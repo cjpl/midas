@@ -6,6 +6,11 @@
   Contents:     Web server for remote PAW display
 
   $Log$
+  Revision 1.8  2000/05/16 11:27:23  midas
+  - Added -d [file] option
+  - Check DISPLAY variable
+  - Fixed bug with "quit" and "restart"
+
   Revision 1.7  2000/05/15 15:07:38  midas
   Fixed bug with command line parameters
 
@@ -62,17 +67,43 @@
 char return_buffer[WEB_BUFFER_SIZE];
 int  return_length;
 char webpaw_url[256];
-int  _debug;
 
 char _param[MAX_PARAM][PARAM_LENGTH];
 char _value[MAX_PARAM][VALUE_SIZE];
 char host_name[256];
 char remote_host_name[256];
+int  _debug;
+char debug_file[256];
 int  _sock=0, _quit;
 
 #ifndef O_BINARY
 #define O_BINARY 0
 #endif
+
+/*------------------------------------------------------------------*/
+
+void debug_message(char *str)
+{
+FILE *f;
+
+  if (!_debug)
+    return;
+
+  if (debug_file[0])
+    {
+    f = fopen(debug_file, "a");
+    if (f)
+      {
+      fprintf(f, str);
+      fclose(f);
+      }
+    }
+  else
+    {
+    printf(str);
+    fflush(stdout);
+    }
+}
 
 /*------------------------------------------------------------------*/
 
@@ -473,11 +504,9 @@ int    i;
       {
       if (result);
         strcpy(result, str);
-      if (_debug)
-        {
-        printf(str);
-        fflush(stdout);
-        }
+
+      debug_message(str);
+
       return ERR_TIMEOUT;
       }
   
@@ -495,11 +524,7 @@ int    i;
   if (result)
     strcpy(result, str);
 
-  if (_debug)
-    {
-    printf(str);
-    fflush(stdout);
-    }
+  debug_message(str);
 
   if (i <= 0)
     return ERR_PIPE;
@@ -554,8 +579,7 @@ int    status;
       {
       strcpy(str, kumac);
       strcat(str, "\n");
-      if (_debug)
-        printf(str);
+      debug_message(str);
       write(pipe, str, strlen(str));
       close(pipe);
       return SHUTDOWN;
@@ -819,6 +843,11 @@ int    fh, i, j, length, status, height;
     return;
     }
 
+  /* restart PAW */
+  if (getparam("restart"))
+    {
+    }
+  
   /* display contents */
   if (strstr(path, ".html") ||
       getparam("submit") || getparam("cmd"))
@@ -828,14 +857,29 @@ int    fh, i, j, length, status, height;
     rsprintf("Content-Type: text/html\r\n\r\n");
     rsprintf("<html><body>\r\n");
 
-    if (getparam("cmd"))
+    if (getparam("restart"))
+      strcpy(str, "restart");
+    else if (getparam("cmd"))
       strcpy(str, getparam("cmd"));
     else
       strcpy(str, path);
 
-    if (strstr(path, ".html"))
-      *strstr(str, ".html") = 0;
-    rsprintf("<img src=\"%s.gif\" alt=contents.gif></a>\r\n", str);
+    if (equal_ustring(str, "quit"))
+      {
+      status = submit_paw("quit", str);
+      if (status == SHUTDOWN)
+        rsprintf("<h1>WebPAW shut down successfully</h1>\r\n");
+      else
+        rsprintf("<h1>Error talking to PAW, return string :</h1>\r\n<pre>%s</pre>\r\n", str);
+
+      _quit = 1;
+      }
+    else
+      {
+      if (strstr(path, ".html"))
+        *strstr(str, ".html") = 0;
+      rsprintf("<img src=\"%s.gif\" alt=contents.gif></a>\r\n", str);
+      }
     
     rsprintf("</body></html>\r\n");
     return;
@@ -845,11 +889,7 @@ int    fh, i, j, length, status, height;
   if (strstr(path, ".gif") ||
       getparam("submit") || getparam("cmd"))
     {
-    if (getparam("restart"))
-      strcpy(str, "restart");
-    else
-      strcpy(str, path);
-
+    strcpy(str, path);
     urlDecode(str);
     if (strstr(path, ".gif"))
       *strstr(str, ".gif") = 0;
@@ -859,18 +899,7 @@ int    fh, i, j, length, status, height;
 
 #ifndef _MSC_VER
     status = submit_paw(str, str);
-    if (status == SHUTDOWN)
-      {
-      rsprintf("HTTP/1.0 200 Document follows\r\n");
-      rsprintf("Server: WebPAW\r\n");
-      rsprintf("Content-Type: text/html\r\n\r\n");
-      rsprintf("<html><body><h1>WebPAW shut down successfully</h1>\r\n");
-      rsprintf("</body></html>\r\n");
-
-      _quit = 1;
-      return;
-      }
-    else if (status != SUCCESS)
+    if (status != SUCCESS)
       {
       rsprintf("HTTP/1.0 200 Document follows\r\n");
       rsprintf("Server: WebPAW\r\n");
@@ -1001,8 +1030,15 @@ struct timeval       timeout;
 
   /* set signal handler for HUP signal */
   signal(SIGHUP, sighup);
-#endif
 
+  /* check DISPLAY variable */
+  if (!getenv("DISPLAY"))
+    {
+    printf("Please define DISPLAY variable so that PAW can open its HIGZ window.\n");
+    return;
+    }
+#endif
+  
   /* create a new socket */
   lsock = socket(AF_INET, SOCK_STREAM, 0);
 
@@ -1260,7 +1296,11 @@ int tcp_port = 80, daemon = 0;
     if (argv[i][0] == '-' && argv[i][1] == 'D')
       daemon = 1;
     else if (argv[i][0] == '-' && argv[i][1] == 'd')
+      {
       _debug = 1;
+      if (argv[i+1][0] && argv[i+1][0] != '-')
+        strcpy(debug_file, argv[++i]);
+      }
     else if (argv[i][0] == '-')
       {
       if (i+1 >= argc || argv[i+1][0] == '-')
@@ -1270,17 +1310,17 @@ int tcp_port = 80, daemon = 0;
       else
         {
 usage:
-        printf("usage: %s [-p port] [-d] [-D]\n\n", argv[0]);
-        printf("       -d display debug message\n");
+        printf("usage: %s [-p port] [-d [file]] [-D]\n\n", argv[0]);
+        printf("       -d [file] display debug message, optionally put them into file\n");
         printf("       -D become a daemon\n");
         return 1;
         }
       }
     }
   
-  if (_debug && daemon)
+  if (_debug && daemon && !debug_file[0])
     {
-    printf("Error: -d and -D flags cannot be combined.\n");
+    printf("Error: when -D flag is given, -d must contain a filename.\n");
     return 1;
     }
 
