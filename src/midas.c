@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.89  1999/11/25 13:29:55  midas
+  Fixed bug in cm_msg_retrieve
+
   Revision 1.88  1999/11/23 15:52:40  midas
   If an event is larger than the buffer read or write cache, it bypasses the
   cache.
@@ -849,12 +852,17 @@ HNDLE hDB, hKey;
   else
     {
     /* position buf_size bytes before the EOF */
-    fseek(f, -(*buf_size), SEEK_END);
+    fseek(f, -(*buf_size-1), SEEK_END);
     offset = ftell(f);
-    fgets(message, *buf_size, f);
-    offset = ftell(f)-offset;
-    *buf_size -= offset;
-    offset = fread(message, 1, *buf_size, f);
+    if (offset != 0)
+      {
+      fgets(message, *buf_size-1, f);
+      offset = ftell(f)-offset;
+      *buf_size -= offset;
+      }
+
+    fread(message, 1, *buf_size-1, f);
+    message[*buf_size-1] = 0;
     fclose(f);
     }
 
