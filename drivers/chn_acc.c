@@ -6,6 +6,9 @@
   Contents:     Epics channel access device driver
 
   $Log$
+  Revision 1.7  1999/09/22 15:27:35  midas
+  Removed TABs
+
   Revision 1.6  1999/09/22 13:01:12  midas
   Figured out that pv_handle is an array of pointers
 
@@ -118,8 +121,8 @@ CA_INFO   *info;
 
   if (ca_pend_io(5.0) == ECA_TIMEOUT)
 	  {
-		for (i=0; i < channels; i++)
-			if (info->pv_handles[i]->state != 2)
+    for (i=0; i < channels; i++)
+      if (info->pv_handles[i]->state != 2)
         cm_msg(MERROR, "chn_acc_init", "cannot connect to %s", 
                info->channel_names+CHN_NAME_LENGTH*i);
 	  }
@@ -139,12 +142,12 @@ CA_INFO   *info;
     }
 
   if (ca_pend_io(5.0) == ECA_TIMEOUT)
-	  {
+    {
 		for (i=0; i < channels; i++)
-			if (info->pv_handles[i]->state != 2)
+      if (info->pv_handles[i]->state != 2)
         cm_msg(MERROR, "chn_acc_init", "cannot add event to channel %s", 
                info->channel_names+CHN_NAME_LENGTH*i);
-	  }
+    }
 
   return FE_SUCCESS;
 }
