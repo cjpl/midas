@@ -6,6 +6,9 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.63  2003/05/30 23:16:15  pierre
+  validate db_lock/unlock/protect_database() for other OS
+
   Revision 1.62  2003/05/09 07:40:05  midas
   Added extra parameter to cm_get_environment
 
@@ -1515,7 +1518,6 @@ INT              index;
 
 /*------------------------------------------------------------------*/
 
-#ifdef LOCAL_ROUTINES
 
 INT db_lock_database(HNDLE hDB)
 /********************************************************************\
@@ -1535,6 +1537,8 @@ INT db_lock_database(HNDLE hDB)
 
 \********************************************************************/
 {
+
+#ifdef LOCAL_ROUTINES
   if (hDB > _database_entries || hDB <= 0)
     {
     cm_msg(MERROR, "db_lock_database", "invalid database handle");
@@ -1555,6 +1559,7 @@ INT db_lock_database(HNDLE hDB)
       ss_shm_unprotect(_database[hDB-1].shm_handle, (void **) &_database[hDB-1].database_header);
     }
 
+#endif /* LOCAL_ROUTINES */
   return DB_SUCCESS;
 }
 
@@ -1579,6 +1584,8 @@ INT db_unlock_database(HNDLE hDB)
 
 \********************************************************************/
 {
+
+#ifdef LOCAL_ROUTINES
   if (hDB > _database_entries || hDB <= 0)
     {
     cm_msg(MERROR, "db_unlock_database", "invalid database handle");
@@ -1597,6 +1604,7 @@ INT db_unlock_database(HNDLE hDB)
     _database[hDB-1].database_header = NULL;
     }
 
+#endif /* LOCAL_ROUTINES */
   return DB_SUCCESS;
 }
 
@@ -1622,6 +1630,7 @@ INT db_protect_database(HNDLE hDB)
 
 \********************************************************************/
 {
+#ifdef LOCAL_ROUTINES
   if (hDB > _database_entries || hDB <= 0)
     {
     cm_msg(MERROR, "db_unlock_database", "invalid database handle");
@@ -1631,11 +1640,9 @@ INT db_protect_database(HNDLE hDB)
   _database[hDB-1].protect = TRUE;
   ss_shm_protect(_database[hDB-1].shm_handle, _database[hDB-1].database_header);
   _database[hDB-1].database_header = NULL;
-
+#endif /* LOCAL_ROUTINES */
   return DB_SUCCESS;
 }
-
-#endif /* LOCAL_ROUTINES */
 
 /*---- helper routines ---------------------------------------------*/
 
