@@ -6,6 +6,9 @@
   Contents:     MIDAS logger program
 
   $Log$
+  Revision 1.29  1999/10/27 15:14:56  midas
+  Exclude /dev/null from open file check
+
   Revision 1.28  1999/10/27 08:17:25  midas
   Increased history size to 15 and added limit check
 
@@ -506,15 +509,19 @@ INT          status;
   else
     {
     /* check if file exists */
-    log_chn->handle = open(log_chn->path, O_RDONLY);
-    if (log_chn->handle > 0)
+    if (strstr(log_chn->path, "null") == NULL)
       {
-      close(log_chn->handle);
-      free(info->buffer);
-      free(info);
-      log_chn->handle = 0;
-      return SS_FILE_EXISTS;
+      log_chn->handle = open(log_chn->path, O_RDONLY);
+      if (log_chn->handle > 0)
+        {
+        close(log_chn->handle);
+        free(info->buffer);
+        free(info);
+        log_chn->handle = 0;
+        return SS_FILE_EXISTS;
+        }
       }
+
 #ifdef OS_WINNT       
     log_chn->handle = (int) CreateFile(log_chn->path, GENERIC_WRITE, FILE_SHARE_READ, NULL, 
                       CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_WRITE_THROUGH | 
@@ -1273,7 +1280,7 @@ INT status;
     }
   else /* default format is MIDAS */
     {
-	  log_chn->format = FORMAT_MIDAS;
+    log_chn->format = FORMAT_MIDAS;
     status = midas_log_open(log_chn, run_number);
     }
 
@@ -2092,8 +2099,9 @@ BOOL         write_data, tape_flag = FALSE;
       else
         log_chn[index].type = LOG_TYPE_DISK;
 
-      /* if disk, precede filename with directory */
-      if (log_chn[index].type == LOG_TYPE_DISK)
+      /* if disk, precede filename with directory if not already there */
+      if (log_chn[index].type == LOG_TYPE_DISK &&
+          strchr(chn_settings->filename, DIR_SEPARATOR) == NULL)
         {
         size = sizeof(dir);
         dir[0] = 0;
