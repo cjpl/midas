@@ -6,6 +6,9 @@
  *         amaudruz@triumf.ca                            Local:           6234
  * ---------------------------------------------------------------------------
    $Log$
+   Revision 1.32  2001/09/14 17:04:57  pierre
+   fix gzread for Midas fmt
+
    Revision 1.31  2001/07/20 20:38:26  pierre
    -Make ybk_close_... return bank size in bytes
    -Fix replay (mdump) when file size less than 32K (fmt=midas)
@@ -2221,6 +2224,10 @@ INT   midas_physrec_get (void * prec, DWORD *readn)
   {
 #ifdef INCLUDE_ZLIB
     *readn = gzread(filegz, (char *) prec, my.size);
+    if (*readn <= 0)
+      status = SS_FILE_ERROR;
+    else 
+      status = SS_SUCCESS;
 #endif
   }
 
