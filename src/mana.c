@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.26  1999/07/22 07:04:56  midas
+  Only dump histos in online mode
+
   Revision 1.25  1999/07/21 09:22:01  midas
   Added Ctrl-C handler to cm_connect_experiment and cm_yield
 
@@ -1369,35 +1372,22 @@ char       str[256], file_name[256];
   status = ana_end_of_run(run_number, error);
 
   /* save histos if requested */
-  if (out_info.histo_dump)
+  if (out_info.histo_dump && clp.online)
     {
-    if (out_file)
-      {
-      printf("\nCannot dump histos together with output RZ file.\n");
-      printf("Please switch off \"/Analyzer/Output/Dump Histos\" flag.\n");
-      }
+    size = sizeof(str);
+    str[0] = 0;
+    db_get_value(hDB, 0, "/Logger/Data Dir", str, &size, TID_STRING);
+    if (str[0] != 0)
+      if (str[strlen(str)-1] != DIR_SEPARATOR)
+        strcat(str, DIR_SEPARATOR_STR);
+
+    strcat(str, out_info.histo_dump_filename);
+    if (strchr(str, '%') != NULL)
+      sprintf(file_name, str, run_number);
     else
-      {
-      if (clp.online)
-        {
-        size = sizeof(str);
-        str[0] = 0;
-        db_get_value(hDB, 0, "/Logger/Data Dir", str, &size, TID_STRING);
-        if (str[0] != 0)
-          if (str[strlen(str)-1] != DIR_SEPARATOR)
-            strcat(str, DIR_SEPARATOR_STR);
-        }
-      else
-        str[0] = 0;
+      strcpy(file_name, str);
 
-      strcat(str, out_info.histo_dump_filename);
-      if (strchr(str, '%') != NULL)
-        sprintf(file_name, str, run_number);
-      else
-        strcpy(file_name, str);
-
-      HRPUT(0, file_name, "NT");
-      }
+    HRPUT(0, file_name, "NT");
     }
 
   /* close output file */
