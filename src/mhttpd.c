@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.289  2005/01/04 16:58:46  midas
+  Implemented bars and fills for custom GIF images
+
   Revision 1.288  2005/01/04 13:34:06  midas
   Implemented labels for custom graphics
 
@@ -1097,6 +1100,12 @@ unsigned char favicon_ico[] = {
 /*------------------------------------------------------------------*/
 
 void show_hist_page(char *path, char *buffer, int *buffer_size, int refresh);
+int vaxis(gdImagePtr im, gdFont * font, int col, int gcol,
+          int x1, int y1, int width,
+          int minor, int major, int text, int label, int grid, double ymin, double ymax, BOOL logaxis);
+void haxis(gdImagePtr im, gdFont * font, int col, int gcol,
+           int x1, int y1, int width,
+           int minor, int major, int text, int label, int grid, double xmin, double xmax);
 
 /*------------------------------------------------------------------*/
 
@@ -5346,18 +5355,106 @@ void show_odb_tag(char *path, char *keypath, int n_var, BOOL bedit)
 
 /*------------------------------------------------------------------*/
 
+/* add labels using following syntax under /Custom/Images/<name.gif>/Labels/<name>:
+   
+   [Name]    [Description]                       [Example]
+
+   Src       ODB path for vairable to display    /Equipment/Environment/Variables/Input[0]
+   Format    Formt for float/double              %1.2f
+   Font      Font to use                         small | medium | giant
+   Unit      Unit to display after value         Deg. C
+   X         X-position in pixel                 90
+   Y         Y-position from top                 67
+   Align     horizontal align left/center/right  left
+   FGColor   Foreground color RRGGBB             000000
+   BGColor   Background color RRGGBB             FFFFFF
+*/
+
+char *cgif_label_str[] = {
+"Src = STRING : [256] ",
+"Format = STRING : [32] %1.1f",
+"Font = STRING : [32] Medium",
+"Unit = STRING : [32] ",
+"X = INT : 0",
+"Y = INT : 0",
+"Align = INT : 0",
+"FGColor = STRING : [8] 000000",
+"BGColor = STRING : [8] FFFFFF",
+NULL
+};
+
+typedef struct {
+   char src[256];
+   char format[32];
+   char font[32];
+   char unit[32];
+   int x, y, align;
+   char fgcolor[8];
+   char bgcolor[8];
+} CGIF_LABEL;
+
+/* add labels using following syntax under /Custom/Images/<name.gif>/Bars/<name>:
+   
+   [Name]    [Description]                       [Example]
+
+   Src       ODB path for vairable to display    /Equipment/Environment/Variables/Input[0]
+   X         X-position in pixel                 90
+   Y         Y-position from top                 67
+   Width     Width in pixel                      20
+   Height    Height in pixel                     100
+   Direction 0(vertical)/1(horiz.)               0
+   Axis      Draw axis 0(none)/1(left)/2(right)  1
+   Logscale  Draw logarithmix axis               n
+   Min       Min value for axis                  0
+   Max       Max value for axis                  10
+   FGColor   Foreground color RRGGBB             000000
+   BGColor   Background color RRGGBB             FFFFFF
+   BDColor   Border color RRGGBB                 808080
+*/
+
+char *cgif_bar_str[] = {
+"Src = STRING : [256] ",
+"X = INT : 0",
+"Y = INT : 0",
+"Width = INT : 10",
+"Height = INT : 100",
+"Direction = INT : 0",
+"Axis = INT : 1",
+"Logscale = BOOL : n",
+"Min = DOUBLE : 0",
+"Max = DOUBLE : 10",
+"FGColor = STRING : [8] 000000",
+"BGColor = STRING : [8] FFFFFF",
+"BDColor = STRING : [8] 808080",
+NULL
+};
+
+typedef struct {
+   char src[256];
+   int x, y, width, height, direction, axis;
+   BOOL logscale;
+   double min, max;
+   char fgcolor[8];
+   char bgcolor[8];
+   char bdcolor[8];
+} CGIF_BAR;
+
+/*------------------------------------------------------------------*/
+
 void show_custom_gif(char *name)
 {
-   char str[256], filename[256], src[256], fgcolor[8], bgcolor[8], 
-      data[256], value[256], format[32], font[32];
-   int index, length, status, size, x, y, width, height, bgcol, fgcol,
-      r, g, b, align;
+   char str[256], filename[256], data[256], value[256], src[256];
+   int i, index, length, status, size, width, height, bgcol, fgcol, bdcol,
+      r, g, b, x, y;
    HNDLE hDB, hkeygif, hkeyroot, hkey, hkeyval;
+   double fvalue, ratio;
    KEY key, vkey;
    gdImagePtr im;
    gdGifBuffer gb;
    gdFontPtr pfont;
    FILE *f;
+   CGIF_LABEL label;
+   CGIF_BAR bar;
 
    /* find image description in ODB */
    cm_get_experiment_database(&hDB, NULL);
@@ -5386,21 +5483,8 @@ void show_custom_gif(char *name)
       return;
    }
 
-   /* add labels using following syntax under /Custom/Images/<name.gif>/Labels/<name>:
-      
-      [Name]    [Description]                       [Example]
+   /*---- draw labels ----------------------------------------------*/
 
-      Src       ODB path for vairable to display    /Equipment/Environment/Variables/Input[0]
-      Format    Formt for float/double              %1.2f
-      Font      Font to use                         small | medium | giant
-      Unit      Unit to display after value         Deg. C
-      X         X-position in pixel                 90
-      Y         Y-position from top                 67
-      Align     horizontal align left/center/right  left
-      FGColor   Foreground color RRGGBB             000000
-      BGColor   Background color RRGGBB             FFFFFF
-   */
-   
    db_find_key(hDB, hkeygif, "Labels", &hkeyroot);
    if (hkeyroot) {
       for (index=0 ; ; index++) {
@@ -5409,72 +5493,53 @@ void show_custom_gif(char *name)
             break;
          db_get_key(hDB, hkey, &key);
          
-         size = sizeof(src);
-         src[0] = 0;
-         db_get_value(hDB, hkey, "Src", src, &size, TID_STRING, TRUE);
-         if (src[0] == 0) {
-            cm_msg(MERROR, "Empty Src key for label %s", key.name);
+         db_check_record(hDB, hkey, "", strcomb(cgif_label_str), TRUE);
+         size = sizeof(label);
+         status = db_get_record(hDB, hkey, &label, &size, 0);
+         if (status != DB_SUCCESS) {
+            cm_msg(MERROR, "show_custom_gif", "Cannot open data record for label \"%s\"", key.name);
             continue;
          }
 
-         db_find_key(hDB, 0, src, &hkeyval);
+         if (label.src[0] == 0) {
+            cm_msg(MERROR, "show_custom_gif", "Empty Src key for label \"%s\"", key.name);
+            continue;
+         }
+
+         db_find_key(hDB, 0, label.src, &hkeyval);
          if (!hkeyval) {
-            cm_msg(MERROR, "Invalid Src key \"%s\" for label %s", src, key.name);
+            cm_msg(MERROR, "show_custom_gif", "Invalid Src key \"%s\" for label \"%s\"", label.src, key.name);
             continue;
          }
-
-         size = sizeof(format);
-         format[0] = 0;
-         db_get_value(hDB, hkey, "Format", format, &size, TID_STRING, TRUE);
-
-         size = sizeof(font);
-         strcpy(font, "MediumBold");
-         db_get_value(hDB, hkey, "Font", font, &size, TID_STRING, TRUE);
 
          db_get_key(hDB, hkeyval, &vkey);
          size = sizeof(data);
-         status = db_get_value(hDB, 0, src, data, &size, vkey.type, FALSE);
+         status = db_get_value(hDB, 0, label.src, data, &size, vkey.type, FALSE);
          
-         if (format[0]) {
+         if (label.format[0]) {
             if (vkey.type == TID_FLOAT)
-               sprintf(value, format, *(((float *) data)));
+               sprintf(value, label.format, *(((float *) data)));
             else if (vkey.type == TID_DOUBLE)
-               sprintf(value, format, *(((double *) data)));
+               sprintf(value, label.format, *(((double *) data)));
             else
                db_sprintf(value, data, size, 0, vkey.type);
          } else
             db_sprintf(value, data, size, 0, vkey.type);
 
-         size = sizeof(str);
-         str[0] = 0;
-         db_get_value(hDB, hkey, "Unit", str, &size, TID_STRING, TRUE);
          strlcat(value, " ", sizeof(value));
-         strlcat(value, str, sizeof(value));
+         strlcat(value, label.unit, sizeof(value));
 
-         size = sizeof(x);
-         x = y = align = 0;
-         db_get_value(hDB, hkey, "X", &x, &size, TID_INT, TRUE);
-         db_get_value(hDB, hkey, "Y", &y, &size, TID_INT, TRUE);
-         db_get_value(hDB, hkey, "Align", &align, &size, TID_INT, TRUE);
-
-         size = sizeof(fgcolor);
-         strcpy(fgcolor, "000000");
-         db_get_value(hDB, hkey, "FGColor", fgcolor, &size, TID_STRING, TRUE);
-         sscanf(fgcolor, "%02x%02x%02x", &r, &g, &b);
+         sscanf(label.fgcolor, "%02x%02x%02x", &r, &g, &b);
          fgcol = gdImageColorAllocate(im, r, g, b);
-
-         size = sizeof(bgcolor);
-         strcpy(bgcolor, "FFFFFF");
-         db_get_value(hDB, hkey, "BGColor", bgcolor, &size, TID_STRING, TRUE);
-         sscanf(bgcolor, "%02x%02x%02x", &r, &g, &b);
+         sscanf(label.bgcolor, "%02x%02x%02x", &r, &g, &b);
          bgcol = gdImageColorAllocate(im, r, g, b);
 
          /* select font */
-         if (equal_ustring(font, "Small"))
+         if (equal_ustring(label.font, "Small"))
             pfont = gdFontSmall;
-         else if (equal_ustring(font, "Medium"))
+         else if (equal_ustring(label.font, "Medium"))
             pfont = gdFontMediumBold;
-         else if (equal_ustring(font, "Giant"))
+         else if (equal_ustring(label.font, "Giant"))
             pfont = gdFontGiant;
          else
             pfont = gdFontMediumBold;
@@ -5482,21 +5547,173 @@ void show_custom_gif(char *name)
          width = strlen(value) * pfont->w + 5 + 5;
          height = pfont->h + 2 + 2;
 
-         if (align == 0) {
+         if (label.align == 0) {
             /* left */          
-            gdImageFilledRectangle(im, x, y, x + width, y + height, bgcol);
-            gdImageRectangle(im, x, y, x + width, y + height, fgcol);
-            gdImageString(im, pfont, x + 5, y + 2, value, fgcol);
-         } else if (align == 1) {
+            gdImageFilledRectangle(im, label.x, label.y, label.x+width, label.y+height, bgcol);
+            gdImageRectangle(im, label.x, label.y, label.x+width, label.y+height, fgcol);
+            gdImageString(im, pfont, label.x+5, label.y+2, value, fgcol);
+         } else if (label.align == 1) {
             /* center */
-            gdImageFilledRectangle(im, x-width/2, y, x+width/2, y + height, bgcol);
-            gdImageRectangle(im, x-width/2, y, x+width/2, y + height, fgcol);
-            gdImageString(im, pfont, x + 5 - width/2, y + 2, value, fgcol);
+            gdImageFilledRectangle(im, label.x-width/2, label.y, label.x+width/2, label.y+height, bgcol);
+            gdImageRectangle(im, label.x-width/2, label.y, label.x+width/2, label.y+height, fgcol);
+            gdImageString(im, pfont, label.x+5-width/2, label.y+2, value, fgcol);
          } else {
             /* right */
-            gdImageFilledRectangle(im, x - width, y, x, y + height, bgcol);
-            gdImageRectangle(im, x - width, y, x, y + height, fgcol);
-            gdImageString(im, pfont, x - width + 5, y + 2, value, fgcol);
+            gdImageFilledRectangle(im, label.x-width, label.y, label.x, label.y+height, bgcol);
+            gdImageRectangle(im, label.x-width, label.y, label.x, label.y+height, fgcol);
+            gdImageString(im, pfont, label.x-width+5, label.y+2, value, fgcol);
+         }
+      }
+   }
+
+   /*---- draw bars ------------------------------------------------*/
+
+   db_find_key(hDB, hkeygif, "Bars", &hkeyroot);
+   if (hkeyroot) {
+      for (index=0 ; ; index++) {
+         db_enum_key(hDB, hkeyroot, index, &hkey);
+         if (!hkey)
+            break;
+         db_get_key(hDB, hkey, &key);
+         
+         db_check_record(hDB, hkey, "", strcomb(cgif_bar_str), TRUE);
+         size = sizeof(bar);
+         status = db_get_record(hDB, hkey, &bar, &size, 0);
+         if (status != DB_SUCCESS) {
+            cm_msg(MERROR, "show_custom_gif", "Cannot open data record for bar \"%s\"", key.name);
+            continue;
+         }
+
+         if (bar.src[0] == 0) {
+            cm_msg(MERROR, "show_custom_gif", "Empty Src key for bar \"%s\"", key.name);
+            continue;
+         }
+
+         db_find_key(hDB, 0, bar.src, &hkeyval);
+         if (!hkeyval) {
+            cm_msg(MERROR, "show_custom_gif", "Invalid Src key \"%s\" for bar \"%s\"", bar.src, key.name);
+            continue;
+         }
+
+         db_get_key(hDB, hkeyval, &vkey);
+         size = sizeof(data);
+         status = db_get_value(hDB, 0, bar.src, data, &size, vkey.type, FALSE);
+         db_sprintf(value, data, size, 0, vkey.type);
+         fvalue = atof(value);
+         
+         sscanf(bar.fgcolor, "%02x%02x%02x", &r, &g, &b);
+         fgcol = gdImageColorAllocate(im, r, g, b);
+         sscanf(bar.bgcolor, "%02x%02x%02x", &r, &g, &b);
+         bgcol = gdImageColorAllocate(im, r, g, b);
+         sscanf(bar.bdcolor, "%02x%02x%02x", &r, &g, &b);
+         bdcol = gdImageColorAllocate(im, r, g, b);
+
+         if (bar.min == bar.max)
+            bar.max += 1;
+
+         if (bar.logscale) {
+            if (fvalue < 1E-20)
+               fvalue = 1E-20;
+            ratio = (log(fvalue) - log(bar.min))/(log(bar.max) - log(bar.min));
+         } else
+            ratio = (fvalue - bar.min)/(bar.max - bar.min);
+         if (ratio < 0)
+            ratio = 0;
+         if (ratio > 1)
+            ratio = 1;
+
+         if (bar.direction == 0) {
+            /* vertical */          
+            ratio = (bar.height-2) - ratio*(bar.height-2);
+            r = (int) (ratio+0.5);
+
+            gdImageFilledRectangle(im, bar.x, bar.y, bar.x+bar.width, bar.y+bar.height, bgcol);
+            gdImageRectangle(im, bar.x, bar.y, bar.x+bar.width, bar.y+bar.height, bdcol);
+            gdImageFilledRectangle(im, bar.x+1, bar.y+r+1, bar.x+bar.width-1, bar.y+bar.height-1, fgcol);
+
+            if (bar.axis == 1)
+               vaxis(im, gdFontSmall, bdcol, 0, bar.x, bar.y+bar.height, bar.height, -3, -5, -7, -8, 0, bar.min, bar.max, bar.logscale);
+            else if (bar.axis == 2)
+               vaxis(im, gdFontSmall, bdcol, 0, bar.x+bar.width, bar.y+bar.height, bar.height, 3, 5, 7, 10, 0, bar.min, bar.max, bar.logscale);
+
+         } else {
+            /* horizontal */
+            ratio = ratio*(bar.height-2);
+            r = (int) (ratio+0.5);
+
+            gdImageFilledRectangle(im, bar.x, bar.y, bar.x+bar.height, bar.y+bar.width, bgcol);
+            gdImageRectangle(im, bar.x, bar.y, bar.x+bar.height, bar.y+bar.width, bdcol);
+            gdImageFilledRectangle(im, bar.x+1, bar.y+1, bar.x+r, bar.y+bar.width-1, fgcol);
+
+            if (bar.axis == 1)
+               haxis(im, gdFontSmall, bdcol, 0, bar.x, bar.y, bar.height, -3, -5, -7, -18, 0, bar.min, bar.max);
+            else if (bar.axis == 2)
+               haxis(im, gdFontSmall, bdcol, 0, bar.x, bar.y+bar.width, bar.height, 3, 5, 7, 8, 0, bar.min, bar.max);
+         }
+      }
+   }
+
+   /*---- draw fills -----------------------------------------------*/
+
+   db_find_key(hDB, hkeygif, "Fills", &hkeyroot);
+   if (hkeyroot) {
+      for (index=0 ; ; index++) {
+         db_enum_key(hDB, hkeyroot, index, &hkey);
+         if (!hkey)
+            break;
+         db_get_key(hDB, hkey, &key);
+
+         size = sizeof(src);
+         src[0] = 0;
+         db_get_value(hDB, hkey, "Src", src, &size, TID_STRING, TRUE);
+
+         if (src[0] == 0) {
+            cm_msg(MERROR, "show_custom_gif", "Empty Src key for Fill \"%s\"", key.name);
+            continue;
+         }
+
+         db_find_key(hDB, 0, src, &hkeyval);
+         if (!hkeyval) {
+            cm_msg(MERROR, "show_custom_gif", "Invalid Src key \"%s\" for Fill \"%s\"", src, key.name);
+            continue;
+         }
+
+         db_get_key(hDB, hkeyval, &vkey);
+         size = sizeof(data);
+         status = db_get_value(hDB, 0, src, data, &size, vkey.type, FALSE);
+         db_sprintf(value, data, size, 0, vkey.type);
+         fvalue = atof(value);
+         
+         x = y = 0;
+         size = sizeof(x);
+         db_get_value(hDB, hkey, "X", &x, &size, TID_INT, TRUE);
+         db_get_value(hDB, hkey, "Y", &y, &size, TID_INT, TRUE);
+
+         size = sizeof(data);
+         status = db_get_value(hDB, hkey, "Limits", data, &size, TID_DOUBLE, FALSE);
+         if (status != DB_SUCCESS) {
+            cm_msg(MERROR, "show_custom_gif", "No \"Limits\" entry for Fill \"%s\"", key.name);
+            continue;
+         }
+         for (i=0 ; i<size/(int)sizeof(double) ; i++)
+            if (*((double *)data+i) > fvalue)
+               break;
+         if (i > 0)
+            i--;
+
+         db_find_key(hDB, hkey, "Fillcolors", &hkeyval);
+         if (!hkeyval) {
+            cm_msg(MERROR, "show_custom_gif", "No \"Fillcolors\" entry for Fill \"%s\"", key.name);
+            continue;
+         }
+
+         size = sizeof(data);
+         strcpy(data, "FFFFFF");
+         status = db_get_data_index(hDB, hkeyval, data, &size, i, TID_STRING);
+         if (status == DB_SUCCESS) {
+            sscanf(data, "%02x%02x%02x", &r, &g, &b);
+            fgcol = gdImageColorAllocate(im, r, g, b);
+            gdImageFill(im, x, y, fgcol);
          }
       }
    }
