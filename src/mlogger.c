@@ -6,6 +6,9 @@
   Contents:     MIDAS logger program
 
   $Log$
+  Revision 1.33  1999/11/26 07:57:38  midas
+  Increased wait time for auto restart to 20s
+
   Revision 1.32  1999/11/15 11:24:37  midas
   Added run state check in auto restart
 
@@ -2500,7 +2503,7 @@ usage:
     if (auto_restart)
       {
       /* wait until analyzer EOR finished */
-      ss_sleep(10000);
+      ss_sleep(20000);
 
       /* check if really stopped */
       size = sizeof(state);
