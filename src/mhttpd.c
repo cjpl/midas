@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.184  2002/02/02 11:34:29  midas
+  Added run markes in history
+
   Revision 1.183  2002/02/01 13:15:23  midas
   Improved log axis labeling
 
@@ -6790,11 +6793,11 @@ HNDLE       hDB, hkey, hkeypanel, hkeyeq, hkeydvar, hkeyvars, hkeyroot, hkeyname
 KEY         key;
 gdImagePtr  im;
 gdGifBuffer gb;
-int         i, j, k, l, n_vars, size, status, n_event, row;
-DWORD       bsize, tsize;
+int         i, j, k, l, n_vars, size, status, n_event, row, x_marker;
+DWORD       bsize, tsize, n_marker, *state, run_number;
 int         length, aoffset, toffset;
 int         flag, x1, y1, x2, y2, xs, ys, xold, yold;
-int         white, black, grey, ltgrey, red, green, blue, curve_col[MAX_VARS];
+int         white, black, grey, ltgrey, red, green, blue, curve_col[MAX_VARS], state_col[3];
 char        str[256], panel[NAME_LENGTH], *p, odbpath[256];
 INT         var_index[MAX_VARS], *event_id_list, event_id;
 DWORD       name_size, id_size, type;
@@ -6804,7 +6807,7 @@ DWORD       n_point[MAX_VARS];
 int         x[MAX_VARS][1000];
 float       y[MAX_VARS][1000];
 float       factor[MAX_VARS];
-BOOL        logaxis;
+BOOL        logaxis, runmarker;
 float       xmin, xmax, ymin, ymax;
 char        ybuffer[8000];
 DWORD       tbuffer[1000];
@@ -6837,6 +6840,10 @@ float       upper_limit[MAX_VARS], lower_limit[MAX_VARS];
   curve_col[7] = gdImageColorAllocate(im, 128, 255, 128);
   curve_col[8] = gdImageColorAllocate(im, 255, 128, 128);
   curve_col[9] = gdImageColorAllocate(im, 128, 128, 128);
+
+  state_col[0] = gdImageColorAllocate(im, 255,   0,   0);
+  state_col[1] = gdImageColorAllocate(im, 255, 255,   0);
+  state_col[2] = gdImageColorAllocate(im,   0, 255,   0);
 
   /* Set transparent color. */
 	gdImageColorTransparent(im, grey);
@@ -6976,6 +6983,11 @@ float       upper_limit[MAX_VARS], lower_limit[MAX_VARS];
     size = sizeof(logaxis);
     logaxis = 0;
     db_get_value(hDB, hkeypanel, "Log axis", &logaxis, &size, TID_BOOL);
+
+    /* get runmarker flag */
+    size = sizeof(runmarker);
+    runmarker = 1;
+    db_get_value(hDB, hkeypanel, "Show run markers", &runmarker, &size, TID_BOOL);
 
     /* make ODB path from tag name */
     odbpath[0] = 0;
@@ -7266,6 +7278,64 @@ float       upper_limit[MAX_VARS], lower_limit[MAX_VARS];
   gdImageLine(im, x1, y2, x2, y2, black);
   gdImageLine(im, x2, y2, x2, y1, black);
 
+  /* write run markes if selected */
+  if (runmarker)
+    {
+    if (offset > 0)
+      toffset = offset*scale;
+    else
+      toffset = -offset;
+
+    bsize = sizeof(ybuffer);
+    tsize = sizeof(tbuffer);
+
+    /* read run state */
+
+    status = hs_read(0, ss_time()-scale-toffset, ss_time()-toffset, 0,
+                     "State", 0, tbuffer, &tsize, ybuffer, &bsize,
+                     &type, &n_marker);
+
+    state = NULL;
+    if (status != HS_UNDEFINED_VAR)
+      {
+      state = malloc(sizeof(DWORD)*n_marker);
+      for (j=0 ; j<(int)n_marker ; j++)
+        state[j] = *((DWORD *) ybuffer+j);
+      }
+
+    bsize = sizeof(ybuffer);
+    tsize = sizeof(tbuffer);
+
+    /* read run number */
+
+    status = hs_read(0, ss_time()-scale-toffset, ss_time()-toffset, 0,
+                     "Run number", 0, tbuffer, &tsize, ybuffer, &bsize,
+                     &type, &n_marker);
+
+    if (status != HS_UNDEFINED_VAR)
+      {
+      for (j=0 ; j<(int)n_marker ; j++)
+        {
+        x_marker = tbuffer[j] - ss_time();
+        xs = (int) ((x_marker/3600.0-xmin)/(xmax-xmin)*(x2-x1)+x1+0.5);
+
+        run_number = *((DWORD *) ybuffer+j);
+
+        gdImageDashedLine(im, xs, y1, xs, y2, state_col[state[j]-1]);
+
+        sprintf(str, "%d", run_number);
+
+        if (state[j] == STATE_RUNNING)
+          gdImageString(im, gdFontSmall, xs+2, y2+2, str, black);
+        else if (state[j] == STATE_STOPPED)
+          gdImageString(im, gdFontSmall, xs-2-gdFontSmall->w*strlen(str), y2+2, str, black);
+        }
+      }
+
+    if (state)
+      free(state);
+    }
+  
   for (i=0 ; i<n_vars ; i++)
     {
     if (index != -1 && index != i)
