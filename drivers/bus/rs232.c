@@ -6,6 +6,9 @@
   Contents:     RS232 communication routines for MS-DOS and NT
 
   $Log$
+  Revision 1.2  2001/01/03 16:05:10  midas
+  Adapted Bus Driver scheme to rs232
+
   Revision 1.1  1999/12/20 10:18:11  midas
   Reorganized driver directory structure
 
@@ -17,7 +20,30 @@
 
 #include "midas.h"
 
-static BOOL debug_flag = FALSE;
+static int debug_flag = 0;
+
+typedef struct {
+  char port[NAME_LENGTH];
+  int  baud;
+  char parity;
+  int  data_bit;
+  int  stop_bit;
+} RS232_SETTINGS;
+
+#define RS232_SETTINGS_STR "\
+RS232 Port = STRING : [32] com1\n\
+Baud = INT : 9600\n\
+Parity = CHAR : N\n\
+Data Bit = INT : 8\n\
+Stop Bit = INT : 1\n\
+"
+
+typedef struct {
+  RS232_SETTINGS settings;
+  int fd;                         /* device handle for RS232 device */
+} RS232_INFO;
+
+/*--- OS_MSDOS -----------------------------------------------------*/
 
 #ifdef OS_MSDOS
 
@@ -56,10 +82,9 @@ struct {
   { 0x2F8, 0x0B, com2int }
 };
 
-/* ------------------------- rs232_init ----------------------------- */
+/* ------------------------- rs232_open ----------------------------- */
 
-void rs232_init(int port, int baud, int parity, int data_bit, int stop_bit,
-              int mode)
+int rs232_open(char *port, int baud, char parity, int data_bit, int stop_bit)
 /*********************************************************************
 * Initialize serial port according to parameters. Install interrupt  *
 * handler and uninstall it on exit.                                  *
@@ -70,6 +95,8 @@ void rs232_init(int port, int baud, int parity, int data_bit, int stop_bit,
 #define DSR  0x20
 #define RLSD 0x80
 
+int mode = 0;
+
 static int first_init  = 1;
 int    parity_mask[]   = { 0x00, 0x08, 0x18 };
 int    baud_list[]     = { 110, 150, 300, 600, 1200, 2400, 4800, 9600 };
@@ -79,9 +106,8 @@ int    i;
     if (baud_list[i] == baud) break;
 
   /**** init com port ****/
-  port--;
   bioscom(0, i*0x20 | parity_mask[parity] | (stop_bit-1)*4
-             | (data_bit-5), port);
+             | (data_bit-5), port[3] - '1');
 
   /**** initialize ring buffer ****/
   ccb[port].write_mark  = 0;
@@ -120,6 +146,8 @@ int    i;
   /**** 8259 Interrupt Controller init ****/
   outportb(0x21,inportb(0x21) & ~(0x10 >> port));
   outportb(0x20,0x20);        /* end of interrupt */
+
+  return port;
 }
 
 /* --------------------------- rs232_exit --------------------------- */
@@ -183,17 +211,17 @@ int  retry;
   outportb(ccb[port].port_base,c);           /**** send char ****/
 }
 
-void computs(int port, char *str)
+void rs232_puts(RS232_INFO *info, char *str)
 {
   while(*str)
-    computc(port, *(str++));
+    computc(info->fd, *(str++));
 
   if (debug_flag)
     {
     FILE *f;
 
     f = fopen("rs232.log", "a");
-    fprintf(f, "Out: %s\n", str);
+    fprintf(f, "puts: %s\n", str);
     fclose(f);
     }
 }
@@ -270,7 +298,7 @@ char str[30];
     FILE *f;
 
     f = fopen("rs232.log", "a");
-    fprintf(f, "In: %s\n", s);
+    fprintf(f, "gets: %s\n", s);
     fclose(f);
     }
   
@@ -344,7 +372,7 @@ struct timeb start_time, act_time;
                 FILE *f;
 
                 f = fopen("rs232.log", "a");
-                fprintf(f, "Waitfor: %s\n", retstr);
+                fprintf(f, "waitfor: %s\n", retstr);
                 fclose(f);
                 }
 
@@ -439,8 +467,7 @@ cprintf("old_write_mark: %d, write_mark: %d, read_mark: %d\n\r",
 
 #include <stdio.h>
 
-int rs232_init(char *port, int baud, char parity, int data_bit, int stop_bit,
-              int mode)
+int rs232_open(char *port, int baud, char parity, int data_bit, int stop_bit)
 {
 char          str[80];
 DCB           dcb ;
@@ -458,44 +485,45 @@ COMMTIMEOUTS  CommTimeOuts;
                   NULL );
                   
   if (hDev == (HANDLE) -1)
-    return (int) hDev;
+    return FE_ERR_HW;
 
-  GetCommState( hDev, &dcb ) ;
+  GetCommState(hDev, &dcb);
 
   sprintf(str, "baud=%d parity=%c data=%d stop=%d", baud, parity, data_bit, stop_bit);
   BuildCommDCB(str, &dcb);
 
-  if (SetCommState( hDev, &dcb ) == FALSE)
-    return -1;
+  if (SetCommState(hDev, &dcb) == FALSE)
+    return FE_ERR_HW;
 
-  // SetCommMask( hDev, EV_RXCHAR );
-  SetupComm( hDev, 4096, 4096 );
+  SetupComm(hDev, 4096, 4096);
 
-  CommTimeOuts.ReadIntervalTimeout = 0 ;
-  CommTimeOuts.ReadTotalTimeoutMultiplier = 0 ;
-  CommTimeOuts.ReadTotalTimeoutConstant = 0 ;
-  CommTimeOuts.WriteTotalTimeoutMultiplier = 0 ;
-  CommTimeOuts.WriteTotalTimeoutConstant = 5000 ;
+  CommTimeOuts.ReadIntervalTimeout = 0;
+  CommTimeOuts.ReadTotalTimeoutMultiplier = 0;
+  CommTimeOuts.ReadTotalTimeoutConstant = 0;
+  CommTimeOuts.WriteTotalTimeoutMultiplier = 0;
+  CommTimeOuts.WriteTotalTimeoutConstant = 5000;
   
-  SetCommTimeouts( (HANDLE) hDev, &CommTimeOuts ) ;
+  SetCommTimeouts((HANDLE) hDev, &CommTimeOuts);
 
-  return (int) hDev;
+  return (INT) hDev;
 }
 
 /*----------------------------------------------------------------------------*/
 
-void rs232_exit(int hDev)
+INT rs232_exit(RS232_INFO *info)
 {
-  EscapeCommFunction( (HANDLE) hDev, CLRDTR ) ;
+  EscapeCommFunction( (HANDLE) info->fd, CLRDTR ) ;
 
-  PurgeComm( (HANDLE) hDev, PURGE_TXABORT | PURGE_RXABORT |
+  PurgeComm( (HANDLE) info->fd, PURGE_TXABORT | PURGE_RXABORT |
                                   PURGE_TXCLEAR | PURGE_RXCLEAR ) ;
-  CloseHandle( (HANDLE) hDev );
+  CloseHandle( (HANDLE) info->fd);
+
+  return SUCCESS;
 }
 
 /*----------------------------------------------------------------------------*/
 
-void rs232_puts(int hDev, char *str)
+int rs232_puts(RS232_INFO *info, char *str)
 {
 DWORD written;
  
@@ -504,76 +532,38 @@ DWORD written;
     FILE *f;
 
     f = fopen("rs232.log", "a");
-    fprintf(f, "Out: %s\n", str);
+    fprintf(f, "puts: %s\n", str);
     fclose(f);
     }
 
-  WriteFile( (HANDLE) hDev, str, strlen(str), &written, NULL);
+  WriteFile( (HANDLE) info->fd, str, strlen(str), &written, NULL);
+  return written;
 }
 
 /*----------------------------------------------------------------------------*/
 
-int rs232_gets(int hDev, char *str, int size, int end_char)
+int rs232_gets(RS232_INFO *info, char *str, int size, char *pattern, int timeout)
 {
 int           i, status;
 DWORD         read;
 COMMTIMEOUTS  CommTimeOuts;
 
-  GetCommTimeouts( (HANDLE) hDev, &CommTimeOuts ) ;
+  GetCommTimeouts((HANDLE) info->fd, &CommTimeOuts );
 
-  CommTimeOuts.ReadIntervalTimeout = 0 ;
-  CommTimeOuts.ReadTotalTimeoutMultiplier = 0 ;
-  CommTimeOuts.ReadTotalTimeoutConstant = 500 ;
+  CommTimeOuts.ReadIntervalTimeout = 0;
+  CommTimeOuts.ReadTotalTimeoutMultiplier = 0;
+  CommTimeOuts.ReadTotalTimeoutConstant = timeout;
   
-  SetCommTimeouts( (HANDLE) hDev, &CommTimeOuts ) ;
+  SetCommTimeouts((HANDLE) info->fd, &CommTimeOuts);
 
   memset(str, 0, size);
-  for (i=0 ; ; i++)
-    {
-    status = ReadFile( (HANDLE) hDev, str+i, 1, &read, NULL);
-    if (!status || read == 0)
-      return 0;
-
-    if (str[i] == end_char)
-      break;
-    }
-
-  if (debug_flag)
-    {
-    FILE *f;
-
-    f = fopen("rs232.log", "a");
-    fprintf(f, "In: %s\n", str);
-    fclose(f);
-    }
-
-  return i;
-}
-
-/*----------------------------------------------------------------------------*/
-
-int rs232_waitfor(int hDev, char *str, char *retstr, int size, int seconds)
-{
-int           i, status;
-DWORD         read;
-COMMTIMEOUTS  CommTimeOuts;
-
-  GetCommTimeouts( (HANDLE) hDev, &CommTimeOuts ) ;
-
-  CommTimeOuts.ReadIntervalTimeout = 0 ;
-  CommTimeOuts.ReadTotalTimeoutMultiplier = 0 ;
-  CommTimeOuts.ReadTotalTimeoutConstant = 1000*seconds ;
-  
-  SetCommTimeouts( (HANDLE) hDev, &CommTimeOuts ) ;
-
-  memset(retstr, 0, size);
   for (i=0 ; i<size-1 ; i++)
     {
-    status = ReadFile( (HANDLE) hDev, retstr+i, 1, &read, NULL);
+    status = ReadFile( (HANDLE) info->fd, str+i, 1, &read, NULL);
     if (!status || read == 0)
       return 0;
 
-    if (strstr(retstr, str) != NULL)
+    if (strstr(str, pattern) != NULL)
       break;
     }
   
@@ -582,7 +572,7 @@ COMMTIMEOUTS  CommTimeOuts;
     FILE *f;
 
     f = fopen("rs232.log", "a");
-    fprintf(f, "Waitfor: %s\n", retstr);
+    fprintf(f, "gets %s: %s\n", pattern, str);
     fclose(f);
     }
 
@@ -591,9 +581,260 @@ COMMTIMEOUTS  CommTimeOuts;
 
 #endif
 
+/*---- Linux ----------------------------------------------------------------*/
+
+#ifdef OS_LINUX
+
+#include <stdio.h>
+#include <string.h>
+#include <sys/ioctl.h>
+#include <fcntl.h>
+#include <termios.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <stdarg.h>
+
+int rs232_open(char *port, int baud, char parity, int data_bit, int stop_bit)
+{
+int  fd, flags, i;
+char str[80];
+struct termios tio;
+
+struct {
+  int speed;
+  int code;
+} baud_table[] = {
+  {300,  B300}, 
+  {600,  B600}, 
+  {1200, B1200},
+  {1800, B1800}, 
+  {2400, B2400}, 
+  {4800, B4800}, 
+  {9600, B9600},
+  {19200,B19200}, 
+  {38400,B38400}, 
+  {0,0}
+};
+
+
+  fd = open(port, O_RDWR);
+  if (fd < 0)
+    {
+    perror("rs232_open");
+    return FE_ERR_HW;
+    }
+
+  tio.c_iflag = 0;
+  tio.c_oflag = 0;
+  tio.c_cflag = CREAD | CLOCAL;
+  if (data_bit == 7)
+    tio.c_cflag |= CS7;
+  else
+    tio.c_cflag |= CS8;
+
+  if (stop_bit == 2)
+    tio.c_cflag |= CSTOPB;
+
+  if (parity == 'E')
+    tio.c_cflag |= PARENB;
+  if (parity == 'O')
+    tio.c_cflag |= PARENB | PARODD;
+
+  /* tio.c_cflag |= CRTSCTS; */
+  /* tio.c_iflag |= IXON | IXOFF; */
+
+  tio.c_lflag = 0;
+  tio.c_cc[VMIN] = 1;
+  tio.c_cc[VTIME] = 0;
+
+  /* check baud argument */
+  for (i=0 ; baud_table[i].speed ; i++)
+    {
+    if (baud == baud_table[i].speed)
+      break;
+    }
+
+  if (!baud_table[i].speed)
+    i = 6; /* 9600 baud by default */
+
+  cfsetispeed(&tio, baud_table[i].code);
+  cfsetospeed(&tio, baud_table[i].code);
+
+  tcsetattr(fd, TCSANOW, &tio);
+
+  return fd;
+}
+
 /*----------------------------------------------------------------------------*/
 
-void rs232_debug(BOOL flag)
+int rs232_exit(RS232_INFO *info)
 {
-  debug_flag = flag;
+  close(info->fd);
+
+  return SUCCESS;
+}
+
+/*----------------------------------------------------------------------------*/
+
+int rs232_puts(RS232_INFO *info, char *str)
+{
+int i, j;
+ 
+  if (debug_flag)
+    {
+    FILE *f;
+ 
+    f = fopen("rs232.log", "a");
+    fprintf(f, "puts: %s\n", str);
+    fclose(f);
+    }
+ 
+  i = write(info->fd, str, strlen(str));
+
+  return i;
+}
+
+/*----------------------------------------------------------------------------*/ 
+
+int rs232_gets(RS232_INFO *info, char *str, int size, char *pattern, int timeout)
+{
+int  i, l, start_time;
+char c;
+ 
+  start_time = time(NULL);
+  memset(str, 0, size);
+  l = 0;
+ 
+  do
+    {
+    ioctl(info->fd, FIONREAD, &i);
+    if (i >= size)
+      i = size - 1;
+    if (i > 0)
+      {
+      if (l + i >= size)
+        i = size - 1 - l;
+
+      i = read(info->fd, str+l, i);
+ 
+      if (i > 0)
+        l += i;
+      else
+        perror("read");
+      }
+ 
+    if (strstr(str, pattern) != NULL)
+      break;
+ 
+    if (l == size - 1)
+      break;
+
+    if (time(NULL) - start_time >= timeout/1000)
+      return 0;
+ 
+    if (i == 0)
+      usleep(100000);
+
+    } while (1);
+ 
+  str[l] = 0;
+ 
+  if (debug_flag && l>0)
+    {
+    FILE *f;
+ 
+    f = fopen("rs232.log", "a");
+    fprintf(f, "getstr %s: %s\n", pattern, str);
+    fclose(f);
+    }
+ 
+  return l;
+}
+
+#endif
+
+/*----------------------------------------------------------------------------*/
+
+int rs232_init(HNDLE hkey, void **pinfo)
+{
+HNDLE         hDB, hkeybd;
+INT           size, status;
+RS232_INFO    *info;
+
+  /* allocate info structure */
+  info = calloc(1, sizeof(RS232_INFO));
+  *pinfo = info;
+
+  cm_get_experiment_database(&hDB, NULL);
+
+  /* create RS232 settings record */
+  status = db_create_record(hDB, hkey, "BD", RS232_SETTINGS_STR);
+  if (status != DB_SUCCESS)
+    return FE_ERR_ODB;
+
+  db_find_key(hDB, hkey, "BD", &hkeybd);
+  size = sizeof(info->settings);
+  db_get_record(hDB, hkeybd, &info->settings, &size, 0);
+ 
+  /* open port */
+  info->fd = rs232_open(info->settings.port, 
+                        info->settings.baud, info->settings.parity, 
+                        info->settings.data_bit, info->settings.stop_bit);
+
+  if (info->fd < 0)
+    return FE_ERR_HW;
+
+  return SUCCESS;
+}
+
+/*----------------------------------------------------------------------------*/
+
+INT rs232(INT cmd, ...)
+{
+va_list    argptr;
+HNDLE      hkey;
+INT        status, size, timeout;
+void       *info;
+char       *str, *pattern;
+
+  va_start(argptr, cmd);
+  status = FE_SUCCESS;
+
+  switch (cmd)
+    {
+    case CMD_INIT:
+      hkey = va_arg(argptr, HNDLE);
+      info = va_arg(argptr, void *);
+      status = rs232_init(hkey, info);
+      break;
+
+    case CMD_EXIT:
+      info = va_arg(argptr, void *);
+      status = rs232_exit(info);
+      break;
+
+    case CMD_PUTS:
+      info = va_arg(argptr, void *);
+      str = va_arg(argptr, char *);
+      status = rs232_puts(info, str);
+      break;
+
+    case CMD_GETS:
+      info = va_arg(argptr, void *);
+      str = va_arg(argptr, char *);
+      size = va_arg(argptr, INT);
+      pattern = va_arg(argptr, char *);
+      timeout = va_arg(argptr, INT);
+      status = rs232_gets(info, str, size, pattern, timeout);
+      break;
+
+    case CMD_DEBUG:
+      status = va_arg(argptr, INT);
+      debug_flag = status;
+      break;
+    }
+
+  va_end(argptr);
+
+  return status;
 }
