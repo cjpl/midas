@@ -6,6 +6,9 @@
  *         amaudruz@triumf.ca                            Local:           6234
  * ---------------------------------------------------------------------------
    $Log$
+   Revision 1.29  2000/09/28 13:11:21  midas
+   Fixed compiler warning
+
    Revision 1.28  2000/07/21 18:27:32  pierre
    - Include YBOS version >4.0 support by default, otherwise use in Makefile
      -DYBOS_VERSION_3_3 for MIDAS_PREF_FLAGS
@@ -1154,8 +1157,10 @@ INT ybos_logfile_open(INT type, char * path, HNDLE *handle)
     error, success
 \********************************************************************/
 {
+#ifdef YBOS_VERSION_3_3 
   INT   status;
   DWORD written;
+#endif
 
   /* Create device channel */
   if (type == LOG_TYPE_TAPE)
