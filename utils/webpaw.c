@@ -6,6 +6,9 @@
   Contents:     Web server for remote PAW display
 
   $Log$
+  Revision 1.30  2001/05/18 08:52:48  midas
+  Fixed unterminated string in configuration file
+
   Revision 1.29  2000/11/06 12:29:18  midas
   Increase PAW communication buffers to 100000
 
@@ -282,18 +285,19 @@ int  fh;
     if (cfgbuffer)
       free(cfgbuffer);
 
-    fh = open("webpaw.cfg", O_RDONLY);
+    fh = open("webpaw.cfg", O_RDONLY | O_BINARY);
     if (fh < 0)
       return 0;
     length = lseek(fh, 0, SEEK_END);
     lseek(fh, 0, SEEK_SET);
-    cfgbuffer = malloc(length);
+    cfgbuffer = malloc(length+1);
     if (cfgbuffer == NULL)
       {
       close(fh);
       return 0;
       }
     read(fh, cfgbuffer, length);
+    cfgbuffer[length] = 0;
     close(fh);
     }
 
