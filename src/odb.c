@@ -6,6 +6,9 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.86  2004/03/26 09:33:09  midas
+  Added database record cleanup to db_open_database
+
   Revision 1.85  2004/01/18 09:57:30  olchansk
   fix compiler warnings about format mismatch between %d, %X and sizeof(foo)
 
@@ -952,7 +955,7 @@ INT db_open_database(char *database_name, INT database_size,
 
 #ifdef LOCAL_ROUTINES
    {
-      INT i, status;
+      INT i, k, status;
       HNDLE handle;
       DATABASE_CLIENT *pclient;
       BOOL shm_created;
@@ -1087,32 +1090,6 @@ INT db_open_database(char *database_name, INT database_size,
          pkeylist->parent = (PTYPE) pkey - (PTYPE) pheader;
          pkeylist->num_keys = 0;
          pkeylist->first_key = 0;
-      } else {
-         /* check if database size is identical */
-/*
-    if (pheader->data_size != ALIGN8(database_size / 2))
-      {
-      database_size = pheader->data_size + pheader->key_size;
-
-      status = ss_shm_close(database_name, _database[handle].database_header,
-                            shm_handle, FALSE);
-      if (status != SS_SUCCESS)
-        return DB_MEMSIZE_MISMATCH;
-
-      status = ss_open_shm(database_name,
-                           sizeof(DATABASE_HEADER) + database_size,
-                           (void *) &(_database[handle].database_header),
-                           &shm_handle);
-
-      if (status == SS_NO_MEMORY || status == SS_FILE_ERROR)
-        {
-        *hDB = 0;
-        return DB_INVALID_NAME;
-        }
-
-      pheader = _database[handle].database_header;
-      }
-  */
       }
 
       /* create mutex for the database */
@@ -1139,13 +1116,27 @@ INT db_open_database(char *database_name, INT database_size,
       /* Only enable this for systems that define ESRCH and hope that
          they also support kill(pid,0) */
       for (i = 0; i < MAX_CLIENTS; i++) {
-         int err;
          errno = 0;
-         err = kill(pheader->client[i].pid, 0);
+         kill(pheader->client[i].pid, 0);
          if (errno == ESRCH) {
             cm_msg(MERROR, "db_open_database",
                    "removing client %s, pid %d, index %d because the pid no longer exists",
                    pheader->client[i].name, pheader->client[i].pid, i);
+
+            /* decrement notify_count for open records and clear exclusive mode */
+            for (k = 0; k < pheader->client[i].max_index; k++)
+               if (pheader->client[i].open_record[k].handle) {
+                  pkey = (KEY *) ((char *) pheader +
+                                  pheader->client[i].open_record[k].handle);
+                  if (pkey->notify_count > 0)
+                     pkey->notify_count--;
+
+                  if (pheader->client[i].open_record[k].access_mode & MODE_WRITE)
+                     db_set_mode(i + 1, pheader->client[i].open_record[k].handle,
+                                 (WORD) (pkey->access_mode & ~MODE_EXCLUSIVE),
+                                 2);
+               }
+
             /* clear entry from client structure in database header */
             memset(&(pheader->client[i]), 0, sizeof(DATABASE_CLIENT));
          }
