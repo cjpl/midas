@@ -6,6 +6,9 @@
   Contents:     LeCroy LRS1454/1458 Voltage Device Driver
 
   $Log$
+  Revision 1.6  2001/04/05 12:48:53  midas
+  Re-open broken TCP connection
+
   Revision 1.5  2001/04/04 04:11:24  midas
   Various changes at KEK, added CMD_SET_CURRENT_LIMIT_ALL
 
@@ -64,45 +67,23 @@ typedef struct {
   int num_channels;
   INT (*bd)(INT cmd, ...);             /* bus driver entry function */
   void *bd_info;                      /* private info of bus driver */
+  HNDLE hkey;                        /* ODB key for bus driver info */
 } LRS1454_INFO;
 
 /*---- device driver routines --------------------------------------*/
 
-INT lrs1454_init(HNDLE hkey, void **pinfo, INT channels, INT (*bd)(INT cmd, ...))
+INT lrs1454_setup(LRS1454_INFO *info)
 {
-int          status, size, i;
+int          status, i;
 char         str[1000];
-HNDLE        hDB, hkeydd;
-LRS1454_INFO *info;
-
-  /* allocate info structure */
-  info = (LRS1454_INFO *) calloc(1, sizeof(LRS1454_INFO));
-  *pinfo = info;
-
-  cm_get_experiment_database(&hDB, NULL);
-
-  /* create lrs1454 settings record */
-  status = db_create_record(hDB, hkey, "DD", LRS1454_SETTINGS_STR);
-  if (status != DB_SUCCESS)
-    return FE_ERR_ODB;
-
-  db_find_key(hDB, hkey, "DD", &hkeydd);
-  size = sizeof(info->settings);
-  db_get_record(hDB, hkeydd, &info->settings, &size, 0);
-
-  info->num_channels = channels;
-  info->bd = bd;
 
   /* initialize bus driver */
-  if (!bd)
-    return FE_ERR_ODB;
-
-  status = bd(CMD_INIT, hkey, &info->bd_info);
+  status = info->bd(CMD_INIT, info->hkey, &info->bd_info);
   
   if (status != SUCCESS)
     return status;
 
-  bd(CMD_DEBUG, 1);
+  info->bd(CMD_DEBUG, 1);
 
   /* wait for "NETPASSWORD:"  */
   BD_PUTS("\r");
@@ -168,6 +149,37 @@ LRS1454_INFO *info;
     }
 
   return FE_SUCCESS;
+}
+
+INT lrs1454_init(HNDLE hkey, void **pinfo, INT channels, INT (*bd)(INT cmd, ...))
+{
+INT          status, size;
+HNDLE        hDB, hkeydd;
+LRS1454_INFO *info;
+
+  /* allocate info structure */
+  info = (LRS1454_INFO *) calloc(1, sizeof(LRS1454_INFO));
+  *pinfo = info;
+
+  cm_get_experiment_database(&hDB, NULL);
+
+  /* create lrs1454 settings record */
+  status = db_create_record(hDB, hkey, "DD", LRS1454_SETTINGS_STR);
+  if (status != DB_SUCCESS)
+    return FE_ERR_ODB;
+
+  db_find_key(hDB, hkey, "DD", &hkeydd);
+  size = sizeof(info->settings);
+  db_get_record(hDB, hkeydd, &info->settings, &size, 0);
+
+  info->num_channels = channels;
+  info->bd = bd;
+  info->hkey = hkey;
+
+  if (!bd)
+    return FE_ERR_ODB;
+
+  return lrs1454_setup(info);
 }
 
 /*----------------------------------------------------------------------------*/
@@ -245,8 +257,32 @@ char  str[256], *p;
   /* if connection lost, reconnect */
   if (status == 0)
     {
-    BD_PUTS("\r");
-    BD_GETS(str, sizeof(str), ">", DEFAULT_TIMEOUT);
+    /* get name of bus driver */
+    info->bd(CMD_NAME, info->bd_info, str);
+
+    /* reconnect in rs232 mode */
+    if (strcmp(str, "rs232"))
+      {
+      BD_PUTS("\r");
+      BD_GETS(str, sizeof(str), ">", DEFAULT_TIMEOUT);
+      }
+
+    /* re-open tcpip socket connection */
+    if (strcmp(str, "tcpip"))
+      {
+      printf("\n\n\n\n\n\n\n\n");
+      info->bd(CMD_EXIT, info->bd_info);
+      do
+        {
+        printf("Trying to reconnect to LRS1454...\n");
+        status = lrs1454_setup(info);
+        } while (status != SUCCESS);
+
+      printf("...success\n");
+
+      /* re-read value */
+      return lrs1454_get(info, channel, pvalue);
+      }
     }
 
   if (strstr(str, "to begin"))
