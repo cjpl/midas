@@ -6,6 +6,10 @@
   Contents:     Header fiel for MSCB funcions
 
   $Log$
+  Revision 1.36  2004/10/03 18:27:13  olchansk
+  add MacOSX (aka darwin) native USB support
+  make libusb support conditional on HAVE_LIBUSB (this allows one to use libusb on MacOSX)
+
   Revision 1.35  2004/07/08 11:14:45  midas
   Added size to mscb_select_device()
 
@@ -336,7 +340,7 @@ extern "C" {
 }
 #endif
 /* define missing linux functions */
-#ifdef __linux__
+#if defined(OS_UNIX)
 int kbhit();
 #define getch() getchar()
 #define Sleep(x) usleep(x*1000)

@@ -6,6 +6,10 @@
   Contents:     Midas Slow Control Bus communication functions
 
   $Log$
+  Revision 1.74  2004/10/03 18:27:13  olchansk
+  add MacOSX (aka darwin) native USB support
+  make libusb support conditional on HAVE_LIBUSB (this allows one to use libusb on MacOSX)
+
   Revision 1.73  2004/09/10 12:27:21  midas
   Version 1.7.5
 
@@ -233,7 +237,7 @@
 #include <windows.h>
 #include <conio.h>
 
-#elif defined(__linux__)        // Linux includes
+#elif defined(OS_LINUX)        // Linux includes
 
 #include <unistd.h>
 #include <string.h>
@@ -245,7 +249,27 @@
 #include <fcntl.h>
 #include <linux/parport.h>
 #include <linux/ppdev.h>
+
+#ifdef HAVE_LIBUSB
 #include <usb.h>
+#endif
+
+#elif defined(OS_DARWIN)
+
+#include <unistd.h>
+#include <string.h>
+#include <stdlib.h>
+#include <ctype.h>
+#include <sys/types.h>
+#include <sys/ioctl.h>
+#include <sys/time.h>
+#include <fcntl.h>
+
+#include <assert.h>
+#include <mach/mach.h>
+#include <IOKit/IOKitLib.h>
+#include <IOKit/IOCFPlugIn.h>
+#include <IOKit/usb/IOUSBLib.h>
 
 #endif
 
@@ -362,7 +386,7 @@ int n_cache;
 
 /* missing linux functions */
 
-#ifdef __linux__
+#if defined(OS_UNIX)
 
 int kbhit()
 {
@@ -376,8 +400,7 @@ int kbhit()
 
 /*---- strlcpy and strlcat to avoid buffer overflow ----------------*/
 
-#ifndef _STRLCPY_DEFINED
-#define _STRLCPY_DEFINED
+#ifndef HAVE_STRLCPY
 
 /*
 * Copy src to string dst of size siz.  At most siz-1 characters
@@ -442,9 +465,6 @@ size_t strlcat(char *dst, const char *src, size_t size)
    return (dlen + (s - src));   /* count does not include NUL */
 }
 
-#else 
-extern size_t strlcpy(char *dst, const char *src, size_t size);
-extern size_t strlcat(char *dst, const char *src, size_t size);
 #endif
 
 /*------------------------------------------------------------------*/
@@ -557,7 +577,7 @@ int mscb_lock(int fd)
    if (status == WAIT_TIMEOUT)
       return 0;
 
-#elif defined(__linux__)
+#elif defined(OS_LINUX)
 
    if (mscb_fd[fd - 1].type == MSCB_TYPE_LPT) {
       if (ioctl(mscb_fd[fd - 1].fd, PPCLAIM))
@@ -579,7 +599,7 @@ int mscb_release(int fd)
    if (status == FALSE)
       return 0;
 
-#elif defined(__linux__)
+#elif defined(OS_LINUX)
 
    if (mscb_fd[fd - 1].type == MSCB_TYPE_LPT) {
       if (ioctl(mscb_fd[fd - 1].fd, PPRELEASE))
@@ -617,10 +637,12 @@ void pp_wcontrol(int fd, int signal, int flag)
       break;
    }
 
-#ifdef _MSC_VER
+#if defined(_MSC_VER)
    _outp((unsigned short) (mscb_fd[fd - 1].fd + 2), mask);
-#else
+#elif defined(OS_LINUX)
    ioctl(mscb_fd[fd - 1].fd, PPWCONTROL, &mask);
+#else
+   /* no-op unsupported operation */
 #endif
 }
 
@@ -631,10 +653,12 @@ int pp_rstatus(int fd, int signal)
 /* read status signal */
    unsigned int mask = 0;
 
-#ifdef _MSC_VER
+#if defined(_MSC_VER)
    mask = _inp((unsigned short) (mscb_fd[fd - 1].fd + 1));
-#else
+#elif defined(OS_LINUX)
    ioctl(mscb_fd[fd - 1].fd, PPRSTATUS, &mask);
+#else
+   /* no-op unsupported operation */
 #endif
 
    switch (signal) {
@@ -652,11 +676,13 @@ int pp_rstatus(int fd, int signal)
 void pp_setdir(int fd, unsigned int r)
 {
 /* set port direction: r==0:write mode;  r==1:read mode */
-#ifdef _MSC_VER
+#if defined(_MSC_VER)
    pp_wcontrol(fd, LPT_READMODE, r);
-#else
+#elif defined(OS_LINUX)
    if (ioctl(mscb_fd[fd - 1].fd, PPDATADIR, &r))
       perror("PPDATADIR");
+#else
+   /* no-op unsupported operation */
 #endif
 }
 
@@ -665,10 +691,12 @@ void pp_setdir(int fd, unsigned int r)
 void pp_wdata(int fd, unsigned int data)
 /* output data byte */
 {
-#ifdef _MSC_VER
+#if defined(_MSC_VER)
    _outp((unsigned short) mscb_fd[fd - 1].fd, data);
-#else
+#elif defined(OS_LINUX)
    ioctl(mscb_fd[fd - 1].fd, PPWDATA, &data);
+#else
+   /* no-op unsupported operation */
 #endif
 }
 
@@ -677,13 +705,15 @@ void pp_wdata(int fd, unsigned int data)
 unsigned char pp_rdata(int fd)
 /* intput data byte */
 {
-#ifdef _MSC_VER
+#if defined(_MSC_VER)
    return _inp((unsigned short) mscb_fd[fd - 1].fd);
-#else
+#elif defined(OS_LINUX)
    unsigned char data;
    if (ioctl(mscb_fd[fd - 1].fd, PPRDATA, &data))
       perror("PPRDATA");
    return data;
+#else
+   /* no-op unsupported operation */
 #endif
 }
 
@@ -693,11 +723,17 @@ int msend_usb(int fd, void *buf, int size)
 {
    int n_written;
 
-#ifdef _MSC_VER
+#if defined(_MSC_VER)
    WriteFile((HANDLE) fd, buf, size, &n_written, NULL);
-#else
+#elif defined(OS_LINUX)
    n_written = usb_bulk_write((usb_dev_handle *) fd, 2, buf, size, 100);
    usleep(0); // needed for linux not to crash !!!!
+#elif defined(OS_DARWIN)
+   IOReturn status;
+   IOUSBInterfaceInterface** device = (IOUSBInterfaceInterface**)fd;
+   status = (*device)->WritePipe(device,2,buf,size);
+   if (status != 0) printf("msend_usb: WritePipe() status %d 0x%x\n",status,status);
+   n_written = size;
 #endif
    return n_written;
 }
@@ -708,7 +744,7 @@ int mrecv_usb(int fd, void *buf, int size)
 {
    int n_read;
 
-#ifdef _MSC_VER
+#if defined(_MSC_VER)
    OVERLAPPED overlapped;
    int status;
 
@@ -732,7 +768,7 @@ int mrecv_usb(int fd, void *buf, int size)
    }
 
    CloseHandle(overlapped.hEvent);
-#else
+#elif defined(HAVE_LIBUSB)
    usb_dev_handle *dev;
    int i;
 
@@ -747,7 +783,15 @@ int mrecv_usb(int fd, void *buf, int size)
       else
          break;
    }
-
+#elif defined(OS_DARWIN)
+   IOReturn status;
+   IOUSBInterfaceInterface** device = (IOUSBInterfaceInterface**)fd;
+   n_read = size;
+   status = (*device)->ReadPipe(device,1,buf,&n_read);
+   if (status != kIOReturnSuccess) {
+      printf("mrecv_usb: size %d, read %d, ReadPipe() status %d 0x%x\n",size,n_read,status,status);
+      return -1;
+   }
 #endif
    return n_read;
 }
@@ -1124,7 +1168,7 @@ int lpt_init(char *device, int index)
       if (!DeviceIoControl(hdio, (DWORD) 0x9c406000, &buffer, sizeof(buffer), NULL, 0, &size, NULL))
          return -1;
    }
-#elif defined(__linux__)
+#elif defined(OS_LINUX)
 
    int i;
 
@@ -1241,7 +1285,7 @@ int lpt_close(int fd)
       if (!DeviceIoControl(hdio, (DWORD) 0x9c406000, &buffer, sizeof(buffer), NULL, 0, &size, NULL))
          return -1;
    }
-#elif defined(__linux__)
+#elif defined(OS_LINUX)
 
    close(fd);
 
@@ -1358,7 +1402,7 @@ int musb_init(int index, int *hUSBRead, int *hUSBWrite)
    return 0;
 }
 
-#else
+#elif defined(HAVE_LIBUSB)
 
 int musb_init(int index, int *fdr, int *fdw)
 {
@@ -1405,17 +1449,123 @@ int musb_init(int index, int *fdr, int *fdw)
    return -1;
 }
 
+#elif defined(OS_DARWIN)
+
+int musb_init(int index, int *fdr, int *fdw)
+{
+	kern_return_t status;
+	io_iterator_t iter;
+	io_service_t  service;
+	IOCFPlugInInterface** plugin;
+	SInt32 score;
+	IOUSBDeviceInterface** device;
+	IOUSBInterfaceInterface** interface;
+	UInt16 vendor, product;
+	UInt8 numend;
+	int found = 0;
+	
+	printf("musb_init, index=%d!\n",index);
+
+	status = IORegistryCreateIterator(kIOMasterPortDefault,kIOUSBPlane,kIORegistryIterateRecursively,&iter);
+	assert(status==kIOReturnSuccess);
+
+	while ((service = IOIteratorNext(iter)))
+	{
+	status = IOCreatePlugInInterfaceForService(service, kIOUSBDeviceUserClientTypeID, kIOCFPlugInInterfaceID, &plugin, &score);
+	assert(status==kIOReturnSuccess);
+
+	status = IOObjectRelease(service);
+	assert(status==kIOReturnSuccess);
+
+	status = (*plugin)->QueryInterface(plugin, CFUUIDGetUUIDBytes (kIOUSBDeviceInterfaceID), (void*)&device);
+	assert(status==kIOReturnSuccess);
+
+	status = (*plugin)->Release(plugin);
+
+	status = (*device)->GetDeviceVendor(device, &vendor);
+	assert(status==kIOReturnSuccess);
+        status = (*device)->GetDeviceProduct(device, &product);
+	assert(status==kIOReturnSuccess);
+
+	printf("Found USB device: vendor 0x%04x, product 0x%04x\n",vendor,product);
+
+	if (vendor==0x10C4 && product==0x1175)
+		{
+		found++;
+		if (found==index+1)
+		{
+printf("Here0\n");
+			if (fdr && fdw) {
+
+		  	status = (*device)->USBDeviceOpen(device);
+			assert(status==kIOReturnSuccess);
+
+		  	status = (*device)->SetConfiguration(device,1);
+			assert(status==kIOReturnSuccess);
+
+    IOUSBFindInterfaceRequest request;
+
+    request.bInterfaceClass = kIOUSBFindInterfaceDontCare;
+    request.bInterfaceSubClass = kIOUSBFindInterfaceDontCare;
+    request.bInterfaceProtocol = kIOUSBFindInterfaceDontCare;
+    request.bAlternateSetting = kIOUSBFindInterfaceDontCare;
+
+	status = (*device)->CreateInterfaceIterator(device,&request,&iter);
+	assert(status==kIOReturnSuccess);
+
+printf("HereA\n");
+
+	while ((service=IOIteratorNext(iter)))
+	{
+printf("HereB\n");
+	status = IOCreatePlugInInterfaceForService(service, kIOUSBInterfaceUserClientTypeID, kIOCFPlugInInterfaceID, &plugin, &score);
+	assert(status==kIOReturnSuccess);
+
+	status = (*plugin)->QueryInterface(plugin, CFUUIDGetUUIDBytes (kIOUSBInterfaceInterfaceID), (void*)&interface);
+	assert(status==kIOReturnSuccess);
+
+
+		  	status = (*interface)->USBInterfaceOpen(interface);
+			printf("status 0x%x\n",status);
+			assert(status==kIOReturnSuccess);
+
+		  	status = (*interface)->GetNumEndpoints(interface,&numend);
+			assert(status==kIOReturnSuccess);
+
+			printf("endpoints: %d\n",numend);
+
+			printf("pipe 1 status: 0x%x\n",(*interface)->GetPipeStatus(interface,1));
+			printf("pipe 2 status: 0x%x\n",(*interface)->GetPipeStatus(interface,2));
+
+
+		          *fdr = (int) interface;
+		          *fdw = (int) interface;
+			return 0;
+	}
+	}
+	return 0;
+		}
+printf("Here1\n");
+		}
+	(*device)->Release(device);
+	}
+
+        return -1;
+}
+
 #endif
 
 /*------------------------------------------------------------------*/
 
 void musb_close(int fdr, int fdw)
 {
-#ifdef _MSC_VER
+#if defined(_MSC_VER)
    CloseHandle((HANDLE) fdr);
    CloseHandle((HANDLE) fdw);
-#else
+#elif defined(HAVE_LIBUSB)
    usb_close((usb_dev_handle *) fdr);
+#else
+   /* FIXME */
 #endif
 }
 
