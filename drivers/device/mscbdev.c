@@ -6,6 +6,9 @@
   Contents:     MSCB Device Driver.
 
   $Log$
+  Revision 1.7  2004/04/30 07:58:17  midas
+  Adjusted mscb_init()
+
   Revision 1.6  2004/01/08 08:40:08  midas
   Implemented standard indentation
 
@@ -93,7 +96,7 @@ INT mscbdev_init(HNDLE hkey, void **pinfo, INT channels, INT(*bd) (INT cmd, ...)
 
    /* create settings record */
    size = sizeof(info->mscbdev_settings.device);
-   strcpy(info->mscbdev_settings.device, DEF_DEVICE);
+   info->mscbdev_settings.device[0] = 0;
 
    status =
        db_get_value(hDB, hkey, "Device", &info->mscbdev_settings.device, &size,
@@ -123,7 +126,7 @@ INT mscbdev_init(HNDLE hkey, void **pinfo, INT channels, INT(*bd) (INT cmd, ...)
    /* initialize info structure */
    info->num_channels = channels;
 
-   info->fd = mscb_init(info->mscbdev_settings.device, FALSE);
+   info->fd = mscb_init(info->mscbdev_settings.device, 0, FALSE);
    if (info->fd < 0) {
       cm_msg(MERROR, "mscbdev_init", "Cannot connect to MSCB device \"%s\"",
              info->mscbdev_settings.device);
