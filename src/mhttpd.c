@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.111  2000/04/28 09:48:34  midas
+  Added history config button
+
   Revision 1.110  2000/04/28 09:10:46  midas
   Added history picture display
 
@@ -5317,6 +5320,7 @@ char        tag_name[MAX_VARS][64], var_name[NAME_LENGTH];
 DWORD       n_point[MAX_VARS];
 int         x[MAX_VARS][1000];
 float       y[MAX_VARS][1000];
+float       factor[MAX_VARS];
 float       xmin, xmax, ymin, ymax;
 char        buffer[8000];
 DWORD       tbuffer[1000];
@@ -5471,6 +5475,10 @@ gdPoint     poly[3];
     xmin = (float) (-scale/3600.0);
     xmax = 0;
 
+    /* get factors */
+    size = sizeof(factor);
+    db_get_value(hDB, hkeypanel, "Factor", factor, &size, TID_FLOAT);
+
     bsize = sizeof(buffer);
     tsize = sizeof(tbuffer);
     status = hs_read(event_id, ss_time()-scale, ss_time(), scale/1000, 
@@ -5479,6 +5487,8 @@ gdPoint     poly[3];
     for (j=0 ; j<(int)n_point[i] ; j++)
       {
       x[i][j] = tbuffer[j] - ss_time();
+      
+      /* convert data to float */
       switch (type)
         {
         case TID_BYTE:
@@ -5503,6 +5513,10 @@ gdPoint     poly[3];
           y[i][j] = (float) *(((double *) buffer)+j); break;
         }
 
+      /* apply factor */
+      y[i][j] *= factor[i];
+
+      /* calculate ymin and ymax */
       if (i == 0 && j == 0)
         ymin = ymax = y[0][0];
       else
@@ -5568,21 +5582,26 @@ gdPoint     poly[3];
 
   for (i=0 ; i<n_vars ; i++)
     {
+    if (factor[i] != 1)
+      sprintf(str, "%s * %1.2lG", strchr(tag_name[i], ':')+1, factor[i]);
+    else
+      sprintf(str, "%s", strchr(tag_name[i], ':')+1);
+
     gdImageFilledRectangle(im, 
             x1+10, 
             y2+10+i*(gdFontMediumBold->h+10),
-            x1+10+strlen(tag_name[i])*gdFontMediumBold->w+10, 
+            x1+10+strlen(str)*gdFontMediumBold->w+10, 
             y2+10+i*(gdFontMediumBold->h+10)+gdFontMediumBold->h+2+2, white);
     gdImageRectangle(im, 
             x1+10, 
             y2+10+i*(gdFontMediumBold->h+10),
-            x1+10+strlen(tag_name[i])*gdFontMediumBold->w+10, 
+            x1+10+strlen(str)*gdFontMediumBold->w+10, 
             y2+10+i*(gdFontMediumBold->h+10)+gdFontMediumBold->h+2+2, curve_col[i]);
 
     gdImageString(im, gdFontMediumBold, 
             x1+10+5, 
             y2+10+2+i*(gdFontMediumBold->h+10),
-            tag_name[i], curve_col[i]);
+            str, curve_col[i]);
     }
 
   gdImageRectangle(im, x1, y2, x2, y1, black);
@@ -5622,10 +5641,18 @@ error:
 
 void show_hist_page(char *path)
 {
-char   str[80], ref[80], *pscale;
+char   str[80], ref[80], paramstr[256], *pscale;
 HNDLE  hDB, hkey, hkeyp;
 KEY    key;
 int    i, scale;
+float  factor[2];
+
+  if (equal_ustring(getparam("cmd"), "Config"))
+    {
+    sprintf(str, "History/Display/%s", path);
+    redirect(str);
+    return;
+    }
 
   if (strstr(path, ".gif"))
     {
@@ -5652,7 +5679,13 @@ int    i, scale;
     else
       scale = 0;
 
-    generate_hist_graph(path, 640, 400, scale);
+    if (equal_ustring(getparam("magnify"), "Large"))
+      generate_hist_graph(path, 1024, 768, scale);
+    else if (equal_ustring(getparam("magnify"), "Small"))
+      generate_hist_graph(path, 320, 200, scale);
+    else
+      generate_hist_graph(path, 640, 400, scale);
+
     return;
     }
 
@@ -5682,6 +5715,12 @@ int    i, scale;
     strcpy(str+NAME_LENGTH, "System:Trigger kB per sec.");
     db_set_value(hDB, 0, "/History/Display/Trigger rate/Variables", 
                  str, NAME_LENGTH*2, 2, TID_STRING);
+
+    factor[0] = 1;
+    factor[1] = 1;
+    db_set_value(hDB, 0, "/History/Display/Trigger rate/Factor", 
+                 &i, sizeof(float), 2, TID_FLOAT);
+
     i = 3600;
     db_set_value(hDB, 0, "/History/Display/Trigger rate/Timescale", 
                  &i, sizeof(INT), 1, TID_INT);
@@ -5720,36 +5759,45 @@ int    i, scale;
   if (path[0])
     {
     /* navigation links */
-    rsprintf("<tr><td colspan=2 bgcolor=#A0FFA0>\n");
+    rsprintf("<tr><td bgcolor=#A0FFA0>\n");
     rsprintf("<input type=submit name=scale value=10m>\n");
     rsprintf("<input type=submit name=scale value=1h>\n");
     rsprintf("<input type=submit name=scale value=3h>\n");
     rsprintf("<input type=submit name=scale value=12h>\n");
     rsprintf("<input type=submit name=scale value=24h>\n");
     rsprintf("<input type=submit name=scale value=3d>\n");
-    rsprintf("<input type=submit name=scale value=7d>\n");
+    rsprintf("<input type=submit name=scale value=7d>\n");\
+
+    rsprintf("<td bgcolor=#A0FFA0>\n");
+    rsprintf("<input type=submit name=magnify value=Large>\n");
+    rsprintf("<input type=submit name=magnify value=Small>\n");
+    rsprintf("<input type=submit name=cmd value=Config>\n");
+
     rsprintf("</tr>\n");
 
-    pscale = getparam("scale");
-    sprintf(str, "%s.gif", path);
+    paramstr[0] = 0;
+    if (getparam("scale") && *getparam("scale"))
+      sprintf(paramstr+strlen(paramstr), "?scale=%s", getparam("scale"));
+    if (getparam("magnify") && *getparam("magnify"))
+      sprintf(paramstr+strlen(paramstr), "?magnify=%s", getparam("magnify"));
 
-    if (pscale)
+    if (paramstr[0])
       {
       if (exp_name[0])
-        sprintf(ref, "%sHS/%s?exp=%s?scale=%s", 
-                mhttpd_url, str, exp_name, pscale);
+        sprintf(ref, "%sHS/%s.gif?exp=%s%s", 
+                mhttpd_url, path, exp_name, paramstr);
       else
-        sprintf(ref, "%sHS/%s?scale=%s", 
-                mhttpd_url, str, pscale);
+        sprintf(ref, "%sHS/%s.gif%s", 
+                mhttpd_url, path, paramstr);
       }
     else
       {
       if (exp_name[0])
-        sprintf(ref, "%sHS/%s?exp=%s", 
-                mhttpd_url, str, exp_name);
+        sprintf(ref, "%sHS/%s.gif?exp=%s", 
+                mhttpd_url, path, exp_name);
       else
-        sprintf(ref, "%sHS/%s", 
-                mhttpd_url, str);
+        sprintf(ref, "%sHS/%s.gif", 
+                mhttpd_url, path);
       }
 
     rsprintf("<tr><td colspan=2><img src=\"%s\" alt=\"%s.gif\"></tr>\n", ref, path);
@@ -5968,6 +6016,27 @@ struct tm *gmt;
   if (equal_ustring(command, "SC"))
     {
     redirect("SC/");
+    return;
+    }
+
+  /*---- History command -------------------------------------------*/
+
+  if (equal_ustring(command, "history"))
+    {
+    redirect("HS/");
+    return;
+    }
+
+  if (strncmp(path, "HS/", 3) == 0)
+    {
+    if (equal_ustring(command, "config"))
+      {
+      sprintf(str, "%s?cmd=%s", path, command);
+      if (!check_web_password(cookie_wpwd, str, experiment))
+        return;
+      }
+
+    show_hist_page(dec_path+3);
     return;
     }
 
@@ -6290,27 +6359,6 @@ struct tm *gmt;
   if (equal_ustring(command, "Create ELog from this page"))
     {
     show_elog_page(dec_path);
-    return;
-    }
-
-  /*---- History command -------------------------------------------*/
-
-  if (equal_ustring(command, "history"))
-    {
-    redirect("HS/");
-    return;
-    }
-
-  if (strncmp(path, "HS/", 3) == 0)
-    {
-    if (equal_ustring(command, "config"))
-      {
-      sprintf(str, "%s?cmd=%s", path, command);
-      if (!check_web_password(cookie_wpwd, str, experiment))
-        return;
-      }
-
-    show_hist_page(dec_path+3);
     return;
     }
 
