@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.192  2002/02/26 09:29:07  midas
+  Fixed bug where query in elog stopped at 12:00
+
   Revision 1.191  2002/02/21 16:03:05  midas
   Fixed &nbsp
 
@@ -2771,7 +2774,7 @@ FILE   *f;
       tms.tm_year = y2 % 100;
       tms.tm_mon  = m2;
       tms.tm_mday = d2;
-      tms.tm_hour = 12;
+      tms.tm_hour = 24;
 
       if (tms.tm_year < 90)
         tms.tm_year += 100;
