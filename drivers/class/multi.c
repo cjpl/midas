@@ -6,6 +6,9 @@
   Contents:     Multimeter Class Driver
 
   $Log$
+  Revision 1.3  2002/03/14 13:03:15  midas
+  Fixed small bug
+
   Revision 1.2  2000/03/02 21:54:02  midas
   Added offset in readout routines, added cmd_set_label
 
@@ -351,7 +354,7 @@ MULTI_INFO *m_info;
       }
 
     status = pequipment->driver[i].dd(CMD_INIT, hKey, &pequipment->driver[i].dd_info, 
-                                      pequipment->driver[i].channels);
+                                      pequipment->driver[i].channels, pequipment->driver[i].bd);
     if (status != FE_SUCCESS)
       {
       free_mem(m_info);
