@@ -6,6 +6,9 @@
   Contents:     Command-line editor for ODBEdit
 
   $Log$
+  Revision 1.9  2000/10/23 14:34:38  midas
+  Fixed output of '%' when editing
+
   Revision 1.8  1999/06/23 09:35:41  midas
   Switched back cursor to end of line for editing
 
@@ -64,19 +67,19 @@ BOOL  escape_flag = 0;
   if (ss_getchar(0) == -1)
     {
     /* normal input if ss_getchar not supported */
-    printf(prompt);
+    fputs(prompt, stdout);
     ss_gets(cmd, 256);
     return strlen(cmd);
     }
 
-  printf(prompt);
+  fputs(prompt, stdout);
   fflush(stdout);
 
   hi = his_index;
   memset(line, 0, LINE_LENGTH);
   memset(history[hi], 0, LINE_LENGTH);
   strcpy(line, cmd);
-  printf(line);
+  fputs(line, stdout);
   i = strlen(cmd);
   fflush(stdout);
 
@@ -104,12 +107,12 @@ BOOL  escape_flag = 0;
         if (i < LINE_LENGTH-1)
           {
           line[i++] = c;
-          printf("%c", c);
+          fputc(c, stdout);
           }
         for (j=i ; j<(INT)strlen(line) ; j++)
-          printf("%c", line[j]);
+          fputc(line[j], stdout);
         for (j=i ; j<(INT)strlen(line) ; j++)
-          printf("\b");
+          fputc('\b', stdout);
         }
       }
 
@@ -117,17 +120,17 @@ BOOL  escape_flag = 0;
     if (c == CH_BS && i>0)
       {
       i--;
-      printf("\b");
+      fputc('\b', stdout);
       for (j=i ; j<=(INT) strlen(line) ; j++)
         {
         line[j] = line[j+1];
         if (line[j])
-          printf("%c", line[j]);
+          fputc(line[j], stdout);
         else
-          printf(" ");
+          fputc(' ', stdout);
         }
       for (k=0 ; k<j-i ; k++)
-        printf("\b");
+        fputc('\b', stdout);
       }
 
     /* DELETE/Ctrl-D */
@@ -137,12 +140,12 @@ BOOL  escape_flag = 0;
         {
         line[j] = line[j+1];
         if (line[j])
-          printf("%c", line[j]);
+          fputc(line[j], stdout);
         else
-          printf(" ");
+          fputc(' ', stdout);
         }
       for (k=0 ; k<j-i ; k++)
-        printf("\b");
+        fputc('\b', stdout);
       }
 
     /* Erase line: CTRL-W, CTRL-U */
@@ -152,9 +155,9 @@ BOOL  escape_flag = 0;
       memset(line, 0, sizeof(line));
       printf("\r%s", prompt);
       for (j=0 ; j<i ; j++)
-        printf(" ");
+        fputc(' ', stdout);
       for (j=0 ; j<i ; j++)
-        printf("\b");
+        fputc('\b', stdout);
       i = 0;
       }
 
@@ -162,9 +165,9 @@ BOOL  escape_flag = 0;
     if (c == 11)
       {
       for (j=i ; j<(INT)strlen(line) ; j++)
-        printf(" ");
+        fputc(' ', stdout);
       for (j=i ; j<(INT)strlen(line) ; j++)
-        printf("\b");
+        fputc('\b', stdout);
       for (j=strlen(line) ; j>=i ; j--)
         line[j] = 0;
       }
@@ -173,18 +176,18 @@ BOOL  escape_flag = 0;
     if ((c == CH_LEFT || c == 2) && i>0)
       {
       i--;
-      printf("\b");
+      fputc('\b', stdout);
       }
 
     /* right arrow, CTRL-F */
     if ((c == CH_RIGHT || c == 6) && i<(INT) strlen(line))
-      printf("%c", line[i++]);
+      fputc(line[i++], stdout);
 
     /* HOME, CTRL-A */
     if ((c == CH_HOME || c == 1) && i>0)
       {
       for (j=0 ; j<i ; j++)
-        printf("\b");
+        fputc('\b', stdout);
       i = 0;
       }
 
@@ -192,7 +195,7 @@ BOOL  escape_flag = 0;
     if ((c == CH_END || c == 5) && i<(INT) strlen(line))
       {
       for (j=i ; j<(INT) strlen(line) ; j++)
-        printf("%c", line[i++]);
+        fputc(line[i++], stdout);
       i = strlen(line);
       }
 
@@ -203,15 +206,16 @@ BOOL  escape_flag = 0;
         {
         hi = (hi + MAX_HISTORY - 1) % MAX_HISTORY;
         i = strlen(line);
-        printf("\r%s", prompt);
+        fputc('\r', stdout);
+        fputs(prompt, stdout);
         for (j=0 ; j<i ; j++)
-          printf(" ");
+          fputc(' ', stdout);
         for (j=0 ; j<i ; j++)
-          printf("\b");
+          fputc('\b', stdout);
         memcpy(line, history[hi], 256);
         i = strlen(line);
         for (j=0 ; j<i ; j++)
-          printf("%c", line[j]);
+          fputc(line[j], stdout);
         }
       }
 
@@ -222,15 +226,16 @@ BOOL  escape_flag = 0;
         {
         hi = (hi+1) % MAX_HISTORY;
         i = strlen(line);
-        printf("\r%s", prompt);
+        fputc('\r', stdout);
+        fputs(prompt, stdout);
         for (j=0 ; j<i ; j++)
-          printf(" ");
+          fputc(' ', stdout);
         for (j=0 ; j<i ; j++)
-          printf("\b");
+          fputc('\b', stdout);
         memcpy(line, history[hi], 256);
         i = strlen(line);
         for (j=0 ; j<i ; j++)
-          printf("%c", line[j]);
+          fputc(line[j], stdout);
         }
       }
 
@@ -242,12 +247,12 @@ BOOL  escape_flag = 0;
         if (history[j][0] && strncmp(line, history[j], i) == 0)
           {
           memcpy(line, history[j], 256);
-          printf(line+i);
+          fputs(line+i, stdout);
           i = strlen(line);
           break;
           }
       if (j == hi)
-        printf("%c", 7);
+        fputc(7, stdout);
       }
 
     /* tab */
@@ -259,10 +264,12 @@ BOOL  escape_flag = 0;
         status = dir(line, &i);
 
       /* redraw line */
-      printf("\r%s%s", prompt, line);
+      fputc('\r', stdout);
+      fputs(prompt, stdout);
+      fputs(line, stdout);
 
       for (j=0 ; j<(INT)strlen(line)-i ; j++)
-        printf("\b");
+        fputc('\b', stdout);
       }
 
     if (c != 0)
@@ -277,10 +284,12 @@ BOOL  escape_flag = 0;
 
       if (status)
         {
-        printf("\r%s%s", prompt, line);
+      fputc('\r', stdout);
+      fputs(prompt, stdout);
+      fputs(line, stdout);
 
         for (j=0 ; j<(INT)strlen(line)-i ; j++)
-          printf("\b");
+          fputc('\b', stdout);
 
         fflush(stdout);
         }
@@ -301,7 +310,7 @@ BOOL  escape_flag = 0;
   /* reset terminal */
   ss_getchar(1);
 
-  printf("\n");
+  fputc('\n', stdout);
 
   return strlen(line);
 }
