@@ -6,6 +6,9 @@
   Contents:     Kernel mode driver for Hytec 1331 CAMAC interface
 
   $Log$
+  Revision 1.5  2003/06/23 08:00:57  midas
+  Replaced malloc.h by slab.h
+
   Revision 1.4  2001/10/03 14:57:22  midas
   Check IO address region before allocation
 
@@ -38,7 +41,7 @@
 #include <linux/fs.h>
 #include <linux/sched.h>
 #include <linux/pci.h>
-#include <linux/malloc.h>
+#include <linux/slab.h>
 #include <linux/delay.h>
 #include <linux/proc_fs.h>
 #include <linux/poll.h>
