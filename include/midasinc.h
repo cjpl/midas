@@ -7,6 +7,9 @@
   Contents:     Includes all necessary include files
 
   $Log$
+  Revision 1.6  2001/06/27 12:18:16  midas
+  Added code for OS_IRIX
+
   Revision 1.5  1999/01/21 22:58:18  pierre
   - include DM_DUAL_THREAD lib as default for OS_VXWORKS
 
@@ -159,6 +162,12 @@
 
 extern void *malloc(); /* patches for wrong gcc include files */
 extern void *realloc();
+#endif
+
+#ifdef OS_IRIX
+#include <sys/statfs.h>
+#include <fnmatch.h>
+#define NO_PTY
 #endif
 
 #include <sys/wait.h>
