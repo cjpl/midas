@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.92  1999/12/08 10:00:41  midas
+  Changed error string to single line
+
   Revision 1.91  1999/12/08 00:25:20  pierre
   - add cm_get_path in cm_msg_retrieve for midas.log location.
   - mod dm_buffer_create for arg "max user event size".
@@ -7833,7 +7836,7 @@ struct hostent       *phe;
   i = recv_string(sock, str, sizeof(str), 3000);
   if (i<=0)
     {
-      cm_msg(MERROR, "rpc_client_connect", "%s\ntimeout on receive remote computer info", str);
+      cm_msg(MERROR, "rpc_client_connect", "timeout on receive remote computer info: %s", str);
       return RPC_NET_ERROR;
     }
 
