@@ -7,6 +7,9 @@
                 template to write a read device driver
 
   $Log$
+  Revision 1.4  2003/09/29 11:56:44  midas
+  Initial revision
+
   Revision 1.3  2003/05/09 10:33:52  midas
   Fixed bug with CMD_SET_ALL
 
@@ -143,7 +146,7 @@ char str[80];
 INT nulldev_set_all(NULLDEV_INFO *info, INT channels, float *value)
 {
 int  i;
-char str[1000];
+char str[100000];
 
   /* put here some optimized form of setting all channels simultaneously like ...*/
   strcpy(str, "SETALL ");
