@@ -4,10 +4,12 @@
   Created by:   Stefan Ritt
 
   Contents:     Receive broadcasts from COBRA magnet in PiE5 area
-                and display coil current. This program needs to run
-                in subnet of the experimental hall.
+                and display coil currents.
 
   $Log$
+  Revision 1.3  2005/03/18 13:44:27  ritt
+  Switched to multicast mode
+
   Revision 1.2  2005/03/17 14:19:38  ritt
   Added TCP code
 
@@ -25,14 +27,15 @@
 #include <netinet/in.h>
 #endif
 
-#define UDP // Remove this line for TCP code
+#define MCAST_GROUP  "239.208.0.1"
 
 main()
 {
-   int sock, size, n;
-   char str[80], host_name[80];
+   int sock, n;
+   char str[80];
    struct sockaddr_in myaddr, addr;
-   struct hostent *phe;
+   struct ip_mreq req;
+   int size;
 
 #if defined( _MSC_VER )
    {
@@ -44,15 +47,27 @@ main()
    }
 #endif
 
-#ifdef UDP // UDP code ---------------------------------------
    sock = socket(AF_INET, SOCK_DGRAM, 0);
+
+   n = 1;
+	if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (char *) &n, sizeof(int)) < 0)
+      perror("setsockopt SO_REUSEADDR");
 
    /* bind to port 1178 to receive cobra current broadcasts */
    memset(&myaddr, 0, sizeof(myaddr));
    myaddr.sin_family = AF_INET;
    myaddr.sin_addr.s_addr = htonl(INADDR_ANY);
    myaddr.sin_port = htons(1178);
-   bind(sock, (struct sockaddr *)&myaddr, sizeof(myaddr));
+   if (bind(sock, (struct sockaddr *)&myaddr, sizeof(myaddr)))
+      perror("bind");
+
+   /* set multicast group */
+   memset(&req, 0, sizeof(req));
+   req.imr_multiaddr.s_addr = inet_addr(MCAST_GROUP);
+   req.imr_interface.s_addr = INADDR_ANY;
+   
+   if (setsockopt(sock, IPPROTO_IP, IP_ADD_MEMBERSHIP, (char *)&req, sizeof(req)) < 0)
+      perror("setsockopt IP_ADD_MEMBERSHIP");
 
    size = sizeof(addr);
    do {
@@ -62,45 +77,4 @@ main()
       /* just print string */
       printf(str);
    } while (1);
-
-#else // TCP code --------------------------------------------
-
-   strcpy(host_name, "MSCB001");
-
-   sock = socket(AF_INET, SOCK_STREAM, 0);
-
-   /* let OS choose any port number */
-   memset(&myaddr, 0, sizeof(myaddr));
-   myaddr.sin_family = AF_INET;
-   myaddr.sin_addr.s_addr = htonl(INADDR_ANY);
-   myaddr.sin_port = 0;
-   bind(sock, (void *) &myaddr, sizeof(myaddr));
-
-   /* connect to remote node */
-   memset(&addr, 0, sizeof(addr));
-   addr.sin_family = AF_INET;
-   addr.sin_addr.s_addr = 0;
-   addr.sin_port = htons(23); // telnet port
-
-   phe = gethostbyname(host_name);
-   if (phe == NULL) {
-      printf("Cannot resolve host name %s\n", host_name);
-      return -1;
-   }
-   memcpy((char *) &(addr.sin_addr), phe->h_addr, phe->h_length);
-
-   if (connect(sock, (void *) &addr, sizeof(addr)) != 0) {
-      printf("Cannot connect to %s\n", host_name);
-      return -1;
-   }
-
-   do {
-      memset(str, 0, sizeof(str));
-      n = recv(sock, str, sizeof(str), 0);
-
-      /* just print string */
-      printf(str);
-   } while (1);
-
-#endif
 }
