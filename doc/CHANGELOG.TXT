@@ -1,7 +1,7 @@
 Revision History
 ================
 
-Version 1.9.0, released May 10, 2002
+Version 1.9.0, released May 13, 2002
 ------------------------------------
 
 - Added slowdev class driver.
@@ -29,7 +29,21 @@ Version 1.9.0, released May 10, 2002
 - Fixed bug where keys containing "+" were not properly displayed
   in mhttpd odb display
 - Run start abort by frontend causes logger to overwrite old data
-  file on next start
+  file on next start by default now
+- Added history display configuration page
+- Made run numbers in history display vertical and not overwriting
+  each other if too many are shown
+- Added optional debug output in cm_transition
+- Added debug output via "-v" flag in odbedit start/stop commands
+- Added "more lines" button in runlog.txt display
+- Put some spaces between panel names in history display
+- Added extra parameter to db_get_value, all user code so far using
+  this function has to be adjusted!
+- Added "last x" buttons in Elog display
+- Added "-v" flag to logger for verbose display of history booking
+- mhttpd now displays link destination on ODB pages
+- db_create_link now fails if destination doesn't exist
+- Tab completion in odbedit now also works with "-l" flag
 
 Version 1.8.3, released August 8, 2001
 --------------------------------------
