@@ -9,6 +9,9 @@
                 for HVR_300 High Voltage Regulator
 
   $Log$
+  Revision 1.4  2004/04/08 09:23:36  midas
+  Added software current limit
+
   Revision 1.3  2004/04/07 11:06:17  midas
   Version 1.7.1
 
@@ -224,12 +227,7 @@ void user_init(unsigned char init)
 
 void user_write(unsigned char index) reentrant
 {
-   if (index == 0) {
-      /* indicate new demand voltage */
-      chn_bits[cur_sub_addr()] |= DEMAND_CHANGED;
-   }
-
-   if (index == 1 || index == 4) {
+   if (index == 0 || index == 1 || index == 4) {
       /* reset trip */
       user_data[cur_sub_addr()].status &= ~STATUS_ILIMIT;
 
@@ -584,6 +582,41 @@ void set_current_limit(float value) reentrant
 
 /*------------------------------------------------------------------*/
 
+void check_current(unsigned char channel)
+{
+   if (user_data[channel].i_meas > user_data[channel].i_limit) {
+
+      /* zero output voltage */
+      set_hv(channel, 0);
+      v_actual[channel] = 0;
+      user_data[channel].v_dac = 0;
+
+      /* stop possible ramping */
+      chn_bits[channel] &= ~DEMAND_CHANGED;
+      chn_bits[channel] &= ~RAMP_UP;
+      chn_bits[channel] &= ~RAMP_DOWN;
+      user_data[channel].status &= ~(STATUS_RAMP_UP | STATUS_RAMP_DOWN);
+
+      /* raise trip flag */
+      user_data[channel].status |= STATUS_ILIMIT;
+      user_data[channel].trip_cnt++;
+
+      /* check for trip recovery */
+      if (user_data[channel].trip_cnt < user_data[channel].trip_max) {
+         /* clear trip */
+         user_data[channel].status &= ~STATUS_ILIMIT;
+
+         /* force ramp up */
+         chn_bits[channel] |= DEMAND_CHANGED;
+      }
+   }
+
+   if (user_data[channel].status & STATUS_ILIMIT)
+     led_blink(channel, 1, 500);
+}
+
+/*------------------------------------------------------------------*/
+
 void read_current(unsigned char channel)
 {
    float current;
@@ -792,11 +825,15 @@ void user_loop(void)
    /* loop over all HV channels */
    for (channel=0 ; channel<N_HV_CHN ; channel++) {
 
+      /* outcommented until implemented in HW
       if (chn_bits[channel] & CUR_LIMIT_CHANGED) {
          set_current_limit(user_data[channel].i_limit);
          chn_bits[channel] &= ~CUR_LIMIT_CHANGED;
       }
+      */
 
+      /* instead, use software limit */
+      check_current(channel);
 
       read_hv(channel);
       ramp_hv(channel);
