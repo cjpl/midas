@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus communication functions
 
   $Log$
+  Revision 1.61  2004/03/11 08:46:07  midas
+  Don't display DirectIO error if USB submaster present
+
   Revision 1.60  2004/03/10 13:28:25  midas
   mscb_init returns device name
 
@@ -1008,7 +1011,10 @@ int lpt_init(char *device, int index)
                             DirectIO address
   Function value:
     0                       Successful completion
-    -1                      Device not present
+    -1                      Invalid parameter or other error
+    -2                      Submaster does not respond
+    -3                      No DirectIO driver
+    -4                      MSCB system locked by other user
 
 \********************************************************************/
 {
@@ -1045,8 +1051,8 @@ int lpt_init(char *device, int index)
    if (vi.dwPlatformId == VER_PLATFORM_WIN32_NT) {
       hdio = CreateFile("\\\\.\\directio", GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
       if (hdio == INVALID_HANDLE_VALUE) {
-         printf("mscb.c: Cannot access parallel port (No DirectIO driver installed)\n");
-         return -1;
+         //printf("mscb.c: Cannot access parallel port (No DirectIO driver installed)\n");
+         return -3;
       }
 
       if (!DeviceIoControl(hdio, (DWORD) 0x9c406000, &buffer, sizeof(buffer), NULL, 0, &size, NULL))
@@ -1083,7 +1089,7 @@ int lpt_init(char *device, int index)
 
    status = mscb_lock(index + 1);
    if (status != MSCB_SUCCESS)
-      return -3;
+      return -4;
 
    /* set initial state of handshake lines */
    pp_wcontrol(index + 1, LPT_RESET, 0);
@@ -3136,10 +3142,11 @@ int mscb_select_device(char *device)
 \********************************************************************/
 {
    char list[10][256], str[256];
-   int status, i, n, index;
+   int status, i, n, index, no_directio_flag;
 
    n = 0;
    *device = 0;
+   no_directio_flag = 0;
 
    /* search for temporary file descriptor */
    for (index = 0; index < MSCB_MAX_FD; index++)
@@ -3169,7 +3176,10 @@ int mscb_select_device(char *device)
       mscb_fd[index].type = MSCB_TYPE_LPT;
 
       status = lpt_init(str, index);
-      lpt_close(mscb_fd[index].fd);
+      if (status == -3)
+         no_directio_flag = 1;
+      if (status != -3)
+        lpt_close(mscb_fd[index].fd);
       memset(&mscb_fd[index], 0, sizeof(MSCB_FD));
       if (status == 0)
          sprintf(list[n++], str);
@@ -3177,8 +3187,11 @@ int mscb_select_device(char *device)
          break;
    }
 
-   if (n == 0)
+   if (n == 0) {
+      if (no_directio_flag)
+         printf("mscb.c: Cannot access parallel port (No DirectIO driver installed)\n");
       return 0;
+   }
 
    /* if only one device, return it */
    if (n == 1) {
