@@ -8,6 +8,9 @@
                 CAMAC frontend (mfe.c)
 
   $Log$
+  Revision 1.2  2000/08/10 07:48:29  midas
+  Added client name together with frontend name in cam_init_rpc
+
   Revision 1.1  1999/12/20 10:18:55  midas
   Added files
 
@@ -47,8 +50,8 @@ BOOL  midas_connect;
 
 /*------------------------------------------------------------------*/
 
-int cam_init_rpc(char *host_name, char *exp_name, char *client_name, 
-                 char *rpc_server)
+int cam_init_rpc(char *host_name, char *exp_name, char *fe_name,
+                 char *client_name, char *rpc_server)
 {
 INT   status, i, size;
 char  str[256];
@@ -69,7 +72,7 @@ HNDLE hDB, hKey, hRootKey, hSubkey;
     }
 #endif
 
-    rpc_set_name("MCNAF");
+    rpc_set_name(client_name);
     rpc_register_functions(rpc_get_internal_list(0), NULL);
     rpc_register_functions(rpc_get_internal_list(1), NULL);
 
@@ -89,7 +92,7 @@ HNDLE hDB, hKey, hRootKey, hSubkey;
     cm_set_msg_print(MT_ALL, 0, NULL);
 
     /* connect to experiment */
-    status = cm_connect_experiment(host_name, exp_name, "mcnaf", 0);
+    status = cm_connect_experiment(host_name, exp_name, client_name, 0);
     if (status != CM_SUCCESS)
       return CM_UNDEF_EXP;
   
@@ -97,8 +100,8 @@ HNDLE hDB, hKey, hRootKey, hSubkey;
     cm_get_experiment_database(&hDB, &hKey);
 
     /* find CNAF server if not specified */
-    strcpy(str, client_name);
-    if (client_name[0] == '\0')
+    strcpy(str, fe_name);
+    if (fe_name[0] == '\0')
       {
       /* find client which exports CNAF function */
       status = db_find_key(hDB, 0, "System/Clients", &hRootKey);
@@ -137,14 +140,14 @@ HNDLE hDB, hKey, hRootKey, hSubkey;
 
       if (status != RPC_SUCCESS)
         {
-        printf("CNAF functionality not implemented by client %s\n", client_name);
+        printf("CNAF functionality not implemented by frontend %s\n", fe_name);
         cm_disconnect_client(hConn, FALSE);
         return CM_NO_CLIENT;
         }
       }
     else
       {
-      printf("Cannot connect to client %s\n",client_name);
+      printf("Cannot connect to frontend %s\n",fe_name);
       return CM_NO_CLIENT;
       }
     }
