@@ -7,6 +7,11 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.10  1999/01/15 12:50:04  midas
+  - Set /Analyzer/Bank switches/... to FALSE by default to avoid N-tuple
+    overflow when an analyzer is started the first time
+  - Assume MIDAS data format on /dev/... input
+
   Revision 1.9  1999/01/08 15:00:53  midas
   Analyzer does not stop if a file in a range of files is missing
 
@@ -533,7 +538,7 @@ EVENT_DEF  *event_def;
       for (; bank_list->name[0] ; bank_list++)
         {
         sprintf(str, "/%s/Bank switches/%s", analyzer_name, bank_list->name);
-        bank_list->output_flag = TRUE;
+        bank_list->output_flag = FALSE;
         size = sizeof(DWORD);
         db_get_value(hDB, 0, str, &bank_list->output_flag, &size, TID_DWORD); 
         }
@@ -805,6 +810,11 @@ EVENT_DEF  *event_def;
               if (clp.verbose)
                 printf("NT #%d-%d: %s\n", analyze_request[index].ar_info.event_id, 
                                           n_tag, str);
+              if (n_tag >= 512)
+                {
+                cm_msg(MERROR, "book_ntuples", "Too much tags for RW N-tupeles (512 maximum)");
+                return 0;
+                }
               }
             }
           else
@@ -1040,7 +1050,7 @@ INT        lrec;
       for (; bank_list->name[0] ; bank_list++)
         {
         sprintf(str, "/%s/Bank switches/%s", analyzer_name, bank_list->name);
-        bank_list->output_flag = TRUE;
+        bank_list->output_flag = FALSE;
         size = sizeof(DWORD);
         db_get_value(hDB, 0, str, &bank_list->output_flag, &size, TID_DWORD);
         }
@@ -2753,6 +2763,9 @@ HNDLE           hKey, hKeyEq, hKeyRoot;
     while (*ext_str != '.')
       ext_str--;
     }
+  else
+    ext_str = "";
+
   if (strncmp(ext_str, ".gz", 3) == 0)
     {
     ext_str--;
@@ -2760,7 +2773,9 @@ HNDLE           hKey, hKeyEq, hKeyRoot;
       ext_str--;
     }
 
-  if (strncmp(ext_str, ".asc", 4) == 0)
+  if (strncmp(input_file_name, "/dev/", 4) == 0) /* asume MIDAS tape */
+    format = FORMAT_MIDAS;
+  else if (strncmp(ext_str, ".asc", 4) == 0)
     format = FORMAT_ASCII;
   else if (strncmp(ext_str, ".mid", 4) == 0)
     format = FORMAT_MIDAS;
