@@ -8,6 +8,9 @@
                 following the MIDAS CAMAC Standard under DIRECTIO
 
   $Log$
+  Revision 1.12  2001/08/14 10:27:40  midas
+  Restore signal handler on error
+
   Revision 1.11  2001/08/14 10:15:43  midas
   Removed debugging statements
 
@@ -1064,7 +1067,10 @@ INLINE int cam_init(void)
     printf("hyt1331.c: Found PCI card at 0x%X, IRQ %d\n", io_base[n_dev], irq[n_dev]);
 
     if (directio_give_port(io_base[n_dev], io_base[n_dev]+4*0x10) < 0)
+      {
+      signal(SIGSEGV, SIG_DFL);
       return 0;
+      }
     }
 
   /* scan ISA cards */
@@ -1073,13 +1079,19 @@ INLINE int cam_init(void)
     base_test = isa_io_base[i];
 
     if (directio_give_port(base_test, base_test+4*0x10) < 0)
+      {
+      signal(SIGSEGV, SIG_DFL);
       return 0;
+      }
 
     /* Test if address is writable */
     OUTP(base_test, 0);
     status = INP(base_test);
     if (status != 0)
-      goto fail;
+      {
+      directio_lock_port(base_test, base_test+4*0x10);
+      continue;
+      }
 
     /* Test A,N,F readback of ISA card */
     OUTP(base_test+8, 1);
@@ -1091,18 +1103,15 @@ INLINE int cam_init(void)
     f = (BYTE) INP(base_test+10);
 
     if (n != 1 || a != 2 || f != 32)
-      goto fail;
+      {
+      directio_lock_port(base_test, base_test+4*0x10);
+      continue;
+      }
 
     /* ISA card found */
     printf("hyt1331.c: Found ISA card at 0x%X\n", base_test);
 
     io_base[n_dev++] = base_test;
-
-    continue;
-
-
-fail:
-    directio_lock_port(base_test, base_test+4*0x10);
     }
 
   if (n_dev == 0)

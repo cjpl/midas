@@ -7,8 +7,8 @@
                 MCSTD (Midas Camac Standard)
 
   $Log$
-  Revision 1.4  2001/08/14 10:00:04  midas
-  Fixed compiler warning
+  Revision 1.5  2001/08/14 10:27:40  midas
+  Restore signal handler on error
 
   Revision 1.3  2001/08/14 09:43:30  midas
   Initial revision
