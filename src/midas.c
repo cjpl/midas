@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.16  1999/02/01 15:41:23  midas
+  Added warning for zero length bank in bk_close
+
   Revision 1.15  1999/02/01 13:03:49  midas
   Added /system/clients/xxx/link timeout to show current TCP timeout value
 
@@ -10836,6 +10839,9 @@ void bk_close(void *event, void *pdata)
 \********************************************************************/
 {
   _pbk->data_size = (WORD) (INT) pdata - (INT) (_pbk+1);
+  if (_pbk->data_size == 0)
+    printf("Warning: bank %c%c%c%c has zero size\n", 
+      _pbk->name[0], _pbk->name[1], _pbk->name[2], _pbk->name[3]);
   ((BANK_HEADER *) event)->data_size += sizeof(BANK) + ALIGN(_pbk->data_size);
 }
 
