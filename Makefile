@@ -6,6 +6,9 @@
 #  Contents:     Makefile for MIDAS binaries and examples under unix
 #
 #  $Log$
+#  Revision 1.42  2003/04/28 11:12:55  midas
+#  Adjusted ROOT flags
+#
 #  Revision 1.41  2003/04/20 02:59:13  olchansk
 #  merge ROOT code into mana.c
 #  remove MANA_LITE, replaced with HAVE_HBOOK, HAVE_ROOT
@@ -188,10 +191,7 @@ SYSINC_DIR = $(PREFIX)/include
 #  Midas preference flags
 #  -DYBOS_VERSION_3_3  for YBOS up to version 3.3 
 MIDAS_PREF_FLAGS  =
-#
-# #MANA_OPTION = -DMANA_LITE for analyzer with HBOOK (default).
-# MANA_OPTION = -DMANA_LITE for analyzer without HBOOK.
-#MANA_OPTION = -DMANA_LITE
+
 #####################################################################
 # Nothing needs to be modified after this line 
 #####################################################################
@@ -200,7 +200,7 @@ MIDAS_PREF_FLAGS  =
 # Common flags
 #
 CC = cc
-CFLAGS = -g -O2 -Wall -Wuninitialized -I$(INC_DIR) -I$(DRV_DIR) -L$(LIB_DIR) -DINCLUDE_FTPLIB
+CFLAGS = -g -O2 -Wall -I$(INC_DIR) -I$(DRV_DIR) -L$(LIB_DIR) -DINCLUDE_FTPLIB
 
 #-----------------------
 # OSF/1 (DEC UNIX)
@@ -319,7 +319,7 @@ VPATH = $(LIB_DIR):$(INC_DIR)
 
 all:    $(OS_DIR) $(LIB_DIR) $(BIN_DIR) \
 	$(LIBNAME) $(SHLIB) \
-	$(LIB_DIR)/mana.o $(LIB_DIR)/pmana.o $(LIB_DIR)/rmana.o \
+	$(LIB_DIR)/mana.o $(LIB_DIR)/hmana.o $(LIB_DIR)/rmana.o \
 	$(LIB_DIR)/mfe.o \
 	$(LIB_DIR)/fal.o $(PROGS)
 
@@ -354,14 +354,21 @@ $(BIN_DIR):
 #
 
 ifdef ROOTSYS
-ROOTLIBS:= -Wl,-rpath,$(ROOTSYS)/lib -L$(ROOTSYS)/lib -lCore -lCint -lHist -lTree -lMatrix -ldl
-ROOTGLIBS:= -Wl,-rpath,$(ROOTSYS)/lib -L$(ROOTSYS)/lib -lCore -lCint -lHist -lGraf -lGraf3d -lGpad -lTree -lRint -lPostscript -lMatrix -lPhysics -lGui -ldl
+ROOTLIBS    := $(shell root-config --libs)
+ROOTGLIBS   := $(shell root-config --glibs)
+ROOTCFLAGS  := $(shell root-config --cflags)
 
 $(BIN_DIR)/mlogger: $(BIN_DIR)/%: $(SRC_DIR)/%.c
-	$(CXX) $(CFLAGS) $(OSFLAGS) -DHAVE_ROOT -I$(ROOTSYS)/include -o $@ $< $(LIB) $(ROOTLIBS) $(LIBS)
+	$(CXX) $(CFLAGS) $(OSFLAGS) -DHAVE_ROOT $(ROOTCFLAGS) -o $@ $< $(LIB) $(ROOTLIBS) $(LIBS)
 
 $(BIN_DIR)/rmidas: $(BIN_DIR)/%: $(SRC_DIR)/%.c
-	$(CXX) $(CFLAGS) $(OSFLAGS) -DHAVE_ROOT -I$(ROOTSYS)/include -o $@ $< $(LIB) $(ROOTGLIBS) $(LIBS)
+	$(CXX) $(CFLAGS) $(OSFLAGS) -DHAVE_ROOT $(ROOTCFLAGS) -o $@ $< $(LIB) $(ROOTGLIBS) $(LIBS)
+else
+
+# logger without ROOT support
+$(BIN_DIR)/mlogger: $(BIN_DIR)/%: $(SRC_DIR)/%.c
+	$(CXX) $(CFLAGS) $(OSFLAGS) -o $@ $< $(LIB) $(ROOTLIBS) $(LIBS)
+
 endif
 
 $(BIN_DIR)/%:$(SRC_DIR)/%.c
@@ -404,21 +411,17 @@ $(SHLIB): $(OBJS)
 #
 
 $(LIB_DIR)/mfe.o: msystem.h midas.h midasinc.h mrpc.h
-$(LIB_DIR)/mana.o: $(SRC_DIR)/mana.c msystem.h midas.h midasinc.h mrpc.h
 $(LIB_DIR)/fal.o: $(SRC_DIR)/fal.c msystem.h midas.h midasinc.h mrpc.h
 
 $(LIB_DIR)/fal.o: $(SRC_DIR)/fal.c msystem.h midas.h midasinc.h mrpc.h
 	$(CC) -Dextname -c $(CFLAGS) $(OSFLAGS) $(MANA_OPTION) -o $@ $<
 $(LIB_DIR)/mana.o: $(SRC_DIR)/mana.c msystem.h midas.h midasinc.h mrpc.h
+	$(CC) -c $(CFLAGS) $(OSFLAGS) $(MANA_OPTION) -o $@ $<
+$(LIB_DIR)/hmana.o: $(SRC_DIR)/mana.c msystem.h midas.h midasinc.h mrpc.h
 	$(CC) -Dextname -DHAVE_HBOOK -c $(CFLAGS) $(OSFLAGS) $(MANA_OPTION) -o $@ $<
-$(LIB_DIR)/pmana.o: $(SRC_DIR)/mana.c msystem.h midas.h midasinc.h mrpc.h
-	$(CC) -Dextname -DHAVE_HBOOK -DPVM -c $(CFLAGS) $(OSFLAGS) -o $@ $<
 ifdef ROOTSYS
 $(LIB_DIR)/rmana.o: $(SRC_DIR)/mana.c msystem.h midas.h midasinc.h mrpc.h
-	$(CXX) -Dextname -DHAVE_ROOT -c $(CFLAGS) $(OSFLAGS) -I$(ROOTSYS)/include -o $@ $<
-else
-$(LIB_DIR)/rmana.o: $(SRC_DIR)/mana.c msystem.h midas.h midasinc.h mrpc.h
-	$(CXX) -Dextname -c $(CFLAGS) $(OSFLAGS) -o $@ $<
+	$(CXX) -DHAVE_ROOT -c $(CFLAGS) $(OSFLAGS) $(ROOTCFLAGS) -o $@ $<
 endif
 
 #
@@ -426,7 +429,7 @@ endif
 #
 
 $(LIB_DIR)/%.o:$(SRC_DIR)/%.c
-	$(CC) -Dextname -c $(CFLAGS) $(OSFLAGS) -o $@ $<
+	$(CC) -c $(CFLAGS) $(OSFLAGS) -o $@ $<
 
 $(LIB_DIR)/midas.o: msystem.h midas.h midasinc.h mrpc.h
 $(LIB_DIR)/system.o: msystem.h midas.h midasinc.h mrpc.h
@@ -529,7 +532,7 @@ install:
           mkdir -p $(SYSLIB_DIR); \
         fi;
 
-	@for i in libmidas.so libmidas.a mana.o pmana.o rmana.o mfe.o fal.o ; \
+	@for i in libmidas.so libmidas.a mana.o hmana.o rmana.o mfe.o fal.o ; \
 	  do \
 	  echo $$i ; \
 	  rm -f $(SYSLIB_DIR)/$$i ;\
