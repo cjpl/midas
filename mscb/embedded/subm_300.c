@@ -7,6 +7,9 @@
                 SUBM300 running on Cygnal C8051F021
 
   $Log$
+  Revision 1.9  2003/03/20 07:57:04  midas
+  Chaned 'channels' to 'variables'
+
   Revision 1.8  2003/03/06 11:00:39  midas
   Added delay for slow AduC
 
@@ -60,10 +63,7 @@ bit ti_shadow;
 
 
 /* dummies needed by mscbutil.c */
-MSCB_INFO_CHN code conf_param[] = {
-  0
-};
-MSCB_INFO_CHN code channel[] = {
+MSCB_INFO_VAR code variables[] = {
   0
 };
 
