@@ -51,6 +51,7 @@ are for @ref Linux_installation and @ref Windows_installation.
     <a href=http://midas.psi.ch/cgi-bin/cvsweb/midas>
     CVS repository</a>. The following two anonymous commands can used for 
     respectively <b>checking out</b> (first time) and <b>updating</b> the full midas tree.
+    The password required for access is "cvs".
     \code
     cvs -e ssh -d :ext:cvs@midas.psi.ch:/usr/local/cvsroot checkout midas
     
