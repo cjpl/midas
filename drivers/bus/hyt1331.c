@@ -7,6 +7,9 @@
                 following the MIDAS CAMAC Standard under DIRECTIO
 
   $Log$
+  Revision 1.3  2000/04/19 07:39:22  midas
+  Outcommented "fast" cam24i_r because of problems
+
   Revision 1.2  2000/01/13 18:02:10  pierre
   - Fix version due to CVS re-organization
 
@@ -247,8 +250,26 @@ INLINE void cam16i_r(const int c, const int n, const int a, const int f,
 INLINE void cam24i_r(const int c, const int n, const int a, const int f, 
                      DWORD **d, const int r)
 {
-  WORD adr, i, status;
+WORD adr, i, status;
+
+  adr = CAMAC_BASE+(c<<4);
+  OUTP(adr+8, n);
+  OUTP(adr+6, a);
   
+  for (i=0 ; i<r ; i++)
+    {
+    OUTP(adr+10, f);
+    status = (unsigned char) INP(adr+6);
+    *((unsigned char *) *d) = INP(adr);
+    *(((unsigned char *) *d)+1) = INP(adr+2);
+    *(((unsigned char *) *d)+2) = INP(adr+4);
+    *(((unsigned char *) *d)+3) = 0;
+    (*d)++;
+    }
+  
+  /*
+  gives unrealiable results, SR 6.4.00
+
   adr = CAMAC_BASE+(c<<4);
   
   OUTP(adr+8, n);
@@ -256,13 +277,13 @@ INLINE void cam24i_r(const int c, const int n, const int a, const int f,
   OUTP_P(adr+10,f);
   
   status = (unsigned char) INP(adr+6);
-		*((unsigned char *) *d) = INP(adr);
-  *(((unsigned char *) *d)+1) = INP(adr+2); /* read the first word */
+	*((unsigned char *) *d) = INP(adr);
+  *(((unsigned char *) *d)+1) = INP(adr+2); // read the first word 
   *(((unsigned char *) *d)+2) = INP(adr+4);
   *(((unsigned char *) *d)+3) = 0;
   (*d)++;
   
-  INPW_P(adr+12); /* trigger first cycle */
+  INPW_P(adr+12); // trigger first cycle
   
   for (i=0 ; i<(r-1) ; i++) 
   {
@@ -271,6 +292,7 @@ INLINE void cam24i_r(const int c, const int n, const int a, const int f,
 				*((unsigned short *) *d) = INPW_P(adr+12); 
     (*d)++;
   }
+  */
 }
 
 /*------------------------------------------------------------------*/
