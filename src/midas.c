@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.77  1999/10/27 13:37:57  midas
+  Added event size check in bm_send_event
+
   Revision 1.76  1999/10/18 15:52:12  midas
   Use "alarm count" to declare programs dead if inactive for 5 minutes
 
@@ -5175,6 +5178,14 @@ EVENT_HEADER    *pevent;
     return BM_INVALID_PARAM;
     }
 
+  /* check for maximal event size */
+  if (ALIGN(buf_size) > MAX_EVENT_SIZE)
+    {
+    cm_msg(MERROR, "bm_send_event", "event size (%d) larger than maximum event size (%d)", 
+           ALIGN(buf_size), MAX_EVENT_SIZE);
+    return BM_INVALID_PARAM;
+    }
+  
   if (rpc_is_remote())
     {
     /* check if event fits in network buffer */
