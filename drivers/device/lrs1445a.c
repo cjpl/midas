@@ -6,6 +6,9 @@
   Contents:     LeCroy LRS 1440 High Voltage Device Driver
 
   $Log$
+  Revision 1.2  2003/10/06 09:17:46  midas
+  Fixed bugs with set_all
+
   Revision 1.1  2003/09/29 11:56:44  midas
   Initial revision
 
@@ -112,7 +115,10 @@ LRS1445A_INFO *info;
   status = bd(CMD_INIT, hkey, &info->bd_info);
 
   if (status != SUCCESS)
+    {
+    cm_msg(MERROR, "lrs1445a_init", "Cannot access RS232 port. Mayb other application is using it.");
     return status;
+    }
 
   bd(CMD_DEBUG, FALSE); 
 
@@ -172,16 +178,46 @@ char  str[80];
 
 /*----------------------------------------------------------------------------*/
 
-INT lrs1445a_set_all(LRS1445A_INFO *info, INT channels, float value)
+INT lrs1445a_set_all(LRS1445A_INFO *info, INT channels, float *pvalue)
 {
-char  str[80];
-INT   i;
+char  str[1000];
+INT   i, j, n;
 
   lrs1445a_switch(info);
 
   for (i=0 ; i<(channels-1)/16+1 ; i++)
     {
-    sprintf(str, "WRITE (%d,0-15) %04.0f\r", i, info->settings.polarity[i/16]*value);
+    n = channels - i*16 - 1;
+    if (n > 7)
+      n = 7;
+    sprintf(str, "WRITE (%d,0-%d) ", i, n);
+
+    for (j=0 ; j<channels && j<8; j++)
+      {
+      if (i*16 + j == channels)
+        break;
+
+      sprintf(str+strlen(str), "%1.1f,", *pvalue++ * info->settings.polarity[i]);
+      }
+    sprintf(str+strlen(str), "\r");
+    
+    BD_PUTS(str);
+    BD_GETS(str, sizeof(str), "> ", 3000);
+
+    n = channels - i*16 - 1;
+    if (n > 15)
+      n = 15;
+    sprintf(str, "WRITE (%d,8-%d) ", i, n);
+
+    for (j=8 ; j<channels && j<16; j++)
+      {
+      if (i*16 + j == channels)
+        break;
+
+      sprintf(str+strlen(str), "%1.1f,", *pvalue++ * info->settings.polarity[i]);
+      }
+    sprintf(str+strlen(str), "\r");
+    
     BD_PUTS(str);
     BD_GETS(str, sizeof(str), "> ", 3000);
     }
@@ -297,8 +333,8 @@ DWORD   flags;
     case CMD_SET_ALL:
       info = va_arg(argptr, void *);
       channel = va_arg(argptr, INT);
-      value   = (float) va_arg(argptr, double);
-      status = lrs1445a_set_all(info, channel, value);
+      pvalue   = va_arg(argptr, float *);
+      status = lrs1445a_set_all(info, channel, pvalue);
       break;
 
     case CMD_GET:
