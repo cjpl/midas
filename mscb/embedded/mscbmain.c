@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol main program
 
   $Log$
+  Revision 1.19  2002/11/28 13:03:41  midas
+  Protocol version 1.2
+
   Revision 1.18  2002/11/22 15:43:03  midas
   Made user_write reentrant
 
@@ -115,7 +118,7 @@ void flash_upgrade(void);
 unsigned char idata in_buf[10], out_buf[8];
 
 unsigned char idata i_in, last_i_in, final_i_in, n_out, i_out, cmd_len;
-unsigned char idata crc_code, addr_mode;
+unsigned char idata crc_code, addr_mode, n_channel, n_param;
 
 SYS_INFO sys_info;
 
@@ -194,6 +197,14 @@ unsigned char i;
   i_in = i_out = n_out = 0;
 
   uart_init(0, BD_115200);
+
+  /* count channels and parameters */
+  for (n_channel=0 ; ; n_channel++)
+    if (channel[n_channel].name[0] == 0)
+      break;
+  for (n_param=0 ; ; n_param++)
+    if (channel[n_param].name[0] == 0)
+      break;
 
   /* retrieve EEPROM data */
   eeprom_retrieve();
@@ -384,7 +395,7 @@ void send_byte(unsigned char d, unsigned char data *crc)
 
 void interprete(void)
 {
-unsigned char crc, cmd, i, n;
+unsigned char crc, cmd, i, j, n;
 MSCB_INFO_CHN code *pchn;
 
   cmd = (in_buf[0] & 0xF8); // strip lenth field
@@ -451,10 +462,7 @@ MSCB_INFO_CHN code *pchn;
       send_byte(VERSION, &crc);   // send protocol version
       send_byte(CSR, &crc);       // send node status
 
-      for (i=0 ; ; i++)           // send number of channels
-        if (channel[i].name[0] == 0)
-          break;
-      send_byte(i, &crc);
+      send_byte(n_channel, &crc);
 
       for (i=0 ; ; i++)           // send number of configuration parameters
         if (conf_param[i].name[0] == 0)
@@ -483,29 +491,38 @@ MSCB_INFO_CHN code *pchn;
       /* send channel/config param info */
 
       if (in_buf[1] == GET_INFO_CHANNEL)
+        {
+        i = n_channel;
         pchn = channel+in_buf[2];
+        }
       else
+        {
+        i = n_param;
         pchn = conf_param+in_buf[2];
-      
-      ES0 = 0;                     // temporarily disable serial interrupt
-      crc = 0;
-      RS485_ENABLE = 1;
+        }
 
-      send_byte(CMD_ACK+7, &crc); // send acknowledge, variable data length
-      send_byte(13, &crc);        // send data length
-      send_byte(pchn->width, &crc);
-      send_byte(pchn->unit, &crc);
-      send_byte(pchn->prefix, &crc);
-      send_byte(pchn->status, &crc);
-      send_byte(pchn->flags, &crc);
-
-      for (i=0 ; i<8 ; i++)                        // send channel name
-        send_byte(pchn->name[i], &crc);
-
-      send_byte(crc, NULL);                        // send CRC code
-
-      RS485_ENABLE = 0;
-      ES0 = 1;                                      // re-enable serial interrupts
+      if (in_buf[2] < i)
+        {
+        ES0 = 0;                     // temporarily disable serial interrupt
+        crc = 0;
+        RS485_ENABLE = 1;
+  
+        send_byte(CMD_ACK+7, &crc); // send acknowledge, variable data length
+        send_byte(13, &crc);        // send data length
+        send_byte(pchn->width, &crc);
+        send_byte(pchn->unit, &crc);
+        send_byte(pchn->prefix, &crc);
+        send_byte(pchn->status, &crc);
+        send_byte(pchn->flags, &crc);
+  
+        for (i=0 ; i<8 ; i++)                        // send channel name
+          send_byte(pchn->name[i], &crc);
+  
+        send_byte(crc, NULL);                        // send CRC code
+  
+        RS485_ENABLE = 0;
+        ES0 = 1;                                      // re-enable serial interrupts
+        }
       break;
 
     case CMD_SET_ADDR:
@@ -556,49 +573,99 @@ MSCB_INFO_CHN code *pchn;
       SBUF0 = out_buf[0];
       break;
 
-    case CMD_READ:
-      n = channel[in_buf[1]].width; // number of bytes to return
-
-      if (n == 0)
-        {
-        n = user_read(in_buf[1]);  // for 0-bit channels, user routine returns bytes
-        out_buf[0] = CMD_ACK + n;
-        }
-      else
-        {
-        user_read(in_buf[1]);
-
-        out_buf[0] = CMD_ACK + n;
-        for (i=0 ; i<n ; i++)
-          out_buf[1+i] = ((char idata *)channel[in_buf[1]].ud)[i];  // copy user data
-        }
-
-      out_buf[1+n] = crc8(out_buf, 1 + n); // generate CRC code
-
-      /* send result */
-      n_out = 2 + n;
+    case CMD_ECHO:
+      out_buf[0] = CMD_ACK+1;
+      out_buf[1] = in_buf[1];
+      out_buf[2] = crc8(out_buf, 2);
+      n_out = 3;
       RS485_ENABLE = 1;
       SBUF0 = out_buf[0];
-
       break;
 
-    case CMD_READ_CONF:
-      user_read_conf(in_buf[1]);  // let user readout routine update data buffer
+    }
 
+  if (cmd == CMD_READ)
+    {
+    if (in_buf[0] == CMD_READ + 1)  // single channel
+      {
+      if (in_buf[i] < n_channel)
+        {
+        n = channel[in_buf[1]].width; // number of bytes to return
+    
+        if (n == 0)
+          {
+          n = user_read(in_buf[1]);   // for 0-bit channels, user routine returns bytes
+          out_buf[0] = CMD_ACK + n;
+          }
+        else
+          {
+          user_read(in_buf[1]);
+    
+          out_buf[0] = CMD_ACK + n;
+          for (i=0 ; i<n ; i++)
+            out_buf[1+i] = ((char idata *)channel[in_buf[1]].ud)[i];  // copy user data
+          }
+    
+        out_buf[1+n] = crc8(out_buf, 1 + n); // generate CRC code
+    
+        /* send result */
+        n_out = 2 + n;
+        RS485_ENABLE = 1;
+        SBUF0 = out_buf[0];
+        }
+      }
+    else if (in_buf[0] == CMD_READ + 2) // channel range
+      {
+      if (in_buf[1] < n_channel && in_buf[2] < n_channel && in_buf[1] < in_buf[2])
+        {
+        /* calculate number of bytes to return */
+        for (i=in_buf[1],n=0 ; i<=in_buf[2] ; i++)
+          {
+          user_read(i);
+          n += channel[i].width;
+          }
+  
+        ES0 = 0;                      // temporarily disable serial interrupt
+        crc = 0;
+        RS485_ENABLE = 1;
+  
+        send_byte(CMD_ACK+7, &crc);   // send acknowledge, variable data length
+        send_byte(n, &crc);           // send data length
+  
+        /* loop over all channels */
+        for (i=in_buf[1] ; i<=in_buf[2] ; i++)
+          {
+          for (j=0 ; j<channel[i].width ; j++)
+            send_byte(((char idata *)channel[i].ud)[j], &crc); // send user data
+          }
+  
+        send_byte(crc, NULL);         // send CRC code
+  
+        RS485_ENABLE = 0;
+        ES0 = 1;                      // re-enable serial interrupts
+        }
+      }
+    }
+
+  if (cmd == CMD_READ_CONF)
+    {
+    if (in_buf[1] < n_param)
+      {
+      user_read_conf(in_buf[1]);      // let user readout routine update data buffer
+  
       n = conf_param[in_buf[1]].width; // number of bytes to return
-
+  
       out_buf[0] = CMD_ACK + n;
       for (i=0 ; i<n ; i++)
         out_buf[1+i] = ((char idata *)conf_param[in_buf[1]].ud)[i];  // copy user data
-
+  
       out_buf[1+i] = crc8(out_buf, 1 + n); // generate CRC code
-
+  
       /* send result */
       n_out = 2 + n;
       RS485_ENABLE = 1;
       SBUF0 = out_buf[0];
-
-      break;
+      }
     }
 
   if (cmd == CMD_USER)
