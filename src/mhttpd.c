@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.200  2002/05/08 20:56:32  midas
+  Added spaces between panel names in history display
+
   Revision 1.199  2002/05/08 19:54:40  midas
   Added extra parameter to function db_get_value()
 
@@ -8244,9 +8247,9 @@ char   def_button[][NAME_LENGTH] = {"10m", "1h", "3h", "12h", "24h", "3d", "7d" 
   else
     {
     if (exp_name[0])
-      rsprintf("<a href=\"/HS/All?exp=%s\">ALL</a> ", exp_name);
+      rsprintf("<a href=\"/HS/All?exp=%s\">ALL</a>&nbsp;&nbsp;&nbsp;", exp_name);
     else
-      rsprintf("<a href=\"/HS/All\">ALL</a> ");
+      rsprintf("<a href=\"/HS/All\">ALL</a>&nbsp;&nbsp;&nbsp;");
     }
 
   db_find_key(hDB, 0, "/History/Display", &hkey);
@@ -8283,13 +8286,13 @@ char   def_button[][NAME_LENGTH] = {"10m", "1h", "3h", "12h", "24h", "3d", "7d" 
       db_get_key(hDB, hkeyp, &key);
 
       if (equal_ustring(path, key.name))
-        rsprintf("<b>%s</b> ", key.name);
+        rsprintf("<b>%s</b>&nbsp;&nbsp;&nbsp;", key.name);
       else
         {
         if (exp_name[0])
-          rsprintf("<a href=\"/HS/%s?exp=%s\">%s</a> ", key.name, exp_name, key.name);
+          rsprintf("<a href=\"/HS/%s?exp=%s\">%s</a>&nbsp;&nbsp;&nbsp;", key.name, exp_name, key.name);
         else
-          rsprintf("<a href=\"/HS/%s\">%s</a> ", key.name, key.name);
+          rsprintf("<a href=\"/HS/%s\">%s</a>&nbsp;&nbsp;&nbsp;", key.name, key.name);
         }
       if (i % 10 == 9)
         rsprintf("<br>\n");
