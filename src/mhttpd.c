@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.188  2002/02/05 04:55:16  midas
+  Improved log axis limit calculation
+
   Revision 1.187  2002/02/04 03:00:10  midas
   Fixed bug with offset
 
@@ -6600,7 +6603,7 @@ int vaxis(gdImagePtr im, gdFont *font, int col, int gcol,
            int minor, int major, int text, int label,
            int grid, double ymin, double ymax, BOOL logaxis)
 {
-double dy, int_dy, frac_dy, y_act, label_dy, major_dy, y_screen, y_next, ybase;
+double dy, int_dy, frac_dy, y_act, label_dy, major_dy, y_screen, y_next;
 int    tick_base, major_base, label_base, n_sig1, n_sig2, max_tick, ys, max_width;
 int    last_label_y;
 char   str[80];
@@ -6609,15 +6612,8 @@ double base[] = {1,2,5,10,20,50,100,200,500,1000};
   if (ymax <= ymin || width <=0)
     return 0;
 
-  /* use 5 as min tick distance */
   if (logaxis)
     {
-    /* round down and up ymin and ymax */
-    ybase = pow(10, floor(log(ymin)/LN10));
-    ymin = floor(ymin/ybase)*ybase;
-    ybase = pow(10, floor(log(ymax)/LN10));
-    ymax = (floor(ymax/ybase)+1)*ybase;
-
     max_tick = (int) ((log(ymax)/LN10 - log(ymin)/LN10) * 10 + 1);
     dy = pow(10, floor(log(ymin)/LN10));
     label_dy = dy;
@@ -6845,6 +6841,7 @@ char        ybuffer[8000];
 DWORD       tbuffer[1000];
 gdPoint     poly[3];
 float       upper_limit[MAX_VARS], lower_limit[MAX_VARS];
+double      yb1, yb2, yf1, yf2, ybase;
 
   cm_get_experiment_database(&hDB, NULL);
   event_name_list = NULL;
@@ -7270,9 +7267,41 @@ float       upper_limit[MAX_VARS], lower_limit[MAX_VARS];
       ymin = 0;
     }
 
+  /* if min and max too close together, switch to linear axis */
+  if (logaxis)
+    {
+    yb1 = pow(10, floor(log(ymin)/LN10));
+    yf1 = floor(ymin/yb1);
+    yb2 = pow(10, floor(log(ymax)/LN10));
+    yf2 = floor(ymax/yb2);
+    
+    if (yb1 == yb2 && yf1 == yf2)
+      logaxis = 0;
+    else
+      {
+      /* round down and up ymin and ymax */
+      ybase = pow(10, floor(log(ymin)/LN10));
+      ymin = (float) (floor(ymin/ybase)*ybase);
+      ybase = pow(10, floor(log(ymax)/LN10));
+      ymax = (float) ((floor(ymax/ybase)+1)*ybase);
+      }
+    }
+
+  /* avoid negative limits for log axis */
+  if (logaxis)
+    {
+    if (ymax <= 0)
+      ymax = 1;
+    if (ymin <= 0)
+      ymin = 1E-5f;
+    }
+
   /* increase limits by 5% */
   if (ymin == 0 && ymax == 0)
+    {
+    ymin = -1;
     ymax = 1;
+    }
   else
     {
     if (!logaxis)
@@ -7297,14 +7326,6 @@ float       upper_limit[MAX_VARS], lower_limit[MAX_VARS];
       ymax += 1;
       ymin -= 1;
       }
-    }
-
-  if (logaxis)
-    {
-    if (ymax <= 0)
-      ymax = 1;
-    if (ymin <= 0)
-      ymin = 1E-5f;
     }
 
   /* calculate X limits */
