@@ -11,6 +11,9 @@
                 with one bank (SCLR).
 
   $Log$
+  Revision 1.16  2003/04/14 13:31:17  midas
+  Enabled trigger_bank_list
+
   Revision 1.15  2003/04/14 13:17:01  midas
   Added bank description
 
@@ -150,7 +153,7 @@ EQUIPMENT equipment[] = {
     "", "", "",
     read_trigger_event,   /* readout routine */
     NULL, NULL, 
-    NULL,    /* bank list */
+    trigger_bank_list,    /* bank list */
   },
 
   { "Scaler",             /* equipment name */
