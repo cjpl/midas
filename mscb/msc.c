@@ -6,6 +6,9 @@
   Contents:     Command-line interface for the Midas Slow Control Bus
 
   $Log$
+  Revision 1.30  2003/02/27 10:43:33  midas
+  Changed 'address' command to non-acknowledge
+
   Revision 1.29  2003/02/18 11:21:12  midas
   Added repeat scan mode
 
@@ -115,6 +118,8 @@
 #include <fcntl.h>
 #include "mscb.h"
 #include "rpc.h"
+
+extern int mscb_addr(int fd, int cmd, int adr, int retry);
 
 /*------------------------------------------------------------------*/
 
@@ -512,9 +517,8 @@ MSCB_INFO_CHN info_chn;
       mscb_reset(fd);
       }
 
-    /* ping/address */
-    else if ((param[0][0] == 'p') ||
-             (param[0][0] == 'a'))
+    /* ping */
+    else if (param[0][0] == 'p')
       {
       if (!param[1][0])
         puts("Please specify node address");
@@ -541,6 +545,24 @@ MSCB_INFO_CHN info_chn;
           current_addr = addr;
           current_group = -1;
           }
+        }
+      }
+
+    /* address */
+    else if ((param[0][0] == 'a'))
+      {
+      if (!param[1][0])
+        puts("Please specify node address");
+      else
+        {
+        if (param[1][1] == 'x')
+          sscanf(param[1]+2, "%x", &addr);
+        else
+          addr = atoi(param[1]);
+
+        mscb_addr(fd, CMD_ADDR_NODE16, addr, 1);
+        current_addr = addr;
+        current_group = -1;
         }
       }
 
@@ -905,6 +927,9 @@ MSCB_INFO_CHN info_chn;
           if (param[1][0] != 'f' && param[1][1] != 'c')
             Sleep(10);
           }
+        printf("%d\n", i);
+        while (kbhit())
+          getch();
         }
       }
 
