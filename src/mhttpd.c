@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.278  2004/10/22 22:48:28  olchansk
+  Improve decision on which messages should be "red"
+
   Revision 1.277  2004/10/06 23:54:39  midas
   Removed event builder section
 
@@ -1633,6 +1636,40 @@ void exec_script(HNDLE hkey)
 
 /*------------------------------------------------------------------*/
 
+int message_red(const char* message)
+{
+  // decide if a message should be coloured "red"
+  // by looking for this pattern:
+  // [feepics] [midas.c:12351:rpc_server_receive] blah...
+  //
+  // Algorithm:
+  // skip the first "[",
+  // then look for subsequent sequence "[*:*]"
+
+  char* bracket1;
+  char* colon;
+  char* bracket2;
+
+  bracket1 = strchr(message + 1, '[');
+  if (!bracket1)
+    return 0;
+
+  colon    = strchr(bracket1, ':');
+  if (!colon)
+    return 0;
+
+  bracket2 = strchr(bracket1, ']');
+  if (!bracket2)
+    return 0;
+
+  if ((bracket1 < colon) && (colon < bracket2))
+    return 1;
+  else
+    return 0;
+}
+
+/*------------------------------------------------------------------*/
+
 void show_status_page(int refresh, char *cookie_wpwd)
 {
    int i, j, k, status, size, type;
@@ -2274,8 +2311,7 @@ void show_status_page(int refresh, char *cookie_wpwd)
    rsprintf("<tr><td colspan=6>");
 
    if (message_buffer[0]) {
-
-      if (strchr(message_buffer+9, '[') && strchr(message_buffer+9, ':'))
+      if (message_red(message_buffer+8))
          rsprintf("<span style=\"color:white;background-color:red\"><b>%s</b></span>", message_buffer);
       else
          rsprintf("<b>%s</b>", message_buffer);
@@ -2399,7 +2435,7 @@ void show_messages_page(int refresh, int n_message)
          pline++;
 
       /* check for error */
-      if (strchr(line+26, '[') && strchr(line+25, ':'))
+      if (message_red(line+25))
          rsprintf("<span style=\"color:white;background-color:red\">%s</span>", line);
       else
          rsprintf("%s", line);
