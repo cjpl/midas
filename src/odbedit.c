@@ -6,6 +6,9 @@
   Contents:     Command-line interface to the MIDAS online data base.
 
   $Log$
+  Revision 1.61  2003/04/15 08:16:16  midas
+  Fixed bugs in ODB validationi
+
   Revision 1.60  2003/03/14 06:07:25  pierre
   - Add arg for cleanup
   - change data_str[50000] for print_key (Custom up to 50K)
@@ -254,7 +257,7 @@ void print_help(char *command)
     printf("  -r                      show database entries recursively\n");
     printf("  -p                      pause between screens\n");
     printf("make [analyzer name]    - create experim.h\n");
-    printf("mem                     - show memeory usage\n");
+    printf("mem [-v]                - show memeory usage [verbose]\n");
     printf("mkdir <subdir>          - make new <subdir>\n");
     printf("move <key> [top/bottom/[n]] - move key to position in keylist\n");
     printf("msg [type] [user] <msg> - compose user message\n");
@@ -2439,8 +2442,8 @@ PRINT_INFO      print_info;
         printf("This function works only locally\n");
       else
         {
-        db_show_mem(hDB, data, sizeof(data));
-        printf(data);
+        db_show_mem(hDB, data, sizeof(data), param[1][0]);
+        puts(data);
         }
       }
 

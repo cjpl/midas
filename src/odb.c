@@ -6,6 +6,9 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.57  2003/04/15 08:16:15  midas
+  Fixed bugs in ODB validationi
+
   Revision 1.56  2003/04/09 13:43:01  midas
   Made file compile under C++
 
@@ -553,15 +556,38 @@ static char *str = NULL;
 
 /*------------------------------------------------------------------*/
 
-INT db_show_mem(HNDLE hDB, char *result, INT buf_size)
+INT print_key_info(HNDLE hDB, HNDLE hKey, KEY *pkey, INT level, void *info)
+{
+int  i;
+char *p;
+
+  p = (char *)info;
+
+  sprintf(p+strlen(p), "%08X  %08X  %04X    ", hKey - sizeof(DATABASE_HEADER), 
+          pkey->data  - sizeof(DATABASE_HEADER), pkey->total_size);
+  
+  for (i=0 ; i<level ; i++)
+    sprintf(p+strlen(p), "  ");
+
+  sprintf(p+strlen(p), "%s\n", pkey->name);
+
+  return SUCCESS;
+}
+
+INT db_show_mem(HNDLE hDB, char *result, INT buf_size, BOOL verbose)
 {
 DATABASE_HEADER *pheader;
 INT total_size_key, total_size_data;
 FREE_DESCRIP *pfree;
 
+  db_lock_database(hDB);
+
   pheader = _database[hDB-1].database_header;
 
-  sprintf(result, "Keylist:\n");
+  sprintf(result, "Database header size is 0x%04X, all following values are offset by this!\nKey area  0x00000000 - 0x%08X\nData area 0x%08X - 0x%08X\n\n", 
+          sizeof(DATABASE_HEADER), pheader->key_size-1, pheader->key_size, pheader->key_size+pheader->data_size);
+
+  strcat(result, "Keylist:\n");
   strcat(result, "--------\n");
   total_size_key = 0;
   pfree = (FREE_DESCRIP *) ((char *) pheader + pheader->first_free_key);
@@ -569,7 +595,7 @@ FREE_DESCRIP *pfree;
   while ((PTYPE) pfree != (PTYPE) pheader)
     {
     total_size_key += pfree->size;
-    sprintf(result+strlen(result), "Free block at %8d, size %8d, next %8d\n",
+    sprintf(result+strlen(result), "Free block at 0x%08X, size 0x%08X, next 0x%08X\n",
       (PTYPE) pfree - (PTYPE) pheader - sizeof(DATABASE_HEADER),
       pfree->size,
       pfree->next_free ?
@@ -585,59 +611,79 @@ FREE_DESCRIP *pfree;
   while ((PTYPE) pfree != (PTYPE) pheader)
     {
     total_size_data += pfree->size;
-    sprintf(result+strlen(result), "Free block at %8d, size %8d, next %8d\n",
+    sprintf(result+strlen(result), "Free block at 0x%08X, size 0x%08X, next 0x%08X\n",
       (PTYPE) pfree - (PTYPE) pheader - sizeof(DATABASE_HEADER),
       pfree->size,
       pfree->next_free ?
       pfree->next_free - sizeof(DATABASE_HEADER) : 0);
     pfree = (FREE_DESCRIP *) ((char *) pheader + pfree->next_free);
     }
-  sprintf(result+strlen(result), "\nTotal size: %1d keylist, %1d data\n",
-          total_size_key, total_size_data);
+  sprintf(result+strlen(result), "\nTotal size: %1d (0x%08X) keylist, %1d (0x%08X) data\n",
+          total_size_key, total_size_key, total_size_data, total_size_data);
   sprintf(result+strlen(result), "\nFree: %1d (%1.1lf%%) keylist, %1d (%1.1lf%%) data\n",
           total_size_key,
           100 * (double) total_size_key / pheader->key_size,
           total_size_data,
           100 * (double) total_size_data / pheader->data_size);
 
+  if (verbose)
+    {
+    sprintf(result+strlen(result), "\n\n");
+    sprintf(result+strlen(result), "Key       Data      Size\n");
+    sprintf(result+strlen(result), "------------------------\n");
+    db_scan_tree(hDB, pheader->root_key, 0, print_key_info, result);
+    }
+
+  db_unlock_database(hDB);
+
   return DB_SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
 
-static int db_validate_key_offset(DATABASE_HEADER *pheader,int offset)
+static int db_validate_key_offset(DATABASE_HEADER *pheader, int offset)
+/* check if key offset lies in valid range */
 {
-  if (offset < 0) return 0;
-  if (offset > pheader->key_size) return 0;
+  if (offset != 0 && offset < (int)sizeof(DATABASE_HEADER)) 
+    return 0;
+  
+  if (offset > (int)sizeof(DATABASE_HEADER) + pheader->key_size) 
+    return 0;
+
   return 1;
 }
 
-static int db_validate_data_offset(DATABASE_HEADER *pheader,int offset)
+static int db_validate_data_offset(DATABASE_HEADER *pheader, int offset)
+/* check if data offset lies in valid range */
 {
-  if (offset < 0) return 0;
-  if (offset > pheader->key_size + pheader->data_size) return 0;
+  if (offset < (int)sizeof(DATABASE_HEADER)) 
+    return 0;
+
+  if (offset > (int)sizeof(DATABASE_HEADER) + pheader->key_size + pheader->data_size) 
+    return 0;
+
   return 1;
 }
 
-static int db_validate_key(DATABASE_HEADER *pheader,int level,const char* path,KEY* pkey)
+static int db_validate_key(DATABASE_HEADER *pheader, int level, const char *path, KEY *pkey)
 {
-  KEYLIST* pkeylist;
-  int i;
+KEYLIST *pkeylist;
+int i;
 
-  if (!db_validate_key_offset(pheader,pkey->data))
+  if (!db_validate_key_offset(pheader, pkey->data))
     {
-    cm_msg(MERROR, "db_validate_key","Warning: database is corrupted: entry [%s] has invalid data offset: %d",path,pkey->data);
+    cm_msg(MERROR, "db_validate_key", "Warning: database corruption, key \"%s\", data 0x%08X", 
+           path, pkey->data - sizeof(DATABASE_HEADER));
     return 0;
     }
 
   pkeylist = (KEYLIST *) ((char *) pheader + pkey->data);
 
-  /*fprintf(stderr,"Level: %d, path: [%s], num_keys: %d, first_key: %d\n",level,path,pkeylist->num_keys,pkeylist->first_key);*/
-
-  if (((pkeylist->num_keys!=0) && (pkeylist->first_key==0))
-      || (!db_validate_key_offset(pheader,pkeylist->first_key)))
+  if (pkeylist->num_keys !=0 && 
+      (pkeylist->first_key == 0 || !db_validate_key_offset(pheader, pkeylist->first_key)))
     {
-    cm_msg(MERROR, "db_validate_key","Warning: database is corrupted: entry [%s] has invalid first_key: %d",path,pkeylist->first_key);
+    cm_msg(MERROR, "db_validate_key","Warning: database corruption, key \"%s\", first_key 0x%08X", 
+           path, pkeylist->first_key - sizeof(DATABASE_HEADER));
     return 0;
     }
   
@@ -647,16 +693,17 @@ static int db_validate_key(DATABASE_HEADER *pheader,int level,const char* path,K
   for (i=0 ; i<pkeylist->num_keys ; i++)
     {
     char buf[1024];
-    sprintf(buf,"%s/%s",path,pkey->name);
+    sprintf(buf, "%s/%s", path,pkey->name);
 
-    if (!db_validate_key_offset(pheader,pkey->next_key))
+    if (!db_validate_key_offset(pheader, pkey->next_key))
       {
-      cm_msg(MERROR, "db_validate_key","Warning: database is corrupted: entry [%s] has invalid next_key: %d",buf,pkey->next_key);
+      cm_msg(MERROR, "db_validate_key","Warning: database corruption, key \"%s\", next_key 0x%08X", 
+             buf, pkey->next_key - sizeof(DATABASE_HEADER));
       return 0;
       }
 
     if (pkey->type == TID_KEY)
-      if (!db_validate_key(pheader,level+1,buf,pkey))
+      if (!db_validate_key(pheader, level+1, buf, pkey))
         return 0;
     
     pkey = (KEY *) ((char *) pheader + pkey->next_key);
@@ -667,31 +714,28 @@ static int db_validate_key(DATABASE_HEADER *pheader,int level,const char* path,K
 
 static int db_validate_db(DATABASE_HEADER *pheader)
 {
-  int total_size_key = 0;
-  int total_size_data = 0;
-  double ratio;
-  FREE_DESCRIP *pfree;
+int total_size_key = 0;
+int total_size_data = 0;
+double ratio;
+FREE_DESCRIP *pfree;
 
   /* validate the key free list */
 
-  if (!db_validate_key_offset(pheader,pheader->first_free_key))
+  if (!db_validate_key_offset(pheader, pheader->first_free_key))
     {
-    cm_msg(MERROR, "db_validate_db","Warning: database is corrupted: Invalid first_free_key: %d",pheader->first_free_key);
+    cm_msg(MERROR, "db_validate_db","Warning: database corruption, first_free_key 0x%08X",
+           pheader->first_free_key - sizeof(DATABASE_HEADER));
     return 0;
-    }
-
-  if (pheader->first_free_key == 0)
-    {
-    cm_msg(MERROR, "db_validate_db","Warning: database is corrupted: Invalid first_free_key: %d",pheader->first_free_key);
     }
 
   pfree = (FREE_DESCRIP *) ((char *) pheader + pheader->first_free_key);
 
   while ((PTYPE) pfree != (PTYPE) pheader)
     {
-    if (!db_validate_key_offset(pheader,pfree->next_free))
+    if (pfree->next_free != 0 && !db_validate_key_offset(pheader, pfree->next_free))
       {
-      cm_msg(MERROR, "db_validate_db","Warning: database is corrupted: Invalid next_free: %d",pfree->next_free);
+      cm_msg(MERROR, "db_validate_db","Warning: database corruption, next_free 0x%08X", 
+             pfree->next_free - sizeof(DATABASE_HEADER));
       return 0;
       }
 
@@ -699,35 +743,33 @@ static int db_validate_db(DATABASE_HEADER *pheader)
     pfree = (FREE_DESCRIP *) ((char *) pheader + pfree->next_free);
     }
 
-  if (total_size_key > pheader->key_size)
-    {
-    cm_msg(MERROR, "db_validate_db","Warning: database is corrupted: Key free list size %d is bigger than key area size %d",total_size_key,pheader->key_size);
-    }
-
   ratio = ((double)(pheader->key_size-total_size_key))/((double)pheader->key_size);
   if (ratio > 0.9)
-    cm_msg(MERROR, "db_validate_db","Warning: database key area is %.0f%% full",ratio*100.0);
+    cm_msg(MERROR, "db_validate_db","Warning: database key area is %.0f%% full", ratio*100.0);
 
-  /* validate the data free list */
-
-  if (!db_validate_data_offset(pheader,pheader->first_free_data))
+  if (total_size_key > pheader->key_size)
     {
-    cm_msg(MERROR, "db_validate_db","Warning: database is corrupted: Invalid first_free_data: %d",pheader->first_free_data);
+    cm_msg(MERROR, "db_validate_db", "Warning: database corruption, total_key_size 0x%08X", total_size_key);
     return 0;
     }
 
-  if (pheader->first_free_data == 0)
+  /* validate the data free list */
+
+  if (!db_validate_data_offset(pheader, pheader->first_free_data))
     {
-    cm_msg(MERROR, "db_validate_db","Warning: database is corrupted: Invalid first_free_data: %d",pheader->first_free_data);
+    cm_msg(MERROR, "db_validate_db","Warning: database corruption, first_free_data 0x%08X",
+           pheader->first_free_data - sizeof(DATABASE_HEADER));
+    return 0;
     }
 
   pfree = (FREE_DESCRIP *) ((char *) pheader + pheader->first_free_data);
 
   while ((PTYPE) pfree != (PTYPE) pheader)
     {
-    if (!db_validate_data_offset(pheader,pfree->next_free))
+    if (pfree->next_free != 0 && !db_validate_data_offset(pheader, pfree->next_free))
       {
-      cm_msg(MERROR, "db_validate_db","Warning: database is corrupted: Invalid next_free: %d",pfree->next_free);
+      cm_msg(MERROR, "db_validate_db","Warning: database corruption, next_free 0x%08X",
+             pfree->next_free - sizeof(DATABASE_HEADER));
       return 0;
       }
 
@@ -735,24 +777,26 @@ static int db_validate_db(DATABASE_HEADER *pheader)
     pfree = (FREE_DESCRIP *) ((char *) pheader + pfree->next_free);
     }
 
-  if (total_size_data > pheader->data_size)
-    {
-    cm_msg(MERROR, "db_validate_db","Warning: database is corrupted: Data free list size %d is bigger than data area size %d",total_size_key,pheader->data_size);
-    }
-
   ratio = ((double)(pheader->data_size-total_size_data))/((double)pheader->data_size);
   if (ratio > 0.9)
-    cm_msg(MERROR, "db_validate_db","Warning: database data area is %.0f%% full",ratio*100.0);
+    cm_msg(MERROR, "db_validate_db","Warning: database data area is %.0f%% full", ratio*100.0);
 
-  /* validate the tree of keys, starting from the root key */
-
-  if (!db_validate_key_offset(pheader,pheader->root_key))
+  if (total_size_data > pheader->data_size) 
     {
-    cm_msg(MERROR, "db_validate_db","Warning: database is corrupted: Invalid root_key: %d",pheader->root_key);
+    cm_msg(MERROR, "db_validate_db","Warning: database corruption, total_size_data 0x%08X", total_size_key);
     return 0;
     }
 
-  return db_validate_key(pheader,0,"",(KEY *) ((char *) pheader + pheader->root_key));
+  /* validate the tree of keys, starting from the root key */
+
+  if (!db_validate_key_offset(pheader, pheader->root_key))
+    {
+    cm_msg(MERROR, "db_validate_db","Warning: database corruption, root_key 0x%08X", 
+           pheader->root_key - sizeof(DATABASE_HEADER));
+    return 0;
+    }
+
+  return db_validate_key(pheader, 0, "", (KEY *) ((char *) pheader + pheader->root_key));
 }
 
 /*------------------------------------------------------------------*/
@@ -1068,20 +1112,14 @@ INT                  timeout;
   /* check ODB for corruption */
   if (!db_validate_db(pheader))
     {
-    /* do not warn about database corruption twice-
-       a warning is already reported by db_validate_db() before returning an error. */
-    if (0)
-      cm_msg(MERROR, "db_open_database", "Warning: database is corrupted");
-
     /* do not treat corrupted odb as a fatal error- allow the user
        to preceed at own risk- the database is already corrupted,
        so no further harm can possibly be made. */
-    if (0)
-      {
-      db_unlock_database(handle + 1);
-      *hDB = 0;
-      return DB_CORRUPTED;
-      }
+    /*
+    db_unlock_database(handle + 1);
+    *hDB = 0;
+    return DB_CORRUPTED;
+    */
     }
 
   db_unlock_database(handle + 1);
@@ -1662,9 +1700,10 @@ INT              i;
 
     for (i=0 ; i<pkeylist->num_keys ; i++)
       {
-      if (!db_validate_key_offset(pheader,pkey->next_key))
+      if (!db_validate_key_offset(pheader, pkey->next_key))
         {
-        cm_msg(MERROR, "db_create_key", "Warning: found database corruption while adding %s",key_name);
+        cm_msg(MERROR, "db_create_key", "Warning: database corruption, key %s, next_key 0x%08X", 
+               key_name, pkey->next_key - sizeof(DATABASE_HEADER));
         db_unlock_database(hDB);
         return DB_CORRUPTED;
         }
@@ -2209,9 +2248,10 @@ INT              i, status;
 
     for (i=0 ; i<pkeylist->num_keys ; i++)
       {
-      if ((pkey->name[0]==0)||(!db_validate_key_offset(pheader,pkey->next_key)))
+      if (pkey->name[0] == 0 || !db_validate_key_offset(pheader, pkey->next_key))
         {
-        cm_msg(MERROR, "db_find_key", "Warning: found database corruption while looking for %s",key_name);
+        cm_msg(MERROR, "db_find_key", "Warning: database corruption, key %s, next_key 0x%08X", 
+               key_name, pkey->next_key - sizeof(DATABASE_HEADER));
         *subhKey = 0;
         db_unlock_database(hDB);
         return DB_CORRUPTED;
@@ -2549,9 +2589,10 @@ INT              i;
 
     for (i=0 ; i<pkeylist->num_keys ; i++)
       {
-      if (!db_validate_key_offset(pheader,pkey->next_key))
+      if (!db_validate_key_offset(pheader, pkey->next_key))
         {
-        cm_msg(MERROR, "db_find_link", "Warning: found database corruption while looking for %s",key_name);
+        cm_msg(MERROR, "db_find_link", "Warning: database corruption, key \"%s\", next_key 0x%08X", 
+               key_name, pkey->next_key - sizeof(DATABASE_HEADER));
         *subhKey = 0;
         db_unlock_database(hDB);
         return DB_CORRUPTED;
@@ -2712,7 +2753,8 @@ INT              i;
       {
       if (!db_validate_key_offset(pheader,pkey->next_key))
         {
-        cm_msg(MERROR, "db_find_link1", "Warning: found database corruption while looking for %s",key_name);
+        cm_msg(MERROR, "db_find_link1", "Warning: database corruption, key \"%s\", next_key 0x%08X", 
+               key_name, pkey->next_key - sizeof(DATABASE_HEADER));
         *subhKey = 0;
         return DB_CORRUPTED;
         }
