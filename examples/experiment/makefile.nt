@@ -46,8 +46,8 @@ frontend.exe:  $(LIBRARY) $(LIB_DIR)\mfe.obj frontend.c $(DRV_DIR)\bus\camacnul.
 
 analyzer.exe: $(LIBRARY) $(LIB_DIR)\mana.obj analyzer.obj $(MODULES)
 	$(CC) /Feanalyzer.exe $(LIB_DIR)\mana.obj analyzer.obj \
-	$(MODULES) $(CERNLIB_DIR)\packlib.lib $(ZLIB_DIR)\zlib.lib \
-	$(LIBRARY) $(LIBS) wsock32.lib /link "/nodefaultlib:libc.lib"
+	$(MODULES) packlib.lib $(ZLIB_DIR)\zlib.lib \
+	$(LIBRARY) $(LIBS) wsock32.lib /link /libpath:"$(CERNLIB_DIR)"
 
 .c.obj:
 	$(CC) $(CFLAGS) /c $<
