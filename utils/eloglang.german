@@ -67,6 +67,10 @@ If no attachments are resubmitted, the original ones are kept = Falls keine neue
 To delete an old attachment, enter <code>&lt;delete&gt;</code> in the new attachment field = Um einen alten Anhang zu löschen, bitte <code>&lt;entfernen&gt;</code> eingeban
 <delete> = <entfernen>
 Attachment = Anhang
+Attachments = Anhänge
+No message available = Kein Entrag vorhanden
+Reply to this = Antwort hierzu
+In reply to = Als Antwort auf
 
 #
 # Submit entry
@@ -85,6 +89,7 @@ New attachment = Neuer Anhang
 #
 # Find display
 #
+ELOG search result = ELOG Suchergebnis
 ELOG find = ELOG suchen
 Find = Finden
 Search = Suchen
