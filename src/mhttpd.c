@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.210  2002/05/14 06:33:36  midas
+  Display link destination on ODB pages
+
   Revision 1.209  2002/05/14 04:24:04  midas
   Fixed small bug on history config page
 
@@ -5626,7 +5629,7 @@ void show_odb_page(char *enc_path, char *dec_path)
 {
 int    i, j, size, status;
 char   str[256], tmp_path[256], url_path[256],
-       data_str[10000], hex_str[256], ref[256], keyname[32];
+       data_str[10000], hex_str[256], ref[256], keyname[32], link_name[256];
 char   *p, *pd;
 char   data[10000];
 HNDLE  hDB, hkey, hkeyroot;
@@ -5754,8 +5757,11 @@ KEY    key;
     strcpy(keyname, key.name);
 
     /* resolve links */
+    link_name[0] = 0;
     if (key.type == TID_LINK)
       {
+      size = sizeof(link_name);
+      db_get_data(hDB, hkey, link_name, &size, TID_LINK);
       db_enum_key(hDB, hkeyroot, i, &hkey);
       db_get_key(hDB, hkey, &key);
       }
@@ -5796,14 +5802,22 @@ KEY    key;
           sprintf(ref, "/%s?cmd=Set", str);
 
         if (strcmp(data_str, hex_str) != 0 && hex_str[0])
-          rsprintf("<tr><td bgcolor=#FFFF00>%s<td><a href=\"%s\">%s (%s)</a><br></tr>\n",
-                    keyname, ref, data_str, hex_str);
+          {
+          if (link_name[0])
+            rsprintf("<tr><td bgcolor=#FFFF00>%s <i>-> %s</i><td><a href=\"%s\">%s (%s)</a><br></tr>\n",
+                      keyname, link_name, ref, data_str, hex_str);
+          else
+            rsprintf("<tr><td bgcolor=#FFFF00>%s<td><a href=\"%s\">%s (%s)</a><br></tr>\n",
+                      keyname, ref, data_str, hex_str);
+          }
         else
           {
           if (strchr(data_str, '\n'))
             {
-            rsprintf("<tr><td bgcolor=#FFFF00>%s<td>",
-                      keyname);
+            if (link_name[0])
+              rsprintf("<tr><td bgcolor=#FFFF00>%s <i>-> %s</i><td>", keyname, link_name);
+            else
+              rsprintf("<tr><td bgcolor=#FFFF00>%s<td>", keyname);
             rsprintf("\n<pre>");
             strencode3(data_str);
             rsprintf("</pre>");
@@ -5811,8 +5825,12 @@ KEY    key;
             }
           else
             {
-            rsprintf("<tr><td bgcolor=#FFFF00>%s<td><a href=\"%s\">",
-                      keyname, ref);
+            if (link_name[0])
+              rsprintf("<tr><td bgcolor=#FFFF00>%s <i>-> %s</i><td><a href=\"%s\">",
+                        keyname, link_name, ref);
+            else
+              rsprintf("<tr><td bgcolor=#FFFF00>%s<td><a href=\"%s\">",
+                        keyname, ref);
             strencode(data_str);
             rsprintf("</a><br></tr>\n");
             }
@@ -5826,7 +5844,10 @@ KEY    key;
         else
           {
           /* display first value */
-          rsprintf("<tr><td  bgcolor=#FFFF00 rowspan=%d>%s\n", key.num_values, keyname);
+          if (link_name[0])
+            rsprintf("<tr><td  bgcolor=#FFFF00 rowspan=%d>%s<br><i>-> %s</i>\n", key.num_values, keyname, link_name);
+          else
+            rsprintf("<tr><td  bgcolor=#FFFF00 rowspan=%d>%s\n", key.num_values, keyname);
 
           for (j=0 ; j<key.num_values ; j++)
             {
