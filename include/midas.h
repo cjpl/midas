@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.6  1998/10/23 14:35:16  midas
+  Added version comment
+
   Revision 1.5  1998/10/23 14:21:35  midas
   - Modified version scheme from 1.06 to 1.6.0
   - cm_get_version() now returns versino as string
@@ -38,7 +41,8 @@
 
 /* MIDAS library version number. This value is returned by 
    cm_get_version and will be incremented whenever changes are done
-   to the MIDAS library */
+   to the MIDAS library. First digit is major release, second
+   digit is minor release, third digit is patch level */
 
 #define MIDAS_VERSION "1.6.0"
 
