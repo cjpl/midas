@@ -6,6 +6,9 @@
   Contents:     Header fiel for MSCB funcions
 
   $Log$
+  Revision 1.9  2002/10/07 15:16:32  midas
+  Added upgrade facility
+
   Revision 1.8  2002/10/03 15:30:40  midas
   Added linux support
 
@@ -52,7 +55,7 @@
 
 #define CMD_FREEZE      0x41
 #define CMD_SYNC        0x49
-#define CMD_TRANSP      0x50
+#define CMD_UPGRADE     0x50
 #define CMD_USER        0x58
 
 #define CMD_TOKEN       0x60
@@ -129,6 +132,7 @@ typedef struct {
 #define MSCB_TIMEOUT       3
 #define MSCB_INVAL_PARAM   4
 #define MSCB_MUTEX         5
+#define MSCB_FILE_ERROR    6
 
 /*---- function declarations ---------------------------------------*/
 
@@ -157,7 +161,8 @@ int EXPRT mscb_set_addr(int fd, int node, int group);
 int EXPRT mscb_write(int fd, unsigned char channel, unsigned int data, int size);
 int EXPRT mscb_write_na(int fd, unsigned char channel, unsigned int data, int size);
 int EXPRT mscb_write_conf(int fd, unsigned char channel, unsigned int data, int size);
-int EXPRT mscb_flash();
+int EXPRT mscb_flash(int fd);
+int EXPRT mscb_upload(int fd, char *filename);
 int EXPRT mscb_read(int fd, unsigned char channel, unsigned int *data);
 int EXPRT mscb_read_conf(int fd, unsigned char channel, unsigned int *data);
 int EXPRT mscb_user(int fd, void *param, int size, void *result, int *rsize);
