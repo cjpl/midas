@@ -6,6 +6,9 @@
 #  Contents:     Makefile for MIDAS binaries and examples under unix
 #
 #  $Log$
+#  Revision 1.67  2005/03/24 22:01:27  ritt
+#  Added mxml
+#
 #  Revision 1.66  2005/02/22 09:20:55  ritt
 #  Moved _LARGEFILE64_SOURCE into linux section
 #
@@ -441,7 +444,8 @@ ANALYZER += $(LIB_DIR)/rmana.o
 endif
 
 OBJS =  $(LIB_DIR)/midas.o $(LIB_DIR)/system.o $(LIB_DIR)/mrpc.o \
-	$(LIB_DIR)/odb.o $(LIB_DIR)/ybos.o $(LIB_DIR)/ftplib.o
+	$(LIB_DIR)/odb.o $(LIB_DIR)/ybos.o $(LIB_DIR)/ftplib.o \
+	$(LIB_DIR)/mxml.o
 
 LIBNAME=$(LIB_DIR)/libmidas.a
 LIB    =$(LIBNAME)
@@ -583,12 +587,16 @@ endif
 $(LIB_DIR)/%.o:$(SRC_DIR)/%.c
 	$(CC) -c $(CFLAGS) $(OSFLAGS) -o $@ $<
 
+$(LIB_DIR)/mxml.o:$(SRC_DIR)/mxml.c
+	$(CC) -c $(CFLAGS) -DHAVE_STRLCPY $(OSFLAGS) -o $@ $<
+
 $(LIB_DIR)/midas.o: msystem.h midas.h midasinc.h mrpc.h
 $(LIB_DIR)/system.o: msystem.h midas.h midasinc.h mrpc.h
 $(LIB_DIR)/mrpc.o: msystem.h midas.h mrpc.h
 $(LIB_DIR)/odb.o: msystem.h midas.h midasinc.h mrpc.h
 $(LIB_DIR)/ybos.o: msystem.h midas.h midasinc.h mrpc.h
 $(LIB_DIR)/ftplib.o: msystem.h midas.h midasinc.h
+$(LIB_DIR)/mxml.o: msystem.h midas.h midasinc.h mxml.h
 
 #
 # utilities
