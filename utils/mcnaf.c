@@ -6,6 +6,9 @@
   Contents:     CAMAC utility
   
   $Log$
+  Revision 1.6  1998/11/05 21:25:29  pierre
+  -PAA- Fix Hex data input and exit request
+
   Revision 1.5  1998/10/23 14:21:51  midas
   - Modified version scheme from 1.06 to 1.6.0
   - cm_get_version() now returns versino as string
@@ -262,7 +265,8 @@ void cnafsub()
 /*--------------------------------------------------------------------*/
 INT decode_line (CAMAC *P, char * ss)
 {
-	char * c, * cmd;
+	char empty[16]={"                "};
+  char * c, * cmd;
 	char pp[128], *p, *s, *ps;
   DWORD  tmp;
   BOOL   ok=FALSE;
@@ -306,8 +310,6 @@ INT decode_line (CAMAC *P, char * ss)
 		return LOOP;
 	if (cmd = strpbrk(p,"H"))
     return HELP;
-	if (cmd = strpbrk(p,"QE"))
-		return QUIT;
 	if (cmd = strpbrk(p,"J"))
     return JOB;
 	if (cmd = strpbrk(p,"D"))
@@ -336,6 +338,7 @@ INT decode_line (CAMAC *P, char * ss)
         else
           printf("mcnaf-E- Data out of range 0:65535\n");
       }
+    strncpy(cmd,empty,strlen(cmd));
 		*ps = ' '; 
 	}
 	if (cmd = strpbrk(p,"X"))
@@ -364,6 +367,7 @@ INT decode_line (CAMAC *P, char * ss)
         else
           printf("mcnaf-E- Data out of range 0x0:0xffff\n");
       }
+    strncpy(cmd,empty,strlen(cmd));
 		*ps = ' '; 
 	}
 	if (cmd = strpbrk(p,"O"))
@@ -392,6 +396,7 @@ INT decode_line (CAMAC *P, char * ss)
         else
           printf("mcnaf-E- Data out of range O0:O177777\n");
       }
+    strncpy(cmd,empty,strlen(cmd));
     *ps = ' '; 
 	}
   if (cmd = strchr(p,'B'))
@@ -503,6 +508,8 @@ INT decode_line (CAMAC *P, char * ss)
 	}
   if (ok)
     return LOOP;
+	if (cmd = strpbrk(p,"QE"))
+		return QUIT;
 	return SKIP;
 }
 
@@ -517,7 +524,7 @@ void help_page()
   printf(" Inputs : Bx :  Branch   [0 -  7]    Cx :  Crate    [0 -  7]\n");
   printf("          Nx :  Slot     [1 - 31]    Ax :  SubAdd.  [0 - 15]\n");
   printf("          Fx :  Function [0 - 31]    Mx :  Access mode [16,24]\n");
-  printf("           H :  HELP on   CNAF      Q/E :  Quit/Exit from CNAF\n");
+  printf("           H :  HELP on   CNAF       E/Q:  Exit/Quit from CNAF\n");
   printf("          Rx :  Repetition counter               [1 -   999]\n");
   printf("          Wx :  Delay between command (ms)       [0 - 10000]\n");
   printf("           J :  Perform JOB (command list from file )\n");
