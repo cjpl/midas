@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus communication functions
 
   $Log$
+  Revision 1.37  2003/05/12 10:41:38  midas
+  Fixed compiler warnings
+
   Revision 1.36  2003/05/12 10:30:45  midas
   Fixed name collisions with midas library
 
@@ -461,6 +464,7 @@ unsigned char pp_rdata(int fd)
 #ifdef _MSC_VER
   return _inp((unsigned short)mscb_fd[fd-1].fd);
 #else
+  unsigned char data;
   if (ioctl(mscb_fd[fd-1].fd, PPRDATA, &data))
     perror("PPRDATA");
   return data;
@@ -2306,9 +2310,9 @@ MSCB_INFO_VAR info;
     {
     /* add new entry in cache */
     if (n_cache == 0)
-      cache = malloc(sizeof(CACHE_ENTRY));
+      cache = (CACHE_ENTRY *)malloc(sizeof(CACHE_ENTRY));
     else
-      cache = realloc(cache, sizeof(CACHE_ENTRY)*(n_cache+1));
+      cache = (CACHE_ENTRY *)realloc(cache, sizeof(CACHE_ENTRY)*(n_cache+1));
 
     if (cache == NULL)
       return MSCB_NO_MEM;
