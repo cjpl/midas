@@ -8,6 +8,9 @@
                 following the MIDAS CAMAC Standard under DIRECTIO
 
   $Log$
+  Revision 1.24  2004/04/20 13:27:22  midas
+  Fixed bug with PCI interface
+
   Revision 1.23  2004/01/08 08:40:08  midas
   Implemented standard indentation
 
@@ -1061,6 +1064,7 @@ INLINE int cam_init(void)
       if (directio_give_port(io_base[n_dev], io_base[n_dev] + 4 * 0x10) < 0) {
          signal(SIGSEGV, SIG_DFL);
          return 0;
+      } else {
          n_dev++;
          break;                 // currently only supports one PCI interface
       }
