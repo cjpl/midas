@@ -6,6 +6,9 @@
   Contents:     Command-line interface for the Midas Slow Control Bus
 
   $Log$
+  Revision 1.46  2003/09/30 08:03:41  midas
+  Implemented multiple RPC connections
+
   Revision 1.45  2003/09/23 09:25:05  midas
   Improved error display
 
@@ -429,6 +432,7 @@ MSCB_INFO_VAR info_var;
         printf("group%d> ", current_group);
       else
         printf("> ");
+      line[0] = 0;
       fgets(line, sizeof(line), stdin);
       }
     else if (cmd[0] != '@')
