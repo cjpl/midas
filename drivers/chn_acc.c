@@ -6,6 +6,9 @@
   Contents:     Epics channel access device driver
 
   $Log$
+  Revision 1.5  1999/09/22 12:53:04  midas
+  Removed sizeof(chid) by sizeof(struct channel_in_use)
+
   Revision 1.4  1999/09/22 12:13:42  midas
   Fixed compiler warning
 
@@ -45,7 +48,6 @@ typedef struct {
   chid          *pv_handles;
   float         *array;
   INT           num_channels;
-  evid          *pevid;
 } CA_INFO;
 
 
@@ -97,11 +99,11 @@ CA_INFO   *info;
 
   /* allocate arrays */
   info->array = calloc(channels, sizeof(float));
-  info->pevid = calloc(channels, sizeof(evid));
 
   /* search channels */
   info->num_channels = channels;
-  info->pv_handles = malloc(channels*sizeof(chid));
+  info->pv_handles = malloc(channels*sizeof(struct channel_in_use));
+
   for (i=0 ; i<channels ; i++)
     {
   	status = ca_search(info->channel_names+CHN_NAME_LENGTH*i, &info->pv_handles[i]);
@@ -125,7 +127,7 @@ CA_INFO   *info;
       continue;
 
   	status = ca_add_event(DBR_FLOAT, info->pv_handles[i], chn_acc_callback, 
-                          info, &info->pevid[i]);
+                          info, NULL);
       
     if (!(status & CA_M_SUCCESS))
       cm_msg(MERROR, "chn_acc_init", "cannot add event to channel %s", info->channel_names+CHN_NAME_LENGTH*i);
@@ -148,8 +150,6 @@ INT chn_acc_exit(CA_INFO *info)
 {
   if (info->array)
     free(info->array);
-  if (info->pevid)
-    free(info->pevid);
   if (info->channel_names)
     free(info->channel_names);
 
