@@ -3,6 +3,7 @@
 	ProjectType="Visual C++"
 	Version="7.10"
 	Name="calib_520"
+	ProjectGUID="{55EBC0C7-2374-41CA-98CC-974B391937B6}"
 	SccProjectName=""
 	SccLocalPath="">
 	<Platforms>
@@ -97,7 +98,7 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="wsock32.lib"
 				OutputFile="c:\midas\nt\bin\calib_520.exe"
-				LinkIncremental="2"
+				LinkIncremental="1"
 				SuppressStartupBanner="TRUE"
 				GenerateDebugInformation="TRUE"
 				ProgramDatabaseFile=".\Debug/calib_520.pdb"
