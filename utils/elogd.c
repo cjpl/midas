@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.11  2001/06/19 10:55:40  midas
+  Variable number of attachments, revised attachment editing
+
   Revision 1.10  2001/06/15 09:13:30  midas
   Display "<" and ">" correctly
 
@@ -99,20 +102,22 @@ int  return_length;
 char elogd_url[256];
 char loogbook[32];
 char logbook[32];
+char logbook_enc[40];
 char data_dir[256];
 char cfg_file[256];
 
-#define MAX_GROUPS    32
-#define MAX_PARAM    100
-#define VALUE_SIZE   256
-#define PARAM_LENGTH 256
-#define TEXT_SIZE   4096
+#define MAX_GROUPS      32
+#define MAX_PARAM      100
+#define MAX_ATTACHMENTS  5
+#define VALUE_SIZE     256
+#define PARAM_LENGTH   256
+#define TEXT_SIZE    50000
 
 char _param[MAX_PARAM][PARAM_LENGTH];
 char _value[MAX_PARAM][VALUE_SIZE];
 char _text[TEXT_SIZE];
-char *_attachment_buffer[3];
-INT  _attachment_size[3];
+char *_attachment_buffer[MAX_ATTACHMENTS];
+INT  _attachment_size[MAX_ATTACHMENTS];
 struct in_addr remote_addr;
 INT  _sock;
 BOOL verbose;
@@ -791,9 +796,9 @@ char   str[256], file_name[256], dir[256];
 
 INT el_submit(int run, char *author, char *type, char *category, char *subject,
               char *text, char *reply_to, char *encoding,
-              char *afilename1, char *buffer1, INT buffer_size1,
-              char *afilename2, char *buffer2, INT buffer_size2,
-              char *afilename3, char *buffer3, INT buffer_size3,
+              char afilename[MAX_ATTACHMENTS][256],
+              char *buffer[MAX_ATTACHMENTS], 
+              INT buffer_size[MAX_ATTACHMENTS],
               char *tag, INT tag_size)
 /********************************************************************\
 
@@ -811,9 +816,9 @@ INT el_submit(int run, char *author, char *type, char *category, char *subject,
     char   *reply_to        In reply to this message
     char   *encoding        Text encoding, either HTML or plain
 
-    char   *afilename1/2/3  File name of attachment
-    char   *buffer1/2/3     File contents
-    INT    *buffer_size1/2/3 Size of buffer in bytes
+    char   *afilename[]     File name of attachments
+    char   *buffer[]        Attachment contents
+    INT    *buffer_size[]   Size of attachment in bytes
     char   *tag             If given, edit existing message
     INT    *tag_size        Maximum size of tag
 
@@ -826,12 +831,12 @@ INT el_submit(int run, char *author, char *type, char *category, char *subject,
 
 \********************************************************************/
 {
-INT     n, size, fh, status, run_number, buffer_size, index, offset, tail_size;
+INT     n, i, size, fh, status, run_number, index, offset, tail_size;
 struct  tm *tms;
-char    afilename[256], file_name[256], afile_name[3][256], dir[256], str[256],
+char    file_name[256], afile_name[MAX_ATTACHMENTS][256], dir[256], str[256],
         start_str[80], end_str[80], last[80], date[80], thread[80], attachment[256];
 time_t  now;
-char    message[10000], *p, *buffer;
+char    message[TEXT_SIZE+100], *p;
 BOOL    bedit;
 
   bedit = (tag[0] != 0);
@@ -839,75 +844,59 @@ BOOL    bedit;
   /* ignore run number */
   run_number = 0;
 
-  for (index = 0 ; index < 3 ; index++)
+  for (index = 0 ; index < MAX_ATTACHMENTS ; index++)
     {
     /* generate filename for attachment */
     afile_name[index][0] = file_name[0] = 0;
 
-    if (index == 0)
+    if (equal_ustring(afilename[index], "<delete>"))
       {
-      strcpy(afilename, afilename1);
-      buffer = buffer1;
-      buffer_size = buffer_size1;
+      strcpy(afile_name[index], "<delete>");
       }
-    else if (index == 1)
+    else
       {
-      strcpy(afilename, afilename2);
-      buffer = buffer2;
-      buffer_size = buffer_size2;
-      }
-    else if (index == 2)
-      {
-      strcpy(afilename, afilename3);
-      buffer = buffer3;
-      buffer_size = buffer_size3;
-      }
-
-    if (afilename[0])
-      {
-      strcpy(file_name, afilename);
-      p = file_name;
-      while (strchr(p, ':'))
-        p = strchr(p, ':')+1;
-      while (strchr(p, '\\'))
-        p = strchr(p, '\\')+1; /* NT */
-      while (strchr(p, '/'))
-        p = strchr(p, '/')+1;  /* Unix */
-      while (strchr(p, ']'))
-        p = strchr(p, ']')+1;  /* VMS */
-
-      /* assemble ELog filename */
-      if (p[0])
+      if (afilename[index][0])
         {
-        strcpy(dir, data_dir);
+        /* strip directory, add date and time to filename */
+  
+        strcpy(file_name, afilename[index]);
+        p = file_name;
+        while (strchr(p, ':'))
+          p = strchr(p, ':')+1;
+        while (strchr(p, '\\'))
+          p = strchr(p, '\\')+1; /* NT */
+        while (strchr(p, '/'))
+          p = strchr(p, '/')+1;  /* Unix */
 
-#if !defined(OS_VXWORKS)
-#if !defined(OS_VMS)
-        tzset();
-#endif
-#endif
-
-        time(&now);
-        tms = localtime(&now);
-
-        strcpy(str, p);
-        sprintf(afile_name[index], "%02d%02d%02d_%02d%02d%02d_%s",
-                tms->tm_year % 100, tms->tm_mon+1, tms->tm_mday,
-                tms->tm_hour, tms->tm_min, tms->tm_sec, str);
-        sprintf(file_name, "%s%02d%02d%02d_%02d%02d%02d_%s", dir,
-                tms->tm_year % 100, tms->tm_mon+1, tms->tm_mday,
-                tms->tm_hour, tms->tm_min, tms->tm_sec, str);
-
-        /* save attachment */
-        fh = open(file_name, O_CREAT | O_RDWR | O_BINARY, 0644);
-        if (fh < 0)
+        /* assemble ELog filename */
+        if (p[0])
           {
-          printf("Cannot write attachment file \"%s\"", file_name);
-          }
-        else
-          {
-          write(fh, buffer, buffer_size);
-          close(fh);
+          strcpy(dir, data_dir);
+
+          tzset();
+
+          time(&now);
+          tms = localtime(&now);
+
+          strcpy(str, p);
+          sprintf(afile_name[index], "%02d%02d%02d_%02d%02d%02d_%s",
+                  tms->tm_year % 100, tms->tm_mon+1, tms->tm_mday,
+                  tms->tm_hour, tms->tm_min, tms->tm_sec, str);
+          sprintf(file_name, "%s%02d%02d%02d_%02d%02d%02d_%s", dir,
+                  tms->tm_year % 100, tms->tm_mon+1, tms->tm_mday,
+                  tms->tm_hour, tms->tm_min, tms->tm_sec, str);
+
+          /* save attachment */
+          fh = open(file_name, O_CREAT | O_RDWR | O_BINARY, 0644);
+          if (fh < 0)
+            {
+            printf("Cannot write attachment file \"%s\"", file_name);
+            }
+          else
+            {
+            write(fh, buffer[index], buffer_size[index]);
+            close(fh);
+            }
           }
         }
       }
@@ -916,11 +905,7 @@ BOOL    bedit;
   /* generate new file name YYMMDD.log in data directory */
   strcpy(dir, data_dir);
 
-#if !defined(OS_VXWORKS)
-#if !defined(OS_VMS)
   tzset();
-#endif
-#endif
 
   if (bedit)
     {
@@ -998,16 +983,55 @@ BOOL    bedit;
   sprintf(message+strlen(message), "Subject: %s\n", subject);
 
   /* keep original attachment if edit and no new attachment */
-  if (bedit && afile_name[0][0] == 0 && afile_name[1][0] == 0 &&
-                afile_name[2][0] == 0)
-    sprintf(message+strlen(message), "Attachment: %s", attachment);
+
+  if (bedit)
+    {
+    for (i=n=0 ; i<MAX_ATTACHMENTS ; i++)
+      {
+      if (i == 0)
+        p = strtok(attachment, ",");
+      else
+        p = strtok(NULL, ",");
+
+      if (p && (afile_name[i][0] || equal_ustring(afile_name[i], "<delete>")))
+        {
+        /* delete old attachment */
+        strcpy(str, data_dir);
+        strcat(str, p);
+        remove(str);
+        p = NULL;
+        }
+
+      if (afile_name[i][0] && !equal_ustring(afile_name[i], "<delete>"))
+        {
+        if (n == 0)
+          {
+          sprintf(message+strlen(message), "Attachment: %s", afile_name[i]);
+          n++;
+          }
+        else
+          sprintf(message+strlen(message), ",%s", afile_name[i]);
+        }
+
+      if (!afile_name[i][0] && p && !equal_ustring(afile_name[i], "<delete>"))
+        {
+        if (n == 0)
+          {
+          sprintf(message+strlen(message), "Attachment: %s", p);
+          n++;
+          }
+        else
+          sprintf(message+strlen(message), ",%s", p);
+        }
+
+      }
+    }
   else
     {
     sprintf(message+strlen(message), "Attachment: %s", afile_name[0]);
-    if (afile_name[1][0])
-      sprintf(message+strlen(message), ",%s", afile_name[1]);
-    if (afile_name[2][0])
-      sprintf(message+strlen(message), ",%s", afile_name[2]);
+    for (i=1 ; i<MAX_ATTACHMENTS ; i++)
+      if (afile_name[i][0])
+        sprintf(message+strlen(message), ",%s", afile_name[i]);
     }
   sprintf(message+strlen(message), "\n");
 
@@ -1094,7 +1118,7 @@ BOOL    bedit;
 INT el_retrieve(char *tag, char *date, int *run, char *author, char *type,
                 char *category, char *subject, char *text, int *textsize,
                 char *orig_tag, char *reply_tag,
-                char *attachment1, char *attachment2, char *attachment3,
+                char attachment[MAX_ATTACHMENTS][256],
                 char *encoding)
 /********************************************************************\
 
@@ -1117,7 +1141,7 @@ INT el_retrieve(char *tag, char *date, int *run, char *author, char *type,
     char   *text            Message text
     char   *orig_tag        Original message if this one is a reply
     char   *reply_tag       Reply for current message
-    char   *attachment1/2/3 File attachment
+    char   *attachment[]    File attachments
     char   *encoding        Encoding of message
     int    *size            Actual message text size
 
@@ -1127,9 +1151,9 @@ INT el_retrieve(char *tag, char *date, int *run, char *author, char *type,
 
 \********************************************************************/
 {
-int     size, fh, offset, search_status;
+int     i, size, fh, offset, search_status;
 char    str[256], *p;
-char    message[10000], thread[256], attachment_all[256];
+char    message[TEXT_SIZE+100], thread[256], attachment_all[256];
 
   if (tag[0])
     {
@@ -1150,8 +1174,10 @@ char    message[10000], thread[256], attachment_all[256];
   offset = TELL(fh);
   read(fh, str, 16);
   size = atoi(str+9);
-  read(fh, message, size);
 
+  /* read message */
+  memset(message, 0, sizeof(message));
+  read(fh, message, size);
   close(fh);
 
   /* decode message */
@@ -1168,18 +1194,20 @@ char    message[10000], thread[256], attachment_all[256];
   el_decode(message, "Encoding: ", encoding);
 
   /* break apart attachements */
-  if (attachment1 && attachment2 && attachment3)
+  for (i=0 ; i<MAX_ATTACHMENTS ; i++)
     {
-    attachment1[0] = attachment2[0] = attachment3[0] = 0;
-    p = strtok(attachment_all, ",");
-    if (p != NULL)
-      strcpy(attachment1, p);
-    p = strtok(NULL, ",");
-    if (p != NULL)
-      strcpy(attachment2, p);
-    p = strtok(NULL, ",");
-    if (p != NULL)
-      strcpy(attachment3, p);
+    if (attachment[i] != NULL)
+      {
+      attachment[i][0] = 0;
+
+      if (i == 0)
+        p = strtok(attachment_all, ",");
+      else
+        p = strtok(NULL, ",");
+
+      if (p != NULL)
+        strcpy(attachment[i], p);
+      }
     }
 
   /* conver thread in reply-to and reply-from */
@@ -1280,7 +1308,7 @@ char    tag[256];
 
     el_retrieve(tag, NULL, &actual_run, NULL, NULL,
                 NULL, NULL, NULL, NULL, NULL, NULL,
-                NULL, NULL, NULL, NULL);
+                NULL, NULL);
     } while (actual_run >= run);
 
   while (actual_run < run)
@@ -1295,7 +1323,7 @@ char    tag[256];
 
     el_retrieve(tag, NULL, &actual_run, NULL, NULL,
                 NULL, NULL, NULL, NULL, NULL, NULL,
-                NULL, NULL, NULL, NULL);
+                NULL, NULL);
     }
 
   strcpy(return_tag, tag);
@@ -1311,7 +1339,7 @@ char    tag[256];
 INT el_delete_message(char *tag)
 /********************************************************************\
 
-  Routine: el_submit
+  Routine: el_delete_message
 
   Purpose: Submit an ELog entry
 
@@ -1326,9 +1354,28 @@ INT el_delete_message(char *tag)
 
 \********************************************************************/
 {
-INT     n, size, fh, offset, tail_size;
-char    dir[256], str[256], file_name[256];
-char    *buffer;
+INT  i, n, size, fh, offset, tail_size, run, status;
+char dir[256], str[256], file_name[256];
+char *buffer;
+char date[80], author[80], type[80], category[80], subject[256], text[TEXT_SIZE], 
+     orig_tag[80], reply_tag[80], attachment[MAX_ATTACHMENTS][256], encoding[80];
+
+  /* get attachments */
+  size = sizeof(text);
+  status = el_retrieve(tag, date, &run, author, type, category, subject, 
+                       text, &size, orig_tag, reply_tag, 
+                       attachment,
+                       encoding);
+  if (status != SUCCESS)
+    return EL_FILE_ERROR;
+
+  for (i=0 ; i<MAX_ATTACHMENTS ; i++)
+    if (attachment[i][0])
+      {
+      strcpy(str, data_dir);
+      strcat(str, attachment[i]);
+      remove(str);
+      }
 
   /* generate file name YYMMDD.log in data directory */
   strcpy(dir, data_dir);
@@ -1340,7 +1387,7 @@ char    *buffer;
     *strchr(str, '.') = 0;
     }
   sprintf(file_name, "%s%s.log", dir, str);
-  fh = open(file_name, O_CREAT | O_RDWR | O_BINARY, 0644);
+  fh = open(file_name, O_RDWR | O_BINARY, 0644);
   if (fh < 0)
     return EL_FILE_ERROR;
   lseek(fh, offset, SEEK_SET);
@@ -1531,7 +1578,7 @@ int i;
 
 /*------------------------------------------------------------------*/
 
-void urlDecode(char *p) 
+void url_decode(char *p) 
 /********************************************************************\
    Decode the given string in-place by expanding %XX escapes
 \********************************************************************/
@@ -1573,7 +1620,7 @@ int  i;
    *pD = '\0';
 }
 
-void urlEncode(char *ps) 
+void url_encode(char *ps) 
 /********************************************************************\
    Encode the given string in-place by adding %XX escapes
 \********************************************************************/
@@ -1607,7 +1654,7 @@ void redirect(char *path)
   rsprintf("HTTP/1.0 302 Found\r\n");
   rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
 
-  rsprintf("Location: %s%s/%s\n\n<html>redir</html>\r\n", elogd_url, logbook, path);
+  rsprintf("Location: %s%s/%s\n\n<html>redir</html>\r\n", elogd_url, logbook_enc, path);
 }
 
 void redirect2(char *path)
@@ -1657,7 +1704,7 @@ time_t now;
 
   rsprintf("<html><head><title>%s</title></head>\n", title);
   rsprintf("<body><form method=\"GET\" action=\"%s%s/%s\">\n\n",
-            elogd_url, logbook, path);
+            elogd_url, logbook_enc, path);
 
   /* title row */
 
@@ -1666,6 +1713,19 @@ time_t now;
   rsprintf("<table border=3 cellpadding=1>\n");
   rsprintf("<tr><th colspan=%d bgcolor=#A0A0FF>Electronic Logbook \"%s\"", colspan, logbook);
   rsprintf("<th colspan=%d bgcolor=#A0A0FF>%s</tr>\n", colspan, ctime(&now));
+}
+
+void show_standard_header(char *path)
+{
+  rsprintf("HTTP/1.0 200 Document follows\r\n");
+  rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
+  rsprintf("Content-Type: text/html\r\n\r\n");
+
+  rsprintf("<html><head><title>ELOG</title></head>\n");
+  if (path)
+    rsprintf("<body><form method=\"GET\" action=\"%s%s/%s\">\n", elogd_url, logbook_enc, path);
+  else
+    rsprintf("<body><form method=\"GET\" action=\"%s%s\">\n", elogd_url, logbook_enc);
 }
 
 /*------------------------------------------------------------------*/
@@ -1732,12 +1792,12 @@ void el_format(char *text, char *encoding)
     strencode(text);
 }
 
-void show_elog_new(char *path, BOOL bedit, char *attachment)
+void show_elog_new(char *path, BOOL bedit)
 {
 int    i, size, run_number, wrap;
 char   str[256], ref[256], *p, list[1000];
-char   date[80], author[80], type[80], category[80], subject[256], text[10000], 
-       orig_tag[80], reply_tag[80], att1[256], att2[256], att3[256], encoding[80];
+char   date[80], author[80], type[80], category[80], subject[256], text[TEXT_SIZE], 
+       orig_tag[80], reply_tag[80], att[MAX_ATTACHMENTS][256], encoding[80];
 time_t now;
 BOOL   allow_edit;
 
@@ -1749,7 +1809,9 @@ BOOL   allow_edit;
 
   /* get message for reply */
   type[0] = category[0] = 0;
-  att1[0] = att2[0] = att3[0] = 0;
+  
+  for (i=0 ; i<MAX_ATTACHMENTS ; i++)
+    att[i][0] = 0;
   subject[0] = 0;
 
   if (path)
@@ -1757,7 +1819,7 @@ BOOL   allow_edit;
     strcpy(str, path);
     size = sizeof(text);
     el_retrieve(str, date, &run_number, author, type, category, subject, 
-                text, &size, orig_tag, reply_tag, att1, att2, att3, encoding);
+                text, &size, orig_tag, reply_tag, att, encoding);
     }
 
   /* header */
@@ -1767,7 +1829,7 @@ BOOL   allow_edit;
 
   rsprintf("<html><head><title>ELOG</title></head>\n");
   rsprintf("<body><form method=\"POST\" action=\"%s%s\" enctype=\"multipart/form-data\">\n", 
-            elogd_url, logbook);
+            elogd_url, logbook_enc);
 
   rsprintf("<table border=3 cellpadding=5>\n");
 
@@ -1922,25 +1984,35 @@ BOOL   allow_edit;
   else
     rsprintf("<input type=checkbox name=html value=1>Submit as HTML text</tr>\n");
 
-  if (bedit && att1[0])
-    rsprintf("<tr><td colspan=2 align=center bgcolor=#8080FF>If no attachment are resubmitted, the original ones are kept</tr>\n");
-
-  /* attachment */
-  rsprintf("<tr><td colspan=2 align=center>Enter attachment filename(s):</tr>");
-
-  if (attachment)
+  if (bedit)
     {
-    str[0] = 0;
-    if (attachment[0] != '\\' && attachment[0] != '/')
-      strcpy(str, "\\");
-    strcat(str, attachment);
-    rsprintf("<tr><td colspan=2>Attachment1: <input type=hidden name=attachment0 value=\"%s\"><b>%s</b></tr>\n", str, str);
+    rsprintf("<tr><td colspan=2 align=center bgcolor=#8080FF>If no attachments are resubmitted, the original ones are kept.<br>\n");
+    rsprintf("To delete an old attachment, enter <code>&lt;delete&gt;</code> in the new attachment field.</tr>\n");
+
+    for (i=0 ; i<MAX_ATTACHMENTS ; i++)
+      {
+      if (att[i][0])
+        {
+        rsprintf("<tr><td colspan=2><table width=100%% border=0>\n");
+        rsprintf("<tr><td>Original attachment:<td>%s</tr>", att[i]+14);
+        rsprintf("<tr><td>New attachment%d:<td><input type=\"file\" size=\"60\" maxlength=\"256\" name=\"attfile%d\" accept=\"filetype/*\"></tr>\n", 
+                  i+1, i+1);
+        rsprintf("</table>\n");
+        }
+      else
+        rsprintf("<tr><td>Attachment%d:<td><input type=\"file\" size=\"60\" maxlength=\"256\" name=\"attfile%d\" accept=\"filetype/*\"></tr>\n", 
+                  i+1, i+1);
+      }
+
     }
   else
-    rsprintf("<tr><td colspan=2>Attachment1: <input type=\"file\" size=\"60\" maxlength=\"256\" name=\"attfile1\" value=\"%s\" accept=\"filetype/*\"></tr>\n", att1);
+    {
+    /* attachment */
+    rsprintf("<tr><td colspan=2 align=center>Enter attachment filename(s):</tr>");
 
-  rsprintf("<tr><td colspan=2>Attachment2: <input type=\"file\" size=\"60\" maxlength=\"256\" name=\"attfile2\" value=\"%s\" accept=\"filetype/*\"></tr>\n", att2);
-  rsprintf("<tr><td colspan=2>Attachment3: <input type=\"file\" size=\"60\" maxlength=\"256\" name=\"attfile3\" value=\"%s\" accept=\"filetype/*\"></tr>\n", att3);
+    for (i=0 ; i<MAX_ATTACHMENTS ; i++)
+      rsprintf("<tr><td colspan=2>Attachment%d: <input type=\"file\" size=\"60\" maxlength=\"256\" name=\"attfile%d\" accept=\"filetype/*\"></tr>\n", i+1, i+1);
+    }
 
   rsprintf("</table>\n");
   rsprintf("</body></html>\r\n");
@@ -1956,13 +2028,7 @@ struct tm *tms;
 char   *p, list[1000];
 
   /* header */
-  rsprintf("HTTP/1.0 200 Document follows\r\n");
-  rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
-  rsprintf("Content-Type: text/html\r\n\r\n");
-
-  rsprintf("<html><head><title>ELOG</title></head>\n");
-  rsprintf("<body><form method=\"GET\" action=\"%s%s\">\n", elogd_url, logbook);
-
+  show_standard_header(NULL);
   rsprintf("<table border=3 cellpadding=5>\n");
 
   /*---- title row ----*/
@@ -2159,8 +2225,8 @@ BOOL   allow_delete;
 void show_elog_submit_query(INT past_n, INT last_n)
 {
 int    i, size, run, status, m1, d2, m2, y2, index, colspan, current_year, fh;
-char   date[80], author[80], type[80], category[80], subject[256], text[10000], 
-       orig_tag[80], reply_tag[80], attachment[3][256], encoding[80];
+char   date[80], author[80], type[80], category[80], subject[256], text[TEXT_SIZE], 
+       orig_tag[80], reply_tag[80], attachment[MAX_ATTACHMENTS][256], encoding[80];
 char   str[256], str2[10000], tag[256], ref[80], file_name[256];
 BOOL   full, show_attachments;
 DWORD  ltime_start, ltime_end, ltime_current, now;
@@ -2168,13 +2234,7 @@ struct tm tms, *ptms;
 FILE   *f;
 
   /* header */
-  rsprintf("HTTP/1.0 200 Document follows\r\n");
-  rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
-  rsprintf("Content-Type: text/html\r\n\r\n");
-
-  rsprintf("<html><head><title>ELOG</title></head>\n");
-  rsprintf("<body><form method=\"GET\" action=\"%s%s\">\n", elogd_url, logbook);
-
+  show_standard_header(NULL);
   rsprintf("<table border=3 cellpadding=2 width=\"100%%\">\n");
 
   /* get mode */
@@ -2397,7 +2457,7 @@ FILE   *f;
     size = sizeof(text);
     status = el_retrieve(tag, date, &run, author, type, category, subject, 
                          text, &size, orig_tag, reply_tag, 
-                         attachment[0], attachment[1], attachment[2],
+                         attachment,
                          encoding);
     strcat(tag, "+1");
 
@@ -2485,14 +2545,14 @@ FILE   *f;
       strcpy(str, tag);
       if (strchr(str, '+'))
         *strchr(str, '+') = 0;
-      sprintf(ref, "%s%s/%s", elogd_url, logbook, str);
+      sprintf(ref, "%s%s/%s", elogd_url, logbook_enc, str);
 
       strncpy(str, text, 80);
       str[80] = 0;
 
       if (full)
         {
-        rsprintf("<tr><td><a href=%s>%s</a><td>%s<td>%s<td>%s<td>%s</tr>\n", ref, date, author, type, category, subject);
+        rsprintf("<tr><td><a href=\"%s\">%s</a><td>%s<td>%s<td>%s<td>%s</tr>\n", ref, date, author, type, category, subject);
         rsprintf("<tr><td colspan=5>");
         
         if (equal_ustring(encoding, "plain"))
@@ -2514,7 +2574,7 @@ FILE   *f;
         else
           rsprintf("</tr>\n");
 
-        for (index = 0 ; index < 3 ; index++)
+        for (index = 0 ; index < MAX_ATTACHMENTS ; index++)
           {
           if (attachment[index][0])
             {
@@ -2522,7 +2582,7 @@ FILE   *f;
               str[i] = toupper(attachment[index][i]);
             str[i] = 0;
     
-            sprintf(ref, "%s%s/%s", elogd_url, logbook, attachment[index]);
+            sprintf(ref, "%s%s/%s", elogd_url, logbook_enc, attachment[index]);
 
             if (!show_attachments)
               {
@@ -2583,7 +2643,7 @@ FILE   *f;
       else
         {
         rsprintf("<tr><td>%s<td>%s<td>%s<td>%s<td>%s\n", date, author, type, category, subject);
-        rsprintf("<td><a href=%s>", ref);
+        rsprintf("<td><a href=\"%s\">", ref);
       
         el_format(str, encoding);
       
@@ -2605,13 +2665,7 @@ FILE   *f;
 char   file_name[256], line[1000];
 
   /* header */
-  rsprintf("HTTP/1.0 200 Document follows\r\n");
-  rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
-  rsprintf("Content-Type: text/html\r\n\r\n");
-
-  rsprintf("<html><head><title>ELOG File Display</title></head>\n");
-  rsprintf("<body><form method=\"GET\" action=\"%s%s\">\n", elogd_url, logbook);
-
+  show_standard_header(NULL);
   rsprintf("<table border=3 cellpadding=1 width=\"100%%\">\n");
 
   /*---- title row ----*/
@@ -2663,15 +2717,11 @@ char   file_name[256], line[1000];
 
 void submit_elog()
 {
-char   str[80], author[256], path[256], path1[256];
-char   *buffer[3];
-char   att_file[3][256];
-int    i, fh, size;
+char   str[80], author[256];
+char   *buffer[MAX_ATTACHMENTS];
+char   att_file[MAX_ATTACHMENTS][256];
+int    i;
 struct hostent *phe;
-
-  strcpy(att_file[0], getparam("attachment0"));
-  strcpy(att_file[1], getparam("attachment1"));
-  strcpy(att_file[2], getparam("attachment2"));
 
   /* check for author */
   if (*getparam("author") == 0)
@@ -2688,41 +2738,22 @@ struct hostent *phe;
     }
 
   /* check for valid attachment files */
-  for (i=0 ; i<3 ; i++)
+  for (i=0 ; i<MAX_ATTACHMENTS ; i++)
     {
     buffer[i] = NULL;
     sprintf(str, "attachment%d", i);
-    if (getparam(str) && *getparam(str) && _attachment_size[i] == 0)
+    strcpy(att_file[i], getparam(str));
+    if (att_file[i][0] && _attachment_size[i] == 0 && !equal_ustring(att_file[i], "<delete>"))
       {
-      /* replace '\' by '/' */
-      strcpy(path, getparam(str));  
-      strcpy(path1, path);
-      while (strchr(path, '\\'))    
-        *strchr(path, '\\') = '/';
+      rsprintf("HTTP/1.0 200 Document follows\r\n");
+      rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
+      rsprintf("Content-Type: text/html\r\n\r\n");
 
-      if ((fh = open(path1, O_RDONLY | O_BINARY)) >= 0)
-        {
-        size = lseek(fh, 0, SEEK_END);
-        buffer[i] = malloc(size);
-        lseek(fh, 0, SEEK_SET);
-        read(fh, buffer[i], size);
-        close(fh);
-        strcpy(att_file[i], path);
-        _attachment_buffer[i] = buffer[i];
-        _attachment_size[i] = size;
-        }
-      else
-        {
-        rsprintf("HTTP/1.0 200 Document follows\r\n");
-        rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
-        rsprintf("Content-Type: text/html\r\n\r\n");
-
-        rsprintf("<html><head><title>ELog Error</title></head>\n");
-        rsprintf("<i>Error: Attachment file <i>%s</i> not valid.</i><p>\n", getparam(str));
-        rsprintf("Please go back and enter a proper filename (use the <b>Browse</b> button).\n");
-        rsprintf("<body></body></html>\n");
-        return;
-        }
+      rsprintf("<html><head><title>ELog Error</title></head>\n");
+      rsprintf("<i>Error: Attachment file <i>%s</i> not valid.</i><p>\n", getparam(str));
+      rsprintf("Please go back and enter a proper filename (use the <b>Browse</b> button).\n");
+      rsprintf("<body></body></html>\n");
+      return;
       }
     }
 
@@ -2736,7 +2767,6 @@ struct hostent *phe;
   else
     strcpy(str, phe->h_name);
       
-
   strcpy(author, getparam("author"));
   strcat(author, "@");
   strcat(author, str);
@@ -2748,19 +2778,19 @@ struct hostent *phe;
   el_submit(atoi(getparam("run")), author, getparam("type"),
             getparam("category"), getparam("subject"), getparam("text"), 
             getparam("orig"), *getparam("html") ? "HTML" : "plain", 
-            att_file[0], _attachment_buffer[0], _attachment_size[0], 
-            att_file[1], _attachment_buffer[1], _attachment_size[1], 
-            att_file[2], _attachment_buffer[2], _attachment_size[2], 
+            att_file, 
+            _attachment_buffer, 
+            _attachment_size, 
             str, sizeof(str));
 
-  for (i=0 ; i<3 ; i++)
+  for (i=0 ; i<MAX_ATTACHMENTS ; i++)
     if (buffer[i])
       free(buffer[i]);
 
   rsprintf("HTTP/1.0 302 Found\r\n");
   rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
 
-  rsprintf("Location: %s%s/%s\n\n<html>redir</html>\r\n", elogd_url, logbook, str);
+  rsprintf("Location: %s%s/%s\n\n<html>redir</html>\r\n", elogd_url, logbook_enc, str);
 }
 
 /*------------------------------------------------------------------*/
@@ -2769,8 +2799,8 @@ void show_elog_page(char *logbook, char *path)
 {
 int   size, i, run, msg_status, status, fh, length, first_message, last_message, index;
 char  str[256], orig_path[256], command[80], ref[256], file_name[256];
-char  date[80], author[80], type[80], category[80], subject[256], text[10000], 
-      orig_tag[80], reply_tag[80], attachment[3][256], encoding[80], att[256];
+char  date[80], author[80], type[80], category[80], subject[256], text[TEXT_SIZE], 
+      orig_tag[80], reply_tag[80], attachment[MAX_ATTACHMENTS][256], encoding[80], att[256];
 FILE  *f;
 BOOL  allow_delete, allow_edit;
 
@@ -2795,22 +2825,19 @@ BOOL  allow_delete, allow_edit;
 
   if (equal_ustring(command, "new"))
     {
-    if (*getparam("file"))
-      show_elog_new(NULL, FALSE, getparam("file"));
-    else
-      show_elog_new(NULL, FALSE, NULL);
+    show_elog_new(NULL, FALSE);
     return;
     }
 
   if (equal_ustring(command, "edit"))
     {
-    show_elog_new(path, TRUE, NULL);
+    show_elog_new(path, TRUE);
     return;
     }
 
   if (equal_ustring(command, "reply"))
     {
-    show_elog_new(path, FALSE, NULL);
+    show_elog_new(path, FALSE);
     return;
     }
 
@@ -2952,8 +2979,7 @@ BOOL  allow_delete, allow_edit;
       size = sizeof(text);
       el_retrieve(path, date, &run, author, type, category, subject, 
                   text, &size, orig_tag, reply_tag, 
-                  attachment[0], attachment[1], attachment[2], 
-                  encoding);
+                  attachment, encoding);
       
       if (strchr(author, '@'))
         *strchr(author, '@') = 0;
@@ -3013,19 +3039,12 @@ BOOL  allow_delete, allow_edit;
   strcpy(str, path);
   msg_status = el_retrieve(str, date, &run, author, type, category, subject, 
                            text, &size, orig_tag, reply_tag, 
-                           attachment[0], attachment[1], attachment[2],
-                           encoding);
+                           attachment, encoding);
 
   /*---- header ----*/
 
   /* header */
-  rsprintf("HTTP/1.0 200 Document follows\r\n");
-  rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
-  rsprintf("Content-Type: text/html\r\n\r\n");
-
-  rsprintf("<html><head><title>ELOG</title></head>\n");
-  rsprintf("<body><form method=\"GET\" action=\"%s%s/%s\">\n", elogd_url, logbook, str);
-
+  show_standard_header(str);
   rsprintf("<table cols=2 border=2 cellpadding=2>\n");
 
   /*---- title row ----*/
@@ -3061,12 +3080,12 @@ BOOL  allow_delete, allow_edit;
     rsprintf("<tr><td colspan=2 bgcolor=#F0F0F0>");
     if (orig_tag[0])
       {
-      sprintf(ref, "%s%s/%s", elogd_url, logbook, orig_tag);
+      sprintf(ref, "%s%s/%s", elogd_url, logbook_enc, orig_tag);
       rsprintf("  <a href=\"%s\">Original message</a>  ", ref);
       }
     if (reply_tag[0])
       {
-      sprintf(ref, "%s%s/%s", elogd_url, logbook, reply_tag);
+      sprintf(ref, "%s%s/%s", elogd_url, logbook_enc, reply_tag);
       rsprintf("  <a href=\"%s\">Reply to this message</a>  ", ref);
       }
     rsprintf("</tr>\n");
@@ -3133,7 +3152,7 @@ BOOL  allow_delete, allow_edit;
       rsputs(text);
     rsputs("</tr>\n");
 
-    for (index = 0 ; index < 3 ; index++)
+    for (index = 0 ; index < MAX_ATTACHMENTS ; index++)
       {
       if (attachment[index][0])
         {
@@ -3141,7 +3160,7 @@ BOOL  allow_delete, allow_edit;
           att[i] = toupper(attachment[index][i]);
         att[i] = 0;
       
-        sprintf(ref, "%s%s/%s", elogd_url, logbook, attachment[index]);
+        sprintf(ref, "%s%s/%s", elogd_url, logbook_enc, attachment[index]);
 
         if (strstr(att, ".GIF") ||
             strstr(att, ".JPG"))
@@ -3200,14 +3219,7 @@ BOOL  allow_delete, allow_edit;
 
 void show_password_page(char *password, char *experiment)
 {
-  rsprintf("HTTP/1.0 200 Document follows\r\n");
-  rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
-  rsprintf("Content-Type: text/html\r\n\r\n");
-
-  rsprintf("<html><head><title>Enter password</title></head><body>\n\n");
-
-  rsprintf("<form method=\"GET\" action=\"%s%s\">\n\n", elogd_url, logbook);
-
+  show_standard_header(NULL);
   rsprintf("<table border=1 cellpadding=5>");
 
   if (password[0])
@@ -3235,13 +3247,7 @@ char  str[256];
       return TRUE;
 
     /* show web password page */
-    rsprintf("HTTP/1.0 200 Document follows\r\n");
-    rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
-    rsprintf("Content-Type: text/html\r\n\r\n");
-
-    rsprintf("<html><head><title>Enter password</title></head><body>\n\n");
-
-    rsprintf("<form method=\"GET\" action=\"%s%s\">\n\n", elogd_url, logbook);
+    show_standard_header(NULL);
 
     /* define hidden fields for current experiment and destination */
     if (redir[0])
@@ -3293,7 +3299,9 @@ char str[80], logbook[80];
     if (!enumgrp(i, logbook))
       break;
 
-    rsprintf("<tr><td bgcolor=#FFFF00><a href=\"%s%s\">%s</a>", elogd_url, logbook, logbook);
+    strcpy(str, logbook);
+    url_encode(str);
+    rsprintf("<tr><td bgcolor=#FFFF00><a href=\"%s%s\">%s</a>", elogd_url, str, logbook);
 
     str[0] = 0;
     getcfg(logbook, "Comment", str);
@@ -3344,10 +3352,10 @@ struct tm *gmt;
 
   /* encode path for further usage */
   strcpy(dec_path, path);
-  urlDecode(dec_path);
-  urlDecode(dec_path); /* necessary for %2520 -> %20 -> ' ' */
+  url_decode(dec_path);
+  url_decode(dec_path); /* necessary for %2520 -> %20 -> ' ' */
   strcpy(enc_path, dec_path);
-  urlEncode(enc_path);
+  url_encode(enc_path);
 
   experiment = getparam("exp");
   wpassword = getparam("wpwd");
@@ -3356,10 +3364,14 @@ struct tm *gmt;
   group = getparam("group");
   index = atoi(getparam("index"));
 
-  /* if experiment give, use it as logbook */
+  /* if experiment given, use it as logbook (for elog!) */
   if (experiment && experiment[0])
+    {
+    strcpy(logbook_enc, experiment);
     strcpy(logbook, experiment);
-  
+    url_decode(logbook);
+    }
+
   /* if no logbook given, display logbook selection page */
   if (!logbook[0])
     {
@@ -3396,9 +3408,9 @@ struct tm *gmt;
     gmt = gmtime(&now);
     strftime(str, sizeof(str), "%A, %d-%b-%y %H:%M:%S GMT", gmt);
 
-    rsprintf("Set-Cookie: elog_wpwd=%s; path=/%s; expires=%s\r\n", enc_pwd, logbook, str);
+    rsprintf("Set-Cookie: elog_wpwd=%s; path=/%s; expires=%s\r\n", enc_pwd, logbook_enc, str);
 
-    sprintf(str, "%s%s/%s", elogd_url, logbook, getparam("redir"));
+    sprintf(str, "%s%s/%s", elogd_url, logbook_enc, getparam("redir"));
     rsprintf("Location: %s\n\n<html>redir</html>\r\n", str);
     return;
     }
@@ -3450,8 +3462,8 @@ char *p, *pitem;
       if (p != NULL)
         {
         *p++ = 0;
-        urlDecode(pitem);
-        urlDecode(p);
+        url_decode(pitem);
+        url_decode(p);
 
         setparam(pitem, p);
 
@@ -3468,10 +3480,11 @@ char *p, *pitem;
 void decode_post(char *string, char *boundary, int length, char *cookie_wpwd)
 {
 char *pinit, *p, *pitem, *ptmp, file_name[256], str[256];
-int  n;
+int  i, n;
 
   initparam();
-  _attachment_size[0] = _attachment_size[1] = _attachment_size[2] = 0;
+  for (i=0 ; i<MAX_ATTACHMENTS ; i++)
+    _attachment_size[i]=  0;
 
   pinit = string;
 
@@ -3510,6 +3523,9 @@ int  n;
         strcpy(file_name, p);
         sprintf(str, "attachment%d", n);
         setparam(str, file_name);
+
+        if (verbose)
+          printf("Attachment: %s\n", file_name);
 
         /* find next boundary */
         ptmp = string;
@@ -3770,6 +3786,8 @@ INT                  last_time=0;
             if (strstr(str, "HTTP"))
               *(strstr(str, "HTTP")-1) = 0;
             strcpy(logbook, str);
+            strcpy(logbook_enc, str);
+            url_decode(logbook);
             
             /* extract header and content length */
             if (strstr(net_buffer, "Content-Length:"))
@@ -3832,6 +3850,8 @@ INT                  last_time=0;
         for (i=0 ; *p && *p != '/' && *p != '?' && *p != ' '; i++)
           logbook[i] = *p++;
         logbook[i] = 0;
+        strcpy(logbook_enc, logbook);
+        url_decode(logbook);
         }
       
       /* ask for password if configured */
@@ -3891,7 +3911,6 @@ INT                  last_time=0;
         }
       else
         {
-
         if (verbose)
           printf("\n\n\n%s\n", net_buffer);
 
@@ -4064,6 +4083,8 @@ main(int argc, char *argv[])
 int i;
 int tcp_port = 80, daemon = FALSE;
 char read_pwd[80], write_pwd[80], str[80];
+time_t now;
+struct tm *tms;
 
   read_pwd[0] = write_pwd[0] = logbook[0] = 0;
 
@@ -4076,6 +4097,16 @@ char read_pwd[80], write_pwd[80], str[80];
       daemon = TRUE;
     else if (argv[i][0] == '-' && argv[i][1] == 'v')
       verbose = TRUE;
+    else if (argv[i][1] == 't')
+      {
+      tzset();
+      time(&now);
+      tms = localtime(&now);
+      printf("Acutal date/time: %02d%02d%02d_%02d%02d%02d\n",
+             tms->tm_year % 100, tms->tm_mon+1, tms->tm_mday,
+             tms->tm_hour, tms->tm_min, tms->tm_sec);
+      return 0;
+      }
     else if (argv[i][0] == '-')
       {
       if (i+1 >= argc || argv[i+1][0] == '-')
