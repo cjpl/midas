@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol main program
 
   $Log$
+  Revision 1.22  2003/01/16 16:34:07  midas
+  Do not use printf() for scs_210/300
+
   Revision 1.21  2002/11/29 08:02:52  midas
   Fixed linux warnings
 
@@ -249,6 +252,7 @@ unsigned char i;
     eeprom_flash();
     }
 
+#if !defined(SCS_300) && !defined(SCS_210) // SCS210/300 redefine printf()
   lcd_setup();
 
   if (lcd_present)
@@ -256,6 +260,9 @@ unsigned char i;
     printf("AD:%04X GA:%04X WD:%d", sys_info.node_addr, 
             sys_info.group_addr, sys_info.wd_counter);
     }
+#else
+  lcd_present = 0;
+#endif
 
   /* Blink LEDs */
   led_blink(1, 5, 150);
@@ -266,11 +273,13 @@ unsigned char i;
 
 void debug_output()
 {
-unsigned char i, n;
-
   if (!DEBUG_MODE)
     return;
                              
+#if !defined(SCS_300) && !defined(SCS_210) // SCS210/300 redefine printf()
+  {
+  unsigned char i, n;
+
   if (debug_new_i)
     {
     debug_new_i = 0;
@@ -288,6 +297,9 @@ unsigned char i, n;
     for (i=0 ; i<n_out ; i++)
       printf("%02bX ", out_buf[i]);
     }
+  }
+#endif
+
 }
         
 /*------------------------------------------------------------------*\
@@ -907,6 +919,7 @@ void main(void)
     rs232_output();
     
     /* output new address to LCD if available */
+#if !defined(SCS_300) && !defined(SCS_210) // SCS210/300 redefine printf()
     if (new_address)
       {
       new_address = 0;
@@ -914,6 +927,7 @@ void main(void)
       printf("AD:%04X GA:%04X WD:%d", sys_info.node_addr, 
               sys_info.group_addr, sys_info.wd_counter);
       }
+#endif
 
     /* flash EEPROM if asked by interrupt routine */
     if (flash_param)
