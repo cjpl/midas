@@ -6,6 +6,9 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
+  Revision 1.51  1999/09/27 09:18:05  midas
+  Fixed bug
+
   Revision 1.50  1999/09/27 09:14:54  midas
   Use _blank for new windows
 
@@ -4751,23 +4754,22 @@ INT                  last_time=0;
 
   gethostname(host_name, sizeof(host_name));
 
-  if (strchr(host_name, '.') == NULL)
+  phe = gethostbyname(host_name);
+  if (phe == NULL)
     {
-    /* if domain name is not in host name, get it from DNS server */
-    phe = gethostbyname(host_name);
-    if (phe == NULL)
-      {
-      printf("Cannot retrieve host name\n");
-      return;
-      }
-    phe = gethostbyaddr(phe->h_addr, sizeof(int), AF_INET);
-    if (phe == NULL)
-      {
-      printf("Cannot retrieve host name\n");
-      return;
-      }
-    strcpy(host_name, phe->h_name);
+    printf("Cannot retrieve host name\n");
+    return;
     }
+  phe = gethostbyaddr(phe->h_addr, sizeof(int), AF_INET);
+  if (phe == NULL)
+    {
+    printf("Cannot retrieve host name\n");
+    return;
+    }
+
+  /* if domain name is not in host name, hope to get it from phe */
+  if (strchr(host_name, '.') == NULL)
+    strcpy(host_name, phe->h_name);
 
   memcpy((char *)&(bind_addr.sin_addr), phe->h_addr, phe->h_length);
 
