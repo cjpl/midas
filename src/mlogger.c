@@ -6,6 +6,9 @@
   Contents:     MIDAS logger program
 
   $Log$
+  Revision 1.17  1999/08/23 12:59:08  midas
+  Fixed bug with defining system events
+
   Revision 1.16  1999/08/17 13:02:58  midas
   Revised history system
 
@@ -1379,7 +1382,7 @@ void log_history(HNDLE hDB, HNDLE hKey, void *info);
 
 INT open_history()
 {
-INT      size, index, i_tag, status, i, j, li;
+INT      size, index, i_tag, status, i, j, li, max_event_id;
 INT      n_var, n_tags, n_names;
 HNDLE    hKeyRoot, hKeyVar, hKeyNames, hLinkKey, hVarKey, hKeyEq, hHistKey, hKey;
 DWORD    history;
@@ -1408,6 +1411,8 @@ BOOL     single_names;
     }
 
   /*---- define equipment events as history ------------------------*/
+
+  max_event_id = 0;
 
   status = db_find_key(hDB, 0, "/Equipment", &hKeyRoot);
   if (status != DB_SUCCESS)
@@ -1546,6 +1551,10 @@ BOOL     single_names;
                               size, MODE_READ, log_history, NULL);
       if (status != DB_SUCCESS)
         cm_msg(MERROR, "open_history", "cannot open variable record for history logging");
+
+      /* remember maximum event id for later use with system events */
+      if (event_id > max_event_id)
+        max_event_id = event_id;
       }
     else
       {
@@ -1558,6 +1567,8 @@ BOOL     single_names;
     }
 
   /*---- define linked trees ---------------------------------------*/
+
+  max_event_id++;
 
   status = db_find_key(hDB, 0, "/History/Links", &hKeyRoot);
   if (status != DB_SUCCESS)
@@ -1632,12 +1643,12 @@ BOOL     single_names;
     if (histkey.type == TID_LINK)
       db_open_record(hDB, hHistKey, NULL, size, MODE_READ, log_system_history, (void *) index);
 
-    hs_define_event(index, hist_name, tag, sizeof(TAG)*n_var);
+    hs_define_event(max_event_id, hist_name, tag, sizeof(TAG)*n_var);
     free(tag);
 
     /* define system history */
   
-    hist_log[index].event_id = 0;
+    hist_log[index].event_id = max_event_id;
     hist_log[index].hKeyVar = hHistKey;
     hist_log[index].buffer_size = size;
     hist_log[index].buffer = malloc(size);
@@ -1650,6 +1661,7 @@ BOOL     single_names;
       }
 
     index++;
+    max_event_id++;
     }
   
   return CM_SUCCESS;
