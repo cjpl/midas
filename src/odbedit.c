@@ -6,6 +6,9 @@
   Contents:     Command-line interface to the MIDAS online data base.
 
   $Log$
+  Revision 1.53  2002/05/08 01:32:22  midas
+  Fixed problem with <tab> on single entries
+
   Revision 1.52  2002/03/14 12:59:31  midas
   Skip 'Edit run number' when starting a run
 
@@ -788,7 +791,7 @@ BOOL  blanks, mismatch;
   else
     key_name[0] = 0;
   
-  /* check if key exists (for "set <key>" completion */
+  /* check if key exists (for "set <key>" completion) */
   if (strncmp(head, "set", 3) == 0 && strlen(key_name)>0)
     {
     if (key_name[0] == '"')
@@ -888,7 +891,9 @@ BOOL  blanks, mismatch;
       if (match == 1)
         {
         /* search split point */
-        for (pc = key_name+strlen(key_name)-1 ; pc>key_name && *pc != '/' ; pc--);
+        pc = key_name;
+        if (strlen(key_name)>0)
+          for (pc = key_name+strlen(key_name)-1 ; pc>key_name && *pc != '/' ; pc--);
         if (*pc == '/')
           pc++;
 
