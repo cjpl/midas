@@ -6,6 +6,9 @@
   Contents:     Command-line interface to the MIDAS online data base.
 
   $Log$
+  Revision 1.48  2001/07/24 10:44:40  midas
+  Added import command
+
   Revision 1.47  2001/06/27 14:40:53  midas
   Added message type in "msg" command, don't query name if in command line mode
 
@@ -202,6 +205,7 @@ void print_help(char *command)
     printf("find <pattern>          - find a key with wildcard pattern\n");
     printf("help/? [command]        - print this help [for a specific command]\n");
     printf("hi [analyzer] [id]      - tell analyzer to clear histos\n");
+    printf("imp <filename> [key]    - import ASCII file into string key\n");
     printf("ln <source> <linkname>  - create a link to <source> key\n");
     printf("load <file>             - load database from .ODB file at current position\n");
     printf("-- hit return for more --\r"); getchar();
@@ -362,7 +366,7 @@ int c;
 INT print_key(HNDLE hDB, HNDLE hKey, KEY *key, INT level, void *info)
 {
 INT         i, size, status;
-static char data_str[256], line[256];
+static char data_str[10000], line[256];
 DWORD       delta;
 PRINT_INFO  *pi;
 
@@ -468,18 +472,27 @@ PRINT_INFO  *pi;
         if (key->access_mode & MODE_EXCLUSIVE)
           line[64] = 'E';
 
-        if (key->num_values == 1)
+        if (key->type == TID_STRING && strchr(data_str, '\n'))
+          strcpy(line+66, "<multi-line>");
+        else if (key->num_values == 1)
           strcpy(line+66, data_str);
         else
           line[66] = 0;
         }
       else
         if (key->num_values == 1)
-          strcpy(line+32, data_str);
+          if (key->type == TID_STRING && strchr(data_str, '\n'))
+            strcpy(line+32, "<multi-line>");
+          else
+            strcpy(line+32, data_str);
         else
           line[32] = 0;
 
       printf("%s\n", line);
+
+      if (key->type == TID_STRING && strchr(data_str, '\n'))
+        puts(data_str);
+
       if (check_abort(pi->flags, ls_line++))
         return 0;
     
@@ -1086,7 +1099,7 @@ char experim_h_comment2[] =
 
 char *file_name = "experim.h";
 
-  /* create fiel */
+  /* create file */
   hfile = open(file_name, O_WRONLY | O_CREAT | O_TRUNC, 0644);
   if (hfile == -1)
     cm_msg(MERROR, "create_experim_h", "cannot open experim.h file.");
@@ -2174,6 +2187,39 @@ PRINT_INFO      print_info;
         }
       }
     
+    /* import */
+    else if (param[0][0] == 'i' && param[0][1] == 'm')
+      {
+      int fh;
+
+      fh = open(param[1], O_RDONLY | O_BINARY);
+      if (fh < 0)
+        printf("File %s not found\n", param[1]);
+      else
+        {
+        size = lseek(fh, 0, SEEK_END); 
+        lseek(fh, 0, SEEK_SET);
+        read(fh, data, size);
+        data[size++] = 0;
+        close(fh);
+
+        if (param[2][0] == 0)
+          {
+          printf("Key name: ");
+          ss_gets(name, 256);
+          }
+        else
+          strcpy(name, param[2]);
+
+        compose_name(pwd, name, str);
+
+        db_create_key(hDB, 0, str, TID_STRING);
+        db_find_key(hDB, 0, str, &hKey);
+        db_set_data(hDB, hKey, data, size, 1, TID_STRING);
+        }
+
+      }
+
     /* rewind */
     else if (param[0][0] == 'r' && param[0][1] == 'e' && param[0][2] == 'w')
       {
@@ -2795,9 +2841,25 @@ PRINT_INFO      print_info;
     /* test 3 */
     else if (param[0][0] == 't' && param[0][1] == '3')
       {
-      cm_set_watchdog_params(FALSE, 0);
-      db_protect_database(hDB);
-      db_find_key(hDB, 0, "/runinfo/run number", &hKey);
+      EVENT_HEADER *pevent;
+      WORD *pdata;
+      int fh;
+
+      pevent = (EVENT_HEADER *) data;
+      bm_compose_event(pevent, 1, 2, 0, 123);
+      
+      bk_init(pevent+1);
+      bk_create(pevent+1, "TEST", TID_WORD, &pdata);
+      *pdata++ = 1;
+      *pdata++ = 2;
+      *pdata++ = 3;
+      *pdata++ = 4;
+      bk_close(pevent+1, pdata);
+      pevent->data_size = bk_size(pevent+1); 
+
+      fh = open("test.mid", O_WRONLY | O_CREAT | O_TRUNC, 0644);
+      write(fh, data, pevent->data_size + sizeof(EVENT_HEADER));
+      close(fh);
       }
 
 
