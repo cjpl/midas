@@ -12,35 +12,38 @@ of the latest documentation on past and current features. It will also
 mention the wish list documentation on current developments.
  
 
-- <b> Current doc revision: 1.9.5-0 </b>
-- <b> Software version: 1.9.5 </b>
-- <b> Latest tarball : <a href=http://midas.triumf.ca/download> 1.9.5 </a> </b>
-- <b> Latest RPM : <a href=http://midas.triumf.ca/download> 1.9.2-1  </a> </b>
+- Current doc revision: 1.9.5-1 
+- Software version: 1.9.5 
+- Latest tarball : <a href=http://midas.triumf.ca/download> 1.9.5-1 </a> 
+- Latest RPM : <a href=http://midas.triumf.ca/download> 1.9.2-1  </a>
 
+- <b> [1.9.5-1] </b>
+ - @ref Custom_page improvement. Implementation of external file.html and 
+  dynamic linked graphic to ODB values. 
 - <b> [1.9.5] </b>
- - <b> When upgrading to 1.9.5, \em ALL midas applications including user
+ - When upgrading to 1.9.5 , \em ALL midas applications including user
    applications needs to be rebuild \em AND the \b ODB.SHM (.ODB.SHM) shared
    memory need to be removed. Prior the removal of the ODB.SHM, the ODB database
-   can be saved in ASCII format for later restoration. </b>
- - <b> @ref Transition_sequence changed to multiple level scheme. </b>
- - <b> odbedit_task support of XML format for ODB dump. </b>
- - <b> Large File support (>2GB) from @ref mlogger_task application. </b>
- - <b> @ref Folder Root Histogram support within mana. </b>
- - <b> @ref mevb_task application. </b>
- - <b> New @ref frontend_task argument for Event Builder option (-i index). </b>
-   - <b> Documentation on "Tests" results from analyzer.</b>
- - <b> @ref mySQL support from @ref mlogger_task. </b>
- - <b> Increase system wide parameters values (see midas.h).
- - <b> Fix numerous small annoying bugs... </b>
- - <b> Improve debugging messages in mserver -d (/tmp/mserver.log). </b>
+   can be saved in ASCII format for later restoration.
+ -  @ref Transition_sequence changed to multiple level scheme.
+ -  odbedit_task support of XML format for ODB dump.
+ -  Large File support (>2GB) from @ref mlogger_task application.
+ -  @ref Folder Root Histogram support within mana.
+ -  @ref mevb_task application. 
+ -  New @ref frontend_task argument for Event Builder option (-i index). 
+   -  Documentation on "Tests" results from analyzer.
+ -  @ref mySQL support from @ref mlogger_task. 
+ -  Increase system wide parameters values (see midas.h).
+ -  Fix numerous small annoying bugs... 
+ -  Improve debugging messages in mserver -d (/tmp/mserver.log). 
 
 - <b> [<1.9.5] </b>
  - In writing
-  - <b> Epics Slow Control documentation </b>
+  -  Epics Slow Control documentation 
 
-  - <b> Introduce @ref MIDASSYS environment variable </b>
-  - <b> Analyzer documention revision @ref analyzer_struct </b>
-  - <b> Watchdog bug fix (RH9.0) </b>
+  -  Introduce @ref MIDASSYS environment variable
+  -  Analyzer documention revision @ref analyzer_struct
+  -  Watchdog bug fix (RH9.0)
 
   - <b> Restructured Midas distribution </b>
    - In the same effort as the documentation, the midas tree and CVS have been  
