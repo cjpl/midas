@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.108  2000/03/17 10:55:15  midas
+  Don't trigger internal alarms if alarm system is off
+
   Revision 1.107  2000/03/04 00:42:29  midas
   Delete elog & alarm mutexes correctly
 
@@ -15535,6 +15538,7 @@ int         status, size;
 HNDLE       hDB, hkeyalarm;
 char        str[256];
 ALARM       alarm;
+BOOL        flag;
 ALARM_STR(alarm_str);
 
   cm_get_experiment_database(&hDB, NULL);
@@ -15586,12 +15590,20 @@ ALARM_STR(alarm_str);
   /* if internal alarm, check if active and check interval */
   if (alarm.type != AT_EVALUATED)
     {
+    /* check global alarm flag */
+    flag = TRUE;
+    size = sizeof(flag);
+    db_get_value(hDB, 0, "/Alarms/Alarm system active", &flag, &size, TID_BOOL);
+    if (!flag)
+      return AL_SUCCESS;
+
     if (!alarm.active)
       return AL_SUCCESS;
+
     if ((INT)ss_time() - (INT)alarm.checked_last < alarm.check_interval)
       return AL_SUCCESS;
 
-    /* no the alarm will be triggeres, so save time */
+    /* now the alarm will be triggered, so save time */
     alarm.checked_last = ss_time();
     }
 
