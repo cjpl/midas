@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.8  1998/12/10 10:18:38  midas
+  Added SS_END_OF_FILE
+
   Revision 1.7  1998/10/29 15:58:05  midas
   Release 1.6.1
 
@@ -459,6 +462,7 @@ typedef          INT       HNDLE;
 #define SS_TAPE_ERROR               420
 #define SS_NO_DRIVER                421
 #define SS_END_OF_TAPE              422
+#define SS_END_OF_FILE              423
 
 /* Remote Procedure Calls */
 #define RPC_SUCCESS                   1
