@@ -14,6 +14,9 @@
                 Brown, Prentice Hall
 
   $Log$
+  Revision 1.64  2002/10/15 19:20:24  olchansk
+  add more debugging printout to send_tcp() and recv_tcp()
+
   Revision 1.63  2002/06/25 19:48:18  pierre
   doc++ functions
 
@@ -3578,7 +3581,10 @@ INT   status;
     if (status != -1)
 	    count += status;
     else
+            {
+	    cm_msg(MERROR, "send_tcp", "send(socket=%d,size=%d) returned %d, errno: %d (%s)",sock,NET_TCP_SIZE,status,errno,strerror(errno));
 	    return status;
+            }
     }
 
   while (count<buffer_size)
@@ -3587,7 +3593,10 @@ INT   status;
     if (status != -1)
 	    count += status;
     else
+            {
+	    cm_msg(MERROR, "send_tcp", "send(socket=%d,size=%d) returned %d, errno: %d (%s)",sock,(int)(buffer_size - count),status,errno,strerror(errno));
 	    return status;
+            }
     }
 
   return count;
@@ -3729,8 +3738,8 @@ NET_COMMAND *nc;
 
     if (n <= 0)
       {
-      cm_msg(MERROR, "recv_tcp", "header: recv returned %d, n_received = %d", 
-             n, n_received);
+      cm_msg(MERROR, "recv_tcp", "header: recv returned %d, n_received = %d, errno: %d (%s)", 
+             n, n_received, errno, strerror(errno));
       return n;
       }
 
@@ -3764,8 +3773,8 @@ NET_COMMAND *nc;
 
     if (n <= 0)
       {
-      cm_msg(MERROR, "recv_tcp", "param: recv returned %d, n_received = %d", 
-             n, n_received);
+      cm_msg(MERROR, "recv_tcp", "param: recv returned %d, n_received = %d, errno: %d (%s)", 
+             n, n_received, errno, strerror(errno));
       return n;
       }
 
