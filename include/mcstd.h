@@ -7,12 +7,18 @@
  *         amaudruz@triumf.ca
  * -----------------------------------------------------------------------------
  *  
- *  Description	: Midas Camac Standard calls. 
- *  Requires 	: 
+ *  Description : Midas Camac Standard calls. 
+ *  Requires : 
  *  Application : Used in any camac driver
  *  Author:  Pierre-Andre Amaudruz Data Acquisition Group
- *  Revision 1.0  1998        Pierre	 Initial revision
- *           1.1  JUL 98      SR         Added 8-bit functions, BYTE definition
+ *
+ *  $Log$
+ *  Revision 1.3  1998/10/13 07:04:29  midas
+ *  Added Log in header
+ *
+ *
+ *  Previous revision 1.0  1998        Pierre	 Initial revision
+ *                    1.1  JUL 98      SR      Added 8-bit functions, BYTE definition
  *---------------------------------------------------------------------------*/
 
 #ifndef INLINE
@@ -100,7 +106,7 @@ EXTERNAL INLINE void EXPRT cam_crate_clear  (const int c);
 EXTERNAL INLINE void EXPRT cam_crate_zinit  (const int c);
 EXTERNAL INLINE void EXPRT cam_lam_enable   (const int c, const int n);
 EXTERNAL INLINE void EXPRT cam_lam_disable  (const int c, const int n);
-EXTERNAL INLINE void EXPRT cam_lam_read     (const int c, DOWRD *lam);
+EXTERNAL INLINE void EXPRT cam_lam_read     (const int c, DWORD *lam);
 EXTERNAL INLINE void EXPRT cam_lam_clear    (const int c, const int n);
 EXTERNAL INLINE void EXPRT came_cn   (int *ext, const int b, const int c, const int n, const int a);
 EXTERNAL INLINE void EXPRT came_ext  (const int ext, int *b, int *c, int *n, int *a);
