@@ -7,6 +7,9 @@
                 linked with user code to form a complete frontend
 
   $Log$
+  Revision 1.6  1999/09/27 13:49:04  midas
+  Added bUnique parameter to cm_shutdown
+
   Revision 1.5  1999/09/23 12:45:48  midas
   Added 32 bit banks
 
@@ -1456,7 +1459,7 @@ reconnect:
     }
 
   /* shutdown previous frontend */
-  status = cm_shutdown(frontend_name);
+  status = cm_shutdown(frontend_name, FALSE);
   if (status == CM_SHUTDOWN && display_period)
     {
     printf("Previous frontend stopped\n");

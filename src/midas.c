@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.60  1999/09/27 13:49:04  midas
+  Added bUnique parameter to cm_shutdown
+
   Revision 1.59  1999/09/27 12:54:08  midas
   Finished alarm system
 
@@ -3002,7 +3005,7 @@ RUNINFO_STR(runinfo_str);
           }
 
         if (program_info.auto_stop)
-          cm_shutdown(key.name);
+          cm_shutdown(key.name, FALSE);
         }
       }
     }
@@ -3984,7 +3987,7 @@ static BOOL call_flag = FALSE;
 
 /*------------------------------------------------------------------*/
 
-INT cm_shutdown(char *name)
+INT cm_shutdown(char *name, BOOL bUnique)
 /********************************************************************\
 
   Routine: cm_shutdown
@@ -3992,7 +3995,10 @@ INT cm_shutdown(char *name)
   Purpose: Shutdown (exit) other MIDAS client
 
   Input:
-    char   name             Client name or "all" for all clients
+    char   name             Client name or "all" for all clients 
+    BOOL   bUnique          If true, look for the exact client name.
+                            If false, look for namexxx where xxx is
+                            a any number
 
   Output:
     none
@@ -4040,6 +4046,9 @@ DWORD  start_time;
       /* contact client */
       size = sizeof(client_name);
       db_get_value(hDB, hSubkey, "Name", client_name, &size, TID_STRING);
+
+      if (!bUnique)
+	client_name[strlen(name)] = 0; /* strip number */
 
       /* check if individual client */
       if (!equal_ustring("all", name) && 

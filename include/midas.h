@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.45  1999/09/27 13:49:03  midas
+  Added bUnique parameter to cm_shutdown
+
   Revision 1.44  1999/09/27 12:54:55  midas
   Finished alarm system
 
@@ -1277,7 +1280,7 @@ INT EXPRT cm_get_watchdog_params(BOOL *call_watchdog, INT *timeout);
 INT EXPRT cm_get_watchdog_info(HNDLE hDB, char *client_name, INT *timeout, INT *last);
 INT EXPRT cm_enable_watchdog(BOOL flag);
 void EXPRT cm_watchdog(int);
-INT EXPRT cm_shutdown(char *name);
+INT EXPRT cm_shutdown(char *name, BOOL bUnique);
 INT EXPRT cm_exist(char *name, BOOL bUnique);
 INT EXPRT cm_cleanup(void);
 INT EXPRT cm_yield(INT millisec);

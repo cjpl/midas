@@ -6,6 +6,9 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
+  Revision 1.53  1999/09/27 13:49:04  midas
+  Added bUnique parameter to cm_shutdown
+
   Revision 1.52  1999/09/27 12:53:50  midas
   Finished alarm system
 
@@ -3907,7 +3910,7 @@ char  str[256], ref[256], command[256], name[80];
   /* stop command */
   if (*getparam("Stop"))
     {
-    cm_shutdown(getparam("Stop")+5);
+    cm_shutdown(getparam("Stop")+5, FALSE);
     redirect("?cmd=programs");
     return;
     }
