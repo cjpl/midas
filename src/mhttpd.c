@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.140  2000/09/26 06:54:17  midas
+  Updated http link to Midas manual
+
   Revision 1.139  2000/08/28 11:04:17  midas
   Optimized header decoding
 
@@ -873,11 +876,11 @@ void show_help_page()
   rsprintf("the contents of the experiment database can be displayed and modified.<P>\n\n");
 
   rsprintf("For more information, refer to the\n"); 
-  rsprintf("<A HREF=\"http://pibeta.psi.ch/midas/manual/Manual.html\">MIDAS manual</A>.<P>\n\n");
+  rsprintf("<A HREF=\"http://midas.psi.ch/manual/Manual.html\">MIDAS manual</A>.<P>\n\n");
 
   rsprintf("<hr>\n");
   rsprintf("<address>\n");
-  rsprintf("<a href=\"http://pibeta.psi.ch/~stefan\">S. Ritt</a>, 12 Feb 1998");
+  rsprintf("<a href=\"http://pibeta.psi.ch/~stefan\">S. Ritt</a>, 26 Sep 2000");
   rsprintf("</address>");
 
   rsprintf("</body></html>\r\n");
