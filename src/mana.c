@@ -7,6 +7,13 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.85  2003/04/20 02:59:13  olchansk
+  merge ROOT code into mana.c
+  remove MANA_LITE, replaced with HAVE_HBOOK, HAVE_ROOT
+  ROOT histogramming support almost complete,
+  ROOT TTree filling is missing
+  all ROOT code is untested, but compiles with RH-8.0, GCC-3.2, ROOT v3.05.03
+
   Revision 1.84  2003/04/07 23:59:41  olchansk
   make mana.c compilable with g++ 3.2
   replace all '\t' with spaces
@@ -282,7 +289,8 @@
 #define f2cFortran
 #endif
 
-#ifndef MANA_LITE
+#ifdef HAVE_HBOOK
+
 #include <cfortran.h>
 #include <hbook.h>
 
@@ -294,7 +302,71 @@
 #ifndef HMERGE
 #define HMERGE(A1,A2,A3)  CCALLSFSUB3(HMERGE,hmerge,INT,STRINGV,STRING,A1,A2,A3)
 #endif
-#endif
+
+#endif /* HAVE_HBOOK */
+
+#ifdef HAVE_ROOT
+
+#include <assert.h>
+#include <TROOT.h>
+#include <TH1.h>
+#include <TFile.h>
+#include <TTree.h>
+
+extern void InitGui ();
+VoidFuncPtr_t initfuncs[ ] = { InitGui, 0 };
+TROOT root ("hello","Hello World", initfuncs);
+
+/* Our own ROOT global objects */
+
+TDirectory* gManaHistsDir   = NULL; // Container for all histograms
+TFile*      gManaOutputFile = NULL; // MIDAS output file
+TTree*      gManaOutputTree = NULL; // MIDAS output tree
+
+// Save all objects from given directory into given file
+INT SaveRootHistograms(TDirectory* dir,const char* filename)
+{
+  TDirectory *savedir = gDirectory;
+  TFile *outf = new TFile(filename,"RECREATE","Midas Analyzer Histograms");
+  if (outf == 0)
+    {
+    cm_msg(MERROR,"SaveRootHistograms","Cannot create output file %s",filename);
+    return 0;
+    }
+
+  outf->cd();
+  TIter next(dir->GetList());
+  while (TObject *obj = next())
+    obj->Write();
+
+  outf->Close();
+  delete outf;
+  // restore current directory
+  savedir->cd();
+  return SUCCESS;
+}
+
+// Load all objects from given file into given directory
+INT LoadRootHistograms(TDirectory* dir,const char* filename)
+{
+  TDirectory *savedir = gDirectory;
+  // restore current directory
+  savedir->cd();
+  return SUCCESS;
+}
+
+// Clear all TH1 objects in the given directory
+INT ClearRootHistograms(TDirectory* dir)
+{
+  TIter next(dir->GetList());
+  while (TObject *obj = next())
+    if (obj->InheritsFrom("TH1"))
+      ((TH1*)obj)->Reset();
+  return SUCCESS;
+}
+
+#endif /* HAVE_ROOT */
+
 /* PVM include */
 
 #ifdef PVM
@@ -366,11 +438,7 @@ int  pvm_distribute(ANALYZE_REQUEST *par, EVENT_HEADER *pevent);
 //#define PVM_DEBUG pvm_debug
 #define PVM_DEBUG
 
-#else
-
-#define PVM_DEBUG
-
-#endif
+#endif /* PVM */
 
 BOOL pvm_master=FALSE, pvm_slave=FALSE;
 
@@ -992,6 +1060,7 @@ char hbook_types[][8] = {
 };
 
 INT book_ntuples(void);
+INT book_ttree(void);
 
 void banks_changed(INT hDB, INT hKey, void *info)
 {
@@ -1003,13 +1072,17 @@ HNDLE hkey;
   db_find_key(hDB, 0, str, &hkey);
   db_close_record(hDB, hkey);
 
-#ifndef MANA_LITE
+#ifdef HAVE_HBOOK
   book_ntuples();
   printf("N-tuples rebooked\n");
 #endif
+#ifdef HAVE_ROOT
+  book_ttree();
+  printf("ROOT TTree rebooked\n");
+#endif
 }
 
-#ifndef MANA_LITE
+#ifdef HAVE_HBOOK
 INT book_ntuples(void)
 {
 INT        index, i, j, status, n_tag, size, id;
@@ -1402,8 +1475,18 @@ EVENT_DEF  *event_def;
 
   return SUCCESS;
 }
-/* !MANA_LITE */
-#endif
+#endif /* HAVE_HBOOK */
+
+#ifdef HAVE_ROOT
+
+INT book_ttree()
+{
+  //WRITEME!
+  cm_msg(MERROR,"book_ttree","not implemented");
+  return SUCCESS;
+}
+
+#endif /* HAVE_ROOT */
 
 /*-- analyzer init routine -----------------------------------------*/
 
@@ -1479,7 +1562,8 @@ double     dummy;
   db_find_key(hDB, 0, str, &hkey);
   if (hkey)
     db_delete_key(hDB, hkey, FALSE);
-#ifndef MANA_LITE
+
+#ifdef HAVE_HBOOK
   /* create global memory */
   if (clp.online)
     {
@@ -1506,7 +1590,19 @@ double     dummy;
     else
       HLIMIT(pawc_size/4);
     }
-#endif
+#endif /* HAVE_HBOOK */
+
+#ifdef HAVE_ROOT
+
+  // make sure we only come here once
+  assert(gManaHistsDir == NULL);
+  // create the directory for analyzer histograms
+  gManaHistsDir = new TDirectory("MidasHists","MIDAS Analyzer Histograms","");
+  assert(gManaHistsDir != NULL);
+  // make all ROOT objects created in user module init() functions to into gManaHistsDir
+  gManaHistsDir->cd();
+
+#endif /* HAVE_ROOT */
   
   /* call main analyzer init routine */
   status = analyzer_init();
@@ -1558,11 +1654,9 @@ INT        i, j;
 INT bor(INT run_number, char *error)
 {
 ANA_MODULE **module;
-INT        i, j, n, status, size;
+INT        i, j, size;
 char       str[256], file_name[256];
-char       *ext_str;
 BANK_LIST  *bank_list;
-INT        lrec;
 
   /* load parameters */
   load_parameters(run_number);
@@ -1592,11 +1686,13 @@ INT        lrec;
       }
 
     }
-#ifndef MANA_LITE
+
+#ifdef HAVE_HBOOK
 /* clear histos, N-tuples and tests */
   if (clp.online && out_info.clear_histos)
     {
     int hid[10000];
+    int n;
 
     for (i=0 ; analyze_request[i].event_name[0] ; i++)
       if (analyze_request[i].bank_list != NULL)
@@ -1618,13 +1714,20 @@ INT        lrec;
 
     test_clear();
     }
-#endif
+#endif /* HAVE_HBOOK */
+
+#ifdef HAVE_ROOT
+  /* clear histos, N-tuples and tests */
+  if (clp.online && out_info.clear_histos)
+    ClearRootHistograms(gManaHistsDir);
+#endif /* HAVE_ROOT */
   
   /* open output file if not already open (append mode) and in offline mode */
   if (!clp.online && out_file == NULL && !pvm_master && !equal_ustring(clp.output_file_name, "OFLN"))
     {
     if (out_info.filename[0])
       {
+      char *ext_str = NULL;
       strcpy(str, out_info.filename);
       if (strchr(str, '%') != NULL)
         sprintf(file_name, str, run_number);
@@ -1653,9 +1756,11 @@ INT        lrec;
         out_format = FORMAT_MIDAS;
       else if (strncmp(ext_str, ".rz", 3) == 0)
         out_format = FORMAT_HBOOK;
+      else if (strncmp(ext_str, ".root", 5) == 0)
+        out_format = FORMAT_ROOT;
       else
         {
-        strcpy(error, "Unknown output data format. Please use file extension .asc, .mid or .rz.\n");
+        strcpy(error, "Unknown output data format. Please use file extension .asc, .mid, .rz or .root.\n");
         cm_msg(MERROR, "bor", error);
         return 0;
         }
@@ -1684,7 +1789,9 @@ INT        lrec;
       /* open output file */
       if (out_format == FORMAT_HBOOK)
         {
-#ifndef MANA_LITE
+#ifdef HAVE_HBOOK
+        int status, lrec;
+
         lrec = clp.lrec;
 #ifdef extname
         quest_[9] = 65000;
@@ -1703,7 +1810,38 @@ INT        lrec;
           }
         else
           out_file = (FILE *) 1;
-#endif
+#else
+	cm_msg(MERROR, "bor", "HBOOK support is not compiled in");
+#endif /* HAVE_HBOOK */
+        }
+      else if (out_format == FORMAT_ROOT)
+        {
+#ifdef HAVE_ROOT
+	// ensure the output file is closed
+        assert(gManaOutputFile == NULL);
+        assert(gManaOutputTree == NULL);
+
+	gManaOutputFile = new TFile(file_name,"RECREATE","Midas Analyzer output file");
+	if (gManaOutputFile == NULL)
+	  {
+	  sprintf(error, "Cannot open output file %s", out_info.filename);
+	  cm_msg(MERROR, "bor", error);
+	  out_file = NULL;
+	  return 0;
+          }
+
+	// make all ROOT objects created by user module bor() functions
+	// go into the output file
+	gManaOutputFile->cd();
+
+	// create the output tree
+	gManaOutputTree = new TTree("T","Midas Analyzer output tree");
+	assert(gManaOutputTree != NULL);
+
+	out_file = (FILE *) 1;
+#else
+	cm_msg(MERROR, "bor", "ROOT support is not compiled in");
+#endif /* HAVE_ROOT */
         }
       else
         {
@@ -1724,15 +1862,25 @@ INT        lrec;
     else
       out_file = NULL;
 
-#ifndef MANA_LITE
+#ifdef HAVE_HBOOK
     /* book N-tuples */
     if (out_format == FORMAT_HBOOK)
       {
-      status = book_ntuples();
+      int status = book_ntuples();
       if (status != SUCCESS)
         return status;
       }
-#endif
+#endif /* HAVE_HBOOK */
+
+#ifdef HAVE_ROOT
+    /* book ROOT TTree */
+    if (out_format == FORMAT_ROOT)
+      {
+      int status = book_ttree();
+      if (status != SUCCESS)
+        return status;
+      }
+#endif /* HAVE_ROOT */
 
     } /* if (out_file == NULL) */
 
@@ -1773,7 +1921,6 @@ char       str[256], file_name[256];
   /* call main analyzer BOR routine */
   status = ana_end_of_run(run_number, error);
 
-#ifndef MANA_LITE
   /* save histos if requested */
   if (out_info.histo_dump && clp.online)
     {
@@ -1784,18 +1931,54 @@ char       str[256], file_name[256];
       strcpy(file_name, str);
 
     add_data_dir(str, file_name);
+#ifdef HAVE_HBOOK
     HRPUT(0, str, "NT");
+#endif /* HAVE_HBOOK */
+
+#ifdef HAVE_ROOT
+    SaveRootHistograms(gManaHistsDir,str);
+#endif /* HAVE_ROOT */
     }
-#endif
+
   /* close output file */
   if (out_file && !out_append)
     {
     if (out_format == FORMAT_HBOOK)
       {
-#ifndef MANA_LITE
+#ifdef HAVE_HBOOK
       HROUT(0, i, " ");
       HREND("OFFLINE");
-#endif
+#else
+      cm_msg(MERROR, "eor", "HBOOK support is not compiled in");
+#endif /* HAVE_HBOOK */
+      }
+    else if (out_format == FORMAT_ROOT)
+      {
+#ifdef HAVE_ROOT
+      // ensure that we do have an open file
+      assert(gManaOutputFile != NULL);
+      assert(gManaOutputTree != NULL);
+
+      // save the histograms
+      gManaOutputFile->cd();
+      TIter next(gManaHistsDir->GetList());
+      while (TObject *obj = next())
+	obj->Write();
+
+      // close the output file
+      gManaOutputFile->Write();
+      gManaOutputFile->Close();
+      delete gManaOutputFile;
+      gManaOutputFile = NULL;
+
+      // delete the output tree
+      gManaOutputTree = NULL;
+
+      // go to ROOT root directory
+      gROOT->cd();
+#else
+      cm_msg(MERROR, "eor", "ROOT support is not compiled in");
+#endif /* HAVE_ROOT */
       }
     else
       {
@@ -1953,12 +2136,12 @@ WORD           bktype;
   name[4] = 0;
 
   if (pevent->event_id == EVENTID_BOR)
-    sprintf(pbuf, "%%ID BOR NR %d\n", pevent->serial_number);
+    sprintf(pbuf, "%%ID BOR NR %d\n", (int)pevent->serial_number);
   else if (pevent->event_id == EVENTID_EOR)
-    sprintf(pbuf, "%%ID EOR NR %d\n", pevent->serial_number);
+    sprintf(pbuf, "%%ID EOR NR %d\n", (int)pevent->serial_number);
   else
     sprintf(pbuf, "%%ID %d TR %d NR %d\n", pevent->event_id, pevent->trigger_mask, 
-                                           pevent->serial_number);
+                                           (int)pevent->serial_number);
   STR_INC(pbuf,buffer);
 
   /*---- MIDAS format ----------------------------------------------*/
@@ -2158,7 +2341,7 @@ WORD           bktype;
 
 INT write_event_midas(FILE *file, EVENT_HEADER *pevent, ANALYZE_REQUEST *par)
 {
-INT            status, size, i;
+INT            status, size = 0, i;
 BOOL           exclude;
 BANK_HEADER    *pbh;
 BANK_LIST      *pbl;
@@ -2281,7 +2464,7 @@ static char    *buffer = NULL;
   return status;
 }
 
-#ifndef MANA_LITE
+#ifdef HAVE_HBOOK
 /*---- HBOOK output ------------------------------------------------*/
 
 INT write_event_hbook(FILE *file, EVENT_HEADER *pevent, ANALYZE_REQUEST *par)
@@ -2766,7 +2949,14 @@ WORD        bktype;
 
   return SUCCESS;
 }
-#endif
+#endif /* HAVE_HBOOK */
+
+#ifdef HAVE_ROOT
+INT write_event_ttree(FILE *file, EVENT_HEADER *pevent, ANALYZE_REQUEST *par)
+{
+  return SUCCESS;
+}
+#endif /* HAVE_ROOT */
 
 /*---- ODB output --------------------------------------------------*/
 
@@ -2902,7 +3092,7 @@ void correct_num_events(INT i)
 
 INT process_event(ANALYZE_REQUEST *par, EVENT_HEADER *pevent)
 {
-INT          i, status, ch;
+INT          i, status = SUCCESS, ch;
 ANA_MODULE   **module;
 DWORD        actual_time;
 EVENT_DEF    *event_def;
@@ -2912,7 +3102,9 @@ static char  *orig_event = NULL;
   /* verbose output */
   if (clp.verbose)
     printf("event %d, number %d, total size %d\n", 
-      pevent->event_id, pevent->serial_number, pevent->data_size+sizeof(EVENT_HEADER));
+	   (int)pevent->event_id,
+	   (int)pevent->serial_number,
+	   (int)(pevent->data_size+sizeof(EVENT_HEADER)));
 
   /* save analyze_request for event number correction */
   _current_par = par;
@@ -2949,7 +3141,9 @@ static char  *orig_event = NULL;
       /* load ODB from event */
       odb_load(pevent);
 
+#ifdef PVM
       PVM_DEBUG("process_event: ODB load");
+#endif
       }
     }
   else
@@ -3046,11 +3240,15 @@ static char  *orig_event = NULL;
   /* write resulting event */
   if (out_file)
     {
-      if (out_format == FORMAT_HBOOK) {
-#ifndef MANA_LITE
-    status = write_event_hbook(out_file, pevent, par);
-#endif
-      }
+    if (0) { }
+#ifdef HAVE_HBOOK
+    else if (out_format == FORMAT_HBOOK)
+      status = write_event_hbook(out_file, pevent, par);
+#endif /* HAVE_HBOOK */
+#ifdef HAVE_ROOT
+    else if (out_format == FORMAT_ROOT)
+      status = write_event_ttree(out_file, pevent, par);
+#endif /* HAVE_ROOT */
     else if (out_format == FORMAT_ASCII)
       status = write_event_ascii(out_file, pevent, par);
     else if (out_format == FORMAT_MIDAS)
@@ -3065,11 +3263,11 @@ static char  *orig_event = NULL;
     par->events_written++;
     }
 
-#ifndef MANA_LITE
+#ifdef HAVE_HBOOK
   /* fill shared memory */
   if ((clp.online || equal_ustring(clp.output_file_name, "OFLN")) && par->rwnt_buffer_size > 0)
     write_event_hbook(NULL, pevent, par);
-#endif
+#endif /* HAVE_HBOOK */
   
   /* put event in ODB once every second */
   if (out_info.events_to_odb)
@@ -3270,8 +3468,8 @@ DWORD    actual_time;
 
 
 /*-- Clear histos --------------------------------------------------*/
-#ifndef MANA_LITE
-INT clear_histos(INT id1, INT id2)
+#ifdef HAVE_HBOOK
+INT clear_histos_hbook(INT id1, INT id2)
 {
 INT i;
 
@@ -3290,6 +3488,7 @@ INT i;
 
   return SUCCESS;
 }
+#endif /* HAVE_HBOOK */
 
 /*------------------------------------------------------------------*/
 
@@ -3308,30 +3507,31 @@ INT i;
 
 INT ana_callback(INT index, void *prpc_param[])
 {
+#ifdef HAVE_HBOOK
   if (index == RPC_ANA_CLEAR_HISTOS)
-    clear_histos(CINT(0),CINT(1));
-
+    clear_histos_hbook(CINT(0),CINT(1));
+#endif
   return RPC_SUCCESS;
 }
-#endif
 
 /*------------------------------------------------------------------*/
 
 INT loop_online()
 {
-INT      status;
+INT      status = SUCCESS;
 DWORD    last_time_loop, last_time_update, actual_time;
 int      ch;
 FILE     *f;
 char     str[256];
 
-#ifndef MANA_LITE
   /* load previous online histos */
   if (!clp.no_load)
     {
     strcpy(str, out_info.last_histo_filename);
     if (strchr(str, DIR_SEPARATOR) == NULL)
       add_data_dir(str, out_info.last_histo_filename);
+
+#ifdef HAVE_HBOOK
     f = fopen(str, "r");
     if (f != NULL)
       {
@@ -3343,8 +3543,12 @@ char     str[256];
       if (HEXIST(100000))
         HDELET(100000);
       }
-    }
+#endif /* HAVE_HBOOK */
+
+#ifdef HAVE_ROOT
+    LoadRootHistograms(gManaHistsDir,str);
 #endif
+    }
   printf("Running analyzer online. Stop with \"!\"\n");
 
   /* main loop */
@@ -3401,9 +3605,12 @@ char     str[256];
   if (strchr(str, DIR_SEPARATOR) == NULL)
     add_data_dir(str, out_info.last_histo_filename);
 
-#ifndef MANA_LITE
   printf("Saving current online histos to %s\n", str);
+#ifdef HAVE_HBOOK
   HRPUT(0, str, "NT");
+#endif
+#ifdef HAVE_ROOT
+  SaveRootHistograms(gManaHistsDir,str);
 #endif
   
   return status;
@@ -3480,11 +3687,11 @@ INT bevid_2_mheader(EVENT_HEADER * pevent, DWORD * pybos)
     if (clp.verbose)
     {
       printf("--------- EVID --------- Event# %i ------Run#:%i--------\n"
-             ,YBOS_EVID_EVENT_NB(pdata), YBOS_EVID_RUN_NUMBER(pdata)); 
+             ,(int)(YBOS_EVID_EVENT_NB(pdata)),(int)(YBOS_EVID_RUN_NUMBER(pdata))); 
       printf("Evid:%4.4x- Mask:%4.4x- Serial:%i- Time:0x%x- Dsize:%i/0x%x"
-             ,YBOS_EVID_EVENT_ID(pdata), YBOS_EVID_TRIGGER_MASK(pdata)
-             ,YBOS_EVID_SERIAL(pdata), YBOS_EVID_TIME(pdata)
-             ,pybk->length, pybk->length);
+             ,(int)YBOS_EVID_EVENT_ID(pdata),(int)YBOS_EVID_TRIGGER_MASK(pdata)
+             ,(int)YBOS_EVID_SERIAL(pdata),(int)YBOS_EVID_TIME(pdata)
+             ,(int)pybk->length,(int)pybk->length);
     }
     pevent->event_id      = YBOS_EVID_EVENT_ID(pdata);
     pevent->trigger_mask  = YBOS_EVID_TRIGGER_MASK(pdata);
@@ -3516,7 +3723,7 @@ HNDLE hKey, hKeyRoot, hKeyEq;
         printf("Protect ODB tree \"%s\"\n", clp.protect[i]);
 
     if (!clp.quiet)
-      printf("Load ODB from run %d...", current_run_number);
+      printf("Load ODB from run %d...", (int)current_run_number);
     
     if (flag == 1)
       {
@@ -3844,7 +4051,7 @@ ANALYZE_REQUEST *par;
 INT             i, n, size;
 DWORD           num_events_in, num_events_out;
 char            error[256], str[256];
-INT             status;
+INT             status = SUCCESS;
 MA_FILE         *file;
 BOOL            skip;
 DWORD           start_time;
@@ -3852,8 +4059,10 @@ DWORD           start_time;
   /* set output file name and flags in ODB */
   sprintf(str, "/%s/Output/Filename", analyzer_name);
   db_set_value(hDB, 0, str, output_file_name, 256, 1, TID_STRING);
+#ifdef HAVE_HBOOK
   sprintf(str, "/%s/Output/RWNT", analyzer_name);
   db_set_value(hDB, 0, str, &clp.rwnt, sizeof(BOOL), 1, TID_BOOL);
+#endif
 
   /* set run number in ODB */
   db_set_value(hDB, 0, "/Runinfo/Run number", &run_number, sizeof(run_number), 1, TID_INT);
@@ -3992,10 +4201,10 @@ DWORD           start_time;
       if (!clp.quiet)
         {
         if (out_file)
-          printf("%s:%d  %s:%d  events\r", input_file_name, num_events_in, 
-                                           out_info.filename, num_events_out);
+          printf("%s:%d  %s:%d  events\r", input_file_name, (int)num_events_in, 
+                                           out_info.filename, (int)num_events_out);
         else
-          printf("%s:%d  events\r", input_file_name, num_events_in); 
+          printf("%s:%d  events\r", input_file_name, (int)num_events_in); 
 
 #ifndef OS_WINNT
         fflush(stdout);
@@ -4004,7 +4213,9 @@ DWORD           start_time;
       }
     } while(1);
 
+#ifdef PVM
   PVM_DEBUG("analyze_run: event loop finished, status = %d", status);
+#endif
 
   /* signal EOR to slaves */
 #ifdef PVM
@@ -4086,10 +4297,10 @@ DWORD           start_time;
   if (!clp.quiet)
     {
     if (out_file)
-      printf("%s:%d  %s:%d  events, %1.2lfs\n", input_file_name, num_events_in, 
-             out_info.filename, num_events_out, start_time/1000.0);
+      printf("%s:%d  %s:%d  events, %1.2lfs\n", input_file_name, (int)num_events_in, 
+             out_info.filename, (int)num_events_out, start_time/1000.0);
     else
-      printf("%s:%d  events, %1.2lfs\n", input_file_name, num_events_in, start_time/1000.0); 
+      printf("%s:%d  events, %1.2lfs\n", input_file_name, (int)num_events_in, start_time/1000.0); 
     }
 
   /* call analyzer eor routines */
@@ -4186,10 +4397,36 @@ BANK_LIST *bank_list;
     {
     if (out_format == FORMAT_HBOOK)
       {
-#ifndef MANA_LITE
+#ifdef HAVE_HBOOK
       HROUT(0, i, " ");
       HREND("OFFLINE");
+#else
+      cm_msg(MERROR, "loop_runs_offline", "HBOOK support is not compiled in");
 #endif
+      }
+    else if (out_format == FORMAT_ROOT)
+      {
+#ifdef HAVE_ROOT
+      // make sure we have an output file
+      assert(gManaOutputFile != NULL);
+
+      // save the histograms
+      gManaOutputFile->cd();
+      TIter next(gManaHistsDir->GetList());
+      while (TObject *obj = next()) {
+	obj->Write();
+      }
+
+      // close the output file
+      gManaOutputFile->Close();
+      delete gManaOutputFile;
+      gManaOutputFile = NULL;
+
+      // go to the ROOT root directory
+      gROOT->cd();
+#else
+      cm_msg(MERROR, "loop_runs_offline", "ROOT support is not compiled in");
+#endif /* HAVE_ROOT */
       }
     else
       {
@@ -4933,7 +5170,7 @@ char ext[10], *p;
     
 /*------------------------------------------------------------------*/
 
-main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
 INT status;
 
@@ -4953,8 +5190,10 @@ INT status;
   /* get default from environment */
   cm_get_environment(clp.host_name, clp.exp_name);
 
+#ifdef HAVE_HBOOK
   /* set default lrec size */
   clp.lrec = HBOOK_LREC;
+#endif /* HAVE_HBOOK */
 
   /* read in command line parameters into clp structure */
   status = getparam(argc, argv);
@@ -4983,9 +5222,11 @@ INT status;
   /* set online mode if no input filename is given */
   clp.online = (clp.input_file_name[0][0] == 0);
 
+#ifdef HAVE_HBOOK
   /* set Ntuple format to RWNT if online */
   if (clp.online || equal_ustring(clp.output_file_name, "OFLN"))
     clp.rwnt = TRUE;
+#endif /* HAVE_HBOOK */
 
 #ifdef PVM
   status = pvm_main(argv);
@@ -5058,7 +5299,7 @@ INT status;
       }
     }
 
-#ifndef MANA_LITE
+#ifndef HAVE_HBOOK
   /* register callback for clearing histos */
   cm_register_function(RPC_ANA_CLEAR_HISTOS, ana_callback);
 #endif

@@ -6,6 +6,13 @@
 #  Contents:     Makefile for MIDAS binaries and examples under unix
 #
 #  $Log$
+#  Revision 1.41  2003/04/20 02:59:13  olchansk
+#  merge ROOT code into mana.c
+#  remove MANA_LITE, replaced with HAVE_HBOOK, HAVE_ROOT
+#  ROOT histogramming support almost complete,
+#  ROOT TTree filling is missing
+#  all ROOT code is untested, but compiles with RH-8.0, GCC-3.2, ROOT v3.05.03
+#
 #  Revision 1.40  2003/04/18 01:49:49  olchansk
 #  Add "rmidas"
 #
@@ -408,10 +415,10 @@ $(LIB_DIR)/pmana.o: $(SRC_DIR)/mana.c msystem.h midas.h midasinc.h mrpc.h
 	$(CC) -Dextname -DHAVE_HBOOK -DPVM -c $(CFLAGS) $(OSFLAGS) -o $@ $<
 ifdef ROOTSYS
 $(LIB_DIR)/rmana.o: $(SRC_DIR)/mana.c msystem.h midas.h midasinc.h mrpc.h
-	$(CXX) -Dextname -DHAVE_ROOT -DMANA_LITE -c $(CFLAGS) $(OSFLAGS) -I$(ROOTSYS)/include -o $@ $<
+	$(CXX) -Dextname -DHAVE_ROOT -c $(CFLAGS) $(OSFLAGS) -I$(ROOTSYS)/include -o $@ $<
 else
 $(LIB_DIR)/rmana.o: $(SRC_DIR)/mana.c msystem.h midas.h midasinc.h mrpc.h
-	$(CXX) -Dextname -DMANA_LITE -c $(CFLAGS) $(OSFLAGS) -o $@ $<
+	$(CXX) -Dextname -c $(CFLAGS) $(OSFLAGS) -o $@ $<
 endif
 
 #
