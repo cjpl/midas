@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.67  1999/10/07 13:50:49  midas
+  Fixed bug with date in el_submit
+
   Revision 1.66  1999/10/07 13:31:18  midas
   Fixed truncated date in el_submit, cut off @host in author search
 
@@ -14248,7 +14251,7 @@ char    message[10000], *p, *buffer;
     }
 
   strcpy(str, ctime(&now));
-  str[19] = 0;
+  str[24] = 0;
 
   sprintf(message, "Date: %s\n", str);
   if (reply_to[0])
