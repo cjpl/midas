@@ -9,6 +9,9 @@
                 for HVR_300 High Voltage Regulator
 
   $Log$
+  Revision 1.9  2004/10/12 11:02:41  midas
+  Version 1.7.6
+
   Revision 1.8  2004/07/29 15:48:27  midas
   Disabled temp. measurement (unreliable)
 
@@ -158,15 +161,15 @@ MSCB_INFO_VAR code variables[] = {
    1, UNIT_COUNT,           0, 0,           0, "TripMax", &user_data[0].trip_max,    // 10
 
    /* calibration constants */
-   4, UNIT_FACTOR,          0, 0, MSCBF_FLOAT, "ADCgain", &user_data[0].adc_gain,    // 11
-   4, UNIT_VOLT,            0, 0, MSCBF_FLOAT, "ADCofs",  &user_data[0].adc_offset,  // 12
-   4, UNIT_FACTOR,          0, 0, MSCBF_FLOAT, "DACgain", &user_data[0].dac_gain,    // 13
-   4, UNIT_VOLT,            0, 0, MSCBF_FLOAT, "DACofs",  &user_data[0].dac_offset,  // 14
-   4, UNIT_FACTOR,          0, 0, MSCBF_FLOAT, "CURgain", &user_data[0].cur_gain,    // 15
-   4, UNIT_AMPERE, PRFX_MICRO, 0, MSCBF_FLOAT, "CURofs",  &user_data[0].cur_offset,  // 16
+   4, UNIT_FACTOR,          0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "ADCgain", &user_data[0].adc_gain,    // 11
+   4, UNIT_VOLT,            0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "ADCofs",  &user_data[0].adc_offset,  // 12
+   4, UNIT_FACTOR,          0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "DACgain", &user_data[0].dac_gain,    // 13
+   4, UNIT_VOLT,            0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "DACofs",  &user_data[0].dac_offset,  // 14
+   4, UNIT_FACTOR,          0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "CURgain", &user_data[0].cur_gain,    // 15
+   4, UNIT_AMPERE, PRFX_MICRO, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "CURofs",  &user_data[0].cur_offset,  // 16
 
-   4, UNIT_CELSIUS,         0, 0, MSCBF_FLOAT, "Temp",    &user_data[0].temperature, // 17
-   4, UNIT_VOLT,            0, 0, MSCBF_FLOAT, "VDAC",    &user_data[0].v_dac,       // 18
+   4, UNIT_CELSIUS,         0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "Temp",    &user_data[0].temperature, // 17
+   4, UNIT_VOLT,            0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "VDAC",    &user_data[0].v_dac,       // 18
    0
 };
 
@@ -846,6 +849,8 @@ void read_temperature(void)
 
 /*---- User loop function ------------------------------------------*/
 
+sbit led_0 = P2 ^ 4;
+
 void user_loop(void)
 {
    unsigned char channel;
@@ -870,6 +875,8 @@ void user_loop(void)
          regulation(channel);
          read_current(channel);
       }
+
+      watchdog_refresh();
    }
 
    // read_temperature();

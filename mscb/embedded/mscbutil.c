@@ -6,6 +6,9 @@
   Contents:     Various utility functions for MSCB protocol
 
   $Log$
+  Revision 1.41  2004/10/12 11:02:41  midas
+  Version 1.7.6
+
   Revision 1.40  2004/09/25 01:14:54  midas
   Started implementing slave port on SCS-1000
 
@@ -524,15 +527,15 @@ void uart_init(unsigned char port, unsigned char baud)
 
 \********************************************************************/
 {
-#if defined (CPU_C8051F310)
+#if defined (CPU_C8051F310)        // 24.5 MHz
    unsigned char code baud_table[] =
      {0x100 - 0,    //  N/A
       0x100 - 0,    //  N/A
-      0x100 - 192,  //  28800
-      0x100 - 96,   //  57600
-      0x100 - 48,   // 115200
-      0x100 - 32,   // 172800
-      0x100 - 16 }; // 345600
+      0x100 - 0,    //  N/A
+      0x100 - 213,  //  57600
+      0x100 - 106,  // 115200
+      0x100 - 71,   // 172800
+      0x100 - 35 }; // 345600
 #elif defined(CPU_C8051F320)       // 12 MHz
    unsigned char code baud_table[] =
      {0x100 - 0,    //  N/A
@@ -681,7 +684,7 @@ void sysclock_init(void)
    unsigned char i;
 
    EA = 1;                      // general interrupt enable
-   ET0 = 1;                     // Enable Timer 1 interrupt
+   ET0 = 1;                     // Enable Timer 0 interrupt
    PT1 = 1;                     // Interrupt priority high
 
 #ifdef CPU_C8051F120
@@ -689,16 +692,19 @@ void sysclock_init(void)
 #endif
 
    TMOD = (TMOD & 0x0F) | 0x01; // 16-bit counter
-#ifdef CPU_C8051F120
+#if defined(CPU_C8051F120)
    CKCON = 0x02;                // use SYSCLK/48
    TH0 = 0xAF;                  // load initial value
+#elif defined(CPU_C8051F310)
+   CKCON = 0x00;                // use SYSCLK/12
+   TH0 = 0xAF;                  // load initial value (24.5 MHz SYSCLK)
 #else
    CKCON = 0x00;                // use SYSCLK/12
    TH0 = 0xDB;                  // load initial value
 #endif
 
    TL0 = 0x00;
-   TR0 = 1;                     // start timer 1
+   TR0 = 1;                     // start timer 0
 
    _systime = 0;
 
@@ -750,8 +756,10 @@ void timer0_int(void) interrupt 1 using 2
 
 \********************************************************************/
 {
-#ifdef CPU_C8051F120
+#if defined(CPU_C8051F120)
    TH0 = 0xAF;                  // for 98 MHz clock
+#elif defined(CPU_C8051F310)
+   TH0 = 0xAF;                  // for 24.5 MHz clock
 #else
    TH0 = 0xDC;                  // reload timer values, let LSB freely run
 #endif
@@ -932,7 +940,7 @@ void delay_us(unsigned int us)
 
 void delay_us(unsigned int us)
 {
-#ifdef CPU_C8051F120
+#if defined(CPU_C8051F120) || defined(CPU_C8051F310)
    unsigned char j;
 #endif
 
@@ -941,8 +949,12 @@ void delay_us(unsigned int us)
 
    if (us <= 250) {
       for (i = (unsigned char) us; i > 0; i--) {
-#ifdef CPU_C8051F120
+#if defined(CPU_C8051F120)
          for (j=22 ; j>0 ; j--)
+            _nop_();
+#elif defined(CPU_C8051F310)
+         _nop_();
+         for (j=3 ; j>0 ; j--)
             _nop_();
 #else
          _nop_();

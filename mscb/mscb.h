@@ -6,6 +6,9 @@
   Contents:     Header fiel for MSCB funcions
 
   $Log$
+  Revision 1.37  2004/10/12 11:02:41  midas
+  Version 1.7.6
+
   Revision 1.36  2004/10/03 18:27:13  olchansk
   add MacOSX (aka darwin) native USB support
   make libusb support conditional on HAVE_LIBUSB (this allows one to use libusb on MacOSX)
@@ -192,8 +195,12 @@ typedef struct {
    char name[8];                // name
 } MSCB_INFO_VAR;
 
-#define MSCBF_FLOAT  (1<<0)     // variable in floating point format
-#define MSCBF_SIGNED (1<<1)     // variable is signed integer
+#define MSCBF_FLOAT    (1<<0)   // channel in floating point format
+#define MSCBF_SIGNED   (1<<1)   // channel is signed integer
+#define MSCBF_DATALESS (1<<2)   // channel doesn't contain data
+#define MSCBF_HIDDEN   (1<<3)   // used for internal config parameters
+#define MSCBF_REMIN    (1<<4)   // get variable from remote node on subbus
+#define MSCBF_REMOUT   (1<<5)   // send variable to remote node on subbus
 
 /* physical units */
 
