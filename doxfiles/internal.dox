@@ -27,18 +27,45 @@ to the Electronic Logbook.
 
 <hr> @section Transition_sequence Run Transition Sequence
 The run transition sequence has been modified since Midas version 1.9.5.
-The new scheme utilize transition sequence level which provides to the user
+The new scheme utilize transition sequence level which provides the user
 a full control of the sequencing of any Midas client.
 
 Midas defines 3 states of Data acquistion: \em STOPPED, \em PAUSED, \em RUNNING
 
-These 3 states requires 4 transitions : \em TR_START, \em TR_PAUSE
+These 3 states require 4 transitions : \em TR_START, \em TR_PAUSE
 , \em TR_RESUME, \em TR_STOP
 
 Any Midas client can request notification for run transition. This 
 notification is done by registering to the system for a given transition
 ( cm_register_transition() ) by specifying the transition type and the
-sequencing number (1 to 1000). 
+sequencing number (1 to 1000). Multiple registration to a given transition
+can be requested. This latest option permits for example to invoke two callback
+functions prior and after a given transition such as the start of the logger.
+
+\code
+my_application.c
+  INT before_logger(INT run_number, char *error)
+  {
+    printf("Initialize ... before the logger gets the Start Transition");
+    ...
+    return CM_SUCCESS;
+  }
+
+  INT before_logger(INT run_number, char *error)
+  {
+    printf("Log initial info to file... after logger gets the Start Transition");
+    ...
+    return CM_SUCCESS;
+  }
+
+  INT main()
+  {
+    ...
+    cm_register_transition(TR_START, before_logger, 100);
+    cm_register_transition(TR_START, after_logger, 300);
+    ...
+  }
+\endcode
 
 By Default the following sequence numbers are used:
 - Frontend     : TR_START: 500, TR_PAUSE: 500, TR_RESUME: 500,TR_STOP: 500 

@@ -88,43 +88,17 @@ the user code for further consistency check.
 
  * <center> Event Builder Flowchart.
  *  \image html eventbuilder.jpg
- *  \image latex eventbuilder.eps "Event Builder Flowchart." width=12cm
+ *  \image latex eventbuilder.eps "Event Builder Flowchart." width=8cm
  * </center> 
-
-Each frontend channel needs to send its "midas event" (fragment in this case)
-to a dedicated midas buffer with a unique "Event Identifier".
-This is specified within the frontend code in the equipment
-definition ( BUF1 instead of default SYSTEM, see also @ref ODB_Equipment_Tree):
-\code
-EQUIPMENT equipment[] = {
-
-  { "Trigger1",            // equipment name
-    1, 0,                  // event ID, trigger mask 
-    "BUF1",                // event buffer
-    ...
-\endcode
- 
-The user has the possibility of interfering into the event building process
-at several stages:
-- [Begin of run] Like in the frontend, a hook to the begin of run is available
-                for initialization etc.
-- [End of run]   Like in the frontend, a hook to the end of run is available
-                for proper closure of private task etc.
-- [Event-By-Event] Once all the fragments for a given serial number (match), the
-    user has the possibility to access these fragments for further
-    "user fragment analysis" and/or appending private data to the
-    built event through the mean of bank creation (see eb_user()).
-
-In the case of serial number mismatch or error returned from the user code, the event builder
-will abort by issuing a "stop run" transition and return to an "idle" state. 
-<strong> THERE IS NO RECOVERY PROCESS AVAILABLE YET! </strong>
 
 @section eb_tree Event builder Tree
 
 The Event builder tree will be created under the Equipment list and will
 appear as a standard equipment. The sub tree \em /Common will contains the
 specific setting of the equipment while the \em /Variables will remain empty.
-\em /Settings will have particualr parameter for the Event Builder itself
+\em /Settings will have particular parameter for the Event Builder itself.
+The <b> User Field </b> is an ASCII string passed from the ODB to the
+eb_begin_of_run() which can be used for steering the event builder.
 
 \code
 [local:midas:S]EB>ls -lr
