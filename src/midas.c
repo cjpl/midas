@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.36  1999/04/30 14:22:01  midas
+  Send buffer name via bm_notify_client to java application
+
   Revision 1.35  1999/04/30 13:19:54  midas
   Changed inter-process communication (ss_resume, bm_notify_clients, etc)
   to strings so that server process can receive it's own watchdog produced
@@ -6408,7 +6411,7 @@ static DWORD last_time = 0;
 
   if (convert_flags & CF_ASCII)
     {
-    sprintf(buffer, "MSG_BM");
+    sprintf(buffer, "MSG_BM&%s", buffer_name);
     send_tcp(socket, buffer, strlen(buffer)+1, 0);
     }
   else
