@@ -6,6 +6,11 @@
   Contents:     MIDAS logger program
 
   $Log$
+  Revision 1.88  2004/11/09 21:19:06  pierre
+  - change VARCHAR for TEXT
+  - add NOT NULL for PRIMARY KEY
+  - convert \ to / in field value
+
   Revision 1.87  2004/11/09 20:33:25  pierre
   *** empty log message ***
 
@@ -731,7 +736,8 @@ SQL_LIST *sql_list;
    strlcat(query, ") VALUES (", sizeof(query));
 
    for (i=0 ; i<n_col ; i++) {
-     while ((pstr = strchr(sql_list[i].data, DIR_SEPARATOR)) != NULL)  *pstr = '/';
+// convert \ to / as it gets drop off in the field
+      while ((pstr = strchr(sql_list[i].data, DIR_SEPARATOR)) != NULL)  *pstr = '/';
       sprintf(query+strlen(query), "'%s'", sql_list[i].data);
       if (i<n_col-1)
          strcat(query, ", ");
