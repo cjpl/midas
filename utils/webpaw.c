@@ -6,6 +6,9 @@
   Contents:     Web server for remote PAW display
 
   $Log$
+  Revision 1.32  2001/06/15 07:29:52  midas
+  Version 1.0.10
+
   Revision 1.31  2001/06/15 07:26:24  midas
   Fixed Genera/Global bug in configuration file
 
@@ -126,7 +129,7 @@
 #endif
 
 /* Version of WebPAW */
-#define VERSION "1.0.9"
+#define VERSION "1.0.10"
 
 #define WEB_BUFFER_SIZE 100000
 #define MAX_PARAM           10
