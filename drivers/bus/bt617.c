@@ -116,6 +116,20 @@ int        read;
 
 /*------------------------------------------------------------------*/
 
+int vme_write(int vh, void *src, int vme_addr, int size)
+{
+bt_error_t status;
+int        read;
+
+  status = bt_write((bt_desc_t) vh, src, vme_addr, size, &read);
+  if (status != BT_SUCCESS)
+    bt_perror((bt_desc_t) vh, status, "vme_write error");
+
+  return read;
+}
+
+/*------------------------------------------------------------------*/
+
 int vme_mmap(int vh, void **ptr, int vme_addr, int size)
 {
 bt_error_t status;
