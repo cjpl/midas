@@ -7,6 +7,9 @@
   Contents:     Symbolic constants for internal RPC functions
 
   $Log$
+  Revision 1.10  1999/08/03 11:15:07  midas
+  Added bm_skip_event
+
   Revision 1.9  1999/05/05 12:01:42  midas
   Added and modified hs_xxx functions
 
@@ -65,6 +68,7 @@
 #define RPC_BM_RECEIVE_EVENT            11111 
 #define RPC_BM_MARK_READ_WAITING        11112
 #define RPC_BM_EMPTY_BUFFERS            11113
+#define RPC_BM_SKIP_EVENT               11114
 
 #define RPC_DB_OPEN_DATABASE            11200
 #define RPC_DB_CLOSE_DATABASE           11201

@@ -6,6 +6,9 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
+  Revision 1.16  1999/08/03 11:15:07  midas
+  Added bm_skip_event
+
   Revision 1.15  1999/05/05 12:02:34  midas
   Added and modified history functions, added db_set_num_values
 
@@ -550,6 +553,10 @@ INT convert_flags;
     case RPC_BM_RECEIVE_EVENT:
       status = bm_receive_event(CINT(0), CARRAY(1), CPINT(2),
                                 CINT(3));
+      break;
+
+    case RPC_BM_SKIP_EVENT:
+      status = bm_skip_event(CINT(0));
       break;
 
     case RPC_BM_FLUSH_CACHE:

@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.42  1999/08/03 11:15:07  midas
+  Added bm_skip_event
+
   Revision 1.41  1999/07/21 09:22:01  midas
   Added Ctrl-C handler to cm_connect_experiment and cm_yield
 
@@ -5966,6 +5969,69 @@ CACHE_FULL:
 #endif /* LOCAL_ROUTINES */
 
   return SS_SUCCESS;
+}
+
+/*------------------------------------------------------------------*/
+
+INT bm_skip_event(INT buffer_handle)
+/********************************************************************\
+
+  Routine: bm_skip_event
+
+  Purpose: Skip all events in current buffer. Useful for single
+           event displays to see the newest events
+
+
+  Input:
+    INT  buffer_handle      Handle of the buffer. Must be obtained
+                            via bm_open_buffer.
+
+  Output:
+    none
+
+  Function value:
+    BM_SUCCESS              Successful completion
+    BM_INVALID_HANDLE       Buffer handle is invalid
+    RPC_NET_ERROR           Network error.
+
+\********************************************************************/
+{
+  if (rpc_is_remote())
+    return rpc_call(RPC_BM_SKIP_EVENT, buffer_handle);
+
+#ifdef LOCAL_ROUTINES
+{
+BUFFER          *pbuf;
+BUFFER_HEADER   *pheader;
+BUFFER_CLIENT   *pclient;
+
+  if (buffer_handle > _buffer_entries || buffer_handle <= 0)
+    {
+    cm_msg(MERROR, "bm_skip_event", "invalid buffer handle %d", buffer_handle);
+    return BM_INVALID_HANDLE;
+    }
+
+  pbuf = &_buffer[buffer_handle-1];
+  pheader = pbuf->buffer_header;
+
+  if (!pbuf->attached)
+    {
+    cm_msg(MERROR, "bm_skip_event", "invalid buffer handle %d", buffer_handle);
+    return BM_INVALID_HANDLE;
+    }
+
+  /* clear cache */
+  if (pbuf->read_cache_wp > pbuf->read_cache_rp)
+    pbuf->read_cache_rp = pbuf->read_cache_wp = 0;
+
+  /* forward read pointer to write pointer */
+  pclient = pheader->client + pbuf->client_index;
+  pclient->read_pointer = pheader->write_pointer;
+
+}
+#endif
+
+  return BM_SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
