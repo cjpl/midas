@@ -7,6 +7,9 @@
                 Most routines are from mfe.c mana.c and mlogger.c.
 
   $Log$
+  Revision 1.12  1999/06/23 09:31:18  midas
+  Modified error message
+
   Revision 1.11  1999/02/22 11:55:20  midas
   Fixed bug with rebooking of N-tuples
 
@@ -1573,7 +1576,8 @@ BOOL     single_names;
           }
 
         if (hKeyNames && varkey.num_values > n_names)
-          cm_msg(MERROR, "open_history", "Settings/%s contain not enough entries", key.name);
+          cm_msg(MERROR, "open_history", "/Equipment/%s/Settings/%s contains only %d entries", 
+                 eq_name, key.name, n_names);
 
         if (hKeyNames)
           {

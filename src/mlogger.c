@@ -6,6 +6,9 @@
   Contents:     MIDAS logger program
 
   $Log$
+  Revision 1.10  1999/06/23 09:31:01  midas
+  Modified error message
+
   Revision 1.9  1999/05/03 10:39:56  midas
   Log system hisotry not peridically, but on every change
 
@@ -1506,7 +1509,8 @@ BOOL     single_names;
           }
 
         if (hKeyNames && varkey.num_values > n_names)
-          cm_msg(MERROR, "open_history", "Settings/%s contain not enough entries", key.name);
+          cm_msg(MERROR, "open_history", "/Equipment/%s/Settings/%s contains only %d entries", 
+                 eq_name, key.name, n_names);
 
         if (hKeyNames)
           {
