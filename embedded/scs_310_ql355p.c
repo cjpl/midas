@@ -9,6 +9,9 @@
                 for TTI QL335P Power supply
 
   $Log$
+  Revision 1.4  2004/03/19 07:10:33  midas
+  Changed pinout for GPIB
+
   Revision 1.3  2004/01/07 12:52:23  midas
   Changed indentation
 
@@ -65,15 +68,15 @@ MSCB_INFO_VAR code variables[] = {
 /* 8 data bits to LPT */
 #define GPIB_DATA        P1
 
-/* GPIB control/status bits          DB40   */
-sbit GPIB_EOI = P0 ^ 7;         // Pin 5
-sbit GPIB_DAV = P0 ^ 6;         // Pin 6
-sbit GPIB_NRFD = P2 ^ 7;        // Pin 7
-sbit GPIB_NDAC = P2 ^ 6;        // Pin 8
-sbit GPIB_IFC = P2 ^ 5;         // Pin 9
-sbit GPIB_SRQ = P2 ^ 4;         // Pin 10 ##
-sbit GPIB_ATN = P2 ^ 4;         // Pin 11
-sbit GPIB_REM = P2 ^ 3;         // Pin 17
+/* GPIB control/status bits DB40 */
+sbit GPIB_EOI  = P2 ^ 1;         // Pin 5
+sbit GPIB_DAV  = P2 ^ 2;         // Pin 6
+sbit GPIB_NRFD = P2 ^ 3;         // Pin 7
+sbit GPIB_NDAC = P2 ^ 4;         // Pin 8
+sbit GPIB_IFC  = P2 ^ 5;         // Pin 9
+sbit GPIB_SRQ  = P2 ^ 6;         // Pin 10
+sbit GPIB_ATN  = P2 ^ 7;         // Pin 11
+sbit GPIB_REM  = P2 ^ 0;         // Pin 17
 
 #pragma NOAREGS
 
@@ -288,7 +291,7 @@ char enter(unsigned char adr, char *str, char maxlen)
          return 0;              // timeout
       }
 
-      led_blink(2, 1, 100);     // singal data received
+      led_blink(1, 1, 100);     // singal data received
 
       GPIB_NRFD = 0;            // signal busy
 
@@ -365,7 +368,7 @@ void user_loop(void)
          /* send buffer */
          send(user_data.gpib_adr, term_buf);
 
-         led_blink(2, 1, 100);
+         led_blink(1, 1, 100);
 
          /* receive buffer */
          tbwp = enter(user_data.gpib_adr, term_buf, sizeof(term_buf));
