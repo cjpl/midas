@@ -6,6 +6,9 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
+  Revision 1.20  1999/08/27 08:14:26  midas
+  Added query
+
   Revision 1.19  1999/08/26 15:19:05  midas
   Added Next/Previous button
 
@@ -84,6 +87,40 @@ char _value[MAX_PARAM][10000];
 
 int el_retrieve(char *tag, char *date, int *run, char *author, char *type, char *subject, 
                 char *text, int *size);
+
+char *mname[] = {
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December"
+};
+
+char type_list[20][NAME_LENGTH] = {
+  "Routine",
+  "Shift summary",
+  "Minor error",
+  "Severe error",
+  "Fix",
+  "Complaints",
+  "Test",
+  "Other"
+};
+
+char system_list[20][NAME_LENGTH] = {
+  "General",
+  "DAQ",
+  "Detector",
+  "Electronics",
+  "Target",
+};
 
 /*------------------------------------------------------------------*/
 
@@ -1023,10 +1060,10 @@ HNDLE hDB;
 
 void show_elog_new()
 {
-int  size, run_number;
-char str[256];
+int    i, size, run_number;
+char   str[256], ref[256];
 time_t now;
-HNDLE hDB;
+HNDLE  hDB, hkey;
 
   cm_get_experiment_database(&hDB, NULL);
 
@@ -1043,7 +1080,7 @@ HNDLE hDB;
   if (exp_name[0])
     rsprintf("<input type=hidden name=exp value=\"%s\">\n", exp_name);
 
-  rsprintf("<table border=3 cellpadding=2>\n");
+  rsprintf("<table border=3 cellpadding=5>\n");
 
   /*---- title row ----*/
 
@@ -1073,16 +1110,34 @@ HNDLE hDB;
 
   rsprintf("<tr><td bgcolor=#FFA0A0>Author: <input type=\"text\" size=\"15\" maxlength=\"80\" name=\"Author\">\n");
 
-  rsprintf("<td bgcolor=#FFA0A0>Type: <select name=\"type\">\n");
+  /* get type list from ODB */
+  size = 20*NAME_LENGTH;
+  if (db_find_key(hDB, 0, "/Elog/Types", &hkey) != DB_SUCCESS)
+    db_set_value(hDB, 0, "/Elog/Types", type_list, NAME_LENGTH*20, 20, TID_STRING);
+  db_find_key(hDB, 0, "/Elog/Types", &hkey);
+  if (hkey)
+    db_get_data(hDB, hkey, type_list, &size, TID_STRING);
 
-  rsprintf("<option value=\"Routine\"> Routine\n");
-  rsprintf("<option value=\"Shift summary\"> Shift summary\n");
-  rsprintf("<option value=\"Fix\"> Fix\n");
-  rsprintf("<option value=\"Minor error\"> Minor error\n");
-  rsprintf("<option value=\"Severe error\"> Severe error\n");
-  rsprintf("<option value=\"Complaints\"> Complaints\n");
-  rsprintf("<option value=\"Test\"> Test\n");
-  rsprintf("<option value=\"Other\"> Other\n");
+  /* get system list from ODB */
+  size = 20*NAME_LENGTH;
+  if (db_find_key(hDB, 0, "/Elog/Systems", &hkey) != DB_SUCCESS)
+    db_set_value(hDB, 0, "/Elog/Systems", system_list, NAME_LENGTH*20, 20, TID_STRING);
+  db_find_key(hDB, 0, "/Elog/Systems", &hkey);
+  if (hkey)
+    db_get_data(hDB, hkey, system_list, &size, TID_STRING);
+
+  if (exp_name[0])
+    sprintf(ref, "%sELog/?exp=%s", mhttpd_url, exp_name);
+  else
+    sprintf(ref, "%sELog/", mhttpd_url);
+  rsprintf("<td bgcolor=#FFA0A0><a href=\"%s\">Type:</a> <select name=\"type\">\n", ref);
+  for (i=0 ; i<20 && type_list[i][0] ; i++)
+    rsprintf("<option value=\"%s\">%s\n", type_list[i], type_list[i]);
+  rsprintf("</select>\n");
+
+  rsprintf("  System: <select name=\"system\">\n");
+  for (i=0 ; i<20 && system_list[i][0] ; i++)
+    rsprintf("<option value=\"%s\">%s\n", system_list[i], system_list[i]);
   rsprintf("</select></tr>\n");
 
   rsprintf("<tr><td colspan=2 bgcolor=#A0FFA0>Subject: <input type=text size=80 maxlength=\"256\" name=Subject></tr>\n");
@@ -1091,6 +1146,124 @@ HNDLE hDB;
 
   /* attachment */
   rsprintf("<tr><td colspan=2>Attachment: <input type=\"file\" size=\"50\" maxlength=\"256\" name=\"attfile\" value=\"\"> </tr>\n");
+
+  rsprintf("</tr></table>\n");
+  rsprintf("</body></html>\r\n");
+}
+
+/*------------------------------------------------------------------*/
+
+void show_elog_query()
+{
+int    i, size;
+char   str[256];
+time_t now;
+struct tm *tms;
+HNDLE  hDB, hkey;
+
+  cm_get_experiment_database(&hDB, NULL);
+
+  /* header */
+  rsprintf("HTTP/1.0 200 Document follows\r\n");
+  rsprintf("Server: MIDAS HTTP %s\r\n", cm_get_version());
+  rsprintf("Content-Type: text/html\r\n\r\n");
+
+  rsprintf("<html><head><title>MIDAS ELog</title></head>\n");
+  rsprintf("<body><form method=\"GET\" action=\"%s\">\n", mhttpd_url);
+
+  /* define hidden field for experiment */
+  if (exp_name[0])
+    rsprintf("<input type=hidden name=exp value=\"%s\">\n", exp_name);
+
+  rsprintf("<table border=3 cellpadding=5>\n");
+
+  /*---- title row ----*/
+
+  size = sizeof(str);
+  str[0] = 0;
+  db_get_value(hDB, 0, "/Experiment/Name", str, &size, TID_STRING);
+
+  rsprintf("<tr><th colspan=2 bgcolor=#A0A0FF>MIDAS Electronic Logbook");
+  rsprintf("<th colspan=2 bgcolor=#A0A0FF>Experiment \"%s\"</tr>\n", str);
+
+  /*---- menu buttons ----*/
+
+  rsprintf("<tr><td colspan=4 bgcolor=#C0C0C0>\n");
+
+  rsprintf("<input type=submit name=cmd value=\"Submit Query\">\n");
+  rsprintf("</tr>\n\n");
+
+  /*---- entry form ----*/
+
+  time(&now);
+  tms = localtime(&now);
+  tms->tm_year += 1900;
+  if (tms->tm_year < 1990)
+    tms->tm_year += 100;
+
+  rsprintf("<tr><td bgcolor=#FFFF00>Start date: ");
+  rsprintf("<td colspan=3 bgcolor=#FFFF00><select name=\"m1\" value=\"%s\">\n", mname[tms->tm_mon]);
+
+  for (i=0 ; i<12 ; i++)
+    rsprintf("<option value=\"%s\">%s\n", mname[i], mname[i]);
+  rsprintf("</select>\n");
+
+  rsprintf(" <input type=\"text\" size=3 maxlength=3 name=\"d1\" value=\"%d\">", tms->tm_mday);
+  rsprintf(" <input type=\"text\" size=5 maxlength=5 name=\"y1\" value=\"%d\">", tms->tm_year);
+  rsprintf("</tr>\n");
+
+  rsprintf("<tr><td bgcolor=#FFFF00>End date: ");
+  rsprintf("<td colspan=3 bgcolor=#FFFF00><select name=\"m2\" value=\"%s\">\n", mname[tms->tm_mon]);
+
+  for (i=0 ; i<12 ; i++)
+    rsprintf("<option value=\"%s\">%s\n", mname[i], mname[i]);
+  rsprintf("</select>\n");
+
+  rsprintf(" <input type=\"text\" size=3 maxlength=3 name=\"d2\" value=\"%d\">", tms->tm_mday);
+  rsprintf(" <input type=\"text\" size=5 maxlength=5 name=\"y2\" value=\"%d\">", tms->tm_year);
+  rsprintf("</tr>\n");
+
+  rsprintf("<tr><td bgcolor=#A0FFA0>Start run: ");
+  rsprintf("<td bgcolor=#A0FFA0><input type=\"text\" size=\"10\" maxlength=\"10\" name=\"r1\">\n");
+  rsprintf("<td bgcolor=#A0FFA0>End run: ");
+  rsprintf("<td bgcolor=#A0FFA0><input type=\"text\" size=\"10\" maxlength=\"10\" name=\"r2\">\n");
+  rsprintf("</tr>\n");
+
+  /* get type list from ODB */
+  size = 20*NAME_LENGTH;
+  if (db_find_key(hDB, 0, "/Elog/Types", &hkey) != DB_SUCCESS)
+    db_set_value(hDB, 0, "/Elog/Types", type_list, NAME_LENGTH*20, 20, TID_STRING);
+  db_find_key(hDB, 0, "/Elog/Types", &hkey);
+  if (hkey)
+    db_get_data(hDB, hkey, type_list, &size, TID_STRING);
+
+  /* get system list from ODB */
+  size = 20*NAME_LENGTH;
+  if (db_find_key(hDB, 0, "/Elog/Systems", &hkey) != DB_SUCCESS)
+    db_set_value(hDB, 0, "/Elog/Systems", system_list, NAME_LENGTH*20, 20, TID_STRING);
+  db_find_key(hDB, 0, "/Elog/Systems", &hkey);
+  if (hkey)
+    db_get_data(hDB, hkey, system_list, &size, TID_STRING);
+
+  rsprintf("<tr><td colspan=2 bgcolor=#FFA0A0>Type: ");
+  rsprintf("<select name=\"type\">\n");
+  rsprintf("<option value=\"\">\n");
+  for (i=0 ; i<20 && type_list[i][0] ; i++)
+    rsprintf("<option value=\"%s\">%s\n", type_list[i], type_list[i]);
+  rsprintf("</select>\n");
+
+  rsprintf("<td colspan=2 bgcolor=#FFA0A0>System: ");
+  rsprintf("<select name=\"system\">\n");
+  rsprintf("<option value=\"\">\n");
+  for (i=0 ; i<20 && system_list[i][0] ; i++)
+    rsprintf("<option value=\"%s\">%s\n", system_list[i], system_list[i]);
+  rsprintf("</select></tr>\n");
+
+  rsprintf("<tr><td colspan=2 bgcolor=#FFA0A0>Author: ");
+  rsprintf("<input type=\"test\" size=\"15\" maxlength=\"80\" name=\"author\">\n");
+
+  rsprintf("<td colspan=2 bgcolor=#FFA0A0>Subject: ");
+  rsprintf("<input type=\"test\" size=\"15\" maxlength=\"80\" name=\"subject\">\n");
 
   rsprintf("</tr></table>\n");
   rsprintf("</body></html>\r\n");
@@ -3348,6 +3521,12 @@ struct tm *gmt;
   if (equal_ustring(command, "previous"))
     {
     show_elog_page(-1);
+    return;
+    }
+
+  if (equal_ustring(command, "query"))
+    {
+    show_elog_query();
     return;
     }
 
