@@ -7,6 +7,9 @@
                 routines
 
   $Log$
+  Revision 1.28  2003/04/22 12:00:56  midas
+  Added rpc_client_check
+
   Revision 1.27  2003/04/15 08:17:08  midas
   Added verbose flag to db_show_mem
 
@@ -317,6 +320,7 @@ typedef struct {
   char exp_name[NAME_LENGTH];   /*  experiment to connect   */
   int  send_sock;               /*  tcp send socket         */
   INT  remote_hw_type;          /*  remote hardware type    */
+  char client_name[NAME_LENGTH];/* name of remote client    */
   INT  transport;               /*  RPC_TCP/RPC_FTCP        */
   INT  rpc_timeout;             /*  in milliseconds         */
 
@@ -582,6 +586,7 @@ INT recv_tcp_check(int sock);
 INT recv_event_check(int sock);
 INT rpc_deregister_functions(void);
 INT rpc_check_channels(void);
+void rpc_client_check();
 INT rpc_server_disconnect(void);
 int EXPRT rpc_get_send_sock(void);
 int EXPRT rpc_get_event_sock(void);
