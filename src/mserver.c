@@ -6,6 +6,9 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
+  Revision 1.54  2004/09/30 16:13:02  midas
+  Added more debugging info
+
   Revision 1.53  2004/09/28 21:02:12  midas
   Become a daemon before registering the socket server
 
@@ -179,6 +182,8 @@
 CRITICAL_SECTION buffer_critial_section;
 #endif
 
+struct callback_addr callback;
+
 INT rpc_server_dispatch(INT index, void *prpc_param[]);
 
 /*---- msg_print ---------------------------------------------------*/
@@ -197,7 +202,12 @@ INT msg_print(const char *msg)
 void debug_print(char *msg)
 {
    FILE *f;
-   char file_name[256];
+   char file_name[256], str[1000];
+   static char client_name[NAME_LENGTH] = "";
+   static DWORD start_time = 0;
+
+   if (!start_time)
+      start_time = ss_millitime();
 
    /* print message to file */
 #ifdef OS_LINUX
@@ -210,8 +220,16 @@ void debug_print(char *msg)
 #endif
    f = fopen(file_name, "a");
 
+   if (!client_name[0])
+      cm_get_client_info(client_name);
+
+   sprintf(str, "%10.3lf [%d,%s,%s] ", (ss_millitime()-start_time)/1000.0, 
+      ss_getpid(), callback.host_name, client_name);
+   strlcat(str, msg, sizeof(str));
+   strlcat(str, "\n", sizeof(str));
+
    if (f != NULL) {
-      fprintf(f, "%s\n", msg);
+      fprintf(f, str);
       fclose(f);
    } else {
       printf("Cannot open \"%s\": %s\n", file_name, strerror(errno));
@@ -266,7 +284,6 @@ int main(int argc, char **argv)
 
 \********************************************************************/
 {
-   struct callback_addr callback;
    int i, flag, size, server_type;
    char name[256], str[1000];
    BOOL inetd, daemon, debug;
