@@ -14,6 +14,9 @@
                 Brown, Prentice Hall
 
   $Log$
+  Revision 1.43  1999/10/11 14:41:10  midas
+  Added code to close stdin, stdout and stderr in daemon mode
+
   Revision 1.42  1999/10/11 14:13:47  midas
   Added ss_system which executs a program in a seperate process and closes
   all file descriptors from the parent. This is needed my mhttpd for example
@@ -1294,7 +1297,28 @@ INT ss_daemon_init()
   else if (pid != 0)
     exit(0); /* parent finished */
 
-  /* child continues */
+  /* child continues here */
+
+  /* try and use up stdin, stdout and stderr, so other
+     routines writing to stdout etc won't cause havoc. Copied from smbd */
+  for (i=0 ; i<3 ; i++) 
+    {
+    close(i);
+    fd = open("/dev/null", O_RDWR, 0);
+    if (fd < 0) 
+      fd = open("/dev/null", O_WRONLY, 0);
+    if (fd < 0) 
+      {
+      cm_msg(MERROR, "ss_system", "Can't open /dev/null");
+      return;
+      }
+    if (fd != i) {
+      {
+      cm_msg(MERROR, "ss_system", "Did not get file descriptor");
+      return;
+      }
+    }
+  
   setsid();               /* become session leader */
   chdir("/");             /* change working direcotry (not on NFS!) */
   umask(0);               /* clear our file mode createion mask */
@@ -1331,18 +1355,38 @@ INT ss_system(char *command)
 #ifdef OS_UNIX
 
   /* only implemented for UNIX */
-  int i, pid;
+  int i, fd, pid;
 
   if ( (pid = fork()) < 0)
     return SS_ABORT;
   else if (pid != 0)
     return SS_SUCCESS; /* parent returns */
 
+  /* child continues here... */
+
   /* close all open file descriptors */
   for (i=0 ; i<256 ; i++)
     close(i);
 
-  /* child continues */
+  /* try and use up stdin, stdout and stderr, so other
+     routines writing to stdout etc won't cause havoc */
+  for (i=0 ; i<3 ; i++) 
+    {
+    fd = open("/dev/null", O_RDWR, 0);
+    if (fd < 0) 
+      fd = open("/dev/null", O_WRONLY, 0);
+    if (fd < 0) 
+      {
+      cm_msg(MERROR, "ss_system", "Can't open /dev/null");
+      return;
+      }
+    if (fd != i) {
+      {
+      cm_msg(MERROR, "ss_system", "Did not get file descriptor");
+      return;
+      }
+    }
+
   setsid();               /* become session leader */
   chdir("/");             /* change working direcotry (not on NFS!) */
   umask(0);               /* clear our file mode createion mask */
