@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.133  2001/06/15 08:49:56  midas
+  Fixed bug when query gave no result if only messages from today are present
+
   Revision 1.132  2001/05/22 09:27:13  midas
   Fixed bug when searching old messages
 
@@ -15600,7 +15603,7 @@ HNDLE  hDB;
         }
 
       /* in forward direction, stop today */
-      if (direction != -1 && ltime > (DWORD)time(NULL))
+      if (direction != -1 && ltime > (DWORD)time(NULL) + 3600*24)
         break;
 
       /* in backward direction, goe back 10 years */
