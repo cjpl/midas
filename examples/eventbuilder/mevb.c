@@ -4,6 +4,9 @@ Created by:   Pierre-Andre Amaudruz
 
 Contents:     Main Event builder task.
 $Log$
+Revision 1.10  2003/08/19 23:26:36  pierre
+fix cm_get_environment arg
+
 Revision 1.9  2002/10/07 17:04:01  pierre
 fix tr_stop request
 
@@ -652,7 +655,7 @@ int main(unsigned int argc,char **argv)
   memset (&ebch[0], 0, sizeof(ebch));
 
   /* set default */
-  cm_get_environment (host_name, expt_name);
+  cm_get_environment (host_name, sizeof(host_name), expt_name, sizeof(expt_name));
 
   /* get parameters */
   for (i=1 ; i<argc ; i++)
