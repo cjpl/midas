@@ -6,6 +6,9 @@
 #  Contents:     Makefile for MIDAS binaries and examples under unix
 #
 #  $Log$
+#  Revision 1.6  1999/05/19 14:17:07  midas
+#  Prefix for installation can now be defined by environment variable PREFIX
+#
 #  Revision 1.5  1999/03/23 10:37:13  midas
 #  Removed -lbsd for Linux
 #
@@ -68,9 +71,14 @@
 #
 # System direcotries for installation, modify if needed
 #
-SYSBIN_DIR = /usr/local/bin
-SYSLIB_DIR = /usr/local/lib
-SYSINC_DIR = /usr/local/include
+
+ifndef PREFIX
+PREFIX     = /usr/local
+endif
+
+SYSBIN_DIR = $(PREFIX)/bin
+SYSLIB_DIR = $(PREFIX)/lib
+SYSINC_DIR = $(PREFIX)/include
 
 #####################################################################
 # Nothing needs to be modified after this line 
@@ -181,6 +189,7 @@ all:    $(OS_DIR) $(LIB_DIR) $(BIN_DIR) \
 	$(BIN_DIR)/mtape $(BIN_DIR)/mhist \
 	$(BIN_DIR)/mstat $(BIN_DIR)/mcnaf \
 	$(BIN_DIR)/mdump $(BIN_DIR)/lazylogger
+	echo $(PREFIX)
 
 examples: $(EXAMPLES)
 
