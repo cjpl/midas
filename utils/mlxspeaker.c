@@ -6,6 +6,9 @@
   Contents:     Speaks midas messages (UNIX version)
 
   $Log$
+  Revision 1.7  2002/06/03 06:07:15  midas
+  Added extra parameter to ss_daemon_init to keep stdout
+
   Revision 1.6  2000/09/29 09:52:14  midas
   Replace "isblank" routine which doesn't exist under DECUnix
 
@@ -149,8 +152,8 @@ usage:
 
   if (daemon)
     {
-      printf("Becoming a daemon...\n");
-      ss_daemon_init();
+    printf("Becoming a daemon...\n");
+    ss_daemon_init(FALSE);
     }
 
   /* now connect to server */

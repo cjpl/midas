@@ -6,6 +6,9 @@
   Contents:     Disk to Tape copier for background job
 
   $Log$
+  Revision 1.27  2002/06/03 06:07:14  midas
+  Added extra parameter to ss_daemon_init to keep stdout
+
   Revision 1.26  2002/05/08 19:54:40  midas
   Added extra parameter to function db_get_value()
 
@@ -1615,7 +1618,7 @@ int main(unsigned int argc,char **argv)
   if (daemon)
   {
     printf("Becoming a daemon...\n");
-    ss_daemon_init();
+    ss_daemon_init(FALSE);
   }
 
   /* connect to experiment */
