@@ -7,6 +7,10 @@
                 routines
 
   $Log$
+  Revision 1.31  2003/10/16 22:53:57  midas
+  Changed return values for ss_thread_create to return threadId.
+  Added ss_thread_kill for killing the passed threadId. (DBM - Triumf)
+
   Revision 1.30  2003/05/01 18:10:50  midas
   Made rpc_client_check() EXPRT
 
@@ -629,6 +633,7 @@ INT ss_exception_handler(void (*func)());
 void EXPRT ss_force_single_thread();
 INT EXPRT ss_suspend(INT millisec, INT msg);
 INT EXPRT ss_thread_create(INT (*func)(void *), void *param);
+INT EXPRT ss_thread_kill(INT thread_id);
 INT EXPRT ss_get_struct_align(void);
 
 /*---- socket routines ----*/
