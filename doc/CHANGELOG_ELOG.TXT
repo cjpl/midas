@@ -1,3 +1,23 @@
+Version 1.3.2, released December xxth, 2001
+===========================================
+
+- Added spaces around message number in find result page to make
+  link wider
+- Added "preset <attribute> = %03d" for automatic index generation
+
+Version 1.3.1, released December 14th, 2001
+===========================================
+
+- Display URL links in search result page
+- Fixed a few missing string translations
+- Left-align text about attachments on edit page
+- Fixed concatenation of lines in password file on password change,
+  thanks to Michael Buselli
+- Added support for crypt() function
+- Made "Required Attributes" working with "MOptions"
+- Make relative paths work for "Data dir" and "Password file"
+
+
 Version 1.3.0, released December 13th, 2001
 ===========================================
 
