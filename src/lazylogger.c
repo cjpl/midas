@@ -5,6 +5,9 @@
   Contents:     Disk to Tape copier for background job.
 
   $Log$
+  Revision 1.34  2003/11/01 00:38:11  olchansk
+  abort if cannot read Runinfo/Run number
+
   Revision 1.33  2003/06/12 18:35:51  pierre
   remove ss_tape_get_blockn
 
@@ -176,6 +179,7 @@
 #include "midas.h"
 #include "msystem.h"
 #include "ybos.h"
+#include <assert.h>
 
 #define NOTHING_TODO  0
 #define FORCE_EXIT    1
@@ -1513,7 +1517,8 @@ Function value:
   
   /* Get current run number */
   size = sizeof(cur_acq_run);
-  db_get_value (hDB, 0, "Runinfo/Run number", &cur_acq_run, &size, TID_INT, TRUE);
+  status = db_get_value (hDB, 0, "Runinfo/Run number", &cur_acq_run, &size, TID_INT, TRUE);
+  assert(status == SUCCESS);
   
   /* update "maintain free space" */
   lazy_maintain_check(pLch->hKey, pLall);
