@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.260  2003/11/20 11:29:44  midas
+  Implemented db_check_record and use it in most places instead of db_create_record
+
   Revision 1.259  2003/11/18 14:39:44  midas
   Remove red color on 'events analyzed' if /Analyzer does not exist
 
@@ -1572,28 +1575,27 @@ CHN_STATISTICS chn_stats;
 
   cm_get_experiment_database(&hDB, NULL);
 
-  status = db_find_key(hDB, 0, "/Runinfo", &hkey);
-  if (status == SUCCESS)
+  status = db_check_record(hDB, 0, "/Runinfo", strcomb(runinfo_str), FALSE);
+  if (status == DB_STRUCT_MISMATCH)
     {
-    /* do nothing */
-    }
-  else if (status == DB_NO_KEY)
-    {
-    /* create/correct /runinfo structure */
-    status = db_create_record(hDB, 0, "/Runinfo", strcomb(runinfo_str));
-    assert(status == SUCCESS);
-    status = db_find_key(hDB, 0, "/Runinfo", &hkey);
-    assert(status == SUCCESS);
-    }
-  else
-    {
-    cm_msg(MERROR, "show_status_page", "aborting on failure to find /RunInfo, status %d",status);
+    cm_msg(MERROR, "show_status_page", "Aborting on mismatching /Runinfo structure");
+    cm_disconnect_experiment();
     abort();
     }
 
+  if (status != DB_SUCCESS)
+    {
+    cm_msg(MERROR, "show_status_page", "Aborting on invalid access to ODB /Runinfo, status=%d", status);
+    cm_disconnect_experiment();
+    abort();
+    }
+
+  db_find_key(hDB, 0, "/Runinfo", &hkey);
+  assert(hkey);
+
   size = sizeof(runinfo);
   status = db_get_record(hDB, hkey, &runinfo, &size, 0);
-  assert(status == SUCCESS);
+  assert(status == DB_SUCCESS);
 
   /* header */
   rsprintf("HTTP/1.1 200 OK\r\n");

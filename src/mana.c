@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.104  2003/11/20 11:29:44  midas
+  Implemented db_check_record and use it in most places instead of db_create_record
+
   Revision 1.103  2003/11/01 23:21:30  olchansk
   per Stephan Ritt's request, remove #error Please defeine either -DHAVE_HBOOK or -DHAVE_ROOT
 
@@ -1916,7 +1919,7 @@ double     dummy;
       if (bank_list->type == TID_STRUCT)
         {
         sprintf(str, "/Equipment/%s/Variables/%s", analyze_request[i].event_name, block_name);
-        db_create_record(hDB, 0, str, strcomb(bank_list->init_str));
+        db_check_record(hDB, 0, str, strcomb(bank_list->init_str), TRUE);
         db_find_key(hDB, 0, str, &hkey);
         bank_list->def_key = hkey;
         }
@@ -1937,7 +1940,7 @@ double     dummy;
     if (analyze_request[i].init_string)
       {
       sprintf(str, "/Equipment/%s/Variables", analyze_request[i].event_name);
-      db_create_record(hDB, 0, str, strcomb(analyze_request[i].init_string));
+      db_check_record(hDB, 0, str, strcomb(analyze_request[i].init_string), TRUE);
       }
     }
 
@@ -3920,7 +3923,7 @@ HNDLE    hKey;
 
     /* create common subtree from analyze_request table in analyze.c */
     sprintf(str, "/%s/%s/Common", analyzer_name, analyze_request[index].event_name);
-    db_create_record(hDB, 0, str, ANALYZER_REQUEST_STR);
+    db_check_record(hDB, 0, str, ANALYZER_REQUEST_STR, TRUE);
     db_find_key(hDB, 0, str, &hKey);
     analyze_request[index].hkey_common = hKey;
 
@@ -3933,8 +3936,9 @@ HNDLE    hKey;
 
     /* create statistics tree */
     sprintf(str, "/%s/%s/Statistics", analyzer_name, analyze_request[index].event_name);
-    db_create_record(hDB, 0, str, ANALYZER_STATS_STR);
+    db_check_record(hDB, 0, str, ANALYZER_STATS_STR, TRUE);
     db_find_key(hDB, 0, str, &hKey);
+    assert(hKey);
 
     ar_stats->events_received = 0;
     ar_stats->events_per_sec = 0;
@@ -4207,14 +4211,16 @@ HNDLE      hkey;
             }
           if (status != DB_SUCCESS && module[j]->init_str)
             {
-            if (db_create_record(hDB, 0, str, strcomb(module[j]->init_str)) != DB_SUCCESS)
+            if (db_check_record(hDB, 0, str, strcomb(module[j]->init_str), TRUE) != DB_SUCCESS)
               {
-              cm_msg(MERROR, "init_module_parameters", "Cannot create \"%s\" parameters in ODB", str);
+              cm_msg(MERROR, "init_module_parameters", "Cannot create/check \"%s\" parameters in ODB", str);
               return 0;
               }
             }
 
           db_find_key(hDB, 0, str, &hkey);
+          assert(hkey);
+
           if (db_open_record(hDB, hkey, module[j]->parameters, module[j]->param_size,
                              MODE_READ, NULL, NULL) != DB_SUCCESS)
             {
@@ -6056,8 +6062,9 @@ int rargc;
 
   /* create ODB structure for output */
   sprintf(str, "/%s/Output", analyzer_name);
-  db_create_record(hDB, 0, str, OUT_INFO_STR);
+  db_check_record(hDB, 0, str, OUT_INFO_STR, TRUE);
   db_find_key(hDB, 0, str, &hkey);
+  assert(hkey);
   size = sizeof(out_info);
   db_get_record(hDB, hkey, &out_info, &size, 0);
 
