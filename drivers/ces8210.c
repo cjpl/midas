@@ -419,7 +419,7 @@ INLINE void cam_lam_disable(const int c, const int n)
 }
 
 /*--General functions--------------------------------------------*/
-INLINE void cam_lam_read(const int c, int *lam)
+INLINE void cam_lam_read(const int c, DWORD *lam)
 {
   CAM_GLCHK(lam);
 }
@@ -688,7 +688,7 @@ INLINE void cam_interrupt_disable(void)
 }
 
 /*--Interrupt functions------------------------------------------*/
-INLINE void cam_interrupt_attach(void (*isr)())
+INLINE void cam_interrupt_attach(void (*isr)(void))
 {
   static DWORD cbd_ifr;
   
