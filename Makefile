@@ -6,6 +6,10 @@
 #  Contents:     Makefile for MIDAS binaries and examples under unix
 #
 #  $Log$
+#  Revision 1.33  2001/10/05 22:32:38  pierre
+#  - added mvmestd in install include.
+#  - change ybos.c to ybos.o in mdump build rule.
+#
 #  Revision 1.32  2001/08/07 11:04:03  midas
 #  Added -lc flag for libmidas.so because of missing stat()
 #
@@ -153,7 +157,7 @@ SYSINC_DIR = $(PREFIX)/include
 #
 #  Midas preference flags
 #  -DYBOS_VERSION_3_3  for YBOS up to version 3.3 
-MIDAS_PREF_FLAGS  = 
+MIDAS_PREF_FLAGS  =
 
 #####################################################################
 # Nothing needs to be modified after this line 
@@ -383,8 +387,11 @@ $(BIN_DIR)/%:$(UTL_DIR)/%.c
 $(BIN_DIR)/mcnaf: $(UTL_DIR)/mcnaf.c $(DRV_DIR)/bus/camacrpc.c
 	$(CC) $(CFLAGS) $(OSFLAGS) -o $@ $(UTL_DIR)/mcnaf.c $(DRV_DIR)/bus/camacrpc.c $(LIB) $(LIBS)
 
-$(BIN_DIR)/mdump: $(UTL_DIR)/mdump.c $(SRC_DIR)/ybos.c
-	$(CC) $(CFLAGS) $(OSFLAGS) -o $@ $(UTL_DIR)/mdump.c $(SRC_DIR)/ybos.c $(LIB) -lz $(LIBS)
+$(BIN_DIR)/mdump: $(UTL_DIR)/mdump.c $(LIB_DIR)/ybos.o
+	$(CC) $(CFLAGS) $(OSFLAGS) -o $@ $(UTL_DIR)/mdump.c $(LIB) -lz $(LIBS)
+
+$(BIN_DIR)/lazylogger: $(SRC_DIR)/lazylogger.c $(LIB_DIR)/ybos.o
+	$(CC) $(CFLAGS) $(OSFLAGS) -o $@ $(SRC_DIR)/lazylogger.c $(LIB) -lz $(LIBS)
 
 $(BIN_DIR)/dio: $(UTL_DIR)/dio.c
 	$(CC) $(CFLAGS) $(OSFLAGS) -o $@ $(UTL_DIR)/dio.c $(LIB) $(LIBS)
@@ -450,7 +457,7 @@ install:
           mkdir -p $(SYSINC_DIR); \
         fi;
 
-	@for i in midas msystem midasinc mrpc ybos cfortran hbook hardware mcstd esone mfbstd ; \
+	@for i in midas msystem midasinc mrpc ybos cfortran hbook hardware mcstd mvmestd esone mfbstd ; \
 	  do \
 	  echo $$i.h ; \
 	  cp $(INC_DIR)/$$i.h $(SYSINC_DIR) ; \
