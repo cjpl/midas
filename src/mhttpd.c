@@ -6,6 +6,9 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
+  Revision 1.46  1999/09/22 08:57:08  midas
+  Implemented auto start and auto stop in /programs
+
   Revision 1.45  1999/09/21 14:57:39  midas
   Added "execute on start/stop" under /programs
 
@@ -165,8 +168,7 @@ char _text[TEXT_SIZE];
 char *_attachment_buffer;
 INT  _attachment_size;
 char remote_host_name[256];
-char _start_command[256];
-char _start_name[NAME_LENGTH];
+INT  _sock;
 
 char *mname[] = {
   "January",
@@ -409,6 +411,14 @@ void redirect(char *path)
     }
   else
     rsprintf("Location: %s%s\n\n<html>redir</html>\r\n", mhttpd_url, path);
+}
+
+void redirect2(char *path)
+{
+  redirect(path);
+  send_tcp(_sock, return_buffer, strlen(return_buffer)+1, 0);
+  closesocket(_sock);
+  return_length = -1;
 }
 
 /*------------------------------------------------------------------*/
@@ -3850,6 +3860,8 @@ char  str[256], ref[256], command[256], name[80];
   /* start command */
   if (*getparam("Start"))
     {
+    redirect2("?cmd=programs");
+
     strcpy(name, getparam("Start")+6);
     sprintf(str, "/Programs/%s/Start command", name);
     command[0] = 0;
@@ -3857,10 +3869,14 @@ char  str[256], ref[256], command[256], name[80];
     db_get_value(hDB, 0, str, command, &size, TID_STRING);
     if (command[0])
       {
-      strcpy(_start_command, command);
-      strcpy(_start_name, name);
+      system(command);
+      for (i=0 ; i<50 ; i++)
+        {
+        if (cm_exist(name, FALSE) == CM_SUCCESS)
+          break;
+        ss_sleep(100);
+        }
       }
-    redirect("?cmd=programs");
     return;
     }
 
@@ -4283,7 +4299,6 @@ struct tm *gmt;
           }
         }
 
-
       i = atoi(value);
       status = cm_transition(TR_START, i, str, sizeof(str), SYNC);
       if (status != CM_SUCCESS)
@@ -4682,7 +4697,7 @@ int                  status, i, refresh;
 struct sockaddr_in   bind_addr, acc_addr;
 char                 host_name[256];
 char                 cookie_pwd[256], boundary[256];
-int                  lsock, sock, len, flag, content_length, header_length;
+int                  lsock, len, flag, content_length, header_length;
 struct hostent       *phe;
 struct linger        ling;
 fd_set               readfds;
@@ -4795,14 +4810,14 @@ INT                  last_time=0;
     if (FD_ISSET(lsock, &readfds))
       {
       len = sizeof(acc_addr);
-      sock = accept( lsock,(struct sockaddr *) &acc_addr, &len);
+      _sock = accept( lsock,(struct sockaddr *) &acc_addr, &len);
 
       last_time = (INT) ss_time();
 
       /* turn on lingering (borrowed from NCSA httpd code) */
       ling.l_onoff = 1;
       ling.l_linger = 600;
-      setsockopt(sock, SOL_SOCKET, SO_LINGER, (char *) &ling, sizeof(ling));
+      setsockopt(_sock, SOL_SOCKET, SO_LINGER, (char *) &ling, sizeof(ling));
 
       /* ret remote host name */
       phe = gethostbyaddr((char *) &acc_addr.sin_addr, 4, PF_INET);
@@ -4819,7 +4834,7 @@ INT                  last_time=0;
       header_length = 0;
       do
         {
-        i = recv(sock, net_buffer+len, sizeof(net_buffer)-len, 0);
+        i = recv(_sock, net_buffer+len, sizeof(net_buffer)-len, 0);
       
         /* abort if connection got broken */
         if (i<0)
@@ -4905,28 +4920,17 @@ INT                  last_time=0;
         decode_post(net_buffer+header_length, boundary, content_length, cookie_pwd, refresh);
         }
 
-      if (return_length == 0)
-        return_length = strlen(return_buffer)+1;
+      if (return_length != -1)
+        {
+        if (return_length == 0)
+          return_length = strlen(return_buffer)+1;
 
-      send_tcp(sock, return_buffer, return_length, 0);
+        send_tcp(_sock, return_buffer, return_length, 0);
 
   error:
 
-      closesocket(sock);
-
-      /* start program if requested */
-      if (_start_command[0])
-        {
-        system(_start_command);
-        for (i=0 ; i<50 ; i++)
-          {
-          if (cm_exist(_start_name, FALSE) == CM_SUCCESS)
-            break;
-          ss_sleep(100);
-          }
+        closesocket(_sock);
         }
-
-      _start_command[0] = 0;
       }
 
     /* re-establish ctrl-c handler */

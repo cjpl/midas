@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.55  1999/09/22 08:57:08  midas
+  Implemented auto start and auto stop in /programs
+
   Revision 1.54  1999/09/21 14:57:39  midas
   Added "execute on start/stop" under /programs
 
@@ -2647,6 +2650,8 @@ char   str[256];
 char   error[256];
 INT    state;
 INT    old_timeout;
+KEY    key;
+PROGRAM_INFO program_info;
 RUNINFO_STR(runinfo_str);
 
   cm_get_experiment_database(&hDB, &hKey);
@@ -2714,14 +2719,43 @@ RUNINFO_STR(runinfo_str);
       return status;
     }
 
-  /* execute program on start */
+  /* execute programs on start */
   if (transition == TR_START)
     {
     str[0] = 0;
     size = sizeof(str);
     db_get_value(hDB, 0, "/Programs/Execute on start run", str, &size, TID_STRING);
     if (str[0])
-      cm_execute(str, error, sizeof(error));
+      cm_execute(str, "", 0);
+
+    db_find_key(hDB, 0, "/Programs", &hRootKey);
+    if (hRootKey)
+      {
+      for (i=0 ; ; i++)
+        {
+        status = db_enum_key(hDB, hRootKey, i, &hKey);
+        if (status == DB_NO_MORE_SUBKEYS)
+          break;
+
+        db_get_key(hDB, hKey, &key);
+      
+        /* don't check "execute on xxx" */
+        if (key.type != TID_KEY)
+          continue;
+
+        size = sizeof(program_info);
+        status = db_get_record(hDB, hKey, &program_info, &size, 0);
+        if (status != DB_SUCCESS)
+          {
+          cm_msg(MERROR, "cm_transition", "Cannot get program info record");
+          continue;
+          }
+
+        if (program_info.auto_start &&
+            program_info.start_command[0])
+          cm_execute(program_info.start_command, "", 0);
+        }
+      }
     }
 
   status = db_find_key(hDB, 0, "System/Clients", &hRootKey);
@@ -2923,14 +2957,42 @@ RUNINFO_STR(runinfo_str);
   if (transition == TR_STOP)
     db_flush_database(hDB);
 
-  /* execute program on stop */
+  /* execute/stop programs on stop */
   if (transition == TR_STOP)
     {
     str[0] = 0;
     size = sizeof(str);
     db_get_value(hDB, 0, "/Programs/Execute on stop run", str, &size, TID_STRING);
     if (str[0])
-      cm_execute(str, error, sizeof(error));
+      cm_execute(str, "", 0);
+
+    db_find_key(hDB, 0, "/Programs", &hRootKey);
+    if (hRootKey)
+      {
+      for (i=0 ; ; i++)
+        {
+        status = db_enum_key(hDB, hRootKey, i, &hKey);
+        if (status == DB_NO_MORE_SUBKEYS)
+          break;
+
+        db_get_key(hDB, hKey, &key);
+      
+        /* don't check "execute on xxx" */
+        if (key.type != TID_KEY)
+          continue;
+
+        size = sizeof(program_info);
+        status = db_get_record(hDB, hKey, &program_info, &size, 0);
+        if (status != DB_SUCCESS)
+          {
+          cm_msg(MERROR, "cm_transition", "Cannot get program info record");
+          continue;
+          }
+
+        if (program_info.auto_stop)
+          cm_shutdown(key.name);
+        }
+      }
     }
 
   /* send notification */
@@ -3119,21 +3181,26 @@ int  fh;
   if (rpc_is_remote())
     return rpc_call(RPC_CM_EXECUTE, command, result, bufsize);
   
-  strcpy(str, command);
-  sprintf(str, "%s > %d.tmp", command, ss_getpid());
-
-  system(str);
-
-  sprintf(str, "%d.tmp", ss_getpid());
-  fh = open(str, O_RDONLY, 0644);
-  result[0] = 0;
-  if (fh)
+  if (bufsize > 0)
     {
-    n = read(fh, result, bufsize-1);
-    result[max(0,n)] = 0;
-    close(fh);
+    strcpy(str, command);
+    sprintf(str, "%s > %d.tmp", command, ss_getpid());
+
+    system(str);
+
+    sprintf(str, "%d.tmp", ss_getpid());
+    fh = open(str, O_RDONLY, 0644);
+    result[0] = 0;
+    if (fh)
+      {
+      n = read(fh, result, bufsize-1);
+      result[max(0,n)] = 0;
+      close(fh);
+      }
+    remove(str);
     }
-  remove(str);
+  else
+    system(command);
 
   return CM_SUCCESS;
 }
