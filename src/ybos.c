@@ -6,6 +6,9 @@
  *         amaudruz@triumf.ca                            Local:           6234
  * ---------------------------------------------------------------------------
    $Log$
+   Revision 1.30  2001/04/30 19:58:03  pierre
+   - fix ybk_iterate for return -1 instead of 0 (empty bank possible)
+
    Revision 1.29  2000/09/28 13:11:21  midas
    Fixed compiler warning
 
@@ -734,7 +737,7 @@ INT ybk_locate (DWORD *plrl, char * bkname, void *pdata)
     @param bkname name of the bank to be located.
     @param pybkh pointer to the YBOS bank header.
     @param pdata pointer to the first data of the current bank.
-    @return  data length in 4 bytes unit. return 0 (zero) if no more bank found.
+    @return  data length in 4 bytes unit. return -1 if no more bank found.
 */
 INT   ybk_iterate (DWORD *plrl, YBOS_BANK_HEADER ** pybkh , void ** pdata)
 {
@@ -796,7 +799,7 @@ INT   ybk_iterate (DWORD *plrl, YBOS_BANK_HEADER ** pybkh , void ** pdata)
     {
       /* no more bank in this event */
       *pybkh = *pdata = NULL;
-      return (0);
+      return (-1);
     }
 }
 
@@ -2932,7 +2935,7 @@ void yb_any_bank_event_display( void * pevent, INT data_fmt, INT dsp_fmt)
     
     /* display bank content */
     pybk = NULL;
-    while (ybk_iterate((DWORD *)pevent, &pybk, (void *)&pdata) && (pybk != NULL))
+    while ((ybk_iterate((DWORD *)pevent, &pybk, (void *)&pdata) >=0) && (pybk != NULL))
       ybos_bank_display(pybk, dsp_fmt);
   }
   else if (data_fmt == FORMAT_MIDAS)
@@ -3136,7 +3139,7 @@ void ybos_bank_display(YBOS_BANK_HEADER * pybk, INT dsp_fmt)
 	j = 0;
 	i += 8;
       }
-      printf("%15.5le    ",*((double *)pdata));
+      printf("%15.5le  ",*((double *)pdata));
       ((double *)pdata)++;
       j++;
       break;
