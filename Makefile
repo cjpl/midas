@@ -7,6 +7,9 @@
 #  Contents:     Makefile for MIDAS binaries and examples under unix
 #
 #  $Log$
+#  Revision 1.60  2004/09/21 21:50:12  midas
+#  Added optional mySQL linking for mlogger
+#
 #  Revision 1.59  2004/09/18 04:33:26  olchansk
 #  Add support for linking with the static libRoot.a: use "make NEED_LIBROOTA=1"
 #  This is experimental and untested. Compilation and linking tested on RHL9 with ROOT v4.00.08.
@@ -243,6 +246,7 @@ endif
 SYSBIN_DIR = $(PREFIX)/bin
 SYSLIB_DIR = $(PREFIX)/lib
 SYSINC_DIR = $(PREFIX)/include
+
 #
 #  Midas preference flags
 #  -DYBOS_VERSION_3_3  for YBOS up to version 3.3 
@@ -267,6 +271,12 @@ NEED_RPATH=1
 # To link midas with the static ROOT library, say "make ... NEED_LIBROOTA=1"
 #
 NEED_LIBROOTA=
+
+#
+# Optional libmysqlclient library for mlogger
+#
+NEED_MYSQL=
+MYSQL_LIBS=/usr/lib/mysql/libmysqlclient.a
 
 #####################################################################
 # Nothing needs to be modified after this line 
@@ -450,6 +460,10 @@ $(BIN_DIR):
 # main binaries
 #
 
+ifdef NEED_MYSQL
+CFLAGS     += -DHAVE_MYSQL
+LIBS       += $(MYSQL_LIBS) -lz
+endif
 
 ifdef ROOTSYS
 ROOTLIBS    := $(shell $(ROOTSYS)/bin/root-config --libs)
@@ -466,18 +480,16 @@ ROOTLIBS    := $(ROOTSYS)/lib/libRoot.a -lssl -ldl -lcrypt
 ROOTGLIBS   := $(ROOTLIBS) -lfreetype
 endif
 
-$(BIN_DIR)/mlogger: $(BIN_DIR)/%: $(SRC_DIR)/%.c
-	$(CXX) $(CFLAGS) $(OSFLAGS) -DHAVE_ROOT $(ROOTCFLAGS) -o $@ $< $(LIB) $(ROOTLIBS) $(LIBS)
+CFLAGS     += -DHAVE_ROOT $(ROOTCFLAGS)
 
 $(BIN_DIR)/rmidas: $(BIN_DIR)/%: $(SRC_DIR)/%.c
 	$(CXX) $(CFLAGS) $(OSFLAGS) -DHAVE_ROOT $(ROOTCFLAGS) -o $@ $< $(LIB) $(ROOTGLIBS) $(LIBS)
-else
 
-# logger without ROOT support
+endif # ROOTSYS
+
+
 $(BIN_DIR)/mlogger: $(BIN_DIR)/%: $(SRC_DIR)/%.c
 	$(CXX) $(CFLAGS) $(OSFLAGS) -o $@ $< $(LIB) $(ROOTLIBS) $(LIBS)
-
-endif
 
 $(BIN_DIR)/%:$(SRC_DIR)/%.c
 	$(CC) $(CFLAGS) $(OSFLAGS) -o $@ $< $(LIB) $(LIBS)
