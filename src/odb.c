@@ -6,6 +6,9 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.4  1998/10/29 14:53:17  midas
+  BOOL values are displayed and read as 'y' and 'n'
+
   Revision 1.3  1998/10/12 12:19:03  midas
   Added Log tag in header
 
@@ -2507,7 +2510,24 @@ INT              i;
   if (pkey->type == TID_LINK)
     {
     db_unlock_database(hDB);
-    return db_find_key(hDB, 0, (char *) pheader + pkey->data, subkey_handle);
+
+    if (*((char *) pheader + pkey->data) == '/')
+      {
+      /* absolute path */
+      return db_find_key(hDB, 0, (char *) pheader + pkey->data, subkey_handle);
+      }
+    else
+      {
+      /* relative path */
+      if (pkey->parent_keylist)
+        {
+        pkeylist = (KEYLIST *) ((char *) pheader + pkey->parent_keylist);
+        return db_find_key(hDB, pkeylist->parent, 
+          (char *) pheader + pkey->data, subkey_handle);
+        }
+      else
+        return db_find_key(hDB, 0, (char *) pheader + pkey->data, subkey_handle);
+      }
     }
 
   *subkey_handle = (PTYPE) pkey - (PTYPE) pheader;
@@ -4610,7 +4630,7 @@ INT db_sprintf(char* string, void *data, INT data_size, INT index, DWORD type)
     case TID_INT:
       sprintf(string, "%d",  *(((INT *) data)+index)); break;
     case TID_BOOL:
-      sprintf(string, "%d",  *(((BOOL *) data)+index)); break;
+      sprintf(string, "%c",  *(((BOOL *) data)+index) ? 'y' : 'n'); break;
     case TID_FLOAT:
       sprintf(string, "%g",  *(((float *) data)+index)); break;
     case TID_DOUBLE:
@@ -4672,7 +4692,7 @@ INT db_sprintfh(char* string, void *data, INT data_size, INT index, DWORD type)
     case TID_INT:
       sprintf(string, "0x%X",  *(((INT *) data)+index)); break;
     case TID_BOOL:
-      sprintf(string, "%d",  *(((BOOL *) data)+index)); break;
+      sprintf(string, "%c",  *(((BOOL *) data)+index) ? 'y' : 'n'); break;
     case TID_FLOAT:
       sprintf(string, "%g",  *(((float *) data)+index)); break;
     case TID_DOUBLE:
@@ -4763,7 +4783,12 @@ BOOL  hex = FALSE;
         *((INT *) data+i) = atol(data_str); 
       break;
     case TID_BOOL:
-      *((BOOL *) data+i) = atoi(data_str); break;
+      if (data_str[0] == 'y' || data_str[0] == 'Y' ||
+          atoi(data_str) > 0)
+        *((BOOL *) data+i) = 1;
+      else
+        *((BOOL *) data+i) = 0;
+      break;
     case TID_FLOAT:
       *((float *) data+i) = (float) atof(data_str); break;
     case TID_DOUBLE:
