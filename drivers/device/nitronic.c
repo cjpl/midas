@@ -6,6 +6,9 @@
   Contents:     Nitronic HVS 132 High Voltage Device Driver
 
   $Log$
+  Revision 1.3  2000/12/18 13:43:49  midas
+  Implemented new bus driver scheme
+
   Revision 1.2  2000/10/19 13:00:42  midas
   Initial revision
 
@@ -18,22 +21,19 @@
 
 /*---- globals -----------------------------------------------------*/
 
-int rs232_hdev[2];
-
 typedef struct {
-  char rs232_port[NAME_LENGTH];
   int  address;
 } NITRONIC_SETTINGS;
 
 #define NITRONIC_SETTINGS_STR "\
-RS232 Port = STRING : [32] com1\n\
 Address = INT : 0\n\
 "
 
 typedef struct {
   NITRONIC_SETTINGS settings;
   int num_channels;
-  int hdev;                            /* device handle for RS232 device */
+  INT (*bd)(INT cmd, ...);             /* bus driver entry function */
+  void *bd_info;                      /* private info of bus driver */
 } NITRONIC_INFO;
 
 /*---- device driver routines --------------------------------------*/
@@ -47,11 +47,11 @@ INT  status;
   if (info->settings.address != last_address)
     {
     sprintf(str, "M%02d", info->settings.address);
-    rs232_puts(info->hdev, str);
-    status = rs232_waitfor(info->hdev, "\r+", str, 80, 5);
+    BD_PUTS(str);
+    status = BD_GETS(str, sizeof(str), "\r+", 5000);
     if (!status)
       {
-      cm_msg(MERROR, "nitronic_init", 
+      cm_msg(MERROR, "nitronic_switch", 
         "NITRONIC adr %d doesn't respond. Check power and RS232 connection.", 
         info->settings.address);
       return;
@@ -63,11 +63,11 @@ INT  status;
 
 /*------------------------------------------------------------------*/
 
-INT nitronic_init(HNDLE hKey, void **pinfo, INT channels)
+INT nitronic_init(HNDLE hkey, void **pinfo, INT channels, INT (*bd)(INT cmd, ...))
 {
-int          status, size, no;
+int          status, size;
 char         str[256];
-HNDLE        hDB;
+HNDLE        hDB, hkeydd;
 NITRONIC_INFO *info;
 
   /* allocate info structure */
@@ -77,42 +77,32 @@ NITRONIC_INFO *info;
   cm_get_experiment_database(&hDB, NULL);
 
   /* create NITRONIC settings record */
-  status = db_create_record(hDB, hKey, "", NITRONIC_SETTINGS_STR);
+  status = db_create_record(hDB, hkey, "DD", NITRONIC_SETTINGS_STR);
   if (status != DB_SUCCESS)
     return FE_ERR_ODB;
 
+  db_find_key(hDB, hkey, "DD", &hkeydd);
   size = sizeof(info->settings);
-  db_get_record(hDB, hKey, &info->settings, &size, 0);
+  db_get_record(hDB, hkeydd, &info->settings, &size, 0);
 
   info->num_channels = channels;
+  info->bd = bd;
 
-  /* initialize RS232 port */
-  no = info->settings.rs232_port[3] - '0';
-  if (no < 1)
-    no = 1;
-  if (no > 2)
-    no = 2;
+  /* initialize bus driver */
+  if (!bd)
+    return FE_ERR_ODB;
 
-  if (rs232_hdev[no-1])
-    info->hdev = rs232_hdev[no-1];
-  else
-    {
-    info->hdev = rs232_init(info->settings.rs232_port, 9600, 'N', 8, 1, 0);
-    if (info->hdev < 0)
-      {
-      cm_msg(MERROR, "nitronic_init", "Cannot access port \"%s\"", info->settings.rs232_port);
-      return FE_ERR_HW;
-      }
+  status = bd(CMD_INIT, hkey, &info->bd_info);
 
-    rs232_hdev[no-1] = info->hdev;
-    }
+  if (status != SUCCESS)
+    return status;
 
-  rs232_debug(FALSE);
+  bd(CMD_DEBUG, TRUE);
 
   /* check if module is living  */
   sprintf(str, "M%02d", info->settings.address);
-  rs232_puts(info->hdev, str);
-  status = rs232_waitfor(info->hdev, "\r+", str, 80, 2);
+  BD_PUTS(str);
+  status = BD_GETS(str, sizeof(str), "\r+", 2000);
   if (!status)
     {
     cm_msg(MERROR, "nitronic_init", "NITRONIC adr %d doesn't respond. Check power and RS232 connection.", info->settings.address);
@@ -120,10 +110,10 @@ NITRONIC_INFO *info;
     }
 
   /* turn on HV main switch */
-  rs232_puts(info->hdev, "ONA");
-  rs232_waitfor(info->hdev, "\r+", str, 80, 5);
+  BD_PUTS("ONA");
+  BD_GETS(str, sizeof(str), "\r+", 5000);
 
-  rs232_puts(info->hdev, "M16\r\n");
+  BD_PUTS("M16\r\n");
 
   return FE_SUCCESS;
 }
@@ -132,7 +122,7 @@ NITRONIC_INFO *info;
 
 INT nitronic_exit(NITRONIC_INFO *info)
 {
-  rs232_exit(info->hdev);
+  info->bd(CMD_EXIT, info->bd_info);
   
   free(info);
 
@@ -148,9 +138,8 @@ char  str[80];
   nitronic_switch(info);
 
   sprintf(str, "UCH%02d%04.0fL", channel+1, value);
-
-  rs232_puts(info->hdev, str);
-  rs232_waitfor(info->hdev, "+", str, 80, 1);
+  BD_PUTS(str);
+  BD_GETS(str, sizeof(str), "+", 1000);
 
   return FE_SUCCESS;
 }
@@ -167,8 +156,8 @@ INT   i;
   for (i=0 ; i<channels ; i++)
     {
     sprintf(str, "UCH%02d%04.0fL", i+1, value);
-    rs232_puts(info->hdev, str);
-    rs232_waitfor(info->hdev, "+", str, 80, 3);
+    BD_PUTS(str);
+    BD_GETS(str, sizeof(str), "+", 3000);
     }
 
   return FE_SUCCESS;
@@ -184,8 +173,8 @@ char  str[256];
   nitronic_switch(info);
 
   sprintf(str, "CH%02dL", channel+1);
-  rs232_puts(info->hdev, str);
-  rs232_waitfor(info->hdev, "\r+", str, 80, 1);
+  BD_PUTS(str);
+  BD_GETS(str, sizeof(str), "+", 1000);
   sscanf(str+14, "%d", &value);
 
   *pvalue = (float) value;
@@ -203,8 +192,8 @@ char  str[256];
   nitronic_switch(info);
 
   sprintf(str, "CH%02dL", channel+1);
-  rs232_puts(info->hdev, str);
-  rs232_waitfor(info->hdev, "\r+", str, 80, 1);
+  BD_PUTS(str);
+  BD_GETS(str, sizeof(str), "+", 1000);
   sscanf(str+19, "%d", &value);
 
   *pvalue = (float) value;
@@ -221,20 +210,19 @@ char  str[256];
 
   nitronic_switch(info);
 
-  sprintf(str, "CH01A");
-  rs232_puts(info->hdev, str);
-  rs232_waitfor(info->hdev, "\r", str, 80, 5);
+  BD_PUTS("CH01A");
+  BD_GETS(str, sizeof(str), "\r", 5000);
 
   for (i=0 ; i < 32 ; i++)
     {
-    rs232_waitfor(info->hdev, "\r", str, 80, 5);
+    BD_GETS(str, sizeof(str), "\r", 5000);
     if (i < channels)
       {
       sscanf(str+12, "%d", &value);
       array[i] = (float) value;
       }
     }
-  rs232_waitfor(info->hdev, "+", str, 80, 2);
+  BD_GETS(str, sizeof(str), "+", 2000);
 
   return FE_SUCCESS;
 }
@@ -248,20 +236,19 @@ char  str[256];
 
   nitronic_switch(info);
 
-  sprintf(str, "CH01A");
-  rs232_puts(info->hdev, str);
-  rs232_waitfor(info->hdev, "\r", str, 80, 5);
+  BD_PUTS("CH01A");
+  BD_GETS(str, sizeof(str), "\r", 5000);
 
   for (i=0 ; i < 32 ; i++)
     {
-    rs232_waitfor(info->hdev, "\r", str, 80, 5);
+    BD_GETS(str, sizeof(str), "\r", 5000);
     if (i < channels)
       {
       sscanf(str+19, "%d", &value);
       array[i] = (float) value;
       }
     }
-  rs232_waitfor(info->hdev, "+", str, 80, 2);
+  BD_GETS(str, sizeof(str), "+", 2000);
 
   return FE_SUCCESS;
 }
@@ -275,8 +262,8 @@ char str[256];
   nitronic_switch(info);
 
   sprintf(str, "ICH01%04dA", (int)limit);
-  rs232_puts(info->hdev, str);
-  rs232_waitfor(info->hdev, "\r+", str, 80, 5);
+  BD_PUTS(str);
+  BD_GETS(str, sizeof(str), "\r+", 5000);
 
   return FE_SUCCESS;
 }
@@ -289,7 +276,7 @@ va_list argptr;
 HNDLE   hKey;
 INT     channel, status;
 float   value, *pvalue;
-void    *info;
+void    *info, *bd;
 
   va_start(argptr, cmd);
   status = FE_SUCCESS;
@@ -300,7 +287,8 @@ void    *info;
       hKey = va_arg(argptr, HNDLE);
       info = va_arg(argptr, void *);
       channel = va_arg(argptr, INT);
-      status = nitronic_init(hKey, info, channel);
+      bd = va_arg(argptr, void *);
+      status = nitronic_init(hKey, info, channel, bd);
       break;
 
     case CMD_EXIT:
