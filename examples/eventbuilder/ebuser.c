@@ -6,8 +6,11 @@
   Contents:     User section for the Event builder
 
   $Log$
-  Revision 1.1  2002/01/17 19:49:54  pierre
-  Initial revision
+  Revision 1.2  2002/01/17 23:34:29  pierre
+  doc++ format
+
+  Revision 1.1.1.1  2002/01/17 19:49:54  pierre
+  Initial Version
 
 \********************************************************************/
 
@@ -54,7 +57,7 @@ INT eb_end_of_run(INT rn, char * error)
 }
 
 /*--------------------------------------------------------------------*/
-/** eb_user()
+/** @name eb_user()
 Hook to the event builder task after the reception of
 all fragments of the same serial number. The destination
 event has already the final EVENT_HEADER setup with
@@ -77,7 +80,8 @@ The correct code for including your own bank is shown below where
 {\bf TID_xxx} is one of the valid Bank type starting with {\bf TID_} for
 midas format or {\bf xxx_BKTYPE} for Ybos data format.
 {\bf bank_name} is a 4 character descriptor.
-{\bf pdata} has to be declared accordingly with the bank type. The
+{\bf pdata} has to be declared accordingly with the bank type.
+Refers to the ebuser.c source code for further description.
 
 {\Large It is not possible to mix within the same destination event different
    event format!}
@@ -99,6 +103,7 @@ midas format or {\bf xxx_BKTYPE} for Ybos data format.
 @param pheader Destination pointer to the header.
 @param pevent Destination pointer to the bank header.
 @param dest_size Destination event size in bytes.
+@memo  event builder user code for private data filtering.
 @return
 */
 INT eb_user(INT nfrag
