@@ -6,6 +6,10 @@
  *         amaudruz@triumf.ca                            Local:           6234
  * -----------------------------------------------------------------------------
    $Log$
+   Revision 1.21  1999/12/13 23:26:40  pierre
+   - Active FTP for YBOS format (yb_any_file_wopen)
+   - Remove printf dbg in ybos_write()
+
    Revision 1.20  1999/09/30 22:56:46  pierre
    - Change TID_DOUBLE, D8_BKTYPE display format
    - fix return yb_any_swap
@@ -1230,22 +1234,15 @@ INT ybos_write(LOG_CHN *log_chn, EVENT_HEADER *pevent, INT evt_size)
       else
       	ybk_create(pbktop, "MODB", A1_BKTYPE, &pbkdat);
 
-      printf("pbktop:%p (%x)\n",pbktop, *pbktop);
       memcpy ((char *)pbkdat, (char *)(pevent+1), pevent->data_size);
       (char *) pbkdat += datasize;
       ybk_close(pbktop, pbkdat);
       
-      printf("pbktop:%p (%x)\n",pbktop, *pbktop);
-      printf("%x - %x-%x-%x - %x-%x-%x-%x\n",
-	     *pbktop,*(pbktop+1),*(pbktop+2),*(pbktop+3),
-	     *(pbktop+4),*(pbktop+5),*(pbktop+6),*(pbktop+7));
-
       /* event size in bytes for Midas */
       evt_size = ybk_size(pbktop);
       
       /* swap bytes if necessary based on the ybos.bank_type */
       ybos_event_swap((DWORD *)pbktop);
-      printf("pbktop:%p (%x) [%x]\n",pbktop, *pbktop, evt_size);
       
       /* Event with MIDAS header striped out */
       memcpy( (char *)ybos->pbuf, (char *) pbktop, evt_size);
@@ -1772,43 +1769,53 @@ INT   yb_any_file_wopen (INT type, INT data_fmt, char * filename, INT * hDev)
 {
   INT status;
 
-  if (data_fmt == FORMAT_YBOS)   
-    /* takes care of TapeLX/NT under ss_tape_open , DiskLX/NT there */
-    status = ybos_logfile_open(type, filename, hDev); 
-  else if (data_fmt == FORMAT_MIDAS)
+  if (type == LOG_TYPE_DISK)
+  /* takes care of TapeLX/NT under ss_tape_open , DiskLX/NT here */
+  {
+    if (data_fmt == FORMAT_YBOS)   
     {
-      if (type == LOG_TYPE_DISK)
-        /* takes care of TapeLX/NT under ss_tape_open , DiskLX/NT here */
-        {
-#ifdef OS_WINNT       
-         *hDev = (int) CreateFile(filename, GENERIC_WRITE, FILE_SHARE_READ, NULL, 
-                    CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_WRITE_THROUGH | 
-                     FILE_FLAG_SEQUENTIAL_SCAN, 0);
-#else
-         *hDev = open(filename, O_WRONLY | O_CREAT | O_TRUNC | O_BINARY, 0644);
-#endif
-         status = *hDev < 0 ? SS_FILE_ERROR : SS_SUCCESS;
-        }
-      else if (type == LOG_TYPE_TAPE)
-        status = ss_tape_open(filename, O_WRONLY | O_CREAT | O_TRUNC, hDev);
-      else if (type == LOG_TYPE_FTP)
-        {
-
-#ifdef INCLUDE_FTPLIB
-          status = yb_ftp_open(filename,(FTP_CON **)&ftp_con);
-          if (status != SS_SUCCESS)
-            {
-            *hDev = 0;
-            return status;
-            }
-          else
-            *hDev = 1;
-#else
-      cm_msg(MERROR,"ybos","FTP support not included");
-      return SS_FILE_ERROR;
-#endif
-       }
+      /* takes care of TapeLX/NT under ss_tape_open , DiskLX/NT there */
+      status = ybos_logfile_open(type, filename, hDev); 
     }
+    else if (data_fmt == FORMAT_MIDAS)
+    {
+#ifdef OS_WINNT       
+      *hDev = (int) CreateFile(filename, GENERIC_WRITE, FILE_SHARE_READ, NULL, 
+              CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_WRITE_THROUGH | 
+               FILE_FLAG_SEQUENTIAL_SCAN, 0);
+#else
+      *hDev = open(filename, O_WRONLY | O_CREAT | O_TRUNC | O_BINARY, 0644);
+#endif
+     status = *hDev < 0 ? SS_FILE_ERROR : SS_SUCCESS;
+    }
+  }
+  else if (type == LOG_TYPE_TAPE)
+  {
+    if (data_fmt == FORMAT_YBOS)   
+    {
+      /* takes care of TapeLX/NT under ss_tape_open , DiskLX/NT there */
+      status = ybos_logfile_open(type, filename, hDev); 
+    }
+    else if (data_fmt == FORMAT_MIDAS)
+      status = ss_tape_open(filename, O_WRONLY | O_CREAT | O_TRUNC, hDev);
+  }
+  else if (type == LOG_TYPE_FTP)
+  {
+#ifdef INCLUDE_FTPLIB
+    status = yb_ftp_open(filename,(FTP_CON **)&ftp_con);
+    if (status != SS_SUCCESS)
+    {
+      *hDev = 0;
+      return status;
+    }
+    else
+      *hDev = 1;
+#else
+  cm_msg(MERROR,"yb_any_file_wopen","FTP support not included");
+  return SS_FILE_ERROR;
+#endif
+  }
+
   return status;
 }
 
