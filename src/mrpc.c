@@ -6,6 +6,9 @@
   Contents:     List of MIDAS RPC functions with parameters
 
   $Log$
+  Revision 1.14  1999/09/17 11:48:07  midas
+  Alarm system half finished
+
   Revision 1.13  1999/09/15 13:33:36  midas
   Added remote el_submit functionality
 
@@ -562,6 +565,16 @@ static RPC_LIST rpc_list_library[] = {
      {TID_INT,        RPC_IN},
      {TID_STRING,     RPC_OUT}, 
      {TID_INT,        RPC_IN},
+     {0} }},
+
+  /* alarm  funcions */
+
+  { RPC_AL_CHECK, "al_check",
+     {{0}}},
+
+  { RPC_AL_TRIGGER_ALARM, "al_trigger_alarm",
+    {{TID_STRING,     RPC_IN}, 
+     {TID_STRING,     RPC_IN},
      {0} }},
 
   /* run control */

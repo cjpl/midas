@@ -6,6 +6,9 @@
   Contents:     Command-line interface to the MIDAS online data base.
 
   $Log$
+  Revision 1.21  1999/09/17 11:48:08  midas
+  Alarm system half finished
+
   Revision 1.20  1999/07/21 09:22:02  midas
   Added Ctrl-C handler to cm_connect_experiment and cm_yield
 
@@ -1309,8 +1312,10 @@ PRINT_INFO      print_info;
         pc++;
         for (i=0 ; *pc && *pc != '"' ; i++)
           param[nparam][i] = *pc++;
+/*
         while(strlen(param[nparam]) > 0 && param[nparam][strlen(param[nparam])-1] == ' ')
           param[nparam][strlen(param[nparam])-1] = 0;
+*/
         if (*pc)
           pc++;
         }
@@ -1989,6 +1994,28 @@ PRINT_INFO      print_info;
         }
       }
 
+    /* alarm reset */
+    else if (param[0][0] == 'a' && param[0][1] == 'l')
+      {
+      /* go through all triggered alarms */
+      db_find_key(hDB, 0, "/Alarms/Classes", &hKey);
+      if (hKey)
+        {
+        for (i=0 ; ; i++)
+          {
+          db_enum_link(hDB, hKey, i, &hSubkey);
+
+          if (!hSubkey)
+            break;
+
+          db_get_key(hDB, hSubkey, &key);
+          status = al_reset_alarm(key.name);
+          if (status == AL_RESET)
+            printf("Alarm of class \"%s\" reset sucessfully\n", key.name);
+          }
+        }
+      }
+
     /* mem */
     else if (param[0][0] == 'm' && param[0][1] == 'e')
       {
@@ -2467,6 +2494,7 @@ PRINT_INFO      print_info;
     /* test 3 */
     else if (param[0][0] == 't' && param[0][1] == '3')
       {
+      al_check();
       }
 
     /* exit/quit */

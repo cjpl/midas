@@ -6,6 +6,9 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.24  1999/09/17 11:48:07  midas
+  Alarm system half finished
+
   Revision 1.23  1999/09/13 11:07:58  midas
   Test for NULL strings in equal_ustring
 
@@ -4716,11 +4719,11 @@ KEY              root_key;
               }
             }
 
-          /* skip system entries */
+          /* skip system client entries */
           strcpy(test_str, key_name);
-          test_str[6] = 0;
+          test_str[15] = 0;
 
-          if (!equal_ustring(test_str, "System"))
+          if (!equal_ustring(test_str, "/System/Clients"))
             {
             if (root_key.type != TID_KEY)
               {

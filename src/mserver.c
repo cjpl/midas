@@ -6,6 +6,9 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
+  Revision 1.18  1999/09/17 11:48:07  midas
+  Alarm system half finished
+
   Revision 1.17  1999/09/15 13:33:36  midas
   Added remote el_submit functionality
 
@@ -868,6 +871,14 @@ INT convert_flags;
                          CARRAY(9), CINT(10), CSTRING(11), CINT(12));
       break;
     
+    case RPC_AL_CHECK:
+      status = al_check();
+      break;
+
+    case RPC_AL_TRIGGER_ALARM:
+      status = al_trigger_alarm(CSTRING(0), CSTRING(1));
+      break;
+
     /* exit functions */
     case RPC_ID_EXIT:
     case RPC_ID_SHUTDOWN:
