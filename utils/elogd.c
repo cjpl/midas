@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.98  2001/12/21 13:28:08  midas
+  Adjusted spaces in find page display for link with message number
+
   Revision 1.97  2001/12/17 12:11:22  midas
   Added "Preset <attrib> = %03d"
 
@@ -308,7 +311,7 @@
 \********************************************************************/
 
 /* Version of ELOG */
-#define VERSION "1.3.1"
+#define VERSION "1.3.2"
 
 #include <stdio.h>
 #include <sys/types.h>
@@ -4925,7 +4928,7 @@ FILE   *f;
           size = printable ? 2 : 3;
           nowrap = printable ? "" : "nowrap";
 
-          rsprintf("<td align=center bgcolor=%s><font size=%d><a href=\"%s\">&nbsp; %d &nbsp;</a></font></td>", col, size, ref, n_found);
+          rsprintf("<td align=center bgcolor=%s><font size=%d><a href=\"%s\">&nbsp;&nbsp;%d&nbsp;&nbsp;</a></font></td>", col, size, ref, n_found);
 
           if (atoi(getparam("all")) == 1)
             rsprintf("<td align=center %s bgcolor=%s><font size=%d>%s</font></td>", nowrap, col, size, logbook_list[lindex]);
@@ -5093,7 +5096,7 @@ FILE   *f;
           size = printable ? 2 : 3;
           nowrap = printable ? "" : "nowrap";
 
-          rsprintf("<td align=center bgcolor=%s><font size=%d><a href=\"%s\">&nbsp; %d &nbsp;</a></font></td>", col, size, ref, n_found);
+          rsprintf("<td align=center bgcolor=%s><font size=%d><a href=\"%s\">&nbsp;&nbsp;%d&nbsp;&nbsp;</a></font></td>", col, size, ref, n_found);
 
           if (atoi(getparam("all")) == 1)
             rsprintf("<td align=center %s bgcolor=%s>%s</td>", nowrap, col, logbook_list[lindex]);
