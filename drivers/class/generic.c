@@ -6,6 +6,9 @@
   Contents:     Generic Class Driver
 
   $Log$
+  Revision 1.4  2002/05/09 03:02:37  midas
+  Simplified driver to better serve as template for more complicated drivers
+
   Revision 1.3  2002/05/08 19:54:40  midas
   Added extra parameter to function db_get_value()
 
@@ -45,7 +48,6 @@ typedef struct {
   /* globals */
   INT    num_channels;
   INT    format;
-  DWORD  last_update;
   INT    last_channel;
 
   /* items in /Variables record */
@@ -59,7 +61,6 @@ typedef struct {
   /* mirror arrays */
   float  *demand_mirror;
   float  *measured_mirror;
-  DWORD  *last_change;
 
   void   **driver;
   INT    *channel_offset;
@@ -85,7 +86,6 @@ static void free_mem(GEN_INFO *gen_info)
 
   free(gen_info->demand_mirror);
   free(gen_info->measured_mirror);
-  free(gen_info->last_change);
 
   free(gen_info->dd_info);
   free(gen_info->channel_offset);
@@ -99,9 +99,7 @@ static void free_mem(GEN_INFO *gen_info)
 INT gen_read(EQUIPMENT *pequipment, int channel)
 {
 int          i, status;
-float        max_diff;
-DWORD        act_time, min_time;
-BOOL         changed;
+DWORD        act_time;
 GEN_INFO     *gen_info;
 HNDLE        hDB;
 
@@ -118,35 +116,21 @@ HNDLE        hDB;
   act_time = ss_millitime();
 
   /* check for update measured */
-  max_diff = 0.f;
-  min_time = 10000;
-  changed  = FALSE;
   for (i=0 ; i<gen_info->num_channels ; i++)
     {
-    if ( abs(gen_info->measured[i] - gen_info->measured_mirror[i]) > max_diff)
-      max_diff = abs(gen_info->measured[i] - gen_info->measured_mirror[i]);
-
+    /* update if change is more than update_threshold */
     if ( abs(gen_info->measured[i] - gen_info->measured_mirror[i]) > gen_info->update_threshold[i])
-      changed = TRUE;
+      {
+      for (i=0 ; i<gen_info->num_channels ; i++)
+        gen_info->measured_mirror[i] = gen_info->measured[i];
 
-    if ( act_time - gen_info->last_change[i] < min_time)
-      min_time = act_time - gen_info->last_change[i];
-    }
+      db_set_data(hDB, gen_info->hKeyMeasured, gen_info->measured, 
+                  sizeof(float)*gen_info->num_channels, gen_info->num_channels, TID_FLOAT);
 
-  /* update if change is more than update_sensitivity or less than 2sec ago 
-     or last update is older than a minute */
-  if (changed || (min_time < 2000 && max_diff > 0) ||
-      act_time - gen_info->last_update > 60000)
-    {
-    gen_info->last_update = act_time;
+      pequipment->odb_out++;
 
-    for (i=0 ; i<gen_info->num_channels ; i++)
-      gen_info->measured_mirror[i] = gen_info->measured[i];
-
-    db_set_data(hDB, gen_info->hKeyMeasured, gen_info->measured, 
-                sizeof(float)*gen_info->num_channels, gen_info->num_channels, TID_FLOAT);
-
-    pequipment->odb_out++;
+      break;
+      }
     }
 
   /*---- read demand value ----*/
@@ -183,7 +167,6 @@ EQUIPMENT *pequipment;
       status = DRIVER(i)(CMD_SET, gen_info->dd_info[i], 
                          i-gen_info->channel_offset[i], gen_info->demand[i]);
       gen_info->demand_mirror[i] = gen_info->demand[i];
-      gen_info->last_change[i] = ss_millitime();
       }
 
   pequipment->odb_in++;
@@ -269,7 +252,6 @@ GEN_INFO *gen_info;
 
   gen_info->demand_mirror    = (float *) calloc(gen_info->num_channels, sizeof(float));
   gen_info->measured_mirror  = (float *) calloc(gen_info->num_channels, sizeof(float));
-  gen_info->last_change      = (DWORD *) calloc(gen_info->num_channels, sizeof(DWORD));
 
   gen_info->dd_info          = (void *)  calloc(gen_info->num_channels, sizeof(void*));
   gen_info->channel_offset   = (INT *)   calloc(gen_info->num_channels, sizeof(INT));
@@ -340,7 +322,7 @@ GEN_INFO *gen_info;
     {
     DRIVER(i)(CMD_GET_DEMAND, gen_info->dd_info[i], 
               i-gen_info->channel_offset[i], &gen_info->demand[i]);
-    gen_info->demand_mirror[i] = -12345.f; /* invalid value */
+    gen_info->demand_mirror[i] = -12345.f; /* use -12345 as invalid value */
     }
   /* write back demand values */
   status = db_find_key(hDB, gen_info->hKeyRoot, "Variables/Demand", &gen_info->hKeyDemand);
@@ -435,20 +417,6 @@ GEN_INFO   *gen_info;
   /* select next measurement channel */
   act_time = ss_millitime();
   act = (gen_info->last_channel + 1) % gen_info->num_channels;
-
-  /* look for the next channel recently updated */
-  while (!( act_time - gen_info->last_change[act] < 5000 ||
-          ( act_time - gen_info->last_change[act] < 20000 
-          &&  abs(gen_info->measured[act] - gen_info->demand[act]) > 
-                  2*gen_info->update_threshold[act])))
-    {
-    act = (act + 1) % gen_info->num_channels;
-    if (act == gen_info->last_channel)
-      {
-      act = (gen_info->last_channel + 1) % gen_info->num_channels;
-      break;
-      }
-    }
 
   /* measure channel */
   status = gen_read(pequipment, act);
