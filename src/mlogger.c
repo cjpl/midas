@@ -6,6 +6,9 @@
   Contents:     MIDAS logger program
 
   $Log$
+  Revision 1.24  1999/10/15 12:15:31  midas
+  Made logger timout controlled by /logger/logger timeout.
+
   Revision 1.23  1999/10/11 15:03:52  midas
   Fixed bug with daemon flag
 
@@ -2334,7 +2337,7 @@ INT i;
 
 main(int argc, char *argv[])
 {
-INT    status, msg, i, size, run_number, ch;
+INT    status, msg, i, size, run_number, ch, timeout;
 char   host_name[100], exp_name[NAME_LENGTH], dir[256];
 BOOL   debug, daemon;
 DWORD  last_time_kb = 0;
@@ -2391,8 +2394,13 @@ usage:
 
   cm_get_experiment_database(&hDB, NULL);
 
+  /* read default timeout */
+  timeout = LOGGER_TIMEOUT;
+  size = sizeof(timeout);
+  db_get_value(hDB, 0, "/Logger/Logger timeout", &timeout, &size, TID_INT);
+
   /* change watchdog timeout because of tape io */
-  cm_set_watchdog_params(TRUE, LOGGER_TIMEOUT);
+  cm_set_watchdog_params(TRUE, timeout);
 
   /* turn off watchdog if in debug mode */
   if (debug)
