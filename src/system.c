@@ -14,6 +14,11 @@
                 Brown, Prentice Hall
 
   $Log$
+  Revision 1.42  1999/10/11 14:13:47  midas
+  Added ss_system which executs a program in a seperate process and closes
+  all file descriptors from the parent. This is needed my mhttpd for example
+  to launch programs, which should no block on the port 80 socket.
+
   Revision 1.41  1999/09/17 11:48:08  midas
   Alarm system half finished
 
@@ -1256,6 +1261,107 @@ struct termios tios;
   return SS_SUCCESS;
 
 #endif /* OS_UNIX */
+}
+
+/*------------------------------------------------------------------*/
+
+INT ss_daemon_init()
+/********************************************************************\
+
+  Routine: ss_daemon_init
+
+  Purpose: Become a daemon
+
+  Input:
+    none
+
+  Output:
+    none
+
+  Function value:
+    SS_SUCCESS       Successful completeion
+    SS_ABORT         fork() was not successful
+
+\********************************************************************/
+{
+#ifdef OS_UNIX
+
+  /* only implemented for UNIX */
+  int pid;
+
+  if ( (pid = fork()) < 0)
+    return SS_ABORT;
+  else if (pid != 0)
+    exit(0); /* parent finished */
+
+  /* child continues */
+  setsid();               /* become session leader */
+  chdir("/");             /* change working direcotry (not on NFS!) */
+  umask(0);               /* clear our file mode createion mask */
+
+  return SS_SUCCESS;
+
+#endif
+
+  return SS_SUCCESS;
+}
+
+/*------------------------------------------------------------------*/
+
+INT ss_system(char *command)
+/********************************************************************\
+
+  Routine: ss_system
+
+  Purpose: Execute command in a separate process, close all open
+           file descriptors
+
+  Input:
+    char *command    Command to execute
+
+  Output:
+    none
+
+  Function value:
+    SS_SUCCESS       Successful completeion
+    SS_ABORT         fork() was not successful
+
+\********************************************************************/
+{
+#ifdef OS_UNIX
+
+  /* only implemented for UNIX */
+  int i, pid;
+
+  if ( (pid = fork()) < 0)
+    return SS_ABORT;
+  else if (pid != 0)
+    return SS_SUCCESS; /* parent returns */
+
+  /* close all open file descriptors */
+  for (i=0 ; i<256 ; i++)
+    close(i);
+
+  /* child continues */
+  setsid();               /* become session leader */
+  chdir("/");             /* change working direcotry (not on NFS!) */
+  umask(0);               /* clear our file mode createion mask */
+
+  /* execute command */
+  system(command);
+
+  /* exit process */
+  exit(0);
+
+  return SS_SUCCESS;
+
+#else
+
+  system(command);
+
+#endif
+
+  return SS_SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
