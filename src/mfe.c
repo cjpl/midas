@@ -7,6 +7,9 @@
                 linked with user code to form a complete frontend
 
   $Log$
+  Revision 1.58  2003/10/29 15:33:48  midas
+  Properly display message about stopped previous frontend
+
   Revision 1.57  2003/09/30 19:47:57  midas
   Removed tabs
 
@@ -2068,10 +2071,12 @@ usage:
 
   /* shutdown previous frontend */
   status = cm_shutdown(frontend_name, FALSE);
-  if (status == CM_SHUTDOWN && display_period)
+  if (status == CM_SUCCESS && display_period)
     {
     printf("Previous frontend stopped\n");
-    ss_sleep(1000);
+    
+    /* let user read message */
+    ss_sleep(3000);
     }
 
   /* register transition callbacks */
