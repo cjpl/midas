@@ -7,6 +7,10 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.39  1999/10/18 14:41:51  midas
+  Use /programs/<name>/Watchdog timeout in all programs as timeout value. The
+  default value can be submitted by calling cm_connect_experiment1(..., timeout)
+
   Revision 1.38  1999/10/11 14:59:24  midas
   Moved the daemonizing before the cm_connect_experiment
 
@@ -3347,7 +3351,8 @@ INT status;
       printf("Connect to experiment %s...", clp.exp_name);
     }
 
-  status = cm_connect_experiment1(clp.host_name, clp.exp_name, analyzer_name, NULL, odb_size);
+  status = cm_connect_experiment1(clp.host_name, clp.exp_name, analyzer_name, NULL, odb_size,
+                                  DEFAULT_WATCHDOG_TIMEOUT);
   if (status != CM_SUCCESS)
     return 1;
 

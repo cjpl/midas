@@ -6,6 +6,10 @@
   Contents:     Command-line interface to the MIDAS online data base.
 
   $Log$
+  Revision 1.29  1999/10/18 14:41:52  midas
+  Use /programs/<name>/Watchdog timeout in all programs as timeout value. The
+  default value can be submitted by calling cm_connect_experiment1(..., timeout)
+
   Revision 1.28  1999/10/05 13:16:11  midas
   Added global alarm flag "/alarms/alarm system active"
 
@@ -2610,7 +2614,8 @@ usage:
   if (cmd[0])
     cm_set_msg_print(MT_ERROR, 0, NULL);
 
-  status = cm_connect_experiment1(host_name, exp_name, "ODBEdit", NULL, odb_size);
+  status = cm_connect_experiment1(host_name, exp_name, "ODBEdit", NULL, 
+                                  odb_size, DEFAULT_WATCHDOG_TIMEOUT);
   if (status != CM_SUCCESS)
     {
     cm_get_error(status, str);

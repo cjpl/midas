@@ -8,6 +8,10 @@
 
 
   $Log$
+  Revision 1.49  1999/10/18 14:41:50  midas
+  Use /programs/<name>/Watchdog timeout in all programs as timeout value. The
+  default value can be submitted by calling cm_connect_experiment1(..., timeout)
+
   Revision 1.48  1999/10/08 15:07:04  midas
   Program check creates new internal alarm when triggered
 
@@ -1032,6 +1036,8 @@ typedef struct {
   char      start_command[256];
   char      alarm_class[32];
   DWORD     checked_last;
+  DWORD     alarm_count;
+  INT       watchdog_timeout;
 } PROGRAM_INFO;
 
 #define PROGRAM_INFO_STR(_name) char *_name[] = {\
@@ -1043,6 +1049,8 @@ typedef struct {
 "Start command = STRING : [256] ",\
 "Alarm Class = STRING : [32] ",\
 "Checked last = DWORD : 0",\
+"Alarm count = DWORD : 0",\
+"Watchdog timeout = INT : 10000",\
 "",\
 NULL }
 
@@ -1272,7 +1280,7 @@ INT EXPRT cm_get_environment(char *host_name, char *exp_name);
 INT EXPRT cm_list_experiments(char *host_name, char exp_name[MAX_EXPERIMENT][NAME_LENGTH]);
 INT EXPRT cm_select_experiment(char *host_name, char *exp_name);
 INT EXPRT cm_connect_experiment(char *host_name, char *exp_name, char *client_name, void (*func)(char*));
-INT EXPRT cm_connect_experiment1(char *host_name, char *exp_name, char *client_name, void (*func)(char*), INT odb_size);
+INT EXPRT cm_connect_experiment1(char *host_name, char *exp_name, char *client_name, void (*func)(char*), INT odb_size, INT watchdog_timeout);
 INT EXPRT cm_disconnect_experiment(void);
 INT EXPRT cm_register_transition(INT transition, INT (*func)(INT,char*));
 INT EXPRT cm_transition(INT transition, INT run_number, char *error, INT strsize, INT async_flag);

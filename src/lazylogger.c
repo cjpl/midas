@@ -6,6 +6,10 @@
   Contents:     Disk to Tape copier for background job
 
   $Log$
+  Revision 1.12  1999/10/18 14:41:50  midas
+  Use /programs/<name>/Watchdog timeout in all programs as timeout value. The
+  default value can be submitted by calling cm_connect_experiment1(..., timeout)
+
   Revision 1.11  1999/10/18 11:40:53  midas
   Changed %9.2e[MB] to %1.3lfMB for NEWS message to be the same as for the COPIED msg.
 
@@ -193,6 +197,8 @@ BOOL      copy_continue = TRUE;
 INT       data_fmt, dev_type;
 char      lazylog[MAX_STRING_LENGTH];
 BOOL      full_bck_flag = FALSE;
+
+#define WATCHDOG_TIMEOUT 60000 /* 60 sec for tape access */
 
 /* prototypes */
 BOOL lazy_file_exists(char * dir, char * file);
@@ -1123,7 +1129,8 @@ INT lazy_main (INT channel, LAZY_INFO * pLall)
   INT size,cur_acq_run, status, tobe_backup, purun;
   double freepercent, svfree;
   char pufile[MAX_FILE_PATH], inffile[MAX_FILE_PATH], outffile[MAX_FILE_PATH];
-  BOOL donepurge;
+  BOOL donepurge, watchdog_flag;
+  DWORD watchdog_timeout;
   LAZY_INFO * pLch;
 
   /* current channel */
@@ -1351,11 +1358,12 @@ INT lazy_main (INT channel, LAZY_INFO * pLall)
         int channel;
 
         cm_msg(MINFO,"Lazy","backup device rewinding...");
-        cm_set_watchdog_params(TRUE, 300000); /* 5 min for tape rewind */
         ss_tape_open(outffile, O_RDONLY, &channel);
+        cm_get_watchdog_params(&watchdog_flag, &watchdog_timeout);
+        cm_set_watchdog_params(watchdog_flag, 300000);  /* 5 min for tape rewind */
         ss_tape_unmount(channel);
         ss_tape_close(channel);
-        cm_set_watchdog_params(TRUE, 120000);
+        cm_set_watchdog_params(watchdog_flag, watchdog_timeout);
 
         /* Setup alarm */
         lazy.alarm[0] = 0;
@@ -1485,7 +1493,7 @@ int main(unsigned int argc,char **argv)
   }
 
   /* connect to experiment */
-  status = cm_connect_experiment(host_name, expt_name, "Lazy_Tape", 0);
+  status = cm_connect_experiment1(host_name, expt_name, "Lazy_Tape", 0, DEFAULT_ODB_SIZE, WATCHDOG_TIMEOUT);
   if (status != CM_SUCCESS)
     return 1;
 
@@ -1649,7 +1657,7 @@ int main(unsigned int argc,char **argv)
   { /* reconnect to experiment with proper name */
     char str[32];
     sprintf(str, "Lazy_%s", lazyinfo[channel].name);
-    status = cm_connect_experiment(host_name, expt_name, str, 0);
+    status = cm_connect_experiment1(host_name, expt_name, str, 0, DEFAULT_ODB_SIZE, WATCHDOG_TIMEOUT);
   }
   if (status != CM_SUCCESS)
     goto error;
@@ -1659,9 +1667,6 @@ int main(unsigned int argc,char **argv)
   /* turn on keepalive messages with increased timeout */
   if (debug)
     cm_set_watchdog_params(TRUE, 0);
-  else
-    cm_set_watchdog_params(TRUE, 120000);
-  
   
   printf("Lazy_%s starting... ""!"" to exit \n", lazyinfo[channel].name);
 

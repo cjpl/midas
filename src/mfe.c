@@ -7,6 +7,10 @@
                 linked with user code to form a complete frontend
 
   $Log$
+  Revision 1.8  1999/10/18 14:41:51  midas
+  Use /programs/<name>/Watchdog timeout in all programs as timeout value. The
+  default value can be submitted by calling cm_connect_experiment1(..., timeout)
+
   Revision 1.7  1999/10/15 12:17:52  midas
   Increased timeout
 
@@ -1494,9 +1498,6 @@ reconnect:
 #ifdef OS_VXWORKS
   cm_synchronize(NULL);
 #endif
-
-  /* turn on keepalive messages with increased timeout */
-  cm_set_watchdog_params(TRUE, 120000);
 
   /* turn off watchdog if in debug mode */
   if (debug)

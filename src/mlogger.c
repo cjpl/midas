@@ -6,6 +6,10 @@
   Contents:     MIDAS logger program
 
   $Log$
+  Revision 1.25  1999/10/18 14:41:52  midas
+  Use /programs/<name>/Watchdog timeout in all programs as timeout value. The
+  default value can be submitted by calling cm_connect_experiment1(..., timeout)
+
   Revision 1.24  1999/10/15 12:15:31  midas
   Made logger timout controlled by /logger/logger timeout.
 
@@ -1295,7 +1299,8 @@ INT log_close(LOG_CHN *log_chn, INT run_number)
 INT log_write(LOG_CHN *log_chn, EVENT_HEADER *pevent)
 {
 int    status, size, izero;
-DWORD  actual_time, start_time;
+DWORD  actual_time, start_time, watchdog_timeout;
+BOOL   watchdog_flag;
 static BOOL stop_requested = FALSE;
 static DWORD last_checked = 0;
 HNDLE  htape, stats_hkey;
@@ -1402,10 +1407,11 @@ double dzero;
     ss_tape_open(tape_name, O_RDONLY, &htape);
     cm_msg(MTALK, "log_write", "rewinding tape %s, please wait", log_chn->path);
 
-    cm_set_watchdog_params(TRUE, 300000);  /* 5 min for tape rewind */
+    cm_get_watchdog_params(&watchdog_flag, &watchdog_timeout);
+    cm_set_watchdog_params(watchdog_flag, 300000);  /* 5 min for tape rewind */
     ss_tape_unmount(htape);
     ss_tape_close(htape);
-    cm_set_watchdog_params(TRUE, LOGGER_TIMEOUT);
+    cm_set_watchdog_params(watchdog_flag, watchdog_timeout);
 
     /* zero statistics */
     dzero = izero = 0;
@@ -1837,6 +1843,8 @@ INT log_callback(INT index, void *prpc_param[])
 {
 HNDLE  hKeyRoot, hKeyChannel;
 INT    i, status, size, channel, izero, htape, online_mode;
+DWORD  watchdog_timeout;
+BOOL   watchdog_flag;
 char   str[256];
 double dzero;
 
@@ -1886,11 +1894,12 @@ double dzero;
             {
             cm_msg(MTALK, "log_callback", "rewinding tape #%d, please wait", i);
 
-            cm_set_watchdog_params(TRUE, 300000);  /* 5 min for tape rewind */
+            cm_get_watchdog_params(&watchdog_flag, &watchdog_timeout);
+            cm_set_watchdog_params(watchdog_flag, 300000);  /* 5 min for tape rewind */
             ss_tape_rewind(htape);
             if (online_mode)
               ss_tape_unmount(htape);
-            cm_set_watchdog_params(TRUE, LOGGER_TIMEOUT);
+            cm_set_watchdog_params(watchdog_flag, watchdog_timeout);
 
             cm_msg(MINFO, "log_callback", "Tape %s rewound sucessfully", str);
             }
@@ -2337,7 +2346,7 @@ INT i;
 
 main(int argc, char *argv[])
 {
-INT    status, msg, i, size, run_number, ch, timeout;
+INT    status, msg, i, size, run_number, ch;
 char   host_name[100], exp_name[NAME_LENGTH], dir[256];
 BOOL   debug, daemon;
 DWORD  last_time_kb = 0;
@@ -2393,14 +2402,6 @@ usage:
     }
 
   cm_get_experiment_database(&hDB, NULL);
-
-  /* read default timeout */
-  timeout = LOGGER_TIMEOUT;
-  size = sizeof(timeout);
-  db_get_value(hDB, 0, "/Logger/Logger timeout", &timeout, &size, TID_INT);
-
-  /* change watchdog timeout because of tape io */
-  cm_set_watchdog_params(TRUE, timeout);
 
   /* turn off watchdog if in debug mode */
   if (debug)

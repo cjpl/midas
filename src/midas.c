@@ -6,6 +6,10 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.75  1999/10/18 14:41:51  midas
+  Use /programs/<name>/Watchdog timeout in all programs as timeout value. The
+  default value can be submitted by calling cm_connect_experiment1(..., timeout)
+
   Revision 1.74  1999/10/13 08:03:28  midas
   Fixed bug displaying executed message as %d
 
@@ -1292,6 +1296,8 @@ INT cm_set_client_info(HNDLE hDB, HNDLE *hKeyClient, char *host_name,
     INT   hw_type           Hardware type returned by
                             rpc_get_option(RPC_OHW_TYPE)
     char  *passoword        MIDAS password
+    INT   watchdog_timeout  Default watchdog timeout, can be overwritten
+                            by ODB setting /programs/<name>/Watchdog timeout
 
   Output:
     HNDLE *hKeyClient       Handle to client key
@@ -1588,7 +1594,7 @@ INT status;
 char str[256];
 
   status = cm_connect_experiment1(host_name, exp_name, client_name, 
-                                  func, DEFAULT_ODB_SIZE);
+                                  func, DEFAULT_ODB_SIZE, DEFAULT_WATCHDOG_TIMEOUT);
   if (status != CM_SUCCESS)
     {
     cm_get_error(status, str);
@@ -1602,7 +1608,7 @@ char str[256];
 
 INT cm_connect_experiment1(char *host_name, char *exp_name, 
                            char *client_name, void (*func)(char*), 
-                           INT odb_size)
+                           INT odb_size, INT watchdog_timeout)
 /********************************************************************\
 
   Routine: cm_connect_experiment1
@@ -1625,6 +1631,9 @@ INT cm_connect_experiment1(char *host_name, char *exp_name,
     INT odb_size            Size in bytes of ODB. Only used when creating
                             a fresh ODB.
 
+    INT watchdog_timeout    Default watchdog timeout, can be overwritten
+                            by ODB setting /programs/<name>/Watchdog timeout
+
   Output:
     none
 
@@ -1638,7 +1647,7 @@ INT cm_connect_experiment1(char *host_name, char *exp_name,
 
 \********************************************************************/
 {
-INT   status, i, mutex_elog, mutex_alarm;
+INT   status, i, mutex_elog, mutex_alarm, size;
 char  local_host_name[HOST_NAME_LENGTH];
 char  client_name1[NAME_LENGTH];
 char  password[NAME_LENGTH], str[NAME_LENGTH], exp_name1[NAME_LENGTH];
@@ -1743,7 +1752,8 @@ HNDLE hDB, hKeyClient;
   strcpy(client_name1, client_name);
   password[0] = 0;
   status = cm_set_client_info(hDB, &hKeyClient, local_host_name, 
-                              client_name1, rpc_get_option(0, RPC_OHW_TYPE), password);
+                              client_name1, rpc_get_option(0, RPC_OHW_TYPE), 
+                              password);
 
   if (status == CM_WRONG_PASSWORD)
     {
@@ -1762,7 +1772,8 @@ HNDLE hDB, hKeyClient;
 
     strcpy(password, ss_crypt(str, "mi"));
     status = cm_set_client_info(hDB, &hKeyClient, local_host_name, 
-                                client_name1, rpc_get_option(0, RPC_OHW_TYPE), password);
+                                client_name1, rpc_get_option(0, RPC_OHW_TYPE), 
+                                password);
     if (status != CM_SUCCESS)
       {
       /* disconnect */
@@ -1782,6 +1793,14 @@ HNDLE hDB, hKeyClient;
   status = cm_register_server();
   if (status != CM_SUCCESS)
     return status;
+
+  /* set watchdog timeout */
+  size = sizeof(watchdog_timeout);
+  if (watchdog_timeout == 0)
+    watchdog_timeout = DEFAULT_WATCHDOG_TIMEOUT;
+  sprintf(str, "/Programs/%s/Watchdog timeout", client_name);
+  db_get_value(hDB, 0, str, &watchdog_timeout, &size, TID_INT);
+  cm_set_watchdog_params(TRUE, watchdog_timeout);
 
   /* send startup notification */
   if (strchr(local_host_name, '.'))
