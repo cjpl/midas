@@ -6,6 +6,9 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.22  1999/08/27 08:14:47  midas
+  Fixed bug with several strings in db_set_value
+
   Revision 1.21  1999/06/02 07:43:03  midas
   Fixed second bug with "//"
 
@@ -2335,7 +2338,7 @@ INT              status;
 
   if (type == TID_STRING || 
       type == TID_LINK)
-    pkey->item_size = data_size;
+    pkey->item_size = data_size / num_values;
   else
     pkey->item_size = rpc_tid_size(type);
 
