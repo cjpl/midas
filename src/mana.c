@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.5  1998/10/29 14:37:58  midas
+  Fixed problem with '!' for stopping analyzer
+
   Revision 1.4  1998/10/22 07:11:15  midas
   *** empty log message ***
 
@@ -2111,15 +2114,15 @@ EVENT_DEF    *event_def;
     last_time_kb = actual_time;
 
     ch = 0;
-    if (ss_kbhit())
+    while (ss_kbhit())
       {
       ch = ss_getchar(0);
       if (ch == -1)
         ch = getchar();
-      }
 
-    if ((char) ch == '!')
-      return RPC_SHUTDOWN;
+      if ((char) ch == '!')
+        return RPC_SHUTDOWN;
+      }
     }
 
   return SUCCESS;
