@@ -8,6 +8,9 @@
                 following the MIDAS CAMAC Standard under DIRECTIO
 
   $Log$
+  Revision 1.13  2001/08/16 09:39:12  midas
+  Changed comments
+
   Revision 1.12  2001/08/14 10:27:40  midas
   Restore signal handler on error
 
@@ -759,17 +762,18 @@ INLINE int cam_interrupt_test(const int c)
 
 INLINE void cam_lam_read(const int c, DWORD *lam)
 {
-  /* return a BITWISE coded station NOT the station number
-     i.e.: INP(adr+8) = 5 ==> lam = 0x10
-     I mask off the upper 3 bit */
+  /*
+  return a BITWISE coded station NOT the station number
+  i.e.: n = 5  ==> lam = 0x10
+  */
   unsigned int adr, csr;
 
   adr = io_base[c >> 2]+((c % 3)<<4);
   csr = (BYTE) INP(adr+6);
-  if (csr & 0x8)
+  if (csr & (1<<3))
     {
-    *lam = ((BYTE) INP(adr+8));
-    *lam = 1<<((*lam&0x1f)-1);
+    *lam = ((BYTE) INP(adr+8)) & 0x1F; // mask upper 3 bits
+    *lam = 1<<(*lam - 1);
     }
   else
     *lam = 0;
@@ -781,13 +785,13 @@ INLINE void cam_lam_clear(const int c, const int n)
 {
   unsigned int adr;
 
-  /* signal End-Of-Interrupt */
-#ifdef __MSDOS__
-  OUTP(0x20, 0x20);
-#endif
+  /* 
+  note that the LAM flip-flop in unit must be cleared via
+  
+    camc(c, n, 0, 10);
 
-  /* clear LAM flip-flop in unit */
-  /* camc(c, n, 0, 10); // should be done in user code */
+  in the user code prior to the call of cam_lam_clear()
+  */
 
   /* restart LAM scanner in controller */
   adr = io_base[c >> 2]+((c % 3)<<4);
