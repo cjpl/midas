@@ -6,6 +6,9 @@
   Contents:     Various utility functions for MSCB protocol
 
   $Log$
+  Revision 1.35  2004/07/08 11:15:50  midas
+  Implemented flash protection
+
   Revision 1.34  2004/05/19 15:11:04  midas
   Avoid flashing directly after watchdog reset
 
@@ -120,7 +123,7 @@ extern MSCB_INFO_VAR code variables[];
 
 #endif
 
-extern unsigned char idata _n_sub_addr, _var_size;
+extern unsigned char idata _n_sub_addr, _var_size, _flkey;
 
 #pragma NOAREGS                 // all functions can be called from interrupt routine!
 
@@ -983,6 +986,11 @@ void eeprom_write(void * src, unsigned char len, unsigned short *offset)
    unsigned char i, b;
    unsigned char *s;
 
+   if (_flkey != 0xF1)
+      return;
+
+   DISABLE_INTERRUPTS;
+
 #if defined(CPU_C8051F000)
    FLSCL = (FLSCL & 0xF0) | 0x08;  // set timer for 11.052 MHz clock
 #elif defined (CPU_C8051F020)
@@ -998,7 +1006,7 @@ void eeprom_write(void * src, unsigned char len, unsigned short *offset)
 
 #if defined(CPU_C8051F310) || defined(CPU_C8051F320)
       FLKEY = 0xA5;             // write flash key code
-      FLKEY = 0xF1;
+      FLKEY = _flkey;
 #endif
 
       *p++ = b;
@@ -1008,6 +1016,8 @@ void eeprom_write(void * src, unsigned char len, unsigned short *offset)
    FLSCL = FLSCL & 0xF0;
 
    *offset += len;
+
+   ENABLE_INTERRUPTS;
 
    watchdog_refresh();
 #endif
@@ -1031,7 +1041,10 @@ void eeprom_erase(void)
 #ifdef CPU_CYGNAL
    unsigned char xdata *p;
 
-   watchdog_refresh();
+   if (_flkey != 0xF1)
+      return;
+
+   DISABLE_INTERRUPTS;
 
 #if defined(CPU_C8051F000)
    FLSCL = (FLSCL & 0xF0) | 0x08;       // set timer for 11.052 MHz clock
@@ -1043,7 +1056,7 @@ void eeprom_erase(void)
 #if defined(CPU_C8051F310) || defined(CPU_C8051F320)
    p = EEPROM_OFFSET;                   // erase first page
    FLKEY = 0xA5;                        // write flash key code
-   FLKEY = 0xF1;
+   FLKEY = _flkey;
    *p = 0;
 
 // Following code crashed the uC !
@@ -1060,11 +1073,11 @@ void eeprom_erase(void)
    PSCTL = 0x00;                        // don't allow write
    FLSCL = FLSCL & 0xF0;
 #endif
+
+  ENABLE_INTERRUPTS;
 }
 
 /*------------------------------------------------------------------*/
-
-sbit button = P3 ^ 3;
 
 void eeprom_flash(void)
 /********************************************************************\
@@ -1078,8 +1091,7 @@ void eeprom_flash(void)
    unsigned char i, adr;
    unsigned short magic, offset;
 
-   led_blink(3, 5, 50);
-   watchdog_refresh();
+   led_blink(3, 3, 50);
 
    eeprom_erase();
 
@@ -1097,6 +1109,8 @@ void eeprom_flash(void)
    // magic
    magic = 0x1234;
    eeprom_write(&magic, 2, &offset);
+
+   _flkey = 0;
 }
 
 /*------------------------------------------------------------------*/

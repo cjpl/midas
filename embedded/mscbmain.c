@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol main program
 
   $Log$
+  Revision 1.50  2004/07/08 11:15:46  midas
+  Implemented flash protection
+
   Revision 1.49  2004/06/09 12:27:12  midas
   Made output buffer smaller
 
@@ -209,7 +212,7 @@ unsigned char idata in_buf[20], out_buf[8];
 #endif
 
 unsigned char idata i_in, last_i_in, final_i_in, n_out, i_out, cmd_len;
-unsigned char idata crc_code, addr_mode, n_variables;
+unsigned char idata crc_code, addr_mode, n_variables, _flkey=0;
 
 unsigned char idata _cur_sub_addr, _var_size;
 
@@ -232,6 +235,7 @@ bit flash_param;                // used for EEPROM flashing
 bit flash_program;              // used for upgrading firmware
 bit reboot;                     // used for rebooting
 bit configured;                 // TRUE if node is configured
+bit flash_allowed;              // TRUE 5 sec after booting node
 
 /*------------------------------------------------------------------*/
 
@@ -239,6 +243,8 @@ void setup(void)
 {
    unsigned char adr;
    unsigned short i;
+
+   _flkey = 0;
 
    /* first disable watchdog */
 #ifdef CPU_CYGNAL
@@ -355,6 +361,7 @@ void setup(void)
    flash_program = 0;
    reboot = 0;
    configured = 0;
+   flash_allowed = 0;
 
    RS485_ENABLE = 0;
    i_in = i_out = n_out = 0;
@@ -1168,24 +1175,29 @@ void yield(void)
    if (!configured)
       led_blink(0, 1, 50);
 
-   /* flash EEPROM if asked by interrupt routine, wait 3 sec
+   /* flash EEPROM if asked by interrupt routine, wait 5 sec
       after reboot (power might not be stable) */
-   if (flash_param && time() > 300) {
+   if (flash_param && flash_allowed) {
       flash_param = 0;
 
       /* reset watchdog counts */
       sys_info.wd_counter = 0;
 
+      _flkey = 0xF1;
       eeprom_flash();
 	   configured = 1;
    }
 
-   if (flash_program && time() > 300) {
+   if (flash_program && flash_allowed) {
       flash_program = 0;
 
       /* go to "bootloader" program */
       upgrade();
    }
+
+   /* allow flash 5 sec after reboot */
+   if (time() > 500)
+      flash_allowed = 1;
 
    if (reboot) {
 #ifdef CPU_CYGNAL
