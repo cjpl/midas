@@ -6,6 +6,9 @@
  *         amaudruz@triumf.ca                            Local:           6234
  * ---------------------------------------------------------------------------
    $Log$
+   Revision 1.34  2001/12/12 17:52:19  pierre
+   1.8.3-2 doc++
+
    Revision 1.33  2001/11/09 20:28:16  pierre
    Fix replay for YBOS format
 
@@ -281,18 +284,18 @@ struct {
 /*--BANK MANIPULATION-----------------------------------------------*/
 /*------------------------------------------------------------------*/
 /*------------------------------------------------------------------*/
+/** @name bk_list()
+    \begin{description}
+    \item[Description:] extract the MIDAS bank name listing of an event.
+    \item[Remarks:] The bklist should be dimensioned with YB_STRING_BANKLIST_MAX
+    which correspond to a max of YB_BANKLIST_MAX (midas.h:32) banks.
+    \end{description}
+    @memo fill a string will all the bank names in the event.
+    @param pmbh  pointer to the bank header (pheader+1).
+    @param bklist returned ASCII string, has to be booked with YB_STRING_BANKLIST_MAX.
+    @return number of bank found in this event.
+*/
 INT bk_list (BANK_HEADER * pmbh, char * bklist)
-/*
-  Routine: bk_list
-  Purpose: extract the MIDAS bank name listing of an event (pheader+1)
-  Input:
-    BANK_HEADER * pmbh      pointer to the bank header (pheader+1)
-  Output:
-    char *bklist            returned ASCII string
-                            has to be booked with YB_STRING_BANKLIST_MAX
-  Function value:
-    INT nbk                 number of bank found in this event
-\********************************************************************/
 { /* Full event */
   DWORD nbk, size;
   BANK * pmbk;
