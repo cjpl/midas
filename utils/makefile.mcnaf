@@ -12,7 +12,7 @@
 #	DirectIO (mdcnaf) or Linux driver (mcnaf)
 #  Usage: gmake DRIVER=xxx
 #         Where xxx can be either :
-#	  camacnul, camacrpc, hyt1331, kcs2926, kcs2927, dsp004
+#	  camacnul, camacrpc, hyt1331, kcs2926, kcs2927, dsp004, wecc32
 # 	  ex: gmake DRIVER=camacrpc
 #  Remarks: in order to run mdcnaf under (hyt1331, kcs2926, kcs2927, dsp004)
 #           you need to :
@@ -20,10 +20,16 @@
 #	    2) spawn this task using the Dio to gain IO permission.
 #           		ex : Dio mdcnaf
 #
+#	For the wecc32, you need to have the module installed prior its uses.
+#       wecc32 doesn't require dio.
+#
 #  Author:  Pierre-Andre Amaudruz Data Acquisition Group
 # 
 #  Revision History:
 #    $Log$
+#    Revision 1.6  2000/04/18 19:12:55  pierre
+#    - Added mwecnaf from /drivers/bus/wecc32.c (PCI/CAMAC CC32 Wiener interface)
+#
 #    Revision 1.5  1999/12/21 21:05:40  pierre
 #    - default hyt1331, build all 3 applications, cosmetic
 #
@@ -69,10 +75,13 @@ endif
 
 ## DRIVER = camacnul
 
-all: miocnaf mcnaf mdrvcnaf rmobj
+all: miocnaf mwecnaf mcnaf mdrvcnaf rmobj
 
 miocnaf: mcnaf.o $(DRIVER).o
 	$(CC) $(CFLAGS) $(INCLUDES) $(OSFLAGS) -o miocnaf mcnaf.o $(DRIVER).o $(DIO_LDFLAGS) $(LIBS)
+
+mwecnaf: mcnaf.o wecc32.o
+	$(CC) $(CFLAGS) $(INCLUDES) $(OSFLAGS) -o mwecnaf mcnaf.o wecc32.o $(DRV_LDFLAGS) $(LIBS) 
 
 mdrvcnaf: mcnaf.o camaclx.o
 	$(CC) $(CFLAGS) $(INCLUDES) $(OSFLAGS) -o mdrvcnaf mcnaf.o camaclx.o $(DRV_LDFLAGS) $(LIBS) 
@@ -92,6 +101,9 @@ camacrpc.o: $(DRV_DIR)/bus/camacrpc.c
 camaclx.o: $(DRV_DIR)/bus/camaclx.c
 	$(CC) $(CFLAGS) $(INCLUDES) $(OSFLAGS) -c -o $@ $<
 
+wecc32.o: $(DRV_DIR)/bus/wecc32.c
+	$(CC) $(CFLAGS) $(INCLUDES) $(OSFLAGS) -c -o $@ $<
+
 install: all
 	@echo "... "
 	@echo "... Installing CNAF programs to $(SYSBIN_DIR)"
@@ -108,4 +120,4 @@ rmobj:
 	rm *.o
 
 clean cleanup:
-	rm *.o mcnaf miocnaf mdrvcnaf
+	rm -f *.o mcnaf miocnaf mdrvcnaf mwecnaf
