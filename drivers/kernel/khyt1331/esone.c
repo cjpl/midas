@@ -7,6 +7,9 @@
                 MCSTD (Midas Camac Standard)
 
   $Log$
+  Revision 1.2  2004/01/08 08:40:08  midas
+  Implemented standard indentation
+
   Revision 1.1  2001/08/21 14:28:34  midas
   Initial revision
 
@@ -30,17 +33,17 @@
 
 INLINE void came_cn(int *ext, const int b, const int c, const int n, const int a)
 {
-  *ext = (b<<24 | (c<<16) | (n<<8) | a);
+   *ext = (b << 24 | (c << 16) | (n << 8) | a);
 }
 
 /*------------------------------------------------------------------*/
 
 INLINE void came_ext(const int ext, int *b, int *c, int *n, int *a)
 {
-  *b = (ext >> 24) & 0x7;
-  *c = (ext >> 16) & 0x7;
-  *n = (ext >>  8) & 0x1f;
-  *a = (ext >>  0) & 0xf;
+   *b = (ext >> 24) & 0x7;
+   *c = (ext >> 16) & 0x7;
+   *n = (ext >> 8) & 0x1f;
+   *a = (ext >> 0) & 0xf;
 }
 
 /*********************************************************************
@@ -60,7 +63,7 @@ INLINE void came_ext(const int ext, int *b, int *c, int *n, int *a)
 */
 INLINE void ccinit(void)
 {
-  cam_init();
+   cam_init();
 }
 
 /*------------------------------------------------------------------*/
@@ -76,10 +79,10 @@ INLINE void ccinit(void)
 */
 INLINE int fccinit(void)
 {
-  if (cam_init() == SUCCESS)
-    return 1;
+   if (cam_init() == SUCCESS)
+      return 1;
 
-  return 0;
+   return 0;
 }
 
 /*-- external representation ---------------------------------------*/
@@ -101,7 +104,7 @@ INLINE int fccinit(void)
 */
 INLINE void cdreg(int *ext, const int b, const int c, const int n, const int a)
 {
-  came_cn(ext, b, c, n, a);
+   came_cn(ext, b, c, n, a);
 }
 
 /*-- 16bit functions -----------------------------------------------*/
@@ -124,26 +127,21 @@ INLINE void cdreg(int *ext, const int b, const int c, const int n, const int a)
 */
 INLINE void cssa(const int f, int ext, unsigned short *d, int *q)
 {
-int b,c,n,a,x;
+   int b, c, n, a, x;
 
-  if (f < 8)
-    {
-    /* read */
-    came_ext(ext, &b, &c, &n, &a);
-    cam16i_q(c,n,a,f,d,&x,q);
-    }
-  else if (f >15)
-    {
-    /* write */
-    came_ext(ext, &b, &c, &n, &a);
-    cam16o_q(c,n,a,f,*d,&x,q);
-    }
-  else if ((f > 7) || (f > 23))
-    {
-    /* command */
-    came_ext(ext, &b, &c, &n, &a);
-    camc_q(c,n,a,f,q);
-    }
+   if (f < 8) {
+      /* read */
+      came_ext(ext, &b, &c, &n, &a);
+      cam16i_q(c, n, a, f, d, &x, q);
+   } else if (f > 15) {
+      /* write */
+      came_ext(ext, &b, &c, &n, &a);
+      cam16o_q(c, n, a, f, *d, &x, q);
+   } else if ((f > 7) || (f > 23)) {
+      /* command */
+      came_ext(ext, &b, &c, &n, &a);
+      camc_q(c, n, a, f, q);
+   }
 }
 
 /*-- 24bit functions -----------------------------------------------*/
@@ -166,26 +164,21 @@ int b,c,n,a,x;
 */
 INLINE void cfsa(const int f, const int ext, unsigned long *d, int *q)
 {
-int b,c,n,a,x;
+   int b, c, n, a, x;
 
-  if (f < 8)
-    {
-    /* read */
-    came_ext(ext, &b, &c, &n, &a);
-    cam24i_q(c,n,a,f,d,&x,q);
-    }
-  else if (f >15)
-    {
-    /* write */
-    came_ext(ext, &b, &c, &n, &a);
-    cam24o_q(c,n,a,f,*d,&x,q);
-    }
-  else if ((f > 7) || (f > 23))
-    {
-    /* command */
-    came_ext(ext, &b, &c, &n, &a);
-    camc_q(c,n,a,f,q);
-    }
+   if (f < 8) {
+      /* read */
+      came_ext(ext, &b, &c, &n, &a);
+      cam24i_q(c, n, a, f, d, &x, q);
+   } else if (f > 15) {
+      /* write */
+      came_ext(ext, &b, &c, &n, &a);
+      cam24o_q(c, n, a, f, *d, &x, q);
+   } else if ((f > 7) || (f > 23)) {
+      /* command */
+      came_ext(ext, &b, &c, &n, &a);
+      camc_q(c, n, a, f, q);
+   }
 }
 
 /*-- general functions----------------------------------------------*/
@@ -201,10 +194,10 @@ int b,c,n,a,x;
 */
 INLINE void cccc(const int ext)
 {
-int b, c, n, a;
+   int b, c, n, a;
 
-  came_ext(ext, &b, &c, &n, &a);
-  cam_crate_clear(c);
+   came_ext(ext, &b, &c, &n, &a);
+   cam_crate_clear(c);
 }
 
 /*------------------------------------------------------------------*/
@@ -220,10 +213,10 @@ int b, c, n, a;
 */
 INLINE void cccz(const int ext)
 {
-int b, c, n, a;
+   int b, c, n, a;
 
-  came_ext(ext, &b, &c, &n, &a);
-  cam_crate_zinit(c);
+   came_ext(ext, &b, &c, &n, &a);
+   cam_crate_zinit(c);
 }
 
 /*------------------------------------------------------------------*/
@@ -240,13 +233,13 @@ int b, c, n, a;
 */
 INLINE void ccci(const int ext, int l)
 {
-int b, c, n, a;
+   int b, c, n, a;
 
-  came_ext(ext, &b, &c, &n, &a);
-  if (l)
-    cam_inhibit_set(c);
-  else
-    cam_inhibit_clear(c);
+   came_ext(ext, &b, &c, &n, &a);
+   if (l)
+      cam_inhibit_set(c);
+   else
+      cam_inhibit_clear(c);
 }
 
 /*------------------------------------------------------------------*/
@@ -263,10 +256,10 @@ int b, c, n, a;
 */
 INLINE void ctci(const int ext, int *l)
 {
-int b, c, n, a;
+   int b, c, n, a;
 
-  came_ext(ext, &b, &c, &n, &a);
-  *l = cam_inhibit_test(c);
+   came_ext(ext, &b, &c, &n, &a);
+   *l = cam_inhibit_test(c);
 }
 
 /*------------------------------------------------------------------*/
@@ -283,14 +276,14 @@ int b, c, n, a;
 */
 INLINE void cccd(const int ext, int l)
 {
-int b, c, n, a;
+   int b, c, n, a;
 
-  came_ext(ext, &b, &c, &n, &a);
+   came_ext(ext, &b, &c, &n, &a);
 
-  if (l)
-    cam_interrupt_enable(c);
-  else
-    cam_interrupt_disable(c);
+   if (l)
+      cam_interrupt_enable(c);
+   else
+      cam_interrupt_disable(c);
 }
 
 /*------------------------------------------------------------------*/
@@ -307,10 +300,10 @@ int b, c, n, a;
 */
 INLINE void ctcd(const int ext, int *l)
 {
-int b, c, n, a;
+   int b, c, n, a;
 
-  came_ext(ext, &b, &c, &n, &a);
-  *l = cam_interrupt_test(c);
+   came_ext(ext, &b, &c, &n, &a);
+   *l = cam_interrupt_test(c);
 }
 
 /*------------------------------------------------------------------*/
@@ -332,8 +325,8 @@ int b, c, n, a;
 INLINE void cdlam(int *lam, const int b, const int c, const int n,
                   const int a, const int inta[2])
 {
-  /* inta[2] ignored */
-  cdreg(lam, b, c, n, a);
+   /* inta[2] ignored */
+   cdreg(lam, b, c, n, a);
 }
 
 /*------------------------------------------------------------------*/
@@ -350,12 +343,12 @@ INLINE void cdlam(int *lam, const int b, const int c, const int n,
 */
 INLINE void ctgl(const int ext, int *l)
 {
-int b, c, n, a;
-unsigned long lam;
+   int b, c, n, a;
+   unsigned long lam;
 
-  came_ext(ext, &b, &c, &n, &a);
-  cam_lam_read(c, &lam);
-  *l = (lam > 0);
+   came_ext(ext, &b, &c, &n, &a);
+   cam_lam_read(c, &lam);
+   *l = (lam > 0);
 }
 
 /*------------------------------------------------------------------*/
@@ -370,16 +363,16 @@ unsigned long lam;
     @param l action l=0 -> disable LAM , l=1 -> enable LAM
     @return void
 */
-INLINE void  cclm(const int lam, int l)
+INLINE void cclm(const int lam, int l)
 {
-int b, c, n, a;
+   int b, c, n, a;
 
-  came_ext(lam, &b, &c, &n, &a);
+   came_ext(lam, &b, &c, &n, &a);
 
-  if (l)
-    camc(c,n,0,26);
-  else
-    camc(c,n,0,24);
+   if (l)
+      camc(c, n, 0, 26);
+   else
+      camc(c, n, 0, 24);
 }
 
 /*------------------------------------------------------------------*/
@@ -395,15 +388,15 @@ int b, c, n, a;
     @param isr name of service procedure
     @return void
 */
-INLINE void cclnk(const int lam, void (*isr)(void))
+INLINE void cclnk(const int lam, void (*isr) (void))
 {
-int b, c, n, a;
+   int b, c, n, a;
 
-  came_ext(lam, &b, &c, &n, &a);
+   came_ext(lam, &b, &c, &n, &a);
 
-  cam_interrupt_attach(c, n, isr);
-  cam_lam_enable(c, n);
-  cam_lam_clear(c, n);
+   cam_interrupt_attach(c, n, isr);
+   cam_lam_enable(c, n);
+   cam_lam_clear(c, n);
 }
 
 /*------------------------------------------------------------------*/
@@ -419,10 +412,10 @@ int b, c, n, a;
 */
 INLINE void cculk(const int lam)
 {
-int b, c, n, a;
+   int b, c, n, a;
 
-  came_ext(lam, &b, &c, &n, &a);
-  cam_interrupt_detach(c, n);
+   came_ext(lam, &b, &c, &n, &a);
+   cam_interrupt_detach(c, n);
 }
 
 /*------------------------------------------------------------------*/
@@ -438,13 +431,13 @@ int b, c, n, a;
 */
 INLINE void ccrgl(const int lam)
 {
-int b, c, n, a;
+   int b, c, n, a;
 
-  came_ext(lam, &b, &c, &n, &a);
+   came_ext(lam, &b, &c, &n, &a);
 
-  cam_lam_enable(c, n);
-  cam_lam_clear(c, n);
-  cam_interrupt_enable(c);
+   cam_lam_enable(c, n);
+   cam_lam_clear(c, n);
+   cam_interrupt_enable(c);
 }
 
 /*------------------------------------------------------------------*/
@@ -457,12 +450,12 @@ int b, c, n, a;
     @param lam external address
     @return void
 */
-INLINE void  cclc(const int lam)
+INLINE void cclc(const int lam)
 {
-int b, c, n, a;
+   int b, c, n, a;
 
-  came_ext(lam, &b, &c, &n, &a);
-  camc(c, n, 0, 10);
+   came_ext(lam, &b, &c, &n, &a);
+   camc(c, n, 0, 10);
 }
 
 /*------------------------------------------------------------------*/
@@ -477,12 +470,12 @@ int b, c, n, a;
     @param l No LAM-> l=0, LAM present-> l=1
     @return void
 */
-INLINE void  ctlm(const int lam, int *l)
+INLINE void ctlm(const int lam, int *l)
 {
-int  b,c,n,a;
+   int b, c, n, a;
 
-  came_ext(lam, &b, &c, &n, &a);
-  camc_q(c, n, a, 8, l);
+   came_ext(lam, &b, &c, &n, &a);
+   camc_q(c, n, a, 8, l);
 }
 
 /*------------------------------------------------------------------*/
@@ -500,14 +493,14 @@ int  b,c,n,a;
     cb[1] : returned number of function performed
     @return void
 */
-INLINE void  cfga(int f[], int exta[], int intc[], int qa[], int cb[])
+INLINE void cfga(int f[], int exta[], int intc[], int qa[], int cb[])
 {
-int i;
+   int i;
 
-  for (i=0 ; i<cb[0] ; i++)
-    cfsa(f[i], exta[i], (unsigned long *)(&(intc[i])), &(qa[i]));
+   for (i = 0; i < cb[0]; i++)
+      cfsa(f[i], exta[i], (unsigned long *) (&(intc[i])), &(qa[i]));
 
-  cb[1] = cb[0];
+   cb[1] = cb[0];
 }
 
 /*------------------------------------------------------------------*/
@@ -527,12 +520,12 @@ int i;
 */
 INLINE void csga(int f[], int exta[], int intc[], int qa[], int cb[])
 {
-int i;
+   int i;
 
-  for (i=0 ; i<cb[0] ; i++)
-    cssa(f[i], exta[i], (unsigned short *)(&(intc[i])), &(qa[i]));
+   for (i = 0; i < cb[0]; i++)
+      cssa(f[i], exta[i], (unsigned short *) (&(intc[i])), &(qa[i]));
 
-  cb[1] = cb[0];
+   cb[1] = cb[0];
 }
 
 /*------------------------------------------------------------------*/
@@ -561,37 +554,33 @@ int i;
 */
 INLINE void cfmad(int f, int extb[], int intc[], int cb[])
 {
-int j, count;
-int x, q, b, c, n, a;
-unsigned long exts, extc, exte;
+   int j, count;
+   int x, q, b, c, n, a;
+   unsigned long exts, extc, exte;
 
-  exts = extb[0];
-  exte = extb[1];
-  count = cb[0];
-  j = 0;
-  came_ext(exts, &b, &c, &n, &a);
-  do
-    {
-    cam24i_q(c, n, a, f, (unsigned long *)&intc[j], &x, &q);
-    if (q == 0)
-      {
-      a = 0;     /* set subaddress to zero */
-      n++;       /* select next slot */
-      j++;
+   exts = extb[0];
+   exte = extb[1];
+   count = cb[0];
+   j = 0;
+   came_ext(exts, &b, &c, &n, &a);
+   do {
+      cam24i_q(c, n, a, f, (unsigned long *) &intc[j], &x, &q);
+      if (q == 0) {
+         a = 0;                 /* set subaddress to zero */
+         n++;                   /* select next slot */
+         j++;
+      } else {
+         a++;                   /* increment address */
+         ++cb[1];               /* increment tally count */
+         ++intc;                /* next data array */
+         --count;
       }
-    else
-      {
-      a++;       /* increment address */
-      ++cb[1];   /* increment tally count */
-      ++intc;    /* next data array */
-      --count;
-      }
-    came_cn ((int *)&extc, b, c, n, a);
+      came_cn((int *) &extc, b, c, n, a);
 
-    if (extc > exte)
-      count = 0; /* force exit */
+      if (extc > exte)
+         count = 0;             /* force exit */
 
-  } while (count);
+   } while (count);
 }
 
 /*------------------------------------------------------------------*/
@@ -620,37 +609,33 @@ unsigned long exts, extc, exte;
 */
 INLINE void csmad(int f, int extb[], int intc[], int cb[])
 {
-int j, count;
-int x, q, b, c, n, a;
-unsigned long exts, extc, exte;
+   int j, count;
+   int x, q, b, c, n, a;
+   unsigned long exts, extc, exte;
 
-  exts = extb[0];
-  exte = extb[1];
-  count = cb[0];
-  j = 0;
-  came_ext(exts, &b, &c, &n, &a);
-  do
-    {
-    cam16i_q(c, n, a, f, (unsigned short *)&intc[j], &x, &q);
-    if (q == 0)
-      {
-      a = 0;     /* set subaddress to zero */
-      n++;       /* select next slot */
-      j++;
+   exts = extb[0];
+   exte = extb[1];
+   count = cb[0];
+   j = 0;
+   came_ext(exts, &b, &c, &n, &a);
+   do {
+      cam16i_q(c, n, a, f, (unsigned short *) &intc[j], &x, &q);
+      if (q == 0) {
+         a = 0;                 /* set subaddress to zero */
+         n++;                   /* select next slot */
+         j++;
+      } else {
+         a++;                   /* increment address */
+         ++cb[1];               /* increment tally count */
+         ++intc;                /* next data array */
+         --count;
       }
-    else
-      {
-      a++;       /* increment address */
-      ++cb[1];   /* increment tally count */
-      ++intc;    /* next data array */
-      --count;
-      }
-    came_cn((int *)&extc, b, c, n, a);
+      came_cn((int *) &extc, b, c, n, a);
 
-    if (extc > exte)
-      count = 0; /* force exit */
+      if (extc > exte)
+         count = 0;             /* force exit */
 
-  } while (count);
+   } while (count);
 }
 
 /*------------------------------------------------------------------*/
@@ -671,21 +656,19 @@ unsigned long exts, extc, exte;
 */
 INLINE void cfubc(const int f, int ext, int intc[], int cb[])
 {
-int count, q;
+   int count, q;
 
-  count = cb[0];
-  do
-    {
-    cfsa(f,ext,(unsigned long *)intc, &q);
-    if (q == 0)
-      count = 0;  /* stop on no q */
-    else
-      {
-      ++cb[1];    /* increment tally count */
-      ++intc;     /* next data array */
-      --count;
+   count = cb[0];
+   do {
+      cfsa(f, ext, (unsigned long *) intc, &q);
+      if (q == 0)
+         count = 0;             /* stop on no q */
+      else {
+         ++cb[1];               /* increment tally count */
+         ++intc;                /* next data array */
+         --count;
       }
-    } while (count);
+   } while (count);
 }
 
 /*------------------------------------------------------------------*/
@@ -706,21 +689,19 @@ int count, q;
 */
 INLINE void csubc(const int f, int ext, int intc[], int cb[])
 {
-int count, q;
+   int count, q;
 
-  count = cb[0];
-  do
-    {
-    cssa(f,ext,(unsigned short *)intc, &q);
-    if (q == 0)
-      count = 0;  /* stop on no q */
-    else
-      {
-      ++cb[1];    /* increment tally count */
-      ++intc;     /* next data array */
-      --count;
+   count = cb[0];
+   do {
+      cssa(f, ext, (unsigned short *) intc, &q);
+      if (q == 0)
+         count = 0;             /* stop on no q */
+      else {
+         ++cb[1];               /* increment tally count */
+         ++intc;                /* next data array */
+         --count;
       }
-    } while (count);
+   } while (count);
 }
 
 /*------------------------------------------------------------------*/
@@ -742,20 +723,18 @@ int count, q;
 */
 INLINE void cfubr(const int f, int ext, int intc[], int cb[])
 {
-int q, count;
+   int q, count;
 
-  count = cb[0];
-  do
-    {
-    do
-      {
-      cfsa(f, ext, (unsigned long *)intc, &q);
+   count = cb[0];
+   do {
+      do {
+         cfsa(f, ext, (unsigned long *) intc, &q);
       } while (q == 0);
 
-    ++cb[1];    /* increment tally count */
-    ++intc;     /* next data array */
-    --count;
-    } while (count);
+      ++cb[1];                  /* increment tally count */
+      ++intc;                   /* next data array */
+      --count;
+   } while (count);
 }
 
 /*------------------------------------------------------------------*/
@@ -777,18 +756,16 @@ int q, count;
 */
 INLINE void csubr(const int f, int ext, int intc[], int cb[])
 {
-int q, count;
+   int q, count;
 
-  count = cb[0];
-  do
-    {
-    do
-      {
-      cssa(f, ext, (unsigned short *)intc, &q);
+   count = cb[0];
+   do {
+      do {
+         cssa(f, ext, (unsigned short *) intc, &q);
       } while (q == 0);
 
-    ++cb[1];    /* increment tally count */
-    ++intc;     /* next data array */
-    --count;
-    } while (count);
+      ++cb[1];                  /* increment tally count */
+      ++intc;                   /* next data array */
+      --count;
+   } while (count);
 }

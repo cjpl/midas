@@ -7,6 +7,9 @@
                 with either LRS1821.C or STR340.C
                 
   $Log$
+  Revision 1.4  2004/01/08 08:40:09  midas
+  Implemented standard indentation
+
   Revision 1.3  2000/09/22 07:34:19  midas
   Moved to main include directory
 
@@ -27,14 +30,14 @@
 typedef unsigned short int WORD;
 
 #ifdef __alpha
-typedef unsigned int       DWORD;
+typedef unsigned int DWORD;
 #else
-typedef unsigned long int  DWORD;
+typedef unsigned long int DWORD;
 #endif
 
 #define SUCCESS  1
 
-#endif /* MIDAS_TYPE_DEFINED */
+#endif                          /* MIDAS_TYPE_DEFINED */
 
 /* make functions under WinNT dll exportable */
 #if defined(_MSC_VER) && defined(MIDAS_DLL)
@@ -51,24 +54,24 @@ typedef unsigned long int  DWORD;
 extern "C" {
 #endif
 
-int EXPRT fb_init();
-void EXPRT fb_exit();
-int EXPRT fb_reset(void);
+   int EXPRT fb_init();
+   void EXPRT fb_exit();
+   int EXPRT fb_reset(void);
 
-int EXPRT fb_frd(int paddr, int saddr, DWORD *data);
-int EXPRT fb_frc(int paddr, int saddr, DWORD *data);
-int EXPRT fb_fwd(int paddr, int saddr, DWORD data);
-int EXPRT fb_fwc(int paddr, int saddr, DWORD data);
-int EXPRT fb_fwdm(int paddr, int saddr, DWORD data);
-int EXPRT fb_fwcm(int b_case, int paddr, int saddr, DWORD data);
-int EXPRT fb_frcm(int b_case, DWORD *data);
-int EXPRT fb_frdb(int paddr, int saddr, DWORD *data, int *count);
-int EXPRT fb_out(DWORD data);
-int EXPRT fb_in(void);
-void EXPRT fb_frdba(int paddr, int saddr, int count);
-int EXPRT fb_load_begin(int addr);
-int EXPRT fb_load_end(void);
-int EXPRT fb_execute(int addr, void *buffer, int *count);
+   int EXPRT fb_frd(int paddr, int saddr, DWORD * data);
+   int EXPRT fb_frc(int paddr, int saddr, DWORD * data);
+   int EXPRT fb_fwd(int paddr, int saddr, DWORD data);
+   int EXPRT fb_fwc(int paddr, int saddr, DWORD data);
+   int EXPRT fb_fwdm(int paddr, int saddr, DWORD data);
+   int EXPRT fb_fwcm(int b_case, int paddr, int saddr, DWORD data);
+   int EXPRT fb_frcm(int b_case, DWORD * data);
+   int EXPRT fb_frdb(int paddr, int saddr, DWORD * data, int *count);
+   int EXPRT fb_out(DWORD data);
+   int EXPRT fb_in(void);
+   void EXPRT fb_frdba(int paddr, int saddr, int count);
+   int EXPRT fb_load_begin(int addr);
+   int EXPRT fb_load_end(void);
+   int EXPRT fb_execute(int addr, void *buffer, int *count);
 
 #ifdef __cplusplus
 }

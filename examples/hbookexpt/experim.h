@@ -24,7 +24,7 @@
 #define EXP_PARAM_DEFINED
 
 typedef struct {
-  char      comment[80];
+   char comment[80];
 } EXP_PARAM;
 
 #define EXP_PARAM_STR(_name) char *_name[] = {\
@@ -38,9 +38,9 @@ NULL }
 #define ADC_CALIBRATION_PARAM_DEFINED
 
 typedef struct {
-  INT       pedestal[8];
-  float     software_gain[8];
-  double    histo_threshold;
+   INT pedestal[8];
+   float software_gain[8];
+   double histo_threshold;
 } ADC_CALIBRATION_PARAM;
 
 #define ADC_CALIBRATION_PARAM_STR(_name) char *_name[] = {\
@@ -74,7 +74,7 @@ NULL }
 #define ADC_SUMMING_PARAM_DEFINED
 
 typedef struct {
-  float     adc_threshold;
+   float adc_threshold;
 } ADC_SUMMING_PARAM;
 
 #define ADC_SUMMING_PARAM_STR(_name) char *_name[] = {\
@@ -90,7 +90,7 @@ NULL }
 #define GLOBAL_PARAM_DEFINED
 
 typedef struct {
-  float     adc_threshold;
+   float adc_threshold;
 } GLOBAL_PARAM;
 
 #define GLOBAL_PARAM_STR(_name) char *_name[] = {\
@@ -106,10 +106,10 @@ NULL }
 #define ADC0_BANK_DEFINED
 
 typedef struct {
-  WORD      adc0;
-  WORD      adc1;
-  WORD      adc2;
-  WORD      adc3;
+   WORD adc0;
+   WORD adc1;
+   WORD adc2;
+   WORD adc3;
 } ADC0_BANK;
 
 #define ADC0_BANK_STR(_name) char *_name[] = {\
@@ -124,8 +124,8 @@ NULL }
 #define ASUM_BANK_DEFINED
 
 typedef struct {
-  float     sum;
-  float     average;
+   float sum;
+   float average;
 } ASUM_BANK;
 
 #define ASUM_BANK_STR(_name) char *_name[] = {\
@@ -138,21 +138,21 @@ NULL }
 #define TRIGGER_COMMON_DEFINED
 
 typedef struct {
-  WORD      event_id;
-  WORD      trigger_mask;
-  char      buffer[32];
-  INT       type;
-  INT       source;
-  char      format[8];
-  BOOL      enabled;
-  INT       read_on;
-  INT       period;
-  double    event_limit;
-  DWORD     num_subevents;
-  INT       log_history;
-  char      frontend_host[32];
-  char      frontend_name[32];
-  char      frontend_file_name[256];
+   WORD event_id;
+   WORD trigger_mask;
+   char buffer[32];
+   INT type;
+   INT source;
+   char format[8];
+   BOOL enabled;
+   INT read_on;
+   INT period;
+   double event_limit;
+   DWORD num_subevents;
+   INT log_history;
+   char frontend_host[32];
+   char frontend_name[32];
+   char frontend_file_name[256];
 } TRIGGER_COMMON;
 
 #define TRIGGER_COMMON_STR(_name) char *_name[] = {\
@@ -178,7 +178,7 @@ NULL }
 #define TRIGGER_SETTINGS_DEFINED
 
 typedef struct {
-  BYTE      io506;
+   BYTE io506;
 } TRIGGER_SETTINGS;
 
 #define TRIGGER_SETTINGS_STR(_name) char *_name[] = {\
@@ -194,21 +194,21 @@ NULL }
 #define SCALER_COMMON_DEFINED
 
 typedef struct {
-  WORD      event_id;
-  WORD      trigger_mask;
-  char      buffer[32];
-  INT       type;
-  INT       source;
-  char      format[8];
-  BOOL      enabled;
-  INT       read_on;
-  INT       period;
-  double    event_limit;
-  DWORD     num_subevents;
-  INT       log_history;
-  char      frontend_host[32];
-  char      frontend_name[32];
-  char      frontend_file_name[256];
+   WORD event_id;
+   WORD trigger_mask;
+   char buffer[32];
+   INT type;
+   INT source;
+   char format[8];
+   BOOL enabled;
+   INT read_on;
+   INT period;
+   double event_limit;
+   DWORD num_subevents;
+   INT log_history;
+   char frontend_host[32];
+   char frontend_name[32];
+   char frontend_file_name[256];
 } SCALER_COMMON;
 
 #define SCALER_COMMON_STR(_name) char *_name[] = {\
@@ -232,4 +232,3 @@ typedef struct {
 NULL }
 
 #endif
-

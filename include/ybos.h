@@ -10,6 +10,9 @@
   date        by    modification
   ---------   ---   ------------------------------------------------
 *  $Log$
+*  Revision 1.23  2004/01/08 08:40:09  midas
+*  Implemented standard indentation
+*
 *  Revision 1.22  2004/01/08 06:30:37  pierre
 *  Doxygen the file
 *
@@ -129,7 +132,7 @@ General parameters
                                        /**< to be used for xbk_list() */
 
 /**dox***************************************************************/
-/** @} */// end of ybosdefineh
+                                                      /** @} */// end of ybosdefineh
 
 /**dox***************************************************************/
 /** @addtogroup yboserrorh
@@ -145,7 +148,7 @@ General parameters
 #define YB_UNKNOWN_FORMAT     -104     /**< Unknown format (see @ref YBOS_format) */
 
 /**dox***************************************************************/
-/** @} */// end of yboserrorh
+                                                      /** @} */// end of yboserrorh
 
 /**dox***************************************************************/
 /** @addtogroup ybosdefineh
@@ -186,7 +189,7 @@ Display format */
 #define DSP_ASC    3  /**< Display data in ASCII format */
 
 /**dox***************************************************************/
-/** @} */// end of ybosdefineh
+                                                      /** @} */// end of ybosdefineh
 
 /**dox***************************************************************/
 /** @addtogroup ybosmacroh
@@ -319,7 +322,7 @@ pevt Evt# id/msk serial run# */
         }
 
 /**dox***************************************************************/
-/** @} */// end of ybosmacroh
+                                                      /** @} */// end of ybosmacroh
 
 /**dox***************************************************************/
 /** @addtogroup ybosdefineh
@@ -338,7 +341,7 @@ YBOS Bank types */
 #define MAX_BKTYPE      I1_BKTYPE+1 /**< delimiter */
 
 /**dox***************************************************************/
-/** @} */// end of ybosdefineh
+                                                      /** @} */// end of ybosdefineh
 
 /**dox***************************************************************/
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
@@ -464,6 +467,6 @@ extern "C" {
 #ifdef __cplusplus
 }
 #endif
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 /*------------ END --------------------------------------------------------------*//**dox***************************************************************/
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   /*------------ END --------------------------------------------------------------*//**dox***************************************************************/
 #endif                          /* DOXYGEN_SHOULD_SKIP_THIS */
-/**dox***************************************************************//** @} */// end of ybosincludecode
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          /**dox***************************************************************//** @} */// end of ybosincludecode

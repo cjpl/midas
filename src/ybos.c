@@ -6,6 +6,9 @@
  *         amaudruz@triumf.ca                            Local:           6234
  * ---------------------------------------------------------------------------
    $Log$
+   Revision 1.58  2004/01/08 08:40:11  midas
+   Implemented standard indentation
+
    Revision 1.57  2004/01/08 06:35:25  pierre
    Doxygen the file
 
@@ -3843,7 +3846,7 @@ YB_SUCCESS         Successful completion
 #endif                          /* DOXYGEN_SHOULD_SKIP_THIS */
 
 /**dox***************************************************************/
-/** @} */// end of ybosbankc
+                                                      /** @} */// end of ybosbankc
 
 /**dox***************************************************************/
-/** @} */// end of ybosincludecode
+                                                      /** @} */// end of ybosincludecode

@@ -8,6 +8,9 @@
                 implementation of the large fragmented event.
 
   $Log$
+  Revision 1.2  2004/01/08 08:40:08  midas
+  Implemented standard indentation
+
   Revision 1.1  2003/05/17 16:27:08  midas
   demo code
 
@@ -70,71 +73,70 @@ extern "C" {
 
 /*-- Globals -------------------------------------------------------*/
 /* The frontend name (client name) as seen by other MIDAS clients   */
-char *frontend_name = "largefe";
+   char *frontend_name = "largefe";
 
 /* The frontend file name, don't change it */
-char *frontend_file_name = __FILE__;
+   char *frontend_file_name = __FILE__;
 
 /* frontend_loop is called periodically if this variable is TRUE    */
-BOOL frontend_call_loop = TRUE;
+   BOOL frontend_call_loop = TRUE;
 
 /* a frontend status page is displayed with this frequency in ms */
-INT display_period = 0000;
+   INT display_period = 0000;
 
 /* maximum event size produced by this frontend */
-INT max_event_size = 10000;
+   INT max_event_size = 10000;
 
 /* maximum event size for fragmented events (EQ_FRAGMENTED) */
-INT max_event_size_frag = 5*1024*1024;
+   INT max_event_size_frag = 5 * 1024 * 1024;
 
 /* buffer size to hold events */
-INT event_buffer_size = 10*10000;
+   INT event_buffer_size = 10 * 10000;
 
 
 /* MY HV structure */
-HNDLE  hDB, hKey;
+   HNDLE hDB, hKey;
 
 /*-- Function declarations -----------------------------------------*/
 
-INT frontend_init();
-INT frontend_exit();
-INT begin_of_run(INT run_number, char *error);
-INT end_of_run(INT run_number, char *error);
-INT pause_run(INT run_number, char *error);
-INT resume_run(INT run_number, char *error);
-INT frontend_loop();
-INT read_large_event(char *pevent, INT off);
+   INT frontend_init();
+   INT frontend_exit();
+   INT begin_of_run(INT run_number, char *error);
+   INT end_of_run(INT run_number, char *error);
+   INT pause_run(INT run_number, char *error);
+   INT resume_run(INT run_number, char *error);
+   INT frontend_loop();
+   INT read_large_event(char *pevent, INT off);
 /*-- Equipment list ------------------------------------------------*/
 
 #undef USE_INT
 
-EQUIPMENT equipment[] = {
+   EQUIPMENT equipment[] = {
 
-  { "large",              /* equipment name */
-    3, 0,                 /* event ID, trigger mask */
-    "SYSTEM",             /* event buffer */
-    EQ_PERIODIC | EQ_FRAGMENTED, /* equipment type */
-    0,                    /* event source */
-    "MIDAS",              /* format */
-    TRUE,                 /* enabled */
-    RO_ALWAYS ,           /* read when running and on transitions */
-    2000,                 /* read every 2 sec */
-    0,                    /* stop run after this event limit */
-    0,                    /* number of sub events */
-    0,                    /* log history */
-    "", "", "",
-    read_large_event,     /* readout routine */
-    NULL, NULL,           /* keep null */
-    NULL,                 /* init string */
-  },
+      {"large",                 /* equipment name */
+       3, 0,                    /* event ID, trigger mask */
+       "SYSTEM",                /* event buffer */
+       EQ_PERIODIC | EQ_FRAGMENTED,     /* equipment type */
+       0,                       /* event source */
+       "MIDAS",                 /* format */
+       TRUE,                    /* enabled */
+       RO_ALWAYS,               /* read when running and on transitions */
+       2000,                    /* read every 2 sec */
+       0,                       /* stop run after this event limit */
+       0,                       /* number of sub events */
+       0,                       /* log history */
+       "", "", "",
+       read_large_event,        /* readout routine */
+       NULL, NULL,              /* keep null */
+       NULL,                    /* init string */
+       },
 
-  { "" }
-};
+      {""}
+   };
 
 #ifdef __cplusplus
 }
 #endif
-
 /********************************************************************\
               Callback routines for system transitions
 
@@ -159,53 +161,51 @@ EQUIPMENT equipment[] = {
 
   resume_run:     When a run is resumed. Should enable trigger events.
 
-\********************************************************************/
-/*-- Frontend Init -------------------------------------------------*/
-
-INT frontend_init()
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          \********************************************************************//*-- Frontend Init -------------------------------------------------*/
+    INT frontend_init()
 {
-  return SUCCESS;
+   return SUCCESS;
 }
 
 /*-- Frontend Exit -------------------------------------------------*/
 
 INT frontend_exit()
 {
-  return SUCCESS;
+   return SUCCESS;
 }
 
 /*-- Begin of Run --------------------------------------------------*/
 
 INT begin_of_run(INT run_number, char *error)
 {
-  return SUCCESS;
+   return SUCCESS;
 }
 
 /*-- End of Run ----------------------------------------------------*/
 
 INT end_of_run(INT run_number, char *error)
 {
-  return SUCCESS;
+   return SUCCESS;
 }
 
 /*-- Pause Run -----------------------------------------------------*/
 
 INT pause_run(INT run_number, char *error)
 {
-  return SUCCESS;
+   return SUCCESS;
 }
 
 /*-- Resuem Run ----------------------------------------------------*/
 
 INT resume_run(INT run_number, char *error)
 {
-  return SUCCESS;
+   return SUCCESS;
 }
 
 /*-- Frontend Loop -------------------------------------------------*/
 INT frontend_loop()
 {
-  return SUCCESS;
+   return SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
@@ -223,53 +223,51 @@ INT poll_event(INT source, INT count, BOOL test)
    is available. If test equals TRUE, don't return. The test
    flag is used to time the polling */
 {
-  int   i;
-  DWORD lam;
+   int i;
+   DWORD lam;
 
-  for (i=0 ; i<count ; i++)
-    {
-    cam_lam_read(LAM_SOURCE_CRATE(source), &lam);
+   for (i = 0; i < count; i++) {
+      cam_lam_read(LAM_SOURCE_CRATE(source), &lam);
 
-    if (lam & LAM_SOURCE_STATION(source))
-      if (!test)
-        return lam;
-    }
+      if (lam & LAM_SOURCE_STATION(source))
+         if (!test)
+            return lam;
+   }
 
-  return 0;
+   return 0;
 }
 
 /*-- Interrupt configuration ---------------------------------------*/
 
 INT interrupt_configure(INT cmd, INT source, PTYPE adr)
 {
-  switch(cmd)
-    {
-    case CMD_INTERRUPT_ENABLE:
+   switch (cmd) {
+   case CMD_INTERRUPT_ENABLE:
       break;
-    case CMD_INTERRUPT_DISABLE:
+   case CMD_INTERRUPT_DISABLE:
       break;
-    case CMD_INTERRUPT_ATTACH:
+   case CMD_INTERRUPT_ATTACH:
       break;
-    case CMD_INTERRUPT_DETACH:
+   case CMD_INTERRUPT_DETACH:
       break;
-    }
-  return SUCCESS;
+   }
+   return SUCCESS;
 }
 
 
 /*-- Large event --------------------------------------------------*/
 INT read_large_event(char *pevent, INT off)
 {
-  DWORD *pddata;
+   DWORD *pddata;
 
-  /* init bank structure */
-  bk_init32(pevent);
+   /* init bank structure */
+   bk_init32(pevent);
 
-  bk_create(pevent, "BIGG", TID_DWORD, &pddata);
-  memset((char *)pddata, 0x0000, 100);
-  pddata += 1000000;
-  memset((char *)pddata-100, 0xFFFF, 100);
-  bk_close(pevent, pddata);
+   bk_create(pevent, "BIGG", TID_DWORD, &pddata);
+   memset((char *) pddata, 0x0000, 100);
+   pddata += 1000000;
+   memset((char *) pddata - 100, 0xFFFF, 100);
+   bk_close(pevent, pddata);
 
-  return bk_size(pevent);
+   return bk_size(pevent);
 }

@@ -53,53 +53,41 @@
 #ifndef HDRVERSIONID
 #       define HDRVERSIONID(NAME,VERS)
 #endif /*HDRVERSIONID*/
-
 HDRVERSIONID(caerrh, "@(#) $Id$")
 
 /*	CA Status Code Definitions 	 */
-
-#define CA_K_INFO       3	/* successful */
-#define CA_K_ERROR      2	/* failed- continue */
-#define CA_K_SUCCESS    1	/* successful */
-#define CA_K_WARNING    0	/* unsuccessful */
-#define CA_K_SEVERE     4	/* failed- quit */
+#define CA_K_INFO       3       /* successful */
+#define CA_K_ERROR      2       /* failed- continue */
+#define CA_K_SUCCESS    1       /* successful */
+#define CA_K_WARNING    0       /* unsuccessful */
+#define CA_K_SEVERE     4       /* failed- quit */
 #define CA_K_FATAL	CA_K_ERROR | CA_K_SEVERE
-
 #define CA_M_MSG_NO     0x0000FFF8
 #define CA_M_SEVERITY   0x00000007
 #define CA_M_LEVEL	0x00000003
 #define CA_M_SUCCESS    0x00000001
 #define CA_M_ERROR    	0x00000002
 #define CA_M_SEVERE     0x00000004
-
 #define CA_S_MSG_NO     0x0D
 #define CA_S_SEVERITY   0x03
-
 #define CA_V_MSG_NO     0x03
 #define CA_V_SEVERITY   0x00
 #define CA_V_SUCCESS    0x00
-
 /* Define MACROS to extract/insert individual fields from a status value */
-
 #define CA_EXTRACT_MSG_NO(code)\
 ( ( (code) & CA_M_MSG_NO ) 	>> CA_V_MSG_NO )
 #define CA_EXTRACT_SEVERITY(code)\
 ( ( (code) & CA_M_SEVERITY ) 	>> CA_V_SEVERITY )
 #define CA_EXTRACT_SUCCESS(code)\
 ( ( (code) & CA_M_SUCCESS ) 	>> CA_V_SUCCESS )
-
 #define CA_INSERT_MSG_NO(code)\
 (	((code)<< CA_V_MSG_NO)	& CA_M_MSG_NO	)
 #define CA_INSERT_SEVERITY(code)\
 (	((code)<< CA_V_SEVERITY)& CA_M_SEVERITY	)
 #define CA_INSERT_SUCCESS(code)\
 (	((code)<< CA_V_SUCCESS)	& CA_M_SUCCESS	)
-
-
 #define	DEFMSG(SEVERITY,NUMBER)\
 (CA_INSERT_MSG_NO(NUMBER) | CA_INSERT_SEVERITY(SEVERITY))
-
-
 #define	ECA_NORMAL  	DEFMSG(CA_K_SUCCESS,	0)
 #define ECA_MAXIOC	DEFMSG(CA_K_ERROR,	1)
 #define ECA_UKNHOST	DEFMSG(CA_K_ERROR,	2)
@@ -153,70 +141,68 @@ HDRVERSIONID(caerrh, "@(#) $Id$")
 #define ECA_NOCONVERT	 DEFMSG(CA_K_WARNING,	50)
 #define ECA_BADCHID		 DEFMSG(CA_K_ERROR,	51)
 #define ECA_BADFUNCPTR	 DEFMSG(CA_K_ERROR,	52)
-
 #ifndef CA_ERROR_GLBLSOURCE
-epicsShareExtern READONLY char	*ca_message_text[];
+epicsShareExtern READONLY char *ca_message_text[];
 #else
-READONLY char	*ca_message_text[]
-=
-{
-"Normal successful completion",
-"Maximum simultaneous IOC connections exceeded",
-"Unknown internet host",
-"Unknown internet service",
-"Unable to allocate a new socket",
-"Unable to connect to internet host or service",
-"Unable to allocate additional dynamic memory",
-"Unknown IO channel",
-"Record field specified inappropriate for channel specified",
-"The array or data structure specified will not fit in CA message buffer",
-"User specified timeout on IO operation expired",
-"Sorry, that feature is planned but not supported at this time",
-"The supplied string is unusually large",
-"The request was ignored because the specified channel is disconnected",
-"The type you have requested from this channel is unknown",
-"Remote Channel not found",
-"Unable to locate all user specified channels",
-"Channel Access Internal Failure",
-"The requested local DB operation failed",
-"Could not perform a database value get for that channel",
-"Could not perform a database value put for that channel",
-"Could not perform a database event add for that channel",
-"Count requested inappropriate for that channel",
-"The supplied string has improper format",
-"Network connection lost",
-"Ambiguous channel host (multiple IOC's have a channel by that name)",
-"The CA routine called is inappropriate for use within an event handler",
-"Database value get for that channel failed during channel search",
-"Unable to initialize without the vxWorks VX_FP_TASK task option set",
-"Event queue overflow has prevented first pass event after event add",
-"A monitor by that id cant be found",
-"Remote channel has new network address",
-"New or resumed network connection",
-"Specified task isnt a member of a CA context",
-"Attempt to use defunct CA feature failed",
-"The supplied string is empty",
-"Unable to spawn the CA repeater thread- auto reconnect will fail",
-"No channel id match for search reply- search reply ignored",
-"Reseting dead connection- will try to reconnect",
-"Server (IOC) has fallen behind or is not responding- still waiting",
-"No internet interface with broadcast available",
-"The event selection mask supplied is empty or inappropriate",
-"IO operations have completed",
-"IO operations are in progress",
-"Invalid synchronous group identifier",
-"Put call back operation collision with put call back operation in progress",
-"Read access denied",
-"Write access denied",
-"Sorry, that anachronistic feature of CA is no longer supported",
-"The search request/beacon address list was empty after initialization",
-"Data conversion between client's type and the server's type failed",
-"Invalid channel identifier",
-"Invalid function pointer"
+READONLY char *ca_message_text[]
+    = {
+   "Normal successful completion",
+   "Maximum simultaneous IOC connections exceeded",
+   "Unknown internet host",
+   "Unknown internet service",
+   "Unable to allocate a new socket",
+   "Unable to connect to internet host or service",
+   "Unable to allocate additional dynamic memory",
+   "Unknown IO channel",
+   "Record field specified inappropriate for channel specified",
+   "The array or data structure specified will not fit in CA message buffer",
+   "User specified timeout on IO operation expired",
+   "Sorry, that feature is planned but not supported at this time",
+   "The supplied string is unusually large",
+   "The request was ignored because the specified channel is disconnected",
+   "The type you have requested from this channel is unknown",
+   "Remote Channel not found",
+   "Unable to locate all user specified channels",
+   "Channel Access Internal Failure",
+   "The requested local DB operation failed",
+   "Could not perform a database value get for that channel",
+   "Could not perform a database value put for that channel",
+   "Could not perform a database event add for that channel",
+   "Count requested inappropriate for that channel",
+   "The supplied string has improper format",
+   "Network connection lost",
+   "Ambiguous channel host (multiple IOC's have a channel by that name)",
+   "The CA routine called is inappropriate for use within an event handler",
+   "Database value get for that channel failed during channel search",
+   "Unable to initialize without the vxWorks VX_FP_TASK task option set",
+   "Event queue overflow has prevented first pass event after event add",
+   "A monitor by that id cant be found",
+   "Remote channel has new network address",
+   "New or resumed network connection",
+   "Specified task isnt a member of a CA context",
+   "Attempt to use defunct CA feature failed",
+   "The supplied string is empty",
+   "Unable to spawn the CA repeater thread- auto reconnect will fail",
+   "No channel id match for search reply- search reply ignored",
+   "Reseting dead connection- will try to reconnect",
+   "Server (IOC) has fallen behind or is not responding- still waiting",
+   "No internet interface with broadcast available",
+   "The event selection mask supplied is empty or inappropriate",
+   "IO operations have completed",
+   "IO operations are in progress",
+   "Invalid synchronous group identifier",
+   "Put call back operation collision with put call back operation in progress",
+   "Read access denied",
+   "Write access denied",
+   "Sorry, that anachronistic feature of CA is no longer supported",
+   "The search request/beacon address list was empty after initialization",
+   "Data conversion between client's type and the server's type failed",
+   "Invalid channel identifier",
+   "Invalid function pointer"
 };
 #endif
 
-#ifdef __STDC__ 
+#ifdef __STDC__
 #define CAERR_USE_FUNC_PROTO
 #endif
 
@@ -227,8 +213,8 @@ READONLY char	*ca_message_text[]
 #endif
 
 #ifdef CAERR_USE_FUNC_PROTO
-epicsShareFunc READONLY char * epicsShareAPI ca_message(long ca_status);
-#else /* CAERR_USE_FUNC_PROTO */
+epicsShareFunc READONLY char *epicsShareAPI ca_message(long ca_status);
+#else                           /* CAERR_USE_FUNC_PROTO */
 READONLY char *ca_message();
 #endif
 

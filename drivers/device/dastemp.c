@@ -6,6 +6,9 @@
   Contents:     DAS-TEMP (Keithley) Device Driver
 
   $Log$
+  Revision 1.3  2004/01/08 08:40:08  midas
+  Implemented standard indentation
+
   Revision 1.2  2001/08/22 13:53:02  midas
   Reorganized directio functions
 
@@ -29,7 +32,7 @@
 /*---- globals -----------------------------------------------------*/
 
 typedef struct {
-  unsigned short io_base;
+   unsigned short io_base;
 } DASTEMP_SETTINGS;
 
 #define DASTEMP_SETTINGS_STR "\
@@ -40,35 +43,34 @@ IO Base = WORD : 0x220\n\
 
 INT dastemp_init(HNDLE hKey, void **psettings, INT channels)
 {
-int   status, size;
-HNDLE hDB;
-DASTEMP_SETTINGS *settings;
+   int status, size;
+   HNDLE hDB;
+   DASTEMP_SETTINGS *settings;
 
-  /* allocate info structure */
-  settings = calloc(1, sizeof(DASTEMP_SETTINGS));
-  *psettings = settings;
+   /* allocate info structure */
+   settings = calloc(1, sizeof(DASTEMP_SETTINGS));
+   *psettings = settings;
 
-  cm_get_experiment_database(&hDB, NULL);
+   cm_get_experiment_database(&hDB, NULL);
 
-  /* create settings record */
-  status = db_create_record(hDB, hKey, "", DASTEMP_SETTINGS_STR);
-  if (status != DB_SUCCESS)
-    return FE_ERR_ODB;
+   /* create settings record */
+   status = db_create_record(hDB, hKey, "", DASTEMP_SETTINGS_STR);
+   if (status != DB_SUCCESS)
+      return FE_ERR_ODB;
 
-  size = sizeof(DASTEMP_SETTINGS);
-  db_get_record(hDB, hKey, settings, &size, 0);
+   size = sizeof(DASTEMP_SETTINGS);
+   db_get_record(hDB, hKey, settings, &size, 0);
 
 #ifdef OS_WINNT
-  /* open IO address space */
-  status = ss_directio_give_port(settings->io_base, settings->io_base+0x0F);
-  if (status != SS_SUCCESS)
-    {
-    cm_msg(MERROR, "dastemp_init", "DirectIO driver not installed");
-    return FE_ERR_HW;
-    }
+   /* open IO address space */
+   status = ss_directio_give_port(settings->io_base, settings->io_base + 0x0F);
+   if (status != SS_SUCCESS) {
+      cm_msg(MERROR, "dastemp_init", "DirectIO driver not installed");
+      return FE_ERR_HW;
+   }
 #endif
 
-  return FE_SUCCESS;
+   return FE_SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
@@ -83,108 +85,105 @@ DASTEMP_SETTINGS *settings;
 
 /*------------------------------------------------------------------*/
 
-INT dastemp_get(DASTEMP_SETTINGS *settings, INT channel, float *pvalue)
+INT dastemp_get(DASTEMP_SETTINGS * settings, INT channel, float *pvalue)
 {
-unsigned short int data;
-double             temp;
+   unsigned short int data;
+   double temp;
 
 //###
 //*pvalue = (float) (channel/10.0);
 //return FE_SUCCESS;
 
-  /* set up counter 1 for gating */
-  _outp(CTC, 0x72); // HW one shot
-  _outp(CT1, 0x40); // 0x9C40 for 50 Hz rej.
-  _outp(CT1, 0x9C);
+   /* set up counter 1 for gating */
+   _outp(CTC, 0x72);            // HW one shot
+   _outp(CT1, 0x40);            // 0x9C40 for 50 Hz rej.
+   _outp(CT1, 0x9C);
 
-  /* set up counter 0 for V-F counting */
-  _outp(CTC, 0x30); // event counting mode for cntr0
-  _outp(CT0, 0xFF); // 0xFFFF
-  _outp(CT0, 0xFF);
-  _outp(LCZS, 0);   // load cntr0
+   /* set up counter 0 for V-F counting */
+   _outp(CTC, 0x30);            // event counting mode for cntr0
+   _outp(CT0, 0xFF);            // 0xFFFF
+   _outp(CT0, 0xFF);
+   _outp(LCZS, 0);              // load cntr0
 
-  /* select channel */
-  _outp(STATUS, (channel & 31) | 0x80);
+   /* select channel */
+   _outp(STATUS, (channel & 31) | 0x80);
 
-  /* trigger a conversion */
-  data = _inp(CTC);
+   /* trigger a conversion */
+   data = _inp(CTC);
 
-  /* wait until "dummy" conversion is ready */
-  do
-    {
-    data = _inp(STATUS);
-    } while (data & (1<<5));
+   /* wait until "dummy" conversion is ready */
+   do {
+      data = _inp(STATUS);
+   } while (data & (1 << 5));
 
-  /* set up counter 0 for V-F counting */
-  _outp(CTC, 0x30); // event counting mode for cntr0
-  _outp(CT0, 0xFF); // 0xFFFF
-  _outp(CT0, 0xFF);
-  _outp(LCZS, 0);   // load cntr0
+   /* set up counter 0 for V-F counting */
+   _outp(CTC, 0x30);            // event counting mode for cntr0
+   _outp(CT0, 0xFF);            // 0xFFFF
+   _outp(CT0, 0xFF);
+   _outp(LCZS, 0);              // load cntr0
 
-  /* trigger a conversion */
-  data = _inp(CTC);
+   /* trigger a conversion */
+   data = _inp(CTC);
 
-  /* wait until "real" conversion is ready */
-  do
-    {
-    data = _inp(STATUS);
-    } while (data & (1<<5));
+   /* wait until "real" conversion is ready */
+   do {
+      data = _inp(STATUS);
+   } while (data & (1 << 5));
 
-  /* latch counter command */
-  _outp(CTC, 0x00);
+   /* latch counter command */
+   _outp(CTC, 0x00);
 
-  /* read data */
-  data = _inp(CT0);
-  data |= (_inp(CT0) << 8);
-  data = 65535 - data;
+   /* read data */
+   data = _inp(CT0);
+   data |= (_inp(CT0) << 8);
+   data = 65535 - data;
 
-  temp = data * 0.0125 - 273.15;
+   temp = data * 0.0125 - 273.15;
 
-  /* round temperature to 0.01 deg */
-  temp = ((int) (temp*100 +0.5))/100.0;
+   /* round temperature to 0.01 deg */
+   temp = ((int) (temp * 100 + 0.5)) / 100.0;
 
-  /* return temperature */
-  *pvalue = (float) temp;
+   /* return temperature */
+   *pvalue = (float) temp;
 
-  return FE_SUCCESS ;
+   return FE_SUCCESS;
 }
 
 /*---- device driver entry point -----------------------------------*/
 
 INT dastemp(INT cmd, ...)
 {
-va_list argptr;
-HNDLE   hKey;
-INT     channel, status;
-float   *pvalue;
-void    *info;
+   va_list argptr;
+   HNDLE hKey;
+   INT channel, status;
+   float *pvalue;
+   void *info;
 
-  va_start(argptr, cmd);
-  status = FE_SUCCESS;
+   va_start(argptr, cmd);
+   status = FE_SUCCESS;
 
-  switch (cmd)
-    {
-    case CMD_INIT:
+   switch (cmd) {
+   case CMD_INIT:
       hKey = va_arg(argptr, HNDLE);
       info = va_arg(argptr, void *);
       channel = va_arg(argptr, INT);
       status = dastemp_init(hKey, info, channel);
       break;
 
-    case CMD_GET:
+   case CMD_GET:
       info = va_arg(argptr, void *);
       channel = va_arg(argptr, INT);
-      pvalue  = va_arg(argptr, float*);
+      pvalue = va_arg(argptr, float *);
       status = dastemp_get(info, channel, pvalue);
       break;
-    
-    default:
+
+   default:
       break;
-    }
+   }
 
-  va_end(argptr);
+   va_end(argptr);
 
-  return status;
+   return status;
 }
 
 /*------------------------------------------------------------------*/

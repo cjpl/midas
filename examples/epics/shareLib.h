@@ -74,22 +74,22 @@
  * Also check for "EPICS_DLL_NO" not defined so that we will not use these
  * keywords if it is an object library build of base under WIN32.
  */
-#if defined(_WIN32) && !defined(__CYGWIN32__) 
+#if defined(_WIN32) && !defined(__CYGWIN32__)
 
 #	if defined(epicsExportSharedSymbols)
-#		if defined(EPICS_DLL_NO) /* this indicates that we are not building a DLL */
-#			define epicsShareExtern extern 
-#			define epicsShareClass 
+#		if defined(EPICS_DLL_NO)        /* this indicates that we are not building a DLL */
+#			define epicsShareExtern extern
+#			define epicsShareClass
 #			define epicsShareFunc
 #		else
 #			define epicsShareExtern extern __declspec(dllexport)
-#			define epicsShareClass  __declspec(dllexport) 
+#			define epicsShareClass  __declspec(dllexport)
 #			define epicsShareFunc  __declspec(dllexport)
 #		endif
 #	else
-#		if defined(_DLL) /* this indicates that we are being compiled to call a DLL */
+#		if defined(_DLL)        /* this indicates that we are being compiled to call a DLL */
 #			define epicsShareExtern extern __declspec(dllimport)
-#			define epicsShareClass  __declspec(dllimport) 
+#			define epicsShareClass  __declspec(dllimport)
 #			define epicsShareFunc  __declspec(dllimport)
 #		else
 #			define epicsShareExtern extern
@@ -97,19 +97,19 @@
 #			define epicsShareFunc
 #		endif
 #	endif
-	/*
-	 * Subroutine removes arguments 
-	 * (Bill does not allow __stdcall to be next to
-	 * __declspec(xxxx))
-	 */
+        /*
+         * Subroutine removes arguments 
+         * (Bill does not allow __stdcall to be next to
+         * __declspec(xxxx))
+         */
 #	define epicsShareAPI __stdcall
-	/*
-	 * Variable args functions cannot be __stdcall
-	 * Use this for variable args functions
-	 * (Those using either ... or va_list arguments)
-	 */
+        /*
+         * Variable args functions cannot be __stdcall
+         * Use this for variable args functions
+         * (Those using either ... or va_list arguments)
+         */
 #	define epicsShareAPIV __cdecl
-#	if defined(EPICS_DLL_NO) /* this indicates that we are not building a DLL */
+#	if defined(EPICS_DLL_NO)        /* this indicates that we are not building a DLL */
 #		define epicsShareDef
 #	else
 #		define epicsShareDef __declspec(dllexport)
@@ -120,18 +120,18 @@
  */
 #elif defined(VAXC)
 
-	/* 
-	 * VAXC creates FORTRAN common blocks when
-	 * we use "extern int fred"/"int fred=4". Therefore,
-	 * the initialization is not loaded unless we
-	 * call a function in that object module.
-	 *
-	 * DEC CXX does not have this problem.
-	 * We suspect (but do not know) that DEC C 
-	 * 	also does not have this problem.
-	 */
-#	define epicsShareExtern globalref 
-#	define epicsShareDef globaldef 
+        /* 
+         * VAXC creates FORTRAN common blocks when
+         * we use "extern int fred"/"int fred=4". Therefore,
+         * the initialization is not loaded unless we
+         * call a function in that object module.
+         *
+         * DEC CXX does not have this problem.
+         * We suspect (but do not know) that DEC C 
+         *      also does not have this problem.
+         */
+#	define epicsShareExtern globalref
+#	define epicsShareDef globaldef
 #	define READONLY const
 #	define epicsShareClass
 #	define epicsShareFunc
@@ -156,4 +156,3 @@
 #	endif
 
 #endif
-

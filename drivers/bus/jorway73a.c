@@ -41,6 +41,9 @@ takes almost 12 seconds in NODMA mode but occurs in a blistering
 15 ms if block transfers are enabled.
 
 $Log$
+Revision 1.3  2004/01/08 08:40:08  midas
+Implemented standard indentation
+
 Revision 1.2  2004/01/08 06:49:58  pierre
 fix small bugs
 
@@ -730,10 +733,10 @@ int handle_scsi_cmd(int branch, /* CAMAC branch */
 
 
    /* Since the sg.c driver _read_ always returns the sg_header, we must
-      ** provide a buffer +SCSI_OFF in size. Since i_buff was already
-      ** allocated as the largest size data buffer we could use (+SCSI_OFF),
-      ** we use it. We have to copy the data read back to the user's 
-      ** buffer, but this ultimatly saves an extra malloc call.
+    ** provide a buffer +SCSI_OFF in size. Since i_buff was already
+    ** allocated as the largest size data buffer we could use (+SCSI_OFF),
+    ** we use it. We have to copy the data read back to the user's 
+    ** buffer, but this ultimatly saves an extra malloc call.
     */
 
    /* retrieve result */
@@ -752,20 +755,20 @@ int handle_scsi_cmd(int branch, /* CAMAC branch */
 
    /* copy data read back to the user buffer */
    /* The generic scsi driver keeps an internal buffer with the
-      ** last data read, and does not clear it when a subsequent SCSI
-      ** command completes with a non-zero SCSI response. sg_hd->result
-      ** does not contain the SCSI response as observed from a SCSI
-      ** analyzer, so it is not used. The only alternative is to test
-      ** for a non-zero sense buffer sense key field returned from the
-      ** Jorway. If the sense key is non-zero, the user buffer is
-      ** zeroed instead of returning stale data from the internal SCSI
-      ** buffer.
+    ** last data read, and does not clear it when a subsequent SCSI
+    ** command completes with a non-zero SCSI response. sg_hd->result
+    ** does not contain the SCSI response as observed from a SCSI
+    ** analyzer, so it is not used. The only alternative is to test
+    ** for a non-zero sense buffer sense key field returned from the
+    ** Jorway. If the sense key is non-zero, the user buffer is
+    ** zeroed instead of returning stale data from the internal SCSI
+    ** buffer.
     */
 
    /* by rex hubbard (jorway): before doing the above, check if the
-      ** sensekey is 9, indicating a transfer stopped by q-response. If
-      ** so, get the defecit from the sense data and adjust the return
-      ** value. The data in the internal buffer is valid, so copy it.
+    ** sensekey is 9, indicating a transfer stopped by q-response. If
+    ** so, get the defecit from the sense data and adjust the return
+    ** value. The data in the internal buffer is valid, so copy it.
     */
 
    if (!(sg_hd->sense_buffer[SENSEKEY])) {
@@ -815,9 +818,9 @@ int handle_scsi_cmd(int branch, /* CAMAC branch */
 
 
    /* Unlike the Jorway 73A, the 411S returns SCSI status CONDITION_MET
-      ** (0x04) for Q=1 on a data transfer. This is converted by the 
-      ** generic SCSI driver sg.c to EIO (0x05). The CAMAC completion routines
-      ** ignore this status, but the following code segment does not.
+    ** (0x04) for Q=1 on a data transfer. This is converted by the 
+    ** generic SCSI driver sg.c to EIO (0x05). The CAMAC completion routines
+    ** ignore this status, but the following code segment does not.
     */
 #ifdef DEBUG
    if (status < 0 || status != SCSI_OFF + out_size || sg_hd->result) {
@@ -1012,7 +1015,7 @@ unsigned char *sjy_inquiry(int branch)
                    sizeof(Inqbuffer) - SCSI_OFF, Inqbuffer);
 
    /* handle_scsi_cmd removes sg_header in the copy from i_buff to o_buff,
-      ** so don't add SCSI_OFF offset to Inqbuffer
+    ** so don't add SCSI_OFF offset to Inqbuffer
     */
    /*
       fprintf(stderr,"Inquiry buffer\n");
@@ -1087,7 +1090,7 @@ unsigned char *sjy_reqSense(int branch)
                    sizeof(sensebuffer) - SCSI_OFF, sensebuffer);
 
    /* handle_scsi_cmd removes sg_header in the copy from i_buff to o_buff,
-      ** so don't add SCSI_OFF offset to sensebuffer
+    ** so don't add SCSI_OFF offset to sensebuffer
     */
    return (sensebuffer);
 }

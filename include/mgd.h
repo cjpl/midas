@@ -24,46 +24,46 @@
 	read-only purposes. */
 
 typedef struct gdImageStruct {
-	unsigned char ** pixels;
-	int sx;
-	int sy;
-	int colorsTotal;
-	int red[gdMaxColors];
-	int green[gdMaxColors];
-	int blue[gdMaxColors]; 
-	int open[gdMaxColors];
-	int transparent;
-	int *polyInts;
-	int polyAllocated;
-	struct gdImageStruct *brush;
-	struct gdImageStruct *tile;	
-	int brushColorMap[gdMaxColors];
-	int tileColorMap[gdMaxColors];
-	int styleLength;
-	int stylePos;
-	int *style;
-	int interlace;
+   unsigned char **pixels;
+   int sx;
+   int sy;
+   int colorsTotal;
+   int red[gdMaxColors];
+   int green[gdMaxColors];
+   int blue[gdMaxColors];
+   int open[gdMaxColors];
+   int transparent;
+   int *polyInts;
+   int polyAllocated;
+   struct gdImageStruct *brush;
+   struct gdImageStruct *tile;
+   int brushColorMap[gdMaxColors];
+   int tileColorMap[gdMaxColors];
+   int styleLength;
+   int stylePos;
+   int *style;
+   int interlace;
 } gdImage;
 
-typedef gdImage * gdImagePtr;
+typedef gdImage *gdImagePtr;
 
 typedef struct gdGifBufferStruct {
-  char *data;
-  int  size;
+   char *data;
+   int size;
 } gdGifBuffer;
 
 typedef struct {
-	/* # of characters in font */
-	int nchars;
-	/* First character is numbered... (usually 32 = space) */
-	int offset;
-	/* Character width and height */
-	int w;
-	int h;
-	/* Font data; array of characters, one row after another.
-		Easily included in code, also easily loaded from
-		data files. */
-	int *data;
+   /* # of characters in font */
+   int nchars;
+   /* First character is numbered... (usually 32 = space) */
+   int offset;
+   /* Character width and height */
+   int w;
+   int h;
+   /* Font data; array of characters, one row after another.
+      Easily included in code, also easily loaded from
+      data files. */
+   int *data;
 } gdFont;
 
 /* Text functions take these. */
@@ -93,7 +93,7 @@ extern gdFontPtr gdFontSmall;
 /* Functions to manipulate images. */
 
 gdImagePtr gdImageCreate(int sx, int sy);
-gdImagePtr gdImageCreateFromGif(FILE *fd);
+gdImagePtr gdImageCreateFromGif(FILE * fd);
 void gdImageDestroy(gdImagePtr im);
 void gdImageSetPixel(gdImagePtr im, int x, int y, int color);
 int gdImageGetPixel(gdImagePtr im, int x, int y);
@@ -115,7 +115,7 @@ void gdImageStringUp(gdImagePtr im, gdFontPtr f, int x, int y, char *s, int colo
 /* Point type for use in polygon drawing. */
 
 typedef struct {
-	int x, y;
+   int x, y;
 } gdPoint, *gdPointPtr;
 
 void gdImagePolygon(gdImagePtr im, gdPointPtr p, int n, int c);
@@ -126,12 +126,14 @@ int gdImageColorClosest(gdImagePtr im, int r, int g, int b);
 int gdImageColorExact(gdImagePtr im, int r, int g, int b);
 void gdImageColorDeallocate(gdImagePtr im, int color);
 void gdImageColorTransparent(gdImagePtr im, int color);
-void gdImageGif(gdImagePtr im, gdGifBuffer *buffer);
+void gdImageGif(gdImagePtr im, gdGifBuffer * buffer);
 void gdImageFillToBorder(gdImagePtr im, int x, int y, int border, int color);
 void gdImageFill(gdImagePtr im, int x, int y, int color);
-void gdImageCopy(gdImagePtr dst, gdImagePtr src, int dstX, int dstY, int srcX, int srcY, int w, int h);
+void gdImageCopy(gdImagePtr dst, gdImagePtr src, int dstX, int dstY, int srcX, int srcY,
+                 int w, int h);
 /* Stretches or shrinks to fit, as needed */
-void gdImageCopyResized(gdImagePtr dst, gdImagePtr src, int dstX, int dstY, int srcX, int srcY, int dstW, int dstH, int srcW, int srcH);
+void gdImageCopyResized(gdImagePtr dst, gdImagePtr src, int dstX, int dstY, int srcX,
+                        int srcY, int dstW, int dstH, int srcW, int srcH);
 void gdImageSetBrush(gdImagePtr im, gdImagePtr brush);
 void gdImageSetTile(gdImagePtr im, gdImagePtr tile);
 void gdImageSetStyle(gdImagePtr im, int *style, int noOfPixels);

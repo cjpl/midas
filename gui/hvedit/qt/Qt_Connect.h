@@ -15,6 +15,9 @@
     email                : andreas.suter@psi.ch
 
   $Log$
+  Revision 1.3  2004/01/08 08:40:09  midas
+  Implemented standard indentation
+
   Revision 1.2  2003/12/30 14:54:26  suter_a
   "doxygenized" code, i.e. added comments which can be handled by doxygen in
   order to generate html- and latex-docu.
@@ -43,28 +46,23 @@
 #include "cmExperiment.h"
 #include "Qt_Connect_Base.h"
 
-class Qt_Connect : public Qt_Connect_Base
-{
-  Q_OBJECT
+class Qt_Connect:public Qt_Connect_Base {
+   Q_OBJECT
+       // Constructor/Destructor
+ public:
+   Qt_Connect(cmExperiment * cmExp,
+              QWidget * parent = 0, const char *name = 0, bool modal = FALSE, WFlags f =
+              WDestructiveClose);
+   ~Qt_Connect();
 
-  // Constructor/Destructor
-  public:
-    Qt_Connect(cmExperiment *cmExp,
-               QWidget *parent = 0, const char *name = 0, bool modal = FALSE, WFlags f = WDestructiveClose);
-    ~Qt_Connect();
+   // Attributes
+ private:
+    cmExperiment * cmExp;       //!< Pointer to a MIDAS experiment object.
 
-  // Attributes
-  private:
-    cmExperiment *cmExp; //!< Pointer to a MIDAS experiment object.
+   // Slots
+   public slots:void gotExperiment();
 
-  // Slots
-  public slots:
-    void gotExperiment();
-
-  private slots:
-    void getExpList();
+   private slots:void getExpList();
 };
 
-#endif // QT_CONNECT_H
-
-
+#endif                          // QT_CONNECT_H

@@ -15,6 +15,9 @@
     email                : andreas.suter@psi.ch
 
   $Log$
+  Revision 1.3  2004/01/08 08:40:09  midas
+  Implemented standard indentation
+
   Revision 1.2  2003/12/30 14:54:26  suter_a
   "doxygenized" code, i.e. added comments which can be handled by doxygen in
   order to generate html- and latex-docu.
@@ -42,22 +45,20 @@
 
 #include "Qt_Pwd_Base.h"
 
-class Qt_Pwd : public Qt_Pwd_Base
-{
-  Q_OBJECT
+class Qt_Pwd:public Qt_Pwd_Base {
+   Q_OBJECT
+       // Constructor
+ public:
+   Qt_Pwd(char *password, QWidget * parent = 0, const char *name = 0, bool modal =
+          FALSE, WFlags f = WDestructiveClose);
+   ~Qt_Pwd();
 
-  // Constructor
-  public:
-    Qt_Pwd(char *password, QWidget *parent = 0, const char *name = 0, bool modal = FALSE, WFlags f = WDestructiveClose);
-    ~Qt_Pwd();
+   // Attributes
+ private:
+   char *pwd;                   //!< holds the password string
 
-  // Attributes
-  private:
-    char *pwd; //!< holds the password string
-
-  // Slots
-  public slots:
-    void GetPassword();
+   // Slots
+   public slots:void GetPassword();
 };
 
-#endif // QT_PWD_H
+#endif                          // QT_PWD_H

@@ -7,6 +7,9 @@
                 following the MIDAS CAMAC Standard for DirectIO
 
   $Log$
+  Revision 1.7  2004/01/08 08:40:08  midas
+  Implemented standard indentation
+
   Revision 1.6  2002/05/08 22:19:57  pierre
   remove warnings
 
@@ -70,31 +73,31 @@
 #define TCR CAMAC_BASE+0xe
 
 /* Control/Status Register (CSR) Bit Fields */
-#define GO		0x01		/* Start a data transfer	*/
-#define NOQ		0x02		/* Q status of last operation	*/
-#define NOX		0x04		/* X status of last operation	*/
-#define ID1		0x08		/* Interface ID1 + ID 2 Ro      */
+#define GO		0x01    /* Start a data transfer        */
+#define NOQ		0x02    /* Q status of last operation   */
+#define NOX		0x04    /* X status of last operation   */
+#define ID1		0x08    /* Interface ID1 + ID 2 Ro      */
 #define ID2		0x10
-#define DONE_ENABLE     0x40            /* Done interrupt enable RW */
-#define DONE            0x80            /* Done Ro */
-#define RFS_ENABLE      0x100           /* Request For Service Int Enable RW */
-#define RFS             0x200           /* LAM is Pending Ro */
-#define PP              0x400           /* Parallel Poll Wo */
-#define RESET           0x1000          /* Reset Interface Wo */
-#define TMO             0x2000          /* Timeout info Ro */
-#define ABT             0x4000          /* Abort info Ro */
-#define CERROR          0x8000          /* Error = TMO + ABT Ro */
+#define DONE_ENABLE     0x40    /* Done interrupt enable RW */
+#define DONE            0x80    /* Done Ro */
+#define RFS_ENABLE      0x100   /* Request For Service Int Enable RW */
+#define RFS             0x200   /* LAM is Pending Ro */
+#define PP              0x400   /* Parallel Poll Wo */
+#define RESET           0x1000  /* Reset Interface Wo */
+#define TMO             0x2000  /* Timeout info Ro */
+#define ABT             0x4000  /* Abort info Ro */
+#define CERROR          0x8000  /* Error = TMO + ABT Ro */
 #define CSR_RESET_VALUE	(DONE | NOX | NOQ)
 #define MCR_RESET_VALUE	0x00
 
 /* Mode Control Register (MCR) Bit Fields 15-6 not used */
-#define AD		0x01		/* Disable Abort on DMA tfer	*/
-#define WS1		0x02		/* Word size			*/
-#define WS2		0x04		/* 00=24bit 01=16bit 10=8bit	*/
-#define TM1		0x08		/* DMA transfer mode		*/
-#define	TM2		0x10            /* 00:Q-stop,   01:Q-ignore
-					   10:Q-repeat, 11:Q-scan       */
-#define BM		0x20		/* Block transfer mode		*/
+#define AD		0x01    /* Disable Abort on DMA tfer    */
+#define WS1		0x02    /* Word size                    */
+#define WS2		0x04    /* 00=24bit 01=16bit 10=8bit    */
+#define TM1		0x08    /* DMA transfer mode            */
+#define	TM2		0x10    /* 00:Q-stop,   01:Q-ignore
+                                   10:Q-repeat, 11:Q-scan       */
+#define BM		0x20    /* Block transfer mode          */
 
 #define WS_24BIT	0x00
 #define WS_16BIT	WS1
@@ -117,12 +120,12 @@
     1   0 Write
     1   1 Control */
 
-#define A_FIELD         0x01E0          /* 16 sub addresses */
+#define A_FIELD         0x01E0  /* 16 sub addresses */
 #define A_SHIFT         5
-#define N_FIELD         0x3E00          /* 32 slots */
+#define N_FIELD         0x3E00  /* 32 slots */
 #define N_SHIFT         9
-#define F_FIELD         0x1F            /* 32 functions */
-#define RDNAF           0x8000          /* READ NAF Wo Initiate K-bus NAF */
+#define F_FIELD         0x1F    /* 32 functions */
+#define RDNAF           0x8000  /* READ NAF Wo Initiate K-bus NAF */
 
 /* Bit fields in the 3922 Status Register */
 #define ZINIT	       0x0001
@@ -170,397 +173,379 @@
 #define INPW(_p) inw(_p)
 #endif
 /*------------------------------------------------------------------*/
-INLINE void cam8i(const int c, const int n, const int a, const int f, 
-                  unsigned char *d)
+INLINE void cam8i(const int c, const int n, const int a, const int f, unsigned char *d)
 {
 }
 
 /*------------------------------------------------------------------*/
-INLINE void cami(const int c, const int n, const int a, const int f, 
-                 WORD *d)
+INLINE void cami(const int c, const int n, const int a, const int f, WORD * d)
 {
-  OUTPW(CCR, c);
-  OUTPW(NAF,(n << N_SHIFT) | (a << A_SHIFT) | f);
-  while(!(INPW(CSR)&DONE));
-  OUTPW(MCR, WS_16BIT);
-  OUTPW(CSR,GO);
-  while(!(INPW(CSR)&DONE));
-  *d=INPW(DLR);
+   OUTPW(CCR, c);
+   OUTPW(NAF, (n << N_SHIFT) | (a << A_SHIFT) | f);
+   while (!(INPW(CSR) & DONE));
+   OUTPW(MCR, WS_16BIT);
+   OUTPW(CSR, GO);
+   while (!(INPW(CSR) & DONE));
+   *d = INPW(DLR);
 }
 
 /*------------------------------------------------------------------*/
-INLINE void cam16i(const int c, const int n, const int a, const int f, 
-                   WORD *d)
+INLINE void cam16i(const int c, const int n, const int a, const int f, WORD * d)
 {
-  cami(c, n, a, f, d);
+   cami(c, n, a, f, d);
 }
 
 /*------------------------------------------------------------------*/
-INLINE void cam24i(const int c, const int n, const int a, const int f, 
-                   DWORD *d)
+INLINE void cam24i(const int c, const int n, const int a, const int f, DWORD * d)
 {
-  OUTPW(CCR, c);
-  OUTPW(NAF,(n << N_SHIFT) | (a << A_SHIFT) | f);
-  while(!(INPW(CSR)&DONE));
-  OUTPW(MCR, WS_24BIT);
-  OUTPW(CSR,GO);
-  while(!(INPW(CSR)&DONE));
-  *((unsigned short *)d)  =INPW(DLR);
-  *((unsigned char *)d+2) =INP(DHR);
+   OUTPW(CCR, c);
+   OUTPW(NAF, (n << N_SHIFT) | (a << A_SHIFT) | f);
+   while (!(INPW(CSR) & DONE));
+   OUTPW(MCR, WS_24BIT);
+   OUTPW(CSR, GO);
+   while (!(INPW(CSR) & DONE));
+   *((unsigned short *) d) = INPW(DLR);
+   *((unsigned char *) d + 2) = INP(DHR);
 }
 
 /*------------------------------------------------------------------*/
-INLINE void cam8i_q(const int c, const int n, const int a, const int f, 
+INLINE void cam8i_q(const int c, const int n, const int a, const int f,
                     unsigned char *d, int *x, int *q)
 {
-  printf("cam8i_q not implemented\n");
+   printf("cam8i_q not implemented\n");
 }
 
 /*------------------------------------------------------------------*/
-INLINE void cam16i_q(const int c, const int n, const int a, const int f, 
-                     WORD *d, int *x, int *q)
+INLINE void cam16i_q(const int c, const int n, const int a, const int f,
+                     WORD * d, int *x, int *q)
 {
-  OUTPW(CCR, c);
-  OUTPW(NAF,(n << N_SHIFT) | (a << A_SHIFT) | f);
-  while(!(INPW(CSR)&DONE));
-  OUTPW(MCR, WS_16BIT);
-  OUTPW(CSR,GO);
-  while(!(INPW(CSR)&DONE));
-  *((unsigned short *)d)  =INPW(DLR);
-  *q=(((INPW(CSR)>>1)&1)^1);
-  *x=(((INPW(CSR)>>2)&1)^1);
+   OUTPW(CCR, c);
+   OUTPW(NAF, (n << N_SHIFT) | (a << A_SHIFT) | f);
+   while (!(INPW(CSR) & DONE));
+   OUTPW(MCR, WS_16BIT);
+   OUTPW(CSR, GO);
+   while (!(INPW(CSR) & DONE));
+   *((unsigned short *) d) = INPW(DLR);
+   *q = (((INPW(CSR) >> 1) & 1) ^ 1);
+   *x = (((INPW(CSR) >> 2) & 1) ^ 1);
 }
 
 /*------------------------------------------------------------------*/
-INLINE void cam24i_q(const int c, const int n, const int a, const int f, 
-                     DWORD *d, int *x, int *q)
+INLINE void cam24i_q(const int c, const int n, const int a, const int f,
+                     DWORD * d, int *x, int *q)
 {
-  OUTPW(CCR, c);
-  OUTPW(NAF,(n << N_SHIFT) | (a << A_SHIFT) | f);
-  while(!(INPW(CSR)&DONE));
-  OUTPW(MCR, WS_24BIT);
-  OUTPW(CSR,GO);
-  while(!(INPW(CSR)&DONE));
-  *((unsigned short *)d)  =INPW(DLR);
-  *((unsigned char *)d+2) =INP(DHR);
-  *d &= 0x00ffffff;
-  *q=(((INPW(CSR)>>1)&1)^1);
-  *x=(((INPW(CSR)>>2)&1)^1);
+   OUTPW(CCR, c);
+   OUTPW(NAF, (n << N_SHIFT) | (a << A_SHIFT) | f);
+   while (!(INPW(CSR) & DONE));
+   OUTPW(MCR, WS_24BIT);
+   OUTPW(CSR, GO);
+   while (!(INPW(CSR) & DONE));
+   *((unsigned short *) d) = INPW(DLR);
+   *((unsigned char *) d + 2) = INP(DHR);
+   *d &= 0x00ffffff;
+   *q = (((INPW(CSR) >> 1) & 1) ^ 1);
+   *x = (((INPW(CSR) >> 2) & 1) ^ 1);
 }
 
 /*------------------------------------------------------------------*/
-INLINE void cam16i_r(const int c, const int n, const int a, const int f, 
-                     WORD **d, const int r)
+INLINE void cam16i_r(const int c, const int n, const int a, const int f,
+                     WORD ** d, const int r)
 {
-  WORD i;
+   WORD i;
 
-  OUTPW(CCR, c);
-  OUTPW(NAF,(n << N_SHIFT) | (a << A_SHIFT) | f);
-  while(!(INPW(CSR)&DONE));
-  OUTPW(MCR, WS_16BIT);
-  for (i=0 ; i<r ; i++)
-  {
-    OUTPW(CSR,GO);
-    while(!(INPW(CSR)&DONE));
-    *((unsigned short *)(*d))  =INPW(DLR);
-    (*d)++;
-  }
+   OUTPW(CCR, c);
+   OUTPW(NAF, (n << N_SHIFT) | (a << A_SHIFT) | f);
+   while (!(INPW(CSR) & DONE));
+   OUTPW(MCR, WS_16BIT);
+   for (i = 0; i < r; i++) {
+      OUTPW(CSR, GO);
+      while (!(INPW(CSR) & DONE));
+      *((unsigned short *) (*d)) = INPW(DLR);
+      (*d)++;
+   }
 }
 
 /*------------------------------------------------------------------*/
-INLINE void cam24i_r(const int c, const int n, const int a, const int f, 
-                     DWORD **d, const int r)
+INLINE void cam24i_r(const int c, const int n, const int a, const int f,
+                     DWORD ** d, const int r)
 {
-  WORD i;
+   WORD i;
 
-  OUTPW(CCR, c);
-  OUTPW(NAF,(n << N_SHIFT) | (a << A_SHIFT) | f);
-  while(!(INPW(CSR)&DONE));
-  OUTPW(MCR, WS_24BIT);
-  for (i=0 ; i<r ; i++)
-  {
-    OUTPW(CSR,GO);
-    while(!(INPW(CSR)&DONE));
-    *((unsigned short *)(*d))  =INPW(DLR);
-    *(((unsigned char *) *d)+2) = INP(DHR);
-    **(d) &= 0x00ffffff;
-    (*d)++;
-  }
+   OUTPW(CCR, c);
+   OUTPW(NAF, (n << N_SHIFT) | (a << A_SHIFT) | f);
+   while (!(INPW(CSR) & DONE));
+   OUTPW(MCR, WS_24BIT);
+   for (i = 0; i < r; i++) {
+      OUTPW(CSR, GO);
+      while (!(INPW(CSR) & DONE));
+      *((unsigned short *) (*d)) = INPW(DLR);
+      *(((unsigned char *) *d) + 2) = INP(DHR);
+      **(d) &= 0x00ffffff;
+      (*d)++;
+   }
 }
 
 /*------------------------------------------------------------------*/
-INLINE void cam16i_rq(const int c, const int n, const int a, const int f, 
-                      WORD **d, const int r)
+INLINE void cam16i_rq(const int c, const int n, const int a, const int f,
+                      WORD ** d, const int r)
 {
-int i, x, q;
+   int i, x, q;
 
-  for (i=0 ; i<r ; i++)
-    {
-    cam16i_q(c, n, a, f, (*d)++, &x, &q);
-    if (!q)
-      {
-	(*d)--;
-        break;
+   for (i = 0; i < r; i++) {
+      cam16i_q(c, n, a, f, (*d)++, &x, &q);
+      if (!q) {
+         (*d)--;
+         break;
       }
-    }
+   }
 }
 
 /*------------------------------------------------------------------*/
-INLINE void cam24i_rq(const int c, const int n, const int a, const int f, 
-                      DWORD **d, const int r)
+INLINE void cam24i_rq(const int c, const int n, const int a, const int f,
+                      DWORD ** d, const int r)
 {
-int i, x, q;
+   int i, x, q;
 
-  for (i=0 ; i<r ; i++)
-    {
-    cam24i_q(c, n, a, f, (*d)++, &x, &q);
-    if (!q)
-      {
-	(*d)--;
-	break;
+   for (i = 0; i < r; i++) {
+      cam24i_q(c, n, a, f, (*d)++, &x, &q);
+      if (!q) {
+         (*d)--;
+         break;
       }
-    }
+   }
 }
 
 /*------------------------------------------------------------------*/
-INLINE void cam16i_sa(const int c, const int n, const int a, const int f, 
-                      WORD **d, const int r)
+INLINE void cam16i_sa(const int c, const int n, const int a, const int f,
+                      WORD ** d, const int r)
 {
-  WORD i, aa;
+   WORD i, aa;
 
-  aa = a;
-  OUTPW(CCR, c);
-  OUTPW(MCR, WS_16BIT);
-  for (i=0 ; i<r ; i++)
-  {
-    OUTPW(NAF,(n << N_SHIFT) | (aa << A_SHIFT) | f);
-    while(!(INPW(CSR)&DONE));
-    OUTPW(CSR,GO);
-    while(!(INPW(CSR)&DONE));
-    *((unsigned short *)(*d))  =INPW(DLR);
-    aa++;
-    (*d)++;
-  }
+   aa = a;
+   OUTPW(CCR, c);
+   OUTPW(MCR, WS_16BIT);
+   for (i = 0; i < r; i++) {
+      OUTPW(NAF, (n << N_SHIFT) | (aa << A_SHIFT) | f);
+      while (!(INPW(CSR) & DONE));
+      OUTPW(CSR, GO);
+      while (!(INPW(CSR) & DONE));
+      *((unsigned short *) (*d)) = INPW(DLR);
+      aa++;
+      (*d)++;
+   }
 }
 
 /*------------------------------------------------------------------*/
-INLINE void cam24i_sa(const int c, const int n, const int a, const int f, 
-                      DWORD **d, const int r)
+INLINE void cam24i_sa(const int c, const int n, const int a, const int f,
+                      DWORD ** d, const int r)
 {
-  WORD i, aa;
+   WORD i, aa;
 
-  aa = a;
-  OUTPW(CCR, c);
-  OUTPW(MCR, WS_24BIT);
-  for (i=0 ; i<r ; i++)
-  {
-    OUTPW(NAF,(n << N_SHIFT) | (aa << A_SHIFT) | f);
-    while(!(INPW(CSR)&DONE));
-    OUTPW(CSR,GO);
-    while(!(INPW(CSR)&DONE));
-    *((unsigned short *)(*d))  =INPW(DLR);
-    *(((unsigned char *) *d)+2) = INP(DHR);
-    **(d) &= 0x00ffffff;
-    aa++;
-    (*d)++;
-  }
+   aa = a;
+   OUTPW(CCR, c);
+   OUTPW(MCR, WS_24BIT);
+   for (i = 0; i < r; i++) {
+      OUTPW(NAF, (n << N_SHIFT) | (aa << A_SHIFT) | f);
+      while (!(INPW(CSR) & DONE));
+      OUTPW(CSR, GO);
+      while (!(INPW(CSR) & DONE));
+      *((unsigned short *) (*d)) = INPW(DLR);
+      *(((unsigned char *) *d) + 2) = INP(DHR);
+      **(d) &= 0x00ffffff;
+      aa++;
+      (*d)++;
+   }
 }
 
 /*------------------------------------------------------------------*/
-INLINE void cam16i_sn(const int c, const int n, const int a, const int f, 
-                      WORD **d, const int r)
+INLINE void cam16i_sn(const int c, const int n, const int a, const int f,
+                      WORD ** d, const int r)
 {
-int i;
+   int i;
 
-  for (i=0 ; i<r ; i++)
-    cam16i(c, n+i, a, f, (*d)++);
+   for (i = 0; i < r; i++)
+      cam16i(c, n + i, a, f, (*d)++);
 }
 
 /*------------------------------------------------------------------*/
-INLINE void cam24i_sn(const int c, const int n, const int a, const int f, 
-                      DWORD **d, const int r)
+INLINE void cam24i_sn(const int c, const int n, const int a, const int f,
+                      DWORD ** d, const int r)
 {
-int i;
+   int i;
 
-  for (i=0 ; i<r ; i++)
-    cam24i(c, n+i, a, f, (*d)++);
+   for (i = 0; i < r; i++)
+      cam24i(c, n + i, a, f, (*d)++);
 }
 
 /*------------------------------------------------------------------*/
-INLINE void cam8o(const int c, const int n, const int a, const int f, 
-                  unsigned char d)
+INLINE void cam8o(const int c, const int n, const int a, const int f, unsigned char d)
 {
-  printf("cam8o not implemented\n");
+   printf("cam8o not implemented\n");
 }
 
 /*------------------------------------------------------------------*/
-INLINE void camo(const int c, const int n, const int a, const int f, 
-                 WORD d)
+INLINE void camo(const int c, const int n, const int a, const int f, WORD d)
 {
-  OUTPW(CCR, c);
-  OUTPW(NAF,(n << N_SHIFT) | (a << A_SHIFT) | f);
-  while(!(INPW(CSR)&DONE));
-  OUTPW(MCR, WS_16BIT);
-  OUTPW(DLR, d);
-  OUTPW(CSR,GO);
-  while(!(INPW(CSR)&DONE));
+   OUTPW(CCR, c);
+   OUTPW(NAF, (n << N_SHIFT) | (a << A_SHIFT) | f);
+   while (!(INPW(CSR) & DONE));
+   OUTPW(MCR, WS_16BIT);
+   OUTPW(DLR, d);
+   OUTPW(CSR, GO);
+   while (!(INPW(CSR) & DONE));
 }
 
 /*------------------------------------------------------------------*/
-INLINE void cam16o(const int c, const int n, const int a, const int f, 
-                   WORD d)
+INLINE void cam16o(const int c, const int n, const int a, const int f, WORD d)
 {
-  camo(c, n, a, f, d);
+   camo(c, n, a, f, d);
 }
 
 /*------------------------------------------------------------------*/
-INLINE void cam24o(const int c, const int n, const int a, const int f, 
-                   DWORD d)
+INLINE void cam24o(const int c, const int n, const int a, const int f, DWORD d)
 {
-  OUTPW(CCR, c);
-  OUTPW(NAF,(n << N_SHIFT) | (a << A_SHIFT) | f);
-  while(!(INPW(CSR)&DONE));
-  OUTPW(MCR, WS_24BIT);
-  OUTPW(DLR, (unsigned short) d);
-  OUTP(DHR, *(((unsigned char *) (&d))+2));
-  OUTPW(CSR,GO);
-  while(!(INPW(CSR)&DONE));
+   OUTPW(CCR, c);
+   OUTPW(NAF, (n << N_SHIFT) | (a << A_SHIFT) | f);
+   while (!(INPW(CSR) & DONE));
+   OUTPW(MCR, WS_24BIT);
+   OUTPW(DLR, (unsigned short) d);
+   OUTP(DHR, *(((unsigned char *) (&d)) + 2));
+   OUTPW(CSR, GO);
+   while (!(INPW(CSR) & DONE));
 }
 
 /*------------------------------------------------------------------*/
-INLINE void cam16o_q(const int c, const int n, const int a, const int f, 
+INLINE void cam16o_q(const int c, const int n, const int a, const int f,
                      WORD d, int *x, int *q)
 {
-  OUTPW(CCR, c);
-  OUTPW(NAF,(n << N_SHIFT) | (a << A_SHIFT) | f);
-  while(!(INPW(CSR)&DONE));
-  OUTPW(MCR, WS_16BIT);
-  OUTPW(DLR,    (unsigned short)  d);
-  OUTPW(CSR,GO);
-  while(!(INPW(CSR)&DONE));
-  *q=(((INPW(CSR)>>1)&1)^1);
-  *x=(((INPW(CSR)>>2)&1)^1);
+   OUTPW(CCR, c);
+   OUTPW(NAF, (n << N_SHIFT) | (a << A_SHIFT) | f);
+   while (!(INPW(CSR) & DONE));
+   OUTPW(MCR, WS_16BIT);
+   OUTPW(DLR, (unsigned short) d);
+   OUTPW(CSR, GO);
+   while (!(INPW(CSR) & DONE));
+   *q = (((INPW(CSR) >> 1) & 1) ^ 1);
+   *x = (((INPW(CSR) >> 2) & 1) ^ 1);
 }
 
 /*------------------------------------------------------------------*/
-INLINE void cam24o_q(const int c, const int n, const int a, const int f, 
+INLINE void cam24o_q(const int c, const int n, const int a, const int f,
                      DWORD d, int *x, int *q)
 {
-  OUTPW(CCR, c);
-  OUTPW(NAF,(n << N_SHIFT) | (a << A_SHIFT) | f);
-  while(!(INPW(CSR)&DONE));
-  OUTPW(MCR, WS_24BIT);
-  OUTPW(DLR, (unsigned short) d);
-  OUTP(DHR, *(((unsigned char *) (&d))+2));
-  OUTPW(CSR,GO);
-  while(!(INPW(CSR)&DONE));
-  *q=(((INPW(CSR)>>1)&1)^1);
-  *x=(((INPW(CSR)>>2)&1)^1);
+   OUTPW(CCR, c);
+   OUTPW(NAF, (n << N_SHIFT) | (a << A_SHIFT) | f);
+   while (!(INPW(CSR) & DONE));
+   OUTPW(MCR, WS_24BIT);
+   OUTPW(DLR, (unsigned short) d);
+   OUTP(DHR, *(((unsigned char *) (&d)) + 2));
+   OUTPW(CSR, GO);
+   while (!(INPW(CSR) & DONE));
+   *q = (((INPW(CSR) >> 1) & 1) ^ 1);
+   *x = (((INPW(CSR) >> 2) & 1) ^ 1);
 }
 
 /*------------------------------------------------------------------*/
-INLINE void cam8o_r(const int c, const int n, const int a, const int f, 
-                    BYTE *d, const int r)
+INLINE void cam8o_r(const int c, const int n, const int a, const int f,
+                    BYTE * d, const int r)
 {
 }
 
 /*------------------------------------------------------------------*/
-INLINE void cam16o_r(const int c, const int n, const int a, const int f, 
-                     WORD *d, const int r)
+INLINE void cam16o_r(const int c, const int n, const int a, const int f,
+                     WORD * d, const int r)
 {
-  int i;
+   int i;
 
-  OUTPW(CCR, c);
-  OUTPW(NAF,(n << N_SHIFT) | (a << A_SHIFT) | f);
-  while(!(INPW(CSR)&DONE));
-  OUTPW(MCR, WS_16BIT);
-  for (i=0; i<r ; i++)
-  {
-    OUTPW(DLR,  *((unsigned short *) d));
-    OUTPW(CSR,GO);
-    while(!(INPW(CSR)&DONE));
-  }
+   OUTPW(CCR, c);
+   OUTPW(NAF, (n << N_SHIFT) | (a << A_SHIFT) | f);
+   while (!(INPW(CSR) & DONE));
+   OUTPW(MCR, WS_16BIT);
+   for (i = 0; i < r; i++) {
+      OUTPW(DLR, *((unsigned short *) d));
+      OUTPW(CSR, GO);
+      while (!(INPW(CSR) & DONE));
+   }
 }
 
 /*------------------------------------------------------------------*/
-INLINE void cam24o_r(const int c, const int n, const int a, const int f, 
-                     DWORD *d, const int r)
+INLINE void cam24o_r(const int c, const int n, const int a, const int f,
+                     DWORD * d, const int r)
 {
-  WORD i;
+   WORD i;
 
-  OUTPW(CCR, c);
-  OUTPW(NAF,(n << N_SHIFT) | (a << A_SHIFT) | f);
-  while(!(INPW(CSR)&DONE));
-  OUTPW(MCR, WS_24BIT);
-  for (i=0; i<r ; i++)
-  {
-    OUTPW(DLR,  *((unsigned short *) d));
-    OUTP(DHR, *(((unsigned char *) (&d))+2));
-    OUTPW(CSR,GO);
-    while(!(INPW(CSR)&DONE));
-  }
+   OUTPW(CCR, c);
+   OUTPW(NAF, (n << N_SHIFT) | (a << A_SHIFT) | f);
+   while (!(INPW(CSR) & DONE));
+   OUTPW(MCR, WS_24BIT);
+   for (i = 0; i < r; i++) {
+      OUTPW(DLR, *((unsigned short *) d));
+      OUTP(DHR, *(((unsigned char *) (&d)) + 2));
+      OUTPW(CSR, GO);
+      while (!(INPW(CSR) & DONE));
+   }
 }
 
 /*------------------------------------------------------------------*/
 INLINE int camc_chk(const int c)
 {
-unsigned int naf, n, a, f;
+   unsigned int naf, n, a, f;
 
-  /* clear inhibit */
-  camc(c, 1, 2, 32);
+   /* clear inhibit */
+   camc(c, 1, 2, 32);
 
-  /* read back naf */
-  OUTPW(NAF, RDNAF);
-  while(!(INPW(CSR)&DONE));
-  naf = INPW(NAF);
-  n = ((naf>>N_SHIFT) & N_FIELD);
-  a = ((naf>>A_SHIFT) & A_FIELD);
-  f = naf & F_FIELD;
-  if (n != 1 || a != 2 || f != 32)
-    return -1;
+   /* read back naf */
+   OUTPW(NAF, RDNAF);
+   while (!(INPW(CSR) & DONE));
+   naf = INPW(NAF);
+   n = ((naf >> N_SHIFT) & N_FIELD);
+   a = ((naf >> A_SHIFT) & A_FIELD);
+   f = naf & F_FIELD;
+   if (n != 1 || a != 2 || f != 32)
+      return -1;
 
-  return 0;
+   return 0;
 }
 
 /*------------------------------------------------------------------*/
 INLINE void camc(const int c, const int n, const int a, const int f)
 {
-  OUTPW(CCR, c);
-  OUTPW(NAF,(n << N_SHIFT) | (a << A_SHIFT) | f);
-  while(!(INPW(CSR)&DONE));
-  OUTPW(MCR, WS_16BIT);
-  OUTPW(CSR,GO);
-  while(!(INPW(CSR)&DONE));
+   OUTPW(CCR, c);
+   OUTPW(NAF, (n << N_SHIFT) | (a << A_SHIFT) | f);
+   while (!(INPW(CSR) & DONE));
+   OUTPW(MCR, WS_16BIT);
+   OUTPW(CSR, GO);
+   while (!(INPW(CSR) & DONE));
 }
 
 /*------------------------------------------------------------------*/
 INLINE void camc_q(const int c, const int n, const int a, const int f, int *q)
 {
-  OUTPW(CCR, c);
-  OUTPW(NAF,(n << N_SHIFT) | (a << A_SHIFT) | f);
-  while(!(INPW(CSR)&DONE));
-  OUTPW(MCR, WS_16BIT);
-  OUTPW(CSR,GO);
-  while(!(INPW(CSR)&DONE));
-  *q=(((INPW(CSR)>>1)&1)^1);
+   OUTPW(CCR, c);
+   OUTPW(NAF, (n << N_SHIFT) | (a << A_SHIFT) | f);
+   while (!(INPW(CSR) & DONE));
+   OUTPW(MCR, WS_16BIT);
+   OUTPW(CSR, GO);
+   while (!(INPW(CSR) & DONE));
+   *q = (((INPW(CSR) >> 1) & 1) ^ 1);
 }
 
 /*------------------------------------------------------------------*/
 INLINE void camc_sa(const int c, const int n, const int a, const int f, const int r)
 {
-  int i;
-  
-  for (i=0 ; i<r ; i++)
-    camc(c, n, a+i, f);
+   int i;
+
+   for (i = 0; i < r; i++)
+      camc(c, n, a + i, f);
 }
 
 /*------------------------------------------------------------------*/
 INLINE void camc_sn(const int c, const int n, const int a, const int f, const int r)
 {
-  int i;
+   int i;
 
-  for (i=0 ; i<r ; i++)
-    camc(c, n+i, a, f);
+   for (i = 0; i < r; i++)
+      camc(c, n + i, a, f);
 }
 
 /*------------------------------------------------------------------*/
@@ -572,149 +557,152 @@ INLINE int cam_init(void)
 {
 
 #ifdef _MSC_VER
-OSVERSIONINFO vi;
-DWORD buffer[] = {6, CAMAC_BASE, CAMAC_BASE+4*0x10, 0};
-DWORD size;
+   OSVERSIONINFO vi;
+   DWORD buffer[] = { 6, CAMAC_BASE, CAMAC_BASE + 4 * 0x10, 0 };
+   DWORD size;
 
-  vi.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
-  GetVersionEx(&vi);
+   vi.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
+   GetVersionEx(&vi);
 
-  /* use DirectIO driver under NT to gain port access */
-  if (vi.dwPlatformId == VER_PLATFORM_WIN32_NT)
-    {
-    _hdio = CreateFile("\\\\.\\directio", GENERIC_READ, FILE_SHARE_READ, NULL,
-					 OPEN_EXISTING, 0, NULL);
-    if (_hdio == INVALID_HANDLE_VALUE)
+   /* use DirectIO driver under NT to gain port access */
+   if (vi.dwPlatformId == VER_PLATFORM_WIN32_NT) {
+      _hdio = CreateFile("\\\\.\\directio", GENERIC_READ, FILE_SHARE_READ, NULL,
+                         OPEN_EXISTING, 0, NULL);
+      if (_hdio == INVALID_HANDLE_VALUE)
+         return -1;
+   }
+
+   if (!DeviceIoControl(_hdio, (DWORD) 0x9c406000, &buffer, sizeof(buffer),
+                        NULL, 0, &size, NULL))
       return -1;
-    }
-
-  if (!DeviceIoControl(_hdio, (DWORD) 0x9c406000, &buffer, sizeof(buffer), 
-		                   NULL, 0, &size, NULL))
-    return -1;
-#endif // _MSC_VER
+#endif                          // _MSC_VER
 #ifdef OS_LINUX
-  /* 
-  In order to access the IO ports of the CAMAC interface, one needs
-  to call the ioperm() function for those ports. This requires root
-  privileges. For normal operation, this is performed by the "dio"
-  program, which is a "setuid" program having temporarily root privi-
-  lege. So the frontend is started with "dio frontend". Since the
-  frontend cannot be debugged through the dio program, we suplly here
-  the direct ioperm call which requires the program to be run as root,
-  making it possible to debug it. The program has then to be compiled
-  with "gcc -DDO_IOPERM -o frontend frontend.c kcs2927.c ..."
-  */
+   /* 
+      In order to access the IO ports of the CAMAC interface, one needs
+      to call the ioperm() function for those ports. This requires root
+      privileges. For normal operation, this is performed by the "dio"
+      program, which is a "setuid" program having temporarily root privi-
+      lege. So the frontend is started with "dio frontend". Since the
+      frontend cannot be debugged through the dio program, we suplly here
+      the direct ioperm call which requires the program to be run as root,
+      making it possible to debug it. The program has then to be compiled
+      with "gcc -DDO_IOPERM -o frontend frontend.c kcs2927.c ..."
+    */
 
 #ifdef DO_IOPERM
-  ioperm(0x80, 1 , 1);
-  if (ioperm(CAMAC_BASE, 4*0x10, 1) < 0)
-    printf("hyt1331.c: Cannot call ioperm() (no root privileges)\n");
-#endif  
+   ioperm(0x80, 1, 1);
+   if (ioperm(CAMAC_BASE, 4 * 0x10, 1) < 0)
+      printf("hyt1331.c: Cannot call ioperm() (no root privileges)\n");
+#endif
 
 #endif
-  return SUCCESS;
+   return SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
 INLINE void cam_exit(void)
 {
 #ifdef _MSC_VER
-DWORD buffer[] = {6, CAMAC_BASE, CAMAC_BASE+4*0x10, 0};
-DWORD size;
+   DWORD buffer[] = { 6, CAMAC_BASE, CAMAC_BASE + 4 * 0x10, 0 };
+   DWORD size;
 
-  if (_hdio <= 0)
-    return;
+   if (_hdio <= 0)
+      return;
 
-  DeviceIoControl(_hdio, (DWORD) 0x9c406000, &buffer, sizeof(buffer), 
-	                NULL, 0, &size, NULL);
+   DeviceIoControl(_hdio, (DWORD) 0x9c406000, &buffer, sizeof(buffer),
+                   NULL, 0, &size, NULL);
 #endif
 }
 
 /*------------------------------------------------------------------*/
 INLINE void cam_inhibit_set(const int c)
 {
-  WORD ccsr;
+   WORD ccsr;
 
-  cam16i (c,30,0,1,&ccsr);
-  ccsr |= INHIBIT;
-  cam16o(c,30,0,17,ccsr);
+   cam16i(c, 30, 0, 1, &ccsr);
+   ccsr |= INHIBIT;
+   cam16o(c, 30, 0, 17, ccsr);
 }
 
 /*------------------------------------------------------------------*/
 INLINE void cam_inhibit_clear(const int c)
 {
-  WORD ccsr;
+   WORD ccsr;
 
-  cam16i (c,30,0,1,&ccsr);
-  ccsr &= ~INHIBIT;
-  cam16o(c,30,0,17,ccsr);
+   cam16i(c, 30, 0, 1, &ccsr);
+   ccsr &= ~INHIBIT;
+   cam16o(c, 30, 0, 17, ccsr);
 }
 
 /*------------------------------------------------------------------*/
 INLINE void cam_crate_clear(const int c)
 {
-  WORD ccsr;
+   WORD ccsr;
 
-  cam16i (c,30,0,1,&ccsr);
-  ccsr |= CLEAR;
-  cam16o(c,30,0,17,ccsr);
+   cam16i(c, 30, 0, 1, &ccsr);
+   ccsr |= CLEAR;
+   cam16o(c, 30, 0, 17, ccsr);
 }
 
 /*------------------------------------------------------------------*/
 INLINE void cam_crate_zinit(const int c)
 {
-  WORD ccsr;
+   WORD ccsr;
 
-  cam16i (c,30,0,1,&ccsr);
-  ccsr |= ZINIT;
-  cam16o(c,30,0,17,ccsr);
+   cam16i(c, 30, 0, 1, &ccsr);
+   ccsr |= ZINIT;
+   cam16o(c, 30, 0, 17, ccsr);
 }
 
 /*------------------------------------------------------------------*/
 INLINE void cam_lam_enable(const int c, const int n)
-{ 
-  DWORD mask;
+{
+   DWORD mask;
 
-  /* append slot n LAM(bitwise) to LAM mask in controller */
-  cam24i(c,30,13,1,&mask);
-  mask |= (1<<(n-1));
-  cam24o(c,30,13,17,mask);
+   /* append slot n LAM(bitwise) to LAM mask in controller */
+   cam24i(c, 30, 13, 1, &mask);
+   mask |= (1 << (n - 1));
+   cam24o(c, 30, 13, 17, mask);
 }
 
 /*------------------------------------------------------------------*/
 INLINE void cam_lam_disable(const int c, const int n)
-{ 
-  DWORD mask;
-  /* disable LAM mask for slot n in controller */
-  cam24i(c,30,13,1,&mask);
-  mask &= ~(1<<(n-1));
-  cam24o(c,30,13,17,mask);
+{
+   DWORD mask;
+   /* disable LAM mask for slot n in controller */
+   cam24i(c, 30, 13, 1, &mask);
+   mask &= ~(1 << (n - 1));
+   cam24o(c, 30, 13, 17, mask);
 }
 
 /*------------------------------------------------------------------*/
-INLINE void cam_lam_read(const int c, DWORD *lam)
+INLINE void cam_lam_read(const int c, DWORD * lam)
 {
-  cam24i(c,30,12,1,lam);
+   cam24i(c, 30, 12, 1, lam);
 }
 
 /*------------------------------------------------------------------*/
 INLINE void cam_lam_clear(const int c, const int n)
-{ 
+{
 }
 
 /*------------------------------------------------------------------*/
 INLINE void cam_interrupt_enable(const int c)
 {
-  printf("cam_interrupt_enable not implemented\n");
+   printf("cam_interrupt_enable not implemented\n");
 }
 
 /*------------------------------------------------------------------*/
 INLINE void cam_interrupt_disable(const int c)
 {
-  printf("cam_interrupt_disable not implemented\n");
+   printf("cam_interrupt_disable not implemented\n");
 }
 
 /*------------------------------------------------------------------*/
-INLINE int cam_init_rpc(char *host_name, char *exp_name, char *fe_name, char *client_name, char *rpc_server){return 1;}
+INLINE int cam_init_rpc(char *host_name, char *exp_name, char *fe_name, char *client_name,
+                        char *rpc_server)
+{
+   return 1;
+}
 
 /*------------------------------------------------------------------*/

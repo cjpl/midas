@@ -101,27 +101,27 @@ extern "C" {
 #include <ellLib.h>
 #include "dbAddr.h"
 
-#define MAX_UNITS_SIZE		8	
+#define MAX_UNITS_SIZE		8
 #define MAX_ENUM_STRING_SIZE	26
-#define MAX_ENUM_STATES		16	
+#define MAX_ENUM_STATES		16
 
 /*
  * architecture independent types
  *
  * (so far this is sufficient for all archs we have ported to)
  */
-typedef epicsOldString	dbr_string_t;
-typedef epicsUInt8	dbr_char_t;
-typedef epicsInt16	dbr_short_t;
-typedef epicsUInt16	dbr_ushort_t;
-typedef epicsInt16	dbr_int_t;
-typedef epicsUInt16	dbr_enum_t;
-typedef epicsInt32	dbr_long_t;
-typedef epicsUInt32	dbr_ulong_t;
-typedef epicsFloat32	dbr_float_t;
-typedef epicsFloat64	dbr_double_t;
-typedef epicsUInt16	dbr_put_ackt_t;
-typedef epicsUInt16	dbr_put_acks_t;
+   typedef epicsOldString dbr_string_t;
+   typedef epicsUInt8 dbr_char_t;
+   typedef epicsInt16 dbr_short_t;
+   typedef epicsUInt16 dbr_ushort_t;
+   typedef epicsInt16 dbr_int_t;
+   typedef epicsUInt16 dbr_enum_t;
+   typedef epicsInt32 dbr_long_t;
+   typedef epicsUInt32 dbr_ulong_t;
+   typedef epicsFloat32 dbr_float_t;
+   typedef epicsFloat64 dbr_double_t;
+   typedef epicsUInt16 dbr_put_ackt_t;
+   typedef epicsUInt16 dbr_put_acks_t;
 
 /* database field types */
 #define DBF_STRING	0
@@ -138,17 +138,17 @@ typedef epicsUInt16	dbr_put_acks_t;
 #define	INVALID_DB_FIELD(x)	((x < 0) || (x > LAST_TYPE))
 
 /* data request buffer types */
-#define DBR_STRING	DBF_STRING	
-#define	DBR_INT		DBF_INT		
-#define	DBR_SHORT	DBF_INT		
-#define	DBR_FLOAT	DBF_FLOAT	
+#define DBR_STRING	DBF_STRING
+#define	DBR_INT		DBF_INT
+#define	DBR_SHORT	DBF_INT
+#define	DBR_FLOAT	DBF_FLOAT
 #define	DBR_ENUM	DBF_ENUM
 #define	DBR_CHAR	DBF_CHAR
 #define	DBR_LONG	DBF_LONG
 #define	DBR_DOUBLE	DBF_DOUBLE
 #define DBR_STS_STRING	7
 #define	DBR_STS_SHORT	8
-#define	DBR_STS_INT	DBR_STS_SHORT	
+#define	DBR_STS_INT	DBR_STS_SHORT
 #define	DBR_STS_FLOAT	9
 #define	DBR_STS_ENUM	10
 #define	DBR_STS_CHAR	11
@@ -164,7 +164,7 @@ typedef epicsUInt16	dbr_put_acks_t;
 #define	DBR_TIME_DOUBLE	20
 #define	DBR_GR_STRING	21
 #define	DBR_GR_SHORT	22
-#define	DBR_GR_INT	DBR_GR_SHORT	
+#define	DBR_GR_INT	DBR_GR_SHORT
 #define	DBR_GR_FLOAT	23
 #define	DBR_GR_ENUM	24
 #define	DBR_GR_CHAR	25
@@ -172,7 +172,7 @@ typedef epicsUInt16	dbr_put_acks_t;
 #define	DBR_GR_DOUBLE	27
 #define	DBR_CTRL_STRING	28
 #define DBR_CTRL_SHORT	29
-#define DBR_CTRL_INT	DBR_CTRL_SHORT	
+#define DBR_CTRL_INT	DBR_CTRL_SHORT
 #define	DBR_CTRL_FLOAT	30
 #define DBR_CTRL_ENUM	31
 #define	DBR_CTRL_CHAR	32
@@ -192,125 +192,123 @@ typedef epicsUInt16	dbr_put_acks_t;
  * larger type to avoid loss of information
  */
 #ifdef DB_TEXT_GLBLSOURCE
-epicsShareDef READONLY int epicsTypeToDBR_XXXX [lastEpicsType+1] = {
-                        DBR_SHORT, /* forces conversion fronm uint8 to int16 */
-                        DBR_CHAR,
-                        DBR_SHORT,
-                        DBR_LONG, /* forces conversion fronm uint16 to int32 */
-                        DBR_ENUM,
-                        DBR_LONG,
-                        DBR_LONG, /* very large unsigned number will not map */
-                        DBR_FLOAT,
-                        DBR_DOUBLE,
-                        DBR_STRING,
-                        DBR_STRING
-};
+   epicsShareDef READONLY int epicsTypeToDBR_XXXX[lastEpicsType + 1] = {
+      DBR_SHORT,                /* forces conversion fronm uint8 to int16 */
+      DBR_CHAR,
+      DBR_SHORT,
+      DBR_LONG,                 /* forces conversion fronm uint16 to int32 */
+      DBR_ENUM,
+      DBR_LONG,
+      DBR_LONG,                 /* very large unsigned number will not map */
+      DBR_FLOAT,
+      DBR_DOUBLE,
+      DBR_STRING,
+      DBR_STRING
+   };
 #else
-epicsShareExtern READONLY int epicsTypeToDBR_XXXX [lastEpicsType+1];
+   epicsShareExtern READONLY int epicsTypeToDBR_XXXX[lastEpicsType + 1];
 #endif
 
 /*Definitions that allow old database access to use new conversion routines*/
 #define newDBF_DEVICE 11
 #define newDBR_ENUM    9
 #ifdef __STDC__
-void *dbCalloc(size_t nobj,size_t size);
-void *dbMalloc(size_t size);
-extern long (*dbGetConvertRoutine[newDBF_DEVICE+1][newDBR_ENUM+1])
-    (struct dbAddr *paddr, void *pbuffer,long nRequest,
-        long no_elements, long offset);
-extern long (*dbPutConvertRoutine[newDBR_ENUM+1][newDBF_DEVICE+1])
-    (struct dbAddr *paddr, void *pbuffer,long nRequest,
-        long no_elements, long offset);
-extern long (*dbFastGetConvertRoutine[newDBF_DEVICE+1][newDBR_ENUM+1])();
-extern long (*dbFastPutConvertRoutine[newDBR_ENUM+1][newDBF_DEVICE+1])();
+   void *dbCalloc(size_t nobj, size_t size);
+   void *dbMalloc(size_t size);
+   extern long (*dbGetConvertRoutine[newDBF_DEVICE + 1][newDBR_ENUM + 1])
+    (struct dbAddr * paddr, void *pbuffer, long nRequest, long no_elements, long offset);
+   extern long (*dbPutConvertRoutine[newDBR_ENUM + 1][newDBF_DEVICE + 1])
+    (struct dbAddr * paddr, void *pbuffer, long nRequest, long no_elements, long offset);
+   extern long (*dbFastGetConvertRoutine[newDBF_DEVICE + 1][newDBR_ENUM + 1]) ();
+   extern long (*dbFastPutConvertRoutine[newDBR_ENUM + 1][newDBF_DEVICE + 1]) ();
 #else
-extern long (*dbGetConvertRoutine[newDBF_DEVICE+1][newDBR_ENUM+1]) ();
-extern long (*dbPutConvertRoutine[newDBR_ENUM+1][newDBF_DEVICE+1]) ();
-extern long (*dbFastGetConvertRoutine[newDBF_DEVICE+1][newDBR_ENUM+1])();
-extern long (*dbFastPutConvertRoutine[newDBR_ENUM+1][newDBF_DEVICE+1])();
-void *dbCalloc();
-void *dbMalloc();
+   extern long (*dbGetConvertRoutine[newDBF_DEVICE + 1][newDBR_ENUM + 1]) ();
+   extern long (*dbPutConvertRoutine[newDBR_ENUM + 1][newDBF_DEVICE + 1]) ();
+   extern long (*dbFastGetConvertRoutine[newDBF_DEVICE + 1][newDBR_ENUM + 1]) ();
+   extern long (*dbFastPutConvertRoutine[newDBR_ENUM + 1][newDBF_DEVICE + 1]) ();
+   void *dbCalloc();
+   void *dbMalloc();
 #endif /*__STDC__*/
 
 /*Conversion between old and new DBR types*/
-extern unsigned short dbDBRoldToDBFnew[DBR_DOUBLE+1];
-extern unsigned short dbDBRnewToDBRold[newDBR_ENUM+1];
+   extern unsigned short dbDBRoldToDBFnew[DBR_DOUBLE + 1];
+   extern unsigned short dbDBRnewToDBRold[newDBR_ENUM + 1];
 #ifdef DB_TEXT_GLBLSOURCE
-unsigned short dbDBRoldToDBFnew[DBR_DOUBLE+1] = {
-	0, /*DBR_STRING to DBF_STRING*/
-	3, /*DBR_INT to DBF_SHORT*/
-	7, /*DBR_FLOAT to DBF_FLOAT*/
-	9, /*DBR_ENUM to DBF_ENUM*/
-	1, /*DBR_CHAR to DBF_CHAR*/
-	5, /*DBR_LONG to DBF_LONG*/
-	8  /*DBR_DOUBLE to DBF_DOUBLE*/
-};
-unsigned short dbDBRnewToDBRold[newDBR_ENUM+1] = {
-	0, /*DBR_STRING to DBR_STRING*/
-	4, /*DBR_CHAR to DBR_CHAR*/
-	4, /*DBR_UCHAR to DBR_CHAR*/
-	1, /*DBR_SHORT to DBR_SHORT*/
-	5, /*DBR_USHORT to DBR_LONG*/
-	5, /*DBR_LONG to DBR_LONG*/
-	6, /*DBR_ULONG to DBR_DOUBLE*/
-	2, /*DBR_FLOAT to DBR_FLOAT*/
-	6, /*DBR_DOUBLE to DBR_DOUBLE*/
-	3, /*DBR_ENUM to DBR_ENUM*/
-};
-#endif /*DB_TEXT_GLBLSOURCE*/
+   unsigned short dbDBRoldToDBFnew[DBR_DOUBLE + 1] = {
+      0,                        /*DBR_STRING to DBF_STRING */
+      3,                        /*DBR_INT to DBF_SHORT */
+      7,                        /*DBR_FLOAT to DBF_FLOAT */
+      9,                        /*DBR_ENUM to DBF_ENUM */
+      1,                        /*DBR_CHAR to DBF_CHAR */
+      5,                        /*DBR_LONG to DBF_LONG */
+      8                         /*DBR_DOUBLE to DBF_DOUBLE */
+   };
+   unsigned short dbDBRnewToDBRold[newDBR_ENUM + 1] = {
+      0,                        /*DBR_STRING to DBR_STRING */
+      4,                        /*DBR_CHAR to DBR_CHAR */
+      4,                        /*DBR_UCHAR to DBR_CHAR */
+      1,                        /*DBR_SHORT to DBR_SHORT */
+      5,                        /*DBR_USHORT to DBR_LONG */
+      5,                        /*DBR_LONG to DBR_LONG */
+      6,                        /*DBR_ULONG to DBR_DOUBLE */
+      2,                        /*DBR_FLOAT to DBR_FLOAT */
+      6,                        /*DBR_DOUBLE to DBR_DOUBLE */
+      3,                        /*DBR_ENUM to DBR_ENUM */
+   };
+#endif                          /*DB_TEXT_GLBLSOURCE */
 
 /*
  * The DBR_XXXX types are indicies into this array
  */
-#if defined(DB_TEXT_GLBLSOURCE) 
-epicsShareDef READONLY epicsType DBR_XXXXToEpicsType [LAST_BUFFER_TYPE+1] = {
-			epicsOldStringT,
-			epicsInt16T,	
-			epicsFloat32T,	
-			epicsEnum16T,	
-			epicsUInt8T,	
-			epicsInt32T,	
-			epicsFloat64T,
+#if defined(DB_TEXT_GLBLSOURCE)
+   epicsShareDef READONLY epicsType DBR_XXXXToEpicsType[LAST_BUFFER_TYPE + 1] = {
+      epicsOldStringT,
+      epicsInt16T,
+      epicsFloat32T,
+      epicsEnum16T,
+      epicsUInt8T,
+      epicsInt32T,
+      epicsFloat64T,
 
-			epicsOldStringT,
-			epicsInt16T,	
-			epicsFloat32T,	
-			epicsEnum16T,	
-			epicsUInt8T,	
-			epicsInt32T,	
-			epicsFloat64T,
+      epicsOldStringT,
+      epicsInt16T,
+      epicsFloat32T,
+      epicsEnum16T,
+      epicsUInt8T,
+      epicsInt32T,
+      epicsFloat64T,
 
-			epicsOldStringT,
-			epicsInt16T,	
-			epicsFloat32T,	
-			epicsEnum16T,	
-			epicsUInt8T,	
-			epicsInt32T,	
-			epicsFloat64T,
+      epicsOldStringT,
+      epicsInt16T,
+      epicsFloat32T,
+      epicsEnum16T,
+      epicsUInt8T,
+      epicsInt32T,
+      epicsFloat64T,
 
-			epicsOldStringT,
-			epicsInt16T,	
-			epicsFloat32T,	
-			epicsEnum16T,	
-			epicsUInt8T,	
-			epicsInt32T,	
-			epicsFloat64T,
+      epicsOldStringT,
+      epicsInt16T,
+      epicsFloat32T,
+      epicsEnum16T,
+      epicsUInt8T,
+      epicsInt32T,
+      epicsFloat64T,
 
-			epicsOldStringT,
-			epicsInt16T,	
-			epicsFloat32T,	
-			epicsEnum16T,	
-			epicsUInt8T,	
-			epicsInt32T,	
-			epicsFloat64T,
+      epicsOldStringT,
+      epicsInt16T,
+      epicsFloat32T,
+      epicsEnum16T,
+      epicsUInt8T,
+      epicsInt32T,
+      epicsFloat64T,
 
-			epicsUInt16T,
-			epicsUInt16T,
-			epicsOldStringT,
-			epicsOldStringT
-};
+      epicsUInt16T,
+      epicsUInt16T,
+      epicsOldStringT,
+      epicsOldStringT
+   };
 #else
-epicsShareExtern READONLY epicsType DBR_XXXXToEpicsType [LAST_BUFFER_TYPE+1];
+   epicsShareExtern READONLY epicsType DBR_XXXXToEpicsType[LAST_BUFFER_TYPE + 1];
 #endif
 
 /* extra processing flags */
@@ -360,508 +358,509 @@ epicsShareExtern READONLY epicsType DBR_XXXXToEpicsType [LAST_BUFFER_TYPE+1];
  *	DBR_CTRL_LONG	returns a control long structure (dbr_ctrl_long)
  *	DBR_CTRL_DOUBLE	returns a control double structure (dbr_ctrl_double)
  */
-
 
+
 /* VALUES WITH STATUS STRUCTURES */
 
 /* structure for a  string status field */
-struct dbr_sts_string{
-	dbr_short_t	status;	 		/* status of value */
-	dbr_short_t	severity;		/* severity of alarm */
-	dbr_string_t	value;			/* current value */
-};
+   struct dbr_sts_string {
+      dbr_short_t status;       /* status of value */
+      dbr_short_t severity;     /* severity of alarm */
+      dbr_string_t value;       /* current value */
+   };
 
 /* structure for a  string status and ack field */
-struct dbr_stsack_string{
-	dbr_ushort_t	status;	 		/* status of value */
-	dbr_ushort_t	severity;		/* severity of alarm */
-	dbr_ushort_t	ackt;	 		/* ack transient? */
-	dbr_ushort_t	acks;			/* ack severity	*/
-	dbr_string_t	value;			/* current value */
-};
+   struct dbr_stsack_string {
+      dbr_ushort_t status;      /* status of value */
+      dbr_ushort_t severity;    /* severity of alarm */
+      dbr_ushort_t ackt;        /* ack transient? */
+      dbr_ushort_t acks;        /* ack severity */
+      dbr_string_t value;       /* current value */
+   };
 /* structure for an short status field */
-struct dbr_sts_int{
-	dbr_short_t	status;	 		/* status of value */
-	dbr_short_t	severity;		/* severity of alarm */
-	dbr_short_t	value;			/* current value */
-};
-struct dbr_sts_short{
-	dbr_short_t	status;	 		/* status of value */
-	dbr_short_t	severity;		/* severity of alarm */
-	dbr_short_t	value;			/* current value */
-};
+   struct dbr_sts_int {
+      dbr_short_t status;       /* status of value */
+      dbr_short_t severity;     /* severity of alarm */
+      dbr_short_t value;        /* current value */
+   };
+   struct dbr_sts_short {
+      dbr_short_t status;       /* status of value */
+      dbr_short_t severity;     /* severity of alarm */
+      dbr_short_t value;        /* current value */
+   };
 
 /* structure for a  float status field */
-struct dbr_sts_float{
-	dbr_short_t	status;	 		/* status of value */
-	dbr_short_t	severity;		/* severity of alarm */
-	dbr_float_t	value;			/* current value */
-};
+   struct dbr_sts_float {
+      dbr_short_t status;       /* status of value */
+      dbr_short_t severity;     /* severity of alarm */
+      dbr_float_t value;        /* current value */
+   };
 
 /* structure for a  enum status field */
-struct dbr_sts_enum{
-	dbr_short_t	status;	 		/* status of value */
-	dbr_short_t	severity;		/* severity of alarm */
-	dbr_enum_t	value;			/* current value */
-};
+   struct dbr_sts_enum {
+      dbr_short_t status;       /* status of value */
+      dbr_short_t severity;     /* severity of alarm */
+      dbr_enum_t value;         /* current value */
+   };
 
 /* structure for a char status field */
-struct dbr_sts_char{
-	dbr_short_t	status;	 	/* status of value */
-	dbr_short_t	severity;	/* severity of alarm */
-	dbr_char_t	RISC_pad;	/* RISC alignment */
-	dbr_char_t	value;		/* current value */
-};
+   struct dbr_sts_char {
+      dbr_short_t status;       /* status of value */
+      dbr_short_t severity;     /* severity of alarm */
+      dbr_char_t RISC_pad;      /* RISC alignment */
+      dbr_char_t value;         /* current value */
+   };
 
 /* structure for a long status field */
-struct dbr_sts_long{
-	dbr_short_t	status;	 		/* status of value */
-	dbr_short_t	severity;		/* severity of alarm */
-	dbr_long_t	value;			/* current value */
-};
+   struct dbr_sts_long {
+      dbr_short_t status;       /* status of value */
+      dbr_short_t severity;     /* severity of alarm */
+      dbr_long_t value;         /* current value */
+   };
 
 /* structure for a double status field */
-struct dbr_sts_double{
-	dbr_short_t	status;	 		/* status of value */
-	dbr_short_t	severity;		/* severity of alarm */
-	dbr_long_t	RISC_pad;		/* RISC alignment */
-	dbr_double_t	value;			/* current value */
-};
+   struct dbr_sts_double {
+      dbr_short_t status;       /* status of value */
+      dbr_short_t severity;     /* severity of alarm */
+      dbr_long_t RISC_pad;      /* RISC alignment */
+      dbr_double_t value;       /* current value */
+   };
 
 /* VALUES WITH STATUS AND TIME STRUCTURES */
 
 /* structure for a  string time field */
-struct dbr_time_string{
-	dbr_short_t	status;	 		/* status of value */
-	dbr_short_t	severity;		/* severity of alarm */
-	TS_STAMP	stamp;			/* time stamp */
-	dbr_string_t	value;			/* current value */
-};
+   struct dbr_time_string {
+      dbr_short_t status;       /* status of value */
+      dbr_short_t severity;     /* severity of alarm */
+      TS_STAMP stamp;           /* time stamp */
+      dbr_string_t value;       /* current value */
+   };
 
 /* structure for an short time field */
-struct dbr_time_short{
-	dbr_short_t	status;	 		/* status of value */
-	dbr_short_t	severity;		/* severity of alarm */
-	TS_STAMP	stamp;			/* time stamp */
-	dbr_short_t	RISC_pad;		/* RISC alignment */
-	dbr_short_t	value;			/* current value */
-};
+   struct dbr_time_short {
+      dbr_short_t status;       /* status of value */
+      dbr_short_t severity;     /* severity of alarm */
+      TS_STAMP stamp;           /* time stamp */
+      dbr_short_t RISC_pad;     /* RISC alignment */
+      dbr_short_t value;        /* current value */
+   };
 
 /* structure for a  float time field */
-struct dbr_time_float{
-	dbr_short_t	status;	 		/* status of value */
-	dbr_short_t	severity;		/* severity of alarm */
-	TS_STAMP	stamp;			/* time stamp */
-	dbr_float_t	value;			/* current value */
-};
+   struct dbr_time_float {
+      dbr_short_t status;       /* status of value */
+      dbr_short_t severity;     /* severity of alarm */
+      TS_STAMP stamp;           /* time stamp */
+      dbr_float_t value;        /* current value */
+   };
 
 /* structure for a  enum time field */
-struct dbr_time_enum{
-	dbr_short_t	status;	 		/* status of value */
-	dbr_short_t	severity;		/* severity of alarm */
-	TS_STAMP	stamp;			/* time stamp */
-	dbr_short_t	RISC_pad;		/* RISC alignment */
-	dbr_enum_t	value;			/* current value */
-};
+   struct dbr_time_enum {
+      dbr_short_t status;       /* status of value */
+      dbr_short_t severity;     /* severity of alarm */
+      TS_STAMP stamp;           /* time stamp */
+      dbr_short_t RISC_pad;     /* RISC alignment */
+      dbr_enum_t value;         /* current value */
+   };
 
 /* structure for a char time field */
-struct dbr_time_char{
-	dbr_short_t	status;	 		/* status of value */
-	dbr_short_t	severity;		/* severity of alarm */
-	TS_STAMP	stamp;			/* time stamp */
-	dbr_short_t	RISC_pad0;		/* RISC alignment */
-	dbr_char_t	RISC_pad1;		/* RISC alignment */
-	dbr_char_t	value;			/* current value */
-};
+   struct dbr_time_char {
+      dbr_short_t status;       /* status of value */
+      dbr_short_t severity;     /* severity of alarm */
+      TS_STAMP stamp;           /* time stamp */
+      dbr_short_t RISC_pad0;    /* RISC alignment */
+      dbr_char_t RISC_pad1;     /* RISC alignment */
+      dbr_char_t value;         /* current value */
+   };
 
 /* structure for a long time field */
-struct dbr_time_long{
-	dbr_short_t	status;	 		/* status of value */
-	dbr_short_t	severity;		/* severity of alarm */
-	TS_STAMP	stamp;			/* time stamp */
-	dbr_long_t	value;			/* current value */
-};
+   struct dbr_time_long {
+      dbr_short_t status;       /* status of value */
+      dbr_short_t severity;     /* severity of alarm */
+      TS_STAMP stamp;           /* time stamp */
+      dbr_long_t value;         /* current value */
+   };
 
 /* structure for a double time field */
-struct dbr_time_double{
-	dbr_short_t	status;	 		/* status of value */
-	dbr_short_t	severity;		/* severity of alarm */
-	TS_STAMP	stamp;			/* time stamp */
-	dbr_long_t	RISC_pad;		/* RISC alignment */
-	dbr_double_t	value;			/* current value */
-};
+   struct dbr_time_double {
+      dbr_short_t status;       /* status of value */
+      dbr_short_t severity;     /* severity of alarm */
+      TS_STAMP stamp;           /* time stamp */
+      dbr_long_t RISC_pad;      /* RISC alignment */
+      dbr_double_t value;       /* current value */
+   };
 
 /* VALUES WITH STATUS AND GRAPHIC STRUCTURES */
 
 /* structure for a graphic string */
-	/* not implemented; use struct_dbr_sts_string */
+   /* not implemented; use struct_dbr_sts_string */
 
 /* structure for a graphic short field */
-struct dbr_gr_int{
-	dbr_short_t	status;	 		/* status of value */
-	dbr_short_t	severity;		/* severity of alarm */
-	char		units[MAX_UNITS_SIZE];	/* units of value */
-	dbr_short_t	upper_disp_limit;	/* upper limit of graph */
-	dbr_short_t	lower_disp_limit;	/* lower limit of graph */
-	dbr_short_t	upper_alarm_limit;	
-	dbr_short_t	upper_warning_limit;
-	dbr_short_t	lower_warning_limit;
-	dbr_short_t	lower_alarm_limit;
-	dbr_short_t	value;			/* current value */
-};
-struct dbr_gr_short{
-	dbr_short_t	status;	 		/* status of value */
-	dbr_short_t	severity;		/* severity of alarm */
-	char		units[MAX_UNITS_SIZE];	/* units of value */
-	dbr_short_t	upper_disp_limit;	/* upper limit of graph */
-	dbr_short_t	lower_disp_limit;	/* lower limit of graph */
-	dbr_short_t	upper_alarm_limit;	
-	dbr_short_t	upper_warning_limit;
-	dbr_short_t	lower_warning_limit;
-	dbr_short_t	lower_alarm_limit;
-	dbr_short_t	value;			/* current value */
-};
+   struct dbr_gr_int {
+      dbr_short_t status;       /* status of value */
+      dbr_short_t severity;     /* severity of alarm */
+      char units[MAX_UNITS_SIZE];       /* units of value */
+      dbr_short_t upper_disp_limit;     /* upper limit of graph */
+      dbr_short_t lower_disp_limit;     /* lower limit of graph */
+      dbr_short_t upper_alarm_limit;
+      dbr_short_t upper_warning_limit;
+      dbr_short_t lower_warning_limit;
+      dbr_short_t lower_alarm_limit;
+      dbr_short_t value;        /* current value */
+   };
+   struct dbr_gr_short {
+      dbr_short_t status;       /* status of value */
+      dbr_short_t severity;     /* severity of alarm */
+      char units[MAX_UNITS_SIZE];       /* units of value */
+      dbr_short_t upper_disp_limit;     /* upper limit of graph */
+      dbr_short_t lower_disp_limit;     /* lower limit of graph */
+      dbr_short_t upper_alarm_limit;
+      dbr_short_t upper_warning_limit;
+      dbr_short_t lower_warning_limit;
+      dbr_short_t lower_alarm_limit;
+      dbr_short_t value;        /* current value */
+   };
 
 /* structure for a graphic floating point field */
-struct dbr_gr_float{
-	dbr_short_t	status;	 		/* status of value */
-	dbr_short_t	severity;		/* severity of alarm */
-	dbr_short_t	precision;		/* number of decimal places */
-	dbr_short_t	RISC_pad0;		/* RISC alignment */
-	char		units[MAX_UNITS_SIZE];	/* units of value */
-	dbr_float_t	upper_disp_limit;	/* upper limit of graph */
-	dbr_float_t	lower_disp_limit;	/* lower limit of graph */
-	dbr_float_t	upper_alarm_limit;	
-	dbr_float_t	upper_warning_limit;
-	dbr_float_t	lower_warning_limit;
-	dbr_float_t	lower_alarm_limit;
-	dbr_float_t	value;			/* current value */
-};
+   struct dbr_gr_float {
+      dbr_short_t status;       /* status of value */
+      dbr_short_t severity;     /* severity of alarm */
+      dbr_short_t precision;    /* number of decimal places */
+      dbr_short_t RISC_pad0;    /* RISC alignment */
+      char units[MAX_UNITS_SIZE];       /* units of value */
+      dbr_float_t upper_disp_limit;     /* upper limit of graph */
+      dbr_float_t lower_disp_limit;     /* lower limit of graph */
+      dbr_float_t upper_alarm_limit;
+      dbr_float_t upper_warning_limit;
+      dbr_float_t lower_warning_limit;
+      dbr_float_t lower_alarm_limit;
+      dbr_float_t value;        /* current value */
+   };
 
 /* structure for a graphic enumeration field */
-struct dbr_gr_enum{
-	dbr_short_t	status;	 		/* status of value */
-	dbr_short_t	severity;		/* severity of alarm */
-	dbr_short_t	no_str;			/* number of strings */
-	char		strs[MAX_ENUM_STATES][MAX_ENUM_STRING_SIZE];
-						/* state strings */
-	dbr_enum_t	value;			/* current value */
-};
+   struct dbr_gr_enum {
+      dbr_short_t status;       /* status of value */
+      dbr_short_t severity;     /* severity of alarm */
+      dbr_short_t no_str;       /* number of strings */
+      char strs[MAX_ENUM_STATES][MAX_ENUM_STRING_SIZE];
+      /* state strings */
+      dbr_enum_t value;         /* current value */
+   };
 
 /* structure for a graphic char field */
-struct dbr_gr_char{
-	dbr_short_t	status;	 		/* status of value */
-	dbr_short_t	severity;		/* severity of alarm */
-	char		units[MAX_UNITS_SIZE];	/* units of value */
-	dbr_char_t	upper_disp_limit;	/* upper limit of graph */
-	dbr_char_t	lower_disp_limit;	/* lower limit of graph */
-	dbr_char_t	upper_alarm_limit;	
-	dbr_char_t	upper_warning_limit;
-	dbr_char_t	lower_warning_limit;
-	dbr_char_t	lower_alarm_limit;
-	dbr_char_t	RISC_pad;		/* RISC alignment */
-	dbr_char_t	value;			/* current value */
-};
+   struct dbr_gr_char {
+      dbr_short_t status;       /* status of value */
+      dbr_short_t severity;     /* severity of alarm */
+      char units[MAX_UNITS_SIZE];       /* units of value */
+      dbr_char_t upper_disp_limit;      /* upper limit of graph */
+      dbr_char_t lower_disp_limit;      /* lower limit of graph */
+      dbr_char_t upper_alarm_limit;
+      dbr_char_t upper_warning_limit;
+      dbr_char_t lower_warning_limit;
+      dbr_char_t lower_alarm_limit;
+      dbr_char_t RISC_pad;      /* RISC alignment */
+      dbr_char_t value;         /* current value */
+   };
 
 /* structure for a graphic long field */
-struct dbr_gr_long{
-	dbr_short_t	status;	 		/* status of value */
-	dbr_short_t	severity;		/* severity of alarm */
-	char		units[MAX_UNITS_SIZE];	/* units of value */
-	dbr_long_t	upper_disp_limit;	/* upper limit of graph */
-	dbr_long_t	lower_disp_limit;	/* lower limit of graph */
-	dbr_long_t	upper_alarm_limit;	
-	dbr_long_t	upper_warning_limit;
-	dbr_long_t	lower_warning_limit;
-	dbr_long_t	lower_alarm_limit;
-	dbr_long_t	value;			/* current value */
-};
+   struct dbr_gr_long {
+      dbr_short_t status;       /* status of value */
+      dbr_short_t severity;     /* severity of alarm */
+      char units[MAX_UNITS_SIZE];       /* units of value */
+      dbr_long_t upper_disp_limit;      /* upper limit of graph */
+      dbr_long_t lower_disp_limit;      /* lower limit of graph */
+      dbr_long_t upper_alarm_limit;
+      dbr_long_t upper_warning_limit;
+      dbr_long_t lower_warning_limit;
+      dbr_long_t lower_alarm_limit;
+      dbr_long_t value;         /* current value */
+   };
 
 /* structure for a graphic double field */
-struct dbr_gr_double{
-	dbr_short_t	status;	 		/* status of value */
-	dbr_short_t	severity;		/* severity of alarm */
-	dbr_short_t	precision;		/* number of decimal places */
-	dbr_short_t	RISC_pad0;		/* RISC alignment */
-	char		units[MAX_UNITS_SIZE];	/* units of value */
-	dbr_double_t	upper_disp_limit;	/* upper limit of graph */
-	dbr_double_t	lower_disp_limit;	/* lower limit of graph */
-	dbr_double_t	upper_alarm_limit;	
-	dbr_double_t	upper_warning_limit;
-	dbr_double_t	lower_warning_limit;
-	dbr_double_t	lower_alarm_limit;
-	dbr_double_t	value;			/* current value */
-};
+   struct dbr_gr_double {
+      dbr_short_t status;       /* status of value */
+      dbr_short_t severity;     /* severity of alarm */
+      dbr_short_t precision;    /* number of decimal places */
+      dbr_short_t RISC_pad0;    /* RISC alignment */
+      char units[MAX_UNITS_SIZE];       /* units of value */
+      dbr_double_t upper_disp_limit;    /* upper limit of graph */
+      dbr_double_t lower_disp_limit;    /* lower limit of graph */
+      dbr_double_t upper_alarm_limit;
+      dbr_double_t upper_warning_limit;
+      dbr_double_t lower_warning_limit;
+      dbr_double_t lower_alarm_limit;
+      dbr_double_t value;       /* current value */
+   };
 
 /* VALUES WITH STATUS, GRAPHIC and CONTROL STRUCTURES */
 
 /* structure for a control string */
-	/* not implemented; use struct_dbr_sts_string */
+   /* not implemented; use struct_dbr_sts_string */
 
 /* structure for a control integer */
-struct dbr_ctrl_int{
-	dbr_short_t	status;	 		/* status of value */
-	dbr_short_t	severity;		/* severity of alarm */
-	char		units[MAX_UNITS_SIZE];	/* units of value */
-	dbr_short_t	upper_disp_limit;	/* upper limit of graph */
-	dbr_short_t	lower_disp_limit;	/* lower limit of graph */
-	dbr_short_t	upper_alarm_limit;	
-	dbr_short_t	upper_warning_limit;
-	dbr_short_t	lower_warning_limit;
-	dbr_short_t	lower_alarm_limit;
-	dbr_short_t	upper_ctrl_limit;	/* upper control limit */
-	dbr_short_t	lower_ctrl_limit;	/* lower control limit */
-	dbr_short_t	value;			/* current value */
-};
-struct dbr_ctrl_short{
-	dbr_short_t	status;	 		/* status of value */
-	dbr_short_t	severity;		/* severity of alarm */
-	char		units[MAX_UNITS_SIZE];	/* units of value */
-	dbr_short_t	upper_disp_limit;	/* upper limit of graph */
-	dbr_short_t	lower_disp_limit;	/* lower limit of graph */
-	dbr_short_t	upper_alarm_limit;	
-	dbr_short_t	upper_warning_limit;
-	dbr_short_t	lower_warning_limit;
-	dbr_short_t	lower_alarm_limit;
-	dbr_short_t	upper_ctrl_limit;	/* upper control limit */
-	dbr_short_t	lower_ctrl_limit;	/* lower control limit */
-	dbr_short_t	value;			/* current value */
-};
+   struct dbr_ctrl_int {
+      dbr_short_t status;       /* status of value */
+      dbr_short_t severity;     /* severity of alarm */
+      char units[MAX_UNITS_SIZE];       /* units of value */
+      dbr_short_t upper_disp_limit;     /* upper limit of graph */
+      dbr_short_t lower_disp_limit;     /* lower limit of graph */
+      dbr_short_t upper_alarm_limit;
+      dbr_short_t upper_warning_limit;
+      dbr_short_t lower_warning_limit;
+      dbr_short_t lower_alarm_limit;
+      dbr_short_t upper_ctrl_limit;     /* upper control limit */
+      dbr_short_t lower_ctrl_limit;     /* lower control limit */
+      dbr_short_t value;        /* current value */
+   };
+   struct dbr_ctrl_short {
+      dbr_short_t status;       /* status of value */
+      dbr_short_t severity;     /* severity of alarm */
+      char units[MAX_UNITS_SIZE];       /* units of value */
+      dbr_short_t upper_disp_limit;     /* upper limit of graph */
+      dbr_short_t lower_disp_limit;     /* lower limit of graph */
+      dbr_short_t upper_alarm_limit;
+      dbr_short_t upper_warning_limit;
+      dbr_short_t lower_warning_limit;
+      dbr_short_t lower_alarm_limit;
+      dbr_short_t upper_ctrl_limit;     /* upper control limit */
+      dbr_short_t lower_ctrl_limit;     /* lower control limit */
+      dbr_short_t value;        /* current value */
+   };
 
 /* structure for a control floating point field */
-struct dbr_ctrl_float{
-	dbr_short_t	status;	 		/* status of value */
-	dbr_short_t	severity;		/* severity of alarm */
-	dbr_short_t	precision;		/* number of decimal places */
-	dbr_short_t	RISC_pad;		/* RISC alignment */
-	char		units[MAX_UNITS_SIZE];	/* units of value */
-	dbr_float_t	upper_disp_limit;	/* upper limit of graph */
-	dbr_float_t	lower_disp_limit;	/* lower limit of graph */
-	dbr_float_t	upper_alarm_limit;	
-	dbr_float_t	upper_warning_limit;
-	dbr_float_t	lower_warning_limit;
-	dbr_float_t	lower_alarm_limit;
- 	dbr_float_t	upper_ctrl_limit;	/* upper control limit */
-	dbr_float_t	lower_ctrl_limit;	/* lower control limit */
-	dbr_float_t	value;			/* current value */
-};
+   struct dbr_ctrl_float {
+      dbr_short_t status;       /* status of value */
+      dbr_short_t severity;     /* severity of alarm */
+      dbr_short_t precision;    /* number of decimal places */
+      dbr_short_t RISC_pad;     /* RISC alignment */
+      char units[MAX_UNITS_SIZE];       /* units of value */
+      dbr_float_t upper_disp_limit;     /* upper limit of graph */
+      dbr_float_t lower_disp_limit;     /* lower limit of graph */
+      dbr_float_t upper_alarm_limit;
+      dbr_float_t upper_warning_limit;
+      dbr_float_t lower_warning_limit;
+      dbr_float_t lower_alarm_limit;
+      dbr_float_t upper_ctrl_limit;     /* upper control limit */
+      dbr_float_t lower_ctrl_limit;     /* lower control limit */
+      dbr_float_t value;        /* current value */
+   };
 
 /* structure for a control enumeration field */
-struct dbr_ctrl_enum{
-	dbr_short_t	status;	 		/* status of value */
-	dbr_short_t	severity;		/* severity of alarm */
-	dbr_short_t	no_str;			/* number of strings */
-	char	strs[MAX_ENUM_STATES][MAX_ENUM_STRING_SIZE];
-					/* state strings */
-	dbr_enum_t	value;		/* current value */
-};
+   struct dbr_ctrl_enum {
+      dbr_short_t status;       /* status of value */
+      dbr_short_t severity;     /* severity of alarm */
+      dbr_short_t no_str;       /* number of strings */
+      char strs[MAX_ENUM_STATES][MAX_ENUM_STRING_SIZE];
+      /* state strings */
+      dbr_enum_t value;         /* current value */
+   };
 
 /* structure for a control char field */
-struct dbr_ctrl_char{
-	dbr_short_t	status;	 		/* status of value */
-	dbr_short_t	severity;		/* severity of alarm */
-	char		units[MAX_UNITS_SIZE];	/* units of value */
-	dbr_char_t	upper_disp_limit;	/* upper limit of graph */
-	dbr_char_t	lower_disp_limit;	/* lower limit of graph */
-	dbr_char_t	upper_alarm_limit;	
-	dbr_char_t	upper_warning_limit;
-	dbr_char_t	lower_warning_limit;
-	dbr_char_t	lower_alarm_limit;
-	dbr_char_t	upper_ctrl_limit;	/* upper control limit */
-	dbr_char_t	lower_ctrl_limit;	/* lower control limit */
-	dbr_char_t	RISC_pad;		/* RISC alignment */
-	dbr_char_t	value;			/* current value */
-};
+   struct dbr_ctrl_char {
+      dbr_short_t status;       /* status of value */
+      dbr_short_t severity;     /* severity of alarm */
+      char units[MAX_UNITS_SIZE];       /* units of value */
+      dbr_char_t upper_disp_limit;      /* upper limit of graph */
+      dbr_char_t lower_disp_limit;      /* lower limit of graph */
+      dbr_char_t upper_alarm_limit;
+      dbr_char_t upper_warning_limit;
+      dbr_char_t lower_warning_limit;
+      dbr_char_t lower_alarm_limit;
+      dbr_char_t upper_ctrl_limit;      /* upper control limit */
+      dbr_char_t lower_ctrl_limit;      /* lower control limit */
+      dbr_char_t RISC_pad;      /* RISC alignment */
+      dbr_char_t value;         /* current value */
+   };
 
 /* structure for a control long field */
-struct dbr_ctrl_long{
-	dbr_short_t	status;	 		/* status of value */
-	dbr_short_t	severity;		/* severity of alarm */
-	char		units[MAX_UNITS_SIZE];	/* units of value */
-	dbr_long_t	upper_disp_limit;	/* upper limit of graph */
-	dbr_long_t	lower_disp_limit;	/* lower limit of graph */
-	dbr_long_t	upper_alarm_limit;	
-	dbr_long_t	upper_warning_limit;
-	dbr_long_t	lower_warning_limit;
-	dbr_long_t	lower_alarm_limit;
-	dbr_long_t	upper_ctrl_limit;	/* upper control limit */
-	dbr_long_t	lower_ctrl_limit;	/* lower control limit */
-	dbr_long_t	value;			/* current value */
-};
+   struct dbr_ctrl_long {
+      dbr_short_t status;       /* status of value */
+      dbr_short_t severity;     /* severity of alarm */
+      char units[MAX_UNITS_SIZE];       /* units of value */
+      dbr_long_t upper_disp_limit;      /* upper limit of graph */
+      dbr_long_t lower_disp_limit;      /* lower limit of graph */
+      dbr_long_t upper_alarm_limit;
+      dbr_long_t upper_warning_limit;
+      dbr_long_t lower_warning_limit;
+      dbr_long_t lower_alarm_limit;
+      dbr_long_t upper_ctrl_limit;      /* upper control limit */
+      dbr_long_t lower_ctrl_limit;      /* lower control limit */
+      dbr_long_t value;         /* current value */
+   };
 
 /* structure for a control double field */
-struct dbr_ctrl_double{
-	dbr_short_t	status;	 		/* status of value */
-	dbr_short_t	severity;		/* severity of alarm */
-	dbr_short_t	precision;		/* number of decimal places */
-	dbr_short_t	RISC_pad0;		/* RISC alignment */
-	char		units[MAX_UNITS_SIZE];	/* units of value */
-	dbr_double_t	upper_disp_limit;	/* upper limit of graph */
-	dbr_double_t	lower_disp_limit;	/* lower limit of graph */
-	dbr_double_t	upper_alarm_limit;	
-	dbr_double_t	upper_warning_limit;
-	dbr_double_t	lower_warning_limit;
-	dbr_double_t	lower_alarm_limit;
-	dbr_double_t	upper_ctrl_limit;	/* upper control limit */
-	dbr_double_t	lower_ctrl_limit;	/* lower control limit */
-	dbr_double_t	value;			/* current value */
-};
+   struct dbr_ctrl_double {
+      dbr_short_t status;       /* status of value */
+      dbr_short_t severity;     /* severity of alarm */
+      dbr_short_t precision;    /* number of decimal places */
+      dbr_short_t RISC_pad0;    /* RISC alignment */
+      char units[MAX_UNITS_SIZE];       /* units of value */
+      dbr_double_t upper_disp_limit;    /* upper limit of graph */
+      dbr_double_t lower_disp_limit;    /* lower limit of graph */
+      dbr_double_t upper_alarm_limit;
+      dbr_double_t upper_warning_limit;
+      dbr_double_t lower_warning_limit;
+      dbr_double_t lower_alarm_limit;
+      dbr_double_t upper_ctrl_limit;    /* upper control limit */
+      dbr_double_t lower_ctrl_limit;    /* lower control limit */
+      dbr_double_t value;       /* current value */
+   };
 
 #define dbr_size_n(TYPE,COUNT)\
 ((unsigned)((COUNT)==1?dbr_size[TYPE]:dbr_size[TYPE]+((COUNT)-1)*dbr_value_size[TYPE]))
 /* size for each type */
 
 #ifndef DB_TEXT_GLBLSOURCE
-epicsShareExtern READONLY unsigned short dbr_size[LAST_BUFFER_TYPE+1];
+   epicsShareExtern READONLY unsigned short dbr_size[LAST_BUFFER_TYPE + 1];
 #else
-epicsShareDef READONLY unsigned short dbr_size[LAST_BUFFER_TYPE+1] = {
-	sizeof(dbr_string_t),		/* string max size		*/
-	sizeof(dbr_short_t),		/* short			*/
-	sizeof(dbr_float_t),		/* IEEE Float			*/
-	sizeof(dbr_enum_t),		/* item number			*/
-	sizeof(dbr_char_t),		/* character			*/
-	sizeof(dbr_long_t),		/* long				*/
-	sizeof(dbr_double_t),		/* double			*/
-	sizeof(struct dbr_sts_string),	/* string field	with status	*/
-	sizeof(struct dbr_sts_short),	/* short field with status	*/
-	sizeof(struct dbr_sts_float),	/* float field with status	*/
-	sizeof(struct dbr_sts_enum),	/* item number with status	*/
-	sizeof(struct dbr_sts_char),	/* char field with status	*/
-	sizeof(struct dbr_sts_long),	/* long field with status	*/
-	sizeof(struct dbr_sts_double),	/* double field with time	*/
-	sizeof(struct dbr_time_string),	/* string field	with time	*/
-	sizeof(struct dbr_time_short),	/* short field with time	*/
-	sizeof(struct dbr_time_float),	/* float field with time	*/
-	sizeof(struct dbr_time_enum),	/* item number with time	*/
-	sizeof(struct dbr_time_char),	/* char field with time		*/
-	sizeof(struct dbr_time_long),	/* long field with time		*/
-	sizeof(struct dbr_time_double),	/* double field with time	*/
-	sizeof(struct dbr_sts_string),	/* graphic string info		*/
-	sizeof(struct dbr_gr_short),	/* graphic short info		*/
-	sizeof(struct dbr_gr_float),	/* graphic float info		*/
-	sizeof(struct dbr_gr_enum),	/* graphic item info		*/
-	sizeof(struct dbr_gr_char),	/* graphic char info		*/
-	sizeof(struct dbr_gr_long),	/* graphic long info		*/
-	sizeof(struct dbr_gr_double),	/* graphic double info		*/
-	sizeof(struct dbr_sts_string),	/* control string info		*/
-	sizeof(struct dbr_ctrl_short),	/* control short info		*/
-	sizeof(struct dbr_ctrl_float),	/* control float info		*/
-	sizeof(struct dbr_ctrl_enum),	/* control item info		*/
-	sizeof(struct dbr_ctrl_char),	/* control char info		*/
-	sizeof(struct dbr_ctrl_long),	/* control long info		*/
-	sizeof(struct dbr_ctrl_double),	/* control double info		*/
-	sizeof(dbr_put_ackt_t),		/* put ackt			*/
-	sizeof(dbr_put_acks_t),		/* put acks			*/
-	sizeof(struct dbr_stsack_string),/* string field with status/ack*/
-	sizeof(dbr_string_t),		/* string max size		*/
-};
+   epicsShareDef READONLY unsigned short dbr_size[LAST_BUFFER_TYPE + 1] = {
+      sizeof(dbr_string_t),     /* string max size              */
+      sizeof(dbr_short_t),      /* short                        */
+      sizeof(dbr_float_t),      /* IEEE Float                   */
+      sizeof(dbr_enum_t),       /* item number                  */
+      sizeof(dbr_char_t),       /* character                    */
+      sizeof(dbr_long_t),       /* long                         */
+      sizeof(dbr_double_t),     /* double                       */
+      sizeof(struct dbr_sts_string),    /* string field with status     */
+      sizeof(struct dbr_sts_short),     /* short field with status      */
+      sizeof(struct dbr_sts_float),     /* float field with status      */
+      sizeof(struct dbr_sts_enum),      /* item number with status      */
+      sizeof(struct dbr_sts_char),      /* char field with status       */
+      sizeof(struct dbr_sts_long),      /* long field with status       */
+      sizeof(struct dbr_sts_double),    /* double field with time       */
+      sizeof(struct dbr_time_string),   /* string field with time       */
+      sizeof(struct dbr_time_short),    /* short field with time        */
+      sizeof(struct dbr_time_float),    /* float field with time        */
+      sizeof(struct dbr_time_enum),     /* item number with time        */
+      sizeof(struct dbr_time_char),     /* char field with time         */
+      sizeof(struct dbr_time_long),     /* long field with time         */
+      sizeof(struct dbr_time_double),   /* double field with time       */
+      sizeof(struct dbr_sts_string),    /* graphic string info          */
+      sizeof(struct dbr_gr_short),      /* graphic short info           */
+      sizeof(struct dbr_gr_float),      /* graphic float info           */
+      sizeof(struct dbr_gr_enum),       /* graphic item info            */
+      sizeof(struct dbr_gr_char),       /* graphic char info            */
+      sizeof(struct dbr_gr_long),       /* graphic long info            */
+      sizeof(struct dbr_gr_double),     /* graphic double info          */
+      sizeof(struct dbr_sts_string),    /* control string info          */
+      sizeof(struct dbr_ctrl_short),    /* control short info           */
+      sizeof(struct dbr_ctrl_float),    /* control float info           */
+      sizeof(struct dbr_ctrl_enum),     /* control item info            */
+      sizeof(struct dbr_ctrl_char),     /* control char info            */
+      sizeof(struct dbr_ctrl_long),     /* control long info            */
+      sizeof(struct dbr_ctrl_double),   /* control double info          */
+      sizeof(dbr_put_ackt_t),   /* put ackt                     */
+      sizeof(dbr_put_acks_t),   /* put acks                     */
+      sizeof(struct dbr_stsack_string), /* string field with status/ack */
+      sizeof(dbr_string_t),     /* string max size              */
+   };
 #endif
 
 /* size for each type's value */
 #ifndef DB_TEXT_GLBLSOURCE
-epicsShareExtern READONLY unsigned short dbr_value_size[LAST_BUFFER_TYPE+1];
+   epicsShareExtern READONLY unsigned short dbr_value_size[LAST_BUFFER_TYPE + 1];
 #else
-epicsShareDef READONLY unsigned short dbr_value_size[LAST_BUFFER_TYPE+1] = {
-	sizeof(dbr_string_t),	/* string max size		*/
-	sizeof(dbr_short_t),	/* short			*/
-	sizeof(dbr_float_t),	/* IEEE Float			*/
-	sizeof(dbr_enum_t),	/* item number			*/
-	sizeof(dbr_char_t),	/* character			*/
-	sizeof(dbr_long_t),	/* long				*/
-	sizeof(dbr_double_t),	/* double			*/
-	sizeof(dbr_string_t),	/* string max size		*/
-	sizeof(dbr_short_t),	/* short			*/
-	sizeof(dbr_float_t),	/* IEEE Float			*/
-	sizeof(dbr_enum_t),	/* item number			*/
-	sizeof(dbr_char_t),	/* character			*/
-	sizeof(dbr_long_t),	/* long				*/
-	sizeof(dbr_double_t),	/* double			*/
-	sizeof(dbr_string_t),	/* string max size		*/
-	sizeof(dbr_short_t),	/* short			*/
-	sizeof(dbr_float_t),	/* IEEE Float			*/
-	sizeof(dbr_enum_t),	/* item number			*/
-	sizeof(dbr_char_t),	/* character			*/
-	sizeof(dbr_long_t),	/* long				*/
-	sizeof(dbr_double_t),	/* double			*/
-	sizeof(dbr_string_t),	/* string max size		*/
-	sizeof(dbr_short_t),	/* short			*/
-	sizeof(dbr_float_t),	/* IEEE Float			*/
-	sizeof(dbr_enum_t),	/* item number			*/
-	sizeof(dbr_char_t),	/* character			*/
-	sizeof(dbr_long_t),	/* long				*/
-	sizeof(dbr_double_t),	/* double			*/
-	sizeof(dbr_string_t),	/* string max size		*/
-	sizeof(dbr_short_t),	/* short			*/
-	sizeof(dbr_float_t),	/* IEEE Float			*/
-	sizeof(dbr_enum_t),	/* item number			*/
-	sizeof(dbr_char_t),	/* character			*/
-	sizeof(dbr_long_t),	/* long				*/
-	sizeof(dbr_double_t),	/* double			*/
-	sizeof(dbr_ushort_t), 	/* put_ackt			*/
-	sizeof(dbr_ushort_t), 	/* put_acks			*/
-	sizeof(dbr_string_t),	/* string max size		*/
-	sizeof(dbr_string_t),	/* string max size		*/
-};
+   epicsShareDef READONLY unsigned short dbr_value_size[LAST_BUFFER_TYPE + 1] = {
+      sizeof(dbr_string_t),     /* string max size              */
+      sizeof(dbr_short_t),      /* short                        */
+      sizeof(dbr_float_t),      /* IEEE Float                   */
+      sizeof(dbr_enum_t),       /* item number                  */
+      sizeof(dbr_char_t),       /* character                    */
+      sizeof(dbr_long_t),       /* long                         */
+      sizeof(dbr_double_t),     /* double                       */
+      sizeof(dbr_string_t),     /* string max size              */
+      sizeof(dbr_short_t),      /* short                        */
+      sizeof(dbr_float_t),      /* IEEE Float                   */
+      sizeof(dbr_enum_t),       /* item number                  */
+      sizeof(dbr_char_t),       /* character                    */
+      sizeof(dbr_long_t),       /* long                         */
+      sizeof(dbr_double_t),     /* double                       */
+      sizeof(dbr_string_t),     /* string max size              */
+      sizeof(dbr_short_t),      /* short                        */
+      sizeof(dbr_float_t),      /* IEEE Float                   */
+      sizeof(dbr_enum_t),       /* item number                  */
+      sizeof(dbr_char_t),       /* character                    */
+      sizeof(dbr_long_t),       /* long                         */
+      sizeof(dbr_double_t),     /* double                       */
+      sizeof(dbr_string_t),     /* string max size              */
+      sizeof(dbr_short_t),      /* short                        */
+      sizeof(dbr_float_t),      /* IEEE Float                   */
+      sizeof(dbr_enum_t),       /* item number                  */
+      sizeof(dbr_char_t),       /* character                    */
+      sizeof(dbr_long_t),       /* long                         */
+      sizeof(dbr_double_t),     /* double                       */
+      sizeof(dbr_string_t),     /* string max size              */
+      sizeof(dbr_short_t),      /* short                        */
+      sizeof(dbr_float_t),      /* IEEE Float                   */
+      sizeof(dbr_enum_t),       /* item number                  */
+      sizeof(dbr_char_t),       /* character                    */
+      sizeof(dbr_long_t),       /* long                         */
+      sizeof(dbr_double_t),     /* double                       */
+      sizeof(dbr_ushort_t),     /* put_ackt                     */
+      sizeof(dbr_ushort_t),     /* put_acks                     */
+      sizeof(dbr_string_t),     /* string max size              */
+      sizeof(dbr_string_t),     /* string max size              */
+   };
 #endif
-
 
+
 /* class for each type's value */
-enum dbr_value_class { 
-		dbr_class_int, 
-		dbr_class_float, 
-		dbr_class_string, 
-		dbr_class_max};
+   enum dbr_value_class {
+      dbr_class_int,
+      dbr_class_float,
+      dbr_class_string,
+      dbr_class_max
+   };
 #ifndef DB_TEXT_GLBLSOURCE
-epicsShareExtern READONLY enum dbr_value_class dbr_value_class[LAST_BUFFER_TYPE+1];
+   epicsShareExtern READONLY enum dbr_value_class dbr_value_class[LAST_BUFFER_TYPE + 1];
 #else
-epicsShareDef READONLY enum dbr_value_class dbr_value_class[LAST_BUFFER_TYPE+1] = {
-	dbr_class_string,	/* string max size		*/
-	dbr_class_int,		/* short			*/
-	dbr_class_float,	/* IEEE Float			*/
-	dbr_class_int,		/* item number			*/
-	dbr_class_int,		/* character			*/
-	dbr_class_int,		/* long				*/
-	dbr_class_float,	/* double			*/
+   epicsShareDef READONLY enum dbr_value_class dbr_value_class[LAST_BUFFER_TYPE + 1] = {
+      dbr_class_string,         /* string max size              */
+      dbr_class_int,            /* short                        */
+      dbr_class_float,          /* IEEE Float                   */
+      dbr_class_int,            /* item number                  */
+      dbr_class_int,            /* character                    */
+      dbr_class_int,            /* long                         */
+      dbr_class_float,          /* double                       */
 
-	dbr_class_string,	/* string max size		*/
-	dbr_class_int,		/* short			*/
-	dbr_class_float,	/* IEEE Float			*/
-	dbr_class_int,		/* item number			*/
-	dbr_class_int,		/* character			*/
-	dbr_class_int,		/* long				*/
-	dbr_class_float,	/* double			*/
+      dbr_class_string,         /* string max size              */
+      dbr_class_int,            /* short                        */
+      dbr_class_float,          /* IEEE Float                   */
+      dbr_class_int,            /* item number                  */
+      dbr_class_int,            /* character                    */
+      dbr_class_int,            /* long                         */
+      dbr_class_float,          /* double                       */
 
-	dbr_class_string,	/* string max size		*/
-	dbr_class_int,		/* short			*/
-	dbr_class_float,	/* IEEE Float			*/
-	dbr_class_int,		/* item number			*/
-	dbr_class_int,		/* character			*/
-	dbr_class_int,		/* long				*/
-	dbr_class_float,	/* double			*/
+      dbr_class_string,         /* string max size              */
+      dbr_class_int,            /* short                        */
+      dbr_class_float,          /* IEEE Float                   */
+      dbr_class_int,            /* item number                  */
+      dbr_class_int,            /* character                    */
+      dbr_class_int,            /* long                         */
+      dbr_class_float,          /* double                       */
 
-	dbr_class_string,	/* string max size		*/
-	dbr_class_int,		/* short			*/
-	dbr_class_float,	/* IEEE Float			*/
-	dbr_class_int,		/* item number			*/
-	dbr_class_int,		/* character			*/
-	dbr_class_int,		/* long				*/
-	dbr_class_float,	/* double			*/
+      dbr_class_string,         /* string max size              */
+      dbr_class_int,            /* short                        */
+      dbr_class_float,          /* IEEE Float                   */
+      dbr_class_int,            /* item number                  */
+      dbr_class_int,            /* character                    */
+      dbr_class_int,            /* long                         */
+      dbr_class_float,          /* double                       */
 
-	dbr_class_string,	/* string max size		*/
-	dbr_class_int,		/* short			*/
-	dbr_class_float,	/* IEEE Float			*/
-	dbr_class_int,		/* item number			*/
-	dbr_class_int,		/* character			*/
-	dbr_class_int,		/* long				*/
-	dbr_class_float,	/* double			*/
-	dbr_class_int,
-	dbr_class_int,
-	dbr_class_string,
-	dbr_class_string,	/* string max size		*/
-};
+      dbr_class_string,         /* string max size              */
+      dbr_class_int,            /* short                        */
+      dbr_class_float,          /* IEEE Float                   */
+      dbr_class_int,            /* item number                  */
+      dbr_class_int,            /* character                    */
+      dbr_class_int,            /* long                         */
+      dbr_class_float,          /* double                       */
+      dbr_class_int,
+      dbr_class_int,
+      dbr_class_string,
+      dbr_class_string,         /* string max size              */
+   };
 #endif
-
 
+
 /* 
  * ptr to value given a pointer to the structure and the DBR type
  */
@@ -881,94 +880,94 @@ epicsShareDef READONLY enum dbr_value_class dbr_value_class[LAST_BUFFER_TYPE+1] 
 ((void *)(((char *)PDBR)+BYTE_OS(STRUCTURE, value)))
 
 #ifndef DB_TEXT_GLBLSOURCE
-epicsShareExtern READONLY unsigned short dbr_value_offset[LAST_BUFFER_TYPE+1];
+   epicsShareExtern READONLY unsigned short dbr_value_offset[LAST_BUFFER_TYPE + 1];
 #else
-epicsShareDef READONLY unsigned short dbr_value_offset[LAST_BUFFER_TYPE+1] = {
-	0,					/* string			*/
-	0,					/* short			*/
-	0,					/* IEEE Float			*/
-	0,					/* item number			*/
-	0,					/* character			*/
-	0,					/* long				*/
-	0,					/* IEEE double			*/
-	BYTE_OS(struct dbr_sts_string,value[0]),/* string field	with status	*/
-	BYTE_OS(struct dbr_sts_short,value),	/* short field with status	*/
-	BYTE_OS(struct dbr_sts_float,value),	/* float field with status	*/
-	BYTE_OS(struct dbr_sts_enum,value),	/* item number with status	*/
-	BYTE_OS(struct dbr_sts_char,value),	/* char field with status	*/
-	BYTE_OS(struct dbr_sts_long,value),	/* long field with status	*/
-	BYTE_OS(struct dbr_sts_double,value),	/* double field with time	*/
-	BYTE_OS(struct dbr_time_string,value[0]),/* string field with time	*/
-	BYTE_OS(struct dbr_time_short,value),	/* short field with time	*/
-	BYTE_OS(struct dbr_time_float,value),	/* float field with time	*/
-	BYTE_OS(struct dbr_time_enum,value),	/* item number with time	*/
-	BYTE_OS(struct dbr_time_char,value),	/* char field with time		*/
-	BYTE_OS(struct dbr_time_long,value),	/* long field with time		*/
-	BYTE_OS(struct dbr_time_double,value),	/* double field with time	*/
-	BYTE_OS(struct dbr_sts_string,value[0]),/* graphic string info		*/
-	BYTE_OS(struct dbr_gr_short,value),	/* graphic short info		*/
-	BYTE_OS(struct dbr_gr_float,value),	/* graphic float info		*/
-	BYTE_OS(struct dbr_gr_enum,value),	/* graphic item info		*/
-	BYTE_OS(struct dbr_gr_char,value),	/* graphic char info		*/
-	BYTE_OS(struct dbr_gr_long,value),	/* graphic long info		*/
-	BYTE_OS(struct dbr_gr_double,value),	/* graphic double info		*/
-	BYTE_OS(struct dbr_sts_string,value[0]),/* control string info		*/
-	BYTE_OS(struct dbr_ctrl_short,value),	/* control short info		*/
-	BYTE_OS(struct dbr_ctrl_float,value),	/* control float info		*/
-	BYTE_OS(struct dbr_ctrl_enum,value),	/* control item info		*/
-	BYTE_OS(struct dbr_ctrl_char,value),	/* control char info		*/
-	BYTE_OS(struct dbr_ctrl_long,value),	/* control long info		*/
-	BYTE_OS(struct dbr_ctrl_double,value),	/* control double info		*/
-	0,					/* put ackt			*/
-	0,					/* put acks			*/
-	BYTE_OS(struct dbr_stsack_string,value[0]),/* string field	with status	*/
-	0,					/* string			*/
-};
+   epicsShareDef READONLY unsigned short dbr_value_offset[LAST_BUFFER_TYPE + 1] = {
+      0,                        /* string                       */
+      0,                        /* short                        */
+      0,                        /* IEEE Float                   */
+      0,                        /* item number                  */
+      0,                        /* character                    */
+      0,                        /* long                         */
+      0,                        /* IEEE double                  */
+      BYTE_OS(struct dbr_sts_string, value[0]), /* string field with status     */
+      BYTE_OS(struct dbr_sts_short, value),     /* short field with status      */
+      BYTE_OS(struct dbr_sts_float, value),     /* float field with status      */
+      BYTE_OS(struct dbr_sts_enum, value),      /* item number with status      */
+      BYTE_OS(struct dbr_sts_char, value),      /* char field with status       */
+      BYTE_OS(struct dbr_sts_long, value),      /* long field with status       */
+      BYTE_OS(struct dbr_sts_double, value),    /* double field with time       */
+      BYTE_OS(struct dbr_time_string, value[0]),        /* string field with time      */
+      BYTE_OS(struct dbr_time_short, value),    /* short field with time        */
+      BYTE_OS(struct dbr_time_float, value),    /* float field with time        */
+      BYTE_OS(struct dbr_time_enum, value),     /* item number with time        */
+      BYTE_OS(struct dbr_time_char, value),     /* char field with time         */
+      BYTE_OS(struct dbr_time_long, value),     /* long field with time         */
+      BYTE_OS(struct dbr_time_double, value),   /* double field with time       */
+      BYTE_OS(struct dbr_sts_string, value[0]), /* graphic string info          */
+      BYTE_OS(struct dbr_gr_short, value),      /* graphic short info           */
+      BYTE_OS(struct dbr_gr_float, value),      /* graphic float info           */
+      BYTE_OS(struct dbr_gr_enum, value),       /* graphic item info            */
+      BYTE_OS(struct dbr_gr_char, value),       /* graphic char info            */
+      BYTE_OS(struct dbr_gr_long, value),       /* graphic long info            */
+      BYTE_OS(struct dbr_gr_double, value),     /* graphic double info          */
+      BYTE_OS(struct dbr_sts_string, value[0]), /* control string info          */
+      BYTE_OS(struct dbr_ctrl_short, value),    /* control short info           */
+      BYTE_OS(struct dbr_ctrl_float, value),    /* control float info           */
+      BYTE_OS(struct dbr_ctrl_enum, value),     /* control item info            */
+      BYTE_OS(struct dbr_ctrl_char, value),     /* control char info            */
+      BYTE_OS(struct dbr_ctrl_long, value),     /* control long info            */
+      BYTE_OS(struct dbr_ctrl_double, value),   /* control double info          */
+      0,                        /* put ackt                     */
+      0,                        /* put acks                     */
+      BYTE_OS(struct dbr_stsack_string, value[0]),      /* string field      with status     */
+      0,                        /* string                       */
+   };
 #endif
 
 /* union for each fetch buffers */
-union db_access_val{
-	dbr_string_t		strval;		/* string max size	      */
-	dbr_short_t		shrtval;	/* short		      */
-	dbr_short_t		intval;		/* short		      */
-	dbr_float_t		fltval;		/* IEEE Float		      */
-	dbr_enum_t		enmval;		/* item number		      */
-	dbr_char_t		charval;	/* character		      */
-	dbr_long_t		longval;	/* long			      */
-	dbr_double_t		doubleval;	/* double		      */
-	struct dbr_sts_string	sstrval;	/* string field	with status   */
-	struct dbr_sts_short	sshrtval;	/* short field with status    */
-	struct dbr_sts_float	sfltval;	/* float field with status    */
-	struct dbr_sts_enum	senmval;	/* item number with status    */
-	struct dbr_sts_char	schrval;	/* char field with status     */
-	struct dbr_sts_long	slngval;	/* long field with status     */
-	struct dbr_sts_double	sdblval;	/* double field with time     */
-	struct dbr_time_string	tstrval;	/* string field	with time     */
-	struct dbr_time_short	tshrtval;	/* short field with time      */
-	struct dbr_time_float	tfltval;	/* float field with time      */
-	struct dbr_time_enum	tenmval;	/* item number with time      */
-	struct dbr_time_char	tchrval;	/* char field with time	      */
-	struct dbr_time_long	tlngval;	/* long field with time	      */
-	struct dbr_time_double	tdblval;	/* double field with time     */
-	struct dbr_sts_string	gstrval;	/* graphic string info	      */
-	struct dbr_gr_short	gshrtval;	/* graphic short info	      */
-	struct dbr_gr_float	gfltval;	/* graphic float info	      */
-	struct dbr_gr_enum	genmval;	/* graphic item info	      */
-	struct dbr_gr_char	gchrval;	/* graphic char info	      */
-	struct dbr_gr_long	glngval;	/* graphic long info	      */
-	struct dbr_gr_double	gdblval;	/* graphic double info	      */
-	struct dbr_sts_string	cstrval;	/* control string info	      */
-	struct dbr_ctrl_short	cshrtval;	/* control short info	      */
-	struct dbr_ctrl_float	cfltval;	/* control float info	      */
-	struct dbr_ctrl_enum	cenmval;	/* control item info	      */
-	struct dbr_ctrl_char	cchrval;	/* control char info	      */
-	struct dbr_ctrl_long	clngval;	/* control long info	      */
-	struct dbr_ctrl_double	cdblval;	/* control double info	      */
-	dbr_put_ackt_t		putackt;	/* item number		      */
-	dbr_put_acks_t		putacks;	/* item number		      */
-	struct dbr_sts_string	sastrval;	/* string field	with status   */
-	dbr_string_t		classname;	/* string max size	      */
-};
+   union db_access_val {
+      dbr_string_t strval;      /* string max size            */
+      dbr_short_t shrtval;      /* short                      */
+      dbr_short_t intval;       /* short                      */
+      dbr_float_t fltval;       /* IEEE Float                 */
+      dbr_enum_t enmval;        /* item number                */
+      dbr_char_t charval;       /* character                  */
+      dbr_long_t longval;       /* long                       */
+      dbr_double_t doubleval;   /* double                     */
+      struct dbr_sts_string sstrval;    /* string field with status   */
+      struct dbr_sts_short sshrtval;    /* short field with status    */
+      struct dbr_sts_float sfltval;     /* float field with status    */
+      struct dbr_sts_enum senmval;      /* item number with status    */
+      struct dbr_sts_char schrval;      /* char field with status     */
+      struct dbr_sts_long slngval;      /* long field with status     */
+      struct dbr_sts_double sdblval;    /* double field with time     */
+      struct dbr_time_string tstrval;   /* string field with time     */
+      struct dbr_time_short tshrtval;   /* short field with time      */
+      struct dbr_time_float tfltval;    /* float field with time      */
+      struct dbr_time_enum tenmval;     /* item number with time      */
+      struct dbr_time_char tchrval;     /* char field with time       */
+      struct dbr_time_long tlngval;     /* long field with time       */
+      struct dbr_time_double tdblval;   /* double field with time     */
+      struct dbr_sts_string gstrval;    /* graphic string info        */
+      struct dbr_gr_short gshrtval;     /* graphic short info         */
+      struct dbr_gr_float gfltval;      /* graphic float info         */
+      struct dbr_gr_enum genmval;       /* graphic item info          */
+      struct dbr_gr_char gchrval;       /* graphic char info          */
+      struct dbr_gr_long glngval;       /* graphic long info          */
+      struct dbr_gr_double gdblval;     /* graphic double info        */
+      struct dbr_sts_string cstrval;    /* control string info        */
+      struct dbr_ctrl_short cshrtval;   /* control short info         */
+      struct dbr_ctrl_float cfltval;    /* control float info         */
+      struct dbr_ctrl_enum cenmval;     /* control item info          */
+      struct dbr_ctrl_char cchrval;     /* control char info          */
+      struct dbr_ctrl_long clngval;     /* control long info          */
+      struct dbr_ctrl_double cdblval;   /* control double info        */
+      dbr_put_ackt_t putackt;   /* item number                */
+      dbr_put_acks_t putacks;   /* item number                */
+      struct dbr_sts_string sastrval;   /* string field with status   */
+      dbr_string_t classname;   /* string max size            */
+   };
 
 /*----------------------------------------------------------------------------
 * repository for some useful PV database constants and utilities
@@ -1011,11 +1010,11 @@ union db_access_val{
 *     void dbr_text_to_type(text, type) finds DBR_xxx matching text
 *---------------------------------------------------------------------------*/
 #define db_strval_dim 		MAX_STRING_SIZE
-#define db_units_dim		MAX_UNITS_SIZE	
+#define db_units_dim		MAX_UNITS_SIZE
 #define db_desc_dim		24
 #define db_name_dim		36
-#define db_state_dim		MAX_ENUM_STATES	
-#define db_state_text_dim	MAX_ENUM_STRING_SIZE 
+#define db_state_dim		MAX_ENUM_STATES
+#define db_state_text_dim	MAX_ENUM_STRING_SIZE
 
 #define dbf_type_is_valid(type)   ((type) >= 0 && (type) <= LAST_TYPE)
 #define dbr_type_is_valid(type)   ((type) >= 0 && (type) <= LAST_BUFFER_TYPE)
@@ -1094,75 +1093,74 @@ union db_access_val{
 
 
 #ifndef DB_TEXT_GLBLSOURCE
-    epicsShareExtern READONLY char	*dbf_text[LAST_TYPE+2], *dbf_text_invalid;
-    epicsShareExtern READONLY short	dbf_text_dim;
+   epicsShareExtern READONLY char *dbf_text[LAST_TYPE + 2], *dbf_text_invalid;
+   epicsShareExtern READONLY short dbf_text_dim;
 #else
-    epicsShareDef READONLY char *dbf_text[] = {
-	"TYPENOTCONN",
-	"DBF_STRING",
-	"DBF_SHORT",
-	"DBF_FLOAT",
-	"DBF_ENUM",
-	"DBF_CHAR",
-	"DBF_LONG",
-	"DBF_DOUBLE",
-	"DBF_NO_ACCESS"
-    };
-    epicsShareDef READONLY char    *dbf_text_invalid = "DBF_invalid";
-    epicsShareDef READONLY short   dbf_text_dim = (sizeof dbf_text)/(sizeof (char *));
+   epicsShareDef READONLY char *dbf_text[] = {
+      "TYPENOTCONN",
+      "DBF_STRING",
+      "DBF_SHORT",
+      "DBF_FLOAT",
+      "DBF_ENUM",
+      "DBF_CHAR",
+      "DBF_LONG",
+      "DBF_DOUBLE",
+      "DBF_NO_ACCESS"
+   };
+   epicsShareDef READONLY char *dbf_text_invalid = "DBF_invalid";
+   epicsShareDef READONLY short dbf_text_dim = (sizeof dbf_text) / (sizeof(char *));
 #endif
 
 #ifndef DB_TEXT_GLBLSOURCE
-    epicsShareExtern READONLY char	*dbr_text[LAST_BUFFER_TYPE+1], *dbr_text_invalid;
-    epicsShareExtern READONLY short	dbr_text_dim;
+   epicsShareExtern READONLY char *dbr_text[LAST_BUFFER_TYPE + 1], *dbr_text_invalid;
+   epicsShareExtern READONLY short dbr_text_dim;
 #else
-    epicsShareDef READONLY char *dbr_text[LAST_BUFFER_TYPE+1] = {
-	"DBR_STRING",
-	"DBR_SHORT",
-	"DBR_FLOAT",
-	"DBR_ENUM",
-	"DBR_CHAR",
-	"DBR_LONG",
-	"DBR_DOUBLE",
-	"DBR_STS_STRING",
-	"DBR_STS_SHORT",
-	"DBR_STS_FLOAT",
-	"DBR_STS_ENUM",
-	"DBR_STS_CHAR",
-	"DBR_STS_LONG",
-	"DBR_STS_DOUBLE",
-	"DBR_TIME_STRING",
-	"DBR_TIME_SHORT",
-	"DBR_TIME_FLOAT",
-	"DBR_TIME_ENUM",
-	"DBR_TIME_CHAR",
-	"DBR_TIME_LONG",
-	"DBR_TIME_DOUBLE",
-	"DBR_GR_STRING",
-	"DBR_GR_SHORT",
-	"DBR_GR_FLOAT",
-	"DBR_GR_ENUM",
-	"DBR_GR_CHAR",
-	"DBR_GR_LONG",
-	"DBR_GR_DOUBLE",
-	"DBR_CTRL_STRING",
-	"DBR_CTRL_SHORT",
-	"DBR_CTRL_FLOAT",
-	"DBR_CTRL_ENUM",
-	"DBR_CTRL_CHAR",
-	"DBR_CTRL_LONG",
-	"DBR_CTRL_DOUBLE",
-	"DBR_PUT_ACKT",
-	"DBR_PUT_ACKS",
-	"DBR_STSACK_STRING",
-	"DBR_CLASS_NAME",
-    };
-    epicsShareDef READONLY char * dbr_text_invalid = "DBR_invalid";
-    epicsShareDef READONLY short   dbr_text_dim = (sizeof dbr_text)/(sizeof (char *)) + 1;
+   epicsShareDef READONLY char *dbr_text[LAST_BUFFER_TYPE + 1] = {
+      "DBR_STRING",
+      "DBR_SHORT",
+      "DBR_FLOAT",
+      "DBR_ENUM",
+      "DBR_CHAR",
+      "DBR_LONG",
+      "DBR_DOUBLE",
+      "DBR_STS_STRING",
+      "DBR_STS_SHORT",
+      "DBR_STS_FLOAT",
+      "DBR_STS_ENUM",
+      "DBR_STS_CHAR",
+      "DBR_STS_LONG",
+      "DBR_STS_DOUBLE",
+      "DBR_TIME_STRING",
+      "DBR_TIME_SHORT",
+      "DBR_TIME_FLOAT",
+      "DBR_TIME_ENUM",
+      "DBR_TIME_CHAR",
+      "DBR_TIME_LONG",
+      "DBR_TIME_DOUBLE",
+      "DBR_GR_STRING",
+      "DBR_GR_SHORT",
+      "DBR_GR_FLOAT",
+      "DBR_GR_ENUM",
+      "DBR_GR_CHAR",
+      "DBR_GR_LONG",
+      "DBR_GR_DOUBLE",
+      "DBR_CTRL_STRING",
+      "DBR_CTRL_SHORT",
+      "DBR_CTRL_FLOAT",
+      "DBR_CTRL_ENUM",
+      "DBR_CTRL_CHAR",
+      "DBR_CTRL_LONG",
+      "DBR_CTRL_DOUBLE",
+      "DBR_PUT_ACKT",
+      "DBR_PUT_ACKS",
+      "DBR_STSACK_STRING",
+      "DBR_CLASS_NAME",
+   };
+   epicsShareDef READONLY char *dbr_text_invalid = "DBR_invalid";
+   epicsShareDef READONLY short dbr_text_dim = (sizeof dbr_text) / (sizeof(char *)) + 1;
 #endif
 
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* INCLdb_accessh */
+#endif                          /* INCLdb_accessh */

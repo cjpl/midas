@@ -77,7 +77,7 @@
 #endif
 
 #ifndef STDC
-#  ifndef const /* cannot use !defined(STDC) && !defined(const) on Mac */
+#  ifndef const                 /* cannot use !defined(STDC) && !defined(const) on Mac */
 #    define const
 #  endif
 #endif
@@ -98,7 +98,7 @@
 
 /* Maximum value for windowBits in deflateInit2 and inflateInit2 */
 #ifndef MAX_WBITS
-#  define MAX_WBITS   15 /* 32K LZ77 window */
+#  define MAX_WBITS   15        /* 32K LZ77 window */
 #endif
 
 /* The memory requirements for deflate are (in bytes):
@@ -116,7 +116,7 @@
 
                         /* Type declarations */
 
-#ifndef OF /* function prototypes */
+#ifndef OF                      /* function prototypes */
 #  ifdef STDC
 #    define OF(args)  args
 #  else
@@ -149,27 +149,27 @@
 #   define FAR
 #endif
 
-typedef unsigned char  Byte;  /* 8 bits */
-typedef unsigned int   uInt;  /* 16 bits or more */
-typedef unsigned long  uLong; /* 32 bits or more */
+typedef unsigned char Byte;     /* 8 bits */
+typedef unsigned int uInt;      /* 16 bits or more */
+typedef unsigned long uLong;    /* 32 bits or more */
 
 #if defined(__BORLANDC__) && defined(SMALL_MEDIUM)
    /* Borland C/C++ ignores FAR inside typedef */
 #  define Bytef Byte FAR
 #else
-   typedef Byte  FAR Bytef;
+typedef Byte FAR Bytef;
 #endif
-typedef char  FAR charf;
-typedef int   FAR intf;
-typedef uInt  FAR uIntf;
+typedef char FAR charf;
+typedef int FAR intf;
+typedef uInt FAR uIntf;
 typedef uLong FAR uLongf;
 
 #ifdef STDC
-   typedef void FAR *voidpf;
-   typedef void     *voidp;
+typedef void FAR *voidpf;
+typedef void *voidp;
 #else
-   typedef Byte FAR *voidpf;
-   typedef Byte     *voidp;
+typedef Byte FAR *voidpf;
+typedef Byte *voidp;
 #endif
 
 
@@ -181,4 +181,4 @@ typedef uLong FAR uLongf;
 #  define EXPORT
 #endif
 
-#endif /* _ZCONF_H */
+#endif                          /* _ZCONF_H */

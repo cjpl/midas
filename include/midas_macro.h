@@ -6,6 +6,9 @@
   Contents:     C macros for writing a MIDAS frontend
 
   $Log$
+  Revision 1.3  2004/01/08 08:40:09  midas
+  Implemented standard indentation
+
   Revision 1.2  1998/10/12 12:19:01  midas
   Added Log tag in header
 
@@ -23,7 +26,7 @@
 BOOL frontend_call_loop = FALSE;
 INT event_buffer_size = DEFAULT_EVENT_BUFFER_SIZE;
 HNDLE hdb;
-INT _crate=0;
+INT _crate = 0;
 
 #define name(x) char *frontend_name = #x; char *frontend_file_name = __FILE__;
 #define display(s) INT display_period = s*1000;
@@ -33,11 +36,11 @@ TRIGGER_SETTINGS trigger_settings;
 #endif
 
 #ifdef SCALER_SETTINGS_DEFINED
-SCALER_SETTINGS  scaler_settings;
+SCALER_SETTINGS scaler_settings;
 #endif
 
 #ifdef EXP_PARAM_DEFINED
-EXP_PARAM        exp_param;
+EXP_PARAM exp_param;
 #endif
 
 /*-- Function declarations -----------------------------------------*/
@@ -92,39 +95,37 @@ INT poll_event(INT source, INT count, BOOL test)
    is available. If test equals TRUE, don't return. The test
    flag is used to time the polling */
 {
-INT i, lam;
+   INT i, lam;
 
-  for (i=0 ; i<count ; i++)
-    {
-    cam_lam_read(source >> 24, &lam);
-    if (lam)
-      if (!test)
-        return TRUE;
-    }
+   for (i = 0; i < count; i++) {
+      cam_lam_read(source >> 24, &lam);
+      if (lam)
+         if (!test)
+            return TRUE;
+   }
 
-  return FALSE;
+   return FALSE;
 }
 
 /*-- Interrupt configuration for trigger event ---------------------*/
 
 INT interrupt_configure(INT cmd, INT source, PTYPE adr)
 {
-  switch(cmd)
-    {
-    case CMD_INTERRUPT_ENABLE:
+   switch (cmd) {
+   case CMD_INTERRUPT_ENABLE:
       cam_interrupt_enable();
       break;
-    case CMD_INTERRUPT_DISABLE:
+   case CMD_INTERRUPT_DISABLE:
       cam_interrupt_disable();
       break;
-    case CMD_INTERRUPT_ATTACH:
-      cam_interrupt_attach((void (*)())adr);
+   case CMD_INTERRUPT_ATTACH:
+      cam_interrupt_attach((void (*)()) adr);
       break;
-    case CMD_INTERRUPT_DETACH:
+   case CMD_INTERRUPT_DETACH:
       cam_interrupt_detach();
       break;
-    }
-  return SUCCESS;
+   }
+   return SUCCESS;
 }
 
 /*-- trigger settings callback -------------------------------------*/
@@ -134,7 +135,7 @@ void trigger_update(void);
 
 void trigger_upd(INT hDB, INT hKey)
 {
-  trigger_update();
+   trigger_update();
 }
 #endif
 
@@ -146,69 +147,58 @@ void trigger_upd(INT hDB, INT hKey)
 void user_init(void);
 void user_exit(void);
 
-INT frontend_init() 
+INT frontend_init()
 {
-HNDLE hkey;
+   HNDLE hkey;
 #ifdef EXP_PARAM_DEFINED
-EXP_PARAM_STR(exp_param_str);
+   EXP_PARAM_STR(exp_param_str);
 #endif
 #ifdef TRIGGER_SETTINGS_DEFINED
-TRIGGER_SETTINGS_STR(trigger_settings_str);
+   TRIGGER_SETTINGS_STR(trigger_settings_str);
 #endif
 #ifdef SCALER_SETTINGS_STR
-SCALER_SETTINGS_STR(scaler_settings_str);
+   SCALER_SETTINGS_STR(scaler_settings_str);
 #endif
 
-  cm_get_experiment_database(&hdb, &hkey);
+   cm_get_experiment_database(&hdb, &hkey);
 
 #ifdef EXP_PARAM_DEFINED
-  db_create_record(hdb, 0, "/Experiment/Run Parameters",
-                   strcomb(exp_param_str));
-  db_find_key(hdb, 0, "/Experiment/Run Parameters", &hkey);
-  if (db_open_record(hdb, hkey, &exp_param,
-        sizeof(exp_param),
-        MODE_READ, NULL, NULL) != DB_SUCCESS)
-    {
-    cm_msg(MERROR, "frontend_init",
-           "Cannot open Run Parameters in ODB");
-    return -1;
-    }
+   db_create_record(hdb, 0, "/Experiment/Run Parameters", strcomb(exp_param_str));
+   db_find_key(hdb, 0, "/Experiment/Run Parameters", &hkey);
+   if (db_open_record(hdb, hkey, &exp_param,
+                      sizeof(exp_param), MODE_READ, NULL, NULL) != DB_SUCCESS) {
+      cm_msg(MERROR, "frontend_init", "Cannot open Run Parameters in ODB");
+      return -1;
+   }
 #endif
 #ifdef TRIGGER_SETTINGS_DEFINED
-  db_create_record(hdb, 0, "/Equipment/Trigger/Settings",
-                   strcomb(trigger_settings_str));
-  db_find_key(hdb, 0, "/Equipment/Trigger/Settings", &hkey);
-  if (db_open_record(hdb, hkey, &trigger_settings,
-        sizeof(trigger_settings), MODE_READ,
-        trigger_upd, NULL) != DB_SUCCESS)
-    {
-    cm_msg(MERROR, "frontend_init",
-           "Cannot open Trigger Settings in ODB");
-    return -1;
-    }
+   db_create_record(hdb, 0, "/Equipment/Trigger/Settings", strcomb(trigger_settings_str));
+   db_find_key(hdb, 0, "/Equipment/Trigger/Settings", &hkey);
+   if (db_open_record(hdb, hkey, &trigger_settings,
+                      sizeof(trigger_settings), MODE_READ,
+                      trigger_upd, NULL) != DB_SUCCESS) {
+      cm_msg(MERROR, "frontend_init", "Cannot open Trigger Settings in ODB");
+      return -1;
+   }
 #endif
 #ifdef SCALER_SETTINGS_DEFINED
-  db_create_record(hdb, 0, "/Equipment/Scaler/Settings",
-                   strcomb(scaler_settings_str));
-  db_find_key(hdb, 0, "/Equipment/Scaler/Settings", &hkey);
-  if (db_open_record(hdb, hkey, &scaler_settings,
-        sizeof(scaler_settings),
-        MODE_READ, NULL, NULL) != DB_SUCCESS)
-    {
-    cm_msg(MERROR, "frontend_init",
-           "Cannot open Scaler Settings in ODB");
-    return -1;
-    }
+   db_create_record(hdb, 0, "/Equipment/Scaler/Settings", strcomb(scaler_settings_str));
+   db_find_key(hdb, 0, "/Equipment/Scaler/Settings", &hkey);
+   if (db_open_record(hdb, hkey, &scaler_settings,
+                      sizeof(scaler_settings), MODE_READ, NULL, NULL) != DB_SUCCESS) {
+      cm_msg(MERROR, "frontend_init", "Cannot open Scaler Settings in ODB");
+      return -1;
+   }
 #endif
 
-  user_init();
-  return SUCCESS;
+   user_init();
+   return SUCCESS;
 }
 
-INT frontend_exit() 
+INT frontend_exit()
 {
-  user_exit();
-  return SUCCESS;
+   user_exit();
+   return SUCCESS;
 }
 
 #define init_begin   void user_init() {
@@ -231,7 +221,7 @@ INT frontend_exit()
 
 INT frontend_loop()
 {
-  return SUCCESS;
+   return SUCCESS;
 }
 
 /*-- Event readout -------------------------------------------------*/

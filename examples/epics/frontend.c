@@ -7,6 +7,9 @@
                 through EPICS channel access.
 
   $Log$
+  Revision 1.8  2004/01/08 08:40:08  midas
+  Implemented standard indentation
+
   Revision 1.7  2002/05/10 00:42:32  pierre
   additional arg for BUS_DRIVER
 
@@ -56,7 +59,7 @@ INT display_period = 1000;
 INT max_event_size = 10000;
 
 /* buffer size to hold events */
-INT event_buffer_size = 10*10000;
+INT event_buffer_size = 10 * 10000;
 
 /*-- Equipment list ------------------------------------------------*/
 
@@ -91,93 +94,98 @@ by EPICS.
 
 /* device driver list */
 DEVICE_DRIVER epics_driver[] = {
-  { "Beamline", epics_ca, 10, NULL, 0, CMD_SET_LABEL }, /* disable CMD_SET_LABEL */
-  { "" }
+   {"Beamline", epics_ca, 10, NULL, 0, CMD_SET_LABEL},  /* disable CMD_SET_LABEL */
+   {""}
 };
 
 EQUIPMENT equipment[] = {
 
-  { "Beamline",           /* equipment name */
-    3, 0,                 /* event ID, trigger mask */
-    "SYSTEM",             /* event buffer */
-    EQ_SLOW,              /* equipment type */
-    0,                    /* event source */
-    "FIXED",              /* format */
-    TRUE,                 /* enabled */
-    RO_RUNNING |
-    RO_TRANSITIONS,       /* read when running and on transitions */
-    60000,                /* read every 60 sec */
-    0,                    /* stop run after this event limit */
-    0,                    /* number of sub events */
-    1,                    /* log history every event */
+   {"Beamline",                 /* equipment name */
+    3, 0,                       /* event ID, trigger mask */
+    "SYSTEM",                   /* event buffer */
+    EQ_SLOW,                    /* equipment type */
+    0,                          /* event source */
+    "FIXED",                    /* format */
+    TRUE,                       /* enabled */
+    RO_RUNNING | RO_TRANSITIONS,        /* read when running and on transitions */
+    60000,                      /* read every 60 sec */
+    0,                          /* stop run after this event limit */
+    0,                          /* number of sub events */
+    1,                          /* log history every event */
     "", "", "",
-    cd_gen_read,          /* readout routine */
-    cd_gen,               /* class driver main routine */
-    epics_driver,         /* device driver list */
-    NULL,                 /* init string */
-  },
+    cd_gen_read,                /* readout routine */
+    cd_gen,                     /* class driver main routine */
+    epics_driver,               /* device driver list */
+    NULL,                       /* init string */
+    },
 
-  { "" }
+   {""}
 };
 
 /*-- Dummy routines ------------------------------------------------*/
 
-INT  poll_event(INT source[], INT count, BOOL test) {return 1;};
-INT  interrupt_configure(INT cmd, INT source[], PTYPE adr) {return 1;};
+INT poll_event(INT source[], INT count, BOOL test)
+{
+   return 1;
+};
+INT interrupt_configure(INT cmd, INT source[], PTYPE adr)
+{
+   return 1;
+};
 
 /*-- Frontend Init -------------------------------------------------*/
 
 INT frontend_init()
 {
-  /* anable/disable certain command in device driver */
+   /* anable/disable certain command in device driver */
 
 
-  return CM_SUCCESS;
+   return CM_SUCCESS;
 }
 
 /*-- Frontend Exit -------------------------------------------------*/
 
 INT frontend_exit()
 {
-  return CM_SUCCESS;
+   return CM_SUCCESS;
 }
 
 /*-- Frontend Loop -------------------------------------------------*/
 
 INT frontend_loop()
 {
-  /* slow down frontend not to eat all CPU cycles */
-  ss_sleep(200);
+   /* slow down frontend not to eat all CPU cycles */
+   ss_sleep(200);
 
-  return CM_SUCCESS;
+   return CM_SUCCESS;
 }
 
 /*-- Begin of Run --------------------------------------------------*/
 
 INT begin_of_run(INT run_number, char *error)
 {
-  return CM_SUCCESS;
+   return CM_SUCCESS;
 }
 
 /*-- End of Run ----------------------------------------------------*/
 
 INT end_of_run(INT run_number, char *error)
 {
-  return CM_SUCCESS;
+   return CM_SUCCESS;
 }
 
 /*-- Pause Run -----------------------------------------------------*/
 
 INT pause_run(INT run_number, char *error)
 {
-  return CM_SUCCESS;
+   return CM_SUCCESS;
 }
 
 /*-- Resuem Run ----------------------------------------------------*/
 
 INT resume_run(INT run_number, char *error)
 {
-  return CM_SUCCESS;
+   return CM_SUCCESS;
 }
 
 /*------------------------------------------------------------------*/

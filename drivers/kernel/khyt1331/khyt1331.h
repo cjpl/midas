@@ -6,6 +6,9 @@
   Contents:     IOCTL operation code definitions
 
   $Log$
+  Revision 1.2  2004/01/08 08:40:08  midas
+  Implemented standard indentation
+
   Revision 1.1  2001/10/03 14:45:11  midas
   Separated IOCTL functions code into header file
 
@@ -45,9 +48,7 @@
 #define EINVAL                22
 #endif
 
-typedef struct
-  {
-  int c, n, a, f, x, q, r, m;
-  unsigned long d;
-  } CNAF_BUF;
-
+typedef struct {
+   int c, n, a, f, x, q, r, m;
+   unsigned long d;
+} CNAF_BUF;

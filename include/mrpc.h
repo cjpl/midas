@@ -7,6 +7,9 @@
   Contents:     Symbolic constants for internal RPC functions
 
   $Log$
+  Revision 1.19  2004/01/08 08:40:09  midas
+  Implemented standard indentation
+
   Revision 1.18  2004/01/08 06:36:53  pierre
   Doxygen the file
 
@@ -191,7 +194,7 @@ routine IDs for RPC calls
 /*------------------------------------------------------------------*/
 
 /**dox***************************************************************/
-/** @} */// end of rpcdefineh
+                                                      /** @} */// end of rpcdefineh
 
 /**dox***************************************************************/
-/** @} */// end of rpcincludecode
+                                                      /** @} */// end of rpcincludecode

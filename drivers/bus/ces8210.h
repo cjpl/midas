@@ -68,25 +68,25 @@
  *---------------------------------------------------------------------------*/
 #ifndef _ces8210_h_
 #define _ces8210_h_
-#define BASE	       0x00800000	             /* camac base address */
-#define A32D24	       0xf0000000              /* A32D24 camac base address */
-#define A32D16	       0xf0000002              /* A32D16 camac base address */
-#define CSR_OFFSET     0x0000e800              /* camac control and status reg */
-#define CAR_OFFSET     0x0000e820              /* Crate Address Register */
-#define BTB_OFFSET     0x0000e824              /* on-line status (R) */
+#define BASE	       0x00800000       /* camac base address */
+#define A32D24	       0xf0000000       /* A32D24 camac base address */
+#define A32D16	       0xf0000002       /* A32D16 camac base address */
+#define CSR_OFFSET     0x0000e800       /* camac control and status reg */
+#define CAR_OFFSET     0x0000e820       /* Crate Address Register */
+#define BTB_OFFSET     0x0000e824       /* on-line status (R) */
 #define INT_OFFSET     0x0000e810
-#define GL             0x0000e828              /* GL register */
+#define GL             0x0000e828       /* GL register */
 
 #define GLR     BASE |     GL     | A32D24
 #define CSR     BASE | CSR_OFFSET | A32D16
 #define CAR     BASE | CAR_OFFSET | A32D16
 #define BTB     BASE | BTB_OFFSET | A32D16
-#define IFR     BASE | INT_OFFSET | A32D16 
+#define IFR     BASE | INT_OFFSET | A32D16
 /* Control and Status Register */
-#define IT4	  0x0001                          /* front panel int IT4 status */
-#define IT2	  0x0002	                        /* front panel int IT2 status */
-#define MIT4	0x0004		                      /* IT4 mask 0 = enabled */
-#define MIT2	0x0008		                      /* IT2 mask 0 = enabled */
+#define IT4	  0x0001        /* front panel int IT4 status */
+#define IT2	  0x0002        /* front panel int IT2 status */
+#define MIT4	0x0004          /* IT4 mask 0 = enabled */
+#define MIT2	0x0008          /* IT2 mask 0 = enabled */
 #endif
 
 /*-----------------------------------------------------------------*/
@@ -228,14 +228,14 @@
 							((WORD *) _d)++;}\
 					    } while (rr > 0);}\
 				      }
-					  
+
 #define CAM24_I(_ext,_n,_a,_f,_d){\
 				    *_ext &= 0xffff0000;\
 				    CAM_N(_ext,_n);\
 				    CAM_A(_ext,_a);\
 				    CAM_F(_ext,_f);\
 	         *(DWORD *) _d = *(DWORD *) *_ext;}
-					    
+
 #define CAM24_IQX(_ext,_n,_a,_f,_d,_q,_x){\
 					    CAM24_I(_ext,_n,_a,_f,_d);\
 					    CAM_QXCHK(_q,_x);}
@@ -384,7 +384,7 @@
 				  }
 
 /*-----------------------------------------------------------------*/
-void cdreg (int *ext, int b, int c, int n, int a);
-void cfsa (int f, int ext, int *data, int *q);
-void cssa (int f, int ext, short *data, int *q);
+void cdreg(int *ext, int b, int c, int n, int a);
+void cfsa(int f, int ext, int *data, int *q);
+void cssa(int f, int ext, short *data, int *q);
 void ctstat(int *istat);

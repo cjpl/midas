@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.124  2004/01/08 08:40:09  midas
+  Implemented standard indentation
+
   Revision 1.123  2004/01/08 06:29:07  pierre
   Doxygen the file
 
@@ -719,7 +722,7 @@ Read - On flags */
 #define RO_ODB        (1<<8)   /**< Submit data to ODB only */
 
 /**dox***************************************************************/
-/** @} */// end of mdefineh
+                                                      /** @} */// end of mdefineh
 
 /**
 special characters */
@@ -806,7 +809,7 @@ Align macro for variable data alignment */
 #define VALIGN(adr,align)  (((PTYPE) (adr)+align-1) & ~(align-1))
 
 /**dox***************************************************************/
-/** @} */// end of mmacroh
+                                                      /** @} */// end of mmacroh
 
 /**dox***************************************************************/
 /** @addtogroup mdefineh
@@ -837,7 +840,7 @@ System message types */
 #define MCALL              MT_CALL,  __FILE__, __LINE__ /**< info message for telephone call */
 
 /**dox***************************************************************/
-/** @} */// end of mdefineh
+                                                      /** @} */// end of mdefineh
 
 /**dox***************************************************************/
 /** @addtogroup mdeferrorh
@@ -862,7 +865,7 @@ System message types */
 #define CM_DEFERRED_TRANSITION      110 /**< - */
 #define CM_TRANSITION_IN_PROGRESS   111 /**< - */
 /**dox***************************************************************/
-/** @} */// end of err21
+                                                      /** @} */// end of err21
 
 /**dox***************************************************************/
 /**
@@ -887,7 +890,7 @@ System message types */
 #define BM_INVALID_MIXING           217   /**< - */
 #define BM_NO_SHM                   218   /**< - */
 /**dox***************************************************************/
-/** @} */// end of group 22
+                                                      /** @} */// end of group 22
 
 /**dox***************************************************************/
 /**  @defgroup err23 Online Database error codes 
@@ -917,7 +920,7 @@ System message types */
 #define DB_CORRUPTED                323   /**< - */
 #define DB_STRUCT_MISMATCH          324   /**< - */
 /**dox***************************************************************/
-/** @} */// end of group 23
+                                                      /** @} */// end of group 23
 
 /**dox***************************************************************/
 /**  @defgroup err24 System Services error code
@@ -950,7 +953,7 @@ System message types */
 #define SS_INVALID_FORMAT           426   /**< - */
 #define SS_NO_ROOT                  427   /**< - */
 /**dox***************************************************************/
-/** @} */// end of group 24
+                                                      /** @} */// end of group 24
 
 /**dox***************************************************************/
 /**  @defgroup err25 Remote Procedure Calls error codes
@@ -968,7 +971,7 @@ System message types */
 #define RPC_NO_MEMORY               510   /**< - */
 #define RPC_DOUBLE_DEFINED          511   /**< - */
 /**dox***************************************************************/
-/** @} */// end of group 25
+                                                      /** @} */// end of group 25
 
 /**dox***************************************************************/
 /**  @defgroup err26 Other errors
@@ -1057,10 +1060,10 @@ macros for bus driver access */
 #define BD_WRITES(s)       info->bd(CMD_WRITE, info->bd_info, s)
 
 /**dox***************************************************************/
-/** @} */// end of 26
+                                                      /** @} */// end of 26
 
 /**dox***************************************************************/
-/** @} */// end of mdeferrorh
+                                                      /** @} */// end of mdeferrorh
 
 
 #define ANA_CONTINUE                  1
@@ -1224,7 +1227,7 @@ typedef struct {
 } KEYLIST;
 
 /**dox***************************************************************/
-/** @} */// end of msectionh
+                                                      /** @} */// end of msectionh
 
 /*---- Equipment ---------------------------------------------------*/
 
@@ -1302,7 +1305,7 @@ typedef struct eqpmnt {
    EQUIPMENT_STATS stats;
 } EQUIPMENT;
 /**dox***************************************************************/
-/** @} */// end of mequipmenth
+                                                      /** @} */// end of mequipmenth
 
 /*---- Banks -------------------------------------------------------*/
 
@@ -1347,7 +1350,7 @@ typedef struct {
    HNDLE def_key;                      /**< - */
 } BANK_LIST;
 /**dox***************************************************************/
-/** @} */// end of mbank
+                                                      /** @} */// end of mbank
 
 /*---- Analyzer request --------------------------------------------*/
 /**dox***************************************************************/
@@ -1430,7 +1433,7 @@ typedef struct {
 #define DEF_TEST(t) extern ANA_TEST t;
 #endif
 /**dox***************************************************************/
-/** @} */// end of mbank
+                                                      /** @} */// end of mbank
 
 /*---- History structures ------------------------------------------*/
 
@@ -1473,7 +1476,7 @@ typedef struct {
    DWORD def_offset;
 } HISTORY;
 /**dox***************************************************************/
-/** @} */// end of mhistory
+                                                      /** @} */// end of mhistory
 
 /*---- ODB runinfo -------------------------------------------------*/
 
@@ -1510,7 +1513,7 @@ typedef struct {
 "",\
 NULL }
 /**dox***************************************************************/
-/** @} */// end of mhistory
+                                                      /** @} */// end of mhistory
 
 /*---- Alarm system ------------------------------------------------*/
 /**dox***************************************************************/
@@ -1629,7 +1632,7 @@ NULL }
 NULL }
 
 /**dox***************************************************************/
-/** @} */// end of malarmh
+                                                      /** @} */// end of malarmh
 
 /**dox***************************************************************/
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
@@ -2154,4 +2157,4 @@ extern "C" {
 #endif                          /* _MIDAS_H */
 /**dox***************************************************************/
 #endif                          /* DOXYGEN_SHOULD_SKIP_THIS */
-/**dox***************************************************************//** @} */// end of midasincludecode
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          /**dox***************************************************************//** @} */// end of midasincludecode

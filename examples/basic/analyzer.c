@@ -13,6 +13,9 @@
                 written analyzers that don't use the CERN library.
 
   $Log$
+  Revision 1.3  2004/01/08 08:40:08  midas
+  Implemented standard indentation
+
   Revision 1.2  1998/10/12 12:18:58  midas
   Added Log tag in header
 
@@ -28,38 +31,38 @@
 char *analyzer_name = "Analyzer";
 
 /* analyzer_loop is called with this interval in ms (0 to disable)  */
-INT  analyzer_loop_period = 0;
+INT analyzer_loop_period = 0;
 
 /*-- Function declarations -----------------------------------------*/
 
-INT  analyze_trigger_event(char*);
-INT  analyze_scaler_event(char*);
+INT analyze_trigger_event(char *);
+INT analyze_scaler_event(char *);
 
 /*-- Event request list --------------------------------------------*/
 
 ANALYZE_REQUEST analyze_request[] = {
 
-  { "Trigger",            /* event name */
-    1,                    /* event ID */
-    TRIGGER_ALL,          /* trigger mask */
-    GET_SOME,             /* get some events */
-    "SYSTEM",             /* event buffer */
-    TRUE,                 /* enabled */
-    "", "", 
-    analyze_trigger_event,/* analyzer routine */
-  },
+   {"Trigger",                  /* event name */
+    1,                          /* event ID */
+    TRIGGER_ALL,                /* trigger mask */
+    GET_SOME,                   /* get some events */
+    "SYSTEM",                   /* event buffer */
+    TRUE,                       /* enabled */
+    "", "",
+    analyze_trigger_event,      /* analyzer routine */
+    },
 
-  { "Scaler",             /* equipment name */
-    2,                    /* event ID */
-    TRIGGER_ALL,          /* trigger mask */
-    GET_ALL,              /* get all events */
-    "SYSTEM",             /* event buffer */
-    TRUE,                 /* enabled */
-    "", "", 
-    analyze_scaler_event  /* analyzer routine */
-  },
+   {"Scaler",                   /* equipment name */
+    2,                          /* event ID */
+    TRIGGER_ALL,                /* trigger mask */
+    GET_ALL,                    /* get all events */
+    "SYSTEM",                   /* event buffer */
+    TRUE,                       /* enabled */
+    "", "",
+    analyze_scaler_event        /* analyzer routine */
+    },
 
-  { "" }
+   {""}
 };
 
 /********************************************************************\
@@ -89,49 +92,49 @@ ANALYZE_REQUEST analyze_request[] = {
 
 INT analyzer_init()
 {
-  return CM_SUCCESS;
+   return CM_SUCCESS;
 }
 
 /*-- Analyzer Exit -------------------------------------------------*/
 
 INT analyzer_exit()
 {
-  return CM_SUCCESS;
+   return CM_SUCCESS;
 }
 
 /*-- Begin of Run --------------------------------------------------*/
 
 INT ana_begin_of_run(INT run_number, char *error)
 {
-  return CM_SUCCESS;
+   return CM_SUCCESS;
 }
 
 /*-- End of Run ----------------------------------------------------*/
 
 INT ana_end_of_run(INT run_number, char *error)
 {
-  return CM_SUCCESS;
+   return CM_SUCCESS;
 }
 
 /*-- Pause Run -----------------------------------------------------*/
 
 INT ana_pause_run(INT run_number, char *error)
 {
-  return CM_SUCCESS;
+   return CM_SUCCESS;
 }
 
 /*-- Resuem Run ----------------------------------------------------*/
 
 INT ana_resume_run(INT run_number, char *error)
 {
-  return CM_SUCCESS;
+   return CM_SUCCESS;
 }
 
 /*-- Analyzer Loop -------------------------------------------------*/
 
 INT analyzer_loop()
 {
-  return CM_SUCCESS;
+   return CM_SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
@@ -146,17 +149,17 @@ INT analyzer_loop()
 
 INT analyze_trigger_event(char *pevent)
 {
-  if (SERIAL_NUMBER(pevent) % 1000 == 0)
-    printf("Trigger: %d\r", SERIAL_NUMBER(pevent));
+   if (SERIAL_NUMBER(pevent) % 1000 == 0)
+      printf("Trigger: %d\r", SERIAL_NUMBER(pevent));
 
-  return CM_SUCCESS;
+   return CM_SUCCESS;
 }
 
 /*-- Scaler event --------------------------------------------------*/
 
 INT analyze_scaler_event(char *pevent)
 {
-  printf("\nScaler: %d\n", SERIAL_NUMBER(pevent)); 
+   printf("\nScaler: %d\n", SERIAL_NUMBER(pevent));
 
-  return CM_SUCCESS;
+   return CM_SUCCESS;
 }

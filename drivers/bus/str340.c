@@ -134,105 +134,102 @@ extern char *_sfi;
 #define MERROR    __FILE__
 #define MINFO     __FILE__
 
-#endif /* _MIDAS_H */
+#endif                          /* _MIDAS_H */
 
 /*------------------------------------------------------------------*/
 
 /* SFI base address when mapped to the local address space */
-char          *_sfi;
+char *_sfi;
 
 /* Unit descriptors for Bit 3 library */
-bt_desc_t     btd, btd_lm;
+bt_desc_t btd, btd_lm;
 
 /* remote RAM buffer (writable by VME master) */
 #define REMOTE_RAM_SIZE 0x10000
-char          *remote_ram_buffer;
+char *remote_ram_buffer;
 
 /*------------------------------------------------------------------*/
 
 int fb_init()
 {
-bt_error_t      status;            /* Bit 3 library error return type */
-char            devname[BT_MAX_DEV_NAME];    /* Device to open */
-bt_devdata_t    flag;
+   bt_error_t status;           /* Bit 3 library error return type */
+   char devname[BT_MAX_DEV_NAME];       /* Device to open */
+   bt_devdata_t flag;
 
-  /* Open the device in A24 space */
-  bt_gen_name(0, BT_DEV_A24, devname, BT_MAX_DEV_NAME);
-  status = bt_open(&btd, devname, BT_RDWR);
-  if (status != BT_SUCCESS) 
-    {
-    cm_msg(MERROR, "fb_init", "Cannot open Bit3 device driver");
-    return FALSE;
-    }
-  bt_init(btd);
-  bt_clrerr(btd);
-  
-  /* map SFI memory */
-  status = bt_mmap(btd, &_sfi, SFI_ADDRESS, SFI_SIZE, BT_RDWR, BT_SWAP_DEFAULT);
-  if (status != BT_SUCCESS) 
-    {
-    cm_msg(MERROR, "fb_init", "Cannot map VME memory");
-    bt_close(btd);
-    return FALSE;
-    }
+   /* Open the device in A24 space */
+   bt_gen_name(0, BT_DEV_A24, devname, BT_MAX_DEV_NAME);
+   status = bt_open(&btd, devname, BT_RDWR);
+   if (status != BT_SUCCESS) {
+      cm_msg(MERROR, "fb_init", "Cannot open Bit3 device driver");
+      return FALSE;
+   }
+   bt_init(btd);
+   bt_clrerr(btd);
 
-  /* Open the device in local memory */
-  bt_gen_name(0, BT_DEV_LM, devname, BT_MAX_DEV_NAME);
-  status = bt_open(&btd_lm, devname, BT_RDWR);
-  if (status != BT_SUCCESS) 
-    {
-    cm_msg(MERROR, "fb_init", "Cannot open Bit3 device for local memory");
-    return FALSE;
-    }
-  bt_clrerr(btd_lm);
+   /* map SFI memory */
+   status = bt_mmap(btd, &_sfi, SFI_ADDRESS, SFI_SIZE, BT_RDWR, BT_SWAP_DEFAULT);
+   if (status != BT_SUCCESS) {
+      cm_msg(MERROR, "fb_init", "Cannot map VME memory");
+      bt_close(btd);
+      return FALSE;
+   }
 
-  /* map local memory */
-  status = bt_mmap(btd_lm, &remote_ram_buffer, 0, REMOTE_RAM_SIZE, BT_RDWR, BT_SWAP_DEFAULT);
-  if (status != BT_SUCCESS) 
-    {
-    cm_msg(MERROR, "fb_init", "Cannot map local memory");
-    bt_close(btd);
-    return FALSE;
-    }
+   /* Open the device in local memory */
+   bt_gen_name(0, BT_DEV_LM, devname, BT_MAX_DEV_NAME);
+   status = bt_open(&btd_lm, devname, BT_RDWR);
+   if (status != BT_SUCCESS) {
+      cm_msg(MERROR, "fb_init", "Cannot open Bit3 device for local memory");
+      return FALSE;
+   }
+   bt_clrerr(btd_lm);
 
-  /* clear local memory */
-  memset(remote_ram_buffer, 0, REMOTE_RAM_SIZE);
+   /* map local memory */
+   status =
+       bt_mmap(btd_lm, &remote_ram_buffer, 0, REMOTE_RAM_SIZE, BT_RDWR, BT_SWAP_DEFAULT);
+   if (status != BT_SUCCESS) {
+      cm_msg(MERROR, "fb_init", "Cannot map local memory");
+      bt_close(btd);
+      return FALSE;
+   }
 
-  /* force D32 mode */
-  bt_get_info(btd, BT_INFO_MMAP_AMOD, &flag);
-  flag = BT_AMOD_A24_SD;
-  bt_set_info(btd, BT_INFO_MMAP_AMOD, flag);
+   /* clear local memory */
+   memset(remote_ram_buffer, 0, REMOTE_RAM_SIZE);
 
-  /* sequencer reset */
-  SFI_OUT(SFI_SEQUENCER_RESET, 0);
+   /* force D32 mode */
+   bt_get_info(btd, BT_INFO_MMAP_AMOD, &flag);
+   flag = BT_AMOD_A24_SD;
+   bt_set_info(btd, BT_INFO_MMAP_AMOD, flag);
 
-  /* arbitration level */
+   /* sequencer reset */
+   SFI_OUT(SFI_SEQUENCER_RESET, 0);
+
+   /* arbitration level */
 //  SFI_OUT(SFI_FASTBUS_ARBITRATION_LEVEL_REGISTER, 0x15);
-  SFI_OUT(SFI_FASTBUS_ARBITRATION_LEVEL_REGISTER, 0xBF);
+   SFI_OUT(SFI_FASTBUS_ARBITRATION_LEVEL_REGISTER, 0xBF);
 
-  /* timeout */
-  SFI_OUT(SFI_FASTBUS_TIMEOUT_REGISTER, 0x73);
-  
-  /* sequencer enable */
-  SFI_OUT(SFI_SEQUENCER_ENABLE, 0);
+   /* timeout */
+   SFI_OUT(SFI_FASTBUS_TIMEOUT_REGISTER, 0x73);
 
-  /* switch off all output */
-  SFI_OUT(SFI_CLEAR_BOTH_LCA1_TEST_REGISTER, 0);
+   /* sequencer enable */
+   SFI_OUT(SFI_SEQUENCER_ENABLE, 0);
 
-  /* clear registers */
-  SFI_OUT(SFI_RESET_REGISTER_GROUP_LCA2, 0);
+   /* switch off all output */
+   SFI_OUT(SFI_CLEAR_BOTH_LCA1_TEST_REGISTER, 0);
 
-  return SUCCESS;
+   /* clear registers */
+   SFI_OUT(SFI_RESET_REGISTER_GROUP_LCA2, 0);
+
+   return SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
 
 void fb_exit()
 {
-  bt_unmmap(btd, _sfi, SFI_SIZE);
-  bt_close(btd);
-  bt_unmmap(btd_lm, remote_ram_buffer, REMOTE_RAM_SIZE);
-  bt_close(btd_lm);
+   bt_unmmap(btd, _sfi, SFI_SIZE);
+   bt_close(btd);
+   bt_unmmap(btd_lm, remote_ram_buffer, REMOTE_RAM_SIZE);
+   bt_close(btd_lm);
 }
 
 /*------------------------------------------------------------------*/
@@ -240,80 +237,77 @@ void fb_exit()
 int fb_reset(void)
 /* reset sequencer after FB failure (like blocktransfer with no data) */
 {
-  SFI_OUT(SFI_SEQUENCER_RESET, 0);
-  SFI_OUT(SFI_SEQUENCER_ENABLE, 0);
-  return SUCCESS;
+   SFI_OUT(SFI_SEQUENCER_RESET, 0);
+   SFI_OUT(SFI_SEQUENCER_ENABLE, 0);
+   return SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
 
-static int fb_fifo_read(DWORD *data)
+static int fb_fifo_read(DWORD * data)
 /* read SFI FIFO and check for error */
 {
-DWORD status;
+   DWORD status;
 
-  /* wait for sequencer done */
-  do
-    {
-    status = SFI_IN(SFI_SEQUENCER_STATUS_REGISTER);
-    
-    if ((status & 0x8001) == 0)
-      /* not initialized */
-      return 0x10000 | (status & 0xFFFF);
+   /* wait for sequencer done */
+   do {
+      status = SFI_IN(SFI_SEQUENCER_STATUS_REGISTER);
 
-    if ((status & 0x8001) == 0x8000)
-      /* bad status */
-      return 0x10000 | (status & 0xFFFF);
+      if ((status & 0x8001) == 0)
+         /* not initialized */
+         return 0x10000 | (status & 0xFFFF);
 
-    if ((status & 0x8001) == 0x8001)
-      {
-      /* OK, check if EMPTY */
-      status = SFI_IN(SFI_SEQUENCER_FIFO_FLAG_AND_ECL_NIM_INPUT_REGISTER);
-      if (status & 0x10)
-        {
-        /* dummy read */
-        status = SFI_IN(SFI_READ_SEQ2VME_FIFO_BASE);
-        /* check again for EMTPY */
-        status = SFI_IN(SFI_SEQUENCER_FIFO_FLAG_AND_ECL_NIM_INPUT_REGISTER);
-        if (status & 0x10)
-          return 0x10000 | (SFI_IN(SFI_SEQUENCER_STATUS_REGISTER) & 0xFFFF);
-        }
-      /* read FIFO */
-      *data = SFI_IN(SFI_READ_SEQ2VME_FIFO_BASE);
-      return SUCCESS;
+      if ((status & 0x8001) == 0x8000)
+         /* bad status */
+         return 0x10000 | (status & 0xFFFF);
+
+      if ((status & 0x8001) == 0x8001) {
+         /* OK, check if EMPTY */
+         status = SFI_IN(SFI_SEQUENCER_FIFO_FLAG_AND_ECL_NIM_INPUT_REGISTER);
+         if (status & 0x10) {
+            /* dummy read */
+            status = SFI_IN(SFI_READ_SEQ2VME_FIFO_BASE);
+            /* check again for EMTPY */
+            status = SFI_IN(SFI_SEQUENCER_FIFO_FLAG_AND_ECL_NIM_INPUT_REGISTER);
+            if (status & 0x10)
+               return 0x10000 | (SFI_IN(SFI_SEQUENCER_STATUS_REGISTER) & 0xFFFF);
+         }
+         /* read FIFO */
+         *data = SFI_IN(SFI_READ_SEQ2VME_FIFO_BASE);
+         return SUCCESS;
       }
-    } while (TRUE);
+   } while (TRUE);
 }
 
 /*------------------------------------------------------------------*/
 
-int fb_frd(int paddr, int saddr, DWORD *data)
+int fb_frd(int paddr, int saddr, DWORD * data)
 /* read data space */
 {
-  SFI_OUT(SFI_WRITE_VME2SEQ_FIFO_BASE + PRIM_DSR, paddr);
-  SFI_OUT(SFI_WRITE_VME2SEQ_FIFO_BASE + SECAD_W, saddr);
-  SFI_OUT(SFI_WRITE_VME2SEQ_FIFO_BASE + RNDM_R_DIS, 0);
+   SFI_OUT(SFI_WRITE_VME2SEQ_FIFO_BASE + PRIM_DSR, paddr);
+   SFI_OUT(SFI_WRITE_VME2SEQ_FIFO_BASE + SECAD_W, saddr);
+   SFI_OUT(SFI_WRITE_VME2SEQ_FIFO_BASE + RNDM_R_DIS, 0);
 
-  return fb_fifo_read(data);
+   return fb_fifo_read(data);
 }
 
 /*------------------------------------------------------------------*/
 
-int fb_frc(int paddr, int saddr, DWORD *data)
+int fb_frc(int paddr, int saddr, DWORD * data)
 /* read control space */
 {
-int status;
+   int status;
 
-  SFI_OUT(SFI_WRITE_VME2SEQ_FIFO_BASE + PRIM_CSR, paddr);
+   SFI_OUT(SFI_WRITE_VME2SEQ_FIFO_BASE + PRIM_CSR, paddr);
 
-  status = SFI_IN(SFI_SEQUENCER_STATUS_REGISTER);
-  if (status & 0x20)
-    cm_msg(MERROR, "fb_frc", "Arbitration error on Primary Address Cycle");
+   status = SFI_IN(SFI_SEQUENCER_STATUS_REGISTER);
+   if (status & 0x20)
+      cm_msg(MERROR, "fb_frc", "Arbitration error on Primary Address Cycle");
 
-  SFI_OUT(SFI_WRITE_VME2SEQ_FIFO_BASE + SECAD_W, saddr);
-  SFI_OUT(SFI_WRITE_VME2SEQ_FIFO_BASE + RNDM_R_DIS, 0);
+   SFI_OUT(SFI_WRITE_VME2SEQ_FIFO_BASE + SECAD_W, saddr);
+   SFI_OUT(SFI_WRITE_VME2SEQ_FIFO_BASE + RNDM_R_DIS, 0);
 
-  return fb_fifo_read(data);
+   return fb_fifo_read(data);
 }
 
 /*------------------------------------------------------------------*/
@@ -321,11 +315,11 @@ int status;
 int fb_fwd(int paddr, int saddr, DWORD data)
 /* write data space */
 {
-  SFI_OUT(SFI_WRITE_VME2SEQ_FIFO_BASE + PRIM_DSR, paddr);
-  SFI_OUT(SFI_WRITE_VME2SEQ_FIFO_BASE + SECAD_W, saddr);
-  SFI_OUT(SFI_WRITE_VME2SEQ_FIFO_BASE + RNDM_W_DIS, data);
+   SFI_OUT(SFI_WRITE_VME2SEQ_FIFO_BASE + PRIM_DSR, paddr);
+   SFI_OUT(SFI_WRITE_VME2SEQ_FIFO_BASE + SECAD_W, saddr);
+   SFI_OUT(SFI_WRITE_VME2SEQ_FIFO_BASE + RNDM_W_DIS, data);
 
-  return SUCCESS;
+   return SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
@@ -333,11 +327,11 @@ int fb_fwd(int paddr, int saddr, DWORD data)
 int fb_fwc(int paddr, int saddr, DWORD data)
 /* write conrol space */
 {
-  SFI_OUT(SFI_WRITE_VME2SEQ_FIFO_BASE + PRIM_CSR, paddr);
-  SFI_OUT(SFI_WRITE_VME2SEQ_FIFO_BASE + SECAD_W, saddr);
-  SFI_OUT(SFI_WRITE_VME2SEQ_FIFO_BASE + RNDM_W_DIS, data);
+   SFI_OUT(SFI_WRITE_VME2SEQ_FIFO_BASE + PRIM_CSR, paddr);
+   SFI_OUT(SFI_WRITE_VME2SEQ_FIFO_BASE + SECAD_W, saddr);
+   SFI_OUT(SFI_WRITE_VME2SEQ_FIFO_BASE + RNDM_W_DIS, data);
 
-  return SUCCESS;
+   return SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
@@ -345,11 +339,11 @@ int fb_fwc(int paddr, int saddr, DWORD data)
 int fb_fwdm(int paddr, int saddr, DWORD data)
 /* write data space broadcast */
 {
-  SFI_OUT(SFI_WRITE_VME2SEQ_FIFO_BASE + PRIM_DSRM, paddr);
-  SFI_OUT(SFI_WRITE_VME2SEQ_FIFO_BASE + SECAD_W, saddr);
-  SFI_OUT(SFI_WRITE_VME2SEQ_FIFO_BASE + RNDM_W_DIS, data);
+   SFI_OUT(SFI_WRITE_VME2SEQ_FIFO_BASE + PRIM_DSRM, paddr);
+   SFI_OUT(SFI_WRITE_VME2SEQ_FIFO_BASE + SECAD_W, saddr);
+   SFI_OUT(SFI_WRITE_VME2SEQ_FIFO_BASE + RNDM_W_DIS, data);
 
-  return SUCCESS;
+   return SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
@@ -365,84 +359,82 @@ int fb_fwcm(int b_case, int paddr, int saddr, DWORD data)
 
 */
 {
-  if (b_case == 2)
-    {
-    /* case 2 broadcast (class select) */
-    SFI_OUT(SFI_WRITE_VME2SEQ_FIFO_BASE + PRIM_HM_CSRM, 0x05);
-    SFI_OUT(SFI_WRITE_VME2SEQ_FIFO_BASE + RNDM_W, paddr);
-    }
-  if (b_case == 3)
-    {
-    /* case 3 broadcast (pattern select) */
-    SFI_OUT(SFI_WRITE_VME2SEQ_FIFO_BASE + PRIM_HM_CSRM, 0x09);
-    SFI_OUT(SFI_WRITE_VME2SEQ_FIFO_BASE + RNDM_W, paddr);
-    }
+   if (b_case == 2) {
+      /* case 2 broadcast (class select) */
+      SFI_OUT(SFI_WRITE_VME2SEQ_FIFO_BASE + PRIM_HM_CSRM, 0x05);
+      SFI_OUT(SFI_WRITE_VME2SEQ_FIFO_BASE + RNDM_W, paddr);
+   }
+   if (b_case == 3) {
+      /* case 3 broadcast (pattern select) */
+      SFI_OUT(SFI_WRITE_VME2SEQ_FIFO_BASE + PRIM_HM_CSRM, 0x09);
+      SFI_OUT(SFI_WRITE_VME2SEQ_FIFO_BASE + RNDM_W, paddr);
+   }
 
-  SFI_OUT(SFI_WRITE_VME2SEQ_FIFO_BASE + SECAD_W, saddr);
-  SFI_OUT(SFI_WRITE_VME2SEQ_FIFO_BASE + RNDM_W_DIS, data);
+   SFI_OUT(SFI_WRITE_VME2SEQ_FIFO_BASE + SECAD_W, saddr);
+   SFI_OUT(SFI_WRITE_VME2SEQ_FIFO_BASE + RNDM_W_DIS, data);
 
-  return SUCCESS;
+   return SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
 
-int fb_frcm(int b_case, DWORD *data)
+int fb_frcm(int b_case, DWORD * data)
 /* Read control space broadcast.
 
   For a broadcast of case 3 (sparse data scan), each module
   having data ready responds via its corresponding T-Pin bit.
 */
 {
-  if (b_case == 3)
-    /* case 3 broadcast (sparse data scan) */
-    SFI_OUT(SFI_WRITE_VME2SEQ_FIFO_BASE + PRIM_HM_CSRM, 0x09);
+   if (b_case == 3)
+      /* case 3 broadcast (sparse data scan) */
+      SFI_OUT(SFI_WRITE_VME2SEQ_FIFO_BASE + PRIM_HM_CSRM, 0x09);
 
-  SFI_OUT(SFI_WRITE_VME2SEQ_FIFO_BASE + RNDM_R_DIS, 0);
+   SFI_OUT(SFI_WRITE_VME2SEQ_FIFO_BASE + RNDM_R_DIS, 0);
 
-  return fb_fifo_read(data);
+   return fb_fifo_read(data);
 }
 
 /*------------------------------------------------------------------*/
 
-int fb_frdb(int paddr, int saddr, DWORD *data, int *count)
+int fb_frdb(int paddr, int saddr, DWORD * data, int *count)
 /* read data space block transfer */
 {
-int status;
+   int status;
 
-  SFI_OUT(SFI_SEQUENCER_DISABLE, 0);
+   SFI_OUT(SFI_SEQUENCER_DISABLE, 0);
 
-  SFI_OUT(SFI_WRITE_VME2SEQ_FIFO_BASE + PRIM_DSR, paddr);
-  SFI_OUT(SFI_WRITE_VME2SEQ_FIFO_BASE + SECAD_W, saddr);
+   SFI_OUT(SFI_WRITE_VME2SEQ_FIFO_BASE + PRIM_DSR, paddr);
+   SFI_OUT(SFI_WRITE_VME2SEQ_FIFO_BASE + SECAD_W, saddr);
 
-  /* DMA address 0 (remote ram window) */
-  SFI_OUT(SFI_WRITE_VME2SEQ_FIFO_BASE + LOAD_DMA_ADDRESS_POINTER, 0);
+   /* DMA address 0 (remote ram window) */
+   SFI_OUT(SFI_WRITE_VME2SEQ_FIFO_BASE + LOAD_DMA_ADDRESS_POINTER, 0);
 
-  /* VME block mode DMA */
-  SFI_OUT(SFI_WRITE_VME2SEQ_FIFO_BASE + START_FRDB_WITH_CLEAR_WORD_COUNTER, 
-          (0x0A<<24) | (*count/sizeof(DWORD)));
+   /* VME block mode DMA */
+   SFI_OUT(SFI_WRITE_VME2SEQ_FIFO_BASE + START_FRDB_WITH_CLEAR_WORD_COUNTER,
+           (0x0A << 24) | (*count / sizeof(DWORD)));
 
-  /* disonnect from module */
-  SFI_OUT(SFI_WRITE_VME2SEQ_FIFO_BASE + DISCON, 0);
+   /* disonnect from module */
+   SFI_OUT(SFI_WRITE_VME2SEQ_FIFO_BASE + DISCON, 0);
 
-  /* store word count and adress pointer */
-  SFI_OUT(SFI_WRITE_VME2SEQ_FIFO_BASE + STORE_FRDB_WC, 0);
+   /* store word count and adress pointer */
+   SFI_OUT(SFI_WRITE_VME2SEQ_FIFO_BASE + STORE_FRDB_WC, 0);
 //  SFI_OUT(SFI_WRITE_VME2SEQ_FIFO_BASE + STORE_FRDB_AP, 0);
 
-  SFI_OUT(SFI_SEQUENCER_ENABLE, 0);
+   SFI_OUT(SFI_SEQUENCER_ENABLE, 0);
 
-  status = fb_fifo_read(count);
-  if (status & 0x10000)
-    return status & 0xFFFF;
+   status = fb_fifo_read(count);
+   if (status & 0x10000)
+      return status & 0xFFFF;
 
 //  fb_fifo_read(&ap);
 
-  *count &= 0xFFFFFF;
-  *count *= sizeof(DWORD);
+   *count &= 0xFFFFFF;
+   *count *= sizeof(DWORD);
 
-  /* move data from kernel memory to user buffer */
-  memcpy(data, remote_ram_buffer, *count);
+   /* move data from kernel memory to user buffer */
+   memcpy(data, remote_ram_buffer, *count);
 
-  return SUCCESS;
+   return SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
@@ -450,16 +442,16 @@ int status;
 void fb_frdba(int paddr, int saddr, int count)
 /* asynchronous read data space block transfer */
 {
-  /* address module */
-  SFI_OUT(SFI_WRITE_VME2SEQ_FIFO_BASE + PRIM_DSR, paddr);
-  SFI_OUT(SFI_WRITE_VME2SEQ_FIFO_BASE + SECAD_W, saddr);
+   /* address module */
+   SFI_OUT(SFI_WRITE_VME2SEQ_FIFO_BASE + PRIM_DSR, paddr);
+   SFI_OUT(SFI_WRITE_VME2SEQ_FIFO_BASE + SECAD_W, saddr);
 
-  /* VME block mode DMA */
-  SFI_OUT(SFI_WRITE_VME2SEQ_FIFO_BASE + START_FRDB_WITH_CLEAR_WORD_COUNTER, 
-          (0x0A<<24) | (count/sizeof(DWORD)));
+   /* VME block mode DMA */
+   SFI_OUT(SFI_WRITE_VME2SEQ_FIFO_BASE + START_FRDB_WITH_CLEAR_WORD_COUNTER,
+           (0x0A << 24) | (count / sizeof(DWORD)));
 
-  /* disonnect from module */
-  SFI_OUT(SFI_WRITE_VME2SEQ_FIFO_BASE + DISCON, 0);
+   /* disonnect from module */
+   SFI_OUT(SFI_WRITE_VME2SEQ_FIFO_BASE + DISCON, 0);
 }
 
 /*------------------------------------------------------------------*/
@@ -473,12 +465,12 @@ int fb_out(DWORD data)
    bit 20-23: clear ECL
    bit 24-26: clear NIM */
 {
-  /* directly access output register */
-  /* SFI_OUT(SFI_WRITE_VME_OUT_SIGNAL_REGISTER, data); */
+   /* directly access output register */
+   /* SFI_OUT(SFI_WRITE_VME_OUT_SIGNAL_REGISTER, data); */
 
-  /* ask the sequencer to write to the output */
-  SFI_OUT(SFI_WRITE_VME2SEQ_FIFO_BASE + SEQ_WRITE_OUT_REG, data);
-  return SUCCESS;
+   /* ask the sequencer to write to the output */
+   SFI_OUT(SFI_WRITE_VME2SEQ_FIFO_BASE + SEQ_WRITE_OUT_REG, data);
+   return SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
@@ -488,7 +480,7 @@ int fb_in(void)
    bit 8-11 : ECL input
    bit 12-15: NIM input */
 {
-  return (int) SFI_IN(SFI_SEQUENCER_FIFO_FLAG_AND_ECL_NIM_INPUT_REGISTER);
+   return (int) SFI_IN(SFI_SEQUENCER_FIFO_FLAG_AND_ECL_NIM_INPUT_REGISTER);
 }
 
 /*------------------------------------------------------------------*/
@@ -496,14 +488,14 @@ int fb_in(void)
 int fb_load_begin(int addr)
 /* load sequencer in ram mode at given address */
 {
-  SFI_OUT(SFI_SEQUENCER_RESET, 0);
-  SFI_OUT(SFI_NEXT_SEQUENCER_RAM_ADDRESS_REGISTER, addr);
-  SFI_OUT(SFI_SEQUENCER_RAM_LOAD_ENABLE, 0);
+   SFI_OUT(SFI_SEQUENCER_RESET, 0);
+   SFI_OUT(SFI_NEXT_SEQUENCER_RAM_ADDRESS_REGISTER, addr);
+   SFI_OUT(SFI_SEQUENCER_RAM_LOAD_ENABLE, 0);
 
-  /* initialize DMA address */
-  SFI_OUT(SFI_WRITE_VME2SEQ_FIFO_BASE + LOAD_DMA_ADDRESS_POINTER, 0);
+   /* initialize DMA address */
+   SFI_OUT(SFI_WRITE_VME2SEQ_FIFO_BASE + LOAD_DMA_ADDRESS_POINTER, 0);
 
-  return SUCCESS;
+   return SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
@@ -511,18 +503,18 @@ int fb_load_begin(int addr)
 int fb_load_end()
 /* finish loading sequencer in ram mode */
 {
-  /* last command: store address pointer */
-  SFI_OUT(SFI_WRITE_VME2SEQ_FIFO_BASE + STORE_FRDB_AP, 0);
+   /* last command: store address pointer */
+   SFI_OUT(SFI_WRITE_VME2SEQ_FIFO_BASE + STORE_FRDB_AP, 0);
 
-  SFI_OUT(SFI_WRITE_VME2SEQ_FIFO_BASE + DISABLE_RAM_MODE, 0);
-  
-  /* 2us delay */
-  SFI_OUT(SFI_WRITE_VME_OUT_SIGNAL_REGISTER, 0);
+   SFI_OUT(SFI_WRITE_VME2SEQ_FIFO_BASE + DISABLE_RAM_MODE, 0);
 
-  SFI_OUT(SFI_SEQUENCER_RAM_LOAD_DISABLE, 0);
-  SFI_OUT(SFI_SEQUENCER_ENABLE, 0);
+   /* 2us delay */
+   SFI_OUT(SFI_WRITE_VME_OUT_SIGNAL_REGISTER, 0);
 
-  return SUCCESS;
+   SFI_OUT(SFI_SEQUENCER_RAM_LOAD_DISABLE, 0);
+   SFI_OUT(SFI_SEQUENCER_ENABLE, 0);
+
+   return SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
@@ -530,25 +522,25 @@ int fb_load_end()
 int fb_execute(int addr, void *data, int *count)
 /* execute commands form ram list at given address */
 {
-int ap, status;
+   int ap, status;
 
-  SFI_OUT(SFI_WRITE_VME2SEQ_FIFO_BASE + ENABLE_RAM_SEQUENCER + (addr & 0xFF00), 0);
+   SFI_OUT(SFI_WRITE_VME2SEQ_FIFO_BASE + ENABLE_RAM_SEQUENCER + (addr & 0xFF00), 0);
 
-  if (data == NULL)
-    return SUCCESS;
+   if (data == NULL)
+      return SUCCESS;
 
-  status = fb_fifo_read(&ap);
-  if (status & 0x10000)
-    return status & 0xFFFF;
+   status = fb_fifo_read(&ap);
+   if (status & 0x10000)
+      return status & 0xFFFF;
 
-  ap &= 0xFFFFFF;
-  if (ap < *count)
-    *count = ap;
+   ap &= 0xFFFFFF;
+   if (ap < *count)
+      *count = ap;
 
-  /* move data from kernel memory to user buffer */
-  memcpy(data, remote_ram_buffer, *count);
-  
-  return SUCCESS;
+   /* move data from kernel memory to user buffer */
+   memcpy(data, remote_ram_buffer, *count);
+
+   return SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
@@ -560,7 +552,7 @@ void fb_irq_enable(int source)
    bit 2 : NIM3
    bit 3 : ECL1 */
 {
-  SFI_OUT(SFI_VME_IRQ_MASK_REGISTER, source);
+   SFI_OUT(SFI_VME_IRQ_MASK_REGISTER, source);
 }
 
 /*------------------------------------------------------------------*/
@@ -572,7 +564,7 @@ void fb_irq_disable(int source)
    bit 2 : NIM3
    bit 3 : ECL1 */
 {
-  SFI_OUT(SFI_VME_IRQ_MASK_REGISTER, source << 8);
+   SFI_OUT(SFI_VME_IRQ_MASK_REGISTER, source << 8);
 }
 
 /*------------------------------------------------------------------*/
@@ -580,7 +572,7 @@ void fb_irq_disable(int source)
 void fb_irq_read(int *source)
 /* read intterupt source */
 {
-  *source = (SFI_IN(SFI_VME_IRQ_MASK_REGISTER) >> 8) & 0xFF;
+   *source = (SFI_IN(SFI_VME_IRQ_MASK_REGISTER) >> 8) & 0xFF;
 }
 
 /*------------------------------------------------------------------*/
@@ -592,56 +584,56 @@ void fb_irq_clear(int source)
    bit 2 : NIM3
    bit 3 : ECL1 */
 {
-  SFI_OUT(SFI_VME_IRQ_MASK_REGISTER, source << 8);
-  SFI_OUT(SFI_VME_IRQ_MASK_REGISTER, source);
+   SFI_OUT(SFI_VME_IRQ_MASK_REGISTER, source << 8);
+   SFI_OUT(SFI_VME_IRQ_MASK_REGISTER, source);
 }
 
 /*------------------------------------------------------------------*/
 
 void fb_interrupt_enable(void)
 {
-  /* VME IRQ Level 1 */
-  SFI_OUT(SFI_VME_IRQ_LEVEL_AND_VECTOR_REGISTER, 0x800 | 0x100);
+   /* VME IRQ Level 1 */
+   SFI_OUT(SFI_VME_IRQ_LEVEL_AND_VECTOR_REGISTER, 0x800 | 0x100);
 }
 
 /*------------------------------------------------------------------*/
 
 void fb_interrupt_disable(void)
 {
-  /* VME IRQ Level 1 */
-  SFI_OUT(SFI_VME_IRQ_LEVEL_AND_VECTOR_REGISTER, 0x000);
+   /* VME IRQ Level 1 */
+   SFI_OUT(SFI_VME_IRQ_LEVEL_AND_VECTOR_REGISTER, 0x000);
 }
 
 /*------------------------------------------------------------------*/
 
-void (*user_interrupt_routine)() = NULL;
+void (*user_interrupt_routine) () = NULL;
 
 void application_icbr(void *param_p, bt_irq_t irq_type, bt_data32_t vector)
 {
-int status;
+   int status;
 
-  status = bt_chkerr(btd);
+   status = bt_chkerr(btd);
 
-  if (user_interrupt_routine != NULL)
-    user_interrupt_routine();
+   if (user_interrupt_routine != NULL)
+      user_interrupt_routine();
 }
 
 /*------------------------------------------------------------------*/
 
-void fb_interrupt_attach(void (*isr)())
+void fb_interrupt_attach(void (*isr) ())
 {
-int status;
+   int status;
 
-  user_interrupt_routine = isr;
-  status = bt_icbr_install(btd, BT_IRQ_IACK, application_icbr, NULL, BT_VECTOR_ALL);
-  if (status != BT_SUCCESS) 
-    bt_perror(btd, status, "Could not install interrupt call back routine.");
+   user_interrupt_routine = isr;
+   status = bt_icbr_install(btd, BT_IRQ_IACK, application_icbr, NULL, BT_VECTOR_ALL);
+   if (status != BT_SUCCESS)
+      bt_perror(btd, status, "Could not install interrupt call back routine.");
 }
-    
+
 /*------------------------------------------------------------------*/
 
 void fb_interrupt_detach(void)
 {
-  bt_icbr_remove(btd, BT_IRQ_IACK, application_icbr);
-  user_interrupt_routine = NULL;
+   bt_icbr_remove(btd, BT_IRQ_IACK, application_icbr);
+   user_interrupt_routine = NULL;
 }
