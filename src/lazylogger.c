@@ -6,6 +6,9 @@
   Contents:     Disk to Tape copier for background job
 
   $Log$
+  Revision 1.21  2000/10/17 20:56:50  pierre
+  *** empty log message ***
+
   Revision 1.20  2000/10/12 18:59:34  pierre
   - Correct label for "Copy Rate" in KB
 
@@ -166,7 +169,7 @@ File size [Bytes] = FLOAT : 0.0\n\
 KBytes copied = FLOAT : 0.0\n\
 Total Bytes copied = FLOAT : 0.0\n\
 Copy progress [%] = FLOAT : 0\n\
-Copy Rate [Kbytes per s] = FLOAT : 0\n\
+Copy Rate [bytes per s] = FLOAT : 0\n\
 Backup status [%] = FLOAT : 0\n\
 Number of Files = INT : 0\n\
 Current Lazy run = INT : 0\n\
@@ -892,7 +895,7 @@ void lazy_statistics_update(INT cploop_time)
 \********************************************************************/
 {
     /* update rate [kb/s] statistics */
-    lazyst.copy_rate = (lazyst.cur_size - lastsz) / (ss_millitime() - cploop_time);
+    lazyst.copy_rate = 1000. * (lazyst.cur_size - lastsz) / (ss_millitime() - cploop_time);
 
     /* update % statistics */
     if (lazyst.file_size != 0.0f)
@@ -1453,7 +1456,7 @@ INT lazy_main (INT channel, LAZY_INFO * pLall)
 	    { char cmd[256];
 	       sprintf(cmd,"%s %s %s %s",lazy.command, lazy.path,  pLch->name, pre_label);
 	       cm_msg(MINFO,"lazy_main","Exec post-rewind script:%s",cmd);
-	       ss_system(cmd, &pid);
+	       ss_system(cmd);
 	    }
 	    return NOTHING_TODO;
 	  }
