@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol main program
 
   $Log$
+  Revision 1.7  2002/07/12 15:19:01  midas
+  Call user_init before blinking
+
   Revision 1.6  2002/07/12 08:38:13  midas
   Fixed LCD recognition
 
@@ -129,6 +132,9 @@ unsigned char i;
   /* retrieve EEPROM data */
   eeprom_retrieve();
 
+  /* call user initialization routine */
+  user_init();
+
   /* correct initial value */
   if (sys_info.wd_counter == 0xFFFF)
     {
@@ -173,9 +179,6 @@ unsigned char i;
     }
 
   lcd_clear();
-
-  /* call user initialization routine */
-  user_init();
 
   /* enable watchdog */
 #ifdef CPU_ADUC812
