@@ -6,6 +6,9 @@
    Contents:     Dump event on screen with MIDAS or YBOS data format
  
    $Log$
+   Revision 1.6  1999/01/19 20:58:32  pierre
+   - Fix minor display and ybos call for argument list.
+
    Revision 1.5  1999/01/18 18:11:30  pierre
    - Correct for new ybos prototype functions.
    - Added more switches for online and replay.
@@ -140,7 +143,7 @@ int replog (int data_fmt, char * rep_file, int bl, int action)
           if (action == REP_HEADER)
             status = yb_any_all_info_display (D_HEADER);
           else if (action == REP_RECORD)
-            status = yb_any_physrec_display(data_fmt, dsp_fmt);
+            status = yb_any_physrec_display(data_fmt);
           if (status == YB_DONE | bl != -1)
             break;
         }
@@ -153,11 +156,12 @@ int replog (int data_fmt, char * rep_file, int bl, int action)
       if (yb_any_physrec_skip(data_fmt, bl) != YB_SUCCESS)
         return (-1);
       i = 0;
-      while (yb_any_event_get(data_fmt, bl, (void *)&pmyevt, &evtlen) == YB_SUCCESS)
+      while (yb_any_event_get(data_fmt, (void *)&pmyevt, &evtlen) == YB_SUCCESS)
         {
           status = yb_any_event_swap(data_fmt, pmyevt);
           if (file_mode != YB_NO_RECOVER)
-            status = yb_file_recompose(pmyevt, data_fmt, svpath, file_mode);  
+            if ((status = yb_file_recompose(pmyevt, data_fmt, svpath, file_mode)) != YB_SUCCESS)
+              printf("mdump recompose error %i\n");
           if (action == REP_LENGTH)
             status = yb_any_all_info_display (D_EVTLEN);
           else if ((action == REP_EVENT) && 
@@ -297,7 +301,8 @@ void process_event(HNDLE hBuf, HNDLE request_id, EVENT_HEADER *pheader, void *pe
           (yb_any_event_swap(FORMAT_YBOS,plrl) >= YB_SUCCESS))
         { /* ---- YBOS FMT ---- */
           if (file_mode != YB_NO_RECOVER)
-            status = yb_file_recompose(pevent, internal_data_fmt, svpath, file_mode);  
+            if ((status = yb_file_recompose(pevent, internal_data_fmt, svpath, file_mode)) != YB_SUCCESS)
+              printf("mdump recompose error %i\n");
           if (sbank_name[0] != 0)
             { /* bank name given through argument list */
               if (status = ybk_find (plrl,sbank_name,&bklen,&bktyp,(void *)&pybk) == YB_SUCCESS)
@@ -317,7 +322,7 @@ void process_event(HNDLE hBuf, HNDLE request_id, EVENT_HEADER *pheader, void *pe
           else
             { /* Full event */
               /* event header */
-              printf("Evid:%4.4x- Mask:%4.4x- Serial:%i- Time:0x%x- Dsize:%i/0x%x"
+              printf("Evid:%4.4x- Mask:%4.4x- Serial:%i- Time:0x%x- Dsize:%i/0x%x\n"
               ,pheader->event_id, pheader->trigger_mask ,pheader->serial_number
               ,pheader->time_stamp, pheader->data_size, pheader->data_size);
 
