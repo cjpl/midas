@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.80  2002/08/13 14:34:18  midas
+  Added event header byte swapping for offline analysis on RS6000 system
+
   Revision 1.79  2002/06/03 06:07:15  midas
   Added extra parameter to ss_daemon_init to keep stdout
 
@@ -3692,6 +3695,16 @@ int status, n;
         if (n > 0)
           printf("Unexpected end of file %s, last event skipped\n", file->file_name);
         return -1;
+        }
+
+      /* swap event header if in wrong format */
+      if (pevent->serial_number > 0x1000000)
+        {
+        WORD_SWAP(&pevent->event_id);
+        WORD_SWAP(&pevent->trigger_mask);
+        DWORD_SWAP(&pevent->serial_number);
+        DWORD_SWAP(&pevent->time_stamp);
+        DWORD_SWAP(&pevent->data_size);
         }
 
       /* read event */
