@@ -18,11 +18,13 @@
 #-------------------------------------------------------------------
 # The following lines define direcories. Adjust if necessary
 #                 
-INC_DIR 	= \midas\include
-DRV_DIR         = \midas\drivers
-LIB_DIR 	= \midas\nt\lib
-ZLIB_DIR        = \midas\nt\lib
-CERNLIB_DIR	= \cern\lib
+MIDAS_DIR       = \midas
+INC_DIR 	= $(MIDAS_DIR)\include
+DRV_DIR         = $(MIDAS_DIR)\drivers
+SRC_DIR         = $(MIDAS_DIR)\src
+LIB_DIR 	= $(MIDAS_DIR)\nt\lib
+ZLIB_DIR        = $(MIDAS_DIR)\nt\lib
+ROOT_DIR	= $(ROOTSYS)
 
 #-------------------------------------------------------------------
 # List of analyzer modules
@@ -37,20 +39,23 @@ LIBRARY = $(LIB_DIR)\midas.lib
 
 # compiler
 CC = cl
-CFLAGS = /I$(INC_DIR) /nologo /D WIN32
+CFLAGS = /I$(INC_DIR) /I$(ROOT_DIR)/include /nologo /D WIN32
 
 all: frontend.exe analyzer.exe
 
 frontend.exe:  $(LIBRARY) $(LIB_DIR)\mfe.obj frontend.c $(DRV_DIR)\bus\camacnul.c
-	$(CC) $(CFLAGS) /Fefrontend.exe $(LIB_DIR)\mfe.obj frontend.c $(DRV_DIR)\bus\camacnul.c $(LIBRARY) $(LIBS) wsock32.lib
+	$(CC) $(CFLAGS) /Fefrontend.exe frontend.c $(DRV_DIR)\bus\camacnul.c $(LIB_DIR)\mfe.obj $(LIBRARY) $(LIBS) wsock32.lib
 
-analyzer.exe: $(LIBRARY) $(LIB_DIR)\mana.obj analyzer.obj $(MODULES)
-	$(CC) /Feanalyzer.exe $(LIB_DIR)\mana.obj analyzer.obj \
-	$(MODULES) packlib.lib $(ZLIB_DIR)\zlib.lib \
-	$(LIBRARY) $(LIBS) wsock32.lib /link /libpath:"$(CERNLIB_DIR)"
+analyzer.exe: $(LIBRARY) rmana.obj analyzer.obj $(MODULES)
+	$(CC) /Feanalyzer.exe rmana.obj analyzer.obj \
+	$(MODULES) libCore.lib libTree.lib libHist.lib $(ZLIB_DIR)\zlib.lib \
+	$(LIBRARY) $(LIBS) wsock32.lib /link /libpath:"$(ROOT_DIR)/lib"
 
 .c.obj:
-	$(CC) $(CFLAGS) /c $<
+	$(CC) $(CFLAGS) /TP /c $<
+
+rmana.obj: $(SRC_DIR)\mana.c
+	$(CC) $(CFLAGS) /TP /c $(SRC_DIR)\mana.c /Formana.obj /D HAVE_ROOT /TP
 
 clean:
 	del *.obj
