@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.100  2003/10/29 14:33:46  midas
+  Test for either HAVE_HBOOK or HAVE_ROOT
+
   Revision 1.99  2003/10/03 18:57:40  pierre
   fix error msg
 
@@ -1927,6 +1930,12 @@ double     dummy;
   db_find_key(hDB, 0, str, &hkey);
   if (hkey)
     db_delete_key(hDB, hkey, FALSE);
+
+#ifndef HAVE_HBOOK
+#ifndef HAVE_ROOT
+#error Please defeine either -DHAVE_HBOOK or -DHAVE_ROOT
+#endif
+#endif
 
 #ifdef HAVE_HBOOK
   /* create global memory */
