@@ -7,6 +7,9 @@
                 linked with user code to form a complete frontend
 
   $Log$
+  Revision 1.71  2004/10/01 23:35:53  midas
+  Removed PRE/POST transitions and implemented sequence order of transitions
+
   Revision 1.70  2004/09/29 19:38:20  midas
   Decreased run stop polling time from 500ms to 100ms
 
@@ -386,7 +389,7 @@ INT tr_start(INT rn, char *error)
 
 /*-- prestop -------------------------------------------------------*/
 
-INT tr_prestop(INT rn, char *error)
+INT tr_stop(INT rn, char *error)
 {
    INT status, i;
    EQUIPMENT *eq;
@@ -435,7 +438,7 @@ INT tr_prestop(INT rn, char *error)
 
 /*-- pause ---------------------------------------------------------*/
 
-INT tr_prepause(INT rn, char *error)
+INT tr_pause(INT rn, char *error)
 {
    INT status;
 
@@ -2055,10 +2058,10 @@ int main(int argc, char *argv[])
    }
 
    /* register transition callbacks */
-   if (cm_register_transition(TR_START, tr_start) != CM_SUCCESS ||
-       cm_register_transition(TR_PRESTOP, tr_prestop) != CM_SUCCESS ||
-       cm_register_transition(TR_PREPAUSE, tr_prepause) != CM_SUCCESS ||
-       cm_register_transition(TR_RESUME, tr_resume) != CM_SUCCESS) {
+   if (cm_register_transition(TR_START, tr_start, 500) != CM_SUCCESS ||
+       cm_register_transition(TR_STOP, tr_stop, 500) != CM_SUCCESS ||
+       cm_register_transition(TR_PAUSE, tr_pause, 500) != CM_SUCCESS ||
+       cm_register_transition(TR_RESUME, tr_resume, 500) != CM_SUCCESS) {
       printf("Failed to start local RPC server");
       cm_disconnect_experiment();
       dm_buffer_release();

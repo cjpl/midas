@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.129  2004/10/01 23:35:53  midas
+  Removed PRE/POST transitions and implemented sequence order of transitions
+
   Revision 1.128  2004/09/30 23:36:09  midas
   Added rates to tests
 
@@ -2366,7 +2369,7 @@ INT eor(INT run_number, char *error)
 
 /*-- start ---------------------------------------------------------*/
 
-INT tr_prestart(INT rn, char *error)
+INT tr_start(INT rn, char *error)
 {
    INT status, i;
 
@@ -5921,10 +5924,10 @@ int main(int argc, char *argv[])
       }
 
       /* register transitions if started online */
-      if (cm_register_transition(TR_PRESTART, tr_prestart) != CM_SUCCESS ||
-          cm_register_transition(TR_STOP, tr_stop) != CM_SUCCESS ||
-          cm_register_transition(TR_PAUSE, tr_pause) != CM_SUCCESS ||
-          cm_register_transition(TR_RESUME, tr_resume) != CM_SUCCESS) {
+      if (cm_register_transition(TR_START, tr_start, 500) != CM_SUCCESS ||
+          cm_register_transition(TR_STOP, tr_stop, 500) != CM_SUCCESS ||
+          cm_register_transition(TR_PAUSE, tr_pause, 500) != CM_SUCCESS ||
+          cm_register_transition(TR_RESUME, tr_resume, 500) != CM_SUCCESS) {
          printf("Failed to start local RPC server");
          return 1;
       }

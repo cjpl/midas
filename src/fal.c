@@ -7,6 +7,9 @@
                 Most routines are from mfe.c mana.c and mlogger.c.
 
   $Log$
+  Revision 1.43  2004/10/01 23:35:53  midas
+  Removed PRE/POST transitions and implemented sequence order of transitions
+
   Revision 1.42  2004/05/07 19:40:11  midas
   Replaced min/max by MIN/MAX macros
 
@@ -304,6 +307,7 @@ int print_message(const char *msg);
 void update_stats();
 void interrupt_routine(void);
 void interrupt_enable(BOOL flag);
+INT tr_start2(run_number, error);
 
 /* items defined in frontend.c */
 
@@ -2071,7 +2075,7 @@ struct {
 
 /*------------------------------------------------------------------*/
 
-INT tr_prestart(INT run_number, char *error)
+INT tr_start1(INT run_number, char *error)
 /********************************************************************\
 
    Prestart:
@@ -2332,6 +2336,10 @@ INT tr_prestart(INT run_number, char *error)
    eb.run_number = run_number;
    hs_write_event(0, &eb, sizeof(eb));
 
+#ifdef FAL_MAIN
+   return tr_start2(run_number, error);
+#endif
+
    return CM_SUCCESS;
 }
 
@@ -2554,7 +2562,7 @@ void test_write()
 
 /*-- start ---------------------------------------------------------*/
 
-INT tr_start(INT rn, char *error)
+INT tr_start2(INT rn, char *error)
 /********************************************************************\
 
      Initialize serial numbers, update display
@@ -2641,9 +2649,9 @@ INT tr_start(INT rn, char *error)
    return status;
 }
 
-/*-- prestop -------------------------------------------------------*/
+/*-- stop ----------------------------------------------------------*/
 
-INT tr_prestop(INT rn, char *error)
+INT tr_stop(INT rn, char *error)
 /********************************************************************\
 
      Send all periodic events, update display
@@ -4604,12 +4612,10 @@ int main(int argc, char *argv[])
                              LOGGER_TIMEOUT);
    }
 
-   if (cm_register_transition(TR_PRESTART, tr_prestart) != CM_SUCCESS ||
-       cm_register_transition(TR_START, tr_start) != CM_SUCCESS ||
-       cm_register_transition(TR_PRESTOP, tr_prestop) != CM_SUCCESS ||
-       cm_register_transition(TR_POSTSTOP, tr_poststop) != CM_SUCCESS ||
-       cm_register_transition(TR_PAUSE, tr_pause) != CM_SUCCESS ||
-       cm_register_transition(TR_RESUME, tr_resume) != CM_SUCCESS) {
+   if (cm_register_transition(TR_START, tr_start1, 500) != CM_SUCCESS ||
+       cm_register_transition(TR_STOP, tr_stop, 500) != CM_SUCCESS ||
+       cm_register_transition(TR_PAUSE, tr_pause, 500) != CM_SUCCESS ||
+       cm_register_transition(TR_RESUME, tr_resume, 500) != CM_SUCCESS) {
       printf("Failed to start local RPC server");
       return 1;
    }

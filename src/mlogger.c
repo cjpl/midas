@@ -6,6 +6,9 @@
   Contents:     MIDAS logger program
 
   $Log$
+  Revision 1.86  2004/10/01 23:35:54  midas
+  Removed PRE/POST transitions and implemented sequence order of transitions
+
   Revision 1.85  2004/09/30 19:58:11  midas
   Added more debugging info to cm_transition
 
@@ -3121,7 +3124,7 @@ struct {
 
 /*------------------------------------------------------------------*/
 
-INT tr_prestart(INT run_number, char *error)
+INT tr_start(INT run_number, char *error)
 /********************************************************************\
 
   Prestart:
@@ -3463,7 +3466,7 @@ INT tr_prestart(INT run_number, char *error)
 
 /*-- poststop ------------------------------------------------------*/
 
-INT tr_poststop(INT run_number, char *error)
+INT tr_stop(INT run_number, char *error)
 /********************************************************************\
 
    Poststop:
@@ -3723,14 +3726,14 @@ int main(int argc, char *argv[])
    }
 
    /* register transition callbacks */
-   if (cm_register_transition(TR_PRESTART, tr_prestart) != CM_SUCCESS) {
+   if (cm_register_transition(TR_START, tr_start, 200) != CM_SUCCESS) {
       cm_msg(MERROR, "main", "cannot register callbacks");
       return 1;
    }
 
-   cm_register_transition(TR_POSTSTOP, tr_poststop);
-   cm_register_transition(TR_PAUSE, tr_pause);
-   cm_register_transition(TR_RESUME, tr_resume);
+   cm_register_transition(TR_STOP, tr_stop, 800);
+   cm_register_transition(TR_PAUSE, tr_pause, 500);
+   cm_register_transition(TR_RESUME, tr_resume, 500);
 
    /* register callback for rewinding tapes */
    cm_register_function(RPC_LOG_REWIND, log_callback);
