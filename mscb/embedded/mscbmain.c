@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol main program
 
   $Log$
+  Revision 1.57  2004/12/21 10:44:54  midas
+  Made secondary port on SCS-1000 working
+
   Revision 1.56  2004/12/10 11:23:00  midas
   Fixed bug with block transfer
 
@@ -229,7 +232,7 @@ unsigned char xdata in_buf[64], out_buf[64]; /* limited by USB block size */
 unsigned char idata in_buf[20], out_buf[8];
 #endif
 
-unsigned char idata i_in, last_i_in, final_i_in, n_out, i_out, cmd_len;
+unsigned char idata i_in, last_i_in, final_i_in, i_out, n_out, cmd_len;
 unsigned char idata crc_code, addr_mode, n_variables, _flkey=0;
 
 unsigned char idata _cur_sub_addr, _var_size;
@@ -252,13 +255,13 @@ sbit FREEZE_MODE = CSR ^ 2;     // turned on in FREEZE mode
 sbit WD_RESET = CSR ^ 3;        // got rebooted by watchdog reset
 
 bit addressed;                  // true if node addressed
-bit new_address, debug_new_i, debug_new_o;      // used for LCD debug output
 bit flash_param;                // used for EEPROM flashing
 bit flash_program;              // used for upgrading firmware
 bit reboot;                     // used for rebooting
 bit configured;                 // TRUE if node is configured
 bit flash_allowed;              // TRUE 5 sec after booting node
 bit wrong_cpu;                  // TRUE if code uses xdata and CPU does't have it
+bit out_buf_empty;              // TRUR if out_buf has been sent completely
 
 /*------------------------------------------------------------------*/
 
@@ -440,13 +443,6 @@ void setup(void)
 #ifdef LCD_SUPPORT
    lcd_setup();
 
-#ifdef LCD_DEBUG
-   if (lcd_present) {
-      printf("AD:%04X GA:%04X WD:%d", sys_info.node_addr,
-             sys_info.group_addr, sys_info.wd_counter);
-   }
-#endif
-
 #endif
 
    /* count variables */
@@ -486,10 +482,6 @@ void setup(void)
                memset((char*)variables[i].ud + _var_size*adr, 0, variables[i].width);
                watchdog_refresh();
             }
-#ifdef SCS_1000
-            if (variables[i].flags & MSCBF_REMOUT)
-               send_remote_var(i);
-#endif
          }
 
       /* call user initialization routine with initialization */
@@ -532,38 +524,6 @@ unsigned char cur_sub_addr()
 {
    return _cur_sub_addr;
 }
-/*------------------------------------------------------------------*/
-
-void debug_output()
-{
-   if (!DEBUG_MODE)
-      return;
-
-#if !defined(CPU_ADUC812) && !defined(SCS_300) && !defined(SCS_210)     // SCS210/300 redefine printf()
-#ifdef LCD_DEBUG
-   {
-      unsigned char i, n;
-
-      if (debug_new_i) {
-         debug_new_i = 0;
-         lcd_clear();
-
-         n = i_in ? i_in : cmd_len;
-         for (i = 0; i < n; i++)
-            printf("%02bX ", in_buf[i]);
-      }
-
-      if (debug_new_o) {
-         debug_new_o = 0;
-         lcd_goto(0, 1);
-         for (i = 0; i < n_out; i++)
-            printf("%02bX ", out_buf[i]);
-      }
-   }
-#endif
-#endif
-
-}
 
 /*------------------------------------------------------------------*\
 
@@ -583,8 +543,8 @@ void serial_int(void) interrupt 4 using 1
       i_out++;                  // increment output counter
       if (i_out == n_out) {
          i_out = 0;             // send buffer empty, clear pointer
+         out_buf_empty = 1;     // and set flag
          RS485_ENABLE = 0;      // disable RS485 driver
-         debug_new_o = 1;       // indicate new debug output
       } else {
          SBUF0 = out_buf[i_out];        // send character
       }
@@ -619,8 +579,6 @@ void serial_int(void) interrupt 4 using 1
          cmd_len = in_buf[1] + 3;       // + cmd + N + crc
       }
 
-      debug_new_i = 1;          // indicate new data in input buffer
-
       if (i_in == sizeof(in_buf))       // check for buffer overflow
       {
          i_in = 0;
@@ -648,6 +606,8 @@ void serial_int(void) interrupt 4 using 1
 
 #pragma NOAREGS
 
+#include <intrins.h>
+
 static void send_byte(unsigned char d, unsigned char data * crc)
 {
 #ifdef CPU_C8051F120
@@ -659,6 +619,18 @@ static void send_byte(unsigned char d, unsigned char data * crc)
    SBUF0 = d;
    while (!TI0);
    TI0 = 0;
+}
+
+static void send_obuf(unsigned char n)
+{
+#ifdef CPU_C8051F120
+   SFRPAGE = UART0_PAGE;
+#endif
+
+   n_out = n;
+   out_buf_empty = 0;
+   RS485_ENABLE = 1;
+   SBUF0 = out_buf[0];
 }
 
 void addr_node8(unsigned char mode, unsigned char adr, unsigned char node_addr)
@@ -736,9 +708,7 @@ void interprete(void)
       addr_node8(ADDR_NODE, in_buf[1], sys_info.node_addr & 0xFF);
       if (addressed) {
          out_buf[0] = CMD_ACK;
-         n_out = 1;
-         RS485_ENABLE = 1;
-         SBUF0 = CMD_ACK;
+         send_obuf(1);
       }
       break;
 
@@ -746,9 +716,7 @@ void interprete(void)
       addr_node16(ADDR_NODE, *(unsigned int *) &in_buf[1], sys_info.node_addr);
       if (addressed) {
          out_buf[0] = CMD_ACK;
-         n_out = 1;
-         RS485_ENABLE = 1;
-         SBUF0 = CMD_ACK;
+         send_obuf(1);
       }
       break;
 
@@ -825,8 +793,6 @@ void interprete(void)
       /* copy address to EEPROM */
       flash_param = 1;
 
-      /* output new address */
-      new_address = 1;
       break;
 
    case (CMD_SET_ADDR | 0x07):
@@ -839,8 +805,6 @@ void interprete(void)
       /* copy address to EEPROM */
       flash_param = 1;
 
-      /* output new address */
-      new_address = 1;
       break;
 
    case CMD_SET_BAUD:
@@ -863,15 +827,7 @@ void interprete(void)
 
    case CMD_FLASH:
       led_blink(_cur_sub_addr, 1, 50);
-
       flash_param = 1;
-
-      /* send acknowledge */
-      out_buf[0] = CMD_ACK;
-      out_buf[1] = in_buf[i_in - 1];
-      n_out = 2;
-      RS485_ENABLE = 1;
-      SBUF0 = out_buf[0];
       break;
 
    case CMD_ECHO:
@@ -879,9 +835,7 @@ void interprete(void)
       out_buf[0] = CMD_ACK + 1;
       out_buf[1] = in_buf[1];
       out_buf[2] = crc8(out_buf, 2);
-      n_out = 3;
-      RS485_ENABLE = 1;
-      SBUF0 = out_buf[0];
+      send_obuf(3);
       break;
 
    }
@@ -899,12 +853,7 @@ void interprete(void)
                out_buf[2 + n] = crc8(out_buf, 2 + n);      // generate CRC code
    
                /* send result */
-#ifdef CPU_C8051F120
-               SFRPAGE = UART0_PAGE;
-#endif
-               n_out = 3 + n;
-               RS485_ENABLE = 1;
-               SBUF0 = out_buf[0];
+               send_obuf(3 + n);
 
             } else {
 
@@ -971,12 +920,7 @@ void interprete(void)
       n = user_func(in_buf + 1, out_buf + 1);
       out_buf[0] = CMD_ACK + n;
       out_buf[n + 1] = crc8(out_buf, n + 1);
-      n_out = n + 2;
-#ifdef CPU_C8051F120
-      SFRPAGE = UART0_PAGE;
-#endif
-      RS485_ENABLE = 1;
-      SBUF0 = out_buf[0];
+      send_obuf(n+2);
    }
 
    if (cmd == CMD_WRITE_NA || cmd == CMD_WRITE_ACK) {
@@ -1030,12 +974,7 @@ void interprete(void)
          if (cmd == CMD_WRITE_ACK) {
             out_buf[0] = CMD_ACK;
             out_buf[1] = in_buf[i_in - 1];
-            n_out = 2;
-#ifdef CPU_C8051F120
-            SFRPAGE = UART0_PAGE;
-#endif
-            RS485_ENABLE = 1;
-            SBUF0 = out_buf[0];
+            send_obuf(2);
          }
       } else if (ch == 0xFF) {
          CSR = in_buf[2];
@@ -1043,64 +982,108 @@ void interprete(void)
          if (cmd == CMD_WRITE_ACK) {
             out_buf[0] = CMD_ACK;
             out_buf[1] = in_buf[i_in - 1];
-            n_out = 2;
-#ifdef CPU_C8051F120
-            SFRPAGE = UART0_PAGE;
-#endif
-            RS485_ENABLE = 1;
-            SBUF0 = out_buf[0];
+            send_obuf(2);
          }
       }
    }
-
 }
 
 /*------------------------------------------------------------------*/
 
 #ifdef SCS_1000
 
-static unsigned short last_addr = -1;
+static unsigned short xdata last_addr = -1;
 static unsigned char xdata uart1_buf[10];
+
+/*------------------------------------------------------------------*/
+
+void address_node(unsigned short addr)
+{
+   if (addr != last_addr) {
+      uart1_buf[0] = CMD_ADDR_NODE16;
+      uart1_buf[1] = (unsigned char) (addr >> 8);
+      uart1_buf[2] = (unsigned char) (addr & 0xFF);
+      uart1_buf[3] = crc8(uart1_buf, 3);
+      uart1_send(uart1_buf, 4, 1);
+      last_addr = addr;
+   }
+}
+
+/*------------------------------------------------------------------*/
+
+unsigned char ping(unsigned short addr)
+{
+   unsigned char n;
+
+   uart1_buf[0] = CMD_PING16;
+   uart1_buf[1] = (unsigned char) (addr >> 8);
+   uart1_buf[2] = (unsigned char) (addr & 0xFF);
+   uart1_buf[3] = crc8(uart1_buf, 3);
+   uart1_send(uart1_buf, 4, 1);
+
+   n = uart1_receive(uart1_buf, 10);
+   if (n == 0)
+      return 0; // no response
+
+   if (uart1_buf[0] != CMD_ACK)
+      return 0; // invalid response
+
+   return 1; // node resonded
+}
+
+/*------------------------------------------------------------------*/
+
+unsigned long xdata last_poll = 0;
+
+void poll_error(unsigned char i)
+{
+   memset(variables[i].ud, 0, variables[i].width);
+   led_blink(1, 1, 50);
+}
 
 void poll_remote_vars()
 {
 unsigned char i, n;
 
-   for (i=0 ; i<n_variables ; i++)
-      if (variables[i].flags & MSCBF_REMIN) {
-         
-         /* address remote node */
-         if (variables[i].node_address != last_addr) {
-            uart1_buf[0] = CMD_ADDR_NODE16;
-            uart1_buf[1] = (unsigned char) (variables[i].node_address >> 8);
-            uart1_buf[2] = (unsigned char) (variables[i].node_address & 0xFF);
-            uart1_buf[3] = crc8(uart1_buf, 3);
-            uart1_send(uart1_buf, 4);
-            last_addr = variables[i].node_address;
-         }
-
-         /* read variable */
-         uart1_buf[0] = CMD_READ + 1;
-         uart1_buf[1] = variables[i].channel;
-         uart1_buf[2] = crc8(uart1_buf, 2);
-         uart1_send(uart1_buf, 4);
-
-         n = uart1_receive(uart1_buf, 10);
-         if (n<2)
-            continue; // no bytes receive
-
-         if (uart1_buf[0] != CMD_ACK + n - 2)
-            continue; // invalid command received
-
-         if (variables[i].width != n - 2)
-            continue; // variables has wrong length
-
-         if (uart1_buf[n-1] != crc8(uart1_buf, n-1))
-            continue; // invalid CRC
-
-         /* all ok, so copy variable */
-         memcpy(variables[i].ud, uart1_buf+1, variables[i].width);
-  	   }
+   /* only do once every 100ms */
+   if (time() > last_poll+10) {
+      last_poll = time();
+      for (i=0 ; i<n_variables ; i++)
+         if (variables[i].flags & MSCBF_REMIN) {
+            
+            address_node(variables[i].node_address);
+   
+            /* read variable */
+            uart1_buf[0] = CMD_READ + 1;
+            uart1_buf[1] = variables[i].channel;
+            uart1_buf[2] = crc8(uart1_buf, 2);
+            uart1_send(uart1_buf, 3, 0);
+   
+            n = uart1_receive(uart1_buf, 10);
+            if (n<2) {
+               poll_error(i);
+               continue; // no bytes receive
+            }
+   
+            if (uart1_buf[0] != CMD_ACK + n - 2) {
+               poll_error(i);
+               continue; // invalid command received
+            }
+   
+            if (variables[i].width != n - 2) {
+               poll_error(i);
+               continue; // variables has wrong length
+            }
+   
+            if (uart1_buf[n-1] != crc8(uart1_buf, n-1)) {
+               poll_error(i);
+               continue; // invalid CRC
+            }
+   
+            /* all ok, so copy variable */
+            memcpy(variables[i].ud, uart1_buf+1, variables[i].width);
+     	   }
+   }
 }
 
 /*------------------------------------------------------------------*/
@@ -1109,26 +1092,20 @@ void send_remote_var(unsigned char i)
 {
 unsigned char size;
 
-   /* address remote node */
-   if (variables[i].node_address != last_addr) {
-      uart1_buf[0] = CMD_ADDR_NODE16;
-      uart1_buf[1] = (unsigned char) (variables[i].node_address >> 8);
-      uart1_buf[2] = (unsigned char) (variables[i].node_address & 0xFF);
-      uart1_buf[3] = crc8(uart1_buf, 3);
-      uart1_send(uart1_buf, 4);
-      last_addr = variables[i].node_address;
-   }
+   address_node(variables[i].node_address);
 
    /* send variable */
    size = variables[i].width;
    uart1_buf[0] = CMD_WRITE_NA + size + 1;
-   uart1_buf[1] = i;
+   uart1_buf[1] = variables[i].channel;
    memcpy(uart1_buf+2, variables[i].ud, size);
    uart1_buf[2+size] = crc8(uart1_buf, 2+size);
-   uart1_send(uart1_buf, 3+size);
+   uart1_send(uart1_buf, 3+size, 0);
+
+   led_blink(1, 1, 50);
 }
 
-#endif
+#endif // SCS_1000
 
 /*------------------------------------------------------------------*/
 
@@ -1190,9 +1167,13 @@ void upgrade()
          RI0 = 0;
 
          /* erase page if not page of upgrade() function */
-         if (page * 512 < (unsigned int)upgrade) {
+         if (page*512 < (unsigned int)upgrade && page*512 < EEPROM_OFFSET) {
 
 #ifdef CPU_C8051F120
+            /* for F120, only erase even pages (1024kB page size!) */
+            if (page & 1)
+               break;
+
             SFRPAGE = LEGACY_PAGE;
 #endif
 
@@ -1361,9 +1342,6 @@ void yield(void)
 {
    watchdog_refresh();
 
-   /* output debug info to LCD if asked by interrupt routine */
-   debug_output();
-
    /* output RS232 data if present */
    rs232_output();
 
@@ -1375,18 +1353,6 @@ void yield(void)
       send_remote_var(var_to_send);
       var_to_send = 0xFF;
    }
-#endif
-
-   /* output new address to LCD if available */
-#if !defined(CPU_ADUC812) && !defined(SCS_300) && !defined(SCS_210)     // SCS210/300 redefine printf()
-#ifdef LCD_DEBUG
-   if (new_address) {
-      new_address = 0;
-      lcd_clear();
-      printf("AD:%04X GA:%04X WD:%d", sys_info.node_addr,
-             sys_info.group_addr, sys_info.wd_counter);
-   }
-#endif
 #endif
 
    /* blink LED if not configured */
