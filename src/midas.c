@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.58  1999/09/27 08:56:53  midas
+  Fixed bug with missing run number in elog
+
   Revision 1.57  1999/09/23 14:00:48  midas
   Used capital names for mutexes
 
@@ -14086,7 +14089,7 @@ char    message[10000], *p;
 
   /* get run number from ODB if not given */
   if (run > 0)
-    run_number = 0;
+    run_number = run;
   else
     {
     /* get run number */
@@ -14199,7 +14202,6 @@ char    message[10000], *p;
   sprintf(message+strlen(message), "Encoding: %s\n", encoding);
   sprintf(message+strlen(message), "========================================\n");
   strcat(message, text);
-  strcat(message, "\n");
 
   /* go to EOF and record position */
   lseek(fh, 0, SEEK_END);
