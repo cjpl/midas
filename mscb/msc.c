@@ -6,6 +6,9 @@
   Contents:     Command-line interface for the Midas Slow Control Bus
 
   $Log$
+  Revision 1.52  2004/03/04 16:10:49  midas
+  Fixed compiler warning
+
   Revision 1.51  2004/03/04 15:29:16  midas
   Added USB support
 
@@ -1084,7 +1087,7 @@ void cmd_loop(int fd, char *cmd, int adr)
          if (current_addr < 0)
             printf("You must first address an individual node\n");
          else {
-            i = 0;
+            d1 = i = 0;
             /* first echo with adressing */
             status = mscb_echo(fd, current_addr, d1, &d2);
             while (!kbhit()) {
