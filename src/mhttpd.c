@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.119  2000/05/04 12:53:31  midas
+  Fixed bug with locking author (strip @host)
+
   Revision 1.118  2000/05/04 12:03:59  midas
   Added -E for ELog mode (only display elog pages, no experiment status etc.)
 
@@ -3123,7 +3126,10 @@ FILE  *f;
     rsprintf("<td bgcolor=#FFFF00>Run number: <b>%d</b></tr>\n\n", run);
 
     /* define hidded fields */
-    rsprintf("<input type=hidden name=author  value=\"%s\">\n", author); 
+    strcpy(str, author);
+    if (strchr(str, '@'))
+      *strchr(str, '@') = 0;
+    rsprintf("<input type=hidden name=author  value=\"%s\">\n", str); 
     rsprintf("<input type=hidden name=type    value=\"%s\">\n", type); 
     rsprintf("<input type=hidden name=system  value=\"%s\">\n", system); 
     rsprintf("<input type=hidden name=subject value=\"%s\">\n\n", subject); 
