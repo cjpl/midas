@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.62  1999/10/06 07:57:55  midas
+  Added "last 10 messages" feature
+
   Revision 1.61  1999/10/06 07:04:59  midas
   Edit mode half finished
 
@@ -1585,9 +1588,9 @@ KEY    key;
 
 /*------------------------------------------------------------------*/
 
-void show_elog_submit_query()
+void show_elog_submit_query(BOOL last10)
 {
-int    i, size, run, status, m1, d2, m2, y2, index;
+int    i, size, run, status, m1, d2, m2, y2, index, fh;
 char   date[80], author[80], type[80], system[80], subject[256], text[10000], 
        orig_tag[80], reply_tag[80], attachment[3][256], encoding[80];
 char   str[256], str2[256], tag[256], ref[80], file_name[256];
@@ -1614,8 +1617,16 @@ FILE   *f;
   rsprintf("<table border=3 cellpadding=2 width=\"100%%\">\n");
 
   /* get mode */
-  full = !(*getparam("mode"));
-  show_attachments = (*getparam("attach") > 0);
+  if (last10)
+    {
+    full = TRUE;
+    show_attachments = FALSE;
+    }
+  else
+    {
+    full = !(*getparam("mode"));
+    show_attachments = (*getparam("attach") > 0);
+    }
   
   /*---- title row ----*/
 
@@ -1640,49 +1651,52 @@ FILE   *f;
 
   /*---- convert end date to ltime ----*/
 
-  strcpy(str, getparam("m1"));
-  for (m1=0 ; m1<12 ; m1++)
-    if (equal_ustring(str, mname[m1]))
-      break;
-  if (m1 == 12)
-    m1 = 0;
+  ltime_end = 0;
 
-  if (*getparam("m2") || *getparam("y2") || *getparam("d2"))
+  if (!last10)
     {
-    if (*getparam("m2"))
+    strcpy(str, getparam("m1"));
+    for (m1=0 ; m1<12 ; m1++)
+      if (equal_ustring(str, mname[m1]))
+        break;
+    if (m1 == 12)
+      m1 = 0;
+
+    if (*getparam("m2") || *getparam("y2") || *getparam("d2"))
       {
-      strcpy(str, getparam("m2"));
-      for (m2=0 ; m2<12 ; m2++)
-        if (equal_ustring(str, mname[m2]))
-          break;
-      if (m2 == 12)
-        m2 = 0;
+      if (*getparam("m2"))
+        {
+        strcpy(str, getparam("m2"));
+        for (m2=0 ; m2<12 ; m2++)
+          if (equal_ustring(str, mname[m2]))
+            break;
+        if (m2 == 12)
+          m2 = 0;
+        }
+      else
+        m2 = m1;
+
+      if (*getparam("y2"))
+        y2 = atoi(getparam("y2"));
+      else
+        y2 = atoi(getparam("y1"));
+
+      if (*getparam("d2"))
+        d2 = atoi(getparam("d2"));
+      else
+        d2 = atoi(getparam("d1"));
+
+      memset(&tms, 0, sizeof(struct tm));
+      tms.tm_year = y2 % 100;
+      tms.tm_mon  = m2;
+      tms.tm_mday = d2;
+      tms.tm_hour = 12;
+
+      if (tms.tm_year < 90)
+        tms.tm_year += 100;
+      ltime_end = mktime(&tms);
       }
-    else
-      m2 = m1;
-
-    if (*getparam("y2"))
-      y2 = atoi(getparam("y2"));
-    else
-      y2 = atoi(getparam("y1"));
-
-    if (*getparam("d2"))
-      d2 = atoi(getparam("d2"));
-    else
-      d2 = atoi(getparam("d1"));
-
-    memset(&tms, 0, sizeof(struct tm));
-    tms.tm_year = y2 % 100;
-    tms.tm_mon  = m2;
-    tms.tm_mday = d2;
-    tms.tm_hour = 12;
-
-    if (tms.tm_year < 90)
-      tms.tm_year += 100;
-    ltime_end = mktime(&tms);
     }
-  else
-    ltime_end = 0;
 
   /*---- title row ----*/
 
@@ -1697,7 +1711,10 @@ FILE   *f;
     }
   else 
     {
-    if (*getparam("m2") || *getparam("y2") || *getparam("d2"))
+    if (last10)
+      rsprintf("<tr><td colspan=6 bgcolor=#FFFF00><b>Last ten messages</b></tr>\n");
+
+    else if (*getparam("m2") || *getparam("y2") || *getparam("d2"))
       rsprintf("<tr><td colspan=%d bgcolor=#FFFF00><b>Query result between %s %s %s and %s %d %d</b></tr>\n",
                 full?6:7, getparam("m1"), getparam("d1"), getparam("y1"),
                 mname[m2], d2, y2);
@@ -1740,7 +1757,19 @@ FILE   *f;
 
   /*---- do query ----*/
 
-  if (*getparam("r1"))
+  if (last10)
+    {
+    strcpy(tag, "-1");
+    el_search_message(tag, &fh, TRUE);
+    close(fh);
+    for (i=0 ; i<10 ; i++)
+      {
+      strcat(tag, "-1");
+      el_search_message(tag, &fh, TRUE);
+      close(fh);
+      }
+    }
+  else if (*getparam("r1"))
     {
     /* do run query */
     el_search_run(atoi(getparam("r1")), tag);
@@ -2263,7 +2292,19 @@ FILE  *f;
 
   if (equal_ustring(command, "submit query"))
     {
-    show_elog_submit_query();
+    show_elog_submit_query(FALSE);
+    return;
+    }
+
+  if (equal_ustring(command, "last 10 entries"))
+    {
+    redirect("EL/last");
+    return;
+    }
+
+  if (equal_ustring(path, "last"))
+    {
+    show_elog_submit_query(TRUE);
     return;
     }
 
@@ -2464,6 +2505,7 @@ FILE  *f;
   rsprintf("<input type=submit name=cmd value=Edit>\n");
   rsprintf("<input type=submit name=cmd value=Reply>\n");
   rsprintf("<input type=submit name=cmd value=Query>\n");
+  rsprintf("<input type=submit name=cmd value=\"Last 10 entries\">\n");
 
   /* check forms from ODB */
   db_find_key(hDB, 0, "/Elog/Forms", &hkeyroot);
