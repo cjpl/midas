@@ -6,6 +6,9 @@
   Contents:     LeCroy 2415 CAMAC HV Device Driver
 
   $Log$
+  Revision 1.3  1999/06/25 10:59:30  midas
+  Fixed bug in CAMAC access
+
   Revision 1.2  1998/10/12 12:18:57  midas
   Added Log tag in header
 
@@ -83,7 +86,7 @@ INT q, x, d;
 
   do
     {
-    camc_q(camac_crate[index], camac_slot[index], 0, 0, &q);
+    cam16i_q(camac_crate[index], camac_slot[index], 0, 0, (WORD *) &d, &x, &q);
     } while (x && !q);
 
   if (config[index] == 3.5)
@@ -105,7 +108,7 @@ INT q, x, d;
 
   do
     {
-    camc_q(camac_crate[index], camac_slot[index], 0, 0, &q);
+    cam16i_q(camac_crate[index], camac_slot[index], 0, 0, (WORD *) &d, &x, &q);
     } while (x && !q);
 
   if (config[index] == 3.5)
