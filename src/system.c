@@ -14,6 +14,9 @@
                 Brown, Prentice Hall
 
   $Log$
+  Revision 1.37  1999/07/22 19:08:25  pierre
+  - move static INT ss_in_async_routine_flag above LOCAL_ROUTINE for VxWorks
+
   Revision 1.36  1999/07/15 07:42:48  midas
   Added SIGTERM to ss_ctrlc_handler
 
@@ -148,13 +151,13 @@
 #include "midas.h"
 #include "msystem.h"
 
+static INT ss_in_async_routine_flag = 0;
 #ifdef LOCAL_ROUTINES
 #include <signal.h>
 
 /*------------------------------------------------------------------*/
 
 /* globals */
-static INT ss_in_async_routine_flag = 0;
 
 /*------------------------------------------------------------------*/
 
@@ -1510,32 +1513,25 @@ INT ss_mutex_wait_for(HNDLE mutex_handle, INT timeout)
 
 \********************************************************************/
 {
-INT status;
-
+  INT status;
+  
 #ifdef OS_WINNT
-
+  
   status = WaitForSingleObject((HANDLE) mutex_handle, 
                                timeout == 0 ? INFINITE : timeout);
-
   if (status == WAIT_FAILED)
     return SS_NO_MUTEX;
-
   return SS_SUCCESS;
-
 #endif /* OS_WINNT */
 #ifdef OS_VMS
-
   status = sys$enqw(0, LCK$K_EXMODE, mutex_handle, LCK$M_CONVERT,
 		    0,0,0,0,0,0,0);
-
   if (status != SS$_NORMAL)
     return SS_NO_MUTEX;
-
   return SS_SUCCESS;
 
 #endif /* OS_VMS */
 #ifdef OS_VXWORKS
-
   /* convert timeout in ticks (1/60) = 1000/60 ~ 1/16 = >>4 */
   status = semTake((SEM_ID)mutex_handle, timeout == 0 ? WAIT_FOREVER : timeout>>4);
   if (status == ERROR)
@@ -1544,64 +1540,60 @@ INT status;
 
 #endif /* OS_VXWORKS */
 #ifdef OS_UNIX
-
-  {
+ {
   struct sembuf sb;
-  INT           status;
 
 #if (defined(OS_LINUX) && !defined(_SEM_SEMUN_UNDEFINED)) || defined(OS_FREEBSD)
   union semun arg;
 #else
-  union semun {
-    INT             val;
-    struct semid_ds *buf;
-    ushort          *array;
-  } arg;
+    union semun {
+      INT             val;
+      struct semid_ds *buf;
+      ushort          *array;
+    } arg;
 #endif
-
-  sb.sem_num = 0;
-  sb.sem_op = -1; /* decrement semaphore */
-  sb.sem_flg = SEM_UNDO;
-
-  /* don't request the mutex when in asynchronous state
-     and mutex was locked already by foreground process */
-
-  if (ss_in_async_routine_flag)
-    if (semctl(mutex_handle, 0, GETPID, arg) == getpid())
-      if (semctl(mutex_handle, 0, GETVAL, arg) == 0)
+    
+    sb.sem_num = 0;
+    sb.sem_op = -1; /* decrement semaphore */
+    sb.sem_flg = SEM_UNDO;
+    
+    /* don't request the mutex when in asynchronous state
+       and mutex was locked already by foreground process */
+    if (ss_in_async_routine_flag)
+      if (semctl(mutex_handle, 0, GETPID, arg) == getpid())
+        if (semctl(mutex_handle, 0, GETVAL, arg) == 0)
 	  {
-	  skip_mutex_handle = mutex_handle;
-	  return SS_SUCCESS;
+            skip_mutex_handle = mutex_handle;
+            return SS_SUCCESS;
 	  }
-
-  skip_mutex_handle = -1;
-
-  do
-    {
-    status = semop(mutex_handle, &sb, 1);
-
-    /* return on success */
-    if (status == 0)
-      break;
-
-    /* retry if interrupted by a ss_wake signal */
-    if (errno == EINTR)
-      continue;
-
-    return SS_NO_MUTEX;
-    } while (1);
-
-  return SS_SUCCESS;
+    
+    skip_mutex_handle = -1;
+    
+    do
+      {
+        status = semop(mutex_handle, &sb, 1);
+        
+        /* return on success */
+        if (status == 0)
+          break;
+        
+        /* retry if interrupted by a ss_wake signal */
+        if (errno == EINTR)
+          continue;
+        
+        return SS_NO_MUTEX;
+      } while (1);
+    
+    return SS_SUCCESS;
   }
 #endif /* OS_UNIX */
-
+  
 #ifdef OS_MSDOS
   return SS_NO_MUTEX;
 #endif
 }
 
 /*------------------------------------------------------------------*/
-
 INT ss_mutex_release(HNDLE mutex_handle)
 /********************************************************************\
 
@@ -1910,8 +1902,7 @@ struct tm *ltm;
   clock_settime(CLOCK_REALTIME, &ltm);
 
 #endif
-
-  return SS_SUCCESS;
+return SS_SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
