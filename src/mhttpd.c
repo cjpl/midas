@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.261  2003/12/01 11:41:34  midas
+  Added history panel groups (code from PAA)
+
   Revision 1.260  2003/11/20 11:29:44  midas
   Implemented db_check_record and use it in most places instead of db_create_record
 
@@ -8918,73 +8921,76 @@ char   *hist_col[] =
 
 void show_hist_page(char *path, char *buffer, int *buffer_size, int refresh)
 {
-char   str[256], ref[256], ref2[256], paramstr[256], scalestr[256];
+char   str[256], ref[256], ref2[256], paramstr[256], scalestr[256], hgroup[256];
 char   *poffset, *pscale, *pmag, *pindex;
-HNDLE  hDB, hkey, hkeyp, hkeybutton;
-KEY    key;
-int    i, scale, offset, index, width, size, status, labels;
+HNDLE  hDB, hkey, hikeyp, hkeyp, hkeybutton;
+KEY    key, ikey;
+int    i, j, k, scale, offset, index, width, size, status, labels;
 float  factor[2];
 char   def_button[][NAME_LENGTH] = {"10m", "1h", "3h", "12h", "24h", "3d", "7d" };
-
+  
   cm_get_experiment_database(&hDB, NULL);
-
+  
   if (equal_ustring(getparam("cmd"), "Query"))
     {
     show_query_page(path);
     return;
     }
-
+  
   if (equal_ustring(getparam("cmd"), "Config") ||
-      equal_ustring(getparam("cmd"), "Save")   ||
-      equal_ustring(getparam("cmd"), "Refresh"))
+    equal_ustring(getparam("cmd"), "Save")   ||
+    equal_ustring(getparam("cmd"), "Refresh"))
     {
     show_hist_config_page(path);
     /*
     sprintf(str, "History/Display/%s", path);
     redirect(str);
     */
-
+    
     return;
     }
-
+  
   if (equal_ustring(getparam("cmd"), "New"))
     {
     sprintf(str, "HS/%s", path);
     show_header(hDB, "History", "GET", str, 1, 0);
+    rsprintf("<tr><td align=center bgcolor=\"#FFFF00\" colspan=2>Group name: &nbsp;&nbsp;");
+    rsprintf("<input type=text size=15 maxlength=31 name=group>\n");
     rsprintf("<tr><td align=center bgcolor=\"#FFFF00\" colspan=2>Panel name: &nbsp;&nbsp;");
     rsprintf("<input type=text size=15 maxlength=31 name=panel>\n");
     rsprintf("</td></tr>\n");
-
+    
     rsprintf("<tr><td align=center colspan=2>");
     rsprintf("<input type=submit value=Submit>\n");
     rsprintf("</td></tr>\n");
-
+    
     rsprintf("</table>\r\n");
     rsprintf("</body></html>\r\n");
     return;
     }
-
+  
   if (equal_ustring(getparam("cmd"), "Delete Panel"))
     {
     sprintf(str, "/History/Display/%s", path);
     if (db_find_key(hDB, 0, str, &hkey))
       db_delete_key(hDB, hkey, FALSE);
-
+    
     redirect("HS/");
     return;
     }
-
+  
   if (*getparam("panel"))
     {
     strcpy(path, getparam("panel"));
-
+    strcpy(hgroup, getparam("group"));
+    
     /* create new panel */
-    sprintf(str, "/History/Display/%s", path);
+    sprintf(str, "/History/Display/%s/%s", hgroup, path);
     db_create_key(hDB, 0, str, TID_KEY);
     db_find_key(hDB, 0, str, &hkey);
     db_set_value(hDB, hkey, "Variables",
-                 "", NAME_LENGTH*2, 1, TID_STRING);
-
+      "", NAME_LENGTH*2, 1, TID_STRING);
+    
     factor[0] = 1;
     db_set_value(hDB, hkey, "Factor", factor, 1*sizeof(float), 1, TID_FLOAT);
     factor[0] = 0;
@@ -8995,12 +9001,13 @@ char   def_button[][NAME_LENGTH] = {"10m", "1h", "3h", "12h", "24h", "3d", "7d" 
     db_set_value(hDB, hkey, "Show run markers", &i, sizeof(BOOL), 1, TID_BOOL);
     i = 0;
     db_set_value(hDB, hkey, "Log axis", &i, sizeof(BOOL), 1, TID_BOOL);
-
+    
     /* configure that panel */
-    show_hist_config_page(path);
+    sprintf(str, "%s/%s", hgroup, path);
+    show_hist_config_page(str);
     return;
     }
-
+  
   if (equal_ustring(getparam("cmd"), "Create ELog"))
     {
     sprintf(str, "\\HS\\%s.gif", path);
@@ -9030,11 +9037,11 @@ char   def_button[][NAME_LENGTH] = {"10m", "1h", "3h", "12h", "24h", "3d", "7d" 
         strcat(str, "?");
       sprintf(str+strlen(str), "index=%s", getparam("hindex"));
       }
-
+    
     show_elog_new(NULL, FALSE, str);
     return;
     }
-
+  
   pscale = getparam("scale");
   if (pscale == NULL || *pscale == 0)
     pscale = getparam("hscale");
@@ -9047,29 +9054,29 @@ char   def_button[][NAME_LENGTH] = {"10m", "1h", "3h", "12h", "24h", "3d", "7d" 
   pindex = getparam("index");
   if (pindex == NULL || *pindex == 0)
     pindex = getparam("hindex");
-
+  
   labels = 1;
   if (*getparam("labels") && atoi(getparam("labels")) == 0)
     labels = 0;
-
+  
   /* evaluate scale and offset */
-
+  
   if (poffset && *poffset)
     offset = time_to_sec(poffset);
   else
     offset = 0;
-
+  
   if (pscale && *pscale)
     scale = time_to_sec(pscale);
   else
     scale = 0;
-
+  
   if (strstr(path, ".gif"))
     {
     index = -1;
     if (pindex && *pindex)
       index = atoi(pindex);
-
+    
     if (equal_ustring(pmag, "Large"))
       generate_hist_graph(path, buffer, buffer_size, 1024, 768, scale, offset, index, labels);
     else if (equal_ustring(pmag, "Small"))
@@ -9078,14 +9085,14 @@ char   def_button[][NAME_LENGTH] = {"10m", "1h", "3h", "12h", "24h", "3d", "7d" 
       generate_hist_graph(path, buffer, buffer_size, atoi(pmag), (int) (atoi(pmag)*0.625), scale, offset, index, labels);
     else
       generate_hist_graph(path, buffer, buffer_size, 640, 400, scale, offset, index, labels);
-
+    
     return;
     }
-
+  
   /* evaluate offset shift */
   if (equal_ustring(getparam("shift"), "<"))
     offset -= scale/2;
-
+  
   if (equal_ustring(getparam("shift"), ">"))
     {
     offset += scale/2;
@@ -9094,13 +9101,13 @@ char   def_button[][NAME_LENGTH] = {"10m", "1h", "3h", "12h", "24h", "3d", "7d" 
     }
   if (equal_ustring(getparam("shift"), ">>"))
     offset = 0;
-
+  
   if (equal_ustring(getparam("shift"), " + "))
     {
     offset -= scale/4;
     scale /= 2;
     }
-
+  
   if (equal_ustring(getparam("shift"), " - "))
     {
     offset += scale/2;
@@ -9108,16 +9115,16 @@ char   def_button[][NAME_LENGTH] = {"10m", "1h", "3h", "12h", "24h", "3d", "7d" 
       offset = 0;
     scale *= 2;
     }
-
+  
   sprintf(str, "HS/%s", path);
   show_header(hDB, "History", "GET", str, 1, offset == 0 ? refresh : 0);
-
+  
   /* menu buttons */
   rsprintf("<tr><td colspan=2 bgcolor=\"#C0C0C0\">\n");
   rsprintf("<input type=submit name=cmd value=ODB>\n");
   rsprintf("<input type=submit name=cmd value=Alarms>\n");
   rsprintf("<input type=submit name=cmd value=Status>\n");
-
+  
   /* define hidden field for parameters */
   if (pscale && *pscale)
     rsprintf("<input type=hidden name=hscale value=%d>\n", scale);
@@ -9127,7 +9134,7 @@ char   def_button[][NAME_LENGTH] = {"10m", "1h", "3h", "12h", "24h", "3d", "7d" 
     if (path[0] && !equal_ustring(path, "All"))
       {
       sprintf(str, "/History/Display/%s/Timescale", path);
-
+      
       strcpy(scalestr, "1h");
       size = NAME_LENGTH;
       status = db_get_value(hDB, 0, str, scalestr, &size, TID_STRING, TRUE);
@@ -9137,276 +9144,313 @@ char   def_button[][NAME_LENGTH] = {"10m", "1h", "3h", "12h", "24h", "3d", "7d" 
         db_find_key(hDB, 0, str, &hkey);
         if (hkey)
           db_delete_key(hDB, hkey, FALSE);
-
+        
         strcpy(scalestr, "1h");
         size = NAME_LENGTH;
         db_get_value(hDB, 0, str, scalestr, &size, TID_STRING, TRUE);
         }
-
+      
       rsprintf("<input type=hidden name=hscale value=%s>\n", scalestr);
       scale = time_to_sec(scalestr);
       }
     }
-
+  
   if (offset != 0)
     rsprintf("<input type=hidden name=hoffset value=%d>\n", offset);
   if (pmag && *pmag)
     rsprintf("<input type=hidden name=hwidth value=%s>\n", pmag);
   if (pindex && *pindex)
     rsprintf("<input type=hidden name=hindex value=%s>\n", pindex);
-
+  
   rsprintf("</td></tr>\n");
-
+  
   /* links for history panels */
   rsprintf("<tr><td colspan=2 bgcolor=\"#FFFF00\">\n");
-  if (path[0])
-    rsprintf("<i>Panels:</i> &nbsp;&nbsp;\n");
-  else
-    rsprintf("<b>Please select panel:</b> &nbsp;&nbsp;\n");
+  if (!path[0])
+    rsprintf("<b>Please select panel:</b><br>\n");
+  
+  /* table for panel selection */
+  rsprintf("<table border=1 cellpadding=3 style='text-align: left;'>");
 
+  /* "All" link */
+  rsprintf("<tr><td colspan=2>\n");
   if (equal_ustring(path, "All"))
     rsprintf("<b>All</b> &nbsp;&nbsp;");
   else
     {
     if (exp_name[0])
-      rsprintf("<a href=\"/HS/All?exp=%s\">ALL</a> &nbsp;&nbsp;\n", exp_name);
+      rsprintf("<a href=\"/HS/All?exp=%s\">ALL</a>;\n", exp_name);
     else
-      rsprintf("<a href=\"/HS/All\">ALL</a> &nbsp;&nbsp;\n");
+      rsprintf("<a href=\"/HS/All\">ALL</a>\n");
     }
+  rsprintf("</td></tr>\n");
 
+  /* Setup History table links */
   db_find_key(hDB, 0, "/History/Display", &hkey);
   if (!hkey)
     {
     /* create default panel */
     strcpy(str, "System:Trigger per sec.");
     strcpy(str+2*NAME_LENGTH, "System:Trigger kB per sec.");
-    db_set_value(hDB, 0, "/History/Display/Trigger rate/Variables",
-                 str, NAME_LENGTH*4, 2, TID_STRING);
+    db_set_value(hDB, 0, "/History/Display/Default/Trigger rate/Variables",
+      str, NAME_LENGTH*4, 2, TID_STRING);
     strcpy(str, "1h");
-    db_set_value(hDB, 0, "/History/Display/Trigger rate/Time Scale",
-                 str, NAME_LENGTH, 1, TID_STRING);
-
+    db_set_value(hDB, 0, "/History/Display/Default/Trigger rate/Time Scale",
+      str, NAME_LENGTH, 1, TID_STRING);
+    
     factor[0] = 1;
     factor[1] = 1;
-    db_set_value(hDB, 0, "/History/Display/Trigger rate/Factor",
-                 factor, 2*sizeof(float), 2, TID_FLOAT);
+    db_set_value(hDB, 0, "/History/Display/Default/Trigger rate/Factor",
+      factor, 2*sizeof(float), 2, TID_FLOAT);
     factor[0] = 0;
     factor[1] = 0;
-    db_set_value(hDB, 0, "/History/Display/Trigger rate/Offset",
-                 factor, 2*sizeof(float), 2, TID_FLOAT);
+    db_set_value(hDB, 0, "/History/Display/Default/Trigger rate/Offset",
+      factor, 2*sizeof(float), 2, TID_FLOAT);
     strcpy(str, "1h");
-    db_set_value(hDB, 0, "/History/Display/Trigger rate/Timescale",
-                 str, NAME_LENGTH, 1, TID_STRING);
+    db_set_value(hDB, 0, "/History/Display/Default/Trigger rate/Timescale",
+      str, NAME_LENGTH, 1, TID_STRING);
     i = 1;
-    db_set_value(hDB, 0, "/History/Display/Trigger rate/Zero ylow",
-                 &i, sizeof(BOOL), 1, TID_BOOL);
+    db_set_value(hDB, 0, "/History/Display/Default/Trigger rate/Zero ylow",
+      &i, sizeof(BOOL), 1, TID_BOOL);
     i = 1;
-    db_set_value(hDB, 0, "/History/Display/Trigger rate/Show run markers",
-                 &i, sizeof(BOOL), 1, TID_BOOL);
+    db_set_value(hDB, 0, "/History/Display/Default/Trigger rate/Show run markers",
+      &i, sizeof(BOOL), 1, TID_BOOL);
     }
-
+  
   db_find_key(hDB, 0, "/History/Display", &hkey);
   if (hkey)
+    {
     for (i=0 ; ; i++)
       {
       db_enum_link(hDB, hkey, i, &hkeyp);
-
-      if (!hkeyp)
+      
+      if (!hkeyp) 
         break;
-
+      
+      // Group key
       db_get_key(hDB, hkeyp, &key);
-
-      if (equal_ustring(path, key.name))
-        rsprintf("<b>%s</b> &nbsp;&nbsp;", key.name);
-      else
+      rsprintf("<tr><td><b>%s</b></td>\n<td>", key.name);
+      
+      for (j=0; ; j++) 
         {
-        if (exp_name[0])
-          rsprintf("<a href=\"/HS/%s?exp=%s\">%s</a> &nbsp;&nbsp;\n", key.name, exp_name, key.name);
+        // scan items 
+        db_enum_link(hDB, hkeyp, j, &hikeyp);
+        
+        if (!hikeyp) {
+          rsprintf("</tr>");
+          break;
+          }
+        
+        // Item key
+        db_get_key(hDB, hikeyp, &ikey);
+        
+        if (strchr(path, '/'))
+          strcpy(str, strchr(path, '/')+1);
         else
-          rsprintf("<a href=\"/HS/%s\">%s</a> &nbsp;&nbsp;\n", key.name, key.name);
-        }
-      }
+          strcpy(str, path);
 
-  /* "New" button */
-  rsprintf("<input type=submit name=cmd value=New>");
-
-  rsprintf("</tr>\n");
-
-  /* image panel */
-  if (path[0] && !equal_ustring(path, "All"))
-    {
-    /* navigation links */
-    rsprintf("<tr><td bgcolor=\"#A0FFA0\">\n");
-
-    sprintf(str, "/History/Display/%s/Buttons", path);
-    db_find_key(hDB, 0, str, &hkeybutton);
-    if (hkeybutton == 0)
-      {
-      /* create default buttons */
-      db_create_key(hDB, 0, str, TID_STRING);
-      db_find_key(hDB, 0, str, &hkeybutton);
-      db_set_data(hDB, hkeybutton, def_button, sizeof(def_button), 7, TID_STRING);
-      }
-
-    db_get_key(hDB, hkeybutton, &key);
-
-    for (i=0 ; i<key.num_values ; i++)
-      {
-      size = sizeof(str);
-      db_get_data_index(hDB, hkeybutton, str, &size, i, TID_STRING);
-      rsprintf("<input type=submit name=scale value=%s>\n", str);
-      }
-
-    rsprintf("<input type=submit name=shift value=\"<\">\n");
-    rsprintf("<input type=submit name=shift value=\" + \">\n");
-    rsprintf("<input type=submit name=shift value=\" - \">\n");
-    if (offset != 0)
-      {
-      rsprintf("<input type=submit name=shift value=\">\">\n");
-      rsprintf("<input type=submit name=shift value=\">>\">\n");
-      }
-
-    rsprintf("<td bgcolor=\"#A0FFA0\">\n");
-    rsprintf("<input type=submit name=width value=Large>\n");
-    rsprintf("<input type=submit name=width value=Small>\n");
-    rsprintf("<input type=submit name=cmd value=\"Create ELog\">\n");
-    rsprintf("<input type=submit name=cmd value=Config>\n");
-    rsprintf("<input type=submit name=cmd value=Query>\n");
-
-    rsprintf("</tr>\n");
-
-    paramstr[0] = 0;
-    sprintf(paramstr+strlen(paramstr), "&scale=%d", scale);
-    if (offset != 0)
-      sprintf(paramstr+strlen(paramstr), "&offset=%d", offset);
-    if (pmag && *pmag)
-      sprintf(paramstr+strlen(paramstr), "&width=%s", pmag);
-
-    /* define image map */
-    rsprintf("<map name=\"%s\">\r\n", path);
-
-    if (!(pindex && *pindex))
-      {
-      sprintf(str, "/History/Display/%s/Variables", path);
-      db_find_key(hDB, 0, str, &hkey);
-      if (hkey)
-        {
-        db_get_key(hDB, hkey, &key);
-
-        for (i=0 ; i < key.num_values ; i++)
+        if (equal_ustring(str, ikey.name))
+          rsprintf("<small><b>%s</b></small> &nbsp;", ikey.name);
+        else
           {
-          if (paramstr[0])
-            {
-            if (exp_name[0])
-              sprintf(ref, "/HS/%s?exp=%s%s&index=%d", path, exp_name, paramstr, i);
-            else
-              sprintf(ref, "/HS/%s?%s&index=%d", path, paramstr, i);
-            }
+          if (exp_name[0])
+            rsprintf("<small><a href=\"/HS/%s/%s?exp=%s\">%s</a></small> &nbsp;\n", key.name, ikey.name, exp_name, ikey.name);
           else
-            {
-            if (exp_name[0])
-              sprintf(ref, "/HS/%s?exp=%s&index=%d", path, exp_name, i);
-            else
-              sprintf(ref, "/HS/%s?index=%d", path, i);
-            }
-
-          rsprintf("  <area shape=rect coords=\"%d,%d,%d,%d\" href=\"%s\">\r\n",
-                   30, 31+23*i, 150, 30+23*i+17, ref);
+            rsprintf("<small><a href=\"/HS/%s/%s\">%s</a></small> &nbsp;\n", key.name, ikey.name, ikey.name);
           }
         }
       }
-    else
+    }
+
+    /* "New" button */
+    rsprintf("<tr><td colspan=2><input type=submit name=cmd value=New></td></tr>\n");
+    
+    rsprintf("</table></tr>\n");
+    
+    /* image panel */
+    if (path[0] && !equal_ustring(path, "All"))
       {
+      /* navigation links */
+      rsprintf("<tr><td bgcolor=\"#A0FFA0\">\n");
+      
+      sprintf(str, "/History/Display/%s/Buttons", path);
+      db_find_key(hDB, 0, str, &hkeybutton);
+      if (hkeybutton == 0)
+        {
+        /* create default buttons */
+        db_create_key(hDB, 0, str, TID_STRING);
+        db_find_key(hDB, 0, str, &hkeybutton);
+        db_set_data(hDB, hkeybutton, def_button, sizeof(def_button), 7, TID_STRING);
+        }
+      
+      db_get_key(hDB, hkeybutton, &key);
+      
+      for (i=0 ; i<key.num_values ; i++)
+        {
+        size = sizeof(str);
+        db_get_data_index(hDB, hkeybutton, str, &size, i, TID_STRING);
+        rsprintf("<input type=submit name=scale value=%s>\n", str);
+        }
+      
+      rsprintf("<input type=submit name=shift value=\"<\">\n");
+      rsprintf("<input type=submit name=shift value=\" + \">\n");
+      rsprintf("<input type=submit name=shift value=\" - \">\n");
+      if (offset != 0)
+        {
+        rsprintf("<input type=submit name=shift value=\">\">\n");
+        rsprintf("<input type=submit name=shift value=\">>\">\n");
+        }
+      
+      rsprintf("<td bgcolor=\"#A0FFA0\">\n");
+      rsprintf("<input type=submit name=width value=Large>\n");
+      rsprintf("<input type=submit name=width value=Small>\n");
+      rsprintf("<input type=submit name=cmd value=\"Create ELog\">\n");
+      rsprintf("<input type=submit name=cmd value=Config>\n");
+      rsprintf("<input type=submit name=cmd value=Query>\n");
+      
+      rsprintf("</tr>\n");
+      
+      paramstr[0] = 0;
+      sprintf(paramstr+strlen(paramstr), "&scale=%d", scale);
+      if (offset != 0)
+        sprintf(paramstr+strlen(paramstr), "&offset=%d", offset);
+      if (pmag && *pmag)
+        sprintf(paramstr+strlen(paramstr), "&width=%s", pmag);
+      
+      /* define image map */
+      rsprintf("<map name=\"%s\">\r\n", path);
+      
+      if (!(pindex && *pindex))
+        {
+        sprintf(str, "/History/Display/%s/Variables", path);
+        db_find_key(hDB, 0, str, &hkey);
+        if (hkey)
+          {
+          db_get_key(hDB, hkey, &key);
+          
+          for (i=0 ; i < key.num_values ; i++)
+            {
+            if (paramstr[0])
+              {
+              if (exp_name[0])
+                sprintf(ref, "/HS/%s?exp=%s%s&index=%d", path, exp_name, paramstr, i);
+              else
+                sprintf(ref, "/HS/%s?%s&index=%d", path, paramstr, i);
+              }
+            else
+              {
+              if (exp_name[0])
+                sprintf(ref, "/HS/%s?exp=%s&index=%d", path, exp_name, i);
+              else
+                sprintf(ref, "/HS/%s?index=%d", path, i);
+              }
+            
+            rsprintf("  <area shape=rect coords=\"%d,%d,%d,%d\" href=\"%s\">\r\n",
+              30, 31+23*i, 150, 30+23*i+17, ref);
+            }
+          }
+        }
+      else
+        {
+        if (paramstr[0])
+          {
+          if (exp_name[0])
+            sprintf(ref, "/HS/%s?exp=%s%s", path, exp_name, paramstr);
+          else
+            sprintf(ref, "/HS/%s?%s", path, paramstr);
+          }
+        else
+          {
+          if (exp_name[0])
+            sprintf(ref, "/HS/%s?exp=%s", path, exp_name);
+          else
+            sprintf(ref, "/HS/%s", path);
+          }
+        
+        if (equal_ustring(pmag, "Large"))
+          width = 1024;
+        else if (equal_ustring(pmag, "Small"))
+          width = 320;
+        else if (atoi(pmag) > 0)
+          width = atoi(pmag);
+        else
+          width = 640;
+        
+        rsprintf("  <area shape=rect coords=\"%d,%d,%d,%d\" href=\"%s\">\r\n",
+          0, 0, width, 20, ref);
+        }
+      
+      rsprintf("</map>\r\n");
+      
+      /* Display individual panels */
+      if (pindex && *pindex)
+        sprintf(paramstr+strlen(paramstr), "&index=%s", pindex);
       if (paramstr[0])
         {
         if (exp_name[0])
-          sprintf(ref, "/HS/%s?exp=%s%s", path, exp_name, paramstr);
+          sprintf(ref, "/HS/%s.gif?exp=%s%s", path, exp_name, paramstr);
         else
-          sprintf(ref, "/HS/%s?%s", path, paramstr);
+          sprintf(ref, "/HS/%s.gif?%s", path, paramstr);
         }
       else
         {
         if (exp_name[0])
-          sprintf(ref, "/HS/%s?exp=%s", path, exp_name);
+          sprintf(ref, "/HS/%s.gif?exp=%s", path, exp_name);
         else
-          sprintf(ref, "/HS/%s", path);
+          sprintf(ref, "/HS/%s.gif", path);
         }
-
-      if (equal_ustring(pmag, "Large"))
-        width = 1024;
-      else if (equal_ustring(pmag, "Small"))
-        width = 320;
-      else if (atoi(pmag) > 0)
-        width = atoi(pmag);
-      else
-        width = 640;
-
-      rsprintf("  <area shape=rect coords=\"%d,%d,%d,%d\" href=\"%s\">\r\n",
-                 0, 0, width, 20, ref);
-      }
-
-    rsprintf("</map>\r\n");
-
-    /* Display individual panels */
-    if (pindex && *pindex)
-      sprintf(paramstr+strlen(paramstr), "&index=%s", pindex);
-    if (paramstr[0])
-      {
-      if (exp_name[0])
-        sprintf(ref, "/HS/%s.gif?exp=%s%s", path, exp_name, paramstr);
-      else
-        sprintf(ref, "/HS/%s.gif?%s", path, paramstr);
-      }
-    else
-      {
-      if (exp_name[0])
-        sprintf(ref, "/HS/%s.gif?exp=%s", path, exp_name);
-      else
-        sprintf(ref, "/HS/%s.gif", path);
-      }
-
-    /* put reference to graph */
-    rsprintf("<tr><td colspan=2><img src=\"%s\" alt=\"%s.gif\" usemap=\"#%s\"></tr>\n",
-             ref, path, path);
+      
+      /* put reference to graph */
+      rsprintf("<tr><td colspan=2><img src=\"%s\" alt=\"%s.gif\" usemap=\"#%s\"></tr>\n",
+        ref, path, path);
     }
-
-  if (equal_ustring(path, "All"))
-    {
-    /* Display all panels */
-    db_find_key(hDB, 0, "/History/Display", &hkey);
-    if (hkey)
-      for (i=0 ; ; i++)
-        {
-        db_enum_link(hDB, hkey, i, &hkeyp);
-
-        if (!hkeyp)
-          break;
-
-        db_get_key(hDB, hkeyp, &key);
-
-        if (exp_name[0])
-          {
-          sprintf(ref, "/HS/%s.gif?exp=%s&width=Small", key.name, exp_name);
-          sprintf(ref2, "/HS/%s?exp=%s", key.name, exp_name);
-          }
-        else
-          {
-          sprintf(ref, "/HS/%s.gif?width=Small", key.name);
-          sprintf(ref2, "/HS/%s", key.name);
-          }
-
-        if (i % 2 == 0)
-          rsprintf("<tr><td><a href=\"%s\"><img src=\"%s\" alt=\"%s.gif\"></a>\n",
-                   ref2, ref, key.name);
-        else
-          rsprintf("<td><a href=\"%s\"><img src=\"%s\" alt=\"%s.gif\"></a></tr>\n",
-                   ref2, ref, key.name);
-        }
-    }
-
-  rsprintf("</table>\r\n");
-  rsprintf("</body></html>\r\n");
+    
+    if (equal_ustring(path, "All"))
+      {
+      /* Display all panels */
+      db_find_key(hDB, 0, "/History/Display", &hkey);
+      if (hkey)
+        for (i=0, k=0; ; i++)
+          { // scan Groups
+          db_enum_link(hDB, hkey, i, &hkeyp);
+          
+          if (!hkeyp)
+            break;
+          
+          db_get_key(hDB, hkeyp, &key);
+          
+          for (j=0 ; ; j++, k++) {
+            // scan items 
+            db_enum_link(hDB, hkeyp, j, &hikeyp);
+            
+            if (!hikeyp)
+              break;
+            
+            db_get_key(hDB, hikeyp, &ikey);
+            if (exp_name[0])
+              {
+              sprintf(ref, "/HS/%s/%s.gif?exp=%s&width=Small", key.name, ikey.name, exp_name);
+              sprintf(ref2, "/HS/%s/%s?exp=%s", key.name, ikey.name, exp_name);
+              }
+            else
+              {
+              sprintf(ref, "/HS/%s/%s.gif?width=Small", key.name, ikey.name);
+              sprintf(ref2, "/HS/%s/%s", key.name, ikey.name);
+              }
+            
+            if (k % 2 == 0)
+              rsprintf("<tr><td><a href=\"%s\"><img src=\"%s\" alt=\"%s.gif\"></a>\n",
+              ref2, ref, key.name);
+            else
+              rsprintf("<td><a href=\"%s\"><img src=\"%s\" alt=\"%s.gif\"></a></tr>\n",
+              ref2, ref, key.name);
+            } // items loop
+          } // Groups loop
+      } // All
+    rsprintf("</table>\r\n");
+    rsprintf("</body></html>\r\n");
 }
+
 
 /*------------------------------------------------------------------*/
 
