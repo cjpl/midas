@@ -1,4 +1,4 @@
-Version 1.2.4, released November xxth, 2001
+Version 1.2.4, released November 20th, 2001
 ===========================================
 
 - Added "date format" option
@@ -16,6 +16,7 @@ Version 1.2.4, released November xxth, 2001
 - Added option "find menu commands"
 - Added command "last x" to "find menu commands"
 - Last x gets now multiplied by 2 each time instead of added one
+- Added more spaces in attachment display of find result page
 
 Version 1.2.3, released November 15th, 2001
 ===========================================
