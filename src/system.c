@@ -14,6 +14,9 @@
                 Brown, Prentice Hall
 
   $Log$
+  Revision 1.14  1998/12/10 10:17:34  midas
+  Improved tape status return values under UNIX
+
   Revision 1.13  1998/11/25 23:44:24  midas
   Removed O_RDWR... in ss_tape_open()
 
@@ -3799,12 +3802,20 @@ INT n, status;
     n = read(channel, pdata, *count);
     } while (n == -1 && errno == EINTR);
 
-  if (n != *count)
+  if (n <= 0)
     {
-    if (errno == 0)
+    if (errno == ENOSPC || errno == EIO)
       status = SS_END_OF_TAPE;
     else
-      status = errno;
+      { 
+      if (n == 0 && errno == 0)
+        status = SS_END_OF_FILE;
+      else
+        {
+        printf("enexpected tape error: n=%d, errno=%d\n", n, errno);
+        status = errno;
+        }
+      }
     }
   else
     status = SS_SUCCESS;
