@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.35  2001/08/28 10:42:58  midas
+  Extract path for theme file from configuration file
+
   Revision 1.34  2001/08/28 10:20:59  midas
   Changed default colors
 
@@ -774,7 +777,20 @@ int  i;
     return;
 
   memset(file_name, 0, sizeof(file_name));
-  strcpy(file_name, tn);
+
+  /* extract directory from configuration file */
+  if (cfg_file[0] && strchr(cfg_file, DIR_SEPARATOR))
+    {
+    strcpy(file_name, cfg_file);
+    for (i=strlen(file_name-1) ; i>0 ; i--)
+      {
+      if (file_name[i] == DIR_SEPARATOR)
+        break;
+      file_name[i] = 0;
+      }
+    }
+
+  strcat(file_name, tn);
   file_name[strlen(file_name)] = DIR_SEPARATOR;
   strcat(file_name, "theme.cfg");
 
