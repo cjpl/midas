@@ -6,6 +6,9 @@
 #  Contents:     Makefile for MIDAS binaries and examples under unix
 #
 #  $Log$
+#  Revision 1.25  2000/11/20 13:13:06  midas
+#  Fixed little bug
+#
 #  Revision 1.24  2000/11/20 11:40:36  midas
 #  Added pmana.o for parallelized analyzer
 #
@@ -339,8 +342,6 @@ $(LIB_DIR)/ftplib.o: msystem.h midas.h midasinc.h
 #
 
 $(LIB_DIR)/mfe.o: msystem.h midas.h midasinc.h mrpc.h
-	$(CC) -Dextname -c $(CFLAGS) $(OSFLAGS) -o $@ $<
-
 $(LIB_DIR)/mana.o: $(SRC_DIR)/mana.c msystem.h midas.h midasinc.h mrpc.h
 	$(CC) -Dextname -c $(CFLAGS) $(OSFLAGS) -o $@ $<
 
