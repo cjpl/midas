@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.20  1999/04/15 09:59:09  midas
+  Added key name to db_get_key_info
+
   Revision 1.19  1999/04/13 12:20:42  midas
   Added db_get_data1 (for Java)
 
@@ -1145,7 +1148,7 @@ INT EXPRT db_delete_key(HNDLE database_handle, HNDLE key_handle, BOOL follow_lin
 INT EXPRT db_enum_key(HNDLE hdb, HNDLE key_handle, INT index, HNDLE *subkey_handle);
 INT EXPRT db_enum_link(HNDLE hdb, HNDLE key_handle, INT index, HNDLE *subkey_handle);
 INT EXPRT db_get_key(HNDLE hdb, HNDLE key_handle, KEY *key);
-INT EXPRT db_get_key_info(HNDLE hDB, HNDLE hKey, INT *type, INT *num_values, INT *item_size);
+INT EXPRT db_get_key_info(HNDLE hDB, HNDLE hKey, char *name, INT name_size, INT *type, INT *num_values, INT *item_size);
 INT EXPRT db_get_key_time(HNDLE hdb, HNDLE key_handle, DWORD *delta);
 INT EXPRT db_rename_key(HNDLE hDB, HNDLE hKey, char *name);
 INT EXPRT db_reorder_key(HNDLE hDB, HNDLE hKey, INT index);
