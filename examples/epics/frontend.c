@@ -7,6 +7,9 @@
                 through EPICS channel access.
 
   $Log$
+  Revision 1.4  1999/12/20 10:29:44  midas
+  Use new driver directories
+
   Revision 1.3  1999/10/08 14:04:45  midas
   Set initial channel number to 10
 
@@ -27,8 +30,8 @@
 
 #include <stdio.h>
 #include "midas.h"
-#include "cd_gen.h"
-#include "chn_acc.h"
+#include "class/generic.h"
+#include "device/epics_ca.h"
 
 /*-- Globals -------------------------------------------------------*/
 
@@ -50,7 +53,7 @@ INT event_buffer_size = DEFAULT_EVENT_BUFFER_SIZE;
 
 /* device driver list */
 DEVICE_DRIVER epics_driver[] = {
-  { "Beamline",  chn_acc, 10 },
+  { "Beamline",  epics_ca, 10 },
   { "" }
 };
 
