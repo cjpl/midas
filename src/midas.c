@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.65  1999/10/06 06:56:02  midas
+  Include weekday in elog
+
   Revision 1.64  1999/10/05 13:16:10  midas
   Added global alarm flag "/alarms/alarm system active"
 
@@ -14241,7 +14244,7 @@ char    message[10000], *p, *buffer;
     return EL_FILE_ERROR;
     }
 
-  strcpy(str, ctime(&now)+4);
+  strcpy(str, ctime(&now));
   str[15] = 0;
 
   sprintf(message, "Date: %s\n", str);
