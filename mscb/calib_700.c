@@ -6,6 +6,9 @@
   Contents:     Calibration program for SCS-700
 
   $Log$
+  Revision 1.4  2005/03/21 10:57:25  ritt
+  Version 2.0.0
+
   Revision 1.3  2004/03/10 13:28:25  midas
   mscb_init returns device name
 
@@ -39,7 +42,7 @@ int main(int argc, char *argv[])
 
    /* open port */
    *str = 0;
-   fd = mscb_init(str, sizeof(str), 0);
+   fd = mscb_init(str, sizeof(str), "", 0);
    if (fd < 0) {
       if (str[0])
          printf("Cannot connect to device \"%s\".\n", str);

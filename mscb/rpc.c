@@ -6,6 +6,9 @@
   Contents:     List of MSCB RPC functions with parameters
 
   $Log$
+  Revision 1.29  2005/03/21 10:57:25  ritt
+  Version 2.0.0
+
   Revision 1.28  2005/03/16 14:11:33  ritt
   Added ethernet protocol
 
@@ -136,6 +139,7 @@ static RPC_LIST rpc_list[] = {
    {RPC_MSCB_INIT, "mscb_init",
     {{TID_STRING, RPC_IN | RPC_OUT},
      {TID_INT, RPC_IN},
+     {TID_STRING, RPC_IN},
      {TID_INT, RPC_IN},
      {0}}},
 
@@ -424,7 +428,7 @@ int server_execute(int index, void *prpc_param[])
       break;
 
    case RPC_MSCB_INIT:
-      status = mscb_init(CSTRING(0), CINT(1), CINT(2));
+      status = mscb_init(CSTRING(0), CINT(1), CSTRING(2), CINT(3));
       break;
 
    case RPC_MSCB_EXIT:
@@ -725,7 +729,8 @@ int mrpc_connect(char *host_name, int port)
 
    status = connect(sock, (void *) &bind_addr, sizeof(bind_addr));
    if (status != 0) {
-      perror("mrpc_connect");
+      if (errno)
+         perror("mrpc_connect");
       return -1;
    }
 

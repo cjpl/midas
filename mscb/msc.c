@@ -6,6 +6,9 @@
   Contents:     Command-line interface for the Midas Slow Control Bus
 
   $Log$
+  Revision 1.79  2005/03/21 10:57:25  ritt
+  Version 2.0.0
+
   Revision 1.78  2005/03/16 14:11:02  ritt
   Added ethernet protocol
 
@@ -833,6 +836,12 @@ void cmd_loop(int fd, char *cmd, int adr)
          }
       }
 
+      /* sm, set MAC address etc. ---------- */
+      else if (match(param[0], "sm")) {
+         if (set_mac_address(fd))
+            break; // exit program
+      }
+
       /* debug ---------- */
       else if (match(param[0], "debug")) {
          if (current_addr < 0)
@@ -1349,7 +1358,7 @@ void cmd_loop(int fd, char *cmd, int adr)
 int main(int argc, char *argv[])
 {
    int i, fd, adr, server;
-   char cmd[256], device[256];
+   char cmd[256], device[256], str[256];
    int debug, check_io;
 
    cmd[0] = 0;
@@ -1408,9 +1417,18 @@ int main(int argc, char *argv[])
    }
 
    /* open port */
-   fd = mscb_init(device, sizeof(device), debug ? 1 : 0);
+   fd = mscb_init(device, sizeof(device), NULL, debug ? 1 : 0);
+
+   if (fd == EMSCB_WRONG_PASSWORD) {
+      printf("Enter password to access %s: ", device);
+      fgets(str, sizeof(str), stdin);
+      while (strlen(str) > 0 && (str[strlen(str) - 1] == '\r' || str[strlen(str) - 1] == '\n'))
+         str[strlen(str) - 1] = 0;
+      fd = mscb_init(device, sizeof(device), str, debug ? 1 : 0);
+   }
+
    if (fd < 0) {
-      if (fd == -2) {
+      if (fd == EMSCB_LPT_ERROR) {
          printf("No MSCB submaster present at port \"%s\"\n", device);
 
          puts("\nMake sure that");
@@ -1426,15 +1444,19 @@ int main(int argc, char *argv[])
          puts("  and the \"msc -i\" command which toggles the pins of the parallel port");
          puts("o If the port is configured to another address than 0x378, use");
          puts("  \"msc -d 0xabc\" with \"0xabc\" the correct address");
-      } else if (fd == -3) {
-         printf("MSCB system locked by other process\n");
-      } else if (fd == -4) {
+      } else if (fd == EMSCB_NO_DIRECTIO) {
+         printf("No DirectIO driver installed\n");
+      } else if (fd == EMSCB_COMM_ERROR) {
          printf("\nCannot communicate with MSCB submaster at %s\n", device);
          puts("Please disconnect and reconnect submaster\n");
-      } else if (fd == -5) {
+      } else if (fd == EMSCB_NOT_FOUND) {
+         printf("\nCannot find USB submaster\n");
+      } else if (fd == EMSCB_WRONG_PASSWORD) {
+         printf("\nWrong password\n");
+      } else if (fd == EMSCB_NO_WRITE_ACCESS) {
          printf("\nNo write access to MSCB submaster at %s\n", device);
          puts("Please install hotplug script \"drivers/linux/usb.usermap_scs_250\" to \"/etc/hotplug/\".\n");
-      } else if (fd == -6) {
+      } else if (fd == EMSCB_LOCKED) {
          puts("\nMSCB system is locked by other process");
          puts("Please stop all running MSCB clients\n");
       } else

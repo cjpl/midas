@@ -6,6 +6,9 @@
   Contents:     Header fiel for MSCB funcions
 
   $Log$
+  Revision 1.44  2005/03/21 10:57:25  ritt
+  Version 2.0.0
+
   Revision 1.43  2005/03/16 14:11:38  ritt
   Added ethernet protocol
 
@@ -318,6 +321,23 @@ extern MSCB_FD mscb_fd[MSCB_MAX_FD];
 #define MSCB_NO_MEM        7
 #define MSCB_SUBM_ERROR    8
 #define MSCB_ADDR_EXISTS   9
+#define MSCB_WRONG_PASS   10
+
+/*---- error codes ------------------------------------------------*/
+
+#define EMSCB_UNDEFINED          -1
+#define EMSCB_NO_MEM             -2
+#define EMSCB_RPC_ERROR          -3
+#define EMSCB_NO_ACCESS          -4
+#define EMSCB_LOCKED             -5
+#define EMSCB_NO_SUBM            -6
+#define EMSCB_INVAL_PARAM        -7
+#define EMSCB_WRONG_PASSWORD     -8
+#define EMSCB_NO_DIRECTIO        -9
+#define EMSCB_COMM_ERROR        -10
+#define EMSCB_NOT_FOUND         -11
+#define EMSCB_NO_WRITE_ACCESS   -12
+#define EMSCB_LPT_ERROR         -13
 
 /*---- Byte and Word swapping big endian <-> little endian ---------*/
 #define WORD_SWAP(x) { unsigned char _tmp;                               \
@@ -347,7 +367,7 @@ extern "C" {
 #define EXPRT
 #endif
 
-   int EXPRT mscb_init(char *device, int size, int debug);
+   int EXPRT mscb_init(char *device, int size, char *password, int debug);
    int EXPRT mscb_select_device(char *data, int size, int select);
    void EXPRT mscb_get_device(int fd, char *device, int bufsize);
    void EXPRT mscb_get_version(char *lib_version, char *prot_version);
@@ -374,6 +394,8 @@ extern "C" {
    int EXPRT mscb_user(int fd, int adr, void *param, int size, void *result, int *rsize);
    int EXPRT mscb_link(int fd, int adr, unsigned char index, void *data, int size);
    int EXPRT mscb_addr(int fd, int cmd, int adr, int retry, int lock);
+
+   int set_mac_address(int fd);
 
 #ifdef __cplusplus
 }
