@@ -6,6 +6,12 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.242  2003/04/16 19:05:49  olchansk
+  Fix a few compiler warnings:
+  - a format mismatch,
+  - a few uninitialized variables,
+  - removed a few unused variables
+
   Revision 1.241  2003/03/26 21:05:15  midas
   Switched to POST method for changing ODB values (for large multi-line entries)
 
@@ -1485,7 +1491,6 @@ void show_status_page(int refresh, char *cookie_wpwd)
 int    i, j, k, status, size, type;
 BOOL   flag, first;
 char   str[256], name[32], ref[256], bgcol[32], fgcol[32], alarm_class[32];
-char   *yn[] = {"No", "Yes"};
 char   *state[] = {"", "Stopped", "Paused", "Running" };
 char   *trans_name[] = {"Start", "Stop", "Pause", "Resume"};
 time_t now, difftime;
@@ -3487,7 +3492,7 @@ HNDLE  hDB;
 
 void show_form_query()
 {
-int    i, size, run_number;
+int    i=0, size, run_number;
 char   str[256];
 time_t now;
 HNDLE  hDB, hkey, hkeyroot;
@@ -8190,8 +8195,8 @@ struct tm *ptms, tms;
     ltime_end = mktime(&tms);
     ltime_end += 3600*24;
 
-    sprintf(str, "HS/%s?scale=%d&offset=%d", path, ltime_end-ltime_start, 
-            min(ltime_end - (int)ss_time(), 0));
+    sprintf(str, "HS/%s?scale=%d&offset=%d", path, (int)(ltime_end-ltime_start), 
+            min((int)(ltime_end - ss_time()), 0));
     redirect(str);
     return;
     }
@@ -8580,7 +8585,7 @@ char   *hist_col[] =
         if (status != DB_SUCCESS)
           {
           sprintf(str, "Cannot find /Equipment/%s/Variables in ODB", 
-                  eq_name, eq_name);
+                  eq_name);
           show_error(str);
           return;
           }
@@ -10501,7 +10506,7 @@ struct linger        ling;
 
 /*------------------------------------------------------------------*/
 
-main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
 int i;
 int daemon = FALSE;
