@@ -6,6 +6,9 @@
  *         amaudruz@triumf.ca                            Local:           6234
  * ---------------------------------------------------------------------------
    $Log$
+   Revision 1.43  2002/08/02 19:42:30  pierre
+   ifdef vxWorks all the logger & mdump functions
+
    Revision 1.42  2002/07/14 00:19:59  pierre
    add DSP_UNK, fix YB_DONE
 
@@ -263,6 +266,7 @@ FTP_CON *ftp_con;
 
 /* magta stuff */
 DWORD *pbot, *pbktop=NULL;
+char * ptopmrd;
 DWORD magta[3]={0x00000004, 0x544f422a, 0x00007ff8};
 
 /* For Fragmentation */
@@ -1111,7 +1115,20 @@ SS_FILE_ERROR       file access error
     return YB_SUCCESS;
 }
 
-#if !defined (FE_YBOS_SUPPORT)
+/* Used in mfe */
+INT ybos_get_tid_size(INT tid)
+{
+  if (tid < 8)
+    return yb_tid_size[tid];
+  return 0;
+}
+
+/*
+The entrie section below will not be included in the VxWorks built of the
+libmidas.a library. All the functions are logger, mdump related and therefore
+certaintly of no use under this OS. 
+*/
+#if !defined (OS_VXWORKS) /* Frontend */
 /*---- LOGGER YBOS format routines ----Section b)--------------------------*/
 /*---- LOGGER YBOS format routines ----------------------------------------*/
 /*---- LOGGER YBOS format routines ----------------------------------------*/
@@ -1725,6 +1742,7 @@ status : from lower function
     
     /* allocate memory for one full event */
     my.pmrd = malloc(5*MAX_EVENT_SIZE);    /* in bytes */
+    ptopmrd = my.pmrd;
     if (my.pmrd == NULL)
       return SS_NO_MEMORY;
     memset ((char *)my.pmrd, -1, 5*MAX_EVENT_SIZE);
@@ -1774,12 +1792,12 @@ status : from lower function
     free (my.pyh);
   if (my.pylrl != NULL)
     free (my.pylrl);
-  //  if (my.pmrd != NULL)
-  //    free (my.pmrd);
+  if (ptopmrd != NULL)
+    free (ptopmrd);
   if (my.pmp != NULL)
     free (my.pmp);
   (void *)my.pyh = (void *)my.pmagta = (void *)my.pylrl = NULL;
-  (void *)my.pmp = (void *)my.pmrd =(void *)my.pmh = NULL;
+  (void *)my.pmp = (void *)my.pmh = ptopmrd = NULL;
   return(YB_SUCCESS);
 }
 
@@ -3958,14 +3976,7 @@ YB_SUCCESS         Successful completion
   else
     return YB_UNKNOWN_FORMAT;
 }
-#endif /* !FE_YBOS_SUPPORT */
-
-INT ybos_get_tid_size(INT tid)
-{
-  if (tid < 8)
-    return yb_tid_size[tid];
-  return 0;
-}
+#endif /* OS_VXWORKS Frontend */
 
 /*------------------------------------------------------------------*/
 /*------------------------------------------------------------------*/
