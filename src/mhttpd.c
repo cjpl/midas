@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.194  2002/03/19 08:04:07  midas
+  Fixed few small bugs, thanks to Thomas Prokscha
+
   Revision 1.193  2002/03/13 08:36:51  midas
   Added periodic alarms, more buttons in Elog display
 
@@ -6174,11 +6177,11 @@ INT    al_list[] = { AT_EVALUATED, AT_PROGRAM, AT_INTERNAL, AT_PERIODIC };
   db_get_value(hDB, 0, "/Experiment/Name", str, &size, TID_STRING);
   time(&now);
 
+  rsprintf("<form method=\"GET\" action=\"/\">\n");
+
   /* define hidden field for experiment */
   if (exp_name[0])
     rsprintf("<input type=hidden name=exp value=\"%s\">\n", exp_name);
-
-  rsprintf("<form method=\"GET\" action=\"/\">\n");
 
   rsprintf("<table border=3 cellpadding=2>\n");
   rsprintf("<tr><th colspan=4 bgcolor=#A0A0FF>MIDAS experiment \"%s\"", str);
@@ -6362,7 +6365,11 @@ INT    al_list[] = { AT_EVALUATED, AT_PROGRAM, AT_INTERNAL, AT_PERIODIC };
 
         rsprintf("<td>\n");
         if (triggered)
+          {
+          if (exp_name[0])
+            rsprintf("<input type=hidden name=exp value=\"%s\">\n", exp_name);
           rsprintf("<input type=submit name=cmd value=\"Reset\">\n");
+          }
         else
           rsprintf("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;");
 
@@ -7923,7 +7930,7 @@ struct tm *ptms, tms;
     ltime_end += 3600*24;
 
     sprintf(str, "HS/%s?scale=%d&offset=%d", path, ltime_end-ltime_start, 
-            min(ltime_end - ss_time(), 0));
+            min(ltime_end - (int)ss_time(), 0));
     redirect(str);
     return;
     }
