@@ -1,4 +1,8 @@
 #
+# $Revision$
+#
+
+#
 # Menu commands
 #
 New = Neu
@@ -26,6 +30,7 @@ Copy to = Kopieren nach
 Move to = Verschieben nach
 Save = Speichern
 Cancel = Abbrechen
+Go to = Nach
 
 #
 # Login & password screens
@@ -49,7 +54,6 @@ Change password for user = Kennwort ändern für Benutzer
 #
 Logged in as = Angemeldet als
 Entry date = Eingabedatum
-This is the last entry
 with = mit
 This is the last entry = Dies ist der letzte Eintrag
 This is the first entry = Dies ist der erste Eintrag
