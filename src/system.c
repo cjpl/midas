@@ -14,6 +14,9 @@
                 Brown, Prentice Hall
 
   $Log$
+  Revision 1.69  2003/04/25 14:03:57  midas
+  Fixed compiler warnings
+
   Revision 1.68  2003/04/25 11:47:42  midas
   Added ss_force_single_thread()
 
@@ -270,9 +273,9 @@ INT ss_set_async_flag(INT flag)
   Routine: ss_set_async_flag
 
   Purpose: Sets the ss_in_async_routine_flag according to the flag
-	   value. This is necessary when semaphore operations under
-	   UNIX are called inside an asynchrounous routine (via alarm)
-	   because they then behave different.
+     value. This is necessary when semaphore operations under
+     UNIX are called inside an asynchrounous routine (via alarm)
+     because they then behave different.
 
   Input:
     INT  flag               May be 1 or 0
@@ -300,7 +303,7 @@ INT ss_shm_open(char *name, INT size, void **adr, HNDLE *handle)
   Routine: ss_shm_open
 
   Purpose: Create a shared memory region which can be seen by several
-	   processes which know the name.
+     processes which know the name.
 
   Input:
     char *name              Name of the shared memory
@@ -320,7 +323,7 @@ INT ss_shm_open(char *name, INT size, void **adr, HNDLE *handle)
 \********************************************************************/
 {
 INT    status;
-char   mem_name[256], file_name[256], path[256], *p;
+char   mem_name[256], file_name[256], path[256];
 
   /* Add a leading SM_ to the memory name */
   sprintf(mem_name, "SM_%s", name);
@@ -355,13 +358,13 @@ char   mem_name[256], file_name[256], path[256], *p;
   DWORD  file_size;
 
   /* make the memory name unique using the pathname. This is necessary
-     because NT doesn't use ftok. So if different experiments are 
+     because NT doesn't use ftok. So if different experiments are
      running in different directories, they should not see the same
      shared memory */
   strcpy(str, path);
 
-  /* replace special chars by '*' */  
-  while (strpbrk(str, "\\: "))  
+  /* replace special chars by '*' */
+  while (strpbrk(str, "\\: "))
     *strpbrk(str, "\\: ") = '*';
   strcat(str, mem_name);
 
@@ -387,7 +390,7 @@ char   mem_name[256], file_name[256], path[256], *p;
       size = file_size;
 
     hMap = CreateFileMapping(hFile, NULL, PAGE_READWRITE,
-			     0, size, str);
+           0, size, str);
 
     if (!hMap)
       {
@@ -430,7 +433,7 @@ char   mem_name[256], file_name[256], path[256], *p;
   addr[1] = 0;
 
   status = ppl$create_shared_memory( &memname_dsc, addr,
-				     &PPL$M_NOUNI, &filename_dsc);
+             &PPL$M_NOUNI, &filename_dsc);
 
   if (status == PPL$_CREATED)
     status = SS_CREATED;
@@ -452,7 +455,7 @@ char   mem_name[256], file_name[256], path[256], *p;
   status = SS_SUCCESS;
 
   {
-  int             key, shmid, i, fh, file_size;
+  int             key, shmid, fh, file_size;
   struct shmid_ds buf;
   char            str[256];
 
@@ -551,7 +554,7 @@ INT ss_shm_close(char *name, void *adr, HNDLE handle, INT destroy_flag)
     void *adr               Base address of shared memory
     HNDLE handle            Handle of shared memeory
     BOOL destroy            Shared memory has to be destroyd and
-			    flushed to the mapping file.
+          flushed to the mapping file.
 
   Output:
     none
@@ -634,7 +637,6 @@ char   mem_name[256], file_name[256], path[256];
   {
   struct shmid_ds buf;
   FILE   *fh;
-  INT    status;
 
   /* get info about shared memory */
   if (shmctl(handle, IPC_STAT, &buf) < 0)
@@ -899,8 +901,8 @@ HANDLE hThread;
   */
 
   DuplicateHandle(GetCurrentProcess(), GetCurrentThread(),
-		  GetCurrentProcess(), &hThread, THREAD_ALL_ACCESS,
-		  TRUE, 0);
+      GetCurrentProcess(), &hThread, THREAD_ALL_ACCESS,
+      TRUE, 0);
 
   return (int) hThread;
 
@@ -932,11 +934,11 @@ INT ss_get_struct_align()
   Routine: ss_get_struct_align
 
   Purpose: Returns compiler alignment of structures. In C, structures
-	   can be byte aligned, word or even quadword aligned. This
-	   can usually be set with compiler switches. This routine
-	   tests this alignment during runtime and returns 1 for
-	   byte alignment, 2 for word alignment, 4 for dword alignment
-	   and 8 for quadword alignment.
+     can be byte aligned, word or even quadword aligned. This
+     can usually be set with compiler switches. This routine
+     tests this alignment during runtime and returns 1 for
+     byte alignment, 2 for word alignment, 4 for dword alignment
+     and 8 for quadword alignment.
 
   Input:
     <none>
@@ -1078,9 +1080,9 @@ INT ss_spawnv(INT mode, char *cmdname, char *argv[])
 
   Input:
     INT mode         One of the following modes:
-		       P_WAIT     Wait for the subprocess to compl.
-		       P_NOWAIT   Don't wait for subprocess to compl.
-		       P_DETACH   Create detached process.
+           P_WAIT     Wait for the subprocess to compl.
+           P_NOWAIT   Don't wait for subprocess to compl.
+           P_DETACH   Create detached process.
     char cmdname     Program name to execute
     char *argv[]     Optional program arguments
 
@@ -1125,9 +1127,9 @@ INT ss_spawnv(INT mode, char *cmdname, char *argv[])
     cmdstring_dsc.dsc$a_pointer = cmdstring;
 
     status = sys$creprc(0, &cmdstring_dsc,
-			0, 0, 0, 0,
-			0, NULL, 4, 0, 0,
-			PRC$M_DETACH );
+      0, 0, 0, 0,
+      0, NULL, 4, 0, 0,
+      PRC$M_DETACH );
     }
   else
     {
@@ -1154,7 +1156,7 @@ INT ss_spawnv(INT mode, char *cmdname, char *argv[])
     cmdstring_dsc.dsc$a_pointer = cmdstring;
 
     status = lib$spawn(&cmdstring_dsc, 0, 0, &flags, NULL,
-		       0, 0, 0, 0, 0, 0, 0, 0);
+           0, 0, 0, 0, 0, 0, 0, 0);
     }
 
   return BM_SUCCESS;
@@ -1220,95 +1222,95 @@ INT ss_shell(int sock)
 \********************************************************************/
 {
 #ifdef OS_WINNT
-  
-  HANDLE hChildStdinRd, hChildStdinWr, hChildStdinWrDup, 
-    hChildStdoutRd, hChildStdoutWr, 
-    hChildStderrRd, hChildStderrWr, 
-    hSaveStdin, hSaveStdout, hSaveStderr; 
-  
-  SECURITY_ATTRIBUTES saAttr; 
-  PROCESS_INFORMATION piProcInfo; 
-  STARTUPINFO         siStartInfo; 
-  char                buffer[256], cmd[256]; 
+
+  HANDLE hChildStdinRd, hChildStdinWr, hChildStdinWrDup,
+    hChildStdoutRd, hChildStdoutWr,
+    hChildStderrRd, hChildStderrWr,
+    hSaveStdin, hSaveStdout, hSaveStderr;
+
+  SECURITY_ATTRIBUTES saAttr;
+  PROCESS_INFORMATION piProcInfo;
+  STARTUPINFO         siStartInfo;
+  char                buffer[256], cmd[256];
   DWORD               dwRead, dwWritten, dwAvail, i, i_cmd;
   fd_set              readfds;
   struct timeval      timeout;
-  
+
   /* Set the bInheritHandle flag so pipe handles are inherited. */
-  saAttr.nLength = sizeof(SECURITY_ATTRIBUTES); 
-  saAttr.bInheritHandle = TRUE; 
-  saAttr.lpSecurityDescriptor = NULL; 
-  
+  saAttr.nLength = sizeof(SECURITY_ATTRIBUTES);
+  saAttr.bInheritHandle = TRUE;
+  saAttr.lpSecurityDescriptor = NULL;
+
   /* Save the handle to the current STDOUT. */
-  hSaveStdout = GetStdHandle(STD_OUTPUT_HANDLE); 
-  
+  hSaveStdout = GetStdHandle(STD_OUTPUT_HANDLE);
+
   /* Create a pipe for the child's STDOUT. */
-  if (! CreatePipe(&hChildStdoutRd, &hChildStdoutWr, &saAttr, 0)) 
-    return 0; 
-  
+  if (! CreatePipe(&hChildStdoutRd, &hChildStdoutWr, &saAttr, 0))
+    return 0;
+
   /* Set a write handle to the pipe to be STDOUT. */
-  if (! SetStdHandle(STD_OUTPUT_HANDLE, hChildStdoutWr)) 
-    return 0; 
-  
-  
+  if (! SetStdHandle(STD_OUTPUT_HANDLE, hChildStdoutWr))
+    return 0;
+
+
   /* Save the handle to the current STDERR. */
-  hSaveStderr = GetStdHandle(STD_ERROR_HANDLE); 
-  
+  hSaveStderr = GetStdHandle(STD_ERROR_HANDLE);
+
   /* Create a pipe for the child's STDERR. */
-  if (! CreatePipe(&hChildStderrRd, &hChildStderrWr, &saAttr, 0)) 
-    return 0; 
-  
+  if (! CreatePipe(&hChildStderrRd, &hChildStderrWr, &saAttr, 0))
+    return 0;
+
   /* Set a read handle to the pipe to be STDERR. */
-  if (! SetStdHandle(STD_ERROR_HANDLE, hChildStderrWr)) 
-    return 0; 
-  
-  
+  if (! SetStdHandle(STD_ERROR_HANDLE, hChildStderrWr))
+    return 0;
+
+
   /* Save the handle to the current STDIN. */
-  hSaveStdin = GetStdHandle(STD_INPUT_HANDLE); 
-  
+  hSaveStdin = GetStdHandle(STD_INPUT_HANDLE);
+
   /* Create a pipe for the child's STDIN. */
-  if (! CreatePipe(&hChildStdinRd, &hChildStdinWr, &saAttr, 0)) 
-    return 0; 
-  
+  if (! CreatePipe(&hChildStdinRd, &hChildStdinWr, &saAttr, 0))
+    return 0;
+
   /* Set a read handle to the pipe to be STDIN. */
-  if (! SetStdHandle(STD_INPUT_HANDLE, hChildStdinRd)) 
-    return 0; 
- 
+  if (! SetStdHandle(STD_INPUT_HANDLE, hChildStdinRd))
+    return 0;
+
   /* Duplicate the write handle to the pipe so it is not inherited. */
-  if (!DuplicateHandle(GetCurrentProcess(), hChildStdinWr, 
-      GetCurrentProcess(), &hChildStdinWrDup, 0, 
+  if (!DuplicateHandle(GetCurrentProcess(), hChildStdinWr,
+      GetCurrentProcess(), &hChildStdinWrDup, 0,
       FALSE,                  /* not inherited */
       DUPLICATE_SAME_ACCESS))
-    return 0; 
- 
-  CloseHandle(hChildStdinWr); 
- 
+    return 0;
+
+  CloseHandle(hChildStdinWr);
+
   /* Now create the child process. */
   memset(&siStartInfo, 0, sizeof(siStartInfo));
-  siStartInfo.cb = sizeof(STARTUPINFO); 
-  siStartInfo.lpReserved = NULL; 
-  siStartInfo.lpReserved2 = NULL; 
-  siStartInfo.cbReserved2 = 0; 
-  siStartInfo.lpDesktop = NULL;  
-  siStartInfo.dwFlags = 0; 
- 
-  if (!CreateProcess(NULL, 
+  siStartInfo.cb = sizeof(STARTUPINFO);
+  siStartInfo.lpReserved = NULL;
+  siStartInfo.lpReserved2 = NULL;
+  siStartInfo.cbReserved2 = 0;
+  siStartInfo.lpDesktop = NULL;
+  siStartInfo.dwFlags = 0;
+
+  if (!CreateProcess(NULL,
       "cmd /Q",      /* command line */
       NULL,          /* process security attributes */
       NULL,          /* primary thread security attributes */
       TRUE,          /* handles are inherited */
       0,             /* creation flags */
-	    NULL,          /* use parent's environment */
-	    NULL,          /* use parent's current directory */
+      NULL,          /* use parent's environment */
+      NULL,          /* use parent's current directory */
       &siStartInfo,  /* STARTUPINFO pointer */
       &piProcInfo))  /* receives PROCESS_INFORMATION */
     return 0;
- 
+
   /* After process creation, restore the saved STDIN and STDOUT. */
   SetStdHandle(STD_INPUT_HANDLE, hSaveStdin);
   SetStdHandle(STD_OUTPUT_HANDLE, hSaveStdout);
   SetStdHandle(STD_ERROR_HANDLE, hSaveStderr);
- 
+
   i_cmd = 0;
 
   do
@@ -1318,7 +1320,7 @@ INT ss_shell(int sock)
       {
       if (!PeekNamedPipe(hChildStderrRd, buffer, 256, &dwRead, &dwAvail, NULL))
         break;
-    
+
       if (dwRead > 0)
         {
         ReadFile(hChildStderrRd, buffer, 256, &dwRead, NULL);
@@ -1398,8 +1400,7 @@ pid_t  pid;
 int    i, pipe;
 char   line[32], buffer[1024], shell[32];
 fd_set readfds;
-struct termios tios;
-  
+
   if ((pid = forkpty(&pipe, line, NULL, NULL)) < 0)
     return 0;
   else if (pid > 0)
@@ -1446,7 +1447,7 @@ struct termios tios;
     execl(shell, shell, 0);
     }
 #else
-  send(sock, "not implemented\n", 17, 0);  
+  send(sock, "not implemented\n", 17, 0);
 #endif /* NO_PTY */
 
   return SS_SUCCESS;
@@ -1493,16 +1494,16 @@ INT ss_daemon_init(BOOL keep_stdout)
 
   /* try and use up stdin, stdout and stderr, so other
      routines writing to stdout etc won't cause havoc. Copied from smbd */
-  for (i=0 ; i<3 ; i++) 
+  for (i=0 ; i<3 ; i++)
     {
     if (keep_stdout && ((i==1)||(i==2)))
       continue;
 
     close(i);
     fd = open("/dev/null", O_RDWR, 0);
-    if (fd < 0) 
+    if (fd < 0)
       fd = open("/dev/null", O_WRONLY, 0);
-    if (fd < 0) 
+    if (fd < 0)
       {
       cm_msg(MERROR, "ss_system", "Can't open /dev/null");
       return SS_ABORT;
@@ -1513,7 +1514,7 @@ INT ss_daemon_init(BOOL keep_stdout)
       return SS_ABORT;
       }
     }
-  
+
   setsid();               /* become session leader */
   chdir("/");             /* change working direcotry (not on NFS!) */
   umask(0);               /* clear our file mode createion mask */
@@ -1533,13 +1534,13 @@ BOOL ss_existpid(INT pid)
 
   Input:
     pid  : pid to check
-    
+
   Output:
     none
 
   Function value:
     TRUE      PID found
-    FALSE     PID not found 
+    FALSE     PID not found
 
 \********************************************************************/
 {
@@ -1561,16 +1562,16 @@ BOOL ss_existpid(INT pid)
 \item[Example:] \begin{verbatim}
 { ...
   char cmd[256];
-  sprintf(cmd,"%s %s %i %s/%s %1.3lf %d",lazy.commandAfter, 
+  sprintf(cmd,"%s %s %i %s/%s %1.3lf %d",lazy.commandAfter,
      lazy.backlabel, lazyst.nfiles, lazy.path, lazyst.backfile,
      lazyst.file_size/1024.0/1024.0, blockn);
   cm_msg(MINFO,"Lazy","Exec post file write script:%s",cmd);
   ss_system(cmd);
 }
-...  
+...
 \end{verbatim}
 \end{description}
-@memo Execute command. 
+@memo Execute command.
 @param command Command to execute.
 @return SS_SUCCESS or ss_exec return code
 */
@@ -1580,7 +1581,7 @@ INT ss_system(char *command)
   INT childpid;
 
   return ss_exec(command, &childpid);
-  
+
 #else
 
   system(command);
@@ -1632,12 +1633,12 @@ INT ss_exec(char * command, INT *pid)
 
   /* try and use up stdin, stdout and stderr, so other
      routines writing to stdout etc won't cause havoc */
-  for (i=0 ; i<3 ; i++) 
+  for (i=0 ; i<3 ; i++)
     {
     fd = open("/dev/null", O_RDWR, 0);
-    if (fd < 0) 
+    if (fd < 0)
       fd = open("/dev/null", O_WRONLY, 0);
-    if (fd < 0) 
+    if (fd < 0)
       {
       cm_msg(MERROR, "ss_exec", "Can't open /dev/null");
       return SS_ABORT;
@@ -1675,7 +1676,7 @@ INT ss_thread_create(INT (*thread_func)(void *), void *param)
 
   Input:
     INT (*thread_func) Pointer to function which runs as a thread.
-		       NULL for testing for threads.
+           NULL for testing for threads.
 
     INT param          Parameter passed to thread_func
 
@@ -1696,7 +1697,7 @@ INT ss_thread_create(INT (*thread_func)(void *), void *param)
     return SS_SUCCESS;
 
   CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE) thread_func,
-	       (LPVOID) param, 0, &thread_id);
+         (LPVOID) param, 0, &thread_id);
 
   return SS_SUCCESS;
 
@@ -1714,7 +1715,7 @@ INT ss_thread_create(INT (*thread_func)(void *), void *param)
 
 #ifdef OS_VXWORKS
 /* taskSpawn which could be considered as a thread under VxWorks
-   requires several argument beside the thread args 
+   requires several argument beside the thread args
    taskSpawn (taskname, priority, option, stacksize, entry_point
               , arg1, arg2, ... , arg9, arg10)
    all the arg will have to be retrieved from the param list.
@@ -1725,14 +1726,14 @@ INT ss_thread_create(INT (*thread_func)(void *), void *param)
 
   ts = (VX_TASK_SPAWN *)param;
   status = taskSpawn(ts->name, ts->priority, ts->options
-		     , ts->stackSize, (FUNCPTR) thread_func
-		     , ts->arg1, ts->arg2, ts->arg3, ts->arg4, ts->arg5
-		     , ts->arg6, ts->arg7, ts->arg8, ts->arg9, ts->arg10);
+         , ts->stackSize, (FUNCPTR) thread_func
+         , ts->arg1, ts->arg2, ts->arg3, ts->arg4, ts->arg5
+         , ts->arg6, ts->arg7, ts->arg8, ts->arg9, ts->arg10);
   if (status == ERROR)
     return SS_NO_THREAD;
   return SS_SUCCESS;
 #endif /* OS_VXWORKS */
-  
+
 #ifdef OS_UNIX
   return SS_NO_THREAD;
 #endif /* OS_UNIX */
@@ -1748,8 +1749,8 @@ INT ss_mutex_create(char *name, HNDLE *mutex_handle)
   Routine: ss_mutex_create
 
   Purpose: Create a mutex with a specific name
-  
-    Remark: Under VxWorks the specific semaphore handling is 
+
+    Remark: Under VxWorks the specific semaphore handling is
             different than other OS. But VxWorks provides
             the POSIX-compatible semaphore interface.
             Under POSIX, no timeout is supported.
@@ -1828,7 +1829,7 @@ char mutex_name[256], path[256], file_name[256];
   *mutex_handle = (HNDLE) malloc(8);
 
   status = sys$enqw(0, LCK$K_NLMODE, *mutex_handle, 0, &mutexname_dsc,
-	    0, 0, 0, 0, 0, 0);
+      0, 0, 0, 0, 0, 0);
 
   if (status != SS$_NORMAL)
     {
@@ -1933,10 +1934,10 @@ INT ss_mutex_wait_for(HNDLE mutex_handle, INT timeout)
 \********************************************************************/
 {
   INT status;
-  
+
 #ifdef OS_WINNT
-  
-  status = WaitForSingleObject((HANDLE) mutex_handle, 
+
+  status = WaitForSingleObject((HANDLE) mutex_handle,
                                timeout == 0 ? INFINITE : timeout);
   if (status == WAIT_FAILED)
     return SS_NO_MUTEX;
@@ -1947,7 +1948,7 @@ INT ss_mutex_wait_for(HNDLE mutex_handle, INT timeout)
 #endif /* OS_WINNT */
 #ifdef OS_VMS
   status = sys$enqw(0, LCK$K_EXMODE, mutex_handle, LCK$M_CONVERT,
-		    0,0,0,0,0,0,0);
+        0,0,0,0,0,0,0);
   if (status != SS$_NORMAL)
     return SS_NO_MUTEX;
   return SS_SUCCESS;
@@ -1975,7 +1976,7 @@ INT ss_mutex_wait_for(HNDLE mutex_handle, INT timeout)
     ushort          *array;
   } arg;
 #endif
-    
+
   sb.sem_num = 0;
   sb.sem_op = -1; /* decrement semaphore */
   sb.sem_flg = SEM_UNDO;
@@ -1991,37 +1992,37 @@ INT ss_mutex_wait_for(HNDLE mutex_handle, INT timeout)
         skip_mutex_handle = mutex_handle;
         return SS_SUCCESS;
         }
-    
+
   skip_mutex_handle = -1;
-    
+
   start_time = ss_millitime();
 
   do
     {
     status = semop(mutex_handle, &sb, 1);
-        
+
     /* return on success */
     if (status == 0)
       break;
-        
+
     /* retry if interrupted by a ss_wake signal */
     if (errno == EINTR)
       {
       /* return if timeout expired */
-      if (timeout > 0 && 
+      if (timeout > 0 &&
           ss_millitime() - start_time > timeout)
         return SS_TIMEOUT;
 
       continue;
       }
-        
+
     return SS_NO_MUTEX;
     } while (1);
-    
+
   return SS_SUCCESS;
 }
 #endif /* OS_UNIX */
-  
+
 #ifdef OS_MSDOS
   return SS_NO_MUTEX;
 #endif
@@ -2192,7 +2193,7 @@ INT ss_mutex_delete(HNDLE mutex_handle, INT destroy_flag)
  origin. This time may only be used to calculate relative times.
  Overruns in the 32 bit value don't hurt since in a subtraction calculated
  with 32 bit accuracy this overrun cancels (you may think about!)..
-\item[Remarks:] 
+\item[Remarks:]
 \item[Example:] \begin{verbatim}
 ...
 DWORD start, stop:
@@ -2203,7 +2204,7 @@ printf("Operation took %1.3lf seconds\n",(stop-start)/1000.0);
 ...
 \end{verbatim}
 \end{description}
-@memo Returns current time stamp in millisecond. 
+@memo Returns current time stamp in millisecond.
 @return millisecond time stamp.
 */
 DWORD ss_millitime()
@@ -2240,7 +2241,7 @@ DWORD ss_millitime()
   {
   struct timeval tv;
 
-  gettimeofday(&tv, NULL); 
+  gettimeofday(&tv, NULL);
 
   return tv.tv_sec * 1000 + tv.tv_usec / 1000;
   }
@@ -2263,7 +2264,7 @@ DWORD ss_millitime()
 /** @name ss_time()
 \begin{description}
 \item[Description:] Returns the actual time in seconds since 1.1.1970 UTC.
-\item[Remarks:] 
+\item[Remarks:]
 \item[Example:] \begin{verbatim}
 ...
 DWORD start, stop:
@@ -2274,12 +2275,12 @@ printf("Operation took %1.3lf seconds\n",stop-start);
 ...
 \end{verbatim}
 \end{description}
-@memo Returns current time stamp in seconds. 
+@memo Returns current time stamp in seconds.
 @return Time in seconds
 */
 DWORD ss_time()
 {
-#if !defined(OS_VXWORKS) 
+#if !defined(OS_VXWORKS)
 #if !defined(OS_VMS)
   tzset();
 #endif
@@ -2312,7 +2313,7 @@ struct tm *ltm;
 
   tzset();
   ltm = localtime((time_t *) &seconds);
-  
+
   st.wYear   = ltm->tm_year+1900;
   st.wMonth  = ltm->tm_mon+1;
   st.wDay    = ltm->tm_mday;
@@ -2330,9 +2331,9 @@ struct tm *ltm;
 
 #endif
 #ifdef OS_VXWORKS
-  
+
   struct timespec ltm;
-  
+
   ltm.tv_sec = seconds;
   ltm.tv_nsec = 0;
   clock_settime(CLOCK_REALTIME, &ltm);
@@ -2365,17 +2366,17 @@ static char str[32];
 time_t seconds;
 
   seconds = (time_t) ss_time();
-  
-#if !defined(OS_VXWORKS) 
+
+#if !defined(OS_VXWORKS)
 #if !defined(OS_VMS)
   tzset();
 #endif
 #endif
   strcpy(str, asctime(localtime(&seconds)));
-  
+
   /* strip new line */
   str[24] = 0;
-  
+
   return str;
 }
 
@@ -2448,7 +2449,7 @@ static int          sock = 0;
 
     /* if an alarm signal was cought, restart select with reduced timeout */
     if (status == -1 && timeout.tv_sec >= WATCHDOG_INTERVAL / 1000)
-	    timeout.tv_sec -= WATCHDOG_INTERVAL / 1000;
+      timeout.tv_sec -= WATCHDOG_INTERVAL / 1000;
 
     } while (status == -1); /* dont return if an alarm signal was cought */
 
@@ -2522,7 +2523,7 @@ INT ss_wake(INT pid, INT tid, INT thandle)
   Routine: ss_wake
 
   Purpose: Wake a process with a specific ID and optional with a
-	   specific thread ID (on OS with support threads).
+     specific thread ID (on OS with support threads).
 
   Input:
     INT    pid              Process ID
@@ -2558,7 +2559,7 @@ HANDLE dup_thread_handle;
     return SS_NO_PROCESS;
 
   DuplicateHandle(process_handle, (HANDLE) thandle, GetCurrentProcess(),
-		  &dup_thread_handle, THREAD_ALL_ACCESS, TRUE, 0);
+      &dup_thread_handle, THREAD_ALL_ACCESS, TRUE, 0);
 
   /* close handles not to waste resources */
   CloseHandle(process_handle);
@@ -2608,7 +2609,7 @@ static void (*UserCallback)(int);
 static UINT _timer_id = 0;
 
 VOID CALLBACK _timeCallback(UINT idEvent, UINT uReserved, DWORD dwUser,
-			    DWORD dwReserved1, DWORD dwReserved2)
+          DWORD dwReserved1, DWORD dwReserved2)
 {
   _timer_id = 0;
   if (UserCallback != NULL)
@@ -2623,12 +2624,12 @@ INT ss_alarm(INT millitime, void (*func)(int))
   Routine: ss_alarm
 
   Purpose: Schedules an alarm. Call function referenced by *func
-	   after the specified seconds.
+     after the specified seconds.
 
   Input:
     INT    millitime        Time in milliseconds
     void   (*func)()        Function to be called after the spe-
-			    cified time.
+          cified time.
 
   Output:
     none
@@ -2733,9 +2734,9 @@ INT ss_exception_handler(void (*func)())
   Routine: ss_exception_handler
 
   Purpose: Establish new exception handler which is called before
-	   the program is aborted due to a Ctrl-Break or an access
-	   violation. This handler may clean up things which may
-	   otherwise left in an undefined state.
+     the program is aborted due to a Ctrl-Break or an access
+     violation. This handler may clean up things which may
+     otherwise left in an undefined state.
 
   Input:
     void  (*func)()     Address of handler function
@@ -2789,7 +2790,7 @@ void *ss_ctrlc_handler(void (*func)(int))
   Routine: ss_ctrlc_handler
 
   Purpose: Establish new exception handler which is called before
-	   the program is aborted due to a Ctrl-Break. This handler may 
+     the program is aborted due to a Ctrl-Break. This handler may
      clean up things which may otherwise left in an undefined state.
 
   Input:
@@ -2853,7 +2854,7 @@ void *ss_ctrlc_handler(void (*func)(int))
 
 /* globals */
 
-/* 
+/*
    The suspend structure is used in a multithread environment
    (multi thread server) where each thread may resume another thread.
    Since all threads share the same global memory, the ports and
@@ -2863,18 +2864,18 @@ void *ss_ctrlc_handler(void (*func)(int))
 
 typedef struct {
   BOOL                  in_use;
-  INT                   thread_id;                                                
-  INT                   ipc_port;                                                 
-  INT                   ipc_recv_socket;                                          
-  INT                   ipc_send_socket;                                          
-  INT                   (*ipc_dispatch)(char *,INT);                                        
+  INT                   thread_id;
+  INT                   ipc_port;
+  INT                   ipc_recv_socket;
+  INT                   ipc_send_socket;
+  INT                   (*ipc_dispatch)(char *,INT);
   INT                   listen_socket;
-  INT                   (*listen_dispatch)(INT);     
+  INT                   (*listen_dispatch)(INT);
   RPC_SERVER_CONNECTION *server_connection;
   INT                   (*client_dispatch)(INT);
   RPC_SERVER_ACCEPTION  *server_acception;
   INT                   (*server_dispatch)(INT, int, BOOL);
-  struct sockaddr_in    bind_addr;       
+  struct sockaddr_in    bind_addr;
 } SUSPEND_STRUCT;
 
 SUSPEND_STRUCT    *_suspend_struct = NULL;
@@ -2891,7 +2892,7 @@ INT ss_suspend_init_ipc(INT index)
 
   Input:
     INT    index            Index to the _suspend_struct array for
-			    the calling thread.
+          the calling thread.
   Output:
     <indirect>              Set entry in _suspend_struct
 
@@ -2955,7 +2956,7 @@ struct hostent       *phe;
   /* find out which port OS has chosen */
   i = sizeof(bind_addr);
   getsockname(sock, (struct sockaddr *)&bind_addr, (int *)&i);
-  
+
   _suspend_struct[index].ipc_recv_socket  = sock;
   _suspend_struct[index].ipc_port    = ntohs(bind_addr.sin_port);
 
@@ -2995,14 +2996,14 @@ INT ss_suspend_get_index(INT *pindex)
   Routine: ss_suspend_init
 
   Purpose: Return the index for the suspend structure for this
-	   thread.
+     thread.
 
   Input:
-    none 
+    none
 
   Output:
     INT    *pindex          Index to the _suspend_struct array for
-			    the calling thread.
+          the calling thread.
 
   Function value:
     SS_SUCCESS              Successful completion
@@ -3030,31 +3031,31 @@ INT index;
     /* check for an existing entry for this thread */
     for (index=0 ; index<_suspend_entries ; index++)
       if (_suspend_struct[index].thread_id == ss_gettid())
-	      {
-	      if (pindex != NULL)
+        {
+        if (pindex != NULL)
           *pindex = index;
 
-	      return SS_SUCCESS;
-	      }
+        return SS_SUCCESS;
+        }
 
     /* check for a deleted entry */
     for (index=0 ; index<_suspend_entries ; index++)
       if (!_suspend_struct[index].in_use)
-	      break;
-	
+        break;
+
     if (index == _suspend_entries)
       {
       /* if not found, create new one */
-      _suspend_struct = (SUSPEND_STRUCT *)realloc(_suspend_struct, 
-			  sizeof(SUSPEND_STRUCT) * (_suspend_entries+1));
+      _suspend_struct = (SUSPEND_STRUCT *)realloc(_suspend_struct,
+        sizeof(SUSPEND_STRUCT) * (_suspend_entries+1));
       memset(&_suspend_struct[_suspend_entries], 0, sizeof(SUSPEND_STRUCT));
 
       _suspend_entries++;
       if (_suspend_struct == NULL)
-	      {
-	      _suspend_entries--;
-	      return SS_NO_MEMORY;
-	      }
+        {
+        _suspend_entries--;
+        return SS_NO_MEMORY;
+        }
       }
     *pindex = index;
     _suspend_struct[index].thread_id = ss_gettid();
@@ -3072,7 +3073,7 @@ INT ss_suspend_exit()
   Routine: ss_suspend_exit
 
   Purpose: Closes the sockets used in the suspend/resume mechanism.
-	   Should be called before a thread exits.
+     Should be called before a thread exits.
 
   Input:
     none
@@ -3124,21 +3125,21 @@ INT ss_suspend_set_dispatch(INT channel, void *connection, INT (*dispatch)())
   Routine: ss_suspend_set_dispatch
 
   Purpose: Set dispatch functions which get called whenever new data
-	   on various sockets arrive inside the ss_suspend function.
+     on various sockets arrive inside the ss_suspend function.
 
-	   Beside the Inter Process Communication socket several other
-	   sockets can simultanously watched: A "listen" socket for
-	   a server main thread, server sockets which receive new
-	   RPC requests from remote clients (given by the 
-	   server_acception array) and client sockets which may
-	   get notification data from remote servers (such as
-	   database updates).
+     Beside the Inter Process Communication socket several other
+     sockets can simultanously watched: A "listen" socket for
+     a server main thread, server sockets which receive new
+     RPC requests from remote clients (given by the
+     server_acception array) and client sockets which may
+     get notification data from remote servers (such as
+     database updates).
 
   Input:
-    INT    channel               One of CH_IPC, CH_CLIENT, 
-				 CH_SERVER, CH_MSERVER
+    INT    channel               One of CH_IPC, CH_CLIENT,
+         CH_SERVER, CH_MSERVER
 
-    INT    (*dispatch())         Function being called 
+    INT    (*dispatch())         Function being called
 
   Output:
     none
@@ -3171,14 +3172,14 @@ INT i, status;
 
   if (channel == CH_CLIENT)
     {
-    _suspend_struct[i].server_connection = 
+    _suspend_struct[i].server_connection =
       (RPC_SERVER_CONNECTION *) connection;
     _suspend_struct[i].client_dispatch   = (INT (*)(INT)) dispatch;
     }
 
   if (channel == CH_SERVER)
     {
-    _suspend_struct[i].server_acception = 
+    _suspend_struct[i].server_acception =
       (RPC_SERVER_ACCEPTION *) connection;
     _suspend_struct[i].server_dispatch   = (INT (*)(INT,int,BOOL)) dispatch;
     }
@@ -3194,10 +3195,10 @@ INT ss_suspend_get_port(INT* port)
   Routine: ss_suspend_get_port
 
   Purpose: Return the UDP port number which can be used to resume
-	   the calling thread inside a ss_suspend function. The port
-	   number can then be used by another process as a para-
-	   meter to the ss_resume function to resume the thread
-	   which called ss_suspend.
+     the calling thread inside a ss_suspend function. The port
+     number can then be used by another process as a para-
+     meter to the ss_resume function to resume the thread
+     which called ss_suspend.
 
   Input:
     none
@@ -3212,7 +3213,7 @@ INT ss_suspend_get_port(INT* port)
 {
 INT index, status;
 
-  status = ss_suspend_get_index(&index);             
+  status = ss_suspend_get_index(&index);
 
   if (status != SS_SUCCESS)
     return status;
@@ -3233,18 +3234,18 @@ INT ss_suspend(INT millisec, INT msg)
   Routine: ss_suspend
 
   Purpose: Suspend the calling thread for a speficic time. If
-	   timeout (in millisec.) is negative, the thead is suspended
-	   indefinitely. It can only be resumed from another thread
-	   or process which calls ss_resume or by some data which
-	   arrives on the client or server sockets.
+     timeout (in millisec.) is negative, the thead is suspended
+     indefinitely. It can only be resumed from another thread
+     or process which calls ss_resume or by some data which
+     arrives on the client or server sockets.
 
-	   If msg equals to one of MSG_BM, MSG_ODB, the function
-	   return whenever such a message is received.
+     If msg equals to one of MSG_BM, MSG_ODB, the function
+     return whenever such a message is received.
 
   Input:
     INT    millisec         Timeout in milliseconds
     INT    msg              Return from ss_suspend when msg
-			    (MSG_BM, MSG_ODB) is received.
+          (MSG_BM, MSG_ODB) is received.
 
   Output:
     none
@@ -3274,11 +3275,11 @@ char                str[100], buffer[80], buffer_tmp[80];
     return status;
 
   return_status = SS_TIMEOUT;
-  
+
   do
     {
     FD_ZERO(&readfds);
-    
+
     /* check listen socket */
     if (_suspend_struct[index].listen_socket)
       FD_SET(_suspend_struct[index].listen_socket, &readfds);
@@ -3286,7 +3287,7 @@ char                str[100], buffer[80], buffer_tmp[80];
     /* check server channels */
     if (_suspend_struct[index].server_acception)
       for (i=0 ; i < MAX_RPC_CONNECTION ; i++)
-	      {
+        {
         /* RPC channel */
         sock = _suspend_struct[index].server_acception[i].recv_sock;
 
@@ -3296,12 +3297,12 @@ char                str[100], buffer[80], buffer_tmp[80];
 
         /* watch server socket if no data in cache */
         if (recv_tcp_check(sock) == 0)
-	        FD_SET(sock, &readfds);
+          FD_SET(sock, &readfds);
         /* set timeout to zero if data in cache (-> just quick check IPC)
-	         and not called from inside bm_send_event (-> wait for IPC) */
+           and not called from inside bm_send_event (-> wait for IPC) */
         else
-	        if (msg == 0)
-		        millisec = 0;
+          if (msg == 0)
+            millisec = 0;
 
         /* event channel */
         sock = _suspend_struct[index].server_acception[i].event_sock;
@@ -3311,21 +3312,21 @@ char                str[100], buffer[80], buffer_tmp[80];
 
         /* watch server socket if no data in cache */
         if (recv_event_check(sock) == 0)
-	        FD_SET(sock, &readfds);
+          FD_SET(sock, &readfds);
         /* set timeout to zero if data in cache (-> just quick check IPC)
-	         and not called from inside bm_send_event (-> wait for IPC) */
+           and not called from inside bm_send_event (-> wait for IPC) */
         else
-	        if (msg == 0)
-		        millisec = 0;
+          if (msg == 0)
+            millisec = 0;
         }
 
     /* watch client recv connections */
     if (_suspend_struct[index].server_connection)
-	    {
-	    sock = _suspend_struct[index].server_connection->recv_sock;
-	    if (sock)
+      {
+      sock = _suspend_struct[index].server_connection->recv_sock;
+      if (sock)
         FD_SET(sock, &readfds);
-	    }
+      }
 
     /* check IPC socket */
     if (_suspend_struct[index].ipc_recv_socket)
@@ -3339,171 +3340,171 @@ char                str[100], buffer[80], buffer_tmp[80];
       if (millisec < 0)
         status = select(FD_SETSIZE, &readfds, NULL, NULL, NULL); /* blocking */
       else
-	      status = select(FD_SETSIZE, &readfds, NULL, NULL, &timeout);
+        status = select(FD_SETSIZE, &readfds, NULL, NULL, &timeout);
 
       /* if an alarm signal was cought, restart select with reduced timeout */
       if (status == -1 && timeout.tv_sec >= WATCHDOG_INTERVAL / 1000)
-	      timeout.tv_sec -= WATCHDOG_INTERVAL / 1000;
+        timeout.tv_sec -= WATCHDOG_INTERVAL / 1000;
 
       } while (status == -1); /* dont return if an alarm signal was cought */
 
     /* if listen socket got data, call dispatcher with socket */
     if (_suspend_struct[index].listen_socket &&
-	      FD_ISSET(_suspend_struct[index].listen_socket, &readfds))
+        FD_ISSET(_suspend_struct[index].listen_socket, &readfds))
       {
       sock = _suspend_struct[index].listen_socket;
 
       if (_suspend_struct[index].listen_dispatch)
         {
-	      status = _suspend_struct[index].listen_dispatch(sock);
-	      if (status == RPC_SHUTDOWN)
-		      return status;
+        status = _suspend_struct[index].listen_dispatch(sock);
+        if (status == RPC_SHUTDOWN)
+          return status;
         }
       }
 
     /* check server channels */
     if (_suspend_struct[index].server_acception)
       for (i=0 ; i < MAX_RPC_CONNECTION ; i++)
-	      {
+        {
         /* rpc channel */
-	      sock = _suspend_struct[index].server_acception[i].recv_sock;
+        sock = _suspend_struct[index].server_acception[i].recv_sock;
 
         /* only watch the event tcp connection belonging to this thread */
         if (!sock || _suspend_struct[index].server_acception[i].tid != ss_gettid())
           continue;
 
-	      if (recv_tcp_check(sock) || FD_ISSET(sock, &readfds))
+        if (recv_tcp_check(sock) || FD_ISSET(sock, &readfds))
           {
           if (_suspend_struct[index].server_dispatch)
-	          {
-	          status = _suspend_struct[index].server_dispatch(i, sock, msg != 0);
-	          _suspend_struct[index].server_acception[i].last_activity = ss_millitime();
+            {
+            status = _suspend_struct[index].server_dispatch(i, sock, msg != 0);
+            _suspend_struct[index].server_acception[i].last_activity = ss_millitime();
 
-	          if (status == SS_ABORT || status == SS_EXIT || status == RPC_SHUTDOWN)
-		          return status;
+            if (status == SS_ABORT || status == SS_EXIT || status == RPC_SHUTDOWN)
+              return status;
 
-	          return_status = SS_SERVER_RECV;
-	          }
+            return_status = SS_SERVER_RECV;
+            }
           }
 
         /* event channel */
-	      sock = _suspend_struct[index].server_acception[i].event_sock;
+        sock = _suspend_struct[index].server_acception[i].event_sock;
         if (!sock)
           continue;
 
         if (recv_event_check(sock) || FD_ISSET(sock, &readfds))
           {
           if (_suspend_struct[index].server_dispatch)
-	          {
-	          status = _suspend_struct[index].server_dispatch(i, sock, msg != 0);
-	          _suspend_struct[index].server_acception[i].last_activity = ss_millitime();
+            {
+            status = _suspend_struct[index].server_dispatch(i, sock, msg != 0);
+            _suspend_struct[index].server_acception[i].last_activity = ss_millitime();
 
-	          if (status == SS_ABORT || status == SS_EXIT || status == RPC_SHUTDOWN)
-		          return status;
+            if (status == SS_ABORT || status == SS_EXIT || status == RPC_SHUTDOWN)
+              return status;
 
-	          return_status = SS_SERVER_RECV;
-	          }
+            return_status = SS_SERVER_RECV;
+            }
           }
-	      }
+        }
 
     /* check server message channels */
     if (_suspend_struct[index].server_connection)
-	    {
-	    sock = _suspend_struct[index].server_connection->recv_sock;
+      {
+      sock = _suspend_struct[index].server_connection->recv_sock;
 
-	    if (sock && FD_ISSET(sock, &readfds))
+      if (sock && FD_ISSET(sock, &readfds))
         {
         if (_suspend_struct[index].client_dispatch)
-	        status = _suspend_struct[index].client_dispatch(sock);
+          status = _suspend_struct[index].client_dispatch(sock);
         else
-	        {
-	        status = SS_SUCCESS;
-	        size = recv_tcp(sock, buffer, sizeof(buffer), 0);
+          {
+          status = SS_SUCCESS;
+          size = recv_tcp(sock, buffer, sizeof(buffer), 0);
 
-	        if (size <= 0)
-	          status = SS_ABORT;
-	        }
+          if (size <= 0)
+            status = SS_ABORT;
+          }
 
         if (status == SS_ABORT)
-	        {
-	        sprintf(str, "Server connection broken to %s", 
-		        _suspend_struct[index].server_connection->host_name);
-	        cm_msg(MINFO, "ss_suspend", str);
+          {
+          sprintf(str, "Server connection broken to %s",
+            _suspend_struct[index].server_connection->host_name);
+          cm_msg(MINFO, "ss_suspend", str);
 
-	        /* close client connection if link broken */
-	        closesocket(_suspend_struct[index].server_connection->send_sock);
-	        closesocket(_suspend_struct[index].server_connection->recv_sock);
-	        closesocket(_suspend_struct[index].server_connection->event_sock);
+          /* close client connection if link broken */
+          closesocket(_suspend_struct[index].server_connection->send_sock);
+          closesocket(_suspend_struct[index].server_connection->recv_sock);
+          closesocket(_suspend_struct[index].server_connection->event_sock);
 
-	        memset(_suspend_struct[index].server_connection, 
-			           0, sizeof(RPC_CLIENT_CONNECTION));
+          memset(_suspend_struct[index].server_connection,
+                 0, sizeof(RPC_CLIENT_CONNECTION));
 
-	        /* exit program after broken connection to MIDAS server */
-	        return SS_ABORT;
-	        }
+          /* exit program after broken connection to MIDAS server */
+          return SS_ABORT;
+          }
 
         return_status = SS_CLIENT_RECV;
         }
-	    }
+      }
 
     /* check IPC socket */
     if (_suspend_struct[index].ipc_recv_socket &&
-	      FD_ISSET(_suspend_struct[index].ipc_recv_socket, &readfds))
+        FD_ISSET(_suspend_struct[index].ipc_recv_socket, &readfds))
       {
       /* receive IPC message */
       size = sizeof(struct sockaddr);
-      size = recvfrom(_suspend_struct[index].ipc_recv_socket, 
-		                  buffer, sizeof(buffer), 0, &from_addr, (int *)&size);
+      size = recvfrom(_suspend_struct[index].ipc_recv_socket,
+                      buffer, sizeof(buffer), 0, &from_addr, (int *)&size);
 
       /* find out if this thread is connected as a server */
       server_socket = 0;
       if (_suspend_struct[index].server_acception &&
-		      rpc_get_server_option(RPC_OSERVER_TYPE) != ST_REMOTE)
+          rpc_get_server_option(RPC_OSERVER_TYPE) != ST_REMOTE)
         for (i=0 ; i < MAX_RPC_CONNECTION ; i++)
           {
           sock = _suspend_struct[index].server_acception[i].send_sock;
           if (sock && _suspend_struct[index].server_acception[i].tid == ss_gettid())
-	          server_socket = sock;
+            server_socket = sock;
           }
 
       /* receive further messages to empty UDP queue */
       do
-	      {
-	      FD_ZERO(&readfds);
-	      FD_SET(_suspend_struct[index].ipc_recv_socket, &readfds);
+        {
+        FD_ZERO(&readfds);
+        FD_SET(_suspend_struct[index].ipc_recv_socket, &readfds);
 
-	      timeout.tv_sec  = 0;
-	      timeout.tv_usec = 0;
+        timeout.tv_sec  = 0;
+        timeout.tv_usec = 0;
 
-	      status = select(FD_SETSIZE, &readfds, NULL, NULL, &timeout);
+        status = select(FD_SETSIZE, &readfds, NULL, NULL, &timeout);
 
-	      if (status != -1 && FD_ISSET(_suspend_struct[index].ipc_recv_socket, &readfds))
+        if (status != -1 && FD_ISSET(_suspend_struct[index].ipc_recv_socket, &readfds))
           {
           size = sizeof(struct sockaddr);
           size = recvfrom(_suspend_struct[index].ipc_recv_socket, buffer_tmp,
-					                sizeof(buffer_tmp), 0, &from_addr, &size);
+                          sizeof(buffer_tmp), 0, &from_addr, &size);
 
           /* don't forward same MSG_BM as above */
           if (buffer_tmp[0] != 'B' ||
               strcmp(buffer_tmp, buffer) != 0)
-	          if (_suspend_struct[index].ipc_dispatch)
-		          _suspend_struct[index].ipc_dispatch(buffer_tmp, server_socket);
+            if (_suspend_struct[index].ipc_dispatch)
+              _suspend_struct[index].ipc_dispatch(buffer_tmp, server_socket);
           }
 
-	      } while (FD_ISSET(_suspend_struct[index].ipc_recv_socket, &readfds));
+        } while (FD_ISSET(_suspend_struct[index].ipc_recv_socket, &readfds));
 
       /* return if received requested message */
       if (msg == MSG_BM && buffer[0] == 'B')
-	      return SS_SUCCESS;
+        return SS_SUCCESS;
       if (msg == MSG_ODB && buffer[0] == 'O')
         return SS_SUCCESS;
 
       /* call dispatcher */
       if (_suspend_struct[index].ipc_dispatch)
-	      _suspend_struct[index].ipc_dispatch(buffer, server_socket);
+        _suspend_struct[index].ipc_dispatch(buffer, server_socket);
 
       return_status = SS_SUCCESS;
-      } 
+      }
 
     } while (millisec < 0);
 
@@ -3518,9 +3519,9 @@ INT ss_resume(INT port, char *message)
   Routine: ss_resume
 
   Purpose: Resume another thread or process which called ss_suspend.
-	   The port has to be transfered (shared memory or so) from
-	   the thread or process which should be resumed. In that
-	   process it can be obtained via ss_suspend_get_port.
+     The port has to be transfered (shared memory or so) from
+     the thread or process which should be resumed. In that
+     process it can be obtained via ss_suspend_get_port.
 
   Input:
     INT    port             UDP port number
@@ -3553,9 +3554,9 @@ INT status, index;
 
   _suspend_struct[index].bind_addr.sin_port = htons((short) port);
 
-  status = sendto(_suspend_struct[index].ipc_send_socket, message, 
-                  strlen(message)+1, 0, 
-                  (struct sockaddr *)&_suspend_struct[index].bind_addr, 
+  status = sendto(_suspend_struct[index].ipc_send_socket, message,
+                  strlen(message)+1, 0,
+                  (struct sockaddr *)&_suspend_struct[index].bind_addr,
                   sizeof(struct sockaddr_in));
 
   if (status != (INT)strlen(message)+1)
@@ -3604,11 +3605,11 @@ INT   status;
     {
     status = send(sock, buffer+count, NET_TCP_SIZE, flags);
     if (status != -1)
-	    count += status;
+      count += status;
     else
       {
-	    cm_msg(MERROR, "send_tcp", "send(socket=%d,size=%d) returned %d, errno: %d (%s)",sock,NET_TCP_SIZE,status,errno,strerror(errno));
-	    return status;
+      cm_msg(MERROR, "send_tcp", "send(socket=%d,size=%d) returned %d, errno: %d (%s)",sock,NET_TCP_SIZE,status,errno,strerror(errno));
+      return status;
       }
     }
 
@@ -3616,11 +3617,11 @@ INT   status;
     {
     status = send(sock, buffer+count, buffer_size - count, flags);
     if (status != -1)
-	    count += status;
+      count += status;
     else
       {
-	    cm_msg(MERROR, "send_tcp", "send(socket=%d,size=%d) returned %d, errno: %d (%s)",sock,(int)(buffer_size - count),status,errno,strerror(errno));
-	    return status;
+      cm_msg(MERROR, "send_tcp", "send(socket=%d,size=%d) returned %d, errno: %d (%s)",sock,(int)(buffer_size - count),status,errno,strerror(errno));
+      return status;
       }
     }
 
@@ -3635,13 +3636,13 @@ INT recv_string(int sock, char *buffer, DWORD buffer_size, INT millisec)
   Routine: recv_string
 
   Purpose: Receive network data over TCP port. Since sockets are
-	   operated in stream mode, a single transmission via send
-	   may not transfer the full data. Therefore, one has to check
-	   at the receiver side if the full data is received. If not,
-	   one has to issue several recv() commands.
+     operated in stream mode, a single transmission via send
+     may not transfer the full data. Therefore, one has to check
+     at the receiver side if the full data is received. If not,
+     one has to issue several recv() commands.
 
-	   The length of the data is determined by a trailing zero.
-	   
+     The length of the data is determined by a trailing zero.
+
   Input:
     INT   sock               Socket which was previosly opened.
     DWORD buffer_size        Size of the buffer in bytes.
@@ -3674,14 +3675,14 @@ struct timeval timeout;
       timeout.tv_usec = (millisec % 1000) * 1000;
 
       do
-	      {
-	      status = select(FD_SETSIZE, &readfds, NULL, NULL, &timeout);
+        {
+        status = select(FD_SETSIZE, &readfds, NULL, NULL, &timeout);
 
-	      /* if an alarm signal was cought, restart select with reduced timeout */
-	      if (status == -1 && timeout.tv_sec >= WATCHDOG_INTERVAL / 1000)
+        /* if an alarm signal was cought, restart select with reduced timeout */
+        if (status == -1 && timeout.tv_sec >= WATCHDOG_INTERVAL / 1000)
           timeout.tv_sec -= WATCHDOG_INTERVAL / 1000;
 
-	      } while (status == -1); /* dont return if an alarm signal was cought */
+        } while (status == -1); /* dont return if an alarm signal was cought */
 
       if (!FD_ISSET(sock, &readfds))
         break;
@@ -3710,16 +3711,16 @@ INT recv_tcp(int sock, char *net_buffer, DWORD buffer_size, INT flags)
   Routine: recv_tcp
 
   Purpose: Receive network data over TCP port. Since sockets are
-	   operated in stream mode, a single transmission via send
-	   may not transfer the full data. Therefore, one has to check
-	   at the receiver side if the full data is received. If not,
-	   one has to issue several recv() commands.
+     operated in stream mode, a single transmission via send
+     may not transfer the full data. Therefore, one has to check
+     at the receiver side if the full data is received. If not,
+     one has to issue several recv() commands.
 
-	   The length of the data is determined by the data header,
-	   which consists of two DWORDs. The first is the command code
-	   (or function id), the second is the size of the following
-	   parameters in bytes. From that size recv_tcp() determines
-	   how much data to receive.
+     The length of the data is determined by the data header,
+     which consists of two DWORDs. The first is the command code
+     (or function id), the second is the size of the following
+     parameters in bytes. From that size recv_tcp() determines
+     how much data to receive.
 
   Input:
     INT   sock               Socket which was previosly opened.
@@ -3751,19 +3752,19 @@ NET_COMMAND *nc;
 #ifdef OS_UNIX
     do
       {
-      n = recv(sock, net_buffer + n_received, 
-	       sizeof(NET_COMMAND_HEADER), flags);
+      n = recv(sock, net_buffer + n_received,
+         sizeof(NET_COMMAND_HEADER), flags);
 
       /* don't return if an alarm signal was cought */
-      } while (n == -1 && errno == EINTR); 
+      } while (n == -1 && errno == EINTR);
 #else
-    n = recv(sock, net_buffer + n_received, 
-	     sizeof(NET_COMMAND_HEADER), flags);
+    n = recv(sock, net_buffer + n_received,
+       sizeof(NET_COMMAND_HEADER), flags);
 #endif
 
     if (n <= 0)
       {
-      cm_msg(MERROR, "recv_tcp", "header: recv returned %d, n_received = %d, errno: %d (%s)", 
+      cm_msg(MERROR, "recv_tcp", "header: recv returned %d, n_received = %d, errno: %d (%s)",
              n, n_received, errno, strerror(errno));
       return n;
       }
@@ -3786,19 +3787,19 @@ NET_COMMAND *nc;
 #ifdef OS_UNIX
     do
       {
-      n = recv(sock, net_buffer+sizeof(NET_COMMAND_HEADER)+n_received, 
-	       param_size-n_received, flags);
+      n = recv(sock, net_buffer+sizeof(NET_COMMAND_HEADER)+n_received,
+         param_size-n_received, flags);
 
       /* don't return if an alarm signal was cought */
-      } while (n == -1 && errno == EINTR); 
+      } while (n == -1 && errno == EINTR);
 #else
-    n = recv(sock, net_buffer+sizeof(NET_COMMAND_HEADER)+n_received, 
-	     param_size-n_received, flags);
+    n = recv(sock, net_buffer+sizeof(NET_COMMAND_HEADER)+n_received,
+       param_size-n_received, flags);
 #endif
 
     if (n <= 0)
       {
-      cm_msg(MERROR, "recv_tcp", "param: recv returned %d, n_received = %d, errno: %d (%s)", 
+      cm_msg(MERROR, "recv_tcp", "param: recv returned %d, n_received = %d, errno: %d (%s)",
              n, n_received, errno, strerror(errno));
       return n;
       }
@@ -3817,10 +3818,10 @@ INT send_udp(int sock, char *buffer, DWORD buffer_size, INT flags)
   Routine: send_udp
 
   Purpose: Send network data over UDP port. If buffer_size is small,
-	   collect several events and send them together. If
-	   buffer_size is larger than largest datagram size
-	   NET_UDP_SIZE, split event in several udp buffers and
-	   send them separately with serial number protection.
+     collect several events and send them together. If
+     buffer_size is larger than largest datagram size
+     NET_UDP_SIZE, split event in several udp buffers and
+     send them separately with serial number protection.
 
   Input:
     INT   sock               Socket which was previosly opened.
@@ -3884,7 +3885,7 @@ DWORD       i, data_size;
     if (buffer_size + n_received < data_size)
       {
       memcpy(udp_buffer+sizeof(UDP_HEADER)+n_received, buffer,
-	     buffer_size);
+       buffer_size);
 
       n_received+=buffer_size;
       return buffer_size;
@@ -3941,7 +3942,7 @@ DWORD       i, data_size;
   udp_header->sequence_number = i;
   memcpy(udp_header+1, buffer+i*data_size, buffer_size - i*data_size);
   status = send(sock, udp_buffer,
-		sizeof(UDP_HEADER) + buffer_size - i*data_size, flags);
+    sizeof(UDP_HEADER) + buffer_size - i*data_size, flags);
   if ((DWORD) status == sizeof(UDP_HEADER) + buffer_size - i*data_size)
     return buffer_size;
 
@@ -3956,9 +3957,9 @@ INT recv_udp(int sock, char *buffer, DWORD buffer_size, INT flags)
   Routine: recv_udp
 
   Purpose: Receive network data over UDP port. If received event
-	   is splitted into several buffers, recombine them checking
-	   the serial number. If one buffer is missing in a splitted
-	   event, throw away the whole event.
+     is splitted into several buffers, recombine them checking
+     the serial number. If one buffer is missing in a splitted
+     event, throw away the whole event.
 
   Input:
     INT   sock               Socket which was previosly opened.
@@ -3991,7 +3992,7 @@ struct timeval  timeout;
     i = recv(sock, udp_buffer, NET_UDP_SIZE, flags);
 
     /* dont return if an alarm signal was cought */
-    } while (i == -1 && errno == EINTR); 
+    } while (i == -1 && errno == EINTR);
 #else
   i = recv(sock, udp_buffer, NET_UDP_SIZE, flags);
 #endif
@@ -4026,7 +4027,7 @@ start:
       i = recv(sock, udp_buffer, NET_UDP_SIZE, flags);
 
       /* dont return if an alarm signal was caught */
-      } while (i == -1 && errno == EINTR); 
+      } while (i == -1 && errno == EINTR);
 #else
     i = recv(sock, udp_buffer, NET_UDP_SIZE, flags);
 #endif
@@ -4090,7 +4091,7 @@ start:
       i = recv(sock, udp_buffer, NET_UDP_SIZE, flags);
 
       /* dont return if an alarm signal was caught */
-      } while (i == -1 && errno == EINTR); 
+      } while (i == -1 && errno == EINTR);
 #else
     i = recv(sock, udp_buffer, NET_UDP_SIZE, flags);
 #endif
@@ -4099,7 +4100,7 @@ start:
 
     /* check sequence and serial numbers */
     if (udp_header->serial_number != serial_number ||
-	udp_header->sequence_number != sequence_number)
+  udp_header->sequence_number != sequence_number)
       /* lost one, so start again */
       goto start;
 
@@ -4172,7 +4173,7 @@ struct mtop arg;
   cm_enable_watchdog(FALSE);
 
   *channel = open(path, oflag, 0644);
-  
+
   cm_enable_watchdog(TRUE);
 
   if (*channel < 0)
@@ -4198,12 +4199,12 @@ struct mtop arg;
 #endif /* OS_UNIX */
 
 #ifdef OS_WINNT
-INT status;           
+INT status;
 TAPE_GET_MEDIA_PARAMETERS m;
 
-  *channel = (INT) CreateFile(path, GENERIC_READ | GENERIC_WRITE, 0, 
-			      0, OPEN_EXISTING, 0, NULL);
-  
+  *channel = (INT) CreateFile(path, GENERIC_READ | GENERIC_WRITE, 0,
+            0, OPEN_EXISTING, 0, NULL);
+
   if (*channel == (INT) INVALID_HANDLE_VALUE)
     {
     status = GetLastError();
@@ -4217,7 +4218,7 @@ TAPE_GET_MEDIA_PARAMETERS m;
       cm_msg(MERROR, "ss_tape_open", "tape device \"%s\" doesn't exist", path);
       return SS_NO_TAPE;
       }
-    
+
     cm_msg(MERROR, "ss_tape_open", "unknown error %d", status);
     return status;
     }
@@ -4323,9 +4324,9 @@ TAPE_GET_MEDIA_PARAMETERS m;
 TAPE_GET_DRIVE_PARAMETERS d;
 double x;
 
-  channel = (INT) CreateFile(path, GENERIC_READ | GENERIC_WRITE, 0, 
-			     0, OPEN_EXISTING, 0, NULL);
-  
+  channel = (INT) CreateFile(path, GENERIC_READ | GENERIC_WRITE, 0,
+           0, OPEN_EXISTING, 0, NULL);
+
   if (channel == (INT) INVALID_HANDLE_VALUE)
     {
     status = GetLastError();
@@ -4339,7 +4340,7 @@ double x;
       cm_msg(MINFO, "ss_tape_status", "tape device \"%s\" doesn't exist", path);
       return SS_SUCCESS;
       }
-    
+
     cm_msg(MINFO, "ss_tape_status", "unknown error %d", status);
     return status;
     }
@@ -4482,7 +4483,7 @@ INT n, status;
     if (errno == ENOSPC || errno == EIO)
       status = SS_END_OF_TAPE;
     else
-      { 
+      {
       if (n == 0 && errno == 0)
         status = SS_END_OF_FILE;
       else
@@ -4643,14 +4644,14 @@ struct mtop arg;
     cm_msg(MERROR, "ss_tape_fskip", strerror(errno));
     return errno;
     }
-  
+
 #endif /* OS_UNIX */
 
 #ifdef OS_WINNT
 
-  status = SetTapePosition((HANDLE) channel, TAPE_SPACE_FILEMARKS, 0, 
-			   (DWORD) count, 0, FALSE);
-  
+  status = SetTapePosition((HANDLE) channel, TAPE_SPACE_FILEMARKS, 0,
+         (DWORD) count, 0, FALSE);
+
   if (status == ERROR_END_OF_MEDIA)
     return SS_END_OF_TAPE;
 
@@ -4714,7 +4715,7 @@ struct mtop arg;
 
 #ifdef OS_WINNT
 
-  status = SetTapePosition((HANDLE) channel, TAPE_SPACE_RELATIVE_BLOCKS, 0, 
+  status = SetTapePosition((HANDLE) channel, TAPE_SPACE_RELATIVE_BLOCKS, 0,
                            (DWORD) count, 0, FALSE);
   if (status != NO_ERROR)
     {
@@ -4767,7 +4768,7 @@ struct mtop arg;
     cm_msg(MERROR, "ss_tape_rewind", strerror(errno));
     return errno;
     }
-  
+
 #endif /* OS_UNIX */
 
 #ifdef OS_WINNT
@@ -4828,7 +4829,7 @@ struct mtop arg;
     cm_msg(MERROR, "ss_tape_rewind", strerror(errno));
     return errno;
     }
-  
+
 #endif /* OS_UNIX */
 
 #ifdef OS_WINNT
@@ -5042,7 +5043,7 @@ char   str[80];
   return 1e9;
 
 #endif
-}             
+}
 
 #if defined(OS_ULTRIX) || defined(OS_WINNT)
 int fnmatch (const char * pat, const char * str, const int flag)
@@ -5050,18 +5051,18 @@ int fnmatch (const char * pat, const char * str, const int flag)
   while (*str != '\0')
     {
       if (*pat == '*')
-	{
-	  pat++;
-	  if ((str = strchr(str ,*pat)) == NULL)
-	    return -1;
-	}
+  {
+    pat++;
+    if ((str = strchr(str ,*pat)) == NULL)
+      return -1;
+  }
       if (*pat == *str)
-	{
-	  pat++;
-	  str++;
-	}
+  {
+    pat++;
+    str++;
+  }
       else
-	return -1;
+  return -1;
     }
   if (*pat == '\0')
     return 0;
@@ -5079,26 +5080,25 @@ INT ss_file_find(char * path, char * pattern, char **plist)
 
   Routine: ss_file_find
 
-  Purpose: Return list of files matching 'pattern' from the 'path' location 
+  Purpose: Return list of files matching 'pattern' from the 'path' location
 
   Input:
     char  *path             Name of a file in file system to check
     char  *pattern          pattern string (wildcard allowed)
 
   Output:
-    char  **plist           pointer to the lfile list 
+    char  **plist           pointer to the lfile list
 
   Function value:
     int                     Number of files matching request
 
 \********************************************************************/
 {
-  int i, first;
-  char str[255];
+  int i;
 #ifdef OS_UNIX
   DIR *dir_pointer;
   struct dirent *dp;
-  
+
   if ((dir_pointer = opendir(path)) == NULL)
     return 0;
   *plist = (char *) malloc(MAX_STRING_LENGTH);
@@ -5106,17 +5106,20 @@ INT ss_file_find(char * path, char * pattern, char **plist)
   for (dp = readdir(dir_pointer); dp != NULL; dp = readdir(dir_pointer))
   {
     if (fnmatch (pattern, dp->d_name, 0) == 0)
-	  {
-	    *plist = (char *)realloc(*plist, (i+1)*MAX_STRING_LENGTH);
-	    strncpy(*plist+(i*MAX_STRING_LENGTH), dp->d_name, strlen(dp->d_name)); 
+    {
+      *plist = (char *)realloc(*plist, (i+1)*MAX_STRING_LENGTH);
+      strncpy(*plist+(i*MAX_STRING_LENGTH), dp->d_name, strlen(dp->d_name));
       *(*plist+(i*MAX_STRING_LENGTH)+strlen(dp->d_name)) = '\0';
-	    i++;
-	    seekdir(dir_pointer, telldir(dir_pointer));
-	  }
+      i++;
+      seekdir(dir_pointer, telldir(dir_pointer));
+    }
   }
-  closedir(dir_pointer); 
+  closedir(dir_pointer);
 #endif
 #ifdef OS_WINNT
+  char str[255];
+  int  first;
+
   strcpy(str,path);
   strcat(str,"\\");
   strcat(str,pattern);
@@ -5128,16 +5131,16 @@ INT ss_file_find(char * path, char * pattern, char **plist)
   if (pffile == INVALID_HANDLE_VALUE)
     return 0;
   first = 0;
-	*plist = (char *)realloc(*plist, (i+1)*MAX_STRING_LENGTH);
-	strncpy(*plist+(i*MAX_STRING_LENGTH), lpfdata->cFileName, strlen(lpfdata->cFileName));
+  *plist = (char *)realloc(*plist, (i+1)*MAX_STRING_LENGTH);
+  strncpy(*plist+(i*MAX_STRING_LENGTH), lpfdata->cFileName, strlen(lpfdata->cFileName));
   *(*plist+(i*MAX_STRING_LENGTH)+strlen(lpfdata->cFileName)) = '\0';
-	i++;
+  i++;
   while (FindNextFile(pffile, lpfdata))
   {
-	  *plist = (char *)realloc(*plist, (i+1)*MAX_STRING_LENGTH);
-	  strncpy(*plist+(i*MAX_STRING_LENGTH), lpfdata->cFileName, strlen(lpfdata->cFileName));
+    *plist = (char *)realloc(*plist, (i+1)*MAX_STRING_LENGTH);
+    strncpy(*plist+(i*MAX_STRING_LENGTH), lpfdata->cFileName, strlen(lpfdata->cFileName));
     *(*plist+(i*MAX_STRING_LENGTH)+strlen(lpfdata->cFileName)) = '\0';
-	  i++;
+    i++;
   }
   free(lpfdata);
 #endif
@@ -5177,7 +5180,7 @@ double ss_file_size(char * path)
   Output:
 
   Function value:
-    double                     File size 
+    double                     File size
 
 \********************************************************************/
 {
@@ -5194,12 +5197,12 @@ double ss_disk_size(char *path)
   Routine: ss_disk_size
 
   Purpose: Return full disk space
-  
+
   Input:
     char  *path             Name of a file in file system to check
-  
+
   Output:
-  
+
   Function value:
     doube                   Number of bytes free on disk
 
@@ -5230,34 +5233,34 @@ double ss_disk_size(char *path)
   statfs(path, &st, sizeof(struct statfs), 0);
   return (double) st.f_blocks * st.f_bsize;
 #else
-#error ss_disk_size not defined for this OS 
+#error ss_disk_size not defined for this OS
 #endif
 #endif /* OS_UNIX */
-  
+
 #ifdef OS_WINNT
   DWORD  SectorsPerCluster;
   DWORD  BytesPerSector;
   DWORD  NumberOfFreeClusters;
   DWORD  TotalNumberOfClusters;
   char   str[80];
-  
+
   strcpy(str, path);
   if (strchr(str, ':') != NULL)
     {
       *(strchr(str, ':')+1) = 0;
       strcat(str, DIR_SEPARATOR_STR);
       GetDiskFreeSpace(str, &SectorsPerCluster, &BytesPerSector,
-		       &NumberOfFreeClusters, &TotalNumberOfClusters);
+           &NumberOfFreeClusters, &TotalNumberOfClusters);
     }
   else
     GetDiskFreeSpace(NULL, &SectorsPerCluster, &BytesPerSector,
                      &NumberOfFreeClusters, &TotalNumberOfClusters);
-  
+
   return (double) TotalNumberOfClusters * SectorsPerCluster * BytesPerSector;
 #endif /* OS_WINNT */
-  
+
   return 1e9;
-}                 
+}
 
 /*------------------------------------------------------------------*/
 
@@ -5301,7 +5304,7 @@ void ss_clear_screen()
   /* get the number of character cells in the current buffer */
   bSuccess = GetConsoleScreenBufferInfo(hConsole, &csbi);
   dwConSize = csbi.dwSize.X * csbi.dwSize.Y;
-  
+
   /* fill the entire screen with blanks */
   bSuccess = FillConsoleOutputCharacter(hConsole, (TCHAR) ' ',
                dwConSize, coordScreen, &cCharsWritten);
@@ -5309,7 +5312,7 @@ void ss_clear_screen()
   /* put the cursor at (0, 0) */
   bSuccess = SetConsoleCursorPosition(hConsole, coordScreen);
   return;
-    
+
 #endif /* OS_WINNT */
 #if defined(OS_UNIX) || defined(OS_VXWORKS) || defined(OS_VMS)
   printf("\033[2J");
@@ -5348,7 +5351,7 @@ void ss_set_screen_size(int x, int y)
   coordSize.Y = (short) y;
   hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
   SetConsoleScreenBufferSize(hConsole, coordSize);
-    
+
 #endif /* OS_WINNT */
 }
 
@@ -5362,8 +5365,8 @@ void ss_printf(INT x, INT y, const char *format, ...)
   Purpose: Print string at given cursor position
 
   Input:
-    INT   x,y               Cursor position, starting from zero, 
-			    x=0 and y=0 left upper corner
+    INT   x,y               Cursor position, starting from zero,
+          x=0 and y=0 left upper corner
 
     char  *format           Format string for printf
     ...                     Arguments for printf
@@ -5500,7 +5503,7 @@ INT ss_getchar(BOOL reset)
 \********************************************************************/
 {
 #ifdef OS_UNIX
-  
+
 static BOOL           init = FALSE;
 static struct termios save_termios;
 struct termios        buf;
@@ -5515,7 +5518,7 @@ char c[3];
   if (reset)
     {
     if (init)
-      tcsetattr(fd, TCSAFLUSH, &save_termios); 
+      tcsetattr(fd, TCSAFLUSH, &save_termios);
     init = FALSE;
     return 0;
     }
@@ -5535,7 +5538,7 @@ char c[3];
     buf.c_cc[VMIN] = 0;
     buf.c_cc[VTIME] = 0;
 
-    tcsetattr(fd, TCSAFLUSH, &buf); 
+    tcsetattr(fd, TCSAFLUSH, &buf);
     init = TRUE;
     }
 
@@ -5625,7 +5628,7 @@ OSVERSIONINFO vi;
 
   if (reset)
     {
-    SetConsoleMode(hConsole, ENABLE_LINE_INPUT | ENABLE_ECHO_INPUT | 
+    SetConsoleMode(hConsole, ENABLE_LINE_INPUT | ENABLE_ECHO_INPUT |
                              ENABLE_PROCESSED_INPUT | ENABLE_MOUSE_INPUT);
     init = FALSE;
     return 0;
@@ -5735,7 +5738,7 @@ char *ss_gets(char *string, int size)
 
   Output:
     BOOL   string           Return string
-  
+
   Function value:
     char                    Return string
 
@@ -5767,7 +5770,7 @@ char *p;
 
 INT ss_directio_give_port(INT start, INT end)
 {
-#ifdef OS_WINNT  
+#ifdef OS_WINNT
 
   /* under Windows NT, use DirectIO driver to open ports */
 
@@ -5808,7 +5811,7 @@ INT ss_directio_give_port(INT start, INT end)
 
 INT ss_directio_lock_port(INT start, INT end)
 {
-#ifdef OS_WINNT  
+#ifdef OS_WINNT
 
   /* under Windows NT, use DirectIO driver to lock ports */
 
@@ -5875,7 +5878,7 @@ INT ss_syslog(const char *message)
 {
 #ifdef OS_UNIX
 static   BOOL init = FALSE;
-  
+
   if (!init)
     {
 #ifdef OS_ULTRIX
@@ -5895,20 +5898,20 @@ const char *pstr[2];
 
   if (!hlog)
     {
-    HKEY  hk;  
-    DWORD d; 
+    HKEY  hk;
+    DWORD d;
     char  str[80];
-    
-    RegCreateKey(HKEY_LOCAL_MACHINE, 
+
+    RegCreateKey(HKEY_LOCAL_MACHINE,
       "SYSTEM\\CurrentControlSet\\Services\\EventLog\\Application\\Midas", &hk);
 
     strcpy(str, (char *) rpc_get_server_option(RPC_OSERVER_NAME));
     RegSetValueEx(hk, "EventMessageFile", 0, REG_EXPAND_SZ, (LPBYTE) str, strlen(str) + 1);
- 
-    d = EVENTLOG_ERROR_TYPE | EVENTLOG_WARNING_TYPE | 
-        EVENTLOG_INFORMATION_TYPE; 
+
+    d = EVENTLOG_ERROR_TYPE | EVENTLOG_WARNING_TYPE |
+        EVENTLOG_INFORMATION_TYPE;
     RegSetValueEx(hk, "TypesSupported", 0, REG_DWORD, (LPBYTE) &d, sizeof(DWORD));
-    RegCloseKey(hk); 
+    RegCloseKey(hk);
 
     hlog = RegisterEventSource(NULL, "Midas");
     }
@@ -5922,7 +5925,7 @@ const char *pstr[2];
   return SS_SUCCESS;
 
 #else /* OS_WINNT */
-  
+
   return SS_SUCCESS;
 
 #endif
@@ -5956,7 +5959,7 @@ char *ss_crypt(char *buf, char *salt)
 
   Function value:
     char*                   Encrypted password
-   
+
 \********************************************************************/
 {
 int i, seed;
@@ -5967,14 +5970,14 @@ static char enc_pw[13];
   enc_pw[1] = salt[1];
 
   for (i=0; i<8 && buf[i]; i++)
-		enc_pw[i+2] = buf[i];
-	for (; i<8; i++)
-		enc_pw[i+2] = 0;
+    enc_pw[i+2] = buf[i];
+  for (; i<8; i++)
+    enc_pw[i+2] = 0;
 
   seed = 123;
-	for (i=2; i<13; i++)
+  for (i=2; i<13; i++)
     {
-		seed = 5*seed + 27 + enc_pw[i];
+    seed = 5*seed + 27 + enc_pw[i];
     enc_pw[i] = (char) bin_to_ascii(seed & 0x3F);
     }
 
