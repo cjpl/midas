@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.53  1999/11/19 09:49:36  midas
+  Added watchdog_timeout to cm_set_client_info
+
   Revision 1.52  1999/11/09 13:17:00  midas
   Changed shared memory function names to ss_shm_xxx instead ss_xxx_shm
 
@@ -1310,7 +1313,7 @@ INT EXPRT cm_set_experiment_database(HNDLE hDB, HNDLE hKeyClient);
 INT EXPRT cm_get_experiment_database(HNDLE *hDB, HNDLE *hKeyClient);
 INT EXPRT cm_set_experiment_mutex(INT mutex_alarm, INT mutex_elog);
 INT EXPRT cm_get_experiment_mutex(INT *mutex_alarm, INT *mutex_elog);
-INT EXPRT cm_set_client_info(HNDLE hDB, HNDLE *hKeyClient, char *host_name, char *client_name, INT computer_id, char *password);
+INT EXPRT cm_set_client_info(HNDLE hDB, HNDLE *hKeyClient, char *host_name, char *client_name, INT computer_id, char *password, INT watchdog_timeout);
 INT EXPRT cm_get_client_info(char *client_name);
 INT EXPRT cm_set_watchdog_params(BOOL call_watchdog, INT timeout);
 INT EXPRT cm_get_watchdog_params(BOOL *call_watchdog, INT *timeout);
