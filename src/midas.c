@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.125  2000/11/06 14:19:19  midas
+  Don't return from hs_read if variable not found (could be present later...)
+
   Revision 1.124  2000/10/21 12:26:12  midas
   Fixed bug with cache pointer in hs_read
 
@@ -14618,15 +14621,18 @@ char         *cache;
               break;
               }
           
+          /*
           if ((DWORD) i == drec.data_size/sizeof(TAG))
             {
             *n = *tbsize = *dbsize = 0;
             if (cache)
               free(cache);
+
             return HS_UNDEFINED_VAR;
             }
+          */
           
-          if (var_index >= tag[i].n_data)
+          if (index >= 0 && var_index >= tag[i].n_data)
             {
             *n = *tbsize = *dbsize = 0;
             if (cache)
