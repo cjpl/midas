@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.211  2004/07/15 14:59:35  midas
+  Fixed compiler warning
+
   Revision 1.210  2004/07/15 14:58:12  midas
   Fixed severe bug in bm_check_buffers which crashed the logger during run stop
 
@@ -7349,7 +7352,7 @@ INT bm_check_buffers()
 {
 #ifdef LOCAL_ROUTINES
    {
-      INT index, status;
+      INT index, status = 0;
       INT server_type, server_conn, tid;
       BOOL bMore;
       DWORD start_time;
