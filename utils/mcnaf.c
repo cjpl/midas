@@ -577,4 +577,5 @@ usage:
         cnafsub();
     }
   cam_exit();
+  return 0;
 }
