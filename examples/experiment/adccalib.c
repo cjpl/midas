@@ -12,6 +12,9 @@
                 and transferred to experim.h.
 
   $Log$
+  Revision 1.6  2003/04/22 15:00:27  midas
+  Worked on ROOT histo booking
+
   Revision 1.5  2003/04/21 04:02:13  olchansk
   replace MANA_LITE with HAVE_HBOOK and HAVE_ROOT
   implement ROOT-equivalents of the sample HBOOK code
@@ -57,6 +60,7 @@
 #ifdef HAVE_ROOT
 #include <TH1F.h>
 #include <TTree.h>
+#include <TDirectory.h>
 #endif
 
 /*-- Parameters ----------------------------------------------------*/
@@ -90,6 +94,8 @@ ANA_MODULE adc_calib_module = {
 /*-- module-local variables ----------------------------------------*/
 
 #ifdef HAVE_ROOT
+extern TDirectory *gManaHistsDir;
+
 static TH1F* gAdcHists[N_ADC];
 
 static char* gMyBranchString = "run_number/I:n_adc/I:adc_sum/F";
@@ -108,45 +114,36 @@ static float gAdcCalibData[N_ADC];
 
 /*-- init routine --------------------------------------------------*/
 
-INT adc_calib_init(void)
-{
-  /* book histos */
-  adc_calib_bor(0);
-  return SUCCESS;
-}
-
-/*-- BOR routine ---------------------------------------------------*/
-
 #define ADC_N_BINS   500
 #define ADC_X_LOW      0
 #define ADC_X_HIGH  4000
 
-INT adc_calib_bor(INT run_number)
+INT adc_calib_init(void)
 {
-int    i;
+char name[256];
+int  i;
 
   /* book CADC histos */
 #ifdef HAVE_HBOOK
   for (i=0; i<N_ADC; i++)
     {
-    char str[80];
-    if (HEXIST(ADCCALIB_ID_BASE+i))
-      HDELET(ADCCALIB_ID_BASE+i);
-    sprintf(str, "CADC%02d", i);
-    HBOOK1(ADCCALIB_ID_BASE+i, str, ADC_N_BINS, 
+    sprintf(name, "CADC%02d", i);
+    HBOOK1(ADCCALIB_ID_BASE+i, name, ADC_N_BINS, 
            (float)ADC_X_LOW, (float)ADC_X_HIGH, 0.f); 
     }
 #endif /* HAVE_HBOOK */
 #ifdef HAVE_ROOT
   for (i=0; i<N_ADC; i++)
     {
-    char name[256];
     char title[256];
-    if (gAdcHists[i] != NULL)
-      delete gAdcHists[i];
+
     sprintf(name,  "CADC%02d", i);
     sprintf(title, "ADC %d", i);
-    gAdcHists[i] = new TH1F(name, title, ADC_N_BINS, ADC_X_LOW, ADC_X_HIGH);
+
+    gAdcHists[i] = (TH1F*)gManaHistsDir->GetList()->FindObject(name);
+    
+    if (gAdcHists[i] == NULL)
+      gAdcHists[i] = new TH1F(name, title, ADC_N_BINS, ADC_X_LOW, ADC_X_HIGH);
     }
 #endif /* HAVE_ROOT */
 
@@ -160,7 +157,8 @@ int    i;
   // also only create branches is they do not exist: in append
   // mode the output file is not reopened and the output
   // tree with it's branches persists across calls to bor() and eor().
-  
+
+  /*
   if (gManaOutputTree != NULL)
     {
     if (gManaOutputTree->GetBranch("MyBranch")==NULL)
@@ -172,8 +170,16 @@ int    i;
     if (gManaOutputTree->GetBranch("AdcCalib")==NULL)
       gManaOutputTree->Branch("AdcCalib",&gAdcCalibData,"adc_calib[n_adc]/F");
     }
+  */
 #endif /* HAVE_ROOT */
 
+  return SUCCESS;
+}
+
+/*-- BOR routine ---------------------------------------------------*/
+
+INT adc_calib_bor(INT run_number)
+{
   return SUCCESS;
 }
 

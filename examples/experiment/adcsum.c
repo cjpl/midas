@@ -10,6 +10,9 @@
                 in the ODB and transferred to experim.h.
 
   $Log$
+  Revision 1.5  2003/04/22 15:00:27  midas
+  Worked on ROOT histo booking
+
   Revision 1.4  2003/04/21 04:02:13  olchansk
   replace MANA_LITE with HAVE_HBOOK and HAVE_ROOT
   implement ROOT-equivalents of the sample HBOOK code
@@ -51,6 +54,7 @@
 
 #ifdef HAVE_ROOT
 #include <TH1F.h>
+#include <TDirectory.h>
 #endif
 
 #ifndef PI
@@ -85,6 +89,8 @@ ANA_MODULE adc_summing_module = {
 /*-- Module-local variables-----------------------------------------*/
 
 #ifdef HAVE_ROOT
+extern TDirectory *gManaHistsDir;
+
 static TH1F *gAdcSumHist = NULL;
 #endif
 
@@ -96,8 +102,12 @@ INT adc_summing_init(void)
 #ifdef HAVE_HBOOK
   HBOOK1(ADCSUM_ID_BASE, "ADC sum", 500, 0.f, 10000.f, 0.f); 
 #endif
+
 #ifdef HAVE_ROOT
-  gAdcSumHist = new TH1F("ADCSUM", "ADC sum", 500, 0, 10000);
+  gAdcSumHist = (TH1F*)gManaHistsDir->GetList()->FindObject("ADCSUM");
+    
+  if (gAdcSumHist == NULL)
+    gAdcSumHist = new TH1F("ADCSUM", "ADC sum", 500, 0, 10000);
 #endif
   return SUCCESS;
 }
