@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.108  2003/12/12 12:52:24  midas
+  Warn about uppercase characters in HBOOK directory names
+
   Revision 1.107  2003/12/12 12:32:09  midas
   Fixed HBOOK compiler warnings
 
@@ -2329,11 +2332,21 @@ char       str[256], file_name[256];
 
     add_data_dir(str, file_name);
 #ifdef HAVE_HBOOK
-    {
-    char str2[256];
-    strcpy(str2, "NT");
-    HRPUT(0, str, str2);
-    }
+    for (i=0 ; i<(int)strlen(str) ; i++)
+      if (isupper(str[i]))
+        break;
+
+    if (i<(int)strlen(str))
+      {
+      printf("Error: Due to a limitation in HBOOK, directoy names may not contain uppercase\n");
+      printf("       characters. Histogram saving will not work.\n");
+      }
+    else
+      {
+      char str2[256];
+      strcpy(str2, "NT");
+      HRPUT(0, str, str2);
+      }
 #endif /* HAVE_HBOOK */
 
 #ifdef HAVE_ROOT
@@ -4101,18 +4114,31 @@ char str[256];
     {
     FILE *f;
     char str2[256];
+    int  i;
 
-    f = fopen(str, "r");
-    if (f != NULL)
+    for (i=0 ; i<(int)strlen(str) ; i++)
+      if (isupper(str[i]))
+        break;
+
+    if (i<(int)strlen(str))
       {
-      fclose(f);
-      printf("Loading previous online histos from %s\n", str);
-      strcpy(str2, "A");
-      HRGET(0, str, str2);
+      printf("Error: Due to a limitation in HBOOK, directoy names may not contain uppercase\n");
+      printf("       characters. Histogram loading will not work.\n");
+      }
+    else
+      {
+      f = fopen(str, "r");
+      if (f != NULL)
+        {
+        fclose(f);
+        printf("Loading previous online histos from %s\n", str);
+        strcpy(str2, "A");
+        HRGET(0, str, str2);
 
-      /* fix wrongly booked N-tuples at ID 100000 */
-      if (HEXIST(100000))
-        HDELET(100000);
+        /* fix wrongly booked N-tuples at ID 100000 */
+        if (HEXIST(100000))
+          HDELET(100000);
+        }
       }
     }
 #endif /* HAVE_HBOOK */
@@ -4139,10 +4165,23 @@ char str[256];
 
 #ifdef HAVE_HBOOK
   {
+  int  i;
   char str2[256];
 
-  strcpy(str2, "NT");
-  HRPUT(0, str, str2);
+  for (i=0 ; i<(int)strlen(str) ; i++)
+    if (isupper(str[i]))
+      break;
+
+  if (i<(int)strlen(str))
+    {
+    printf("Error: Due to a limitation in HBOOK, directoy names may not contain uppercase\n");
+    printf("       characters. Histogram saving will not work.\n");
+    }
+  else
+    {
+    strcpy(str2, "NT");
+    HRPUT(0, str, str2);
+    }
   }
 #endif
 
