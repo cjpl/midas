@@ -6,6 +6,9 @@
   Contents:     Command-line interface for the Midas Slow Control Bus
 
   $Log$
+  Revision 1.61  2004/03/10 12:41:22  midas
+  *** empty log message ***
+
   Revision 1.60  2004/03/10 10:28:47  midas
   Implemented test block write for speed tests
 
@@ -1253,7 +1256,6 @@ int main(int argc, char *argv[])
    }
 
    /* open port */
-//  fd = mscb_init(device, debug ? 2 : 0);
    fd = mscb_init(device, debug ? 1 : 0);
    if (fd < 0) {
       if (fd == -2) {
