@@ -6,6 +6,9 @@
   Contents:     Electronic logbook utility   
 
   $Log$
+  Revision 1.22  2001/12/05 10:02:50  midas
+  Fixed -Wall compiler warning
+
   Revision 1.21  2001/12/05 09:58:57  midas
   Fixed small bug
 
@@ -353,7 +356,7 @@ char                 host_name[256], boundary[80], str[80], *p;
 
 /*------------------------------------------------------------------*/
 
-main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
 char      str[1000], text[10000], uname[80], upwd[80];
 char      host_name[256], logbook[32], textfile[256], password[80];
