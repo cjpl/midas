@@ -6,8 +6,8 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
-  Revision 1.53  1999/09/27 13:49:04  midas
-  Added bUnique parameter to cm_shutdown
+  Revision 1.54  1999/09/28 10:24:15  midas
+  Display text attachments
 
   Revision 1.52  1999/09/27 12:53:50  midas
   Finished alarm system
@@ -1659,7 +1659,7 @@ struct tm tms;
         sprintf(ref, "%sEL/%s", mhttpd_url, str);
 
       strncpy(str, text, 80);
-      str[250] = 0;
+      str[80] = 0;
       rsprintf("<tr><td>%s<td>%d<td>%s<td>%s<td>%s<td>%s\n", date, run, author, type, system, subject);
 
 
@@ -1961,6 +1961,7 @@ char  date[80], author[80], type[80], system[80], subject[256], text[10000],
       orig_tag[80], reply_tag[80], attachment[3][256], encoding[80];
 HNDLE hDB, hkey, hkeyroot;
 KEY   key;
+FILE  *f;
 
   cm_get_experiment_database(&hDB, NULL);
 
@@ -2328,6 +2329,7 @@ KEY   key;
         {
         for (i=0 ; i<(int)strlen(attachment[index]) ; i++)
           str[i] = toupper(attachment[index][i]);
+        str[i] = 0;
       
         if (exp_name[0])
           sprintf(ref, "%sEL/%s?exp=%s", 
@@ -2345,8 +2347,38 @@ KEY   key;
           }
         else
           {
-          rsprintf("<tr><td colspan=2 bgcolor=#8080FF>Attachment: <a href=\"%s\"><b>%s</b></a></tr>\n", 
+          rsprintf("<tr><td colspan=2 bgcolor=#C0C0FF>Attachment: <a href=\"%s\"><b>%s</b></a>\n", 
                     ref, attachment[index]+14);
+          if (!strstr(str, ".PS") &&
+              !strstr(str, ".EPS"))
+            {
+            /* display attachment */
+            rsprintf("<br><pre>");
+
+            file_name[0] = 0;
+            size = sizeof(file_name);
+            memset(file_name, 0, size);
+            db_get_value(hDB, 0, "/Logger/Data dir", file_name, &size, TID_STRING);
+            if (file_name[0] != 0)
+              if (file_name[strlen(file_name)-1] != DIR_SEPARATOR)
+                strcat(file_name, DIR_SEPARATOR_STR);
+            strcat(file_name, attachment[index]);
+
+            f = fopen(file_name, "rt");
+            if (f != NULL)
+              {
+              while (!feof(f))
+                {
+                str[0] = 0;
+                fgets(str, sizeof(str), f);
+                rsprintf(str);
+                }
+              fclose(f);
+              }
+
+            rsprintf("</pre>\n");
+            }
+          rsprintf("</tr>\n");
           }
         }
       }
