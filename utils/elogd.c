@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.51  2001/11/05 12:36:15  midas
+  Added <errno.h> for Unix include files
+
   Revision 1.50  2001/11/05 12:33:30  midas
   Fixed bugs concerning edit/reply/delete and admin password
 
@@ -206,6 +209,7 @@ typedef unsigned long int DWORD;
 #include <signal.h>
 #include <time.h>
 #include <dirent.h>
+#include <errno.h>
 
 #define closesocket(s) close(s)
 #define O_BINARY 0
