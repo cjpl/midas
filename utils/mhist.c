@@ -6,6 +6,9 @@
   Contents:     MIDAS history display utility
 
   $Log$
+  Revision 1.5  1999/06/28 12:01:10  midas
+  Added -f flag
+
   Revision 1.4  1999/06/02 07:52:50  midas
   Fixed compiler warning
 
@@ -234,7 +237,7 @@ main(int argc, char *argv[])
 DWORD    status, event_id, start_time, end_time, interval, index;
 INT      i, var_n_data;
 DWORD    var_type;
-char     var_name[NAME_LENGTH];
+char     var_name[NAME_LENGTH], file_name[256];
 
   /* turn off system message */
   cm_set_msg_print(0, MT_ALL, puts);
@@ -254,6 +257,8 @@ char     var_name[NAME_LENGTH];
     index = 0;
     var_type = 0;
     var_name[0] = 0;
+    file_name[0] = 0;
+    event_id = 0;
 
     /* parse command line parameters */
     for (i=1 ; i<argc ; i++)
@@ -274,11 +279,14 @@ char     var_name[NAME_LENGTH];
           start_time = ss_time() - atoi(argv[++i])*3600*24;
         else if (argv[i][1] == 't')
           interval = atoi(argv[++i]);
+        else if (argv[i][1] == 'f')
+          strcpy(file_name, argv[++i]);
         else
           {
 usage:
           printf("\nusage: mhist -e Event ID -v Variable Name\n");
           printf("         [-i Index] [-h Hours] [-d Days] [-t Interval]\n\n");
+          printf("         [-f file] for complet file dump\n\n");
           printf("where index is for variables which are arrays, hours/days go into the past\n");
           printf("and interval is the minimum interval between two displayed records.\n\n");
           return 0;
@@ -289,6 +297,8 @@ usage:
       }
     }
 
+  if (file_name[0])
+    hs_fdump(file_name, event_id);
   if (var_name[0] == 0)
     hs_dump(event_id, start_time, end_time, interval);
   else
