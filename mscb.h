@@ -6,6 +6,9 @@
   Contents:     Header fiel for MSCB funcions
 
   $Log$
+  Revision 1.38  2004/12/10 11:21:51  midas
+  Changed baud rates
+
   Revision 1.37  2004/10/12 11:02:41  midas
   Version 1.7.6
 
@@ -167,13 +170,15 @@
 
 /*---- baud rates used ---------------------------------------------*/
 
-#define BD_9600            1
-#define BD_19200           2
-#define BD_28800           3
-#define BD_57600           4
-#define BD_115200          5
-#define BD_172800          6
-#define BD_345600          7
+#define BD_2400            1
+#define BD_4800            2
+#define BD_9600            3
+#define BD_19200           4
+#define BD_28800           5
+#define BD_57600           6
+#define BD_115200          7
+#define BD_172800          8
+#define BD_345600          9
 
 /*---- info structures ---------------------------------------------*/
 
@@ -339,6 +344,7 @@ extern "C" {
    int EXPRT mscb_read(int fd, int adr, unsigned char index, void *data, int *size);
    int EXPRT mscb_read_range(int fd, int adr, unsigned char index1,
                              unsigned char index2, void *data, int *size);
+   int EXPRT mscb_read_block(int fd, int adr, unsigned char index, void *data, int *size);
    int EXPRT mscb_user(int fd, int adr, void *param, int size, void *result, int *rsize);
    int EXPRT mscb_link(int fd, int adr, unsigned char index, void *data, int size);
    int EXPRT mscb_addr(int fd, int cmd, int adr, int retry, int lock);

@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol commands
 
   $Log$
+  Revision 1.46  2004/12/10 11:22:28  midas
+  Changed baud rates
+
   Revision 1.45  2004/10/29 12:45:59  midas
   Increased EEPROM page to 4kB
 
@@ -364,13 +367,15 @@ sbit RS485_ENABLE = P0 ^ 7;
 
 /*---- baud rates used ---------------------------------------------*/
 
-#define BD_9600            1
-#define BD_19200           2
-#define BD_28800           3
-#define BD_57600           4
-#define BD_115200          5
-#define BD_172800          6
-#define BD_345600          7
+#define BD_2400            1
+#define BD_4800            2
+#define BD_9600            3
+#define BD_19200           4
+#define BD_28800           5
+#define BD_57600           6
+#define BD_115200          7
+#define BD_172800          8
+#define BD_345600          9
 
 /*---- info structures ---------------------------------------------*/
 
