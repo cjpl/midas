@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.114  2000/05/02 14:03:18  midas
+  Added alarm level display and display of individual curves
+
   Revision 1.113  2000/04/28 15:27:14  midas
   Adjusted colors
 
@@ -5273,24 +5276,11 @@ double base[] = {1,2,5,10,20,50,100,200,500,1000};
       }
     }
 
-  /* determination of maximal width of labels */
-  if (x1 == 0 && y1 == 0) 
-    {
-    sprintf(str, "%1.*lG", n_sig1, floor(ymin/dy)*dy);
-    max_width = font->w*strlen(str);
-
-    sprintf(str, "%1.*lG", n_sig1, floor(ymax/dy)*dy);
-    max_width = max(max_width, (int)(font->w*strlen(str)));
-
-    sprintf(str, "%1.*lG", n_sig1, floor(ymin/dy)*dy+label_dy);
-    max_width = max(max_width, (int)(font->w*strlen(str)));
-    
-    return max_width + abs(label);
-    }
-
+  max_width = 0;
   y_act = floor(ymin/dy)*dy;
 
-  gdImageLine(im, x1, y1, x1, y1 - width, col);
+  if (x1 != 0 || y1 != 0) 
+    gdImageLine(im, x1, y1, x1, y1 - width, col);
 
   do
     {
@@ -5307,40 +5297,54 @@ double base[] = {1,2,5,10,20,50,100,200,500,1000};
         if ( fabs(floor(y_act/label_dy+0.5) - y_act/label_dy) <
            dy / label_dy / 10.0 )
           {
-          /**** label tick mark ****/
-          gdImageLine(im, x1, ys, x1 + text, ys, col);
+          if (x1 != 0 || y1 != 0) 
+            {
+            /**** label tick mark ****/
+            gdImageLine(im, x1, ys, x1 + text, ys, col);
 
-          /**** grid line ***/
-          if (grid != 0 && y_screen < y1 && y_screen > y1 - width)
-            if (grid > 0)
-              gdImageLine(im, x1+1, ys, x1+grid, ys, gcol);
-            else
-              gdImageLine(im, x1-1, ys, x1+grid, ys, gcol);
+            /**** grid line ***/
+            if (grid != 0 && y_screen < y1 && y_screen > y1 - width)
+              if (grid > 0)
+                gdImageLine(im, x1+1, ys, x1+grid, ys, gcol);
+              else
+                gdImageLine(im, x1-1, ys, x1+grid, ys, gcol);
 
-          /**** label ****/
-          if (label != 0)
+            /**** label ****/
+            if (label != 0)
+              {
+              sprintf(str, "%1.*lG", n_sig1, y_act);
+              if (label < 0)
+                gdImageString(im, font, x1+label-font->w*strlen(str), ys-font->h/2, str, col);
+              else
+                gdImageString(im, font, x1+label, ys-font->h/3, str, col);
+              }
+            }
+          else
             {
             sprintf(str, "%1.*lG", n_sig1, y_act);
-            if (label < 0)
-              gdImageString(im, font, x1+label-font->w*strlen(str), ys-font->h/2, str, col);
-            else
-              gdImageString(im, font, x1+label, ys-font->h/3, str, col);
+            max_width = max(max_width, (int)(font->w*strlen(str)));
             }
           }
         else
           {
-          /**** major tick mark ****/
-          gdImageLine(im, x1, ys, x1 + major, ys, col);
+          if (x1 != 0 || y1 != 0) 
+            {
+            /**** major tick mark ****/
+            gdImageLine(im, x1, ys, x1 + major, ys, col);
 
-          /**** grid line ***/
-          if (grid != 0 && y_screen < y1 && y_screen > y1 - width)
-            gdImageLine(im, x1, ys, x1 + grid, ys, col);
+            /**** grid line ***/
+            if (grid != 0 && y_screen < y1 && y_screen > y1 - width)
+              gdImageLine(im, x1, ys, x1 + grid, ys, col);
+            }
           }
 
         }
       else
-        /**** minor tick mark ****/
-        gdImageLine(im, x1, ys, x1 + minor, ys, col);
+        if (x1 != 0 || y1 != 0) 
+          {
+          /**** minor tick mark ****/
+          gdImageLine(im, x1, ys, x1 + minor, ys, col);
+          }
       }
 
     y_act+=dy;
@@ -5350,7 +5354,7 @@ double base[] = {1,2,5,10,20,50,100,200,500,1000};
 
     } while(1);
 
-  return 0;
+  return max_width+abs(label);
 }
 
 /*------------------------------------------------------------------*/
@@ -5358,22 +5362,22 @@ double base[] = {1,2,5,10,20,50,100,200,500,1000};
 #define MAX_VARS 10
 
 void generate_hist_graph(char *path, char *buffer, int *buffer_size, 
-                         int width, int height, int scale)
+                         int width, int height, int scale, int index)
 {
-HNDLE       hDB, hkey, hkeypanel;
+HNDLE       hDB, hkey, hkeypanel, hkeyeq, hkeydvar, hkeyvars, hkeyroot, hkeynames;
 KEY         key;
 gdImagePtr  im;
 gdGifBuffer gb;
-int         i, j, n_vars, size, status, n_event;
+int         i, j, k, l, n_vars, size, status, n_event, row;
 DWORD       bsize, tsize;
 int         length, offset;
 int         flag, x1, y1, x2, y2, xs, ys, xold, yold;
 int         white, black, grey, ltgrey, red, green, blue, curve_col[MAX_VARS];
-char        str[256], panel[NAME_LENGTH], name[256];
-INT         var_index, *event_id_list, event_id;
+char        str[256], panel[NAME_LENGTH], name[256], *p, odbpath[256];
+INT         var_index[MAX_VARS], *event_id_list, event_id;
 DWORD       name_size, id_size, type;
-char        event_name[NAME_LENGTH], *event_name_list;
-char        tag_name[MAX_VARS][64], var_name[NAME_LENGTH];
+char        event_name[MAX_VARS][NAME_LENGTH], *event_name_list;
+char        tag_name[MAX_VARS][64], var_name[MAX_VARS][NAME_LENGTH], varname[64], key_name[256];
 DWORD       n_point[MAX_VARS];
 int         x[MAX_VARS][1000];
 float       y[MAX_VARS][1000];
@@ -5382,6 +5386,7 @@ float       xmin, xmax, ymin, ymax;
 char        ybuffer[8000];
 DWORD       tbuffer[1000];
 gdPoint     poly[3];
+float       upper_limit[MAX_VARS], lower_limit[MAX_VARS];
 
   cm_get_experiment_database(&hDB, NULL);
   event_name_list = NULL;
@@ -5464,15 +5469,15 @@ gdPoint     poly[3];
     goto error;
     }
 
-  db_find_key(hDB, hkeypanel, "Variables", &hkey);
-  if (!hkey)
+  db_find_key(hDB, hkeypanel, "Variables", &hkeydvar);
+  if (!hkeydvar)
     {
     sprintf(str, "Cannot find /History/Display/%s/Variables in ODB", panel);
     gdImageString(im, gdFontGiant, width/2-(strlen(str)*gdFontGiant->w)/2, height/2, str, red);
     goto error;
     }
 
-  db_get_key(hDB, hkey, &key);
+  db_get_key(hDB, hkeydvar, &key);
   n_vars = key.num_values;
 
   if (n_vars > MAX_VARS)
@@ -5484,38 +5489,41 @@ gdPoint     poly[3];
 
   for (i=0 ; i<n_vars ; i++)
     {
+    if (index != -1 && index != i)
+      continue;
+
     size = sizeof(str);
-    db_get_data_index(hDB, hkey, str, &size, i, TID_STRING);
+    db_get_data_index(hDB, hkeydvar, str, &size, i, TID_STRING);
     strcpy(tag_name[i], str);
     
     /* split varname in event, variable and index */
     if (strchr(tag_name[i], ':'))
       {
-      strcpy(event_name, tag_name[i]);
-      *strchr(event_name, ':') = 0;
-      strcpy(var_name, strchr(tag_name[i], ':')+1);
-      var_index = 0;
-      if (strchr(var_name, '['))
+      strcpy(event_name[i], tag_name[i]);
+      *strchr(event_name[i], ':') = 0;
+      strcpy(var_name[i], strchr(tag_name[i], ':')+1);
+      var_index[i] = 0;
+      if (strchr(var_name[i], '['))
         {
-        var_index = atoi(strchr(var_name, '['));
+        var_index[i] = atoi(strchr(var_name[i], '['));
         *strchr(name, '[') = 0;
         }
       }
     else
       {
-      sprintf(str, "Tag %s has wrong format in panel %s", var_name[i], panel);
+      sprintf(str, "Tag %s has wrong format in panel %s", tag_name[i], panel);
       gdImageString(im, gdFontGiant, width/2-(strlen(str)*gdFontGiant->w)/2, height/2, str, red);
       goto error;
       }
 
     /* search event_id */
     for (j=0 ; j<n_event ; j++)
-      if (equal_ustring(event_name, event_name_list+NAME_LENGTH*j))
+      if (equal_ustring(event_name[i], event_name_list+NAME_LENGTH*j))
         break;
 
     if (j == n_event)
       {
-      sprintf(str, "Event %s from panel %s not found in history", event_name, panel);
+      sprintf(str, "Event %s from panel %s not found in history", event_name[i], panel);
       gdImageString(im, gdFontGiant, width/2-(strlen(str)*gdFontGiant->w)/2, height/2, str, red);
       goto error;
       }
@@ -5536,10 +5544,170 @@ gdPoint     poly[3];
     size = sizeof(factor);
     db_get_value(hDB, hkeypanel, "Factor", factor, &size, TID_FLOAT);
 
+    /* make ODB path from tag name */
+    odbpath[0] = 0;
+    db_find_key(hDB, 0, "/Equipment", &hkeyroot);
+    if (hkeyroot)
+      {
+      for (j=0 ; ; j++)
+        {
+        db_enum_key(hDB, hkeyroot, j, &hkeyeq);
+
+        if (!hkeyeq)
+          break;
+
+        db_get_key(hDB, hkeyeq, &key);
+        if (equal_ustring(key.name, event_name[i]))
+          {
+          /* check if variable is individual key under variabels/ */
+          sprintf(str, "Variables/%s", var_name[i]);
+          db_find_key(hDB, hkeyeq, str, &hkey);
+          if (hkey)
+            {
+            sprintf(odbpath, "/Equipment/%s/Variables/%s", event_name[i], var_name[i]);
+            break;
+            }
+
+          /* check if variable is in setttins/names array */
+          db_find_key(hDB, hkeyeq, "Settings/Names", &hkeynames);
+          if (hkeynames)
+            {
+            /* extract variable name and Variables/<key> */
+            strcpy(str, var_name[i]);
+            p = str+strlen(str)-1;
+            while (p > str && *p != ' ')
+              p--;
+            strcpy(key_name, p+1);
+            *p = 0;
+            strcpy(varname, str);
+
+            /* find key in single name array */
+            db_get_key(hDB, hkeynames, &key);
+            for (k = 0 ; k<key.num_values; k++)
+              {
+              size = sizeof(str);
+              db_get_data_index(hDB, hkeynames, str, &size, k, TID_STRING);
+              if (equal_ustring(str, varname))
+                {
+                sprintf(odbpath, "/Equipment/%s/Variables/%s[%d]", event_name[i], key_name, k);
+                break;
+                }
+              }
+            }
+          else
+            {
+            /* go through /variables/<name> entries */
+            db_find_key(hDB, hkeyeq, "Variables", &hkeyvars);
+            if (hkeyvars)
+              {
+              for (k=0 ; ; k++)
+                {
+                db_enum_key(hDB, hkeyvars, k, &hkey);
+
+                if (!hkey)
+                  break;
+
+                /* find "settins/names <key>" for this key */
+                db_get_key(hDB, hkey, &key);
+
+                /* find key in key_name array */
+                strcpy(key_name, key.name);
+                sprintf(str, "Settings/Names %s", key_name);
+
+                db_find_key(hDB, hkeyeq, str, &hkeynames);
+                if (hkeynames)
+                  {
+                  db_get_key(hDB, hkeynames, &key);
+                  for (l = 0 ; l<key.num_values; l++)
+                    {
+                    size = sizeof(str);
+                    db_get_data_index(hDB, hkeynames, str, &size, l, TID_STRING);
+                    if (equal_ustring(str, var_name[i]))
+                      {
+                      sprintf(odbpath, "/Equipment/%s/Variables/%s[%d]", 
+                              event_name[i], key_name, l);
+                      break;
+                      }
+                    }
+                  }
+                }
+              }
+            }
+
+          break;
+          }
+        }
+
+      if (!hkeyeq)
+        {
+        db_find_key(hDB, 0, "/History/Links", &hkeyroot);
+        if (hkeyroot)
+          {
+          for (j=0 ; ; j++)
+            {
+            db_enum_link(hDB, hkeyroot, j, &hkey);
+
+            if (!hkey)
+              break;
+
+            db_get_key(hDB, hkey, &key);
+            if (equal_ustring(key.name, event_name[i]))
+              {
+              db_enum_key(hDB, hkeyroot, j, &hkey);
+              db_find_key(hDB, hkey, var_name[i], &hkey);
+              if (hkey)
+                {
+                db_get_key(hDB, hkey, &key);
+                db_get_path(hDB, hkey, odbpath, sizeof(odbpath));
+                if (key.num_values > 1)
+                  sprintf(odbpath+strlen(odbpath), "[%d]", var_index[i]);
+                break;
+                }
+              }
+            }
+          }
+        }
+      }
+
+    /* search alarm limits */
+    upper_limit[i] = lower_limit[i] = -12345;
+    db_find_key(hDB, 0, "/Alarms/Alarms", &hkeyroot);
+    if (hkeyroot)
+      {
+      for (j=0 ; ; j++)
+        {
+        db_enum_key(hDB, hkeyroot, j, &hkey);
+
+        if (!hkey)
+          break;
+
+        size = sizeof(str);
+        db_get_value(hDB, hkey, "Condition", str, &size, TID_STRING);
+
+        if (strstr(str, odbpath))
+          {
+          if (strchr(str, '<'))
+            {
+            p = strchr(str, '<')+1;
+            if (*p == '=') p++;
+            lower_limit[i] = (float) (factor[i]*atof(p));
+            }
+          if (strchr(str, '>'))
+            {
+            p = strchr(str, '>')+1;
+            if (*p == '=') p++;
+            upper_limit[i] = (float) (factor[i]*atof(p));
+            }
+          }
+        }
+      }
+
+
     bsize = sizeof(ybuffer);
     tsize = sizeof(tbuffer);
     status = hs_read(event_id, ss_time()-scale, ss_time(), scale/1000, 
-                     var_name, var_index, tbuffer, &tsize, ybuffer, &bsize, &type, &n_point[i]);
+                     var_name[i], var_index[i], tbuffer, &tsize, ybuffer, &bsize, 
+                     &type, &n_point[i]);
 
     for (j=0 ; j<(int)n_point[i] ; j++)
       {
@@ -5574,8 +5742,8 @@ gdPoint     poly[3];
       y[i][j] *= factor[i];
 
       /* calculate ymin and ymax */
-      if (i == 0 && j == 0)
-        ymin = ymax = y[0][0];
+      if ((i == 0 || index != -1) && j == 0)
+        ymin = ymax = y[i][0];
       else
         {
         if (y[i][j] > ymax)
@@ -5586,12 +5754,17 @@ gdPoint     poly[3];
       }
     }
 
-  flag = 0;
-  size = sizeof(flag);
-  db_get_value(hDB, hkeypanel, "Zero ylow", &flag, &size, TID_BOOL);
-  if (flag && ymin > 0)
-    ymin = 0;
+  /* check if ylow = 0 */
+  if (index == -1)
+    {
+    flag = 0;
+    size = sizeof(flag);
+    db_get_value(hDB, hkeypanel, "Zero ylow", &flag, &size, TID_BOOL);
+    if (flag && ymin > 0)
+      ymin = 0;
+    }
 
+  /* increase limits by 5% */
   if (ymin == 0 && ymax == 0)
     ymax = 1;
   else
@@ -5601,7 +5774,9 @@ gdPoint     poly[3];
       ymin -= (ymax-ymin)/20.f;
     }
 
+  /* caluclate required space for Y-axis */
   offset = vaxis(im, gdFontSmall, black, ltgrey, 0, 0, height, -3, -5, -7, -8, 0, ymin, ymax);
+  offset += 2;
 
   x1 = offset;
   y1 = height-20;
@@ -5610,6 +5785,7 @@ gdPoint     poly[3];
 
   gdImageFilledRectangle(im, x1, y2, x2, y1, white);
 
+  /* draw axis frame */
   haxis(im, gdFontSmall, black, ltgrey, x1, y1, x2-x1, 3, 5, 9, 10, 0, xmin,  xmax);
   vaxis(im, gdFontSmall, black, ltgrey, x1, y1, y1-y2, -3, -5, -7, -8, x2-x1, ymin, ymax);
   gdImageLine(im, x1, y2, x2, y2, black);
@@ -5617,6 +5793,39 @@ gdPoint     poly[3];
 
   for (i=0 ; i<n_vars ; i++)
     {
+    if (index != -1 && index != i)
+      continue;
+
+    /* draw alarm limits */
+    if (lower_limit[i] != -12345)
+      {
+      ys = (int) (y1-(lower_limit[i]-ymin)/(ymax-ymin)*(y1-y2)+0.5);
+      gdImageDashedLine(im, x1, ys, x2, ys, curve_col[i]);
+
+      poly[0].x = x1;
+      poly[0].y = ys;
+      poly[1].x = x1+5;
+      poly[1].y = ys;
+      poly[2].x = x1;
+      poly[2].y = ys-5;
+
+      gdImageFilledPolygon(im, poly, 3, curve_col[i]);
+      }
+    if (upper_limit[i] != -12345)
+      {
+      ys = (int) (y1-(upper_limit[i]-ymin)/(ymax-ymin)*(y1-y2)+0.5);
+      gdImageDashedLine(im, x1, ys, x2, ys, curve_col[i]);
+
+      poly[0].x = x1;
+      poly[0].y = ys;
+      poly[1].x = x1+5;
+      poly[1].y = ys;
+      poly[2].x = x1;
+      poly[2].y = ys+5;
+
+      gdImageFilledPolygon(im, poly, 3, curve_col[i]);
+      }
+
     for (j=0 ; j<(int)n_point[i] ; j++)
       {
       xs = (int) ((x[i][j]/3600.0-xmin)/(xmax-xmin)*(x2-x1)+x1+0.5);
@@ -5639,25 +5848,30 @@ gdPoint     poly[3];
 
   for (i=0 ; i<n_vars ; i++)
     {
+    if (index != -1 && index != i)
+      continue;
+
     if (factor[i] != 1)
       sprintf(str, "%s * %1.2lG", strchr(tag_name[i], ':')+1, factor[i]);
     else
       sprintf(str, "%s", strchr(tag_name[i], ':')+1);
 
+    row = index == -1 ? i : 0;
+
     gdImageFilledRectangle(im, 
             x1+10, 
-            y2+10+i*(gdFontMediumBold->h+10),
+            y2+10+row*(gdFontMediumBold->h+10),
             x1+10+strlen(str)*gdFontMediumBold->w+10, 
-            y2+10+i*(gdFontMediumBold->h+10)+gdFontMediumBold->h+2+2, white);
+            y2+10+row*(gdFontMediumBold->h+10)+gdFontMediumBold->h+2+2, white);
     gdImageRectangle(im, 
             x1+10, 
-            y2+10+i*(gdFontMediumBold->h+10),
+            y2+10+row*(gdFontMediumBold->h+10),
             x1+10+strlen(str)*gdFontMediumBold->w+10, 
-            y2+10+i*(gdFontMediumBold->h+10)+gdFontMediumBold->h+2+2, curve_col[i]);
+            y2+10+row*(gdFontMediumBold->h+10)+gdFontMediumBold->h+2+2, curve_col[i]);
 
     gdImageString(im, gdFontMediumBold, 
             x1+10+5, 
-            y2+10+2+i*(gdFontMediumBold->h+10),
+            y2+10+2+row*(gdFontMediumBold->h+10),
             str, curve_col[i]);
     }
 
@@ -5712,10 +5926,10 @@ error:
 
 void show_hist_page(char *path, char *buffer, int *buffer_size)
 {
-char   str[80], ref[80], ref2[80], paramstr[256], *pscale, *pmag;
+char   str[80], ref[80], ref2[80], paramstr[256], *pscale, *pmag, *pindex;
 HNDLE  hDB, hkey, hkeyp;
 KEY    key;
-int    i, scale;
+int    i, scale, index, width;
 float  factor[2];
 
   if (equal_ustring(getparam("cmd"), "Config"))
@@ -5738,6 +5952,14 @@ float  factor[2];
         strcat(str, "?");
       sprintf(str+strlen(str), "magnify=%s", getparam("hmagnify"));
       }
+    if (getparam("hindex") && *getparam("hindex"))
+      {
+      if (strchr(str, '?'))
+        strcat(str, "&");
+      else
+        strcat(str, "?");
+      sprintf(str+strlen(str), "index=%s", getparam("hindex"));
+      }
 
     show_elog_new(NULL, FALSE, str);
     return;
@@ -5749,6 +5971,9 @@ float  factor[2];
   pmag = getparam("magnify");
   if (pmag == NULL || *pmag == 0)
     pmag = getparam("hmagnify");
+  pindex = getparam("index");
+  if (pindex == NULL || *pindex == 0)
+    pindex = getparam("hindex");
   
   if (strstr(path, ".gif"))
     {
@@ -5774,12 +5999,16 @@ float  factor[2];
     else
       scale = 0;
 
+    index = -1;
+    if (pindex && *pindex)
+      index = atoi(pindex);
+
     if (equal_ustring(pmag, "Large"))
-      generate_hist_graph(path, buffer, buffer_size, 1024, 768, scale);
+      generate_hist_graph(path, buffer, buffer_size, 1024, 768, scale, index);
     else if (equal_ustring(pmag, "Small"))
-      generate_hist_graph(path, buffer, buffer_size, 320, 200, scale);
+      generate_hist_graph(path, buffer, buffer_size, 320, 200, scale, index);
     else
-      generate_hist_graph(path, buffer, buffer_size, 640, 400, scale);
+      generate_hist_graph(path, buffer, buffer_size, 640, 400, scale, index);
 
     return;
     }
@@ -5800,6 +6029,8 @@ float  factor[2];
     rsprintf("<input type=hidden name=hscale value=%s></tr>\n", pscale);
   if (pmag && *pmag)
     rsprintf("<input type=hidden name=hmagnify value=%s></tr>\n", pmag);
+  if (pindex && *pindex)
+    rsprintf("<input type=hidden name=hindex value=%s></tr>\n", pindex);
 
   /* links for history panels */
   rsprintf("<tr><td colspan=2 bgcolor=#C0C0C0>\n");
@@ -5890,12 +6121,78 @@ float  factor[2];
     rsprintf("</tr>\n");
 
     paramstr[0] = 0;
-    if (pscale)
+    if (pscale && *pscale)
       sprintf(paramstr+strlen(paramstr), "&scale=%s", pscale);
-    if (pmag)
+    if (pmag && *pmag)
       sprintf(paramstr+strlen(paramstr), "&magnify=%s", pmag);
 
+    /* define image map */
+    rsprintf("<map name=\"%s\">\r\n", path);
+
+    if (!(pindex && *pindex))
+      {
+      for (i=0 ; i < 5 ; i++)
+        {
+        if (paramstr[0])
+          {
+          if (exp_name[0])
+            sprintf(ref, "%sHS/%s?exp=%s%s&index=%d", 
+                    mhttpd_url, path, exp_name, paramstr, i);
+          else
+            sprintf(ref, "%sHS/%s?%s&index=%d", 
+                    mhttpd_url, path, paramstr, i);
+          }
+        else
+          {
+          if (exp_name[0])
+            sprintf(ref, "%sHS/%s?exp=%s&index=%d", 
+                    mhttpd_url, path, exp_name, i);
+          else
+            sprintf(ref, "%sHS/%s?index=%d", 
+                    mhttpd_url, path, i);
+          }
+
+        rsprintf("  <area shape=rect coords=\"%d,%d,%d,%d\" href=\"%s\">\r\n", 
+                 30, 31+23*i, 150, 30+23*i+17, ref);
+        }
+      }
+    else
+      {
+      if (paramstr[0])
+        {
+        if (exp_name[0])
+          sprintf(ref, "%sHS/%s?exp=%s%s", 
+                  mhttpd_url, path, exp_name, paramstr);
+        else
+          sprintf(ref, "%sHS/%s?%s", 
+                  mhttpd_url, path, paramstr);
+        }
+      else
+        {
+        if (exp_name[0])
+          sprintf(ref, "%sHS/%s?exp=%s", 
+                  mhttpd_url, path, exp_name);
+        else
+          sprintf(ref, "%sHS/%s", 
+                  mhttpd_url, path);
+        }
+
+      if (equal_ustring(pmag, "Large"))
+        width = 1024;
+      else if (equal_ustring(pmag, "Small"))
+        width = 320;
+      else
+        width = 640;
+
+      rsprintf("  <area shape=rect coords=\"%d,%d,%d,%d\" href=\"%s\">\r\n", 
+                 0, 0, width, 20, ref);
+      }
+
+    rsprintf("</map>\r\n");
+    
     /* Display individual panels */
+    if (pindex && *pindex)
+      sprintf(paramstr+strlen(paramstr), "&index=%s", pindex);
     if (paramstr[0])
       {
       if (exp_name[0])
@@ -5915,7 +6212,9 @@ float  factor[2];
                 mhttpd_url, path);
       }
 
-    rsprintf("<tr><td colspan=2><img src=\"%s\" alt=\"%s.gif\"></tr>\n", ref, path);
+    /* put reference to graph */
+    rsprintf("<tr><td colspan=2><img src=\"%s\" alt=\"%s.gif\" usemap=\"#%s\"></tr>\n", 
+             ref, path, path);
     }
 
   if (equal_ustring(path, "All"))
@@ -5956,7 +6255,10 @@ float  factor[2];
         }
     }
 
-  rsprintf("</table></body></html>\r\n");
+
+  rsprintf("</table>\r\n");
+
+  rsprintf("</body></html>\r\n");
 }
 
 /*------------------------------------------------------------------*/
