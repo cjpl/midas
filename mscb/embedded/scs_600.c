@@ -9,6 +9,9 @@
                 for SCS-600 Digital I/O
 
   $Log$
+  Revision 1.17  2004/01/08 09:41:42  midas
+  Made single shot capability conditional
+
   Revision 1.16  2004/01/07 13:12:39  midas
   Added single shot mode
 
@@ -66,6 +69,7 @@ extern bit DEBUG_MODE;
 
 char code node_name[] = "SCS-600";
 
+#undef SINGLE_SHOT              /* #define/#undef for single shot capability */
 
 sbit SR_CLOCK = P0 ^ 4;         // Shift register clock
 sbit SR_STROBE = P0 ^ 5;        // Storage register clock
@@ -82,7 +86,9 @@ struct {
    unsigned char out[8];
    unsigned char button;
    unsigned char p1;
+#ifdef SINGLE_SHOT
    unsigned char single;
+#endif
    unsigned char input[2];
    float power[8];
 } idata user_data;
@@ -98,7 +104,9 @@ MSCB_INFO_VAR code variables[] = {
    1, UNIT_BOOLEAN, 0, 0, 0, "Out7", &user_data.out[7],
    1, UNIT_BYTE, 0, 0, 0, "Button", &user_data.button,
    1, UNIT_BYTE, 0, 0, 0, "P1", &user_data.p1,
+#ifdef SINGLE_SHOT
    1, UNIT_BYTE, 0, 0, 0, "Single", &user_data.single,
+#endif
    1, UNIT_BYTE, 0, 0, 0, "Input1", &user_data.input[0],
    1, UNIT_BYTE, 0, 0, 0, "Input2", &user_data.input[1],
    4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "Power0", &user_data.power[0],
@@ -268,11 +276,14 @@ void set_power(void)
          expired = time() - on_time;
          if (expired >= (unsigned long) (user_data.power[i])) {
 
+#ifdef SINGLE_SHOT
             /* check for single shot */
             if ((user_data.single & (1 << i)) && (output & (1 << i))) {
                output &= ~(1 << i);
                user_data.out[i] = 0;
-            } else {
+            } else
+#endif
+            {
 
                frac = user_data.power[i] - (unsigned long) (user_data.power[i]);
 
