@@ -6,6 +6,12 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.13  1999/01/21 23:09:17  pierre
+  - Incorporate dm_semaphore_...() functionality into ss_mutex_...()
+  - Remove dm_semaphore_...(), adjust dm_...() accordingly.
+  - Incorporate taskSpawn into ss_thread_create (system.c).
+  - Adjust status value returnd from ss_mutex_create().
+
   Revision 1.12  1999/01/20 08:55:44  midas
   - Renames ss_xxx_mutex to ss_mutex_xxx
   - Added timout flag to ss_mutex_wait_for
@@ -3015,7 +3021,7 @@ BUFFER_HEADER        *pheader;
 
   /* create mutex for the buffer */
   status = ss_mutex_create(buffer_name, &(_buffer[handle].mutex));
-  if (status != SS_SUCCESS)
+  if (status != SS_CREATED)
     {
     *buffer_handle = 0;
     return BM_NO_MUTEX;
@@ -9902,7 +9908,7 @@ static struct callback_addr callback;
 
         /*----- multi thread server ------------------------*/
         if (rpc_get_server_option(RPC_OSERVER_TYPE) == ST_MTHREAD)
-          ss_create_thread(rpc_server_thread, (void *) (&callback));
+          ss_thread_create(rpc_server_thread, (void *) (&callback));
 
         /*----- single thread server -----------------------*/
         if (rpc_get_server_option(RPC_OSERVER_TYPE) == ST_SINGLE ||
@@ -12807,112 +12813,6 @@ INT  size, i;
 }
 
 /*------------------------------------------------------------------*/
-/********************************************************************\
-*                                                                    *
-*                 Semaphore functions                                *
-*                                                                    *
-* dm_semaphore_create(SEM_TYPE sem):                                 *
-* dm_semaphore_release(SEM_TYPE sem);                                *
-* dm_semaphore_give(SEM_TYPE sem);                                   *
-* dm_semaphore_wait_forever(SEM_TYPE sem);                           *
-* dm_semaphore_wait(SEM_TYPE sem, INT timeout);                      *
-*                                                                    *
-*                                                                    *
-*                                                                    *
-\********************************************************************/
-#ifdef OS_VXWORKS
-#define SEM_TYPE SEM_ID
-#else
-#define SEM_TYPE int
-#endif
-
-#define DM_FLUSH       10    /* flush request for DUAL_THREAD */
-#define DM_SEND        11    /* FULL send request for DUAL_THREAD */
-#define DM_KILL        12    /* Kill request for 2nd thread */  
-#define DM_TIMEOUT     13    /* "timeout" return state in flush request for DUAL_THREAD */  
-#define DM_ACTIVE_NULL 14    /* "both buffer were/are FULL with no valid area"
-                                 return state */
-#define DM_POSTPONE   400
-
-/* prototypes */
-INT  dm_semaphore_create(SEM_TYPE *sem);
-void dm_semaphore_release(SEM_TYPE sem);
-void dm_semaphore_give(SEM_TYPE sem);
-void dm_semaphore_wait_forever(SEM_TYPE sem);
-INT  dm_semaphore_wait(SEM_TYPE sem, INT timeout);
-
-/*------------------------------------------------------------------*/
-INLINE INT  dm_semaphore_create(SEM_TYPE *sem)
-{
-#ifdef OS_VXWORKS
-    if ((*sem = semBCreate(SEM_Q_FIFO, SEM_EMPTY)) == NULL)
-      return 0;
-    return CM_SUCCESS;
-#else
-    printf("dm_semaphore_create(SEM_TYPE sem) not yet implemented for this OS\n");
-    return 0;
-#endif    
-}
-
-/*------------------------------------------------------------------*/
-INLINE void dm_semaphore_release(SEM_TYPE sem)
-{
-#ifdef OS_VXWORKS
-  semDelete(sem);
-#else
-    printf("dm_semaphore_release(SEM_TYPE sem) not yet implemented for this OS\n");
-#endif    
-}
-
-/*------------------------------------------------------------------*/
-INLINE void dm_semaphore_give(SEM_TYPE sem)
-{
-#ifdef OS_VXWORKS
-    semGive(sem);
-#else
-    printf("dm_semaphore_give(SEM_TYPE sem) not yet implemented for this OS\n");
-#endif    
-}
-
-/*------------------------------------------------------------------*/
-INLINE void dm_semaphore_wait_forever(SEM_TYPE sem)
-{
-#ifdef OS_VXWORKS
-  semTake(sem, WAIT_FOREVER);
-#else
-  printf("dm_semaphore_wait_forever(SEM_TYPE sem) not yet implemented for this OS\n");
-#endif    
-}
-
-/*------------------------------------------------------------------*/
-INLINE INT dm_semaphore_wait(SEM_TYPE sem, int timeout)
-/********************************************************************\
-  Routine: dm_sempahore_wait
-
-  Purpose: Setup a dual memory buffer. Has to be called initially before
-           any other dm_xxx function
-  Input:
-    INT    size             Size in bytes
-  Output:
-    none
-  Function value:
-    CM_SUCCESS              Successful completion
-    DM_TIMEOUT              Time out
-\********************************************************************/
-{
-#ifdef OS_VXWORKS
-  INT status;
-  status = semTake(sem, timeout);
-  if (status == ERROR)
-    return DM_TIMEOUT;
-  else 
-    return CM_SUCCESS;
-#else
-  printf("dm_semaphore_wait(SEM_TYPE sem) not yet implemented for this OS\n");
-  return CM_SUCCESS;
-#endif    
-}
-/*------------------------------------------------------------------*/
 
 /*------------------------------------------------------------------*/
 /********************************************************************\
@@ -12958,6 +12858,13 @@ INLINE INT dm_semaphore_wait(SEM_TYPE sem, int timeout)
 * dm_buffer_send():        internal: send data for given area        *
 \********************************************************************/
 
+#define DM_FLUSH       10    /* flush request for DUAL_THREAD */
+#define DM_SEND        11    /* FULL send request for DUAL_THREAD */
+#define DM_KILL        12    /* Kill request for 2nd thread */  
+#define DM_TIMEOUT     13    /* "timeout" return state in flush request for DUAL_THREAD */  
+#define DM_ACTIVE_NULL 14    /* "both buffer were/are FULL with no valid area"
+                                 return state */
+
 typedef struct {
   char *        pt;       /* top pointer    memory buffer          */
   char *        pw;       /* write pointer  memory buffer          */
@@ -12973,8 +12880,8 @@ typedef struct {
   DMEM_AREA area2;     /* mem buffer area 2 */
   DWORD    serial;     /* overall buffer serial# for evt order     */
   INT      action;     /* for multi thread configuration */
-  SEM_TYPE sem_send;   /* semaphore for dm_async_area_send */
-  SEM_TYPE sem_flush;  /* semaphore for dm_async_area_flush */
+  HNDLE sem_send;      /* semaphore for dm_async_area_send */
+  HNDLE sem_flush;     /* semaphore for dm_async_area_flush */
   } DMEM_BUFFER;
 
 DMEM_BUFFER  dm;
@@ -12997,7 +12904,7 @@ INT dm_buffer_create(INT size)
     BM_NO_MEMORY            Out of memory
 \********************************************************************/
 {
-  
+
   dm.area1.pt = malloc(size);
   if (dm.area1.pt == NULL)
     return (BM_NO_MEMORY);
@@ -13028,28 +12935,35 @@ INT dm_buffer_create(INT size)
   _send_sock = rpc_get_event_sock();
   
 #ifdef DM_DUAL_THREAD
-  
-#ifdef OS_VXWORKS
-  /* create semaphore */
-  if (dm_semaphore_create(&dm.sem_send) != CM_SUCCESS)
-    {
-      cm_msg(MERROR,"dm_buffer_create","error in dm_semaphore_create send");
-      return 0;
-    }
-  if (dm_semaphore_create(&dm.sem_flush) != CM_SUCCESS)
-    {
-      cm_msg(MERROR,"dm_buffer_create","error in dm_semaphore_create flush");
-      return 0;
-    }
+  {
+    INT status;
+    VX_TASK_SPAWN starg;
 
-  /* spawn async_area_send */
-  taskSpawn ("areaSend",120,0,20000, (FUNCPTR) dm_async_area_send
-	     ,0,0,0,0,0,0,0,0,0,0);
-#else
-  printf("spawned task not yet implemented for this OS\n");
-  return 0;
-#endif /* OS */
-  
+    /* create semaphore */
+    if ((status = ss_mutex_create("send",&dm.sem_send)) != SS_CREATED)
+      {
+        cm_msg(MERROR,"dm_buffer_create","error in ss_mutex_create send");
+        return status;
+      }
+    if ((status = ss_mutex_create("flush",&dm.sem_flush)) != SS_CREATED)
+      {
+        cm_msg(MERROR,"dm_buffer_create","error in ss_mutex_create flush");
+        return status;
+      }
+
+    /* spawn async_area_send */
+    memset (&starg, 0, sizeof(VX_TASK_SPAWN));
+    strcpy(starg.name,"areaSend");
+    starg.priority = 120;
+    starg.stackSize = 20000;
+
+    if ((status = ss_thread_create(dm_async_area_send, (void *) &starg))
+                != SS_SUCCESS)
+      {
+        cm_msg(MERROR,"dm_buffer_create","error in ss_thread_create");
+        return status;
+      }
+  }
 #endif /* DM_DUAL_THREAD */
   
   return CM_SUCCESS;
@@ -13081,13 +12995,13 @@ INT dm_buffer_release(void)
 #ifdef DM_DUAL_THREAD
   /* kill spawned async_area_send */
     dm.action = DM_KILL;
-    dm_semaphore_give(dm.sem_send);
-    dm_semaphore_give(dm.sem_flush);
+    ss_mutex_release(dm.sem_send);
+    ss_mutex_release(dm.sem_flush);
     ss_sleep(500);
 
   /* release semaphore */
-  dm_semaphore_release(dm.sem_send);
-  dm_semaphore_release(dm.sem_flush);
+  ss_mutex_delete(dm.sem_send, 0);
+  ss_mutex_delete(dm.sem_flush, 0);
 #endif
 
   return CM_SUCCESS;
@@ -13360,7 +13274,7 @@ INT dm_area_send(void)
 #ifdef DM_DUAL_THREAD
   /* force a DM_SEND if possible. Don't wait for completion */
   dm.action = DM_SEND;
-  dm_semaphore_give(dm.sem_send);
+  ss_mutex_release(dm.sem_send);
   return CM_SUCCESS;
 #else
   INT status;
@@ -13391,7 +13305,7 @@ INT dm_area_send(void)
 }
 
 /*------------------------------------------------------------------*/
-void dm_async_area_send(void)
+INT dm_async_area_send(void *pointer)
 /********************************************************************\
   Routine: dm_async_area_send
 
@@ -13423,8 +13337,8 @@ void dm_async_area_send(void)
   while (1)
     {
       if (dm.pa != NULL)
-	/* wait semaphore here ........*/ 
-	dm_semaphore_wait_forever(dm.sem_send);
+	/* wait semaphore here ........ 0 == forever*/ 
+	ss_mutex_wait_for(dm.sem_send, 0);
       if (dm.action == DM_SEND)
 	{
 	  /* DM_SEND : Empty a single full buffer only. */
@@ -13488,7 +13402,7 @@ void dm_async_area_send(void)
 	  dm.pa = &dm.area1;
 	  
 	  /* release user */
-	  dm_semaphore_give(dm.sem_flush);
+	  ss_mutex_release(dm.sem_flush);
 	} /* if FLUSH */
       if (dm.action == DM_KILL)
 	goto kill;
@@ -13499,11 +13413,12 @@ void dm_async_area_send(void)
  error:
   cm_msg(MERROR,"dm_area_flush","aSync Net error");
  kill:
-  dm_semaphore_give(dm.sem_flush);
+  ss_mutex_release(dm.sem_flush);
   cm_msg(MERROR,"areaSend","task areaSend exiting now");  
   exit;
 #else
   printf("DM_DUAL_THREAD not defined\n");
+  return 0;
 #endif
 }
 
@@ -13531,11 +13446,11 @@ INT dm_area_flush(void)
 #ifdef DM_DUAL_THREAD
   /* request FULL flush */
   dm.action = DM_FLUSH;
-  dm_semaphore_give(dm.sem_send);
+  ss_mutex_release(dm.sem_send);
   
   /* important to wait for completion before continue with timeout
      timeout specifide in ticks, (1/60 sec I think)*/
-  status = dm_semaphore_wait(dm.sem_flush,120);
+  status = ss_mutex_wait_for(dm.sem_flush, 120);
   return status;
 #else
   /* full flush done here */
