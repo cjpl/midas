@@ -6,6 +6,9 @@
   Contents:     Command-line interface for the Midas Slow Control Bus
 
   $Log$
+  Revision 1.9  2002/09/27 11:09:08  midas
+  Modified test mode
+
   Revision 1.8  2002/08/12 12:10:30  midas
   Added reset command
 
@@ -507,22 +510,24 @@ MSCB_INFO_CHN info_chn;
     /* test */
     else if ((param[0][0] == 't' && param[0][1] == 'e'))
       {
-      unsigned short d;
+      unsigned short d1, d2;
+      int size, i;
 
+      i = 0;
       while (!kbhit())
         {
-        status = mscb_read16("lpt1", 2, 3, &d);
-        if (status != MSCB_SUCCESS)
-          printf("Error: %d\n", status);
-        else
-          printf("%1.2lf\r", d/65536.0*250);
+        d1 = rand();
 
-        status = mscb_write16("lpt1", 1, 0, 50);
+        mscb_user(fd, &d1, sizeof(short), &d2, &size);
+        
+        if (d2 != (unsigned short) (~d1))
+          printf("Received: %04X, should be %04X\n", d2, (unsigned short) (~d1));
 
-        if (status != MSCB_SUCCESS)
-          printf("Error: %d\n", status);
+        i++;
+        if (i % 100 == 0)
+          printf("%d\r", i);
 
-        Sleep(10);
+        // Sleep(10);
         }
 
       }
