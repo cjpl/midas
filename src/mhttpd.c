@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.112  2000/04/28 14:48:58  midas
+  Added ELog from History capability
+
   Revision 1.111  2000/04/28 09:48:34  midas
   Added history config button
 
@@ -400,6 +403,8 @@ char system_list[20][NAME_LENGTH] = {
   "Beamline"
 };
 
+void show_hist_page(char *path, char *buffer, int *buffer_size);
+
 /*------------------------------------------------------------------*/
 
 void rsputs(const char *str, ...)
@@ -501,6 +506,21 @@ int i;
     return TRUE;
 
   return FALSE;
+}
+
+void unsetparam(char *param)
+{
+int i;
+
+  for (i=0 ; i<MAX_PARAM ; i++)
+    if (equal_ustring(param, _param[i]))
+      break;
+
+  if (i<MAX_PARAM)
+    {
+    _param[i][0] = 0;
+    _value[i][0] = 0;
+    }
 }
 
 /*------------------------------------------------------------------*/
@@ -2524,10 +2544,10 @@ time_t now;
 void submit_elog()
 {
 char   str[80], author[256], path[256];
-char   *buffer[3];
+char   *buffer[3], *p, *pitem;
 HNDLE  hDB, hkey;
 char   att_file[3][256];
-int    i;
+int    i, size;
 
   cm_get_experiment_database(&hDB, NULL);
   strcpy(att_file[0], getparam("attachment0"));
@@ -2569,6 +2589,39 @@ int    i;
         strcat(att_file[i], ".html");
         _attachment_buffer[i] = buffer[i];
         _attachment_size[i] = strlen(buffer[i])+1;
+        }
+      else if (strncmp(path, "/HS/", 4) == 0)
+        {
+        buffer[i] = malloc(100000);
+        size = 100000;
+        strcpy(str, path+4);
+        if (strchr(str, '?'))
+          {
+          p = strchr(str, '?')+1;
+          p = strtok(p,"&");
+          while (p != NULL) 
+            {
+            pitem = p;
+            p = strchr(p,'=');
+            if (p != NULL)
+              {
+              *p++ = 0;
+              urlDecode(pitem);
+              urlDecode(p);
+
+              setparam(pitem, p);
+
+              p = strtok(NULL,"&");
+              }
+            }
+          *strchr(str, '?') = 0;
+          }
+        show_hist_page(str, buffer[i], &size);
+        strcpy(att_file[i], str);
+        _attachment_buffer[i] = buffer[i];
+        _attachment_size[i] = size;
+        unsetparam("scale");
+        unsetparam("magnify");
         }
       else
         {
@@ -5301,7 +5354,8 @@ double base[] = {1,2,5,10,20,50,100,200,500,1000};
 
 #define MAX_VARS 10
 
-void generate_hist_graph(char *path, int width, int height, int scale)
+void generate_hist_graph(char *path, char *buffer, int *buffer_size, 
+                         int width, int height, int scale)
 {
 HNDLE       hDB, hkey, hkeypanel;
 KEY         key;
@@ -5322,7 +5376,7 @@ int         x[MAX_VARS][1000];
 float       y[MAX_VARS][1000];
 float       factor[MAX_VARS];
 float       xmin, xmax, ymin, ymax;
-char        buffer[8000];
+char        ybuffer[8000];
 DWORD       tbuffer[1000];
 gdPoint     poly[3];
 
@@ -5479,10 +5533,10 @@ gdPoint     poly[3];
     size = sizeof(factor);
     db_get_value(hDB, hkeypanel, "Factor", factor, &size, TID_FLOAT);
 
-    bsize = sizeof(buffer);
+    bsize = sizeof(ybuffer);
     tsize = sizeof(tbuffer);
     status = hs_read(event_id, ss_time()-scale, ss_time(), scale/1000, 
-                     var_name, var_index, tbuffer, &tsize, buffer, &bsize, &type, &n_point[i]);
+                     var_name, var_index, tbuffer, &tsize, ybuffer, &bsize, &type, &n_point[i]);
 
     for (j=0 ; j<(int)n_point[i] ; j++)
       {
@@ -5492,25 +5546,25 @@ gdPoint     poly[3];
       switch (type)
         {
         case TID_BYTE:
-          y[i][j] = (float) *(((BYTE *) buffer)+j); break;
+          y[i][j] = (float) *(((BYTE *) ybuffer)+j); break;
         case TID_SBYTE:
-          y[i][j] = (float) *(((char *) buffer)+j); break;
+          y[i][j] = (float) *(((char *) ybuffer)+j); break;
         case TID_CHAR:
-          y[i][j] = (float) *(((char *) buffer)+j); break;
+          y[i][j] = (float) *(((char *) ybuffer)+j); break;
         case TID_WORD:
-          y[i][j] = (float) *(((WORD *) buffer)+j); break;
+          y[i][j] = (float) *(((WORD *) ybuffer)+j); break;
         case TID_SHORT:
-          y[i][j] = (float) *(((short *) buffer)+j); break;
+          y[i][j] = (float) *(((short *) ybuffer)+j); break;
         case TID_DWORD:
-          y[i][j] = (float) *(((DWORD *) buffer)+j); break;
+          y[i][j] = (float) *(((DWORD *) ybuffer)+j); break;
         case TID_INT:
-          y[i][j] = (float) *(((INT *) buffer)+j); break;
+          y[i][j] = (float) *(((INT *) ybuffer)+j); break;
         case TID_BOOL:
-          y[i][j] = (float) *(((BOOL *) buffer)+j); break;
+          y[i][j] = (float) *(((BOOL *) ybuffer)+j); break;
         case TID_FLOAT:
-          y[i][j] = (float) *(((float *) buffer)+j); break;
+          y[i][j] = (float) *(((float *) ybuffer)+j); break;
         case TID_DOUBLE:
-          y[i][j] = (float) *(((double *) buffer)+j); break;
+          y[i][j] = (float) *(((double *) ybuffer)+j); break;
         }
 
       /* apply factor */
@@ -5619,29 +5673,43 @@ error:
   gdImageDestroy(im);
   length = gb.size;
 
-  rsprintf("HTTP/1.0 200 Document follows\r\n");
-  rsprintf("Server: MIDAS HTTP %s\r\n", cm_get_version());
-
-  rsprintf("Content-Type: image/gif\r\n");
-  rsprintf("Content-Length: %d\r\n", length);
-  rsprintf("Pragma: no-cache\r\n");
-  rsprintf("Expires: Fri, 01 Jan 1983 00:00:00 GMT\r\n\r\n");
-
-  if (length > (int) (sizeof(return_buffer) - strlen(return_buffer)))
+  if (buffer == NULL)
     {
-    printf("return buffer too small\n");
-    return;
-    }
+    rsprintf("HTTP/1.0 200 Document follows\r\n");
+    rsprintf("Server: MIDAS HTTP %s\r\n", cm_get_version());
 
-  return_length = strlen(return_buffer)+length;
-  memcpy(return_buffer+strlen(return_buffer), gb.data, length);
+    rsprintf("Content-Type: image/gif\r\n");
+    rsprintf("Content-Length: %d\r\n", length);
+    rsprintf("Pragma: no-cache\r\n");
+    rsprintf("Expires: Fri, 01 Jan 1983 00:00:00 GMT\r\n\r\n");
+
+    if (length > (int) (sizeof(return_buffer) - strlen(return_buffer)))
+      {
+      printf("return buffer too small\n");
+      return;
+      }
+
+    return_length = strlen(return_buffer)+length;
+    memcpy(return_buffer+strlen(return_buffer), gb.data, length);
+    }
+  else
+    {
+    if (length > *buffer_size)
+      {
+      printf("return buffer too small\n");
+      return;
+      }
+
+    memcpy(buffer, gb.data, length);
+    *buffer_size = length;
+    }
 }
 
 /*------------------------------------------------------------------*/
 
-void show_hist_page(char *path)
+void show_hist_page(char *path, char *buffer, int *buffer_size)
 {
-char   str[80], ref[80], paramstr[256], *pscale;
+char   str[80], ref[80], ref2[80], paramstr[256], *pscale, *pmag;
 HNDLE  hDB, hkey, hkeyp;
 KEY    key;
 int    i, scale;
@@ -5654,9 +5722,33 @@ float  factor[2];
     return;
     }
 
+  if (equal_ustring(getparam("cmd"), "Create ELog"))
+    {
+    sprintf(str, "HS/%s.gif", path);
+    if (getparam("hscale") && *getparam("hscale"))
+      sprintf(str+strlen(str), "?scale=%s", getparam("hscale"));
+    if (getparam("hmagnify") && *getparam("hmagnify"))
+      {
+      if (strchr(str, '?'))
+        strcat(str, "&");
+      else
+        strcat(str, "?");
+      sprintf(str+strlen(str), "magnify=%s", getparam("hmagnify"));
+      }
+
+    show_elog_new(NULL, FALSE, str);
+    return;
+    }
+
+  pscale = getparam("scale");
+  if (pscale == NULL || *pscale == 0)
+    pscale = getparam("hscale");
+  pmag = getparam("magnify");
+  if (pmag == NULL || *pmag == 0)
+    pmag = getparam("hmagnify");
+  
   if (strstr(path, ".gif"))
     {
-    pscale = getparam("scale");
     if (pscale)
       {
       if (equal_ustring(pscale, "10m"))
@@ -5679,12 +5771,12 @@ float  factor[2];
     else
       scale = 0;
 
-    if (equal_ustring(getparam("magnify"), "Large"))
-      generate_hist_graph(path, 1024, 768, scale);
-    else if (equal_ustring(getparam("magnify"), "Small"))
-      generate_hist_graph(path, 320, 200, scale);
+    if (equal_ustring(pmag, "Large"))
+      generate_hist_graph(path, buffer, buffer_size, 1024, 768, scale);
+    else if (equal_ustring(pmag, "Small"))
+      generate_hist_graph(path, buffer, buffer_size, 320, 200, scale);
     else
-      generate_hist_graph(path, 640, 400, scale);
+      generate_hist_graph(path, buffer, buffer_size, 640, 400, scale);
 
     return;
     }
@@ -5700,12 +5792,30 @@ float  factor[2];
   rsprintf("<input type=submit name=cmd value=Alarms>\n");
   rsprintf("<input type=submit name=cmd value=Status></tr>\n");
 
+  /* define hidden field for parameters */
+  if (pscale && *pscale)
+    rsprintf("<input type=hidden name=hscale value=%s></tr>\n", pscale);
+  if (pmag && *pmag)
+    rsprintf("<input type=hidden name=hmagnify value=%s></tr>\n", pmag);
+
   /* links for history panels */
   rsprintf("<tr><td colspan=2 bgcolor=#C0C0C0>\n");
   if (path[0])
     rsprintf("<tr><td colspan=6 bgcolor=#FFFF00><i>Panel:</i> \n");
   else
     rsprintf("<tr><td colspan=6 bgcolor=#FFFF00><b>Please select panel:</b> \n");
+
+  if (equal_ustring(path, "All"))
+    rsprintf("<b>All</b> ");
+  else
+    {
+    if (exp_name[0])
+      rsprintf("<a href=\"%sHS/All?exp=%s\">ALL</a> ", 
+                mhttpd_url, exp_name);
+    else
+      rsprintf("<a href=\"%sHS/All\">ALL</a> ", 
+                mhttpd_url);
+    }
 
   db_find_key(hDB, 0, "/History/Display/Trigger rate", &hkey);
   if (!hkey)
@@ -5756,7 +5866,7 @@ float  factor[2];
   rsprintf("</tr>\n");
 
   /* image panel */
-  if (path[0])
+  if (path[0] && !equal_ustring(path, "All"))
     {
     /* navigation links */
     rsprintf("<tr><td bgcolor=#A0FFA0>\n");
@@ -5771,23 +5881,25 @@ float  factor[2];
     rsprintf("<td bgcolor=#A0FFA0>\n");
     rsprintf("<input type=submit name=magnify value=Large>\n");
     rsprintf("<input type=submit name=magnify value=Small>\n");
+    rsprintf("<input type=submit name=cmd value=\"Create ELog\">\n");
     rsprintf("<input type=submit name=cmd value=Config>\n");
 
     rsprintf("</tr>\n");
 
     paramstr[0] = 0;
-    if (getparam("scale") && *getparam("scale"))
-      sprintf(paramstr+strlen(paramstr), "?scale=%s", getparam("scale"));
-    if (getparam("magnify") && *getparam("magnify"))
-      sprintf(paramstr+strlen(paramstr), "?magnify=%s", getparam("magnify"));
+    if (pscale)
+      sprintf(paramstr+strlen(paramstr), "&scale=%s", pscale);
+    if (pmag)
+      sprintf(paramstr+strlen(paramstr), "&magnify=%s", pmag);
 
+    /* Display individual panels */
     if (paramstr[0])
       {
       if (exp_name[0])
         sprintf(ref, "%sHS/%s.gif?exp=%s%s", 
                 mhttpd_url, path, exp_name, paramstr);
       else
-        sprintf(ref, "%sHS/%s.gif%s", 
+        sprintf(ref, "%sHS/%s.gif?%s", 
                 mhttpd_url, path, paramstr);
       }
     else
@@ -5801,6 +5913,44 @@ float  factor[2];
       }
 
     rsprintf("<tr><td colspan=2><img src=\"%s\" alt=\"%s.gif\"></tr>\n", ref, path);
+    }
+
+  if (equal_ustring(path, "All"))
+    {
+    /* Display all panels */
+    db_find_key(hDB, 0, "/History/Display", &hkey);
+    if (hkey)
+      for (i=0 ; ; i++)
+        {
+        db_enum_link(hDB, hkey, i, &hkeyp);
+
+        if (!hkeyp)
+          break;
+
+        db_get_key(hDB, hkeyp, &key);
+
+        if (exp_name[0])
+          {
+          sprintf(ref, "%sHS/%s.gif?exp=%s?magnify=Small", 
+                  mhttpd_url, key.name, exp_name);
+          sprintf(ref2, "%sHS/%sexp=%s", 
+                  mhttpd_url, key.name, exp_name);
+          }
+        else
+          {
+          sprintf(ref, "%sHS/%s.gif?magnify=Small", 
+                  mhttpd_url, key.name);
+          sprintf(ref2, "%sHS/%s", 
+                  mhttpd_url, key.name);
+          }
+
+        if (i % 2 == 0)
+          rsprintf("<tr><td><a href=\"%s\"><img src=\"%s\" alt=\"%s.gif\"></a>\n", 
+                   ref2, ref, key.name);
+        else
+          rsprintf("<td><a href=\"%s\"><img src=\"%s\" alt=\"%s.gif\"></a></tr>\n", 
+                   ref2, ref, key.name);
+        }
     }
 
   rsprintf("</table></body></html>\r\n");
@@ -6019,6 +6169,14 @@ struct tm *gmt;
     return;
     }
 
+  /*---- redirect if status command --------------------------------*/
+
+  if (equal_ustring(command, "status"))
+    {
+    redirect("");
+    return;
+    }
+
   /*---- History command -------------------------------------------*/
 
   if (equal_ustring(command, "history"))
@@ -6036,15 +6194,7 @@ struct tm *gmt;
         return;
       }
 
-    show_hist_page(dec_path+3);
-    return;
-    }
-
-  /*---- redirect if status command --------------------------------*/
-
-  if (equal_ustring(command, "status"))
-    {
-    redirect("");
+    show_hist_page(dec_path+3, NULL, NULL);
     return;
     }
 
