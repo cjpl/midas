@@ -6,6 +6,9 @@
   Contents:     MIDAS logger program
 
   $Log$
+  Revision 1.26  1999/10/18 14:46:04  midas
+  fixed compiler warning
+
   Revision 1.25  1999/10/18 14:41:52  midas
   Use /programs/<name>/Watchdog timeout in all programs as timeout value. The
   default value can be submitted by calling cm_connect_experiment1(..., timeout)
@@ -1298,8 +1301,8 @@ INT log_close(LOG_CHN *log_chn, INT run_number)
 
 INT log_write(LOG_CHN *log_chn, EVENT_HEADER *pevent)
 {
-int    status, size, izero;
-DWORD  actual_time, start_time, watchdog_timeout;
+INT    status, size, izero, watchdog_timeout;
+DWORD  actual_time, start_time
 BOOL   watchdog_flag;
 static BOOL stop_requested = FALSE;
 static DWORD last_checked = 0;
@@ -1842,8 +1845,7 @@ KEY   key;
 INT log_callback(INT index, void *prpc_param[])
 {
 HNDLE  hKeyRoot, hKeyChannel;
-INT    i, status, size, channel, izero, htape, online_mode;
-DWORD  watchdog_timeout;
+INT    i, status, size, channel, izero, htape, online_mode, watchdog_timeout;
 BOOL   watchdog_flag;
 char   str[256];
 double dzero;
