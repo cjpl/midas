@@ -6,6 +6,9 @@
   Contents:     User section for the Event builder
 
   $Log$
+  Revision 1.9  2004/09/29 16:25:04  pierre
+  change Ebuilder structure
+
   Revision 1.8  2004/01/08 06:46:43  pierre
   Doxygen the file
 
@@ -152,16 +155,10 @@ INT eb_user(INT nfrag, EBUILDER_CHANNEL * ebch, EVENT_HEADER * pheader, void *pe
       serial = ((EVENT_HEADER *) ebch[i].pfragment)->serial_number;
       printf("Frg#:%d Dsz:%d Ser:%d ", i + 1, frag_size, serial);
 
-      // For YBOS fragment Access.
+       // For YBOS fragment Access.
       plrl = (DWORD *) (((EVENT_HEADER *) ebch[i].pfragment) + 1);
    }
 
-   if (!((pheader->serial_number + 1) % lModulo)) {
-      pheader->trigger_mask = (WORD) 0x8000;
-      return EB_USER_ERROR;
-//  or  TRIGGER_MASK(pevent) = 0x0505;
-      printf("This event needs a special mask: 0x%x\n", pheader->trigger_mask);
-   }
    printf("\n");
    return EB_SUCCESS;
 }
