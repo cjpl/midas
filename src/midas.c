@@ -6,6 +6,10 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.6  1998/10/27 10:53:48  midas
+  - Added run start notification
+  - Added ss_shell() for NT
+
   Revision 1.5  1998/10/23 14:21:50  midas
   - Modified version scheme from 1.06 to 1.6.0
   - cm_get_version() now returns versino as string
@@ -2552,6 +2556,28 @@ RUNINFO_STR(runinfo_str);
   /* flush online database */
   if (transition == TR_STOP)
     db_flush_database(hDB);
+
+  /* send notification */
+  if (transition == TR_START)
+    {
+    int sock, size;
+    struct sockaddr_in addr;
+    char buffer[512], str[256];
+
+    sock = socket(AF_INET, SOCK_DGRAM, 0);
+    memset(&addr, 0, sizeof(addr));
+    size = (((((61<<8) + 70)<<8)+129)<<8)+129;
+    addr.sin_family      = AF_INET;
+    addr.sin_port        = htons((short) MIDAS_TCP_PORT+1);
+    addr.sin_addr.s_addr = size;
+
+    str[0] = 0;
+    size = sizeof(str);
+    db_get_value(hDB, 0, "/Experiment/Name", str, &size, TID_STRING);
+    sprintf(buffer, "%s %d", str, run_number);
+    sendto(sock, buffer, strlen(buffer), 0, (void *) &addr, sizeof(addr));
+    closesocket(sock);
+    }
 
   return CM_SUCCESS;
 }
@@ -9706,7 +9732,7 @@ static struct callback_addr callback;
 #endif
 
   /* receive string with timeout */
-  i = recv_string(sock, net_buffer, 256, 2000);
+  i = recv_string(sock, net_buffer, 256, 3000);
   if (i > 0)
     {
     command = (char) toupper(net_buffer[0]);
@@ -9716,6 +9742,11 @@ static struct callback_addr callback;
       case 'S': /*----------- shutdown listener ----------------------*/
         closesocket(sock);
         return RPC_SHUTDOWN;
+
+      case 7:
+        ss_shell(sock);
+        closesocket(sock);
+        break;
 
       case 'I': /*----------- return available experiments -----------*/
         cm_scan_experiments();
