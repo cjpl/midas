@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus communication functions
 
   $Log$
+  Revision 1.14  2002/10/09 11:06:46  midas
+  Protocol version 1.1
+
   Revision 1.13  2002/10/07 15:16:32  midas
   Added upgrade facility
 
@@ -631,7 +634,7 @@ unsigned char c;
            OPEN_EXISTING, 0, NULL);
     if (hdio == INVALID_HANDLE_VALUE)
       {
-      //printf("mscb.c: Cannot access parallel port (No DirectIO driver installed)\n");
+      printf("mscb.c: Cannot access parallel port (No DirectIO driver installed)\n");
       return -1;
       }
 
@@ -1384,33 +1387,14 @@ int mscb_upload(int fd, char *filename)
 
 \********************************************************************/
 {
-unsigned char  buf[512], ack, image[0x8000], line[80], len, type, ofh, ofl, d;
-int            i, page;
+unsigned char  buf[512], crc, ack[2], image[0x8000], line[80], len, type, ofh, ofl, d;
+int            i, j, page;
 unsigned short ofs;
 FILE           *f;
 
   f = fopen(filename, "rt");
   if (f == NULL)
     return MSCB_FILE_ERROR;
-
-  if (mscb_lock() != MSCB_SUCCESS)
-    return MSCB_MUTEX;
-
-  /* send upgrade command */
-  buf[0] = CMD_UPGRADE;
-  buf[1] = crc8(buf, 1);
-  mscb_out(fd, buf, 2, 0);
-
-  /* send ping */
-  buf[0] = 1;
-  mscb_out(fd, buf, 1, 0);
-
-  /* read acknowledge, 100ms timeout */
-  if (mscb_in1(fd, &ack, 100000) != MSCB_SUCCESS)
-    {
-    mscb_release();
-    return MSCB_TIMEOUT;
-    }
 
   /* read HEX file */
   memset(image, 0xFF, sizeof(image));
@@ -1429,8 +1413,58 @@ FILE           *f;
         image[ofs+i] = d;
         }
       }
+    else
+      {
+      printf("Error: invalid HEX format in file %s\n", filename);
+      return MSCB_FILE_ERROR;
+      }
 
     } while (!feof(f));
+
+  if (mscb_lock() != MSCB_SUCCESS)
+    {
+    fclose(f);
+    return MSCB_MUTEX;
+    }
+
+  /* send upgrade command */
+  buf[0] = CMD_UPGRADE;
+  crc = crc8(buf, 1);
+  buf[1] = crc;
+  mscb_out(fd, buf, 2, 0);
+
+  /* read acknowledge, 100ms timeout */
+  i = mscb_in(fd, ack, 2, 100000);
+  mscb_release();
+
+  if (i<2)
+    {
+    printf("Error: Upload not implemented in remote node\n");
+    fclose(f);
+    return MSCB_TIMEOUT;
+    }
+
+  if (ack[0] != CMD_ACK || ack[1] != crc)
+    {
+    fclose(f);
+    return MSCB_CRC_ERROR;
+    }
+
+  /* wait for ready, 3 sec timeout */
+  for (i=0 ; i<30 ; i++)
+    {
+    if (mscb_in1(fd, ack, 1000) == MSCB_SUCCESS)
+      break;
+    Sleep(100);
+    }
+
+  if (i == 30 || ack[0] != 0xBE)
+    {
+    printf("Error: timeout from remote node\n");
+    fclose(f);
+    mscb_release();
+    return MSCB_TIMEOUT;
+    }
 
   /* program pages up to 0x7000 */
   for (page=0 ; page<56 ; page++)
@@ -1445,19 +1479,22 @@ FILE           *f;
       do
         {
         printf("E");
+        fflush(stdout);
 
         /* erase page */
         buf[0] = 2;
         buf[1] = page;
         mscb_out(fd, buf, 2, 0);
 
-        if (mscb_in1(fd, &ack, 100000) != MSCB_SUCCESS)
+        if (mscb_in1(fd, ack, 100000) != MSCB_SUCCESS)
           {
+          fclose(f);
           mscb_release();
           return MSCB_TIMEOUT;
           }
 
         printf("\bP");
+        fflush(stdout);
 
         /* program page */
         buf[0] = 3;
@@ -1469,16 +1506,18 @@ FILE           *f;
 
         mscb_out(fd, buf, 512, 0);
 
-        if (mscb_in1(fd, &ack, 100000) != MSCB_SUCCESS)
+        if (mscb_in1(fd, ack, 100000) != MSCB_SUCCESS)
           {
+          fclose(f);
           mscb_release();
           return MSCB_TIMEOUT;
           }
 
-        do
+        for (j=0 ; j<10 ; j++)
           {
           printf("\bV");
-
+          fflush(stdout);
+  
           /* verify page */
           buf[0] = 4;
           buf[1] = page;
@@ -1489,20 +1528,29 @@ FILE           *f;
               break;
 
           if (i == 512)
-            if (mscb_in1(fd, &ack, 100000) == MSCB_SUCCESS)
+            if (mscb_in1(fd, ack, 100000) == MSCB_SUCCESS)
               break;
 
           Sleep(100);
 
-          } while (1);
+          }
+
+        if (j == 10)
+          {
+          fclose(f);
+          mscb_release();
+          return MSCB_TIMEOUT;
+          }
 
         for (i=0 ; i<512 ; i++)
           if (buf[i] != image[page*512+i])
             break;
 
+        /* reprogram page until verified */
         } while (i < 512);
 
       printf("\b=");
+      fflush(stdout);
       }
     }
 
@@ -1512,6 +1560,7 @@ FILE           *f;
   buf[0] = 5;
   mscb_out(fd, buf, 1, 0);
 
+  fclose(f);
   mscb_release();
   return MSCB_SUCCESS;
 }

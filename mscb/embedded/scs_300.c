@@ -9,6 +9,9 @@
                 for SCS-300 Parallel Port Interface
 
   $Log$
+  Revision 1.2  2002/10/09 11:06:46  midas
+  Protocol version 1.1
+
   Revision 1.1  2002/10/04 09:02:05  midas
   Initial revision
 
@@ -36,10 +39,10 @@ struct {
 } user_data;
 
 MSCB_INFO_CHN code channel[] = {
-  SIZE_32BIT, 0, 0, MSCBF_FLOAT, "Data0", &user_data.value[0],
-  SIZE_32BIT, 0, 0, MSCBF_FLOAT, "Data1", &user_data.value[1],
-  SIZE_32BIT, 0, 0, MSCBF_FLOAT, "Data2", &user_data.value[2],
-  SIZE_32BIT, 0, 0, MSCBF_FLOAT, "Data3", &user_data.value[3],
+  SIZE_32BIT, UNIT_UNDEFINED, 0, 0, MSCBF_FLOAT, "Data0", &user_data.value[0],
+  SIZE_32BIT, UNIT_UNDEFINED, 0, 0, MSCBF_FLOAT, "Data1", &user_data.value[1],
+  SIZE_32BIT, UNIT_UNDEFINED, 0, 0, MSCBF_FLOAT, "Data2", &user_data.value[2],
+  SIZE_32BIT, UNIT_UNDEFINED, 0, 0, MSCBF_FLOAT, "Data3", &user_data.value[3],
   0
 };
 

@@ -6,6 +6,9 @@
   Contents:     Command-line interface for the Midas Slow Control Bus
 
   $Log$
+  Revision 1.12  2002/10/09 11:06:46  midas
+  Protocol version 1.1
+
   Revision 1.11  2002/10/07 15:16:32  midas
   Added upgrade facility
 
@@ -53,6 +56,62 @@
 
 /*------------------------------------------------------------------*/
 
+typedef struct {
+  unsigned char id;
+  char name[32];
+} NAME_TABLE;
+
+NAME_TABLE prefix_table[] = {
+  PRFX_PICO,  "Pico",
+  PRFX_NANO,  "Nano",
+  PRFX_MICRO, "Micro",
+  PRFX_MILLI, "Milli",
+  PRFX_NONE,  "",
+  PRFX_KILO,  "Kilo",
+  PRFX_MEGA,  "Mega",
+  PRFX_GIGA,  "Giga",
+  PRFX_TERA,  "Tera",
+  0
+};
+
+NAME_TABLE unit_table[] = {
+
+  UNIT_METER,      "meter",     
+  UNIT_GRAM,       "gram",     
+  UNIT_SECOND,     "second",     
+  UNIT_MINUTE,     "minute", 
+  UNIT_HOUR,       "hour", 
+  UNIT_AMPERE,     "ampere",     
+  UNIT_KELVIN,     "kelvin",     
+  UNIT_CELSIUS,    "deg. celsius",     
+  UNIT_FARENHEIT,  "deg. farenheit",     
+
+  UNIT_HERTZ,      "hertz",      
+  UNIT_PASCAL,     "pascal",      
+  UNIT_BAR,        "bar", 
+  UNIT_WATT,       "watt",      
+  UNIT_VOLT,       "volt",      
+  UNIT_OHM,        "ohm", 
+  UNIT_TESLA,      "tesls", 
+  UNIT_LITERPERSEC,"liter/sec",      
+  UNIT_RPM,        "RPM", 
+
+  UNIT_BOOLEAN,    "boolean", 
+  UNIT_BYTE,       "byte", 
+  UNIT_WORD,       "word", 
+  UNIT_DWORD,      "dword", 
+  UNIT_ASCII,      "ascii", 
+  UNIT_STRING,     "string",
+  UNIT_BAUD,       "baud",
+
+  UNIT_PERCENT,    "percent", 
+  UNIT_PPM,        "RPM", 
+  UNIT_COUNT,      "counts",
+  0
+};
+
+/*------------------------------------------------------------------*/
+
 void print_help()
 {
   puts("Available commands:\n");
@@ -76,9 +135,86 @@ void print_help()
 
 /*------------------------------------------------------------------*/
 
-void cmd_loop(int fd, char *cmd)
+print_channel(int index, MSCB_INFO_CHN *info_chn, int data)
 {
-int           i, j, status, nparam, addr, gaddr, current_addr, current_group;
+char str[80];
+int  i;
+
+  memset(str, 0, sizeof(str));
+  strncpy(str, info_chn->name, 8);
+  for (i=strlen(str) ; i<9 ; i++)
+    str[i] = ' ';
+  printf("%2d: %s ", index, str);
+  switch(info_chn->width)
+    {
+    case SIZE_0BIT:  
+      printf(" 0bit"); 
+      break;
+
+    case SIZE_8BIT:  
+      if (info_chn->flags & MSCBF_SIGNED)
+        printf(" 8bit %8d (0x%02X)", data, data); 
+      else
+        printf(" 8bit %8u (0x%02X)", data, data); 
+      break;
+
+    case SIZE_16BIT: 
+      if (info_chn->flags & MSCBF_SIGNED)
+        printf("16bit %8d (0x%04X)", data, data); 
+      else
+        printf("16bit %8u (0x%04X)", data, data); 
+      break;
+
+    case SIZE_24BIT: 
+      if (info_chn->flags & MSCBF_SIGNED)
+        printf("24bit %8d (0x%06X)", data, data); 
+      else
+        printf("24bit %8u (0x%06X)", data, data); 
+      break;
+      
+    case SIZE_32BIT: 
+      if (info_chn->flags & MSCBF_FLOAT)
+        printf("32bit %8.6lg", *((float *)&data));
+      else
+        {
+        if (info_chn->flags & MSCBF_SIGNED)
+          printf("32bit %8d (0x%08X)", data, data);
+        else
+          printf("32bit %8u (0x%08X)", data, data);
+        }
+      break;
+    }
+
+  printf(" ");
+
+  /* evaluate prfix */
+  if (info_chn->prefix)
+    {
+    for (i=0 ; prefix_table[i].id ; i++)
+      if (prefix_table[i].id == info_chn->prefix)
+        break;
+    if (prefix_table[i].id)
+      printf(prefix_table[i].name);
+    }
+
+  /* evaluate unit */
+  if (info_chn->unit)
+    {
+    for (i=0 ; unit_table[i].id ; i++)
+      if (unit_table[i].id == info_chn->unit)
+        break;
+    if (unit_table[i].id)
+      printf(unit_table[i].name);
+    }
+
+  printf("\n");
+}
+
+/*------------------------------------------------------------------*/
+
+void cmd_loop(int fd, char *cmd, int adr)
+{
+int           i, status, nparam, addr, gaddr, current_addr, current_group;
 unsigned int  data;
 char          str[256], line[256];
 char          param[10][100];
@@ -106,6 +242,25 @@ MSCB_INFO_CHN info_chn;
     current_addr = -1;
 
   current_group = -1;
+
+  if (adr)
+    {
+    /* address node */
+    status = mscb_addr(fd, CMD_PING16, adr);
+    if (status != MSCB_SUCCESS)
+      {
+      if (status == MSCB_MUTEX)
+        printf("MSCB used by other process\n");
+      else
+        printf("Node %d does not respond\n", adr);
+      return;
+      }
+    else
+      {
+      current_addr = adr;
+      current_group = -1;
+      }
+    }
 
   do
     {
@@ -194,7 +349,12 @@ MSCB_INFO_CHN info_chn;
         fflush(stdout);
         status = mscb_addr(fd, CMD_PING16, i);
         if (status == MSCB_SUCCESS)
-          printf("Found node %d       \n", i);
+          {
+          status = mscb_info(fd, &info);
+
+          printf("Found node \"%s\", node addr. %d (0x%04X), group addr. %d (0x%04X)      \n", 
+            info.node_name, i, i, info.group_address, info.group_address);
+          }
         }
       status = mscb_addr(fd, CMD_PING16, 0xFFFF);
       if (status == MSCB_SUCCESS)
@@ -238,7 +398,7 @@ MSCB_INFO_CHN info_chn;
             printf("\n");
           printf("Node address:     %d (0x%X)\n", info.node_address, info.node_address);
           printf("Group address:    %d (0x%X)\n", info.group_address, info.group_address);
-          printf("Protocol version: %02X\n", info.protocol_version);
+          printf("Protocol version: %d.%d\n", info.protocol_version/16, info.protocol_version % 16);
           printf("Watchdog resets:  %d\n", info.watchdog_resets);
 
           printf("\nChannels:\n");
@@ -246,48 +406,17 @@ MSCB_INFO_CHN info_chn;
             {
             mscb_info_channel(fd, GET_INFO_CHANNEL, i, &info_chn);
             mscb_read(fd, (unsigned char)i, &data);
-            memset(str, 0, sizeof(str));
-            strncpy(str, info_chn.channel_name, 8);
-            for (j=strlen(str) ; j<9 ; j++)
-              str[j] = ' ';
-            printf("%2d: %s ", i, str);
-            switch(info_chn.channel_width)
-              {
-              case SIZE_0BIT:  printf(" 0bit"); break;
-              case SIZE_8BIT:  printf(" 8bit %8d (0x%02X)", data, data); break;
-              case SIZE_16BIT: printf("16bit %8d (0x%04X)", data, data); break;
-              case SIZE_24BIT: printf("24bit %8d (0x%06X)", data, data); break;
-              case SIZE_32BIT: if (info_chn.flags & MSCBF_FLOAT)
-                                 printf("32bit %8.6lg", *((float *)&data));
-                               else
-                                 printf("32bit %8d (0x%08X)", data, data);
-                               break;
-              }
-            printf("\n");
+
+            print_channel(i, &info_chn, data);
             }
+
           printf("\nConfiguration Parameters:\n");
           for (i=0 ; i<info.n_conf ; i++)
             {
             mscb_info_channel(fd, GET_INFO_CONF, i, &info_chn);
             mscb_read_conf(fd, (unsigned char)i, &data);
-            memset(str, 0, sizeof(str));
-            strncpy(str, info_chn.channel_name, 8);
-            for (j=strlen(str) ; j<9 ; j++)
-              str[j] = ' ';
-            printf("%2d: %s ", i, str);
-            switch(info_chn.channel_width)
-              {
-              case SIZE_0BIT:  printf(" 0bit"); break;
-              case SIZE_8BIT:  printf(" 8bit %8d (0x%02X)", data, data); break;
-              case SIZE_16BIT: printf("16bit %8d (0x%04X)", data, data); break;
-              case SIZE_24BIT: printf("24bit %8d (0x%06X)", data, data); break;
-              case SIZE_32BIT: if (info_chn.flags & MSCBF_FLOAT)
-                                 printf("32bit %8.6lg", *((float *)&data));
-                               else
-                                 printf("32bit %8d (0x%08X)", data, data);
-                               break;
-              }
-            printf("\n");
+
+            print_channel(i, &info_chn, data);
             }
           }
         }
@@ -597,7 +726,7 @@ MSCB_INFO_CHN info_chn;
       }
 
     /* test */
-    else if ((param[0][0] == 't' && param[0][1] == 'e' && param[0][2] == 's'))
+    else if (param[0][0] == 't' && param[0][1] == 'e' && param[0][2] == 's')
       {
       unsigned short d1, d2;
       int size, i, status;
@@ -623,6 +752,16 @@ MSCB_INFO_CHN info_chn;
         }
 
       }
+    else if (param[0][0] == 't' && param[0][1] == '1')
+      {
+      do
+        {
+        mscb_addr(fd, CMD_PING16, 0xFFFF);
+        mscb_upload(fd, "scs_210.hex");
+        Sleep(500);
+        } while (!kbhit());
+      }
+
 
     /* exit/quit */
     else if ((param[0][0] == 'e' && param[0][1] == 'x') ||
@@ -647,11 +786,12 @@ MSCB_INFO_CHN info_chn;
 
 main(int argc, char *argv[])
 {
-int   i, fd;
+int   i, fd, adr;
 char  cmd[256], port[100];
 int   debug, check_io;
 
   cmd[0] = 0;
+  adr = 0;
 #ifdef _MSC_VER
   strcpy(port, "lpt1");
 #elif defined(__linux__)
@@ -675,6 +815,10 @@ int   debug, check_io;
         goto usage;
       if (argv[i][1] == 'p')
         strcpy(port, argv[++i]);
+      else if (argv[i][1] == 'a')
+        {
+        adr = atoi(argv[++i]);
+        }
       else if (argv[i][1] == 'c')
         {
         if (strlen(argv[i]) >= 256)
@@ -687,8 +831,9 @@ int   debug, check_io;
       else
         {
 usage:
-        printf("usage: msc [-p port] [-c Command] [-c @CommandFile] [-v] [-i]\n\n");
+        printf("usage: msc [-p port] [-a addr] [-c Command] [-c @CommandFile] [-v] [-i]\n\n");
         printf("       -p     Specify port (LPT1 by default)\n");
+        printf("       -a     Address node before executing command\n");
         printf("       -c     Execute command immediately\n");
         printf("       -v     Produce verbose output\n\n");
         printf("       -i     Check IO pins of port\n\n");
@@ -714,7 +859,7 @@ usage:
     return 0;
     }
 
-  cmd_loop(fd, cmd);
+  cmd_loop(fd, cmd, adr);
 
   mscb_exit(fd);
 
