@@ -6,6 +6,9 @@
    Contents:     Dump event on screen with MIDAS or YBOS data format
  
    $Log$
+   Revision 1.12  1999/11/23 15:35:41  midas
+   Check for BM_CREATED when opening buffer
+
    Revision 1.11  1999/09/30 22:53:21  pierre
    - fix return of yb_any_swap
 
@@ -701,7 +704,7 @@ int main(unsigned int argc,char **argv)
   
   /* open the "system" buffer, 1M size */
   status = bm_open_buffer(buf_name, EVENT_BUFFER_SIZE, &hBufEvent);
-  if (status != BM_SUCCESS) {
+  if (status != BM_SUCCESS && status != BM_CREATED) {
     cm_msg(MERROR,"mdump","bm_open_buffer, unknown buffer");
     goto error;
   }
