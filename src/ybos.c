@@ -6,6 +6,9 @@
  *         amaudruz@triumf.ca                            Local:           6234
  * ---------------------------------------------------------------------------
    $Log$
+   Revision 1.55  2003/10/03 19:00:45  pierre
+   fix event display format
+
    Revision 1.54  2003/06/12 19:19:13  pierre
    handle TID_STRUCT bank type (->8bit)
 
@@ -3319,7 +3322,7 @@ none
   }
   if (type == TID_SHORT)
   {
-    length_type = sizeof (WORD);
+    length_type = sizeof (short);
     strcpy (strbktype,"Signed Integer*2");
   }
   if (type == TID_BYTE)
@@ -3422,9 +3425,9 @@ none
         j = 0;
         i += 8;
       }
-      if ((dsp_fmt == DSP_DEC) || (dsp_fmt == DSP_UNK)) printf("%5.1i ",*((WORD *)pdata));
-      if (dsp_fmt == DSP_HEX) printf("0x%4.4x ",*((WORD *)pdata));
-      pdata = (char *)(((WORD *)pdata)+1);
+      if ((dsp_fmt == DSP_DEC) || (dsp_fmt == DSP_UNK)) printf("%5.1i ",*((short *)pdata));
+      if (dsp_fmt == DSP_HEX) printf("0x%4.4x ",*((short *)pdata));
+      pdata = (char *)(((short *)pdata)+1);
       j++;
       break;
     case TID_BYTE :
@@ -3525,20 +3528,35 @@ none
     length_type = sizeof (float);
     strcpy (strbktype,"Real*4 (FMT machine dependent)");
   }
-  if ((type == TID_DWORD) || (type == TID_INT))
+  if (type == TID_DWORD)
   {
     length_type = sizeof (DWORD);
-    strcpy (strbktype,"Integer*4");
+    strcpy (strbktype,"Unsigned Integer*4");
   }
-  if ((type == TID_WORD) || (type == TID_SHORT))
+  if (type == TID_INT)
+  {
+    length_type = sizeof (INT);
+    strcpy (strbktype,"Signed Integer*4");
+  }
+  if (type == TID_WORD)
   {
     length_type = sizeof (WORD);
-    strcpy (strbktype,"Integer*2");
+    strcpy (strbktype,"Unsigned Integer*2");
+  }
+  if (type == TID_SHORT)
+  {
+    length_type = sizeof (short);
+    strcpy (strbktype,"Signed Integer*2");
   }
   if (type == TID_BYTE)
   {
     length_type = sizeof (BYTE);
     strcpy (strbktype,"8 bit Bytes");
+  }
+  if (type == TID_SBYTE)
+  {
+    length_type = sizeof (BYTE);
+    strcpy (strbktype,"Signed Bytes");
   }
   if (type == TID_BOOL)
   {
@@ -3550,6 +3568,11 @@ none
     length_type = sizeof(char);
     strcpy (strbktype,"8 bit ASCII");
   }
+   if (type == TID_STRUCT)
+  {
+    length_type = sizeof(char);
+    strcpy (strbktype,"STRUCT (not supported->8 bits)");
+  }
   printf("\nBank:%s Length: %li(I*1)/%li(I*4)/%li(Type) Type:%s",
     bank_name,lrl, lrl>>2, lrl/length_type, strbktype);
   
@@ -3560,14 +3583,13 @@ none
     switch (type)
     {
     case TID_DOUBLE :
-      if (j>7)
+      if (j>3)
       {
         printf("\n%4i-> ",i);
         j = 0;
-        i += 8;
+        i += 4;
       }
-      if (dsp_fmt == DSP_DEC || (dsp_fmt == DSP_UNK)) printf("%8.3e ",*((double *)pdata));
-      if (dsp_fmt == DSP_HEX) printf("0x%16.16lux ",*((DWORD *)pdata));
+      printf("%15.5le    ",*((double *)pdata));
       pdata = (char *)(((double *)pdata)+1);
       j++;
       break;
@@ -3578,12 +3600,23 @@ none
         j = 0;
         i += 8;
       }
-      if (dsp_fmt == DSP_DEC || (dsp_fmt == DSP_UNK)) printf("%8.3e ",*((float *)pdata));
+      if ((dsp_fmt == DSP_DEC) || (dsp_fmt == DSP_UNK)) printf("%8.3e ",*((float *)pdata));
       if (dsp_fmt == DSP_HEX) printf("0x%8.8lx ",*((DWORD *)pdata));
       pdata = (char *)(((DWORD *)pdata)+1);
       j++;
       break;
     case TID_DWORD :
+      if (j>7)
+      {
+        printf("\n%4i-> ",i);
+        j = 0;
+        i += 8;
+      }
+      if (dsp_fmt == DSP_DEC) printf("%8.1li ",*((DWORD *)pdata));
+      if ((dsp_fmt == DSP_HEX) || (dsp_fmt == DSP_UNK)) printf("0x%8.8lx ",*((DWORD *)pdata));
+      pdata = (char *)(((DWORD *)pdata)+1);
+      j++;
+      break;
     case TID_INT :
       if (j>7)
       {
@@ -3591,13 +3624,12 @@ none
         j = 0;
         i += 8;
       }
-      if (dsp_fmt == DSP_DEC || (dsp_fmt == DSP_UNK)) printf("%8.1li ",*((DWORD *)pdata));
+      if ((dsp_fmt == DSP_DEC) || (dsp_fmt == DSP_UNK)) printf("%8.1li ",*((DWORD *)pdata));
       if (dsp_fmt == DSP_HEX) printf("0x%8.8lx ",*((DWORD *)pdata));
-      pdata = (char *)(((DWORD *)pdata) +1);
+      pdata = (char *)(((DWORD *)pdata)+1);
       j++;
       break;
     case TID_WORD :
-    case TID_SHORT :
       if (j>7)
       {
         printf("\n%4i-> ",i);
@@ -3605,12 +3637,24 @@ none
         i += 8;
       }
       if (dsp_fmt == DSP_DEC) printf("%5.1i ",*((WORD *)pdata));
-      if (dsp_fmt == DSP_HEX || (dsp_fmt == DSP_UNK)) printf("0x%4.4x ",*((WORD *)pdata));
-      pdata = (char *)(((DWORD *)pdata)+1);
+      if ((dsp_fmt == DSP_HEX) || (dsp_fmt == DSP_UNK)) printf("0x%4.4x ",*((WORD *)pdata));
+      pdata = (char *)(((WORD *)pdata)+1);
+      j++;
+      break;
+    case TID_SHORT :
+      if (j>7)
+      {
+        printf("\n%4i-> ",i);
+        j = 0;
+        i += 8;
+      }
+      if ((dsp_fmt == DSP_DEC) || (dsp_fmt == DSP_UNK)) printf("%5.1i ",*((short *)pdata));
+      if (dsp_fmt == DSP_HEX) printf("0x%4.4x ",*((short *)pdata));
+      pdata = (char *)(((short *)pdata)+1);
       j++;
       break;
     case TID_BYTE :
-    case TID_SBYTE :
+    case TID_STRUCT:
       if (j>15)
       {
         printf("\n%4i-> ",i);
@@ -3618,7 +3662,19 @@ none
         i += 16;
       }
       if (dsp_fmt == DSP_DEC) printf("%4.i ",*((BYTE *)pdata));
-      if (dsp_fmt == DSP_HEX || (dsp_fmt == DSP_UNK)) printf("0x%2.2x ",*((BYTE *)pdata));
+      if ((dsp_fmt == DSP_HEX) || (dsp_fmt == DSP_UNK)) printf("0x%2.2x ",*((BYTE *)pdata));
+      pdata++;
+      j++;
+      break;
+    case TID_SBYTE :
+      if (j>15)
+      {
+        printf("\n%4i-> ",i);
+        j = 0;
+        i += 16;
+      }
+      if ((dsp_fmt == DSP_DEC) || (dsp_fmt == DSP_UNK)) printf("%4.i ",*((BYTE *)pdata));
+      if (dsp_fmt == DSP_HEX) printf("0x%2.2x ",*((BYTE *)pdata));
       pdata++;
       j++;
       break;
