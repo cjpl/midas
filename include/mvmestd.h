@@ -8,6 +8,9 @@
                 bt617.c and sis3100.c are supported
                 
   $Log$
+  Revision 1.9  2004/12/07 09:59:04  midas
+  Revised MVMESTD
+
   Revision 1.8  2004/09/10 12:33:47  midas
   Implemented SIS3100/1100
 
@@ -73,26 +76,26 @@ typedef unsigned long mvme_size_t;
 
 /*---- constants ---------------------------------------------------*/
 
-/* data modes */
-#define MVME_A16D16                   1
-#define MVME_A16D32                   2
-#define MVME_A24D16                   3
-#define MVME_A24D32                   4
-#define MVME_A32D16                   5
-#define MVME_A32D32                   6
-#define MVME_RAMD16                   7   /* RAM memory of VME adapter */
-#define MVME_RAND32                   8
-#define MVME_LM                       9   /* local memory mapped to VME */
-
 /* vme_ioctl commands */
 #define MVME_IOCTL_CRATE_SET          0
 #define MVME_IOCTL_CRATE_GET          1
 #define MVME_IOCTL_AMOD_SET           2
 #define MVME_IOCTL_AMOD_GET           3
-#define MVME_IOCTL_DMA_SET            4
-#define MVME_IOCTL_DMA_GET            5
-#define MVME_IOCTL_FIFO_SET           6
-#define MVME_IOCTL_FIFO_GET           7
+#define MVME_IOCTL_DMODE_SET          4
+#define MVME_IOCTL_DMODE_GET          5
+#define MVME_IOCTL_DMA_SET            6
+#define MVME_IOCTL_DMA_GET            7
+#define MVME_IOCTL_FIFO_SET           8
+#define MVME_IOCTL_FIFO_GET           9
+
+/* data modes */
+#define MVME_DMODE_D8                 1
+#define MVME_DMODE_D16                2
+#define MVME_DMODE_D32                3
+#define MVME_DMODE_D64                4
+#define MVME_DMODE_RAMD16             5   /* RAM memory of VME adapter */
+#define MVME_DMODE_RAMD32             6
+#define MVME_DMODE_LM                 7   /* local memory mapped to VME */
 
 /* vme bus address modifiers */
 #define MVME_AMOD_A32_SB     (0x0F)      /* A32 Extended Supervisory Block */
