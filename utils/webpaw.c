@@ -6,6 +6,9 @@
   Contents:     Web server for remote PAW display
 
   $Log$
+  Revision 1.28  2000/11/06 12:03:30  midas
+  Version 1.0.9
+
   Revision 1.27  2000/11/06 12:02:58  midas
   Added -s [prompt] flag
 
@@ -114,7 +117,7 @@
 #endif
 
 /* Version of WebPAW */
-#define VERSION "1.0.8"
+#define VERSION "1.0.9"
 
 #define WEB_BUFFER_SIZE 100000
 #define MAX_PARAM           10
