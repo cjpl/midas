@@ -53,7 +53,7 @@ manually, depending on the initial Linux installation and on the distribution.
 /usr/src/linux/Documentation/devices.txt as "LOCAL/EXPERIMENTAL", which should
 not conflict with any existing device. This can be checked with 
   
-   ld -l /dev | grep "60,"
+   ls -l /dev | grep "60,"
    
 If no device appears wiht this command, it should be fine.
 
