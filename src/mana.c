@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.35  1999/10/08 13:17:11  midas
+  Fixed wrongly booked N-tuple #100000 when loading from last.rz
+
   Revision 1.34  1999/10/06 10:42:40  midas
   Added -l flag not to load histos from last.rz
 
@@ -2714,6 +2717,10 @@ FILE     *f;
       fclose(f);
       printf("Loading previous online histos from %s\n", str);
       HRGET(0, str, "A");
+
+      /* fix wrongly booked N-tuples at ID 100000 */
+      if (HEXIST(100000))
+        HDELET(100000);
       }
     }
   
