@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.217  2004/09/30 18:21:28  midas
+  Changed debug printout for transitions
+
   Revision 1.216  2004/09/28 20:21:05  midas
   Fixed missing LF in debug output
 
@@ -3586,14 +3589,6 @@ INT cm_transition(INT transition, INT run_number, char *perror, INT strsize,
    BOOL deferred;
    PROGRAM_INFO program_info;
 
-   if (debug_flag) {
-      for (i = 0; i < 13; i++)
-         if (trans_name[i].transition == transition)
-            break;
-
-      printf("\ncm_transition: transition %s\n", trans_name[i].name);
-   }
-
    deferred = (transition & TR_DEFERRED) > 0;
    transition &= ~TR_DEFERRED;
 
@@ -3786,6 +3781,14 @@ INT cm_transition(INT transition, INT run_number, char *perror, INT strsize,
       return status;
    }
 
+   if (debug_flag) {
+      for (i = 0; i < 13; i++)
+         if (trans_name[i].transition == transition)
+            break;
+
+      printf("\ncm_transition: transition %s\n", trans_name[i].name);
+   }
+
    /* search database for clients with transition mask set */
    for (i = 0, status = 0;; i++) {
       status = db_enum_key(hDB, hRootKey, i, &hSubkey);
@@ -3891,6 +3894,14 @@ INT cm_transition(INT transition, INT run_number, char *perror, INT strsize,
             }
          }
       }
+   }
+
+   if (debug_flag) {
+      for (i = 0; i < 13; i++)
+         if (trans_name[i].transition == transition)
+            break;
+
+      printf("\ncm_transition: transition %s finished\n", trans_name[i].name);
    }
 
    /* call post- transitions */
