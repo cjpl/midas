@@ -7,6 +7,9 @@
   Contents:     Includes all necessary include files
 
   $Log$
+  Revision 1.3  1998/10/28 11:06:42  midas
+  Added NO_PTY for solaris and ultrix
+
   Revision 1.2  1998/10/12 12:19:01  midas
   Added Log tag in header
 
@@ -140,6 +143,7 @@
 /*-PAA- Special for Ultrix */
 #ifndef OS_ULTRIX
 #include <fnmatch.h>
+#define NO_PTY
 #endif
 
 extern void *malloc(); /* patches for wrong gcc include files */
@@ -154,6 +158,7 @@ extern void *realloc();
 #ifdef OS_SOLARIS
 #include <sys/filio.h>
 #include <sys/statvfs.h>
+#define NO_PTY
 #endif
 
 /*------------------------------------------------------------------*/
