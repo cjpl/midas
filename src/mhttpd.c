@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.82  1999/10/22 10:48:25  midas
+  Added auto restart in status page
+
   Revision 1.81  1999/10/20 09:22:39  midas
   Added -c flag
 
@@ -859,9 +862,14 @@ CHN_STATISTICS chn_stats;
 
   rsprintf("<td colspan=2 bgcolor=#%s>%s", str, state[runinfo.state]);
 
+  size = sizeof(flag);
+  db_get_value(hDB, 0, "/Logger/Auto restart", &flag, &size, TID_BOOL);
+  strcpy(str, flag ? "00FF00" : "FFFF00");
+  rsprintf("<td bgcolor=#%s>Restart: %s", str, flag ? "Yes" : "No");
+
   if (cm_exist("Logger", FALSE) != CM_SUCCESS &&
       cm_exist("FAL", FALSE) != CM_SUCCESS)
-    rsprintf("<td colspan=3 bgcolor=#FF0000>Logger not running</tr>\n");
+    rsprintf("<td colspan=2 bgcolor=#FF0000>Logger not running</tr>\n");
   else
     {
     /* write data flag */
@@ -869,7 +877,7 @@ CHN_STATISTICS chn_stats;
     db_get_value(hDB, 0, "/Logger/Write data", &flag, &size, TID_BOOL);
 
     if (!flag)
-      rsprintf("<td colspan=3 bgcolor=#FFFF00>Logging disabled</tr>\n");
+      rsprintf("<td colspan=2 bgcolor=#FFFF00>Logging disabled</tr>\n");
     else
       {
       size = sizeof(str);
