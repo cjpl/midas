@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.31  1999/04/27 15:16:14  midas
+  Increased ASCII_BUFFER_SIZE to 64500
+
   Revision 1.30  1999/04/27 11:11:26  midas
   Added rpc_register_client
 
@@ -9997,7 +10000,7 @@ INT rpc_execute_ascii(INT sock, char *buffer)
 
 \********************************************************************/
 {
-#define ASCII_BUFFER_SIZE 11000
+#define ASCII_BUFFER_SIZE 64500
 #define N_APARAM           1024
 
 INT          i, j, index, status, index_in;
