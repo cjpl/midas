@@ -6,6 +6,10 @@
   Contents:     Disk to Tape copier for background job
 
   $Log$
+  Revision 1.4  1998/11/20 15:02:01  pierre
+  Added MIDAS fmt support
+  No FTP channel support yet!
+
   Revision 1.3  1998/10/19 17:48:48  pierre
   - restructure of setting and statistics
   - add disk to disk support
@@ -746,7 +750,7 @@ INT lazy_copy( char * outfile, char * infile)
         {
           if (get_any_physrec(data_fmt) == RDLOG_SUCCESS)
             {
-              status = ybos_magta_write(hDev, (char *)plazy, szlazy);
+              status = any_magta_write(hDev, data_fmt, (char *)plazy, szlazy);
               if (status != SS_SUCCESS)
                 {
                   cm_msg(MERROR,"Lazy","lazy_copy Write error %i",szlazy);
