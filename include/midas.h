@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.132  2004/07/21 06:54:03  pierre
+  fix dox doc
+
   Revision 1.131  2004/07/21 05:43:32  pierre
   fix dox doc
 
@@ -1426,8 +1429,7 @@ typedef struct {
 typedef struct {
    char event_name[NAME_LENGTH];      /**< Event name                        */
    AR_INFO ar_info;                   /**< From above                        */
-    INT(*analyzer) (EVENT_HEADER *, void *);
-                                           /**< Pointer to user analyzer routine  */
+   INT(*analyzer) (EVENT_HEADER *, void *); /**< Pointer to user analyzer routine  */
    ANA_MODULE **ana_module;           /**< List of analyzer modules          */
    BANK_LIST *bank_list;              /**< List of banks for event           */
    INT rwnt_buffer_size;              /**< Size in events of RW N-tuple buf  */
@@ -1439,11 +1441,11 @@ typedef struct {
    HNDLE hkey_variables;              /**< Key to variables subtree in ODB   */
    HNDLE hkey_common;                 /**< Key to common subtree             */
    void *addr;                        /**< Buffer for CWNT filling           */
-   struct {                           /**< Buffer for event number for CWNT  */
+   struct {                          
       DWORD run;
       DWORD serial;
       DWORD time;
-   } number;
+   } number;                          /**< Buffer for event number for CWNT  */    
    DWORD events_received;             /**< number of events sent             */
    DWORD events_written;              /**< number of events written          */
    AR_STATS ar_stats;
