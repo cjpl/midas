@@ -6,6 +6,9 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.60  2003/04/25 10:57:02  midas
+  Added more ODB key validation
+
   Revision 1.59  2003/04/17 07:32:10  midas
   Improved db_validate_key speed dramatically
 
@@ -669,6 +672,11 @@ static int db_validate_data_offset(DATABASE_HEADER *pheader, int offset)
     return 0;
 
   return 1;
+}
+
+static int db_validate_hkey(DATABASE_HEADER *pheader, HNDLE hKey)
+{
+  return db_validate_key_offset(pheader, hKey);
 }
 
 static int db_validate_key(DATABASE_HEADER *pheader, int recurse, const char *path, KEY *pkey)
@@ -1723,6 +1731,14 @@ INT              i;
   if (!hKey)
     hKey = pheader->root_key;
   pkey = (KEY *) ((char *) pheader + hKey);
+
+  /* check if hKey argument is correct */
+  if (!db_validate_hkey(pheader, hKey))
+    {
+    db_unlock_database(hDB);
+    return DB_INVALID_HANDLE;
+    }
+
   if (pkey->type != TID_KEY)
     {
     db_unlock_database(hDB);
@@ -2036,6 +2052,13 @@ INT              status;
 
   pkey = (KEY *) ((char *) pheader + hKey);
 
+  /* check if hKey argument is correct */
+  if (!db_validate_hkey(pheader, hKey))
+    {
+    db_unlock_database(hDB);
+    return DB_INVALID_HANDLE;
+    }
+
   /* check if someone has opened key or parent */
   if (level == 0)
     do
@@ -2223,8 +2246,7 @@ INT db_find_key(HNDLE hDB, HNDLE hKey, char *key_name,
                 HNDLE *subhKey)
 {
   if (rpc_is_remote())
-    return rpc_call(RPC_DB_FIND_KEY, hDB, hKey, key_name,
-                                        subhKey);
+    return rpc_call(RPC_DB_FIND_KEY, hDB, hKey, key_name, subhKey);
 
 #ifdef LOCAL_ROUTINES
 {
@@ -2256,6 +2278,14 @@ INT              i, status;
     hKey = pheader->root_key;
 
   pkey = (KEY *) ((char *) pheader + hKey);
+
+  /* check if hKey argument is correct */
+  if (!db_validate_hkey(pheader, hKey))
+    {
+    db_unlock_database(hDB);
+    return DB_INVALID_HANDLE;
+    }
+
   if (pkey->type != TID_KEY)
     {
     cm_msg(MERROR, "db_find_key", "key has no subkeys");
@@ -2434,6 +2464,14 @@ INT              i;
   if (!hKey)
     hKey = pheader->root_key;
   pkey = (KEY *) ((char *) pheader + hKey);
+
+  /* check if hKey argument is correct */
+  if (!db_validate_hkey(pheader, hKey))
+    {
+    db_unlock_database(hDB);
+    return DB_INVALID_HANDLE;
+    }
+
   if (pkey->type != TID_KEY)
     {
     cm_msg(MERROR, "db_find_key", "key has no subkeys");
@@ -2598,6 +2636,14 @@ INT              i;
   if (!hKey)
     hKey = pheader->root_key;
   pkey = (KEY *) ((char *) pheader + hKey);
+
+  /* check if hKey argument is correct */
+  if (!db_validate_hkey(pheader, hKey))
+    {
+    db_unlock_database(hDB);
+    return DB_INVALID_HANDLE;
+    }
+
   if (pkey->type != TID_KEY)
     {
     cm_msg(MERROR, "db_find_link", "key has no subkeys");
@@ -2763,6 +2809,14 @@ INT              i;
   if (!hKey)
     hKey = pheader->root_key;
   pkey = (KEY *) ((char *) pheader + hKey);
+
+  /* check if hKey argument is correct */
+  if (!db_validate_hkey(pheader, hKey))
+    {
+    db_unlock_database(hDB);
+    return DB_INVALID_HANDLE;
+    }
+
   if (pkey->type != TID_KEY)
     {
     cm_msg(MERROR, "db_find_link", "key has no subkeys");
@@ -3034,6 +3088,13 @@ char             str[MAX_ODB_PATH];
   if (!hKey)
     hKey = pheader->root_key;
   pkey = (KEY *) ((char *) pheader + hKey);
+
+  /* check if hKey argument is correct */
+  if (!db_validate_hkey(pheader, hKey))
+    {
+    db_unlock_database(hDB);
+    return DB_INVALID_HANDLE;
+    }
 
   if (hKey == pheader->root_key)
     {
@@ -3526,6 +3587,14 @@ HNDLE            parent;
   if (!hKey)
     hKey = pheader->root_key;
   pkey = (KEY *) ((char *) pheader + hKey);
+
+  /* check if hKey argument is correct */
+  if (!db_validate_hkey(pheader, hKey))
+    {
+    db_unlock_database(hDB);
+    return DB_INVALID_HANDLE;
+    }
+  
   if (pkey->type != TID_KEY)
     {
     db_unlock_database(hDB);
@@ -3641,6 +3710,14 @@ INT              i;
   if (!hKey)
     hKey = pheader->root_key;
   pkey = (KEY *) ((char *) pheader + hKey);
+
+  /* check if hKey argument is correct */
+  if (!db_validate_hkey(pheader, hKey))
+    {
+    db_unlock_database(hDB);
+    return DB_INVALID_HANDLE;
+    }
+  
   if (pkey->type != TID_KEY)
     {
     db_unlock_database(hDB);
@@ -3738,6 +3815,13 @@ KEY              *pkey;
   pheader  = _database[hDB-1].database_header;
   pkey = (KEY *) ((char *) pheader + hKey);
 
+  /* check if hKey argument is correct */
+  if (!db_validate_hkey(pheader, hKey))
+    {
+    db_unlock_database(hDB);
+    return DB_INVALID_HANDLE;
+    }
+
   if (!pkey->type)
     {
     db_unlock_database(hDB);
@@ -3808,6 +3892,13 @@ KEY              *pkey;
   pheader  = _database[hDB-1].database_header;
   pkey = (KEY *) ((char *) pheader + hKey);
 
+  /* check if hKey argument is correct */
+  if (!db_validate_hkey(pheader, hKey))
+    {
+    db_unlock_database(hDB);
+    return DB_INVALID_HANDLE;
+    }
+
   *delta = ss_time() - pkey->last_written;
 
   db_unlock_database(hDB);
@@ -3877,6 +3968,13 @@ KEYLIST          *pkeylist;
 
   pheader  = _database[hDB-1].database_header;
   pkey = (KEY *) ((char *) pheader + hKey);
+
+  /* check if hKey argument is correct */
+  if (!db_validate_hkey(pheader, hKey))
+    {
+    db_unlock_database(hDB);
+    return DB_INVALID_HANDLE;
+    }
 
   if ((INT) strlen(pkey->name)+1 > name_size)
     {
@@ -3962,6 +4060,13 @@ KEY              *pkey;
   pheader  = _database[hDB-1].database_header;
   pkey = (KEY *) ((char *) pheader + hKey);
 
+  /* check if hKey argument is correct */
+  if (!db_validate_hkey(pheader, hKey))
+    {
+    db_unlock_database(hDB);
+    return DB_INVALID_HANDLE;
+    }
+
   if (!pkey->type)
     {
     db_unlock_database(hDB);
@@ -4038,6 +4143,13 @@ INT              i;
 
   pheader  = _database[hDB-1].database_header;
   pkey = (KEY *) ((char *) pheader + hKey);
+
+  /* check if hKey argument is correct */
+  if (!db_validate_hkey(pheader, hKey))
+    {
+    db_unlock_database(hDB);
+    return DB_INVALID_HANDLE;
+    }
 
   if (!pkey->type)
     {
@@ -4192,7 +4304,7 @@ KEY              *pkey;
   pkey = (KEY *) ((char *) pheader + hKey);
 
   /* check if hKey argument is correct */
-  if (!db_validate_key(pheader, 0, pkey->name, pkey))
+  if (!db_validate_hkey(pheader, hKey))
     {
     db_unlock_database(hDB);
     return DB_INVALID_HANDLE;
@@ -4318,6 +4430,13 @@ KEY              *pkey;
   pheader  = _database[hDB-1].database_header;
   pkey = (KEY *) ((char *) pheader + hKey);
 
+  /* check if hKey argument is correct */
+  if (!db_validate_hkey(pheader, hKey))
+    {
+    db_unlock_database(hDB);
+    return DB_INVALID_HANDLE;
+    }
+
   /* check for read access */
   if (!(pkey->access_mode & MODE_READ))
     {
@@ -4430,6 +4549,13 @@ char             str[256];
 
   pheader  = _database[hDB-1].database_header;
   pkey = (KEY *) ((char *) pheader + hKey);
+
+  /* check if hKey argument is correct */
+  if (!db_validate_hkey(pheader, hKey))
+    {
+    db_unlock_database(hDB);
+    return DB_INVALID_HANDLE;
+    }
 
   /* check for read access */
   if (!(pkey->access_mode & MODE_READ))
@@ -4564,7 +4690,7 @@ KEY              *pkey;
   pkey = (KEY *) ((char *) pheader + hKey);
 
   /* check if hKey argument is correct */
-  if (!db_validate_key(pheader, 0, pkey->name, pkey))
+  if (!db_validate_hkey(pheader, hKey))
     {
     db_unlock_database(hDB);
     return DB_INVALID_HANDLE;
@@ -4690,6 +4816,13 @@ INT              new_size;
   pheader  = _database[hDB-1].database_header;
   pkey = (KEY *) ((char *) pheader + hKey);
 
+  /* check if hKey argument is correct */
+  if (!db_validate_hkey(pheader, hKey))
+    {
+    db_unlock_database(hDB);
+    return DB_INVALID_HANDLE;
+    }
+
   /* check for write access */
   if (!(pkey->access_mode & MODE_WRITE) ||
        (pkey->access_mode & MODE_EXCLUSIVE))
@@ -4790,6 +4923,13 @@ KEY              *pkey;
 
   pheader  = _database[hDB-1].database_header;
   pkey = (KEY *) ((char *) pheader + hKey);
+
+  /* check if hKey argument is correct */
+  if (!db_validate_hkey(pheader, hKey))
+    {
+    db_unlock_database(hDB);
+    return DB_INVALID_HANDLE;
+    }
 
   /* check for write access */
   if (!(pkey->access_mode & MODE_WRITE) ||
@@ -4926,6 +5066,13 @@ KEY              *pkey;
 
   pheader  = _database[hDB-1].database_header;
   pkey = (KEY *) ((char *) pheader + hKey);
+
+  /* check if hKey argument is correct */
+  if (!db_validate_hkey(pheader, hKey))
+    {
+    db_unlock_database(hDB);
+    return DB_INVALID_HANDLE;
+    }
 
   /* check for write access */
   if (!(pkey->access_mode & MODE_WRITE) ||
@@ -5107,6 +5254,14 @@ HNDLE            hKeyLink;
   if (!hKey)
     hKey = pheader->root_key;
   pkey = (KEY *) ((char *) pheader + hKey);
+
+  /* check if hKey argument is correct */
+  if (!db_validate_hkey(pheader, hKey))
+    {
+    db_unlock_database(hDB);
+    return DB_INVALID_HANDLE;
+    }
+
   pkeylist = (KEYLIST *) ((char *) pheader + pkey->data);
 
   if (pkey->type == TID_KEY && pkeylist->first_key &&
@@ -6490,6 +6645,7 @@ INT             size, align, corr, total_size_tmp;
   /* get first subkey of hKey */
   pheader  = _database[hDB-1].database_header;
   pkey = (KEY *) ((char *) pheader + hKey);
+
   pkeylist = (KEYLIST *) ((char *) pheader + pkey->data);
   if (!pkeylist->first_key)
     return;
@@ -6969,6 +7125,14 @@ INT             i;
 
   /* increment notify_count */
   pkey = (KEY *) ((char *) pheader + hKey);
+
+  /* check if hKey argument is correct */
+  if (!db_validate_hkey(pheader, hKey))
+    {
+    db_unlock_database(hDB);
+    return DB_INVALID_HANDLE;
+    }
+
   pkey->notify_count++;
 
   pclient->num_open_records++;
@@ -7026,6 +7190,7 @@ INT             i, index;
 
   /* decrement notify_count */
   pkey = (KEY *) ((char *) pheader + hKey);
+
   if (pkey->notify_count > 0)
     pkey->notify_count--;
 
