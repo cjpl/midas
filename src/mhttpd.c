@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.222  2002/05/22 16:49:45  midas
+  Avoid restarting of mhttpd if only one experiment defined
+
   Revision 1.221  2002/05/22 05:46:44  midas
   Increased disconnect time to 1 day
 
@@ -9242,8 +9245,13 @@ struct tm *gmt;
   /* disconnect from previous experiment if current is different */
   if (connected && !equal_ustring(exp_name, experiment))
     {
-    cm_disconnect_experiment();
-    connected = FALSE;
+    /* check if only one experiment defined */
+    cm_list_experiments("", exp_list);
+    if (exp_list[1][0])
+      {
+      cm_disconnect_experiment();
+      connected = FALSE;
+      }
     }
 
   if (!connected)
