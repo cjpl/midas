@@ -7,6 +7,10 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.84  2003/04/07 23:59:41  olchansk
+  make mana.c compilable with g++ 3.2
+  replace all '\t' with spaces
+
   Revision 1.83  2003/03/31 08:27:34  midas
   Fixed alignment bug for strings
 
@@ -716,7 +720,7 @@ static EVENT_DEF *event_def=NULL;
 
   /* allocate memory for cache */
   if (event_def == NULL)
-    event_def = calloc(EVENT_DEF_CACHE_SIZE, sizeof(EVENT_DEF));
+    event_def = (EVENT_DEF*)calloc(EVENT_DEF_CACHE_SIZE, sizeof(EVENT_DEF));
 
   /* lookup if event definition in cache */
   for (i=0 ; event_def[i].event_id ; i++)
@@ -827,10 +831,10 @@ int i;
   /* allocate space for pointer to test */
   if (n_test == 0)
     {
-    tl = malloc(2*sizeof(void *));
+    tl = (ANA_TEST**)malloc(2*sizeof(void *));
 
     /* define "always true" test */
-    tl[0] = malloc(sizeof(ANA_TEST));
+    tl[0] = (ANA_TEST*)malloc(sizeof(ANA_TEST));
     strcpy(tl[0]->name, "Always true");
     tl[0]->count = 0;
     tl[0]->value = TRUE;
@@ -838,7 +842,7 @@ int i;
     n_test++;
     }
   else
-    tl = realloc(tl, (n_test+1)*sizeof(void *));
+    tl = (ANA_TEST**)realloc(tl, (n_test+1)*sizeof(void *));
 
   tl[n_test] = t;
   t->count = 0;
@@ -1681,7 +1685,7 @@ INT        lrec;
       if (out_format == FORMAT_HBOOK)
         {
 #ifndef MANA_LITE
-	  lrec = clp.lrec;
+        lrec = clp.lrec;
 #ifdef extname
         quest_[9] = 65000;
 #else
@@ -2169,7 +2173,7 @@ WORD           bktype;
 static char    *buffer = NULL;
 
   if (buffer == NULL)
-    buffer = malloc(MAX_EVENT_SIZE);
+    buffer = (char*)malloc(MAX_EVENT_SIZE);
 
   pevent_copy = (EVENT_HEADER *) ALIGN((PTYPE)buffer);
 
@@ -2586,7 +2590,7 @@ WORD        bktype;
             cm_msg(MERROR, "write_event_hbook", "Received bank %s with unknown item size", block_name);
             continue;
             }
-	  
+
           pbl->n_data = size / item_size;
 
           /* check bank size */
@@ -2625,52 +2629,52 @@ WORD        bktype;
       if (!exclude && pbl != NULL && clp.rwnt)
       {
         exclude_all = FALSE;
-	
+
         item_size = ybos_get_tid_size(pybk->type & 0xFF);
         /* set array size in bank list */
         if ((pybk->type & 0xFF) < MAX_BKTYPE)
           {
           n = size / item_size;
-	  
+
           /* check bank size */
           if (n > (INT)pbl->size)
             {
             cm_msg(MERROR, "write_event_hbook", 
-	                 "Bank %s has more (%d) entries than maximum value (%d)", block_name, n,
-		               pbl->size);
+                         "Bank %s has more (%d) entries than maximum value (%d)", block_name, n,
+                         pbl->size);
             continue;
             }
-	  
+  
           /* convert bank to float values */
           for (i=0 ; i<n ; i++)
             {
             switch (pybk->type & 0xFF)
-	            {
-	            case I1_BKTYPE : 
-	              rwnt[pbl->n_data + i] = (float) (*((BYTE *) pdata+i));
-	              break;
-	            case I2_BKTYPE : 
-	              rwnt[pbl->n_data + i] = (float) (*((WORD *) pdata+i));
-	              break;
-	            case I4_BKTYPE : 
-	              rwnt[pbl->n_data + i] = (float) (*((DWORD *) pdata+i));
-	              break;
-	            case F4_BKTYPE : 
-	              rwnt[pbl->n_data + i] = (float) (*((float *) pdata+i));
-	              break;
-	            case D8_BKTYPE : 
-	              rwnt[pbl->n_data + i] = (float) (*((double *) pdata+i));
-	              break;
-	            }
-	          }
-	  
-	        /* zero padding */
-	        for ( ; i<(INT)pbl->size ; i++)
-	          rwnt[pbl->n_data + i] = 0.f;
+                    {
+                    case I1_BKTYPE : 
+                      rwnt[pbl->n_data + i] = (float) (*((BYTE *) pdata+i));
+                      break;
+                    case I2_BKTYPE : 
+                      rwnt[pbl->n_data + i] = (float) (*((WORD *) pdata+i));
+                      break;
+                    case I4_BKTYPE : 
+                      rwnt[pbl->n_data + i] = (float) (*((DWORD *) pdata+i));
+                      break;
+                    case F4_BKTYPE : 
+                      rwnt[pbl->n_data + i] = (float) (*((float *) pdata+i));
+                      break;
+                    case D8_BKTYPE : 
+                      rwnt[pbl->n_data + i] = (float) (*((double *) pdata+i));
+                      break;
+                    }
+                  }
+  
+                /* zero padding */
+                for ( ; i<(INT)pbl->size ; i++)
+                  rwnt[pbl->n_data + i] = 0.f;
           }
         else
           {
-	        printf("YBOS is not supporting STRUCTURE banks \n");
+                printf("YBOS is not supporting STRUCTURE banks \n");
           }
         }
       
@@ -2979,7 +2983,7 @@ static char  *orig_event = NULL;
   if (clp.filter)
     {
     if (orig_event == NULL)
-      orig_event = malloc(MAX_EVENT_SIZE+sizeof(EVENT_HEADER));
+      orig_event = (char*)malloc(MAX_EVENT_SIZE+sizeof(EVENT_HEADER));
     memcpy(orig_event, pevent, pevent->data_size+sizeof(EVENT_HEADER));
     }
   
@@ -3023,7 +3027,7 @@ static char  *orig_event = NULL;
   if (event_def->format == FORMAT_YBOS)
     {
     /* check if event got too large */
-    i = ybk_size((void *) (pevent+1));
+    i = ybk_size((DWORD*) (pevent+1));
     if (i > MAX_EVENT_SIZE)
       cm_msg(MERROR, "process_event", "Event got too large (%d Bytes) in analyzer", i);
 
@@ -3107,7 +3111,7 @@ char            *pb;
 
   if (buffer == NULL)
     {
-    buffer = malloc(MAX_EVENT_SIZE+sizeof(EVENT_HEADER));
+    buffer = (char*)malloc(MAX_EVENT_SIZE+sizeof(EVENT_HEADER));
 
     if (buffer == NULL)
       {
@@ -3470,17 +3474,17 @@ INT bevid_2_mheader(EVENT_HEADER * pevent, DWORD * pybos)
   YBOS_BANK_HEADER *pybk;
   
   /* check if EVID is present if so display its content */
-  if ((status = ybk_find (pybos, "EVID", &bklen, &bktyp, (void *)&pybk)) == YB_SUCCESS)
+  if ((status = ybk_find (pybos, "EVID", &bklen, &bktyp, (void **)&pybk)) == YB_SUCCESS)
   {
     pdata = (DWORD *)((YBOS_BANK_HEADER *)pybk + 1);
     if (clp.verbose)
     {
       printf("--------- EVID --------- Event# %i ------Run#:%i--------\n"
-	     ,YBOS_EVID_EVENT_NB(pdata), YBOS_EVID_RUN_NUMBER(pdata)); 
+             ,YBOS_EVID_EVENT_NB(pdata), YBOS_EVID_RUN_NUMBER(pdata)); 
       printf("Evid:%4.4x- Mask:%4.4x- Serial:%i- Time:0x%x- Dsize:%i/0x%x"
-	     ,YBOS_EVID_EVENT_ID(pdata), YBOS_EVID_TRIGGER_MASK(pdata)
-	     ,YBOS_EVID_SERIAL(pdata), YBOS_EVID_TIME(pdata)
-	     ,pybk->length, pybk->length);
+             ,YBOS_EVID_EVENT_ID(pdata), YBOS_EVID_TRIGGER_MASK(pdata)
+             ,YBOS_EVID_SERIAL(pdata), YBOS_EVID_TIME(pdata)
+             ,pybk->length, pybk->length);
     }
     pevent->event_id      = YBOS_EVID_EVENT_ID(pdata);
     pevent->trigger_mask  = YBOS_EVID_TRIGGER_MASK(pdata);
@@ -3611,7 +3615,7 @@ int     status;
 MA_FILE *file;
 
   /* allocate MA_FILE structure */
-  file = calloc(sizeof(MA_FILE), 1);
+  file = (MA_FILE*)calloc(sizeof(MA_FILE), 1);
   if (file == NULL)
     {
     cm_msg(MERROR, "open_input_file", "Cannot allocate MA file structure");
@@ -3628,7 +3632,7 @@ MA_FILE *file;
   if (pvm_slave)
     {
     file->device = MA_DEVICE_PVM;
-    file->buffer = malloc(PVM_BUFFER_SIZE);
+    file->buffer = (char*)malloc(PVM_BUFFER_SIZE);
     file->wp = file->rp = 0;
     }
 
@@ -3868,7 +3872,7 @@ DWORD           start_time;
     return -1;
     }
 
-  pevent_unaligned = malloc(EXT_EVENT_SIZE);
+  pevent_unaligned = (EVENT_HEADER*)malloc(EXT_EVENT_SIZE);
   if (pevent_unaligned == NULL)
     {
     printf("Not enough memeory\n");
