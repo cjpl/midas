@@ -6,6 +6,9 @@
   Contents:     Web server for remote PAW display
 
   $Log$
+  Revision 1.20  2000/05/26 13:02:30  midas
+  Added body1/2/3 tag to display frames in different colors
+
   Revision 1.19  2000/05/26 07:01:20  midas
   Added <br> after "Create ELog ..."
 
@@ -767,7 +770,11 @@ int    fh, i, j, length, status, height;
     rsprintf("HTTP/1.0 200 Document follows\r\n");
     rsprintf("Server: WebPAW\r\n");
     rsprintf("Content-Type: text/html\r\n\r\n");
-    rsprintf("<html><body>\r\n");
+
+    if (getcfg("General", "Body2", str))
+      rsprintf("<html><body %s>\r\n", str);
+    else
+      rsprintf("<html><body>\r\n");
 
     if (getcfg("Global", "Logo", str))
       {
@@ -826,7 +833,10 @@ int    fh, i, j, length, status, height;
     rsprintf("HTTP/1.0 200 Document follows\r\n");
     rsprintf("Server: WebPAW\r\n");
     rsprintf("Content-Type: text/html\r\n\r\n");
-    rsprintf("<html><body>\r\n");
+    if (getcfg("General", "Body1", str))
+      rsprintf("<html><body %s>\r\n", str);
+    else
+      rsprintf("<html><body>\r\n");
 
     rsprintf("<form method=GET action=\"%s\" target=contents>\r\n", webpaw_url);
 
@@ -948,7 +958,11 @@ int    fh, i, j, length, status, height;
     rsprintf("HTTP/1.0 200 Document follows\r\n");
     rsprintf("Server: WebPAW\r\n");
     rsprintf("Content-Type: text/html\r\n\r\n");
-    rsprintf("<html><body>\r\n");
+
+    if (getcfg("General", "Body3", str))
+      rsprintf("<html><body %s>\r\n", str);
+    else
+      rsprintf("<html><body>\r\n");
 
     if (getparam("restart"))
       strcpy(cmd, "restart");
