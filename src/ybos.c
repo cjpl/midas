@@ -6,6 +6,9 @@
  *         amaudruz@triumf.ca                            Local:           6234
  * -----------------------------------------------------------------------------
    $Log$
+   Revision 1.10  1999/01/19 19:58:06  pierre
+   - Fix several compiler warnings
+
    Revision 1.9  1999/01/18 17:42:59  pierre
    - Added lost cvs log flag
 
@@ -103,14 +106,14 @@ INT  ybos_physrec_skip (INT bl);
 INT  ybos_physrec_get (DWORD ** prec, DWORD * readn);
 INT  midas_physrec_get (void ** prec, DWORD * readn);
 
-void yb_any_bank_event_display(void * pevent, INT data_fmt, INT dsp_mode, INT dsp_fmt);
+void yb_any_bank_event_display(void * pevent, INT data_fmt, INT dsp_fmt);
 void yb_any_raw_event_display(void * pevent, INT data_fmt, INT dsp_fmt);
 
 void yb_any_raw_bank_display(void * pbank, INT data_fmt, INT dsp_fmt);
 void ybos_bank_display(YBOS_BANK_HEADER * pybk, INT dsp_fmt);
 void midas_bank_display( BANK * pbk, INT dsp_fmt);
 
-INT  ybos_event_get (INT bl, DWORD ** plrl, DWORD * size);
+INT  ybos_event_get (DWORD ** plrl, DWORD * size);
 INT  midas_event_get (void ** pevent, DWORD * size);
 INT  ybos_event_swap   (DWORD * pevt);
 
@@ -1804,35 +1807,36 @@ INT  yb_any_dev_os_read(INT handle, INT type, void * prec, DWORD nbytes, DWORD *
     {
       *readn = read(handle, prec, nbytes);
       if (*readn <= 0)
-	status = SS_FILE_ERROR;
+      	status = SS_FILE_ERROR;
       else 
-	status = SS_SUCCESS;
+	      status = SS_SUCCESS;
       return status;
     }
   else if (type == LOG_TYPE_TAPE)
     /* --------- TAPE ----------*/
-    {
 #ifdef OS_UNIX
+    {
       *readn = read(handle, prec, nbytes);
       if (*readn <= 0)
-	status = SS_FILE_ERROR;
+	      status = SS_FILE_ERROR;
       else 
-	status = SS_SUCCESS;
+	      status = SS_SUCCESS;
       return status;
+    }
 #endif
       
 #ifdef OS_WINNT
+    {
       if (!ReadFile((HANDLE)handle, prec, nbytes, readn, NULL))
       	status = GetLastError();
       else
       	status = SS_SUCCESS;
-      
       if (status == ERROR_NO_DATA_DETECTED)
 	      status = SS_END_OF_TAPE;
       
       return status;
-#endif /* OS_WINNT */
     }
+#endif /* OS_WINNT */
 }
 
 /*------------------------------------------------------------------*/
@@ -1856,19 +1860,22 @@ INT  yb_any_dev_os_write(INT handle, INT type, void * prec, DWORD nbytes, DWORD 
 {
   INT status;
   if (type == LOG_TYPE_DISK)
-    { /* --------- DISK ----------*/
 #ifdef OS_WINNT
+    { /* --------- DISK ----------*/
       WriteFile((HANDLE) handle, (char *) prec, nbytes, written, NULL);
       status = *written == nbytes ? SS_SUCCESS : SS_FILE_ERROR;
-#else
-      status = *written = 
-        write(handle, (char *)prec, nbytes) == nbytes ? SS_SUCCESS : SS_FILE_ERROR;
-#endif
       return status;       /* return for DISK */
     }
+#else
+    { /* --------- DISK ----------*/
+      status = *written = 
+        write(handle, (char *)prec, nbytes) == nbytes ? SS_SUCCESS : SS_FILE_ERROR;
+      return status;       /* return for DISK */
+    }
+#endif
   else if (type == LOG_TYPE_TAPE)
-    { /* --------- TAPE ----------*/
 #ifdef OS_UNIX
+    { /* --------- TAPE ----------*/
       do
       {
         status = write(handle, (char *)prec, nbytes);
@@ -1885,27 +1892,30 @@ INT  yb_any_dev_os_write(INT handle, INT type, void * prec, DWORD nbytes, DWORD 
 #endif /* OS_UNIX */
 
 #ifdef OS_WINNT
-    WriteFile((HANDLE) handle, (char *)prec, nbytes, written, NULL);
-    if (*written != nbytes)
-      {
-      status = GetLastError();
-      cm_msg(MERROR, "any_dev_os_write", "error %d", status);
-      return SS_IO_ERROR;
-      }
-#endif /* OS_WINNT */
+    {
+      WriteFile((HANDLE) handle, (char *)prec, nbytes, written, NULL);
+      if (*written != nbytes)
+        {
+        status = GetLastError();
+        cm_msg(MERROR, "any_dev_os_write", "error %d", status);
+        return SS_IO_ERROR;
+        }
       return SS_SUCCESS;      /* return for TAPE */
     }
+#endif /* OS_WINNT */
   else if (type == LOG_TYPE_FTP)
-    {
 #ifdef INCLUDE_FTPLIB
+    {
       (int)written = (int)status = ftp_send(ftp_con.sock, (char *)prec, (int)nbytes) == (int)nbytes ?
                         SS_SUCCESS : SS_FILE_ERROR;
       return status;
+    }
 #else
+    {
       cm_msg(MERROR,"ybos","FTP support not included");
       return SS_IO_ERROR;
-#endif
     }
+#endif
 }
 
 /*------------------------------------------------------------------*/
@@ -1927,6 +1937,8 @@ INT  yb_any_physrec_get (INT data_fmt, void ** precord, DWORD * readn)
     return midas_physrec_get(precord, readn);
   else if (data_fmt == FORMAT_YBOS)
     return ybos_physrec_get((DWORD **) precord, readn);
+  else
+    return YB_UNKNOWN_FORMAT;
 }
 /*------------------------------------------------------------------*/
 INT   ybos_physrec_get (DWORD ** precord, DWORD * readn)
@@ -2119,8 +2131,7 @@ INT   yb_any_log_write (INT handle, INT data_fmt, INT type, void * prec, DWORD n
     }
   /* write record */
   status = yb_any_dev_os_write(handle, type, prec, nbytes, &written);
-  if (status != SS_SUCCESS)
-    return status;
+  return status;
 }
 
 /*------------------------------------------------------------------*/
@@ -2149,6 +2160,8 @@ INT   yb_any_physrec_skip (INT data_fmt, INT bl)
     }
   else if (data_fmt == FORMAT_YBOS)
     return ybos_physrec_skip(bl);
+  else
+    return YB_UNKNOWN_FORMAT;
 }
 
 /*------------------------------------------------------------------*/
@@ -2233,7 +2246,7 @@ INT   midas_event_skip (INT evtn)
 
 
 /*------------------------------------------------------------------*/
-INT yb_any_physrec_display (INT data_fmt, INT dsp_fmt)
+INT yb_any_physrec_display (INT data_fmt)
 /********************************************************************\
   Routine: external yb_any_physrec_display
   Purpose: Display the physical record of the current record 
@@ -2241,7 +2254,6 @@ INT yb_any_physrec_display (INT data_fmt, INT dsp_fmt)
            Not possible for MIDAS as no physical record structure
   Input:
     INT data_fmt :  YBOS or MIDAS 
-    INT dsp_fmt:    not used for now
   Output:
     none
   Function value:
@@ -2278,6 +2290,8 @@ INT yb_any_physrec_display (INT data_fmt, INT dsp_fmt)
         }
         return(YB_SUCCESS);
     }
+  else
+    return YB_UNKNOWN_FORMAT;
 }
 
 /*------------------------------------------------------------------*/
@@ -2367,6 +2381,8 @@ INT   yb_any_event_swap (INT data_fmt, void * pevent)
   }
   else if (data_fmt == FORMAT_YBOS)
    return status=ybos_event_swap ((DWORD *)pevent) == YB_EVENT_NOT_SWAPPED ? YB_SUCCESS : status;
+  else
+   return YB_UNKNOWN_FORMAT;
 }
 
 /*------------------------------------------------------------------*/
@@ -2455,7 +2471,7 @@ INT ybos_event_swap (DWORD * plrl)
 }
 
 /*------------------------------------------------------------------*/
-INT   yb_any_event_get (INT data_fmt, INT bl, void ** pevent, DWORD * readn)
+INT   yb_any_event_get (INT data_fmt, void ** pevent, DWORD * readn)
 /********************************************************************\
   Routine: external yb_any_event_get
   Purpose: Retrieve an event from the given data format.
@@ -2474,19 +2490,17 @@ INT   yb_any_event_get (INT data_fmt, INT bl, void ** pevent, DWORD * readn)
   if (data_fmt == FORMAT_MIDAS)
     status = midas_event_get(pevent, readn);
   else if (data_fmt == FORMAT_YBOS)
-    status = ybos_event_get (bl, (DWORD **)pevent, readn);
+    status = ybos_event_get ((DWORD **)pevent, readn);
   return(status);
 }
 
 /*------------------------------------------------------------------*/
-INT   ybos_event_get (INT bl, DWORD ** plrl, DWORD * readn)
+INT   ybos_event_get (DWORD ** plrl, DWORD * readn)
 /********************************************************************\
   Routine: ybos_event_get
   Purpose: read one YBOS event.
            detect the end of run by checking the *plrl content (-1)
   Input:
-    INT    bl            physical record number
-                         != -1 stop at the end of the current physical record
   Output:
     DWORD ** plrl      points to LRL valid full YBOS event
     DWORD * readn      event size in Bytes 
@@ -2520,12 +2534,6 @@ INT   ybos_event_get (INT bl, DWORD ** plrl, DWORD * readn)
   /* check if event cross physical record boundary */
   if ((my.pyrd + evt_length) >= (DWORD *)my.pyh + my.size)
     {
-      /* check if request of event should be terminate due to bl != -1 */
-/*-PAA- It's better to skip and go til end of run instead of display only 
-        one physical record and leave 
-      if (bl != -1)
-	      return (YB_DONE);
-*/
       /* upcomming event crosses block, then first copy first part of event */
       /* compute max copy for first part of event */
       fpart = (DWORD *)my.pyh + my.size - my.pyrd;
@@ -2733,7 +2741,7 @@ void yb_any_event_display(void * pevent, INT data_fmt, INT dsp_mode, INT dsp_fmt
   if (dsp_mode == DSP_RAW)
      yb_any_raw_event_display(pevent, data_fmt, dsp_fmt);
   else if (dsp_mode == DSP_BANK)
-     yb_any_bank_event_display(pevent, data_fmt, dsp_mode, dsp_fmt);
+     yb_any_bank_event_display(pevent, data_fmt, dsp_fmt);
   else
     printf("yb_any_event_display- Unknown format:%i\n",dsp_fmt);
   return;
@@ -2788,7 +2796,7 @@ void yb_any_raw_event_display(void * pevent, INT data_fmt, INT dsp_fmt)
 }
 
 /*------------------------------------------------------------------*/
-void yb_any_bank_event_display( void * pevent, INT data_fmt, INT dsp_mode, INT dsp_fmt)
+void yb_any_bank_event_display( void * pevent, INT data_fmt, INT dsp_fmt)
 /********************************************************************\
   Routine: ybos_bank_event_display
   Purpose: display on screen the event header, bank list and bank content
@@ -3488,7 +3496,9 @@ INT   yb_ymfile_update(int slot, int fmt, void * pevt)
           /* fragment retrieved wait next one */
           return YB_SUCCESS;
         }
-      }
+    }
+  else
+    return YB_UNKNOWN_FORMAT;
 }
 #endif /* !FE_YBOS_SUPPORT */
 /*------------------------------------------------------------------*/
