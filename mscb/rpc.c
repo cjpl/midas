@@ -6,6 +6,9 @@
   Contents:     List of MSCB RPC functions with parameters
 
   $Log$
+  Revision 1.3  2002/11/27 16:26:22  midas
+  Fixed errors under linux
+
   Revision 1.2  2002/11/20 12:01:35  midas
   Added host to mscb_init
 
@@ -15,10 +18,27 @@
 
 \********************************************************************/
 
+#ifdef _MSC_VER
+
 #include <stdio.h>
 #include <windows.h>
+
+#elif defined(__linux__)
+
+#include <stdarg.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netdb.h>
+#include <netinet/in.h>
+
+#define closesocket(s) close(s)
+
+#endif
+
 #include "mscb.h"
 #include "rpc.h"
+
+typedef int INT;
 
 /*------------------------------------------------------------------*/
 
@@ -579,7 +599,7 @@ int rpc_disconnect()
 
 /*------------------------------------------------------------------*/
 
-void rpc_va_arg(va_list* arg_ptr, INT arg_type, void *arg)
+void rpc_va_arg(va_list* arg_ptr, int arg_type, void *arg)
 {
   switch(arg_type)
     {
@@ -595,7 +615,7 @@ void rpc_va_arg(va_list* arg_ptr, INT arg_type, void *arg)
     case TID_INT:
     case TID_BOOL:     *((INT *) arg) = va_arg(*arg_ptr, INT); break;
 
-    case TID_DWORD:    *((DWORD *) arg) = va_arg(*arg_ptr, DWORD); break;
+    case TID_DWORD:    *((unsigned int *) arg) = va_arg(*arg_ptr, unsigned int); break;
 
     /* float variables are passed as double by the compiler */
     case TID_FLOAT:    *((float *) arg) = (float) va_arg(*arg_ptr, double); break;
@@ -619,7 +639,7 @@ INT             tid, flags;
 fd_set          readfds;
 struct timeval  timeout;
 char            *param_ptr;
-BOOL            bpointer;
+int             bpointer;
 NET_COMMAND     *nc;
 
   nc = (NET_COMMAND *) net_buffer;
