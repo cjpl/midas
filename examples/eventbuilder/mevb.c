@@ -4,6 +4,9 @@ Created by:   Pierre-Andre Amaudruz
 
 Contents:     Main Event builder task.
 $Log$
+Revision 1.11  2004/01/08 06:48:26  pierre
+Doxygen the file
+
 Revision 1.10  2003/08/19 23:26:36  pierre
 fix cm_get_environment arg
 
@@ -23,7 +26,7 @@ Revision 1.5  2002/07/13 05:45:49  pierre
 added swap before user function
 
 Revision 1.4  2002/06/14 04:59:08  pierre
-revised for ybos
+revised for ybos 
 
 Revision 1.3  2002/05/08 20:51:41  midas
 Added extra parameter to function db_get_value()
@@ -35,6 +38,11 @@ Revision 1.1.1.1  2002/01/17 19:49:54  pierre
 Initial Version
 
 \********************************************************************/
+
+/**dox***************************************************************/
+/* @file mevb.c
+The Event builder main file 
+*/
 
 #include <stdio.h>
 #include "midas.h"
@@ -72,15 +80,7 @@ INT eb_user(INT, EBUILDER_CHANNEL *, EVENT_HEADER *, void *, INT *);
 
 extern INT  ybos_event_swap   (DWORD * pevt);
 
-/*--------------------------------------------------------------------*/
-/* eb_mfragment_add_()
-@memo append one fragment to current destination event.
-@param fmt Data format
-@param pdest Destination pointer
-@param psrce Fragment source pointer
-@param size  Current destination event size (byte)
-@return EB_SUCCESS
-*/
+/********************************************************************/
 INT eb_mfragment_add(char * pdest, char * psrce, INT *size)
 {
   BANK_HEADER  *psbh, *pdbh;
@@ -156,7 +156,7 @@ INT eb_yfragment_add(char * pdest, char * psrce, INT *size)
   pddata  = pdest + *size + sizeof(EVENT_HEADER);
 
   /* the Midas header is present for logger */
-  if (*size)
+  if (*size) 
   { /* already filled with a fragment */
 
     /* source pointer: number of DWORD (lrl included) */
@@ -445,27 +445,26 @@ INT source_unbooking(nfrag)
   return EB_SUCCESS;
 }
 
-/*--------------------------------------------------------------------*/
-/* source_scan()
+/********************************************************************/
+/**
 Scan all the fragment source once per call.
-1) This will retrieve the full midas event not swapped (except the
+
+-# This will retrieve the full midas event not swapped (except the
 MIDAS_HEADER) for each fragment if possible. The fragment will
 be stored in the channel event pointer.
-2a) if after a full nfrag path some frag are still not cellected, it
+-# if after a full nfrag path some frag are still not cellected, it
 returns with the frag# missing for timeout check.
-2b) If ALL fragments are present it will check the midas serial#
+-# If ALL fragments are present it will check the midas serial#
 for a full match across all the fragments.
-3a) If the serial check fails it returns with "event mismatch"
+-# If the serial check fails it returns with "event mismatch"
 and will abort the event builder but not stop the run for now.
-3b) If the serial check is passed, it will call the user_build function
+-# If the serial check is passed, it will call the user_build function
 where the destination event is going to be composed.
 
-@memo Scan all defined source and build a event if all fragment
-are present.
 @param fmt Fragment format type 
 @param nfragment number of fragment to collect
 @param dest_hBuf  Destination buffer handle
-@param event destination point for built event 
+@param dest_event destination point for built event 
 @return   EB_NO_MORE_EVENT, EB_COMPOSE_TIMEOUT
 if different then SUCCESS (bm_compose, rpc_sent error)
 */

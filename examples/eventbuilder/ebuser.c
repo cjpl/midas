@@ -6,6 +6,9 @@
   Contents:     User section for the Event builder
 
   $Log$
+  Revision 1.8  2004/01/08 06:46:43  pierre
+  Doxygen the file
+
   Revision 1.7  2003/12/03 00:57:20  pierre
   ctlM fix
 
@@ -28,6 +31,9 @@
   Initial Version
 
 \********************************************************************/
+/** @file ebuser.c
+The Event builder user file 
+*/
 
 #include <stdio.h>
 #include "midas.h"
@@ -38,46 +44,41 @@ INT eb_begin_of_run(INT, char *, char *);
 INT eb_end_of_run(INT, char *);
 INT ebuser(INT, EBUILDER_CHANNEL *, EVENT_HEADER *, void *, INT *);
 
-/* Globals */
-INT  lModulo = 100;
+/**
+Globals */
+INT lModulo = 100;              ///< Global var for testing
 
-/*--------------------------------------------------------------------*/
-/** eb_begin_of_run()
+/********************************************************************/
+/** 
 Hook to the event builder task at PreStart transition.
-\begin{verbatim}
-\end{verbatim}
-
 @param rn run number
 @param UserField argument from /Ebuilder/Settings
 @param error error string to be passed back to the system.
 @return EB_SUCCESS
 */
-INT eb_begin_of_run(INT rn, char * UserField, char * error)
+INT eb_begin_of_run(INT rn, char *UserField, char *error)
 {
-  printf("In eb_begin_of_run User_field:%s \n", UserField);
-  lModulo = atoi(UserField);
-  return EB_SUCCESS;
+   printf("In eb_begin_of_run User_field:%s \n", UserField);
+   lModulo = atoi(UserField);
+   return EB_SUCCESS;
 }
 
-/*--------------------------------------------------------------------*/
-/** eb_end_of_run()
+/********************************************************************/
+/** 
 Hook to the event builder task at completion of event collection after
 receiving the Stop transition.
-\begin{verbatim}
-\end{verbatim}
-
 @param rn run number
 @param error error string to be passed back to the system.
 @return EB_SUCCESS
 */
-INT eb_end_of_run(INT rn, char * error)
+INT eb_end_of_run(INT rn, char *error)
 {
-  printf("In eb_end_of_run\n");
-  return EB_SUCCESS;
+   printf("In eb_end_of_run\n");
+   return EB_SUCCESS;
 }
 
-/*--------------------------------------------------------------------*/
-/** @name eb_user()
+/********************************************************************/
+/** 
 Hook to the event builder task after the reception of
 all fragments of the same serial number. The destination
 event has already the final EVENT_HEADER setup with
@@ -87,26 +88,27 @@ bank calls.
 
 The ebch[] array structure points to nfragment channel structure
 with the following content:
-\begin{verbatim}
+\code
 typedef struct {
     char  name[32];         // Fragment name (Buffer name).
     DWORD serial;           // Serial fragment number.
     char *pfragment;        // Pointer to fragment (EVENT_HEADER *)
     ...
 } EBUILDER_CHANNEL;
-\end{verbatim}
+\endcode
 
 The correct code for including your own MIDAS bank is shown below where
-{\bf TID_xxx} is one of the valid Bank type starting with {\bf TID_} for
-midas format or {\bf xxx_BKTYPE} for Ybos data format.
-{\bf bank_name} is a 4 character descriptor.
-{\bf pdata} has to be declared accordingly with the bank type.
+\b TID_xxx is one of the valid Bank type starting with \b TID_ for
+midas format or \b xxx_BKTYPE for Ybos data format.
+\b bank_name is a 4 character descriptor.
+\b pdata has to be declared accordingly with the bank type.
 Refers to the ebuser.c source code for further description.
 
-{\Large It is not possible to mix within the same destination event different
-   event format!}
+<strong>
+It is not possible to mix within the same destination event different event format!
+</strong>
 
-\begin{verbatim}
+\code
   // Event is empty, fill it with BANK_HEADER
   // If you need to add your own bank at this stage 
   
@@ -115,11 +117,11 @@ Refers to the ebuser.c source code for further description.
   *pdata++ = ...;
   *dest_size = bk_close(pevent, pdata);
   pheader->data_size = *dest_size + sizeof(EVENT_HEADER);
-\end{verbatim}
+\endcode
 
 For YBOS format, use the following example.
 
-\begin{verbatim}
+\code
   ybk_init(pevent);
   ybk_create(pevent, "EBBK", I4_BKTYPE, &pdata);
   *pdata++ = 0x12345678;
@@ -127,43 +129,39 @@ For YBOS format, use the following example.
   *dest_size = ybk_close(pevent, pdata);
   *dest_size *= 4;
   pheader->data_size = *dest_size + sizeof(YBOS_BANK_HEADER);
-\end{verbatim}
-
+\endcode
 @param nfrag Number of fragment.
 @param ebch  Structure to all the fragments.
 @param pheader Destination pointer to the header.
 @param pevent Destination pointer to the bank header.
 @param dest_size Destination event size in bytes.
-@memo  event builder user code for private data filtering.
 @return EB_SUCCESS
 */
-INT eb_user(INT nfrag
-    , EBUILDER_CHANNEL * ebch, EVENT_HEADER *pheader
-    , void *pevent, INT * dest_size)
+INT eb_user(INT nfrag, EBUILDER_CHANNEL * ebch, EVENT_HEADER * pheader, void *pevent,
+            INT * dest_size)
 {
-  INT    i, dest_serial, frag_size, serial;
-  DWORD *plrl;
+   INT i, dest_serial, frag_size, serial;
+   DWORD *plrl;
 
-  dest_serial = pheader->serial_number;  
-  printf("DSer#:%d ", dest_serial);
+   dest_serial = pheader->serial_number;
+   printf("DSer#:%d ", dest_serial);
 
-  // Loop over fragments.
-  for (i=0;i<nfrag;i++) {
-    frag_size  = ((EVENT_HEADER *) ebch[i].pfragment)->data_size;
-    serial =  ((EVENT_HEADER *) ebch[i].pfragment)->serial_number;
-    printf("Frg#:%d Dsz:%d Ser:%d ", i+1, frag_size, serial);
+   // Loop over fragments.
+   for (i = 0; i < nfrag; i++) {
+      frag_size = ((EVENT_HEADER *) ebch[i].pfragment)->data_size;
+      serial = ((EVENT_HEADER *) ebch[i].pfragment)->serial_number;
+      printf("Frg#:%d Dsz:%d Ser:%d ", i + 1, frag_size, serial);
 
-    // For YBOS fragment Access.
-    plrl = (DWORD *) (((EVENT_HEADER *) ebch[i].pfragment) + 1);
-  }
+      // For YBOS fragment Access.
+      plrl = (DWORD *) (((EVENT_HEADER *) ebch[i].pfragment) + 1);
+   }
 
-  if(!((pheader->serial_number+1)%lModulo)){
-    pheader->trigger_mask =(WORD) 0x8000;
-    return EB_USER_ERROR;
+   if (!((pheader->serial_number + 1) % lModulo)) {
+      pheader->trigger_mask = (WORD) 0x8000;
+      return EB_USER_ERROR;
 //  or  TRIGGER_MASK(pevent) = 0x0505;
-    printf("This event needs a special mask: 0x%x\n",pheader->trigger_mask);
-  }
-  printf("\n");
-  return EB_SUCCESS;
+      printf("This event needs a special mask: 0x%x\n", pheader->trigger_mask);
+   }
+   printf("\n");
+   return EB_SUCCESS;
 }
-
