@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol main program
 
   $Log$
+  Revision 1.35  2004/01/07 12:52:23  midas
+  Changed indentation
+
   Revision 1.34  2003/06/27 13:52:07  midas
   Added missing clock reset
 
@@ -171,180 +174,174 @@ SYS_INFO sys_info;
 
 /* bit variables in internal RAM */
 
-unsigned char bdata CSR;         // byte address of CSR consisting of bits below 
+unsigned char bdata CSR;        // byte address of CSR consisting of bits below 
 
-sbit DEBUG_MODE     = CSR ^ 0;   // debugging mode
-sbit SYNC_MODE      = CSR ^ 1;   // turned on in SYNC mode
-sbit FREEZE_MODE    = CSR ^ 2;   // turned on in FREEZE mode
-sbit WD_RESET       = CSR ^ 3;   // got rebooted by watchdog reset
+sbit DEBUG_MODE = CSR ^ 0;      // debugging mode
+sbit SYNC_MODE = CSR ^ 1;       // turned on in SYNC mode
+sbit FREEZE_MODE = CSR ^ 2;     // turned on in FREEZE mode
+sbit WD_RESET = CSR ^ 3;        // got rebooted by watchdog reset
 
-bit addressed;                   // true if node addressed
-bit new_address, debug_new_i, debug_new_o;    // used for LCD debug output
-bit flash_param;                 // used for EEPROM flashing
-bit flash_program;               // used for upgrading firmware
-bit reboot;                      // used for rebooting
+bit addressed;                  // true if node addressed
+bit new_address, debug_new_i, debug_new_o;      // used for LCD debug output
+bit flash_param;                // used for EEPROM flashing
+bit flash_program;              // used for upgrading firmware
+bit reboot;                     // used for rebooting
 
 /*------------------------------------------------------------------*/
 
 void setup(void)
 {
-unsigned char i;
+   unsigned char i;
 
 #ifdef CPU_CYGNAL
-  
-  /* Port configuration (1 = Push Pull Output) */
+
+   /* Port configuration (1 = Push Pull Output) */
 
 #ifdef CPU_C8051F020
-  XBR0 = 0x04; // Enable UART0 & UART1
-  XBR1 = 0x00;
-  XBR2 = 0x44;
+   XBR0 = 0x04;                 // Enable UART0 & UART1
+   XBR1 = 0x00;
+   XBR2 = 0x44;
 
-  P0MDOUT = 0x01;  // P0.0: TX = Push Pull
-  P1MDOUT = 0x00;  // P1: LPT
-  P2MDOUT = 0x00;  // P2: LPT
-  P3MDOUT = 0xE0;  // P3.5,6,7: Optocouplers
+   P0MDOUT = 0x01;              // P0.0: TX = Push Pull
+   P1MDOUT = 0x00;              // P1: LPT
+   P2MDOUT = 0x00;              // P2: LPT
+   P3MDOUT = 0xE0;              // P3.5,6,7: Optocouplers
 #else
-  XBR0 = 0x04; // Enable RX/TX
-  XBR1 = 0x00;
-  XBR2 = 0x40; // Enable crossbar
+   XBR0 = 0x04;                 // Enable RX/TX
+   XBR1 = 0x00;
+   XBR2 = 0x40;                 // Enable crossbar
 
-  PRT0CF = 0x01;   // P0.0: TX = Push Pull
-  PRT1CF = 0x00;   // P1
-  PRT2CF = 0x00;   // P2  Open drain for 5V LCD
-  PRT3CF = 0x20;   // P3.5: RS485 enable = Push Pull
+   PRT0CF = 0x01;               // P0.0: TX = Push Pull
+   PRT1CF = 0x00;               // P1
+   PRT2CF = 0x00;               // P2  Open drain for 5V LCD
+   PRT3CF = 0x20;               // P3.5: RS485 enable = Push Pull
 #endif
 
-  /* Select external quartz oscillator */
-  OSCXCN = 0x66;  // Crystal mode, Power Factor 22E6
-  OSCICN = 0x08;  // CLKSL=1 (external)
+   /* Select external quartz oscillator */
+   OSCXCN = 0x66;               // Crystal mode, Power Factor 22E6
+   OSCICN = 0x08;               // CLKSL=1 (external)
 
 #endif
 
-  /* enable watchdog */
+   /* enable watchdog */
 #ifdef CPU_ADUC812
-  WDCON = 0xE0;      // 2048 msec
-  WDE = 1;
+   WDCON = 0xE0;                // 2048 msec
+   WDE = 1;
 #endif
 #ifdef CPU_CYGNAL
-  WDTCN = 0x07;      // 95 msec
-  WDTCN = 0xA5;      // start watchdog
+   WDTCN = 0x07;                // 95 msec
+   WDTCN = 0xA5;                // start watchdog
 
-  /* enable missing clock reset */
-  OSCICN |= 0x80; // MSCLKE = 1
+   /* enable missing clock reset */
+   OSCICN |= 0x80;              // MSCLKE = 1
 
-  /* enable reset pin and watchdog reset */
-  RSTSRC = 0x09;
+   /* enable reset pin and watchdog reset */
+   RSTSRC = 0x09;
 #endif
 
-  /* start system clock */
-  sysclock_init();
+   /* start system clock */
+   sysclock_init();
 
-  /* init memory */
-  CSR = 0;
-  LED = LED_OFF;
+   /* init memory */
+   CSR = 0;
+   LED = LED_OFF;
 #ifdef LED_2
-  LED_SEC = LED_OFF;
+   LED_SEC = LED_OFF;
 #endif
-  RS485_ENABLE = 0;
-  i_in = i_out = n_out = 0;
+   RS485_ENABLE = 0;
+   i_in = i_out = n_out = 0;
 
-  uart_init(0, BD_115200);
+   uart_init(0, BD_115200);
 
-  /* count variables */
-  for (n_variables=0 ; ; n_variables++)
-    if (variables[n_variables].width == 0)
-      break;
+   /* count variables */
+   for (n_variables = 0;; n_variables++)
+      if (variables[n_variables].width == 0)
+         break;
 
-  /* retrieve EEPROM data */
-  if (!eeprom_retrieve())
-    {
-    /* correct initial value */
-    sys_info.node_addr  = 0xFFFF;
-    sys_info.group_addr = 0xFFFF;
-    sys_info.wd_counter = 0;
-    memset(sys_info.node_name, 0, sizeof(sys_info.node_name));
-    strncpy(sys_info.node_name, node_name, sizeof(sys_info.node_name));
+   /* retrieve EEPROM data */
+   if (!eeprom_retrieve()) {
+      /* correct initial value */
+      sys_info.node_addr = 0xFFFF;
+      sys_info.group_addr = 0xFFFF;
+      sys_info.wd_counter = 0;
+      memset(sys_info.node_name, 0, sizeof(sys_info.node_name));
+      strncpy(sys_info.node_name, node_name, sizeof(sys_info.node_name));
 
-    // init variables
-    for (i=0 ; variables[i].width ; i++)
-      if (variables[i].ud)
-        memset(variables[i].ud, 0, variables[i].width);
-  
-    /* call user initialization routine with initialization */
-    user_init(1);
+      // init variables
+      for (i = 0; variables[i].width; i++)
+         if (variables[i].ud)
+            memset(variables[i].ud, 0, variables[i].width);
 
-    eeprom_flash();
-    }
-  else
-    /* call user initialization routine without initialization */
-    user_init(0);
+      /* call user initialization routine with initialization */
+      user_init(1);
 
-  /* check if reset by watchdog */
+      eeprom_flash();
+   } else
+      /* call user initialization routine without initialization */
+      user_init(0);
+
+   /* check if reset by watchdog */
 #ifdef CPU_ADUC812
-  if (WDS)
+   if (WDS)
 #endif
 #ifdef CPU_CYGNAL
-  if (RSTSRC & 0x08)
+      if (RSTSRC & 0x08)
 #endif
-    {
-    WD_RESET = 1;
-    sys_info.wd_counter++;
-    eeprom_flash();
-    }
-
+      {
+         WD_RESET = 1;
+         sys_info.wd_counter++;
+         eeprom_flash();
+      }
 #ifdef LCD_SUPPORT
-  lcd_setup();
+   lcd_setup();
 
 #ifdef LCD_DEBUG
-  if (lcd_present)
-    {
-    printf("AD:%04X GA:%04X WD:%d", sys_info.node_addr, 
-            sys_info.group_addr, sys_info.wd_counter);
-    }
+   if (lcd_present) {
+      printf("AD:%04X GA:%04X WD:%d", sys_info.node_addr,
+             sys_info.group_addr, sys_info.wd_counter);
+   }
 #endif
 
 #endif
 
-  /* Blink LEDs */
-  led_blink(1, 5, 150);
-  led_blink(2, 5, 150);
+   /* Blink LEDs */
+   led_blink(1, 5, 150);
+   led_blink(2, 5, 150);
 }
 
 /*------------------------------------------------------------------*/
 
 void debug_output()
 {
-  if (!DEBUG_MODE)
-    return;
-                             
-#if !defined(CPU_ADUC812) && !defined(SCS_300) && !defined(SCS_210) // SCS210/300 redefine printf()
+   if (!DEBUG_MODE)
+      return;
+
+#if !defined(CPU_ADUC812) && !defined(SCS_300) && !defined(SCS_210)     // SCS210/300 redefine printf()
 #ifdef LCD_DEBUG
-  {
-  unsigned char i, n;
+   {
+      unsigned char i, n;
 
-  if (debug_new_i)
-    {
-    debug_new_i = 0;
-    lcd_clear();
+      if (debug_new_i) {
+         debug_new_i = 0;
+         lcd_clear();
 
-    n = i_in ? i_in : cmd_len;
-    for (i=0 ; i<n ; i++)
-      printf("%02bX ", in_buf[i]);
-    }
+         n = i_in ? i_in : cmd_len;
+         for (i = 0; i < n; i++)
+            printf("%02bX ", in_buf[i]);
+      }
 
-  if (debug_new_o)
-    {
-    debug_new_o = 0;
-    lcd_goto(0, 1);
-    for (i=0 ; i<n_out ; i++)
-      printf("%02bX ", out_buf[i]);
-    }
-  }
+      if (debug_new_o) {
+         debug_new_o = 0;
+         lcd_goto(0, 1);
+         for (i = 0; i < n_out; i++)
+            printf("%02bX ", out_buf[i]);
+      }
+   }
 #endif
 #endif
 
 }
-        
+
 /*------------------------------------------------------------------*\
 
   Serial interrupt
@@ -355,79 +352,69 @@ void interprete(void);
 
 void serial_int(void) interrupt 4 using 1
 {
-  if (TI0)
-    {
-    /* character has been transferred */
-    
-    TI0 = 0;              // clear TI flag
+   if (TI0) {
+      /* character has been transferred */
 
-    i_out++;              // increment output counter
-    if (i_out == n_out)
-      {
-      i_out = 0;          // send buffer empty, clear pointer
-      RS485_ENABLE = 0;   // disable RS485 driver
-      debug_new_o = 1;    // indicate new debug output
+      TI0 = 0;                  // clear TI flag
+
+      i_out++;                  // increment output counter
+      if (i_out == n_out) {
+         i_out = 0;             // send buffer empty, clear pointer
+         RS485_ENABLE = 0;      // disable RS485 driver
+         debug_new_o = 1;       // indicate new debug output
+      } else {
+         SBUF0 = out_buf[i_out];        // send character
       }
-    else
-      {
-      SBUF0 = out_buf[i_out];  // send character
+   }
+
+   if (RI0) {
+      /* character has been received */
+
+      if (!RB80 && !addressed) {
+         RI0 = 0;
+         i_in = 0;
+         return;                // discard data if not bit9 and not addressed
       }
-    }
 
-  if (RI0)
-    {
-    /* character has been received */
-
-    if (!RB80 && !addressed)
-      {
+      RB80 = 0;
+      in_buf[i_in++] = SBUF0;
       RI0 = 0;
+
+      if (i_in == 1) {
+         /* check for padding character */
+         if (in_buf[0] == 0) {
+            i_in = 0;
+            return;
+         }
+
+         /* initialize command length if first byte */
+         cmd_len = (in_buf[0] & 0x07) + 2;      // + cmd + crc
+      }
+
+      if (i_in == 2 && cmd_len == 9) {
+         /* variable length command */
+         cmd_len = in_buf[1] + 3;       // + cmd + N + crc
+      }
+
+      debug_new_i = 1;          // indicate new data in input buffer
+
+      if (i_in == sizeof(in_buf))       // check for buffer overflow
+      {
+         i_in = 0;
+         return;                // don't interprete command
+      }
+
+      if (i_in < cmd_len)       // return if command not yet complete
+         return;
+
+      if (in_buf[i_in - 1] != crc8(in_buf, i_in - 1)) {
+         i_in = 0;
+         return;                // return if CRC code does not match
+      }
+
+      interprete();             // interprete command
       i_in = 0;
-      return;           // discard data if not bit9 and not addressed
-      }
-
-    RB80 = 0;
-    in_buf[i_in++] = SBUF0;
-    RI0 = 0;
-
-    if (i_in == 1)
-      {
-      /* check for padding character */
-      if (in_buf[0] == 0)
-        {
-        i_in = 0;
-        return;
-        }
-
-      /* initialize command length if first byte */
-      cmd_len = (in_buf[0] & 0x07) + 2; // + cmd + crc
-      }
-
-    if (i_in == 2 && cmd_len == 9)
-      {
-      /* variable length command */
-      cmd_len = in_buf[1] + 3; // + cmd + N + crc
-      }
-
-    debug_new_i = 1; // indicate new data in input buffer
-
-    if (i_in == sizeof(in_buf))  // check for buffer overflow
-      {
-      i_in = 0;
-      return;                    // don't interprete command
-      }
-
-    if (i_in < cmd_len)          // return if command not yet complete
-      return;
-
-    if (in_buf[i_in-1] != crc8(in_buf, i_in-1))
-      {
-      i_in = 0;
-      return;                    // return if CRC code does not match
-      }
-
-    interprete();                // interprete command
-    i_in = 0;
-    }
+   }
 }
 
 /*------------------------------------------------------------------*\
@@ -440,147 +427,146 @@ void serial_int(void) interrupt 4 using 1
 
 void set_addressed(unsigned char mode, bit flag)
 {
-  if (flag)
-    {
-    addressed = 1;
-    led_blink(1, 1, 50);
-    addr_mode = mode;
-    }
-  else
-    {
-    addressed = 0;
-    addr_mode = ADDR_NONE;
-    }
+   if (flag) {
+      addressed = 1;
+      led_blink(1, 1, 50);
+      addr_mode = mode;
+   } else {
+      addressed = 0;
+      addr_mode = ADDR_NONE;
+   }
 }
 
-static void send_byte(unsigned char d, unsigned char data *crc)
+static void send_byte(unsigned char d, unsigned char data * crc)
 {
-  if (crc)
-    *crc = crc8_add(*crc, d);
-  SBUF0 = d;          
-  while (!TI0);
-  TI0 = 0;
+   if (crc)
+      *crc = crc8_add(*crc, d);
+   SBUF0 = d;
+   while (!TI0);
+   TI0 = 0;
 }
 
 void interprete(void)
 {
-unsigned char crc, cmd, i, j, n, ch;
-MSCB_INFO_VAR code *pvar;
+   unsigned char crc, cmd, i, j, n, ch;
+   MSCB_INFO_VAR code *pvar;
 
-  cmd = (in_buf[0] & 0xF8); // strip length field
+   cmd = (in_buf[0] & 0xF8);    // strip length field
 
-  switch (in_buf[0])
-    {
-    case CMD_ADDR_NODE8:
-      set_addressed(ADDR_NODE, in_buf[1] == *(unsigned char *)&sys_info.node_addr);
+   switch (in_buf[0]) {
+   case CMD_ADDR_NODE8:
+      set_addressed(ADDR_NODE,
+                    in_buf[1] == *(unsigned char *) &sys_info.node_addr);
       break;
 
-    case CMD_ADDR_NODE16:
-      set_addressed(ADDR_NODE, *(unsigned int *)&in_buf[1] == sys_info.node_addr);
+   case CMD_ADDR_NODE16:
+      set_addressed(ADDR_NODE,
+                    *(unsigned int *) &in_buf[1] == sys_info.node_addr);
       break;
 
-    case CMD_ADDR_BC:
+   case CMD_ADDR_BC:
       set_addressed(ADDR_ALL, 1);
       break;
 
-    case CMD_ADDR_GRP8:
-      set_addressed(ADDR_GROUP, in_buf[1] == *(unsigned char *)&sys_info.group_addr);
+   case CMD_ADDR_GRP8:
+      set_addressed(ADDR_GROUP,
+                    in_buf[1] == *(unsigned char *) &sys_info.group_addr);
       break;
 
-    case CMD_ADDR_GRP16:
-      set_addressed(ADDR_GROUP, *(unsigned int *)&in_buf[1] == sys_info.group_addr);
+   case CMD_ADDR_GRP16:
+      set_addressed(ADDR_GROUP,
+                    *(unsigned int *) &in_buf[1] == sys_info.group_addr);
       break;
 
-    case CMD_PING8:
-      set_addressed(ADDR_NODE, in_buf[1] == *(unsigned char *)&sys_info.node_addr);
-      if (addressed)
-        {
-        out_buf[0] = CMD_ACK;
-        n_out = 1;
-        RS485_ENABLE = 1;
-        SBUF0 = CMD_ACK;
-        }
+   case CMD_PING8:
+      set_addressed(ADDR_NODE,
+                    in_buf[1] == *(unsigned char *) &sys_info.node_addr);
+      if (addressed) {
+         out_buf[0] = CMD_ACK;
+         n_out = 1;
+         RS485_ENABLE = 1;
+         SBUF0 = CMD_ACK;
+      }
       break;
 
-    case CMD_PING16:
-      set_addressed(ADDR_NODE, *(unsigned int *)&in_buf[1] == sys_info.node_addr);
-      if (addressed)
-        {
-        out_buf[0] = CMD_ACK;
-        n_out = 1;
-        RS485_ENABLE = 1;
-        SBUF0 = CMD_ACK;
-        }
+   case CMD_PING16:
+      set_addressed(ADDR_NODE,
+                    *(unsigned int *) &in_buf[1] == sys_info.node_addr);
+      if (addressed) {
+         out_buf[0] = CMD_ACK;
+         n_out = 1;
+         RS485_ENABLE = 1;
+         SBUF0 = CMD_ACK;
+      }
       break;
 
-    case CMD_INIT:
-      reboot = 1; // reboot in next main loop
+   case CMD_INIT:
+      reboot = 1;               // reboot in next main loop
       break;
 
-    case CMD_GET_INFO:
+   case CMD_GET_INFO:
       /* general info */
 
-      ES0 = 0;                     // temporarily disable serial interrupt
+      ES0 = 0;                  // temporarily disable serial interrupt
       crc = 0;
       RS485_ENABLE = 1;
 
-      send_byte(CMD_ACK+7, &crc); // send acknowledge, variable data length
-      send_byte(24, &crc);        // send data length
-      send_byte(VERSION, &crc);   // send protocol version
+      send_byte(CMD_ACK + 7, &crc);     // send acknowledge, variable data length
+      send_byte(24, &crc);      // send data length
+      send_byte(VERSION, &crc); // send protocol version
 
-      send_byte(n_variables, &crc); // send number of variables
+      send_byte(n_variables, &crc);     // send number of variables
 
-      send_byte(*(((unsigned char *)&sys_info.node_addr)+0), &crc);    // send node address
-      send_byte(*(((unsigned char *)&sys_info.node_addr)+1), &crc); 
+      send_byte(*(((unsigned char *) &sys_info.node_addr) + 0), &crc);  // send node address
+      send_byte(*(((unsigned char *) &sys_info.node_addr) + 1), &crc);
 
-      send_byte(*(((unsigned char *)&sys_info.group_addr)+0), &crc);   // send group address
-      send_byte(*(((unsigned char *)&sys_info.group_addr)+1), &crc); 
+      send_byte(*(((unsigned char *) &sys_info.group_addr) + 0), &crc); // send group address
+      send_byte(*(((unsigned char *) &sys_info.group_addr) + 1), &crc);
 
-      send_byte(*(((unsigned char *)&sys_info.wd_counter)+0), &crc);   // send watchdog resets
-      send_byte(*(((unsigned char *)&sys_info.wd_counter)+1), &crc);
+      send_byte(*(((unsigned char *) &sys_info.wd_counter) + 0), &crc); // send watchdog resets
+      send_byte(*(((unsigned char *) &sys_info.wd_counter) + 1), &crc);
 
-      for (i=0 ; i<16 ; i++)                       // send node name
-        send_byte(sys_info.node_name[i], &crc);
+      for (i = 0; i < 16; i++)  // send node name
+         send_byte(sys_info.node_name[i], &crc);
 
-      send_byte(crc, NULL);                        // send CRC code
+      send_byte(crc, NULL);     // send CRC code
 
       RS485_ENABLE = 0;
-      ES0 = 1;                                     // re-enable serial interrupts
+      ES0 = 1;                  // re-enable serial interrupts
       break;
 
-    case CMD_GET_INFO+1:
+   case CMD_GET_INFO + 1:
       /* send variable info */
 
-      if (in_buf[1] < n_variables)
-        {
-        pvar = variables+in_buf[1];
+      if (in_buf[1] < n_variables) {
+         pvar = variables + in_buf[1];
 
-        ES0 = 0;                     // temporarily disable serial interrupt
-        crc = 0;
-        RS485_ENABLE = 1;
-  
-        send_byte(CMD_ACK+7, &crc); // send acknowledge, variable data length
-        send_byte(13, &crc);        // send data length
-        send_byte(pvar->width, &crc);
-        send_byte(pvar->unit, &crc);
-        send_byte(pvar->prefix, &crc);
-        send_byte(pvar->status, &crc);
-        send_byte(pvar->flags, &crc);
-  
-        for (i=0 ; i<8 ; i++)                        // send variable name
-          send_byte(pvar->name[i], &crc);
-  
-        send_byte(crc, NULL);                        // send CRC code
-  
-        RS485_ENABLE = 0;
-        ES0 = 1;                                      // re-enable serial interrupts
-        }
+         ES0 = 0;               // temporarily disable serial interrupt
+         crc = 0;
+         RS485_ENABLE = 1;
+
+         send_byte(CMD_ACK + 7, &crc);  // send acknowledge, variable data length
+         send_byte(13, &crc);   // send data length
+         send_byte(pvar->width, &crc);
+         send_byte(pvar->unit, &crc);
+         send_byte(pvar->prefix, &crc);
+         send_byte(pvar->status, &crc);
+         send_byte(pvar->flags, &crc);
+
+         for (i = 0; i < 8; i++)        // send variable name
+            send_byte(pvar->name[i], &crc);
+
+         send_byte(crc, NULL);  // send CRC code
+
+         RS485_ENABLE = 0;
+         ES0 = 1;               // re-enable serial interrupts
+      }
       break;
 
-    case CMD_SET_ADDR:
+   case CMD_SET_ADDR:
       /* set address in RAM */
-      sys_info.node_addr  = *((unsigned int*)(in_buf+1));
-      sys_info.group_addr = *((unsigned int*)(in_buf+3));
+      sys_info.node_addr = *((unsigned int *) (in_buf + 1));
+      sys_info.group_addr = *((unsigned int *) (in_buf + 3));
 
       /* copy address to EEPROM */
       flash_param = 1;
@@ -589,10 +575,10 @@ MSCB_INFO_VAR code *pvar;
       new_address = 1;
       break;
 
-    case (CMD_SET_ADDR | 0x07):
+   case (CMD_SET_ADDR | 0x07):
       /* set node name in RAM */
-      for (i=0 ; i<16 && i<in_buf[1] ; i++)
-        sys_info.node_name[i] = in_buf[2+i];
+      for (i = 0; i < 16 && i < in_buf[1]; i++)
+         sys_info.node_name[i] = in_buf[2 + i];
 
       /* copy address to EEPROM */
       flash_param = 1;
@@ -601,44 +587,44 @@ MSCB_INFO_VAR code *pvar;
       new_address = 1;
       break;
 
-    case CMD_SET_BAUD:
+   case CMD_SET_BAUD:
       // uart_init(0, in_buf[1]);
       break;
 
-    case CMD_FREEZE:
+   case CMD_FREEZE:
       FREEZE_MODE = in_buf[1];
       break;
 
-    case CMD_SYNC:
+   case CMD_SYNC:
       SYNC_MODE = in_buf[1];
       break;
 
-    case CMD_UPGRADE:
+   case CMD_UPGRADE:
 
       flash_program = 1;
 
       /* send acknowledge */
       out_buf[0] = CMD_ACK;
-      out_buf[1] = in_buf[i_in-1];
+      out_buf[1] = in_buf[i_in - 1];
       n_out = 2;
       RS485_ENABLE = 1;
       SBUF0 = out_buf[0];
       break;
 
-    case CMD_FLASH:
+   case CMD_FLASH:
 
       flash_param = 1;
 
       /* send acknowledge */
       out_buf[0] = CMD_ACK;
-      out_buf[1] = in_buf[i_in-1];
+      out_buf[1] = in_buf[i_in - 1];
       n_out = 2;
       RS485_ENABLE = 1;
       SBUF0 = out_buf[0];
       break;
 
-    case CMD_ECHO:
-      out_buf[0] = CMD_ACK+1;
+   case CMD_ECHO:
+      out_buf[0] = CMD_ACK + 1;
       out_buf[1] = in_buf[1];
       out_buf[2] = crc8(out_buf, 2);
       n_out = 3;
@@ -646,144 +632,125 @@ MSCB_INFO_VAR code *pvar;
       SBUF0 = out_buf[0];
       break;
 
-    }
+   }
 
-  if (cmd == CMD_READ)
-    {
-    if (in_buf[0] == CMD_READ + 1)  // single variable
+   if (cmd == CMD_READ) {
+      if (in_buf[0] == CMD_READ + 1)    // single variable
       {
-      if (in_buf[1] < n_variables)
-        {
-        n = variables[in_buf[1]].width; // number of bytes to return
-    
-        if (variables[in_buf[1]].ud == 0)
-          {
-          n = user_read(in_buf[1]);   // for dataless variables, user routine returns bytes
-          out_buf[0] = CMD_ACK + n;   // and places data directly in out_buf
-          }
-        else
-          {
-          user_read(in_buf[1]);
-    
-          if (n > 6)
-            {
-            /* variable length buffer */
-            out_buf[0] = CMD_ACK + 7;
-            out_buf[1] = n;
-            for (i=0 ; i<n ; i++)
-              out_buf[2+i] = ((char idata *)variables[in_buf[1]].ud)[i];  // copy user data
-            n++; 
+         if (in_buf[1] < n_variables) {
+            n = variables[in_buf[1]].width;     // number of bytes to return
+
+            if (variables[in_buf[1]].ud == 0) {
+               n = user_read(in_buf[1]);        // for dataless variables, user routine returns bytes
+               out_buf[0] = CMD_ACK + n;        // and places data directly in out_buf
+            } else {
+               user_read(in_buf[1]);
+
+               if (n > 6) {
+                  /* variable length buffer */
+                  out_buf[0] = CMD_ACK + 7;
+                  out_buf[1] = n;
+                  for (i = 0; i < n; i++)
+                     out_buf[2 + i] = ((char idata *) variables[in_buf[1]].ud)[i];      // copy user data
+                  n++;
+               } else {
+                  out_buf[0] = CMD_ACK + n;
+                  for (i = 0; i < n; i++)
+                     out_buf[1 + i] = ((char idata *) variables[in_buf[1]].ud)[i];      // copy user data
+               }
             }
-          else
-            {
-            out_buf[0] = CMD_ACK + n;
-            for (i=0 ; i<n ; i++)
-              out_buf[1+i] = ((char idata *)variables[in_buf[1]].ud)[i];  // copy user data
+
+            out_buf[1 + n] = crc8(out_buf, 1 + n);      // generate CRC code
+
+            /* send result */
+            n_out = 2 + n;
+            RS485_ENABLE = 1;
+            SBUF0 = out_buf[0];
+         }
+      } else if (in_buf[0] == CMD_READ + 2)     // variable range
+      {
+         if (in_buf[1] < n_variables && in_buf[2] < n_variables
+             && in_buf[1] < in_buf[2]) {
+            /* calculate number of bytes to return */
+            for (i = in_buf[1], n = 0; i <= in_buf[2]; i++) {
+               user_read(i);
+               n += variables[i].width;
             }
-          }
-    
-        out_buf[1+n] = crc8(out_buf, 1 + n); // generate CRC code
-    
-        /* send result */
-        n_out = 2 + n;
-        RS485_ENABLE = 1;
-        SBUF0 = out_buf[0];
-        }
-      }
-    else if (in_buf[0] == CMD_READ + 2) // variable range
-      {
-      if (in_buf[1] < n_variables && in_buf[2] < n_variables && in_buf[1] < in_buf[2])
-        {
-        /* calculate number of bytes to return */
-        for (i=in_buf[1],n=0 ; i<=in_buf[2] ; i++)
-          {
-          user_read(i);
-          n += variables[i].width;
-          }
-  
-        ES0 = 0;                      // temporarily disable serial interrupt
-        crc = 0;
-        RS485_ENABLE = 1;
-  
-        send_byte(CMD_ACK+7, &crc);   // send acknowledge, variable data length
-        send_byte(n, &crc);           // send data length
-  
-        /* loop over all variables */
-        for (i=in_buf[1] ; i<=in_buf[2] ; i++)
-          {
-          for (j=0 ; j<variables[i].width ; j++)
-            send_byte(((char idata *)variables[i].ud)[j], &crc); // send user data
-          }
-  
-        send_byte(crc, NULL);         // send CRC code
-  
-        RS485_ENABLE = 0;
-        ES0 = 1;                      // re-enable serial interrupts
-        }
-      }
-    }
 
-  if (cmd == CMD_USER)
-    {
-    n = user_func(in_buf+1, out_buf+1);
-    out_buf[0] = CMD_ACK + n;
-    out_buf[n+1] = crc8(out_buf, n+1);
-    n_out = n+2;
-    RS485_ENABLE = 1;
-    SBUF0 = out_buf[0];
-    }
+            ES0 = 0;            // temporarily disable serial interrupt
+            crc = 0;
+            RS485_ENABLE = 1;
 
-  if (cmd == CMD_WRITE_NA ||
-      cmd == CMD_WRITE_ACK)
-    {
-    /* offset to data */
-    if ((in_buf[0] & 0x07) == 0x07) // variable length
-      j = 1;
-    else
-      j = 0;
+            send_byte(CMD_ACK + 7, &crc);       // send acknowledge, variable data length
+            send_byte(n, &crc); // send data length
 
-    ch = in_buf[1+j];
-      
-    if (ch < n_variables)
-      {
-      n = variables[ch].width;
-  
-      for (i=0 ; i<n ; i++)
-        if (variables[ch].ud)
-          {
-          if (n < 4)
-            /* copy LSB bytes, needed for BYTE if DWORD is sent */
-            ((char idata *)variables[ch].ud)[i] = in_buf[i_in-1-n+i+j];
-          else
-            /* copy bytes in normal order, needed for strings */
-            ((char idata *)variables[ch].ud)[i] = in_buf[2+j+i];
-          }
-      
-      user_write(ch);
-  
-      if (cmd == CMD_WRITE_ACK)
-        {
-        out_buf[0] = CMD_ACK;
-        out_buf[1] = in_buf[i_in-1];
-        n_out = 2;
-        RS485_ENABLE = 1;
-        SBUF0 = out_buf[0];
-        }
+            /* loop over all variables */
+            for (i = in_buf[1]; i <= in_buf[2]; i++) {
+               for (j = 0; j < variables[i].width; j++)
+                  send_byte(((char idata *) variables[i].ud)[j], &crc); // send user data
+            }
+
+            send_byte(crc, NULL);       // send CRC code
+
+            RS485_ENABLE = 0;
+            ES0 = 1;            // re-enable serial interrupts
+         }
       }
-    else if (ch == 0xFF)
-      {
-      CSR = in_buf[2];
+   }
 
-      if (cmd == CMD_WRITE_ACK)
-        {
-        out_buf[0] = CMD_ACK;
-        out_buf[1] = in_buf[i_in-1];
-        n_out = 2;
-        RS485_ENABLE = 1;
-        SBUF0 = out_buf[0];
-        }
+   if (cmd == CMD_USER) {
+      n = user_func(in_buf + 1, out_buf + 1);
+      out_buf[0] = CMD_ACK + n;
+      out_buf[n + 1] = crc8(out_buf, n + 1);
+      n_out = n + 2;
+      RS485_ENABLE = 1;
+      SBUF0 = out_buf[0];
+   }
+
+   if (cmd == CMD_WRITE_NA || cmd == CMD_WRITE_ACK) {
+      /* offset to data */
+      if ((in_buf[0] & 0x07) == 0x07)   // variable length
+         j = 1;
+      else
+         j = 0;
+
+      ch = in_buf[1 + j];
+
+      if (ch < n_variables) {
+         n = variables[ch].width;
+
+         for (i = 0; i < n; i++)
+            if (variables[ch].ud) {
+               if (n < 4)
+                  /* copy LSB bytes, needed for BYTE if DWORD is sent */
+                  ((char idata *) variables[ch].ud)[i] =
+                      in_buf[i_in - 1 - n + i + j];
+               else
+                  /* copy bytes in normal order, needed for strings */
+                  ((char idata *) variables[ch].ud)[i] = in_buf[2 + j + i];
+            }
+
+         user_write(ch);
+
+         if (cmd == CMD_WRITE_ACK) {
+            out_buf[0] = CMD_ACK;
+            out_buf[1] = in_buf[i_in - 1];
+            n_out = 2;
+            RS485_ENABLE = 1;
+            SBUF0 = out_buf[0];
+         }
+      } else if (ch == 0xFF) {
+         CSR = in_buf[2];
+
+         if (cmd == CMD_WRITE_ACK) {
+            out_buf[0] = CMD_ACK;
+            out_buf[1] = in_buf[i_in - 1];
+            n_out = 2;
+            RS485_ENABLE = 1;
+            SBUF0 = out_buf[0];
+         }
       }
-    }
+   }
 
 
 }
@@ -793,139 +760,135 @@ MSCB_INFO_VAR code *pvar;
 void upgrade()
 {
 #ifdef CPU_CYGNAL
-unsigned char cmd, page;
-unsigned short i;
-unsigned char xdata *pw;
-unsigned char code  *pr;
+   unsigned char cmd, page;
+   unsigned short i;
+   unsigned char xdata *pw;
+   unsigned char code *pr;
 
-  /* wait until acknowledge has been sent */
-  while (RS485_ENABLE);
+   /* wait until acknowledge has been sent */
+   while (RS485_ENABLE);
 
-  /* disable all interrupts */
-  EA = 0;
+   /* disable all interrupts */
+   EA = 0;
 
-  /* disable watchdog */
-  WDTCN  = 0xDE;
-  WDTCN  = 0xAD;
+   /* disable watchdog */
+   WDTCN = 0xDE;
+   WDTCN = 0xAD;
 
-  cmd = page = 0;
+   cmd = page = 0;
 
-  /* send ready */
-  RS485_ENABLE = 1;
-  TI0 = 0;
-  SBUF0 = 0xBE;
-  while (TI0 == 0);
-  RS485_ENABLE = 0;
+   /* send ready */
+   RS485_ENABLE = 1;
+   TI0 = 0;
+   SBUF0 = 0xBE;
+   while (TI0 == 0);
+   RS485_ENABLE = 0;
 
-  do
-    {
-    /* receive command */
-    while (!RI0);
-     
-    cmd = SBUF0;
-    RI0 = 0;
+   do {
+      /* receive command */
+      while (!RI0);
 
-    switch (cmd)
-      {
-      case 1: // return acknowledge
-        break;
+      cmd = SBUF0;
+      RI0 = 0;
 
-      case 2: // erase page
-        /* receive page */
-        while (!RI0);
-        page = SBUF0;
-        RI0 = 0;
+      switch (cmd) {
+      case 1:                  // return acknowledge
+         break;
 
-        /* erase page */
+      case 2:                  // erase page
+         /* receive page */
+         while (!RI0);
+         page = SBUF0;
+         RI0 = 0;
+
+         /* erase page */
 #if defined(CPU_C8051F000)
-        FLSCL = (FLSCL & 0xF0) | 0x08; // set timer for 11.052 MHz clock
+         FLSCL = (FLSCL & 0xF0) | 0x08; // set timer for 11.052 MHz clock
 #elif defined (CPU_C8051F020)
-        FLSCL = FLSCL  | 1;            // enable flash writes
+         FLSCL = FLSCL | 1;     // enable flash writes
 #endif
-        PSCTL = 0x03;                  // allow write and erase
+         PSCTL = 0x03;          // allow write and erase
 
-        pw = (char xdata *)(512 * page);
-        *pw = 0;
-        
-        FLSCL = (FLSCL & 0xF0);
-        PSCTL = 0x00;
+         pw = (char xdata *) (512 * page);
+         *pw = 0;
 
-        break;
+         FLSCL = (FLSCL & 0xF0);
+         PSCTL = 0x00;
 
-      case 3: // program page
-        LED = LED_OFF;
+         break;
 
-        /* receive page */
-        while (!RI0);
-        page = SBUF0;
-        RI0 = 0;
+      case 3:                  // program page
+         LED = LED_OFF;
 
-        /* allow write */
+         /* receive page */
+         while (!RI0);
+         page = SBUF0;
+         RI0 = 0;
+
+         /* allow write */
 #if defined(CPU_C8051F000)
-        FLSCL = (FLSCL & 0xF0) | 0x08; // set timer for 11.052 MHz clock
+         FLSCL = (FLSCL & 0xF0) | 0x08; // set timer for 11.052 MHz clock
 #elif defined (CPU_C8051F020)
-        FLSCL = FLSCL  | 1;            // enable flash writes
+         FLSCL = FLSCL | 1;     // enable flash writes
 #endif
-        PSCTL = 0x01;                  // allow write access
+         PSCTL = 0x01;          // allow write access
 
-        pw = (char xdata *)(512 * page);
+         pw = (char xdata *) (512 * page);
 
-        for (i=0 ; i<512 ; i++)
-          {
-          /* receive byte */
-          while (!RI0);
+         for (i = 0; i < 512; i++) {
+            /* receive byte */
+            while (!RI0);
 
-          /* flash byte */
-          *pw++ = SBUF0;
-          RI0 = 0;
-          }
+            /* flash byte */
+            *pw++ = SBUF0;
+            RI0 = 0;
+         }
 
-        /* disable write */
-        FLSCL = (FLSCL & 0xF0);
-        PSCTL = 0x00;
-        break;
+         /* disable write */
+         FLSCL = (FLSCL & 0xF0);
+         PSCTL = 0x00;
+         break;
 
-      case 4: // verify page
-        LED = LED_ON;
+      case 4:                  // verify page
+         LED = LED_ON;
 
-        /* receive page */
-        while (!RI0);
-        page = SBUF0;
-        RI0 = 0;
+         /* receive page */
+         while (!RI0);
+         page = SBUF0;
+         RI0 = 0;
 
-        pr = 512 * page;
+         pr = 512 * page;
 
-        RS485_ENABLE = 1;
-        for (i=0 ; i<512 ; i++)
-          {
-          TI0 = 0;
-          SBUF0 = *pr++;
-          while (TI0 == 0);
-          }
-        RS485_ENABLE = 0;
-        break;
+         RS485_ENABLE = 1;
+         for (i = 0; i < 512; i++) {
+            TI0 = 0;
+            SBUF0 = *pr++;
+            while (TI0 == 0);
+         }
+         RS485_ENABLE = 0;
+         break;
 
-      case 5: // reboot
-        RSTSRC = 0x02;
-        break;
+      case 5:                  // reboot
+         RSTSRC = 0x02;
+         break;
 
-      case 6: // return
-        break;
+      case 6:                  // return
+         break;
       }
 
-    /* return acknowledge */
-    RS485_ENABLE = 1;
-    TI0 = 0;
-    SBUF0 = cmd;
-    while (TI0 == 0);
-    RS485_ENABLE = 0;
+      /* return acknowledge */
+      RS485_ENABLE = 1;
+      TI0 = 0;
+      SBUF0 = cmd;
+      while (TI0 == 0);
+      RS485_ENABLE = 0;
 
-    } while (cmd != 6);
+   } while (cmd != 6);
 
 
-  EA = 1; // re-enable interrupts
+   EA = 1;                      // re-enable interrupts
 
-#endif // CPU_CYGNAL
+#endif                          // CPU_CYGNAL
 }
 
 /*------------------------------------------------------------------*\
@@ -937,7 +900,7 @@ unsigned char code  *pr;
 
 void yield(void)
 {
-  watchdog_refresh();
+   watchdog_refresh();
 }
 
 /*------------------------------------------------------------------*\
@@ -948,63 +911,58 @@ void yield(void)
 
 void main(void)
 {
-  setup();
+   setup();
 
-  do
-    {
-    yield();
+   do {
+      yield();
 
-    user_loop();
+      user_loop();
 
-    /* output debug info to LCD if asked by interrupt routine */
-    debug_output();
+      /* output debug info to LCD if asked by interrupt routine */
+      debug_output();
 
-    /* output RS232 data if present */
-    rs232_output();
-    
-    /* output new address to LCD if available */
-#if !defined(CPU_ADUC812) && !defined(SCS_300) && !defined(SCS_210) // SCS210/300 redefine printf()
+      /* output RS232 data if present */
+      rs232_output();
+
+      /* output new address to LCD if available */
+#if !defined(CPU_ADUC812) && !defined(SCS_300) && !defined(SCS_210)     // SCS210/300 redefine printf()
 #ifdef LCD_DEBUG
-    if (new_address)
-      {
-      new_address = 0;
-      lcd_clear();
-      printf("AD:%04X GA:%04X WD:%d", sys_info.node_addr, 
-              sys_info.group_addr, sys_info.wd_counter);
+      if (new_address) {
+         new_address = 0;
+         lcd_clear();
+         printf("AD:%04X GA:%04X WD:%d", sys_info.node_addr,
+                sys_info.group_addr, sys_info.wd_counter);
       }
 #endif
 #endif
 
-    /* flash EEPROM if asked by interrupt routine */
-    if (flash_param)
-      {
-      flash_param = 0;
+      /* flash EEPROM if asked by interrupt routine */
+      if (flash_param) {
+         flash_param = 0;
 
-      /* reset watchdog counts */
-      sys_info.wd_counter = 0;
+         /* reset watchdog counts */
+         sys_info.wd_counter = 0;
 
-      eeprom_flash();
+         eeprom_flash();
       }
 
-    if (flash_program)
-      {
-      flash_program = 0;
+      if (flash_program) {
+         flash_program = 0;
 
-      /* go to "bootloader" program */
-      upgrade();
+         /* go to "bootloader" program */
+         upgrade();
       }
 
-    if (reboot)
-      {
+      if (reboot) {
 #ifdef CPU_CYGNAL
-      RSTSRC = 0x02;   // force power-on reset
+         RSTSRC = 0x02;         // force power-on reset
 #else
-      WDCON = 0x00;      // 16 msec
-      WDE = 1;
-      while (1);       // should be hardware reset later...
+         WDCON = 0x00;          // 16 msec
+         WDE = 1;
+         while (1);             // should be hardware reset later...
 #endif
       }
 
-    } while (1);
-  
+   } while (1);
+
 }

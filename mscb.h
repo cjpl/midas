@@ -6,6 +6,9 @@
   Contents:     Header fiel for MSCB funcions
 
   $Log$
+  Revision 1.28  2004/01/07 12:52:23  midas
+  Changed indentation
+
   Revision 1.27  2003/10/03 14:08:07  midas
   Added locking parameter to mscb_addr
 
@@ -144,7 +147,7 @@
 #define BD_9600            1
 #define BD_19200           2
 #define BD_28800           3
-#define BD_57600           4 
+#define BD_57600           4
 #define BD_115200          5
 #define BD_172800          6
 #define BD_345600          7
@@ -152,25 +155,25 @@
 /*---- info structures ---------------------------------------------*/
 
 typedef struct {
-  unsigned char  protocol_version;
-  unsigned char  n_variables;
-  unsigned short node_address;
-  unsigned short group_address;
-  unsigned short watchdog_resets;
-  char           node_name[16];
+   unsigned char protocol_version;
+   unsigned char n_variables;
+   unsigned short node_address;
+   unsigned short group_address;
+   unsigned short watchdog_resets;
+   char node_name[16];
 } MSCB_INFO;
 
 typedef struct {
-  unsigned char width;    // width in bytes
-  unsigned char unit;     // physical units UNIT_xxxx
-  unsigned char prefix;   // unit prefix PRFX_xxx
-  unsigned char status;   // status (not yet used)
-  unsigned char flags;    // flags MSCBF_xxx
-  char          name[8];  // name
+   unsigned char width;         // width in bytes
+   unsigned char unit;          // physical units UNIT_xxxx
+   unsigned char prefix;        // unit prefix PRFX_xxx
+   unsigned char status;        // status (not yet used)
+   unsigned char flags;         // flags MSCBF_xxx
+   char name[8];                // name
 } MSCB_INFO_VAR;
 
-#define MSCBF_FLOAT  (1<<0) // variable in floating point format
-#define MSCBF_SIGNED (1<<1) // variable is signed integer
+#define MSCBF_FLOAT  (1<<0)     // variable in floating point format
+#define MSCBF_SIGNED (1<<1)     // variable is signed integer
 
 /* physical units */
 
@@ -184,29 +187,29 @@ typedef struct {
 #define PRFX_GIGA         9
 #define PRFX_TERA        12
 
-#define UNIT_UNDEFINED    0      
+#define UNIT_UNDEFINED    0
 
 // SI base units
-#define UNIT_METER        1      
-#define UNIT_GRAM         2      
-#define UNIT_SECOND       3      
+#define UNIT_METER        1
+#define UNIT_GRAM         2
+#define UNIT_SECOND       3
 #define UNIT_MINUTE       4
 #define UNIT_HOUR         5
-#define UNIT_AMPERE       6      
-#define UNIT_KELVIN       7      
-#define UNIT_CELSIUS      8      
-#define UNIT_FARENHEIT    9      
+#define UNIT_AMPERE       6
+#define UNIT_KELVIN       7
+#define UNIT_CELSIUS      8
+#define UNIT_FARENHEIT    9
 
 // SI derived units
 
-#define UNIT_HERTZ       20       
-#define UNIT_PASCAL      21       
+#define UNIT_HERTZ       20
+#define UNIT_PASCAL      21
 #define UNIT_BAR         22
-#define UNIT_WATT        23       
-#define UNIT_VOLT        24       
+#define UNIT_WATT        23
+#define UNIT_VOLT        24
 #define UNIT_OHM         25
 #define UNIT_TESLA       26
-#define UNIT_LITERPERSEC 27       
+#define UNIT_LITERPERSEC 27
 #define UNIT_RPM         28
 #define UNIT_FARAD       29
 
@@ -267,36 +270,41 @@ extern "C" {
 #define EXPRT
 #endif
 
-int EXPRT mscb_init(char *device, int debug);
-void EXPRT mscb_get_version(char *lib_version, char *prot_version);
-void EXPRT mscb_check(char *device);
-int EXPRT mscb_exit(int fd);
-int EXPRT mscb_reset(int fd);
-int EXPRT mscb_reboot(int fd, int adr);
-int EXPRT mscb_ping(int fd, int adr);
-int EXPRT mscb_echo(int fd, int addr, unsigned char d1, unsigned char *d2);
-int EXPRT mscb_info(int fd, int adr, MSCB_INFO *info);
-int EXPRT mscb_info_variable(int fd, int adr, int index, MSCB_INFO_VAR *info);
-int EXPRT mscb_set_addr(int fd, int adr, int node, int group);
-int EXPRT mscb_set_name(int fd, int adr, char *name);
-int EXPRT mscb_write(int fd, int adr, unsigned char index, void *data, int size);
-int EXPRT mscb_write_group(int fd, int adr, unsigned char index, void *data, int size);
-int EXPRT mscb_flash(int fd, int adr);
-int EXPRT mscb_upload(int fd, int adr, char *buffer, int size);
-int EXPRT mscb_read(int fd, int adr, unsigned char index, void *data, int *size);
-int EXPRT mscb_read_range(int fd, int adr, unsigned char index1, unsigned char index2, void *data, int *size);
-int EXPRT mscb_user(int fd, int adr, void *param, int size, void *result, int *rsize);
-int EXPRT mscb_link(int fd, int adr, unsigned char index, void *data, int size);
-int EXPRT mscb_addr(int fd, int cmd, int adr, int retry, int lock);
+   int EXPRT mscb_init(char *device, int debug);
+   void EXPRT mscb_get_version(char *lib_version, char *prot_version);
+   void EXPRT mscb_check(char *device);
+   int EXPRT mscb_exit(int fd);
+   int EXPRT mscb_reset(int fd);
+   int EXPRT mscb_reboot(int fd, int adr);
+   int EXPRT mscb_ping(int fd, int adr);
+   int EXPRT mscb_echo(int fd, int addr, unsigned char d1,
+                       unsigned char *d2);
+   int EXPRT mscb_info(int fd, int adr, MSCB_INFO * info);
+   int EXPRT mscb_info_variable(int fd, int adr, int index,
+                                MSCB_INFO_VAR * info);
+   int EXPRT mscb_set_addr(int fd, int adr, int node, int group);
+   int EXPRT mscb_set_name(int fd, int adr, char *name);
+   int EXPRT mscb_write(int fd, int adr, unsigned char index, void *data,
+                        int size);
+   int EXPRT mscb_write_group(int fd, int adr, unsigned char index,
+                              void *data, int size);
+   int EXPRT mscb_flash(int fd, int adr);
+   int EXPRT mscb_upload(int fd, int adr, char *buffer, int size);
+   int EXPRT mscb_read(int fd, int adr, unsigned char index, void *data,
+                       int *size);
+   int EXPRT mscb_read_range(int fd, int adr, unsigned char index1,
+                             unsigned char index2, void *data, int *size);
+   int EXPRT mscb_user(int fd, int adr, void *param, int size,
+                       void *result, int *rsize);
+   int EXPRT mscb_link(int fd, int adr, unsigned char index, void *data,
+                       int size);
+   int EXPRT mscb_addr(int fd, int cmd, int adr, int retry, int lock);
 
 #ifdef __cplusplus
 }
 #endif
-
-
 /* define missing linux functions */
 #ifdef __linux__
-
 int kbhit();
 #define getch() getchar()
 #define Sleep(x) usleep(x*1000)
@@ -305,9 +313,9 @@ int kbhit();
 
 /* default device */
 #ifdef _MSC_VER
-  #define DEF_DEVICE "lpt1"
+#define DEF_DEVICE "lpt1"
 #elif defined(__linux__)
-  #define DEF_DEVICE "/dev/parport0"
+#define DEF_DEVICE "/dev/parport0"
 #else
-  #define DEF_DEVICE ""
+#define DEF_DEVICE ""
 #endif

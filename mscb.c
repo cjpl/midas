@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus communication functions
 
   $Log$
+  Revision 1.48  2004/01/07 12:52:23  midas
+  Changed indentation
+
   Revision 1.47  2003/10/03 14:08:07  midas
   Added locking parameter to mscb_addr
 
@@ -150,12 +153,12 @@
 #define MSCB_LIBRARY_VERSION   "1.5.2"
 #define MSCB_PROTOCOL_VERSION  "1.4"
 
-#ifdef _MSC_VER           // Windows includes
+#ifdef _MSC_VER                 // Windows includes
 
 #include <windows.h>
 #include <conio.h>
 
-#elif defined(__linux__)  // Linux includes
+#elif defined(__linux__)        // Linux includes
 
 #include <unistd.h>
 #include <string.h>
@@ -185,10 +188,10 @@
 #define MSCB_TYPE_RPC 4
 
 typedef struct {
-  char device[256];
-  int  type;
-  int  fd;
-  int  remote_fd;
+   char device[256];
+   int type;
+   int fd;
+   int remote_fd;
 } MSCB_FD;
 
 MSCB_FD mscb_fd[MSCB_MAX_FD];
@@ -258,9 +261,9 @@ MSCB_FD mscb_fd[MSCB_MAX_FD];
 
 /* other constants */
 
-#define TIMEOUT_OUT      1000    /* ~1ms */
+#define TIMEOUT_OUT      1000   /* ~1ms */
 
-extern int _debug_flag; /* global debug flag */
+extern int _debug_flag;         /* global debug flag */
 extern void debug_log(char *format, ...);
 
 /*------------------------------------------------------------------*/
@@ -268,18 +271,18 @@ extern void debug_log(char *format, ...);
 /* cache definitions for mscb_link */
 
 typedef struct {
-  int            fd;
-  unsigned short adr;
-  unsigned char  index;
-  void           *data;
-  unsigned char  size;
-  unsigned long  last;
+   int fd;
+   unsigned short adr;
+   unsigned char index;
+   void *data;
+   unsigned char size;
+   unsigned long last;
 } CACHE_ENTRY;
 
 CACHE_ENTRY *cache;
-int n_cache ;
+int n_cache;
 
-#define CACHE_PERIOD 500 // update cache every 500 ms
+#define CACHE_PERIOD 500        // update cache every 500 ms
 
 /*------------------------------------------------------------------*/
 
@@ -289,10 +292,10 @@ int n_cache ;
 
 int kbhit()
 {
-int n;
+   int n;
 
-  ioctl(0, FIONREAD, &n);
-  return (n > 0);
+   ioctl(0, FIONREAD, &n);
+   return (n > 0);
 }
 
 #endif
@@ -300,38 +303,38 @@ int n;
 /*------------------------------------------------------------------*/
 
 unsigned char crc8_data[] = {
-0x00, 0x5e, 0xbc, 0xe2, 0x61, 0x3f, 0xdd, 0x83,
-0xc2, 0x9c, 0x7e, 0x20, 0xa3, 0xfd, 0x1f, 0x41,
-0x9d, 0xc3, 0x21, 0x7f, 0xfc, 0xa2, 0x40, 0x1e,
-0x5f, 0x01, 0xe3, 0xbd, 0x3e, 0x60, 0x82, 0xdc,
-0x23, 0x7d, 0x9f, 0xc1, 0x42, 0x1c, 0xfe, 0xa0,
-0xe1, 0xbf, 0x5d, 0x03, 0x80, 0xde, 0x3c, 0x62,
-0xbe, 0xe0, 0x02, 0x5c, 0xdf, 0x81, 0x63, 0x3d,
-0x7c, 0x22, 0xc0, 0x9e, 0x1d, 0x43, 0xa1, 0xff,
-0x46, 0x18, 0xfa, 0xa4, 0x27, 0x79, 0x9b, 0xc5,
-0x84, 0xda, 0x38, 0x66, 0xe5, 0xbb, 0x59, 0x07,
-0xdb, 0x85, 0x67, 0x39, 0xba, 0xe4, 0x06, 0x58,
-0x19, 0x47, 0xa5, 0xfb, 0x78, 0x26, 0xc4, 0x9a,
-0x65, 0x3b, 0xd9, 0x87, 0x04, 0x5a, 0xb8, 0xe6,
-0xa7, 0xf9, 0x1b, 0x45, 0xc6, 0x98, 0x7a, 0x24,
-0xf8, 0xa6, 0x44, 0x1a, 0x99, 0xc7, 0x25, 0x7b,
-0x3a, 0x64, 0x86, 0xd8, 0x5b, 0x05, 0xe7, 0xb9,
-0x8c, 0xd2, 0x30, 0x6e, 0xed, 0xb3, 0x51, 0x0f,
-0x4e, 0x10, 0xf2, 0xac, 0x2f, 0x71, 0x93, 0xcd,
-0x11, 0x4f, 0xad, 0xf3, 0x70, 0x2e, 0xcc, 0x92,
-0xd3, 0x8d, 0x6f, 0x31, 0xb2, 0xec, 0x0e, 0x50,
-0xaf, 0xf1, 0x13, 0x4d, 0xce, 0x90, 0x72, 0x2c,
-0x6d, 0x33, 0xd1, 0x8f, 0x0c, 0x52, 0xb0, 0xee,
-0x32, 0x6c, 0x8e, 0xd0, 0x53, 0x0d, 0xef, 0xb1,
-0xf0, 0xae, 0x4c, 0x12, 0x91, 0xcf, 0x2d, 0x73,
-0xca, 0x94, 0x76, 0x28, 0xab, 0xf5, 0x17, 0x49,
-0x08, 0x56, 0xb4, 0xea, 0x69, 0x37, 0xd5, 0x8b,
-0x57, 0x09, 0xeb, 0xb5, 0x36, 0x68, 0x8a, 0xd4,
-0x95, 0xcb, 0x29, 0x77, 0xf4, 0xaa, 0x48, 0x16,
-0xe9, 0xb7, 0x55, 0x0b, 0x88, 0xd6, 0x34, 0x6a,
-0x2b, 0x75, 0x97, 0xc9, 0x4a, 0x14, 0xf6, 0xa8,
-0x74, 0x2a, 0xc8, 0x96, 0x15, 0x4b, 0xa9, 0xf7,
-0xb6, 0xe8, 0x0a, 0x54, 0xd7, 0x89, 0x6b, 0x35,
+   0x00, 0x5e, 0xbc, 0xe2, 0x61, 0x3f, 0xdd, 0x83,
+   0xc2, 0x9c, 0x7e, 0x20, 0xa3, 0xfd, 0x1f, 0x41,
+   0x9d, 0xc3, 0x21, 0x7f, 0xfc, 0xa2, 0x40, 0x1e,
+   0x5f, 0x01, 0xe3, 0xbd, 0x3e, 0x60, 0x82, 0xdc,
+   0x23, 0x7d, 0x9f, 0xc1, 0x42, 0x1c, 0xfe, 0xa0,
+   0xe1, 0xbf, 0x5d, 0x03, 0x80, 0xde, 0x3c, 0x62,
+   0xbe, 0xe0, 0x02, 0x5c, 0xdf, 0x81, 0x63, 0x3d,
+   0x7c, 0x22, 0xc0, 0x9e, 0x1d, 0x43, 0xa1, 0xff,
+   0x46, 0x18, 0xfa, 0xa4, 0x27, 0x79, 0x9b, 0xc5,
+   0x84, 0xda, 0x38, 0x66, 0xe5, 0xbb, 0x59, 0x07,
+   0xdb, 0x85, 0x67, 0x39, 0xba, 0xe4, 0x06, 0x58,
+   0x19, 0x47, 0xa5, 0xfb, 0x78, 0x26, 0xc4, 0x9a,
+   0x65, 0x3b, 0xd9, 0x87, 0x04, 0x5a, 0xb8, 0xe6,
+   0xa7, 0xf9, 0x1b, 0x45, 0xc6, 0x98, 0x7a, 0x24,
+   0xf8, 0xa6, 0x44, 0x1a, 0x99, 0xc7, 0x25, 0x7b,
+   0x3a, 0x64, 0x86, 0xd8, 0x5b, 0x05, 0xe7, 0xb9,
+   0x8c, 0xd2, 0x30, 0x6e, 0xed, 0xb3, 0x51, 0x0f,
+   0x4e, 0x10, 0xf2, 0xac, 0x2f, 0x71, 0x93, 0xcd,
+   0x11, 0x4f, 0xad, 0xf3, 0x70, 0x2e, 0xcc, 0x92,
+   0xd3, 0x8d, 0x6f, 0x31, 0xb2, 0xec, 0x0e, 0x50,
+   0xaf, 0xf1, 0x13, 0x4d, 0xce, 0x90, 0x72, 0x2c,
+   0x6d, 0x33, 0xd1, 0x8f, 0x0c, 0x52, 0xb0, 0xee,
+   0x32, 0x6c, 0x8e, 0xd0, 0x53, 0x0d, 0xef, 0xb1,
+   0xf0, 0xae, 0x4c, 0x12, 0x91, 0xcf, 0x2d, 0x73,
+   0xca, 0x94, 0x76, 0x28, 0xab, 0xf5, 0x17, 0x49,
+   0x08, 0x56, 0xb4, 0xea, 0x69, 0x37, 0xd5, 0x8b,
+   0x57, 0x09, 0xeb, 0xb5, 0x36, 0x68, 0x8a, 0xd4,
+   0x95, 0xcb, 0x29, 0x77, 0xf4, 0xaa, 0x48, 0x16,
+   0xe9, 0xb7, 0x55, 0x0b, 0x88, 0xd6, 0x34, 0x6a,
+   0x2b, 0x75, 0x97, 0xc9, 0x4a, 0x14, 0xf6, 0xa8,
+   0x74, 0x2a, 0xc8, 0x96, 0x15, 0x4b, 0xa9, 0xf7,
+   0xb6, 0xe8, 0x0a, 0x54, 0xd7, 0x89, 0x6b, 0x35,
 };
 
 unsigned char crc8(unsigned char *data, int len)
@@ -351,17 +354,16 @@ unsigned char crc8(unsigned char *data, int len)
 
 \********************************************************************/
 {
-int i;
-unsigned char crc8_code, index;
+   int i;
+   unsigned char crc8_code, index;
 
-  crc8_code = 0;
-  for (i=0 ; i<len ; i++)
-    {
-    index = data[i] ^ crc8_code;
-    crc8_code = crc8_data[index];
-    }
+   crc8_code = 0;
+   for (i = 0; i < len; i++) {
+      index = data[i] ^ crc8_code;
+      crc8_code = crc8_data[index];
+   }
 
-  return crc8_code;
+   return crc8_code;
 }
 
 /*------------------------------------------------------------------*/
@@ -373,45 +375,45 @@ static HANDLE mutex_handle = 0;
 int mscb_lock(int fd)
 {
 #ifdef _MSC_VER
-int status;
-  if (mutex_handle == 0)
-    mutex_handle = CreateMutex(NULL, FALSE, "mscb");
+   int status;
+   if (mutex_handle == 0)
+      mutex_handle = CreateMutex(NULL, FALSE, "mscb");
 
-  if (mutex_handle == 0)
-    return 0;
+   if (mutex_handle == 0)
+      return 0;
 
-  status = WaitForSingleObject(mutex_handle, 1000);
+   status = WaitForSingleObject(mutex_handle, 1000);
 
-  if (status == WAIT_FAILED)
-    return 0;
-  if (status == WAIT_TIMEOUT)
-    return 0;
+   if (status == WAIT_FAILED)
+      return 0;
+   if (status == WAIT_TIMEOUT)
+      return 0;
 
 #elif defined(__linux__)
 
-  if (ioctl(mscb_fd[fd-1].fd, PPCLAIM))
-    return 0;
+   if (ioctl(mscb_fd[fd - 1].fd, PPCLAIM))
+      return 0;
 
 #endif
-  return MSCB_SUCCESS;
+   return MSCB_SUCCESS;
 }
 
 int mscb_release(int fd)
 {
 #ifdef _MSC_VER
-int status;
+   int status;
 
-  status = ReleaseMutex(mutex_handle);
-  if (status == FALSE)
-    return 0;
+   status = ReleaseMutex(mutex_handle);
+   if (status == FALSE)
+      return 0;
 
 #elif defined(__linux__)
 
-  if (ioctl(mscb_fd[fd-1].fd, PPRELEASE))
-    return 0;
+   if (ioctl(mscb_fd[fd - 1].fd, PPRELEASE))
+      return 0;
 
 #endif
-  return MSCB_SUCCESS;
+   return MSCB_SUCCESS;
 }
 
 /*---- low level functions for direct port access ------------------*/
@@ -419,31 +421,30 @@ int status;
 void pp_wcontrol(int fd, int signal, int flag)
 /* write control signal */
 {
-static unsigned int mask=0;
+   static unsigned int mask = 0;
 
-  switch (signal)
-    {
-    case LPT_STROBE: // negative port, negative MSCB usage
-       mask = flag ? mask | (1<<0) : mask & ~(1<<0);
-       break;
-    case LPT_RESET:  // negative port, negative MSCB usage
-       mask = flag ? mask | (1<<1) : mask & ~(1<<1);
-       break;
-    case LPT_BIT9:   // positive
-       mask = flag ? mask | (1<<2) : mask & ~(1<<2);
-       break;
-    case LPT_ACK:    // negative port, negative MSCB usage
-       mask = flag ? mask | (1<<3) : mask & ~(1<<3);
-       break;
-    case LPT_READMODE: // positive
-       mask = flag ? mask | (1<<5) : mask & ~(1<<5);
-       break;
-    }
+   switch (signal) {
+   case LPT_STROBE:            // negative port, negative MSCB usage
+      mask = flag ? mask | (1 << 0) : mask & ~(1 << 0);
+      break;
+   case LPT_RESET:             // negative port, negative MSCB usage
+      mask = flag ? mask | (1 << 1) : mask & ~(1 << 1);
+      break;
+   case LPT_BIT9:              // positive
+      mask = flag ? mask | (1 << 2) : mask & ~(1 << 2);
+      break;
+   case LPT_ACK:               // negative port, negative MSCB usage
+      mask = flag ? mask | (1 << 3) : mask & ~(1 << 3);
+      break;
+   case LPT_READMODE:          // positive
+      mask = flag ? mask | (1 << 5) : mask & ~(1 << 5);
+      break;
+   }
 
 #ifdef _MSC_VER
-  _outp((unsigned short)(mscb_fd[fd-1].fd+2), mask);
+   _outp((unsigned short) (mscb_fd[fd - 1].fd + 2), mask);
 #else
-  ioctl(mscb_fd[fd-1].fd, PPWCONTROL, &mask);
+   ioctl(mscb_fd[fd - 1].fd, PPWCONTROL, &mask);
 #endif
 }
 
@@ -452,21 +453,22 @@ static unsigned int mask=0;
 int pp_rstatus(int fd, int signal)
 {
 /* read status signal */
-unsigned int mask = 0;
+   unsigned int mask = 0;
 
 #ifdef _MSC_VER
-  mask = _inp((unsigned short) (mscb_fd[fd-1].fd+1));
+   mask = _inp((unsigned short) (mscb_fd[fd - 1].fd + 1));
 #else
-  ioctl(mscb_fd[fd-1].fd, PPRSTATUS, &mask);
+   ioctl(mscb_fd[fd - 1].fd, PPRSTATUS, &mask);
 #endif
 
-  switch (signal)
-    {
-    case LPT_BUSY:       return (mask & (1<<7)) == 0;
-    case LPT_DATAREADY:  return (mask & (1<<6)) == 0;
-    }
+   switch (signal) {
+   case LPT_BUSY:
+      return (mask & (1 << 7)) == 0;
+   case LPT_DATAREADY:
+      return (mask & (1 << 6)) == 0;
+   }
 
-  return 0;
+   return 0;
 }
 
 /*------------------------------------------------------------------*/
@@ -475,10 +477,10 @@ void pp_setdir(int fd, unsigned int r)
 {
 /* set port direction: r==0:write mode;  r==1:read mode */
 #ifdef _MSC_VER
-  pp_wcontrol(fd, LPT_READMODE, r);
+   pp_wcontrol(fd, LPT_READMODE, r);
 #else
-  if (ioctl(mscb_fd[fd-1].fd, PPDATADIR, &r))
-    perror("PPDATADIR");
+   if (ioctl(mscb_fd[fd - 1].fd, PPDATADIR, &r))
+      perror("PPDATADIR");
 #endif
 }
 
@@ -488,9 +490,9 @@ void pp_wdata(int fd, unsigned int data)
 /* output data byte */
 {
 #ifdef _MSC_VER
-  _outp((unsigned short)mscb_fd[fd-1].fd, data);
+   _outp((unsigned short) mscb_fd[fd - 1].fd, data);
 #else
-  ioctl(mscb_fd[fd-1].fd, PPWDATA, &data);
+   ioctl(mscb_fd[fd - 1].fd, PPWDATA, &data);
 #endif
 }
 
@@ -500,12 +502,12 @@ unsigned char pp_rdata(int fd)
 /* intput data byte */
 {
 #ifdef _MSC_VER
-  return _inp((unsigned short)mscb_fd[fd-1].fd);
+   return _inp((unsigned short) mscb_fd[fd - 1].fd);
 #else
-  unsigned char data;
-  if (ioctl(mscb_fd[fd-1].fd, PPRDATA, &data))
-    perror("PPRDATA");
-  return data;
+   unsigned char data;
+   if (ioctl(mscb_fd[fd - 1].fd, PPRDATA, &data))
+      perror("PPRDATA");
+   return data;
 #endif
 }
 
@@ -531,92 +533,85 @@ int mscb_out(int fd, unsigned char *buffer, int len, int bit9)
 
 \********************************************************************/
 {
-int i, timeout;
+   int i, timeout;
 
-  /* remove accidental strobe */
-  pp_wcontrol(fd, LPT_STROBE, 0);
+   /* remove accidental strobe */
+   pp_wcontrol(fd, LPT_STROBE, 0);
 
-  for (i=0 ; i<len ; i++)
-    {
-    /* wait for SM ready */
-    for (timeout=0 ; timeout<TIMEOUT_OUT ; timeout++)
-      {
-      if (!pp_rstatus(fd, LPT_BUSY))
-        break;
-      }
-    if (timeout == TIMEOUT_OUT)
-      {
-      printf("Automatic submaster reset.\n");
-
-      /*
-      mscb_release(fd);
-      mscb_reset(fd);
-      mscb_lock(fd);
-      */
-      Sleep(100);
-
+   for (i = 0; i < len; i++) {
       /* wait for SM ready */
-      for (timeout=0 ; timeout<TIMEOUT_OUT ; timeout++)
-        {
-        if (!pp_rstatus(fd, LPT_BUSY))
-          break;
-        }
-      
-      if (timeout == TIMEOUT_OUT)
-        return MSCB_TIMEOUT;
+      for (timeout = 0; timeout < TIMEOUT_OUT; timeout++) {
+         if (!pp_rstatus(fd, LPT_BUSY))
+            break;
+      }
+      if (timeout == TIMEOUT_OUT) {
+         printf("Automatic submaster reset.\n");
+
+         /*
+            mscb_release(fd);
+            mscb_reset(fd);
+            mscb_lock(fd);
+          */
+         Sleep(100);
+
+         /* wait for SM ready */
+         for (timeout = 0; timeout < TIMEOUT_OUT; timeout++) {
+            if (!pp_rstatus(fd, LPT_BUSY))
+               break;
+         }
+
+         if (timeout == TIMEOUT_OUT)
+            return MSCB_TIMEOUT;
       }
 
-    /* output data byte */
-    pp_wdata(fd, buffer[i]);
+      /* output data byte */
+      pp_wdata(fd, buffer[i]);
 
-    /* set bit 9 */
-    if (bit9)
-      pp_wcontrol(fd, LPT_BIT9, 1);
-    else
-      pp_wcontrol(fd, LPT_BIT9, 0);
+      /* set bit 9 */
+      if (bit9)
+         pp_wcontrol(fd, LPT_BIT9, 1);
+      else
+         pp_wcontrol(fd, LPT_BIT9, 0);
 
-    // ## printf(".");
+      // ## printf(".");
 
-    /* set strobe */
-    pp_wcontrol(fd, LPT_STROBE, 1);
+      /* set strobe */
+      pp_wcontrol(fd, LPT_STROBE, 1);
 
-    /* wait for busy to become active */
-    for (timeout=0 ; timeout<TIMEOUT_OUT ; timeout++)
-      {
-      if (pp_rstatus(fd, LPT_BUSY))
-        break;
+      /* wait for busy to become active */
+      for (timeout = 0; timeout < TIMEOUT_OUT; timeout++) {
+         if (pp_rstatus(fd, LPT_BUSY))
+            break;
       }
 
-    if (timeout == TIMEOUT_OUT)
-      {
-      printf("Automatic submaster reset.\n");
+      if (timeout == TIMEOUT_OUT) {
+         printf("Automatic submaster reset.\n");
 
-      /*
-      mscb_release(fd);
-      mscb_reset(fd);
-      mscb_lock(fd);
-      */
-      Sleep(100);
+         /*
+            mscb_release(fd);
+            mscb_reset(fd);
+            mscb_lock(fd);
+          */
+         Sleep(100);
 
-      /* try again */
-      return mscb_out(fd, buffer, len, bit9);
+         /* try again */
+         return mscb_out(fd, buffer, len, bit9);
       }
 
-    if (timeout == TIMEOUT_OUT)
-      {
+      if (timeout == TIMEOUT_OUT) {
+         pp_wdata(fd, 0xFF);
+         pp_wcontrol(fd, LPT_STROBE, 0);
+         return MSCB_TIMEOUT;
+      }
+
+      /* remove data, make port available for input */
       pp_wdata(fd, 0xFF);
+
+      /* remove strobe */
       pp_wcontrol(fd, LPT_STROBE, 0);
-      return MSCB_TIMEOUT;
-      }
+   }
 
-    /* remove data, make port available for input */
-    pp_wdata(fd, 0xFF);
-
-    /* remove strobe */
-    pp_wcontrol(fd, LPT_STROBE, 0);
-    }
-
-  return MSCB_SUCCESS;
+   return MSCB_SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
@@ -641,66 +636,62 @@ int mscb_in1(int fd, unsigned char *c, int timeout)
 
 \********************************************************************/
 {
-int i;
+   int i;
 
-  /* wait for DATAREADY, each port access takes roughly 1us */
-  for (i=0 ; i<timeout ; i++)
-    {
-    if (pp_rstatus(fd, LPT_DATAREADY))
-      break;
-    }
-  if (i == timeout)
-    return MSCB_TIMEOUT;
+   /* wait for DATAREADY, each port access takes roughly 1us */
+   for (i = 0; i < timeout; i++) {
+      if (pp_rstatus(fd, LPT_DATAREADY))
+         break;
+   }
+   if (i == timeout)
+      return MSCB_TIMEOUT;
 
-  /* switch to input mode */
-  pp_setdir(fd, 1);
+   /* switch to input mode */
+   pp_setdir(fd, 1);
 
-  /* signal switch to input */
-  pp_wcontrol(fd, LPT_ACK, 1);
+   /* signal switch to input */
+   pp_wcontrol(fd, LPT_ACK, 1);
 
-  /* wait for data ready */
-  for (i=0 ; i<1000 ; i++)
-    {
-    if (!pp_rstatus(fd, LPT_DATAREADY))
-      break;
-    }
+   /* wait for data ready */
+   for (i = 0; i < 1000; i++) {
+      if (!pp_rstatus(fd, LPT_DATAREADY))
+         break;
+   }
 
-  /* read data */
-  *c = pp_rdata(fd);
+   /* read data */
+   *c = pp_rdata(fd);
 
-  /* signal data read */
-  pp_wcontrol(fd, LPT_ACK, 0);
+   /* signal data read */
+   pp_wcontrol(fd, LPT_ACK, 0);
 
-  /* wait for mode switch */
-  for (i=0 ; i<1000 ; i++)
-    {
-    if (pp_rstatus(fd, LPT_DATAREADY))
-      break;
-    }
+   /* wait for mode switch */
+   for (i = 0; i < 1000; i++) {
+      if (pp_rstatus(fd, LPT_DATAREADY))
+         break;
+   }
 
-  /* switch to output mode */
-  pp_setdir(fd, 0);
+   /* switch to output mode */
+   pp_setdir(fd, 0);
 
-  /* indicate mode switch */
-  pp_wcontrol(fd, LPT_ACK, 1);
+   /* indicate mode switch */
+   pp_wcontrol(fd, LPT_ACK, 1);
 
-  /* wait for end of cycle */
-  for (i=0 ; i<1000 ; i++)
-    {
-    if (!pp_rstatus(fd, LPT_DATAREADY))
-      break;
-    }
+   /* wait for end of cycle */
+   for (i = 0; i < 1000; i++) {
+      if (!pp_rstatus(fd, LPT_DATAREADY))
+         break;
+   }
 
-  /* remove acknowlege */
-  pp_wcontrol(fd, LPT_ACK, 0);
+   /* remove acknowlege */
+   pp_wcontrol(fd, LPT_ACK, 0);
 
-  if (i == 1000)
-    return MSCB_TIMEOUT;
+   if (i == 1000)
+      return MSCB_TIMEOUT;
 
-  for (i=0 ; i<50 ; i++)
-    pp_rdata(fd);
+   for (i = 0; i < 50; i++)
+      pp_rdata(fd);
 
-  return MSCB_SUCCESS;
+   return MSCB_SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
@@ -725,66 +716,62 @@ int mscb_in(int fd, char *buffer, int size, int timeout)
 
 \********************************************************************/
 {
-int i, n, len, status;
+   int i, n, len, status;
 
-  n = 0;
-  len = -1;
+   n = 0;
+   len = -1;
 
-  /* wait for MCMD_ACK command */
-  do
-    {
-    status = mscb_in1(fd, buffer, timeout);
+   /* wait for MCMD_ACK command */
+   do {
+      status = mscb_in1(fd, buffer, timeout);
 
-    /* return in case of timeout */
-    if (status != MSCB_SUCCESS)
-      return -1;
+      /* return in case of timeout */
+      if (status != MSCB_SUCCESS)
+         return -1;
 
-    /* check for Acknowledge */
-    if ((buffer[0] & 0xF8) == MCMD_ACK)
-      {
-      len = buffer[n++] & 0x7;
+      /* check for Acknowledge */
+      if ((buffer[0] & 0xF8) == MCMD_ACK) {
+         len = buffer[n++] & 0x7;
 
-      /* check for variable length data block */
-      if (len == 7)
-        {
-        status = mscb_in1(fd, buffer+n, timeout);
+         /* check for variable length data block */
+         if (len == 7) {
+            status = mscb_in1(fd, buffer + n, timeout);
 
-        /* return in case of timeout */
-        if (status != MSCB_SUCCESS)
-          return -1;
+            /* return in case of timeout */
+            if (status != MSCB_SUCCESS)
+               return -1;
 
-        len = buffer[n++];
-        }
+            len = buffer[n++];
+         }
       }
 
-    } while (len == -1);
+   } while (len == -1);
 
-  /* receive remaining bytes and CRC code */
-  for (i=0 ; i<len+1 ; i++)
-    {
-    status = mscb_in1(fd, buffer+n+i, timeout);
+   /* receive remaining bytes and CRC code */
+   for (i = 0; i < len + 1; i++) {
+      status = mscb_in1(fd, buffer + n + i, timeout);
 
-    /* return in case of timeout */
-    if (status != MSCB_SUCCESS)
-      return -1;
-    }
+      /* return in case of timeout */
+      if (status != MSCB_SUCCESS)
+         return -1;
+   }
 
-  return n+i;
+   return n + i;
 }
 
 /*------------------------------------------------------------------*/
 
 void mscb_get_version(char *lib_version, char *prot_version)
 {
-  strcpy(lib_version, MSCB_LIBRARY_VERSION);
-  strcpy(prot_version, MSCB_PROTOCOL_VERSION);
-} 
-                                        
+   strcpy(lib_version, MSCB_LIBRARY_VERSION);
+   strcpy(prot_version, MSCB_PROTOCOL_VERSION);
+}
+
 /*------------------------------------------------------------------*/
 
 int mrpc_connected(int fd)
 {
-  return mscb_fd[fd-1].type == MSCB_TYPE_RPC;
+   return mscb_fd[fd - 1].type == MSCB_TYPE_RPC;
 }
 
 /*------------------------------------------------------------------*/
@@ -809,186 +796,178 @@ int mscb_init(char *device, int debug)
 
 \********************************************************************/
 {
-int           index, i;
-int           status;
-unsigned char c;
-char          host[256], port[256];
+   int index, i;
+   int status;
+   unsigned char c;
+   char host[256], port[256];
 
-  /* search for new file descriptor */
-  for (index=0 ; index<MSCB_MAX_FD ; index++)
-    if (mscb_fd[index].fd == 0)
-      break;
+   /* search for new file descriptor */
+   for (index = 0; index < MSCB_MAX_FD; index++)
+      if (mscb_fd[index].fd == 0)
+         break;
 
-  if (index == MSCB_MAX_FD)
-    return -1;
-
-  /* set global debug flag */
-  _debug_flag = debug;
-
-  /* clear cache */
-  for (i=0 ; i<n_cache ; i++)
-    free(cache[i].data);
-  free(cache);
-  n_cache = 0;
-
-  if (strchr(device, ':'))
-    {
-    strncpy(mscb_fd[index].device, device, sizeof(mscb_fd[index].device));
-    mscb_fd[index].type = MSCB_TYPE_RPC;
-
-    strcpy(port, strchr(device, ':')+1);
-    if (port[0] == 0)
-      strcpy(port, DEF_DEVICE);
-    strcpy(host, device);
-    *strchr(host, ':') = 0;
-
-    mscb_fd[index].fd = mrpc_connect(host);
-    
-    if (mscb_fd[index].fd < 0)
-      {
-      mscb_fd[index].fd = 0;
+   if (index == MSCB_MAX_FD)
       return -1;
+
+   /* set global debug flag */
+   _debug_flag = debug;
+
+   /* clear cache */
+   for (i = 0; i < n_cache; i++)
+      free(cache[i].data);
+   free(cache);
+   n_cache = 0;
+
+   if (strchr(device, ':')) {
+      strncpy(mscb_fd[index].device, device,
+              sizeof(mscb_fd[index].device));
+      mscb_fd[index].type = MSCB_TYPE_RPC;
+
+      strcpy(port, strchr(device, ':') + 1);
+      if (port[0] == 0)
+         strcpy(port, DEF_DEVICE);
+      strcpy(host, device);
+      *strchr(host, ':') = 0;
+
+      mscb_fd[index].fd = mrpc_connect(host);
+
+      if (mscb_fd[index].fd < 0) {
+         mscb_fd[index].fd = 0;
+         return -1;
       }
 
-    mscb_fd[index].remote_fd = mrpc_call(mscb_fd[index].fd, RPC_MSCB_INIT, port, debug);
-    if (mscb_fd[index].remote_fd < 0)
-      {
-      mrpc_disconnect(mscb_fd[index].fd);
-      mscb_fd[index].fd = 0;
-      return -1;
+      mscb_fd[index].remote_fd =
+          mrpc_call(mscb_fd[index].fd, RPC_MSCB_INIT, port, debug);
+      if (mscb_fd[index].remote_fd < 0) {
+         mrpc_disconnect(mscb_fd[index].fd);
+         mscb_fd[index].fd = 0;
+         return -1;
       }
 
-    return index+1;
-    }
-  else
-    {
-    strcpy(port, device);
-    mscb_fd[index].type = MSCB_TYPE_LPT;
+      return index + 1;
+   } else {
+      strcpy(port, device);
+      mscb_fd[index].type = MSCB_TYPE_LPT;
 
-    if (_server_sock)
-      mscb_fd[index].remote_fd = _server_sock;
-    }
+      if (_server_sock)
+         mscb_fd[index].remote_fd = _server_sock;
+   }
 
-  strcpy(mscb_fd[index].device, port);
+   strcpy(mscb_fd[index].device, port);
 
 #ifdef _MSC_VER
 
-  if (port[1] == 'x')
-    sscanf(port+2, "%x", &mscb_fd[index].fd);
-  else
-    {
-    if (strlen(port) == 4)
-      i = atoi(port+3);
-    else
-      return -1;
+   if (port[1] == 'x')
+      sscanf(port + 2, "%x", &mscb_fd[index].fd);
+   else {
+      if (strlen(port) == 4)
+         i = atoi(port + 3);
+      else
+         return -1;
 
-    /* derive base address from device name */
-    if (i == 1)
-      mscb_fd[index].fd = 0x378;
-    else if (i == 2)
-      mscb_fd[index].fd = 0x278;
-    else
-      return -1;
-    }
+      /* derive base address from device name */
+      if (i == 1)
+         mscb_fd[index].fd = 0x378;
+      else if (i == 2)
+         mscb_fd[index].fd = 0x278;
+      else
+         return -1;
+   }
 
-  /* under NT, user directio driver */
-  {
+   /* under NT, user directio driver */
+   {
 
-  OSVERSIONINFO vi;
-  DWORD buffer[4];
-  DWORD size;
-  HANDLE hdio;
+      OSVERSIONINFO vi;
+      DWORD buffer[4];
+      DWORD size;
+      HANDLE hdio;
 
-  buffer[0] = 6; /* give IO */
-  buffer[1] = mscb_fd[index].fd;
-  buffer[2] = buffer[1]+4;
-  buffer[3] = 0;
+      buffer[0] = 6;            /* give IO */
+      buffer[1] = mscb_fd[index].fd;
+      buffer[2] = buffer[1] + 4;
+      buffer[3] = 0;
 
-  vi.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
-  GetVersionEx(&vi);
+      vi.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
+      GetVersionEx(&vi);
 
-  /* use DirectIO driver under NT to gain port access */
-  if (vi.dwPlatformId == VER_PLATFORM_WIN32_NT)
-    {
-    hdio = CreateFile("\\\\.\\directio", GENERIC_READ, FILE_SHARE_READ, NULL,
-           OPEN_EXISTING, 0, NULL);
-    if (hdio == INVALID_HANDLE_VALUE)
-      {
-      printf("mscb.c: Cannot access parallel port (No DirectIO driver installed)\n");
-      return -1;
+      /* use DirectIO driver under NT to gain port access */
+      if (vi.dwPlatformId == VER_PLATFORM_WIN32_NT) {
+         hdio =
+             CreateFile("\\\\.\\directio", GENERIC_READ, FILE_SHARE_READ,
+                        NULL, OPEN_EXISTING, 0, NULL);
+         if (hdio == INVALID_HANDLE_VALUE) {
+            printf
+                ("mscb.c: Cannot access parallel port (No DirectIO driver installed)\n");
+            return -1;
+         }
+
+         if (!DeviceIoControl
+             (hdio, (DWORD) 0x9c406000, &buffer, sizeof(buffer), NULL, 0,
+              &size, NULL))
+            return -1;
       }
-
-    if (!DeviceIoControl(hdio, (DWORD) 0x9c406000, &buffer, sizeof(buffer),
-        NULL, 0, &size, NULL))
-      return -1;
-    }
-  }
+   }
 
 #elif defined(__linux__)
 
-  mscb_fd[index].fd = open(port, O_RDWR);
-  if (mscb_fd[index].fd < 0)
-    {
-    perror("open");
-    printf("Please make sure that device \"%s\" is world readable/writable\n", port);
-    return -1;
-    }
+   mscb_fd[index].fd = open(port, O_RDWR);
+   if (mscb_fd[index].fd < 0) {
+      perror("open");
+      printf
+          ("Please make sure that device \"%s\" is world readable/writable\n",
+           port);
+      return -1;
+   }
 
-  if (ioctl(mscb_fd[index].fd, PPCLAIM))
-    {
-    perror("PPCLAIM");
-    printf("Please load driver via \"modprobe parport_pc\" as root\n");
-    return -1;
-    }
+   if (ioctl(mscb_fd[index].fd, PPCLAIM)) {
+      perror("PPCLAIM");
+      printf("Please load driver via \"modprobe parport_pc\" as root\n");
+      return -1;
+   }
 
-  if (ioctl(mscb_fd[index].fd, PPRELEASE))
-    {
-    perror("PPRELEASE");
-    return -1;
-    }
+   if (ioctl(mscb_fd[index].fd, PPRELEASE)) {
+      perror("PPRELEASE");
+      return -1;
+   }
 
-  i = IEEE1284_MODE_BYTE;
-  if (ioctl(mscb_fd[index].fd, PPSETMODE, &i))
-    {
-    perror("PPSETMODE");
-    return -1;
-    }
-
+   i = IEEE1284_MODE_BYTE;
+   if (ioctl(mscb_fd[index].fd, PPSETMODE, &i)) {
+      perror("PPSETMODE");
+      return -1;
+   }
 #endif
 
-  status = mscb_lock(index+1);
-  if (status != MSCB_SUCCESS)
-    return -3;
+   status = mscb_lock(index + 1);
+   if (status != MSCB_SUCCESS)
+      return -3;
 
-  /* set initial state of handshake lines */
-  pp_wcontrol(index+1, LPT_RESET, 0);
-  pp_wcontrol(index+1, LPT_STROBE, 0);
+   /* set initial state of handshake lines */
+   pp_wcontrol(index + 1, LPT_RESET, 0);
+   pp_wcontrol(index + 1, LPT_STROBE, 0);
 
-  /* switch to output mode */
-  pp_setdir(index+1, 0);
+   /* switch to output mode */
+   pp_setdir(index + 1, 0);
 
-  /* wait for submaster irritated by a stuck LPT_STROBE */
-  Sleep(100);
-  
-  /* check if SM alive */
-  if (pp_rstatus(index+1, LPT_BUSY))
-    {
-    //printf("mscb.c: No SM present on parallel port\n");
-    mscb_release(mscb_fd[index].fd);
-    return -2;
-    }
+   /* wait for submaster irritated by a stuck LPT_STROBE */
+   Sleep(100);
 
-  /* empty RBuffer of SM */
-  do
-    {
-    status = mscb_in1(index+1, &c, 1000);
-    if (status == MSCB_SUCCESS)
-      printf("%02X ", c);
-    } while (status == MSCB_SUCCESS);
+   /* check if SM alive */
+   if (pp_rstatus(index + 1, LPT_BUSY)) {
+      //printf("mscb.c: No SM present on parallel port\n");
+      mscb_release(mscb_fd[index].fd);
+      return -2;
+   }
 
-  mscb_release(index+1);
+   /* empty RBuffer of SM */
+   do {
+      status = mscb_in1(index + 1, &c, 1000);
+      if (status == MSCB_SUCCESS)
+         printf("%02X ", c);
+   } while (status == MSCB_SUCCESS);
 
-  return index+1;
+   mscb_release(index + 1);
+
+   return index + 1;
 }
 
 /*------------------------------------------------------------------*/
@@ -1008,18 +987,18 @@ int mscb_exit(int fd)
 
 \********************************************************************/
 {
-  if (fd > MSCB_MAX_FD || fd < 1)
-    return MSCB_INVAL_PARAM;
+   if (fd > MSCB_MAX_FD || fd < 1)
+      return MSCB_INVAL_PARAM;
 
-  if (mrpc_connected(fd))
-    {
-    mrpc_call(mscb_fd[fd-1].fd, RPC_MSCB_EXIT, mscb_fd[fd-1].remote_fd);
-    mrpc_disconnect(mscb_fd[fd-1].fd);
-    }
+   if (mrpc_connected(fd)) {
+      mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_EXIT,
+                mscb_fd[fd - 1].remote_fd);
+      mrpc_disconnect(mscb_fd[fd - 1].fd);
+   }
 
-  memset(&mscb_fd[fd-1], 0, sizeof(MSCB_FD));
+   memset(&mscb_fd[fd - 1], 0, sizeof(MSCB_FD));
 
-  return MSCB_SUCCESS;
+   return MSCB_SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
@@ -1027,14 +1006,14 @@ int mscb_exit(int fd)
 void mscb_cleanup(int sock)
 /* Called by mrpc_server_loop to remove stale fd's on broken connection */
 {
-int i;
+   int i;
 
-  for (i=0 ; i<MSCB_MAX_FD ; i++)
-    if (mscb_fd[i].fd && mscb_fd[i].remote_fd == sock)
-      memset(&mscb_fd[i], 0, sizeof(MSCB_FD));
+   for (i = 0; i < MSCB_MAX_FD; i++)
+      if (mscb_fd[i].fd && mscb_fd[i].remote_fd == sock)
+         memset(&mscb_fd[i], 0, sizeof(MSCB_FD));
 }
 
-  
+
 /*------------------------------------------------------------------*/
 
 void mscb_check(char *device)
@@ -1054,64 +1033,62 @@ void mscb_check(char *device)
 
 \********************************************************************/
 {
-int i, fd, d;
+   int i, fd, d;
 
-  mscb_init(device, 0);
-  fd = 1;
+   mscb_init(device, 0);
+   fd = 1;
 
-  mscb_lock(fd);
+   mscb_lock(fd);
 
-  printf("Toggling %s output pins, hit ENTER to stop.\n", device);
-  printf("GND = 19-25, toggling 2-9, 1, 14, 16 and 17\n\n");
-  do
-    {
-    printf("\r11111111 1111");
-    fflush(stdout);
-    pp_wdata(fd, 0xFF);
-    pp_wcontrol(fd, LPT_STROBE, 1);
-    pp_wcontrol(fd, LPT_ACK, 1);
-    pp_wcontrol(fd, LPT_RESET, 1);
-    pp_wcontrol(fd, LPT_BIT9, 1);
+   printf("Toggling %s output pins, hit ENTER to stop.\n", device);
+   printf("GND = 19-25, toggling 2-9, 1, 14, 16 and 17\n\n");
+   do {
+      printf("\r11111111 1111");
+      fflush(stdout);
+      pp_wdata(fd, 0xFF);
+      pp_wcontrol(fd, LPT_STROBE, 1);
+      pp_wcontrol(fd, LPT_ACK, 1);
+      pp_wcontrol(fd, LPT_RESET, 1);
+      pp_wcontrol(fd, LPT_BIT9, 1);
 
-    Sleep(1000);
+      Sleep(1000);
 
-    printf("\r00000000 0000");
-    fflush(stdout);
-    pp_wdata(fd, 0);
-    pp_wcontrol(fd, LPT_STROBE, 0);
-    pp_wcontrol(fd, LPT_ACK, 0);
-    pp_wcontrol(fd, LPT_RESET, 0);
-    pp_wcontrol(fd, LPT_BIT9, 0);
+      printf("\r00000000 0000");
+      fflush(stdout);
+      pp_wdata(fd, 0);
+      pp_wcontrol(fd, LPT_STROBE, 0);
+      pp_wcontrol(fd, LPT_ACK, 0);
+      pp_wcontrol(fd, LPT_RESET, 0);
+      pp_wcontrol(fd, LPT_BIT9, 0);
 
-    Sleep(1000);
+      Sleep(1000);
 
-    } while (!kbhit());
+   } while (!kbhit());
 
-  while (kbhit())
-    getch();
+   while (kbhit())
+      getch();
 
-  printf("\n\n\nInput display, hit ENTER to stop.\n");
-  printf("Pins 2-9, 10 and 11\n\n");
+   printf("\n\n\nInput display, hit ENTER to stop.\n");
+   printf("Pins 2-9, 10 and 11\n\n");
 
-  do
-    {
-    d = pp_rdata(fd);
-    for (i=0 ; i<8 ; i++)
-      {
-      printf("%d", (d & 1) > 0);
-      d >>= 1;
+   do {
+      d = pp_rdata(fd);
+      for (i = 0; i < 8; i++) {
+         printf("%d", (d & 1) > 0);
+         d >>= 1;
       }
 
-    printf(" %d%d\r", !pp_rstatus(fd, LPT_DATAREADY), pp_rstatus(fd, LPT_BUSY));
-    fflush(stdout);
+      printf(" %d%d\r", !pp_rstatus(fd, LPT_DATAREADY),
+             pp_rstatus(fd, LPT_BUSY));
+      fflush(stdout);
 
-    Sleep(100);
-    } while (!kbhit());
+      Sleep(100);
+   } while (!kbhit());
 
-  while (kbhit())
-    getch();
+   while (kbhit())
+      getch();
 
-  mscb_release(fd);
+   mscb_release(fd);
 }
 
 /*------------------------------------------------------------------*/
@@ -1147,91 +1124,77 @@ int mscb_addr(int fd, int cmd, int adr, int retry, int lock)
 
 \********************************************************************/
 {
-unsigned char buf[10];
-int i, n, status;
+   unsigned char buf[10];
+   int i, n, status;
 
-  if (fd > MSCB_MAX_FD || fd < 1 || mscb_fd[fd-1].fd == 0)
-    return MSCB_INVAL_PARAM;
+   if (fd > MSCB_MAX_FD || fd < 1 || mscb_fd[fd - 1].fd == 0)
+      return MSCB_INVAL_PARAM;
 
-  if (mrpc_connected(fd))
-    return mrpc_call(mscb_fd[fd-1].fd, RPC_MSCB_ADDR, mscb_fd[fd-1].remote_fd, cmd, adr, retry, lock);
+   if (mrpc_connected(fd))
+      return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_ADDR,
+                       mscb_fd[fd - 1].remote_fd, cmd, adr, retry, lock);
 
-  if (lock)
-    {
-    if (mscb_lock(fd) != MSCB_SUCCESS)
-      return MSCB_MUTEX;
-    }
+   if (lock) {
+      if (mscb_lock(fd) != MSCB_SUCCESS)
+         return MSCB_MUTEX;
+   }
 
-  for (n = 0 ; n < retry ; n++)
-    {
-    buf[0] = cmd;
+   for (n = 0; n < retry; n++) {
+      buf[0] = cmd;
 
-    if (cmd == MCMD_ADDR_NODE8 ||
-        cmd == MCMD_ADDR_GRP8 ||
-        cmd == MCMD_PING8)
-      {
-      buf[1] = (unsigned char) adr;
-      buf[2] = crc8(buf, 2);
-      status = mscb_out(fd, buf, 3, 1);
-      }
-    else if (cmd == MCMD_ADDR_NODE16 ||
-             cmd == MCMD_ADDR_GRP16 ||
-             cmd == MCMD_PING16)
-      {
-      buf[1] = (unsigned char) (adr >> 8);
-      buf[2] = (unsigned char) (adr & 0xFF);
-      buf[3] = crc8(buf, 3);
-      status = mscb_out(fd, buf, 4, 1);
-      }
-    else
-      {
-      buf[1] = crc8(buf, 1);
-      status = mscb_out(fd, buf, 2, 1);
+      if (cmd == MCMD_ADDR_NODE8 ||
+          cmd == MCMD_ADDR_GRP8 || cmd == MCMD_PING8) {
+         buf[1] = (unsigned char) adr;
+         buf[2] = crc8(buf, 2);
+         status = mscb_out(fd, buf, 3, 1);
+      } else if (cmd == MCMD_ADDR_NODE16 ||
+                 cmd == MCMD_ADDR_GRP16 || cmd == MCMD_PING16) {
+         buf[1] = (unsigned char) (adr >> 8);
+         buf[2] = (unsigned char) (adr & 0xFF);
+         buf[3] = crc8(buf, 3);
+         status = mscb_out(fd, buf, 4, 1);
+      } else {
+         buf[1] = crc8(buf, 1);
+         status = mscb_out(fd, buf, 2, 1);
       }
 
-    if (status != MSCB_SUCCESS)
-      {
-      if (lock)
-        mscb_release(fd);
-      return MSCB_SUBM_ERROR;
+      if (status != MSCB_SUCCESS) {
+         if (lock)
+            mscb_release(fd);
+         return MSCB_SUBM_ERROR;
       }
 
-    if (cmd == MCMD_PING8 || cmd == MCMD_PING16)
-      {
-      /* read back ping reply, 1ms timeout */
-      i = mscb_in1(fd, buf, 1000);
+      if (cmd == MCMD_PING8 || cmd == MCMD_PING16) {
+         /* read back ping reply, 1ms timeout */
+         i = mscb_in1(fd, buf, 1000);
 
-      if (i == MSCB_SUCCESS && buf[0] == MCMD_ACK)
-        {
-        if (lock)
-          mscb_release(fd);
-        return MSCB_SUCCESS;
-        }
+         if (i == MSCB_SUCCESS && buf[0] == MCMD_ACK) {
+            if (lock)
+               mscb_release(fd);
+            return MSCB_SUCCESS;
+         }
 
-      if (retry > 1)
-        {
-        /* send 0's to overflow partially filled node receive buffer */
-        memset(buf, 0, sizeof(buf));
-        mscb_out(fd, buf, 10, 1);
+         if (retry > 1) {
+            /* send 0's to overflow partially filled node receive buffer */
+            memset(buf, 0, sizeof(buf));
+            mscb_out(fd, buf, 10, 1);
 
-        /* wait some time */
-        Sleep(10);
-        }
+            /* wait some time */
+            Sleep(10);
+         }
 
-      /* try again.... */
+         /* try again.... */
+      } else {
+         if (lock)
+            mscb_release(fd);
+         return MSCB_SUCCESS;
       }
-    else
-      {
-      if (lock)
-        mscb_release(fd);
-      return MSCB_SUCCESS;
-      }
-    }
+   }
 
-  if (lock)
-    mscb_release(fd);
+   if (lock)
+      mscb_release(fd);
 
-  return MSCB_TIMEOUT;
+   return MSCB_TIMEOUT;
 }
 
 /*------------------------------------------------------------------*/
@@ -1254,32 +1217,32 @@ int mscb_reboot(int fd, int adr)
 
 \********************************************************************/
 {
-unsigned char buf[10];
-int status;
+   unsigned char buf[10];
+   int status;
 
-  if (fd > MSCB_MAX_FD || fd < 1 || mscb_fd[fd-1].fd == 0)
-    return MSCB_INVAL_PARAM;
+   if (fd > MSCB_MAX_FD || fd < 1 || mscb_fd[fd - 1].fd == 0)
+      return MSCB_INVAL_PARAM;
 
-  if (mrpc_connected(fd))
-    return mrpc_call(mscb_fd[fd-1].fd, RPC_MSCB_REBOOT, mscb_fd[fd-1].remote_fd, adr);
+   if (mrpc_connected(fd))
+      return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_REBOOT,
+                       mscb_fd[fd - 1].remote_fd, adr);
 
-  if (mscb_lock(fd) != MSCB_SUCCESS)
-    return MSCB_MUTEX;
+   if (mscb_lock(fd) != MSCB_SUCCESS)
+      return MSCB_MUTEX;
 
-  status = mscb_addr(fd, MCMD_PING16, adr, 10, FALSE);
-  if (status != MSCB_SUCCESS)
-    {
-    mscb_release(fd);
-    return status;
-    }
+   status = mscb_addr(fd, MCMD_PING16, adr, 10, FALSE);
+   if (status != MSCB_SUCCESS) {
+      mscb_release(fd);
+      return status;
+   }
 
-  buf[0] = MCMD_INIT;
-  buf[1] = crc8(buf, 1);
-  mscb_out(fd, buf, 2, 0);
+   buf[0] = MCMD_INIT;
+   buf[1] = crc8(buf, 1);
+   mscb_out(fd, buf, 2, 0);
 
-  mscb_release(fd);
+   mscb_release(fd);
 
-  return MSCB_SUCCESS;
+   return MSCB_SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
@@ -1300,23 +1263,24 @@ int mscb_reset(int fd)
 
 \********************************************************************/
 {
-  if (fd > MSCB_MAX_FD || fd < 1 || mscb_fd[fd-1].fd == 0)
-    return MSCB_INVAL_PARAM;
+   if (fd > MSCB_MAX_FD || fd < 1 || mscb_fd[fd - 1].fd == 0)
+      return MSCB_INVAL_PARAM;
 
-  if (mrpc_connected(fd))
-    return mrpc_call(mscb_fd[fd-1].fd, RPC_MSCB_RESET, mscb_fd[fd-1].remote_fd);
+   if (mrpc_connected(fd))
+      return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_RESET,
+                       mscb_fd[fd - 1].remote_fd);
 
-  if (mscb_lock(fd) != MSCB_SUCCESS)
-    return MSCB_MUTEX;
+   if (mscb_lock(fd) != MSCB_SUCCESS)
+      return MSCB_MUTEX;
 
-  /* toggle reset */
-  pp_wcontrol(fd, LPT_RESET, 1);
-  Sleep(100); // for elko
-  pp_wcontrol(fd, LPT_RESET, 0);
+   /* toggle reset */
+   pp_wcontrol(fd, LPT_RESET, 1);
+   Sleep(100);                  // for elko
+   pp_wcontrol(fd, LPT_RESET, 0);
 
-  mscb_release(fd);
+   mscb_release(fd);
 
-  return MSCB_SUCCESS;
+   return MSCB_SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
@@ -1342,26 +1306,27 @@ int mscb_ping(int fd, int adr)
 
 \********************************************************************/
 {
-int status;
+   int status;
 
-  if (fd > MSCB_MAX_FD || fd < 1 || mscb_fd[fd-1].fd == 0)
-    return MSCB_INVAL_PARAM;
+   if (fd > MSCB_MAX_FD || fd < 1 || mscb_fd[fd - 1].fd == 0)
+      return MSCB_INVAL_PARAM;
 
-  if (mrpc_connected(fd))
-    return mrpc_call(mscb_fd[fd-1].fd, RPC_MSCB_PING, mscb_fd[fd-1].remote_fd, adr);
+   if (mrpc_connected(fd))
+      return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_PING,
+                       mscb_fd[fd - 1].remote_fd, adr);
 
-  if (mscb_lock(fd) != MSCB_SUCCESS)
-    return MSCB_MUTEX;
+   if (mscb_lock(fd) != MSCB_SUCCESS)
+      return MSCB_MUTEX;
 
-  status = mscb_addr(fd, MCMD_PING16, adr, 1, FALSE);
+   status = mscb_addr(fd, MCMD_PING16, adr, 1, FALSE);
 
-  mscb_release(fd);
-  return status;
+   mscb_release(fd);
+   return status;
 }
 
 /*------------------------------------------------------------------*/
 
-int mscb_info(int fd, int adr, MSCB_INFO *info)
+int mscb_info(int fd, int adr, MSCB_INFO * info)
 /********************************************************************\
 
   Routine: mscb_info
@@ -1383,51 +1348,51 @@ int mscb_info(int fd, int adr, MSCB_INFO *info)
 
 \********************************************************************/
 {
-int i, status;
-unsigned char buf[256];
+   int i, status;
+   unsigned char buf[256];
 
-  if (fd > MSCB_MAX_FD || fd < 1 || mscb_fd[fd-1].fd == 0)
-    return MSCB_INVAL_PARAM;
+   if (fd > MSCB_MAX_FD || fd < 1 || mscb_fd[fd - 1].fd == 0)
+      return MSCB_INVAL_PARAM;
 
-  if (mrpc_connected(fd))
-    return mrpc_call(mscb_fd[fd-1].fd, RPC_MSCB_INFO, mscb_fd[fd-1].remote_fd, adr, info);
+   if (mrpc_connected(fd))
+      return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_INFO,
+                       mscb_fd[fd - 1].remote_fd, adr, info);
 
-  if (mscb_lock(fd) != MSCB_SUCCESS)
-    return MSCB_MUTEX;
+   if (mscb_lock(fd) != MSCB_SUCCESS)
+      return MSCB_MUTEX;
 
-  status = mscb_addr(fd, MCMD_PING16, adr, 10, FALSE);
-  if (status != MSCB_SUCCESS)
-    {
-    mscb_release(fd);
-    return status;
-    }
+   status = mscb_addr(fd, MCMD_PING16, adr, 10, FALSE);
+   if (status != MSCB_SUCCESS) {
+      mscb_release(fd);
+      return status;
+   }
 
-  buf[0] = MCMD_GET_INFO;
-  buf[1] = crc8(buf, 1);
-  mscb_out(fd, buf, 2, 0);
+   buf[0] = MCMD_GET_INFO;
+   buf[1] = crc8(buf, 1);
+   mscb_out(fd, buf, 2, 0);
 
-  i = mscb_in(fd, buf, sizeof(buf), 5000);
-  mscb_release(fd);
+   i = mscb_in(fd, buf, sizeof(buf), 5000);
+   mscb_release(fd);
 
-  if (i<(int)sizeof(MSCB_INFO)+2)
-    return MSCB_TIMEOUT;
+   if (i < (int) sizeof(MSCB_INFO) + 2)
+      return MSCB_TIMEOUT;
 
-  memcpy(info, buf+2, sizeof(MSCB_INFO));
+   memcpy(info, buf + 2, sizeof(MSCB_INFO));
 
-  /* do CRC check */
-  if (crc8(buf, sizeof(MSCB_INFO)+2) != buf[sizeof(MSCB_INFO)+2])
-    return MSCB_CRC_ERROR;
+   /* do CRC check */
+   if (crc8(buf, sizeof(MSCB_INFO) + 2) != buf[sizeof(MSCB_INFO) + 2])
+      return MSCB_CRC_ERROR;
 
-  WORD_SWAP(&info->node_address);
-  WORD_SWAP(&info->group_address);
-  WORD_SWAP(&info->watchdog_resets);
+   WORD_SWAP(&info->node_address);
+   WORD_SWAP(&info->group_address);
+   WORD_SWAP(&info->watchdog_resets);
 
-  return MSCB_SUCCESS;
+   return MSCB_SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
 
-int mscb_info_variable(int fd, int adr, int index, MSCB_INFO_VAR *info)
+int mscb_info_variable(int fd, int adr, int index, MSCB_INFO_VAR * info)
 /********************************************************************\
 
   Routine: mscb_info_variable
@@ -1451,43 +1416,44 @@ int mscb_info_variable(int fd, int adr, int index, MSCB_INFO_VAR *info)
 
 \********************************************************************/
 {
-int i, status;
-unsigned char buf[80];
+   int i, status;
+   unsigned char buf[80];
 
-  if (fd > MSCB_MAX_FD || fd < 1 || mscb_fd[fd-1].fd == 0)
-    return MSCB_INVAL_PARAM;
+   if (fd > MSCB_MAX_FD || fd < 1 || mscb_fd[fd - 1].fd == 0)
+      return MSCB_INVAL_PARAM;
 
-  if (mrpc_connected(fd))
-    return mrpc_call(mscb_fd[fd-1].fd, RPC_MSCB_INFO_VARIABLE, mscb_fd[fd-1].remote_fd, adr, index, info);
+   if (mrpc_connected(fd))
+      return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_INFO_VARIABLE,
+                       mscb_fd[fd - 1].remote_fd, adr, index, info);
 
-  if (mscb_lock(fd) != MSCB_SUCCESS)
-    return MSCB_MUTEX;
+   if (mscb_lock(fd) != MSCB_SUCCESS)
+      return MSCB_MUTEX;
 
-  status = mscb_addr(fd, MCMD_PING16, adr, 10, FALSE);
-  if (status != MSCB_SUCCESS)
-    {
-    mscb_release(fd);
-    return status;
-    }
+   status = mscb_addr(fd, MCMD_PING16, adr, 10, FALSE);
+   if (status != MSCB_SUCCESS) {
+      mscb_release(fd);
+      return status;
+   }
 
-  buf[0] = MCMD_GET_INFO+1;
-  buf[1] = index;
-  buf[2] = crc8(buf, 2);
-  mscb_out(fd, buf, 3, 0);
+   buf[0] = MCMD_GET_INFO + 1;
+   buf[1] = index;
+   buf[2] = crc8(buf, 2);
+   mscb_out(fd, buf, 3, 0);
 
-  i = mscb_in(fd, buf, sizeof(buf), 5000);
-  mscb_release(fd);
+   i = mscb_in(fd, buf, sizeof(buf), 5000);
+   mscb_release(fd);
 
-  if (i<(int)sizeof(MSCB_INFO_VAR)+3)
-    return MSCB_TIMEOUT;
+   if (i < (int) sizeof(MSCB_INFO_VAR) + 3)
+      return MSCB_TIMEOUT;
 
-  memcpy(info, buf+2, sizeof(MSCB_INFO_VAR));
+   memcpy(info, buf + 2, sizeof(MSCB_INFO_VAR));
 
-  /* do CRC check */
-  if (crc8(buf, sizeof(MSCB_INFO_VAR)+2) != buf[sizeof(MSCB_INFO_VAR)+2])
-    return MSCB_CRC_ERROR;
+   /* do CRC check */
+   if (crc8(buf, sizeof(MSCB_INFO_VAR) + 2) !=
+       buf[sizeof(MSCB_INFO_VAR) + 2])
+      return MSCB_CRC_ERROR;
 
-  return MSCB_SUCCESS;
+   return MSCB_SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
@@ -1511,44 +1477,43 @@ int mscb_set_addr(int fd, int adr, int node, int group)
 
 \********************************************************************/
 {
-unsigned char buf[8];
-int status;
+   unsigned char buf[8];
+   int status;
 
-  if (fd > MSCB_MAX_FD || fd < 1 || mscb_fd[fd-1].fd == 0)
-    return MSCB_INVAL_PARAM;
+   if (fd > MSCB_MAX_FD || fd < 1 || mscb_fd[fd - 1].fd == 0)
+      return MSCB_INVAL_PARAM;
 
-  if (mrpc_connected(fd))
-    return mrpc_call(mscb_fd[fd-1].fd, RPC_MSCB_SET_ADDR, mscb_fd[fd-1].remote_fd, adr, node, group);
+   if (mrpc_connected(fd))
+      return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_SET_ADDR,
+                       mscb_fd[fd - 1].remote_fd, adr, node, group);
 
-  if (mscb_lock(fd) != MSCB_SUCCESS)
-    return MSCB_MUTEX;
+   if (mscb_lock(fd) != MSCB_SUCCESS)
+      return MSCB_MUTEX;
 
-  /* check if destination address is alive */
-  status = mscb_addr(fd, MCMD_PING16, node, 10, FALSE);
-  if (status == MSCB_SUCCESS)
-    {
-    mscb_release(fd);
-    return MSCB_ADDR_EXISTS;
-    }
+   /* check if destination address is alive */
+   status = mscb_addr(fd, MCMD_PING16, node, 10, FALSE);
+   if (status == MSCB_SUCCESS) {
+      mscb_release(fd);
+      return MSCB_ADDR_EXISTS;
+   }
 
-  status = mscb_addr(fd, MCMD_PING16, adr, 10, FALSE);
-  if (status != MSCB_SUCCESS)
-    {
-    mscb_release(fd);
-    return status;
-    }
+   status = mscb_addr(fd, MCMD_PING16, adr, 10, FALSE);
+   if (status != MSCB_SUCCESS) {
+      mscb_release(fd);
+      return status;
+   }
 
-  buf[0] = MCMD_SET_ADDR;
-  buf[1] = (unsigned char ) (node >> 8);
-  buf[2] = (unsigned char ) (node & 0xFF);
-  buf[3] = (unsigned char ) (group >> 8);
-  buf[4] = (unsigned char ) (group & 0xFF);
-  buf[5] = crc8(buf, 5);
-  mscb_out(fd, buf, 6, 0);
+   buf[0] = MCMD_SET_ADDR;
+   buf[1] = (unsigned char) (node >> 8);
+   buf[2] = (unsigned char) (node & 0xFF);
+   buf[3] = (unsigned char) (group >> 8);
+   buf[4] = (unsigned char) (group & 0xFF);
+   buf[5] = crc8(buf, 5);
+   mscb_out(fd, buf, 6, 0);
 
-  mscb_release(fd);
+   mscb_release(fd);
 
-  return MSCB_SUCCESS;
+   return MSCB_SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
@@ -1571,46 +1536,47 @@ int mscb_set_name(int fd, int adr, char *name)
 
 \********************************************************************/
 {
-unsigned char buf[256];
-int status, i;
+   unsigned char buf[256];
+   int status, i;
 
-  if (fd > MSCB_MAX_FD || fd < 1 || mscb_fd[fd-1].fd == 0)
-    return MSCB_INVAL_PARAM;
+   if (fd > MSCB_MAX_FD || fd < 1 || mscb_fd[fd - 1].fd == 0)
+      return MSCB_INVAL_PARAM;
 
-  if (mrpc_connected(fd))
-    return mrpc_call(mscb_fd[fd-1].fd, RPC_MSCB_SET_NAME, mscb_fd[fd-1].remote_fd, adr, name);
+   if (mrpc_connected(fd))
+      return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_SET_NAME,
+                       mscb_fd[fd - 1].remote_fd, adr, name);
 
-  if (mscb_lock(fd) != MSCB_SUCCESS)
-    return MSCB_MUTEX;
+   if (mscb_lock(fd) != MSCB_SUCCESS)
+      return MSCB_MUTEX;
 
-  status = mscb_addr(fd, MCMD_PING16, adr, 10, FALSE);
-  if (status != MSCB_SUCCESS)
-    {
+   status = mscb_addr(fd, MCMD_PING16, adr, 10, FALSE);
+   if (status != MSCB_SUCCESS) {
 
-    mscb_release(fd);
-    return status;
-    }
+      mscb_release(fd);
+      return status;
+   }
 
-  buf[0] = MCMD_SET_ADDR | 0x07;
-  for (i=0 ; i<16 && name[i] ; i++)
-    buf[2+i] = name[i];
+   buf[0] = MCMD_SET_ADDR | 0x07;
+   for (i = 0; i < 16 && name[i]; i++)
+      buf[2 + i] = name[i];
 
-  if (i<16)
-    buf[2 + (i++)] = 0;
+   if (i < 16)
+      buf[2 + (i++)] = 0;
 
-  buf[1] = i; /* varibale buffer length */
+   buf[1] = i;                  /* varibale buffer length */
 
-  buf[2+i] = crc8(buf, 2+i);
-  mscb_out(fd, buf, 3+i, 0);
+   buf[2 + i] = crc8(buf, 2 + i);
+   mscb_out(fd, buf, 3 + i, 0);
 
-  mscb_release(fd);
+   mscb_release(fd);
 
-  return MSCB_SUCCESS;
+   return MSCB_SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
 
-int mscb_write_group(int fd, int adr, unsigned char index, void *data, int size)
+int mscb_write_group(int fd, int adr, unsigned char index, void *data,
+                     int size)
 /********************************************************************\
 
   Routine: mscb_write_na
@@ -1631,41 +1597,41 @@ int mscb_write_group(int fd, int adr, unsigned char index, void *data, int size)
 
 \********************************************************************/
 {
-int i, status;
-unsigned char *d;
-unsigned char buf[256];
+   int i, status;
+   unsigned char *d;
+   unsigned char buf[256];
 
-  if (fd > MSCB_MAX_FD || fd < 1 || mscb_fd[fd-1].fd == 0)
-    return MSCB_INVAL_PARAM;
+   if (fd > MSCB_MAX_FD || fd < 1 || mscb_fd[fd - 1].fd == 0)
+      return MSCB_INVAL_PARAM;
 
-  if (mrpc_connected(fd))
-    return mrpc_call(mscb_fd[fd-1].fd, RPC_MSCB_WRITE_GROUP, mscb_fd[fd-1].remote_fd, adr, index, data, size);
+   if (mrpc_connected(fd))
+      return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_WRITE_GROUP,
+                       mscb_fd[fd - 1].remote_fd, adr, index, data, size);
 
-  if (size > 4 || size < 1)
-    return MSCB_INVAL_PARAM;
+   if (size > 4 || size < 1)
+      return MSCB_INVAL_PARAM;
 
-  if (mscb_lock(fd) != MSCB_SUCCESS)
-    return MSCB_MUTEX;
+   if (mscb_lock(fd) != MSCB_SUCCESS)
+      return MSCB_MUTEX;
 
-  status = mscb_addr(fd, MCMD_ADDR_GRP16, adr, 10, FALSE);
-  if (status != MSCB_SUCCESS)
-    {
-    mscb_release(fd);
-    return status;
-    }
+   status = mscb_addr(fd, MCMD_ADDR_GRP16, adr, 10, FALSE);
+   if (status != MSCB_SUCCESS) {
+      mscb_release(fd);
+      return status;
+   }
 
-  buf[0] = MCMD_WRITE_NA+size+1;
-  buf[1] = index;
+   buf[0] = MCMD_WRITE_NA + size + 1;
+   buf[1] = index;
 
-  for (i=0,d=data ; i<size ; i++)
-    buf[2+size-1-i] = *d++;
+   for (i = 0, d = data; i < size; i++)
+      buf[2 + size - 1 - i] = *d++;
 
-  buf[2+i] = crc8(buf, 2+i);
-  mscb_out(fd, buf, 3+i, 0);
+   buf[2 + i] = crc8(buf, 2 + i);
+   mscb_out(fd, buf, 3 + i, 0);
 
-  mscb_release(fd);
+   mscb_release(fd);
 
-  return MSCB_SUCCESS;
+   return MSCB_SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
@@ -1694,65 +1660,62 @@ int mscb_write(int fd, int adr, unsigned char index, void *data, int size)
 
 \********************************************************************/
 {
-int           i, status;
-unsigned char buf[256], crc, ack[2];
-unsigned char *d;
+   int i, status;
+   unsigned char buf[256], crc, ack[2];
+   unsigned char *d;
 
-  if (fd > MSCB_MAX_FD || fd < 1 || mscb_fd[fd-1].fd == 0)
-    return MSCB_INVAL_PARAM;
+   if (fd > MSCB_MAX_FD || fd < 1 || mscb_fd[fd - 1].fd == 0)
+      return MSCB_INVAL_PARAM;
 
-  if (mrpc_connected(fd))
-    return mrpc_call(mscb_fd[fd-1].fd, RPC_MSCB_WRITE, mscb_fd[fd-1].remote_fd, adr, index, data, size);
+   if (mrpc_connected(fd))
+      return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_WRITE,
+                       mscb_fd[fd - 1].remote_fd, adr, index, data, size);
 
-  if (size < 1)
-    return MSCB_INVAL_PARAM;
+   if (size < 1)
+      return MSCB_INVAL_PARAM;
 
-  if (mscb_lock(fd) != MSCB_SUCCESS)
-    return MSCB_MUTEX;
+   if (mscb_lock(fd) != MSCB_SUCCESS)
+      return MSCB_MUTEX;
 
-  status = mscb_addr(fd, MCMD_PING16, adr, 10, FALSE);
-  if (status != MSCB_SUCCESS)
-    {
-    mscb_release(fd);
-    return status;
-    }
+   status = mscb_addr(fd, MCMD_PING16, adr, 10, FALSE);
+   if (status != MSCB_SUCCESS) {
+      mscb_release(fd);
+      return status;
+   }
 
-  if (size < 7)
-    {
-    buf[0] = MCMD_WRITE_ACK+size+1;
-    buf[1] = index;
+   if (size < 7) {
+      buf[0] = MCMD_WRITE_ACK + size + 1;
+      buf[1] = index;
 
-    for (i=0,d=data ; i<size ; i++)
-      buf[2+size-1-i] = *d++;
+      for (i = 0, d = data; i < size; i++)
+         buf[2 + size - 1 - i] = *d++;
 
-    crc = crc8(buf, 2+i);
-    buf[2+i] = crc;
-    mscb_out(fd, buf, 3+i, 0);
-    }
-  else
-    {
-    buf[0] = MCMD_WRITE_ACK+7;
-    buf[1] = size + 1;
-    buf[2] = index;
+      crc = crc8(buf, 2 + i);
+      buf[2 + i] = crc;
+      mscb_out(fd, buf, 3 + i, 0);
+   } else {
+      buf[0] = MCMD_WRITE_ACK + 7;
+      buf[1] = size + 1;
+      buf[2] = index;
 
-    for (i=0,d=data ; i<size ; i++)
-      buf[3+i] = *d++;
+      for (i = 0, d = data; i < size; i++)
+         buf[3 + i] = *d++;
 
-    crc = crc8(buf, 3+i);
-    buf[3+i] = crc;
-    mscb_out(fd, buf, 4+i, 0);
-    }
+      crc = crc8(buf, 3 + i);
+      buf[3 + i] = crc;
+      mscb_out(fd, buf, 4 + i, 0);
+   }
 
-  /* read acknowledge */
-  i = mscb_in(fd, ack, 2, 5000);
-  mscb_release(fd);
-  if (i<2)
-    return MSCB_TIMEOUT;
+   /* read acknowledge */
+   i = mscb_in(fd, ack, 2, 5000);
+   mscb_release(fd);
+   if (i < 2)
+      return MSCB_TIMEOUT;
 
-  if (ack[0] != MCMD_ACK || ack[1] != crc)
-    return MSCB_CRC_ERROR;
+   if (ack[0] != MCMD_ACK || ack[1] != crc)
+      return MSCB_CRC_ERROR;
 
-  return MSCB_SUCCESS;
+   return MSCB_SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
@@ -1779,41 +1742,41 @@ int mscb_flash(int fd, int adr)
 
 \********************************************************************/
 {
-int           i, status;
-unsigned char buf[10], crc, ack[2];
+   int i, status;
+   unsigned char buf[10], crc, ack[2];
 
-  if (fd > MSCB_MAX_FD || fd < 1 || mscb_fd[fd-1].fd == 0)
-    return MSCB_INVAL_PARAM;
+   if (fd > MSCB_MAX_FD || fd < 1 || mscb_fd[fd - 1].fd == 0)
+      return MSCB_INVAL_PARAM;
 
-  if (mrpc_connected(fd))
-    return mrpc_call(mscb_fd[fd-1].fd, RPC_MSCB_FLASH, mscb_fd[fd-1].remote_fd, adr);
+   if (mrpc_connected(fd))
+      return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_FLASH,
+                       mscb_fd[fd - 1].remote_fd, adr);
 
-  if (mscb_lock(fd) != MSCB_SUCCESS)
-    return MSCB_MUTEX;
+   if (mscb_lock(fd) != MSCB_SUCCESS)
+      return MSCB_MUTEX;
 
-  status = mscb_addr(fd, MCMD_PING16, adr, 10, FALSE);
-  if (status != MSCB_SUCCESS)
-    {
-    mscb_release(fd);
-    return status;
-    }
+   status = mscb_addr(fd, MCMD_PING16, adr, 10, FALSE);
+   if (status != MSCB_SUCCESS) {
+      mscb_release(fd);
+      return status;
+   }
 
-  buf[0] = MCMD_FLASH;
-  crc = crc8(buf, 1);
-  buf[1] = crc;
-  mscb_out(fd, buf, 2, 0);
+   buf[0] = MCMD_FLASH;
+   crc = crc8(buf, 1);
+   buf[1] = crc;
+   mscb_out(fd, buf, 2, 0);
 
-  /* read acknowledge, 100ms timeout */
-  i = mscb_in(fd, ack, 2, 100000);
-  mscb_release(fd);
+   /* read acknowledge, 100ms timeout */
+   i = mscb_in(fd, ack, 2, 100000);
+   mscb_release(fd);
 
-  if (i<2)
-    return MSCB_TIMEOUT;
+   if (i < 2)
+      return MSCB_TIMEOUT;
 
-  if (ack[0] != MCMD_ACK || ack[1] != crc)
-    return MSCB_CRC_ERROR;
+   if (ack[0] != MCMD_ACK || ack[1] != crc)
+      return MSCB_CRC_ERROR;
 
-  return MSCB_SUCCESS;
+   return MSCB_SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
@@ -1841,185 +1804,172 @@ int mscb_upload(int fd, int adr, char *buffer, int size)
 
 \********************************************************************/
 {
-unsigned char  buf[512], crc, ack[2], image[0x8000], *line;
-unsigned int   len, ofh, ofl, type, d;
-int            i, j, status, page;
-unsigned short ofs;
+   unsigned char buf[512], crc, ack[2], image[0x8000], *line;
+   unsigned int len, ofh, ofl, type, d;
+   int i, j, status, page;
+   unsigned short ofs;
 
-  if (fd > MSCB_MAX_FD || fd < 1 || mscb_fd[fd-1].fd == 0)
-    return MSCB_INVAL_PARAM;
+   if (fd > MSCB_MAX_FD || fd < 1 || mscb_fd[fd - 1].fd == 0)
+      return MSCB_INVAL_PARAM;
 
-  if (mrpc_connected(fd))
-    return mrpc_call(mscb_fd[fd-1].fd, RPC_MSCB_UPLOAD, mscb_fd[fd-1].remote_fd, adr, buffer, size);
+   if (mrpc_connected(fd))
+      return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_UPLOAD,
+                       mscb_fd[fd - 1].remote_fd, adr, buffer, size);
 
-  /* interprete HEX file */
-  memset(image, 0xFF, sizeof(image));
-  line = buffer;
-  do
-    {
-    if (line[0] == ':')
-      {
-      sscanf(line+1, "%02x%02x%02x%02x", &len, &ofh, &ofl, &type);
-      ofs = (ofh << 8) | ofl;
+   /* interprete HEX file */
+   memset(image, 0xFF, sizeof(image));
+   line = buffer;
+   do {
+      if (line[0] == ':') {
+         sscanf(line + 1, "%02x%02x%02x%02x", &len, &ofh, &ofl, &type);
+         ofs = (ofh << 8) | ofl;
 
-      for (i=0 ; i<(int)len ; i++)
-        {
-        sscanf(line+9+i*2, "%02x", &d);
-        image[ofs+i] = d;
-        }
-      line = strchr(line, '\r')+1;
-      if (line && *line == '\n')
-        line++;
-      }
-    else
-      return MSCB_FORMAT_ERROR;
+         for (i = 0; i < (int) len; i++) {
+            sscanf(line + 9 + i * 2, "%02x", &d);
+            image[ofs + i] = d;
+         }
+         line = strchr(line, '\r') + 1;
+         if (line && *line == '\n')
+            line++;
+      } else
+         return MSCB_FORMAT_ERROR;
 
-    } while (*line);
+   } while (*line);
 
 
-  if (mscb_lock(fd) != MSCB_SUCCESS)
-    return MSCB_MUTEX;
+   if (mscb_lock(fd) != MSCB_SUCCESS)
+      return MSCB_MUTEX;
 
-  status = mscb_addr(fd, MCMD_PING16, adr, 10, FALSE);
-  if (status != MSCB_SUCCESS)
-    {
-    mscb_release(fd);
-    return status;
-    }
+   status = mscb_addr(fd, MCMD_PING16, adr, 10, FALSE);
+   if (status != MSCB_SUCCESS) {
+      mscb_release(fd);
+      return status;
+   }
 
-  /* send upgrade command */
-  buf[0] = MCMD_UPGRADE;
-  crc = crc8(buf, 1);
-  buf[1] = crc;
-  mscb_out(fd, buf, 2, 0);
+   /* send upgrade command */
+   buf[0] = MCMD_UPGRADE;
+   crc = crc8(buf, 1);
+   buf[1] = crc;
+   mscb_out(fd, buf, 2, 0);
 
-  /* read acknowledge, 100ms timeout */
-  i = mscb_in(fd, ack, 2, 100000);
-  if (i<2)
-    {
-    printf("Error: Upload not implemented in remote node\n");
-    mscb_release(fd);
-    return MSCB_TIMEOUT;
-    }
+   /* read acknowledge, 100ms timeout */
+   i = mscb_in(fd, ack, 2, 100000);
+   if (i < 2) {
+      printf("Error: Upload not implemented in remote node\n");
+      mscb_release(fd);
+      return MSCB_TIMEOUT;
+   }
 
-  if (ack[0] != MCMD_ACK || ack[1] != crc)
-    {
-    printf("Error: Cannot set remote node into upload mode\n");
-    mscb_release(fd);
-    return MSCB_CRC_ERROR;
-    }
+   if (ack[0] != MCMD_ACK || ack[1] != crc) {
+      printf("Error: Cannot set remote node into upload mode\n");
+      mscb_release(fd);
+      return MSCB_CRC_ERROR;
+   }
 
-  /* wait for ready, 3 sec timeout */
-  for (i=0 ; i<30 ; i++)
-    {
-    if (mscb_in1(fd, ack, 1000) == MSCB_SUCCESS)
-      break;
-    Sleep(100);
-    }
+   /* wait for ready, 3 sec timeout */
+   for (i = 0; i < 30; i++) {
+      if (mscb_in1(fd, ack, 1000) == MSCB_SUCCESS)
+         break;
+      Sleep(100);
+   }
 
-  if (i == 30 || ack[0] != 0xBE)
-    {
-    printf("Error: timeout from remote node\n");
-    mscb_release(fd);
-    return MSCB_TIMEOUT;
-    }
+   if (i == 30 || ack[0] != 0xBE) {
+      printf("Error: timeout from remote node\n");
+      mscb_release(fd);
+      return MSCB_TIMEOUT;
+   }
 
-  /* program pages up to 0x7000 */
-  for (page=0 ; page<56 ; page++)
-    {
-    /* check if page contains data */
-    for (i=0 ; i<512 ; i++)
-      if (image[page*512+i] != 0xFF)
-        break;
-
-    if (i<512)
-      {
-      do
-        {
-        printf("E");
-        fflush(stdout);
-
-        /* erase page */
-        buf[0] = 2;
-        buf[1] = page;
-        mscb_out(fd, buf, 2, 0);
-
-        if (mscb_in1(fd, ack, 100000) != MSCB_SUCCESS)
-          {
-          printf("Error: timeout from remote node for erase page\n");
-          mscb_release(fd);
-          return MSCB_TIMEOUT;
-          }
-
-        printf("\bP");
-        fflush(stdout);
-
-        /* program page */
-        buf[0] = 3;
-        buf[1] = page;
-        mscb_out(fd, buf, 2, 0);
-
-        for (i=0 ; i<512 ; i++)
-          buf[i] = image[page*512+i];
-
-        mscb_out(fd, buf, 512, 0);
-
-        if (mscb_in1(fd, ack, 100000) != MSCB_SUCCESS)
-          {
-          printf("Error: timeout from remote node for program page\n");
-          mscb_release(fd);
-          return MSCB_TIMEOUT;
-          }
-
-        for (j=0 ; j<10 ; j++)
-          {
-          printf("\bV");
-          fflush(stdout);
-
-          /* verify page */
-          buf[0] = 4;
-          buf[1] = page;
-          mscb_out(fd, buf, 2, 0);
-
-          for (i=0 ; i<512 ; i++)
-            if (mscb_in1(fd, buf+i, 100000) != MSCB_SUCCESS)
-              break;
-
-          if (i == 512)
-            if (mscb_in1(fd, ack, 100000) == MSCB_SUCCESS)
-              break;
-
-          Sleep(100);
-
-          }
-
-        if (j == 10)
-          {
-          printf("Error: error on page verification (tried 10 times)\n");
-          mscb_release(fd);
-          return MSCB_TIMEOUT;
-          }
-
-        for (i=0 ; i<512 ; i++)
-          if (buf[i] != image[page*512+i])
+   /* program pages up to 0x7000 */
+   for (page = 0; page < 56; page++) {
+      /* check if page contains data */
+      for (i = 0; i < 512; i++)
+         if (image[page * 512 + i] != 0xFF)
             break;
 
-        /* reprogram page until verified */
-        } while (i < 512);
+      if (i < 512) {
+         do {
+            printf("E");
+            fflush(stdout);
 
-      printf("\b=");
-      fflush(stdout);
+            /* erase page */
+            buf[0] = 2;
+            buf[1] = page;
+            mscb_out(fd, buf, 2, 0);
+
+            if (mscb_in1(fd, ack, 100000) != MSCB_SUCCESS) {
+               printf("Error: timeout from remote node for erase page\n");
+               mscb_release(fd);
+               return MSCB_TIMEOUT;
+            }
+
+            printf("\bP");
+            fflush(stdout);
+
+            /* program page */
+            buf[0] = 3;
+            buf[1] = page;
+            mscb_out(fd, buf, 2, 0);
+
+            for (i = 0; i < 512; i++)
+               buf[i] = image[page * 512 + i];
+
+            mscb_out(fd, buf, 512, 0);
+
+            if (mscb_in1(fd, ack, 100000) != MSCB_SUCCESS) {
+               printf
+                   ("Error: timeout from remote node for program page\n");
+               mscb_release(fd);
+               return MSCB_TIMEOUT;
+            }
+
+            for (j = 0; j < 10; j++) {
+               printf("\bV");
+               fflush(stdout);
+
+               /* verify page */
+               buf[0] = 4;
+               buf[1] = page;
+               mscb_out(fd, buf, 2, 0);
+
+               for (i = 0; i < 512; i++)
+                  if (mscb_in1(fd, buf + i, 100000) != MSCB_SUCCESS)
+                     break;
+
+               if (i == 512)
+                  if (mscb_in1(fd, ack, 100000) == MSCB_SUCCESS)
+                     break;
+
+               Sleep(100);
+
+            }
+
+            if (j == 10) {
+               printf
+                   ("Error: error on page verification (tried 10 times)\n");
+               mscb_release(fd);
+               return MSCB_TIMEOUT;
+            }
+
+            for (i = 0; i < 512; i++)
+               if (buf[i] != image[page * 512 + i])
+                  break;
+
+            /* reprogram page until verified */
+         } while (i < 512);
+
+         printf("\b=");
+         fflush(stdout);
       }
-    }
+   }
 
-  printf("\n");
+   printf("\n");
 
-  /* reboot node */
-  buf[0] = 5;
-  mscb_out(fd, buf, 1, 0);
+   /* reboot node */
+   buf[0] = 5;
+   mscb_out(fd, buf, 1, 0);
 
-  mscb_release(fd);
-  return MSCB_SUCCESS;
+   mscb_release(fd);
+   return MSCB_SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
@@ -2050,100 +2000,95 @@ int mscb_read(int fd, int adr, unsigned char index, void *data, int *size)
 
 \********************************************************************/
 {
-int           i, n, status;
-unsigned char buf[256], crc;
+   int i, n, status;
+   unsigned char buf[256], crc;
 
-  memset(data, 0, *size);
+   memset(data, 0, *size);
 
-  if (fd > MSCB_MAX_FD || fd < 1 || mscb_fd[fd-1].fd == 0)
-    return MSCB_INVAL_PARAM;
+   if (fd > MSCB_MAX_FD || fd < 1 || mscb_fd[fd - 1].fd == 0)
+      return MSCB_INVAL_PARAM;
 
-  if (mrpc_connected(fd))
-    return mrpc_call(mscb_fd[fd-1].fd, RPC_MSCB_READ, mscb_fd[fd-1].remote_fd, adr, index, data, size);
-  
-  if (mscb_lock(fd) != MSCB_SUCCESS)
-    return MSCB_MUTEX;
+   if (mrpc_connected(fd))
+      return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_READ,
+                       mscb_fd[fd - 1].remote_fd, adr, index, data, size);
 
-  status = mscb_addr(fd, MCMD_PING16, adr, 10, FALSE);
-  if (status != MSCB_SUCCESS)
-    {
-    mscb_release(fd);
-    return status;
-    }
+   if (mscb_lock(fd) != MSCB_SUCCESS)
+      return MSCB_MUTEX;
 
-  /* try ten times */
-  for (n=0 ; n<10 ; n++)
-    {
-    /* after five times, reset submaster */
-    if (n == 5)
-      {
-      printf("Automatic submaster reset.\n");
+   status = mscb_addr(fd, MCMD_PING16, adr, 10, FALSE);
+   if (status != MSCB_SUCCESS) {
+      mscb_release(fd);
+      return status;
+   }
 
-      mscb_reset(fd);
-      Sleep(100);
-      }
-    
-    buf[0] = MCMD_READ+1;
-    buf[1] = index;
-    buf[2] = crc8(buf, 2);
-    mscb_out(fd, buf, 3, 0);
+   /* try ten times */
+   for (n = 0; n < 10; n++) {
+      /* after five times, reset submaster */
+      if (n == 5) {
+         printf("Automatic submaster reset.\n");
 
-    /* read data */
-    i = mscb_in(fd, buf, sizeof(buf), 5000);
-
-    if (i<2)
-      continue;
-
-    crc = crc8(buf, i-1);
-
-    if ((buf[0] != MCMD_ACK+i-2 && buf[0] != MCMD_ACK+7) || buf[i-1] != crc)
-      continue;
-
-    if (buf[0] == MCMD_ACK+7)
-      {
-      if (i-3 > *size)
-        {
-        mscb_release(fd);
-        *size = 0;
-        return MSCB_NO_MEM;
-        }
-
-      memcpy(data, buf+2, i-3);  // variable length
-      *size = i-3;
-      }
-    else
-      {
-      if (i-2 > *size)
-        {
-        mscb_release(fd);
-        *size = 0;
-        return MSCB_NO_MEM;
-        }
-
-      memcpy(data, buf+1, i-2);
-      *size = i-2;
+         mscb_reset(fd);
+         Sleep(100);
       }
 
-    if (i-2 == 2)
-      WORD_SWAP(data);
-    if (i-2 == 4)
-      DWORD_SWAP(data);
+      buf[0] = MCMD_READ + 1;
+      buf[1] = index;
+      buf[2] = crc8(buf, 2);
+      mscb_out(fd, buf, 3, 0);
 
-    mscb_release(fd);
-    return MSCB_SUCCESS;
-    }
+      /* read data */
+      i = mscb_in(fd, buf, sizeof(buf), 5000);
 
-  mscb_release(fd);
+      if (i < 2)
+         continue;
 
-  if (i<2)
-    return MSCB_TIMEOUT;
+      crc = crc8(buf, i - 1);
 
-  return MSCB_CRC_ERROR;
+      if ((buf[0] != MCMD_ACK + i - 2 && buf[0] != MCMD_ACK + 7)
+          || buf[i - 1] != crc)
+         continue;
+
+      if (buf[0] == MCMD_ACK + 7) {
+         if (i - 3 > *size) {
+            mscb_release(fd);
+            *size = 0;
+            return MSCB_NO_MEM;
+         }
+
+         memcpy(data, buf + 2, i - 3);  // variable length
+         *size = i - 3;
+      } else {
+         if (i - 2 > *size) {
+            mscb_release(fd);
+            *size = 0;
+            return MSCB_NO_MEM;
+         }
+
+         memcpy(data, buf + 1, i - 2);
+         *size = i - 2;
+      }
+
+      if (i - 2 == 2)
+         WORD_SWAP(data);
+      if (i - 2 == 4)
+         DWORD_SWAP(data);
+
+      mscb_release(fd);
+      return MSCB_SUCCESS;
+   }
+
+   mscb_release(fd);
+
+   if (i < 2)
+      return MSCB_TIMEOUT;
+
+   return MSCB_CRC_ERROR;
 }
 
 /*------------------------------------------------------------------*/
 
-int mscb_read_range(int fd, int adr, unsigned char index1, unsigned char index2, void *data, int *size)
+int mscb_read_range(int fd, int adr, unsigned char index1,
+                    unsigned char index2, void *data, int *size)
 /********************************************************************\
 
   Routine: mscb_read
@@ -2170,74 +2115,74 @@ int mscb_read_range(int fd, int adr, unsigned char index1, unsigned char index2,
 
 \********************************************************************/
 {
-int           i, n, status;
-unsigned char buf[256], crc;
+   int i, n, status;
+   unsigned char buf[256], crc;
 
-  memset(data, 0, *size);
+   memset(data, 0, *size);
 
-  if (fd > MSCB_MAX_FD || fd < 1 || mscb_fd[fd-1].fd == 0)
-    return MSCB_INVAL_PARAM;
+   if (fd > MSCB_MAX_FD || fd < 1 || mscb_fd[fd - 1].fd == 0)
+      return MSCB_INVAL_PARAM;
 
-  if (mrpc_connected(fd))
-    return mrpc_call(mscb_fd[fd-1].fd, RPC_MSCB_READ_RANGE, mscb_fd[fd-1].remote_fd, adr, index1, index2, data, size);
+   if (mrpc_connected(fd))
+      return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_READ_RANGE,
+                       mscb_fd[fd - 1].remote_fd, adr, index1, index2,
+                       data, size);
 
-  if (mscb_lock(fd) != MSCB_SUCCESS)
-    return MSCB_MUTEX;
+   if (mscb_lock(fd) != MSCB_SUCCESS)
+      return MSCB_MUTEX;
 
-  status = mscb_addr(fd, MCMD_PING16, adr, 10, FALSE);
-  if (status != MSCB_SUCCESS)
-    {
-    mscb_release(fd);
-    return status;
-    }
+   status = mscb_addr(fd, MCMD_PING16, adr, 10, FALSE);
+   if (status != MSCB_SUCCESS) {
+      mscb_release(fd);
+      return status;
+   }
 
-  /* try ten times */
-  for (n=0 ; n<10 ; n++)
-    {
-    /* after five times, reset submaster */
-    if (n == 5)
-      {
-      printf("Automatic submaster reset.\n");
+   /* try ten times */
+   for (n = 0; n < 10; n++) {
+      /* after five times, reset submaster */
+      if (n == 5) {
+         printf("Automatic submaster reset.\n");
 
-      mscb_reset(fd);
-      Sleep(100);
+         mscb_reset(fd);
+         Sleep(100);
       }
 
-    buf[0] = MCMD_READ+2;
-    buf[1] = index1;
-    buf[2] = index2;
-    buf[3] = crc8(buf, 3);
-    mscb_out(fd, buf, 4, 0);
+      buf[0] = MCMD_READ + 2;
+      buf[1] = index1;
+      buf[2] = index2;
+      buf[3] = crc8(buf, 3);
+      mscb_out(fd, buf, 4, 0);
 
-    /* read data */
-    i = mscb_in(fd, buf, 256, 5000);
+      /* read data */
+      i = mscb_in(fd, buf, 256, 5000);
 
-    if (i<2)
-      continue;
+      if (i < 2)
+         continue;
 
-    crc = crc8(buf, i-1);
+      crc = crc8(buf, i - 1);
 
-    if (buf[0] != MCMD_ACK+7 || buf[i-1] != crc)
-      continue;
+      if (buf[0] != MCMD_ACK + 7 || buf[i - 1] != crc)
+         continue;
 
-    memcpy(data, buf+2, i-3);
-    *size = i-3;
+      memcpy(data, buf + 2, i - 3);
+      *size = i - 3;
 
-    mscb_release(fd);
-    return MSCB_SUCCESS;
-    }
+      mscb_release(fd);
+      return MSCB_SUCCESS;
+   }
 
-  mscb_release(fd);
+   mscb_release(fd);
 
-  if (i<2)
-    return MSCB_TIMEOUT;
+   if (i < 2)
+      return MSCB_TIMEOUT;
 
-  return MSCB_CRC_ERROR;
+   return MSCB_CRC_ERROR;
 }
 
 /*------------------------------------------------------------------*/
 
-int mscb_user(int fd, int adr, void *param, int size, void *result, int *rsize)
+int mscb_user(int fd, int adr, void *param, int size, void *result,
+              int *rsize)
 /********************************************************************\
 
   Routine: mscb_user
@@ -2264,66 +2209,65 @@ int mscb_user(int fd, int adr, void *param, int size, void *result, int *rsize)
 
 \********************************************************************/
 {
-int i, n, status;
-unsigned char buf[80];
+   int i, n, status;
+   unsigned char buf[80];
 
-  memset(result, 0, *rsize);
+   memset(result, 0, *rsize);
 
-  if (fd > MSCB_MAX_FD || fd < 1 || mscb_fd[fd-1].fd == 0)
-    return MSCB_INVAL_PARAM;
+   if (fd > MSCB_MAX_FD || fd < 1 || mscb_fd[fd - 1].fd == 0)
+      return MSCB_INVAL_PARAM;
 
-  if (mrpc_connected(fd))
-    return mrpc_call(mscb_fd[fd-1].fd, RPC_MSCB_USER, mscb_fd[fd-1].remote_fd, adr, param, size, result, rsize);
+   if (mrpc_connected(fd))
+      return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_USER,
+                       mscb_fd[fd - 1].remote_fd, adr, param, size, result,
+                       rsize);
 
-  if (mscb_lock(fd) != MSCB_SUCCESS)
-    return MSCB_MUTEX;
+   if (mscb_lock(fd) != MSCB_SUCCESS)
+      return MSCB_MUTEX;
 
-  status = mscb_addr(fd, MCMD_PING16, adr, 10, FALSE);
-  if (status != MSCB_SUCCESS)
-    {
-    mscb_release(fd);
-    return status;
-    }
+   status = mscb_addr(fd, MCMD_PING16, adr, 10, FALSE);
+   if (status != MSCB_SUCCESS) {
+      mscb_release(fd);
+      return status;
+   }
 
-  if (size > 4 || size < 0)
-    return MSCB_FORMAT_ERROR;
+   if (size > 4 || size < 0)
+      return MSCB_FORMAT_ERROR;
 
-  buf[0] = MCMD_USER+size;
+   buf[0] = MCMD_USER + size;
 
-  for (i=0 ; i<size ; i++)
-    buf[1+i] = ((char *)param)[i];
+   for (i = 0; i < size; i++)
+      buf[1 + i] = ((char *) param)[i];
 
-  /* add CRC code and send data */
-  buf[1+i] = crc8(buf, 1+i);
-  status = mscb_out(fd, buf, 2+i, 0);
-  if (status != MSCB_SUCCESS)
-    {
-    mscb_release(fd);
-    return status;
-    }
+   /* add CRC code and send data */
+   buf[1 + i] = crc8(buf, 1 + i);
+   status = mscb_out(fd, buf, 2 + i, 0);
+   if (status != MSCB_SUCCESS) {
+      mscb_release(fd);
+      return status;
+   }
 
-  if (result == NULL)
-    {
-    mscb_release(fd);
-    return MSCB_SUCCESS;
-    }
+   if (result == NULL) {
+      mscb_release(fd);
+      return MSCB_SUCCESS;
+   }
 
-  /* read result */
-  n = mscb_in(fd, buf, sizeof(buf), 5000);
-  mscb_release(fd);
+   /* read result */
+   n = mscb_in(fd, buf, sizeof(buf), 5000);
+   mscb_release(fd);
 
-  if (n<0)
-    return MSCB_TIMEOUT;
+   if (n < 0)
+      return MSCB_TIMEOUT;
 
-  if (rsize)
-    *rsize = n-2;
-  for (i=0 ; i<n-2 ; i++)
-    ((char *)result)[i] = buf[1+i];
+   if (rsize)
+      *rsize = n - 2;
+   for (i = 0; i < n - 2; i++)
+      ((char *) result)[i] = buf[1 + i];
 
-  if (buf[n-1] != crc8(buf, n-1))
-    return MSCB_CRC_ERROR;
+   if (buf[n - 1] != crc8(buf, n - 1))
+      return MSCB_CRC_ERROR;
 
-  return MSCB_SUCCESS;
+   return MSCB_SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
@@ -2352,52 +2296,51 @@ int mscb_echo(int fd, int adr, unsigned char d1, unsigned char *d2)
 
 \********************************************************************/
 {
-int n, status;
-unsigned char buf[80];
- 
-  *d2 = 0xFF;
+   int n, status;
+   unsigned char buf[80];
 
-  if (fd > MSCB_MAX_FD || fd < 1 || mscb_fd[fd-1].fd == 0)
-    return MSCB_INVAL_PARAM;
+   *d2 = 0xFF;
 
-  if (mrpc_connected(fd))
-    return mrpc_call(mscb_fd[fd-1].fd, RPC_MSCB_ECHO, mscb_fd[fd-1].remote_fd, adr, d1, d2);
+   if (fd > MSCB_MAX_FD || fd < 1 || mscb_fd[fd - 1].fd == 0)
+      return MSCB_INVAL_PARAM;
 
-  if (mscb_lock(fd) != MSCB_SUCCESS)
-    return MSCB_MUTEX;
+   if (mrpc_connected(fd))
+      return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_ECHO,
+                       mscb_fd[fd - 1].remote_fd, adr, d1, d2);
 
-  status = mscb_addr(fd, MCMD_PING16, adr, 1, FALSE);
-  if (status != MSCB_SUCCESS)
-    {
-    mscb_release(fd);
-    return status;
-    }
+   if (mscb_lock(fd) != MSCB_SUCCESS)
+      return MSCB_MUTEX;
 
-  buf[0] = MCMD_ECHO;
-  buf[1] = d1;
+   status = mscb_addr(fd, MCMD_PING16, adr, 1, FALSE);
+   if (status != MSCB_SUCCESS) {
+      mscb_release(fd);
+      return status;
+   }
 
-  /* add CRC code and send data */
-  buf[2] = crc8(buf, 2);
-  status = mscb_out(fd, buf, 3, 0);
-  if (status != MSCB_SUCCESS)
-    {
-    mscb_release(fd);
-    return status;
-    }
+   buf[0] = MCMD_ECHO;
+   buf[1] = d1;
 
-  /* read result */
-  n = mscb_in(fd, buf, sizeof(buf), 5000);
-  mscb_release(fd);
+   /* add CRC code and send data */
+   buf[2] = crc8(buf, 2);
+   status = mscb_out(fd, buf, 3, 0);
+   if (status != MSCB_SUCCESS) {
+      mscb_release(fd);
+      return status;
+   }
 
-  if (n<0)
-    return MSCB_TIMEOUT;
+   /* read result */
+   n = mscb_in(fd, buf, sizeof(buf), 5000);
+   mscb_release(fd);
 
-  *d2 = buf[1];
+   if (n < 0)
+      return MSCB_TIMEOUT;
 
-  if (buf[n-1] != crc8(buf, n-1))
-    return MSCB_CRC_ERROR;
+   *d2 = buf[1];
 
-  return MSCB_SUCCESS;
+   if (buf[n - 1] != crc8(buf, n - 1))
+      return MSCB_CRC_ERROR;
+
+   return MSCB_SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
@@ -2405,15 +2348,15 @@ unsigned char buf[80];
 unsigned long millitime()
 {
 #ifdef _MSC_VER
-  return (int) GetTickCount();
+   return (int) GetTickCount();
 #else
-  {
-  struct timeval tv;
+   {
+      struct timeval tv;
 
-  gettimeofday(&tv, NULL); 
+      gettimeofday(&tv, NULL);
 
-  return tv.tv_sec * 1000 + tv.tv_usec / 1000;
-  }
+      return tv.tv_sec * 1000 + tv.tv_usec / 1000;
+   }
 #endif
 }
 
@@ -2446,85 +2389,79 @@ int mscb_link(int fd, int adr, unsigned char index, void *data, int size)
 
 \********************************************************************/
 {
-int i, s, status;
-MSCB_INFO_VAR info;
+   int i, s, status;
+   MSCB_INFO_VAR info;
 
-  debug_log("mscb_link( %d %d %d * %d)\n", fd, adr, index, size);
+   debug_log("mscb_link( %d %d %d * %d)\n", fd, adr, index, size);
 
-  /* check if variable in cache */
-  for (i=0 ; i<n_cache ; i++)
-    if (cache[i].fd == fd &&
-        cache[i].adr == adr &&
-        cache[i].index == index)
-      break;
+   /* check if variable in cache */
+   for (i = 0; i < n_cache; i++)
+      if (cache[i].fd == fd &&
+          cache[i].adr == adr && cache[i].index == index)
+         break;
 
-  if (i<n_cache)
-    {
-    if (memcmp(data, cache[i].data, cache[i].size) != 0)
-      {
-      /* data has changed, send update */
-      memcpy(cache[i].data, data, cache[i].size);
-      mscb_write(fd, adr, index, data, cache[i].size);
+   if (i < n_cache) {
+      if (memcmp(data, cache[i].data, cache[i].size) != 0) {
+         /* data has changed, send update */
+         memcpy(cache[i].data, data, cache[i].size);
+         mscb_write(fd, adr, index, data, cache[i].size);
+      } else {
+         /* retrieve data from node */
+         if (millitime() > cache[i].last + CACHE_PERIOD) {
+            cache[i].last = millitime();
+
+            s = cache[i].size;
+            status = mscb_read(fd, adr, index, cache[i].data, &s);
+            if (status != MSCB_SUCCESS)
+               return status;
+
+            memcpy(data, cache[i].data, size);
+         }
       }
-    else
-      {
-      /* retrieve data from node */
-      if (millitime() > cache[i].last + CACHE_PERIOD)
-        {
-        cache[i].last = millitime();
+   } else {
+      /* add new entry in cache */
+      if (n_cache == 0)
+         cache = (CACHE_ENTRY *) malloc(sizeof(CACHE_ENTRY));
+      else
+         cache =
+             (CACHE_ENTRY *) realloc(cache,
+                                     sizeof(CACHE_ENTRY) * (n_cache + 1));
 
-        s = cache[i].size;
-        status = mscb_read(fd, adr, index, cache[i].data, &s);
-        if (status != MSCB_SUCCESS)
-          return status;
+      if (cache == NULL)
+         return MSCB_NO_MEM;
 
-        memcpy(data, cache[i].data, size);
-        }
-      }
-    }
-  else
-    {
-    /* add new entry in cache */
-    if (n_cache == 0)
-      cache = (CACHE_ENTRY *)malloc(sizeof(CACHE_ENTRY));
-    else
-      cache = (CACHE_ENTRY *)realloc(cache, sizeof(CACHE_ENTRY)*(n_cache+1));
+      /* get variable size from node */
+      status = mscb_info_variable(fd, adr, index, &info);
+      if (status != MSCB_SUCCESS)
+         return status;
 
-    if (cache == NULL)
-      return MSCB_NO_MEM;
+      /* setup cache entry */
+      i = n_cache;
+      n_cache++;
 
-    /* get variable size from node */
-    status = mscb_info_variable(fd, adr, index, &info);
-    if (status != MSCB_SUCCESS)
-      return status;
+      cache[i].fd = fd;
+      cache[i].adr = adr;
+      cache[i].index = index;
+      cache[i].last = 0;
+      cache[i].size = info.width;
 
-    /* setup cache entry */
-    i = n_cache;
-    n_cache++;
+      /* allocate at least 4 bytes */
+      s = info.width;
+      if (s < 4)
+         s = 4;
+      cache[i].data = malloc(s);
+      if (cache[i].data == NULL)
+         return MSCB_NO_MEM;
+      memset(cache[i].data, 0, s);
 
-    cache[i].fd = fd;
-    cache[i].adr = adr;
-    cache[i].index = index;
-    cache[i].last = 0;
-    cache[i].size = info.width;
+      /* read initial value */
+      s = cache[i].size;
+      status = mscb_read(fd, adr, index, cache[i].data, &s);
+      if (status != MSCB_SUCCESS)
+         return status;
 
-    /* allocate at least 4 bytes */
-    s = info.width;
-    if (s < 4)
-      s = 4;
-    cache[i].data = malloc(s);
-    if (cache[i].data == NULL)
-      return MSCB_NO_MEM;
-    memset(cache[i].data, 0, s);
+      memcpy(data, cache[i].data, size);
+   }
 
-    /* read initial value */
-    s = cache[i].size;
-    status = mscb_read(fd, adr, index, cache[i].data, &s);
-    if (status != MSCB_SUCCESS)
-      return status;
-
-    memcpy(data, cache[i].data, size);
-    }
-
-  return MSCB_SUCCESS;
+   return MSCB_SUCCESS;
 }
