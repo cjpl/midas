@@ -6,6 +6,10 @@
  *         amaudruz@triumf.ca                            Local:           6234
  * -----------------------------------------------------------------------------
    $Log$
+   Revision 1.20  1999/09/30 22:56:46  pierre
+   - Change TID_DOUBLE, D8_BKTYPE display format
+   - fix return yb_any_swap
+
    Revision 1.19  1999/09/29 20:41:21  pierre
    - several fixes for bk32, added TID_DOUBLE display.
 
@@ -2445,7 +2449,7 @@ INT   yb_any_event_swap (INT data_fmt, void * pevent)
        return SS_SUCCESS;
     pbh = (BANK_HEADER *) (((EVENT_HEADER *)pevent)+1);
     status = bk_swap(pbh, FALSE);
-    return  status;
+    return  status == CM_SUCCESS ? YB_EVENT_NOT_SWAPPED : YB_SUCCESS;
   }
   else if (data_fmt == FORMAT_YBOS)
     {
@@ -3071,7 +3075,7 @@ void ybos_bank_display(YBOS_BANK_HEADER * pybk, INT dsp_fmt)
 	      j = 0;
 	      i += 8;
       }
-      printf("%8.3le ",*((double *)pdata));
+      printf("%15.5le    ",*((double *)pdata));
       ((double *)pdata)++;
       j++;
       break;
@@ -3214,14 +3218,13 @@ void midas_bank_display( BANK * pbk, INT dsp_fmt)
     switch (type)
     {
     case TID_DOUBLE :
-      if (j>7)
+      if (j>3)
       {
 	      printf("\n%4i-> ",i);
 	      j = 0;
-	      i += 8;
+	      i += 4;
       }
-      if (dsp_fmt == DSP_DEC) printf("%8.3e ",*((double *)pdata));
-      if (dsp_fmt == DSP_HEX) printf("0x%8.8x/%8.8x ",*((DWORD *)pdata),*((DWORD *)pdata+1));
+      printf("%15.5le    ",*((double *)pdata));
       ((double *)pdata)++;
       j++;
       break;
@@ -3371,7 +3374,7 @@ void midas_bank_display32( BANK32 * pbk, INT dsp_fmt)
   printf("\nBank:%s Length: %i(I*1)/%i(I*4)/%i(Type) Type:%s",
 	 bank_name,lrl, lrl>>2, lrl/length_type, strbktype);
 
-  pendbk = pdata + lrl - sizeof(DWORD);
+  pendbk = pdata + lrl;
 
   while (pdata < pendbk)
   {
