@@ -10,6 +10,10 @@
   date        by    modification
   ---------   ---   ------------------------------------------------
 *  $Log$
+*  Revision 1.14  2000/07/21 18:28:06  pierre
+*  - Include YBOS version >4.0 support by default, otherwise use in Makefile
+*    -DYBOS_VERSION_3_3 for MIDAS_PREF_FLAGS
+*
 *  Revision 1.13  2000/05/04 14:50:20  midas
 *  Return yb_tid_size[] via new function ybos_get_tid_size()
 *
@@ -54,7 +58,11 @@
 #endif
 
 /*---- General parameters -----------------------------*/
+#ifdef YBOS_VERSION_3_3
 #define YBOS_PHYREC_SIZE        8190  /* I*4 */
+#else
+#define YBOS_PHYREC_SIZE        8192  /* I*4 */
+#endif
 #define YBOS_HEADER_LENGTH      4
 #define YBOS_BUFFER_SIZE        3*(YBOS_PHYREC_SIZE<<2) + MAX_EVENT_SIZE + 128           /* in BYTES */
 
