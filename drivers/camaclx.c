@@ -14,6 +14,9 @@
  *  Revision    : 1.0  1998        Pierre	 Initial revision
  *                include linux-camac.h from linux drivers
  *  $Log$
+ *  Revision 1.5  1999/07/22 19:19:26  pierre
+ *  - implemented cam16o_r, cam24o_r
+ *
  *  Revision 1.4  1999/05/06 18:40:35  pierre
  *  - remove came_xxx
  *
@@ -409,6 +412,25 @@ INLINE void cam24o_q(const int c, const int n, const int a, const int f, DWORD d
 INLINE void camo(const int c, const int n, const int a, const int f, WORD d)
 {
   cam16o (c,n,a,f,d);
+}
+
+/*------------------------------------------------------------------*/
+
+void cam16o_r(const int c, const int n, const int a, const int f, 
+                     WORD *d, const int r)
+{
+  INT i;
+  for (i=0 ; i< r ; i++)
+    cam16o (c,n,a,f,*d++);
+}
+
+/*------------------------------------------------------------------*/
+void cam24o_r(const int c, const int n, const int a, const int f, 
+                     DWORD *d, const int r)
+{
+  INT i;
+  for (i=0 ; i< r ; i++)
+    cam24o (c,n,a,f,*d++);
 }
 
 /*--command------------------------------------------------------*/
