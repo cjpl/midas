@@ -6,6 +6,9 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.28  1999/11/09 13:36:24  midas
+  Changed db_lock_database slightly
+
   Revision 1.27  1999/11/09 13:20:47  midas
   Fixed compiler warning
 
@@ -1110,13 +1113,19 @@ INT db_lock_database(HNDLE hDB)
     return DB_INVALID_HANDLE;
     }
 
+  if (_database[hDB-1].protect && _database[hDB-1].database_header != NULL)
+    cm_msg(MERROR, "db_lock_database", "internal error: DB already locked");
+
   if (_database[hDB-1].lock_cnt == 0)
     ss_mutex_wait_for(_database[hDB-1].mutex, 0);
 
   _database[hDB-1].lock_cnt++;
 
   if (_database[hDB-1].protect)
-    ss_shm_unprotect(_database[hDB-1].shm_handle, (void **) &_database[hDB-1].database_header);
+    {
+    if (_database[hDB-1].database_header == NULL)
+      ss_shm_unprotect(_database[hDB-1].shm_handle, (void **) &_database[hDB-1].database_header);
+    }
 
   return DB_SUCCESS;
 }
@@ -6238,7 +6247,7 @@ INT             i;
 
   /* set exclusive bit if requested */
   if (access_mode & MODE_WRITE)
-    db_set_mode(hDB, hKey, (WORD) (pkey->access_mode | MODE_EXCLUSIVE), TRUE);
+    db_set_mode(hDB, hKey, (WORD) (pkey->access_mode | MODE_EXCLUSIVE), 2);
 
   db_unlock_database(hDB);
 }
