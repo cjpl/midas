@@ -6,6 +6,9 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.58  2003/04/15 10:50:21  midas
+  Improved ODB validation
+
   Revision 1.57  2003/04/15 08:16:15  midas
   Fixed bugs in ODB validationi
 
@@ -656,7 +659,7 @@ static int db_validate_key_offset(DATABASE_HEADER *pheader, int offset)
 static int db_validate_data_offset(DATABASE_HEADER *pheader, int offset)
 /* check if data offset lies in valid range */
 {
-  if (offset < (int)sizeof(DATABASE_HEADER)) 
+  if (offset != 0 && offset < (int)sizeof(DATABASE_HEADER)) 
     return 0;
 
   if (offset > (int)sizeof(DATABASE_HEADER) + pheader->key_size + pheader->data_size) 
@@ -665,52 +668,88 @@ static int db_validate_data_offset(DATABASE_HEADER *pheader, int offset)
   return 1;
 }
 
-static int db_validate_key(DATABASE_HEADER *pheader, int level, const char *path, KEY *pkey)
+static int db_validate_key(DATABASE_HEADER *pheader, int recurse, const char *path, KEY *pkey)
 {
 KEYLIST *pkeylist;
 int i;
 
-  if (!db_validate_key_offset(pheader, pkey->data))
+  if (!db_validate_key_offset(pheader, (PTYPE)pkey - (PTYPE)pheader))
     {
     cm_msg(MERROR, "db_validate_key", "Warning: database corruption, key \"%s\", data 0x%08X", 
            path, pkey->data - sizeof(DATABASE_HEADER));
     return 0;
     }
 
-  pkeylist = (KEYLIST *) ((char *) pheader + pkey->data);
-
-  if (pkeylist->num_keys !=0 && 
-      (pkeylist->first_key == 0 || !db_validate_key_offset(pheader, pkeylist->first_key)))
+  if (!db_validate_data_offset(pheader, pkey->data))
     {
-    cm_msg(MERROR, "db_validate_key","Warning: database corruption, key \"%s\", first_key 0x%08X", 
-           path, pkeylist->first_key - sizeof(DATABASE_HEADER));
+    cm_msg(MERROR, "db_validate_key", "Warning: database corruption, data \"%s\", data 0x%08X", 
+           path, pkey->data - sizeof(DATABASE_HEADER));
     return 0;
     }
-  
-  /* check if key is in keylist */
-  pkey = (KEY *) ((char *) pheader + pkeylist->first_key);
 
-  for (i=0 ; i<pkeylist->num_keys ; i++)
+  /* check key type */
+  if (pkey->type >= TID_LAST)
     {
-    char buf[1024];
-    sprintf(buf, "%s/%s", path,pkey->name);
+    cm_msg(MERROR, "db_validate_key", "Warning: invalid key type, key \"%s\", type %d", path, pkey->type);
+    return 0;
+    }
 
-    if (!db_validate_key_offset(pheader, pkey->next_key))
+  /* check access mode */
+  if ((pkey->access_mode & ~(MODE_READ | MODE_WRITE | MODE_DELETE | MODE_EXCLUSIVE | MODE_ALLOC)))
+    {
+    cm_msg(MERROR, "db_validate_key", "Warning: invalid access mode, key \"%s\", mode %d", path, pkey->access_mode);
+    return 0;
+    }
+
+  /* check access time, consider valid if within +- 10 years */
+  if (pkey->last_written > 0 &&
+      ((DWORD)pkey->last_written < ss_time() - 3600*24*365*10 || (DWORD)pkey->last_written > ss_time() + 3600*24*365*10))
+    {
+    cm_msg(MERROR, "db_validate_key", "Warning: invalid access time, key \"%s\", time %d", path, pkey->last_written);
+    return 0;
+    }
+
+  if (pkey->type == TID_KEY && recurse)
+    {
+    /* if key has subkeys, go through whole list */
+
+    pkeylist = (KEYLIST *) ((char *) pheader + pkey->data);
+
+    if (pkeylist->num_keys !=0 && 
+        (pkeylist->first_key == 0 || !db_validate_key_offset(pheader, pkeylist->first_key)))
       {
-      cm_msg(MERROR, "db_validate_key","Warning: database corruption, key \"%s\", next_key 0x%08X", 
-             buf, pkey->next_key - sizeof(DATABASE_HEADER));
+      cm_msg(MERROR, "db_validate_key","Warning: database corruption, key \"%s\", first_key 0x%08X", 
+             path, pkeylist->first_key - sizeof(DATABASE_HEADER));
       return 0;
       }
+  
+    /* check if key is in keylist */
+    pkey = (KEY *) ((char *) pheader + pkeylist->first_key);
 
-    if (pkey->type == TID_KEY)
-      if (!db_validate_key(pheader, level+1, buf, pkey))
+    for (i=0 ; i<pkeylist->num_keys ; i++)
+      {
+      char buf[1024];
+      sprintf(buf, "%s/%s", path,pkey->name);
+
+      if (!db_validate_key_offset(pheader, pkey->next_key))
+        {
+        cm_msg(MERROR, "db_validate_key","Warning: database corruption, key \"%s\", next_key 0x%08X", 
+               buf, pkey->next_key - sizeof(DATABASE_HEADER));
         return 0;
+        }
+
+      if (pkey->type == TID_KEY)
+        if (!db_validate_key(pheader, recurse+1, buf, pkey))
+          return 0;
     
-    pkey = (KEY *) ((char *) pheader + pkey->next_key);
+      pkey = (KEY *) ((char *) pheader + pkey->next_key);
+      }
     }
 
   return 1;
 }
+
+/*------------------------------------------------------------------*/
 
 static int db_validate_db(DATABASE_HEADER *pheader)
 {
@@ -796,7 +835,7 @@ FREE_DESCRIP *pfree;
     return 0;
     }
 
-  return db_validate_key(pheader, 0, "", (KEY *) ((char *) pheader + pheader->root_key));
+  return db_validate_key(pheader, 1, "", (KEY *) ((char *) pheader + pheader->root_key));
 }
 
 /*------------------------------------------------------------------*/
@@ -1660,6 +1699,13 @@ INT              i;
     return DB_INVALID_HANDLE;
     }
 
+  /* check type */
+  if (type >= TID_LAST)
+    {
+    cm_msg(MERROR, "db_create_key", "invalid key type %d", type);
+    return DB_INVALID_PARAM;
+    }
+
   /* lock database */
   db_lock_database(hDB);
 
@@ -2198,6 +2244,7 @@ INT              i, status;
 
   if (!hKey)
     hKey = pheader->root_key;
+
   pkey = (KEY *) ((char *) pheader + hKey);
   if (pkey->type != TID_KEY)
     {
@@ -2751,7 +2798,7 @@ INT              i;
 
     for (i=0 ; i<pkeylist->num_keys ; i++)
       {
-      if (!db_validate_key_offset(pheader,pkey->next_key))
+      if (!db_validate_key_offset(pheader, pkey->next_key))
         {
         cm_msg(MERROR, "db_find_link1", "Warning: database corruption, key \"%s\", next_key 0x%08X", 
                key_name, pkey->next_key - sizeof(DATABASE_HEADER));
@@ -3623,8 +3670,6 @@ typedef struct {
   INT           total_size;           // Total size of data block          
   INT           item_size;            // Size of single data item          
   WORD          access_mode;          // Access mode                       
-  WORD          lock_mode;            // Lock mode                         
-  WORD          exclusive_client;     // Index of client in excl. mode     
   WORD          notify_count;         // Notify counter                    
   INT           next_key;             // Address of next key               
   INT           parent_keylist;       // keylist to which this key belongs 
@@ -4136,6 +4181,13 @@ KEY              *pkey;
   pheader  = _database[hDB-1].database_header;
   pkey = (KEY *) ((char *) pheader + hKey);
 
+  /* check if hKey argument is correct */
+  if (!db_validate_key(pheader, 0, pkey->name, pkey))
+    {
+    db_unlock_database(hDB);
+    return DB_INVALID_HANDLE;
+    }
+
   /* check for read access */
   if (!(pkey->access_mode & MODE_READ))
     {
@@ -4500,6 +4552,13 @@ KEY              *pkey;
 
   pheader  = _database[hDB-1].database_header;
   pkey = (KEY *) ((char *) pheader + hKey);
+
+  /* check if hKey argument is correct */
+  if (!db_validate_key(pheader, 0, pkey->name, pkey))
+    {
+    db_unlock_database(hDB);
+    return DB_INVALID_HANDLE;
+    }
 
   /* check for write access */
   if (!(pkey->access_mode & MODE_WRITE) ||
