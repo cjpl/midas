@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus communication functions
 
   $Log$
+  Revision 1.7  2001/11/05 11:47:04  midas
+  Fixed bug to run msc under W95
+
   Revision 1.6  2001/10/31 11:16:54  midas
   Added IO check function
 
@@ -494,12 +497,11 @@ unsigned char c;
       //printf("mscb.c: Cannot access parallel port (No DirectIO driver installed)\n");
       return -1;
       }
+
+    if (!DeviceIoControl(hdio, (DWORD) 0x9c406000, &buffer, sizeof(buffer), 
+		    NULL, 0, &size, NULL))
+      return -1;
     }
-
-  if (!DeviceIoControl(hdio, (DWORD) 0x9c406000, &buffer, sizeof(buffer), 
-		  NULL, 0, &size, NULL))
-    return -1;
-
   }
 #endif _MSC_VER
 
@@ -622,11 +624,11 @@ int i, fd, d;
       printf("mscb.c: Cannot access parallel port (No DirectIO driver installed)\n");
       return;
       }
-    }
 
-  if (!DeviceIoControl(hdio, (DWORD) 0x9c406000, &buffer, sizeof(buffer), 
-		  NULL, 0, &size, NULL))
-    return;
+    if (!DeviceIoControl(hdio, (DWORD) 0x9c406000, &buffer, sizeof(buffer), 
+		    NULL, 0, &size, NULL))
+      return;
+    }
 
   printf("Toggling %s output pins, hit ENTER to stop.\n", device);
   printf("GND = 19-25, toggling 2-9, 1, 14, 16 and 17\n\n");
