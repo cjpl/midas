@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.79  1999/11/08 13:56:09  midas
+  Added different alarm types
+
   Revision 1.78  1999/10/27 15:13:56  midas
   Added "access(<key>)" in alarm system
 
@@ -3211,8 +3214,8 @@ static DWORD last_checked = 0;
     return status;
     }
 
-  /* check alarms once every 10 seconds */
-  if (!rpc_is_remote() && ss_time() - last_checked > 10)
+  /* check alarms once every 60 seconds */
+  if (!rpc_is_remote() && ss_time() - last_checked > 60)
     {
     al_check();
     last_checked = ss_time();
@@ -15082,7 +15085,8 @@ DWORD  time;
 
 /*------------------------------------------------------------------*/
 
-INT al_trigger_alarm(char *alarm_name, char *alarm_message, char *default_class)
+INT al_trigger_alarm(char *alarm_name, char *alarm_message, char *default_class,
+                     char *cond_str, INT type)
 /********************************************************************\
 
   Routine: al_trigger_alarm
@@ -15095,6 +15099,8 @@ INT al_trigger_alarm(char *alarm_name, char *alarm_message, char *default_class)
     char   *default_class   If alarm is not yet defined under 
                             /alarms/alarms/<alarm_name>, a new one
                             is created and this default class is used.
+    char   cond_str         String displayed in alarm condition
+    INT    type             Alarm type, one of AT_xxx
 
   Output:
 
@@ -15130,7 +15136,8 @@ ALARM_STR(alarm_str);
       cm_msg(MERROR, "al_trigger_alarm", "Cannot create alarm record");
       return AL_ERROR_ODB;
       }
-    strcpy(str, "INTERNAL");
+    db_set_value(hDB, hkeyalarm, "Type", &type, sizeof(INT), 1, TID_INT);
+    strcpy(str, cond_str);
     db_set_value(hDB, hkeyalarm, "Condition", str, 256, 1, TID_STRING); 
     status = TRUE;
     db_set_value(hDB, hkeyalarm, "Active", &status, sizeof(status), 1, TID_BOOL); 
@@ -15148,7 +15155,7 @@ ALARM_STR(alarm_str);
     }
 
   /* if internal alarm, check if active and check interval */
-  if (equal_ustring(alarm.condition, "INTERNAL"))
+  if (alarm.type != AT_EVALUATED)
     {
     if (!alarm.active)
       return AL_SUCCESS;
@@ -15160,7 +15167,7 @@ ALARM_STR(alarm_str);
     }
 
   /* write back alarm message for internal alarms */
-  if (equal_ustring(alarm.condition, "INTERNAL"))
+  if (alarm.type != AT_EVALUATED)
     {
     strncpy(alarm.alarm_message, alarm_message, 79);
     alarm.alarm_message[79] = 0;
@@ -15503,7 +15510,7 @@ ALARM_STR(alarm_str);
 
     /* check alarm only when active and not internal */
     if (alarm.active &&
-        !equal_ustring(alarm.condition, "INTERNAL") &&
+        alarm.type == AT_EVALUATED && 
         alarm.check_interval > 0 &&
         (INT)ss_time() - (INT)alarm.checked_last > alarm.check_interval)
       {
@@ -15511,7 +15518,7 @@ ALARM_STR(alarm_str);
       if (al_evaluate_condition(alarm.condition, value))
         {
         sprintf(str, alarm.alarm_message, value);
-        al_trigger_alarm(key.name, str, alarm.alarm_class);
+        al_trigger_alarm(key.name, str, alarm.alarm_class, "", AT_EVALUATED);
         }
       else
         {
@@ -15570,7 +15577,8 @@ ALARM_STR(alarm_str);
             if (program_info.alarm_class[0])
               {
               sprintf(str, "Program %s is not running", key.name);
-              al_trigger_alarm(key.name, str, program_info.alarm_class);
+              al_trigger_alarm(key.name, str, program_info.alarm_class, 
+                               "Program not running", AT_PROGRAM);
               }
 
             /* auto restart program */
@@ -15589,7 +15597,6 @@ ALARM_STR(alarm_str);
         }
       }
     }
-
 
   ss_mutex_release(mutex);
 }
