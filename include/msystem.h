@@ -7,6 +7,10 @@
                 routines
 
   $Log$
+  Revision 1.20  2000/10/20 19:03:17  pierre
+  - Added ss_exec(...) for pid return
+  - Added ss_existpid(...) for pid check
+
   Revision 1.19  2000/08/21 07:05:47  midas
   Added cm_msg_log1(...,facility) to be compatible with older programs
 
@@ -538,6 +542,8 @@ INT ss_spawnv(INT mode, char *cmdname, char *argv[]);
 INT ss_shell(int sock);
 INT EXPRT ss_daemon_init();
 INT EXPRT ss_system(char *command);
+INT  EXPRT ss_exec(char * cmd, INT * child_pid);
+BOOL EXPRT ss_existpid(INT pid);
 INT EXPRT ss_getpid(void);
 INT EXPRT ss_gettid(void);
 INT ss_getthandle(void);
