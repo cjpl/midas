@@ -6,6 +6,9 @@
   Contents:     LeCroy LRS1454/1458 Voltage Device Driver
 
   $Log$
+  Revision 1.13  2003/09/29 11:56:44  midas
+  Initial revision
+
   Revision 1.12  2003/09/29 08:01:32  midas
   Added 'zero channels'
 
@@ -155,7 +158,7 @@ char         str[1000];
       if (strchr(str, '>') == NULL || strstr(str, "ERROR"))
         {
         cm_msg(MERROR, "lrs1454_init", "Cannot zero module %d. Please exchange module.", i);
-        return FE_ERR_HW;
+//        return FE_ERR_HW;
         }
       }
     }
@@ -181,7 +184,7 @@ char         str[1000];
     if (strchr(str, '>') == NULL || strstr(str, "ERROR"))
       {
       cm_msg(MERROR, "lrs1454_init", "Cannot enable module %d. Please exchange module.", i);
-      return FE_ERR_HW;
+//      return FE_ERR_HW;
       }
     }
 
@@ -443,7 +446,7 @@ char  str[256];
 
 INT lrs1454_set_current_limit_all(LRS1454_INFO *info, int channels, float *limit)
 {
-char  str[256];
+char  str[1000];
 INT   i, j;
 
   for (i=0 ; i<(channels-1)/12+1 ; i++)
@@ -553,6 +556,10 @@ void    *info, *bd;
       channel = va_arg(argptr, INT);
       pvalue = va_arg(argptr, float*);
       status = lrs1454_set_current_limit_all(info, channel, pvalue);
+      break;
+
+    case CMD_GET_DEFAULT_NAME:
+    case CMD_SET_LABEL:
       break;
 
     default:
