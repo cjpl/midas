@@ -851,7 +851,7 @@ Version 1.04, released Aug 6, 1998
 Version 1.05, intermediate version, never released
 --------------------------------------------------
 
-Version 1.06, released Oct 23, 1998
+Version 1.6, released Oct 23, 1998
 -----------------------------------
 
 - Class & device drivers have now their own local memory so they
@@ -877,3 +877,5 @@ Version 1.06, released Oct 23, 1998
 - Fixed minor bus in mana.c
 
 - Some revisions of the drivers/ directory
+
+- Modified version scheme from 1.06 to 1.6.0 where last digit is patch level
