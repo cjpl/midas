@@ -6,6 +6,9 @@
 #  Contents:     Makefile for MIDAS binaries and examples under unix
 #
 #  $Log$
+#  Revision 1.14  1999/09/17 11:55:08  midas
+#  Remove OS_UNIX (now defined in midas.h)
+#
 #  Revision 1.13  1999/09/14 15:32:09  midas
 #  Added elog
 #
@@ -110,7 +113,7 @@ endif
 
 ifeq ($(OSTYPE),osf1)
 OS_DIR = osf1
-OSFLAGS = -DOS_OSF1 -DOS_UNIX $(USERFLAGS)
+OSFLAGS = -DOS_OSF1 $(USERFLAGS)
 FFLAGS = -nofor_main -D 40000000 -T 20000000
 LIBS = -lbsd
 endif
@@ -124,7 +127,7 @@ endif
 
 ifeq ($(OSTYPE),ultrix)
 OS_DIR = ultrix
-OSFLAGS = -DOS_ULTRIX -DOS_UNIX -DNO_PTY $(USERFLAGS)
+OSFLAGS = -DOS_ULTRIX -DNO_PTY $(USERFLAGS)
 LIBS =
 endif
 
@@ -133,7 +136,7 @@ endif
 #
 ifeq ($(OSTYPE), FreeBSD)
 OS_DIR = freeBSD
-OSFLAGS = -DOS_FREEBSD -DOS_UNIX $(USERFLAGS)
+OSFLAGS = -DOS_FREEBSD $(USERFLAGS)
 LIBS = -lbsd -lcompat
 endif
 
@@ -146,7 +149,7 @@ endif
 
 ifeq ($(OSTYPE),linux)
 OS_DIR = linux
-OSFLAGS = -DOS_LINUX -DOS_UNIX -fPIC $(USERFLAGS)
+OSFLAGS = -DOS_LINUX -fPIC $(USERFLAGS)
 LIBS = -lbsd -lutil
 endif
 
@@ -156,7 +159,7 @@ endif
 ifeq ($(OSTYPE),solaris)
 CC = gcc
 OS_DIR = solaris
-OSFLAGS = -DOS_SOLARIS -DOS_UNIX $(USERFLAGS)
+OSFLAGS = -DOS_SOLARIS $(USERFLAGS)
 LIBS = -lsocket -lnsl
 endif
 
