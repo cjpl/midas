@@ -6,6 +6,9 @@
   Contents:     LeCroy LRS 1440 High Voltage Device Driver
 
   $Log$
+  Revision 1.7  2004/12/15 17:05:52  midas
+  Changed warning text
+
   Revision 1.6  2004/01/08 08:40:08  midas
   Implemented standard indentation
 
@@ -146,7 +149,7 @@ INT lrs1440_init(HNDLE hkey, void **pinfo, INT channels, INT(*bd) (INT cmd, ...)
    status = BD_GETS(str, sizeof(str), "M16\r\n", 2000);
    if (!status) {
       cm_msg(MERROR, "lrs1440_init",
-             "LRS1440 adr %d doesn't respond. Check power and RS232 connection.",
+             "LRS1440 adr %d doesn't respond. Check power and cable connection.",
              info->settings.address);
       return FE_ERR_HW;
    }
