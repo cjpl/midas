@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.89  2003/04/22 14:58:17  midas
+  Made histogram loading from last.root work
+
   Revision 1.88  2003/04/22 12:07:22  midas
   Made mana.c compile under Visual C++, added TApplication to make select() work
 
@@ -322,6 +325,7 @@
 
 #include <assert.h>
 #include <TApplication.h>
+#include <TKey.h>
 #include <TROOT.h>
 #include <TH1.h>
 #include <TFile.h>
@@ -348,8 +352,6 @@ INT SaveRootHistograms(TDirectory* dir,const char* filename)
     return 0;
     }
 
-  printf("Saving ROOT histograms to %s\n",filename);
-
   outf->cd();
   TIter next(dir->GetList());
   while (TObject *obj = next())
@@ -363,10 +365,29 @@ INT SaveRootHistograms(TDirectory* dir,const char* filename)
 }
 
 // Load all objects from given file into given directory
-INT LoadRootHistograms(TDirectory* dir,const char* filename)
+INT LoadRootHistograms(TDirectory *dir, const char *filename)
 {
   TDirectory *savedir = gDirectory;
-  printf("Loading ROOT histograms from %s: not implemented.\n",filename);
+  dir->cd();
+  TFile *inf = new TFile(filename, "READ");
+  if (inf == NULL)
+    printf("Error: File \"%\" not found", filename);
+  else
+    {
+    TIter next(inf->GetListOfKeys());
+
+    while (TObject *obj = next())
+      {
+      //if (obj->InheritsFrom("TH1")) // does not work???
+        {
+        dir->cd();
+        inf->Get(obj->GetName())->Clone();
+        savedir->cd();
+        }
+      }
+    inf->Close();
+    delete inf;
+    }
   // restore current directory
   savedir->cd();
   return SUCCESS;
@@ -1543,13 +1564,9 @@ char       str[256], block_name[32];
 BANK_LIST  *bank_list;
 double     dummy;
 
-  /* create ODB structure for output */
   sprintf(str, "/%s/Output", analyzer_name);
-  db_create_record(hDB, 0, str, OUT_INFO_STR);
   db_find_key(hDB, 0, str, &hkey);
-  size = sizeof(out_info);
-  db_get_record(hDB, hkey, &out_info, &size, 0);
-  
+
   if (clp.online)
     {
     status = db_open_record(hDB, hkey, &out_info, sizeof(out_info), MODE_READ, NULL, NULL);
@@ -1636,18 +1653,6 @@ double     dummy;
     }
 #endif /* HAVE_HBOOK */
 
-#ifdef HAVE_ROOT
-
-  // make sure we only come here once
-  assert(gManaHistsDir == NULL);
-  // create the directory for analyzer histograms
-  gManaHistsDir = new TDirectory("MidasHists","MIDAS Analyzer Histograms","");
-  assert(gManaHistsDir != NULL);
-  // make all ROOT objects created in user module init() functions to into gManaHistsDir
-  gManaHistsDir->cd();
-
-#endif /* HAVE_ROOT */
-  
   /* call main analyzer init routine */
   status = analyzer_init();
   if (status != SUCCESS)
@@ -1731,10 +1736,10 @@ BANK_LIST  *bank_list;
 
     }
 
-#ifdef HAVE_HBOOK
 /* clear histos, N-tuples and tests */
   if (clp.online && out_info.clear_histos)
     {
+#ifdef HAVE_HBOOK
     int hid[10000];
     int n;
 
@@ -1755,16 +1760,17 @@ BANK_LIST  *bank_list;
       if (lock_list[j] != hid[i])
         HRESET(hid[i], " ");
       }
-
-    test_clear();
-    }
 #endif /* HAVE_HBOOK */
 
 #ifdef HAVE_ROOT
-  /* clear histos, N-tuples and tests */
-  if (clp.online && out_info.clear_histos)
-    ClearRootHistograms(gManaHistsDir);
+    /* clear histos */
+    if (clp.online && out_info.clear_histos)
+      ClearRootHistograms(gManaHistsDir);
 #endif /* HAVE_ROOT */
+
+    /* clear tests */
+    test_clear();
+    }
 
   /* open output file if not already open (append mode) and in offline mode */
   if (!clp.online && out_file == NULL && !pvm_master && !equal_ustring(clp.output_file_name, "OFLN"))
@@ -3545,17 +3551,15 @@ INT ana_callback(INT index, void *prpc_param[])
 
 /*------------------------------------------------------------------*/
 
-INT loop_online()
+void load_last_histos()
 {
-INT      status = SUCCESS;
-DWORD    last_time_loop, last_time_update, actual_time;
-int      ch;
-char     str[256];
+char str[256];
 
   /* load previous online histos */
   if (!clp.no_load)
     {
     strcpy(str, out_info.last_histo_filename);
+
     if (strchr(str, DIR_SEPARATOR) == NULL)
       add_data_dir(str, out_info.last_histo_filename);
 
@@ -3577,9 +3581,43 @@ char     str[256];
 #endif /* HAVE_HBOOK */
 
 #ifdef HAVE_ROOT
-    LoadRootHistograms(gManaHistsDir,str);
+    printf("Loading previous online histos from %s\n", str);
+    LoadRootHistograms(gManaHistsDir, str);
 #endif
     }
+}
+
+/*------------------------------------------------------------------*/
+
+void save_last_histos()
+{
+char str[256];
+
+  /* save online histos */
+  strcpy(str, out_info.last_histo_filename);
+  if (strchr(str, DIR_SEPARATOR) == NULL)
+    add_data_dir(str, out_info.last_histo_filename);
+
+  printf("Saving current online histos to %s\n", str);
+
+#ifdef HAVE_HBOOK
+  HRPUT(0, str, "NT");
+#endif
+
+#ifdef HAVE_ROOT
+  SaveRootHistograms(gManaHistsDir, str);
+#endif
+  
+}
+
+/*------------------------------------------------------------------*/
+
+INT loop_online()
+{
+INT      status = SUCCESS;
+DWORD    last_time_loop, last_time_update, actual_time;
+int      ch;
+
   printf("Running analyzer online. Stop with \"!\"\n");
 
   /* main loop */
@@ -3631,21 +3669,6 @@ char     str[256];
   /* update statistics */
   update_stats();
 
-  /* save actual online histos */
-  strcpy(str, out_info.last_histo_filename);
-  if (strchr(str, DIR_SEPARATOR) == NULL)
-    add_data_dir(str, out_info.last_histo_filename);
-
-  printf("Saving current online histos to %s\n", str);
-#ifdef HAVE_HBOOK
-  HRPUT(0, str, "NT");
-#endif
-#ifdef HAVE_ROOT
-  SaveRootHistograms(gManaHistsDir,str);
-  if (gManaOutputFile)
-    CloseRootOutputFile();
-#endif
-  
   return status;
 }
     
@@ -5189,7 +5212,9 @@ char ext[10], *p;
 
 int main(int argc, char *argv[])
 {
-INT status;
+INT   status, size;
+char  str[256];
+HNDLE hkey;
 
 #ifdef PVM
   int i;
@@ -5362,6 +5387,36 @@ int rargc;
     return 1;
     }
 
+  /* create ODB structure for output */
+  sprintf(str, "/%s/Output", analyzer_name);
+  db_create_record(hDB, 0, str, OUT_INFO_STR);
+  db_find_key(hDB, 0, str, &hkey);
+  size = sizeof(out_info);
+  db_get_record(hDB, hkey, &out_info, &size, 0);
+
+#ifdef HAVE_ROOT
+
+  // create the directory for analyzer histograms
+  gManaHistsDir = new TDirectory("MidasHists","MIDAS Analyzer Histograms","");
+  assert(gManaHistsDir != NULL);
+
+  // make all ROOT objects created in user module init() functions to into gManaHistsDir
+  gManaHistsDir->cd();
+
+  /* convert .rz names to .root names */
+  if (strstr(out_info.last_histo_filename, ".rz"))
+    strcpy(out_info.last_histo_filename, "last.root");
+
+  if (strstr(out_info.histo_dump_filename, ".rz"))
+    strcpy(out_info.histo_dump_filename, "his%05d.root");
+
+  db_set_record(hDB, hkey, &out_info, size, 0);
+#endif
+
+  /* load histos from last.xxx */
+  if (clp.online)
+    load_last_histos();
+
   /* analyzer init function */
   if (mana_init() != CM_SUCCESS)
     {
@@ -5389,6 +5444,10 @@ int rargc;
 
   /* call exit function */
   mana_exit();
+
+  /* save histos to last.xxx */
+  if (clp.online)
+    save_last_histos();
 
 #ifdef PVM
 
