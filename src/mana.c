@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.64  2000/09/18 09:22:23  midas
+  Fixed bug which limited output event size to 64k
+
   Revision 1.63  2000/08/10 07:44:50  midas
   Made PAW global memory name variable under /analyzer/output/global memeory name
   to run more than one online analyzer instance on one machine
@@ -2000,10 +2003,14 @@ EVENT_DEF      *event_def;
 BANK           *pbk;
 BANK32         *pbk32;
 char           *pdata, *pdata_copy;
-char           buffer[NET_TCP_SIZE], *pbuf;
+char           *pbuf;
 EVENT_HEADER   *pevent_copy;
 DWORD          bkname, bksize;
 WORD           bktype;
+static char    *buffer = NULL;
+
+  if (buffer == NULL)
+    buffer = malloc(MAX_EVENT_SIZE);
 
   pevent_copy = (EVENT_HEADER *) ALIGN((PTYPE)buffer);
 
