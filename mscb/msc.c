@@ -6,6 +6,9 @@
   Contents:     Command-line interface for the Midas Slow Control Bus
 
   $Log$
+  Revision 1.37  2003/05/12 13:49:17  midas
+  Added address check for SET_ADDR command
+
   Revision 1.36  2003/05/12 10:30:45  midas
   Fixed name collisions with midas library
 
@@ -623,7 +626,11 @@ MSCB_INFO_VAR info_var;
           else
             gaddr = atoi(param[2]);
 
-          mscb_set_addr(fd, current_addr, addr, gaddr);
+          status = mscb_set_addr(fd, current_addr, addr, gaddr);
+          if (status == MSCB_ADDR_EXISTS)
+            printf("Error: Address %d exists already on this network\n", addr);
+          else
+            current_addr = addr;
           }
         }
       }
