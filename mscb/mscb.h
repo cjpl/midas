@@ -6,6 +6,9 @@
   Contents:     Header fiel for MSCB funcions
 
   $Log$
+  Revision 1.6  2002/07/10 09:51:13  midas
+  Introduced mscb_flash()
+
   Revision 1.5  2001/10/31 11:16:54  midas
   Added IO check function
 
@@ -55,7 +58,7 @@
 #define CMD_WRITE_ACK   0x88
 
 #define CMD_WRITE_CONF  0x90
-#define CMD_WRITE_CONF_PERM 0x98
+#define CMD_FLASH       0x98
 
 #define CMD_READ        0xA1
 #define CMD_READ_CONF   0xA9
@@ -143,14 +146,14 @@ int EXPRT mscb_info_channel(int fd, int type, int index, MSCB_INFO_CHN *info);
 int EXPRT mscb_set_addr(int fd, int node, int group);
 int EXPRT mscb_write(int fd, unsigned char channel, unsigned int data, int size);
 int EXPRT mscb_write_na(int fd, unsigned char channel, unsigned int data, int size);
-int EXPRT mscb_write_conf(int fd, unsigned char channel, unsigned int data, int size, int perm);
+int EXPRT mscb_write_conf(int fd, unsigned char channel, unsigned int data, int size);
+int EXPRT mscb_flash();
 int EXPRT mscb_read(int fd, unsigned char channel, unsigned int *data);
 int EXPRT mscb_read_conf(int fd, unsigned char channel, unsigned int *data);
-int EXPRT mscb_user(int fd, unsigned char *param, int size, 
-                    unsigned char *result, int *rsize);
+int EXPRT mscb_user(int fd, void *param, int size, void *result, int *rsize);
 
 int EXPRT mscb_write16(char *device, unsigned short addr, unsigned char channel, unsigned short data);
-int EXPRT mscb_write_conf16(char *device, unsigned short addr, unsigned char channel, unsigned short data, int perm);
+int EXPRT mscb_write_conf16(char *device, unsigned short addr, unsigned char channel, unsigned short data);
 
 int EXPRT mscb_read16(char *device, unsigned short addr, unsigned char channel, unsigned short *data);
 int EXPRT mscb_read_conf16(char *device, unsigned short addr, unsigned char channel, unsigned short *data);
