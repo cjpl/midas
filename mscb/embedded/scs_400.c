@@ -9,6 +9,9 @@
                 for SCS-400 thermo couple I/O
 
   $Log$
+  Revision 1.13  2003/03/23 10:20:43  midas
+  Added LCD_SUPPORT flag
+
   Revision 1.12  2003/03/21 08:28:15  midas
   Fixed bug with LSB bytes
 
@@ -68,6 +71,7 @@ char code node_name[] = "SCS-400";
 struct {
   short demand[4];
   float temp[4];
+  float c_int[4];
   float p_int[4];
   char  power[4];
 } idata user_data;
@@ -81,6 +85,10 @@ MSCB_INFO_VAR code variables[] = {
   4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp1",   &user_data.temp[1],
   4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp2",   &user_data.temp[2],
   4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp3",   &user_data.temp[3],
+  4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "CInt0",   &user_data.c_int[0],
+  4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "CInt1",   &user_data.c_int[1],
+  4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "CInt2",   &user_data.c_int[2],
+  4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "CInt3",   &user_data.c_int[3],
   4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "PInt0",   &user_data.p_int[0],
   4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "PInt1",   &user_data.p_int[1],
   4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "PInt2",   &user_data.p_int[2],
@@ -148,8 +156,15 @@ unsigned char i;
   PRT1CF = 0xFF;  // P1 on push-pull
 
   if (init)
+    {
     for (i=0 ; i<N_CHANNEL ; i++)
       user_data.power[i] = 0;
+
+#ifdef CONTROL_4
+    for (i=0 ; i<N_CHANNEL ; i++)
+       user_data.c_int[i] = 0.01;
+#endif
+    }
 }
 
 /*---- User write function -----------------------------------------*/
@@ -258,7 +273,7 @@ static unsigned long t;
     for (i=0 ; i<N_CHANNEL ; i++)
       {
       /* integral part */
-      user_data.p_int[i] += (user_data.demand[i] - user_data.temp[i]) * 0.01; 
+      user_data.p_int[i] += (user_data.demand[i] - user_data.temp[i]) * user_data.c_int[i]; 
       if (user_data.p_int[i] < 0)
         user_data.p_int[i] = 0;
       if (user_data.p_int[i] > 100)
@@ -285,7 +300,6 @@ static unsigned long t;
 void user_loop(void)
 {
 static unsigned char i;
-static unsigned long last_display;
 
   /* convert one channel at a time */
   i = (i+1) % N_CHANNEL;
@@ -298,17 +312,5 @@ static unsigned long last_display;
 
   /* set output according to power */
   set_power();
-
-  /* output temperature */
-  if (!DEBUG_MODE)
-    {
-    last_display = time();
-
-    lcd_goto(0, 0);
-    printf("0:%5.1fﬂC 1:%5.1fﬂC", user_data.temp[0], user_data.temp[1]);
-
-    lcd_goto(0, 1);
-    printf("2:%5.1fﬂC 3:%5.1fﬂC", user_data.temp[2], user_data.temp[3]);
-    }
 }
 
