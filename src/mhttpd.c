@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.177  2001/12/04 08:36:37  midas
+  Increased ref[80] to ref[256]
+
   Revision 1.176  2001/11/20 14:42:15  midas
   Added "/logger/history dir" and "/logger/elog dir"
 
@@ -2618,7 +2621,7 @@ void show_elog_submit_query(INT last_n)
 int    i, size, run, status, m1, d2, m2, y2, index, colspan;
 char   date[80], author[80], type[80], system[80], subject[256], text[10000], 
        orig_tag[80], reply_tag[80], attachment[3][256], encoding[80];
-char   str[256], str2[10000], tag[256], ref[80], file_name[256];
+char   str[256], str2[10000], tag[256], ref[256], file_name[256];
 HNDLE  hDB;
 BOOL   full, show_attachments, display_run_number;
 DWORD  ltime_start, ltime_end, ltime_current, now;
