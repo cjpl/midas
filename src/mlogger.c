@@ -6,6 +6,9 @@
   Contents:     MIDAS logger program
 
   $Log$
+  Revision 1.15  1999/08/12 11:24:41  midas
+  Fixed message bug
+
   Revision 1.14  1999/07/23 07:00:56  midas
   Added automatic tape rewind when tape gets full
 
@@ -1329,7 +1332,8 @@ double dzero;
 
     /* rewind tape */
     ss_tape_open(tape_name, O_RDONLY, &htape);
-    cm_msg(MTALK, "log_write", "rewinding tape %s, please wait", log_chn->path);
+    cm_msg(MTALK, "log_write", "rewinding tape %s, please wait", tape_name);
+    ss_sleep(3000);
 
     cm_set_watchdog_params(TRUE, 300000);  /* 5 min for tape rewind */
     ss_tape_unmount(htape);
