@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.170  2001/10/12 11:12:13  midas
+  Added /Experiment/Parameter Comment feature
+
   Revision 1.169  2001/09/14 18:48:39  pierre
   corrected help link
 
@@ -5253,10 +5256,10 @@ char  str[256];
 void show_start_page(void)
 {
 int   i, j, n, size, status;
-HNDLE hDB, hkey, hsubkey;
+HNDLE hDB, hkey, hsubkey, hkeycomm, hkeyc;
 KEY   key;
 char  data[1000], str[32];
-char  data_str[256];
+char  data_str[256], comment[1000];
 
   cm_get_experiment_database(&hDB, NULL);
 
@@ -5273,6 +5276,7 @@ char  data_str[256];
 
   /* run parameters */
   db_find_key(hDB, 0, "/Experiment/Edit on start", &hkey);
+  db_find_key(hDB, 0, "/Experiment/Parameter Comments", &hkeycomm);
   if (hkey)
     {
     for (i=0,n=0 ; ; i++)
@@ -5299,6 +5303,17 @@ char  data_str[256];
           rsprintf("<tr><td>%s [%d]", str, j);
         else
           rsprintf("<tr><td>%s", str);
+
+        if (j == 0 && hkeycomm)
+          {
+          /* look for comment */
+          if (db_find_key(hDB, hkeycomm, key.name, &hkeyc))
+            {
+            size = sizeof(comment);
+            if (db_get_data(hDB, hkeyc, comment, &size, TID_STRING) == DB_SUCCESS)
+              rsprintf("<br>%s\n", comment);
+            }
+          }
 
         db_sprintf(data_str, data, key.item_size, j, key.type);
         
