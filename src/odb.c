@@ -6,6 +6,9 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.31  2000/02/25 22:19:10  midas
+  Improved Ctrl-C handling
+
   Revision 1.30  1999/12/21 14:34:27  midas
   Added a few #ifdef LOCAL_ROUTINES to make VxWorks happy
 
@@ -2388,7 +2391,7 @@ INT              i;
 /*------------------------------------------------------------------*/
 
 INT db_scan_tree(HNDLE hDB, HNDLE hKey, INT level,
-                 void (*callback)(HNDLE,HNDLE,KEY*,INT,void *), void *info)
+                 INT (*callback)(HNDLE,HNDLE,KEY*,INT,void *), void *info)
 /********************************************************************\
 
   Routine: db_scan_tree
@@ -2424,7 +2427,9 @@ INT   i, status;
   if (status != DB_SUCCESS)
     return status;
 
-  callback(hDB, hKey, &key, level, info);
+  status = callback(hDB, hKey, &key, level, info);
+  if (status == 0)
+    return status;
 
   if (key.type == TID_KEY)
     {
