@@ -6,6 +6,9 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
+  Revision 1.4  1999/01/21 23:10:23  pierre
+  - change ss_create_thread() to ss_thread_create()
+
   Revision 1.3  1999/01/13 09:40:48  midas
   Added db_set_data_index2 function
 
@@ -124,7 +127,7 @@ BOOL  inetd;
         printf("Single thread server started\n");
       if (atoi(argv[1]) == 1)
         {
-        if (ss_create_thread(NULL, NULL) == SS_NO_THREAD)
+        if (ss_thread_create(NULL, NULL) == SS_NO_THREAD)
           {
           printf("MIDAS doesn't support threads on this OS.\n");
           return 0;
