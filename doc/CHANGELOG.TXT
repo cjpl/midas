@@ -1,6 +1,21 @@
 Revision History
 ================
 
+Version 1.9.5, released Oct 7th, 2004
+-------------------------------------
+
+- increased number of clients for ODB. Please recompile all applications
+  and recreate ODB from scratch
+- Sequence based transitions. Users can specify the sequence in which 
+  clients go through run transitions
+- Histogram subdirectories in midas root analyzer
+- Large file (>2GB) support in logger
+- odbedit can save ODB in XML format
+- Improvements in event builder
+- MySQL support in logger for writing run table
+- Improved debugging of mserver via -d flag
+- Fix of many small bugs
+
 Version 1.9.4, released July 9th, 2004
 --------------------------------------
 
