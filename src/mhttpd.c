@@ -6,6 +6,9 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
+  Revision 1.9  1999/02/18 11:23:50  midas
+  Added level parameter to search_callback
+
   Revision 1.8  1999/01/20 13:51:56  midas
   Fixed some bugs in displaying/setting slow control values
 
@@ -226,7 +229,7 @@ void redirect(char *path)
 
 /*------------------------------------------------------------------*/
 
-void search_callback(HNDLE hDB, HNDLE hKey, KEY *key, void *info)
+void search_callback(HNDLE hDB, HNDLE hKey, KEY *key, INT level, void *info)
 {
 INT         i, size, status;
 char        *search_name, *p;
@@ -1892,7 +1895,7 @@ HNDLE hkey;
     db_find_key(hDB, 0, "", &hkey);
 
     /* scan tree, call "search_callback" for each key */
-    db_scan_tree(hDB, hkey, search_callback, (void *) value);
+    db_scan_tree(hDB, hkey, 0, search_callback, (void *) value);
 
     rsprintf("</table>");
     rsprintf("</body></html>\r\n");
