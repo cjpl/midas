@@ -8,6 +8,9 @@
                 CAMAC frontend (mfe.c)
 
   $Log$
+  Revision 1.7  1999/05/06 18:49:54  pierre
+  - Fix return code using midas code.
+
   Revision 1.6  1999/02/22 19:04:50  pierre
   - Remove came_xxx
 
@@ -85,7 +88,7 @@ HNDLE hDB, hKey, hRootKey, hSubkey;
     /* connect to experiment */
     status = cm_connect_experiment(host_name, exp_name, "mcnaf", 0);
     if (status != CM_SUCCESS)
-      return 1;
+      return CM_UNDEF_EXP;
   
     /* connect to the database */
     cm_get_experiment_database(&hDB, &hKey);
@@ -105,7 +108,7 @@ HNDLE hDB, hKey, hRootKey, hSubkey;
             {
             printf("No client currently exports the CNAF functionality.\n");
             cm_disconnect_experiment();
-            return 1;
+            return CM_UNDEF_EXP;
             }
 
           sprintf(str, "RPC/%d", RPC_CNAF16);
@@ -133,13 +136,13 @@ HNDLE hDB, hKey, hRootKey, hSubkey;
         {
         printf("CNAF functionality not implemented by client %s\n", client_name);
         cm_disconnect_client(hConn, FALSE);
-        return 0;
+        return CM_NO_CLIENT;
         }
       }
     else
       {
       printf("Cannot connect to client %s\n",client_name);
-      return 0;
+      return CM_NO_CLIENT;
       }
     }
   
