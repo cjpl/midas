@@ -6,6 +6,9 @@
   Contents:     Web server for remote PAW display
 
   $Log$
+  Revision 1.38  2003/05/14 13:53:49  midas
+  Fixed compiler warning
+
   Revision 1.37  2003/04/25 14:37:35  midas
   Fixed compiler warnings
 
@@ -1380,10 +1383,10 @@ unsigned int t;
 
   while (*s)
     {
-    t = (cind(*s++) << 18) |
-        (cind(*s++) << 12) |
-        (cind(*s++) << 6)  |
-        (cind(*s++) << 0);
+    t  = cind(*s++) << 18;
+    t |= cind(*s++) << 12;
+    t |= cind(*s++) <<  6;
+    t |= cind(*s++) <<  0;
 
     *(d+2) = (char) (t & 0xFF);
     t >>= 8;
