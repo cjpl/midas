@@ -6,6 +6,9 @@
   Contents:     Display/log some pertinent information of the ODB
   
   $Log$
+  Revision 1.11  2001/02/16 18:51:30  pierre
+  - Added logger status section for FAL
+
   Revision 1.10  2000/02/28 17:57:06  pierre
   - Change statistics to TID_DOUBLE for Super event implementation
 
@@ -336,7 +339,7 @@ void compose_status(HNDLE hDB, HNDLE hKey)
 
 /* --------------------- Logger tree ----------------------------- */
 /* search client name "Logger" under /system/clients/xxx/name */
-  if (cm_exist("logger",FALSE) == CM_SUCCESS)
+  if (cm_exist("logger",FALSE) || cm_exist("fal",FALSE)  == CM_SUCCESS)
     {
       char     datadir[256];
       char     mesfil[256];
