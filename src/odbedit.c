@@ -6,6 +6,9 @@
   Contents:     Command-line interface to the MIDAS online data base.
 
   $Log$
+  Revision 1.34  2000/02/25 22:36:52  midas
+  Made Ctrl-C working for display of large arrays
+
   Revision 1.33  2000/02/25 22:19:10  midas
   Improved Ctrl-C handling
 
@@ -301,6 +304,9 @@ PRINT_INFO  *pi;
       else
         for (i=0 ; i<key->num_values ; i++)
           {
+          if (_ctrlc_pressed)
+            return 0;
+
           if (pi->flags & PI_HEX)
             db_sprintfh(data_str, data, key->item_size, i, key->type);
           else
@@ -389,6 +395,9 @@ PRINT_INFO  *pi;
         {
         for (i=0 ; i<key->num_values ; i++)
           {
+          if (_ctrlc_pressed)
+            return 0;
+
           if (pi->flags & PI_HEX)
             db_sprintfh(data_str, data, key->item_size, i, key->type);
           else
