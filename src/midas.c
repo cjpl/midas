@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.126  2000/11/14 08:17:04  midas
+  Added number of messages for cm_msg_retrieve and in odbedit "old" command
+
   Revision 1.125  2000/11/06 14:19:19  midas
   Don't return from hs_read if variable not found (could be present later...)
 
@@ -1168,7 +1171,7 @@ INT status, id;
 
 /*------------------------------------------------------------------*/
 
-INT cm_msg_retrieve(char *message, INT *buf_size)
+INT cm_msg_retrieve(INT n_message, char *message, INT *buf_size)
 /********************************************************************\
 
   Routine: cm_msg_retrieve
@@ -1176,6 +1179,7 @@ INT cm_msg_retrieve(char *message, INT *buf_size)
   Purpose: Retrive old messages from log file
 
   Input:
+    INT    n_message         Number of messages to retrieve
     INT    *buf_size         Size of message buffer to fill
 
   Output:
@@ -1192,9 +1196,9 @@ INT cm_msg_retrieve(char *message, INT *buf_size)
 {
 char  dir[256];
 char  filename[256];
-char  path[256];
+char  path[256], *p;
 FILE  *f;
-INT   status, size, offset;
+INT   status, size, offset, i;
 HNDLE hDB, hKey;
 
 
@@ -1204,7 +1208,7 @@ HNDLE hDB, hKey;
   cm_get_experiment_database(&hDB, NULL);
 
   if (hDB)
-  {
+    {
     status = db_find_key(hDB, 0, "/Logger/Data dir", &hKey);
     if (status == DB_SUCCESS)
       {
@@ -1222,7 +1226,7 @@ HNDLE hDB, hKey;
       strcat(path, filename);
       }
     else
-    {
+      {
       cm_get_path(dir);
       if (dir[0] != 0)
         if (dir[strlen(dir)-1] != DIR_SEPARATOR)
@@ -1230,8 +1234,8 @@ HNDLE hDB, hKey;
 
       strcpy(path, dir);
       strcat(path, "midas.log");
+      }
     }
-  }
   else
     strcpy(path, "midas.log");
 
@@ -1247,6 +1251,7 @@ HNDLE hDB, hKey;
     offset = ftell(f);
     if (offset != 0)
       {
+      /* go to end of line */
       fgets(message, *buf_size-1, f);
       offset = ftell(f)-offset;
       *buf_size -= offset;
@@ -1255,6 +1260,24 @@ HNDLE hDB, hKey;
     fread(message, 1, *buf_size-1, f);
     message[*buf_size-1] = 0;
     fclose(f);
+
+    /* trim buffer so that last n_messages remain */
+    p = message+(*buf_size-3);
+    for (i=0 ; i<n_message ; i++)
+      {
+      while (p != message && *p != '\n')
+        p--;
+
+      if (*p == '\n')
+        p--;
+      }
+    while (*p == '\n' || *p == '\r')
+      p++;
+
+    *buf_size = (*buf_size-1) - ((PTYPE)p-(PTYPE)message);
+
+    memmove(message, p, *buf_size);
+    message[*buf_size] = 0;
     }
 
   return CM_SUCCESS;

@@ -6,6 +6,9 @@
   Contents:     Command-line interface to the MIDAS online data base.
 
   $Log$
+  Revision 1.43  2000/11/14 08:17:05  midas
+  Added number of messages for cm_msg_retrieve and in odbedit "old" command
+
   Revision 1.42  2000/11/10 08:38:22  midas
   "make" now also puts other trees in /Equipment except "Statistics" and
   "Variables" into experim.h
@@ -200,7 +203,7 @@ void print_help(char *command)
     printf("mkdir <subdir>          - make new <subdir>\n");
     printf("move <key> [top/bottom/[n]] - move key to position in keylist\n");
     printf("msg [user] <msg>        - compose user message\n");
-    printf("old                     - display old messages\n");
+    printf("old [n]                 - display old n messages\n");
     printf("passwd                  - change MIDAS password\n");
     printf("pause                   - pause current run\n");
     printf("pwd                     - show current directory\n");
@@ -2579,8 +2582,12 @@ PRINT_INFO      print_info;
     /* old */
     else if (param[0][0] == 'o' && param[0][1] == 'l')
       {
-      size = 1000;
-      cm_msg_retrieve(data, &size);
+      i = 20;
+      if (param[1][0])
+        i = atoi(param[1]);
+
+      size = sizeof(data);
+      cm_msg_retrieve(i, data, &size);
       printf(data);
       }
 
