@@ -7,6 +7,9 @@
                 SUBM250 running on Cygnal C8051F320
 
   $Log$
+  Revision 1.5  2004/07/20 16:04:40  midas
+  Implemented scs-1000 code
+
   Revision 1.4  2004/03/12 07:15:24  midas
   Enabled watchdog
 
@@ -97,7 +100,6 @@ void setup(void)
    P0MDOUT = 0x90;              // P0.4: TX, P0.7: RS485 enable Push/Pull
    P0SKIP  = 0x0C;              // Skip P0.2&3 for Xtal
    P0MDIN  = 0xF3;              // P0.2&3 as analog input for Xtal
-
 
    OSCXCN = 0;
    OSCICN |= 0x03;              // Configure internal oscillator for
