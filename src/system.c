@@ -14,6 +14,9 @@
                 Brown, Prentice Hall
 
   $Log$
+  Revision 1.65  2003/03/26 21:08:44  midas
+  Removed tabs
+
   Revision 1.64  2002/10/15 19:20:24  olchansk
   add more debugging printout to send_tcp() and recv_tcp()
 
@@ -3575,28 +3578,28 @@ INT   status;
 
   /* transfer fragments until complete buffer is transferred */
 
-  for (count=0 ; (INT)count<(INT)buffer_size-NET_TCP_SIZE ; )
+  for(count=0 ; (INT)count<(INT)buffer_size-NET_TCP_SIZE ; )
     {
     status = send(sock, buffer+count, NET_TCP_SIZE, flags);
     if (status != -1)
 	    count += status;
     else
-            {
+      {
 	    cm_msg(MERROR, "send_tcp", "send(socket=%d,size=%d) returned %d, errno: %d (%s)",sock,NET_TCP_SIZE,status,errno,strerror(errno));
 	    return status;
-            }
+      }
     }
 
-  while (count<buffer_size)
+  while(count < buffer_size)
     {
     status = send(sock, buffer+count, buffer_size - count, flags);
     if (status != -1)
 	    count += status;
     else
-            {
+      {
 	    cm_msg(MERROR, "send_tcp", "send(socket=%d,size=%d) returned %d, errno: %d (%s)",sock,(int)(buffer_size - count),status,errno,strerror(errno));
 	    return status;
-            }
+      }
     }
 
   return count;
