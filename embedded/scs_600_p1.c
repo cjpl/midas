@@ -9,6 +9,9 @@
                 for SCS-600 Digital I/O
 
   $Log$
+  Revision 1.2  2002/11/22 15:43:03  midas
+  Made user_write reentrant
+
   Revision 1.1  2002/11/20 12:05:14  midas
   Initila revision
 
@@ -37,7 +40,7 @@
 
 extern bit DEBUG_MODE;
 
-char code node_name[] = "SCS-600";
+char code node_name[] = "SCS-600-P1";
 
 
 sbit SR_CLOCK   = P0 ^ 2;    // Shift register clock
@@ -95,19 +98,32 @@ unsigned char output;
 
 #pragma NOAREGS
 
-void user_write(unsigned char channel);
+void user_write(unsigned char channel) reentrant;
 
 /*---- User init function ------------------------------------------*/
 
 void user_init(void)
 {
+unsigned char i;
+
   PRT1CF = 0xFF;  // push-pull for P1
+  /* initialize configuration data */
+
+  if (user_conf.power[0] <= 0 || user_conf.power[0] > 100)
+    {
+    for (i=0 ; i<8 ; i++)
+      {
+      user_data.out[i] = 0;
+      user_conf.power[i] = 100;
+      }
+    eeprom_flash();
+    }
 }
 
 
 /*---- User write function -----------------------------------------*/
 
-void user_write(unsigned char channel)
+void user_write(unsigned char channel) reentrant
 {
   if (channel);
 }
@@ -122,7 +138,7 @@ unsigned char user_read(unsigned char channel)
 
 /*---- User write config function ----------------------------------*/
 
-void user_write_conf(unsigned char channel)
+void user_write_conf(unsigned char channel) reentrant
 {
   if (channel);
 }
@@ -150,6 +166,9 @@ unsigned char user_func(unsigned char idata *data_in,
 unsigned char cycle;
 unsigned char ca[8];
 
+//#define BIT(i) (0x80 >> i)   // "reverse" order
+#define BIT(i) (1 << i)      // normal order
+
 void set_power(void)
 {
 unsigned char        i;
@@ -168,13 +187,13 @@ unsigned long        expired;
 
         if (frac == 0 || expired >= (unsigned long) (user_conf.power[i])+1)
           {
-          output &= ~(0x80 >> i);
+          output &= ~BIT(i);
           }
         else if (cycle > 0)
           {
           if ((float)ca[i] / cycle > frac)
             {
-            output &= ~(0x80 >> i);
+            output &= ~BIT(i);
             }
           else
             {
@@ -194,7 +213,7 @@ unsigned long        expired;
     on_time = time();
     for (i=0 ; i<8 ; i++)
       if (user_conf.power[i] > 0 && user_data.out[i])
-        output |= (0x80 >> i);
+        output |= BIT(i);
 
     cycle = (cycle + 1) % 10;
 
@@ -208,9 +227,9 @@ unsigned long        expired;
     if (user_conf.power[i] >= 100)
       {
       if (user_data.out[i])
-        output |= (0x80 >> i);
+        output |= BIT(i);
       else
-        output &= ~(0x80 >> i);
+        output &= ~BIT(i);
       }
 
   /* write output to P1 */
