@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.6  1998/12/10 05:28:18  midas
+  Removed convert-only flag, added -v (verbose) flag
+
   Revision 1.5  1998/10/29 14:37:58  midas
   Fixed problem with '!' for stopping analyzer
 
@@ -98,7 +101,7 @@ struct {
   char  param[10][256];
   BOOL  rwnt;
   BOOL  debug;
-  BOOL  convert_only;
+  BOOL  verbose;
   BOOL  quiet;
 } clp;
 
@@ -161,9 +164,8 @@ struct {
    &clp.rwnt, TID_BOOL, 0 },
 
   {'v', 
-   "              Convert only input file to output file. Useful\n\
-                   for format conversions.",
-   &clp.convert_only, TID_BOOL, 0 },
+   "              Verbose output.",
+   &clp.verbose, TID_BOOL, 0 },
 
   {'d', 
    "              Debug flag when started the analyzer fron a debugger.\n\
@@ -1350,7 +1352,7 @@ char           buffer[100000];
       /* look if bank is in exclude list */
       exclude = FALSE;
       pbl = NULL;
-      if (par->bank_list != NULL && !clp.convert_only)
+      if (par->bank_list != NULL)
         for (i=0 ; par->bank_list[i].name[0] ; i++)
           if ( *((DWORD *) par->bank_list[i].name) == *((DWORD *) pbk->name))
             {
@@ -1556,7 +1558,7 @@ EVENT_HEADER   *pevent_copy;
       /* look if bank is in exclude list */
       exclude = FALSE;
       pbl = NULL;
-      if (par->bank_list != NULL && !clp.convert_only)
+      if (par->bank_list != NULL)
         for (i=0 ; par->bank_list[i].name[0] ; i++)
           if ( *((DWORD *) par->bank_list[i].name) == *((DWORD *) pbk->name))
             {
@@ -1662,7 +1664,7 @@ KEY        key;
 
       exclude = FALSE;
       pbl = NULL;
-      if (par->bank_list != NULL && !clp.convert_only)
+      if (par->bank_list != NULL)
         {
         for (i=0 ; par->bank_list[i].name[0] ; i++)
           if ( *((DWORD *) par->bank_list[i].name) == *((DWORD *) pbk->name))
@@ -2025,6 +2027,10 @@ DWORD        actual_time;
 static DWORD last_time_kb = 0;
 EVENT_DEF    *event_def;
 
+  /* verbose output */
+  if (clp.verbose)
+    printf("event %d, number %d\n", pevent->event_id, pevent->serial_number);
+
   /* increment event counter */
   par->events_received++;
 
@@ -2036,30 +2042,28 @@ EVENT_DEF    *event_def;
   if (event_def->format == FORMAT_MIDAS)
     bk_swap((BANK_HEADER *) (pevent+1), FALSE);
 
-  /* analyze event if not in convert_only mode */
-  if (!clp.convert_only)
+  /*---- analyze event ----*/
+
+  /* call non-modular analyzer if defined */
+  status = CM_SUCCESS;
+  if (par->analyzer)
+    status = par->analyzer(pevent, (void *) (pevent+1));
+
+  /* don't continue if event was rejected */
+  if (status == 0)
+    return 0;
+
+  /* loop over analyzer modules */
+  module = par->ana_module;
+  for (i=0 ; module != NULL && module[i] != NULL ; i++)
     {
-    /* call non-modular analyzer if defined */
-    status = CM_SUCCESS;
-    if (par->analyzer)
-      status = par->analyzer(pevent, (void *) (pevent+1));
-  
-    /* don't continue if event was rejected */
-    if (status == 0)
-      return 0;
-
-    /* loop over analyzer modules */
-    module = par->ana_module;
-    for (i=0 ; module != NULL && module[i] != NULL ; i++)
+    if (module[i]->enabled)
       {
-      if (module[i]->enabled)
-        {
-        status = module[i]->analyzer(pevent, (void *) (pevent+1));
+      status = module[i]->analyzer(pevent, (void *) (pevent+1));
 
-        /* don't continue if event was rejected */
-        if (status == 0)
-          return 0;
-        }
+      /* don't continue if event was rejected */
+      if (status == 0)
+        return 0;
       }
     }
 
@@ -2734,9 +2738,6 @@ HNDLE           hKey, hKeyEq, hKeyRoot;
 
   ascii_serial = 1;
   num_events_in = num_events_out = 0;
-
-  if (clp.convert_only)
-    printf("Converting file only\n");
 
   /* event loop */
   do
