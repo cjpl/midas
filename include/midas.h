@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.142  2004/10/01 15:38:18  midas
+  Added previous_count to tests
+
   Revision 1.141  2004/09/29 17:57:22  midas
   Added large file (>2GB) support for linux
 
@@ -1495,6 +1498,7 @@ typedef struct {
    char name[80];
    BOOL registered;
    DWORD count;
+   DWORD previous_count;
    BOOL value;
 } ANA_TEST;
 
@@ -2231,10 +2235,10 @@ extern "C" {
    void EXPRT test_register(ANA_TEST * t);
    void EXPRT add_data_dir(char *result, char *file);
    void EXPRT lock_histo(INT id);
-   void *h1_book(char *name, char *title, int bins, double min, double max);
-   void *h2_book(char *name, char *title, int bx, double xmin, double xmax, int by, double ymin, double ymax);
-   void open_subfolder(char *name);
-   void close_subfolder();
+   void EXPRT *h1_book(char *name, char *title, int bins, double min, double max);
+   void EXPRT *h2_book(char *name, char *title, int bx, double xmin, double xmax, int by, double ymin, double ymax);
+   void EXPRT open_subfolder(char *name);
+   void EXPRT close_subfolder();
 
 #define H1_BOOK(n,t,b,min,max) ((TH1F*)h1_book(n,t,b,min,max))
 #define H2_BOOK(n,t,xb,xmin,xmax,yb,ymin,ymax) ((TH2F*)h2_book(n,t,xb,xmin,xmax,yb,ymin,ymax))
