@@ -6,6 +6,9 @@
   Contents:     Header fiel for MSCB RPC funcions
 
   $Log$
+  Revision 1.9  2003/09/30 08:03:41  midas
+  Implemented multiple RPC connections
+
   Revision 1.8  2003/09/23 09:25:27  midas
   Added RPC call for mscb_addr
 
@@ -165,5 +168,6 @@ typedef struct {
 
 void mrpc_server_loop(void);
 int  mrpc_connect(char *host_name);
-int  mrpc_connected();
+int  mrpc_connected(int fd);
+int  mrpc_disconnect(int sock);
 int  mrpc_call(const int routine_id, ...);
