@@ -6,6 +6,9 @@
   Contents:     MIDAS logger program
 
   $Log$
+  Revision 1.74  2004/07/21 14:55:14  midas
+  Fixed crashes with root trees due to realloc()
+
   Revision 1.73  2004/05/07 19:40:11  midas
   Replaced min/max by MIN/MAX macros
 
@@ -1277,14 +1280,16 @@ INT ascii_log_close(LOG_CHN * log_chn, INT run_number)
 
 #ifdef HAVE_ROOT
 
+#define MAX_BANKS 100
+
 typedef struct {
    int event_id;
    TTree *tree;
    int n_branch;
-   DWORD *branch_name;
-   int *branch_filled;
-   int *branch_len;
-   TBranch **branch;
+   DWORD branch_name[MAX_BANKS];
+   int branch_filled[MAX_BANKS];
+   int branch_len[MAX_BANKS];
+   TBranch *branch[MAX_BANKS];
 } EVENT_TREE;
 
 typedef struct {
@@ -1338,10 +1343,6 @@ INT root_book_trees(TREE_STRUCT * tree_struct)
 
       et->event_id = id;
       et->n_branch = 0;
-      et->branch = NULL;
-      et->branch_name = NULL;
-      et->branch_filled = NULL;
-      et->branch_len = NULL;
 
       /* check format */
       size = sizeof(str);
@@ -1380,19 +1381,10 @@ INT root_book_bank(EVENT_TREE * et, HNDLE hKeyDef, int event_id, char *bank_name
       return 0;
    }
 
-   if (et->n_branch == 0) {
-      et->branch = (TBranch **) malloc(sizeof(TBranch *));
-      et->branch_name = (DWORD *) malloc(sizeof(DWORD));
-      et->branch_filled = (int *) malloc(sizeof(int));
-      et->branch_len = (int *) malloc(sizeof(int));
-   } else {
-      et->branch =
-          (TBranch **) realloc(et->branch, sizeof(TBranch *) * (et->n_branch + 1));
-      et->branch_name =
-          (DWORD *) realloc(et->branch_name, sizeof(DWORD) * (et->n_branch + 1));
-      et->branch_filled =
-          (int *) realloc(et->branch_filled, sizeof(int) * (et->n_branch + 1));
-      et->branch_len = (int *) realloc(et->branch_len, sizeof(int) * (et->n_branch + 1));
+   if (et->n_branch + 1 == MAX_BANKS) {
+      cm_msg(MERROR, "root_book_bank", "max number of banks (%d) exceeded in event #%d",
+             MAX_BANKS, event_id);
+      return 0;
    }
 
    db_get_key(hDB, hKeyVar, &varkey);
@@ -1702,7 +1694,6 @@ INT root_log_open(LOG_CHN * log_chn, INT run_number)
 
 INT root_log_close(LOG_CHN * log_chn, INT run_number)
 {
-   int i;
    TREE_STRUCT *ts;
 
    ts = (TREE_STRUCT *) log_chn->format_info;
@@ -1711,15 +1702,6 @@ INT root_log_close(LOG_CHN * log_chn, INT run_number)
    ts->f->Write();
    ts->f->Close();
    delete ts->f;                // deletes also all trees and branches!
-
-   /* go through all events */
-   for (i = 0; i < ts->n_tree; i++)
-      if (ts->event_tree[i].branch) {
-         free(ts->event_tree[i].branch);
-         free(ts->event_tree[i].branch_name);
-         free(ts->event_tree[i].branch_filled);
-         free(ts->event_tree[i].branch_len);
-      }
 
    /* delete event tree */
    free(ts->event_tree);
