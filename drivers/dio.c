@@ -11,6 +11,9 @@
                 dio frontend
 
   $Log$
+  Revision 1.2  1999/05/06 18:44:16  pierre
+  - Added ioperm to port 0x80 for slow IO access (linux asm/io.h)
+
   Revision 1.1  1998/11/25 15:57:37  midas
   Added dio.c program as ioperm() wrapper for frontends
 
@@ -29,6 +32,13 @@ int main( int argc, char **argv )
 {
   int i;
   int status;
+
+  /* Grant access to the 0x80 ioports 
+     This is for being able to use the i/o port function with
+     _P (pause) for slow access.
+     See macros in hyt1331.c
+     See asm/io.h  port 0x80 is not supposed to be used */
+  status = ioperm( 0x80, 1, 1 );
 
   /* Grant access to the device's ioports */
   status = ioperm( iobase, num_ports, 1 );
