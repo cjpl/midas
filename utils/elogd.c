@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.78  2001/12/05 16:01:05  midas
+  Removed DWORD, changed (int)p1-(int)p2 to (int)(p1-p2) for True64
+
   Revision 1.77  2001/12/05 10:37:09  midas
   Removed most -Wall compiler warnings
 
@@ -278,7 +281,6 @@
 #define DIR_SEPARATOR_STR "/"
 
 typedef int BOOL;
-typedef unsigned long int DWORD;
 
 #include <netdb.h>
 #include <netinet/in.h>
@@ -465,7 +467,7 @@ char tmp[1000], str[256], uattr[256], *ps, *pt, *p;
   for (p = strchr(ps, '$') ; p != NULL ; p = strchr(ps, '$'))
     {
     /* copy leading characters */
-    j = (int)p-(int)ps;
+    j = (int)(p-ps);
     memcpy(pt, ps, j);
     pt += j;
     p++;
@@ -577,10 +579,9 @@ unsigned int t, pad;
 
 /*-------------------------------------------------------------------*/
 
-INT recv_string(int sock, char *buffer, DWORD buffer_size, INT millisec)
+INT recv_string(int sock, char *buffer, INT buffer_size, INT millisec)
 {
-INT            i;
-DWORD          n;
+INT            i, n;
 fd_set         readfds;
 struct timeval timeout;
 
@@ -1265,12 +1266,13 @@ INT el_search_message(char *tag, int *fh, BOOL walk, BOOL first)
 {
 int    lfh, i, n, d, min, max, size, offset, direction, last, status, did_walk;
 struct tm *tms, ltms;
-DWORD  lt, ltime, lact;
+time_t lt, ltime, lact;
 char   str[256], file_name[256], dir[256];
 char   *file_list;
 
   tzset();
   did_walk = 0;
+  ltime = lfh = 0;
 
   /* get data directory */
   strcpy(dir, data_dir);
@@ -1333,11 +1335,11 @@ char   *file_list;
         }
 
       /* in forward direction, stop today */
-      if (direction != -1 && ltime > (DWORD)time(NULL)+3600*24)
+      if (direction != -1 && ltime > (time_t)(time(NULL)+3600*24))
         break;
 
       /* in backward direction, go back 10 years */
-      if (direction == -1 && abs((INT)lt-(INT)ltime) > 3600*24*365*10)
+      if (direction == -1 && abs((int)(lt-ltime)) > 3600*24*365*10)
         break;
 
       } while (lfh < 0);
@@ -3986,7 +3988,7 @@ char   logbook_list[100][256], lb_enc[256], *nowrap, format[80];
 char   menu_str[1000], menu_item[MAX_N_LIST][NAME_LENGTH];
 char   *p , *pt, *pt1, *pt2;
 BOOL   full, show_attachments;
-DWORD  ltime, ltime_start, ltime_end, ltime_current, now;
+time_t ltime, ltime_start, ltime_end, ltime_current, now;
 struct tm tms, *ptms;
 FILE   *f;
 
@@ -4548,7 +4550,7 @@ FILE   *f;
           do
             {
             p = strstr(pt1, str);
-            size = (int)p - (int)pt1;
+            size = (int)(p - pt1);
             if (p != NULL)
               {
               pt1 = p+strlen(str);
@@ -6673,7 +6675,7 @@ int  i, n;
           if (file_name[0])
             {
             _attachment_buffer[n] = string;
-            _attachment_size[n] = (INT)p - (INT) string;
+            _attachment_size[n] = (int)(p - string);
             }
           string = strstr(p, boundary) + strlen(boundary);
           }
@@ -6707,7 +6709,7 @@ int  i, n;
         string++;
       }
 
-    } while ((INT)string - (INT)pinit < length);
+    } while ((int)(string - pinit) < length);
 
   interprete("");
 }
@@ -7445,7 +7447,7 @@ struct timeval       timeout;
             {
             length = strlen(p+4);
 
-            header_length = (int) (p) - (int) return_buffer;
+            header_length = (int) (p - return_buffer);
             memcpy(header_buffer, return_buffer, header_length);
 
             sprintf(header_buffer+header_length, "\r\nContent-Length: %d\r\n\r\n", length);
@@ -7549,7 +7551,7 @@ char *cfgbuffer, str[256], *p;
       if (strncmp(p, name, strlen(name)) == 0)
         {
         /* replace existing password */
-        i = (int) p - (int) cfgbuffer;
+        i = (int) (p - cfgbuffer);
         write(fh, cfgbuffer, i);
         sprintf(str, "%s=%s\n", name, pwd);
         write(fh, str, strlen(str));
@@ -7580,7 +7582,7 @@ char *cfgbuffer, str[256], *p;
       if (*p && *p == '\n')
         p++;
 
-      i = (int) p - (int) cfgbuffer;
+      i = (int) (p - cfgbuffer);
       write(fh, cfgbuffer, i);
       sprintf(str, "%s=%s\n", name, pwd);
       write(fh, str, strlen(str));
