@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.70  1999/10/11 10:40:44  midas
+  Fixed bug with form submit
+
   Revision 1.69  1999/10/08 22:00:29  midas
   Finished editing of elog messages
 
@@ -2255,6 +2258,7 @@ KEY   key;
       sprintf(text+strlen(text), "%s\n", getparam(str));
       }
   
+  str[0] = 0;
   el_submit(atoi(getparam("run")), getparam("author"), getparam("form"),
             "General", "", text, "", "plain", "", NULL, 0, "", NULL, 0, "", NULL, 0, str, sizeof(str));
 
@@ -2262,9 +2266,9 @@ KEY   key;
   rsprintf("Server: MIDAS HTTP %s\r\n", cm_get_version());
 
   if (exp_name[0])
-    rsprintf("Location: %sEL/%s?exp=%s\n\n<html>redir</html>\r\n", mhttpd_url, str, exp_name);
+    rsprintf("Location: %sEL/?exp=%s\n\n<html>redir</html>\r\n", mhttpd_url, exp_name);
   else
-    rsprintf("Location: %sEL/%s\n\n<html>redir</html>\r\n", mhttpd_url, str);
+    rsprintf("Location: %sEL/\n\n<html>redir</html>\r\n", mhttpd_url);
 }
 
 /*------------------------------------------------------------------*/
