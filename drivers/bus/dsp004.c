@@ -7,6 +7,9 @@
                 following the MIDAS CAMAC Standard for DirectIO
 
   $Log$
+  Revision 1.9  2002/05/16 22:20:54  pierre
+  add cam_inhibit_test
+
   Revision 1.8  2002/05/08 22:19:27  pierre
   remove warnings
 
@@ -621,6 +624,11 @@ INLINE void cam_inhibit_set(const int c){
   OUTP(CDMA, (((c&0x3)-1)<<4));
   OUTP(ZCI, 0x4);
   OUTP(CACY,1);
+}
+
+/*------------------------------------------------------------------*/
+INLINE int cam_inhibit_test(const int c){
+  return 0;
 }
 
 /*------------------------------------------------------------------*/
