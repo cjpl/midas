@@ -12,6 +12,9 @@
                 and transferred to experim.h.
 
   $Log$
+  Revision 1.7  2003/04/23 15:09:47  midas
+  Removed user branch
+
   Revision 1.6  2003/04/22 15:00:27  midas
   Worked on ROOT histo booking
 
@@ -97,19 +100,6 @@ ANA_MODULE adc_calib_module = {
 extern TDirectory *gManaHistsDir;
 
 static TH1F* gAdcHists[N_ADC];
-
-static char* gMyBranchString = "run_number/I:n_adc/I:adc_sum/F";
-static struct
-{
-  int   run_number;       // run number
-  int   n_adc;            // number of ADCs
-  float adc_sum;          // sum of calibrated ADCs
-
-} gMyBranchData;
-
-static int   gAdcRawData[N_ADC];
-static float gAdcCalibData[N_ADC];
-
 #endif
 
 /*-- init routine --------------------------------------------------*/
@@ -124,6 +114,7 @@ char name[256];
 int  i;
 
   /* book CADC histos */
+
 #ifdef HAVE_HBOOK
   for (i=0; i<N_ADC; i++)
     {
@@ -132,6 +123,7 @@ int  i;
            (float)ADC_X_LOW, (float)ADC_X_HIGH, 0.f); 
     }
 #endif /* HAVE_HBOOK */
+
 #ifdef HAVE_ROOT
   for (i=0; i<N_ADC; i++)
     {
@@ -145,32 +137,6 @@ int  i;
     if (gAdcHists[i] == NULL)
       gAdcHists[i] = new TH1F(name, title, ADC_N_BINS, ADC_X_LOW, ADC_X_HIGH);
     }
-#endif /* HAVE_ROOT */
-
-#ifdef HAVE_ROOT
-  // create a custom branch in the output file
-  extern TTree* gManaOutputTree;
-
-  // create the branches only if there is an output file and
-  // if the output tree exists.
-  //
-  // also only create branches is they do not exist: in append
-  // mode the output file is not reopened and the output
-  // tree with it's branches persists across calls to bor() and eor().
-
-  /*
-  if (gManaOutputTree != NULL)
-    {
-    if (gManaOutputTree->GetBranch("MyBranch")==NULL)
-      gManaOutputTree->Branch("MyBranch",&gMyBranchData,gMyBranchString);
-    gMyBranchData.run_number = run_number;
-
-    if (gManaOutputTree->GetBranch("AdcRaw")==NULL)
-      gManaOutputTree->Branch("AdcRaw",  &gAdcRawData,  "adc_raw[n_adc]/I");
-    if (gManaOutputTree->GetBranch("AdcCalib")==NULL)
-      gManaOutputTree->Branch("AdcCalib",&gAdcCalibData,"adc_calib[n_adc]/F");
-    }
-  */
 #endif /* HAVE_ROOT */
 
   return SUCCESS;
@@ -233,18 +199,6 @@ float  *cadc;
   for (i=0 ; i<n_adc ; i++)
     if (cadc[i] > (float) adccalib_param.histo_threshold)
       gAdcHists[i]->Fill(cadc[i], 1);
-#endif /* HAVE_ROOT */
-
-#ifdef HAVE_ROOT
-  // Fill the custom branch
-  gMyBranchData.n_adc = n_adc;
-  gMyBranchData.adc_sum = 0;
-  for (i=0 ; i<n_adc ; i++)
-    {
-    gAdcRawData[i]   = pdata[i];
-    gAdcCalibData[i] = cadc[i];
-    gMyBranchData.adc_sum += cadc[i];
-    }
 #endif /* HAVE_ROOT */
 
   /* close calculated bank */
