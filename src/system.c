@@ -14,6 +14,11 @@
                 Brown, Prentice Hall
 
   $Log$
+  Revision 1.53  2000/10/20 19:05:35  pierre
+  - Added ss_exec(...) for pid return.
+  - Added ss_existpid(...) for pid check.
+  - ss_system uses ss_exec with dummy pid.
+
   Revision 1.52  2000/03/08 17:38:14  midas
   Fixed BIIIIG bug in ss_mutex_wait_for which made the system under Linux
   totally unstable since mutexed didn't work at all with this bug
@@ -1452,7 +1457,35 @@ INT ss_daemon_init()
 }
 
 /*------------------------------------------------------------------*/
+BOOL ss_existpid(INT pid)
+/********************************************************************\
 
+  Routine: ss_existpid
+
+  Purpose: Execute a Kill sig=0 which return success if pid found.
+
+  Input:
+    pid  : pid to check
+    
+  Output:
+    none
+
+  Function value:
+    TRUE      PID found
+    FALSE     PID not found 
+
+\********************************************************************/
+{
+#ifdef OS_UNIX
+  /* only implemented for UNIX */
+  return (kill (pid, 0) == 0 ? TRUE : FALSE);
+#else
+  cm_msg(MINFO,"ss_existpid","implemented for UNIX only");
+  return FALSE;
+#endif
+}
+
+/*------------------------------------------------------------------*/
 INT ss_system(char *command)
 /********************************************************************\
 
@@ -1460,6 +1493,7 @@ INT ss_system(char *command)
 
   Purpose: Execute command in a separate process, close all open
            file descriptors
+	   invoke ss_exec and ignore pid.
 
   Input:
     char *command    Command to execute
@@ -1468,7 +1502,40 @@ INT ss_system(char *command)
     none
 
   Function value:
-    SS_SUCCESS       Successful completeion
+    SS_SUCCESS       Successful completion (or ss_exec returns code)
+
+\********************************************************************/
+{
+#ifdef OS_UNIX
+  INT childpid;
+
+  return ss_exec(command, &childpid);
+  
+#else
+
+  system(command);
+  return SS_SUCCESS;
+
+#endif
+}
+
+/*------------------------------------------------------------------*/
+INT ss_exec(char * command, INT *pid)
+/********************************************************************\
+
+  Routine: ss_exec
+
+  Purpose: Execute command in a separate process, close all open
+           file descriptors, return the pid of the child process.
+
+  Input:
+    char * command    Command to execute
+    INT  * pid        Returned PID of the spawned process.
+  Output:
+    none
+
+  Function value:
+    SS_SUCCESS       Successful completion
     SS_ABORT         fork() was not successful
 
 \********************************************************************/
@@ -1476,15 +1543,14 @@ INT ss_system(char *command)
 #ifdef OS_UNIX
 
   /* only implemented for UNIX */
-  int i, fd, pid;
+  int i, fd;
 
-  if ( (pid = fork()) < 0)
+  if ( (*pid = fork()) < 0)
     return SS_ABORT;
-  else if (pid != 0)
+  else if (*pid != 0)
     {
     /* avoid <defunc> parent processes */
     signal(SIGCHLD, catch_sigchld);
-
     return SS_SUCCESS; /* parent returns */
     }
 
@@ -1503,18 +1569,18 @@ INT ss_system(char *command)
       fd = open("/dev/null", O_WRONLY, 0);
     if (fd < 0) 
       {
-      cm_msg(MERROR, "ss_system", "Can't open /dev/null");
+      cm_msg(MERROR, "ss_exec", "Can't open /dev/null");
       return;
       }
     if (fd != i)
       {
-      cm_msg(MERROR, "ss_system", "Did not get file descriptor");
+      cm_msg(MERROR, "ss_exec", "Did not get file descriptor");
       return;
       }
     }
 
   setsid();               /* become session leader */
-  /* chdir("/"); */       /* change working direcotry (not on NFS!) */
+  /* chdir("/"); */       /* change working directory (not on NFS!) */
   umask(0);               /* clear our file mode createion mask */
 
   /* execute command */
@@ -1530,7 +1596,6 @@ INT ss_system(char *command)
 }
 
 /*------------------------------------------------------------------*/
-
 INT ss_thread_create(INT (*thread_func)(void *), void *param)
 /********************************************************************\
 
