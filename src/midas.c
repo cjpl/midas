@@ -6,6 +6,10 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.12  1999/01/20 08:55:44  midas
+  - Renames ss_xxx_mutex to ss_mutex_xxx
+  - Added timout flag to ss_mutex_wait_for
+
   Revision 1.11  1999/01/19 19:58:56  pierre
   - Fix compiler warning in dm_buffer_send
 
@@ -3010,7 +3014,7 @@ BUFFER_HEADER        *pheader;
     }
 
   /* create mutex for the buffer */
-  status = ss_create_mutex(buffer_name, &(_buffer[handle].mutex));
+  status = ss_mutex_create(buffer_name, &(_buffer[handle].mutex));
   if (status != SS_SUCCESS)
     {
     *buffer_handle = 0;
@@ -3207,7 +3211,7 @@ INT           i, j, index, destroy_flag;
   bm_unlock_buffer(buffer_handle);
 
   /* delete mutex */
-  ss_delete_mutex(_buffer[buffer_handle-1].mutex, destroy_flag);
+  ss_mutex_delete(_buffer[buffer_handle-1].mutex, destroy_flag);
 
   /* update _buffer_entries */
   if (buffer_handle == _buffer_entries)
@@ -4011,7 +4015,7 @@ INT bm_lock_buffer(INT buffer_handle)
     return BM_INVALID_HANDLE;
     }
 
-  ss_wait_for_mutex(_buffer[buffer_handle-1].mutex);
+  ss_mutex_wait_for(_buffer[buffer_handle-1].mutex, 0);
   return BM_SUCCESS;
 }
 
@@ -4041,7 +4045,7 @@ INT bm_unlock_buffer(INT buffer_handle)
     return BM_INVALID_HANDLE;
     }
 
-  ss_release_mutex(_buffer[buffer_handle-1].mutex);
+  ss_mutex_release(_buffer[buffer_handle-1].mutex);
   return BM_SUCCESS;
 }
 

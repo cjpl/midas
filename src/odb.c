@@ -6,6 +6,10 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.7  1999/01/20 08:55:44  midas
+  - Renames ss_xxx_mutex to ss_mutex_xxx
+  - Added timout flag to ss_mutex_wait_for
+
   Revision 1.6  1999/01/19 12:42:08  midas
   Records can be open several times with different dispatchers
 
@@ -638,7 +642,7 @@ INT                  timeout;
     }
 
   /* create mutex for the database */
-  status = ss_create_mutex(database_name, &(_database[handle].mutex));
+  status = ss_mutex_create(database_name, &(_database[handle].mutex));
   if (status != SS_SUCCESS)
     {
     *hDB = 0;
@@ -823,7 +827,7 @@ INT              index, destroy_flag, i, j;
   db_unlock_database(hDB);
 
   /* delete mutex */
-  ss_delete_mutex(_database[hDB-1].mutex, destroy_flag);
+  ss_mutex_delete(_database[hDB-1].mutex, destroy_flag);
 
   /* update _database_entries */
   if (hDB == _database_entries)
@@ -1026,7 +1030,7 @@ INT db_lock_database(HNDLE hDB)
     }
 
   if (_database[hDB-1].lock_cnt == 0)
-    ss_wait_for_mutex(_database[hDB-1].mutex);
+    ss_mutex_wait_for(_database[hDB-1].mutex, 0);
 
   _database[hDB-1].lock_cnt++;
 
@@ -1061,7 +1065,7 @@ INT db_unlock_database(HNDLE hDB)
     }
 
   if (_database[hDB-1].lock_cnt == 1)
-    ss_release_mutex(_database[hDB-1].mutex);
+    ss_mutex_release(_database[hDB-1].mutex);
 
   if (_database[hDB-1].lock_cnt > 0)
     _database[hDB-1].lock_cnt--;
