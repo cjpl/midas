@@ -9,6 +9,9 @@
                 for SCS-520 analog I/O with current option
 
   $Log$
+  Revision 1.7  2004/05/12 13:10:48  midas
+  Removed variables (stack overflow!)
+
   Revision 1.6  2004/04/07 11:06:17  midas
   Version 1.7.1
 
@@ -54,14 +57,13 @@ bit gain_flag;                  // set when new gains need to be set
 
 struct {
    float adc[8];
-   float dac0, dac1;
+//##   float dac0, dac1;
    unsigned char p1;
    unsigned char adc_average;   // average 2^(adc_average+4)
    unsigned char range[8];      // see below
    char ofs[8];                 // channel offset in mV
    char gain[8];                // channel gain
-   char bip_ofs[8];             // bipolar offset in 10mV
-   float glbl_gain;             // global gain calibration
+//##   char bip_ofs[8];             // bipolar offset in 10mV
    unsigned char cur_mode;      // current bit for each channel
 } idata user_data;
 
@@ -92,8 +94,8 @@ MSCB_INFO_VAR code variables[] = {
    4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC5", &user_data.adc[5],
    4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC6", &user_data.adc[6],
    4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC7", &user_data.adc[7],
-   4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "DAC0", &user_data.dac0,
-   4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "DAC1", &user_data.dac1,
+//##   4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "DAC0", &user_data.dac0,
+//##   4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "DAC1", &user_data.dac1,
    1, UNIT_BYTE, 0, 0, 0, "P1", &user_data.p1,
 
    1, UNIT_COUNT, 0, 0, 0, "ADCAvrg", &user_data.adc_average,
@@ -124,6 +126,7 @@ MSCB_INFO_VAR code variables[] = {
    1, UNIT_FACTOR, 0, 0, MSCBF_SIGNED, "Gain6", &user_data.gain[6],
    1, UNIT_FACTOR, 0, 0, MSCBF_SIGNED, "Gain7", &user_data.gain[7],
 
+/*##
    1, UNIT_VOLT, PRFX_MILLI, 0, MSCBF_SIGNED, "BipOfs0",
    &user_data.bip_ofs[0],
    1, UNIT_VOLT, PRFX_MILLI, 0, MSCBF_SIGNED, "BipOfs1",
@@ -140,9 +143,7 @@ MSCB_INFO_VAR code variables[] = {
    &user_data.bip_ofs[6],
    1, UNIT_VOLT, PRFX_MILLI, 0, MSCBF_SIGNED, "BipOfs7",
    &user_data.bip_ofs[7],
-
-   4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT, "GlblGain", &user_data.glbl_gain,
-   1, UNIT_BYTE, 0, 0, 0, "CurMode", &user_data.cur_mode,
+*/
 
    0
 };
@@ -195,17 +196,12 @@ void user_init(unsigned char init)
       for (i = 0; i < 8; i++) {
          user_data.range[i] = 0;
          user_data.ofs[i] = 0;
-         user_data.bip_ofs[i] = 0;
+//##         user_data.bip_ofs[i] = 0;
       }
-      user_data.glbl_gain = 1;
-
-      user_data.dac0 = 0;
-      user_data.dac1 = 0;
+//##      user_data.dac0 = 0;
+//##      user_data.dac1 = 0;
       user_data.p1 = 0xff;
    }
-
-   if (user_data.glbl_gain < 0.1 || user_data.glbl_gain > 10)
-      user_data.glbl_gain = 1;
 
    /* write P1, DACs and UNI_BIP */
    user_write(8);
@@ -277,11 +273,11 @@ void write_gain(void) reentrant
 void user_write(unsigned char index) reentrant
 {
    unsigned char i;
-   unsigned short d;
 
    switch (index) {
    case 8:                     // DAC0
       /* assume -10V..+10V range */
+/*##
       d = ((user_data.dac0 + 10) / 20) * 0x1000;
       if (d >= 0x1000)
          d = 0x0FFF;
@@ -294,10 +290,12 @@ void user_write(unsigned char index) reentrant
       DAC0L = d & 0xFF;
       DAC0H = d >> 8;
 #endif
+##*/
       break;
 
    case 9:                     // DAC1
       /* assume -10V..+10V range */
+/*##
       d = ((user_data.dac1 + 10) / 20) * 0x1000;
       if (d >= 0x1000)
          d = 0x0FFF;
@@ -310,6 +308,7 @@ void user_write(unsigned char index) reentrant
       DAC1L = d & 0xFF;
       DAC1H = d >> 8;
 #endif
+##*/
       break;
 
    case 10:                    // p1 
@@ -402,11 +401,11 @@ void adc_read(channel, float *d)
       gvalue = gvalue - 1;
 
    /* correct for bipolar offset */
-   if (user_data.range[channel] & 0x04)
-      gvalue += user_data.bip_ofs[channel] / 1000.0;
+//##   if (user_data.range[channel] & 0x04)
+//##      gvalue += user_data.bip_ofs[channel] / 1000.0;
 
    /* external voltage divider */
-   gvalue *= 10 * user_data.glbl_gain;
+   gvalue *= 10;
 
    /* external PGA */
    switch (user_data.range[channel] & 0x03) {
