@@ -6,6 +6,9 @@
  *         amaudruz@triumf.ca                            Local:           6234
  * ---------------------------------------------------------------------------
    $Log$
+   Revision 1.35  2002/03/05 01:04:37  pierre
+   add TID_SHORT for display
+
    Revision 1.34  2001/12/12 17:52:19  pierre
    1.8.3-2 doc++
 
@@ -3274,7 +3277,7 @@ void midas_bank_display( BANK * pbk, INT dsp_fmt)
     length_type = sizeof (DWORD);
     strcpy (strbktype,"Integer*4");
   }
-  if (type == TID_WORD)
+  if ((type == TID_WORD) || (type == TID_SHORT))
   {
     length_type = sizeof (WORD);
     strcpy (strbktype,"Integer*2");
@@ -3339,6 +3342,7 @@ void midas_bank_display( BANK * pbk, INT dsp_fmt)
       j++;
       break;
     case TID_WORD :
+    case TID_SHORT :
       if (j>7)
       {
 	printf("\n%4i-> ",i);
