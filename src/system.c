@@ -14,6 +14,9 @@
                 Brown, Prentice Hall
 
   $Log$
+  Revision 1.56  2001/06/27 12:16:00  midas
+  Fixed compiler warnings for IRIX
+
   Revision 1.55  2001/04/23 08:25:41  midas
   Use execvp instead execve so that mserver is searched in the full PATH
 
@@ -1421,7 +1424,7 @@ INT ss_daemon_init()
 
   Function value:
     SS_SUCCESS       Successful completeion
-    SS_ABORT         fork() was not successful
+    SS_ABORT         fork() was not successful, or other problem
 
 \********************************************************************/
 {
@@ -1450,12 +1453,12 @@ INT ss_daemon_init()
     if (fd < 0) 
       {
       cm_msg(MERROR, "ss_system", "Can't open /dev/null");
-      return;
+      return SS_ABORT;
       }
     if (fd != i)
       {
       cm_msg(MERROR, "ss_system", "Did not get file descriptor");
-      return;
+      return SS_ABORT;
       }
     }
   
@@ -1548,7 +1551,7 @@ INT ss_exec(char * command, INT *pid)
 
   Function value:
     SS_SUCCESS       Successful completion
-    SS_ABORT         fork() was not successful
+    SS_ABORT         fork() was not successful, or other problem
 
 \********************************************************************/
 {
@@ -1582,12 +1585,12 @@ INT ss_exec(char * command, INT *pid)
     if (fd < 0) 
       {
       cm_msg(MERROR, "ss_exec", "Can't open /dev/null");
-      return;
+      return SS_ABORT;
       }
     if (fd != i)
       {
       cm_msg(MERROR, "ss_exec", "Did not get file descriptor");
-      return;
+      return SS_ABORT;
       }
     }
 
@@ -1921,7 +1924,9 @@ INT ss_mutex_wait_for(HNDLE mutex_handle, INT timeout)
   sb.sem_num = 0;
   sb.sem_op = -1; /* decrement semaphore */
   sb.sem_flg = SEM_UNDO;
-    
+
+  memset(&arg, 0, sizeof(arg));
+
   /* don't request the mutex when in asynchronous state
      and mutex was locked already by foreground process */
   if (ss_in_async_routine_flag)
@@ -2109,6 +2114,8 @@ INT ss_mutex_delete(HNDLE mutex_handle, INT destroy_flag)
     ushort *array;
     } arg;
 #endif
+
+  memset(&arg, 0, sizeof(arg));
 
   if (destroy_flag)
     if (semctl(mutex_handle, 0, IPC_RMID, arg) < 0)
@@ -2773,18 +2780,15 @@ void *ss_ctrlc_handler(void (*func)(int))
   if (func == NULL)
     {
     signal(SIGTERM, SIG_DFL);
-    return signal(SIGINT, SIG_DFL);
+    return (void *) signal(SIGINT, SIG_DFL);
     }
   else
     {
     signal(SIGTERM, func);
-    return signal(SIGINT, func);
+    return (void *) signal(SIGINT, func);
     }
-  return NULL;
 
 #endif /* OS_UNIX */
-
-  return 0;
 }
 
 /*------------------------------------------------------------------*/
@@ -4370,7 +4374,6 @@ INT status;
       return SS_TAPE_ERROR;
     }
 
-  return SS_SUCCESS;
 #endif /* OS_UNIX */
 
 #ifdef OS_WINNT
@@ -4441,9 +4444,9 @@ INT n, status;
   *count = n;
 
   return status;
-#endif /* OS_UNIX */
 
-#ifdef OS_WINNT
+#elif defined(OS_WINNT) /* OS_UNIX */
+
 INT read, status;
 
   if (!ReadFile((HANDLE) channel, pdata, *count, &read, NULL))
@@ -4464,9 +4467,11 @@ INT read, status;
   *count = read;
   return status;
 
-#endif /* OS_WINNT */
+#else /* OS_WINNT */
 
   return SS_SUCCESS;
+
+#endif
 }
 
 /*------------------------------------------------------------------*/
@@ -4948,15 +4953,17 @@ double ss_disk_free(char *path)
   struct statvfs st;
   statvfs(path, &st);
   return (double) st.f_bavail * st.f_bsize;
+#elif defined(OS_IRIX)
+  struct statfs st;
+  statfs(path, &st, sizeof(struct statfs), 0);
+  return (double) st.f_bfree * st.f_bsize;
 #else
   struct fs_data st;
   statfs(path, &st);
   return (double) st.fd_otsize * st.fd_bfree;
 #endif
 
-#endif /* OS_UNIX */
-
-#ifdef OS_WINNT
+#elif defined(OS_WINNT) /* OS_UNIX */
 DWORD  SectorsPerCluster;
 DWORD  BytesPerSector;
 DWORD  NumberOfFreeClusters;
@@ -4976,9 +4983,11 @@ char   str[80];
                      &NumberOfFreeClusters, &TotalNumberOfClusters);
 
   return (double) NumberOfFreeClusters * SectorsPerCluster * BytesPerSector;
-#endif /* OS_WINNT */
+#else /* OS_WINNT */
 
   return 1e9;
+
+#endif
 }             
 
 #if defined(OS_ULTRIX) || defined(OS_WINNT)
@@ -5162,6 +5171,10 @@ double ss_disk_size(char *path)
   struct fs_data st;
   statfs(path, &st);
   return (double) st.fd_btot * 1024;
+#elif defined(OS_IRIX)
+  struct statfs st;
+  statfs(path, &st, sizeof(struct statfs), 0);
+  return (double) st.f_blocks * st.f_bsize;
 #else
 #error ss_disk_size not defined for this OS 
 #endif
@@ -5821,9 +5834,7 @@ static   BOOL init = FALSE;
 
   syslog(LOG_DEBUG, message);
   return SS_SUCCESS;
-#endif /* OS_UNIX */
-
-#ifdef OS_WINNT
+#elif defined(OS_WINNT) /* OS_UNIX */
 /*
 HANDLE hlog = 0;
 const char *pstr[2];
@@ -5854,9 +5865,13 @@ const char *pstr[2];
   if (hlog)
     ReportEvent(hlog, EVENTLOG_INFORMATION_TYPE, 0, 0, NULL, 1, 0, pstr, NULL);
 */
-#endif /* OS_WINNT */
+  return SS_SUCCESS;
+
+#else /* OS_WINNT */
   
   return SS_SUCCESS;
+
+#endif
 }
 
 /*------------------------------------------------------------------*/
