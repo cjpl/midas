@@ -6,6 +6,9 @@
   Contents:     List of MSCB RPC functions with parameters
 
   $Log$
+  Revision 1.21  2004/03/11 09:58:10  midas
+  mscb_init() does not ask for device if running under labview
+
   Revision 1.20  2004/03/10 13:28:25  midas
   mscb_init returns device name
 
@@ -99,7 +102,7 @@
 
 typedef int INT;
 
-int _debug_flag;
+int _debug_flag = 1;
 
 /*------------------------------------------------------------------*/
 

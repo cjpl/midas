@@ -6,6 +6,9 @@
   Contents:     Header fiel for MSCB funcions
 
   $Log$
+  Revision 1.33  2004/03/11 09:58:10  midas
+  mscb_init() does not ask for device if running under labview
+
   Revision 1.32  2004/03/10 13:28:25  midas
   mscb_init returns device name
 
@@ -298,7 +301,7 @@ extern "C" {
 #endif
 
    int EXPRT mscb_init(char *device, int size, int debug);
-   int EXPRT mscb_select_device(char *data);
+   int EXPRT mscb_select_device(char *data, int select);
    void EXPRT mscb_get_device(int fd, char *device, int bufsize);
    void EXPRT mscb_get_version(char *lib_version, char *prot_version);
    void EXPRT mscb_check(char *device, int size);

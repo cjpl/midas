@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus communication functions
 
   $Log$
+  Revision 1.62  2004/03/11 09:58:10  midas
+  mscb_init() does not ask for device if running under labview
+
   Revision 1.61  2004/03/11 08:46:07  midas
   Don't display DirectIO error if USB submaster present
 
@@ -1402,14 +1405,20 @@ int mscb_init(char *device, int bufsize, int debug)
    /* set global debug flag */
    _debug_flag = debug;
 
+   debug_log("mscb_init( %s %d %d * %d)\n", device, bufsize, debug);
+
    /* clear cache */
    for (i = 0; i < n_cache; i++)
       free(cache[i].data);
    free(cache);
    n_cache = 0;
 
-   if (!device[0])
-     mscb_select_device(device);
+   if (!device[0]) {
+      if (bufsize)
+         mscb_select_device(device, 1);
+      else
+         mscb_select_device(device, 0); /* for Labview */
+   }
 
    /* check for RPC connection */
    if (strchr(device, ':')) {
@@ -3121,7 +3130,7 @@ int mscb_link(int fd, int adr, unsigned char index, void *data, int size)
 
 /*------------------------------------------------------------------*/
 
-int mscb_select_device(char *device)
+int mscb_select_device(char *device, int select)
 /********************************************************************\
 
   Routine: mscb_select_device
@@ -3134,6 +3143,8 @@ int mscb_select_device(char *device)
 
   Output:
     char *device            Device name, can be passed to mscb_init()
+    int  select             If 1, ask user which device to select,
+                            if zero, use first device (for Labview)
 
   Function value:
     MSCB_SUCCESS            Successful completion
@@ -3194,7 +3205,7 @@ int mscb_select_device(char *device)
    }
 
    /* if only one device, return it */
-   if (n == 1) {
+   if (n == 1 || select == 0) {
       strcpy(device, list[0]);
       return MSCB_SUCCESS;
    }
