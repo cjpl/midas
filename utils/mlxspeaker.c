@@ -6,6 +6,9 @@
   Contents:     Speaks midas messages (UNIX version)
 
   $Log$
+  Revision 1.8  2002/09/26 00:09:17  pierre
+  include arg for 'play beep'
+
   Revision 1.7  2002/06/03 06:07:15  midas
   Added extra parameter to ss_daemon_init to keep stdout
 
@@ -44,67 +47,88 @@
 
 static FILE *fp = NULL;
 BOOL   debug=FALSE;
-
+char   mtUserStr[128], mtTalkStr[128];
+DWORD  shutupTime=10;
 /*------------------------------------------------------------------*/
 
 void sigpipehandler( int sig )
 {
-	cm_msg(MERROR, "Speaker", "No speech synthesizer attached" );
-	cm_disconnect_experiment();
-	pclose( fp );
-	exit( 2 );
+  cm_msg(MERROR, "Speaker", "No speech synthesizer attached" );
+  cm_disconnect_experiment();
+  pclose( fp );
+  exit( 2 );
 }
 
 void siginthandler( int sig )
 {
-	cm_msg(MINFO, "Speaker", "Speaker interrupted" );
-	cm_disconnect_experiment();
-	pclose( fp );
-	exit( 0 );
+  cm_msg(MINFO, "Speaker", "Speaker interrupted" );
+  cm_disconnect_experiment();
+  pclose( fp );
+  exit( 0 );
 }
 
 /*----- receive_message --------------------------------------------*/
 
 void receive_message(HNDLE hBuf, HNDLE id, EVENT_HEADER *header, void *message)
 {
-char str[256], *pc, *sp;
-
+  char str[256], *pc, *sp;
+  static DWORD last_beep=0;
+  
   /* print message */
   printf("%s\n", (char *)(message));
-
+  
   if (fp == NULL) {
-	  fputs( "Speech synthesizer not enabled - terminating\n", stderr );
-	  cm_disconnect_experiment();
-	  exit( 2 );
+    fputs( "Speech synthesizer not enabled - terminating\n", stderr );
+    cm_disconnect_experiment();
+    exit( 2 );
   }
-
+  
   if (debug)
-    {
-      printf("evID:%x Mask:%x Serial:%i Size:%d\n"
-	     ,header->event_id
-	     ,header->trigger_mask
-	     ,header->serial_number
-	     ,header->data_size);
-      pc = strchr((char *)(message),']')+2;
-    }
-
+  {
+    printf("evID:%hx Mask:%hx Serial:%i Size:%d\n"
+      ,header->event_id
+      ,header->trigger_mask
+      ,header->serial_number
+      ,header->data_size);
+    pc = strchr((char *)(message),']')+2;
+  }
+  
   /* skip none talking message */
   if (header->trigger_mask == MT_TALK ||
-      header->trigger_mask == MT_USER)
+    header->trigger_mask == MT_USER)
+  {
+    pc = strchr((char *)(message),']')+2;
+    sp = pc + strlen(pc) - 1;
+    while (*sp == ' ' || *sp == '\t')
+      sp--;
+    *(++sp) ='\0';
+    if (debug) 
     {
-      pc = strchr((char *)(message),']')+2;
-      sp = pc + strlen(pc) - 1;
-      while (*sp == ' ' || *sp == '\t')
-      	sp--;
-      *(++sp) ='\0';
-      if (debug) 
-	{
-	  printf("<%s>", pc );
-	  printf(" sending msg to festival\n");
-	}
-      fprintf( fp, "%s.\n.\n", pc );
-      fflush( fp );
+      printf("<%s>", pc );
+      printf(" sending msg to festival\n");
     }
+
+    /* Send beep first */
+    // "play --volume=0.3 /etc/mt_talk.wav"
+    if ((ss_time() - last_beep) > shutupTime) {
+      switch (header->trigger_mask) {
+      case MT_TALK:
+        if (mtTalkStr[0])
+	  sprintf(str, mtTalkStr);
+        break;
+      case MT_USER:
+	if (mtUserStr[0])
+        sprintf(str, mtUserStr);
+        break;
+      }
+      ss_system(str);
+      last_beep = ss_time();
+      ss_sleep(200);
+    }
+    
+    fprintf( fp, "%s.\n.\n", pc );
+    fflush( fp );
+  }
   
   return;
 }
@@ -123,63 +147,74 @@ int main(int argc, char *argv[])
   
   /* parse command line parameters */
   for (i=1 ; i<argc ; i++)
+  {
+    if (argv[i][0] == '-' && argv[i][1] == 'd')
+      debug = TRUE;
+    else if (argv[i][0] == '-' && argv[i][1] == 'D')
+      daemon = TRUE;
+    else if (argv[i][0] == '-')
     {
-      if (argv[i][0] == '-' && argv[i][1] == 'd')
-	debug = TRUE;
-      else if (argv[i][0] == '-' && argv[i][1] == 'D')
-	daemon = TRUE;
-      else if (argv[i][0] == '-')
-	{
-	  if (i+1 >= argc || argv[i+1][0] == '-')
-	    goto usage;
-	  if (argv[i][1] == 'e')
-	    strcpy(exp_name, argv[++i]);
-	  else if (argv[i][1] == 'h')
-	    strcpy(host_name, argv[++i]);
-	  else if (argv[i][1] == 'c')
-	    speech_program = argv[++i];
-	  else
-        {
+      if (i+1 >= argc || argv[i+1][0] == '-')
+        goto usage;
+      if (argv[i][1] == 'e')
+        strcpy(exp_name, argv[++i]);
+      else if (argv[i][1] == 'h')
+        strcpy(host_name, argv[++i]);
+      else if (argv[i][1] == 'c')
+        speech_program = argv[++i];
+      else if (argv[i][1] == 't')
+        strcpy(mtTalkStr, argv[++i]);
+      else if (argv[i][1] == 'u')
+        strcpy(mtUserStr, argv[++i]);
+      else if (argv[i][1] == 's')
+        shutupTime = atoi(argv[++i]);
+      else
+      {
 usage:
-        printf("usage: mlxspeaker [-h Hostname] [-e Experiment] [-c command] [-D] daemon\n");
-	printf("  where `command' is used to start the speech synthesizer,\n" );
-	printf("  which should read text from it's standard input.\n" );
-	printf("   eg: mlxspeaker -c 'festival --tts -'\n\n" );
-        return 0;
-        }
+      printf("usage: mlxspeaker [-h Hostname] [-e Experiment] [-c command] [-D] daemon\n");
+      printf("                  [-t mt_talk] Specify the mt_talk alert command\n");
+      printf("                  [-u mt_user] Specify the mt_user alert command\n");
+      printf("                  [-s shut up time] Specify the min time interval between alert [s]\n");
+      printf("                  The -t & -u switch require a command equivalent to:\n");
+      printf("                  '-t play --volume=0.3 file.wav'\n");
+      printf("                  [-c command] Used to start the speech synthesizer,\n" );
+      printf("                              which should read text from it's standard input.\n" );
+      printf("                              eg: mlxspeaker -c 'festival --tts -'\n\n" );
+      return 0;
       }
     }
-
+  }
+  
   if (daemon)
-    {
+  {
     printf("Becoming a daemon...\n");
     ss_daemon_init(FALSE);
-    }
-
+  }
+  
   /* now connect to server */
   status = cm_connect_experiment(host_name, exp_name, "Speaker", NULL);
   if (status != CM_SUCCESS)
     return 1;
-
+  
   cm_msg_register(receive_message);
-
+  
   /* Handle SIGPIPE signals generated from errors on the pipe */
   signal( SIGPIPE, sigpipehandler );
   signal( SIGINT, siginthandler );
   if (NULL == (fp = popen( speech_program, "w" ))) {
-	  cm_msg( MERROR, "Speaker", "Unable to start \"%s\": %s\n",
-		  speech_program, strerror( errno ) );
-	  cm_disconnect_experiment();
-	  exit( 2 );
+    cm_msg( MERROR, "Speaker", "Unable to start \"%s\": %s\n",
+      speech_program, strerror( errno ) );
+    cm_disconnect_experiment();
+    exit( 2 );
   }
-
+  
   printf("Midas Message Speaker connected to %s.\n", 
-          host_name[0] ? host_name : "local host");
-
+    host_name[0] ? host_name : "local host");
+  
   do
-    {
+  {
     status = cm_yield(1000);
-    } while (status != RPC_SHUTDOWN && status != SS_ABORT);
+  } while (status != RPC_SHUTDOWN && status != SS_ABORT);
   
   pclose( fp );
   
