@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.135  2005/03/15 23:49:40  amaudruz
+  add Reset cmd in root server
+
   Revision 1.134  2005/03/08 07:53:34  ritt
   Applied patch from John
 
@@ -5657,41 +5660,47 @@ THREADTYPE root_server_thread(void *arg)
                delete message;
                continue;
             }
-
+	    
             //get folder names
             TObject *obj;
             TObjArray *names = new TObjArray(100);
-
+	    
             TCollection *folders = folder->GetListOfFolders();
             TIterator *iterFolders = folders->MakeIterator();
             while ((obj = iterFolders->Next()) != NULL)
-               names->Add(new TObjString(obj->GetName()));
-
+	      names->Add(new TObjString(obj->GetName()));
+	    
             //write folder names
             message->Reset(kMESS_OBJECT);
             message->WriteObject(names);
             sock->Send(*message);
-
+	    
             for (int i = 0; i < names->GetLast() + 1; i++)
-               delete(TObjString *) names->At(i);
-
+	      delete(TObjString *) names->At(i);
+	    
             delete names;
-
+	    
             delete message;
+	    
+	 } else if( strncmp(request,"Reset",5) == 0 ) {
 
-         } else if (strncmp(request, "FindObject", 10) == 0) {
-
-            TFolder *folder = ReadFolderPointer(sock);
-
-            //get object
-            TObject *obj;
-            if (strncmp(request+10, "Any", 3) == 0)
-               obj = folder->FindObjectAny(request+14);
-            else
-               obj = folder->FindObject(request+11);
-
-            //write object
-            if (!obj)
+	   TObject *object = gROOT->FindObjectAny(request+6);
+	   if( object && object->InheritsFrom(TH1::Class()) )
+	     static_cast<TH1*>(object)->Reset();
+	   
+	 } else if (strncmp(request, "FindObject", 10) == 0) {
+	   
+	   TFolder *folder = ReadFolderPointer(sock);
+	   
+	   //get object
+	   TObject *obj;
+	   if (strncmp(request+10, "Any", 3) == 0)
+	     obj = folder->FindObjectAny(request+14);
+	   else
+	     obj = folder->FindObject(request+11);
+	   
+	   //write object
+	   if (!obj)
                sock->Send("Error");
             else {
                message->Reset(kMESS_OBJECT);
