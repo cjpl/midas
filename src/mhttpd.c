@@ -6,6 +6,9 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
+  Revision 1.27  1999/09/14 09:20:18  midas
+  Finished reply
+
   Revision 1.26  1999/09/13 15:45:50  midas
   Added forms
 
@@ -1468,7 +1471,7 @@ KEY    key;
   /* hidden field for form */
   rsprintf("<input type=hidden name=form value=\"%s\">\n", getparam("form"));
 
-  rsprintf("<table border=3 cellpadding=5>\n");
+  rsprintf("<table border=3 cellpadding=1>\n");
 
   /*---- title row ----*/
 
@@ -1699,7 +1702,7 @@ KEY   key;
       }
     strcat(file_name, path);
 
-    fh = open(file_name, O_RDONLY);
+    fh = open(file_name, O_RDONLY | O_BINARY);
     if (fh > 0)
       {
       lseek(fh, 0, SEEK_END);
@@ -1878,7 +1881,7 @@ KEY   key;
   rsprintf("<i>Check a category to browse only entries from that category</i>\n");
   rsprintf("</tr>\n\n");
 
-  if (reply_tag[0] || orig_tag[0])
+  if (msg_status != EL_FILE_ERROR && (reply_tag[0] || orig_tag[0]))
     {
     rsprintf("<tr><td colspan=2 bgcolor=#F0F0F0>");
     if (orig_tag[0])
@@ -2019,7 +2022,7 @@ int el_submit(int run, char *author, char *type, char *system, char *subject,
 {
 int     size, fh, status;
 struct  tm *tms;
-char    file_name[256], dir[256], str[256], start_str[80], end_str[80];
+char    file_name[256], dir[256], str[256], start_str[80], end_str[80], last[80];
 HNDLE   hDB;
 time_t  now;
 char    message[10000];
@@ -2090,24 +2093,38 @@ char    message[10000];
   /* if reply, mark original message */
   if (reply_to[0])
     {
-    status = el_search_message(reply_to, &fh, FALSE);
-    if (status == EL_SUCCESS)
+    strcpy(last, reply_to);
+    do
       {
-      /* position to next thread location */
-      lseek(fh, 63, SEEK_CUR);
-      memset(str, 0, sizeof(str));
-      read(fh, str, 16);
-      lseek(fh, -16, SEEK_CUR);
-
-      /* if no reply yet, set it */
-      if (atoi(str) == 0)
+      status = el_search_message(last, &fh, FALSE);
+      if (status == EL_SUCCESS)
         {
-        sprintf(str, "%16s", tag);
-        write(fh, str, 16);
-        }
+        /* position to next thread location */
+        lseek(fh, 63, SEEK_CUR);
+        memset(str, 0, sizeof(str));
+        read(fh, str, 16);
+        lseek(fh, -16, SEEK_CUR);
 
-      close(fh);
-      }
+        /* if no reply yet, set it */
+        if (atoi(str) == 0)
+          {
+          sprintf(str, "%16s", tag);
+          write(fh, str, 16);
+          close(fh);
+          break;
+          }
+        else
+          {
+          /* if reply set, find last one in chain */
+          strcpy(last, strtok(str, " "));
+          close(fh);
+          }
+        }
+      else
+        /* stop on error */
+        break;
+
+      } while (TRUE);
     }
 
   return EL_SUCCESS;
@@ -2213,6 +2230,22 @@ HNDLE  hDB;
       return EL_FILE_ERROR;
 
     lseek(*fh, offset, SEEK_SET);
+
+    /* check if start of message */
+    i = read(*fh, str, 15);
+    if (i <= 0)
+      {
+      close(*fh);
+      return EL_FILE_ERROR;
+      }
+
+    if (strncmp(str, "$Start$: ", 9) != 0)
+      {
+      close(*fh);
+      return EL_FILE_ERROR;
+      }
+
+    lseek(*fh, offset, SEEK_SET);
     }
 
   /* open most recent file if no tag given */
@@ -2281,7 +2314,10 @@ HNDLE  hDB;
     lseek(*fh, -17, SEEK_CUR);
     i = read(*fh, str, 17);
     if (i <= 0)
+      {
+      close(*fh);
       return EL_FILE_ERROR;
+      }
 
     if (strncmp(str, "$End$: ", 7) == 0)
       {
@@ -2289,7 +2325,10 @@ HNDLE  hDB;
       lseek(*fh, -size, SEEK_CUR);
       }
     else
+      {
+      close(*fh);
       return EL_FILE_ERROR;
+      }
 
     /* adjust tag */
     sprintf(strchr(tag, '.')+1, "%d", TELL(*fh));
@@ -2304,7 +2343,10 @@ HNDLE  hDB;
 
     i = read(*fh, str, 15);
     if (i <= 0)
+      {
+      close(*fh);
       return EL_FILE_ERROR;
+      }
     lseek(*fh, -15, SEEK_CUR);
 
     if (strncmp(str, "$Start$: ", 9) == 0)
@@ -2313,7 +2355,10 @@ HNDLE  hDB;
       lseek(*fh, size, SEEK_CUR);
       }
     else
+      {
+      close(*fh);
       return EL_FILE_ERROR;
+      }
 
     /* if EOF, goto next day */
     i = read(*fh, str, 15);
