@@ -6,6 +6,10 @@
   Contents:     Electronic logbook utility   
 
   $Log$
+  Revision 1.17  2001/10/12 08:40:02  midas
+  Fixed bug when submitting text files and an additional (garbage) lines was
+  added
+
   Revision 1.16  2001/06/19 10:55:40  midas
   Variable number of attachments, revised attachment editing
 
@@ -51,6 +55,8 @@
 typedef int INT;
 
 #define MAX_ATTACHMENTS 10
+
+int verbose;
 
 /*------------------------------------------------------------------*/
 
@@ -366,6 +372,9 @@ char                 host_name[256], boundary[80], str[80], *p;
     return -1;
     }
 
+  if (verbose)
+    printf("Successfully connected to host %s, port %d\n", host, port);
+
   /* compose content */
   strcpy(boundary, "---------------------------7d0bf1a60904bc");
   strcpy(content, boundary);
@@ -434,6 +443,12 @@ char                 host_name[256], boundary[80], str[80], *p;
   */
 
   /* send request */
+  if (verbose)
+    {
+    printf("Request sent to host:\n");
+    puts(request);
+    }
+
   send(sock, request, header_length+content_length, 0);
 
   /* receive response */
@@ -455,6 +470,12 @@ char                 host_name[256], boundary[80], str[80], *p;
   response[n] = 0;
 
   closesocket(sock);
+
+  if (verbose)
+    {
+    printf("Response received:\n");
+    puts(response);
+    }
 
   /* check response status */
   if (strstr(response, "302 Found"))
@@ -492,44 +513,50 @@ INT       i, n, status, fh, n_att, size, port;
   /* parse command line parameters */
   for (i=1 ; i<argc ; i++)
     {
-    if (argv[i][0] == '-')
-      {
-      if (i+1 >= argc || argv[i+1][0] == '-')
-        goto usage;
-      if (argv[i][1] == 'h')
-        strcpy(host_name, argv[++i]);
-      else if (argv[i][1] == 'p')
-        port = atoi(argv[++i]);
-      else if (argv[i][1] == 'l')
-        strcpy(logbook, argv[++i]);
-      else if (argv[i][1] == 'w')
-        strcpy(password, argv[++i]);
-      else if (argv[i][1] == 'a')
-        strcpy(author, argv[++i]);
-      else if (argv[i][1] == 't')
-        strcpy(type, argv[++i]);
-      else if (argv[i][1] == 'c')
-        strcpy(category, argv[++i]);
-      else if (argv[i][1] == 'b')
-        strcpy(subject, argv[++i]);
-      else if (argv[i][1] == 'f')
-        strcpy(attachment[n_att++], argv[++i]);
-      else if (argv[i][1] == 'm')
-        strcpy(textfile, argv[++i]);
-      else
-        {
-usage:
-        printf("\nusage: elog -h <hostname> [-p port] [-l logbook/experiment]\n");
-        printf("          [-w password] -a <author> -t <type> -c <category> -b <subject>\n");
-        printf("          [-f <attachment>] [-m <textfile>|<text>]\n");
-        printf("\nArguments with blanks must be enclosed in quotes\n");
-        printf("The elog message can either be submitted on the command line\n");
-        printf("or in a file with the -m flag.\n");
-        return 0;
-        }
-      }
+    if (argv[i][0] == '-' && argv[i][1] == 'v')
+      verbose = 1;
     else
-      strcpy(text, argv[i]);
+      {
+      if (argv[i][0] == '-')
+        {
+        if (i+1 >= argc || argv[i+1][0] == '-')
+          goto usage;
+        if (argv[i][1] == 'h')
+          strcpy(host_name, argv[++i]);
+        else if (argv[i][1] == 'p')
+          port = atoi(argv[++i]);
+        else if (argv[i][1] == 'l')
+          strcpy(logbook, argv[++i]);
+        else if (argv[i][1] == 'w')
+          strcpy(password, argv[++i]);
+        else if (argv[i][1] == 'a')
+          strcpy(author, argv[++i]);
+        else if (argv[i][1] == 't')
+          strcpy(type, argv[++i]);
+        else if (argv[i][1] == 'c')
+          strcpy(category, argv[++i]);
+        else if (argv[i][1] == 'b')
+          strcpy(subject, argv[++i]);
+        else if (argv[i][1] == 'f')
+          strcpy(attachment[n_att++], argv[++i]);
+        else if (argv[i][1] == 'm')
+          strcpy(textfile, argv[++i]);
+        else
+          {
+  usage:
+          printf("\nusage: elog -h <hostname> [-p port] [-l logbook/experiment]\n");
+          printf("          [-w password] -a <author> -t <type> -c <category> -b <subject>\n");
+          printf("          [-f <attachment>] [-m <textfile>|<text>]\n");
+          printf("          [-v] for verbose output\n");
+          printf("\nArguments with blanks must be enclosed in quotes\n");
+          printf("The elog message can either be submitted on the command line\n");
+          printf("or in a file with the -m flag.\n");
+          return 0;
+          }
+        }
+      else
+        strcpy(text, argv[i]);
+      }
     }
 
   /* complete missing parameters */
@@ -558,6 +585,7 @@ usage:
       return 0;
       }
 
+    memset(text, 0, sizeof(text));
     i = read(fh, text, size);
     if (i < size)
       {
@@ -585,7 +613,7 @@ usage:
     att_size[i] = lseek(fh, 0, SEEK_END);
     lseek(fh, 0, SEEK_SET);
 
-    buffer[i] = malloc(att_size[i]);
+    buffer[i] = malloc(att_size[i]+1);
     if (buffer[i] == NULL || att_size[i] > 500*1024)
       {
       printf("Attachment file \"%s\" is too long (500k max).\n", attachment[i]);
@@ -598,6 +626,7 @@ usage:
       printf("Cannot fully read attachment file \"%s\".\n", attachment[i]);
       return 0;
       }
+    buffer[i][n] = 0;
 
     close(fh);
     }
