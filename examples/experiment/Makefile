@@ -6,6 +6,9 @@
 #  Contents:     Makefile for MIDAS example frontend and analyzer
 #
 #  $Log$
+#  Revision 1.8  1999/12/22 08:57:27  midas
+#  Use ../../drivers directory
+#
 #  Revision 1.7  1999/12/22 08:53:56  midas
 #  Changed /midas/drivers to ../../drivers
 #
@@ -50,7 +53,7 @@ LIBS = -lm -lz -lutil
 #-------------------------------------------------------------------
 # The following lines define direcories. Adjust if necessary
 #                 
-DRV_DIR         = /midas/drivers
+DRV_DIR         = ../../drivers
 INC_DIR 	= /usr/local/include
 LIB_DIR 	= /usr/local/lib
 CERNLIB_DIR	= /cern/pro/lib
