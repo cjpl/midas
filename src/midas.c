@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.74  1999/10/13 08:03:28  midas
+  Fixed bug displaying executed message as %d
+
   Revision 1.73  1999/10/11 14:14:03  midas
   Use ss_system in certain places
 
@@ -15198,7 +15201,7 @@ ALARM_CLASS ac;
     {
     sprintf(str, "%s: %s", alarm_class, alarm_message);
     sprintf(command, ac.execute_command, str);
-    cm_msg(MINFO, "al_trigger_class", "Execute: %d", command);
+    cm_msg(MINFO, "al_trigger_class", "Execute: %s", command);
     ss_system(command);
     ac.execute_last = ss_time();
     }
