@@ -6,6 +6,9 @@
   Contents:     Various utility functions for MSCB protocol
 
   $Log$
+  Revision 1.44  2004/12/10 11:23:12  midas
+  Changed baud rates
+
   Revision 1.43  2004/12/08 10:42:18  midas
   Version 1.7.8
 
@@ -248,7 +251,7 @@ unsigned char crc8_add(unsigned char crc, unsigned int c)
 
 bit ti1_shadow = 1;
 
-char xdata rbuf[1024];
+char xdata rbuf[2048];
 char xdata sbuf[1024];
 
 unsigned char xdata *data rbuf_rp = rbuf;
@@ -528,14 +531,24 @@ void uart_init(unsigned char port, unsigned char baud)
            (optionally) Timer 2 (4 for F020) for UART1
 
   Input:
-    unsigned char baud      1:9600,2:19200,3:28800,4:57600,
-                            5:115200,6:172800,7:345600 Baud
+    unsigned char baud      
+      1:    2400
+      2:    4800
+      3:    9600
+      4:   19200
+      5:   28800
+      6:   57600
+      7:  115200
+      8:  172800
+      9:  345600 
 
 \********************************************************************/
 {
 #if defined (CPU_C8051F310)        // 24.5 MHz
    unsigned char code baud_table[] =
      {0x100 - 0,    //  N/A
+      0x100 - 0,    //  N/A
+      0x100 - 0,    //  N/A
       0x100 - 0,    //  N/A
       0x100 - 0,    //  N/A
       0x100 - 213,  //  57600
@@ -546,6 +559,8 @@ void uart_init(unsigned char port, unsigned char baud)
    unsigned char code baud_table[] =
      {0x100 - 0,    //  N/A
       0x100 - 0,    //  N/A
+      0x100 - 0,    //  N/A
+      0x100 - 0,    //  N/A
       0x100 - 208,  //  28800
       0x100 - 104,  //  57600
       0x100 - 52,   // 115200
@@ -555,6 +570,8 @@ void uart_init(unsigned char port, unsigned char baud)
    unsigned char code baud_table[] =  // UART0 via timer 2
      {0x100 - 0,    //  N/A
       0x100 - 0,    //  N/A
+      0x100 - 0,    //  N/A
+      0x100 - 0,    //  N/A
       0x100 - 208,  //  28800  2% error
       0x100 - 104,  //  57600  2% error
       0x100 - 53,   // 115200  2% error
@@ -562,7 +579,9 @@ void uart_init(unsigned char port, unsigned char baud)
       0x100 - 18 }; // 345600  2% error
 #else                              // 11.0592 MHz
    unsigned char code baud_table[] =
-     {0x100 - 36,   //   9600  
+     {0x100 - 144,  //   2400  
+      0x100 - 72,   //   4800  
+      0x100 - 36,   //   9600  
       0x100 - 18,   //  14400 
       0x100 - 12,   //  28800
       0x100 - 6,    //  57600
