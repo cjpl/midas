@@ -9,6 +9,9 @@
                 for HVR_300 High Voltage Regulator
 
   $Log$
+  Revision 1.11  2004/12/21 15:12:33  midas
+  Implemented voltage divider unbalance calibration
+
   Revision 1.10  2004/12/21 10:44:12  midas
   Added watchdog_refresh to avoid timeout during ramping
 
@@ -147,6 +150,7 @@ struct {
    float adc_offset;
    float dac_gain;
    float dac_offset;
+   float cur_vgain;
    float cur_gain;
    float cur_offset;
 
@@ -174,11 +178,12 @@ MSCB_INFO_VAR code variables[] = {
    4, UNIT_VOLT,            0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "ADCofs",  &user_data[0].adc_offset,  // 12
    4, UNIT_FACTOR,          0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "DACgain", &user_data[0].dac_gain,    // 13
    4, UNIT_VOLT,            0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "DACofs",  &user_data[0].dac_offset,  // 14
-   4, UNIT_FACTOR,          0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "CURgain", &user_data[0].cur_gain,    // 15
-   4, UNIT_AMPERE, PRFX_MICRO, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "CURofs",  &user_data[0].cur_offset,  // 16
+   4, UNIT_FACTOR,          0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "CURvgain",&user_data[0].cur_vgain,   // 15
+   4, UNIT_FACTOR,          0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "CURgain", &user_data[0].cur_gain,    // 16
+   4, UNIT_AMPERE, PRFX_MICRO, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "CURofs",  &user_data[0].cur_offset,  // 17
 
-   4, UNIT_CELSIUS,         0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "Temp",    &user_data[0].temperature, // 17
-   4, UNIT_VOLT,            0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "VDAC",    &user_data[0].v_dac,       // 18
+   4, UNIT_CELSIUS,         0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "Temp",    &user_data[0].temperature, // 18
+   4, UNIT_VOLT,            0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "VDAC",    &user_data[0].v_dac,       // 19
    0
 };
 
@@ -220,6 +225,7 @@ void user_init(unsigned char init)
          user_data[i].adc_offset = 0;
          user_data[i].dac_gain = 1;
          user_data[i].dac_offset = 0;
+         user_data[i].cur_vgain = 0;
          user_data[i].cur_gain = 1;
          user_data[i].cur_offset = 0;
       }
@@ -673,6 +679,9 @@ void read_current(unsigned char channel)
 
    /* correct opamp gain, divider & curr. resist, microamp */
    current = current / CUR_MULT * DIVIDER / RCURR * 1E6;
+
+   /* correct for unbalanced voltage dividers */
+   current += user_data[channel].cur_vgain * user_data[channel].v_meas;
 
    /* calibrate */
    current = current * user_data[channel].cur_gain + user_data[channel].cur_offset;
