@@ -12,6 +12,9 @@
                 and transferred to experim.h.
 
   $Log$
+  Revision 1.3  2002/05/10 05:22:47  pierre
+  add MANA_LITE #ifdef
+
   Revision 1.2  1998/10/12 12:18:58  midas
   Added Log tag in header
 
@@ -38,8 +41,10 @@
 #define f2cFortran
 #endif
 
+#ifndef MANA_LITE
 #include <cfortran.h>
 #include <hbook.h>
+#endif
 
 /*-- Parameters ----------------------------------------------------*/
 
@@ -89,6 +94,9 @@ INT adc_calib_bor(INT run_number)
 int    i;
 char   str[80];
 
+#ifdef MANA_LITE
+ printf("manalite: adc_calib_bor: HBOOK disable\n");
+#else
   /* book CADC histos */
   for (i=0; i<N_ADC; i++)
     {
@@ -98,6 +106,7 @@ char   str[80];
     HBOOK1(ADCCALIB_ID_BASE+i, str, ADC_N_BINS, 
            (float)ADC_X_LOW, (float)ADC_X_HIGH, 0.f); 
     }
+#endif
 
   return SUCCESS;
 }
@@ -137,10 +146,14 @@ float  *cadc;
   for (i=0 ; i<n_adc ; i++)
     cadc[i] *= adccalib_param.software_gain[i];
 
+#ifdef MANA_LITE
+ printf("manalite: adc_calib: HBOOK disable\n");
+#else
   /* fill ADC histos if above threshold */
   for (i=0 ; i<n_adc ; i++)
     if (cadc[i] > (float) adccalib_param.histo_threshold)
       HF1(ADCCALIB_ID_BASE+i, cadc[i], 1.f);
+#endif
 
   /* close calculated bank */
   bk_close(pevent, cadc+n_adc);

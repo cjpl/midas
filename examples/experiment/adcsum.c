@@ -10,6 +10,9 @@
                 in the ODB and transferred to experim.h.
 
   $Log$
+  Revision 1.3  2002/05/10 05:22:59  pierre
+  add MANA_LITE #ifdef
+
   Revision 1.2  1998/10/12 12:18:58  midas
   Added Log tag in header
 
@@ -36,8 +39,10 @@
 #define f2cFortran
 #endif
 
+#ifndef MANA_LITE
 #include <cfortran.h>
 #include <hbook.h>
+#endif
 
 #ifndef PI
 #define PI 3.14159265359
@@ -72,9 +77,12 @@ ANA_MODULE adc_summing_module = {
 
 INT adc_summing_init(void)
 {
+#ifdef MANA_LITE
+  printf("manalite: adc_summing_init: HBOOK disable\n");
+#else
   /* book sum histo */
   HBOOK1(ADCSUM_ID_BASE, "ADC sum", 500, 0.f, 10000.f, 0.f); 
-
+#endif
   return SUCCESS;
 }
 
@@ -82,9 +90,9 @@ INT adc_summing_init(void)
 
 INT adc_summing(EVENT_HEADER *pheader, void *pevent)
 {
-INT          i, n_adc;
-float        *cadc;
-ASUM_BANK    *asum;
+  INT          i, n_adc;
+  float        *cadc;
+  ASUM_BANK    *asum;
 
   /* look for CADC bank, return if not present */
   n_adc = bk_locate(pevent, "CADC", &cadc);
@@ -99,8 +107,12 @@ ASUM_BANK    *asum;
   for (i=0 ; i<n_adc ; i++)
     asum->sum += cadc[i];
 
+#ifdef MANA_LITE
+ printf("manalite: adc_summing: HBOOK disable\n");
+#else
   /* fill sum histo */
   HF1(ADCSUM_ID_BASE, asum->sum, 1.f);
+#endif
 
   /* close calculated bank */
   bk_close(pevent, asum+1);

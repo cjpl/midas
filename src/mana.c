@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.78  2002/05/10 05:21:50  pierre
+  add MANA_LITE #ifdef
+
   Revision 1.77  2002/05/09 01:57:37  midas
   Set 'events to ODB' TRUE by default
 
@@ -260,6 +263,7 @@
 #define f2cFortran
 #endif
 
+#ifndef MANA_LITE
 #include <cfortran.h>
 #include <hbook.h>
 
@@ -271,7 +275,7 @@
 #ifndef HMERGE
 #define HMERGE(A1,A2,A3)  CCALLSFSUB3(HMERGE,hmerge,INT,STRINGV,STRING,A1,A2,A3)
 #endif
-
+#endif
 /* PVM include */
 
 #ifdef PVM
@@ -978,10 +982,13 @@ HNDLE hkey;
   db_find_key(hDB, 0, str, &hkey);
   db_close_record(hDB, hkey);
 
+#ifndef MANA_LITE
   book_ntuples();
   printf("N-tuples rebooked\n");
+#endif
 }
 
+#ifndef MANA_LITE
 INT book_ntuples(void)
 {
 INT        index, i, j, status, n_tag, size, id;
@@ -1374,6 +1381,8 @@ EVENT_DEF  *event_def;
 
   return SUCCESS;
 }
+/* !MANA_LITE */
+#endif
 
 /*-- analyzer init routine -----------------------------------------*/
 
@@ -1449,7 +1458,7 @@ double     dummy;
   db_find_key(hDB, 0, str, &hkey);
   if (hkey)
     db_delete_key(hDB, hkey, FALSE);
-  
+#ifndef MANA_LITE
   /* create global memory */
   if (clp.online)
     {
@@ -1465,7 +1474,8 @@ double     dummy;
     {
     HLIMIT(pawc_size/4);
     }
-
+#endif
+  
   /* call main analyzer init routine */
   status = analyzer_init();
   if (status != SUCCESS)
@@ -1550,8 +1560,8 @@ INT        lrec;
       }
 
     }
-
-  /* clear histos, N-tuples and tests */
+#ifndef MANA_LITE
+/* clear histos, N-tuples and tests */
   if (clp.online && out_info.clear_histos)
     {
     int hid[10000];
@@ -1576,7 +1586,8 @@ INT        lrec;
 
     test_clear();
     }
-
+#endif
+  
   /* open output file if not already open (append mode) and in offline mode */
   if (!clp.online && out_file == NULL && !pvm_master)
     {
@@ -1641,7 +1652,8 @@ INT        lrec;
       /* open output file */
       if (out_format == FORMAT_HBOOK)
         {
-        lrec = clp.lrec;
+#ifndef MANA_LITE
+	  lrec = clp.lrec;
 #ifdef extname
         quest_[9] = 65000;
 #else
@@ -1659,6 +1671,7 @@ INT        lrec;
           }
         else
           out_file = (FILE *) 1;
+#endif
         }
       else
         {
@@ -1679,6 +1692,7 @@ INT        lrec;
     else
       out_file = NULL;
 
+#ifndef MANA_LITE
     /* book N-tuples */
     if (out_format == FORMAT_HBOOK)
       {
@@ -1686,6 +1700,7 @@ INT        lrec;
       if (status != SUCCESS)
         return status;
       }
+#endif
 
     } /* if (out_file == NULL) */
 
@@ -1726,6 +1741,7 @@ char       str[256], file_name[256];
   /* call main analyzer BOR routine */
   status = ana_end_of_run(run_number, error);
 
+#ifndef MANA_LITE
   /* save histos if requested */
   if (out_info.histo_dump && clp.online)
     {
@@ -1738,14 +1754,16 @@ char       str[256], file_name[256];
     add_data_dir(str, file_name);
     HRPUT(0, str, "NT");
     }
-
+#endif
   /* close output file */
   if (out_file && !out_append)
     {
     if (out_format == FORMAT_HBOOK)
       {
+#ifndef MANA_LITE
       HROUT(0, i, " ");
       HREND("OFFLINE");
+#endif
       }
     else
       {
@@ -2231,6 +2249,7 @@ static char    *buffer = NULL;
   return status;
 }
 
+#ifndef MANA_LITE
 /*---- HBOOK output ------------------------------------------------*/
 
 INT write_event_hbook(FILE *file, EVENT_HEADER *pevent, ANALYZE_REQUEST *par)
@@ -2715,6 +2734,7 @@ WORD        bktype;
 
   return SUCCESS;
 }
+#endif
 
 /*---- ODB output --------------------------------------------------*/
 
@@ -2993,8 +3013,11 @@ static char  *orig_event = NULL;
   /* write resulting event */
   if (out_file)
     {
-    if (out_format == FORMAT_HBOOK)
-      status = write_event_hbook(out_file, pevent, par);
+      if (out_format == FORMAT_HBOOK) {
+#ifndef MANA_LITE
+    status = write_event_hbook(out_file, pevent, par);
+#endif
+      }
     else if (out_format == FORMAT_ASCII)
       status = write_event_ascii(out_file, pevent, par);
     else if (out_format == FORMAT_MIDAS)
@@ -3009,10 +3032,12 @@ static char  *orig_event = NULL;
     par->events_written++;
     }
 
+#ifndef MANA_LITE
   /* fill shared memory */
   if (clp.online && par->rwnt_buffer_size > 0)
     write_event_hbook(NULL, pevent, par);
-
+#endif
+  
   /* put event in ODB once every second */
   if (out_info.events_to_odb)
     for (i=0 ; i<50 ; i++)
@@ -3210,8 +3235,9 @@ DWORD    actual_time;
   last_time = actual_time;
 }
 
-/*-- Clear histos --------------------------------------------------*/
 
+/*-- Clear histos --------------------------------------------------*/
+#ifndef MANA_LITE
 INT clear_histos(INT id1, INT id2)
 {
 INT i;
@@ -3254,6 +3280,7 @@ INT ana_callback(INT index, void *prpc_param[])
 
   return RPC_SUCCESS;
 }
+#endif
 
 /*------------------------------------------------------------------*/
 
@@ -3265,6 +3292,7 @@ int      ch;
 FILE     *f;
 char     str[256];
 
+#ifndef MANA_LITE
   /* load previous online histos */
   if (!clp.no_load)
     {
@@ -3283,7 +3311,7 @@ char     str[256];
         HDELET(100000);
       }
     }
-  
+#endif
   printf("Running analyzer online. Stop with \"!\"\n");
 
   /* main loop */
@@ -3340,9 +3368,11 @@ char     str[256];
   if (strchr(str, DIR_SEPARATOR) == NULL)
     add_data_dir(str, out_info.last_histo_filename);
 
+#ifndef MANA_LITE
   printf("Saving current online histos to %s\n", str);
   HRPUT(0, str, "NT");
-
+#endif
+  
   return status;
 }
     
@@ -4113,8 +4143,10 @@ BANK_LIST *bank_list;
     {
     if (out_format == FORMAT_HBOOK)
       {
+#ifndef MANA_LITE
       HROUT(0, i, " ");
       HREND("OFFLINE");
+#endif
       }
     else
       {
@@ -4983,9 +5015,10 @@ INT status;
       }
     }
 
+#ifndef MANA_LITE
   /* register callback for clearing histos */
   cm_register_function(RPC_ANA_CLEAR_HISTOS, ana_callback);
-
+#endif
   /* turn on keepalive messages */
   cm_set_watchdog_params(TRUE, DEFAULT_RPC_TIMEOUT);
 
