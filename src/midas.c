@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.183  2003/04/14 11:01:04  midas
+  Added bk_find(), added htonl(INADDR_ANY) for bind()
+
   Revision 1.182  2003/04/09 13:42:47  midas
   Made file compile under C++
 
@@ -9216,7 +9219,6 @@ INT                  listen_port1, listen_port2, listen_port3;
 INT                  remote_hw_type, hw_type;
 int                  size;
 char                 str[200], version[32], v1[32];
-char                 local_host_name[HOST_NAME_LENGTH];
 char                 local_prog_name[NAME_LENGTH];
 struct hostent       *phe;
 
@@ -9274,27 +9276,8 @@ struct hostent       *phe;
   /* let OS choose any port number */
   memset(&bind_addr, 0, sizeof(bind_addr));
   bind_addr.sin_family      = AF_INET;
-  bind_addr.sin_addr.s_addr = 0;
+  bind_addr.sin_addr.s_addr = htonl(INADDR_ANY);
   bind_addr.sin_port        = 0;
-
-  gethostname(local_host_name, sizeof(local_host_name));
-
-#ifdef OS_VXWORKS
-  {
-  INT host_addr;
-
-  host_addr = hostGetByName(local_host_name);
-  memcpy((char *)&(bind_addr.sin_addr), &host_addr, 4);
-  }
-#else
-  phe = gethostbyname(local_host_name);
-  if (phe == NULL)
-    {
-    cm_msg(MERROR, "rpc_server_connect", "cannot get host name");
-    return RPC_NET_ERROR;
-    }
-  memcpy((char *)&(bind_addr.sin_addr), phe->h_addr, phe->h_length);
-#endif
 
   status = bind(lsock1, (struct sockaddr *) &bind_addr, sizeof(bind_addr));
   bind_addr.sin_port = 0;
@@ -11463,8 +11446,6 @@ INT rpc_register_server(INT server_type, char *name, INT *port,
 struct sockaddr_in   bind_addr;
 INT                  status, flag;
 int                  size;
-char                 host_name[HOST_NAME_LENGTH];
-struct hostent       *phe;
 
 #ifdef OS_WINNT
   {
@@ -11509,31 +11490,12 @@ struct hostent       *phe;
   /* bind local node name and port to socket */
   memset(&bind_addr, 0, sizeof(bind_addr));
   bind_addr.sin_family      = AF_INET;
-  bind_addr.sin_addr.s_addr = 0;
+  bind_addr.sin_addr.s_addr = htonl(INADDR_ANY);
 
   if (!port)
     bind_addr.sin_port        = htons(MIDAS_TCP_PORT);
   else
     bind_addr.sin_port        = htons((short) (*port));
-
-  gethostname(host_name, sizeof(host_name));
-
-#ifdef OS_VXWORKS
-  {
-  INT host_addr;
-
-  host_addr = hostGetByName(host_name);
-  memcpy((char *)&(bind_addr.sin_addr), &host_addr, 4);
-  }
-#else
-  phe = gethostbyname(host_name);
-  if (phe == NULL)
-    {
-    cm_msg(MERROR, "rpc_register_server", "cannot get host name");
-    return RPC_NET_ERROR;
-    }
-  memcpy((char *)&(bind_addr.sin_addr), phe->h_addr, phe->h_length);
-#endif
 
   status = bind(_lsock, (struct sockaddr *)&bind_addr, sizeof(bind_addr));
   if (status < 0)
@@ -13405,7 +13367,7 @@ INT bk_size(void *event)
     @param pdata pointer to the data area of the newly created bank
     @return void
 */
-void bk_create(void *event, char *name, WORD type, void *pdata)
+void bk_create(void *event, const char *name, WORD type, void *pdata)
 {
   if (((BANK_HEADER *)event)->flags & BANK_FORMAT_32BIT)
     {
@@ -13431,7 +13393,7 @@ void bk_create(void *event, char *name, WORD type, void *pdata)
 
 /*------------------------------------------------------------------*/
 
-int bk_delete(void *event, char *name)
+int bk_delete(void *event, const char *name)
 /********************************************************************\
 
   Routine: bk_delete
@@ -13635,7 +13597,7 @@ INT bk_list (void *event, char * bklist)
     @param pdata pointer to data area of bank, NULL if bank not found
     @return number of values inside the bank
 */
-INT bk_locate(void *event, char *name, void *pdata)
+INT bk_locate(void *event, const char *name, void *pdata)
 {
   BANK   *pbk;
   BANK32 *pbk32;
@@ -13672,6 +13634,75 @@ INT bk_locate(void *event, char *name, void *pdata)
         }
       pbk = (BANK *) ((char *) (pbk + 1) + ALIGN(pbk->data_size));
       } while ((DWORD) pbk - (DWORD) event < ((BANK_HEADER *) event)->data_size + sizeof(BANK_HEADER));
+    }
+
+  /* bank not found */
+  *((void **)pdata) = NULL;
+  return 0;
+}
+
+/*------------------------------------------------------------------*/
+/** @name bk_find()
+    \begin{description}
+    \item[Description:] Finds a MIDAS bank of given name inside an event.
+    \item[Remarks:]
+    \item[Example:]
+    \end{description}
+    \begin{verbatim}
+    \end{verbatim}
+    @memo find a bank in event.
+    @param event pointer to current composed event
+    @param name bank name to look for
+    @param bklen number of elemtents in bank
+    @patam bktype bank type, one of TID_xxx
+    @param pdata pointer to data area of bank, NULL if bank not found
+    @return 1 if bank found, 0 otherwise
+*/
+INT bk_find(BANK_HEADER *pbkh, const char *name, DWORD *bklen, DWORD *bktype, void **pdata)
+{
+  BANK   *pbk;
+  BANK32 *pbk32;
+  DWORD  dname;
+
+  if (bk_is32(pbkh))
+    {
+    pbk32 = (BANK32 *) (pbkh+1);
+    strncpy((char *) &dname, name, 4);
+    do
+      {
+      if (*((DWORD *) pbk32->name) == dname)
+        {
+        *((void **)pdata) = pbk32+1;
+        if (tid_size[pbk32->type & 0xFF] == 0)
+          *bklen = pbk32->data_size;
+        else
+          *bklen = pbk32->data_size / tid_size[pbk32->type & 0xFF];
+
+        *bktype = pbk32->type;
+        return 1;
+        }
+      pbk32 = (BANK32 *) ((char *) (pbk32 + 1) + ALIGN(pbk32->data_size));
+      } while ((DWORD) pbk32 - (DWORD) pbkh < pbkh->data_size + sizeof(BANK_HEADER));
+    }
+  else
+    {
+    pbk = (BANK *) (pbkh+1);
+    strncpy((char *) &dname, name, 4);
+    do
+      {
+      if (*((DWORD *) pbk->name) == dname)
+        {
+        *((void **)pdata) = pbk+1;
+        if (tid_size[pbk->type & 0xFF] == 0)
+          *bklen = pbk->data_size;
+        else
+          *bklen = pbk->data_size / tid_size[pbk->type & 0xFF];
+
+        *bktype = pbk->type;
+        return 1;
+        }
+      pbk = (BANK *) ((char *) (pbk + 1) + ALIGN(pbk->data_size));
+      } while ((DWORD) pbk - (DWORD) pbkh < pbkh->data_size + sizeof(BANK_HEADER));
     }
 
   /* bank not found */
