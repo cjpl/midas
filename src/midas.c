@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.162  2002/05/29 18:49:37  midas
+  Fixed bug with 'shutdown all' in odbedit
+
   Revision 1.161  2002/05/29 07:25:13  midas
   Fixed bug with shutting down programs
 
@@ -5192,7 +5195,7 @@ DWORD  start_time;
   return_status = CM_NO_CLIENT;
 
   /* loop over all clients */
-  for (i=0 ; ; )
+  for (i=0 ; ; i++)
     {
     status = db_enum_key(hDB, hKey, i, &hSubkey);
     if (status == DB_NO_MORE_SUBKEYS)
@@ -5200,10 +5203,7 @@ DWORD  start_time;
 
     /* don't shutdown ourselves */
     if (hSubkey == hKeyClient)
-      {
-      i++;
       continue;
-      }
 
     if (status == DB_SUCCESS)
       {
@@ -5219,10 +5219,7 @@ DWORD  start_time;
       /* check if individual client */
       if (!equal_ustring("all", name) &&
           !equal_ustring(client_name, name))
-        {
-        i++;
         continue;
-        }
 
       size = sizeof(port);
       db_get_value(hDB, hSubkey, "Server Port", &port, &size, TID_INT, TRUE);
@@ -5238,7 +5235,6 @@ DWORD  start_time;
         sprintf(str, "cannot connect to client %s on host %s, port %d",
                 client_name, remote_host, port);
         cm_msg(MERROR, "cm_shutdown", str);
-        i++;
         }
       else
         {
@@ -5259,9 +5255,10 @@ DWORD  start_time;
           return_status = CM_NO_CLIENT;
           }
         else
+          {
           return_status = CM_SUCCESS;
-
-        i++;
+          i--;
+          }
         }
       }
     }
