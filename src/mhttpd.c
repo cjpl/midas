@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.90  1999/11/23 10:17:55  midas
+  SC equipment is now normally displayed if no equipment settings are defined
+
   Revision 1.89  1999/11/11 12:46:36  midas
   Changed alias bar color
 
@@ -2882,13 +2885,14 @@ char   data_str[256], hex_str[256];
           break;
         }
 
-      /* redirect if no names found */
-      if (!hkeynames)
-        {
-        /* redirect */
-        sprintf(str, "Equipment/%s/Variables", eq_name);
-        redirect(str);
-        }
+      }
+
+    /* redirect if no names found */
+    if (!hkeyset || !hkeynames)
+      {
+      /* redirect */
+      sprintf(str, "Equipment/%s/Variables", eq_name);
+      redirect(str);
       }
     }
 
