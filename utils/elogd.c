@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.72  2001/11/21 15:23:48  midas
+  Fixed bug with "Welcome page"
+
   Revision 1.71  2001/11/21 15:03:35  midas
   Added "resubmit as new entry" checkbox
 
@@ -5420,7 +5423,7 @@ FILE   *f;
 
   /*---- check for welcome page ------------------------------------*/
 
-  if (!path[0] && getcfg(logbook, "Welcome page", str))
+  if (!path[0] && getcfg(logbook, "Welcome page", str) && str[0])
     {
     strcpy(file_name, cfg_dir);
     strcat(file_name, str);
