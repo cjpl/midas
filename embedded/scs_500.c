@@ -9,6 +9,9 @@
                 for SCS-500 analog I/O
 
   $Log$
+  Revision 1.9  2002/10/23 05:46:04  midas
+  Fixed bug with wrong gain bits
+
   Revision 1.8  2002/10/22 15:05:36  midas
   Added gain and offset calibrations
 
@@ -239,28 +242,39 @@ unsigned char i;
 
   for (i=0 ; i<4 ; i++)
     {
-    SR_DATA = ((user_conf.gain[3-i] & 0x10) > 0); // first bit ext. PGA
+    SR_DATA = ((user_conf.gain[3-i] & 0x02) > 0); // first bit ext. PGA
+    delay_us(10);
     SR_CLOCK = 1;
+    delay_us(10);
     SR_CLOCK = 0;
+    delay_us(10);
 
-    SR_DATA = ((user_conf.gain[3-i] & 0x08) > 0); // second bit ext. PGA
+    SR_DATA = ((user_conf.gain[3-i] & 0x01) > 0); // second bit ext. PGA
+    delay_us(10);
     SR_CLOCK = 1;
+    delay_us(10);
     SR_CLOCK = 0;
     }
   
   for (i=0 ; i<4 ; i++)
     {
-    SR_DATA = ((user_conf.gain[7-i] & 0x10) > 0); // first bit ext. PGA
+    SR_DATA = ((user_conf.gain[7-i] & 0x02) > 0); // first bit ext. PGA
+    delay_us(10);
     SR_CLOCK = 1;
+    delay_us(10);
     SR_CLOCK = 0;
 
-    SR_DATA = ((user_conf.gain[7-i] & 0x08) > 0); // second bit ext. PGA
+    SR_DATA = ((user_conf.gain[7-i] & 0x01) > 0); // second bit ext. PGA
+    delay_us(10);
     SR_CLOCK = 1;
+    delay_us(10);
     SR_CLOCK = 0;
     }
 
   SR_DATA   = 0;
+  delay_us(10);
   SR_STROBE = 1;
+  delay_us(10);
   SR_STROBE = 0;
 }
 
