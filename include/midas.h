@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.54  1999/12/08 00:29:34  pierre
+  - Add CM_SET_LABEL for cd_gen/dd_epca (chn_acc)
+
   Revision 1.53  1999/11/19 09:49:36  midas
   Added watchdog_timeout to cm_set_client_info
 
@@ -672,6 +675,7 @@ typedef          INT       HNDLE;
 #define CMD_GET_DEMAND               11
 #define CMD_GET_DEFAULT_NAME         12
 #define CMD_GET_DEFAULT_THRESHOLD    13
+#define CMD_SET_LABEL                14
 
 /* Commands for interrupt events */
 #define CMD_INTERRUPT_ENABLE        100
