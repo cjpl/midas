@@ -10,6 +10,9 @@
                 in the ODB and transferred to experim.h.
 
   $Log$
+  Revision 1.12  2004/09/30 23:35:33  midas
+  Added some simple tests
+
   Revision 1.11  2004/09/23 19:22:43  midas
   Use new histo booking
 
@@ -51,6 +54,8 @@
 #include <stdio.h>
 #include <math.h>
 
+#define DEFINE_TESTS // must be defined prior to midas.h
+
 /* midas includes */
 #include "midas.h"
 #include "experim.h"
@@ -66,6 +71,11 @@
 /*-- Parameters ----------------------------------------------------*/
 
 ADC_SUMMING_PARAM adc_summing_param;
+
+/*-- Tests ---------------------------------------------------------*/
+
+DEF_TEST(low_sum);
+DEF_TEST(high_sum);
 
 /*-- Module declaration --------------------------------------------*/
 
@@ -133,6 +143,10 @@ INT adc_summing(EVENT_HEADER * pheader, void *pevent)
 
    /* calculate ADC average */
    asum->average = j > 0 ? asum->sum / j : 0;
+
+   /* evaluate tests */
+   SET_TEST(low_sum, asum->sum < 1000);
+   SET_TEST(high_sum, asum->sum > 1000);
 
    /* fill sum histo */
    hAdcSum->Fill(asum->sum, 1);
