@@ -6,6 +6,9 @@
   Contents:     Command-line interface for the Midas Slow Control Bus
 
   $Log$
+  Revision 1.71  2004/10/27 07:06:55  midas
+  Fixed compiler warning
+
   Revision 1.70  2004/10/12 11:02:41  midas
   Version 1.7.6
 
@@ -495,6 +498,8 @@ void cmd_loop(int fd, char *cmd, int adr)
 
    if (adr)
       current_addr = adr;
+
+   status = 0;
 
    do {
       /* print prompt */
