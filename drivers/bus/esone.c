@@ -7,6 +7,9 @@
                 MCSTD (Midas Camac Standard)
 
   $Log$
+  Revision 1.4  2001/08/14 10:00:04  midas
+  Fixed compiler warning
+
   Revision 1.3  2001/08/14 09:43:30  midas
   Initial revision
 
@@ -350,7 +353,8 @@ INLINE void cdlam(int *lam, const int b, const int c, const int n,
 */
 INLINE void ctgl(const int ext, int *l)
 {
-int b, c, n, a, lam;
+int b, c, n, a;
+unsigned long lam;
 
   came_ext(ext, &b, &c, &n, &a);
   cam_lam_read(c, &lam);
