@@ -6,6 +6,9 @@
   Cotents:      Routines for accessing VME under VxWorks
                 
   $Log$
+  Revision 1.5  2004/10/06 18:57:05  pierre
+  fix definition MVME
+
   Revision 1.4  2004/06/23 17:07:54  pierre
   add read/write func code
 
@@ -49,16 +52,16 @@ int vme_open(int device, int mode)
 {
    /* derive device name */
    switch (mode) {
-   case VME_A16D16:
-   case VME_A16D32:
+   case MVME_A16D16:
+   case MVME_A16D32:
 
       break;
-   case VME_A24D16:
-   case VME_A24D32:
+   case MVME_A24D16:
+   case MVME_A24D32:
 
       break;
-   case VME_A32D16:
-   case VME_A32D32:
+   case MVME_A32D16:
+   case MVME_A32D32:
 
       break;
 
@@ -90,7 +93,7 @@ static int last_dma = -1;
 int vme_read(int vh, void *dst, int vme_addr, int size, int dma)
 {
   int *ptr, status;
-  status = sysBusToLocalAdrs(VME_AM_STD_USR_DATA, vme_addr, &ptr);
+  status = sysBusToLocalAdrs(MVME_AM_STD_USR_DATA, vme_addr, &ptr);
   switch (size) {
   case 2:
     *((WORD *)dst) = *((WORD *)ptr);
@@ -113,7 +116,7 @@ int vme_read(int vh, void *dst, int vme_addr, int size, int dma)
 int vme_write(int vh, void *src, int vme_addr, int size, int dma)
 {
   int *ptr, status;
-  status = sysBusToLocalAdrs(VME_AM_STD_USR_DATA, vme_addr, &ptr);
+  status = sysBusToLocalAdrs(MVME_AM_STD_USR_DATA, vme_addr, &ptr);
   switch (size) {
   case 2:
     *((WORD *)ptr) = *((WORD *)src);
@@ -135,7 +138,7 @@ int vme_write(int vh, void *src, int vme_addr, int size, int dma)
 int vme_mmap(int vh, void **ptr, int vme_addr, int size)
 {
    int status;
-   status = sysBusToLocalAdrs(VME_AM_STD_USR_DATA, vme_addr, (int *) ptr);
+   status = sysBusToLocalAdrs(MVME_AM_STD_USR_DATA, vme_addr, (int *) ptr);
    return status == SUCCESS ? 1 : (int) status;
 }
 
@@ -149,9 +152,9 @@ int vme_unmap(int vh, void *ptr, int size)
 int vme_ioctl(int vh, int request, int *param)
 {
    switch (request) {
-   case VME_IOCTL_AMOD_SET:
+   case MVME_IOCTL_AMOD_SET:
       break;
-   case VME_IOCTL_AMOD_GET:
+   case MVME_IOCTL_AMOD_GET:
       break;
    }
    return SUCCESS;

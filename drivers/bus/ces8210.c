@@ -15,6 +15,9 @@
  *  Application :
  *  Author      : Pierre-Andre Amaudruz Data Acquisition Group
  *  $Log$
+ *  Revision 1.11  2004/10/06 18:56:55  pierre
+ *  fix definition MVME
+ *
  *  Revision 1.10  2004/01/08 08:40:08  midas
  *  Implemented standard indentation
  *
@@ -410,11 +413,11 @@ INLINE int cam_init(void)
    int branch = 0, crate, vmecrate, err, am;
 
    /* Open in A24D16 */
-   vh = vme_open(0, VME_A24D16);
+   vh = vme_open(0, MVME_A24D16);
    if (vh >= 0) {
-      am = VME_AMOD_A24_ND;
-      vme_ioctl(vh, VME_IOCTL_AMOD_SET, &am);
-      vme_ioctl(vh, VME_IOCTL_AMOD_GET, &am);
+      am = MVME_AMOD_A24_ND;
+      vme_ioctl(vh, MVME_IOCTL_AMOD_SET, &am);
+      vme_ioctl(vh, MVME_IOCTL_AMOD_GET, &am);
 
       /* mapping all crates */
       for (crate = 0; crate < 8; crate++) {
