@@ -10,6 +10,9 @@
   date        by    modification
   ---------   ---   ------------------------------------------------
 *  $Log$
+*  Revision 1.20  2003/04/07 23:55:55  olchansk
+*  add c++ wrappers
+*
 *  Revision 1.19  2002/09/19 17:50:34  pierre
 *  remove ^m
 *
@@ -333,6 +336,12 @@ typedef struct {
 #define DSP_ASC    3
 
 /*---- function declarations ---------------------------------------*/
+
+/* make functions callable from a C++ program */
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 INT   EXPRT yb_file_recompose(void * pevt, INT fmt, char * svpath, INT file_mode);
 INT   EXPRT feodb_file_dump (EQUIPMENT * eqp, char * eqpname,char * pevent, INT run_number, char *path);
 
@@ -372,5 +381,9 @@ INT   EXPRT ybos_log_close(LOG_CHN * log_chn, INT run_number);
 
 INT   EXPRT ybos_event_get (DWORD ** plrl, DWORD * size);
 INT   EXPRT ybos_get_tid_size(INT tid);
+
+#ifdef __cplusplus
+}
+#endif
 
 /*------------ END --------------------------------------------------------------*/

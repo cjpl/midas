@@ -15,6 +15,11 @@
 ---------------------------------------
 */
 
+/* make functions callable from a C++ program */
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define HARRAY(A1,A2,A3)  CCALLSFSUB3(HARRAY,harray,INT,INT,PINT,A1,A2,A3)
 #define HBANDX(A1,A2,A3,A4)  CCALLSFSUB4(HBANDX,hbandx,INT,FLOAT,FLOAT,FLOAT,A1,A2,A3,A4)
 #define HBANDY(A1,A2,A3,A4)  CCALLSFSUB4(HBANDY,hbandy,INT,FLOAT,FLOAT,FLOAT,A1,A2,A3,A4)
@@ -203,3 +208,8 @@
 #define HLIMAP(A1,A2)  CCALLSFSUB2(HLIMAP,hlimap,INT,STRING,A1,A2)
 
 #endif
+
+#ifdef __cplusplus
+}
+#endif
+

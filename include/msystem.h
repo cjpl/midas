@@ -7,6 +7,9 @@
                 routines
 
   $Log$
+  Revision 1.25  2003/04/07 23:55:55  olchansk
+  add c++ wrappers
+
   Revision 1.24  2002/06/03 06:07:14  midas
   Added extra parameter to ss_daemon_init to keep stdout
 
@@ -522,6 +525,11 @@ int     arg1,arg2,arg3,arg4,arg5,arg6,arg7,arg8,arg9,arg10;
 
 /*---- Function declarations ---------------------------------------*/
 
+/* make functions callable from a C++ program */
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*---- common function ----*/
 INT EXPRT cm_set_path(char *path);
 INT EXPRT cm_get_path(char *path);
@@ -637,3 +645,8 @@ INT  EXPRT dm_async_area_send(void *pointer);
 /*---- Include RPC identifiers -------------------------------------*/
 
 #include "mrpc.h"
+
+#ifdef __cplusplus
+}
+#endif
+
