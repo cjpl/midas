@@ -6,6 +6,9 @@
   Contents:     Disk to Tape copier for background job
 
   $Log$
+  Revision 1.8  1999/05/06 19:18:53  pierre
+  - replace [%] by (%)
+
   Revision 1.7  1999/02/19 21:54:08  pierre
   - incorporate hot links on Settings
 
@@ -52,7 +55,7 @@ DIRLOG *pdirlog;
 INT    *pdonelist;
 
 #define LAZY_SETTINGS_STRING "\
-Maintain free space[%] = INT : 0\n\
+Maintain free space(%) = INT : 0\n\
 Stay behind = INT : -3\n\
 Running condition = STRING : [128] ALWAYS\n\
 Data dir = STRING : [256] \n\
