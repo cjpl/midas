@@ -11,16 +11,19 @@
  *  Requires 	: ybos.h
  *  Author:  Pierre-Andre Amaudruz Data Acquisition Group
  *
+ *  Revision 1.0  1994/Oct Pierre	 Initial revision
+ *  Revision History: Oct/96  :
+ *    1 April 97: S. Ritt, minor modification to supress compiler warnings
  *  $Log$
+ *  Revision 1.4  1998/10/19 17:45:42  pierre
+ *  - new ybos_magta_write
+ *
  *  Revision 1.3  1998/10/12 12:19:03  midas
  *  Added Log tag in header
  *
  *  Revision 1.2  1998/10/12 11:59:11  midas
  *  Added Log tag in header
- *
- *
- *---------------------------------------------------------------------------*/
-
+/*---------------------------------------------------------------------------*/
 /* include files */
 #include "midas.h"
 #include "msystem.h"
@@ -81,8 +84,11 @@ INT   ybos_log_close(LOG_CHN * log_chn, INT run_number);
    :
    :
    */
+
+#if !defined (FE_YBOS_SUPPORT)
 DWORD magta[3]={0x00000004, 0x544f422a, 0x00007ff8};
 INT magta_flag = 0;
+DWORD  *pbot;
 
 /* rdlog general info */
 struct {
@@ -113,7 +119,6 @@ YBOS_PHYSREC_HEADER *ybosbl;
 
 struct stat *filestat;
 
-
 /*---- LOGGER YBOS format routines ----------------------------------------*/
 INT open_any_logfile(INT type, INT format, char * path, HNDLE *handle)
 /********************************************************************\
@@ -133,7 +138,6 @@ INT open_any_logfile(INT type, INT format, char * path, HNDLE *handle)
 \********************************************************************/
 {
 INT         status, written;
-DWORD     * pmagta;
 
   /* Create device channel */
   if (type == LOG_TYPE_TAPE)
@@ -160,16 +164,15 @@ DWORD     * pmagta;
     status = write(*handle, (char *) magta, 8) == 8 ? SS_SUCCESS : SS_FILE_ERROR;
 #endif
     /* allocate temporary emtpy record */
-    pmagta = malloc (magta[2]-4);
-    memset (pmagta,0,magta[2]-4);
+    pbot = realloc (pbot, magta[2]-4);
+    memset ((char *)pbot,0,magta[2]-4);
     /* write BOT empty record for MAGTA */
 #ifdef OS_WINNT
-    WriteFile((HANDLE) *handle, (char *) pmagta, magta[2]-4, &written, NULL);
+    WriteFile((HANDLE) *handle, (char *) pbot, magta[2]-4, &written, NULL);
     status = written == (INT) magta[2]-4 ? SS_SUCCESS : SS_FILE_ERROR;
 #else
-    status = write(*handle, (char *) pmagta, magta[2]-4) == (INT) magta[2]-4 ? SS_SUCCESS : SS_FILE_ERROR;
+    status = write(*handle, (char *) pbot, magta[2]-4) == (INT) magta[2]-4 ? SS_SUCCESS : SS_FILE_ERROR;
 #endif
-      free (pmagta);
   }
   else if ((type == LOG_TYPE_FTP) && (format == FORMAT_MIDAS))
   {
@@ -280,6 +283,37 @@ INT ybos_log_open(LOG_CHN *log_chn, INT run_number)
 }
 
 /*------------------------------------------------------------------*/
+INT ybos_magta_write( INT logH, char *pwt, INT nbytes)
+/********************************************************************\
+  Routine: ybos_magta_write
+  Purpose: Special data write using magta format for YBOS
+  Input:
+    HANDLE logH        Devive handle
+    char * pwt         pointer to data
+    INT    nbytes      data size in bytes
+  Output:
+    none
+ Function value:
+    error, success
+\********************************************************************/
+  {
+    INT status, written;
+#ifdef OS_WINNT
+        WriteFile((HANDLE) logH, (char *) ((DWORD *)(magta+2)), 4, &written, NULL);
+        status = written == 4 ? SS_SUCCESS : SS_FILE_ERROR;
+#else
+        status = write(logH, (char *)((DWORD *)(magta+2)), 4) == 4 ? SS_SUCCESS : SS_FILE_ERROR;
+#endif
+#ifdef OS_WINNT
+        WriteFile((HANDLE) logH, (char *) pwt, nbytes, &written, NULL);
+        status = written == nbytes ? SS_SUCCESS : SS_FILE_ERROR;
+#else
+        status = write(logH, (char *)pwt, nbytes) == nbytes ? SS_SUCCESS : SS_FILE_ERROR;
+#endif
+        return status;
+  }
+
+/*------------------------------------------------------------------*/
 INT ybos_flush_buffer(LOG_CHN *log_chn)
 /********************************************************************\
   Routine: ybos_flush_buffer
@@ -292,7 +326,7 @@ INT ybos_flush_buffer(LOG_CHN *log_chn)
     error, success
 \********************************************************************/
 {
-INT         status, written;
+INT         status;
 YBOS_INFO   *ybos;
 
   ybos = (YBOS_INFO *) log_chn->format_info;
@@ -322,26 +356,14 @@ YBOS_INFO   *ybos;
   else
     {
     /* write MAGTA header (4bytes)=0x7ff8 */
-#ifdef OS_WINNT
-    WriteFile((HANDLE) log_chn->handle, (char *) ((DWORD *)(magta+2)), 4, &written, NULL);
-    status = written == 4 ? SS_SUCCESS : SS_FILE_ERROR;
-#else
-    status = write(log_chn->handle, (char *)((DWORD *)(magta+2)), 4) == 4 ? SS_SUCCESS : SS_FILE_ERROR;
-#endif
-#ifdef OS_WINNT
-    WriteFile((HANDLE) log_chn->handle, (char *) ybos->rd_cur_ptr, YBOS_BLK_SIZE*4, &written, NULL);
-    status = written == YBOS_BLK_SIZE*4 ? SS_SUCCESS : SS_FILE_ERROR;
-#else
-    status = write(log_chn->handle, (char *)ybos->rd_cur_ptr,
-                 YBOS_BLK_SIZE*4) == YBOS_BLK_SIZE*4 ? SS_SUCCESS : SS_FILE_ERROR;
-#endif
+    status = ybos_magta_write(log_chn->handle, (char *) ybos->rd_cur_ptr, YBOS_BLK_SIZE*4);
     log_chn->statistics.bytes_written += YBOS_BLK_SIZE*4 + 4;
     log_chn->statistics.bytes_written_total += YBOS_BLK_SIZE*4 + 4;
     }
   return status;
 }
 
-/*------------------------------------------------------------------*/
+  /*------------------------------------------------------------------*/
 INT ybos_write(LOG_CHN *log_chn, EVENT_HEADER *pevent, INT evt_size)
 /********************************************************************\
   Routine: ybos_write
@@ -357,7 +379,7 @@ INT ybos_write(LOG_CHN *log_chn, EVENT_HEADER *pevent, INT evt_size)
 \********************************************************************/
 {
   short int   evid, evmsk;
-  INT         status, written, left_over_length, datasize, event_size;
+  INT         status, left_over_length, datasize, event_size;
   YBOS_INFO   *ybos;
   DWORD       *pbkdat,*pbktop;
   DWORD        bfsize;
@@ -453,6 +475,10 @@ INT ybos_write(LOG_CHN *log_chn, EVENT_HEADER *pevent, INT evt_size)
       /* Event with MIDAS header striped out */
       memcpy( (char *)ybos->wr_cur_ptr, (char *) pevent, evt_size);
       
+/*    if (evid == 2)
+      display_any_bank( (void *)((DWORD *)pevent+1), FORMAT_YBOS, DSP_BANK, DSP_HEX);
+      */
+
       /* move write pointer to next free location (DWORD) */
       ybos->wr_cur_ptr += (evt_size>>2);
       
@@ -478,21 +504,7 @@ INT ybos_write(LOG_CHN *log_chn, EVENT_HEADER *pevent, INT evt_size)
     else
       {
       /* write MAGTA header (4bytes)=0x7ff8 */
-
-#ifdef OS_WINNT
-        WriteFile((HANDLE) log_chn->handle, (char *) ((DWORD *)(magta+2)), 4, &written, NULL);
-        status = written == 4 ? SS_SUCCESS : SS_FILE_ERROR;
-#else
-        status = write(log_chn->handle, (char *)((DWORD *)(magta+2)), 4) == 4 ? SS_SUCCESS : SS_FILE_ERROR;
-#endif
-#ifdef OS_WINNT
-        WriteFile((HANDLE) log_chn->handle, (char *) ybos->rd_cur_ptr, YBOS_BLK_SIZE*4, &written, NULL);
-        status = written == YBOS_BLK_SIZE*4 ? SS_SUCCESS : SS_FILE_ERROR;
-#else
-        status = write(log_chn->handle, (char *)ybos->rd_cur_ptr,
-                 YBOS_BLK_SIZE*4) == YBOS_BLK_SIZE*4 ? SS_SUCCESS : SS_FILE_ERROR;
-#endif
-
+        status = ybos_magta_write(log_chn->handle, (char *) ybos->rd_cur_ptr, YBOS_BLK_SIZE*4);
         log_chn->statistics.bytes_written += YBOS_BLK_SIZE*4 + 4;
         log_chn->statistics.bytes_written_total += YBOS_BLK_SIZE*4 + 4;
       }
@@ -528,20 +540,7 @@ INT ybos_write(LOG_CHN *log_chn, EVENT_HEADER *pevent, INT evt_size)
       else
         {
         /* write MAGTA header (4bytes)=0x7ff8 */
-#ifdef OS_WINNT
-          WriteFile((HANDLE) log_chn->handle, (char *) ((DWORD *)(magta+2)), 4, &written, NULL);
-          status = written == 4 ? SS_SUCCESS : SS_FILE_ERROR;
-#else
-          status = write(log_chn->handle, (char *)((DWORD *)(magta+2)), 4) == 4 ? SS_SUCCESS : SS_FILE_ERROR;
-#endif
-#ifdef OS_WINNT
-          WriteFile((HANDLE) log_chn->handle, (char *) ybos->rd_cur_ptr, YBOS_BLK_SIZE*4, &written, NULL);
-          status = written == YBOS_BLK_SIZE*4 ? SS_SUCCESS : SS_FILE_ERROR;
-#else
-          status = write(log_chn->handle, (char *)ybos->rd_cur_ptr,
-                 YBOS_BLK_SIZE*4) == YBOS_BLK_SIZE*4 ? SS_SUCCESS : SS_FILE_ERROR;
-#endif
-
+          status = ybos_magta_write(log_chn->handle, (char *)ybos->rd_cur_ptr, YBOS_BLK_SIZE*4);
           log_chn->statistics.bytes_written += YBOS_BLK_SIZE*4 + 4;
           log_chn->statistics.bytes_written_total += YBOS_BLK_SIZE*4 + 4;
         }
@@ -588,22 +587,6 @@ YBOS_INFO   *ybos;
     return status;
 
   status = close_any_logfile(log_chn->type, log_chn->handle);
-
-  /* Write EOF if Tape */
-  if (log_chn->type == LOG_TYPE_TAPE)
-    {
-    /* writing EOF mark on tape only */
-    ss_tape_write_eof(log_chn->handle);
-    ss_tape_write_eof(log_chn->handle);
-    ss_tape_fskip(log_chn->handle, -1);
-    ss_tape_close(log_chn->handle);
-    }
-  else
-#ifdef OS_WINNT
-    CloseHandle((HANDLE) log_chn->handle);
-#else
-    close(log_chn->handle);
-#endif
 
   free(ybos->top_ptr);
   free(ybos);
@@ -800,221 +783,6 @@ INT   ybos_file_dump(INT hBuf, INT ev_ID, INT run_number, char * path)
   /* cleanup memory */
   free (pheader);
 
-  /* close file */
-  if( close( dmpf) )
-    {
-      printf("File was not closed\n");
-      return RDLOG_FAIL_CLOSE;
-    }
-  return RDLOG_SUCCESS;
-}
-
-/*------------------------------------------------------------------*/
-INT   ybos_feodb_file_dump (EQUIPMENT * eqp, DWORD* pevent, INT run_number, char *path)
-/********************************************************************\
-  Routine: ybos_feodb_file_dump
-  Purpose: Access ODB for the /Equipment/<equip_name>/Dump.
-           in order to scan for file name and dump the files content to the
-           Midas buffer channel.
-  Input:
-    EQUIPMENT * eqp        Current equipment
-    INT    run_number      current run_number
-    char * path            full file name specification
-  Output:
-    none
-  Function value:
-    0                      Successful completion
-\********************************************************************/
-{
-  INT      index, size, status;
-  HNDLE    hDB, hKey, hKeydump;
-  char     strpath[MAX_FILE_PATH], Dumpfile[MAX_FILE_PATH];
-  char     odb_entry[MAX_FILE_PATH];
-
-  cm_get_experiment_database(&hDB, &hKey);
-
-  /* loop over all channels */
-  sprintf (odb_entry,"/Equipment/%s/Dump",path);
-  status = db_find_key(hDB, 0, odb_entry, &hKey);
-  if (status != DB_SUCCESS)
-    {
-      cm_msg(MINFO, "ybos_odb_file_dump", "odb_access_file -I- %s not found", odb_entry);
-      return RDLOG_SUCCESS;
-    }
-  index = 0;
-  while ((status = db_enum_key(hDB, hKey, index, &hKeydump))!= DB_NO_MORE_SUBKEYS)
-    {
-      if (status == DB_SUCCESS)
-	{
-	  size = sizeof(strpath);
-	  db_get_path(hDB, hKeydump, strpath, size);
-	  db_get_value(hDB, 0, strpath, Dumpfile, &size, TID_STRING);
-	  ybos_fefile_dump(eqp, (EVENT_HEADER *)pevent, run_number, Dumpfile);
-	}
-      index++;
-    }
-  return (RDLOG_SUCCESS);
-}
-
-/*------------------------------------------------------------------*/
-INT  ybos_fefile_dump(EQUIPMENT * eqp, EVENT_HEADER *pevent, INT run_number, char * path)
-/********************************************************************\
-  Routine: ybos_fefile_dump
-  Purpose: Fragment file in order to send it through Midas.
-           This version compose an event of the form of:
-           Midas_header[(YBOS_CFILE)(YBOS_PFILE)(YBOS_DFILE)]
-      	   Specific for the fe.
-  Input:
-    EQUIPMENT * eqp        Current equipment
-    INT   run_number       currrent run_number
-    char * path            full file name specification
-  Output:
-    none
-  Function value:
-    RDLOG_SUCCESS          Successful completion
-    RDLOG_OPEN_FAILED      file doesn't exist
-    -2                     file not closed
-\********************************************************************/
-  {
-    INT dmpf, remaining;
-    INT nread, filesize, nfrag;
-    INT allheader_size;
-    DWORD *pbuf, *pcfile, *pybos;
-    YBOS_CFILE ybos_cfileh;
-    YBOS_PFILE ybos_pfileh;
-    int  send_sock, flag;
-
-    /* check if file exists */
-    /* Open for read (will fail if file does not exist) */
-    if( (dmpf = open(path, O_RDONLY | O_BINARY, 0644 )) == -1 )
-  	  {
-	      cm_msg(MINFO,"ybos_file_dump","File dump -Failure- on open file %s",path);
-	      return RDLOG_FAIL_OPEN;
-	    }
-
-    /* get file size */
-    filestat = malloc( sizeof(struct stat) );
-    stat(path,filestat);
-    filesize = filestat->st_size;
-    free(filestat);
-    cm_msg(MINFO,"ybos_file_dump","Accessing File %s (%i)",path, filesize);
-
-    /*-PAA-Oct06/97 added for ring buffer option */
-    send_sock = rpc_get_send_sock();
-  
-    /* compute fragmentation & initialize*/
-    nfrag = filesize / MAX_FRAG_SIZE;
-
-    /* Generate a unique FILE ID */
-    srand( (unsigned)time( NULL ) );
-    srand( (unsigned)time( NULL ) );
-
-    /* Fill file YBOS_CFILE header */
-    ybos_cfileh.file_ID = rand();
-    ybos_cfileh.size = filesize;
-    ybos_cfileh.total_fragment = nfrag + (((filesize % MAX_FRAG_SIZE)==0) ? 0 : 1);
-    ybos_cfileh.current_fragment = 0;
-    ybos_cfileh.current_read_byte = 0;
-    ybos_cfileh.run_number= run_number;
-    ybos_cfileh.spare= 0xabcd;
-
-    /* Fill file YBOS_PFILE header */
-    memset (ybos_pfileh.path,0,sizeof(YBOS_PFILE));
-    /* first remove path if present */
-    if (strrchr(path,'/') != NULL)
-      {
-        strncpy(ybos_pfileh.path
-	        ,strrchr(path,'/')+1
-	        ,strlen(strrchr(path,'/')));
-      }
-    else
-        strcpy(ybos_pfileh.path, path);
-
-    /* allocate space */
-    allheader_size = sizeof(EVENT_HEADER)
-      + sizeof(YBOS_BANK_HEADER)           /* EVID bank header */
-      + 5*sizeof(DWORD)                    /* EVID data size */
-      + sizeof(YBOS_CFILE)
-      + sizeof(YBOS_PFILE) + 64;
-
-    flag = 0;
-    pevent -= 1;
-
-    /* read file */
-    while (ybos_cfileh.current_fragment <= nfrag)
-    {
-      /* pevent passed by fe for first event only */
-      if (flag)
-        pevent = eb_get_pointer();
-      flag = 1;
-
-      /* YBOS bank header */
-      pybos = (DWORD *) ((EVENT_HEADER *) pevent+1);
-
-      /*-PAA-Oct06/97 for ring buffer reset the LRL */
-      ybk_init((DWORD *) pybos);
-
-      /*---- YBOS Event bank ----*/
-      ybk_create(pybos, "EVID", I4_BKTYPE, (DWORD *)&pbuf);
-      *(pbuf)++ = ybos_cfileh.current_fragment;          /* Event number */
-      *(pbuf)++ = (eqp->info.event_id <<16) | (eqp->info.trigger_mask);  /* Event_ID + Mask */
-      *(pbuf)++ = eqp->serial_number;                    /* Serial number */
-      *(pbuf)++ = ss_millitime();                        /* Time Stamp */
-      *(pbuf)++ = run_number;                            /* run number */
-      ybk_close(pybos, pbuf);
-
-      /* Create YBOS bank */
-      ybk_create(pybos, "CFIL", I4_BKTYPE, (DWORD *)&pbuf);
-      /* save pointer for later */
-      pcfile = pbuf;
-      (char *)pbuf += sizeof(YBOS_CFILE);
-      ybk_close(pybos, pbuf);
-
-      ybk_create(pybos, "PFIL", A1_BKTYPE, (DWORD *)&pbuf);
-      memcpy((char *)pbuf,(char *)&ybos_pfileh,sizeof(YBOS_PFILE));
-      (char *)pbuf += sizeof(YBOS_PFILE);
-      ybk_close(pybos, pbuf);
-
-      ybk_create(pybos, "DFIL", A1_BKTYPE, (DWORD *)&pbuf);
-      /* compute data length */
-      remaining = filesize-ybos_cfileh.current_read_byte;
-      nread = read(dmpf,(char *)pbuf,(remaining > MAX_FRAG_SIZE) ? MAX_FRAG_SIZE : remaining);
-
-      /* adjust target pointer */
-      (char *) pbuf += nread;
-      /* keep track of statistic */
-      ybos_cfileh.current_fragment++;
-      ybos_cfileh.fragment_size = nread;
-      ybos_cfileh.current_read_byte += nread;
-      memcpy((char *)pcfile,(char *)&ybos_cfileh,sizeof(YBOS_CFILE));
-
-      /* close YBOS bank */
-      ybk_close(pybos, pbuf);
-
-      /* Fill the Midas header */
-      bm_compose_event(pevent, eqp->info.event_id, eqp->info.trigger_mask
-		       , ybk_size(pybos), eqp->serial_number++);
-
-/*-PAA-Oct06/97 Added the ring buffer option for FE event send */
-      eqp->bytes_sent += pevent->data_size+sizeof(EVENT_HEADER);
-      eqp->events_sent++;
-      if (eqp->buffer_handle)
-        {
-/*-PAA- Jun98 These events should be sent directly as they come before the run
-        started. If the event channel has to be used, then care should be taken
-        if interrupt are being used too. May requires buffer checks like in
-        scheduler (mfe.c) */
-/* #undef USE_EVENT_CHANNEL */
-#ifdef USE_EVENT_CHANNEL
-        eb_increment_pointer(eqp->buffer_handle, 
-                             pevent->data_size + sizeof(EVENT_HEADER));
-#else
-        rpc_flush_event();
-        bm_send_event(eqp->buffer_handle, pevent,
-                       pevent->data_size + sizeof(EVENT_HEADER), SYNC);
-#endif
-        }
-    }
   /* close file */
   if( close( dmpf) )
     {
@@ -1290,17 +1058,17 @@ void display_ybos_event( DWORD *pevt, INT dsp_fmt)
 	}
       if (ybos.type == I2_BKTYPE)
 	{
-	  length_type = (ybos.length-(1 << 1));
+	  length_type = (ybos.length-1 << 1);
 	  strcpy (strbktype,"Integer*2");
 	}
       if (ybos.type == I1_BKTYPE)
 	{
-	  length_type = (ybos.length-(1 << 2));
+	  length_type = (ybos.length-1 << 2);
 	  strcpy (strbktype,"8 bit Bytes");
 	}
       if (ybos.type == A1_BKTYPE)
 	{
-	  length_type = (ybos.length-(1 << 2));
+	  length_type = (ybos.length-1 << 2);
 	  strcpy (strbktype,"8 bit ASCII");
 	}
       printf("\nBank:%s Length: %i(I*1)/%i(I*4)/%i(Type) Type:%s",
@@ -1575,17 +1343,17 @@ void ybos_display_ybos_bank( DWORD *pbk, INT dsp_fmt)
     }
   if (pbkh->type == I2_BKTYPE)
     {
-      length_type = (pbkh->length-(1 << 1));
+      length_type = (pbkh->length-1 << 1);
       strcpy (strbktype,"Integer*2");
     }
   if (pbkh->type == I1_BKTYPE)
     {
-      length_type = (pbkh->length-(1 << 2));
+      length_type = (pbkh->length-1 << 2);
       strcpy (strbktype,"8 bit Bytes");
     }
   if (pbkh->type == A1_BKTYPE)
     {
-      length_type = (pbkh->length-(1 << 2));
+      length_type = (pbkh->length-1 << 2);
       strcpy (strbktype,"8 bit ASCII");
     }
     printf("\nBank:%s Length: %i(I*1)/%i(I*4)/%i(Type) Type:%s",
@@ -2786,6 +2554,221 @@ INT   ybos_file_update(int slot, char * pevt)
       /* fragment retrieved wait next one */
       return RDLOG_SUCCESS;
     }
+}
+#endif /* !FE_YBOS_SUPPORT */
+/*------------------------------------------------------------------*/
+INT   ybos_feodb_file_dump (EQUIPMENT * eqp, DWORD* pevent, INT run_number, char *path)
+/********************************************************************\
+  Routine: ybos_feodb_file_dump
+  Purpose: Access ODB for the /Equipment/<equip_name>/Dump.
+           in order to scan for file name and dump the files content to the
+           Midas buffer channel.
+  Input:
+    EQUIPMENT * eqp        Current equipment
+    INT    run_number      current run_number
+    char * path            full file name specification
+  Output:
+    none
+  Function value:
+    0                      Successful completion
+\********************************************************************/
+{
+  INT      index, size, status;
+  HNDLE    hDB, hKey, hKeydump;
+  char     strpath[MAX_FILE_PATH], Dumpfile[MAX_FILE_PATH];
+  char     odb_entry[MAX_FILE_PATH];
+
+  cm_get_experiment_database(&hDB, &hKey);
+
+  /* loop over all channels */
+  sprintf (odb_entry,"/Equipment/%s/Dump",path);
+  status = db_find_key(hDB, 0, odb_entry, &hKey);
+  if (status != DB_SUCCESS)
+    {
+      cm_msg(MINFO, "ybos_odb_file_dump", "odb_access_file -I- %s not found", odb_entry);
+      return RDLOG_SUCCESS;
+    }
+  index = 0;
+  while ((status = db_enum_key(hDB, hKey, index, &hKeydump))!= DB_NO_MORE_SUBKEYS)
+    {
+      if (status == DB_SUCCESS)
+	{
+	  size = sizeof(strpath);
+	  db_get_path(hDB, hKeydump, strpath, size);
+	  db_get_value(hDB, 0, strpath, Dumpfile, &size, TID_STRING);
+	  ybos_fefile_dump(eqp, (EVENT_HEADER *)pevent, run_number, Dumpfile);
+	}
+      index++;
+    }
+  return (RDLOG_SUCCESS);
+}
+
+/*------------------------------------------------------------------*/
+INT  ybos_fefile_dump(EQUIPMENT * eqp, EVENT_HEADER *pevent, INT run_number, char * path)
+/********************************************************************\
+  Routine: ybos_fefile_dump
+  Purpose: Fragment file in order to send it through Midas.
+           This version compose an event of the form of:
+           Midas_header[(YBOS_CFILE)(YBOS_PFILE)(YBOS_DFILE)]
+      	   Specific for the fe.
+  Input:
+    EQUIPMENT * eqp        Current equipment
+    INT   run_number       currrent run_number
+    char * path            full file name specification
+  Output:
+    none
+  Function value:
+    RDLOG_SUCCESS          Successful completion
+    RDLOG_OPEN_FAILED      file doesn't exist
+    -2                     file not closed
+\********************************************************************/
+  {
+    INT dmpf, remaining;
+    INT nread, filesize, nfrag;
+    INT allheader_size;
+    DWORD *pbuf, *pcfile, *pybos;
+    YBOS_CFILE ybos_cfileh;
+    YBOS_PFILE ybos_pfileh;
+    int  send_sock, flag;
+
+    /* check if file exists */
+    /* Open for read (will fail if file does not exist) */
+    if( (dmpf = open(path, O_RDONLY | O_BINARY, 0644 )) == -1 )
+  	  {
+	      cm_msg(MINFO,"ybos_file_dump","File dump -Failure- on open file %s",path);
+	      return RDLOG_FAIL_OPEN;
+	    }
+
+    /* get file size */
+    filestat = malloc( sizeof(struct stat) );
+    stat(path,filestat);
+    filesize = filestat->st_size;
+    free(filestat);
+    cm_msg(MINFO,"ybos_file_dump","Accessing File %s (%i)",path, filesize);
+
+    /*-PAA-Oct06/97 added for ring buffer option */
+    send_sock = rpc_get_send_sock();
+  
+    /* compute fragmentation & initialize*/
+    nfrag = filesize / MAX_FRAG_SIZE;
+
+    /* Generate a unique FILE ID */
+    srand( (unsigned)time( NULL ) );
+    srand( (unsigned)time( NULL ) );
+
+    /* Fill file YBOS_CFILE header */
+    ybos_cfileh.file_ID = rand();
+    ybos_cfileh.size = filesize;
+    ybos_cfileh.total_fragment = nfrag + (((filesize % MAX_FRAG_SIZE)==0) ? 0 : 1);
+    ybos_cfileh.current_fragment = 0;
+    ybos_cfileh.current_read_byte = 0;
+    ybos_cfileh.run_number= run_number;
+    ybos_cfileh.spare= 0xabcd;
+
+    /* Fill file YBOS_PFILE header */
+    memset (ybos_pfileh.path,0,sizeof(YBOS_PFILE));
+    /* first remove path if present */
+    if (strrchr(path,'/') != NULL)
+      {
+        strncpy(ybos_pfileh.path
+	        ,strrchr(path,'/')+1
+	        ,strlen(strrchr(path,'/')));
+      }
+    else
+        strcpy(ybos_pfileh.path, path);
+
+    /* allocate space */
+    allheader_size = sizeof(EVENT_HEADER)
+      + sizeof(YBOS_BANK_HEADER)           /* EVID bank header */
+      + 5*sizeof(DWORD)                    /* EVID data size */
+      + sizeof(YBOS_CFILE)
+      + sizeof(YBOS_PFILE) + 64;
+
+    flag = 0;
+    pevent -= 1;
+
+    /* read file */
+    while (ybos_cfileh.current_fragment <= nfrag)
+    {
+      /* pevent passed by fe for first event only */
+      if (flag)
+        pevent = eb_get_pointer();
+      flag = 1;
+
+      /* YBOS bank header */
+      pybos = (DWORD *) ((EVENT_HEADER *) pevent+1);
+
+      /*-PAA-Oct06/97 for ring buffer reset the LRL */
+      ybk_init((DWORD *) pybos);
+
+      /*---- YBOS Event bank ----*/
+      ybk_create(pybos, "EVID", I4_BKTYPE, (DWORD *)&pbuf);
+      *(pbuf)++ = ybos_cfileh.current_fragment;          /* Event number */
+      *(pbuf)++ = (eqp->info.event_id <<16) | (eqp->info.trigger_mask);  /* Event_ID + Mask */
+      *(pbuf)++ = eqp->serial_number;                    /* Serial number */
+      *(pbuf)++ = ss_millitime();                        /* Time Stamp */
+      *(pbuf)++ = run_number;                            /* run number */
+      ybk_close(pybos, pbuf);
+
+      /* Create YBOS bank */
+      ybk_create(pybos, "CFIL", I4_BKTYPE, (DWORD *)&pbuf);
+      /* save pointer for later */
+      pcfile = pbuf;
+      (char *)pbuf += sizeof(YBOS_CFILE);
+      ybk_close(pybos, pbuf);
+
+      ybk_create(pybos, "PFIL", A1_BKTYPE, (DWORD *)&pbuf);
+      memcpy((char *)pbuf,(char *)&ybos_pfileh,sizeof(YBOS_PFILE));
+      (char *)pbuf += sizeof(YBOS_PFILE);
+      ybk_close(pybos, pbuf);
+
+      ybk_create(pybos, "DFIL", A1_BKTYPE, (DWORD *)&pbuf);
+      /* compute data length */
+      remaining = filesize-ybos_cfileh.current_read_byte;
+      nread = read(dmpf,(char *)pbuf,(remaining > MAX_FRAG_SIZE) ? MAX_FRAG_SIZE : remaining);
+
+      /* adjust target pointer */
+      (char *) pbuf += nread;
+      /* keep track of statistic */
+      ybos_cfileh.current_fragment++;
+      ybos_cfileh.fragment_size = nread;
+      ybos_cfileh.current_read_byte += nread;
+      memcpy((char *)pcfile,(char *)&ybos_cfileh,sizeof(YBOS_CFILE));
+
+      /* close YBOS bank */
+      ybk_close(pybos, pbuf);
+
+      /* Fill the Midas header */
+      bm_compose_event(pevent, eqp->info.event_id, eqp->info.trigger_mask
+		       , ybk_size(pybos), eqp->serial_number++);
+
+/*-PAA-Oct06/97 Added the ring buffer option for FE event send */
+      eqp->bytes_sent += pevent->data_size+sizeof(EVENT_HEADER);
+      eqp->events_sent++;
+      if (eqp->buffer_handle)
+        {
+/*-PAA- Jun98 These events should be sent directly as they come before the run
+        started. If the event channel has to be used, then care should be taken
+        if interrupt are being used too. May requires buffer checks like in
+        scheduler (mfe.c) */
+/* #undef USE_EVENT_CHANNEL */
+#ifdef USE_EVENT_CHANNEL
+        eb_increment_pointer(eqp->buffer_handle, 
+                             pevent->data_size + sizeof(EVENT_HEADER));
+#else
+        rpc_flush_event();
+        bm_send_event(eqp->buffer_handle, pevent,
+                       pevent->data_size + sizeof(EVENT_HEADER), SYNC);
+#endif
+        }
+    }
+  /* close file */
+  if( close( dmpf) )
+    {
+      printf("File was not closed\n");
+      return RDLOG_FAIL_CLOSE;
+    }
+  return RDLOG_SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
