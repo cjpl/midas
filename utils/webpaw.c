@@ -6,6 +6,9 @@
   Contents:     Web server for remote PAW display
 
   $Log$
+  Revision 1.21  2000/06/06 09:35:57  midas
+  Added refresh option
+
   Revision 1.20  2000/05/26 13:02:30  midas
   Added body1/2/3 tag to display frames in different colors
 
@@ -93,7 +96,7 @@
 #endif
 
 /* Version of WebPAW */
-#define VERSION "1.0.4"
+#define VERSION "1.0.5"
 
 #define WEB_BUFFER_SIZE 100000
 #define MAX_PARAM           10
@@ -957,7 +960,13 @@ int    fh, i, j, length, status, height;
     {
     rsprintf("HTTP/1.0 200 Document follows\r\n");
     rsprintf("Server: WebPAW\r\n");
+
     rsprintf("Content-Type: text/html\r\n\r\n");
+
+    rsprintf("<head>\r\n");
+    if (getcfg("General", "Refresh", str))
+      rsprintf("<meta http-equiv=REFRESH content=%s>", str);
+    rsprintf("</head>\r\n");
 
     if (getcfg("General", "Body3", str))
       rsprintf("<html><body %s>\r\n", str);
