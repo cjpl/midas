@@ -9,6 +9,9 @@
                 for SCS-500 analog I/O
 
   $Log$
+  Revision 1.18  2003/05/14 15:13:43  midas
+  Limit ADC_average to 8
+
   Revision 1.17  2003/05/14 15:08:04  midas
   Switched P1 back to open drain
 
@@ -282,6 +285,10 @@ unsigned short d;
       P1 = user_data.p1; 
       break;
 
+    case 11:  // adc_average
+      if (user_data.adc_average > 8)
+        user_data.adc_average = 8;
+      break;
     }
 
   if (index > 10)
