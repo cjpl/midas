@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus communication functions
 
   $Log$
+  Revision 1.26  2003/01/27 16:10:09  midas
+  Keep port in input mode by default (not to collide with submaster)
+
   Revision 1.25  2002/11/29 09:01:50  midas
   Added <unistd.h>
 
@@ -153,9 +156,10 @@ MSCB_FD mscb_fd[MSCB_MAX_FD];
 #define LPT_ACK        2
 #define LPT_RESET      3
 #define LPT_BIT9       4
+#define LPT_READMODE   5
 
-#define LPT_BUSY       5
-#define LPT_DATAREADY  6
+#define LPT_BUSY       6
+#define LPT_DATAREADY  7
 
 /*
 #define LPT_NSTROBE     (1<<0)
@@ -320,41 +324,6 @@ int status;
 
 /*---- low level functions for direct port access ------------------*/
 
-void pp_wdata(int fd, unsigned int data)
-/* output data byte */
-{
-#ifdef _MSC_VER
-  _outp((unsigned short)mscb_fd[fd-1].fd, data);
-#else
-  ioctl(mscb_fd[fd-1].fd, PPWDATA, &data);
-#endif
-}
-
-/*------------------------------------------------------------------*/
-
-unsigned char pp_rdata(int fd)
-/* intput data byte */
-{
-#ifdef _MSC_VER
-  /* switch port to input */
-  _outp((unsigned short)(mscb_fd[fd-1].fd+2), (1 << 5));
-
-  return _inp((unsigned short)mscb_fd[fd-1].fd);
-#else
-  unsigned int mode = 1, data;
-  if (ioctl(mscb_fd[fd-1].fd, PPDATADIR, &mode))
-    perror("PPDATADIR");
-  if (ioctl(mscb_fd[fd-1].fd, PPRDATA, &data))
-    perror("PPRDATA");
-  mode = 0;
-  if (ioctl(mscb_fd[fd-1].fd, PPDATADIR, &mode))
-    perror("PPDATADIR");
-  return data;
-#endif
-}
-
-/*------------------------------------------------------------------*/
-
 void pp_wcontrol(int fd, int signal, int flag)
 /* write control signal */
 {
@@ -373,6 +342,9 @@ static unsigned int mask=0;
        break;
     case LPT_ACK:    // negative
        mask = flag ? mask | (1<<3) : mask & ~(1<<3);
+       break;
+    case LPT_READMODE: // positive
+       mask = flag ? mask | (1<<5) : mask & ~(1<<5);
        break;
     }
 
@@ -403,6 +375,45 @@ unsigned int mask = 0;
     }
 
   return 0;
+}
+
+/*------------------------------------------------------------------*/
+
+void pp_setdir(int fd, unsigned int r)
+{
+/* set port direction: r==0:write mode;  r==1:read mode */
+#ifdef _MSC_VER
+  pp_wcontrol(fd, LPT_READMODE, r);
+#else
+  if (ioctl(mscb_fd[fd-1].fd, PPDATADIR, &r))
+    perror("PPDATADIR");
+#endif
+}
+
+/*------------------------------------------------------------------*/
+
+void pp_wdata(int fd, unsigned int data)
+/* output data byte */
+{
+#ifdef _MSC_VER
+  _outp((unsigned short)mscb_fd[fd-1].fd, data);
+#else
+  ioctl(mscb_fd[fd-1].fd, PPWDATA, &data);
+#endif
+}
+
+/*------------------------------------------------------------------*/
+
+unsigned char pp_rdata(int fd)
+/* intput data byte */
+{
+#ifdef _MSC_VER
+  return _inp((unsigned short)mscb_fd[fd-1].fd);
+#else
+  if (ioctl(mscb_fd[fd-1].fd, PPRDATA, &data))
+    perror("PPRDATA");
+  return data;
+#endif
 }
 
 /*------------------------------------------------------------------*/
@@ -443,6 +454,9 @@ int i, timeout;
     if (timeout == TIMEOUT_OUT)
       return MSCB_TIMEOUT;
 
+    /* switch to output mode */
+    pp_setdir(fd, 0);
+
     /* output data byte */
     pp_wdata(fd, buffer[i]);
 
@@ -464,14 +478,17 @@ int i, timeout;
 
     if (timeout == TIMEOUT_OUT)
       {
-      /* remove strobe */
+      pp_wdata(fd, 0xFF);
+      pp_setdir(fd, 1);
       pp_wcontrol(fd, LPT_STROBE, 0);
-
       return MSCB_TIMEOUT;
       }
 
     /* remove data, make port available for input */
     pp_wdata(fd, 0xFF);
+
+    /* switch to input mode */
+    pp_setdir(fd, 1);
 
     /* remove strobe */
     pp_wcontrol(fd, LPT_STROBE, 0);
@@ -751,6 +768,9 @@ char          host[256], port[256];
   /* set initial state of handshake lines */
   pp_wcontrol(index+1, LPT_STROBE, 0);
 
+  /* switch to input mode */
+  pp_setdir(index+1, 1);
+  
   /* check if SM alive */
   if (pp_rstatus(index+1, LPT_BUSY))
     {
