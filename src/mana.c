@@ -7,6 +7,11 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.102  2003/11/01 01:25:11  olchansk
+  abort if cannto read /runinfo/run number
+  abort on invalid run numbers
+  abort if cannot write /runinfo/run number
+
   Revision 1.101  2003/10/29 14:37:14  midas
   Don't book NTUPLES for unknown events
 
@@ -324,6 +329,7 @@
 
 \********************************************************************/
 
+#include <assert.h>
 #include "midas.h"
 #include "msystem.h"
 #include "hardware.h"
@@ -3664,9 +3670,13 @@ static char  *orig_event = NULL;
       /* get run number from BOR event */
       current_run_number = pevent->serial_number;
 
+      cm_msg(MINFO, "process_event", "Set run number %d in ODB", current_run_number);
+      assert(current_run_number > 0);
+
       /* set run number in ODB */
-      db_set_value(hDB, 0, "/Runinfo/Run number", &current_run_number,
+      status = db_set_value(hDB, 0, "/Runinfo/Run number", &current_run_number,
                    sizeof(current_run_number), 1, TID_INT);
+      assert(status == SUCCESS);
 
       /* load ODB from event */
       odb_load(pevent);
@@ -4614,8 +4624,12 @@ DWORD           start_time;
   db_set_value(hDB, 0, str, &clp.rwnt, sizeof(BOOL), 1, TID_BOOL);
 #endif
 
+  cm_msg(MINFO, "analyze_run", "Set run number %d in ODB",run_number);
+  assert(run_number > 0);
+
   /* set run number in ODB */
-  db_set_value(hDB, 0, "/Runinfo/Run number", &run_number, sizeof(run_number), 1, TID_INT);
+  status = db_set_value(hDB, 0, "/Runinfo/Run number", &run_number, sizeof(run_number), 1, TID_INT);
+  assert(status == SUCCESS);
 
   /* set file name in out_info */
   strcpy(out_info.filename, output_file_name);
