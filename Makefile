@@ -7,6 +7,9 @@
 #  Contents:     Makefile for MIDAS binaries and examples under unix
 #
 #  $Log$
+#  Revision 1.54  2004/06/07 02:41:59  olchansk
+#  set ROOT and libmidas.a RPATH on executables
+#
 #  Revision 1.53  2004/04/04 01:41:20  olchansk
 #  dio does not need to link with midas libraries
 #
@@ -373,7 +376,7 @@ LIBNAME=$(LIB_DIR)/libmidas.a
 LIB    =$(LIBNAME)
 ifdef NEED_SHLIB
 SHLIB = $(LIB_DIR)/libmidas.so
-LIB   = -lmidas
+LIB   = -lmidas -Wl,-rpath,$(SYSLIB_DIR)
 endif
 VPATH = $(LIB_DIR):$(INC_DIR)
 
@@ -381,7 +384,7 @@ all:    $(OS_DIR) $(LIB_DIR) $(BIN_DIR) \
 	$(LIBNAME) $(SHLIB) \
 	$(ANALYZER) \
 	$(LIB_DIR)/mfe.o \
- 	$(LIB_DIR)/fal.o $(PROGS)
+	$(LIB_DIR)/fal.o $(PROGS)
 
 examples: $(EXAMPLES)
 
@@ -417,7 +420,7 @@ $(BIN_DIR):
 ifdef ROOTSYS
 ROOTLIBS    := $(shell $(ROOTSYS)/bin/root-config --libs)
 ROOTGLIBS   := $(shell $(ROOTSYS)/bin/root-config --glibs)
-ROOTCFLAGS  := $(shell $(ROOTSYS)/bin/root-config --cflags)
+ROOTCFLAGS  := $(shell $(ROOTSYS)/bin/root-config --cflags) -Wl,-rpath,$(ROOTSYS)/lib
 
 $(BIN_DIR)/mlogger: $(BIN_DIR)/%: $(SRC_DIR)/%.c
 	$(CXX) $(CFLAGS) $(OSFLAGS) -DHAVE_ROOT $(ROOTCFLAGS) -o $@ $< $(LIB) $(ROOTLIBS) $(LIBS)
