@@ -52,9 +52,9 @@ Example of frontend code can be found under the \b ../examples/experiment direct
 - <b> [Global declaration] </b>
 Up to the User global section  the declarations are system wide and should not
 be remove.
-  - @ref frontend_name  value can be modified to reflect the purpose of the code.
-  - @ref frontend_call_loop()  enable the function frontend_loop() to be run on every
-    frontend loop.
+  - @ref frontend_name  This value can be modified to reflect the purpose of the code.
+  - @ref frontend_call_loop() Enables the function frontend_loop() to be run
+    after every equipment loop.
   - @ref display_period  defined in millisecond the time interval between refresh of a
     frontend status display. The value of zero disable the display.
     If the frontend is started in the background with the display enabled,
@@ -125,31 +125,58 @@ of operation is the following:
    - end_of_run(): Runs before any other Equipments at each End of Run request.
    - frontend_exit(): Runs once before Slow Control Equipment exit. 
 
+- <b> [Bank definition]</b>
+Since the introduction of \b ROOT , the frontend requires to have the
+definition of the banks in the case you desire to store the raw data in \b
+ROOT format. This procedure is equivalent to the bank declaration in the
+analyzer. In the case the format declared is MIDAS, the example below
+shows the a structured bank and a standard variable length bank declaration
+for the trigger bank list. The trigger_bank_list[] is declared in the
+equipment structure (see @ref Eq_example ).
+\code
+   ADC0_BANK_STR(adc0_bank_str);
+   BANK_LIST trigger_bank_list[] = {
+      {"ADC0", TID_STRUCT, sizeof(ADC0_BANK), adc0_bank_str},
+      {"TDC0", TID_WORD, N_TDC, NULL},
+      {""},
+   };
+
+   BANK_LIST scaler_bank_list[] = {
+      {"SCLR", TID_DWORD, N_ADC, NULL},
+      {""},
+   };
+\endcode
+
 - <b> [Equipment definition] </b>
 See @ref The_Equipment_Structure for further explanation.
+\anchor Eq_example 
 \code
 #undef USE_INT
 EQUIPMENT equipment[] = {
 
-  { "Trigger",                                    // equipment name 
-    1, 0,                                         // event ID, trigger mask 
-    "SYSTEM",                                     // event buffer
+  { "Trigger",                                  // equipment name 
+    1, 0,                                       // event ID, trigger mask 
+    "SYSTEM",                                   // event buffer
 #ifdef USE_INT
-    EQ_INTERRUPT,                                 // equipment type
+    EQ_INTERRUPT,                               // equipment type
 #else
-    EQ_POLLED,                                    // equipment type 
+    EQ_POLLED,                                  // equipment type 
 #endif
-    LAM_SOURCE(CRATE, LAM_STATION(SLOT_C212)),    // event source crate 0 
-    "MIDAS",                                      // format 
-    TRUE,                                         // enabled 
-    RO_RUNNING |                                  // read only when running 
-    RO_ODB,                                       // and update ODB  
-    500,                                          // poll for 500ms 
-    0,                                            // stop run after this event limit 
-    0,                                            // number of sub events
-    0,                                            // don't log history 
-    "", "", "",
-    read_trigger_event,                           // readout routine 
+    LAM_SOURCE(CRATE, LAM_STATION(SLOT_C212)),  // event source crate 0 
+    "MIDAS",                                    // format 
+    TRUE,                                       // enabled 
+    RO_RUNNING |                                // read only when running 
+    RO_ODB,                                     // and update ODB  
+    500,                                        // poll for 500ms 
+    0,                                          // stop run after this event limit 
+    0,                                          // number of sub events 
+    0,                                          // don't log history 
+    "", "", "",}
+    ,
+    read_trigger_event,                         // readout routine 
+    NULL, NULL,
+    trigger_bank_list,                          // bank list
+    }
    ,
   ...
 \endcode 
@@ -175,8 +202,8 @@ EQUIPMENT equipment[] = {
   The function \b cam_lam_enable(CRATE, SLOT_IO)  is then necessary in order to enable
   the proper LAM source station. The LAM source station has to alos be enabled (F26).
   <br><br>
-  The argument \b run_number  provides the current run number being started.
-  The argument \b error  can be used for returning a message to the system.
+  The argument \b run_number provides the current run number being started.
+  The argument \b error can be used for returning a message to the system.
   This string will be logged into the {b midas.log  file.
   <br><br>
   \code 
@@ -199,10 +226,10 @@ EQUIPMENT equipment[] = {
   \endcode
 
 - [poll_event()]
-  If the equipment definition is \b EQ_POLLED  as a acquisition
-  type, the \b poll_event  will be call as often as possible over the corresponding
-  poll time (ex:500ms see @ref The_Equipment_Structure ) given by each polling equipment.
-  The code below shows a typical CAMAC LAM polling loop. The \b source  corresponds
+  If the equipment definition is \b EQ_POLLED  as an acquisition
+  type, the \b poll_event()  will be call as often as possible over the corresponding
+  poll time (ex:500ms see @ref The_Equipment_Structure) given by each polling equipment.
+  The code below shows a typical CAMAC LAM polling loop. The \b source corresponds
   to a bitwise LAM station susceptible to generate LAM for that particular equipement.
   If the LAM is ORed for several station and is independent of the equipment, the
   LAM test can be simplified (see example below) 
@@ -274,7 +301,7 @@ INT read_trigger_event(char *pevent, INT off)
 }
 \endcode
 
- - [pause / resume_of_run()]
+ - [pause_run() / resume_run()]
   These two functions are called respectively upon "Pause" and
   "Resume" command. Any code relevant to the upcoming run state can be
   include. Possible commands when CAMAC is involved can be
@@ -331,12 +358,16 @@ EQUIPMENT equipment[] = {
     RO_ODB,               // and update ODB  
     500,                  // poll for 500ms 
     0,                    // stop run after this event limit 
-    0,                    // number of sub events
+    0,                    // number of sub events 
     0,                    // don't log history 
-    "", "", "",
+    "", "", "",}
+    ,
     read_trigger_event,   // readout routine 
+    NULL, NULL,
+    trigger_bank_list,    // bank list
+    }
    ,
-  ...   
+  ...
 \endcode
 
 - <b>["trigger","scaler"]</b>: Each equipment has to have a unique equipment name defined
@@ -361,7 +392,7 @@ frontend are called fragment). In this example both events are placed in the sam
 buffer called "SYSTEM" (default).
   - <b> [Remark]  </b>If this field is left empty ("") the readout function associated to
 that equipment will still be performed, but the actual event won't be sent to the
-buffer. The positive side-effect of that configuration is to allow that particuliar
+buffer. The positive side-effect of that configuration is to allow that particular
 equipment to be mirrored in the ODB if the RO_ODB is turned on.
 
 - <b>[EQ_xxx]</b> The field specify the type of equipment. It can be composed of several 
