@@ -6,6 +6,9 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
+  Revision 1.43  2003/12/12 10:54:14  midas
+  Fixed wrong index in call to db_remove_open_record()
+
   Revision 1.42  2003/12/12 09:19:08  midas
   Fixed wrong parameter in call to cm_get_watchdog_info()
 
@@ -895,7 +898,7 @@ INT convert_flags;
       break;
 
     case RPC_DB_REMOVE_OPEN_RECORD:
-      status = db_remove_open_record(CHNDLE(0), CHNDLE(1), CBOOL(3));
+      status = db_remove_open_record(CHNDLE(0), CHNDLE(1), CBOOL(2));
       break;
 
     case RPC_DB_LOAD:
