@@ -6,6 +6,9 @@
 #  Contents:     Makefile for MIDAS binaries and examples under unix
 #
 #  $Log$
+#  Revision 1.35  2002/01/24 22:26:48  pierre
+#  rm elog, add cc for webpaw,odbhist
+#
 #  Revision 1.34  2002/01/23 11:27:32  midas
 #  Removed elogd (now separate package)
 #
@@ -269,6 +272,7 @@ PROGS = $(BIN_DIR)/mserver $(BIN_DIR)/mhttpd \
 	$(BIN_DIR)/mstat $(BIN_DIR)/mcnaf \
 	$(BIN_DIR)/mdump $(BIN_DIR)/lazylogger \
 	$(BIN_DIR)/mchart $(BIN_DIR)/stripchart.tcl \
+	$(BIN_DIR)/webpaw $(BIN_DIR)/odbhist \
 	$(SPECIFIC_OS_PRG)
 
 OBJS =  $(LIB_DIR)/midas.o $(LIB_DIR)/system.o $(LIB_DIR)/mrpc.o \
@@ -435,7 +439,7 @@ install:
 	@echo "... "
 	@echo "... Installing utilities to $(SYSBIN_DIR)"
 	@echo "... "
-	@for i in mhist odbhist elog mtape mstat lazylogger mdump mcnaf mlxspeaker mchart stripchart.tcl webpaw; \
+	@for i in mhist odbhist mtape mstat lazylogger mdump mcnaf mlxspeaker mchart stripchart.tcl webpaw; \
 	  do \
 	  echo $$i ; \
 	  rm -f $(SYSBIN_DIR)/$$i ; \
