@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol main program
 
   $Log$
+  Revision 1.37  2004/02/24 13:30:21  midas
+  Implemented C8051F310 code
+
   Revision 1.36  2004/01/07 12:56:15  midas
   Chaned line length
 
@@ -200,7 +203,7 @@ void setup(void)
 
    /* Port configuration (1 = Push Pull Output) */
 
-#ifdef CPU_C8051F020
+#if defined(CPU_C8051F020)
    XBR0 = 0x04;                 // Enable UART0 & UART1
    XBR1 = 0x00;
    XBR2 = 0x44;
@@ -209,6 +212,21 @@ void setup(void)
    P1MDOUT = 0x00;              // P1: LPT
    P2MDOUT = 0x00;              // P2: LPT
    P3MDOUT = 0xE0;              // P3.5,6,7: Optocouplers
+#elif defined(CPU_C8051F310)
+   XBR0 = 0x01;                 // Enable RX/TX
+   XBR1 = 0x40;                 // Enable crossbar
+   P0MDOUT = 0x90;              // P0.4: TX, P0.7: RS485 enable Push/Pull
+   P0SKIP  = 0x0C;              // Skip P0.2&3 for Xtal
+   P0MDIN  = 0xF3;              // P0.2&3 as analog input for Xtal
+
+   /* Select external quartz oscillator */
+   PCA0MD = 0x00;               // disable watchdog
+   OSCXCN = 0x67;
+   for (i=0 ; i<255 ; i++);
+   while ((OSCXCN & 0x80) == 0);
+
+   CLKSEL = 0x01;               // derive SYSCLK from external source
+   OSCICN = 0x00;               // CLKSL=1 (external)
 #else
    XBR0 = 0x04;                 // Enable RX/TX
    XBR1 = 0x00;
@@ -218,39 +236,61 @@ void setup(void)
    PRT1CF = 0x00;               // P1
    PRT2CF = 0x00;               // P2  Open drain for 5V LCD
    PRT3CF = 0x20;               // P3.5: RS485 enable = Push Pull
-#endif
 
    /* Select external quartz oscillator */
-   OSCXCN = 0x66;               // Crystal mode, Power Factor 22E6
+   OSCXCN = 0x67;               // Crystal mode, Power Factor 22E6
    OSCICN = 0x08;               // CLKSL=1 (external)
+#endif
 
 #endif
 
    /* enable watchdog */
 #ifdef CPU_ADUC812
+#ifdef USE_WATCHDOG
    WDCON = 0xE0;                // 2048 msec
    WDE = 1;
 #endif
+#endif
+
 #ifdef CPU_CYGNAL
+
+#if defined(CPU_C8051F310)
+
+#ifdef USE_WATCHDOG
+   PCA0MD = 0x00;               // disable watchdog
+   PCA0CPL4 = 255;              // 71.1 msec
+   PCA0MD = 0x40;               // enable watchdog
+#endif
+
+   /* enable reset pin and watchdog reset */
+   RSTSRC = 0x09;
+#else
+
+#ifdef USE_WATCHDOG
    WDTCN = 0x07;                // 95 msec
    WDTCN = 0xA5;                // start watchdog
+#else
+   WDTCN = 0xDE;                // disable watchdog
+   WDTCN = 0xAD;
+#endif
 
    /* enable missing clock reset */
    OSCICN |= 0x80;              // MSCLKE = 1
 
    /* enable reset pin and watchdog reset */
    RSTSRC = 0x09;
-#endif
+#endif /* F310 */
+
+#endif /* CPU_CYGNAL */
 
    /* start system clock */
    sysclock_init();
 
    /* init memory */
    CSR = 0;
-   LED = LED_OFF;
-#ifdef LED_2
-   LED_SEC = LED_OFF;
-#endif
+   for (i=0 ; i<N_LED ; i++)
+      led_set(i, LED_OFF);
+   
    RS485_ENABLE = 0;
    i_in = i_out = n_out = 0;
 
@@ -308,8 +348,8 @@ void setup(void)
 #endif
 
    /* Blink LEDs */
-   led_blink(1, 5, 150);
-   led_blink(2, 5, 150);
+   for (i=0 ; i<N_LED ; i++)
+      led_blink(i, 5, 150);
 }
 
 /*------------------------------------------------------------------*/
@@ -432,7 +472,7 @@ void set_addressed(unsigned char mode, bit flag)
 {
    if (flag) {
       addressed = 1;
-      led_blink(1, 1, 50);
+      led_blink(0, 1, 50);
       addr_mode = mode;
    } else {
       addressed = 0;
@@ -648,12 +688,12 @@ void interprete(void)
                   out_buf[0] = CMD_ACK + 7;
                   out_buf[1] = n;
                   for (i = 0; i < n; i++)
-                     out_buf[2 + i] = ((char idata *) variables[in_buf[1]].ud)[i];      // copy user data
+                     out_buf[2 + i] = ((char *) variables[in_buf[1]].ud)[i];      // copy user data
                   n++;
                } else {
                   out_buf[0] = CMD_ACK + n;
                   for (i = 0; i < n; i++)
-                     out_buf[1 + i] = ((char idata *) variables[in_buf[1]].ud)[i];      // copy user data
+                     out_buf[1 + i] = ((char *) variables[in_buf[1]].ud)[i];      // copy user data
                }
             }
 
@@ -683,7 +723,7 @@ void interprete(void)
             /* loop over all variables */
             for (i = in_buf[1]; i <= in_buf[2]; i++) {
                for (j = 0; j < variables[i].width; j++)
-                  send_byte(((char idata *) variables[i].ud)[j], &crc); // send user data
+                  send_byte(((char *) variables[i].ud)[j], &crc); // send user data
             }
 
             send_byte(crc, NULL);       // send CRC code
@@ -719,10 +759,10 @@ void interprete(void)
             if (variables[ch].ud) {
                if (n < 4)
                   /* copy LSB bytes, needed for BYTE if DWORD is sent */
-                  ((char idata *) variables[ch].ud)[i] = in_buf[i_in - 1 - n + i + j];
+                  ((char *) variables[ch].ud)[i] = in_buf[i_in - 1 - n + i + j];
                else
                   /* copy bytes in normal order, needed for strings */
-                  ((char idata *) variables[ch].ud)[i] = in_buf[2 + j + i];
+                  ((char *) variables[ch].ud)[i] = in_buf[2 + j + i];
             }
 
          user_write(ch);
@@ -752,6 +792,10 @@ void interprete(void)
 
 /*------------------------------------------------------------------*/
 
+#ifdef LED_0
+sbit led_0 = LED_0;
+#endif
+
 void upgrade()
 {
 #ifdef CPU_CYGNAL
@@ -767,8 +811,12 @@ void upgrade()
    EA = 0;
 
    /* disable watchdog */
+#if defined(CPU_C8051F310)
+   PCA0MD = 0x00;
+#else
    WDTCN = 0xDE;
    WDTCN = 0xAD;
+#endif
 
    cmd = page = 0;
 
@@ -790,30 +838,42 @@ void upgrade()
       case 1:                  // return acknowledge
          break;
 
-      case 2:                  // erase page
+      case 2:                   // erase page
          /* receive page */
          while (!RI0);
          page = SBUF0;
          RI0 = 0;
 
-         /* erase page */
+         /* erase page if not page of upgrade() function */
+         if (page * 512 < (unsigned int)upgrade) {
+
 #if defined(CPU_C8051F000)
-         FLSCL = (FLSCL & 0xF0) | 0x08; // set timer for 11.052 MHz clock
+            FLSCL = (FLSCL & 0xF0) | 0x08; // set timer for 11.052 MHz clock
 #elif defined (CPU_C8051F020)
-         FLSCL = FLSCL | 1;     // enable flash writes
+            FLSCL = FLSCL | 1;     // enable flash writes
 #endif
-         PSCTL = 0x03;          // allow write and erase
-
-         pw = (char xdata *) (512 * page);
-         *pw = 0;
-
-         FLSCL = (FLSCL & 0xF0);
-         PSCTL = 0x00;
+            PSCTL = 0x03;          // allow write and erase
+   
+            pw = (char xdata *) (512 * page);
+   
+#if defined(CPU_C8051F310)
+            FLKEY = 0xA5;          // write flash key code
+            FLKEY = 0xF1;
+#endif
+            
+            *pw = 0;
+   
+            FLSCL = (FLSCL & 0xF0);
+            PSCTL = 0x00;
+         } else
+            cmd = 10;              // return 'protected' flag
 
          break;
 
-      case 3:                  // program page
-         LED = LED_OFF;
+      case 3:                   // program page
+#ifdef LED_0
+         led_0 = LED_OFF;
+#endif
 
          /* receive page */
          while (!RI0);
@@ -834,6 +894,10 @@ void upgrade()
             /* receive byte */
             while (!RI0);
 
+#if defined(CPU_C8051F310)
+            FLKEY = 0xA5;          // write flash key code
+            FLKEY = 0xF1;
+#endif
             /* flash byte */
             *pw++ = SBUF0;
             RI0 = 0;
@@ -845,7 +909,9 @@ void upgrade()
          break;
 
       case 4:                  // verify page
-         LED = LED_ON;
+#ifdef LED_0
+         led_0 = LED_ON;
+#endif
 
          /* receive page */
          while (!RI0);
@@ -864,7 +930,7 @@ void upgrade()
          break;
 
       case 5:                  // reboot
-         RSTSRC = 0x02;
+         RSTSRC = 0x10;
          break;
 
       case 6:                  // return
@@ -950,7 +1016,7 @@ void main(void)
 
       if (reboot) {
 #ifdef CPU_CYGNAL
-         RSTSRC = 0x02;         // force power-on reset
+         RSTSRC = 0x10;         // force power-on reset
 #else
          WDCON = 0x00;          // 16 msec
          WDE = 1;

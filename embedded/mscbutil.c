@@ -6,6 +6,9 @@
   Contents:     Various utility functions for MSCB protocol
 
   $Log$
+  Revision 1.28  2004/02/24 13:30:21  midas
+  Implemented C8051F310 code
+
   Revision 1.27  2004/01/07 12:56:15  midas
   Chaned line length
 
@@ -277,7 +280,7 @@ void serial_int1(void) interrupt 20 using 2
 
       SCON1 &= ~0x01;           // clear RI flag
 
-      led_blink(2, 1, 100);
+      led_blink(1, 1, 100);
    }
 }
 
@@ -399,24 +402,50 @@ void uart_init(unsigned char port, unsigned char baud)
 
 \********************************************************************/
 {
+#if defined (CPU_C8051F310)
    unsigned char code baud_table[] =
-       { 0x100 - 36, 0x100 - 18, 0x100 - 12, 0x100 - 6, 0x100 - 3,
-      0x100 - 2, 0x100 - 1
-   };
+     {0x100 - 0,    //  N/A
+      0x100 - 0,    //  N/A
+      0x100 - 192,  //  28800
+      0x100 - 96,   //  57600
+      0x100 - 48,   // 115200
+      0x100 - 32,   // 172800
+      0x100 - 16 }; // 345600
+#else
+   unsigned char code baud_table[] =
+     {0x100 - 36, 
+      0x100 - 18, 
+      0x100 - 12, 
+      0x100 - 6, 
+      0x100 - 3, 
+      0x100 - 2, 
+      0x100 - 1 };
+#endif
 
    if (port);
 
    SCON0 = 0xD0;                // Mode 3, 9 bit, receive enable
-// SCON = 0x50;    // Mode 1, 8 bit, receive enable
+// SCON0 = 0x50;    // Mode 1, 8 bit, receive enable
 
+#if defined (CPU_C8051F310)
+   TMOD  |= 0x20;               // 8-bit counter with auto reload
+   CKCON |= 0x08;               // use system clock
+
+   TL1 = 0xFF;
+   TH1 = baud_table[baud - 1];  // load initial values
+   TR1 = 1;                     // start timer 1
+#else
    T2CON = 0x34;                // timer 2 RX+TX mode
    RCAP2H = 0xFF;
    RCAP2L = baud_table[baud - 1];
+#endif
 
    ES0 = 1;                     // enable serial interrupt
 
-#ifdef CPU_ADUC812
+#if defined(CPU_ADUC812)
    PS = 1;                      // serial interrupt high priority for slow ADuC
+#elif defined(CPU_C8051F310)
+   IP = 0;                      // serial interrupt low priority
 #else
    PS = 0;                      // serial interrupt low priority
 #endif
@@ -437,14 +466,29 @@ void rs232_output(void)
 
 static unsigned long _systime;
 
-static unsigned char led_pri_n;
-static unsigned char led_pri_int;
-static unsigned char led_pri_timer;
+/* LED structure */
 
+struct {
+  unsigned char mode;
+  unsigned char timer;
+  unsigned char interval;
+  unsigned char n;
+} idata leds[N_LED];
+
+#ifdef LED_0
+sbit led_0 = LED_0;
+#endif
+#ifdef LED_1
+sbit led_1 = LED_1;
+#endif
 #ifdef LED_2
-static unsigned char led_sec_n;
-static unsigned char led_sec_int;
-static unsigned char led_sec_timer;
+sbit led_2 = LED_2;
+#endif
+#ifdef LED_3
+sbit led_3 = LED_3;
+#endif
+#ifdef LED_4
+sbit led_4 = LED_4;
 #endif
 
 /*------------------------------------------------------------------*/
@@ -458,9 +502,24 @@ void sysclock_init(void)
 
 *********************************************************************/
 {
+   unsigned char i;
+
+#if defined(CPU_C8051F310)      // --- use timer 2 for that device
 
    EA = 1;                      // general interrupt enable
-   IE |= 0x08;                  // Enable Timer1 interrupt
+   IE |= 0x20;                  // Enable Timer 2 interrupt
+   IP |= 0x20;                  // Interrupt priority high Timer 2
+
+   TMR2CN = 0x04;               // enable timer 2, SYSCKL/12
+   CKCON = 0x00;                // user SYSCLK/12 for Timer 2
+
+   TMR2RLH = 0xDB;              // load initial values
+   TMR2RLL = 0x00;
+
+#else                           // --- use timer 1 for all other devices
+
+   EA = 1;                      // general interrupt enable
+   IE |= 0x08;                  // Enable Timer 1 interrupt
 #ifdef CPU_ADUC812
    PT1 = 0;                     // Interrupt priority low for slow ADuC
 #else
@@ -475,34 +534,29 @@ void sysclock_init(void)
    TL1 = 0x00;
    TR1 = 1;                     // start timer 1
 
+#endif
+
    _systime = 0;
 
-   led_pri_n = 0;
-   led_pri_int = 0;
-   led_pri_timer = 0;
-
-#ifdef LED_2
-   led_sec_n = 0;
-   led_sec_int = 0;
-   led_sec_timer = 0;
-#endif
+   for (i=0 ; i<N_LED ; i++) {
+     leds[i].mode = 0;
+     leds[i].timer = 0;
+     leds[i].interval = 0;
+     leds[i].n = 0;
+   }
 }
 
 /*------------------------------------------------------------------*/
 
-static bit led1_mode, led2_mode;
-
-void led_mode(int led, int flag) reentrant
+void led_mode(unsigned char led, unsigned char flag) reentrant
 {
-   if (led == 1)
-      led1_mode = flag;
-   if (led == 2)
-      led2_mode = flag;
+   if (led < N_LED)
+      leds[led].mode = flag;
 }
 
 /*------------------------------------------------------------------*/
 
-void led_blink(int led, int n, int interval) reentrant
+void led_blink(unsigned char led, unsigned char n, int interval) reentrant
 /********************************************************************\
 
   Routine: blink led
@@ -516,25 +570,92 @@ void led_blink(int led, int n, int interval) reentrant
 
 \********************************************************************/
 {
-   if (led == 1) {
-      if (led_pri_n == 0 && led_pri_timer == 0) {
-         led_pri_n = n * 2;
-         led_pri_int = interval / 10;
-         led_pri_timer = 0;
+   if (led < N_LED) {
+      if (leds[led].n == 0 && leds[led].timer == 0) {
+         leds[led].n = n*2+1;
+         leds[led].interval = interval / 10;
+         leds[led].timer = 0;
       }
    }
+}
+
+/*------------------------------------------------------------------*/
+
+void led_set(unsigned char led, unsigned char flag) reentrant using 2
+{
+   /* invert on/of if mode = 1 */
+   if (led < N_LED && leds[led].mode)
+      flag = !flag;
+
+#ifdef LED_0
+   if (led == 0)
+      led_0 = flag;
+#endif
+#ifdef LED_1
+   if (led == 1)
+      led_1 = flag;
+#endif 
 #ifdef LED_2
-   if (led == 2) {
-      if (led_sec_n == 0 && led_sec_timer == 0) {
-         led_sec_n = n * 2;
-         led_sec_int = interval / 10;
-         led_sec_timer = 0;
-      }
-   }
+   if (led == 2)
+      led_2 = flag;
+#endif 
+#ifdef LED_3
+   if (led == 3)
+      led_3 = flag;
+#endif 
+#ifdef LED_4
+   if (led == 4)
+      led_4 = flag;
 #endif
 }
 
 /*------------------------------------------------------------------*/
+
+void led_int() reentrant using 2
+{
+   unsigned char i;
+
+   /* manage blinking LEDs */
+   for (i=0 ; i<N_LED ; i++) {
+      if (leds[i].n > 0 && leds[i].timer == 0) {
+         if ((leds[i].n & 1) && leds[i].n > 1)
+            led_set(i, LED_ON);
+         else
+            led_set(i, LED_OFF);
+
+         leds[i].n--;
+         if (leds[i].n)
+            leds[i].timer = leds[i].interval;
+      }
+
+      if (leds[i].timer)
+         leds[i].timer--;
+   }
+}
+
+/*------------------------------------------------------------------*/
+
+#if defined(CPU_C8051F310)
+
+void timer2_int(void) interrupt 5 using 2
+/********************************************************************\
+
+  Routine: timer2_int
+
+  Purpose: Timer 2 interrupt routine for 100Hz system clock
+
+           Reload value = 0x10000 - 0.01 / (11059200/12)
+
+\********************************************************************/
+{
+   TMR2RLH = 0xDC;              // reload timer values, let LSB freely run
+   TMR2CN &= ~0x80;             // clear interrupt flag
+   _systime++;                  // increment system time
+
+   led_int();
+}
+
+#else
 
 void timer1_int(void) interrupt 3 using 2
 /********************************************************************\
@@ -550,44 +671,10 @@ void timer1_int(void) interrupt 3 using 2
    TH1 = 0xDC;                  // reload timer values, let LSB freely run
    _systime++;                  // increment system time
 
-   /* manage address LED blinking */
-
-   if (led_pri_n) {
-      if (led_pri_timer == 0) {
-         LED = !LED;
-         led_pri_timer = led_pri_int;
-         led_pri_n--;
-         if (led_pri_n == 0) {
-            if (led1_mode)
-               LED = LED_ON;
-            else
-               LED = LED_OFF;
-         }
-      }
-   }
-
-   if (led_pri_timer)
-      led_pri_timer--;
-
-#ifdef LED_2
-   if (led_sec_n) {
-      if (led_sec_timer == 0) {
-         LED_SEC = !LED_SEC;
-         led_sec_timer = led_sec_int;
-         led_sec_n--;
-         if (led_sec_n == 0) {
-            if (led2_mode)
-               LED_SEC = LED_ON;
-            else
-               LED_SEC = LED_OFF;
-         }
-      }
-   }
-
-   if (led_sec_timer)
-      led_sec_timer--;
-#endif
+   led_int();
 }
+
+#endif /* other CPU */
 
 /*------------------------------------------------------------------*/
 
@@ -628,7 +715,13 @@ void watchdog_refresh(void)
 #endif
 
 #ifdef CPU_CYGNAL
+
+#if defined(CPU_C8051F310)
+   PCA0CPH4 = 0x00;
+#else
    WDTCN = 0xA5;
+#endif
+
 #endif
 
 #endif
@@ -703,7 +796,7 @@ void delay_us(unsigned int us)
 
 /*------------------------------------------------------------------*/
 
-void eeprom_read(void idata * dst, unsigned char len, unsigned char *offset)
+void eeprom_read(void * dst, unsigned char len, unsigned char *offset)
 /********************************************************************\
 
   Routine: eeprom_read
@@ -721,7 +814,7 @@ void eeprom_read(void idata * dst, unsigned char len, unsigned char *offset)
 #ifdef CPU_ADUC812
 
    unsigned char i, ofs;
-   unsigned char idata *d;
+   unsigned char *d;
 
    d = dst;
 
@@ -761,9 +854,11 @@ void eeprom_read(void idata * dst, unsigned char len, unsigned char *offset)
 
    unsigned char i;
    unsigned char code *p;
-   unsigned char idata *d;
+   unsigned char *d;
 
-   p = 0x8000 + *offset;        // read from 128-byte EEPROM page
+   watchdog_refresh();
+
+   p = EEPROM_OFFSET + *offset;        // read from 128-byte EEPROM page
    d = dst;
 
    for (i = 0; i < len; i++)
@@ -775,7 +870,7 @@ void eeprom_read(void idata * dst, unsigned char len, unsigned char *offset)
 
 /*------------------------------------------------------------------*/
 
-void eeprom_write(void idata * src, unsigned char len, unsigned char *offset)
+void eeprom_write(void * src, unsigned char len, unsigned char *offset)
 /********************************************************************\
 
   Routine: eeprom_write
@@ -793,7 +888,7 @@ void eeprom_write(void idata * src, unsigned char len, unsigned char *offset)
 #ifdef CPU_ADUC812
 
    unsigned char i, ofs;
-   unsigned char idata *d;
+   unsigned char *d;
 
    d = src;
 
@@ -834,22 +929,30 @@ void eeprom_write(void idata * src, unsigned char len, unsigned char *offset)
 #endif
 
 #ifdef CPU_CYGNAL
-   unsigned char xdata *p;
-   unsigned char i;
-   unsigned char idata *s;
+   unsigned char xdata *p;      // xdata pointer causes MOVX command
+   unsigned char i, b;
+   unsigned char *s;
 
 #if defined(CPU_C8051F000)
-   FLSCL = (FLSCL & 0xF0) | 0x08;       // set timer for 11.052 MHz clock
+   FLSCL = (FLSCL & 0xF0) | 0x08;  // set timer for 11.052 MHz clock
 #elif defined (CPU_C8051F020)
    FLSCL = FLSCL | 1;           // enable flash writes
 #endif
    PSCTL = 0x01;                // allow write
 
-   p = 0x8000 + *offset;
+   p = EEPROM_OFFSET + *offset;
    s = src;
 
-   for (i = 0; i < len; i++)    // write data
-      *p++ = *s++;
+   for (i = 0; i < len; i++) {  // write data
+      b = *s++;
+
+#if defined(CPU_C8051F310)
+      FLKEY = 0xA5;             // write flash key code
+      FLKEY = 0xF1;
+#endif
+
+      *p++ = b;
+   }
 
    PSCTL = 0x00;                // don't allow write
    FLSCL = FLSCL & 0xF0;
@@ -881,14 +984,28 @@ void eeprom_erase(void)
 #if defined(CPU_C8051F000)
    FLSCL = (FLSCL & 0xF0) | 0x08;       // set timer for 11.052 MHz clock
 #elif defined (CPU_C8051F020)
-   FLSCL = FLSCL | 1;           // enable flash writes
+   FLSCL = FLSCL | 1;                   // enable flash writes
 #endif
-   PSCTL = 0x03;                // allow write and erase
+   PSCTL = 0x03;                        // allow write and erase
 
-   p = 0x8000;                  // erase page
+#if defined(CPU_C8051F310)
+   p = EEPROM_OFFSET;                   // erase first page
+   FLKEY = 0xA5;                        // write flash key code
+   FLKEY = 0xF1;
    *p = 0;
 
-   PSCTL = 0x00;                // don't allow write
+// Following code crashed the uC !
+
+//   p = EEPROM_OFFSET+512;               // erase second page
+//   FLKEY = 0xA5;                        // write flash key code
+//   FLKEY = 0xF1;
+//   *p = 0;
+#else
+   p = EEPROM_OFFSET;                   // erase page
+   *p = 0;
+#endif
+
+   PSCTL = 0x00;                        // don't allow write
    FLSCL = FLSCL & 0xF0;
 #endif
 }
