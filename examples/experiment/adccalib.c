@@ -12,6 +12,9 @@
                 and transferred to experim.h.
 
   $Log$
+  Revision 1.4  2003/04/21 03:51:41  olchansk
+  kludge misunderstanding of the ADC0 bank size.
+
   Revision 1.3  2002/05/10 05:22:47  pierre
   add MANA_LITE #ifdef
 
@@ -128,8 +131,13 @@ float  *cadc;
 
   /* look for ADC0 bank, return if not present */
   n_adc = bk_locate(pevent, "ADC0", &pdata);
-  if (n_adc == 0 || n_adc > N_ADC)
+  if (n_adc == 0)
     return 1;
+
+  /* if ADC0 is a structured bank, bk_locate()
+     returns sizeof(structure) rather than
+     the number of ADCs. Hence this kludge */
+  n_adc = n_adc/sizeof(WORD);
 
   /* create calibrated ADC bank */
   bk_create(pevent, "CADC", TID_FLOAT, &cadc);
