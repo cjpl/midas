@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.140  2001/12/05 11:29:51  midas
+  Changed creation of "/Loger/xxx dir"
+
   Revision 1.139  2001/11/20 14:42:15  midas
   Added "/logger/history dir" and "/logger/elog dir"
 
@@ -2211,7 +2214,7 @@ INT cm_connect_experiment(char *host_name, char *exp_name,
   char str[256];
 
   status = cm_connect_experiment1(host_name, exp_name, client_name,
-				  func, DEFAULT_ODB_SIZE, DEFAULT_WATCHDOG_TIMEOUT);
+          func, DEFAULT_ODB_SIZE, DEFAULT_WATCHDOG_TIMEOUT);
   if (status != CM_SUCCESS)
   {
     cm_get_error(status, str);
@@ -5019,7 +5022,7 @@ DWORD  start_time;
       db_get_value(hDB, hSubkey, "Name", client_name, &size, TID_STRING);
 
       if (!bUnique)
-	client_name[strlen(name)] = 0; /* strip number */
+  client_name[strlen(name)] = 0; /* strip number */
 
       /* check if individual client */
       if (!equal_ustring("all", name) &&
@@ -6273,7 +6276,7 @@ char            str[80];
             if (pc->read_wait && request_id != -1)
               {
 #ifdef DEBUG_MSG
-	            cm_msg(MDEBUG, "Send wake: rp=%d, wp=%d",
+              cm_msg(MDEBUG, "Send wake: rp=%d, wp=%d",
                       pheader->read_pointer, pheader->write_pointer);
 #endif
               sprintf(str, "B %s %d", pheader->name, request_id);
@@ -6295,7 +6298,7 @@ char            str[80];
           return BM_ASYNC_RETURN;
 
 #ifdef DEBUG_MSG
-	cm_msg(MDEBUG, "Send sleep: rp=%d, wp=%d, level=%1.1lf",
+  cm_msg(MDEBUG, "Send sleep: rp=%d, wp=%d, level=%1.1lf",
                 pheader->read_pointer,
                 pheader->write_pointer,
                 100-100.0*size/pheader->size);
@@ -6322,7 +6325,7 @@ char            str[80];
           }
 
 #ifdef DEBUG_MSG
-	      cm_msg(MDEBUG, "Send woke up: rp=%d, wp=%d, level=%1.1lf",
+        cm_msg(MDEBUG, "Send woke up: rp=%d, wp=%d, level=%1.1lf",
                 pheader->read_pointer,
                 pheader->write_pointer,
                 100-100.0*size/pheader->size);
@@ -6409,8 +6412,8 @@ char            str[80];
       if (num_requests_client && pclient[i].read_wait)
         {
 #ifdef DEBUG_MSG
-	cm_msg(MDEBUG, "Send wake: rp=%d, wp=%d", pheader->read_pointer,
-		pheader->write_pointer);
+  cm_msg(MDEBUG, "Send wake: rp=%d, wp=%d", pheader->read_pointer,
+    pheader->write_pointer);
 #endif
         sprintf(str, "B %s %d", pheader->name, request_id);
         ss_resume(pclient[i].port, str);
@@ -8474,7 +8477,7 @@ char        net_buffer[256];
       select(FD_SETSIZE, (void *) &readfds, NULL, NULL, (void *) &timeout);
 
       if (FD_ISSET(sock, &readfds))
-	      {
+        {
         n = recv_tcp(sock, net_buffer, sizeof(net_buffer), 0);
         if (n<=0)
           return SS_ABORT;
@@ -9675,9 +9678,9 @@ int             send_sock;
     flags = rpc_list[rpc_index].param[i].flags;
 
     bpointer = (flags & RPC_POINTER)  || (flags & RPC_OUT)      ||
-	             (flags & RPC_FIXARRAY) || (flags & RPC_VARARRAY) ||
-		            tid == TID_STRING     || tid == TID_ARRAY       ||
-		            tid == TID_STRUCT     || tid == TID_LINK;
+               (flags & RPC_FIXARRAY) || (flags & RPC_VARARRAY) ||
+                tid == TID_STRING     || tid == TID_ARRAY       ||
+                tid == TID_STRUCT     || tid == TID_LINK;
 
     if (bpointer)
       arg_type = TID_ARRAY;
@@ -9719,9 +9722,9 @@ int             send_sock;
       /* for varibale length arrays, the size is given by
          the next parameter on the stack */
       if (flags & RPC_VARARRAY)
-      	{
-      	memcpy(&aptmp, &ap, sizeof(ap));
-      	rpc_va_arg(&aptmp, TID_ARRAY, arg_tmp);
+        {
+        memcpy(&aptmp, &ap, sizeof(ap));
+        rpc_va_arg(&aptmp, TID_ARRAY, arg_tmp);
 
         if (flags & RPC_OUT)
           arg_size = *((INT *) *((void **) arg_tmp));
@@ -9729,8 +9732,8 @@ int             send_sock;
           arg_size = *((INT *) arg_tmp);
 
         *((INT *) param_ptr) = ALIGN(arg_size);
-      	param_ptr += ALIGN( sizeof(INT) );
-      	}
+        param_ptr += ALIGN( sizeof(INT) );
+        }
 
       if (tid == TID_STRUCT || (flags & RPC_FIXARRAY))
         arg_size = rpc_list[rpc_index].param[i].n;
@@ -9867,9 +9870,9 @@ int             send_sock;
 
       if (flags & RPC_VARARRAY)
         {
-      	arg_size = *((INT *) param_ptr);
-      	param_ptr += ALIGN( sizeof(INT) );
-      	}
+        arg_size = *((INT *) param_ptr);
+        param_ptr += ALIGN( sizeof(INT) );
+        }
 
       if (tid == TID_STRUCT || (flags & RPC_FIXARRAY))
         arg_size = rpc_list[rpc_index].param[i].n;
@@ -9976,9 +9979,9 @@ int             send_sock;
     flags = rpc_list[index].param[i].flags;
 
     bpointer = (flags & RPC_POINTER)  || (flags & RPC_OUT)      ||
-	             (flags & RPC_FIXARRAY) || (flags & RPC_VARARRAY) ||
-		            tid == TID_STRING     || tid == TID_ARRAY       ||
-		            tid == TID_STRUCT     || tid == TID_LINK;
+               (flags & RPC_FIXARRAY) || (flags & RPC_VARARRAY) ||
+                tid == TID_STRING     || tid == TID_ARRAY       ||
+                tid == TID_STRUCT     || tid == TID_LINK;
 
     if (bpointer)
       arg_type = TID_ARRAY;
@@ -10020,9 +10023,9 @@ int             send_sock;
       /* for varibale length arrays, the size is given by
          the next parameter on the stack */
       if (flags & RPC_VARARRAY)
-      	{
-      	memcpy(&aptmp, &ap, sizeof(ap));
-      	rpc_va_arg(&aptmp, TID_ARRAY, arg_tmp);
+        {
+        memcpy(&aptmp, &ap, sizeof(ap));
+        rpc_va_arg(&aptmp, TID_ARRAY, arg_tmp);
 
         if (flags & RPC_OUT)
           arg_size = *((INT *) *((void **) arg_tmp));
@@ -10030,8 +10033,8 @@ int             send_sock;
           arg_size = *((INT *) arg_tmp);
 
         *((INT *) param_ptr) = ALIGN(arg_size);
-      	param_ptr += ALIGN( sizeof(INT) );
-      	}
+        param_ptr += ALIGN( sizeof(INT) );
+        }
 
       if (tid == TID_STRUCT || (flags & RPC_FIXARRAY))
         arg_size = rpc_list[index].param[i].n;
@@ -10166,9 +10169,9 @@ int             send_sock;
 
       if (flags & RPC_VARARRAY)
         {
-      	arg_size = *((INT *) param_ptr);
-      	param_ptr += ALIGN( sizeof(INT) );
-      	}
+        arg_size = *((INT *) param_ptr);
+        param_ptr += ALIGN( sizeof(INT) );
+        }
 
       if (tid == TID_STRUCT || (flags & RPC_FIXARRAY))
         arg_size = rpc_list[index].param[i].n;
@@ -12787,7 +12790,7 @@ struct timeval  timeout;
 
       do
         {
-	      status = select(FD_SETSIZE, (void *) &readfds, NULL, NULL, (void *) &timeout);
+        status = select(FD_SETSIZE, (void *) &readfds, NULL, NULL, (void *) &timeout);
 
         /* if an alarm signal was cought, restart select with reduced timeout */
         if (status == -1 && timeout.tv_sec >= WATCHDOG_INTERVAL / 1000)
@@ -13325,9 +13328,9 @@ INT bk_swap(void *event, BOOL force)
       case TID_SHORT :
         while ((PTYPE) pdata < (PTYPE) pbk)
           {
-	        WORD_SWAP(pdata);
+          WORD_SWAP(pdata);
           ((WORD *)pdata)++;
-	        }
+          }
         break;
 
       case TID_DWORD :
@@ -13336,17 +13339,17 @@ INT bk_swap(void *event, BOOL force)
       case TID_FLOAT :
         while ((PTYPE) pdata < (PTYPE) pbk)
           {
-	        DWORD_SWAP(pdata);
+          DWORD_SWAP(pdata);
           ((DWORD *)pdata)++;
-	        }
+          }
         break;
 
       case TID_DOUBLE :
         while ((PTYPE) pdata < (PTYPE) pbk)
           {
-	        QWORD_SWAP(pdata);
+          QWORD_SWAP(pdata);
           ((double *)pdata)++;
-	        }
+          }
         break;
       }
     }
@@ -15015,9 +15018,9 @@ struct tm    *tms;
           printf("%i ",irec.time);
         else
         {
-	  sprintf(str, "%s", ctime((const time_t *)&irec.time)+4);
-	  str[20] = '\t';
-	  printf(str);
+    sprintf(str, "%s", ctime((const time_t *)&irec.time)+4);
+    str[20] = '\t';
+    printf(str);
         }
         /* read data */
         read(fh, data_buffer, rec.data_size);
@@ -15262,6 +15265,7 @@ HNDLE   hDB;
 time_t  now;
 char    message[10000], *p, *buffer;
 BOOL    bedit;
+HNDLE   hktmp;
 
   cm_get_experiment_database(&hDB, NULL);
 
@@ -15326,12 +15330,14 @@ BOOL    bedit;
           {
           size = sizeof(dir);
           memset(dir, 0, size);
-          db_get_value(hDB, 0, "/Logger/Elog dir", dir, &size, TID_STRING);
-          if (!dir[0])
+          status = db_find_key(hDB, 0, "/Logger/Elog dir", &hktmp);
+          if (status == DB_SUCCESS)
+            db_get_value(hDB, 0, "/Logger/Elog dir", dir, &size, TID_STRING);
+          else
             db_get_value(hDB, 0, "/Logger/Data dir", dir, &size, TID_STRING);
-          if (dir[0] != 0)
-            if (dir[strlen(dir)-1] != DIR_SEPARATOR)
-              strcat(dir, DIR_SEPARATOR_STR);
+
+          if (dir[0] != 0 && dir[strlen(dir)-1] != DIR_SEPARATOR)
+            strcat(dir, DIR_SEPARATOR_STR);
           }
 
 #if !defined(OS_VXWORKS)
@@ -15368,14 +15374,17 @@ BOOL    bedit;
 
   /* generate new file name YYMMDD.log in data directory */
   cm_get_experiment_database(&hDB, NULL);
+
   size = sizeof(dir);
   memset(dir, 0, size);
-  db_get_value(hDB, 0, "/Logger/Elog dir", dir, &size, TID_STRING);
-  if (!dir[0])
+  status = db_find_key(hDB, 0, "/Logger/Elog dir", &hktmp);
+  if (status == DB_SUCCESS)
+    db_get_value(hDB, 0, "/Logger/Elog dir", dir, &size, TID_STRING);
+  else
     db_get_value(hDB, 0, "/Logger/Data dir", dir, &size, TID_STRING);
-  if (dir[0] != 0)
-    if (dir[strlen(dir)-1] != DIR_SEPARATOR)
-      strcat(dir, DIR_SEPARATOR_STR);
+
+  if (dir[0] != 0 && dir[strlen(dir)-1] != DIR_SEPARATOR)
+    strcat(dir, DIR_SEPARATOR_STR);
 
 #if !defined(OS_VXWORKS)
 #if !defined(OS_VMS)
@@ -15569,7 +15578,7 @@ int    i, size, offset, direction, last, status;
 struct tm *tms, ltms;
 DWORD  lt, ltime, lact;
 char   str[256], file_name[256], dir[256];
-HNDLE  hDB;
+HNDLE  hDB, hktmp;
 
 #if !defined(OS_VXWORKS)
 #if !defined(OS_VMS)
@@ -15579,14 +15588,17 @@ HNDLE  hDB;
 
   /* open file */
   cm_get_experiment_database(&hDB, NULL);
+  
   size = sizeof(dir);
   memset(dir, 0, size);
-  db_get_value(hDB, 0, "/Logger/Elog dir", dir, &size, TID_STRING);
-  if (!dir[0])
+  status = db_find_key(hDB, 0, "/Logger/Elog dir", &hktmp);
+  if (status == DB_SUCCESS)
+    db_get_value(hDB, 0, "/Logger/Elog dir", dir, &size, TID_STRING);
+  else
     db_get_value(hDB, 0, "/Logger/Data dir", dir, &size, TID_STRING);
-  if (dir[0] != 0)
-    if (dir[strlen(dir)-1] != DIR_SEPARATOR)
-      strcat(dir, DIR_SEPARATOR_STR);
+
+  if (dir[0] != 0 && dir[strlen(dir)-1] != DIR_SEPARATOR)
+    strcat(dir, DIR_SEPARATOR_STR);
 
   /* check tag for direction */
   direction = 0;
@@ -16069,9 +16081,9 @@ INT el_delete_message(char *tag)
 \********************************************************************/
 {
 #ifdef LOCAL_ROUTINES
-INT     n, size, fh, mutex, offset, tail_size;
+INT     n, size, fh, mutex, offset, tail_size, status;
 char    dir[256], str[256], file_name[256];
-HNDLE   hDB;
+HNDLE   hDB, hktmp;
 char    *buffer;
 
   cm_get_experiment_database(&hDB, NULL);
@@ -16082,14 +16094,16 @@ char    *buffer;
 
   /* generate file name YYMMDD.log in data directory */
   cm_get_experiment_database(&hDB, NULL);
+
   size = sizeof(dir);
   memset(dir, 0, size);
-  db_get_value(hDB, 0, "/Logger/Elog dir", dir, &size, TID_STRING);
-  if (!dir[0])
+  status = db_find_key(hDB, 0, "/Logger/Elog dir", &hktmp);
+  if (status == DB_SUCCESS)
+    db_get_value(hDB, 0, "/Logger/Elog dir", dir, &size, TID_STRING);
+  else
     db_get_value(hDB, 0, "/Logger/Data dir", dir, &size, TID_STRING);
-  if (dir[0] != 0)
-    if (dir[strlen(dir)-1] != DIR_SEPARATOR)
-      strcat(dir, DIR_SEPARATOR_STR);
+  if (dir[0] != 0 && dir[strlen(dir)-1] != DIR_SEPARATOR)
+    strcat(dir, DIR_SEPARATOR_STR);
 
   strcpy(str, tag);
   if (strchr(str, '.'))
@@ -16928,7 +16942,7 @@ INT eb_free_space  (void)
     none
 
   Function value:
-    INT	   Number of usable free bytes in the event buffer
+    INT    Number of usable free bytes in the event buffer
 
 \********************************************************************/
 {
@@ -16992,7 +17006,7 @@ BOOL eb_buffer_full  (void)
   Routine: eb_buffer_full
 
   Purpose: Test if there is sufficient space in the event buffer
-		for another event
+    for another event
 
   Input:
     none
@@ -17001,7 +17015,7 @@ BOOL eb_buffer_full  (void)
     none
 
   Function value:
-    BOOL	Is there enough space for another event in the event buffer
+    BOOL  Is there enough space for another event in the event buffer
 
 \********************************************************************/
 {
@@ -17038,10 +17052,10 @@ EVENT_HEADER *eb_get_pointer()
     {
 #ifdef OS_VXWORKS
     logMsg( "eb_get_pointer(): Event won't fit: read=%d, write=%d, end=%d\n",
-	    _eb_read_pointer - _event_ring_buffer,
-	    _eb_write_pointer - _event_ring_buffer,
-	    _eb_end_pointer - _event_ring_buffer,
-	    0,0,0 );
+      _eb_read_pointer - _event_ring_buffer,
+      _eb_write_pointer - _event_ring_buffer,
+      _eb_end_pointer - _event_ring_buffer,
+      0,0,0 );
 #endif
     return NULL;
     }
@@ -17475,7 +17489,7 @@ INLINE BOOL dm_area_full (void)
   Output:
     none
   Function value:
-    BOOL	       TRUE if not enough space for another event
+    BOOL         TRUE if not enough space for another event
 \********************************************************************/
 {
   if (dm.pa == NULL || (dm.area1.full && dm.area2.full))
@@ -17489,13 +17503,13 @@ INLINE BOOL dm_active_full (void)
   Routine: dm_active_full
 
   Purpose: Test if there is sufficient space in either event buffer
-	         for another event.
+           for another event.
   Input:
     none
   Output:
     none
   Function value:
-    BOOL	       TRUE if not enough space for another event
+    BOOL         TRUE if not enough space for another event
 \********************************************************************/
 {
   /* catch both full areas, waiting for transfer */
@@ -17654,9 +17668,9 @@ INLINE INT dm_buffer_send(DMEM_AREA * larea)
 
   /* if not connected remotely, use bm_send_event */
  if (_send_sock == 0)
-	return bm_flush_cache(*((INT *) dm.pa->pw), ASYNC);
+  return bm_flush_cache(*((INT *) dm.pa->pw), ASYNC);
 
-	/* alias */
+  /* alias */
   lpt = larea->pt;
 
   /* Get overall buffer size */
@@ -17819,8 +17833,8 @@ INT dm_task(void *pointer)
         } /* if DM_SEND */
       else if (dm.action == DM_FLUSH)
         {
-	  /* DM_FLUSH: User is waiting for completion (i.e. No more incomming
-	     events) Empty both area in order independently of being full or not */
+    /* DM_FLUSH: User is waiting for completion (i.e. No more incomming
+       events) Empty both area in order independently of being full or not */
           if (dm.area1.serial <= dm.area2.serial)
             {
               status = dm_buffer_send(&dm.area1);
