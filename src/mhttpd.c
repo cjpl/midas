@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.234  2002/10/07 04:06:59  olchansk
+  teach mhttpd about PNG images.
+
   Revision 1.233  2002/07/01 07:57:05  midas
   Fixed bug with email notification and several experiments
 
@@ -789,6 +792,7 @@ struct {
 
   ".JPG",   "image/jpeg",
   ".GIF",   "image/gif",
+  ".PNG",   "image/png",
   ".PS",    "application/postscript",
   ".EPS",   "application/postscript",
   ".HTML",  "text/html",
