@@ -6,6 +6,9 @@
   Contents:     Command-line interface for the Midas Slow Control Bus
 
   $Log$
+  Revision 1.40  2003/06/11 14:13:33  midas
+  Version 1.4.5
+
   Revision 1.39  2003/06/05 14:46:44  midas
   Added load/save facility
 
@@ -405,7 +408,7 @@ MSCB_INFO_VAR info_var;
     if (!cmd[0])
       {
       if (current_addr >= 0)
-        printf("node0x%X> ", current_addr);
+        printf("node%d(0x%X)> ", current_addr, current_addr);
       else if (current_group >= 0)
         printf("group%d> ", current_group);
       else
