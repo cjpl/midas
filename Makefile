@@ -6,6 +6,9 @@
 #  Contents:     Makefile for MIDAS binaries and examples under unix
 #
 #  $Log$
+#  Revision 1.11  1999/08/08 19:20:21  midas
+#  Added chmod +s to mhttpd
+#
 #  Revision 1.10  1999/08/03 13:14:33  midas
 #  Removed -DPIC, added dio to normal utils compilation
 #
@@ -319,6 +322,7 @@ install:
 	  chmod 755 $(SYSBIN_DIR)/$$i ; \
 	  done
 	chmod +s $(SYSBIN_DIR)/dio
+	chmod +s $(SYSBIN_DIR)/mhttpd
 
 # utilities
 	@echo "... "
