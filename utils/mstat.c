@@ -6,6 +6,9 @@
   Contents:     Display/log some pertinent information of the ODB
   
   $Log$
+  Revision 1.5  1999/02/05 23:47:55  pierre
+  - Fix lazylogger client display
+
   Revision 1.4  1999/01/18 17:20:47  pierre
   - Added lazylogger status line
   - correct main for new keyboard handling
@@ -493,42 +496,41 @@ void compose_status(HNDLE hDB, HNDLE hKey)
 /* --------------------- Lazy logger tree ------------------------ */
 /* include lazy if running */
 /* search client name under /system/clients/xxx/name */
-  if (cm_exist("LazyLogger",TRUE) == CM_SUCCESS)
+  if (cm_exist("LazyLogger",FALSE) == CM_SUCCESS)
     {
       float cr, bs;
-      INT nf, size;
+      INT status, nf, size;
       char bn[128], tl[128];
-    
-      size = sizeof(tl);
-      db_get_value(hDB, 0, "/lazy/Settings/List label", tl, &size, TID_STRING);
-      if (*tl == '\0')  sprintf(tl,"Last");
-      size = sizeof(cr);
-      db_get_value(hDB, 0, "/lazy/statistics/Copy progress [%]", &cr, &size, TID_FLOAT);
-      size = sizeof(nf);
-      db_get_value(hDB, 0, "/lazy/statistics/Number of Files", &nf, &size, TID_INT);
-      size = sizeof(bs);
-      db_get_value(hDB, 0, "/lazy/statistics/Backup status [%]", &bs, &size, TID_FLOAT);
-      size = sizeof(bn);
-      db_get_value(hDB, 0, "/lazy/statistics/Backup file", bn, &size, TID_STRING);
+      status = db_find_key(hDB, 0, "/lazy/Settings", &hKey);
+      if (status == DB_SUCCESS)
+        {
+          size = sizeof(tl);
+          db_get_value(hDB, 0, "/lazy/Settings/List label", tl, &size, TID_STRING);
+          if (*tl == '\0')  sprintf(tl,"Last");
+          size = sizeof(cr);
+          db_get_value(hDB, 0, "/lazy/statistics/Copy progress [%]", &cr, &size, TID_FLOAT);
+          size = sizeof(nf);
+          db_get_value(hDB, 0, "/lazy/statistics/Number of Files", &nf, &size, TID_INT);
+          size = sizeof(bs);
+          db_get_value(hDB, 0, "/lazy/statistics/Backup status [%]", &bs, &size, TID_FLOAT);
+          size = sizeof(bn);
+          db_get_value(hDB, 0, "/lazy/statistics/Backup file", bn, &size, TID_STRING);
 
-      sprintf(ststr[j++],"");
-      sprintf(&(ststr[j][0]),"Lazy Label");
-      sprintf(&(ststr[j][15]),"Progress");
-      sprintf(&(ststr[j][25]),"File name");
-      sprintf(&(ststr[j][45]),"#files");
-      sprintf(&(ststr[j++][60]),"Total");
-      sprintf(&(ststr[j][0]), "%s",tl);
-      sprintf(&(ststr[j][15]), "%.0f[%]",cr);
-      sprintf(&(ststr[j][25]), "%s",bn);
-      sprintf(&(ststr[j][45]),"%i",nf);
-      sprintf(&(ststr[j++][60]), "%.1f[%]",bs);
-      sprintf(ststr[j++],"");
+          sprintf(ststr[j++],"");
+          sprintf(&(ststr[j][0]),"Lazy Label");
+          sprintf(&(ststr[j][15]),"Progress");
+          sprintf(&(ststr[j][25]),"File name");
+          sprintf(&(ststr[j][45]),"#files");
+          sprintf(&(ststr[j++][60]),"Total");
+          sprintf(&(ststr[j][0]), "%s",tl);
+          sprintf(&(ststr[j][15]), "%.0f[%%]",cr);
+          sprintf(&(ststr[j][25]), "%s",bn);
+          sprintf(&(ststr[j][45]),"%i",nf);
+          sprintf(&(ststr[j++][60]), "%.1f[%%]",bs);
+          sprintf(ststr[j++],"");
+        }
     }
-  else
-    {
-      ii = 0;
-      sprintf(ststr[j++],"");
-    }
+  sprintf(ststr[j++],"");
 
 /* --------------------- System client list ---------------------- */
 /* Get current Client listing */
@@ -536,6 +538,9 @@ void compose_status(HNDLE hDB, HNDLE hKey)
     {
       char     clientn[256], clienth[256];
       char *pp, sdummy[64];
+
+      
+      ii = 0;
 
       sprintf(&(ststr[j][0]),"Clients:");
       for (i=0 ; ; i++)
@@ -570,10 +575,10 @@ void compose_status(HNDLE hDB, HNDLE hKey)
     }
   
   if (loop == 1)
-    sprintf(ststr[j++],"*- [!<cr>] to Exit --- [R<cr>] to Refresh ------------------ Delay:%2.i [sec]--*"
+    sprintf(ststr[j++],"*- [!<cr>] to Exit --- [R<cr>] to Refresh -------------------- Delay:%2.i [sec]-*"
 	    ,delta_time/1000);
   else
-    sprintf(ststr[j++],"*-----------------------------------------------------------------------------*");
+    sprintf(ststr[j++],"*------------------------------------------------------------------------------*");
   
   cur_max_line = j;
   
