@@ -6,6 +6,9 @@
 #  Contents:     Makefile for MIDAS binaries and examples under unix
 #
 #  $Log$
+#  Revision 1.68  2005/04/01 06:56:39  ritt
+#  Added include path for mxml.h
+#
 #  Revision 1.67  2005/03/24 22:01:27  ritt
 #  Added mxml
 #
@@ -299,6 +302,12 @@ NEED_LIBROOTA=
 NEED_MYSQL=
 MYSQL_LIBS=/usr/lib/mysql/libmysqlclient.a
 
+#
+# Directory in which mxml.c/h resides. This library has to be checked
+# out separately from the midas CVS since it's used in several projects
+#
+MXML_DIR=../mxml
+
 #####################################################################
 # Nothing needs to be modified after this line 
 #####################################################################
@@ -308,7 +317,7 @@ MYSQL_LIBS=/usr/lib/mysql/libmysqlclient.a
 #
 CC = cc
 CXX = g++
-CFLAGS = -g -O2 -Wall -Wuninitialized -I$(INC_DIR) -I$(DRV_DIR) -L$(LIB_DIR) -DINCLUDE_FTPLIB $(MIDAS_PREF_FLAGS) $(USERFLAGS)
+CFLAGS = -g -O2 -Wall -Wuninitialized -I$(INC_DIR) -I$(DRV_DIR) -I$(MXML_DIR) -L$(LIB_DIR) -DINCLUDE_FTPLIB $(MIDAS_PREF_FLAGS) $(USERFLAGS)
 
 #-----------------------
 # OSF/1 (DEC UNIX)
@@ -587,8 +596,8 @@ endif
 $(LIB_DIR)/%.o:$(SRC_DIR)/%.c
 	$(CC) -c $(CFLAGS) $(OSFLAGS) -o $@ $<
 
-$(LIB_DIR)/mxml.o:$(SRC_DIR)/mxml.c
-	$(CC) -c $(CFLAGS) -DHAVE_STRLCPY $(OSFLAGS) -o $@ $<
+$(LIB_DIR)/mxml.o:$(MXML_DIR)/mxml.c
+	$(CC) -c $(CFLAGS) -DHAVE_STRLCPY $(OSFLAGS) -o $@ $(MXML_DIR)/mxml.c
 
 $(LIB_DIR)/midas.o: msystem.h midas.h midasinc.h mrpc.h
 $(LIB_DIR)/system.o: msystem.h midas.h midasinc.h mrpc.h
@@ -596,7 +605,7 @@ $(LIB_DIR)/mrpc.o: msystem.h midas.h mrpc.h
 $(LIB_DIR)/odb.o: msystem.h midas.h midasinc.h mrpc.h
 $(LIB_DIR)/ybos.o: msystem.h midas.h midasinc.h mrpc.h
 $(LIB_DIR)/ftplib.o: msystem.h midas.h midasinc.h
-$(LIB_DIR)/mxml.o: msystem.h midas.h midasinc.h mxml.h
+$(LIB_DIR)/mxml.o: msystem.h midas.h midasinc.h $(MXML_DIR)/mxml.h
 
 #
 # utilities
