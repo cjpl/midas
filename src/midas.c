@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.82  1999/11/10 08:30:44  midas
+  Fixed bug when editing the last elog message
+
   Revision 1.81  1999/11/09 14:44:08  midas
   Changed ODB locking in cm_cleanup
 
@@ -14468,10 +14471,13 @@ BOOL    bedit;
   write(fh, message, strlen(message));
   write(fh, end_str, strlen(end_str));
 
-  if (bedit && tail_size > 0)
+  if (bedit)
     {
-    n = write(fh, buffer, tail_size);
-    free(buffer);
+    if (tail_size > 0)
+      {
+      n = write(fh, buffer, tail_size);
+      free(buffer);
+      }
     
     /* truncate file here */
 #ifdef OS_WINNT
