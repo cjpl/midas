@@ -6,6 +6,9 @@
   Contents:     Epics channel access device driver
 
   $Log$
+  Revision 1.6  1999/09/22 13:01:12  midas
+  Figured out that pv_handle is an array of pointers
+
   Revision 1.5  1999/09/22 12:53:04  midas
   Removed sizeof(chid) by sizeof(struct channel_in_use)
 
@@ -82,7 +85,7 @@ CA_INFO   *info;
   cm_get_experiment_database(&hDB, NULL);
 
   /* get channel names */
-  info->channel_names = malloc(channels*CHN_NAME_LENGTH);
+  info->channel_names = calloc(channels, CHN_NAME_LENGTH);
   for (i=0 ; i<channels ; i++)
     sprintf(info->channel_names+CHN_NAME_LENGTH*i, "Channel%d", i);
   db_merge_data(hDB, hKey, "Channel name", 
@@ -99,10 +102,12 @@ CA_INFO   *info;
 
   /* allocate arrays */
   info->array = calloc(channels, sizeof(float));
+  info->pv_handles = calloc(channels, sizeof(void *));
+  for (i=0 ; i<channels ; i++)
+    info->pv_handles[i] = calloc(1, sizeof(struct channel_in_use));
 
   /* search channels */
   info->num_channels = channels;
-  info->pv_handles = malloc(channels*sizeof(struct channel_in_use));
 
   for (i=0 ; i<channels ; i++)
     {
@@ -148,6 +153,17 @@ CA_INFO   *info;
 
 INT chn_acc_exit(CA_INFO *info)
 {
+int i;
+
+  ca_task_exit();
+
+  if (info->pv_handles)
+    {
+    for (i=0 ; i<info->num_channels ; i++)
+      info->pv_handles[i] = calloc(1, sizeof(struct channel_in_use));
+    free(info->pv_handles);
+    }
+
   if (info->array)
     free(info->array);
   if (info->channel_names)
