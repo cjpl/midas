@@ -6,6 +6,9 @@
 #  Contents:     Makefile for MIDAS example frontend and analyzer
 #
 #  $Log$
+#  Revision 1.17  2003/04/24 14:09:59  midas
+#  Added more ROOT libraries
+#
 #  Revision 1.16  2003/04/21 04:04:03  olchansk
 #  add building "ranalyzer" - the ROOT analyzer
 #  replace MANA_LITE with HAVE_HBOOK and HAVE_ROOT
@@ -80,7 +83,7 @@ LIBS = -lm -lz -lutil -lnsl
 #-----------------------------------------
 ifdef ROOTSYS
 ROOTCFLAGS:= -DHAVE_ROOT -I$(ROOTSYS)/include
-ROOTLIBS:= -Wl,-rpath,$(ROOTSYS)/lib -L$(ROOTSYS)/lib -lCore -lCint -lHist -lTree -lMatrix -ldl
+ROOTLIBS:= -Wl,-rpath,$(ROOTSYS)/lib -L$(ROOTSYS)/lib -lCore -lCint -lHist -lGraf -lGui -lGpad -lTree -lMatrix -lThread -ldl
 endif
 
 #-------------------------------------------------------------------
