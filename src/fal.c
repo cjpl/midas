@@ -7,6 +7,10 @@
                 Most routines are from mfe.c mana.c and mlogger.c.
 
   $Log$
+  Revision 1.24  2001/04/10 04:30:38  midas
+  Fixed crash when FAL was stopping run in logger part and scaler event had
+  zero size.
+
   Revision 1.23  2001/01/31 08:00:48  midas
   Copied some modifications from mfe.c
 
@@ -3550,6 +3554,10 @@ EVENT_DEF       *event_def;
       
     log_write(&log_chn[i], pevent);
     }
+
+  /* return for zero event size */
+  if (pevent->data_size == 0)
+    return;
 
   /* analyze event */
   par = analyze_request;
