@@ -6,6 +6,9 @@
   Contents:     MSCB Device Driver.
 
   $Log$
+  Revision 1.2  2003/05/12 12:04:44  midas
+  Check for DF_PRIO_DEV
+
   Revision 1.1  2003/05/12 10:30:16  midas
   Initial revision
 
@@ -36,15 +39,38 @@ typedef struct {
 
 /*---- device driver routines --------------------------------------*/
 
+INT addr_changed(HNDLE hDB, HNDLE hKey, MSCBDEV_INFO *info)
+{
+INT i, status;
+MSCB_INFO_VAR var_info;
+
+  /* get info about MSCB channels */
+  for (i=0 ; i<info->num_channels ; i++)
+    {
+    status = mscb_info_variable(info->fd, info->mscbdev_settings.mscb_address[i], 
+                                info->mscbdev_settings.mscb_index[i], &var_info);
+    if (status == MSCB_SUCCESS)
+      {
+      if (var_info.flags & MSCBF_FLOAT)
+        info->mscbdev_settings.var_size[i] = -1;
+      else
+        info->mscbdev_settings.var_size[i] = var_info.width;
+      }
+    else
+      info->mscbdev_settings.var_size[i] = 0;
+    }
+
+  return SUCCESS;
+}
+
 /* the init function creates a ODB record which contains the
    settings and initialized it variables as well as the bus driver */
 
 INT mscbdev_init(HNDLE hkey, void **pinfo, INT channels, INT (*bd)(INT cmd, ...))
 {
-int           i, status, size;
+int           status, size;
 HNDLE         hDB, hsubkey;
 MSCBDEV_INFO  *info;   
-MSCB_INFO_VAR var_info;
 
   /* allocate info structure */
   info = calloc(1, sizeof(MSCBDEV_INFO));
@@ -68,21 +94,14 @@ MSCB_INFO_VAR var_info;
   db_find_key(hDB, hkey, "MSCB Address", &hsubkey);
   size = sizeof(INT) * channels;
   db_set_data(hDB, hsubkey, info->mscbdev_settings.mscb_address, size, channels, TID_INT);
-  db_open_record(hDB, hsubkey, info->mscbdev_settings.mscb_address, size, MODE_READ, NULL, NULL);
+  db_open_record(hDB, hsubkey, info->mscbdev_settings.mscb_address, size, MODE_READ, addr_changed, info);
 
   size = sizeof(BYTE) * channels;
   db_get_value(hDB, hkey, "MSCB Index", info->mscbdev_settings.mscb_index, &size, TID_BYTE, TRUE);
   db_find_key(hDB, hkey, "MSCB Index", &hsubkey);
   size = sizeof(BYTE) * channels;
   db_set_data(hDB, hsubkey, info->mscbdev_settings.mscb_index, size, channels, TID_BYTE);
-  db_open_record(hDB, hsubkey, info->mscbdev_settings.mscb_index, size, MODE_READ, NULL, NULL);
-
-  size = sizeof(INT) * channels;
-  db_get_value(hDB, hkey, "Var Size", info->mscbdev_settings.var_size, &size, TID_INT, TRUE);
-  db_find_key(hDB, hkey, "Var Size", &hsubkey);
-  size = sizeof(INT) * channels;
-  db_set_data(hDB, hsubkey, info->mscbdev_settings.var_size, size, channels, TID_INT);
-  db_open_record(hDB, hsubkey, info->mscbdev_settings.var_size, size, MODE_READ, NULL, NULL);
+  db_open_record(hDB, hsubkey, info->mscbdev_settings.mscb_index, size, MODE_READ, addr_changed, info);
 
   /* initialize info structure */
   info->num_channels = channels;
@@ -91,21 +110,8 @@ MSCB_INFO_VAR var_info;
   if (info->fd < 0)
     return -1;
 
-  /* get info about MSCB channels */
-  for (i=0 ; i<channels ; i++)
-    {
-    status = mscb_info_variable(info->fd, info->mscbdev_settings.mscb_address[i], 
-                                info->mscbdev_settings.mscb_index[i], &var_info);
-    if (status == MSCB_SUCCESS)
-      {
-      if (var_info.flags & MSCBF_FLOAT)
-        info->mscbdev_settings.var_size[i] = -1;
-      else
-        info->mscbdev_settings.var_size[i] = var_info.width;
-      }
-    else
-      info->mscbdev_settings.var_size[i] = 0;
-    }
+  /* read initial variable sizes */
+  addr_changed(0, 0, info);
 
   return FE_SUCCESS;
 }
@@ -156,11 +162,23 @@ INT value_int;
 
 INT mscbdev_get(MSCBDEV_INFO *info, INT channel, float *pvalue)
 {
-INT size;
+INT size, value_int;
 
-  size = sizeof(float);
-  mscb_read(info->fd, info->mscbdev_settings.mscb_address[channel],
-               info->mscbdev_settings.mscb_index[channel], pvalue, &size);
+  if (info->mscbdev_settings.var_size[channel] == -1)
+    {
+    size = sizeof(float);
+    mscb_read(info->fd, info->mscbdev_settings.mscb_address[channel],
+                 info->mscbdev_settings.mscb_index[channel], pvalue, &size);
+    }
+  else
+    {
+    /* channel is int */
+    size = info->mscbdev_settings.var_size[channel];
+    value_int = 0;
+    mscb_read(info->fd, info->mscbdev_settings.mscb_address[channel],
+                 info->mscbdev_settings.mscb_index[channel], &value_int, &size);
+    *pvalue = (float) value_int;
+    }
 
   return FE_SUCCESS;
 }
@@ -190,7 +208,6 @@ INT     channel, status;
 DWORD   flags;
 float   value, *pvalue;
 void    *info, *bd;
-char    *name;
 
   va_start(argptr, cmd);
   status = FE_SUCCESS;
@@ -226,10 +243,12 @@ char    *name;
       break;
     
     case CMD_GET_DEFAULT_NAME:
+      /*
       info = va_arg(argptr, void *);
       channel = va_arg(argptr, INT);
       name = va_arg(argptr, char *);
       status = mscbdev_get_default_name(info, channel, name);
+      */
       break;
 
     default:
