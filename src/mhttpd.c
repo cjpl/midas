@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.264  2004/02/06 00:39:16  pierre
+  Update Midas doc links
+
   Revision 1.263  2004/01/19 16:56:49  olchansk
   use ss_timezone()
 
@@ -1394,9 +1397,9 @@ void show_help_page()
 
    rsprintf("For more information, refer to the\n");
    rsprintf
-       ("<A HREF=\"http://midas.psi.ch/doc/manual/Manual.html\">PSI MIDAS manual</A>,\n");
+       ("<A HREF=\"http://midas.psi.ch/htmldoc/index.html\">PSI MIDAS manual</A>,\n");
    rsprintf
-       ("<A HREF=\"http://midas.triumf.ca/docmidas/index.html\">Triumf MIDAS manual</A>.<P>\n\n");
+       ("<A HREF=\"http://midas.triumf.ca/doc/html/index.html\">Triumf MIDAS manual</A>.<P>\n\n");
 
    rsprintf("<hr>\n");
    rsprintf("<address>\n");
