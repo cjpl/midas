@@ -1,6 +1,21 @@
 Revision History
 ================
 
+Version 1.8.3, released August 8, 2001
+--------------------------------------
+
+- Fixed problems occuring under RedHat 7.1
+
+- modified mserver.c to run under xinetd
+
+- put xinetd configuration info into INSTALL file
+
+- added /Custom tree in ODB for mhttpd to display user-specific pages
+
+- standalone elogd program included for offline logbook display
+
+- added mail notification in elog in mhttpd
+
 Version 1.8.2, released November 20, 2000
 -----------------------------------------
 
