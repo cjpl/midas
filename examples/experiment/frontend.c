@@ -11,6 +11,9 @@
                 one bank (SCLR).
 
   $Log$
+  Revision 1.3  1998/10/28 15:50:58  midas
+  Changed lam to DWORD
+
   Revision 1.2  1998/10/12 12:18:58  midas
   Added Log tag in header
 
@@ -207,7 +210,7 @@ INT poll_event(INT source, INT count, BOOL test)
    is available. If test equals TRUE, don't return. The test
    flag is used to time the polling */
 {
-INT i, lam;
+DWORD i, lam;
 
   for (i=0 ; i<count ; i++)
     {
