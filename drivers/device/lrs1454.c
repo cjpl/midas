@@ -6,6 +6,9 @@
   Contents:     LeCroy LRS1454/1458 Voltage Device Driver
 
   $Log$
+  Revision 1.2  2000/12/18 09:45:39  midas
+  changed CR-LF
+
   Revision 1.1  2000/12/05 00:49:55  midas
   Initial revision
 
@@ -82,7 +85,7 @@ lrs1454_INFO *info;
     p++;
 
   i = *p - '0';
-  
+
   if (i < 0)
     i = 0;
   if (i > 4)
@@ -140,7 +143,7 @@ INT lrs1454_exit(lrs1454_INFO *info)
 {
   rs232_puts(info->hdev, "quit\r");
   rs232_exit(info->hdev);
-  
+
   free(info);
 
   return FE_SUCCESS;
@@ -152,7 +155,7 @@ INT lrs1454_set(lrs1454_INFO *info, INT channel, float value)
 {
 char  str[80];
 
-  sprintf(str, "LD L%d.%d DV %1.1f\r", channel/12, channel%12, 
+  sprintf(str, "LD L%d.%d DV %1.1f\r", channel/12, channel%12,
           info->settings.polarity[channel/12]*value);
 
   rs232_puts(info->hdev, str);
@@ -194,7 +197,7 @@ char  str[256], *p;
     rs232_puts(info->hdev, "\r");
     rs232_waitfor(info->hdev, ">", str, 80, 1);
     }
-  
+
   if (strstr(str, "to begin"))
     {
     rs232_puts(info->hdev, "1450\r");
@@ -287,7 +290,7 @@ INT lrs1454_set_current_limit(lrs1454_INFO *info, int channel, float limit)
 {
 char  str[80];
 
-  sprintf(str, "LD L%d.%d TC %1.1f\r", channel/12, channel%12, 
+  sprintf(str, "LD L%d.%d TC %1.1f\r", channel/12, channel%12,
           info->settings.polarity[channel/16]*limit);
 
   rs232_puts(info->hdev, str);
@@ -343,7 +346,7 @@ void    *info;
       pvalue  = va_arg(argptr, float*);
       status = lrs1454_get(info, channel, pvalue);
       break;
-    
+
     case CMD_GET_ALL:
       info = va_arg(argptr, void *);
       channel = va_arg(argptr, INT);
@@ -357,14 +360,14 @@ void    *info;
       pvalue  = va_arg(argptr, float*);
       status = lrs1454_get_current(info, channel, pvalue);
       break;
-    
+
     case CMD_GET_CURRENT_ALL:
       info = va_arg(argptr, void *);
       channel = va_arg(argptr, INT);
       pvalue  = va_arg(argptr, float*);
       status = lrs1454_get_current_all(info, channel, pvalue);
       break;
-      
+
     case CMD_SET_CURRENT_LIMIT:
       info = va_arg(argptr, void *);
       channel = va_arg(argptr, INT);
