@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.139  2001/11/20 14:42:15  midas
+  Added "/logger/history dir" and "/logger/elog dir"
+
   Revision 1.138  2001/10/25 22:18:48  pierre
   added doc++ comments
 
@@ -15323,7 +15326,9 @@ BOOL    bedit;
           {
           size = sizeof(dir);
           memset(dir, 0, size);
-          db_get_value(hDB, 0, "/Logger/Data dir", dir, &size, TID_STRING);
+          db_get_value(hDB, 0, "/Logger/Elog dir", dir, &size, TID_STRING);
+          if (!dir[0])
+            db_get_value(hDB, 0, "/Logger/Data dir", dir, &size, TID_STRING);
           if (dir[0] != 0)
             if (dir[strlen(dir)-1] != DIR_SEPARATOR)
               strcat(dir, DIR_SEPARATOR_STR);
@@ -15365,7 +15370,9 @@ BOOL    bedit;
   cm_get_experiment_database(&hDB, NULL);
   size = sizeof(dir);
   memset(dir, 0, size);
-  db_get_value(hDB, 0, "/Logger/Data dir", dir, &size, TID_STRING);
+  db_get_value(hDB, 0, "/Logger/Elog dir", dir, &size, TID_STRING);
+  if (!dir[0])
+    db_get_value(hDB, 0, "/Logger/Data dir", dir, &size, TID_STRING);
   if (dir[0] != 0)
     if (dir[strlen(dir)-1] != DIR_SEPARATOR)
       strcat(dir, DIR_SEPARATOR_STR);
@@ -15574,7 +15581,9 @@ HNDLE  hDB;
   cm_get_experiment_database(&hDB, NULL);
   size = sizeof(dir);
   memset(dir, 0, size);
-  db_get_value(hDB, 0, "/Logger/Data dir", dir, &size, TID_STRING);
+  db_get_value(hDB, 0, "/Logger/Elog dir", dir, &size, TID_STRING);
+  if (!dir[0])
+    db_get_value(hDB, 0, "/Logger/Data dir", dir, &size, TID_STRING);
   if (dir[0] != 0)
     if (dir[strlen(dir)-1] != DIR_SEPARATOR)
       strcat(dir, DIR_SEPARATOR_STR);
@@ -16075,7 +16084,9 @@ char    *buffer;
   cm_get_experiment_database(&hDB, NULL);
   size = sizeof(dir);
   memset(dir, 0, size);
-  db_get_value(hDB, 0, "/Logger/Data dir", dir, &size, TID_STRING);
+  db_get_value(hDB, 0, "/Logger/Elog dir", dir, &size, TID_STRING);
+  if (!dir[0])
+    db_get_value(hDB, 0, "/Logger/Data dir", dir, &size, TID_STRING);
   if (dir[0] != 0)
     if (dir[strlen(dir)-1] != DIR_SEPARATOR)
       strcat(dir, DIR_SEPARATOR_STR);

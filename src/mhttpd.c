@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.176  2001/11/20 14:42:15  midas
+  Added "/logger/history dir" and "/logger/elog dir"
+
   Revision 1.175  2001/11/19 12:03:22  midas
   Added event builder section
 
@@ -6825,7 +6828,9 @@ float       upper_limit[MAX_VARS], lower_limit[MAX_VARS];
 
   size = sizeof(str);
   memset(str, 0, size);
-  db_get_value(hDB, 0, "/Logger/Data dir", str, &size, TID_STRING);
+  db_get_value(hDB, 0, "/Logger/History dir", str, &size, TID_STRING);
+  if (!str[0])
+    db_get_value(hDB, 0, "/Logger/Data dir", str, &size, TID_STRING);
   hs_set_path(str);
 
   /* get list of events */
