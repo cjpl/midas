@@ -7,14 +7,16 @@
                 either as dedicated server (camacsrv.c) or inside a
                 CAMAC frontend (mfe.c)
 
-  Revision history
-  ------------------------------------------------------------------
-  date         by    modification
-  ---------    ---   ------------------------------------------------
-  17-APR-98    SR    created
   $Log$
+  Revision 1.3  1998/10/12 09:34:08  midas
+  -SR- added back CNAF_TEST instead of CNAF. This way, no CAMAC cycle is executed
+       during the test.
+
   Revision 1.2  1998/10/09 22:56:49  midas
   -PAA- int to DWORD *lam
+
+  Revision 1.0  1998/4/17
+  -SR- created
 
 \********************************************************************/
 
@@ -116,7 +118,7 @@ HNDLE hDB, hKey, hRootKey, hSubkey;
 
       /* test if CNAF function implemented */
       size = sizeof(WORD);
-      status = rpc_client_call(hConn, RPC_CNAF16, CNAF, 0, 0, 0, 0, 0, &data, &size, &q, &x);
+      status = rpc_client_call(hConn, RPC_CNAF16, CNAF_TEST, 0, 0, 0, 0, 0, &data, &size, &q, &x);
 
       if (status != RPC_SUCCESS)
         {
