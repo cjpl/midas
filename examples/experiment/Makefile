@@ -33,12 +33,13 @@
 #OSFLAGS = -DOS_FREEBSD -DOS_UNIX
 
 # This is for Linux
-LIBS = -lbsd -lm -lutil /usr/lib/libf2c.a
 OSFLAGS = -DOS_LINUX -DOS_UNIX -Dextname
-FF = cc
-# for egcs g77 instead of f2c, uncomment following
-#FF = g77
-#LIBS = -lbsd -lm -lutil
+# for f2c, uncomment following:
+#LIBS = -lbsd -lm -lutil /usr/lib/libf2c.a
+#FF = cc
+# for egcs g77, use this
+FF = g77
+LIBS = -lbsd -lm -lz -lutil -static
 
 #-------------------------------------------------------------------
 # The following lines define direcories. Adjust if necessary
@@ -71,7 +72,7 @@ frontend:  $(LIB) $(LIB_DIR)/mfe.o frontend.c camacnul.c
 
 analyzer: $(LIB) $(LIB_DIR)/mana.o analyzer.o $(MODULES)
 	$(FF) $(FFLAGS) -o analyzer $(LIB_DIR)/mana.o analyzer.o \
-	$(MODULES) $(CERNLIB_DIR)/libpacklib.a $(LIB_DIR)/libz.a \
+	$(MODULES) $(CERNLIB_DIR)/libpacklib.a \
 	$(LIB) $(LDFLAGS) $(LIBS)
 
 .c.o:
