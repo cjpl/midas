@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol main program
 
   $Log$
+  Revision 1.23  2003/02/19 16:04:50  midas
+  Added code for ADuC812
+
   Revision 1.22  2003/01/16 16:34:07  midas
   Do not use printf() for scs_210/300
 
@@ -97,7 +100,7 @@
 
 /*---- functions and data in user part -----------------------------*/
 
-void user_init(void);
+void user_init(unsigned char init);
 void user_write(unsigned char channel) reentrant;
 unsigned char user_read(unsigned char channel);
 void user_write_conf(unsigned char channel) reentrant;
@@ -146,6 +149,7 @@ bit addressed;                   // true if node addressed
 bit new_address, debug_new_i, debug_new_o;    // used for LCD debug output
 bit flash_param;                 // used for EEPROM flashing
 bit flash_program;               // used for upgrading firmware
+bit reboot;                      // used for rebooting
 
 /*------------------------------------------------------------------*/
 
@@ -218,13 +222,13 @@ unsigned char i;
   /* retrieve EEPROM data */
   eeprom_retrieve();
 
-  /* call user initialization routine */
-  user_init();
-
   /* correct initial value */
-  if (sys_info.wd_counter == 0xFFFF)
+  if (sys_info.magic != 0xC0DE)
     {
+    sys_info.node_addr  = 0xFFFF;
+    sys_info.group_addr = 0xFFFF;
     sys_info.wd_counter = 0;
+    sys_info.magic      = 0xC0DE;
 
     // init channel variables
     for (i=0 ; channel[i].width ; i++)
@@ -236,8 +240,14 @@ unsigned char i;
       if (conf_param[i].ud)
         memset(conf_param[i].ud, 0, conf_param[i].width);
 
+    /* call user initialization routine with initialization */
+    user_init(1);
+
     eeprom_flash();
     }
+  else
+    /* call user initialization routine without initialization */
+    user_init(0);
 
   /* check if reset by watchdog */
 #ifdef CPU_ADUC812
@@ -252,7 +262,7 @@ unsigned char i;
     eeprom_flash();
     }
 
-#if !defined(SCS_300) && !defined(SCS_210) // SCS210/300 redefine printf()
+#if !defined(CPU_ADUC812) && !defined(SCS_300) && !defined(SCS_210) // SCS210/300 redefine printf()
   lcd_setup();
 
   if (lcd_present)
@@ -276,7 +286,7 @@ void debug_output()
   if (!DEBUG_MODE)
     return;
                              
-#if !defined(SCS_300) && !defined(SCS_210) // SCS210/300 redefine printf()
+#if !defined(CPU_ADUC812) && !defined(SCS_300) && !defined(SCS_210) // SCS210/300 redefine printf()
   {
   unsigned char i, n;
 
@@ -465,9 +475,7 @@ MSCB_INFO_CHN code *pchn;
       break;
 
     case CMD_INIT:
-#ifdef CPU_CYGNAL
-      RSTSRC = 0x02;   // force power-on reset
-#endif
+      reboot = 1; // reboot in next main loop
       break;
 
     case CMD_GET_INFO:
@@ -698,48 +706,54 @@ MSCB_INFO_CHN code *pchn;
   if (cmd == CMD_WRITE_NA ||
       cmd == CMD_WRITE_ACK)
     {
-    n = channel[in_buf[1]].width;
-
-    /* copy LSB bytes */
-    for (i=0 ; i<n ; i++)
-      if (channel[in_buf[1]].ud)
-        ((char idata *)channel[in_buf[1]].ud)[i] = in_buf[i_in-1-n+i];
-    
-    user_write(in_buf[1]);
-
-    if (cmd == CMD_WRITE_ACK)
+    if (in_buf[1] < n_channel)
       {
+      n = channel[in_buf[1]].width;
+  
+      /* copy LSB bytes */
+      for (i=0 ; i<n ; i++)
+        if (conf_param[in_buf[1]].ud)
+          ((char idata *)channel[in_buf[1]].ud)[i] = in_buf[i_in-1-n+i];
+      
+      user_write(in_buf[1]);
+  
+      if (cmd == CMD_WRITE_ACK)
+        {
+        out_buf[0] = CMD_ACK;
+        out_buf[1] = in_buf[i_in-1];
+        n_out = 2;
+        RS485_ENABLE = 1;
+        SBUF0 = out_buf[0];
+        }
+      }
+    }
+
+  if (cmd == CMD_WRITE_CONF)
+    {
+    if (in_buf[1] < n_param && in_buf[1] != 0xFF)
+      {
+      if (in_buf[1] == 0xFF)
+        {
+        CSR = in_buf[2];
+        }
+      else
+        {
+        n = conf_param[in_buf[1]].width;
+    
+        /* copy LSB bytes */
+        for (i=0 ; i<n ; i++)
+          if (channel[in_buf[1]].ud)
+            ((char idata *)conf_param[in_buf[1]].ud)[i] = in_buf[i_in-1-n+i];
+        
+        user_write_conf(in_buf[1]);
+        }
+    
       out_buf[0] = CMD_ACK;
       out_buf[1] = in_buf[i_in-1];
       n_out = 2;
       RS485_ENABLE = 1;
       SBUF0 = out_buf[0];
       }
-    }
-
-  if (cmd == CMD_WRITE_CONF)
-    {
-    if (in_buf[1] == 0xFF)
-      {
-      CSR = in_buf[2];
-      }
-    else
-      {
-      n = conf_param[in_buf[1]].width;
-  
-      /* copy LSB bytes */
-      for (i=0 ; i<n ; i++)
-        if (channel[in_buf[1]].ud)
-          ((char idata *)conf_param[in_buf[1]].ud)[i] = in_buf[i_in-1-n+i];
-      
-      user_write_conf(in_buf[1]);
-      }
-  
-    out_buf[0] = CMD_ACK;
-    out_buf[1] = in_buf[i_in-1];
-    n_out = 2;
-    RS485_ENABLE = 1;
-    SBUF0 = out_buf[0];
     }
 
 }
@@ -919,7 +933,7 @@ void main(void)
     rs232_output();
     
     /* output new address to LCD if available */
-#if !defined(SCS_300) && !defined(SCS_210) // SCS210/300 redefine printf()
+#if !defined(CPU_ADUC812) && !defined(SCS_300) && !defined(SCS_210) // SCS210/300 redefine printf()
     if (new_address)
       {
       new_address = 0;
@@ -940,6 +954,17 @@ void main(void)
       {
       flash_program = 1;
       upgrade();
+      }
+
+    if (reboot)
+      {
+#ifdef CPU_CYGNAL
+      RSTSRC = 0x02;   // force power-on reset
+#else
+      WDCON = 0x00;      // 16 msec
+      WDE = 1;
+      while (1);       // should be hardware reset later...
+#endif
       }
 
     } while (1);

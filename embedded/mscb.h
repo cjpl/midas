@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol commands
 
   $Log$
+  Revision 1.17  2003/02/19 16:05:13  midas
+  Added code for ADuC812
+
   Revision 1.16  2003/01/30 08:35:30  midas
   Added watchdog switch
 
@@ -93,8 +96,17 @@ sbit RS485_ENABLE =      P3^5;
 #define LED_ON 1
 
 /*--------------------------------*/
+#elif defined(HVR_300)
+#include <aduc812.h>
+#define CPU_ADUC812
+
+sbit LED =               P3^4;
+sbit RS485_ENABLE =      P3^5;
+#define LED_ON 1
+
+/*--------------------------------*/
 #else
-#error Please define SCS_xxx in project options
+#error Please define SCS_xxx or HVR_xxx in project options
 #endif
 
 #define LED_OFF !LED_ON
@@ -268,6 +280,7 @@ typedef struct {          // system info stored in EEPROM
 unsigned int  node_addr;
 unsigned int  group_addr;
 unsigned int  wd_counter;
+unsigned int  magic;
 } SYS_INFO;
 
 #define ENABLE_INTERRUPTS { EA = 1; }
