@@ -7,6 +7,9 @@
   Contents:     Symbolic constants for internal RPC functions
 
   $Log$
+  Revision 1.4  1999/02/11 13:20:06  midas
+  Added RPC_CM_CSG
+
   Revision 1.3  1999/01/13 09:40:48  midas
   Added db_set_data_index2 function
 
@@ -28,6 +31,7 @@
 #define RPC_CM_SYNCHRONIZE              11006
 #define RPC_CM_ASCTIME                  11007
 #define RPC_CM_TIME                     11008
+#define RPC_CM_MSG                      11009
 
 #define RPC_BM_OPEN_BUFFER              11100
 #define RPC_BM_CLOSE_BUFFER             11101
