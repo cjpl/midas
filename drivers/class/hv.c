@@ -6,6 +6,9 @@
   Contents:     High Voltage Class Driver
 
   $Log$
+  Revision 1.10  2003/05/12 12:05:26  midas
+  Removed tabs
+
   Revision 1.9  2003/03/06 11:43:11  midas
   Added CMD_SET_LABEL routines
 
@@ -609,9 +612,9 @@ HV_INFO *hv_info;
   db_find_key(hDB, hv_info->hKeyRoot, "Settings/Names", &hKey);
   for (i=0 ; i<hv_info->num_channels ; i++)
     {
-     DRIVER(i)(CMD_GET_DEFAULT_NAME, hv_info->dd_info[i], 
-                i-hv_info->channel_offset[i], hv_info->names+NAME_LENGTH*i);
-     db_set_data_index(hDB, hKey, hv_info->names+NAME_LENGTH*i, size, i, TID_STRING);
+    DRIVER(i)(CMD_GET_DEFAULT_NAME, hv_info->dd_info[i], 
+              i-hv_info->channel_offset[i], hv_info->names+NAME_LENGTH*i);
+    db_set_data_index(hDB, hKey, hv_info->names+NAME_LENGTH*i, size, i, TID_STRING);
     }
 
   /*---- set labels form midas SC names ----*/
