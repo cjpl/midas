@@ -6,6 +6,9 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.92  2004/09/15 23:40:19  midas
+  Fixed compiler warning
+
   Revision 1.91  2004/09/15 23:36:02  midas
   Added ODB save in XML format
 
@@ -5864,7 +5867,7 @@ void xml_encode(char *src, int size)
    int i;
    char *dst, *p;
 
-   dst = malloc(size);
+   dst = (char *)malloc(size);
    if (dst == NULL)
       return;
 
