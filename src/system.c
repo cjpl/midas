@@ -14,6 +14,9 @@
                 Brown, Prentice Hall
 
   $Log$
+  Revision 1.35  1999/07/15 07:35:00  midas
+  Added ss_ctrlc_handler
+
   Revision 1.34  1999/07/08 13:41:37  midas
   Fixed followup error in ss_tape_read
 
@@ -2290,6 +2293,8 @@ void MidasExceptionSignal(INT sig)
 
 #endif /* OS_VMS */
 
+/*------------------------------------------------------------------*/
+
 INT ss_exception_handler(void (*func)())
 /********************************************************************\
 
@@ -2343,6 +2348,48 @@ INT ss_exception_handler(void (*func)())
 }
 
 #endif /* LOCAL_ROUTINES */
+
+/*------------------------------------------------------------------*/
+
+void *ss_ctrlc_handler(void (*func)(int))
+/********************************************************************\
+
+  Routine: ss_ctrlc_handler
+
+  Purpose: Establish new exception handler which is called before
+	   the program is aborted due to a Ctrl-Break. This handler may 
+     clean up things which may otherwise left in an undefined state.
+
+  Input:
+    void  (*func)(int)     Address of handler function
+  Output:
+    none
+
+  Function value:
+    same as signal()
+
+\********************************************************************/
+{
+#ifdef OS_WINNT
+
+  signal(SIGBREAK, func);
+  return signal(SIGINT, func);
+
+#endif /* OS_WINNT */
+#ifdef OS_VMS
+
+  return signal(SIGINT, func);
+
+#endif /* OS_WINNT */
+
+#ifdef OS_UNIX
+
+  return signal(SIGINT, func);
+
+#endif /* OS_UNIX */
+
+  return 0;
+}
 
 /*------------------------------------------------------------------*/
 
