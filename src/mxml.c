@@ -9,13 +9,13 @@
    reading XML files. For writing an XML file from scratch, following
    functions can be used:
 
-   writer = mxml_open_document(file_name);
+   writer = mxml_open_file(file_name);
      mxml_start_element(writer, name);
      mxml_write_attribute(writer, name, value);
      mxml_write_value(writer, value);
      mxml_end_element(writer); 
      ...
-   mxml_close_document(writer);
+   mxml_close_file(writer);
 
    To read an XML file, the function
 
@@ -70,6 +70,8 @@
 #endif
 
 #include "mxml.h"
+
+#define XML_INDENT "  "
 
 /*------------------------------------------------------------------*/
 
@@ -343,7 +345,7 @@ int mxml_start_element(MXML_WRITER *writer, const char *name)
 
    line[0] = 0;
    for (i=0 ; i<writer->level ; i++)
-      strlcat(line, "     ", sizeof(line));
+      strlcat(line, XML_INDENT, sizeof(line));
    strlcat(line, "<", sizeof(line));
    strlcpy(name_enc, name, sizeof(name_enc));
    mxml_encode(name_enc, sizeof(name_enc));
@@ -390,7 +392,7 @@ int mxml_end_element(MXML_WRITER *writer)
    line[0] = 0;
    if (!writer->data_was_written) {
       for (i=0 ; i<writer->level ; i++)
-         strlcat(line, "     ", sizeof(line));
+         strlcat(line, XML_INDENT, sizeof(line));
    }
 
    strlcat(line, "</", sizeof(line));
@@ -500,13 +502,13 @@ int mxml_close_file(MXML_WRITER *writer)
 
 /*------------------------------------------------------------------*/
 
-PMXML_NODE mxml_create_root_node()
+PMXML_NODE mxml_create_root_node(char *name)
 /* create root node of an XML tree */
 {
    PMXML_NODE root;
 
    root = (PMXML_NODE)calloc(sizeof(MXML_NODE), 1);
-   strcpy(root->name, "root");
+   strcpy(root->name, name);
 
    return root;
 }
@@ -784,6 +786,14 @@ PMXML_NODE mxml_find_node(PMXML_NODE tree, char *xml_path)
 
 /*------------------------------------------------------------------*/
 
+char *mxml_get_name(PMXML_NODE pnode)
+{
+   assert(pnode);
+   return pnode->name;
+}
+
+/*------------------------------------------------------------------*/
+
 char *mxml_get_value(PMXML_NODE pnode)
 {
    assert(pnode);
@@ -961,7 +971,10 @@ PMXML_NODE read_error(PMXML_NODE root, char *file_name, int line_number, char *e
    char *msg, str[1000];
    va_list argptr;
 
-   sprintf(str, "XML read error in file \"%s\", line %d: ", file_name, line_number);
+   if (file_name && file_name[0])
+      sprintf(str, "XML read error in file \"%s\", line %d: ", file_name, line_number);
+   else
+      sprintf(str, "XML read error, line %d: ", line_number);
    msg = (char *)malloc(error_size);
    strlcpy(error, str, error_size);
 
@@ -978,7 +991,7 @@ PMXML_NODE read_error(PMXML_NODE root, char *file_name, int line_number, char *e
 
 /*------------------------------------------------------------------*/
 
-PMXML_NODE mxml_parse_buffer(char *buf, char *error, int error_size, char *file_name)
+PMXML_NODE mxml_parse_buffer(char *buf, char *error, int error_size)
 /* parse a XML buffer and convert it into a tree of MXML_NODE's. Return NULL
    in case of an error, return error description. Optional file_name is used
    for error reporting if called from mxml_parse_file() */
@@ -989,15 +1002,12 @@ PMXML_NODE mxml_parse_buffer(char *buf, char *error, int error_size, char *file_
    PMXML_NODE root, ptree, pnew;
    int end_element;
    size_t len;
+   char *file_name = NULL; // dummy for 'HERE'
 
    p = buf;
    line_number = 1;
 
-   root = mxml_create_root_node();
-   ptree = root;
-
-   /* store filename in attribute */
-   mxml_add_attribute(root, "filename", file_name);
+   root = ptree = NULL;
 
    /* parse file contents */
    do {
@@ -1073,6 +1083,9 @@ PMXML_NODE mxml_parse_buffer(char *buf, char *error, int error_size, char *file_
 
             if (end_element) {
 
+               if (!ptree)
+                  return read_error(HERE, "Found unexpected </%s>", node_name);
+
                /* close previously opened element */
                if (strcmp(ptree->name, node_name) != 0)
                   return read_error(HERE, "Found </%s>, expected </%s>", node_name, ptree->name);
@@ -1082,8 +1095,14 @@ PMXML_NODE mxml_parse_buffer(char *buf, char *error, int error_size, char *file_
 
             } else {
             
+               if (root != NULL && ptree == NULL)
+                  return read_error(HERE, "Unexpected second top level node");
+
                /* allocate new element structure in parent tree */
-               pnew = mxml_add_node(ptree, node_name, NULL);
+               if (root == NULL) {
+                  pnew = ptree = root = mxml_create_root_node(node_name);
+               } else
+                  pnew = mxml_add_node(ptree, node_name, NULL);
 
                while (*p && isspace(*p)) {
                   if (*p == '\n')
@@ -1268,7 +1287,7 @@ PMXML_NODE mxml_parse_file(char *file_name, char *error, int error_size)
    buf[length] = 0;
    close(fh);
 
-   root = mxml_parse_buffer(buf, error, error_size, file_name);
+   root = mxml_parse_buffer(buf, error, error_size);
 
    free(buf);
 
@@ -1326,7 +1345,7 @@ int mxml_write_tree(char *file_name, PMXML_NODE tree)
 void mxml_debug_tree(PMXML_NODE tree, int level)
 /* print XML tree for debugging */
 {
-   int i;
+   int i, j;
 
    for (i=0 ; i<level ; i++)
       printf("  ");
@@ -1334,6 +1353,14 @@ void mxml_debug_tree(PMXML_NODE tree, int level)
    for (i=0 ; i<level ; i++)
       printf("  ");
    printf("Valu: %s\n", tree->value);
+
+   for (j=0 ; j<tree->n_attributes ; j++) {
+      for (i=0 ; i<level ; i++)
+         printf("  ");
+      printf("%s: %s\n", tree->attribute_name+j*MXML_NAME_LENGTH, 
+         tree->attribute_value[j]);
+   }
+
    for (i=0 ; i<level ; i++)
       printf("  ");
    printf("Addr: %08X\n", (size_t)tree);
