@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.57  2000/03/23 08:50:37  midas
+  Changed comments
+
   Revision 1.56  2000/03/13 16:37:10  midas
   Add data directory to last.rz if no directory present already in ODB key
 
@@ -321,8 +324,8 @@ struct {
    clp.exp_name, TID_STRING, 1 },
   
   {'f', 
-   "                Filter events. Write original events to output file\n\
-                     only if analyzer accepts them (doesn't return ANA_SKIP).\n",
+   "              Filter mode. Write original events to output file\n\
+                   only if analyzer accepts them (doesn't return ANA_SKIP).\n",
    &clp.filter, TID_BOOL, 0 },
 
   {'h', 
