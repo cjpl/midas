@@ -9,6 +9,9 @@
                 for SCS-600 Digital I/O
 
   $Log$
+  Revision 1.15  2004/01/07 12:56:15  midas
+  Chaned line length
+
   Revision 1.14  2004/01/07 12:52:23  midas
   Changed indentation
 
@@ -90,11 +93,11 @@ MSCB_INFO_VAR code variables[] = {
    1, UNIT_BOOLEAN, 0, 0, 0, "Out5", &user_data.out[5],
    1, UNIT_BOOLEAN, 0, 0, 0, "Out6", &user_data.out[6],
    1, UNIT_BOOLEAN, 0, 0, 0, "Out7", &user_data.out[7],
-   1, UNIT_BYTE, 0, 0, 0, "Button",  &user_data.button,
+   1, UNIT_BYTE, 0, 0, 0, "Button", &user_data.button,
    1, UNIT_BYTE, 0, 0, 0, "P1", &user_data.p1,
-   1, UNIT_BYTE, 0, 0, 0, "Single",  &user_data.single,
-   1, UNIT_BYTE, 0, 0, 0, "Input1",  &user_data.input[0],
-   1, UNIT_BYTE, 0, 0, 0, "Input2",  &user_data.input[1],
+   1, UNIT_BYTE, 0, 0, 0, "Single", &user_data.single,
+   1, UNIT_BYTE, 0, 0, 0, "Input1", &user_data.input[0],
+   1, UNIT_BYTE, 0, 0, 0, "Input2", &user_data.input[1],
    4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "Power0", &user_data.power[0],
    4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "Power1", &user_data.power[1],
    4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "Power2", &user_data.power[2],
@@ -261,11 +264,9 @@ void set_power(void)
       if (user_data.power[i] < 100) {
          expired = time() - on_time;
          if (expired >= (unsigned long) (user_data.power[i])) {
-            frac =
-                user_data.power[i] - (unsigned long) (user_data.power[i]);
+            frac = user_data.power[i] - (unsigned long) (user_data.power[i]);
 
-            if (frac == 0
-                || expired >= (unsigned long) (user_data.power[i]) + 1) {
+            if (frac == 0 || expired >= (unsigned long) (user_data.power[i]) + 1) {
                output &= ~(1 << i);
             } else if (cycle > 0) {
                if ((float) ca[i] / cycle > frac) {
@@ -323,8 +324,7 @@ static bit first = 1;
    old_button = user_data.button;
    ser_clock();
    for (i = 0; i < 8; i++) {
-      if ((user_data.button & (1 << i)) > 0 &&
-          (old_button & (1 << i)) == 0)
+      if ((user_data.button & (1 << i)) > 0 && (old_button & (1 << i)) == 0)
          user_data.out[i] = !user_data.out[i];
    }
 

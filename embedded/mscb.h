@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol commands
 
   $Log$
+  Revision 1.28  2004/01/07 12:56:15  midas
+  Chaned line length
+
   Revision 1.27  2004/01/07 12:52:23  midas
   Changed indentation
 
@@ -349,8 +352,7 @@ void lcd_puts(char *str);
 char scs_lcd1_read();
 
 char getchar_nowait(void);
-unsigned char gets_wait(char *str, unsigned char size,
-                        unsigned char timeout);
+unsigned char gets_wait(char *str, unsigned char size, unsigned char timeout);
 void flush(void);
 
 void eeprom_flash(void);

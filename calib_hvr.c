@@ -6,6 +6,9 @@
   Contents:     Calibration program for HVR-500
 
   $Log$
+  Revision 1.5  2004/01/07 12:56:15  midas
+  Chaned line length
+
   Revision 1.4  2004/01/07 12:52:23  midas
   Changed indentation
 
@@ -83,8 +86,7 @@ int main(int argc, char *argv[])
    memset(str, 0, sizeof(str));
    memcpy(str, info.name, 8);
    if (strcmp(str, "TempC") != 0) {
-      printf
-          ("Incorrect software versionon SCS-520. Expect \"TempC\" on var #17.\n");
+      printf("Incorrect software versionon SCS-520. Expect \"TempC\" on var #17.\n");
       return 0;
    }
 
@@ -92,8 +94,7 @@ int main(int argc, char *argv[])
    size = sizeof(float);
    mscb_read(fd, adr, CH_TEMPC, &f, &size);
    if (f < 10 || f > 50) {
-      printf
-          ("Incorrect temperature reading %1.1lf. Check reference voltage and AGND.\n");
+      printf("Incorrect temperature reading %1.1lf. Check reference voltage and AGND.\n");
       return 0;
    }
 
@@ -230,9 +231,7 @@ int main(int argc, char *argv[])
          v_adc2 = (float) ((int) (v_adc2 / 100.0) * 100);
 
          printf("Only %1.1lf V can be reached on output,\n", v_adc1);
-         printf
-             ("please increase input voltage by %1.0lf V and press ENTER.\n",
-              v_adc2);
+         printf("please increase input voltage by %1.0lf V and press ENTER.\n", v_adc2);
          fgets(str, sizeof(str), stdin);
       }
 

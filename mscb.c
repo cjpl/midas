@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus communication functions
 
   $Log$
+  Revision 1.49  2004/01/07 12:56:15  midas
+  Chaned line length
+
   Revision 1.48  2004/01/07 12:52:23  midas
   Changed indentation
 
@@ -819,8 +822,7 @@ int mscb_init(char *device, int debug)
    n_cache = 0;
 
    if (strchr(device, ':')) {
-      strncpy(mscb_fd[index].device, device,
-              sizeof(mscb_fd[index].device));
+      strncpy(mscb_fd[index].device, device, sizeof(mscb_fd[index].device));
       mscb_fd[index].type = MSCB_TYPE_RPC;
 
       strcpy(port, strchr(device, ':') + 1);
@@ -836,8 +838,7 @@ int mscb_init(char *device, int debug)
          return -1;
       }
 
-      mscb_fd[index].remote_fd =
-          mrpc_call(mscb_fd[index].fd, RPC_MSCB_INIT, port, debug);
+      mscb_fd[index].remote_fd = mrpc_call(mscb_fd[index].fd, RPC_MSCB_INIT, port, debug);
       if (mscb_fd[index].remote_fd < 0) {
          mrpc_disconnect(mscb_fd[index].fd);
          mscb_fd[index].fd = 0;
@@ -902,8 +903,7 @@ int mscb_init(char *device, int debug)
          }
 
          if (!DeviceIoControl
-             (hdio, (DWORD) 0x9c406000, &buffer, sizeof(buffer), NULL, 0,
-              &size, NULL))
+             (hdio, (DWORD) 0x9c406000, &buffer, sizeof(buffer), NULL, 0, &size, NULL))
             return -1;
       }
    }
@@ -913,9 +913,7 @@ int mscb_init(char *device, int debug)
    mscb_fd[index].fd = open(port, O_RDWR);
    if (mscb_fd[index].fd < 0) {
       perror("open");
-      printf
-          ("Please make sure that device \"%s\" is world readable/writable\n",
-           port);
+      printf("Please make sure that device \"%s\" is world readable/writable\n", port);
       return -1;
    }
 
@@ -991,8 +989,7 @@ int mscb_exit(int fd)
       return MSCB_INVAL_PARAM;
 
    if (mrpc_connected(fd)) {
-      mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_EXIT,
-                mscb_fd[fd - 1].remote_fd);
+      mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_EXIT, mscb_fd[fd - 1].remote_fd);
       mrpc_disconnect(mscb_fd[fd - 1].fd);
    }
 
@@ -1078,8 +1075,7 @@ void mscb_check(char *device)
          d >>= 1;
       }
 
-      printf(" %d%d\r", !pp_rstatus(fd, LPT_DATAREADY),
-             pp_rstatus(fd, LPT_BUSY));
+      printf(" %d%d\r", !pp_rstatus(fd, LPT_DATAREADY), pp_rstatus(fd, LPT_BUSY));
       fflush(stdout);
 
       Sleep(100);
@@ -1142,13 +1138,11 @@ int mscb_addr(int fd, int cmd, int adr, int retry, int lock)
    for (n = 0; n < retry; n++) {
       buf[0] = cmd;
 
-      if (cmd == MCMD_ADDR_NODE8 ||
-          cmd == MCMD_ADDR_GRP8 || cmd == MCMD_PING8) {
+      if (cmd == MCMD_ADDR_NODE8 || cmd == MCMD_ADDR_GRP8 || cmd == MCMD_PING8) {
          buf[1] = (unsigned char) adr;
          buf[2] = crc8(buf, 2);
          status = mscb_out(fd, buf, 3, 1);
-      } else if (cmd == MCMD_ADDR_NODE16 ||
-                 cmd == MCMD_ADDR_GRP16 || cmd == MCMD_PING16) {
+      } else if (cmd == MCMD_ADDR_NODE16 || cmd == MCMD_ADDR_GRP16 || cmd == MCMD_PING16) {
          buf[1] = (unsigned char) (adr >> 8);
          buf[2] = (unsigned char) (adr & 0xFF);
          buf[3] = crc8(buf, 3);
@@ -1267,8 +1261,7 @@ int mscb_reset(int fd)
       return MSCB_INVAL_PARAM;
 
    if (mrpc_connected(fd))
-      return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_RESET,
-                       mscb_fd[fd - 1].remote_fd);
+      return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_RESET, mscb_fd[fd - 1].remote_fd);
 
    if (mscb_lock(fd) != MSCB_SUCCESS)
       return MSCB_MUTEX;
@@ -1312,8 +1305,7 @@ int mscb_ping(int fd, int adr)
       return MSCB_INVAL_PARAM;
 
    if (mrpc_connected(fd))
-      return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_PING,
-                       mscb_fd[fd - 1].remote_fd, adr);
+      return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_PING, mscb_fd[fd - 1].remote_fd, adr);
 
    if (mscb_lock(fd) != MSCB_SUCCESS)
       return MSCB_MUTEX;
@@ -1449,8 +1441,7 @@ int mscb_info_variable(int fd, int adr, int index, MSCB_INFO_VAR * info)
    memcpy(info, buf + 2, sizeof(MSCB_INFO_VAR));
 
    /* do CRC check */
-   if (crc8(buf, sizeof(MSCB_INFO_VAR) + 2) !=
-       buf[sizeof(MSCB_INFO_VAR) + 2])
+   if (crc8(buf, sizeof(MSCB_INFO_VAR) + 2) != buf[sizeof(MSCB_INFO_VAR) + 2])
       return MSCB_CRC_ERROR;
 
    return MSCB_SUCCESS;
@@ -1575,8 +1566,7 @@ int mscb_set_name(int fd, int adr, char *name)
 
 /*------------------------------------------------------------------*/
 
-int mscb_write_group(int fd, int adr, unsigned char index, void *data,
-                     int size)
+int mscb_write_group(int fd, int adr, unsigned char index, void *data, int size)
 /********************************************************************\
 
   Routine: mscb_write_na
@@ -1916,8 +1906,7 @@ int mscb_upload(int fd, int adr, char *buffer, int size)
             mscb_out(fd, buf, 512, 0);
 
             if (mscb_in1(fd, ack, 100000) != MSCB_SUCCESS) {
-               printf
-                   ("Error: timeout from remote node for program page\n");
+               printf("Error: timeout from remote node for program page\n");
                mscb_release(fd);
                return MSCB_TIMEOUT;
             }
@@ -1944,8 +1933,7 @@ int mscb_upload(int fd, int adr, char *buffer, int size)
             }
 
             if (j == 10) {
-               printf
-                   ("Error: error on page verification (tried 10 times)\n");
+               printf("Error: error on page verification (tried 10 times)\n");
                mscb_release(fd);
                return MSCB_TIMEOUT;
             }
@@ -2125,8 +2113,7 @@ int mscb_read_range(int fd, int adr, unsigned char index1,
 
    if (mrpc_connected(fd))
       return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_READ_RANGE,
-                       mscb_fd[fd - 1].remote_fd, adr, index1, index2,
-                       data, size);
+                       mscb_fd[fd - 1].remote_fd, adr, index1, index2, data, size);
 
    if (mscb_lock(fd) != MSCB_SUCCESS)
       return MSCB_MUTEX;
@@ -2181,8 +2168,7 @@ int mscb_read_range(int fd, int adr, unsigned char index1,
 
 /*------------------------------------------------------------------*/
 
-int mscb_user(int fd, int adr, void *param, int size, void *result,
-              int *rsize)
+int mscb_user(int fd, int adr, void *param, int size, void *result, int *rsize)
 /********************************************************************\
 
   Routine: mscb_user
@@ -2219,8 +2205,7 @@ int mscb_user(int fd, int adr, void *param, int size, void *result,
 
    if (mrpc_connected(fd))
       return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_USER,
-                       mscb_fd[fd - 1].remote_fd, adr, param, size, result,
-                       rsize);
+                       mscb_fd[fd - 1].remote_fd, adr, param, size, result, rsize);
 
    if (mscb_lock(fd) != MSCB_SUCCESS)
       return MSCB_MUTEX;
@@ -2396,8 +2381,7 @@ int mscb_link(int fd, int adr, unsigned char index, void *data, int size)
 
    /* check if variable in cache */
    for (i = 0; i < n_cache; i++)
-      if (cache[i].fd == fd &&
-          cache[i].adr == adr && cache[i].index == index)
+      if (cache[i].fd == fd && cache[i].adr == adr && cache[i].index == index)
          break;
 
    if (i < n_cache) {
@@ -2423,9 +2407,7 @@ int mscb_link(int fd, int adr, unsigned char index, void *data, int size)
       if (n_cache == 0)
          cache = (CACHE_ENTRY *) malloc(sizeof(CACHE_ENTRY));
       else
-         cache =
-             (CACHE_ENTRY *) realloc(cache,
-                                     sizeof(CACHE_ENTRY) * (n_cache + 1));
+         cache = (CACHE_ENTRY *) realloc(cache, sizeof(CACHE_ENTRY) * (n_cache + 1));
 
       if (cache == NULL)
          return MSCB_NO_MEM;
