@@ -21,7 +21,8 @@
 #-------------------------------------------------------------------
 # The following lines define direcories. Adjust if necessary
 #                 
-INC_DIR 	= /usr/local/include
+INC_DIR 	= /midas/include
+DRV_DIR         = .
 LIB_DIR 	= /usr/local/lib
 CERNLIB_DIR	= /cern/pro/lib
 
@@ -77,6 +78,8 @@ endif
 ifeq ($(OSTYPE),linux)
 OS_DIR = linux
 OSFLAGS = -DOS_LINUX -DOS_UNIX
+CFLAGS  = -O3
+LDFLAGS = -DMODULE -D__KERNEL__
 LIBS = -lbsd
 endif
 
@@ -93,23 +96,27 @@ endif
 #-------------------------------------------------------------------
 # List of analyzer modules
 #                 
-MODULES 	= adccalib.o adcsum.o scaler.o
+MODULES 	= 
 
 ####################################################################
 # Lines below here should not be edited
 ####################################################################
-
+DRIVER = camacnul
 LIB = $(LIB_DIR)/libmidas.a
+INCLUDE = -I$(INC_DIR)
 
-all: $(UFE) 
+all: $(DRIVER).o $(UFE) 
 
-$(UFE): $(LIB) $(LIB_DIR)/mfe.o $(UFE).o
-	$(CC) $(CFLAGS) $(OSFLAGS) -c -o $(UFE).o $(UFE).c 
-	$(CC) $(CFLAGS) -o $(UFE) $(UFE).o $(LIB_DIR)/mfe.o \
+$(UFE): $(LIB) $(LIB_DIR)/mfe.o $(DRIVER).o $(UFE).o
+	$(CC) $(CFLAGS) $(OSFLAGS) $(INCLUDE) -c -o $(UFE).o $(UFE).c 
+	$(CC) $(CFLAGS) -o $(UFE) $(UFE).o $(DRIVER).o $(LIB_DIR)/mfe.o \
 	$(LIB) $(LDFLAGS) $(LIBS)
 
+$(DRIVER).o: $(DRV_DIR)/$(DRIVER).c
+	$(CC) $(CFLAGS) $(INCLUDES) $(OSFLAGS) -c -o $(DRIVER).o $(DRV_DIR)/$(DRIVER).c
+
 .c.o:
-	$(CC) $(CFLAGS) $(OSFLAGS) -c $<
+	$(CC) $(CFLAGS) $(OSFLAGS) $(INCLUDE) -c $<
 
 clean:
 	rm -f *.o *~ \#*
