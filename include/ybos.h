@@ -10,6 +10,9 @@
   date        by    modification
   ---------   ---   ------------------------------------------------
 *  $Log$
+*  Revision 1.19  2002/09/19 17:50:34  pierre
+*  remove ^m
+*
 *  Revision 1.18  2002/09/18 16:37:27  pierre
 *  remove bk_list()
 *
