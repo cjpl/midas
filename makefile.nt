@@ -7,16 +7,18 @@
 #                Windows NT
 #
 #  $Log$
+#  Revision 1.3  1998/10/30 08:44:11  midas
+#  Removed version
+#
 #  Revision 1.2  1998/10/12 12:18:55  midas
 #  Added Log tag in header
 #
 #
 #####################################################################
-#
-#
-MIDAS_VERSION = 1.02
+
 #
 # System directories
+#
 SYSBIN_DIR = c:\winnt\system32
 SYSLIB_DIR = c:\msdev\lib
 SYSINC_DIR = c:\msdev\include
@@ -110,7 +112,7 @@ $(BIN_DIR)/odb_test.exe:  $(LIBRARY) $(EXAM_DIR)/basic/odb_test.c
 $(LIBRARY): $(OBJS)
 	start net stop midas
 	start net stop mhttpd
-	link $(OBJS) wsock32.lib winmm.lib /subsystem:windows /dll /machine:I386 /VERSION:0,5 /out:$(LIB_DIR)/midas.dll /implib:$(LIBRARY)
+	link $(OBJS) wsock32.lib winmm.lib /subsystem:windows /dll /machine:I386 /out:$(LIB_DIR)/midas.dll /implib:$(LIBRARY)
 	copy $(LIB_DIR)\midas.dll $(SYSBIN_DIR)\midas.dll
 
 # library objects
