@@ -6,6 +6,9 @@
   Contents:     Web server for remote PAW display
 
   $Log$
+  Revision 1.29  2000/11/06 12:29:18  midas
+  Increase PAW communication buffers to 100000
+
   Revision 1.28  2000/11/06 12:03:30  midas
   Version 1.0.9
 
@@ -567,7 +570,7 @@ char *pd, *p, str[256];
 int read_paw(int pipe, char *delim, char *result)
 {
 fd_set readfds;
-char   str[30000], tmp[30000];
+char   str[100000], tmp[100000];
 struct timeval timeout;
 int    i;
 
@@ -631,7 +634,7 @@ int submit_paw(char *kumac, char *result, int save_gif)
 #ifndef _MSC_VER
 static int pid=0, pipe;
 
-char   str[10000];
+char   str[100000];
 int    status;
 
   if (equal_ustring(kumac, "restart") && pid)
@@ -818,7 +821,7 @@ void interprete(char *path)
 
 \********************************************************************/
 {
-char   str[10000], str2[10000], group_name[256], display_name[256], kumac_name[256];
+char   str[100000], str2[100000], group_name[256], display_name[256], kumac_name[256];
 char   cmd[256], param_name[256], param_opt[256], *p, *ps;
 char   cur_group[256], tmp[256], elog[256];
 int    fh, i, j, length, status, height;
