@@ -6,6 +6,9 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.65  2003/07/26 23:25:55  olchansk
+  more ODB validation checks on key size and num_items
+
   Revision 1.64  2003/07/24 12:29:44  midas
   Fixed problem with atol() in db_sscanf
 
@@ -714,6 +717,32 @@ static time_t t_min = 0, t_max;
     {
     cm_msg(MERROR, "db_validate_key", "Warning: invalid key type, key \"%s\", type %d", path, pkey->type);
     return 0;
+    }
+
+  /* check key sizes */
+  if ((pkey->total_size < 0)||(pkey->total_size > pheader->key_size))
+    {
+    cm_msg(MERROR, "db_validate_key", "Warning: invalid key \"%s\" total_size: %d", path, pkey->total_size);
+    return 0;
+    }
+
+  if ((pkey->item_size < 0)||(pkey->item_size > pheader->key_size))
+    {
+    cm_msg(MERROR, "db_validate_key", "Warning: invalid key \"%s\" item_size: %d", path, pkey->item_size);
+    return 0;
+    }
+
+  if ((pkey->num_values < 0)||(pkey->num_values > pheader->key_size))
+    {
+    cm_msg(MERROR, "db_validate_key", "Warning: invalid key \"%s\" num_values: %d", path, pkey->num_values);
+    return 0;
+    }
+
+  /* check and correct key size */
+  if (pkey->total_size != pkey->item_size*pkey->num_values)
+    {
+    cm_msg(MINFO,  "db_validate_key", "Warning: corrected key \"%s\" size: total_size=%d, should be %d*%d=%d", path, pkey->total_size, pkey->item_size, pkey->num_values, pkey->item_size*pkey->num_values);
+    pkey->total_size = pkey->item_size*pkey->num_values;
     }
 
   /* check access mode */
