@@ -1,3 +1,12 @@
+Version 1.2.1, released November xxth, 2001
+===========================================
+
+- Fixed problem with long configuration files (use POST instead GET)
+- Fixed bug with delete command and admin. password
+- Fixed bug with reply/edit/delete commands which always used last message
+- Change "use for title" into "page title", introduced attribute substitution
+- Added attribute substitution to "use email subject"
+
 Version 1.2.0, released October 19th, 2001
 ==========================================
 
