@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.134  2001/06/27 11:55:50  midas
+  Fixed compiler warnings (came from IRIX)
+
   Revision 1.133  2001/06/15 08:49:56  midas
   Fixed bug when query gave no result if only messages from today are present
 
@@ -3199,9 +3202,9 @@ INT i;
 
   return CM_NO_CLIENT;
 }
-#endif /* LOCAL_ROUTINES */
-
+#else /* LOCAL_ROUTINES */
   return CM_SUCCESS;
+#endif
 }
 
 /*------------------------------------------------------------------*/
@@ -7198,9 +7201,10 @@ CACHE_FULL:
 
   return status;
 }
-#endif /* LOCAL_ROUTINES */
+#else /* LOCAL_ROUTINES */
 
   return SS_SUCCESS;
+#endif
 }
 
 /*------------------------------------------------------------------*/
@@ -7561,9 +7565,10 @@ CACHE_FULL:
 
   return BM_MORE_EVENTS;
 }
-#endif /* LOCAL_ROUTINES */
+#else /* LOCAL_ROUTINES */
 
   return BM_SUCCESS;
+#endif
 }
 
 /*------------------------------------------------------------------*/
@@ -7642,9 +7647,11 @@ DWORD           start_time;
   return bMore;
 
 }
-#endif /* LOCAL_ROUTINES */
+#else /* LOCAL_ROUTINES */
 
   return FALSE;
+
+#endif
 }
 
 /*------------------------------------------------------------------*/
@@ -15303,8 +15310,8 @@ BOOL    bedit;
 #endif
 #endif
 
-        time(&now);
-        tms = localtime(&now);
+        time((time_t *)&now);
+        tms = localtime((const time_t *)&now);
 
         strcpy(str, p);
         sprintf(afile_name[index], "%02d%02d%02d_%02d%02d%02d_%s",
@@ -15391,8 +15398,8 @@ BOOL    bedit;
   else
     {
     /* create new message */
-    time(&now);
-    tms = localtime(&now);
+    time((time_t *)&now);
+    tms = localtime((const time_t *)&now);
 
     sprintf(file_name, "%s%02d%02d%02d.log", dir,
             tms->tm_year % 100, tms->tm_mon+1, tms->tm_mday);
@@ -15581,7 +15588,7 @@ HNDLE  hDB;
 
     do
       {
-      tms = localtime(&ltime);
+      tms = localtime((const time_t *)&ltime);
 
       sprintf(file_name, "%s%02d%02d%02d.log", dir,
               tms->tm_year % 100, tms->tm_mon+1, tms->tm_mday);
@@ -15598,7 +15605,7 @@ HNDLE  hDB;
           ltime += 3600*24; /* go forward one day */
 
         /* set new tag */
-        tms = localtime(&ltime);
+        tms = localtime((const time_t *)&ltime);
         sprintf(tag, "%02d%02d%02d.0", tms->tm_year % 100, tms->tm_mon+1, tms->tm_mday);
         }
 
@@ -15641,7 +15648,7 @@ HNDLE  hDB;
     ltime = lt;
     do
       {
-      tms = localtime(&ltime);
+      tms = localtime((const time_t *)&ltime);
 
       sprintf(file_name, "%s%02d%02d%02d.log", dir,
               tms->tm_year % 100, tms->tm_mon+1, tms->tm_mday);
@@ -15677,7 +15684,7 @@ HNDLE  hDB;
       do
         {
         lt -= 3600*24;
-        tms = localtime(&lt);
+        tms = localtime((const time_t *)&lt);
         sprintf(str, "%02d%02d%02d.0",
                 tms->tm_year % 100, tms->tm_mon+1, tms->tm_mday);
 
@@ -15757,7 +15764,7 @@ HNDLE  hDB;
       do
         {
         lt += 3600*24;
-        tms = localtime(&lt);
+        tms = localtime((const time_t *)&lt);
         sprintf(str, "%02d%02d%02d.0",
                 tms->tm_year % 100, tms->tm_mon+1, tms->tm_mday);
 
@@ -15846,6 +15853,7 @@ char    message[10000], thread[256], attachment_all[256];
   offset = TELL(fh);
   read(fh, str, 16);
   size = atoi(str+9);
+  memset(message, 0, sizeof(message));
   read(fh, message, size);
 
   close(fh);
@@ -17223,7 +17231,6 @@ typedef struct {
 
 DMEM_BUFFER  dm;
 INT          dm_user_max_event_size;
-extern       _opt_tcp_size;
 
 /*------------------------------------------------------------------*/
 INT dm_buffer_create(INT size, INT user_max_event_size)
@@ -17824,11 +17831,11 @@ INT dm_task(void *pointer)
 #endif
   cm_msg(MERROR,"areaSend","task areaSend exiting now");
   exit;
+  return 1;
 #else
   printf("DM_DUAL_THREAD not defined\n");
   return 0;
 #endif
-  return 1;
 }
 
 /*------------------------------------------------------------------*/
