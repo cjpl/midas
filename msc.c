@@ -6,6 +6,9 @@
   Contents:     Command-line interface for the Midas Slow Control Bus
 
   $Log$
+  Revision 1.74  2004/12/10 11:21:14  midas
+  Modified terminal mode
+
   Revision 1.73  2004/12/08 10:42:18  midas
   Version 1.7.8
 
@@ -687,10 +690,10 @@ void cmd_loop(int fd, char *cmd, int adr)
                   mscb_info_variable(fd, current_addr, i, &info_var);
                   size = info_var.width;
                   memset(dbuf, 0, sizeof(dbuf));
-                  mscb_read(fd, current_addr, (unsigned char) i, dbuf, &size);
-
-                  if ((info_var.flags & MSCBF_HIDDEN) == 0 || param[1][0])
-                     print_channel(i, &info_var, dbuf, 1);
+                  status = mscb_read(fd, current_addr, (unsigned char) i, dbuf, &size);
+                  if (status == MSCB_SUCCESS)
+                     if ((info_var.flags & MSCBF_HIDDEN) == 0 || param[1][0])
+                        print_channel(i, &info_var, dbuf, 1);
                }
 
                mscb_get_version(lib, prot);
@@ -854,6 +857,13 @@ void cmd_loop(int fd, char *cmd, int adr)
                         str[strlen(str) - 1] = 0;
 
                      status = mscb_write(fd, current_addr, (unsigned char) addr, str, strlen(str)+1);
+                  } else if (info_var.unit == UNIT_ASCII) {
+                     memset(str, 0, sizeof(str));
+                     strncpy(str, param[2], sizeof(str));
+                     if (strlen(str) > 0 && str[strlen(str) - 1] == '\n')
+                        str[strlen(str) - 1] = 0;
+
+                     status = mscb_write_block(fd, current_addr, (unsigned char) addr, str, strlen(str));
                   } else {
                      if (info_var.flags & MSCBF_FLOAT) {
                         value = (float) atof(param[2]);
@@ -905,22 +915,40 @@ void cmd_loop(int fd, char *cmd, int adr)
                else if (status != MSCB_SUCCESS)
                   puts("Timeout or invalid channel number");
                else {
-                  do {
+
+                  if (info_var.unit == UNIT_ASCII) {
+
+                     /* read ASCII string */
                      memset(dbuf, 0, sizeof(dbuf));
-                     size = info_var.width;
-                     status = mscb_read(fd, current_addr, (unsigned char) addr, dbuf, &size);
+                     size = sizeof(dbuf);
+                     status = mscb_read_block(fd, current_addr, (unsigned char) addr, dbuf, &size);
                      if (status != MSCB_SUCCESS)
                         printf("Error: %d\n", status);
-                     else if (size != info_var.width)
-                        printf("Error: Received %d bytes instead of %d", size, info_var.width);
+                     else if (size == 0)
+                        puts("No data available");
                      else
-                        print_channel(addr, &info_var, dbuf, 0);
+                        puts(dbuf);
 
-                     Sleep(10);
-                  } while (param[2][0] && !kbhit());
+                  } else {
+                   
+                     /* read single value, optionally in repeat mode */
+                     do {
+                        memset(dbuf, 0, sizeof(dbuf));
+                        size = info_var.width;
+                        status = mscb_read(fd, current_addr, (unsigned char) addr, dbuf, &size);
+                        if (status != MSCB_SUCCESS)
+                           printf("Error: %d\n", status);
+                        else if (size != info_var.width)
+                           printf("Error: Received %d bytes instead of %d", size, info_var.width);
+                        else
+                           print_channel(addr, &info_var, dbuf, 0);
 
-                  while (kbhit())
-                     getch();
+                        Sleep(10);
+                     } while (param[2][0] && !kbhit());
+
+                     while (kbhit())
+                        getch();
+                  }
 
                   printf("\n");
                }
@@ -1069,16 +1097,16 @@ void cmd_loop(int fd, char *cmd, int adr)
          int d, status;
 
          puts("Exit with <ESC>\n");
-
-         /* switch SCS-210 into terminal mode */
          c = 0;
-         status = mscb_write(fd, current_addr, 0, &c, 1);
 
          do {
             if (kbhit()) {
                c = getch();
+               if (c == 27)
+                  break;
+
                putchar(c);
-               status = mscb_write(fd, current_addr, 0, &c, 1);
+               status = mscb_write_block(fd, current_addr, 0, &c, 1);
                if (status != MSCB_SUCCESS) {
                   printf("\nError: %d\n", status);
                   break;
@@ -1087,7 +1115,7 @@ void cmd_loop(int fd, char *cmd, int adr)
                if (c == '\r') {
                   putchar('\n');
                   c = '\n';
-                  mscb_write(fd, current_addr, 0, &c, 1);
+                  mscb_write_block(fd, current_addr, 0, &c, 1);
                }
 
             }
@@ -1098,7 +1126,7 @@ void cmd_loop(int fd, char *cmd, int adr)
                putchar(d);
 
             Sleep(10);
-         } while (c != 27);
+         } while (TRUE);
 
          puts("\n");
          while (kbhit())
