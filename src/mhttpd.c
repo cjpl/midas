@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.168  2001/08/30 09:05:58  midas
+  Increased text box size to 80 in start run page
+
   Revision 1.167  2001/08/02 13:07:10  midas
   Fixed a bug in the mail system
 
@@ -5295,7 +5298,7 @@ char  data_str[256];
 
         db_sprintf(data_str, data, key.item_size, j, key.type);
         
-        rsprintf("<td><input type=text size=20 maxlenth=80 name=x%d value=\"%s\"></tr>\n",
+        rsprintf("<td><input type=text size=80 maxlenth=80 name=x%d value=\"%s\"></tr>\n",
                  n++, data_str);
         }
       }
