@@ -4,8 +4,11 @@
  *  TRIUMF Data Acquisition Group, 4004 Wesbrook Mall, Vancouver, B.C. V6T 2A3
  *  Email: online@triumf.ca         Tel: (604) 222-1047    Fax: (604) 222-1074
  *         amaudruz@triumf.ca                            Local:           6234
- * -----------------------------------------------------------------------------
+ * ---------------------------------------------------------------------------
    $Log$
+   Revision 1.26  2000/04/26 19:10:25  pierre
+   -Moved first round of doc++ comments from ybos.h to here
+
    Revision 1.25  2000/02/25 18:53:48  pierre
    - fix typo in function name dm_()
 
@@ -126,7 +129,8 @@
  *
  *          online replay MIDAS YBOS NT UNIX TAPE DISK FTP largeEVT frag/recomp
  *                
-/*---------------------------------------------------------------------------*/
+ */
+
 /* include files */
 /* moved #define INCLUDE_FTPLIB into makefile (!vxWorks) */
 
@@ -155,7 +159,6 @@ INT yb_tid_size[] = {
   0,         /* 7 undefined */
   1,         /* 8 logical*1 */
   };
-
 
 /*---- Hidden prototypes ---------------------------------------------------*/
 /* File fragmentation and recovery */
@@ -256,7 +259,7 @@ struct {
 /*------------------------------------------------------------------*/
 /*------------------------------------------------------------------*/
 INT bk_list (BANK_HEADER * pmbh, char * bklist)
-/********************************************************************\
+/*
   Routine: bk_list
   Purpose: extract the MIDAS bank name listing of an event (pheader+1)
   Input:
@@ -311,7 +314,7 @@ INT bk_list (BANK_HEADER * pmbh, char * bklist)
 
 /*------------------------------------------------------------------*/
 INT bk_find (BANK_HEADER * pmbh, char * bkname, DWORD * bklen, DWORD * bktype, void **pbk)
-/********************************************************************\
+/*
   Routine: bk_find
   Purpose: find the requested bank and return bank info
   
@@ -367,20 +370,17 @@ INT bk_find (BANK_HEADER * pmbh, char * bkname, DWORD * bklen, DWORD * bktype, v
 }
             
 /*------------------------------------------------------------------*/
+/** ybk\_init()
+    \begin{description}
+    \item[Description:] Initializes an event for YBOS banks structure.
+    \item[Remarks:] Before banks can be created in an event, ybk\_init()
+    has to be called first.  See \Ref{YBOS bank examples}.
+    \end{description}
+    @memo Initialize an event.
+    @param plrl pointer to the first DWORD of the event area of event 
+    @return void
+*/
 void  ybk_init(DWORD *plrl)
-/********************************************************************\
-  Routine: ybk_init
-  Purpose: Prepare a YBOS event for a new YBOS bank structure
-           reserve the Logical Record length (LRL)
-           The plrl should ALWAYS remain to the same location.
-           In this case it will point to the LRL.
-  Input:
-    DWORD * plrl    pointer to the top of the YBOS event.
-  Output:
-    none
-  Function value:
-    none
-\********************************************************************/
 {
   *plrl = 0;
   return;
@@ -388,37 +388,43 @@ void  ybk_init(DWORD *plrl)
 
 /*------------------------------------------------------------------*/
 static YBOS_BANK_HEADER *__pbkh;
-void ybk_create(DWORD *pevt, char *bn, DWORD bt, void *pbkdat)
-/********************************************************************\
-  Routine: ybk_create
-  Purpose: fills up the bank header and return the pointer to the 
-           first user space data pointer.
-  Input:
-    DWORD * pevt          pointer to the top of the YBOS event (LRL)
-    char  * bname         Bank name should be char*4
-    DWORD   bt            Bank type can by either
-                          I2_BKTYPE, I1_BKTYPE, I4_BKTYPE, F4_BKTYPE
-  Output:
-    void  *pbkdat         pointer to first valid data of the created bank
-  Function value:
-    none
-\********************************************************************/
+
+/*------------------------------------------------------------------*/
+/** ybk\_create()
+    \begin{description}
+    \item[Description:] Define the following memory area to be a YBOS bank with the
+    given attribute.  See \Ref{YBOS bank examples}.
+    \item[Remarks:] Before banks can be created in an event, ybk\_init(). 
+    has to be called first. YBOS does not support mixed bank type. i.e: all the
+    data are expected to be of the same type. YBOS is a 4 bytes bank aligned structure.
+    Padding is performed at the closing of the bank (see \Ref{ybk\_close}) with values of
+    0x0f or/and 0x0ffb. See \Ref{YBOS bank examples}.
+    \end{description}
+    @memo Create a YBOS bank.
+    @param pevent pointer to the first DWORD of the event area.
+    @param bkname name to be assigned to the breated bank (max 4 char)
+    @param bktype \Ref{YBOS Bank Types} of the values for the entire created bank.
+    @param pbkdat return pointer to the first empty data location.
+    @return void
+*/
+void ybk_create(DWORD *plrl, char *bkname, DWORD bktype, void *pbkdat)
 {
   DWORD dname=0;
-  __pbkh         = (YBOS_BANK_HEADER *) ( ((DWORD *)(pevt+1)) + (*(DWORD *)pevt) );
-  strncpy((char *) &dname, bn, 4);
-  __pbkh->name   = *((DWORD *)bn);
+  __pbkh         = (YBOS_BANK_HEADER *) ( ((DWORD *)(plrl+1)) + (*(DWORD *)plrl) );
+  strncpy((char *) &dname, bkname, 4);
+  __pbkh->name   = *((DWORD *)bkname);
   __pbkh->number = 1;
   __pbkh->index  = 0;
   __pbkh->length = 0;
-  __pbkh->type   = bt;
+  __pbkh->type   = bktype;
   *((DWORD **)pbkdat) = (DWORD *)(__pbkh + 1);
   return;
 }
 
 /*------------------------------------------------------------------*/
 static DWORD *__pchaosi4;
-void ybk_create_chaos(DWORD *pevt, char *bn, DWORD bt, void *pbkdat)
+/*------------------------------------------------------------------*/
+void ybk_create_chaos(DWORD *plrl, char *bkname, DWORD bktype, void *pbkdat)
 /********************************************************************\
   Routine: ybk_create
   Purpose: fills up the bank header,
@@ -427,7 +433,7 @@ void ybk_create_chaos(DWORD *pevt, char *bn, DWORD bt, void *pbkdat)
   Input:
     DWORD * pevt          pointer to the top of the YBOS event (LRL)
     char  * bname         Bank name should be char*4
-    DWORD   bt            Bank type can by either
+    DWORD   bktype            Bank type can by either
                           I2_BKTYPE, I1_BKTYPE, I4_BKTYPE, F4_BKTYPE
   Output:
     void    *pbkdat       pointer to first valid data of the created bank
@@ -436,13 +442,13 @@ void ybk_create_chaos(DWORD *pevt, char *bn, DWORD bt, void *pbkdat)
 \********************************************************************/
 {
   DWORD dname = 0;
-  __pbkh         = (YBOS_BANK_HEADER *) ( (pevt+1) + (*pevt) );
-  strncpy((char *) &dname, bn, 4);
-  __pbkh->name   = *((DWORD *)bn);
+  __pbkh         = (YBOS_BANK_HEADER *) ( (plrl+1) + (*plrl) );
+  strncpy((char *) &dname, bkname, 4);
+  __pbkh->name   = *((DWORD *)bkname);
   __pbkh->number = 1;
   __pbkh->index  = 0;
   __pbkh->length = 0;
-  __pbkh->type   = bt;
+  __pbkh->type   = bktype;
 
   *((DWORD **)pbkdat) = (DWORD *)(__pbkh + 1);
   __pchaosi4 = (DWORD *)(*(DWORD *)pbkdat);
@@ -451,19 +457,22 @@ void ybk_create_chaos(DWORD *pevt, char *bn, DWORD bt, void *pbkdat)
 }
 
 /*------------------------------------------------------------------*/
-void  ybk_close(DWORD *pevt, void *pbkdat)
-/********************************************************************\
-  Routine: ybk_close
-  Purpose: patch the end of the event to the next 4 byte boundary,
-           fills up the bank header, update the LRL (pevt)
-  Input:
-    DWORD * pevt          pointer to the top of the YBOS event (LRL).
-    void    *pbkdat       pointer to first valid data of the created bank
-  Output:
-    none
-  Function value:
-    none
-\********************************************************************/
+/** ybk\_close()
+    \begin{description}
+    \item[Description:] Close the YBOS bank previously created by \Ref{ybk_create}.
+    \item[Remarks:] The data pointer pdata must be obtained by \Ref{ybk_create()} and
+    used as an address to fill a bank. It is incremented with every value written
+    to the bank and finally points to a location just after the last byte of the
+    bank. It is then passed to ybk\_close() to finish the bank creation. YBOS is a
+    4 bytes bank aligned structure. Padding is performed at the closing of the bank
+    with values of 0x0f or/and 0x0ffb. See \Ref{YBOS bank examples}.
+    \end{description}
+    @memo Close YBOS bank.
+    @param plrl pointer to current composed event.
+    @param pbkdata  pointer to the current data.
+    @return void
+ */
+void  ybk_close(DWORD *plrl, void *pbkdat)
 {
   DWORD tdlen;
   /* align pbkdat to I*4 */
@@ -485,12 +494,12 @@ void  ybk_close(DWORD *pevt, void *pbkdat)
   __pbkh->length = (tdlen + 4) / 4;       /* (+Bank Type &@#$!) YBOS bank length */
 
   /* adjust Logical Record Length (entry point from the system) */
-  *pevt += __pbkh->length + (sizeof(YBOS_BANK_HEADER)/4) - 1;
+  *plrl += __pbkh->length + (sizeof(YBOS_BANK_HEADER)/4) - 1;
   return;
 }
 
 /*------------------------------------------------------------------*/
-void  ybk_close_chaos(DWORD *pevt, DWORD bt, void *pbkdat)
+void  ybk_close_chaos(DWORD *plrl, DWORD bktype, void *pbkdat)
 /********************************************************************\
   Routine: ybk_close_chaos
   Purpose: patch the end of the event to the next 4 byte boundary,
@@ -508,58 +517,56 @@ void  ybk_close_chaos(DWORD *pevt, DWORD bt, void *pbkdat)
     none
 \********************************************************************/
 {
-	switch (bt)
-	  {
-    case D8_BKTYPE:
+  switch (bktype)
+  {
+  case D8_BKTYPE:
     *__pchaosi4 = (DWORD) ((double *)pbkdat - (double *)__pchaosi4 -1);
     break;
-	  case I4_BKTYPE:
-	  case F4_BKTYPE:
-	   *__pchaosi4 = (DWORD) ((DWORD *)pbkdat - __pchaosi4 - 1);
-	   break;
-	 case I2_BKTYPE:
-	   *__pchaosi4 = (DWORD) (  (WORD *)pbkdat - (WORD *)__pchaosi4 - 2);
-	   SWAP_D2WORD (__pchaosi4);
-     break;
-	 case I1_BKTYPE:
-	 case A1_BKTYPE:
-	   *__pchaosi4 = (DWORD) ( (BYTE *)pbkdat - (BYTE *)__pchaosi4 - 4);
-	   break;
-	   }
-
-  ybk_close(pevt, pbkdat);
+  case I4_BKTYPE:
+  case F4_BKTYPE:
+    *__pchaosi4 = (DWORD) ((DWORD *)pbkdat - __pchaosi4 - 1);
+    break;
+  case I2_BKTYPE:
+    *__pchaosi4 = (DWORD) (  (WORD *)pbkdat - (WORD *)__pchaosi4 - 2);
+    SWAP_D2WORD (__pchaosi4);
+    break;
+  case I1_BKTYPE:
+  case A1_BKTYPE:
+    *__pchaosi4 = (DWORD) ( (BYTE *)pbkdat - (BYTE *)__pchaosi4 - 4);
+    break;
+  }
+  
+  ybk_close(plrl, pbkdat);
 }
 
 /*------------------------------------------------------------------*/
-INT ybk_size(DWORD *pevt)
-/********************************************************************\
-  Routine: ybk_init
-  Purpose: Compute the overall byte size of the last closed YBOS event
-  Input:
-    DWORD * pevt    pointer to the top of the YBOS event.
-  Output:
-    none
-  Function value:
-    INT size in byte including the LRL
-\********************************************************************/
+/** ybk\_size()
+    \begin{description}
+    \item[Description:] Returns the size in bytes of the event composed of YBOS bank(s).
+    \item[Remarks:]
+    \end{description}
+    @memo compute event size in bytes.
+    @param plrl pointer to the area of event
+    @return number of bytes contained in data area of the event 
+*/
+INT ybk_size(DWORD *plrl)
 {
-  return (*((DWORD *)pevt) * 4 + 4);
+  return (*((DWORD *)plrl) * 4 + 4);
 }
 
 /*------------------------------------------------------------------*/
+/** ybk\_list()
+    \begin{description}
+    \item[Description:] Returns the size in bytes of the event composed of YBOS bank(s).
+    \item[Remarks:] The bklist has to be a predefined string of max size of
+    YB\_STRING\_BANKLIST\_MAX.
+    \end{description}
+    @memo Extract the bank list of an event composed of YBOS banks.
+    @param plrl pointer to the area of event
+    @param bklist Filled character string of the YBOS bank names found in the event.
+    @return number of banks found in this event.
+*/
 INT   ybk_list (DWORD *plrl , char *bklist)
-/********************************************************************\
-  Routine: ybk_list
-  Purpose: extract the YBOS bank name listing of a pointed event (->LRL)
-  Input:
-    DWORD * plrl            pointer to the YBOS event pointing to lrl
-                            has to be booked with YB_STRING_BANKLIST_MAX
-  Output:
-    char *bklist            returned ASCII string
-  Function value:
-    YBOS_WRONG_BANK_TYPE    bank type unknown
-    INT nbk                 number of bank found in this event
-\********************************************************************/
 {
 
   YBOS_BANK_HEADER  *pbk;
@@ -580,61 +587,58 @@ INT   ybk_list (DWORD *plrl , char *bklist)
 
   /* scan event */
   while ((DWORD *)pbk < pendevt)
+  {
+    /* update the number of bank counter */
+    nbk++;
+    
+    if (nbk> YB_BANKLIST_MAX)
     {
-      /* update the number of bank counter */
-      nbk++;
-
-      if (nbk> YB_BANKLIST_MAX)
-        {
-          cm_msg(MINFO,"ybk_list","over %i banks -> truncated",YB_BANKLIST_MAX);
-          return (nbk);
-        }
-
-      /* append ybos bank name to list */
-      strncat (bklist,(char *) &(pbk->name),4);
-
-      /* skip to next bank */
-      pbk = (YBOS_BANK_HEADER *)(((DWORD *) pbk) + pbk->length + 4);
+      cm_msg(MINFO,"ybk_list","over %i banks -> truncated",YB_BANKLIST_MAX);
+      return (nbk);
     }
+    
+    /* append ybos bank name to list */
+    strncat (bklist,(char *) &(pbk->name),4);
+    
+    /* skip to next bank */
+    pbk = (YBOS_BANK_HEADER *)(((DWORD *) pbk) + pbk->length + 4);
+  }
   return(nbk);
 }
 
 /*------------------------------------------------------------------*/
+/** ybk\_find()
+    \begin{description}
+    \item[Description:] Find the requested bank and return the infirmation if the bank as well
+    as the pointer to the top of the data section.
+    \item[Remarks:]
+    \end{description}
+    @memo Find bank in event.
+    @param plrl pointer to the area of event.
+    @param bkname name of the bank to be located.
+    @param bklen  returned length in 4bytes unit of the bank.
+    @param bktype returned bank type.
+    @param pbkdata pointer to the first data of the found bank.
+    @return  YB\_SUCCESS, YB\_BANK\_NOT\_FOUND, YB\_WRONG\_BANK\_TYPE
+*/
 INT ybk_find (DWORD *plrl, char * bkname, DWORD * bklen, DWORD * bktype, void **pbk)
-/********************************************************************\
-  Routine: ybk_find
-  Purpose: find the requested bank and return the pointer to the
-           top of the data section
-  Input:
-    DWORD * plrl           pointer to the YBOS event pointing to lrl
-    char  * bkname         bank name
-  Output:
-    DWORD * pbklen         data section length in I*4
-    DWORD * pbktype        bank type
-    void  ** pbk           pointer to the bank name
-  Function value:
-    YB_SUCCESS
-    YB_BANK_NOT_FOUND
-    YB_WRONG_BANK_TYPE
-
-\********************************************************************/
 {
   YBOS_BANK_HEADER * pevt;
   DWORD    *pendevt;
-
+  
   pevt = (YBOS_BANK_HEADER *) (plrl+1);
   
   /* end of event pointer skip LRL, point to YBOS_BANK_HEADER */
   pendevt = (DWORD *)pevt + *plrl;
-
+  
   /* check if bank_type in range*/
   if (pevt->type >= MAX_BKTYPE)
     return (YB_WRONG_BANK_TYPE);
-
+  
   /* init returned variables */
   *bklen  = 0;
   *bktype = 0;
-
+  
   /* scan event */
   while ((DWORD *)pevt < pendevt)
   {
@@ -643,7 +647,7 @@ INT ybk_find (DWORD *plrl, char * bkname, DWORD * bklen, DWORD * bktype, void **
     { /* bank name match */
       /* extract bank length */
       *bklen = pevt->length - 1;  /* exclude bank type */
-
+      
       /* extract bank type */
       *bktype = pevt->type;
 
@@ -661,22 +665,19 @@ INT ybk_find (DWORD *plrl, char * bkname, DWORD * bklen, DWORD * bktype, void **
 }
 
 /*------------------------------------------------------------------*/
+/** ybk\_locate()
+    \begin{description}
+    \item[Description:] Locate the requested bank and return the pointer to the
+    top of the data section.
+    \item[Remarks:]
+    \end{description}
+    @memo Locate bank in event.
+    @param plrl pointer to the area of event
+    @param bkname name of the bank to be located.
+    @param pdata pointer to the first data of the located bank.
+    @return  YB\_SUCCESS, YB\_BANK\_NOT\_FOUND, YB\_WRONG\_BANK\_TYPE
+*/
 INT ybk_locate (DWORD *plrl, char * bkname, void *pdata)
-/********************************************************************\
-  Routine: ybk_locate
-  Purpose: find the requested bank and return the pointer to the
-           top of the data section
-  Input:
-    DWORD * plrl           pointer to the YBOS event pointing to lrl
-    char  * bkname         bank name
-  Output:
-    void  * pdata          pointer to the data section
-  Function value:
-    YB_SUCCESS
-    YB_BANK_NOT_FOUND
-    YB_WRONG_BANK_TYPE
-
-\********************************************************************/
 {
   YBOS_BANK_HEADER * pybk;
   DWORD    *pendevt;
@@ -712,20 +713,20 @@ INT ybk_locate (DWORD *plrl, char * bkname, void *pdata)
 }
 
 /*------------------------------------------------------------------*/
+/** ybk\_iterate()
+    \begin{description}
+    \item[Description:] Returns the bank header pointer and data pointer of the given
+    bank name.
+    \item[Remarks:]
+    \end{description}
+    @memo Find bank in event.
+    @param plrl pointer to the area of event.
+    @param bkname name of the bank to be located.
+    @param pybkh pointer to the YBOS bank header.
+    @param pdata pointer to the first data of the current bank.
+    @return  data length in 4 bytes unit. return 0 (zero) if no more bank found.
+*/
 INT   ybk_iterate (DWORD *plrl, YBOS_BANK_HEADER ** pybkh , void ** pdata)
-/********************************************************************\
-  Routine: ybk_iterate
-  Purpose: return the pointer to the bank name and data bank section
-           of the current pointed event.
-  Input:
-  DWORD * plrl                   pointer to the YBOS event (at the LRL)
-  Output:
-  YBOS_BANK_HEADER ** pybkh      pointer to the top of the current bank
-                                 if (pybkh == NULL) no more bank in event
-  void ** pdata                pointer to the data bank section
-
-  Function value:                data length in I*4
-\********************************************************************/
 {
   static int      len;
   static DWORD  * pendevt;
@@ -740,26 +741,26 @@ INT   ybk_iterate (DWORD *plrl, YBOS_BANK_HEADER ** pybkh , void ** pdata)
       *pybkh = (YBOS_BANK_HEADER *) (plrl+1);
 						
       if ((*pybkh)->type > I1_BKTYPE)
-								{
-										*pybkh = *pdata = NULL;
-										return (YB_WRONG_BANK_TYPE);
-								}
-						
+      {
+	*pybkh = *pdata = NULL;
+	return (YB_WRONG_BANK_TYPE);
+      }
+      
       /* end of event pointer (+ lrl) */
       pendevt = plrl + *plrl;
-						
+      
       /* skip the EVID bank if present */
       /*-PAA- keep it in for a little while Dec 17/98
-      *((DWORD *)bname) = (*pybkh)->name;
-      if (strncmp (bname,"EVID",4) == 0)
-				{
-					len = (*pybkh)->length;
-					(YBOS_BANK_HEADER *)(*pybkh)++;
-					pybk = (DWORD *) *pybkh;
-					pybk += len - 1;
-					*pybkh = (YBOS_BANK_HEADER *) pybk;
-				}
-*/
+       *((DWORD *)bname) = (*pybkh)->name;
+       if (strncmp (bname,"EVID",4) == 0)
+       {
+       len = (*pybkh)->length;
+       (YBOS_BANK_HEADER *)(*pybkh)++;
+       pybk = (DWORD *) *pybkh;
+       pybk += len - 1;
+       *pybkh = (YBOS_BANK_HEADER *) pybk;
+       }
+      */
     }
   else
     {
