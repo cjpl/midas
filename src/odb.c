@@ -6,6 +6,9 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.69  2003/10/30 15:17:45  midas
+  Return from db_set_data if num_values==0
+
   Revision 1.68  2003/10/28 09:48:18  midas
   Made db_create_record() atomic by locking ODB
 
@@ -4737,6 +4740,9 @@ KEY              *pkey;
     return DB_INVALID_HANDLE;
     }
 
+  if (num_values == 0)
+    return DB_INVALID_PARAM;
+
   db_lock_database(hDB);
 
   pheader  = _database[hDB-1].database_header;
@@ -5232,6 +5238,9 @@ INT db_merge_data(HNDLE hDB, HNDLE hKeyRoot, char *name, void *data, INT data_si
 {
 HNDLE hKey;
 INT   status, old_size;
+
+  if (num_values == 0)
+    return DB_INVALID_PARAM;
 
   status = db_find_key(hDB, hKeyRoot, name, &hKey);
   if (status != DB_SUCCESS)
