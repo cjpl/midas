@@ -42,19 +42,6 @@ copy doc\install_nt.txt %dir%\install.txt > nul
 copy doc\overview.txt %dir% > nul
 
 
-mkdir %dir%\nt
-mkdir %dir%\nt\bin
-xcopy nt\bin\*.exe %dir%\nt\bin\ > nul
-
-mkdir %dir%\nt\lib
-xcopy nt\lib\*.lib %dir%\nt\lib\ > nul
-xcopy nt\lib\*.dll %dir%\nt\lib\ > nul
-xcopy nt\lib\mana.obj %dir%\nt\lib\ > nul
-xcopy nt\lib\mfe.obj %dir%\nt\lib\ > nul
-mkdir %dir%\nt\directio
-xcopy nt\directio\*.* %dir%\nt\directio\ > nul
-mkdir %dir%\nt\service
-xcopy nt\service\*.* %dir%\nt\service\ > nul
 mkdir %dir%\nt\hvedit
 xcopy nt\hvedit\*.* %dir%\nt\hvedit\ > nul
 mkdir %dir%\nt\hvedit\hlp
@@ -82,7 +69,7 @@ net use n: \\pc2075\midas mi_das /user:midas
 
 echo Sending archive to midas.psi.ch
 
-cp midas%version%.exe n:\html\download\
-cp midas%version%.zip n:\html\download\
+cp midas%version%.exe n:\html\download\windows\
+cp midas%version%.zip n:\html\download\windows\
 
 rm midas%version%.exe > nul
