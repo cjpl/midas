@@ -147,6 +147,12 @@ abort is done, which is equivalent of killing the process (kill -9 under unix).
 - Added -P flag into analyzer to protect certain subtrees from being overwritten
   by the ODB dump from the .mid file.
 
+- Added "/Analyzer/Output/Events to ODB" flag to prevent analyzer from writing
+  events to the ODB every second. This can be useful when dealing with large
+  events which should not go to the ODB. This flag is off by default and has to
+  be turned on if one wants to see copies of analyzed events in the ODB under
+  /Equipment/<name>/Variables.
+
 Version 1.7.1, released Feb 9, 2000
 -----------------------------------
 
