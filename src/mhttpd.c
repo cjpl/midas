@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.60  1999/10/05 13:36:15  midas
+  Use strencode
+
   Revision 1.59  1999/10/05 13:25:43  midas
   Evaluate global alarm flag
 
@@ -1206,28 +1209,32 @@ HNDLE hDB;
 
 /*------------------------------------------------------------------*/
 
-void el_format(char *text, char *encoding)
+void strencode(char *text)
 {
 int i;
 
   for (i=0 ; i<(int) strlen(text) ; i++)
     {
-    if (encoding[0] == 'H')
-      switch (text[i])
-        {
-        default: rsprintf("%c", text[i]);
-        }
-    else
-      switch (text[i])
-        {
-        case '\n': rsprintf("<br>\n"); break;
-        case '<': rsprintf("&lt;"); break;
-        case '>': rsprintf("&gt;"); break;
-        case '&': rsprintf("&amp;"); break;
-        case '\"': rsprintf("&quot;"); break;
-        default: rsprintf("%c", text[i]);
-        }
+    switch (text[i])
+      {
+      case '\n': rsprintf("<br>\n"); break;
+      case '<': rsprintf("&lt;"); break;
+      case '>': rsprintf("&gt;"); break;
+      case '&': rsprintf("&amp;"); break;
+      case '\"': rsprintf("&quot;"); break;
+      default: rsprintf("%c", text[i]);
+      }
     }
+}
+
+/*------------------------------------------------------------------*/
+
+void el_format(char *text, char *encoding)
+{
+  if (equal_ustring(encoding, "HTML"))
+    rsprintf(text);
+  else
+    strencode(text);
 }
 
 void show_elog_new(char *path)
@@ -3545,8 +3552,12 @@ KEY    key;
           rsprintf("<tr><td bgcolor=#FFFF00>%s<td><a href=\"%s\">%s (%s)</a><br></tr>\n", 
                     keyname, ref, data_str, hex_str);
         else
-          rsprintf("<tr><td bgcolor=#FFFF00>%s<td><a href=\"%s\">%s</a><br></tr>\n", 
-                    keyname, ref, data_str);
+          {
+          rsprintf("<tr><td bgcolor=#FFFF00>%s<td><a href=\"%s\">", 
+                    keyname, ref);
+          strencode(data_str);
+          rsprintf("</a><br></tr>\n");
+          }
         }
       else
         {
@@ -4032,7 +4043,6 @@ char  str[256], ref[256], condition[256], value[256];
     rsprintf("<tr><td align=center colspan=6 bgcolor=#C0C0FF><a href=\"%s\"><h1>Alarm system disabled</h1></a></tr>", ref);
     }
 
-
   /*---- alarms ----*/
 
   rsprintf("<tr><th>Alarm<th>State<th>First triggered<th>Class<th>Condition<th>Current value</tr>\n");
@@ -4103,7 +4113,10 @@ char  str[256], ref[256], condition[256], value[256];
         rsprintf("<td>%s", str);
         }
       else
-        rsprintf("<td>%s", condition);
+        {
+        rsprintf("<td>");
+        strencode(condition);
+        }
 
       if (!equal_ustring(condition, "INTERNAL"))
         {
