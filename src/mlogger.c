@@ -6,6 +6,9 @@
   Contents:     MIDAS logger program
 
   $Log$
+  Revision 1.27  1999/10/18 14:47:16  midas
+  fixed compiler warning
+
   Revision 1.26  1999/10/18 14:46:04  midas
   fixed compiler warning
 
@@ -1302,7 +1305,7 @@ INT log_close(LOG_CHN *log_chn, INT run_number)
 INT log_write(LOG_CHN *log_chn, EVENT_HEADER *pevent)
 {
 INT    status, size, izero, watchdog_timeout;
-DWORD  actual_time, start_time
+DWORD  actual_time, start_time;
 BOOL   watchdog_flag;
 static BOOL stop_requested = FALSE;
 static DWORD last_checked = 0;
