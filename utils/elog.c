@@ -6,6 +6,9 @@
   Contents:     Electronic logbook utility   
 
   $Log$
+  Revision 1.16  2001/06/19 10:55:40  midas
+  Variable number of attachments, revised attachment editing
+
   Revision 1.15  2001/05/23 13:15:34  midas
   Fixed bug with category
 
@@ -46,6 +49,8 @@
 #endif
 
 typedef int INT;
+
+#define MAX_ATTACHMENTS 10
 
 /*------------------------------------------------------------------*/
 
@@ -98,7 +103,7 @@ char *p;
 
 INT query_params(char *host_name, int *port, char *logbook, char *password, char *author, char *type, 
                  char *category, char *subject, char *text, 
-                 char *textfile, char attachment[3][256])
+                 char *textfile, char attachment[MAX_ATTACHMENTS][256])
 {
 char str[1000], tmpfile[256];
 FILE *f;
@@ -138,13 +143,13 @@ int  i, query_attachment;
 
   if (!type[0])
     {
-    printf("Enter message type:\n");
+    printf("Enter message type: ");
     sgets(type, 80);
     }
 
   if (!category[0])
     {
-    printf("Enter category:\n");
+    printf("Enter category: ");
     sgets(category, 80);
     }
 
@@ -238,7 +243,7 @@ int  i, query_attachment;
 
   if (query_attachment)
     {
-    for (i=0 ; i<3 ; i++)
+    for (i=0 ; i<MAX_ATTACHMENTS ; i++)
       {
       do
         {
@@ -268,9 +273,9 @@ char request[600000], response[10000], content[600000];
 INT submit_elog(char *host, int port, char *experiment, char *passwd,
                 char *author, char *type, char *category, char *subject, 
                 char *text,
-                char *afilename1, char *buffer1, INT buffer_size1, 
-                char *afilename2, char *buffer2, INT buffer_size2, 
-                char *afilename3, char *buffer3, INT buffer_size3)
+                char afilename[MAX_ATTACHMENTS][256], 
+                char *buffer[MAX_ATTACHMENTS], 
+                INT buffer_size[MAX_ATTACHMENTS])
 /********************************************************************\
 
   Routine: submit_elog
@@ -288,9 +293,9 @@ INT submit_elog(char *host, int port, char *experiment, char *passwd,
     char   *subject         Subject
     char   *text            Message text
 
-    char   *afilename1/2/3  File name of attachment
-    char   *buffer1/2/3     File contents
-    INT    *buffer_size1/2/3 Size of buffer in bytes
+    char   afilename[]      File names of attachments
+    char   *buffer[]        Attachment contents
+    INT    buffer_size[]    Size of buffer in bytes
 
   Function value:
     EL_SUCCESS              Successful completion
@@ -384,54 +389,23 @@ char                 host_name[256], boundary[80], str[80], *p;
   content_length = strlen(content);
   p = content+content_length;
 
-  if (afilename1[0])
-    {
-    sprintf(p, "Content-Disposition: form-data; name=\"attfile1\"; filename=\"%s\"\r\n\r\n", 
-            afilename1);
+  for (i=0 ; i<MAX_ATTACHMENTS ; i++)
+    if (afilename[i][0])
+      {
+      sprintf(p, "Content-Disposition: form-data; name=\"attfile%d\"; filename=\"%s\"\r\n\r\n", 
+              i+1, afilename[i]);
 
-    content_length += strlen(p);
-    p += strlen(p);
-    memcpy(p, buffer1, buffer_size1);
-    p += buffer_size1;
-    strcpy(p, boundary);
-    strcat(p, "\r\n");
+      content_length += strlen(p);
+      p += strlen(p);
+      memcpy(p, buffer[i], buffer_size[i]);
+      p += buffer_size[i];
+      strcpy(p, boundary);
+      strcat(p, "\r\n");
 
-    content_length += buffer_size1 + strlen(p);
-    p += strlen(p);
-    }
+      content_length += buffer_size[i] + strlen(p);
+      p += strlen(p);
+      }
   
-  if (afilename2[0])
-    {
-    sprintf(p, "Content-Disposition: form-data; name=\"attfile2\"; filename=\"%s\"\r\n\r\n", 
-            afilename2);
-
-    content_length += strlen(p);
-    p += strlen(p);
-    memcpy(p, buffer2, buffer_size2);
-    p += buffer_size2;
-    strcpy(p, boundary);
-    strcat(p, "\r\n");
-
-    content_length += buffer_size2 + strlen(p);
-    p += strlen(p);
-    }
-
-  if (afilename3[0])
-    {
-    sprintf(p, "Content-Disposition: form-data; name=\"attfile3\"; filename=\"%s\"\r\n\r\n", 
-            afilename3);
-
-    content_length += strlen(p);
-    p += strlen(p);
-    memcpy(p, buffer3, buffer_size3);
-    p += buffer_size3;
-    strcpy(p, boundary);
-    strcat(p, "\r\n");
-
-    content_length += buffer_size3 + strlen(p);
-    p += strlen(p);
-    }
-
   /* compose request */
   sprintf(request, "POST / HTTP/1.0\r\n");
   sprintf(request+strlen(request), "Content-Type: multipart/form-data; boundary=%s\r\n", boundary);
@@ -501,14 +475,14 @@ main(int argc, char *argv[])
 {
 char      author[80], type[80], category[80], subject[256], text[10000];
 char      host_name[256], logbook[32], textfile[256], password[80];
-char      *buffer[3], attachment[3][256];
-INT       att_size[3];
+char      *buffer[MAX_ATTACHMENTS], attachment[MAX_ATTACHMENTS][256];
+INT       att_size[MAX_ATTACHMENTS];
 INT       i, n, status, fh, n_att, size, port;
 
   author[0] = type[0] = category[0] = subject[0] = text[0] = textfile[0] = 0;
   host_name[0] = logbook[0] = password[0] = n_att = 0;
   port = 80;
-  for (i=0 ; i<3 ; i++)
+  for (i=0 ; i<MAX_ATTACHMENTS ; i++)
     {
     attachment[i][0] = 0;
     buffer[i] = NULL;
@@ -596,7 +570,7 @@ usage:
 
   /*---- open attachment file ----*/
 
-  for (i = 0 ; i<3 ; i++)
+  for (i = 0 ; i<MAX_ATTACHMENTS ; i++)
     {
     if (!attachment[i][0])
       break;
@@ -630,11 +604,9 @@ usage:
 
   /* now submit message */
   submit_elog(host_name, port, logbook, password, author, type, category, subject, text,
-             attachment[0], buffer[0], att_size[0], 
-             attachment[1], buffer[1], att_size[1], 
-             attachment[2], buffer[2], att_size[2]);
+             attachment, buffer, att_size); 
 
-  for (i=0 ; i<3 ; i++)
+  for (i=0 ; i<MAX_ATTACHMENTS ; i++)
     if (buffer[i])
       free(buffer[i]);
 
