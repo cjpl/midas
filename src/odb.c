@@ -6,6 +6,9 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.59  2003/04/17 07:32:10  midas
+  Improved db_validate_key speed dramatically
+
   Revision 1.58  2003/04/15 10:50:21  midas
   Improved ODB validation
 
@@ -672,6 +675,7 @@ static int db_validate_key(DATABASE_HEADER *pheader, int recurse, const char *pa
 {
 KEYLIST *pkeylist;
 int i;
+static time_t t_min = 0, t_max;
 
   if (!db_validate_key_offset(pheader, (PTYPE)pkey - (PTYPE)pheader))
     {
@@ -702,8 +706,14 @@ int i;
     }
 
   /* check access time, consider valid if within +- 10 years */
+  if (t_min == 0)
+    {
+    t_min = ss_time() - 3600*24*365*10;
+    t_max = ss_time() + 3600*24*365*10;
+    }
+  
   if (pkey->last_written > 0 &&
-      ((DWORD)pkey->last_written < ss_time() - 3600*24*365*10 || (DWORD)pkey->last_written > ss_time() + 3600*24*365*10))
+      (pkey->last_written < t_min || pkey->last_written > t_max))
     {
     cm_msg(MERROR, "db_validate_key", "Warning: invalid access time, key \"%s\", time %d", path, pkey->last_written);
     return 0;
