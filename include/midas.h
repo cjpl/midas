@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.105  2003/03/17 06:36:55  olchansk
+  really remove Windows-style "\r" characters
+
   Revision 1.104  2002/10/22 03:46:33  pierre
   add SS_NO_TAPE
 
