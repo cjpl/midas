@@ -14,6 +14,10 @@
                 Brown, Prentice Hall
 
   $Log$
+  Revision 1.7  1998/10/27 10:53:48  midas
+  - Added run start notification
+  - Added ss_shell() for NT
+
   Revision 1.6  1998/10/22 12:40:34  midas
   Added "oflag" to ss_tape_open()
 
@@ -874,6 +878,206 @@ INT ss_spawnv(INT mode, char *cmdname, char *argv[])
       /* catch SIGCHLD signal to avoid <defunc> processes */
       signal(SIGCHLD, catch_sigchld);
     }
+
+  return SS_SUCCESS;
+
+#endif /* OS_UNIX */
+}
+
+/*------------------------------------------------------------------*/
+
+INT ss_shell(int sock)
+/********************************************************************\
+
+  Routine: ss_shell
+
+  Purpose: Execute shell via socket (like telnetd)
+
+  Input:
+    int  sock        Socket
+
+  Output:
+    none
+
+  Function value:
+    SS_SUCCESS       Successful completeion
+
+\********************************************************************/
+{
+#ifdef OS_WINNT
+
+HANDLE hChildStdinRd, hChildStdinWr, hChildStdinWrDup, 
+       hChildStdoutRd, hChildStdoutWr, 
+       hChildStderrRd, hChildStderrWr, 
+       hSaveStdin, hSaveStdout, hSaveStderr; 
+ 
+SECURITY_ATTRIBUTES saAttr; 
+PROCESS_INFORMATION piProcInfo; 
+STARTUPINFO         siStartInfo; 
+char                buffer[256], cmd[256]; 
+DWORD               dwRead, dwWritten, dwAvail, i, i_cmd;
+fd_set              readfds;
+struct timeval      timeout;
+
+  // Set the bInheritHandle flag so pipe handles are inherited. 
+  saAttr.nLength = sizeof(SECURITY_ATTRIBUTES); 
+  saAttr.bInheritHandle = TRUE; 
+  saAttr.lpSecurityDescriptor = NULL; 
+ 
+  // Save the handle to the current STDOUT. 
+  hSaveStdout = GetStdHandle(STD_OUTPUT_HANDLE); 
+ 
+  // Create a pipe for the child's STDOUT. 
+  if (! CreatePipe(&hChildStdoutRd, &hChildStdoutWr, &saAttr, 0)) 
+    return 0; 
+ 
+  // Set a write handle to the pipe to be STDOUT. 
+  if (! SetStdHandle(STD_OUTPUT_HANDLE, hChildStdoutWr)) 
+    return 0; 
+
+
+  // Save the handle to the current STDERR. 
+  hSaveStderr = GetStdHandle(STD_ERROR_HANDLE); 
+ 
+  // Create a pipe for the child's STDERR. 
+  if (! CreatePipe(&hChildStderrRd, &hChildStderrWr, &saAttr, 0)) 
+    return 0; 
+ 
+  // Set a read handle to the pipe to be STDERR. 
+  if (! SetStdHandle(STD_ERROR_HANDLE, hChildStderrWr)) 
+    return 0; 
+
+  
+  // Save the handle to the current STDIN. 
+  hSaveStdin = GetStdHandle(STD_INPUT_HANDLE); 
+ 
+  // Create a pipe for the child's STDIN. 
+  if (! CreatePipe(&hChildStdinRd, &hChildStdinWr, &saAttr, 0)) 
+    return 0; 
+ 
+  // Set a read handle to the pipe to be STDIN. 
+  if (! SetStdHandle(STD_INPUT_HANDLE, hChildStdinRd)) 
+    return 0; 
+ 
+  // Duplicate the write handle to the pipe so it is not inherited. 
+  if (!DuplicateHandle(GetCurrentProcess(), hChildStdinWr, 
+      GetCurrentProcess(), &hChildStdinWrDup, 0, 
+      FALSE,                  // not inherited 
+      DUPLICATE_SAME_ACCESS))
+    return 0; 
+ 
+  CloseHandle(hChildStdinWr); 
+ 
+  // Now create the child process. 
+  memset(&siStartInfo, 0, sizeof(siStartInfo));
+  siStartInfo.cb = sizeof(STARTUPINFO); 
+  siStartInfo.lpReserved = NULL; 
+  siStartInfo.lpReserved2 = NULL; 
+  siStartInfo.cbReserved2 = 0; 
+  siStartInfo.lpDesktop = NULL;  
+  siStartInfo.dwFlags = 0; 
+ 
+  if (!CreateProcess(NULL, 
+      "cmd /Q",         // command line 
+      NULL,          // process security attributes 
+      NULL,          // primary thread security attributes 
+      TRUE,          // handles are inherited 
+      0,             // creation flags 
+      NULL,          // use parent's environment 
+      NULL,          // use parent's current directory 
+      &siStartInfo,  // STARTUPINFO pointer 
+      &piProcInfo))  // receives PROCESS_INFORMATION 
+    return 0;
+ 
+  // After process creation, restore the saved STDIN and STDOUT. 
+  SetStdHandle(STD_INPUT_HANDLE, hSaveStdin);
+  SetStdHandle(STD_OUTPUT_HANDLE, hSaveStdout);
+  SetStdHandle(STD_ERROR_HANDLE, hSaveStderr);
+ 
+  i_cmd = 0;
+
+  do
+    {
+    // query stderr
+    do
+      {
+      if (!PeekNamedPipe(hChildStderrRd, buffer, 256, &dwRead, &dwAvail, NULL))
+        break;
+    
+      if (dwRead > 0)
+        {
+        ReadFile(hChildStderrRd, buffer, 256, &dwRead, NULL);
+        send(sock, buffer, dwRead, 0);
+        }
+      } while (dwAvail > 0);
+
+    // query stdout
+    do
+      {
+      if (!PeekNamedPipe(hChildStdoutRd, buffer, 256, &dwRead, &dwAvail, NULL))
+        break;
+      if (dwRead > 0)
+        {
+        ReadFile(hChildStdoutRd, buffer, 256, &dwRead, NULL);
+        send(sock, buffer, dwRead, 0);
+        }
+      } while (dwAvail > 0);
+
+
+    // check if subprocess still alive
+    if (!GetExitCodeProcess(piProcInfo.hProcess, &i))
+      break;
+    if (i != STILL_ACTIVE)
+      break;
+
+    // query network socket
+    FD_ZERO(&readfds);
+    FD_SET(sock, &readfds);
+    timeout.tv_sec  = 0;
+    timeout.tv_usec = 100;
+    select(FD_SETSIZE, (void *) &readfds, NULL, NULL, (void *) &timeout);
+
+    if (FD_ISSET(sock, &readfds))
+      {
+      i = recv(sock, cmd+i_cmd, 1, 0);
+      if (i<=0)
+        break;
+
+      // backspace
+      if (cmd[i_cmd] == 8)
+        {
+        if (i_cmd > 0)
+          {
+          send(sock, "\b \b", 3, 0);
+          i_cmd -= 1;
+          }
+        }
+      else if (cmd[i_cmd] >= ' ' || cmd[i_cmd] == 13 || cmd[i_cmd] == 10)
+        {
+        send(sock, cmd+i_cmd, 1, 0);
+        i_cmd += i;
+        }
+      }
+
+    // linefeed triggers new command
+    if (cmd[i_cmd-1] == 10)
+      {
+      WriteFile(hChildStdinWrDup, cmd, i_cmd, &dwWritten, NULL);
+      i_cmd = 0;
+      }
+
+    } while (TRUE);
+
+  CloseHandle(hChildStdinWrDup);
+  CloseHandle(hChildStdinRd);
+  CloseHandle(hChildStderrRd);
+  CloseHandle(hChildStdoutRd);
+
+  return SS_SUCCESS;
+
+#endif /* OS_WINNT */
+
+#ifdef OS_UNIX
 
   return SS_SUCCESS;
 
@@ -2463,7 +2667,11 @@ char                str[100];
       sock = _suspend_struct[index].listen_socket;
 
       if (_suspend_struct[index].listen_dispatch)
+        {
 	      status = _suspend_struct[index].listen_dispatch(sock);
+	      if (status == RPC_SHUTDOWN)
+		      return status;
+        }
       }
 
     /* check server channels */
@@ -2742,7 +2950,7 @@ struct timeval timeout;
     if (n >= buffer_size)
       break;
 
-    } while (buffer[n-1]);
+    } while (buffer[n-1] && buffer[n-1] != 10);
 
   return n-1;
 }
