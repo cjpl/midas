@@ -7,6 +7,10 @@
                 Most routines are from mfe.c mana.c and mlogger.c.
 
   $Log$
+  Revision 1.16  2000/08/10 11:37:27  midas
+  Made PAW global memory name variable under /analyzer/output/global memeory name
+  to run more than one online analyzer instance on one machine
+
   Revision 1.15  1999/10/18 14:46:04  midas
   fixed compiler warning
 
@@ -119,6 +123,9 @@ struct {
   BOOL      histo_dump;
   char      histo_dump_filename[256];
   BOOL      clear_histos;
+  char      last_histo_filename[256];
+  BOOL      events_to_odb;
+  char      global_memory_name[8];
 } out_info;
 
 /* paw common memory */
@@ -200,6 +207,9 @@ RWNT = BOOL : 0\n\
 Histo Dump = BOOL : 0\n\
 Histo Dump Filename = STRING : [256] his%05d.rz\n\
 Clear histos = BOOL : 1\n\
+Last Histo Filename = STRING : [256] last.rz\n\
+Events to ODB = BOOL : 0\n\
+Global Memory Name = STRING : [8] ONLN\n\
 "
 
 /*---- data structures for MIDAS format ----------------------------*/
@@ -3256,8 +3266,8 @@ double     dummy;
     }
 
   /* create global section */
-  HLIMAP(pawc_size/4, "ONLN");
-  printf("\n");
+  HLIMAP(pawc_size/4, out_info.global_memory_name);
+  printf("\nGLOBAL MEMORY NAME = %s\n", out_info.global_memory_name);
 
   /* book online N-tuples only once when online */
   status = book_ntuples();
@@ -3721,7 +3731,7 @@ INT            i;
     equipment[i].last_called = actual_time;
 
     /* call user readout routine */
-    pevent->data_size = equipment[i].readout((char *) (pevent+1));
+    pevent->data_size = equipment[i].readout((char *) (pevent+1), 0);
 
     /* send event */
     if (pevent->data_size)
@@ -3893,7 +3903,7 @@ char            str[80];
           pevent->serial_number = eq->serial_number++;
 
           /* call user readout routine */
-          pevent->data_size = eq->readout((char *) (pevent+1));
+          pevent->data_size = eq->readout((char *) (pevent+1), 0);
 
           /* send event */
           if (pevent->data_size)
@@ -3940,7 +3950,7 @@ char            str[80];
           *(INT *) (pevent+1) = source;
 
           /* call user readout routine */
-          pevent->data_size = eq->readout((char *) (pevent+1));
+          pevent->data_size = eq->readout((char *) (pevent+1), 0);
 
           /* send event */
           if (pevent->data_size)
