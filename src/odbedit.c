@@ -6,6 +6,9 @@
   Contents:     Command-line interface to the MIDAS online data base.
 
   $Log$
+  Revision 1.40  2000/09/29 13:31:14  midas
+  ODBEdit cleanup now deletes open record with no client attached to
+
   Revision 1.39  2000/06/16 09:04:52  midas
   Added possibility to use index in "ls" command like "ls array[123]"
 
@@ -2238,7 +2241,7 @@ PRINT_INFO      print_info;
     else if (param[0][0] == 's' && param[0][1] == 'o')
       {
       db_find_key(hDB, 0, pwd, &hKey);
-      db_get_open_records(hDB, hKey, data, sizeof(data));
+      db_get_open_records(hDB, hKey, data, sizeof(data), FALSE);
       printf(data);
       }
 
@@ -2578,6 +2581,10 @@ PRINT_INFO      print_info;
       bm_open_buffer(EVENT_BUFFER_NAME, EVENT_BUFFER_SIZE, &hBuf);
       cm_cleanup();
       bm_close_buffer(hBuf);
+
+      db_find_key(hDB, 0, "/", &hKey);
+      db_get_open_records(hDB, hKey, data, sizeof(data), TRUE);
+      printf(data);
       }
 
     /* shutdown */

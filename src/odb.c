@@ -6,6 +6,9 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.38  2000/09/29 13:31:14  midas
+  ODBEdit cleanup now deletes open record with no client attached to
+
   Revision 1.37  2000/08/04 14:18:27  midas
   Print unknown ODB type in error message
 
@@ -2652,6 +2655,8 @@ char            line[256], str[80];
         if (pclient->open_record[j].handle == hKey)
           sprintf(line+strlen(line), "%s ",pclient->name);
       }
+    if (i == pheader->max_client_index)
+      strcat(line, "killed client");
     strcat(line, "\n");
     strcat((char *) result, line);
 
@@ -2660,7 +2665,48 @@ char            line[256], str[80];
 #endif /* LOCAL_ROUTINES */
 }
 
-INT db_get_open_records(HNDLE hDB, HNDLE hKey, char *str, INT buf_size)
+void db_fix_open_records(HNDLE hDB, HNDLE hKey, KEY *key, INT level, void *result)
+{
+#ifdef LOCAL_ROUTINES
+DATABASE_HEADER *pheader;
+DATABASE_CLIENT *pclient;
+INT             i, j;
+char            str[256];
+KEY             *pkey;
+
+  /* check if this key has notify count set */
+  if (key->notify_count)
+    {
+    db_lock_database(hDB);
+    pheader  = _database[hDB-1].database_header;
+
+    for (i=0 ; i<pheader->max_client_index ; i++)
+      {
+      pclient = &pheader->client[i];
+      for (j=0 ; j<pclient->max_index ; j++)
+        if (pclient->open_record[j].handle == hKey)
+          break;
+      if (j<pclient->max_index)
+        break;
+      }
+    if (i == pheader->max_client_index)
+      {
+      db_get_path(hDB, hKey, str, sizeof(str));
+      strcat(str, " fixed\n");
+      strcat((char *) result, str);
+
+      /* reset notify count */
+      pkey = (KEY *) ((char *) pheader + hKey);
+      pkey->notify_count = 0;
+      }
+
+    db_unlock_database(hDB);
+    }
+#endif /* LOCAL_ROUTINES */
+}
+
+INT db_get_open_records(HNDLE hDB, HNDLE hKey, char *str, INT buf_size, 
+                        BOOL fix)
 /********************************************************************\
 
   Routine: db_get_open_records
@@ -2671,6 +2717,8 @@ INT db_get_open_records(HNDLE hDB, HNDLE hKey, char *str, INT buf_size)
     HNDLE  hDB              Handle to the database
     HNDLE  hKey             Key to start search from, 0 for root
     INT    buf_size         Size of string
+    INT    fix              If TRUE, fix records which are open
+                            but have no client belonging to it.
 
   Output:
     char   *str             Result string. Individual records are
@@ -2686,7 +2734,11 @@ INT db_get_open_records(HNDLE hDB, HNDLE hKey, char *str, INT buf_size)
   if (rpc_is_remote())
     return rpc_call(RPC_DB_GET_OPEN_RECORDS, hDB, hKey, str, buf_size);
 
-  db_scan_tree_link(hDB, hKey, 0, db_find_open_records, str);
+  if (fix)
+    db_scan_tree_link(hDB, hKey, 0, db_fix_open_records, str);
+  else
+    db_scan_tree_link(hDB, hKey, 0, db_find_open_records, str);
+
   return DB_SUCCESS;
 }
 

@@ -6,6 +6,9 @@
   Contents:     List of MIDAS RPC functions with parameters
 
   $Log$
+  Revision 1.23  2000/09/29 13:31:14  midas
+  ODBEdit cleanup now deletes open record with no client attached to
+
   Revision 1.22  2000/09/28 13:02:06  midas
   Added manual triggered events
 
@@ -504,6 +507,7 @@ static RPC_LIST rpc_list_library[] = {
      {TID_INT,        RPC_IN},
      {TID_STRING,     RPC_OUT}, 
      {TID_INT,        RPC_IN},
+     {TID_BOOL,       RPC_IN},
      {0} }},
 
   /* history functions */
