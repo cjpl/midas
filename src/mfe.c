@@ -7,6 +7,9 @@
                 linked with user code to form a complete frontend
 
   $Log$
+  Revision 1.52  2003/04/25 07:45:03  midas
+  Write first event to ODB only if logger uses ROOT format
+
   Revision 1.51  2003/04/14 12:40:23  midas
   Create ODB entries for structured banks derived from BANK_LIST in frontend.c
 
@@ -1292,6 +1295,35 @@ char   str[30];
 
 /*------------------------------------------------------------------*/
 
+BOOL logger_root()
+/* check if logger uses ROOT format */
+{
+int   size, i, status;
+char  str[80];
+HNDLE hKeyRoot, hKey;
+
+  if (db_find_key(hDB, 0, "/Logger/Channels", &hKeyRoot) == DB_SUCCESS)
+    {
+    for (i=0;  ; i++)
+      {
+      status = db_enum_key(hDB, hKeyRoot, i, &hKey);
+      if (status == DB_NO_MORE_SUBKEYS)
+        break;
+
+      strcpy(str, "MIDAS");
+      size = sizeof(str);
+      db_get_value(hDB, hKey, "Settings/Format", str, &size, TID_STRING, TRUE);
+
+      if (equal_ustring(str, "ROOT"))
+        return TRUE;
+      }
+    }
+
+  return FALSE;
+}
+
+/*------------------------------------------------------------------*/
+
 INT scheduler(void)
 {
 EQUIPMENT_INFO *eq_info;
@@ -1477,9 +1509,10 @@ INT err;
             {
             if (eq->buffer_handle)
               {
-              /* send always first event to ODB */
+              /* send first event to ODB if logger writes in root format */
               if (pevent->serial_number == 1)
-                update_odb(pevent, eq->hkey_variables, eq->format);
+                if (logger_root())
+                  update_odb(pevent, eq->hkey_variables, eq->format);
 
 #ifdef USE_EVENT_CHANNEL
               dm_pointer_increment(eq->buffer_handle, 
