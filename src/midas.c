@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.102  2000/02/29 02:10:26  midas
+  Added cm_is_ctrlc_pressed and cm_ack_ctrlc_pressed
+
   Revision 1.101  2000/02/25 22:49:29  midas
   Increased timeouts
 
@@ -3512,7 +3515,7 @@ INT cm_dispatch_ipc(char *message, int socket)
 
 /*------------------------------------------------------------------*/
 
-BOOL _ctrlc_pressed = FALSE;
+static BOOL _ctrlc_pressed = FALSE;
 
 void cm_ctrlc_handler(int sig)
 {
@@ -3525,6 +3528,16 @@ void cm_ctrlc_handler(int sig)
   _ctrlc_pressed = TRUE;
 
   ss_ctrlc_handler(cm_ctrlc_handler);
+}
+
+BOOL cm_is_ctrlc_pressed()
+{
+  return _ctrlc_pressed;
+}
+
+void cm_ack_ctrlc_pressed()
+{
+  _ctrlc_pressed = FALSE;
 }
 
 /*------------------------------------------------------------------*/

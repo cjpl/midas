@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.60  2000/02/29 02:09:33  midas
+  Added cm_is_ctrlc_pressed and cm_ack_ctrlc_pressed
+
   Revision 1.59  2000/02/25 22:22:45  midas
   Added abort feature in db_scan_tree
 
@@ -1357,6 +1360,8 @@ INT EXPRT cm_execute(char *command, char *result, INT buf_size);
 INT EXPRT cm_synchronize(DWORD *sec);
 INT EXPRT cm_asctime(char *str, INT buf_size);
 INT EXPRT cm_time(DWORD *time);
+BOOL EXPRT cm_is_ctrlc_pressed(); 
+void EXPRT cm_ack_ctrlc_pressed();
 
 INT EXPRT cm_set_msg_print(INT system_mask, INT user_mask, int (*func)(const char*));
 INT EXPRT cm_msg(INT message_type, char* filename, INT line, const char *routine, const char *format, ...);

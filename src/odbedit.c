@@ -6,6 +6,9 @@
   Contents:     Command-line interface to the MIDAS online data base.
 
   $Log$
+  Revision 1.35  2000/02/29 02:10:26  midas
+  Added cm_is_ctrlc_pressed and cm_ack_ctrlc_pressed
+
   Revision 1.34  2000/02/25 22:36:52  midas
   Made Ctrl-C working for display of large arrays
 
@@ -104,7 +107,6 @@
 #include "msystem.h"
 
 extern INT cmd_edit(char *prompt, char *cmd, INT (*dir)(char*,INT*), INT (*idle)());
-extern BOOL _ctrlc_pressed;
 
 BOOL  need_redraw;
 BOOL  in_cmd_edit;
@@ -282,7 +284,7 @@ static char data_str[256], line[256];
 DWORD       delta;
 PRINT_INFO  *pi;
 
-  if (_ctrlc_pressed)
+  if (cm_is_ctrlc_pressed())
     return 0;
 
   pi = (PRINT_INFO *) info;
@@ -304,7 +306,7 @@ PRINT_INFO  *pi;
       else
         for (i=0 ; i<key->num_values ; i++)
           {
-          if (_ctrlc_pressed)
+          if (cm_is_ctrlc_pressed())
             return 0;
 
           if (pi->flags & PI_HEX)
@@ -395,7 +397,7 @@ PRINT_INFO  *pi;
         {
         for (i=0 ; i<key->num_values ; i++)
           {
-          if (_ctrlc_pressed)
+          if (cm_is_ctrlc_pressed())
             return 0;
 
           if (pi->flags & PI_HEX)
@@ -476,10 +478,10 @@ HNDLE       hSubkey;
 static char data_str[256], line[256];
 DWORD       delta;
 
-  if (_ctrlc_pressed)
+  if (cm_is_ctrlc_pressed())
     {
     if (level == 0)
-      _ctrlc_pressed = FALSE;
+      cm_ack_ctrlc_pressed();
     return;
     }
 
@@ -624,10 +626,10 @@ DWORD       delta;
 
       scan_tree(hDB, hSubkey, total_size_key, total_size_data, level+1, flags);
 
-      if (_ctrlc_pressed)
+      if (cm_is_ctrlc_pressed())
         {
         if (level == 0)
-          _ctrlc_pressed = FALSE;
+          cm_ack_ctrlc_pressed();
         return;
         }
       }
@@ -1474,8 +1476,8 @@ PRINT_INFO      print_info;
         if (print_info.flags & PI_RECURSIVE)
           {
           db_scan_tree(hDB, hKey, 0, print_key, &print_info);
-          if (_ctrlc_pressed)
-            _ctrlc_pressed = FALSE;
+          if (cm_is_ctrlc_pressed())
+            cm_ack_ctrlc_pressed();
           }
         else
           {
@@ -1485,9 +1487,9 @@ PRINT_INFO      print_info;
           else
             for (i=0 ; ; i++)
               {
-              if (_ctrlc_pressed)
+              if (cm_is_ctrlc_pressed())
                 {
-                _ctrlc_pressed = FALSE;
+                cm_ack_ctrlc_pressed();
                 break;
                 }
 
