@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol commands
 
   $Log$
+  Revision 1.25  2003/06/27 13:52:17  midas
+  Added led_mode()
+
   Revision 1.24  2003/06/05 14:47:16  midas
   Added SCS-520
 
@@ -324,6 +327,7 @@ char          node_name[16];
 
 void yield(void);
 void led_blink(int led, int n, int interval) reentrant;
+void led_mode(int led, int flag) reentrant;
 void delay_us(unsigned int us);
 void delay_ms(unsigned int ms);
 
