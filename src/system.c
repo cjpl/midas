@@ -14,6 +14,9 @@
                 Brown, Prentice Hall
 
   $Log$
+  Revision 1.51  2000/02/26 00:16:05  midas
+  Bypass ss_kbhit and ss_getchar after becoming a daemon
+
   Revision 1.50  2000/02/15 11:07:51  midas
   Changed GET_xxx to bit flags
 
@@ -1380,6 +1383,8 @@ struct termios tios;
 
 /*------------------------------------------------------------------*/
 
+static BOOL _daemon_flag;
+
 INT ss_daemon_init()
 /********************************************************************\
 
@@ -1410,6 +1415,8 @@ INT ss_daemon_init()
     exit(0); /* parent finished */
 
   /* child continues here */
+
+  _daemon_flag = TRUE;
 
   /* try and use up stdin, stdout and stderr, so other
      routines writing to stdout etc won't cause havoc. Copied from smbd */
@@ -2348,6 +2355,10 @@ BOOL ss_kbhit()
 #ifdef OS_UNIX
 
   int n;
+
+  if (_daemon_flag)
+    return 0;
+
   ioctl(0, FIONREAD, &n);
   return (n > 0);
 
@@ -5346,6 +5357,9 @@ static struct termios save_termios;
 struct termios        buf;
 int  i, fd;
 char c[3];
+
+  if (_daemon_flag)
+    return 0;
 
   fd = fileno(stdin);
 
