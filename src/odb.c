@@ -6,6 +6,9 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.76  2003/12/03 00:42:01  pierre
+  doc++ on db_check_record
+
   Revision 1.75  2003/12/01 09:55:27  midas
   Remove trailing '/' in db_create_record()
 
@@ -7774,7 +7777,29 @@ INT db_create_record(HNDLE hDB, HNDLE hKey, char *orig_key_name, char *init_str)
 }
 
 /*------------------------------------------------------------------*/
-
+/** @name db_check_record()
+\begin{description}
+\item[Description:] This function ensures that a certain ODB subtree matches
+           a given C structure, by comparing the init_str with the
+           current ODB structure.
+\item[Remarks:] If the record does not exist at all,
+           it is created with the default values in init_str. If it
+           does exist but does not match the variables in init_str,
+           the function returns an error if correct=FALSE or calls
+           db_create_record if correct=TRUE.
+\item[Example:] 
+\begin{verbatim}
+\end{verbatim}
+\end{description}
+@memo Check if ODB record is compatible.
+@param hDB ODB handle obtained via cm_get_experiment_database().
+@param hKey Handle for key where search starts, zero for root.
+@param keyname Name of key to search, can contain directories
+@param rec_str ASCII representation of ODB record in the format
+       of the db_copy/db_save functions
+@param correct If TRUE, correct ODB record if necessary.
+@return DB_SUCCESS, DB_INVALID_HANDLE, DB_NO_KEY, DB_STRUCT_SIZE_MISMATCH
+*/
 INT db_check_record(HNDLE hDB, HNDLE hKey, char *keyname, char *rec_str, BOOL correct)
 /********************************************************************\
 
