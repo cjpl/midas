@@ -44,6 +44,7 @@ functions prior and after a given transition such as the start of the logger.
 
 \code
 my_application.c
+  // Callback 
   INT before_logger(INT run_number, char *error)
   {
     printf("Initialize ... before the logger gets the Start Transition");
@@ -51,7 +52,8 @@ my_application.c
     return CM_SUCCESS;
   }
 
-  INT before_logger(INT run_number, char *error)
+  // Callback 
+  INT after_logger(INT run_number, char *error)
   {
     printf("Log initial info to file... after logger gets the Start Transition");
     ...
