@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.277  2004/10/06 23:54:39  midas
+  Removed event builder section
+
   Revision 1.276  2004/09/30 17:01:50  midas
   Don't disconnect from experiment if favicon.ico is requested
 
@@ -1645,7 +1648,6 @@ void show_status_page(int refresh, char *cookie_wpwd)
    char client_name[NAME_LENGTH];
    struct tm *gmt;
    BOOL new_window;
-   char ebname[] = "EBuilder";
 
    RUNINFO_STR(runinfo_str);
    RUNINFO runinfo;
@@ -2090,70 +2092,6 @@ void show_status_page(int refresh, char *cookie_wpwd)
             rsprintf("<td align=center>N/A</td></tr>\n");
          }
       }
-   }
-
-   /*---- Event Builder ----*/
-
-   if (db_find_key(hDB, 0, ebname, &hkey) == DB_SUCCESS) {
-      rsprintf
-          ("<tr><th>EBuilder<th>Node<th>Tot. Events<th>Tot. Rate[/s]<th>Tot. Data[kB/s]<th>Analyzed</tr>\n");
-
-      if (exp_name[0])
-         sprintf(ref, "/%s/Channels?exp=%s", ebname, exp_name);
-      else
-         sprintf(ref, "/%s/Channels", ebname);
-      rsprintf("<tr><td><font color=\"#cc66cc\"><a href=\"%s\">Chan.</a>&nbsp;", ref);
-      if (exp_name[0])
-         sprintf(ref, "/%s/Settings?exp=%s", ebname, exp_name);
-      else
-         sprintf(ref, "/%s/Settings", ebname);
-      rsprintf("<a href=\"%s\">Settings</a>", ref);
-
-      /* Extract general setting */
-      size = sizeof(str);
-      db_get_value(hDB, hkey, "Settings/Hostname", str, &size, TID_STRING, TRUE);
-      if (cm_exist("EBuilder", FALSE) == CM_SUCCESS)
-         rsprintf("<td align=center bgcolor=\"00FF00\">%s", str);
-      else
-         rsprintf("<td align=center bgcolor=\"FF0000\">(inactive)");
-
-      memset(&equipment_stats, 0, sizeof(equipment_stats));
-      status = db_find_key(hDB, hkey, "Statistics", &hkeytmp);
-      if (hkeytmp) {
-         db_get_record_size(hDB, hkeytmp, 0, &size);
-         if (size == sizeof(equipment_stats))
-            db_get_record(hDB, hkeytmp, &equipment_stats, &size, 0);
-      }
-      d = equipment_stats.events_sent;
-      if (d > 1E9)
-         sprintf(str, "%1.3lfG", d / 1E9);
-      else if (d > 1E6)
-         sprintf(str, "%1.3lfM", d / 1E6);
-      else
-         sprintf(str, "%1.0lf", d);
-
-      /* -PAA- get analyzed ratio, but the Analyzer is not scanning this
-         EBuilder like Equipment for now. It's in for cosmetic purpose only.
-         The EBuilder (mevb.c) contains code for YBOS and MIDAS format, but
-         only the YBOS fmt has been tested (twist expt at Triumf). */
-      analyze_ratio = 0;
-      sprintf(ref, "/Analyzer/%s", ebname);
-      db_find_key(hDB, 0, ref, &hkeytmp);
-      if (hkeytmp) {
-         size = sizeof(double);
-         if (db_get_value(hDB, hkeytmp, "Statistics/Events received",
-                          &analyzed, &size, TID_DOUBLE, TRUE) == DB_SUCCESS &&
-             equipment_stats.events_sent > 0)
-            analyze_ratio = analyzed / equipment_stats.events_sent;
-
-         if (analyze_ratio > 1)
-            analyze_ratio = 1;
-      }
-
-      rsprintf
-          ("<td align=center>%s<td align=center>%1.1lf<td align=center>%1.1lf<td align=center>%3.1lf%%</tr>\n",
-           str, equipment_stats.events_per_sec, equipment_stats.kbytes_per_sec,
-           analyze_ratio * 100.0);
    }
 
    /*---- Logging channels ----*/
