@@ -6,6 +6,10 @@
   Contents:     CAMAC utility
   
   $Log$
+  Revision 1.8  1998/11/23 16:17:37  pierre
+  Fix bug: double CAMAC call since [P] implementation (visible in camacrpc)
+  CVS:-----------------------------------------------------------------------
+
   Revision 1.7  1998/11/20 14:29:31  pierre
   Added [P] cmd for MCStd commands (2nd level)
 
@@ -99,9 +103,8 @@ typedef struct {
 
 
 /* Default CAMAC definition */
-CAMAC Prompt[3] ={ {24,0,0,1,2,0,0,0,1,0,0,0},
-                   {24,0,0,1,2,0,0,0,1,0,0,0},
-            		   {0}
+CAMAC Prompt[2] ={ {24,0,0,1,2,0,0,0,1,0,0,0},
+             		   {0}
                  };
 
 /* Default job file name */
@@ -481,53 +484,54 @@ void cnafsub()
 	    p = job;
 	  while (p->m)
 	    {
-	      for (j=0;j<p->r;j++)
-		{
-		  if (p->n == 28 || p->n == 30)
-		    cc_services(p);
-		  else
-		    if (p->m == 24) /* Actual 24 bits CAMAC operation */
-		      if (p->f<16)
-			cam24i_q(p->c, p->n, p->a, p->f, &p->d24, &p->x, &p->q);
-		      else
-			cam24o_q(p->c, p->n, p->a, p->f, p->d24, &p->x, &p->q);
-		    else /* Actual 16 bits CAMAC operation */
-		      if (p->f<16)
-			cam16i_q(p->c, p->n, p->a, p->f, &p->d16, &p->x, &p->q);
-		      else
-			cam16o_q(p->c, p->n, p->a, p->f, p->d16, &p->x, &p->q);
-		  make_display_string(MAIN, p, addr);
-		  /* Result display */
-		  if (p->r > 1)
-		    {
-		      /* repeat mode */
-		      if (status == JOB)
-			{
-			  printf("\nmCNAF> [%s]",addr);
-			  if (p->w != 0)
-			    ss_sleep(p->w);
-			}  
-		      else
-			{
-			  printf("mCNAF> [%s] <-%03i\n",addr,j+1);
-			  if (p->w != 0)
-			    ss_sleep(p->w);
-			  if (j > p->r-1)
-			    break;
-			}
+      for (j=0;j<p->r;j++)
+		  {
+		    if (p->n == 28 || p->n == 30)
+		      cc_services(p);
+		    else
+		      if (p->m == 24) /* Actual 24 bits CAMAC operation */
+		        if (p->f<16)
+      			  cam24i_q(p->c, p->n, p->a, p->f, &p->d24, &p->x, &p->q);
+		        else
+			        cam24o_q(p->c, p->n, p->a, p->f, p->d24, &p->x, &p->q);
+		      else /* Actual 16 bits CAMAC operation */
+		        if (p->f<16)
+		      	  cam16i_q(p->c, p->n, p->a, p->f, &p->d16, &p->x, &p->q);
+		        else
+			        cam16o_q(p->c, p->n, p->a, p->f, p->d16, &p->x, &p->q);
+		      make_display_string(MAIN, p, addr);
+
+          /* Result display */
+		    if (p->r > 1)
+		      {
+		        /* repeat mode */
+		        if (status == JOB)
+			      {
+			        printf("\nmCNAF> [%s]",addr);
+			        if (p->w != 0)
+			          ss_sleep(p->w);
+			      }  
+            else
+			      {
+			        printf("mCNAF> [%s] <-%03i\n",addr,j+1);
+			        if (p->w != 0)
+			          ss_sleep(p->w);
+			        if (j > p->r-1)
+			          break;
+			      }
 		    }
 		  else
 		    {
 		      /* single command */
 		      if (status == JOB)
-			{
-			  printf("mCNAF> [%s]\n",addr);
-			  if (p->w != 0)
-			    ss_sleep(p->w);
-			}
+			    {
+			      printf("mCNAF> [%s]\n",addr);
+			      if (p->w != 0)
+			        ss_sleep(p->w);
+			    }
 		    }
 		}
-	      p++; 
+    p++; 
 	    };
 	  if (status == JOB)
 	    {
@@ -562,11 +566,11 @@ INT decode_line (CAMAC *P, char * ss)
   while (*s)
     {
       if (*s == 'G')
-	{
-	  while (*s)
-	    *p++ = *s++;
-	  break;
-	}
+	    {
+	      while (*s)
+	        *p++ = *s++;
+	      break;
+	    }
       if ((*s == 'B') || (*s == 'C') ||
 	  (*s == 'N') || (*s == 'A') ||
 	  (*s == 'F') || (*s == 'C') ||
@@ -575,13 +579,13 @@ INT decode_line (CAMAC *P, char * ss)
 	  (*s == 'E') || (*s == 'Q'))
 	*p++ = ' ';
       else if ((*s == 'X') || (*s == 'D') || (*s == 'O'))
-	{
-	  *p++ = ' ';
-	  *p++ = *s++;
-	  while (*s)
-	    *p++ = *s++;
-	  break;
-	};
+	    {
+	      *p++ = ' ';
+	      *p++ = *s++;
+	      while (*s)
+	        *p++ = *s++;
+	      break;
+	    };
       *p++ = *s++;
     }
   *p++ = ' ';
@@ -604,35 +608,6 @@ INT decode_line (CAMAC *P, char * ss)
     return HELP;
   if (cmd = strpbrk(p,"J"))
     return JOB;
-  if (cmd = strpbrk(p,"D"))
-    {
-      ps = strchr(cmd,' ');
-      *ps = 0;
-      if (P->m == D24)
-	{
-	  tmp = strtoul((cmd+1),NULL,10);
-	  if (tmp>=0x0 && tmp<=0xffffff)
-	    {
-	      P->d24 = tmp;
-	      ok = TRUE;
-          }
-        else
-          printf("mcnaf-E- Data out of range 0:16777215\n");
-      }
-		else
-      {
-        tmp = strtoul((cmd+1),NULL,10);
-        if (tmp>=0x0 && tmp<=0xffff)
-          {
-            P->d16 = (WORD) tmp;
-            ok = TRUE;
-          }
-        else
-          printf("mcnaf-E- Data out of range 0:65535\n");
-      }
-    strncpy(cmd,empty,strlen(cmd));
-		*ps = ' '; 
-	}
 	if (cmd = strpbrk(p,"X"))
 	{
 		ps = strchr(cmd,' ');
@@ -690,6 +665,35 @@ INT decode_line (CAMAC *P, char * ss)
       }
     strncpy(cmd,empty,strlen(cmd));
     *ps = ' '; 
+	}
+  if (cmd = strpbrk(p,"D"))
+    {
+      ps = strchr(cmd,' ');
+      *ps = 0;
+      if (P->m == D24)
+	{
+	  tmp = strtoul((cmd+1),NULL,10);
+	  if (tmp>=0x0 && tmp<=0xffffff)
+	    {
+	      P->d24 = tmp;
+	      ok = TRUE;
+          }
+        else
+          printf("mcnaf-E- Data out of range 0:16777215\n");
+      }
+		else
+      {
+        tmp = strtoul((cmd+1),NULL,10);
+        if (tmp>=0x0 && tmp<=0xffff)
+          {
+            P->d16 = (WORD) tmp;
+            ok = TRUE;
+          }
+        else
+          printf("mcnaf-E- Data out of range 0:65535\n");
+      }
+    strncpy(cmd,empty,strlen(cmd));
+		*ps = ' '; 
 	}
   if (cmd = strchr(p,'B'))
     {
@@ -847,6 +851,7 @@ void help_page( INT which)
       printf("\n*-v%s----------- H E L P   C N A F -------------------*\n"
 	     ,cm_get_version());
       printf("          Interactive MCStd CAMAC command\n");
+      printf("The action taken is dependent on the driver implementation\n");
       printf("[Q/E]            : Exit this level\n");
       printf("[G] <function>   : Issue the given function on preset CAMAC address\n");
       printf("Possible functions are:\n");
