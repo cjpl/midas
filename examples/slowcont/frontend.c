@@ -17,6 +17,9 @@
 
 
   $Log$
+  Revision 1.3  1998/10/23 08:46:26  midas
+  Added #include "null.h"
+
   Revision 1.2  1998/10/12 12:18:59  midas
   Added Log tag in header
 
@@ -27,6 +30,7 @@
 #include "midas.h"
 #include "cd_hv.h"
 #include "cd_multi.h"
+#include "null.h"
 
 /*-- Globals -------------------------------------------------------*/
 
