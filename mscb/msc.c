@@ -6,6 +6,9 @@
   Contents:     Command-line interface for the Midas Slow Control Bus
 
   $Log$
+  Revision 1.41  2003/06/26 11:56:13  midas
+  Use retry in ping
+
   Revision 1.40  2003/06/11 14:13:33  midas
   Version 1.4.5
 
@@ -578,7 +581,7 @@ MSCB_INFO_VAR info_var;
         else
           addr = atoi(param[1]);
 
-        status = mscb_ping(fd, addr);
+        status = mscb_addr(fd, MCMD_PING16, addr, 10);
         if (status != MSCB_SUCCESS)
           {
           if (status == MSCB_MUTEX)
