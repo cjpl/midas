@@ -10,6 +10,9 @@
                 Pfeiffer Dual Gauge TPG262 vacuum sensor
 
   $Log$
+  Revision 1.3  2002/10/09 15:48:13  midas
+  Fixed bug with download
+
   Revision 1.2  2002/10/09 11:06:46  midas
   Protocol version 1.1
 
@@ -19,6 +22,7 @@
 \********************************************************************/
 
 #include <stdio.h>
+#include <stdlib.h> // for atof()
 #include "mscb.h"
 
 extern bit FREEZE_MODE;
@@ -43,7 +47,7 @@ struct {
   
 
 MSCB_INFO_CHN code channel[] = {
-  SIZE_0BIT,            0, 0, 0,           0, "RS232", 0,
+  SIZE_0BIT,   UNIT_ASCII, 0, 0,           0, "RS232", 0,
   SIZE_32BIT, UNIT_PASCAL, 0, 0, MSCBF_FLOAT, "P1", &user_data.p1,
   SIZE_32BIT, UNIT_PASCAL, 0, 0, MSCBF_FLOAT, "P2", &user_data.p2,
   0
@@ -153,39 +157,6 @@ unsigned char user_func(unsigned char idata *data_in,
 }
 
 /*---- User loop function ------------------------------------------*/
-
-#include <stdlib.h>
-
-unsigned char gets_wait(char *str, unsigned char size, unsigned char timeout)
-{
-unsigned long start;
-unsigned char i;
-char          c;
-
-  start = time();
-  i = 0;
-  do
-    {
-    c = getchar_nowait();
-    if (c != -1 && c != '\n')
-      {
-      if (c == '\r')
-        {
-        str[i] = 0;
-        return i;
-        }
-      str[i++] = c;
-      if (i == size)
-        return i;
-      }
-
-    watchdog_refresh();
-    blink_led();
-
-    } while (time() < start+timeout);
-
-  return 0;
-}
 
 void user_loop(void)
 {
