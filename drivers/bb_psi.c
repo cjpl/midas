@@ -8,6 +8,9 @@
                 (http://www1.psi.ch/~rohrer/secblctl.htm)
 
   $Log$
+  Revision 1.5  1999/11/12 09:38:04  midas
+  Added notification message upon reconnect
+
   Revision 1.4  1999/11/12 09:24:52  midas
   Added reconnect
 
@@ -269,13 +272,18 @@ static DWORD last_update;
 
         if (status != FE_SUCCESS)
           return FE_ERR_HW;
+        else
+          cm_msg(MINFO, "bb_psi_get", "sucessfully reconneccted to %s",
+                 info->bb_psi_settings.frontend_pc);
         }
+      else
+        return FE_SUCCESS;
       }
 
     status = recv_string(info->sock, str, sizeof(str), 3000);
     if (status <= 0)
       {
-      cm_msg(MERROR, "bb_psi_rall", "cannot retrieve data from %s",
+      cm_msg(MERROR, "bb_psi_get", "cannot retrieve data from %s",
              info->bb_psi_settings.frontend_pc);
       return FE_ERR_HW;
       }
