@@ -51,6 +51,7 @@ int mxml_get_number_of_children(PMXML_NODE pnode);
 PMXML_NODE mxml_subnode(PMXML_NODE pnode, int index);
 PMXML_NODE mxml_find_node(PMXML_NODE tree, char *xml_path);
 int mxml_find_nodes(PMXML_NODE tree, char *xml_path, PMXML_NODE **nodelist);
+char *mxml_get_name(PMXML_NODE pnode);
 char *mxml_get_value(PMXML_NODE pnode);
 char *mxml_get_attribute(PMXML_NODE pnode, char *name);
 
@@ -67,9 +68,9 @@ int mxml_replace_attribute_value(PMXML_NODE pnode, char *attrib_name, char *attr
 int mxml_delete_node(PMXML_NODE pnode);
 int mxml_delete_attribute(PMXML_NODE, char *attrib_name);
 
-PMXML_NODE mxml_create_root_node();
+PMXML_NODE mxml_create_root_node(char *name);
 PMXML_NODE mxml_parse_file(char *file_name, char *error, int error_size);
-PMXML_NODE mxml_parse_buffer(char *buffer, char *error, int error_size, char *file_name);
+PMXML_NODE mxml_parse_buffer(char *buffer, char *error, int error_size);
 int mxml_write_tree(char *file_name, PMXML_NODE tree);
 void mxml_debug_tree(PMXML_NODE tree, int level);
 void mxml_free_tree(PMXML_NODE tree);
