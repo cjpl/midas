@@ -9,6 +9,9 @@
                 for SCS-600 Digital I/O
 
   $Log$
+  Revision 1.5  2003/03/21 13:38:17  midas
+  Reverse order P1
+
   Revision 1.4  2003/03/21 08:28:15  midas
   Fixed bug with LSB bytes
 
@@ -149,8 +152,8 @@ unsigned char user_func(unsigned char *data_in,
 unsigned char cycle;
 unsigned char ca[8];
 
-//#define BIT(i) (0x80 >> i)   // "reverse" order
-#define BIT(i) (1 << i)      // normal order
+#define BIT(i) (0x80 >> i)   // "reverse" order
+//#define BIT(i) (1 << i)      // normal order
 
 void set_power(void)
 {
