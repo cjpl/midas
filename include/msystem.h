@@ -7,6 +7,9 @@
                 routines
 
   $Log$
+  Revision 1.3  1998/10/27 10:54:03  midas
+  Added ss_shell()
+
   Revision 1.2  1998/10/12 12:19:01  midas
   Added Log tag in header
 
@@ -463,6 +466,7 @@ INT ss_open_shm(char *name, INT size, void **adr, HNDLE *handle);
 INT ss_close_shm(char *name, void *adr, HNDLE handle, INT destroy_flag);
 INT ss_flush_shm(char *name, void *adr, INT size);
 INT ss_spawnv(INT mode, char *cmdname, char *argv[]);
+INT ss_shell(int sock);
 INT ss_getpid(void);
 INT ss_gettid(void);
 INT ss_getthandle(void);
