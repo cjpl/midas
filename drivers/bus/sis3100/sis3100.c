@@ -7,6 +7,9 @@
                 VME controller using sis1100w.lib
 
   $Log$
+  Revision 1.3  2004/11/25 07:13:20  midas
+  Added PLX defines
+
   Revision 1.2  2004/08/11 15:31:35  midas
   Adjusted inlude directories
 
@@ -14,6 +17,10 @@
   Initial revision
 
 \********************************************************************/
+
+#define PLX_9054
+#define PCI_CODE
+#define LITTLE_ENDIAN
 
 #include <stdio.h>
 #include <string.h>
