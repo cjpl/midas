@@ -5,6 +5,9 @@
    Contents:     Dump event on screen with MIDAS or YBOS data format
  
    $Log$
+   Revision 1.15  2000/11/01 17:17:54  pierre
+   -fix duplicate ID for different fmt.
+
    Revision 1.14  2000/10/31 23:08:51  pierre
    - Fix Duplicate ID/msk/fmt
    - Fix db_get_value error on "Frontend name" due to Analyzer writing as [256]
@@ -104,9 +107,10 @@ DWORD data_format_check(EVENT_HEADER * pevent, INT * i)
   while (eq[ii].fmt)
   {
     jj = ii+1;
+    /* problem occur when duplicate ID with different data format */
     while (eq[jj].fmt)
     {
-      if ((eq[jj].fmt == eq[ii].fmt)
+      if ((eq[jj].fmt != eq[ii].fmt)
 	  && (eq[jj].id == eq[ii].id)
 	  && (eq[jj].msk == eq[ii].msk)
 	  && eq[ii].id != 0)
