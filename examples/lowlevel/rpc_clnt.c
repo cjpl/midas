@@ -6,6 +6,9 @@
   Contents:     Mini RPC client program for test purposes.
 
   $Log$
+  Revision 1.2  1999/10/26 12:00:57  midas
+  Replaced gets by ss_gets
+
   Revision 1.1  1999/04/27 11:10:56  midas
   Added files to CVS
 
@@ -43,7 +46,7 @@ RPC_LIST rpc_list[] = {
 
 main()
 {
-char   host_name[30];
+char   host_name[80];
 HNDLE  hConn;
 INT    status;
 BYTE   b;
@@ -53,7 +56,7 @@ float  f;
 double d;
 
   printf("Remote host name: ");
-  gets(host_name);
+  ss_gets(host_name, sizeof(host_name));
 
   /* register this as an RPC client with rpc_list */
   rpc_register_client("MYCLIENT", rpc_list);
