@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.149  2001/05/15 03:03:51  pierre
+  - Add "orange" color for disabled equipment
+
   Revision 1.148  2000/12/18 08:08:03  midas
   Added subtree with symbolic links in /Scripts system
 
@@ -1403,10 +1406,15 @@ CHN_STATISTICS chn_stats;
       if (cm_exist(equipment.frontend_name, TRUE) != CM_SUCCESS)
         rsprintf("<tr><td><a href=\"%s\">%s</a><td align=center bgcolor=#FF0000>(inactive)", 
                   ref, key.name);
-      else
-        rsprintf("<tr><td><a href=\"%s\">%s</a><td align=center bgcolor=#00FF00>%s@%s", 
-                  ref, key.name, equipment.frontend_name, equipment.frontend_host);
-      
+      else {
+	 if (equipment.enabled)
+	   rsprintf("<tr><td><a href=\"%s\">%s</a><td align=center bgcolor=#00FF00>%s@%s", 
+		    ref, key.name, equipment.frontend_name, equipment.frontend_host);
+	 else
+	   rsprintf("<tr><td><a href=\"%s\">%s</a><td align=center bgcolor=#F6BF00>%s@%s",
+		    ref, key.name, equipment.frontend_name, equipment.frontend_host);
+      }
+	 
       /* get analyzed ratio */
       analyze_ratio = 0;
       sprintf(ref, "/Analyzer/%s", key.name);
