@@ -7,6 +7,9 @@
                 following the MIDAS CAMAC Standard for DirectIO
 
   $Log$
+  Revision 1.5  2001/10/16 20:47:29  pierre
+  Update cam_interrupt_() args
+
   Revision 1.4  2001/04/20 21:56:51  pierre
   - Zeroed upper byte in 24i, sa, rq
 
@@ -164,14 +167,12 @@
 #define INPW(_p) inw(_p)
 #endif
 /*------------------------------------------------------------------*/
-
 INLINE void cam8i(const int c, const int n, const int a, const int f, 
                   unsigned char *d)
 {
 }
 
 /*------------------------------------------------------------------*/
-
 INLINE void cami(const int c, const int n, const int a, const int f, 
                  WORD *d)
 {
@@ -185,7 +186,6 @@ INLINE void cami(const int c, const int n, const int a, const int f,
 }
 
 /*------------------------------------------------------------------*/
-
 INLINE void cam16i(const int c, const int n, const int a, const int f, 
                    WORD *d)
 {
@@ -193,7 +193,6 @@ INLINE void cam16i(const int c, const int n, const int a, const int f,
 }
 
 /*------------------------------------------------------------------*/
-
 INLINE void cam24i(const int c, const int n, const int a, const int f, 
                    DWORD *d)
 {
@@ -208,7 +207,6 @@ INLINE void cam24i(const int c, const int n, const int a, const int f,
 }
 
 /*------------------------------------------------------------------*/
-
 INLINE void cam8i_q(const int c, const int n, const int a, const int f, 
                     unsigned char *d, int *x, int *q)
 {
@@ -216,7 +214,6 @@ INLINE void cam8i_q(const int c, const int n, const int a, const int f,
 }
 
 /*------------------------------------------------------------------*/
-
 INLINE void cam16i_q(const int c, const int n, const int a, const int f, 
                      WORD *d, int *x, int *q)
 {
@@ -232,7 +229,6 @@ INLINE void cam16i_q(const int c, const int n, const int a, const int f,
 }
 
 /*------------------------------------------------------------------*/
-
 INLINE void cam24i_q(const int c, const int n, const int a, const int f, 
                      DWORD *d, int *x, int *q)
 {
@@ -250,7 +246,6 @@ INLINE void cam24i_q(const int c, const int n, const int a, const int f,
 }
 
 /*------------------------------------------------------------------*/
-
 INLINE void cam16i_r(const int c, const int n, const int a, const int f, 
                      WORD **d, const int r)
 {
@@ -270,7 +265,6 @@ INLINE void cam16i_r(const int c, const int n, const int a, const int f,
 }
 
 /*------------------------------------------------------------------*/
-
 INLINE void cam24i_r(const int c, const int n, const int a, const int f, 
                      DWORD **d, const int r)
 {
@@ -292,7 +286,6 @@ INLINE void cam24i_r(const int c, const int n, const int a, const int f,
 }
 
 /*------------------------------------------------------------------*/
-
 INLINE void cam16i_rq(const int c, const int n, const int a, const int f, 
                       WORD **d, const int r)
 {
@@ -310,7 +303,6 @@ int i, x, q;
 }
 
 /*------------------------------------------------------------------*/
-
 INLINE void cam24i_rq(const int c, const int n, const int a, const int f, 
                       DWORD **d, const int r)
 {
@@ -328,7 +320,6 @@ int i, x, q;
 }
 
 /*------------------------------------------------------------------*/
-
 INLINE void cam16i_sa(const int c, const int n, const int a, const int f, 
                       WORD **d, const int r)
 {
@@ -350,7 +341,6 @@ INLINE void cam16i_sa(const int c, const int n, const int a, const int f,
 }
 
 /*------------------------------------------------------------------*/
-
 INLINE void cam24i_sa(const int c, const int n, const int a, const int f, 
                       DWORD **d, const int r)
 {
@@ -374,7 +364,6 @@ INLINE void cam24i_sa(const int c, const int n, const int a, const int f,
 }
 
 /*------------------------------------------------------------------*/
-
 INLINE void cam16i_sn(const int c, const int n, const int a, const int f, 
                       WORD **d, const int r)
 {
@@ -385,7 +374,6 @@ int i;
 }
 
 /*------------------------------------------------------------------*/
-
 INLINE void cam24i_sn(const int c, const int n, const int a, const int f, 
                       DWORD **d, const int r)
 {
@@ -396,7 +384,6 @@ int i;
 }
 
 /*------------------------------------------------------------------*/
-
 INLINE void cam8o(const int c, const int n, const int a, const int f, 
                   unsigned char d)
 {
@@ -404,7 +391,6 @@ INLINE void cam8o(const int c, const int n, const int a, const int f,
 }
 
 /*------------------------------------------------------------------*/
-
 INLINE void camo(const int c, const int n, const int a, const int f, 
                  WORD d)
 {
@@ -418,7 +404,6 @@ INLINE void camo(const int c, const int n, const int a, const int f,
 }
 
 /*------------------------------------------------------------------*/
-
 INLINE void cam16o(const int c, const int n, const int a, const int f, 
                    WORD d)
 {
@@ -426,7 +411,6 @@ INLINE void cam16o(const int c, const int n, const int a, const int f,
 }
 
 /*------------------------------------------------------------------*/
-
 INLINE void cam24o(const int c, const int n, const int a, const int f, 
                    DWORD d)
 {
@@ -441,7 +425,6 @@ INLINE void cam24o(const int c, const int n, const int a, const int f,
 }
 
 /*------------------------------------------------------------------*/
-
 INLINE void cam16o_q(const int c, const int n, const int a, const int f, 
                      WORD d, int *x, int *q)
 {
@@ -457,7 +440,6 @@ INLINE void cam16o_q(const int c, const int n, const int a, const int f,
 }
 
 /*------------------------------------------------------------------*/
-
 INLINE void cam24o_q(const int c, const int n, const int a, const int f, 
                      DWORD d, int *x, int *q)
 {
@@ -474,14 +456,12 @@ INLINE void cam24o_q(const int c, const int n, const int a, const int f,
 }
 
 /*------------------------------------------------------------------*/
-
 INLINE void cam8o_r(const int c, const int n, const int a, const int f, 
                     BYTE *d, const int r)
 {
 }
 
 /*------------------------------------------------------------------*/
-
 INLINE void cam16o_r(const int c, const int n, const int a, const int f, 
                      WORD *d, const int r)
 {
@@ -500,7 +480,6 @@ INLINE void cam16o_r(const int c, const int n, const int a, const int f,
 }
 
 /*------------------------------------------------------------------*/
-
 INLINE void cam24o_r(const int c, const int n, const int a, const int f, 
                      DWORD *d, const int r)
 {
@@ -552,7 +531,6 @@ INLINE void camc(const int c, const int n, const int a, const int f)
 }
 
 /*------------------------------------------------------------------*/
-
 INLINE void camc_q(const int c, const int n, const int a, const int f, int *q)
 {
   OUTPW(CCR, c);
@@ -565,7 +543,6 @@ INLINE void camc_q(const int c, const int n, const int a, const int f, int *q)
 }
 
 /*------------------------------------------------------------------*/
-
 INLINE void camc_sa(const int c, const int n, const int a, const int f, const int r)
 {
   int i;
@@ -575,7 +552,6 @@ INLINE void camc_sa(const int c, const int n, const int a, const int f, const in
 }
 
 /*------------------------------------------------------------------*/
-
 INLINE void camc_sn(const int c, const int n, const int a, const int f, const int r)
 {
   int i;
@@ -585,7 +561,6 @@ INLINE void camc_sn(const int c, const int n, const int a, const int f, const in
 }
 
 /*------------------------------------------------------------------*/
-
 #ifdef _MSC_VER
 static HANDLE _hdio = 0;
 #endif
@@ -638,7 +613,6 @@ DWORD size;
 }
 
 /*------------------------------------------------------------------*/
-
 INLINE void cam_exit(void)
 {
 #ifdef _MSC_VER
@@ -654,7 +628,6 @@ DWORD size;
 }
 
 /*------------------------------------------------------------------*/
-
 INLINE void cam_inhibit_set(const int c)
 {
   WORD ccsr;
@@ -665,7 +638,6 @@ INLINE void cam_inhibit_set(const int c)
 }
 
 /*------------------------------------------------------------------*/
-
 INLINE void cam_inhibit_clear(const int c)
 {
   WORD ccsr;
@@ -676,7 +648,6 @@ INLINE void cam_inhibit_clear(const int c)
 }
 
 /*------------------------------------------------------------------*/
-
 INLINE void cam_crate_clear(const int c)
 {
   WORD ccsr;
@@ -687,7 +658,6 @@ INLINE void cam_crate_clear(const int c)
 }
 
 /*------------------------------------------------------------------*/
-
 INLINE void cam_crate_zinit(const int c)
 {
   WORD ccsr;
@@ -698,7 +668,6 @@ INLINE void cam_crate_zinit(const int c)
 }
 
 /*------------------------------------------------------------------*/
-
 INLINE void cam_lam_enable(const int c, const int n)
 { 
   DWORD mask;
@@ -710,7 +679,6 @@ INLINE void cam_lam_enable(const int c, const int n)
 }
 
 /*------------------------------------------------------------------*/
-
 INLINE void cam_lam_disable(const int c, const int n)
 { 
   DWORD mask;
@@ -721,50 +689,29 @@ INLINE void cam_lam_disable(const int c, const int n)
 }
 
 /*------------------------------------------------------------------*/
-
 INLINE void cam_lam_read(const int c, DWORD *lam)
 {
   cam24i(c,30,12,1,lam);
 }
 
 /*------------------------------------------------------------------*/
-
 INLINE void cam_lam_clear(const int c, const int n)
 { 
 }
 
 /*------------------------------------------------------------------*/
-
-INLINE void cam_interrupt_enable(void)
+INLINE void cam_interrupt_enable(const int c)
 {
   printf("cam_interrupt_enable not implemented\n");
 }
 
 /*------------------------------------------------------------------*/
-
-INLINE void cam_interrupt_disable(void)
+INLINE void cam_interrupt_disable(const int c)
 {
   printf("cam_interrupt_disable not implemented\n");
 }
 
 /*------------------------------------------------------------------*/
-
-static void (*old_handler)(void) = NULL;
-
-INLINE void cam_interrupt_attach(void (*isr)(void))
-{ 
-  printf("cam_interrupt_attach not implemented\n");
-}
-
-/*------------------------------------------------------------------*/
-
-INLINE void cam_interrupt_detach(void)
-{
-  printf("caminterrupt_detach not implemented\n");
-}
-
-/*------------------------------------------------------------------*/
-
 INLINE int cam_init_rpc(char *host_name, char *exp_name, char *fe_name, char *client_name, char *rpc_server){return 1;}
 
 /*------------------------------------------------------------------*/
