@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.228  2002/05/31 05:55:26  midas
+  Fixed bug in command line parsing, thanks to Gertjan Hofman
+
   Revision 1.227  2002/05/29 07:33:41  midas
   Increase WEB_BUFFER_SIZE and added warning if too small
 
@@ -10483,7 +10486,7 @@ int tcp_port = 80, daemon = FALSE;
     {
     if (argv[i][0] == '-' && argv[i][1] == 'D')
       daemon = TRUE;
-    if (argv[i][0] == '-' && argv[i][1] == 'd')
+    else if (argv[i][0] == '-' && argv[i][1] == 'd')
       verbose = TRUE;
     else if (argv[i][0] == '-' && argv[i][1] == 'E')
       elog_mode = TRUE;
