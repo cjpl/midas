@@ -10,6 +10,9 @@
                 in the ODB and transferred to experim.h.
 
   $Log$
+  Revision 1.2  2003/12/10 13:56:08  midas
+  Fixed HBOOK compiler warning
+
   Revision 1.1  2003/04/25 13:20:07  midas
   Initial revision
 
@@ -80,8 +83,11 @@ static TH1F *gAdcSumHist;
 
 INT adc_summing_init(void)
 {
+char name[80];
+
   /* book sum histo */
-  HBOOK1(ADCSUM_ID_BASE, "ADC sum", 500, 0.f, 10000.f, 0.f); 
+  strcpy(name, "ADC sum");
+  HBOOK1(ADCSUM_ID_BASE, name, 500, 0.f, 10000.f, 0.f); 
 
   return SUCCESS;
 }
