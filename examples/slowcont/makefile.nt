@@ -25,7 +25,7 @@ LIB_DIR 	= \midas\nt\lib
 # Used drivers
 #                 
 
-DRIVERS = cd_hv.obj cd_multi.obj null.obj
+DRIVERS = hv.obj multi.obj null.obj camacnul.obj
 
 ####################################################################
 # Lines below here should not be edited
@@ -46,12 +46,14 @@ frontend.exe:  $(LIBRARY) $(LIB_DIR)\mfe.obj frontend.c $(DRIVERS)
 .c.obj:
 	$(CC) $(CFLAGS) /c $<
 
-cd_hv.obj:
-	$(CC) $(CFLAGS) /c $(DRV_DIR)\cd_hv.c
-cd_multi.obj:
-	$(CC) $(CFLAGS) /c $(DRV_DIR)\cd_multi.c
+hv.obj:
+	$(CC) $(CFLAGS) /c $(DRV_DIR)\class\hv.c
+multi.obj:
+	$(CC) $(CFLAGS) /c $(DRV_DIR)\class\multi.c
 null.obj:
-	$(CC) $(CFLAGS) /c $(DRV_DIR)\null.c
+	$(CC) $(CFLAGS) /c $(DRV_DIR)\device\null.c
+camacnul.obj:
+	$(CC) $(CFLAGS) /c $(DRV_DIR)\bus\camacnul.c
 	
 clean:
 	del *.obj
