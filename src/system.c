@@ -14,6 +14,9 @@
                 Brown, Prentice Hall
 
   $Log$
+  Revision 1.82  2004/01/28 01:22:39  pierre
+  simple ss_timezone fix
+
   Revision 1.81  2004/01/22 22:47:11  pierre
   correct ss_timezone for VxWorks
 
@@ -2441,14 +2444,10 @@ INT ss_timezone()
 
 \********************************************************************/
 {
-#ifdef OS_DARWIN
+#if defined(OS_DARWIN) || defined(OS_VXWORKS)
   return 0;
 #else
-#ifndef OS_VXWORKS
   return timezone; /* on Linux, comes from "#include <time.h>". */
-#else
-  return 0;     /* Ignored on VxWorks as func() used in mhttpd */
-#endif
 #endif
 }
 
