@@ -14,6 +14,9 @@
  *  Revision    : 1.0  1998        Pierre	 Initial revision
  *                include linux-camac.h from linux drivers
  *  $Log$
+ *  Revision 1.3  1998/11/23 17:45:32  pierre
+ *  cleanup variables, remove test func()
+ *
  *  Revision 1.2  1998/10/09 23:17:41  midas
  *  -PAA- Made OS_LINUX dependent
  *
@@ -268,9 +271,6 @@ INLINE int cselect( int c )
 /*-input---------------------------------------------------------*/
 INLINE void cam16i(const int c, const int n, const int a, const int f, WORD *d)
 {
-  int	stat;
-  long	_d;
-  
   cam24i (c, n, a, f, (DWORD *)d);
 }
 
@@ -670,7 +670,6 @@ INLINE void cam24ei_rq(const int ext, const int f, DWORD **d, const int r)
 /*--external-----------------------------------------------------*/
 INLINE void cam16ei_sa(const int ext, const int f, WORD **d, const int r)
 {
-  static WORD dtemp;
   static int i,b,c,n,a;
 
   came_ext(ext, &b, &c, &n, &a);
@@ -803,7 +802,7 @@ INLINE void cam_interrupt_disable(void)
 }
 
 /*--Interrupt functions------------------------------------------*/
-INLINE void cam_interrupt_attach(void (*isr)())
+INLINE void cam_interrupt_attach(void (*isr)(void))
 {
   printf("cam_interrupt_attach not yet implemented\n");
 }
@@ -827,82 +826,12 @@ INLINE void cam_glint_disable(void)
   printf("cam_glint_disable not yet implemented\n");
 }
 
-/*--Interrupt functions------------------------------------------*/
-INLINE void cam_glint_attach(int lam, void (*isr)())
+INLINE void cam_glint_attach(int lam, void (*isr)(void))
 {
   printf("cam_glint_attach not yet implemented\n");
 }
 
-/*-Tests---------------------------------------------------------*/
-void camaclx(void)
-{
-  printf("\n---> Direct CAMAC from Linux box (camaclx.c)<---\n");
-  printf("Macro  : CAM_CSRCHK CAM_CARCHK CAM_BTBCHK CAM_QXCHK\n");
-  printf("Macro  : CAM_GLCHK CAM_QCHK CAM_XCHK\n");
-  printf("Inline : All mcstd functions\n");
-  printf("Test   : camop()                <--- -> CSR, CAR, BTB\n");
-  printf("Test   : camE_ext(ext)          <--- ext -> b,c,n,a\n");
-  printf("Test   : camC(c,n,a,f)          <--- cmd -> c,n,a,f\n");
-  printf("Test   : camI(c,n,a,f)   (16)   <--- c,n,a,f -> d\n");
-  printf("Test   : camO(c,n,a,f,d) (16)   <--- d -> c,n,a,f\n");
-  printf("Test   : camI24(c,n,a,f)        <--- c,n,a,f -> d\n");
-  printf("Test   : camO24(c,n,a,f,d)      <--- d -> c,n,a,f\n");
-  printf("Test   : attach_interrupt()     <--- attach, enable Int2\n");
-}
-
-void tint (void)
-{
-  static int private_counter=0;
-  printf("%tint external interrupt #%i received and served\n",private_counter++);
-}
-
-void attach_interrupt(void)
-{
-  cam_interrupt_attach(tint);
-  cam_interrupt_enable();
-  printf("Please generate an interrupt\n");
-}
-
-void camop(void)
-{
-}
-
-void camE_ext(int ext)
-{
-  int b,c,n,a;
-  came_ext(ext,&b,&c,&n,&a);
-  printf("ext:0x%x -> b:%2i c:%2i n:%2i a:%2i\n",ext,b,c,n,a);
-}
-
-void camI(int c, int n, int a, int f)
-{
-  WORD d;
-  cami(c,n,a,f,&d);
-  printf("c:%2i n:%2i a:%2i f:%2i -> d:0x%4x (%i)\n",c,n,a,f,d,d);
-}
-
-void camO(int c, int n, int a, int f, int d)
-{
-  camo(c,n,a,f,(WORD)d);
-}
-
-void camC(int c, int n, int a, int f)
-{
-  camc(c,n,a,f);
-}
-
-void camI24(int c, int n, int a, int f)
-{
-  DWORD d;
-  cam24i(c,n,a,f,&d);
-  printf("c%1i n%2.2i a%2.2i f%2.2i -> d:0x%6x (%i)\n",c,n,a,f,d,d);
-}
-
-void camO24(int c, int n, int a, int f, int d)
-{
-  camo(c,n,a,f,(WORD)d);
-}
-
+/*--Extra functions------------------------------------------*/
 int cam_init_rpc(char *host_name, char *exp_name, char *client_name, char *rpc_server)
 {
   return SUCCESS;
