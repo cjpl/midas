@@ -1,3 +1,15 @@
+Version 1.1.3, released October 12th, 2001
+==========================================
+
+- Various problems fixed with read passwords:
+  o First page of single logbook was always displayed even with read password
+  o Without "-k" flag, some browsers were hanging on password page
+- Fixed CRLF problem with some SMTP hosts (courtesy of Michael Jones)
+- Fixed a bug in the elog submission program which added a wrong line
+  at the end of a message
+- Fixed bug which caused the "find" function to display only one entry if
+  a file xyx.log is present in the data directory
+
 Version 1.1.2, released October 9th, 2001
 =========================================
 
