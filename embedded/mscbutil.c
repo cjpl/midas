@@ -6,6 +6,9 @@
   Contents:     Various utility functions for MSCB protocol
 
   $Log$
+  Revision 1.45  2004/12/21 10:45:42  midas
+  Made secondary port on SCS-1000 working
+
   Revision 1.44  2004/12/10 11:23:12  midas
   Changed baud rates
 
@@ -427,8 +430,6 @@ void serial_int1(void) interrupt 20 using 2
       /* character has been received */
       rbuf[n_recv++] = SBUF1;
       SCON1 &= ~0x01;           // clear RI flag
-
-      led_blink(1, 1, 100);
    }
 }
 
@@ -436,13 +437,18 @@ void serial_int1(void) interrupt 20 using 2
 
 #ifdef SCS_1000
 
-unsigned char uart1_send(char *buffer, int size)
+unsigned char uart1_send(char *buffer, int size, unsigned char bit9)
 {
 unsigned char i;
+
+   /* empty receive buffer */
+   n_recv = 0;
 
    SFRPAGE = UART1_PAGE;
 
    RS485_SEC_ENABLE = 1;
+   TB81 = bit9;
+
    for (i=0 ; i<size ; i++) {
 
       ti1_shadow = 0;
@@ -468,26 +474,31 @@ long start_time;
    len = 0;
    do {
 
-      if (time() - start_time > 10) // timeout after 100ms
-         return 0;
+      if (time() - start_time > 1) // timeout after 20ms
+         return 0;  
 
       if (n_recv > 0) {
 
+         /* response to ping */
+         if (rbuf[0] == CMD_ACK)
+            return 1;
+
+         /* response to CMD_READ */
          if ((rbuf[0] & 0xF8) != CMD_ACK)
             return 0;
 
-         len = rbuf[0] & 0x07;
+         len = (rbuf[0] & 0x07) + 2;
 
-         if (n_recv == len+1) {
+         if (n_recv == len) {
             if (n_recv > size)
                memcpy(buffer, rbuf, size);
             else
                memcpy(buffer, rbuf, n_recv);
-            return n_recv;
+            return len;
          }
+      }
 
       watchdog_refresh();
-      }
 
    } while (1);
 
@@ -572,11 +583,11 @@ void uart_init(unsigned char port, unsigned char baud)
       0x100 - 0,    //  N/A
       0x100 - 0,    //  N/A
       0x100 - 0,    //  N/A
-      0x100 - 208,  //  28800  2% error
-      0x100 - 104,  //  57600  2% error
-      0x100 - 53,   // 115200  2% error
-      0x100 - 35,   // 172800  2% error
-      0x100 - 18 }; // 345600  2% error
+      0x100 - 213,  //  28800  0.2% error
+      0x100 - 106,  //  57600  0.3% error
+      0x100 - 53,   // 115200  0.3% error
+      0x100 - 35,   // 172800  1.3% error
+      0x100 - 18 }; // 345600  1.6% error
 #else                              // 11.0592 MHz
    unsigned char code baud_table[] =
      {0x100 - 144,  //   2400  
@@ -981,6 +992,9 @@ void delay_us(unsigned int us)
          _nop_();
          for (j=3 ; j>0 ; j--)
             _nop_();
+#elif defined(CPU_C8051F320)
+         _nop_();
+         _nop_();
 #else
          _nop_();
 #endif
