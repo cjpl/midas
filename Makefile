@@ -7,6 +7,9 @@
 #  Contents:     Makefile for MIDAS binaries and examples under unix
 #
 #  $Log$
+#  Revision 1.53  2004/04/04 01:41:20  olchansk
+#  dio does not need to link with midas libraries
+#
 #  Revision 1.52  2004/01/22 06:33:10  pierre
 #  fix location of midas.so
 #
@@ -518,7 +521,7 @@ $(BIN_DIR)/lazylogger: $(SRC_DIR)/lazylogger.c $(LIB_DIR)/ybos.o
 	$(CC) $(CFLAGS) $(OSFLAGS) -o $@ $(SRC_DIR)/lazylogger.c $(LIB) -lz $(LIBS)
 
 $(BIN_DIR)/dio: $(UTL_DIR)/dio.c
-	$(CC) $(CFLAGS) $(OSFLAGS) -o $@ $(UTL_DIR)/dio.c $(LIB) $(LIBS)
+	$(CC) $(CFLAGS) $(OSFLAGS) -o $@ $(UTL_DIR)/dio.c
 
 $(BIN_DIR)/stripchart.tcl: $(UTL_DIR)/stripchart.tcl
 	cp -f $(UTL_DIR)/stripchart.tcl $(BIN_DIR)/. 
