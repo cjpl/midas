@@ -9,6 +9,9 @@
                 for SCS-1000 stand alone control unit
 
   $Log$
+  Revision 1.6  2004/12/21 10:47:38  midas
+  Subtract ADC offset
+
   Revision 1.5  2004/09/25 01:14:54  midas
   Started implementing slave port on SCS-1000
 
@@ -72,6 +75,8 @@ struct {
    float aofs[8];
 
    float rem_adc, rem_dac;
+
+   unsigned char remrel[4];
 } xdata user_data;
 
 MSCB_INFO_VAR code variables[] = {
@@ -116,8 +121,9 @@ MSCB_INFO_VAR code variables[] = {
    { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "AOFS7",   &user_data.aofs[7], -0.1, 0.1, 0.001 },
 
    //## test
-//   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT | MSCBF_REMIN,  "RemAdc",  &user_data.rem_adc, 0, 0, 0, 1, 1 },
-   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT | MSCBF_REMOUT, "RemDac",  &user_data.rem_dac, 0, 0, 0, 1, 2 },
+//   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT | MSCBF_REMIN,  "RemAdc",  &user_data.rem_adc, 0, 0, 0, 2, 0 },
+//   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT | MSCBF_REMOUT, "RemDac",  &user_data.rem_dac, 0, 0, 0, 1, 2 },
+//   { 1, UNIT_BOOLEAN, 0, 0, MSCBF_REMIN | MSCBF_REMOUT, "RemRel0",  &user_data.remrel[0], 0, 1, 1, 1, 0 },
 
    { 0 }
 };
@@ -194,6 +200,11 @@ void user_init(unsigned char init)
    user_write(8);
    user_write(9);
 
+   /* write remote variables */
+   for (i = 0; variables[i].width; i++)
+      if (variables[i].flags & MSCBF_REMOUT)
+         send_remote_var(i);
+
    /* display startup screen */
    lcd_goto(0, 0);
    for (i=0 ; i<7-strlen(sys_info.node_name)/2 ; i++)
@@ -249,6 +260,7 @@ void user_write(unsigned char index) reentrant
       DAC1H = d >> 8;
       break;
    }
+
 }
 
 /*---- User read function ------------------------------------------*/
@@ -286,7 +298,8 @@ void adc_read(channel, float *d)
    value = 0;
    for (i = 0; i < n; i++) {
       DISABLE_INTERRUPTS;
-
+  
+      SFRPAGE = ADC0_PAGE;
       AD0INT = 0;
       AD0BUSY = 1;
       while (!AD0INT);          // wait until conversion ready, does NOT work with ADBUSY!
@@ -304,7 +317,7 @@ void adc_read(channel, float *d)
    else
       gvalue = value / 65536.0 * 10; // 0...10V range
 
-   gvalue += user_data.aofs[channel];
+   gvalue -= user_data.aofs[channel];
 
    DISABLE_INTERRUPTS;
    *d = gvalue;
@@ -390,8 +403,6 @@ static bit b0_old = 0, b1_old = 0, b2_old = 0, b3_old = 0;
 }
 
 /*---- User loop function ------------------------------------------*/
-
-unsigned char uart1_send(char *buffer, int size);
 
 void user_loop(void)
 {
