@@ -6,6 +6,9 @@
   Contents:     List of MSCB RPC functions with parameters
 
   $Log$
+  Revision 1.5  2002/11/29 08:02:52  midas
+  Fixed linux warnings
+
   Revision 1.4  2002/11/28 13:04:36  midas
   Implemented protocol version 1.2 (echo, read_channels)
 
@@ -23,21 +26,24 @@
 
 #ifdef _MSC_VER
 
-#include <stdio.h>
 #include <windows.h>
 
 #elif defined(__linux__)
 
+#include <unistd.h>
 #include <stdarg.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netdb.h>
 #include <netinet/in.h>
+#include <arpa/inet.h>
+#include <string.h>
 
 #define closesocket(s) close(s)
 
 #endif
 
+#include <stdio.h>
 #include "mscb.h"
 #include "rpc.h"
 
@@ -395,7 +401,7 @@ char         return_buffer[NET_BUFFER_SIZE];
   index = i;
   if (rpc_list[i].id == 0)
     {
-    printf("rpc_execute: Invalid rpc ID (%ld)\n", routine_id);
+    printf("rpc_execute: Invalid rpc ID (%d)\n", routine_id);
     return RPC_INVALID_ID;
     }
 
@@ -679,7 +685,7 @@ NET_COMMAND     *nc;
   index = i;
   if (rpc_list[i].id == 0)
     {
-    printf("rpc_call: invalid rpc ID (%ld)", routine_id);
+    printf("rpc_call: invalid rpc ID (%d)", routine_id);
     return RPC_INVALID_ID;
     }
 

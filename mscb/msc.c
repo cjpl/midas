@@ -6,6 +6,9 @@
   Contents:     Command-line interface for the Midas Slow Control Bus
 
   $Log$
+  Revision 1.24  2002/11/29 08:02:52  midas
+  Fixed linux warnings
+
   Revision 1.23  2002/11/28 14:44:09  midas
   Removed SIZE_XBIT
 
@@ -78,14 +81,22 @@
 \********************************************************************/
 
 #ifdef _MSC_VER
+
 #include <windows.h>
 #include <conio.h>
+#include <io.h>
+
+#elif defined(__linux__)
+
+#define O_BINARY 0
+
+#include <unistd.h>
+
 #endif
 
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <io.h>
 #include <fcntl.h>
 #include "mscb.h"
 #include "rpc.h"
@@ -98,53 +109,53 @@ typedef struct {
 } NAME_TABLE;
 
 NAME_TABLE prefix_table[] = {
-  PRFX_PICO,  "Pico",
-  PRFX_NANO,  "Nano",
-  PRFX_MICRO, "Micro",
-  PRFX_MILLI, "Milli",
-  PRFX_NONE,  "",
-  PRFX_KILO,  "Kilo",
-  PRFX_MEGA,  "Mega",
-  PRFX_GIGA,  "Giga",
-  PRFX_TERA,  "Tera",
-  0
+  { PRFX_PICO,  "Pico",   },
+  { PRFX_NANO,  "Nano",   },
+  { PRFX_MICRO, "Micro",  },
+  { PRFX_MILLI, "Milli",  },
+  { PRFX_NONE,  "",       },
+  { PRFX_KILO,  "Kilo",   },
+  { PRFX_MEGA,  "Mega",   },
+  { PRFX_GIGA,  "Giga",   },
+  { PRFX_TERA,  "Tera",   },
+  { 0                     }
 };
 
 NAME_TABLE unit_table[] = {
 
-  UNIT_METER,      "meter",     
-  UNIT_GRAM,       "gram",     
-  UNIT_SECOND,     "second",     
-  UNIT_MINUTE,     "minute", 
-  UNIT_HOUR,       "hour", 
-  UNIT_AMPERE,     "ampere",     
-  UNIT_KELVIN,     "kelvin",     
-  UNIT_CELSIUS,    "deg. celsius",     
-  UNIT_FARENHEIT,  "deg. farenheit",     
+  { UNIT_METER,      "meter",           },
+  { UNIT_GRAM,       "gram",            },
+  { UNIT_SECOND,     "second",          },
+  { UNIT_MINUTE,     "minute",          },
+  { UNIT_HOUR,       "hour",            },
+  { UNIT_AMPERE,     "ampere",          },
+  { UNIT_KELVIN,     "kelvin",          },
+  { UNIT_CELSIUS,    "deg. celsius",    }, 
+  { UNIT_FARENHEIT,  "deg. farenheit",  },   
 
-  UNIT_HERTZ,      "hertz",      
-  UNIT_PASCAL,     "pascal",      
-  UNIT_BAR,        "bar", 
-  UNIT_WATT,       "watt",      
-  UNIT_VOLT,       "volt",      
-  UNIT_OHM,        "ohm", 
-  UNIT_TESLA,      "tesls", 
-  UNIT_LITERPERSEC,"liter/sec",      
-  UNIT_RPM,        "RPM", 
+  { UNIT_HERTZ,      "hertz",           },
+  { UNIT_PASCAL,     "pascal",          },
+  { UNIT_BAR,        "bar",             },
+  { UNIT_WATT,       "watt",            },
+  { UNIT_VOLT,       "volt",            },
+  { UNIT_OHM,        "ohm",             },
+  { UNIT_TESLA,      "tesls",           },
+  { UNIT_LITERPERSEC,"liter/sec",       },
+  { UNIT_RPM,        "RPM",             },
 
-  UNIT_BOOLEAN,    "boolean", 
-  UNIT_BYTE,       "byte", 
-  UNIT_WORD,       "word", 
-  UNIT_DWORD,      "dword", 
-  UNIT_ASCII,      "ascii", 
-  UNIT_STRING,     "string",
-  UNIT_BAUD,       "baud",
+  { UNIT_BOOLEAN,    "boolean",         },
+  { UNIT_BYTE,       "byte",            },
+  { UNIT_WORD,       "word",            },
+  { UNIT_DWORD,      "dword",           },
+  { UNIT_ASCII,      "ascii",           },
+  { UNIT_STRING,     "string",          },
+  { UNIT_BAUD,       "baud",            },
 
-  UNIT_PERCENT,    "percent", 
-  UNIT_PPM,        "RPM", 
-  UNIT_COUNT,      "counts",
-  UNIT_FACTOR,     "factor",
-  0
+  { UNIT_PERCENT,    "percent",         },
+  { UNIT_PPM,        "RPM",             },
+  { UNIT_COUNT,      "counts",          },
+  { UNIT_FACTOR,     "factor",          },
+  { 0                                   }
 };
 
 /*------------------------------------------------------------------*/
@@ -174,7 +185,7 @@ void print_help()
 
 /*------------------------------------------------------------------*/
 
-print_channel(int index, MSCB_INFO_CHN *info_chn, int data, int verbose)
+void print_channel(int index, MSCB_INFO_CHN *info_chn, int data, int verbose)
 {
 char str[80];
 int  i;
@@ -599,7 +610,7 @@ MSCB_INFO_CHN info_chn;
             else
               {
               if (param[2][1] == 'x')
-                sscanf(param[2]+2, "%lx", &data);
+                sscanf(param[2]+2, "%x", &data);
               else
                 data = atoi(param[2]);
               }
@@ -609,7 +620,7 @@ MSCB_INFO_CHN info_chn;
           else if (current_group >= 0)
             {
             if (param[2][1] == 'x')
-              sscanf(param[2]+2, "%lx", &data);
+              sscanf(param[2]+2, "%x", &data);
             else
               data = atoi(param[2]);
 
@@ -686,7 +697,7 @@ MSCB_INFO_CHN info_chn;
             else
               {
               if (param[2][1] == 'x')
-                sscanf(param[2]+2, "%lx", &data);
+                sscanf(param[2]+2, "%x", &data);
               else
                 data = atoi(param[2]);
               }
@@ -811,7 +822,7 @@ MSCB_INFO_CHN info_chn;
         if (param[1][0] == 0)
           {
           printf("Enter name of HEX-file: ");
-          gets(str);
+          fgets(str, sizeof(str), stdin);
           }
         else
           strcpy(str, param[1]);
@@ -844,24 +855,32 @@ MSCB_INFO_CHN info_chn;
       unsigned char d1, d2;
       int i, status;
 
-      i = 0;
-      while (!kbhit())
+      if (current_addr < 0)
+        printf("You must first address an individual node\n");
+      else
         {
-        d1 = rand();
-
-        status = mscb_echo(fd, current_addr, d1, &d2);
-
-        if (d2 != d1)
-          printf("%d\nReceived: %02X, should be %02X, status = %d\n", i, d2, d1, status);
-
-        i++;
-        if (i % 100 == 0)
+        i = 0;
+        while (!kbhit())
           {
-          printf("%d\r", i);
-          fflush(stdout);
-          }
+          d1 = rand();
 
-        //Sleep(10);
+          status = mscb_echo(fd, current_addr, d1, &d2);
+
+          if (d2 != d1)
+            {
+            printf("%d\nReceived: %02X, should be %02X, status = %d\n", i, d2, d1, status);
+            break; //##
+            }
+
+          i++;
+          if (i % 100 == 0)
+            {
+            printf("%d\r", i);
+            fflush(stdout);
+            }
+
+          Sleep(10);
+          }
         }
       }
 
@@ -890,7 +909,7 @@ MSCB_INFO_CHN info_chn;
 
 /*------------------------------------------------------------------*/
 
-main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
 int   i, fd, adr, server;
 char  cmd[256], device[256];
@@ -940,7 +959,7 @@ usage:
         printf("usage: msc [-d host:device] [-a addr] [-c Command] [-c @CommandFile] [-v] [-i]\n\n");
         printf("       -d     device, usually \"%s\" for parallel port,\n", device);
         printf("              or 0x378 for direct parallel port address,\n");
-        printf("              or \"<host>:%s\" for RPC connection\n", device, device);
+        printf("              or \"<host>:%s\" for RPC connection\n", device);
         printf("       -s     Start RPC server\n");
         printf("       -a     Address node before executing command\n");
         printf("       -c     Execute command immediately\n");
