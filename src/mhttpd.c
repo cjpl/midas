@@ -6,6 +6,9 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
+  Revision 1.35  1999/09/15 13:33:32  midas
+  Added remote el_submit functionality
+
   Revision 1.34  1999/09/15 09:33:05  midas
   Re-establish ctrlc-handler
 
@@ -132,6 +135,8 @@ BOOL connected;
 char _param[MAX_PARAM][NAME_LENGTH];
 char _value[MAX_PARAM][VALUE_SIZE];
 char _text[TEXT_SIZE];
+char *_attachment_buffer;
+INT  _attachment_size;
 
 char *mname[] = {
   "January",
@@ -1742,7 +1747,7 @@ char str[80];
   el_submit(atoi(getparam("run")), getparam("author"), getparam("type"),
             getparam("system"), getparam("subject"), getparam("text"), 
             getparam("orig"), *getparam("html") ? "HTML" : "plain", 
-            getparam("attachment"), str);
+            getparam("attachment"), _attachment_buffer, _attachment_size, str, sizeof(str));
 
   rsprintf("HTTP/1.0 302 Found\r\n");
   rsprintf("Server: MIDAS HTTP %s\r\n", cm_get_version());
@@ -1800,7 +1805,7 @@ KEY   key;
   strcpy(text+strlen(text)-1, "</code>");
   
   el_submit(atoi(getparam("run")), getparam("author"), getparam("form"),
-            "General", "", text, "", "HTML", "", str);
+            "General", "", text, "", "HTML", "", NULL, 0, str, sizeof(str));
 
   rsprintf("HTTP/1.0 302 Found\r\n");
   rsprintf("Server: MIDAS HTTP %s\r\n", cm_get_version());
@@ -4177,11 +4182,7 @@ char *p, *pitem;
 
 void decode_post(char *string, char *boundary, int length, char *cookie_pwd, int refresh)
 {
-char   *pinit, *p, *pitem, *ptmp, dir[256], file_name[256];
-int    fh, size;
-DWORD  now;
-struct tm *tms;
-HNDLE  hDB;
+char   *pinit, *p, *pitem, *ptmp, file_name[256];
 
   initparam();
 
@@ -4216,49 +4217,9 @@ HNDLE  hDB;
         if (strchr(p, '\"'))
           *strchr(p, '\"') = 0;
 
-        /* strip path from filename */
-        while (strchr(p, '\\'))
-          p = strchr(p, '\\')+1; /* NT */
-        while (strchr(p, '/'))
-          p = strchr(p, '/')+1;  /* Unix */
-        while (strchr(p, ']'))
-          p = strchr(p, ']')+1;  /* VMS */
-
-        /* assemble ELog filename */
-        if (p[0])
-          {
-          cm_get_experiment_database(&hDB, NULL);
-          dir[0] = 0;
-          if (hDB > 0)
-            {
-            size = sizeof(dir);
-            memset(dir, 0, size);
-            db_get_value(hDB, 0, "/Logger/Data dir", dir, &size, TID_STRING);
-            if (dir[0] != 0)
-              if (dir[strlen(dir)-1] != DIR_SEPARATOR)
-                strcat(dir, DIR_SEPARATOR_STR);
-            }
-
-
-#if !defined(OS_VXWORKS) 
-#if !defined(OS_VMS)
-          tzset();
-#endif
-#endif
-        
-          time(&now);
-          tms = localtime(&now);
-
-          sprintf(file_name, "%02d%02d%02d_%02d%02d%02d_%s",
-                  tms->tm_year % 100, tms->tm_mon+1, tms->tm_mday,
-                  tms->tm_hour, tms->tm_min, tms->tm_sec, p);
-          setparam("attachment", file_name);
-          sprintf(file_name, "%s%02d%02d%02d_%02d%02d%02d_%s", dir, 
-                  tms->tm_year % 100, tms->tm_mon+1, tms->tm_mday,
-                  tms->tm_hour, tms->tm_min, tms->tm_sec, p);
-          }
-        else
-          file_name[0] = 0;
+        /* set attachment filename */
+        strcpy(file_name, p);
+        setparam("attachment", file_name);
 
         /* find next boundary */
         ptmp = string;
@@ -4283,19 +4244,11 @@ HNDLE  hDB;
 
           } while (TRUE);
 
-        /* save file */
+        /* save pointer to file */
         if (file_name[0])
           {
-          fh = open(file_name, O_CREAT | O_RDWR | O_BINARY, 0644);
-          if (fh < 0)
-            {
-            /* print error message */
-            }
-          else
-            {
-            write(fh, string, (INT)p - (INT) string); 
-            close(fh);
-            }
+          _attachment_buffer = string;
+          _attachment_size = (INT)p - (INT) string; 
           }
 
         string = strstr(p, boundary) + strlen(boundary);

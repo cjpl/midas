@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.47  1999/09/15 13:33:34  midas
+  Added remote el_submit functionality
+
   Revision 1.46  1999/09/14 15:15:45  midas
   Moved el_xxx funtions into midas.c
 
@@ -13634,7 +13637,8 @@ char         str[80];
 \********************************************************************/
 
 INT el_submit(int run, char *author, char *type, char *system, char *subject, 
-              char *text, char *reply_to, char *encoding, char *attachment, char *tag)
+              char *text, char *reply_to, char *encoding, char *afilename, 
+              char *buffer, INT buffer_size, char *tag, INT tag_size)
 /********************************************************************\
 
   Routine: el_submit
@@ -13650,22 +13654,95 @@ INT el_submit(int run, char *author, char *type, char *system, char *subject,
     char   *text            Message text
     char   *reply_to        In reply to this message
     char   *encoding        Text encoding, either HTML or plain
-    char   *attachment      File attachment
+    char   *afilename       File name of attachment
+    char   *buffer          File contents
+    INT    *buffer_size     Size of buffer in bytes
+    INT    *tag_size        Maximum size of tag
 
   Output:
     char   *tag             Message tag in the form YYMMDD.offset
+    INT    *tag_size        Size of returned tag
 
   Function value:
     EL_SUCCESS              Successful completion
 
 \********************************************************************/
 {
+  if (rpc_is_remote())
+    return rpc_call(RPC_EL_SUBMIT, run, author, type, system, subject,
+                    text, reply_to, encoding, afilename, buffer, buffer_size,
+                    tag, tag_size);
+
+#ifdef LOCAL_ROUTINES
+{
 int     size, fh, status;
 struct  tm *tms;
-char    file_name[256], dir[256], str[256], start_str[80], end_str[80], last[80];
+char    file_name[256], afile_name[256], dir[256], str[256], 
+        start_str[80], end_str[80], last[80];
 HNDLE   hDB;
 time_t  now;
-char    message[10000];
+char    message[10000], *p;
+
+  /* generate filename for attachment */
+  afile_name[0] = file_name[0] = 0;
+  if (afilename[0])
+    {
+    strcpy(file_name, afilename);
+    p = file_name;
+    while (strchr(p, ':'))
+      p = strchr(p, ':')+1;
+    while (strchr(p, '\\'))
+      p = strchr(p, '\\')+1; /* NT */
+    while (strchr(p, '/'))
+      p = strchr(p, '/')+1;  /* Unix */
+    while (strchr(p, ']'))
+      p = strchr(p, ']')+1;  /* VMS */
+
+    /* assemble ELog filename */
+    if (p[0])
+      {
+      cm_get_experiment_database(&hDB, NULL);
+      dir[0] = 0;
+      if (hDB > 0)
+        {
+        size = sizeof(dir);
+        memset(dir, 0, size);
+        db_get_value(hDB, 0, "/Logger/Data dir", dir, &size, TID_STRING);
+        if (dir[0] != 0)
+          if (dir[strlen(dir)-1] != DIR_SEPARATOR)
+            strcat(dir, DIR_SEPARATOR_STR);
+        }
+
+  #if !defined(OS_VXWORKS) 
+  #if !defined(OS_VMS)
+      tzset();
+  #endif
+  #endif
+  
+      time(&now);
+      tms = localtime(&now);
+
+      strcpy(str, p);
+      sprintf(afile_name, "%02d%02d%02d_%02d%02d%02d_%s",
+              tms->tm_year % 100, tms->tm_mon+1, tms->tm_mday,
+              tms->tm_hour, tms->tm_min, tms->tm_sec, str);
+      sprintf(file_name, "%s%02d%02d%02d_%02d%02d%02d_%s", dir, 
+              tms->tm_year % 100, tms->tm_mon+1, tms->tm_mday,
+              tms->tm_hour, tms->tm_min, tms->tm_sec, str);
+  
+      /* save attachment */
+      fh = open(file_name, O_CREAT | O_RDWR | O_BINARY, 0644);
+      if (fh < 0)
+        {
+        cm_msg(MERROR, "el_submit", "Cannot write attachment file \"%s\"", file_name);
+        }
+      else
+        {
+        write(fh, buffer, buffer_size); 
+        close(fh);
+        }
+      }
+    }
 
   /* generate new file name YYMMDD.log in data directory */
   cm_get_experiment_database(&hDB, NULL);
@@ -13705,7 +13782,7 @@ char    message[10000];
   sprintf(message+strlen(message), "Type: %s\n", type);
   sprintf(message+strlen(message), "System: %s\n", system);
   sprintf(message+strlen(message), "Subject: %s\n", subject);
-  sprintf(message+strlen(message), "Attachment: %s\n", attachment);
+  sprintf(message+strlen(message), "Attachment: %s\n", afile_name);
   sprintf(message+strlen(message), "Encoding: %s\n", encoding);
   sprintf(message+strlen(message), "========================================\n");
   strcat(message, text);
@@ -13766,6 +13843,8 @@ char    message[10000];
 
       } while (TRUE);
     }
+}
+#endif /* LOCAL_ROUTINES */
 
   return EL_SUCCESS;
 }
