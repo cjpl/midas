@@ -7,6 +7,11 @@
                 linked with user code to form a complete frontend
 
   $Log$
+  Revision 1.35  2001/11/20 19:22:07  pierre
+  - Add rpc_flush_event in case no periodic eqp
+  - Force rpc_flush_event for low trigger rate
+  - Patch /Statistics in case it exists but size=0
+
   Revision 1.34  2001/06/27 12:34:49  midas
   Added -D flag to become a daemon
 
@@ -296,6 +301,7 @@ INT status, i;
     interrupt_enable(TRUE);
 
   /* flush remaining buffered events */
+  rpc_flush_event();
   for (i=0 ; equipment[i].name[0] ; i++)
     if (equipment[i].buffer_handle)
       bm_flush_cache(equipment[i].buffer_handle, SYNC);
@@ -456,6 +462,11 @@ BOOL   manual_trig_flag = FALSE;
 
     /*---- Create and initialize statistics tree -------------------*/
     sprintf(str, "/Equipment/%s/Statistics", equipment[index].name);
+    /*-PAA- Needed in case Statistics exists but size = 0 */
+    status = db_find_key(hDB, 0, str, &hKey);
+    if (status == DB_SUCCESS) {
+      db_delete_key(hDB, hKey, FALSE);
+    }
     db_create_record(hDB, 0, str, EQUIPMENT_STATISTICS_STR);
     db_find_key(hDB, 0, str, &hKey);
 
@@ -1438,12 +1449,12 @@ INT opt_max=0, opt_index=0, opt_tcp_size=128, opt_cnt=0;
             if (!buffer_done)
               {
               rpc_set_option(-1, RPC_OTRANSPORT, RPC_FTCP);
+	      rpc_flush_event();
               bm_flush_cache(equipment[i].buffer_handle, ASYNC);
               rpc_set_option(-1, RPC_OTRANSPORT, RPC_TCP);
               }
             }
           }
-
         interrupt_enable(TRUE);
         }
       }
