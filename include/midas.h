@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.99  2002/06/06 07:49:46  midas
+  Added DF_xxx flags for device drivers
+
   Revision 1.98  2002/06/06 07:15:03  midas
   Added demand_priority for SC FE
 
@@ -1021,11 +1024,10 @@ typedef struct {
 
 /*---- Equipment ---------------------------------------------------*/
 
-#define CH_INPUT    1
-#define CH_OUTPUT   2
-
-#define PRIO_ODB    0
-#define PRIO_DEVICE 1
+#define DF_INPUT       (1<<0)         /* channel is input           */
+#define DF_OUTPUT      (1<<1)         /* channel is output          */
+#define DF_PRIO_DEVICE (1<<2)         /* get demand values from device instead of ODB */
+#define DF_READ_ONLY   (1<<3)         /* never write demand values to device */
 
 typedef struct {
   char   name[NAME_LENGTH];           /* Driver name                       */
@@ -1038,9 +1040,7 @@ typedef struct {
   INT    (*dd)(INT cmd, ...);         /* Device driver entry point         */
   INT    channels;                    /* Number of channels                */
   INT    (*bd)(INT cmd, ...);         /* Bus driver entry point            */
-  DWORD  type;                        /* channel type, combination of CH_xxx*/
-  DWORD  cmd_disabled;                /* Mask of disabled commands         */
-  INT    demand_priority;             /* PRIO_ODB, PRIO_DEVICE             */
+  DWORD  flags;                       /* Combination of DF_xx              */
   void   *dd_info;                    /* Private info for device driver    */
 } DEVICE_DRIVER;
 
