@@ -6,10 +6,7 @@
   Contents:     MIDAS online database functions
 
   $Log$
-  Revision 1.87  2004/03/26 09:33:47  midas
-  Added database record cleanup to db_open_database
-
-  Revision 1.86  2004/03/26 09:33:09  midas
+  Revision 1.88  2004/03/26 09:50:12  midas
   Added database record cleanup to db_open_database
 
   Revision 1.85  2004/01/18 09:57:30  olchansk
@@ -1137,7 +1134,7 @@ INT db_open_database(char *database_name, INT database_size,
                      pkey->notify_count--;
 
                   if (pheader->client[i].open_record[k].access_mode & MODE_WRITE)
-                     db_set_mode(i + 1, pheader->client[i].open_record[k].handle,
+                     db_set_mode(handle + 1, pheader->client[i].open_record[k].handle,
                                  (WORD) (pkey->access_mode & ~MODE_EXCLUSIVE),
                                  2);
                }
