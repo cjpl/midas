@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.92  2001/12/12 16:22:25  midas
+  Added "HTML default" option, fixed "reply" link display
+
   Revision 1.91  2001/12/12 16:01:18  midas
   Fixed wrong help file name and preceeding " | " for MOptions
 
@@ -3712,12 +3715,32 @@ time_t now;
     rsprintf("</textarea><br>\n");
 
     /* HTML check box */
-    if (bedit && encoding[0] == 'H')
-      rsprintf("<input type=checkbox checked name=html value=1>%s\n", loc("Submit as HTML text"));
+    if (bedit)
+      {
+      if (encoding[0] == 'H')
+        rsprintf("<input type=checkbox checked name=html value=1>%s\n", loc("Submit as HTML text"));
+      else
+        rsprintf("<input type=checkbox name=html value=1>%s\n", loc("Submit as HTML text"));
+      }
     else
-      rsprintf("<input type=checkbox name=html value=1>%s\n", loc("Submit as HTML text"));
+      {
+      if (getcfg(logbook, "HTML default", str))
+        {
+        if (atoi(str) == 0)
+          {
+          rsprintf("<input type=checkbox name=html value=1>%s\n", loc("Submit as HTML text"));
+          }
+        else if (atoi(str) == 1)
+          {
+          rsprintf("<input type=checkbox checked name=html value=1>%s\n", loc("Submit as HTML text"));
+          }
+        }
+      else
+        rsprintf("<input type=checkbox name=html value=1>%s\n", loc("Submit as HTML text"));
+      }
     }
 
+  /* Suppress check box */
   if (getcfg(logbook, "Suppress default", str))
     {
     if (atoi(str) == 0)
@@ -3739,6 +3762,7 @@ time_t now;
 
   if (bedit)
     {
+    /* Resubmit check box */
     if (getcfg(logbook, "Resubmit default", str))
       {
       if (atoi(str) == 0)
@@ -6219,21 +6243,21 @@ FILE   *f;
 
     if (msg_status != EL_FILE_ERROR && (reply_tag[0] || orig_tag[0]))
       {
-      rsprintf("<tr><td nowrap width=10%% bgcolor=%s>", gt("Categories bgcolor1"));
 
       if (orig_tag[0])
         {
+        rsprintf("<tr><td nowrap width=10%% bgcolor=%s>", gt("Categories bgcolor1"));
         sprintf(ref, "/%s/%s", logbook_enc, orig_tag);
         rsprintf("<b>In reply to:</b></td><td bgcolor=%s>", gt("Menu2 bgcolor"));
-        rsprintf("<a href=\"%s\">%s</a></td>", ref, orig_tag);
+        rsprintf("<a href=\"%s\">%s</a></td></tr>\n", ref, orig_tag);
         }
       if (reply_tag[0])
         {
+        rsprintf("<tr><td nowrap width=10%% bgcolor=%s>", gt("Categories bgcolor1"));
         sprintf(ref, "/%s/%s", logbook_enc, reply_tag);
         rsprintf("<b>Reply:</b></td><td bgcolor=%s>", gt("Menu2 bgcolor"));
-        rsprintf("<a href=\"%s\">%s</a></td>", ref, reply_tag);
+        rsprintf("<a href=\"%s\">%s</a></td></tr>\n", ref, reply_tag);
         }
-      rsprintf("</tr>\n");
       }
 
     /*---- display attributes ----*/
