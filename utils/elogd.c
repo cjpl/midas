@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.25  2001/08/07 08:03:40  midas
+  Fixed bug in el_retrieve in decoding attachments
+
   Revision 1.24  2001/08/07 07:10:03  midas
   Fixed problem with emails
 
@@ -1346,11 +1349,13 @@ char    message[TEXT_SIZE+100], thread[256], attachment_all[256];
 
   /* break apart attachements */
   for (i=0 ; i<MAX_ATTACHMENTS ; i++)
+    if (attachment[i] != NULL)
+      attachment[i][0] = 0;
+
+  for (i=0 ; i<MAX_ATTACHMENTS ; i++)
     {
     if (attachment[i] != NULL)
       {
-      attachment[i][0] = 0;
-
       if (i == 0)
         p = strtok(attachment_all, ",");
       else
@@ -1358,6 +1363,8 @@ char    message[TEXT_SIZE+100], thread[256], attachment_all[256];
 
       if (p != NULL)
         strcpy(attachment[i], p);
+      else
+        break;
       }
     }
 
