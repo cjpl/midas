@@ -7,6 +7,9 @@
                 routines
 
   $Log$
+  Revision 1.16  1999/11/09 13:17:00  midas
+  Changed shared memory function names to ss_shm_xxx instead ss_xxx_shm
+
   Revision 1.15  1999/10/11 14:16:04  midas
   Added ss_daemon_init and ss_system
 
@@ -375,6 +378,7 @@ typedef struct {
   INT           lock_cnt;           /* flag to avoid multiple locks */
   HNDLE         shm_handle;         /* handle (id) to shared memory */
   INT           index;              /* connection index / tid       */
+  BOOL          protect;            /* read/write protection        */
 
 } DATABASE;
 
@@ -515,9 +519,11 @@ INT EXPRT rpc_set_opt_tcp_size(INT tcp_size);
 INT EXPRT rpc_get_opt_tcp_size(void);
 
 /*---- system services ----*/
-INT ss_open_shm(char *name, INT size, void **adr, HNDLE *handle);
-INT ss_close_shm(char *name, void *adr, HNDLE handle, INT destroy_flag);
-INT ss_flush_shm(char *name, void *adr, INT size);
+INT ss_shm_open(char *name, INT size, void **adr, HNDLE *handle);
+INT ss_shm_close(char *name, void *adr, HNDLE handle, INT destroy_flag);
+INT ss_shm_flush(char *name, void *adr, INT size);
+INT ss_shm_protect(HNDLE handle, void *adr);
+INT ss_shm_unprotect(HNDLE handle, void **adr);
 INT ss_spawnv(INT mode, char *cmdname, char *argv[]);
 INT ss_shell(int sock);
 INT EXPRT ss_daemon_init();

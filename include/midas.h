@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.52  1999/11/09 13:17:00  midas
+  Changed shared memory function names to ss_shm_xxx instead ss_xxx_shm
+
   Revision 1.51  1999/11/08 13:55:54  midas
   Added AT_xxx
 
@@ -1363,6 +1366,7 @@ INT EXPRT bm_empty_buffers(void);
 INT EXPRT db_open_database(char *database_name, INT database_size, HNDLE *hdb, char *client_name);
 INT EXPRT db_close_database(HNDLE database_handle);
 INT EXPRT db_close_all_databases(void);
+INT EXPRT db_protect_database(HNDLE database_handle);
 
 INT EXPRT db_create_key(HNDLE hdb, HNDLE key_handle, char *key_name, DWORD type);
 INT EXPRT db_create_link(HNDLE hdb, HNDLE key_handle, char *link_name, char *destination);
@@ -1370,6 +1374,8 @@ INT EXPRT db_set_value(HNDLE hdb, HNDLE hKeyRoot, char *key_name, void *data, IN
 INT EXPRT db_get_value(HNDLE hdb, HNDLE hKeyRoot, char *key_name, void *data, INT *size, DWORD type);
 INT EXPRT db_find_key(HNDLE hdb, HNDLE hkey, char *name, HNDLE *hsubkey);
 INT EXPRT db_find_link(HNDLE hDB, HNDLE hKey, char *key_name, HNDLE *subhKey);
+INT EXPRT db_find_key1(HNDLE hdb, HNDLE hkey, char *name, HNDLE *hsubkey);
+INT EXPRT db_find_link1(HNDLE hDB, HNDLE hKey, char *key_name, HNDLE *subhKey);
 INT EXPRT db_scan_tree(HNDLE hDB, HNDLE hKey, int level, void (*callback)(HNDLE,HNDLE,KEY*,INT,void *), void *info);
 INT EXPRT db_scan_tree_link(HNDLE hDB, HNDLE hKey, int level, void (*callback)(HNDLE,HNDLE,KEY*,INT,void *), void *info);
 INT EXPRT db_get_path(HNDLE hDB, HNDLE hKey, char *path, INT buf_size);
