@@ -6,6 +6,9 @@
   Contents:     MIDAS history display utility
 
   $Log$
+  Revision 1.7  1999/08/17 12:39:51  midas
+  Fixed bug
+
   Revision 1.6  1999/07/06 09:02:53  midas
   Fixed little bug
 
@@ -245,6 +248,9 @@ char     var_name[NAME_LENGTH], file_name[256];
   /* turn off system message */
   cm_set_msg_print(0, MT_ALL, puts);
 
+  var_name[0] = 0;
+  file_name[0] = 0;
+
   if (argc == 1)
     {
     status = query_params(&event_id, &start_time, &end_time,
@@ -259,8 +265,6 @@ char     var_name[NAME_LENGTH], file_name[256];
     interval = 1;
     index = 0;
     var_type = 0;
-    var_name[0] = 0;
-    file_name[0] = 0;
     event_id = 0;
 
     /* parse command line parameters */
