@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol commands
 
   $Log$
+  Revision 1.3  2002/07/08 08:50:42  midas
+  Added mscbutil functions
+
   Revision 1.2  2002/07/05 15:27:23  midas
   *** empty log message ***
 
@@ -127,7 +130,8 @@ void lcd_putc(char c);
 void lcd_puts(char *str);
 char scs_lcd1_read();
 
-void eeprom_read(unsigned char idata *dst, unsigned char len, unsigned char offset);
-void eeprom_write(unsigned char idata *src, unsigned char len, unsigned char offset);
+void eeprom_read(void idata *dst, unsigned char len, unsigned char offset);
+void eeprom_write(void idata *src, unsigned char len, unsigned char offset);
 
+void uart_init(unsigned char baud);
 
