@@ -6,6 +6,9 @@
   Contents:     Command-line interface to the MIDAS online data base.
 
   $Log$
+  Revision 1.31  1999/11/09 13:17:26  midas
+  Added secure ODB feature
+
   Revision 1.30  1999/11/03 16:19:39  midas
   Added "start now" command for batch programs
 
@@ -2530,7 +2533,11 @@ PRINT_INFO      print_info;
     /* test 3 */
     else if (param[0][0] == 't' && param[0][1] == '3')
       {
+      cm_set_watchdog_params(FALSE, 0);
+      db_protect_database(hDB);
+      db_find_key(hDB, 0, "/runinfo/run number", &hKey);
       }
+
 
     /* exit/quit */
     else if ((param[0][0] == 'e' && param[0][1] == 'x' && param[0][2] == 'i') ||

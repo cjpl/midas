@@ -14,6 +14,9 @@
                 Brown, Prentice Hall
 
   $Log$
+  Revision 1.48  1999/11/09 13:17:27  midas
+  Added secure ODB feature
+
   Revision 1.47  1999/11/09 08:36:54  midas
   Don't use console IO under Windows 95
 
@@ -157,7 +160,7 @@
   Fixed error occuring when .ODB.SHM had zero size
 
   Revision 1.4  1998/10/12 14:00:19  midas
-  ss_open_shm returns memory size in case of failure
+  ss_shm_open returns memory size in case of failure
 
   Revision 1.3  1998/10/12 12:19:03  midas
   Added Log tag in header
@@ -220,12 +223,13 @@ INT old_flag;
   ss_in_async_routine_flag = flag;
   return old_flag;
 }
+
 /*------------------------------------------------------------------*/
 
-INT ss_open_shm(char *name, INT size, void **adr, HNDLE *handle)
+INT ss_shm_open(char *name, INT size, void **adr, HNDLE *handle)
 /********************************************************************\
 
-  Routine: ss_open_shm
+  Routine: ss_shm_open
 
   Purpose: Create a shared memory region which can be seen by several
 	   processes which know the name.
@@ -306,7 +310,7 @@ char   mem_name[256], file_name[256], path[256], *p;
                        FILE_ATTRIBUTE_NORMAL, 0);
     if (!hFile)
       {
-      cm_msg(MERROR, "ss_open_shm", "CreateFile() failed");
+      cm_msg(MERROR, "ss_shm_open", "CreateFile() failed");
       return SS_FILE_ERROR;
       }
 
@@ -320,7 +324,7 @@ char   mem_name[256], file_name[256], path[256], *p;
     if (!hMap)
       {
       status = GetLastError();
-      cm_msg(MERROR, "ss_open_shm", "CreateFileMapping() failed, error %d", status);
+      cm_msg(MERROR, "ss_shm_open", "CreateFileMapping() failed, error %d", status);
       return SS_FILE_ERROR;
       }
 
@@ -333,7 +337,7 @@ char   mem_name[256], file_name[256], path[256], *p;
 
   if (adr == NULL)
     {
-    cm_msg(MERROR, "ss_open_shm", "MapViewOfFile() failed");
+    cm_msg(MERROR, "ss_shm_open", "MapViewOfFile() failed");
     return SS_NO_MEMORY;
     }
 
@@ -396,7 +400,7 @@ char   mem_name[256], file_name[256], path[256], *p;
 
     if (key == -1)
       {
-      cm_msg(MERROR, "ss_open_shm", "ftok() failed");
+      cm_msg(MERROR, "ss_shm_open", "ftok() failed");
       return SS_FILE_ERROR;
       }
 
@@ -426,9 +430,9 @@ char   mem_name[256], file_name[256], path[256], *p;
   if (shmid == -1)
     {
     if (errno == EINVAL)
-      cm_msg(MERROR, "ss_open_shm", "shmget() failed, shared memory size %d exceeds system limit", size);
+      cm_msg(MERROR, "ss_shm_open", "shmget() failed, shared memory size %d exceeds system limit", size);
     else
-      cm_msg(MERROR, "ss_open_shm", "shmget() failed, errno = %d", errno);
+      cm_msg(MERROR, "ss_shm_open", "shmget() failed, errno = %d", errno);
 
     return SS_NO_MEMORY;
     }
@@ -444,7 +448,7 @@ char   mem_name[256], file_name[256], path[256], *p;
   if ( (*adr) == (void *) (-1) )
     {
     sprintf(str, "shmat() failed, errno = %d", errno);
-    cm_msg(MERROR, "ss_open_shm", str);
+    cm_msg(MERROR, "ss_shm_open", str);
     return SS_NO_MEMORY;
     }
 
@@ -467,10 +471,10 @@ char   mem_name[256], file_name[256], path[256], *p;
 
 /*------------------------------------------------------------------*/
 
-INT ss_close_shm(char *name, void *adr, HNDLE handle, INT destroy_flag)
+INT ss_shm_close(char *name, void *adr, HNDLE handle, INT destroy_flag)
 /********************************************************************\
 
-  Routine: ss_close_shm
+  Routine: ss_shm_close
 
   Purpose: Close a shared memory region.
 
@@ -567,7 +571,7 @@ char   mem_name[256], file_name[256], path[256];
   /* get info about shared memory */
   if (shmctl(handle, IPC_STAT, &buf) < 0)
     {
-    cm_msg(MERROR, "ss_close_shm", "shmctl() failed");
+    cm_msg(MERROR, "ss_shm_close", "shmctl() failed");
     return SS_INVALID_HANDLE;
     }
 
@@ -578,7 +582,7 @@ char   mem_name[256], file_name[256], path[256];
 
     if (fh == NULL)
       {
-      cm_msg(MERROR, "ss_close_shm", "Cannot write to file %s, please check protection", file_name);
+      cm_msg(MERROR, "ss_shm_close", "Cannot write to file %s, please check protection", file_name);
       }
     else
       {
@@ -589,13 +593,13 @@ char   mem_name[256], file_name[256], path[256];
 
     if (shmdt(adr) < 0)
       {
-      cm_msg(MERROR, "ss_close_shm", "shmdt() failed");
+      cm_msg(MERROR, "ss_shm_close", "shmdt() failed");
       return SS_INVALID_ADDRESS;
       }
 
     if (shmctl(handle, IPC_RMID, &buf) < 0)
       {
-      cm_msg(MERROR, "ss_close_shm", "shmctl(RMID) failed");
+      cm_msg(MERROR, "ss_shm_close", "shmctl(RMID) failed");
       return SS_INVALID_ADDRESS;
       }
     }
@@ -603,7 +607,7 @@ char   mem_name[256], file_name[256], path[256];
     /* only detach if we are not the last */
     if (shmdt(adr) < 0)
       {
-      cm_msg(MERROR, "ss_close_shm", "shmdt() failed");
+      cm_msg(MERROR, "ss_shm_close", "shmdt() failed");
       return SS_INVALID_ADDRESS;
       }
 
@@ -615,10 +619,101 @@ char   mem_name[256], file_name[256], path[256];
 
 /*------------------------------------------------------------------*/
 
-INT ss_flush_shm(char *name, void *adr, INT size)
+INT ss_shm_protect(HNDLE handle, void *adr)
 /********************************************************************\
 
-  Routine: ss_flush_shm
+  Routine: ss_shm_protect
+
+  Purpose: Protect a shared memory region, disallow read and write
+           access to it by this process
+
+  Input:
+    HNDLE handle            Handle of shared memeory
+    void  *adr              Address of shared memory
+
+  Output:
+    none
+
+  Function value:
+    SS_SUCCESS              Successful completion
+    SS_INVALID_ADDRESS      Invalid base address
+
+\********************************************************************/
+{
+#ifdef OS_WINNT
+
+  if (!UnmapViewOfFile(adr))
+    return SS_INVALID_ADDRESS;
+
+#endif /* OS_WINNT*/
+#ifdef OS_UNIX
+
+  if (shmdt(adr) < 0)
+    {
+    cm_msg(MERROR, "ss_shm_protect", "shmdt() failed");
+    return SS_INVALID_ADDRESS;
+    }
+
+#endif /* OS_UNIX */
+  return SS_SUCCESS;
+}
+
+/*------------------------------------------------------------------*/
+
+INT ss_shm_unprotect(HNDLE handle, void **adr)
+/********************************************************************\
+
+  Routine: ss_shm_unprotect
+
+  Purpose: Unprotect a shared memory region so that it can be accessed
+           by this process
+
+  Input:
+    HNDLE handle            Handle or key to the shared memory, must
+                            be obtained with ss_shm_open
+
+  Output:
+    void  *adr              Address of opened shared memory
+
+  Function value:
+    SS_SUCCESS              Successful completion
+    SS_NO_MEMORY            Memory mapping failed
+
+\********************************************************************/
+{
+#ifdef OS_WINNT
+
+  *adr = MapViewOfFile((HANDLE)handle, FILE_MAP_ALL_ACCESS, 0, 0, 0);
+
+  if (*adr == NULL)
+    {
+    cm_msg(MERROR, "ss_shm_unprotect", "MapViewOfFile() failed");
+    return SS_NO_MEMORY;
+    }
+
+#endif /* OS_WINNT*/
+#ifdef OS_UNIX
+
+  *adr = shmat(handle, 0, 0);
+
+  if ( (*adr) == (void *) (-1) )
+    {
+    sprintf(str, "shmat() failed, errno = %d", errno);
+    cm_msg(MERROR, "ss_shm_unprotect", str);
+    return SS_NO_MEMORY;
+    }
+
+#endif /* OS_UNIX */
+
+  return SS_SUCCESS;
+}
+
+/*------------------------------------------------------------------*/
+
+INT ss_shm_flush(char *name, void *adr, INT size)
+/********************************************************************\
+
+  Routine: ss_shm_flush
 
   Purpose: Flush a shared memory region to its disk file.
 
@@ -686,7 +781,7 @@ char   mem_name[256], file_name[256], path[256];
 
   if (fh == NULL)
     {
-    cm_msg(MERROR, "ss_flush_shm", "Cannot write to file %s, please check protection", file_name);
+    cm_msg(MERROR, "ss_shm_flush", "Cannot write to file %s, please check protection", file_name);
     }
   else
     {
