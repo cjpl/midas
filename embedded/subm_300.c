@@ -7,6 +7,9 @@
                 SUBM300 running on Cygnal C8051F021
 
   $Log$
+  Revision 1.11  2003/07/14 10:19:14  midas
+  Version 1.4.8
+
   Revision 1.10  2003/06/27 13:51:44  midas
   Made fast reboot
 
@@ -208,7 +211,6 @@ unsigned long t;
 
   /* remove busy */
   LPT_BUSY = 0;
-
 }
 
 /*------------------------------------------------------------------*/

@@ -9,6 +9,9 @@
                 for SCS-400 thermo couple I/O
 
   $Log$
+  Revision 1.23  2003/07/14 10:19:14  midas
+  Version 1.4.8
+
   Revision 1.22  2003/04/16 09:48:50  midas
   Turned off PID loop by default
 
@@ -178,7 +181,7 @@ unsigned char i;
     for (i=0 ; i<N_CHANNEL ; i++)
       user_data.power[i] = 0;
 
-#ifdef CONTROL_4
+#ifdef PID_CONTROL
     for (i=0 ; i<N_CHANNEL ; i++)
        {
        user_data.demand[i] = 0;
@@ -268,7 +271,6 @@ float t;
     ENABLE_INTERRUPTS;
     }
 }
-
 
 /*------------------------------------------------------------------*/
 

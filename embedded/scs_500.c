@@ -9,6 +9,9 @@
                 for SCS-500 analog I/O
 
   $Log$
+  Revision 1.19  2003/07/14 10:19:14  midas
+  Version 1.4.8
+
   Revision 1.18  2003/05/14 15:13:43  midas
   Limit ADC_average to 8
 
@@ -97,8 +100,6 @@ struct {
   float         bip_cal;  // bipolar zero offset
 } idata user_data;
   
-float idata gain[8];     // gain resulting from PGA bits
-
 /* Usage of gain:
 
  Bipol.     Ext.  PGA          Int. PGA       Gain
