@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.92  1999/12/08 12:12:22  midas
+  Modified "&str" to "str"
+
   Revision 1.91  1999/11/26 10:49:58  midas
   Display alarym system on/off flag on main status page
 
@@ -4399,14 +4402,14 @@ char  str[256], ref[256], condition[256], value[256];
 
         /* time */
         size = sizeof(str);
-        db_get_value(hDB, hkey, "Time triggered first", &str, &size, TID_STRING);
+        db_get_value(hDB, hkey, "Time triggered first", str, &size, TID_STRING);
         if (!triggered)
           strcpy(str, "-");
         rsprintf("<td align=center>%s", str);
 
         /* class */
         size = sizeof(str);
-        db_get_value(hDB, hkey, "Alarm Class", &str, &size, TID_STRING);
+        db_get_value(hDB, hkey, "Alarm Class", str, &size, TID_STRING);
 
         if (exp_name[0])
           sprintf(ref, "%sAlarms/Classes/%s?exp=%s", 
@@ -4439,7 +4442,7 @@ char  str[256], ref[256], condition[256], value[256];
         else if (index == AT_INTERNAL && triggered)
           {
           size = sizeof(str);
-          db_get_value(hDB, hkey, "Alarm message", &str, &size, TID_STRING);
+          db_get_value(hDB, hkey, "Alarm message", str, &size, TID_STRING);
           rsprintf("<td colspan=2>%s", str);
           }
 
@@ -4594,7 +4597,7 @@ char  str[256], ref[256], command[256], name[80];
 
       /* Alarm */
       size = sizeof(str);
-      db_get_value(hDB, hkey, "Alarm Class", &str, &size, TID_STRING);
+      db_get_value(hDB, hkey, "Alarm Class", str, &size, TID_STRING);
       if (str[0])
         {
         if (exp_name[0])
@@ -4619,7 +4622,7 @@ char  str[256], ref[256], command[256], name[80];
 
       /* start/stop button */
       size = sizeof(str);
-      db_get_value(hDB, hkey, "Start Command", &str, &size, TID_STRING);
+      db_get_value(hDB, hkey, "Start Command", str, &size, TID_STRING);
       if (str[0] && count == 0)
         {
         sprintf(str, "Start %s", key.name);
