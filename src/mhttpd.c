@@ -6,6 +6,10 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
+  Revision 1.7  1998/12/11 11:15:50  midas
+  Rearranged URL to make it work under the KDE browser, but auto refresh still
+  does not work there.
+
   Revision 1.6  1998/10/28 13:48:17  midas
   Added message display
 
@@ -239,7 +243,8 @@ char        path[MAX_ODB_PATH], data[10000];
 
   if (strstr(str1, str2) != NULL)
     {
-    db_get_path(hDB, hKey, path, MAX_ODB_PATH);
+    db_get_path(hDB, hKey, str1, MAX_ODB_PATH);
+    strcpy(path, str1+1); /* strip leading '/' */
     strcpy(str1, path);
     urlEncode(str1);
 
@@ -280,7 +285,12 @@ char        path[MAX_ODB_PATH], data[10000];
                   mhttpd_url, str1);
 
         rsprintf("<tr><td bgcolor=#FFFF00>");
-        rsprintf("<a href=\"%s%s\">%s</a>/%s", mhttpd_url, path, path, key->name);
+
+        if (exp_name[0])
+          rsprintf("<a href=\"%s%s?exp=%s\">%s</a>/%s", mhttpd_url, path, exp_name, path, key->name);
+        else
+          rsprintf("<a href=\"%s%s\">%s</a>/%s", mhttpd_url, path, path, key->name);
+
         rsprintf("<td><a href=\"%s\">%s</a></tr>\n", ref, data_str);
         }
       else
@@ -459,9 +469,9 @@ CHN_STATISTICS chn_stats;
       db_get_key(hDB, hsubkey, &key);
 
       if (exp_name[0])
-        sprintf(ref, "%s/Alias/%s?exp=%s", mhttpd_url, key.name, exp_name);
+        sprintf(ref, "%sAlias/%s?exp=%s", mhttpd_url, key.name, exp_name);
       else
-        sprintf(ref, "%s/Alias/%s", mhttpd_url, key.name);
+        sprintf(ref, "%sAlias/%s", mhttpd_url, key.name);
 
       rsprintf("<a href=\"%s\">%s</a> ", ref, key.name);
       }
@@ -521,24 +531,38 @@ CHN_STATISTICS chn_stats;
     {
     for (i=0 ; ; i++)
       {
-	    db_enum_key(hDB, hkey, i, &hsubkey);
-	    if (!hsubkey)
-	      break;
+      db_enum_key(hDB, hkey, i, &hsubkey);
+      if (!hsubkey)
+        break;
 
       db_get_key(hDB, hsubkey, &key);
 
+      memset(&equipment, 0, sizeof(equipment));
+      memset(&equipment_stats, 0, sizeof(equipment_stats));
+
       db_find_key(hDB, hsubkey, "Common", &hkeytmp);
-      size = sizeof(equipment);
-      db_get_record(hDB, hkeytmp, &equipment, &size, 0);
+
+      if (hkeytmp)
+	{
+        db_get_record_size(hDB, hkeytmp, 0, &size);
+        /* discard wrong equipments (caused by analyzer) */
+        if (size == sizeof(equipment))
+          db_get_record(hDB, hkeytmp, &equipment, &size, 0);
+        }
       
       db_find_key(hDB, hsubkey, "Statistics", &hkeytmp);
-      size = sizeof(equipment_stats);
-      db_get_record(hDB, hkeytmp, &equipment_stats, &size, 0);
+
+      if (hkeytmp)
+        {
+        db_get_record_size(hDB, hkeytmp, 0, &size);
+        if (size == sizeof(equipment_stats))
+          db_get_record(hDB, hkeytmp, &equipment_stats, &size, 0);
+        }
 
       if (exp_name[0])
-        sprintf(ref, "%s/SC/%s?exp=%s", mhttpd_url, key.name, exp_name);
+        sprintf(ref, "%sSC/%s?exp=%s", mhttpd_url, key.name, exp_name);
       else
-        sprintf(ref, "%s/SC/%s", mhttpd_url, key.name);
+        sprintf(ref, "%sSC/%s", mhttpd_url, key.name);
       
       /* check if client running this equipment is present */
       if (cm_exist(equipment.frontend_name, TRUE) != CM_SUCCESS)
@@ -607,9 +631,9 @@ CHN_STATISTICS chn_stats;
 		    strcpy(str, chn_settings.filename);
 
       if (exp_name[0])
-        sprintf(ref, "%s/Logger/Channels/%s/Settings?exp=%s", mhttpd_url, key.name, exp_name);
+        sprintf(ref, "%sLogger/Channels/%s/Settings?exp=%s", mhttpd_url, key.name, exp_name);
       else
-        sprintf(ref, "%s/Logger/Channels/%s/Settings", mhttpd_url, key.name);
+        sprintf(ref, "%sLogger/Channels/%s/Settings", mhttpd_url, key.name);
 
       rsprintf("<tr><td colspan=2><B><a href=\"%s\">%s</a></B> %s", ref, key.name, str);
 
@@ -785,7 +809,7 @@ KEY    eqkey, key, varkey;
       if (!hkeynames)
         {
         /* redirect */
-        sprintf(str, "/Equipment/%s/Variables", eq_name);
+        sprintf(str, "Equipment/%s/Variables", eq_name);
         redirect(str);
         }
       }
@@ -836,10 +860,10 @@ KEY    eqkey, key, varkey;
             else
               {
               if (exp_name[0])
-                rsprintf("<a href=\"%s/SC/%s?exp=%s\">%s</a> ", 
+                rsprintf("<a href=\"%sSC/%s?exp=%s\">%s</a> ", 
                           mhttpd_url, eqkey.name, exp_name, eqkey.name);
               else
-                rsprintf("<a href=\"%s/SC/%s?\">%s</a> ", 
+                rsprintf("<a href=\"%sSC/%s?\">%s</a> ", 
                           mhttpd_url, eqkey.name, eqkey.name);
               }
             break;
@@ -871,10 +895,10 @@ KEY    eqkey, key, varkey;
     else
       {
       if (exp_name[0])
-        rsprintf("<a href=\"%s/SC/%s/All?exp=%s\">All</a> ", 
+        rsprintf("<a href=\"%sSC/%s/All?exp=%s\">All</a> ", 
                   mhttpd_url, eq_name, exp_name);
       else
-        rsprintf("<a href=\"%s/SC/%s/All?\">All</a> ", 
+        rsprintf("<a href=\"%sSC/%s/All?\">All</a> ", 
                   mhttpd_url, eq_name);
       }
 
@@ -909,10 +933,10 @@ KEY    eqkey, key, varkey;
       else
         {
         if (exp_name[0])
-          rsprintf("<a href=\"%s/SC/%s/%s?exp=%s\">%s</a> ", 
+          rsprintf("<a href=\"%sSC/%s/%s?exp=%s\">%s</a> ", 
                     mhttpd_url, eq_name, group_name[i], exp_name, group_name[i]);
         else
-          rsprintf("<a href=\"%s/SC/%s/%s?\">%s</a> ", 
+          rsprintf("<a href=\"%sSC/%s/%s?\">%s</a> ", 
                     mhttpd_url, eq_name, group_name[i], group_name[i]);
         }
       }
@@ -995,10 +1019,10 @@ KEY    eqkey, key, varkey;
             equal_ustring(varkey.name, "Output"))
           {
           if (exp_name[0])
-            sprintf(ref, "%s/Equipment/%s/Variables/%s?cmd=Set&index=%d&group=%s&exp=%s", 
+            sprintf(ref, "%sEquipment/%s/Variables/%s?cmd=Set&index=%d&group=%s&exp=%s", 
                     mhttpd_url, eq_name, varkey.name, i, group, exp_name);
           else
-            sprintf(ref, "%s/Equipment/%s/Variables/%s?cmd=Set&index=%d&group=%s", 
+            sprintf(ref, "%sEquipment/%s/Variables/%s?cmd=Set&index=%d&group=%s", 
                     mhttpd_url, eq_name, varkey.name, i, group);
 
           rsprintf("<td align=center><a href=\"%s\">%s</a>", 
@@ -1023,10 +1047,10 @@ KEY    eqkey, key, varkey;
     else
       {
       if (exp_name[0])
-        rsprintf("<a href=\"%s/SC/%s?exp=%s\">All</a> ", 
+        rsprintf("<a href=\"%sSC/%s?exp=%s\">All</a> ", 
                   mhttpd_url, eq_name, exp_name);
       else
-        rsprintf("<a href=\"%s/SC/%s?\">All</a> ", 
+        rsprintf("<a href=\"%sSC/%s?\">All</a> ", 
                   mhttpd_url, eq_name);
       }
 
@@ -1049,10 +1073,10 @@ KEY    eqkey, key, varkey;
       else
         {
         if (exp_name[0])
-          rsprintf("<a href=\"%s/SC/%s/%s?exp=%s\">%s</a> ", 
+          rsprintf("<a href=\"%sSC/%s/%s?exp=%s\">%s</a> ", 
                     mhttpd_url, eq_name, key.name, exp_name, key.name);
         else
-          rsprintf("<a href=\"%s/SC/%s/%s?\">%s</a> ", 
+          rsprintf("<a href=\"%sSC/%s/%s?\">%s</a> ", 
                     mhttpd_url, eq_name, key.name, key.name);
         }
       }
@@ -1100,10 +1124,10 @@ KEY    eqkey, key, varkey;
             equal_ustring(varkey.name, "Output"))
           {
           if (exp_name[0])
-            sprintf(ref, "%s/Equipment/%s/Variables/%s?cmd=Set&index=%d&group=%s&exp=%s", 
+            sprintf(ref, "%sEquipment/%s/Variables/%s?cmd=Set&index=%d&group=%s&exp=%s", 
                     mhttpd_url, eq_name, varkey.name, j, group, exp_name);
           else
-            sprintf(ref, "%s/Equipment/%s/Variables/%s?cmd=Set&index=%d&group=%s", 
+            sprintf(ref, "%sEquipment/%s/Variables/%s?cmd=Set&index=%d&group=%s", 
                     mhttpd_url, eq_name, varkey.name, j, group);
 
           rsprintf("<td align=center><a href=\"%s\">%s</a>", 
@@ -1486,10 +1510,10 @@ char   data[10000];
 HNDLE  hkey, hkeyroot;
 KEY    key;
 
-  if (strcmp(enc_path, "/root") == 0)
+  if (strcmp(enc_path, "root") == 0)
     {
-    strcpy(enc_path, "/");
-    strcpy(dec_path, "/");
+    strcpy(enc_path, "");
+    strcpy(dec_path, "");
     }
 
   show_header(hDB, "MIDAS online database", enc_path, 1);
@@ -1541,11 +1565,11 @@ KEY    key;
   /* display root key */
   rsprintf("<tr><td colspan=2 align=center><b>");
   if (exp_name[0])
-    rsprintf("<a href=\"%s/root?exp=%s\">/</a> \n", mhttpd_url, exp_name);
+    rsprintf("<a href=\"%sroot?exp=%s\">/</a> \n", mhttpd_url, exp_name);
   else
-    rsprintf("<a href=\"%s/root?\">/</a> \n", mhttpd_url);
+    rsprintf("<a href=\"%sroot?\">/</a> \n", mhttpd_url);
 
-  strcpy(tmp_path, "/");
+  strcpy(tmp_path, "");
 
   p = dec_path;
   if (*p == '/')
@@ -1587,7 +1611,7 @@ KEY    key;
     db_get_key(hDB, hkey, &key);
     
     strcpy(str, dec_path);
-    if (str[strlen(str)-1] != '/')
+    if (str[0] && str[strlen(str)-1] != '/')
       strcat(str, "/");
     strcat(str, key.name);
     urlEncode(str);
@@ -1808,7 +1832,7 @@ char   data[10000];
         }
 
       /* back to SC display */
-      sprintf(str, "/SC/%s/%s", eq_name, group);
+      sprintf(str, "SC/%s/%s", eq_name, group);
       redirect(str);
       }
     else
@@ -2244,7 +2268,7 @@ struct tm *gmt;
     rsprintf("Set-cookie: midas_pwd=%s; path=/; expires=%s\r\n", ss_crypt(password, "mi"), str);
 
     if (exp_name[0])
-      rsprintf("Location: %s/?exp=%s\n\n<html>redir</html>\r\n", mhttpd_url, exp_name);
+      rsprintf("Location: %s?exp=%s\n\n<html>redir</html>\r\n", mhttpd_url, exp_name);
     else
       rsprintf("Location: %s\n\n<html>redir</html>\r\n", mhttpd_url);
     return;
@@ -2254,7 +2278,7 @@ struct tm *gmt;
 
   if (equal_ustring(command, "ODB"))
     {
-    redirect("/root");
+    redirect("root");
     return;
     }
 
@@ -2262,7 +2286,7 @@ struct tm *gmt;
 
   if (equal_ustring(command, "SC"))
     {
-    redirect("/SC/");
+    redirect("SC/");
     return;
     }
 
@@ -2421,7 +2445,7 @@ struct tm *gmt;
         }
 
       /* back to SC display */
-      sprintf(str, "/SC/%s/%s", eq_name, group);
+      sprintf(str, "SC/%s/%s", eq_name, group);
       redirect(str);
       }
     else
@@ -2499,7 +2523,7 @@ struct tm *gmt;
     rsprintf("Set-cookie: midas_refr=%d; path=/; expires=0\n", refresh);
 
     if (exp_name[0])
-      rsprintf("Location: %s/?exp=%s\n\n<html>redir</html>\r\n", mhttpd_url, exp_name);
+      rsprintf("Location: %s?exp=%s\n\n<html>redir</html>\r\n", mhttpd_url, exp_name);
     else
       rsprintf("Location: %s\n\n<html>redir</html>\r\n", mhttpd_url);
     return;
@@ -2507,15 +2531,15 @@ struct tm *gmt;
 
   /*---- slow control display --------------------------------------*/
   
-  if (strncmp(path, "/SC/", 4) == 0)
+  if (strncmp(path, "SC/", 3) == 0)
     {
-    show_sc_page(hDB, path+4);
+    show_sc_page(hDB, path+3);
     return;
     }
 
   /*---- show status -----------------------------------------------*/
   
-  if (path[1] == 0)
+  if (path[0] == 0)
     {
     show_status_page(hDB, refresh);
     return;
@@ -2523,7 +2547,7 @@ struct tm *gmt;
 
   /*---- show ODB --------------------------------------------------*/
 
-  if (path[1])
+  if (path[0])
     {
     show_odb_page(hDB, enc_path, dec_path);
     return;
@@ -2539,7 +2563,7 @@ char *p, *pitem;
 
   initparam();
 
-  strcpy(path, string);
+  strcpy(path, string+1); /* strip leading '/' */
   if (strchr(path, '?'))
     *strchr(path, '?') = 0;
   setparam("path", path);
@@ -2649,9 +2673,9 @@ INT                  last_time=0;
 
   /* set my own URL */
   if (tcp_port == 80)
-    sprintf(mhttpd_url, "http://%s", host_name);
+    sprintf(mhttpd_url, "http://%s/", host_name);
   else
-    sprintf(mhttpd_url, "http://%s:%d", host_name, tcp_port);
+    sprintf(mhttpd_url, "http://%s:%d/", host_name, tcp_port);
 
   printf("Server listening...\n");
   do
