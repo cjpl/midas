@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol main program
 
   $Log$
+  Revision 1.11  2002/10/04 09:03:20  midas
+  Small mods for scs_300
+
   Revision 1.10  2002/10/03 15:31:53  midas
   Various modifications
 
@@ -193,7 +196,7 @@ unsigned char i;
   lcd_setup();
   lcd_clear();
 
-#ifndef SCS_210 // do not print to UART1
+#if !defined(SCS_210) && !defined(SCS_300) // do not print to UART1
   printf("AD:%04X GA:%04X WD:%d", sys_info.node_addr, 
           sys_info.group_addr, sys_info.wd_counter);
 #endif

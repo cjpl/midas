@@ -6,6 +6,9 @@
   Contents:     Various utility functions for MSCB protocol
 
   $Log$
+  Revision 1.9  2002/10/04 09:03:20  midas
+  Small mods for scs_300
+
   Revision 1.8  2002/10/03 15:31:53  midas
   Various modifications
 
@@ -333,17 +336,17 @@ unsigned char code baud_table[] =
 
   if (port);
 
-  SCON = 0xD0;   // Mode 3, 9 bit, receive enable
+  SCON0 = 0xD0;   // Mode 3, 9 bit, receive enable
 // SCON = 0x50;    // Mode 1, 8 bit, receive enable
 
-  T2CON = 0x34;  // timer 2 RX+TX mode
+  T2CON = 0x34;   // timer 2 RX+TX mode
   RCAP2H = 0xFF;
   RCAP2L = baud_table[baud-1];
 
-  ES = 1;        // enable serial interrupt
-  PS = 0;        // serial interrupt low priority
-  EA = 1;        // general interrupt enable
-  RB8 = 0;       // clear read bit 9
+  ES0 = 1;        // enable serial interrupt
+  PS = 0;         // serial interrupt low priority
+  EA = 1;         // general interrupt enable
+  RB80 = 0;       // clear read bit 9
 }
 
 /*------------------------------------------------------------------*/
@@ -818,7 +821,7 @@ void lcd_goto(char x, char y)
 
 /*------------------------------------------------------------------*/
 
-#if !defined(SCS_210)
+#if !defined(SCS_210) && !defined(SCS_300)
 
 char putchar(char c)
 {
