@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.104  2000/03/18 08:02:32  midas
+  Increased idle time logout to 1h
+
   Revision 1.103  2000/03/17 13:10:49  midas
   Make port bind check before becoming a daemon
 
@@ -313,7 +316,7 @@
 #define DEFAULT_REFRESH 60
 
 /* time until mhttpd disconnects from MIDAS */
-#define CONNECT_TIME   600
+#define CONNECT_TIME  3600
 
 char return_buffer[1000000];
 int  return_length;
