@@ -9,6 +9,9 @@
                 for SCS-220 RS-485 node
 
   $Log$
+  Revision 1.2  2005/01/07 09:29:05  midas
+  Version 1.7.a
+
   Revision 1.1  2005/01/06 14:49:25  midas
   Initial revision
 
@@ -130,7 +133,7 @@ unsigned char user_func(unsigned char *data_in, unsigned char *data_out)
 /*---- User loop function ------------------------------------------*/
 
 /* external watchdog */
-sbit EWD = P0 ^ 6;
+sbit EWD = P0 ^ 7;
 
 void user_loop(void)
 {

@@ -6,6 +6,9 @@
   Contents:     Various utility functions for MSCB protocol
 
   $Log$
+  Revision 1.47  2005/01/07 09:29:05  midas
+  Version 1.7.a
+
   Revision 1.46  2005/01/06 14:49:01  midas
   Added scs_220
 
@@ -270,14 +273,15 @@ unsigned char xdata *data sbuf_wp = sbuf;
 void serial_int1(void) interrupt 20 using 2
 {
    if (SCON1 & 0x02) {          // TI1
-      /* character has been transferred */
-      SCON1 &= ~0x02;           // clear TI flag
-      ti1_shadow = 1;
 
-#ifdef SCS_220
+   #ifdef SCS_220
       if (sbuf_wp == sbuf_rp)
          RS485_SEC_ENABLE = 0;
 #endif
+
+      /* character has been transferred */
+      SCON1 &= ~0x02;           // clear TI flag
+      ti1_shadow = 1;
    }
 
    if (SCON1 & 0x01) {          // RI1
