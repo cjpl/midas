@@ -7,6 +7,9 @@
                 control
 
   $Log$
+  Revision 1.4  2003/04/28 15:28:40  midas
+  Added text entry box
+
   Revision 1.3  2003/04/25 14:36:49  midas
   Added clear button
 
@@ -34,6 +37,195 @@
 #include "TGMenu.h"
 #include "TGTab.h"
 #include "TGLabel.h"
+#include "TGTextEntry.h"
+
+#ifndef ROOT_TGFrame
+#include "TGFrame.h"
+#endif
+
+/*------------------------------------------------------------------*/
+
+class TGTextDialog : public TGTransientFrame {
+
+protected:
+   TGCompositeFrame *fF1, *fF2;                // sub frames
+   TGButton         *fOkButton;                // ok button
+   TGButton         *fCancelButton;            // cancel button
+   TGLayoutHints    *fL1, *fL5, *fL6, *fL21;   // layout hints
+   TGTextEntry      *fText;                    // text entry widget
+   TGTextBuffer     *fBLabel;                  // text buffer
+   TGLabel          *fLabel;                   // label
+   char             *fRetStr;                  // return string
+
+public:
+   TGTextDialog(const TGWindow *p, const TGWindow *main, UInt_t w, UInt_t h,
+                char *label, char *ret_str, UInt_t options = kVerticalFrame);
+   virtual ~TGTextDialog();
+
+   virtual void   CloseWindow();
+   virtual Bool_t ProcessMessage(Long_t msg, Long_t parm1, Long_t parm2);
+
+   //ClassDef(TGTextDialog, 0)
+};
+
+//ClassImp(TGTextDialog)
+
+/*------------------------------------------------------------------*/
+
+TGTextDialog::TGTextDialog(const TGWindow *p, const TGWindow *main,
+                           UInt_t w, UInt_t h, char *label, char *ret_str,
+                           UInt_t options) :
+   TGTransientFrame(p, main, w, h, options)
+{
+/* Create a dialog to enter a single line text entry */
+
+   fRetStr = ret_str;
+
+   ChangeOptions((GetOptions() & ~kVerticalFrame) | kHorizontalFrame);
+
+   fF1 = new TGCompositeFrame(this, 60, 20, kVerticalFrame | kFixedWidth);
+   fF2 = new TGCompositeFrame(this, 60, 20, kHorizontalFrame);
+
+   fOkButton = new TGTextButton(fF1, new TGHotString("&Ok"), 1);
+   fCancelButton = new TGTextButton(fF1, new TGHotString("&Cancel"), 2);
+   fF1->Resize(fOkButton->GetDefaultWidth()+40, GetDefaultHeight());
+
+   fOkButton->Associate(this);
+   fCancelButton->Associate(this);
+
+   fL1 = new TGLayoutHints(kLHintsTop | kLHintsExpandX, 2, 2, 3, 0);
+   fL21 = new TGLayoutHints(kLHintsTop | kLHintsRight, 2, 5, 10, 0);
+
+   fF1->AddFrame(fOkButton, fL1);
+   fF1->AddFrame(fCancelButton, fL1);
+   AddFrame(fF1, fL21);
+
+   fLabel = new TGLabel(fF2, new TGHotString(label));
+
+   fBLabel = new TGTextBuffer(50);
+   if (fRetStr[0])
+     fBLabel->AddText(0, fRetStr);
+   else
+     fOkButton->SetState(kButtonDisabled);
+
+   fText = new TGTextEntry(fF2, fBLabel);
+   fText->Associate(this);
+   fText->Resize(220, fText->GetDefaultHeight());
+   fText->SelectAll();
+
+   fL5 = new TGLayoutHints(kLHintsLeft | kLHintsCenterY, 3, 5, 0, 0);
+   fL6 = new TGLayoutHints(kLHintsLeft | kLHintsCenterY, 0, 2, 0, 0);
+
+   fF2->AddFrame(fLabel, fL5);
+   fF2->AddFrame(fText, fL5);
+   AddFrame(fF2, fL1);
+
+   MapSubwindows();
+   Resize(GetDefaultSize());
+
+   // position relative to the parent's window
+   Int_t ax, ay;
+   if (main) {
+      Window_t wdum;
+      gVirtualX->TranslateCoordinates(main->GetId(), GetParent()->GetId(),
+                        (Int_t)(((TGFrame *) main)->GetWidth() - fWidth) >> 1,
+                        (Int_t)(((TGFrame *) main)->GetHeight() - fHeight) >> 1,
+                        ax, ay, wdum);
+   } else {
+      UInt_t root_w, root_h;
+      gVirtualX->GetWindowSize(fClient->GetRoot()->GetId(), ax, ay, root_w, root_h);
+      ax = (root_w - fWidth) >> 1;
+      ay = (root_h - fHeight) >> 1;
+   }
+
+   Move(ax, ay);
+   SetWMPosition(ax, ay);
+
+   SetWindowName("Enter Text");
+
+   SetMWMHints(kMWMDecorAll | kMWMDecorMaximize | kMWMDecorMenu,
+               kMWMFuncAll | kMWMFuncMaximize | kMWMFuncResize,
+               kMWMInputModeless);
+
+   MapWindow();
+   fClient->WaitFor(this);
+}
+
+/*------------------------------------------------------------------*/
+
+TGTextDialog::~TGTextDialog()
+{
+   // Clean up text dialog
+
+   delete fCancelButton;
+   delete fOkButton;
+   delete fText;
+   delete fLabel;
+   delete fF1; delete fF2;
+   delete fL1; delete fL5; delete fL6; delete fL21;
+}
+
+/*------------------------------------------------------------------*/
+
+void TGTextDialog::CloseWindow()
+{
+   // Close the dialog. On close the dialog will be deleted and cannot be
+   // re-used.
+
+   DeleteWindow();
+}
+
+Bool_t TGTextDialog::ProcessMessage(Long_t msg, Long_t parm1, Long_t)
+{
+   const char *string;
+
+   switch (GET_MSG(msg)) {
+      case kC_COMMAND:
+         switch (GET_SUBMSG(msg)) {
+            case kCM_BUTTON:
+               switch (parm1) {
+                  case 1:
+                     if (fRetStr)
+                       strcpy(fRetStr, fBLabel->GetString());
+                     CloseWindow();
+                     break;
+                  case 2:
+                     fRetStr[0] = 0;
+                     CloseWindow();
+                     break;
+               }
+               break;
+
+            default:
+               break;
+         }
+         break;
+
+      case kC_TEXTENTRY:
+         switch (GET_SUBMSG(msg)) {
+            case kTE_TEXTCHANGED:
+               string = fBLabel->GetString();
+               if (strlen(string) == 0)
+                  fOkButton->SetState(kButtonDisabled);
+               else
+                  fOkButton->SetState(kButtonUp);
+               break;
+            case kTE_ENTER:
+               if (fRetStr)
+                 strcpy(fRetStr, fBLabel->GetString());
+               CloseWindow();
+               break;
+            default:
+               break;
+         }
+         break;
+
+      default:
+         break;
+   }
+
+   return kTRUE;
+}
 
 /*------------------------------------------------------------------*/
 
@@ -93,19 +285,19 @@ char str[80];
 
   if (fSock)
     {
-    /* disconnect */
+    /* disconnect first */
     fSock->Close();
     delete fSock;
     fSock = NULL;
 
     SetWindowName("RMidas");
 
-    fMenuFile->DeleteEntry(fMenuFile->GetEntry(M_FILE_CONNECT));
-    sprintf(str, "&Connect to %s", fHost);
-    fMenuFile->AddEntry(str, M_FILE_CONNECT, NULL, NULL, fMenuFile->GetEntry(M_FILE_EXIT));
-
     fListBox->RemoveEntries(0, 999);
-    return 1;
+    }
+
+  if (fHost[0] == 0)
+    {
+    new TGTextDialog(gClient->GetRoot(), this, 100, 100, "&Host name:", fHost);
     }
 
   /* Connect to RMidasServ */
@@ -139,9 +331,6 @@ char str[80];
       sprintf(str, "RMidas connected to %s", fHost);
       SetWindowName(str);
       GetHistoList();
- 
-      fMenuFile->DeleteEntry(fMenuFile->GetEntry(M_FILE_CONNECT));
-      fMenuFile->AddEntry("&Disconnect", M_FILE_CONNECT, NULL, NULL, fMenuFile->GetEntry(M_FILE_EXIT));
       return 1;
       }
     }
@@ -215,12 +404,14 @@ RMidasFrame::RMidasFrame(const TGWindow *p, UInt_t w, UInt_t h, char *host) :
   TGMainFrame(p, w, h)
 {
   /* save host name */
-  strcpy(fHost, host);
+  if (host)
+    strcpy(fHost, host);
+  else fHost[0] = 0;
   fSock = NULL;
 
   /* Create Menus */
   fMenuFile = new TGPopupMenu(fClient->GetRoot());
-  fMenuFile->AddEntry("&Disconnect", M_FILE_CONNECT);
+  fMenuFile->AddEntry("&Connect to ...", M_FILE_CONNECT);
   fMenuFile->AddEntry("E&xit", M_FILE_EXIT);
   fMenuFile->Associate(this);
 
@@ -263,7 +454,7 @@ RMidasFrame::RMidasFrame(const TGWindow *p, UInt_t w, UInt_t h, char *host) :
   /* Create "Clear" button */
   fBClear = new TGTextButton(fHorz2, "Clear", B_CLEAR);
   fBClear->Associate(this);
-  fHorz2->AddFrame(fBClear, new TGLayoutHints(kLHintsCenterX, 10, 10, 0, 0));
+  fHorz2->AddFrame(fBClear, new TGLayoutHints(kLHintsCenterX, 10, 10, 4, 4));
 
   tf->AddFrame(fTabHisto, new TGLayoutHints(kLHintsTop | kLHintsLeft, 0, 0, 0, 0)); 
 
@@ -324,6 +515,7 @@ Bool_t RMidasFrame::ProcessMessage(Long_t msg, Long_t param1, Long_t param2)
                break;
 
              case M_FILE_CONNECT:
+               fHost[0] = 0;
                ConnectServer();
                break;
              }
@@ -385,12 +577,6 @@ void rmidas()
 
 int main(int argc, char **argv)
 {
-  if (argc < 2)
-    {
-    printf("Usage: %s <hostname>\n", argv[0]);
-    return 1;
-    }
-
   TApplication theApp("RMidas", &argc, argv);
 
   if (gROOT->IsBatch()) 
