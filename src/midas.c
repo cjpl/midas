@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.72  1999/10/11 13:01:22  midas
+  Produce system message when executing an alarm script
+
   Revision 1.71  1999/10/08 22:15:03  midas
   Added ftruncate for LINUX
 
@@ -15192,6 +15195,7 @@ ALARM_CLASS ac;
     {
     sprintf(str, "%s: %s", alarm_class, alarm_message);
     sprintf(command, ac.execute_command, str);
+    cm_msg(MINFO, "al_trigger_class", "Execute: %d", command);
     system(command);
     ac.execute_last = ss_time();
     }
