@@ -7,6 +7,9 @@
                 linked with user code to form a complete frontend
 
   $Log$
+  Revision 1.3  1998/12/10 12:50:47  midas
+  Program abort with "!" now works without a return under UNIX
+
   Revision 1.2  1998/10/12 12:19:01  midas
   Added Log tag in header
 
@@ -1136,6 +1139,8 @@ INT opt_max=0, opt_index=0, opt_tcp_size=128, opt_cnt=0;
 
         /* check keyboard */
         ch = 0;
+        status = 0;
+/*
         if (ss_kbhit())
           {
 #if defined(OS_MSDOS) || defined(OS_WINNT)
@@ -1144,24 +1149,21 @@ INT opt_max=0, opt_index=0, opt_tcp_size=128, opt_cnt=0;
           ch = getchar();
 #endif
           }
-
-        /*
-        ch = ss_getchar(0);
-        if (ch == -1)
+*/
+        while (ss_kbhit())
           {
-          if (ss_kbhit())
+          ch = ss_getchar(0);
+          if (ch == -1)
             ch = getchar();
-          }
-        */
 
-        if (ch == '!')
-          {
-          status = RPC_SHUTDOWN;
-          break;
+          if (ch == '!')
+            status = RPC_SHUTDOWN;
           }
 
         if (ch > 0)
           display(TRUE);
+        if (status == RPC_SHUTDOWN)
+          break;
         }
 
       last_time_display = actual_millitime;
@@ -1510,8 +1512,14 @@ reconnect:
   if (interrupt_eq && run_state == STATE_RUNNING)
     interrupt_enable(TRUE);
 
+  /* initialize ss_getchar */
+  ss_getchar(0);
+
   /* call main scheduler loop */
   status = scheduler();
+
+  /* reset terminal */
+  ss_getchar(TRUE);
 
   /* switch off interrupts */
   if (interrupt_eq)
