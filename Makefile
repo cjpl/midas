@@ -6,6 +6,9 @@
 #  Contents:     Makefile for MIDAS binaries and examples under unix
 #
 #  $Log$
+#  Revision 1.5  1999/03/23 10:37:13  midas
+#  Removed -lbsd for Linux
+#
 #  Revision 1.4  1999/02/22 12:03:38  midas
 #  Added dio to unix makefile
 #
@@ -80,6 +83,19 @@ CC = cc
 CFLAGS = -g -I$(INC_DIR) -I$(DRV_DIR)
 
 #-----------------------
+# This is for Linux
+#
+ifeq ($(OSTYPE),Linux)
+OSTYPE = linux
+endif
+
+ifeq ($(OSTYPE),linux)
+OS_DIR = linux
+OSFLAGS = -DOS_LINUX -DOS_UNIX
+LIBS = -lutil
+endif
+
+#-----------------------
 # OSF/1 (DEC UNIX)
 #
 ifeq ($(HOSTTYPE),alpha)
@@ -113,19 +129,6 @@ ifeq ($(OSTYPE), FreeBSD)
 OS_DIR = freeBSD
 OSFLAGS = -DOS_FREEBSD -DOS_UNIX
 LIBS = -lbsd -lcompat
-endif
-
-#-----------------------
-# This is for Linux
-#
-ifeq ($(OSTYPE),Linux)
-OSTYPE = linux
-endif
-
-ifeq ($(OSTYPE),linux)
-OS_DIR = linux
-OSFLAGS = -DOS_LINUX -DOS_UNIX
-LIBS = -lbsd -lutil
 endif
 
 #-----------------------
@@ -172,7 +175,7 @@ LIB =   $(LIB_DIR)/libmidas.a
 
 all:    $(OS_DIR) $(LIB_DIR) $(BIN_DIR) \
 	$(LIB_DIR)/mana.o $(LIB_DIR)/mfe.o \
-	$(LIB_DIR)/fal.o $(BIN_DIR)/dio.o \
+	$(LIB_DIR)/fal.o $(BIN_DIR)/dio \
 	$(BIN_DIR)/mserver $(BIN_DIR)/mhttpd \
 	$(BIN_DIR)/mlogger $(BIN_DIR)/odbedit \
 	$(BIN_DIR)/mtape $(BIN_DIR)/mhist \
@@ -275,7 +278,7 @@ $(LIB_DIR)/mana.o: $(SRC_DIR)/mana.c $(INC_DIR)/msystem.h $(INC_DIR)/midas.h $(I
 $(LIB_DIR)/fal.o: $(SRC_DIR)/fal.c $(INC_DIR)/msystem.h $(INC_DIR)/midas.h $(INC_DIR)/midasinc.h $(INC_DIR)/mrpc.h
 	$(CC) -c $(CFLAGS) $(OSFLAGS) -o $(LIB_DIR)/fal.o $(SRC_DIR)/fal.c
 
-$(BIN_DIR)/dio.o: $(DRV_DIR)/dio.c
+$(BIN_DIR)/dio: $(DRV_DIR)/dio.c
 	$(CC) $(CFLAGS) $(OSFLAGS) -o $(BIN_DIR)/dio $(DRV_DIR)/dio.c
 
 #
