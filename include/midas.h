@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.122  2003/11/24 08:22:45  midas
+  Changed timeouts from INT to DWORD, added ignore_timeout to cm_cleanup, adde '-f' flag to ODBEdit 'cleanup'
+
   Revision 1.121  2003/11/20 11:28:47  midas
   Added db_check_record
 
@@ -1038,8 +1041,8 @@ typedef struct {
   INT           write_wait;           /* wait for write # bytes     */
   BOOL          wake_up;              /* client got a wake-up msg   */
   BOOL          all_flag;             /* at least one GET_ALL request */
-  INT           last_activity;        /* time of last activity      */
-  INT           watchdog_timeout;     /* timeout in ms              */
+  DWORD         last_activity;        /* time of last activity      */
+  DWORD         watchdog_timeout;     /* timeout in ms              */
 
   EVENT_REQUEST event_request[MAX_EVENT_REQUESTS];
 
@@ -1655,7 +1658,7 @@ INT EXPRT cm_get_environment(char *host_name, int host_name_size, char *exp_name
 INT EXPRT cm_list_experiments(char *host_name, char exp_name[MAX_EXPERIMENT][NAME_LENGTH]);
 INT EXPRT cm_select_experiment(char *host_name, char *exp_name);
 INT EXPRT cm_connect_experiment(char *host_name, char *exp_name, char *client_name, void (*func)(char*));
-INT EXPRT cm_connect_experiment1(char *host_name, char *exp_name, char *client_name, void (*func)(char*), INT odb_size, INT watchdog_timeout);
+INT EXPRT cm_connect_experiment1(char *host_name, char *exp_name, char *client_name, void (*func)(char*), INT odb_size, DWORD watchdog_timeout);
 INT EXPRT cm_disconnect_experiment(void);
 INT EXPRT cm_register_transition(INT transition, INT (*func)(INT,char*));
 INT EXPRT cm_register_deferred_transition(INT transition, BOOL (*func)(INT,BOOL));
@@ -1669,16 +1672,16 @@ INT EXPRT cm_set_experiment_database(HNDLE hDB, HNDLE hKeyClient);
 INT EXPRT cm_get_experiment_database(HNDLE *hDB, HNDLE *hKeyClient);
 INT EXPRT cm_set_experiment_mutex(INT mutex_alarm, INT mutex_elog);
 INT EXPRT cm_get_experiment_mutex(INT *mutex_alarm, INT *mutex_elog);
-INT EXPRT cm_set_client_info(HNDLE hDB, HNDLE *hKeyClient, char *host_name, char *client_name, INT computer_id, char *password, INT watchdog_timeout);
+INT EXPRT cm_set_client_info(HNDLE hDB, HNDLE *hKeyClient, char *host_name, char *client_name, INT computer_id, char *password, DWORD watchdog_timeout);
 INT EXPRT cm_get_client_info(char *client_name);
-INT EXPRT cm_set_watchdog_params(BOOL call_watchdog, INT timeout);
-INT EXPRT cm_get_watchdog_params(BOOL *call_watchdog, INT *timeout);
-INT EXPRT cm_get_watchdog_info(HNDLE hDB, char *client_name, INT *timeout, INT *last);
+INT EXPRT cm_set_watchdog_params(BOOL call_watchdog, DWORD timeout);
+INT EXPRT cm_get_watchdog_params(BOOL *call_watchdog, DWORD *timeout);
+INT EXPRT cm_get_watchdog_info(HNDLE hDB, char *client_name, DWORD *timeout, DWORD *last);
 INT EXPRT cm_enable_watchdog(BOOL flag);
 void EXPRT cm_watchdog(int);
 INT EXPRT cm_shutdown(char *name, BOOL bUnique);
 INT EXPRT cm_exist(char *name, BOOL bUnique);
-INT EXPRT cm_cleanup(char *client_name);
+INT EXPRT cm_cleanup(char *client_name, BOOL ignore_timeout);
 INT EXPRT cm_yield(INT millisec);
 INT EXPRT cm_execute(char *command, char *result, INT buf_size);
 INT EXPRT cm_synchronize(DWORD *sec);

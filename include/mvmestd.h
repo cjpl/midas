@@ -7,6 +7,9 @@
                 with bt617.c
                 
   $Log$
+  Revision 1.6  2003/11/24 08:22:45  midas
+  Changed timeouts from INT to DWORD, added ignore_timeout to cm_cleanup, adde '-f' flag to ODBEdit 'cleanup'
+
   Revision 1.5  2001/06/27 12:16:30  midas
   Added OS_IRIX
 
@@ -63,9 +66,8 @@ typedef unsigned long int  DWORD;
 #define VME_LM        9 /* local memory mapped to VME */
 
 /* vme_ioctl commands */
-#define     IOCTL_MAX_DEV_GET        0
-#define     IOCTL_AMOD_SET           1
-#define     IOCTL_AMOD_GET           2
+#define VME_IOCTL_AMOD_SET           0
+#define VME_IOCTL_AMOD_GET           1
 
 /* vme bus address modifiers */
 #define VME_AMOD_A32_SB     (0x0F) /* A32 Extended Supervisory Block */

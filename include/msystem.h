@@ -7,6 +7,9 @@
                 routines
 
   $Log$
+  Revision 1.32  2003/11/24 08:22:45  midas
+  Changed timeouts from INT to DWORD, added ignore_timeout to cm_cleanup, adde '-f' flag to ODBEdit 'cleanup'
+
   Revision 1.31  2003/10/16 22:53:57  midas
   Changed return values for ss_thread_create to return threadId.
   Added ss_thread_kill for killing the passed threadId. (DBM - Triumf)
@@ -392,8 +395,8 @@ typedef struct {
   INT           thandle;              /* thread handle              */
   INT           port;                 /* UDP port for wake up       */
   INT           num_open_records;     /* number of open records     */
-  INT           last_activity;        /* time of last activity      */
-  INT           watchdog_timeout;     /* timeout in ms              */
+  DWORD         last_activity;        /* time of last activity      */
+  DWORD         watchdog_timeout;     /* timeout in ms              */
   INT           max_index;            /* index of last opren record */
 
   OPEN_RECORD   open_record[MAX_OPEN_RECORDS];

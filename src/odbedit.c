@@ -6,6 +6,9 @@
   Contents:     Command-line interface to the MIDAS online data base.
 
   $Log$
+  Revision 1.68  2003/11/24 08:22:46  midas
+  Changed timeouts from INT to DWORD, added ignore_timeout to cm_cleanup, adde '-f' flag to ODBEdit 'cleanup'
+
   Revision 1.67  2003/11/20 11:29:45  midas
   Implemented db_check_record and use it in most places instead of db_create_record
 
@@ -256,7 +259,7 @@ void print_help(char *command)
     printf("chat                    - enter chat mode\n");
     printf("chmod <mode> <key>      - change access mode of a key\n");
     printf("                          1=read | 2=write | 4=delete\n");
-    printf("cleanup [clientname]    - delete hanging clients\n");
+    printf("cleanup [client] [-f]   - delete hanging clients [force]\n");
     printf("copy <src> <dest>       - copy a subtree to a new location\n");
     printf("create <type> <key>     - create a key of a certain type\n");
     printf("create <type> <key>[n]  - create an array of size [n]\n");
@@ -2517,7 +2520,7 @@ PRINT_INFO      print_info;
             /* display optional watchdog info */
             if (param[1][1] == 'w')
               {
-              INT timeout, last;
+              DWORD timeout, last;
 
               status = cm_get_watchdog_info(hDB, name, &timeout, &last);
               printf("%-10d %-10d", timeout, last);
@@ -2857,11 +2860,20 @@ PRINT_INFO      print_info;
     else if (param[0][0] == 'c' && param[0][1] == 'l')
       {
       HNDLE hBuf;
+      BOOL  force;
+
+      force = FALSE;
+      if (param[1][0] == '-' && param[1][1] == 'f')
+        force = TRUE;
+      if (param[2][0] == '-' && param[2][1] == 'f')
+        force = TRUE;
+      
       bm_open_buffer(EVENT_BUFFER_NAME, EVENT_BUFFER_SIZE, &hBuf);
-      if (param[1][0])
-        cm_cleanup(param[1]);
+
+      if (param[1][0] && param[1][0] != '-')
+        cm_cleanup(param[1], force);
       else
-        cm_cleanup("");
+        cm_cleanup("", force);
       bm_close_buffer(hBuf);
 
       db_find_key(hDB, 0, "/", &hKey);

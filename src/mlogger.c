@@ -6,6 +6,9 @@
   Contents:     MIDAS logger program
 
   $Log$
+  Revision 1.70  2003/11/24 08:22:46  midas
+  Changed timeouts from INT to DWORD, added ignore_timeout to cm_cleanup, adde '-f' flag to ODBEdit 'cleanup'
+
   Revision 1.69  2003/11/20 11:29:44  midas
   Implemented db_check_record and use it in most places instead of db_create_record
 
@@ -1859,8 +1862,8 @@ INT log_close(LOG_CHN *log_chn, INT run_number)
 
 INT log_write(LOG_CHN *log_chn, EVENT_HEADER *pevent)
 {
-INT    status=0, size, izero, watchdog_timeout;
-DWORD  actual_time, start_time;
+INT    status=0, size, izero;
+DWORD  actual_time, start_time, watchdog_timeout;
 BOOL   watchdog_flag, flag;
 static BOOL stop_requested = FALSE;
 static DWORD last_checked = 0;
@@ -2499,7 +2502,8 @@ KEY   key;
 INT log_callback(INT index, void *prpc_param[])
 {
 HNDLE  hKeyRoot, hKeyChannel;
-INT    i, status, size, channel, izero, htape, online_mode, watchdog_timeout;
+INT    i, status, size, channel, izero, htape, online_mode;
+DWORD  watchdog_timeout;
 BOOL   watchdog_flag;
 char   str[256];
 double dzero;
@@ -3208,6 +3212,8 @@ usage:
   /* turn off watchdog if in debug mode */
   if (debug)
     cm_set_watchdog_params(TRUE, 0);
+
+  cm_set_watchdog_params(TRUE, 300000);  //##
 
   /* turn on save mode */
   if (save_mode)

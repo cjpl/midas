@@ -6,6 +6,9 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.73  2003/11/24 08:22:46  midas
+  Changed timeouts from INT to DWORD, added ignore_timeout to cm_cleanup, adde '-f' flag to ODBEdit 'cleanup'
+
   Revision 1.72  2003/11/20 11:29:44  midas
   Implemented db_check_record and use it in most places instead of db_create_record
 
@@ -964,7 +967,7 @@ KEY                  *pkey;
 KEYLIST              *pkeylist;
 FREE_DESCRIP         *pfree;
 BOOL                 call_watchdog;
-INT                  timeout;
+DWORD                timeout;
 
   if (database_size <0 || database_size > 10E7)
     {

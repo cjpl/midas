@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.105  2003/11/24 08:22:45  midas
+  Changed timeouts from INT to DWORD, added ignore_timeout to cm_cleanup, adde '-f' flag to ODBEdit 'cleanup'
+
   Revision 1.104  2003/11/20 11:29:44  midas
   Implemented db_check_record and use it in most places instead of db_create_record
 
@@ -6023,7 +6026,7 @@ int rargc;
       if (status == CM_SUCCESS)
         {
         /* kill hanging previous analyzer */
-        cm_cleanup(analyzer_name);
+        cm_cleanup(analyzer_name, FALSE);
 
         status = cm_exist(analyzer_name, FALSE);
         if (status == CM_SUCCESS)
