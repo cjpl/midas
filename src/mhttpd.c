@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.288  2005/01/04 13:34:06  midas
+  Implemented labels for custom graphics
+
   Revision 1.287  2005/01/03 14:20:48  midas
   Added colors for history graphs
 
@@ -5194,7 +5197,7 @@ void show_sc_page(char *path, int refresh)
 
 /*------------------------------------------------------------------*/
 
-char *find_odb_tag(char *p, char *path, BOOL * edit)
+char *find_odb_tag(char *p, char *path, BOOL *edit)
 {
    char str[256], *ps;
 
@@ -5268,15 +5271,12 @@ char *find_odb_tag(char *p, char *path, BOOL * edit)
 
 /*------------------------------------------------------------------*/
 
-void show_custom_page(char *path)
+void show_odb_tag(char *path, char *keypath, int n_var, BOOL bedit)
 {
-   int size, i_edit, i_set, index, n_var, fh;
-   char str[TEXT_SIZE], data[TEXT_SIZE], *ctext, keypath[256], *p, *ps;
+   int size, index, i_edit, i_set;
+   char str[TEXT_SIZE], data[TEXT_SIZE], *p;
    HNDLE hDB, hkey;
    KEY key;
-   BOOL bedit;
-
-   cm_get_experiment_database(&hDB, NULL);
 
    /* check if variable to edit */
    i_edit = -1;
@@ -5287,6 +5287,259 @@ void show_custom_page(char *path)
    i_set = -1;
    if (equal_ustring(getparam("cmd"), "Set"))
       i_set = atoi(getparam("index"));
+
+   /* check if path contains index */
+   index = 0;
+
+   if (strchr(keypath, '[') && strchr(keypath, ']')) {
+      for (p = strchr(keypath, '[') + 1; *p && *p != ']'; p++)
+         if (!isdigit(*p))
+            break;
+
+      if (*p && *p == ']') {
+         index = atoi(strchr(keypath, '[') + 1);
+         *strchr(keypath, '[') = 0;
+      }
+   }
+
+   cm_get_experiment_database(&hDB, NULL);
+   db_find_key(hDB, 0, keypath, &hkey);
+   if (!hkey)
+      rsprintf("<b>Key \"%s\" not found in ODB</b>\n", keypath);
+   else {
+      db_get_key(hDB, hkey, &key);
+      size = sizeof(data);
+      db_get_data_index(hDB, hkey, data, &size, index, key.type);
+      db_sprintf(str, data, key.item_size, 0, key.type);
+
+      if (bedit) {
+         if (n_var == i_set) {
+            /* set value */
+            strcpy(str, getparam("value"));
+            db_sscanf(str, data, &size, 0, key.type);
+            db_set_data_index(hDB, hkey, data, size, index, key.type);
+
+            /* read back value */
+            size = sizeof(data);
+            db_get_data_index(hDB, hkey, data, &size, index, key.type);
+            db_sprintf(str, data, key.item_size, 0, key.type);
+         }
+
+         if (n_var == i_edit) {
+            rsprintf("<input type=text size=10 maxlength=80 name=value value=\"%s\">\n", str);
+            rsprintf("<input type=submit size=20 name=cmd value=Set>\n");
+            rsprintf("<input type=hidden name=index value=%d>\n", n_var);
+            rsprintf("<input type=hidden name=cmd value=Set>\n");
+         } else {
+            if (exp_name[0])
+               rsprintf("<a href=\"/CS/%s?exp=%s&cmd=Edit&index=%d\">", path, exp_name, n_var);
+            else
+               rsprintf("<a href=\"/CS/%s?cmd=Edit&index=%d\">", path, n_var);
+
+            rsputs(str);
+            rsprintf("</a>");
+         }
+      } else
+         rsputs(str);
+   }
+}
+
+/*------------------------------------------------------------------*/
+
+void show_custom_gif(char *name)
+{
+   char str[256], filename[256], src[256], fgcolor[8], bgcolor[8], 
+      data[256], value[256], format[32], font[32];
+   int index, length, status, size, x, y, width, height, bgcol, fgcol,
+      r, g, b, align;
+   HNDLE hDB, hkeygif, hkeyroot, hkey, hkeyval;
+   KEY key, vkey;
+   gdImagePtr im;
+   gdGifBuffer gb;
+   gdFontPtr pfont;
+   FILE *f;
+
+   /* find image description in ODB */
+   cm_get_experiment_database(&hDB, NULL);
+   sprintf(str, "/Custom/Images/%s", name);
+   db_find_key(hDB, 0, str, &hkeygif);
+   if (!hkeygif) {
+      sprintf(str, "Cannot find ODB key \"/Custom/Images/%s\"", name);
+      show_error(str);
+      return;
+   }
+
+   /* load background image */
+   size = sizeof(filename);
+   db_get_value(hDB, hkeygif, "Background", filename, &size, TID_STRING, FALSE);
+   f = fopen(filename, "rb");
+   if (f == NULL) {
+      sprintf(str, "Cannot open file \"%s\"", filename);
+      show_error(str);
+      return;
+   }
+
+   im = gdImageCreateFromGif(f);
+   if (im == NULL) {
+      sprintf(str, "File \"%s\" is not a GIF image", filename);
+      show_error(str);
+      return;
+   }
+
+   /* add labels using following syntax under /Custom/Images/<name.gif>/Labels/<name>:
+      
+      [Name]    [Description]                       [Example]
+
+      Src       ODB path for vairable to display    /Equipment/Environment/Variables/Input[0]
+      Format    Formt for float/double              %1.2f
+      Font      Font to use                         small | medium | giant
+      Unit      Unit to display after value         Deg. C
+      X         X-position in pixel                 90
+      Y         Y-position from top                 67
+      Align     horizontal align left/center/right  left
+      FGColor   Foreground color RRGGBB             000000
+      BGColor   Background color RRGGBB             FFFFFF
+   */
+   
+   db_find_key(hDB, hkeygif, "Labels", &hkeyroot);
+   if (hkeyroot) {
+      for (index=0 ; ; index++) {
+         db_enum_key(hDB, hkeyroot, index, &hkey);
+         if (!hkey)
+            break;
+         db_get_key(hDB, hkey, &key);
+         
+         size = sizeof(src);
+         src[0] = 0;
+         db_get_value(hDB, hkey, "Src", src, &size, TID_STRING, TRUE);
+         if (src[0] == 0) {
+            cm_msg(MERROR, "Empty Src key for label %s", key.name);
+            continue;
+         }
+
+         db_find_key(hDB, 0, src, &hkeyval);
+         if (!hkeyval) {
+            cm_msg(MERROR, "Invalid Src key \"%s\" for label %s", src, key.name);
+            continue;
+         }
+
+         size = sizeof(format);
+         format[0] = 0;
+         db_get_value(hDB, hkey, "Format", format, &size, TID_STRING, TRUE);
+
+         size = sizeof(font);
+         strcpy(font, "MediumBold");
+         db_get_value(hDB, hkey, "Font", font, &size, TID_STRING, TRUE);
+
+         db_get_key(hDB, hkeyval, &vkey);
+         size = sizeof(data);
+         status = db_get_value(hDB, 0, src, data, &size, vkey.type, FALSE);
+         
+         if (format[0]) {
+            if (vkey.type == TID_FLOAT)
+               sprintf(value, format, *(((float *) data)));
+            else if (vkey.type == TID_DOUBLE)
+               sprintf(value, format, *(((double *) data)));
+            else
+               db_sprintf(value, data, size, 0, vkey.type);
+         } else
+            db_sprintf(value, data, size, 0, vkey.type);
+
+         size = sizeof(str);
+         str[0] = 0;
+         db_get_value(hDB, hkey, "Unit", str, &size, TID_STRING, TRUE);
+         strlcat(value, " ", sizeof(value));
+         strlcat(value, str, sizeof(value));
+
+         size = sizeof(x);
+         x = y = align = 0;
+         db_get_value(hDB, hkey, "X", &x, &size, TID_INT, TRUE);
+         db_get_value(hDB, hkey, "Y", &y, &size, TID_INT, TRUE);
+         db_get_value(hDB, hkey, "Align", &align, &size, TID_INT, TRUE);
+
+         size = sizeof(fgcolor);
+         strcpy(fgcolor, "000000");
+         db_get_value(hDB, hkey, "FGColor", fgcolor, &size, TID_STRING, TRUE);
+         sscanf(fgcolor, "%02x%02x%02x", &r, &g, &b);
+         fgcol = gdImageColorAllocate(im, r, g, b);
+
+         size = sizeof(bgcolor);
+         strcpy(bgcolor, "FFFFFF");
+         db_get_value(hDB, hkey, "BGColor", bgcolor, &size, TID_STRING, TRUE);
+         sscanf(bgcolor, "%02x%02x%02x", &r, &g, &b);
+         bgcol = gdImageColorAllocate(im, r, g, b);
+
+         /* select font */
+         if (equal_ustring(font, "Small"))
+            pfont = gdFontSmall;
+         else if (equal_ustring(font, "Medium"))
+            pfont = gdFontMediumBold;
+         else if (equal_ustring(font, "Giant"))
+            pfont = gdFontGiant;
+         else
+            pfont = gdFontMediumBold;
+
+         width = strlen(value) * pfont->w + 5 + 5;
+         height = pfont->h + 2 + 2;
+
+         if (align == 0) {
+            /* left */          
+            gdImageFilledRectangle(im, x, y, x + width, y + height, bgcol);
+            gdImageRectangle(im, x, y, x + width, y + height, fgcol);
+            gdImageString(im, pfont, x + 5, y + 2, value, fgcol);
+         } else if (align == 1) {
+            /* center */
+            gdImageFilledRectangle(im, x-width/2, y, x+width/2, y + height, bgcol);
+            gdImageRectangle(im, x-width/2, y, x+width/2, y + height, fgcol);
+            gdImageString(im, pfont, x + 5 - width/2, y + 2, value, fgcol);
+         } else {
+            /* right */
+            gdImageFilledRectangle(im, x - width, y, x, y + height, bgcol);
+            gdImageRectangle(im, x - width, y, x, y + height, fgcol);
+            gdImageString(im, pfont, x - width + 5, y + 2, value, fgcol);
+         }
+      }
+   }
+
+   /* generate GIF */
+   gdImageInterlace(im, 1);
+   gdImageGif(im, &gb);
+   gdImageDestroy(im);
+   length = gb.size;
+
+   rsprintf("HTTP/1.0 200 Document follows\r\n");
+   rsprintf("Server: MIDAS HTTP %s\r\n", cm_get_version());
+
+   rsprintf("Content-Type: image/gif\r\n");
+   rsprintf("Content-Length: %d\r\n", length);
+   rsprintf("Pragma: no-cache\r\n");
+   rsprintf("Expires: Fri, 01-Jan-1983 00:00:00 GMT\r\n\r\n");
+
+   if (length > (int) (sizeof(return_buffer) - strlen(return_buffer))) {
+      printf("return buffer too small\n");
+      return;
+   }
+
+   return_length = strlen(return_buffer) + length;
+   memcpy(return_buffer + strlen(return_buffer), gb.data, length);
+}
+
+/*------------------------------------------------------------------*/
+
+void show_custom_page(char *path)
+{
+   int size, n_var, fh;
+   char str[TEXT_SIZE], *ctext, keypath[256], *p, *ps;
+   HNDLE hDB, hkey;
+   KEY key;
+   BOOL bedit;
+
+   if (strstr(path, ".gif")) {
+      show_custom_gif(path);
+      return;
+   }
+
+   cm_get_experiment_database(&hDB, NULL);
 
    sprintf(str, "/Custom/%s", path);
 
@@ -5333,66 +5586,13 @@ void show_custom_page(char *path)
             break;
          ps = strchr(p + 1, '>') + 1;
 
-         /* check if path contains index */
-         index = 0;
-
-         if (strchr(keypath, '[') && strchr(keypath, ']')) {
-            for (p = strchr(keypath, '[') + 1; *p && *p != ']'; p++)
-               if (!isdigit(*p))
-                  break;
-
-            if (*p && *p == ']') {
-               index = atoi(strchr(keypath, '[') + 1);
-               *strchr(keypath, '[') = 0;
-            }
-         }
-
-         db_find_key(hDB, 0, keypath, &hkey);
-         if (!hkey)
-            rsprintf("<b>Key \"%s\" not found in ODB</b>\n", keypath);
-         else {
-            db_get_key(hDB, hkey, &key);
-            size = sizeof(data);
-            db_get_data_index(hDB, hkey, data, &size, index, key.type);
-            db_sprintf(str, data, key.item_size, 0, key.type);
-
-            if (bedit) {
-               if (n_var == i_set) {
-                  /* set value */
-                  strcpy(str, getparam("value"));
-                  db_sscanf(str, data, &size, 0, key.type);
-                  db_set_data_index(hDB, hkey, data, size, index, key.type);
-
-                  /* read back value */
-                  size = sizeof(data);
-                  db_get_data_index(hDB, hkey, data, &size, index, key.type);
-                  db_sprintf(str, data, key.item_size, 0, key.type);
-               }
-
-               if (n_var == i_edit) {
-                  rsprintf("<input type=text size=10 maxlength=80 name=value value=\"%s\">\n", str);
-                  rsprintf("<input type=submit size=20 name=cmd value=Set>\n");
-                  rsprintf("<input type=hidden name=index value=%d>\n", n_var);
-                  rsprintf("<input type=hidden name=cmd value=Set>\n");
-                  n_var++;
-               } else {
-                  if (exp_name[0])
-                     rsprintf("<a href=\"/CS/%s?exp=%s&cmd=Edit&index=%d\">", path, exp_name, n_var++);
-                  else
-                     rsprintf("<a href=\"/CS/%s?cmd=Edit&index=%d\">", path, n_var++);
-
-                  rsputs(str);
-                  rsprintf("</a>");
-               }
-            } else
-               rsputs(str);
-         }
-
+         show_odb_tag(path, keypath, n_var, bedit);
+         n_var++;
 
       } while (p != NULL);
-   }
 
    free(ctext);
+   }
 }
 
 /*------------------------------------------------------------------*/
@@ -6947,29 +7147,29 @@ void haxis(gdImagePtr im, gdFont * font, int col, int gcol,
          if (fabs(floor(x_act / major_dx + 0.5) - x_act / major_dx) < dx / major_dx / 10.0) {
 
             if (fabs(floor(x_act / label_dx + 0.5) - x_act / label_dx) < dx / label_dx / 10.0) {
-          /**** label tick mark ****/
+               /* label tick mark */
                gdImageLine(im, xs, y1, xs, y1 + text, col);
 
-          /**** grid line ***/
+               /* grid line */
                if (grid != 0 && xs > x1 && xs < x1 + width)
                   gdImageLine(im, xs, y1, xs, y1 + grid, col);
 
-          /**** label ****/
+               /* label */
                if (label != 0) {
                   sprintf(str, "%1.*lG", n_sig1, x_act);
                   gdImageString(im, font, (int) xs - font->w * strlen(str) / 2, y1 + label, str, col);
                }
             } else {
-          /**** major tick mark ****/
+               /* major tick mark */
                gdImageLine(im, xs, y1, xs, y1 + major, col);
 
-          /**** grid line ****/
+               /* grid line */
                if (grid != 0 && xs > x1 && xs < x1 + width)
                   gdImageLine(im, xs, y1 - 1, xs, y1 + grid, gcol);
             }
 
          } else
-        /**** minor tick mark ****/
+            /* minor tick mark */
             gdImageLine(im, xs, y1, xs, y1 + minor, col);
 
       }
@@ -7091,14 +7291,14 @@ void taxis(gdImagePtr im, gdFont * font, int col, int gcol,
       if (x_screen >= x1) {
          if ((x_act - ss_timezone()) % major_dx == 0) {
             if ((x_act - ss_timezone()) % label_dx == 0) {
-               /**** label tick mark ****/
+               /* label tick mark */
                gdImageLine(im, xs, y1, xs, y1 + text, col);
 
-               /**** grid line ***/
+               /* grid line */
                if (grid != 0 && xs > x1 && xs < x1 + width)
                   gdImageLine(im, xs, y1, xs, y1 + grid, col);
 
-               /**** label ****/
+               /* label */
                if (label != 0) {
                   sec_to_label(str, x_act, label_dx, force_date);
 
@@ -7111,16 +7311,16 @@ void taxis(gdImagePtr im, gdFont * font, int col, int gcol,
                   gdImageString(im, font, xl, y1 + label, str, col);
                }
             } else {
-               /**** major tick mark ****/
+               /* major tick mark */
                gdImageLine(im, xs, y1, xs, y1 + major, col);
 
-               /**** grid line ****/
+               /* grid line */
                if (grid != 0 && xs > x1 && xs < x1 + width)
                   gdImageLine(im, xs, y1 - 1, xs, y1 + grid, gcol);
             }
 
          } else
-            /**** minor tick mark ****/
+            /* minor tick mark */
             gdImageLine(im, xs, y1, xs, y1 + minor, col);
 
       }
@@ -7218,10 +7418,10 @@ int vaxis(gdImagePtr im, gdFont * font, int col, int gcol,
          if (fabs(floor(y_act / major_dy + 0.5) - y_act / major_dy) < dy / major_dy / 10.0) {
             if (fabs(floor(y_act / label_dy + 0.5) - y_act / label_dy) < dy / label_dy / 10.0) {
                if (x1 != 0 || y1 != 0) {
-                  /**** label tick mark ****/
+                  /* label tick mark */
                   gdImageLine(im, x1, ys, x1 + text, ys, col);
 
-                  /**** grid line ***/
+                  /* grid line */
                   if (grid != 0 && y_screen < y1 && y_screen > y1 - width) {
                      if (grid > 0)
                         gdImageLine(im, x1 + 1, ys, x1 + grid, ys, gcol);
@@ -7229,7 +7429,7 @@ int vaxis(gdImagePtr im, gdFont * font, int col, int gcol,
                         gdImageLine(im, x1 - 1, ys, x1 + grid, ys, gcol);
                   }
 
-                  /**** label ****/
+                  /* label */
                   if (label != 0) {
                      sprintf(str, "%1.*lG", n_sig1, y_act);
                      if (label < 0)
@@ -7246,10 +7446,10 @@ int vaxis(gdImagePtr im, gdFont * font, int col, int gcol,
                }
             } else {
                if (x1 != 0 || y1 != 0) {
-                  /**** major tick mark ****/
+                  /* major tick mark */
                   gdImageLine(im, x1, ys, x1 + major, ys, col);
 
-                  /**** grid line ***/
+                  /* grid line */
                   if (grid != 0 && y_screen < y1 && y_screen > y1 - width)
                      gdImageLine(im, x1, ys, x1 + grid, ys, col);
                }
@@ -7262,7 +7462,7 @@ int vaxis(gdImagePtr im, gdFont * font, int col, int gcol,
 
          } else {
             if (x1 != 0 || y1 != 0) {
-               /**** minor tick mark ****/
+               /* minor tick mark */
                gdImageLine(im, x1, ys, x1 + minor, ys, col);
             }
 
