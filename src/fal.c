@@ -7,6 +7,9 @@
                 Most routines are from mfe.c mana.c and mlogger.c.
 
   $Log$
+  Revision 1.25  2002/01/16 15:21:38  midas
+  Use odb_size from analyzer
+
   Revision 1.24  2001/04/10 04:30:38  midas
   Fixed crash when FAL was stopping run in logger part and scaler event had
   zero size.
@@ -290,6 +293,7 @@ extern INT  ana_end_of_run(INT run_number, char *error);
 extern INT  ana_pause_run(INT run_number, char *error);
 extern INT  ana_resume_run(INT run_number, char *error);
 extern ANALYZE_REQUEST analyze_request[];
+extern INT  odb_size;
 
 /*---- Logging routines --------------------------------------------*/
 
@@ -4556,7 +4560,7 @@ usage:
   else
     printf("Connect to experiment %s...", exp_name);
 
-  status = cm_connect_experiment1(host_name, exp_name, fal_name, NULL, DEFAULT_ODB_SIZE,
+  status = cm_connect_experiment1(host_name, exp_name, fal_name, NULL, odb_size,
                                   LOGGER_TIMEOUT);
   if (status != CM_SUCCESS)
     {
@@ -4593,7 +4597,7 @@ usage:
 
     /* now reconnect to get client name FAL, not FAL1 */
     cm_disconnect_experiment();
-    cm_connect_experiment1(host_name, exp_name, fal_name, NULL, DEFAULT_ODB_SIZE, LOGGER_TIMEOUT);
+    cm_connect_experiment1(host_name, exp_name, fal_name, NULL, odb_size, LOGGER_TIMEOUT);
     }
 
   if (cm_register_transition(TR_PRESTART, tr_prestart) != CM_SUCCESS ||
