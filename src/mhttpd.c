@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.276  2004/09/30 17:01:50  midas
+  Don't disconnect from experiment if favicon.ico is requested
+
   Revision 1.275  2004/09/29 17:00:05  midas
   mhttpd does not exit on rpc_shutdown, only disconnect
 
@@ -9221,6 +9224,9 @@ void interprete(char *cookie_pwd, char *cookie_wpwd, char *path, int refresh)
    time_t now;
    struct tm *gmt;
 
+   if (equal_ustring(path, "favicon.ico"))
+      return;
+
    /* encode path for further usage */
    strlcpy(dec_path, path, sizeof(dec_path));
    urlDecode(dec_path);
@@ -9236,7 +9242,7 @@ void interprete(char *cookie_pwd, char *cookie_wpwd, char *path, int refresh)
    group = getparam("group");
    index = atoi(getparam("index"));
 
-  /*---- experiment connect ----------------------------------------*/
+   /*---- experiment connect ----------------------------------------*/
 
    /* disconnect from previous experiment if current is different */
    if (connected && !equal_ustring(exp_name, experiment)) {
@@ -9314,7 +9320,7 @@ void interprete(char *cookie_pwd, char *cookie_wpwd, char *path, int refresh)
    size = sizeof(run_state);
    db_get_value(hDB, 0, "/Runinfo/State", &run_state, &size, TID_INT, TRUE);
 
-  /*---- redirect with cookie if password given --------------------*/
+   /*---- redirect with cookie if password given --------------------*/
 
    if (password[0]) {
       rsprintf("HTTP/1.0 302 Found\r\n");
