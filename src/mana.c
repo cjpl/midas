@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.76  2002/05/08 22:15:03  pierre
+  add db_get_value arg
+
   Revision 1.75  2002/05/08 19:54:40  midas
   Added extra parameter to function db_get_value()
 
@@ -4749,7 +4752,7 @@ char           str[256];
         sprintf(str, "/%s/Tests/%s", analyzer_name, tst_buf[i].name);
         count = 0;
         size = sizeof(DWORD);
-        db_get_value(hDB, 0, str, &count, &size, TID_DWORD);
+        db_get_value(hDB, 0, str, &count, &size, TID_DWORD, TRUE);
         count += tst_buf[i].count;
 
         db_set_value(hDB, 0, str, &count, sizeof(DWORD), 1, TID_DWORD);
