@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus communication functions
 
   $Log$
+  Revision 1.19  2002/11/06 16:46:11  midas
+  Check parameter size
+
   Revision 1.18  2002/11/06 14:01:20  midas
   Fixed small bugs
 
@@ -1788,6 +1791,7 @@ int mscb_user(int fd, int adr, void *param, int size, void *result, int *rsize)
     MSCB_TIMEOUT            Timeout receiving data
     MSCB_CRC_ERROR          CRC error
     MSCB_MUTEX              Cannot obtain mutex for mscb
+    MSCB_FORMAT_ERROR       "size" parameter too large
 
 \********************************************************************/
 {
@@ -1803,6 +1807,9 @@ unsigned char buf[80];
     mscb_release();
     return status;
     }
+
+  if (size > 4 || size < 0)
+    return MSCB_FORMAT_ERROR;
 
   buf[0] = CMD_USER+size;
 
