@@ -9,6 +9,9 @@
                 for SCS-210 RS232 node
 
   $Log$
+  Revision 1.9  2004/01/07 12:52:23  midas
+  Changed indentation
+
   Revision 1.8  2003/05/02 09:03:01  midas
   Fixed buffer overflows by strlcpy()
 
@@ -36,14 +39,14 @@
 \********************************************************************/
 
 #include <stdio.h>
-#include <stdlib.h> // for atof()
+#include <stdlib.h>             // for atof()
 #include "mscb.h"
 
 extern bit FREEZE_MODE;
 extern bit DEBUG_MODE;
 
 char code node_name[] = "SCS-210";
-bit       terminal_mode;
+bit terminal_mode;
 
 /*---- Define channels and configuration parameters returned to
        the CMD_GET_INFO command                                 ----*/
@@ -51,15 +54,15 @@ bit       terminal_mode;
 /* data buffer (mirrored in EEPROM) */
 
 struct {
-  float value;
-  unsigned char baud;
+   float value;
+   unsigned char baud;
 } user_data;
 
 MSCB_INFO_VAR code variables[] = {
-  1,      UNIT_ASCII, 0, 0,           0, "RS232", 0,
-  4,  UNIT_UNDEFINED, 0, 0, MSCBF_FLOAT, "Value", &user_data.value,
-  1,  UNIT_BAUD,      0, 0,           0, "Baud",  &user_data.baud,
-  0
+   1, UNIT_ASCII, 0, 0, 0, "RS232", 0,
+   4, UNIT_UNDEFINED, 0, 0, MSCBF_FLOAT, "Value", &user_data.value,
+   1, UNIT_BAUD, 0, 0, 0, "Baud", &user_data.baud,
+   0
 };
 
 /********************************************************************\
@@ -75,13 +78,13 @@ void write_gain(void);
 
 void user_init(unsigned char init)
 {
-  /* initialize UART1 */
-  if (init)
-    user_data.baud = 1; // 9600 by default
+   /* initialize UART1 */
+   if (init)
+      user_data.baud = 1;       // 9600 by default
 
-  uart_init(1, user_data.baud);
+   uart_init(1, user_data.baud);
 
-  // DEBUG_MODE = 1;
+   // DEBUG_MODE = 1;
 }
 
 /*---- User write function -----------------------------------------*/
@@ -95,81 +98,74 @@ char idata obuf[8];
 
 void user_write(unsigned char channel) reentrant
 {
-unsigned char i, n;
+   unsigned char i, n;
 
-  if (channel == 0)
-    {
-    if (in_buf[2] == 27)
-      terminal_mode = 0;
-    else if (in_buf[2] == 0)
-      terminal_mode = 1;
-    else
-      {
-      n = (in_buf[0] & 0x07) - 1;
-      for (i=0 ; i< n ; i++)
-        putchar(in_buf[i+2]);
+   if (channel == 0) {
+      if (in_buf[2] == 27)
+         terminal_mode = 0;
+      else if (in_buf[2] == 0)
+         terminal_mode = 1;
+      else {
+         n = (in_buf[0] & 0x07) - 1;
+         for (i = 0; i < n; i++)
+            putchar(in_buf[i + 2]);
       }
-    }
+   }
 }
 
 /*---- User read function ------------------------------------------*/
 
 unsigned char user_read(unsigned char channel)
 {
-char c;
+   char c;
 
-  if (channel == 0)
-    {
-    c = getchar_nowait();
-    if (c != -1)
-      {
-      out_buf[1] = c;
-      return 1;
+   if (channel == 0) {
+      c = getchar_nowait();
+      if (c != -1) {
+         out_buf[1] = c;
+         return 1;
       }
-    }
+   }
 
-  return 0;
+   return 0;
 }
 
 /*---- User write config function ----------------------------------*/
 
 void user_write_conf(unsigned char channel) reentrant
 {
-  if (channel == 0)
-    uart_init(1, user_data.baud);
+   if (channel == 0)
+      uart_init(1, user_data.baud);
 }
 
 /*---- User read config function -----------------------------------*/
 
 void user_read_conf(unsigned char channel)
 {
-  if (channel);
+   if (channel);
 }
 
 /*---- User function called vid CMD_USER command -------------------*/
 
-unsigned char user_func(unsigned char *data_in,
-                        unsigned char *data_out)
+unsigned char user_func(unsigned char *data_in, unsigned char *data_out)
 {
-  /* echo input data */
-  data_out[0] = data_in[0];
-  data_out[1] = data_in[1];
-  return 2;
-}            
+   /* echo input data */
+   data_out[0] = data_in[0];
+   data_out[1] = data_in[1];
+   return 2;
+}
 
 /*---- User loop function ------------------------------------------*/
 
 void user_loop(void)
 {
-char idata str[32];
-unsigned char i;
+   char idata str[32];
+   unsigned char i;
 
-  if (!terminal_mode)
-    {
-    i = gets_wait(str, sizeof(str), 200);
+   if (!terminal_mode) {
+      i = gets_wait(str, sizeof(str), 200);
 
-    if (i > 2)
-      user_data.value = atof(str);
-    }
+      if (i > 2)
+         user_data.value = atof(str);
+   }
 }
-

@@ -6,6 +6,9 @@
   Contents:     Header fiel for MSCB RPC funcions
 
   $Log$
+  Revision 1.10  2004/01/07 12:52:23  midas
+  Changed indentation
+
   Revision 1.9  2003/09/30 08:03:41  midas
   Implemented multiple RPC connections
 
@@ -35,25 +38,25 @@
 
 
 \********************************************************************/
-        
-/* Data types */        /*                      min      max    */
-#define TID_BYTE      1 /* unsigned byte         0       255    */
-#define TID_SBYTE     2 /* signed byte         -128      127    */
-#define TID_CHAR      3 /* single character      0       255    */
-#define TID_WORD      4 /* two bytes             0      65535   */
-#define TID_SHORT     5 /* signed word        -32768    32767   */
-#define TID_DWORD     6 /* four bytes            0      2^32-1  */
-#define TID_INT       7 /* signed dword        -2^31    2^31-1  */
-#define TID_BOOL      8 /* four bytes bool       0        1     */
-#define TID_FLOAT     9 /* 4 Byte float format                  */
-#define TID_DOUBLE   10 /* 8 Byte float format                  */
-#define TID_BITFIELD 11 /* 32 Bits Bitfield      0  111... (32) */
-#define TID_STRING   12 /* zero terminated string               */
-#define TID_ARRAY    13 /* array with unknown contents          */
-#define TID_STRUCT   14 /* structure with fixed length          */
-#define TID_KEY      15 /* key in online database               */
-#define TID_LINK     16 /* link in online database              */
-#define TID_LAST     17 /* end of TID list indicator            */
+
+                        /* Data types *//*                      min      max    */
+#define TID_BYTE      1         /* unsigned byte         0       255    */
+#define TID_SBYTE     2         /* signed byte         -128      127    */
+#define TID_CHAR      3         /* single character      0       255    */
+#define TID_WORD      4         /* two bytes             0      65535   */
+#define TID_SHORT     5         /* signed word        -32768    32767   */
+#define TID_DWORD     6         /* four bytes            0      2^32-1  */
+#define TID_INT       7         /* signed dword        -2^31    2^31-1  */
+#define TID_BOOL      8         /* four bytes bool       0        1     */
+#define TID_FLOAT     9         /* 4 Byte float format                  */
+#define TID_DOUBLE   10         /* 8 Byte float format                  */
+#define TID_BITFIELD 11         /* 32 Bits Bitfield      0  111... (32) */
+#define TID_STRING   12         /* zero terminated string               */
+#define TID_ARRAY    13         /* array with unknown contents          */
+#define TID_STRUCT   14         /* structure with fixed length          */
+#define TID_KEY      15         /* key in online database               */
+#define TID_LINK     16         /* link in online database              */
+#define TID_LAST     17         /* end of TID list indicator            */
 
 #define CBYTE(_i)        (* ((unsigned char *)   prpc_param[_i]))
 #define CPBYTE(_i)       (  ((unsigned char *)   prpc_param[_i]))
@@ -96,16 +99,16 @@
 /* rpc parameter list */
 
 typedef struct {
-  unsigned short tid;
-  unsigned short flags;
-  int            n;
+   unsigned short tid;
+   unsigned short flags;
+   int n;
 } RPC_PARAM;
 
 
 typedef struct {
-  int           id;
-  char          *name;
-  RPC_PARAM     param[20];
+   int id;
+   char *name;
+   RPC_PARAM param[20];
 } RPC_LIST;
 
 /* function list */
@@ -134,13 +137,13 @@ typedef struct {
 /* Network structures */
 
 typedef struct {
-  int                routine_id;    /* routine ID like ID_BM_xxx    */
-  int                param_size;    /* size in Bytes of parameter   */
+   int routine_id;              /* routine ID like ID_BM_xxx    */
+   int param_size;              /* size in Bytes of parameter   */
 } NET_COMMAND_HEADER;
 
 typedef struct {
-  NET_COMMAND_HEADER header;
-  char               param[32];     /* parameter array              */
+   NET_COMMAND_HEADER header;
+   char param[32];              /* parameter array              */
 } NET_COMMAND;
 
 /* default listen port */
@@ -167,7 +170,7 @@ typedef struct {
 /* function declarations */
 
 void mrpc_server_loop(void);
-int  mrpc_connect(char *host_name);
-int  mrpc_connected(int fd);
-int  mrpc_disconnect(int sock);
-int  mrpc_call(const int routine_id, ...);
+int mrpc_connect(char *host_name);
+int mrpc_connected(int fd);
+int mrpc_disconnect(int sock);
+int mrpc_call(const int routine_id, ...);
