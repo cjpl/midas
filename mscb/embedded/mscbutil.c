@@ -6,6 +6,9 @@
   Contents:     Various utility functions for MSCB protocol
 
   $Log$
+  Revision 1.53  2005/04/01 10:52:19  ritt
+  Initialize UART1 in 8 bit mode
+
   Revision 1.52  2005/03/21 10:56:02  ritt
   Removed ADuC code
 
@@ -707,7 +710,7 @@ void uart_init(unsigned char port, unsigned char baud)
 
 #elif defined(CPU_C8051F120)       // 98 MHz
       SFRPAGE = UART1_PAGE;
-      SCON1 = 0xD0;                // Mode 3, 9 bit, receive enable
+      SCON1 = 0x50;                // Mode 1, 8 bit, receive enable
 
       SFRPAGE = TIMER01_PAGE;
       TMOD  = (TMOD & 0x0F)| 0x20; // Timer 1 8-bit counter with auto reload
