@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.249  2003/05/14 09:20:27  midas
+  Fixed bug with /CNAF
+
   Revision 1.248  2003/05/12 14:29:19  midas
   Added expiration header
 
@@ -9812,7 +9815,7 @@ struct tm *gmt;
 
   /*---- CAMAC CNAF command ----------------------------------------*/
 
-  if (equal_ustring(command, "CNAF") || strncmp(path, "/CNAF", 5) == 0)
+  if (equal_ustring(command, "CNAF") || strncmp(path, "CNAF", 4) == 0)
     {
     if (!check_web_password(cookie_wpwd, "?cmd=CNAF", experiment))
       return;
