@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.39  1999/09/17 11:54:43  midas
+  OS_LINUX & co automatically define OS_UNIX
+
   Revision 1.38  1999/09/17 11:48:04  midas
   Alarm system half finished
 
@@ -161,6 +164,10 @@
 #if defined ( vxw )
 #define OS_VXWORKS
 #undef OS_UNIX
+#endif
+
+#if defined(OS_LINUX) || defined(OS_OSF1) || defined(OS_ULTRIX) || defined(OS_FREEBSD) || defined(OS_SOLARIS)
+#define OS_UNIX
 #endif
 
 #if !defined(OS_VMS) && !defined(OS_MSDOS) && !defined(OS_UNIX) && !defined(OS_VXWORKS) && !defined(OS_WINNT)
