@@ -9,6 +9,9 @@
                 for SCS-800 capacitance meter
 
   $Log$
+  Revision 1.2  2003/09/23 09:23:05  midas
+  Removed tabs
+
   Revision 1.1  2003/09/10 13:46:34  midas
   Initial revision
 
@@ -139,15 +142,15 @@ unsigned char i;
   SR_STROBE = 0;
   SR_CLOCK = 0;
 
- /* first shift register (chn 0-3) */
+  /* first shift register (chn 0-3) */
   for (i=0 ; i<4 ; i++)
     {
     /* first bit (5M1 Ohm) */
-	SR_DATAO = 1;
+    SR_DATAO = 1;
     SR_CLOCK = 1;
     SR_CLOCK = 0;
 
-	/* second bit (5k6 Ohm) */
+    /* second bit (5k6 Ohm) */
     SR_DATAO = 1;
     SR_CLOCK = 1;
     SR_CLOCK = 0;
@@ -161,7 +164,7 @@ unsigned char i;
     SR_CLOCK = 1;
     SR_CLOCK = 0;
  
-	/* second bit (5k6 Ohm) */
+    /* second bit (5k6 Ohm) */
     SR_DATAO = 1;
     SR_CLOCK = 1;
     SR_CLOCK = 0;
@@ -173,57 +176,65 @@ unsigned char i;
   SR_STROBE = 0;
 }
 
-
 /*------------------------------------------------------------------*/
-
-sbit CH0 = P1 ^ 0;
 
 void cap_read()
 {
 static unsigned char channel = 0;
-unsigned char m;
+unsigned char m, i;
+unsigned long v;
 float c;
 
-  m = (1 << channel);
-
-  /* init timer 3 */
-  TMR3L = 0;
-  TMR3H = 0;
-  TMR3RLL = 0xFF;
-  TMR3RLH = 0xFF;
-
-  TMR3CN = (1 << 2); /* clock/12, Timer 3 enabled */
-
-  /* trigger NE555 */
-  NE555_TRIGGER = 0;
-  delay_us(1);
-  NE555_TRIGGER = 1;
-
-  /* wait until NE555 output goes low again */
-  while ((P1 & m) != 0 && (TMR3CN & 0x80) == 0);
-
-  if ((TMR3CN & 0x80) != 0)
+  /* average 10 times */
+  for (i=v=0 ; i<10 ; i++)
     {
-	/* overflow */
-	c = 999;
+    yield();
 
-    /* stop timer 3 */
-    TMR3CN = 0;
-	}
-  else
-    {
-    /* stop timer 3 */
-    TMR3CN = 0;
+    m = (1 << channel);
+	
+    /* init timer 3 */
+    TMR3L = 0;
+    TMR3H = 0;
+    TMR3RLL = 0xFF;
+    TMR3RLH = 0xFF;
+	
+    TMR3CN = (1 << 2); /* clock/12, Timer 3 enabled */
+	
+    /* trigger NE555 */
+    NE555_TRIGGER = 0;
+	  delay_us(1);
+	  NE555_TRIGGER = 1;
+	
+	  /* wait until NE555 output goes low again */
+	  while ((P1 & m) != 0 && (TMR3CN & 0x80) == 0);
+	
+	  if ((TMR3CN & 0x80) != 0)
+	    {
+  		/* overflow */
+  		c = 999;
+  	
+      /* stop timer 3 */
+	    TMR3CN = 0;
 
-    /* time in us */
-    c = TMR3H * 256 + TMR3L;
-    c = c / 11.052 * 12;
+      goto overflow;
+  		}
+	  else
+	    {
+	    /* stop timer 3 */
+	    TMR3CN = 0;
 	
-    /* time in s */
-    c /= 1E6;
-	
-    /* convert to nF via t = 1.1 * R * C */
-    c = c / 1.1 / 5.6E6 * 1E9;
+	    /* time in us */
+	    v += TMR3H * 256 + TMR3L;
+      }
+    }
+
+  c = (float)v / i / 11.052 * 12;
+
+  /* time in s */
+  c /= 1E6;
+
+  /* convert to nF via t = 1.1 * R * C */
+  c = c / 1.1 / 5.6E6 * 1E9;
 
     /* apply overall gain */
 	c *= user_data.gain;
@@ -236,7 +247,8 @@ float c;
 
 	/* stip off unsignificant digits */
 	c = ((int) (c * 1000 + 0.5)) / 1000.0;
-	}
+
+overflow:
   
   DISABLE_INTERRUPTS;
   user_data.cap[channel] = c;
@@ -254,7 +266,7 @@ static long t = 0;
   if (time() - t > 10)
     {
     cap_read();
-	t = time();
-	}
+  	t = time();
+	  }
 }
 
