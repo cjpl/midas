@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.189  2002/02/12 15:59:36  midas
+  Improved time axis, added time query for history
+
   Revision 1.188  2002/02/05 04:55:16  midas
   Improved log axis limit calculation
 
@@ -6246,7 +6249,6 @@ char  str[256], ref[256], condition[256], value[256];
       }
     }
 
-
   rsprintf("</table>\n");
   rsprintf("</body></html>\r\n");
 }
@@ -6476,7 +6478,7 @@ void haxis(gdImagePtr im, gdFont *font, int col, int gcol,
            int grid, double xmin, double xmax)
 {
 double dx, int_dx, frac_dx, x_act, label_dx, major_dx, x_screen, maxwidth;
-int    tick_base, major_base, label_base, n_sig1, n_sig2, max_tick, xs;
+int    tick_base, major_base, label_base, n_sig1, n_sig2, xs;
 char   str[80];
 double base[] = {1,2,5,10,20,50,100,200,500,1000};
 
@@ -6484,8 +6486,6 @@ double base[] = {1,2,5,10,20,50,100,200,500,1000};
     return;
 
   /* use 5 as min tick distance */
-  max_tick = (int) ((double) (width/5) + 1);
-
   dx = (xmax - xmin)/ (double) (width/5);
 
   frac_dx = modf(log(dx)/LN10, &int_dx);
@@ -6598,13 +6598,153 @@ double base[] = {1,2,5,10,20,50,100,200,500,1000};
 
 /*------------------------------------------------------------------*/
 
+void sec_to_label(char *result, int sec, int base)
+{
+char      mon[80];
+struct tm *tms;
+
+  tms = localtime((time_t *)&sec);
+  strcpy(mon, mname[tms->tm_mon]);
+  mon[3] = 0;
+  
+  if (base < 600)
+    sprintf(result, "%02d:%02d:%02d", tms->tm_hour, tms->tm_min, tms->tm_sec);
+  else if (base < 3600*3)
+    sprintf(result, "%02d:%02d", tms->tm_hour, tms->tm_min);
+  else if (base < 3600*24)
+    sprintf(result, "%02d %s %02d %02d:%02d", 
+      tms->tm_mday, mon, tms->tm_year % 100,
+      tms->tm_hour, tms->tm_min);
+  else
+    sprintf(result, "%02d %s %02d", tms->tm_mday, mon, tms->tm_year % 100);
+}
+
+void taxis(gdImagePtr im, gdFont *font, int col, int gcol,
+           int x1, int y1, int width, int xr, 
+           int minor, int major, int text, int label,
+           int grid, double xmin, double xmax)
+{
+int    dx, x_act, label_dx, major_dx, x_screen, maxwidth;
+int    tick_base, major_base, label_base, xs, xl;
+char   str[80];
+int    base[] = {1,5,10,60,300,600,1800,3600,3600*6,3600*12,3600*24,0};
+
+  if (xmax <= xmin || width <= 0)
+    return;
+
+  /* use 5 pixel as min tick distance */
+  dx = (int)((xmax - xmin)/ (double) (width/5)+0.5);
+
+  for (tick_base=0 ; base[tick_base] ; tick_base++)
+    {
+    if (base[tick_base] > dx)
+      break;
+    }
+  if (!base[tick_base])
+    tick_base--;
+  dx = base[tick_base];
+
+  if (base[tick_base+1])
+    major_base = tick_base + 1;
+  else
+    major_base = tick_base;
+  major_dx = base[major_base];
+
+  if (base[major_base+1])
+    label_base = major_base + 1;
+  else
+    label_base = major_base;
+  label_dx = base[label_base];
+
+  do
+    {
+    sec_to_label(str, (int)(xmin+0.5), label_dx);
+    maxwidth = font->h/2 * strlen(str);
+
+    /* increasing label_dx, if labels would overlap */
+    if (maxwidth > 0.7 * label_dx/(xmax-xmin)*width)
+      {
+      if (base[label_base+1])
+        label_dx = base[++label_base];
+      else
+        label_dx += 3600*24;
+      }
+    else
+      break;
+    } while (1);
+
+  x_act = (int)floor((double)(xmin-timezone)/label_dx)*label_dx+timezone;
+
+  gdImageLine(im, x1, y1, x1+width, y1, col);
+
+  do
+    {
+    x_screen = (int) ((x_act-xmin)/(xmax-xmin)*width + x1 + 0.5);
+    xs = (int) (x_screen+0.5);
+
+    if (x_screen > x1 + width + 0.001) break;
+
+    if (x_screen >= x1)
+      {
+      if ((x_act - timezone) % major_dx == 0)
+        {
+        if ((x_act - timezone) % label_dx == 0)
+          {
+          /**** label tick mark ****/
+          gdImageLine(im, xs, y1, xs, y1+text, col);
+
+          /**** grid line ***/
+          if (grid != 0 && xs > x1 && xs < x1 + width)
+            gdImageLine(im, xs, y1, xs, y1+grid, col);
+
+          /**** label ****/
+          if (label != 0)
+            {
+            sec_to_label(str, x_act, label_dx);
+
+            /* if labels at edge, shift them in */
+            xl = (int)xs-font->w*strlen(str)/2;
+            if (xl < 0)
+              xl = 0;
+            if (xl+font->w*(int)strlen(str) > xr)
+              xl = xr-font->w*strlen(str);
+            gdImageString(im, font, xl, y1+label, str, col);
+            }
+          }
+        else
+          {
+          /**** major tick mark ****/
+          gdImageLine(im, xs, y1, xs, y1+major, col);
+
+          /**** grid line ****/
+          if (grid != 0 && xs > x1 && xs < x1 + width)
+            gdImageLine(im, xs, y1-1, xs, y1+grid, gcol);
+          }
+
+        }
+      else
+        /**** minor tick mark ****/
+        gdImageLine(im, xs, y1, xs, y1+minor, col);
+
+      }
+
+    x_act+=dx;
+
+    /* supress 1.23E-17 ... */
+    if (fabs(x_act) < dx/100) x_act=0;
+
+    } while(1);
+}
+
+/*------------------------------------------------------------------*/
+
 int vaxis(gdImagePtr im, gdFont *font, int col, int gcol,
            int x1, int y1, int width,
            int minor, int major, int text, int label,
            int grid, double ymin, double ymax, BOOL logaxis)
 {
 double dy, int_dy, frac_dy, y_act, label_dy, major_dy, y_screen, y_next;
-int    tick_base, major_base, label_base, n_sig1, n_sig2, max_tick, ys, max_width;
+int    tick_base, major_base, label_base, n_sig1, n_sig2, ys, max_width;
 int    last_label_y;
 char   str[80];
 double base[] = {1,2,5,10,20,50,100,200,500,1000};
@@ -6614,7 +6754,6 @@ double base[] = {1,2,5,10,20,50,100,200,500,1000};
 
   if (logaxis)
     {
-    max_tick = (int) ((log(ymax)/LN10 - log(ymin)/LN10) * 10 + 1);
     dy = pow(10, floor(log(ymin)/LN10));
     label_dy = dy;
     major_dy = dy * 10;
@@ -6622,7 +6761,6 @@ double base[] = {1,2,5,10,20,50,100,200,500,1000};
     }
   else
     {
-    max_tick = (int) ((double) (width/5) + 1);
     dy = (ymax - ymin)/ (double) (width/5);
 
     frac_dy = modf(log(dy)/LN10, &int_dy);
@@ -7344,7 +7482,9 @@ double      yb1, yb2, yf1, yf2, ybase;
   gdImageFilledRectangle(im, x1, y2, x2, y1, white);
 
   /* draw axis frame */
-  haxis(im, gdFontSmall, black, ltgrey, x1, y1, x2-x1, 3, 5, 9, 10, 0, xmin,  xmax);
+  taxis(im, gdFontSmall, black, ltgrey, x1, y1, x2-x1, width, 3, 5, 9, 10, 0, 
+    ss_time()-scale+toffset,  ss_time()+toffset);
+  //haxis(im, gdFontSmall, black, ltgrey, x1, y1, x2-x1, 3, 5, 9, 10, 0, xmin,  xmax);
   vaxis(im, gdFontSmall, black, ltgrey, x1, y1, y1-y2, -3, -5, -7, -8, x2-x1, ymin, ymax, logaxis);
   gdImageLine(im, x1, y2, x2, y2, black);
   gdImageLine(im, x2, y2, x2, y1, black);
@@ -7583,6 +7723,132 @@ error:
 
 /*------------------------------------------------------------------*/
 
+void show_query_page(char *path)
+{
+int    i;
+time_t ltime_start, ltime_end;
+HNDLE  hDB;
+char   str[256];
+time_t now;
+struct tm *ptms, tms;
+
+  if (*getparam("m1"))
+    {
+    memset(&tms, 0, sizeof(struct tm));
+    tms.tm_year = atoi(getparam("y1")) % 100;
+
+    strcpy(str, getparam("m1"));
+    for (i=0 ; i<12 ; i++)
+      if (equal_ustring(str, mname[i]))
+        break;
+    if (i == 12)
+      i = 0;
+    
+    tms.tm_mon  = i;
+    tms.tm_mday = atoi(getparam("d1"));
+    tms.tm_hour = 0;
+
+    if (tms.tm_year < 90)
+      tms.tm_year += 100;
+
+    ltime_start = mktime(&tms);
+    memset(&tms, 0, sizeof(struct tm));
+    tms.tm_year = atoi(getparam("y2")) % 100;
+
+    strcpy(str, getparam("m2"));
+    for (i=0 ; i<12 ; i++)
+      if (equal_ustring(str, mname[i]))
+        break;
+    if (i == 12)
+      i = 0;
+    
+    tms.tm_mon  = i;
+    tms.tm_mday = atoi(getparam("d2"));
+    tms.tm_hour = 0;
+
+    if (tms.tm_year < 90)
+      tms.tm_year += 100;
+    ltime_end = mktime(&tms);
+    ltime_end += 3600*24;
+
+    sprintf(str, "HS/%s?scale=%d&offset=%d", path, ltime_end-ltime_start, 
+            min(ss_time() - ltime_start, 0));
+    redirect(str);
+    return;
+    }
+
+  cm_get_experiment_database(&hDB, NULL);
+
+  sprintf(str, "HS/%s", path);
+  show_header(hDB, "History", str, 1, 0);
+
+  /* menu buttons */
+  rsprintf("<tr><td colspan=2 bgcolor=#C0C0C0>\n");
+  rsprintf("<input type=submit name=cmd value=Query>\n");
+  rsprintf("<input type=submit name=cmd value=History>\n");
+  rsprintf("<input type=submit name=cmd value=Status></tr>\n");
+  rsprintf("</tr>\n\n");
+
+  time(&now);
+  now -= 3600*24;
+  ptms = localtime(&now);
+  ptms->tm_year += 1900;
+
+  rsprintf("<tr><td nowrap bgcolor=#CCCCFF>Start date:</td>", "Start date");
+  
+  rsprintf("<td bgcolor=#DDEEBB>Month: <select name=\"m1\">\n");
+  rsprintf("<option value=\"\">\n");
+  for (i=0 ; i<12 ; i++)
+    if (i == ptms->tm_mon)
+      rsprintf("<option selected value=\"%s\">%s\n", mname[i], mname[i]);
+    else
+      rsprintf("<option value=\"%s\">%s\n", mname[i], mname[i]);
+  rsprintf("</select>\n");
+
+  rsprintf("&nbsp;Day: <select name=\"d1\">");
+  rsprintf("<option selected value=\"\">\n");
+  for (i=0 ; i<31 ; i++)
+    if (i+1 == ptms->tm_mday)
+      rsprintf("<option selected value=%d>%d\n", i+1, i+1);
+    else
+      rsprintf("<option value=%d>%d\n", i+1, i+1);
+  rsprintf("</select>\n");
+
+  rsprintf("&nbsp;Year: <input type=\"text\" size=5 maxlength=5 name=\"y1\" value=\"%d\">", ptms->tm_year);
+  rsprintf("</td></tr>\n");
+
+  rsprintf("<tr><td nowrap bgcolor=#CCCCFF>End date:</td>");
+  time(&now);
+  ptms = localtime(&now);
+  ptms->tm_year += 1900;
+  
+  rsprintf("<td bgcolor=#DDEEBB>Month: <select name=\"m2\">\n");
+  rsprintf("<option value=\"\">\n");
+  for (i=0 ; i<12 ; i++)
+    if (i == ptms->tm_mon)
+      rsprintf("<option selected value=\"%s\">%s\n", mname[i], mname[i]);
+    else
+      rsprintf("<option value=\"%s\">%s\n", mname[i], mname[i]);
+  rsprintf("</select>\n");
+
+  rsprintf("&nbsp;Day: <select name=\"d2\">");
+  rsprintf("<option selected value=\"\">\n");
+  for (i=0 ; i<31 ; i++)
+    if (i+1 == ptms->tm_mday)
+      rsprintf("<option selected value=%d>%d\n", i+1, i+1);
+    else
+      rsprintf("<option value=%d>%d\n", i+1, i+1);
+  rsprintf("</select>\n");
+
+  rsprintf("&nbsp;Year: <input type=\"text\" size=5 maxlength=5 name=\"y2\" value=\"%d\">", ptms->tm_year);
+  rsprintf("</td></tr>\n");
+
+  rsprintf("</table>\n");
+  rsprintf("</body></html>\r\n");
+}
+
+/*------------------------------------------------------------------*/
+
 void show_hist_page(char *path, char *buffer, int *buffer_size, int refresh)
 {
 char   str[256], ref[256], ref2[256], paramstr[256], scalestr[256];
@@ -7592,6 +7858,12 @@ KEY    key;
 int    i, scale, offset, index, width, size, status;
 float  factor[2];
 char   def_button[][NAME_LENGTH] = {"10m", "1h", "3h", "12h", "24h", "3d", "7d" };
+
+  if (equal_ustring(getparam("cmd"), "Query"))
+    {
+    show_query_page(path);
+    return;
+    }
 
   if (equal_ustring(getparam("cmd"), "Config"))
     {
@@ -7856,6 +8128,7 @@ char   def_button[][NAME_LENGTH] = {"10m", "1h", "3h", "12h", "24h", "3d", "7d" 
     rsprintf("<input type=submit name=width value=Small>\n");
     rsprintf("<input type=submit name=cmd value=\"Create ELog\">\n");
     rsprintf("<input type=submit name=cmd value=Config>\n");
+    rsprintf("<input type=submit name=cmd value=Query>\n");
 
     rsprintf("</tr>\n");
 
