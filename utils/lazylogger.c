@@ -6,6 +6,9 @@
   Contents:     Disk to Tape copier for background job
 
   $Log$
+  Revision 1.7  1999/02/19 21:54:08  pierre
+  - incorporate hot links on Settings
+
   Revision 1.6  1999/02/05 23:51:11  pierre
   - Cleanup /settings structure
   - Enable FTP channel
@@ -48,16 +51,16 @@ typedef struct {
 DIRLOG *pdirlog;
 INT    *pdonelist;
 
-#define LAZY_SETTING_STRING "\
+#define LAZY_SETTINGS_STRING "\
 Maintain free space[%] = INT : 0\n\
 Stay behind = INT : -3\n\
 Running condition = STRING : [128] ALWAYS\n\
-Dir data  = STRING : [128] \n\
+Data dir = STRING : [256] \n\
 Data format = STRING : [8] MIDAS\n\
 Filename format = STRING : [128] run%05d.mid\n\
 Backup type = STRING : [8] Disk\n\
 Path = STRING : [128] \n\
-Capacity (KBytes) = FLOAT : 5e9\n\
+Capacity (KBytes) = FLOAT : 5e6\n\
 List label= STRING : [128] \n\
 "
 #define LAZY_STATISTICS_STRING "\
@@ -77,7 +80,7 @@ typedef struct {
   INT   staybehind;               /* keep x run file between current Acq and backup 
                                         -x same as x but starting from oldest */
   char  condition[128];           /* key condition */
-  char  dir[MAX_FILE_PATH];       /* path to the data dir */
+  char  dir[256];       /* path to the data dir */
   char  format[8];                /* Data format (YBOS, MIDAS) */
   char  backfmt[MAX_FILE_PATH];   /* format for the run files run%05d.mid */
   char  type[8];                  /* Backup device type  (Disk, Tape, Ftp) */
@@ -106,7 +109,7 @@ DWORD     szlazy;
 HNDLE     hDB, hKey;
 float     lastsz;
 HNDLE     hKeyst;
-INT       tot_do_size, tot_dirlog_size, hDev;
+INT       run_state, tot_do_size, tot_dirlog_size, hDev;
 BOOL      zap_flag, msg_flag;
 BOOL      copy_continue = TRUE;
 INT       data_fmt, dev_type;
@@ -219,76 +222,6 @@ INT ss_run_extract(char * name)
     }
   strncpy(run_str, pb, pe-pb); 
   return(atoi(run_str));
-}
-
-/*------------------------------------------------------------------*/
-INT lazy_load_params( HNDLE hDB, HNDLE hKey )
-/********************************************************************\
-  Routine: lazy_load_params
-  Purpose: loads the /Lazy/settings into the global struct lazy.
-  Input:
-   HNDLE hDB   Database handle (not used here but could be hot linked)
-   HNDLE hKey  Key handle (not used here but could be hot linked)
-  Output:
-  Function value:
-   INT        DB_SUCCESS
-              DB_NO_ACCESS
-\********************************************************************/
-{
-  INT status, size;
-  
-  /* check if dir exists */
-    if (db_find_key(hDB, 0, "Lazy/Settings", &hKey) != DB_SUCCESS)
-    {
-      if (db_find_key(hDB, 0, "Lazy", &hKey) == DB_SUCCESS)
-      {
-        status = db_create_record(hDB, hKey, "Settings", LAZY_SETTING_STRING);
-        if (status != DB_SUCCESS)
-        {
-          cm_msg(MINFO, "Lazy", "cannot create Lazy structure");
-          return DB_SUCCESS;
-        }
-      }
-      else
-      return DB_NO_KEY;
-    }
-  size = sizeof(lazy);
-  db_find_key(hDB, 0, "/Lazy/Settings", &hKey);
-  status = db_get_record(hDB, hKey, &lazy, &size, 0);
-  if (status != DB_SUCCESS)
-    {
-      cm_msg(MINFO, "Lazy", "cannot read Lazy structure");
-      return DB_NO_ACCESS;
-    }
-  
-  /* extract Data format from the struct */
-  if (equal_ustring(lazy.format, "YBOS"))
-    data_fmt = FORMAT_YBOS;
-  else if (equal_ustring(lazy.format, "MIDAS"))
-    data_fmt = FORMAT_MIDAS;
-  else
-  {
-    cm_msg(MERROR,"Lazy","Unknown data format (MIDAS, YBOS)");
-    return DB_NO_ACCESS;
-  }
-
-  /* extract Device type from the struct */
-  if (equal_ustring(lazy.type, "DISK"))
-    dev_type = LOG_TYPE_DISK;
-  else if (equal_ustring(lazy.type, "TAPE"))
-    dev_type = LOG_TYPE_TAPE;
-  else if (equal_ustring(lazy.type, "FTP"))
-    dev_type = LOG_TYPE_FTP;
-  else
-  {
-    cm_msg(MERROR,"Lazy","Unknown device type (Disk, Tape, FTP)");
-    return DB_NO_ACCESS;
-  }
-
-  /* make sure that we don't operate on the current DAQ file if so set to oldest */
-  if (lazy.staybehind == 0)
-    lazy.staybehind = -1;
-  return DB_SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
@@ -639,18 +572,21 @@ INT lazy_update_list(void)
           size += sizeof(INT);
         }
       db_set_data (hDB, hKeylabel, (char *)ptape, size, lazyst.nfiles, TID_INT);
-      size = sizeof(lazyst.nfiles);
-      db_set_value(hDB, 0,"/Lazy/Statistics/Number of Files", &lazyst.nfiles, size, 1, TID_INT);
     }
   else
     { /* new run array ==> */
       size = sizeof(lazyst.cur_run);
       db_set_value(hDB, hKey, lazy.backlabel, &lazyst.cur_run, size, 1, TID_INT);
     }
+
   lazy_log_update(NEW_FILE, 0, lazyst.cur_run, lazy.backlabel, lazyst.backfile);
+  
   if (msg_flag) cm_msg(MUSER,"Lazy","         lazy job %s done!",lazyst.backfile);
+  
   if (ptape)
     free (ptape);
+
+  db_send_changed_records();
   return DB_SUCCESS;
 }
 
@@ -707,8 +643,6 @@ void lazy_statistics_update(INT cploop_time)
         0           success
 \********************************************************************/
 {
-  INT size;
-
     /* update rate [kb/s] statistics */
     lazyst.copy_rate = 1000.f * (lazyst.cur_size - lastsz) / (ss_millitime() - cploop_time);
 
@@ -725,9 +659,8 @@ void lazy_statistics_update(INT cploop_time)
       lazyst.bckfill = 0.0f;
 
     lastsz = lazyst.cur_size;
-
-    size = sizeof(lazyst);
-    db_set_record(hDB, hKeyst, &lazyst, size, 0);
+    /* udate ODB statistics */
+    db_send_changed_records();
 }
 
 /*------------------------------------------------------------------*/
@@ -826,23 +759,14 @@ BOOL lazy_condition_check(void)
   BOOL :  new copy condition
   \********************************************************************/
 {
-  INT size, cur_state;
-
   /* Get condition */
-  size = sizeof(lazy.condition);
-  db_get_value(hDB, 0, "/Lazy/Settings/Running condition", lazy.condition, &size, TID_STRING);
-
   if (equal_ustring(lazy.condition, "ALWAYS"))
     return TRUE;
   else if (equal_ustring(lazy.condition, "NEVER"))
     return FALSE;
   else if (equal_ustring(lazy.condition, "WHILE_ACQ_NOT_RUNNING"))
     {
-      /* Get current running state */
-      size = sizeof(cur_state);
-      db_get_value (hDB, 0, "Runinfo/State", &cur_state, &size, TID_INT);
-
-      if (cur_state == STATE_RUNNING)
+      if (run_state == STATE_RUNNING)
         return FALSE;
       else
         return TRUE;
@@ -1009,10 +933,38 @@ INT lazy_main (HNDLE hDB, HNDLE hKey)
   char pufile[MAX_FILE_PATH], inffile[MAX_FILE_PATH], outffile[MAX_FILE_PATH];
   BOOL donepurge;
 
-  /* load ODB parameters from /Lazy/Settings */
-  if ((status = lazy_load_params(hDB, hKey)) != DB_SUCCESS)
-    return status;
   
+  /* extract Data format from the struct */
+  if (equal_ustring(lazy.format, "YBOS"))
+    data_fmt = FORMAT_YBOS;
+  else if (equal_ustring(lazy.format, "MIDAS"))
+    data_fmt = FORMAT_MIDAS;
+  else
+  {
+    cm_msg(MERROR,"Lazy","Unknown data format (MIDAS, YBOS)");
+    return DB_NO_ACCESS;
+  }
+
+  /* extract Device type from the struct */
+  if (equal_ustring(lazy.type, "DISK"))
+    dev_type = LOG_TYPE_DISK;
+  else if (equal_ustring(lazy.type, "TAPE"))
+    dev_type = LOG_TYPE_TAPE;
+  else if (equal_ustring(lazy.type, "FTP"))
+    dev_type = LOG_TYPE_FTP;
+  else
+  {
+    cm_msg(MERROR,"Lazy","Unknown device type (Disk, Tape, FTP)");
+    return DB_NO_ACCESS;
+  }
+
+  /* make sure that we don't operate on the current DAQ file if so set to oldest */
+  if (lazy.staybehind == 0)
+  {
+    cm_msg(MERROR,"Lazy","Stay behind cannot be 0");
+    return NOTHING_TODO;
+  }
+
   /* Check if Tape is OK */
   /* ... */
   
@@ -1150,10 +1102,7 @@ INT lazy_main (HNDLE hDB, HNDLE hKey)
           return NOTHING_TODO;
         }
       
-      /* Update the /Lazy for current file processing */
-//      size = sizeof(lazyst.cur_run);
-//      db_set_value (hDB, 0, "/Lazy/Statistics/Current Lazy run", &lazyst.cur_run, size, 1, TID_INT);
-      
+     
       /* compose the destination file name */
       if (dev_type == LOG_TYPE_DISK)
         {
@@ -1195,10 +1144,10 @@ INT lazy_main (HNDLE hDB, HNDLE hKey)
 /*------------------------------------------------------------------*/
 int main(unsigned int argc,char **argv)
 {
-  char      ch, host_name[HOST_NAME_LENGTH];
+  char      host_name[HOST_NAME_LENGTH];
   char      expt_name[HOST_NAME_LENGTH];
   BOOL      debug;
-  INT       size, status, mainlast_time;
+  INT       msg, ch, size, status, mainlast_time;
   DWORD     i;
   
   /* set default */
@@ -1231,35 +1180,35 @@ int main(unsigned int argc,char **argv)
       else
         {
         usage:
-printf("usage: lazylogger [-h <Hostname>] [-e <Experiment>]\n");
-printf("                  [-z zap statistics] [-t (talk msg)\n\n");
-printf(" Quick man :\n");
-printf(" The Lazy/Settings tree is composed of the following parameters:\n");
-printf(" Maintain free space [%](0): purge source device to maintain free space on the source directory\n");
-printf("                       (0) : no purge      \n");
-printf(" Stay behind  (-3)         : If negative number : lazylog runs starting from the OLDEST\n");
-printf("                              run file sitting in the 'Dir data' to the current acquisition\n");
-printf("                              run minus the 'Stay behind number'\n");
-printf("                             If positive number : lazylog starts from the current\n");
-printf("                              acquisition run minus 'Stay behind number' \n");
-printf(" Running condition          : active/deactive lazylogger under given condition i.e:\n");
-printf("                            'ALWAYS' (default)     : Independent of the ACQ state ...\n");
-printf("                            'NEVER'                : ...\n");
-printf("                            'WHILE_ACQ_NOT_RUNNING': ...\n");
-printf("                            '/alias/max_rate < 200'    (max_rate is a link)\n");
-printf("                            '/equipment/scaler/variables/scal[4] < 23.45'\n");
-printf("                            '/equipment/trigger/statistics/events per sec. < 400'\n");
-printf(" Dir data                  : Directory of the run to be lazylogged \n");
-printf(" Data format               : Data format (YBOS/MIDAS)\n");
-printf(" Filename format           : Run format i.e. run%05d.mid \n");
-printf(" List label                : Label of destination save_set.\n");
-printf("                             Prevent lazylogger to run if not given.\n");
-printf("                             Will be reset if maximum capacity reached.\n");
-printf(" Backup type               : Destination device type (Disk, Tape, FTP)\n");
-printf(" Path                      : Destination path (file.ext, /dev/nst0, ftp...)\n");
-printf("                             in case of FTP type, the 'Path' entry should be:\n");
-printf("                             host, port, user, password, directory, run%05d.mid\n");
-printf(" Capacity (KBytes)         : Maximum capacity of the destination device.\n");
+        printf("usage: lazylogger [-h <Hostname>] [-e <Experiment>]\n");
+        printf("                  [-z zap statistics] [-t (talk msg)\n\n");
+        printf(" Quick man :\n");
+        printf(" The Lazy/Settings tree is composed of the following parameters:\n");
+        printf(" Maintain free space [%](0): purge source device to maintain free space on the source directory\n");
+        printf("                       (0) : no purge      \n");
+        printf(" Stay behind  (-3)         : If negative number : lazylog runs starting from the OLDEST\n");
+        printf("                              run file sitting in the 'Dir data' to the current acquisition\n");
+        printf("                              run minus the 'Stay behind number'\n");
+        printf("                             If positive number : lazylog starts from the current\n");
+        printf("                              acquisition run minus 'Stay behind number' \n");
+        printf(" Running condition          : active/deactive lazylogger under given condition i.e:\n");
+        printf("                            'ALWAYS' (default)     : Independent of the ACQ state ...\n");
+        printf("                            'NEVER'                : ...\n");
+        printf("                            'WHILE_ACQ_NOT_RUNNING': ...\n");
+        printf("                            '/alias/max_rate < 200'    (max_rate is a link)\n");
+        printf("                            '/equipment/scaler/variables/scal[4] < 23.45'\n");
+        printf("                            '/equipment/trigger/statistics/events per sec. < 400'\n");
+        printf(" Data dir                  : Directory of the run to be lazylogged \n");
+        printf(" Data format               : Data format (YBOS/MIDAS)\n");
+        printf(" Filename format           : Run format i.e. run%05d.mid \n");
+        printf(" List label                : Label of destination save_set.\n");
+        printf("                             Prevent lazylogger to run if not given.\n");
+        printf("                             Will be reset if maximum capacity reached.\n");
+        printf(" Backup type               : Destination device type (Disk, Tape, FTP)\n");
+        printf(" Path                      : Destination path (file.ext, /dev/nst0, ftp...)\n");
+        printf("                             in case of FTP type, the 'Path' entry should be:\n");
+        printf("                             host, port, user, password, directory, run%05d.mid\n");
+        printf(" Capacity (KBytes)         : Maximum capacity of the destination device.\n");
          return 0;
         }
     }
@@ -1277,8 +1226,32 @@ printf(" Capacity (KBytes)         : Maximum capacity of the destination device.
   
   cm_get_experiment_database(&hDB, &hKey);
   
+  /* need to cleanup previous lazy in order to make sure the open record
+  is attached correctly */
+  if (cm_exist("lazylogger",FALSE))
+    {
+      HNDLE hBuf;
+      bm_open_buffer(EVENT_BUFFER_NAME, EVENT_BUFFER_SIZE, &hBuf);
+      cm_cleanup();
+      bm_close_buffer(hBuf);
+    }
+
   printf("Lazylogger starting... ""!"" to exit \n");
 
+  if (db_find_key(hDB,0,"/Lazy", &hKey) == DB_SUCCESS)
+    {
+      /* create/update settings */	
+      db_create_record(hDB, hKey, "Settings", LAZY_SETTINGS_STRING);
+      /* create/update statistics */
+      db_create_record(hDB, hKey, "Statistics", LAZY_STATISTICS_STRING);
+    }
+  else
+    {
+      /* create/update settings */	
+      db_create_record(hDB, 0, "/Lazy/Settings", LAZY_SETTINGS_STRING);
+      /* create/update statistics */
+      db_create_record(hDB, 0, "/Lazy/Statistics", LAZY_STATISTICS_STRING);
+    }
   if (zap_flag)
     {
       /* reset the statistics */
@@ -1290,31 +1263,47 @@ printf(" Capacity (KBytes)         : Maximum capacity of the destination device.
       else
         cm_msg(MERROR,"Lazy","did not find /Lazy/Statistics for zapping");
     }
-  else
-    {
-      /* restore globals from odb */
-      if (db_find_key(hDB, 0, "/Lazy", &hKey) == DB_SUCCESS)
-        {
-          if (db_find_key(hDB, 0, "/Lazy/Statistics", &hKeyst) == DB_SUCCESS)
-            {
-              cm_msg(MINFO,"lazy","restoring /lazy/statistics content");
-              size = sizeof(lazyst);
-              status = db_get_record(hDB, hKeyst, &lazyst, &size, 0);
-            }
-          else
-            db_create_record(hDB, hKey, "Statistics", LAZY_STATISTICS_STRING);
-        }
-      else
-        {
-          cm_msg(MINFO,"lazy","creating /lazy/statistics content");
-          db_create_record(hDB, 0, "Lazy/Statistics", LAZY_STATISTICS_STRING);
-        }
-    }
+  
+  /* get value once & hot links the run state */
+  db_find_key(hDB,0,"/runinfo/state",&hKey);
+  size = sizeof(run_state);
+  db_get_data(hDB, hKey, &run_state, &size, TID_INT);
+  status = db_open_record(hDB, hKey, &run_state, sizeof(run_state), MODE_READ, NULL, NULL);
+  if (status != DB_SUCCESS){
+    cm_msg(MERROR, "run_state", "cannot open variable record");
+  }
+  /* hot link for statistics in write mode */
+  size = sizeof(lazyst);
+  if (db_find_key(hDB,0,"/Lazy/Statistics",&hKey) == DB_SUCCESS)
+    db_get_record(hDB, hKey, &lazyst, &size, 0);
+  status = db_open_record(hDB, hKey, &lazyst, sizeof(lazyst), MODE_WRITE, NULL, NULL);
+  if (status != DB_SUCCESS){
+    cm_msg(MERROR, "lazy/statistics", "cannot open variable record");
+  }
+  /* get /settings once & hot link settings in read mode */
+  db_find_key(hDB,0,"/Lazy/Settings",&hKey);
+  size = sizeof(lazy);
+  status = db_open_record(hDB, hKey, &lazy, sizeof(lazy), MODE_READ, NULL, NULL);
+  if (status != DB_SUCCESS){
+    cm_msg(MERROR, "lazy/settings", "cannot open variable record");
+  }
+
+  /* set Data dir from /logger if local is empty & /logger exists */
+  if ((lazy.dir[0] == '\0') &&
+      (db_find_key(hDB,0,"/Logger/Data dir", &hKey) == DB_SUCCESS))
+  {
+    size = sizeof(lazy.dir);
+    db_get_data(hDB, hKey, lazy.dir, &size, TID_STRING);
+    db_set_value(hDB, 0, "/Lazy/Settings/Data dir", lazy.dir, size, 1, TID_STRING);
+  }
 
   mainlast_time = 0;
+  /* initialize ss_getchar() */
+  ss_getchar(0);
+
   do
     {
-      status = cm_yield(2000);
+      msg = cm_yield(2000);
       if ((ss_millitime() - mainlast_time) > 10000)
         {
           status = lazy_main( hDB, hKey );
@@ -1322,17 +1311,16 @@ printf(" Capacity (KBytes)         : Maximum capacity of the destination device.
             break;
           mainlast_time = ss_millitime();
         }      
-      if (ss_kbhit())
+      ch = 0;
+      while (ss_kbhit())
         {
-#if defined(OS_MSDOS) || defined(OS_WINNT)
-          ch = getch();
-#else
+        ch = ss_getchar(0);
+        if (ch == -1)
           ch = getchar();
-#endif
-          if (ch == '!')
-            break;
+        if ((char) ch == '!')
+          break;
         }
-    } while (status != RPC_SHUTDOWN && status != SS_ABORT);
+     } while (msg != RPC_SHUTDOWN && msg != SS_ABORT && ch != '!');
   cm_disconnect_experiment();
   return 1;
 }
