@@ -7,6 +7,9 @@
                 following the MIDAS CAMAC Standard for DirectIO
 
   $Log$
+  Revision 1.7  2001/11/22 18:26:25  pierre
+  fix cam24o_q upper byte
+
   Revision 1.6  2001/10/16 20:47:40  pierre
   Update cam_interrupt_() args
 
@@ -430,7 +433,8 @@ INLINE void cam24o_q(const int c, const int n, const int a, const int f,
   OUTP(ADD,a);
   OUTP(FUN,f);
   OUTP(WL, (unsigned char)(d));
-  OUTP(WM,  *(((unsigned char *) &d)+1));
+  OUTP(WM, *(((unsigned char *) &d)+1));
+  OUTP(WH, *(((unsigned char *) &d)+2));
   OUTP(CACY,1);
   while (((INT) ((INP(OPST) ) & 0x7) != 5) && loop > 0)
       loop--;
