@@ -6,6 +6,9 @@
   Contents:     Command-line interface for the Midas Slow Control Bus
 
   $Log$
+  Revision 1.36  2003/05/12 10:30:45  midas
+  Fixed name collisions with midas library
+
   Revision 1.35  2003/04/03 08:21:44  midas
   Added submaster check
 
@@ -576,7 +579,7 @@ MSCB_INFO_VAR info_var;
         else
           addr = atoi(param[1]);
 
-        mscb_addr(fd, CMD_ADDR_NODE16, addr, 1);
+        mscb_addr(fd, MCMD_ADDR_NODE16, addr, 1);
         current_addr = addr;
         current_group = -1;
         }
@@ -993,7 +996,7 @@ usage:
 
   if (server)
     {
-    rpc_server_loop();
+    mrpc_server_loop();
     return 0;
     }
 
