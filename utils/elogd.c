@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.86  2001/12/10 09:18:09  midas
+  Call tzset() only once
+
   Revision 1.85  2001/12/10 09:06:57  midas
   Fixed memeory leak with ss_file_find
 
@@ -1398,7 +1401,6 @@ time_t lt, ltime, lact;
 char   str[256], file_name[256], dir[256];
 char   *file_list;
 
-  tzset();
   did_walk = 0;
   ltime = lfh = 0;
 
@@ -1781,8 +1783,6 @@ BOOL    bedit;
           {
           strcpy(dir, data_dir);
 
-          tzset();
-
           time(&now);
           tms = localtime(&now);
 
@@ -1812,8 +1812,6 @@ BOOL    bedit;
 
   /* generate new file name YYMMDD.log in data directory */
   strcpy(dir, data_dir);
-
-  tzset();
 
   if (bedit)
     {
@@ -3309,7 +3307,6 @@ struct tm *gmt;
           }
         else
           {
-          tzset();
           time(&now);
           now += (int) (3600*exp);
           gmt = gmtime(&now);
@@ -6655,7 +6652,6 @@ struct tm *gmt;
       }
     else
       {
-      tzset();
       time(&now);
       now += (int) (3600*exp);
       gmt = gmtime(&now);
@@ -6737,7 +6733,6 @@ struct tm *gmt;
       }
     else
       {
-      tzset();
       time(&now);
       now += (int) (3600*exp);
       gmt = gmtime(&now);
@@ -7870,6 +7865,8 @@ char read_pwd[80], write_pwd[80], admin_pwd[80], str[80];
 time_t now;
 struct tm *tms;
 
+  tzset();
+
   read_pwd[0] = write_pwd[0] = admin_pwd[0] = logbook[0] = 0;
 
   strcpy(cfg_file, "elogd.cfg");
@@ -7887,7 +7884,6 @@ struct tm *tms;
       use_keepalive = FALSE;
     else if (argv[i][1] == 't')
       {
-      tzset();
       time(&now);
       tms = localtime(&now);
       printf("Acutal date/time: %02d%02d%02d_%02d%02d%02d\n",
