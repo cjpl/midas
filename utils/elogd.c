@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.23  2001/08/06 12:44:15  midas
+  Fixed small bug preventing the selection list for multiple logbooks
+
   Revision 1.22  2001/08/03 12:06:12  midas
   Fixed bug where categories were wrong when multiple logbooks are used
 
@@ -4208,7 +4211,7 @@ INT                  last_time=0;
             break;
           }
 
-        if (!equal_ustring(logbook, str))
+        if (!equal_ustring(logbook, str) && logbook[0])
           {
           sprintf(str, "Error: logbook \"%s\" not defined in elogd.cfg", logbook);
           show_error(str);
