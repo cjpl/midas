@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.145  2004/10/06 22:35:37  midas
+  Added CM_TOO_MANY_REQUESTS
+
   Revision 1.144  2004/10/04 23:54:39  midas
   Implemented ODB version
 
@@ -940,6 +943,7 @@ System message types */
 #define CM_TRANSITION_IN_PROGRESS   111 /**< - */
 #define CM_TIMEOUT                  112 /**< - */
 #define CM_INVALID_TRANSITION       113 /**< - */
+#define CM_TOO_MANY_REQUESTS        114 /**< - */
 /**dox***************************************************************/
 /** @} */ /* end of err21 */
 
