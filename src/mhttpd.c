@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.59  1999/10/05 13:25:43  midas
+  Evaluate global alarm flag
+
   Revision 1.58  1999/10/05 12:48:17  midas
   Added expiration date 2040 for refresh cookie
 
@@ -705,25 +708,32 @@ CHN_STATISTICS chn_stats;
   db_find_key(hDB, 0, "/Alarms/Alarms", &hkey);
   if (hkey)
     {
-    for (i=0 ; ; i++)
+    /* check global alarm flag */
+    flag = TRUE;
+    size = sizeof(flag);
+    db_get_value(hDB, 0, "/Alarms/Alarm System active", &flag, &size, TID_BOOL);
+    if (flag)
       {
-      db_enum_link(hDB, hkey, i, &hsubkey);
-
-      if (!hsubkey)
-        break;
-
-      flag = 0;
-      size = sizeof(flag);
-      db_get_value(hDB, hsubkey, "Triggered", &flag, &size, TID_INT);
-      if (flag)
+      for (i=0 ; ; i++)
         {
-        if (exp_name[0])
-          sprintf(ref, "%s?exp=%s&cmd=alarms", mhttpd_url, exp_name);
-        else
-          sprintf(ref, "%s?cmd=alarms", mhttpd_url);
+        db_enum_link(hDB, hkey, i, &hsubkey);
 
-        rsprintf("<tr><td colspan=6 bgcolor=#FF0000 align=center><h1><a href=\"%s\">Alarm!</a></h1></tr>\n", ref);
-        break;
+        if (!hsubkey)
+          break;
+
+        flag = 0;
+        size = sizeof(flag);
+        db_get_value(hDB, hsubkey, "Triggered", &flag, &size, TID_INT);
+        if (flag)
+          {
+          if (exp_name[0])
+            sprintf(ref, "%s?exp=%s&cmd=alarms", mhttpd_url, exp_name);
+          else
+            sprintf(ref, "%s?cmd=alarms", mhttpd_url);
+
+          rsprintf("<tr><td colspan=6 bgcolor=#FF0000 align=center><h1><a href=\"%s\">Alarm!</a></h1></tr>\n", ref);
+          break;
+          }
         }
       }
     }
@@ -4005,6 +4015,23 @@ char  str[256], ref[256], condition[256], value[256];
   rsprintf("<input type=submit name=cmd value=Status>\n");
 
   rsprintf("</tr>\n\n");
+
+  /*---- global flag ----*/
+
+  active = TRUE;
+  size = sizeof(active);
+  db_get_value(hDB, 0, "/Alarms/Alarm System active", &active, &size, TID_BOOL);
+  if (!active)
+    {
+    if (exp_name[0])
+      sprintf(ref, "%sAlarms/?exp=%s", 
+              mhttpd_url, exp_name);
+    else
+      sprintf(ref, "%sAlarms/", 
+              mhttpd_url);
+    rsprintf("<tr><td align=center colspan=6 bgcolor=#C0C0FF><a href=\"%s\"><h1>Alarm system disabled</h1></a></tr>", ref);
+    }
+
 
   /*---- alarms ----*/
 
