@@ -14,6 +14,10 @@
                 Brown, Prentice Hall
 
   $Log$
+  Revision 1.29  1999/05/03 10:40:41  midas
+  Fixed segmentation violation on program close under Unix, when .ODB.SHM
+  has been created under root, and accessed under normal user
+
   Revision 1.28  1999/04/30 13:19:55  midas
   Changed inter-process communication (ss_resume, bm_notify_clients, etc)
   to strings so that server process can receive it's own watchdog produced
@@ -517,7 +521,7 @@ char   mem_name[256], file_name[256], path[256];
 
     if (fh == NULL)
       {
-      cm_msg(MERROR, "ss_close_shm", "Cannot write to file %s", file_name);
+      cm_msg(MERROR, "ss_close_shm", "Cannot write to file %s, please check protection", file_name);
       }
     else
       {
@@ -623,9 +627,16 @@ char   mem_name[256], file_name[256], path[256];
 
   fh = fopen(file_name, "w");
 
-  /* write shared memory to file */
-  fwrite(adr, 1, size, fh);
-  fclose(fh);
+  if (fh == NULL)
+    {
+    cm_msg(MERROR, "ss_flush_shm", "Cannot write to file %s, please check protection", file_name);
+    }
+  else
+    {
+    /* write shared memory to file */
+    fwrite(adr, 1, size, fh);
+    fclose(fh);
+    }
 
   return SS_SUCCESS;
   }
