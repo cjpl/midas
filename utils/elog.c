@@ -1,4 +1,4 @@
- /********************************************************************\
+/********************************************************************\
 
   Name:         elog.c
   Created by:   Stefan Ritt
@@ -6,6 +6,9 @@
   Contents:     Electronic logbook utility   
 
   $Log$
+  Revision 1.12  2000/09/01 15:49:26  midas
+  Elog is now submitted via mhttpd
+
   Revision 1.11  2000/05/08 14:29:39  midas
   Added delete option in ELog
 
@@ -40,11 +43,29 @@
 \********************************************************************/
 
 #include <stdio.h>
-#include <signal.h>
-#include "midas.h"
-#include "msystem.h"
+#include <sys/types.h>
+#include <fcntl.h>
+#include <stdarg.h>
+#include <string.h>
+#include <stdlib.h>
 
-char type_list[20][NAME_LENGTH] = {
+#ifdef _MSC_VER
+#include <windows.h>
+#include <io.h>
+#else
+#include <netdb.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
+#include <sys/time.h>
+#include <unistd.h>
+#include <signal.h>
+#define closesocket(s) close(s)
+#define O_BINARY 0
+#endif
+
+typedef int INT;
+
+char type_list[20][32] = {
   "Routine",
   "Shift summary",
   "Minor error",
@@ -59,7 +80,7 @@ char type_list[20][NAME_LENGTH] = {
   "Other"
 };
 
-char system_list[20][NAME_LENGTH] = {
+char system_list[20][32] = {
   "General",
   "DAQ",
   "Detector",
@@ -68,94 +89,99 @@ char system_list[20][NAME_LENGTH] = {
   "Beamline"
 };
 
-HNDLE hDB;
+/*------------------------------------------------------------------*/
+
+void sgets(char *string, int size)
+{
+char *p;
+
+  do
+    {
+    p = fgets(string, size, stdin);
+    } while (p == NULL);
+
+  if (strlen(p) > 0 && p[strlen(p)-1] == '\n')
+    p[strlen(p)-1] = 0;
+}
 
 /*------------------------------------------------------------------*/
 
-INT query_params(char *author, char *type, char *syst, char *subject, 
-                 char *text, char *textfile, char attachment[3][256])
+INT query_params(char *host_name, int *port, char *author, char *type, char *syst, 
+                 char *subject, char *text, char *textfile, char attachment[3][256])
 {
 char str[1000], tmpfile[256];
 FILE *f;
-int  i;
+int  i, query_attachment;
+
+  if (!host_name[0])
+    {
+    while (!host_name[0])
+      {
+      printf("Host name: ");
+      sgets(host_name, 80);
+      if (!host_name[0])
+        printf("Author must be supplied!\n");
+      }
+
+    printf("Port [80]: ");
+    sgets(str, 80);
+    if (str[0])
+      *port = atoi(str);
+    }
+
+  query_attachment = (author[0] == 0 && attachment[0][0] == 0);
 
   while (!author[0])
     {
     printf("Author: ");
-    ss_gets(author, 80);
+    sgets(author, 80);
     if (!author[0])
       printf("Author must be supplied!\n");
     }
 
   if (!type[0])
     {
-    do
+    printf("Select a message type from following list:\n<");
+    for (i=0 ; i<20 && type_list[i][0] ; i++)
       {
-      printf("Select a message type from following list:\n<");
-      for (i=0 ; i<20 && type_list[i][0] ; i++)
-        {
-        if (i % 8 == 7)
-          printf("\n");
-        if (type_list[i+1][0])
-          printf("%s,", type_list[i]);
-        else
-          printf("%s>\n", type_list[i]);
-        }
-
-      ss_gets(type, 80);
-
-      /* check if valid type */
-      for (i=0 ; i<20 && type_list[i][0] ; i++)
-        if (equal_ustring(type_list[i], type))
-          break;
-      if (!type_list[i][0])
-        printf("Not a valid message type!\n");
+      if (i % 8 == 7)
+        printf("\n");
+      if (type_list[i+1][0])
+        printf("%s,", type_list[i]);
       else
-        break;
+        printf("%s>\n", type_list[i]);
+      }
 
-      } while (1);
+    sgets(type, 80);
     }
 
   if (!syst[0])
     {
-    do
+    printf("Select a system from following list:\n<");
+    for (i=0 ; i<20 && system_list[i][0] ; i++)
       {
-      printf("Select a system from following list:\n<");
-      for (i=0 ; i<20 && system_list[i][0] ; i++)
-        {
-        if (i % 8 == 7)
-          printf("\n");
-        if (system_list[i+1][0])
-          printf("%s,", system_list[i]);
-        else
-          printf("%s>\n", system_list[i]);
-        }
-
-      ss_gets(syst, 80);
-
-      /* check if valid system */
-      for (i=0 ; i<20 && system_list[i][0] ; i++)
-        if (equal_ustring(system_list[i], syst))
-          break;
-      if (!system_list[i][0])
-        printf("Not a valid system!\n");
+      if (i % 8 == 7)
+        printf("\n");
+      if (system_list[i+1][0])
+        printf("%s,", system_list[i]);
       else
-        break;
+        printf("%s>\n", system_list[i]);
+      }
 
-      } while (1);
+    sgets(syst, 80);
     }
 
   if (!subject[0])
     {
     printf("Subject: ");
-    ss_gets(subject, 256);
+    sgets(subject, 256);
     }
 
   if (!text[0] && !textfile[0])
     {
     if (getenv("EDITOR"))
       {
-      sprintf(tmpfile, "tmp%d.txt", ss_getpid());
+      sprintf(tmpfile, "tmp.txt");
       f = fopen(tmpfile, "wt");
       if (f == NULL)
         {
@@ -223,7 +249,7 @@ int  i;
       printf("Finish message text with empty line!\nMessage text: ");
       do
         {
-        ss_gets(str, 1000);
+        sgets(str, 1000);
         if (str[0])
           {
           strcat(text, str);
@@ -233,14 +259,14 @@ int  i;
       }
     }
 
-  if (!attachment[0][0] && !author[0])
+  if (query_attachment)
     {
     for (i=0 ; i<3 ; i++)
       {
       do
         {
         printf("Optional file attachment %d: ", i+1);
-        ss_gets(attachment[i], 256);
+        sgets(attachment[i], 256);
         if (!attachment[i][0])
           break;
         f = fopen(attachment[i], "r");
@@ -255,16 +281,231 @@ int  i;
       }
     }
 
-  return SUCCESS;
+  return 1;
 }
 
 /*------------------------------------------------------------------*/
 
-void ctrlc_handler(int sig)
+char request[600000], response[10000], content[600000];
+
+INT submit_elog(char *host, int port, char *experiment, char *passwd,
+                char *author, char *type, char *system, char *subject, 
+                char *text,
+                char *afilename1, char *buffer1, INT buffer_size1, 
+                char *afilename2, char *buffer2, INT buffer_size2, 
+                char *afilename3, char *buffer3, INT buffer_size3)
+/********************************************************************\
+
+  Routine: submit_elog
+
+  Purpose: Submit an ELog entry
+
+  Input:
+    char   *host            Host name where ELog server runs
+    in     port             ELog server port number
+    char   *passwd          Web password
+    int    run              Run number
+    char   *author          Message author
+    char   *type            Message type
+    char   *system          Message system
+    char   *subject         Subject
+    char   *text            Message text
+
+    char   *afilename1/2/3  File name of attachment
+    char   *buffer1/2/3     File contents
+    INT    *buffer_size1/2/3 Size of buffer in bytes
+
+  Function value:
+    EL_SUCCESS              Successful completion
+
+\********************************************************************/
 {
-  cm_disconnect_experiment();
-  ss_ctrlc_handler(NULL);
-  raise(sig);
+int                  status, sock, i, n, header_length, content_length;
+struct hostent       *phe;
+struct sockaddr_in   bind_addr;
+char                 host_name[256], boundary[80], *p;
+
+#if defined( _MSC_VER )
+  {
+  WSADATA WSAData;
+
+  /* Start windows sockets */
+  if ( WSAStartup(MAKEWORD(1,1), &WSAData) != 0)
+    return -1;
+  }
+#endif
+
+  /* get local host name */
+  gethostname(host_name, sizeof(host_name));
+
+  phe = gethostbyname(host_name);
+  if (phe == NULL)
+    {
+    perror("Cannot retrieve host name");
+    return -1;
+    }
+  phe = gethostbyaddr(phe->h_addr, sizeof(int), AF_INET);
+  if (phe == NULL)
+    {
+    perror("Cannot retrieve host name");
+    return -1;
+    }
+
+  /* if domain name is not in host name, hope to get it from phe */
+  if (strchr(host_name, '.') == NULL)
+    strcpy(host_name, phe->h_name);
+
+  /* create socket */
+  if ((sock = socket(AF_INET, SOCK_STREAM, 0)) == -1)
+    {
+    perror("cannot create socket");
+    return -1;
+    }
+
+  /* compose remote address */
+  memset(&bind_addr, 0, sizeof(bind_addr));
+  bind_addr.sin_family      = AF_INET;
+  bind_addr.sin_addr.s_addr = 0;
+  bind_addr.sin_port        = htons((unsigned short)port);
+
+  phe = gethostbyname(host);
+  if (phe == NULL)
+    {
+    perror("cannot get host name");
+    return -1;
+    }
+  memcpy((char *)&(bind_addr.sin_addr), phe->h_addr, phe->h_length);
+
+  /* connect to server */
+  status = connect(sock, (void *) &bind_addr, sizeof(bind_addr));
+  if (status != 0)
+    {
+    printf("Cannot connect to host %s, port %d\n", host, port);
+    return -1;
+    }
+
+  /* compose content */
+  strcpy(boundary, "---------------------------7d0bf1a60904bc");
+  strcpy(content, boundary);
+  strcat(content, "\r\nContent-Disposition: form-data; name=\"cmd\"\r\n\r\nSubmit\r\n");
+
+  if (experiment[0])
+    sprintf(content+strlen(content), 
+            "%s\r\nContent-Disposition: form-data; name=\"exp\"\r\n\r\n%s\r\n", boundary, experiment);
+  
+  sprintf(content+strlen(content), 
+          "%s\r\nContent-Disposition: form-data; name=\"Author\"\r\n\r\n%s\r\n", boundary, author);
+  sprintf(content+strlen(content), 
+          "%s\r\nContent-Disposition: form-data; name=\"type\"\r\n\r\n%s\r\n", boundary, type);
+  sprintf(content+strlen(content), 
+          "%s\r\nContent-Disposition: form-data; name=\"system\"\r\n\r\n%s\r\n", boundary, system);
+  sprintf(content+strlen(content), 
+          "%s\r\nContent-Disposition: form-data; name=\"Subject\"\r\n\r\n%s\r\n", boundary, subject);
+  sprintf(content+strlen(content), 
+          "%s\r\nContent-Disposition: form-data; name=\"Text\"\r\n\r\n%s\r\n%s\r\n", boundary, text, boundary);
+
+  content_length = strlen(content);
+  p = content+content_length;
+
+  if (afilename1[0])
+    {
+    sprintf(p, "Content-Disposition: form-data; name=\"attfile1\"; filename=\"%s\"\r\n\r\n", 
+            afilename1);
+
+    content_length += strlen(p);
+    p += strlen(p);
+    memcpy(p, buffer1, buffer_size1);
+    p += buffer_size1;
+    strcpy(p, boundary);
+    strcat(p, "\r\n");
+
+    content_length += buffer_size1 + strlen(p);
+    p += strlen(p);
+    }
+  
+  if (afilename2[0])
+    {
+    sprintf(p, "Content-Disposition: form-data; name=\"attfile2\"; filename=\"%s\"\r\n\r\n", 
+            afilename2);
+
+    content_length += strlen(p);
+    p += strlen(p);
+    memcpy(p, buffer2, buffer_size2);
+    p += buffer_size2;
+    strcpy(p, boundary);
+    strcat(p, "\r\n");
+
+    content_length += buffer_size2 + strlen(p);
+    p += strlen(p);
+    }
+
+  if (afilename3[0])
+    {
+    sprintf(p, "Content-Disposition: form-data; name=\"attfile3\"; filename=\"%s\"\r\n\r\n", 
+            afilename3);
+
+    content_length += strlen(p);
+    p += strlen(p);
+    memcpy(p, buffer3, buffer_size3);
+    p += buffer_size3;
+    strcpy(p, boundary);
+    strcat(p, "\r\n");
+
+    content_length += buffer_size3 + strlen(p);
+    p += strlen(p);
+    }
+
+  /* compose request */
+  sprintf(request, "POST / HTTP/1.0\r\n");
+  sprintf(request+strlen(request), "Content-Type: multipart/form-data; boundary=%s\r\n", boundary);
+  sprintf(request+strlen(request), "Host: %s\r\n", host_name);
+  sprintf(request+strlen(request), "Content-Length: %d\r\n", content_length);
+
+  if (passwd[0])
+    sprintf(request+strlen(request), "Cookie: midas_wpwd: %s\r\n", content_length);
+
+  strcat(request, "\r\n");
+
+  header_length = strlen(request);
+  memcpy(request+header_length, content, content_length);
+
+    {
+    FILE *f;
+    f = fopen("elog.log", "w");
+    fwrite(request, header_length+content_length, 1, f);
+    fclose(f);
+    }
+
+  /* send request */
+  send(sock, request, header_length+content_length, 0);
+
+  /* receive response */
+  i = recv(sock, response, 10000, 0);
+  if (i < 0)
+    {
+    perror("Cannot receive response");
+    return -1;
+    }  
+
+  /* discard remainder of response */
+  n = i;
+  while (i > 0)
+    {
+    i = recv(sock, response+n, 10000, 0);
+    if (i > 0)
+      n += i;
+    }
+  response[n] = 0;
+
+  closesocket(sock);
+
+  /* check response status */
+  if (strstr(response, "302 Found"))
+    printf("Message successfully transmitted\n");
+  else
+    printf("Error transmitting message\n");
+
+  return 1;
 }
 
 /*------------------------------------------------------------------*/
@@ -272,18 +513,14 @@ void ctrlc_handler(int sig)
 main(int argc, char *argv[])
 {
 char      author[80], type[80], system[80], subject[256], text[10000];
-char      host_name[256], exp_name[NAME_LENGTH], str[256], lhost_name[256], textfile[256];
+char      host_name[256], exp_name[32], textfile[256];
 char      *buffer[3], attachment[3][256];
 INT       att_size[3];
-struct hostent *phe;
-INT       i, n, status, fh, n_att, size;
-HNDLE     hkey;
-
-  /* turn off system message */
-  cm_set_msg_print(0, MT_ALL, puts);
+INT       i, n, status, fh, n_att, size, port;
 
   author[0] = type[0] = system[0] = subject[0] = text[0] = textfile[0] = 0;
   host_name[0] = exp_name[0] = n_att = 0;
+  port = 80;
   for (i=0 ; i<3 ; i++)
     {
     attachment[i][0] = 0;
@@ -300,6 +537,8 @@ HNDLE     hkey;
         goto usage;
       if (argv[i][1] == 'h')
         strcpy(host_name, argv[++i]);
+      else if (argv[i][1] == 'p')
+        port = atoi(argv[++i]);
       else if (argv[i][1] == 'e')
         strcpy(exp_name, argv[++i]);
       else if (argv[i][1] == 'a')
@@ -317,9 +556,9 @@ HNDLE     hkey;
       else
         {
 usage:
-        printf("\nusage: elog [-h hostname] [-e experiment]\n");
+        printf("\nusage: elog -h <hostname> [-p port] [-e experiment]\n");
         printf("          -a <author> -t <type> -s <system> -b <subject>\n");
-        printf("          -f <attachment> -m <textfile> <text>\n");
+        printf("          [-f <attachment>] [-m <textfile>|<text>]\n");
         printf("\nArguments with blanks must be enclosed in quotes\n");
         printf("The elog message can either be submitted on the command line\n");
         printf("or in a file with the -m flag.\n");
@@ -330,63 +569,11 @@ usage:
       strcpy(text, argv[i]);
     }
 
-  /* connect to experiment */
-  status = cm_connect_experiment(host_name, exp_name, "ELog", NULL);
-  if (status != CM_SUCCESS)
-    {
-    cm_get_error(status, str);
-    puts(str);
-    return 1;
-    }
-
-  cm_get_experiment_database(&hDB, NULL);
-
-  /* re-establish Ctrl-C handler */
-  ss_ctrlc_handler(ctrlc_handler);
-
-  /* get type list from ODB */
-  size = 20*NAME_LENGTH;
-  if (db_find_key(hDB, 0, "/Elog/Types", &hkey) != DB_SUCCESS)
-    db_set_value(hDB, 0, "/Elog/Types", type_list, NAME_LENGTH*20, 20, TID_STRING);
-  db_find_key(hDB, 0, "/Elog/Types", &hkey);
-  if (hkey)
-    db_get_data(hDB, hkey, type_list, &size, TID_STRING);
-
-  /* get system list from ODB */
-  size = 20*NAME_LENGTH;
-  if (db_find_key(hDB, 0, "/Elog/Systems", &hkey) != DB_SUCCESS)
-    db_set_value(hDB, 0, "/Elog/Systems", system_list, NAME_LENGTH*20, 20, TID_STRING);
-  db_find_key(hDB, 0, "/Elog/Systems", &hkey);
-  if (hkey)
-    db_get_data(hDB, hkey, system_list, &size, TID_STRING);
-
   /* complete missing parameters */
-  status = query_params(author, type, system, subject, text, textfile, attachment);
-  if (status != EL_SUCCESS)
+  status = query_params(host_name, &port, author, type, system, subject, 
+                        text, textfile, attachment);
+  if (status != 1)
     return 0;
-
-  /* check valid type and system */
-  for (i=0 ; i<20 && type_list[i][0] ; i++)
-    if (equal_ustring(type_list[i], type))
-      break;
-
-  if (i == 20 || !type_list[i][0])
-    {
-    printf("Type \"%s\" is invalid.\n", type);
-    cm_disconnect_experiment();
-    return 0;
-    }
-
-  for (i=0 ; i<20 && system_list[i][0] ; i++)
-    if (equal_ustring(system_list[i], system))
-      break;
-
-  if (i == 20 || !system_list[i][0])
-    {
-    printf("System \"%s\" is invalid.\n", system);
-    cm_disconnect_experiment();
-    return 0;
-    }
 
   /*---- open text file ----*/
 
@@ -396,7 +583,6 @@ usage:
     if (fh < 0)
       {
       printf("Message file \"%s\" does not exist.\n", textfile);
-      cm_disconnect_experiment();
       return 0;
       }
 
@@ -406,7 +592,6 @@ usage:
     if (size > sizeof(text))
       {
       printf("Message file \"%s\" is too long (%d bytes max).\n", sizeof(text));
-      cm_disconnect_experiment();
       return 0;
       }
 
@@ -414,7 +599,6 @@ usage:
     if (i < size)
       {
       printf("Cannot fully read message file \"%s\".\n", textfile);
-      cm_disconnect_experiment();
       return 0;
       }
 
@@ -432,7 +616,6 @@ usage:
     if (fh < 0)
       {
       printf("Attachment file \"%s\" does not exist.\n", attachment[i]);
-      cm_disconnect_experiment();
       return 0;
       }
 
@@ -443,7 +626,6 @@ usage:
     if (buffer[i] == NULL || att_size[i] > 500*1024)
       {
       printf("Attachment file \"%s\" is too long (500k max).\n", attachment[i]);
-      cm_disconnect_experiment();
       return 0;
       }
 
@@ -451,47 +633,21 @@ usage:
     if (n < att_size[i])
       {
       printf("Cannot fully read attachment file \"%s\".\n", attachment[i]);
-      cm_disconnect_experiment();
       return 0;
       }
 
     close(fh);
     }
 
-  /* add local host name to author */
-  gethostname(lhost_name, sizeof(host_name));
-
-  phe = gethostbyname(lhost_name);
-  if (phe == NULL)
-    {
-    printf("Cannot retrieve local host name\n");
-    cm_disconnect_experiment();
-    return 0;
-    }
-  phe = gethostbyaddr(phe->h_addr, sizeof(int), AF_INET);
-  if (phe == NULL)
-    {
-    printf("Cannot retrieve local host name\n");
-    cm_disconnect_experiment();
-    return 0;
-    }
-  strcpy(lhost_name, phe->h_name);
-  strcat(author, "@");
-  strcat(author, lhost_name);
-
   /* now submit message */
-  str[0] = 0;
-  el_submit(0, author, type, system, subject, text, "", "plain", 
-            attachment[0], buffer[0], att_size[0], 
-            attachment[1], buffer[1], att_size[1], 
-            attachment[2], buffer[2], att_size[2], 
-            str, sizeof(str));
+  submit_elog(host_name, port, exp_name, "", author, type, system, subject, text,
+             attachment[0], buffer[0], att_size[0], 
+             attachment[1], buffer[1], att_size[1], 
+             attachment[2], buffer[2], att_size[2]);
 
   for (i=0 ; i<3 ; i++)
     if (buffer[i])
       free(buffer[i]);
-
-  cm_disconnect_experiment();
 
   return 1;
 }
