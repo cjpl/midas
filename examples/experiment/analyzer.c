@@ -6,6 +6,9 @@
   Contents:     System part of Analyzer code for sample experiment
 
   $Log$
+  Revision 1.3  1998/10/29 14:18:19  midas
+  Used hDB consistently
+
   Revision 1.2  1998/10/12 12:18:58  midas
   Added Log tag in header
 
@@ -128,7 +131,7 @@ ANALYZE_REQUEST analyze_request[] = {
 
 INT analyzer_init()
 {
-HNDLE hKey;
+HNDLE hDB, hKey;
 char  str[80];
 
 RUNINFO_STR(runinfo_str);
@@ -138,37 +141,38 @@ GLOBAL_PARAM_STR(global_param_str);
 TRIGGER_SETTINGS_STR(trigger_settings_str);
 
   /* open ODB structures */
-  db_create_record(1, 0, "/Runinfo", strcomb(runinfo_str));
-  db_find_key(1, 0, "/Runinfo", &hKey);
-  if (db_open_record(1, hKey, &runinfo, sizeof(runinfo), MODE_READ, NULL, NULL) != DB_SUCCESS)
+  cm_get_experiment_database(&hDB, NULL);
+  db_create_record(hDB, 0, "/Runinfo", strcomb(runinfo_str));
+  db_find_key(hDB, 0, "/Runinfo", &hKey);
+  if (db_open_record(hDB, hKey, &runinfo, sizeof(runinfo), MODE_READ, NULL, NULL) != DB_SUCCESS)
     {
     cm_msg(MERROR, "analyzer_init", "Cannot open \"/Runinfo\" tree in ODB");
     return 0;
     }
 
-  db_create_record(1, 0, "/Experiment/Run Parameters", strcomb(exp_param_str));
-  db_find_key(1, 0, "/Experiment/Run Parameters", &hKey);
-  if (db_open_record(1, hKey, &exp_param, sizeof(exp_param), MODE_READ, NULL, NULL) != DB_SUCCESS)
+  db_create_record(hDB, 0, "/Experiment/Run Parameters", strcomb(exp_param_str));
+  db_find_key(hDB, 0, "/Experiment/Run Parameters", &hKey);
+  if (db_open_record(hDB, hKey, &exp_param, sizeof(exp_param), MODE_READ, NULL, NULL) != DB_SUCCESS)
     {
     cm_msg(MERROR, "analyzer_init", "Cannot open \"/Experiment/Run Parameters\" tree in ODB");
     return 0;
     }
 
-  db_create_record(1, 0, "/Experiment/Edit on start", strcomb(exp_edit_str));
+  db_create_record(hDB, 0, "/Experiment/Edit on start", strcomb(exp_edit_str));
 
   sprintf(str, "/%s/Parameters/Global", analyzer_name);
-  db_create_record(1, 0, str, strcomb(global_param_str));
-  db_find_key(1, 0, str, &hKey);
-  if (db_open_record(1, hKey, &global_param, sizeof(global_param), MODE_READ, NULL, NULL) != DB_SUCCESS)
+  db_create_record(hDB, 0, str, strcomb(global_param_str));
+  db_find_key(hDB, 0, str, &hKey);
+  if (db_open_record(hDB, hKey, &global_param, sizeof(global_param), MODE_READ, NULL, NULL) != DB_SUCCESS)
     {
     cm_msg(MERROR, "analyzer_init", "Cannot open \"%s\" tree in ODB", str);
     return 0;
     }
 
-  db_create_record(1, 0, "/Equipment/Trigger/Settings", strcomb(trigger_settings_str));
-  db_find_key(1, 0, "/Equipment/Trigger/Settings", &hKey);
+  db_create_record(hDB, 0, "/Equipment/Trigger/Settings", strcomb(trigger_settings_str));
+  db_find_key(hDB, 0, "/Equipment/Trigger/Settings", &hKey);
 
-  if (db_open_record(1, hKey, &trigger_settings, sizeof(trigger_settings), MODE_READ, NULL, NULL) != DB_SUCCESS)
+  if (db_open_record(hDB, hKey, &trigger_settings, sizeof(trigger_settings), MODE_READ, NULL, NULL) != DB_SUCCESS)
     {
     cm_msg(MERROR, "analyzer_init", "Cannot open \"/Equipment/Trigger/Settings\" tree in ODB");
     return 0;
