@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol main program
 
   $Log$
+  Revision 1.43  2004/04/07 11:06:17  midas
+  Version 1.7.1
+
   Revision 1.42  2004/03/19 12:09:06  midas
   Upload with simplified CRC
 
@@ -162,6 +165,7 @@ unsigned char user_read(unsigned char index);
 void user_loop(void);
 
 extern MSCB_INFO_VAR code variables[];
+extern unsigned char idata _n_sub_addr;
 
 extern char code node_name[];
 
@@ -189,6 +193,8 @@ unsigned char idata in_buf[20], out_buf[20];
 unsigned char idata i_in, last_i_in, final_i_in, n_out, i_out, cmd_len;
 unsigned char idata crc_code, addr_mode, n_variables;
 
+unsigned char idata _cur_sub_addr, _var_size;
+
 SYS_INFO sys_info;
 
 /*------------------------------------------------------------------*/
@@ -212,7 +218,7 @@ bit reboot;                     // used for rebooting
 
 void setup(void)
 {
-   unsigned char i;
+   unsigned char i, adr;
 
 #ifdef CPU_CYGNAL
 
@@ -312,13 +318,16 @@ void setup(void)
    
    RS485_ENABLE = 0;
    i_in = i_out = n_out = 0;
+   _cur_sub_addr = 0;
 
    uart_init(0, BD_115200);
 
    /* count variables */
-   for (n_variables = 0;; n_variables++)
+   for (n_variables = _var_size = 0;; n_variables++) {
+      _var_size += variables[n_variables].width;
       if (variables[n_variables].width == 0)
          break;
+   }
 
    /* retrieve EEPROM data */
    if (!eeprom_retrieve()) {
@@ -331,8 +340,10 @@ void setup(void)
 
       // init variables
       for (i = 0; variables[i].width; i++)
-         if (variables[i].ud)
-            memset(variables[i].ud, 0, variables[i].width);
+         if (!(variables[i].flags & MSCBF_DATALESS))
+            // do it for each sub-address
+            for (adr = 0 ; adr < n_sub_addr ; adr++)
+               memset((char*)variables[i].ud + _var_size*adr, 0, variables[i].width);
 
       /* call user initialization routine with initialization */
       user_init(1);
@@ -371,6 +382,12 @@ void setup(void)
       led_blink(i, 5, 150);
 }
 
+/*------------------------------------------------------------------*/
+
+unsigned char cur_sub_addr()
+{
+   return _cur_sub_addr;
+}
 /*------------------------------------------------------------------*/
 
 void debug_output()
@@ -487,18 +504,6 @@ void serial_int(void) interrupt 4 using 1
 
 #pragma NOAREGS
 
-void set_addressed(unsigned char mode, bit flag)
-{
-   if (flag) {
-      addressed = 1;
-      led_blink(0, 1, 50);
-      addr_mode = mode;
-   } else {
-      addressed = 0;
-      addr_mode = ADDR_NONE;
-   }
-}
-
 static void send_byte(unsigned char d, unsigned char data * crc)
 {
    if (crc)
@@ -506,6 +511,48 @@ static void send_byte(unsigned char d, unsigned char data * crc)
    SBUF0 = d;
    while (!TI0);
    TI0 = 0;
+}
+
+void addr_node8(unsigned char mode, unsigned char adr, unsigned char node_addr)
+{
+   if (adr >= node_addr &&
+       adr <  node_addr + n_sub_addr) {
+
+      addressed = 1;
+      _cur_sub_addr = adr - node_addr;
+      led_blink(_cur_sub_addr, 1, 50);
+      addr_mode = mode;
+   } else {
+      addressed = 0;
+      addr_mode = ADDR_NONE;
+   }
+}
+
+void addr_node16(unsigned char mode, unsigned int adr, unsigned int node_addr)
+{
+   if (node_addr == 0xFFFF) {
+      if (adr == node_addr) {
+         addressed = 1;
+         _cur_sub_addr = 0;
+         led_blink(0, 1, 50);
+         addr_mode = mode;
+      } else {
+         addressed = 0;
+         addr_mode = ADDR_NONE;
+      }
+   } else {
+      if (adr >= node_addr &&
+          adr <  node_addr + n_sub_addr) {
+
+         addressed = 1;
+         _cur_sub_addr = adr - node_addr;
+         led_blink(_cur_sub_addr, 1, 50);
+         addr_mode = mode;
+      } else {
+         addressed = 0;
+         addr_mode = ADDR_NONE;
+      }
+   }
 }
 
 void interprete(void)
@@ -517,27 +564,27 @@ void interprete(void)
 
    switch (in_buf[0]) {
    case CMD_ADDR_NODE8:
-      set_addressed(ADDR_NODE, in_buf[1] == *(unsigned char *) &sys_info.node_addr);
+      addr_node8(ADDR_NODE, in_buf[1], sys_info.node_addr & 0xFF);
       break;
 
    case CMD_ADDR_NODE16:
-      set_addressed(ADDR_NODE, *(unsigned int *) &in_buf[1] == sys_info.node_addr);
+      addr_node16(ADDR_NODE, *(unsigned int *) &in_buf[1], sys_info.node_addr);
       break;
 
    case CMD_ADDR_BC:
-      set_addressed(ADDR_ALL, 1);
+      addr_node8(ADDR_ALL, 0, 0);
       break;
 
    case CMD_ADDR_GRP8:
-      set_addressed(ADDR_GROUP, in_buf[1] == *(unsigned char *) &sys_info.group_addr);
+      addr_node8(ADDR_GROUP, in_buf[1], sys_info.group_addr & 0xFF);
       break;
 
    case CMD_ADDR_GRP16:
-      set_addressed(ADDR_GROUP, *(unsigned int *) &in_buf[1] == sys_info.group_addr);
+      addr_node16(ADDR_GROUP, *(unsigned int *) &in_buf[1], sys_info.group_addr);
       break;
 
    case CMD_PING8:
-      set_addressed(ADDR_NODE, in_buf[1] == *(unsigned char *) &sys_info.node_addr);
+      addr_node8(ADDR_NODE, in_buf[1], sys_info.node_addr & 0xFF);
       if (addressed) {
          out_buf[0] = CMD_ACK;
          n_out = 1;
@@ -547,7 +594,7 @@ void interprete(void)
       break;
 
    case CMD_PING16:
-      set_addressed(ADDR_NODE, *(unsigned int *) &in_buf[1] == sys_info.node_addr);
+      addr_node16(ADDR_NODE, *(unsigned int *) &in_buf[1], sys_info.node_addr);
       if (addressed) {
          out_buf[0] = CMD_ACK;
          n_out = 1;
@@ -690,7 +737,8 @@ void interprete(void)
          if (in_buf[1] < n_variables) {
             n = variables[in_buf[1]].width;     // number of bytes to return
 
-            if (variables[in_buf[1]].ud == 0) {
+
+            if (variables[in_buf[1]].flags & MSCBF_DATALESS) {
                n = user_read(in_buf[1]);        // for dataless variables, user routine returns bytes
                out_buf[0] = CMD_ACK + n;        // and places data directly in out_buf
             } else {
@@ -700,13 +748,13 @@ void interprete(void)
                   /* variable length buffer */
                   out_buf[0] = CMD_ACK + 7;
                   out_buf[1] = n;
-                  for (i = 0; i < n; i++)
-                     out_buf[2 + i] = ((char *) variables[in_buf[1]].ud)[i];      // copy user data
+                  for (i = 0; i < n; i++)           // copy user data
+                     out_buf[2 + i] = ((char *) variables[in_buf[1]].ud)[i+_var_size*_cur_sub_addr];
                   n++;
                } else {
                   out_buf[0] = CMD_ACK + n;
-                  for (i = 0; i < n; i++)
-                     out_buf[1 + i] = ((char *) variables[in_buf[1]].ud)[i];      // copy user data
+                  for (i = 0; i < n; i++)           // copy user data
+                     out_buf[1 + i] = ((char *) variables[in_buf[1]].ud)[i+_var_size*_cur_sub_addr];      
                }
             }
 
@@ -717,9 +765,9 @@ void interprete(void)
             RS485_ENABLE = 1;
             SBUF0 = out_buf[0];
          }
-      } else if (in_buf[0] == CMD_READ + 2)     // variable range
-      {
-         if (in_buf[1] < n_variables && in_buf[2] < n_variables && in_buf[1] < in_buf[2]) {
+      } else if (in_buf[0] == CMD_READ + 2) {   // variable range
+
+        if (in_buf[1] < n_variables && in_buf[2] < n_variables && in_buf[1] < in_buf[2]) {
             /* calculate number of bytes to return */
             for (i = in_buf[1], n = 0; i <= in_buf[2]; i++) {
                user_read(i);
@@ -735,8 +783,8 @@ void interprete(void)
 
             /* loop over all variables */
             for (i = in_buf[1]; i <= in_buf[2]; i++) {
-               for (j = 0; j < variables[i].width; j++)
-                  send_byte(((char *) variables[i].ud)[j], &crc); // send user data
+               for (j = 0; j < variables[i].width; j++)    // send user data
+                  send_byte(((char *) variables[i].ud)[j+_var_size*_cur_sub_addr], &crc); 
             }
 
             send_byte(crc, NULL);       // send CRC code
@@ -778,17 +826,20 @@ void interprete(void)
             n = variables[ch].width;
 
          for (i = 0; i < n; i++)
-            if (variables[ch].ud) {
+            if (!(variables[ch].flags & MSCBF_DATALESS)) {
                if (variables[ch].unit == UNIT_STRING) {
                   if (n > 4)
                      /* copy bytes in normal order */
-                     ((char *) variables[ch].ud)[i] = in_buf[2 + j + i];
+                     ((char *) variables[ch].ud)[i + _var_size*_cur_sub_addr] = 
+                        in_buf[2 + j + i];
                   else
                      /* copy bytes in reverse order (got swapped on host) */
-                     ((char *) variables[ch].ud)[i] = in_buf[i_in - 2 - i];
+                     ((char *) variables[ch].ud)[i + _var_size*_cur_sub_addr] = 
+                        in_buf[i_in - 2 - i];
                } else
                   /* copy LSB bytes, needed for BYTE if DWORD is sent */
-                  ((char *) variables[ch].ud)[i] = in_buf[i_in - 1 - variables[ch].width + i + j];
+                  ((char *) variables[ch].ud)[i + _var_size*_cur_sub_addr] = 
+                        in_buf[i_in - 1 - variables[ch].width + i + j];
             }
 
          user_write(ch);

@@ -9,6 +9,9 @@
                 for SCS-210 RS232 node
 
   $Log$
+  Revision 1.11  2004/04/07 11:06:17  midas
+  Version 1.7.1
+
   Revision 1.10  2004/03/05 12:27:46  midas
   Added input/output strings
 
@@ -49,6 +52,10 @@ extern bit FREEZE_MODE;
 extern bit DEBUG_MODE;
 
 char code node_name[] = "SCS-210";
+
+/* declare number of sub-addresses to framework */
+unsigned char idata _n_sub_addr = 1;
+
 bit terminal_mode, output_flag;
 unsigned char n_in;
 

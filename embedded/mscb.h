@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol commands
 
   $Log$
+  Revision 1.35  2004/04/07 11:06:17  midas
+  Version 1.7.1
+
   Revision 1.34  2004/04/05 08:46:31  midas
   Fixed LED bug with hvr_300
 
@@ -330,6 +333,7 @@ typedef struct {
 
 #define MSCBF_FLOAT  (1<<0)     // channel in floating point format
 #define MSCBF_SIGNED (1<<1)     // channel is signed integer
+#define MSCBF_DATALESS (1<<2)   // channel doesn't contain data
 
 /* physical units */
 
@@ -430,3 +434,6 @@ void sysclock_init(void);
 unsigned long time(void);
 
 unsigned char user_func(unsigned char *data_in, unsigned char *data_out);
+
+void set_n_sub_addr(unsigned char n);
+unsigned char cur_sub_addr(void);
