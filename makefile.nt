@@ -7,6 +7,9 @@
 #                Windows NT
 #
 #  $Log$
+#  Revision 1.12  2005/03/29 08:34:09  ritt
+#  Get mxml from separate directory
+#
 #  Revision 1.11  2005/03/24 20:58:22  ritt
 #  Added mxml.c
 #
@@ -54,11 +57,12 @@ UTL_DIR  = utils
 DRV_DIR  = drivers
 EXAM_DIR = examples
 ZLIB_DIR = zlib-1.0.4
+MXML_DIR = \mxml
 
 OS_DIR = nt
 CC = cl
 OSFLAGS = /D WIN32
-CFLAGS = /I$(INC_DIR) /I$(DRV_DIR) /nologo
+CFLAGS = /I$(INC_DIR) /I$(DRV_DIR) /I$(MXML_DIR) /nologo
 LIBS = 
 
 #
@@ -156,8 +160,8 @@ $(LIB_DIR)/ybos.obj: $(SRC_DIR)/ybos.c $(INC_DIR)/msystem.h $(INC_DIR)/midas.h $
 	$(CC) /c /DMIDAS_DLL $(CFLAGS) /Fo$(LIB_DIR)/ybos.obj $(SRC_DIR)/ybos.c
 $(LIB_DIR)/ftplib.obj: $(SRC_DIR)/ftplib.c $(INC_DIR)/msystem.h $(INC_DIR)/midas.h $(INC_DIR)/midasinc.h
 	$(CC) /c /DMIDAS_DLL $(CFLAGS) /Fo$(LIB_DIR)/ftplib.obj $(SRC_DIR)/ftplib.c
-$(LIB_DIR)/mxml.obj: $(SRC_DIR)/mxml.c $(INC_DIR)/msystem.h $(INC_DIR)/midas.h $(INC_DIR)/midasinc.h $(INC_DIR)/mxml.h
-	$(CC) /c /DMIDAS_DLL /DHAVE_STRLCPY $(CFLAGS) /Fo$(LIB_DIR)/mxml.obj $(SRC_DIR)/mxml.c
+$(LIB_DIR)/mxml.obj: $(MXML_DIR)/mxml.c $(INC_DIR)/msystem.h $(INC_DIR)/midas.h $(INC_DIR)/midasinc.h $(MXML_DIR)/mxml.h
+	$(CC) /c /DMIDAS_DLL /DHAVE_STRLCPY $(CFLAGS) /Fo$(LIB_DIR)/mxml.obj $(MXML_DIR)/mxml.c
 
 # frontend + backend
 $(LIB_DIR)/mfe.obj: $(SRC_DIR)/mfe.c $(INC_DIR)/msystem.h $(INC_DIR)/midas.h $(INC_DIR)/midasinc.h $(INC_DIR)/mrpc.h
