@@ -905,7 +905,7 @@ void camI24r(int c, int n, int a,int f, int r)
   DWORD  *pd, *pdata;
   int i;
 
-  pdata = pd = malloc(sizeof(DWORD)*r);
+  pdata = pd = (DWORD *)malloc(sizeof(DWORD)*r);
   cam24i_r(c,n,a,f, (DWORD **)&pdata, r);
   pdata = pd;
   for (i=0;i<r;i++)
@@ -921,7 +921,7 @@ void camI24sa(int c, int n, int a,int f, int r)
   DWORD  *pd, *pdata;
   int i;
 
-  pdata = pd = malloc(sizeof(DWORD)*r);
+  pdata = pd = (DWORD *)malloc(sizeof(DWORD)*r);
   cam24i_sa(c,n,a,f, (DWORD **)&pdata, r);
   pdata = pd;
   for (i=0;i<r;i++)
