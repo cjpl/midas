@@ -14,6 +14,6 @@ Please send questions and comments to
 | Dr. Stefan Ritt                                         |
 | Paul Scherrer Institute    Phone: +41 56 310 3728       |
 | WPGA/3                     FAX  : +41 56 310 3171       |
-| CH-5232 Villigen PSI       mailto:ritt@psi.ch           |
+| CH-5232 Villigen PSI       mailto:Stefan.Ritt@psi.ch    |
 | Switzerland                http://pibeta.psi.ch/~stefan |
 \=========================================================/
