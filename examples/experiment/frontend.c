@@ -11,8 +11,8 @@
                 with one bank (SCLR).
 
   $Log$
-  Revision 1.12  2000/09/28 13:02:02  midas
-  Added manual triggered events
+  Revision 1.13  2002/05/16 18:32:25  midas
+  Added manually triggered events
 
   Revision 1.11  2000/08/21 10:32:51  midas
   Added max_event_size, set event_buffer_size = 10*max_event_size
@@ -272,8 +272,7 @@ DWORD lam;
 
   for (i=0 ; i<count ; i++)
     {
-    //cam_lam_read(LAM_SOURCE_CRATE(source), &lam);
-    lam = 0;
+    cam_lam_read(LAM_SOURCE_CRATE(source), &lam);
 
     if (lam & LAM_SOURCE_STATION(source))
       if (!test)
