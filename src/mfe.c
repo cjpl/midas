@@ -7,6 +7,9 @@
                 linked with user code to form a complete frontend
 
   $Log$
+  Revision 1.72  2004/12/14 22:29:24  olchansk
+  Include record name in error messages about "Cannot find statistics record"
+
   Revision 1.71  2004/10/01 23:35:53  midas
   Removed PRE/POST transitions and implemented sequence order of transitions
 
@@ -633,13 +636,13 @@ INT register_equipment(void)
 
       status = db_check_record(hDB, 0, str, EQUIPMENT_STATISTICS_STR, TRUE);
       if (status != DB_SUCCESS) {
-         printf("Cannot create/check statistics record, error %d\n", status);
+         printf("Cannot create/check statistics record \'%s\', error %d\n", str, status);
          ss_sleep(3000);
       }
 
       status = db_find_key(hDB, 0, str, &hKey);
       if (status != DB_SUCCESS) {
-         printf("Cannot find statistics record, error %d\n", status);
+         printf("Cannot find statistics record \'%s\', error %d\n", str, status);
          ss_sleep(3000);
       }
 
@@ -653,8 +656,8 @@ INT register_equipment(void)
                          NULL);
       if (status != DB_SUCCESS) {
          cm_msg(MERROR, "register_equipment", 
-             "Cannot open statistics record, error %d. Probably other FE is using it",
-              status);
+             "Cannot open statistics record \'%s\', error %d. Probably other FE is using it",
+              str, status);
          ss_sleep(3000);
       }
 
