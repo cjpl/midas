@@ -7,6 +7,10 @@
                 Most routines are from mfe.c mana.c and mlogger.c.
 
   $Log$
+  Revision 1.7  1999/02/12 11:50:44  midas
+  Fixed bug that analyzer statistics didn't get cleared at the beginning
+  of a new run.
+
   Revision 1.6  1999/01/19 12:42:57  midas
   - equipment is registered before analyzer modules are initialized
   - N-tuples are not booked if buffer size is zero in analyzer_request
@@ -2154,7 +2158,10 @@ BANK_LIST  *bank_list;
 
   /* reset counters */
   for (i=0 ; analyze_request[i].event_name[0] ; i++)
+    {
     analyze_request[i].events_received = 0;
+    analyze_request[i].ar_stats.events_received = 0;
+    }
 
   for (i=0 ; analyze_request[i].event_name[0] ; i++)
     {
