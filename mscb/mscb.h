@@ -6,6 +6,9 @@
   Contents:     Header fiel for MSCB funcions
 
   $Log$
+  Revision 1.34  2004/03/19 12:09:16  midas
+  Upload with simplified CRC
+
   Revision 1.33  2004/03/11 09:58:10  midas
   mscb_init() does not ask for device if running under labview
 
@@ -318,7 +321,7 @@ extern "C" {
    int EXPRT mscb_write_group(int fd, int adr, unsigned char index, void *data, int size);
    int EXPRT mscb_write_block(int fd, int adr, unsigned char index, void *data, int size);
    int EXPRT mscb_flash(int fd, int adr);
-   int EXPRT mscb_upload(int fd, int adr, char *buffer, int size);
+   int EXPRT mscb_upload(int fd, int adr, char *buffer, int size, int debug);
    int EXPRT mscb_read(int fd, int adr, unsigned char index, void *data, int *size);
    int EXPRT mscb_read_range(int fd, int adr, unsigned char index1,
                              unsigned char index2, void *data, int *size);

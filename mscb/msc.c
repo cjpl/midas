@@ -6,6 +6,9 @@
   Contents:     Command-line interface for the Midas Slow Control Bus
 
   $Log$
+  Revision 1.64  2004/03/19 12:09:16  midas
+  Upload with simplified CRC
+
   Revision 1.63  2004/03/11 09:57:46  midas
   Changed error strings
 
@@ -299,7 +302,7 @@ void print_help()
    puts("scan [r]                   Scan bus for nodes [repeat mode]");
    puts("sn <name>                  Set node name (up to 16 characters)");
    puts("terminal                   Enter teminal mode for SCS-210");
-   puts("upload <hex-file>          Upload new firmware to node");
+   puts("upload <hex-file> [debug]  Upload new firmware to node [with debug info]");
    puts("version                    Display version number");
    puts("write <index> <value> [r]  Write node variable");
 
@@ -428,7 +431,8 @@ int match(char *str, char *cmd)
 
 void cmd_loop(int fd, char *cmd, int adr)
 {
-   int i, j, fh, status, size, nparam, addr, gaddr, current_addr, current_group;
+   int i, j, fh, status, size, nparam, addr, gaddr, current_addr, current_group,
+      majv, minv;
    unsigned int data;
    unsigned char c;
    float value;
@@ -436,6 +440,7 @@ void cmd_loop(int fd, char *cmd, int adr)
    char param[10][100];
    char *pc, *p, *buffer;
    char name[256], chn_name[256][9];
+   char lib[32], prot[32];
    FILE *f, *cmd_file = NULL;
    MSCB_INFO info;
    MSCB_INFO_VAR info_var;
@@ -520,7 +525,7 @@ void cmd_loop(int fd, char *cmd, int adr)
             for (i = 0; *pc && *pc != ' '; i++)
                param[nparam][i] = *pc++;
          param[nparam][i] = 0;
-         while (*pc == ' ')
+         while (*pc == ' ' || *pc == '\r' || *pc == '\n')
             pc++;
          nparam++;
       } while (*pc);
@@ -531,8 +536,6 @@ void cmd_loop(int fd, char *cmd, int adr)
 
       /* version ---------- */
       else if (match(param[0], "version")) {
-         char lib[32], prot[32];
-
          mscb_get_version(lib, prot);
          printf("MSCB library version  : %s\n", lib);
          printf("MSCB protocol version : %s\n", prot);
@@ -644,6 +647,18 @@ void cmd_loop(int fd, char *cmd, int adr)
                   mscb_read(fd, current_addr, (unsigned char) i, dbuf, &size);
 
                   print_channel(i, &info_var, dbuf, 1);
+               }
+
+               mscb_get_version(lib, prot);
+               majv = atoi(prot);
+               if (strchr(prot, '.'))
+                  minv = atoi(strchr(prot, '.')+1);
+               else
+                  minv = 0;
+               if (info.protocol_version / 16 != majv || info.protocol_version % 16 != minv) {
+                  printf("\nWARNING: Protocol version on node (%d.%d) differs from local version (%s).\n",
+                     info.protocol_version / 16, info.protocol_version % 16, prot);
+                  printf("Problems may arise communicating with this node.\n\n");
                }
             }
          }
@@ -1080,7 +1095,7 @@ void cmd_loop(int fd, char *cmd, int adr)
                memset(buffer, 0, size);
                read(fh, buffer, size - 1);
                close(fh);
-               status = mscb_upload(fd, current_addr, buffer, size);
+               status = mscb_upload(fd, current_addr, buffer, size, param[2][0]);
                if (status == MSCB_FORMAT_ERROR)
                   printf("Syntax error in file \"%s\"\n", str);
                else if (status == MSCB_TIMEOUT)

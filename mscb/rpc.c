@@ -6,6 +6,9 @@
   Contents:     List of MSCB RPC functions with parameters
 
   $Log$
+  Revision 1.22  2004/03/19 12:09:16  midas
+  Upload with simplified CRC
+
   Revision 1.21  2004/03/11 09:58:10  midas
   mscb_init() does not ask for device if running under labview
 
@@ -199,6 +202,7 @@ static RPC_LIST rpc_list[] = {
     {{TID_INT, RPC_IN},
      {TID_INT, RPC_IN},
      {TID_ARRAY, RPC_IN | RPC_VARARRAY},
+     {TID_INT, RPC_IN},
      {TID_INT, RPC_IN},
      {0}}},
 
@@ -437,7 +441,7 @@ int server_execute(int index, void *prpc_param[])
       break;
 
    case RPC_MSCB_UPLOAD:
-      status = mscb_upload(CINT(0), CINT(1), CARRAY(2), CINT(3));
+      status = mscb_upload(CINT(0), CINT(1), CARRAY(2), CINT(3), CINT(4));
       break;
 
    case RPC_MSCB_READ:
