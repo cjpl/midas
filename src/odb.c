@@ -6,6 +6,9 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.97  2004/10/01 17:32:31  midas
+  Do not abort if invalid link in db_create_record() is found
+
   Revision 1.96  2004/09/18 04:04:15  olchansk
   more locking fixes:
   - abort on double-lock
@@ -7130,7 +7133,7 @@ void merge_records(HNDLE hDB, HNDLE hKey, KEY * pkey, INT level, void *info)
    KEY initkey, key;
 
    /* compose name of init key */
-   db_get_path(hDB, hKey, full_name, 256);
+   db_get_path(hDB, hKey, full_name, sizeof(full_name));
    *strchr(full_name, 'O') = 'I';
 
    /* if key in init record found, copy original data to init data */
@@ -7153,6 +7156,13 @@ void merge_records(HNDLE hDB, HNDLE hKey, KEY * pkey, INT level, void *info)
       }
    } else if (status == DB_NO_KEY) {
       /* do nothing */
+   } else if (status == DB_INVALID_LINK) {
+      status = db_find_link(hDB, 0, full_name, &hKeyInit);
+      if (status == DB_SUCCESS) {
+         size = sizeof(full_name);
+         db_get_data(hDB, hKeyInit, full_name, &size, TID_LINK);
+      }
+      cm_msg(MERROR, "merge_records", "Invalid link \"%s\"", full_name);
    } else {
       cm_msg(MERROR, "merge_records",
              "aborting on unexpected failure of db_find_key(%s), status %d",
