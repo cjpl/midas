@@ -6,6 +6,10 @@
   Contents:     Dump event on screen with MIDAS or YBOS data format
 
   $Log$
+  Revision 1.4  1998/11/20 14:54:23  pierre
+  added support for MIDAS fmt for : -x (replay file)
+  				  FE file fragmentation (feodb_file_dump(...))
+
   Revision 1.3  1998/10/23 14:21:51  midas
   - Modified version scheme from 1.06 to 1.6.0
   - cm_get_version() now returns versino as string
@@ -183,8 +187,8 @@ if (evt_display > 0)
       { /* YBOS FMT swap byte if necessary based on the YBOS bank type */
         if (file_mode != NO_RECOVER)
           { 
-	          status = ybos_file_compose(pevent, svpath, file_mode);  
-	          printf("ybos_file_compose(status):%d\n",status);
+	          status = file_recompose(pevent, FORMAT_YBOS, svpath, file_mode);  
+	          printf("file_recompose(status):%d\n",status);
           }
         if (sbank_name[0] != 0)
 	        { /* bank name given through argument list */
@@ -218,6 +222,11 @@ if (evt_display > 0)
       else if (internal_data_fmt == FORMAT_MIDAS && 
               (swap_any_event(FORMAT_MIDAS,pevent) >= 0))
       { /* MIDAS FMT*/
+        if (file_mode != NO_RECOVER)
+          { 
+	          status = file_recompose(pevent, FORMAT_MIDAS, svpath, file_mode);  
+	          printf("file_recompose(status):%d\n",status);
+          }
         if (sbank_name[0] != 0)
 	        { /* bank name given through argument list */
             pbh = (BANK_HEADER *)pevent;
@@ -282,7 +291,7 @@ if (evt_display > 0)
             printf("\n");
 
               if (dsp_mode == DSP_RAW)
-	                display_any_event(pheader,0,dsp_mode,dsp_fmt);
+	                display_any_event(pheader,FORMAT_MIDAS,dsp_mode,dsp_fmt);
 	            else
                   display_any_event(pheader,FORMAT_MIDAS,dsp_mode,dsp_fmt);
 	        }
@@ -352,7 +361,7 @@ if (evt_display > 0)
   if (rep_flag)
   {
   /* get Replay argument list */
-  data_fmt = FORMAT_YBOS;
+  data_fmt = 0;
   for (i=1 ; i<argc ; i++)
     {
     if (argv[i][0] == '-' && argv[i][1] == 'd')
@@ -498,6 +507,11 @@ usage:
     }
   }
 
+  if (rep_flag & data_fmt==0)
+    {
+		  printf("\n>>>>>>>>   data type (-t) should be set by hand in -x mode <<< \n\n");
+      goto usage;
+    }
 
   /* steer to replog function */
   if (rep_flag)
