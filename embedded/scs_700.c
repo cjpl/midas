@@ -9,6 +9,9 @@
                 for SCS-700 PT100/PT1000 unit
 
   $Log$
+  Revision 1.4  2003/07/14 10:19:06  midas
+  Added PID loop
+
   Revision 1.3  2003/03/24 14:59:46  midas
   Removed LCD code
 
@@ -29,36 +32,74 @@ extern bit DEBUG_MODE;
 char code node_name[] = "SCS-700";
 
 #define GAIN      0   // gain for internal PGA
-#define AVERAGE  12   // average 2^12 times
 
-/*---- Define variable parameters returned to CMD_GET_INFO command ----*/
+/*---- Define variable parameters returned to the CMD_GET_INFO command ----*/
+
+#undef PID_CONTROL      // activate/deactivate PID control loop
 
 /* data buffer (mirrored in EEPROM) */
 
+#ifdef PID_CONTROL
+
+#define N_CHANNEL 2
+
 struct {
-  float temp[8];
-  float power[8];
+  short demand[N_CHANNEL];
+  float temp[N_CHANNEL];
+  float c_prop[N_CHANNEL];
+  float c_int[N_CHANNEL];
+  float p_int[N_CHANNEL];
+  float power[N_CHANNEL];
+  unsigned short period;
 } idata user_data;
 
 MSCB_INFO_VAR code variables[] = {
-  4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp0",  &user_data.temp[0],
-  4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp1",  &user_data.temp[1],
-  4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp2",  &user_data.temp[2],
-  4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp3",  &user_data.temp[3],
-  4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp4",  &user_data.temp[4],
-  4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp5",  &user_data.temp[5],
-  4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp6",  &user_data.temp[6],
-  4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp7",  &user_data.temp[7],
-  4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "Power0", &user_data.power[0],
-  4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "Power1", &user_data.power[1],
-  4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "Power2", &user_data.power[2],
-  4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "Power3", &user_data.power[3],
-  4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "Power4", &user_data.power[4],
-  4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "Power5", &user_data.power[5],
-  4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "Power6", &user_data.power[6],
-  4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "Power7", &user_data.power[7],
+  2, UNIT_CELSIUS, 0, 0,           0, "Demand0", &user_data.demand[0],
+  2, UNIT_CELSIUS, 0, 0,           0, "Demand1", &user_data.demand[1],
+  4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp0",   &user_data.temp[0],
+  4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp1",   &user_data.temp[1],
+  4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "CProp0",  &user_data.c_prop[0],
+  4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "CProp1",  &user_data.c_prop[1],
+  4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "CInt0",   &user_data.c_int[0],
+  4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "CInt1",   &user_data.c_int[1],
+  4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "PInt0",   &user_data.p_int[0],
+  4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "PInt1",   &user_data.p_int[1],
+  4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "Power0",  &user_data.power[0],
+  4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "Power1",  &user_data.power[1],
+  2, UNIT_SECOND,  0, 0,           0, "Period",  &user_data.period,
   0
 };
+
+#else
+
+#define N_CHANNEL 8
+
+struct {
+  char  power[N_CHANNEL];
+  float temp[N_CHANNEL];
+} idata user_data;
+
+MSCB_INFO_VAR code variables[] = {
+  1, UNIT_PERCENT, 0, 0,           0, "Power0",  &user_data.power[0],
+  1, UNIT_PERCENT, 0, 0,           0, "Power1",  &user_data.power[1],
+  1, UNIT_PERCENT, 0, 0,           0, "Power2",  &user_data.power[2],
+  1, UNIT_PERCENT, 0, 0,           0, "Power3",  &user_data.power[3],
+  1, UNIT_PERCENT, 0, 0,           0, "Power4",  &user_data.power[4],
+  1, UNIT_PERCENT, 0, 0,           0, "Power5",  &user_data.power[5],
+  1, UNIT_PERCENT, 0, 0,           0, "Power6",  &user_data.power[6],
+  1, UNIT_PERCENT, 0, 0,           0, "Power7",  &user_data.power[7],
+  4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp0",   &user_data.temp[0],
+  4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp1",   &user_data.temp[1],
+  4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp2",   &user_data.temp[2],
+  4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp3",   &user_data.temp[3],
+  4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp4",   &user_data.temp[4],
+  4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp5",   &user_data.temp[5],
+  4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp6",   &user_data.temp[6],
+  4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp7",   &user_data.temp[7],
+  0
+};
+
+#endif
 
 /********************************************************************\
 
@@ -74,13 +115,6 @@ void user_init(unsigned char init)
 {
 unsigned char i;
 
-#ifdef CPU_ADUC812
-  ADCCON1 = 0x7C; // power up ADC, 14.5us conv+acq time
-  ADCCON2 = 0;    // select channel to convert
-  DACCON  = 0x1f; // power on DACs
-#endif
-
-#ifdef CPU_C8051F000
   AMX0CF = 0x00;  // select single ended analog inputs
   ADC0CF = 0xE0;  // 16 system clocks, gain 1
   ADC0CN = 0x80;  // enable ADC
@@ -88,11 +122,25 @@ unsigned char i;
   REF0CN = 0x03;  // enable internal reference
   DAC0CN = 0x80;  // enable DAC0
   DAC1CN = 0x80;  // enable DAC1
-#endif
+
+  PRT1CF = 0xFF;  // P1 on push-pull
 
   if (init)
-    for (i=0 ; i<8 ; i++)
+    {
+    for (i=0 ; i<N_CHANNEL ; i++)
       user_data.power[i] = 0;
+
+#ifdef PID_CONTROL
+    for (i=0 ; i<N_CHANNEL ; i++)
+       {
+       user_data.demand[i] = 0;
+       user_data.c_prop[i] = 1;
+       user_data.c_int[i]  = 0.1;
+       user_data.p_int[i]  = 0;
+       user_data.period    = 60;
+       }
+#endif
+    }
 }
 
 /*---- User write function -----------------------------------------*/
@@ -108,7 +156,7 @@ void user_write(unsigned char index) reentrant
 
 unsigned char user_read(unsigned char index)
 {
-  if (index)
+  if (index);
 
   return 0;
 }
@@ -124,19 +172,28 @@ unsigned char user_func(unsigned char *data_in,
   return 2;
 }
 
-/*---- User loop function ------------------------------------------*/
+/*------------------------------------------------------------------*/
 
-void adc_read(channel, float *d)
+void adc_read()
 {
-unsigned long value;
-unsigned int  i;
+static unsigned char channel = 0;
+static unsigned long value;
+static unsigned char cnt = 0;
+unsigned char i;
 float t;
 
-  AMX0SL = channel & 0x0F;
-  ADC0CF = 0xE0 | (GAIN & 0x07);  // 16 system clocks and gain
+  if (cnt == 0)
+    {
+    /* switch to new channel */
+    channel = (channel + 1) % N_CHANNEL;
+    AMX0SL = channel & 0x0F;
+    ADC0CF = 0xE0 | (GAIN & 0x07);  // 16 system clocks and gain
 
-  value = 0;
-  for (i=0 ; i < (1<<AVERAGE) ; i++)
+    value = 0;
+    }
+
+  /* integrate 16 times */
+  for (i=0 ; i < 16 ; i++)
     {
     DISABLE_INTERRUPTS;
 
@@ -150,50 +207,144 @@ float t;
     yield();
     }
 
-  if (AVERAGE > 4)
-    value >>= (AVERAGE-4);
+  cnt++;
 
-  /* convert to volts, op-amp gain of 10 */
-  t = value  / 65536.0 * 2.5 / 10;
+  if (cnt == 0) /* average 16*256 = 4096 times */
+    {
+    value /= 256;
 
-  /* convert to Ohms (1mA excitation) */
-  t = t / 0.001;
+    /* convert to volts, op-amp gain of 10 */
+    t = value  / 65536.0 * 2.5 / 10;
+  
+    /* convert to Ohms (1mA excitation) */
+    t = t / 0.001;
+  
+    /* convert to degrees, coefficients obtained from table fit (www.lakeshore.com) */
+    t = -2.60315E-7*t*t*t + 0.001249273*t*t + 2.310962*t - 243.5;
 
-  /* convert to degrees, coefficients obtains from table fit (www.lakeshore.com) */
-  t = -2.60315E-7*t*t*t + 0.001249273*t*t + 2.310962*t - 243.5;
-
-  DISABLE_INTERRUPTS;
-  *d = t;
-  ENABLE_INTERRUPTS;
+    DISABLE_INTERRUPTS;
+    user_data.temp[channel] = t;
+    ENABLE_INTERRUPTS;
+    }
 }
+
+/*------------------------------------------------------------------*/
+
+unsigned char cycle;
+unsigned char ca[N_CHANNEL];
 
 void set_power(void)
 {
-unsigned char i;
-static unsigned long on_time;
+static unsigned long on_time, last_time;
 
-  /* turn output off after on time expired */
-  for (i=0 ; i<8 ; i++)
-    if ((time() - on_time) >= user_data.power[i])
-      P1 &= ~(1<<i);
+unsigned char        i;
+float                frac;
+unsigned long        expired;
+
+  /* only process each 10ms */
+  if (time() == last_time)
+    return;
+
+  last_time = time();
+
+  /* turn output off after on-time expired */
+  for (i=0 ; i<N_CHANNEL ; i++)
+    if (user_data.power[i] < 100)
+      {
+      expired = time() - on_time;
+      if (expired >= (unsigned long) (user_data.power[i]))
+        {
+        frac = user_data.power[i] - (unsigned long) (user_data.power[i]);
+
+        if (frac == 0 || expired >= (unsigned long) (user_data.power[i])+1)
+          {
+          P1 &= ~(1<<i);
+          }
+        else if (cycle > 0)
+          {
+          if ((float)ca[i] / cycle > frac)
+            {
+            P1 &= ~(1<<i);
+            }
+          else
+            {
+            ca[i]++;
+            }
+          }
+        else 
+          {
+          ca[i]++;
+          }
+        }
+      }
 
   /* turn all outputs on every second */
   if (time() - on_time >= 100)
     {
-    on_time = time();
-    for (i=0 ; i<8 ; i++)
+    last_time = on_time = time();
+    for (i=0 ; i<N_CHANNEL ; i++)
       if (user_data.power[i] > 0)
         P1 |= (1<<i);
+
+    cycle = (cycle + 1) % 10;
+
+    if (cycle == 0)
+      for (i=0 ; i<N_CHANNEL ; i++)
+        ca[i] = 0;
     }
 }
 
+/*------------------------------------------------------------------*/
+
+#ifdef PID_CONTROL
+
+void do_control(void)
+{
+unsigned char i;
+float p;
+static unsigned long t;
+
+  /* once every specified period */
+  if (time() > t + 100*user_data.period)
+    {
+    t = time();
+
+    for (i=0 ; i<N_CHANNEL ; i++)
+      {
+      /* integral part */
+      user_data.p_int[i] += (user_data.demand[i] - user_data.temp[i]) * user_data.c_int[i]; 
+      if (user_data.p_int[i] < 0)
+        user_data.p_int[i] = 0;
+      if (user_data.p_int[i] > 100)
+        user_data.p_int[i] = 100;
+      p = user_data.p_int[i];
+
+      /* proportional part */
+      p += (user_data.demand[i] - user_data.temp[i]) * user_data.c_prop[i];
+
+      if (p < 0)
+        p = 0;
+      if (p > 100)
+        p = 100;
+
+      user_data.power[i] = ((int) (p*10 + 0.5))/10.0;
+      }
+    }
+}
+
+#endif
+
+/*------------------------------------------------------------------*/
+
 void user_loop(void)
 {
-static unsigned char i;
+  /* read temperature */
+  adc_read();
 
-  /* convert one channel at a time */
-  i = (i+1) % 8;
-  adc_read(i, &user_data.temp[i]);
+#ifdef PID_CONTROL
+  /* do regulation */
+  do_control();
+#endif
 
   /* set output according to power */
   set_power();
