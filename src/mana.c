@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.107  2003/12/12 12:32:09  midas
+  Fixed HBOOK compiler warnings
+
   Revision 1.106  2003/12/04 12:51:18  midas
   Fixed problem when output file does not contain a '.'
 
@@ -503,6 +506,8 @@ int  pvm_distribute(ANALYZE_REQUEST *par, EVENT_HEADER *pevent);
 #endif /* PVM */
 
 BOOL pvm_master=FALSE, pvm_slave=FALSE;
+
+char *bstr = " ";
 
 /*------------------------------------------------------------------*/
 
@@ -1152,7 +1157,7 @@ HNDLE      hkey;
 KEY        key;
 char       ch_tags[2000];
 char       rw_tag[512][8];
-char       str[80], key_name[NAME_LENGTH], block_name[NAME_LENGTH];
+char       str[80], str2[80], key_name[NAME_LENGTH], block_name[NAME_LENGTH];
 BANK_LIST  *bank_list;
 EVENT_DEF  *event_def;
 
@@ -1193,11 +1198,13 @@ EVENT_DEF  *event_def;
     for (index=0 ; analyze_request[index].event_name[0] ; index++)
       {
       /* book N-tuple with evend ID */
-      HBNT(analyze_request[index].ar_info.event_id, analyze_request[index].event_name, " ");
+      HBNT(analyze_request[index].ar_info.event_id, analyze_request[index].event_name, bstr);
 
       /* book run number/event number/time */
-      HBNAME(analyze_request[index].ar_info.event_id, "Number",
-             (int *)&analyze_request[index].number, "Run:U*4,Number:U*4,Time:U*4");
+      strcpy(str, "Number");
+      strcpy(str2, "Run:U*4,Number:U*4,Time:U*4");
+      HBNAME(analyze_request[index].ar_info.event_id, str,
+             (int *)&analyze_request[index].number, str2);
 
       bank_list = analyze_request[index].bank_list;
       if (bank_list == NULL)
@@ -1267,7 +1274,7 @@ EVENT_DEF  *event_def;
 
           if (bank_list->type != TID_STRUCT)
             {
-            sprintf(str, "N%s[0,%d]", bank_list->name, bank_list->size);
+            sprintf(str, "N%s[0,%ld]", bank_list->name, bank_list->size);
             HBNAME(analyze_request[index].ar_info.event_id,
                    bank_list->name, (INT *) &bank_list->n_data, str);
 
@@ -1526,10 +1533,13 @@ EVENT_DEF  *event_def;
         HDELET(id);
 
       if (clp.online || equal_ustring(clp.output_file_name, "OFLN"))
-        HBOOKN(id, block_name, n_tag, " ",
+        HBOOKN(id, block_name, n_tag, bstr,
                n_tag*analyze_request[index].rwnt_buffer_size, rw_tag);
       else
-        HBOOKN(id, block_name, n_tag, "//OFFLINE", 5120, rw_tag);
+        {
+        strcpy(str, "//OFFLINE");
+        HBOOKN(id, block_name, n_tag, str, 5120, rw_tag);
+        }
 
       if (!HEXIST(id))
         {
@@ -2079,7 +2089,7 @@ BANK_LIST  *bank_list;
     for (i=0 ; analyze_request[i].event_name[0] ; i++)
       if (analyze_request[i].bank_list != NULL)
         if (HEXIST(analyze_request[i].ar_info.event_id))
-          HRESET(analyze_request[i].ar_info.event_id, " ");
+          HRESET(analyze_request[i].ar_info.event_id, bstr);
 
     /* get list of all histos */
     HIDALL(hid, n);
@@ -2091,7 +2101,7 @@ BANK_LIST  *bank_list;
 
       /* clear histo if not locked */
       if (lock_list[j] != hid[i])
-        HRESET(hid[i], " ");
+        HRESET(hid[i], bstr);
       }
 #endif /* HAVE_HBOOK */
 
@@ -2176,6 +2186,7 @@ BANK_LIST  *bank_list;
         {
 #ifdef HAVE_HBOOK
         int status, lrec;
+        char str2[80];
 
         lrec = clp.lrec;
 #ifdef extname
@@ -2184,8 +2195,11 @@ BANK_LIST  *bank_list;
         QUEST[9] = 65000;
 #endif
 
-        HBSET("BSIZE", HBOOK_LREC, status);
-        HROPEN(1, "OFFLINE", file_name, "NQ", lrec, status);
+        strcpy(str, "BSIZE");
+        HBSET(str, HBOOK_LREC, status);
+        strcpy(str, "OFFLINE");
+        strcpy(str2, "NQ");
+        HROPEN(1, str, file_name, str2, lrec, status);
         if (status != 0)
           {
           sprintf(error, "Cannot open output file %s", out_info.filename);
@@ -2315,7 +2329,11 @@ char       str[256], file_name[256];
 
     add_data_dir(str, file_name);
 #ifdef HAVE_HBOOK
-    HRPUT(0, str, "NT");
+    {
+    char str2[256];
+    strcpy(str2, "NT");
+    HRPUT(0, str, str2);
+    }
 #endif /* HAVE_HBOOK */
 
 #ifdef HAVE_ROOT
@@ -2329,8 +2347,9 @@ char       str[256], file_name[256];
     if (out_format == FORMAT_HBOOK)
       {
 #ifdef HAVE_HBOOK
-      HROUT(0, i, " ");
-      HREND("OFFLINE");
+      HROUT(0, i, bstr);
+      strcpy(str, "OFFLINE");
+      HREND(str);
 #else
       cm_msg(MERROR, "eor", "HBOOK support is not compiled in");
 #endif /* HAVE_HBOOK */
@@ -2840,7 +2859,7 @@ BANK_LIST   *pbl;
 BANK_HEADER *pbh;
 void        *pdata;
 BOOL        exclude, exclude_all;
-char        block_name[5];
+char        block_name[5], str[80];
 float       rwnt[512];
 EVENT_DEF   *event_def;
 HNDLE       hkey;
@@ -2879,8 +2898,9 @@ WORD        bktype;
   if (event_def->format == FORMAT_MIDAS)
     {
     /* first fill number block */
+    strcpy(str, "Number");
     if (!clp.rwnt)
-      HFNTB(pevent->event_id, "Number");
+      HFNTB(pevent->event_id, str);
 
     pbk = NULL;
     pbk32 = NULL;
@@ -3091,8 +3111,9 @@ WORD        bktype;
     YBOS_BANK_HEADER *pybk;
 
     /* first fill number block */
+    strcpy(str, "Number");
     if (!clp.rwnt)
-      HFNTB(pevent->event_id, "Number");
+      HFNTB(pevent->event_id, str);
 
     pbk = NULL;
     exclude_all = TRUE;
@@ -4026,12 +4047,12 @@ INT i;
     printf("Clear ID %d to ID %d\n", id1, id2);
     for (i=id1 ; i<=id2 ; i++)
       if (HEXIST(i))
-        HRESET(i, " ");
+        HRESET(i, bstr);
     }
   else
     {
     printf("Clear ID %d\n", id1);
-    HRESET(id1, " ");
+    HRESET(id1, bstr);
     }
 
   return SUCCESS;
@@ -4079,12 +4100,15 @@ char str[256];
 #ifdef HAVE_HBOOK
     {
     FILE *f;
+    char str2[256];
+
     f = fopen(str, "r");
     if (f != NULL)
       {
       fclose(f);
       printf("Loading previous online histos from %s\n", str);
-      HRGET(0, str, "A");
+      strcpy(str2, "A");
+      HRGET(0, str, str2);
 
       /* fix wrongly booked N-tuples at ID 100000 */
       if (HEXIST(100000))
@@ -4114,7 +4138,12 @@ char str[256];
   printf("Saving current online histos to %s\n", str);
 
 #ifdef HAVE_HBOOK
-  HRPUT(0, str, "NT");
+  {
+  char str2[256];
+
+  strcpy(str2, "NT");
+  HRPUT(0, str, str2);
+  }
 #endif
 
 #ifdef HAVE_ROOT
@@ -4973,8 +5002,11 @@ BANK_LIST *bank_list;
     if (out_format == FORMAT_HBOOK)
       {
 #ifdef HAVE_HBOOK
-      HROUT(0, i, " ");
-      HREND("OFFLINE");
+      char str[80];
+      
+      HROUT(0, i, bstr);
+      strcpy(str, "OFFLINE");
+      HREND(str);
 #else
       cm_msg(MERROR, "loop_runs_offline", "HBOOK support is not compiled in");
 #endif
@@ -6123,7 +6155,8 @@ int rargc;
     {
     if (equal_ustring(clp.output_file_name, "OFLN"))
       {
-      HLIMAP(pawc_size/4, "OFLN");
+      strcpy(str, "OFLN");
+      HLIMAP(pawc_size/4, str);
       printf("\nGLOBAL MEMORY NAME = %s\n", "OFLN");
       }
     else
