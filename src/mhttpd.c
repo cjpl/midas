@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.103  2000/03/17 13:10:49  midas
+  Make port bind check before becoming a daemon
+
   Revision 1.102  2000/03/15 08:54:39  midas
   Removed web passwd check from "submit" button (necessary if someone edits
   an elog entry for more than an hour)
@@ -5534,7 +5537,7 @@ void ctrlc_handler(int sig)
 
 char net_buffer[1000000];
 
-void server_loop(int tcp_port)
+void server_loop(int tcp_port, int daemon)
 {
 int                  status, i, refresh;
 struct sockaddr_in   bind_addr, acc_addr;
@@ -5619,6 +5622,12 @@ INT                  last_time=0;
   setuid(getuid());
   setgid(getgid());
 #endif
+
+  if (daemon)
+    {
+    printf("Becoming a daemon...\n");
+    ss_daemon_init();
+    }
 
   /* listen for connection */
   status = listen(lsock, SOMAXCONN);
@@ -5860,13 +5869,7 @@ usage:
       }
     }
   
-  if (daemon)
-    {
-    printf("Becoming a daemon...\n");
-    ss_daemon_init();
-    }
-
-  server_loop(tcp_port);
+  server_loop(tcp_port, daemon);
 
   return 0;
 }
