@@ -6,6 +6,9 @@
   Contents:     Command-line interface to the MIDAS online data base.
 
   $Log$
+  Revision 1.32  2000/02/24 22:29:25  midas
+  Added deferred transitions
+
   Revision 1.31  1999/11/09 13:17:26  midas
   Added secure ODB feature
 
@@ -2263,9 +2266,19 @@ PRINT_INFO      print_info;
           {
           i = 1;
           db_set_value(hDB, 0, "/Runinfo/Transition in progress", &i, sizeof(INT), 1, TID_INT);
-          status = cm_transition(TR_STOP, 0, str, sizeof(str), SYNC);
-          if (status != CM_SUCCESS)
+
+          if (param[1][0] == 'n')
+            status = cm_transition(TR_STOP | TR_DEFERRED, 0, str, sizeof(str), SYNC);
+          else
+            status = cm_transition(TR_STOP, 0, str, sizeof(str), SYNC);
+
+          if (status == CM_DEFERRED_TRANSITION)
+            printf("%s\n", str);
+          else if (status == CM_TRANSITION_IN_PROGRESS)
+            printf("Deferred stop already in progress, enter \"stop now\" to force stop\n");
+          else if (status != CM_SUCCESS)
             printf("Error: %s\n", str);
+          
           i = 0;
           db_set_value(hDB, 0, "/Runinfo/Transition in progress", &i, sizeof(INT), 1, TID_INT);
           }
@@ -2285,8 +2298,16 @@ PRINT_INFO      print_info;
         }
       else
         {
-        status = cm_transition(TR_PAUSE, 0, str, sizeof(str), SYNC);
-        if (status != CM_SUCCESS)
+        if (param[1][0] == 'n')
+          status = cm_transition(TR_PAUSE | TR_DEFERRED, 0, str, sizeof(str), SYNC);
+        else
+          status = cm_transition(TR_PAUSE, 0, str, sizeof(str), SYNC);
+
+        if (status == CM_DEFERRED_TRANSITION)
+          printf("%s\n", str);
+        else if (status == CM_TRANSITION_IN_PROGRESS)
+          printf("Deferred pause already in progress, enter \"pause now\" to force pause\n");
+        else if (status != CM_SUCCESS)
           printf("Error: %s\n", str);
         }
       }

@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.98  2000/02/24 22:29:25  midas
+  Added deferred transitions
+
   Revision 1.97  2000/02/23 21:07:44  midas
   Changed spaces and tabulators
 
@@ -403,6 +406,23 @@ typedef struct {
   } TRANS_TABLE;
 
 TRANS_TABLE _trans_table[] = 
+{
+  { TR_START, NULL },
+  { TR_STOP, NULL },
+  { TR_PAUSE, NULL },
+  { TR_RESUME, NULL },
+  { TR_PRESTART, NULL },
+  { TR_POSTSTART, NULL },
+  { TR_PRESTOP, NULL },
+  { TR_POSTSTOP, NULL },
+  { TR_PREPAUSE, NULL },
+  { TR_POSTPAUSE, NULL },
+  { TR_PRERESUME, NULL },
+  { TR_POSTRESUME, NULL },
+  { 0, NULL }
+};
+
+TRANS_TABLE _deferred_trans_table[] =
 {
   { TR_START, NULL },
   { TR_STOP, NULL },
@@ -1531,6 +1551,13 @@ PROGRAM_INFO_STR(program_info_str);
   /* set transition mask */
   data = 0;
   status = db_set_value(hDB, hKey, "Transition Mask", &data, 
+                        sizeof(DWORD), 1, TID_DWORD);
+  if (status != DB_SUCCESS)
+    return status;
+
+  /* set deferred transition mask */
+  data = 0;
+  status = db_set_value(hDB, hKey, "Deferred Transition Mask", &data, 
                         sizeof(DWORD), 1, TID_DWORD);
   if (status != DB_SUCCESS)
     return status;
@@ -2823,6 +2850,139 @@ HNDLE hDB, hKey;
 
 /*------------------------------------------------------------------*/
 
+static INT   _requested_transition;
+static DWORD _deferred_transition_mask;
+
+INT cm_register_deferred_transition(INT transition, BOOL (*func)(INT,BOOL))
+/********************************************************************\
+
+  Routine: cm_register_deferred_transition
+
+  Purpose: Register a deferred transition handler. If a client is
+           registered as a deferred transition handler, it may defer
+           a requested transition by returning FALSE until a certain
+           condition (like a motor reaches its end position) is 
+           reached.
+
+  Input:
+    INT    tranition        One of TR_xxx
+    BOOL   (*func)(INT)     Function which gets called whenever
+                            a transition is requested. If it returns
+                            FALSE, the transition is not performed.
+
+  Output:
+    none
+
+  Function value:
+    CM_SUCCESS              Successful completion
+    <error>                 Error from ODB access
+
+\********************************************************************/
+{
+INT   status, i, size;
+DWORD mask;
+HNDLE hDB, hKey;
+
+  cm_get_experiment_database(&hDB, &hKey);
+
+  size = sizeof(DWORD);
+  status = db_get_value(hDB, hKey, "Deferred Transition Mask", &mask, &size, TID_DWORD);
+  if (status != DB_SUCCESS)
+    return status;
+
+  for (i=0 ; _deferred_trans_table[i].transition ; i++)
+    if (_deferred_trans_table[i].transition == transition)
+      _deferred_trans_table[i].func = (void *) func;
+
+  /* set new transition mask */
+  mask |= transition;
+  _deferred_transition_mask |= transition;
+
+  /* unlock database */
+  db_set_mode(hDB, hKey, MODE_READ | MODE_WRITE, TRUE);
+
+  /* set value */
+  status = db_set_value(hDB, hKey, "Deferred Transition Mask", &mask, sizeof(DWORD), 1, TID_DWORD);
+  if (status != DB_SUCCESS)
+    return status;
+
+  /* re-lock database */
+  db_set_mode(hDB, hKey, MODE_READ, TRUE);
+  
+  /* hot link requested transition */
+  size = sizeof(_requested_transition);
+  db_get_value(hDB, 0, "/Runinfo/Requested Transition", &_requested_transition, &size, TID_INT);
+  db_find_key(hDB, 0, "/Runinfo/Requested Transition", &hKey);
+  status = db_open_record(hDB, hKey, &_requested_transition, sizeof(INT), MODE_READ, NULL, NULL);
+  if (status != DB_SUCCESS)
+    {
+    cm_msg(MERROR, "cm_register_deferred_transition", 
+                   "Cannot hotlink /Runinfo/Requested Transition");
+    return status;
+    }
+
+  return CM_SUCCESS;  
+}
+
+/*------------------------------------------------------------------*/
+
+INT cm_check_deferred_transition()
+/********************************************************************\
+
+  Routine: cm_check_deferred_transition
+
+  Purpose: Check for any deferred transition. If a deferred transition
+           handler has been registered via the 
+           cm_register_deferred_transition function, this routine
+           should be called regularly. It checks if a transition
+           request is pending. If so, it calld the registered handler
+           if the transition should be done and then actually does
+           the transition.
+
+  Input:
+    none
+
+  Output:
+    none
+
+  Function value:
+    CM_SUCCESS              Successful completion
+    <error>                 Error from cm_transition
+
+\********************************************************************/
+{
+INT i, status;
+char str[256];
+static BOOL first;
+
+  if (_requested_transition == 0)
+    first = TRUE;
+
+  if (_requested_transition & _deferred_transition_mask)
+    {
+    for (i=0 ; _deferred_trans_table[i].transition ; i++)
+      if (_deferred_trans_table[i].transition == _requested_transition)
+        break;
+      
+    if (_deferred_trans_table[i].transition == _requested_transition)
+      {
+      if (((BOOL (*)(INT,BOOL))_deferred_trans_table[i].func)(_requested_transition, first))
+        {
+        status = cm_transition(_requested_transition | TR_DEFERRED, 0, str, 256, SYNC);
+        if (status != CM_SUCCESS)
+          cm_msg(MERROR, "cm_check_deferred_transition", 
+                 "Cannot perform deferred transition: %s", str);
+        return status;
+        }
+      first = FALSE;
+      }
+    }
+
+  return SUCCESS;
+}
+
+/*------------------------------------------------------------------*/
+
 INT cm_transition(INT transition, INT run_number, char *perror, INT strsize,
                   INT async_flag)
 /********************************************************************\
@@ -2859,8 +3019,12 @@ char   error[256];
 INT    state;
 INT    old_timeout;
 KEY    key;
+BOOL   deferred;
 PROGRAM_INFO program_info;
 RUNINFO_STR(runinfo_str);
+
+  deferred = (transition & TR_DEFERRED) > 0;
+  transition &= ~TR_DEFERRED;
 
   cm_get_experiment_database(&hDB, &hKey);
 
@@ -2877,28 +3041,69 @@ RUNINFO_STR(runinfo_str);
     db_get_value(hDB, 0, "Runinfo/Run number", &run_number, &size, TID_INT);
     }
 
-  /* set new start time in database */
+  /* Set new run number in ODB */
   if (transition == TR_START)
     {
-    /* ASCII format */
-    cm_asctime(str, sizeof(str));
-    db_set_value(hDB, 0, "Runinfo/Start Time", str, 32, 1, TID_STRING);
-
-    /* reset stop time */
-    seconds = 0;
-    db_set_value(hDB, 0, "Runinfo/Stop Time binary", 
-                 &seconds, sizeof(seconds), 1, TID_DWORD);
-
-    /* Seconds since 1.1.1970 */
-    cm_time(&seconds);
-    db_set_value(hDB, 0, "Runinfo/Start Time binary", 
-                 &seconds, sizeof(seconds), 1, TID_DWORD);
-
-    /* New run number */
     status = db_set_value(hDB, 0, "Runinfo/Run number", 
                           &run_number, sizeof(run_number), 1, TID_INT);
     if (status != DB_SUCCESS)
       cm_msg(MERROR, "cm_transition", "cannot set Runinfo/Run number in database");
+    }
+
+  if (deferred)
+    {
+    /* remove transition request */
+    i = 0;
+    db_set_value(hDB, 0, "/Runinfo/Requested transition", &i, 
+                 sizeof(int), 1, TID_INT);
+    }
+  else
+    {
+    status = db_find_key(hDB, 0, "System/Clients", &hRootKey);
+    if (status != DB_SUCCESS)
+      {
+      cm_msg(MERROR, "cm_transition", "cannot find System/Clients entry in database");
+      return status;
+      }
+
+    /* check if deferred transition already in progress */
+    size = sizeof(INT);
+    db_get_value(hDB, 0, "/Runinfo/Requested transition", &i, &size, TID_INT);
+    if (i)
+      {
+      if (perror)
+        sprintf(perror, "Deferred transition already in progress");
+
+      return CM_TRANSITION_IN_PROGRESS;
+      }
+
+    /* search database for clients with deferred transition mask set */
+    for (i=0,status=0 ; ; i++)
+      {
+      status = db_enum_key(hDB, hRootKey, i, &hSubkey);
+      if (status == DB_NO_MORE_SUBKEYS)
+        break;
+
+      if (status == DB_SUCCESS)
+        {
+        size = sizeof(mask);
+        status = db_get_value(hDB, hSubkey, "Deferred Transition Mask", 
+                              &mask, &size, TID_DWORD);
+
+        /* if registered for deferred transition, set flag in ODB and return */
+        if (status == DB_SUCCESS && (mask & transition))
+          {
+          size = NAME_LENGTH;
+          db_get_value(hDB, hSubkey, "Name", str, &size, TID_STRING);
+          db_set_value(hDB, 0, "/Runinfo/Requested transition", &transition, 
+                       sizeof(int), 1, TID_INT);
+          if (perror)
+            sprintf(perror, "Transition deferred by client \"%s\"", str);
+
+          return CM_DEFERRED_TRANSITION;
+          }
+        }
+      }
     }
 
   /* call pre- transitions */
@@ -2925,45 +3130,6 @@ RUNINFO_STR(runinfo_str);
     status = cm_transition(TR_PRERESUME, run_number, perror, strsize, async_flag);
     if (status != CM_SUCCESS)
       return status;
-    }
-
-  /* execute programs on start */
-  if (transition == TR_START)
-    {
-    str[0] = 0;
-    size = sizeof(str);
-    db_get_value(hDB, 0, "/Programs/Execute on start run", str, &size, TID_STRING);
-    if (str[0])
-      ss_system(str);
-
-    db_find_key(hDB, 0, "/Programs", &hRootKey);
-    if (hRootKey)
-      {
-      for (i=0 ; ; i++)
-        {
-        status = db_enum_key(hDB, hRootKey, i, &hKey);
-        if (status == DB_NO_MORE_SUBKEYS)
-          break;
-
-        db_get_key(hDB, hKey, &key);
-      
-        /* don't check "execute on xxx" */
-        if (key.type != TID_KEY)
-          continue;
-
-        size = sizeof(program_info);
-        status = db_get_record(hDB, hKey, &program_info, &size, 0);
-        if (status != DB_SUCCESS)
-          {
-          cm_msg(MERROR, "cm_transition", "Cannot get program info record");
-          continue;
-          }
-
-        if (program_info.auto_start &&
-            program_info.start_command[0])
-          ss_system(program_info.start_command);
-        }
-      }
     }
 
   status = db_find_key(hDB, 0, "System/Clients", &hRootKey);
@@ -3093,12 +3259,30 @@ RUNINFO_STR(runinfo_str);
       return status;
     }
 
-  /* dont update database or send messages on PRE/POST transitions */
+  /* don't update database or send messages on PRE/POST transitions */
   if (transition == TR_PRESTART  || transition == TR_PRESTOP   ||
       transition == TR_PREPAUSE  || transition == TR_PRERESUME ||
       transition == TR_POSTSTART || transition == TR_POSTSTOP  ||
       transition == TR_POSTPAUSE || transition == TR_POSTRESUME)
     return CM_SUCCESS;
+
+  /* set new start time in database */
+  if (transition == TR_START)
+    {
+    /* ASCII format */
+    cm_asctime(str, sizeof(str));
+    db_set_value(hDB, 0, "Runinfo/Start Time", str, 32, 1, TID_STRING);
+
+    /* reset stop time */
+    seconds = 0;
+    db_set_value(hDB, 0, "Runinfo/Stop Time binary", 
+                 &seconds, sizeof(seconds), 1, TID_DWORD);
+
+    /* Seconds since 1.1.1970 */
+    cm_time(&seconds);
+    db_set_value(hDB, 0, "Runinfo/Start Time binary", 
+                 &seconds, sizeof(seconds), 1, TID_DWORD);
+    }
 
   /* set stop time in database */
   if (transition == TR_STOP)
@@ -3112,7 +3296,7 @@ RUNINFO_STR(runinfo_str);
       {
       /* stop time binary */
       cm_time(&seconds);
-      status = db_set_value(hDB, 0, "Runinfo/Stop Time binary", 
+      status = db_set_value(hDB, 0, "Runinfo/Stop Time binary",
                             &seconds, sizeof(seconds), 1, TID_DWORD);
       if (status != DB_SUCCESS)
         cm_msg(MERROR, "cm_transition", "cannot set \"Runinfo/Stop Time binary\" in database");
@@ -3164,6 +3348,45 @@ RUNINFO_STR(runinfo_str);
   /* flush online database */
   if (transition == TR_STOP)
     db_flush_database(hDB);
+
+  /* execute programs on start */
+  if (transition == TR_START)
+    {
+    str[0] = 0;
+    size = sizeof(str);
+    db_get_value(hDB, 0, "/Programs/Execute on start run", str, &size, TID_STRING);
+    if (str[0])
+      ss_system(str);
+
+    db_find_key(hDB, 0, "/Programs", &hRootKey);
+    if (hRootKey)
+      {
+      for (i=0 ; ; i++)
+        {
+        status = db_enum_key(hDB, hRootKey, i, &hKey);
+        if (status == DB_NO_MORE_SUBKEYS)
+          break;
+
+        db_get_key(hDB, hKey, &key);
+      
+        /* don't check "execute on xxx" */
+        if (key.type != TID_KEY)
+          continue;
+
+        size = sizeof(program_info);
+        status = db_get_record(hDB, hKey, &program_info, &size, 0);
+        if (status != DB_SUCCESS)
+          {
+          cm_msg(MERROR, "cm_transition", "Cannot get program info record");
+          continue;
+          }
+
+        if (program_info.auto_start &&
+            program_info.start_command[0])
+          ss_system(program_info.start_command);
+        }
+      }
+    }
 
   /* execute/stop programs on stop */
   if (transition == TR_STOP)

@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.57  2000/02/24 22:33:16  midas
+  Added deferred transitions
+
   Revision 1.56  2000/02/15 11:07:50  midas
   Changed GET_xxx to bit flags
 
@@ -433,6 +436,7 @@ typedef          INT       HNDLE;
 #define TR_POSTPAUSE  (1<<9) 
 #define TR_PRERESUME  (1<<10) 
 #define TR_POSTRESUME (1<<11) 
+#define TR_DEFERRED   (1<<12)
 
 /* Equipment types */
 #define EQ_PERIODIC   1
@@ -546,7 +550,9 @@ typedef          INT       HNDLE;
 #define CM_SHUTDOWN                 107
 #define CM_WRONG_PASSWORD           108
 #define CM_UNDEF_ENVIRON            109
-                                       
+#define CM_DEFERRED_TRANSITION      110
+#define CM_TRANSITION_IN_PROGRESS   111
+
 /* Buffer Manager */                   
 #define BM_SUCCESS                    1
 #define BM_CREATED                  202
@@ -1032,6 +1038,7 @@ typedef struct {
   INT       online_mode;
   INT       run_number;
   INT       transition_in_progress;
+  INT       requested_transition;
   char      start_time[32];
   DWORD     start_time_binary;
   char      stop_time[32];
@@ -1044,6 +1051,7 @@ typedef struct {
 "Online Mode = INT : 1",\
 "Run number = INT : 0",\
 "Transition in progress = INT : 0",\
+"Requested transition = INT : 0",\
 "Start time = STRING : [32] Tue Sep 09 15:04:42 1997",\
 "Start time binary = DWORD : 0",\
 "Stop time = STRING : [32] Tue Sep 09 15:04:42 1997",\
@@ -1314,6 +1322,8 @@ INT EXPRT cm_connect_experiment(char *host_name, char *exp_name, char *client_na
 INT EXPRT cm_connect_experiment1(char *host_name, char *exp_name, char *client_name, void (*func)(char*), INT odb_size, INT watchdog_timeout);
 INT EXPRT cm_disconnect_experiment(void);
 INT EXPRT cm_register_transition(INT transition, INT (*func)(INT,char*));
+INT EXPRT cm_register_deferred_transition(INT transition, BOOL (*func)(INT,BOOL));
+INT EXPRT cm_check_deferred_transition(void);
 INT EXPRT cm_transition(INT transition, INT run_number, char *error, INT strsize, INT async_flag);
 INT EXPRT cm_register_server(void);
 INT EXPRT cm_register_function(INT id, INT (*func)(INT,void**));
