@@ -11,6 +11,12 @@
 
 #define MXML_NAME_LENGTH 64
 
+#define ELEMENT_NODE                  1
+#define TEXT_NODE                     2
+#define PROCESSING_INSTRUCTION_NODE   3
+#define COMMENT_NODE                  4
+#define DOCUMENT_NODE                 5
+
 typedef struct {
    int  fh;
    char *buffer;
@@ -26,6 +32,7 @@ typedef struct mxml_struct *PMXML_NODE;
 
 typedef struct mxml_struct {
    char       name[MXML_NAME_LENGTH];  // name of element    <[name]>[value]</[name]>
+   int        node_type;               // type of node XXX_NODE
    char       *value;                  // value of element
    int        n_attributes;            // list of attributes
    char       *attribute_name;
@@ -56,8 +63,8 @@ char *mxml_get_value(PMXML_NODE pnode);
 char *mxml_get_attribute(PMXML_NODE pnode, char *name);
 
 int mxml_add_attribute(PMXML_NODE pnode, char *attrib_name, char *attrib_value);
-PMXML_NODE mxml_add_node(PMXML_NODE parent, char *node_name, char *value);
-PMXML_NODE mxml_add_node_at(PMXML_NODE parent, char *node_name, char *value, int index);
+PMXML_NODE mxml_add_node(PMXML_NODE parent, int node_type, char *node_name, char *value);
+PMXML_NODE mxml_add_node_at(PMXML_NODE parent, int node_type, char *node_name, char *value, int index);
 
 int mxml_replace_node_name(PMXML_NODE pnode, char *new_name);
 int mxml_replace_node_value(PMXML_NODE pnode, char *value);
@@ -68,7 +75,7 @@ int mxml_replace_attribute_value(PMXML_NODE pnode, char *attrib_name, char *attr
 int mxml_delete_node(PMXML_NODE pnode);
 int mxml_delete_attribute(PMXML_NODE, char *attrib_name);
 
-PMXML_NODE mxml_create_root_node(char *name);
+PMXML_NODE mxml_create_root_node();
 PMXML_NODE mxml_parse_file(char *file_name, char *error, int error_size);
 PMXML_NODE mxml_parse_buffer(char *buffer, char *error, int error_size);
 int mxml_write_tree(char *file_name, PMXML_NODE tree);
