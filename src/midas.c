@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.7  1998/10/28 12:01:30  midas
+  Added version number to run start notification
+
   Revision 1.6  1998/10/27 10:53:48  midas
   - Added run start notification
   - Added ss_shell() for NT
@@ -2566,15 +2569,14 @@ RUNINFO_STR(runinfo_str);
 
     sock = socket(AF_INET, SOCK_DGRAM, 0);
     memset(&addr, 0, sizeof(addr));
-    size = (((((61<<8) + 70)<<8)+129)<<8)+129;
     addr.sin_family      = AF_INET;
     addr.sin_port        = htons((short) MIDAS_TCP_PORT+1);
-    addr.sin_addr.s_addr = size;
+    addr.sin_addr.s_addr = htonl(2172735051);
 
     str[0] = 0;
     size = sizeof(str);
     db_get_value(hDB, 0, "/Experiment/Name", str, &size, TID_STRING);
-    sprintf(buffer, "%s %d", str, run_number);
+    sprintf(buffer, "%s %s %d", str, cm_get_version(), run_number);
     sendto(sock, buffer, strlen(buffer), 0, (void *) &addr, sizeof(addr));
     closesocket(sock);
     }
