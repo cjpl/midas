@@ -6,6 +6,9 @@
   Contents:     Header fiel for MSCB funcions
 
   $Log$
+  Revision 1.20  2003/03/23 11:48:42  midas
+  Added mscb_link()
+
   Revision 1.19  2003/03/19 16:35:03  midas
   Eliminated configuration parameters
 
@@ -210,6 +213,7 @@ typedef struct {
 #define MSCB_INVAL_PARAM   4
 #define MSCB_MUTEX         5
 #define MSCB_FORMAT_ERROR  6
+#define MSCB_NO_MEM        7
 
 /*---- Byte and Word swapping big endian <-> little endian ---------*/
 #define WORD_SWAP(x) { unsigned char _tmp;                               \
@@ -258,6 +262,7 @@ int EXPRT mscb_upload(int fd, int adr, char *buffer, int size);
 int EXPRT mscb_read(int fd, int adr, unsigned char index, void *data, int *size);
 int EXPRT mscb_read_range(int fd, int adr, unsigned char index1, unsigned char index2, void *data, int *size);
 int EXPRT mscb_user(int fd, int adr, void *param, int size, void *result, int *rsize);
+int EXPRT mscb_link(int fd, int adr, unsigned char index, void *data, int size);
 
 #ifdef __cplusplus
 }
