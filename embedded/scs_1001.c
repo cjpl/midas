@@ -9,6 +9,9 @@
                 for SCS-1001 stand alone control unit
 
   $Log$
+  Revision 1.3  2005/03/08 12:41:32  ritt
+  Version 1.9.0
+
   Revision 1.2  2005/02/16 14:17:58  ritt
   Two-speed menu increment
 
@@ -215,7 +218,9 @@ void user_init(unsigned char init)
    puts(sys_info.node_name);
    puts(" **");
    lcd_goto(0, 1);
-   printf("   Address:  %04X ", sys_info.node_addr);
+   printf("   Address:  %04X", sys_info.node_addr);
+   lcd_goto(0, 2);
+   printf("   Version:  %2bX.%1bX", VERSION / 0x10, VERSION & 0x0F);
 }
 
 #pragma NOAREGS
@@ -228,15 +233,17 @@ void user_write(unsigned char index) reentrant
 
    switch (index) {
 
-   case 0: RELAIS0 = user_data.relais[0]; break;
-   case 1: RELAIS1 = user_data.relais[1]; break;
-   case 2: RELAIS2 = user_data.relais[2]; break;
-   case 3: RELAIS3 = user_data.relais[3]; break;
+   /* RELAIS go through inverter */
+   case 0: RELAIS0 = !user_data.relais[0]; break;
+   case 1: RELAIS1 = !user_data.relais[1]; break;
+   case 2: RELAIS2 = !user_data.relais[2]; break;
+   case 3: RELAIS3 = !user_data.relais[3]; break;
 
-   case 4: DOUT0 = user_data.dout[0]; break;
-   case 5: DOUT1 = user_data.dout[1]; break;
-   case 6: DOUT2 = user_data.dout[2]; break;
-   case 7: DOUT3 = user_data.dout[3]; break;
+   /* DOUT go through inverter */
+   case 4: DOUT0 = !user_data.dout[0]; break;
+   case 5: DOUT1 = !user_data.dout[1]; break;
+   case 6: DOUT2 = !user_data.dout[2]; break;
+   case 7: DOUT3 = !user_data.dout[3]; break;
 
    case 8:                     // DAC0
    case 22:                    // DOFS0

@@ -6,6 +6,9 @@
   Contents:     List of MSCB RPC functions with parameters
 
   $Log$
+  Revision 1.27  2005/03/08 12:41:28  ritt
+  Version 1.9.0
+
   Revision 1.26  2004/12/22 16:02:37  midas
   Implemented verify for upload
 
@@ -212,13 +215,18 @@ static RPC_LIST rpc_list[] = {
      {TID_INT, RPC_IN},
      {0}}},
 
-
    {RPC_MSCB_UPLOAD, "mscb_upload",
     {{TID_INT, RPC_IN},
      {TID_INT, RPC_IN},
      {TID_ARRAY, RPC_IN | RPC_VARARRAY},
      {TID_INT, RPC_IN},
      {TID_INT, RPC_IN},
+     {0}}},
+
+   {RPC_MSCB_VERIFY, "mscb_verify",
+    {{TID_INT, RPC_IN},
+     {TID_INT, RPC_IN},
+     {TID_ARRAY, RPC_IN | RPC_VARARRAY},
      {TID_INT, RPC_IN},
      {0}}},
 
@@ -465,7 +473,11 @@ int server_execute(int index, void *prpc_param[])
       break;
 
    case RPC_MSCB_UPLOAD:
-      status = mscb_upload(CINT(0), CINT(1), CARRAY(2), CINT(3), CINT(4), CINT(5));
+      status = mscb_upload(CINT(0), CINT(1), CARRAY(2), CINT(3), CINT(4));
+      break;
+
+   case RPC_MSCB_VERIFY:
+      status = mscb_verify(CINT(0), CINT(1), CARRAY(2), CINT(3));
       break;
 
    case RPC_MSCB_READ:

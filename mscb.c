@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus communication functions
 
   $Log$
+  Revision 1.82  2005/03/08 12:41:26  ritt
+  Version 1.9.0
+
   Revision 1.81  2005/02/16 13:14:50  ritt
   Version 1.8.0
 
@@ -250,8 +253,8 @@
 
 \********************************************************************/
 
-#define MSCB_LIBRARY_VERSION   "1.8.0"
-#define MSCB_PROTOCOL_VERSION  "1.8"
+#define MSCB_LIBRARY_VERSION   "1.9.0"
+#define MSCB_PROTOCOL_VERSION  "1.9"
 
 #ifdef _MSC_VER                 // Windows includes
 
@@ -2717,7 +2720,7 @@ int mscb_flash(int fd, int adr)
 
 /*------------------------------------------------------------------*/
 
-int mscb_upload(int fd, int adr, char *buffer, int size, int debug, int verify)
+int mscb_upload(int fd, int adr, char *buffer, int size, int debug)
 /********************************************************************\
 
   Routine: mscb_upload
@@ -2731,7 +2734,6 @@ int mscb_upload(int fd, int adr, char *buffer, int size, int debug, int verify)
     char *buffer            Buffer with Intel HEX file
     int size                Size of buffer
     int debug               If TRUE, produce detailed debugging output
-    int verify              If TRUE, only verify remote program
 
   Function value:
     MSCB_SUCCESS            Successful completion
@@ -2745,7 +2747,304 @@ int mscb_upload(int fd, int adr, char *buffer, int size, int debug, int verify)
 {
    unsigned char buf[512], crc, ack[2], image[0x10000], *line;
    unsigned int len, ofh, ofl, type, d;
-   int i, status, page, flash_size, n_page, last_page, retry;
+   int i, status, page, subpage, flash_size, n_page, retry, sretry, protected_page;
+   unsigned short ofs;
+   BOOL page_cont[128];
+
+   if (fd > MSCB_MAX_FD || fd < 1 || !mscb_fd[fd - 1].type)
+      return MSCB_INVAL_PARAM;
+
+   if (mrpc_connected(fd))
+      return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_UPLOAD, mscb_fd[fd - 1].remote_fd, adr, buffer, size);
+
+   /* interprete HEX file */
+   memset(image, 0xFF, sizeof(image));
+   line = buffer;
+   flash_size = 0;
+   do {
+      if (line[0] == ':') {
+         sscanf(line + 1, "%02x%02x%02x%02x", &len, &ofh, &ofl, &type);
+         ofs = (ofh << 8) | ofl;
+
+         for (i = 0; i < (int) len; i++) {
+            sscanf(line + 9 + i * 2, "%02x", &d);
+            image[ofs + i] = d;
+         }
+         
+         flash_size += len;
+         line = strchr(line, '\r') + 1;
+         if (line && *line == '\n')
+            line++;
+      } else
+         return MSCB_FORMAT_ERROR;
+
+   } while (*line);
+
+   /* count pages and bytes */
+   for (page = 0; page < sizeof(page_cont)/sizeof(BOOL) ; page++)
+      page_cont[page] = FALSE;
+
+   for (page = n_page = 0; page < sizeof(page_cont)/sizeof(BOOL) ; page++) {
+      /* check if page contains data */
+      for (i = 0; i < 512; i++) {
+         if (image[page * 512 + i] != 0xFF) {
+            page_cont[page] = TRUE;
+            n_page++;
+            break;
+         }
+      }
+   }
+
+   protected_page = 128;
+
+   if (debug)
+      printf("Found %d valid pages (%d bytes) in HEX file\n", n_page, flash_size);
+
+   if (mscb_lock(fd) != MSCB_SUCCESS)
+      return MSCB_MUTEX;
+
+   status = mscb_addr(fd, MCMD_PING16, adr, 10, 0);
+   if (status != MSCB_SUCCESS) {
+      mscb_release(fd);
+      return status;
+   }
+
+   /* send upgrade command */
+   buf[0] = MCMD_UPGRADE;
+   crc = crc8(buf, 1);
+   buf[1] = crc;
+   mscb_out(fd, buf, 2, RS485_FLAG_NO_ACK);
+
+   /* let main routine enter upgrade() */
+   Sleep(500);
+
+   /* send echo command */
+   buf[0] = UCMD_ECHO;
+   mscb_out(fd, buf, 1, RS485_FLAG_LONG_TO);
+
+   /* wait for ready, 1 sec timeout */
+   if (mscb_in(fd, ack, 2, 1000000) != 2) {
+      printf("Error: timeout receiving upgrade acknowledge from remote node\n");
+
+      /* send exit upgrade command, in case node gets to upgrade routine later */
+      buf[0] = UCMD_RETURN;
+      mscb_out(fd, buf, 1, RS485_FLAG_NO_ACK);
+
+      mscb_release(fd);
+      return MSCB_TIMEOUT;
+   }
+
+   if (debug)
+      printf("Received acknowledge for upgrade command\n");
+
+   if (!debug) {
+      printf("\n[");
+      for (i=0 ; i<n_page+1 ; i++)
+         printf(" ");
+      printf("]\r[");
+   }
+
+   /* erase pages up to 64k */
+   for (page = 0; page < 128; page++) {
+      
+      /* check if page contains data */
+      if (!page_cont[page])
+         continue;
+
+      for (retry = 0 ; retry < 10 ; retry++) {
+
+         if (debug)
+            printf("Erase page   0x%04X - ", page * 512);
+         fflush(stdout);
+
+         /* erase page */
+         buf[0] = UCMD_ERASE;
+         buf[1] = page;
+         mscb_out(fd, buf, 2, RS485_FLAG_LONG_TO);
+
+         if (mscb_in(fd, ack, 2, 100000) != 2) {
+            printf("\nError: timeout from remote node for erase page 0x%04X\n", page * 512);
+            continue;
+         }
+
+         if (ack[1] == 0xFF) {
+            /* protected page, so finish */
+            if (debug)
+               printf("found protected page, exit\n");
+            else
+               printf("]      ");
+            fflush(stdout);
+            protected_page = page;
+            goto prog_pages;
+         }
+
+         if (ack[0] != MCMD_ACK) {
+            printf("\nError: received wrong acknowledge for erase page 0x%04X\n", page * 512);
+            continue;
+         }
+
+         if (debug)
+            printf("ok\n");
+
+         break;
+      }
+
+      /* check retries */
+      if (retry == 10) {
+         printf("\nToo many retries, aborting\n");
+         goto prog_error;
+         break;
+      }
+
+      if (!debug)
+         printf("-");
+      fflush(stdout);
+   }
+
+prog_pages:
+
+   if (!debug)
+      printf("\r[");
+
+   /* program pages up to 64k */
+   for (page = 0; page < protected_page; page++) {
+      
+      /* check if page contains data */
+      if (!page_cont[page])
+         continue;
+
+      /* build CRC of page */
+      for (i = crc = 0; i < 512; i++)
+         crc += image[page * 512 + i];
+
+      for (retry = 0 ; retry < 10 ; retry++) {
+
+         if (debug)
+            printf("Program page 0x%04X - ", page * 512);
+         fflush(stdout);
+
+         /* chop down page in 32 byte segments (->USB) */
+         for (subpage = 0; subpage < 16; subpage++) {
+
+            for (sretry = 0 ; sretry < 10 ; sretry++) {
+               /* program page */
+               buf[0] = UCMD_PROGRAM;
+               buf[1] = page;
+               buf[2] = subpage;
+
+               /* extract page from image */
+               for (i = 0; i < 32; i++)
+                  buf[i+3] = image[page * 512 + subpage * 32 + i];
+
+               mscb_out(fd, buf, 32+3, RS485_FLAG_LONG_TO);
+
+               /* read acknowledge */
+               ack[0] = 0;
+               if (mscb_in(fd, ack, 2, 100000) != 2 || ack[0] != MCMD_ACK) {
+                  printf("\nError: timeout from remote node for program page 0x%04X, chunk %d\n", page * 512, i);
+                  //goto prog_error;
+               } else
+                  break; // successful
+            }
+
+            /* check retries */
+            if (sretry == 10) {
+               printf("\nToo many retries, aborting\n");
+               goto prog_error;
+               break;
+            }
+         }
+
+         /* test if successful completion */
+         if (ack[0] != MCMD_ACK)
+            continue;
+
+         if (debug)
+            printf("ok\n");
+
+         /* verify page */
+         if (debug)
+            printf("Verify page  0x%04X - ", page * 512);
+         fflush(stdout);
+
+         /* verify page */
+         buf[0] = UCMD_VERIFY;
+         buf[1] = page;
+         mscb_out(fd, buf, 2, RS485_FLAG_LONG_TO);
+
+         ack[1] = 0;
+         if (mscb_in(fd, ack, 2, 100000) != 2) {
+            printf("\nError: timeout from remote node for verify page 0x%04X\n", page * 512);
+            goto prog_error;
+         }
+
+         /* compare CRCs */
+         if (ack[1] == crc) {
+            if (debug)
+               printf("ok (CRC = 0x%02X)\n", crc);
+            break;
+         }
+
+         if (debug)
+            printf("CRC error (0x%02X != 0x%02X)\n", crc, ack[1]);
+
+      }
+
+      /* check retries */
+      if (retry == 10) {
+         printf("\nToo many retries, aborting\n");
+         goto prog_error;
+         break;
+      }
+
+      if (!debug)
+         printf("=");
+      fflush(stdout);
+   }
+
+   printf("\n");
+
+   /* reboot node */
+   buf[0] = UCMD_REBOOT;
+   mscb_out(fd, buf, 1, RS485_FLAG_NO_ACK);
+
+   if (debug)
+      printf("Reboot node\n");
+
+prog_error:
+   mscb_release(fd);
+   return MSCB_SUCCESS;
+}
+
+/*------------------------------------------------------------------*/
+
+int mscb_verify(int fd, int adr, char *buffer, int size)
+/********************************************************************\
+
+  Routine: mscb_verify
+
+  Purpose: Compare remote firmware with buffer contents
+
+
+  Input:
+    int fd                  File descriptor for connection
+    int adr                 Node address
+    char *buffer            Buffer with Intel HEX file
+    int size                Size of buffer
+
+  Function value:
+    MSCB_SUCCESS            Successful completion
+    MSCB_TIMEOUT            Timeout receiving acknowledge
+    MSCB_CRC_ERROR          CRC error
+    MSCB_INVAL_PARAM        Parameter "size" has invalid value
+    MSCB_MUTEX              Cannot obtain mutex for mscb
+    MSCB_FORMAT_ERROR       Error in HEX file format
+
+\********************************************************************/
+{
+   unsigned char buf[512], crc, ack[2], image[0x10000], *line;
+   unsigned int len, ofh, ofl, type, d;
+   int i, j, n_error, status, page, subpage, flash_size;
    unsigned short ofs;
 
    if (fd > MSCB_MAX_FD || fd < 1 || !mscb_fd[fd - 1].type)
@@ -2777,25 +3076,6 @@ int mscb_upload(int fd, int adr, char *buffer, int size, int debug, int verify)
 
    } while (*line);
 
-   if (debug) {
-      /* count pages and byes */
-      n_page = 0;
-      last_page = -1;
-      for (page = 0; page < 128; page++) {
-         /* check if page contains data */
-         for (i = 0; i < 512; i++) {
-            if (image[page * 512 + i] != 0xFF) {
-               if (page != last_page) {
-                  last_page = page;
-                  n_page++;
-               }
-            }
-         }
-      }
-
-      printf("Found %d valid pages (%d bytes) in HEX file\n", n_page, flash_size);
-   }
-
    if (mscb_lock(fd) != MSCB_SUCCESS)
       return MSCB_MUTEX;
 
@@ -2809,24 +3089,28 @@ int mscb_upload(int fd, int adr, char *buffer, int size, int debug, int verify)
    buf[0] = MCMD_UPGRADE;
    crc = crc8(buf, 1);
    buf[1] = crc;
-   mscb_out(fd, buf, 2, RS485_FLAG_LONG_TO);
+   mscb_out(fd, buf, 2, RS485_FLAG_NO_ACK);
+   
+   /* let main routine enter upgrade() */
+   Sleep(500);
+
+   /* send echo command */
+   buf[0] = UCMD_ECHO;
+   mscb_out(fd, buf, 1, RS485_FLAG_LONG_TO);
 
    /* wait for ready, 1 sec timeout */
    if (mscb_in(fd, ack, 2, 1000000) != 2) {
       printf("Error: timeout receiving upgrade acknowledge from remote node\n");
 
       /* send exit upgrade command, in case node gets to upgrade routine later */
-      buf[0] = 6;
-      mscb_out(fd, buf, 1, RS485_FLAG_LONG_TO);
+      buf[0] = UCMD_RETURN;
+      mscb_out(fd, buf, 1, RS485_FLAG_NO_ACK);
 
       mscb_release(fd);
       return MSCB_TIMEOUT;
    }
 
-   if (debug)
-      printf("Received acknowledge for upgrade command\n");
-
-   /* program pages up to 64k */
+   /* compare pages up to 64k */
    for (page = 0; page < 128; page++) {
       
       /* check if page contains data */
@@ -2836,160 +3120,54 @@ int mscb_upload(int fd, int adr, char *buffer, int size, int debug, int verify)
       if (i == 512)
          continue;
 
-      retry = 0;
+      /* verify page */
+      printf("Verify page  0x%04X - ", page * 512);
+      fflush(stdout);
+      n_error = 0;
 
-      do {
+      /* compare page in 32-byte blocks */
+      for (subpage=0 ; subpage<16 ; subpage++) {
 
          /* build CRC of page */
          for (i = crc = 0; i < 512; i++)
             crc += image[page * 512 + i];
 
-         if (!verify) {
-
-            if (debug)
-               printf("Erase page   0x%04X - ", page * 512);
-            else
-               printf("E");
-            fflush(stdout);
-
-            /* erase page */
-            buf[0] = 2;
-            buf[1] = page;
-            mscb_out(fd, buf, 2, RS485_FLAG_LONG_TO);
-
-            if (mscb_in(fd, ack, 2, 100000) != 2) {
-               printf("\nError: timeout from remote node for erase page 0x%04X\n", page * 512);
-               goto prog_error;
-            }
-
-            if (ack[1] == 0xFF) {
-               /* protected page, so finish */
-               if (debug)
-                  printf("found protected page, exit\n");
-               else
-                  printf("\bX");
-               fflush(stdout);
-               goto prog_error;
-            }
-
-            if (ack[0] != MCMD_ACK) {
-               printf("\nError: received wrong acknowledge for erase page 0x%04X\n", page * 512);
-               goto prog_error;
-            }
-
-            if (debug)
-               printf("ok\n");
-
-            if (debug)
-               printf("Program page 0x%04X - ", page * 512);
-            else
-               printf("\bP");
-            fflush(stdout);
-
-            /* program page */
-            buf[0] = 3;
-            buf[1] = page;
-            mscb_out(fd, buf, 2, RS485_FLAG_NO_ACK);
-
-            /* build CRC of page */
-            for (i = 0; i < 512; i++)
-               buf[i] = image[page * 512 + i];
-
-            /* chop down page in 60 byte segments (->USB) */
-            for (i = 0; i < 8; i++) {
-               mscb_out(fd, buf + i * 60, 60, RS485_FLAG_LONG_TO);
-
-               /* read acknowledge */
-               if (mscb_in(fd, ack, 2, 100000) != 2) {
-                  printf("\nError: timeout from remote node for program page 0x%04X\n", page * 512);
-                  goto prog_error;
-               }
-            }
-
-            /* send remaining 32 bytes */
-            mscb_out(fd, buf + i * 60, 32, RS485_FLAG_LONG_TO);
-
-            /* read acknowledge */
-            if (mscb_in(fd, ack, 2, 100000) != 2) {
-               printf("\nError: timeout from remote node for program page 0x%04X\n", page * 512);
-               goto prog_error;
-            }
-
-            if (ack[0] != MCMD_ACK) {
-               printf("\nError: received wrong acknowledge for program page 0x%04X\n", page * 512);
-               goto prog_error;
-            }
-
-            if (debug)
-               printf("ok\n");
-
-         } // if (!verify)
-
-         /* verify page */
-         if (debug | verify)
-            printf("Verify page  0x%04X - ", page * 512);
-         else
-            printf("\bV");
-         fflush(stdout);
-
-         /* verify page */
-         buf[0] = 4;
+         /* read page */
+         buf[0] = UCMD_READ;
          buf[1] = page;
-         mscb_out(fd, buf, 2, RS485_FLAG_LONG_TO);
+         buf[2] = subpage;
+         mscb_out(fd, buf, 3, RS485_FLAG_LONG_TO);
 
-         ack[1] = 0;
-         if (mscb_in(fd, ack, 2, 100000) != 2) {
+         memset(buf, 0, sizeof(buf));
+         status = mscb_in(fd, buf, 32+3, 100000);
+         if (status != 32+3) {
             printf("\nError: timeout from remote node for verify page 0x%04X\n", page * 512);
-            goto prog_error;
+            goto ver_error;
+          }
+
+         /* compare data */
+         for (j=0 ; j<32 ; j++) {
+            if (buf[j+2] != image[page*512+subpage*32+j]) {
+               n_error++;
+               printf("\nError at 0x%04X: file=0x%02X != remote=0x%02X", page*512+subpage*32+j, 
+                  image[page*512+subpage*32+j], buf[j]);
+            }
          }
+      }
 
-         /* compare CRCs */
-         if (ack[1] == crc) {
-            if (debug | verify)
-               printf("ok (CRC = 0x%02X)\n", crc);
-            break;
-         }
-
-         if (debug)
-            printf("CRC error (0x%02X != 0x%02X)\n", crc, ack[1]);
-
-         if (verify) {
-            printf("Page is different (0x%02X != 0x%02X)\n", crc, ack[1]);
-            break;
-         }
-
-         /* reprogram page until verified */
-         retry++;
-         if (retry == 10) {
-            printf("\nToo many retries, aborting\n");
-            goto prog_error;
-            break;
-         }
-
-      } while (1);
-
-      if (!debug && !verify)
-         printf("\b=");
-      fflush(stdout);
+      if (n_error == 0)
+         printf("OK\n");
+      else
+         printf("\n - %d errors\n", n_error);
    }
 
- prog_error:
-   printf("\n");
+ver_error:
 
-   if (verify) {
-      /* send exit code */
-      buf[0] = 6;
-      mscb_out(fd, buf, 1, RS485_FLAG_NO_ACK);
+   /* send exit code */
+   buf[0] = UCMD_RETURN;
+   mscb_out(fd, buf, 1, RS485_FLAG_NO_ACK);
 
-      printf("Verify finished\n");
-   } else {
-      /* reboot node */
-      buf[0] = 5;
-      mscb_out(fd, buf, 1, RS485_FLAG_NO_ACK);
-
-      if (debug)
-         printf("Reboot node\n");
-   }
+   printf("Verify finished\n");
 
    mscb_release(fd);
    return MSCB_SUCCESS;

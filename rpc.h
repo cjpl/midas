@@ -6,6 +6,9 @@
   Contents:     Header fiel for MSCB RPC funcions
 
   $Log$
+  Revision 1.19  2005/03/08 12:41:30  ritt
+  Version 1.9.0
+
   Revision 1.18  2004/12/10 11:22:05  midas
   Added block functions
 
@@ -152,14 +155,15 @@ typedef struct {
 #define RPC_MSCB_WRITE_BLOCK      11
 #define RPC_MSCB_FLASH            12
 #define RPC_MSCB_UPLOAD           13
-#define RPC_MSCB_READ             14
-#define RPC_MSCB_READ_RANGE       15
-#define RPC_MSCB_READ_BLOCK       16
-#define RPC_MSCB_USER             17
-#define RPC_MSCB_ECHO             18
-#define RPC_MSCB_SET_NAME         19
-#define RPC_MSCB_ADDR             20
-#define RPC_MSCB_GET_DEVICE       21
+#define RPC_MSCB_VERIFY           14
+#define RPC_MSCB_READ             15
+#define RPC_MSCB_READ_RANGE       16
+#define RPC_MSCB_READ_BLOCK       17
+#define RPC_MSCB_USER             18
+#define RPC_MSCB_ECHO             19
+#define RPC_MSCB_SET_NAME         20
+#define RPC_MSCB_ADDR             21
+#define RPC_MSCB_GET_DEVICE       22
 
 /*------------------------------------------------------------------*/
 
