@@ -6,6 +6,9 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.14  1999/04/22 15:32:18  midas
+  db_get_key_info returns the numbe of subkeys for TID_KEYs
+
   Revision 1.13  1999/04/15 09:57:01  midas
   - Added key name to db_get_key_info
   - Added db_notify_clients to db_set_record
@@ -2824,25 +2827,57 @@ INT db_get_key_info(HNDLE hDB, HNDLE hKey, char *name, INT name_size,
 
 #ifdef LOCAL_ROUTINES
 {
-KEY key;
-INT status;
+DATABASE_HEADER  *pheader;
+KEY              *pkey;
+KEYLIST          *pkeylist;
 
-  status = db_get_key(hDB, hKey, &key);
+  if (hDB > _database_entries || hDB <= 0)
+    {
+    cm_msg(MERROR, "db_get_key_info", "invalid database handle");
+    return DB_INVALID_HANDLE;
+    }
 
-  if (status != DB_SUCCESS)
-    return status;
+  if (!_database[hDB-1].attached)
+    {
+    cm_msg(MERROR, "db_get_key_info", "invalid database handle");
+    return DB_INVALID_HANDLE;
+    }
 
-  if ((INT) strlen(key.name)+1 > name_size)
+  if (hKey < sizeof(DATABASE_HEADER))
+    {
+    cm_msg(MERROR, "db_get_key_info", "invalid key handle");
+    return DB_INVALID_HANDLE;
+    }
+
+  db_lock_database(hDB);
+
+  pheader  = _database[hDB-1].database_header;
+  pkey = (KEY *) ((char *) pheader + hKey);
+
+  if ((INT) strlen(pkey->name)+1 > name_size)
     {
     /* truncate name */
-    memcpy(name, key.name, name_size-1);
+    memcpy(name, pkey->name, name_size-1);
     name[name_size] = 0;
     }
   else
-    strcpy(name, key.name);
-  *type       = key.type;
-  *num_values = key.num_values;
-  *item_size  = key.item_size;
+    strcpy(name, pkey->name);
+
+  /* convert "root" to "/" */
+  if (strcmp(name, "root") == 0)
+    strcpy(name, "/");
+
+  *type       = pkey->type;
+  *num_values = pkey->num_values;
+  *item_size  = pkey->item_size;
+
+  if (pkey->type == TID_KEY)
+    {
+    pkeylist = (KEYLIST *) ((char *) pheader + pkey->data);
+    *num_values = pkeylist->num_keys;
+    }
+
+  db_unlock_database(hDB);
 }
 #endif /* LOCAL_ROUTINES */
 
