@@ -18,8 +18,8 @@ OBJS    = $(OBJ_DIR)/midas.o $(OBJ_DIR)/system.o $(OBJ_DIR)/mrpc.o $(OBJ_DIR)/od
 DRIVERS = $(OBJ_DIR)/cd_hv.o $(OBJ_DIR)/cd_multi.o \
 	  $(OBJ_DIR)/ces8210.o $(OBJ_DIR)/lrs1151.o $(OBJ_DIR)/lrs1190.o \
 	  $(OBJ_DIR)/vmeio.o $(OBJ_DIR)/esone.o $(OBJ_DIR)/camacnul.o \
-          $(OBJ_DIR)/camacrpc.o $(OBJ_DIR)/caenv488.o $(OBJ_DIR)/lrs4032.o \
-          $(OBJ_DIR)/caen170a.o $(OBJ_DIR)/null.o 
+      $(OBJ_DIR)/camacrpc.o
+
 LIB     = $(OBJ_DIR)/libmidas.o
 
 #-save-temps
@@ -122,4 +122,4 @@ $(OBJ_DIR)/mtest.o:     $(DRV_DIR)/mtest.c
 #			 $(OBJ_DIR)/lrs4032.o $(OBJ_DIR)/caen170a.o 
 
 clean:
-	rm -f $(OBJS) *~ \#*
+	rm -f $(OBJ_DIR)/*.o *~ \#*
