@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.21  1999/07/12 11:22:51  midas
+  Added tests
+
   Revision 1.20  1999/07/02 13:40:53  midas
   Write periodic and slow events always to ODB, not only every second
 
@@ -247,6 +250,8 @@ BOOL  out_gzip;
 INT   out_format;
 BOOL  out_append;
 
+void update_stats();
+
 /*---- ODB records -------------------------------------------------*/
 
 #define ANALYZER_REQUEST_STR "\
@@ -447,6 +452,97 @@ static EVENT_DEF *event_def=NULL;
       db_find_key(hDB, hKey, "Variables", &event_def[index].hDefKey);
       return &event_def[index];
       }
+    }
+}
+
+/*-- functions for internal tests ----------------------------------*/
+
+ANA_TEST **tl;
+int      n_test = 0;
+
+void test_register(ANA_TEST *t)
+{
+int i;
+
+  /* check if test already registered */
+  for (i=0 ; i<n_test ; i++)
+    if (tl[i] == t)
+      break;
+  if (i<n_test)
+    {
+    t->registered = TRUE;
+    return;
+    }
+
+  /* allocate space for pointer to test */
+  if (n_test == 0)
+    {
+    tl = malloc(2*sizeof(void *));
+
+    /* define "always true" test */
+    tl[0] = malloc(sizeof(ANA_TEST));
+    strcpy(tl[0]->name, "Always true");
+    tl[0]->count = 0;
+    tl[0]->value = TRUE;
+    tl[0]->registered = TRUE;
+    n_test++;
+    }
+  else
+    tl = realloc(tl, (n_test+1)*sizeof(void *));
+
+  tl[n_test] = t;
+  t->count = 0;
+  t->value = FALSE;
+  t->registered = TRUE;
+
+  n_test++;
+}
+
+void test_clear()
+{
+int i;
+
+  /* clear all tests in interal list */
+  for (i=0 ; i<n_test ; i++)
+    {
+    tl[i]->count = 0;
+    tl[i]->value = FALSE;
+    }
+}
+
+void test_reset()
+{
+int i;
+
+  /* reset all tests to FALSE except "always true" test */
+  for (i=1 ; i<n_test ; i++)
+    tl[i]->value = FALSE;
+}
+
+void test_increment()
+{
+int i;
+
+  /* increment test counters based on their value and reset them */
+  for (i=0 ; i<n_test ; i++)
+    {
+    if (tl[i]->value)
+      tl[i]->count++;
+    if (i>0)
+      tl[i]->value = FALSE;
+    }
+}
+
+void test_write()
+{
+int  i;
+char str[256];
+
+  /* write all test counts to /analyzer/tests/<name> */
+  for (i=0 ; i<n_test ; i++)
+    {
+    sprintf(str, "/%s/Tests/%s", analyzer_name, tl[i]->name);
+    db_set_value(hDB, 0, str, &tl[i]->count, sizeof(DWORD), 1, TID_DWORD);
     }
 }
 
@@ -1120,7 +1216,7 @@ INT        lrec;
 
     }
 
-  /* clear histos and N-tuples */
+  /* clear histos, N-tuples and tests */
   if (clp.online && out_info.clear_histos)
     {
     for (i=0 ; analyze_request[i].event_name[0] ; i++)
@@ -1128,6 +1224,8 @@ INT        lrec;
         if (HEXIST(analyze_request[i].ar_info.event_id))
           HRESET(analyze_request[i].ar_info.event_id, " ");
     HRESET(0, " ");
+
+    test_clear();
     }
 
   /* open output file if not already open (append mode) and in offline mode */
@@ -1381,6 +1479,9 @@ INT i, status, n_bytes;
           cm_yield(100);
         } while (n_bytes > 0);
       } 
+
+  /* update statistics */
+  update_stats();
 
   status = eor(rn, error);
   if (status != SUCCESS)
@@ -2187,6 +2288,9 @@ EVENT_DEF    *event_def;
       }
     }
 
+  /* increment tests */
+  test_increment();
+
   /* write resulting event */
   if (out_file)
     {
@@ -2414,6 +2518,9 @@ DWORD    actual_time;
 
   /* propagate new statistics to ODB */
   db_send_changed_records();
+
+  /* save tests in ODB */
+  test_write();
 
   last_time = actual_time;
 }
