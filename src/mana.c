@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.43  1999/11/29 11:27:23  midas
+  Made HBOOK record size LREC changable via command line parameter -L
+
   Revision 1.42  1999/11/29 09:14:45  midas
   Do a automatic cleanup if running offline
 
@@ -199,7 +202,7 @@ extern int QUEST[100];
 
 extern INT pawc_size;
 
-/* HBOOK record size */
+/* default HBOOK record size */
 #define HBOOK_LREC 8190
 
 /* command line parameters */
@@ -215,6 +218,7 @@ struct {
   char  config_file_name[10][256];
   char  param[10][256];
   BOOL  rwnt;
+  INT   lrec;
   BOOL  debug;
   BOOL  verbose;
   BOOL  quiet;
@@ -304,6 +308,10 @@ struct {
   {'l', 
    "              If set, don't load histos from last.rz when running online.",
    &clp.no_load, TID_BOOL, 0 },
+
+  {'L', 
+   "              HBOOK LREC size. Default is 8190.",
+   &clp.lrec, TID_INT, 0 },
 
   {'D', 
    "              Start analyzer as a daemon in the background (UNIX only).",
@@ -1371,7 +1379,7 @@ INT        lrec;
       /* open output file */
       if (out_format == FORMAT_HBOOK)
         {
-        lrec = HBOOK_LREC;
+        lrec = clp.lrec;
 #ifdef extname
         quest_[9] = 65000;
 #else
@@ -3351,6 +3359,9 @@ INT status;
 
   /* get default from environment */
   cm_get_environment(clp.host_name, clp.exp_name);
+
+  /* set default lrec size */
+  clp.lrec = HBOOK_LREC;
 
   /* read in command line parameters into clp structure */
   status = getparam(argc, argv);
