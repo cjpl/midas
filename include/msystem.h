@@ -7,6 +7,9 @@
                 routines
 
   $Log$
+  Revision 1.41  2004/07/21 05:41:23  pierre
+  fix dox doc
+
   Revision 1.40  2004/05/07 19:40:11  midas
   Replaced min/max by MIN/MAX macros
 
@@ -150,7 +153,7 @@ The Midas System include file
 
 /** @defgroup msystemincludecode The msystem.h & system.c
  */
-/** @defgroup msdefineh System #define
+/** @defgroup msdefineh System Define
  */
 /** @defgroup msmacroh System Macros
  */

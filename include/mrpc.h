@@ -8,6 +8,9 @@
   Contents:     Symbolic constants for internal RPC functions
 
   $Log$
+  Revision 1.21  2004/07/21 05:37:48  pierre
+  fix dox doc
+
   Revision 1.20  2004/01/28 01:21:44  pierre
   fix double slash for VxWorks
 
@@ -75,7 +78,7 @@ The mrpc include file
 
 /** @defgroup mrpcincludecode The mrpc.h & mrpc.c
  */
-/** @defgroup mrpcdefineh RPC #define 
+/** @defgroup mrpcdefineh RPC Define 
  */
 
 /**dox***************************************************************/

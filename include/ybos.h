@@ -10,6 +10,9 @@
   date        by    modification
   ---------   ---   ------------------------------------------------
 *  $Log$
+*  Revision 1.25  2004/07/21 05:43:58  pierre
+*  fix dox doc
+*
 *  Revision 1.24  2004/01/13 00:51:23  pierre
 *  fix dox comment for vxworks
 *
@@ -79,7 +82,7 @@ The YBOS include file
 
 /** @defgroup ybosincludecode The ybos.h & ybos.c
  */
-/** @defgroup ybosdefineh YBOS #define 
+/** @defgroup ybosdefineh YBOS Define 
  */
 /** @defgroup ybosmacroh YBOS Macros 
  */
