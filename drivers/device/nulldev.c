@@ -7,6 +7,9 @@
                 template to write a read device driver
 
   $Log$
+  Revision 1.3  2003/05/09 10:33:52  midas
+  Fixed bug with CMD_SET_ALL
+
   Revision 1.2  2002/06/06 07:50:12  midas
   Implemented scheme with DF_xxx flags
 
@@ -137,21 +140,21 @@ char str[80];
 
 /*----------------------------------------------------------------------------*/
 
-INT nulldev_set_all(NULLDEV_INFO *info, INT channels, float value)
+INT nulldev_set_all(NULLDEV_INFO *info, INT channels, float *value)
 {
 int  i;
 char str[1000];
 
-  /* put here some optimized form of setting all channels to one value like ...*/
+  /* put here some optimized form of setting all channels simultaneously like ...*/
   strcpy(str, "SETALL ");
   for (i=0 ; i<min(info->num_channels, channels) ; i++)
-    sprintf(str+strlen(str), "%lf ", value);
+    sprintf(str+strlen(str), "%lf ", value[i]);
   BD_PUTS(str);
   BD_GETS(str, sizeof(str), ">", DEFAULT_TIMEOUT);
 
   /* simulate writing by storing values in local array */
   for (i=0 ; i<min(info->num_channels, channels) ; i++)
-    info->array[i] = value;
+    info->array[i] = value[i];
 
   return FE_SUCCESS;
 }
@@ -236,15 +239,15 @@ void    *info, *bd;
     case CMD_SET:
       info = va_arg(argptr, void *);
       channel = va_arg(argptr, INT);
-      value   = (float) va_arg(argptr, double);
+      value   = (float) va_arg(argptr, double); // floats are passed as double
       status = nulldev_set(info, channel, value);
       break;
 
     case CMD_SET_ALL:
       info = va_arg(argptr, void *);
       channel = va_arg(argptr, INT);
-      value   = (float) va_arg(argptr, double);
-      status = nulldev_set_all(info, channel, value);
+      pvalue   = (float *) va_arg(argptr, float *);
+      status = nulldev_set_all(info, channel, pvalue);
       break;
 
     case CMD_GET:
