@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.78  1999/10/15 12:15:52  midas
+  Added daemon function
+
   Revision 1.77  1999/10/15 10:54:03  midas
   Changed column width in elog page
 
@@ -5513,12 +5516,14 @@ INT                  last_time=0;
 main(int argc, char *argv[])
 {
 int i;
-int tcp_port = 80;
+int tcp_port = 80, daemon = FALSE;
 
   /* parse command line parameters */
   for (i=1 ; i<argc ; i++)
     {
-    if (argv[i][0] == '-')
+    if (argv[i][0] == '-' && argv[i][1] == 'D')
+      daemon = TRUE;
+    else if (argv[i][0] == '-')
       {
       if (i+1 >= argc || argv[i+1][0] == '-')
         goto usage;
@@ -5527,12 +5532,18 @@ int tcp_port = 80;
       else
         {
 usage:
-        printf("usage: %s [-p port]\n", argv[0]);
+        printf("usage: %s [-p port] [-D]\n", argv[0]);
         return 0;
         }
       }
     }
   
+  if (daemon)
+    {
+    printf("Becoming a daemon...\n");
+    ss_daemon_init();
+    }
+
   server_loop(tcp_port);
 
   return 0;
