@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.99  2000/03/08 22:42:01  midas
+  Fixed problem with elog froms and several experiments
+
   Revision 1.98  2000/03/03 01:45:13  midas
   Added web password for mhttpd, added webpasswd command in odbedit
 
@@ -565,7 +568,7 @@ void redirect(char *path)
 
   if (exp_name[0])
     {
-    if (path[0] == '?')
+    if (strchr(path, '?'))
       rsprintf("Location: %s%s&exp=%s\n\n<html>redir</html>\r\n", mhttpd_url, path, exp_name);
     else
       rsprintf("Location: %s%s?exp=%s\n\n<html>redir</html>\r\n", mhttpd_url, path, exp_name);
