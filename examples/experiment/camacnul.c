@@ -16,6 +16,23 @@
  *     
  *  Author:  Pierre-Andre Amaudruz Data Acquisition Group
  * 
+ *  $Log$
+ *  Revision 1.3  1998/10/29 09:39:12  midas
+ *  Copied file from /midas/drivers
+ *
+ *  Revision 1.5  1998/10/23 14:21:49  midas
+ *  - Modified version scheme from 1.06 to 1.6.0
+ *  - cm_get_version() now returns versino as string
+ *
+ *  Revision 1.4  1998/10/12 09:43:11  midas
+ *  -SR- Changed header comment
+ *
+ *  Revision 1.3  1998/10/12 09:30:48  midas
+ *  -SR- cam_lam_read returns always 1 (needed for test frontends)
+ *
+ *  Revision 1.2  1998/10/09 22:57:13  midas
+ *  -PAA- int to DWORD *lam
+ *
  *  Revision 1.0  1998        Pierre	 Initial revision
  *
  *------------------------------------------------------------------------ */
@@ -84,9 +101,9 @@ INLINE void camec_sa(const int ext, const int f, const int r){}
 INLINE void camec_sn(const int ext, const int f, const int r){}
 INLINE void cam_interrupt_enable(void){}
 INLINE void cam_interrupt_disable(void){}
-INLINE void cam_interrupt_attach(void (*isr)()){}
+INLINE void cam_interrupt_attach(void (*isr)(void)){}
 INLINE void cam_interrupt_detach(void){}
 INLINE void cam_glint_enable(void){}
 INLINE void cam_glint_disable(void){}
-INLINE void cam_glint_attach(int lam, void (*isr)()){}
+INLINE void cam_glint_attach(int lam, void (*isr)(void)){}
 INLINE void cam_glint_detach(){}
