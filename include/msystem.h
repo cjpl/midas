@@ -7,6 +7,10 @@
                 routines
 
   $Log$
+  Revision 1.12  1999/06/23 09:59:00  midas
+  Added dm_task and dm_buffer_time_get
+
+
   Revision 1.11  1999/04/30 13:19:53  midas
   Changed inter-process communication (ss_resume, bm_notify_clients, etc)
   to strings so that server process can receive it's own watchdog produced
@@ -556,6 +560,8 @@ EVENT_HEADER EXPRT *dm_pointer_get(void);
 INT  EXPRT dm_pointer_increment(INT buffer_handle, INT event_size);
 INT  EXPRT dm_area_send(void);
 INT  EXPRT dm_area_flush(void);
+INT  EXPRT dm_task(void *pointer);
+DWORD EXPRT dm_buffer_time_get (void);
 INT  EXPRT dm_async_area_send(void *pointer);
 /*---- Include RPC identifiers -------------------------------------*/
 
