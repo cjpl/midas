@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.198  2003/11/24 08:22:46  midas
+  Changed timeouts from INT to DWORD, added ignore_timeout to cm_cleanup, adde '-f' flag to ODBEdit 'cleanup'
+
   Revision 1.197  2003/11/20 11:29:44  midas
   Implemented db_check_record and use it in most places instead of db_create_record
 
@@ -2113,7 +2116,7 @@ char            name[NAME_LENGTH];
 
 INT cm_set_client_info(HNDLE hDB, HNDLE *hKeyClient, char *host_name,
                        char *client_name, INT hw_type, char *password,
-                       INT watchdog_timeout)
+                       DWORD watchdog_timeout)
 /********************************************************************\
 
   Routine: cm_set_client_info
@@ -2128,7 +2131,7 @@ INT cm_set_client_info(HNDLE hDB, HNDLE *hKeyClient, char *host_name,
     INT   hw_type           Hardware type returned by
                             rpc_get_option(RPC_OHW_TYPE)
     char  *passoword        MIDAS password
-    INT   watchdog_timeout  Default watchdog timeout, can be overwritten
+    DWORD watchdog_timeout  Default watchdog timeout, can be overwritten
                             by ODB setting /programs/<name>/Watchdog timeout
 
   Output:
@@ -2532,7 +2535,7 @@ char str[256];
 
 INT cm_connect_experiment1(char *host_name, char *exp_name,
                            char *client_name, void (*func)(char*),
-                           INT odb_size, INT watchdog_timeout)
+                           INT odb_size, DWORD watchdog_timeout)
 /********************************************************************\
 
   Routine: cm_connect_experiment1
@@ -3271,7 +3274,7 @@ INT cm_get_experiment_mutex(INT *mutex_alarm, INT *mutex_elog)
 
 /*------------------------------------------------------------------*/
 
-INT cm_set_watchdog_params(BOOL call_watchdog, INT timeout)
+INT cm_set_watchdog_params(BOOL call_watchdog, DWORD timeout)
 /********************************************************************\
 
   Routine: cm_set_watchdog_params
@@ -3436,7 +3439,7 @@ INT i;
 
 /*------------------------------------------------------------------*/
 
-INT cm_get_watchdog_params(BOOL *call_watchdog, INT *timeout)
+INT cm_get_watchdog_params(BOOL *call_watchdog, DWORD *timeout)
 /********************************************************************\
 
   Routine: cm_get_watchdog_params
@@ -3465,7 +3468,7 @@ INT cm_get_watchdog_params(BOOL *call_watchdog, INT *timeout)
 
 /*------------------------------------------------------------------*/
 
-INT cm_get_watchdog_info(HNDLE hDB, char *client_name, INT *timeout, INT *last)
+INT cm_get_watchdog_info(HNDLE hDB, char *client_name, DWORD *timeout, DWORD *last)
 /********************************************************************\
 
   Routine: cm_get_watchdog_info
@@ -3477,8 +3480,8 @@ INT cm_get_watchdog_info(HNDLE hDB, char *client_name, INT *timeout, INT *last)
     char   *client_name     ODB client name
 
   Output:
-    INT    *timeout         Timeout for this application in seconds
-    INT    *last            Last time watchdog was called in msec
+    DWORD  *timeout         Timeout for this application in seconds
+    DWORD  *last            Last time watchdog was called in msec
 
   Function value:
     CM_SUCCESS              Successful completion
@@ -5132,7 +5135,7 @@ BUFFER_CLIENT   *pbclient, *pbctmp;
 DATABASE_HEADER *pdbheader;
 DATABASE_CLIENT *pdbclient;
 KEY             *pkey;
-INT             actual_time, interval;
+DWORD           actual_time, interval;
 INT             client_pid;
 INT             i, j, k, nc, status;
 BOOL            bDeleted, time_changed, wrong_interval;
@@ -5536,13 +5539,15 @@ char   client_name[NAME_LENGTH];
 
 /*------------------------------------------------------------------*/
 
-INT cm_cleanup(char *client_name)
+INT cm_cleanup(char *client_name, BOOL ignore_timeout)
 /********************************************************************\
 
   Routine: cm_cleanup
 
   Input:
     char   name             Client name, if zero check all clients
+    BOOL   ignore_timeout   If TRUE, ignore a possible increased
+                            timeout defined by each client.
 
   Purpose: Remove hanging clients independent of their watchdog
            timeout.
@@ -5568,6 +5573,13 @@ INT cm_cleanup(char *client_name)
               call to cm_cleanup(<frontend_name>), one can restart
               a frontend immediately.
 
+           Added ignore_timeout on Nov.03. A logger might have an
+           increased tiemout of up to 60 sec. because of tape
+           operations. If ignore_timeout is FALSE, the logger is
+           then not killed if its inactivity is less than 60 sec., 
+           while in the previous implementation it was always
+           killed after 2*WATCHDOG_INTERVAL.
+
   Output:
     none
 
@@ -5590,6 +5602,7 @@ INT             client_pid;
 INT             i, j, k, status, nc;
 BOOL            bDeleted;
 char            str[256];
+DWORD           interval;
 
   /* check buffers */
   for (i=0 ; i<_buffer_entries ; i++)
@@ -5605,19 +5618,24 @@ char            str[256];
         if (j != _buffer[i].client_index && pbclient->pid &&
             (client_name[0] == 0 || strncmp(pbclient->name, client_name, strlen(client_name)) == 0))
           {
+          if (ignore_timeout)
+            interval = 2*WATCHDOG_INTERVAL;
+          else
+            interval = pbclient->watchdog_timeout;
+          
           /* If client process has no activity, clear its buffer entry. */
-          if ((INT) ss_millitime() - pbclient->last_activity > 2*WATCHDOG_INTERVAL)
+          if (ss_millitime() - pbclient->last_activity > interval)
             {
             bm_lock_buffer(i+1);
             str[0] = 0;
 
             /* now make again the check with the buffer locked */
-            if ((INT) ss_millitime() - pbclient->last_activity > 2*WATCHDOG_INTERVAL)
+            if (ss_millitime() - pbclient->last_activity > interval)
               {
-              sprintf(str, "Client %s on %s removed (HARD REMOVE) (idle %1.1lfs,TO %1.0lfs)",
+              sprintf(str, "Client %s on %s removed (via cleanup) (idle %1.1lfs,TO %1.0lfs)",
                       pbclient->name, pheader->name,
-                      ((INT) ss_millitime() - pbclient->last_activity)/1000.0,
-                      (2*WATCHDOG_INTERVAL)/1000.0);
+                      (ss_millitime() - pbclient->last_activity)/1000.0,
+                      interval/1000.0);
 
               /* clear entry from client structure in buffer header */
               memset(&(pheader->client[j]), 0, sizeof(BUFFER_CLIENT));
@@ -5672,21 +5690,25 @@ char            str[256];
             (client_name[0] == 0 || strncmp(pdbclient->name, client_name, strlen(client_name)) == 0))
           {
           client_pid = pdbclient->tid;
+          if (ignore_timeout)
+            interval = 2*WATCHDOG_INTERVAL;
+          else
+            interval = pdbclient->watchdog_timeout;
 
           /* If client process has no activity, clear its buffer entry. */
 
-          if ((INT) ss_millitime() - pdbclient->last_activity > 2*WATCHDOG_INTERVAL)
+          if (ss_millitime() - pdbclient->last_activity > interval)
             {
             bDeleted = FALSE;
             str[0] = 0;
 
             /* now make again the check with the buffer locked */
-            if ((INT) ss_millitime() - pdbclient->last_activity > 2*WATCHDOG_INTERVAL)
+            if (ss_millitime() - pdbclient->last_activity > interval)
               {
-              sprintf(str, "Client %s on %s removed (HARD REMOVE) (idle %1.1lfs,TO %1.0lfs)",
+              sprintf(str, "Client %s on %s removed (via cleanup) (idle %1.1lfs,TO %1.0lfs)",
                            pdbclient->name, pdbheader->name,
-                           ((INT) ss_millitime() - pdbclient->last_activity)/1000.0,
-                           (2*WATCHDOG_INTERVAL)/1000.0);
+                           (ss_millitime() - pdbclient->last_activity)/1000.0,
+                           interval/1000.0);
 
               /* decrement notify_count for open records and clear exclusive mode */
               for (k=0 ; k<pdbclient->max_index ; k++)

@@ -6,6 +6,9 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
+  Revision 1.41  2003/11/24 08:22:46  midas
+  Changed timeouts from INT to DWORD, added ignore_timeout to cm_cleanup, adde '-f' flag to ODBEdit 'cleanup'
+
   Revision 1.40  2003/11/20 11:29:44  midas
   Implemented db_check_record and use it in most places instead of db_create_record
 
@@ -506,7 +509,7 @@ INT convert_flags;
       break;
 
     case RPC_CM_CLEANUP:
-      status = cm_cleanup(CSTRING(0));
+      status = cm_cleanup(CSTRING(0), CBOOL(1));
       break;
 
     case RPC_CM_GET_WATCHDOG_INFO:
