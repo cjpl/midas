@@ -1,0 +1,126 @@
+#
+# Menu commands
+#
+New = Neu
+Edit = Ändern
+Delete = Löschen
+Reply = Antworten
+Find = Finden
+Last day = Letzter Tag
+Last 10 = Letzte 10
+Config = Konfigurieren
+Change Password = Passwort ändern
+Logout = Abmelden
+Help = Hilfe
+Back = Zurück
+Submit = Abschicken
+First = Erster
+First entry = Erster Eintrag
+Last = Letzter
+Last entry = Letzter Eintrag
+Previous = Vorheriger
+Previous entry = Vorheriger Eintrag
+Next = Nächster
+Next entry = Nächster Eintrag
+Copy to = Kopieren nach
+Move to = Verschieben nach
+Save = Speichern
+Cancel = Abbrechen
+
+#
+# Login & password screens
+#
+Wrong password = Falsches Kennwort
+Please login = Bitte Anmelden
+Username = Benutzername
+Password = Kennwort
+Old Password = Altes Kennwort
+New Password = Neues Kennwort
+ELOG password = ELOG Kennwort
+ELOG change password = ELOG Kennwort ändern
+Please enter password to obtain write access = Bitte Kennwort eingeben für Schreibzugriff
+Please enter password to obtain administration access = Bitte Kennwort eingeben für Administrationszugriff
+Several logbooks are defined on this host = Mehrere Logbücher sind auf diesem Computer eingerichtet
+Please select the one to connect to = Bitte wählen Sie eines aus
+Change password for user = Kennwort ändern für Benutzer
+
+#
+# Entry display
+#
+Logged in as = Angemeldet als
+Entry date = Eingabedatum
+This is the last entry
+with = mit
+This is the last entry = Dies ist der letzte Eintrag
+This is the first entry = Dies ist der erste Eintrag
+Email sent to = Email gesendet an
+Email notification suppressed = Email Benachrichtigung untedrückt
+please select = bitte auswählen
+Submit as HTML text = Als HTML Text abschicken
+Suppress Email notification = Email Benachrichtigung unterdrücken
+Resubmit as new entry = Als neuen Eintrag abschicken
+If no attachments are resubmitted, the original ones are kept = Falls keine neuen Anhänge abgeschickt werden, werden die Originale behalten
+To delete an old attachment, enter <code>&lt;delete&gt;</code> in the new attachment field = Um einen alten Anhang zu löschen, bitte <code>&lt;entfernen&gt;</code> eingeban
+<delete> = <entfernen>
+Attachment = Anhang
+
+#
+# Submit entry
+#
+ELOG Error = ELOG Fehler
+Fields marked with = Felder markiert mit
+are required = sind Pflichteinträge
+Error: Attachment file <i>%s</i> invalid, please bo back and enter a proper file name = Fehler: Datei <i>%s</i> ist ungültig, bitte zurück und korrekten Dateinamen eingeben
+New message cannot be written to directory "%s" = Neuer Entrag kann nicht ins Verzeichnig "%s" geschrieben werden
+Please check that it exists and elogd has write access = Bitte überprüfen, ob es existiert und ob elogd Schreibzugriff hat
+Error: Attribute <b>%s</b> not supplied = Fehler: Attribut <b>%s</b> nicht ausgefüllt
+Please go back and enter the <b>%s</b> field = Bitte zurückgehen und das Feld <b>%s</b> ausfüllen
+Original attachment = Alter Anhang
+New attachment = Neuer Anhang
+
+#
+# Find display
+#
+ELOG find = ELOG suchen
+Find = Finden
+Search = Suchen
+Reset Form = Eingabe zurücksetzen
+Summary only = Nur Zusammenfassung
+Show attachments = Anhänge anzeigen
+Printable output = Druckfähige Anzeige
+Sort in reverse order = Sortieren in umgekehrter Reihenfolge
+Start date = Anfangsdatum
+End date = Enddatum
+Year = Jahr
+Text = Text
+(case insensitive substring) = (Teilzeichenkette Großschreibung ignorieren)
+Search all logbooks = Alle Logbücher durchsuchen
+Last %d days = Letzte %d Tage
+Last %d entries = Letzte %d Einträge
+No entries found = Keine Einträge gefunden
+
+#
+# Email, Copy/Move, Delete
+#
+A new entry has been submitted on %s = Ein neuer Eintrag wurde an %s geschickt
+Logbook = Logbuch
+Copy ELog entry = ELog Eintrag Kopieren
+Message moved successfully from "%s" to "%s" = Eintrag erfolgreich von "%s" nach "%s" verschoben
+Message copied successfully from "%s" to "%s" = Eintrag erfolgreich von "%s" nach "%s" kopiert
+Are you sure to delete this message? = Diesen Eintrag wirklich löschen?
+Yes = Ja
+No = Nein
+Message successfully deleted = Eintrag erfolgreich gelöscht
+Error deleting message: status = Fehler beim Löschen: Status
+Goto last message = Zum letzten Eintrag
+
+#
+# Error messages
+#
+Error: Command "<b>%s</b>" not allowed = Fehler: Kommando "<b>%s</b>" nicht erlaubt
+Error: Command "<b>%s</b>" is not allowed for user "<b>%s</b>" = Fehler: Kommando "<b>%s</b>" nicht erlaubt für Benutzer "<b>%s</b>"
+Cannot open file <b>%s</b> = Datei <b>%s</b> kann nicht geöffnet werden
+Cannot write to <b>%s</b> = Datei <b>%s</b> kann nicht geschrieben werden
+No SMTP host defined in [global] section of configuration file = Kein SMTP Host im [global] Bereich der Konfigurationsdatei definiert
+Messags %s cannot be read from logook "%s" = Eintrag %s kann nicht aus dem Logbuch "%s" gelesen werden
+New message cannot be written to directory "%s" = Neuer Eintrag kann nicht ins Verzeichnis "%s" geschrieben werden
