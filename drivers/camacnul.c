@@ -16,14 +16,17 @@
  *     
  *  Author:  Pierre-Andre Amaudruz Data Acquisition Group
  * 
- *  Revision 1.0  1998        Pierre	 Initial revision
  *  $Log$
+ *  Revision 1.4  1998/10/12 09:43:11  midas
+ *  -SR- Changed header comment
+ *
  *  Revision 1.3  1998/10/12 09:30:48  midas
  *  -SR- cam_lam_read returns always 1 (needed for test frontends)
  *
  *  Revision 1.2  1998/10/09 22:57:13  midas
  *  -PAA- int to DWORD *lam
  *
+ *  Revision 1.0  1998        Pierre	 Initial revision
  *
  *------------------------------------------------------------------------ */
 
