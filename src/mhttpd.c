@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.267  2004/05/07 19:40:11  midas
+  Replaced min/max by MIN/MAX macros
+
   Revision 1.266  2004/04/30 19:11:45  midas
   Newly created strings in ODB now get default length of 32
 
@@ -6825,16 +6828,16 @@ void haxis(gdImagePtr im, gdFont * font, int col, int gcol,
       n_sig2 = (int) floor(log(fabs(xmax)) / LN10) -
           (int) floor(log(fabs(label_dx)) / LN10) + 1;
 
-   n_sig1 = max(n_sig1, n_sig2);
-   n_sig1 = max(n_sig1, 4);
+   n_sig1 = MAX(n_sig1, n_sig2);
+   n_sig1 = MAX(n_sig1, 4);
 
    /* determination of maximal width of labels */
    sprintf(str, "%1.*lG", n_sig1, floor(xmin / dx) * dx);
    maxwidth = font->h / 2 * strlen(str);
    sprintf(str, "%1.*lG", n_sig1, floor(xmax / dx) * dx);
-   maxwidth = max(maxwidth, font->h / 2 * strlen(str));
+   maxwidth = MAX(maxwidth, font->h / 2 * strlen(str));
    sprintf(str, "%1.*lG", n_sig1, floor(xmax / dx) * dx + label_dx);
-   maxwidth = max(maxwidth, font->h / 2 * strlen(str));
+   maxwidth = MAX(maxwidth, font->h / 2 * strlen(str));
 
    /* increasing label_dx, if labels would overlap */
    while (maxwidth > 0.7 * label_dx / (xmax - xmin) * width) {
@@ -7104,8 +7107,8 @@ int vaxis(gdImagePtr im, gdFont * font, int col, int gcol,
          n_sig2 = (int) floor(log(fabs(ymax)) / LN10) -
              (int) floor(log(fabs(label_dy)) / LN10) + 1;
 
-      n_sig1 = max(n_sig1, n_sig2);
-      n_sig1 = max(n_sig1, 4);
+      n_sig1 = MAX(n_sig1, n_sig2);
+      n_sig1 = MAX(n_sig1, 4);
 
       /* increasing label_dy, if labels would overlap */
       while (label_dy / (ymax - ymin) * width < 1.5 * font->h) {
@@ -7166,7 +7169,7 @@ int vaxis(gdImagePtr im, gdFont * font, int col, int gcol,
                   }
                } else {
                   sprintf(str, "%1.*lG", n_sig1, y_act);
-                  max_width = max(max_width, (int) (font->w * strlen(str)));
+                  max_width = MAX(max_width, (int) (font->w * strlen(str)));
                }
             } else {
                if (x1 != 0 || y1 != 0) {
@@ -7215,7 +7218,7 @@ int vaxis(gdImagePtr im, gdFont * font, int col, int gcol,
                      last_label_y = ys - font->h / 2;
                   } else {
                      sprintf(str, "%1.*lG", n_sig1, y_act);
-                     max_width = max(max_width, (int) (font->w * strlen(str)));
+                     max_width = MAX(max_width, (int) (font->w * strlen(str)));
                   }
                }
             }
@@ -8032,7 +8035,7 @@ void show_query_page(char *path)
       ltime_end += 3600 * 24;
 
       sprintf(str, "HS/%s?scale=%d&offset=%d", path, (int) (ltime_end - ltime_start),
-              min((int) (ltime_end - ss_time()), 0));
+              MIN((int) (ltime_end - ss_time()), 0));
       redirect(str);
       return;
    }

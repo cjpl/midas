@@ -7,6 +7,9 @@
                 linked with user code to form a complete frontend
 
   $Log$
+  Revision 1.65  2004/05/07 19:40:11  midas
+  Replaced min/max by MIN/MAX macros
+
   Revision 1.64  2004/03/26 09:31:56  midas
   Converted pritnf() to cm_msg() for statistics record error
 
@@ -801,7 +804,7 @@ void update_odb(EVENT_HEADER * pevent, HNDLE hKey, INT format)
                /* adjust for alignment */
                if (key.type != TID_STRING && key.type != TID_LINK)
                   pdata =
-                      (void *) VALIGN(pdata, min(ss_get_struct_align(), key.item_size));
+                      (void *) VALIGN(pdata, MIN(ss_get_struct_align(), key.item_size));
 
                status = db_set_data(hDB, hKeyl, pdata, key.item_size * key.num_values,
                                     key.num_values, key.type);
@@ -1574,7 +1577,7 @@ INT scheduler(void)
 
             /* tcp buffer size evaluation */
             if (optimize) {
-               opt_max = max(opt_max, (INT) max_bytes_per_sec);
+               opt_max = MAX(opt_max, (INT) max_bytes_per_sec);
                ss_printf(0, opt_index, "%6d : %5.1lf %5.1lf", opt_tcp_size,
                          opt_max / 1024.0, max_bytes_per_sec / 1024.0);
                if (++opt_cnt == 10) {

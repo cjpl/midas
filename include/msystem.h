@@ -7,6 +7,9 @@
                 routines
 
   $Log$
+  Revision 1.40  2004/05/07 19:40:11  midas
+  Replaced min/max by MIN/MAX macros
+
   Revision 1.39  2004/01/19 20:20:42  midas
   Made ss_timezone() EXPRTable
 
@@ -337,16 +340,16 @@ extern char **environ;
 #endif
 
 /* min/max/abs macros */
-#ifndef max
-#define max(a,b)            (((a) > (b)) ? (a) : (b))
+#ifndef MAX
+#define MAX(a,b)            (((a) > (b)) ? (a) : (b))
 #endif
 
-#ifndef min
-#define min(a,b)            (((a) < (b)) ? (a) : (b))
+#ifndef MIN
+#define MIN(a,b)            (((a) < (b)) ? (a) : (b))
 #endif
 
-#ifndef abs
-#define abs(a)              (((a) < 0)   ? -(a) : (a))
+#ifndef ABS
+#define ABS(a)              (((a) < 0)   ? -(a) : (a))
 #endif
 
 /* missing tell() for some operating systems */

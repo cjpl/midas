@@ -6,6 +6,9 @@
   Contents:     MIDAS logger program
 
   $Log$
+  Revision 1.73  2004/05/07 19:40:11  midas
+  Replaced min/max by MIN/MAX macros
+
   Revision 1.72  2004/01/08 08:40:10  midas
   Implemented standard indentation
 
@@ -931,7 +934,7 @@ INT dump_write(LOG_CHN * log_chn, EVENT_HEADER * pevent, INT evt_size)
             STR_INC(pbuf, buffer);
 
             /* adjust for alignment */
-            pdata = (void *) VALIGN(pdata, min(ss_get_struct_align(), key.item_size));
+            pdata = (void *) VALIGN(pdata, MIN(ss_get_struct_align(), key.item_size));
 
             for (j = 0; j < key.num_values; j++) {
                db_sprintf(pbuf, pdata, key.item_size, j, key.type);
@@ -1156,7 +1159,7 @@ INT ascii_write(LOG_CHN * log_chn, EVENT_HEADER * pevent, INT evt_size)
             db_get_key(hDB, hKey, &key);
 
             /* adjust for alignment */
-            pdata = (void *) VALIGN(pdata, min(ss_get_struct_align(), key.item_size));
+            pdata = (void *) VALIGN(pdata, MIN(ss_get_struct_align(), key.item_size));
 
             for (j = 0; j < key.num_values; j++) {
                if (pevent->event_id != last_event_id) {
