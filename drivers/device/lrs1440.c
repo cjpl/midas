@@ -6,6 +6,9 @@
   Contents:     LeCroy LRS 1440 High Voltage Device Driver
 
   $Log$
+  Revision 1.4  2001/01/04 12:21:46  midas
+  Fixed bug
+
   Revision 1.3  2001/01/04 12:05:41  midas
   Implemented Bus Driver scheme
 
@@ -121,6 +124,7 @@ LRS1440_INFO *info;
   db_get_record(hDB, hkeydd, &info->settings, &size, 0);
 
   info->num_channels = channels;
+  info->bd = bd;
 
   /* initialize bus driver */
   if (!bd)
