@@ -6,6 +6,9 @@
   Contents:     MIDAS history display utility
 
   $Log$
+  Revision 1.13  2001/12/13 08:50:53  midas
+  Removed tabs in source code
+
   Revision 1.12  2001/12/13 04:31:52  pierre
   add hs_set_path, add -z for path
 
@@ -373,8 +376,8 @@ main(int argc, char *argv[])
   BOOL     list_query;
   DWORD    var_type;
   char     var_name[NAME_LENGTH], file_name[256];
-  char     path_name[256]={'\0'}, path1_name[256]={'\0'};
-  char     start_name[64] ={'\0'};
+  char     *p, path_name[256], path1_name[256];
+  char     start_name[64];
   
   /* turn off system message */
   cm_set_msg_print(0, MT_ALL, puts);
@@ -382,16 +385,19 @@ main(int argc, char *argv[])
   var_name[0] = 0;
   file_name[0] = 0;
   list_query = FALSE;
+  path_name[0] = 0;
+  path1_name[0] = 0;
+  start_name[0] = 0;
   
   if (argc == 1)
-  {
+    {
     status = query_params(&event_id, &start_time, &end_time,
 			  &interval, var_name, &var_type, &var_n_data, &index);
     if (status != HS_SUCCESS)
       return 1;
-  }
+    }
   else
-  {
+    {
     /* at least one argument */
     end_time = ss_time();
     start_time = end_time - 3600;
@@ -402,94 +408,96 @@ main(int argc, char *argv[])
     binary_time = FALSE;
     
     for (i=1 ; i<argc ; i++)
-    {
+      {
       if (argv[i][0] == '-' && argv[i][1] == 'b')
-	binary_time = TRUE;
+	      binary_time = TRUE;
       else if (argv[i][0] == '-' && argv[i][1] == 'l')
-	list_query = TRUE;
+	      list_query = TRUE;
       else if (argv[i][0] == '-')
       {
-	if (i+1 >= argc || argv[i+1][0] == '-')
-	  goto usage;
-	if (strncmp(argv[i],"-e",2) == 0)
-	  event_id = atoi(argv[++i]);
-	else if (strncmp(argv[i],"-v",2) == 0)
-	  strcpy(var_name, argv[++i]);
-	else if (strncmp(argv[i],"-i",2) == 0)
-	  index = atoi(argv[++i]);
-	else if (strncmp(argv[i],"-h",2)==0)
-	  start_time = ss_time() - atoi(argv[++i])*3600;
-	else if (strncmp(argv[i],"-d",2)==0)
-	  start_time = ss_time() - atoi(argv[++i])*3600*24;
-	else if (strncmp(argv[i],"-s",2)==0) {
-	  strcpy(start_name, argv[++i]);
-	  start_time = convert_time(argv[i]);
-	}
-	else if (strncmp(argv[i],"-p",2)==0)
-	  end_time = convert_time(argv[++i]);
-	else if (strncmp(argv[i],"-t",2) == 0)
-	  interval = atoi(argv[++i]);
-	else if (strncmp(argv[i],"-f",2) == 0)
-	  strcpy(path_name, argv[++i]);
-	else if (strncmp(argv[i],"-z",2) == 0)
-	  strcpy(path1_name, argv[++i]);
+	    if (i+1 >= argc || argv[i+1][0] == '-')
+	      goto usage;
+	    if (strncmp(argv[i],"-e",2) == 0)
+	      event_id = atoi(argv[++i]);
+	    else if (strncmp(argv[i],"-v",2) == 0)
+	      strcpy(var_name, argv[++i]);
+	    else if (strncmp(argv[i],"-i",2) == 0)
+	      index = atoi(argv[++i]);
+	    else if (strncmp(argv[i],"-h",2)==0)
+	      start_time = ss_time() - atoi(argv[++i])*3600;
+	    else if (strncmp(argv[i],"-d",2)==0)
+	      start_time = ss_time() - atoi(argv[++i])*3600*24;
+	    else if (strncmp(argv[i],"-s",2)==0) 
+        {
+	      strcpy(start_name, argv[++i]);
+	      start_time = convert_time(argv[i]);
+        }
+	    else if (strncmp(argv[i],"-p",2)==0)
+	      end_time = convert_time(argv[++i]);
+	    else if (strncmp(argv[i],"-t",2) == 0)
+	      interval = atoi(argv[++i]);
+	    else if (strncmp(argv[i],"-f",2) == 0)
+	      strcpy(path_name, argv[++i]);
+	    else if (strncmp(argv[i],"-z",2) == 0)
+	      strcpy(path1_name, argv[++i]);
       }
-      else
+    else
       {
-     usage:
-	printf("\nusage: mhist -e Event ID -v Variable Name\n");
-	printf("         [-i Index] index of variables which are arrays\n");
-        printf("         [-t Interval] minimum interval in sec. between two displayed records\n");
-	printf("         [-h Hours] display between some hours ago and now\n");
-	printf("         [-d Days] display between some days ago and now\n");
-	printf("         [-f File] specify history file explicitly\n");
-	printf("         [-s Start date] specify start date YYMMDD[.HHMM[SS]]\n");
-	printf("         [-p End date] specify end date YYMMDD[.HHMM[SS]]\n");
-	printf("         [-l] list available events and variables\n");
-	printf("         [-b] display time stamp in decimal format\n");
-	printf("         [-z path] path to the location of the history files (def:cwd)\n");
-	return 1;
+usage:
+	    printf("\nusage: mhist -e Event ID -v Variable Name\n");
+	    printf("         [-i Index] index of variables which are arrays\n");
+            printf("         [-t Interval] minimum interval in sec. between two displayed records\n");
+	    printf("         [-h Hours] display between some hours ago and now\n");
+	    printf("         [-d Days] display between some days ago and now\n");
+	    printf("         [-f File] specify history file explicitly\n");
+	    printf("         [-s Start date] specify start date YYMMDD[.HHMM[SS]]\n");
+	    printf("         [-p End date] specify end date YYMMDD[.HHMM[SS]]\n");
+	    printf("         [-l] list available events and variables\n");
+	    printf("         [-b] display time stamp in decimal format\n");
+	    printf("         [-z path] path to the location of the history files (def:cwd)\n");
+	    return 1;
       }
     }
   }
   
-  {
-    /*
-      -z is needed in case the mhist called by script
+  /*
+    -z is needed in case the mhist called by script
 
-      -f /path/file.hst
-      -f file.hst -z /path         =>   file_name = file.hst
-                                        path1_name= /path/
-      -f /path/file.hst -z path1   =>   file_name = file.hst
-                                        path1_name = path1
-     */
-    char *p;
-    p=strrchr(path_name,DIR_SEPARATOR);
-    if (p != NULL) {
-      strcpy(file_name, p+1);
-      *(p+1) = '\0';
-      if (path1_name[0] == '\0')
-	strcpy(path1_name, path_name);
+    -f /path/file.hst
+    -f file.hst -z /path         =>   file_name = file.hst
+                                      path1_name= /path/
+    -f /path/file.hst -z path1   =>   file_name = file.hst
+                                      path1_name = path1
+  */
+  p = strrchr(path_name, DIR_SEPARATOR);
+  if (p != NULL) 
+    {
+    strcpy(file_name, p+1);
+    *(p+1) = '\0';
+    if (path1_name[0] == '\0')
+      strcpy(path1_name, path_name);
     }
-    else {
-      strcpy(file_name, path_name);
-      path_name[0] = '\0';
+  else 
+    {
+    strcpy(file_name, path_name);
+    path_name[0] = '\0';
     }
-  }
 
   /* Set path */
   if (path1_name)
     hs_set_path(path1_name);
 
   /* -l listing only */
-  if (list_query) {
+  if (list_query) 
+    {
     /* Overwrite the file_name if -s is given with -l only
        in order to produce the -l on the specified date */
     if (start_time != 0)
       strcpy(file_name, start_name);
     
     display_vars(file_name);
-  }
+    }
+
   /* -f given takes -e -b */
   else if (file_name[0])
     hs_fdump(file_name, event_id, binary_time);
