@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.75  2001/12/04 12:13:21  midas
+  Fixed "Date format" problem in short listings
+
   Revision 1.74  2001/12/04 08:53:03  midas
   Fixed bugs with resubmit, display locked attributes as text only, added
   -h flag for multi-homes hosts thanks to Scott Erickson
@@ -4762,7 +4765,30 @@ FILE   *f;
           if (atoi(getparam("all")) == 1)
             rsprintf("<td align=center %s bgcolor=%s>%s</td>", nowrap, col, logbook_list[lindex]);
 
-          rsprintf("<td align=center %s bgcolor=%s><font size=%d>%s</font></td>", nowrap, col, size, date);
+          if (getcfg(logbook, "Date format", format))
+            {
+            struct tm ts;
+
+            memset(&ts, 0, sizeof(ts));
+
+            for (i=0 ; i<12 ; i++)
+              if (strncmp(date+4, mname[i], 3) == 0)
+                break;
+            ts.tm_mon = i;
+
+            ts.tm_mday = atoi(date+8);
+            ts.tm_hour = atoi(date+11);
+            ts.tm_min  = atoi(date+14);
+            ts.tm_sec  = atoi(date+17);
+            ts.tm_year = atoi(date+20)-1900;
+
+            mktime(&ts);
+            strftime(str, sizeof(str), format, &ts);
+            }
+          else
+            strcpy(str, date);
+
+          rsprintf("<td align=center %s bgcolor=%s><font size=%d>%s</font></td>", nowrap, col, size, str);
           
           for (i=0 ; i<n_attr ; i++)
             {
