@@ -16,6 +16,7 @@ mkdir $dir
 # checkout files
 echo Checkout files...
 cvs export -d $dir -D now midas
+cvs export -d $dir/../ -D now mxml
 
 # add some files manually
 cp doc/install.txt $dir/INSTALL
@@ -30,7 +31,7 @@ rm $dir/doc/course/*.ppt
 # create midas-x.xx.tar.gz file
 echo Creating archive...
 cd /tmp
-tar -cvzf $archive midas-$version/
+tar -cvzf $archive midas-$version/ mxml/
 
 # remove temporary files
 rm -Rf $dir
