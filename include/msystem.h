@@ -7,6 +7,10 @@
                 routines
 
   $Log$
+  Revision 1.17  1999/12/08 00:34:24  pierre
+  - EXPRT db_un/lock_database.
+  - mod dm_buffer_create arg list.
+
   Revision 1.16  1999/11/09 13:17:00  midas
   Changed shared memory function names to ss_shm_xxx instead ss_xxx_shm
 
@@ -21,7 +25,6 @@
 
   Revision 1.12  1999/06/23 09:59:00  midas
   Added dm_task and dm_buffer_time_get
-
 
   Revision 1.11  1999/04/30 13:19:53  midas
   Changed inter-process communication (ss_resume, bm_notify_clients, etc)
@@ -488,8 +491,8 @@ INT bm_check_buffers(void);
 INT EXPRT bm_remove_event_request(INT buffer_handle, INT request_id);
 
 /*---- online database ----*/
-INT db_lock_database(HNDLE database_handle);
-INT db_unlock_database(HNDLE database_handle);
+INT EXPRT db_lock_database(HNDLE database_handle);
+INT EXPRT db_unlock_database(HNDLE database_handle);
 INT db_update_record(INT hDB, INT hKey, int socket);
 INT db_close_all_records(void);
 INT EXPRT db_flush_database(HNDLE hDB);
@@ -567,7 +570,7 @@ INT  EXPRT eb_increment_pointer(INT buffer_handle, INT event_size);
 INT  EXPRT eb_send_events(BOOL send_all);
 
 /*---- dual memory event buffer routines ----*/
-INT  EXPRT dm_buffer_create(INT size);
+INT  EXPRT dm_buffer_create(INT size, INT usize);
 INT  EXPRT dm_buffer_release(void);
 BOOL EXPRT dm_area_full(void);
 EVENT_HEADER EXPRT *dm_pointer_get(void);
