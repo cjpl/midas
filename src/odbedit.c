@@ -6,6 +6,9 @@
   Contents:     Command-line interface to the MIDAS online data base.
 
   $Log$
+  Revision 1.41  2000/10/23 14:34:38  midas
+  Fixed output of '%' when editing
+
   Revision 1.40  2000/09/29 13:31:14  midas
   ODBEdit cleanup now deletes open record with no client attached to
 
@@ -2332,7 +2335,7 @@ PRINT_INFO      print_info;
             line[0] = 'y';
             }
           else
-	    {
+            {
             db_find_key(hDB, 0, "/Experiment/Edit on start", &hKey);
             do
               {
