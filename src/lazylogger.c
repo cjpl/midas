@@ -6,6 +6,9 @@
   Contents:     Disk to Tape copier for background job
 
   $Log$
+  Revision 1.11  1999/10/18 11:40:53  midas
+  Changed %9.2e[MB] to %1.3lfMB for NEWS message to be the same as for the COPIED msg.
+
   Revision 1.10  1999/10/18 11:31:47  midas
   - Fixed problem that lazy_main returned occasionally before releasing mutex
   - Changed ss_tape_rewind to ss_tape_unload, use increased timeout
@@ -221,7 +224,7 @@ INT lazy_log_update(INT action, INT run, char * label, char * file)
       sprintf(str, "%s: %s %1.3lfMB file COPIED",
               label, lazyst.backfile, lazyst.file_size/1024.0/1024.0);
     else
-      sprintf(str,"%s[%i] %s%c%s  %9.2e[MB] file NEW",
+      sprintf(str,"%s[%i] %s%c%s %1.3lfMB file NEW",
 	      label, lazyst.nfiles,
 	      lazy.path, DIR_SEPARATOR, lazyst.backfile, 
               lazyst.file_size/1024.0/1024.0);
