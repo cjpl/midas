@@ -6,6 +6,9 @@
   Contents:     Electronic logbook utility   
 
   $Log$
+  Revision 1.15  2001/05/23 13:15:34  midas
+  Fixed bug with category
+
   Revision 1.14  2001/05/23 13:04:19  midas
   Added password functionality
 
@@ -135,13 +138,13 @@ int  i, query_attachment;
 
   if (!type[0])
     {
-    printf("Enter message type:\n<");
+    printf("Enter message type:\n");
     sgets(type, 80);
     }
 
   if (!category[0])
     {
-    printf("Enter category:\n<");
+    printf("Enter category:\n");
     sgets(category, 80);
     }
 
