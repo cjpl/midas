@@ -6,6 +6,9 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
+  Revision 1.49  1999/09/27 09:11:13  midas
+  Check domain name in hostname
+
   Revision 1.48  1999/09/27 08:57:29  midas
   Use <pre> for plain text
 
@@ -4745,19 +4748,23 @@ INT                  last_time=0;
 
   gethostname(host_name, sizeof(host_name));
 
-  phe = gethostbyname(host_name);
-  if (phe == NULL)
+  if (strchr(host_name, '.') == NULL)
     {
-    printf("Cannot retrieve host name\n");
-    return;
+    /* if domain name is not in host name, get it from DNS server */
+    phe = gethostbyname(host_name);
+    if (phe == NULL)
+      {
+      printf("Cannot retrieve host name\n");
+      return;
+      }
+    phe = gethostbyaddr(phe->h_addr, sizeof(int), AF_INET);
+    if (phe == NULL)
+      {
+      printf("Cannot retrieve host name\n");
+      return;
+      }
+    strcpy(host_name, phe->h_name);
     }
-  phe = gethostbyaddr(phe->h_addr, sizeof(int), AF_INET);
-  if (phe == NULL)
-    {
-    printf("Cannot retrieve host name\n");
-    return;
-    }
-  strcpy(host_name, phe->h_name);
 
   memcpy((char *)&(bind_addr.sin_addr), phe->h_addr, phe->h_length);
 
