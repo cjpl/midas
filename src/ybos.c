@@ -6,6 +6,9 @@
  *         amaudruz@triumf.ca                            Local:           6234
  * ---------------------------------------------------------------------------
    $Log$
+   Revision 1.46  2003/04/10 15:45:45  pierre
+   Made file compile under C++
+
    Revision 1.45  2002/09/18 16:37:55  pierre
    remove bk_list()
 
@@ -750,7 +753,7 @@ INT   ybk_iterate (DWORD *plrl, YBOS_BANK_HEADER ** pybkh , void ** pdata)
     
     if ((*pybkh)->type > I1_BKTYPE)
     {
-      *pybkh = *pdata = NULL;
+      *pybkh = (YBOS_BANK_HEADER *) *pdata = NULL;
       return (YB_WRONG_BANK_TYPE);
     }
     
@@ -793,7 +796,7 @@ INT   ybk_iterate (DWORD *plrl, YBOS_BANK_HEADER ** pybkh , void ** pdata)
   else
   {
     /* no more bank in this event */
-    *pybkh = *pdata = NULL;
+    *pybkh = (YBOS_BANK_HEADER *) *pdata = NULL;
     return (-1);
   }
 }
@@ -903,7 +906,7 @@ SS_FILE_ERROR       file access error
   }
   
   /* get file size */
-  filestat = malloc( sizeof(struct stat) );
+  filestat = (struct stat *) malloc( sizeof(struct stat) );
   stat(path,filestat);
   filesize = filestat->st_size;
   free(filestat);
@@ -1104,7 +1107,7 @@ error, success
   INT status;
   
   /* allocate YBOS buffer info */
-  log_chn->format_info = malloc(sizeof(YBOS_INFO));
+  log_chn->format_info = (void **) malloc(sizeof(YBOS_INFO));
   
   ybos = (YBOS_INFO *) log_chn->format_info;
   
@@ -1269,7 +1272,7 @@ error, success
     bfsize = datasize + sizeof(YBOS_BANK_HEADER) + 4;   /* +LRL */
     
     /* allocate space */
-    pbktop = malloc(bfsize);
+    pbktop = (DWORD *)malloc(bfsize);
     if (pbktop == NULL)
     {
       cm_msg(MERROR,"ybos_write","malloc error for ASCII dump");
@@ -1558,7 +1561,7 @@ none
   buffer_size = 10000;
   do
   {
-    pevent = malloc(buffer_size);
+    pevent = (EVENT_HEADER *)malloc(buffer_size);
     if (pevent == NULL)
     {
       cm_msg(MERROR, "ybos_odb_log_dump", "Cannot allocate ODB dump buffer");
@@ -1661,7 +1664,7 @@ status : from lower function
   {
     my.fmt           = FORMAT_YBOS;
     my.size          = YBOS_PHYREC_SIZE;    /* in DWORD  */
-    my.pmagta = malloc(32);
+    my.pmagta = (char *)malloc(32);
     if (my.pmagta == NULL)
       return SS_NO_MEMORY;
     my.pyh = (YBOS_PHYSREC_HEADER *) malloc(my.size * 14);
@@ -1687,13 +1690,13 @@ status : from lower function
   {
     my.fmt  = FORMAT_MIDAS;
     my.size = TAPE_BUFFER_SIZE;
-    my.pmp = malloc( my.size);
+    my.pmp = (char *)malloc( my.size);
     if (my.pmp == NULL)
       return SS_NO_MEMORY;
     my.pme = (EVENT_HEADER *)my.pmp;
     
     /* allocate memory for one full event */
-    my.pmrd = malloc(5*MAX_EVENT_SIZE);    /* in bytes */
+    my.pmrd = (char *)malloc(5*MAX_EVENT_SIZE);    /* in bytes */
     ptopmrd = my.pmrd;
     if (my.pmrd == NULL)
       return SS_NO_MEMORY;
@@ -2042,8 +2045,9 @@ SS_SUCCESS         Ok
   else if (type == LOG_TYPE_FTP)
 #ifdef INCLUDE_FTPLIB
   {
-    (int)written = (int)status = ftp_send(ftp_con->data, (char *)prec, (int)nbytes) == (int)nbytes ?
-SS_SUCCESS : SS_FILE_ERROR;
+    *written =
+    (DWORD) status =
+    (INT)  ftp_send(ftp_con->data, (char *)prec, (int)nbytes) == (int)nbytes ? SS_SUCCESS : SS_FILE_ERROR;
     return status;
   }
 #else
@@ -2802,7 +2806,7 @@ YB_SUCCESS        Ok
     my.pme = (EVENT_HEADER *) my.pmp;
     memcpy(my.pmh, my.pme, leftover);
     (char *)my.pme += leftover;
-    my.pmh = *pevent;
+    my.pmh = (EVENT_HEADER *)*pevent;
   }
   else
   {
@@ -2949,11 +2953,11 @@ none
     /* event header --> No event header in YBOS */
     
     /* bank list */
-    status = ybk_list (pevent, banklist);
+    status = ybk_list ((DWORD *)pevent, banklist);
     printf("#banks:%i - Bank list:-%s-\n",status,banklist);
     
     /* check if EVID is present if so display its content */
-    if ((status = ybk_find ((DWORD *)pevent, "EVID", &bklen, &bktyp, (void *)&pybk)) == YB_SUCCESS)
+    if ((status = ybk_find ((DWORD *)pevent, "EVID", &bklen, &bktyp, (void **)&pybk)) == YB_SUCCESS)
     {
       pdata = (DWORD *)((YBOS_BANK_HEADER *)pybk + 1);
       printf("--------- EVID --------- Event# %i ------Run#:%i--------\n"
@@ -2967,7 +2971,7 @@ none
     
     /* display bank content */
     pybk = NULL;
-    while ((ybk_iterate((DWORD *)pevent, &pybk, (void *)&pdata) >=0) && (pybk != NULL))
+    while ((ybk_iterate((DWORD *)pevent, &pybk, (void **)&pdata) >=0) && (pybk != NULL))
       ybos_bank_display(pybk, dsp_fmt);
   }
   else if (data_fmt == FORMAT_MIDAS)
@@ -3045,12 +3049,12 @@ none
     if (data_fmt == FORMAT_MIDAS)
     {
       if (bk_is32(pmbh))
-        midas_bank_display32 (pbk, dsp_fmt);
+        midas_bank_display32 ((BANK32 *)pbk, dsp_fmt);
       else
-        midas_bank_display (pbk, dsp_fmt);
+        midas_bank_display ((BANK *)pbk, dsp_fmt);
     }
     else if (data_fmt == FORMAT_YBOS)
-      ybos_bank_display (pbk, dsp_fmt);
+      ybos_bank_display ((YBOS_BANK_HEADER *)pbk, dsp_fmt);
   }
   return;
 }
@@ -3094,7 +3098,7 @@ none
         if (dsp_fmt == DSP_DEC) printf ("%8.i ",*((DWORD *)pdata));
         if (dsp_fmt == DSP_ASC) printf ("%8.8x ",*((DWORD *)pdata));
         if (dsp_fmt == DSP_HEX) printf ("%8.8x ",*((DWORD *)pdata));
-        ((DWORD *)pdata)++;
+        pdata++;
       }
     } 
   }
