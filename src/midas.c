@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.177  2003/01/14 08:14:32  midas
+  Removed unnecessary bind()
+
   Revision 1.176  2003/01/13 17:07:01  midas
   Fixed problem with missing history in recent files
 
@@ -2685,19 +2688,6 @@ struct hostent       *phe;
   if (sock == -1)
     {
     cm_msg(MERROR, "cm_list_experiments", "cannot create socket");
-    return RPC_NET_ERROR;
-    }
-
-  /* let OS choose any port number */
-  memset(&bind_addr, 0, sizeof(bind_addr));
-  bind_addr.sin_family      = AF_INET;
-  bind_addr.sin_addr.s_addr = 0;
-  bind_addr.sin_port        = 0;
-
-  status = bind(sock, (void *)&bind_addr, sizeof(bind_addr));
-  if (status < 0)
-    {
-    cm_msg(MERROR, "cm_list_experiments", "cannot bind");
     return RPC_NET_ERROR;
     }
 
@@ -9038,7 +9028,9 @@ struct hostent       *phe;
         status = recv(sock, (char *) buffer, sizeof(buffer), 0);
         if (status<=0)
           {
-	  cm_msg(MERROR, "rpc_client_connect", "recv(%d) returned %d, errno: %d (%s)", sizeof(buffer), status, errno, strerror(errno));
+          cm_msg(MERROR, "rpc_client_connect", "recv(%d) returned %d, errno: %d (%s)", 
+            sizeof(buffer), status, errno, strerror(errno));
+         
           /* connection broken -> reset */
           closesocket(sock);
           memset(&_client_connection[i], 0, sizeof(RPC_CLIENT_CONNECTION));
