@@ -6,6 +6,9 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.19  1999/05/06 15:28:18  midas
+  Fixed bug in db_sprintf where '0' was not returned in data size for strings
+
   Revision 1.18  1999/05/05 12:02:34  midas
   Added and modified history functions, added db_set_num_values
 
@@ -5320,7 +5323,7 @@ BOOL  hex = FALSE;
     case TID_STRING:
     case TID_LINK:
       strcpy((char *) data, data_str);
-      *data_size = strlen(data_str);
+      *data_size = strlen(data_str)+1;
       break;
     }
 
