@@ -6,8 +6,8 @@
   Contents:     Header fiel for MSCB funcions
 
   $Log$
-  Revision 1.1  2001/07/20 07:30:46  midas
-  Initial revision
+  Revision 1.2  2001/08/31 11:05:18  midas
+  Added write16 and read16 (for LabView)
 
 
 \********************************************************************/
@@ -116,13 +116,13 @@ extern "C" {
 #endif
 
 /* make functions under WinNT dll exportable */
-#if defined(OS_WINNT) && defined(MIDAS_DLL)
+#if defined(_MSC_VER) && defined(_USRDLL)
 #define EXPRT __declspec(dllexport)
 #else
 #define EXPRT
 #endif
 
-int EXPRT mscb_init(int parport);
+int EXPRT mscb_init(char *device);
 int EXPRT mscb_exit(int fd);
 int EXPRT mscb_reset(int fd);
 int EXPRT mscb_set_baud(int fd, int baud);
@@ -137,6 +137,12 @@ int EXPRT mscb_read(int fd, unsigned char channel, unsigned int *data);
 int EXPRT mscb_read_conf(int fd, unsigned char channel, unsigned int *data);
 int EXPRT mscb_user(int fd, unsigned char *param, int size, 
                     unsigned char *result, int *rsize);
+
+int EXPRT mscb_write16(int parport, unsigned short addr, unsigned char channel, unsigned short data);
+int EXPRT mscb_write_conf16(int parport, unsigned short addr, unsigned char channel, unsigned short data, int perm);
+
+int EXPRT mscb_read16(int parport, unsigned short addr, unsigned char channel, unsigned short *data);
+int EXPRT mscb_read_conf16(int parport, unsigned short addr, unsigned char channel, unsigned short *data);
 
 #ifdef __cplusplus
 }
