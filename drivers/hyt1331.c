@@ -7,6 +7,10 @@
                 following the MIDAS CAMAC Standard under DIRECTIO
 
   $Log$
+  Revision 1.6  1999/02/22 19:09:34  pierre
+  - Remove came_xxx
+  - Fix cam16i_sa() sub address increment.
+
   Revision 1.5  1998/11/25 15:57:01  midas
   Outcommented printf statements for auto subadress increment
 
@@ -331,8 +335,8 @@ INLINE void cam16i_sa(const int c, const int n, const int a, const int f,
       OUTP(adr+10, 48);
     }
   else
-    for (i=a;i<r;i++)
-      cami(c, n, i, f, (*d)++);
+    for (i=0;i<r;i++)
+      cami(c, n, a+i, f, (*d)++);
 }
 
 /*------------------------------------------------------------------*/
@@ -367,8 +371,8 @@ WORD adr, i;
       OUTP(adr+10, 48);
     }
   else
-    for (i=a;i<r;i++)
-      cam24i(c, n, i, f, (*d)++);
+    for (i=0;i<r;i++)
+      cam24i(c, n, a+i, f, (*d)++);
 }
 
 /*------------------------------------------------------------------*/
@@ -856,31 +860,8 @@ INLINE void cam_interrupt_detach(void)
 /*------------------------------------------------------------------*/
 
 INLINE int cam_init_rpc(char *host_name, char *exp_name, char *client_name, char *rpc_server){return 1;}
-INLINE void came_cn(int *ext, const int b, const int c, const int n, const int a) {}
-INLINE void came_ext(const int ext, int *b, int *c, int *n, int *a) {}
-INLINE void cam16ei(const int ext, const int f, WORD *d) {}
-INLINE void cam24ei(const int ext, const int f, DWORD *d) {}
-INLINE void cam16ei_q(const int ext, const int f, WORD *d, int *x, int *q) {}
-INLINE void cam24ei_q(const int ext, const int f, DWORD *d, int *x, int *q) {}
-INLINE void cam16ei_r(const int ext, const int f, WORD **d, const int r) {}
-INLINE void cam24ei_r(const int ext, const int f, DWORD **d, const int r) {}
-INLINE void cam16ei_rq(const int ext, const int f, WORD **d, const int r) {}
-INLINE void cam24ei_rq(const int ext, const int f, DWORD **d, const int r) {}
-INLINE void cam16ei_saq(const int ext, const int f, WORD **d, const int r) {}
-INLINE void cam24ei_saq(const int ext, const int f, DWORD **d, const int r) {}
-INLINE void cam16ei_snq(const int ext, const int f, WORD **d, const int r) {}
-INLINE void cam24ei_snq(const int ext, const int f, DWORD **d, const int r) {}
-INLINE void cam16eo(const int ext, const int f, WORD d) {}
-INLINE void cam24eo(const int ext, const int f, DWORD d) {}
-INLINE void cam16eo_q(const int ext, const int f, WORD d, int *x, int *q) {}
-INLINE void cam24eo_q(const int ext, const int f, DWORD d, int *x, int *q) {}
-INLINE void camec(const int ext, const int f) {}
-INLINE void camec_q(const int ext, const int f, int *x, int *q) {}
-INLINE void camec_sa(const int ext, const int f, const int r) {}
-INLINE void camec_sn(const int ext, const int f, const int r) {}
 
 /*------------------------------------------------------------------*/
-
 
 
 
