@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.95  2000/02/09 08:03:52  midas
+  Fixed bracket indention
+
   Revision 1.94  1999/12/08 16:10:43  midas
   Fixed another watchdog bug causing remote clients to crash
 
@@ -12295,37 +12298,37 @@ BANK32 *pbk32;
 DWORD  dname;
 
   if (bk_is32(event))
-  {
+    {
     pbk32 = (BANK32 *) (((BANK_HEADER *) event)+1);
     strncpy((char *) &dname, name, 4);
     do
-    {
-      if (*((DWORD *) pbk32->name) == dname)
       {
+      if (*((DWORD *) pbk32->name) == dname)
+        {
         *((void **)pdata) = pbk32+1;
         if (tid_size[pbk32->type & 0xFF] == 0)
           return pbk32->data_size;
         return pbk32->data_size / tid_size[pbk32->type & 0xFF];
-      }
+        }
       pbk32 = (BANK32 *) ((char *) (pbk32 + 1) + ALIGN(pbk32->data_size));
-    } while ((DWORD) pbk32 - (DWORD) event < ((BANK_HEADER *) event)->data_size + sizeof(BANK_HEADER));
-  }
+      } while ((DWORD) pbk32 - (DWORD) event < ((BANK_HEADER *) event)->data_size + sizeof(BANK_HEADER));
+    }
   else
-  {
+    {
     pbk = (BANK *) (((BANK_HEADER *) event)+1);
     strncpy((char *) &dname, name, 4);
     do
-    {
-      if (*((DWORD *) pbk->name) == dname)
       {
+      if (*((DWORD *) pbk->name) == dname)
+        {
         *((void **)pdata) = pbk+1;
         if (tid_size[pbk->type & 0xFF] == 0)
           return pbk->data_size;
         return pbk->data_size / tid_size[pbk->type & 0xFF];
-      }
+        }
       pbk = (BANK *) ((char *) (pbk + 1) + ALIGN(pbk->data_size));
-    } while ((DWORD) pbk - (DWORD) event < ((BANK_HEADER *) event)->data_size + sizeof(BANK_HEADER));
-  }
+      } while ((DWORD) pbk - (DWORD) event < ((BANK_HEADER *) event)->data_size + sizeof(BANK_HEADER));
+    }
 
   /* bank not found */
   *((void **)pdata) = NULL;
