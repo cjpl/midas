@@ -9,6 +9,9 @@
                 for SCS-700 PT100/PT1000 unit
 
   $Log$
+  Revision 1.5  2003/07/17 14:24:20  midas
+  Added PID loop
+
   Revision 1.4  2003/07/14 10:19:06  midas
   Added PID loop
 
@@ -35,7 +38,7 @@ char code node_name[] = "SCS-700";
 
 /*---- Define variable parameters returned to the CMD_GET_INFO command ----*/
 
-#undef PID_CONTROL      // activate/deactivate PID control loop
+#define PID_CONTROL      // activate/deactivate PID control loop
 
 /* data buffer (mirrored in EEPROM) */
 
@@ -50,23 +53,26 @@ struct {
   float c_int[N_CHANNEL];
   float p_int[N_CHANNEL];
   float power[N_CHANNEL];
+  short ofs[N_CHANNEL];
   unsigned short period;
 } idata user_data;
 
 MSCB_INFO_VAR code variables[] = {
-  2, UNIT_CELSIUS, 0, 0,           0, "Demand0", &user_data.demand[0],
-  2, UNIT_CELSIUS, 0, 0,           0, "Demand1", &user_data.demand[1],
-  4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp0",   &user_data.temp[0],
-  4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp1",   &user_data.temp[1],
-  4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "CProp0",  &user_data.c_prop[0],
-  4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "CProp1",  &user_data.c_prop[1],
-  4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "CInt0",   &user_data.c_int[0],
-  4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "CInt1",   &user_data.c_int[1],
-  4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "PInt0",   &user_data.p_int[0],
-  4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "PInt1",   &user_data.p_int[1],
-  4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "Power0",  &user_data.power[0],
-  4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "Power1",  &user_data.power[1],
-  2, UNIT_SECOND,  0, 0,           0, "Period",  &user_data.period,
+  2, UNIT_CELSIUS, 0, 0, MSCBF_SIGNED, "Demand0", &user_data.demand[0],
+  2, UNIT_CELSIUS, 0, 0, MSCBF_SIGNED, "Demand1", &user_data.demand[1],
+  4, UNIT_CELSIUS, 0, 0,  MSCBF_FLOAT, "Temp0",   &user_data.temp[0],
+  4, UNIT_CELSIUS, 0, 0,  MSCBF_FLOAT, "Temp1",   &user_data.temp[1],
+  4, UNIT_PERCENT, 0, 0,  MSCBF_FLOAT, "CProp0",  &user_data.c_prop[0],
+  4, UNIT_PERCENT, 0, 0,  MSCBF_FLOAT, "CProp1",  &user_data.c_prop[1],
+  4, UNIT_PERCENT, 0, 0,  MSCBF_FLOAT, "CInt0",   &user_data.c_int[0],
+  4, UNIT_PERCENT, 0, 0,  MSCBF_FLOAT, "CInt1",   &user_data.c_int[1],
+  4, UNIT_PERCENT, 0, 0,  MSCBF_FLOAT, "PInt0",   &user_data.p_int[0],
+  4, UNIT_PERCENT, 0, 0,  MSCBF_FLOAT, "PInt1",   &user_data.p_int[1],
+  4, UNIT_PERCENT, 0, 0,  MSCBF_FLOAT, "Power0",  &user_data.power[0],
+  4, UNIT_PERCENT, 0, 0,  MSCBF_FLOAT, "Power1",  &user_data.power[1],
+  2, UNIT_CELSIUS, 0, 0, MSCBF_SIGNED, "Ofs0",    &user_data.ofs[0],
+  2, UNIT_CELSIUS, 0, 0, MSCBF_SIGNED, "Ofs1",    &user_data.ofs[1],
+  2, UNIT_SECOND,  0, 0,            0, "Period",  &user_data.period,
   0
 };
 
@@ -77,6 +83,7 @@ MSCB_INFO_VAR code variables[] = {
 struct {
   char  power[N_CHANNEL];
   float temp[N_CHANNEL];
+  short ofs[N_CHANNEL];
 } idata user_data;
 
 MSCB_INFO_VAR code variables[] = {
@@ -88,14 +95,22 @@ MSCB_INFO_VAR code variables[] = {
   1, UNIT_PERCENT, 0, 0,           0, "Power5",  &user_data.power[5],
   1, UNIT_PERCENT, 0, 0,           0, "Power6",  &user_data.power[6],
   1, UNIT_PERCENT, 0, 0,           0, "Power7",  &user_data.power[7],
-  4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp0",   &user_data.temp[0],
-  4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp1",   &user_data.temp[1],
-  4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp2",   &user_data.temp[2],
-  4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp3",   &user_data.temp[3],
-  4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp4",   &user_data.temp[4],
-  4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp5",   &user_data.temp[5],
-  4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp6",   &user_data.temp[6],
-  4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp7",   &user_data.temp[7],
+  4, UNIT_CELSIUS, 0, 0,  MSCBF_FLOAT,"Temp0",   &user_data.temp[0],
+  4, UNIT_CELSIUS, 0, 0,  MSCBF_FLOAT,"Temp1",   &user_data.temp[1],
+  4, UNIT_CELSIUS, 0, 0,  MSCBF_FLOAT,"Temp2",   &user_data.temp[2],
+  4, UNIT_CELSIUS, 0, 0,  MSCBF_FLOAT,"Temp3",   &user_data.temp[3],
+  4, UNIT_CELSIUS, 0, 0,  MSCBF_FLOAT,"Temp4",   &user_data.temp[4],
+  4, UNIT_CELSIUS, 0, 0,  MSCBF_FLOAT,"Temp5",   &user_data.temp[5],
+  4, UNIT_CELSIUS, 0, 0,  MSCBF_FLOAT,"Temp6",   &user_data.temp[6],
+  4, UNIT_CELSIUS, 0, 0,  MSCBF_FLOAT,"Temp7",   &user_data.temp[7],
+  2, UNIT_CELSIUS, 0, 0, MSCBF_SIGNED,"Ofs0",    &user_data.ofs[0],
+  2, UNIT_CELSIUS, 0, 0, MSCBF_SIGNED,"Ofs1",    &user_data.ofs[1],
+  2, UNIT_CELSIUS, 0, 0, MSCBF_SIGNED,"Ofs2",    &user_data.ofs[2],
+  2, UNIT_CELSIUS, 0, 0, MSCBF_SIGNED,"Ofs3",    &user_data.ofs[3],
+  2, UNIT_CELSIUS, 0, 0, MSCBF_SIGNED,"Ofs4",    &user_data.ofs[4],
+  2, UNIT_CELSIUS, 0, 0, MSCBF_SIGNED,"Ofs5",    &user_data.ofs[5],
+  2, UNIT_CELSIUS, 0, 0, MSCBF_SIGNED,"Ofs6",    &user_data.ofs[6],
+  2, UNIT_CELSIUS, 0, 0, MSCBF_SIGNED,"Ofs7",    &user_data.ofs[7],
   0
 };
 
@@ -219,8 +234,14 @@ float t;
     /* convert to Ohms (1mA excitation) */
     t = t / 0.001;
   
-    /* convert to degrees, coefficients obtained from table fit (www.lakeshore.com) */
-    t = -2.60315E-7*t*t*t + 0.001249273*t*t + 2.310962*t - 243.5;
+    /* convert to Kelvin, coefficients obtained from table fit (www.lakeshore.com) */
+    t = 5.232935E-7*t*t*t + 0.0009*t*t + 2.357*t + 28.288;
+
+    /* convert to Celsius */
+    t -= 273.15;
+
+    /* correct offset */
+    t += user_data.ofs[channel]/100.0;
 
     DISABLE_INTERRUPTS;
     user_data.temp[channel] = t;
@@ -303,6 +324,9 @@ void do_control(void)
 unsigned char i;
 float p;
 static unsigned long t;
+
+  if (user_data.period == 0)
+    return;
 
   /* once every specified period */
   if (time() > t + 100*user_data.period)
