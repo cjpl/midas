@@ -17,8 +17,14 @@
  *  Author:  Pierre-Andre Amaudruz Data Acquisition Group
  * 
  *  $Log$
- *  Revision 1.4  1999/07/23 07:14:16  midas
- *  Moved updated driver from \midas\drivers
+ *  Revision 1.5  2000/08/21 09:16:10  midas
+ *  Add fe_name in cam_init_rpc()
+ *
+ *  Revision 1.2  2000/08/11 13:41:27  midas
+ *  Changed parameter of rpc_cam_init
+ *
+ *  Revision 1.1  1999/12/20 10:18:55  midas
+ *  Added files
  *
  *  Revision 1.6  1999/02/22 19:02:23  pierre
  *  - Remove came_xxx
@@ -70,7 +76,7 @@ INLINE void camc_q(const int c, const int n, const int a, const int f, int *q){*
 INLINE void camc_sa(const int c, const int n, const int a, const int f, const int r){}
 INLINE void camc_sn(const int c, const int n, const int a, const int f, const int r){}
 INLINE int  cam_init(void){return 1;}
-INLINE int  cam_init_rpc(char *host_name, char *exp_name, char *client_name, char *rpc_server){return 1;}
+INLINE int  cam_init_rpc(char *host_name, char *exp_name, char *fe_name, char *client_name, char *rpc_server){return 1;}
 INLINE void cam_exit(void){}
 INLINE void cam_inhibit_set(const int c){}
 INLINE void cam_inhibit_clear(const int c){}
