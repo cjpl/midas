@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.102  2002/09/18 16:36:24  pierre
+  add bk_list()
+
   Revision 1.101  2002/09/13 07:32:36  midas
   Added client name to cm_cleanup()
 
@@ -480,6 +483,9 @@ typedef          INT       HNDLE;
 #define MAX_OPEN_RECORDS       100   /* number of open DB records   */
 #define MAX_ODB_PATH           256   /* length of path in ODB       */
 #define MAX_EXPERIMENT         32    /* number of different exp.    */
+#define BANKLIST_MAX           32     /* max # of banks in event    */
+#define STRING_BANKLIST_MAX    BANKLIST_MAX * 4 /* for bk_list()    */
+
 
 #define MIDAS_TCP_PORT 1175 /* port under which server is listening */
 
@@ -866,8 +872,10 @@ Convert the coded LAM station to Station number.
 #define CMD_NAME                    105
 
 /* macros for bus driver access */
-#define BD_PUTS(s)       info->bd(CMD_PUTS, info->bd_info, s)
-#define BD_GETS(s,z,p,t) info->bd(CMD_GETS, info->bd_info, s, z, p, t)
+#define BD_GETS(s,z,p,t)   info->bd(CMD_GETS, info->bd_info, s, z, p, t)
+#define BD_READS(s,z,p,t)  info->bd(CMD_READ, info->bd_info, s, z, p, t)
+#define BD_PUTS(s)         info->bd(CMD_PUTS, info->bd_info, s)
+#define BD_WRITES(s)       info->bd(CMD_WRITE, info->bd_info, s)
 
 /* Commands for interrupt events */
 #define CMD_INTERRUPT_ENABLE        100
@@ -1712,6 +1720,7 @@ INT EXPRT bk_size(void *pbh);
 void EXPRT bk_create(void *pbh, char *name, WORD type, void *pdata);
 INT EXPRT bk_delete(void *event, char *name);
 INT EXPRT bk_close(void *pbh, void *pdata);
+INT EXPRT bk_list (void *pbh, char * bklist);
 INT EXPRT bk_locate(void *pbh, char *name, void *pdata);
 INT EXPRT bk_iterate(void *pbh, BANK **pbk, void *pdata);
 INT EXPRT bk_iterate32(void *pbh, BANK32 **pbk, void *pdata);

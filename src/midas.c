@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.169  2002/09/18 16:39:16  pierre
+  add bk_list()
+
   Revision 1.168  2002/09/17 08:58:43  midas
   Fix for watchdog timeout after tape operations
 
@@ -19,7 +22,7 @@
   #if !defined(OS_VXWORKS) for eb_ & hs_ section
 
   Revision 1.164  2002/06/25 19:39:48  pierre
-  doc++ functions
+  doc++ functions  strstr
 
   Revision 1.163  2002/06/25 19:00:36  pierre
   doc++ functions
@@ -13537,6 +13540,77 @@ INT bk_close(void *event, void *pdata)
 }
 
 /*------------------------------------------------------------------*/
+/** @name bk_list()
+\begin{description}
+\item[Description:] extract the MIDAS bank name listing of an event.
+\item[Remarks:] The bklist should be dimensioned with STRING_BANKLIST_MAX
+which corresponds to a max of BANKLIST_MAX banks (midas.h: 32 banks max).
+\item[Example:]
+\begin{verbatim}
+INT adc_calib(EVENT_HEADER *pheader, void *pevent)
+{
+  INT    n_adc, nbanks;
+  WORD   *pdata;
+  char   banklist[STRING_BANKLIST_MAX];
+
+  // Display # of banks and list of banks in the event
+  nbanks = bk_list(pevent, banklist);
+  printf("#banks:%d List:%s\n", nbanks, banklist);
+
+  // look for ADC0 bank, return if not present
+  n_adc = bk_locate(pevent, "ADC0", &pdata);
+  ...
+}
+\end{verbatim}
+
+\end{description}
+@memo fill a string will all the bank names in the event.
+@param event pointer to current composed event
+@param bklist returned ASCII string, has to be booked with STRING_BANKLIST_MAX.
+@return number of bank found in this event.
+*/
+INT bk_list (void *event, char * bklist)
+{ /* Full event */
+  INT    nbk, size;
+  BANK * pmbk = NULL;
+  BANK32 * pmbk32 = NULL;
+  char * pdata;
+
+  /* compose bank list */
+  bklist[0] = 0;
+  nbk = 0;
+  do
+  {
+    /* scan all banks for bank name only */
+    if (bk_is32(event))
+    {
+      size = bk_iterate32(event, &pmbk32, &pdata);
+      if (pmbk32 == NULL)
+        break;
+    }
+    else
+    {
+      size = bk_iterate(event, &pmbk, &pdata);
+      if (pmbk == NULL)
+        break;
+    }
+    nbk++;
+    
+    if (nbk > BANKLIST_MAX)
+    {
+      cm_msg(MINFO,"bk_list","over %i banks -> truncated", BANKLIST_MAX);
+      return (nbk-1);
+    }
+    if (bk_is32(event))
+      strncat (bklist,(char *) pmbk32->name,4);
+    else
+      strncat (bklist,(char *) pmbk->name,4);
+  }
+  while (1);
+  return (nbk);
+}
+
+/*------------------------------------------------------------------*/
 /** @name bk_locate()
     \begin{description}
     \item[Description:] Locates a MIDAS bank of given name inside an event.
@@ -13545,7 +13619,7 @@ INT bk_close(void *event, void *pdata)
     \end{description}
     \begin{verbatim}
     \end{verbatim}
-    @memo loate a bank in event.
+    @memo locate a bank in event.
     @param event pointer to current composed event
     @param name bank name to look for
     @param pdata pointer to data area of bank, NULL if bank not found
