@@ -6,6 +6,9 @@
   Contents:     LeCroy LRS1454/1458 Voltage Device Driver
 
   $Log$
+  Revision 1.12  2003/09/29 08:01:32  midas
+  Added 'zero channels'
+
   Revision 1.11  2002/06/06 08:06:32  midas
   Implemented DF_xx scheme
 
@@ -88,7 +91,7 @@ typedef struct {
 
 /*---- device driver routines --------------------------------------*/
 
-INT lrs1454_setup(LRS1454_INFO *info)
+INT lrs1454_setup(LRS1454_INFO *info, BOOL zero_channels)
 {
 int          status, i;
 char         str[1000];
@@ -138,19 +141,22 @@ char         str[1000];
     return FE_ERR_HW;
     }
   
-  /* enable channels */
-  printf("\n");
-  for (i=0 ; i<(info->num_channels-1)/12+1 ; i++)
+  /* zero channels initially */
+  if (zero_channels)
     {
-    printf("Zero module %d\r", i);
-    fflush(stdout);
-    sprintf(str, "LD L%d DV 0 0 0 0 0 0 0 0 0 0 0 0\r", i);
-    BD_PUTS(str);
-    status = BD_GETS(str, sizeof(str), ">", DEFAULT_TIMEOUT);
-    if (strchr(str, '>') == NULL || strstr(str, "ERROR"))
+    printf("\n");
+    for (i=0 ; i<(info->num_channels-1)/12+1 ; i++)
       {
-      cm_msg(MERROR, "lrs1454_init", "Cannot zero module %d. Please exchange module.", i);
-      return FE_ERR_HW;
+      printf("Zero module %d\r", i);
+      fflush(stdout);
+      sprintf(str, "LD L%d DV 0 0 0 0 0 0 0 0 0 0 0 0\r", i);
+      BD_PUTS(str);
+      status = BD_GETS(str, sizeof(str), ">", DEFAULT_TIMEOUT);
+      if (strchr(str, '>') == NULL || strstr(str, "ERROR"))
+        {
+        cm_msg(MERROR, "lrs1454_init", "Cannot zero module %d. Please exchange module.", i);
+        return FE_ERR_HW;
+        }
       }
     }
 
@@ -210,7 +216,7 @@ LRS1454_INFO *info;
   if (!bd)
     return FE_ERR_ODB;
 
-  return lrs1454_setup(info);
+  return lrs1454_setup(info, TRUE);
 }
 
 /*----------------------------------------------------------------------------*/
@@ -268,7 +274,7 @@ INT   i, j, status;
     if (strchr(str, '>') == NULL)
       {
       cm_msg(MERROR, "lrs1454_set_all", "LRS1454 cannot set voltages on module %d. Please check device manually.", i);
-      return FE_ERR_HW;
+      return FE_ERR_HW;//
       }
     }
 
@@ -309,7 +315,8 @@ char  str[256], *p;
       do
         {
         printf("Trying to reconnect to LRS1454...\n");
-        status = lrs1454_setup(info);
+        status = lrs1454_setup(info, FALSE);
+        cm_yield(0);
         } while (status != SUCCESS);
 
       printf("...success\n");
