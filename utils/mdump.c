@@ -5,6 +5,9 @@
    Contents:     Dump event on screen with MIDAS or YBOS data format
  
    $Log$
+   Revision 1.18  2002/05/15 00:23:26  pierre
+   string length for Format
+
    Revision 1.17  2002/05/08 19:54:41  midas
    Added extra parameter to function db_get_value()
 
@@ -821,7 +824,7 @@ int main(unsigned int argc,char **argv)
 	sprintf(strtmp,"/equipment/%s/common/Trigger mask",key.name);
 	db_get_value(hDB, 0, strtmp, &(eq[l]).msk, &size, TID_WORD, TRUE);
 	
-	size = 8;
+	size = sizeof(str);
 	sprintf(strtmp,"/equipment/%s/common/Format",key.name);
 	db_get_value(hDB, 0, strtmp, str, &size, TID_STRING, TRUE);
 	if (equal_ustring(str, "YBOS"))
