@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.245  2003/05/02 09:03:01  midas
+  Fixed buffer overflows by strlcpy()
+
   Revision 1.244  2003/04/25 14:37:43  midas
   Fixed compiler warnings
 
@@ -939,7 +942,7 @@ int i;
     if (strlen(value) >= TEXT_SIZE)
       printf("Error: parameter value too big\n");
 
-    strncpy(_text, value, TEXT_SIZE);
+    strlcpy(_text, value, TEXT_SIZE);
     _text[TEXT_SIZE-1] = 0;
     return;
     }
@@ -955,7 +958,7 @@ int i;
     if (strlen(value) >= VALUE_SIZE)
       printf("Error: parameter value too big\n");
 
-    strncpy(_value[i], value, VALUE_SIZE);
+    strlcpy(_value[i], value, VALUE_SIZE);
     _value[i][VALUE_SIZE-1] = 0;
     }
   else
@@ -10056,7 +10059,7 @@ int  n;
 
   initparam();
 
-  strncpy(path, header+1, sizeof(path)); /* strip leading '/' */
+  strlcpy(path, header+1, sizeof(path)); /* strip leading '/' */
   path[255] = 0;
   if (strchr(path, '?'))
     *strchr(path, '?') = 0;
@@ -10100,7 +10103,7 @@ int  n;
             *strchr(p, '\"') = 0;
 
           /* set attachment filename */
-          strcpy(file_name, p);
+          strlcpy(file_name, p, sizeof(file_name));
           sprintf(str, "attachment%d", n);
           setparam(str, file_name);
           }

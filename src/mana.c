@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.97  2003/05/02 09:03:01  midas
+  Fixed buffer overflows by strlcpy()
+
   Revision 1.96  2003/04/30 12:58:50  midas
   Load HBOOK histos after booking
 
@@ -6040,7 +6043,7 @@ int rargc;
   if (strstr(out_info.histo_dump_filename, ".rz"))
     strcpy(out_info.histo_dump_filename, "his%05d.root");
 
-  db_set_record(hDB, hkey, &out_info, size, 0);
+  db_set_record(hDB, hkey, &out_info, sizeof(out_info), 0);
 
 #ifdef OS_LINUX
   /* start socket server */
@@ -6058,7 +6061,7 @@ int rargc;
   if (strstr(out_info.histo_dump_filename, ".root"))
     strcpy(out_info.histo_dump_filename, "his%05d.rz");
 
-  db_set_record(hDB, hkey, &out_info, size, 0);
+  db_set_record(hDB, hkey, &out_info, sizeof(out_info), 0);
 #endif
 
 #ifdef HAVE_HBOOK
@@ -6079,7 +6082,6 @@ int rargc;
       HLIMIT(pawc_size/4);
     }
 #endif /* HAVE_HBOOK */
-
 
 #ifdef HAVE_ROOT
   /* load histos from last.xxx */

@@ -14,6 +14,9 @@
                 Brown, Prentice Hall
 
   $Log$
+  Revision 1.71  2003/05/02 09:03:01  midas
+  Fixed buffer overflows by strlcpy()
+
   Revision 1.70  2003/04/30 06:47:44  midas
   Fixed missing variable for NT
 
@@ -1444,7 +1447,7 @@ fd_set readfds;
     /* child process */
 
     if (getenv("SHELL"))
-      strcpy(shell, getenv("SHELL"));
+      strlcpy(shell, getenv("SHELL"), sizeof(shell));
     else
       strcpy(shell, "/bin/sh");
     execl(shell, shell, 0);

@@ -9,6 +9,9 @@
                 for SCS-210 RS232 node
 
   $Log$
+  Revision 1.8  2003/05/02 09:03:01  midas
+  Fixed buffer overflows by strlcpy()
+
   Revision 1.7  2003/04/11 08:59:10  midas
   Merged channels/config into variables
 
@@ -152,7 +155,7 @@ unsigned char user_func(unsigned char *data_in,
   data_out[0] = data_in[0];
   data_out[1] = data_in[1];
   return 2;
-}
+}            
 
 /*---- User loop function ------------------------------------------*/
 
