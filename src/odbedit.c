@@ -5,7 +5,10 @@
 
   Contents:     Command-line interface to the MIDAS online data base.
 
-  $LOG: odbedit.c,v $
+  $Log$
+  Revision 1.5  1998/10/12 11:00:29  midas
+  Added $Log$ in header
+
 
 \********************************************************************/
 
