@@ -6,6 +6,12 @@
 #  Contents:     Makefile for MIDAS example frontend and analyzer
 #
 #  $Log$
+#  Revision 1.16  2003/04/21 04:04:03  olchansk
+#  add building "ranalyzer" - the ROOT analyzer
+#  replace MANA_LITE with HAVE_HBOOK and HAVE_ROOT
+#  compile HBOOK modules into h*.o, ROOT modules into r*.o
+#  the HBOOK analyzer is still called "analyzer"
+#
 #  Revision 1.15  2003/04/14 13:46:30  midas
 #  Fixed bug that camacnu.o was not compiled after a 'make clean'
 #
@@ -46,14 +52,6 @@
 #  - Add DRIVER selection and UFE option
 #
 #####################################################################
-#
-# Specify the mode of operation for the analyzer
-# #USERFLAGS=-DMANA_LITE  with HBOOK (default)
-# USERFLAGS=-DMANA_LITE  without HBOOK 
-# During the Midas installation, mana.o has to be compiled
-# with the -DMANA_LITE in the case of mana_lite.
-# See the general Makefile.
-#USERFLAGS = -DMANA_LITE
 
 #--------------------------------------------------------------------
 # The following lines contain specific switches for different UNIX
@@ -70,7 +68,7 @@
 #-----------------------------------------
 # This is for Linux
 OSFLAGS = -DOS_LINUX -Dextname
-CFLAGS = -O3
+CFLAGS = -g -O2 -Wall -Wuninitialized
 
 # for f2c, uncomment following:
 #LIBS = -lbsd -lm -lutil /usr/lib/libf2c.a
@@ -79,23 +77,32 @@ CFLAGS = -O3
 FF = g77
 LIBS = -lm -lz -lutil -lnsl
 
+#-----------------------------------------
+ifdef ROOTSYS
+ROOTCFLAGS:= -DHAVE_ROOT -I$(ROOTSYS)/include
+ROOTLIBS:= -Wl,-rpath,$(ROOTSYS)/lib -L$(ROOTSYS)/lib -lCore -lCint -lHist -lTree -lMatrix -ldl
+endif
+
 #-------------------------------------------------------------------
 # The following lines define direcories. Adjust if necessary
 #                 
 DRV_DIR         = ../../drivers
-INC_DIR 	= /usr/local/include
-LIB_DIR 	= /usr/local/lib
+INC_DIR 	= ../../include
+LIB_DIR 	= ../../linux/lib
 #
-# Link with or without CERNLIB
-ifndef USERFLAGS
 CERNLIB_PACK	= /cern/pro/lib/libpacklib.a
-endif
 #
 #-------------------------------------------------------------------
 # List of analyzer modules
-#                 
+#
+# LITE modules for "analyzer"
 MODULES 	= adccalib.o adcsum.o scaler.o
+
+# ROOT modules for the ROOT analyzer "ranalyzer"
 RMODULES 	= radccalib.o radcsum.o rscaler.o
+
+# HBOOK modules for the HBOOK analyzer "hanalyzer"
+HMODULES 	= hadccalib.o hadcsum.o hscaler.o
 
 #-------------------------------------------------------------------
 # Hardware driver can be (camacnul, kcs2926, kcs2927, hyt1331)
@@ -130,34 +137,30 @@ $(UFE): $(LIB) $(LIB_DIR)/mfe.o $(DRIVER).o $(UFE).c
 $(DRIVER).o: $(DRV_DIR)/bus/$(DRIVER).c
 	$(CC) $(CFLAGS) $(OSFLAGS) -c -o $(DRIVER).o $(DRV_DIR)/bus/$(DRIVER).c
 
-analyzer: $(LIB) $(LIB_DIR)/mana.o analyzer.o $(MODULES)
-	$(FF) $(FFLAGS) -o analyzer $(LIB_DIR)/mana.o analyzer.o \
+analyzer: $(LIB) $(LIB_DIR)/mana.o hanalyzer.o $(HMODULES)
+	$(FF) $(FFLAGS) -o $@ $(LIB_DIR)/mana.o hanalyzer.o \
 	$(MODULES) $(CERNLIB_PACK) \
 	$(LIB) $(LDFLAGS) $(LIBS)
 
 ranalyzer: $(LIB) $(LIB_DIR)/rmana.o ranalyzer.o $(RMODULES)
-	$(CXX) $(FFLAGS) -o ranalyzer $(LIB_DIR)/rmana.o ranalyzer.o $(RMODULES) \
-	$(LIB) $(LDFLAGS) $(LIBS)
+	$(CXX) $(FFLAGS) -o $@ $(LIB_DIR)/rmana.o ranalyzer.o $(RMODULES) \
+	$(LIB) $(LDFLAGS) $(ROOTLIBS) $(LIBS)
 
-fal: $(LIB) $(LIB_DIR)/fal.o $(DRV_DIR)/bus/$(DRIVER).o $(UFE).c $(MODULES) $(UFE).o analyzer.o
+fal: $(LIB) $(LIB_DIR)/fal.o $(DRV_DIR)/bus/$(DRIVER).o $(UFE).c $(MODULES) $(UFE).o hanalyzer.o
 	$(FF) $(FFLAGS) -o fal $(LIB_DIR)/fal.o $(UFE).o $(DRIVER).o \
-	analyzer.o $(MODULES) $(CERNLIB_PACK) \
+	hanalyzer.o $(MODULES) $(CERNLIB_PACK) \
 	$(LIB) $(LDFEFLAGS) $(LIBS)
 
-ranalyzer.o: analyzer.c
-	$(CXX) -DMANA_LITE $(USERFLAGS) $(CFLAGS) $(OSFLAGS) -o $@ -c $<
+ranalyzer.o $(RMODULES): r%.o: %.c
+	$(CXX) $(ROOTCFLAGS) $(USERFLAGS) $(CFLAGS) $(OSFLAGS) -o $@ -c $<
 
-rscaler.o: scaler.c
-	$(CXX) -DMANA_LITE $(USERFLAGS) $(CFLAGS) $(OSFLAGS) -o $@ -c $<
+hanalyzer.o $(HMODULES): h%.o: %.c
+	$(CC) -DHAVE_HBOOK $(CFLAGS) $(OSFLAGS) -o $@ -c $<
 
-radccalib.o: adccalib.c
-	$(CXX) -DMANA_LITE $(USERFLAGS) $(CFLAGS) $(OSFLAGS) -o $@ -c $<
-
-radcsum.o: adcsum.c
-	$(CXX) -DMANA_LITE $(USERFLAGS) $(CFLAGS) $(OSFLAGS) -o $@ -c $<
-
-.c.o:
+%.o: %.c
 	$(CC) $(USERFLAGS) $(CFLAGS) $(OSFLAGS) -o $@ -c $<
 
-clean:
+clean::
 	rm -f *.o *~ \#*
+
+#end file
