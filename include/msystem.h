@@ -7,6 +7,9 @@
                 routines
 
   $Log$
+  Revision 1.21  2001/06/15 09:50:29  midas
+  Made recv_string EXPRT (for bl_psi.ch)
+
   Revision 1.20  2000/10/20 19:03:17  pierre
   - Added ss_exec(...) for pid return
   - Added ss_existpid(...) for pid check
@@ -565,10 +568,10 @@ INT EXPRT ss_get_struct_align(void);
 
 /*---- socket routines ----*/
 INT EXPRT send_tcp(int sock, char *buffer, DWORD buffer_size, INT flags);
-INT recv_tcp(int sock, char *buffer, DWORD buffer_size, INT flags);
+INT EXPRT recv_tcp(int sock, char *buffer, DWORD buffer_size, INT flags);
 INT send_udp(int sock, char *buffer, DWORD buffer_size, INT flags);
 INT recv_udp(int sock, char *buffer, DWORD buffer_size, INT flags);
-INT recv_string(int sock, char *buffer, DWORD buffer_size, INT flags);
+INT EXPRT recv_string(int sock, char *buffer, DWORD buffer_size, INT flags);
 
 /*---- system logging ----*/
 INT EXPRT ss_syslog(const char *message);
