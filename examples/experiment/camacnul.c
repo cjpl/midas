@@ -17,8 +17,11 @@
  *  Author:  Pierre-Andre Amaudruz Data Acquisition Group
  * 
  *  $Log$
- *  Revision 1.3  1998/10/29 09:39:12  midas
- *  Copied file from /midas/drivers
+ *  Revision 1.4  1999/07/23 07:14:16  midas
+ *  Moved updated driver from \midas\drivers
+ *
+ *  Revision 1.6  1999/02/22 19:02:23  pierre
+ *  - Remove came_xxx
  *
  *  Revision 1.5  1998/10/23 14:21:49  midas
  *  - Modified version scheme from 1.06 to 1.6.0
@@ -77,28 +80,6 @@ INLINE void cam_lam_enable(const int c, const int n){}
 INLINE void cam_lam_disable(const int c, const int n){}
 INLINE void cam_lam_read(const int c, DWORD *lam){*lam=1;}
 INLINE void cam_lam_clear(const int c, const int n){}
-INLINE void came_cn(int *ext, const int b, const int c, const int n, const int a){}
-INLINE void came_ext(const int ext, int *b, int *c, int *n, int *a){}
-INLINE void cam16ei(const int ext, const int f, WORD *d){}
-INLINE void cam24ei(const int ext, const int f, DWORD *d){}
-INLINE void cam16ei_q(const int ext, const int f, WORD *d, int *x, int *q){*q=*x=1;}
-INLINE void cam24ei_q(const int ext, const int f, DWORD *d, int *x, int *q){*q=*x=1;}
-INLINE void cam16ei_r(const int ext, const int f, WORD **d, const int r){}
-INLINE void cam24ei_r(const int ext, const int f, DWORD **d, const int r){}
-INLINE void cam16ei_rq(const int ext, const int f, WORD **d, const int r){}
-INLINE void cam24ei_rq(const int ext, const int f, DWORD **d, const int r){}
-INLINE void cam16ei_sa(const int ext, const int f, WORD **d, const int r){}
-INLINE void cam24ei_sa(const int ext, const int f, DWORD **d, const int r){}
-INLINE void cam16ei_sn(const int ext, const int f, WORD **d, const int r){}
-INLINE void cam24ei_sn(const int ext, const int f, DWORD **d, const int r){}
-INLINE void cam16eo(const int ext, const int f, WORD d){}
-INLINE void cam24eo(const int ext, const int f, DWORD d){}
-INLINE void cam16eo_q(const int ext, const int f, WORD d, int *x, int *q){*q=*x=1;}
-INLINE void cam24eo_q(const int ext, const int f, DWORD d, int *x, int *q){*q=*x=1;}
-INLINE void camec(const int ext, const int f){}
-INLINE void camec_q(const int ext, const int f, int *x, int *q){*q=*x=1;}
-INLINE void camec_sa(const int ext, const int f, const int r){}
-INLINE void camec_sn(const int ext, const int f, const int r){}
 INLINE void cam_interrupt_enable(void){}
 INLINE void cam_interrupt_disable(void){}
 INLINE void cam_interrupt_attach(void (*isr)(void)){}
