@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.41  1999/09/21 13:49:02  midas
+  Added PROGRAM_INFO
+
   Revision 1.40  1999/09/17 15:06:46  midas
   Moved al_check into cm_yield() and rpc_server_thread
 
@@ -990,6 +993,78 @@ typedef struct {
 "",\
 NULL }
 
+/*---- Alarm system ------------------------------------------------*/
+
+typedef struct {
+  BOOL      auto_start;
+  BOOL      auto_stop;
+  BOOL      auto_restart;
+  char      start_command[256];
+  char      alarm_class[32];
+  DWORD     checked_last;
+} PROGRAM_INFO;
+
+#define PROGRAM_INFO_STR(_name) char *_name[] = {\
+"[.]",\
+"Auto start = BOOL : n",\
+"Auto stop = BOOL : n",\
+"Auto restart = BOOL : n",\
+"Start command = STRING : [256] ",\
+"Alarm Class = STRING : [32] ",\
+"Checked last = DWORD : 0",\
+"",\
+NULL }
+
+typedef struct {
+  BOOL      write_system_message;
+  BOOL      write_elog_message;
+  INT       system_message_interval;
+  DWORD     system_message_last;
+  char      execute_command[256];
+  INT       execute_interval;
+  DWORD     execute_last;
+  BOOL      stop_run;
+} ALARM_CLASS;
+
+#define ALARM_CLASS_STR(_name) char *_name[] = {\
+"[.]",\
+"Write system message = BOOL : y",\
+"Write Elog message = BOOL : n",\
+"System message interval = INT : 60",\
+"System message last = DWORD : 0",\
+"Execute command = STRING : [256] ",\
+"Execute interval = INT : 0",\
+"Execute last = DWORD : 0",\
+"Stop run = BOOL : n",\
+"",\
+NULL }
+
+typedef struct {
+  BOOL      active;
+  INT       triggered;
+  INT       check_interval;
+  DWORD     checked_last;
+  char      time_triggered_first[32];
+  char      time_triggered_last[32];
+  char      condition[256];
+  char      alarm_class[32];
+  char      alarm_message[80];
+} ALARM;
+
+#define ALARM_STR(_name) char *_name[] = {\
+"[.]",\
+"Active = BOOL : n",\
+"Triggered = INT : 0",\
+"Check interval = INT : 60",\
+"Checked last = DWORD : 0",\
+"Time triggered first = STRING : [32] ",\
+"Time triggered last = STRING : [32] ",\
+"Condition = STRING : [256] /Runinfo/Run number > 100",\
+"Alarm Class = STRING : [32] Warning",\
+"Alarm Message = STRING : [80] Run number became too large",\
+"",\
+NULL }
+
 /*---- CERN libray -------------------------------------------------*/
 
 #ifdef extname
@@ -1401,6 +1476,7 @@ INT EXPRT el_search_run(int run, char *return_tag);
 /*---- Alarm functions ----*/
 INT EXPRT al_check();
 INT EXPRT al_trigger_alarm(char *alarm_name, char *alarm_message);
+INT EXPRT al_trigger_class(char *alarm_class, char *alarm_message, BOOL first);
 INT EXPRT al_reset_alarm(char *alarm_name);
 
 /*---- analyzer functions ----*/
