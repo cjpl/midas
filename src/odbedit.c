@@ -6,6 +6,9 @@
   Contents:     Command-line interface to the MIDAS online data base.
 
   $Log$
+  Revision 1.27  1999/09/27 13:49:05  midas
+  Added bUnique parameter to cm_shutdown
+
   Revision 1.26  1999/09/23 14:00:48  midas
   Used capital names for mutexes
 
@@ -2371,7 +2374,7 @@ PRINT_INFO      print_info;
         printf("Please enter client name or \"all\" to shutdown all clients.\n");
       else
         {
-        status = cm_shutdown(param[1]);
+        status = cm_shutdown(param[1], TRUE);
         if (status != CM_SUCCESS)
           {
           if (strcmp(param[1], "all") == 0)
