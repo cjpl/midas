@@ -9,8 +9,8 @@ Group (Include Files)
 
 File 1,1,<.\mscbmain.c><mscbmain.c> 0x0 
 File 1,1,<.\mscbutil.c><mscbutil.c> 0x0 
-File 1,1,<.\scs_1000.c><scs_1000.c> 0x0 
 File 1,1,<.\lcd_menu.c><lcd_menu.c> 0x0 
+File 1,1,<.\scs_1000_scanner.c><scs_1000_scanner.c> 0x0 
 File 2,7,<.\mscb.h><mscb.h> 0x0 
 
 
@@ -35,7 +35,7 @@ Options 1,0,0  // Target 'ICE'
  OrgReg (ÿCygnal\)
  TgStat=0
  OutDir (.\)
- OutName (scs_1000)
+ OutName (scs_1000_scanner)
  GenApp=1
  GenLib=0
  GenHex=1

@@ -9,6 +9,9 @@
                 for PSI beamline scanner
 
   $Log$
+  Revision 1.2  2004/07/29 13:55:52  midas
+  Finished code
+
   Revision 1.1  2004/07/27 09:30:57  midas
   Initial revision
 
@@ -31,18 +34,18 @@ extern lcd_menu(void);
 
 /*---- Port definitions ----*/
 
-sbit RELAIS0  = P3 ^ 0;
-sbit RELAIS1  = P3 ^ 1;
-sbit RELAIS2  = P3 ^ 2;
-sbit RELAIS3  = P3 ^ 3;
+sbit RELAIS0 = P3 ^ 0;
+sbit RELAIS1 = P3 ^ 1;
+sbit RELAIS2 = P3 ^ 2;
+sbit RELAIS3 = P3 ^ 3;
 
-sbit DOUT0    = P3 ^ 7;
-sbit DOUT1    = P3 ^ 6;
-sbit DOUT2    = P3 ^ 5;
-sbit DOUT3    = P3 ^ 4;
+sbit DOUT0 = P3 ^ 7;
+sbit DOUT1 = P3 ^ 6;
+sbit DOUT2 = P3 ^ 5;
+sbit DOUT3 = P3 ^ 4;
 
-sbit SRCLK    = P1 ^ 7;
-sbit SRIN     = P1 ^ 6;
+sbit SRCLK = P1 ^ 7;
+sbit SRIN = P1 ^ 6;
 sbit SRSTROBE = P1 ^ 5;
 
 /*---- Define variable parameters returned to CMD_GET_INFO command ----*/
@@ -54,26 +57,34 @@ struct {
    float demandx, demandy;
    unsigned char relais[4];
    float aofs[2];
+   float five_v;
 } xdata user_data;
 
 MSCB_INFO_VAR code variables[] = {
 
-   { 1, UNIT_METER, PRFX_MILLI, 0, 0, "PosX",    &user_data.posx },
-   { 1, UNIT_METER, PRFX_MILLI, 0, 0, "PosY",    &user_data.posy },
+   {4, UNIT_METER, PRFX_MILLI, 0, MSCBF_FLOAT, "PosX", &user_data.posx},
+   {4, UNIT_METER, PRFX_MILLI, 0, MSCBF_FLOAT, "PosY", &user_data.posy},
 
-   { 1, UNIT_METER, PRFX_MILLI, 0, 0, "DemandX", &user_data.demandx, -1000, 1000, 1 },
-   { 1, UNIT_METER, PRFX_MILLI, 0, 0, "DemandY", &user_data.demandy, -1000, 1000, 1 },
+   {4, UNIT_METER, PRFX_MILLI, 0, MSCBF_FLOAT, "DemandX", &user_data.demandx, -1000, 1000,
+    1},
+   {4, UNIT_METER, PRFX_MILLI, 0, MSCBF_FLOAT, "DemandY", &user_data.demandy, -1000, 1000,
+    1},
 
-   { 1, UNIT_BOOLEAN, 0, 0, 0,        "Relais0", &user_data.relais[0], 0, 1, 1 },
-   { 1, UNIT_BOOLEAN, 0, 0, 0,        "Relais1", &user_data.relais[1], 0, 1, 1 },
-   { 1, UNIT_BOOLEAN, 0, 0, 0,        "Relais2", &user_data.relais[2], 0, 1, 1 },
-   { 1, UNIT_BOOLEAN, 0, 0, 0,        "Relais3", &user_data.relais[3], 0, 1, 1 },
+   {1, UNIT_BOOLEAN, 0, 0, 0, "Relais0", &user_data.relais[0], 0, 1, 1},
+   {1, UNIT_BOOLEAN, 0, 0, 0, "Relais1", &user_data.relais[1], 0, 1, 1},
+   {1, UNIT_BOOLEAN, 0, 0, 0, "Relais2", &user_data.relais[2], 0, 1, 1},
+   {1, UNIT_BOOLEAN, 0, 0, 0, "Relais3", &user_data.relais[3], 0, 1, 1},
 
-   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "AOFS0",   &user_data.aofs[0], -10, 10, 0.1 },
-   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "AOFS1",   &user_data.aofs[1], -10, 10, 0.1 },
+   {4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "AOFS0", &user_data.aofs[0], -10, 10, 0.1},
+   {4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "AOFS1", &user_data.aofs[1], -10, 10, 0.1},
 
-   { 0 }
+   {4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "5V", &user_data.five_v},
+
+   {0}
 };
+
+bit moving_x = 0;
+bit moving_y = 0;
 
 /********************************************************************\
 
@@ -112,7 +123,7 @@ void user_init(unsigned char init)
       P0.1*RX1      P1.1 BACKLIGHT    P2.1 LCD_E        P3.1 RELAIS1
       P0.2 TX2      P1.2 TP5          P2.2 LCD_RW       P3.2 RELAIS2
       P0.3*RX2      P1.3 TP7          P2.3 LCD_RS       P3.3 RELAIS3
-                                                                      
+
       P0.4 EN1      P1.4 WATCHDOG     P2.4 LCD_DB4      P3.4 DOUT0
       P0.5 EN2      P1.5 SRSTROBE     P2.5 LCD_DB5      P3.5 DOUT1
       P0.6 LED2     P1.6*SRIN         P2.6 LCD_DB6      P3.6 DOUT2
@@ -126,7 +137,7 @@ void user_init(unsigned char init)
 
    /* initial EEPROM value */
    if (init) {
-      for (i=0 ; i<4 ; i++)
+      for (i = 0; i < 4; i++)
          user_data.relais[i] = 0;
 
       user_data.demandx = 0;
@@ -137,12 +148,12 @@ void user_init(unsigned char init)
    }
 
    /* write relais */
-   for (i=4 ; i<8 ; i++)
+   for (i = 4; i < 8; i++)
       user_write(i);
 
    /* display startup screen */
    lcd_goto(0, 0);
-   for (i=0 ; i<7-strlen(sys_info.node_name)/2 ; i++)
+   for (i = 0; i < 7 - strlen(sys_info.node_name) / 2; i++)
       puts(" ");
    puts("** ");
    puts(sys_info.node_name);
@@ -159,11 +170,37 @@ void user_write(unsigned char index) reentrant
 {
    switch (index) {
 
-   case 4: RELAIS0 = user_data.relais[0]; break;
-   case 5: RELAIS1 = user_data.relais[1]; break;
-   case 6: RELAIS2 = user_data.relais[2]; break;
-   case 7: RELAIS3 = user_data.relais[3]; break;
+   case 2:
+      if (user_data.demandx < user_data.posx)
+         RELAIS0 = 1;
+      else if (user_data.demandx > user_data.posx)
+         RELAIS1 = 1;
+      moving_x = 1;
+      break;
+   case 3:
+      if (user_data.demandy < user_data.posy)
+         RELAIS2 = 1;
+      else if (user_data.demandy > user_data.posy)
+         RELAIS3 = 1;
+      moving_y = 1;
+      break;
+   case 4:
+      RELAIS0 = user_data.relais[0];
+      break;
+   case 5:
+      RELAIS1 = user_data.relais[1];
+      break;
+   case 6:
+      RELAIS2 = user_data.relais[2];
+      break;
+   case 7:
+      RELAIS3 = user_data.relais[3];
+      break;
 
+   case 10:
+      RELAIS0 = RELAIS1 = RELAIS2 = RELAIS3 = 0;
+      moving_x = moving_y = 0;
+      break;
    }
 }
 
@@ -216,11 +253,14 @@ void adc_read(channel, float *d)
    value >>= 6;
 
    if (channel < 2)
-      gvalue = value / 65536.0 * 20 - 10; // +- 10V range
+      gvalue = value / 65536.0 * 20 - 10;       // +- 10V range
    else
-      gvalue = value / 65536.0 * 10; // 0...10V range
+      gvalue = value / 65536.0 * 10;    // 0...10V range
 
-   gvalue += user_data.aofs[channel];
+   if (channel == 2 || channel == 3) {
+      gvalue *= 100;            // 0..5V -> 0..500 mm range
+      gvalue += user_data.aofs[channel - 2];
+   }
 
    DISABLE_INTERRUPTS;
    *d = gvalue;
@@ -233,6 +273,8 @@ bit b0, b1, b2, b3;
 
 #define SHIFT SRCLK = 1; delay_us(1); SRCLK = 0; delay_us(1)
 
+unsigned char din[4];
+
 void sr_read()
 {
    SRCLK = 0;
@@ -241,9 +283,14 @@ void sr_read()
    delay_us(1);
    SRSTROBE = 0;
 
+   din[2] = SRIN;
    SHIFT;
+   din[3] = SRIN;
    SHIFT;
+   din[0] = SRIN;
    SHIFT;
+   din[1] = SRIN;
+
    SHIFT;
    b3 = SRIN;
    SHIFT;
@@ -258,39 +305,84 @@ void sr_read()
 
 unsigned char application_display(bit init)
 {
-static bit b0_old = 0, b1_old = 0, b2_old = 0, b3_old = 0;
+   static bit b0_old = 0, b1_old = 0, b2_old = 0, b3_old = 0;
 
    if (init)
       lcd_clear();
 
    /* display first two ADCs */
    lcd_goto(0, 0);
-   printf("0:%6.3fV", user_data.posx);
+   printf("X:%5.1fmm", user_data.posx);
    lcd_goto(10, 0);
-   printf("1:%6.3fV", user_data.posy);
+   printf("Y:%5.1fmm", user_data.posy);
 
    /* show state of relais 0&1 */
-   lcd_goto(0, 1);
-   printf("Rel0: %s", user_data.relais[0] ? "ON " : "OFF");
-   lcd_goto(10, 1);
-   printf("Rel1: %s", user_data.relais[1] ? "ON " : "OFF");
+   if (moving_x || moving_y) {
 
-   /* toggle relais 0 with button 1 */
-   if (b1 && !b1_old) {
-      user_data.relais[0] = !user_data.relais[0];
-      user_write(0);
+      lcd_goto(0, 1);
+      printf("       abort        ");
+
+      if ((!b0_old && b0) || (!b1_old && b1) || (!b2_old && b2) || (!b3_old && b3)) {
+         RELAIS0 = 0;
+         RELAIS1 = 0;
+         RELAIS2 = 0;
+         RELAIS3 = 0;
+         moving_x = moving_y = 0;
+      }
+
+      if (user_data.demandx >= user_data.posx && RELAIS0 == 1) {
+         RELAIS0 = 0;
+         moving_x = 0;
+      }
+
+      if (user_data.demandx <= user_data.posx && RELAIS1 == 1) {
+         RELAIS1 = 0;
+         moving_x = 0;
+      }
+
+      if (user_data.demandy >= user_data.posy && RELAIS2 == 1) {
+         RELAIS2 = 0;
+         moving_y = 0;
+      }
+
+      if (user_data.demandy <= user_data.posy && RELAIS3 == 1) {
+         RELAIS3 = 0;
+         moving_y = 0;
+      }
+
+   } else {
+      lcd_goto(0, 1);
+      printf("  -   +   ");
+      lcd_goto(10, 1);
+      printf("  -   +   ");
+
+      /* switch relais 0 with button 0 */
+      user_data.relais[0] = b0;
+      user_write(4);
+
+      /* switch relais 1 with button 1 */
+      user_data.relais[1] = b1;
+      user_write(5);
+
+      /* switch relais 2 with button 2 */
+      user_data.relais[2] = b2;
+      user_write(6);
+
+      /* switch relais 3 with button 3 */
+      user_data.relais[3] = b3;
+      user_write(7);
    }
 
-   /* toggle relais 1 with button 3 */
-   if (b3 && !b3_old) {
-      user_data.relais[1] = !user_data.relais[1];
-      user_write(1);
-   }
-
-   /* enter menu on button 0 or 2 */
+   /* enter menu on button 0 and 1 */
    if (!init)
-      if ((b0 && !b0_old) || (b2 && !b2_old))
+      if (b0 && b1) {
+         RELAIS0 = 0;
+         RELAIS1 = 0;
+         RELAIS2 = 0;
+         RELAIS3 = 0;
+         moving_x = moving_y = 0;
          return 1;
+      }
 
    b0_old = b0;
    b1_old = b1;
@@ -305,8 +397,9 @@ static bit b0_old = 0, b1_old = 0, b2_old = 0, b3_old = 0;
 void user_loop(void)
 {
    /* read scanne position */
-   adc_read(0, &user_data.posx);
-   adc_read(1, &user_data.posy);
+   adc_read(2, &user_data.posx);
+   adc_read(3, &user_data.posy);
+   adc_read(4, &user_data.five_v);
 
    /* read buttons and digital input */
    sr_read();
