@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.286  2004/12/23 09:36:16  midas
+  Treat NaN as missing data
+
   Revision 1.285  2004/12/22 14:33:00  midas
   Redid indentation
 
@@ -7305,7 +7308,7 @@ void generate_hist_graph(char *path, char *buffer, int *buffer_size,
    KEY key;
    gdImagePtr im;
    gdGifBuffer gb;
-   int i, j, k, l, n_vars, size, status, row, x_marker;
+   int i, j, k, l, n_vars, size, status, row, x_marker, n_vp;
    DWORD bsize, tsize, n_marker, *state, run_number;
    int length, aoffset;
    int flag, x1, y1, x2, y2, xs, xs_old, ys, xold, yold, xmaxm;
@@ -7670,72 +7673,76 @@ void generate_hist_graph(char *path, char *buffer, int *buffer_size,
          goto error;
       }
 
-      for (j = 0; j < (int) n_point[i]; j++) {
-         x[i][j] = tbuffer[j] - ss_time();
+      for (j = n_vp = 0; j < (int) n_point[i]; j++) {
+         x[i][n_vp] = tbuffer[j] - ss_time();
 
          /* convert data to float */
          switch (type) {
          case TID_BYTE:
-            y[i][j] = (float) *(((BYTE *) ybuffer) + j);
+            y[i][n_vp] = (float) *(((BYTE *) ybuffer) + j);
             break;
          case TID_SBYTE:
-            y[i][j] = (float) *(((char *) ybuffer) + j);
+            y[i][n_vp] = (float) *(((char *) ybuffer) + j);
             break;
          case TID_CHAR:
-            y[i][j] = (float) *(((char *) ybuffer) + j);
+            y[i][n_vp] = (float) *(((char *) ybuffer) + j);
             break;
          case TID_WORD:
-            y[i][j] = (float) *(((WORD *) ybuffer) + j);
+            y[i][n_vp] = (float) *(((WORD *) ybuffer) + j);
             break;
          case TID_SHORT:
-            y[i][j] = (float) *(((short *) ybuffer) + j);
+            y[i][n_vp] = (float) *(((short *) ybuffer) + j);
             break;
          case TID_DWORD:
-            y[i][j] = (float) *(((DWORD *) ybuffer) + j);
+            y[i][n_vp] = (float) *(((DWORD *) ybuffer) + j);
             break;
          case TID_INT:
-            y[i][j] = (float) *(((INT *) ybuffer) + j);
+            y[i][n_vp] = (float) *(((INT *) ybuffer) + j);
             break;
          case TID_BOOL:
-            y[i][j] = (float) *(((BOOL *) ybuffer) + j);
+            y[i][n_vp] = (float) *(((BOOL *) ybuffer) + j);
             break;
          case TID_FLOAT:
-            y[i][j] = (float) *(((float *) ybuffer) + j);
+            y[i][n_vp] = (float) *(((float *) ybuffer) + j);
             break;
          case TID_DOUBLE:
-            y[i][j] = (float) *(((double *) ybuffer) + j);
+            y[i][n_vp] = (float) *(((double *) ybuffer) + j);
             break;
          }
 
-         /* avoid NaNs */
-         if (!finite(y[i][j]))
-            y[i][j] = 0;
+         /* skip NaNs */
+         if (!finite(y[i][n_vp]))
+            continue;
 
          /* avoid overflow */
-         if (y[i][j] > 1E30)
-            y[i][j] = 1E30f;
+         if (y[i][n_vp] > 1E30)
+            y[i][n_vp] = 1E30f;
 
          /* apply factor and offset */
-         y[i][j] = y[i][j] * factor[i] + offset[i];
-
+         y[i][n_vp] = y[i][n_vp] * factor[i] + offset[i];
 
          /* apply minimum and maximum clamping */
-         if (y[i][j] > maxvalue)
-            y[i][j] = maxvalue;
+         if (y[i][n_vp] > maxvalue)
+            y[i][n_vp] = maxvalue;
 
-         if (y[i][j] < minvalue)
-            y[i][j] = minvalue;
+         if (y[i][n_vp] < minvalue)
+            y[i][n_vp] = minvalue;
 
          /* calculate ymin and ymax */
-         if ((i == 0 || index != -1) && j == 0)
+         if ((i == 0 || index != -1) && n_vp == 0)
             ymin = ymax = y[i][0];
          else {
-            if (y[i][j] > ymax)
-               ymax = y[i][j];
-            if (y[i][j] < ymin)
-               ymin = y[i][j];
+            if (y[i][n_vp] > ymax)
+               ymax = y[i][n_vp];
+            if (y[i][n_vp] < ymin)
+               ymin = y[i][n_vp];
          }
+
+         /* increment number of valid points */
+         n_vp++;
       }
+
+      n_point[i] = n_vp;
    }
 
    /* check if ylow = 0 */
