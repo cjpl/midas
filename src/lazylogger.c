@@ -6,6 +6,9 @@
   Contents:     Disk to Tape copier for background job
 
   $Log$
+  Revision 1.24  2001/07/25 06:53:18  midas
+  Fixed bug with appended "/" for tape logging
+
   Revision 1.23  2001/07/23 22:58:16  pierre
   - Fix condition line parsing.
 
@@ -285,9 +288,10 @@ INT lazy_log_update(INT action, INT run, char * label, char * file, DWORD perf_t
       sprintf(str, "%s: (cp:%.1fs) %s %1.3lfMB file COPIED",
               label, (float)perf_time/1000., lazyst.backfile, lazyst.file_size/1024.0/1024.0);
     else {
-      if (lazy.path[0] != 0)
-        if (lazy.path[strlen(lazy.path)-1] != DIR_SEPARATOR)
-          strcat(lazy.path, DIR_SEPARATOR_STR);
+      if (equal_ustring(lazy.type, "Disk"))
+        if (lazy.path[0] != 0)
+          if (lazy.path[strlen(lazy.path)-1] != DIR_SEPARATOR)
+            strcat(lazy.path, DIR_SEPARATOR_STR);
       sprintf(str,"%s[%i] (cp:%.1fs) %s%s %1.3lfMB file NEW",
 	      label, lazyst.nfiles, (float)perf_time/1000.,
 	      lazy.path, lazyst.backfile, 
@@ -904,7 +908,7 @@ void lazy_statistics_update(INT cploop_time)
 \********************************************************************/
 {
     /* update rate [kb/s] statistics */
-    lazyst.copy_rate = 1000. * (lazyst.cur_size - lastsz) / (ss_millitime() - cploop_time);
+    lazyst.copy_rate = 1000.f * (lazyst.cur_size - lastsz) / (ss_millitime() - cploop_time);
 
     /* update % statistics */
     if (lazyst.file_size != 0.0f)
@@ -945,7 +949,7 @@ BOOL condition_test(char * string)
   double lcond_value;
   INT size, index, status;
   char str[128], left[64], right[64];
-  char *p=NULL, *pp, *ppl, *pn, *pv, *pc, *lp;
+  char *p=NULL, *pp, *ppl, *pv, *pc, *lp;
   
   index = 0;
   p = string;
@@ -1209,7 +1213,7 @@ INT lazy_main (INT channel, LAZY_INFO * pLall)
   double freepercent, svfree;
   char pufile[MAX_FILE_PATH], inffile[MAX_FILE_PATH], outffile[MAX_FILE_PATH];
   BOOL donepurge, watchdog_flag;
-  INT watchdog_timeout, pid;
+  INT watchdog_timeout;
   LAZY_INFO * pLch;
 
   /* current channel */
