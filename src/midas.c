@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.110  2000/03/29 09:14:47  midas
+  Fixed bug with original message tagging having the wrong offset
+
   Revision 1.109  2000/03/17 13:00:06  midas
   Frontends use default timeout fo 60 sec.
 
@@ -14883,7 +14886,7 @@ BOOL    bedit;
       if (status == EL_SUCCESS)
         {
         /* position to next thread location */
-        lseek(fh, 63, SEEK_CUR);
+        lseek(fh, 72, SEEK_CUR);
         memset(str, 0, sizeof(str));
         read(fh, str, 16);
         lseek(fh, -16, SEEK_CUR);
