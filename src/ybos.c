@@ -6,6 +6,9 @@
  *         amaudruz@triumf.ca                            Local:           6234
  * -----------------------------------------------------------------------------
    $Log$
+   Revision 1.25  2000/02/25 18:53:48  pierre
+   - fix typo in function name dm_()
+
    Revision 1.24  2000/01/25 18:57:07  pierre
    - fix midas replay end of file
 
@@ -1036,7 +1039,7 @@ INT  yb_file_fragment(EQUIPMENT * eqp, EVENT_HEADER *pevent, INT run_number, cha
         scheduler (mfe.c) */
 /* #undef USE_EVENT_CHANNEL */
 #ifdef USE_EVENT_CHANNEL
-        dm_increment_pointer(eqp->buffer_handle, 
+        dm_pointer_increment(eqp->buffer_handle, 
                              pevent->data_size + sizeof(EVENT_HEADER));
 #else
         rpc_flush_event();
