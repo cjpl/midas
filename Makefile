@@ -6,6 +6,9 @@
 #  Contents:     Makefile for MIDAS binaries and examples under unix
 #
 #  $Log$
+#  Revision 1.22  2000/07/21 18:30:11  pierre
+#  - Added MIDAS_PREF_FLAGS for custom build
+#
 #  Revision 1.21  2000/05/11 14:21:34  midas
 #  Added webpaw
 #
@@ -114,6 +117,10 @@ endif
 SYSBIN_DIR = $(PREFIX)/bin
 SYSLIB_DIR = $(PREFIX)/lib
 SYSINC_DIR = $(PREFIX)/include
+#
+#  Midas preference flags
+#  -DYBOS_VERSION_3_3  for YBOS up to version 3.3 
+MIDAS_PREF_FLAGS  = 
 
 #####################################################################
 # Nothing needs to be modified after this line 
@@ -134,7 +141,7 @@ endif
 
 ifeq ($(OSTYPE),osf1)
 OS_DIR = osf1
-OSFLAGS = -DOS_OSF1 $(USERFLAGS)
+OSFLAGS = -DOS_OSF1 $(MIDAS_PREF_FLAGS) $(USERFLAGS)
 FFLAGS = -nofor_main -D 40000000 -T 20000000
 LIBS = -lbsd
 endif
@@ -148,7 +155,7 @@ endif
 
 ifeq ($(OSTYPE),ultrix)
 OS_DIR = ultrix
-OSFLAGS = -DOS_ULTRIX -DNO_PTY $(USERFLAGS)
+OSFLAGS = -DOS_ULTRIX -DNO_PTY $(MIDAS_PREF_FLAGS) $(USERFLAGS)
 LIBS =
 endif
 
@@ -157,7 +164,7 @@ endif
 #
 ifeq ($(OSTYPE), FreeBSD)
 OS_DIR = freeBSD
-OSFLAGS = -DOS_FREEBSD $(USERFLAGS)
+OSFLAGS = -DOS_FREEBSD $(MIDAS_PREF_FLAGS) $(USERFLAGS)
 LIBS = -lbsd -lcompat
 endif
 
@@ -170,7 +177,7 @@ endif
 
 ifeq ($(OSTYPE),linux)
 OS_DIR = linux
-OSFLAGS = -DOS_LINUX -fPIC $(USERFLAGS)
+OSFLAGS = -DOS_LINUX -fPIC $(MIDAS_PREF_FLAGS) $(USERFLAGS)
 LIBS = -lutil
 endif
 
@@ -180,7 +187,7 @@ endif
 ifeq ($(OSTYPE),solaris)
 CC = gcc
 OS_DIR = solaris
-OSFLAGS = -DOS_SOLARIS $(USERFLAGS)
+OSFLAGS = -DOS_SOLARIS $(MIDAS_PREF_FLAGS) $(USERFLAGS)
 LIBS = -lsocket -lnsl
 endif
 
@@ -430,3 +437,9 @@ install:
 
 clean:
 	rm -f $(LIB_DIR)/*.o *~ \#*
+
+mrproper : clean
+	rm -rf $(OS_DIR)
+	rm -rf vxworks/68kobj vxworks/ppcobj
+
+
