@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.56  2000/03/13 16:37:10  midas
+  Add data directory to last.rz if no directory present already in ODB key
+
   Revision 1.55  2000/03/08 17:39:35  midas
   Added "/analyzer/output/events to odb" flag
 
@@ -3092,16 +3095,20 @@ INT      status;
 DWORD    last_time_loop, last_time_update, actual_time;
 int      ch;
 FILE     *f;
+char     str[256];
 
   /* load previous online histos */
   if (!clp.no_load)
     {
-    f = fopen(out_info.last_histo_filename, "r");
+    strcpy(str, out_info.last_histo_filename);
+    if (strchr(str, DIR_SEPARATOR) == NULL)
+      add_data_dir(str, out_info.last_histo_filename);
+    f = fopen(str, "r");
     if (f != NULL)
       {
       fclose(f);
-      printf("Loading previous online histos from %s\n", out_info.last_histo_filename);
-      HRGET(0, out_info.last_histo_filename, "A");
+      printf("Loading previous online histos from %s\n", str);
+      HRGET(0, str, "A");
 
       /* fix wrongly booked N-tuples at ID 100000 */
       if (HEXIST(100000))
@@ -3161,8 +3168,12 @@ FILE     *f;
   update_stats();
 
   /* save actual online histos */
-  printf("Saving current online histos to %s\n", out_info.last_histo_filename);
-  HRPUT(0, out_info.last_histo_filename, "NT");
+  strcpy(str, out_info.last_histo_filename);
+  if (strchr(str, DIR_SEPARATOR) == NULL)
+    add_data_dir(str, out_info.last_histo_filename);
+
+  printf("Saving current online histos to %s\n", str);
+  HRPUT(0, str, "NT");
 
   return status;
 }
