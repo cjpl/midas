@@ -6,6 +6,9 @@
   Contents:     LeCroy LRS1454/1458 Voltage Device Driver
 
   $Log$
+  Revision 1.7  2001/04/06 01:33:57  midas
+  Addef fflush
+
   Revision 1.6  2001/04/05 12:48:53  midas
   Re-open broken TCP connection
 
@@ -138,6 +141,7 @@ char         str[1000];
   for (i=0 ; i<(info->num_channels-1)/12+1 ; i++)
     {
     printf("Enable module %d\r", i);
+    fflush(stdout);
     sprintf(str, "LD L%d CE 1 1 1 1 1 1 1 1 1 1 1 1\r", i);
     BD_PUTS(str);
     status = BD_GETS(str, sizeof(str), ">", DEFAULT_TIMEOUT);
@@ -219,6 +223,7 @@ INT   i, j, status;
   for (i=0 ; i<(channels-1)/12+1 ; i++)
     {
     printf("Setting voltage module %d\r", i);
+    fflush(stdout);
 
     sprintf(str, "LD L%d DV", i);
 
@@ -329,6 +334,7 @@ char  str[256], *p;
   for (i=0 ; i<(channels-1)/12+1 ; i++)
     {
     printf("Reading voltage module %d    \r", i);
+    fflush(stdout);
 
     sprintf(str, "RC L%d MV\r", i);
     BD_PUTS(str);
@@ -361,6 +367,7 @@ char  str[256], *p;
   for (i=0 ; i<(channels-1)/12+1 ; i++)
     {
     printf("Reading current module %d    \r", i);
+    fflush(stdout);
 
     sprintf(str, "RC L%d MC\r", i);
     BD_PUTS(str);
@@ -404,6 +411,7 @@ INT   i, j;
   for (i=0 ; i<(channels-1)/12+1 ; i++)
     {
     printf("Setting current limit module %d\r", i);
+    fflush(stdout);
 
     sprintf(str, "LD L%d TC", i);
 
