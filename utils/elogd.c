@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.81  2001/12/07 09:15:37  midas
+  Added Per-Session cookies (when expriation == 0)
+
   Revision 1.80  2001/12/06 15:47:24  midas
   First version of localization
 
@@ -991,7 +994,7 @@ char *loc(char *orig)
 char str[256], file_name[256], *p;
 int  fh, length, n;
 
-  if (getcfg(logbook, "Language", str))
+  if (getcfg("global", "Language", str))
     {
     if (!locbuffer)
       {
@@ -3265,13 +3268,20 @@ struct tm *gmt;
         if (getcfg(logbook, "Login expiration", str))
           exp = atof(str);
 
-        tzset();
-        time(&now);
-        now += (int) (3600*exp);
-        gmt = gmtime(&now);
-        strftime(str, sizeof(str), "%A, %d-%b-%Y %H:%M:%S GMT", gmt);
+        if (exp == 0)
+          {
+          rsprintf("Set-Cookie: upwd=%s; path=/%s\r\n", new_pwd, logbook_enc);
+          }
+        else
+          {
+          tzset();
+          time(&now);
+          now += (int) (3600*exp);
+          gmt = gmtime(&now);
+          strftime(str, sizeof(str), "%A, %d-%b-%Y %H:%M:%S GMT", gmt);
 
-        rsprintf("Set-Cookie: upwd=%s; path=/%s; expires=%s\r\n", new_pwd, logbook_enc, str);
+          rsprintf("Set-Cookie: upwd=%s; path=/%s; expires=%s\r\n", new_pwd, logbook_enc, str);
+          }
 
         sprintf(str, "/%s/", logbook_enc);
         rsprintf("Location: %s\r\n\r\n<html>redir</html>\r\n", str);
@@ -5435,7 +5445,14 @@ FILE   *f;
     /* send local help file */
     strcpy(file_name, cfg_dir);
     strcat(file_name, "eloghelp.html");
-    send_file(file_name);
+    f = fopen(file_name, "r");
+    if (f == NULL)
+      redirect3("http://midas.psi.ch/elog/eloghelp.html");
+    else
+      {
+      fclose(f);
+      send_file(file_name);
+      }
     return;
     }
 
@@ -6542,13 +6559,20 @@ struct tm *gmt;
     if (getcfg(logbook, "Write password expiration", str))
       exp = atof(str);
 
-    tzset();
-    time(&now);
-    now += (int) (3600*exp);
-    gmt = gmtime(&now);
-    strftime(str, sizeof(str), "%A, %d-%b-%y %H:%M:%S GMT", gmt);
+    if (exp == 0)
+      {
+      rsprintf("Set-Cookie: wpwd=%s; path=/%s\r\n", enc_pwd, logbook_enc);
+      }
+    else
+      {
+      tzset();
+      time(&now);
+      now += (int) (3600*exp);
+      gmt = gmtime(&now);
+      strftime(str, sizeof(str), "%A, %d-%b-%y %H:%M:%S GMT", gmt);
 
-    rsprintf("Set-Cookie: wpwd=%s; path=/%s; expires=%s\r\n", enc_pwd, logbook_enc, str);
+      rsprintf("Set-Cookie: wpwd=%s; path=/%s; expires=%s\r\n", enc_pwd, logbook_enc, str);
+      }
 
     sprintf(str, "/%s/%s", logbook_enc, getparam("redir"));
     rsprintf("Location: %s\r\n\r\n<html>redir</html>\r\n", str);
@@ -6576,12 +6600,19 @@ struct tm *gmt;
     if (getcfg(logbook, "Admin password expiration", str))
       exp = atof(str);
 
-    time(&now);
-    now += (int) (3600*exp);
-    gmt = gmtime(&now);
-    strftime(str, sizeof(str), "%A, %d-%b-%y %H:%M:%S GMT", gmt);
+    if (exp == 0)
+      {
+      rsprintf("Set-Cookie: apwd=%s; path=/%s\r\n", enc_pwd, logbook_enc);
+      }
+    else
+      {
+      time(&now);
+      now += (int) (3600*exp);
+      gmt = gmtime(&now);
+      strftime(str, sizeof(str), "%A, %d-%b-%y %H:%M:%S GMT", gmt);
 
-    rsprintf("Set-Cookie: apwd=%s; path=/%s; expires=%s\r\n", enc_pwd, logbook_enc, str);
+      rsprintf("Set-Cookie: apwd=%s; path=/%s; expires=%s\r\n", enc_pwd, logbook_enc, str);
+      }
 
     sprintf(str, "/%s/%s", logbook_enc, getparam("redir"));
     rsprintf("Location: %s\r\n\r\n<html>redir</html>\r\n", str);
@@ -6609,14 +6640,22 @@ struct tm *gmt;
     if (getcfg(logbook, "Login expiration", str))
       exp = atof(str);
 
-    tzset();
-    time(&now);
-    now += (int) (3600*exp);
-    gmt = gmtime(&now);
-    strftime(str, sizeof(str), "%A, %d-%b-%y %H:%M:%S GMT", gmt);
+    if (exp == 0)
+      {
+      rsprintf("Set-Cookie: upwd=%s; path=/%s\r\n", enc_pwd, logbook_enc);
+      rsprintf("Set-Cookie: unm=%s; path=/%s\r\n", getparam("uname"), logbook_enc);
+      }
+    else
+      {
+      tzset();
+      time(&now);
+      now += (int) (3600*exp);
+      gmt = gmtime(&now);
+      strftime(str, sizeof(str), "%A, %d-%b-%y %H:%M:%S GMT", gmt);
 
-    rsprintf("Set-Cookie: upwd=%s; path=/%s; expires=%s\r\n", enc_pwd, logbook_enc, str);
-    rsprintf("Set-Cookie: unm=%s; path=/%s; expires=%s\r\n", getparam("uname"), logbook_enc, str);
+      rsprintf("Set-Cookie: upwd=%s; path=/%s; expires=%s\r\n", enc_pwd, logbook_enc, str);
+      rsprintf("Set-Cookie: unm=%s; path=/%s; expires=%s\r\n", getparam("uname"), logbook_enc, str);
+      }
 
     sprintf(str, "/%s/%s", logbook_enc, getparam("redir"));
     rsprintf("Location: %s\r\n\r\n<html>redir</html>\r\n", str);
@@ -7283,9 +7322,25 @@ struct timeval       timeout;
 
         if (n == 1)
           {
+          if (verbose)
+            printf("\n\n\n%s\n", net_buffer);
+
           strcpy(logbook, str);
           strcpy(logbook_enc, logbook);
           url_encode(logbook_enc);
+
+          /* redirect to logbook, necessary to get optionsl cookies for that logbook */
+          redirect("");
+
+          send(_sock, return_buffer, strlen(return_buffer), 0);
+
+          if (verbose)
+            {
+            printf("==== Return ================================\n");
+            puts(return_buffer);
+            printf("\n\n");
+            }
+          goto error;
           }
         }
 
