@@ -6,6 +6,9 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
+  Revision 1.45  1999/09/21 14:57:39  midas
+  Added "execute on start/stop" under /programs
+
   Revision 1.44  1999/09/21 14:41:35  midas
   Close server socket before system() call
 
@@ -3890,6 +3893,10 @@ char  str[256], ref[256], command[256], name[80];
 
       db_get_key(hDB, hkey, &key);
 
+      /* skip "execute on xxxx" */
+      if (key.type != TID_KEY)
+        continue;
+
       if (strncmp(key.name, "mhttpd", 6) == 0)
         continue;
 
@@ -3959,16 +3966,12 @@ char  str[256], ref[256], command[256], name[80];
         sprintf(str, "Start %s", key.name);
         rsprintf("<td bgcolor=#00FF00 align=center><input type=submit name=\"Start\" value=\"%s\">\n", str);
         }
-      else
-        rsprintf("<td align=center>-");
 
       if (count > 0)
         {
         sprintf(str, "Stop %s", key.name);
         rsprintf("<td bgcolor=#FF0000 align=center><input type=submit name=\"Stop\" value=\"%s\">\n", str);
         }
-      else
-        rsprintf("<td align=center>-");
 
       rsprintf("</tr>\n");
       }
