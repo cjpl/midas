@@ -4,6 +4,9 @@ Name:         mevb.h
 
   Contents:     Event builder header file
   $Log$
+  Revision 1.7  2003/01/28 20:44:50  pierre
+  Remove user field in fragment struct
+
   Revision 1.6  2002/10/07 17:04:10  pierre
   fix tr_stop request
 
@@ -55,7 +58,6 @@ NULL }
 "Buffer = STRING : [32] BUF2",\
 "Format = STRING : [32] MIDAS",\
 "Event mask = DWORD : 2",\
-"User Field = STRING : [64] ",\
 "",\
 "[Frag2/Statistics]",\
 "Events sent = DOUBLE : 0",\
