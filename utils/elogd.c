@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.63  2001/11/16 15:29:36  midas
+  First fine-tuning for GNU software directory
+
   Revision 1.62  2001/11/15 16:08:07  midas
   Logout takes you back to the logbook selection page
 
@@ -254,7 +257,7 @@ typedef int INT;
 
 #define TELL(fh) lseek(fh, 0, SEEK_CUR)
 
-#define NAME_LENGTH 100
+#define NAME_LENGTH 256
 #define SUCCESS       1
 
 #define EL_SUCCESS    1
@@ -272,8 +275,8 @@ int  return_length;
 char host_name[256];
 char elogd_url[256];
 char elogd_full_url[256];
-char logbook[32];
-char logbook_enc[40];
+char logbook[256];
+char logbook_enc[256];
 char data_dir[256];
 char cfg_file[256];
 char cfg_dir[256];
@@ -282,7 +285,7 @@ char cfg_dir[256];
 #define MAX_PARAM       100
 #define MAX_ATTACHMENTS  10
 #define MAX_N_LIST      100
-#define MAX_N_ATTR       20
+#define MAX_N_ATTR       50
 #define VALUE_SIZE      256
 #define PARAM_LENGTH    256
 #define TEXT_SIZE     50000
@@ -2108,9 +2111,10 @@ char *p, link[256];
         {
         p = (char *) (str+i+7);
         i += 7;
-        for (k=0 ; *p && *p != ' ' && *p != '\t' && *p != '\n' && *p != '\r'; k++,i++)
+        for (k=0 ; *p && *p != ' ' && *p != ',' && *p != '\t' && *p != '\n' && *p != '\r'; k++,i++)
           link[k] = *p++;
         link[k] = 0;
+        i--;
 
         sprintf(return_buffer+j, "<a href=\"http://%s\">http://%s</a>", link, link);
         j += strlen(return_buffer+j);
@@ -2119,9 +2123,10 @@ char *p, link[256];
         {
         p = (char *) (str+i+8);
         i += 8;
-        for (k=0 ; *p && *p != ' ' && *p != '\t' && *p != '\n' && *p != '\r'; k++,i++)
+        for (k=0 ; *p && *p != ' ' && *p != ',' && *p != '\t' && *p != '\n' && *p != '\r'; k++,i++)
           link[k] = *p++;
         link[k] = 0;
+        i--;
 
         sprintf(return_buffer+j, "<a href=\"https://%s\">https://%s</a>", link, link);
         j += strlen(return_buffer+j);
@@ -2130,9 +2135,10 @@ char *p, link[256];
         {
         p = (char *) (str+i+6);
         i += 6;
-        for (k=0 ; *p && *p != ' ' && *p != '\t' && *p != '\n' && *p != '\r'; k++,i++)
+        for (k=0 ; *p && *p != ' ' && *p != ',' && *p != '\t' && *p != '\n' && *p != '\r'; k++,i++)
           link[k] = *p++;
         link[k] = 0;
+        i--;
 
         sprintf(return_buffer+j, "<a href=\"ftp://%s\">ftp://%s</a>", link, link);
         j += strlen(return_buffer+j);
@@ -2141,11 +2147,12 @@ char *p, link[256];
         {
         p = (char *) (str+i+7);
         i += 7;
-        for (k=0 ; *p && *p != ' ' && *p != '\t' && *p != '\n' && *p != '\r'; k++,i++)
+        for (k=0 ; *p && *p != '>' && *p != ' ' && *p != ',' && *p != '\t' && *p != '\n' && *p != '\r'; k++,i++)
           link[k] = *p++;
         link[k] = 0;
+        i--;
 
-        sprintf(return_buffer+j, "<a href=\"mailto:%s\">mailto:%s</a>", link, link);
+        sprintf(return_buffer+j, "<a href=\"mailto:%s\">%s</a>", link, link);
         j += strlen(return_buffer+j);
         }
       else
@@ -2686,8 +2693,13 @@ int  i;
 
   /* left cell */
   rsprintf("<tr><td bgcolor=%s align=left>", gt("Title BGColor"));
+
+  /* use comment as title if available, else logbook name */
+  if (!getcfg(logbook, "Comment", str))
+    strcpy(str, logbook);
+
   rsprintf("<font size=3 face=verdana,arial,helvetica,sans-serif color=%s><b>&nbsp;&nbsp;%s%s<b></font>\n", 
-            gt("Title fontcolor"), logbook, text);
+            gt("Title fontcolor"), str, text);
   rsprintf("&nbsp;</td>\n");
 
   /* middle cell */
@@ -2856,8 +2868,10 @@ int i;
 int build_subst_list(char list[][NAME_LENGTH], char value[][NAME_LENGTH],
                      char attrib[][NAME_LENGTH])
 {
-int  i;
-char str[256];
+int            i;
+char           str[256], format[256];
+time_t         now;
+struct tm      *ts;
 struct hostent *phe;
 
   /* copy attribute list */
@@ -2890,6 +2904,16 @@ struct hostent *phe;
   /* add logbook */
   strcpy(list[i], "logbook");
   strcpy(value[i++], logbook);
+
+  /* add date */
+  strcpy(list[i], "date");
+  time(&now);
+  ts = localtime(&now);
+  if (getcfg(logbook, "Date format", format))
+    strftime(str, sizeof(str), format, ts);
+  else
+    strcpy(str, ctime(&now));
+  strcpy(value[i++], str);
 
   return i;
 }
@@ -3383,7 +3407,20 @@ time_t now;
       }
     }
 
-  rsprintf("</td></tr></table></td></tr></table>\n");
+  rsprintf("</td></tr></table>\n");
+
+  /*---- menu buttons again ----*/
+
+  rsprintf("<tr><td><table width=100%% border=0 cellpadding=%s cellspacing=1 bgcolor=%s>\n", 
+           gt("Menu1 cellpadding"), gt("Frame color"));
+
+  rsprintf("<tr><td align=%s bgcolor=%s>\n", gt("Menu1 Align"), gt("Menu1 BGColor"));
+
+  rsprintf("<input type=submit name=cmd value=Submit>\n");
+  rsprintf("<input type=submit name=cmd value=Back>\n");
+  rsprintf("</td></tr></table></td></tr>\n\n");
+
+  rsprintf("</td></tr></table>\n");
   rsprintf("</body></html>\r\n");
 }
 
@@ -3721,7 +3758,7 @@ char   date[80], attrib[MAX_N_ATTR][NAME_LENGTH], disp_attr[MAX_N_ATTR][NAME_LEN
        list[10000], text[TEXT_SIZE], text1[TEXT_SIZE], text2[TEXT_SIZE],
        orig_tag[80], reply_tag[80], attachment[MAX_ATTACHMENTS][256], encoding[80];
 char   str[256], tag[256], ref[256], file_name[256], col[80], old_data_dir[256];
-char   logbook_list[100][32], lb_enc[32], *nowrap;
+char   logbook_list[100][256], lb_enc[256], *nowrap;
 char   *p , *pt, *pt1, *pt2;
 BOOL   full, show_attachments;
 DWORD  ltime, ltime_start, ltime_end, ltime_current, now;
@@ -4864,9 +4901,9 @@ void show_elog_page(char *logbook, char *path)
 {
 int    size, i, j, n, msg_status, status, fh, length, first_message, last_message, index, n_attr;
 char   str[256], orig_path[256], command[80], ref[256], file_name[256], attrib[MAX_N_ATTR][NAME_LENGTH];
-char   date[80], text[TEXT_SIZE], menu_str[1000],
+char   date[80], text[TEXT_SIZE], menu_str[1000], cmd[256],
        orig_tag[80], reply_tag[80], attachment[MAX_ATTACHMENTS][256], encoding[80], att[256], lattr[256];
-char   menu_item[MAX_N_LIST][NAME_LENGTH], 
+char   menu_item[MAX_N_LIST][NAME_LENGTH], format[80],
        slist[MAX_N_ATTR+5][NAME_LENGTH], svalue[MAX_N_ATTR+5][NAME_LENGTH];
 FILE   *f;
 
@@ -4933,8 +4970,11 @@ FILE   *f;
 
   if (equal_ustring(command, "edit"))
     {
-    show_elog_new(path, TRUE);
-    return;
+    if (path[0])
+      {
+      show_elog_new(path, TRUE);
+      return;
+      }
     }
 
   if (equal_ustring(command, "reply"))
@@ -5060,6 +5100,14 @@ FILE   *f;
     return;
     }
 
+  if (equal_ustring(command, "back") &&
+      getcfg(logbook, "Back to main", str) &&
+      atoi(str) == 1)
+    {
+    redirect3("/");
+    return;
+    }
+
   /*---- check if file requested -----------------------------------*/
 
   if ((strlen(path) > 13 && path[6] == '_' && path[13] == '_') ||
@@ -5132,7 +5180,19 @@ FILE   *f;
         }
       if (i < n_attr)
         continue;
-      
+
+      /* check for attribute filter if not browsing */
+      if (!*getparam("browsing"))
+        {
+        for (i=0 ; i<n_attr ; i++)
+          {
+          if (*getparam(attr_list[i]) && !equal_ustring(getparam(attr_list[i]), attrib[i]))
+            break;
+          }
+        if (i < n_attr)
+          continue;
+        }
+
       sprintf(str, "%s", path);
 
       for (i=0 ; i<n_attr ; i++)
@@ -5242,29 +5302,56 @@ FILE   *f;
     for (i=0 ; i<n ; i++)
       {
       /* display menu item */
-      if (equal_ustring(menu_item[i], "copy to") ||
-          equal_ustring(menu_item[i], "move to"))
+      
+      strcpy(cmd, menu_item[i]);
+      cmd[7] = 0;
+
+      if (equal_ustring(cmd, "copy to") ||
+          equal_ustring(cmd, "move to"))
         {
-        /* put one link for each logbook except current one */
-        for (j=0 ;  ; j++)
+        /* if logbook supplied, put a link to that logbook */
+        if (strlen(menu_item[i]) > 7)
           {
-          if (!enumgrp(j, str))
-            break;
-
-          if (equal_ustring(str, "global"))
-            continue;
-
-          if (equal_ustring(str, logbook))
-            continue;
-
-          strcpy(ref, str);
-          url_encode(ref);
-          if (equal_ustring(menu_item[i], "copy to"))
-            rsprintf("&nbsp;<a href=\"/%s/%s?cmd=Copy+to&destc=%s\">Copy to \"%s\"</a>&nbsp|\n", 
-                      logbook_enc, path, ref, str);
+          /* extract logbook */
+          if (menu_item[i][8] == '"')
+            strcpy(ref, menu_item[i]+9);
           else
-            rsprintf("&nbsp;<a href=\"/%s/%s?cmd=Move+to&destm=%s\">Move to \"%s\"</a>&nbsp|\n", 
-                      logbook_enc, path, ref, str);
+            strcpy(ref, menu_item[i]+8);
+          if (strchr(ref, '"'))
+            *strchr(ref, '"') = 0;
+
+          url_encode(ref);
+
+          if (equal_ustring(cmd, "copy to"))
+            rsprintf("&nbsp;<a href=\"/%s/%s?cmd=Copy+to&destc=%s\">%s</a>&nbsp|\n", 
+                      logbook_enc, path, ref, menu_item[i]);
+          else
+            rsprintf("&nbsp;<a href=\"/%s/%s?cmd=Move+to&destm=%s\">%s</a>&nbsp|\n", 
+                      logbook_enc, path, ref, menu_item[i]);
+          }
+        else
+          {
+          /* put one link for each logbook except current one */
+          for (j=0 ;  ; j++)
+            {
+            if (!enumgrp(j, str))
+              break;
+
+            if (equal_ustring(str, "global"))
+              continue;
+
+            if (equal_ustring(str, logbook))
+              continue;
+
+            strcpy(ref, str);
+            url_encode(ref);
+            if (equal_ustring(menu_item[i], "copy to"))
+              rsprintf("&nbsp;<a href=\"/%s/%s?cmd=Copy+to&destc=%s\">Copy to \"%s\"</a>&nbsp|\n", 
+                        logbook_enc, path, ref, str);
+            else
+              rsprintf("&nbsp;<a href=\"/%s/%s?cmd=Move+to&destm=%s\">Move to \"%s\"</a>&nbsp|\n", 
+                        logbook_enc, path, ref, str);
+            }
           }
         }
       else
@@ -5289,35 +5376,40 @@ FILE   *f;
 
   /*---- next/previous buttons ----*/
 
-  if (atoi(gt("Merge menus")) != 1)
+  if (!getcfg(logbook, "Enable browsing", str) ||
+       atoi(str) == 1)
     {
-    rsprintf("<tr><td><table width=100%% border=0 cellpadding=%s cellspacing=1 bgcolor=%s>\n", 
-             gt("Menu2 cellpadding"), gt("Frame color"));
-    rsprintf("<tr><td valign=bottom align=%s bgcolor=%s>\n", gt("Menu2 Align"), gt("Menu2 BGColor"));
-    }
-  else
-    rsprintf("<td width=10%% nowrap align=%s bgcolor=%s>\n", gt("Menu2 Align"), gt("Menu2 BGColor"));
+    if (atoi(gt("Merge menus")) != 1)
+      {
+      rsprintf("<tr><td><table width=100%% border=0 cellpadding=%s cellspacing=1 bgcolor=%s>\n", 
+               gt("Menu2 cellpadding"), gt("Frame color"));
+      rsprintf("<tr><td valign=bottom align=%s bgcolor=%s>\n", gt("Menu2 Align"), gt("Menu2 BGColor"));
+      }
+    else
+      rsprintf("<td width=10%% nowrap align=%s bgcolor=%s>\n", gt("Menu2 Align"), gt("Menu2 BGColor"));
   
-  if (atoi(gt("Menu2 use images")) == 1)
-    {
-    rsprintf("<input type=image name=cmd_first border=0 alt=\"First entry\" src=\"/%s/first.gif\">\n", 
-             logbook_enc);
-    rsprintf("<input type=image name=cmd_previous border=0 alt=\"Previous entry\" src=\"/%s/previous.gif\">\n", 
-             logbook_enc);
-    rsprintf("<input type=image name=cmd_next border=0 alt=\"Next entry\" src=\"/%s/next.gif\">\n", 
-             logbook_enc);
-    rsprintf("<input type=image name=cmd_last border=0 alt=\"Last entry\" src=\"/%s/last.gif\">\n", 
-             logbook_enc);
-    }
-  else
-    {
-    rsprintf("<input type=submit name=cmd value=First>\n");
-    rsprintf("<input type=submit name=cmd value=Previous>\n");
-    rsprintf("<input type=submit name=cmd value=Next>\n");
-    rsprintf("<input type=submit name=cmd value=Last>\n");
+    if (atoi(gt("Menu2 use images")) == 1)
+      {
+      rsprintf("<input type=image name=cmd_first border=0 alt=\"First entry\" src=\"/%s/first.gif\">\n", 
+               logbook_enc);
+      rsprintf("<input type=image name=cmd_previous border=0 alt=\"Previous entry\" src=\"/%s/previous.gif\">\n", 
+               logbook_enc);
+      rsprintf("<input type=image name=cmd_next border=0 alt=\"Next entry\" src=\"/%s/next.gif\">\n", 
+               logbook_enc);
+      rsprintf("<input type=image name=cmd_last border=0 alt=\"Last entry\" src=\"/%s/last.gif\">\n", 
+               logbook_enc);
+      }
+    else
+      {
+      rsprintf("<input type=submit name=cmd value=First>\n");
+      rsprintf("<input type=submit name=cmd value=Previous>\n");
+      rsprintf("<input type=submit name=cmd value=Next>\n");
+      rsprintf("<input type=submit name=cmd value=Last>\n");
+      }
+
+    rsprintf("</td></tr>\n");
     }
 
-  rsprintf("</td></tr>\n");
   rsprintf("</table></td></tr>\n\n");
 
   /*---- message ----*/
@@ -5331,11 +5423,23 @@ FILE   *f;
     rsprintf("<tr><td bgcolor=#FF0000 colspan=2 align=center><h1>No message available</h1></tr>\n");
   else
     {
+    /* check for locked attributes */
+    for (i=0 ; i<n_attr ; i++)
+      {
+      sprintf(lattr, "l%s", attr_list[i]);
+      if (*getparam(lattr) == '1')
+        break;
+      }
+    if (i < n_attr)
+      sprintf(str, " width <i>\"%s = %s\"</i>", attr_list[i], getparam(attr_list[i]));
+    else
+      str[0] = 0;
+    
     if (last_message)
-      rsprintf("<tr><td bgcolor=#FF0000 colspan=2 align=center><b>This is the last message in the ELog</b></tr>\n");
+      rsprintf("<tr><td bgcolor=#FF0000 colspan=2 align=center><b>This is the last entry %s</b></tr>\n", str);
 
     if (first_message)
-      rsprintf("<tr><td bgcolor=#FF0000 colspan=2 align=center><b>This is the first message in the ELog</b></tr>\n");
+      rsprintf("<tr><td bgcolor=#FF0000 colspan=2 align=center><b>This is the first entry %s</b></tr>\n", str);
 
     /* check for mail submissions */
     if (*getparam("suppress"))
@@ -5367,11 +5471,38 @@ FILE   *f;
 
     /*---- display date ----*/
 
-    rsprintf("<tr><td nowrap bgcolor=%s width=10%%><b>Entry date:</b></td><td bgcolor=%s>%s\n\n", 
-             gt("Categories bgcolor1"), gt("Categories bgcolor2"), date);
+    if (getcfg(logbook, "Date format", format))
+      {
+      struct tm ts;
+
+      memset(&ts, 0, sizeof(ts));
+
+      for (i=0 ; i<12 ; i++)
+        if (strncmp(date+4, mname[i], 3) == 0)
+          break;
+      ts.tm_mon = i;
+
+      ts.tm_mday = atoi(date+8);
+      ts.tm_hour = atoi(date+11);
+      ts.tm_min  = atoi(date+14);
+      ts.tm_sec  = atoi(date+17);
+      ts.tm_year = atoi(date+20)-1900;
+
+      mktime(&ts);
+      strftime(str, sizeof(str), format, &ts);
+
+      rsprintf("<tr><td nowrap bgcolor=%s width=10%%><b>Entry date:</b></td><td bgcolor=%s>%s\n\n", 
+               gt("Categories bgcolor1"), gt("Categories bgcolor2"), str);
+      }
+    else
+      rsprintf("<tr><td nowrap bgcolor=%s width=10%%><b>Entry date:</b></td><td bgcolor=%s>%s\n\n", 
+               gt("Categories bgcolor1"), gt("Categories bgcolor2"), date);
 
     for (i=0 ; i<n_attr ; i++)
-      rsprintf("<input type=hidden name=\"%s\" value=\"%s\">\n", attr_list[i], attrib[i]); 
+      rsprintf("<input type=hidden name=\"%s\" value=\"%s\">\n", attr_list[i], attrib[i]);
+    
+    /* browsing flag to distinguish "/../<attr>=<value>" from browsing */
+    rsprintf("<input type=hidden name=browsing value=1>\n");
 
     rsprintf("</td></tr>\n\n");
 
@@ -5737,7 +5868,7 @@ FILE  *f;
 void show_selection_page()
 {
 int  i;
-char str[10000], logbook[80];
+char str[10000], logbook[256];
 
   rsprintf("HTTP/1.1 200 Document follows\r\n");
   rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
@@ -6028,8 +6159,10 @@ struct tm *gmt;
       return;
     }
 
-  if (equal_ustring(command, "delete") ||
-      equal_ustring(command, "config"))
+  if (equal_ustring(command, "delete")  ||
+      equal_ustring(command, "config")  ||
+      equal_ustring(command, "copy to") ||
+      equal_ustring(command, "move to"))
     {
     sprintf(str, "%s?cmd=%s", path, command);
     if (!check_password(logbook, "Admin password", getparam("apwd"), str))
@@ -6487,7 +6620,7 @@ struct timeval       timeout;
           if (header_length == 0)
             {
             /* extract logbook */
-            strncpy(str, net_buffer+6, 32);
+            strncpy(str, net_buffer+6, sizeof(str));
             if (strstr(str, "HTTP"))
               *(strstr(str, "HTTP")-1) = 0;
             strcpy(logbook, str);
