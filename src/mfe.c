@@ -7,6 +7,9 @@
                 linked with user code to form a complete frontend
 
   $Log$
+  Revision 1.68  2004/09/28 23:56:53  midas
+  Added -i flag and EQ_EB flag for event building
+
   Revision 1.67  2004/09/24 21:42:17  midas
   Send manually triggered events in scheduler
 
@@ -272,6 +275,7 @@ DWORD actual_millitime;            /* current time in milliseconds */
 
 char host_name[HOST_NAME_LENGTH];
 char exp_name[NAME_LENGTH];
+char full_frontend_name[256];
 
 INT max_bytes_per_sec;
 INT optimize = 0;                  /* set this to one to opimize TCP buffer size */
@@ -279,6 +283,7 @@ INT fe_stop = 0;                   /* stop switch for VxWorks */
 BOOL debug;                        /* disable watchdog messages from server */
 DWORD auto_restart = 0;            /* restart run after event limit reached stop */
 INT manual_trigger_event_id = 0;   /* set from the manual_trigger callback */
+INT frontend_index = -1;           /* frontend index for event building */
 
 HNDLE hDB;
 
@@ -509,12 +514,32 @@ INT register_equipment(void)
       eq_stats = &equipment[index].stats;
 
       if (eq_info->event_id == 0) {
-         printf("Event ID 0 for %s not allowed\n", equipment[index].name);
+         printf("\nEvent ID 0 for %s not allowed\n", equipment[index].name);
+         cm_disconnect_experiment();
          ss_sleep(5000);
+         exit(0);
       }
 
       /* init status */
       equipment[index].status = FE_SUCCESS;
+
+      /* check for event builder event */
+      if (eq_info->eq_type & EQ_EB) {
+
+         if (frontend_index == -1) {
+            printf("\nEquipment \"%s\" has EQ_EB set, but no", equipment[index].name); 
+            printf(" index specified via \"-i\" flag.\nExiting.");
+            cm_disconnect_experiment();
+            ss_sleep(5000);
+            exit(0);
+         }
+
+         /* modify equipment name to <name>xx where xx is the frontend index*/
+         sprintf(equipment[index].name+strlen(equipment[index].name), "%02d", frontend_index);
+
+         /* modify event buffer name to <name>xx where xx is the frontend index*/
+         sprintf(eq_info->buffer+strlen(eq_info->buffer), "%02d", frontend_index);
+      }
 
       sprintf(str, "/Equipment/%s/Common", equipment[index].name);
 
@@ -543,7 +568,7 @@ INT register_equipment(void)
          equipment[index].format = FORMAT_MIDAS;
 
       gethostname(eq_info->frontend_host, sizeof(eq_info->frontend_host));
-      strcpy(eq_info->frontend_name, frontend_name);
+      strcpy(eq_info->frontend_name, full_frontend_name);
       strcpy(eq_info->frontend_file_name, frontend_file_name);
 
       /* set record from equipment[] table in frontend.c */
@@ -1209,7 +1234,7 @@ void display(BOOL bInit)
       else
          strcpy(str, "<local>");
 
-      ss_printf(0, 0, "%s connected to %s. Press \"!\" to exit", frontend_name, str);
+      ss_printf(0, 0, "%s connected to %s. Press \"!\" to exit", full_frontend_name, str);
       ss_printf(0, 1,
                 "================================================================================");
       ss_printf(0, 2, "Run status:   %s",
@@ -1856,6 +1881,14 @@ INT cnaf_callback(INT index, void *prpc_param[])
 
 #endif                          /* HAVE_CAMAC */
 
+
+/*------------------------------------------------------------------*/
+
+INT get_frontend_index()
+{
+   return frontend_index;
+}
+
 /*------------------------------------------------------------------*/
 
 #ifdef OS_VXWORKS
@@ -1905,12 +1938,15 @@ int main(int argc, char *argv[])
             strcpy(exp_name, argv[++i]);
          else if (argv[i][1] == 'h')
             strcpy(host_name, argv[++i]);
+         else if (argv[i][1] == 'i')
+            frontend_index = atoi(argv[++i]);
          else {
           usage:
-            printf("usage: frontend [-h Hostname] [-e Experiment] [-d] [-D] [-O]\n");
+            printf("usage: frontend [-h Hostname] [-e Experiment] [-d] [-D] [-O] [-i n]\n");
             printf("         [-d]     Used to debug the frontend\n");
             printf("         [-D]     Become a daemon\n");
             printf("         [-O]     Become a daemon but keep stdout\n");
+            printf("         [-i n]   Set frontend index (used for event building)\n");
             return 0;
          }
       }
@@ -1954,7 +1990,13 @@ int main(int argc, char *argv[])
       dm_size = 0x4000;         /* 16k */
 #endif
 
+   /* add frontend index to frontend name if present */
+   strcpy(full_frontend_name, frontend_name);
+   if (frontend_index >= 0)
+      sprintf(full_frontend_name+strlen(full_frontend_name), "%02d", frontend_index);
+
    /* inform user of settings */
+   printf("Frontend name          :     %s\n", full_frontend_name);
    printf("Event buffer size      :     %d\n", event_buffer_size);
    printf("Buffer allocation      : 2 x %d\n", dm_size);
    printf("System max event size  :     %d\n", MAX_EVENT_SIZE);
@@ -1976,7 +2018,7 @@ int main(int argc, char *argv[])
          printf("Connect to experiment %s...", exp_name);
    }
 
-   status = cm_connect_experiment1(host_name, exp_name, frontend_name,
+   status = cm_connect_experiment1(host_name, exp_name, full_frontend_name,
                                    NULL, DEFAULT_ODB_SIZE, DEFAULT_FE_TIMEOUT);
    if (status != CM_SUCCESS) {
       /* let user read message before window might close */
