@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.60  2001/11/14 10:51:02  midas
+  Fixed bug with resubmission of attachments
+
   Revision 1.59  2001/11/14 08:58:56  midas
   Version 1.2.2
 
@@ -1509,7 +1512,7 @@ INT el_submit(char attr_name[MAX_N_ATTR][NAME_LENGTH],
 INT     n, i, size, fh, status, run_number, index, offset, tail_size;
 struct  tm *tms;
 char    file_name[256], afile_name[MAX_ATTACHMENTS][256], dir[256], str[256],
-        start_str[80], end_str[80], last[80], date[80], thread[80], attachment[256];
+        start_str[80], end_str[80], last[80], date[80], thread[80], attachment_all[64*MAX_ATTACHMENTS];
 time_t  now;
 char    message[TEXT_SIZE+100], *p;
 BOOL    bedit;
@@ -1603,7 +1606,7 @@ BOOL    bedit;
 
     el_decode(message, "Date: ", date);
     el_decode(message, "Thread: ", thread);
-    el_decode(message, "Attachment: ", attachment);
+    el_decode(message, "Attachment: ", attachment_all);
 
     /* buffer tail of logfile */
     lseek(fh, 0, SEEK_END);
@@ -1662,7 +1665,7 @@ BOOL    bedit;
     for (i=n=0 ; i<MAX_ATTACHMENTS ; i++)
       {
       if (i == 0)
-        p = strtok(attachment, ",");
+        p = strtok(attachment_all, ",");
       else
         if (p != NULL)
           p = strtok(NULL, ",");
@@ -1673,7 +1676,6 @@ BOOL    bedit;
         strcpy(str, data_dir);
         strcat(str, p);
         remove(str);
-        p = NULL;
         }
 
       if (afile_name[i][0] && !equal_ustring(afile_name[i], "<delete>"))
@@ -1687,7 +1689,7 @@ BOOL    bedit;
           sprintf(message+strlen(message), ",%s", afile_name[i]);
         }
 
-      if (!afile_name[i][0] && p && !equal_ustring(afile_name[i], "<delete>"))
+      else if (p && !equal_ustring(afile_name[i], "<delete>"))
         {
         if (n == 0)
           {
