@@ -8,6 +8,9 @@
                 CAMAC frontend (mfe.c)
 
   $Log$
+  Revision 1.5  1998/11/22 18:27:58  midas
+  Fixed &x and &q pointer bugs in various functions
+
   Revision 1.4  1998/10/13 07:23:21  midas
   Added void to cam_interrupt_attach(void (*isr)(void))
 
@@ -182,7 +185,7 @@ void cam16i_q(const int c, const int n, const int a, const int f,
 INT status, size;
 
   size = sizeof(WORD);
-  status = rpc_client_call(hConn, RPC_CNAF16, CNAF, 0, c, n, a, f, d, &size, &x, &q);
+  status = rpc_client_call(hConn, RPC_CNAF16, CNAF, 0, c, n, a, f, d, &size, x, q);
   if (status != RPC_SUCCESS)
     printf("RPC error %d\n", status);
 }
@@ -195,7 +198,7 @@ void cam24i_q(const int c, const int n, const int a, const int f,
 INT status, size;
 
   size = sizeof(DWORD);
-  status = rpc_client_call(hConn, RPC_CNAF24, CNAF, 0, c, n, a, f, d, &size, &x, &q);
+  status = rpc_client_call(hConn, RPC_CNAF24, CNAF, 0, c, n, a, f, d, &size, x, q);
   if (status != RPC_SUCCESS)
     printf("RPC error %d\n", status);
 }
@@ -382,7 +385,7 @@ void cam16o_q(const int c, const int n, const int a, const int f,
 INT status, size;
 
   size = sizeof(WORD);
-  status = rpc_client_call(hConn, RPC_CNAF16, CNAF, 0, c, n, a, f, &d, &size, &x, &q);
+  status = rpc_client_call(hConn, RPC_CNAF16, CNAF, 0, c, n, a, f, &d, &size, x, q);
   if (status != RPC_SUCCESS)
     printf("RPC error %d\n", status);
 }
@@ -395,7 +398,7 @@ void cam24o_q(const int c, const int n, const int a, const int f,
 INT status, size;
 
   size = sizeof(DWORD);
-  status = rpc_client_call(hConn, RPC_CNAF24, CNAF, 0, c, n, a, f, &d, &size, &x, &q);
+  status = rpc_client_call(hConn, RPC_CNAF24, CNAF, 0, c, n, a, f, &d, &size, x, q);
   if (status != RPC_SUCCESS)
     printf("RPC error %d\n", status);
 }
@@ -452,7 +455,7 @@ INT status, size, x;
 
   size = sizeof(WORD);
   status = 0;
-  status = rpc_client_call(hConn, RPC_CNAF16, CNAF, 0, c, n, a, f, &status, &size, &x, &q);
+  status = rpc_client_call(hConn, RPC_CNAF16, CNAF, 0, c, n, a, f, &status, &size, &x, q);
   if (status != RPC_SUCCESS)
     printf("RPC error %d\n", status);
 }
