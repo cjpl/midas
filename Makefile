@@ -6,6 +6,9 @@
 #  Contents:     Makefile for MIDAS binaries and examples under unix
 #
 #  $Log$
+#  Revision 1.36  2002/05/10 05:20:54  pierre
+#  add MANA_LITE option on mana & fal
+#
 #  Revision 1.35  2002/01/24 22:26:48  pierre
 #  rm elog, add cc for webpaw,odbhist
 #
@@ -164,7 +167,10 @@ SYSINC_DIR = $(PREFIX)/include
 #  Midas preference flags
 #  -DYBOS_VERSION_3_3  for YBOS up to version 3.3 
 MIDAS_PREF_FLAGS  =
-
+#
+# #MANA_OPTION = -DMANA_LITE for analyzer with HBOOK (default).
+# MANA_OPTION = -DMANA_LITE for analyzer without HBOOK.
+#MANA_OPTION = -DMANA_LITE
 #####################################################################
 # Nothing needs to be modified after this line 
 #####################################################################
@@ -362,9 +368,9 @@ $(LIB_DIR)/mana.o: $(SRC_DIR)/mana.c msystem.h midas.h midasinc.h mrpc.h
 $(LIB_DIR)/fal.o: $(SRC_DIR)/fal.c msystem.h midas.h midasinc.h mrpc.h
 
 $(LIB_DIR)/fal.o: $(SRC_DIR)/fal.c msystem.h midas.h midasinc.h mrpc.h
-	$(CC) -Dextname -c $(CFLAGS) $(OSFLAGS) -w -o $@ $<
+	$(CC) -Dextname -c $(CFLAGS) $(OSFLAGS) $(MANA_OPTION) -w -o $@ $<
 $(LIB_DIR)/mana.o: $(SRC_DIR)/mana.c msystem.h midas.h midasinc.h mrpc.h
-	$(CC) -Dextname -c $(CFLAGS) $(OSFLAGS) -w -o $@ $<
+	$(CC) -Dextname -c $(CFLAGS) $(OSFLAGS) $(MANA_OPTION) -w -o $@ $<
 $(LIB_DIR)/pmana.o: $(SRC_DIR)/mana.c msystem.h midas.h midasinc.h mrpc.h
 	$(CC) -Dextname -DPVM -c $(CFLAGS) $(OSFLAGS) -w -o $@ $<
 
