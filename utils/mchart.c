@@ -19,6 +19,10 @@
 		See mchart -h for further info.
 		
   $Log$
+  Revision 1.5  2000/10/20 21:59:55  pierre
+  - Fix duplicate config bug
+  - Add messages on spawning, creation.
+
   Revision 1.4  2000/10/20 19:10:57  pierre
   - cleanup code for arguments
     mchart -f <file>[.conf] for run
@@ -503,7 +507,8 @@ int main(unsigned int argc,char **argv)
     FILE *f;
     char strtmp[128];
     char * peqp;
-    
+
+    config_done = TRUE;
     create = FALSE;
     /* Overwrite the -q using the file.conf content */
     f = fopen(mchart_conf, "r");
@@ -545,7 +550,10 @@ int main(unsigned int argc,char **argv)
       last_time = ss_millitime();
       status = mchart_compose(hDB, mchart_conf, mchart_data, eqpstr);
       if (status != 1) goto error;
-      if (create_only) goto out;
+      if (create_only) {
+	printf("mchart file %s created\n", mchart_conf);
+	goto out;
+      }
     }
 
     /* spawn graph once if possible */
@@ -586,19 +594,23 @@ int main(unsigned int argc,char **argv)
 	sprintf(command,"gstripchart -g 500x200-200-800 -f %s", mchart_conf);
       else
       	sprintf(command,"stripchart %s", mchart_conf);
-      if (!daemon) printf("spawning graph with %s ...\n",command);
+
+      if (!daemon) printf("Spawning graph with %s ...\nUse '!' to exit\n"
+			  ,command);
       ss_exec(command, &childpid);
     }
     else if (graph == 2)
     { /* Gnu graph */
       sprintf(command,"gstripchart -g 500x200-200-800 -f %s", mchart_conf);
-      if (!daemon) printf("spawning graph with %s ...\n",command);
+      if (!daemon)  printf("Spawning graph with %s ...\nUse '!' to exit\n"
+			  ,command);
       ss_exec(command, &childpid);
     }
     else if (graph == 3)
     { /* Hofman graph */
       sprintf(command,"stripchart %s", mchart_conf);
-      if (!daemon) printf("spawning graph with %s ...\n",command);
+      if (!daemon)  printf("Spawning graph with %s ...\nUse '!' to exit\n"
+			  ,command);
       ss_exec(command, &childpid);
     }
     
