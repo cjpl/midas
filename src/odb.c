@@ -6,6 +6,9 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.66  2003/09/04 11:39:43  midas
+  Correct initial total_size of root key
+
   Revision 1.65  2003/07/26 23:25:55  olchansk
   more ODB validation checks on key size and num_items
 
@@ -1074,6 +1077,7 @@ INT                  timeout;
     /* store keylist in data field */
     pkey->data = (PTYPE) pkeylist - (PTYPE) pheader;
     pkey->item_size = sizeof(KEYLIST);
+    pkey->total_size = sizeof(KEYLIST);
 
     pkeylist->parent       = (PTYPE) pkey - (PTYPE) pheader;
     pkeylist->num_keys     = 0;
