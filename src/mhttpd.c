@@ -6,6 +6,9 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
+  Revision 1.29  1999/09/14 11:45:25  midas
+  Finished run number query
+
   Revision 1.28  1999/09/14 09:47:36  midas
   Fixed '/' and '\' handling with attachments
 
@@ -119,6 +122,7 @@ INT el_retrieve(char *tag, char *date, int *run, char *author, char *type,
 int el_submit(int run, char *author, char *type, char *system, char *subject, 
               char *text, char *reply_to, char *encoding, char *attachment, char *tag);
 INT el_search_message(char *tag, int *fh, BOOL walk);
+INT el_search_run(int run, char *return_tag);
 
 char *mname[] = {
   "January",
@@ -1308,11 +1312,13 @@ KEY    key;
 
 void show_elog_submit_query()
 {
-int    i, size, run, status;
+int    i, size, run, status, m1, d2, m2, y2;
 char   date[80], author[80], type[80], system[80], subject[256], text[10000], 
        orig_tag[80], reply_tag[80], attachment[256], encoding[80];
 char   str[256], tag[256], ref[80];
 HNDLE  hDB;
+DWORD  ltime_end, ltime_current;
+struct tm tms;
 
   cm_get_experiment_database(&hDB, NULL);
 
@@ -1348,15 +1354,73 @@ HNDLE  hDB;
   rsprintf("<input type=submit name=cmd value=\"Status\">\n");
   rsprintf("</tr>\n\n");
 
+  /*---- convert end date to ltime ----*/
+
+  strcpy(str, getparam("m1"));
+  for (m1=0 ; m1<12 ; m1++)
+    if (equal_ustring(str, mname[m1]))
+      break;
+  if (m1 == 12)
+    m1 = 0;
+
+  if (*getparam("m2") || *getparam("y2") || *getparam("d2"))
+    {
+    if (*getparam("m2"))
+      {
+      strcpy(str, getparam("m2"));
+      for (m2=0 ; m2<12 ; m2++)
+        if (equal_ustring(str, mname[m2]))
+          break;
+      if (m2 == 12)
+        m2 = 0;
+      }
+    else
+      m2 = m1;
+
+    if (*getparam("y2"))
+      y2 = atoi(getparam("y2"));
+    else
+      y2 = atoi(getparam("y1"));
+
+    if (*getparam("d2"))
+      d2 = atoi(getparam("d2"));
+    else
+      d2 = atoi(getparam("d1"));
+
+    memset(&tms, 0, sizeof(struct tm));
+    tms.tm_year = y2 % 100;
+    tms.tm_mon  = m2;
+    tms.tm_mday = d2;
+    tms.tm_hour = 12;
+
+    if (tms.tm_year < 90)
+      tms.tm_year += 100;
+    ltime_end = mktime(&tms);
+    }
+  else
+    ltime_end = 0;
+
   /*---- title row ----*/
 
-  if (*getparam("m2"))
-    rsprintf("<tr><td colspan=7 bgcolor=#FFFF00><b>Query result between %s %s %s and %s %s %s</b></tr>\n",
-              getparam("m1"), getparam("d1"), getparam("y1"),
-              getparam("m2"), getparam("d2"), getparam("y2"));
-  else
-    rsprintf("<tr><td colspan=7 bgcolor=#FFFF00><b>Query result between %s %s %s and today</b></tr>\n",
-              getparam("m1"), getparam("d1"), getparam("y1"));
+  if (*getparam("r1"))
+    {
+    if (*getparam("r2"))
+      rsprintf("<tr><td colspan=7 bgcolor=#FFFF00><b>Query result between runs %s and %s</b></tr>\n",
+                getparam("r1"), getparam("r2"));
+    else
+      rsprintf("<tr><td colspan=7 bgcolor=#FFFF00><b>Query result between run %s and today</b></tr>\n",
+                getparam("r1"));
+    }
+  else 
+    {
+    if (*getparam("m2") || *getparam("y2") || *getparam("d2"))
+      rsprintf("<tr><td colspan=7 bgcolor=#FFFF00><b>Query result between %s %s %s and %s %d %d</b></tr>\n",
+                getparam("m1"), getparam("d1"), getparam("y1"),
+                mname[m2], d2, y2);
+    else
+      rsprintf("<tr><td colspan=7 bgcolor=#FFFF00><b>Query result between %s %s %s and today</b></tr>\n",
+                getparam("m1"), getparam("d1"), getparam("y1"));
+    }
 
   rsprintf("</tr>\n<tr>");
 
@@ -1385,73 +1449,88 @@ HNDLE  hDB;
   if (*getparam("r1"))
     {
     /* do run query */
+    el_search_run(atoi(getparam("r1")), tag);
     }
   else
     {
     /* do date-date query */
-    strcpy(str, getparam("m1"));
-    for (i=0 ; i<12 ; i++)
-      if (equal_ustring(str, mname[i]))
-        break;
-    if (i == 12)
-      i = 0;
-
-    sprintf(tag, "%02d%02d%02d.0", atoi(getparam("y1")) % 100, i+1, atoi(getparam("d1")));
-
-    do
-      {
-      size = sizeof(text);
-      status = el_retrieve(tag, date, &run, author, type, system, subject, 
-                           text, &size, orig_tag, reply_tag, attachment, encoding);
-      strcat(tag, "+1");
-
-      if (status == EL_SUCCESS)
-        {
-        /* do filtering */
-        if (*getparam("author") && !equal_ustring(getparam("author"), author))
-          continue;
-        if (*getparam("type") && !equal_ustring(getparam("type"), type))
-          continue;
-        if (*getparam("system") && !equal_ustring(getparam("system"), system))
-          continue;
-        if (*getparam("subject"))
-          {
-          strcpy(str, getparam("subject"));
-          for (i=0 ; i<(int)strlen(str) ; i++)
-            str[i] = toupper(str[i]);
-          for (i=0 ; i<(int)strlen(subject) ; i++)
-            subject[i] = toupper(subject[i]);
-
-          if (strstr(subject, str) == NULL)
-            continue;
-          }
-
-        /* filter passed: display line */
-
-        strcpy(str, tag);
-        if (strchr(str, '+'))
-          *strchr(str, '+') = 0;
-        if (exp_name[0])
-          sprintf(ref, "%sEL/%s?exp=%s", mhttpd_url, str, exp_name);
-        else
-          sprintf(ref, "%sEL/%s", mhttpd_url, str);
-
-        strncpy(str, text, 80);
-        str[250] = 0;
-        rsprintf("<tr><td>%s<td>%d<td>%s<td>%s<td>%s<td>%s\n", date, run, author, type, system, subject);
-
-
-        rsprintf("<td><a href=%s>", ref);
-        
-        el_format(str, encoding);
-        
-        rsprintf("</a></tr>\n");
-        }
-
-      } while (status == EL_SUCCESS);
-    
+    sprintf(tag, "%02d%02d%02d.0", atoi(getparam("y1")) % 100, m1+1, atoi(getparam("d1")));
     }
 
+  do
+    {
+    size = sizeof(text);
+    status = el_retrieve(tag, date, &run, author, type, system, subject, 
+                         text, &size, orig_tag, reply_tag, attachment, encoding);
+    strcat(tag, "+1");
+
+    /* check for end run */
+    if (*getparam("r2") && atoi(getparam("r2")) < run)
+      break;
+
+    /* check for end date */
+    if (ltime_end > 0)
+      {
+      /* extract time structure from tag */
+      memset(&tms, 0, sizeof(struct tm));
+      tms.tm_year = (tag[0]-'0')*10 + (tag[1]-'0');
+      tms.tm_mon  = (tag[2]-'0')*10 + (tag[3]-'0') -1;
+      tms.tm_mday = (tag[4]-'0')*10 + (tag[5]-'0');
+      tms.tm_hour = 12;
+
+      if (tms.tm_year < 90)
+        tms.tm_year += 100;
+      ltime_current = mktime(&tms);
+
+      if (ltime_current > ltime_end)
+        break;
+      }
+
+    if (status == EL_SUCCESS)
+      {
+      /* do filtering */
+      if (*getparam("author") && !equal_ustring(getparam("author"), author))
+        continue;
+      if (*getparam("type") && !equal_ustring(getparam("type"), type))
+        continue;
+      if (*getparam("system") && !equal_ustring(getparam("system"), system))
+        continue;
+      if (*getparam("subject"))
+        {
+        strcpy(str, getparam("subject"));
+        for (i=0 ; i<(int)strlen(str) ; i++)
+          str[i] = toupper(str[i]);
+        for (i=0 ; i<(int)strlen(subject) ; i++)
+          subject[i] = toupper(subject[i]);
+
+        if (strstr(subject, str) == NULL)
+          continue;
+        }
+
+      /* filter passed: display line */
+
+      strcpy(str, tag);
+      if (strchr(str, '+'))
+        *strchr(str, '+') = 0;
+      if (exp_name[0])
+        sprintf(ref, "%sEL/%s?exp=%s", mhttpd_url, str, exp_name);
+      else
+        sprintf(ref, "%sEL/%s", mhttpd_url, str);
+
+      strncpy(str, text, 80);
+      str[250] = 0;
+      rsprintf("<tr><td>%s<td>%d<td>%s<td>%s<td>%s<td>%s\n", date, run, author, type, system, subject);
+
+
+      rsprintf("<td><a href=%s>", ref);
+      
+      el_format(str, encoding);
+      
+      rsprintf("</a></tr>\n");
+      }
+
+    } while (status == EL_SUCCESS);
+    
   rsprintf("</table>\n");
   rsprintf("</body></html>\r\n");
 }
@@ -2151,6 +2230,9 @@ void el_decode(char *message, char *key, char *result)
 {
 char *pc;
 
+  if (result == NULL)
+    return;
+
   *result = 0;
 
   if (strstr(message, key))
@@ -2316,7 +2398,7 @@ HNDLE  hDB;
                  (INT)ltime-(INT)lt < 3600*24*365);
 
       if (status != EL_SUCCESS)
-        return status;
+        return EL_FIRST_MSG;
 
       /* adjust tag */
       strcpy(tag, str);
@@ -2476,7 +2558,7 @@ char    message[10000], thread[256];
   close(fh);
 
   /* decode message */
-  if (strstr(message, "Run: "))
+  if (strstr(message, "Run: ") && run)
     *run = atoi(strstr(message, "Run: ")+5);
     
   el_decode(message, "Date: ", date);
@@ -2489,47 +2571,53 @@ char    message[10000], thread[256];
   el_decode(message, "Encoding: ", encoding);
 
   /* conver thread in reply-to and reply-from */
-  p = strtok(thread, " \r");
-  if (p != NULL)
-    strcpy(orig_tag, p);
-  else
-    strcpy(orig_tag, "");
-  p = strtok(NULL, " \r");
-  if (p != NULL)
-    strcpy(reply_tag, p);
-  else
-    strcpy(reply_tag, "");
-  if (atoi(orig_tag) == 0)
-    orig_tag[0] = 0;
-  if (atoi(reply_tag) == 0)
-    reply_tag[0] = 0;
+  if (orig_tag != NULL && reply_tag != NULL)
+    {
+    p = strtok(thread, " \r");
+    if (p != NULL)
+      strcpy(orig_tag, p);
+    else
+      strcpy(orig_tag, "");
+    p = strtok(NULL, " \r");
+    if (p != NULL)
+      strcpy(reply_tag, p);
+    else
+      strcpy(reply_tag, "");
+    if (atoi(orig_tag) == 0)
+      orig_tag[0] = 0;
+    if (atoi(reply_tag) == 0)
+      reply_tag[0] = 0;
+    }
 
   p = strstr(message, "========================================\n");
 
-  if (p != NULL)
+  if (text != NULL)
     {
-    p += 41;
-    if ((int) strlen(p) >= *textsize)
+    if (p != NULL)
       {
-      strncpy(text, p, *textsize-1);
-      text[*textsize-1] = 0;
-      return EL_TRUNCATED;
+      p += 41;
+      if ((int) strlen(p) >= *textsize)
+        {
+        strncpy(text, p, *textsize-1);
+        text[*textsize-1] = 0;
+        return EL_TRUNCATED;
+        }
+      else
+        {
+        strcpy(text, p);
+    
+        /* strip end tag */
+        if (strstr(text, "$End$"))
+          *strstr(text, "$End$") = 0;
+      
+        *textsize = strlen(text);
+        }
       }
     else
       {
-      strcpy(text, p);
-    
-      /* strip end tag */
-      if (strstr(text, "$End$"))
-        *strstr(text, "$End$") = 0;
-      
-      *textsize = strlen(text);
+      text[0] = 0;
+      *textsize = 0;
       }
-    }
-  else
-    {
-    text[0] = 0;
-    *textsize = 0;
     }
 
   if (search_status == EL_LAST_MSG)
@@ -2540,6 +2628,73 @@ char    message[10000], thread[256];
 
 /*------------------------------------------------------------------*/
 
+INT el_search_run(int run, char *return_tag)
+/********************************************************************\
+
+  Routine: el_search_run
+
+  Purpose: Find first message belonging to a specific run
+
+  Input:
+    int    run              Run number
+
+  Output:
+    char   *tag             tag of retrieved message
+
+  Function value:
+    EL_SUCCESS              Successful completion
+    EL_LAST_MSG             Last message in log
+
+\********************************************************************/
+{
+int     actual_run, fh, status;
+char    tag[256];
+
+  tag[0] = return_tag[0] = 0;
+
+  do
+    {
+    /* open first message in file */
+    strcat(tag, "-1");
+    status = el_search_message(tag, &fh, TRUE);
+    if (status == EL_FIRST_MSG)
+      break;
+    if (status != EL_SUCCESS)
+      return status;
+    close(fh);
+
+    if (strchr(tag, '.') != NULL)
+      strcpy(strchr(tag, '.'), ".0");
+
+    el_retrieve(tag, NULL, &actual_run, NULL, NULL, 
+                NULL, NULL, NULL, NULL, 
+                NULL, NULL, NULL, NULL);
+    } while (actual_run >= run);
+
+  while (actual_run < run)
+    {
+    strcat(tag, "+1");
+    status = el_search_message(tag, &fh, TRUE);
+    if (status == EL_LAST_MSG)
+      break;
+    if (status != EL_SUCCESS)
+      return status;
+    close(fh);
+
+    el_retrieve(tag, NULL, &actual_run, NULL, NULL, 
+                NULL, NULL, NULL, NULL, 
+                NULL, NULL, NULL, NULL);
+    }
+
+  strcpy(return_tag, tag);
+
+  if (status == EL_LAST_MSG || status == EL_FIRST_MSG)
+    return status;
+  
+  return EL_SUCCESS;
+}
+
+/*------------------------------------------------------------------*/
 
 void show_sc_page(char *path)
 {
