@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.60  2000/05/09 08:42:58  midas
+  Call analyzer_init after ODB load to correct record structures
+
   Revision 1.59  2000/05/09 08:00:58  midas
   Fixed bug with file not found in ma_open
 
@@ -2727,7 +2730,7 @@ static char  *orig_event = NULL;
       /* load ODB from event */
       odb_load(pevent);
 
-      cm_msg(MERROR, "process_event", "ODB load");
+      /* cm_msg(MERROR, "process_event", "ODB load"); */
       }
     }
   else
@@ -3348,6 +3351,9 @@ HNDLE hKey, hKeyRoot, hKeyEq;
     if (flag == 1)
       db_set_mode(hDB, 0, MODE_READ | MODE_WRITE | MODE_DELETE, TRUE);
 
+    /* reinit structured opened by user analyzer */
+    analyzer_init();
+
     /* reload parameter files after BOR event */
     if (!clp.quiet)
       printf("OK\n");
@@ -3386,7 +3392,8 @@ char    *ext_str;
 int     status;
 MA_FILE *file;
 
-  cm_msg(MERROR, "ma_open", "Open file %s", file_name);
+  /* cm_msg(MERROR, "ma_open", "Open file %s", file_name); */
+
   /* allocate MA_FILE structure */
   file = calloc(sizeof(MA_FILE), 1);
   if (file == NULL)
@@ -3440,19 +3447,13 @@ MA_FILE *file;
       {
       status = yb_any_file_ropen(file_name, FORMAT_YBOS);
       if (status != SS_SUCCESS)
-        {
-        printf("File %s not found\n", file_name);
         return NULL;
-        }
       }
     else
       {
       file->gzfile = gzopen(file_name, "rb");
       if (file->gzfile == NULL)
-        {
-        printf("File %s not found\n", file_name);
         return NULL;
-        }
       }
     }
 
@@ -3604,7 +3605,7 @@ DWORD           start_time;
   file = ma_open(input_file_name);
   if (file == NULL)
     {
-    printf("Cannot open input file \"%s\"", input_file_name);
+    printf("Cannot open input file \"%s\"\n", input_file_name);
     return -1;
     }
 
