@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol commands
 
   $Log$
+  Revision 1.44  2004/09/25 01:14:54  midas
+  Started implementing slave port on SCS-1000
+
   Revision 1.43  2004/09/10 12:27:22  midas
   Version 1.7.5
 
@@ -392,9 +395,12 @@ typedef struct {
 #endif
 } MSCB_INFO_VAR;
 
-#define MSCBF_FLOAT  (1<<0)     // channel in floating point format
-#define MSCBF_SIGNED (1<<1)     // channel is signed integer
+#define MSCBF_FLOAT    (1<<0)   // channel in floating point format
+#define MSCBF_SIGNED   (1<<1)   // channel is signed integer
 #define MSCBF_DATALESS (1<<2)   // channel doesn't contain data
+#define MSCBF_HIDDEN   (1<<3)   // used for internal config parameters
+#define MSCBF_REMIN    (1<<4)   // get variable from remote node on subbus
+#define MSCBF_REMOUT   (1<<5)   // send variable to remote node on subbus
 
 /* physical units */
 
@@ -465,6 +471,7 @@ typedef struct {                // system info stored in EEPROM
 
 /*---- function declarations ---------------------------------------*/
 
+void watchdog_refresh(void);
 void yield(void);
 void led_set(unsigned char led, unsigned char flag) reentrant;
 void led_blink(unsigned char led, unsigned char n, int interval) reentrant;
@@ -472,7 +479,7 @@ void led_mode(unsigned char led, unsigned char flag) reentrant;
 void delay_us(unsigned int us);
 void delay_ms(unsigned int ms);
 
-unsigned char crc8(unsigned char *buffer, int len);
+unsigned char crc8(unsigned char *buffer, int len) reentrant;
 unsigned char crc8_add(unsigned char crc, unsigned int c);
 
 void lcd_setup();
@@ -490,6 +497,9 @@ void eeprom_flash(void);
 unsigned char eeprom_retrieve(void);
 
 void uart_init(unsigned char port, unsigned char baud);
+unsigned char uart1_send(char *buffer, int size);
+unsigned char uart1_receive(char *buffer, int size);
+void send_remote_var(unsigned char i);
 
 void sysclock_init(void);
 unsigned long time(void);

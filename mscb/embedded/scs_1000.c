@@ -9,6 +9,9 @@
                 for SCS-1000 stand alone control unit
 
   $Log$
+  Revision 1.5  2004/09/25 01:14:54  midas
+  Started implementing slave port on SCS-1000
+
   Revision 1.4  2004/09/10 12:27:22  midas
   Version 1.7.5
 
@@ -67,6 +70,8 @@ struct {
    float adc[8];
    float dofs[2];
    float aofs[8];
+
+   float rem_adc, rem_dac;
 } xdata user_data;
 
 MSCB_INFO_VAR code variables[] = {
@@ -98,17 +103,21 @@ MSCB_INFO_VAR code variables[] = {
    { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC6",    &user_data.adc[6] },
    { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC7",    &user_data.adc[7] },
 
-   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "DOFS0",   &user_data.dofs[0], -0.1, 0.1, 0.001 },
-   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "DOFS1",   &user_data.dofs[1], -0.1, 0.1, 0.001 },
+   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "DOFS0",   &user_data.dofs[0], -0.1, 0.1, 0.001 },
+   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "DOFS1",   &user_data.dofs[1], -0.1, 0.1, 0.001 },
 
-   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "AOFS0",   &user_data.aofs[0], -0.1, 0.1, 0.001 },
-   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "AOFS1",   &user_data.aofs[1], -0.1, 0.1, 0.001 },
-   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "AOFS2",   &user_data.aofs[2], -0.1, 0.1, 0.001 },
-   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "AOFS3",   &user_data.aofs[3], -0.1, 0.1, 0.001 },
-   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "AOFS4",   &user_data.aofs[4], -0.1, 0.1, 0.001 },
-   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "AOFS5",   &user_data.aofs[5], -0.1, 0.1, 0.001 },
-   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "AOFS6",   &user_data.aofs[6], -0.1, 0.1, 0.001 },
-   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "AOFS7",   &user_data.aofs[7], -0.1, 0.1, 0.001 },
+   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "AOFS0",   &user_data.aofs[0], -0.1, 0.1, 0.001 },
+   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "AOFS1",   &user_data.aofs[1], -0.1, 0.1, 0.001 },
+   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "AOFS2",   &user_data.aofs[2], -0.1, 0.1, 0.001 },
+   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "AOFS3",   &user_data.aofs[3], -0.1, 0.1, 0.001 },
+   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "AOFS4",   &user_data.aofs[4], -0.1, 0.1, 0.001 },
+   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "AOFS5",   &user_data.aofs[5], -0.1, 0.1, 0.001 },
+   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "AOFS6",   &user_data.aofs[6], -0.1, 0.1, 0.001 },
+   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "AOFS7",   &user_data.aofs[7], -0.1, 0.1, 0.001 },
+
+   //## test
+//   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT | MSCBF_REMIN,  "RemAdc",  &user_data.rem_adc, 0, 0, 0, 1, 1 },
+   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT | MSCBF_REMOUT, "RemDac",  &user_data.rem_dac, 0, 0, 0, 1, 2 },
 
    { 0 }
 };

@@ -6,6 +6,9 @@
   Contents:     Various utility functions for MSCB protocol
 
   $Log$
+  Revision 1.40  2004/09/25 01:14:54  midas
+  Started implementing slave port on SCS-1000
+
   Revision 1.39  2004/09/10 12:32:50  midas
   *** empty log message ***
 
@@ -127,6 +130,7 @@
 
 #include "mscb.h"
 #include <intrins.h>
+#include <string.h>
 
 #ifdef EEPROM_SUPPORT
 
@@ -176,7 +180,7 @@ unsigned char code crc8_data[] = {
    0xb6, 0xe8, 0x0a, 0x54, 0xd7, 0x89, 0x6b, 0x35,
 };
 
-unsigned char crc8(unsigned char *buffer, int len)
+unsigned char crc8(unsigned char *buffer, int len) reentrant
 /********************************************************************\
 
   Routine: crc8
@@ -418,7 +422,7 @@ void serial_int1(void) interrupt 20 using 2
 
 /*------------------------------------------------------------------*/
 
-/* uncomment later when it will be used...
+#ifdef SCS_1000
 
 unsigned char uart1_send(char *buffer, int size)
 {
@@ -426,18 +430,59 @@ unsigned char i;
 
    SFRPAGE = UART1_PAGE;
 
+   RS485_SEC_ENABLE = 1;
    for (i=0 ; i<size ; i++) {
 
       ti1_shadow = 0;
 
       SBUF1 = *buffer++;
       while (ti1_shadow == 0);
+
+      watchdog_refresh();
    }
+   RS485_SEC_ENABLE = 0;
 
    return size;
 }
 
-*/
+/*------------------------------------------------------------------*/
+
+unsigned char uart1_receive(char *buffer, int size)
+{
+unsigned char len;
+long start_time;
+
+   start_time = time();
+   len = 0;
+   do {
+
+      if (time() - start_time > 10) // timeout after 100ms
+         return 0;
+
+      if (n_recv > 0) {
+
+         if ((rbuf[0] & 0xF8) != CMD_ACK)
+            return 0;
+
+         len = rbuf[0] & 0x07;
+
+         if (n_recv == len+1) {
+            if (n_recv > size)
+               memcpy(buffer, rbuf, size);
+            else
+               memcpy(buffer, rbuf, n_recv);
+            return n_recv;
+         }
+
+      watchdog_refresh();
+      }
+
+   } while (1);
+
+   return len;
+}
+
+#endif
 
 /*------------------------------------------------------------------*/
 
@@ -1319,9 +1364,9 @@ void lcd_setup()
    SFRPAGE = CONFIG_PAGE;
    P2MDOUT = 0xFF;
 
-   LCD = 0;
+   LCD &= ~(0xFE);
    delay_ms(15);
-   LCD = 0x30;
+   LCD |= 0x30;
 
    LCD_E = 1;
    delay_us(1);
