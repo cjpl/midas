@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.226  2004/11/10 05:40:23  pierre
+  correct transition loop check on client side
+
   Revision 1.225  2004/11/10 01:05:46  pierre
   fix transition problem
 
@@ -3433,12 +3436,18 @@ INT cm_set_transition_sequence(INT transition, INT sequence_number)
 
    cm_get_experiment_database(&hDB, &hKey);
 
+   // Find the transition type from the list
    for (i = 0; i < 13; i++)
-	   if (trans_name[i].transition == transition){
+       if (trans_name[i].transition == transition)
+         break;
+   sprintf(str, "Transition %s", trans_name[i].name);
+
+   // Change local sequence number for this transition type
+   for (i = 0; i < MAX_TRANSITIONS; i++)
+       if (_trans_table[i].transition == transition){
           _trans_table[i].sequence_number = sequence_number;
          break;
-	   }
-   sprintf(str, "Transition %s", trans_name[i].name);
+       }
 
    /* unlock database */
    db_set_mode(hDB, hKey, MODE_READ | MODE_WRITE, TRUE);
