@@ -6,6 +6,9 @@
   Contents:     Various utility functions for MSCB protocol
 
   $Log$
+  Revision 1.13  2002/10/16 15:28:25  midas
+  Fixed typo
+
   Revision 1.12  2002/10/09 15:48:13  midas
   Fixed bug with download
 
@@ -539,7 +542,7 @@ unsigned int  remaining_us;
 /*------------------------------------------------------------------*/
 
 void eeprom_read(void idata *dst, unsigned char len, 
-                 unsigned char idata *offset)
+                 unsigned char *offset)
 /********************************************************************\
 
   Routine: eeprom_read
@@ -597,11 +600,11 @@ EEPROM_RET:
 
 /*------------------------------------------------------------------*/
 
-void eeprom_write(void idata *src, unsigned char len, 
-                  unsigned char idata *offset)
+void eeprom_write(void *src, unsigned char len, 
+                  unsigned char *offset)
 /********************************************************************\
 
-  Routine: eeprom_read
+  Routine: eeprom_write
 
   Purpose: Read from internal EEPROM
 
