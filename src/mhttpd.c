@@ -6,6 +6,9 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
+  Revision 1.23  1999/09/02 15:02:13  midas
+  Display attachments
+
   Revision 1.22  1999/09/02 10:17:16  midas
   Implemented POST method
 
@@ -81,6 +84,7 @@
 #define CONNECT_TIME   600
 
 char return_buffer[1000000];
+int  return_length;
 char mhttpd_url[256];
 char exp_name[32];
 BOOL connected;
@@ -1111,7 +1115,7 @@ HNDLE  hDB, hkey;
   rsprintf("<tr><td><input type=\"checkbox\" name=\"html\" value=\"1\">Text contains HTML tags\n");
   
   /* attachment */
-  rsprintf("<td>Attachment: <input type=\"file\" size=\"30\" maxlength=\"256\" name=\"attfile\" value=\"\">\n");
+  rsprintf("<td>Attachment: <input type=\"file\" size=\"30\" maxlength=\"256\" name=\"attfile\" accept=\"filetype/*\" value=\"\">\n");
 
   rsprintf("</tr></table>\n");
   rsprintf("</body></html>\r\n");
@@ -1416,8 +1420,8 @@ char str[80];
 
 void show_elog_page(char *path)
 {
-int   size, run, msg_status, status, fh, first_message, last_message;
-char  str[256], command[80];
+int   size, i, run, msg_status, status, fh, length, first_message, last_message;
+char  str[256], command[80], ref[256], dir[256], file_name[256];
 char  date[80], author[80], type[80], system[80], subject[256], text[10000], 
       attachment[256], encoding[80];
 HNDLE hDB;
@@ -1484,6 +1488,66 @@ HNDLE hDB;
     return;
     }
 
+  /*---- check if file requested -----------------------------------*/
+
+  if (path[6] == '_' && path[13] == '_')
+    {
+    cm_get_experiment_database(&hDB, NULL);
+    file_name[0] = 0;
+    if (hDB > 0)
+      {
+      size = sizeof(file_name);
+      memset(file_name, 0, size);
+      db_get_value(hDB, 0, "/Logger/Data dir", file_name, &size, TID_STRING);
+      if (file_name[0] != 0)
+        if (dir[strlen(file_name)-1] != DIR_SEPARATOR)
+          strcat(file_name, DIR_SEPARATOR_STR);
+      }
+    strcat(file_name, path);
+
+    fh = open(file_name, O_RDONLY);
+    if (fh > 0)
+      {
+      lseek(fh, 0, SEEK_END);
+      length = TELL(fh);
+      lseek(fh, 0, SEEK_SET);
+
+      rsprintf("HTTP/1.0 200 Document follows\r\n");
+      rsprintf("Server: MIDAS HTTP %s\r\n", cm_get_version());
+
+      /* return proper header for file type */
+      for (i=0 ; i<(int)strlen(path) ; i++)
+        str[i] = toupper(path[i]);
+      if (strstr(str, ".JPG"))
+        rsprintf("Content-Type: image/jpeg\r\n");
+      else if (strstr(str, ".GIF"))
+        rsprintf("Content-Type: image/gif\r\n");
+      else if (strstr(str, ".PS"))
+        rsprintf("Content-Type: application/postscript\r\n");
+      else if (strstr(str, ".EPS"))
+        rsprintf("Content-Type: application/postscript\r\n");
+      else
+        rsprintf("Content-Type: text/plain\r\n");
+      
+      rsprintf("Content-Length: %d\r\n\r\n", length);
+
+      /* return if file too big */
+      if (length > (int) (sizeof(return_buffer) - strlen(return_buffer)))
+        {
+        printf("return buffer too small\n");
+        close(fh);
+        return;
+        }
+
+      return_length = strlen(return_buffer)+length;
+      read(fh, return_buffer+strlen(return_buffer), length);
+
+      close(fh);
+      }
+
+    return;
+    }
+
   /*---- get current message ---------------------------------------*/
 
   size = sizeof(text);
@@ -1518,17 +1582,16 @@ HNDLE hDB;
 
   /*---- menu buttons ----*/
 
-  rsprintf("<tr><td bgcolor=#C0C0C0>\n");
-
+  rsprintf("<tr><td colspan=2 bgcolor=#C0C0C0>\n");
   rsprintf("<input type=submit name=cmd value=New>\n");
   rsprintf("<input type=submit name=cmd value=Reply>\n");
   rsprintf("<input type=submit name=cmd value=Query>\n");
   rsprintf("<input type=submit name=cmd value=Status>\n");
+  rsprintf("</tr>\n");
 
-  rsprintf("<td bgcolor=#C0C0C0>");
+  rsprintf("<tr><td colspan=2 bgcolor=#E0E0E0>");
   rsprintf("<input type=submit name=cmd value=Next>\n");
   rsprintf("<input type=submit name=cmd value=Previous>\n");
-
   rsprintf("</tr>\n\n");
 
   /*---- message ----*/
@@ -1557,7 +1620,30 @@ HNDLE hDB;
     rsprintf("<td bgcolor=#A0FFA0>Subject: <b>%s</b></tr>\n", subject);
 
     if (attachment[0])
-      rsprintf("<tr><td colspan=2 bgcolor=#8080FF>Attachment: <b>%s</b></tr>\n", attachment);
+      {
+      for (i=0 ; i<(int)strlen(attachment) ; i++)
+        str[i] = toupper(attachment[i]);
+      
+      if (exp_name[0])
+        sprintf(ref, "%sEL/%s?exp=%s", 
+                mhttpd_url, attachment, exp_name);
+      else
+        sprintf(ref, "%sEL/%s", 
+                mhttpd_url, attachment);
+
+      if (strstr(str, ".GIF") ||
+          strstr(str, ".JPG"))
+        {
+        rsprintf("<tr><td colspan=2>Attachment: <a href=\"%s\"><b>%s</b></a><br>\n", 
+                  ref, attachment+14);
+        rsprintf("<img src=%s></tr>", ref);
+        }
+      else
+        {
+        rsprintf("<tr><td colspan=2 bgcolor=#8080FF>Attachment: <a href=\"%s\"><b>%s</b></a></tr>\n", 
+                  ref, attachment+14);
+        }
+      }
 
     rsprintf("<tr><td colspan=2>\n");
 
@@ -1717,6 +1803,15 @@ HNDLE  hDB;
   /* if tag is given, open file directly */
   if (tag[0])
     {
+    /* extract time structure from tag */
+    tms = &ltms;
+    memset(tms, 0, sizeof(struct tm));
+    tms->tm_year = (tag[0]-'0')*10 + (tag[1]-'0');
+    tms->tm_mon  = (tag[2]-'0')*10 + (tag[3]-'0') -1;
+    tms->tm_mday = (tag[4]-'0')*10 + (tag[5]-'0');
+    tms->tm_hour = 12;
+    ltime = lt = mktime(tms);
+
     strcpy(str, tag);
     if (strchr(str, '.'))
       {
@@ -1726,24 +1821,32 @@ HNDLE  hDB;
     else
       return EL_FILE_ERROR;
 
-    sprintf(file_name, "%s%s.log", dir, str);
+    do
+      {
+      tms = localtime(&ltime);
 
-    *fh = open(file_name, O_RDONLY | O_BINARY, 0644);
+      sprintf(file_name, "%s%02d%02d%02d.log", dir, 
+              tms->tm_year, tms->tm_mon+1, tms->tm_mday);
+      *fh = open(file_name, O_RDONLY | O_BINARY, 0644);
+
+      if (direction == -1)
+        ltime -= 3600*24; /* one day back */
+      else
+        ltime += 3600*24; /* go forward one day */
+
+      if (*fh < 0)
+        {
+        /* set new tag */
+        tms = localtime(&ltime);
+        sprintf(tag, "%02d%02d%02d.0", tms->tm_year, tms->tm_mon+1, tms->tm_mday);
+        }
+
+      } while (*fh < 0 && abs((INT)lt-(INT)ltime) < 3600*24*365);
+
     if (*fh < 0)
       return EL_FILE_ERROR;
 
     lseek(*fh, offset, SEEK_SET);
-
-    /* extract time structure from file_name */
-
-    tms = &ltms;
-    memset(tms, 0, sizeof(struct tm));
-    tms->tm_year = (tag[0]-'0')*10 + (tag[1]-'0');
-    tms->tm_mon  = (tag[2]-'0')*10 + (tag[3]-'0') -1;
-    tms->tm_mday = (tag[4]-'0')*10 + (tag[5]-'0');
-    tms->tm_hour = 12;
-
-    ltime = mktime(tms);
     }
 
   /* open most recent file if no tag given */
@@ -3971,6 +4074,10 @@ HNDLE  hDB;
 
   pinit = string;
 
+  /* return if no boundary defined */
+  if (!boundary[0])
+    return;
+
   if (strstr(string, boundary))
     string = strstr(string, boundary) + strlen(boundary);
 
@@ -4054,6 +4161,9 @@ HNDLE  hDB;
             p++;
             break;
             }
+          else
+            ptmp += strlen(ptmp);
+
           } while (TRUE);
 
         /* save file */
@@ -4299,6 +4409,8 @@ INT                  last_time=0;
           strncmp(net_buffer, "POST", 4) != 0)
         goto error;
       
+      return_length = 0;
+
       if (strncmp(net_buffer, "GET", 3) == 0)
         {
         /* extract path and commands */
@@ -4316,8 +4428,10 @@ INT                  last_time=0;
         decode_post(net_buffer+header_length, boundary, content_length, cookie_pwd, refresh);
         }
 
-      i = strlen(return_buffer);
-      send(sock, return_buffer, i+1, 0);
+      if (return_length == 0)
+        return_length = strlen(return_buffer)+1;
+
+      send(sock, return_buffer, return_length, 0);
 
   error:
 
