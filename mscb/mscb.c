@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus communication functions
 
   $Log$
+  Revision 1.69  2004/05/19 15:14:47  midas
+  *** empty log message ***
+
   Revision 1.68  2004/05/17 09:33:16  midas
   Added #ifdef _USRDLL
 
@@ -210,7 +213,7 @@
 
 \********************************************************************/
 
-#define MSCB_LIBRARY_VERSION   "1.7.1"
+#define MSCB_LIBRARY_VERSION   "1.7.2"
 #define MSCB_PROTOCOL_VERSION  "1.7"
 
 #ifdef _MSC_VER                 // Windows includes
