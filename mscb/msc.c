@@ -6,6 +6,9 @@
   Contents:     Command-line interface for the Midas Slow Control Bus
 
   $Log$
+  Revision 1.31  2003/03/05 15:58:36  midas
+  Added bit output
+
   Revision 1.30  2003/02/27 10:43:33  midas
   Changed 'address' command to non-acknowledge
 
@@ -227,9 +230,15 @@ int  i;
 
     case 1:  
       if (info_chn->flags & MSCBF_SIGNED)
-        printf(" 8bit %8d (0x%02X)", data, data); 
+        printf(" 8bit %8d (0x%02X, ", data, data); 
       else
-        printf(" 8bit %8u (0x%02X)", data, data); 
+        printf(" 8bit %8u (0x%02X, ", data, data); 
+      for (i=0 ; i<8 ; i++)
+        if (data & (0x80 >> i))
+          printf("1");
+        else
+          printf("0");
+      printf(")");
       break;
 
     case 2: 
@@ -705,6 +714,8 @@ MSCB_INFO_CHN info_chn;
                 printf("Error: %d\n", status);
               else
                 print_channel(addr, &info_chn, data, 0);
+
+              Sleep(10);
               } while (param[2][0] && !kbhit());
 
             while (kbhit())
