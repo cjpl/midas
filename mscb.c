@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus communication functions
 
   $Log$
+  Revision 1.84  2005/03/21 10:57:25  ritt
+  Version 2.0.0
+
   Revision 1.83  2005/03/16 14:11:11  ritt
   Added ethernet protocol
 
@@ -256,8 +259,8 @@
 
 \********************************************************************/
 
-#define MSCB_LIBRARY_VERSION   "1.9.0"
-#define MSCB_PROTOCOL_VERSION  "1.9"
+#define MSCB_LIBRARY_VERSION   "2.0.0"
+#define MSCB_PROTOCOL_VERSION  "2.0"
 
 #ifdef _MSC_VER                 // Windows includes
 
@@ -384,6 +387,7 @@ extern void debug_log(char *format, ...);
 #define RS485_FLAG_SHORT_TO  (1<<2)
 #define RS485_FLAG_LONG_TO   (1<<3)
 #define RS485_FLAG_CMD       (1<<4)
+#define RS485_FLAG_ADR_CYCLE (1<<5)
 
 /*------------------------------------------------------------------*/
 
@@ -1227,10 +1231,11 @@ int lpt_init(char *device, int index)
                             DirectIO address
   Function value:
     0                       Successful completion
-    -1                      Invalid parameter or other error
-    -2                      Submaster does not respond
-    -3                      No DirectIO driver
-    -4                      MSCB system locked by other user
+    EMSCB_INVAL_PARAM       Invalid "device" parameter
+    EMSCB_COMM_ERROR        Submaster does not respond
+    EMSCB_NO_DIRECTIO       No DirectIO driver
+    EMSCB_LOCKED            MSCB system locked by other user
+    EMSCB_NO_ACCESS         No access to submaster
 
 \********************************************************************/
 {
@@ -1246,14 +1251,13 @@ int lpt_init(char *device, int index)
    DWORD size;
    HANDLE hdio;
 
-
    /* derive base address from device name */
    if (atoi(device + 3) == 1)
       mscb_fd[index].fd = 0x378;
    else if (atoi(device + 3) == 2)
       mscb_fd[index].fd = 0x278;
    else
-      return -1;
+      return EMSCB_INVAL_PARAM;
 
    buffer[0] = 6;               /* give IO */
    buffer[1] = mscb_fd[index].fd;
@@ -1268,11 +1272,11 @@ int lpt_init(char *device, int index)
       hdio = CreateFile("\\\\.\\directio", GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
       if (hdio == INVALID_HANDLE_VALUE) {
          //printf("mscb.c: Cannot access parallel port (No DirectIO driver installed)\n");
-         return -3;
+         return EMSCB_NO_DIRECTIO;
       }
 
       if (!DeviceIoControl(hdio, (DWORD) 0x9c406000, &buffer, sizeof(buffer), NULL, 0, &size, NULL))
-         return -1;
+         return EMSCB_NO_DIRECTIO;
    }
 #elif defined(OS_LINUX)
 
@@ -1284,7 +1288,7 @@ int lpt_init(char *device, int index)
       perror("open");
       printf("Please make sure that device \"%s\" is world readable/writable\n", device);
 #endif
-      return -1;
+      return EMSCB_NO_ACCESS;
    }
 
    if (ioctl(mscb_fd[index].fd, PPCLAIM)) {
@@ -1292,14 +1296,14 @@ int lpt_init(char *device, int index)
       perror("PPCLAIM");
       printf("Please load driver via \"modprobe parport_pc\" as root\n");
 #endif
-      return -1;
+      return EMSCB_NO_ACCESS;
    }
 
    if (ioctl(mscb_fd[index].fd, PPRELEASE)) {
 #ifndef _USRDLL
       perror("PPRELEASE");
 #endif
-      return -1;
+      return EMSCB_NO_ACCESS;
    }
 
    i = IEEE1284_MODE_BYTE;
@@ -1307,13 +1311,13 @@ int lpt_init(char *device, int index)
 #ifndef _USRDLL
       perror("PPSETMODE");
 #endif
-      return -1;
+      return EMSCB_NO_ACCESS;
    }
 #endif
 
    status = mscb_lock(index + 1);
    if (status != MSCB_SUCCESS)
-      return -4;
+      return EMSCB_LOCKED;
 
    /* set initial state of handshake lines */
    pp_wcontrol(index + 1, LPT_RESET, 0);
@@ -1329,7 +1333,7 @@ int lpt_init(char *device, int index)
    if (pp_rstatus(index + 1, LPT_BUSY)) {
       //printf("mscb.c: No SM present on parallel port\n");
       mscb_release(index + 1);
-      return -2;
+      return EMSCB_LPT_ERROR;
    }
 
    /* empty RBuffer of SM */
@@ -1488,7 +1492,7 @@ int musb_init(int index, int *hUSBRead, int *hUSBWrite)
                                       OPEN_EXISTING, FILE_FLAG_OVERLAPPED, NULL);
 
          if (*hUSBRead == (int) INVALID_HANDLE_VALUE)
-            return -1;
+            return EMSCB_NO_ACCESS;
       }
 
       if (hUSBWrite) {
@@ -1499,11 +1503,11 @@ int musb_init(int index, int *hUSBRead, int *hUSBWrite)
                                        FILE_SHARE_WRITE | FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
 
          if (*hUSBWrite == (int) INVALID_HANDLE_VALUE)
-            return -1;
+            return EMSCB_NO_ACCESS;
       }
 
    } else
-      return -1;
+      return EMSCB_NOT_FOUND;
 
    return 0;
 }
@@ -1532,14 +1536,14 @@ int musb_init(int index, int *fdr, int *fdw)
                if (fdr && fdw) {
                   udev = usb_open(dev);
                   if (!udev)
-                     return -1;
+                     return EMSCB_NO_ACCESS;
 
                   if (usb_set_configuration(udev, 1) < 0)
-                     return -5;
+                     return EMSCB_NO_WRITE_ACCESS;
 
                   /* see if we have write access */
                   if (usb_claim_interface(udev, 0) < 0)
-                     return -5;
+                     return EMSCB_NO_WRITE_ACCESS;
                   usb_release_interface(udev, 0);
 
                   *fdr = (int) udev;
@@ -1552,7 +1556,7 @@ int musb_init(int index, int *fdr, int *fdw)
       }
    }
 
-   return -1;
+   return EMSCB_NOT_FOUND;
 }
 
 #elif defined(OS_DARWIN)
@@ -1600,7 +1604,6 @@ int musb_init(int index, int *fdr, int *fdw)
 		found++;
 		if (found==index+1)
 		{
-printf("Here0\n");
 			if (fdr && fdw) {
 
 		  	status = (*device)->USBDeviceOpen(device);
@@ -1609,26 +1612,23 @@ printf("Here0\n");
 		  	status = (*device)->SetConfiguration(device,1);
 			assert(status==kIOReturnSuccess);
 
-    IOUSBFindInterfaceRequest request;
+         IOUSBFindInterfaceRequest request;
 
-    request.bInterfaceClass = kIOUSBFindInterfaceDontCare;
-    request.bInterfaceSubClass = kIOUSBFindInterfaceDontCare;
-    request.bInterfaceProtocol = kIOUSBFindInterfaceDontCare;
-    request.bAlternateSetting = kIOUSBFindInterfaceDontCare;
+         request.bInterfaceClass = kIOUSBFindInterfaceDontCare;
+         request.bInterfaceSubClass = kIOUSBFindInterfaceDontCare;
+         request.bInterfaceProtocol = kIOUSBFindInterfaceDontCare;
+         request.bAlternateSetting = kIOUSBFindInterfaceDontCare;
 
-	status = (*device)->CreateInterfaceIterator(device,&request,&iter);
-	assert(status==kIOReturnSuccess);
+	      status = (*device)->CreateInterfaceIterator(device,&request,&iter);
+	      assert(status==kIOReturnSuccess);
 
-printf("HereA\n");
+	      while ((service=IOIteratorNext(iter)))
+	      {
+	      status = IOCreatePlugInInterfaceForService(service, kIOUSBInterfaceUserClientTypeID, kIOCFPlugInInterfaceID, &plugin, &score);
+	      assert(status==kIOReturnSuccess);
 
-	while ((service=IOIteratorNext(iter)))
-	{
-printf("HereB\n");
-	status = IOCreatePlugInInterfaceForService(service, kIOUSBInterfaceUserClientTypeID, kIOCFPlugInInterfaceID, &plugin, &score);
-	assert(status==kIOReturnSuccess);
-
-	status = (*plugin)->QueryInterface(plugin, CFUUIDGetUUIDBytes (kIOUSBInterfaceInterfaceID), (void*)&interface);
-	assert(status==kIOReturnSuccess);
+	      status = (*plugin)->QueryInterface(plugin, CFUUIDGetUUIDBytes (kIOUSBInterfaceInterfaceID), (void*)&interface);
+	      assert(status==kIOReturnSuccess);
 
 
 		  	status = (*interface)->USBInterfaceOpen(interface);
@@ -1651,7 +1651,6 @@ printf("HereB\n");
 	}
 	return 0;
 		}
-printf("Here1\n");
 		}
 	(*device)->Release(device);
 	}
@@ -1692,7 +1691,7 @@ int mrpc_connected(int fd)
 
 /*------------------------------------------------------------------*/
 
-int mscb_init(char *device, int bufsize, int debug)
+int mscb_init(char *device, int bufsize, char *password, int debug)
 /********************************************************************\
 
   Routine: mscb_init
@@ -1713,20 +1712,34 @@ int mscb_init(char *device, int bufsize, int debug)
     int bufsize             Size of "device" string, in case no device
                             is specified from the caller and this function
                             returns the chosen device
+    int password            Optional password, used for ethernet submasters
     int debug               Debug flag. If "1" debugging information is
                             written to "mscb_debug.log" in the current
                             directory. If "-1", do not ask for device
                             (useb by LabView DLL)
 
   Function value:
-    int fd                  device descriptor for connection, -1 if
-                            error
+    int fd                  device descriptor for connection, negative
+                            number in case of error:
+
+    EMSCB_NO_MEM            Out of memory for file descriptors
+    EMSCB_RPC_ERROR         Cannot talk to RPC server
+    EMSCB_COMM_ERROR        Submaster does not reply on echo
+    EMSCB_NO_DIRECTIO       No DirectIO driver for LPT installed
+    EMSCB_LOCKED            MSCB system locked by other user
+    EMSCB_NO_ACCESS         No access to submaster
+    EMSCB_INVAL_PARAM       Invalid parameter
+    EMSCB_NOT_FOUND         USB submaster not found
+    EMSCB_NO_WRITE_ACCESS   No write access under linux
+    EMSCB_WRONG_PASSWORD    Wrong password
+    EMSCB_LPT_ERROR         Error talking to LPT submaster
 
 \********************************************************************/
 {
    int index, i, n;
    int status;
-   char host[256], port[256], dev3[256], buf[10], remote_device[256];
+   char host[256], port[256], dev3[256], remote_device[256];
+   unsigned char buf[10];
 
    /* search for new file descriptor */
    for (index = 0; index < MSCB_MAX_FD; index++)
@@ -1734,12 +1747,12 @@ int mscb_init(char *device, int bufsize, int debug)
          break;
 
    if (index == MSCB_MAX_FD)
-      return -1;
+      return EMSCB_NO_MEM;
 
    /* set global debug flag */
    _debug_flag = (debug == 1);
 
-   debug_log("mscb_init( %s %d %d * %d)\n", device, bufsize, debug);
+   debug_log("mscb_init( %s %d %s %d * %d)\n", device, bufsize, password, debug);
 
    /* clear cache */
    for (i = 0; i < n_cache; i++)
@@ -1767,14 +1780,14 @@ int mscb_init(char *device, int bufsize, int debug)
 
       if (mscb_fd[index].fd < 0) {
          mscb_fd[index].fd = 0;
-         return -1;
+         return EMSCB_RPC_ERROR;
       }
 
       mscb_fd[index].remote_fd = mrpc_call(mscb_fd[index].fd, RPC_MSCB_INIT, remote_device, bufsize, debug);
       if (mscb_fd[index].remote_fd < 0) {
          mrpc_disconnect(mscb_fd[index].fd);
          mscb_fd[index].fd = 0;
-         return -1;
+         return EMSCB_RPC_ERROR;
       }
 
       sprintf(device, "%s:%s", host, remote_device);
@@ -1811,7 +1824,7 @@ int mscb_init(char *device, int bufsize, int debug)
       mscb_fd[index].type = MSCB_TYPE_ETH;
 
    if (mscb_fd[index].type == 0)
-      return -1;
+      return EMSCB_INVAL_PARAM;
 
    /*---- initialize submaster ----*/
 
@@ -1831,7 +1844,7 @@ int mscb_init(char *device, int bufsize, int debug)
       /* linux needs some time to start-up ...??? */
       for (i = 0; i < 10; i++) {
          if (!mscb_lock(index + 1))
-            return -6;
+            return EMSCB_LOCKED;
 
          /* check if submaster alive */
          buf[0] = MCMD_ECHO;
@@ -1845,7 +1858,7 @@ int mscb_init(char *device, int bufsize, int debug)
       }
 
       if (n != 2 || buf[0] != MCMD_ACK)
-         return -4;
+         return EMSCB_COMM_ERROR;
    }
 
    if (mscb_fd[index].type == MSCB_TYPE_ETH) {
@@ -1854,21 +1867,33 @@ int mscb_init(char *device, int bufsize, int debug)
 
       if (mscb_fd[index].fd < 0) {
          mscb_fd[index].fd = 0;
-         return -1;
+         return EMSCB_RPC_ERROR;
       }
 
       if (!mscb_lock(index + 1))
-         return -6;
+         return EMSCB_LOCKED;
 
-      /* check if submaster alive */
-      buf[0] = MCMD_ECHO;
-      mscb_out(index + 1, buf, 1, RS485_FLAG_CMD);
+      /* authenticate */
+      memset(buf, 0, sizeof(buf));
+      buf[0] = MCMD_TOKEN;
+      if (password)
+         strcpy(buf+1, password);
+      else
+         buf[1] = 0;
+      mscb_out(index + 1, buf, 21, RS485_FLAG_CMD);
 
       n = mscb_in(index + 1, buf, 2, 10000);
       mscb_release(index + 1);
 
-      if (n != 2 || buf[0] != MCMD_ACK)
-         return -4;
+      if (n != 1 || (buf[0] != MCMD_ACK && buf[0] != 0xFF)) {
+         mscb_exit(index + 1);
+         return EMSCB_COMM_ERROR;
+      }
+
+      if (buf[0] == 0xFF) {
+         mscb_exit(index + 1);
+         return EMSCB_WRONG_PASSWORD;
+      }
 
       return index + 1;
    }
@@ -1903,6 +1928,9 @@ int mscb_exit(int fd)
 
    if (mscb_fd[fd - 1].type == MSCB_TYPE_USB)
       musb_close(mscb_fd[fd - 1].hr, mscb_fd[fd - 1].hw);
+
+   if (mscb_fd[fd - 1].type == MSCB_TYPE_ETH)
+      mrpc_disconnect(mscb_fd[fd - 1].fd);
 
    /* outcommented, other client (like Labview) could still use LPT ...
    if (mscb_fd[fd - 1].type == MSCB_TYPE_LPT)
@@ -1980,7 +2008,7 @@ void mscb_check(char *device, int size)
 {
    int i, fd, d;
 
-   mscb_init(device, size, 0);
+   mscb_init(device, size, "", 0);
    fd = 1;
 
    mscb_lock(fd);
@@ -2168,7 +2196,6 @@ int mscb_reboot(int fd, int adr)
 \********************************************************************/
 {
    unsigned char buf[10];
-   int status;
 
    if (fd > MSCB_MAX_FD || fd < 1 || !mscb_fd[fd - 1].type)
       return MSCB_INVAL_PARAM;
@@ -2179,15 +2206,14 @@ int mscb_reboot(int fd, int adr)
    if (mscb_lock(fd) != MSCB_SUCCESS)
       return MSCB_MUTEX;
 
-   status = mscb_addr(fd, MCMD_PING16, adr, 10, 0);
-   if (status != MSCB_SUCCESS) {
-      mscb_release(fd);
-      return status;
-   }
+   buf[0] = MCMD_ADDR_NODE16;
+   buf[1] = (unsigned char) (adr >> 8);
+   buf[2] = (unsigned char) (adr & 0xFF);
+   buf[3] = crc8(buf, 3);
 
-   buf[0] = MCMD_INIT;
-   buf[1] = crc8(buf, 1);
-   mscb_out(fd, buf, 2, RS485_FLAG_NO_ACK);
+   buf[4] = MCMD_INIT;
+   buf[5] = crc8(buf+4, 1);
+   mscb_out(fd, buf, 6, RS485_FLAG_NO_ACK | RS485_FLAG_ADR_CYCLE);
 
    mscb_release(fd);
 
@@ -2306,7 +2332,7 @@ int mscb_info(int fd, int adr, MSCB_INFO * info)
 
 \********************************************************************/
 {
-   int i, status;
+   int i;
    unsigned char buf[256];
 
    if (fd > MSCB_MAX_FD || fd < 1 || !mscb_fd[fd - 1].type)
@@ -2318,15 +2344,14 @@ int mscb_info(int fd, int adr, MSCB_INFO * info)
    if (mscb_lock(fd) != MSCB_SUCCESS)
       return MSCB_MUTEX;
 
-   status = mscb_addr(fd, MCMD_PING16, adr, 10, 0);
-   if (status != MSCB_SUCCESS) {
-      mscb_release(fd);
-      return status;
-   }
+   buf[0] = MCMD_ADDR_NODE16;
+   buf[1] = (unsigned char) (adr >> 8);
+   buf[2] = (unsigned char) (adr & 0xFF);
+   buf[3] = crc8(buf, 3);
 
-   buf[0] = MCMD_GET_INFO;
-   buf[1] = crc8(buf, 1);
-   mscb_out(fd, buf, 2, RS485_FLAG_LONG_TO);
+   buf[4] = MCMD_GET_INFO;
+   buf[5] = crc8(buf+4, 1);
+   mscb_out(fd, buf, 6, RS485_FLAG_LONG_TO | RS485_FLAG_ADR_CYCLE);
 
    i = mscb_in(fd, buf, sizeof(buf), 10000);
    mscb_release(fd);
@@ -2373,7 +2398,7 @@ int mscb_info_variable(int fd, int adr, int index, MSCB_INFO_VAR * info)
 
 \********************************************************************/
 {
-   int i, status;
+   int i;
    unsigned char buf[80];
 
    if (fd > MSCB_MAX_FD || fd < 1 || !mscb_fd[fd - 1].type)
@@ -2386,16 +2411,15 @@ int mscb_info_variable(int fd, int adr, int index, MSCB_INFO_VAR * info)
    if (mscb_lock(fd) != MSCB_SUCCESS)
       return MSCB_MUTEX;
 
-   status = mscb_addr(fd, MCMD_PING16, adr, 10, 0);
-   if (status != MSCB_SUCCESS) {
-      mscb_release(fd);
-      return status;
-   }
+   buf[0] = MCMD_ADDR_NODE16;
+   buf[1] = (unsigned char) (adr >> 8);
+   buf[2] = (unsigned char) (adr & 0xFF);
+   buf[3] = crc8(buf, 3);
 
-   buf[0] = MCMD_GET_INFO + 1;
-   buf[1] = index;
-   buf[2] = crc8(buf, 2);
-   mscb_out(fd, buf, 3, RS485_FLAG_LONG_TO);
+   buf[4] = MCMD_GET_INFO + 1;
+   buf[5] = index;
+   buf[6] = crc8(buf+4, 2);
+   mscb_out(fd, buf, 7, RS485_FLAG_LONG_TO | RS485_FLAG_ADR_CYCLE);
 
    i = mscb_in(fd, buf, sizeof(buf), 10000);
    mscb_release(fd);
@@ -2452,19 +2476,18 @@ int mscb_set_addr(int fd, int adr, int node, int group)
       return MSCB_ADDR_EXISTS;
    }
 
-   status = mscb_addr(fd, MCMD_PING16, adr, 10, 0);
-   if (status != MSCB_SUCCESS) {
-      mscb_release(fd);
-      return status;
-   }
+   buf[0] = MCMD_ADDR_NODE16;
+   buf[1] = (unsigned char) (adr >> 8);
+   buf[2] = (unsigned char) (adr & 0xFF);
+   buf[3] = crc8(buf, 3);
 
-   buf[0] = MCMD_SET_ADDR;
-   buf[1] = (unsigned char) (node >> 8);
-   buf[2] = (unsigned char) (node & 0xFF);
-   buf[3] = (unsigned char) (group >> 8);
-   buf[4] = (unsigned char) (group & 0xFF);
-   buf[5] = crc8(buf, 5);
-   mscb_out(fd, buf, 6, RS485_FLAG_NO_ACK);
+   buf[4] = MCMD_SET_ADDR;
+   buf[5] = (unsigned char) (node >> 8);
+   buf[6] = (unsigned char) (node & 0xFF);
+   buf[7] = (unsigned char) (group >> 8);
+   buf[8] = (unsigned char) (group & 0xFF);
+   buf[9] = crc8(buf+4, 5);
+   mscb_out(fd, buf, 10, RS485_FLAG_NO_ACK | RS485_FLAG_ADR_CYCLE);
 
    mscb_release(fd);
 
@@ -2492,7 +2515,7 @@ int mscb_set_name(int fd, int adr, char *name)
 \********************************************************************/
 {
    unsigned char buf[256];
-   int status, i;
+   int i;
 
    if (fd > MSCB_MAX_FD || fd < 1 || !mscb_fd[fd - 1].type)
       return MSCB_INVAL_PARAM;
@@ -2503,24 +2526,22 @@ int mscb_set_name(int fd, int adr, char *name)
    if (mscb_lock(fd) != MSCB_SUCCESS)
       return MSCB_MUTEX;
 
-   status = mscb_addr(fd, MCMD_PING16, adr, 10, 0);
-   if (status != MSCB_SUCCESS) {
+   buf[0] = MCMD_ADDR_NODE16;
+   buf[1] = (unsigned char) (adr >> 8);
+   buf[2] = (unsigned char) (adr & 0xFF);
+   buf[3] = crc8(buf, 3);
 
-      mscb_release(fd);
-      return status;
-   }
-
-   buf[0] = MCMD_SET_ADDR | 0x07;
+   buf[4] = MCMD_SET_ADDR | 0x07;
    for (i = 0; i < 16 && name[i]; i++)
-      buf[2 + i] = name[i];
+      buf[6 + i] = name[i];
 
    if (i < 16)
-      buf[2 + (i++)] = 0;
+      buf[6 + (i++)] = 0;
 
-   buf[1] = i;                  /* varibale buffer length */
+   buf[5] = i;                  /* varibale buffer length */
 
-   buf[2 + i] = crc8(buf, 2 + i);
-   mscb_out(fd, buf, 3 + i, RS485_FLAG_NO_ACK);
+   buf[6 + i] = crc8(buf+4, 2 + i);
+   mscb_out(fd, buf, 7 + i, RS485_FLAG_NO_ACK | RS485_FLAG_ADR_CYCLE);
 
    mscb_release(fd);
 
@@ -2532,7 +2553,7 @@ int mscb_set_name(int fd, int adr, char *name)
 int mscb_write_group(int fd, int adr, unsigned char index, void *data, int size)
 /********************************************************************\
 
-  Routine: mscb_write_na
+  Routine: mscb_write_group
 
   Purpose: Write data to channels on group of nodes
 
@@ -2550,7 +2571,7 @@ int mscb_write_group(int fd, int adr, unsigned char index, void *data, int size)
 
 \********************************************************************/
 {
-   int i, status;
+   int i;
    unsigned char *d;
    unsigned char buf[256];
 
@@ -2567,20 +2588,19 @@ int mscb_write_group(int fd, int adr, unsigned char index, void *data, int size)
    if (mscb_lock(fd) != MSCB_SUCCESS)
       return MSCB_MUTEX;
 
-   status = mscb_addr(fd, MCMD_ADDR_GRP16, adr, 10, 0);
-   if (status != MSCB_SUCCESS) {
-      mscb_release(fd);
-      return status;
-   }
+   buf[0] = MCMD_ADDR_GRP16;
+   buf[1] = (unsigned char) (adr >> 8);
+   buf[2] = (unsigned char) (adr & 0xFF);
+   buf[3] = crc8(buf, 3);
 
-   buf[0] = MCMD_WRITE_NA + size + 1;
-   buf[1] = index;
+   buf[4] = MCMD_WRITE_NA + size + 1;
+   buf[5] = index;
 
    for (i = 0, d = data; i < size; i++)
-      buf[2 + size - 1 - i] = *d++;
+      buf[6 + size - 1 - i] = *d++;
 
-   buf[2 + i] = crc8(buf, 2 + i);
-   mscb_out(fd, buf, 3 + i, RS485_FLAG_NO_ACK);
+   buf[6 + i] = crc8(buf, 6 + i);
+   mscb_out(fd, buf, 7 + i, RS485_FLAG_NO_ACK);
 
    mscb_release(fd);
 
@@ -2613,7 +2633,7 @@ int mscb_write(int fd, int adr, unsigned char index, void *data, int size)
 
 \********************************************************************/
 {
-   int i, status;
+   int i;
    unsigned char buf[256], crc, ack[2];
    unsigned char *d;
 
@@ -2629,38 +2649,37 @@ int mscb_write(int fd, int adr, unsigned char index, void *data, int size)
    if (mscb_lock(fd) != MSCB_SUCCESS)
       return MSCB_MUTEX;
 
-   status = mscb_addr(fd, MCMD_PING16, adr, 10, 0);
-   if (status != MSCB_SUCCESS) {
-      mscb_release(fd);
-      return status;
-   }
+   buf[0] = MCMD_ADDR_NODE16;
+   buf[1] = (unsigned char) (adr >> 8);
+   buf[2] = (unsigned char) (adr & 0xFF);
+   buf[3] = crc8(buf, 3);
 
    if (size < 6) {
-      buf[0] = MCMD_WRITE_ACK + size + 1;
-      buf[1] = index;
+      buf[4] = MCMD_WRITE_ACK + size + 1;
+      buf[5] = index;
 
       /* reverse order for WORD & DWORD */
       if (size < 5)
          for (i = 0, d = data; i < size; i++)
-            buf[2 + size - 1 - i] = *d++;
+            buf[6 + size - 1 - i] = *d++;
       else
          for (i = 0, d = data; i < size; i++)
-            buf[2 + i] = *d++;
+            buf[6 + i] = *d++;
 
-      crc = crc8(buf, 2 + i);
-      buf[2 + i] = crc;
-      mscb_out(fd, buf, 3 + i, 0);
+      crc = crc8(buf+4, 2 + i);
+      buf[6 + i] = crc;
+      mscb_out(fd, buf, 7 + i, RS485_FLAG_ADR_CYCLE);
    } else {
-      buf[0] = MCMD_WRITE_ACK + 7;
-      buf[1] = size + 1;
-      buf[2] = index;
+      buf[4] = MCMD_WRITE_ACK + 7;
+      buf[5] = size + 1;
+      buf[6] = index;
 
       for (i = 0, d = data; i < size; i++)
-         buf[3 + i] = *d++;
+         buf[7 + i] = *d++;
 
-      crc = crc8(buf, 3 + i);
-      buf[3 + i] = crc;
-      mscb_out(fd, buf, 4 + i, 0);
+      crc = crc8(buf+4, 3 + i);
+      buf[7 + i] = crc;
+      mscb_out(fd, buf, 8 + i, RS485_FLAG_ADR_CYCLE);
    }
 
    /* read acknowledge */
@@ -2700,7 +2719,7 @@ int mscb_write_block(int fd, int adr, unsigned char index, void *data, int size)
 
 \********************************************************************/
 {
-   int i, n, status;
+   int i, n;
    unsigned char buf[256], crc, ack[2];
 
    if (fd > MSCB_MAX_FD || fd < 1 || !mscb_fd[fd - 1].type)
@@ -2714,12 +2733,6 @@ int mscb_write_block(int fd, int adr, unsigned char index, void *data, int size)
 
    if (mscb_lock(fd) != MSCB_SUCCESS)
       return MSCB_MUTEX;
-
-   status = mscb_addr(fd, MCMD_PING16, adr, 10, 0);
-   if (status != MSCB_SUCCESS) {
-      mscb_release(fd);
-      return status;
-   }
 
    /*
    Bulk test gave 128kb/sec, 10.3.04, SR
@@ -2741,15 +2754,20 @@ int mscb_write_block(int fd, int adr, unsigned char index, void *data, int size)
       if (n == 0)
          break;
 
-      buf[0] = MCMD_WRITE_ACK + 7;
-      buf[1] = n + 1;
-      buf[2] = index;
+      buf[0] = MCMD_ADDR_NODE16;
+      buf[1] = (unsigned char) (adr >> 8);
+      buf[2] = (unsigned char) (adr & 0xFF);
+      buf[3] = crc8(buf, 3);
 
-      memcpy(buf+3, (char *)data+i*58, n);
-      crc = crc8(buf, 3 + n);
+      buf[4] = MCMD_WRITE_ACK + 7;
+      buf[5] = n + 1;
+      buf[6] = index;
+
+      memcpy(buf+7, (char *)data+i*58, n);
+      crc = crc8(buf+4, 3 + n);
       buf[3 + n] = crc;
 
-      mscb_out(fd, buf, n+4, 0);
+      mscb_out(fd, buf, n+8, RS485_FLAG_ADR_CYCLE);
 
       /* read acknowledge */
       n = mscb_in(fd, ack, 2, 10000);
@@ -2793,8 +2811,7 @@ int mscb_flash(int fd, int adr)
 
 \********************************************************************/
 {
-   int status;
-   unsigned char buf[10], crc;
+   unsigned char buf[10];
 
    if (fd > MSCB_MAX_FD || fd < 1 || !mscb_fd[fd - 1].type)
       return MSCB_INVAL_PARAM;
@@ -2805,16 +2822,14 @@ int mscb_flash(int fd, int adr)
    if (mscb_lock(fd) != MSCB_SUCCESS)
       return MSCB_MUTEX;
 
-   status = mscb_addr(fd, MCMD_PING16, adr, 10, 0);
-   if (status != MSCB_SUCCESS) {
-      mscb_release(fd);
-      return status;
-   }
+   buf[0] = MCMD_ADDR_NODE16;
+   buf[1] = (unsigned char) (adr >> 8);
+   buf[2] = (unsigned char) (adr & 0xFF);
+   buf[3] = crc8(buf, 3);
 
-   buf[0] = MCMD_FLASH;
-   crc = crc8(buf, 1);
-   buf[1] = crc;
-   mscb_out(fd, buf, 2, RS485_FLAG_NO_ACK);
+   buf[4] = MCMD_FLASH;
+   buf[5] = crc8(buf+4, 1);
+   mscb_out(fd, buf, 6, RS485_FLAG_NO_ACK | RS485_FLAG_ADR_CYCLE);
 
    mscb_release(fd);
 
@@ -3304,7 +3319,7 @@ int mscb_read(int fd, int adr, unsigned char index, void *data, int *size)
 
 \********************************************************************/
 {
-   int i, n, status;
+   int i, n;
    unsigned char buf[256], crc;
 
    memset(data, 0, *size);
@@ -3318,12 +3333,6 @@ int mscb_read(int fd, int adr, unsigned char index, void *data, int *size)
    if (mscb_lock(fd) != MSCB_SUCCESS)
       return MSCB_MUTEX;
 
-   status = mscb_addr(fd, MCMD_PING16, adr, 10, 0);
-   if (status != MSCB_SUCCESS) {
-      mscb_release(fd);
-      return status;
-   }
-
    /* try ten times */
    for (n = 0; n < 10; n++) {
       /* after five times, reset submaster */
@@ -3336,10 +3345,15 @@ int mscb_read(int fd, int adr, unsigned char index, void *data, int *size)
          Sleep(100);
       }
 
-      buf[0] = MCMD_READ + 1;
-      buf[1] = index;
-      buf[2] = crc8(buf, 2);
-      mscb_out(fd, buf, 3, 0);
+      buf[0] = MCMD_ADDR_NODE16;
+      buf[1] = (unsigned char) (adr >> 8);
+      buf[2] = (unsigned char) (adr & 0xFF);
+      buf[3] = crc8(buf, 3);
+
+      buf[4] = MCMD_READ + 1;
+      buf[5] = index;
+      buf[6] = crc8(buf+4, 2);
+      mscb_out(fd, buf, 7, RS485_FLAG_ADR_CYCLE);
 
       /* read data */
       i = mscb_in(fd, buf, sizeof(buf), 10000);
@@ -3347,7 +3361,7 @@ int mscb_read(int fd, int adr, unsigned char index, void *data, int *size)
       if (i == 1 && buf[0] == 0xFF) {
 #ifndef _USRDLL
          /* show error, but repeat 10 times */
-         //printf("Timeout from RS485 bus.\n");
+         printf("Timeout from RS485 bus, resent request.\n");
 #endif
       }
 
@@ -3426,7 +3440,7 @@ int mscb_read_range(int fd, int adr, unsigned char index1, unsigned char index2,
 
 \********************************************************************/
 {
-   int i, n, status;
+   int i, n;
    unsigned char buf[256], crc;
 
    memset(data, 0, *size);
@@ -3441,12 +3455,6 @@ int mscb_read_range(int fd, int adr, unsigned char index1, unsigned char index2,
    if (mscb_lock(fd) != MSCB_SUCCESS)
       return MSCB_MUTEX;
 
-   status = mscb_addr(fd, MCMD_PING16, adr, 10, 0);
-   if (status != MSCB_SUCCESS) {
-      mscb_release(fd);
-      return status;
-   }
-
    /* try ten times */
    for (n = 0; n < 10; n++) {
       /* after five times, reset submaster */
@@ -3459,11 +3467,16 @@ int mscb_read_range(int fd, int adr, unsigned char index1, unsigned char index2,
          Sleep(100);
       }
 
-      buf[0] = MCMD_READ + 2;
-      buf[1] = index1;
-      buf[2] = index2;
+      buf[0] = MCMD_ADDR_NODE16;
+      buf[1] = (unsigned char) (adr >> 8);
+      buf[2] = (unsigned char) (adr & 0xFF);
       buf[3] = crc8(buf, 3);
-      mscb_out(fd, buf, 4, 0);
+
+      buf[4] = MCMD_READ + 2;
+      buf[5] = index1;
+      buf[6] = index2;
+      buf[7] = crc8(buf+4, 3);
+      mscb_out(fd, buf, 8, RS485_FLAG_ADR_CYCLE);
 
       /* read data */
       i = mscb_in(fd, buf, 256, 10000);
@@ -3519,7 +3532,7 @@ int mscb_read_block(int fd, int adr, unsigned char index, void *data, int *size)
 
 \********************************************************************/
 {
-   int i, n, status;
+   int i, n;
    unsigned char buf[256], crc;
 
    memset(data, 0, *size);
@@ -3533,19 +3546,18 @@ int mscb_read_block(int fd, int adr, unsigned char index, void *data, int *size)
    if (mscb_lock(fd) != MSCB_SUCCESS)
       return MSCB_MUTEX;
 
-   status = mscb_addr(fd, MCMD_PING16, adr, 10, 0);
-   if (status != MSCB_SUCCESS) {
-      mscb_release(fd);
-      return status;
-   }
-
    n = 0;
    do {
 
-      buf[0] = MCMD_READ + 1;
-      buf[1] = index;
-      buf[2] = crc8(buf, 2);
-      mscb_out(fd, buf, 3, 0);
+      buf[0] = MCMD_ADDR_NODE16;
+      buf[1] = (unsigned char) (adr >> 8);
+      buf[2] = (unsigned char) (adr & 0xFF);
+      buf[3] = crc8(buf, 3);
+
+      buf[4] = MCMD_READ + 1;
+      buf[5] = index;
+      buf[6] = crc8(buf+4, 2);
+      mscb_out(fd, buf, 7, RS485_FLAG_ADR_CYCLE);
 
       /* read data */
       i = mscb_in(fd, buf, sizeof(buf), 10000);
@@ -3640,6 +3652,10 @@ int mscb_user(int fd, int adr, void *param, int size, void *result, int *rsize)
    if (fd > MSCB_MAX_FD || fd < 1 || !mscb_fd[fd - 1].type)
       return MSCB_INVAL_PARAM;
 
+   if (size > 4 || size < 0) {
+      return MSCB_FORMAT_ERROR;
+   }
+
    if (mrpc_connected(fd))
       return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_USER,
                        mscb_fd[fd - 1].remote_fd, adr, param, size, result, rsize);
@@ -3647,25 +3663,19 @@ int mscb_user(int fd, int adr, void *param, int size, void *result, int *rsize)
    if (mscb_lock(fd) != MSCB_SUCCESS)
       return MSCB_MUTEX;
 
-   status = mscb_addr(fd, MCMD_PING16, adr, 10, 0);
-   if (status != MSCB_SUCCESS) {
-      mscb_release(fd);
-      return status;
-   }
+   buf[0] = MCMD_ADDR_NODE16;
+   buf[1] = (unsigned char) (adr >> 8);
+   buf[2] = (unsigned char) (adr & 0xFF);
+   buf[3] = crc8(buf, 3);
 
-   if (size > 4 || size < 0) {
-      mscb_release(fd);
-      return MSCB_FORMAT_ERROR;
-   }
-
-   buf[0] = MCMD_USER + size;
+   buf[4] = MCMD_USER + size;
 
    for (i = 0; i < size; i++)
-      buf[1 + i] = ((char *) param)[i];
+      buf[5 + i] = ((char *) param)[i];
 
    /* add CRC code and send data */
-   buf[1 + i] = crc8(buf, 1 + i);
-   status = mscb_out(fd, buf, 2 + i, 0);
+   buf[5 + i] = crc8(buf+4, 1 + i);
+   status = mscb_out(fd, buf, 6 + i, RS485_FLAG_ADR_CYCLE);
    if (status != MSCB_SUCCESS) {
       mscb_release(fd);
       return status;
@@ -3735,22 +3745,33 @@ int mscb_echo(int fd, int adr, unsigned char d1, unsigned char *d2)
       return MSCB_MUTEX;
 
    if (adr) {
-      status = mscb_addr(fd, MCMD_PING16, adr, 1, 0);
+      buf[0] = MCMD_ADDR_NODE16;
+      buf[1] = (unsigned char) (adr >> 8);
+      buf[2] = (unsigned char) (adr & 0xFF);
+      buf[3] = crc8(buf, 3);
+
+      buf[4] = MCMD_ECHO;
+      buf[5] = d1;
+
+      /* add CRC code and send data */
+      buf[6] = crc8(buf+4, 2);
+      status = mscb_out(fd, buf, 7, RS485_FLAG_ADR_CYCLE);
       if (status != MSCB_SUCCESS) {
          mscb_release(fd);
          return status;
       }
-   }
+   } else {
 
-   buf[0] = MCMD_ECHO;
-   buf[1] = d1;
+      buf[0] = MCMD_ECHO;
+      buf[1] = d1;
 
-   /* add CRC code and send data */
-   buf[2] = crc8(buf, 2);
-   status = mscb_out(fd, buf, 3, 0);
-   if (status != MSCB_SUCCESS) {
-      mscb_release(fd);
-      return status;
+      /* add CRC code and send data */
+      buf[2] = crc8(buf, 2);
+      status = mscb_out(fd, buf, 3, 0);
+      if (status != MSCB_SUCCESS) {
+         mscb_release(fd);
+         return status;
+      }
    }
 
    /* read result */
@@ -3932,7 +3953,7 @@ int mscb_select_device(char *device, int size, int select)
    /* check USB devices */
    for (i = 0; i < 127; i++) {
       status = musb_init(i, NULL, NULL);
-      if (status != -1)
+      if (status == 0)
          sprintf(list[n++], "usb%d", i);
       else
          break;
@@ -3992,3 +4013,95 @@ int mscb_select_device(char *device, int size, int select)
 
    return MSCB_SUCCESS;
 }
+
+/*------------------------------------------------------------------*/
+
+typedef struct {
+   char           host_name[20];
+   char           password[20];
+   unsigned char  eth_mac_addr[6];
+   unsigned short magic;
+} SUBM_CFG;
+
+int set_mac_address(int fd)
+/********************************************************************\
+
+  Routine: set_mac_address
+
+  Purpose: Ask for hostname/password and set MAC configuration of
+           subm_260 interface over ethernet
+
+  Input:
+    int  fd                 File descriptor for connection
+    <parameters are asked interactively>
+
+  Output:
+    None
+
+  Function value:
+    MSCB_SUCCESS            Successful completion
+    0                       Error
+
+\********************************************************************/
+{
+   char str[256];
+   unsigned char buf[64];
+   SUBM_CFG cfg;
+   int n;
+
+   if (fd > MSCB_MAX_FD || fd < 1 || !mscb_fd[fd - 1].type)
+      return 0;
+
+   if (mscb_fd[fd - 1].type != MSCB_TYPE_ETH) {
+      printf("This command only works on ethernet submasters.\n");
+      return 0;
+   }
+
+   printf("Hostname (should be \"MSCBxxx\") : MSCB");
+   fgets(str, sizeof(str), stdin);
+   n = atoi(str);
+   if (n < 1 || n > 999) {
+      printf("Hostname must be in the range MSCB001 to MSCB999\n");
+      return 0;
+   }
+   sprintf(cfg.host_name, "MSCB%03d", n);
+
+   cfg.eth_mac_addr[0] = 0x00;
+   cfg.eth_mac_addr[1] = 0x50;
+   cfg.eth_mac_addr[2] = 0xC2;
+   cfg.eth_mac_addr[3] = 0x46;
+   cfg.eth_mac_addr[4] = 0xD0 | (n >> 8);
+   cfg.eth_mac_addr[5] = n & 0xFF;
+
+   printf("MAC Address is 00-50-C2-46-%02X-%02X\n", 
+           cfg.eth_mac_addr[4], cfg.eth_mac_addr[5]);
+
+   printf("Enter optional password        : ");
+   fgets(str, sizeof(str), stdin);
+   if (strlen(str) > sizeof(cfg.password)-1) {
+      printf("Password too long\n");
+      return 0;
+   }
+   while (strlen(str)>0 && 
+           (str[strlen(str)-1] == '\r' || str[strlen(str)-1] == '\n'))
+      str[strlen(str)-1] = 0;
+   strcpy(cfg.password, str);
+
+   cfg.magic = 0x3412;
+
+   buf[0] = MCMD_FLASH;
+   memcpy(buf+1, &cfg, sizeof(cfg));
+   mscb_out(fd, buf, 1+sizeof(cfg), RS485_FLAG_CMD);
+
+   n = mscb_in(fd, buf, 2, 10000);
+   if (n == 2 && buf[0] == MCMD_ACK) {
+      printf("\nConfiguration successfully downloaded.\n");
+      return MSCB_SUCCESS;   
+   }
+    
+   printf("Error downloading configuration.\n");
+
+   return 0;
+}
+
+/*------------------------------------------------------------------*/
