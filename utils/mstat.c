@@ -6,6 +6,9 @@
   Contents:     Display/log some pertinent information of the ODB
   
   $Log$
+  Revision 1.6  1999/06/23 09:50:06  midas
+  Changed lazy label from "last" to "<empty>"
+
   Revision 1.5  1999/02/05 23:47:55  pierre
   - Fix lazylogger client display
 
@@ -506,7 +509,7 @@ void compose_status(HNDLE hDB, HNDLE hKey)
         {
           size = sizeof(tl);
           db_get_value(hDB, 0, "/lazy/Settings/List label", tl, &size, TID_STRING);
-          if (*tl == '\0')  sprintf(tl,"Last");
+          if (*tl == '\0')  sprintf(tl,"<empty>");
           size = sizeof(cr);
           db_get_value(hDB, 0, "/lazy/statistics/Copy progress [%]", &cr, &size, TID_FLOAT);
           size = sizeof(nf);
