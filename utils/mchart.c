@@ -19,6 +19,9 @@
 		See mchart -h for further info.
 		
   $Log$
+  Revision 1.6  2001/12/08 01:04:13  pierre
+  fix float min, max values
+
   Revision 1.5  2000/10/20 21:59:55  pierre
   - Fix duplicate config bug
   - Add messages on spawning, creation.
@@ -287,7 +290,7 @@ INT mchart_get_array(FILE * f, char * eqpstr, HNDLE hDB
     }
     else if (key.type == TID_FLOAT)
     {
-      value = (float) *(pdata+(i*key.item_size));
+      value = *((float *) (pdata+(i*key.item_size)));
       fprintf(f, "%s %f\n", field, *((float *) (pdata+(i*key.item_size))));
     }
     else if (key.type == TID_DOUBLE)
@@ -298,8 +301,10 @@ INT mchart_get_array(FILE * f, char * eqpstr, HNDLE hDB
     else
       continue;
     
-    if (!config_done)
-      conf_compose(CONF_APPEND, confpath, datapath, field, value);
+    if (!config_done) {
+        if (debug) printf("Field:%s Values:%f\n",field, value);
+	conf_compose(CONF_APPEND, confpath, datapath, field, value);
+    }
   }
   if (pdata) free (pdata);
   if (pname) free (pname);
@@ -375,7 +380,7 @@ int main(unsigned int argc,char **argv)
   char   host_name[HOST_NAME_LENGTH], expt_name[HOST_NAME_LENGTH];
   char   eqpstr[128]={'\0'};
   char   ch, cmdline[256];
-  char   mchart_dir[128], mchart_data[128], mchart_conf[128];
+  char   mchart_dir[128]={'\0'}, mchart_data[128], mchart_conf[128];
   INT    fHandle;
   INT    msg, childpid;
   
@@ -549,7 +554,8 @@ int main(unsigned int argc,char **argv)
     {
       last_time = ss_millitime();
       status = mchart_compose(hDB, mchart_conf, mchart_data, eqpstr);
-      if (status != 1) goto error;
+      if (status != 1) 
+	goto error;
       if (create_only) {
 	printf("mchart file %s created\n", mchart_conf);
 	goto out;
