@@ -6,6 +6,9 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.10  1999/02/18 11:20:08  midas
+  Added "level" parameter to db_scan_tree and db_scan_tree_link
+
   Revision 1.9  1999/02/18 07:10:14  midas
   - db_save now stores full path name in .odb file
   - db_load loads .odb entries to absolute ODB location if they start with "[/...]"
@@ -1915,8 +1918,8 @@ INT              i;
 
 /*------------------------------------------------------------------*/
 
-INT db_scan_tree(HNDLE hDB, HNDLE hKey, 
-                 void (*callback)(HNDLE,HNDLE,KEY*,void *), void *info)
+INT db_scan_tree(HNDLE hDB, HNDLE hKey, INT level,
+                 void (*callback)(HNDLE,HNDLE,KEY*,INT,void *), void *info)
 /********************************************************************\
 
   Routine: db_scan_tree
@@ -1926,10 +1929,12 @@ INT db_scan_tree(HNDLE hDB, HNDLE hKey,
   Input:
     HNDLE  hDB              Handle to the database
     HNDLE  hKeyRoot         Key to start scan from, 0 for root
+    INT    level            Recursion level
     void   *callback        Callback routine called with params:
                               hDB   Copy of hDB
                               hKey  Copy of hKey
                               key   Key associated with hKey
+                              INT   Recursion level
                               info  Copy of *info
     void   *info            Optional data copied to callback routine
 
@@ -1950,7 +1955,7 @@ INT   i, status;
   if (status != DB_SUCCESS)
     return status;
 
-  callback(hDB, hKey, &key, info);
+  callback(hDB, hKey, &key, level, info);
 
   if (key.type == TID_KEY)
     {
@@ -1961,7 +1966,7 @@ INT   i, status;
       if (!hSubkey)
         break;
 
-      db_scan_tree(hDB, hSubkey, callback, info);
+      db_scan_tree(hDB, hSubkey, level+1, callback, info);
       }
     }
 
@@ -1970,8 +1975,8 @@ INT   i, status;
 
 /*------------------------------------------------------------------*/
 
-INT db_scan_tree_link(HNDLE hDB, HNDLE hKey, 
-                      void (*callback)(HNDLE,HNDLE,KEY*,void *), void *info)
+INT db_scan_tree_link(HNDLE hDB, HNDLE hKey, INT level,
+                      void (*callback)(HNDLE,HNDLE,KEY*,INT,void *), void *info)
 /********************************************************************\
 
   Routine: db_scan_tree_link
@@ -1982,10 +1987,12 @@ INT db_scan_tree_link(HNDLE hDB, HNDLE hKey,
   Input:
     HNDLE  hDB              Handle to the database
     HNDLE  hKeyRoot         Key to start scan from, 0 for root
+    INT    level            Recursion level
     void   *callback        Callback routine called with params:
                               hDB   Copy of hDB
                               hKey  Copy of hKey
                               key   Key associated with hKey
+                              INT   Recursion level
                               info  Copy of *info
     void   *info            Optional data copied to callback routine
 
@@ -2006,7 +2013,7 @@ INT   i, status;
   if (status != DB_SUCCESS)
     return status;
 
-  callback(hDB, hKey, &key, info);
+  callback(hDB, hKey, &key, level, info);
 
   if (key.type == TID_KEY)
     {
@@ -2017,7 +2024,7 @@ INT   i, status;
       if (!hSubkey)
         break;
 
-      db_scan_tree_link(hDB, hSubkey, callback, info);
+      db_scan_tree_link(hDB, hSubkey, level+1, callback, info);
       }
     }
 
@@ -2116,7 +2123,7 @@ char             str[MAX_ODB_PATH];
 
 /*------------------------------------------------------------------*/
 
-void db_find_open_records(HNDLE hDB, HNDLE hKey, KEY *key, void *result)
+void db_find_open_records(HNDLE hDB, HNDLE hKey, KEY *key, INT level, void *result)
 {
 DATABASE_HEADER *pheader;
 DATABASE_CLIENT *pclient;
@@ -2177,7 +2184,7 @@ INT db_get_open_records(HNDLE hDB, HNDLE hKey, char *str, INT buf_size)
   if (rpc_is_remote())
     return rpc_call(RPC_DB_GET_OPEN_RECORDS, hDB, hKey, str, buf_size);
 
-  db_scan_tree(hDB, hKey, db_find_open_records, str);
+  db_scan_tree(hDB, hKey, 0, db_find_open_records, str);
   return DB_SUCCESS;
 }
 
@@ -5597,7 +5604,7 @@ INT             i, j;
 
 /*------------------------------------------------------------------*/
 
-void merge_records(HNDLE hDB, HNDLE hKey, KEY* pkey, void *info)
+void merge_records(HNDLE hDB, HNDLE hKey, KEY* pkey, INT level, void *info)
 {
 char  full_name[256], buffer[10000];
 INT   status, size;
@@ -5628,7 +5635,7 @@ KEY   initkey, key;
 
 static int open_count;
 
-void check_open_keys(HNDLE hDB, HNDLE hKey, KEY* pkey, void *info)
+void check_open_keys(HNDLE hDB, HNDLE hKey, KEY* pkey, INT level, void *info)
 {
   if (pkey->notify_count)
     open_count++;
@@ -5674,7 +5681,7 @@ HNDLE hKeyTmp, hKeyTmpO, hKeyOrig, hSubkey;
     {
     /* check if key or subkey is opened */
     open_count = 0;
-    db_scan_tree_link(hDB, hKeyOrig, check_open_keys, NULL);
+    db_scan_tree_link(hDB, hKeyOrig, 0, check_open_keys, NULL);
     if (open_count)
       return DB_OPEN_RECORD;
     
@@ -5725,7 +5732,7 @@ HNDLE hKeyTmp, hKeyTmpO, hKeyOrig, hSubkey;
       }
 
     /* merge temporay record and original record */
-    db_scan_tree_link(hDB, hKeyTmpO, merge_records, NULL);
+    db_scan_tree_link(hDB, hKeyTmpO, 0, merge_records, NULL);
 
     /* delete original record */
     for (i=0 ; ; i++)

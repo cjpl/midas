@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.15  1999/02/18 11:20:39  midas
+  Added "level" parameter to db_scan_tree and db_scan_tree_link
+
   Revision 1.14  1999/02/11 13:20:29  midas
   Changed cm_msg from void to INT
 
@@ -1119,8 +1122,8 @@ INT EXPRT db_set_value(HNDLE hdb, HNDLE hKeyRoot, char *key_name, void *data, IN
 INT EXPRT db_get_value(HNDLE hdb, HNDLE hKeyRoot, char *key_name, void *data, INT *size, DWORD type);
 INT EXPRT db_find_key(HNDLE hdb, HNDLE hkey, char *name, HNDLE *hsubkey);
 INT EXPRT db_find_link(HNDLE hDB, HNDLE hKey, char *key_name, HNDLE *subhKey);
-INT EXPRT db_scan_tree(HNDLE hDB, HNDLE hKey, void (*callback)(HNDLE,HNDLE,KEY*,void *), void *info);
-INT EXPRT db_scan_tree_link(HNDLE hDB, HNDLE hKey, void (*callback)(HNDLE,HNDLE,KEY*,void *), void *info);
+INT EXPRT db_scan_tree(HNDLE hDB, HNDLE hKey, int level, void (*callback)(HNDLE,HNDLE,KEY*,INT,void *), void *info);
+INT EXPRT db_scan_tree_link(HNDLE hDB, HNDLE hKey, int level, void (*callback)(HNDLE,HNDLE,KEY*,INT,void *), void *info);
 INT EXPRT db_get_path(HNDLE hDB, HNDLE hKey, char *path, INT buf_size);
 INT EXPRT db_delete_key(HNDLE database_handle, HNDLE key_handle, BOOL follow_links);
 INT EXPRT db_enum_key(HNDLE hdb, HNDLE key_handle, INT index, HNDLE *subkey_handle);
