@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol commands
 
   $Log$
+  Revision 1.38  2004/06/16 11:40:54  midas
+  Implemented SUBM_xxx defines
+
   Revision 1.37  2004/05/14 07:55:48  midas
   Remove EEPROM support for SCS_300
 
@@ -136,7 +139,7 @@
 sbit RS485_ENABLE = P3 ^ 5;
 
 /*--------------------------------*/
-#elif defined(SCS_250)
+#elif defined(SUBM_250)
 #include "c8051F320.h" // don't use the one from Keil !!
 #define CPU_C8051F320
 #define CPU_CYGNAL
@@ -159,9 +162,18 @@ sbit RS485_ENABLE = P1 ^ 0;
 #define LED_ON 0
 sbit RS485_ENABLE = P3 ^ 5;
 
-#if defined(SCS_300)
+/*--------------------------------*/
+#elif defined(SUBM_300)
+#include <c8051F020.h>
+#define CPU_C8051F020
+#define CPU_CYGNAL
+
+#define LED_0 P3 ^ 3
+#define LED_1 P3 ^ 4
+#define LED_ON 0
+sbit RS485_ENABLE = P3 ^ 5;
+
 #undef EEPROM_SUPPORT
-#endif
 
 /*--------------------------------*/
 #elif defined(SCS_400) || defined(SCS_500)
