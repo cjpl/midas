@@ -6,6 +6,9 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.43  2001/12/12 17:42:11  pierre
+  1.8.3-2 doc comments
+
   Revision 1.42  2001/10/25 22:18:26  pierre
   added doc++ comments
 
@@ -1767,30 +1770,36 @@ INT              status;
 }
 
 /*------------------------------------------------------------------*/
-
+/** @name db_delete_key()
+\begin{description}
+\item[Description:] Delete a subtree in a database starting from a key
+(including this key).
+\item[Remarks:] 
+\item[Example:] \begin{verbatim}
+  ...
+    status = db_find_link(hDB, 0, str, &hkey);
+    if (status != DB_SUCCESS)
+    {
+      cm_msg(MINFO,"my_delete"," "Cannot find key %s", str);
+      return;
+    }
+    
+    status = db_delete_key(hDB, hkey, FALSE);
+    if (status != DB_SUCCESS)
+    {
+      cm_msg(MERROR,"my_delete"," "Cannot delete key %s", str);
+      return;
+    }
+  ...
+ \end{verbatim}
+\end{description}
+@memo Delete ODB key.
+@param hDB ODB handle obtained via \Ref{cm_get_experiment_database()}.
+@param Handle for key where search starts, zero for root.
+@param follow_links Follow links when TRUE.
+@return DB_SUCCESS, DB_INVALID_HANDLE, DB_NO_ACCESS, DB_OPEN_RECORD
+*/
 INT db_delete_key(HNDLE hDB, HNDLE hKey, BOOL follow_links)
-/********************************************************************\
-
-  Routine: db_delete_key
-
-  Purpose: Delete a subtree in a database starting from a key 
-           (including this key)
-
-  Input:
-    HNDLE  hDB              Handle to the database
-    HNDLE  hKey             Key handle to start with, 0 for root
-    BOOL   follow_links     Follow links when TRUE
-
-  Output:
-    none
-
-  Function value:
-    DB_SUCCESS              Successful completion
-    DB_INVALID_HANDLE       Database handle is invalid
-    DB_NO_ACCESS            Key is locked for delete
-    DB_OPEN_RECORD          Key, subkey or parent key is open
-
-\********************************************************************/
 {
   if (rpc_is_remote())
     return rpc_call(RPC_DB_DELETE_KEY, hDB, hKey, follow_links);
@@ -7282,9 +7291,143 @@ NET_COMMAND *nc;
 \begin{description}
 \item[Description:] Send all records to the ODB which were changed locally
            since the last call to this function.
-\item[Remarks:]
-\item[Example:] \begin{verbatim}
- \end{verbatim}
+\item[Remarks:] This function is valid if used in conjunction with \Ref{db_open_record()}
+under the condition the record is open as MODE_WRITE access code.
+\item[Example:] Full example \Ref{dbchange.c} which can be compiled as follow \\
+{\em gcc -DOS_LINUX -I/midas/include -o dbchange dbchange.c
+/midas/linux/lib/libmidas.a -lutil}
+
+\begin{verbatim}
+//------- dbchange.c
+#include "midas.h"
+#include "msystem.h"
+
+typedef struct {
+    INT    my_number;
+    float   my_rate;
+} MY_STATISTICS;
+
+MY_STATISTICS myrec;
+
+#define MY_STATISTICS(_name) char *_name[] = {\
+"My Number = INT : 0",\
+"My Rate = FLOAT : 0",\
+"",\
+NULL }
+
+HNDLE hDB, hKey;
+
+// Main 
+int main(unsigned int argc,char **argv)
+{
+  char      host_name[HOST_NAME_LENGTH];
+  char      expt_name[HOST_NAME_LENGTH];
+  INT       lastnumber, status, msg;
+  BOOL      debug=FALSE;
+  char      i, ch;
+  DWORD     update_time, mainlast_time;
+  MY_STATISTICS (my_stat);
+  
+  // set default 
+  host_name[0] = 0;
+  expt_name[0] = 0;
+  
+  // get default
+  cm_get_environment (host_name, expt_name);
+  
+  // get parameters 
+  for (i=1 ; i<argc ; i++)
+  {
+    if (argv[i][0] == '-' && argv[i][1] == 'd')
+      debug = TRUE;
+    else if (argv[i][0] == '-')
+    {
+      if (i+1 >= argc || argv[i+1][0] == '-')
+        goto usage;
+      if (strncmp(argv[i],"-e",2) == 0)
+        strcpy(expt_name, argv[++i]);
+      else if (strncmp(argv[i],"-h",2)==0)
+        strcpy(host_name, argv[++i]);
+    }
+    else
+    {
+   usage:
+      printf("usage: dbchange [-h <Hostname>] [-e <Experiment>]\n");
+      return 0;
+    }
+  }
+  
+  // connect to experiment 
+  status = cm_connect_experiment(host_name, expt_name, "dbchange", 0);
+  if (status != CM_SUCCESS)
+    return 1;
+  
+  // Connect to DB
+  cm_get_experiment_database(&hDB, &hKey);
+  
+  // Create a default structure in ODB
+  db_create_record(hDB, 0, "My statistics", strcomb(my_stat));
+  
+  // Retrieve key for that strucutre in ODB
+  if (db_find_key(hDB, 0, "My statistics", &hKey) != DB_SUCCESS)
+  {
+    cm_msg(MERROR, "mychange", "cannot find My statistics");
+    goto error;
+  }
+  
+  // Hot link this structure in Write mode
+  status = db_open_record(hDB, hKey, &myrec
+			  , sizeof(MY_STATISTICS), MODE_WRITE, NULL, NULL);
+  if (status != DB_SUCCESS)
+  {
+    cm_msg(MERROR, "mychange", "cannot open My statistics record");
+    goto error;
+  }
+  
+  // initialize ss_getchar() 
+  ss_getchar(0);
+  
+  // Main loop 
+  do
+  {
+    // Update local structure 
+    if ((ss_millitime() - update_time) > 100)
+    {
+      myrec.my_number += 1;
+      if (myrec.my_number - lastnumber) {
+	myrec.my_rate = 1000.f * (float) (myrec.my_number - lastnumber)
+	  / (float) (ss_millitime() - update_time);
+      }
+      update_time = ss_millitime();
+      lastnumber = myrec.my_number;
+    }      
+    
+    // Publish local structure to ODB (db_send_changed_record)
+    if ((ss_millitime() - mainlast_time) > 5000)
+    {
+      db_send_changed_records();                   // <------- Call 
+      mainlast_time = ss_millitime();
+    }      
+    
+    // Check for keyboard interaction 
+    ch = 0;
+    while (ss_kbhit())
+    {
+      ch = ss_getchar(0);
+      if (ch == -1)
+	ch = getchar();
+      if ((char) ch == '!')
+	break;
+    }
+    msg = cm_yield(20);
+  } while (msg != RPC_SHUTDOWN && msg != SS_ABORT && ch != '!');
+  
+ error:
+  cm_disconnect_experiment();
+  return 1;
+}
+//-------- EOF dbchange.c
+\end{verbatim}
 \end{description}
 @memo update ODB from local open records.
 @return DB_SUCCESS
