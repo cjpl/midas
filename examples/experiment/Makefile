@@ -6,6 +6,9 @@
 #  Contents:     Makefile for MIDAS example frontend and analyzer
 #
 #  $Log$
+#  Revision 1.9  2000/03/15 12:48:36  midas
+#  Added -Dextname for linux
+#
 #  Revision 1.8  1999/12/22 08:57:27  midas
 #  Use ../../drivers directory
 #
@@ -40,7 +43,7 @@
 
 #-----------------------------------------
 # This is for Linux
-OSFLAGS = -DOS_LINUX 
+OSFLAGS = -DOS_LINUX -Dextname
 CFLAGS = -O3
 
 # for f2c, uncomment following:
