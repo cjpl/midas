@@ -7,6 +7,11 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.87  2003/04/21 03:22:59  olchansk
+  remove \t
+  fix missing calls to CloseRootOutputFile()
+  fix call to gManaOutputTree->Fill();
+
   Revision 1.86  2003/04/20 03:07:12  olchansk
   fix botched #ifdef HAVE_HBOOK around ana_callback()
 
@@ -337,6 +342,8 @@ INT SaveRootHistograms(TDirectory* dir,const char* filename)
     return 0;
     }
 
+  printf("Saving ROOT histograms to %s\n",filename);
+
   outf->cd();
   TIter next(dir->GetList());
   while (TObject *obj = next())
@@ -353,6 +360,7 @@ INT SaveRootHistograms(TDirectory* dir,const char* filename)
 INT LoadRootHistograms(TDirectory* dir,const char* filename)
 {
   TDirectory *savedir = gDirectory;
+  printf("Loading ROOT histograms from %s: not implemented.\n",filename);
   // restore current directory
   savedir->cd();
   return SUCCESS;
@@ -366,6 +374,31 @@ INT ClearRootHistograms(TDirectory* dir)
     if (obj->InheritsFrom("TH1"))
       ((TH1*)obj)->Reset();
   return SUCCESS;
+}
+
+INT CloseRootOutputFile()
+{
+  // ensure that we do have an open file
+  assert(gManaOutputFile != NULL);
+  assert(gManaOutputTree != NULL);
+  
+  // save the histograms
+  gManaOutputFile->cd();
+  TIter next(gManaHistsDir->GetList());
+  while (TObject *obj = next())
+    obj->Write();
+  
+  // close the output file
+  gManaOutputFile->Write();
+  gManaOutputFile->Close();
+  delete gManaOutputFile;
+  gManaOutputFile = NULL;
+  
+  // delete the output tree
+  gManaOutputTree = NULL;
+  
+  // go to ROOT root directory
+  gROOT->cd();
 }
 
 #endif /* HAVE_ROOT */
@@ -1724,7 +1757,7 @@ BANK_LIST  *bank_list;
   if (clp.online && out_info.clear_histos)
     ClearRootHistograms(gManaHistsDir);
 #endif /* HAVE_ROOT */
-  
+
   /* open output file if not already open (append mode) and in offline mode */
   if (!clp.online && out_file == NULL && !pvm_master && !equal_ustring(clp.output_file_name, "OFLN"))
     {
@@ -1814,36 +1847,36 @@ BANK_LIST  *bank_list;
         else
           out_file = (FILE *) 1;
 #else
-	cm_msg(MERROR, "bor", "HBOOK support is not compiled in");
+        cm_msg(MERROR, "bor", "HBOOK support is not compiled in");
 #endif /* HAVE_HBOOK */
         }
       else if (out_format == FORMAT_ROOT)
         {
 #ifdef HAVE_ROOT
-	// ensure the output file is closed
+        // ensure the output file is closed
         assert(gManaOutputFile == NULL);
         assert(gManaOutputTree == NULL);
 
-	gManaOutputFile = new TFile(file_name,"RECREATE","Midas Analyzer output file");
-	if (gManaOutputFile == NULL)
-	  {
-	  sprintf(error, "Cannot open output file %s", out_info.filename);
-	  cm_msg(MERROR, "bor", error);
-	  out_file = NULL;
-	  return 0;
+        gManaOutputFile = new TFile(file_name,"RECREATE","Midas Analyzer output file");
+        if (gManaOutputFile == NULL)
+          {
+          sprintf(error, "Cannot open output file %s", out_info.filename);
+          cm_msg(MERROR, "bor", error);
+          out_file = NULL;
+          return 0;
           }
 
-	// make all ROOT objects created by user module bor() functions
-	// go into the output file
-	gManaOutputFile->cd();
+        // make all ROOT objects created by user module bor() functions
+        // go into the output file
+        gManaOutputFile->cd();
 
-	// create the output tree
-	gManaOutputTree = new TTree("T","Midas Analyzer output tree");
-	assert(gManaOutputTree != NULL);
+        // create the output tree
+        gManaOutputTree = new TTree("T","Midas Analyzer output tree");
+        assert(gManaOutputTree != NULL);
 
-	out_file = (FILE *) 1;
+        out_file = (FILE *) 1;
 #else
-	cm_msg(MERROR, "bor", "ROOT support is not compiled in");
+        cm_msg(MERROR, "bor", "ROOT support is not compiled in");
 #endif /* HAVE_ROOT */
         }
       else
@@ -1958,27 +1991,7 @@ char       str[256], file_name[256];
     else if (out_format == FORMAT_ROOT)
       {
 #ifdef HAVE_ROOT
-      // ensure that we do have an open file
-      assert(gManaOutputFile != NULL);
-      assert(gManaOutputTree != NULL);
-
-      // save the histograms
-      gManaOutputFile->cd();
-      TIter next(gManaHistsDir->GetList());
-      while (TObject *obj = next())
-	obj->Write();
-
-      // close the output file
-      gManaOutputFile->Write();
-      gManaOutputFile->Close();
-      delete gManaOutputFile;
-      gManaOutputFile = NULL;
-
-      // delete the output tree
-      gManaOutputTree = NULL;
-
-      // go to ROOT root directory
-      gROOT->cd();
+      CloseRootOutputFile();
 #else
       cm_msg(MERROR, "eor", "ROOT support is not compiled in");
 #endif /* HAVE_ROOT */
@@ -3105,9 +3118,9 @@ static char  *orig_event = NULL;
   /* verbose output */
   if (clp.verbose)
     printf("event %d, number %d, total size %d\n", 
-	   (int)pevent->event_id,
-	   (int)pevent->serial_number,
-	   (int)(pevent->data_size+sizeof(EVENT_HEADER)));
+           (int)pevent->event_id,
+           (int)pevent->serial_number,
+           (int)(pevent->data_size+sizeof(EVENT_HEADER)));
 
   /* save analyze_request for event number correction */
   _current_par = par;
@@ -3295,6 +3308,11 @@ static char  *orig_event = NULL;
         break;
         }
       }
+
+#ifdef HAVE_ROOT
+  if (gManaOutputTree != NULL)
+    gManaOutputTree->Fill();
+#endif
 
   return SUCCESS;
 }
@@ -3614,6 +3632,8 @@ char     str[256];
 #endif
 #ifdef HAVE_ROOT
   SaveRootHistograms(gManaHistsDir,str);
+  if (gManaOutputFile)
+    CloseRootOutputFile();
 #endif
   
   return status;
@@ -4410,23 +4430,7 @@ BANK_LIST *bank_list;
     else if (out_format == FORMAT_ROOT)
       {
 #ifdef HAVE_ROOT
-      // make sure we have an output file
-      assert(gManaOutputFile != NULL);
-
-      // save the histograms
-      gManaOutputFile->cd();
-      TIter next(gManaHistsDir->GetList());
-      while (TObject *obj = next()) {
-	obj->Write();
-      }
-
-      // close the output file
-      gManaOutputFile->Close();
-      delete gManaOutputFile;
-      gManaOutputFile = NULL;
-
-      // go to the ROOT root directory
-      gROOT->cd();
+      CloseRootOutputFile();
 #else
       cm_msg(MERROR, "loop_runs_offline", "ROOT support is not compiled in");
 #endif /* HAVE_ROOT */
