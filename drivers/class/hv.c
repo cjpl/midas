@@ -6,6 +6,9 @@
   Contents:     High Voltage Class Driver
 
   $Log$
+  Revision 1.19  2005/04/06 06:48:23  ritt
+  Fixed bug with channel offset
+
   Revision 1.18  2004/05/07 19:40:10  midas
   Replaced min/max by MIN/MAX macros
 
@@ -645,14 +648,14 @@ INT hv_init(EQUIPMENT * pequipment)
          hv_info->demand_mirror[offset + j] =
              MIN(hv_info->demand[offset + j], hv_info->voltage_limit[offset + j]);
 
-      DRIVER(i + offset) (CMD_SET_CURRENT_LIMIT_ALL, pequipment->driver[i].dd_info,
+      DRIVER(offset) (CMD_SET_CURRENT_LIMIT_ALL, pequipment->driver[i].dd_info,
                           pequipment->driver[i].channels,
                           hv_info->current_limit + offset);
 
       printf("\n");
 
       if ((hv_info->flags[i] & DF_PRIO_DEVICE) == 0)
-         status = DRIVER(i + offset) (CMD_SET_ALL, pequipment->driver[i].dd_info,
+         status = DRIVER(offset) (CMD_SET_ALL, pequipment->driver[i].dd_info,
                                       pequipment->driver[i].channels,
                                       hv_info->demand_mirror + offset);
       if (status != FE_SUCCESS)
