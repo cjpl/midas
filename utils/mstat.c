@@ -6,6 +6,9 @@
   Contents:     Display/log some pertinent information of the ODB
   
   $Log$
+  Revision 1.9  2000/02/25 18:51:51  pierre
+  - include deferred transition messages
+
   Revision 1.8  1999/10/07 13:17:36  midas
   Put a few EXPRT im msystem.h to make NT happy, updated NT makefile
 
@@ -122,7 +125,7 @@ void compose_status(HNDLE hDB, HNDLE hKey)
 /* --------------------- Run info -------------------------------- */
 {
 
-  INT rs;
+  INT rs, rt;
   char cs[256], stt[256], spt[256], ex[256];
   DWORD tb, tsb;
 
@@ -144,6 +147,9 @@ void compose_status(HNDLE hDB, HNDLE hKey)
   db_get_value(hDB, 0, "/runinfo/Start Time binary", &tb, &size, TID_DWORD);
   size = sizeof(tsb);
   db_get_value(hDB, 0, "/runinfo/Stop Time binary", &tsb, &size, TID_DWORD);
+  size = sizeof(rt);
+  db_get_value(hDB, 0, "/Runinfo/Requested transition", &rt, &size, TID_INT);
+
   /* Experiment info */
   size = sizeof(ex);
   db_get_value(hDB, 0, "/experiment/name", ex, &size, TID_STRING);
@@ -165,12 +171,24 @@ void compose_status(HNDLE hDB, HNDLE hKey)
   /* PAA revisit the /Runinfo for run time display */
   /* state */
   if (rs == STATE_RUNNING)
-    if (esc_flag)
-      sprintf(&(ststr[j][35]), "State:\033[1m%s\033[m",cs);
-    else
-      sprintf(&(ststr[j][36]), "State:%s",cs);
+    {
+      if (rt == TR_STOP)
+	sprintf(&(ststr[j][35]), "Deferred_Stop");
+      else
+	{
+	  if (esc_flag)
+	    sprintf(&(ststr[j][35]), "State:\033[1m%s\033[m",cs);
+	  else
+	    sprintf(&(ststr[j][36]), "State:%s",cs);
+	}
+    }
   else
-    sprintf(&(ststr[j][36]), "State:%s",cs);
+    {
+      if (rt == TR_START)
+	sprintf(&(ststr[j][36]), "Deferred_Start");
+      else
+	sprintf(&(ststr[j][36]), "State:%s",cs);
+    }
 
   /* time */  
   if (rs != STATE_STOPPED)  
