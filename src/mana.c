@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.74  2001/11/09 20:27:53  pierre
+  Fix replay for YBOS format
+
   Revision 1.73  2001/01/30 09:13:04  midas
   Correct for increased event size
 
@@ -3597,7 +3600,9 @@ MA_FILE *file;
       status = yb_any_file_ropen(file_name, FORMAT_YBOS);
       if (status != SS_SUCCESS)
         return NULL;
-      }
+      if (yb_any_physrec_skip(FORMAT_YBOS, -1) != YB_SUCCESS)
+        return (NULL);
+    }
     else
       {
       file->gzfile = gzopen(file_name, "rb");
@@ -3613,7 +3618,7 @@ MA_FILE *file;
 
 int ma_close(MA_FILE *file)
 {
-  if (file->format == FORMAT_YBOS)
+  if (file->format == MA_FORMAT_YBOS)
     yb_any_file_rclose(FORMAT_YBOS);
   else
     gzclose(file->gzfile);
@@ -3667,7 +3672,7 @@ int status, n;
 
       return n+sizeof(EVENT_HEADER);
       }
-    else if (file->format == FORMAT_YBOS)
+    else if (file->format == MA_FORMAT_YBOS)
       {
       DWORD * pybos, readn;
       if (ybos_event_get (&pybos, &readn) != SS_SUCCESS)
@@ -3675,6 +3680,7 @@ int status, n;
       status = yb_any_event_swap(FORMAT_YBOS, pybos);
       memcpy((char *)(pevent+1), (char *)pybos, readn); 
       status  = bevid_2_mheader(pevent, pybos);
+      return readn;
       }
     }
   else if (file->device == MA_DEVICE_PVM)
