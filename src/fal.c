@@ -7,6 +7,9 @@
                 Most routines are from mfe.c mana.c and mlogger.c.
 
   $Log$
+  Revision 1.23  2001/01/31 08:00:48  midas
+  Copied some modifications from mfe.c
+
   Revision 1.22  2001/01/30 09:13:04  midas
   Correct for increased event size
 
@@ -245,7 +248,7 @@ typedef struct {
 
 /* forward declarations */
 
-void send_event(WORD event_id);
+void send_event(INT index);
 void display(BOOL binit);
 void send_all_periodic_events(INT transition);
 void receive_event(HNDLE hBuf, HNDLE request_id, EVENT_HEADER *pevent);
@@ -3624,9 +3627,13 @@ EVENT_DEF       *event_def;
 INT manual_trigger(INT index, void *prpc_param[])
 {
 WORD event_id;
+INT  i;
 
   event_id = CWORD(0);
-  send_event(event_id);
+
+  for (i=0 ; equipment[i].name[0] ; i++)
+    if (equipment[i].info.event_id == event_id)
+      send_event(i);
 
   if (display_period)
     display(FALSE);
@@ -3936,7 +3943,7 @@ INT ana_callback(INT index, void *prpc_param[])
 
 /*------------------------------------------------------------------*/
 
-void send_event(WORD event_id)
+void send_event(INT index)
 {
 EQUIPMENT_INFO *eq_info;
 EVENT_HEADER   *pevent;
@@ -3944,50 +3951,48 @@ INT            i;
 
   pevent = (EVENT_HEADER *) event_buffer;
 
-  for (i=0 ; equipment[i].name[0] ; i++)
+  eq_info = &equipment[index].info;
+
+  pevent->event_id      = eq_info->event_id;
+  pevent->trigger_mask  = eq_info->trigger_mask;
+  pevent->data_size     = 0;
+  pevent->time_stamp    = ss_time();
+  pevent->serial_number = equipment[index].serial_number++;
+
+  equipment[index].last_called = ss_millitime();
+
+  /* call user readout routine */
+  *((EQUIPMENT **)(pevent+1)) = &equipment[index];
+  pevent->data_size = equipment[index].readout((char *) (pevent+1), 0);
+
+  /* send event */
+  if (pevent->data_size)
     {
-    eq_info = &equipment[i].info;
+    equipment[index].bytes_sent += pevent->data_size + sizeof(EVENT_HEADER);
+    equipment[index].events_sent++;
 
-    if (eq_info->event_id != event_id)
-      continue;
+    equipment[index].stats.events_sent += equipment[index].events_sent;
+    equipment[index].events_sent = 0;
 
-    pevent->event_id      = eq_info->event_id;
-    pevent->trigger_mask  = eq_info->trigger_mask;
-    pevent->data_size     = 0;
-    pevent->time_stamp    = ss_time();
-    pevent->serial_number = equipment[i].serial_number++;
+    /* process event locally */
+    process_event(pevent);
 
-    equipment[i].last_called = ss_millitime();
-
-    /* call user readout routine */
-    *((EQUIPMENT **)(pevent+1)) = &equipment[i];
-    pevent->data_size = equipment[i].readout((char *) (pevent+1), 0);
-
-    /* send event */
-    if (pevent->data_size)
+    /* send event to buffer */
+    if (equipment[index].buffer_handle)
       {
-      equipment[i].bytes_sent += pevent->data_size + sizeof(EVENT_HEADER);
-      equipment[i].events_sent++;
-
-      equipment[i].stats.events_sent += equipment[i].events_sent;
-      equipment[i].events_sent = 0;
-
-      /* process event locally */
-      process_event(pevent);
-
-      /* send event to buffer */
-      if (equipment[i].buffer_handle)
-        {
-        bm_send_event(equipment[i].buffer_handle, pevent,
-                      pevent->data_size + sizeof(EVENT_HEADER), SYNC);
-        
-        /* flush buffer cache */
-        bm_flush_cache(equipment[i].buffer_handle, SYNC);
-        }
+      bm_send_event(equipment[index].buffer_handle, pevent,
+                    pevent->data_size + sizeof(EVENT_HEADER), SYNC);
+      
+      /* flush buffer cache */
+      bm_flush_cache(equipment[index].buffer_handle, SYNC);
       }
-    else
-      equipment[i].serial_number--;
     }
+  else
+    equipment[index].serial_number--;
+
+  for (i=0 ; equipment[i].name[0] ; i++)
+    if (equipment[i].buffer_handle)
+      bm_flush_cache(equipment[i].buffer_handle, SYNC);
 }
 
 /*------------------------------------------------------------------*/
@@ -4013,7 +4018,7 @@ INT            i;
     if (transition == TR_RESUME && (eq_info->read_on & RO_RESUME) == 0)
       continue;
 
-    send_event(eq_info->event_id);
+    send_event(i);
     }
 }
 
