@@ -12,6 +12,9 @@
   date         by    modification
   ---------    ---   ------------------------------------------------
   17-APR-98    SR    created
+  $Log$
+  Revision 1.2  1998/10/09 22:56:49  midas
+  -PAA- int to DWORD *lam
 
 \********************************************************************/
 
@@ -113,8 +116,7 @@ HNDLE hDB, hKey, hRootKey, hSubkey;
 
       /* test if CNAF function implemented */
       size = sizeof(WORD);
-      data = 0;
-      status = rpc_client_call(hConn, RPC_CNAF16, CNAF_TEST, 0, 0, 0, 0, 0, &data, &size, &q, &x);
+      status = rpc_client_call(hConn, RPC_CNAF16, CNAF, 0, 0, 0, 0, 0, &data, &size, &q, &x);
 
       if (status != RPC_SUCCESS)
         {
@@ -570,7 +572,7 @@ void cam_lam_disable(const int c, const int n)
 
 /*------------------------------------------------------------------*/
 
-void cam_lam_read(const int c, int *lam)
+void cam_lam_read(const int c, DWORD *lam)
 {
 }
 
