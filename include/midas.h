@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.147  2004/12/23 09:36:25  midas
+  Implemented NaNs
+
   Revision 1.146  2004/10/07 00:54:02  midas
   Implemented templates for histo booking from John O'Donnell
 
@@ -2160,6 +2163,9 @@ extern "C" {
    char EXPRT *ss_asctime(void);
    INT EXPRT ss_sleep(INT millisec);
    BOOL EXPRT ss_kbhit(void);
+
+   double EXPRT ss_nan(void);
+   int ss_isnan(double x);
 
    void EXPRT ss_clear_screen(void);
    void EXPRT ss_printf(INT x, INT y, const char *format, ...);
