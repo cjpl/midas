@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.116  2003/05/02 09:04:50  midas
+  Version 1.9.3
+
   Revision 1.115  2003/05/02 09:03:01  midas
   Fixed buffer overflows by strlcpy()
 
@@ -373,7 +376,7 @@
    to the MIDAS library. First digit is major release, second
    digit is minor release, third digit is patch level */
 
-#define MIDAS_VERSION "1.9.2"
+#define MIDAS_VERSION "1.9.3"
 
 /*------------------------------------------------------------------*/
 
