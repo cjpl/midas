@@ -7,6 +7,9 @@
 #                Windows NT
 #
 #  $Log$
+#  Revision 1.11  2005/03/24 20:58:22  ritt
+#  Added mxml.c
+#
 #  Revision 1.10  2003/06/17 06:36:11  midas
 #  Removed hvedit from makefile
 #
@@ -74,7 +77,8 @@ OBJS =  $(LIB_DIR)/midas.obj \
   $(LIB_DIR)/mrpc.obj \
   $(LIB_DIR)/odb.obj \
   $(LIB_DIR)/ybos.obj \
-  $(LIB_DIR)/ftplib.obj
+  $(LIB_DIR)/ftplib.obj \
+  $(LIB_DIR)/mxml.obj
 
 LIBRARY =   $(LIB_DIR)/midas.lib
 
@@ -152,6 +156,8 @@ $(LIB_DIR)/ybos.obj: $(SRC_DIR)/ybos.c $(INC_DIR)/msystem.h $(INC_DIR)/midas.h $
 	$(CC) /c /DMIDAS_DLL $(CFLAGS) /Fo$(LIB_DIR)/ybos.obj $(SRC_DIR)/ybos.c
 $(LIB_DIR)/ftplib.obj: $(SRC_DIR)/ftplib.c $(INC_DIR)/msystem.h $(INC_DIR)/midas.h $(INC_DIR)/midasinc.h
 	$(CC) /c /DMIDAS_DLL $(CFLAGS) /Fo$(LIB_DIR)/ftplib.obj $(SRC_DIR)/ftplib.c
+$(LIB_DIR)/mxml.obj: $(SRC_DIR)/mxml.c $(INC_DIR)/msystem.h $(INC_DIR)/midas.h $(INC_DIR)/midasinc.h $(INC_DIR)/mxml.h
+	$(CC) /c /DMIDAS_DLL /DHAVE_STRLCPY $(CFLAGS) /Fo$(LIB_DIR)/mxml.obj $(SRC_DIR)/mxml.c
 
 # frontend + backend
 $(LIB_DIR)/mfe.obj: $(SRC_DIR)/mfe.c $(INC_DIR)/msystem.h $(INC_DIR)/midas.h $(INC_DIR)/midasinc.h $(INC_DIR)/mrpc.h
