@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.274  2004/09/17 23:43:19  midas
+  Correct email header to pass SpamAssassin
+
   Revision 1.273  2004/09/17 22:03:58  midas
   Added refresh to SC page
 
@@ -1186,9 +1189,10 @@ INT sendmail(char *smtp_host, char *from, char *to, char *subject, char *text)
 {
    struct sockaddr_in bind_addr;
    struct hostent *phe;
-   int s;
-   char str[10000];
+   int i, s, strsize, offset;
+   char *str, *p, buf[256];
    time_t now;
+   struct tm *ts;
 
    if (verbose)
       printf("\n\nEmail from %s to %s, SMTP host %s:\n", from, to, smtp_host);
@@ -1201,7 +1205,6 @@ INT sendmail(char *smtp_host, char *from, char *to, char *subject, char *text)
    /* connect to remote node port 25 */
    memset(&bind_addr, 0, sizeof(bind_addr));
    bind_addr.sin_family = AF_INET;
-   bind_addr.sin_addr.s_addr = 0;
    bind_addr.sin_port = htons((short) 25);
 
    phe = gethostbyname(smtp_host);
@@ -1214,66 +1217,108 @@ INT sendmail(char *smtp_host, char *from, char *to, char *subject, char *text)
       return -1;
    }
 
-   recv_string(s, str, sizeof(str), 3000);
+   strsize = TEXT_SIZE + 1000;
+   str = malloc(strsize);
+
+   recv_string(s, str, strsize, 3000);
    if (verbose)
       puts(str);
 
    /* drain server messages */
    do {
       str[0] = 0;
-      recv_string(s, str, sizeof(str), 300);
+      recv_string(s, str, strsize, 300);
       if (verbose)
          puts(str);
    } while (str[0]);
 
-   sprintf(str, "HELO %s\n", host_name);
+   sprintf(str, "HELO %s\r\n", host_name);
    send(s, str, strlen(str), 0);
    if (verbose)
       puts(str);
-   recv_string(s, str, sizeof(str), 3000);
+   recv_string(s, str, strsize, 3000);
    if (verbose)
       puts(str);
 
-   sprintf(str, "MAIL FROM: <%s>\n", from);
+   if (strchr(from, '<')) {
+      strlcpy(buf, strchr(from, '<')+1, sizeof(buf));
+      if (strchr(buf, '>'))
+         *strchr(buf, '>') = 0;
+   } else
+      strlcpy(buf, from, sizeof(buf));
+
+   sprintf(str, "MAIL FROM: %s\n", buf);
    send(s, str, strlen(str), 0);
    if (verbose)
       puts(str);
-   recv_string(s, str, sizeof(str), 3000);
+   recv_string(s, str, strsize, 3000);
    if (verbose)
       puts(str);
 
-   sprintf(str, "RCPT TO: <%s>\n", to);
+   sprintf(str, "RCPT TO: <%s>\r\n", to);
    send(s, str, strlen(str), 0);
    if (verbose)
       puts(str);
-   recv_string(s, str, sizeof(str), 3000);
+   recv_string(s, str, strsize, 3000);
    if (verbose)
       puts(str);
 
-   sprintf(str, "DATA\n");
+   sprintf(str, "DATA\r\n");
    send(s, str, strlen(str), 0);
    if (verbose)
       puts(str);
-   recv_string(s, str, sizeof(str), 3000);
+   recv_string(s, str, strsize, 3000);
    if (verbose)
       puts(str);
 
-   sprintf(str, "To: %s\nFrom: %s\nSubject: %s\n", to, from, subject);
+   sprintf(str, "To: %s\r\nFrom: %s\r\nSubject: %s\r\n", to, from, subject);
+   send(s, str, strlen(str), 0);
+   if (verbose)
+      puts(str);
+
+   sprintf(str, "X-Mailer: mhttpd, midas version %s\r\n", MIDAS_VERSION);
    send(s, str, strlen(str), 0);
    if (verbose)
       puts(str);
 
    time(&now);
-   sprintf(str, "Date: %s\n", ctime(&now));
+   ts = localtime(&now);
+   strftime(buf, sizeof(buf), "%a, %d %b %Y %H:%M:%S", ts);
+   offset = (-(int) timezone);
+   if (ts->tm_isdst)
+      offset += 3600;
+   sprintf(str, "Date: %s %+03d%02d\r\n", buf, (int) (offset / 3600),
+            (int) ((abs((int) offset) / 60) % 60));
    send(s, str, strlen(str), 0);
    if (verbose)
       puts(str);
 
-   sprintf(str, "%s\n.\n", text);
+   sprintf(str, "Content-Type: TEXT/PLAIN; charset=US-ASCII\r\n\r\n");
    send(s, str, strlen(str), 0);
    if (verbose)
       puts(str);
-   recv_string(s, str, sizeof(str), 3000);
+
+   /* analyze text for "." at beginning of line */
+   p = text;
+   str[0] = 0;
+   while (strstr(p, "\r\n.\r\n")) {
+      i = (int) strstr(p, "\r\n.\r\n") - (int) p + 1;
+      strlcat(str, p, i);
+      p += i + 4;
+      strlcat(str, "\r\n..\r\n", strsize);
+   }
+   strlcat(str, p, strsize);
+   strlcat(str, "\r\n", strsize);
+   send(s, str, strlen(str), 0);
+   if (verbose)
+      puts(str);
+
+   /* send ".<CR>" to signal end of message */
+   sprintf(str, ".\r\n");
+   send(s, str, strlen(str), 0);
+   if (verbose)
+      puts(str);
+   recv_string(s, str, strsize, 3000);
    if (verbose)
       puts(str);
 
@@ -1281,11 +1326,12 @@ INT sendmail(char *smtp_host, char *from, char *to, char *subject, char *text)
    send(s, str, strlen(str), 0);
    if (verbose)
       puts(str);
-   recv_string(s, str, sizeof(str), 3000);
+   recv_string(s, str, strsize, 3000);
    if (verbose)
       puts(str);
 
    closesocket(s);
+   free(str);
 
    return 1;
 }
@@ -3968,14 +4014,11 @@ void submit_elog()
          p = strtok(mail_list, ",");
          for (i = 0; p; i++) {
             strcpy(mail_to, p);
-            sprintf(mail_from, "MIDAS@%s", host_name);
+            sprintf(mail_from, "MIDAS <MIDAS@%s>", host_name);
 
             size = sizeof(str);
             str[0] = 0;
             db_get_value(hDB, 0, "/Experiment/Name", str, &size, TID_STRING, TRUE);
-
-            // zero out the array. needed because later strncat() does not always add the trailing '\0'
-            memset(mail_text, 0, sizeof(mail_text));
 
             sprintf(mail_text, "A new entry has been submitted by %s:\n\n", author);
             sprintf(mail_text + strlen(mail_text), "Experiment : %s\n", str);
@@ -3994,12 +4037,10 @@ void submit_elog()
 
             assert(strlen(mail_text) + 100 < sizeof(mail_text));        // bomb out on array overrun.
 
-            strcat(mail_text + strlen(mail_text), "\n");
-            // this strncat() depends on the mail_text array being zeroed out:
-            // strncat() does not always add the trailing '\0'
-            strncat(mail_text + strlen(mail_text), getparam("text"),
+            strlcat(mail_text + strlen(mail_text), "\n", sizeof(mail_text));
+            strlcat(mail_text + strlen(mail_text), getparam("text"),
                     sizeof(mail_text) - strlen(mail_text) - 50);
-            strcat(mail_text + strlen(mail_text), "\n");
+            strlcat(mail_text + strlen(mail_text), "\n", sizeof(mail_text));
 
             assert(strlen(mail_text) < sizeof(mail_text));      // bomb out on array overrun.
 
@@ -4130,7 +4171,7 @@ void show_elog_page(char *path)
                 TRUE);
    db_get_value(hDB, 0, "/Elog/Allow delete", &allow_delete, &size, TID_BOOL, TRUE);
 
-  /*---- interprete commands ---------------------------------------*/
+   /*---- interprete commands ---------------------------------------*/
 
    strcpy(command, getparam("cmd"));
 
@@ -8658,7 +8699,7 @@ void show_hist_page(char *path, char *buffer, int *buffer_size, int refresh)
             if (!hkeyp)
                break;
 
-            db_get_key(hDB, hkey, &key);
+            db_get_key(hDB, hkeyp, &key);
             rsprintf("<option>%s</option>\n", key.name);
          }
       }
