@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.93  2000/02/24 22:29:24  midas
+  Added deferred transitions
+
   Revision 1.92  1999/12/08 12:12:22  midas
   Modified "&str" to "str"
 
@@ -745,6 +748,7 @@ BOOL   flag;
 char   str[256], name[32], ref[256];
 char   *yn[] = {"No", "Yes"};
 char   *state[] = {"", "Stopped", "Paused", "Running" };
+char   *trans_name[] = {"Start", "Stop", "Pause", "Resume"};
 time_t now, difftime;
 DWORD  analyzed;
 double analyze_ratio;
@@ -904,6 +908,11 @@ CHN_STATISTICS chn_stats;
   else strcpy(str, "FFFFFF");
 
   rsprintf("<td colspan=1 bgcolor=#%s>%s", str, state[runinfo.state]);
+
+  if (runinfo.requested_transition)
+    for (i=0 ; i<4 ; i++)
+      if (runinfo.requested_transition & (1<<i))
+        rsprintf("<br><b>%s requested</b>", trans_name[i]);
 
   if (exp_name[0])
     sprintf(ref, "%sAlarms/Alarm system active?cmd=set&exp=%s", mhttpd_url, exp_name);
@@ -4879,7 +4888,7 @@ struct tm *gmt;
       }
 
     status = cm_transition(TR_PAUSE, 0, str, sizeof(str), SYNC);
-    if (status != CM_SUCCESS)
+    if (status != CM_SUCCESS && status != CM_DEFERRED_TRANSITION)
       show_error(str);
     else
       redirect("");
@@ -4898,7 +4907,7 @@ struct tm *gmt;
       }
 
     status = cm_transition(TR_RESUME, 0, str, sizeof(str), SYNC);
-    if (status != CM_SUCCESS)
+    if (status != CM_SUCCESS && status != CM_DEFERRED_TRANSITION)
       show_error(str);
     else
       redirect("");
@@ -4947,7 +4956,7 @@ struct tm *gmt;
 
       i = atoi(value);
       status = cm_transition(TR_START, i, str, sizeof(str), SYNC);
-      if (status != CM_SUCCESS)
+      if (status != CM_SUCCESS && status != CM_DEFERRED_TRANSITION)
         show_error(str);
       else
         redirect("");
@@ -4966,7 +4975,7 @@ struct tm *gmt;
       }
 
     status = cm_transition(TR_STOP, 0, str, sizeof(str), SYNC);
-    if (status != CM_SUCCESS)
+    if (status != CM_SUCCESS && status != CM_DEFERRED_TRANSITION)
       show_error(str);
     else
       redirect("");

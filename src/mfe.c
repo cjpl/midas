@@ -7,6 +7,9 @@
                 linked with user code to form a complete frontend
 
   $Log$
+  Revision 1.12  2000/02/24 22:29:24  midas
+  Added deferred transitions
+
   Revision 1.11  1999/12/08 00:50:29  pierre
   - fix EVID (ybos: strncpy to strncmp)
 
@@ -77,9 +80,10 @@ extern INT  interrupt_configure(INT cmd, INT source, PTYPE adr);
 
 #undef USE_EVENT_CHANNEL
 
-#define SERVER_CACHE_SIZE 100000 /* event cache before buffer */
+#define USER_MAX_EVENT_SIZE 10000 /* max event size for the FE in bytes */ 
+#define SERVER_CACHE_SIZE  100000 /* event cache before buffer */
 
-#define ODB_UPDATE_TIME    10000 /* 10 seconds for ODB update */
+#define ODB_UPDATE_TIME    10000  /* 10 seconds for ODB update */
 
 INT   run_state;       /* STATE_RUNNING, STATE_STOPPED, STATE_PAUSED */
 INT   run_number;
@@ -361,7 +365,7 @@ HNDLE  hKey;
       if (status != BM_SUCCESS && status != BM_CREATED)
         {
         cm_msg(MERROR, "register_equipment", 
-"Cannot open event buffer. Try to reduce EVENT_BUFFER_SIZE in midas.h \
+               "Cannot open event buffer. Try to reduce EVENT_BUFFER_SIZE in midas.h \
 and rebuild the system.");
         return 0;         
         }
@@ -620,7 +624,13 @@ INT            i;
     if (transition == TR_RESUME && (eq_info->read_on & RO_RESUME) == 0)
       continue;
 
-    pevent = eb_get_pointer();
+    /* return value should be valid pointer. if NULL BIG error ==> abort  */
+    pevent = dm_pointer_get();
+    if (pevent == NULL)
+      {
+      cm_msg(MERROR, "send_all_periodic_events", "dm_pointer_get not returning valid pointer");
+      return;
+      }
 
     pevent->event_id      = eq_info->event_id;
     pevent->trigger_mask  = eq_info->trigger_mask;
@@ -644,12 +654,12 @@ INT            i;
       if (equipment[i].buffer_handle)
         {
 #ifdef USE_EVENT_CHANNEL
-        eb_increment_pointer(equipment[i].buffer_handle, 
+        dm_pointer_increment(equipment[i].buffer_handle, 
                              pevent->data_size + sizeof(EVENT_HEADER));
 #else
         rpc_flush_event();
         bm_send_event(equipment[i].buffer_handle, pevent,
-                       pevent->data_size + sizeof(EVENT_HEADER), SYNC);
+                      pevent->data_size + sizeof(EVENT_HEADER), SYNC);
         bm_flush_cache(equipment[i].buffer_handle, SYNC);
 #endif
         }
@@ -667,12 +677,22 @@ INT            i;
     }
 
   /* emtpy event buffer */
-  while (eb_send_events(TRUE) == BM_MORE_EVENTS);
+#ifdef USE_EVENT_CHANNEL
+  {
+  INT status;
+  if ((status = dm_area_flush()) != CM_SUCCESS)
+    cm_msg(MERROR,"send_all_periodic_events","dm_area_flush: %i", status);
+  }
+#endif
+
+  for (i=0 ; equipment[i].name[0] ; i++)
+    if (equipment[i].buffer_handle)
+      bm_flush_cache(equipment[i].buffer_handle, SYNC);
 }
 
 /*------------------------------------------------------------------*/
 
-BOOL interrupt_enabled, interrupt_blocked;
+BOOL interrupt_enabled;
 
 void interrupt_enable(BOOL flag)
 {
@@ -680,55 +700,23 @@ void interrupt_enable(BOOL flag)
 
   if (interrupt_eq)
     {
-    if (interrupt_enabled && !interrupt_blocked)
+    if (interrupt_enabled)
       interrupt_configure(CMD_INTERRUPT_ENABLE,0,0);
     else
       interrupt_configure(CMD_INTERRUPT_DISABLE,0,0);
     }
 }
 
-void interrupt_block(BOOL flag)
-{
-  if (!flag && eb_buffer_full())
-    {
-    cm_msg(MERROR, "interrupt_block",
-	   "Tried to enable interrupts when buffer is full.");
-    return;
-    }
-
-  if (interrupt_blocked && flag)
-    return;
-  if (!interrupt_blocked && !flag)
-    return;
-
-  interrupt_blocked = flag;
-
-  if (interrupt_eq)
-    {
-    if (interrupt_enabled && !interrupt_blocked)
-      interrupt_configure(CMD_INTERRUPT_ENABLE,0,0);
-    else
-      interrupt_configure(CMD_INTERRUPT_DISABLE,0,0);
-    }
-}
-
-/* Should be volatile - as it may be modified by an interrupt handler */
-volatile INT daqPendingInterrupt = 0;
+/*------------------------------------------------------------------*/
 
 void interrupt_routine(void)
 {
 EVENT_HEADER *pevent;
 
-  pevent = eb_get_pointer();
-  if (pevent == NULL) 
-    {
-#ifdef OS_VXWORKS
-    logMsg("DAQ hang: Buffer is unexpectedly %d%% full\n",
-	   eb_get_level(),0,0,0,0,0);
-#endif
-    daqPendingInterrupt = 1;
-    return;
-    }
+  /* get pointer for upcoming event.
+     This is a blocking call if no space available */
+  if ((pevent = dm_pointer_get()) == NULL)
+    cm_msg(MERROR,"scheduler","interrupt, dm_pointer_get returned NULL");
   
   /* compose MIDAS event header */
   pevent->event_id      = interrupt_eq->info.event_id;
@@ -749,7 +737,7 @@ EVENT_HEADER *pevent;
     if (interrupt_eq->buffer_handle)
       {
 #ifdef USE_EVENT_CHANNEL
-      eb_increment_pointer(interrupt_eq->buffer_handle, 
+      dm_pointer_increment(interrupt_eq->buffer_handle, 
                            pevent->data_size + sizeof(EVENT_HEADER));
 #else
       rpc_send_event(interrupt_eq->buffer_handle, pevent,
@@ -773,8 +761,6 @@ EVENT_HEADER *pevent;
   else
     interrupt_eq->serial_number--;
 
-  if (interrupt_eq && eb_buffer_full())
-    interrupt_block(TRUE);
 }
 
 /*------------------------------------------------------------------*/
@@ -794,6 +780,8 @@ char str[160];
 
   return 0;
 }
+
+/*------------------------------------------------------------------*/
 
 void display(BOOL bInit)
 {
@@ -877,9 +865,12 @@ INT opt_max=0, opt_index=0, opt_tcp_size=128, opt_cnt=0;
 
 #ifdef OS_VXWORKS
   rpc_set_opt_tcp_size(1024);
+#ifdef PPCxxx
+  rpc_set_opt_tcp_size(NET_TCP_SIZE);
+#endif
 #endif
 
-  pevent = eb_get_pointer();
+  /*----------------- MAIN equipment loop ------------------------------*/
 
   do
     {
@@ -924,21 +915,17 @@ INT opt_max=0, opt_index=0, opt_tcp_size=128, opt_cnt=0;
         if (actual_millitime - eq->last_called >= (DWORD) eq_info->period)
           {
           /* disable interrupts during readout */
-          interrupt_block(TRUE);
+          interrupt_enable(FALSE);
 
-          do
+          pevent = dm_pointer_get();
+          if (pevent == NULL)
             {
-            pevent = eb_get_pointer();
-            
-            /* if no space in buffer, empty it */
-            if (pevent == NULL)
-              {
-              status = eb_send_events(FALSE);
-              if (status == RPC_NET_ERROR)
-                goto net_error;
-              }
-            } while (pevent == NULL);
+            cm_msg(MERROR, "scheduler", "periodic, dm_pointer_get not returning valid pointer");
+            status = SS_NO_MEMORY;
+            goto net_error;
+            }
 
+          /* tag current equipment loop time */
           eq->last_called = actual_millitime;
 
           /* compose MIDAS event header */
@@ -955,13 +942,10 @@ INT opt_max=0, opt_index=0, opt_tcp_size=128, opt_cnt=0;
           /* send event */
           if (pevent->data_size)
             {
-            eq->bytes_sent += pevent->data_size + sizeof(EVENT_HEADER);
-            eq->events_sent++;
-
             if (eq->buffer_handle)
               {
 #ifdef USE_EVENT_CHANNEL
-              eb_increment_pointer(eq->buffer_handle, 
+              dm_increment_pointer(eq->buffer_handle, 
                                    pevent->data_size + sizeof(EVENT_HEADER));
 #else
               rpc_flush_event();
@@ -969,6 +953,9 @@ INT opt_max=0, opt_index=0, opt_tcp_size=128, opt_cnt=0;
                             pevent->data_size + sizeof(EVENT_HEADER), SYNC);
 #endif
               }
+
+            eq->bytes_sent += pevent->data_size + sizeof(EVENT_HEADER);
+            eq->events_sent++;
 
             /* send event to ODB for periodic events */
             if (eq_info->eq_type == EQ_PERIODIC &&
@@ -982,32 +969,26 @@ INT opt_max=0, opt_index=0, opt_tcp_size=128, opt_cnt=0;
           else
             eq->serial_number--;
           
-          if (interrupt_eq && !eb_buffer_full())
-            interrupt_block(FALSE);
+          /* re-enable the interrupt after periodic */
+          interrupt_enable(TRUE);
           }
-        }
+        } /* end of periodic equipments */
 
       /*---- check polled events ----*/
       if (eq_info->eq_type == EQ_POLLED)
         {
         readout_start = actual_millitime;
-        pevent = NULL;
 
         while ((source = poll_event(eq_info->source, eq->poll_count, FALSE)) > 0)
           {
-          do
+          pevent = dm_pointer_get();
+          if (pevent == NULL)
             {
-            pevent = eb_get_pointer();
+            cm_msg(MERROR, "scheduler", "polled, dm_pointer_get not returning valid pointer");
+            status = SS_NO_MEMORY;
+            goto net_error;
+            }
             
-            /* if no space in buffer, empty it */
-            if (pevent == NULL)
-              {
-              status = eb_send_events(FALSE);
-              if (status == RPC_NET_ERROR)
-                goto net_error;
-              }
-            } while (pevent == NULL);
-
           /* compose MIDAS event header */
           pevent->event_id      = eq_info->event_id;
           pevent->trigger_mask  = eq_info->trigger_mask;
@@ -1015,7 +996,8 @@ INT opt_max=0, opt_index=0, opt_tcp_size=128, opt_cnt=0;
           pevent->time_stamp    = actual_time;
           pevent->serial_number = eq->serial_number++;
 
-          /* put source at beginning of event */
+          /* put source at beginning of event, will be overwritten by user readout code,
+             just a special feature used by some multi-source applications */
           *(INT *) (pevent+1) = source;
 
           /* call user readout routine */
@@ -1027,16 +1009,12 @@ INT opt_max=0, opt_index=0, opt_tcp_size=128, opt_cnt=0;
             if (eq->buffer_handle)
               {
 #ifdef USE_EVENT_CHANNEL
-              eb_increment_pointer(eq->buffer_handle, 
+              dm_pointer_increment(eq->buffer_handle, 
                                    pevent->data_size + sizeof(EVENT_HEADER));
 #else
               rpc_send_event(eq->buffer_handle, pevent,
                              pevent->data_size + sizeof(EVENT_HEADER), SYNC);
 #endif
-
-              status = eb_send_events(FALSE);
-              if (status == RPC_NET_ERROR)
-                goto net_error;
 
               eq->bytes_sent += pevent->data_size + sizeof(EVENT_HEADER);
               eq->events_sent++;
@@ -1057,12 +1035,8 @@ INT opt_max=0, opt_index=0, opt_tcp_size=128, opt_cnt=0;
             break;
           }
 
-        /* send remaining events in order to avoid partially sent events */
-        while (eb_send_events(TRUE) == BM_MORE_EVENTS);
-
         /* send event to ODB */
-        if (eq_info->read_on & RO_ODB ||
-            eq_info->history)
+        if (eq_info->read_on & RO_ODB || eq_info->history)
           {
           if (actual_millitime - eq->last_called > ODB_UPDATE_TIME && pevent != NULL)
             {
@@ -1076,19 +1050,7 @@ INT opt_max=0, opt_index=0, opt_tcp_size=128, opt_cnt=0;
       /*---- send interrupt events ----*/
       if (eq_info->eq_type == EQ_INTERRUPT)
         {
-        readout_start = actual_millitime;
-
-        do
-          {
-          status = eb_send_events(FALSE);
-          if (status == RPC_NET_ERROR)
-            goto net_error;
-
-          } while (ss_millitime() - readout_start < (DWORD) eq_info->period &&
-                   status == BM_MORE_EVENTS);
-        
-        /* send remaining events in order to avoid partially sent events */
-        while (eb_send_events(TRUE) == BM_MORE_EVENTS);
+        /* not much to do as work being done independently in interrupt_routine() */
 
         /* update ODB */
         if (interrupt_odb_buffer_valid)
@@ -1098,9 +1060,6 @@ INT opt_max=0, opt_index=0, opt_tcp_size=128, opt_cnt=0;
           interrupt_odb_buffer_valid = FALSE;
           }
 
-        /* check for low water mark */
-        if (interrupt_eq && !eb_buffer_full())
-          interrupt_block(FALSE);
         }
 
       /*---- check if event limit is reached ----*/
@@ -1114,17 +1073,16 @@ INT opt_max=0, opt_index=0, opt_tcp_size=128, opt_cnt=0;
         }
       }
 
-    /*---- check if Interrupt routine needs calling ----------------*/
-    if (daqPendingInterrupt && !eb_buffer_full())
-      {
-      daqPendingInterrupt = 0;
-      interrupt_routine();
-      cm_msg(MINFO, "scheduler", "Interrupt pending: restarting front end.");
-      }
-
     /*---- call frontend_loop periodically -------------------------*/
     if (frontend_call_loop)
-      frontend_loop();
+      {
+      status = frontend_loop();
+      if (status != CM_SUCCESS)
+        status = RPC_SHUTDOWN;
+      }
+
+    /*---- check for deferred transitions --------------------------*/
+    cm_check_deferred_transition();
 
     /*---- calculate rates and update status page periodically -----*/
     if ((display_period && actual_millitime - last_time_display > (DWORD) display_period) ||
@@ -1191,16 +1149,6 @@ INT opt_max=0, opt_index=0, opt_tcp_size=128, opt_cnt=0;
         /* check keyboard */
         ch = 0;
         status = 0;
-/*
-        if (ss_kbhit())
-          {
-#if defined(OS_MSDOS) || defined(OS_WINNT)
-          ch = getch();
-#else
-          ch = getchar();
-#endif
-          }
-*/
         while (ss_kbhit())
           {
           ch = ss_getchar(0);
@@ -1224,17 +1172,19 @@ INT opt_max=0, opt_index=0, opt_tcp_size=128, opt_cnt=0;
     if (actual_millitime - last_time_flush > 1000)
       {
       last_time_flush = actual_millitime;
-    
-      /* if event buffer contains less than optimal TCP size, flush
-         it now */
-      if (max_bytes_per_sec < rpc_get_opt_tcp_size())
-        eb_send_events(TRUE);
-
+      
       /* if cache on server is not filled in one second at current
          data rate, flush it now to make events available to consumers */
       
       if (max_bytes_per_sec < SERVER_CACHE_SIZE)
         {
+        interrupt_enable(FALSE);
+
+#ifdef USE_EVENT_CHANNEL
+        if ((status = dm_area_flush()) != CM_SUCCESS)
+          cm_msg(MERROR, "scheduler", "dm_area_flush: %i", status);
+#endif
+
         for (i=0 ; equipment[i].name[0] ; i++)
           {
           if (equipment[i].buffer_handle)
@@ -1256,14 +1206,16 @@ INT opt_max=0, opt_index=0, opt_tcp_size=128, opt_cnt=0;
               }
             }
           }
+
+        interrupt_enable(TRUE);
         }
       }
 
     /*---- check network messages ----------------------------------*/
     if (run_state == STATE_RUNNING && interrupt_eq == NULL)
       {
-      /* only call yield once every 100ms when running */
-      if (actual_millitime - last_time_network > 100)
+      /* only call yield once every 500ms when running */
+      if (actual_millitime - last_time_network > 500)
         {
         status = cm_yield(0);
         last_time_network = actual_millitime;
@@ -1340,7 +1292,7 @@ INT   i, count;
         {
         for (i=0 ; i<count ; i++)
           if (f<16)
-            cam16i_q(c, n, a, f, pword, (int *) x, (int *) q);
+            cam16i_q(c, n, a, f, pword++, (int *) x, (int *) q);
           else if (f<24)
             cam16o_q(c, n, a, f, pword[i], (int *) x, (int *) q);
           else
@@ -1350,7 +1302,7 @@ INT   i, count;
         {
         for (i=0 ; i<count ; i++)
           if (f<16)
-            cam24i_q(c, n, a, f, pdword, (int *) x, (int *) q);
+            cam24i_q(c, n, a, f, pdword++, (int *) x, (int *) q);
           else if (f<24)
             cam24o_q(c, n, a, f, pdword[i], (int *) x, (int *) q);
           else
@@ -1379,7 +1331,15 @@ INT   i, count;
       printf("cnaf: Unknown command 0x%X\n", cmd);
     }
 
-  printf("cmd=%d c=%d n=%d a=%d f=%d d=%X\n", cmd, c, n, a, f, pdword[0]);
+  if (debug)
+    {
+    if (index == RPC_CNAF16)
+      printf("cmd=%d r=%d c=%d n=%d a=%d f=%d d=%X x=%d q=%d\n",
+              cmd, count, c, n, a, f, pword[0], *x, *q);
+    else if (index == RPC_CNAF24)
+      printf("cmd=%d r=%d c=%d n=%d a=%d f=%d d=%X x=%d q=%d\n",
+              cmd, count, c, n, a, f, pdword[0], *x, *q);
+    }
 
   return RPC_SUCCESS;
 }
@@ -1392,7 +1352,7 @@ int mfe(char *ahost_name, char *aexp_name, BOOL adebug)
 main(int argc, char *argv[])
 #endif
 {
-INT    status, i, eb_size;
+INT    status, i, dm_size;
 
   host_name[0] = 0;
   exp_name[0] = 0;
@@ -1432,21 +1392,44 @@ usage:
     }
 #endif
 
-  /* allocate event ring buffer to hold at least three events */
-  eb_size = 3*(MAX_EVENT_SIZE + sizeof(EVENT_HEADER));
-  eb_size = max(eb_size , 0x4000); /* minimum 16kb */
-  if (eb_size > event_buffer_size)
+  /* allocate event ring buffer to hold at least 10 events */
+  dm_size = 10*(USER_MAX_EVENT_SIZE + sizeof(EVENT_HEADER) + sizeof(INT));
+  dm_size = max(dm_size , 0x4000); /* minimum 16kb */
+  if (dm_size > event_buffer_size)
     {
-    printf("event_buffer_size too small for max. event size\n");
-    ss_sleep(1000);
+      printf("event_buffer_size too small for max. event size\n");
+      ss_sleep(1000);
     }
   else
-    eb_size = event_buffer_size;
+    dm_size = event_buffer_size;
+
+#ifdef OS_VXWORKS
+  /* override dm_size in case of VxWorks
+     take remaining free memory and use 20% of it for dm_ */
+  dm_size = 2*10*(USER_MAX_EVENT_SIZE + sizeof(EVENT_HEADER) + sizeof(INT));
+  if (dm_size > memFindMax())
+    {
+      cm_msg(MERROR,"mainFE","Not enough mem space for event size");
+      return 0;
+    }
+  /* takes overall 20% of the available memory resource for dm_() */
+  dm_size = 0.5 * memFindMax(); 
+  
+  /* there are two buffers */
+  dm_size /= 2;
+  
+  /* inform user of settings */
+  printf("Event buffer size      :     %i\n",event_buffer_size);
+  printf("buffer allocation      : 2 x %i\n",dm_size);
+  printf("system max event size  :     %i\n",MAX_EVENT_SIZE);
+  printf("user max event size    :     %i\n",USER_MAX_EVENT_SIZE);
+  printf("# of events per buffer :     %i\n",dm_size/USER_MAX_EVENT_SIZE);
+#endif
 
   /* reduce memory size for MS-DOS */
 #ifdef OS_MSDOS
-  if (eb_size > 0x4000)
-    eb_size = 0x4000; /* 16k */
+  if (dm_size > 0x4000)
+    dm_size = 0x4000; /* 16k */
 #endif
 
   /* now connect to server */
@@ -1460,6 +1443,9 @@ usage:
 
 reconnect:
 
+  /* remove dead connections */
+  cm_cleanup();
+
   status = cm_connect_experiment(host_name, exp_name, frontend_name, NULL);
   if (status != CM_SUCCESS)
     {
@@ -1471,10 +1457,11 @@ reconnect:
   if (display_period)
     printf("OK\n");
 
-  status = eb_create_buffer(eb_size);
+  /* book buffer space */
+  status = dm_buffer_create(dm_size, USER_MAX_EVENT_SIZE);
   if (status != CM_SUCCESS)
     {
-    printf("Not enough memory. Decrease event_buffer_size in frontend.c\n");
+    printf("dm_buffer_create: Not enough memory or event too big\n");
     return 1;
     }
 
@@ -1494,7 +1481,7 @@ reconnect:
     {
     printf("Failed to start local RPC server");
     cm_disconnect_experiment();
-    eb_free_buffer();
+    dm_buffer_release();
 
     /* let user read message before window might close */
     ss_sleep(5000);
@@ -1531,7 +1518,7 @@ reconnect:
     if (display_period)
       printf("\n");
     cm_disconnect_experiment();
-    eb_free_buffer();
+    dm_buffer_release();
 
     /* let user read message before window might close */
     ss_sleep(5000);
@@ -1544,7 +1531,7 @@ reconnect:
     if (display_period)
       printf("\n");
     cm_disconnect_experiment();
-    eb_free_buffer();
+    dm_buffer_release();
 
     /* let user read message before window might close */
     ss_sleep(5000);
@@ -1603,8 +1590,6 @@ reconnect:
     {
     printf("Network connection broken, trying to reestablish...\n");
 
-    eb_free_buffer();
-
     /* try to reconnect */
     ss_sleep(12000);
     goto reconnect;
@@ -1623,7 +1608,7 @@ reconnect:
   if (status != RPC_SHUTDOWN)
     printf("\nNetwork connection aborted.");
 
-  eb_free_buffer();
+  dm_buffer_release();
 
   return 0;
 }
