@@ -7,6 +7,9 @@
                 control
 
   $Log$
+  Revision 1.3  2003/04/25 14:36:49  midas
+  Added clear button
+
   Revision 1.2  2003/04/17 15:12:02  midas
   Added tab panels
 
@@ -38,6 +41,7 @@ enum RMidasCommandIdentifiers {
   M_FILE_EXIT,
   M_FILE_CONNECT,
   B_UPDATE,
+  B_CLEAR,
 };
 
 /*------------------------------------------------------------------*/
@@ -60,6 +64,7 @@ private:
    TRootEmbeddedCanvas *fCanvas;
 
    TGTextButton        *fBUpdate;
+   TGTextButton        *fBClear;
 
    char                 fHost[256];   // remote host name
    TSocket             *fSock;
@@ -70,6 +75,7 @@ private:
    int  ConnectServer();
    void GetHistoList();
    void GetHisto(const char *name);
+   void ClearHisto(const char *name);
 
 public:
    RMidasFrame(const TGWindow *p, UInt_t w, UInt_t h, char *host = "localhost");
@@ -194,6 +200,17 @@ char str[32];
 
 /*------------------------------------------------------------------*/
 
+void RMidasFrame::ClearHisto(const char *name)
+{
+char str[32];
+
+  sprintf(str, "CLEAR %s", name);
+  fSock->Send(str);
+  fSock->Recv(str, sizeof(str));
+}
+
+/*------------------------------------------------------------------*/
+
 RMidasFrame::RMidasFrame(const TGWindow *p, UInt_t w, UInt_t h, char *host) :
   TGMainFrame(p, w, h)
 {
@@ -242,6 +259,11 @@ RMidasFrame::RMidasFrame(const TGWindow *p, UInt_t w, UInt_t h, char *host) :
   fBUpdate = new TGTextButton(fHorz2, "Update", B_UPDATE);
   fBUpdate->Associate(this);
   fHorz2->AddFrame(fBUpdate, new TGLayoutHints(kLHintsCenterX, 10, 10, 4, 4));
+
+  /* Create "Clear" button */
+  fBClear = new TGTextButton(fHorz2, "Clear", B_CLEAR);
+  fBClear->Associate(this);
+  fHorz2->AddFrame(fBClear, new TGLayoutHints(kLHintsCenterX, 10, 10, 0, 0));
 
   tf->AddFrame(fTabHisto, new TGLayoutHints(kLHintsTop | kLHintsLeft, 0, 0, 0, 0)); 
 
@@ -313,6 +335,14 @@ Bool_t RMidasFrame::ProcessMessage(Long_t msg, Long_t param1, Long_t param2)
              case B_UPDATE:
                if (fHisto)
                  GetHisto((char *)fHisto->GetName());
+               break;
+
+             case B_CLEAR:
+               if (fHisto)
+                 {
+                 ClearHisto((char *)fHisto->GetName());
+                 GetHisto((char *)fHisto->GetName());
+                 }
                break;
              }
            break;
