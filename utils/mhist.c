@@ -6,6 +6,9 @@
   Contents:     MIDAS history display utility
 
   $Log$
+  Revision 1.20  2004/07/12 12:23:24  midas
+  Fixed small bug with hs_enum_vars()
+
   Revision 1.19  2004/01/08 08:40:11  midas
   Implemented standard indentation
 
@@ -177,10 +180,10 @@ INT query_params(DWORD * ev_id, DWORD * start_time, DWORD * end_time,
       *ev_id = event_id[0];
 
    hs_count_vars(0, *ev_id, &n);
-   n_bytes = n;
+   n_bytes = n * sizeof(DWORD);
    bytes = n * NAME_LENGTH;
    var_names = malloc(bytes);
-   var_n = malloc(n * sizeof(DWORD));
+   var_n = malloc(n_bytes);
    hs_enum_vars(0, *ev_id, var_names, &bytes, var_n, &n_bytes);
 
    printf("\nAvailable variables:\n");
