@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.71  1999/10/11 10:52:43  midas
+  Added full text search feature
+
   Revision 1.70  1999/10/11 10:40:44  midas
   Fixed bug with form submit
 
@@ -1607,7 +1610,11 @@ KEY    key;
   rsprintf("</select>\n");
 
   rsprintf("<td colspan=2 bgcolor=#A0FFA0>Subject: ");
-  rsprintf("<input type=\"test\" size=\"15\" maxlength=\"80\" name=\"subject\">\n");
+  rsprintf("<input type=\"text\" size=\"15\" maxlength=\"80\" name=\"subject\"></tr>\n");
+
+  rsprintf("<tr><td colspan=4 bgcolor=#FFA0FF>Text: ");
+  rsprintf("<input type=\"text\" size=\"15\" maxlength=\"80\" name=\"text\">\n");
+  rsprintf("<i>(case insensitive substring)</i><tr>\n");
 
   rsprintf("</tr></table>\n");
   rsprintf("</body></html>\r\n");
@@ -1620,7 +1627,7 @@ void show_elog_submit_query(INT last_n)
 int    i, size, run, status, m1, d2, m2, y2, index, fh;
 char   date[80], author[80], type[80], system[80], subject[256], text[10000], 
        orig_tag[80], reply_tag[80], attachment[3][256], encoding[80];
-char   str[256], str2[256], tag[256], ref[80], file_name[256];
+char   str[256], str2[10000], tag[256], ref[80], file_name[256];
 HNDLE  hDB;
 BOOL   full, show_attachments;
 DWORD  ltime_end, ltime_current, now;
@@ -1867,6 +1874,18 @@ FILE   *f;
           str[i] = toupper(str[i]);
         for (i=0 ; i<(int)strlen(subject) ; i++)
           str2[i] = toupper(subject[i]);
+
+        if (strstr(str2, str) == NULL)
+          continue;
+        }
+
+      if (*getparam("text"))
+        {
+        strcpy(str, getparam("text"));
+        for (i=0 ; i<(int)strlen(str) ; i++)
+          str[i] = toupper(str[i]);
+        for (i=0 ; i<(int)strlen(text) ; i++)
+          str2[i] = toupper(text[i]);
 
         if (strstr(str2, str) == NULL)
           continue;
