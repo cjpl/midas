@@ -10,6 +10,9 @@
   date        by    modification
   ---------   ---   ------------------------------------------------
 *  $Log$
+*  Revision 1.17  2002/06/08 06:06:27  pierre
+*  add DSP_UNK
+*
 *  Revision 1.16  2001/12/12 17:50:50  pierre
 *  EVID bank handling, 1.8.3-2 doc++
 *
@@ -318,6 +321,7 @@ typedef struct {
 #define DSP_BANK   2
 
 /* Display format */
+#define DSP_UNK    0
 #define DSP_DEC    1
 #define DSP_HEX    2
 #define DSP_ASC    3
