@@ -7,6 +7,9 @@
                 SUBM250 running on Cygnal C8051F320
 
   $Log$
+  Revision 1.6  2004/07/21 14:18:55  midas
+  Restructured timer usage
+
   Revision 1.5  2004/07/20 16:04:40  midas
   Implemented scs-1000 code
 
@@ -274,10 +277,10 @@ unsigned char i, n;
 
       if (rs485_flags & RS485_FLAG_SHORT_TO)        // 200us for PING
          delay_us(2);
-      else if (rs485_flags & RS485_FLAG_LONG_TO)    // 100ms for flash
-         delay_ms(1);
+      else if (rs485_flags & RS485_FLAG_LONG_TO)    // 1 s for flash/upgrade
+         delay_ms(10);
       else
-         delay_us(100);                             //  10ms for other commands
+         delay_us(100);                             // 10ms for other commands
    }
 
    /* send timeout */
