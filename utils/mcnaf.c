@@ -6,6 +6,9 @@
   Contents:     CAMAC utility
   
   $Log$
+  Revision 1.13  2000/09/14 20:23:45  pierre
+  -Add cm_get_environment()
+
   Revision 1.12  2000/08/10 07:49:25  midas
   Added client name together with frontend name in cam_init_rpc
 
@@ -929,6 +932,8 @@ int main(int argc, char **argv)
   debug = FALSE;
   
   /* get parameters */
+  cm_get_environment (host_name, exp_name);
+
   /* parse command line parameters */
   for (i=1 ; i<argc ; i++)
   {
