@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.163  2001/07/31 06:31:29  midas
+  Fixed kb/s display for lazylogger
+
   Revision 1.162  2001/07/30 08:26:05  midas
   Fixed bug with automatich attachments in forms
 
@@ -1718,7 +1721,7 @@ CHN_STATISTICS chn_stats;
               {
               size = sizeof(value);
               db_get_value(hDB, hLKey, "Statistics/Copy Rate [bytes per s]", &value, &size, TID_FLOAT);
-              rsprintf("<td align=center>%1.1f", value);
+              rsprintf("<td align=center>%1.1f", value/1024.0f);
               }
             else
               {
