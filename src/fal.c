@@ -7,6 +7,9 @@
                 Most routines are from mfe.c mana.c and mlogger.c.
 
   $Log$
+  Revision 1.8  1999/02/22 08:00:03  midas
+  Made FAL stop with "!" work under Linux
+
   Revision 1.7  1999/02/12 11:50:44  midas
   Fixed bug that analyzer statistics didn't get cleared at the beginning
   of a new run.
@@ -3710,19 +3713,19 @@ char            str[80];
       display(FALSE);
 
       /* check keyboard */
-      if (ss_kbhit())
+      ch = 0;
+      while (ss_kbhit())
         {
-#if defined(OS_MSDOS) || defined(OS_WINNT)
-        ch = getch();
-#else
-        ch = getchar();
-#endif
+        ch = ss_getchar(0);
+        if (ch == -1)
+          ch = getchar();
 
         if (ch == '!')
           break;
-        else
-          display(TRUE);
         }
+
+      if (ch > 0)
+        display(TRUE);
 
       last_time_display = actual_time;
       }
