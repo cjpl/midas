@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.153  2002/05/14 04:24:53  midas
+  Fixed bug on nonexisting message file
+
   Revision 1.152  2002/05/11 01:22:48  midas
   Improved malloc/free debugging
 
@@ -1383,7 +1386,9 @@ HNDLE hDB, hKey;
   f = fopen(path, "rb");
   if (f==NULL)
     {
-    printf("Cannot open message log file %s\n", path);
+    sprintf(message, "Cannot open message log file %s\n", path);
+    *buf_size = strlen(message);
+    return CM_DB_ERROR;
     }
   else
     {
