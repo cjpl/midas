@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol commands
 
   $Log$
+  Revision 1.50  2005/02/22 13:18:29  ritt
+  Added hvr_500
+
   Revision 1.49  2005/02/16 13:14:50  ritt
   Version 1.8.0
 
@@ -205,11 +208,11 @@
 #ifdef scs_1001
 #define SCS_1001
 #endif
-#ifdef hvr_200
-#define hvr_200
+#ifdef hvr_400
+#define HVR_400
 #endif
-#ifdef hvr_300
-#define HVR_300
+#ifdef hvr_500
+#define HVR_500
 #endif
 
 /*---- CPU specific items ------------------------------------------*/
@@ -332,16 +335,7 @@ sbit RS485_SEC_ENABLE = P0 ^ 4;
 #define LCD_SUPPORT
 
 /*--------------------------------*/
-#elif defined(HVR_300)
-#include <aduc812.h>
-#define CPU_ADUC812
-
-#define LED_0 P3 ^ 4
-#define LED_ON 1
-sbit RS485_ENABLE = P3 ^ 5;
-
-/*--------------------------------*/
-#elif defined(HVR_200)
+#elif defined(HVR_400)
 #include <c8051F310.h>
 #define CPU_C8051F310
 #define CPU_CYGNAL
@@ -350,6 +344,20 @@ sbit RS485_ENABLE = P3 ^ 5;
 #define LED_1 P2 ^ 5 
 #define LED_2 P2 ^ 6 
 #define LED_3 P2 ^ 7
+#define LED_ON 1
+sbit RS485_ENABLE = P0 ^ 7;
+
+/*--------------------------------*/
+#elif defined(HVR_500)
+#include <c8051F310.h>
+#define CPU_C8051F310
+#define CPU_CYGNAL
+
+#define LED_0 P2 ^ 7
+#define LED_1 P2 ^ 6 
+#define LED_2 P2 ^ 5 
+#define LED_3 P2 ^ 4
+#define LED_4 P2 ^ 3
 #define LED_ON 1
 sbit RS485_ENABLE = P0 ^ 7;
 
@@ -504,10 +512,11 @@ sbit RS485_ENABLE = P0 ^ 7;
 #define BD_9600            3
 #define BD_19200           4
 #define BD_28800           5
-#define BD_57600           6
-#define BD_115200          7
-#define BD_172800          8
-#define BD_345600          9
+#define BD_38400           6
+#define BD_57600           7
+#define BD_115200          8
+#define BD_172800          9
+#define BD_345600         10
 
 /*---- info structures ---------------------------------------------*/
 
