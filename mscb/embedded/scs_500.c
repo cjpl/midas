@@ -9,6 +9,9 @@
                 for SCS-500 analog I/O
 
   $Log$
+  Revision 1.8  2002/10/22 15:05:36  midas
+  Added gain and offset calibrations
+
   Revision 1.7  2002/10/16 15:24:38  midas
   Added units in descriptor
 
@@ -64,11 +67,12 @@ struct {
 
 struct {
   unsigned char adc_average;
-  unsigned char gain[8]; // PGA bits
+  unsigned char gain[8];  // PGA bits
+  float         gain_cal; // gain calibration
+  float         bip_cal;  // bipolar zero offset
 } idata user_conf;
   
 float idata gain[8];     // gain resulting from PGA bits
-float idata ofs[8];      // offset for bipolar operation
 
 MSCB_INFO_CHN code channel[] = {
   1, UNIT_BYTE, 0, 0,           0, "P1",   &user_data.p1,
@@ -105,15 +109,17 @@ MSCB_INFO_CHN code channel[] = {
 */
 
 MSCB_INFO_CHN code conf_param[] = {
-  1, UNIT_COUNT, 0, 0, 0, "ADCAvrg", &user_conf.adc_average,
-  1, UNIT_BYTE,  0, 0, 0, "Gain0",   &user_conf.gain[0],
-  1, UNIT_BYTE,  0, 0, 0, "Gain1",   &user_conf.gain[1],
-  1, UNIT_BYTE,  0, 0, 0, "Gain2",   &user_conf.gain[2],
-  1, UNIT_BYTE,  0, 0, 0, "Gain3",   &user_conf.gain[3],
-  1, UNIT_BYTE,  0, 0, 0, "Gain4",   &user_conf.gain[4],
-  1, UNIT_BYTE,  0, 0, 0, "Gain5",   &user_conf.gain[5],
-  1, UNIT_BYTE,  0, 0, 0, "Gain6",   &user_conf.gain[6],
-  1, UNIT_BYTE,  0, 0, 0, "Gain7",   &user_conf.gain[7],
+  1, UNIT_COUNT,  0, 0,           0, "ADCAvrg", &user_conf.adc_average,
+  1, UNIT_BYTE,   0, 0,           0, "Gain0",   &user_conf.gain[0],
+  1, UNIT_BYTE,   0, 0,           0, "Gain1",   &user_conf.gain[1],
+  1, UNIT_BYTE,   0, 0,           0, "Gain2",   &user_conf.gain[2],
+  1, UNIT_BYTE,   0, 0,           0, "Gain3",   &user_conf.gain[3],
+  1, UNIT_BYTE,   0, 0,           0, "Gain4",   &user_conf.gain[4],
+  1, UNIT_BYTE,   0, 0,           0, "Gain5",   &user_conf.gain[5],
+  1, UNIT_BYTE,   0, 0,           0, "Gain6",   &user_conf.gain[6],
+  1, UNIT_BYTE,   0, 0,           0, "Gain7",   &user_conf.gain[7],
+  4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT, "GainCal", &user_conf.gain_cal,
+  4, UNIT_VOLT,   0, 0, MSCBF_FLOAT, "BipCal",  &user_conf.bip_cal,
   0
 };
 
@@ -148,7 +154,15 @@ unsigned char i;
     user_conf.adc_average = 8;
     for (i=0 ; i<8 ; i++)
       user_conf.gain[i] = 0;
+    user_conf.gain_cal = 1;
+	  user_conf.bip_cal = 0;
     }
+
+  if (user_conf.gain_cal < 0.1 || user_conf.gain_cal > 10)
+    user_conf.gain_cal = 1;
+
+  if (user_conf.bip_cal < -1 || user_conf.bip_cal > 1)
+	  user_conf.bip_cal = 0;
 
   /* write P1 and DACs */
   user_write(0);
@@ -219,7 +233,6 @@ unsigned char user_read(unsigned char channel)
 void write_gain(void) reentrant
 {
 unsigned char i;
-float g;
 
   SR_STROBE = 0;
   SR_CLOCK  = 0;
@@ -249,43 +262,6 @@ float g;
   SR_DATA   = 0;
   SR_STROBE = 1;
   SR_STROBE = 0;
-
-  /* calculate gains */
-  for (i=0 ; i<8 ; i++)
-    {
-    /* external PGA */
-    switch (user_conf.gain[i] & 0x18)
-      {
-      case 0x00: g = 1.0/1; break;
-      case 0x08: g = 1.0/10; break;
-      case 0x10: g = 1.0/100; break;
-      case 0x18: g = 1.0/1000; break;
-      }
-
-    if (user_conf.gain[i] & 0x20)
-      ofs[i] = - 10.0/g;
-    else
-      ofs[i] = 0;
-
-    /* external voltage divider */
-    g *= 10;
-
-    /* internal PGA */
-    switch (user_conf.gain[i] & 0x07)
-      {
-      case 0: g /= 1; break;
-      case 1: g /= 2; break;
-      case 2: g /= 4; break;
-      case 3: g /= 8; break;
-      case 4: g /= 16; break;
-      case 6: g /= 0.5; break;
-      }
-
-    /* convert to volts */
-    g = g / 65536.0 * 2.5;
-
-    gain[i] = g;
-    }
 }
 
 void user_write_conf(unsigned char channel)
@@ -321,7 +297,7 @@ unsigned int  i, n;
 float gvalue;
 
   AMX0SL = channel & 0x0F;
-  ADC0CF = 0xE0 | (user_conf.gain[channel] & 0x07);  // 16 system clocks and gain
+  ADC0CF = 0xE0;  // 16 system clocks, gain 1
 
   n = 1 << (user_conf.adc_average+4);
 
@@ -343,7 +319,28 @@ float gvalue;
   if (user_conf.adc_average)
     value >>= (user_conf.adc_average);
 
-  gvalue = value * gain[channel] + ofs[channel];
+  /* convert to volts */
+  gvalue = value / 65536.0 * 2.5;
+
+  /* subtract 1V for bipolar mode */
+  if (user_conf.gain[channel] & 0x04)
+    gvalue = gvalue - 1;
+
+  /* external voltage divider */
+  gvalue *= 10 * user_conf.gain_cal;
+
+  /* correct for bipolar offset */
+  if (user_conf.gain[channel] & 0x04)
+    gvalue += user_conf.bip_cal;
+
+  /* external PGA */
+  switch (user_conf.gain[channel] & 0x03)
+    {
+    case 0x00: gvalue /= 1.0; break;
+    case 0x01: gvalue /= 10.0; break;
+    case 0x02: gvalue /= 100.0; break;
+    case 0x03: gvalue /= 1000.0; break;
+    }
 
   DISABLE_INTERRUPTS;
   *d = gvalue;
