@@ -7,6 +7,11 @@
                 linked with user code to form a complete frontend
 
   $Log$
+  Revision 1.4  1999/06/23 09:38:51  midas
+  - Added D8_BKTYPE
+  - Fixed CAMAC server F24 bug
+  - cm_synchronize only called for VxWorks
+
   Revision 1.3  1998/12/10 12:50:47  midas
   Program abort with "!" now works without a return under UNIX
 
@@ -65,6 +70,7 @@ char  exp_name[NAME_LENGTH];
 INT   max_bytes_per_sec;
 INT   optimize = 0;  /* set this to one to opimize TCP buffer size */
 INT   fe_stop = 0;   /* stop switch for VxWorks */
+BOOL  debug;         /* disable watchdog messages from server */
 
 HNDLE hDB;
 
@@ -79,6 +85,7 @@ struct {
   {I2_BKTYPE, TID_WORD, 2},
   {I4_BKTYPE, TID_DWORD, 4},
   {F4_BKTYPE, TID_FLOAT, 4},
+  {D8_BKTYPE, TID_DOUBLE, 8},
   {0,0}
 };
 #endif
@@ -523,6 +530,8 @@ DWORD             *pyevt;
 	    name[4] = 0;
 
       /* correct YBS number of entries */
+      if (pybkh->type == D8_BKTYPE)
+        ni4 /= 2;
       if (pybkh->type == I2_BKTYPE)
         ni4 *= 2;
       if (pybkh->type == I1_BKTYPE || pybkh->type == A1_BKTYPE)
@@ -1240,8 +1249,8 @@ net_error:
 
 INT cnaf_callback(INT index, void *prpc_param[])
 {
-DWORD cmd, b, c, n, a, f, *pdword, *size, *x, *q;
-WORD  *pword, *pdata;
+DWORD cmd, b, c, n, a, f, *pdword, *size, *x, *q, dtemp;
+WORD  *pword, *pdata, temp;
 INT   i, count;
 
   /* Decode parameters */
@@ -1290,16 +1299,20 @@ INT   i, count;
         for (i=0 ; i<count ; i++)
           if (f<16)
             cam16i_q(c, n, a, f, pword, (int *) x, (int *) q);
-          else
+          else if (f<24)
             cam16o_q(c, n, a, f, pword[i], (int *) x, (int *) q);
+          else
+            cam16i_q(c, n, a, f, &temp, (int *) x, (int *) q);
         }
       else
         {
         for (i=0 ; i<count ; i++)
           if (f<16)
             cam24i_q(c, n, a, f, pdword, (int *) x, (int *) q);
-          else
+          else if (f<24)
             cam24o_q(c, n, a, f, pdword[i], (int *) x, (int *) q);
+          else
+            cam24i_q(c, n, a, f, &dtemp, (int *) x, (int *) q);
         }
 
       break;
@@ -1338,7 +1351,6 @@ main(int argc, char *argv[])
 #endif
 {
 INT    status, i, eb_size;
-BOOL   debug;
 
   host_name[0] = 0;
   exp_name[0] = 0;
@@ -1454,7 +1466,9 @@ reconnect:
   cm_get_experiment_database(&hDB, &status);
 
   /* set time from server */
+#ifdef OS_VXWORKS
   cm_synchronize(NULL);
+#endif
 
   /* turn on keepalive messages with increased timeout */
   cm_set_watchdog_params(TRUE, 30000);
