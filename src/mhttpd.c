@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.230  2002/05/31 09:26:41  midas
+  Added '/Elog/Host name' for mail notification
+
   Revision 1.229  2002/05/31 06:53:01  midas
   Added debug info in sendmail()
 
@@ -704,15 +707,15 @@
 #define CONNECT_TIME  3600*24
 
 /* size of buffer for incoming data, must fit sum of all attachments */
-#define WEB_BUFFER_SIZE 2000000
+#define WEB_BUFFER_SIZE 10000000
 
 char return_buffer[WEB_BUFFER_SIZE];
 int  strlen_retbuf;
 int  return_length;
 char host_name[256];
-char mhttpd_full_url[256];
 char exp_name[32];
 BOOL connected, no_disconnect;
+int  tcp_port = 80;
 
 #define MAX_GROUPS    32
 #define MAX_PARAM    100
@@ -1062,7 +1065,7 @@ INT sendmail(char *smtp_host, char *from, char *to, char *subject, char *text)
 struct sockaddr_in   bind_addr;
 struct hostent       *phe;
 int                  s;
-char                 str[10000], hostname[256];
+char                 str[10000];
 time_t               now;
 
   if (verbose)
@@ -1093,8 +1096,7 @@ time_t               now;
   recv_string(s, str, sizeof(str), 3000);
   if (verbose) puts(str);
 
-  gethostname(hostname, sizeof(hostname));
-  sprintf(str, "HELO %s\n", hostname);
+  sprintf(str, "HELO %s\n", host_name);
   send(s, str, strlen(str), 0);
   if (verbose) puts(str);
   recv_string(s, str, sizeof(str), 3000);
@@ -3654,6 +3656,7 @@ HNDLE  hDB, hkey;
 char   att_file[3][256];
 int    i, fh, size, n_mail;
 struct hostent *phe;
+char   mhttpd_full_url[256];
 
   cm_get_experiment_database(&hDB, NULL);
   strcpy(att_file[0], getparam("attachment0"));
@@ -3785,6 +3788,15 @@ struct hostent *phe;
             att_file[2], _attachment_buffer[2], _attachment_size[2],
             tag, sizeof(tag));
 
+  /* supersede host name with "/Elog/Host name" */
+  size = sizeof(host_name);
+  db_get_value(hDB, 0, "/Elog/Host name", host_name, &size, TID_STRING, TRUE);
+
+  if (tcp_port == 80)
+    sprintf(mhttpd_full_url, "http://%s/", host_name);
+  else
+    sprintf(mhttpd_full_url, "http://%s:%d/", host_name, tcp_port);
+
   /* check for mail submissions */
   mail_param[0] = 0;
   n_mail = 0;
@@ -3818,7 +3830,11 @@ struct hostent *phe;
       sprintf(mail_text+strlen(mail_text), "Type       : %s\n", getparam("type"));
       sprintf(mail_text+strlen(mail_text), "System     : %s\n", getparam("system"));
       sprintf(mail_text+strlen(mail_text), "Subject    : %s\n", getparam("subject"));
-      sprintf(mail_text+strlen(mail_text), "Link       : %sEL/%s\n", mhttpd_full_url, tag);
+
+      if (exp_name[0])
+        sprintf(mail_text+strlen(mail_text), "Link       : %sEL/%s?exp=%s\n", mhttpd_full_url, tag, exp_name);
+      else
+        sprintf(mail_text+strlen(mail_text), "Link       : %sEL/%s\n", mhttpd_full_url, tag);
 
       sendmail(smtp_host, mail_from, mail_to, getparam("type"), mail_text);
 
@@ -3865,8 +3881,12 @@ struct hostent *phe;
       sprintf(mail_text+strlen(mail_text), "Type       : %s\n", getparam("type"));
       sprintf(mail_text+strlen(mail_text), "System     : %s\n", getparam("system"));
       sprintf(mail_text+strlen(mail_text), "Subject    : %s\n", getparam("subject"));
-      sprintf(mail_text+strlen(mail_text), "Link       : %sEL/%s\n", mhttpd_full_url, tag);
 
+      if (exp_name[0])
+        sprintf(mail_text+strlen(mail_text), "Link       : %sEL/%s?exp=%s\n", mhttpd_full_url, tag, exp_name);
+      else
+        sprintf(mail_text+strlen(mail_text), "Link       : %sEL/%s\n", mhttpd_full_url, tag);
+      
       sendmail(smtp_host, mail_from, mail_to, getparam("system"), mail_text);
 
       strcat(mail_param, "&");
@@ -10144,7 +10164,7 @@ void ctrlc_handler(int sig)
 
 char net_buffer[WEB_BUFFER_SIZE];
 
-void server_loop(int tcp_port, int daemon)
+void server_loop(int daemon)
 {
 int                  status, i, refresh, n_error;
 struct sockaddr_in   bind_addr, acc_addr;
@@ -10208,11 +10228,6 @@ struct linger        ling;
   /* if domain name is not in host name, hope to get it from phe */
   if (strchr(host_name, '.') == NULL)
     strcpy(host_name, phe->h_name);
-
-  if (tcp_port == 80)
-    sprintf(mhttpd_full_url, "http://%s/", host_name);
-  else
-    sprintf(mhttpd_full_url, "http://%s:%d/", host_name, tcp_port);
 
 #ifdef OS_UNIX
   /* give up root privilege */
@@ -10499,7 +10514,7 @@ struct linger        ling;
 main(int argc, char *argv[])
 {
 int i;
-int tcp_port = 80, daemon = FALSE;
+int daemon = FALSE;
 
   /* parse command line parameters */
   no_disconnect = FALSE;
@@ -10532,7 +10547,7 @@ usage:
       }
     }
 
-  server_loop(tcp_port, daemon);
+  server_loop(daemon);
 
   return 0;
 }
