@@ -6,6 +6,9 @@
   Contents:     TCP/IP socket communication routines
 
   $Log$
+  Revision 1.2  2001/03/01 09:36:25  midas
+  Put <TIMOUT> into debug messages
+
   Revision 1.1  2001/02/26 13:58:06  midas
   Added files
 
@@ -200,8 +203,11 @@ int            i, status, n;
 
     f = fopen("tcpip.log", "a");
     fprintf(f, "read: ");
-    for (i=0 ; i<n ; i++)
-      fprintf(f, "%X ", data[i]);
+    if (n == 0)
+      fprintf(f, "<TIMEOUT>");
+    else
+      for (i=0 ; i<n ; i++)
+        fprintf(f, "%X ", data[i]);
     fprintf(f, "\n");
     fclose(f);
     }
@@ -288,7 +294,7 @@ int            i, status, n;
 
     f = fopen("tcpip.log", "a");
     if (str[0] == 0)
-      fprintf(f, "gets [%s]: <TIMOUET>\n", pattern);
+      fprintf(f, "gets [%s]: <TIMEOUT>\n", pattern);
     else
       fprintf(f, "gets [%s]: %s\n", pattern, str);
     fclose(f);
