@@ -9,6 +9,9 @@
                 for HVR_300 High Voltage Regulator
 
   $Log$
+  Revision 1.10  2004/12/21 10:44:12  midas
+  Added watchdog_refresh to avoid timeout during ramping
+
   Revision 1.9  2004/10/12 11:02:41  midas
   Version 1.7.6
 
@@ -42,13 +45,19 @@
 extern bit FREEZE_MODE;
 extern bit DEBUG_MODE;
 
-char code node_name[] = "HVR-200";
-
 /* number of HV channels */
 #define N_HV_CHN 4   
 
 /* declare number of sub-addresses to framework */
 unsigned char idata _n_sub_addr = N_HV_CHN;
+
+char code node_name[] = "HVR-200";
+
+/* maximum current im micro Ampere */
+#define MAX_CURRENT 2000
+
+/* maximum voltage in Volt */
+#define MAX_VOLTAGE 2500
 
 /* calculate voltage divider */
 #define DIVIDER ((41E6 + 33E3) / 33E3)
@@ -203,8 +212,8 @@ void user_init(unsigned char init)
          user_data[i].trip_cnt = 0;
          user_data[i].ramp_up = 0;
          user_data[i].ramp_down = 0;
-         user_data[i].v_limit = 3000;
-         user_data[i].i_limit = 3000;
+         user_data[i].v_limit = MAX_VOLTAGE;
+         user_data[i].i_limit = MAX_CURRENT;
          user_data[i].trip_max = 0;
    
          user_data[i].adc_gain = 1;
@@ -221,6 +230,13 @@ void user_init(unsigned char init)
       user_data[i].control = CONTROL_REGULATION;
       user_data[i].status = 0;
       user_data[i].temperature = 0;
+
+      /* check maximum ratings */
+      if (user_data[i].v_limit > MAX_VOLTAGE)
+         user_data[i].v_limit = MAX_VOLTAGE;
+
+      if (user_data[i].i_limit > MAX_CURRENT)
+         user_data[i].i_limit = MAX_CURRENT;
    }
 
    JU1 = 1;
@@ -259,7 +275,16 @@ void user_write(unsigned char index) reentrant
 
    /* re-check voltage limit */
    if (index == 8) {
+      if (user_data[cur_sub_addr()].v_limit > MAX_VOLTAGE)
+         user_data[cur_sub_addr()].v_limit = MAX_VOLTAGE;
+
       chn_bits[cur_sub_addr()] |= DEMAND_CHANGED;
+   }
+
+   /* check current limit */
+   if (index == 9) {
+      if (user_data[cur_sub_addr()].i_limit > MAX_CURRENT)
+         user_data[cur_sub_addr()].i_limit = MAX_CURRENT;
    }
 }
 
@@ -634,7 +659,7 @@ void check_current(unsigned char channel)
    }
 
    if (user_data[channel].status & STATUS_ILIMIT)
-      led_blink(channel, 1, 500);
+      led_blink(channel, 3, 50);
 }
 
 /*------------------------------------------------------------------*/
@@ -659,9 +684,10 @@ void read_current(unsigned char channel)
 
 /*------------------------------------------------------------------*/
 
+static unsigned long xdata t_ramp[N_HV_CHN];
+
 void ramp_hv(unsigned char channel)
 {
-   static unsigned long xdata t[N_HV_CHN];
    unsigned char delta;
 
    /* only process ramping when HV is on and not tripped */
@@ -692,14 +718,15 @@ void ramp_hv(unsigned char channel)
          }
 
          /* remember start time */
-         t[channel] = time();
+         t_ramp[channel] = time();
       }
 
       /* ramp up */
       if (chn_bits[channel] & RAMP_UP) {
-         delta = time() - t[channel];
+         delta = time() - t_ramp[channel];
          if (delta) {
             v_actual[channel] += (float) user_data[channel].ramp_up * delta / 100.0;
+            user_data[channel].v_dac = v_actual[channel];
 
             if (v_actual[channel] >= user_data[channel].v_demand) {
                /* finish ramping */
@@ -712,15 +739,16 @@ void ramp_hv(unsigned char channel)
             }
 
             set_hv(channel, v_actual[channel]);
-            t[channel] = time();
+            t_ramp[channel] = time();
          }
       }
 
       /* ramp down */
       if (chn_bits[channel] & RAMP_DOWN) {
-         delta = time() - t[channel];
+         delta = time() - t_ramp[channel];
          if (delta) {
             v_actual[channel] -= (float) user_data[channel].ramp_down * delta / 100.0;
+            user_data[channel].v_dac = v_actual[channel];
 
             if (v_actual[channel] <= user_data[channel].v_demand) {
                /* finish ramping */
@@ -733,10 +761,12 @@ void ramp_hv(unsigned char channel)
             }
 
             set_hv(channel, v_actual[channel]);
-            t[channel] = time();
+            t_ramp[channel] = time();
          }
       }
    }
+
+   watchdog_refresh();
 }
 
 /*------------------------------------------------------------------*/
@@ -787,6 +817,8 @@ void regulation(unsigned char channel)
       set_hv(channel, 0);
       chn_bits[channel] &= ~DEMAND_CHANGED;
    }
+
+   watchdog_refresh();
 }
 
 /*------------------------------------------------------------------*/
@@ -849,8 +881,6 @@ void read_temperature(void)
 
 /*---- User loop function ------------------------------------------*/
 
-sbit led_0 = P2 ^ 4;
-
 void user_loop(void)
 {
    unsigned char channel;
@@ -875,8 +905,6 @@ void user_loop(void)
          regulation(channel);
          read_current(channel);
       }
-
-      watchdog_refresh();
    }
 
    // read_temperature();
