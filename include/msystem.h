@@ -7,6 +7,9 @@
                 routines
 
   $Log$
+  Revision 1.10  1999/04/30 10:58:20  midas
+  Added mode to rpc_set_debug
+
   Revision 1.9  1999/04/29 12:14:49  midas
   Made db_notify_clients EXPRT
 
@@ -249,7 +252,7 @@ struct callback_addr {
   short host_port1;
   short host_port2;
   short host_port3;
-  BOOL  debug;
+  int   debug;
   char  experiment[NAME_LENGTH];
   char  directory[MAX_STRING_LENGTH];
   char  user[NAME_LENGTH];
