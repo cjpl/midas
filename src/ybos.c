@@ -6,6 +6,9 @@
  *         amaudruz@triumf.ca                            Local:           6234
  * -----------------------------------------------------------------------------
    $Log$
+   Revision 1.16  1999/07/23 07:04:54  midas
+   Fixed compiler warnings
+
    Revision 1.15  1999/07/22 19:06:07  pierre
    - Added D8_BKTYPE for Ybos
    - Fix long event for MIDAS
@@ -2416,8 +2419,8 @@ INT   yb_any_event_swap (INT data_fmt, void * pevent)
     status=ybos_event_swap ((DWORD *)pevent);
     return  status == YB_EVENT_NOT_SWAPPED ? YB_SUCCESS : status;
     }
-  else
-   return YB_UNKNOWN_FORMAT;
+
+  return YB_UNKNOWN_FORMAT;
 }
 
 /*------------------------------------------------------------------*/
