@@ -6,6 +6,9 @@
   Contents:     Electronic logbook utility   
 
   $Log$
+  Revision 1.4  2004/03/11 07:55:37  midas
+  Changed POST statement to contain /EL/
+
   Revision 1.3  2004/01/18 09:58:21  olchansk
   fix format mismatch warning between %d and sizeof(foo)
 
@@ -286,7 +289,7 @@ INT submit_elog(char *host, int port, char *experiment, char *passwd,
       }
 
    /* compose request */
-   sprintf(request, "POST /%s/ HTTP/1.0\r\n", experiment);
+   sprintf(request, "POST /EL/ HTTP/1.0\r\n");
    sprintf(request + strlen(request),
            "Content-Type: multipart/form-data; boundary=%s\r\n", boundary);
    sprintf(request + strlen(request), "Host: %s\r\n", host_name);
