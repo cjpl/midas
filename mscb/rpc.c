@@ -6,6 +6,9 @@
   Contents:     List of MSCB RPC functions with parameters
 
   $Log$
+  Revision 1.9  2003/03/25 09:42:57  midas
+  Added debugging facility
+
   Revision 1.8  2003/03/21 13:36:37  midas
   Fixed bug
 
@@ -36,6 +39,9 @@
 #ifdef _MSC_VER
 
 #include <windows.h>
+#include <io.h>
+#include <fcntl.h>
+#include <time.h>
 
 #elif defined(__linux__)
 
@@ -58,6 +64,8 @@
 
 typedef int INT;
 
+int _debug_flag;
+
 /*------------------------------------------------------------------*/
 
 static RPC_LIST rpc_list[] = {
@@ -65,6 +73,7 @@ static RPC_LIST rpc_list[] = {
   /* common functions */
   { RPC_MSCB_INIT, "mscb_init",
     {{TID_STRING,     RPC_IN}, 
+     {TID_INT,        RPC_IN}, 
      {0} }},
 
   { RPC_MSCB_EXIT, "mscb_exit",
@@ -211,6 +220,34 @@ char recv_buffer[NET_BUFFER_SIZE];
 
 /*------------------------------------------------------------------*/
 
+void debug_log(char *format, ...)
+{
+int     fh;
+char    str[256];
+va_list argptr;
+
+  if (!_debug_flag)
+    return;
+
+  va_start(argptr, format);
+  vsprintf(str, (char *) format, argptr);
+  va_end(argptr);
+
+  if (_debug_flag == 2)
+    write(fileno(stdout), str, strlen(str));
+  else
+    {
+    fh = open("mscb_debug.log", O_CREAT | O_WRONLY | O_APPEND, 0644);
+    if (fh < 0)
+      return;
+
+    write(fh, str, strlen(str));
+    close(fh);
+    }
+}
+
+/*------------------------------------------------------------------*/
+
 int recv_tcp(int sock, char *buffer, int buffer_size)
 {
 INT         param_size, n_received, n;
@@ -297,7 +334,7 @@ int status;
   switch (index)
     {
     case RPC_MSCB_INIT:
-      status = mscb_init(CSTRING(0));
+      status = mscb_init(CSTRING(0), CINT(1));
       break;
 
     case RPC_MSCB_EXIT:
@@ -657,7 +694,7 @@ void rpc_va_arg(va_list* arg_ptr, int arg_type, void *arg)
 int rpc_call(const int routine_id, ...)
 {
 va_list         ap, aptmp;
-char            arg[8], arg_tmp[8];
+char            str[256], arg[8], arg_tmp[8];
 INT             arg_type;
 INT             i, index, status;
 INT             param_size, arg_size, send_size;
@@ -667,6 +704,7 @@ struct timeval  timeout;
 char            *param_ptr;
 int             bpointer;
 NET_COMMAND     *nc;
+time_t          now;
 
   nc = (NET_COMMAND *) net_buffer;
   nc->header.routine_id = routine_id;
@@ -681,6 +719,11 @@ NET_COMMAND     *nc;
     printf("rpc_call: invalid rpc ID (%d)", routine_id);
     return RPC_INVALID_ID;
     }
+
+  time(&now);
+  strcpy(str, ctime(&now));
+  str[19] = 0;
+  debug_log("%s %s (", str+4, rpc_list[i].name);
 
   /* examine variable argument list and convert it to parameter array */
   va_start(ap, routine_id);
@@ -759,10 +802,29 @@ NET_COMMAND     *nc;
           *((float *) param_ptr) = (float) *((double *) arg);
         }
 
+      switch (tid)
+        {
+        case TID_BYTE:   debug_log(" %d",  *((unsigned char *)param_ptr)); break;
+        case TID_SBYTE:  debug_log(" %d",  *((char *)param_ptr)); break;
+        case TID_CHAR:   debug_log(" %c",  *((char *)param_ptr)); break;
+        case TID_WORD:   debug_log(" %d",  *((unsigned short *)param_ptr)); break;
+        case TID_SHORT:  debug_log(" %d",  *((short *)param_ptr)); break;
+        case TID_DWORD:  debug_log(" %d",  *((unsigned int *)param_ptr)); break;
+        case TID_INT:    debug_log(" %d",  *((int *)param_ptr)); break;
+        case TID_BOOL:   debug_log(" %d",  *((int *)param_ptr)); break;
+        case TID_FLOAT:  debug_log(" %f",  *((float *)param_ptr)); break;
+        case TID_DOUBLE: debug_log(" %lf", *((double *)param_ptr)); break;
+        case TID_STRING: debug_log(" %s",  (char *)param_ptr); break;
+
+        default: debug_log(" *"); break;
+        }
+
       param_ptr += param_size;
 
       }
     }
+
+  debug_log(" ) : (");
 
   va_end(ap);
 
@@ -856,9 +918,28 @@ NET_COMMAND     *nc;
       /* parameter size is always aligned */
       param_size = ALIGN(arg_size);
 
+      switch (tid)
+        {
+        case TID_BYTE:   debug_log(" %d",  *((unsigned char *)param_ptr)); break;
+        case TID_SBYTE:  debug_log(" %d",  *((char *)param_ptr)); break;
+        case TID_CHAR:   debug_log(" %c",  *((char *)param_ptr)); break;
+        case TID_WORD:   debug_log(" %d",  *((unsigned short *)param_ptr)); break;
+        case TID_SHORT:  debug_log(" %d",  *((short *)param_ptr)); break;
+        case TID_DWORD:  debug_log(" %d",  *((unsigned int *)param_ptr)); break;
+        case TID_INT:    debug_log(" %d",  *((int *)param_ptr)); break;
+        case TID_BOOL:   debug_log(" %d",  *((int *)param_ptr)); break;
+        case TID_FLOAT:  debug_log(" %f",  *((float *)param_ptr)); break;
+        case TID_DOUBLE: debug_log(" %lf", *((double *)param_ptr)); break;
+        case TID_STRING: debug_log(" %s",  (char *)param_ptr); break;
+
+        default: debug_log(" *"); break;
+        }
+
       param_ptr += param_size;
       }
     }
+
+  debug_log(" ) : %d\n", status);
 
   va_end(ap);
 

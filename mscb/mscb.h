@@ -6,6 +6,9 @@
   Contents:     Header fiel for MSCB funcions
 
   $Log$
+  Revision 1.21  2003/03/25 09:42:57  midas
+  Added debugging facility
+
   Revision 1.20  2003/03/23 11:48:42  midas
   Added mscb_link()
 
@@ -243,7 +246,7 @@ extern "C" {
 #define EXPRT
 #endif
 
-int EXPRT mscb_init(char *device);
+int EXPRT mscb_init(char *device, int debug);
 void EXPRT mscb_get_version(char *lib_version, char *prot_version);
 void EXPRT mscb_check(char *device);
 int EXPRT mscb_exit(int fd);
@@ -276,4 +279,13 @@ int kbhit();
 #define getch() getchar()
 #define Sleep(x) usleep(x*1000)
 
+#endif
+
+/* default device */
+#ifdef _MSC_VER
+  #define DEF_DEVICE "lpt1"
+#elif defined(__linux__)
+  #define DEF_DEVICE "/dev/parport0"
+#else
+  #define DEF_DEVICE ""
 #endif
