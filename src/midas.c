@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.121  2000/08/21 07:05:48  midas
+  Added cm_msg_log1(...,facility) to be compatible with older programs
+
   Revision 1.120  2000/08/11 12:16:44  midas
   Fixed bug with "facility" being NULL
 
@@ -653,10 +656,97 @@ INT cm_set_msg_print(INT system_mask, INT user_mask, int (*func)(const char*))
 
 /*------------------------------------------------------------------*/
 
-INT cm_msg_log(INT message_type, const char *message, const char *facility)
+INT cm_msg_log(INT message_type, const char *message)
 /********************************************************************\
 
   Routine: cm_msg_log
+
+  Purpose: Write message to logging file. Called by cm_msg.
+           Internal use only
+
+  Input:
+    INT    message_type      Message type 
+    char   *message          Message string
+
+  Output:
+    none
+
+  Function value:
+    CM_SUCCESS
+
+\********************************************************************/
+{
+char  dir[256];
+char  filename[256];
+char  path[256];
+char  str[256];
+FILE  *f;
+INT   status, size;
+HNDLE hDB, hKey;
+
+
+  if (rpc_is_remote())
+    return rpc_call(RPC_CM_MSG_LOG, message_type, message);
+
+  if (message_type != MT_DEBUG)
+    {
+    cm_get_experiment_database(&hDB, NULL);
+
+    if (hDB)
+      {
+      status = db_find_key(hDB, 0, "/Logger/Data dir", &hKey);
+      if (status == DB_SUCCESS)
+        {
+        size = sizeof(dir);
+        memset(dir, 0, size);
+        db_get_value(hDB, 0, "/Logger/Data dir", dir, &size, TID_STRING);
+        if (dir[0] != 0)
+          if (dir[strlen(dir)-1] != DIR_SEPARATOR)
+            strcat(dir, DIR_SEPARATOR_STR);
+        
+        strcpy(filename, "midas.log");
+        db_get_value(hDB, 0, "/Logger/Message file", filename, &size, TID_STRING);
+
+        strcpy(path, dir);
+        strcat(path, filename);
+        }
+      else
+        {
+        cm_get_path(dir);
+        if (dir[0] != 0)
+          if (dir[strlen(dir)-1] != DIR_SEPARATOR)
+            strcat(dir, DIR_SEPARATOR_STR);
+
+        strcpy(path, dir);
+        strcat(path, "midas.log");
+        }
+      }
+    else
+      strcpy(path, "midas.log");
+
+    f = fopen(path, "a");
+    if (f==NULL)
+      {
+      printf("Cannot open message log file %s\n", path);
+      }
+    else
+      {
+      strcpy(str, ss_asctime());
+      fprintf(f, str);
+      fprintf(f, " %s\n", message);
+      fclose(f);
+      }
+    }
+
+  return CM_SUCCESS;
+}
+
+/*------------------------------------------------------------------*/
+
+INT cm_msg_log1(INT message_type, const char *message, const char *facility)
+/********************************************************************\
+
+  Routine: cm_msg_log1
 
   Purpose: Write message to logging file. Called by cm_msg.
            Internal use only
@@ -685,7 +775,7 @@ HNDLE hDB, hKey;
 
 
   if (rpc_is_remote())
-    return rpc_call(RPC_CM_MSG_LOG, message_type, message, facility);
+    return rpc_call(RPC_CM_MSG_LOG1, message_type, message, facility);
 
   if (message_type != MT_DEBUG)
     {
@@ -884,7 +974,7 @@ static BOOL  in_routine = FALSE;
     }
 
   /* log message */
-  cm_msg_log(message_type, send_message, "");
+  cm_msg_log(message_type, send_message);
 
   in_routine = FALSE;
 
@@ -1018,7 +1108,7 @@ static BOOL  in_routine = FALSE;
     }
 
   /* log message */
-  cm_msg_log(message_type, send_message, facility);
+  cm_msg_log1(message_type, send_message, facility);
 
   in_routine = FALSE;
 

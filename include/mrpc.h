@@ -7,6 +7,9 @@
   Contents:     Symbolic constants for internal RPC functions
 
   $Log$
+  Revision 1.13  2000/08/21 07:05:47  midas
+  Added cm_msg_log1(...,facility) to be compatible with older programs
+
   Revision 1.12  1999/09/17 11:48:05  midas
   Alarm system half finished
 
@@ -59,6 +62,7 @@
 #define RPC_CM_TRANSITION               11010
 #define RPC_CM_EXIST                    11011
 #define RPC_CM_MSG_RETRIEVE             11012
+#define RPC_CM_MSG_LOG1                 11013
 
 #define RPC_BM_OPEN_BUFFER              11100
 #define RPC_BM_CLOSE_BUFFER             11101

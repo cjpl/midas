@@ -7,6 +7,9 @@
                 routines
 
   $Log$
+  Revision 1.19  2000/08/21 07:05:47  midas
+  Added cm_msg_log1(...,facility) to be compatible with older programs
+
   Revision 1.18  2000/08/11 11:43:50  midas
   Added cm_msg1 to produce messages which go to a differnt logging file
 
@@ -481,7 +484,8 @@ int     arg1,arg2,arg3,arg4,arg5,arg6,arg7,arg8,arg9,arg10;
 INT EXPRT cm_set_path(char *path);
 INT EXPRT cm_get_path(char *path);
 INT cm_dispatch_ipc(char *message, int socket);
-INT EXPRT cm_msg_log(INT message_type, const char *message, const char *facility);
+INT EXPRT cm_msg_log(INT message_type, const char *message);
+INT EXPRT cm_msg_log1(INT message_type, const char *message, const char *facility);
 void EXPRT name2c(char *str);
 
 /*---- buffer manager ----*/
