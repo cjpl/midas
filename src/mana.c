@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.20  1999/07/02 13:40:53  midas
+  Write periodic and slow events always to ODB, not only every second
+
   Revision 1.19  1999/07/02 13:27:26  midas
   Removed *par from write_event_odb (for external use)
 
@@ -342,13 +345,14 @@ usage:
 
 typedef struct {
   short int event_id;
+  int       type;
   WORD      format;
   HNDLE     hDefKey;
   } EVENT_DEF;
 
 EVENT_DEF *db_get_event_definition(short int event_id)
 {
-INT   i, index, status, size;
+INT   i, index, status, size, type;
 char  str[80];
 HNDLE hKey, hKeyRoot;
 WORD  id;
@@ -408,10 +412,16 @@ static EVENT_DEF *event_def=NULL;
     if (status != DB_SUCCESS)
       continue;
 
+    size = sizeof(type);
+    status = db_get_value(hDB, hKey, "Common/Type", &type, &size, TID_INT);
+    if (status != DB_SUCCESS)
+      continue;
+
     if (id == event_id)
       {
       /* set cache entry */
       event_def[index].event_id = id;
+      event_def[index].type = type;
 
       size = sizeof(str);
       str[0] = 0;
@@ -2217,7 +2227,9 @@ EVENT_DEF    *event_def;
     {
     if (last_time_event[i].event_id == pevent->event_id)
       {
-      if (actual_time - last_time_event[i].last_time > 1000)
+      if (event_def->type == EQ_PERIODIC ||
+          event_def->type == EQ_SLOW ||
+          actual_time - last_time_event[i].last_time > 1000)
         {
         last_time_event[i].last_time = actual_time;
         write_event_odb(pevent);
