@@ -9,6 +9,9 @@
                 for SCS-210 RS232 node
 
   $Log$
+  Revision 1.14  2004/12/13 11:13:43  midas
+  Modified terminal mode
+
   Revision 1.13  2004/07/30 10:22:03  midas
   Added MSCBF_DATALESS
 
@@ -62,7 +65,7 @@ char code node_name[] = "SCS-210";
 /* declare number of sub-addresses to framework */
 unsigned char idata _n_sub_addr = 1;
 
-bit terminal_mode, output_flag;
+bit output_flag, flush_flag;
 unsigned char n_in;
 
 /*---- Define channels and configuration parameters returned to
@@ -99,7 +102,7 @@ void user_init(unsigned char init)
 {
    /* initialize UART1 */
    if (init)
-      user_data.baud = 1;       // 9600 by default
+      user_data.baud = BD_9600;    // 9600 by default
 
    uart_init(1, user_data.baud);
 }
@@ -117,17 +120,11 @@ void user_write(unsigned char index) reentrant
 {
    unsigned char i, n;
 
-   /* manage terminal functions */
    if (index == 0) {
-      if (in_buf[2] == 27)
-         terminal_mode = 0;
-      else if (in_buf[2] == 0)
-         terminal_mode = 1;
-      else {
-         n = (in_buf[0] & 0x07) - 1;
-         for (i = 0; i < n; i++)
-            putchar(in_buf[i + 2]);
-      }
+      n = in_buf[1]-1;
+      for (i = 0; i < n; i++)
+         putchar(in_buf[3 + i]);
+      flush_flag = 1;
    }
 
    if (index == 1) 
@@ -141,32 +138,22 @@ void user_write(unsigned char index) reentrant
 
 unsigned char user_read(unsigned char channel)
 {
-   char c;
+   char c, n;
 
    if (channel == 0) {
-      c = getchar_nowait();
-      if (c != -1) {
-         out_buf[1] = c;
-         return 1;
+
+      for (n=0 ; n<32 ; n++) {
+         c = getchar_nowait();
+         if (c == -1)
+            break;
+
+         /* put character directly in return buffer */
+         out_buf[2 + n] = c;
       }
+      return n;
    }
 
    return 0;
-}
-
-/*---- User write config function ----------------------------------*/
-
-void user_write_conf(unsigned char channel) reentrant
-{
-   if (channel == 0)
-      uart_init(1, user_data.baud);
-}
-
-/*---- User read config function -----------------------------------*/
-
-void user_read_conf(unsigned char channel)
-{
-   if (channel);
 }
 
 /*---- User function called vid CMD_USER command -------------------*/
@@ -188,11 +175,19 @@ void user_loop(void)
 {
    char c;
    unsigned char i;
+   unsigned long t_input;
+
+   if (flush_flag) {
+      flush_flag = 0;
+      flush();
+   }
 
    if (output_flag)
       {
       output_flag = 0;
-      
+
+      /* perform one string exchange: send output, wait for input */
+            
       /* delete input string */
       n_in = 0;
       for (i=0 ; i<32 ; i++)
@@ -208,9 +203,13 @@ void user_loop(void)
          /* delay for slow modules */
          delay_ms(10);
       }
+
+      /* remember time */
+      t_input = time();
    }
 
-   if (!terminal_mode) {
+   /* read 3 seconds after write into input string */
+   if (time() - t_input < 300) {
       c = getchar_nowait();
       if (c != -1 && n_in < 32) {
          user_data.input[n_in++] = c;
