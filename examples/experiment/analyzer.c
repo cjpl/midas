@@ -6,6 +6,9 @@
   Contents:     System part of Analyzer code for sample experiment
 
   $Log$
+  Revision 1.9  2002/05/09 02:50:28  midas
+  Removed initialization of 'Edit on start' by analyzer
+
   Revision 1.8  2002/05/08 19:54:40  midas
   Added extra parameter to function db_get_value()
 
@@ -90,6 +93,7 @@ ANA_MODULE *trigger_module[] = {
 ASUM_BANK_STR(asum_bank_str);
 
 BANK_LIST trigger_bank_list[] = {
+
   /* online banks */
   { "ADC0", TID_WORD, N_ADC, NULL },
   { "TDC0", TID_WORD, N_TDC, NULL },
@@ -152,7 +156,6 @@ char  str[80];
 
 RUNINFO_STR(runinfo_str);
 EXP_PARAM_STR(exp_param_str);
-EXP_EDIT_STR(exp_edit_str);
 GLOBAL_PARAM_STR(global_param_str);
 TRIGGER_SETTINGS_STR(trigger_settings_str);
 
@@ -173,8 +176,6 @@ TRIGGER_SETTINGS_STR(trigger_settings_str);
     cm_msg(MERROR, "analyzer_init", "Cannot open \"/Experiment/Run Parameters\" tree in ODB");
     return 0;
     }
-
-  db_create_record(hDB, 0, "/Experiment/Edit on start", strcomb(exp_edit_str));
 
   sprintf(str, "/%s/Parameters/Global", analyzer_name);
   db_create_record(hDB, 0, str, strcomb(global_param_str));
