@@ -9,6 +9,9 @@
                 for SCS-1000 stand alone control unit
 
   $Log$
+  Revision 1.3  2004/07/22 11:52:33  midas
+  Fixed bugs with DOFS
+
   Revision 1.2  2004/07/20 16:04:40  midas
   Implemented scs-1000 code
 
@@ -211,6 +214,7 @@ void user_write(unsigned char index) reentrant
    case 7: DOUT3 = user_data.dout[3]; break;
 
    case 8:                     // DAC0
+   case 22:                    // DOFS0
       /* assume -10V..+10V range */
       d = ((user_data.dac[0] + user_data.dofs[0] + 10) / 20) * 0x1000;
       if (d >= 0x1000)
@@ -222,8 +226,9 @@ void user_write(unsigned char index) reentrant
       break;
 
    case 9:                     // DAC1
+   case 23:                    // DOFS1
       /* assume -10V..+10V range */
-      d = ((user_data.dac[1] + 10) / 20) * 0x1000;
+      d = ((user_data.dac[1] + user_data.dofs[1] + 10) / 20) * 0x1000;
       if (d >= 0x1000)
          d = 0x0FFF;
 
