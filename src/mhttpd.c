@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.136  2000/08/22 14:25:27  midas
+  Changed BG color of program list on status page (avoid yellow)
+
   Revision 1.135  2000/08/21 12:43:09  midas
   Added "last x days" feature in Elog
 
@@ -1442,7 +1445,7 @@ CHN_STATISTICS chn_stats;
         break;
 
       if (i%3 == 0)
-        rsprintf("<tr bgcolor=#FFFF00>"); 
+        rsprintf("<tr bgcolor=#E0E0FF>"); 
 
       size = sizeof(name);
       db_get_value(hDB, hsubkey, "Name", name, &size, TID_STRING);
