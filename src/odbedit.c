@@ -6,6 +6,9 @@
   Contents:     Command-line interface to the MIDAS online data base.
 
   $Log$
+  Revision 1.22  1999/09/17 15:06:50  midas
+  Moved al_check into cm_yield() and rpc_server_thread
+
   Revision 1.21  1999/09/17 11:48:08  midas
   Alarm system half finished
 
@@ -1997,8 +2000,8 @@ PRINT_INFO      print_info;
     /* alarm reset */
     else if (param[0][0] == 'a' && param[0][1] == 'l')
       {
-      /* go through all triggered alarms */
-      db_find_key(hDB, 0, "/Alarms/Classes", &hKey);
+      /* go through all alarms */
+      db_find_key(hDB, 0, "/Alarms/Alarms", &hKey);
       if (hKey)
         {
         for (i=0 ; ; i++)
@@ -2494,7 +2497,6 @@ PRINT_INFO      print_info;
     /* test 3 */
     else if (param[0][0] == 't' && param[0][1] == '3')
       {
-      al_check();
       }
 
     /* exit/quit */

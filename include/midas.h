@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.40  1999/09/17 15:06:46  midas
+  Moved al_check into cm_yield() and rpc_server_thread
+
   Revision 1.39  1999/09/17 11:54:43  midas
   OS_LINUX & co automatically define OS_UNIX
 
@@ -610,7 +613,7 @@ typedef          INT       HNDLE;
 
 /* Alarm */
 #define AL_SUCCESS                    1
-#define AL_INVALID_CLASS           1002
+#define AL_INVALID_NAME            1002
 #define AL_ERROR_ODB               1003
 #define AL_RESET                   1004
 
@@ -1397,8 +1400,8 @@ INT EXPRT el_search_run(int run, char *return_tag);
 
 /*---- Alarm functions ----*/
 INT EXPRT al_check();
-INT EXPRT al_trigger_alarm(char *alarm_class, char *alarm_message);
-INT EXPRT al_reset_alarm(char *alarm_class);
+INT EXPRT al_trigger_alarm(char *alarm_name, char *alarm_message);
+INT EXPRT al_reset_alarm(char *alarm_name);
 
 /*---- analyzer functions ----*/
 void EXPRT test_register(ANA_TEST *t);
