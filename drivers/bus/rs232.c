@@ -6,6 +6,9 @@
   Contents:     RS232 communication routines for MS-DOS and NT
 
   $Log$
+  Revision 1.10  2001/04/10 21:39:23  pierre
+  - Fix rs232_read fprintf (...str)
+
   Revision 1.9  2001/04/05 05:53:34  midas
   Added CMD_NAME
 
@@ -828,7 +831,7 @@ double fstart, fnow;
     f = fopen("rs232.log", "a");
     fprintf(f, "read: ");
     for (i=0 ; i<size ; i++)
-      fprintf(f, "%X ", data[i]);
+      fprintf(f, "%X ", str[i]);
     fprintf(f, "\n");
     fclose(f);
     }
