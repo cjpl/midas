@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.18  1999/04/08 15:23:46  midas
+  Added CF_ASCII and db_get_key_info
+
   Revision 1.17  1999/03/02 10:00:07  midas
   Added ANA_CONTINUE and ANA_SKIP
 
@@ -937,6 +940,7 @@ typedef struct {
 #define CF_ENDIAN          (1<<0)
 #define CF_IEEE2VAX        (1<<1)
 #define CF_VAX2IEEE        (1<<2)
+#define CF_ASCII           (1<<3)
 
 #define CBYTE(_i)        (* ((BYTE *)       prpc_param[_i]))
 #define CPBYTE(_i)       (  ((BYTE *)       prpc_param[_i]))
@@ -1138,6 +1142,7 @@ INT EXPRT db_delete_key(HNDLE database_handle, HNDLE key_handle, BOOL follow_lin
 INT EXPRT db_enum_key(HNDLE hdb, HNDLE key_handle, INT index, HNDLE *subkey_handle);
 INT EXPRT db_enum_link(HNDLE hdb, HNDLE key_handle, INT index, HNDLE *subkey_handle);
 INT EXPRT db_get_key(HNDLE hdb, HNDLE key_handle, KEY *key);
+INT EXPRT db_get_key_info(HNDLE hDB, HNDLE hKey, INT *type, INT *num_values, INT *item_size);
 INT EXPRT db_get_key_time(HNDLE hdb, HNDLE key_handle, DWORD *delta);
 INT EXPRT db_rename_key(HNDLE hDB, HNDLE hKey, char *name);
 INT EXPRT db_reorder_key(HNDLE hDB, HNDLE hKey, INT index);
