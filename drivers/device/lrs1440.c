@@ -6,6 +6,9 @@
   Contents:     LeCroy LRS 1440 High Voltage Device Driver
 
   $Log$
+  Revision 1.3  2001/01/04 12:05:41  midas
+  Implemented Bus Driver scheme
+
   Revision 1.2  2000/03/17 13:13:58  midas
   Changed rs232.h to bus\rs232.h
 
@@ -29,21 +32,17 @@
 
 #include <stdio.h>
 #include <math.h>
+#include <stdarg.h>
 #include "midas.h"
-#include "bus\rs232.h"
 
 /*---- globals -----------------------------------------------------*/
 
-int rs232_hdev[2];
-
 typedef struct {
-  char rs232_port[NAME_LENGTH];
   int  address;
   int  polarity[16];
 } LRS1440_SETTINGS;
 
 #define LRS1440_SETTINGS_STR "\
-RS232 Port = STRING : [32] com1\n\
 Address = INT : 1\n\
 Polarity = INT[16] :\n\
 [0] -1\n\
@@ -66,7 +65,8 @@ Polarity = INT[16] :\n\
 typedef struct {
   LRS1440_SETTINGS settings;
   int num_channels;
-  int hdev;                            /* device handle for RS232 device */
+  INT (*bd)(INT cmd, ...);             /* bus driver entry function */
+  void *bd_info;                      /* private info of bus driver */
 } LRS1440_INFO;
 
 /*---- device driver routines --------------------------------------*/
@@ -79,11 +79,11 @@ INT  status;
 
   if (info->settings.address != last_address)
     {
-    rs232_puts(info->hdev, "M16\r\n");
-    rs232_waitfor(info->hdev, "M16\r\n", str, 80, 5);
+    BD_PUTS("M16\r\n");
+    BD_GETS(str, sizeof(str), "M16\r\n", 1000);
     sprintf(str, "M%02d\r\n", info->settings.address);
-    rs232_puts(info->hdev, str);
-    status = rs232_waitfor(info->hdev, "responding\r\n", str, 80, 5);
+    BD_PUTS(str);
+    status = BD_GETS(str, sizeof(str), "responding\r\n", 2000);
     if (!status)
       {
       cm_msg(MERROR, "lrs1440_init", 
@@ -98,11 +98,11 @@ INT  status;
 
 /*------------------------------------------------------------------*/
 
-INT lrs1440_init(HNDLE hKey, void **pinfo, INT channels)
+INT lrs1440_init(HNDLE hkey, void **pinfo, INT channels, INT (*bd)(INT cmd, ...))
 {
-int          status, size, no;
+int          status, size;
 char         str[256];
-HNDLE        hDB;
+HNDLE        hDB, hkeydd;
 LRS1440_INFO *info;
 
   /* allocate info structure */
@@ -112,35 +112,30 @@ LRS1440_INFO *info;
   cm_get_experiment_database(&hDB, NULL);
 
   /* create LRS1440 settings record */
-  status = db_create_record(hDB, hKey, "", LRS1440_SETTINGS_STR);
+  status = db_create_record(hDB, hkey, "DD", LRS1440_SETTINGS_STR);
   if (status != DB_SUCCESS)
     return FE_ERR_ODB;
 
+  db_find_key(hDB, hkey, "DD", &hkeydd);
   size = sizeof(info->settings);
-  db_get_record(hDB, hKey, &info->settings, &size, 0);
+  db_get_record(hDB, hkeydd, &info->settings, &size, 0);
 
   info->num_channels = channels;
 
-  /* initialize RS232 port */
-  no = info->settings.rs232_port[3] - '0';
-  if (no < 1)
-    no = 1;
-  if (no > 2)
-    no = 2;
+  /* initialize bus driver */
+  if (!bd)
+    return FE_ERR_ODB;
 
-  if (rs232_hdev[no-1])
-    info->hdev = rs232_hdev[no-1];
-  else
-    {
-    info->hdev = rs232_init(info->settings.rs232_port, 9600, 'N', 8, 1, 0);
-    rs232_hdev[no-1] = info->hdev;
-    }
+  status = bd(CMD_INIT, hkey, &info->bd_info);
 
-  rs232_debug(FALSE);
+  if (status != SUCCESS)
+    return status;
+
+  bd(CMD_DEBUG, FALSE); 
 
   /* check if module is living  */
-  rs232_puts(info->hdev, "M16\r\n");
-  status = rs232_waitfor(info->hdev, "M16\r\n", str, 80, 2);
+  BD_PUTS("M16\r\n");
+  status = BD_GETS(str, sizeof(str), "M16\r\n", 2000);
   if (!status)
     {
     cm_msg(MERROR, "lrs1440_init", "LRS1440 adr %d doesn't respond. Check power and RS232 connection.", info->settings.address);
@@ -148,8 +143,8 @@ LRS1440_INFO *info;
     }
 
   sprintf(str, "M%02d\r\n", info->settings.address);
-  rs232_puts(info->hdev, str);
-  status = rs232_waitfor(info->hdev, "responding\r\n", str, 80, 3);
+  BD_PUTS(str);
+  status = BD_GETS(str, sizeof(str), "responding\r\n", 3000);
   if (!status)
     {
     cm_msg(MERROR, "lrs1440_init", "LRS1440 adr %d doesn't respond. Check power and RS232 connection.", info->settings.address);
@@ -157,26 +152,26 @@ LRS1440_INFO *info;
     }
 
   /* check if HV enabled */
-  rs232_puts(info->hdev, "ST\r");
-  rs232_waitfor(info->hdev, "abled", str, 80, 3);
+  BD_PUTS("ST\r");
+  BD_GETS(str, sizeof(str), "abled", 3000);
 
   if (str[strlen(str) - 6] == 's')
     {
     /* read rest of status */
-    rs232_gets(info->hdev, str, 80, 0);
+    BD_GETS(str, sizeof(str), "", 0);
 
     cm_msg(MERROR, "lrs1440_init", "LeCroy1440 adr %d: HV disabled by front panel button", info->settings.address);
 //    return FE_ERR_HW;
     }
 
   /* read rest of status */
-  rs232_gets(info->hdev, str, 80, 0);
+  BD_GETS(str, sizeof(str), "", 0);
 
   /* turn on HV main switch */
-  rs232_puts(info->hdev, "ON\r");
-  rs232_waitfor(info->hdev, "Turn on\r\n", str, 80, 5);
+  BD_PUTS("ON\r");
+  BD_GETS(str, sizeof(str), "Turn on\r\n", 5000);
 
-  rs232_puts(info->hdev, "M16\r\n");
+  BD_PUTS("M16\r\n");
 
   return FE_SUCCESS;
 }
@@ -185,7 +180,7 @@ LRS1440_INFO *info;
 
 INT lrs1440_exit(LRS1440_INFO *info)
 {
-  rs232_exit(info->hdev);
+  info->bd(CMD_EXIT, info->bd_info);
   
   free(info);
 
@@ -202,8 +197,8 @@ char  str[80];
 
   sprintf(str, "W%04.0f C%02d\r", info->settings.polarity[channel/16]*value, channel);
 
-  rs232_puts(info->hdev, str);
-  rs232_waitfor(info->hdev, "\r\n\r\n", str, 80, 1);
+  BD_PUTS(str);
+  BD_GETS(str, sizeof(str), "\r\n\r\n", 1000);
 
   return FE_SUCCESS;
 }
@@ -220,8 +215,8 @@ INT   i;
   for (i=0 ; i<(channels-1)/16+1 ; i++)
     {
     sprintf(str, "W%04.0f C%d DO16\r", info->settings.polarity[i/16]*value, i*16);
-    rs232_puts(info->hdev, str);
-    rs232_waitfor(info->hdev, "\r\n\r\n", str, 80, 3);
+    BD_PUTS(str);
+    BD_GETS(str, sizeof(str), "\r\n\r\n", 3000);
     }
 
   return FE_SUCCESS;
@@ -237,9 +232,9 @@ char  str[256];
   lrs1440_switch(info);
 
   sprintf(str, "R V C%02d\r", channel);
-  rs232_puts(info->hdev, str);
-  rs232_waitfor(info->hdev, "Act ", str, 80, 1);
-  rs232_waitfor(info->hdev, "\r\n\r\n", str, 80, 1);
+  BD_PUTS(str);
+  BD_GETS(str, sizeof(str), "Act ", 1000);
+  BD_GETS(str, sizeof(str), "\r\n\r\n", 1000);
   sscanf(str+1, "%d", &value);
 
   *pvalue = (float) value;
@@ -257,19 +252,19 @@ char  str[256];
   lrs1440_switch(info);
 
   sprintf(str, "R V F C0 DO%d\r", channels);
-  rs232_puts(info->hdev, str);
+  BD_PUTS(str);
 
   for (i=0 ; i <= (channels-1)/8 ; i++)
     {
-    rs232_waitfor(info->hdev, "Act ", str, 80, 5);
-    rs232_waitfor(info->hdev, "\r\n", str, 80, 2);
+    BD_GETS(str, sizeof(str), "Act ", 5000);
+    BD_GETS(str, sizeof(str), "\r\n", 2000);
     for (j=0 ; j<8 && i*8+j < channels; j++)
       {
       sscanf(str + 1 + j*6, "%d", &value);
       array[i*8 + j] = (float) value;
       }
     }
-  rs232_waitfor(info->hdev, "\r\n", str, 80, 2);
+  BD_GETS(str, sizeof(str), "\r\n", 2000);
 
   return FE_SUCCESS;
 }
@@ -286,12 +281,12 @@ char str[256];
     limit = 255.f;
 
   sprintf(str, "LI %1.0f\r", limit);
-  rs232_puts(info->hdev, str);
-  rs232_waitfor(info->hdev, "\r\n\r\n", str, 80, 1);
+  BD_PUTS(str);
+  BD_GETS(str, sizeof(str), "\r\n\r\n", 1000);
 
   sprintf(str, "LI %1.0f\r", -limit);
-  rs232_puts(info->hdev, str);
-  rs232_waitfor(info->hdev, "\r\n\r\n", str, 80, 1);
+  BD_PUTS(str);
+  BD_GETS(str, sizeof(str), "\r\n\r\n", 1000);
 
   return FE_SUCCESS;
 }
@@ -304,7 +299,7 @@ va_list argptr;
 HNDLE   hKey;
 INT     channel, status;
 float   value, *pvalue;
-void    *info;
+void    *info, *bd;
 
   va_start(argptr, cmd);
   status = FE_SUCCESS;
@@ -315,7 +310,8 @@ void    *info;
       hKey = va_arg(argptr, HNDLE);
       info = va_arg(argptr, void *);
       channel = va_arg(argptr, INT);
-      status = lrs1440_init(hKey, info, channel);
+      bd = va_arg(argptr, void *);
+      status = lrs1440_init(hKey, info, channel, bd);
       break;
 
     case CMD_EXIT:
