@@ -6,6 +6,9 @@
   Contents:     Command-line interface for the Midas Slow Control Bus
 
   $Log$
+  Revision 1.81  2005/04/01 10:51:27  ritt
+  Added repeat mode for writing stings
+
   Revision 1.80  2005/03/21 13:15:29  ritt
   Added submaster software version
 
@@ -881,7 +884,11 @@ void cmd_loop(int fd, char *cmd, int adr)
                      if (strlen(str) > 0 && str[strlen(str) - 1] == '\n')
                         str[strlen(str) - 1] = 0;
 
-                     status = mscb_write(fd, current_addr, (unsigned char) addr, str, strlen(str)+1);
+                     do {
+                        status = mscb_write(fd, current_addr, (unsigned char) addr, str, strlen(str)+1);
+                        Sleep(1000);
+                     } while (param[3][0] && !kbhit());
+
                   } else if (info_var.unit == UNIT_ASCII) {
                      memset(str, 0, sizeof(str));
                      strncpy(str, param[2], sizeof(str));
