@@ -6,6 +6,9 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.102  2004/12/14 23:11:21  olchansk
+  Prevent infinite looping in db_validate_db() when free list is corrupted.
+
   Revision 1.101  2004/10/14 07:26:39  midas
   Check for '/' in db_rename_key
 
@@ -905,15 +908,26 @@ static int db_validate_db(DATABASE_HEADER * pheader)
    pfree = (FREE_DESCRIP *) ((char *) pheader + pheader->first_free_key);
 
    while ((PTYPE) pfree != (PTYPE) pheader) {
+      FREE_DESCRIP* nextpfree;
+
       if (pfree->next_free != 0 && !db_validate_key_offset(pheader, pfree->next_free)) {
          cm_msg(MERROR, "db_validate_db",
-                "Warning: database corruption, next_free 0x%08X",
+                "Warning: database corruption, key area next_free 0x%08X",
                 pfree->next_free - sizeof(DATABASE_HEADER));
          return 0;
       }
 
       total_size_key += pfree->size;
-      pfree = (FREE_DESCRIP *) ((char *) pheader + pfree->next_free);
+      nextpfree = (FREE_DESCRIP *) ((char *) pheader + pfree->next_free);
+
+      if (pfree->next_free != 0 && nextpfree == pfree) {
+         cm_msg(MERROR, "db_validate_db",
+                "Warning: database corruption, key area next_free 0x%08X is same as current free",
+                pfree - sizeof(DATABASE_HEADER));
+         return 0;
+      }
+
+      pfree = nextpfree;
    }
 
    ratio = ((double) (pheader->key_size - total_size_key)) / ((double) pheader->key_size);
@@ -939,15 +953,26 @@ static int db_validate_db(DATABASE_HEADER * pheader)
    pfree = (FREE_DESCRIP *) ((char *) pheader + pheader->first_free_data);
 
    while ((PTYPE) pfree != (PTYPE) pheader) {
+      FREE_DESCRIP* nextpfree;
+
       if (pfree->next_free != 0 && !db_validate_data_offset(pheader, pfree->next_free)) {
          cm_msg(MERROR, "db_validate_db",
-                "Warning: database corruption, next_free 0x%08X",
+                "Warning: database corruption, data area next_free 0x%08X",
                 pfree->next_free - sizeof(DATABASE_HEADER));
          return 0;
       }
 
       total_size_data += pfree->size;
-      pfree = (FREE_DESCRIP *) ((char *) pheader + pfree->next_free);
+      nextpfree = (FREE_DESCRIP *) ((char *) pheader + pfree->next_free);
+
+      if (pfree->next_free != 0 && nextpfree == pfree) {
+         cm_msg(MERROR, "db_validate_db",
+                "Warning: database corruption, data area next_free 0x%08X is same as current free",
+                pfree - sizeof(DATABASE_HEADER));
+         return 0;
+      }
+
+      pfree = nextpfree;
    }
 
    ratio =
