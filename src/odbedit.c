@@ -6,6 +6,9 @@
   Contents:     Command-line interface to the MIDAS online data base.
 
   $Log$
+  Revision 1.58  2002/05/31 06:43:55  midas
+  Set /logger/data dir only if it exists locally
+
   Revision 1.57  2002/05/14 06:31:47  midas
   Make <tab> completion also work with flags
 
@@ -1441,7 +1444,7 @@ void command_loop(char *host_name, char *exp_name, char *cmd, char *start_dir)
 INT             status, i, j, state, size, old_run_number, new_run_number, channel;
 char            line[256], prompt[256];
 char            param[10][100];
-char            str[256], name[256], *pc, data_str[256];
+char            str[256], old_dir[256], cwd[256], name[256], *pc, data_str[256];
 char            old_password[32], new_password[32];
 INT             nparam, flags, index1, index2, debug_flag;
 WORD            mode;
@@ -2038,15 +2041,31 @@ PRINT_INFO      print_info;
       {
       db_find_key(hDB, 0, pwd, &hKey);
 
-      /* protect /Logger/Data dir */
-      db_find_key(hDB, 0, "/Logger/Data dir", &hSubkey);
-      if (hSubkey)
-        db_set_mode(hDB, hSubkey, MODE_READ, TRUE);
+      /* keep /Logger/Data dir if new one doesn't exist */
+      cm_get_path(old_dir);
+      size = sizeof(old_dir);
+      db_get_value(hDB, 0, "/Logger/Data dir", old_dir, &size, TID_STRING, TRUE);
 
       db_load(hDB, hKey, param[1], FALSE);
 
-      if (hSubkey)
-        db_set_mode(hDB, hSubkey, MODE_READ | MODE_WRITE | MODE_DELETE, TRUE);
+      str[0] = 0;
+      size = sizeof(str);
+      db_get_value(hDB, 0, "/Logger/Data dir", str, &size, TID_STRING, FALSE);
+
+      /* check if new one exists */
+      getcwd(cwd, sizeof(cwd));
+      status = chdir(str);
+      if (status == -1)
+        {
+        printf("\"/Logger/Data dir = %s\" in file \"%s\" does not exist locally,\nset anyhow? (y/[n]): ", str, param[1]);
+        ss_gets(line, 256);
+ 
+        /* restor old one */
+        if (line[0] != 'y' && line[0] != 'Y')
+          db_set_value(hDB, 0, "/Logger/Data dir", old_dir, sizeof(old_dir), 1, TID_STRING);
+        }
+
+      chdir(cwd);
       }
 
     /* save */
