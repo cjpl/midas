@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.237  2003/01/13 17:07:00  midas
+  Fixed problem with missing history in recent files
+
   Revision 1.236  2002/10/19 06:36:56  midas
   Fixed problem with Mozilla 0.99
 
@@ -7368,15 +7371,15 @@ HNDLE       hDB, hkey, hkeypanel, hkeyeq, hkeydvar, hkeyvars, hkeyroot, hkeyname
 KEY         key;
 gdImagePtr  im;
 gdGifBuffer gb;
-int         i, j, k, l, n_vars, size, status, n_event, row, x_marker;
+int         i, j, k, l, n_vars, size, status, row, x_marker;
 DWORD       bsize, tsize, n_marker, *state, run_number;
 int         length, aoffset;
 int         flag, x1, y1, x2, y2, xs, xs_old, ys, xold, yold, xmaxm;
 int         white, black, grey, ltgrey, red, green, blue, curve_col[MAX_VARS], state_col[3];
 char        str[256], panel[NAME_LENGTH], *p, odbpath[256];
-INT         var_index[MAX_VARS], *event_id_list, event_id;
-DWORD       name_size, id_size, type;
-char        event_name[MAX_VARS][NAME_LENGTH], *event_name_list;
+INT         var_index[MAX_VARS], event_id;
+DWORD       type;
+char        event_name[MAX_VARS][NAME_LENGTH];
 char        tag_name[MAX_VARS][64], var_name[MAX_VARS][NAME_LENGTH], varname[64], key_name[256];
 DWORD       n_point[MAX_VARS];
 int         x[MAX_VARS][1000];
@@ -7391,8 +7394,6 @@ float       upper_limit[MAX_VARS], lower_limit[MAX_VARS];
 double      yb1, yb2, yf1, yf2, ybase;
 
   cm_get_experiment_database(&hDB, NULL);
-  event_name_list = NULL;
-  event_id_list = NULL;
 
   /* generate test image */
   im = gdImageCreate(width, height);
@@ -7447,27 +7448,6 @@ double      yb1, yb2, yf1, yf2, ybase;
   if (status != DB_SUCCESS)
     db_get_value(hDB, 0, "/Logger/Data dir", str, &size, TID_STRING, TRUE);
   hs_set_path(str);
-
-  /* get list of events */
-  status = hs_count_events(0, (DWORD *) &n_event);
-  if (status != HS_SUCCESS)
-    {
-    sprintf(str, "Internal history error %d", status);
-    gdImageString(im, gdFontGiant, width/2-(strlen(str)*gdFontGiant->w)/2, height/2, str, red);
-    goto error;
-    }
-
-  name_size = n_event*NAME_LENGTH;
-  id_size = n_event*sizeof(INT);
-  event_name_list = M_MALLOC(name_size);
-  event_id_list = M_MALLOC(id_size);
-  status = hs_enum_events(0, event_name_list, (DWORD*)&name_size, event_id_list, (DWORD*)&id_size);
-  if (status != HS_SUCCESS)
-    {
-    sprintf(str, "Internal history error %d", status);
-    gdImageString(im, gdFontGiant, width/2-(strlen(str)*gdFontGiant->w)/2, height/2, str, red);
-    goto error;
-    }
 
   /* check panel name in ODB */
   sprintf(str, "/History/Display/%s", panel);
@@ -7529,18 +7509,14 @@ double      yb1, yb2, yf1, yf2, ybase;
       }
 
     /* search event_id */
-    for (j=0 ; j<n_event ; j++)
-      if (equal_ustring(event_name[i], event_name_list+NAME_LENGTH*j))
-        break;
+    status = hs_get_event_id(0, event_name[i], &event_id);
 
-    if (j == n_event)
+    if (status != HS_SUCCESS)
       {
       sprintf(str, "Event \"%s\" from panel \"%s\" not found in history", event_name[i], panel);
       gdImageString(im, gdFontGiant, width/2-(strlen(str)*gdFontGiant->w)/2, height/2, str, red);
       goto error;
       }
-
-    event_id = event_id_list[j];
 
     /* get timescale */
     if (scale == 0)
@@ -8105,11 +8081,6 @@ double      yb1, yb2, yf1, yf2, ybase;
   gdImageRectangle(im, x1, y2, x2, y1, black);
 
 error:
-
-  if (event_name_list)
-    M_FREE(event_name_list);
-  if (event_id_list)
-    M_FREE(event_id_list);
 
   /* generate GIF */
 	gdImageInterlace(im, 1);

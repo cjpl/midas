@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.176  2003/01/13 17:07:01  midas
+  Fixed problem with missing history in recent files
+
   Revision 1.175  2002/11/27 12:54:49  midas
   Removed unnecessary bind()
 
@@ -14696,7 +14699,8 @@ INT hs_get_event_id(DWORD ltime, char *name, DWORD *id)
 
   Routine: hs_get_event_id
 
-  Purpose: Return event ID for a given name
+  Purpose: Return event ID for a given name. If event cannot be found
+           in current definition file, go back in time until found
 
   Input:
     DWORD  ltime            Date at which event ID should be looked for
@@ -14707,58 +14711,69 @@ INT hs_get_event_id(DWORD ltime, char *name, DWORD *id)
   Function value:
     HS_SUCCESS              Successful completion
     HS_FILE_ERROR           Cannot open history file
+    HS_UNDEFINED_EVENT      Event "name" not found
 
 \********************************************************************/
 {
 int        fh, fhd;
 INT        status, i;
+DWORD      lt;
 DEF_RECORD def_rec;
 
   if (rpc_is_remote())
     return rpc_call(RPC_HS_GET_EVENT_ID, ltime, name, id);
 
   /* search latest history file */
-  status = hs_search_file(&ltime, -1);
-  if (status != HS_SUCCESS)
-    {
-    cm_msg(MERROR, "hs_count_events", "cannot find recent history file");
-    return HS_FILE_ERROR;
-    }
+  if (ltime == 0)
+    ltime = time(NULL);
 
-  /* open history and definition files */
-  hs_open_file(ltime, "hst", O_RDONLY, &fh);
-  hs_open_file(ltime, "idf", O_RDONLY, &fhd);
-  if (fh< 0 || fhd < 0)
-    {
-    cm_msg(MERROR, "hs_count_events", "cannot open index files");
-    return HS_FILE_ERROR;
-    }
+  lt = ltime;
 
-  /* allocate event id array */
-  lseek(fhd, 0, SEEK_END);
-  lseek(fhd, 0, SEEK_SET);
-
-  /* loop over index file */
-  *id = 0;
   do
     {
-    /* read definition index record */
-    i = read(fhd, (char *)&def_rec, sizeof(def_rec));
-    if (i < (int) sizeof(def_rec))
-      break;
-
-    if (strcmp(name, def_rec.event_name) == 0)
+    status = hs_search_file(&lt, -1);
+    if (status != HS_SUCCESS)
       {
-      *id = def_rec.event_id;
-      break;
+      cm_msg(MERROR, "hs_count_events", "cannot find recent history file");
+      return HS_FILE_ERROR;
       }
-    } while (TRUE);
 
+    /* open history and definition files */
+    hs_open_file(lt, "hst", O_RDONLY, &fh);
+    hs_open_file(lt, "idf", O_RDONLY, &fhd);
+    if (fh< 0 || fhd < 0)
+      {
+      cm_msg(MERROR, "hs_count_events", "cannot open index files");
+      return HS_FILE_ERROR;
+      }
 
-  close(fh);
-  close(fhd);
+    /* loop over index file */
+    *id = 0;
+    do
+      {
+      /* read definition index record */
+      i = read(fhd, (char *)&def_rec, sizeof(def_rec));
+      if (i < (int) sizeof(def_rec))
+        break;
 
-  return HS_SUCCESS;
+      if (strcmp(name, def_rec.event_name) == 0)
+        {
+        *id = def_rec.event_id;
+        close(fh);
+        close(fhd);
+        return HS_SUCCESS;
+        }
+      } while (TRUE);
+
+    close(fh);
+    close(fhd);
+ 
+    /* not found -> go back one day */
+    lt -= 3600*24;
+
+    } while (lt > ltime - 3600*24*365*10); /* maximum 10 years */
+
+  return HS_UNDEFINED_EVENT;
 }
 
 /*------------------------------------------------------------------*/
@@ -16217,7 +16232,7 @@ HNDLE  hDB;
       if (direction != -1 && ltime > (DWORD)time(NULL) + 3600*24)
         break;
 
-      /* in backward direction, goe back 10 years */
+      /* in backward direction, go back 10 years */
       if (direction == -1 && abs((INT)lt-(INT)ltime) > 3600*24*365*10)
         break;
 
