@@ -8,6 +8,9 @@
                 Midas Slow Control Bus protocol
 
   $Log$
+  Revision 1.3  2002/07/12 15:19:18  midas
+  Added NOAREGS
+
   Revision 1.2  2002/07/10 09:52:55  midas
   Finished EEPROM routines
 
@@ -100,6 +103,8 @@ void user_init(void)
 
 /*---- User write function -----------------------------------------*/
 
+#pragma NOAREGS
+
 void user_write(unsigned char channel)
 {
 unsigned char data *d;
@@ -162,8 +167,6 @@ void user_read_conf(unsigned char channel)
 
 /*---- User function called vid CMD_USER command -------------------*/
 
-#pragma NOAREGS
-
 unsigned char user_func(unsigned char idata *data_in,
                         unsigned char idata *data_out)
 {
@@ -172,8 +175,6 @@ unsigned char user_func(unsigned char idata *data_in,
   data_out[1] = data_in[1]+1;
   return 2;
 }
-
-#pragma AREGS
 
 /*---- User loop function ------------------------------------------*/
 
