@@ -851,7 +851,7 @@ Version 1.04, released Aug 6, 1998
 Version 1.05, intermediate version, never released
 --------------------------------------------------
 
-Version 1.06, released Oct xx, 1998
+Version 1.06, released Oct 23, 1998
 -----------------------------------
 
 - Class & device drivers have now their own local memory so they
@@ -870,3 +870,10 @@ Version 1.06, released Oct xx, 1998
 
 - Removed gethostbyname from client connection acception to speed up the
   connection process to a frontend or analyzer when they are busy.
+
+- Introduces CVS (concurrent version system) for revision control. All files
+  have how a LOG in their header shich shows their revision
+
+- Fixed minor bus in mana.c
+
+- Some revisions of the drivers/ directory
