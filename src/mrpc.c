@@ -6,6 +6,9 @@
   Contents:     List of MIDAS RPC functions with parameters
 
   $Log$
+  Revision 1.26  2002/05/10 01:41:19  midas
+  Added optional debug output to cm_transition
+
   Revision 1.25  2002/05/08 19:54:41  midas
   Added extra parameter to function db_get_value()
 
@@ -159,14 +162,6 @@ static RPC_LIST rpc_list_library[] = {
 
   { RPC_CM_TIME, "cm_time", 
     {{TID_DWORD,      RPC_OUT},
-     {0} }},
-
-  { RPC_CM_TRANSITION, "cm_transition",
-    {{TID_INT,        RPC_IN}, 
-     {TID_INT,        RPC_IN}, 
-     {TID_STRING,     RPC_OUT},
-     {TID_INT,        RPC_IN}, 
-     {TID_INT,        RPC_IN}, 
      {0} }},
 
   { RPC_CM_MSG_RETRIEVE, "cm_msg_retrieve",

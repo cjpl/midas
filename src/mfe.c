@@ -7,6 +7,9 @@
                 linked with user code to form a complete frontend
 
   $Log$
+  Revision 1.38  2002/05/10 01:41:19  midas
+  Added optional debug output to cm_transition
+
   Revision 1.37  2002/05/08 19:54:40  midas
   Added extra parameter to function db_get_value()
 
@@ -1314,7 +1317,7 @@ INT opt_max=0, opt_index=0, opt_tcp_size=128, opt_cnt=0;
           run_state == STATE_RUNNING)
         {
         /* stop run */
-        if (cm_transition(TR_STOP, 0, str, sizeof(str), SYNC) != CM_SUCCESS)
+        if (cm_transition(TR_STOP, 0, str, sizeof(str), SYNC, FALSE) != CM_SUCCESS)
           cm_msg(MERROR, "scheduler", "cannot stop run: %s", str);
 
         /* check if autorestart, main loop will take care of it */
@@ -1476,7 +1479,7 @@ INT opt_max=0, opt_index=0, opt_tcp_size=128, opt_cnt=0;
         size = sizeof(state);
         status = db_get_value(hDB, 0, "Runinfo/State", &state, &size, TID_INT, TRUE);
         if (status != DB_SUCCESS)
-          cm_msg(MERROR, "cm_transition", "cannot get Runinfo/State in database");
+          cm_msg(MERROR, "scheduler", "cannot get Runinfo/State in database");
 
         if (state == STATE_STOPPED)
           {
@@ -1485,7 +1488,7 @@ INT opt_max=0, opt_index=0, opt_tcp_size=128, opt_cnt=0;
           db_get_value(hDB, 0, "/Runinfo/Run number", &run_number, &size, TID_INT, TRUE);
 
           cm_msg(MTALK, "main", "starting new run");
-          status = cm_transition(TR_START, run_number+1, NULL, 0, SYNC);
+          status = cm_transition(TR_START, run_number+1, NULL, 0, SYNC, FALSE);
           if (status != CM_SUCCESS)
             cm_msg(MERROR, "main", "cannot restart run");
           }

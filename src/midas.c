@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.150  2002/05/10 01:41:19  midas
+  Added optional debug output to cm_transition
+
   Revision 1.149  2002/05/10 00:17:05  midas
   Run start abort causes logger to delete old data file on next run start
 
@@ -3543,7 +3546,7 @@ static BOOL first;
       {
       if (((BOOL (*)(INT,BOOL))_deferred_trans_table[i].func)(_requested_transition, first))
         {
-        status = cm_transition(_requested_transition | TR_DEFERRED, 0, str, 256, SYNC);
+        status = cm_transition(_requested_transition | TR_DEFERRED, 0, str, 256, SYNC, FALSE);
         if (status != CM_SUCCESS)
           cm_msg(MERROR, "cm_check_deferred_transition",
                  "Cannot perform deferred transition: %s", str);
@@ -3562,8 +3565,27 @@ static BOOL first;
 
 /*------------------------------------------------------------------*/
 
+struct {
+  int transition;
+  char name[32];
+} trans_name[] = {
+  TR_START      , "START",
+  TR_STOP       , "STOP",
+  TR_PAUSE      , "PAUSE",
+  TR_RESUME     , "RESUME",
+  TR_PRESTART   , "PRESTART",
+  TR_POSTSTART  , "POSTSTART",
+  TR_PRESTOP    , "PRESTOP",
+  TR_POSTSTOP   , "POSTSTOP",
+  TR_PREPAUSE   , "PREPAUSE",
+  TR_POSTPAUSE  , "POSTPAUSE",
+  TR_PRERESUME  , "PRERESUME",
+  TR_POSTRESUME , "POSTRESUME",
+  TR_DEFERRED   , "DEFERRED",
+};
+
 INT cm_transition(INT transition, INT run_number, char *perror, INT strsize,
-                  INT async_flag)
+                  INT async_flag, INT debug_flag)
 /********************************************************************\
 
   Routine: cm_transition
@@ -3576,6 +3598,7 @@ INT cm_transition(INT transition, INT run_number, char *perror, INT strsize,
                             number pluse one.
     INT    strsize          Size of error string
     INT    async_flag       Return immediately when flag equals ASYNC
+    INT    debug_flag       If TRUE, output debugging information
 
   Output:
     char   *perror          Error string set by clients which are unable
@@ -3602,6 +3625,15 @@ BOOL   deferred;
 PROGRAM_INFO program_info;
 RUNINFO_STR(runinfo_str);
 
+  if (debug_flag)
+    {
+    for (i=0 ; i<13 ; i++)
+      if (trans_name[i].transition == transition)
+        break;
+
+    printf("\ncm_transition: transition %s\n", trans_name[i].name);
+    }
+
   deferred = (transition & TR_DEFERRED) > 0;
   transition &= ~TR_DEFERRED;
 
@@ -3620,6 +3652,9 @@ RUNINFO_STR(runinfo_str);
   /* Set new run number in ODB */
   if (transition == TR_START)
     {
+    if (debug_flag)
+      printf("Setting run number %d in ODB\n", run_number);
+
     status = db_set_value(hDB, 0, "Runinfo/Run number",
                           &run_number, sizeof(run_number), 1, TID_INT);
     if (status != DB_SUCCESS)
@@ -3728,25 +3763,25 @@ RUNINFO_STR(runinfo_str);
   /* call pre- transitions */
   if (transition == TR_START)
     {
-    status = cm_transition(TR_PRESTART, run_number, perror, strsize, async_flag);
+    status = cm_transition(TR_PRESTART, run_number, perror, strsize, async_flag, debug_flag);
     if (status != CM_SUCCESS)
       return status;
     }
   if (transition == TR_STOP)
     {
-    status = cm_transition(TR_PRESTOP, run_number, perror, strsize, async_flag);
+    status = cm_transition(TR_PRESTOP, run_number, perror, strsize, async_flag, debug_flag);
     if (status != CM_SUCCESS)
       return status;
     }
   if (transition == TR_PAUSE)
     {
-    status = cm_transition(TR_PREPAUSE, run_number, perror, strsize, async_flag);
+    status = cm_transition(TR_PREPAUSE, run_number, perror, strsize, async_flag, debug_flag);
     if (status != CM_SUCCESS)
       return status;
     }
   if (transition == TR_RESUME)
     {
-    status = cm_transition(TR_PRERESUME, run_number, perror, strsize, async_flag);
+    status = cm_transition(TR_PRERESUME, run_number, perror, strsize, async_flag, debug_flag);
     if (status != CM_SUCCESS)
       return status;
     }
@@ -3786,7 +3821,18 @@ RUNINFO_STR(runinfo_str);
           /* call registerd function */
           if (_trans_table[j].transition == transition &&
               _trans_table[j].func)
+            {
+            if (debug_flag)
+              {
+              printf("Calling local transition callback...");
+              fflush(stdout);
+              }
+
             status = _trans_table[j].func(run_number, error);
+
+            if (debug_flag)
+              printf("OK\n");
+            }
           else
             status = CM_SUCCESS;
 
@@ -3809,7 +3855,11 @@ RUNINFO_STR(runinfo_str);
           size = sizeof(host_name);
           db_get_value(hDB, hSubkey, "Host", host_name, &size, TID_STRING, TRUE);
 
-          /* cm_msg(MINFO, "Connect to %s [%d] - ", client_name, port); */
+          if (debug_flag)
+            {
+            printf("Connecting to client %s on host %s...", client_name, host_name);
+            fflush(stdout);
+            }
 
           /* client found -> connect to its server port */
           status = rpc_client_connect(host_name, port, &hConn);
@@ -3821,6 +3871,9 @@ RUNINFO_STR(runinfo_str);
             continue;
             }
 
+          if (debug_flag)
+            printf("OK\n");
+
           /* call RC_TRANSITION on remote client with increased timeout */
           old_timeout = rpc_get_option(hConn, RPC_OTIMEOUT);
           rpc_set_option(hConn, RPC_OTIMEOUT, 120000);
@@ -3828,6 +3881,12 @@ RUNINFO_STR(runinfo_str);
           /* set FTPC protocol if in async mode */
           if (async_flag == ASYNC)
             rpc_set_option(hConn, RPC_OTRANSPORT, RPC_FTCP);
+
+          if (debug_flag)
+            {
+            printf("Executing RPC transition client %s on host %s...", client_name, host_name);
+            fflush(stdout);
+            }
 
           status = rpc_client_call(hConn, RPC_RC_TRANSITION, transition,
                                    run_number, error, strsize);
@@ -3839,7 +3898,8 @@ RUNINFO_STR(runinfo_str);
           if (async_flag == ASYNC)
             rpc_set_option(hConn, RPC_OTRANSPORT, RPC_TCP);
 
-          /* cm_msg(MINFO, "done (%d)\n", status); */
+          if (debug_flag)
+            printf("OK\n");
 
           if (perror != NULL)
             memcpy(perror, error, (INT) strlen(error)+1 < strsize ?
@@ -3855,25 +3915,25 @@ RUNINFO_STR(runinfo_str);
   /* call post- transitions */
   if (transition == TR_START)
     {
-    status = cm_transition(TR_POSTSTART, run_number, perror, strsize, async_flag);
+    status = cm_transition(TR_POSTSTART, run_number, perror, strsize, async_flag, debug_flag);
     if (status != CM_SUCCESS)
       return status;
     }
   if (transition == TR_STOP)
     {
-    status = cm_transition(TR_POSTSTOP, run_number, perror, strsize, async_flag);
+    status = cm_transition(TR_POSTSTOP, run_number, perror, strsize, async_flag, debug_flag);
     if (status != CM_SUCCESS)
       return status;
     }
   if (transition == TR_PAUSE)
     {
-    status = cm_transition(TR_POSTPAUSE, run_number, perror, strsize, async_flag);
+    status = cm_transition(TR_POSTPAUSE, run_number, perror, strsize, async_flag, debug_flag);
     if (status != CM_SUCCESS)
       return status;
     }
   if (transition == TR_RESUME)
     {
-    status = cm_transition(TR_POSTRESUME, run_number, perror, strsize, async_flag);
+    status = cm_transition(TR_POSTRESUME, run_number, perror, strsize, async_flag, debug_flag);
     if (status != CM_SUCCESS)
       return status;
     }
@@ -16592,7 +16652,7 @@ ALARM_CLASS ac;
     size = sizeof(state);
     db_get_value(hDB, 0, "/Runinfo/State", &state, &size, TID_INT, TRUE);
     if (state != STATE_STOPPED)
-      cm_transition(TR_STOP, 0, NULL, 0, ASYNC);
+      cm_transition(TR_STOP, 0, NULL, 0, ASYNC, FALSE);
     }
 
   status = db_set_record(hDB, hkeyclass, &ac, sizeof(ac), 0);

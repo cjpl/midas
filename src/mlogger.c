@@ -6,6 +6,9 @@
   Contents:     MIDAS logger program
 
   $Log$
+  Revision 1.53  2002/05/10 01:41:19  midas
+  Added optional debug output to cm_transition
+
   Revision 1.52  2002/05/10 00:17:06  midas
   Run start abort causes logger to delete old data file on next run start
 
@@ -1428,7 +1431,7 @@ double dzero;
       cm_msg(MTALK, "log_write", "Error writing to %s, stopping run", log_chn->path);
 
     stop_requested = TRUE;
-    cm_transition(TR_STOP, 0, NULL, 0, ASYNC);
+    cm_transition(TR_STOP, 0, NULL, 0, ASYNC, FALSE);
     stop_requested = FALSE;
 
     return status;
@@ -1444,7 +1447,7 @@ double dzero;
     cm_msg(MTALK, "log_write", "stopping run after having received %d events",
                                 log_chn->settings.event_limit);
 
-    status = cm_transition(TR_STOP, 0, NULL, 0, ASYNC);
+    status = cm_transition(TR_STOP, 0, NULL, 0, ASYNC, FALSE);
     if (status != CM_SUCCESS)
       cm_msg(MERROR, "log_write", "cannot stop run after reaching event limit");
     stop_requested = FALSE;
@@ -1470,7 +1473,7 @@ double dzero;
     cm_msg(MTALK, "log_write", "stopping run after having received %1.0lf mega bytes",
                                 log_chn->statistics.bytes_written/1E6);
 
-    status = cm_transition(TR_STOP, 0, NULL, 0, ASYNC);
+    status = cm_transition(TR_STOP, 0, NULL, 0, ASYNC, FALSE);
     if (status != CM_SUCCESS)
       cm_msg(MERROR, "log_write", "cannot stop run after reaching bytes limit");
     stop_requested = FALSE;
@@ -1499,7 +1502,7 @@ double dzero;
     strcpy(tape_name, log_chn->path);
     stats_hkey = log_chn->stats_hkey;
 
-    status = cm_transition(TR_STOP, 0, NULL, 0, ASYNC);
+    status = cm_transition(TR_STOP, 0, NULL, 0, ASYNC, FALSE);
     if (status != CM_SUCCESS)
       cm_msg(MERROR, "log_write", "cannot stop run after reaching tape capacity");
     stop_requested = FALSE;
@@ -1538,7 +1541,7 @@ double dzero;
       stop_requested = TRUE;
       cm_msg(MTALK, "log_write", "disk nearly full, stopping run");
 
-      status = cm_transition(TR_STOP, 0, NULL, 0, ASYNC);
+      status = cm_transition(TR_STOP, 0, NULL, 0, ASYNC, FALSE);
       if (status != CM_SUCCESS)
         cm_msg(MERROR, "log_write", "cannot stop run after reaching byte limit");
       stop_requested = FALSE;
@@ -2722,7 +2725,7 @@ usage:
         db_get_value(hDB, 0, "/Runinfo/Run number", &run_number, &size, TID_INT, TRUE);
 
         cm_msg(MTALK, "main", "starting new run");
-        status = cm_transition(TR_START, run_number+1, NULL, 0, ASYNC);
+        status = cm_transition(TR_START, run_number+1, NULL, 0, ASYNC, FALSE);
         if (status != CM_SUCCESS)
           cm_msg(MERROR, "main", "cannot restart run");
         }

@@ -7,6 +7,9 @@
   Contents:     Symbolic constants for internal RPC functions
 
   $Log$
+  Revision 1.15  2002/05/10 01:41:19  midas
+  Added optional debug output to cm_transition
+
   Revision 1.14  2000/09/28 13:01:25  midas
   Added manual triggered events
 
@@ -62,7 +65,6 @@
 #define RPC_CM_ASCTIME                  11007
 #define RPC_CM_TIME                     11008
 #define RPC_CM_MSG                      11009
-#define RPC_CM_TRANSITION               11010
 #define RPC_CM_EXIST                    11011
 #define RPC_CM_MSG_RETRIEVE             11012
 #define RPC_CM_MSG_LOG1                 11013

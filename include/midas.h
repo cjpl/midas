@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.91  2002/05/10 01:41:19  midas
+  Added optional debug output to cm_transition
+
   Revision 1.90  2002/05/09 18:16:55  midas
   Version 1.9.0
 
@@ -1527,7 +1530,7 @@ INT EXPRT cm_disconnect_experiment(void);
 INT EXPRT cm_register_transition(INT transition, INT (*func)(INT,char*));
 INT EXPRT cm_register_deferred_transition(INT transition, BOOL (*func)(INT,BOOL));
 INT EXPRT cm_check_deferred_transition(void);
-INT EXPRT cm_transition(INT transition, INT run_number, char *error, INT strsize, INT async_flag);
+INT EXPRT cm_transition(INT transition, INT run_number, char *error, INT strsize, INT async_flag, INT debug_flag);
 INT EXPRT cm_register_server(void);
 INT EXPRT cm_register_function(INT id, INT (*func)(INT,void**));
 INT EXPRT cm_connect_client(char *client_name, HNDLE *hConn);
