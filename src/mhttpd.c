@@ -6,6 +6,9 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
+  Revision 1.42  1999/09/21 13:47:39  midas
+  Added "programs" page
+
   Revision 1.41  1999/09/17 15:59:03  midas
   Added internal alarms
 
@@ -267,6 +270,20 @@ int i;
     return _value[i];
 
   return NULL;
+}
+
+BOOL isparam(char *param)
+{
+int i;
+
+  for (i=0 ; i<MAX_PARAM && _param[i][0]; i++)
+    if (equal_ustring(param, _param[i]))
+      break;
+
+  if (i<MAX_PARAM && _param[i][0])
+    return TRUE;
+
+  return FALSE;
 }
 
 /*------------------------------------------------------------------*/
@@ -616,6 +633,7 @@ CHN_STATISTICS chn_stats;
   rsprintf("<input type=submit name=cmd value=Messages>\n");
   rsprintf("<input type=submit name=cmd value=ELog>\n");
   rsprintf("<input type=submit name=cmd value=Alarms>\n");
+  rsprintf("<input type=submit name=cmd value=Programs>\n");
   rsprintf("<input type=submit name=cmd value=Config>\n");
   rsprintf("<input type=submit name=cmd value=Help>\n");
 
@@ -3306,7 +3324,7 @@ char   data[10000];
   cm_get_experiment_database(&hDB, NULL);
 
   /* show set page if no value is given */
-  if (value[0] == 0)
+  if (!isparam("value"))
     {
     status = db_find_key(hDB, 0, dec_path, &hkey);
     if (status != DB_SUCCESS)
@@ -3794,6 +3812,167 @@ char  str[256], ref[256];
 
 /*------------------------------------------------------------------*/
 
+void show_programs_page()
+{
+INT   i, j, size, count;
+BOOL  restart, first;
+HNDLE hDB, hkeyroot, hkey, hkey_rc, hkeycl;
+KEY   key, keycl;
+char  str[256], ref[256], command[256], name[80];
+
+  cm_get_experiment_database(&hDB, NULL);
+
+  /* stop command */
+  if (*getparam("Stop"))
+    {
+    cm_shutdown(getparam("Stop")+5);
+    redirect("?cmd=programs");
+    return;
+    }
+
+  /* start command */
+  if (*getparam("Start"))
+    {
+    strcpy(name, getparam("Start")+6);
+    sprintf(str, "/Programs/%s/Start command", name);
+    command[0] = 0;
+    size = sizeof(command);
+    db_get_value(hDB, 0, str, command, &size, TID_STRING);
+    if (command[0])
+      {
+      cm_execute(command, str, sizeof(str));
+      /* wait until program started */
+      for (i=0 ; i<50 ; i++)
+        {
+        if (cm_exist(name, FALSE))
+          break;
+        ss_sleep(100);
+        }
+      }
+    redirect("?cmd=programs");
+    return;
+    }
+
+  show_header(hDB, "Programs", "", 3);
+
+  /*---- menu buttons ----*/
+
+  rsprintf("<tr><td colspan=6 bgcolor=#C0C0C0>\n");
+
+  rsprintf("<input type=submit name=cmd value=Alarms>\n");
+  rsprintf("<input type=submit name=cmd value=Status>\n");
+  rsprintf("</tr>\n\n");
+
+  rsprintf("<input type=hidden name=cmd value=Programs>\n");
+
+  /*---- programs ----*/
+
+  rsprintf("<tr><th>Program<th>Running on host<th>Alarm<th>Autorestart</tr>\n");
+
+  /* go through all programs */
+  db_find_key(hDB, 0, "/Programs", &hkeyroot);
+  if (hkeyroot)
+    {
+    for (i=0 ; ; i++)
+      {
+      db_enum_key(hDB, hkeyroot, i, &hkey);
+
+      if (!hkey)
+        break;
+
+      db_get_key(hDB, hkey, &key);
+
+      if (strncmp(key.name, "mhttpd", 6) == 0)
+        continue;
+
+      if (exp_name[0])
+        sprintf(ref, "%sPrograms/%s?exp=%s", 
+                mhttpd_url, key.name, exp_name);
+      else
+        sprintf(ref, "%sPrograms/%s", 
+                mhttpd_url, key.name);
+      rsprintf("<tr><td><a href=\"%s\"><b>%s</b></a>", ref, key.name);
+
+      /* running */
+      count = 0;
+      rsprintf("<td align=center>");
+      if (db_find_key(hDB, 0, "/System/Clients", &hkey_rc) == DB_SUCCESS)
+        {
+        first = TRUE;
+        for (j=0 ; ; j++)
+          {
+          db_enum_key(hDB, hkey_rc, j, &hkeycl);
+          if (!hkeycl)
+            break;
+
+          size = sizeof(name);
+          db_get_value(hDB, hkeycl, "Name", name, &size, TID_STRING);
+
+          db_get_key(hDB, hkeycl, &keycl);
+          name[strlen(key.name)] = 0;
+
+          if (equal_ustring(name, key.name))
+            {
+            size = sizeof(str);
+            db_get_value(hDB, hkeycl, "Host", str, &size, TID_STRING);
+
+            if (!first)
+              rsprintf("<br>");
+            rsprintf(str);
+
+            first = FALSE;
+            count++;
+            }
+          }
+        }
+
+      /* Alarm */
+      size = sizeof(str);
+      db_get_value(hDB, hkey, "Alarm Class", &str, &size, TID_STRING);
+      if (str[0])
+        rsprintf("<td bgcolor=#FFFF00 align=center>%s", str);
+      else
+        rsprintf("<td align=center>-");
+
+      /* auto restart */
+      size = sizeof(restart);
+      db_get_value(hDB, hkey, "Auto restart", &restart, &size, TID_BOOL);
+
+      if (restart)
+        rsprintf("<td align=center>Yes\n");
+      else
+        rsprintf("<td align=center>No\n");
+
+      /* start/stop button */
+      size = sizeof(str);
+      db_get_value(hDB, hkey, "Start Command", &str, &size, TID_STRING);
+      if (str[0] && count == 0)
+        {
+        sprintf(str, "Start %s", key.name);
+        rsprintf("<td bgcolor=#00FF00 align=center><input type=submit name=\"Start\" value=\"%s\">\n", str);
+        }
+      else
+        rsprintf("<td align=center>-");
+
+      if (count > 0)
+        {
+        sprintf(str, "Stop %s", key.name);
+        rsprintf("<td bgcolor=#FF0000 align=center><input type=submit name=\"Stop\" value=\"%s\">\n", str);
+        }
+      else
+        rsprintf("<td align=center>-");
+
+      rsprintf("</tr>\n");
+      }
+    }
+
+
+  rsprintf("</table>\n");
+  rsprintf("</body></html>\r\n");
+}
+
+/*------------------------------------------------------------------*/
+
 void show_config_page(int refresh)
 {
 char str[80];
@@ -4216,6 +4395,21 @@ struct tm *gmt;
   if (equal_ustring(command, "alarms"))
     {
     show_alarm_page();
+    return;
+    }
+
+  /*---- programs command ------------------------------------------*/
+
+  if (equal_ustring(command, "programs"))
+    {
+    show_programs_page();
+    return;
+    }
+
+  if (strncmp(command, "start_", 6) == 0 ||
+      strncmp(command, "stop_", 5) == 0)
+    {
+    show_programs_page();
     return;
     }
 
