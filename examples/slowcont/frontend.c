@@ -17,6 +17,9 @@
 
 
   $Log$
+  Revision 1.4  1999/12/21 09:38:23  midas
+  Use new driver names
+
   Revision 1.3  1998/10/23 08:46:26  midas
   Added #include "null.h"
 
@@ -28,9 +31,9 @@
 
 #include <stdio.h>
 #include "midas.h"
-#include "cd_hv.h"
-#include "cd_multi.h"
-#include "null.h"
+#include "class/hv.h"
+#include "class/multi.h"
+#include "device/null.h"
 
 /*-- Globals -------------------------------------------------------*/
 
@@ -69,7 +72,7 @@ EQUIPMENT equipment[] = {
     3, 0,                 /* event ID, trigger mask */
     "SYSTEM",             /* event buffer */
     EQ_SLOW,              /* equipment type */
-    {0},                  /* event source */
+    0,                    /* event source */
     "FIXED",              /* format */
     TRUE,                 /* enabled */
     RO_RUNNING |
@@ -88,7 +91,7 @@ EQUIPMENT equipment[] = {
     4, 0,                 /* event ID, trigger mask */
     "SYSTEM",             /* event buffer */
     EQ_SLOW,              /* equipment type */
-    {0},                  /* event source */
+    0,                    /* event source */
     "FIXED",              /* format */
     TRUE,                 /* enabled */
     RO_RUNNING |
