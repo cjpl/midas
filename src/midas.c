@@ -6,6 +6,10 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.117  2000/05/16 10:38:17  midas
+  - Set MIDAS_DIR as the default /logger/data dir on cm_connect_experiment
+  - Remove elog file if all messages are deleted
+
   Revision 1.116  2000/05/09 09:06:12  midas
   Added MIDAS_EXPTAB environment variable and hashmark comments in exptab
 
@@ -1915,7 +1919,7 @@ INT cm_connect_experiment1(char *host_name, char *exp_name,
 INT   status, i, mutex_elog, mutex_alarm, size;
 char  local_host_name[HOST_NAME_LENGTH];
 char  client_name1[NAME_LENGTH];
-char  password[NAME_LENGTH], str[NAME_LENGTH], exp_name1[NAME_LENGTH];
+char  password[NAME_LENGTH], str[256], exp_name1[NAME_LENGTH];
 HNDLE hDB, hKeyClient;
 BOOL  call_watchdog;
 
@@ -2058,6 +2062,11 @@ BOOL  call_watchdog;
 
   /* set experiment name in ODB */
   db_set_value(hDB, 0, "/Experiment/Name", exp_name1, NAME_LENGTH, 1, TID_STRING);
+
+  /* set data dir in ODB */
+  cm_get_path(str);
+  size = sizeof(str);
+  db_get_value(hDB, 0, "/Logger/Data dir", str, &size, TID_STRING);
 
   /* register server to be able to be called by other clients*/
   status = cm_register_server();
@@ -15737,7 +15746,12 @@ char    *buffer;
   ftruncate(fh, TELL(fh));
 #endif
 
+  /* if file length gets zero, delete file */
+  tail_size = lseek(fh, 0, SEEK_END);
   close(fh);
+
+  if (tail_size == 0)
+    remove(file_name);
 
   /* release elog mutex */
   ss_mutex_release(mutex);
