@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.186  2002/02/04 02:41:21  midas
+  Added offset for history display
+
   Revision 1.185  2002/02/04 00:34:12  midas
   Added zoom buttons in history display
 
@@ -6813,7 +6816,7 @@ double s;
 #define MAX_VARS 10
 
 void generate_hist_graph(char *path, char *buffer, int *buffer_size,
-                         int width, int height, int scale, int offset, int index)
+                         int width, int height, int scale, int toffset, int index)
 {
 HNDLE       hDB, hkey, hkeypanel, hkeyeq, hkeydvar, hkeyvars, hkeyroot, hkeynames, hktmp;
 KEY         key;
@@ -6832,7 +6835,7 @@ char        tag_name[MAX_VARS][64], var_name[MAX_VARS][NAME_LENGTH], varname[64]
 DWORD       n_point[MAX_VARS];
 int         x[MAX_VARS][1000];
 float       y[MAX_VARS][1000];
-float       factor[MAX_VARS];
+float       factor[MAX_VARS], offset[MAX_VARS];
 BOOL        logaxis, runmarker;
 float       xmin, xmax, ymin, ymax;
 char        ybuffer[8000];
@@ -7014,9 +7017,19 @@ float       upper_limit[MAX_VARS], lower_limit[MAX_VARS];
       scale = time_to_sec(str);
       }
 
+    for (j=0 ; j<MAX_VARS ; j++)
+      {
+      factor[j] = 1;
+      offset[j] = 0;
+      }
+
     /* get factors */
-    size = sizeof(factor);
+    size = sizeof(float) * n_vars;
     db_get_value(hDB, hkeypanel, "Factor", factor, &size, TID_FLOAT);
+
+    /* get offsets */
+    size = sizeof(float) * n_vars;
+    db_get_value(hDB, hkeypanel, "Offset", offset, &size, TID_FLOAT);
 
     /* get axis type */
     size = sizeof(logaxis);
@@ -7174,13 +7187,13 @@ float       upper_limit[MAX_VARS], lower_limit[MAX_VARS];
             {
             p = strchr(str, '<')+1;
             if (*p == '=') p++;
-            lower_limit[i] = (float) (factor[i]*atof(p));
+            lower_limit[i] = (float) (factor[i]*atof(p)+offset[i]);
             }
           if (strchr(str, '>'))
             {
             p = strchr(str, '>')+1;
             if (*p == '=') p++;
-            upper_limit[i] = (float) (factor[i]*atof(p));
+            upper_limit[i] = (float) (factor[i]*atof(p)+offset[i]);
             }
           }
         }
@@ -7188,7 +7201,7 @@ float       upper_limit[MAX_VARS], lower_limit[MAX_VARS];
 
     bsize = sizeof(ybuffer);
     tsize = sizeof(tbuffer);
-    status = hs_read(event_id, ss_time()-scale+offset, ss_time()+offset, scale/1000,
+    status = hs_read(event_id, ss_time()-scale+toffset, ss_time()+toffset, scale/1000,
                      var_name[i], var_index[i], tbuffer, &tsize, ybuffer, &bsize,
                      &type, &n_point[i]);
 
@@ -7228,8 +7241,8 @@ float       upper_limit[MAX_VARS], lower_limit[MAX_VARS];
           y[i][j] = (float) *(((double *) ybuffer)+j); break;
         }
 
-      /* apply factor */
-      y[i][j] *= factor[i];
+      /* apply factor and offset */
+      y[i][j] *= factor[i] + offset[i];
 
       /* calculate ymin and ymax */
       if ((i == 0 || index != -1) && j == 0)
@@ -7292,8 +7305,8 @@ float       upper_limit[MAX_VARS], lower_limit[MAX_VARS];
     }
 
   /* calculate X limits */
-  xmin = (float) (-scale/3600.0+offset/3600.0);
-  xmax = (float) (offset/3600.0);
+  xmin = (float) (-scale/3600.0+toffset/3600.0);
+  xmax = (float) (toffset/3600.0);
 
   /* caluclate required space for Y-axis */
   aoffset = vaxis(im, gdFontSmall, black, ltgrey, 0, 0, height, -3, -5, -7, -8, 0, ymin, ymax, logaxis);
@@ -7320,7 +7333,7 @@ float       upper_limit[MAX_VARS], lower_limit[MAX_VARS];
 
     /* read run state */
 
-    status = hs_read(0, ss_time()-scale+offset, ss_time()+offset, 0,
+    status = hs_read(0, ss_time()-scale+toffset, ss_time()+toffset, 0,
                      "State", 0, tbuffer, &tsize, ybuffer, &bsize,
                      &type, &n_marker);
 
@@ -7337,7 +7350,7 @@ float       upper_limit[MAX_VARS], lower_limit[MAX_VARS];
 
     /* read run number */
 
-    status = hs_read(0, ss_time()-scale+offset, ss_time()+offset, 0,
+    status = hs_read(0, ss_time()-scale+toffset, ss_time()+toffset, 0,
                      "Run number", 0, tbuffer, &tsize, ybuffer, &bsize,
                      &type, &n_marker);
 
@@ -7462,9 +7475,21 @@ float       upper_limit[MAX_VARS], lower_limit[MAX_VARS];
       continue;
 
     if (factor[i] != 1)
-      sprintf(str, "%s * %1.2lG", strchr(tag_name[i], ':')+1, factor[i]);
+      {
+      if (offset[i] == 0)
+        sprintf(str, "%s * %1.2lG", strchr(tag_name[i], ':')+1, factor[i]);
+      else
+        sprintf(str, "%s * %1.2lG %c %1.5lG", strchr(tag_name[i], ':')+1, 
+          factor[i], offset[i] < 0 ? '-' : '+', fabs(offset[i]));
+      }
     else
-      sprintf(str, "%s", strchr(tag_name[i], ':')+1);
+      {
+      if (offset[i] == 0)
+        sprintf(str, "%s", strchr(tag_name[i], ':')+1);
+      else
+        sprintf(str, "%s %c %1.5lG", strchr(tag_name[i], ':')+1, 
+          offset[i] < 0 ? '-' : '+', fabs(offset[i]));
+      }
 
     row = index == -1 ? i : 0;
 
