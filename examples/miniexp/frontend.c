@@ -11,6 +11,9 @@
                 with one bank (SCLR).
 
   $Log$
+  Revision 1.4  2001/12/17 18:35:35  pierre
+  update for newer version
+
   Revision 1.3  2000/08/21 10:49:11  midas
   Added max_event_size
 
@@ -90,8 +93,8 @@ INT pause_run(INT run_number, char *error);
 INT resume_run(INT run_number, char *error);
 INT frontend_loop();
 
-INT read_trigger_event(char *pevent);
-INT read_scaler_event(char *pevent);
+INT read_trigger_event(char *pevent, INT off);
+INT read_scaler_event(char *pevent, INT off);
 
 /*-- Equipment list ------------------------------------------------*/
 
@@ -114,6 +117,7 @@ EQUIPMENT equipment[] = {
     RO_ODB,               /* and update ODB */ 
     500,                  /* poll for 500ms */
     0,                    /* stop run after this event limit */
+    0,                    /* number of sub events */
     0,                    /* don't log history */
     "", "", "",
     read_trigger_event,   /* readout routine */
@@ -131,6 +135,7 @@ EQUIPMENT equipment[] = {
     RO_ODB,               /* and update ODB */ 
     10000,                /* read every 10 sec */
     0,                    /* stop run after this event limit */
+    0,                    /* number of sub events */
     0,                    /* log history */
     "", "", "",
     read_scaler_event,    /* readout routine */
@@ -290,7 +295,7 @@ INT interrupt_configure(INT cmd, INT source, PTYPE adr)
 
 /*-- Event readout -------------------------------------------------*/
 
-INT read_trigger_event(char *pevent)
+INT read_trigger_event(char *pevent, INT off)
 {
 WORD *pdata, a;
 INT  q, timeout;
@@ -350,7 +355,7 @@ INT  q, timeout;
 
 /*-- Scaler event --------------------------------------------------*/
 
-INT read_scaler_event(char *pevent)
+INT read_scaler_event(char *pevent, INT off)
 {
 DWORD *pdata, a;
 
