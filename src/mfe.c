@@ -7,6 +7,9 @@
                 linked with user code to form a complete frontend
 
   $Log$
+  Revision 1.34  2001/06/27 12:34:49  midas
+  Added -D flag to become a daemon
+
   Revision 1.33  2001/04/06 04:13:40  midas
   Put cm_cleanup() in init code
 
@@ -1608,11 +1611,13 @@ int mfe(char *ahost_name, char *aexp_name, BOOL adebug)
 main(int argc, char *argv[])
 #endif
 {
-INT    status, i, dm_size;
+INT  status, i, dm_size;
+BOOL daemon; 
 
   host_name[0] = 0;
   exp_name[0] = 0;
   debug = FALSE;
+  daemon = FALSE;
 
 #ifdef OS_VXWORKS
   if (ahost_name)
@@ -1630,6 +1635,8 @@ INT    status, i, dm_size;
     {
     if (argv[i][0] == '-' && argv[i][1] == 'd')
       debug = TRUE;
+    else if (argv[i][0] == '-' && argv[i][1] == 'D')
+      daemon = TRUE;
     else if (argv[i][0] == '-')
       {
       if (i+1 >= argc || argv[i+1][0] == '-')
@@ -1694,6 +1701,12 @@ usage:
   printf("System max event size  :     %d\n", MAX_EVENT_SIZE);
   printf("User max event size    :     %d\n", max_event_size);
   printf("# of events per buffer :     %d\n\n", dm_size/max_event_size);
+
+  if (daemon)
+    {
+    printf("\nBecoming a daemon...\n");
+    ss_daemon_init();
+    }
 
   /* now connect to server */
   if (display_period)
