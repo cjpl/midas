@@ -6,6 +6,9 @@
   Contents:     Electronic logbook utility   
 
   $Log$
+  Revision 1.19  2001/11/14 15:35:37  midas
+  Fix error under Cygwin with O_BINARY
+
   Revision 1.18  2001/11/06 15:52:17  midas
   Added general attributes
 
@@ -52,7 +55,9 @@
 #include <unistd.h>
 #include <signal.h>
 #define closesocket(s) close(s)
+#ifndef O_BINARY
 #define O_BINARY 0
+#endif
 #endif
 
 typedef int INT;
