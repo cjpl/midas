@@ -7,8 +7,8 @@
                 through EPICS channel access.
 
   $Log$
-  Revision 1.4  1999/12/20 10:29:44  midas
-  Use new driver directories
+  Revision 1.5  1999/12/21 09:37:00  midas
+  Use new driver names
 
   Revision 1.3  1999/10/08 14:04:45  midas
   Set initial channel number to 10
