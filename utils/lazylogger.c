@@ -6,6 +6,9 @@
   Contents:     Disk to Tape copier for background job
 
   $Log$
+  Revision 1.11  1999/07/01 11:31:19  midas
+  Change lazy_log_update for FTP mode
+
   Revision 1.10  1999/06/30 14:43:00  midas
   Increased str length in lazy_log_updata
 
@@ -148,16 +151,27 @@ INT lazy_log_update(INT action, INT index, INT run, char * label, char * file)
   
   /* log Lazy logger to midas.log only */
   if (action == NEW_FILE)
-    sprintf(str,"%s[%i] %s%s  %9.2e  file  NEW\n"
-	    , label, lazyst.nfiles
-	    ,lazy.path, lazyst.backfile, lazyst.file_size);
+    {
+    if (equal_ustring(lazy.type, "FTP"))
+      sprintf(str, "%s: %s %1.3lfMB file COPIED",
+              label, lazyst.backfile, lazyst.file_size/1024.0);
+    else
+      sprintf(str,"%s[%i] %s%s  %9.2e  file  NEW\n",
+	            label, lazyst.nfiles,
+	            lazy.path, lazyst.backfile, 
+              lazyst.file_size);
+    }
+
   else if (action == REMOVE_FILE)
-    sprintf(str,"%i  %s file  REMOVED\n"
-            , run, file);
+    sprintf(str,"%i  %s file REMOVED",
+            run, file);
+  
   else if (action == REMOVE_ENTRY)
-    sprintf(str,"%s[%i] %i entry REMOVED\n"
-            , label, index,  run);
-  cm_msg(MINFO,"log",str); // fputs (str,pF);
+    sprintf(str,"%s[%i] %i entry REMOVED", 
+            label, index,  run);
+  
+  cm_msg(MINFO, "lazy_log_update", str);
+  
   return 0;
 }
 
@@ -1216,7 +1230,9 @@ int main(unsigned int argc,char **argv)
     }
 
   /* Handle SIGPIPE signals generated from errors on the pipe */
+#ifdef SIGPIPE  
   signal( SIGPIPE, SIG_IGN );
+#endif
   
   /* connect to experiment */
   status = cm_connect_experiment(host_name, expt_name, "LazyLogger", 0);
@@ -1224,10 +1240,10 @@ int main(unsigned int argc,char **argv)
     return 1;
   
   /* turn on keepalive messages with increased timeout */
-  cm_set_watchdog_params(TRUE, 60000);
-#ifdef _DEBUG
-  cm_set_watchdog_params(TRUE, 0);
-#endif
+  if (debug)
+    cm_set_watchdog_params(TRUE, 0);
+  else
+    cm_set_watchdog_params(TRUE, 60000);
   
   cm_get_experiment_database(&hDB, &hKey);
   
