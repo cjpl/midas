@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.27  1999/08/12 14:09:31  midas
+  Changed -f flag from filter ID to "copy original event if analyer accepts it"
+
   Revision 1.26  1999/07/22 07:04:56  midas
   Only dump histos in online mode
 
@@ -161,7 +164,7 @@ struct {
   char  output_file_name[256];
   INT   run_number[2];
   DWORD n[4];
-  INT   filter[10];
+  BOOL  filter;
   char  config_file_name[10][256];
   char  param[10][256];
   BOOL  rwnt;
@@ -213,10 +216,9 @@ struct {
    clp.n, TID_INT, 4 },
 
   {'f', 
-   "<event ID1>     Filter events. Only write events to the output file\n\
-     <event ID2>     if their event ID matches.\n\
-         ...         ", 
-   clp.filter, TID_INT, 10 },
+   "                Filter events. Write original events to output file\n\
+                     only if analyzer accepts them (doesn't return ANA_SKIP).\n",
+   &clp.filter, TID_BOOL, 0 },
 
   {'c', 
    "<filename1>   Configuration file name(s). May contain a '%05d' to be\n\
@@ -1752,69 +1754,81 @@ char           *pdata, *pdata_copy;
 char           buffer[NET_TCP_SIZE], *pbuf;
 EVENT_HEADER   *pevent_copy;
 
-  event_def = db_get_event_definition(pevent->event_id);
-  if (event_def == NULL)
-    return SUCCESS;
   pevent_copy = (EVENT_HEADER *) ALIGN((PTYPE)buffer);
 
-  /*---- MIDAS format ----------------------------------------------*/
-  
-  if (event_def->format == FORMAT_MIDAS)
+  if (clp.filter)
     {
-    /* copy event header */
-    pbuf = (char *) pevent_copy;
-    memcpy(pbuf, pevent, sizeof(EVENT_HEADER));
-    pbuf += sizeof(EVENT_HEADER);
-    bk_init(pbuf);
-
-    pbh = (BANK_HEADER *) (pevent+1);
-    pbk = NULL;
-    pdata_copy = pbuf;
-    do
-      {
-      /* scan all banks */
-      size = bk_iterate(pbh, &pbk, &pdata);
-      if (pbk == NULL)
-        break;
-
-      /* look if bank is in exclude list */
-      exclude = FALSE;
-      pbl = NULL;
-      if (par->bank_list != NULL)
-        for (i=0 ; par->bank_list[i].name[0] ; i++)
-          if ( *((DWORD *) par->bank_list[i].name) == *((DWORD *) pbk->name))
-            {
-            pbl = &par->bank_list[i];
-            exclude = (pbl->output_flag == 0);
-            break;
-            }
-
-      if (!exclude)
-        {
-        /* copy bank */
-        bk_create(pbuf, pbk->name, pbk->type, &pdata_copy);
-        memcpy(pdata_copy, pdata, pbk->data_size);
-        pdata_copy += pbk->data_size;
-        bk_close(pbuf, pdata_copy);
-        }
-
-      } while (1);
-
-    /* set event size in header */
-    size = (PTYPE) pdata_copy  - (PTYPE) pbuf;
-    pevent_copy->data_size = size;
-    size += sizeof(EVENT_HEADER);
-    }
-
-  /*---- FIXED format ----------------------------------------------*/
-  if (event_def->format == FORMAT_FIXED)
-    {
+    /* use original event */
     size = pevent->data_size + sizeof(EVENT_HEADER);
     memcpy(pevent_copy, pevent, size);
     }
+  else
+    {
+    /* copy only banks which are turned on via /analyzer/bank switches */
 
-  if (pevent_copy->data_size == 0)
-    return SUCCESS;
+    /*---- MIDAS format ----------------------------------------------*/
+  
+    event_def = db_get_event_definition(pevent->event_id);
+    if (event_def == NULL)
+      return SUCCESS;
+
+    if (event_def->format == FORMAT_MIDAS)
+      {
+      /* copy event header */
+      pbuf = (char *) pevent_copy;
+      memcpy(pbuf, pevent, sizeof(EVENT_HEADER));
+      pbuf += sizeof(EVENT_HEADER);
+      bk_init(pbuf);
+
+      pbh = (BANK_HEADER *) (pevent+1);
+      pbk = NULL;
+      pdata_copy = pbuf;
+      do
+        {
+        /* scan all banks */
+        size = bk_iterate(pbh, &pbk, &pdata);
+        if (pbk == NULL)
+          break;
+
+        /* look if bank is in exclude list */
+        exclude = FALSE;
+        pbl = NULL;
+        if (par->bank_list != NULL)
+          for (i=0 ; par->bank_list[i].name[0] ; i++)
+            if ( *((DWORD *) par->bank_list[i].name) == *((DWORD *) pbk->name))
+              {
+              pbl = &par->bank_list[i];
+              exclude = (pbl->output_flag == 0);
+              break;
+              }
+
+        if (!exclude)
+          {
+          /* copy bank */
+          bk_create(pbuf, pbk->name, pbk->type, &pdata_copy);
+          memcpy(pdata_copy, pdata, pbk->data_size);
+          pdata_copy += pbk->data_size;
+          bk_close(pbuf, pdata_copy);
+          }
+
+        } while (1);
+
+      /* set event size in header */
+      size = (PTYPE) pdata_copy  - (PTYPE) pbuf;
+      pevent_copy->data_size = size;
+      size += sizeof(EVENT_HEADER);
+      }
+
+    /*---- FIXED format ----------------------------------------------*/
+    if (event_def->format == FORMAT_FIXED)
+      {
+      size = pevent->data_size + sizeof(EVENT_HEADER);
+      memcpy(pevent_copy, pevent, size);
+      }
+
+    if (pevent_copy->data_size == 0)
+      return SUCCESS;
+    }
 
   /* write record to device */
   if (out_gzip)
@@ -2248,6 +2262,7 @@ ANA_MODULE   **module;
 DWORD        actual_time;
 static DWORD last_time_kb = 0;
 EVENT_DEF    *event_def;
+char         orig_event[MAX_EVENT_SIZE+sizeof(EVENT_HEADER)];
 
   /* verbose output */
   if (clp.verbose)
@@ -2265,6 +2280,10 @@ EVENT_DEF    *event_def;
   if (event_def->format == FORMAT_MIDAS)
     bk_swap((BANK_HEADER *) (pevent+1), FALSE);
 
+  /* keep copy of original event */
+  if (clp.filter)
+    memcpy(orig_event, pevent, pevent->data_size+sizeof(EVENT_HEADER));
+  
   /*---- analyze event ----*/
 
   /* call non-modular analyzer if defined */
@@ -2293,34 +2312,27 @@ EVENT_DEF    *event_def;
   /* increment tests */
   test_increment();
 
+  /* in filter mode, use original event */
+  if (clp.filter)
+    pevent = (EVENT_HEADER *) orig_event;
+  
   /* write resulting event */
   if (out_file)
     {
-    /* check if events matches filter */
-    for (i=0 ; i<10 && clp.filter[i] ; i++)
-      if (clp.filter[i] == pevent->event_id)
-        break;
+    if (out_format == FORMAT_HBOOK)
+      status = write_event_hbook(out_file, pevent, par);
+    else if (out_format == FORMAT_ASCII)
+      status = write_event_ascii(out_file, pevent, par);
+    else if (out_format == FORMAT_MIDAS)
+      status = write_event_midas(out_file, pevent, par);
 
-    if (clp.filter[0] == 0 || clp.filter[i] == pevent->event_id)
+    if (status != SUCCESS)
       {
-      if (out_format == FORMAT_HBOOK)
-        status = write_event_hbook(out_file, pevent, par);
-      else if (out_format == FORMAT_ASCII)
-        status = write_event_ascii(out_file, pevent, par);
-      else if (out_format == FORMAT_MIDAS)
-        status = write_event_midas(out_file, pevent, par);
-
-      if (status != SUCCESS)
-        {
-        cm_msg(MERROR, "process_event", "Error writing to file (Disk full?)");
-        return -1;
-        }
-
-      par->events_written++;
+      cm_msg(MERROR, "process_event", "Error writing to file (Disk full?)");
+      return -1;
       }
-    else
-      /* signal rejection of event */
-      return 0;
+
+    par->events_written++;
     }
 
   /* fill shared memory */
