@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.44  1999/09/10 06:11:15  midas
+  Used %100 for year in tms structure
+
   Revision 1.43  1999/08/03 14:41:09  midas
   Lock buffer in bm_skip_event
 
@@ -11975,7 +11978,7 @@ char        file_name[256];
   tms = localtime((const time_t *)&ltime);
 
   sprintf(file_name, "%s%02d%02d%02d.%s", _hs_path_name, 
-          tms->tm_year, tms->tm_mon+1, tms->tm_mday, suffix);
+          tms->tm_year % 100, tms->tm_mon+1, tms->tm_mday, suffix);
 
   /* open file, add O_BINARY flag for Windows NT */
   *fh = open(file_name, mode | O_BINARY, 0644);
