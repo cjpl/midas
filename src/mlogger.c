@@ -6,6 +6,9 @@
   Contents:     MIDAS logger program
 
   $Log$
+  Revision 1.82  2004/09/22 03:28:52  midas
+  Use link name for SQL db instead of link target name
+
   Revision 1.81  2004/09/21 23:05:37  midas
   Add mySQL column if missing
 
@@ -558,16 +561,20 @@ KEY   key;
 
 BOOL sql_modify_table(MYSQL *db, char *database, char *table, HNDLE hKeyRoot)
 {
-char  str[256], data[256], query[5000], type[256], prev_name[NAME_LENGTH];
+char  str[256], data[256], query[5000], type[256], prev_name[NAME_LENGTH],
+         key_name[NAME_LENGTH];
 int   status, i, size;
 HNDLE hKey;
 KEY   key;
 
    for (i=0 ; ; i++) {
-      status = db_enum_key(hDB, hKeyRoot, i, &hKey);
+      status = db_enum_link(hDB, hKeyRoot, i, &hKey);
       if (status == DB_NO_MORE_SUBKEYS)
          break;
 
+      db_get_key(hDB, hKey, &key);
+      strcpy(key_name, key.name);
+      db_enum_key(hDB, hKeyRoot, i, &hKey);
       db_get_key(hDB, hKey, &key);
 
       /* map TID_xxx to mySQL types */
@@ -596,7 +603,7 @@ KEY   key;
             case TID_DOUBLE: strcpy(type, "DOUBLE "); break;
             default: 
                cm_msg(MERROR, "sql_create_database", "No SQL type mapping for key \"%s\" of type %s", 
-                  key.name, rpc_tid_name(key.type));
+                  key_name, rpc_tid_name(key.type));
          }
       }
 
@@ -605,15 +612,15 @@ KEY   key;
       else
          sprintf(type+strlen(type), "AFTER `%s`", prev_name);
 
-      strcpy(prev_name, key.name);
+      strcpy(prev_name, key_name);
 
       /* try to add column */
-      sprintf(query, "ALTER TABLE `%s`.`%s` ADD `%s` %s", database, table, key.name, type);
+      sprintf(query, "ALTER TABLE `%s`.`%s` ADD `%s` %s", database, table, key_name, type);
       if (mysql_query(db, query)) {
          if (mysql_errno(db) == ER_DUP_FIELDNAME) {
 
             /* try to modify column */
-            sprintf(query, "ALTER TABLE `%s`.`%s` MODIFY `%s` %s", database, table, key.name, type);
+            sprintf(query, "ALTER TABLE `%s`.`%s` MODIFY `%s` %s", database, table, key_name, type);
             if (mysql_query(db, query)) {
                cm_msg(MERROR, "sql_modify_table", "Failed to modify column: Error: %s",              
                      mysql_error(db));
@@ -677,7 +684,7 @@ KEY   key;
    sprintf(query, "INSERT INTO `%s`.`%s` (", database, table);
    
    for (i=0 ; ; i++) {
-      status = db_enum_key(hDB, hKeyRoot, i, &hKey);
+      status = db_enum_link(hDB, hKeyRoot, i, &hKey);
       if (status == DB_NO_MORE_SUBKEYS)
          break;
 
@@ -726,13 +733,14 @@ KEY   key;
          sprintf(query, "UPDATE `%s`.`%s` SET ", database, table);
 
          for (i=0 ; ; i++) {
-            status = db_enum_key(hDB, hKeyRoot, i, &hKey);
+            status = db_enum_link(hDB, hKeyRoot, i, &hKey);
             if (status == DB_NO_MORE_SUBKEYS)
                break;
 
             db_get_key(hDB, hKey, &key);
             sprintf(query+strlen(query), "`%s`=", key.name);
 
+            db_enum_key(hDB, hKeyRoot, i, &hKey);
             size = sizeof(data);
             db_get_data(hDB, hKey, data, &size, key.type);
             db_sprintf(str, data, size, 0, key.type);
@@ -745,10 +753,11 @@ KEY   key;
          }
          query[strlen(query)-2] = 0; // strip last ','
          
-         db_enum_key(hDB, hKeyRoot, 0, &hKey);
+         db_enum_link(hDB, hKeyRoot, 0, &hKey);
          db_get_key(hDB, hKey, &key);
          sprintf(query+strlen(query), " where `%s`=", key.name);
 
+         db_enum_key(hDB, hKeyRoot, 0, &hKey);
          size = sizeof(data);
          db_get_data(hDB, hKey, data, &size, key.type);
          db_sprintf(str, data, size, 0, key.type);
