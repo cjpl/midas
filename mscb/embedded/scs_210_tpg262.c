@@ -10,6 +10,9 @@
                 Pfeiffer Dual Gauge TPG262 vacuum sensor
 
   $Log$
+  Revision 1.13  2004/12/13 11:13:43  midas
+  Modified terminal mode
+
   Revision 1.12  2004/09/25 01:14:54  midas
   Started implementing slave port on SCS-1000
 
@@ -60,7 +63,8 @@ char code node_name[] = "TPG262";
 /* declare number of sub-addresses to framework */
 unsigned char idata _n_sub_addr = 1;
 
-bit terminal_mode;
+bit flush_flag;
+static unsigned long last_read = 0;
 
 /*---- Define variable parameters returned to CMD_GET_INFO command ----*/
 
@@ -97,7 +101,7 @@ void user_init(unsigned char init)
 {
    /* initialize UART1 */
    if (init)
-      user_data.baud = 1;       // 9600 by default
+      user_data.baud = BD_9600;   // 9600 by default
 
    uart_init(1, user_data.baud);
 }
@@ -114,15 +118,14 @@ void user_write(unsigned char index) reentrant
    unsigned char i, n;
 
    if (index == 0) {
-      if (in_buf[2] == 27)
-         terminal_mode = 0;
-      else if (in_buf[2] == 0)
-         terminal_mode = 1;
-      else {
-         n = (in_buf[0] & 0x07) - 1;
-         for (i = 0; i < n; i++)
-            putchar(in_buf[i + 2]);
-      }
+      /* prevent reads for 1s */
+      last_read = time();
+
+      /* send characters */
+      n = in_buf[1]-1;
+      for (i = 0; i < n; i++)
+         putchar(in_buf[3 + i]);
+      flush_flag = 1;
    }
 
    if (index == 3)
@@ -133,14 +136,22 @@ void user_write(unsigned char index) reentrant
 
 unsigned char user_read(unsigned char index)
 {
-   char c;
+   char c, n;
 
    if (index == 0) {
-      c = getchar_nowait();
-      if (c != -1) {
-         out_buf[1] = c;
-         return 1;
+
+      /* prevent pump reads for 1s */
+      last_read = time();
+
+      for (n=0 ; n<32 ; n++) {
+         c = getchar_nowait();
+         if (c == -1)
+            break;
+
+         /* put character directly in return buffer */
+         out_buf[2 + n] = c;
       }
+      return n;
    }
 
    return 0;
@@ -164,8 +175,15 @@ void user_loop(void)
    char idata str[32];
    unsigned char i;
 
-   if (!terminal_mode) {
-      /*
+   if (flush_flag) {
+      flush_flag = 0;
+      flush();
+   }
+
+   /* read parameters once each second */
+   if (time() > last_read + 100) {
+      last_read = time();
+
       i = gets_wait(str, sizeof(str), 200);
 
       if (i == 0) {
@@ -176,9 +194,5 @@ void user_loop(void)
          user_data.p1 = atof(str + 2);
          user_data.p2 = atof(str + 16);
       }
-      */
-      user_data.p1 += 1;
-      if (user_data.p1 > 100)
-         user_data.p1 = 0;
    }
 }

@@ -10,6 +10,9 @@
                 Turbomolecular Pump with TC600 Electronics
 
   $Log$
+  Revision 1.11  2004/12/13 11:13:43  midas
+  Modified terminal mode
+
   Revision 1.10  2004/07/30 10:22:03  midas
   Added MSCBF_DATALESS
 
@@ -52,7 +55,8 @@ char code node_name[] = "TC600";
 /* declare number of sub-addresses to framework */
 unsigned char idata _n_sub_addr = 1;
 
-bit terminal_mode;
+bit flush_flag;
+static unsigned long last_read = 0;
 
 unsigned char tc600_write(unsigned short param, unsigned char len, unsigned long value);
 
@@ -98,7 +102,7 @@ void user_init(unsigned char init)
 {
    /* initialize UART1 */
    if (init) {
-      user_data.baud = 1;       // 9600 by default
+      user_data.baud = BD_9600;  // 9600 by default
       user_data.address = 1;
    }
 
@@ -116,7 +120,7 @@ void user_init(unsigned char init)
 /*---- User write function -----------------------------------------*/
 
 /* buffers in mscbmain.c */
-extern unsigned char xdata in_buf[300], out_buf[300];
+extern unsigned char xdata in_buf[64], out_buf[64];
 
 #pragma NOAREGS
 
@@ -125,15 +129,14 @@ void user_write(unsigned char index) reentrant
    unsigned char i, n;
 
    if (index == 0) {
-      if (in_buf[2] == 27)
-         terminal_mode = 0;
-      else if (in_buf[2] == 0)
-         terminal_mode = 1;
-      else {
-         n = (in_buf[0] & 0x07) - 1;
-         for (i = 0; i < n; i++)
-            putchar(in_buf[i + 2]);
-      }
+      /* prevent reads for 1s */
+      last_read = time();
+
+      /* send characters */
+      n = in_buf[1]-1;
+      for (i = 0; i < n; i++)
+         putchar(in_buf[3 + i]);
+      flush_flag = 1;
    }
 
    if (index == 5)
@@ -144,14 +147,22 @@ void user_write(unsigned char index) reentrant
 
 unsigned char user_read(unsigned char index)
 {
-   char c;
+   char c, n;
 
    if (index == 0) {
-      c = getchar_nowait();
-      if (c != -1) {
-         out_buf[1] = c;
-         return 1;
+
+      /* prevent pump reads for 1s */
+      last_read = time();
+
+      for (n=0 ; n<32 ; n++) {
+         c = getchar_nowait();
+         if (c == -1)
+            break;
+
+         /* put character directly in return buffer */
+         out_buf[2 + n] = c;
       }
+      return n;
    }
 
    return 0;
@@ -224,12 +235,17 @@ unsigned char tc600_write(unsigned short param, unsigned char len, unsigned long
 void user_loop(void)
 {
    char idata str[32];
-   static unsigned long last = 0;
    static char pump_on_last = -1;
    static char vent_on_last = -1;
 
-   if (!terminal_mode && time() > last + 100) {
-      last = time();
+   if (flush_flag) {
+      flush_flag = 0;
+      flush();
+   }
+
+   /* read parameters once each second */
+   if (time() > last_read + 100) {
+      last_read = time();
 
       if (user_data.pump_on != pump_on_last) {
          tc600_write(10, 6, user_data.pump_on ? 111111 : 0);
