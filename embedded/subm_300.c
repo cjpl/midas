@@ -7,6 +7,9 @@
                 SUBM300 running on Cygnal C8051F021
 
   $Log$
+  Revision 1.14  2004/05/12 13:18:36  midas
+  *** empty log message ***
+
   Revision 1.13  2004/03/04 14:33:54  midas
   Fixed wrong LED index
 
@@ -134,11 +137,8 @@ void setup(void)
    LPT_BIT9 = 1;
 
    /* Blink LEDs */
-   LED = LED_OFF;
-   LED_SEC = LED_OFF;
-
-   led_blink(0, 5, 150);
-   led_blink(1, 5, 150);
+   led_blink(0, 2, 150);
+   led_blink(1, 2, 150);
 
    /* invert second LED */
    led_mode(2, 1);
