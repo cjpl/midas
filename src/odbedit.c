@@ -6,6 +6,9 @@
   Contents:     Command-line interface to the MIDAS online data base.
 
   $Log$
+  Revision 1.13  1999/02/18 11:16:40  midas
+  Added wildcard matching in "ls" and "set" commands
+
   Revision 1.12  1999/01/13 09:40:49  midas
   Added db_set_data_index2 function
 
@@ -48,6 +51,16 @@ static char data[5000];
 static char data[50000];
 #endif
 
+typedef struct {
+  int flags;
+  char pattern[32];
+} PRINT_INFO;
+
+#define PI_LONG      (1<<0)
+#define PI_RECURSIVE (1<<1)
+#define PI_VALUE     (1<<2)
+#define PI_HEX       (1<<3)
+
 /*------------------------------------------------------------------*/
 
 float test_array[1024];
@@ -77,13 +90,13 @@ void print_help(char *command)
     printf("  -l                      follow links\n");
     printf("  -f                      force deletion without asking\n");
     printf("exec <key>/<cmd>        - execute shell command (stored in key) on server\n");
-    printf("find <key>              - find a key\n");
+    printf("find <pattern>          - find a key with wildcard pattern\n");
     printf("help/? [command]        - print this help [for a specific command]\n");
     printf("hi [analyzer] [id]      - tell analyzer to clear histos\n");
     printf("ln <source> <linkname>  - create a link to <source> key\n");
     printf("load <file>             - load database from .ODB file at current position\n");
     printf("-- hit return for more --\r"); getchar();
-    printf("ls/dir [-l][-h][-v][-r] - show database entries\n");
+    printf("ls/dir [-lhvr] [<pat>]  - show database entries which match pattern\n");
     printf("  -l                      detailed info\n");
     printf("  -h                      hex format\n");
     printf("  -v                      only value\n");
@@ -168,6 +181,209 @@ int print_message(const char *msg)
 
   need_redraw = TRUE;
   return 0;
+}
+
+/*------------------------------------------------------------------*/
+
+BOOL match(char *pat, char *str)
+/* process a wildcard match */
+{    
+  if (!*str)
+    return *pat == '*' ? match (pat+1, str) : !*pat;    
+
+  switch (*pat)    
+    {
+    case '\0': 
+      return 0;
+    case '*' : 
+      return match(pat+1, str) || match(pat, str+1);
+    case '?' : 
+      return match(pat+1, str+1);
+    default  : 
+      return (toupper(*pat) == toupper(*str)) && match(pat+1, str+1);    
+    }
+}
+
+/*------------------------------------------------------------------*/
+
+void print_key(HNDLE hDB, HNDLE hKey, KEY *key, INT level, void *info)
+{
+INT         i, size, status;
+static char data_str[256], line[256];
+DWORD       delta;
+PRINT_INFO  *pi;
+
+  pi = (PRINT_INFO *) info;
+
+  /* if pattern set, check if match */
+  if (pi->pattern[0] &&
+      !match(pi->pattern, key->name))
+    return;
+  
+  size = sizeof(data);
+  if (pi->flags & PI_VALUE)
+    {
+    /* only print value */
+    if (key->type != TID_KEY)
+      {
+      status = db_get_data(hDB, hKey, data, &size, key->type);
+      if (status == DB_NO_ACCESS)
+        strcpy(data_str, "<no read access>");
+      else
+        for (i=0 ; i<key->num_values ; i++)
+          {
+          if (pi->flags & PI_HEX)
+            db_sprintfh(data_str, data, key->item_size, i, key->type);
+          else
+            db_sprintf(data_str, data, key->item_size, i, key->type);
+          printf("%s\n", data_str);
+          }
+      }
+    }
+  else
+    {
+    /* print key name with value */
+    memset(line, ' ', 80);
+    line[80] = 0;
+    sprintf(line + level*4, "%s", key->name);
+    line[strlen(line)] = ' ';
+
+    if (key->type == TID_KEY)
+      {
+      if (pi->flags & PI_LONG)
+        sprintf(line+32, "DIR"); 
+      else
+        line[32] = 0;
+      printf("%s\n", line);
+      }
+    else
+      {
+      status = db_get_data(hDB, hKey, data, &size, key->type);
+      if (status == DB_NO_ACCESS)
+        strcpy(data_str, "<no read access>");
+      else
+        {
+        if (pi->flags & PI_HEX)
+          db_sprintfh(data_str, data, key->item_size, 0, key->type);
+        else
+          db_sprintf(data_str, data, key->item_size, 0, key->type);
+        }
+
+      if (pi->flags & PI_LONG)
+        {
+        sprintf(line+32, "%s", rpc_tid_name(key->type));
+        line[strlen(line)] = ' ';
+        sprintf(line+40, "%ld", key->num_values);
+        line[strlen(line)] = ' ';
+        sprintf(line+46, "%ld", key->item_size);
+        line[strlen(line)] = ' ';
+
+        db_get_key_time(hDB, hKey, &delta);
+        if (delta < 60)
+          sprintf(line+52, "%ds", delta);
+        else if (delta < 3600)
+          sprintf(line+52, "%1.0lfm", delta/60.0);
+        else if (delta < 86400)
+          sprintf(line+52, "%1.0lfh", delta/3600.0);
+        else if (delta < 86400*99)
+          sprintf(line+52, "%1.0lfh", delta/86400.0);
+        else
+          sprintf(line+52, ">99d");
+        line[strlen(line)] = ' ';
+
+        sprintf(line+57, "%d", key->notify_count);
+        line[strlen(line)] = ' ';
+
+        if (key->access_mode & MODE_READ)
+          line[61] = 'R';
+        if (key->access_mode & MODE_WRITE)
+          line[62] = 'W';
+        if (key->access_mode & MODE_DELETE)
+          line[63] = 'D';
+        if (key->access_mode & MODE_EXCLUSIVE)
+          line[64] = 'E';
+
+        if (key->num_values == 1)
+          strcpy(line+66, data_str);
+        else
+          line[66] = 0;
+        }
+      else
+        if (key->num_values == 1)
+          strcpy(line+32, data_str);
+        else
+          line[32] = 0;
+
+      printf("%s\n", line);
+    
+      if (key->num_values > 1)
+        {
+        for (i=0 ; i<key->num_values ; i++)
+          {
+          if (pi->flags & PI_HEX)
+            db_sprintfh(data_str, data, key->item_size, i, key->type);
+          else
+            db_sprintf(data_str, data, key->item_size, i, key->type);
+
+          memset(line, ' ', 80);
+          line[80] = 0;
+
+          if (pi->flags & PI_LONG)
+            {
+            sprintf(line+40, "[%ld]", i);
+            line[strlen(line)] = ' ';
+
+            strcpy(line+56, data_str);
+            }
+          else
+            strcpy(line+32, data_str);
+
+          printf("%s\n", line);
+          }
+        }
+      }
+    }
+}
+
+/*------------------------------------------------------------------*/
+
+void set_key(HNDLE hDB, HNDLE hKey, int index1, int index2, char *value)
+{
+KEY  key;
+char data[1000];
+int  i, size, status;
+
+  db_get_key(hDB, hKey, &key);
+
+  memset(data, 0, sizeof(data));
+  db_sscanf(value, data, &size, 0, key.type);
+
+  /* extend data size for single string if necessary */
+  if ((key.type == TID_STRING || key.type == TID_LINK) 
+        && (int) strlen(data)+1 > key.item_size &&
+      key.num_values == 1)
+    key.item_size = strlen(data)+1;
+
+  if (key.item_size == 0)
+    key.item_size = rpc_tid_size(key.type);
+
+  if (key.num_values > 1 && index1 == -1)
+    {
+    for (i=0 ; i<key.num_values ; i++)
+      status = db_set_data_index(hDB, hKey, data, key.item_size, i, key.type);
+    }
+  else if (key.num_values > 1 && index2>index1)
+    {
+    for (i=index1 ; i<key.num_values && i<=index2; i++)
+      status = db_set_data_index(hDB, hKey, data, key.item_size, i, key.type);
+    }
+  else if (key.num_values > 1 || index1 > 0)
+    status = db_set_data_index(hDB, hKey, data, key.item_size, index1, key.type);
+  else
+    status = db_set_data(hDB, hKey, data, key.item_size, 1, key.type);
+
+  if (status == DB_NO_ACCESS)
+    printf("Write access not allowed\n");
 }
 
 /*------------------------------------------------------------------*/
@@ -481,7 +697,12 @@ BOOL  blanks, mismatch;
           }
 
         if (key.type != TID_KEY)
-          strcat(pc, " ");
+          {
+          if (key_name[0] == '"' && key_name[strlen(key_name)-1] != '"')
+            strcat(pc, "\" ");
+          else
+            strcat(pc, " ");
+          }
 
         strcpy(line, head);
         strcat(line, key_name);
@@ -562,7 +783,7 @@ BOOL  blanks, mismatch;
     }
 
   /* beep if not found */
-  printf("%c", 7);
+  printf("\007");
 
   strcpy(line, head);
   strcat(line, key_name);
@@ -573,22 +794,16 @@ BOOL  blanks, mismatch;
 
 /*------------------------------------------------------------------*/
 
-void search_key(HNDLE hDB, HNDLE hKey, KEY *key, void *info)
+void search_key(HNDLE hDB, HNDLE hKey, KEY *key, INT level, void *info)
 {
 INT         i, size, status;
-char        *key_name;
+char        *pattern;
 static char data_str[MAX_ODB_PATH], line[MAX_ODB_PATH];
-static char str1[MAX_ODB_PATH], str2[MAX_ODB_PATH];
 char        path[MAX_ODB_PATH];
 
-  key_name = (char *) info;
+  pattern = (char *) info;
 
-  for (i=0 ; key->name[i] ; i++)
-    str1[i] = toupper(key->name[i]);
-  for (i=0 ; key->name[i] ; i++)
-    str2[i] = toupper(key_name[i]);
-
-  if (strstr(str1, str2) != NULL)
+  if (match(pattern, key->name))
     {
     db_get_path(hDB, hKey, path, MAX_ODB_PATH);
     strcpy(line, path);
@@ -986,12 +1201,12 @@ INT             nparam, flags, index1, index2;
 WORD            mode;
 HNDLE           hDB, hKey, hKeyClient, hSubkey, hRootKey;
 KEY             key;
-INT             total_size_key, total_size_data;
 char            user_name[80] = "";
 FILE            *cmd_file = NULL;
 DWORD           last_msg_time=0;
 char            message[256], client_name[256];
 INT             n1, n2;
+PRINT_INFO      print_info;
 
   cm_get_experiment_database(&hDB, &hKeyClient);
   
@@ -1103,65 +1318,74 @@ INT             n1, n2;
              (param[0][0] == 'd' && param[0][1] == 'i'))
       {
       db_find_key(hDB, 0, pwd, &hKey);
-      flags = 0;
+      print_info.flags = 0;
+      print_info.pattern[0] = 0;
 
       /* parse options */
       for (i=1 ; i<4 ; i++)
         if (param[i][0] == '-')
           {
-          if (param[i][1] == 'l')
-            flags |= 0x1;
-          if (param[i][1] == 'r')
-            flags |= 0x2;
-          if (param[i][1] == 'v')
-            flags |= 0x4;
-          if (param[i][1] == 'h')
-            flags |= 0x8;
+          for (j=1 ; param[i][j] != ' ' && param[i][j] ; j++)
+            {
+            if (param[i][j] == 'l')
+              print_info.flags |= PI_LONG;
+            if (param[i][j] == 'r')
+              print_info.flags |= PI_RECURSIVE;
+            if (param[i][j] == 'v')
+              print_info.flags |= PI_VALUE;
+            if (param[i][j] == 'h')
+              print_info.flags |= PI_HEX;
+            }
           }
 
       for (i=1 ; param[i][0] == '-' ; i++);
 
       if (param[i][0])
         {
-        if (param[i][0] == '/')
-          status = db_find_key(hDB, 0, param[i], &hKey);
+        if (strpbrk(param[i], "*?") != NULL)
+          {
+          /* if parameter contains wildcards, set pattern */
+          strcpy(print_info.pattern, param[i]);
+          }
         else
-          status = db_find_key(hDB, hKey, param[i], &hKey);
+          {
+          if (param[i][0] == '/')
+            status = db_find_key(hDB, 0, param[i], &hKey);
+          else
+            status = db_find_key(hDB, hKey, param[i], &hKey);
 
-        if (status != DB_SUCCESS)
-          printf("key %s not found\n", param[i]);
+          if (status != DB_SUCCESS)
+            printf("key %s not found\n", param[i]);
+          }
         }
 
       if (hKey)
         {
-        total_size_key = ALIGN(sizeof(KEY))+ALIGN(sizeof(KEYLIST));
-        total_size_data = 0;
-
-        if ((flags & 0x1) && (flags & 0x4)==0)
+        if ((print_info.flags & PI_LONG) && (print_info.flags & PI_VALUE)==0)
           {
           printf("Key name                        Type    #Val  Size  Last Opn Mode Value\n");
           printf("---------------------------------------------------------------------------\n");
           }
 
-        db_get_key(hDB, hKey, &key);
-        if (key.type == TID_KEY)
-          {
-          for (i=0 ; ; i++)
-            {
-            db_enum_link(hDB, hKey, i, &hSubkey);
-
-            if (!hSubkey)
-              break;
-
-            scan_tree(hDB, hSubkey, &total_size_key, &total_size_data, 0, flags);
-            }
-          }
+        if (print_info.flags & PI_RECURSIVE)
+          db_scan_tree(hDB, hKey, 0, print_key, &print_info);
         else
-          scan_tree(hDB, hKey, &total_size_key, &total_size_data, 0, flags);
+          {
+          db_get_key(hDB, hKey, &key);
+          if (key.type != TID_KEY)
+            print_key(hDB, hKey, &key, 0, &print_info);
+          else
+            for (i=0 ; ; i++)
+              {
+              db_enum_link(hDB, hKey, i, &hSubkey);
 
-        if (flags & 0x1)
-          printf("\nTotal size: %1d keylist, %01d data\n", 
-                  total_size_key, total_size_data);
+              if (!hSubkey)
+                break;
+
+              db_get_key(hDB, hSubkey, &key);
+              print_key(hDB, hSubkey, &key, 0, &print_info);
+              }
+          }
         }
       }
 
@@ -1357,10 +1581,9 @@ INT             n1, n2;
     /* set */
     else if (param[0][0] == 's' && param[0][1] == 'e')
       {
-      compose_name(pwd, param[1], str);
-
       /* check if index is supplied */
       index1 = index2 = 0;
+      strcpy(str, param[1]);
       if (str[strlen(str)-1] == ']')
         {
         if (strchr(str, '['))
@@ -1383,44 +1606,32 @@ INT             n1, n2;
         *strchr(str, '[') = 0;
         }
 
-      status = db_find_key(hDB, 0, str, &hKey);
-      if (status == DB_SUCCESS)
+      if (strpbrk(str, "*?") != NULL)
         {
-        db_get_key(hDB, hKey, &key);
-
-        memset(data, 0, sizeof(data));
-        db_sscanf(param[2], data, &size, 0, key.type);
-
-        /* extend data size for single string if necessary */
-        if ((key.type == TID_STRING || key.type == TID_LINK) 
-              && (int) strlen(data)+1 > key.item_size &&
-            key.num_values == 1)
-          key.item_size = strlen(data)+1;
-
-        if (key.item_size == 0)
-          key.item_size = rpc_tid_size(key.type);
-
-        if (key.num_values > 1 && index1 == -1)
+        db_find_key(hDB, 0, pwd, &hKey);
+        for (i=0 ; ; i++)
           {
-          for (i=0 ; i<key.num_values ; i++)
-            status = db_set_data_index(hDB, hKey, data, key.item_size, i, key.type);
-          }
-        else if (key.num_values > 1 && index2>index1)
-          {
-          for (i=index1 ; i<key.num_values && i<=index2; i++)
-            status = db_set_data_index(hDB, hKey, data, key.item_size, i, key.type);
-          }
-        else if (key.num_values > 1 || index1 > 0)
-          status = db_set_data_index(hDB, hKey, data, key.item_size, index1, key.type);
-        else
-          status = db_set_data(hDB, hKey, data, key.item_size, 1, key.type);
+          db_enum_link(hDB, hKey, i, &hSubkey);
 
-        if (status == DB_NO_ACCESS)
-          printf("Write access not allowed\n");
+          if (!hSubkey)
+            break;
+
+          db_get_key(hDB, hSubkey, &key);
+          if (match(str, key.name))
+            set_key(hDB, hSubkey, index1, index2, param[2]);
+          }
         }
       else
         {
-        printf("key not found\n");
+        compose_name(pwd, str, name);
+
+        status = db_find_key(hDB, 0, name, &hKey);
+        if (status == DB_SUCCESS)
+          set_key(hDB, hKey, index1, index2, param[2]);
+        else
+          {
+          printf("key not found\n");
+          }
         }
       }
 
@@ -1531,7 +1742,7 @@ INT             n1, n2;
       status = db_find_key(hDB, 0, pwd, &hKey);
 
       if (status == DB_SUCCESS)
-        db_scan_tree(hDB, hKey, search_key, (void *) param[1]);
+        db_scan_tree(hDB, hKey, 0, search_key, (void *) param[1]);
       else
         printf("current key is invalid / no read access\n");
       }
