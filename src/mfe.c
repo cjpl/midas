@@ -7,6 +7,9 @@
                 linked with user code to form a complete frontend
 
   $Log$
+  Revision 1.30  2000/11/06 10:10:23  midas
+  Flush events for set-ups with only non-periodic events
+
   Revision 1.29  2000/10/23 14:19:06  midas
   Added idle period for slow control equipment
 
@@ -258,7 +261,7 @@ INT i, status;
 
 INT tr_prestop(INT rn, char *error)
 {
-INT status;
+INT status, i;
 
   /* disable interrupts */
   interrupt_enable(FALSE);
@@ -279,6 +282,11 @@ INT status;
     }
   else
     interrupt_enable(TRUE);
+
+  /* flush remaining buffered events */
+  for (i=0 ; equipment[i].name[0] ; i++)
+    if (equipment[i].buffer_handle)
+      bm_flush_cache(equipment[i].buffer_handle, SYNC);
 
   return status;
 }
@@ -738,7 +746,7 @@ INT            i;
       {
       if (pevent->data_size+sizeof(EVENT_HEADER) > (DWORD) max_event_size)
         {
-        cm_msg(MERROR, "send_all_periodic_events", "Event size %d larger than maximum size %d",
+        cm_msg(MERROR, "send_event", "Event size %d larger than maximum size %d",
                pevent->data_size+sizeof(EVENT_HEADER), max_event_size);
         return;
         }
@@ -780,7 +788,7 @@ INT            i;
   {
   INT status;
   if ((status = dm_area_flush()) != CM_SUCCESS)
-    cm_msg(MERROR,"send_all_periodic_events","dm_area_flush: %i", status);
+    cm_msg(MERROR,"send_event","dm_area_flush: %i", status);
   }
 #endif
 
