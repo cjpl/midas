@@ -6,6 +6,9 @@
   Contents:     Broadcast program for COBRA magnet
 
   $Log$
+  Revision 1.3  2005/03/17 14:20:09  ritt
+  Changed host_name
+
   Revision 1.2  2005/03/17 11:19:24  ritt
   Changed indentation
 
@@ -24,7 +27,7 @@
 
 #define TELNET_PORT       23
 
-char *host_name = "MSCB001";    // used for DHCP
+char host_name[] = "MSCB001";    // used for DHCP
 
 /* set MAC address for first PSI address by default */
 unsigned char eth_src_hw_addr[ETH_ADDR_LEN] = { 0x00, 0x50, 0xC2, 0x46, 0xD0, 0x00 };
