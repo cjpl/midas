@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.196  2002/05/08 16:39:25  midas
+  Fixed problem with '+' in key names
+
   Revision 1.195  2002/05/07 22:41:23  midas
   Disabled lingering
 
@@ -911,7 +914,7 @@ char *pd, *p, str[256];
   p  = ps;
   while (*p)
     {
-    if (strchr(" %&=", *p))
+    if (strchr(" %&=+", *p))
       {
       sprintf(pd, "%%%02X", *p);
       pd += 3;
@@ -8473,7 +8476,7 @@ struct tm *gmt;
   /* encode path for further usage */
   strcpy(dec_path, path);
   urlDecode(dec_path);
-  urlDecode(dec_path); /* necessary for %2520 -> %20 -> ' ' */
+  // ##urlDecode(dec_path); /* necessary for %2520 -> %20 -> ' ' */
   strcpy(enc_path, dec_path);
   urlEncode(enc_path);
 
