@@ -8,6 +8,9 @@
                 (http://www1.psi.ch/~rohrer/secblctl.htm)
 
   $Log$
+  Revision 1.2  1999/11/11 10:41:44  midas
+  Fixed compiler warning
+
   Revision 1.1  1999/11/11 10:30:02  midas
   Added files
 
@@ -252,9 +255,9 @@ static DWORD last_update;
     status = atoi(str+i);
 
     if ((status & info->bb_psi_settings.stat_open) > 0)
-      info->open = 1;
+      info->open = 1.f;
     else if ((status & info->bb_psi_settings.stat_closed) > 0)
-      info->open = 0;
+      info->open = 0.f;
     else
       info->open = 0.5f;
 
