@@ -6,6 +6,9 @@
   Contents:     C macros for writing a MIDAS frontend
 
   $Log$
+  Revision 1.3  2000/08/21 10:49:11  midas
+  Added max_event_size
+
   Revision 1.2  1998/10/12 12:18:59  midas
   Added Log tag in header
 
@@ -21,7 +24,8 @@
 /*-- Globals -------------------------------------------------------*/
 
 BOOL frontend_call_loop = FALSE;
-INT event_buffer_size = DEFAULT_EVENT_BUFFER_SIZE;
+INT max_event_size = 10000;
+INT event_buffer_size = 10*10000;
 HNDLE hdb;
 INT _crate=0;
 

@@ -11,6 +11,9 @@
                 with one bank (SCLR).
 
   $Log$
+  Revision 1.3  2000/08/21 10:49:11  midas
+  Added max_event_size
+
   Revision 1.2  1999/02/24 16:26:46  midas
   Added some "real" readout code
 
@@ -59,8 +62,11 @@ BOOL frontend_call_loop = FALSE;
 /* a frontend status page is displayed with this frequency in ms */
 INT display_period = 3000;
 
+/* maximum event size produced by this frontend */
+INT max_event_size = 10000;
+
 /* buffer size to hold events */
-INT event_buffer_size = DEFAULT_EVENT_BUFFER_SIZE;
+INT event_buffer_size = 10*10000;
 
 /* number of channels */
 #define N_ADC  8  
