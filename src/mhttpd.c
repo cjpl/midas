@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.107  2000/04/03 12:26:48  midas
+  Added ODB attachments
+
   Revision 1.106  2000/03/29 09:14:02  midas
   Increased parameter name length to 256
 
@@ -1436,6 +1439,27 @@ int i;
 
 /*------------------------------------------------------------------*/
 
+void strencode2(char *b, char *text)
+{
+int i;
+
+  for (i=0 ; i<(int) strlen(text) ; b++,i++)
+    {
+    switch (text[i])
+      {
+      case '\n': sprintf(b, "<br>\n"); break;
+      case '<': sprintf(b, "&lt;"); break;
+      case '>': sprintf(b, "&gt;"); break;
+      case '&': sprintf(b, "&amp;"); break;
+      case '\"': sprintf(b, "&quot;"); break;
+      default: sprintf(b, "%c", text[i]);
+      }
+    }
+  *b = 0;
+}
+
+/*------------------------------------------------------------------*/
+
 void el_format(char *text, char *encoding)
 {
   if (equal_ustring(encoding, "HTML"))
@@ -1444,7 +1468,7 @@ void el_format(char *text, char *encoding)
     strencode(text);
 }
 
-void show_elog_new(char *path, BOOL bedit)
+void show_elog_new(char *path, BOOL bedit, char *odb_att)
 {
 int    i, size, run_number, wrap;
 char   str[256], ref[256], *p;
@@ -1633,7 +1657,19 @@ HNDLE  hDB, hkey;
     rsprintf("<tr><td colspan=2 align=center bgcolor=#8080FF>If no attachment are resubmitted, the original ones are kept</tr>\n");
 
   /* attachment */
-  rsprintf("<tr><td colspan=2>Attachment1: <input type=\"file\" size=\"60\" maxlength=\"256\" name=\"attfile1\" value=\"%s\" accept=\"filetype/*\"></tr>\n", att1);
+  rsprintf("<tr><td colspan=2 align=center>Enter attachment filename(s) or ODB tree(s), use \"\\\" as an ODB directory separator:</tr>");
+
+  if (odb_att)
+    {
+    str[0] = 0;
+    if (odb_att[0] != '/')
+      strcpy(str, "/");
+    strcat(str, odb_att);
+    rsprintf("<tr><td colspan=2>Attachment1: <input type=hidden name=attachment0 value=\"%s\"><b>%s</b></tr>\n", str, str);
+    }
+  else
+    rsprintf("<tr><td colspan=2>Attachment1: <input type=\"file\" size=\"60\" maxlength=\"256\" name=\"attfile1\" value=\"%s\" accept=\"filetype/*\"></tr>\n", att1);
+
   rsprintf("<tr><td colspan=2>Attachment2: <input type=\"file\" size=\"60\" maxlength=\"256\" name=\"attfile2\" value=\"%s\" accept=\"filetype/*\"></tr>\n", att2);
   rsprintf("<tr><td colspan=2>Attachment3: <input type=\"file\" size=\"60\" maxlength=\"256\" name=\"attfile3\" value=\"%s\" accept=\"filetype/*\"></tr>\n", att3);
 
@@ -2361,9 +2397,121 @@ KEY    key;
 
 /*------------------------------------------------------------------*/
 
+gen_odb_attachment(char *path, char *b)
+{
+HNDLE  hDB, hkeyroot, hkey;
+KEY    key;
+INT    i, j, size;
+char   str[256], data_str[256], hex_str[256];
+char   data[10000];
+time_t now;
+
+  cm_get_experiment_database(&hDB, NULL);
+  db_find_key(hDB, 0, path, &hkeyroot);
+
+  /* title row */
+  size = sizeof(str);
+  str[0] = 0;
+  db_get_value(hDB, 0, "/Experiment/Name", str, &size, TID_STRING);
+  time(&now);
+
+  sprintf(b, "<table border=3 cellpadding=1>\n");
+  sprintf(b+strlen(b), "<tr><th colspan=2 bgcolor=#A0A0FF>%s</tr>\n", ctime(&now));
+  sprintf(b+strlen(b), "<tr><th colspan=2 bgcolor=#FFA0A0>%s</tr>\n", path);
+  
+  /* enumerate subkeys */
+  for (i=0 ; ; i++)
+    {
+    db_enum_link(hDB, hkeyroot, i, &hkey);
+    if (!hkey)
+      break;
+    db_get_key(hDB, hkey, &key);
+    
+    /* resolve links */
+    if (key.type == TID_LINK)
+      {
+      db_enum_key(hDB, hkeyroot, i, &hkey);
+      db_get_key(hDB, hkey, &key);
+      }
+
+    if (key.type == TID_KEY)
+      {
+      /* for keys, don't display data value */
+      sprintf(b+strlen(b), "<tr><td colspan=2 bgcolor=#FFD000>%s</td></tr>\n", key.name);
+      }
+    else
+      {
+      /* display single value */
+      if (key.num_values == 1)
+        {
+        size = sizeof(data);
+        db_get_data(hDB, hkey, data, &size, key.type);
+        db_sprintf(data_str, data, key.item_size, 0, key.type);
+        db_sprintfh(hex_str, data, key.item_size, 0, key.type);
+
+        if (data_str[0] == 0 || equal_ustring(data_str, "<NULL>"))
+          {
+          strcpy(data_str, "(empty)");
+          hex_str[0] = 0;
+          }
+
+        if (strcmp(data_str, hex_str) != 0 && hex_str[0])
+          sprintf(b+strlen(b), "<tr><td bgcolor=#FFFF00>%s</td><td>%s (%s)</td></tr>\n", 
+                  key.name, data_str, hex_str);
+        else
+          {
+          sprintf(b+strlen(b), "<tr><td bgcolor=#FFFF00>%s</td><td>", key.name);
+          strencode2(b+strlen(b), data_str);
+          sprintf(b+strlen(b), "</td></tr>\n");
+          }
+        }
+      else
+        {
+        /* display first value */
+        sprintf(b+strlen(b), "<tr><td  bgcolor=#FFFF00 rowspan=%d>%s</td>\n", key.num_values, key.name);
+
+        for (j=0 ; j<key.num_values ; j++)
+          {
+          size = sizeof(data);
+          db_get_data_index(hDB, hkey, data, &size, j, key.type);
+          db_sprintf(data_str, data, key.item_size, 0, key.type);
+          db_sprintfh(hex_str, data, key.item_size, 0, key.type);
+
+          if (data_str[0] == 0 || equal_ustring(data_str, "<NULL>"))
+            {
+            strcpy(data_str, "(empty)");
+            hex_str[0] = 0;
+            }
+
+          if (j>0)
+            sprintf(b+strlen(b), "<tr>");
+
+          if (strcmp(data_str, hex_str) != 0 && hex_str[0])
+            sprintf(b+strlen(b), "<td>[%d] %s (%s)<br></td></tr>\n", j, data_str, hex_str);
+          else
+            sprintf(b+strlen(b), "<td>[%d] %s<br></td></tr>\n", j, data_str);
+          }
+        }
+      }
+    }
+
+  sprintf(b+strlen(b), "</table>\n");
+}
+
+/*------------------------------------------------------------------*/
+
 void submit_elog()
 {
-char str[80], author[256];
+char   str[80], author[256], path[256];
+char   *buffer[3];
+HNDLE  hDB, hkey;
+char   att_file[3][256];
+int    i;
+
+  cm_get_experiment_database(&hDB, NULL);
+  strcpy(att_file[0], getparam("attachment0"));
+  strcpy(att_file[1], getparam("attachment1"));
+  strcpy(att_file[2], getparam("attachment2"));
 
   /* check for author */
   if (*getparam("author") == 0)
@@ -2379,6 +2527,43 @@ char str[80], author[256];
     return;
     }
 
+  /* check for valid attachment files */
+  for (i=0 ; i<3 ; i++)
+    {
+    buffer[i] = NULL;
+    sprintf(str, "attachment%d", i);
+    if (getparam(str) && *getparam(str) && _attachment_size[i] == 0)
+      {
+      /* replace '\' by '/' */
+      strcpy(path, getparam(str));  
+      while (strchr(path, '\\'))    
+        *strchr(path, '\\') = '/';
+
+      /* check if valid ODB tree */
+      if (db_find_key(hDB, 0, path, &hkey) == DB_SUCCESS)
+        {
+        buffer[i] = malloc(100000);
+        gen_odb_attachment(path, buffer[i]);
+        strcpy(att_file[i], path);
+        strcat(att_file[i], ".html");
+        _attachment_buffer[i] = buffer[i];
+        _attachment_size[i] = strlen(buffer[i])+1;
+        }
+      else
+        {
+        rsprintf("HTTP/1.0 200 Document follows\r\n");
+        rsprintf("Server: MIDAS HTTP %s\r\n", cm_get_version());
+        rsprintf("Content-Type: text/html\r\n\r\n");
+
+        rsprintf("<html><head><title>ELog Error</title></head>\n");
+        rsprintf("<i>Error: Attachment file <i>%s</i> not valid.</i><p>\n", getparam(str));
+        rsprintf("Please go back and enter a proper filename (use the <b>Browse</b> button).\n");
+        rsprintf("<body></body></html>\n");
+        return;
+        }
+      }
+    }
+
   /* add remote host name to author */
   strcpy(author, getparam("author"));
   strcat(author, "@");
@@ -2391,10 +2576,14 @@ char str[80], author[256];
   el_submit(atoi(getparam("run")), author, getparam("type"),
             getparam("system"), getparam("subject"), getparam("text"), 
             getparam("orig"), *getparam("html") ? "HTML" : "plain", 
-            getparam("attachment0"), _attachment_buffer[0], _attachment_size[0], 
-            getparam("attachment1"), _attachment_buffer[1], _attachment_size[1], 
-            getparam("attachment2"), _attachment_buffer[2], _attachment_size[2], 
+            att_file[0], _attachment_buffer[0], _attachment_size[0], 
+            att_file[1], _attachment_buffer[1], _attachment_size[1], 
+            att_file[2], _attachment_buffer[2], _attachment_size[2], 
             str, sizeof(str));
+
+  for (i=0 ; i<3 ; i++)
+    if (buffer[i])
+      free(buffer[i]);
 
   rsprintf("HTTP/1.0 302 Found\r\n");
   rsprintf("Server: MIDAS HTTP %s\r\n", cm_get_version());
@@ -2480,7 +2669,7 @@ void show_elog_page(char *path)
 int   size, i, run, msg_status, status, fh, length, first_message, last_message, index;
 char  str[256], orig_path[256], command[80], ref[256], file_name[256];
 char  date[80], author[80], type[80], system[80], subject[256], text[10000], 
-      orig_tag[80], reply_tag[80], attachment[3][256], encoding[80];
+      orig_tag[80], reply_tag[80], attachment[3][256], encoding[80], att[256];
 HNDLE hDB, hkey, hkeyroot;
 KEY   key;
 FILE  *f;
@@ -2508,19 +2697,25 @@ FILE  *f;
 
   if (equal_ustring(command, "new"))
     {
-    show_elog_new(NULL, FALSE);
+    show_elog_new(NULL, FALSE, NULL);
+    return;
+    }
+
+  if (equal_ustring(command, "Create ELog from this page"))
+    {
+    show_elog_new(NULL, FALSE, path);
     return;
     }
 
   if (equal_ustring(command, "edit"))
     {
-    show_elog_new(path, TRUE);
+    show_elog_new(path, TRUE, NULL);
     return;
     }
 
   if (equal_ustring(command, "reply"))
     {
-    show_elog_new(path, FALSE);
+    show_elog_new(path, FALSE, NULL);
     return;
     }
 
@@ -2599,6 +2794,8 @@ FILE  *f;
         rsprintf("Content-Type: application/postscript\r\n");
       else if (strstr(str, ".EPS"))
         rsprintf("Content-Type: application/postscript\r\n");
+      else if (strstr(str, ".HTML"))
+        rsprintf("Content-Type: text/html\r\n");
       else
         rsprintf("Content-Type: text/plain\r\n");
       
@@ -2873,8 +3070,8 @@ FILE  *f;
       if (attachment[index][0])
         {
         for (i=0 ; i<(int)strlen(attachment[index]) ; i++)
-          str[i] = toupper(attachment[index][i]);
-        str[i] = 0;
+          att[i] = toupper(attachment[index][i]);
+        att[i] = 0;
       
         if (exp_name[0])
           sprintf(ref, "%sEL/%s?exp=%s", 
@@ -2883,8 +3080,8 @@ FILE  *f;
           sprintf(ref, "%sEL/%s", 
                   mhttpd_url, attachment[index]);
 
-        if (strstr(str, ".GIF") ||
-            strstr(str, ".JPG"))
+        if (strstr(att, ".GIF") ||
+            strstr(att, ".JPG"))
           {
           rsprintf("<tr><td colspan=2>Attachment: <a href=\"%s\"><b>%s</b></a><br>\n", 
                     ref, attachment[index]+14);
@@ -2894,11 +3091,13 @@ FILE  *f;
           {
           rsprintf("<tr><td colspan=2 bgcolor=#C0C0FF>Attachment: <a href=\"%s\"><b>%s</b></a>\n", 
                     ref, attachment[index]+14);
-          if (!strstr(str, ".PS") &&
-              !strstr(str, ".EPS"))
+          if (!strstr(att, ".PS") &&
+              !strstr(att, ".EPS"))
             {
             /* display attachment */
-            rsprintf("<br><pre>");
+            rsprintf("<br>");
+            if (!strstr(att, ".HTML"))
+              rsprintf("<pre>");
 
             file_name[0] = 0;
             size = sizeof(file_name);
@@ -2921,7 +3120,9 @@ FILE  *f;
               fclose(f);
               }
 
-            rsprintf("</pre>\n");
+            if (!strstr(att, ".HTML"))
+              rsprintf("</pre>");
+            rsprintf("\n");
             }
           rsprintf("</tr>\n");
           }
@@ -3864,7 +4065,11 @@ KEY    key;
   rsprintf("<input type=submit name=cmd value=Programs>\n");
   rsprintf("<input type=submit name=cmd value=Status>\n");
   rsprintf("<input type=submit name=cmd value=Help>\n");
-  rsprintf("</tr>\n\n");
+  rsprintf("</tr>\n");
+
+  rsprintf("<tr><td colspan=2 bgcolor=#A0A0A0>\n");
+  rsprintf("<input type=submit name=cmd value=\"Create Elog from this page\">\n");
+  rsprintf("</tr>\n");
 
   /*---- ODB display -----------------------------------------------*/
 
@@ -5328,6 +5533,12 @@ struct tm *gmt;
     return;
     }
   
+  if (equal_ustring(command, "Create ELog from this page"))
+    {
+    show_elog_page(dec_path);
+    return;
+    }
+
   /*---- accept command --------------------------------------------*/
   
   if (equal_ustring(command, "accept"))
@@ -5432,6 +5643,7 @@ char *pinit, *p, *pitem, *ptmp, file_name[256], str[256];
 int  n;
 
   initparam();
+  _attachment_size[0] = _attachment_size[1] = _attachment_size[2] = 0;
 
   pinit = string;
 
