@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.87  2001/12/11 09:14:51  midas
+  Added elog language files
+
   Revision 1.86  2001/12/10 09:18:09  midas
   Call tzset() only once
 
@@ -4093,7 +4096,7 @@ FILE   *f;
 
   /*---- header ----*/
 
-  show_standard_header("ELOG search result", NULL);
+  show_standard_header(loc("ELOG search result"), NULL);
 
   /*---- title ----*/
 
@@ -5287,7 +5290,7 @@ char   date[80], text[TEXT_SIZE],  old_data_dir[256], tag[32],
 
   if (status != EL_SUCCESS)
     {
-    sprintf(str, loc("Message %s cannot be read from logook \"%s\""), src_path, logbook);
+    sprintf(str, loc("Message %s cannot be read from logbook \"%s\""), src_path, logbook);
     show_error(str);
     return;
     }
