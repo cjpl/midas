@@ -6,6 +6,10 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.90  1999/11/26 08:31:58  midas
+  midas.log is now places in the same directory as the .SHM files in case
+  there is no data dir in the ODB
+
   Revision 1.89  1999/11/25 13:29:55  midas
   Fixed bug in cm_msg_retrieve
 
@@ -593,7 +597,15 @@ HNDLE hDB, hKey;
         strcat(path, filename);
         }
       else
-        strcpy(path, "midas.log");
+        {
+        cm_get_path(dir);
+        if (dir[0] != 0)
+          if (dir[strlen(dir)-1] != DIR_SEPARATOR)
+            strcat(dir, DIR_SEPARATOR_STR);
+
+        strcpy(path, dir);
+        strcat(path, "midas.log");
+        }
       }
     else
       strcpy(path, "midas.log");
