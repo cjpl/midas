@@ -7,6 +7,9 @@
                 linked with user code to form a complete frontend
 
   $Log$
+  Revision 1.26  2000/08/21 11:01:11  midas
+  Changed comments
+
   Revision 1.25  2000/08/21 10:44:58  midas
   Removed reconnect functionality, it's better to restart the frontend via
   /programs/frontend/auto restart.
@@ -1601,9 +1604,9 @@ usage:
 
   /* inform user of settings */
   printf("Event buffer size      :     %d\n", event_buffer_size);
-  printf("buffer allocation      : 2 x %d\n", dm_size);
-  printf("system max event size  :     %d\n", MAX_EVENT_SIZE);
-  printf("user max event size    :     %d\n", max_event_size);
+  printf("Buffer allocation      : 2 x %d\n", dm_size);
+  printf("System max event size  :     %d\n", MAX_EVENT_SIZE);
+  printf("User max event size    :     %d\n", max_event_size);
   printf("# of events per buffer :     %d\n\n", dm_size/max_event_size);
 
   /* now connect to server */
