@@ -6,6 +6,9 @@
   Contents:     Disk to Tape copier for background job
 
   $Log$
+  Revision 1.5  1999/10/08 08:01:09  midas
+  Changed format from %lf to %1.0lf for postponed message
+
   Revision 1.4  1999/10/08 07:58:18  midas
   Fixed following bugs (hopefully):
   - Error message ss_remove_file was produced in a loop filling up log file,
@@ -936,7 +939,7 @@ INT lazy_copy( char * outfile, char * infile)
 	        /* yield quickly */
 	        status = cm_yield(1);
 	        if (status == RPC_SHUTDOWN || status == SS_ABORT)
-	          cm_msg(MINFO,"Lazy","Abort postponed until end of copy %lf[%%]",(double)lazyst.progress);
+	          cm_msg(MINFO,"Lazy","Abort postponed until end of copy %1.0lf[%%]",(double)lazyst.progress);
    	    }
       } /* get physrec */
       else
