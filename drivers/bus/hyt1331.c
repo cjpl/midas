@@ -7,6 +7,9 @@
                 following the MIDAS CAMAC Standard under DIRECTIO
 
   $Log$
+  Revision 1.8  2001/04/05 05:53:13  midas
+  Removed adr
+
   Revision 1.7  2000/09/28 10:49:57  midas
   Added OUTP_P/INP_P for NT and optimized cam16i_sa
 
@@ -666,7 +669,6 @@ static HANDLE _hdio = 0;
 INLINE int cam_init(void)
 {
   unsigned char status;
-  unsigned int adr;
   
 #ifdef _MSC_VER
   OSVERSIONINFO vi;
@@ -719,8 +721,6 @@ INLINE int cam_init(void)
 #endif  
   
 #endif
-  
-  adr =  CAMAC_BASE; 
   
   status = INP(CAMAC_BASE+6);
   if (!(status & 0x40))
