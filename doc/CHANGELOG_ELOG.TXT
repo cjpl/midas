@@ -10,7 +10,9 @@ Version 1.2.0, released October 19th, 2001
   email notifications
 - Any attribute can be used as a title for the web page
 - A comment can be displayed above the text entry box
-- A site-specifig URL can be defined for the Help button
+- A site-specifig URL can be defined for the Help button, can also point
+  directly to a file in the configuration directory, which gets served
+  by elogd
 - On the search page, the result can be sorted in reverse order
 - On full-text searches, the pattern is highlighted in the result
 - If a "types" entry is present in elogd.cfg, a help page is displayed for
@@ -23,6 +25,13 @@ Version 1.2.0, released October 19th, 2001
 - Moved "SMTP host" to [global] section
 - Added "Display email recipients = 0/1"
 - Added "Suppress default = 2" for no checkbox at all
+- Added "Show attachments" flag
+- Added global and logbook "Welcome page"
+- Added "Submit page"
+- Added "Email message body" flag
+- Added "config" menu to edit elogd.cfg over the web
+- Changed "delete password" into "admin password" which is now used
+  both to delete messages and to config elogd.cfg
 
 Version 1.1.3, released October 12th, 2001
 ==========================================
