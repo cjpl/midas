@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.19  1999/07/02 13:27:26  midas
+  Removed *par from write_event_odb (for external use)
+
   Revision 1.18  1999/06/24 11:59:17  midas
   Fixed filling of N-tuples if RWNT_SIZE equals zero
 
@@ -2021,7 +2024,7 @@ KEY        key;
 
 /*---- ODB output --------------------------------------------------*/
 
-INT write_event_odb(EVENT_HEADER *pevent, ANALYZE_REQUEST *par)
+INT write_event_odb(EVENT_HEADER *pevent)
 {
 INT            status, size, n_data, i;
 BANK_HEADER    *pbh;
@@ -2217,7 +2220,7 @@ EVENT_DEF    *event_def;
       if (actual_time - last_time_event[i].last_time > 1000)
         {
         last_time_event[i].last_time = actual_time;
-        write_event_odb(pevent, par);
+        write_event_odb(pevent);
         }
       break;
       }
@@ -2225,7 +2228,7 @@ EVENT_DEF    *event_def;
       {
       last_time_event[i].event_id = pevent->event_id;
       last_time_event[i].last_time = actual_time;
-      write_event_odb(pevent, par);
+      write_event_odb(pevent);
       break;
       }
     }
