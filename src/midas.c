@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.93  1999/12/08 11:44:25  midas
+  Fixed bug with watchdog timeout
+
   Revision 1.92  1999/12/08 10:00:41  midas
   Changed error string to single line
 
@@ -1532,15 +1535,13 @@ PROGRAM_INFO_STR(program_info_str);
   sprintf(str, "/Programs/%s", orig_name);
   db_create_record(hDB, 0, str, strcomb(program_info_str));
 
-  /* schedule watchdog timer */
-  cm_get_watchdog_params(&call_watchdog, NULL);
-  cm_set_watchdog_params(call_watchdog, watchdog_timeout);
-  if (call_watchdog)
-    ss_alarm(WATCHDOG_INTERVAL, cm_watchdog);
-
   /* save handle for ODB and client */
   rpc_set_server_option(RPC_ODB_HANDLE, hDB);
   rpc_set_server_option(RPC_CLIENT_HANDLE, hKey);
+
+  /* save watchdog timeout */
+  cm_get_watchdog_params(&call_watchdog, NULL);
+  cm_set_watchdog_params(call_watchdog, watchdog_timeout);
 
   /* touch notify key to inform others */
   data = 0;
@@ -1736,6 +1737,7 @@ char  local_host_name[HOST_NAME_LENGTH];
 char  client_name1[NAME_LENGTH];
 char  password[NAME_LENGTH], str[NAME_LENGTH], exp_name1[NAME_LENGTH];
 HNDLE hDB, hKeyClient;
+BOOL  call_watchdog;
 
   if (_hKeyClient)
     cm_disconnect_experiment();
@@ -1881,6 +1883,10 @@ HNDLE hDB, hKeyClient;
   status = cm_register_server();
   if (status != CM_SUCCESS)
     return status;
+
+  /* set watchdog timeout */
+  cm_get_watchdog_params(&call_watchdog, &watchdog_timeout);
+  cm_set_watchdog_params(call_watchdog, watchdog_timeout);
 
   /* send startup notification */
   if (strchr(local_host_name, '.'))
