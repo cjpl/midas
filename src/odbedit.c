@@ -6,6 +6,9 @@
   Contents:     Command-line interface to the MIDAS online data base.
 
   $Log$
+  Revision 1.19  1999/07/15 07:49:17  midas
+  Added analyzer name to "make" command
+
   Revision 1.18  1999/06/23 09:41:05  midas
   - Cleaned up idle loop
   - Fixed bug when stopping run twice and y/n is not asked correctly
@@ -117,7 +120,7 @@ void print_help(char *command)
     printf("  -h                      hex format\n");
     printf("  -v                      only value\n");
     printf("  -r                      show database entries recursively\n");
-    printf("make                    - create experim.h\n");
+    printf("make [analyzer name]    - create experim.h\n");
     printf("mem                     - show memeory usage\n");
     printf("mkdir <subdir>          - make new <subdir>\n");
     printf("move <key> [top/bottom/[n]] - move key to position in keylist\n");
@@ -882,7 +885,7 @@ HNDLE      hSubkey;
 
 /*------------------------------------------------------------------*/
 
-void create_experim_h(HNDLE hDB)
+void create_experim_h(HNDLE hDB, char *analyzer_name)
 {
 INT    i, index, hfile, status, size;
 HNDLE  hKey, hKeyRoot, hKeyEq, hDefKey, hKeyBank, hKeyPar;
@@ -949,9 +952,16 @@ char *file_name = "experim.h";
     lseek(hfile, 0, SEEK_END);
     }
 
-  /* write /analyzer/parameters tree */
-  status = db_find_key(hDB, 0, "/Analyzer/Parameters", &hKeyRoot);
-  if (status == DB_SUCCESS)
+  /* write /<Analyzer>/parameters tree */
+  sprintf(str, "/%s/Parameters", analyzer_name);
+  status = db_find_key(hDB, 0, str, &hKeyRoot);
+  if (status != DB_SUCCESS)
+    {
+    printf("Analyzer \"%s\" not found in ODB, skipping analyzer parameters.\n", 
+           analyzer_name);
+    }
+  else
+    {
     for (index=0 ; ; index++)
       {
       status = db_enum_key(hDB, hKeyRoot, index, &hKeyPar);
@@ -979,6 +989,7 @@ char *file_name = "experim.h";
       sprintf(str, "#endif\n\n");
       write(hfile, str, strlen(str));
       }
+    }
 
   /* loop through equipment list */
   status = db_find_key(hDB, 0, "/Equipment", &hKeyRoot);
@@ -1779,7 +1790,10 @@ PRINT_INFO      print_info;
     /* make */
     else if (param[0][0] == 'm' && param[0][1] == 'a')
       {
-      create_experim_h(hDB);
+      if (param[1][0])
+        create_experim_h(hDB, param[1]);
+      else
+        create_experim_h(hDB, "Analyzer");
       }
 
     /* passwd */
