@@ -14,6 +14,9 @@
                 Brown, Prentice Hall
 
   $Log$
+  Revision 1.26  1999/04/29 10:48:03  midas
+  Implemented "/System/Client Notify" key
+
   Revision 1.25  1999/04/29 07:06:40  midas
   Removed superfluous "{"
 
@@ -2472,7 +2475,7 @@ INT index;
       if (_suspend_struct[index].thread_id == ss_gettid())
 	      {
 	      if (pindex != NULL)
-		*pindex = index;
+          *pindex = index;
 
 	      return SS_SUCCESS;
 	      }

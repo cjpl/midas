@@ -6,6 +6,9 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.15  1999/04/29 10:48:02  midas
+  Implemented "/System/Client Notify" key
+
   Revision 1.14  1999/04/22 15:32:18  midas
   db_get_key_info returns the numbe of subkeys for TID_KEYs
 
@@ -5811,16 +5814,15 @@ INT             i, j;
     /* check which client has record open */
     if (pkey->notify_count)
       for (i=0 ; i<pheader->max_client_index ; i++)
-        /* if (i != _database[hDB-1].client_index) */
-          {
-          pclient = &pheader->client[i];
-          for (j=0 ; j<pclient->max_index ; j++)
-            if (pclient->open_record[j].handle == hKey)
-              {
-              /* send notification */
-              ss_resume(pclient->port, MSG_ODB, hDB, hKey);
-              }
-          }
+        {
+        pclient = &pheader->client[i];
+        for (j=0 ; j<pclient->max_index ; j++)
+          if (pclient->open_record[j].handle == hKey)
+            {
+            /* send notification to remote process */
+            ss_resume(pclient->port, MSG_ODB, hDB, hKey);
+            }
+        }
 
     if (pkey->parent_keylist == 0 || !bWalk)
       return DB_SUCCESS;
