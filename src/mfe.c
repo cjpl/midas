@@ -7,6 +7,9 @@
                 linked with user code to form a complete frontend
 
   $Log$
+  Revision 1.21  2000/07/11 16:43:40  pierre
+  - Fix serial number for POLL super event.
+
   Revision 1.20  2000/04/03 12:27:43  midas
   Changed auto restart to 20 seconds in main loop
 
@@ -1039,6 +1042,7 @@ INT opt_max=0, opt_index=0, opt_tcp_size=128, opt_cnt=0;
           if (eq->info.num_subevents)
             {
             eq->subevent_number = 0;
+	    eq->serial_number--;
             do
               {
               *(INT *) ((char *)(pevent+1)+pevent->data_size) = source;
@@ -1526,7 +1530,7 @@ usage:
       return 0;
     }
   /* takes overall 20% of the available memory resource for dm_() */
-  dm_size = 0.5 * memFindMax(); 
+  dm_size = 0.2 * memFindMax(); 
   
   /* there are two buffers */
   dm_size /= 2;
