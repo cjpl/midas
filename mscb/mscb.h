@@ -6,6 +6,9 @@
   Contents:     Header fiel for MSCB funcions
 
   $Log$
+  Revision 1.27  2003/10/03 14:08:07  midas
+  Added locking parameter to mscb_addr
+
   Revision 1.26  2003/09/23 09:25:26  midas
   Added RPC call for mscb_addr
 
@@ -284,7 +287,7 @@ int EXPRT mscb_read(int fd, int adr, unsigned char index, void *data, int *size)
 int EXPRT mscb_read_range(int fd, int adr, unsigned char index1, unsigned char index2, void *data, int *size);
 int EXPRT mscb_user(int fd, int adr, void *param, int size, void *result, int *rsize);
 int EXPRT mscb_link(int fd, int adr, unsigned char index, void *data, int size);
-int EXPRT mscb_addr(int fd, int cmd, int adr, int retry);
+int EXPRT mscb_addr(int fd, int cmd, int adr, int retry, int lock);
 
 #ifdef __cplusplus
 }

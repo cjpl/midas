@@ -6,6 +6,9 @@
   Contents:     Command-line interface for the Midas Slow Control Bus
 
   $Log$
+  Revision 1.48  2003/10/03 14:08:07  midas
+  Added locking parameter to mscb_addr
+
   Revision 1.47  2003/10/01 17:50:46  midas
   Scan every 100's and 1000's address
 
@@ -169,8 +172,6 @@
 #include <fcntl.h>
 #include "mscb.h"
 #include "rpc.h"
-
-extern int mscb_addr(int fd, int cmd, int adr, int retry);
 
 /*------------------------------------------------------------------*/
 
@@ -617,7 +618,7 @@ MSCB_INFO_VAR info_var;
 
         do
           {
-          status = mscb_addr(fd, MCMD_PING16, addr, 10);
+          status = mscb_addr(fd, MCMD_PING16, addr, 10, TRUE);
           if (status != MSCB_SUCCESS)
             {
             if (status == MSCB_MUTEX)
@@ -655,7 +656,7 @@ MSCB_INFO_VAR info_var;
         else
           addr = atoi(param[1]);
 
-        mscb_addr(fd, MCMD_ADDR_NODE16, addr, 1);
+        mscb_addr(fd, MCMD_ADDR_NODE16, addr, 1, TRUE);
         current_addr = addr;
         current_group = -1;
         }
@@ -1262,7 +1263,8 @@ usage:
     }
 
   /* open port */
-  fd = mscb_init(device, debug ? 2 : 0);
+//  fd = mscb_init(device, debug ? 2 : 0);
+  fd = mscb_init(device, debug ? 1 : 0);
   if (fd < 0)
     {
     if (fd == -2)
@@ -1282,6 +1284,10 @@ usage:
       puts("  and the \"msc -i\" command which toggles the pins of the parallel port");
       puts("o If the port is configured to another address than 0x378, use");
       puts("  \"msc -d 0xabc\" with \"0xabc\" the correct address");
+      }
+    else if (fd == -3)
+      {
+      printf("MSCB system locked by other process\n");
       }
     else
       printf("Cannot connect to device \"%s\"\n", device);
