@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.24  1999/04/13 12:20:43  midas
+  Added db_get_data1 (for Java)
+
   Revision 1.23  1999/04/08 15:26:05  midas
   Worked on rpc_execute_ascii
 
@@ -9840,7 +9843,7 @@ INT rpc_execute_ascii(INT sock, char *buffer)
 INT          i, j, index, status, index_in;
 char         *in_param_ptr, *out_param_ptr, *last_param_ptr;
 INT          routine_id, tid, flags, array_tid, n_param;
-INT          param_size, item_size;
+INT          param_size, item_size, num_values;
 void         *prpc_param[20];
 char         *arpc_param[1024], *pc;
 char         str[1024], debug_line[1024];
@@ -10059,22 +10062,20 @@ char         return_buffer[ASCII_BUFFER_SIZE]; /* ASCII out */
         {
         param_size = *((INT *) prpc_param[i+1]);
         array_tid  = *((INT *) prpc_param[i+2]);
+        num_values = *((INT *) prpc_param[i+3]);
 
         /* assume fixed length for strings */
         if (array_tid == TID_STRING)
-          item_size = NAME_LENGTH;
+          item_size = param_size / num_values;
         else
           item_size = tid_size[array_tid];
         
-        if (item_size > 0)
-          param_size /= item_size;
-
         /* write number of elements to output */
-        sprintf(out_param_ptr, "%d", param_size);
+        sprintf(out_param_ptr, "%d", num_values);
         out_param_ptr += strlen(out_param_ptr);
 
         /* write array of values to output */
-        for (j=0 ; j<param_size ; j++)
+        for (j=0 ; j<num_values ; j++)
           {
           *out_param_ptr++ = '&';
           db_sprintf(out_param_ptr, prpc_param[i], item_size, j, array_tid);

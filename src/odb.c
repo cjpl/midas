@@ -6,6 +6,9 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.12  1999/04/13 12:20:45  midas
+  Added db_get_data1 (for Java)
+
   Revision 1.11  1999/04/08 15:25:17  midas
   Added db_get_key_info and CF_ASCII client notification (for Java)
 
@@ -3166,6 +3169,127 @@ KEY              *pkey;
   /* copy key data */
   memcpy(data, (char *) pheader + pkey->data, pkey->num_values * pkey->item_size);
   *buf_size = pkey->num_values * pkey->item_size;
+
+  db_unlock_database(hDB);
+
+}
+#endif /* LOCAL_ROUTINES */
+
+  return DB_SUCCESS;
+}
+
+/*------------------------------------------------------------------*/
+
+INT db_get_data1(HNDLE hDB, HNDLE hKey, void *data, INT *buf_size, 
+                 DWORD type, INT *num_values)
+/********************************************************************\
+
+  Routine: db_get_data1
+
+  Purpose: Get key data from a handle, return number of values
+
+  Input:
+    HNDLE  hDB              Handle to the database
+    HNDLE  hKey             Handle of key
+    INT    *buf_size        Size of data buffer
+    DWORD  type             Type of data
+
+  Output:
+    void   *data            Key data
+    INT    *buf_size        Size of key data
+    INT    *num_values      Number of values
+
+  Function value:
+    DB_SUCCESS              Successful completion
+    DB_INVALID_HANDLE       Database handle is invalid
+    DB_TRUNCATED            Return buffer is smaller than key data
+    DB_TYPE_MISMATCH        Type mismatch
+
+\********************************************************************/
+{
+  if (rpc_is_remote())
+    return rpc_call(RPC_DB_GET_DATA, hDB, hKey, data, buf_size, type); 
+
+#ifdef LOCAL_ROUTINES
+{
+DATABASE_HEADER  *pheader;
+KEY              *pkey;
+
+  if (hDB > _database_entries || hDB <= 0)
+    {
+    cm_msg(MERROR, "db_get_data", "Invalid database handle");
+    return DB_INVALID_HANDLE;
+    }
+
+  if (!_database[hDB-1].attached)
+    {
+    cm_msg(MERROR, "db_get_data", "invalid database handle");
+    return DB_INVALID_HANDLE;
+    }
+
+  if (hKey < sizeof(DATABASE_HEADER))
+    {
+    cm_msg(MERROR, "db_get_data", "invalid key handle");
+    return DB_INVALID_HANDLE;
+    }
+
+  db_lock_database(hDB);
+
+  pheader  = _database[hDB-1].database_header;
+  pkey = (KEY *) ((char *) pheader + hKey);
+
+  /* check for read access */
+  if (!(pkey->access_mode & MODE_READ))
+    {
+    db_unlock_database(hDB);
+    return DB_NO_ACCESS;
+    }
+
+  if (!pkey->type)
+    {
+    db_unlock_database(hDB);
+    cm_msg(MERROR, "db_get_data", "invalid key");
+    return DB_INVALID_HANDLE;
+    }
+
+  if (pkey->type != type)
+    {
+    db_unlock_database(hDB);
+    cm_msg(MERROR, "db_get_data", "\"%s\" is of type %s, not %s", pkey->name, 
+           rpc_tid_name(pkey->type), rpc_tid_name(type));
+    return DB_TYPE_MISMATCH;
+    }
+
+  /* keys cannot contain data */
+  if (pkey->type == TID_KEY)
+    {
+    db_unlock_database(hDB);
+    cm_msg(MERROR, "db_get_data", "Key cannot contain data");
+    return DB_TYPE_MISMATCH;
+    }
+
+  /* check if key has data */
+  if (pkey->data == 0)
+    {
+    memset(data, 0, *buf_size);
+    *buf_size = 0;
+    db_unlock_database(hDB);
+    return DB_SUCCESS;
+    }
+
+  /* check if buffer is too small */
+  if (pkey->num_values * pkey->item_size > *buf_size)
+    {
+    memcpy(data, (char *) pheader + pkey->data, *buf_size);
+    db_unlock_database(hDB);
+    cm_msg(MERROR, "db_get_data", "data for key \"%s\" truncated", pkey->name);
+    return DB_TRUNCATED;
+    }
+
+  /* copy key data */
+  memcpy(data, (char *) pheader + pkey->data, pkey->num_values * pkey->item_size);
+  *buf_size = pkey->num_values * pkey->item_size;
+  *num_values = pkey->num_values;
 
   db_unlock_database(hDB);
 

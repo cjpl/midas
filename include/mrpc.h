@@ -7,6 +7,9 @@
   Contents:     Symbolic constants for internal RPC functions
 
   $Log$
+  Revision 1.6  1999/04/13 12:20:42  midas
+  Added db_get_data1 (for Java)
+
   Revision 1.5  1999/04/08 15:24:13  midas
   Added RPC_CM_TRANSITION and RPC_DB_GET_KEY_INFO
 
@@ -88,6 +91,7 @@
 #define RPC_DB_FLUSH_DATABASE           11235
 #define RPC_DB_SET_DATA_INDEX2          11236
 #define RPC_DB_GET_KEY_INFO             11237
+#define RPC_DB_GET_DATA1                11238
 
 #define RPC_HS_SET_PATH                 11300
 #define RPC_HS_DEFINE_EVENT             11301 
