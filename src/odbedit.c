@@ -6,6 +6,9 @@
   Contents:     Command-line interface to the MIDAS online data base.
 
   $Log$
+  Revision 1.62  2003/04/22 12:01:37  midas
+  Added graceful shutdown of odbedit->frontend connection
+
   Revision 1.61  2003/04/15 08:16:16  midas
   Fixed bugs in ODB validationi
 
@@ -1347,6 +1350,9 @@ INT status;
     cm_disconnect_experiment();
     exit(0);
     }
+
+  /* check for broken client connections */
+  rpc_client_check();
 
   return need_redraw;
 }
