@@ -6,6 +6,11 @@
  *         amaudruz@triumf.ca                            Local:           6234
  * -----------------------------------------------------------------------------
    $Log$
+   Revision 1.15  1999/07/22 19:06:07  pierre
+   - Added D8_BKTYPE for Ybos
+   - Fix long event for MIDAS
+   - Allow FIXED event display in raw format
+
    Revision 1.14  1999/06/23 09:43:02  midas
    Added ftp functionality (for lazylogger)
 
@@ -118,7 +123,7 @@ INT  midas_event_skip (INT evtn);
 INT  ybos_physrec_skip (INT bl);
 
 INT  ybos_physrec_get (DWORD ** prec, DWORD * readn);
-INT  midas_physrec_get (void ** prec, DWORD * readn);
+INT  midas_physrec_get (void * prec, DWORD * readn);
 
 void yb_any_bank_event_display(void * pevent, INT data_fmt, INT dsp_fmt);
 void yb_any_raw_event_display(void * pevent, INT data_fmt, INT dsp_fmt);
@@ -174,9 +179,9 @@ struct {
   char     name[MAX_FILE_PATH];         /* Device name (/dev/nrmt0h) */
 
   char    *pmp;                         /* ptr to a physical TAPE_BUFFER_SIZE block */
-  EVENT_HEADER *pmh;                     /* ptr to Midas event (midas bank_header)*/
-  char    *pme;                         /* ptr to Midas content (event+1) (midas bank_header)*/
-  char    *pmrd;                        /* current point in the phyical recoord */
+  EVENT_HEADER *pmh;                    /* ptr to Midas event (midas bank_header)*/
+  EVENT_HEADER *pme;                    /* ptr to Midas content (event+1) (midas bank_header)*/
+  char    *pmrd;                        /* current point in the phyical record */
 
   char    *pmagta;                      /* dummy zone for magta stuff */
   YBOS_PHYSREC_HEADER *pyh;             /* ptr to ybos physical block header */
@@ -319,7 +324,9 @@ void ybk_create(DWORD *pevt, char *bn, DWORD bt, void *pbkdat)
     none
 \********************************************************************/
 {
+  DWORD dname=0;
   __pbkh         = (YBOS_BANK_HEADER *) ( ((DWORD *)(pevt+1)) + (*(DWORD *)pevt) );
+  strncpy((char *) &dname, bn, 4);
   __pbkh->name   = *((DWORD *)bn);
   __pbkh->number = 1;
   __pbkh->index  = 0;
@@ -348,7 +355,9 @@ void ybk_create_chaos(DWORD *pevt, char *bn, DWORD bt, void *pbkdat)
     none
 \********************************************************************/
 {
+  DWORD dname = 0;
   __pbkh         = (YBOS_BANK_HEADER *) ( (pevt+1) + (*pevt) );
+  strncpy((char *) &dname, bn, 4);
   __pbkh->name   = *((DWORD *)bn);
   __pbkh->number = 1;
   __pbkh->index  = 0;
@@ -421,6 +430,9 @@ void  ybk_close_chaos(DWORD *pevt, DWORD bt, void *pbkdat)
 {
 	switch (bt)
 	  {
+    case D8_BKTYPE:
+    *__pchaosi4 = (DWORD) ((double *)pbkdat - (double *)__pchaosi4 -1);
+    break;
 	  case I4_BKTYPE:
 	  case F4_BKTYPE:
 	   *__pchaosi4 = (DWORD) ((DWORD *)pbkdat - __pchaosi4 - 1);
@@ -578,8 +590,6 @@ INT ybk_locate (DWORD *plrl, char * bkname, void *pdata)
     DWORD * plrl           pointer to the YBOS event pointing to lrl
     char  * bkname         bank name
   Output:
-    DWORD * pbklen         data section length in I*4
-    DWORD * pbktype        bank type
     void  * pdata          pointer to the data section
   Function value:
     YB_SUCCESS
@@ -659,7 +669,7 @@ INT   ybk_iterate (DWORD *plrl, YBOS_BANK_HEADER ** pybkh , void ** pdata)
       pendevt = plrl + *plrl;
 						
       /* skip the EVID bank if present */
-/*-PAA- kee it in for a little while Dec 17/98
+      /*-PAA- keep it in for a little while Dec 17/98
       *((DWORD *)bname) = (*pybkh)->name;
       if (strncmp (bname,"EVID",4) == 0)
 				{
@@ -719,6 +729,7 @@ INT feodb_file_dump (EQUIPMENT * eqp, char * eqpname,
     none
   Function value:
     0                      Successful completion
+    DB_INVALID_NAME        Equipment doesn't match request
 \********************************************************************/
 {
   EQUIPMENT *peqp;
@@ -732,7 +743,7 @@ INT feodb_file_dump (EQUIPMENT * eqp, char * eqpname,
   peqp = eqp;
 
   /* find the equipment info for this job */
-  while (*((peqp->name), eqpname) != 0)
+  while (*(peqp->name) != 0)
   {
     if (equal_ustring((peqp->name), eqpname))
     {
@@ -742,7 +753,7 @@ INT feodb_file_dump (EQUIPMENT * eqp, char * eqpname,
     peqp++;
   }
   if (!eqpfound)
-   return -1;
+   return DB_INVALID_NAME;
 
   /* loop over all channels */
   sprintf (odb_entry,"/Equipment/%s/Dump",path);
@@ -855,7 +866,7 @@ INT  yb_file_fragment(EQUIPMENT * eqp, EVENT_HEADER *pevent, INT run_number, cha
     {
       /* pevent passed by fe for first event only */
       if (flag)
-        pevent = eb_get_pointer();
+        pevent = dm_pointer_get();
       flag = 1;
 
       /* bank header */
@@ -948,7 +959,7 @@ INT  yb_file_fragment(EQUIPMENT * eqp, EVENT_HEADER *pevent, INT run_number, cha
         scheduler (mfe.c) */
 /* #undef USE_EVENT_CHANNEL */
 #ifdef USE_EVENT_CHANNEL
-        eb_increment_pointer(eqp->buffer_handle, 
+        dm_increment_pointer(eqp->buffer_handle, 
                              pevent->data_size + sizeof(EVENT_HEADER));
 #else
         rpc_flush_event();
@@ -1524,7 +1535,7 @@ INT   yb_any_file_ropen(char * infile, INT data_fmt)
     if (my.type == LOG_TYPE_TAPE)
       {
         printf(" Zip on tape not yet supported \n");
-        return (SS_FIEL_ERROR);
+        return (SS_FILE_ERROR);
       }
     filegz    = gzopen(my.name, "rb");
     my.handle = 0;
@@ -1559,32 +1570,32 @@ INT   yb_any_file_ropen(char * infile, INT data_fmt)
       my.pyrd               = (DWORD *)((DWORD *)my.pyh + (my.pyh)->offset);
 
       /* allocate memory for one full event */
-						if (my.pylrl == NULL)
-								my.pylrl  = (DWORD *) malloc (MAX_EVENT_SIZE);    /* in bytes */
-						if (my.pylrl == NULL)
-								return SS_NO_MEMORY;
+      if (my.pylrl == NULL)
+	      my.pylrl  = (DWORD *) malloc (MAX_EVENT_SIZE);    /* in bytes */
+      if (my.pylrl == NULL)
+	      return SS_NO_MEMORY;
       memset ((char *)my.pylrl, -1, MAX_EVENT_SIZE);
-
+      
       /* reset first path */
       my.magtafl = FALSE;
     }
   else if (data_fmt == FORMAT_MIDAS)
     {
-      my.fmt  = FORMAT_MIDAS;
+     my.fmt  = FORMAT_MIDAS;
       my.size = TAPE_BUFFER_SIZE;
-						if (my.pmp == NULL)
-								my.pmp = malloc( my.size);
-						if (my.pmp == NULL)
-								return SS_NO_MEMORY;
-      my.pmrd = my.pmp;
-
+      if (my.pmp == NULL)
+      	my.pmp = malloc( my.size);
+      if (my.pmp == NULL)
+	      return SS_NO_MEMORY;
+      my.pme = (EVENT_HEADER *)my.pmp;
+      
       /* allocate memory for one full event */
-						if (my.pmh == NULL)
-								my.pmh = malloc(MAX_EVENT_SIZE);    /* in bytes */
-						if (my.pmh == NULL)
-								return SS_NO_MEMORY;
-      memset ((char *)my.pmh, -1, MAX_EVENT_SIZE);
-      my.pme  = (char *)(my.pmh + 1);
+      if (my.pmrd == NULL)
+      	my.pmrd = malloc(5*MAX_EVENT_SIZE);    /* in bytes */
+      if (my.pmrd == NULL)
+	      return SS_NO_MEMORY;
+      memset ((char *)my.pmrd, -1, 5*MAX_EVENT_SIZE);
+      my.pmh = (EVENT_HEADER *)my.pmrd;
     }
 
   /* initialize pertinent variables */
@@ -1614,7 +1625,7 @@ INT   yb_any_file_rclose (INT data_fmt)
       if (my.zipfile)
         {
 #ifdef INCLUDE_ZLIB
-        gzclose(my.name);
+        gzclose(filegz);
 #endif   
         }
       else
@@ -2068,7 +2079,7 @@ INT   ybos_physrec_get (DWORD ** precord, DWORD * readn)
 }
 
 /*------------------------------------------------------------------*/
-INT   midas_physrec_get (void ** precord, DWORD *readn)
+INT   midas_physrec_get (void * prec, DWORD *readn)
 /********************************************************************\
   Routine: midas_physrec_get
   Purpose: read one physical record.from a MIDAS run
@@ -2079,9 +2090,9 @@ INT   midas_physrec_get (void ** precord, DWORD *readn)
            indicate an eof.
 
   Input:
-    void ** precord     pointer to the record
+    void * prec        pointer to the record
   Output:
-    DWORD *readn        retrieve number of bytes
+    DWORD *readn       retrieve number of bytes
   Function value:
     YB_DONE            No more record to read
     YB_SUCCESS         Ok
@@ -2092,16 +2103,15 @@ INT   midas_physrec_get (void ** precord, DWORD *readn)
   /* read one block of data */
   if (!my.zipfile)
   {
-    status = yb_any_dev_os_read(my.handle, my.type, my.pmp, my.size, readn);
+    status = yb_any_dev_os_read(my.handle, my.type, prec, my.size, readn);
   }
   else
   {
 #ifdef INCLUDE_ZLIB
-    readn = gzread(filegz, (char *)my.pmp, my.size);
+    *readn = gzread(filegz, (char *)prec, my.size);
 #endif
   }
 
-  *precord = my.pmp;
   if (status != SS_SUCCESS)
     {
       return(YB_DONE);
@@ -2237,7 +2247,7 @@ INT   midas_event_skip (INT evtn)
   size = MAX_EVENT_SIZE;
   if (evtn == -1)
   {
-    if(midas_event_get(&pevent, &size) == YB_SUCCESS)
+//    if(midas_event_get(&pevent, &size) == YB_SUCCESS)
     return YB_SUCCESS;
   }
   while (midas_event_get(&pevent, &size) == YB_SUCCESS)
@@ -2345,12 +2355,13 @@ INT yb_any_all_info_display (INT what)
     }
   else if (my.fmt == FORMAT_MIDAS)
   {
-    DWORD mbn,run;
+    DWORD mbn,run, ser;
     WORD  id, msk;
     mbn = my.evtn;
     run = my.runn;
     id  = my.pmh->event_id;
     msk = my.pmh->trigger_mask;
+    ser = my.pmh->serial_number;
     switch (what)
 	  {
 	  case D_RECORD:
@@ -2361,7 +2372,7 @@ INT yb_any_all_info_display (INT what)
 	  case D_EVTLEN:
 	    printf("Evt#%d- ",my.evtn);
       printf("%irun 0x%4.4xid 0x%4.4xmsk %5dmevt#",run, id, msk,mbn);
-	    printf("%5del/x%x %5dserial\n",my.evtlen,my.evtlen,my.serial);
+	    printf("%5del/x%x %5dserial\n",my.evtlen,my.evtlen,ser);
 	    break;
 	  }
   }
@@ -2383,15 +2394,22 @@ INT   yb_any_event_swap (INT data_fmt, void * pevent)
 \********************************************************************/
 {
   INT status;
+  BANK_HEADER * pbh;
+
   if (data_fmt == FORMAT_MIDAS)
   {
     if ((((EVENT_HEADER *)pevent)->event_id == EVENTID_BOR) ||
        (((EVENT_HEADER *)pevent)->event_id == EVENTID_EOR) ||
        (((EVENT_HEADER *)pevent)->event_id == EVENTID_MESSAGE))
        return SS_SUCCESS;
+    /* patch for FIXED event => no swap if FIXED */
     /* bk_function needs the (BANK_HEADER *)pointer */
-    status=bk_swap(((EVENT_HEADER *)pevent)+1, FALSE);
-    return  status == 0 ? YB_SUCCESS : status;
+    pbh = (BANK_HEADER *) (((EVENT_HEADER *)pevent)+1);
+    if ((pbh->data_size + 8) == ((EVENT_HEADER *)pevent)->data_size)
+      {
+         status = bk_swap(pbh, FALSE);
+         return  status == 0 ? YB_SUCCESS : status;
+      }
   }
   else if (data_fmt == FORMAT_YBOS)
     {
@@ -2459,7 +2477,14 @@ INT ybos_event_swap (DWORD * plrl)
 
       switch (bank_type)
     	{
-	      case I4_BKTYPE :
+       case D8_BKTYPE :
+        while ((BYTE *) pevt < (BYTE *) pnextb)
+        {
+	        QWORD_SWAP(pevt);
+	        ((double *)pevt)++;
+        }
+        break;
+        case I4_BKTYPE :
 	      case F4_BKTYPE :
 	        while ((BYTE *) pevt < (BYTE *) pnextb)
 	          {
@@ -2613,129 +2638,74 @@ INT   midas_event_get (void ** pevent, DWORD * readn)
     YB_SUCCESS        Ok
 \********************************************************************/
 {
-  static char *pbeyond;
-  static BOOL last_physrec = FALSE;
-  BOOL        last_evt = FALSE;
-  INT x_boundary;
-  INT status;
-  DWORD full_evt_length, fpart, lpart, size;
+  INT         status, leftover;
+  DWORD       fpart, size;
   
+  /* save pointer */
+  *pevent = (char *)my.pmh;
+  size = my.size;
+
+  /* first time in get physrec once */
   if (my.recn == -1)
-    {
-      /* first time in get physrec once */
-      status = midas_physrec_get((void *)&my.pmp, &size);
-      if (status != YB_SUCCESS)
-        return (YB_DONE);
-    }
+  {
+    status = midas_physrec_get((void *)my.pmp, &size);
+    if (status != YB_SUCCESS)
+      return (YB_DONE);
+  }
 
-  /* Check if enough space until the end of the phys record */
-  fpart = my.pmp + my.size - my.pmrd;
-
-  if (fpart < sizeof(EVENT_HEADER))
-    {
-      /* no space even for a header */
-      x_boundary = 2;
-    }
+  /* copy header only */
+  if (((my.pmp+size) - (char *)my.pme) < sizeof(EVENT_HEADER))
+  {
+    fpart = (my.pmp+my.size) - (char *)my.pme;
+    memcpy(my.pmh, my.pme, fpart);
+    (char *)my.pmh += fpart;
+    leftover = sizeof(EVENT_HEADER) - fpart; 
+    status = midas_physrec_get((void *)my.pmp, &size);
+    if (status != YB_SUCCESS)
+      return (YB_DONE);
+    my.pme = (EVENT_HEADER *) my.pmp;
+    memcpy(my.pmh, my.pme, leftover);
+    (char *)my.pme += leftover;
+    my.pmh = *pevent;
+  }
   else
-    {
-      /* enough for at least a header, check for full event */
-      full_evt_length = sizeof(EVENT_HEADER) + ((EVENT_HEADER *)my.pmrd)->data_size;
+  {
+    memcpy(my.pmh, my.pme, sizeof(EVENT_HEADER));
+    (char *)my.pme += sizeof(EVENT_HEADER);
+  }
+  /* leave with pmh  to destination header
+                pmrd to destination event (pmh+1)
+                pme  to source event
+  */
+  my.pmrd = (char *) (my.pmh + 1);
 
-      /* check if last event: should always come here on the last event */
-      if (last_physrec && (pbeyond <= my.pmrd + full_evt_length))
-         last_evt = TRUE;
-      if ((my.pmrd + full_evt_length) > (my.pmp + my.size))
-        {
-          /* event cross boundary */
-          x_boundary = 0;
-        }
-      else
-        {
-          /* full event in the current phys rec */
-          x_boundary = 1;  
-         }
-     }
+  /* check for end of file */
+  if (my.pmh->event_id == -1)
+    return YB_DONE;
+
+  /* copy event (without header) */
+  leftover = my.pmh->data_size;
+
+  /* check for block croissing */
+  while (((my.pmp+size) - (char *)my.pme) < leftover)  
+  {
+    fpart = (my.pmp+my.size) - (char *)my.pme;
+    memcpy(my.pmrd, my.pme, fpart);
+    my.pmrd += fpart;
+    leftover -= fpart; 
+    status = midas_physrec_get((void *)my.pmp, &size);
+    if (status != YB_SUCCESS)
+      return (YB_DONE);
+    memset (my.pmp+size, -1, my.size - size); 
+    my.pme = (EVENT_HEADER *) my.pmp;
+  }
   
-  /* recompose the event */
-  if (x_boundary == 1)
-    {
-      /* full event in phys rec */
-      memcpy (my.pmh, my.pmrd, full_evt_length);
-      my.pmrd += full_evt_length;
-    }
-  else      
-    { /* event cross boundary */
-      /* copy first part of the event */
-      memcpy ((char *)my.pmh, my.pmrd, fpart);
-      /* move pointer to end of first part */
-      my.pme = (char *)my.pmh + fpart;
-      
-      /* retrieve the next physical record */
-      if (!last_physrec)
-        {
-          status = midas_physrec_get((void *)&my.pmp, &size);
-          if ((status != YB_SUCCESS) || (size != my.size))
-            {
-              last_physrec = TRUE;
-              pbeyond = my.pmp + size; 
-            }
-        }
-      else
-        {
-          /* it over no more events */
-        }
-      /* reset current source pointer */
-      my.pmrd = my.pmp;
-
-      /* copy left over part of th event */
-      if (x_boundary == 2)
-        {
-          /* complete at left over of the header */
-          fpart =  sizeof(EVENT_HEADER) - fpart;
-          memcpy (my.pme, my.pmrd, fpart);
-          /* move destination pointer */
-          my.pme  += fpart;
-          /* move source pointer */
-          my.pmrd += fpart;
-
-          full_evt_length = my.pmh->data_size + sizeof(EVENT_HEADER);
-
-          /* correct first part length */
-          lpart = full_evt_length - sizeof(EVENT_HEADER);
-          memcpy (my.pme, my.pmrd, lpart);
-
-          /* move source pointer */
-          my.pmrd += lpart;
-        }
-      else
-        {
-          full_evt_length = my.pmh->data_size + sizeof(EVENT_HEADER);
-
-          lpart = full_evt_length - fpart;
-          memcpy (my.pme, my.pmrd, lpart);
-
-          /* move source pointer */
-          my.pmrd += lpart;
-        }
-    }
-  
- *pevent = (char *)(my.pmh);
- *readn = my.evtlen = full_evt_length;
-
- /* count event */
- my.evtn++;
-
- /* count events or run number */
- if (my.pmh->event_id == EVENTID_BOR)
-   my.runn = my.pmh->serial_number;
- else if (my.pmh->event_id == EVENTID_EOR)
-   my.runn = my.pmh->serial_number;
- else
-   my.serial = my.pmh->serial_number;
-
-if (last_evt)
- return (YB_DONE);
-return(YB_SUCCESS);
+  /* copy left over or full event if no Xing */
+  *readn  = my.evtlen = my.pmh->data_size + sizeof(EVENT_HEADER);
+  memcpy(my.pmrd, my.pme, leftover);
+  (char *) my.pme  += leftover; 
+  my.evtn++;
+  return YB_SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
@@ -2767,7 +2737,7 @@ void yb_any_event_display(void * pevent, INT data_fmt, INT dsp_mode, INT dsp_fmt
 /*------------------------------------------------------------------*/
 void yb_any_raw_event_display(void * pevent, INT data_fmt, INT dsp_fmt)
 /********************************************************************\
-  Routine: ybos_raw_event_display
+  Routine: yb_any_raw_event_display
   Purpose: display on screen the RAW data of either YBOS or MIDAS format.
   Input:
     DWORD *  pevent         points to either plrl or pheader
@@ -2802,7 +2772,7 @@ void yb_any_raw_event_display(void * pevent, INT data_fmt, INT dsp_fmt)
 	    {
         if (dsp_fmt == DSP_DEC)
             printf ("%8.i ",*pevt);
-        if (dsp_fmt == DSP_HEX)
+        else
             printf ("%8.8x ",*pevt);
 	      pevt++;
 	    }
@@ -2878,16 +2848,27 @@ void yb_any_bank_event_display( void * pevent, INT data_fmt, INT dsp_fmt)
   	,pheader->event_id, pheader->trigger_mask ,pheader->serial_number
 	  ,pheader->time_stamp, pheader->data_size, pheader->data_size);
 
-     /* bank list */
-    status = bk_list ((BANK_HEADER *)(pheader+1), banklist);
-    printf("\n#banks:%i - Bank list:-%s-\n",status,banklist);
-
-    /* display bank content */
+    /* check if format is MIDAS or FIXED */
     pbh = (BANK_HEADER *) (pheader+1);
-    pmbk = NULL;
-    while (bk_iterate(pbh, &pmbk, &pdata) && (pmbk != NULL))
-      midas_bank_display(pmbk, dsp_fmt);
-    return;
+    if ((pbh->data_size + 8) == pheader->data_size)
+      {
+        /* bank list */
+        status = bk_list ((BANK_HEADER *)(pheader+1), banklist);
+        printf("\n#banks:%i - Bank list:-%s-\n",status,banklist);
+
+        /* display bank content */
+        pmbk = NULL;
+        do
+          {
+            bk_iterate(pbh, &pmbk, &pdata);
+            if (pmbk != NULL) midas_bank_display(pmbk, dsp_fmt);
+          } while (pmbk != NULL);
+      }
+    else
+      {
+        printf("\nFIXED event with Midas Header\n");
+        yb_any_raw_event_display(pevent, data_fmt, dsp_fmt);
+      }
   }
   return;
 }
@@ -2991,100 +2972,116 @@ void ybos_bank_display(YBOS_BANK_HEADER * pybk, INT dsp_fmt)
   memcpy (&bank_name[0],(char *) &pybk->name,4);
   bank_name[4]=0;
 
+  if (pybk->type == D8_BKTYPE)
+  {
+    length_type = ((pybk->length-1) >> 1);
+    sprintf(strbktype,"double*8 (FMT machine dependent)");
+  }
   if (pybk->type == F4_BKTYPE)
-	  {
-	    length_type = pybk->length-1;
-	    strcpy (strbktype,"Real*4 (FMT machine dependent)");
-	  }
+  {
+    length_type = pybk->length-1;
+    strcpy (strbktype,"Real*4 (FMT machine dependent)");
+  }
   if (pybk->type == I4_BKTYPE)
-    {
-      length_type = pybk->length-1;
-      strcpy (strbktype,"Integer*4");
-    }
+  {
+    length_type = pybk->length-1;
+    strcpy (strbktype,"Integer*4");
+  }
   if (pybk->type == I2_BKTYPE)
-    {
-      length_type = ((pybk->length-1) << 1);
-      strcpy (strbktype,"Integer*2");
-    }
+  {
+    length_type = ((pybk->length-1) << 1);
+    strcpy (strbktype,"Integer*2");
+  }
   if (pybk->type == I1_BKTYPE)
-    {
-      length_type = ((pybk->length-1) << 2);
-      strcpy (strbktype,"8 bit Bytes");
-    }
+  {
+    length_type = ((pybk->length-1) << 2);
+    strcpy (strbktype,"8 bit Bytes");
+  }
   if (pybk->type == A1_BKTYPE)
-	  {
-	    length_type = ((pybk->length-1) << 2);
-	    strcpy (strbktype,"8 bit ASCII");
-	  }
+  {
+    length_type = ((pybk->length-1) << 2);
+    strcpy (strbktype,"8 bit ASCII");
+  }
   printf("\nBank:%s Length: %i(I*1)/%i(I*4)/%i(Type) Type:%s",
-  bank_name,((pybk->length-1) << 2), pybk->length-1, length_type, strbktype);
+	 bank_name,((pybk->length-1) << 2), pybk->length-1, length_type, strbktype);
   j = 16;
-
+  
   pendbk = pdata + pybk->length - 1;
   while ((BYTE *) pdata < (BYTE *) pendbk)
+  {
+    switch (pybk->type)
     {
-	    switch (pybk->type)
-	      {
-	      case F4_BKTYPE :
-	        if (j>7)
-		      {
-		        printf("\n%4i-> ",i);
-		        j = 0;
-		        i += 8;
-		      }
-	        if (dsp_fmt == DSP_DEC) printf("%8.3e ",*((float *)pdata));
-	        if (dsp_fmt == DSP_HEX) printf("0x%8.8x ",*((DWORD *)pdata));
-	        pdata++;
-	        j++;
-	        break;
-	      case I4_BKTYPE :
-	        if (j>7)
-		      {
-		        printf("\n%4i-> ",i);
-		        j = 0;
-		        i += 8;
-		      }
-	        if (dsp_fmt == DSP_DEC) printf("%8.1i ",*((DWORD *)pdata));
-	        if (dsp_fmt == DSP_HEX) printf("0x%8.8x ",*((DWORD *)pdata));
-	        pdata++;
-	        j++;
-	        break;
-	      case I2_BKTYPE :
-	        if (j>7)
-		      {
-		        printf("\n%4i-> ",i);
-		        j = 0;
-		        i += 8;
-		      }
-	        if (dsp_fmt == DSP_DEC) printf("%5.1i ",*((WORD *)pdata));
-	        if (dsp_fmt == DSP_HEX) printf("0x%4.4x ",*((WORD *)pdata));
-	        ((WORD *)pdata)++;
-	        j++;
-	        break;
-	      case A1_BKTYPE :
-	        if (j>15)
-		      {
-		        printf("\n%4i-> ",i);
-		        j = 0;
-		        i += 16;
-		      }
-	        if (dsp_fmt == DSP_DEC) printf("%2.i ",*((BYTE *)pdata));
-	        if (dsp_fmt == DSP_ASC) printf("%1.1s ",(char *)pdata);
-	        if (dsp_fmt == DSP_HEX) printf("0x%2.2x ",*((BYTE *)pdata));
-	        ((BYTE *)pdata)++;
-	        j++;
-	        break;
-	      case I1_BKTYPE :
-	        if (j>7)
-		      {
-		        printf("\n%4i-> ",i);
-		        j = 0;
-		        i += 8;
-		      }
-	        if (dsp_fmt == DSP_DEC) printf("%4.i ",*((BYTE *)pdata));
-	        if (dsp_fmt == DSP_HEX) printf("0x%2.2x ",*((BYTE *)pdata));
-	        ((BYTE *)pdata)++;
-	        j++;
+      case D8_BKTYPE :
+      if (j>7)
+      {
+	      printf("\n%4i-> ",i);
+	      j = 0;
+	      i += 8;
+      }
+      printf("%8.3le ",*((double *)pdata));
+      ((double *)pdata)++;
+      j++;
+      break;
+      case F4_BKTYPE :
+      if (j>7)
+      {
+	      printf("\n%4i-> ",i);
+	      j = 0;
+	      i += 8;
+      }
+      if (dsp_fmt == DSP_DEC) printf("%8.3e ",*((float *)pdata));
+      if (dsp_fmt == DSP_HEX) printf("0x%8.8x ",*((DWORD *)pdata));
+      pdata++;
+      j++;
+      break;
+    case I4_BKTYPE :
+      if (j>7)
+      {
+	      printf("\n%4i-> ",i);
+	      j = 0;
+	      i += 8;
+      }
+      if (dsp_fmt == DSP_DEC) printf("%8.1i ",*((DWORD *)pdata));
+      if (dsp_fmt == DSP_HEX) printf("0x%8.8x ",*((DWORD *)pdata));
+      pdata++;
+      j++;
+      break;
+    case I2_BKTYPE :
+      if (j>7)
+      {
+	      printf("\n%4i-> ",i);
+	      j = 0;
+	      i += 8;
+      }
+      if (dsp_fmt == DSP_DEC) printf("%5.1i ",*((WORD *)pdata));
+      if (dsp_fmt == DSP_HEX) printf("0x%4.4x ",*((WORD *)pdata));
+      ((WORD *)pdata)++;
+      j++;
+      break;
+    case A1_BKTYPE :
+      if (j>15)
+      {
+	      printf("\n%4i-> ",i);
+	      j = 0;
+	      i += 16;
+      }
+      if (dsp_fmt == DSP_DEC) printf("%2.i ",*((BYTE *)pdata));
+      if (dsp_fmt == DSP_ASC) printf("%1.1s ",(char *)pdata);
+      if (dsp_fmt == DSP_HEX) printf("0x%2.2x ",*((BYTE *)pdata));
+      ((BYTE *)pdata)++;
+      j++;
+      break;
+    case I1_BKTYPE :
+      if (j>7)
+      {
+	      printf("\n%4i-> ",i);
+	      j = 0;
+	      i += 8;
+      }
+      if (dsp_fmt == DSP_DEC) printf("%4.i ",*((BYTE *)pdata));
+      if (dsp_fmt == DSP_HEX) printf("0x%2.2x ",*((BYTE *)pdata));
+      ((BYTE *)pdata)++;
+      j++;
 	        break;
 	      } /* switch */
 	  } /* while next bank */
@@ -3112,7 +3109,7 @@ void midas_bank_display( BANK * pbk, INT dsp_fmt)
   INT type, i, j;
   
   lrl= pbk->data_size;   /* in bytes */
-  type = pbk->type;
+  type = pbk->type & 0xff;
   bank_name[4] = 0;
   memcpy (bank_name,(char *)(pbk->name),4);
   pdata = (char *) (pbk+1);
@@ -3140,82 +3137,98 @@ void midas_bank_display( BANK * pbk, INT dsp_fmt)
       length_type = sizeof (BYTE);
       strcpy (strbktype,"8 bit Bytes");
     }
+  if (type == TID_BOOL)
+    {
+      length_type = sizeof (DWORD);
+      strcpy (strbktype,"Boolean");
+    }
   if (type == TID_CHAR)
     {
       length_type = sizeof(char);
       strcpy (strbktype,"8 bit ASCII");
     }
   printf("\nBank:%s Length: %i(I*1)/%i(I*4)/%i(Type) Type:%s",
-	 bank_name,lrl, lrl>>2, lrl, strbktype);
+	 bank_name,lrl, lrl>>2, lrl/length_type, strbktype);
 
   pendbk = pdata + lrl;
   while (pdata < pendbk)
+  {
+    switch (type)
     {
-      switch (type)
-	        {
-	        case TID_FLOAT :
-	          if (j>7)
-	            {
-	              printf("\n%4i-> ",i);
-	              j = 0;
-	              i += 8;
-	            }
-	          if (dsp_fmt == DSP_DEC) printf("%8.3e ",*((float *)pdata));
-	          if (dsp_fmt == DSP_HEX) printf("0x%8.8x ",*((DWORD *)pdata));
-	          ((DWORD *)pdata)++;
-	          j++;
-	          break;
-	        case TID_DWORD :
-	          if (j>7)
-	            {
-	              printf("\n%4i-> ",i);
-	              j = 0;
-	              i += 8;
-	            }
-	          if (dsp_fmt == DSP_DEC) printf("%8.1i ",*((DWORD *)pdata));
-	          if (dsp_fmt == DSP_HEX) printf("0x%8.8x ",*((DWORD *)pdata));
-	          ((DWORD *)pdata)++;
-	          j++;
-	          break;
-	        case TID_WORD :
-	          if (j>7)
-	            {
-	              printf("\n%4i-> ",i);
-	              j = 0;
-	              i += 8;
-	            }
-	          if (dsp_fmt == DSP_DEC) printf("%5.1i ",*((WORD *)pdata));
-	          if (dsp_fmt == DSP_HEX) printf("0x%4.4x ",*((WORD *)pdata));
-	          ((WORD *)pdata)++;
-	          j++;
-	          break;
-	        case TID_BYTE :
-	          if (j>15)
-	            {
-	              printf("\n%4i-> ",i);
-	              j = 0;
-	              i += 16;
-	            }
-	          if (dsp_fmt == DSP_DEC) printf("%4.i ",*((BYTE *)pdata));
-	          if (dsp_fmt == DSP_HEX) printf("0x%2.2x ",*((BYTE *)pdata));
-	          pdata++;
-	          j++;
-	          break;
-	        case TID_CHAR :
-	          if (j>15)
-	            {
-	              printf("\n%4i-> ",i);
-	              j = 0;
-	              i += 16;
-	            }
-	          if (dsp_fmt == DSP_DEC) printf("%3.i ",*((BYTE *)pdata));
-	          if (dsp_fmt == DSP_ASC) printf("%1.1s ",(char *)pdata);
-	          if (dsp_fmt == DSP_HEX) printf("0x%2.2x ",*((BYTE *)pdata));
-        	  pdata++;
-	          j++;
-	          break;
-	        }
-    } /* end of bank */
+    case TID_FLOAT :
+      if (j>7)
+      {
+	printf("\n%4i-> ",i);
+	j = 0;
+	i += 8;
+      }
+      if (dsp_fmt == DSP_DEC) printf("%8.3e ",*((float *)pdata));
+      if (dsp_fmt == DSP_HEX) printf("0x%8.8x ",*((DWORD *)pdata));
+      ((DWORD *)pdata)++;
+      j++;
+      break;
+    case TID_DWORD :
+      if (j>7)
+      {
+	printf("\n%4i-> ",i);
+	j = 0;
+	i += 8;
+      }
+      if (dsp_fmt == DSP_DEC) printf("%8.1i ",*((DWORD *)pdata));
+      if (dsp_fmt == DSP_HEX) printf("0x%8.8x ",*((DWORD *)pdata));
+      ((DWORD *)pdata)++;
+      j++;
+      break;
+    case TID_WORD :
+      if (j>7)
+      {
+	printf("\n%4i-> ",i);
+	j = 0;
+	i += 8;
+      }
+      if (dsp_fmt == DSP_DEC) printf("%5.1i ",*((WORD *)pdata));
+      if (dsp_fmt == DSP_HEX) printf("0x%4.4x ",*((WORD *)pdata));
+      ((WORD *)pdata)++;
+      j++;
+      break;
+    case TID_BYTE :
+      if (j>15)
+      {
+	printf("\n%4i-> ",i);
+	j = 0;
+	i += 16;
+      }
+      if (dsp_fmt == DSP_DEC) printf("%4.i ",*((BYTE *)pdata));
+      if (dsp_fmt == DSP_HEX) printf("0x%2.2x ",*((BYTE *)pdata));
+      pdata++;
+      j++;
+      break;
+    case TID_BOOL :
+      if (j>15)
+      {
+	printf("\n%4i-> ",i);
+	j = 0;
+	i += 16;
+      }
+      (*((BOOL *)pdata) != 0 ) ? printf("Y ") : printf("N ");
+      ((DWORD *)pdata)++;
+      j++;
+      break;
+    case TID_CHAR :
+      if (j>15)
+      {
+	printf("\n%4i-> ",i);
+	j = 0;
+	i += 16;
+      }
+      if (dsp_fmt == DSP_DEC) printf("%3.i ",*((BYTE *)pdata));
+      if (dsp_fmt == DSP_ASC) printf("%1.1s ",(char *)pdata);
+      if (dsp_fmt == DSP_HEX) printf("0x%2.2x ",*((BYTE *)pdata));
+      pdata++;
+      j++;
+      break;
+    }
+  } /* end of bank */
   printf ("\n");
   return;
 }
