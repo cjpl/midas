@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol main program
 
   $Log$
+  Revision 1.26  2003/03/06 16:08:50  midas
+  Protocol version 1.3 (change node name)
+
   Revision 1.25  2003/03/06 11:01:13  midas
   Priority inversion for slow ADuC
 
@@ -133,7 +136,7 @@ void flash_upgrade(void);
 
 /* variables in internal RAM (indirect addressing) */
 
-unsigned char idata in_buf[10], out_buf[8];
+unsigned char idata in_buf[20], out_buf[8];
 
 unsigned char idata i_in, last_i_in, final_i_in, n_out, i_out, cmd_len;
 unsigned char idata crc_code, addr_mode, n_channel, n_param;
@@ -229,12 +232,14 @@ unsigned char i;
   eeprom_retrieve();
 
   /* correct initial value */
-  if (sys_info.magic != 0xC0DE)
+  if (sys_info.magic != 0x12)
     {
     sys_info.node_addr  = 0xFFFF;
     sys_info.group_addr = 0xFFFF;
     sys_info.wd_counter = 0;
-    sys_info.magic      = 0xC0DE;
+    memset(sys_info.node_name, 0, sizeof(sys_info.node_name));
+    strncpy(sys_info.node_name, node_name, sizeof(sys_info.node_name));
+    sys_info.magic      = 0x12;
 
     // init channel variables
     for (i=0 ; channel[i].width ; i++)
@@ -271,11 +276,14 @@ unsigned char i;
 #if !defined(CPU_ADUC812) && !defined(SCS_300) && !defined(SCS_210) // SCS210/300 redefine printf()
   lcd_setup();
 
+#ifdef LCD_DEBUG
   if (lcd_present)
     {
     printf("AD:%04X GA:%04X WD:%d", sys_info.node_addr, 
             sys_info.group_addr, sys_info.wd_counter);
     }
+#endif
+
 #else
   lcd_present = 0;
 #endif
@@ -293,6 +301,7 @@ void debug_output()
     return;
                              
 #if !defined(CPU_ADUC812) && !defined(SCS_300) && !defined(SCS_210) // SCS210/300 redefine printf()
+#ifdef LCD_DEBUG
   {
   unsigned char i, n;
 
@@ -314,6 +323,7 @@ void debug_output()
       printf("%02bX ", out_buf[i]);
     }
   }
+#endif
 #endif
 
 }
@@ -375,6 +385,12 @@ void serial_int(void) interrupt 4 using 1
       cmd_len = (in_buf[0] & 0x07) + 2; // + cmd + crc
       }
 
+    if (i_in == 2 && cmd_len == 9)
+      {
+      /* variable length command */
+      cmd_len = in_buf[1] + 3; // + cmd + N + crc
+      }
+
     debug_new_i = 1; // indicate new data in input buffer
 
     if (i_in == sizeof(in_buf))  // check for buffer overflow
@@ -434,7 +450,7 @@ void interprete(void)
 unsigned char crc, cmd, i, j, n;
 MSCB_INFO_CHN code *pchn;
 
-  cmd = (in_buf[0] & 0xF8); // strip lenth field
+  cmd = (in_buf[0] & 0xF8); // strip length field
 
   switch (in_buf[0])
     {
@@ -509,7 +525,7 @@ MSCB_INFO_CHN code *pchn;
       send_byte(*(((unsigned char *)&sys_info.wd_counter)+1), &crc);
 
       for (i=0 ; i<16 ; i++)                       // send node name
-        send_byte(node_name[i], &crc);
+        send_byte(sys_info.node_name[i], &crc);
 
       send_byte(crc, NULL);                        // send CRC code
 
@@ -559,6 +575,18 @@ MSCB_INFO_CHN code *pchn;
       /* set address in RAM */
       sys_info.node_addr  = *((unsigned int*)(in_buf+1));
       sys_info.group_addr = *((unsigned int*)(in_buf+3));
+
+      /* copy address to EEPROM */
+      flash_param = 1;
+
+      /* output new address */
+      new_address = 1;
+      break;
+
+    case (CMD_SET_ADDR | 0x07):
+      /* set node name in RAM */
+      for (i=0 ; i<16 && i<in_buf[1] ; i++)
+        sys_info.node_name[i] = in_buf[2+i];
 
       /* copy address to EEPROM */
       flash_param = 1;
@@ -940,6 +968,7 @@ void main(void)
     
     /* output new address to LCD if available */
 #if !defined(CPU_ADUC812) && !defined(SCS_300) && !defined(SCS_210) // SCS210/300 redefine printf()
+#ifdef LCD_DEBUG
     if (new_address)
       {
       new_address = 0;
@@ -947,6 +976,7 @@ void main(void)
       printf("AD:%04X GA:%04X WD:%d", sys_info.node_addr, 
               sys_info.group_addr, sys_info.wd_counter);
       }
+#endif
 #endif
 
     /* flash EEPROM if asked by interrupt routine */

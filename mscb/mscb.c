@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus communication functions
 
   $Log$
+  Revision 1.30  2003/03/06 16:08:50  midas
+  Protocol version 1.3 (change node name)
+
   Revision 1.29  2003/03/03 15:58:50  midas
   V1.2.1, fixed communication problem with slow ADuC
 
@@ -93,8 +96,8 @@
 
 \********************************************************************/
 
-#define MSCB_LIBRARY_VERSION   "1.2.1"
-#define MSCB_PROTOCOL_VERSION  "1.2"
+#define MSCB_LIBRARY_VERSION   "1.3.0"
+#define MSCB_PROTOCOL_VERSION  "1.3"
 
 #ifdef _MSC_VER           // Windows includes
 
@@ -576,6 +579,9 @@ int i;
 
   if (i == 1000)
     return MSCB_TIMEOUT;
+
+  for (i=0 ; i<50 ; i++)
+    pp_rdata(fd);
 
   return MSCB_SUCCESS;
 }
@@ -1331,6 +1337,63 @@ int status;
   buf[4] = (unsigned char ) (group & 0xFF);
   buf[5] = crc8(buf, 5);
   mscb_out(fd, buf, 6, 0);
+
+  mscb_release(fd);
+
+  return MSCB_SUCCESS;
+}
+
+/*------------------------------------------------------------------*/
+
+int mscb_set_name(int fd, int adr, char *name)
+/********************************************************************\
+
+  Routine: mscb_set_name
+
+  Purpose: Set node name
+
+  Input:
+    int fd                  File descriptor for connection
+    int adr                 Node address
+    char *name              New node name, up to 16 characters
+
+  Function value:
+    MSCB_SUCCESS            Successful completion
+    MSCB_MUTEX              Cannot obtain mutex for mscb
+
+\********************************************************************/
+{
+unsigned char buf[20];
+int status, i;
+
+  if (rpc_connected())
+    return rpc_call(RPC_MSCB_SET_NAME, fd, adr, name);
+
+  if (fd < 1 || mscb_fd[fd-1].fd == 0)
+    return MSCB_INVAL_PARAM;
+
+  if (mscb_lock(fd) != MSCB_SUCCESS)
+    return MSCB_MUTEX;
+
+  status = mscb_addr(fd, CMD_PING16, adr, 10);
+  if (status != MSCB_SUCCESS)
+    {
+
+    mscb_release(fd);
+    return status;
+    }
+
+  buf[0] = CMD_SET_ADDR | 0x07;
+  for (i=0 ; i<16 && name[i] ; i++)
+    buf[2+i] = name[i];
+
+  if (i<16)
+    buf[2 + (i++)] = 0;
+
+  buf[1] = i; /* varibale buffer length */
+
+  buf[2+i] = crc8(buf, 2+i);
+  mscb_out(fd, buf, 3+i, 0);
 
   mscb_release(fd);
 

@@ -9,6 +9,9 @@
                 for SCS-500 analog I/O
 
   $Log$
+  Revision 1.14  2003/03/06 16:08:50  midas
+  Protocol version 1.3 (change node name)
+
   Revision 1.13  2003/02/19 16:05:36  midas
   Added 'init' parameter to user_init
 
@@ -374,27 +377,8 @@ float gvalue;
 void user_loop(void)
 {
 static unsigned char i = 0;
-static unsigned long last = 300;
-static bit first = 1;
 
   adc_read(i, &user_data.adc[i]);
   i = (i+1) % 8;
-
-  if (!DEBUG_MODE && time() > last+30)
-    {
-    if (first)
-      {
-      lcd_clear();
-      first = 0;
-      }
-
-    last = time();
-
-    lcd_goto(0, 0);
-    printf("CH1: %6.4f V   ", user_data.adc[0]);
-
-    lcd_goto(0, 1);
-    printf("CH2: %6.4f V   ", user_data.adc[1]);
-    }
 }
 

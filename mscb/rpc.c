@@ -6,6 +6,9 @@
   Contents:     List of MSCB RPC functions with parameters
 
   $Log$
+  Revision 1.6  2003/03/06 16:08:50  midas
+  Protocol version 1.3 (change node name)
+
   Revision 1.5  2002/11/29 08:02:52  midas
   Fixed linux warnings
 
@@ -97,6 +100,12 @@ static RPC_LIST rpc_list[] = {
      {TID_INT,        RPC_IN}, 
      {0} }},
   
+  { RPC_MSCB_SET_NAME, "mscb_set_name",
+    {{TID_INT,        RPC_IN}, 
+     {TID_INT,        RPC_IN}, 
+     {TID_STRING,     RPC_IN}, 
+     {0} }},
+
   { RPC_MSCB_WRITE_GROUP, "mscb_write_group",
     {{TID_INT,        RPC_IN}, 
      {TID_INT,        RPC_IN}, 
@@ -329,6 +338,10 @@ int status;
 
     case RPC_MSCB_SET_ADDR:
       status = mscb_set_addr(CINT(0), CINT(1), CINT(2), CINT(3));
+      break;
+
+    case RPC_MSCB_SET_NAME:
+      status = mscb_set_name(CINT(0), CINT(1), CSTRING(2));
       break;
 
     case RPC_MSCB_WRITE_GROUP:
