@@ -6,6 +6,9 @@
   Contents:     MIDAS logger program
 
   $Log$
+  Revision 1.71  2003/12/12 12:33:04  midas
+  Create /History/Links/System if not existing
+
   Revision 1.70  2003/11/24 08:22:46  midas
   Changed timeouts from INT to DWORD, added ignore_timeout to cm_cleanup, adde '-f' flag to ODBEdit 'cleanup'
 
@@ -2048,7 +2051,8 @@ BOOL     single_names;
   if (str[0] != 0)
     hs_set_path(str);
 
-  if (db_find_key(hDB, 0, "/History/Links", &hKeyRoot) != DB_SUCCESS)
+  if (db_find_key(hDB, 0, "/History/Links", &hKeyRoot) != DB_SUCCESS ||
+      db_find_key(hDB, 0, "/History/Links/System", &hKeyRoot) != DB_SUCCESS) 
     {
     /* create default history keys */
     db_create_key(hDB, 0, "/History/Links", TID_KEY);
