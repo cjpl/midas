@@ -6,6 +6,9 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.94  2004/09/17 00:17:55  midas
+  Added timeout handling for ODB locking
+
   Revision 1.93  2004/09/15 23:54:12  midas
   Manage quotation marks correctly in db_save_string
 
@@ -1116,7 +1119,9 @@ INT db_open_database(char *database_name, INT database_size,
       _database[handle].lock_cnt = 0;
 
       /* first lock database */
-      db_lock_database(handle + 1);
+      status = db_lock_database(handle + 1);
+      if (status != DB_SUCCESS)
+         return status;
 
       /*
          Now we have a DATABASE_HEADER, so let's setup a CLIENT
@@ -1539,12 +1544,14 @@ INT db_set_client_name(HNDLE hDB, char *client_name)
 /**
 Lock a database for exclusive access via system mutex calls.
 @param hDB   Handle to the database to lock
-@return DB_SUCCESS, DB_INVALID_HANDLE
+@return DB_SUCCESS, DB_INVALID_HANDLE, DB_TIMEOUT
 */
 INT db_lock_database(HNDLE hDB)
 {
 
 #ifdef LOCAL_ROUTINES
+   int status;
+
    if (hDB > _database_entries || hDB <= 0) {
       cm_msg(MERROR, "db_lock_database", "invalid database handle");
       return DB_INVALID_HANDLE;
@@ -1553,8 +1560,14 @@ INT db_lock_database(HNDLE hDB)
    if (_database[hDB - 1].protect && _database[hDB - 1].database_header != NULL)
       cm_msg(MERROR, "db_lock_database", "internal error: DB already locked");
 
-   if (_database[hDB - 1].lock_cnt == 0)
-      ss_mutex_wait_for(_database[hDB - 1].mutex, 0);
+   if (_database[hDB - 1].lock_cnt == 0) {
+      /* wait max. 5 minutes for mutex (required if locking process is being debugged) */
+      status = ss_mutex_wait_for(_database[hDB - 1].mutex, 5*60*1000);
+      if (status == SS_TIMEOUT) {
+         cm_msg(MERROR, "db_lock_database", "timeout obtaining lock for database");
+         return DB_TIMEOUT;
+      }
+   }
 
    _database[hDB - 1].lock_cnt++;
 
