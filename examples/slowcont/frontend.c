@@ -17,6 +17,9 @@
 
 
   $Log$
+  Revision 1.8  2002/05/13 22:21:08  midas
+  Fixed typo
+
   Revision 1.7  2002/03/13 08:39:28  midas
   Use bus drivers in examples
 
@@ -101,7 +104,7 @@ EQUIPMENT equipment[] = {
     NULL,                 /* init string */
   },
 
-  { "Environmant",        /* equipment name */
+  { "Environment",        /* equipment name */
     4, 0,                 /* event ID, trigger mask */
     "SYSTEM",             /* event buffer */
     EQ_SLOW,              /* equipment type */
