@@ -243,12 +243,12 @@ Scaler                          DIR
 
 <hr> @section ODB_Logger_Tree ODB /Logger Tree
 The /Logger ODB tree contains all the relevant information for the Midas logger
-utility (@ref mlogger_task ) to run properly. This utility provides the mean of
+utility (@ref mlogger_task) to run properly. This utility provides the mean of
 storing the physical data retrieved by the frontend to a storage media.
 The user has no code to write in order for the system to operate correctly.
 Its general behavior can be customized and multiple logging channels can be defined.
-The application supports so far three type of storage devices i.e.: Disk,
-Tape and FTP channel.
+The application supports so far three type of storage devices i.e.: \em Disk,
+\em Tape and \em FTP channel.
 
 Default settings are created automatically when the logger starts the first time:
 \code 
@@ -285,6 +285,37 @@ Logger                          DIR
                 Bytes written toDOUBLE  1     8     1h   0   RWD  3.24316e+11
                 Files written   INT     1     4     1h   0   RWD  334
 \endcode  
+
+\anchor mySQL
+From Midas version 1.9.5, the logger has the possibility to store information to a 
+mySQL database. This is achieved by defining at build time the preprocessor flag
+@ref HAVE_MYSQL. This option when enabled will create a sub tree \em SQL under
+/Logger in the ODB. This tree contains information for mySQL access with predefined
+mySQL database name \em Midas and table \em Runlog. Under 2 dedicated sub directories
+i.e: BOR and EOR, predefined links exists which will be used respectively at BOR and EOR
+for storing into the database. These elements are ODB links allowing the user to extend the 
+list with any parameter of the ODB database. This logger mySQL option is to replace 
+or complement the \em runlog.txt functionality of the ana_end_of_run() function from the
+analyzer.c.
+
+\code
+[local:midas:S]/Logger>ls -lr SQL
+Key name                        Type    #Val  Size  Last Opn Mode Value
+---------------------------------------------------------------------------
+SQL                             DIR
+    Create database             BOOL    1     4     27s  0   RWD  n
+    Write data                  BOOL    1     4     27s  0   RWD  n
+    Hostname                    STRING  1     80    27s  0   RWD  localhost
+    Username                    STRING  1     80    27s  0   RWD  root
+    Password                    STRING  1     80    27s  0   RWD
+    Database                    STRING  1     32    27s  0   RWD  midas
+    Table                       STRING  1     80    27s  0   RWD  Runlog
+    Links BOR                   DIR
+        Run number              LINK    1     20    58s  0   RWD  /Runinfo/Run number
+        Start time              LINK    1     20    58s  0   RWD  /Runinfo/Start time
+    Links EOR                   DIR
+        Stop time               LINK    1     19    4m   0   RWD  /Runinfo/Stop time
+\endcode
 
   \anchor Data_Dir 
   - [Data dir] Specifies in which directory files produced by the logger should
@@ -363,13 +394,15 @@ Logger                          DIR
       - \b .root for \b ROOT 
       - \b .asc  for \b ASCII 
       - \b .txt  for \b DUMP 
-  The ASCII format converts events into readable text format which can be easily
+  
+- The ASCII format converts events into readable text format which can be easily
   analyzed by programs which have problems reading binary data. While the ASCII
   format tries to minimize the file size by printing one event per line, the DUMP
   format gives a very detailed ASCII representation of the event including bank
   information, serial numbers etc, it should be used for diagnostics.
   Consistency of this type of format has to be maintained between the frontend
   declaration and the logger.
+
 - [ODB Dump] Specifies the complete dump of the ODB to the logging channel before
   and after every run. The ODB content is dumped in one long ASCII string reflecting
   the status at begin-of-run event and at end-of-run event. These special events have
@@ -419,7 +452,7 @@ Logger                          DIR
   %j, %k, %l, %m, %M, %n, %O, %p, %P, %r, %R, %s, %S, %t, %T, %u, %U, %V, %w, %W, %x,
   %X, %y, %Y, %z, %Z, %+, %%. (See man strftime() for explanations).
 
-  The \b Current filename  will reflect the full path of the saved data file.
+- [Current filename]  will reflect the full path of the saved data file.
 
 
 <hr> @section ODB_Experiment_Tree ODB /Experiment Tree
@@ -913,9 +946,8 @@ Lazy                            DIR
 
 <hr> @section ODB_EBuilder_Tree ODB /EBuilder Tree
 
-Event Builder tree created by @ref mevb_task . More than 2 fragments can be
-defined. Once the ODB is setup with the user requirments, restarting the
-task will activate all the fragment defined.
+The Event Builder tree is created by @ref mevb_task and is placed in the  
+Equipment list.
 
 \code
 Key name                        Type    #Val  Size  Last Opn Mode Value

@@ -16,7 +16,7 @@ already available in the package.
   @ref SPECIFIC_OS_PRG
 
 - Other flags are avaiable at the application level:
- - @ref HAVE_CAMAC , @ref HAVE_ROOT , @ref HAVE_HBOOK , 
+ - @ref HAVE_CAMAC , @ref HAVE_ROOT , @ref HAVE_HBOOK , @ref HAVE_MYSQL , 
   @ref USE_EVENT_CHANNEL ,  @ref DM_DUAL_THREAD , @ref USE_INT
 
 - By default the midas applications are built for use with dynamic library 
@@ -89,6 +89,13 @@ against \b HBOOK and \b PAW. The path to the cernlib is requested and expected t
 following command:
 \code
 make CERNLIB_PACK=<your path>/libpacklib.a
+\endcode
+
+<hr> @section HAVE_MYSQL HAVE_MYSQL
+This flag is used for the @ref mlogger_task to building the application with \em mySQL support.
+The build requires to have access to the mysql include files as well as the mysql library.
+Refers to @ref for further information on that option.
+\code
 \endcode
 
 - For operation of the analyzer \b without \b HBOOK or \b ROOT, refer to @ref analyzer_struct

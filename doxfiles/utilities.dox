@@ -10,6 +10,7 @@ debug the data aquisition system. Starting with the main utility (odbedit) which
 provide access to the Online data base and run control.  
 - @ref odbedit_task : Online Database Editor
   - @ref ODB_Structure
+- @ref frontend_task : Midas Frontend application  
 - @ref mstat_task : Midas ASCII status report
 - @ref analyzer_task : Midas data analyzer
   - @ref analyzer_struct
@@ -28,6 +29,30 @@ provide access to the Online data base and run control.
 - @ref stripchartfile : Tcl/Tk for chart display
 - @ref rmidas_task : Root/Midas Simple GUI application
 - @ref hvedit_task : High Voltage Slow Control GUI
+- @ref mserver_task : Midas Remote server
+
+<hr> @section frontend_task Midas Frontend application
+The purpose of the @ref frontend_task is to collect data from the hardware and transmit this
+information to a central place where data logging and analysis can be performed. This task
+is achieved with a) a specific code written by the user describing the sequence of action to acquire
+the hardware data and b) a framework code handling the data flow control, data transmission and run
+control operation. From Midas version 1.9.5 a new argument (-i index) has been introduce to
+facilitate the multiple frontend configuration operation required for the @ref Event_Builder.
+
+- <b> Arguments </b>
+  - [-h ] : help
+  - [-h hostname ] : host name (see @ref odbedit_task)
+  - [-e exptname ] : experiment name (see @ref odbedit_task)
+  - [-D ] : Become a Daemon.
+  - [-O ] : Become a Daemon but keep stdout 
+  - [-d ] : Used for debugging.
+  - [-i index] : Set frontend index (used with @ref mevb_task).
+ 
+- <b> Usage </b>
+
+\code
+\endcode
+
 
 <hr> @section odbedit_task odbedit task
 \b odbedit refers to the Online DataBase Editor. This is the main application to
@@ -70,9 +95,28 @@ See @ref ODB_Structure for more information.
   \b ls /System.
 
 - <b> Remarks </b>
-  ODBedit treats the hierarchical online database very much like a file system.
-  Most commands are similar to UNIX file commands like ls, cd, chmod, ln etc.
-  The help command displays a short description of all commands.
+ - ODBedit treats the hierarchical online database very much like a file system.
+   Most commands are similar to UNIX file commands like ls, cd, chmod, ln etc.
+   The help command displays a short description of all commands.
+ - From Midas version 1.9.5, the ODB content can be saved into XML format if the
+   file extension is \em .xml
+   \code
+   C:\odbedit
+   [local:midas:S]/>save odb.xml
+   [local:midas:S]/>q
+   more odb.xml
+   <?xml version="1.0" encoding="ISO-8859-1"?>
+   <!-- created by ODBEdit on Wed Oct 06 22:48:26 2004 -->
+   <dir name="root">
+     <dir name="System">
+       <dir name="Clients">
+         <dir name="3880">
+           <key name="Name" type="STRING" size="32">ebfe01</key>
+           <key name="Host" type="STRING" size="256">pierre2</key>
+           <key name="Hardware type" type="INT">42</key>
+        <key name="Server Port" type="INT">4658</key>
+   ...
+   \endcode
 
 \code
 [local:midas:Stopped]/>help
@@ -267,9 +311,10 @@ See the @ref ODB_Logger_Tree for reference on the tree structure.
 
 - <b> Arguments </b> 
   - [-h ] : help
-  - [-h hostname ] : host name (see @ref odbedit_task)
   - [-e exptname ] : experiment name (see @ref odbedit_task)
   - [-D ] : start program as a daemon (UNIX only).
+  - [-s] : Save mode (debugging: protect ODB).
+  - [-v] : Verbose (not to be used in conjunction with -D).
 
 - <b> Usage </b>
  \code
@@ -277,7 +322,7 @@ See the @ref ODB_Logger_Tree for reference on the tree structure.
 \endcode
 
 - <b> Remarks </b> 
- - The \b mlogger- application requires to have an existing \b /Equipment/- tree
+ - The \b mlogger application requires to have an existing \b /Equipment/ tree
   in the ODB! 
  - As soon as the mlogger is running, the history is mechanism is enabled. 
  - The data channels as well as the history logging is rescanned automatically
@@ -285,8 +330,13 @@ See the @ref ODB_Logger_Tree for reference on the tree structure.
   while running but effect will be taken place only at the following begin of run transition.
  - The default setting defines a data "Midas" format with a file name
   of the type "run\%05d.mid". Make sure this is the requested setting for your experiment.
- - Once the mlogger is running, you should be able to monitor its state
-  through the @ref mstat_task or through a web browser if the @ref mhttpd_task is running.
+ - Once the mlogger is running, you should be able to monitor its state.
+  through the @ref mstat_task or through the @ref mhttpd_task web browser.
+ - From version 1.9.5
+  - mlogger will not run if started remotely (argument -h hostname has been removed).
+  - The file size limitation (<2GB) has been removed for older OS version.
+  - @ref mySQL data entry support.
+ 
  
 <hr> @section lazylogger_task lazylogger task
 \b lazylogger is an application which decouples the data aquisition from the data logging
@@ -648,8 +698,8 @@ Bank:METR Length: 12(I*1)/3(I*4)/3(Type) Type:Real*4 (FMT machine dependent)
 
 
 <hr> @section mevb_task mevb task
-\b mevb is a event builder tool assembling multiple event fragment
-received from different event buffers.
+\b mevb is an event builder application taking several frontends Midas data source
+and assemble a new overall Midas event.
 
 In the case where overall data collection is handled by multiple
 physically separated frontend, it could be necessary to assemble these
@@ -664,13 +714,14 @@ serial number followed by all the expected fragments.
 The composed event is then sent to the next stage which is usually the
 data logger (mlogger).
 
-The @ref mhttpd_task will present a specific section on its page for the
-@ref mevb_task if running. 
+The @ref mhttpd_task will present the status of the event builder as an extra equipment
+with its corresponding statistical information.
 
 - <b> Arguments </b>
   - [-h ] : help
   - [-h hostname ] : host name 
   - [-e exptname ] : experiment name
+  - [-b ] : Buffer name
   - [-v ] : Show wheel
   - [-d ] : debug messages
   - [-D ] : start program as a daemon
@@ -680,7 +731,7 @@ The @ref mhttpd_task will present a specific section on its page for the
   Program mevb/EBuilder version 2 started
 \endcode
 
-\arg See @ref EventBuilder for more details
+\arg See @ref Event_Builder for more details
 
 <hr> @section mspeaker_task mspeaker, mlxspeaker tasks
 \b mspeaker, mlxspeaker are utilities which listen to the Midas messages system
@@ -1178,4 +1229,20 @@ Operates on @ref mchart_task data or on Midas history save-set files.
  \code
  >hvedit
  \endcode
+
+<hr> @section mserver_task Midas Remote server
+\em mserver provides remote access to any midas client. This task usually runs in the
+background and doesn't not to be modified. In the case debugging is required, the
+\em mserver can be started with the -d flag which will write an entry for each transaction
+appearing into the mserver. This log entry contains the time stamp and RPC call request.
+
+- <b> Arguments </b>
+  - [-h ] : help
+  - [-s ] : Single process  server
+  - [-t ] : Multi thread server
+  - [-m ] : Milti process server (default)
+  - [-d ] : Write debug info to /tmp/mserver.log
+  - [-D ] : Become a Daemon
+  
+- <b> Usage </b>
 */

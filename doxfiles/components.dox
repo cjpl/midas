@@ -1,7 +1,7 @@
 /*! @page Comp Components
 
 \htmlonly <img ALIGN="left" alt="previous.gif" src="previous.gif"> \endhtmlonly 
-@ref quickstart - @ref Top - @ref Internal 
+@ref Intro - @ref Top - @ref quickstart
 \htmlonly <img alt="next.gif" src="next.gif"> \endhtmlonly
 
 Midas system is based on a modular scheme that allows scalability and flexibility.
@@ -231,10 +231,11 @@ During these transition periods, any Midas client register to
 receive notification of such message will be able to perform its task within the
 overall run control of the experiment. 
 
-In addition to these main transitions states, the \em Tr_Start and
-\em Tr_Stop have another 2 sub-states defined as \em Tr_preStart,
-\em Tr_postStart, \em Tr_preStop, \em Tr_postStop.
-These sub-states allows proper synchronization of data flow through the system.
+In Order to provide more flexibility to the transition sequence of all the 
+midas clients connected to a given experiment, each transition function has 
+a \em transition \em sequence \em number attached to it. This transition sequence is 
+used to establish within a given transition the order of the invocation of the 
+Midas clients (from the lower seq.# to the largest).
 
  * <center> Transitions
  *  \image html transition.gif
@@ -316,7 +317,7 @@ logbook information is accessible from any web browser as long as the
 For more information see @ref Electronic_Logbook, @ref mhttpd_task.
 
 \htmlonly <img ALIGN="left" alt="previous.gif" src="previous.gif"> \endhtmlonly 
-@ref quickstart - @ref Top - @ref Internal
+@ref Intro - @ref Top - @ref quickstart
 \htmlonly <img alt="next.gif" src="next.gif"> \endhtmlonly
 */
 

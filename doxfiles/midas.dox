@@ -13,10 +13,10 @@
   
   Chapters are: 
   \arg @ref NDF : Whats new in Midas.
-  \arg @ref Intro : Some intial words and description
+  \arg @ref Intro : Some initial words and description
   \arg @ref Comp : listing 
   \arg @ref quickstart : The HowTo for installation.
-  \arg @ref Internal : The main internal components of the system 
+  \arg @ref Internal : The main internal components of the system. 
   \arg @ref Utilities : The Midas applications.
   \arg @ref AppendixA : Supported data format
   \arg @ref AppendixB : Supported hardware.
