@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.154  2002/05/15 23:43:39  midas
+  Added bm_defragment_event()
+
   Revision 1.153  2002/05/14 04:24:53  midas
   Fixed bug on nonexisting message file
 
@@ -4420,6 +4423,14 @@ INT bm_match_event(short int event_id, short int trigger_mask,
 
 \********************************************************************/
 {
+  if ((pevent->event_id & 0xF000) == EVENTID_FRAG1 ||
+      (pevent->event_id & 0xF000) == EVENTID_FRAG)
+    /* fragmented event */
+    return ((event_id     == EVENTID_ALL  ||
+             event_id     == (pevent->event_id & 0x0FFF)) &&
+            (trigger_mask == TRIGGER_ALL ||
+            (trigger_mask &  pevent->trigger_mask)));
+
   return ((event_id     == EVENTID_ALL  ||
            event_id     == pevent->event_id) &&
           (trigger_mask == TRIGGER_ALL ||
@@ -7549,8 +7560,14 @@ CACHE_READ:
       if (_request_list[i].buffer_handle == buffer_handle &&
           bm_match_event(_request_list[i].event_id,
                          _request_list[i].trigger_mask, pevent))
-      {
-      _request_list[i].dispatcher(buffer_handle, i, pevent, (void *)(pevent+1));
+      { 
+      /* if event is fragmented, call defragmenter */
+      if ((pevent->event_id & 0xF000) == EVENTID_FRAG1 ||
+          (pevent->event_id & 0xF000) == EVENTID_FRAG)
+        bm_defragment_event(buffer_handle, i, pevent, (void *)(pevent+1),
+                            _request_list[i].dispatcher);
+      else
+        _request_list[i].dispatcher(buffer_handle, i, pevent, (void *)(pevent+1));
       }
 
     return BM_MORE_EVENTS;
@@ -7745,8 +7762,13 @@ CACHE_FULL:
           bm_match_event(_request_list[i].event_id,
                          _request_list[i].trigger_mask, _event_buffer))
     {
-    _request_list[i].dispatcher(buffer_handle, i, _event_buffer,
-                                (void *)(((EVENT_HEADER *) _event_buffer)+1));
+    if ((_event_buffer->event_id & 0xF000) == 0xC000)
+      bm_defragment_event(buffer_handle, i, _event_buffer,
+                          (void *)(((EVENT_HEADER *) _event_buffer)+1),
+                          _request_list[i].dispatcher);
+    else
+      _request_list[i].dispatcher(buffer_handle, i, _event_buffer,
+                                  (void *)(((EVENT_HEADER *) _event_buffer)+1));
     }
 
   return BM_MORE_EVENTS;
@@ -8045,8 +8067,13 @@ static BOOL          bMoreLast = FALSE;
                bm_match_event(_request_list[i].event_id,
                               _request_list[i].trigger_mask, _event_buffer))
           {
-          _request_list[i].dispatcher(_request_list[i].buffer_handle, i, _event_buffer,
-                                      (void *)(((EVENT_HEADER *) _event_buffer)+1));
+          if ((_event_buffer->event_id & 0xF000) == 0xC000)
+            bm_defragment_event(_request_list[i].buffer_handle, i, _event_buffer,
+                                (void *)(((EVENT_HEADER *) _event_buffer)+1),
+                                _request_list[i].dispatcher);
+          else
+            _request_list[i].dispatcher(_request_list[i].buffer_handle, i, _event_buffer,
+                                        (void *)(((EVENT_HEADER *) _event_buffer)+1));
           }
 
       /* break if no more events */
@@ -8150,6 +8177,145 @@ BUFFER_CLIENT   *pclient;
 #endif /* LOCAL_ROUTINES */
 
   return BM_SUCCESS;
+}
+
+/*------------------------------------------------------------------*/
+
+#define MAX_DEFRAG_EVENTS 10
+
+typedef struct {
+  WORD  event_id;
+  DWORD data_size;
+  DWORD received;
+  EVENT_HEADER *pevent;
+} EVENT_DEFRAG_BUFFER;
+
+EVENT_DEFRAG_BUFFER defrag_buffer[MAX_DEFRAG_EVENTS];
+
+void bm_defragment_event(HNDLE buffer_handle, HNDLE request_id, 
+                         EVENT_HEADER *pevent, void *pdata,
+                         void (*dispatcher)(HNDLE,HNDLE,EVENT_HEADER*,void*))
+/********************************************************************\
+
+  Routine: bm_defragment_event
+
+  Purpose: Called internally from the event receiving routines
+           bm_push_event and bm_poll_event to recombine event 
+           fragments and call the user callback routine upon
+           completion.
+
+  Input:
+    HNDLE buffer_handle  Handle for the buffer containing event
+    HNDLE request_id     Handle for event request
+    EVENT_HEADER *pevent Pointer to event header
+    void *pata           Pointer to event data
+    dispatcher()         User callback routine
+
+  Output:
+    <calls dispatcher() after successfull recombination of event>
+
+  Function value:
+    void
+
+\********************************************************************/
+{
+INT i;
+
+  if ((pevent->event_id & 0xF000) == EVENTID_FRAG1)
+    {
+    /*---- start new event ----*/
+    
+    /* check if fragments already stored */
+    for (i=0 ; i<MAX_DEFRAG_EVENTS ; i++)
+      if (defrag_buffer[i].event_id == (pevent->event_id & 0x0FFF))
+        break;
+
+    if (i<MAX_DEFRAG_EVENTS)
+      {
+      free(defrag_buffer[i].pevent);
+      memset(&defrag_buffer[i].event_id, 0, sizeof(EVENT_DEFRAG_BUFFER));
+      cm_msg(MERROR, "bm_defragement_event", "Received new event with ID %d while old fragments were not completed",
+                                             (pevent->event_id & 0x0FFF));
+      }
+
+    /* search new slot */
+    for (i=0 ; i<MAX_DEFRAG_EVENTS ; i++)
+      if (defrag_buffer[i].event_id == 0)
+        break;
+
+    if (i == MAX_DEFRAG_EVENTS)
+      {
+      cm_msg(MERROR, "bm_defragment_evnet", 
+        "Not eough defragment buffers, please increase MAX_DEFRAG_EVENTS and recompile");
+      return;
+      }
+
+    /* check event size */
+    if (pevent->data_size != sizeof(DWORD))
+      {
+      cm_msg(MERROR, "bm_defragment_evnet", 
+        "Received first event fragment with %s bytes instead of %d bytes, event ignored", 
+        pevent->data_size, sizeof(DWORD));
+      return;
+      }
+
+    /* setup defragment buffer */
+    defrag_buffer[i].event_id = (pevent->event_id & 0x0FFF);
+    defrag_buffer[i].data_size = *(DWORD *)pdata;
+    defrag_buffer[i].received = 0;
+    defrag_buffer[i].pevent = malloc(sizeof(EVENT_HEADER)+defrag_buffer[i].data_size);
+
+    if (defrag_buffer[i].pevent == NULL)
+      {
+      memset(&defrag_buffer[i].event_id, 0, sizeof(EVENT_DEFRAG_BUFFER));
+      cm_msg(MERROR, "bm_defragement_event", "Not enough memory to allocate event defragment buffer");
+      return;
+      }
+
+    memcpy(defrag_buffer[i].pevent, pevent, sizeof(EVENT_HEADER));
+    defrag_buffer[i].pevent->event_id = defrag_buffer[i].event_id;
+    defrag_buffer[i].pevent->data_size = defrag_buffer[i].data_size;
+
+    return;
+    }
+
+  /* search buffer for that event */
+  for (i=0 ; i<MAX_DEFRAG_EVENTS ; i++)
+    if (defrag_buffer[i].event_id == (pevent->event_id & 0xFFF))
+      break;
+
+  if (i == MAX_DEFRAG_EVENTS)
+    {
+    /* no buffer available -> no first fragment received */
+    free(defrag_buffer[i].pevent);
+    memset(&defrag_buffer[i].event_id, 0, sizeof(EVENT_DEFRAG_BUFFER));
+    cm_msg(MERROR, "bm_defragement_event", "Received fragment with no first fragment (ID %d)",
+                                            pevent->event_id & 0x0FFF);
+    return;
+    }
+
+  /* add fragment to buffer */
+  if (pevent->data_size + defrag_buffer[i].received > defrag_buffer[i].data_size)
+    {
+    free(defrag_buffer[i].pevent);
+    memset(&defrag_buffer[i].event_id, 0, sizeof(EVENT_DEFRAG_BUFFER));
+    cm_msg(MERROR, "bm_defragement_event", "Received fragments with more data (%d) than event size (%d)",
+      pevent->data_size + defrag_buffer[i].received, defrag_buffer[i].data_size);
+    return;
+    }
+
+  memcpy(((char *)defrag_buffer[i].pevent) + sizeof(EVENT_HEADER) + 
+         defrag_buffer[i].received, pdata, pevent->data_size);
+
+  defrag_buffer[i].received += pevent->data_size;
+
+  if (defrag_buffer[i].received == defrag_buffer[i].data_size)
+    {
+    /* event complete */
+    dispatcher(buffer_handle, request_id, defrag_buffer[i].pevent, defrag_buffer[i].pevent+1);
+    free(defrag_buffer[i].pevent);
+    memset(&defrag_buffer[i].event_id, 0, sizeof(EVENT_DEFRAG_BUFFER));
+    }
 }
 
 /*------------------------------------------------------------------*/
