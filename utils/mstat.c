@@ -6,6 +6,9 @@
   Contents:     Display/log some pertinent information of the ODB
   
   $Log$
+  Revision 1.14  2003/04/23 23:53:54  pierre
+  Fixed compiler warning
+
   Revision 1.13  2002/05/08 19:54:41  midas
   Added extra parameter to function db_get_value()
 
@@ -67,8 +70,6 @@
 #else
 #define ESC_FLAG 1
 #endif
-
-static char data[10000];
 
 INT rn;
 
@@ -208,10 +209,10 @@ void compose_status(HNDLE hDB, HNDLE hKey)
     cm_time((DWORD *)(&full_time));
     difftime = full_time - tb;
     if (esc_flag)
-      sprintf(&(ststr[j++][66]),"Run time :%02d:%02d:%02d",
+      sprintf(&(ststr[j++][66]),"Run time :%02ld:%02ld:%02ld",
 	      difftime/3600,difftime%3600/60,difftime%60);
     else
-      sprintf(&(ststr[j++][54]),"     Run time :%02d:%02d:%02d",
+      sprintf(&(ststr[j++][54]),"     Run time :%02ld:%02ld:%02ld",
 	      difftime/3600,difftime%3600/60,difftime%60);
   }         
   else if (rs == STATE_STOPPED)
@@ -221,10 +222,10 @@ void compose_status(HNDLE hDB, HNDLE hKey)
     else
       difftime = tsb - tb;
     if (esc_flag)
-      sprintf(&(ststr[j++][54]),"Full Run time :%02d:%02d:%02d",
+      sprintf(&(ststr[j++][54]),"Full Run time :%02ld:%02ld:%02ld",
 	      difftime/3600,difftime%3600/60,difftime%60);
     else
-      sprintf(&(ststr[j++][54]),"Full Run time :%02d:%02d:%02d",
+      sprintf(&(ststr[j++][54]),"Full Run time :%02ld:%02ld:%02ld",
 	      difftime/3600,difftime%3600/60,difftime%60);
     
     sprintf(&(ststr[j][42])," Stop time:%s",spt);
@@ -232,8 +233,8 @@ void compose_status(HNDLE hDB, HNDLE hKey)
   
   /* Start Stop time */
   sprintf(&(ststr[j][0]),"Start time:%s",stt);
-  sprintf(&(ststr[++j][0]),"");
-  sprintf(&(ststr[j++][0]),"");
+  ststr[++j][0] = '\0';
+  ststr[++j][0] = '\0';
 } /* --- run info --- */
  
 /* --------------------- Equipment tree -------------------------- */
@@ -358,7 +359,7 @@ if (   (cm_exist("logger",FALSE) == CM_SUCCESS)
   double   lbyt;
   
   /* logger */
-  sprintf(ststr[j++],"");
+  ststr[j++][0] = '\0';
   size = sizeof(datadir);
   db_get_value(hDB, 0, "/logger/data dir", datadir, &size, TID_STRING, TRUE);
   size = sizeof(mesfil);
@@ -459,7 +460,8 @@ if (   (cm_exist("logger",FALSE) == CM_SUCCESS)
 }
 else
 {
-  sprintf(&(ststr[j++][0]),"");
+  ststr[j++][0] = '\0';
+//-PAA  sprintf(&(ststr[j++][0]),"");
   sprintf(&(ststr[j++][0]),"... Logger currently not running...");
 }
 
@@ -511,7 +513,8 @@ else
 
             if (k==0)
             {
-              sprintf(ststr[j++],"");
+	      ststr[j++][0] = '\0';
+//              sprintf(ststr[j++],"");
               sprintf(&(ststr[j][0]),"Lazy Label");
               sprintf(&(ststr[j][15]),"Progress");
               sprintf(&(ststr[j][25]),"File name");
@@ -530,7 +533,7 @@ else
     }
   }
 
-  sprintf(ststr[j++],"");
+  ststr[j++][0] = '\0';
 
 /* --------------------- System client list ---------------------- */
 /* Get current Client listing */
@@ -552,16 +555,16 @@ else
 	      
 	      memset (strtmp,0,sizeof(strtmp));
 	      size = sizeof(clientn);
-	      sprintf(strtmp,"name",key.name);
+	      sprintf(strtmp,"name");
 	      db_get_value(hDB, hSubkey, strtmp, clientn, &size, TID_STRING, TRUE);
 	      memset (strtmp,0,sizeof(strtmp));
 	      size = sizeof(clienth);
-	      sprintf(strtmp,"host",key.name);
+	      sprintf(strtmp,"host");
 	      db_get_value(hDB, hSubkey, strtmp, clienth, &size, TID_STRING, TRUE);
 	      if (ii>2)
 	        {
 	          ii=0;
-	          sprintf(&(ststr[++j][0]),"");
+	          ststr[++j][0] = '\0';
 	        }
 	      memset (sdummy,0,64);
 	      pp = strchr(clienth,'.');
@@ -575,7 +578,7 @@ else
     }
   
   if (loop == 1)
-    sprintf(ststr[j++],"*- [!<cr>] to Exit --- [R<cr>] to Refresh -------------------- Delay:%2.i [sec]-*"
+    sprintf(ststr[j++],"*- [!<cr>] to Exit --- [R<cr>] to Refresh -------------------- Delay:%2.li [sec]-*"
 	    ,delta_time/1000);
   else
     sprintf(ststr[j++],"*------------------------------------------------------------------------------*");
@@ -590,10 +593,10 @@ else
 }
 
 /*------------------------------------------------------------------*/
-int main(unsigned int argc,char **argv)
+int main(int argc,char **argv)
 {
-  INT    status, last_time, file_mode;
-  DWORD  j, i, last_max_line=0;
+  INT    status, last_time=0, file_mode;
+  DWORD  j=0, i, last_max_line=0;
   HNDLE  hDB, hKey;
   char   host_name[HOST_NAME_LENGTH], expt_name[HOST_NAME_LENGTH], str[32];
   char   ch, svpath[256];
@@ -613,38 +616,38 @@ int main(unsigned int argc,char **argv)
   /* get parameters */
   /* parse command line parameters */
   for (i=1 ; i<argc ; i++)
+  {
+    if (argv[i][0] == '-' && argv[i][1] == 'd')
+      debug = TRUE;
+    else if (strncmp(argv[i],"-l",2) == 0)
+      loop = 1;
+    else if (argv[i][0] == '-')
     {
-      if (argv[i][0] == '-' && argv[i][1] == 'd')
-	debug = TRUE;
-      else if (strncmp(argv[i],"-l",2) == 0)
-	loop = 1;
-      else if (argv[i][0] == '-')
-	{
-	  if (i+1 >= argc || argv[i+1][0] == '-')
-	    goto usage;
-	  if (strncmp(argv[i],"-w",2) == 0)
-	    delta_time = 1000 * (atoi (argv[++i]));
-	  else if (strncmp(argv[i],"-f",2) == 0)
-	    strcpy(svpath, argv[++i]);
-	  else if (strncmp(argv[i],"-e",2) == 0)
-	    strcpy(expt_name, argv[++i]);
-	  else if (strncmp(argv[i],"-h",2)==0)
-	    strcpy(host_name, argv[++i]);
-	  else if (strncmp(argv[i],"-c",2) == 0) {
-	    strcpy(str, argv[++i]);
-	    if (strncmp(str,"n",1)==0 || strncmp(str,"N",1)==0)
-	      file_mode = 0;
-	  }
-	  else
-	    {
-	    usage:
-	      printf("usage: mstat  -l (loop) -w delay (5sec) -f filename (null)\n");
-	      printf("              -c compose (Addrun#/norun#)\n");
-	      printf("             [-h Hostname] [-e Experiment]\n\n");
-	      return 0;
-	    }
-	}
+      if (i+1 >= argc || argv[i+1][0] == '-')
+	goto usage;
+      if (strncmp(argv[i],"-w",2) == 0)
+	delta_time = 1000 * (atoi (argv[++i]));
+      else if (strncmp(argv[i],"-f",2) == 0)
+	strcpy(svpath, argv[++i]);
+      else if (strncmp(argv[i],"-e",2) == 0)
+	strcpy(expt_name, argv[++i]);
+      else if (strncmp(argv[i],"-h",2)==0)
+	strcpy(host_name, argv[++i]);
+      else if (strncmp(argv[i],"-c",2) == 0) {
+	strcpy(str, argv[++i]);
+	if (strncmp(str,"n",1)==0 || strncmp(str,"N",1)==0)
+	  file_mode = 0;
+      }
+      else
+      {
+     usage:
+	printf("usage: mstat  -l (loop) -w delay (5sec) -f filename (null)\n");
+	printf("              -c compose (Addrun#/norun#)\n");
+	printf("             [-h Hostname] [-e Experiment]\n\n");
+	return 0;
+      }
     }
+  }
   
   /* connect to experiment */
   status = cm_connect_experiment(host_name, expt_name, "MStatus", 0);
@@ -666,76 +669,78 @@ int main(unsigned int argc,char **argv)
   
   /* generate status page */
   if (loop == 0)
+  {
+    j = 0;
+    if (svpath[0] != 0)
     {
-      j = 0;
-      if (svpath[0] != 0)
-      	{
-	        compose_status(hDB, hKey);
-	        fHandle = open_log_midstat(file_mode, rn, svpath);
-	        esc_flag = 0;
-	        compose_status(hDB, hKey);
-	        while ((j<cur_max_line ) && (ststr[j][0] != '\0'))
-	          {
-	            strncpy(svpath,ststr[j],80);
-	            svpath[80] = '\0';
-	            printf("%s\n",svpath);
-	            write(fHandle,"\n",1);
-	            write(fHandle, ststr[j], strlen(ststr[j])); 
-	            j++;
-	          }
-	        close (fHandle);
-	      }
-      else
-	      {
-	        esc_flag = 0;
-	        compose_status(hDB, hKey);
-	        while ((j<cur_max_line) && (ststr[j][0] != '\0'))
-	          { 
-	            strncpy(svpath,ststr[j++],80);
-	            svpath[80] = '\0';
-	            printf("%s\n",svpath);
-	          }
-	      }
+      compose_status(hDB, hKey);
+      fHandle = open_log_midstat(file_mode, rn, svpath);
+      esc_flag = 0;
+      compose_status(hDB, hKey);
+      while ((j<cur_max_line ) && (ststr[j][0] != '\0'))
+      {
+	strncpy(svpath,ststr[j],80);
+	svpath[80] = '\0';
+	printf("%s\n",svpath);
+	write(fHandle,"\n",1);
+	write(fHandle, ststr[j], strlen(ststr[j])); 
+	j++;
+      }
+      close (fHandle);
     }
-  else
+    else
     {
-      
-      /* initialize ss_getchar() */
-      ss_getchar(0);
-      
-      do 
-	    {
-	      if ((ss_millitime() - last_time) > delta_time)
-	        {
-	          last_time = ss_millitime();
-	          compose_status(hDB, hKey);
-	          j = 0;
-	          if (cur_max_line < last_max_line)
-      		    ss_clear_screen();
-	          last_max_line = cur_max_line;
-	          
-	          while ((j<cur_max_line) && (ststr[j][0] != '\0')) 
-	      	    ss_printf(0, j, "%s",ststr[j++]);
-	        }
-	      ch = 0;
-	      while (ss_kbhit())
-	        {
-	          ch = ss_getchar(0);
-	          if (ch == -1)
-      		    ch = getchar();
-	          if (ch == 'R')
-		          ss_clear_screen();
-	          if ((char) ch == '!')
-		          break;
-	        }
-	      msg = cm_yield(200);
-	    } while (msg != RPC_SHUTDOWN && msg != SS_ABORT && ch != '!');
-    }      
+      esc_flag = 0;
+      compose_status(hDB, hKey);
+      while ((j<cur_max_line) && (ststr[j][0] != '\0'))
+      { 
+	strncpy(svpath,ststr[j++],80);
+	svpath[80] = '\0';
+	printf("%s\n",svpath);
+      }
+    }
+  }
+  else
+  {
+    
+    /* initialize ss_getchar() */
+    ss_getchar(0);
+    
+    do 
+    {
+      if ((ss_millitime() - last_time) > delta_time)
+      {
+	last_time = ss_millitime();
+	compose_status(hDB, hKey);
+	if (cur_max_line < last_max_line)
+	  ss_clear_screen();
+	last_max_line = cur_max_line;
+	
+	j = 0;
+	while ((j<cur_max_line) && (ststr[j][0] != '\0')) {
+	  ss_printf(0, j, "%s",ststr[j]);
+	  j++;
+	}
+      }
+      ch = 0;
+      while (ss_kbhit())
+      {
+	ch = ss_getchar(0);
+	if (ch == -1)
+	  ch = getchar();
+	if (ch == 'R')
+	  ss_clear_screen();
+	if ((char) ch == '!')
+	  break;
+      }
+      msg = cm_yield(200);
+    } while (msg != RPC_SHUTDOWN && msg != SS_ABORT && ch != '!');
+  }      
   printf("\n");
-
+  
   /* reset terminal */
   ss_getchar(TRUE);
-
+  
   cm_disconnect_experiment();
   return 1;
 }
