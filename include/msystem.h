@@ -7,6 +7,9 @@
                 routines
 
   $Log$
+  Revision 1.15  1999/10/11 14:16:04  midas
+  Added ss_daemon_init and ss_system
+
   Revision 1.14  1999/10/07 13:17:34  midas
   Put a few EXPRT im msystem.h to make NT happy, updated NT makefile
 
@@ -517,6 +520,8 @@ INT ss_close_shm(char *name, void *adr, HNDLE handle, INT destroy_flag);
 INT ss_flush_shm(char *name, void *adr, INT size);
 INT ss_spawnv(INT mode, char *cmdname, char *argv[]);
 INT ss_shell(int sock);
+INT EXPRT ss_daemon_init();
+INT EXPRT ss_system(char *command);
 INT EXPRT ss_getpid(void);
 INT EXPRT ss_gettid(void);
 INT ss_getthandle(void);
