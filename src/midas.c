@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.39  1999/06/25 12:01:54  midas
+  Added bk_delete function
+
   Revision 1.38  1999/06/23 09:36:24  midas
   - Fixed "too many connections" bug
   - incorporated PAAs dm_xxx changes
@@ -11534,6 +11537,55 @@ void bk_create(void *event, char *name, WORD type, void *pdata)
   (_pbk)->type = type;
   (_pbk)->data_size = 0;
   *((void **)pdata) = (_pbk)+1;
+}
+
+/*------------------------------------------------------------------*/
+
+int bk_delete(void *event, char *name)
+/********************************************************************\
+
+  Routine: bk_delete
+
+  Purpose: Delte a MIDAS bank inside an event
+
+  Input:
+    void   *event           pointer to the event
+    char   *name            Name of bank (exactly four letters)
+
+  Function value:
+    CM_SUCCESS              Bank has been deleted
+    0                       Bank has not been found
+
+\********************************************************************/
+{
+BANK *pbk;
+DWORD dname;
+int   remaining;
+
+  /* locate bank */
+  pbk = (BANK *) (((BANK_HEADER *) event)+1);
+  strncpy((char *) &dname, name, 4);
+  do
+    {
+    if (*((DWORD *) pbk->name) == dname)
+      {
+      /* bank found, delete it */
+      remaining = (int) ((char *) event + ((BANK_HEADER *) event)->data_size + sizeof(BANK_HEADER)) -
+                  (int) ((char *) (pbk + 1) + ALIGN(pbk->data_size));
+
+      /* reduce total event size */
+      ((BANK_HEADER *) event)->data_size -= sizeof(BANK) + ALIGN(pbk->data_size);
+
+      /* copy remaining bytes */
+      if (remaining > 0)
+        memcpy(pbk, (char *) (pbk + 1) + ALIGN(pbk->data_size), remaining);
+      return CM_SUCCESS;
+      }
+
+    pbk = (BANK *) ((char *) (pbk + 1) + ALIGN(pbk->data_size));
+    } while ((DWORD) pbk - (DWORD) event < ((BANK_HEADER *) event)->data_size + sizeof(BANK_HEADER));
+
+  return 0;
 }
 
 /*------------------------------------------------------------------*/
