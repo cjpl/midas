@@ -6,6 +6,9 @@
 #  Contents:     Makefile for MIDAS binaries and examples under unix
 #
 #  $Log$
+#  Revision 1.30  2001/08/06 12:02:56  midas
+#  Fixed typo
+#
 #  Revision 1.29  2001/05/23 13:17:19  midas
 #  Added elogd
 #
@@ -422,7 +425,7 @@ install:
 	done
 	ln -fs $(SYSBIN_DIR)/stripchart.tcl $(SYSBIN_DIR)/stripchart
 	chmod +s $(SYSBIN_DIR)/webpaw
-	chmod +x $(SYSBIN_DIR)/elogd
+	chmod +s $(SYSBIN_DIR)/elogd
 
 # include
 	@echo "... "
