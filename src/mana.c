@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.16  1999/05/20 07:37:22  midas
+  Fixed bug with ss_getchar() when running online
+
   Revision 1.15  1999/04/22 07:53:37  midas
   Added event size in -verbose output
 
@@ -2452,17 +2455,19 @@ int      ch;
       last_time_update = actual_time;
 
       /* check keyboard */
-      if (ss_kbhit())
+      ch = 0;
+      while (ss_kbhit())
         {
-#if defined(OS_MSDOS) || defined(OS_WINNT)
-        ch = getch();
-#else
-        ch = getchar();
-#endif
+        ch = ss_getchar(0);
+        if (ch == -1)
+          ch = getchar();
 
-        if (ch == '!')
+        if ((char) ch == '!')
           break;
         }
+
+      if ((char) ch == '!')
+        break;
       }
 
     if (analyzer_loop_period == 0)
