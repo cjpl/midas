@@ -6,6 +6,9 @@
   Contents:     High Voltage Class Driver
 
   $Log$
+  Revision 1.3  1999/06/25 13:49:46  midas
+  Print message "setting channels"
+
   Revision 1.2  1998/10/12 12:18:55  midas
   Added Log tag in header
 
@@ -512,13 +515,21 @@ HV_INFO *hv_info;
     }
 
   /* set limits and initial demand values */
+  printf("\n");
   for (i=0 ; i<hv_info->num_channels ; i++)
     {
+    /* print message if many channels */
+    if (hv_info->num_channels > 255) 
+      {
+      printf("Setting channel %d\r", i);
+      cm_yield(0);
+      }
     DRIVER(i)(CMD_SET_CURRENT_LIMIT, hv_info->dd_info[i], 
               i-hv_info->channel_offset[i], hv_info->current_limit[i]);
     DRIVER(i)(CMD_SET, hv_info->dd_info[i], 
               i-hv_info->channel_offset[i], min(hv_info->demand[i], hv_info->voltage_limit[i]));
     }
+  printf("\n");
 
   /* initially read all channels if not too much */
   if (hv_info->num_channels < 256)
@@ -562,7 +573,7 @@ HV_INFO    *hv_info;
   /* look for the next channel recently updated */
   while (!( act_time - hv_info->last_change[act] < 5000 ||
           ( act_time - hv_info->last_change[act] < 20000 
-          &&  abs(hv_info->measured[act] - hv_info->demand[act]) > 
+          && abs(hv_info->measured[act] - hv_info->demand[act]) > 
                   2*hv_info->update_threshold[act])))
     {
     act = (act + 1) % hv_info->num_channels;
