@@ -6,6 +6,9 @@
   Contents:     MIDAS logger program
 
   $Log$
+  Revision 1.3  1998/10/22 12:40:34  midas
+  Added "oflag" to ss_tape_open()
+
   Revision 1.2  1998/10/12 12:19:02  midas
   Added Log tag in header
 
@@ -189,7 +192,7 @@ INT tape_open(char *dev, INT *handle)
 INT  status, count;
 char buffer[16];
 
-  status = ss_tape_open(dev, handle);
+  status = ss_tape_open(dev, O_RDWR | O_CREAT | O_TRUNC, handle);
   if (status != SS_SUCCESS)
     return status;
 
@@ -1571,7 +1574,7 @@ double dzero;
           if (status != DB_SUCCESS)
             continue;
 
-          if (ss_tape_open(str, &htape) == SS_SUCCESS)
+          if (ss_tape_open(str, O_RDONLY, &htape) == SS_SUCCESS)
             {
             cm_msg(MTALK, "log_callback", "rewinding tape #%d, please wait", i);
 

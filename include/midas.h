@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.3  1998/10/22 12:40:20  midas
+  Added "oflag" to ss_tape_open()
+
   Revision 1.2  1998/10/12 12:18:59  midas
   Added Log tag in header
 
@@ -1177,7 +1180,7 @@ INT EXPRT ss_directio_give_port(INT start, INT end);
 INT EXPRT ss_directio_lock_port(INT start, INT end);
 
 /*---- tape routines ----*/
-INT EXPRT ss_tape_open(char *path, INT *channel);
+INT EXPRT ss_tape_open(char *path, INT oflag, INT *channel);
 INT EXPRT ss_tape_close(INT channel);
 INT EXPRT ss_tape_status(char *path);
 INT EXPRT ss_tape_read(INT channel, void *pdata, INT *count);
