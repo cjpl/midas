@@ -6,6 +6,9 @@
   Contents:     List of MIDAS RPC functions with parameters
 
   $Log$
+  Revision 1.19  1999/11/19 09:49:58  midas
+  Fixed bug with wrong default watchdog timeout in cm_connect_experiment1
+
   Revision 1.18  1999/11/10 10:38:52  midas
   Changed parameters for al_trigger_alarm
 
@@ -79,6 +82,7 @@ static RPC_LIST rpc_list_library[] = {
      {TID_STRING,     RPC_IN}, 
      {TID_INT,        RPC_IN}, 
      {TID_STRING,     RPC_IN}, 
+     {TID_INT,        RPC_IN}, 
      {0} }},
 
   { RPC_CM_SET_WATCHDOG_PARAMS, "cm_set_watchdog_params",

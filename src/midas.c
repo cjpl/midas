@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.87  1999/11/19 09:49:58  midas
+  Fixed bug with wrong default watchdog timeout in cm_connect_experiment1
+
   Revision 1.86  1999/11/12 10:04:59  midas
   Fixed bug with WATCHDOG_INTERVAL
 
@@ -1314,7 +1317,8 @@ char            name[NAME_LENGTH];
 /*------------------------------------------------------------------*/
 
 INT cm_set_client_info(HNDLE hDB, HNDLE *hKeyClient, char *host_name,
-                       char *client_name, INT hw_type, char *password)
+                       char *client_name, INT hw_type, char *password,
+                       INT watchdog_timeout)
 /********************************************************************\
 
   Routine: cm_set_client_info
@@ -1478,12 +1482,18 @@ PROGRAM_INFO_STR(program_info_str);
   /* lock client entry */
   db_set_mode(hDB, hKey, MODE_READ, TRUE);
 
+  /* get (set) default watchdog timeout */
+  size = sizeof(watchdog_timeout);
+  sprintf(str, "/Programs/%s/Watchdog Timeout", orig_name);
+  db_get_value(hDB, 0, str, &watchdog_timeout, &size, TID_INT);
+  
   /* define /programs entry */
   sprintf(str, "/Programs/%s", orig_name);
   db_create_record(hDB, 0, str, strcomb(program_info_str));
 
   /* schedule watchdog timer */
   cm_get_watchdog_params(&call_watchdog, NULL);
+  cm_set_watchdog_params(call_watchdog, watchdog_timeout);
   if (call_watchdog)
     ss_alarm(WATCHDOG_INTERVAL, cm_watchdog);
 
@@ -1680,7 +1690,7 @@ INT cm_connect_experiment1(char *host_name, char *exp_name,
 
 \********************************************************************/
 {
-INT   status, i, mutex_elog, mutex_alarm, size;
+INT   status, i, mutex_elog, mutex_alarm;
 char  local_host_name[HOST_NAME_LENGTH];
 char  client_name1[NAME_LENGTH];
 char  password[NAME_LENGTH], str[NAME_LENGTH], exp_name1[NAME_LENGTH];
@@ -1782,11 +1792,15 @@ HNDLE hDB, hKeyClient;
   /* now setup client info */
   gethostname(local_host_name, sizeof(local_host_name));
 
+  /* check watchdog timeout */
+  if (watchdog_timeout == 0)
+    watchdog_timeout = DEFAULT_WATCHDOG_TIMEOUT;
+
   strcpy(client_name1, client_name);
   password[0] = 0;
   status = cm_set_client_info(hDB, &hKeyClient, local_host_name, 
                               client_name1, rpc_get_option(0, RPC_OHW_TYPE), 
-                              password);
+                              password, watchdog_timeout);
 
   if (status == CM_WRONG_PASSWORD)
     {
@@ -1806,7 +1820,7 @@ HNDLE hDB, hKeyClient;
     strcpy(password, ss_crypt(str, "mi"));
     status = cm_set_client_info(hDB, &hKeyClient, local_host_name, 
                                 client_name1, rpc_get_option(0, RPC_OHW_TYPE), 
-                                password);
+                                password, watchdog_timeout);
     if (status != CM_SUCCESS)
       {
       /* disconnect */
@@ -1826,14 +1840,6 @@ HNDLE hDB, hKeyClient;
   status = cm_register_server();
   if (status != CM_SUCCESS)
     return status;
-
-  /* set watchdog timeout */
-  size = sizeof(watchdog_timeout);
-  if (watchdog_timeout == 0)
-    watchdog_timeout = DEFAULT_WATCHDOG_TIMEOUT;
-  sprintf(str, "/Programs/%s/Watchdog timeout", client_name);
-  db_get_value(hDB, 0, str, &watchdog_timeout, &size, TID_INT);
-  cm_set_watchdog_params(TRUE, watchdog_timeout);
 
   /* send startup notification */
   if (strchr(local_host_name, '.'))
