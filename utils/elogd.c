@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.65  2001/11/19 17:14:25  midas
+  Made "bottom text" work with find page and added "find menu commands"
+
   Revision 1.64  2001/11/19 11:14:45  midas
   Added "default" options, "use email from" and fixed a few small bugs
 
@@ -3780,7 +3783,7 @@ char   str[256];
 
 void show_elog_submit_find(INT past_n, INT last_n)
 {
-int    i, j, size, status, d1, m1, y1, d2, m2, y2, index, colspan, i_line, n_line, i_col;
+int    i, j, n, size, status, d1, m1, y1, d2, m2, y2, index, colspan, i_line, n_line, i_col;
 int    current_year, current_month, current_day, printable, n_logbook, lindex, n_attr,
        reverse, n_attr_disp, n_found;
 char   date[80], attrib[MAX_N_ATTR][NAME_LENGTH], disp_attr[MAX_N_ATTR][NAME_LENGTH], 
@@ -3788,6 +3791,7 @@ char   date[80], attrib[MAX_N_ATTR][NAME_LENGTH], disp_attr[MAX_N_ATTR][NAME_LEN
        orig_tag[80], reply_tag[80], attachment[MAX_ATTACHMENTS][256], encoding[80];
 char   str[256], tag[256], ref[256], file_name[256], col[80], old_data_dir[256];
 char   logbook_list[100][256], lb_enc[256], *nowrap;
+char   menu_str[1000], menu_item[MAX_N_LIST][NAME_LENGTH];
 char   *p , *pt, *pt1, *pt2;
 BOOL   full, show_attachments;
 DWORD  ltime, ltime_start, ltime_end, ltime_current, now;
@@ -3857,14 +3861,42 @@ FILE   *f;
 
     rsprintf("<tr><td align=%s bgcolor=%s>\n", gt("Menu1 Align"), gt("Menu1 BGColor"));
 
-    if (past_n)
-      rsprintf("<input type=submit name=past value=\"Last %d days\">\n", past_n+1);
+    if (getcfg(logbook, "Find menu commands", menu_str))
+      {
+      n = strbreak(menu_str, menu_item, MAX_N_LIST);
 
-    if (last_n)
-      rsprintf("<input type=submit name=last value=\"Last %d entries\">\n", last_n+10);
+      if (atoi(gt("Use buttons")) == 1)
+        {
+        for (i=0 ; i<n ; i++)
+          rsprintf("<input type=submit name=cmd value=\"%s\">\n", menu_item[i]);
+        }
+      else
+        {
+        rsprintf("<small>\n");
+
+        for (i=0 ; i<n ; i++)
+          {
+          if (i < n-1)
+            rsprintf("&nbsp;<a href=\"/%s?cmd=%s\">%s</a>&nbsp;|\n", logbook_enc, menu_item[i], menu_item[i]);
+          else
+            rsprintf("&nbsp;<a href=\"/%s?cmd=%s\">%s</a>&nbsp;\n", logbook_enc, menu_item[i], menu_item[i]);
+          }
+
+        rsprintf("</small>\n");
+        }
+      }
+    else
+      {
+      if (past_n)
+        rsprintf("<input type=submit name=past value=\"Last %d days\">\n", past_n+1);
+
+      if (last_n)
+        rsprintf("<input type=submit name=last value=\"Last %d entries\">\n", last_n+10);
     
-    rsprintf("<input type=submit name=cmd value=Find>\n");
-    rsprintf("<input type=submit name=cmd value=Back>\n");
+      rsprintf("<input type=submit name=cmd value=Find>\n");
+      rsprintf("<input type=submit name=cmd value=Back>\n");
+      }
+
     rsprintf("</td></tr></table></td></tr>\n\n");
     }
 
@@ -4571,8 +4603,32 @@ FILE   *f;
 
   rsprintf("</table>\n");
 
-  /* add little logo */
-  rsprintf("<center><font size=1 color=#A0A0A0><a href=\"http://midas.psi.ch/elog/\">ELOG V%s</a></font></center>", VERSION);
+  if (getcfg(logbook, "bottom text", str))
+    {
+    FILE *f;
+    char file_name[256], *buf;
+
+    strcpy(file_name, cfg_dir);
+    strcat(file_name, str);
+
+    f = fopen(file_name, "r");
+    if (f != NULL)
+      {
+      fseek(f, 0, SEEK_END);
+      size = TELL(fileno(f));
+      fseek(f, 0, SEEK_SET);
+
+      buf = malloc(size+1);
+      fread(buf, 1, size, f);
+      buf[size] = 0;
+      fclose(f);
+
+      rsputs(buf);
+      }
+    }
+  else
+    /* add little logo */
+    rsprintf("<center><font size=1 color=#A0A0A0><a href=\"http://midas.psi.ch/elog/\">ELOG V%s</a></font></center>", VERSION);
 
   rsprintf("</body></html>\r\n");
 
