@@ -16,6 +16,10 @@
  *  Author:  Stefan Ritt & Pierre-Andre Amaudruz
  * 
  *  Revision 1.0  1998        Pierre	 Initial revision
+   $Log$
+   Revision 1.3  1999/02/20 00:41:38  pierre
+   - include CVS Log
+
  *
  *---------------------------------------------------------------------------*/
 #include <stdio.h>
