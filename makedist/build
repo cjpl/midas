@@ -36,8 +36,8 @@ tar -cvzf $archive midas-$version/
 rm -Rf $dir
 
 # copy to download area
-cp /tmp/$archive ~/html/download/$archive
-cp /tmp/$archive ~/html/download/midas-latest.tar.gz
+cp /tmp/$archive ~/html/download/tar/$archive
+cp /tmp/$archive ~/html/download/tar/midas-latest.tar.gz
 cd ~/midas
 cp doc/CHANGELOG.TXT ~/html/download/CHANGELOG
 
