@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.26  2001/08/07 11:01:44  midas
+  Fixed bugs with strtok
+
   Revision 1.25  2001/08/07 08:03:40  midas
   Fixed bug in el_retrieve in decoding attachments
 
@@ -1145,7 +1148,8 @@ BOOL    bedit;
       if (i == 0)
         p = strtok(attachment, ",");
       else
-        p = strtok(NULL, ",");
+        if (p != NULL)
+          p = strtok(NULL, ",");
 
       if (p && (afile_name[i][0] || equal_ustring(afile_name[i], "<delete>")))
         {
@@ -1376,15 +1380,19 @@ char    message[TEXT_SIZE+100], thread[256], attachment_all[256];
       strcpy(orig_tag, p);
     else
       strcpy(orig_tag, "");
-    p = strtok(NULL, " \r");
+
     if (p != NULL)
-      strcpy(reply_tag, p);
-    else
-      strcpy(reply_tag, "");
-    if (atoi(orig_tag) == 0)
-      orig_tag[0] = 0;
-    if (atoi(reply_tag) == 0)
-      reply_tag[0] = 0;
+      {
+      p = strtok(NULL, " \r");
+      if (p != NULL)
+        strcpy(reply_tag, p);
+      else
+        strcpy(reply_tag, "");
+      if (atoi(orig_tag) == 0)
+        orig_tag[0] = 0;
+      if (atoi(reply_tag) == 0)
+        reply_tag[0] = 0;
+      }
     }
 
   p = strstr(message, "========================================\n");
