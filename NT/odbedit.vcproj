@@ -260,6 +260,15 @@
 		<Filter
 			Name="Header Files"
 			Filter="h;hpp;hxx;hm;inl;fi;fd">
+			<File
+				RelativePath="..\include\midas.h">
+			</File>
+			<File
+				RelativePath="..\include\midasinc.h">
+			</File>
+			<File
+				RelativePath="..\include\msystem.h">
+			</File>
 		</Filter>
 		<Filter
 			Name="Resource Files"

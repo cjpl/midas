@@ -80,7 +80,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="\midas\include,\root\include"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;HAVE_ROOT"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;USE_ROOT"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="5"
 				UsePrecompiledHeader="2"
@@ -97,7 +97,7 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="wsock32.lib winmm.lib libCore.lib libHist.lib libTree.lib"
+				AdditionalDependencies="wsock32.lib winmm.lib libCore.lib libHist.lib libTree.lib libRint.lib"
 				OutputFile="C:\midas\nt\bin\ranalyzer.exe"
 				LinkIncremental="2"
 				SuppressStartupBanner="TRUE"
