@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol main program
 
   $Log$
+  Revision 1.3  2002/07/08 08:51:39  midas
+  Test eeprom functions
+
   Revision 1.2  2002/07/05 15:27:28  midas
   *** empty log message ***
 
@@ -114,53 +117,22 @@ unsigned char i;
   /* init memory */
   DEBUG_MODE = 0;
   CSR = 0;
+  LED = 0;
+  RS485_ENABLE = 0;
+
+  uart_init(BD_345600);
+
+  /* retrieve EEPROM data */
+  eeprom_read(&node_addr, 6, 0);
 
   lcd_setup();
   lcd_clear();
-
-  /*
-  do
-    {
-    lcd_goto(0, 0);
-    printf("Switch: %02bX  ", scs_lcd1_read());
-    } while (1);
-  */
-
-
+  lcd_goto(0, 0);
+  //printf("Node: %04X Group: %02X", node_addr, group_addr);
 }
 /*
-; retrieve node address from flash eeprom
-        MOV     R0,#NODE_ADDR
-        MOV     R1,#4
-        MOV     A,#0
-        CALL    EEPROM_READ
-
-; output node address to LCD display
-        MOV     A,#0
-        MOV     B,#0
-        CALL    LCD_GOTO
-
-        MOV     DPTR,#STR_NADR
-        CALL    LCD_PUTS
-        MOV     A,NODE_ADDR+1
-        CALL    LCD_HEX
-        MOV     A,NODE_ADDR
-        CALL    LCD_HEX
-
-        MOV     DPTR,#STR_GADR
-        CALL    LCD_PUTS
-        MOV     A,GROUP_ADDR+1
-        CALL    LCD_HEX
-        MOV     A,GROUP_ADDR
-        CALL    LCD_HEX
-        MOV     A,#0
-        MOV     B,#0
-        CALL    LCD_GOTO
-
 ; reset IO's
 
-        SETB    LED             ; turn off LED
-        CALL    SERIAL_STOP     ; disable RS485 driver
 
 ; configure UART
 
