@@ -6,6 +6,9 @@
   Contents:     Disk to Tape copier for background job
 
   $Log$
+  Revision 1.13  1999/09/27 16:23:56  pierre
+  - Changed KB to Bytes references
+
   Revision 1.12  1999/09/24 00:05:50  pierre
   - Modified for multiple lazy channel.
   - Remove lazy.log and log to midas.log
@@ -79,16 +82,16 @@ Data format = STRING : [8] MIDAS\n\
 Filename format = STRING : [128] run%05d.mid\n\
 Backup type = STRING : [8] Disk\n\
 Path = STRING : [128] \n\
-Capacity (KBytes) = FLOAT : 5e6\n\
+Capacity (Bytes) = FLOAT : 5e6\n\
 List label= STRING : [128] \n\
 "
 #define LAZY_STATISTICS_STRING "\
 Backup file = STRING : [128] none \n\
-File size [KB] = FLOAT : 0.0\n\
+File size [Bytes] = FLOAT : 0.0\n\
 KBytes copied = FLOAT : 0.0\n\
-Total KBytes copied = FLOAT : 0.0\n\
+Total Bytes copied = FLOAT : 0.0\n\
 Copy progress [%] = FLOAT : 0\n\
-Copy Rate [KB per sec] = FLOAT : 0\n\
+Copy Rate [bytes per s] = FLOAT : 0\n\
 Backup status [%] = FLOAT : 0\n\
 Number of Files = INT : 0\n\
 Current Lazy run = INT : 0\n\
@@ -100,21 +103,21 @@ typedef struct {
                                         -x same as x but starting from oldest */
   char  alarm[32];                /* Alarm Class */
   char  condition[128];           /* key condition */
-  char  dir[256];       /* path to the data dir */
+  char  dir[256];                 /* path to the data dir */
   char  format[8];                /* Data format (YBOS, MIDAS) */
   char  backfmt[MAX_FILE_PATH];   /* format for the run files run%05d.mid */
   char  type[8];                  /* Backup device type  (Disk, Tape, Ftp) */
-  char  path[MAX_FILE_PATH];   /* backup device name */
-  float capacity;             /* backup device max byte size */
+  char  path[MAX_FILE_PATH];      /* backup device name */
+  float capacity;                 /* backup device max byte size */
   char  backlabel[MAX_FILE_PATH]; /* label of the array in ~/list. if empty like active = 0 */
 } LAZY_SETTING;
 LAZY_SETTING  lazy;
 
 typedef struct {
 char  backfile[MAX_FILE_PATH]; /* current or last lazy file done (for info only) */
-float file_size;               /* file Kbytes size */
-float cur_size;                /* current Kbytes copied */
-float cur_dev_size;            /* Total Kbytes backup on device */
+float file_size;               /* file size in bytes*/
+float cur_size;                /* current bytes copied */
+float cur_dev_size;            /* Total bytes backup on device */
 float progress;                /* copy % */
 float copy_rate;               /* copy rate */
 float bckfill;                 /* backup fill % */
@@ -171,7 +174,7 @@ INT lazy_log_update(INT action, INT index, INT run, char * label, char * file)
     {
     if (equal_ustring(lazy.type, "FTP"))
       sprintf(str, "%s: %s %1.3lfMB file COPIED",
-              label, lazyst.backfile, lazyst.file_size/1024.0);
+              label, lazyst.backfile, lazyst.file_size/1024.0/1024.0);
     else
       sprintf(str,"%s[%i] %s%s  %9.2e  file  NEW\n",
 	            label, lazyst.nfiles,
@@ -283,7 +286,7 @@ void build_log_list(char * fmt, char * dir, DIRLOG ** plog)
       strcpy(str,dir);
 			strl = strlen(list+j*MAX_STRING_LENGTH);
       strncat(str,list+j*MAX_STRING_LENGTH, strl);
-      (*plog+j)->size = ss_file_size(str)/1024;
+      (*plog+j)->size = ss_file_size(str);
     }
   free(list);
 
@@ -691,7 +694,7 @@ void lazy_statistics_update(INT cploop_time)
 \********************************************************************/
 {
     /* update rate [kb/s] statistics */
-    lazyst.copy_rate = 1000.f * (lazyst.cur_size - lastsz) / (ss_millitime() - cploop_time);
+    lazyst.copy_rate = (lazyst.cur_size - lastsz) / (ss_millitime() - cploop_time);
 
     /* update % statistics */
     if (lazyst.file_size != 0.0f)
@@ -895,8 +898,8 @@ INT lazy_copy( char * outfile, char * infile)
 	        cm_msg(MERROR,"lazy_copy","Write error %i",szlazy);
 	        return FORCE_EXIT; 
 	      }
-	      lazyst.cur_size += (float) szlazy / 1024;
-	      lazyst.cur_dev_size += (float) szlazy / 1024;
+	      lazyst.cur_size += (float) szlazy;
+	      lazyst.cur_dev_size += (float) szlazy;
 	      if ((ss_millitime() - cpy_loop_time) > 2000)
 	      {
 	        /* update statistics */
@@ -964,7 +967,7 @@ BOOL lazy_file_exists(char * dir, char * file)
     {
       strcat(fullfile, dir);
       strcat(fullfile, file);
-      if ((lazyst.file_size = (float)(ss_file_size(fullfile)/1024)) > 0)
+      if ((lazyst.file_size = (float)(ss_file_size(fullfile))) > 0)
       {
         free (list);
         return TRUE;
@@ -1302,7 +1305,7 @@ int main(unsigned int argc,char **argv)
     printf(" Path                      : Destination path (file.ext, /dev/nst0, ftp...)\n");
     printf("                             in case of FTP type, the 'Path' entry should be:\n");
     printf("                             host, port, user, password, directory, run%05d.mid\n");
-    printf(" Capacity (KBytes)         : Maximum capacity of the destination device.\n");
+    printf(" Capacity (Bytes)          : Maximum capacity of the destination device.\n");
      return 0;
     }
   }
