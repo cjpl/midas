@@ -5,12 +5,12 @@
 
 
   Contents:     Application specific (user) part of
-                Midas Slow Control Bus protocol 
+                Midas Slow Control Bus protocol
                 for SCS-400 thermo couple I/O
 
   $Log$
-  Revision 1.5  2002/11/27 15:40:05  midas
-  Added version, fixed few bugs
+  Revision 1.6  2003/01/14 08:19:13  midas
+  Increased to 8 channels
 
   Revision 1.4  2002/11/22 15:43:03  midas
   Made user_write reentrant
@@ -43,20 +43,27 @@ char code node_name[] = "SCS-400";
 /* data buffer (mirrored in EEPROM) */
 
 struct {
-  float power[4];
-  float temp[4];
-} user_data;
-
+  float power[8];
+  float temp[8];
+} idata user_data;
 
 MSCB_INFO_CHN code channel[] = {
   4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "Power0", &user_data.power[0],
   4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "Power1", &user_data.power[1],
   4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "Power2", &user_data.power[2],
   4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "Power3", &user_data.power[3],
+  4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "Power4", &user_data.power[4],
+  4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "Power5", &user_data.power[5],
+  4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "Power6", &user_data.power[6],
+  4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "Power7", &user_data.power[7],
   4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp0",  &user_data.temp[0],
   4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp1",  &user_data.temp[1],
   4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp2",  &user_data.temp[2],
   4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp3",  &user_data.temp[3],
+  4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp4",  &user_data.temp[4],
+  4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp5",  &user_data.temp[5],
+  4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp6",  &user_data.temp[6],
+  4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp7",  &user_data.temp[7],
   0
 };
 
@@ -85,7 +92,7 @@ void user_init(void)
 #ifdef CPU_C8051F000
   AMX0CF = 0x00;  // select single ended analog inputs
   ADC0CF = 0xE0;  // 16 system clocks, gain 1
-  ADC0CN = 0x80;  // enable ADC 
+  ADC0CN = 0x80;  // enable ADC
 
   REF0CN = 0x03;  // enable internal reference
   DAC0CN = 0x80;  // enable DAC0
@@ -180,7 +187,7 @@ unsigned char i;
 static unsigned long on_time;
 
   /* turn output off after on time expired */
-  for (i=0 ; i<4 ; i++)
+  for (i=0 ; i<8 ; i++)
     if ((time() - on_time) >= user_data.power[i])
       P1 &= ~(1<<i);
 
@@ -188,7 +195,7 @@ static unsigned long on_time;
   if (time() - on_time >= 100)
     {
     on_time = time();
-    for (i=0 ; i<4 ; i++)
+    for (i=0 ; i<8 ; i++)
       if (user_data.power[i] > 0)
         P1 |= (1<<i);
     }
@@ -200,7 +207,7 @@ static unsigned char i;
 static unsigned long last_display;
 
   /* convert one channel at a time */
-  i = (i+1) % 4;
+  i = (i+1) % 8;
   adc_read(i, &user_data.temp[i]);
 
   /* set output according to power */
