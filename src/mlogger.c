@@ -6,6 +6,9 @@
   Contents:     MIDAS logger program
 
   $Log$
+  Revision 1.28  1999/10/27 08:17:25  midas
+  Increased history size to 15 and added limit check
+
   Revision 1.27  1999/10/18 14:47:16  midas
   fixed compiler warning
 
@@ -102,7 +105,7 @@
 #define LOGGER_TIMEOUT 60000
 
 #define MAX_CHANNELS 10
-#define MAX_EVENTS   10
+#define MAX_HISTORY  20
 
 BOOL in_stop_transition = FALSE;
 BOOL auto_restart = FALSE;
@@ -117,7 +120,7 @@ struct {
   HNDLE hKeyVar;
   DWORD period;
   DWORD last_log;
-} hist_log[MAX_EVENTS];
+} hist_log[MAX_HISTORY];
 
 HNDLE hDB;
 
@@ -1499,7 +1502,7 @@ BOOL     single_names;
     }
 
   /* loop over equipment */
-  for (index=0; index < MAX_EVENTS ; index++)
+  for (index=0; index < MAX_HISTORY ; index++)
     {
     status = db_enum_key(hDB, hKeyRoot, index, &hKeyEq);
     if (status != DB_SUCCESS)
@@ -1643,6 +1646,12 @@ BOOL     single_names;
       }
     }
 
+  if (index == MAX_HISTORY)
+    {
+    cm_msg(MERROR, "open_history", "too many equipments for history");
+    return 0;
+    }
+
   /*---- define linked trees ---------------------------------------*/
 
   /* round up event id */
@@ -1740,6 +1749,12 @@ BOOL     single_names;
 
     index++;
     max_event_id++;
+
+    if (index == MAX_HISTORY)
+      {
+      cm_msg(MERROR, "open_history", "too many equipments for history");
+      return 0;
+      }
     }
   
   return CM_SUCCESS;
@@ -1766,7 +1781,7 @@ HNDLE hKeyRoot, hKey;
     }
 
   /* close event history */
-  for (i=1 ; i<MAX_EVENTS ; i++)
+  for (i=1 ; i<MAX_HISTORY ; i++)
     if (hist_log[i].hKeyVar)
       {
       db_close_record(hDB, hist_log[i].hKeyVar);
@@ -1780,11 +1795,11 @@ void log_history(HNDLE hDB, HNDLE hKey, void *info)
 {
 INT i, size;
 
-  for (i=0 ; i<MAX_EVENTS ; i++)
+  for (i=0 ; i<MAX_HISTORY ; i++)
     if (hist_log[i].hKeyVar == hKey)
       break;
 
-  if (i == MAX_EVENTS)
+  if (i == MAX_HISTORY)
     return;
 
   /* check if over period */
