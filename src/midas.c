@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.205  2004/04/30 07:26:38  midas
+  Fixed compiler warning
+
   Revision 1.204  2004/03/31 17:35:40  olchansk
   fix the infamous problem with "last NN days broken" in Elog
   catch more memory overruns in the elog code
@@ -14834,7 +14837,7 @@ void el_decode(char *message, char *key, char *result, int size)
       *result = 0;
    }
 
-   assert(strlen(rstart) < size);
+   assert((int)strlen(rstart) < size);
 }
 
 /**dox***************************************************************/
