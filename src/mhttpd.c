@@ -6,6 +6,9 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
+  Revision 1.13  1999/07/01 11:12:32  midas
+  Changed lazy display if in FTP mode
+
   Revision 1.12  1999/06/23 09:39:31  midas
   Added lazy logger display
 
@@ -411,6 +414,7 @@ double analyze_ratio;
 float  value;
 HNDLE  hkey, hsubkey, hkeytmp;
 KEY    key;
+BOOL   ftp_mode;
 
 RUNINFO_STR(runinfo_str);
 RUNINFO runinfo;
@@ -698,12 +702,29 @@ CHN_STATISTICS chn_stats;
 
   if (db_find_key(hDB, 0, "Lazy", &hkey) == DB_SUCCESS)
     {
-    rsprintf("<tr><th colspan=2>Lazy Label<th>Progress<th>File Name<th># Files<th>Total</tr>\n");
-
     size = sizeof(str);
-    db_get_value(hDB, 0, "/Lazy/Settings/List Label", str, &size, TID_STRING);
-    if (str[0] == 0)
-      strcpy(str, "(empty)");
+    db_get_value(hDB, 0, "/Lazy/Settings/Backup Type", str, &size, TID_STRING);
+    ftp_mode = equal_ustring(str, "FTP");
+
+    if (ftp_mode)
+      rsprintf("<tr><th colspan=2>Lazy Destination<th>Progress<th>File Name<th>Speed [kb/s]<th>Total</tr>\n");
+    else
+      rsprintf("<tr><th colspan=2>Lazy Label<th>Progress<th>File Name<th># Files<th>Total</tr>\n");
+
+    if (ftp_mode)
+      {
+      size = sizeof(str);
+      db_get_value(hDB, 0, "/Lazy/Settings/Path", str, &size, TID_STRING);
+      if (strchr(str, ','))
+        *strchr(str, ',') = 0;
+      }
+    else
+      {
+      size = sizeof(str);
+      db_get_value(hDB, 0, "/Lazy/Settings/List Label", str, &size, TID_STRING);
+      if (str[0] == 0)
+        strcpy(str, "(empty)");
+      }
 
     if (exp_name[0])
       sprintf(ref, "%sLazy/Settings?exp=%s", mhttpd_url, exp_name);
@@ -720,9 +741,18 @@ CHN_STATISTICS chn_stats;
     db_get_value(hDB, 0, "/Lazy/Statistics/Backup File", str, &size, TID_STRING);
     rsprintf("<td align=center>%s", str);
 
-    size = sizeof(i);
-    db_get_value(hDB, 0, "/Lazy/Statistics/Number of files", &i, &size, TID_INT);
-    rsprintf("<td align=center>%d", i);
+    if (ftp_mode)
+      {
+      size = sizeof(value);
+      db_get_value(hDB, 0, "/Lazy/Statistics/Copy Rate [KB per sec]", &value, &size, TID_FLOAT);
+      rsprintf("<td align=center>%1.1f", value);
+      }
+    else
+      {
+      size = sizeof(i);
+      db_get_value(hDB, 0, "/Lazy/Statistics/Number of files", &i, &size, TID_INT);
+      rsprintf("<td align=center>%d", i);
+      }
 
     size = sizeof(value);
     db_get_value(hDB, 0, "/Lazy/Statistics/Backup status [%]", &value, &size, TID_FLOAT);
