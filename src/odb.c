@@ -6,6 +6,9 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.103  2005/01/04 13:33:46  midas
+  Make db_get_value work widh indices ala 'value[2]'
+
   Revision 1.102  2004/12/14 23:11:21  olchansk
   Prevent infinite looping in db_validate_db() when free list is corrupted.
 
@@ -2279,6 +2282,10 @@ INT db_find_key(HNDLE hDB, HNDLE hKey, char *key_name, HNDLE * subhKey)
          /* extract single subkey from key_name */
          pkey_name = extract_key(pkey_name, str);
 
+         /* strip trailing '[n]' */
+         if (strchr(str, '[') && str[strlen(str)-1] == ']')
+            *strchr(str, '[') = 0;
+
          /* check if parent or current directory */
          if (strcmp(str, "..") == 0) {
             if (pkey->parent_keylist) {
@@ -3293,8 +3300,8 @@ INT db_get_value(HNDLE hDB, HNDLE hKeyRoot, char *key_name, void *data,
       DATABASE_HEADER *pheader;
       HNDLE hkey;
       KEY *pkey;
-      INT status, size;
-      char path[256];
+      INT status, size, index;
+      char *p, path[256], keyname[256];
 
       if (hDB > _database_entries || hDB <= 0) {
          cm_msg(MERROR, "db_get_value", "invalid database handle");
@@ -3306,11 +3313,25 @@ INT db_get_value(HNDLE hDB, HNDLE hKeyRoot, char *key_name, void *data,
          return DB_INVALID_HANDLE;
       }
 
-      status = db_find_key(hDB, hKeyRoot, key_name, &hkey);
+      /* check if key name contains index */
+      strlcpy(keyname, key_name, sizeof(keyname));
+      index = -1;
+      if (strchr(keyname, '[') && strchr(keyname, ']')) {
+         for (p = strchr(keyname, '[') + 1; *p && *p != ']'; p++)
+            if (!isdigit(*p))
+               break;
+
+         if (*p && *p == ']') {
+            index = atoi(strchr(keyname, '[') + 1);
+            *strchr(keyname, '[') = 0;
+         }
+      }
+      
+      status = db_find_key(hDB, hKeyRoot, keyname, &hkey);
       if (status == DB_NO_KEY) {
          if (create) {
-            db_create_key(hDB, hKeyRoot, key_name, type);
-            status = db_find_key(hDB, hKeyRoot, key_name, &hkey);
+            db_create_key(hDB, hKeyRoot, keyname, type);
+            status = db_find_key(hDB, hKeyRoot, keyname, &hkey);
             if (status != DB_SUCCESS)
                return status;
 
@@ -3324,7 +3345,7 @@ INT db_get_value(HNDLE hDB, HNDLE hKeyRoot, char *key_name, void *data,
                return DB_TYPE_MISMATCH;
 
             /* set default value if key was created */
-            status = db_set_value(hDB, hKeyRoot, key_name, data,
+            status = db_set_value(hDB, hKeyRoot, keyname, data,
                                   *buf_size, *buf_size / size, type);
          } else
             return DB_NO_KEY;
@@ -3344,19 +3365,20 @@ INT db_get_value(HNDLE hDB, HNDLE hKeyRoot, char *key_name, void *data,
       if (pkey->type != (type)) {
          db_unlock_database(hDB);
          cm_msg(MERROR, "db_get_value", "\"%s\" is of type %s, not %s",
-                key_name, rpc_tid_name(pkey->type), rpc_tid_name(type));
+                keyname, rpc_tid_name(pkey->type), rpc_tid_name(type));
          return DB_TYPE_MISMATCH;
       }
 
       /* check for read access */
       if (!(pkey->access_mode & MODE_READ)) {
          db_unlock_database(hDB);
-         cm_msg(MERROR, "db_get_value", "%s has no read access", key_name);
+         cm_msg(MERROR, "db_get_value", "%s has no read access", keyname);
          return DB_NO_ACCESS;
       }
 
       /* check if buffer is too small */
-      if (pkey->num_values * pkey->item_size > *buf_size) {
+      if ((index == -1 && pkey->num_values * pkey->item_size > *buf_size) ||
+          (index != -1 && pkey->item_size > *buf_size)) {
          memcpy(data, (char *) pheader + pkey->data, *buf_size);
          db_unlock_database(hDB);
          db_get_path(hDB, hkey, path, sizeof(path));
@@ -3365,9 +3387,23 @@ INT db_get_value(HNDLE hDB, HNDLE hKeyRoot, char *key_name, void *data,
          return DB_TRUNCATED;
       }
 
+      /* check if index in boundaries */
+      if (index != -1 && index >= pkey->num_values) {
+         db_unlock_database(hDB);
+         db_get_path(hDB, hkey, path, sizeof(path));
+         cm_msg(MERROR, "db_get_value",
+                "invalid index \"%d\" for key \"%s\"", index, path);
+         return DB_INVALID_PARAM;
+      }
+
       /* copy key data */
-      memcpy(data, (char *) pheader + pkey->data, pkey->num_values * pkey->item_size);
-      *buf_size = pkey->num_values * pkey->item_size;
+      if (index == -1) {
+         memcpy(data, (char *) pheader + pkey->data, pkey->num_values * pkey->item_size);
+         *buf_size = pkey->num_values * pkey->item_size;
+      } else {
+         memcpy(data, (char *) pheader + pkey->data + index * pkey->item_size, pkey->item_size);
+         *buf_size = pkey->item_size;
+      }
 
       db_unlock_database(hDB);
    }
