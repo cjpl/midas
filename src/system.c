@@ -14,6 +14,9 @@
                 Brown, Prentice Hall
 
   $Log$
+  Revision 1.27  1999/04/30 10:58:59  midas
+  Added -D debug to screen for mserver
+
   Revision 1.26  1999/04/29 10:48:03  midas
   Implemented "/System/Client Notify" key
 
@@ -2985,10 +2988,18 @@ INT ss_resume(INT port, INT msg, INT param1, INT param2)
 INT                         buffer[3];
 INT                         status, index;
 
-  status = ss_suspend_get_index(&index);
+  if (ss_in_async_routine_flag)
+    {
+    /* if called from watchdog, tid is different under NT! */
+    index = 0;
+    }
+  else
+    {
+    status = ss_suspend_get_index(&index);
 
-  if (status != SS_SUCCESS)
-    return status;
+    if (status != SS_SUCCESS)
+      return status;
+    }
 
   _suspend_struct[index].bind_addr.sin_port = htons((short) port);
 
