@@ -7,6 +7,9 @@
                 VME controller using sis1100w.lib
 
   $Log$
+  Revision 1.2  2004/08/11 15:31:35  midas
+  Adjusted inlude directories
+
   Revision 1.1  2004/08/11 15:30:07  midas
   Initial revision
 
@@ -15,8 +18,8 @@
 #include <stdio.h>
 #include <string.h>
 #include "mvmestd.h"
-#include "sis3100/PlxApi.h"
-#include "sis3100/sis1100w.h" // Header file for sis1100w.dll
+#include "PlxApi.h"
+#include "sis1100w.h" // Header file for sis1100w.dll
 
 /*------------------------------------------------------------------*/
 
