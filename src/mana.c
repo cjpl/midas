@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.90  2003/04/23 15:08:02  midas
+  Added TTree output
+
   Revision 1.89  2003/04/22 14:58:17  midas
   Made histogram loading from last.root work
 
@@ -294,6 +297,8 @@
 #include "zlib.h"
 #include "ybos.h"
 
+/*------------------------------------------------------------------*/
+
 /* cernlib includes */
 #ifdef OS_WINNT
 #define VISUAL_CPLUSPLUS
@@ -319,9 +324,9 @@
 
 #endif /* HAVE_HBOOK */
 
-#ifdef HAVE_ROOT
+/*------------------------------------------------------------------*/
 
-#undef GetCurrentTime
+#ifdef HAVE_ROOT
 
 #include <assert.h>
 #include <TApplication.h>
@@ -330,107 +335,36 @@
 #include <TH1.h>
 #include <TFile.h>
 #include <TTree.h>
-
-extern void InitGui ();
-VoidFuncPtr_t initfuncs[ ] = { InitGui, 0 };
-TROOT root ("hello","Hello World", initfuncs);
+#include <TLeaf.h>
 
 /* Our own ROOT global objects */
 
 TDirectory* gManaHistsDir   = NULL; // Container for all histograms
 TFile*      gManaOutputFile = NULL; // MIDAS output file
-TTree*      gManaOutputTree = NULL; // MIDAS output tree
 
-// Save all objects from given directory into given file
-INT SaveRootHistograms(TDirectory* dir,const char* filename)
-{
-  TDirectory *savedir = gDirectory;
-  TFile *outf = new TFile(filename,"RECREATE","Midas Analyzer Histograms");
-  if (outf == 0)
-    {
-    cm_msg(MERROR,"SaveRootHistograms","Cannot create output file %s",filename);
-    return 0;
-    }
+/* MIDAS output tree structure holing one tree per event type */
 
-  outf->cd();
-  TIter next(dir->GetList());
-  while (TObject *obj = next())
-    obj->Write();
+typedef struct {
+  int        event_id;
+  TTree      *tree;
+  int        n_branch;
+  char       *branch_name;
+  int        *branch_filled;
+  int        *branch_len;
+  TBranch    **branch;
+} EVENT_TREE;
 
-  outf->Close();
-  delete outf;
-  // restore current directory
-  savedir->cd();
-  return SUCCESS;
-}
+typedef struct {
+  TFile      *f;
+  int        n_tree;
+  EVENT_TREE *event_tree;
+} TREE_STRUCT;
 
-// Load all objects from given file into given directory
-INT LoadRootHistograms(TDirectory *dir, const char *filename)
-{
-  TDirectory *savedir = gDirectory;
-  dir->cd();
-  TFile *inf = new TFile(filename, "READ");
-  if (inf == NULL)
-    printf("Error: File \"%\" not found", filename);
-  else
-    {
-    TIter next(inf->GetListOfKeys());
-
-    while (TObject *obj = next())
-      {
-      //if (obj->InheritsFrom("TH1")) // does not work???
-        {
-        dir->cd();
-        inf->Get(obj->GetName())->Clone();
-        savedir->cd();
-        }
-      }
-    inf->Close();
-    delete inf;
-    }
-  // restore current directory
-  savedir->cd();
-  return SUCCESS;
-}
-
-// Clear all TH1 objects in the given directory
-INT ClearRootHistograms(TDirectory* dir)
-{
-  TIter next(dir->GetList());
-  while (TObject *obj = next())
-    if (obj->InheritsFrom("TH1"))
-      ((TH1*)obj)->Reset();
-  return SUCCESS;
-}
-
-INT CloseRootOutputFile()
-{
-  // ensure that we do have an open file
-  assert(gManaOutputFile != NULL);
-  assert(gManaOutputTree != NULL);
-  
-  // save the histograms
-  gManaOutputFile->cd();
-  TIter next(gManaHistsDir->GetList());
-  while (TObject *obj = next())
-    obj->Write();
-  
-  // close the output file
-  gManaOutputFile->Write();
-  gManaOutputFile->Close();
-  delete gManaOutputFile;
-  gManaOutputFile = NULL;
-  
-  // delete the output tree
-  gManaOutputTree = NULL;
-  
-  // go to ROOT root directory
-  gROOT->cd();
-
-  return SUCCESS;
-}
+TREE_STRUCT tree_struct;
 
 #endif /* HAVE_ROOT */
+
+/*------------------------------------------------------------------*/
 
 /* PVM include */
 
@@ -1542,12 +1476,343 @@ EVENT_DEF  *event_def;
 }
 #endif /* HAVE_HBOOK */
 
+/*-- book TTree from ODB bank structures ---------------------------*/
+
 #ifdef HAVE_ROOT
+
+char ttree_types[][8] = {
+  "",
+  "b",  /* TID_BYTE      */
+  "B",  /* TID_SBYTE     */          
+  "b",  /* TID_CHAR      */          
+  "s",  /* TID_WORD      */          
+  "S",  /* TID_SHORT     */          
+  "i",  /* TID_DWORD     */          
+  "I",  /* TID_INT       */          
+  "I",  /* TID_BOOL      */          
+  "F",  /* TID_FLOAT     */          
+  "D",  /* TID_DOUBLE    */          
+  "b",  /* TID_BITFIELD  */          
+  "C",  /* TID_STRING    */          
+  "",      /* TID_ARRAY     */     
+  "",      /* TID_STRUCT    */     
+  "",      /* TID_KEY       */     
+  "",      /* TID_LINK      */     
+  "",      /* TID_LAST      */     
+
+};
 
 INT book_ttree()
 {
-  //WRITEME!
-  cm_msg(MERROR,"book_ttree","not implemented");
+INT        index, i, status, size;
+HNDLE      hkey;
+KEY        key;
+char       leaf_tags[2000];
+char       str[80];
+BANK_LIST  *bank_list;
+EVENT_DEF  *event_def;
+EVENT_TREE *et;
+
+  /* check global N-tuple flag */
+  ntuple_flag = 1;
+  size = sizeof(ntuple_flag);
+  sprintf(str, "/%s/Book TTree", analyzer_name);
+  db_get_value(hDB, 0, str, &ntuple_flag, &size, TID_BOOL, TRUE);
+
+  if (!ntuple_flag)
+    return SUCCESS;
+
+  /* copy output flag from ODB to bank_list */
+  for (i=0 ; analyze_request[i].event_name[0] ; i++)
+    {
+    bank_list = analyze_request[i].bank_list;
+
+    if (bank_list != NULL)
+      for (; bank_list->name[0] ; bank_list++)
+        {
+        sprintf(str, "/%s/Bank switches/%s", analyzer_name, bank_list->name);
+        bank_list->output_flag = FALSE;
+        size = sizeof(DWORD);
+        db_get_value(hDB, 0, str, &bank_list->output_flag, &size, TID_DWORD, TRUE); 
+        }
+    }
+
+  /* hot link bank switches to N-tuple re-booking */
+  sprintf(str, "/%s/Bank switches", analyzer_name);
+  db_find_key(hDB, 0, str, &hkey);
+  db_open_record(hDB, hkey, NULL, 0, MODE_READ, banks_changed, NULL);
+
+  /* go through all analyzer requests (events) */
+  for (index=0 ; analyze_request[index].event_name[0] ; index++)
+    {
+    /* create tree */
+    tree_struct.n_tree++;
+    if (tree_struct.n_tree == 1)
+      tree_struct.event_tree = (EVENT_TREE *)malloc(sizeof(EVENT_TREE));
+    else
+      tree_struct.event_tree = (EVENT_TREE *)realloc(tree_struct.event_tree, sizeof(EVENT_TREE)*tree_struct.n_tree);
+
+    et = tree_struct.event_tree + (tree_struct.n_tree - 1);
+    
+    et->event_id = analyze_request[index].ar_info.event_id;
+    et->n_branch = 0;
+
+    /* create tree */
+    sprintf(str, "Event \"%s\", ID %d", analyze_request[index].event_name, et->event_id);
+    et->tree = new TTree(analyze_request[index].event_name, str);
+
+    /* book run number/event number/time */
+    et->branch = (TBranch **)malloc(sizeof(TBranch *));
+    et->branch_name = (char *)malloc(NAME_LENGTH);
+    et->branch_filled = (int *)malloc(sizeof(int));
+    et->branch_len = (int *)malloc(sizeof(int));
+
+    et->branch[et->n_branch] = et->tree->Branch("Number", &analyze_request[index].number, "Run/I:Number/I:Time/i");
+    strcpy(et->branch_name, "Number");
+    et->n_branch++;
+    
+    bank_list = analyze_request[index].bank_list;
+    if (bank_list == NULL)
+      {
+      /* book fixed event */
+      event_def = db_get_event_definition((short int) analyze_request[index].ar_info.event_id);
+      if (event_def == NULL)
+        {
+        cm_msg(MERROR, "book_ttree", "Cannot find definition of event %s in ODB", 
+               analyze_request[index].event_name);
+        return 0;
+        }
+
+      leaf_tags[0] = 0;
+      for (i=0 ; ; i++)
+        {
+        status = db_enum_key(hDB, event_def->hDefKey, i, &hkey);
+        if (status == DB_NO_MORE_SUBKEYS)
+          break;
+
+        db_get_key(hDB, hkey, &key);
+
+        strcat(leaf_tags, key.name);
+
+        if (key.num_values > 1)
+          sprintf(leaf_tags+strlen(leaf_tags), "[%d]", key.num_values);
+
+        strcat(leaf_tags, "/");
+
+        if (ttree_types[key.type] != NULL)
+          strcat(leaf_tags, ttree_types[key.type]);
+        else
+          {
+          cm_msg(MERROR, "book_ttree", "Key %s in event %s is of type %s with no TTREE correspondence", 
+                          key.name, analyze_request[index].event_name, rpc_tid_name(key.type));
+          return 0;
+          }
+        strcat(leaf_tags, ":");
+        }
+
+      leaf_tags[strlen(leaf_tags)-1] = 0; /* delete last ':' */
+
+      et->branch = (TBranch **)realloc(et->branch, sizeof(TBranch *) * (et->n_branch + 1));
+      et->branch_name = (char *)realloc(et->branch_name, NAME_LENGTH * (et->n_branch + 1));
+      et->branch_filled = (int *)realloc(et->branch_filled, sizeof(int) * (et->n_branch + 1));
+      et->branch_len = (int *)realloc(et->branch_len, sizeof(int) * (et->n_branch + 1));
+
+      et->branch[et->n_branch] = et->tree->Branch(analyze_request[index].event_name, NULL, leaf_tags);
+      strcpy(&et->branch_name[et->n_branch*NAME_LENGTH], analyze_request[index].event_name);
+      et->n_branch++;
+      }
+    else
+      {
+      /* go thorough all banks in bank_list */
+      for (; bank_list->name[0] ; bank_list++)
+        {
+        if (bank_list->output_flag == 0)
+          continue;
+
+        if (bank_list->type != TID_STRUCT)
+          {
+          sprintf(leaf_tags, "n%s/I:%s[n%s]/", bank_list->name, bank_list->name, bank_list->name);
+
+          /* define variable length array */
+          if (ttree_types[bank_list->type] != NULL)
+            strcat(leaf_tags, ttree_types[bank_list->type]);
+          else
+            {
+            cm_msg(MERROR, "book_ttree", "Bank %s is of type %s with no TTREE correspondence", 
+                            bank_list->name, rpc_tid_name(bank_list->type));
+            return 0;
+            }
+                        
+          if (rpc_tid_size(bank_list->type) == 0)
+            {
+            cm_msg(MERROR, "book_ttree", "Bank %s is of type with unknown size", bank_list->name);
+            return 0;
+            }
+
+          et->branch = (TBranch **)realloc(et->branch, sizeof(TBranch *) * (et->n_branch + 1));
+          et->branch_name = (char *)realloc(et->branch_name, NAME_LENGTH * (et->n_branch + 1));
+          et->branch_filled = (int *)realloc(et->branch_filled, sizeof(int) * (et->n_branch + 1));
+          et->branch_len = (int *)realloc(et->branch_len, sizeof(int) * (et->n_branch + 1));
+
+          et->branch[et->n_branch] = et->tree->Branch(bank_list->name, NULL, leaf_tags);
+          strcpy(&et->branch_name[et->n_branch*NAME_LENGTH], bank_list->name);
+          et->n_branch++;
+          }
+        else
+          {
+          /* define structured bank */
+          leaf_tags[0] = 0;
+          for (i=0 ; ; i++)
+            {
+            status = db_enum_key(hDB, bank_list->def_key, i, &hkey);
+            if (status == DB_NO_MORE_SUBKEYS)
+              break;
+
+            db_get_key(hDB, hkey, &key);
+
+            strcat(leaf_tags, key.name);
+
+            if (key.num_values > 1)
+              sprintf(leaf_tags+strlen(leaf_tags), "[%d]", key.num_values);
+
+            strcat(leaf_tags, "/");
+
+            if (ttree_types[key.type] != NULL)
+              strcat(leaf_tags, ttree_types[key.type]);
+            else
+              {
+              cm_msg(MERROR, "book_ttree", "Key %s in bank %s is of type %s with no HBOOK correspondence", 
+                              key.name, bank_list->name, rpc_tid_name(key.type));
+              return 0;
+              }
+            strcat(leaf_tags, ":");
+            }
+
+          leaf_tags[strlen(leaf_tags)-1] = 0;
+  
+          et->branch = (TBranch **)realloc(et->branch, sizeof(TBranch *) * (et->n_branch + 1));
+          et->branch_name = (char *)realloc(et->branch_name, NAME_LENGTH * (et->n_branch + 1));
+          et->branch_filled = (int *)realloc(et->branch_filled, sizeof(int) * (et->n_branch + 1));
+          et->branch_len = (int *)realloc(et->branch_len, sizeof(int) * (et->n_branch + 1));
+
+          et->branch[et->n_branch] = et->tree->Branch(bank_list->name, NULL, leaf_tags);
+          strcpy(&et->branch_name[et->n_branch*NAME_LENGTH], bank_list->name);
+          et->n_branch++;
+          }
+        }
+      }
+    }
+
+  return SUCCESS;
+}
+
+/*-- root histogram routines ---------------------------------------*/
+
+// Save all objects from given directory into given file
+INT SaveRootHistograms(TDirectory* dir,const char* filename)
+{
+  TDirectory *savedir = gDirectory;
+  TFile *outf = new TFile(filename,"RECREATE","Midas Analyzer Histograms");
+  if (outf == 0)
+    {
+    cm_msg(MERROR,"SaveRootHistograms","Cannot create output file %s",filename);
+    return 0;
+    }
+
+  outf->cd();
+  TIter next(dir->GetList());
+  while (TObject *obj = next())
+    obj->Write();
+
+  outf->Close();
+  delete outf;
+  // restore current directory
+  savedir->cd();
+  return SUCCESS;
+}
+
+/*------------------------------------------------------------------*/
+
+// Load all objects from given file into given directory
+INT LoadRootHistograms(TDirectory *dir, const char *filename)
+{
+  TDirectory *savedir = gDirectory;
+  dir->cd();
+  TFile *inf = new TFile(filename, "READ");
+  if (inf == NULL)
+    printf("Error: File \"%\" not found", filename);
+  else
+    {
+    TIter next(inf->GetListOfKeys());
+
+    while (TObject *obj = next())
+      {
+      //if (obj->InheritsFrom("TH1")) // does not work???
+        {
+        dir->cd();
+        inf->Get(obj->GetName())->Clone();
+        savedir->cd();
+        }
+      }
+    inf->Close();
+    delete inf;
+    }
+  // restore current directory
+  savedir->cd();
+  return SUCCESS;
+}
+
+/*------------------------------------------------------------------*/
+
+// Clear all TH1 objects in the given directory
+INT ClearRootHistograms(TDirectory* dir)
+{
+  TIter next(dir->GetList());
+  while (TObject *obj = next())
+    if (obj->InheritsFrom("TH1"))
+      ((TH1*)obj)->Reset();
+  return SUCCESS;
+}
+
+/*------------------------------------------------------------------*/
+
+INT CloseRootOutputFile()
+{
+int i;
+
+  // ensure that we do have an open file
+  assert(gManaOutputFile != NULL);
+  
+  // save the histograms
+  gManaOutputFile->cd();
+  TIter next(gManaHistsDir->GetList());
+  while (TObject *obj = next())
+    obj->Write();
+  
+  // close the output file
+  gManaOutputFile->Write();
+  gManaOutputFile->Close();
+  delete gManaOutputFile;
+  gManaOutputFile = NULL;
+  
+  // delete the output trees
+  for (i=0 ; i<tree_struct.n_tree ; i++)
+    if (tree_struct.event_tree[i].branch)
+      {
+      free(tree_struct.event_tree[i].branch);
+      free(tree_struct.event_tree[i].branch_name);
+      free(tree_struct.event_tree[i].branch_filled);
+      free(tree_struct.event_tree[i].branch_len);
+      tree_struct.event_tree[i].branch = NULL;
+      }
+
+  /* delete event tree */
+  free(tree_struct.event_tree);
+  tree_struct.event_tree = NULL;
+  
+  // go to ROOT root directory
+  gROOT->cd();
+
   return SUCCESS;
 }
 
@@ -1653,6 +1918,16 @@ double     dummy;
     }
 #endif /* HAVE_HBOOK */
 
+#ifdef HAVE_ROOT
+  if (clp.online)
+    {
+    /* book online N-tuples only once when online */
+    status = book_ttree();
+    if (status != SUCCESS)
+      return status;
+    }
+#endif
+
   /* call main analyzer init routine */
   status = analyzer_init();
   if (status != SUCCESS)
@@ -1733,10 +2008,9 @@ BANK_LIST  *bank_list;
       size = sizeof(BOOL);
       db_get_value(hDB, 0, str, &module[j]->enabled, &size, TID_BOOL, TRUE);
       }
-
     }
 
-/* clear histos, N-tuples and tests */
+  /* clear histos, N-tuples and tests */
   if (clp.online && out_info.clear_histos)
     {
 #ifdef HAVE_HBOOK
@@ -1864,14 +2138,15 @@ BANK_LIST  *bank_list;
         cm_msg(MERROR, "bor", "HBOOK support is not compiled in");
 #endif /* HAVE_HBOOK */
         }
+    
       else if (out_format == FORMAT_ROOT)
+      
         {
 #ifdef HAVE_ROOT
         // ensure the output file is closed
         assert(gManaOutputFile == NULL);
-        assert(gManaOutputTree == NULL);
 
-        gManaOutputFile = new TFile(file_name,"RECREATE","Midas Analyzer output file");
+        gManaOutputFile = new TFile(file_name, "RECREATE", "Midas Analyzer output file");
         if (gManaOutputFile == NULL)
           {
           sprintf(error, "Cannot open output file %s", out_info.filename);
@@ -1884,15 +2159,12 @@ BANK_LIST  *bank_list;
         // go into the output file
         gManaOutputFile->cd();
 
-        // create the output tree
-        gManaOutputTree = new TTree("T","Midas Analyzer output tree");
-        assert(gManaOutputTree != NULL);
-
         out_file = (FILE *) 1;
 #else
         cm_msg(MERROR, "bor", "ROOT support is not compiled in");
 #endif /* HAVE_ROOT */
         }
+      
       else
         {
         if (out_gzip)
@@ -2494,8 +2766,9 @@ static char    *buffer = NULL;
   return status;
 }
 
-#ifdef HAVE_HBOOK
 /*---- HBOOK output ------------------------------------------------*/
+
+#ifdef HAVE_HBOOK
 
 INT write_event_hbook(FILE *file, EVENT_HEADER *pevent, ANALYZE_REQUEST *par)
 {
@@ -2981,11 +3254,191 @@ WORD        bktype;
 }
 #endif /* HAVE_HBOOK */
 
+/*---- ROOT output -------------------------------------------------*/
+
 #ifdef HAVE_ROOT
+
 INT write_event_ttree(FILE *file, EVENT_HEADER *pevent, ANALYZE_REQUEST *par)
 {
+INT         i, bklen;
+BANK        *pbk;                      
+BANK32      *pbk32;
+BANK_LIST   *pbl;                      
+BANK_HEADER *pbh;
+void        *pdata;                    
+BOOL        exclude, exclude_all;
+char        bank_name[5];             
+EVENT_DEF   *event_def;                
+DWORD       bkname;
+WORD        bktype;
+EVENT_TREE  *et;
+TBranch     *branch;
+
+  /* return if N-tuples are disabled */
+  if (!ntuple_flag)
+    return SS_SUCCESS;
+
+  event_def = db_get_event_definition(pevent->event_id);
+  if (event_def == NULL)
+    return SS_SUCCESS;
+
+  if (event_def->disabled)
+    return SS_SUCCESS;
+
+  /* fill number info */
+  par->number.run = current_run_number;
+  par->number.serial = pevent->serial_number;
+  par->number.time = pevent->time_stamp;
+
+  /*---- MIDAS format ----------------------------------------------*/
+  
+  if (event_def->format == FORMAT_MIDAS)
+    {
+    /* find event in tree structure */
+    for (i=0 ; i<tree_struct.n_tree ; i++)
+      if (tree_struct.event_tree[i].event_id == pevent->event_id)
+        break;
+
+    if (i == tree_struct.n_tree)
+      {
+      cm_msg(MERROR, "write_event_ttree", "Event #%d not booked by book_ttree()", pevent->event_id);
+      return SS_INVALID_FORMAT;
+      }
+
+    et = tree_struct.event_tree + i;
+
+    /* first mark all banks non-filled */
+    for (i=0 ; i<et->n_branch ; i++)
+      et->branch_filled[i] = FALSE;
+
+    /* first fill number block */
+    et->branch_filled[0] = TRUE;
+
+    pbk = NULL;
+    pbk32 = NULL;
+    exclude_all = TRUE;
+    do
+      {
+      pbh = (BANK_HEADER *) (pevent+1);
+      /* scan all banks */
+      if (bk_is32(pbh))
+        {
+        bklen = bk_iterate32(pbh, &pbk32, &pdata);
+        if (pbk32 == NULL)
+          break;
+        bkname = *((DWORD *) pbk32->name);
+        bktype = (WORD) pbk32->type;
+        }
+      else
+        {
+        bklen = bk_iterate(pbh, &pbk, &pdata);
+        if (pbk == NULL)
+          break;
+        bkname = *((DWORD *) pbk->name);
+        bktype = (WORD) pbk->type;
+        }
+
+      if (rpc_tid_size(bktype & 0xFF))
+        bklen /= rpc_tid_size(bktype & 0xFF);
+
+      /* look if bank is in exclude list */
+      *((DWORD *) bank_name) = bkname;
+      bank_name[4] = 0;
+
+      exclude = FALSE;
+      pbl = NULL;
+      if (par->bank_list != NULL)
+        {
+        for (i=0 ; par->bank_list[i].name[0] ; i++)
+          if ( *((DWORD *) par->bank_list[i].name) == bkname)
+            {
+            pbl = &par->bank_list[i];
+            exclude = (pbl->output_flag == 0);
+            break;
+            }
+        if (par->bank_list[i].name[0] == 0)
+          {
+          cm_msg(MERROR, "write_event_ttree", "Received unknown bank %s", bank_name);
+          continue;
+          }
+        }
+
+      /* fill leaf */
+      if (!exclude && pbl != NULL)
+        {
+        for (i=0 ; i<et->n_branch ; i++)
+          if (*((DWORD *)(&et->branch_name[i*NAME_LENGTH])) == bkname)
+            break;
+
+        if (i == et->n_branch)
+          {
+          cm_msg(MERROR, "write_event_ttree", "Received unknown bank %s", bank_name);          
+          continue;
+          }
+
+        exclude_all = FALSE;
+        branch = et->branch[i];
+        et->branch_filled[i] = TRUE;
+        et->branch_len[i] = bklen;
+
+        /* structured bank */
+        if ((bktype & 0xFF) != TID_STRUCT)
+          {
+          TIter next(branch->GetListOfLeaves());
+          TLeaf *leaf = (TLeaf *)next();
+
+          /* varibale length array */
+          leaf->SetAddress(&et->branch_len[i]);
+
+          leaf = (TLeaf *)next();
+          leaf->SetAddress(pdata);
+          }
+        else
+          {
+          /* hope that structure members are aligned as TTREE thinks ... */
+          branch->SetAddress(pdata);
+          }
+        }
+
+      } while(TRUE);
+
+    /* check if all branches have been filled */
+    for (i=0 ; i<et->n_branch ; i++)
+      if (!et->branch_filled[i])
+        cm_msg(MERROR, "root_write", "Bank %s booked but not received, tree cannot be filled", et->branch_name[i*NAME_LENGTH]);
+
+    /* fill tree */
+    if (file != NULL && !exclude_all)
+      et->tree->Fill();
+
+    
+    } /* if (event_def->format == FORMAT_MIDAS) */
+
+  
+  /*---- FIXED format ----------------------------------------------*/
+  
+  if (event_def->format == FORMAT_FIXED)
+    {
+    /* find event in tree structure */
+    for (i=0 ; i<tree_struct.n_tree ; i++)
+      if (tree_struct.event_tree[i].event_id == pevent->event_id)
+        break;
+
+    if (i == tree_struct.n_tree)
+      {
+      cm_msg(MERROR, "write_event_ttree", "Event #%d not booked by book_ttree()", pevent->event_id);
+      return SS_INVALID_FORMAT;
+      }
+
+    et = tree_struct.event_tree + i;
+
+    et->tree->GetBranch(et->branch_name)->SetAddress(pevent+1);
+    et->tree->Fill();
+    }
+
   return SUCCESS;
 }
+
 #endif /* HAVE_ROOT */
 
 /*---- ODB output --------------------------------------------------*/
@@ -3270,18 +3723,17 @@ static char  *orig_event = NULL;
   /* write resulting event */
   if (out_file)
     {
-    if (0) { }
 #ifdef HAVE_HBOOK
-    else if (out_format == FORMAT_HBOOK)
+    if (out_format == FORMAT_HBOOK)
       status = write_event_hbook(out_file, pevent, par);
 #endif /* HAVE_HBOOK */
 #ifdef HAVE_ROOT
-    else if (out_format == FORMAT_ROOT)
+    if (out_format == FORMAT_ROOT)
       status = write_event_ttree(out_file, pevent, par);
 #endif /* HAVE_ROOT */
-    else if (out_format == FORMAT_ASCII)
+    if (out_format == FORMAT_ASCII)
       status = write_event_ascii(out_file, pevent, par);
-    else if (out_format == FORMAT_MIDAS)
+    if (out_format == FORMAT_MIDAS)
       status = write_event_midas(out_file, pevent, par);
 
     if (status != SUCCESS)
@@ -3322,11 +3774,6 @@ static char  *orig_event = NULL;
         break;
         }
       }
-
-#ifdef HAVE_ROOT
-  if (gManaOutputTree != NULL)
-    gManaOutputTree->Fill();
-#endif
 
   return SUCCESS;
 }
@@ -4940,7 +5387,6 @@ int  i, index, size, status, min, max;
     pvmc[index].n_events++;
     }
 
-  //##
   sprintf(str, "%1.3lf:  ", (ss_millitime()-pvm_start_time)/1000.0);
   for (i=0 ; i<pvm_n_task ; i++)
     if (i == index)
@@ -5244,7 +5690,7 @@ int rargc;
   rargv[rargc] = (char *)malloc(3);
   rargv[rargc++] = "-b";
 
-  TApplication theApp("mlogger", &rargc, rargv);
+  TApplication theApp("ranalyzer", &rargc, rargv);
 
   /* free argument memory */
   free(rargv[0]);
@@ -5369,6 +5815,7 @@ int rargc;
   /* register callback for clearing histos */
   cm_register_function(RPC_ANA_CLEAR_HISTOS, ana_callback);
 #endif
+
   /* turn on keepalive messages */
   cm_set_watchdog_params(TRUE, DEFAULT_RPC_TIMEOUT);
 
@@ -5395,12 +5842,11 @@ int rargc;
   db_get_record(hDB, hkey, &out_info, &size, 0);
 
 #ifdef HAVE_ROOT
-
-  // create the directory for analyzer histograms
-  gManaHistsDir = new TDirectory("MidasHists","MIDAS Analyzer Histograms","");
+  /* create the directory for analyzer histograms */
+  gManaHistsDir = new TDirectory("MidasHists", "MIDAS Analyzer Histograms", "");
   assert(gManaHistsDir != NULL);
 
-  // make all ROOT objects created in user module init() functions to into gManaHistsDir
+  /* make all ROOT objects created in user module init() functions to into gManaHistsDir */
   gManaHistsDir->cd();
 
   /* convert .rz names to .root names */
@@ -5464,7 +5910,6 @@ int rargc;
 
   /* disconnect from experiment */
   cm_disconnect_experiment();
-
 
   return 0;
 }
