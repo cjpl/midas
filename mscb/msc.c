@@ -6,6 +6,9 @@
   Contents:     Command-line interface for the Midas Slow Control Bus
 
   $Log$
+  Revision 1.51  2004/03/04 15:29:16  midas
+  Added USB support
+
   Revision 1.50  2004/01/07 12:56:15  midas
   Chaned line length
 
@@ -260,7 +263,7 @@ void print_help()
    puts("terminal                   Enter teminal mode for SCS-210");
    puts("upload <hex-file>          Upload new firmware to node");
    puts("version                    Display version number");
-   puts("write <index> <value>      Write node variable");
+   puts("write <index> <value> [r]  Write node variable");
 
    puts("");
 }
@@ -500,6 +503,7 @@ void cmd_loop(int fd, char *cmd, int adr)
       /* scan ---------- */
       else if (match(param[0], "scan")) {
          do {
+            /* decimal search */
             for (i = 0; i < 0x10000; i++) {
                printf("Test address %d    \r", i);
                fflush(stdout);
@@ -536,6 +540,37 @@ void cmd_loop(int fd, char *cmd, int adr)
                if (kbhit())
                   break;
             }
+
+            /* hexadecimal search */
+            for (i = 0x100; i < 0x10000; i++) {
+               printf("Test address 0x%x    \r", i);
+               fflush(stdout);
+
+               status = mscb_ping(fd, i);
+
+               if (status == MSCB_SUCCESS) {
+                  status = mscb_info(fd, i, &info);
+                  strncpy(str, info.node_name, sizeof(info.node_name));
+                  str[16] = 0;
+
+                  if (status == MSCB_SUCCESS) {
+                     printf
+                         ("Found node \"%s\", node addr. %d (0x%04X), group addr. %d (0x%04X)      \n",
+                          str, i, i, info.group_address, info.group_address);
+                  }
+               } else if (status == MSCB_SUBM_ERROR) {
+                  printf("Error: Submaster not responding\n");
+                  break;
+               }
+
+               if (i && (i & 0xFF) == 0 && status != MSCB_SUCCESS) {
+                  i += 0xFF;
+               }
+
+               if (kbhit())
+                  break;
+            }
+         
          } while (param[1][0] == 'r' && !kbhit());
 
          while (kbhit())
@@ -589,7 +624,8 @@ void cmd_loop(int fd, char *cmd, int adr)
                addr = atoi(param[1]);
 
             do {
-               status = mscb_addr(fd, MCMD_PING16, addr, 10, TRUE);
+//##               status = mscb_addr(fd, MCMD_PING16, addr, 10, TRUE);
+               status = mscb_addr(fd, MCMD_PING16, addr, 1, TRUE);
                if (status != MSCB_SUCCESS) {
                   if (status == MSCB_MUTEX)
                      printf("MSCB used by other process\n");
@@ -738,9 +774,14 @@ void cmd_loop(int fd, char *cmd, int adr)
                            data = atoi(param[2]);
                      }
 
-                     status =
-                         mscb_write(fd, current_addr, (unsigned char) addr,
-                                    &data, info_var.width);
+                     do {
+                     
+                        status = mscb_write(fd, current_addr, (unsigned char) addr,
+                                            &data, info_var.width);
+                        Sleep(100);
+
+                     } while (param[3][0] && !kbhit());
+
                   }
                } else if (current_group >= 0) {
                   if (param[2][1] == 'x')
@@ -781,6 +822,8 @@ void cmd_loop(int fd, char *cmd, int adr)
                          mscb_read(fd, current_addr, (unsigned char) addr, dbuf, &size);
                      if (status != MSCB_SUCCESS)
                         printf("Error: %d\n", status);
+                     else if (size != info_var.width)
+                        printf("Error: Received %d bytes instead of %d", size, info_var.width);
                      else
                         print_channel(addr, &info_var, dbuf, 0);
 
@@ -1042,10 +1085,13 @@ void cmd_loop(int fd, char *cmd, int adr)
             printf("You must first address an individual node\n");
          else {
             i = 0;
+            /* first echo with adressing */
+            status = mscb_echo(fd, current_addr, d1, &d2);
             while (!kbhit()) {
                d1 = rand();
 
-               status = mscb_echo(fd, current_addr, d1, &d2);
+               /* following echos without adressing */
+               status = mscb_echo(fd, 0, d1, &d2);
 
                if (d2 != d1) {
                   printf
@@ -1107,8 +1153,9 @@ int main(int argc, char *argv[])
 
    cmd[0] = 0;
    adr = 0;
-   strcpy(device, DEF_DEVICE);
+   
    debug = check_io = server = 0;
+   device[0] = 0;
 
    /* parse command line parameters */
    for (i = 1; i < argc; i++) {
@@ -1155,6 +1202,10 @@ int main(int argc, char *argv[])
       return 0;
    }
 
+   /* select device if not specified on command line */
+   if (!device[0])
+      mscb_select_device(device);
+
    if (check_io) {
       mscb_check(device);
       return 0;
@@ -1193,6 +1244,8 @@ int main(int argc, char *argv[])
 
       return 0;
    }
+
+   printf("Connected to submaster at %s\n", device);
 
    cmd_loop(fd, cmd, adr);
 
