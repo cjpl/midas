@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.216  2002/05/16 23:16:24  midas
+  Fixed bug in history configuration page
+
   Revision 1.215  2002/05/16 18:01:13  midas
   Added subdir creation in logger and improved program restart scheme
 
@@ -8197,7 +8200,7 @@ BOOL   single_names, flag, is_link;
 HNDLE  hDB, hKeyRoot, hKeyEq, hKeyVar, hKey, hKeyNames;
 KEY    key, varkey;
 char   str[256], eq_name[256], var_name[256], cmd[256], ref[256];
-char   display_name[10][2*NAME_LENGTH], sel_name[256];
+char   display_name[10][2*NAME_LENGTH];
 float  value;
 char   *hist_col[] = 
   { "#0000FF", "#00C000", "#FF0000", "#00C0C0", "#FF00FF", 
@@ -8360,6 +8363,44 @@ char   *hist_col[] =
 
   /*---- events and variables ----*/
 
+  /* get display event name */
+
+  if (equal_ustring(cmd, "refresh"))
+    {
+    /* from parameters in a refresh */
+    for (i=0 ; i<10 ; i++)
+      {
+      sprintf(str, "event%d", i);
+      strcpy(display_name[i], getparam(str));
+      
+      if (display_name[i][0])
+        {
+        sprintf(str, "var%d", i);
+        strcat(display_name[i], ":");
+        strcat(display_name[i], getparam(str));
+        }
+      }
+    }
+  else
+    {
+    /* from ODB else */
+    sprintf(str, "/History/Display/%s/Variables", path);
+    db_find_key(hDB, 0, str, &hKey);
+
+    memset(display_name, 0, sizeof(display_name));
+    if (hKey)
+      {
+      db_get_key(hDB, hKey, &key);
+
+      memset(display_name, 0, size);
+      for (i=0 ; i< key.num_values ; i++)
+        {
+        size = 2*NAME_LENGTH;
+        db_get_data_index(hDB, hKey, display_name[i], &size, i, TID_STRING);
+        }
+      }
+    }
+
   rsprintf("<tr><th>Col<th>Event<th colspan=2>Variable<th>Factor<th>Offset</tr>\n");
 
   for (index=0 ; index<10 ; index++)
@@ -8381,38 +8422,7 @@ char   *hist_col[] =
     /* empty option */
     rsprintf("<option value=\"\">\n");
 
-    /* get display event name */
-
-    if (equal_ustring(cmd, "refresh"))
-      {
-      /* from parameters in a refresh */
-      for (i=0 ; i<10 ; i++)
-        {
-        sprintf(str, "event%d", index);
-        strcpy(display_name[i], getparam(str));
-        }
-      }
-    else
-      {
-      /* from ODB else */
-      sprintf(str, "/History/Display/%s/Variables", path);
-      db_find_key(hDB, 0, str, &hKey);
-
-      memset(display_name, 0, sizeof(display_name));
-      if (hKey)
-        {
-        db_get_key(hDB, hKey, &key);
-
-        memset(display_name, 0, size);
-        for (i=0 ; i< key.num_values ; i++)
-          {
-          size = 2*NAME_LENGTH;
-          db_get_data_index(hDB, hKey, display_name[i], &size, i, TID_STRING);
-          }
-        }
-      }
-      
-    /* loop over equipment */
+    /* loop over equipment to display event name */
     for (i=0;  ; i++)
       {
       status = db_enum_key(hDB, hKeyRoot, i, &hKeyEq);
@@ -8438,7 +8448,7 @@ char   *hist_col[] =
         }    
       }
 
-    /* loop over history links */
+    /* loop over history links to displayh event name */
     status = db_find_key(hDB, 0, "/History/Links", &hKeyRoot);
     if (status == DB_SUCCESS)
       {
@@ -8459,6 +8469,8 @@ char   *hist_col[] =
 
     rsprintf("</select></td>\n");
     
+    /* display variables for selected event */
+
     status = db_find_key(hDB, 0, "/Equipment", &hKeyRoot);
     if (status == DB_SUCCESS && display_name[index][0])
       {
@@ -8561,23 +8573,13 @@ char   *hist_col[] =
                 strcat(var_name, varkey.name);
                 }
 
-
-              if (equal_ustring(cmd, "refresh"))
-                {
-                /* get name from parameters in a refresh */
-                sprintf(str, "var%d", index);
-                strcpy(sel_name, getparam(str));
-                }
+              /* get name from ODB */
+              if (strchr(display_name[index], ':'))
+                strcpy(str, strchr(display_name[index], ':')+1);
               else
-                {
-                /* get name from ODB */
-                if (strchr(display_name[index], ':'))
-                  strcpy(sel_name, strchr(display_name[index], ':')+1);
-                else
-                  sel_name[0] = 0;
-                }
+                str[0] = 0;
 
-              if (equal_ustring(sel_name, var_name))
+              if (equal_ustring(str, var_name))
                 rsprintf("<option selected value=\"%s\">%s\n", var_name, var_name);
               else
                 rsprintf("<option value=\"%s\">%s\n", var_name, var_name);
@@ -8602,28 +8604,48 @@ char   *hist_col[] =
       }
     else
       rsprintf("<td colspan=2></td>\n");
-    
-    value = 1;
-    sprintf(str, "/History/Display/%s/Factor", path);
-    db_find_key(hDB, 0, str, &hKey);
-    size = sizeof(float);
-    if (hKey)
+
+    if (equal_ustring(cmd, "refresh"))
       {
-      db_get_key(hDB, hKey, &key);
-      if (index < key.num_values)
-        db_get_data_index(hDB, hKey, &value, &size, index, TID_FLOAT);
+      /* get value from parameters */
+      sprintf(str, "fac%d", index);
+      value = (float)atof(getparam(str));
+      }
+    else
+      {
+      /* get value from ODB */
+      value = 1;
+      sprintf(str, "/History/Display/%s/Factor", path);
+      db_find_key(hDB, 0, str, &hKey);
+      size = sizeof(float);
+      if (hKey)
+        {
+        db_get_key(hDB, hKey, &key);
+        if (index < key.num_values)
+          db_get_data_index(hDB, hKey, &value, &size, index, TID_FLOAT);
+        }
       }
     rsprintf("<td><input type=text size=10 maxlength=10 name=\"fac%d\" value=%g></td>\n", index, value);
 
-    value = 0;
-    sprintf(str, "/History/Display/%s/Offset", path);
-    db_find_key(hDB, 0, str, &hKey);
-    size = sizeof(float);
-    if (hKey)
+    if (equal_ustring(cmd, "refresh"))
       {
-      db_get_key(hDB, hKey, &key);
-      if (index < key.num_values)
-        db_get_data_index(hDB, hKey, &value, &size, index, TID_FLOAT);
+      /* get value from parameters */
+      sprintf(str, "ofs%d", index);
+      value = (float)atof(getparam(str));
+      }
+    else
+      {
+      /* get value from ODB */
+      value = 0;
+      sprintf(str, "/History/Display/%s/Offset", path);
+      db_find_key(hDB, 0, str, &hKey);
+      size = sizeof(float);
+      if (hKey)
+        {
+        db_get_key(hDB, hKey, &key);
+        if (index < key.num_values)
+          db_get_data_index(hDB, hKey, &value, &size, index, TID_FLOAT);
+        }
       }
     rsprintf("<td><input type=text size=10 maxlength=10 name=\"ofs%d\" value=%g></td>\n", index, value);
 
