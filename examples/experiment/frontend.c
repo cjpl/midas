@@ -6,11 +6,14 @@
   Contents:     Experiment specific readout code (user part) of
                 Midas frontend. This example simulates a "trigger
                 event" and a "scaler event" which are filled with
-                CAMAC or random data. The trigger event is filled 
-                with two banks (ADC0 and TDC0), the scaler event 
+                CAMAC or random data. The trigger event is filled
+                with two banks (ADC0 and TDC0), the scaler event
                 with one bank (SCLR).
 
   $Log$
+  Revision 1.19  2003/04/28 15:33:05  midas
+  Fixed compiler warnings
+
   Revision 1.18  2003/04/25 14:49:46  midas
   Removed HBOOK code
 
@@ -94,7 +97,7 @@ INT event_buffer_size = 10*10000;
 
 /* number of channels */
 #define N_ADC  4
-#define N_TDC  4  
+#define N_TDC  4
 #define N_SCLR 4
 
 /* CAMAC crate and slots */
@@ -151,35 +154,35 @@ EQUIPMENT equipment[] = {
       "MIDAS",              /* format */
       TRUE,                 /* enabled */
       RO_RUNNING |          /* read only when running */
-      RO_ODB,               /* and update ODB */ 
+      RO_ODB,               /* and update ODB */
       500,                  /* poll for 500ms */
       0,                    /* stop run after this event limit */
       0,                    /* number of sub events */
       0,                    /* don't log history */
-      "", "", "", }
+      "", "", "", },
     read_trigger_event,   /* readout routine */
-    NULL, NULL, 
+    NULL, NULL,
     trigger_bank_list,    /* bank list */
   },
 
   { "Scaler",             /* equipment name */
     { 2, 0,                 /* event ID, trigger mask */
       "SYSTEM",             /* event buffer */
-      EQ_PERIODIC | 
+      EQ_PERIODIC |
       EQ_MANUAL_TRIG,       /* equipment type */
       0,                    /* event source */
       "MIDAS",              /* format */
       TRUE,                 /* enabled */
       RO_RUNNING |
       RO_TRANSITIONS |      /* read when running and on transitions */
-      RO_ODB,               /* and update ODB */ 
+      RO_ODB,               /* and update ODB */
       10000,                /* read every 10 sec */
       0,                    /* stop run after this event limit */
       0,                    /* number of sub events */
       0,                    /* log history */
-      "", "", "", }
+      "", "", "", },
     read_scaler_event,    /* readout routine */
-    NULL, NULL, 
+    NULL, NULL,
     scaler_bank_list,     /* bank list */
   },
 
@@ -199,7 +202,7 @@ EQUIPMENT equipment[] = {
 
   frontend_init:  When the frontend program is started. This routine
                   should initialize the hardware.
-  
+
   frontend_exit:  When the frontend program is shut down. Can be used
                   to releas any locked resources like memory, commu-
                   nications ports etc.
@@ -207,7 +210,7 @@ EQUIPMENT equipment[] = {
   begin_of_run:   When a new run is started. Clear scalers, open
                   rungates, etc.
 
-  end_of_run:     Called on a request to stop a run. Can send 
+  end_of_run:     Called on a request to stop a run. Can send
                   end-of-run event and close run gates.
 
   pause_run:      When a run is paused. Should disable trigger events.
@@ -231,7 +234,7 @@ INT frontend_init()
 
   /* enable LAM in crate controller */
   cam_lam_enable(CRATE, SLOT_IO);
-  
+
   /* reset external LAM Flip-Flop */
   camo(CRATE, SLOT_IO, 1, 16, 0xFF);
   camo(CRATE, SLOT_IO, 1, 16, 0);
@@ -290,7 +293,7 @@ INT frontend_loop()
 /*------------------------------------------------------------------*/
 
 /********************************************************************\
-  
+
   Readout routines for different events
 
 \********************************************************************/
@@ -401,7 +404,7 @@ INT  q, timeout;
 
   /* clear LAM in crate controller */
   cam_lam_clear(CRATE, SLOT_IO);
-  
+
   /* reset external LAM Flip-Flop */
   camo(CRATE, SLOT_IO, 1, 16, 0xFF);
   camo(CRATE, SLOT_IO, 1, 16, 0);
