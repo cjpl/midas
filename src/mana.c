@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.126  2004/09/24 22:59:10  midas
+  Outcommented GetInetAddress() which crashes under Windows
+
   Revision 1.125  2004/09/23 21:43:38  midas
   Changed stricmp to strcmp
 
@@ -466,7 +469,7 @@
 TApplication *manaApp;
 TFolder *gManaHistosFolder = NULL;   // Container for all histograms
 TFile *gManaOutputFile = NULL;       // MIDAS output file
-TObjArray *gHistoFolderStack = NULL; // 
+TObjArray *gHistoFolderStack = NULL; //
 
 /* MIDAS output tree structure holing one tree per event type */
 
@@ -707,7 +710,7 @@ struct {
    'R', "              Start ROOT interpreter after analysis has finished.",
           &clp.start_rint, TID_BOOL, 0},
 #endif
-   
+
    {
    'v', "              Verbose output.", &clp.verbose, TID_BOOL, 0}, {
    'w', "              Produce row-wise N-tuples in outpur .rz file. By\n\
@@ -879,9 +882,9 @@ EVENT_DEF *db_get_event_definition(short int event_id)
 
    event_def = (EVENT_DEF *) realloc(event_def, (n_cache)*sizeof(EVENT_DEF));
    assert(event_def);
-   
+
    memset(&event_def[index], 0, sizeof(EVENT_DEF));
-   
+
    /* check for system events */
    if (event_id < 0) {
       event_def[index].event_id = event_id;
@@ -1957,7 +1960,7 @@ INT mana_init()
    for (i = 0; analyze_request[i].event_name[0]; i++) {
       module = analyze_request[i].ana_module;
       for (j = 0; module != NULL && module[j] != NULL; j++) {
-         
+
          /* copy module enabled flag to ana_module */
          sprintf(str, "/%s/Module switches/%s", analyzer_name, module[j]->name);
          module[j]->enabled = TRUE;
@@ -3350,11 +3353,11 @@ INT write_event_ttree(FILE * file, EVENT_HEADER * pevent, ANALYZE_REQUEST * par)
       /* fill tree both online and offline */
       if (!exclude_all)
          et->tree->Fill();
-   
+
    } // if (event_def->format == FORMAT_MIDAS)
 
    /*---- FIXED format ----------------------------------------------*/
-   
+
    if (event_def->format == FORMAT_FIXED) {
       /* find event in tree structure */
       for (i = 0; i < tree_struct.n_tree; i++)
@@ -3399,7 +3402,7 @@ INT write_event_odb(EVENT_HEADER * pevent)
       return SS_SUCCESS;
 
    /*---- MIDAS format ----------------------------------------------*/
-   
+
    if (event_def->format == FORMAT_MIDAS) {
       pbh = (BANK_HEADER *) (pevent + 1);
       pbk = NULL;
@@ -3474,7 +3477,7 @@ INT write_event_odb(EVENT_HEADER * pevent)
    }
 
    /*---- FIXED format ----------------------------------------------*/
-   
+
    if (event_def->format == FORMAT_FIXED && !clp.online) {
       if (db_set_record(hDB, event_def->hDefKey, (char *) (pevent + 1),
                         pevent->data_size, 0) != DB_SUCCESS)
@@ -3888,7 +3891,7 @@ void * h1_book(char *name, char *title, int bins, double min, double max)
    return hist;
 }
 
-void * h2_book(char *name, char *title, int xbins, double xmin, double xmax, 
+void * h2_book(char *name, char *title, int xbins, double xmin, double xmax,
                                         int ybins, double ymin, double ymax)
 {
    TH2F *hist;
@@ -5541,7 +5544,7 @@ int pvm_merge()
 
 /*------------------------------------------------------------------*/
 
-TFolder *ReadFolderPointer(TSocket *fSocket) 
+TFolder *ReadFolderPointer(TSocket *fSocket)
 {
    //read pointer to current folder
    TMessage *message = new TMessage(kMESS_OBJECT);
@@ -5567,7 +5570,7 @@ THREADTYPE root_server_thread(void *arg)
 
       /* close connection if client has disconnected */
       if (sock->Recv(request, sizeof(request)) <= 0) {
-         printf("Closed connection from %s\n", sock->GetInetAddress().GetHostName());
+         // printf("Closed connection to %s\n", sock->GetInetAddress().GetHostName());
          sock->Close();
          delete sock;
          return THREADRETURN;
@@ -5577,7 +5580,7 @@ THREADTYPE root_server_thread(void *arg)
          TMessage *message = new TMessage(kMESS_OBJECT);
 
          if (strcmp(request, "GetListOfFolders") == 0) {
-            
+
             TFolder *folder = ReadFolderPointer(sock);
             if (folder==NULL) {
                message->Reset(kMESS_OBJECT);
@@ -5628,7 +5631,7 @@ THREADTYPE root_server_thread(void *arg)
                sock->Send(*message);
             }
             delete message;
- 
+
          } else if (strncmp(request, "FindFullPathName", 16) == 0) {
 
             TFolder *folder = ReadFolderPointer(sock);
@@ -5647,7 +5650,7 @@ THREADTYPE root_server_thread(void *arg)
                delete obj;
             }
             delete message;
-         
+
          } else if (strncmp(request, "Occurence", 9) == 0) {
 
             TFolder *folder = ReadFolderPointer(sock);
@@ -5711,7 +5714,7 @@ THREADTYPE root_socket_server(void *arg)
 // Server loop listening for incoming network connections on specified port.
 // Starts a searver_thread for each connection.
    int port;
-   
+
    port = *(int*)arg;
 
    printf("Root server listening on port %d...\n", port);
@@ -5719,6 +5722,8 @@ THREADTYPE root_socket_server(void *arg)
 
    do {
       TSocket *sock = lsock->Accept();
+
+      // printf("Established connection to %s\n", sock->GetInetAddress().GetHostName());
 
 #if defined ( __linux__ )
       TThread *thread = new TThread("Server", root_server_thread, sock);
@@ -5735,7 +5740,7 @@ THREADTYPE root_socket_server(void *arg)
 
 /*------------------------------------------------------------------*/
 
-void start_root_socket_server(int port) 
+void start_root_socket_server(int port)
 {
    static int pport = port;
 #if defined ( __linux__ )
