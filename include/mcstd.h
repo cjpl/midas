@@ -13,6 +13,9 @@
  *  Author:  Pierre-Andre Amaudruz Data Acquisition Group
  *
  *  $Log$
+ *  Revision 1.4  1999/02/19 21:59:59  pierre
+ *  - Moved came_xxx to esone
+ *
  *  Revision 1.3  1998/10/13 07:04:29  midas
  *  Added Log in header
  *
@@ -108,28 +111,6 @@ EXTERNAL INLINE void EXPRT cam_lam_enable   (const int c, const int n);
 EXTERNAL INLINE void EXPRT cam_lam_disable  (const int c, const int n);
 EXTERNAL INLINE void EXPRT cam_lam_read     (const int c, DWORD *lam);
 EXTERNAL INLINE void EXPRT cam_lam_clear    (const int c, const int n);
-EXTERNAL INLINE void EXPRT came_cn   (int *ext, const int b, const int c, const int n, const int a);
-EXTERNAL INLINE void EXPRT came_ext  (const int ext, int *b, int *c, int *n, int *a);
-EXTERNAL INLINE void EXPRT cam16ei   (const int ext, const int f, WORD *d);
-EXTERNAL INLINE void EXPRT cam24ei   (const int ext, const int f, DWORD *d);
-EXTERNAL INLINE void EXPRT cam16ei_r (const int ext, const int f, WORD **d, const int r);
-EXTERNAL INLINE void EXPRT cam24ei_r (const int ext, const int f, DWORD **d, const int r);
-EXTERNAL INLINE void EXPRT cam16ei_q (const int ext, const int f, WORD *d, int *x, int *q);
-EXTERNAL INLINE void EXPRT cam24ei_q (const int ext, const int f, DWORD *d, int *x, int *q);
-EXTERNAL INLINE void EXPRT cam16eo_q (const int ext, const int f, WORD d, int *x, int *q);
-EXTERNAL INLINE void EXPRT cam24eo_q (const int ext, const int f, DWORD d, int *x, int *q);
-EXTERNAL INLINE void EXPRT cam16ei_rq(const int ext, const int f, WORD **d, const int r);
-EXTERNAL INLINE void EXPRT cam24ei_rq(const int ext, const int f, DWORD **d, const int r);
-EXTERNAL INLINE void EXPRT cam16ei_sa(const int ext, const int f, WORD **d, const int r);
-EXTERNAL INLINE void EXPRT cam24ei_sa(const int ext, const int f, DWORD **d, const int r);
-EXTERNAL INLINE void EXPRT cam16ei_sn(const int ext, const int f, WORD **d, const int r);
-EXTERNAL INLINE void EXPRT cam24ei_sn(const int ext, const int f, DWORD **d, const int r);
-EXTERNAL INLINE void EXPRT cam16eo   (const int ext, const int f, WORD d);
-EXTERNAL INLINE void EXPRT cam24eo   (const int ext, const int f, DWORD d);
-EXTERNAL INLINE void EXPRT camec     (const int ext, const int f);
-EXTERNAL INLINE void EXPRT camec_q   (const int ext, const int f, int *x, int *q);
-EXTERNAL INLINE void EXPRT camec_sa  (const int ext, const int f, const int r);
-EXTERNAL INLINE void EXPRT camec_sn  (const int ext, const int f, const int r);
 EXTERNAL INLINE void EXPRT cam_interrupt_enable (void);
 EXTERNAL INLINE void EXPRT cam_interrupt_disable(void);
 EXTERNAL INLINE void EXPRT cam_interrupt_attach (void (*isr)(void));
