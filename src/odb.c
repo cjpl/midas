@@ -6,6 +6,12 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.96  2004/09/18 04:04:15  olchansk
+  more locking fixes:
+  - abort on double-lock
+  - abort on locking failures (ss_mutex_wait_for() returns an error)
+  - exit on locking timeouts.
+
   Revision 1.95  2004/09/17 19:58:09  midas
   Do not allow empty key names in db_create_key
 
@@ -1556,19 +1562,29 @@ INT db_lock_database(HNDLE hDB)
    int status;
 
    if (hDB > _database_entries || hDB <= 0) {
-      cm_msg(MERROR, "db_lock_database", "invalid database handle");
+      cm_msg(MERROR, "db_lock_database", "invalid database handle, aborting...");
+      abort();
       return DB_INVALID_HANDLE;
    }
 
-   if (_database[hDB - 1].protect && _database[hDB - 1].database_header != NULL)
-      cm_msg(MERROR, "db_lock_database", "internal error: DB already locked");
-
+   if (_database[hDB - 1].protect && _database[hDB - 1].database_header != NULL) {
+      cm_msg(MERROR, "db_lock_database", "internal error: DB already locked, aborting...");
+      abort();
+      return DB_NO_MUTEX;
+   }
+   
    if (_database[hDB - 1].lock_cnt == 0) {
       /* wait max. 5 minutes for mutex (required if locking process is being debugged) */
       status = ss_mutex_wait_for(_database[hDB - 1].mutex, 5*60*1000);
       if (status == SS_TIMEOUT) {
-         cm_msg(MERROR, "db_lock_database", "timeout obtaining lock for database");
+         cm_msg(MERROR, "db_lock_database", "timeout obtaining lock for database, exiting...");
+         exit(1);
          return DB_TIMEOUT;
+      }
+      if (status != SS_SUCCESS) {
+         cm_msg(MERROR, "db_lock_database", "cannot lock database, ss_mutex_wait_for() status %d, aborting...",status);
+         abort();
+         return DB_NO_MUTEX;
       }
    }
 
