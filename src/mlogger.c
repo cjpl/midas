@@ -6,6 +6,9 @@
   Contents:     MIDAS logger program
 
   $Log$
+  Revision 1.45  2001/12/05 13:14:17  midas
+  Logger does not refuse to start run, if data file is present but empty
+
   Revision 1.44  2001/12/05 11:24:57  midas
   Changed directory display upon startup and ODB directory key generation
 
@@ -565,11 +568,15 @@ INT          status;
       log_chn->handle = open(log_chn->path, O_RDONLY);
       if (log_chn->handle > 0)
         {
-        close(log_chn->handle);
-        free(info->buffer);
-        free(info);
-        log_chn->handle = 0;
-        return SS_FILE_EXISTS;
+        /* check if file length is nonzero */
+        if (lseek(log_chn->handle, 0, SEEK_END) > 0)
+          {
+          close(log_chn->handle);
+          free(info->buffer);
+          free(info);
+          log_chn->handle = 0;
+          return SS_FILE_EXISTS;
+          }
         }
       }
 
