@@ -6,6 +6,9 @@
   Contents:     Command-line interface to the MIDAS online data base.
 
   $Log$
+  Revision 1.55  2002/05/10 01:41:19  midas
+  Added optional debug output to cm_transition
+
   Revision 1.54  2002/05/08 19:54:41  midas
   Added extra parameter to function db_get_value()
 
@@ -258,8 +261,9 @@ void print_help(char *command)
     printf("scl [-w]                - show all active clients [with watchdog info]\n");
     printf("shutdown <client>/all   - shutdown individual or all clients\n");
     printf("sor                     - show open records in current subtree\n");
-    printf("start [number]          - start a run [with a specific number]\n");
-    printf("stop                    - stop current run\n");
+    printf("start [number][now][-v] - start a run [with a specific number],\n");
+    printf("                          [now] w/o asking parameters, [-v] debug output\n");
+    printf("stop [-v]               - stop current run, [-v] debug output\n");
     printf("trunc <key> <index>     - truncate key to [index] values\n");
     printf("ver                     - show MIDAS library version\n");
     printf("webpasswd               - change WWW password for mhttpd\n");
@@ -1430,7 +1434,7 @@ char            line[256], prompt[256];
 char            param[10][100];
 char            str[256], name[256], *pc, data_str[256];
 char            old_password[32], new_password[32];
-INT             nparam, flags, index1, index2;
+INT             nparam, flags, index1, index2, debug_flag;
 WORD            mode;
 HNDLE           hDB, hKey, hKeyClient, hSubkey, hRootKey;
 KEY             key;
@@ -2456,6 +2460,9 @@ PRINT_INFO      print_info;
     /* start */
     else if (param[0][0] == 's' && param[0][1] == 't' && param[0][2] == 'a')
       {
+      debug_flag = ((param[1][0] == '-' && param[1][1] == 'v') ||
+                    (param[2][0] == '-' && param[2][1] == 'v'));
+      
       /* check if run is already started */
       size = sizeof(i);
       i = STATE_STOPPED;
@@ -2559,7 +2566,7 @@ PRINT_INFO      print_info;
             i = 1;
             db_set_value(hDB, 0, "/Runinfo/Transition in progress", &i, sizeof(INT), 1, TID_INT);
          
-            status = cm_transition(TR_START, new_run_number, str, sizeof(str), SYNC);
+            status = cm_transition(TR_START, new_run_number, str, sizeof(str), SYNC, debug_flag);
             if (status != CM_SUCCESS)
               {
               /* in case of error, reset run number */
@@ -2578,6 +2585,9 @@ PRINT_INFO      print_info;
     /* stop */
     else if (param[0][0] == 's' && param[0][1] == 't' && param[0][2] == 'o')
       {
+      debug_flag = ((param[1][0] == '-' && param[1][1] == 'v') ||
+                    (param[2][0] == '-' && param[2][1] == 'v'));
+
       /* check if transition in progress */
       i = 0;
       size = sizeof(INT);
@@ -2605,9 +2615,9 @@ PRINT_INFO      print_info;
           db_set_value(hDB, 0, "/Runinfo/Transition in progress", &i, sizeof(INT), 1, TID_INT);
 
           if (param[1][0] == 'n')
-            status = cm_transition(TR_STOP | TR_DEFERRED, 0, str, sizeof(str), SYNC);
+            status = cm_transition(TR_STOP | TR_DEFERRED, 0, str, sizeof(str), SYNC, debug_flag);
           else
-            status = cm_transition(TR_STOP, 0, str, sizeof(str), SYNC);
+            status = cm_transition(TR_STOP, 0, str, sizeof(str), SYNC, debug_flag);
 
           if (status == CM_DEFERRED_TRANSITION)
             printf("%s\n", str);
@@ -2625,6 +2635,9 @@ PRINT_INFO      print_info;
     /* pause */
     else if (param[0][0] == 'p' && param[0][1] == 'a' && param[0][2] == 'u')
       {
+      debug_flag = ((param[1][0] == '-' && param[1][1] == 'v') ||
+              (param[2][0] == '-' && param[2][1] == 'v'));
+
       /* check if run is started */
       i = STATE_STOPPED;
       size = sizeof(i);
@@ -2636,9 +2649,9 @@ PRINT_INFO      print_info;
       else
         {
         if (param[1][0] == 'n')
-          status = cm_transition(TR_PAUSE | TR_DEFERRED, 0, str, sizeof(str), SYNC);
+          status = cm_transition(TR_PAUSE | TR_DEFERRED, 0, str, sizeof(str), SYNC, debug_flag);
         else
-          status = cm_transition(TR_PAUSE, 0, str, sizeof(str), SYNC);
+          status = cm_transition(TR_PAUSE, 0, str, sizeof(str), SYNC, debug_flag);
 
         if (status == CM_DEFERRED_TRANSITION)
           printf("%s\n", str);
@@ -2652,6 +2665,9 @@ PRINT_INFO      print_info;
     /* resume */
     else if (param[0][0] == 'r' && param[0][1] == 'e' && param[0][2] == 's')
       {
+      debug_flag = ((param[1][0] == '-' && param[1][1] == 'v') ||
+              (param[2][0] == '-' && param[2][1] == 'v'));
+
       /* check if run is paused */
       i = STATE_STOPPED;
       size = sizeof(i);
@@ -2662,7 +2678,7 @@ PRINT_INFO      print_info;
         }
       else
         {
-        status = cm_transition(TR_RESUME, 0, str, sizeof(str), SYNC);
+        status = cm_transition(TR_RESUME, 0, str, sizeof(str), SYNC, debug_flag);
         if (status != CM_SUCCESS)
           printf("Error: %s\n", str);
         }

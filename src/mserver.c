@@ -6,6 +6,9 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
+  Revision 1.31  2002/05/10 01:41:19  midas
+  Added optional debug output to cm_transition
+
   Revision 1.30  2002/05/08 19:54:41  midas
   Added extra parameter to function db_get_value()
 
@@ -494,10 +497,6 @@ INT convert_flags;
 
     case RPC_CM_TIME:
       status = cm_time(CPDWORD(0));
-      break;
-
-    case RPC_CM_TRANSITION:
-      status = cm_transition(CINT(0), CINT(1), CSTRING(2), CINT(3), CINT(4));
       break;
 
     case RPC_CM_MSG_RETRIEVE:

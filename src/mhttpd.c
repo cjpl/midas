@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.202  2002/05/10 01:41:19  midas
+  Added optional debug output to cm_transition
+
   Revision 1.201  2002/05/08 22:27:24  midas
   Added 'more lines' button in runlog display
 
@@ -8829,7 +8832,7 @@ struct tm *gmt;
     if (!check_web_password(cookie_wpwd, "?cmd=pause", experiment))
       return;
 
-    status = cm_transition(TR_PAUSE, 0, str, sizeof(str), SYNC);
+    status = cm_transition(TR_PAUSE, 0, str, sizeof(str), SYNC, FALSE);
     if (status != CM_SUCCESS && status != CM_DEFERRED_TRANSITION)
       show_error(str);
     else
@@ -8851,7 +8854,7 @@ struct tm *gmt;
     if (!check_web_password(cookie_wpwd, "?cmd=resume", experiment))
       return;
 
-    status = cm_transition(TR_RESUME, 0, str, sizeof(str), SYNC);
+    status = cm_transition(TR_RESUME, 0, str, sizeof(str), SYNC, FALSE);
     if (status != CM_SUCCESS && status != CM_DEFERRED_TRANSITION)
       show_error(str);
     else
@@ -8902,7 +8905,7 @@ struct tm *gmt;
         }
 
       i = atoi(value);
-      status = cm_transition(TR_START, i, str, sizeof(str), SYNC);
+      status = cm_transition(TR_START, i, str, sizeof(str), SYNC, FALSE);
       if (status != CM_SUCCESS && status != CM_DEFERRED_TRANSITION)
         show_error(str);
       else
@@ -8924,7 +8927,7 @@ struct tm *gmt;
     if (!check_web_password(cookie_wpwd, "?cmd=stop", experiment))
       return;
 
-    status = cm_transition(TR_STOP, 0, str, sizeof(str), SYNC);
+    status = cm_transition(TR_STOP, 0, str, sizeof(str), SYNC, FALSE);
     if (status != CM_SUCCESS && status != CM_DEFERRED_TRANSITION)
       show_error(str);
     else
