@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.227  2004/11/26 20:42:52  pierre
+  fix comment for VxWorks
+
   Revision 1.226  2004/11/10 05:40:23  pierre
   correct transition loop check on client side
 
@@ -70,7 +73,7 @@
   Fixed compiler warning
 
   Revision 1.204  2004/03/31 17:35:40  olchansk
-  fix the infamous problem with "last NN days broken" in Elog
+  Fix the infamous problem with "last NN days broken" in Elog
   catch more memory overruns in the elog code
 
   Revision 1.203  2004/03/19 09:58:22  midas
@@ -3436,13 +3439,13 @@ INT cm_set_transition_sequence(INT transition, INT sequence_number)
 
    cm_get_experiment_database(&hDB, &hKey);
 
-   // Find the transition type from the list
+   /* Find the transition type from the list */
    for (i = 0; i < 13; i++)
        if (trans_name[i].transition == transition)
          break;
    sprintf(str, "Transition %s", trans_name[i].name);
 
-   // Change local sequence number for this transition type
+   /* Change local sequence number for this transition type */
    for (i = 0; i < MAX_TRANSITIONS; i++)
        if (_trans_table[i].transition == transition){
           _trans_table[i].sequence_number = sequence_number;
@@ -7904,10 +7907,12 @@ void bm_defragment_event(HNDLE buffer_handle, HNDLE request_id,
 \********************************************************************/
 {
    INT i;
-
+   static int j=-1;
+   
    if ((pevent->event_id & 0xF000) == EVENTID_FRAG1) {
     /*---- start new event ----*/
 
+      printf("First Frag detected : Ser#:%d ID=0x%x \n", pevent->serial_number, pevent->event_id);
       /* check if fragments already stored */
       for (i = 0; i < MAX_DEFRAG_EVENTS; i++)
          if (defrag_buffer[i].event_id == (pevent->event_id & 0x0FFF))
@@ -7927,14 +7932,14 @@ void bm_defragment_event(HNDLE buffer_handle, HNDLE request_id,
             break;
 
       if (i == MAX_DEFRAG_EVENTS) {
-         cm_msg(MERROR, "bm_defragment_evnet",
-                "Not eough defragment buffers, please increase MAX_DEFRAG_EVENTS and recompile");
+         cm_msg(MERROR, "bm_defragment_event",
+                "Not enough defragment buffers, please increase MAX_DEFRAG_EVENTS and recompile");
          return;
       }
 
       /* check event size */
       if (pevent->data_size != sizeof(DWORD)) {
-         cm_msg(MERROR, "bm_defragment_evnet",
+         cm_msg(MERROR, "bm_defragment_event",
                 "Received first event fragment with %s bytes instead of %d bytes, event ignored",
                 pevent->data_size, sizeof(DWORD));
          return;
@@ -7958,6 +7963,12 @@ void bm_defragment_event(HNDLE buffer_handle, HNDLE request_id,
       defrag_buffer[i].pevent->event_id = defrag_buffer[i].event_id;
       defrag_buffer[i].pevent->data_size = defrag_buffer[i].data_size;
 
+      printf("First frag[%d] (ID %d) Ser#:%d sz:%d\n"
+             , i, defrag_buffer[i].event_id
+	     , pevent->serial_number
+	     , defrag_buffer[i].data_size);
+      j=0;
+      
       return;
    }
 
@@ -7971,8 +7982,12 @@ void bm_defragment_event(HNDLE buffer_handle, HNDLE request_id,
       free(defrag_buffer[i].pevent);
       memset(&defrag_buffer[i].event_id, 0, sizeof(EVENT_DEFRAG_BUFFER));
       cm_msg(MERROR, "bm_defragement_event",
-             "Received fragment with no first fragment (ID %d)",
-             pevent->event_id & 0x0FFF);
+             "Received fragment without first fragment (ID %d) Ser#:%d",
+             pevent->event_id & 0x0FFF, pevent->serial_number );
+      printf("Received fragment without first fragment (ID 0x%x) Ser#:%d Sz:%d\n"
+             , pevent->event_id
+	     , pevent->serial_number
+	     , pevent->data_size );
       return;
    }
 
@@ -7981,8 +7996,9 @@ void bm_defragment_event(HNDLE buffer_handle, HNDLE request_id,
       free(defrag_buffer[i].pevent);
       memset(&defrag_buffer[i].event_id, 0, sizeof(EVENT_DEFRAG_BUFFER));
       cm_msg(MERROR, "bm_defragement_event",
-             "Received fragments with more data (%d) than event size (%d)",
-             pevent->data_size + defrag_buffer[i].received, defrag_buffer[i].data_size);
+             "Received fragments with more data (%d) than event size (%d)"
+	     , pevent->data_size + defrag_buffer[i].received
+	     , defrag_buffer[i].data_size);
       return;
    }
 
@@ -7990,11 +8006,17 @@ void bm_defragment_event(HNDLE buffer_handle, HNDLE request_id,
           defrag_buffer[i].received, pdata, pevent->data_size);
 
    defrag_buffer[i].received += pevent->data_size;
-
+   
+   printf("Other frag[%d][%d] (ID %d) Ser#:%d sz:%d\n"
+	  , i, j++, defrag_buffer[i].event_id
+	  , pevent->serial_number
+	  , pevent->data_size);
+   
+   
    if (defrag_buffer[i].received == defrag_buffer[i].data_size) {
-      /* event complete */
-      dispatcher(buffer_handle, request_id, defrag_buffer[i].pevent,
-                 defrag_buffer[i].pevent + 1);
+     /* event complete */
+     dispatcher(buffer_handle, request_id, defrag_buffer[i].pevent,
+		defrag_buffer[i].pevent + 1);
       free(defrag_buffer[i].pevent);
       memset(&defrag_buffer[i].event_id, 0, sizeof(EVENT_DEFRAG_BUFFER));
    }
