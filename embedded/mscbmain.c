@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol main program
 
   $Log$
+  Revision 1.40  2004/03/09 15:37:09  midas
+  Fixed problems with small strings
+
   Revision 1.39  2004/03/05 12:29:00  midas
   Fixed bugs with F020
 
@@ -748,25 +751,38 @@ void interprete(void)
    }
 
    if (cmd == CMD_WRITE_NA || cmd == CMD_WRITE_ACK) {
-      /* offset to data */
-      if ((in_buf[0] & 0x07) == 0x07)   // variable length
-         j = 1;
-      else
-         j = 0;
 
-      ch = in_buf[1 + j];
+      n = in_buf[0] & 0x07;
+
+      if (n == 0x07) {  // variable length
+         j = 1;
+         n = in_buf[1];
+         ch = in_buf[2];
+      } else {
+         j = 0;
+         ch = in_buf[1];
+      }
+
+      n--; // data size (minus channel)
 
       if (ch < n_variables) {
-         n = variables[ch].width;
+   
+         /* don't exceed variable width */
+         if (n > variables[ch].width)
+            n = variables[ch].width;
 
          for (i = 0; i < n; i++)
             if (variables[ch].ud) {
-               if (n < 4)
+               if (variables[ch].unit == UNIT_STRING) {
+                  if (n > 4)
+                     /* copy bytes in normal order */
+                     ((char *) variables[ch].ud)[i] = in_buf[2 + j + i];
+                  else
+                     /* copy bytes in reverse order (got swapped on host) */
+                     ((char *) variables[ch].ud)[i] = in_buf[i_in - 2 - i];
+               } else
                   /* copy LSB bytes, needed for BYTE if DWORD is sent */
-                  ((char *) variables[ch].ud)[i] = in_buf[i_in - 1 - n + i + j];
-               else
-                  /* copy bytes in normal order, needed for strings */
-                  ((char *) variables[ch].ud)[i] = in_buf[2 + j + i];
+                  ((char *) variables[ch].ud)[i] = in_buf[i_in - 1 - variables[ch].width + i + j];
             }
 
          user_write(ch);

@@ -6,6 +6,9 @@
   Contents:     Command-line interface for the Midas Slow Control Bus
 
   $Log$
+  Revision 1.59  2004/03/09 15:37:09  midas
+  Fixed problems with small strings
+
   Revision 1.58  2004/03/09 15:02:26  midas
   Changed indentation
 
@@ -778,7 +781,6 @@ void cmd_loop(int fd, char *cmd, int adr)
                      if (strlen(str) > 0 && str[strlen(str) - 1] == '\n')
                         str[strlen(str) - 1] = 0;
 
-//                     status = mscb_write(fd, current_addr, (unsigned char) addr, str, info_var.width);
                      status = mscb_write(fd, current_addr, (unsigned char) addr, str, strlen(str)+1);
                   } else {
                      if (info_var.flags & MSCBF_FLOAT) {
