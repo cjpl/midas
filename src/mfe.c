@@ -7,6 +7,10 @@
                 linked with user code to form a complete frontend
 
   $Log$
+  Revision 1.25  2000/08/21 10:44:58  midas
+  Removed reconnect functionality, it's better to restart the frontend via
+  /programs/frontend/auto restart.
+
   Revision 1.24  2000/08/21 10:36:41  midas
   Reworked event and event buffer sizes:
   - Both max_event_size and event_buffer_size must be defined in user code
@@ -1611,8 +1615,6 @@ usage:
       printf("Connect to experiment %s...", exp_name);
     }
 
-reconnect:
-
   /* remove dead connections */
   cm_cleanup();
 
@@ -1756,15 +1758,6 @@ reconnect:
 
   /* close network connection to server */
   cm_disconnect_experiment();
-
-  if (status == RPC_NET_ERROR || status == SS_ABORT)
-    {
-    printf("Network connection broken, trying to reestablish...\n");
-
-    /* try to reconnect */
-    ss_sleep(12000);
-    goto reconnect;
-    }
 
   if (display_period)
     {
