@@ -7,6 +7,9 @@
                 routines
 
   $Log$
+  Revision 1.27  2003/04/15 08:17:08  midas
+  Added verbose flag to db_show_mem
+
   Revision 1.26  2003/04/14 12:59:51  midas
   Added 'compression' in channel settings
 
@@ -563,7 +566,7 @@ INT EXPRT db_flush_database(HNDLE hDB);
 INT EXPRT db_notify_clients(HNDLE hDB, HNDLE hKey, BOOL bWalk);
 INT EXPRT db_set_client_name(HNDLE hDB, char *client_name);
 INT db_delete_key1(HNDLE hDB, HNDLE hKey, INT level, BOOL follow_links);
-INT EXPRT db_show_mem(HNDLE hDB, char *result, INT buf_size);
+INT EXPRT db_show_mem(HNDLE hDB, char *result, INT buf_size, BOOL verbose);
 
 /*---- rpc functions -----*/
 RPC_LIST EXPRT *rpc_get_internal_list(INT flag);
