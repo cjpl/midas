@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus communication functions
 
   $Log$
+  Revision 1.70  2004/07/08 11:14:59  midas
+  Implemented reconnect for USB
+
   Revision 1.69  2004/05/19 15:14:47  midas
   *** empty log message ***
 
@@ -213,7 +216,7 @@
 
 \********************************************************************/
 
-#define MSCB_LIBRARY_VERSION   "1.7.2"
+#define MSCB_LIBRARY_VERSION   "1.7.3"
 #define MSCB_PROTOCOL_VERSION  "1.7"
 
 #ifdef _MSC_VER                 // Windows includes
@@ -321,6 +324,12 @@ extern void debug_log(char *format, ...);
 #define RS485_FLAG_SHORT_TO  (1<<2)
 #define RS485_FLAG_LONG_TO   (1<<3)
 #define RS485_FLAG_CMD       (1<<4)
+
+/*------------------------------------------------------------------*/
+
+/* function declarations */
+int musb_init(int index, int *hr, int *hw);
+void musb_close(int fdr, int fdw);
 
 /*------------------------------------------------------------------*/
 
@@ -774,6 +783,18 @@ int mscb_out(int index, unsigned char *buffer, int len, int flags)
 
       /* send on OUT pipe */
       i = msend_usb(mscb_fd[index - 1].hw, usb_buf, len + 1);
+
+      if (i == 0) {
+         /* USB submaster might have been dis- and reconnected, so reinit */
+         musb_close(mscb_fd[index - 1].hr, mscb_fd[index - 1].hw);
+
+         i = musb_init(atoi(mscb_fd[index - 1].device+3), &mscb_fd[index - 1].hr, &mscb_fd[index - 1].hw);
+         if (i < 0)
+            return MSCB_TIMEOUT;
+
+         i = msend_usb(mscb_fd[index - 1].hw, usb_buf, len + 1);
+      }
+
       if (i != len + 1) {
          return MSCB_TIMEOUT;
       }
@@ -1424,8 +1445,12 @@ int mscb_init(char *device, int bufsize, int debug)
                             the first available device or asks the user
                             which one to use.
     int bufsize             Size of "device" string, in case no device
-                            is specified from the caller and this functino
+                            is specified from the caller and this function
                             returns the chosen device
+    int debug               Debug flag. If "1" debugging information is
+                            written to "mscb_debug.log" in the current
+                            directory. If "-1", do not ask for device
+                            (useb by LabView DLL)
 
   Function value:
     int fd                  device descriptor for connection, -1 if
@@ -1446,7 +1471,7 @@ int mscb_init(char *device, int bufsize, int debug)
       return -1;
 
    /* set global debug flag */
-   _debug_flag = debug;
+   _debug_flag = (debug == 1);
 
    debug_log("mscb_init( %s %d %d * %d)\n", device, bufsize, debug);
 
@@ -1457,10 +1482,10 @@ int mscb_init(char *device, int bufsize, int debug)
    n_cache = 0;
 
    if (!device[0]) {
-      if (bufsize)
-         mscb_select_device(device, 1);
+      if (debug == -1)
+         mscb_select_device(device, bufsize, 0); /* for LabView */
       else
-         mscb_select_device(device, 0); /* for Labview */
+         mscb_select_device(device, bufsize, 1); /* interactively ask for device */
    }
 
    /* check for RPC connection */
@@ -3218,7 +3243,7 @@ int mscb_link(int fd, int adr, unsigned char index, void *data, int size)
 
 /*------------------------------------------------------------------*/
 
-int mscb_select_device(char *device, int select)
+int mscb_select_device(char *device, int size, int select)
 /********************************************************************\
 
   Routine: mscb_select_device
@@ -3230,7 +3255,8 @@ int mscb_select_device(char *device, int select)
     none
 
   Output:
-    char *device            Device name, can be passed to mscb_init()
+    char *device            Device name
+    int  size               Size of device string buffer in bytes
     int  select             If 1, ask user which device to select,
                             if zero, use first device (for Labview)
 
@@ -3296,7 +3322,7 @@ int mscb_select_device(char *device, int select)
 
    /* if only one device, return it */
    if (n == 1 || select == 0) {
-      strcpy(device, list[0]);
+      strlcpy(device, list[0], size);
       return MSCB_SUCCESS;
    }
 
@@ -3309,7 +3335,7 @@ int mscb_select_device(char *device, int select)
       fgets(str, sizeof(str), stdin);
       i = atoi(str);
       if (i > 0 && i <= n) {
-         strcpy(device, list[i - 1]);
+         strlcpy(device, list[i - 1], size);
          return MSCB_SUCCESS;
       }
 
