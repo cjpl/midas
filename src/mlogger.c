@@ -6,6 +6,9 @@
   Contents:     MIDAS logger program
 
   $Log$
+  Revision 1.42  2001/11/20 14:42:16  midas
+  Added "/logger/history dir" and "/logger/elog dir"
+
   Revision 1.41  2000/11/10 08:37:47  midas
   Use DELAYED_STOP variable for wait loop in tr_poststop
 
@@ -293,14 +296,19 @@ int  size;
 char dir[256];
 char path[256];
 
-  size = sizeof(dir);
-  dir[0] = 0;
-  db_get_value(hDB, 0, "/Logger/Data Dir", dir, &size, TID_STRING);
-  if (dir[0] != 0)
-    if (dir[strlen(dir)-1] != DIR_SEPARATOR)
-      strcat(dir, DIR_SEPARATOR_STR);
-  strcpy(path, dir);
-  strcat(path, filename);
+  if (strchr(filename, DIR_SEPARATOR) == NULL)
+    {
+    size = sizeof(dir);
+    dir[0] = 0;
+    db_get_value(hDB, 0, "/Logger/Data Dir", dir, &size, TID_STRING);
+    if (dir[0] != 0)
+      if (dir[strlen(dir)-1] != DIR_SEPARATOR)
+        strcat(dir, DIR_SEPARATOR_STR);
+    strcpy(path, dir);
+    strcat(path, filename);
+    }
+  else
+    strcpy(path, filename);
 
   db_save(hDB, 0, path, FALSE);
 }
@@ -1525,7 +1533,10 @@ BOOL     single_names;
   /* set direcotry for history files */
   size = sizeof(str);
   str[0] = 0;
-  db_get_value(hDB, 0, "/Logger/Data Dir", str, &size, TID_STRING);
+  db_get_value(hDB, 0, "/Logger/History Dir", str, &size, TID_STRING);
+  if (!str[0])
+    db_get_value(hDB, 0, "/Logger/Data Dir", str, &size, TID_STRING);
+
   if (str[0] != 0)
     hs_set_path(str);
 
@@ -2527,6 +2538,18 @@ usage:
   db_get_value(hDB, 0, "/Logger/Data dir", dir, &size, TID_STRING);
   printf("MIDAS logger started. Stop with \"!\"\n");
   printf("Data directory is %s\n", dir);
+
+  size = sizeof(dir);
+  dir[0] = 0;
+  db_get_value(hDB, 0, "/Logger/History dir", dir, &size, TID_STRING);
+  if (dir[0])
+    printf("History directory is %s\n", dir);
+
+  size = sizeof(dir);
+  dir[0] = 0;
+  db_get_value(hDB, 0, "/Logger/Elog dir", dir, &size, TID_STRING);
+  if (dir[0])
+    printf("ELog directory is %s\n", dir);
 
   /* initialize ss_getchar() */
   ss_getchar(0);
