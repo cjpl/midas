@@ -6,6 +6,9 @@
   Contents:     List of MIDAS RPC functions with parameters
 
   $Log$
+  Revision 1.24  2000/11/14 08:17:05  midas
+  Added number of messages for cm_msg_retrieve and in odbedit "old" command
+
   Revision 1.23  2000/09/29 13:31:14  midas
   ODBEdit cleanup now deletes open record with no client attached to
 
@@ -164,7 +167,8 @@ static RPC_LIST rpc_list_library[] = {
      {0} }},
 
   { RPC_CM_MSG_RETRIEVE, "cm_msg_retrieve",
-    {{TID_STRING,     RPC_OUT},
+    {{TID_INT,        RPC_IN}, 
+     {TID_STRING,     RPC_OUT},
      {TID_INT,        RPC_IN | RPC_OUT},
      {0} }},
 

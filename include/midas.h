@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.74  2000/11/14 08:17:04  midas
+  Added number of messages for cm_msg_retrieve and in odbedit "old" command
+
   Revision 1.73  2000/10/23 14:19:05  midas
   Added idle period for slow control equipment
 
@@ -1458,7 +1461,7 @@ INT EXPRT cm_set_msg_print(INT system_mask, INT user_mask, int (*func)(const cha
 INT EXPRT cm_msg(INT message_type, char* filename, INT line, const char *routine, const char *format, ...);
 INT EXPRT cm_msg1(INT message_type, char* filename, INT line, const char *facility, const char *routine, const char *format, ...);
 INT EXPRT cm_msg_register(void (*func)(HNDLE,HNDLE,EVENT_HEADER*,void*));
-INT EXPRT cm_msg_retrieve(char *message, INT *buf_size);
+INT EXPRT cm_msg_retrieve(INT n_message, char *message, INT *buf_size);
 
 BOOL EXPRT equal_ustring(char *str1, char *str2);
 

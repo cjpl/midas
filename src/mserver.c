@@ -6,6 +6,9 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
+  Revision 1.26  2000/11/14 08:17:05  midas
+  Added number of messages for cm_msg_retrieve and in odbedit "old" command
+
   Revision 1.25  2000/09/29 16:29:52  pierre
   - add BOOL arg in db_get_open_records
 
@@ -465,7 +468,7 @@ INT convert_flags;
       break;
 
     case RPC_CM_MSG_RETRIEVE:
-      status = cm_msg_retrieve(CSTRING(0), CPINT(1));
+      status = cm_msg_retrieve(CINT(0), CSTRING(1), CPINT(2));
       break;
 
     /* buffer manager functions */
