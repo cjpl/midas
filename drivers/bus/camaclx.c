@@ -14,6 +14,9 @@
  *  Revision    : 1.0  1998        Pierre	 Initial revision
  *                include linux-camac.h from linux drivers
  *  $Log$
+ *  Revision 1.3  2002/01/24 22:24:44  pierre
+ *  adjust for new esone
+ *
  *  Revision 1.2  2000/09/07 17:16:46  pierre
  *  -Add fe_name
  *
@@ -517,6 +520,10 @@ INLINE void cam_inhibit_set(const int c)
 }
 
 /*--General functions--------------------------------------------*/
+INLINE int cam_inhibit_test(const int c) {
+}
+
+/*--General functions--------------------------------------------*/
 INLINE void cam_inhibit_clear(const int c)
 {
   int	stat;
@@ -599,43 +606,32 @@ INLINE void cam_lam_clear(const int c, const int n)
   }
 }
 
-/*--external-----------------------------------------------------*/
-INLINE void came_cn(int *ext, const int b, const int c, const int n, const int a)
-{
-  *ext = (b<<24 | (c<<16) | (n<<8) | a);
-}
 
-/*--external-----------------------------------------------------*/
-INLINE void came_ext(const int ext, int *b, int *c, int *n, int *a)
-{
-  *b = (ext >> 24) & 0x7;
-  *c = (ext >> 16) & 0x7;
-  *n = (ext >>  8) & 0x1f;
-  *a = (ext >>  0) & 0xf;
-}
 /*--Interrupt functions------------------------------------------*/
-INLINE void cam_interrupt_enable(void)
+INLINE void cam_interrupt_enable(const int c )
 {
   printf("cam_interrupt_enable not yet implemented\n");
 }
 
 /*--Interrupt functions------------------------------------------*/
-INLINE void cam_interrupt_disable(void)
+INLINE void cam_interrupt_disable(const int c)
 {
   printf("cam_interrupt_disable not yet implemented\n");
 }
 
 /*--Interrupt functions------------------------------------------*/
-INLINE void cam_interrupt_attach(void (*isr)(void))
+INLINE void cam_interrupt_attach(const int c, const int n, void (*isr)(void))
 {
-  printf("cam_interrupt_attach not yet implemented\n");
-}
+  printf("cam_interrupt_attach not yet implemented\n");}
 
 /*--Interrupt functions------------------------------------------*/
-INLINE void cam_interrupt_detach(void)
+INLINE void cam_interrupt_detach(const int c, const int n)
 {
   printf("cam_interrupt_detach not yet implemented\n");
 }
+
+/*--Interrupt functions------------------------------------------*/
+INLINE int cam_interrupt_test(const int c) {}
 /*---------------------------------------------------------------*/
 
 /*--Interrupt functions------------------------------------------*/
