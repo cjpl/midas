@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.84  2001/12/07 13:02:45  midas
+  Fixed crash with language file in Unix format
+
   Revision 1.83  2001/12/07 11:41:19  midas
   Made "move to" and "copy to" work with other languages
 
@@ -999,10 +1002,11 @@ char *loc(char *orig)
 {
 char str[256], file_name[256], *p;
 int  fh, length, n;
+static int first = 1;
 
-  if (getcfg("global", "Language", str))
+  if (first)
     {
-    if (!locbuffer)
+    if (getcfg("global", "Language", str))
       {
       strcpy(file_name, cfg_dir);
       strcat(file_name, str);
@@ -1033,7 +1037,8 @@ int  fh, length, n;
 
         if (*p && (*p == ';' || *p == '#' || *p == ' ' || *p == '\t'))
           {
-          p = strchr(p, '\r');
+          while (*p && *p != '\n' && *p != '\r')
+            p++;
           continue;
           }
 
@@ -1063,7 +1068,10 @@ int  fh, length, n;
         while (*p == '=' || *p == ' ')
           *p-- = 0;
 
-        p = strchr(ptrans[n], '\r');
+        p = ptrans[n];
+        while (*p && *p != '\n' && *p != '\r')
+          p++;
+
         if (p)
           *p++ = 0;
 
@@ -1073,15 +1081,20 @@ int  fh, length, n;
       porig[n] = NULL;
       }
 
-    /* search string and return translation */
-    for (n = 0; porig[n] ; n++)
-      if (strcmp(orig, porig[n]) == 0)
-        {
-        if (*ptrans[n])
-          return ptrans[n];
-        return orig;
-        }
+    first = 0;
     }
+
+  if (!locbuffer)
+    return orig;
+
+  /* search string and return translation */
+  for (n = 0; porig[n] ; n++)
+    if (strcmp(orig, porig[n]) == 0)
+      {
+      if (*ptrans[n])
+        return ptrans[n];
+      return orig;
+      }
    
   return orig;
 }
