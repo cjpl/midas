@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.173  2002/10/15 19:14:06  olchansk
+  disallow recursive rpc_server_disconnect() (->rpc_call->rpc_server_disconnect)
+
   Revision 1.172  2002/10/04 09:05:39  midas
   Set timeout to 0 in cm_enable_watchdog(FALSE)
 
@@ -9537,6 +9540,13 @@ INT rpc_server_disconnect()
 
 \********************************************************************/
 {
+  static int rpc_server_disconnect_recursion_level = 0;
+
+  if (rpc_server_disconnect_recursion_level)
+    return RPC_SUCCESS;
+
+  rpc_server_disconnect_recursion_level = 1;
+
   /* flush remaining events */
   rpc_flush_event();
 
@@ -9550,6 +9560,7 @@ INT rpc_server_disconnect()
 
   memset(&_server_connection, 0, sizeof(RPC_SERVER_CONNECTION));
 
+  rpc_server_disconnect_recursion_level = 0;
   return RPC_SUCCESS;
 }
 
