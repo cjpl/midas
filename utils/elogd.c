@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.50  2001/11/05 12:33:30  midas
+  Fixed bugs concerning edit/reply/delete and admin password
+
   Revision 1.49  2001/10/31 11:12:02  midas
   Changes made at home...
 
@@ -2443,9 +2446,6 @@ void show_standard_header(char *title, char *path)
   rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
   rsprintf("Content-Type: text/html\r\n");
 
-  //##
-  rsprintf("Set-Cookie: elog_apwd=*; path=/%s; expires=Fri, 01 Jan 1983 00:00:00 GMT\r\n", logbook_enc);
-
   rsprintf("Pragma: no-cache\r\n");
   if (use_keepalive)
     {
@@ -4672,7 +4672,7 @@ FILE   *f;
           }
         }
       else
-        rsprintf("&nbsp;<a href=\"/%s?cmd=%s\">%s</a>&nbsp;|\n", logbook_enc, menu_item[i], menu_item[i]);
+        rsprintf("&nbsp;<a href=\"/%s/%s?cmd=%s\">%s</a>&nbsp;|\n", logbook_enc, path, menu_item[i], menu_item[i]);
       }
 
     rsprintf("</small>\n");
