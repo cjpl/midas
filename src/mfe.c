@@ -7,6 +7,9 @@
                 linked with user code to form a complete frontend
 
   $Log$
+  Revision 1.46  2003/03/28 08:55:11  midas
+  Added code for structured banks
+
   Revision 1.45  2002/10/15 18:44:23  olchansk
   fix printf() and cm_msg() format mismatches
 
@@ -678,7 +681,7 @@ and rebuild the system.");
 
 void update_odb(EVENT_HEADER *pevent, HNDLE hKey, INT format)
 {
-INT               size, i, n, ni4, tsize, status;
+INT               size, i, ni4, tsize, status, n_data;
 void              *pdata;
 char              name[5];
 BANK_HEADER       *pbh;
@@ -688,6 +691,8 @@ void              *pydata;
 DWORD             odb_type;
 DWORD             *pyevt, bkname;
 WORD              bktype;
+HNDLE             hKeyRoot;
+KEY               key;
 
   rpc_set_option(-1, RPC_OTRANSPORT, RPC_FTCP);
 
@@ -722,14 +727,62 @@ WORD              bktype;
         bktype = (WORD) pbk->type;
         }
       
-      /* write bank to ODB */
+      n_data = size;
+      if (rpc_tid_size(bktype & 0xFF))
+        n_data /= rpc_tid_size(bktype & 0xFF);
+  
+      /* get bank key */
       *((DWORD *) name) = bkname;
       name[4] = 0;
 
-      n = rpc_tid_size(bktype & 0xFF) ? size / rpc_tid_size(bktype & 0xFF) : size;
+      status = db_find_key(hDB, hKey, name, &hKeyRoot);
+      if (status != DB_SUCCESS)
+        {
+        cm_msg(MERROR, "update_odb", "received unknown bank %s", name);
+        continue;
+        }
 
-      if (n>0)
-        db_set_value(hDB, hKey, name, pdata, size, n, bktype & 0xFF);
+      if (bktype == TID_STRUCT)
+        {
+        /* write structured bank */
+        for (i=0 ;; i++)
+          {
+          status = db_enum_key(hDB, hKeyRoot, i, &hKey);
+          if (status == DB_NO_MORE_SUBKEYS)
+            break;
+
+          db_get_key(hDB, hKey, &key);
+
+          /* adjust for alignment */
+          pdata = (void *) VALIGN(pdata, min(ss_get_struct_align(),key.item_size));
+
+          status = db_set_data(hDB, hKey, pdata, key.item_size*key.num_values, 
+                               key.num_values, key.type);
+          if (status != DB_SUCCESS)
+            {
+            cm_msg(MERROR, "write_event_odb", "cannot write %s to ODB", name);
+            continue;
+            }
+
+          /* shift data pointer to next item */
+          (char *) pdata += key.item_size*key.num_values;
+          }
+        }
+      else
+        {
+        db_get_key(hDB, hKeyRoot, &key);
+
+        /* write variable length bank  */
+        if (n_data > 0)
+          {
+          status = db_set_data(hDB, hKeyRoot, pdata, size, n_data, key.type);
+          if (status != DB_SUCCESS)
+            {
+            cm_msg(MERROR, "write_event_odb", "cannot write %s to ODB", name);
+            continue;
+            }
+          }
+        }
 
       } while (1);
     }
