@@ -9,6 +9,9 @@
                 for SCS-310 GPIB Adapter
 
   $Log$
+  Revision 1.7  2004/03/19 08:17:13  midas
+  Changed node name
+
   Revision 1.6  2004/03/19 07:10:33  midas
   Changed pinout for GPIB
 
@@ -55,7 +58,7 @@
 #include <string.h>
 #include "mscb.h"
 
-char code node_name[] = "GPIB";
+char code node_name[] = "SCS-310";
 
 bit terminal_mode, term_flag, output_flag, control_flag;
 xdata char term_buf[80];
