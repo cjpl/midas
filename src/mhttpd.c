@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.238  2003/02/20 13:11:13  midas
+  Fixed compiler warning
+
   Revision 1.237  2003/01/13 17:07:00  midas
   Fixed problem with missing history in recent files
 
@@ -7377,8 +7380,8 @@ int         length, aoffset;
 int         flag, x1, y1, x2, y2, xs, xs_old, ys, xold, yold, xmaxm;
 int         white, black, grey, ltgrey, red, green, blue, curve_col[MAX_VARS], state_col[3];
 char        str[256], panel[NAME_LENGTH], *p, odbpath[256];
-INT         var_index[MAX_VARS], event_id;
-DWORD       type;
+INT         var_index[MAX_VARS];
+DWORD       type, event_id;
 char        event_name[MAX_VARS][NAME_LENGTH];
 char        tag_name[MAX_VARS][64], var_name[MAX_VARS][NAME_LENGTH], varname[64], key_name[256];
 DWORD       n_point[MAX_VARS];
