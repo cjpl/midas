@@ -7,6 +7,11 @@
                 routines
 
   $Log$
+  Revision 1.11  1999/04/30 13:19:53  midas
+  Changed inter-process communication (ss_resume, bm_notify_clients, etc)
+  to strings so that server process can receive it's own watchdog produced
+  messages (pass buffer name insteas buffer handle)
+
   Revision 1.10  1999/04/30 10:58:20  midas
   Added mode to rpc_set_debug
 
@@ -455,16 +460,16 @@ int     arg1,arg2,arg3,arg4,arg5,arg6,arg7,arg8,arg9,arg10;
 /*---- common function ----*/
 INT EXPRT cm_set_path(char *path);
 INT EXPRT cm_get_path(char *path);
-INT cm_dispatch_ipc(INT msg, INT p1, INT p2, int socket);
+INT cm_dispatch_ipc(char *message, int socket);
 INT EXPRT cm_msg_log(INT message_type, char *message);
 void EXPRT name2c(char *str);
 
 /*---- buffer manager ----*/
 INT bm_lock_buffer(INT buffer_handle);
 INT bm_unlock_buffer(INT buffer_handle);
-INT bm_notify_client(INT buffer_handle, INT request_id, int socket);
+INT bm_notify_client(char *buffer_name, int socket);
 INT EXPRT bm_mark_read_waiting(BOOL flag);
-INT bm_push_event(INT buffer_handle);
+INT bm_push_event(char *buffer_name);
 INT bm_check_buffers(void);
 INT EXPRT bm_remove_event_request(INT buffer_handle, INT request_id);
 
@@ -517,7 +522,7 @@ INT ss_wake(INT pid, INT tid, INT thandle);
 INT ss_alarm(INT millitime, void (*func)(int));
 INT ss_suspend_get_port(INT* port);
 INT ss_suspend_set_dispatch(INT channel, void *connection, INT (*dispatch)());
-INT ss_resume(INT port, INT msg, INT param1, INT param2);
+INT ss_resume(INT port, char *message);
 INT ss_suspend_exit(void);
 INT ss_exception_handler(void (*func)());
 INT EXPRT ss_suspend(INT millisec, INT msg);
