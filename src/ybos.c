@@ -6,6 +6,9 @@
  *         amaudruz@triumf.ca                            Local:           6234
  * ---------------------------------------------------------------------------
    $Log$
+   Revision 1.40  2002/06/10 22:51:27  pierre
+   fix undefined types
+
    Revision 1.39  2002/06/08 06:05:22  pierre
    improve mdump display format
 
@@ -3321,7 +3324,7 @@ void midas_bank_display( BANK * pbk, INT dsp_fmt)
   }
   if (type == TID_SHORT)
   {
-    length_type = sizeof (SHORT);
+    length_type = sizeof (WORD);
     strcpy (strbktype,"Signed Integer*2");
   }
   if (type == TID_BYTE)
@@ -3341,7 +3344,7 @@ void midas_bank_display( BANK * pbk, INT dsp_fmt)
   }
   if (type == TID_CHAR)
   {
-    length_type = sizeof(CHAR);
+    length_type = sizeof(char);
     strcpy (strbktype,"8 bit ASCII");
   }
   printf("\nBank:%s Length: %i(I*1)/%i(I*4)/%i(Type) Type:%s",
