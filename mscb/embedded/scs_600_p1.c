@@ -9,6 +9,9 @@
                 for SCS-600 Digital I/O
 
   $Log$
+  Revision 1.8  2004/01/07 12:56:15  midas
+  Chaned line length
+
   Revision 1.7  2004/01/07 12:52:23  midas
   Changed indentation
 
@@ -170,11 +173,9 @@ void set_power(void)
       if (user_data.power[i] < 100) {
          expired = time() - on_time;
          if (expired >= (unsigned long) (user_data.power[i])) {
-            frac =
-                user_data.power[i] - (unsigned long) (user_data.power[i]);
+            frac = user_data.power[i] - (unsigned long) (user_data.power[i]);
 
-            if (frac == 0
-                || expired >= (unsigned long) (user_data.power[i]) + 1) {
+            if (frac == 0 || expired >= (unsigned long) (user_data.power[i]) + 1) {
                output &= ~BIT(i);
             } else if (cycle > 0) {
                if ((float) ca[i] / cycle > frac) {

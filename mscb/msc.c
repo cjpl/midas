@@ -6,6 +6,9 @@
   Contents:     Command-line interface for the Midas Slow Control Bus
 
   $Log$
+  Revision 1.50  2004/01/07 12:56:15  midas
+  Chaned line length
+
   Revision 1.49  2004/01/07 12:52:23  midas
   Changed indentation
 
@@ -292,11 +295,9 @@ void print_channel_str(int index, MSCB_INFO_VAR * info_chn, void *pdata,
 
       case 1:
          if (info_chn->flags & MSCBF_SIGNED)
-            sprintf(line + strlen(line), " 8bit S %15d (0x%02X/",
-                    (char) data, data);
+            sprintf(line + strlen(line), " 8bit S %15d (0x%02X/", (char) data, data);
          else
-            sprintf(line + strlen(line), " 8bit U %15u (0x%02X/", data,
-                    data);
+            sprintf(line + strlen(line), " 8bit U %15u (0x%02X/", data, data);
          for (i = 0; i < 8; i++)
             if (data & (0x80 >> i))
                sprintf(line + strlen(line), "1");
@@ -307,33 +308,26 @@ void print_channel_str(int index, MSCB_INFO_VAR * info_chn, void *pdata,
 
       case 2:
          if (info_chn->flags & MSCBF_SIGNED)
-            sprintf(line + strlen(line), "16bit S %15d (0x%04X)",
-                    (short) data, data);
+            sprintf(line + strlen(line), "16bit S %15d (0x%04X)", (short) data, data);
          else
-            sprintf(line + strlen(line), "16bit U %15u (0x%04X)", data,
-                    data);
+            sprintf(line + strlen(line), "16bit U %15u (0x%04X)", data, data);
          break;
 
       case 3:
          if (info_chn->flags & MSCBF_SIGNED)
-            sprintf(line + strlen(line), "24bit S %15d (0x%06X)",
-                    (long) data, data);
+            sprintf(line + strlen(line), "24bit S %15d (0x%06X)", (long) data, data);
          else
-            sprintf(line + strlen(line), "24bit U %15u (0x%06X)", data,
-                    data);
+            sprintf(line + strlen(line), "24bit U %15u (0x%06X)", data, data);
          break;
 
       case 4:
          if (info_chn->flags & MSCBF_FLOAT)
-            sprintf(line + strlen(line), "32bit F %15.6lg",
-                    *((float *) &data));
+            sprintf(line + strlen(line), "32bit F %15.6lg", *((float *) &data));
          else {
             if (info_chn->flags & MSCBF_SIGNED)
-               sprintf(line + strlen(line), "32bit S %15d (0x%08X)", data,
-                       data);
+               sprintf(line + strlen(line), "32bit S %15d (0x%08X)", data, data);
             else
-               sprintf(line + strlen(line), "32bit U %15u (0x%08X)", data,
-                       data);
+               sprintf(line + strlen(line), "32bit U %15u (0x%08X)", data, data);
          }
          break;
       }
@@ -365,8 +359,7 @@ void print_channel_str(int index, MSCB_INFO_VAR * info_chn, void *pdata,
       sprintf(line + strlen(line), "                    \r");
 }
 
-void print_channel(int index, MSCB_INFO_VAR * info_chn, void *pdata,
-                   int verbose)
+void print_channel(int index, MSCB_INFO_VAR * info_chn, void *pdata, int verbose)
 {
    char str[256];
 
@@ -384,8 +377,7 @@ int match(char *str, char *cmd)
       return 0;
 
    for (i = 0; i < (int) strlen(str); i++) {
-      if (toupper(str[i]) != toupper(cmd[i]) &&
-          str[i] != '\r' && str[i] != '\n')
+      if (toupper(str[i]) != toupper(cmd[i]) && str[i] != '\r' && str[i] != '\n')
          return 0;
    }
 
@@ -396,8 +388,7 @@ int match(char *str, char *cmd)
 
 void cmd_loop(int fd, char *cmd, int adr)
 {
-   int i, j, fh, status, size, nparam, addr, gaddr, current_addr,
-       current_group;
+   int i, j, fh, status, size, nparam, addr, gaddr, current_addr, current_group;
    unsigned int data;
    unsigned char c;
    float value;
@@ -523,8 +514,7 @@ void cmd_loop(int fd, char *cmd, int adr)
                   if (status == MSCB_SUCCESS) {
                      printf
                          ("Found node \"%s\", node addr. %d (0x%04X), group addr. %d (0x%04X)      \n",
-                          str, i, i, info.group_address,
-                          info.group_address);
+                          str, i, i, info.group_address, info.group_address);
                   }
                } else if (status == MSCB_SUBM_ERROR) {
                   printf("Error: Submaster not responding\n");
@@ -573,16 +563,14 @@ void cmd_loop(int fd, char *cmd, int adr)
                printf("Group address:    %d (0x%X)\n", info.group_address,
                       info.group_address);
                printf("Protocol version: %d.%d\n",
-                      info.protocol_version / 16,
-                      info.protocol_version % 16);
+                      info.protocol_version / 16, info.protocol_version % 16);
                printf("Watchdog resets:  %d\n", info.watchdog_resets);
 
                printf("\nVariables:\n");
                for (i = 0; i < info.n_variables; i++) {
                   mscb_info_variable(fd, current_addr, i, &info_var);
                   size = sizeof(data);
-                  mscb_read(fd, current_addr, (unsigned char) i, dbuf,
-                            &size);
+                  mscb_read(fd, current_addr, (unsigned char) i, dbuf, &size);
 
                   print_channel(i, &info_var, dbuf, 1);
                }
@@ -675,9 +663,7 @@ void cmd_loop(int fd, char *cmd, int adr)
 
                status = mscb_set_addr(fd, current_addr, addr, gaddr);
                if (status == MSCB_ADDR_EXISTS)
-                  printf
-                      ("Error: Address %d exists already on this network\n",
-                       addr);
+                  printf("Error: Address %d exists already on this network\n", addr);
                else
                   current_addr = addr;
             }
@@ -694,8 +680,7 @@ void cmd_loop(int fd, char *cmd, int adr)
             else {
                strcpy(str, param[1]);
                while (strlen(str) > 0 &&
-                      (str[strlen(str) - 1] == '\r'
-                       || str[strlen(str) - 1] == '\n'))
+                      (str[strlen(str) - 1] == '\r' || str[strlen(str) - 1] == '\n'))
                   str[strlen(str) - 1] = 0;
 
                mscb_set_name(fd, current_addr, str);
@@ -764,8 +749,7 @@ void cmd_loop(int fd, char *cmd, int adr)
                      data = atoi(param[2]);
 
                   status =
-                      mscb_write_group(fd, current_group,
-                                       (unsigned char) addr, &data, 4);
+                      mscb_write_group(fd, current_group, (unsigned char) addr, &data, 4);
                }
 
                if (status != MSCB_SUCCESS)
@@ -784,8 +768,7 @@ void cmd_loop(int fd, char *cmd, int adr)
             else {
                addr = atoi(param[1]);
 
-               status =
-                   mscb_info_variable(fd, current_addr, addr, &info_var);
+               status = mscb_info_variable(fd, current_addr, addr, &info_var);
 
                if (status == MSCB_CRC_ERROR)
                   puts("CRC Error");
@@ -795,8 +778,7 @@ void cmd_loop(int fd, char *cmd, int adr)
                   do {
                      size = sizeof(data);
                      status =
-                         mscb_read(fd, current_addr, (unsigned char) addr,
-                                   dbuf, &size);
+                         mscb_read(fd, current_addr, (unsigned char) addr, dbuf, &size);
                      if (status != MSCB_SUCCESS)
                         printf("Error: %d\n", status);
                      else
@@ -846,17 +828,14 @@ void cmd_loop(int fd, char *cmd, int adr)
                   fprintf(f, "Group address:    %d (0x%X)\n",
                           info.group_address, info.group_address);
                   fprintf(f, "Protocol version: %d.%d\n",
-                          info.protocol_version / 16,
-                          info.protocol_version % 16);
-                  fprintf(f, "Watchdog resets:  %d\n",
-                          info.watchdog_resets);
+                          info.protocol_version / 16, info.protocol_version % 16);
+                  fprintf(f, "Watchdog resets:  %d\n", info.watchdog_resets);
 
                   fprintf(f, "\nVariables:\n");
                   for (i = 0; i < info.n_variables; i++) {
                      mscb_info_variable(fd, current_addr, i, &info_var);
                      size = sizeof(data);
-                     mscb_read(fd, current_addr, (unsigned char) i, dbuf,
-                               &size);
+                     mscb_read(fd, current_addr, (unsigned char) i, dbuf, &size);
 
                      print_channel_str(i, &info_var, dbuf, 1, str);
                      fprintf(f, str);
@@ -914,20 +893,17 @@ void cmd_loop(int fd, char *cmd, int adr)
                         /* search for channel with same name */
                         for (i = 0; chn_name[i][0]; i++)
                            if (strcmp(chn_name[i], name) == 0) {
-                              mscb_info_variable(fd, current_addr, i,
-                                                 &info_var);
+                              mscb_info_variable(fd, current_addr, i, &info_var);
 
                               if (info_var.unit == UNIT_STRING) {
                                  memset(str, 0, sizeof(str));
                                  strncpy(str, p, info_var.width);
-                                 if (strlen(str) > 0
-                                     && str[strlen(str) - 1] == '\n')
+                                 if (strlen(str) > 0 && str[strlen(str) - 1] == '\n')
                                     str[strlen(str) - 1] = 0;
 
                                  status =
                                      mscb_write(fd, current_addr,
-                                                (unsigned char) i, str,
-                                                info_var.width);
+                                                (unsigned char) i, str, info_var.width);
                               } else {
                                  if (info_var.flags & MSCBF_FLOAT) {
                                     value = (float) atof(p);
@@ -938,8 +914,7 @@ void cmd_loop(int fd, char *cmd, int adr)
 
                                  status =
                                      mscb_write(fd, current_addr,
-                                                (unsigned char) i, &data,
-                                                info_var.width);
+                                                (unsigned char) i, &data, info_var.width);
 
                                  /* blank padding */
                                  for (j = strlen(name); j < 8; j++)
@@ -1113,8 +1088,7 @@ void cmd_loop(int fd, char *cmd, int adr)
       else if (param[0][0] == '\n');
 
       else
-         printf("Unknown command %s %s %s\n", param[0], param[1],
-                param[2]);
+         printf("Unknown command %s %s %s\n", param[0], param[1], param[2]);
 
       /* exit after single command */
       if (cmd[0] && cmd[0] != '@')
@@ -1161,21 +1135,15 @@ int main(int argc, char *argv[])
           usage:
             printf
                 ("usage: msc [-d host:device] [-a addr] [-c Command] [-c @CommandFile] [-v] [-i]\n\n");
-            printf
-                ("       -d     device, usually \"%s\" for parallel port,\n",
-                 device);
-            printf
-                ("              or 0x378 for direct parallel port address,\n");
-            printf("              or \"<host>:%s\" for RPC connection\n",
-                   device);
+            printf("       -d     device, usually \"%s\" for parallel port,\n", device);
+            printf("              or 0x378 for direct parallel port address,\n");
+            printf("              or \"<host>:%s\" for RPC connection\n", device);
             printf("       -s     Start RPC server\n");
-            printf
-                ("       -a     Address node before executing command\n");
+            printf("       -a     Address node before executing command\n");
             printf("       -c     Execute command immediately\n");
             printf("       -v     Produce verbose debugging output\n\n");
             printf("       -i     Check IO pins of port\n\n");
-            printf
-                ("For a list of valid commands start msc interactively\n");
+            printf("For a list of valid commands start msc interactively\n");
             printf("and type \"help\".\n");
             return 0;
          }

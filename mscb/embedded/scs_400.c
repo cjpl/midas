@@ -9,6 +9,9 @@
                 for SCS-400 thermo couple I/O
 
   $Log$
+  Revision 1.26  2004/01/07 12:56:15  midas
+  Chaned line length
+
   Revision 1.25  2004/01/07 12:52:23  midas
   Changed indentation
 
@@ -311,11 +314,9 @@ void set_power(void)
       if (user_data.power[i] < 100) {
          expired = time() - on_time;
          if (expired >= (unsigned long) (user_data.power[i])) {
-            frac =
-                user_data.power[i] - (unsigned long) (user_data.power[i]);
+            frac = user_data.power[i] - (unsigned long) (user_data.power[i]);
 
-            if (frac == 0
-                || expired >= (unsigned long) (user_data.power[i]) + 1) {
+            if (frac == 0 || expired >= (unsigned long) (user_data.power[i]) + 1) {
                P1 &= ~(1 << i);
             } else if (cycle > 0) {
                if ((float) ca[i] / cycle > frac) {
@@ -364,8 +365,7 @@ void do_control(void)
       for (i = 0; i < N_CHANNEL; i++) {
          /* integral part */
          user_data.p_int[i] +=
-             (user_data.demand[i] -
-              user_data.temp[i]) * user_data.c_int[i];
+             (user_data.demand[i] - user_data.temp[i]) * user_data.c_int[i];
          if (user_data.p_int[i] < 0)
             user_data.p_int[i] = 0;
          if (user_data.p_int[i] > 100)
@@ -373,8 +373,7 @@ void do_control(void)
          p = user_data.p_int[i];
 
          /* proportional part */
-         p += (user_data.demand[i] -
-               user_data.temp[i]) * user_data.c_prop[i];
+         p += (user_data.demand[i] - user_data.temp[i]) * user_data.c_prop[i];
 
          if (p < 0)
             p = 0;

@@ -9,6 +9,9 @@
                 for SCS-520 analog I/O with current option
 
   $Log$
+  Revision 1.5  2004/01/07 12:56:15  midas
+  Chaned line length
+
   Revision 1.4  2004/01/07 12:52:23  midas
   Changed indentation
 
@@ -116,21 +119,21 @@ MSCB_INFO_VAR code variables[] = {
    1, UNIT_FACTOR, 0, 0, MSCBF_SIGNED, "Gain7", &user_data.gain[7],
 
    1, UNIT_VOLT, PRFX_MILLI, 0, MSCBF_SIGNED, "BipOfs0",
-       &user_data.bip_ofs[0],
+   &user_data.bip_ofs[0],
    1, UNIT_VOLT, PRFX_MILLI, 0, MSCBF_SIGNED, "BipOfs1",
-       &user_data.bip_ofs[1],
+   &user_data.bip_ofs[1],
    1, UNIT_VOLT, PRFX_MILLI, 0, MSCBF_SIGNED, "BipOfs2",
-       &user_data.bip_ofs[2],
+   &user_data.bip_ofs[2],
    1, UNIT_VOLT, PRFX_MILLI, 0, MSCBF_SIGNED, "BipOfs3",
-       &user_data.bip_ofs[3],
+   &user_data.bip_ofs[3],
    1, UNIT_VOLT, PRFX_MILLI, 0, MSCBF_SIGNED, "BipOfs4",
-       &user_data.bip_ofs[4],
+   &user_data.bip_ofs[4],
    1, UNIT_VOLT, PRFX_MILLI, 0, MSCBF_SIGNED, "BipOfs5",
-       &user_data.bip_ofs[5],
+   &user_data.bip_ofs[5],
    1, UNIT_VOLT, PRFX_MILLI, 0, MSCBF_SIGNED, "BipOfs6",
-       &user_data.bip_ofs[6],
+   &user_data.bip_ofs[6],
    1, UNIT_VOLT, PRFX_MILLI, 0, MSCBF_SIGNED, "BipOfs7",
-       &user_data.bip_ofs[7],
+   &user_data.bip_ofs[7],
 
    4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT, "GlblGain", &user_data.glbl_gain,
    1, UNIT_BYTE, 0, 0, 0, "CurMode", &user_data.cur_mode,

@@ -6,6 +6,9 @@
   Contents:     Various utility functions for MSCB protocol
 
   $Log$
+  Revision 1.27  2004/01/07 12:56:15  midas
+  Chaned line length
+
   Revision 1.26  2004/01/07 12:52:23  midas
   Changed indentation
 
@@ -215,7 +218,8 @@ void uart_init(unsigned char port, unsigned char baud)
 {
    unsigned char code baud_table[] =
        { 0x100 - 36, 0x100 - 18, 0x100 - 12, 0x100 - 6, 0x100 - 3,
-0x100 - 2, 0x100 - 1 };
+      0x100 - 2, 0x100 - 1
+   };
 
    if (port == 0) {
       SCON0 = 0xD0;             // Mode 3, 9 bit, receive enable
@@ -329,8 +333,7 @@ char getchar_nowait(void)
 
 /*------------------------------------------------------------------*/
 
-unsigned char gets_wait(char *str, unsigned char size,
-                        unsigned char timeout)
+unsigned char gets_wait(char *str, unsigned char size, unsigned char timeout)
 {
    unsigned long start;
    unsigned char i;
@@ -398,7 +401,8 @@ void uart_init(unsigned char port, unsigned char baud)
 {
    unsigned char code baud_table[] =
        { 0x100 - 36, 0x100 - 18, 0x100 - 12, 0x100 - 6, 0x100 - 3,
-0x100 - 2, 0x100 - 1 };
+      0x100 - 2, 0x100 - 1
+   };
 
    if (port);
 
@@ -699,8 +703,7 @@ void delay_us(unsigned int us)
 
 /*------------------------------------------------------------------*/
 
-void eeprom_read(void idata * dst, unsigned char len,
-                 unsigned char *offset)
+void eeprom_read(void idata * dst, unsigned char len, unsigned char *offset)
 /********************************************************************\
 
   Routine: eeprom_read
@@ -772,8 +775,7 @@ void eeprom_read(void idata * dst, unsigned char len,
 
 /*------------------------------------------------------------------*/
 
-void eeprom_write(void idata * src, unsigned char len,
-                  unsigned char *offset)
+void eeprom_write(void idata * src, unsigned char len, unsigned char *offset)
 /********************************************************************\
 
   Routine: eeprom_write

@@ -6,6 +6,9 @@
   Contents:     List of MSCB RPC functions with parameters
 
   $Log$
+  Revision 1.16  2004/01/07 12:56:15  midas
+  Chaned line length
+
   Revision 1.15  2004/01/07 12:52:23  midas
   Changed indentation
 
@@ -381,8 +384,7 @@ int mrecv_tcp(int sock, char *buffer, int buffer_size)
    /* first receive header */
    n_received = 0;
    do {
-      n = recv(sock, net_buffer + n_received,
-               sizeof(NET_COMMAND_HEADER), 0);
+      n = recv(sock, net_buffer + n_received, sizeof(NET_COMMAND_HEADER), 0);
 
       if (n <= 0)
          return n;
@@ -484,8 +486,7 @@ int server_execute(int index, void *prpc_param[])
       break;
 
    case RPC_MSCB_WRITE_GROUP:
-      status =
-          mscb_write_group(CINT(0), CINT(1), CBYTE(2), CARRAY(3), CINT(4));
+      status = mscb_write_group(CINT(0), CINT(1), CBYTE(2), CARRAY(3), CINT(4));
       break;
 
    case RPC_MSCB_WRITE:
@@ -505,9 +506,7 @@ int server_execute(int index, void *prpc_param[])
       break;
 
    case RPC_MSCB_READ_RANGE:
-      status =
-          mscb_read_range(CINT(0), CINT(1), CBYTE(2), CBYTE(3), CARRAY(4),
-                          CPINT(5));
+      status = mscb_read_range(CINT(0), CINT(1), CBYTE(2), CBYTE(3), CARRAY(4), CPINT(5));
       break;
 
    case RPC_MSCB_ECHO:
@@ -515,9 +514,7 @@ int server_execute(int index, void *prpc_param[])
       break;
 
    case RPC_MSCB_USER:
-      status =
-          mscb_user(CINT(0), CINT(1), CARRAY(2), CINT(3), CARRAY(4),
-                    CPINT(5));
+      status = mscb_user(CINT(0), CINT(1), CARRAY(2), CINT(3), CARRAY(4), CPINT(5));
       break;
 
    case RPC_MSCB_ADDR:
@@ -605,12 +602,10 @@ int mrpc_execute(int sock, char *buffer)
          if (rpc_list[index].param[i].tid == TID_STRUCT)
             param_size = ALIGN(rpc_list[index].param[i].n);
 
-         if ((int) out_param_ptr - (int) nc_out + param_size >
-             NET_BUFFER_SIZE) {
+         if ((int) out_param_ptr - (int) nc_out + param_size > NET_BUFFER_SIZE) {
             printf
                 ("mrpc_execute: return parameters (%d) too large for network buffer (%d)\n",
-                 (int) out_param_ptr - (int) nc_out + param_size,
-                 NET_BUFFER_SIZE);
+                 (int) out_param_ptr - (int) nc_out + param_size, NET_BUFFER_SIZE);
             return RPC_EXCEED_BUFFER;
          }
 
@@ -645,8 +640,7 @@ int mrpc_execute(int sock, char *buffer)
             param_size = ALIGN(param_size);
 
             /* move string ALIGN(sizeof(INT)) left */
-            memcpy(out_param_ptr, out_param_ptr + ALIGN(sizeof(INT)),
-                   param_size);
+            memcpy(out_param_ptr, out_param_ptr + ALIGN(sizeof(INT)), param_size);
 
             /* move remaining parameters to end of string */
             memcpy(out_param_ptr + param_size,
@@ -683,8 +677,7 @@ int mrpc_execute(int sock, char *buffer)
    nc_out->header.routine_id = status;
    nc_out->header.param_size = param_size;
 
-   status = msend_tcp(sock, return_buffer,
-                      sizeof(NET_COMMAND_HEADER) + param_size);
+   status = msend_tcp(sock, return_buffer, sizeof(NET_COMMAND_HEADER) + param_size);
 
    if (status < 0) {
       printf("mrpc_execute: msend_tcp() failed\n");
@@ -838,15 +831,13 @@ int mrpc_call(const int sock, const int routine_id, ...)
    /* examine variable argument list and convert it to parameter array */
    va_start(ap, routine_id);
 
-   for (i = 0, param_ptr = nc->param; rpc_list[index].param[i].tid != 0;
-        i++) {
+   for (i = 0, param_ptr = nc->param; rpc_list[index].param[i].tid != 0; i++) {
       tid = rpc_list[index].param[i].tid;
       flags = rpc_list[index].param[i].flags;
 
       bpointer = (flags & RPC_POINTER) || (flags & RPC_OUT) ||
           (flags & RPC_FIXARRAY) || (flags & RPC_VARARRAY) ||
-          tid == TID_STRING || tid == TID_ARRAY ||
-          tid == TID_STRUCT || tid == TID_LINK;
+          tid == TID_STRING || tid == TID_ARRAY || tid == TID_STRUCT || tid == TID_LINK;
 
       if (bpointer)
          arg_type = TID_ARRAY;
@@ -978,8 +969,7 @@ int mrpc_call(const int sock, const int routine_id, ...)
    select(FD_SETSIZE, (void *) &readfds, NULL, NULL, (void *) &timeout);
 
    if (!FD_ISSET(sock, &readfds)) {
-      printf("mrpc_call: rpc timeout, routine = \"%s\"",
-             rpc_list[index].name);
+      printf("mrpc_call: rpc timeout, routine = \"%s\"", rpc_list[index].name);
 
       /* disconnect to avoid that the reply to this mrpc_call comes at
          the next mrpc_call */
@@ -992,8 +982,7 @@ int mrpc_call(const int sock, const int routine_id, ...)
    i = mrecv_tcp(sock, net_buffer, NET_BUFFER_SIZE);
 
    if (i <= 0) {
-      printf("mrpc_call: mrecv_tcp() failed, routine = \"%s\"",
-             rpc_list[index].name);
+      printf("mrpc_call: mrecv_tcp() failed, routine = \"%s\"", rpc_list[index].name);
       return RPC_NET_ERROR;
    }
 
@@ -1002,15 +991,13 @@ int mrpc_call(const int sock, const int routine_id, ...)
 
    va_start(ap, routine_id);
 
-   for (i = 0, param_ptr = nc->param; rpc_list[index].param[i].tid != 0;
-        i++) {
+   for (i = 0, param_ptr = nc->param; rpc_list[index].param[i].tid != 0; i++) {
       tid = rpc_list[index].param[i].tid;
       flags = rpc_list[index].param[i].flags;
 
       bpointer = (flags & RPC_POINTER) || (flags & RPC_OUT) ||
           (flags & RPC_FIXARRAY) || (flags & RPC_VARARRAY) ||
-          tid == TID_STRING || tid == TID_ARRAY ||
-          tid == TID_STRUCT || tid == TID_LINK;
+          tid == TID_STRING || tid == TID_ARRAY || tid == TID_STRUCT || tid == TID_LINK;
 
       if (bpointer)
          arg_type = TID_ARRAY;
@@ -1136,8 +1123,7 @@ void mrpc_server_loop(void)
 
    /* try reusing address */
    flag = 1;
-   setsockopt(lsock, SOL_SOCKET, SO_REUSEADDR, (char *) &flag,
-              sizeof(INT));
+   setsockopt(lsock, SOL_SOCKET, SO_REUSEADDR, (char *) &flag, sizeof(INT));
 
    status = bind(lsock, (struct sockaddr *) &serv_addr, sizeof(serv_addr));
    if (status < 0) {
@@ -1164,9 +1150,7 @@ void mrpc_server_loop(void)
       timeout.tv_sec = 0;
       timeout.tv_usec = 100000;
 
-      status =
-          select(FD_SETSIZE, (void *) &readfds, NULL, NULL,
-                 (void *) &timeout);
+      status = select(FD_SETSIZE, (void *) &readfds, NULL, NULL, (void *) &timeout);
 
       if (FD_ISSET(lsock, &readfds)) {
          len = sizeof(acc_addr);

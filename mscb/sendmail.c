@@ -6,6 +6,9 @@
   Contents:     SMTP interface for sending an email
 
   $Log$
+  Revision 1.3  2004/01/07 12:56:15  midas
+  Chaned line length
+
   Revision 1.2  2004/01/07 12:52:23  midas
   Changed indentation
 
@@ -73,8 +76,7 @@ int recv_string(int sock, char *buffer, int buffer_size, int millisec)
          timeout.tv_sec = millisec / 1000;
          timeout.tv_usec = (millisec % 1000) * 1000;
 
-         select(FD_SETSIZE, (void *) &readfds, NULL, NULL,
-                (void *) &timeout);
+         select(FD_SETSIZE, (void *) &readfds, NULL, NULL, (void *) &timeout);
 
          if (!FD_ISSET(sock, &readfds))
             break;
@@ -175,8 +177,7 @@ int sendmail(char *smtp_host, char *to, char *subject, char *text)
       puts(str);
 
    snprintf(str, sizeof(str) - 1,
-            "To: %s\r\nFrom: labview@%s\r\nSubject: %s\r\n", to, host_name,
-            subject);
+            "To: %s\r\nFrom: labview@%s\r\nSubject: %s\r\n", to, host_name, subject);
    send(s, str, strlen(str), 0);
    if (verbose)
       puts(str);

@@ -10,6 +10,9 @@
                 Turbomolecular Pump with TC600 Electronics
 
   $Log$
+  Revision 1.8  2004/01/07 12:56:15  midas
+  Chaned line length
+
   Revision 1.7  2004/01/07 12:52:23  midas
   Changed indentation
 
@@ -41,8 +44,7 @@
 char code node_name[] = "TC600";
 bit terminal_mode;
 
-unsigned char tc600_write(unsigned short param, unsigned char len,
-                          unsigned long value);
+unsigned char tc600_write(unsigned short param, unsigned char len, unsigned long value);
 
 /*---- Define variable parameters returned to CMD_GET_INFO command ----*/
 
@@ -186,8 +188,7 @@ unsigned char tc600_read(unsigned short param, char *result)
 
 /*------------------------------------------------------------------*/
 
-unsigned char tc600_write(unsigned short param, unsigned char len,
-                          unsigned long value)
+unsigned char tc600_write(unsigned short param, unsigned char len, unsigned long value)
 {
    char idata str[32];
    unsigned char i, cs;
