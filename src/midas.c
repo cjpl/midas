@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.99  2000/02/24 23:58:29  midas
+  Fixed problem with _requested_transition being update by hotlink too late
+
   Revision 1.98  2000/02/24 22:29:25  midas
   Added deferred transitions
 
@@ -2972,6 +2975,10 @@ static BOOL first;
         if (status != CM_SUCCESS)
           cm_msg(MERROR, "cm_check_deferred_transition", 
                  "Cannot perform deferred transition: %s", str);
+
+        /* bypass hotlink and set _requested_transition directly to zero */
+        _requested_transition = 0;
+
         return status;
         }
       first = FALSE;
