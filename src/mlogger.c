@@ -6,6 +6,9 @@
   Contents:     MIDAS logger program
 
   $Log$
+  Revision 1.76  2004/07/29 13:10:30  midas
+  Removed temporary increased timeout
+
   Revision 1.75  2004/07/29 11:38:42  midas
   Fixed problem with history system
 
@@ -3079,8 +3082,6 @@ int main(int argc, char *argv[])
    /* turn off watchdog if in debug mode */
    if (debug)
       cm_set_watchdog_params(TRUE, 0);
-
-   cm_set_watchdog_params(TRUE, 300000);        //##
 
    /* turn on save mode */
    if (save_mode) {
