@@ -10,6 +10,9 @@
                 in the ODB and transferred to experim.h.
 
   $Log$
+  Revision 1.8  2003/04/28 15:33:05  midas
+  Fixed compiler warnings
+
   Revision 1.7  2003/04/25 14:49:46  midas
   Removed HBOOK code
 
@@ -32,7 +35,7 @@
 
 
 \********************************************************************/
-                                                        
+
 /*-- Include files -------------------------------------------------*/
 
 /* standard includes */
@@ -65,7 +68,7 @@ INT adc_summing_bor(INT run_number);
 ADC_SUMMING_PARAM_STR(adc_summing_param_str);
 
 ANA_MODULE adc_summing_module = {
-  "ADC summing",                 /* module name           */  
+  "ADC summing",                 /* module name           */
   "Stefan Ritt",                 /* author                */
   adc_summing,                   /* event routine         */
   NULL,                          /* BOR routine           */
@@ -79,11 +82,9 @@ ANA_MODULE adc_summing_module = {
 
 /*-- Module-local variables-----------------------------------------*/
 
-#ifdef HAVE_ROOT
 extern TDirectory *gManaHistsDir;
 
 static TH1F *gAdcSumHist;
-#endif
 
 /*-- init routine --------------------------------------------------*/
 
@@ -91,7 +92,7 @@ INT adc_summing_init(void)
 {
   /* book sum histo */
   gAdcSumHist = (TH1F*)gManaHistsDir->GetList()->FindObject("ADCSUM");
-    
+
   if (gAdcSumHist == NULL)
     gAdcSumHist = new TH1F("ADCSUM", "ADC sum", 500, 0, 10000);
 
@@ -131,6 +132,6 @@ ASUM_BANK    *asum;
 
   /* close calculated bank */
   bk_close(pevent, asum+1);
-  
+
   return SUCCESS;
 }

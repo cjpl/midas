@@ -6,6 +6,9 @@
   Contents:     System part of Analyzer code for sample experiment
 
   $Log$
+  Revision 1.15  2003/04/28 15:33:05  midas
+  Fixed compiler warnings
+
   Revision 1.14  2003/04/25 14:49:46  midas
   Removed HBOOK code
 
@@ -47,7 +50,7 @@
 
 
 \********************************************************************/
-                                                        
+
 /* standard includes */
 #include <stdio.h>
 #include <string.h>
@@ -139,12 +142,12 @@ BANK_LIST ana_scaler_bank_list[] = {
 
 ANALYZE_REQUEST analyze_request[] = {
   { "Trigger",            /* equipment name */
-    1,                    /* event ID */
-    TRIGGER_ALL,          /* trigger mask */
-    GET_SOME,             /* get some events */
-    "SYSTEM",             /* event buffer */
-    TRUE,                 /* enabled */
-    "", "", 
+    { 1,                    /* event ID */
+      TRIGGER_ALL,          /* trigger mask */
+      GET_SOME,             /* get some events */
+      "SYSTEM",             /* event buffer */
+      TRUE,                 /* enabled */
+      "", "", },
     NULL,                 /* analyzer routine */
     trigger_module,       /* module list */
     ana_trigger_bank_list,/* bank list */
@@ -153,12 +156,12 @@ ANALYZE_REQUEST analyze_request[] = {
   },
 
   { "Scaler",             /* equipment name */
-    2,                    /* event ID */
-    TRIGGER_ALL,          /* trigger mask */
-    GET_ALL,              /* get all events */
-    "SYSTEM",             /* event buffer */
-    TRUE,                 /* enabled */
-    "", "", 
+    { 2,                    /* event ID */
+      TRIGGER_ALL,          /* trigger mask */
+      GET_ALL,              /* get all events */
+      "SYSTEM",             /* event buffer */
+      TRUE,                 /* enabled */
+      "", "", },
     NULL,                 /* analyzer routine */
     scaler_module,        /* module list */
     ana_scaler_bank_list, /* bank list */
@@ -261,7 +264,7 @@ BOOL   flag;
       if (str[strlen(str)-1] != DIR_SEPARATOR)
         strcat(str, DIR_SEPARATOR_STR);
     strcat(str, "runlog.txt");
-    
+
     f = fopen(str, "a");
 
     time(&now);
