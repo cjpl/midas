@@ -7,7 +7,7 @@
 Feel free to ask questions to one of us (
 <a href=mailto:midas@psi.ch> Stefan Ritt </a>,
 <a href=mailto:midas@triumf.ca> Pierre-Andre Amaudruz</a>)
-or visit the <a href=http://midas.triumf.ca/forum> Midas Forum </a>
+or visit the <a href=http://midas.triumf.ca/forum/Package> Midas Forum </a>
 
 -# <b> Why the CAMAC frontend generate a core dump (linux)?</b>
   - If you're not using a Linux driver for the CAMAC access, you need to
