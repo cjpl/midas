@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.39  2001/08/30 10:58:02  midas
+  Fixed bugs with Opera browser
+
   Revision 1.38  2001/08/29 07:53:49  midas
   Use smaller font for printable search result display
 
@@ -2217,7 +2220,9 @@ void show_standard_header(char *title, char *path)
 {
   rsprintf("HTTP/1.0 200 Document follows\r\n");
   rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
-  rsprintf("Content-Type: text/html\r\n\r\n");
+  rsprintf("Content-Type: text/html\r\n");
+  rsprintf("Pragma: no-cache\r\n");
+  rsprintf("Expires: Fri, 01 Jan 1983 00:00:00 GMT\r\n\r\n");
 
   rsprintf("<html><head><title>%s</title></head>\n", title);
   if (path)
@@ -2247,7 +2252,7 @@ int  i;
     {
     if (!getcfg("global", "tab cellpadding", str))
       strcpy(str, "5");
-    rsprintf("<tr><td><table border=0 cellpadding=%s cellspacing=0 bgcolor=#FFFFFF><tr>\n", str);
+    rsprintf("<tr><td><table width=100%% border=0 cellpadding=%s cellspacing=0 bgcolor=#FFFFFF><tr>\n", str);
 
     for (i=0 ;  ; i++)
       {
@@ -2303,7 +2308,7 @@ void show_error(char *error)
   rsprintf("Content-Type: text/html\r\n\r\n");
 
   rsprintf("<html><head><title>ELOG error</title></head>\n");
-  rsprintf("<body><H1>%s</H1></body></html>\n", error);
+  rsprintf("<body><i>%s</i></body></html>\n", error);
 }
 
 /*------------------------------------------------------------------*/
@@ -2632,7 +2637,7 @@ BOOL   allow_edit;
                   i+1);
         }
       else
-        rsprintf("<tr><td bgcolor=%s>Attachment %d:</td><td bgcolor=%s><input type=\"file\" size=\"60\" maxlength=\"200\" name=\"attfile%d\" accept=\"filetype/*\"></tr>\n", 
+        rsprintf("<tr><td bgcolor=%s>Attachment %d:</td><td bgcolor=%s><input type=\"file\" size=\"60\" maxlength=\"200\" name=\"attfile%d\" accept=\"filetype/*\"></td></tr>\n", 
                   gt("Categories bgcolor1"), i+1, gt("Categories bgcolor2"), i+1);
       }
 
@@ -2641,7 +2646,7 @@ BOOL   allow_edit;
     {
     /* attachment */
     for (i=0 ; i<MAX_ATTACHMENTS ; i++)
-      rsprintf("<tr><td bgcolor=%s><b>Attachment %d:</b></td><td bgcolor=%s><input type=\"file\" size=\"60\" maxlength=\"200\" name=\"attfile%d\" accept=\"filetype/*\"></tr>\n", 
+      rsprintf("<tr><td nowrap bgcolor=%s><b>Attachment %d:</b></td><td bgcolor=%s><input type=\"file\" size=\"60\" maxlength=\"200\" name=\"attfile%d\" accept=\"filetype/*\"></td></tr>\n", 
                gt("Categories bgcolor1"), i+1, gt("Categories bgcolor2"), i+1);
     }
 
@@ -3602,7 +3607,7 @@ char   str[256], str1[256], str2[256], author[256], mail_to[256], mail_from[256]
        mail_text[256], mail_list[256], smtp_host[256], tag[80], *p;
 char   *buffer[MAX_ATTACHMENTS], mail_param[1000];
 char   att_file[MAX_ATTACHMENTS][256];
-int    i, index, n_mail, suppress;
+int    i, index, n_mail, suppress, status;
 struct hostent *phe;
 
   /* check for author */
@@ -3657,13 +3662,21 @@ struct hostent *phe;
   if (*getparam("edit"))
     strcpy(tag, getparam("orig"));
 
-  el_submit(atoi(getparam("run")), author, getparam("type"),
-            getparam("category"), getparam("subject"), getparam("text"), 
-            getparam("orig"), *getparam("html") ? "HTML" : "plain", 
-            att_file, 
-            _attachment_buffer, 
-            _attachment_size, 
-            tag, sizeof(tag));
+  status = el_submit(atoi(getparam("run")), author, getparam("type"),
+                     getparam("category"), getparam("subject"), getparam("text"), 
+                     getparam("orig"), *getparam("html") ? "HTML" : "plain", 
+                     att_file, 
+                     _attachment_buffer, 
+                     _attachment_size, 
+                     tag, sizeof(tag));
+
+  if (status != EL_SUCCESS)
+    {
+    sprintf(str, "New message cannot be written to directory \"%s\"<p>", data_dir);
+    strcat(str, "Please check that it exists and elogd has write access.");
+    show_error(str);
+    return;
+    }
 
   suppress = atoi(getparam("suppress"));
 
@@ -4752,55 +4765,62 @@ int  i, n;
 
         /* evaluate file attachment */
         if (strstr(pitem, "filename="))
+          {
           p = strstr(pitem, "filename=")+9;
-        if (*p == '\"')
-          p++;
-        if (strstr(p, "\r\n\r\n"))
-          string = strstr(p, "\r\n\r\n")+4;
-        else if (strstr(p, "\r\r\n\r\r\n"))
-          string = strstr(p, "\r\r\n\r\r\n")+6;
-        if (strchr(p, '\"'))
-          *strchr(p, '\"') = 0;
-
-        /* set attachment filename */
-        strcpy(file_name, p);
-        sprintf(str, "attachment%d", n);
-        setparam(str, file_name);
-
-        if (verbose)
-          printf("Attachment: %s\n", file_name);
-
-        /* find next boundary */
-        ptmp = string;
-        do
-          {
-          while (*ptmp != '-')
-            ptmp++;
-
-          if ((p = strstr(ptmp, boundary)) != NULL)
-            {
-            while (*p == '-')
-              p--;
-            if (*p == 10)
-              p--;
-            if (*p == 13)
-              p--;
+         
+          if (*p == '\"')
             p++;
-            break;
+          if (strstr(p, "\r\n\r\n"))
+            string = strstr(p, "\r\n\r\n")+4;
+          else if (strstr(p, "\r\r\n\r\r\n"))
+            string = strstr(p, "\r\r\n\r\r\n")+6;
+          if (strchr(p, '\"'))
+            *strchr(p, '\"') = 0;
+
+          /* set attachment filename */
+          strcpy(file_name, p);
+          sprintf(str, "attachment%d", n);
+          setparam(str, file_name);
+
+          if (verbose)
+            printf("decode_post: Found attachment %s\n", file_name);
+
+          /* find next boundary */
+          ptmp = string;
+          do
+            {
+            while (*ptmp != '-')
+              ptmp++;
+
+            if ((p = strstr(ptmp, boundary)) != NULL)
+              {
+              if (*(p-1) == '-')
+                p--;
+              while (*p == '-')
+                p--;
+              if (*p == 10)
+                p--;
+              if (*p == 13)
+                p--;
+              p++;
+              break;
+              }
+            else
+              ptmp += strlen(ptmp);
+
+            } while (TRUE);
+
+          /* save pointer to file */
+          if (file_name[0])
+            {
+            _attachment_buffer[n] = string;
+            _attachment_size[n] = (INT)p - (INT) string; 
             }
-          else
-            ptmp += strlen(ptmp);
-
-          } while (TRUE);
-
-        /* save pointer to file */
-        if (file_name[0])
-          {
-          _attachment_buffer[n] = string;
-          _attachment_size[n] = (INT)p - (INT) string; 
+          string = strstr(p, boundary) + strlen(boundary);
           }
+        else
+          string = strstr(string, boundary) + strlen(boundary);
 
-        string = strstr(p, boundary) + strlen(boundary);
         }
       else
         {
@@ -5018,6 +5038,9 @@ INT                  last_time=0;
             /* extract header and content length */
             if (strstr(net_buffer, "Content-Length:"))
               content_length = atoi(strstr(net_buffer, "Content-Length:") + 15);
+            else if (strstr(net_buffer, "Content-length:"))
+              content_length = atoi(strstr(net_buffer, "Content-length:") + 15);
+
             boundary[0] = 0;
             if (strstr(net_buffer, "boundary="))
               {
@@ -5210,6 +5233,8 @@ INT                  last_time=0;
           }
         else if (strncmp(net_buffer, "POST", 4) == 0)
           {
+          if (verbose)
+            printf("%s\n", net_buffer+header_length);
           decode_post(net_buffer+header_length, boundary, content_length, cookie_wpwd, cookie_dpwd);
           }
         else
