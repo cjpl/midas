@@ -7,6 +7,9 @@
                 linked with user code to form a complete frontend
 
   $Log$
+  Revision 1.7  1999/10/15 12:17:52  midas
+  Increased timeout
+
   Revision 1.6  1999/09/27 13:49:04  midas
   Added bUnique parameter to cm_shutdown
 
@@ -1493,14 +1496,14 @@ reconnect:
 #endif
 
   /* turn on keepalive messages with increased timeout */
-  cm_set_watchdog_params(TRUE, 30000);
+  cm_set_watchdog_params(TRUE, 120000);
 
   /* turn off watchdog if in debug mode */
   if (debug)
     cm_set_watchdog_params(TRUE, 0);
 
-  /* increase RPC timeout to 60sec for logger with exabyte */
-  rpc_set_option(-1, RPC_OTIMEOUT, 60000);
+  /* increase RPC timeout to 2min for logger with exabyte or blocked disk */
+  rpc_set_option(-1, RPC_OTIMEOUT, 120000);
 
   /* set own message print function */
   if (display_period)
