@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.57  1999/10/04 14:16:10  midas
+  Fixed bug in form submit
+
   Revision 1.56  1999/10/04 14:11:43  midas
   Added full display for query
 
@@ -2084,7 +2087,7 @@ KEY   key;
   cm_get_experiment_database(&hDB, NULL);
   sprintf(str, "/Elog/Forms/%s", getparam("form"));
   db_find_key(hDB, 0, str, &hkeyroot);
-  strcpy(text, "<code>");
+  text[0] = 0;
   if (hkeyroot)
     for (i=0 ; ; i++)
       {
@@ -2099,10 +2102,9 @@ KEY   key;
       sprintf(str, "c%d", i);
       sprintf(text+strlen(text), "%s\n", getparam(str));
       }
-  strcpy(text+strlen(text)-1, "</code>");
   
   el_submit(atoi(getparam("run")), getparam("author"), getparam("form"),
-            "General", "", text, "", "HTML", "", NULL, 0, "", NULL, 0, "", NULL, 0, str, sizeof(str));
+            "General", "", text, "", "plain", "", NULL, 0, "", NULL, 0, "", NULL, 0, str, sizeof(str));
 
   rsprintf("HTTP/1.0 302 Found\r\n");
   rsprintf("Server: MIDAS HTTP %s\r\n", cm_get_version());
