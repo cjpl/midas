@@ -6,6 +6,10 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.130  2001/02/19 11:29:05  midas
+  Set run stop time in ODB before run is stopped in order to have the proper
+  value in the runxxx.odb file
+
   Revision 1.129  2001/01/30 08:28:13  midas
   Use va_arg(..., double) for float numbers
 
@@ -3608,6 +3612,31 @@ RUNINFO_STR(runinfo_str);
                  &seconds, sizeof(seconds), 1, TID_DWORD);
     }
 
+  /* set stop time in database */
+  if (transition == TR_STOP)
+    {
+    size = sizeof(state);
+    status = db_get_value(hDB, 0, "Runinfo/State", &state, &size, TID_INT);
+    if (status != DB_SUCCESS)
+      cm_msg(MERROR, "cm_transition", "cannot get Runinfo/State in database");
+
+    if (state != STATE_STOPPED)
+      {
+      /* stop time binary */
+      cm_time(&seconds);
+      status = db_set_value(hDB, 0, "Runinfo/Stop Time binary",
+                            &seconds, sizeof(seconds), 1, TID_DWORD);
+      if (status != DB_SUCCESS)
+        cm_msg(MERROR, "cm_transition", "cannot set \"Runinfo/Stop Time binary\" in database");
+
+      /* stop time ascii */
+      cm_asctime(str, sizeof(str));
+      status = db_set_value(hDB, 0, "Runinfo/Stop Time", str, 32, 1, TID_STRING);
+      if (status != DB_SUCCESS)
+        cm_msg(MERROR, "cm_transition", "cannot set \"Runinfo/Stop Time\" in database");
+      }
+    }
+
   /* call pre- transitions */
   if (transition == TR_START)
     {
@@ -3767,31 +3796,6 @@ RUNINFO_STR(runinfo_str);
       transition == TR_POSTSTART || transition == TR_POSTSTOP  ||
       transition == TR_POSTPAUSE || transition == TR_POSTRESUME)
     return CM_SUCCESS;
-
-  /* set stop time in database */
-  if (transition == TR_STOP)
-    {
-    size = sizeof(state);
-    status = db_get_value(hDB, 0, "Runinfo/State", &state, &size, TID_INT);
-    if (status != DB_SUCCESS)
-      cm_msg(MERROR, "cm_transition", "cannot get Runinfo/State in database");
-
-    if (state != STATE_STOPPED)
-      {
-      /* stop time binary */
-      cm_time(&seconds);
-      status = db_set_value(hDB, 0, "Runinfo/Stop Time binary",
-                            &seconds, sizeof(seconds), 1, TID_DWORD);
-      if (status != DB_SUCCESS)
-        cm_msg(MERROR, "cm_transition", "cannot set \"Runinfo/Stop Time binary\" in database");
-
-      /* stop time ascii */
-      cm_asctime(str, sizeof(str));
-      status = db_set_value(hDB, 0, "Runinfo/Stop Time", str, 32, 1, TID_STRING);
-      if (status != DB_SUCCESS)
-        cm_msg(MERROR, "cm_transition", "cannot set \"Runinfo/Stop Time\" in database");
-      }
-    }
 
   /* set new run state in database */
   if (transition == TR_START || transition == TR_RESUME)
