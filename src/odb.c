@@ -6,6 +6,9 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.77  2003/12/12 09:44:17  midas
+  Fixed missing parameter in db_remove_open_record() RPC call
+
   Revision 1.76  2003/12/03 00:42:01  pierre
   doc++ on db_check_record
 
@@ -7383,7 +7386,7 @@ INT db_remove_open_record(HNDLE hDB, HNDLE hKey, BOOL lock)
 \********************************************************************/
 {
   if (rpc_is_remote())
-    return rpc_call(RPC_DB_REMOVE_OPEN_RECORD, hDB, hKey);
+    return rpc_call(RPC_DB_REMOVE_OPEN_RECORD, hDB, hKey, lock);
 
 #ifdef LOCAL_ROUTINES
 {
