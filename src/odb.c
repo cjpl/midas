@@ -6,6 +6,9 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.47  2002/05/14 20:45:23  midas
+  Added better error message
+
   Revision 1.46  2002/05/14 06:33:02  midas
   db_create_link now return DB_NO_KEY if destination of link doesn't exist
 
@@ -2972,7 +2975,8 @@ DATABASE_HEADER  *pheader;
 HNDLE            hkey;
 KEY              *pkey;
 INT              status, size;
-
+char             path[256];
+ 
   if (hDB > _database_entries || hDB <= 0)
     {
     cm_msg(MERROR, "db_get_value", "invalid database handle");
@@ -3045,7 +3049,8 @@ INT              status, size;
     {
     memcpy(data, (char *) pheader + pkey->data, *buf_size);
     db_unlock_database(hDB);
-    cm_msg(MERROR, "db_get_value", "buffer too small, %s data truncated", key_name);
+    db_get_path(hDB, hkey, path, sizeof(path));
+    cm_msg(MERROR, "db_get_value", "buffer too small, data truncated for key \"%s\"", path);
     return DB_TRUNCATED;
     }
 
