@@ -6,6 +6,9 @@
 #  Contents:     Makefile for MIDAS binaries and examples under unix
 #
 #  $Log$
+#  Revision 1.65  2004/10/06 19:00:41  olchansk
+#  Fix "make install": delete old optional items (libmidas.so, hmana.o, rmana.o) if we do not install newer versions
+#
 #  Revision 1.64  2004/10/04 04:52:27  olchansk
 #  fix missing dependance: $(PROGS): $(SHLIB)
 #
@@ -676,14 +679,19 @@ install:
 	  done
 
 ifdef CERNLIB
-	install -v -m 644 $(LIB_DIR)/hmana.o $(SYSLIB_DIR)
+	install -v -m 644 $(LIB_DIR)/hmana.o $(SYSLIB_DIR)/hmana.o
+else
+	rm -fv $(SYSLIB_DIR)/hmana.o
 endif
 ifdef ROOTSYS
-	install -v -m 644 $(LIB_DIR)/rmana.o $(SYSLIB_DIR)
+	install -v -m 644 $(LIB_DIR)/rmana.o $(SYSLIB_DIR)/rmana.o
+else
+	rm -fv $(SYSLIB_DIR)/rmana.o
 endif
-
 ifdef NEED_SHLIB
 	install -v -m 644 $(LIB_DIR)/libmidas.so $(SYSLIB_DIR)
+else
+	rm -fv $(SYSLIB_DIR)/libmidas.so
 endif
 
 	@if [ -d  $(ZLIB_DIR) ] ; then \
