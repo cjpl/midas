@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.6  2001/05/23 10:48:48  midas
+  Added version
+
   Revision 1.5  2001/05/23 08:16:41  midas
   Fixed bug when POST request comes in two blocks
 
@@ -22,6 +25,9 @@
   Initial revision
 
 \********************************************************************/
+
+/* Version of ELOG */
+#define VERSION "1.0.0"
 
 #include <stdio.h>
 #include <sys/types.h>
@@ -1564,7 +1570,7 @@ void redirect(char *path)
 {
   /* redirect */
   rsprintf("HTTP/1.0 302 Found\r\n");
-  rsprintf("Server: ELOG HTTP 1.0\r\n");
+  rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
 
   rsprintf("Location: %s%s/%s\n\n<html>redir</html>\r\n", elogd_url, logbook, path);
 }
@@ -1611,7 +1617,7 @@ time_t now;
 
   /* header */
   rsprintf("HTTP/1.0 200 Document follows\r\n");
-  rsprintf("Server: ELOG HTTP 1.0\r\n");
+  rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
   rsprintf("Content-Type: text/html\r\n\r\n");
 
   rsprintf("<html><head><title>%s</title></head>\n", title);
@@ -1633,7 +1639,7 @@ void show_error(char *error)
 {
   /* header */
   rsprintf("HTTP/1.0 200 Document follows\r\n");
-  rsprintf("Server: ELOG HTTP 1.0\r\n");
+  rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
   rsprintf("Content-Type: text/html\r\n\r\n");
 
   rsprintf("<html><head><title>ELOG error</title></head>\n");
@@ -1714,7 +1720,7 @@ time_t now;
 
   /* header */
   rsprintf("HTTP/1.0 200 Document follows\r\n");
-  rsprintf("Server: ELOG HTTP 1.0\r\n");
+  rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
   rsprintf("Content-Type: text/html\r\n\r\n");
 
   rsprintf("<html><head><title>ELOG</title></head>\n");
@@ -1901,7 +1907,7 @@ char   *p, list[1000];
 
   /* header */
   rsprintf("HTTP/1.0 200 Document follows\r\n");
-  rsprintf("Server: ELOG HTTP 1.0\r\n");
+  rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
   rsprintf("Content-Type: text/html\r\n\r\n");
 
   rsprintf("<html><head><title>ELOG</title></head>\n");
@@ -2113,7 +2119,7 @@ FILE   *f;
 
   /* header */
   rsprintf("HTTP/1.0 200 Document follows\r\n");
-  rsprintf("Server: ELOG HTTP 1.0\r\n");
+  rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
   rsprintf("Content-Type: text/html\r\n\r\n");
 
   rsprintf("<html><head><title>ELOG</title></head>\n");
@@ -2550,7 +2556,7 @@ char   file_name[256], line[1000];
 
   /* header */
   rsprintf("HTTP/1.0 200 Document follows\r\n");
-  rsprintf("Server: ELOG HTTP 1.0\r\n");
+  rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
   rsprintf("Content-Type: text/html\r\n\r\n");
 
   rsprintf("<html><head><title>ELOG File Display</title></head>\n");
@@ -2658,7 +2664,7 @@ struct hostent *phe;
       else
         {
         rsprintf("HTTP/1.0 200 Document follows\r\n");
-        rsprintf("Server: ELOG HTTP 1.0\r\n");
+        rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
         rsprintf("Content-Type: text/html\r\n\r\n");
 
         rsprintf("<html><head><title>ELog Error</title></head>\n");
@@ -2702,7 +2708,7 @@ struct hostent *phe;
       free(buffer[i]);
 
   rsprintf("HTTP/1.0 302 Found\r\n");
-  rsprintf("Server: ELOG HTTP 1.0\r\n");
+  rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
 
   rsprintf("Location: %s%s/%s\n\n<html>redir</html>\r\n", elogd_url, logbook, str);
 }
@@ -2818,7 +2824,7 @@ BOOL  allow_delete;
       lseek(fh, 0, SEEK_SET);
 
       rsprintf("HTTP/1.0 200 Document follows\r\n");
-      rsprintf("Server: ELOG HTTP 1.0\r\n");
+      rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
       rsprintf("Accept-Ranges: bytes\r\n");
 
       /* return proper header for file type */
@@ -2961,7 +2967,7 @@ BOOL  allow_delete;
 
   /* header */
   rsprintf("HTTP/1.0 200 Document follows\r\n");
-  rsprintf("Server: ELOG HTTP 1.0\r\n");
+  rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
   rsprintf("Content-Type: text/html\r\n\r\n");
 
   rsprintf("<html><head><title>ELOG</title></head>\n");
@@ -3137,7 +3143,7 @@ BOOL  allow_delete;
 void show_password_page(char *password, char *experiment)
 {
   rsprintf("HTTP/1.0 200 Document follows\r\n");
-  rsprintf("Server: ELOG HTTP 1.0\r\n");
+  rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
   rsprintf("Content-Type: text/html\r\n\r\n");
 
   rsprintf("<html><head><title>Enter password</title></head><body>\n\n");
@@ -3172,7 +3178,7 @@ char  str[256];
 
     /* show web password page */
     rsprintf("HTTP/1.0 200 Document follows\r\n");
-    rsprintf("Server: ELOG HTTP 1.0\r\n");
+    rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
     rsprintf("Content-Type: text/html\r\n\r\n");
 
     rsprintf("<html><head><title>Enter password</title></head><body>\n\n");
@@ -3210,7 +3216,7 @@ int  i;
 char str[80], logbook[80];
 
   rsprintf("HTTP/1.0 200 Document follows\r\n");
-  rsprintf("Server: ELOG HTTP 1.0\r\n");
+  rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
   rsprintf("Content-Type: text/html\r\n\r\n");
 
   rsprintf("<html>\n");
@@ -3321,7 +3327,7 @@ struct tm *gmt;
       return;
     
     rsprintf("HTTP/1.0 302 Found\r\n");
-    rsprintf("Server: ELOG HTTP 1.0\r\n");
+    rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
 
     time(&now);
     now += 3600;
