@@ -6,6 +6,9 @@
   Contents:     Electronic logbook utility   
 
   $Log$
+  Revision 1.11  2000/05/08 14:29:39  midas
+  Added delete option in ELog
+
   Revision 1.10  1999/10/08 22:00:30  midas
   Finished editing of elog messages
 
@@ -230,7 +233,7 @@ int  i;
       }
     }
 
-  if (!attachment[0][0])
+  if (!attachment[0][0] && !author[0])
     {
     for (i=0 ; i<3 ; i++)
       {
