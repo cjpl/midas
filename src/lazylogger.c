@@ -6,6 +6,9 @@
   Contents:     Disk to Tape copier for background job
 
   $Log$
+  Revision 1.13  1999/10/22 00:30:45  pierre
+  - add hot link on settings for maintain space.
+
   Revision 1.12  1999/10/18 14:41:50  midas
   Use /programs/<name>/Watchdog timeout in all programs as timeout value. The
   default value can be submitted by calling cm_connect_experiment1(..., timeout)
@@ -188,7 +191,7 @@ INT channel = -1;
 
 /* Globals */
 INT       lazy_mutex;
-HNDLE     hDB, hKey;
+HNDLE     hDB, hKey, pcurrent_hKey;
 float     lastsz;
 HNDLE     hKeyst;
 INT       run_state, tot_do_size, tot_dirlog_size, hDev;
@@ -196,7 +199,7 @@ BOOL      zap_flag, msg_flag;
 BOOL      copy_continue = TRUE;
 INT       data_fmt, dev_type;
 char      lazylog[MAX_STRING_LENGTH];
-BOOL      full_bck_flag = FALSE;
+BOOL      full_bck_flag = FALSE, maintain_touched=FALSE;
 
 #define WATCHDOG_TIMEOUT 60000 /* 60 sec for tape access */
 
@@ -213,7 +216,42 @@ INT  build_done_list(HNDLE, INT **);
 INT  cmp_log2donelist (DIRLOG * plog, INT * pdo);
 INT  lazy_log_update(INT action, INT run, char * label, char * file);
 int  lazy_remove_entry(INT ch, LAZY_INFO *, int run);
+INT lazy_settings_hotlink(HNDLE hDB, HNDLE hKey, void * info);
 void lazy_maintain_check(HNDLE hKey, LAZY_INFO * pLall);
+/*------------------------------------------------------------------*/
+INT lazy_file_remove(char * pufile)
+{
+  INT  fHandle, status;
+
+  /* open device */
+#ifdef OS_UNIX
+  if( (fHandle = open(pufile ,_O_RDONLY, 0644)) == -1 )
+#endif
+#ifdef OS_OSF1
+    if( (fHandle = open(pufile ,_O_RDONLY, 0644)) == -1 )
+#endif
+#ifdef OS_VXWORKS
+      if( (fHandle = open(pufile ,_O_RDONLY, 0644)) == -1 )
+#endif
+#ifdef OS_WINNT
+	if( (fHandle = _open(pufile ,_O_RDONLY)) == -1 )
+	  
+#endif
+	  {
+      return SS_INVALID_NAME;
+	  }
+
+#ifdef OS_WINNT
+    _close(fHandle);
+#else
+    close(fHandle);
+#endif
+
+  status = ss_file_remove(pufile);
+  if (status != 0)
+    return SS_FILE_ERROR;
+  return SS_SUCCESS;
+}
 
 /*------------------------------------------------------------------*/
 INT lazy_log_update(INT action, INT run, char * label, char * file)
@@ -569,6 +607,20 @@ INT lazy_select_purge(HNDLE hKey, INT channel, LAZY_INFO * pLall, char * fmt, ch
 }
 
 /*------------------------------------------------------------------*/
+INT lazy_settings_hotlink(HNDLE hDB, HNDLE hKey, void * info)
+{
+  INT  size, maintain;
+
+  /* check if Maintain has been touched */
+  size = sizeof(maintain);
+  db_get_value(hDB, hKey, "Maintain free space(%)", &maintain, &size, TID_INT);
+  if (maintain != 0)
+    maintain_touched = TRUE;
+  else
+    maintain_touched = FALSE;
+  return SUCCESS;
+}
+/*------------------------------------------------------------------*/
 void lazy_maintain_check(HNDLE hKey, LAZY_INFO * pLall)
 /********************************************************************\
   Routine: lazy_maintain_check
@@ -587,6 +639,10 @@ void lazy_maintain_check(HNDLE hKey, LAZY_INFO * pLall)
   INT  i, maintain;
   char dir[256], ff[128];
   char cdir[256], cff[128];
+
+  /* do test only if maintain has been touched */
+  if (!maintain_touched) return;
+  maintain_touched = FALSE;
 
   /* check is Maintain free is enabled */
   size = sizeof(maintain);
@@ -1130,7 +1186,7 @@ INT lazy_main (INT channel, LAZY_INFO * pLall)
   double freepercent, svfree;
   char pufile[MAX_FILE_PATH], inffile[MAX_FILE_PATH], outffile[MAX_FILE_PATH];
   BOOL donepurge, watchdog_flag;
-  DWORD watchdog_timeout;
+  INT watchdog_timeout;
   LAZY_INFO * pLch;
 
   /* current channel */
@@ -1268,12 +1324,9 @@ INT lazy_main (INT channel, LAZY_INFO * pLall)
         if (purun < (cur_acq_run - abs(lazy.staybehind) - 1 ))
         {
           /* remove file */
-          status = ss_file_remove(pufile);
-          if (status != 0)
-          {
-            cm_msg(MERROR, "Lazy","ss_file_remove not performed (file locked?)%d",status);
-            break;
-          }
+          status = lazy_file_remove(pufile);
+          if (status == SS_FILE_ERROR)
+              cm_msg(MERROR, "Lazy","lazy_file_remove failed on file %s",pufile);
           else
           {
             status = lazy_log_update(REMOVE_FILE, purun, NULL, pufile);
@@ -1281,7 +1334,7 @@ INT lazy_main (INT channel, LAZY_INFO * pLall)
 
             /* update donelist (remove run entry as the file has been deleted */
             if ((status=lazy_remove_entry(channel, pLall, purun)) != 0)
-            cm_msg(MERROR, "Lazy","remove_entry not performed %d",status);
+              cm_msg(MERROR, "Lazy","remove_entry not performed %d",status);
           }
         }
         freepercent = 100. * ss_disk_free(lazy.dir) / ss_disk_size(lazy.dir);
@@ -1703,11 +1756,14 @@ int main(unsigned int argc,char **argv)
   /* get /settings once & hot link settings in read mode */
   db_find_key(hDB,lazyinfo[channel].hKey,"Settings",&hKey);
   size = sizeof(lazy);
-  status = db_open_record(hDB, hKey, &lazy, sizeof(lazy), MODE_READ, NULL, NULL);
+  status = db_open_record(hDB, hKey, &lazy, sizeof(lazy), MODE_READ, lazy_settings_hotlink, NULL);
   if (status != DB_SUCCESS)
   {
     cm_msg(MERROR, "%s/Settings", "cannot open variable record", lazyinfo[channel].name);
   }
+
+  /* set global key for that channel */
+  pcurrent_hKey = lazyinfo[channel].hKey;
 
   /* set Data dir from /logger if local is empty & /logger exists */
   if ((lazy.dir[0] == '\0') &&
