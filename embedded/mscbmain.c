@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol main program
 
   $Log$
+  Revision 1.56  2004/12/10 11:23:00  midas
+  Fixed bug with block transfer
+
   Revision 1.55  2004/10/12 11:02:41  midas
   Version 1.7.6
 
@@ -221,7 +224,7 @@ void send_remote_var(unsigned char i);
 /* variables in internal RAM (indirect addressing) */
 
 #ifdef CPU_C8051F020
-unsigned char xdata in_buf[300], out_buf[300];
+unsigned char xdata in_buf[64], out_buf[64]; /* limited by USB block size */
 #else
 unsigned char idata in_buf[20], out_buf[8];
 #endif
@@ -890,15 +893,16 @@ void interprete(void)
 
             if (variables[in_buf[1]].flags & MSCBF_DATALESS) {
                n = user_read(in_buf[1]);        // for dataless variables, user routine returns bytes
-               out_buf[0] = CMD_ACK + n;        // and places data directly in out_buf
+               out_buf[0] = CMD_ACK + 7;        // and places data directly in out_buf
+               out_buf[1] = n;
 
-               out_buf[1 + n] = crc8(out_buf, 1 + n);      // generate CRC code
+               out_buf[2 + n] = crc8(out_buf, 2 + n);      // generate CRC code
    
                /* send result */
 #ifdef CPU_C8051F120
                SFRPAGE = UART0_PAGE;
 #endif
-               n_out = 2 + n;
+               n_out = 3 + n;
                RS485_ENABLE = 1;
                SBUF0 = out_buf[0];
 
@@ -1048,7 +1052,6 @@ void interprete(void)
          }
       }
    }
-
 
 }
 
