@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.29  1999/04/23 11:42:52  midas
+  Made db_get_data_index working for Java
+
   Revision 1.28  1999/04/19 07:47:00  midas
   Added cm_msg_retrieve
 
@@ -9950,13 +9953,14 @@ INT rpc_execute_ascii(INT sock, char *buffer)
 \********************************************************************/
 {
 #define ASCII_BUFFER_SIZE 11000
+#define N_APARAM           1024
 
 INT          i, j, index, status, index_in;
 char         *in_param_ptr, *out_param_ptr, *last_param_ptr;
 INT          routine_id, tid, flags, array_tid, n_param;
 INT          param_size, item_size, num_values;
 void         *prpc_param[20];
-char         *arpc_param[1024], *pc;
+char         *arpc_param[N_APARAM], *pc;
 char         str[1024], debug_line[1024];
 char         buffer1[ASCII_BUFFER_SIZE];       /* binary in */
 char         buffer2[ASCII_BUFFER_SIZE];       /* binary out */
@@ -9964,7 +9968,7 @@ char         return_buffer[ASCII_BUFFER_SIZE]; /* ASCII out */
 
   /* parse arguments */
   arpc_param[0] = buffer;
-  for (i=1 ; i<20 ; i++)
+  for (i=1 ; i<N_APARAM ; i++)
     {
     arpc_param[i] = strchr(arpc_param[i-1], '&');
     if (arpc_param[i] == NULL)
@@ -9974,7 +9978,7 @@ char         return_buffer[ASCII_BUFFER_SIZE]; /* ASCII out */
     }
 
   /* decode '%' */
-  for (i=0 ; i<20 && arpc_param[i] ; i++)
+  for (i=0 ; i<N_APARAM && arpc_param[i] ; i++)
     while ((pc = strchr(arpc_param[i], '%')) != NULL)
       {
       if (isxdigit(pc[1]) && isxdigit(pc[2])) 
@@ -10027,7 +10031,7 @@ char         return_buffer[ASCII_BUFFER_SIZE]; /* ASCII out */
         prpc_param[i] = in_param_ptr;
         for (j=0 ; j<n_param ; j++)
           {
-          db_sscanf(arpc_param[index_in++], in_param_ptr, &param_size, j, array_tid);
+          db_sscanf(arpc_param[index_in++], in_param_ptr, &param_size, 0, array_tid);
           in_param_ptr += param_size;
           }
         in_param_ptr = (char *) ALIGN(((PTYPE)in_param_ptr));
@@ -10183,11 +10187,20 @@ char         return_buffer[ASCII_BUFFER_SIZE]; /* ASCII out */
           }
         else
           {
-          param_size = *((INT *) prpc_param[i+1]);
-          array_tid  = *((INT *) prpc_param[i+2]);
-          num_values = *((INT *) prpc_param[i+3]);
+          if (rpc_list[index].id == RPC_DB_GET_DATA1)
+            {
+            param_size = *((INT *) prpc_param[i+1]);
+            array_tid  = *((INT *) prpc_param[i+2]);
+            num_values = *((INT *) prpc_param[i+3]);
+            }
+          else if (rpc_list[index].id == RPC_DB_GET_DATA_INDEX)
+            {
+            param_size = *((INT *) prpc_param[i+1]);
+            array_tid  = *((INT *) prpc_param[i+3]);
+            num_values = 1;
+            }
 
-          /* assume fixed length for strings */
+          /* derive size of individual item */
           if (array_tid == TID_STRING)
             item_size = param_size / num_values;
           else
