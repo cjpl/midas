@@ -6,6 +6,9 @@
  *         amaudruz@triumf.ca                            Local:           6234
  * -----------------------------------------------------------------------------
    $Log$
+   Revision 1.24  2000/01/25 18:57:07  pierre
+   - fix midas replay end of file
+
    Revision 1.23  1999/12/20 22:15:53  pierre
    - remove #define INCLUDE_FTP due to VxWorks (moved into Makefile)
 
@@ -2729,6 +2732,7 @@ INT   midas_event_get (void ** pevent, DWORD * readn)
     status = midas_physrec_get((void *)my.pmp, &size);
     if (status != YB_SUCCESS)
       return (YB_DONE);
+    memset (my.pmp+size, -1, my.size - size); 
     my.pme = (EVENT_HEADER *) my.pmp;
     memcpy(my.pmh, my.pme, leftover);
     (char *)my.pme += leftover;
