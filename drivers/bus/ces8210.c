@@ -15,6 +15,9 @@
  *  Application :
  *  Author      : Pierre-Andre Amaudruz Data Acquisition Group
  *  $Log$
+ *  Revision 1.4  2002/01/28 20:14:16  pierre
+ *  added macros, fix camc_chk
+ *
  *  Revision 1.3  2001/09/07 18:09:44  pierre
  *  Fix args for interrupts
  *
@@ -50,6 +53,39 @@ CBD_DESC_T cbd[8];             /* crate 0 ==>system CC mapping */
 #define CBD8210_BASE   0x800000  /* camac base address */
 #define CBDWL_D16      0x000002
 #define CBDWL_D24      0x000000
+#define CSR_OFFSET     0x0000e800              /* camac control and status reg */
+#define CAR_OFFSET     0x0000e820              /* Crate Address Register */
+#define BTB_OFFSET     0x0000e824              /* on-line status (R) */
+#define CSR            CBD8210_BASE | CSR_OFFSET | CBDWL_D16
+#define CAR            CBD8210_BASE | CAR_OFFSET | CBDWL_D16
+#define BTB            CBD8210_BASE | BTB_OFFSET | CBDWL_D16
+
+#define CAM_CSRCHK(_w){\
+			 DWORD cbd_csr = cbd[0].baseCrate | CSR;\
+			 *_w = *(WORD *) cbd_csr;}
+
+#define CAM_CARCHK(_w){\
+			 DWORD cbd_car = cbd[0].baseCrate | CAR;\
+			 *_w = *(WORD *) cbd_car;}
+
+#define CAM_BTBCHK(_w){\
+			 DWORD cbd_btb = cbd[0].baseCrate | BTB;\
+                         *_w = *(WORD *) cbd_btb;}
+
+#define CAM_QXCHK(_q,_x){\
+			 DWORD cbd_csr = cbd[0].baseCrate | CSR;\
+			 WORD csr = *((WORD *) cbd_csr);\
+			 *_q = ((csr & 0x8000)>>15);\
+			 *_x = ((csr & 0x4000)>>14);}
+			 
+#define CAM_QCHK(_q){\
+			 DWORD cbd_csr = cbd[0].baseCrate | CSR;\
+			 WORD csr = *((WORD *) cbd_csr);\
+			 *_q = ((csr & 0x8000)>>15);}
+#define CAM_XCHK(_x){\
+			 DWORD cbd_csr = cbd[0].baseCrate | CSR;\
+			 WORD csr = *((WORD *) cbd_csr);\
+			 *_x = ((csr & 0x4000)>>14);}
 
 /* VME handle */
 int vh;
@@ -296,7 +332,12 @@ INLINE void camo(const int c, const int n, const int a, const int f
 
 INLINE int camc_chk(const int c)
 {
-  return 1;
+  static int crate_status;
+
+  CAM_BTBCHK (&crate_status);
+  if ( ((crate_status >> c) & 0x1) != 1)
+     return -1;
+  return 0;
 }
 
 /*---------------------------------------------------------------*/
@@ -503,3 +544,33 @@ INLINE void cam_glint_attach(int lam, void (*isr)(void))
   printf("cam_glint_attach - Not yet implemented\n");
 }
 
+void csr(void)
+{
+  WORD online;
+
+  CAM_CSRCHK(&online);
+  printf("CSR Camac  status 0x%4.4x\n",online);
+}
+
+void car(void)
+{
+  WORD online;
+
+  CAM_CARCHK(&online);
+  printf("CAR Online status 0x%4.4x\n",online);
+}
+
+void btb(void)
+{
+  WORD online;
+
+  CAM_BTBCHK(&online);
+  printf("BTB Online status 0x%4.4x\n",online);
+}
+
+void camop(void)
+{
+  csr();
+  car();
+  btb();
+}
