@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.106  2003/12/04 12:51:18  midas
+  Fixed problem when output file does not contain a '.'
+
   Revision 1.105  2003/11/24 08:22:45  midas
   Changed timeouts from INT to DWORD, added ignore_timeout to cm_cleanup, adde '-f' flag to ODBEdit 'cleanup'
 
@@ -2035,7 +2038,7 @@ INT bor(INT run_number, char *error)
 {
 ANA_MODULE **module;
 INT        i, j, size;
-char       str[256], file_name[256];
+char       str[256], file_name[256], *ext_str;
 BANK_LIST  *bank_list;
 
   /* load parameters */
@@ -2107,7 +2110,6 @@ BANK_LIST  *bank_list;
     {
     if (out_info.filename[0])
       {
-      char *ext_str = NULL;
       strcpy(str, out_info.filename);
       if (strchr(str, '%') != NULL)
         sprintf(file_name, str, run_number);
@@ -2121,29 +2123,32 @@ BANK_LIST  *bank_list;
         ext_str = file_name + strlen(file_name)-1;
         while (*ext_str != '.')
           ext_str--;
-        }
-      if (strncmp(ext_str, ".gz", 3) == 0)
-        {
-        out_gzip = TRUE;
-        ext_str--;
-        while (*ext_str != '.' && ext_str > file_name)
-          ext_str--;
-        }
 
-      if (strncmp(ext_str, ".asc", 4) == 0)
-        out_format = FORMAT_ASCII;
-      else if (strncmp(ext_str, ".mid", 4) == 0)
-        out_format = FORMAT_MIDAS;
-      else if (strncmp(ext_str, ".rz", 3) == 0)
-        out_format = FORMAT_HBOOK;
-      else if (strncmp(ext_str, ".root", 5) == 0)
-        out_format = FORMAT_ROOT;
-      else
-        {
-        strcpy(error, "Unknown output data format. Please use file extension .asc, .mid, .rz or .root.\n");
-        cm_msg(MERROR, "bor", error);
-        return 0;
+        if (strncmp(ext_str, ".gz", 3) == 0)
+          {
+          out_gzip = TRUE;
+          ext_str--;
+          while (*ext_str != '.' && ext_str > file_name)
+            ext_str--;
+          }
+
+        if (strncmp(ext_str, ".asc", 4) == 0)
+          out_format = FORMAT_ASCII;
+        else if (strncmp(ext_str, ".mid", 4) == 0)
+          out_format = FORMAT_MIDAS;
+        else if (strncmp(ext_str, ".rz", 3) == 0)
+          out_format = FORMAT_HBOOK;
+        else if (strncmp(ext_str, ".root", 5) == 0)
+          out_format = FORMAT_ROOT;
+        else
+          {
+          strcpy(error, "Unknown output data format. Please use file extension .asc, .mid, .rz or .root.\n");
+          cm_msg(MERROR, "bor", error);
+          return 0;
+          }
         }
+      else
+        out_format = FORMAT_ASCII;
 
 #ifdef PVM
       /* use node name as filename if PVM slave */
