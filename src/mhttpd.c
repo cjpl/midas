@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.268  2004/07/12 14:16:03  midas
+  Increase dynamically history buffer size
+
   Revision 1.267  2004/05/07 19:40:11  midas
   Replaced min/max by MIN/MAX macros
 
@@ -7290,11 +7293,19 @@ void generate_hist_graph(char *path, char *buffer, int *buffer_size,
    float factor[MAX_VARS], offset[MAX_VARS];
    BOOL logaxis, runmarker;
    float xmin, xmax, ymin, ymax;
-   char ybuffer[8000];
-   DWORD tbuffer[1000];
    gdPoint poly[3];
    float upper_limit[MAX_VARS], lower_limit[MAX_VARS];
    double yb1, yb2, yf1, yf2, ybase;
+
+   static char *ybuffer;
+   static DWORD *tbuffer;
+   static int hbuffer_size = 0;
+
+   if (hbuffer_size == 0) {
+      hbuffer_size = 1000 * sizeof(DWORD);
+      tbuffer = malloc(hbuffer_size);
+      ybuffer = malloc(hbuffer_size);
+   }
 
    cm_get_experiment_database(&hDB, NULL);
 
@@ -7602,13 +7613,23 @@ void generate_hist_graph(char *path, char *buffer, int *buffer_size,
          }
       }
 
-      bsize = sizeof(ybuffer);
-      tsize = sizeof(tbuffer);
-      memset(ybuffer, 0, bsize);
-      status =
-          hs_read(event_id, ss_time() - scale + toffset, ss_time() + toffset,
-                  scale / 1000, var_name[i], var_index[i], tbuffer, &tsize, ybuffer,
-                  &bsize, &type, &n_point[i]);
+      do {
+         bsize = tsize = hbuffer_size;
+         memset(ybuffer, 0, bsize);
+         status =
+             hs_read(event_id, ss_time() - scale + toffset, ss_time() + toffset,
+                     scale / 1000, var_name[i], var_index[i], tbuffer, &tsize, ybuffer,
+                     &bsize, &type, &n_point[i]);
+
+         if (status == HS_TRUNCATED) {
+            hbuffer_size *= 2;
+            tbuffer = realloc(tbuffer, hbuffer_size);
+            assert(tbuffer);
+            ybuffer = realloc(ybuffer, hbuffer_size);
+            assert(ybuffer);
+         }
+
+      } while (status == HS_TRUNCATED);
 
       if (status == HS_UNDEFINED_VAR) {
          sprintf(str, "Variable \"%s\" not found in history", var_name[i]);
