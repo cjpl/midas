@@ -9,6 +9,9 @@
                 for SCS-400 thermo couple I/O
 
   $Log$
+  Revision 1.12  2003/03/21 08:28:15  midas
+  Fixed bug with LSB bytes
+
   Revision 1.11  2003/03/19 16:35:03  midas
   Eliminated configuration parameters
 
@@ -54,32 +57,71 @@ char code node_name[] = "SCS-400";
 
 /*---- Define variable parameters returned to the CMD_GET_INFO command ----*/
 
+#define CONTROL_4     // control works only with 4 channels
+
 /* data buffer (mirrored in EEPROM) */
 
+#ifdef CONTROL_4
+
+#define N_CHANNEL 4
+
 struct {
-  float power[8];
+  short demand[4];
+  float temp[4];
+  float p_int[4];
+  char  power[4];
+} idata user_data;
+
+MSCB_INFO_VAR code variables[] = {
+  2, UNIT_CELSIUS, 0, 0,           0, "Demand0", &user_data.demand[0],
+  2, UNIT_CELSIUS, 0, 0,           0, "Demand1", &user_data.demand[1],
+  2, UNIT_CELSIUS, 0, 0,           0, "Demand2", &user_data.demand[2],
+  2, UNIT_CELSIUS, 0, 0,           0, "Demand3", &user_data.demand[3],
+  4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp0",   &user_data.temp[0],
+  4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp1",   &user_data.temp[1],
+  4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp2",   &user_data.temp[2],
+  4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp3",   &user_data.temp[3],
+  4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "PInt0",   &user_data.p_int[0],
+  4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "PInt1",   &user_data.p_int[1],
+  4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "PInt2",   &user_data.p_int[2],
+  4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "PInt3",   &user_data.p_int[3],
+  1, UNIT_PERCENT, 0, 0,           0, "Power0",  &user_data.power[0],
+  1, UNIT_PERCENT, 0, 0,           0, "Power1",  &user_data.power[1],
+  1, UNIT_PERCENT, 0, 0,           0, "Power2",  &user_data.power[2],
+  1, UNIT_PERCENT, 0, 0,           0, "Power3",  &user_data.power[3],
+  0
+};
+
+#else
+
+#define N_CHANNEL 8
+
+struct {
+  char  power[8];
   float temp[8];
 } idata user_data;
 
 MSCB_INFO_VAR code variables[] = {
-  4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "Power0", &user_data.power[0],
-  4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "Power1", &user_data.power[1],
-  4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "Power2", &user_data.power[2],
-  4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "Power3", &user_data.power[3],
-  4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "Power4", &user_data.power[4],
-  4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "Power5", &user_data.power[5],
-  4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "Power6", &user_data.power[6],
-  4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "Power7", &user_data.power[7],
-  4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp0",  &user_data.temp[0],
-  4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp1",  &user_data.temp[1],
-  4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp2",  &user_data.temp[2],
-  4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp3",  &user_data.temp[3],
-  4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp4",  &user_data.temp[4],
-  4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp5",  &user_data.temp[5],
-  4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp6",  &user_data.temp[6],
-  4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp7",  &user_data.temp[7],
+  1, UNIT_PERCENT, 0, 0,           0, "Power0",  &user_data.power[0],
+  1, UNIT_PERCENT, 0, 0,           0, "Power1",  &user_data.power[1],
+  1, UNIT_PERCENT, 0, 0,           0, "Power2",  &user_data.power[2],
+  1, UNIT_PERCENT, 0, 0,           0, "Power3",  &user_data.power[3],
+  1, UNIT_PERCENT, 0, 0,           0, "Power4",  &user_data.power[4],
+  1, UNIT_PERCENT, 0, 0,           0, "Power5",  &user_data.power[5],
+  1, UNIT_PERCENT, 0, 0,           0, "Power6",  &user_data.power[6],
+  1, UNIT_PERCENT, 0, 0,           0, "Power7",  &user_data.power[7],
+  4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp0",   &user_data.temp[0],
+  4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp1",   &user_data.temp[1],
+  4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp2",   &user_data.temp[2],
+  4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp3",   &user_data.temp[3],
+  4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp4",   &user_data.temp[4],
+  4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp5",   &user_data.temp[5],
+  4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp6",   &user_data.temp[6],
+  4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp7",   &user_data.temp[7],
   0
 };
+
+#endif
 
 /********************************************************************\
 
@@ -106,7 +148,7 @@ unsigned char i;
   PRT1CF = 0xFF;  // P1 on push-pull
 
   if (init)
-    for (i=0 ; i<8 ; i++)
+    for (i=0 ; i<N_CHANNEL ; i++)
       user_data.power[i] = 0;
 }
 
@@ -139,7 +181,7 @@ unsigned char user_func(unsigned char *data_in,
   return 2;
 }
 
-/*---- User loop function ------------------------------------------*/
+/*------------------------------------------------------------------*/
 
 void adc_read(channel, float *d)
 {
@@ -176,13 +218,15 @@ float t;
   ENABLE_INTERRUPTS;
 }
 
+/*------------------------------------------------------------------*/
+
 void set_power(void)
 {
 unsigned char i;
 static unsigned long on_time;
 
   /* turn output off after on time expired */
-  for (i=0 ; i<8 ; i++)
+  for (i=0 ; i<N_CHANNEL ; i++)
     if ((time() - on_time) >= user_data.power[i])
       P1 &= ~(1<<i);
 
@@ -190,11 +234,53 @@ static unsigned long on_time;
   if (time() - on_time >= 100)
     {
     on_time = time();
-    for (i=0 ; i<8 ; i++)
+    for (i=0 ; i<N_CHANNEL ; i++)
       if (user_data.power[i] > 0)
         P1 |= (1<<i);
     }
 }
+
+/*------------------------------------------------------------------*/
+
+#ifdef CONTROL_4
+
+void do_control(void)
+{
+unsigned char i;
+float p;
+static unsigned long t;
+
+  /* once every minute */
+  if (time() > t + 100*60) //##
+    {
+    t = time();
+
+    for (i=0 ; i<N_CHANNEL ; i++)
+      {
+      /* integral part */
+      user_data.p_int[i] += (user_data.demand[i] - user_data.temp[i]) * 0.01; 
+      if (user_data.p_int[i] < 0)
+        user_data.p_int[i] = 0;
+      if (user_data.p_int[i] > 100)
+        user_data.p_int[i] = 100;
+      p = user_data.p_int[i];
+
+      /* proportional part */
+      p += (user_data.demand[i] - user_data.temp[i]) * 1;
+
+      if (p < 0)
+        p = 0;
+      if (p > 100)
+        p = 100;
+
+      user_data.power[i] = (char) (p + 0.5);
+      }
+    }
+}
+
+#endif
+
+/*------------------------------------------------------------------*/
 
 void user_loop(void)
 {
@@ -202,8 +288,13 @@ static unsigned char i;
 static unsigned long last_display;
 
   /* convert one channel at a time */
-  i = (i+1) % 8;
+  i = (i+1) % N_CHANNEL;
   adc_read(i, &user_data.temp[i]);
+
+#ifdef CONTROL_4
+  /* do regulation */
+  do_control();
+#endif
 
   /* set output according to power */
   set_power();
