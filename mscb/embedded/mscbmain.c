@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol main program
 
   $Log$
+  Revision 1.49  2004/06/09 12:27:12  midas
+  Made output buffer smaller
+
   Revision 1.48  2004/06/09 11:25:01  midas
   Changed blinking
 
@@ -202,7 +205,7 @@ void flash_upgrade(void);
 #ifdef CPU_C8051F020
 unsigned char xdata in_buf[300], out_buf[300];
 #else
-unsigned char idata in_buf[20], out_buf[20];
+unsigned char idata in_buf[20], out_buf[8];
 #endif
 
 unsigned char idata i_in, last_i_in, final_i_in, n_out, i_out, cmd_len;
@@ -792,33 +795,46 @@ void interprete(void)
          if (in_buf[1] < n_variables) {
             n = variables[in_buf[1]].width;     // number of bytes to return
 
-
             if (variables[in_buf[1]].flags & MSCBF_DATALESS) {
                n = user_read(in_buf[1]);        // for dataless variables, user routine returns bytes
                out_buf[0] = CMD_ACK + n;        // and places data directly in out_buf
+
+               out_buf[1 + n] = crc8(out_buf, 1 + n);      // generate CRC code
+   
+               /* send result */
+               n_out = 2 + n;
+               RS485_ENABLE = 1;
+               SBUF0 = out_buf[0];
+
             } else {
+
                user_read(in_buf[1]);
 
+               ES0 = 0;            // temporarily disable serial interrupt
+               crc = 0;
+               RS485_ENABLE = 1;
+   
                if (n > 6) {
                   /* variable length buffer */
-                  out_buf[0] = CMD_ACK + 7;
-                  out_buf[1] = n;
+                  send_byte(CMD_ACK + 7, &crc);       // send acknowledge, variable data length
+                  send_byte(n, &crc); // send data length
+
                   for (i = 0; i < n; i++)           // copy user data
-                     out_buf[2 + i] = ((char *) variables[in_buf[1]].ud)[i+_var_size*_cur_sub_addr];
+                     send_byte(((char *) variables[in_buf[1]].ud)[i+_var_size*_cur_sub_addr], &crc);
                   n++;
                } else {
-                  out_buf[0] = CMD_ACK + n;
+
+                  send_byte(CMD_ACK + n, &crc);       // send acknowledge
+               
                   for (i = 0; i < n; i++)           // copy user data
-                     out_buf[1 + i] = ((char *) variables[in_buf[1]].ud)[i+_var_size*_cur_sub_addr];      
+                     send_byte(((char *) variables[in_buf[1]].ud)[i+_var_size*_cur_sub_addr], &crc);      
                }
+
+               send_byte(crc, NULL);       // send CRC code
+   
+               RS485_ENABLE = 0;
+               ES0 = 1;            // re-enable serial interrupts
             }
-
-            out_buf[1 + n] = crc8(out_buf, 1 + n);      // generate CRC code
-
-            /* send result */
-            n_out = 2 + n;
-            RS485_ENABLE = 1;
-            SBUF0 = out_buf[0];
          }
       } else if (in_buf[0] == CMD_READ + 2) {   // variable range
 
