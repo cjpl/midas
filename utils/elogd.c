@@ -6,6 +6,10 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.48  2001/10/19 14:36:59  midas
+  Added "Display email recipients", "suppress default = 2", moved SMTP host to
+  [global]
+
   Revision 1.47  2001/10/19 11:34:07  midas
   Added "Welcome title" for logbook selection page
 
@@ -2900,8 +2904,13 @@ BOOL   allow_edit;
 
   rsprintf("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\n");
 
-  if (getcfg(logbook, "Suppress default", str) && atoi(str) == 1)
-    rsprintf("<input type=checkbox checked name=suppress value=1>Suppress Email notification</tr>\n");
+  if (getcfg(logbook, "Suppress default", str))
+    {
+    if (atoi(str) == 0)
+      rsprintf("<input type=checkbox name=suppress value=1>Suppress Email notification</tr>\n");
+    else if (atoi(str) == 1)
+      rsprintf("<input type=checkbox checked name=suppress value=1>Suppress Email notification</tr>\n");
+    }
   else
     rsprintf("<input type=checkbox name=suppress value=1>Suppress Email notification</tr>\n");
 
@@ -4025,10 +4034,10 @@ int    i, j, n, index, n_attr, n_mail, n_subj, suppress, status;
         if (verbose)
           printf("\n%s to %s\n\n", str, mail_list);
     
-        if (!getcfg(logbook, "SMTP host", smtp_host))
-          if (!getcfg(logbook, "SMTP host", smtp_host))
+        if (!getcfg("global", "SMTP host", smtp_host))
+          if (!getcfg("global", "SMTP host", smtp_host))
             {
-            show_error("No SMTP host defined in configuration file");
+            show_error("No SMTP host defined in [global] section of configuration file");
             return;
             }
     
@@ -4069,11 +4078,15 @@ int    i, j, n, index, n_attr, n_mail, n_subj, suppress, status;
 
           sendmail(smtp_host, mail_from, mail_to, subject, mail_text);
 
-          if (mail_param[0] == 0)
-            strcpy(mail_param, "?");
-          else
-            strcat(mail_param, "&");
-          sprintf(mail_param+strlen(mail_param), "mail%d=%s", n_mail++, mail_to);
+          if (!getcfg(logbook, "Display email recipients", str) ||
+               atoi(str) == 1)
+            {
+            if (mail_param[0] == 0)
+              strcpy(mail_param, "?");
+            else
+              strcat(mail_param, "&");
+            sprintf(mail_param+strlen(mail_param), "mail%d=%s", n_mail++, mail_to);
+            }
           }
         }
       }
