@@ -10,6 +10,9 @@
   date        by    modification
   ---------   ---   ------------------------------------------------
 *  $Log$
+*  Revision 1.8  1999/06/23 09:59:22  midas
+*  Added D8_BKTYPE
+*
 *  Revision 1.7  1999/01/19 19:56:59  pierre
 *  - Fix prototype
 *  - Added YB_UNKNOWN_FORMAT
@@ -124,6 +127,7 @@ extern chaos;
 #define A1_BKTYPE       2
 #define I4_BKTYPE       3
 #define F4_BKTYPE       4
+#define D8_BKTYPE       5
 #define I1_BKTYPE       8
 #define MAX_BKTYPE      I1_BKTYPE+1
 
