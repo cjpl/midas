@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.40  1999/06/28 12:01:21  midas
+  Added hs_fdump
+
   Revision 1.39  1999/06/25 12:01:54  midas
   Added bk_delete function
 
@@ -13444,6 +13447,80 @@ struct tm    *tms;
 }
 
 /*------------------------------------------------------------------*/
+
+INT hs_fdump(char *file_name, DWORD id)
+/********************************************************************\
+
+  Routine: hs_fdump
+
+  Purpose: Display history for a given history file
+
+  Input:
+    char   *file_name       Name of file to dump
+
+  Output:
+    <screen output>
+
+  Function value:
+    HS_SUCCESS              Successful completion
+    HS_FILE_ERROR           Cannot open history file
+
+\********************************************************************/
+{
+int          fh;
+INT          n;
+HIST_RECORD  rec;
+char         event_name[NAME_LENGTH];
+char         str[80];
+
+  /* open file, add O_BINARY flag for Windows NT */
+  fh = open(file_name, O_RDONLY | O_BINARY, 0644);
+  if (fh < 0)
+    {
+    cm_msg(MERROR, "hs_fdump", "cannot open file %s", file_name);
+    return HS_FILE_ERROR;
+    }
+
+  /* loop over file records in .hst file */
+  do
+    {
+    n = read(fh, (char *)&rec, sizeof(rec));
+    if (n < sizeof(rec))
+      break;
+
+    /* check if record type is definition */
+    if (rec.record_type == RT_DEF)
+      {
+      /* read name */
+      read(fh, event_name, sizeof(event_name));
+
+      if (rec.event_id == id || id == 0)
+        printf("Event definition %s, ID %d\n", event_name, rec.event_id);
+
+      /* skip tags */
+      lseek(fh, rec.data_size, SEEK_CUR);
+      }
+    else
+      {
+      /* print data record */
+      strcpy(str, ctime((const time_t *)&rec.time)+4);
+      str[15] = 0;
+      if (rec.event_id == id || id == 0)
+        printf("ID %d, %s, size %d\n", rec.event_id, str, rec.data_size);
+
+      /* skip data */
+      lseek(fh, rec.data_size, SEEK_CUR);
+      }
+
+    } while (TRUE);
+
+  close(fh);
+
+  return HS_SUCCESS;
+}
+
+/*------------------------------------------------------------------*/
+
 /********************************************************************\
 *                                                                    *
 *                 Event buffer functions                             *

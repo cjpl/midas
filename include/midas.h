@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.28  1999/06/28 12:01:33  midas
+  Added hs_fdump
+
   Revision 1.27  1999/06/25 12:02:12  midas
   Added bk_delete function
 
@@ -1308,6 +1311,7 @@ INT EXPRT hs_read(DWORD event_id, DWORD start_time, DWORD end_time, DWORD interv
             void *data_buffer, DWORD *dbsize, DWORD *type, DWORD *n);
 INT EXPRT hs_dump(DWORD event_id, DWORD start_time, DWORD end_time,
             DWORD interval);
+INT EXPRT hs_fdump(char *file_name, DWORD id);
 
 #ifdef __cplusplus
 }
