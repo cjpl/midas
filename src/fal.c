@@ -7,6 +7,9 @@
                 Most routines are from mfe.c mana.c and mlogger.c.
 
   $Log$
+  Revision 1.33  2003/02/20 13:46:12  midas
+  Fixed bug with RO_ODB
+
   Revision 1.32  2003/02/20 13:10:45  midas
   Fixed wrong channel records
 
@@ -3685,25 +3688,33 @@ EVENT_DEF       *event_def;
 #ifndef MANA_LITE
       write_event_hbook(pevent, par);
 #endif
-      /* put event in ODB once every second */
-      actual_time = ss_millitime();
-      for (i=0 ; i<50 ; i++)
+
+      for (i=0 ; equipment[i].name[0] ; i++)
+        if (equipment[i].info.event_id == pevent->event_id)
+          break;
+
+      if ((equipment[i].info.read_on & RO_ODB) || equipment[i].info.history)
         {
-        if (last_time_event[i].event_id == pevent->event_id)
+        /* put event in ODB once every second */
+        actual_time = ss_millitime();
+        for (i=0 ; i<50 ; i++)
           {
-          if (actual_time - last_time_event[i].last_time > 1000)
+          if (last_time_event[i].event_id == pevent->event_id)
             {
+            if (actual_time - last_time_event[i].last_time > 1000)
+              {
+              last_time_event[i].last_time = actual_time;
+              write_event_odb(pevent, par);
+              }
+            break;
+            }
+          if (last_time_event[i].event_id == 0)
+            {
+            last_time_event[i].event_id = pevent->event_id;
             last_time_event[i].last_time = actual_time;
             write_event_odb(pevent, par);
+            break;
             }
-          break;
-          }
-        if (last_time_event[i].event_id == 0)
-          {
-          last_time_event[i].event_id = pevent->event_id;
-          last_time_event[i].last_time = actual_time;
-          write_event_odb(pevent, par);
-          break;
           }
         }
 
