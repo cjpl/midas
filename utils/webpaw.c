@@ -6,6 +6,9 @@
   Contents:     Web server for remote PAW display
 
   $Log$
+  Revision 1.4  2000/05/15 12:44:52  midas
+  Switched to new webpaw.cfg format, added logo display
+
   Revision 1.3  2000/05/12 12:59:48  midas
   Adjusted WebPAW home directory
 
@@ -22,6 +25,7 @@
 #include <fcntl.h>
 #include <stdarg.h>
 #include <string.h>
+#include <stdlib.h>
 
 #ifdef _MSC_VER
 #include <windows.h>
@@ -41,15 +45,21 @@
 #define VALUE_SIZE         256
 #define PARAM_LENGTH       256
 
+#define SUCCESS              1
+#define SHUTDOWN             2
+#define ERR_TIMEOUT          3
+#define ERR_PIPE             4
+
 char return_buffer[WEB_BUFFER_SIZE];
 int  return_length;
 char webpaw_url[256];
+int  _debug;
 
 char _param[MAX_PARAM][PARAM_LENGTH];
 char _value[MAX_PARAM][VALUE_SIZE];
 char host_name[256];
 char remote_host_name[256];
-int  _sock, _quit;
+int  _sock=0, _quit;
 
 #ifndef O_BINARY
 #define O_BINARY 0
@@ -101,24 +111,193 @@ int equal_ustring(char *str1, char *str2)
   return 1;
 }
 
-void trim(char *str)
+void format(char *str, char *result)
 {
-char *p1, *p2;
+int  i;
+char *p;
 
-  if (!str || !str[0])
-    return;
+  p = result;
+  for (i=0 ; i<(int) strlen(str) ; i++)
+    {
+    switch (str[i])
+      {
+      case '\n': sprintf(p, "<br>\n"); break;
+      case '<': sprintf(p, "&lt;"); break;
+      case '>': sprintf(p, "&gt;"); break;
+      case '&': sprintf(p, "&amp;"); break;
+      case '\"': sprintf(p, "&quot;"); break;
+      default: *p = str[i]; *(p+1) = 0;
+      }
+    p += strlen(p);
+    }
+  *p = 0;
+}
 
-  p1 = p2 = str;
-  while (*p1 == ' ')
-    p1++;
+/*------------------------------------------------------------------*/
 
-  while (*p1)
-    *p2++ = *p1++;
-  *p2 = 0;
+/* Parameter extraction from webpaw.cfg similar to win.ini */
 
-  p2 -= 1;
-  while (p2 > str && (*p2 == ' ' || *p2 == '\n'))
-    *p2-- = 0;
+char *cfgbuffer;
+
+int getcfg(char *group, char *param, char *value)
+{
+char str[256], *p, *pstr;
+int  length;
+int  fh;
+
+  /* read configuration file on init */
+  if (!cfgbuffer)
+    {
+    if (cfgbuffer)
+      free(cfgbuffer);
+
+    fh = open("webpaw.cfg", O_RDONLY);
+    if (fh < 0)
+      return 0;
+    length = lseek(fh, 0, SEEK_END);
+    lseek(fh, 0, SEEK_SET);
+    cfgbuffer = malloc(length);
+    if (cfgbuffer == NULL)
+      {
+      close(fh);
+      return 0;
+      }
+    read(fh, cfgbuffer, length);
+    close(fh);
+    }
+
+  /* search group */
+  p = cfgbuffer;
+  do
+    {
+    if (*p == '[')
+      {
+      p++;
+      pstr = str;
+      while (*p && *p != ']' && *p != '\n')
+        *pstr++ = *p++;
+      *pstr = 0;
+      if (equal_ustring(str, group))
+        {
+        /* search parameter */
+        p = strchr(p, '\n');
+        if (p)
+          p++;
+        while (p && *p && *p != '[')
+          {
+          pstr = str;
+          while (*p && *p != '=' && *p != '\n')
+            *pstr++ = *p++;
+          *pstr-- = 0;
+          while (pstr > str && (*pstr == ' ' || *pstr == '='))
+            *pstr-- = 0;
+
+          if (equal_ustring(str, param))
+            {
+            if (*p == '=')
+              {
+              p++;
+              while (*p == ' ')
+                p++;
+              pstr = str;
+              while (*p && *p != '\n')
+                *pstr++ = *p++;
+              *pstr-- = 0;
+              while (*pstr == ' ')
+                *pstr-- = 0;
+
+              strcpy(value, str);
+              return 1;
+              }
+            }
+
+          if (p)
+            p = strchr(p, '\n');
+          if (p)
+            p++;
+          }
+        }
+      }
+    if (p)
+      p = strchr(p, '\n');
+    if (p)
+      p++;
+    } while (p);
+
+  return 0;
+}
+
+int enumcfg(char *group, char *param, char *value, int index)
+{
+char str[256], *p, *pstr;
+int  i;
+
+  /* open configuration file */
+  if (!cfgbuffer)
+    getcfg("dummy", "dummy", str);
+
+  /* search group */
+  p = cfgbuffer;
+  do
+    {
+    if (*p == '[')
+      {
+      p++;
+      pstr = str;
+      while (*p && *p != ']' && *p != '\n')
+        *pstr++ = *p++;
+      *pstr = 0;
+      if (equal_ustring(str, group))
+        {
+        /* enumerate parameters */
+        i = 0;
+        p = strchr(p, '\n');
+        if (p)
+          p++;
+        while (p && *p && *p != '[')
+          {
+          pstr = str;
+          while (*p && *p != '=' && *p != '\n')
+            *pstr++ = *p++;
+          *pstr-- = 0;
+          while (pstr > str && (*pstr == ' ' || *pstr == '='))
+            *pstr-- = 0;
+
+          if (i == index)
+            {
+            strcpy(param, str);
+            if (*p == '=')
+              {
+              p++;
+              while (*p == ' ')
+                p++;
+              pstr = str;
+              while (*p && *p != '\n')
+                *pstr++ = *p++;
+              *pstr-- = 0;
+              while (*pstr == ' ')
+                *pstr-- = 0;
+
+              strcpy(value, str);
+              return 1;
+              }
+            }
+
+          if (p)
+            p = strchr(p, '\n');
+          if (p)
+            p++;
+          i++;
+          }
+        }
+      }
+    if (p)
+      p = strchr(p, '\n');
+    if (p)
+      p++;
+    } while (p);
+
+  return 0;
 }
 
 /*------------------------------------------------------------------*/
@@ -279,16 +458,42 @@ int    i;
       if (i <= 0)
         break;
       }
+    else
+      {
+      if (result);
+        strcpy(result, str);
+      if (_debug)
+        {
+        printf(str);
+        fflush(stdout);
+        }
+      return ERR_TIMEOUT;
+      }
+  
+    /*
+    if (strlen(str) >= strlen(delim))
+      printf("compare1:%s\ncompare2:%s\ncompare3:%s\n", delim, str, str+strlen(str)-strlen(delim));
+    */
 
-    if (strstr(str, delim))
+    if (strlen(str) >= strlen(delim) &&
+        strcmp(str+strlen(str)-strlen(delim), delim) == 0)
       break;
+
     } while (1);
 
-  strcpy(result, str);
+  if (result)
+    strcpy(result, str);
+
+  if (_debug)
+    {
+    printf(str);
+    fflush(stdout);
+    }
 
   if (i <= 0)
-    return 0;
-  return 1;
+    return ERR_PIPE;
+
+  return SUCCESS;
 }
 
 
@@ -316,14 +521,18 @@ int    status;
       {
       /* wait for workstation question */
       memset(str, 0, sizeof(str));
-      read_paw(pipe, "<CR>=1", str);
+      status = read_paw(pipe, "<CR>=1 : ", str);
+      if (status != SUCCESS)
+        return status;
       
       /* select default workstation */
       sprintf(str, "1\n");
       write(pipe, str, 2);
 
       /* wait for prompt */
-      read_paw(pipe, "PAW >", str);
+      status = read_paw(pipe, "PAW > ", str);
+      if (status != SUCCESS)
+        return status;
       }
     }
 
@@ -332,35 +541,51 @@ int    status;
     /* parent */
     if (equal_ustring(kumac, "quit"))
       {
+      strcpy(str, kumac);
+      strcat(str, "\n");
+      if (_debug)
+        printf(str);
       write(pipe, str, strlen(str));
       close(pipe);
-      return 2;
+      return SHUTDOWN;
       }
 
-    if (kumac[0])
+    if (equal_ustring(kumac, "restart"))
       {
-      strcpy(str, kumac);
-      strcat(str, "; pict/print webpaw.gif\n");
-      }
-    else
       strcpy(str, "pict/print webpaw.gif\n");
+
+      write(pipe, str, strlen(str));
+
+      status = read_paw(pipe, "PAW > ", str);
+      return status;
+      }
+
+    /* submit PAW command */
+    strcpy(str, kumac);
+    strcat(str, "\n");
 
     write(pipe, str, strlen(str));
 
-    status = read_paw(pipe, "PAW >", str);
-    if (status == 0)
-      {
-      /* restart PAW */
-      pid = 0;
-      close(pipe);
-      return submit_paw(kumac, result);
-      }
+    /* wait for prompt */
+    status = read_paw(pipe, "PAW > ", result);
+    if (status != SUCCESS)
+      return status;
 
-    if (strstr(str, "PAW >"))
+    /* send print command */
+    strcpy(str, "pict/print webpaw.gif\n");
+    write(pipe, str, strlen(str));
+
+    /* wait for prompt */
+    status = read_paw(pipe, "PAW > ", str);
+    if (status != SUCCESS)
+      return status;
+
+    if (strstr(str, "PAW > "))
       {
-      *strstr(str, "PAW >") = 0;
-      strcpy(result, str);
-      return 1;
+      *strstr(str, "PAW > ") = 0;
+      if (result)
+        strcpy(result, str);
+      return SUCCESS;
       }
     else
       return 0;
@@ -368,14 +593,15 @@ int    status;
   else
     {
     /* close inherited network socket */
-    closesocket(_sock);
+    if (_sock)
+      closesocket(_sock);
 
     /* start PAW */
     execlp("paw", "paw", NULL);
     }
 
 #endif
-  return 1;
+  return SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
@@ -395,10 +621,9 @@ void interprete(char *path)
 
 \********************************************************************/
 {
-char   str[10000], *group_name, *display_name, *kumac_name;
-char   cur_group[256], last_group_name[256];
-FILE   *f;
-int    fh, length, status;
+char   str[10000], str2[256], group_name[256], display_name[256], kumac_name[256];
+char   cur_group[256];
+int    fh, i, j, length, status, height;
 
   if (!path[0] && !getparam("submit") && !getparam("cmd"))
     {
@@ -410,9 +635,14 @@ int    fh, length, status;
     rsprintf("<html>\r\n");
     rsprintf("<head><title>WebPAW on %s</title></head>\r\n\r\n", host_name);
 
+    if (getcfg("Global", "Logo height", str))
+      height = atoi(str);
+    else
+      height=25;
+
     rsprintf("<frameset cols=\"300,*\">\r\n");
     rsprintf("  <frame name=kumacs src=kumacs.html marginwidth=1 marginheight=1 scrollling=auto>\r\n");
-    rsprintf("  <frameset rows=\"25,*\" frameborder=no>\r\n");
+    rsprintf("  <frameset rows=\"%d,*\" frameborder=no>\r\n", height);
     rsprintf("    <frame name=banner src=banner.html marginwidth=10 marginheight=1 scrolling=no>\r\n");
     rsprintf("    <frame name=contents src=contents.html marginwidth=10 marginheight=5 scrolling=auto>\r\n");
     rsprintf("  </frameset>\r\n");
@@ -431,16 +661,47 @@ int    fh, length, status;
   /* display banner */
   if (equal_ustring(path, "banner.html"))
     {
-    rsprintf("HTTP/1.0 200 Document follows\r\n");
-    rsprintf("Server: WebPAW\r\n");
-    rsprintf("Content-Type: text/html\r\n\r\n");
-    rsprintf("<html><body>\r\n");
+    if (getcfg("Global", "Logo", str))
+      {
+      fh = open(str, O_RDONLY | O_BINARY);
+      if (fh > 0)
+        {
+        length = lseek(fh, 0, SEEK_END);
+        lseek(fh, 0, SEEK_SET);
 
-    /* title row */
-    rsprintf("<b><a target=_top href=\"http://midas.psi.ch/webpaw/\">WebPAW</a> on %s</b>\r\n", 
-              host_name);
+        rsprintf("HTTP/1.0 200 Document follows\r\n");
+        rsprintf("Server: WebPAW\r\n");
+        rsprintf("Accept-Ranges: bytes\r\n");
+        rsprintf("Content-Type: image/gif\r\n");
+        rsprintf("Content-Length: %d\r\n\r\n", length);
+
+        /* return if file too big */
+        if (length > (int) (sizeof(return_buffer) - strlen(return_buffer)))
+          {
+          printf("return buffer too small\n");
+          close(fh);
+          return;
+          }
+
+        return_length = strlen(return_buffer)+length;
+        read(fh, return_buffer+strlen(return_buffer), length);
+
+        close(fh);
+        }
+      }
+    else
+      {
+      rsprintf("HTTP/1.0 200 Document follows\r\n");
+      rsprintf("Server: WebPAW\r\n");
+      rsprintf("Content-Type: text/html\r\n\r\n");
+      rsprintf("<html><body>\r\n");
+
+      /* title row */
+      rsprintf("<b><a target=_top href=\"http://midas.psi.ch/webpaw/\">WebPAW</a> on %s</b>\r\n", 
+                host_name);
     
-    rsprintf("</body></html>\r\n");
+      rsprintf("</body></html>\r\n");
+      }
     return;
     }
 
@@ -455,16 +716,20 @@ int    fh, length, status;
     rsprintf("<form method=GET action=\"%s\" target=contents>\r\n", webpaw_url);
 
     /* display input field */
-    rsprintf("<table border=0 cellpadding=1>\r\n");
-    rsprintf("<tr><td colspan=2 align=center><input type=text name=cmd size=30 maxlength=256></tr>\r\n");
-    rsprintf("<tr><td align=center><input type=submit name=submit value=\" Execute! \">\r\n");
-    rsprintf("<td align=center><input type=submit name=restart value=\"Restart PAW!\">\r\n");
-    rsprintf("</tr></table><hr>\r\n");
-
-    f = fopen("webpaw.cfg", "rt");
-    if (f == NULL)
+    status = getcfg("Global", "Allow submit", str);
+    if (status == 0 || str[0] == 'y')
       {
-      rsprintf("</body></html>\r\n");
+      rsprintf("<center><table border=0 cellpadding=1>\r\n");
+      rsprintf("<tr><td colspan=2 align=center><input type=text name=cmd size=30 maxlength=256></tr>\r\n");
+      rsprintf("<tr><td align=center><input type=submit name=submit value=\" Execute! \">\r\n");
+      rsprintf("<td align=center><input type=submit name=restart value=\"Restart PAW!\">\r\n");
+      rsprintf("</tr></table><hr>\r\n");
+      rsprintf("<h3>Macros</h3></center>\r\n");
+      }
+
+    if (!enumcfg("Kumacs", display_name, kumac_name, 0))
+      {
+      rsprintf("No macros defined</body></html>\r\n");
       return;
       }
 
@@ -477,64 +742,52 @@ int    fh, length, status;
     else
       cur_group[0] = 0;
 
-    //rsprintf("<ul>\r\n");
-    last_group_name[0] = 0;
-    do
+    for (i=0 ; ; i++)
       {
-      str[0] = 0;
-      fgets(str, sizeof(str), f);
-      if (str[0] && str[0] != '#' && strchr(str, '&'))
+      if (!enumcfg("Kumacs", display_name, kumac_name, i))
+        break;
+
+      if (strncmp(display_name, "Group", 5) == 0)
         {
-        group_name = strtok(str, "&");
-        display_name = strtok(NULL, "&");
-        kumac_name = strtok(NULL, "&");
-        trim(group_name);
-        trim(display_name);
-        trim(kumac_name);
+        /* whole group found */
+        strcpy(group_name, kumac_name);
+        format(group_name, str);
+        strcpy(str2, group_name);
+        urlEncode(str2);
 
-        if (kumac_name == NULL)
+        /* display group */
+        rsprintf("<li><b><a href=\"/%s/kumacs.html\" target=kumacs>%s</a></b></li>\r\n", 
+                  str2, str);
+
+        if (equal_ustring(group_name, cur_group))
           {
-          kumac_name = display_name;
-          display_name = group_name;
-          group_name = NULL;
-          }
+          rsprintf("<ul>\r\n");
 
-        urlEncode(kumac_name);
-
-        if (group_name == NULL)
-          rsprintf("<li><a href=\"%s.gif\" target=contents>%s</a></li>\r\n", 
-                    kumac_name, display_name);
-        else
-          {
-          if (!equal_ustring(group_name, last_group_name))
+          for (j=0 ; ; j++)
             {
-            /* finsish previous group */
-            if (equal_ustring(last_group_name, cur_group) && last_group_name[0])
-              rsprintf("</ul>\r\n");
-
-            rsprintf("<li><a href=\"/%s/kumacs.html\" target=kumacs>%s</a></li>\r\n", 
-                      group_name, group_name);
-            strcpy(last_group_name, group_name);
-
-            if (equal_ustring(group_name, cur_group))
-              {
-              rsprintf("<ul>\r\n");
-              }
-            }
-          if (equal_ustring(group_name, cur_group))
-            {
+            if (!enumcfg(group_name, display_name, kumac_name, j))
+              break;
+    
+            urlEncode(kumac_name);
+            format(display_name, str);
             rsprintf("<li><a href=\"/%s.gif\" target=contents>%s</a></li>\r\n", 
-                      kumac_name, display_name);
+                      kumac_name, str);
             }
+
+          rsprintf("</ul>\r\n");
           }
         }
-      } while (str[0]);
+      else
+        {
+        /* single kumac found */
+        urlEncode(kumac_name);
+        format(display_name, str);
+        rsprintf("<li><a href=\"%s.gif\" target=contents>%s</a></li>\r\n", 
+                  kumac_name, str);
+        }
 
-    if (equal_ustring(last_group_name, cur_group))
-      rsprintf("</ul>\r\n");
+      }
 
-    fclose(f);
-    //rsprintf("</ul>\r\n");
     rsprintf("</body></html>\r\n");
     return;
     }
@@ -560,24 +813,24 @@ int    fh, length, status;
 
 #ifndef _MSC_VER
     status = submit_paw(str, str);
-    if (status == 0)
+    if (status == SHUTDOWN)
       {
       rsprintf("HTTP/1.0 200 Document follows\r\n");
       rsprintf("Server: WebPAW\r\n");
       rsprintf("Content-Type: text/html\r\n\r\n");
-      rsprintf("<html><body>Error talking to PAW, return string : <i>%s</i>\r\n", str);
-      rsprintf("</body></html>\r\n");
-      }
-    else if (status == 2)
-      {
-      rsprintf("HTTP/1.0 200 Document follows\r\n");
-      rsprintf("Server: WebPAW\r\n");
-      rsprintf("Content-Type: text/html\r\n\r\n");
-      rsprintf("<html><body>WebPAW shut down successfully\r\n");
+      rsprintf("<html><body><h1>WebPAW shut down successfully</h1>\r\n");
       rsprintf("</body></html>\r\n");
 
       _quit = 1;
       return;
+      }
+    else if (status != SUCCESS)
+      {
+      rsprintf("HTTP/1.0 200 Document follows\r\n");
+      rsprintf("Server: WebPAW\r\n");
+      rsprintf("Content-Type: text/html\r\n\r\n");
+      rsprintf("<html><body><h1>Error talking to PAW, return string :</h1>\r\n<pre>%s</pre>\r\n", str);
+      rsprintf("</body></html>\r\n");
       }
     else
 #endif
@@ -663,6 +916,19 @@ char *p, *pitem;
 
 /*------------------------------------------------------------------*/
 
+void sighup(int sig)
+{
+  /* reread configuration file */
+  if (_debug)
+    printf("Reread configuration file.\n");
+
+  if (cfgbuffer)
+    free(cfgbuffer);
+  cfgbuffer = 0;
+}
+
+/*------------------------------------------------------------------*/
+
 char net_buffer[WEB_BUFFER_SIZE];
 
 void server_loop(int tcp_port, int daemon)
@@ -685,6 +951,10 @@ struct timeval       timeout;
   if ( WSAStartup(MAKEWORD(1,1), &WSAData) != 0)
     return;
   }
+#else
+
+  /* set signal handler for HUP signal */
+  signal(SIGHUP, sighup);
 #endif
 
   /* create a new socket */
@@ -746,6 +1016,14 @@ struct timeval       timeout;
   setuid(getuid());
   setgid(getgid());
 
+  /* start paw */
+  status = submit_paw("restart", NULL);
+  if (status != 1)
+    {
+    printf("Error: cannot start PAW.\n");
+    return;
+    }
+
   if (daemon)
     {
     int i, fd, pid;
@@ -793,7 +1071,9 @@ struct timeval       timeout;
   else
     sprintf(webpaw_url, "http://%s:%d/", host_name, tcp_port);
 
-  printf("Server listening...\n");
+  if (!_debug)
+    printf("Server listening...\n");
+
   do
     {
     FD_ZERO(&readfds);
@@ -928,10 +1208,13 @@ int i;
 int tcp_port = 80, daemon = 0;
 
   /* parse command line parameters */
+  _debug = 0;
   for (i=1 ; i<argc ; i++)
     {
     if (argv[i][0] == '-' && argv[i][1] == 'D')
       daemon = 1;
+    if (argv[i][0] == '-' && argv[i][1] == 'd')
+      _debug = 1;
     else if (argv[i][0] == '-')
       {
       if (i+1 >= argc || argv[i+1][0] == '-')
@@ -941,13 +1224,20 @@ int tcp_port = 80, daemon = 0;
       else
         {
 usage:
-        printf("usage: %s [-p port] [-D]\n\n", argv[0]);
+        printf("usage: %s [-p port] [-d] [-D]\n\n", argv[0]);
+        printf("       -d display debug message\n");
         printf("       -D become a daemon\n");
-        return 0;
+        return 1;
         }
       }
     }
   
+  if (_debug && daemon)
+    {
+    printf("Error: -d and -D flags cannot be combined.\n");
+    return 1;
+    }
+
   server_loop(tcp_port, daemon);
 
   return 0;
