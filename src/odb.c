@@ -6,6 +6,9 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.107  2005/03/24 21:00:18  ritt
+  Added XML functions
+
   Revision 1.106  2005/03/24 09:24:05  ritt
   Implemented XML buffer functions
 
@@ -5253,7 +5256,10 @@ INT db_load(HNDLE hDB, HNDLE hKeyRoot, char *filename, BOOL bRemote)
 
    buffer[n] = 0;
 
-   status = db_paste(hDB, hKeyRoot, buffer);
+   if (strncmp(buffer, "<?xml version=\"1.0\"", 19) == 0)
+      status = db_paste_xml(hDB, hKeyRoot, buffer);
+   else
+      status = db_paste(hDB, hKeyRoot, buffer);
 
    close(hfile);
    free(buffer);
@@ -5824,6 +5830,139 @@ INT db_paste(HNDLE hDB, HNDLE hKeyRoot, char *buffer)
 }
 
 /********************************************************************/
+/* 
+  Only internally used by db_paste_xml                             
+*/
+int db_paste_node(HNDLE hDB, HNDLE hKeyRoot, PMXML_NODE node)
+{
+   char type[256], data[256];
+   int i, status, size, tid, num_values;
+   HNDLE hKey;
+   PMXML_NODE child;
+
+   if (strcmp(mxml_get_name(node), "odb") == 0) {
+      for (i=0 ; i<mxml_get_number_of_children(node) ; i++) {
+         status = db_paste_node(hDB, hKeyRoot, mxml_subnode(node, i));
+         if (status != DB_SUCCESS)
+            return status;
+      }
+   } else if (strcmp(mxml_get_name(node), "dir") == 0) {
+      status = db_find_link(hDB, hKeyRoot, mxml_get_attribute(node, "name"), &hKey);
+      if (status == DB_NO_KEY) {
+         db_create_key(hDB, hKeyRoot, mxml_get_attribute(node, "name"), TID_KEY);
+         status = db_find_link(hDB, hKeyRoot, mxml_get_attribute(node, "name"), &hKey);
+         if (status != DB_SUCCESS) {
+            cm_msg(MERROR, "db_paste_node", 
+               "cannot create key \"%s\" in ODB", mxml_get_attribute(node, "name"));
+            return status;
+         }
+      }
+
+      db_get_path(hDB, hKey, data, sizeof(data));
+      if (strncmp(data, "/System/Clients", 15) != 0) {
+         for (i=0 ; i<mxml_get_number_of_children(node) ; i++) {
+            status = db_paste_node(hDB, hKey, mxml_subnode(node, i));
+            if (status != DB_SUCCESS)
+               return status;
+         }
+      }
+   } else if (strcmp(mxml_get_name(node), "key") == 0 || 
+              strcmp(mxml_get_name(node), "keyarray") == 0) {
+
+      if (strcmp(mxml_get_name(node), "keyarray") == 0)
+         num_values = atoi(mxml_get_attribute(node, "num_values"));
+      else
+         num_values = 0;
+
+      if (mxml_get_attribute(node, "type") == NULL) {
+         cm_msg(MERROR, "db_paste_node", 
+            "found key \"%s\" with no type in XML data", mxml_get_name(node));
+         return DB_TYPE_MISMATCH;
+      }
+
+      strcpy(type, mxml_get_attribute(node, "type"));
+      for (tid = 0; tid < TID_LAST; tid++)
+         if (strcmp(tid_name[tid], type) == 0)
+            break;
+      if (tid == TID_LAST) {
+         cm_msg(MERROR, "db_paste_node", 
+            "found unknown data type \"%s\" in XML data", type);
+         return DB_TYPE_MISMATCH;
+      }
+
+      status = db_find_link(hDB, hKeyRoot, mxml_get_attribute(node, "name"), &hKey);
+      if (status == DB_NO_KEY) {
+         db_create_key(hDB, hKeyRoot, mxml_get_attribute(node, "name"), tid);
+         status = db_find_link(hDB, hKeyRoot, mxml_get_attribute(node, "name"), &hKey);
+         if (status != DB_SUCCESS) {
+            cm_msg(MERROR, "db_paste_node", 
+               "cannot create key \"%s\" in ODB", mxml_get_attribute(node, "name"));
+            return status;
+         }
+      }
+
+      if (num_values) {
+         /* evaluate array */
+         for (i=0 ; i<mxml_get_number_of_children(node) ; i++) {
+            child = mxml_subnode(node, i);
+            if (tid == TID_STRING || tid == TID_LINK) {
+               size = atoi(mxml_get_attribute(node, "size"));
+               db_set_data_index(hDB, hKey, mxml_get_value(child), size, i, tid);
+            } else {
+               db_sscanf(mxml_get_value(child), data, &size, 0, tid);
+               db_set_data_index(hDB, hKey, data, rpc_tid_size(tid), i, tid);
+            }
+         }
+
+      } else { // single value
+         if (tid == TID_STRING || tid == TID_LINK) {
+            size = atoi(mxml_get_attribute(node, "size"));
+            if (mxml_get_value(node) == NULL)
+               db_set_data(hDB, hKey, "", size, 1, tid);
+            else
+               db_set_data(hDB, hKey, mxml_get_value(node), size, 1, tid);
+         } else {
+            db_sscanf(mxml_get_value(node), data, &size, 0, tid);
+            db_set_data(hDB, hKey, data, rpc_tid_size(tid), 1, tid);
+         }
+      }
+   }
+
+   return DB_SUCCESS;
+}
+
+/********************************************************************/
+/**
+Paste an ODB subtree in XML format from a buffer
+@param hDB          ODB handle obtained via cm_get_experiment_database().
+@param hKeyRoot Handle for key where search starts, zero for root.
+@param buffer NULL-terminated buffer
+@return DB_SUCCESS, DB_INVALID_PARAM, DB_NO_MEMORY, DB_TYPE_MISMATCH
+*/
+INT db_paste_xml(HNDLE hDB, HNDLE hKeyRoot, char *buffer)
+{
+   char error[256];
+   INT status;
+   PMXML_NODE tree;
+
+   if (hKeyRoot == 0)
+      db_find_key(hDB, hKeyRoot, "", &hKeyRoot);
+
+   /* parse XML buffer */
+   tree = mxml_parse_buffer(buffer, error, sizeof(error), "");
+   if (tree == NULL) {
+      puts(error);
+      return DB_TYPE_MISMATCH;
+   }
+
+   status = db_paste_node(hDB, hKeyRoot, tree);
+
+   mxml_free_tree(tree);
+
+   return status;
+}
+
+/********************************************************************/
 /**
 Copy an ODB subtree in XML format to a buffer
 
@@ -6109,16 +6248,22 @@ INT db_save_xml_key(HNDLE hDB, HNDLE hKey, INT level, MXML_WRITER *writer)
    char str[MAX_STRING_LENGTH * 2], *data;
    HNDLE hSubkey;
    KEY key;
+   DATABASE_HEADER *pheader;
 
    status = db_get_key(hDB, hKey, &key);
    if (status != DB_SUCCESS)
       return status;
 
+   pheader = _database[hDB - 1].database_header;
+
    if (key.type == TID_KEY) {
 
       /* save opening tag for subtree */
-      mxml_start_element(writer, "dir");
-      mxml_write_attribute(writer, "name", key.name);
+      
+      if (hKey != pheader->root_key) {
+         mxml_start_element(writer, "dir");
+         mxml_write_attribute(writer, "name", key.name);
+      }
 
       for (index = 0;; index++) {
          db_enum_key(hDB, hKey, index, &hSubkey);
@@ -6133,7 +6278,8 @@ INT db_save_xml_key(HNDLE hDB, HNDLE hKey, INT level, MXML_WRITER *writer)
       }
 
       /* save closing tag for subtree */
-      mxml_end_element(writer);
+      if (hKey != pheader->root_key)
+         mxml_end_element(writer);
 
    } else {
 
