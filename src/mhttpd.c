@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.121  2000/05/05 12:19:51  midas
+  Added offset in history display
+
   Revision 1.120  2000/05/05 08:32:05  midas
   Fixe bug with wrong state when running mhttpd on a new ODB
 
@@ -2649,6 +2652,7 @@ int    i, size;
         _attachment_buffer[i] = buffer[i];
         _attachment_size[i] = size;
         unsetparam("scale");
+        unsetparam("offset");
         unsetparam("magnify");
         unsetparam("index");
         }
@@ -2889,6 +2893,7 @@ FILE  *f;
 
       rsprintf("HTTP/1.0 200 Document follows\r\n");
       rsprintf("Server: MIDAS HTTP %s\r\n", cm_get_version());
+      rsprintf("Accept-Ranges: bytes\r\n");
 
       /* return proper header for file type */
       for (i=0 ; i<(int)strlen(path) ; i++)
@@ -2903,8 +2908,19 @@ FILE  *f;
         rsprintf("Content-Type: application/postscript\r\n");
       else if (strstr(str, ".HTML"))
         rsprintf("Content-Type: text/html\r\n");
-      else
+      else if (strstr(str, ".XLS"))
+        rsprintf("Content-Type: application/x-msexcel\r\n");
+      else if (strstr(str, ".DOC"))
+        rsprintf("Content-Type: application/msword\r\n");
+      else if (strstr(str, ".PDF"))
+        rsprintf("Content-Type: application/pdf\r\n");
+      else if (strstr(str, ".TXT"))
         rsprintf("Content-Type: text/plain\r\n");
+      else if (strchr(str, '.') == NULL)
+        rsprintf("Content-Type: text/plain\r\n");
+      else
+        rsprintf("Content-Type: application/octet-stream\r\n");
+
       
       rsprintf("Content-Length: %d\r\n\r\n", length);
 
@@ -3203,8 +3219,8 @@ FILE  *f;
           {
           rsprintf("<tr><td colspan=2 bgcolor=#C0C0FF>Attachment: <a href=\"%s\"><b>%s</b></a>\n", 
                     ref, attachment[index]+14);
-          if (!strstr(att, ".PS") &&
-              !strstr(att, ".EPS"))
+          if (strstr(att, ".TXT") ||
+              strchr(att, '.') == NULL)
             {
             /* display attachment */
             rsprintf("<br>");
@@ -5402,7 +5418,7 @@ double base[] = {1,2,5,10,20,50,100,200,500,1000};
 #define MAX_VARS 10
 
 void generate_hist_graph(char *path, char *buffer, int *buffer_size, 
-                         int width, int height, int scale, int index)
+                         int width, int height, int scale, int offset, int index)
 {
 HNDLE       hDB, hkey, hkeypanel, hkeyeq, hkeydvar, hkeyvars, hkeyroot, hkeynames;
 KEY         key;
@@ -5410,7 +5426,7 @@ gdImagePtr  im;
 gdGifBuffer gb;
 int         i, j, k, l, n_vars, size, status, n_event, row;
 DWORD       bsize, tsize;
-int         length, offset;
+int         length, aoffset, toffset;
 int         flag, x1, y1, x2, y2, xs, ys, xold, yold;
 int         white, black, grey, ltgrey, red, green, blue, curve_col[MAX_VARS];
 char        str[256], panel[NAME_LENGTH], name[256], *p, odbpath[256];
@@ -5577,8 +5593,6 @@ float       upper_limit[MAX_VARS], lower_limit[MAX_VARS];
       size = sizeof(scale);
       db_get_value(hDB, hkeypanel, "Timescale", &scale, &size, TID_INT);
       }
-    xmin = (float) (-scale/3600.0);
-    xmax = 0;
 
     /* get factors */
     size = sizeof(factor);
@@ -5712,7 +5726,7 @@ float       upper_limit[MAX_VARS], lower_limit[MAX_VARS];
     /* search alarm limits */
     upper_limit[i] = lower_limit[i] = -12345;
     db_find_key(hDB, 0, "/Alarms/Alarms", &hkeyroot);
-    if (hkeyroot)
+    if (odbpath[0] && hkeyroot)
       {
       for (j=0 ; ; j++)
         {
@@ -5742,10 +5756,14 @@ float       upper_limit[MAX_VARS], lower_limit[MAX_VARS];
         }
       }
 
+    if (offset > 0)
+      toffset = offset*scale;
+    else
+      toffset = -offset;
 
     bsize = sizeof(ybuffer);
     tsize = sizeof(tbuffer);
-    status = hs_read(event_id, ss_time()-scale, ss_time(), scale/1000, 
+    status = hs_read(event_id, ss_time()-scale-toffset, ss_time()-toffset, scale/1000, 
                      var_name[i], var_index[i], tbuffer, &tsize, ybuffer, &bsize, 
                      &type, &n_point[i]);
 
@@ -5814,11 +5832,15 @@ float       upper_limit[MAX_VARS], lower_limit[MAX_VARS];
       ymin -= (ymax-ymin)/20.f;
     }
 
-  /* caluclate required space for Y-axis */
-  offset = vaxis(im, gdFontSmall, black, ltgrey, 0, 0, height, -3, -5, -7, -8, 0, ymin, ymax);
-  offset += 2;
+  /* calculate X limits */
+  xmin = (float) (-scale/3600.0-toffset/3600.0);
+  xmax = (float) (-toffset/3600.0);
 
-  x1 = offset;
+  /* caluclate required space for Y-axis */
+  aoffset = vaxis(im, gdFontSmall, black, ltgrey, 0, 0, height, -3, -5, -7, -8, 0, ymin, ymax);
+  aoffset += 2;
+
+  x1 = aoffset;
   y1 = height-20;
   x2 = width-20;
   y2 = 20;
@@ -5966,10 +5988,11 @@ error:
 
 void show_hist_page(char *path, char *buffer, int *buffer_size)
 {
-char   str[80], ref[80], ref2[80], paramstr[256], *pscale, *pmag, *pindex;
+char   str[80], ref[80], ref2[80], paramstr[256];
+char   *poffset, *pscale, *pmag, *pindex;
 HNDLE  hDB, hkey, hkeyp;
 KEY    key;
-int    i, scale, index, width;
+int    i, scale, offset, index, width;
 float  factor[2];
 
   if (equal_ustring(getparam("cmd"), "Config"))
@@ -5984,6 +6007,14 @@ float  factor[2];
     sprintf(str, "\\HS\\%s.gif", path);
     if (getparam("hscale") && *getparam("hscale"))
       sprintf(str+strlen(str), "?scale=%s", getparam("hscale"));
+    if (getparam("hoffset") && *getparam("hoffset"))
+      {
+      if (strchr(str, '?'))
+        strcat(str, "&");
+      else
+        strcat(str, "?");
+      sprintf(str+strlen(str), "offset=%s", getparam("hoffset"));
+      }
     if (getparam("hmagnify") && *getparam("hmagnify"))
       {
       if (strchr(str, '?'))
@@ -6008,47 +6039,56 @@ float  factor[2];
   pscale = getparam("scale");
   if (pscale == NULL || *pscale == 0)
     pscale = getparam("hscale");
+  poffset = getparam("offset");
+  if (poffset == NULL || *poffset == 0)
+    poffset = getparam("hoffset");
   pmag = getparam("magnify");
   if (pmag == NULL || *pmag == 0)
     pmag = getparam("hmagnify");
   pindex = getparam("index");
   if (pindex == NULL || *pindex == 0)
     pindex = getparam("hindex");
+
+  /* evaluate scale and offset */
   
+  if (poffset && *poffset)
+    {
+    offset = atoi(poffset);
+    if (poffset[strlen(poffset)-1] == 'm')
+      offset *= 60;
+    else if (poffset[strlen(poffset)-1] == 'h')
+      offset *= 3600;
+    else if (poffset[strlen(poffset)-1] == 'd')
+      offset *= 3600*24;
+    }
+  else
+    offset = 0;
+
+  if (pscale && *pscale)
+    {
+    scale = atoi(pscale);
+    if (pscale[strlen(pscale)-1] == 'm')
+      scale *= 60;
+    else if (pscale[strlen(pscale)-1] == 'h')
+      scale *= 3600;
+    else if (pscale[strlen(pscale)-1] == 'd')
+      scale *= 3600*24;
+    }
+  else
+    scale = 0;
+
   if (strstr(path, ".gif"))
     {
-    if (pscale)
-      {
-      if (equal_ustring(pscale, "10m"))
-        scale = 600;
-      else if (equal_ustring(pscale, "1h"))
-        scale = 3600;
-      else if (equal_ustring(pscale, "3h"))
-        scale = 3*3600;
-      else if (equal_ustring(pscale, "12h"))
-        scale = 12*3600;
-      else if (equal_ustring(pscale, "24h"))
-        scale = 24*3600;
-      else if (equal_ustring(pscale, "3d"))
-        scale = 3*24*3600;
-      else if (equal_ustring(pscale, "7d"))
-        scale = 7*24*3600;
-      else
-        scale = 0;
-      }
-    else
-      scale = 0;
-
     index = -1;
     if (pindex && *pindex)
       index = atoi(pindex);
 
     if (equal_ustring(pmag, "Large"))
-      generate_hist_graph(path, buffer, buffer_size, 1024, 768, scale, index);
+      generate_hist_graph(path, buffer, buffer_size, 1024, 768, scale, offset, index);
     else if (equal_ustring(pmag, "Small"))
-      generate_hist_graph(path, buffer, buffer_size, 320, 200, scale, index);
+      generate_hist_graph(path, buffer, buffer_size, 320, 200, scale, offset, index);
     else
-      generate_hist_graph(path, buffer, buffer_size, 640, 400, scale, index);
+      generate_hist_graph(path, buffer, buffer_size, 640, 400, scale, offset, index);
 
     return;
     }
@@ -6064,9 +6104,37 @@ float  factor[2];
   rsprintf("<input type=submit name=cmd value=Alarms>\n");
   rsprintf("<input type=submit name=cmd value=Status></tr>\n");
 
+  /* evaluate offset shift */
+  if (equal_ustring(getparam("shift"), "<"))
+    {
+    if (scale == 0)
+      offset += 1;
+    else
+      offset -= scale;
+    }
+  if (equal_ustring(getparam("shift"), ">"))
+    {
+    if (scale == 0)
+      {
+      offset -= 1;
+      if (offset < 0)
+        offset = 0;
+      }
+    else
+      {
+      offset += scale;
+      if (offset > 0)
+        offset = 0;
+      }
+    }
+  if (equal_ustring(getparam("shift"), ">>"))
+    offset = 0;
+  
   /* define hidden field for parameters */
   if (pscale && *pscale)
     rsprintf("<input type=hidden name=hscale value=%s></tr>\n", pscale);
+  if (offset != 0)
+    rsprintf("<input type=hidden name=hoffset value=%d></tr>\n", offset);
   if (pmag && *pmag)
     rsprintf("<input type=hidden name=hmagnify value=%s></tr>\n", pmag);
   if (pindex && *pindex)
@@ -6150,7 +6218,14 @@ float  factor[2];
     rsprintf("<input type=submit name=scale value=12h>\n");
     rsprintf("<input type=submit name=scale value=24h>\n");
     rsprintf("<input type=submit name=scale value=3d>\n");
-    rsprintf("<input type=submit name=scale value=7d>\n");\
+    rsprintf("<input type=submit name=scale value=7d>\n");
+
+    rsprintf("<input type=submit name=shift value=\"<\">\n");
+    if (offset != 0)
+      {
+      rsprintf("<input type=submit name=shift value=\">\">\n");
+      rsprintf("<input type=submit name=shift value=\">>\">\n");
+      }
 
     rsprintf("<td bgcolor=#A0FFA0>\n");
     rsprintf("<input type=submit name=magnify value=Large>\n");
@@ -6163,6 +6238,8 @@ float  factor[2];
     paramstr[0] = 0;
     if (pscale && *pscale)
       sprintf(paramstr+strlen(paramstr), "&scale=%s", pscale);
+    if (offset != 0)
+      sprintf(paramstr+strlen(paramstr), "&offset=%d", offset);
     if (pmag && *pmag)
       sprintf(paramstr+strlen(paramstr), "&magnify=%s", pmag);
 
@@ -7095,7 +7172,7 @@ char net_buffer[1000000];
 
 void server_loop(int tcp_port, int daemon)
 {
-int                  status, i, refresh;
+int                  status, i, refresh, n_error;
 struct sockaddr_in   bind_addr, acc_addr;
 char                 host_name[256];
 char                 cookie_pwd[256], cookie_wpwd[256], boundary[256];
@@ -7243,6 +7320,7 @@ INT                  last_time=0;
       memset(net_buffer, 0, sizeof(net_buffer));
       len = 0;
       header_length = 0;
+      n_error = 0;
       do
         {
         FD_ZERO(&readfds);
@@ -7272,6 +7350,13 @@ INT                  last_time=0;
         if (i>0)
           len += i;
 
+        if (i == 0)
+          {
+          n_error++;
+          if (n_error == 100)
+            goto error;
+          }
+
         /* finish when empty line received */
         if (strstr(net_buffer, "GET") != NULL && strstr(net_buffer, "POST") == NULL)
           {
@@ -7284,6 +7369,7 @@ INT                  last_time=0;
           {
           if (strstr(net_buffer, "Content-Length:"))
             content_length = atoi(strstr(net_buffer, "Content-Length:") + 15);
+          boundary[0] = 0;
           if (strstr(net_buffer, "boundary="))
             {
             strncpy(boundary, strstr(net_buffer, "boundary=")+9, sizeof(boundary));
@@ -7302,8 +7388,13 @@ INT                  last_time=0;
           if (header_length > 0 && len >= header_length+content_length)
             break;
           }
+        else if (strstr(net_buffer, "OPTIONS") != NULL)
+          goto error;
         else
+          {
           printf(net_buffer);
+          goto error;
+          }
 
         } while (1);
 
