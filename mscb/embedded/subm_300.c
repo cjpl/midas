@@ -7,6 +7,9 @@
                 SUBM300 running on Cygnal C8051F021
 
   $Log$
+  Revision 1.10  2003/06/27 13:51:44  midas
+  Made fast reboot
+
   Revision 1.9  2003/03/20 07:57:04  midas
   Chaned 'channels' to 'variables'
 
@@ -73,14 +76,14 @@ SYS_INFO sys_info;
 
 void setup(void)
 {
-unsigned char i;
-
   XBR0 = 0x04; // Enable RX/TX
   XBR1 = 0x00;
+
   P2MDOUT = 0x00;  // P2: LPT
   P2MDOUT = 0x00;  // P2: LPT
   P2MDOUT = 0x00;  // P2: LPT
   P2MDOUT = 0x00;  // P2: LPT
+  
   XBR2 = 0x40; // Enable crossbar
 
   /* Port configuration (1 = Push Pull Output) */
@@ -89,16 +92,22 @@ unsigned char i;
   P2MDOUT = 0x00;  // P2: LPT
   P3MDOUT = 0xE0;  // P3.5,6,7: Optocouplers
 
-  /* Disable watchdog (for delays) */
-  WDTCN  = 0xDE;
-  WDTCN  = 0xAD;
-
   /* Select external quartz oscillator */
   OSCXCN = 0x66;  // Crystal mode, Power Factor 22E6
   OSCICN = 0x08;  // CLKSL=1 (external)
 
+  /* enable watchdog */
+  WDTCN = 0x07;      // 95 msec
+  WDTCN = 0xA5;      // start watchdog
+
+  /* enable missing clock reset */
+  OSCICN |= 0x80; // MSCLKE = 1
+  
   /* enable reset pin and watchdog reset */
   RSTSRC = 0x09;
+
+  /* start system clock */
+  sysclock_init();
 
   /* initialize UART0 */
   uart_init(0, BD_115200);
@@ -115,22 +124,15 @@ unsigned char i;
   LPT_NDATAREADY = 1;
   LPT_BIT9 = 1;
 
-  /* blink LEDs */
-  for (i=0 ; i<5 ; i++)
-    {
-    LED = LED_ON;
-    LED_SEC = LED_ON;
-    delay_ms(200);
-    LED = LED_OFF;
-    LED_SEC = LED_OFF;
-    delay_ms(100);
-    }
-  LED_SEC = LED_ON;
+  /* Blink LEDs */
+  LED = LED_OFF;
+  LED_SEC = LED_OFF;
 
-  /* Enable watchdog 95ms (@11.0592MHz) */
-#ifdef USE_WATCHDOG
-  WDTCN=0x07;
-#endif
+  led_blink(1, 5, 150);
+  led_blink(2, 5, 150);
+
+  /* invert second LED */
+  led_mode(2, 1);
 }
 
 /*------------------------------------------------------------------*/
@@ -170,9 +172,12 @@ void check_lpt()
 {
 unsigned char byte;
 bit bit9;
+unsigned long t;
 
   if (LPT_NSTROBE == 1)
     return;
+
+  led_blink(1, 1, 50);  
 
   /* receive new data */
   byte = LPT_DATA;
@@ -184,7 +189,6 @@ bit bit9;
   /* send byte to serial port, flash LED */
   RS485_ENABLE = 1;
 
-  LED = LED_ON;
   TB80 = bit9;
   SBUF0 = byte;
 
@@ -193,10 +197,14 @@ bit bit9;
   RS485_ENABLE = 0;
 
   ti_shadow = 0;
-  LED = LED_OFF;
 
+  t = time();
   while (LPT_NSTROBE == 0) /* wait for strobe to be removed */
+    {
     watchdog_refresh();    /* can take very long (if PC gets context switch) */
+    if (time() - t > 100)
+      break;
+    }
 
   /* remove busy */
   LPT_BUSY = 0;
@@ -208,6 +216,7 @@ bit bit9;
 void check_rs485()
 {
 unsigned char byte;
+unsigned long t;
 
   /* return if no data in buffer */
   if (rbuf_wp == rbuf_rp)
@@ -216,6 +225,8 @@ unsigned char byte;
   /* abort if PC strobe is active to avoid data collision */
   if (LPT_NSTROBE == 0)
     return;
+
+  led_blink(2, 1, 50);  
 
   /* get received byte */
   byte = *rbuf_rp;
@@ -228,9 +239,14 @@ unsigned char byte;
   /* signal new data to PC */
   LPT_NDATAREADY = 0;
 
-  /* wait for PC switched to input */
+  /* wait for PC switched to input with 1s timeout */
+  t = time();
   while (LPT_NACK == 1)
+    {
     watchdog_refresh();
+    if (time() - t > 100)
+      break;
+    }
 
   /* switch port to push-pull */
   P1MDOUT = 0xFF;
@@ -241,9 +257,14 @@ unsigned char byte;
   /* remove data ready */
   LPT_NDATAREADY = 1;
 
-  /* wait until PC has data read */
+  /* wait until PC has data read with 1s timeout */
+  t = time();
   while (LPT_NACK == 0)
+    {
     watchdog_refresh();
+    if (time() - t > 100)
+      break;
+    }
 
   /* switch port to open-drain */
   P1MDOUT = 0x00;
@@ -261,9 +282,14 @@ unsigned char byte;
   /* reset data ready */
   LPT_NDATAREADY = 1;
 
-  /* wait for end of cycle */
+  /* wait for end of cycle with 1s timeout */
+  t = time();
   while (LPT_NACK == 0)
+    {
     watchdog_refresh();
+    if (time() - t > 100)
+      break;
+    }
 }
 
 /*------------------------------------------------------------------*/
