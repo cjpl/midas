@@ -14,6 +14,9 @@
                 Brown, Prentice Hall
 
   $Log$
+  Revision 1.68  2003/04/25 11:47:42  midas
+  Added ss_force_single_thread()
+
   Revision 1.67  2003/04/21 03:16:50  olchansk
   in ss_daemon_init(), if keep_stdout, keep BOTH stdout AND stderr.
   It makes no sense to keep stdout and close stderr.
@@ -998,6 +1001,13 @@ INT ss_getpid(void)
 
 /*------------------------------------------------------------------*/
 
+static BOOL _single_thread = FALSE;
+
+void ss_force_single_thread()
+{
+  _single_thread = TRUE;
+}
+
 INT ss_gettid(void)
 /********************************************************************\
 
@@ -1016,6 +1026,10 @@ INT ss_gettid(void)
 
 \********************************************************************/
 {
+  /* if forced to single thread mode, simply return fake TID */
+  if (_single_thread)
+    return 1;
+
 #ifdef OS_MSDOS
 
   return 0;
