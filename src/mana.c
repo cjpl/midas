@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.51  2000/02/09 09:32:00  midas
+  Speed up analyzer start
+
   Revision 1.50  2000/02/01 08:26:09  midas
   Added -P (protect) flag
 
@@ -3100,7 +3103,7 @@ INT    i, j;
 
 INT init_module_parameters(BOOL bclose)
 {
-INT        i, j;
+INT        i, j, status, size;
 ANA_MODULE **module;
 char       str[80];
 HNDLE      hkey;
@@ -3121,12 +3124,21 @@ HNDLE      hkey;
           }
         else
           {
-          if (module[j]->init_str)
+          status = db_find_key(hDB, 0, str, &hkey);
+          if (status == DB_SUCCESS)
+            {
+            db_get_record_size(hDB, hkey, 0, &size);
+            if (size != module[j]->param_size)
+              status = 0;
+            }
+          if (status != DB_SUCCESS && module[j]->init_str)
+            {
             if (db_create_record(hDB, 0, str, strcomb(module[j]->init_str)) != DB_SUCCESS)
               {
               cm_msg(MERROR, "init_module_parameters", "Cannot create \"%s\" parameters in ODB", str);
               return 0;
               }
+            }
 
           db_find_key(hDB, 0, str, &hkey);
           if (db_open_record(hDB, hkey, module[j]->parameters, module[j]->param_size, 
@@ -3144,6 +3156,7 @@ HNDLE      hkey;
 }
 
 /*------------------------------------------------------------------*/
+
 INT bevid_2_mheader(EVENT_HEADER * pevent, DWORD * pybos)
 {
   INT   status;
@@ -3171,6 +3184,7 @@ INT bevid_2_mheader(EVENT_HEADER * pevent, DWORD * pybos)
   }
   return SS_SUCCESS;
 }
+
 /*------------------------------------------------------------------*/
 
 INT analyze_file(INT run_number, char *input_file_name, char *output_file_name)
