@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.70  2000/11/20 11:26:53  midas
+  Added "use tests" in analyzer request
+
   Revision 1.69  2000/11/17 08:25:45  midas
   Added disable_shm_write flag for Linux cluster applications
 
@@ -244,7 +247,12 @@
 #define HFNOV(A1,A2)  CCALLSFSUB2(HFNOV,hfnov,INT,FLOATV,A1,A2) 
 #endif
 
+#ifndef HMERGE
+#define HMERGE(A1,A2,A3)  CCALLSFSUB3(HMERGE,hmerge,INT,STRINGV,STRING,A1,A2,A3)
+#endif
+
 /* PVM include */
+
 #ifdef PVM
 
 INT         pvm_start_time=0;
@@ -263,7 +271,7 @@ char     msg[256], str[256];
   vsprintf(msg, (char *) format, argptr);
   va_end(argptr);
   sprintf(str, "%1.3lf:  %s", (ss_millitime()-pvm_start_time)/1000.0, msg);
-  cm_msg(MINFO, "PVM", str);
+  puts(str);
 #ifdef OS_LINUX
   {
   char cmd[256];
@@ -283,16 +291,16 @@ char     msg[256], str[256];
 /* buffer size must be larger than largest event (ODB dump!) */
 #define PVM_BUFFER_SIZE (1024*1024)
 
-BOOL pvm_master, pvm_slave;
-
 #ifdef PVM
 #define TAG_DATA  1
 #define TAG_BOR   2
 #define TAG_EOR   3
 #define TAG_EXIT  4
+#define TAG_INIT  5
 
 int  pvm_n_task;
 int  pvm_myparent;
+int  pvm_client_index;
 
 typedef struct {
   int   tid;
@@ -307,17 +315,20 @@ typedef struct {
 PVM_CLIENT *pvmc;
 
 int  pvm_eor(int);
+int  pvm_merge(void);
 void pvm_debug(char *format, ...);
 int  pvm_distribute(ANALYZE_REQUEST *par, EVENT_HEADER *pevent);
 
-//#define PVM_DEBUG pvm_debug
-#define PVM_DEBUG
+#define PVM_DEBUG pvm_debug
+//#define PVM_DEBUG
 
 #else
 
 #define PVM_DEBUG
 
 #endif
+
+BOOL pvm_master=FALSE, pvm_slave=FALSE;
 
 /*------------------------------------------------------------------*/
 
@@ -1412,6 +1423,12 @@ double     dummy;
       }
     }
 
+  /* delete tests in ODB */
+  sprintf(str, "/%s/Tests", analyzer_name);
+  db_find_key(hDB, 0, str, &hkey);
+  if (hkey)
+    db_delete_key(hDB, hkey, FALSE);
+  
   /* create global memory */
   if (clp.online)
     {
@@ -1540,7 +1557,7 @@ INT        lrec;
     }
 
   /* open output file if not already open (append mode) and in offline mode */
-  if (!clp.online && out_file == NULL)
+  if (!clp.online && out_file == NULL && !pvm_master)
     {
     if (out_info.filename[0])
       {
@@ -1579,6 +1596,27 @@ INT        lrec;
         return 0;
         }
 
+#ifdef PVM
+      /* use node name as filename if PVM slave */
+      if (pvm_slave)
+        {
+        /* extract extension */
+        if (strchr(file_name, '.'))
+          {
+          strcpy(str, strchr(file_name, '.')+1);
+          sprintf(file_name, "n%d", pvm_client_index);
+          strcat(file_name, ".");
+          strcat(file_name, str);
+          }
+        else
+          {
+          sprintf(file_name, "n%d", pvm_client_index);
+          }
+
+        PVM_DEBUG("BOR: file_name = %s", file_name);
+        }
+#endif
+
       /* open output file */
       if (out_format == FORMAT_HBOOK)
         {
@@ -1604,14 +1642,14 @@ INT        lrec;
       else
         {
         if (out_gzip)
-          out_file = (FILE *) gzopen(out_info.filename, "wb");
+          out_file = (FILE *) gzopen(file_name, "wb");
         else if (out_format == FORMAT_ASCII)
-          out_file = fopen(out_info.filename, "wt");
+          out_file = fopen(file_name, "wt");
         else
-          out_file = fopen(out_info.filename, "wb");
+          out_file = fopen(file_name, "wb");
         if (out_file == NULL)
           {
-          sprintf(error, "Cannot open output file %s", out_info.filename);
+          sprintf(error, "Cannot open output file %s", file_name);
           cm_msg(MERROR, "bor", error);
           return 0;
           }
@@ -2912,7 +2950,8 @@ static char  *orig_event = NULL;
     }
 
   /* increment tests */
-  test_increment();
+  if (par->use_tests)
+    test_increment();
 
   /* in filter mode, use original event */
   if (clp.filter)
@@ -3639,7 +3678,7 @@ int status, n;
     pvm_send(pvm_myparent, TAG_DATA);
 
     /* receive data */
-    timeout.tv_sec  = 10;
+    timeout.tv_sec  = 60;
     timeout.tv_usec = 0;
 
     bufid = pvm_trecv(-1, -1, &timeout);
@@ -3866,6 +3905,10 @@ DWORD           start_time;
       printf("Shutting down distributed analyzers, please wait...\n"); 
     pvm_eor(status == RPC_SHUTDOWN ? TAG_EXIT : TAG_EOR);
 
+    /* merge slave output files */
+    if (out_info.filename[0] && !out_append)
+      status = pvm_merge();
+
     start_time = ss_millitime() - start_time;
 
     update_stats();
@@ -3876,6 +3919,37 @@ DWORD           start_time;
                out_info.filename, num_events_out, start_time/1000.0);
       else
         printf("%s:%d  events, %1.2lfs\n", input_file_name, num_events_in, start_time/1000.0); 
+      }
+    }
+  else if (pvm_slave)
+    {
+    start_time = ss_millitime() - start_time;
+
+    update_stats();
+    if (!clp.quiet)
+      {
+      if (out_file)
+        printf("%s:%d  %s:%d  events, %1.2lfs\n", input_file_name, num_events_in, 
+               out_info.filename, num_events_out, start_time/1000.0);
+      else
+        printf("%s:%d  events, %1.2lfs\n", input_file_name, num_events_in, start_time/1000.0); 
+      }
+
+    eor(current_run_number, error);
+
+    /* send back tests */
+    pvm_initsend(PvmDataInPlace);
+
+    for (i=0 ; i<n_test ; i++)
+      pvm_pkbyte((char *) tl[i], sizeof(ANA_TEST), 1);
+
+    PVM_DEBUG("analyze_run: send %d tests back to master", n_test);
+
+    status = pvm_send(pvm_myparent, TAG_EOR);
+    if (status < 0)
+      {
+      pvm_perror("pvm_send");
+      return RPC_SHUTDOWN;
       }
     }
   else
@@ -3892,6 +3966,7 @@ DWORD           start_time;
         printf("%s:%d  events, %1.2lfs\n", input_file_name, num_events_in, start_time/1000.0); 
       }
 
+    /* call analyzer eor routines */
     eor(current_run_number, error);
     }
 #else
@@ -4030,6 +4105,12 @@ BANK_LIST *bank_list;
       }
     }
 
+#ifdef PVM
+  /* merge slave output files */
+  if (pvm_master && out_info.filename[0] && out_append)
+    pvm_merge();
+#endif
+
   return CM_SUCCESS;
 }
 
@@ -4039,8 +4120,9 @@ BANK_LIST *bank_list;
 
 int pvm_main(char *argv[])
 {
-int  mytid, status, i, j, dtid, *pvm_tid;
-char path[256];
+int    mytid, status, i, j, dtid, *pvm_tid, bufid;
+char   path[256];
+struct timeval timeout;
 
   getcwd(path, 256);
 
@@ -4107,7 +4189,7 @@ char path[256];
     if (clp.n_task != 0)
       pvm_n_task = clp.n_task;
 
-    if (pvm_n_task > n_host-1)
+    if (clp.n_task != 1 && pvm_n_task > n_host-1)
       pvm_n_task = n_host-1;
 
     if (pvm_n_task == 0)
@@ -4184,12 +4266,66 @@ char path[256];
       return 0;
       }
 
+    /* send slave index */
+    for (i=0 ; i<pvm_n_task ; i++)
+      {
+      pvm_initsend(PvmDataDefault);
+
+      pvm_pkint(&i, 1, 1);
+
+      PVM_DEBUG("pvm_main: send index to client %d", i);
+
+      status = pvm_send(pvmc[i].tid, TAG_INIT);
+      if (status < 0)
+        {
+        pvm_perror("pvm_send");
+        return 0;
+        }
+      }
+
     free(pvm_tid);
     }
   else
     {
+    char path[256];
+
     pvm_master = FALSE;
     pvm_slave = TRUE;
+
+    /* go to path from argv[0] */
+    strcpy(path, argv[0]);
+    for (i=strlen(path) ; i>0 && path[i] != DIR_SEPARATOR ; i--)
+      path[i] = 0;
+    if (i>0)
+      path[i] = 0;
+
+    chdir(path);
+    PVM_DEBUG("PATH=%s", path);
+
+    /* receive slave index */
+    timeout.tv_sec  = 10;
+    timeout.tv_usec = 0;
+
+    bufid = pvm_trecv(-1, -1, &timeout);
+    if (bufid < 0)
+      {
+      pvm_perror("pvm_recv");
+      return 0;
+      }
+    if (bufid == 0)
+      {
+      PVM_DEBUG("pvm_main: timeout receiving index, aborting analyzer.\n");
+      return 0;
+      }
+
+    status = pvm_upkint(&pvm_client_index, 1, 1);
+    if (status < 0)
+      {
+      pvm_perror("pvm_upkint");
+      return 0;
+      }
+
+    PVM_DEBUG("Received client ID %d", pvm_client_index);
     }
 
   return SUCCESS;
@@ -4423,7 +4559,7 @@ int  i, index, size, status, min, max;
       sprintf(str+strlen(str), "#%d# ", pvmc[i].wp);
     else
       sprintf(str+strlen(str), "%d ", pvmc[i].wp);
-  PVM_DEBUG(str);
+  //PVM_DEBUG(str);
 
   /* find min/max buffer level */
   min = PVM_BUFFER_SIZE;
@@ -4458,7 +4594,10 @@ int  i, index, size, status, min, max;
 int pvm_eor(int eor_tag)
 {
 struct timeval timeout;
-int            bufid, len, tag, tid, i, j, status;
+int            bufid, len, tag, tid, i, j, status, size;
+ANA_TEST       *tst_buf;
+DWORD          count;
+char           str[256];
 
   for (i=0 ; i<pvm_n_task ; i++)
     pvmc[i].eor_sent = FALSE;
@@ -4532,6 +4671,9 @@ int            bufid, len, tag, tid, i, j, status;
       else
         PVM_DEBUG("pvm_eor: send EXIT to client %d", j);
 
+      printf("Shutting down %s      \r", pvmc[j].host);
+      fflush(stdout);
+
       status = pvm_send(tid, eor_tag);
       if (status < 0)
         {
@@ -4540,6 +4682,48 @@ int            bufid, len, tag, tid, i, j, status;
         }
 
       pvmc[j].eor_sent = TRUE;
+
+      /* wait for EOR reply */
+      timeout.tv_sec  = 60;
+      timeout.tv_usec = 0;
+
+      bufid = pvm_trecv(tid, -1, &timeout);
+      if (bufid < 0)
+        {
+        pvm_perror("pvm_recv");
+        return RPC_SHUTDOWN;
+        }
+      if (bufid == 0)
+        {
+        printf("Timeout receiving EOR request, aborting analyzer.\n");
+        return RPC_SHUTDOWN;
+        }
+
+      status = pvm_bufinfo(bufid, &len, &tag, &tid);
+      if (status < 0)
+        {
+        pvm_perror("pvm_bufinfo");
+        return RPC_SHUTDOWN;
+        }
+
+      PVM_DEBUG("\nGot %d bytes", len);
+
+      tst_buf = malloc(len);
+      pvm_upkbyte((char *)tst_buf, len, 1);
+
+      /* write tests to ODB */
+      for (i=0 ; i<(int)(len/sizeof(ANA_TEST)) ; i++)
+        {
+        sprintf(str, "/%s/Tests/%s", analyzer_name, tst_buf[i].name);
+        count = 0;
+        size = sizeof(DWORD);
+        db_get_value(hDB, 0, str, &count, &size, TID_DWORD);
+        count += tst_buf[i].count;
+
+        db_set_value(hDB, 0, str, &count, sizeof(DWORD), 1, TID_DWORD);
+        }
+
+      free(tst_buf);
       }
 
     /* check if EOR sent to all clients */
@@ -4548,6 +4732,67 @@ int            bufid, len, tag, tid, i, j, status;
         break;
 
     } while (j<pvm_n_task);
+
+  return SUCCESS;
+}
+
+/*------------------------------------------------------------------*/
+
+int pvm_merge()
+{
+int  i;
+char fn[10][8], str[256], file_name[256], error[256];
+char ext[10], *p;
+
+  strcpy(str, out_info.filename);
+  if (strchr(str, '%') != NULL)
+    sprintf(file_name, str, current_run_number);
+  else
+    strcpy(file_name, str);
+
+  /* check output file extension */
+  out_gzip = FALSE;
+  ext[0] = 0;
+  if (strchr(file_name, '.'))
+    {
+    p = file_name + strlen(file_name)-1;
+    while (*p != '.')
+      p--;
+    strcpy(ext, p);
+    }
+  if (strncmp(ext, ".gz", 3) == 0)
+    {
+    out_gzip = TRUE;
+    *p = 0;
+    p--;
+    while (*p != '.' && p > file_name)
+      p--;
+    strcpy(ext, p);
+    }
+
+  if (strncmp(ext, ".asc", 4) == 0)
+    out_format = FORMAT_ASCII;
+  else if (strncmp(ext, ".mid", 4) == 0)
+    out_format = FORMAT_MIDAS;
+  else if (strncmp(ext, ".rz", 3) == 0)
+    out_format = FORMAT_HBOOK;
+  else
+    {
+    strcpy(error, "Unknown output data format. Please use file extension .asc, .mid or .rz.\n");
+    cm_msg(MERROR, "pvm_merge", error);
+    return 0;
+    }
+
+  if (out_format == FORMAT_HBOOK)
+    {
+    if (pvm_n_task <= 10)
+      {
+      for (i=0 ; i<pvm_n_task ; i++)
+        sprintf(fn[i], "n%d%s", i, ext);
+
+      HMERGE(pvm_n_task, fn, file_name);
+      }
+    }
 
   return SUCCESS;
 }

@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.75  2000/11/20 11:26:52  midas
+  Added "use tests" in analyzer request
+
   Revision 1.74  2000/11/14 08:17:04  midas
   Added number of messages for cm_msg_retrieve and in odbedit "old" command
 
@@ -1064,6 +1067,7 @@ typedef struct {
   ANA_MODULE **ana_module;            /* List of analyzer modules          */
   BANK_LIST *bank_list;               /* List of banks for event           */
   INT    rwnt_buffer_size;            /* Size in events of RW N-tuple buf  */
+  BOOL   use_tests;                   /* Use tests for this event          */
   char   **init_string;
   INT    status;                      /* One of FE_xxx                     */
   HNDLE  buffer_handle;               /* MIDAS buffer handle               */
