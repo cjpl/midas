@@ -6,6 +6,9 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.70  2003/10/30 20:41:15  midas
+  Check for num_values on a couple of db_set_xxx calls
+
   Revision 1.69  2003/10/30 15:17:45  midas
   Return from db_set_data if num_values==0
 
@@ -3340,6 +3343,9 @@ KEY              *pkey;
 HNDLE            hKey;
 INT              status;
 
+  if (num_values == 0)
+    return DB_INVALID_PARAM;
+
   status = db_find_key(hDB, hKeyRoot, key_name, &hKey);
   if (status == DB_NO_KEY)
     {
@@ -4869,6 +4875,9 @@ INT              new_size;
     cm_msg(MERROR, "db_set_data", "invalid key handle");
     return DB_INVALID_HANDLE;
     }
+
+  if (num_values == 0)
+    return DB_INVALID_PARAM;
 
   db_lock_database(hDB);
 
