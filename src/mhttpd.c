@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.191  2002/02/21 16:03:05  midas
+  Fixed &nbsp
+
   Revision 1.190  2002/02/21 15:58:19  midas
   Fixed a few bugs, thanks to Thomas Prokscha
 
@@ -1192,7 +1195,7 @@ int    size;
   rsprintf("<tr><th colspan=%d bgcolor=#A0A0FF>MIDAS experiment \"%s\"", colspan, str);
 
   if (refresh > 0)
-    rsprintf("<th colspan=%d bgcolor=#A0A0FF>%s &nbsp&nbspRefr:%d</tr>\n", colspan, ctime(&now), refresh);
+    rsprintf("<th colspan=%d bgcolor=#A0A0FF>%s &nbsp;&nbsp;Refr:%d</tr>\n", colspan, ctime(&now), refresh);
   else
     rsprintf("<th colspan=%d bgcolor=#A0A0FF>%s</tr>\n", colspan, ctime(&now));
 }
