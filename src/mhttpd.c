@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.281  2004/12/14 23:25:30  olchansk
+  Renee's improvements to http data logging
+
   Revision 1.280  2004/11/26 09:03:06  midas
   Changed favicon bg to white
 
@@ -10218,6 +10221,26 @@ struct linger        ling;
 
          /* save remote host address */
          memcpy(&remote_addr, &(acc_addr.sin_addr), sizeof(remote_addr));
+	 if(verbose)
+	   {
+             struct hostent       *phe;
+             char   str[256];
+	     
+             strcpy(str, ss_asctime());
+             printf(str);          
+             printf("=== Received request from ");
+             phe = gethostbyaddr((char *) &remote_addr, 4, PF_INET);
+             if (phe == NULL)
+               {
+                 /* use IP number instead */
+                 strcpy(str, (char *)inet_ntoa(remote_addr));
+               }
+             else
+               strcpy(str, phe->h_name);
+             puts(str);
+             printf("===========\n");
+             fflush(stdout);
+           }
 
          memset(net_buffer, 0, sizeof(net_buffer));
          len = 0;
@@ -10280,9 +10303,9 @@ struct linger        ling;
                    ("Submitted attachment too large, please increase WEB_BUFFER_SIZE in mhttpd.c and recompile");
                send(_sock, return_buffer, strlen_retbuf + 1, 0);
                if (verbose) {
-                  printf("==== Return ================================\n");
-                  puts(return_buffer);
-                  printf("\n\n");
+                 printf("==== Return error info %i bytes ==============\n",strlen_retbuf+1);
+                 puts(return_buffer);
+                 printf("\n\n");
                }
                goto error;
             }
@@ -10367,8 +10390,25 @@ struct linger        ling;
 
          return_length = 0;
 
-         if (verbose)
-            printf("\n%s\n", net_buffer);
+         if (verbose) {
+           INT temp;
+           printf("Received buffer of %i bytes :\n%s\n",len, net_buffer); fflush(stdout);
+           if(strncmp(net_buffer, "POST", 4) == 0)
+             {
+               printf("Contents of POST has %i bytes:\n",content_length);
+               if(content_length > 2000)
+                 {
+                   printf(" Dumping first 2000 bytes only\n");
+                   temp=net_buffer[header_length+2000];
+                   net_buffer[header_length+2000] = 0;
+                   puts(net_buffer+header_length);
+                   net_buffer[header_length+2000] = temp;
+                 }
+               else
+                 puts(net_buffer+header_length);
+               printf("\n\n"); fflush(stdout);
+             }
+         }
 
          if (strncmp(net_buffer, "GET", 3) == 0) {
             /* extract path and commands */
@@ -10390,18 +10430,31 @@ struct linger        ling;
                return_length = strlen(return_buffer) + 1;
 
             if (verbose) {
-               printf("==== Return ================================\n");
-               puts(return_buffer);
-               printf("\n\n");
+              char   str[256];
+              strcpy(str, ss_asctime());
+              printf(str);       
+              printf("==== Return buffer %i bytes ===\n",return_length);
+              printf("\n\n");
             }
 
             i = send_tcp(_sock, return_buffer, return_length, 0);
             if (i != return_length)
                cm_msg(MERROR, "server_loope", "Only sent back %d out of %d bytes", i,
                       return_length);
-
-          error:
-
+            
+            if (verbose)
+              {
+                if(return_length > 1000)
+                  {
+                    printf(" Dumping first 1000 bytes only\n");
+                    return_buffer[1000] = 0;
+                  }
+                puts(return_buffer);
+                printf("\n\n");
+              }
+            
+         error:
+            
             closesocket(_sock);
          }
       }
