@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.128  2000/12/06 02:58:24  midas
+  Put extended error information for bind() call
+
   Revision 1.127  2000/11/14 12:19:24  midas
   Fixed bug in cm_msg_retrieve, added improved "more" feature in message display
 
@@ -493,7 +496,7 @@ typedef struct {
   INT (*func)(INT, char*);
   } TRANS_TABLE;
 
-TRANS_TABLE _trans_table[] = 
+TRANS_TABLE _trans_table[] =
 {
   { TR_START, NULL },
   { TR_STOP, NULL },
@@ -567,7 +570,7 @@ FILE *f;
 void *adr;
 
   adr = malloc(size);
-  
+
   f = fopen("mem.txt", "a");
   fprintf(f, "malloc size = %d, adr = %X, %s:%d\n", size, adr, file, line);
   fclose(f);
@@ -584,7 +587,7 @@ FILE *f;
   f = fopen("mem.txt", "a");
   fprintf(f, "free adr = %X, %s:%d\n", adr, file, line);
   fclose(f);
-  
+
 }
 
 /*------------------------------------------------------------------*/
@@ -606,10 +609,10 @@ INT cm_get_error(INT code, char *string)
 
   Routine: cm_get_error
 
-  Purpose: Convert error code to string. Used after 
+  Purpose: Convert error code to string. Used after
            cm_connect_experiment to print error string in command
            line programs or windows programs.
-  
+
   Input:
     INT  code               Error code as defined in MIDAS.H
 
@@ -647,14 +650,14 @@ INT cm_set_msg_print(INT system_mask, INT user_mask, int (*func)(const char*))
 
            A user defined callback receives all messages which satisfy
            the user_mask.
-  
+
   Input:
-    INT  system_mask        Bit masks for MERROR, MINFO etc. to send 
+    INT  system_mask        Bit masks for MERROR, MINFO etc. to send
                             system messages
-    INT  user_mask          Bit masks for MERROR, MINFO etc. to send 
+    INT  user_mask          Bit masks for MERROR, MINFO etc. to send
                             messages to the user callback
     void (*func)()          Function which receives all printout.
-                            By setting "puts", messages are just 
+                            By setting "puts", messages are just
                             printed to the screen.
 
   Output:
@@ -683,7 +686,7 @@ INT cm_msg_log(INT message_type, const char *message)
            Internal use only
 
   Input:
-    INT    message_type      Message type 
+    INT    message_type      Message type
     char   *message          Message string
 
   Output:
@@ -721,7 +724,7 @@ HNDLE hDB, hKey;
         if (dir[0] != 0)
           if (dir[strlen(dir)-1] != DIR_SEPARATOR)
             strcat(dir, DIR_SEPARATOR_STR);
-        
+
         strcpy(filename, "midas.log");
         db_get_value(hDB, 0, "/Logger/Message file", filename, &size, TID_STRING);
 
@@ -770,7 +773,7 @@ INT cm_msg_log1(INT message_type, const char *message, const char *facility)
            Internal use only
 
   Input:
-    INT    message_type      Message type 
+    INT    message_type      Message type
     char   *message          Message string
     char   *facility         Message facility, filename in which
                              messages will be written
@@ -810,7 +813,7 @@ HNDLE hDB, hKey;
         if (dir[0] != 0)
           if (dir[strlen(dir)-1] != DIR_SEPARATOR)
             strcat(dir, DIR_SEPARATOR_STR);
-        
+
         if (facility[0])
           {
           strcpy(filename, facility);
@@ -872,7 +875,7 @@ HNDLE hDB, hKey;
 
 /*------------------------------------------------------------------*/
 
-INT cm_msg(INT message_type, char* filename, INT line, 
+INT cm_msg(INT message_type, char* filename, INT line,
            const char *routine, const char *format, ...)
 /********************************************************************\
 
@@ -882,7 +885,7 @@ INT cm_msg(INT message_type, char* filename, INT line,
            or an informative message is produced. Different message
            types can be enabled or disabled by setting the type bits
            via cm_set_msg_print.
-           
+
 
   Input:
     INT   message_type      (1<<0): Error
@@ -899,7 +902,7 @@ INT cm_msg(INT message_type, char* filename, INT line,
     char* error format      Error message to print out
     ...                     Parameters like for printf()
   Output:
-    none                        
+    none
 
   Function value:
     CM_SUCCESS              Sucessful completion
@@ -924,7 +927,7 @@ static BOOL  in_routine = FALSE;
   while (*pc != '\\' && *pc != '/' && pc != filename)
     pc--;
   if (pc != filename)
-    pc++;  
+    pc++;
 
   /* print client name into string */
   if (message_type == MT_USER)
@@ -1001,7 +1004,7 @@ static BOOL  in_routine = FALSE;
 
 /*------------------------------------------------------------------*/
 
-INT cm_msg1(INT message_type, char* filename, INT line, 
+INT cm_msg1(INT message_type, char* filename, INT line,
             const char *facility, const char *routine, const char *format, ...)
 /********************************************************************\
 
@@ -1011,7 +1014,7 @@ INT cm_msg1(INT message_type, char* filename, INT line,
            or an informative message is produced. Different message
            types can be enabled or disabled by setting the type bits
            via cm_set_msg_print.
-           
+
 
   Input:
     INT   message_type      (1<<0): Error
@@ -1029,7 +1032,7 @@ INT cm_msg1(INT message_type, char* filename, INT line,
     char  *error format     Error message to print out
     ...                     Parameters like for printf()
   Output:
-    none                        
+    none
 
   Function value:
     CM_SUCCESS              Sucessful completion
@@ -1054,7 +1057,7 @@ static BOOL  in_routine = FALSE;
   while (*pc != '\\' && *pc != '/' && pc != filename)
     pc--;
   if (pc != filename)
-    pc++;  
+    pc++;
 
   /* print client name into string */
   if (message_type == MT_USER)
@@ -1085,7 +1088,7 @@ static BOOL  in_routine = FALSE;
 
   if (facility)
     sprintf(local_message+strlen(local_message), "{%s} ", facility);
-  
+
   strcat(send_message, str);
   strcat(local_message, str);
 
@@ -1155,7 +1158,7 @@ INT cm_msg_register(void (*func)(HNDLE,HNDLE,EVENT_HEADER*,void*))
 \********************************************************************/
 {
 INT status, id;
-  
+
   /* if no message buffer already opened, do so now */
   if (_msg_buffer == 0)
     {
@@ -1165,8 +1168,8 @@ INT status, id;
     }
 
   _msg_dispatch = func;
-  
-  status = bm_request_event(_msg_buffer, EVENTID_ALL, TRIGGER_ALL, 
+
+  status = bm_request_event(_msg_buffer, EVENTID_ALL, TRIGGER_ALL,
                             GET_SOME, &id, func);
 
   return status;
@@ -1221,7 +1224,7 @@ HNDLE hDB, hKey;
       if (dir[0] != 0)
         if (dir[strlen(dir)-1] != DIR_SEPARATOR)
           strcat(dir, DIR_SEPARATOR_STR);
-      
+
       strcpy(filename, "midas.log");
       db_get_value(hDB, 0, "/Logger/Message file", filename, &size, TID_STRING);
 
@@ -1407,7 +1410,7 @@ INT cm_time(DWORD *time)
 
 static HNDLE _hKeyClient=0;  /* key handle for client in ODB */
 static HNDLE _hDB=0;         /* Database handle */
-static INT   _hardware_type;                                  
+static INT   _hardware_type;
 static char  _client_name[NAME_LENGTH];
 static char  _path_name[MAX_STRING_LENGTH];
 static INT   _call_watchdog     = TRUE;
@@ -1424,7 +1427,7 @@ char *cm_get_version()
   Purpose: Return version number of current MIDAS library as a string
 
   Input:
-    none 
+    none
 
   Output:
     none
@@ -1466,7 +1469,7 @@ INT cm_set_path(char *path)
   if (strlen(_path_name) > 0 &&
       _path_name[strlen(_path_name)-1] != DIR_SEPARATOR)
     strcat(_path_name, DIR_SEPARATOR_STR);
-    
+
   return CM_SUCCESS;
 }
 
@@ -1586,7 +1589,7 @@ char str[MAX_STRING_LENGTH], alt_str[MAX_STRING_LENGTH], *pdir;
     if (f == NULL)
       return CM_UNDEF_ENVIRON;
     }
-  
+
   i = 0;
   if (f != NULL)
     {
@@ -1694,7 +1697,7 @@ INT cm_check_client(HNDLE hDB, HNDLE hKeyClient)
   Routine: cm_check_client
 
   Purpose: Check if a client with a /system/client/xxx entry has
-           a valid entry in the ODB client table. If not, remove 
+           a valid entry in the ODB client table. If not, remove
            that client from the /system/client tree.
 
   Input:
@@ -1720,7 +1723,7 @@ char            name[NAME_LENGTH];
 
   db_get_key(hDB, hKeyClient, &key);
   client_pid = atoi(key.name);
-  
+
   i = sizeof(name);
   db_get_value(hDB, hKeyClient, "Name", name, &i, TID_STRING);
 
@@ -1744,7 +1747,7 @@ char            name[NAME_LENGTH];
       if (status != CM_SUCCESS)
         cm_msg(MERROR, "cm_check_client", "cannot delete client info");
       else
-        cm_msg(MINFO, "cm_check_clinet", 
+        cm_msg(MINFO, "cm_check_clinet",
           "Deleted /System/Clients/%d entry for client %s\n", client_pid, name);
 
       return CM_NO_CLIENT;
@@ -1772,7 +1775,7 @@ INT cm_set_client_info(HNDLE hDB, HNDLE *hKeyClient, char *host_name,
   Input:
     HNDLE *hDB              Handle to online database
     char  *host_name        Host name of client
-    char  *client_name      Name of this program as it will be seen 
+    char  *client_name      Name of this program as it will be seen
                             by other clients.
     INT   hw_type           Hardware type returned by
                             rpc_get_option(RPC_OHW_TYPE)
@@ -1782,7 +1785,7 @@ INT cm_set_client_info(HNDLE hDB, HNDLE *hKeyClient, char *host_name,
 
   Output:
     HNDLE *hKeyClient       Handle to client key
-    INT   watchdog_timeout  Contains value from ODB 
+    INT   watchdog_timeout  Contains value from ODB
                             /Programs/<name>/Watchdog timeout
 
   Function value:
@@ -1791,7 +1794,7 @@ INT cm_set_client_info(HNDLE hDB, HNDLE *hKeyClient, char *host_name,
 \********************************************************************/
 {
   if (rpc_is_remote())
-    return rpc_call(RPC_CM_SET_CLIENT_INFO, hDB, hKeyClient, 
+    return rpc_call(RPC_CM_SET_CLIENT_INFO, hDB, hKeyClient,
                     host_name, client_name, hw_type, password, watchdog_timeout);
 
 #ifdef LOCAL_ROUTINES
@@ -1802,7 +1805,7 @@ char  str[256], name[NAME_LENGTH], orig_name[NAME_LENGTH], pwd[NAME_LENGTH];
 BOOL  call_watchdog, allow;
 PROGRAM_INFO_STR(program_info_str);
 
-  /* check security if password is presend */ 
+  /* check security if password is presend */
   status = db_find_key(hDB, 0, "/Experiment/Security/Password", &hKey);
   if (hKey)
     {
@@ -1820,9 +1823,9 @@ PROGRAM_INFO_STR(program_info_str);
     db_find_key(hDB, 0, "/Experiment/Security/Allowed programs", &hKey);
     if (hKey && db_find_key(hDB, hKey, client_name, &hKey) == DB_SUCCESS)
       allow = TRUE;
-    
+
     /* now check password */
-    if (!allow && 
+    if (!allow &&
         strcmp(password, pwd) != 0 &&
         strcmp(password, "mid7qBxsNMHux") != 0)
       {
@@ -1907,28 +1910,28 @@ PROGRAM_INFO_STR(program_info_str);
     return status;
 
   /* set computer id */
-  status = db_set_value(hDB, hKey, "Hardware type", &hw_type, 
+  status = db_set_value(hDB, hKey, "Hardware type", &hw_type,
                         sizeof(hw_type), 1, TID_INT);
   if (status != DB_SUCCESS)
     return status;
 
   /* set server port */
   data = 0;
-  status = db_set_value(hDB, hKey, "Server Port", &data, 
+  status = db_set_value(hDB, hKey, "Server Port", &data,
                         sizeof(INT), 1, TID_INT);
   if (status != DB_SUCCESS)
     return status;
 
   /* set transition mask */
   data = 0;
-  status = db_set_value(hDB, hKey, "Transition Mask", &data, 
+  status = db_set_value(hDB, hKey, "Transition Mask", &data,
                         sizeof(DWORD), 1, TID_DWORD);
   if (status != DB_SUCCESS)
     return status;
 
   /* set deferred transition mask */
   data = 0;
-  status = db_set_value(hDB, hKey, "Deferred Transition Mask", &data, 
+  status = db_set_value(hDB, hKey, "Deferred Transition Mask", &data,
                         sizeof(DWORD), 1, TID_DWORD);
   if (status != DB_SUCCESS)
     return status;
@@ -1940,7 +1943,7 @@ PROGRAM_INFO_STR(program_info_str);
   size = sizeof(watchdog_timeout);
   sprintf(str, "/Programs/%s/Watchdog Timeout", orig_name);
   db_get_value(hDB, 0, str, &watchdog_timeout, &size, TID_INT);
-  
+
   /* define /programs entry */
   sprintf(str, "/Programs/%s", orig_name);
   db_create_record(hDB, 0, str, strcomb(program_info_str));
@@ -2012,10 +2015,10 @@ HNDLE hDB, hKey;
 
 /*------------------------------------------------------------------*/
 /** cm\_get\_environment()
-    \begin{description} 
+    \begin{description}
     \item[Description:] Returns MIDAS environment variables.
     \item[Remarks:] This function can be used to evaluate the standard MIDAS
-    environment variables before connecting to an experiment 
+    environment variables before connecting to an experiment
     (see \Ref{Environment variables}).
     The usual way is that the host name and experiment name are first derived
     from the environment variables MIDAS\_SERVER\_HOST and MIDAS\_EXPT\_NAME.
@@ -2024,18 +2027,18 @@ HNDLE hDB, hKey;
     \begin{verbatim}
 #include <stdio.h>
 #include <midas.h>
-main(int argc, char *argv[]) 
+main(int argc, char *argv[])
 {
 INT  status, i;
-char host_name[256],exp_name[32]; 
- 
-  // get default values from environment 
+char host_name[256],exp_name[32];
+
+  // get default values from environment
   cm_get_environment(host_name, exp_name);
- 
+
   // parse command line parameters
-  for (i=1 ; i<argc ; i++) 
+  for (i=1 ; i<argc ; i++)
     {
-    if (argv[i][0] == '-') 
+    if (argv[i][0] == '-')
       {
       if (i+1 >= argc || argv[i+1][0] == '-')
         goto usage;
@@ -2043,7 +2046,7 @@ char host_name[256],exp_name[32];
         strcpy(exp_name, argv[++i]);
       else if (argv[i][1] == 'h')
         strcpy(host_name, argv[++i]);
-      else 
+      else
         {
 usage:
         printf("usage: test [-h Hostname] [-e Experiment]\n\n");
@@ -2106,18 +2109,18 @@ void cm_check_connect(void)
     \begin{verbatim}
 #include <stdio.h>
 #include <midas.h>
-main(int argc, char *argv[]) 
+main(int argc, char *argv[])
 {
 INT  status, i;
-char host_name[256],exp_name[32]; 
- 
-  // get default values from environment 
+char host_name[256],exp_name[32];
+
+  // get default values from environment
   cm_get_environment(host_name, exp_name);
- 
-  // parse command line parameters 
-  for (i=1 ; i<argc ; i++) 
+
+  // parse command line parameters
+  for (i=1 ; i<argc ; i++)
     {
-    if (argv[i][0] == '-') 
+    if (argv[i][0] == '-')
       {
       if (i+1 >= argc || argv[i+1][0] == '-')
         goto usage;
@@ -2125,7 +2128,7 @@ char host_name[256],exp_name[32];
         strcpy(exp_name, argv[++i]);
       else if (argv[i][1] == 'h')
         strcpy(host_name, argv[++i]);
-      else 
+      else
         {
 usage:
         printf("usage: test [-h Hostname] [-e Experiment]\n\n");
@@ -2143,14 +2146,14 @@ usage:
     \end{description}
     @memo Connects to a MIDAS experiment.
     @param host\_name Specifies host to connect to. Must be a valid IP host name.
-    The string can be empty ("") if to connect to the local computer. 
+    The string can be empty ("") if to connect to the local computer.
     @param exp\_name Specifies the experiment to connect to.
     If this string is empty, the number of defined experiments in exptab is checked.
     If only one experiment is defined, the function automatically connects to this
     one. If more than one experiment is defined, a list is presented and the user
     can interactively select one experiment.
     @param client\_name Client name of the calling program as it can be seen by
-    others (like the scl command in ODBEdit). 
+    others (like the scl command in ODBEdit).
     @param func Callback function to read in a password if security has
     been enabled. In all command line applications this function is NULL which
     invokes an internal ss\_gets() function to read in a password.
@@ -2160,44 +2163,44 @@ usage:
     @return CM\_SUCCESS, CM\_UNDEF\_EXP, CM\_SET\_ERROR, RPC\_NET\_ERROR, \\
     CM\_VERSION\_MISMATCH MIDAS library version different on local and remote computer
 */
-INT cm_connect_experiment(char *host_name, char *exp_name, 
+INT cm_connect_experiment(char *host_name, char *exp_name,
                           char *client_name, void (*func)(char*))
 {
   INT status;
   char str[256];
-  
-  status = cm_connect_experiment1(host_name, exp_name, client_name, 
+
+  status = cm_connect_experiment1(host_name, exp_name, client_name,
 				  func, DEFAULT_ODB_SIZE, DEFAULT_WATCHDOG_TIMEOUT);
   if (status != CM_SUCCESS)
   {
     cm_get_error(status, str);
     puts(str);
   }
-  
+
   return status;
 }
 
 /*------------------------------------------------------------------*/
-INT cm_connect_experiment1(char *host_name, char *exp_name, 
-                           char *client_name, void (*func)(char*), 
+INT cm_connect_experiment1(char *host_name, char *exp_name,
+                           char *client_name, void (*func)(char*),
                            INT odb_size, INT watchdog_timeout)
 /********************************************************************\
 
   Routine: cm_connect_experiment1
 
   Purpose: Connect to a MIDAS experiment (to the online database) on
-           a specific host. 
+           a specific host.
 
   Input:
     char *host_name         Internet host name. Null string for local
                             machine.
-    char *exp_name          Experiment name, which is defined in "exptab". 
+    char *exp_name          Experiment name, which is defined in "exptab".
                             If exp_name==NULL or "", the shared memory
                             objects are created in the local directory.
-    
-    char *client_name       Name of this program as it will be seen 
+
+    char *client_name       Name of this program as it will be seen
                             by other clients.
-    
+
     void *func()            Callback function to query password
 
     INT odb_size            Size in bytes of ODB. Only used when creating
@@ -2284,7 +2287,7 @@ RUNINFO_STR(runinfo_str);
     /* return if experiment not defined */
     if (i == MAX_EXPERIMENT || exptab[i].name[0] == 0)
       {
-      /* message should be displayed by application 
+      /* message should be displayed by application
       sprintf(str, "Experiment %s not defined in exptab\r", exp_name1);
       cm_msg(MERROR, str);
       */
@@ -2329,8 +2332,8 @@ RUNINFO_STR(runinfo_str);
 
   strcpy(client_name1, client_name);
   password[0] = 0;
-  status = cm_set_client_info(hDB, &hKeyClient, local_host_name, 
-                              client_name1, rpc_get_option(0, RPC_OHW_TYPE), 
+  status = cm_set_client_info(hDB, &hKeyClient, local_host_name,
+                              client_name1, rpc_get_option(0, RPC_OHW_TYPE),
                               password, watchdog_timeout);
 
   if (status == CM_WRONG_PASSWORD)
@@ -2349,8 +2352,8 @@ RUNINFO_STR(runinfo_str);
       }
 
     strcpy(password, ss_crypt(str, "mi"));
-    status = cm_set_client_info(hDB, &hKeyClient, local_host_name, 
-                                client_name1, rpc_get_option(0, RPC_OHW_TYPE), 
+    status = cm_set_client_info(hDB, &hKeyClient, local_host_name,
+                                client_name1, rpc_get_option(0, RPC_OHW_TYPE),
                                 password, watchdog_timeout);
     if (status != CM_SUCCESS)
       {
@@ -2393,8 +2396,8 @@ RUNINFO_STR(runinfo_str);
 
   /* startup message is not displayed */
   _message_print = NULL;
-  
-  cm_msg(MINFO, "cm_connect_experiment", "Program %s on host %s started", 
+
+  cm_msg(MINFO, "cm_connect_experiment", "Program %s on host %s started",
          client_name, local_host_name);
 
   /* enable system and user messages to stdout as default */
@@ -2416,7 +2419,7 @@ INT cm_list_experiments(char *host_name, char exp_name[MAX_EXPERIMENT][NAME_LENG
 
   Routine: cm_list_experiment
 
-  Purpose: Connect to a MIDAS server and return all defined 
+  Purpose: Connect to a MIDAS server and return all defined
            experiments in *exp_name[MAX_EXPERIMENTS]
 
   Input:
@@ -2509,10 +2512,10 @@ struct hostent       *phe;
     status = connect(sock, (void *) &bind_addr, sizeof(bind_addr));
 
     /* don't return if an alarm signal was cought */
-    } while (status == -1 && errno == EINTR); 
+    } while (status == -1 && errno == EINTR);
 #else
   status = connect(sock, (void *) &bind_addr, sizeof(bind_addr));
-#endif  
+#endif
 
   if (status != 0)
     {
@@ -2607,7 +2610,7 @@ INT cm_connect_client(char *client_name, HNDLE *hConn)
     char *client_name       Name of client to connect to. This name
                             is set by the other client via the
                             cm_connect_experiment call.
-    
+
 
   Output:
     HNDLE  hConn            Connection handle
@@ -2684,14 +2687,14 @@ INT cm_disconnect_client(HNDLE hConn, BOOL bShutdown)
   Purpose: Disconnect from a MIDAS client
 
   Input:
-    HNDLE  hConn             Connection handle obtained via 
+    HNDLE  hConn             Connection handle obtained via
                              cm_connect_client
     BOOL   bShutdown         If TRUE, disconnect from client and
                              shut it down (exit the client program)
                              by sending a RPC_SHUTDOWN message
 
   Output:
-    none 
+    none
 
   Function value:
     see rpc_client_disconnect
@@ -2717,7 +2720,7 @@ INT cm_disconnect_experiment(void)
 {
   HNDLE hDB, hKey;
   char local_host_name[HOST_NAME_LENGTH], client_name[80];
-  
+
   /* send shutdown notification */
   rpc_get_name(client_name);
   gethostname(local_host_name, sizeof(local_host_name));
@@ -2727,7 +2730,7 @@ INT cm_disconnect_experiment(void)
   /* disconnect message not displayed */
   _message_print = NULL;
 
-  cm_msg(MINFO, "cm_disconnect_experiment", "Program %s on host %s stopped", 
+  cm_msg(MINFO, "cm_disconnect_experiment", "Program %s on host %s stopped",
          client_name, local_host_name);
 
   if (rpc_is_remote())
@@ -2749,7 +2752,7 @@ INT cm_disconnect_experiment(void)
 
     /* delete client info */
     cm_get_experiment_database(&hDB, &hKey);
-  
+
     if (hDB)
       cm_delete_client_info(hDB, 0);
 
@@ -2928,12 +2931,12 @@ INT cm_set_watchdog_params(BOOL call_watchdog, INT timeout)
                *
   Purpose: Sets the internal watchdog flags and the own timeout.
 
-           If call_watchdog is TRUE, the cm_watchdog routine is called 
+           If call_watchdog is TRUE, the cm_watchdog routine is called
            periodically from the system to show other clients that
            this application is "alive". On UNIX systems, the
-           alarm() timer is used which is then not available for 
+           alarm() timer is used which is then not available for
            user purposes.
-    
+
            The timeout specifies the time, after which the calling
            application should be considered "dead" by other clients.
            Normally, the cm_watchdog() routines is called periodically.
@@ -2943,13 +2946,13 @@ INT cm_set_watchdog_params(BOOL call_watchdog, INT timeout)
            blocked any more. If this application should not checked
            by others, the timeout can be specified as zero.
            It might be useful for debugging purposes to do so,
-           because if a debugger comes to a breakpoint and stops 
-           the application, the periodic call of cm_watchdog 
+           because if a debugger comes to a breakpoint and stops
+           the application, the periodic call of cm_watchdog
            is disabled and the client looks like dead.
 
            If the timeout is not zero, but the watchdog is not
-           called (call_watchdog == FALSE), the user must ensure 
-           to call cm_watchdog periodically with a period of 
+           called (call_watchdog == FALSE), the user must ensure
+           to call cm_watchdog periodically with a period of
            WATCHDOG_INTERVAL milliseconds or less.
 
            An application which calles system routines which block
@@ -3015,7 +3018,7 @@ INT i;
       if (rpc_get_server_option(RPC_OSERVER_TYPE) == ST_SINGLE &&
           _buffer[i-1].index != rpc_get_server_acception())
         continue;
-  
+
       if (rpc_get_server_option(RPC_OSERVER_TYPE) != ST_SINGLE &&
           _buffer[i-1].index != ss_gettid())
         continue;
@@ -3045,7 +3048,7 @@ INT i;
         db_unlock_database(i);
         continue;
         }
-  
+
       if (rpc_get_server_option(RPC_OSERVER_TYPE) != ST_SINGLE &&
           _database[i-1].index != ss_gettid())
         {
@@ -3187,7 +3190,7 @@ INT cm_register_server(void)
   Routine: cm_register_server
 
   Purpose: Register a server which can be called from other clients
-           of a specific experiment. 
+           of a specific experiment.
 
   Input:
     none
@@ -3223,7 +3226,7 @@ HNDLE hDB, hKey;
 
     /* unlock database */
     db_set_mode(hDB, hKey, MODE_READ | MODE_WRITE, TRUE);
-  
+
     /* set value */
     status = db_set_data(hDB, hKey, &port, sizeof(INT), 1, TID_INT);
     if (status != DB_SUCCESS)
@@ -3245,7 +3248,7 @@ HNDLE hDB, hKey;
     the transition bit to /System/Clients/<pid>/Transition Mask.
     Other clients making a transition scan the transition masks of all clients
     and call their transition callbacks via RPC.
-    
+
     Clients can register for transitions (Start/Stop/Pause/Resume) or for
     notifications before or after a transition occurs
     (Pre-start/Post-start/Pre-stop/Post-stop). The logger for example opens
@@ -3255,14 +3258,14 @@ HNDLE hDB, hKey;
     a value larger than one in case of error. An error string can be copied
     into the error variable.
 
-    \item[Example:] 
+    \item[Example:]
     The callback function will be called on transitions from inside the
     \Ref{cm_yield()} function which therefore must be contained in the
     main program loop.
     \begin{verbatim}
-INT start(INT run_number, char *error) 
+INT start(INT run_number, char *error)
 {
-  if (<not ok>) 
+  if (<not ok>)
     {
     strcpy(error, "Cannot start because ...");
     return 2;
@@ -3274,7 +3277,7 @@ main()
 {
   ...
   cm_register_transition(TR_START, start);
-  do 
+  do
     {
     status = cm_yield(1000);
     } while (status != RPC_SHUTDOWN &&
@@ -3285,7 +3288,7 @@ main()
     \end{description}
     @memo Registers a callback function for run transitions.
     @param transition Transition to register for. Can be TR\_PRESTART, TR\_START,
-    TR\_POSTSTART, TR\_PRSTOP, TR\_STOP, TR\_POSTSTOP, TR\_PAUSE or TR\_RESUME. 
+    TR\_POSTSTART, TR\_PRSTOP, TR\_STOP, TR\_POSTSTOP, TR\_PAUSE or TR\_RESUME.
     @param func Callback function.
     @return CM\_SUCCESS
 */
@@ -3294,7 +3297,7 @@ INT cm_register_transition(INT transition, INT (*func)(INT,char*))
   INT   status, i, size;
   DWORD mask;
   HNDLE hDB, hKey;
-  
+
   cm_get_experiment_database(&hDB, &hKey);
 
   size = sizeof(DWORD);
@@ -3321,8 +3324,8 @@ INT cm_register_transition(INT transition, INT (*func)(INT,char*))
 
   /* re-lock database */
   db_set_mode(hDB, hKey, MODE_READ, TRUE);
-  
-  return CM_SUCCESS;  
+
+  return CM_SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
@@ -3338,7 +3341,7 @@ INT cm_register_deferred_transition(INT transition, BOOL (*func)(INT,BOOL))
   Purpose: Register a deferred transition handler. If a client is
            registered as a deferred transition handler, it may defer
            a requested transition by returning FALSE until a certain
-           condition (like a motor reaches its end position) is 
+           condition (like a motor reaches its end position) is
            reached.
 
   Input:
@@ -3385,7 +3388,7 @@ HNDLE hDB, hKey;
 
   /* re-lock database */
   db_set_mode(hDB, hKey, MODE_READ, TRUE);
-  
+
   /* hot link requested transition */
   size = sizeof(_requested_transition);
   db_get_value(hDB, 0, "/Runinfo/Requested Transition", &_requested_transition, &size, TID_INT);
@@ -3393,12 +3396,12 @@ HNDLE hDB, hKey;
   status = db_open_record(hDB, hKey, &_requested_transition, sizeof(INT), MODE_READ, NULL, NULL);
   if (status != DB_SUCCESS)
     {
-    cm_msg(MERROR, "cm_register_deferred_transition", 
+    cm_msg(MERROR, "cm_register_deferred_transition",
                    "Cannot hotlink /Runinfo/Requested Transition");
     return status;
     }
 
-  return CM_SUCCESS;  
+  return CM_SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
@@ -3409,7 +3412,7 @@ INT cm_check_deferred_transition()
   Routine: cm_check_deferred_transition
 
   Purpose: Check for any deferred transition. If a deferred transition
-           handler has been registered via the 
+           handler has been registered via the
            cm_register_deferred_transition function, this routine
            should be called regularly. It checks if a transition
            request is pending. If so, it calld the registered handler
@@ -3440,14 +3443,14 @@ static BOOL first;
     for (i=0 ; _deferred_trans_table[i].transition ; i++)
       if (_deferred_trans_table[i].transition == _requested_transition)
         break;
-      
+
     if (_deferred_trans_table[i].transition == _requested_transition)
       {
       if (((BOOL (*)(INT,BOOL))_deferred_trans_table[i].func)(_requested_transition, first))
         {
         status = cm_transition(_requested_transition | TR_DEFERRED, 0, str, 256, SYNC);
         if (status != CM_SUCCESS)
-          cm_msg(MERROR, "cm_check_deferred_transition", 
+          cm_msg(MERROR, "cm_check_deferred_transition",
                  "Cannot perform deferred transition: %s", str);
 
         /* bypass hotlink and set _requested_transition directly to zero */
@@ -3522,7 +3525,7 @@ RUNINFO_STR(runinfo_str);
   /* Set new run number in ODB */
   if (transition == TR_START)
     {
-    status = db_set_value(hDB, 0, "Runinfo/Run number", 
+    status = db_set_value(hDB, 0, "Runinfo/Run number",
                           &run_number, sizeof(run_number), 1, TID_INT);
     if (status != DB_SUCCESS)
       cm_msg(MERROR, "cm_transition", "cannot set Runinfo/Run number in database");
@@ -3532,7 +3535,7 @@ RUNINFO_STR(runinfo_str);
     {
     /* remove transition request */
     i = 0;
-    db_set_value(hDB, 0, "/Runinfo/Requested transition", &i, 
+    db_set_value(hDB, 0, "/Runinfo/Requested transition", &i,
                  sizeof(int), 1, TID_INT);
     }
   else
@@ -3565,7 +3568,7 @@ RUNINFO_STR(runinfo_str);
       if (status == DB_SUCCESS)
         {
         size = sizeof(mask);
-        status = db_get_value(hDB, hSubkey, "Deferred Transition Mask", 
+        status = db_get_value(hDB, hSubkey, "Deferred Transition Mask",
                               &mask, &size, TID_DWORD);
 
         /* if registered for deferred transition, set flag in ODB and return */
@@ -3573,7 +3576,7 @@ RUNINFO_STR(runinfo_str);
           {
           size = NAME_LENGTH;
           db_get_value(hDB, hSubkey, "Name", str, &size, TID_STRING);
-          db_set_value(hDB, 0, "/Runinfo/Requested transition", &transition, 
+          db_set_value(hDB, 0, "/Runinfo/Requested transition", &transition,
                        sizeof(int), 1, TID_INT);
           if (perror)
             sprintf(perror, "Transition deferred by client \"%s\"", str);
@@ -3593,12 +3596,12 @@ RUNINFO_STR(runinfo_str);
 
     /* reset stop time */
     seconds = 0;
-    db_set_value(hDB, 0, "Runinfo/Stop Time binary", 
+    db_set_value(hDB, 0, "Runinfo/Stop Time binary",
                  &seconds, sizeof(seconds), 1, TID_DWORD);
 
     /* Seconds since 1.1.1970 */
     cm_time(&seconds);
-    db_set_value(hDB, 0, "Runinfo/Start Time binary", 
+    db_set_value(hDB, 0, "Runinfo/Start Time binary",
                  &seconds, sizeof(seconds), 1, TID_DWORD);
     }
 
@@ -3648,7 +3651,7 @@ RUNINFO_STR(runinfo_str);
     if (status == DB_SUCCESS)
       {
       size = sizeof(mask);
-      status = db_get_value(hDB, hSubkey, "Transition Mask", 
+      status = db_get_value(hDB, hSubkey, "Transition Mask",
                             &mask, &size, TID_DWORD);
 
       if (status == DB_SUCCESS && (mask & transition))
@@ -3668,7 +3671,7 @@ RUNINFO_STR(runinfo_str);
             status = CM_SUCCESS;
 
           if (perror != NULL)
-            memcpy(perror, error, (INT) strlen(error)+1 < strsize ? 
+            memcpy(perror, error, (INT) strlen(error)+1 < strsize ?
                                         strlen(error)+1 : strsize);
 
           if (status != CM_SUCCESS)
@@ -3692,7 +3695,7 @@ RUNINFO_STR(runinfo_str);
           status = rpc_client_connect(host_name, port, &hConn);
           if (status != RPC_SUCCESS)
             {
-            sprintf(str, "cannot connect to client %s on host %s, port %d", 
+            sprintf(str, "cannot connect to client %s on host %s, port %d",
                           client_name, host_name, port);
             cm_msg(MERROR, "cm_transition", str);
             continue;
@@ -3706,20 +3709,20 @@ RUNINFO_STR(runinfo_str);
           if (async_flag == ASYNC)
             rpc_set_option(hConn, RPC_OTRANSPORT, RPC_FTCP);
 
-          status = rpc_client_call(hConn, RPC_RC_TRANSITION, transition, 
+          status = rpc_client_call(hConn, RPC_RC_TRANSITION, transition,
                                    run_number, error, strsize);
 
           /* reset timeout */
           rpc_set_option(hConn, RPC_OTIMEOUT, old_timeout);
-          
+
           /* reset protocol */
           if (async_flag == ASYNC)
             rpc_set_option(hConn, RPC_OTRANSPORT, RPC_TCP);
 
           /* cm_msg(MINFO, "done (%d)\n", status); */
-          
+
           if (perror != NULL)
-            memcpy(perror, error, (INT) strlen(error)+1 < strsize ? 
+            memcpy(perror, error, (INT) strlen(error)+1 < strsize ?
                                         strlen(error)+1 : strsize);
 
           if (status != CM_SUCCESS)
@@ -3728,7 +3731,7 @@ RUNINFO_STR(runinfo_str);
         }
       }
     }
-    
+
   /* call post- transitions */
   if (transition == TR_START)
     {
@@ -3796,7 +3799,7 @@ RUNINFO_STR(runinfo_str);
 
   if (transition == TR_STOP)
     state = STATE_STOPPED;
-  
+
   size = sizeof(state);
   status = db_set_value(hDB, 0, "Runinfo/State", &state, size, 1, TID_INT);
   if (status != DB_SUCCESS)
@@ -3846,7 +3849,7 @@ RUNINFO_STR(runinfo_str);
           break;
 
         db_get_key(hDB, hKey, &key);
-      
+
         /* don't check "execute on xxx" */
         if (key.type != TID_KEY)
           continue;
@@ -3885,7 +3888,7 @@ RUNINFO_STR(runinfo_str);
           break;
 
         db_get_key(hDB, hKey, &key);
-      
+
         /* don't check "execute on xxx" */
         if (key.type != TID_KEY)
           continue;
@@ -3950,7 +3953,7 @@ INT cm_dispatch_ipc(char *message, int socket)
 
 \********************************************************************/
 {
-  if (message[0] == 'O') 
+  if (message[0] == 'O')
     {
     HNDLE hDB, hKey;
     sscanf(message+2, "%d %d", &hDB, &hKey);
@@ -4019,7 +4022,7 @@ INT cm_yield(INT millisec)
     INT   millisec          Timeout in millisec. If no message is
                             received during the specified timeout,
                             the routine returns. If millisec=-1,
-                            it only returns when receiving an 
+                            it only returns when receiving an
                             RPC_SHUTDOWN message.
 
   Output:
@@ -4077,7 +4080,7 @@ static DWORD last_checked = 0;
     bm_mark_read_waiting(FALSE);
     }
 
-  return status;  
+  return status;
 }
 
 /*------------------------------------------------------------------*/
@@ -4106,7 +4109,7 @@ int  fh;
 
   if (rpc_is_remote())
     return rpc_call(RPC_CM_EXECUTE, command, result, bufsize);
-  
+
   if (bufsize > 0)
     {
     strcpy(str, command);
@@ -4186,7 +4189,7 @@ char  str[80];
 *                                                                    *
 \********************************************************************/
 
-INT bm_match_event(short int event_id, short int trigger_mask, 
+INT bm_match_event(short int event_id, short int trigger_mask,
                    EVENT_HEADER *pevent)
 /********************************************************************\
 
@@ -4213,7 +4216,7 @@ INT bm_match_event(short int event_id, short int trigger_mask,
           (trigger_mask == TRIGGER_ALL ||
           (trigger_mask &  pevent->trigger_mask)));
 }
-              
+
 /*------------------------------------------------------------------*/
 /** bm\_open\_buffer()
     \begin{description}
@@ -4234,7 +4237,7 @@ INT bm_match_event(short int event_id, short int trigger_mask,
       printf("Received event #%d\r",
       pheader->serial_number);
     }
-    main() 
+    main()
     {
       INT status, request_id;
       HNDLE hbuf;
@@ -4243,8 +4246,8 @@ INT bm_match_event(short int event_id, short int trigger_mask,
       return 1;
       bm_open_buffer(EVENT_BUFFER_NAME, EVENT_BUFFER_SIZE, &hbuf);
       bm_request_event(hbuf, 1, TRIGGER_ALL, GET_ALL, request_id, process_event);
-    
-      do 
+
+      do
       {
        status = cm_yield(1000);
       } while (status != RPC_SHUTDOWN && status != SS_ABORT);
@@ -4255,7 +4258,7 @@ INT bm_match_event(short int event_id, short int trigger_mask,
     \end{description}
     @memo open an event buffer.
     @param buffer_name Name of buffer
-    @param buffer_size Size of buffer in bytes 
+    @param buffer_size Size of buffer in bytes
     @param buffer_handle Buffer handle returned by function
     @return BM\_SUCCESS, BM\_CREATED,\\
     BM\_NO\_SHM Shared memory cannot be created \\
@@ -4321,7 +4324,7 @@ BUFFER_HEADER        *pheader;
         if (rpc_get_server_option(RPC_OSERVER_TYPE) == ST_SINGLE &&
             _buffer[i].index != rpc_get_server_acception())
           continue;
-  
+
         if (rpc_get_server_option(RPC_OSERVER_TYPE) != ST_SINGLE &&
             _buffer[i].index != ss_gettid())
           continue;
@@ -4465,9 +4468,9 @@ BUFFER_HEADER        *pheader;
   pclient->pid = ss_getpid();
   pclient->tid = ss_gettid();
   pclient->thandle = ss_getthandle();
-  
+
   ss_suspend_get_port(&pclient->port);
-  
+
   pclient->read_pointer = pheader->write_pointer;
   pclient->last_activity = ss_millitime();
 
@@ -4509,7 +4512,7 @@ BUFFER_HEADER        *pheader;
     \Ref{bm_open_buffer()}.
     \end{description}
     @memo close event buffer.
-    @param buffer_handle buffer handle 
+    @param buffer_handle buffer handle
     @return BM\_SUCCESS, BM\_INVALID\_HANDLE
 */
 INT bm_close_buffer(INT buffer_handle)
@@ -4541,7 +4544,7 @@ INT           i, j, index, destroy_flag;
   if (rpc_get_server_option(RPC_OSERVER_TYPE) == ST_SINGLE &&
       _buffer[buffer_handle-1].index != rpc_get_server_acception())
     return BM_INVALID_HANDLE;
-  
+
   if (rpc_get_server_option(RPC_OSERVER_TYPE) != ST_SINGLE &&
       _buffer[buffer_handle-1].index != ss_gettid())
     return BM_INVALID_HANDLE;
@@ -4669,7 +4672,7 @@ void cm_watchdog(int dummy)
   Purpose: Called at periodic intervals, checks if all clients are
            alive. If one process died, its client entries are cleaned up.
 
-  Input:                                      
+  Input:
     none
 
   Output:
@@ -4708,9 +4711,9 @@ char            str[256];
   /* check if system time has been changed more than 10 min */
   time_changed = interval < 0 || interval > 600000;
   wrong_interval = interval < 0.8*WATCHDOG_INTERVAL || interval > 1.2*WATCHDOG_INTERVAL;
-    
+
   if(time_changed)
-    cm_msg(MINFO, "cm_watchdog", "System time has been changed! last:%dms  now:%dms  delta:%dms", 
+    cm_msg(MINFO, "cm_watchdog", "System time has been changed! last:%dms  now:%dms  delta:%dms",
                                   _watchdog_last_called, actual_time, interval);
 
   /* check buffers */
@@ -4769,7 +4772,7 @@ char            str[256];
             }
 
           bm_unlock_buffer(i+1);
-          
+
           /* display info message after unlocking buffer */
           if (str[0])
             cm_msg(MINFO, "cm_watchdog", str);
@@ -4813,13 +4816,13 @@ char            str[256];
             for (k=0 ; k<pdbclient->max_index ; k++)
               if (pdbclient->open_record[k].handle)
                 {
-                pkey = (KEY *) ((char *) pdbheader + 
+                pkey = (KEY *) ((char *) pdbheader +
                                 pdbclient->open_record[k].handle);
                 if (pkey->notify_count > 0)
                   pkey->notify_count--;
 
                 if (pdbclient->open_record[k].access_mode & MODE_WRITE)
-                  db_set_mode(i+1, pdbclient->open_record[k].handle, 
+                  db_set_mode(i+1, pdbclient->open_record[k].handle,
                              (WORD) (pkey->access_mode & ~MODE_EXCLUSIVE), 2);
                 }
 
@@ -4838,7 +4841,7 @@ char            str[256];
                 nc++;
             pdbheader->num_clients = nc;
             bDeleted = TRUE;
-            }                          
+            }
 
           db_unlock_database(i+1);
 
@@ -4917,7 +4920,7 @@ INT cm_shutdown(char *name, BOOL bUnique)
   Purpose: Shutdown (exit) other MIDAS client
 
   Input:
-    char   name             Client name or "all" for all clients 
+    char   name             Client name or "all" for all clients
     BOOL   bUnique          If true, look for the exact client name.
                             If false, look for namexxx where xxx is
                             a any number
@@ -4973,7 +4976,7 @@ DWORD  start_time;
 	client_name[strlen(name)] = 0; /* strip number */
 
       /* check if individual client */
-      if (!equal_ustring("all", name) && 
+      if (!equal_ustring("all", name) &&
           !equal_ustring(client_name, name))
         {
         i++;
@@ -5174,7 +5177,7 @@ char            str[256];
               }
 
             bm_unlock_buffer(i+1);
-            
+
             /* display info message after unlocking buffer */
             if (str[0])
               cm_msg(MINFO, "cm_cleanup", str);
@@ -5217,13 +5220,13 @@ char            str[256];
               for (k=0 ; k<pdbclient->max_index ; k++)
                 if (pdbclient->open_record[k].handle)
                   {
-                  pkey = (KEY *) ((char *) pdbheader + 
+                  pkey = (KEY *) ((char *) pdbheader +
                                   pdbclient->open_record[k].handle);
                   if (pkey->notify_count > 0)
                     pkey->notify_count--;
 
                   if (pdbclient->open_record[k].access_mode & MODE_WRITE)
-                    db_set_mode(i+1, pdbclient->open_record[k].handle, 
+                    db_set_mode(i+1, pdbclient->open_record[k].handle,
                                (WORD) (pkey->access_mode & ~MODE_EXCLUSIVE), 2);
                   }
 
@@ -5253,7 +5256,7 @@ char            str[256];
 
               /* display info message after unlocking buffer */
               cm_msg(MINFO, "cm_cleanup", str);
-              
+
               status = cm_delete_client_info(i+1, client_pid);
               if (status != CM_SUCCESS)
                 cm_msg(MERROR, "cm_cleanup", "cannot delete client info");
@@ -5467,7 +5470,7 @@ INT bm_init_buffer_counters(INT buffer_handle)
 
   Routine: bm_init_event_counters
 
-  Purpose: Initialize counters for a specific buffer. This routine 
+  Purpose: Initialize counters for a specific buffer. This routine
            should be called at the beginning of a run.
 
   Input:
@@ -5520,7 +5523,7 @@ INT bm_init_buffer_counters(INT buffer_handle)
     Instead writing directly to the shared memory, the events are copied to a
     local cache buffer. When this buffer is full, it is copied to the shared
     memory in one operation. The same technique can be used when receiving events.
-    
+
     The drawback of this method is that the events have to be copied twice, once to the
     cache and once from the cache to the shared memory. Therefore it can happen that the
     usage of a cache even slows down data throughput on a given environment (computer
@@ -5528,8 +5531,8 @@ INT bm_init_buffer_counters(INT buffer_handle)
     The cache size has therefore be optimized manually to maximize data throughput.
     \end{description}
     @memo Turns on/off caching for reading and writing to a buffer.
-    @param buffer_handle buffer handle obtained via \Ref{bm_open_buffer()} 
-    @param read_size cache size for reading events in bytes, zero for no cache 
+    @param buffer_handle buffer handle obtained via \Ref{bm_open_buffer()}
+    @param read_size cache size for reading events in bytes, zero for no cache
     @param write_size cache size for writing events in bytes, zero for no cache
     @return BM\_SUCCESS, BM\_INVALID\_HANDLE, BM\_NO\_MEMORY, BM\_INVALID\_PARAM
 */
@@ -5619,11 +5622,11 @@ BUFFER        *pbuf;
     Following structure is created at the beginning of an event
     \begin{verbatim}
     typedef struct {
-     short int     event_id; 
-     short int     trigger_mask; 
-     DWORD         serial_number; 
-     DWORD         time_stamp; 
-     DWORD         data_size; 
+     short int     event_id;
+     short int     trigger_mask;
+     DWORD         serial_number;
+     DWORD         time_stamp;
+     DWORD         data_size;
     } EVENT_HEADER;
     \end{verbatim}
     \item[Example:] \begin{verbatim}
@@ -5637,7 +5640,7 @@ BUFFER        *pbuf;
     @param event_id event ID of the event
     @param trigger_mask trigger mask of the event
     @param size size if the data part of the event in bytes
-    @param serial serial number 
+    @param serial serial number
     @return BM\_SUCCESS
 */
 INT bm_compose_event(EVENT_HEADER *event_header,
@@ -5785,28 +5788,28 @@ BUFFER_CLIENT *pclient;
     \item[Example:]
     \end{description}
     @memo event request.
-    @param buffer_handle buffer handle obtained via bm\_open\_buffer() 
+    @param buffer_handle buffer handle obtained via bm\_open\_buffer()
     @param event_id event ID for requested events. Use EVENTID\_ALL
-    to receive events with any ID. 
+    to receive events with any ID.
     @param trigger_mask trigger mask for requested events.
     The requested events must have at least one bit in its
     trigger mask common with the requested trigger mask. Use TRIGGER\_ALL to
-    receive events with any trigger mask. 
+    receive events with any trigger mask.
     @param sampling_type specifies how many events to receive.
     A value of GET\_ALL receives all events which
     match the specified event ID and trigger mask. If the events are consumed slower
     than produced, the producer is automatically slowed down. A value of GET\_SOME
     receives as much events as possible without slowing down the producer. GET\_ALL is
-    typically used by the logger, while GET\_SOME is typically used by analyzers. 
+    typically used by the logger, while GET\_SOME is typically used by analyzers.
     @param request_id request ID returned by the function.
     This ID is passed to the callback routine and must
-    be used in the bm\_delete\_request() routine. 
+    be used in the bm\_delete\_request() routine.
     @param func allback routine which gets called when an event of the
     specified type is received.
     @return BM\_SUCCESS, BM\_INVALID\_HANDLE\\
     BM\_NO\_MEMORY  too many requests. The value
     MAX\_EVENT\_REQUESTS in midas.h should be
-    increased. 
+    increased.
 */
 INT bm_request_event(HNDLE buffer_handle, short int event_id,
                      short int trigger_mask,
@@ -5839,7 +5842,7 @@ INT  index, status;
     /* if not found, create new one */
     if (index == _request_list_entries)
       {
-      _request_list = realloc(_request_list, 
+      _request_list = realloc(_request_list,
                               sizeof(REQUEST_LIST)*(_request_list_entries+1));
       if (_request_list == NULL)
         {
@@ -5862,7 +5865,7 @@ INT  index, status;
   *request_id = index;
 
   /* add request in buffer structure */
-  status = bm_add_event_request(buffer_handle, event_id, trigger_mask, 
+  status = bm_add_event_request(buffer_handle, event_id, trigger_mask,
                                 sampling_type, func, index);
   if (status != BM_SUCCESS)
     return status;
@@ -6001,14 +6004,14 @@ INT bm_delete_request(INT request_id)
     \item[Example:]
     \begin{verbatim}
     char event[1000];
-    // create event with ID 1, trigger mask 0, size 100 bytes and serial number 1 
+    // create event with ID 1, trigger mask 0, size 100 bytes and serial number 1
     bm_compose_event((EVENT_HEADER *) event, 1, 0, 100, 1);
 
-    // set first byte of event 
+    // set first byte of event
     *(event+sizeof(EVENT_HEADER)) = <...>
     #include <stdio.h>
     #include "midas.h"
-    main() 
+    main()
     {
      INT status, i;
      HNDLE hbuf;
@@ -6017,14 +6020,14 @@ INT bm_delete_request(INT request_id)
      if (status != CM_SUCCESS)
      return 1;
      bm_open_buffer(EVENT_BUFFER_NAME, EVENT_BUFFER_SIZE, &hbuf);
-    
-     // create event with ID 1, trigger mask 0, size 100 bytes and serial number 1 
+
+     // create event with ID 1, trigger mask 0, size 100 bytes and serial number 1
      bm_compose_event((EVENT_HEADER *) event, 1, 0, 100, 1);
-    
-     // set event data 
+
+     // set event data
      for (i=0 ; i<100 ; i++)
      *(event+sizeof(EVENT_HEADER)+i) = i;
-     // send event 
+     // send event
      bm_send_event(hbuf, event, 100+sizeof(EVENT_HEADER), SYNC);
      cm_disconnect_experiment();
      return 0;
@@ -6032,9 +6035,9 @@ INT bm_delete_request(INT request_id)
     \end{verbatim}
     \end{description}
     @memo send event to buffer.
-    @param buffer_handle Buffer handle obtained via bm\_open\_buffer() 
-    @param source Address of event buffer 
-    @param buf_size Size of event including event header in bytes 
+    @param buffer_handle Buffer handle obtained via bm\_open\_buffer()
+    @param source Address of event buffer
+    @param buf_size Size of event including event header in bytes
     @param async_flag Synchronous/asynchronous flag. If FALSE, the function
     blocks if the buffer has not enough free space to receive the event.
     If TRUE, the function returns immediately with a
@@ -6044,7 +6047,7 @@ INT bm_delete_request(INT request_id)
     buffer has not enough space to receive event\\
     BM\_NO\_MEMORY   Event is too large for network buffer or event buffer.
     One has to increase MAX\_EVENT\_SIZE or EVENT\_BUFFER\_SIZE in midas.h and
-    recompile. 
+    recompile.
 */
 INT bm_send_event(INT buffer_handle, void *source, INT buf_size,
                   INT async_flag)
@@ -6052,11 +6055,11 @@ INT bm_send_event(INT buffer_handle, void *source, INT buf_size,
   EVENT_HEADER    *pevent;
 
   /* check if event size defined in header matches buf_size */
-  if (ALIGN(buf_size) != (INT) ALIGN(((EVENT_HEADER *) source)->data_size + 
+  if (ALIGN(buf_size) != (INT) ALIGN(((EVENT_HEADER *) source)->data_size +
                            sizeof(EVENT_HEADER)))
     {
     cm_msg(MERROR, "bm_send_event", "event size (%d) mismatch in header (%d)",
-             ALIGN(buf_size), (INT) ALIGN(((EVENT_HEADER *) source)->data_size + 
+             ALIGN(buf_size), (INT) ALIGN(((EVENT_HEADER *) source)->data_size +
              sizeof(EVENT_HEADER)));
     return BM_INVALID_PARAM;
     }
@@ -6064,7 +6067,7 @@ INT bm_send_event(INT buffer_handle, void *source, INT buf_size,
   /* check for maximal event size */
   if (((EVENT_HEADER *) source)->data_size > MAX_EVENT_SIZE)
     {
-    cm_msg(MERROR, "bm_send_event", "event size (%d) larger than maximum event size (%d)", 
+    cm_msg(MERROR, "bm_send_event", "event size (%d) larger than maximum event size (%d)",
       ((EVENT_HEADER *) source)->data_size, MAX_EVENT_SIZE);
     return BM_NO_MEMORY;
     }
@@ -6141,7 +6144,7 @@ char            str[80];
   /* check if buffer is large enough */
   if (total_size >= pheader->size)
     {
-    cm_msg(MERROR, "bm_send_event", "total event size (%d) larger than buffer size (%d)", 
+    cm_msg(MERROR, "bm_send_event", "total event size (%d) larger than buffer size (%d)",
       total_size, pheader->size);
     return BM_NO_MEMORY;
     }
@@ -6705,7 +6708,7 @@ char            str[80];
       }
 
     pbuf->write_cache_rp += total_size;
-    } 
+    }
 
   pbuf->write_cache_rp = pbuf->write_cache_wp = 0;
 
@@ -6791,7 +6794,7 @@ char            str[80];
      printf("Received event #%d\r",
      pheader->serial_number);
     }
-    main() 
+    main()
     {
     INT status, request_id;
     HNDLE hbuf;
@@ -6802,8 +6805,8 @@ char            str[80];
      return 1;
     bm_open_buffer(EVENT_BUFFER_NAME, EVENT_BUFFER_SIZE, &hbuf);
     bm_request_event(hbuf, 1, TRIGGER_ALL, GET_ALL, request_id, NULL);
-    
-    do 
+
+    do
     {
      size = sizeof(event_buffer);
      status = bm_receive_event(hbuf, event_buffer, &size, ASYNC);
@@ -6822,7 +6825,7 @@ char            str[80];
     @param buffer_handle buffer handle
     @param destination destination address where event is written to
     @param buf_size size of destination buffer on input, size of event plus
-    header on return. 
+    header on return.
     @param async_flag Synchronous/asynchronous flag. If FALSE, the function
     blocks if no event is available. If TRUE, the function returns immediately
     with a value of BM\_ASYNC\_RETURN without receiving any event. \\
@@ -6998,7 +7001,7 @@ LOOP:
         {
         /* we found one, so copy it */
 
-        if (pbuf->read_cache_size > 0 && 
+        if (pbuf->read_cache_size > 0 &&
             !(total_size > pbuf->read_cache_size && pbuf->read_cache_wp == 0))
           {
           if (pbuf->read_cache_size - pbuf->read_cache_wp < total_size)
@@ -7383,12 +7386,12 @@ LOOP:
         {
         /* we found one, so copy it */
 
-        if (pbuf->read_cache_size > 0 && 
+        if (pbuf->read_cache_size > 0 &&
             !(total_size > pbuf->read_cache_size && pbuf->read_cache_wp == 0))
           {
           /* copy dispatch function and event to cache */
 
-          if (pbuf->read_cache_size - pbuf->read_cache_wp < 
+          if (pbuf->read_cache_size - pbuf->read_cache_wp <
               total_size + (INT)sizeof(void*) + (INT)sizeof(INT))
             goto CACHE_FULL;
 
@@ -7520,8 +7523,8 @@ CACHE_FULL:
 
   bm_unlock_buffer(buffer_handle);
 
-  if (pbuf->read_cache_size > 0 && 
-      !(total_size > pbuf->read_cache_size && pbuf->read_cache_wp == 0)) 
+  if (pbuf->read_cache_size > 0 &&
+      !(total_size > pbuf->read_cache_size && pbuf->read_cache_wp == 0))
     goto CACHE_READ;
 
   /* call dispatcher */
@@ -7530,7 +7533,7 @@ CACHE_FULL:
           bm_match_event(_request_list[i].event_id,
                          _request_list[i].trigger_mask, _event_buffer))
     {
-    _request_list[i].dispatcher(buffer_handle, i, _event_buffer, 
+    _request_list[i].dispatcher(buffer_handle, i, _event_buffer,
                                 (void *)(((EVENT_HEADER *) _event_buffer)+1));
     }
 
@@ -7552,7 +7555,7 @@ INT bm_check_buffers()
 
 
   Input:
-    none 
+    none
 
   Output:
     none
@@ -7603,7 +7606,7 @@ DWORD           start_time;
 
       if (status != BM_MORE_EVENTS)
         break;
-      
+
       /* stop after one second */
       if (ss_millitime() - start_time > 1000)
         {
@@ -7659,14 +7662,14 @@ BUFFER_CLIENT *pclient;
     if (rpc_get_server_option(RPC_OSERVER_TYPE) == ST_SINGLE &&
         _buffer[i].index != rpc_get_server_acception())
       continue;
-  
+
     if (rpc_get_server_option(RPC_OSERVER_TYPE) != ST_SINGLE &&
         _buffer[i].index != ss_gettid())
       continue;
 
     if (!_buffer[i].attached)
       continue;
-    
+
     pheader            = _buffer[i].buffer_header;
     pclient            = pheader->client + _buffer[i].client_index;
     pclient->read_wait = flag;
@@ -7737,9 +7740,9 @@ static DWORD last_time = 0;
 
     if (convert_flags)
       {
-      rpc_convert_single(&nc->header.routine_id, TID_DWORD, 
+      rpc_convert_single(&nc->header.routine_id, TID_DWORD,
                          RPC_OUTGOING, convert_flags);
-      rpc_convert_single(&nc->header.param_size, TID_DWORD, 
+      rpc_convert_single(&nc->header.param_size, TID_DWORD,
                          RPC_OUTGOING, convert_flags);
       }
 
@@ -7757,7 +7760,7 @@ INT bm_poll_event(INT flag)
 
   Routine: bm_poll_event
 
-  Purpose: Poll an event from a remote server. Gets called by 
+  Purpose: Poll an event from a remote server. Gets called by
            rpc_client_dispatch
 
   Input:
@@ -7822,7 +7825,7 @@ static BOOL          bMoreLast = FALSE;
       if (status == BM_SUCCESS)
         /* search proper request for this event */
         for (i=0 ; i<_request_list_entries ; i++)
-          if ((_request_list[i].buffer_handle == 
+          if ((_request_list[i].buffer_handle ==
                  _request_list[request_id].buffer_handle) &&
                bm_match_event(_request_list[i].event_id,
                               _request_list[i].trigger_mask, _event_buffer))
@@ -7869,18 +7872,18 @@ static BOOL          bMoreLast = FALSE;
     still analyze old events before any new event which reflects the hardware change.
     Users can be fooled by looking at histograms which reflect the hardware change
     many seconds after they have been made.
-    
+
     To overcome this potential problem, the analyzer can call
     bm\_empty\_buffers() just after the hardware change has been made which
     skips all old events contained in event buffers and read caches.
     Technically this is done by forwarding the read pointer of the client.
     No events are really deleted, they are still visible to other clients like
     the logger.
-    
+
     Note that the front-end also contains write buffers which can delay the
     delivery of events.
     The standard front-end framework mfe.c reduces this effect by flushing
-    all buffers once every second. 
+    all buffers once every second.
     \item[Example:]
     \end{description}
     @memo empty event buffer.
@@ -7946,9 +7949,9 @@ BUFFER_CLIENT   *pclient;
 
 /* globals */
 
-RPC_CLIENT_CONNECTION  _client_connection[MAX_RPC_CONNECTION];                         
+RPC_CLIENT_CONNECTION  _client_connection[MAX_RPC_CONNECTION];
 RPC_SERVER_CONNECTION  _server_connection;
-                                                                                    
+
 static int             _lsock;
 RPC_SERVER_ACCEPTION   _server_acception[MAX_RPC_CONNECTION];
 static INT             _server_acception_index = 0;
@@ -7965,7 +7968,7 @@ int _opt_tcp_size = OPT_TCP_SIZE;
 *                       conversion functions                         *
 \********************************************************************/
 
-void rpc_calc_convert_flags(INT hw_type, INT remote_hw_type, 
+void rpc_calc_convert_flags(INT hw_type, INT remote_hw_type,
                             INT *convert_flags)
 {
   *convert_flags = 0;
@@ -8111,7 +8114,7 @@ void rpc_convert_single(void *data, INT tid, INT flags, INT convert_flags)
     }
 }
 
-void rpc_convert_data(void *data, INT tid, INT flags, 
+void rpc_convert_data(void *data, INT tid, INT flags,
                       INT total_size, INT convert_flags)
 /********************************************************************\
 
@@ -8174,7 +8177,7 @@ INT rpc_tid_size(INT id)
 {
   if (id < TID_LAST)
     return tid_size[id];
-  
+
   return 0;
 }
 
@@ -8246,7 +8249,7 @@ INT rpc_register_functions(RPC_LIST *new_list, INT (*func)(INT,void**))
   Function value:
    RPC_SUCCESS              Successful completion
    RPC_NO_MEMORY            Out of memory
-   RPC_DOUBLE_DEFINED       
+   RPC_DOUBLE_DEFINED
 
 \********************************************************************/
 {
@@ -8282,14 +8285,14 @@ INT i, j, iold, inew;
   for (i=iold ; i<iold+inew ; i++)
     {
     memcpy(rpc_list+i, new_list+i-iold, sizeof(RPC_LIST));
-    
+
     /* set default dispatcher */
     if (rpc_list[i].dispatch == NULL)
       rpc_list[i].dispatch = func;
 
     /* check valid ID for user functions */
     if (new_list != rpc_get_internal_list(0) &&
-        new_list != rpc_get_internal_list(1) &&        
+        new_list != rpc_get_internal_list(1) &&
         (rpc_list[i].id < RPC_MIN_ID || rpc_list[i].id > RPC_MAX_ID))
       cm_msg(MERROR, "rpc_register_functions", "registered RPC function with invalid ID");
     }
@@ -8603,14 +8606,14 @@ struct hostent       *phe;
     status = connect(sock, (void *) &bind_addr, sizeof(bind_addr));
 
     /* don't return if an alarm signal was cought */
-    } while (status == -1 && errno == EINTR); 
+    } while (status == -1 && errno == EINTR);
 #else
   status = connect(sock, (void *) &bind_addr, sizeof(bind_addr));
-#endif  
+#endif
 
   if (status != 0)
     {
-    /* cm_msg(MERROR, "rpc_client_connect", "cannot connect"); 
+    /* cm_msg(MERROR, "rpc_client_connect", "cannot connect");
     message should be displayed by application */
     return RPC_NET_ERROR;
     }
@@ -8855,10 +8858,10 @@ struct hostent       *phe;
     status = connect(sock, (void *) &bind_addr, sizeof(bind_addr));
 
     /* don't return if an alarm signal was cought */
-    } while (status == -1 && errno == EINTR); 
+    } while (status == -1 && errno == EINTR);
 #else
   status = connect(sock, (void *) &bind_addr, sizeof(bind_addr));
-#endif  
+#endif
 
   if (status != 0)
     {
@@ -8868,10 +8871,10 @@ struct hostent       *phe;
 
   /* connect to experiment */
   if (exp_name[0] == 0)
-    sprintf(str, "C %ld %ld %ld %s Default", 
+    sprintf(str, "C %ld %ld %ld %s Default",
             listen_port1, listen_port2, listen_port3, cm_get_version());
   else
-    sprintf(str, "C %ld %ld %ld %s %s", 
+    sprintf(str, "C %ld %ld %ld %s %s",
             listen_port1, listen_port2, listen_port3, cm_get_version(), exp_name);
 
   send(sock, str, strlen(str)+1, 0);
@@ -9135,7 +9138,7 @@ INT rpc_get_option(HNDLE hConn, INT item)
   Purpose: Get actual RPC option
 
   Input:
-    HNDLE hConn             RPC connection handle  
+    HNDLE hConn             RPC connection handle
     INT   item              One of RPC_Oxxx
 
   Output:
@@ -9236,7 +9239,7 @@ INT rpc_get_option(HNDLE hConn, INT item)
       return tmp_type;
       }
 
-    default: 
+    default:
       cm_msg(MERROR, "rpc_get_option", "invalid argument");
       break;
     }
@@ -9282,7 +9285,7 @@ INT rpc_set_option(HNDLE hConn, INT item, INT value)
         _client_connection[hConn-1].transport = value;
       break;
 
-    default: 
+    default:
       cm_msg(MERROR, "rpc_set_option", "invalid argument");
       break;
     }
@@ -9333,7 +9336,7 @@ INT i;
     i = max(0,_server_acception_index - 1);
   else
     i = 0;
-    
+
   switch(item)
     {
     case RPC_CONVERT_FLAGS:
@@ -9452,7 +9455,7 @@ INT rpc_set_name(char *name)
   Purpose: Set name of actual program for further rpc connections
 
   Input:
-   char *name               Program name, up to NAME_LENGTH chars, 
+   char *name               Program name, up to NAME_LENGTH chars,
                             no blanks
 
   Output:
@@ -9475,7 +9478,7 @@ INT rpc_set_debug(void (*func)(char*), INT mode)
 
   Routine: rpc_set_debug
 
-  Purpose: Set a function which is called on every RPC call to 
+  Purpose: Set a function which is called on every RPC call to
            display the function name and parameters of the RPC
            call.
 
@@ -9552,7 +9555,7 @@ INT rpc_client_call(HNDLE hConn, const INT routine_id, ...)
 
 \********************************************************************/
 {
-va_list         ap, aptmp;                         
+va_list         ap, aptmp;
 char            arg[8], arg_tmp[8];
 INT             arg_type, transport, rpc_timeout;
 INT             i, index, status, rpc_index;
@@ -9564,7 +9567,7 @@ char            *param_ptr, str[80];
 BOOL            bpointer, bbig;
 NET_COMMAND     *nc;
 int             send_sock;
-  
+
   index = hConn-1;
 
   if (_client_connection[index].send_sock == 0)
@@ -9648,7 +9651,7 @@ int             send_sock;
         arg[1] = arg[3];
         }
       }
-    
+
     if (flags & RPC_IN)
       {
       if (bpointer)
@@ -9660,18 +9663,18 @@ int             send_sock;
       if (tid == TID_STRING || tid == TID_LINK)
         arg_size = 1+strlen((char *) *((char **) arg));
 
-      /* for varibale length arrays, the size is given by 
+      /* for varibale length arrays, the size is given by
          the next parameter on the stack */
       if (flags & RPC_VARARRAY)
       	{
       	memcpy(&aptmp, &ap, sizeof(ap));
       	rpc_va_arg(&aptmp, TID_ARRAY, arg_tmp);
-        
+
         if (flags & RPC_OUT)
           arg_size = *((INT *) *((void **) arg_tmp));
         else
           arg_size = *((INT *) arg_tmp);
-      	
+
         *((INT *) param_ptr) = ALIGN(arg_size);
       	param_ptr += ALIGN( sizeof(INT) );
       	}
@@ -9861,7 +9864,7 @@ INT rpc_call(const INT routine_id, ...)
 
 \********************************************************************/
 {
-va_list         ap, aptmp;                         
+va_list         ap, aptmp;
 char            arg[8], arg_tmp[8];
 INT             arg_type, transport, rpc_timeout;
 INT             i, index, status;
@@ -9949,7 +9952,7 @@ int             send_sock;
         arg[1] = arg[3];
         }
       }
-    
+
     if (flags & RPC_IN)
       {
       if (bpointer)
@@ -9961,18 +9964,18 @@ int             send_sock;
       if (tid == TID_STRING || tid == TID_LINK)
         arg_size = 1+strlen((char *) *((char **) arg));
 
-      /* for varibale length arrays, the size is given by 
+      /* for varibale length arrays, the size is given by
          the next parameter on the stack */
       if (flags & RPC_VARARRAY)
       	{
       	memcpy(&aptmp, &ap, sizeof(ap));
       	rpc_va_arg(&aptmp, TID_ARRAY, arg_tmp);
-        
+
         if (flags & RPC_OUT)
           arg_size = *((INT *) *((void **) arg_tmp));
         else
           arg_size = *((INT *) arg_tmp);
-      	
+
         *((INT *) param_ptr) = ALIGN(arg_size);
       	param_ptr += ALIGN( sizeof(INT) );
       	}
@@ -10198,7 +10201,7 @@ DWORD           aligned_buf_size;
     }
   if (((EVENT_HEADER *) source)->data_size > MAX_EVENT_SIZE)
     {
-    cm_msg(MERROR, "rpc_send_event", "event size (%d) larger than maximum event size (%d)", 
+    cm_msg(MERROR, "rpc_send_event", "event size (%d) larger than maximum event size (%d)",
       ((EVENT_HEADER *) source)->data_size, MAX_EVENT_SIZE);
     return RPC_EXCEED_BUFFER;
     }
@@ -10392,7 +10395,7 @@ INT i;
   /* empty TCP buffer */
   if (_tcp_wp > 0)
     {
-    i = send_tcp(_server_connection.send_sock, 
+    i = send_tcp(_server_connection.send_sock,
                  _tcp_buffer + _tcp_rp, _tcp_wp - _tcp_rp, 0);
 
     if (i != _tcp_wp - _tcp_rp)
@@ -10465,7 +10468,7 @@ INT status, i;
 
 /*------------------------------------------------------------------*/
 
-INT recv_tcp_server(INT index, char *buffer, DWORD buffer_size, INT flags, 
+INT recv_tcp_server(INT index, char *buffer, DWORD buffer_size, INT flags,
                     INT *remaining)
 /********************************************************************\
 
@@ -10541,7 +10544,7 @@ INT         sock;
   read_ptr   = _server_acception[index].read_ptr;
   misalign   = _server_acception[index].misalign;
   net_buffer = _server_acception[index].net_buffer;
-  
+
   do
     {
     if (write_ptr - read_ptr >= (INT) sizeof(NET_COMMAND_HEADER) - copied)
@@ -10551,7 +10554,7 @@ INT         sock;
         if (copied > 0)
           {
           /* assemble split header */
-          memcpy(buffer + copied, net_buffer + read_ptr, 
+          memcpy(buffer + copied, net_buffer + read_ptr,
                  (INT) sizeof(NET_COMMAND_HEADER) - copied);
           nc = (NET_COMMAND *) (buffer);
           }
@@ -10561,7 +10564,7 @@ INT         sock;
         param_size = (INT) nc->header.param_size;
 
         if (_server_acception[index].convert_flags)
-          rpc_convert_single(&param_size, TID_DWORD, 0, 
+          rpc_convert_single(&param_size, TID_DWORD, 0,
                              _server_acception[index].convert_flags);
         }
 
@@ -10569,20 +10572,20 @@ INT         sock;
       if (buffer_size < param_size + sizeof(NET_COMMAND_HEADER))
         {
         cm_msg(MERROR, "recv_tcp_server", "parameters too large for network buffer");
-        _server_acception[index].read_ptr = 
+        _server_acception[index].read_ptr =
           _server_acception[index].write_ptr = 0;
         return -1;
         }
 
       /* check if we have all parameters in buffer */
-      if (write_ptr - read_ptr >= 
+      if (write_ptr - read_ptr >=
             param_size + (INT) sizeof(NET_COMMAND_HEADER) - copied)
         break;
       }
 
     /* not enough data, so copy partially and get new */
     size = write_ptr - read_ptr;
-    
+
     if (size > 0)
       {
       memcpy(buffer + copied, net_buffer + read_ptr, size);
@@ -10596,7 +10599,7 @@ INT         sock;
       write_ptr = recv(sock, net_buffer + misalign, _server_acception[index].net_buffer_size - 8, flags);
 
       /* don't return if an alarm signal was cought */
-      } while (write_ptr == -1 && errno == EINTR); 
+      } while (write_ptr == -1 && errno == EINTR);
 #else
     write_ptr = recv(sock, net_buffer + misalign, _server_acception[index].net_buffer_size - 8, flags);
 #endif
@@ -10664,23 +10667,23 @@ INT         index;
   for (index=0 ; index<MAX_RPC_CONNECTION ; index++)
     if (_server_acception[index].recv_sock == sock)
       break;
-  
+
   return _server_acception[index].write_ptr -
          _server_acception[index].read_ptr;
 }
 
 /*------------------------------------------------------------------*/
 
-INT recv_event_server(INT index, char *buffer, DWORD buffer_size, INT flags, 
+INT recv_event_server(INT index, char *buffer, DWORD buffer_size, INT flags,
                       INT *remaining)
 /********************************************************************\
 
   Routine: recv_event_server
 
-  Purpose: TCP event receive routine with local cache. To speed up 
-           network performance, a 64k buffer is read in at once and 
-           split into several RPC command on successive calls to 
-           recv_event_server. Therefore, the number of recv() calls 
+  Purpose: TCP event receive routine with local cache. To speed up
+           network performance, a 64k buffer is read in at once and
+           split into several RPC command on successive calls to
+           recv_event_server. Therefore, the number of recv() calls
            is minimized.
 
            This routine is ment to be called by the server process.
@@ -10752,7 +10755,7 @@ RPC_SERVER_ACCEPTION *psa;
   read_ptr    = psa->ev_read_ptr;
   misalign    = psa->ev_misalign;
   net_buffer  = psa->ev_net_buffer;
-  
+
   do
     {
     if (write_ptr - read_ptr >= header_size - copied)
@@ -10792,7 +10795,7 @@ RPC_SERVER_ACCEPTION *psa;
 
     /* not enough data, so copy partially and get new */
     size = write_ptr - read_ptr;
-    
+
     if (size > 0)
       {
       memcpy(buffer + copied, net_buffer + read_ptr, size);
@@ -10806,7 +10809,7 @@ RPC_SERVER_ACCEPTION *psa;
       write_ptr = recv(sock, net_buffer + misalign, psa->net_buffer_size - 8, flags);
 
       /* don't return if an alarm signal was cought */
-      } while (write_ptr == -1 && errno == EINTR); 
+      } while (write_ptr == -1 && errno == EINTR);
 #else
     write_ptr = recv(sock, net_buffer + misalign, psa->net_buffer_size - 8, flags);
 #endif
@@ -10864,7 +10867,7 @@ INT recv_event_check(int sock)
 
   Routine: recv_event_check
 
-  Purpose: Check if in TCP event receive buffer associated with sock 
+  Purpose: Check if in TCP event receive buffer associated with sock
            is some data. Called by ss_suspend.
 
   Input:
@@ -10884,14 +10887,14 @@ INT         index;
   for (index=0 ; index<MAX_RPC_CONNECTION ; index++)
     if (_server_acception[index].event_sock == sock)
       break;
-  
+
   return _server_acception[index].ev_write_ptr -
          _server_acception[index].ev_read_ptr;
 }
 
 /*------------------------------------------------------------------*/
 
-INT rpc_register_server(INT server_type, char *name, INT *port, 
+INT rpc_register_server(INT server_type, char *name, INT *port,
                         INT (*func)(INT,void**))
 /********************************************************************\
 
@@ -10967,7 +10970,7 @@ struct hostent       *phe;
 
   /* reuse address, needed if previous server stopped (30s timeout!) */
   flag = 1;
-  status = setsockopt(_lsock, SOL_SOCKET, SO_REUSEADDR, 
+  status = setsockopt(_lsock, SOL_SOCKET, SO_REUSEADDR,
                       (char *) &flag, sizeof(INT));
   if (status < 0)
     {
@@ -11007,7 +11010,7 @@ struct hostent       *phe;
   status = bind(_lsock, (void *)&bind_addr, sizeof(bind_addr));
   if (status < 0)
     {
-    cm_msg(MERROR, "rpc_register_server", "bind() failed");
+    cm_msg(MERROR, "rpc_register_server", "bind() failed: %s", strerror(errno));
     return RPC_NET_ERROR;
     }
 
@@ -11089,9 +11092,9 @@ char         return_buffer[NET_BUFFER_SIZE];
   /* convert header format (byte swapping) */
   if (convert_flags)
     {
-    rpc_convert_single(&nc_in->header.routine_id, TID_DWORD, 
+    rpc_convert_single(&nc_in->header.routine_id, TID_DWORD,
                        0, convert_flags);
-    rpc_convert_single(&nc_in->header.param_size, TID_DWORD, 
+    rpc_convert_single(&nc_in->header.param_size, TID_DWORD,
                        0, convert_flags);
     }
 
@@ -11154,7 +11157,7 @@ char         return_buffer[NET_BUFFER_SIZE];
           rpc_convert_data(in_param_ptr, tid, flags,
                            param_size, convert_flags);
         else
-          rpc_convert_data(in_param_ptr, tid, flags, 
+          rpc_convert_data(in_param_ptr, tid, flags,
                            rpc_list[index].param[i].n * tid_size[tid],
                            convert_flags);
         }
@@ -11192,7 +11195,7 @@ char         return_buffer[NET_BUFFER_SIZE];
         if (convert_flags)
           rpc_convert_single(&max_size, TID_INT, 0, convert_flags);
         max_size = ALIGN(max_size);
-        
+
         *((INT *) out_param_ptr) = max_size;
 
         /* save space for return array length */
@@ -11223,7 +11226,7 @@ char         return_buffer[NET_BUFFER_SIZE];
       prpc_param[i] = out_param_ptr;
       out_param_ptr += param_size;
       }
-    
+
     if (_debug_print)
       if (rpc_list[index].param[i+1].tid)
         strcat(debug_line, ", ");
@@ -11249,7 +11252,7 @@ char         return_buffer[NET_BUFFER_SIZE];
       routine_id == RPC_ID_WATCHDOG)
     status = RPC_SUCCESS;
 
-  /* Return if TCP connection broken */  
+  /* Return if TCP connection broken */
   if (status == SS_ABORT)
     return SS_ABORT;
 
@@ -11289,7 +11292,7 @@ char         return_buffer[NET_BUFFER_SIZE];
         param_size = *((INT *) prpc_param[i+1]);
         *((INT *) out_param_ptr) = param_size;
         if (convert_flags)
-          rpc_convert_single(out_param_ptr, TID_INT, 
+          rpc_convert_single(out_param_ptr, TID_INT,
                              RPC_OUTGOING, convert_flags);
 
         out_param_ptr += ALIGN( sizeof(INT) );
@@ -11310,13 +11313,13 @@ char         return_buffer[NET_BUFFER_SIZE];
       if (convert_flags)
         {
         if (flags & RPC_VARARRAY)
-          rpc_convert_data(out_param_ptr, tid, 
+          rpc_convert_data(out_param_ptr, tid,
                            rpc_list[index].param[i].flags | RPC_OUTGOING,
                            param_size, convert_flags);
         else
-          rpc_convert_data(out_param_ptr, tid, 
+          rpc_convert_data(out_param_ptr, tid,
                            rpc_list[index].param[i].flags | RPC_OUTGOING,
-                           rpc_list[index].param[i].n * tid_size[tid], 
+                           rpc_list[index].param[i].n * tid_size[tid],
                            convert_flags);
         }
 
@@ -11331,9 +11334,9 @@ char         return_buffer[NET_BUFFER_SIZE];
   /* convert header format (byte swapping) if necessary */
   if (convert_flags)
     {
-    rpc_convert_single(&nc_out->header.routine_id, TID_DWORD, 
+    rpc_convert_single(&nc_out->header.routine_id, TID_DWORD,
                        RPC_OUTGOING, convert_flags);
-    rpc_convert_single(&nc_out->header.param_size, TID_DWORD, 
+    rpc_convert_single(&nc_out->header.param_size, TID_DWORD,
                        RPC_OUTGOING, convert_flags);
     }
 
@@ -11427,7 +11430,7 @@ char         return_buffer[ASCII_BUFFER_SIZE]; /* ASCII out */
   for (i=0 ; i<N_APARAM && arpc_param[i] ; i++)
     while ((pc = strchr(arpc_param[i], '%')) != NULL)
       {
-      if (isxdigit(pc[1]) && isxdigit(pc[2])) 
+      if (isxdigit(pc[1]) && isxdigit(pc[2]))
         {
         str[0] = pc[1];
         str[1] = pc[2];
@@ -11485,7 +11488,7 @@ char         return_buffer[ASCII_BUFFER_SIZE]; /* ASCII out */
         if (_debug_print)
           strcat(debug_line, "<array>");
         }
-      else 
+      else
         {
         db_sscanf(arpc_param[index_in++], in_param_ptr, &param_size, 0, tid);
         param_size  = ALIGN(param_size);
@@ -11564,7 +11567,7 @@ char         return_buffer[ASCII_BUFFER_SIZE]; /* ASCII out */
       prpc_param[i] = out_param_ptr;
       out_param_ptr += param_size;
       }
-    
+
     if (_debug_print)
       if (rpc_list[index].param[i+1].tid)
         strcat(debug_line, ", ");
@@ -11590,7 +11593,7 @@ char         return_buffer[ASCII_BUFFER_SIZE]; /* ASCII out */
       routine_id == RPC_ID_WATCHDOG)
     status = RPC_SUCCESS;
 
-  /* Return if TCP connection broken */  
+  /* Return if TCP connection broken */
   if (status == SS_ABORT)
     return SS_ABORT;
 
@@ -11608,7 +11611,7 @@ char         return_buffer[ASCII_BUFFER_SIZE]; /* ASCII out */
     if (rpc_list[index].param[i].flags & RPC_OUT)
       {
       *out_param_ptr++ = '&';
-      
+
       tid   = rpc_list[index].param[i].tid;
       flags = rpc_list[index].param[i].flags;
       param_size  = ALIGN(tid_size[ tid ]);
@@ -11674,7 +11677,7 @@ char         return_buffer[ASCII_BUFFER_SIZE]; /* ASCII out */
             item_size = param_size / num_values;
           else
             item_size = tid_size[array_tid];
-        
+
           /* write number of elements to output */
           sprintf(out_param_ptr, "%d", num_values);
           out_param_ptr += strlen(out_param_ptr);
@@ -11847,7 +11850,7 @@ static struct callback_addr callback;
 
         if (strcmp(v1, str) != 0)
           {
-          sprintf(str, "client MIDAS version %s differs from local version %s", 
+          sprintf(str, "client MIDAS version %s differs from local version %s",
                         version, cm_get_version());
           cm_msg(MERROR, "rpc_server_accept", str);
 
@@ -11897,10 +11900,10 @@ static struct callback_addr callback;
 
           if (index == MAX_EXPERIMENT || exptab[index].name[0] == 0)
             {
-            sprintf(str, "experiment %s not defined in exptab\r", 
+            sprintf(str, "experiment %s not defined in exptab\r",
                      callback.experiment);
             cm_msg(MERROR, "rpc_server_accept", str);
-        
+
             send(sock, "2", 2, 0); /* 2 means exp. not found */
             closesocket(sock);
             break;
@@ -11931,8 +11934,8 @@ static struct callback_addr callback;
           argv[9] = NULL;
 
 /*
-          cm_msg(MINFO, "", "%s %s %s %s %s %s %s %s %s %s", 
-            argv[0], argv[1], argv[2], argv[3], argv[4], 
+          cm_msg(MINFO, "", "%s %s %s %s %s %s %s %s %s %s",
+            argv[0], argv[1], argv[2], argv[3], argv[4],
             argv[5], argv[6], argv[7], argv[8], argv[9]);
 */
           status = ss_spawnv(P_NOWAIT, (char *) rpc_get_server_option(RPC_OSERVER_NAME), argv);
@@ -12220,10 +12223,10 @@ int                  flag;
     status = connect(recv_sock, (void *) &bind_addr, sizeof(bind_addr));
 
     /* don't return if an alarm signal was cought */
-    } while (status == -1 && errno == EINTR); 
+    } while (status == -1 && errno == EINTR);
 #else
   status = connect(recv_sock, (void *) &bind_addr, sizeof(bind_addr));
-#endif  
+#endif
 
   if (status != 0)
     {
@@ -12240,10 +12243,10 @@ int                  flag;
     status = connect(send_sock, (void *) &bind_addr, sizeof(bind_addr));
 
     /* don't return if an alarm signal was cought */
-    } while (status == -1 && errno == EINTR); 
+    } while (status == -1 && errno == EINTR);
 #else
   status = connect(send_sock, (void *) &bind_addr, sizeof(bind_addr));
-#endif  
+#endif
 
   if (status != 0)
     {
@@ -12260,10 +12263,10 @@ int                  flag;
     status = connect(event_sock, (void *) &bind_addr, sizeof(bind_addr));
 
     /* don't return if an alarm signal was cought */
-    } while (status == -1 && errno == EINTR); 
+    } while (status == -1 && errno == EINTR);
 #else
   status = connect(event_sock, (void *) &bind_addr, sizeof(bind_addr));
-#endif  
+#endif
 
   if (status != 0)
     {
@@ -12466,7 +12469,7 @@ EVENT_HEADER *pevent;
       {
       if (_server_acception[index].remote_hw_type == DR_ASCII)
         n_received = recv_string(_server_acception[index].recv_sock, _net_recv_buffer,
-                                 NET_BUFFER_SIZE, 10000); 
+                                 NET_BUFFER_SIZE, 10000);
       else
         n_received = recv_tcp_server(index, _net_recv_buffer, NET_BUFFER_SIZE, 0, &remaining);
 
@@ -12547,7 +12550,7 @@ exit:
 
     cm_get_experiment_database(&hDB, &hKey);
 
-    /* only disconnect from experiment if previously connected. 
+    /* only disconnect from experiment if previously connected.
        Necessary for pure RPC servers (RPC_SRVR) */
     if (hDB)
       {
@@ -12688,13 +12691,13 @@ struct timeval  timeout;
 
   for (index=0 ; index < MAX_RPC_CONNECTION ; index++)
     {
-    if (_server_acception[index].recv_sock && 
+    if (_server_acception[index].recv_sock &&
         _server_acception[index].tid == ss_gettid() &&
         _server_acception[index].watchdog_timeout &&
-        (ss_millitime() - _server_acception[index].last_activity > 
+        (ss_millitime() - _server_acception[index].last_activity >
          (DWORD) _server_acception[index].watchdog_timeout))
       {
-/* printf("Send watchdog message to %s on %s\n", 
+/* printf("Send watchdog message to %s on %s\n",
                 _server_acception[index].prog_name,
                 _server_acception[index].host_name); */
 
@@ -12710,7 +12713,7 @@ struct timeval  timeout;
         }
 
       /* send the header to the client */
-      i = send_tcp(_server_acception[index].send_sock, 
+      i = send_tcp(_server_acception[index].send_sock,
                    (char *) &nc, sizeof(NET_COMMAND_HEADER), 0);
 
       if (i<0)
@@ -12792,10 +12795,10 @@ exit:
     \begin{description}
     \item[Description:] Initializes an event for Midas banks structure.
     \item[Remarks:] Before banks can be created in an event, bk\_init()
-    has to be called first. 
+    has to be called first.
     \end{description}
     @memo Initialize an event.
-    @param event pointer to the area of event 
+    @param event pointer to the area of event
     @return void
 */
 void bk_init(void *event)
@@ -12833,10 +12836,10 @@ BOOL bk_is32(void *event)
     \item[Description:] Initializes an event for Midas banks structure for large.
     bank size (> 32KBytes)
     \item[Remarks:] Before banks can be created in an event, bk\_init32()
-    has to be called first. 
+    has to be called first.
     \end{description}
     @memo Initialize an event (> 32KBytes).
-    @param event pointer to the area of event 
+    @param event pointer to the area of event
     @return void
 */
 void bk_init32(void *event)
@@ -12850,16 +12853,16 @@ void bk_init32(void *event)
     \begin{description}
     \item[Description:] Returns the size of an event containing banks.
     \item[Remarks:] The total size of an event is the value returned by
-    bk\_size() plus the size of the event header (sizeof(EVENT\_HEADER)). 
+    bk\_size() plus the size of the event header (sizeof(EVENT\_HEADER)).
     \end{description}
     @memo compute event size.
-    @param event pointer to the area of event 
-    @return number of bytes contained in data area of event 
+    @param event pointer to the area of event
+    @return number of bytes contained in data area of event
 */
 INT bk_size(void *event)
 {
   return ((BANK_HEADER *) event)->data_size + sizeof(BANK_HEADER);
-}                         
+}
 
 /*------------------------------------------------------------------*/
 /** bk\_create()
@@ -12882,7 +12885,7 @@ INT bk_size(void *event)
     @param event pointer to the data area
     @param name of the bank, must be exactly 4 charaters
     @param type type of bank, one of the \Ref{Midas Data Types} values defined in
-    midas.h 
+    midas.h
     @param pdata pointer to the data area of the newly created bank
     @return void
 */
@@ -13011,7 +13014,7 @@ INT bk_close(void *event, void *pdata)
     pbk32 = (BANK32 *) ((char *) (((BANK_HEADER *) event) + 1) + ((BANK_HEADER *) event)->data_size);
     pbk32->data_size = (DWORD) (INT) pdata - (INT) (pbk32+1);
     if (pbk32->type == TID_STRUCT && pbk32->data_size == 0)
-      printf("Warning: bank %c%c%c%c has zero size\n", 
+      printf("Warning: bank %c%c%c%c has zero size\n",
         pbk32->name[0], pbk32->name[1], pbk32->name[2], pbk32->name[3]);
     ((BANK_HEADER *) event)->data_size += sizeof(BANK32) + ALIGN(pbk32->data_size);
     return pbk32->data_size;
@@ -13023,7 +13026,7 @@ INT bk_close(void *event, void *pdata)
     pbk = (BANK *) ((char *) (((BANK_HEADER *) event) + 1) + ((BANK_HEADER *) event)->data_size);
     pbk->data_size = (WORD) (INT) pdata - (INT) (pbk+1);
     if (pbk->type == TID_STRUCT && pbk->data_size == 0)
-      printf("Warning: bank %c%c%c%c has zero size\n", 
+      printf("Warning: bank %c%c%c%c has zero size\n",
         pbk->name[0], pbk->name[1], pbk->name[2], pbk->name[3]);
     ((BANK_HEADER *) event)->data_size += sizeof(BANK) + ALIGN(pbk->data_size);
     return pbk->data_size;
@@ -13050,7 +13053,7 @@ INT bk_locate(void *event, char *name, void *pdata)
   BANK   *pbk;
   BANK32 *pbk32;
   DWORD  dname;
-  
+
   if (bk_is32(event))
     {
     pbk32 = (BANK32 *) (((BANK_HEADER *) event)+1);
@@ -13094,7 +13097,7 @@ INT bk_locate(void *event, char *name, void *pdata)
     \begin{description}
     \item[Description:] Iterates through banks inside an event.
     \item[Remarks:] The function can be used to enumerate all banks of an event.
-    The returned pointer to the bank header has following structure: 
+    The returned pointer to the bank header has following structure:
     \begin{verbatim}
     typedef struct {
     char   name[4];
@@ -13125,7 +13128,7 @@ INT bk_locate(void *event, char *name, void *pdata)
     @param pbk pointer to the bank header, must be NULL for the first call to
     this function.
     @param pdata Pointer to the bank header, must be NULL for the first
-    call to this function 
+    call to this function
     @return Size of bank in bytes
 */
 INT bk_iterate(void *event, BANK **pbk, void *pdata)
@@ -13194,7 +13197,7 @@ INT bk_iterate32(void *event, BANK32 **pbk, void *pdata)
     the event is only swapped if it is in the "wrong" format for this system.
     An event can be swapped to the "wrong" format on purpose for example by a
     front-end which wants to produce events in a "right" format for a back-end
-    analyzer which has different byte ordering. 
+    analyzer which has different byte ordering.
     \end{description}
     @memo Swap the content of an event.
     @param event pointer to data area of event
@@ -13223,7 +13226,7 @@ INT bk_swap(void *event, BOOL force)
 
   /* check for 32bit banks */
   b32 = ((pbh->flags & BANK_FORMAT_32BIT) > 0);
-  
+
   pbk   = (BANK *) (pbh+1);
   pbk32 = (BANK32 *) pbk;
 
@@ -13339,7 +13342,7 @@ INT hs_set_path(char *path)
   if (strlen(_hs_path_name) > 0 &&
       _hs_path_name[strlen(_hs_path_name)-1] != DIR_SEPARATOR)
     strcat(_hs_path_name, DIR_SEPARATOR_STR);
-    
+
   return HS_SUCCESS;
 }
 
@@ -13348,7 +13351,7 @@ INT hs_set_path(char *path)
 INT hs_open_file(DWORD ltime, char *suffix, INT mode, int *fh)
 /********************************************************************\
 
-  Routine: hs_open_file 
+  Routine: hs_open_file
 
   Purpose: Open history file belonging to certain date. Internal use
            only.
@@ -13371,14 +13374,14 @@ struct      tm *tms;
 char        file_name[256];
 
   /* generate new file name YYMMDD.xxx */
-#if !defined(OS_VXWORKS) 
+#if !defined(OS_VXWORKS)
 #if !defined(OS_VMS)
   tzset();
 #endif
 #endif
   tms = localtime((const time_t *)&ltime);
 
-  sprintf(file_name, "%s%02d%02d%02d.%s", _hs_path_name, 
+  sprintf(file_name, "%s%02d%02d%02d.%s", _hs_path_name,
           tms->tm_year % 100, tms->tm_mon+1, tms->tm_mday, suffix);
 
   /* open file, add O_BINARY flag for Windows NT */
@@ -13499,7 +13502,7 @@ INT hs_search_file(DWORD *ltime, INT direction)
            (direction==-1) up to one year.
 
   Input:
-    DWORD  *ltime           Date of history file 
+    DWORD  *ltime           Date of history file
     INT    direction        Search direction
 
   Output:
@@ -13559,14 +13562,14 @@ struct tm *tms;
 
 /*------------------------------------------------------------------*/
 
-INT hs_define_event(DWORD event_id, char *name, TAG *tag, 
+INT hs_define_event(DWORD event_id, char *name, TAG *tag,
                     DWORD size)
 /********************************************************************\
 
   Routine: hs_define_evnet
 
   Purpose: Define a new event for which a history should be recorded.
-           This routine must be called before any call to 
+           This routine must be called before any call to
            hs_write_event. It also should be called if the definition
            of the event has changed.
 
@@ -13685,7 +13688,7 @@ struct tm    *tmb;
 
     tmb = localtime((const time_t *)&rec.time);
     tmb->tm_hour = tmb->tm_min = tmb->tm_sec = 0;
-    
+
     /* setup history structure */
     _history[index].hist_fh = fh;
     _history[index].index_fh = fhi;
@@ -13697,7 +13700,7 @@ struct tm    *tmb;
     _history[index].n_tag = size/sizeof(TAG);
     _history[index].tag = malloc(size);
     memcpy(_history[index].tag, tag, size);
-    
+
     /* search previous definition */
     n = TELL(fhd) / sizeof(def_rec);
     def_rec.event_id = 0;
@@ -13770,7 +13773,7 @@ struct tm    *tmb;
     read(fh, (char *)&prev_rec, sizeof(prev_rec));
     read(fh, str, NAME_LENGTH);
     read(fh, buffer, size);
-    
+
     lseek(fh, 0, SEEK_END);
     lseek(fhd, 0, SEEK_END);
 
@@ -13780,7 +13783,7 @@ struct tm    *tmb;
       {
       /* save new definition offset */
       _history[index].def_offset = TELL(fh);
-    
+
       /* write definition to history file */
       write(fh, (char *)&rec, sizeof(rec));
       write(fh, event_name, NAME_LENGTH);
@@ -13852,10 +13855,10 @@ struct tm    tmb, tmr;
   rec.time = time(NULL);
   rec.def_offset = _history[index].def_offset;
   rec.data_size = size;
-  
+
   irec.event_id = _history[index].event_id;
   irec.time = rec.time;
-  
+
   /* check if new day */
   memcpy(&tmr, localtime((const time_t *)&rec.time), sizeof(tmr));
   memcpy(&tmb, localtime((const time_t *)&_history[index].base_time), sizeof(tmb));
@@ -13913,14 +13916,14 @@ struct tm    tmb, tmr;
     def_rec.def_offset = _history[index].def_offset;
     write(fhd, (char *)&def_rec, sizeof(def_rec));
     }
-  
+
   /* got to end of file */
   lseek(_history[index].hist_fh, 0, SEEK_END);
   irec.offset = TELL(_history[index].hist_fh);
 
   /* write record header */
   write(_history[index].hist_fh, (char *)&rec, sizeof(rec));
-  
+
   /* write data */
   write(_history[index].hist_fh, (char *)data, size);
 
@@ -13928,7 +13931,7 @@ struct tm    tmb, tmr;
   lseek(_history[index].index_fh, 0, SEEK_END);
   if (write(_history[index].index_fh, (char *)&irec, sizeof(irec)) < sizeof(irec))
     return HS_FILE_ERROR;
- 
+
   return HS_SUCCESS;
 }
 
@@ -14023,7 +14026,7 @@ DEF_RECORD def_rec;
   close(fhd);
   *name_size = n*NAME_LENGTH;
   *id_size = n*sizeof(INT);
-  
+
   return HS_SUCCESS;
 }
 
@@ -14105,7 +14108,7 @@ DEF_RECORD def_rec;
   close(fh);
   close(fhd);
   *count = n;
-  
+
   return HS_SUCCESS;
 }
 
@@ -14177,7 +14180,7 @@ DEF_RECORD def_rec;
 
   close(fh);
   close(fhd);
-  
+
   return HS_SUCCESS;
 }
 
@@ -14251,7 +14254,7 @@ HIST_RECORD  rec;
 
   close(fh);
   close(fhd);
-  
+
   return HS_SUCCESS;
 }
 
@@ -14354,7 +14357,7 @@ TAG          *tag;
   free(tag);
   close(fh);
   close(fhd);
-  
+
   return HS_SUCCESS;
 }
 
@@ -14368,7 +14371,7 @@ INT hs_get_var(DWORD ltime, DWORD event_id, char *var_name, DWORD *type, INT *n_
   Purpose: Get definition for certain variable
 
   Input:
-    DWORD  ltime            Date at which variable definition should 
+    DWORD  ltime            Date at which variable definition should
                             be returned
     DWORD  event_id         Event ID
     char   *var_name        Name of variable
@@ -14465,10 +14468,10 @@ TAG          *tag;
 
 /*------------------------------------------------------------------*/
 
-INT hs_read(DWORD event_id, DWORD start_time, DWORD end_time, 
-            DWORD interval, char *tag_name, DWORD var_index, 
+INT hs_read(DWORD event_id, DWORD start_time, DWORD end_time,
+            DWORD interval, char *tag_name, DWORD var_index,
             DWORD *time_buffer, DWORD *tbsize,
-            void *data_buffer, DWORD *dbsize, 
+            void *data_buffer, DWORD *dbsize,
             DWORD *type, DWORD *n)
 /********************************************************************\
 
@@ -14480,7 +14483,7 @@ INT hs_read(DWORD event_id, DWORD start_time, DWORD end_time,
     DWORD  event_id         Event ID
     DWORD  start_time       Starting Date/Time
     DWORD  end_time         End Date/Time
-    DWORD  interval         Minimum time in seconds between reported 
+    DWORD  interval         Minimum time in seconds between reported
                             events. Can be used to skip events
     char   *tag_name        Variable name inside event
     DWORD  var_index        Index if variable is array
@@ -14501,7 +14504,7 @@ INT hs_read(DWORD event_id, DWORD start_time, DWORD end_time,
     HS_NO_MEMEORY           Out of memory
     HS_FILE_ERROR           Cannot open history file
     HS_WRONG_INDEX          var_index exceeds array size of variable
-    HS_UNDEFINED_VAR        Variable "tag_name" not found in event 
+    HS_UNDEFINED_VAR        Variable "tag_name" not found in event
     HS_TRUNCATED            Buffer too small, data has been truncated
 
 \********************************************************************/
@@ -14518,8 +14521,8 @@ struct tm    *tms;
 char         *cache;
 
   if (rpc_is_remote())
-    return rpc_call(RPC_HS_READ, event_id, start_time, end_time, interval, 
-                    tag_name, var_index, time_buffer, tbsize, data_buffer, 
+    return rpc_call(RPC_HS_READ, event_id, start_time, end_time, interval,
+                    tag_name, var_index, time_buffer, tbsize, data_buffer,
                     dbsize, type, n);
 
   /* if not time given, use present to one hour in past */
@@ -14645,7 +14648,7 @@ char         *cache;
             return HS_NO_MEMORY;
             }
           read(fh, (char *)tag, drec.data_size);
-        
+
           /* find index of tag_name in new definition */
           index = -1;
           for (i=0 ; (DWORD)i < drec.data_size/sizeof(TAG) ; i++)
@@ -14654,7 +14657,7 @@ char         *cache;
               index = i;
               break;
               }
-          
+
           /*
           if ((DWORD) i == drec.data_size/sizeof(TAG))
             {
@@ -14665,7 +14668,7 @@ char         *cache;
             return HS_UNDEFINED_VAR;
             }
           */
-          
+
           if (index >= 0 && var_index >= tag[i].n_data)
             {
             *n = *tbsize = *dbsize = 0;
@@ -14691,7 +14694,7 @@ char         *cache;
 
             var_offset += var_size*var_index;
             }
-        
+
           free(tag);
           old_def_offset = rec.def_offset;
           lseek(fh, irec.offset+sizeof(rec), SEEK_SET);
@@ -14825,7 +14828,7 @@ INT hs_dump(DWORD event_id, DWORD start_time, DWORD end_time,
     DWORD  event_id         Event ID
     DWORD  start_time       Starting Date/Time
     DWORD  end_time         End Date/Time
-    DWORD  interval         Minimum time in seconds between reported 
+    DWORD  interval         Minimum time in seconds between reported
                             events. Can be used to skip events
     BOOL   binary_time      Display DWORD time stamp
   Output:
@@ -14929,7 +14932,7 @@ struct tm    *tms;
             printf("Date\t");
             for (i=0 ; i<n_tag ; i++)
               {
-              if (tag[i].n_data == 1 || tag[i].type == TID_STRING) 
+              if (tag[i].n_data == 1 || tag[i].type == TID_STRING)
                 printf("%s\t", tag[i].name);
               else
                 for (j=0 ; j<(INT)tag[i].n_data ; j++)
@@ -15084,16 +15087,16 @@ char         str[80];
     n = read(fh, (char *)&rec, sizeof(rec));
     if (n < sizeof(rec))
       break;
-    
+
     /* check if record type is definition */
     if (rec.record_type == RT_DEF)
       {
       /* read name */
       read(fh, event_name, sizeof(event_name));
-      
+
       if (rec.event_id == id || id == 0)
         printf("Event definition %s, ID %d\n", event_name, rec.event_id);
-      
+
       /* skip tags */
       lseek(fh, rec.data_size, SEEK_CUR);
       }
@@ -15109,11 +15112,11 @@ char         str[80];
         }
       if (rec.event_id == id || id == 0)
         printf("ID %d, %s, size %d\n", rec.event_id, str, rec.data_size);
-      
+
       /* skip data */
       lseek(fh, rec.data_size, SEEK_CUR);
       }
-    
+
     } while (TRUE);
 
   close(fh);
@@ -15146,11 +15149,11 @@ char *pc;
     }
 }
 
-INT el_submit(int run, char *author, char *type, char *system, char *subject, 
-              char *text, char *reply_to, char *encoding, 
-              char *afilename1, char *buffer1, INT buffer_size1, 
-              char *afilename2, char *buffer2, INT buffer_size2, 
-              char *afilename3, char *buffer3, INT buffer_size3, 
+INT el_submit(int run, char *author, char *type, char *system, char *subject,
+              char *text, char *reply_to, char *encoding,
+              char *afilename1, char *buffer1, INT buffer_size1,
+              char *afilename2, char *buffer2, INT buffer_size2,
+              char *afilename3, char *buffer3, INT buffer_size3,
               char *tag, INT tag_size)
 /********************************************************************\
 
@@ -15185,7 +15188,7 @@ INT el_submit(int run, char *author, char *type, char *system, char *subject,
 {
   if (rpc_is_remote())
     return rpc_call(RPC_EL_SUBMIT, run, author, type, system, subject,
-                    text, reply_to, encoding, 
+                    text, reply_to, encoding,
                     afilename1, buffer1, buffer_size1,
                     afilename2, buffer2, buffer_size2,
                     afilename3, buffer3, buffer_size3,
@@ -15195,7 +15198,7 @@ INT el_submit(int run, char *author, char *type, char *system, char *subject,
 {
 INT     n, size, fh, status, run_number, mutex, buffer_size, index, offset, tail_size;
 struct  tm *tms;
-char    afilename[256], file_name[256], afile_name[3][256], dir[256], str[256], 
+char    afilename[256], file_name[256], afile_name[3][256], dir[256], str[256],
         start_str[80], end_str[80], last[80], date[80], thread[80], attachment[256];
 HNDLE   hDB;
 time_t  now;
@@ -15270,13 +15273,13 @@ BOOL    bedit;
             if (dir[strlen(dir)-1] != DIR_SEPARATOR)
               strcat(dir, DIR_SEPARATOR_STR);
           }
-	
-#if !defined(OS_VXWORKS) 
+
+#if !defined(OS_VXWORKS)
 #if !defined(OS_VMS)
         tzset();
 #endif
 #endif
-	
+
         time(&now);
         tms = localtime(&now);
 
@@ -15284,10 +15287,10 @@ BOOL    bedit;
         sprintf(afile_name[index], "%02d%02d%02d_%02d%02d%02d_%s",
                 tms->tm_year % 100, tms->tm_mon+1, tms->tm_mday,
                 tms->tm_hour, tms->tm_min, tms->tm_sec, str);
-        sprintf(file_name, "%s%02d%02d%02d_%02d%02d%02d_%s", dir, 
+        sprintf(file_name, "%s%02d%02d%02d_%02d%02d%02d_%s", dir,
                 tms->tm_year % 100, tms->tm_mon+1, tms->tm_mday,
                 tms->tm_hour, tms->tm_min, tms->tm_sec, str);
-  
+
         /* save attachment */
         fh = open(file_name, O_CREAT | O_RDWR | O_BINARY, 0644);
         if (fh < 0)
@@ -15296,7 +15299,7 @@ BOOL    bedit;
           }
         else
           {
-          write(fh, buffer, buffer_size); 
+          write(fh, buffer, buffer_size);
           close(fh);
           }
         }
@@ -15312,7 +15315,7 @@ BOOL    bedit;
     if (dir[strlen(dir)-1] != DIR_SEPARATOR)
       strcat(dir, DIR_SEPARATOR_STR);
 
-#if !defined(OS_VXWORKS) 
+#if !defined(OS_VXWORKS)
 #if !defined(OS_VMS)
   tzset();
 #endif
@@ -15368,7 +15371,7 @@ BOOL    bedit;
     time(&now);
     tms = localtime(&now);
 
-    sprintf(file_name, "%s%02d%02d%02d.log", dir, 
+    sprintf(file_name, "%s%02d%02d%02d.log", dir,
             tms->tm_year % 100, tms->tm_mon+1, tms->tm_mday);
 
     fh = open(file_name, O_CREAT | O_RDWR | O_BINARY, 0644);
@@ -15377,7 +15380,7 @@ BOOL    bedit;
       ss_mutex_release(mutex);
       return EL_FILE_ERROR;
       }
-    
+
     strcpy(date, ctime(&now));
     date[24] = 0;
 
@@ -15385,10 +15388,10 @@ BOOL    bedit;
       sprintf(thread, "%16s %16s", reply_to, "0");
     else
       sprintf(thread, "%16s %16s", "0", "0");
-  
+
     lseek(fh, 0, SEEK_END);
     }
-  
+
   /* compose message */
 
   sprintf(message, "Date: %s\n", date);
@@ -15412,7 +15415,7 @@ BOOL    bedit;
       sprintf(message+strlen(message), ",%s", afile_name[2]);
     }
   sprintf(message+strlen(message), "\n");
-  
+
   sprintf(message+strlen(message), "Encoding: %s\n", encoding);
   sprintf(message+strlen(message), "========================================\n");
   strcat(message, text);
@@ -15440,7 +15443,7 @@ BOOL    bedit;
       n = write(fh, buffer, tail_size);
       free(buffer);
       }
-    
+
     /* truncate file here */
 #ifdef OS_WINNT
     chsize(fh, TELL(fh));
@@ -15506,7 +15509,7 @@ DWORD  lt, ltime, lact;
 char   str[256], file_name[256], dir[256];
 HNDLE  hDB;
 
-#if !defined(OS_VXWORKS) 
+#if !defined(OS_VXWORKS)
 #if !defined(OS_VMS)
   tzset();
 #endif
@@ -15557,7 +15560,7 @@ HNDLE  hDB;
       {
       tms = localtime(&ltime);
 
-      sprintf(file_name, "%s%02d%02d%02d.log", dir, 
+      sprintf(file_name, "%s%02d%02d%02d.log", dir,
               tms->tm_year % 100, tms->tm_mon+1, tms->tm_mday);
       *fh = open(file_name, O_RDWR | O_BINARY, 0644);
 
@@ -15609,7 +15612,7 @@ HNDLE  hDB;
       {
       tms = localtime(&ltime);
 
-      sprintf(file_name, "%s%02d%02d%02d.log", dir, 
+      sprintf(file_name, "%s%02d%02d%02d.log", dir,
               tms->tm_year % 100, tms->tm_mon+1, tms->tm_mday);
       *fh = open(file_name, O_RDWR | O_BINARY, 0644);
 
@@ -15644,12 +15647,12 @@ HNDLE  hDB;
         {
         lt -= 3600*24;
         tms = localtime(&lt);
-        sprintf(str, "%02d%02d%02d.0",  
+        sprintf(str, "%02d%02d%02d.0",
                 tms->tm_year % 100, tms->tm_mon+1, tms->tm_mday);
 
         status = el_search_message(str, fh, FALSE);
 
-        } while (status != EL_SUCCESS && 
+        } while (status != EL_SUCCESS &&
                  (INT)ltime-(INT)lt < 3600*24*365);
 
       if (status != EL_SUCCESS)
@@ -15724,12 +15727,12 @@ HNDLE  hDB;
         {
         lt += 3600*24;
         tms = localtime(&lt);
-        sprintf(str, "%02d%02d%02d.0",  
+        sprintf(str, "%02d%02d%02d.0",
                 tms->tm_year % 100, tms->tm_mon+1, tms->tm_mday);
 
         status = el_search_message(str, fh, FALSE);
 
-        } while (status != EL_SUCCESS && 
+        } while (status != EL_SUCCESS &&
                  (INT)lt-(INT)lact < 3600*24);
 
       if (status != EL_SUCCESS)
@@ -15753,10 +15756,10 @@ HNDLE  hDB;
 
 /*------------------------------------------------------------------*/
 
-INT el_retrieve(char *tag, char *date, int *run, char *author, char *type, 
-                char *system, char *subject, char *text, int *textsize, 
-                char *orig_tag, char *reply_tag, 
-                char *attachment1, char *attachment2, char *attachment3, 
+INT el_retrieve(char *tag, char *date, int *run, char *author, char *type,
+                char *system, char *subject, char *text, int *textsize,
+                char *orig_tag, char *reply_tag,
+                char *attachment1, char *attachment2, char *attachment3,
                 char *encoding)
 /********************************************************************\
 
@@ -15819,7 +15822,7 @@ char    message[10000], thread[256], attachment_all[256];
   /* decode message */
   if (strstr(message, "Run: ") && run)
     *run = atoi(strstr(message, "Run: ")+5);
-    
+
   el_decode(message, "Date: ", date);
   el_decode(message, "Thread: ", thread);
   el_decode(message, "Author: ", author);
@@ -15879,11 +15882,11 @@ char    message[10000], thread[256], attachment_all[256];
       else
         {
         strcpy(text, p);
-    
+
         /* strip end tag */
         if (strstr(text, "$End$"))
           *strstr(text, "$End$") = 0;
-      
+
         *textsize = strlen(text);
         }
       }
@@ -15940,8 +15943,8 @@ char    tag[256];
     if (strchr(tag, '.') != NULL)
       strcpy(strchr(tag, '.'), ".0");
 
-    el_retrieve(tag, NULL, &actual_run, NULL, NULL, 
-                NULL, NULL, NULL, NULL, NULL, NULL, 
+    el_retrieve(tag, NULL, &actual_run, NULL, NULL,
+                NULL, NULL, NULL, NULL, NULL, NULL,
                 NULL, NULL, NULL, NULL);
     } while (actual_run >= run);
 
@@ -15955,7 +15958,7 @@ char    tag[256];
       return status;
     close(fh);
 
-    el_retrieve(tag, NULL, &actual_run, NULL, NULL, 
+    el_retrieve(tag, NULL, &actual_run, NULL, NULL,
                 NULL, NULL, NULL, NULL, NULL, NULL,
                 NULL, NULL, NULL, NULL);
     }
@@ -15964,7 +15967,7 @@ char    tag[256];
 
   if (status == EL_LAST_MSG || status == EL_FIRST_MSG)
     return status;
-  
+
   return EL_SUCCESS;
 }
 
@@ -16050,7 +16053,7 @@ char    *buffer;
     n = write(fh, buffer, tail_size);
     free(buffer);
     }
-  
+
   /* truncate file here */
 #ifdef OS_WINNT
   chsize(fh, TELL(fh));
@@ -16169,7 +16172,7 @@ DWORD  time;
     db_sprintf(str, data, size, index, key.type);
     value1 = atof(str);
     }
-  
+
   /* return value */
   if (value)
     strcpy(value, str);
@@ -16206,7 +16209,7 @@ INT al_trigger_alarm(char *alarm_name, char *alarm_message, char *default_class,
   Input:
     char   *alarm_name      Alarm name, defined in /alarms/alarms
     char   *alarm_message   Optional message which goes with alarm
-    char   *default_class   If alarm is not yet defined under 
+    char   *default_class   If alarm is not yet defined under
                             /alarms/alarms/<alarm_name>, a new one
                             is created and this default class is used.
     char   cond_str         String displayed in alarm condition
@@ -16259,7 +16262,7 @@ ALARM_STR(alarm_str);
     if (default_class && default_class[0])
       db_set_value(hDB, hkeyalarm, "Alarm Class", default_class, 32, 1, TID_STRING);
     status = TRUE;
-    db_set_value(hDB, hkeyalarm, "Active", &status, sizeof(status), 1, TID_BOOL); 
+    db_set_value(hDB, hkeyalarm, "Active", &status, sizeof(status), 1, TID_BOOL);
     }
 
   /* set parameters for internal alarms */
@@ -16267,7 +16270,7 @@ ALARM_STR(alarm_str);
     {
     db_set_value(hDB, hkeyalarm, "Type", &type, sizeof(INT), 1, TID_INT);
     strcpy(str, cond_str);
-    db_set_value(hDB, hkeyalarm, "Condition", str, 256, 1, TID_STRING); 
+    db_set_value(hDB, hkeyalarm, "Condition", str, 256, 1, TID_STRING);
     }
 
   size = sizeof(alarm);
@@ -16351,10 +16354,10 @@ INT al_trigger_class(char *alarm_class, char *alarm_message, BOOL first)
   Purpose: Trigger a certain alarm class
 
   Input:
-    char   *alarm_class     Alarm class, must be defined in 
+    char   *alarm_class     Alarm class, must be defined in
                             /alarms/classes
     char   *alarm_message   Optional message which goes with alarm
-    BOOL   first            TRUE if alarm is triggered first time 
+    BOOL   first            TRUE if alarm is triggered first time
                             (used for elog)
 
   Output:
@@ -16377,7 +16380,7 @@ ALARM_CLASS ac;
   db_find_key(hDB, 0, str, &hkeyclass);
   if (!hkeyclass)
     {
-    cm_msg(MERROR, "al_trigger_class", "Alarm class %s not found in ODB", 
+    cm_msg(MERROR, "al_trigger_class", "Alarm class %s not found in ODB",
                    alarm_class);
     return AL_INVALID_NAME;
     }
@@ -16391,7 +16394,7 @@ ALARM_CLASS ac;
     }
 
   /* write system message */
-  if (ac.write_system_message && 
+  if (ac.write_system_message &&
       (INT)ss_time() - (INT)ac.system_message_last > ac.system_message_interval)
     {
     sprintf(str, "%s: %s", alarm_class, alarm_message);
@@ -16401,8 +16404,8 @@ ALARM_CLASS ac;
 
   /* write elog message on first trigger */
   if (ac.write_elog_message && first)
-    el_submit(0, "Alarm system", "Alarm", "General", alarm_class, str, 
-              "", "plain", "", "", 0, "", "", 0, "", "", 0, tag, 32); 
+    el_submit(0, "Alarm system", "Alarm", "General", alarm_class, str,
+              "", "plain", "", "", 0, "", "", 0, "", "", 0, tag, 32);
 
   /* execute command */
   if (ac.execute_command[0] &&
@@ -16556,7 +16559,7 @@ INT al_check()
 
   Routine: al_scan
 
-  Purpose: Scan ODB alarams and programs 
+  Purpose: Scan ODB alarams and programs
 
   Input:
 
@@ -16657,7 +16660,7 @@ ALARM_STR(alarm_str);
 
     /* check alarm only when active and not internal */
     if (alarm.active &&
-        alarm.type == AT_EVALUATED && 
+        alarm.type == AT_EVALUATED &&
         alarm.check_interval > 0 &&
         (INT)ss_time() - (INT)alarm.checked_last > alarm.check_interval)
       {
@@ -16691,7 +16694,7 @@ ALARM_STR(alarm_str);
         break;
 
       db_get_key(hDB, hkey, &key);
-      
+
       /* don't check "execute on xxx" */
       if (key.type != TID_KEY)
         continue;
@@ -16724,7 +16727,7 @@ ALARM_STR(alarm_str);
             if (program_info.alarm_class[0])
               {
               sprintf(str, "Program %s is not running", key.name);
-              al_trigger_alarm(key.name, str, program_info.alarm_class, 
+              al_trigger_alarm(key.name, str, program_info.alarm_class,
                                "Program not running", AT_PROGRAM);
               }
 
@@ -16782,7 +16785,7 @@ INT eb_create_buffer(INT size)
 
   Output:
     none
-  
+
   Function value:
     CM_SUCCESS              Successful completion
     BM_NO_MEMEORY           Out of memory
@@ -16817,7 +16820,7 @@ INT eb_free_buffer()
 
   Output:
     none
-  
+
   Function value:
     CM_SUCCESS              Successful completion
 
@@ -16844,7 +16847,7 @@ INT eb_free_space  (void)
 
   Output:
     none
-  
+
   Function value:
     INT	   Number of usable free bytes in the event buffer
 
@@ -16889,7 +16892,7 @@ DWORD eb_get_level()
 
   Output:
     none
-  
+
   Function value:
     DWORD level              0..99
 
@@ -16909,7 +16912,7 @@ BOOL eb_buffer_full  (void)
 
   Routine: eb_buffer_full
 
-  Purpose: Test if there is sufficient space in the event buffer 
+  Purpose: Test if there is sufficient space in the event buffer
 		for another event
 
   Input:
@@ -16917,7 +16920,7 @@ BOOL eb_buffer_full  (void)
 
   Output:
     none
-  
+
   Function value:
     BOOL	Is there enough space for another event in the event buffer
 
@@ -16945,7 +16948,7 @@ EVENT_HEADER *eb_get_pointer()
 
   Output:
     none
-  
+
   Function value:
     EVENT_HEADER *            Pointer to free location
 
@@ -16985,7 +16988,7 @@ INT eb_increment_pointer(INT buffer_handle, INT event_size)
 
   Output:
     none
-  
+
   Function value:
     CM_SUCCESS                Successful completion
 
@@ -16996,7 +16999,7 @@ INT aligned_event_size;
   /* if not connected remotely, use bm_send_event */
   if (_send_sock == 0)
     return bm_send_event(buffer_handle,
-                         _eb_write_pointer+sizeof(INT), 
+                         _eb_write_pointer+sizeof(INT),
                          event_size, SYNC);
 
   aligned_event_size = ALIGN(event_size);
@@ -17004,7 +17007,7 @@ INT aligned_event_size;
   /* copy buffer handle */
   *((INT *) _eb_write_pointer) = buffer_handle;
   _eb_write_pointer += sizeof(INT) + aligned_event_size;
-  
+
   if (_eb_write_pointer > _eb_end_pointer)
     _eb_end_pointer = _eb_write_pointer;
 
@@ -17012,16 +17015,16 @@ INT aligned_event_size;
     cm_msg(MERROR, "eb_increment_pointer", "event size (%d) exeeds maximum event size (%d)",
                     event_size, MAX_EVENT_SIZE);
 
-  if (_eb_size - ((PTYPE)_eb_write_pointer - (PTYPE)_event_ring_buffer) < 
+  if (_eb_size - ((PTYPE)_eb_write_pointer - (PTYPE)_event_ring_buffer) <
       MAX_EVENT_SIZE+sizeof(EVENT_HEADER)+sizeof(INT))
     {
     _eb_write_pointer = _event_ring_buffer;
-    
+
     /* avoid rp==wp */
     if (_eb_read_pointer == _event_ring_buffer)
       _eb_write_pointer--;
     }
-    
+
   return CM_SUCCESS;
 }
 
@@ -17040,7 +17043,7 @@ INT eb_send_events(BOOL send_all)
 
   Output:
     none
-  
+
   Function value:
     CM_SUCCESS                Successful completion
 
@@ -17149,7 +17152,7 @@ INT  size, i;
 *                          else transfer FULL buffer                 *
 * dm_area_flush():        *Transfer all remaining events from dm     *
 *                          Blocking function with timeout            *
-*                          if DUAL_THREAD: Give sem_flush semaphore. * 
+*                          if DUAL_THREAD: Give sem_flush semaphore. *
 * dm_task():               Secondary thread handling DUAL_THREAD     *
 *                          mechanism. Serves 2 requests:             *
 *                          dm_send:  Transfer FULL buffer only.      *
@@ -17157,14 +17160,14 @@ INT  size, i;
 * dm_area_switch():        internal, used by dm_pointer_get()        *
 * dm_active_full():        internal: check space in current buffer   *
 * dm_buffer_send():        internal: send data for given area        *
-* dm_buffer_time_get():    interal: return the time stamp of the     * 
+* dm_buffer_time_get():    interal: return the time stamp of the     *
 *                          last switch                               *
 \********************************************************************/
 
 #define DM_FLUSH       10    /* flush request for DUAL_THREAD */
 #define DM_SEND        11    /* FULL send request for DUAL_THREAD */
-#define DM_KILL        12    /* Kill request for 2nd thread */  
-#define DM_TIMEOUT     13    /* "timeout" return state in flush request for DUAL_THREAD */  
+#define DM_KILL        12    /* Kill request for 2nd thread */
+#define DM_TIMEOUT     13    /* "timeout" return state in flush request for DUAL_THREAD */
 #define DM_ACTIVE_NULL 14    /* "both buffer were/are FULL with no valid area" return state */
 
 typedef struct {
@@ -17200,7 +17203,7 @@ INT dm_buffer_create(INT size, INT user_max_event_size)
            any other dm_xxx function
   Input:
     INT    size             Size in bytes
-    INT    user_max_event_size  
+    INT    user_max_event_size
   Output:
     none
   Function value:
@@ -17223,17 +17226,17 @@ INT dm_buffer_create(INT size, INT user_max_event_size)
     cm_msg(MERROR,"dm_buffer_create","user max event size too large");
     return BM_MEMSIZE_MISMATCH;
   }
-  dm_user_max_event_size = user_max_event_size;  
-  
+  dm_user_max_event_size = user_max_event_size;
+
   memset(dm.area1.pt, 0, size);
   memset(dm.area2.pt, 0, size);
-  
+
   /* initialize pointers */
   dm.area1.pb = dm.area1.pt + size - 1024;
   dm.area1.pw = dm.area1.pe = dm.area1.pt;
   dm.area2.pb = dm.area2.pt + size - 1024;
   dm.area2.pw = dm.area2.pe = dm.area2.pt;
-  
+
   /*-PAA-*/
 #ifdef DM_DEBUG
   printf(" in dm_buffer_create ---------------------------------\n");
@@ -17243,10 +17246,10 @@ INT dm_buffer_create(INT size, INT user_max_event_size)
 
   /* activate first area */
   dm.pa = &dm.area1;
-  
+
   /* Default not full */
   dm.area1.full = dm.area2.full = FALSE;
-  
+
   /* Reset serial buffer number with proper starting sequence */
   dm.area1.serial = dm.area2.serial = 0;
   /* ensure proper serial on next increment */
@@ -17254,10 +17257,10 @@ INT dm_buffer_create(INT size, INT user_max_event_size)
 
   /* set active buffer time stamp */
   dm.last_active = ss_millitime();
-  
+
   /* get socket for event sending */
   _send_sock = rpc_get_event_sock();
-  
+
 #ifdef DM_DUAL_THREAD
   {
     INT status;
@@ -17299,7 +17302,7 @@ INT dm_buffer_create(INT size, INT user_max_event_size)
 #endif
   }
 #endif /* DM_DUAL_THREAD */
-  
+
   return CM_SUCCESS;
 }
 
@@ -17330,7 +17333,7 @@ INT dm_buffer_release(void)
   dm.serial = 0;
   dm.area1.full = dm.area2.full = TRUE;
   dm.area1.serial = dm.area2.serial = 0;
-  
+
 #ifdef DM_DUAL_THREAD
  /* kill spawned dm_task */
   dm.action = DM_KILL;
@@ -17361,7 +17364,7 @@ INT dm_buffer_release(void)
 \********************************************************************/
 {
   volatile BOOL full1, full2;
-  
+
   full1 = dm.area1.full;
   full2 = dm.area2.full;
 
@@ -17407,7 +17410,7 @@ INLINE BOOL dm_active_full (void)
 /********************************************************************\
   Routine: dm_active_full
 
-  Purpose: Test if there is sufficient space in either event buffer 
+  Purpose: Test if there is sufficient space in either event buffer
 	         for another event.
   Input:
     none
@@ -17454,7 +17457,7 @@ EVENT_HEADER *dm_pointer_get(void)
   Routine: dm_pointer_get
 
   Purpose: Get pointer to next free location in event buffer.
-           after 10sec tries, it times out return NULL indicating a 
+           after 10sec tries, it times out return NULL indicating a
            serious problem, i.e. abort.
   REMARK : Cannot be called twice in a raw due to +sizeof(INT)
   Input:
@@ -17467,11 +17470,11 @@ EVENT_HEADER *dm_pointer_get(void)
 \********************************************************************/
 {
   int timeout, status;
-  
+
   /* Is there still space in the active area ? */
   if (!dm_active_full())
     return (EVENT_HEADER *) (dm.pa->pw + sizeof(INT));
-  
+
   /* no more space => switch area */
 
   /* Tag current area with global dm.serial for order consistency */
@@ -17479,21 +17482,21 @@ EVENT_HEADER *dm_pointer_get(void)
 
   /* set active buffer time stamp */
   dm.last_active = ss_millitime();
-  
+
   /* mark current area full */
   dm.pa->full = TRUE;
-  
+
   /* Trigger/do data transfer (Now/don't wait) */
   if ((status = dm_area_send()) == RPC_NET_ERROR)
     {
       cm_msg(MERROR,"dm_pointer_get()","Net error or timeout %i",status);
       return NULL;
     }
-  
+
   /* wait switch completion (max 10 sec) */
   timeout = ss_millitime();   /* with timeout */
   while ((ss_millitime() - timeout) < 10000)
-    { 
+    {
       dm.pa = dm_area_switch();
       if (dm.pa != NULL)
         return (EVENT_HEADER *) (dm.pa->pw + sizeof(INT));
@@ -17503,7 +17506,7 @@ EVENT_HEADER *dm_pointer_get(void)
                  dm.area1.full, dm.area2.full, dm.area1.serial, dm.area2.serial, dm.serial);
 #endif
     }
-  
+
   /* Time running out abort */
   cm_msg(MERROR,"dm_pointer_get","Timeout due to buffer full");
   return NULL;
@@ -17537,7 +17540,7 @@ INT aligned_event_size;
     return bm_send_event(buffer_handle, dm.pa->pw+sizeof(INT), event_size, SYNC);
     }
   aligned_event_size = ALIGN(event_size);
-  
+
   *((INT *) dm.pa->pw) = buffer_handle;
 
   /* adjust write pointer */
@@ -17574,7 +17577,7 @@ INLINE INT dm_buffer_send(DMEM_AREA * larea)
   /* if not connected remotely, use bm_send_event */
  if (_send_sock == 0)
 	return bm_flush_cache(*((INT *) dm.pa->pw), ASYNC);
-	
+
 	/* alias */
   lpt = larea->pt;
 
@@ -17584,12 +17587,12 @@ INLINE INT dm_buffer_send(DMEM_AREA * larea)
   /* shortcut for speed */
   if (tot_size == 0)
       return CM_SUCCESS;
-  
-#ifdef DM_DEBUG  
+
+#ifdef DM_DEBUG
   printf("lpt:%p size:%i ",lpt, tot_size);
 #endif
   nwrite = send_tcp(_send_sock, lpt, tot_size, 0);
-#ifdef DM_DEBUG  
+#ifdef DM_DEBUG
   printf("nwrite:%i  errno:%i\n",nwrite, errno);
 #endif
   if (nwrite < 0)
@@ -17608,8 +17611,8 @@ INT dm_area_send(void)
 
   Purpose: Empty the FULL area only in proper event order
            Meant to be use either in mfe.c scheduler on every event
-           
-  Dual memory scheme: 
+
+  Dual memory scheme:
    DM_DUAL_THREAD : Trigger sem_send
    !DM_DUAL_THREAD: empty full buffer in order, return active to area1
                     if dm.pa is NULL (were both full) and now both are empty
@@ -17624,8 +17627,8 @@ INT dm_area_send(void)
 \********************************************************************/
 {
 #ifdef DM_DUAL_THREAD
-  INT status; 
-  
+  INT status;
+
   /* force a DM_SEND if possible. Don't wait for completion */
   dm.action = DM_SEND;
   ss_mutex_release(dm.sem_send);
@@ -17638,12 +17641,12 @@ INT dm_area_send(void)
       return RPC_NET_ERROR;
     }
 #endif
-  
+
   return CM_SUCCESS;
 #else
   /* ---------- NOT IN DUAL THREAD -----------*/
   INT status;
-  
+
   /* if no DUAL thread everything is local then */
   /* select the full area */
   if (dm.area1.full && dm.area2.full)
@@ -17685,7 +17688,7 @@ INT dm_task(void *pointer)
 {
 #ifdef DM_DUAL_THREAD
   INT status, timeout;
-  
+
   printf("Semaphores initialization ... in areaSend ");
   /* Check or Wait for semaphore to be setup */
   timeout = ss_millitime();
@@ -17693,28 +17696,28 @@ INT dm_task(void *pointer)
     ss_sleep(200);
   if (dm.sem_send == 0)
     goto kill;
-  
+
 #ifdef OS_WINNT
   /* necessary for true MUTEX (NT) get semaphore */
   ss_mutex_wait_for(dm.sem_flush, 0);
 #endif
-  
+
   /* Main FOREVER LOOP */
   printf("task areaSend ready...\n");
   while (1)
     {
       if (!dm_area_full())
         {
-          /* wait semaphore here ........ 0 == forever*/ 
+          /* wait semaphore here ........ 0 == forever*/
           ss_mutex_wait_for(dm.sem_send, 0);
 #ifdef OS_WINNT
           /* necessary for true MUTEX (NT) give semaphore */
           ss_mutex_release(dm.sem_send);
 #endif
         }
-      if (dm.action == DM_SEND)                            
+      if (dm.action == DM_SEND)
         {
-#ifdef DM_DEBUG 
+#ifdef DM_DEBUG
           printf("Send %i %i ", dm.area1.full, dm.area2.full);
 #endif
           /* DM_SEND : Empty the oldest buffer only. */
@@ -17729,7 +17732,7 @@ INT dm_task(void *pointer)
             status = dm_buffer_send(&dm.area1);
           else if (dm.area2.full)
             status = dm_buffer_send(&dm.area2);
-          
+
           if (status != CM_SUCCESS)
             {
               cm_msg(MERROR,"dm_task","network error %i", status);
@@ -17738,7 +17741,7 @@ INT dm_task(void *pointer)
         } /* if DM_SEND */
       else if (dm.action == DM_FLUSH)
         {
-	  /* DM_FLUSH: User is waiting for completion (i.e. No more incomming 
+	  /* DM_FLUSH: User is waiting for completion (i.e. No more incomming
 	     events) Empty both area in order independently of being full or not */
           if (dm.area1.serial <= dm.area2.serial)
             {
@@ -17758,15 +17761,15 @@ INT dm_task(void *pointer)
               if (status != CM_SUCCESS)
                 goto error;
             }
-          /* reset counter */              
+          /* reset counter */
           dm.area1.serial = 0;
           dm.area2.serial = dm.serial = 1;
-#ifdef DM_DEBUG              
+#ifdef DM_DEBUG
           printf("dm.action: Flushing ...\n");
 #endif
           /* reset area to #1 */
           dm.pa = &dm.area1;
-          
+
           /* release user */
           ss_mutex_release(dm.sem_flush);
 #ifdef OS_WINNT
@@ -17774,12 +17777,12 @@ INT dm_task(void *pointer)
           ss_mutex_wait_for(dm.sem_flush, 0);
 #endif
         } /* if FLUSH */
-      
+
       if (dm.action == DM_KILL)
         goto kill;
-      
+
     } /* FOREVER (go back wainting for semaphore) */
-  
+
   /* kill spawn now */
  error:
   cm_msg(MERROR,"dm_area_flush","aSync Net error");
@@ -17788,7 +17791,7 @@ INT dm_task(void *pointer)
 #ifdef OS_WINNT
   ss_mutex_wait_for(dm.sem_flush, 1);
 #endif
-  cm_msg(MERROR,"areaSend","task areaSend exiting now");  
+  cm_msg(MERROR,"areaSend","task areaSend exiting now");
   exit;
 #else
   printf("DM_DUAL_THREAD not defined\n");
@@ -17806,7 +17809,7 @@ INT dm_area_flush(void)
            Used in mfe for BOR events, periodic events and
            if rate to low in main loop once a second. The standard
            data transfer should be done/triggered by dm_area_send (sync/async)
-           in dm_pointer_get(). 
+           in dm_pointer_get().
   Input:
     none
   Output:
@@ -17825,17 +17828,17 @@ INT dm_area_flush(void)
   /* necessary for true MUTEX (NT) get semaphore back */
   ss_mutex_wait_for(dm.sem_send, 0);
 #endif
-  
+
   /* important to wait for completion before continue with timeout
      timeout specified milliseconds */
   status = ss_mutex_wait_for(dm.sem_flush, 10000);
 #ifdef DM_DEBUG
   printf("dm_area_flush after waiting %i\n",status);
-#endif  
-#ifdef OS_WINNT  
+#endif
+#ifdef OS_WINNT
   ss_mutex_release(dm.sem_flush);   /* give it back now */
 #endif
-  
+
   return status;
 #else
   /* full flush done here */
