@@ -7,6 +7,9 @@
                 linked with user code to form a complete frontend
 
   $Log$
+  Revision 1.67  2004/09/24 21:42:17  midas
+  Send manually triggered events in scheduler
+
   Revision 1.66  2004/09/21 21:09:15  midas
   Updated event statistics to ODB properly at EOR
 
@@ -262,19 +265,20 @@ extern INT interrupt_configure(INT cmd, INT source, PTYPE adr);
 
 #define DEFAULT_FE_TIMEOUT  60000       /* 60 seconds for watchdog timeout */
 
-INT run_state;                  /* STATE_RUNNING, STATE_STOPPED, STATE_PAUSED */
+INT run_state;                     /* STATE_RUNNING, STATE_STOPPED, STATE_PAUSED */
 INT run_number;
-DWORD actual_time;              /* current time in seconds since 1970 */
-DWORD actual_millitime;         /* current time in milliseconds */
+DWORD actual_time;                 /* current time in seconds since 1970 */
+DWORD actual_millitime;            /* current time in milliseconds */
 
 char host_name[HOST_NAME_LENGTH];
 char exp_name[NAME_LENGTH];
 
 INT max_bytes_per_sec;
-INT optimize = 0;               /* set this to one to opimize TCP buffer size */
-INT fe_stop = 0;                /* stop switch for VxWorks */
-BOOL debug;                     /* disable watchdog messages from server */
-DWORD auto_restart = 0;         /* restart run after event limit reached stop */
+INT optimize = 0;                  /* set this to one to opimize TCP buffer size */
+INT fe_stop = 0;                   /* stop switch for VxWorks */
+BOOL debug;                        /* disable watchdog messages from server */
+DWORD auto_restart = 0;            /* restart run after event limit reached stop */
+INT manual_trigger_event_id = 0;   /* set from the manual_trigger callback */
 
 HNDLE hDB;
 
@@ -471,17 +475,7 @@ INT tr_resume(INT rn, char *error)
 
 INT manual_trigger(INT index, void *prpc_param[])
 {
-   WORD event_id, i;
-
-   event_id = CWORD(0);
-
-   for (i = 0; equipment[i].name[0]; i++)
-      if (equipment[i].info.event_id == event_id)
-         send_event(i);
-
-   if (display_period)
-      display(FALSE);
-
+   manual_trigger_event_id = CWORD(0);
    return SUCCESS;
 }
 
@@ -737,7 +731,7 @@ and rebuild the system.");
             ss_sleep(3000);
       }
 
-    /*---- register callback for manual triggered events -----------*/
+      /*---- register callback for manual triggered events -----------*/
       if (eq_info->eq_type & EQ_MANUAL_TRIG) {
          if (!manual_trig_flag)
             cm_register_function(RPC_MANUAL_TRIG, manual_trigger);
@@ -1560,6 +1554,29 @@ INT scheduler(void)
 
       /*---- check for deferred transitions --------------------------*/
       cm_check_deferred_transition();
+
+      /*---- check for manual triggered events -----------------------*/
+      if (manual_trigger_event_id) {
+         interrupt_enable(FALSE);
+
+         /* readout and send event */
+         status = BM_INVALID_PARAM; 
+         for (i = 0; equipment[i].name[0]; i++)
+            if (equipment[i].info.event_id == manual_trigger_event_id) {
+               status = send_event(i);
+               break;
+            }
+
+         manual_trigger_event_id = 0;
+
+         if (status != CM_SUCCESS) {
+            cm_msg(MERROR, "scheduler", "send_event error %d", status);
+            goto net_error;
+         }
+
+         /* re-enable the interrupt after periodic */
+         interrupt_enable(TRUE);
+      }
 
       /*---- calculate rates and update status page periodically -----*/
       if (force_update ||
