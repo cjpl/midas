@@ -9,6 +9,9 @@
                 for HVR_300 High Voltage Regulator
 
   $Log$
+  Revision 1.5  2004/04/30 07:59:22  midas
+  LED on when HV is on
+
   Revision 1.4  2004/04/08 09:23:36  midas
   Added software current limit
 
@@ -219,6 +222,10 @@ void user_init(unsigned char init)
    /* force update */
    for (i=0 ; i<N_HV_CHN ; i++)
       chn_bits[i] = DEMAND_CHANGED | CUR_LIMIT_CHANGED;
+
+   /* LED normally off (non-inverted) */
+   for (i=0 ; i<N_HV_CHN ; i++)
+      led_mode(i, 0);
 }
 
 /*---- User write function -----------------------------------------*/
@@ -527,7 +534,7 @@ void set_hv(unsigned char channel, float value) reentrant
    } else
       user_data[channel].status &= ~STATUS_VLIMIT;
 
-   led_mode(channel, value != 0);
+   led_mode(channel, value > 10);
 
    /* apply correction */
    value = value * user_data[channel].dac_gain + user_data[channel].dac_offset;
@@ -612,7 +619,7 @@ void check_current(unsigned char channel)
    }
 
    if (user_data[channel].status & STATUS_ILIMIT)
-     led_blink(channel, 1, 500);
+      led_blink(channel, 1, 500);
 }
 
 /*------------------------------------------------------------------*/
