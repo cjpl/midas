@@ -9,6 +9,9 @@
                 for SCS-500 analog I/O
 
   $Log$
+  Revision 1.11  2002/11/20 12:02:59  midas
+  Added yield()
+
   Revision 1.10  2002/10/28 14:26:30  midas
   Changes from Japan
 
@@ -185,8 +188,6 @@ unsigned char i;
 
 #pragma NOAREGS
 
-sbit TMP = P0 ^ 2;
-
 void user_write(unsigned char channel)
 {
 unsigned char data *d;
@@ -195,7 +196,6 @@ unsigned char data *d;
     {
     case 0:  // p1 
       P1 = user_data.p1; 
-      TMP = !(user_data.p1 & 0x01);
       break;
 
     case 1:  // DAC0
@@ -319,7 +319,7 @@ float gvalue;
     ENABLE_INTERRUPTS;
 
     value += (ADC0L | (ADC0H << 8));
-    watchdog_refresh();
+    yield();
     }
 
   if (user_conf.adc_average)
