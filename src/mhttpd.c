@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.218  2002/05/21 22:51:45  midas
+  Adjust maxlength in start page according to string length
+
   Revision 1.217  2002/05/16 23:21:07  midas
   Fixed reconnection due to experiment names with different case
 
@@ -5551,7 +5554,7 @@ char  str[256];
 
 void show_start_page(void)
 {
-int   rn, i, j, n, size, status;
+int   rn, i, j, n, size, status, maxlength;
 HNDLE hDB, hkey, hsubkey, hkeycomm, hkeyc;
 KEY   key;
 char  data[1000], str[32];
@@ -5622,8 +5625,12 @@ char  data_str[256], comment[1000];
 
         db_sprintf(data_str, data, key.item_size, j, key.type);
 
-        rsprintf("<td><input type=text size=80 maxlenth=80 name=x%d value=\"%s\"></tr>\n",
-                 n++, data_str);
+        maxlength = 80;
+        if (key.type == TID_STRING)
+          maxlength = key.item_size;
+
+        rsprintf("<td><input type=text size=80 maxlength=%d name=x%d value=\"%s\"></tr>\n",
+                 maxlength, n++, data_str);
         }
       }
     }
