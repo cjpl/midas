@@ -14,6 +14,9 @@
                 Brown, Prentice Hall
 
   $Log$
+  Revision 1.38  1999/08/26 08:50:56  midas
+  Added missing status check on select() funciton
+
   Revision 1.37  1999/07/22 19:08:25  pierre
   - move static INT ss_in_async_routine_flag above LOCAL_ROUTINE for VxWorks
 
@@ -3020,9 +3023,9 @@ char                str[100], buffer[80], buffer_tmp[80];
 	      timeout.tv_sec  = 0;
 	      timeout.tv_usec = 0;
 
-	      select(FD_SETSIZE, (void *) &readfds, NULL, NULL, (void *) &timeout);
+	      status = select(FD_SETSIZE, (void *) &readfds, NULL, NULL, (void *) &timeout);
 
-	      if (FD_ISSET(_suspend_struct[index].ipc_recv_socket, &readfds))
+	      if (status != -1 && FD_ISSET(_suspend_struct[index].ipc_recv_socket, &readfds))
           {
           size = sizeof(struct sockaddr);
           size = recvfrom(_suspend_struct[index].ipc_recv_socket, buffer_tmp,
