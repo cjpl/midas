@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.161  2002/05/29 07:25:13  midas
+  Fixed bug with shutting down programs
+
   Revision 1.160  2002/05/28 12:47:46  midas
   Shut down client connection in FTCP mode
 
@@ -5211,7 +5214,7 @@ DWORD  start_time;
       db_get_value(hDB, hSubkey, "Name", client_name, &size, TID_STRING, TRUE);
 
       if (!bUnique)
-  client_name[strlen(name)] = 0; /* strip number */
+        client_name[strlen(name)] = 0; /* strip number */
 
       /* check if individual client */
       if (!equal_ustring("all", name) &&
@@ -5246,10 +5249,19 @@ DWORD  start_time;
         start_time = ss_millitime();
         do
           {
+          ss_sleep(100);
           status = db_find_key(hDB, hKey, key.name, &hKeyTmp);
-          } while (status == DB_SUCCESS && (ss_millitime() - start_time < 5000));
+         } while (status == DB_SUCCESS && (ss_millitime() - start_time < 5000));
 
-        return_status = CM_SUCCESS;
+        if (status == DB_SUCCESS)
+          {
+          cm_msg(MINFO, "cm_shutdown", "Cannot shutdown client \"%s\", please kill manually and do an ODB cleanup", client_name);
+          return_status = CM_NO_CLIENT;
+          }
+        else
+          return_status = CM_SUCCESS;
+
+        i++;
         }
       }
     }
@@ -11663,6 +11675,9 @@ char         return_buffer[NET_BUFFER_SIZE];
   /* return immediately for closed down client connections */
   if (!sock && routine_id == RPC_ID_EXIT)
     return SS_EXIT;
+
+  if (!sock && routine_id == RPC_ID_SHUTDOWN)
+    return RPC_SHUTDOWN;
 
   /* Return if TCP connection broken */
   if (status == SS_ABORT)

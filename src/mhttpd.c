@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.226  2002/05/29 07:25:12  midas
+  Fixed bug with shutting down programs
+
   Revision 1.225  2002/05/28 11:31:49  midas
   Added debug output via '-d'
 
@@ -6594,7 +6597,7 @@ INT    al_list[] = { AT_EVALUATED, AT_PROGRAM, AT_INTERNAL, AT_PERIODIC };
 
 void show_programs_page()
 {
-INT   i, j, size, count;
+INT   i, j, size, count, status;
 BOOL  restart, first, required;
 HNDLE hDB, hkeyroot, hkey, hkey_rc, hkeycl;
 KEY   key, keycl;
@@ -6605,8 +6608,17 @@ char  str[256], ref[256], command[256], name[80];
   /* stop command */
   if (*getparam("Stop"))
     {
-    cm_shutdown(getparam("Stop")+5, FALSE);
-    redirect("?cmd=programs");
+    status = cm_shutdown(getparam("Stop")+5, FALSE);
+
+    if (status == CM_SUCCESS)
+      redirect("?cmd=programs");
+    else
+      {
+      sprintf(str, "Cannot shut down client \"%s\", please kill manually and do an ODB cleanup", 
+                   getparam("Stop")+5);
+      show_error(str);
+      }
+
     return;
     }
 
