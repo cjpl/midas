@@ -6,6 +6,9 @@
 #  Contents:     Makefile for mevb MIDAS example 
 #
 #  $Log$
+#  Revision 1.3  2004/09/28 16:16:39  pierre
+#  Add MIDASSYS
+#
 #  Revision 1.2  2003/08/19 23:25:29  pierre
 #  add pthread lib
 #
@@ -41,9 +44,9 @@ LIBS = -lm -lz -lutil -lnsl -lpthread
 #-------------------------------------------------------------------
 # The following lines define direcories. Adjust it if necessary.
 #                 
-DRV_DIR         = ../../drivers
-INC_DIR         = /usr/local/include
-LIB_DIR         = /usr/local/lib
+DRV_DIR         = $(MIDASSYS)/drivers
+INC_DIR         = $(MIDASSYS)/include
+LIB_DIR         = $(MIDASSYS)/linux/lib
 CERNLIB_DIR     = /cern/pro/lib
 
 #-------------------------------------------------------------------
