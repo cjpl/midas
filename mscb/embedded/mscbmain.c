@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol main program
 
   $Log$
+  Revision 1.20  2002/11/28 14:44:02  midas
+  Removed SIZE_XBIT
+
   Revision 1.19  2002/11/28 13:03:41  midas
   Protocol version 1.2
 
@@ -200,10 +203,10 @@ unsigned char i;
 
   /* count channels and parameters */
   for (n_channel=0 ; ; n_channel++)
-    if (channel[n_channel].name[0] == 0)
+    if (channel[n_channel].width == 0)
       break;
   for (n_param=0 ; ; n_param++)
-    if (channel[n_param].name[0] == 0)
+    if (conf_param[n_param].width == 0)
       break;
 
   /* retrieve EEPROM data */
@@ -218,12 +221,14 @@ unsigned char i;
     sys_info.wd_counter = 0;
 
     // init channel variables
-    for (i=0 ; channel[i].name[0] ; i++)
-      memset(channel[i].ud, 0, channel[i].width);
+    for (i=0 ; channel[i].width ; i++)
+      if (channel[i].ud)
+        memset(channel[i].ud, 0, channel[i].width);
   
     // init configuration parameters 
-    for (i=0 ; conf_param[i].name[0] ; i++)
-      memset(conf_param[i].ud, 0, conf_param[i].width);
+    for (i=0 ; conf_param[i].width ; i++)
+      if (conf_param[i].ud)
+        memset(conf_param[i].ud, 0, conf_param[i].width);
 
     eeprom_flash();
     }
@@ -462,12 +467,8 @@ MSCB_INFO_CHN code *pchn;
       send_byte(VERSION, &crc);   // send protocol version
       send_byte(CSR, &crc);       // send node status
 
-      send_byte(n_channel, &crc);
-
-      for (i=0 ; ; i++)           // send number of configuration parameters
-        if (conf_param[i].name[0] == 0)
-          break;
-      send_byte(i, &crc);
+      send_byte(n_channel, &crc); // send number of channels
+      send_byte(n_param, &crc);   // send number of configuration parameters
 
       send_byte(*(((unsigned char *)&sys_info.node_addr)+0), &crc);    // send node address
       send_byte(*(((unsigned char *)&sys_info.node_addr)+1), &crc); 
@@ -588,14 +589,14 @@ MSCB_INFO_CHN code *pchn;
     {
     if (in_buf[0] == CMD_READ + 1)  // single channel
       {
-      if (in_buf[i] < n_channel)
+      if (in_buf[1] < n_channel)
         {
         n = channel[in_buf[1]].width; // number of bytes to return
     
-        if (n == 0)
+        if (channel[in_buf[1]].ud == 0)
           {
-          n = user_read(in_buf[1]);   // for 0-bit channels, user routine returns bytes
-          out_buf[0] = CMD_ACK + n;
+          n = user_read(in_buf[1]);   // for dataless channels, user routine returns bytes
+          out_buf[0] = CMD_ACK + n;   // and places data directly in out_buf
           }
         else
           {
@@ -657,7 +658,8 @@ MSCB_INFO_CHN code *pchn;
   
       out_buf[0] = CMD_ACK + n;
       for (i=0 ; i<n ; i++)
-        out_buf[1+i] = ((char idata *)conf_param[in_buf[1]].ud)[i];  // copy user data
+        if (conf_param[in_buf[1]].ud)
+          out_buf[1+i] = ((char idata *)conf_param[in_buf[1]].ud)[i];  // copy user data
   
       out_buf[1+i] = crc8(out_buf, 1 + n); // generate CRC code
   
@@ -685,7 +687,8 @@ MSCB_INFO_CHN code *pchn;
 
     /* copy LSB bytes */
     for (i=0 ; i<n ; i++)
-      ((char idata *)channel[in_buf[1]].ud)[i] = in_buf[i_in-1-n+i];
+      if (channel[in_buf[1]].ud)
+        ((char idata *)channel[in_buf[1]].ud)[i] = in_buf[i_in-1-n+i];
     
     user_write(in_buf[1]);
 
@@ -711,7 +714,8 @@ MSCB_INFO_CHN code *pchn;
   
       /* copy LSB bytes */
       for (i=0 ; i<n ; i++)
-        ((char idata *)conf_param[in_buf[1]].ud)[i] = in_buf[i_in-1-n+i];
+        if (channel[in_buf[1]].ud)
+          ((char idata *)conf_param[in_buf[1]].ud)[i] = in_buf[i_in-1-n+i];
       
       user_write_conf(in_buf[1]);
       }

@@ -9,6 +9,9 @@
                 for SCS-210 RS232 node
 
   $Log$
+  Revision 1.5  2002/11/28 14:44:02  midas
+  Removed SIZE_XBIT
+
   Revision 1.4  2002/11/28 13:03:41  midas
   Protocol version 1.2
 
@@ -48,13 +51,13 @@ struct {
   
 
 MSCB_INFO_CHN code channel[] = {
-  SIZE_0BIT,      UNIT_ASCII, 0, 0,           0, "RS232", 0,
-  SIZE_32BIT, UNIT_UNDEFINED, 0, 0, MSCBF_FLOAT, "Value", &user_data.value,
+  1,      UNIT_ASCII, 0, 0,           0, "RS232", 0,
+  4,  UNIT_UNDEFINED, 0, 0, MSCBF_FLOAT, "Value", &user_data.value,
   0
 };
 
 MSCB_INFO_CHN code conf_param[] = {
-  SIZE_8BIT,  UNIT_BAUD,      0, 0,           0, "Baud",  &user_conf.baud,
+  1,  UNIT_BAUD,      0, 0,           0, "Baud",  &user_conf.baud,
   0
 };
 

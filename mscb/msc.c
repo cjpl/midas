@@ -6,6 +6,9 @@
   Contents:     Command-line interface for the Midas Slow Control Bus
 
   $Log$
+  Revision 1.23  2002/11/28 14:44:09  midas
+  Removed SIZE_XBIT
+
   Revision 1.22  2002/11/28 13:04:36  midas
   Implemented protocol version 1.2 (echo, read_channels)
 
@@ -187,32 +190,32 @@ int  i;
 
   switch(info_chn->width)
     {
-    case SIZE_0BIT:  
+    case 0:  
       printf(" 0bit"); 
       break;
 
-    case SIZE_8BIT:  
+    case 1:  
       if (info_chn->flags & MSCBF_SIGNED)
         printf(" 8bit %8d (0x%02X)", data, data); 
       else
         printf(" 8bit %8u (0x%02X)", data, data); 
       break;
 
-    case SIZE_16BIT: 
+    case 2: 
       if (info_chn->flags & MSCBF_SIGNED)
         printf("16bit %8d (0x%04X)", data, data); 
       else
         printf("16bit %8u (0x%04X)", data, data); 
       break;
 
-    case SIZE_24BIT: 
+    case 3: 
       if (info_chn->flags & MSCBF_SIGNED)
         printf("24bit %8d (0x%06X)", data, data); 
       else
         printf("24bit %8u (0x%06X)", data, data); 
       break;
       
-    case SIZE_32BIT: 
+    case 4: 
       if (info_chn->flags & MSCBF_FLOAT)
         printf("32bit %8.6lg", *((float *)&data));
       else
@@ -707,17 +710,34 @@ MSCB_INFO_CHN info_chn;
       else
         {
         if (!param[1][0])
-          puts("Please specify channel number");
+          puts("Please specify parameter index");
         else
           {
           addr = atoi(param[1]);
 
-          size = sizeof(data);
-          status = mscb_read_conf(fd, current_addr, (unsigned char)addr, &data, &size);
-          if (status != MSCB_SUCCESS)
-            printf("Error: %d\n", status);
+          status = mscb_info_channel(fd, current_addr, GET_INFO_CONF, addr, &info_chn);
+
+          if (status == MSCB_CRC_ERROR)
+            puts("CRC Error");
+          else if (status != MSCB_SUCCESS)
+            puts("Timeout or invalid parameter index");
           else
-            printf("%d (0x%X)\n", data, data);
+            {
+            do
+              {
+              size = sizeof(data);
+              status = mscb_read_conf(fd, current_addr, (unsigned char)addr, &data, &size);
+              if (status != MSCB_SUCCESS)
+                printf("Error: %d\n", status);
+              else
+                print_channel(addr, &info_chn, data, 0);
+              } while (param[2][0] && !kbhit());
+
+            while (kbhit())
+              getch();
+
+            printf("\n");
+            }
           }
         }
       }
