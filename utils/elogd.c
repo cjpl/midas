@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.38  2001/08/29 07:53:49  midas
+  Use smaller font for printable search result display
+
   Revision 1.37  2001/08/28 11:41:49  midas
   Optimized attachment display
 
@@ -2225,18 +2228,22 @@ void show_standard_header(char *title, char *path)
 
 /*------------------------------------------------------------------*/
 
-void show_standard_title(char *logbook, char *text, int suppress_tabs)
+void show_standard_title(char *logbook, char *text, int printable)
 {
 char str[256], ref[256];
 int  i;
 
   /* overall table, containing title, menu and message body */
-  rsprintf("<table width=%s border=%s cellpadding=0 cellspacing=0 bgcolor=%s>\n\n",
-           gt("Table width"), gt("Border width"), gt("Frame color"));
+  if (printable)
+    rsprintf("<table width=600 border=%s cellpadding=0 cellspacing=0 bgcolor=%s>\n\n",
+             gt("Border width"), gt("Frame color"));
+  else
+    rsprintf("<table width=%s border=%s cellpadding=0 cellspacing=0 bgcolor=%s>\n\n",
+             gt("Table width"), gt("Border width"), gt("Frame color"));
 
   /*---- loogbook selection row ----*/
 
-  if (!suppress_tabs && getcfg("global", "logbook tabs", str) && atoi(str) == 1)
+  if (!printable && getcfg("global", "logbook tabs", str) && atoi(str) == 1)
     {
     if (!getcfg("global", "tab cellpadding", str))
       strcpy(str, "5");
@@ -2909,12 +2916,12 @@ BOOL   allow_delete;
 
 void show_elog_submit_find(INT past_n, INT last_n)
 {
-int    i, size, run, status, d1, m1, y1, d2, m2, y2, index, colspan, i_line, n_line, i_col;
+int    i, j, size, run, status, d1, m1, y1, d2, m2, y2, index, colspan, i_line, n_line, i_col;
 int    current_year, current_month, current_day, printable, n_logbook, lindex;
 char   date[80], author[80], type[80], category[80], subject[256], text[TEXT_SIZE], 
        orig_tag[80], reply_tag[80], attachment[MAX_ATTACHMENTS][256], encoding[80];
 char   str[256], str2[10000], tag[256], ref[256], file_name[256], col[80], old_data_dir[256];
-char   logbook_list[100][32], lb_enc[32];
+char   logbook_list[100][32], lb_enc[32], *nowrap;
 BOOL   full, show_attachments;
 DWORD  ltime, ltime_start, ltime_end, ltime_current, now;
 struct tm tms, *ptms;
@@ -3154,17 +3161,19 @@ FILE   *f;
   strcpy(col, gt("Categories bgcolor1"));
   rsprintf("<tr>\n");
 
+  size = printable ? 2 : 3;
+
   if (atoi(getparam("all")) == 1)
-    rsprintf("<td align=center bgcolor=%s><font face=verdana,arial,helvetica><b>Logbook</b></td>", col);
+    rsprintf("<td align=center bgcolor=%s><font size=%d face=verdana,arial,helvetica><b>Logbook</b></td>", col, size);
   
-  rsprintf("<td align=center bgcolor=%s><font face=verdana,arial,helvetica><b>Date</b></td>", col);
-  rsprintf("<td align=center bgcolor=%s><font face=verdana,arial,helvetica><b>Author</b></td>", col);
-  rsprintf("<td align=center bgcolor=%s><font face=verdana,arial,helvetica><b>Type</b></td>", col);
-  rsprintf("<td align=center bgcolor=%s><font face=verdana,arial,helvetica><b>Category</b></td>", col);
-  rsprintf("<td align=center bgcolor=%s><font face=verdana,arial,helvetica><b>Subject</b></td>", col);
+  rsprintf("<td align=center bgcolor=%s><font size=%d face=verdana,arial,helvetica><b>Date</b></td>", col, size);
+  rsprintf("<td align=center bgcolor=%s><font size=%d face=verdana,arial,helvetica><b>Author</b></td>", col, size);
+  rsprintf("<td align=center bgcolor=%s><font size=%d face=verdana,arial,helvetica><b>Type</b></td>", col, size);
+  rsprintf("<td align=center bgcolor=%s><font size=%d face=verdana,arial,helvetica><b>Category</b></td>", col, size);
+  rsprintf("<td align=center bgcolor=%s><font size=%d face=verdana,arial,helvetica><b>Subject</b></td>", col, size);
     
   if (!full && n_line > 0)
-    rsprintf("<td align=center bgcolor=%s><font face=verdana,arial,helvetica><b>Text</b></td>", col);
+    rsprintf("<td align=center bgcolor=%s><font size=%d face=verdana,arial,helvetica><b>Text</b></td>", col, size);
 
   rsprintf("</tr>\n\n");
   
@@ -3352,21 +3361,24 @@ FILE   *f;
           strcpy(col, gt("List bgcolor1"));
           rsprintf("<tr>");
 
-          if (atoi(getparam("all")) == 1)
-            rsprintf("<td nowrap bgcolor=%s>%s</td>", col, logbook_list[lindex]);
+          size = printable ? 2 : 3;
+          nowrap = printable ? "" : "nowrap";
 
-          rsprintf("<td nowrap bgcolor=%s><a href=\"%s\">%s</a></td>", col, ref, date);
-          rsprintf("<td bgcolor=%s>%s&nbsp</td>", col, author);
-          rsprintf("<td bgcolor=%s>%s&nbsp</td>", col, type);
-          rsprintf("<td bgcolor=%s>%s&nbsp</td>", col, category);
-          rsprintf("<td bgcolor=%s>%s&nbsp;</td>", col, subject);
+          if (atoi(getparam("all")) == 1)
+            rsprintf("<td %s bgcolor=%s><font size=%d>%s</font></td>", nowrap, col, size, logbook_list[lindex]);
+
+          rsprintf("<td %s bgcolor=%s><font size=%d><a href=\"%s\">%s</a></font></td>", nowrap, col, size, ref, date);
+          rsprintf("<td bgcolor=%s><font size=%d>%s&nbsp</font></td>", col, size, author);
+          rsprintf("<td bgcolor=%s><font size=%d>%s&nbsp</font></td>", col, size, type);
+          rsprintf("<td bgcolor=%s><font size=%d>%s&nbsp</font></td>", col, size, category);
+          rsprintf("<td bgcolor=%s><font size=%d>%s&nbsp;</font></td>", col, size, subject);
 
           if (atoi(getparam("all")) == 1)
             colspan = 6;
           else
             colspan = 5;
 
-          rsprintf("</tr><tr><td bgcolor=#FFFFFF colspan=%d>", colspan);
+          rsprintf("</tr><tr><td bgcolor=#FFFFFF colspan=%d><font size=%d>", colspan, size);
         
           if (equal_ustring(encoding, "plain"))
             {
@@ -3385,7 +3397,7 @@ FILE   *f;
               rsprintf("Attachment: ");
             }
           else
-            rsprintf("&nbsp;</td></tr>\n");
+            rsprintf("&nbsp;</font></td></tr>\n");
 
           for (index = 0 ; index < MAX_ATTACHMENTS ; index++)
             {
@@ -3423,7 +3435,7 @@ FILE   *f;
                        strchr(str, '.') == NULL) && show_attachments)
                     {
                     /* display attachment */
-                    rsprintf("<br><pre>");
+                    rsprintf("<br><font size=%d><pre>", size);
 
                     strcpy(file_name, data_dir);
 
@@ -3443,14 +3455,14 @@ FILE   *f;
 
                     rsprintf("</pre>\n");
                     }
-                  rsprintf("</td></tr>\n");
+                  rsprintf("</font></td></tr>\n");
                   }
                 }
               }
             }
  
           if (!show_attachments && attachment[0][0])
-            rsprintf("</td></tr>\n");
+            rsprintf("</font></td></tr>\n");
 
           }
         else
@@ -3463,18 +3475,36 @@ FILE   *f;
 
           rsprintf("<tr>");
           
-          if (atoi(getparam("all")) == 1)
-            rsprintf("<td nowrap bgcolor=%s>%s</td>", col, logbook_list[lindex]);
+          size = printable ? 2 : 3;
+          nowrap = printable ? "" : "nowrap";
 
-          rsprintf("<td nowrap bgcolor=%s><a href=\"%s\">%s</a></td>", col, ref, date);
-          rsprintf("<td bgcolor=%s>%s&nbsp</td>", col, author);
-          rsprintf("<td bgcolor=%s>%s&nbsp</td>", col, type);
-          rsprintf("<td bgcolor=%s>%s&nbsp</td>", col, category);
-          rsprintf("<td bgcolor=%s>%s&nbsp;</td>", col, subject);
+          if (atoi(getparam("all")) == 1)
+            rsprintf("<td %s bgcolor=%s>%s</td>", nowrap, col, logbook_list[lindex]);
+
+          rsprintf("<td %s bgcolor=%s><font size=%d><a href=\"%s\">%s</a></font></td>", nowrap, col, size, ref, date);
+          
+          /* add spaces for line wrap */
+          if (printable)
+            {
+            for (i=j=0 ; i<(int)strlen(author) ; i++)
+              {
+              str[j++] = author[i];
+              if (author[i] == '.' || author[i] == '@')
+                str[j++] = ' ';
+              }
+            str[j] = 0;
+            }
+          else
+            strcpy(str, author);
+
+          rsprintf("<td bgcolor=%s><font size=%d>%s&nbsp</font></td>", col, size, str);
+          rsprintf("<td bgcolor=%s><font size=%d>%s&nbsp</font></td>", col, size, type);
+          rsprintf("<td bgcolor=%s><font size=%d>%s&nbsp</font></td>", col, size, category);
+          rsprintf("<td bgcolor=%s><font size=%d>%s&nbsp;</font></td>", col, size, subject);
 
           if (n_line > 0)
             {
-            rsprintf("<td bgcolor=%s>", col);
+            rsprintf("<td bgcolor=%s><font size=%d>", col, size);
             for (i=i_line=0 ; i<sizeof(str)-1 ; i++)
               {
               str[i] = text[i];
@@ -3490,7 +3520,7 @@ FILE   *f;
               rsputs(str);
             else
               strencode(str);
-            rsprintf("&nbsp;</td>\n");
+            rsprintf("&nbsp;</font></td>\n");
             }
 
           rsprintf("</tr>\n");
