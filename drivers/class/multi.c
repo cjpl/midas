@@ -6,6 +6,9 @@
   Contents:     Multimeter Class Driver
 
   $Log$
+  Revision 1.8  2003/09/30 14:40:27  midas
+  Fixed problem if no output channels
+
   Revision 1.7  2003/05/12 12:05:49  midas
   Implemented DF_PRIO_DEVICE
 
@@ -326,46 +329,60 @@ MULTI_INFO *m_info;
 
   for (i=0 ; i<m_info->num_channels_output ; i++)
     m_info->offset_output[i] = 0.f;
-  db_merge_data(hDB, m_info->hKeyRoot, "Settings/Output Offset", 
-                m_info->offset_output, m_info->num_channels_output*sizeof(float), 
-                m_info->num_channels_output, TID_FLOAT);
-  db_find_key(hDB, m_info->hKeyRoot, "Settings/Output Offset", &hKey);
-  db_open_record(hDB, hKey, m_info->offset_output, m_info->num_channels_output*sizeof(float), 
-                 MODE_READ, NULL, NULL);
+
+  if (m_info->num_channels_output)
+    {
+    db_merge_data(hDB, m_info->hKeyRoot, "Settings/Output Offset", 
+                  m_info->offset_output, m_info->num_channels_output*sizeof(float), 
+                  m_info->num_channels_output, TID_FLOAT);
+    db_find_key(hDB, m_info->hKeyRoot, "Settings/Output Offset", &hKey);
+    db_open_record(hDB, hKey, m_info->offset_output, m_info->num_channels_output*sizeof(float), 
+                   MODE_READ, NULL, NULL);
+    }
 
   /* Factor */
   for (i=0 ; i<m_info->num_channels_input ; i++)
     m_info->factor_input[i] = 1.f; /* default 1 */
-  db_merge_data(hDB, m_info->hKeyRoot, "Settings/Input Factor", 
-                m_info->factor_input, m_info->num_channels_input*sizeof(float), 
-                m_info->num_channels_input, TID_FLOAT);
-  db_find_key(hDB, m_info->hKeyRoot, "Settings/Input factor", &hKey);
-  db_open_record(hDB, hKey, m_info->factor_input, m_info->num_channels_input*sizeof(float), 
-                 MODE_READ, NULL, NULL);
 
-  for (i=0 ; i<m_info->num_channels_output ; i++)
-    m_info->factor_output[i] = 1.f;
-  db_merge_data(hDB, m_info->hKeyRoot, "Settings/Output Factor", 
-                m_info->factor_output, m_info->num_channels_output*sizeof(float), 
-                m_info->num_channels_output, TID_FLOAT);
-  db_find_key(hDB, m_info->hKeyRoot, "Settings/Output factor", &hKey);
-  db_open_record(hDB, hKey, m_info->factor_output, m_info->num_channels_output*sizeof(float), 
-                 MODE_READ, NULL, NULL);
+  if (m_info->num_channels_output)
+    {
+    db_merge_data(hDB, m_info->hKeyRoot, "Settings/Input Factor", 
+                  m_info->factor_input, m_info->num_channels_input*sizeof(float), 
+                  m_info->num_channels_input, TID_FLOAT);
+    db_find_key(hDB, m_info->hKeyRoot, "Settings/Input factor", &hKey);
+    db_open_record(hDB, hKey, m_info->factor_input, m_info->num_channels_input*sizeof(float), 
+                   MODE_READ, NULL, NULL);
+
+    for (i=0 ; i<m_info->num_channels_output ; i++)
+      m_info->factor_output[i] = 1.f;
+    db_merge_data(hDB, m_info->hKeyRoot, "Settings/Output Factor", 
+                  m_info->factor_output, m_info->num_channels_output*sizeof(float), 
+                  m_info->num_channels_output, TID_FLOAT);
+    db_find_key(hDB, m_info->hKeyRoot, "Settings/Output factor", &hKey);
+    db_open_record(hDB, hKey, m_info->factor_output, m_info->num_channels_output*sizeof(float), 
+                   MODE_READ, NULL, NULL);
+    }
 
   /*---- Create/Read variables ----*/
 
   /* Input */
-  db_merge_data(hDB, m_info->hKeyRoot, "Variables/Input", 
-                m_info->var_input, m_info->num_channels_input*sizeof(float), 
-                m_info->num_channels_input, TID_FLOAT);
-  db_find_key(hDB, m_info->hKeyRoot, "Variables/Input", &m_info->hKeyInput);
-  memcpy(m_info->input_mirror, m_info->var_input, m_info->num_channels_input*sizeof(float));
+  if (m_info->num_channels_input)
+    {
+    db_merge_data(hDB, m_info->hKeyRoot, "Variables/Input", 
+                  m_info->var_input, m_info->num_channels_input*sizeof(float), 
+                  m_info->num_channels_input, TID_FLOAT);
+    db_find_key(hDB, m_info->hKeyRoot, "Variables/Input", &m_info->hKeyInput);
+    memcpy(m_info->input_mirror, m_info->var_input, m_info->num_channels_input*sizeof(float));
+    }
 
   /* Output */
-  db_merge_data(hDB, m_info->hKeyRoot, "Variables/Output", 
-                m_info->var_output, m_info->num_channels_output*sizeof(float), 
-                m_info->num_channels_output, TID_FLOAT);
-  db_find_key(hDB, m_info->hKeyRoot, "Variables/Output", &m_info->hKeyOutput);
+  if (m_info->num_channels_output)
+    {
+    db_merge_data(hDB, m_info->hKeyRoot, "Variables/Output", 
+                  m_info->var_output, m_info->num_channels_output*sizeof(float), 
+                  m_info->num_channels_output, TID_FLOAT);
+    db_find_key(hDB, m_info->hKeyRoot, "Variables/Output", &m_info->hKeyOutput);
+    }
 
   /*---- Initialize device drivers ----*/
 
