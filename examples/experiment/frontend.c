@@ -11,6 +11,9 @@
                 with one bank (SCLR).
 
   $Log$
+  Revision 1.18  2003/04/25 14:49:46  midas
+  Removed HBOOK code
+
   Revision 1.17  2003/04/23 15:08:43  midas
   Decreased N_TDC to 4
 
@@ -137,44 +140,44 @@ BANK_LIST scaler_bank_list[] = {
 EQUIPMENT equipment[] = {
 
   { "Trigger",            /* equipment name */
-    1, 0,                 /* event ID, trigger mask */
-    "SYSTEM",             /* event buffer */
-#ifdef USE_INT
-    EQ_INTERRUPT,         /* equipment type */
-#else
-    EQ_POLLED,            /* equipment type */
-#endif
-    LAM_SOURCE(0,0xFFFFFF),/* event source crate 0, all stations */
-    "MIDAS",              /* format */
-    TRUE,                 /* enabled */
-    RO_RUNNING |          /* read only when running */
-    RO_ODB,               /* and update ODB */ 
-    500,                  /* poll for 500ms */
-    0,                    /* stop run after this event limit */
-    0,                    /* number of sub events */
-    0,                    /* don't log history */
-    "", "", "",
+    { 1, 0,                 /* event ID, trigger mask */
+      "SYSTEM",             /* event buffer */
+  #ifdef USE_INT
+      EQ_INTERRUPT,         /* equipment type */
+  #else
+      EQ_POLLED,            /* equipment type */
+  #endif
+      LAM_SOURCE(0,0xFFFFFF),/* event source crate 0, all stations */
+      "MIDAS",              /* format */
+      TRUE,                 /* enabled */
+      RO_RUNNING |          /* read only when running */
+      RO_ODB,               /* and update ODB */ 
+      500,                  /* poll for 500ms */
+      0,                    /* stop run after this event limit */
+      0,                    /* number of sub events */
+      0,                    /* don't log history */
+      "", "", "", }
     read_trigger_event,   /* readout routine */
     NULL, NULL, 
     trigger_bank_list,    /* bank list */
   },
 
   { "Scaler",             /* equipment name */
-    2, 0,                 /* event ID, trigger mask */
-    "SYSTEM",             /* event buffer */
-    EQ_PERIODIC | 
-    EQ_MANUAL_TRIG,       /* equipment type */
-    0,                    /* event source */
-    "MIDAS",              /* format */
-    TRUE,                 /* enabled */
-    RO_RUNNING |
-    RO_TRANSITIONS |      /* read when running and on transitions */
-    RO_ODB,               /* and update ODB */ 
-    10000,                /* read every 10 sec */
-    0,                    /* stop run after this event limit */
-    0,                    /* number of sub events */
-    0,                    /* log history */
-    "", "", "",
+    { 2, 0,                 /* event ID, trigger mask */
+      "SYSTEM",             /* event buffer */
+      EQ_PERIODIC | 
+      EQ_MANUAL_TRIG,       /* equipment type */
+      0,                    /* event source */
+      "MIDAS",              /* format */
+      TRUE,                 /* enabled */
+      RO_RUNNING |
+      RO_TRANSITIONS |      /* read when running and on transitions */
+      RO_ODB,               /* and update ODB */ 
+      10000,                /* read every 10 sec */
+      0,                    /* stop run after this event limit */
+      0,                    /* number of sub events */
+      0,                    /* log history */
+      "", "", "", }
     read_scaler_event,    /* readout routine */
     NULL, NULL, 
     scaler_bank_list,     /* bank list */
@@ -402,6 +405,8 @@ INT  q, timeout;
   /* reset external LAM Flip-Flop */
   camo(CRATE, SLOT_IO, 1, 16, 0xFF);
   camo(CRATE, SLOT_IO, 1, 16, 0);
+
+  ss_sleep(10);
 
   return bk_size(pevent);
 }

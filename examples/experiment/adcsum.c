@@ -10,6 +10,9 @@
                 in the ODB and transferred to experim.h.
 
   $Log$
+  Revision 1.7  2003/04/25 14:49:46  midas
+  Removed HBOOK code
+
   Revision 1.6  2003/04/23 15:09:29  midas
   Added 'average' in ASUM bank
 
@@ -41,24 +44,9 @@
 #include "experim.h"
 #include "analyzer.h"
 
-/* cernlib includes */
-#ifdef OS_WINNT
-#define VISUAL_CPLUSPLUS
-#endif
-
-#ifdef __linux__
-#define f2cFortran
-#endif
-
-#ifdef HAVE_HBOOK
-#include <cfortran.h>
-#include <hbook.h>
-#endif
-
-#ifdef HAVE_ROOT
+/* foot includes */
 #include <TH1F.h>
 #include <TDirectory.h>
-#endif
 
 #ifndef PI
 #define PI 3.14159265359
@@ -102,16 +90,11 @@ static TH1F *gAdcSumHist;
 INT adc_summing_init(void)
 {
   /* book sum histo */
-#ifdef HAVE_HBOOK
-  HBOOK1(ADCSUM_ID_BASE, "ADC sum", 500, 0.f, 10000.f, 0.f); 
-#endif
-
-#ifdef HAVE_ROOT
   gAdcSumHist = (TH1F*)gManaHistsDir->GetList()->FindObject("ADCSUM");
     
   if (gAdcSumHist == NULL)
     gAdcSumHist = new TH1F("ADCSUM", "ADC sum", 500, 0, 10000);
-#endif
+
   return SUCCESS;
 }
 
@@ -144,12 +127,7 @@ ASUM_BANK    *asum;
     asum->average = j > 0 ? asum->sum / j : 0;
 
   /* fill sum histo */
-#ifdef HAVE_HBOOK
-  HF1(ADCSUM_ID_BASE, asum->sum, 1.f);
-#endif
-#ifdef HAVE_ROOT
   gAdcSumHist->Fill(asum->sum,1);
-#endif
 
   /* close calculated bank */
   bk_close(pevent, asum+1);
