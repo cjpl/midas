@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol commands
 
   $Log$
+  Revision 1.16  2003/01/30 08:35:30  midas
+  Added watchdog switch
+
   Revision 1.15  2002/11/28 14:44:02  midas
   Removed SIZE_XBIT
 
@@ -91,10 +94,13 @@ sbit RS485_ENABLE =      P3^5;
 
 /*--------------------------------*/
 #else
-#error Please define SCD_xxx in project options
+#error Please define SCS_xxx in project options
 #endif
 
 #define LED_OFF !LED_ON
+
+/* use hardware watchdog of CPU */
+#define USE_WATCHDOG
 
 /* map SBUF0 & Co. to SBUF */
 #ifndef CPU_C8051F020
