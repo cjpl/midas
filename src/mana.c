@@ -7,6 +7,10 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.63  2000/08/10 07:44:50  midas
+  Made PAW global memory name variable under /analyzer/output/global memeory name
+  to run more than one online analyzer instance on one machine
+
   Revision 1.62  2000/06/06 13:41:09  midas
   Added lock_histo to prevent histos from being cleared
 
@@ -443,6 +447,7 @@ struct {
   BOOL      clear_histos;
   char      last_histo_filename[256];
   BOOL      events_to_odb;
+  char      global_memory_name[8];
 } out_info;
 
 FILE *out_file;
@@ -479,6 +484,7 @@ Histo Dump Filename = STRING : [256] his%05d.rz\n\
 Clear histos = BOOL : 1\n\
 Last Histo Filename = STRING : [256] last.rz\n\
 Events to ODB = BOOL : 0\n\
+Global Memory Name = STRING : [8] ONLN\n\
 "
 
 /*-- interprete command line parameters ----------------------------*/
@@ -1349,11 +1355,11 @@ double     dummy;
       }
     }
 
-  /* create global section */
+  /* create global memory */
   if (clp.online)
     {
-    HLIMAP(pawc_size/4, "ONLN");
-    printf("\n");
+    HLIMAP(pawc_size/4, out_info.global_memory_name);
+    printf("\nGLOBAL MEMORY NAME = %s\n", out_info.global_memory_name);
 
     /* book online N-tuples only once when online */
     status = book_ntuples();
