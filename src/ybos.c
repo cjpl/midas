@@ -15,6 +15,9 @@
  *  Revision History: Oct/96  :
  *    1 April 97: S. Ritt, minor modification to supress compiler warnings
  *  $Log$
+ *  Revision 1.6  1998/10/22 12:48:41  midas
+ *  Added brackets around (ybos.length-1) << 1 (got VC++ warning)
+ *
  *  Revision 1.5  1998/10/22 12:40:34  midas
  *  Added "oflag" to ss_tape_open()
  *
@@ -1061,17 +1064,17 @@ void display_ybos_event( DWORD *pevt, INT dsp_fmt)
 	}
       if (ybos.type == I2_BKTYPE)
 	{
-	  length_type = (ybos.length-1 << 1);
+	  length_type = ((ybos.length-1) << 1);
 	  strcpy (strbktype,"Integer*2");
 	}
       if (ybos.type == I1_BKTYPE)
 	{
-	  length_type = (ybos.length-1 << 2);
+	  length_type = ((ybos.length-1) << 2);
 	  strcpy (strbktype,"8 bit Bytes");
 	}
       if (ybos.type == A1_BKTYPE)
 	{
-	  length_type = (ybos.length-1 << 2);
+	  length_type = ((ybos.length-1) << 2);
 	  strcpy (strbktype,"8 bit ASCII");
 	}
       printf("\nBank:%s Length: %i(I*1)/%i(I*4)/%i(Type) Type:%s",
@@ -1346,17 +1349,17 @@ void ybos_display_ybos_bank( DWORD *pbk, INT dsp_fmt)
     }
   if (pbkh->type == I2_BKTYPE)
     {
-      length_type = (pbkh->length-1 << 1);
+      length_type = ((pbkh->length-1) << 1);
       strcpy (strbktype,"Integer*2");
     }
   if (pbkh->type == I1_BKTYPE)
     {
-      length_type = (pbkh->length-1 << 2);
+      length_type = ((pbkh->length-1) << 2);
       strcpy (strbktype,"8 bit Bytes");
     }
   if (pbkh->type == A1_BKTYPE)
     {
-      length_type = (pbkh->length-1 << 2);
+      length_type = ((pbkh->length-1) << 2);
       strcpy (strbktype,"8 bit ASCII");
     }
     printf("\nBank:%s Length: %i(I*1)/%i(I*4)/%i(Type) Type:%s",
