@@ -6,6 +6,9 @@
   Contents:     List of MIDAS RPC functions with parameters
 
   $Log$
+  Revision 1.7  1999/04/08 15:26:33  midas
+  Added cm_transition and db_get_key_info
+
   Revision 1.6  1999/02/11 13:16:15  midas
   Added cm_msg for remote Java
 
@@ -90,6 +93,14 @@ static RPC_LIST rpc_list_library[] = {
 
   { RPC_CM_TIME, "cm_time", 
     {{TID_DWORD,      RPC_OUT},
+     {0} }},
+
+  { RPC_CM_TRANSITION, "cm_transition",
+    {{TID_INT,        RPC_IN}, 
+     {TID_INT,        RPC_IN}, 
+     {TID_STRING,     RPC_OUT},
+     {TID_INT,        RPC_IN}, 
+     {TID_INT,        RPC_IN}, 
      {0} }},
 
   /* buffer manager functions */
@@ -265,6 +276,14 @@ static RPC_LIST rpc_list_library[] = {
     {{TID_INT,        RPC_IN},
      {TID_INT,        RPC_IN},
      {TID_STRUCT,     RPC_OUT, sizeof(KEY)}, 
+     {0} }},
+
+  { RPC_DB_GET_KEY_INFO, "db_get_key_info",
+    {{TID_INT,        RPC_IN},
+     {TID_INT,        RPC_IN},
+     {TID_INT,        RPC_OUT}, 
+     {TID_INT,        RPC_OUT}, 
+     {TID_INT,        RPC_OUT}, 
      {0} }},
 
   { RPC_DB_GET_KEY_TIME, "db_get_key_time",

@@ -6,6 +6,9 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
+  Revision 1.8  1999/04/08 15:26:55  midas
+  Added cm_transition and db_get_key_info
+
   Revision 1.7  1999/02/11 13:15:51  midas
   Made cm_msg callable from a remote client (for Java)
 
@@ -177,7 +180,7 @@ BOOL   inetd, debug;
         }
       }
 
-    /* turn of debugging */
+    /* turn on debugging */
     if (debug)
       {
       printf("Debugging mode is on.\n");
@@ -387,6 +390,10 @@ INT convert_flags;
 
     case RPC_CM_TIME:
       status = cm_time(CPDWORD(0));
+      break;
+
+    case RPC_CM_TRANSITION:
+      status = cm_transition(CINT(0), CINT(1), CSTRING(2), CINT(3), CINT(4));
       break;
 
     /* buffer manager functions */
@@ -646,6 +653,10 @@ INT convert_flags;
         rpc_convert_single(&pkey->parent_keylist, TID_INT, RPC_OUTGOING, convert_flags);
         rpc_convert_single(&pkey->last_written, TID_INT, RPC_OUTGOING, convert_flags);
         }
+      break;
+
+    case RPC_DB_GET_KEY_INFO:
+      status = db_get_key_info(CHNDLE(0), CHNDLE(1), CPINT(2), CPINT(3), CPINT(4));
       break;
 
     case RPC_DB_GET_KEY_TIME:
