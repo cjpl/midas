@@ -5,6 +5,9 @@
   Contents:     Disk to Tape copier for background job.
 
   $Log$
+  Revision 1.31  2003/04/25 04:50:29  pierre
+  Fixed compiler warning
+
   Revision 1.30  2003/04/15 22:29:45  pierre
   fix for compilation with -Wall
 
@@ -1378,7 +1381,7 @@ Function value:
   if(status!=SS_SUCCESS)
     {
       if(status == SS_NO_SPACE )
-	return status;
+    return status;
       return (FORCE_EXIT); 
     }
   /* request exit */
@@ -1779,8 +1782,7 @@ int main(int argc,char **argv)
   char      host_name[HOST_NAME_LENGTH];
   char      expt_name[HOST_NAME_LENGTH];
   BOOL      debug, daemon;
-  INT       msg, ch, size, status, mainlast_time;
-  DWORD     i;
+  INT       i, msg, ch, size, status, mainlast_time;
   
   /* set default */
   host_name[0] = 0;
@@ -2112,10 +2114,10 @@ usage:
     {
       status = lazy_main(channel, &lazyinfo[0]);
       if(status == FORCE_EXIT)
-	{
-	  cm_msg(MERROR,"lazy","Previous error forces task exit");
-	  break;
-	}
+    {
+      cm_msg(MERROR,"lazy","Previous error forces task exit");
+      break;
+    }
       mainlast_time = ss_millitime();
     }      
     ch = 0;
