@@ -4,6 +4,9 @@ Created by:   Pierre-Andre Amaudruz
 
 Contents:     Main Event builder task.
 $Log$
+Revision 1.18  2004/10/07 23:11:49  pierre
+active enable and fragment request switch
+
 Revision 1.17  2004/10/07 22:04:00  pierre
 Doxygen correction
 
@@ -647,7 +650,7 @@ INT tr_start(INT rn, char *error)
     size = key.total_size;
     free (ebset.preqfrag);
     ebset.preqfrag = malloc(size);
-    status = db_get_data(hDB, hEqkey, ebset.preqfrag, &size, TID_BOOL);
+    status = db_get_data(hDB, hEqFRkey, ebset.preqfrag, &size, TID_BOOL);
   }
   /* Cleanup fragment flags */
   free (ebset.received);
@@ -667,6 +670,11 @@ INT tr_start(INT rn, char *error)
   status = source_booking();
   if (status != SUCCESS)
     return status;
+
+  if (!eq_info->enabled) {
+    cm_msg(MINFO,"ebuilder", "Event Builder disabled");
+    return CM_SUCCESS;
+  }
 
   /* local run state */
   run_state = STATE_RUNNING;
@@ -712,19 +720,21 @@ INT handFlush()
 
    /* Do Hand flush until better way to  garantee the input buffer to be empty */
    if (debug)
-      printf("Hand flushing system buffer... \n");
+     printf("Hand flushing system buffer... \n");
    for (i = 0; i < nfragment; i++) {
-      do {
+     do {
+       if (ebset.preqfrag[i]) { 
          size = max_event_size;
          status = bm_receive_event(ebch[i].hBuf, ebch[i].pfragment, &size, ASYNC);
          if (debug1) {
-            sprintf(strout,
-                    "booking:Hand flush bm_receive_event[%d] hndle:%d stat:%d  Last Ser:%d",
-                    i, ebch[i].hBuf, status,
-                    ((EVENT_HEADER *) ebch[i].pfragment)->serial_number);
-            printf("%s\n", strout);
+           sprintf(strout,
+             "booking:Hand flush bm_receive_event[%d] hndle:%d stat:%d  Last Ser:%d",
+             i, ebch[i].hBuf, status,
+             ((EVENT_HEADER *) ebch[i].pfragment)->serial_number);
+           printf("%s\n", strout);
          }
-      } while (status == BM_SUCCESS);
+       }
+     } while (status == BM_SUCCESS);
    }
 
    /* Empty source buffer */
@@ -899,7 +909,7 @@ INT source_scan(INT fmt, EQUIPMENT_INFO *eq_info)
    static DWORD serial;
    DWORD *plrl;
    BOOL   complete;
-   INT i, j, status, size;
+   INT i, status, size;
    INT act_size;
    BOOL found, event_mismatch;
    BANK_HEADER *psbh;
@@ -978,8 +988,8 @@ INT source_scan(INT fmt, EQUIPMENT_INFO *eq_info)
        char str[256];
        char strsub[128];
        strcpy(str, "event mismatch: ");
-       for (j = 0; j < nfragment; j++) {
-         sprintf(strsub, "Ser[%d]:%d ", j, ebch[j].serial);
+       for (i = 0; i < nfragment; i++) {
+         sprintf(strsub, "Ser[%d]:%d ", i, ebch[i].serial);
          strcat(str, strsub);
        }
        printf("event serial mismatch %s\n", str);
@@ -1010,12 +1020,14 @@ INT source_scan(INT fmt, EQUIPMENT_INFO *eq_info)
 
      /* Allow bypass of fragment assembly if user did it on its own */
      if (!ebset.user_build) {
-       for (j = 0; j < nfragment; j++) {
-         status = meb_fragment_add(dest_event, ebch[j].pfragment, &act_size);
-         if (status != EB_SUCCESS) {
-           cm_msg(MERROR, "source_scan",
-             "compose fragment:%d current size:%d (%d)", j, act_size, status);
-           return EB_ERROR;
+       for (i = 0; i < nfragment; i++) {
+         if (ebset.preqfrag[i]) {
+           status = meb_fragment_add(dest_event, ebch[i].pfragment, &act_size);
+           if (status != EB_SUCCESS) {
+             cm_msg(MERROR, "source_scan",
+               "compose fragment:%d current size:%d (%d)", i, act_size, status);
+             return EB_ERROR;
+           }
          }
        }
      }
@@ -1120,7 +1132,7 @@ usage:
   }
   
   /* check if Ebuilder is already running */
-  status = cm_exist(full_frontend_name, TRUE);
+  status = cm_exist(full_frontend_name, FALSE);
   if (status == CM_SUCCESS) {
     cm_msg(MERROR, "Ebuilder", "%s running already!.", full_frontend_name);
     cm_disconnect_experiment();
