@@ -14,6 +14,10 @@
                 Brown, Prentice Hall
 
   $Log$
+  Revision 1.10  1998/10/29 09:37:37  midas
+  Reordered IPC and server checks in ss_suspend() to avoid timeouts when
+  analyze is running under full load
+
   Revision 1.9  1998/10/28 12:02:52  midas
   Added NO_PTY to ss_shell()
 
@@ -2594,10 +2598,6 @@ char                str[100];
     {
     FD_ZERO(&readfds);
     
-    /* check IPC socket */
-    if (_suspend_struct[index].ipc_recv_socket)
-      FD_SET(_suspend_struct[index].ipc_recv_socket, &readfds);
-
     /* check listen socket */
     if (_suspend_struct[index].listen_socket)
       FD_SET(_suspend_struct[index].listen_socket, &readfds);
@@ -2646,6 +2646,10 @@ char                str[100];
         FD_SET(sock, &readfds);
 	    }
 
+    /* check IPC socket */
+    if (_suspend_struct[index].ipc_recv_socket)
+      FD_SET(_suspend_struct[index].ipc_recv_socket, &readfds);
+
     timeout.tv_sec  = millisec / 1000;
     timeout.tv_usec = (millisec % 1000) * 1000;
 
@@ -2661,65 +2665,6 @@ char                str[100];
 	      timeout.tv_sec -= WATCHDOG_INTERVAL / 1000;
 
       } while (status == -1); /* dont return if an alarm signal was cought */
-
-    /* check IPC socket */
-    if (_suspend_struct[index].ipc_recv_socket &&
-	      FD_ISSET(_suspend_struct[index].ipc_recv_socket, &readfds))
-      {
-      /* receive IPC message */
-      size = sizeof(struct sockaddr);
-      size = recvfrom(_suspend_struct[index].ipc_recv_socket, 
-		      (char *) buffer, 
-		      sizeof(buffer), 0, (void *)&from_addr, (void *)&size);
-
-      /* find out if this thread is connected as a server */
-      server_socket = 0;
-      if (_suspend_struct[index].server_acception &&
-		      rpc_get_server_option(RPC_OSERVER_TYPE) != ST_REMOTE)
-        for (i=0 ; i < MAX_RPC_CONNECTION ; i++)
-          {
-          sock = _suspend_struct[index].server_acception[i].send_sock;
-          if (sock && _suspend_struct[index].server_acception[i].tid == ss_gettid())
-	          server_socket = sock;
-          }
-
-      /* receive further messages to empty UDP queue */
-      do
-	      {
-	      FD_ZERO(&readfds);
-	      FD_SET(_suspend_struct[index].ipc_recv_socket, &readfds);
-
-	      timeout.tv_sec  = 0;
-	      timeout.tv_usec = 0;
-
-	      select(FD_SETSIZE, (void *) &readfds, NULL, NULL, (void *) &timeout);
-
-	      if (FD_ISSET(_suspend_struct[index].ipc_recv_socket, &readfds))
-          {
-          size = sizeof(struct sockaddr);
-          size = recvfrom(_suspend_struct[index].ipc_recv_socket, (char *)buffer_tmp,
-					          sizeof(buffer), 0, (void *) &from_addr, (void *)&size);
-
-          /* make sure all ODB messages get through */
-          if (buffer_tmp[0] == MSG_ODB)
-	          if (_suspend_struct[index].ipc_dispatch)
-		          _suspend_struct[index].ipc_dispatch(buffer_tmp[0], buffer_tmp[1], buffer_tmp[2], 
-					          server_socket);
-          }
-
-	      } while (FD_ISSET(_suspend_struct[index].ipc_recv_socket, &readfds));
-
-      /* return if received requested message */
-      if (msg == buffer[0])
-	      return SS_SUCCESS;
-
-      /* call dispatcher */
-      if (_suspend_struct[index].ipc_dispatch)
-	      _suspend_struct[index].ipc_dispatch(buffer[0], buffer[1], buffer[2], 
-			                                      server_socket);
-
-      return_status = SS_SUCCESS;
-      } 
 
     /* if listen socket got data, call dispatcher with socket */
     if (_suspend_struct[index].listen_socket &&
@@ -2820,6 +2765,64 @@ char                str[100];
         }
 	    }
 
+    /* check IPC socket */
+    if (_suspend_struct[index].ipc_recv_socket &&
+	      FD_ISSET(_suspend_struct[index].ipc_recv_socket, &readfds))
+      {
+      /* receive IPC message */
+      size = sizeof(struct sockaddr);
+      size = recvfrom(_suspend_struct[index].ipc_recv_socket, 
+		      (char *) buffer, 
+		      sizeof(buffer), 0, (void *)&from_addr, (void *)&size);
+
+      /* find out if this thread is connected as a server */
+      server_socket = 0;
+      if (_suspend_struct[index].server_acception &&
+		      rpc_get_server_option(RPC_OSERVER_TYPE) != ST_REMOTE)
+        for (i=0 ; i < MAX_RPC_CONNECTION ; i++)
+          {
+          sock = _suspend_struct[index].server_acception[i].send_sock;
+          if (sock && _suspend_struct[index].server_acception[i].tid == ss_gettid())
+	          server_socket = sock;
+          }
+
+      /* receive further messages to empty UDP queue */
+      do
+	      {
+	      FD_ZERO(&readfds);
+	      FD_SET(_suspend_struct[index].ipc_recv_socket, &readfds);
+
+	      timeout.tv_sec  = 0;
+	      timeout.tv_usec = 0;
+
+	      select(FD_SETSIZE, (void *) &readfds, NULL, NULL, (void *) &timeout);
+
+	      if (FD_ISSET(_suspend_struct[index].ipc_recv_socket, &readfds))
+          {
+          size = sizeof(struct sockaddr);
+          size = recvfrom(_suspend_struct[index].ipc_recv_socket, (char *)buffer_tmp,
+					          sizeof(buffer), 0, (void *) &from_addr, (void *)&size);
+
+          /* make sure all ODB messages get through */
+          if (buffer_tmp[0] == MSG_ODB)
+	          if (_suspend_struct[index].ipc_dispatch)
+		          _suspend_struct[index].ipc_dispatch(buffer_tmp[0], buffer_tmp[1], buffer_tmp[2], 
+					          server_socket);
+          }
+
+	      } while (FD_ISSET(_suspend_struct[index].ipc_recv_socket, &readfds));
+
+      /* return if received requested message */
+      if (msg == buffer[0])
+	      return SS_SUCCESS;
+
+      /* call dispatcher */
+      if (_suspend_struct[index].ipc_dispatch)
+	      _suspend_struct[index].ipc_dispatch(buffer[0], buffer[1], buffer[2], 
+			                                      server_socket);
+
+      return_status = SS_SUCCESS;
+      } 
 
     } while (millisec < 0);
 
