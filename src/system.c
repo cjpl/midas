@@ -14,6 +14,9 @@
                 Brown, Prentice Hall
 
   $Log$
+  Revision 1.70  2003/04/30 06:47:44  midas
+  Fixed missing variable for NT
+
   Revision 1.69  2003/04/25 14:03:57  midas
   Fixed compiler warnings
 
@@ -354,7 +357,7 @@ char   mem_name[256], file_name[256], path[256];
 
   {
   HANDLE hFile, hMap;
-  char   str[256];
+  char   str[256], *p;
   DWORD  file_size;
 
   /* make the memory name unique using the pathname. This is necessary
