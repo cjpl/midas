@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.159  2002/05/27 14:29:10  midas
+  Improved rpc timeout error reports
+
   Revision 1.158  2002/05/22 06:07:01  midas
   Call bm_defragment_event for both EVENTID_FRAG1 and EVENTID_FRAG
 
@@ -9982,7 +9985,7 @@ int             send_sock;
     _net_send_buffer = M_MALLOC(NET_BUFFER_SIZE);
     if (_net_send_buffer == NULL)
       {
-      cm_msg(MERROR, "rpc_call", "not enough memory to allocate network buffer");
+      cm_msg(MERROR, "rpc_client_call", "not enough memory to allocate network buffer");
       return RPC_EXCEED_BUFFER;
       }
     _net_send_buffer_size = NET_BUFFER_SIZE;
@@ -10002,7 +10005,7 @@ int             send_sock;
   if (rpc_list[i].id == 0)
     {
     sprintf(str, "invalid rpc ID (%ld)", routine_id);
-    cm_msg(MERROR, "rpc_call", str);
+    cm_msg(MERROR, "rpc_client_call", str);
     return RPC_INVALID_ID;
     }
 
@@ -10084,7 +10087,7 @@ int             send_sock;
       if ((PTYPE) param_ptr - (PTYPE) nc + param_size >
           NET_BUFFER_SIZE)
         {
-        cm_msg(MERROR, "rpc_call", "parameters (%d) too large for network buffer (%d)",
+        cm_msg(MERROR, "rpc_client_call", "parameters (%d) too large for network buffer (%d)",
                (PTYPE) param_ptr - (PTYPE) nc + param_size, NET_BUFFER_SIZE);
         return RPC_EXCEED_BUFFER;
         }
@@ -10118,7 +10121,7 @@ int             send_sock;
 
     if (i != send_size)
       {
-      cm_msg(MERROR, "rpc_call", "send_tcp() failed");
+      cm_msg(MERROR, "rpc_client_call", "send_tcp() failed");
       return RPC_NET_ERROR;
       }
 
@@ -10129,7 +10132,8 @@ int             send_sock;
   i = send_tcp(send_sock, (char *) nc, send_size, 0);
   if (i != send_size)
     {
-    cm_msg(MERROR, "rpc_call", "send_tcp() failed");
+    cm_msg(MERROR, "rpc_client_call", "send_tcp() failed, routine = \"%s\", host = \"%s\"", 
+      rpc_list[rpc_index].name, _client_connection[index].host_name);
     return RPC_NET_ERROR;
     }
 
@@ -10154,7 +10158,8 @@ int             send_sock;
 
     if (!FD_ISSET(send_sock, &readfds))
       {
-      cm_msg(MERROR, "rpc_call", "rpc timeout, routine = %d", routine_id);
+      cm_msg(MERROR, "rpc_client_call", "rpc timeout, routine = \"%s\", host = \"%s\"", 
+        rpc_list[rpc_index].name, _client_connection[index].host_name);
 
       /* disconnect to avoid that the reply to this rpc_call comes at
          the next rpc_call */
@@ -10169,7 +10174,8 @@ int             send_sock;
 
   if (i<=0)
     {
-    cm_msg(MERROR, "rpc_call", "recv_tcp() failed, routine = %d", routine_id);
+    cm_msg(MERROR, "rpc_client_call", "recv_tcp() failed, routine = \"%s\", host = \"%s\"",
+      rpc_list[rpc_index].name, _client_connection[index].host_name);
     return RPC_NET_ERROR;
     }
 
@@ -10455,7 +10461,7 @@ int             send_sock;
 
     if (!FD_ISSET(send_sock, &readfds))
       {
-      cm_msg(MERROR, "rpc_call", "rpc timeout, routine = %d", routine_id);
+      cm_msg(MERROR, "rpc_call", "rpc timeout, routine = \"%s\"", rpc_list[index].name);
 
       /* disconnect to avoid that the reply to this rpc_call comes at
          the next rpc_call */
@@ -10470,7 +10476,7 @@ int             send_sock;
 
   if (i<=0)
     {
-    cm_msg(MERROR, "rpc_call", "recv_tcp() failed, routine = %d", routine_id);
+    cm_msg(MERROR, "rpc_call", "recv_tcp() failed, routine = \"%s\"", rpc_list[index].name);
     return RPC_NET_ERROR;
     }
 
