@@ -1,11 +1,14 @@
 /********************************************************************\
 
-  Name:         mserver.c
+  Name:         mhttpd.c
   Created by:   Stefan Ritt
 
-  Contents:     Server program for midas RPC calls
+  Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.55  1999/09/29 21:08:54  pierre
+  - Modified the Lazy status line for multiple channels
+
   Revision 1.54  1999/09/28 10:24:15  midas
   Display text attachments
 
@@ -952,68 +955,108 @@ CHN_STATISTICS chn_stats;
     }
 
   /*---- Lazy Logger ----*/
+  if (db_find_key(hDB, 0, "/Lazy", &hkey) == DB_SUCCESS)
+  {
+    INT  status, size, i, j, k;
+    BOOL previous_mode;
+    HNDLE  hKeyClient, hLKey, hKey, hSubkey;
+    char   client_name[NAME_LENGTH];
 
-  if (db_find_key(hDB, 0, "Lazy", &hkey) == DB_SUCCESS)
+    status = db_find_key(hDB, 0, "System/Clients", &hKey);
+    if (status != DB_SUCCESS)
+      return;
+
+    k = 0;
+    previous_mode  = -1;
+    /* loop over all clients */
+    for (j=0 ; ; j++)
     {
-    size = sizeof(str);
-    db_get_value(hDB, 0, "/Lazy/Settings/Backup Type", str, &size, TID_STRING);
-    ftp_mode = equal_ustring(str, "FTP");
+      status = db_enum_key(hDB, hKey, j, &hSubkey);
+      if (status == DB_NO_MORE_SUBKEYS)
+        break;
 
-    if (ftp_mode)
-      rsprintf("<tr><th colspan=2>Lazy Destination<th>Progress<th>File Name<th>Speed [kb/s]<th>Total</tr>\n");
-    else
-      rsprintf("<tr><th colspan=2>Lazy Label<th>Progress<th>File Name<th># Files<th>Total</tr>\n");
+      if (hSubkey == hKeyClient)
+        continue;
 
-    if (ftp_mode)
+      if (status == DB_SUCCESS)
       {
-      size = sizeof(str);
-      db_get_value(hDB, 0, "/Lazy/Settings/Path", str, &size, TID_STRING);
-      if (strchr(str, ','))
-        *strchr(str, ',') = 0;
+        /* get client name */
+        size = sizeof(client_name);
+        db_get_value(hDB, hSubkey, "Name", client_name, &size, TID_STRING);
+        client_name[4] = 0; /* search only for the 4 first char */
+        if (equal_ustring(client_name, "Lazy"))
+        {
+          sprintf(str, "/Lazy/%s", &client_name[5]);  
+          status = db_find_key(hDB, 0, str, &hLKey);
+          if (status == DB_SUCCESS)
+          {
+            size = sizeof(str);
+            db_get_value(hDB, hLKey, "Settings/Backup Type", str, &size, TID_STRING);
+            ftp_mode = equal_ustring(str, "FTP");
+            
+            if (previous_mode != ftp_mode)
+              k = 0;
+            if (k == 0)
+            {
+              if (ftp_mode)
+                rsprintf("<tr><th colspan=2>Lazy Destination<th>Progress<th>File Name<th>Speed [kb/s]<th>Total</tr>\n");
+              else
+                rsprintf("<tr><th colspan=2>Lazy Label<th>Progress<th>File Name<th># Files<th>Total</tr>\n");
+            }
+            previous_mode = ftp_mode;
+            if (ftp_mode)
+              {
+              size = sizeof(str);
+              db_get_value(hDB, hLKey, "Settings/Path", str, &size, TID_STRING);
+              if (strchr(str, ','))
+                *strchr(str, ',') = 0;
+              }
+            else
+              {
+              size = sizeof(str);
+              db_get_value(hDB, hLKey, "Settings/List Label", str, &size, TID_STRING);
+              if (str[0] == 0)
+                strcpy(str, "(empty)");
+              }
+
+            if (exp_name[0])
+              sprintf(ref, "%s/Lazy/%s/Settings?exp=%s", mhttpd_url, &client_name[5], exp_name);
+            else
+              sprintf(ref, "%s/Lazy", mhttpd_url);
+
+            rsprintf("<tr><td colspan=2><B><a href=\"%s\">%s</a></B>", ref, str);
+
+            size = sizeof(value);
+            db_get_value(hDB, hLKey, "Statistics/Copy progress [%]", &value, &size, TID_FLOAT);
+            rsprintf("<td align=center>%1.0f %%", value);
+
+            size = sizeof(str);
+            db_get_value(hDB, hLKey, "Statistics/Backup File", str, &size, TID_STRING);
+            rsprintf("<td align=center>%s", str);
+
+            if (ftp_mode)
+              {
+              size = sizeof(value);
+              db_get_value(hDB, hLKey, "Statistics/Copy Rate [KB per sec]", &value, &size, TID_FLOAT);
+              rsprintf("<td align=center>%1.1f", value);
+              }
+            else
+              {
+              size = sizeof(i);
+              db_get_value(hDB, hLKey, "/Statistics/Number of files", &i, &size, TID_INT);
+              rsprintf("<td align=center>%d", i);
+              }
+
+            size = sizeof(value);
+            db_get_value(hDB, hLKey, "Statistics/Backup status [%]", &value, &size, TID_FLOAT);
+            rsprintf("<td align=center>%1.1f %%", value);
+            k++;
+          }
+        }
       }
-    else
-      {
-      size = sizeof(str);
-      db_get_value(hDB, 0, "/Lazy/Settings/List Label", str, &size, TID_STRING);
-      if (str[0] == 0)
-        strcpy(str, "(empty)");
-      }
-
-    if (exp_name[0])
-      sprintf(ref, "%sLazy/Settings?exp=%s", mhttpd_url, exp_name);
-    else
-      sprintf(ref, "%sLazy/Settings", mhttpd_url);
-
-    rsprintf("<tr><td colspan=2><B><a href=\"%s\">%s</a></B>", ref, str);
-
-    size = sizeof(value);
-    db_get_value(hDB, 0, "/Lazy/Statistics/Copy progress [%]", &value, &size, TID_FLOAT);
-    rsprintf("<td align=center>%1.0f %%", value);
-
-    size = sizeof(str);
-    db_get_value(hDB, 0, "/Lazy/Statistics/Backup File", str, &size, TID_STRING);
-    rsprintf("<td align=center>%s", str);
-
-    if (ftp_mode)
-      {
-      size = sizeof(value);
-      db_get_value(hDB, 0, "/Lazy/Statistics/Copy Rate [KB per sec]", &value, &size, TID_FLOAT);
-      rsprintf("<td align=center>%1.1f", value);
-      }
-    else
-      {
-      size = sizeof(i);
-      db_get_value(hDB, 0, "/Lazy/Statistics/Number of files", &i, &size, TID_INT);
-      rsprintf("<td align=center>%d", i);
-      }
-
-    size = sizeof(value);
-    db_get_value(hDB, 0, "/Lazy/Statistics/Backup status [%]", &value, &size, TID_FLOAT);
-    rsprintf("<td align=center>%1.1f %%", value);
-
-    rsprintf("</tr>\n");
     }
-
+    rsprintf("</tr>\n");
+  }
   /*---- Messages ----*/
 
   rsprintf("<tr><td colspan=6>");
