@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.104  2000/03/01 23:06:19  midas
+  bk_xxx functions now don't use global variable _pbk
+
   Revision 1.103  2000/02/29 21:59:05  midas
   Fixec bug with order of actions in cm_transition
 
@@ -12274,9 +12277,6 @@ exit:
 *                                                                    *
 \********************************************************************/
 
-static BANK        *_pbk;
-static BANK32      *_pbk32;
-
 /*------------------------------------------------------------------*/
 
 void bk_init(void *event)
@@ -12396,19 +12396,23 @@ void bk_create(void *event, char *name, WORD type, void *pdata)
 {
   if (((BANK_HEADER *)event)->flags & BANK_FORMAT_32BIT)
     {
-    _pbk32 = (BANK32 *) ((char *) (((BANK_HEADER *) event) + 1) + ((BANK_HEADER *) event)->data_size);
-    strncpy(_pbk32->name, name, 4);
-    (_pbk32)->type = type;
-    (_pbk32)->data_size = 0;
-    *((void **)pdata) = (_pbk32)+1;
+    BANK32 *pbk32;
+
+    pbk32 = (BANK32 *) ((char *) (((BANK_HEADER *) event) + 1) + ((BANK_HEADER *) event)->data_size);
+    strncpy(pbk32->name, name, 4);
+    pbk32->type = type;
+    pbk32->data_size = 0;
+    *((void **)pdata) = pbk32+1;
     }
   else
     {
-    _pbk = (BANK *) ((char *) (((BANK_HEADER *) event) + 1) + ((BANK_HEADER *) event)->data_size);
-    strncpy(_pbk->name, name, 4);
-    (_pbk)->type = type;
-    (_pbk)->data_size = 0;
-    *((void **)pdata) = (_pbk)+1;
+    BANK *pbk;
+
+    pbk = (BANK *) ((char *) (((BANK_HEADER *) event) + 1) + ((BANK_HEADER *) event)->data_size);
+    strncpy(pbk->name, name, 4);
+    pbk->type = type;
+    pbk->data_size = 0;
+    *((void **)pdata) = pbk+1;
     }
 }
 
@@ -12520,19 +12524,25 @@ void bk_close(void *event, void *pdata)
 {
   if (((BANK_HEADER *)event)->flags & BANK_FORMAT_32BIT)
     {
-    _pbk32->data_size = (DWORD) (INT) pdata - (INT) (_pbk32+1);
-    if (_pbk32->type == TID_STRUCT && _pbk32->data_size == 0)
+    BANK32 *pbk32;
+
+    pbk32 = (BANK32 *) ((char *) (((BANK_HEADER *) event) + 1) + ((BANK_HEADER *) event)->data_size);
+    pbk32->data_size = (DWORD) (INT) pdata - (INT) (pbk32+1);
+    if (pbk32->type == TID_STRUCT && pbk32->data_size == 0)
       printf("Warning: bank %c%c%c%c has zero size\n", 
-        _pbk32->name[0], _pbk32->name[1], _pbk32->name[2], _pbk32->name[3]);
-    ((BANK_HEADER *) event)->data_size += sizeof(BANK32) + ALIGN(_pbk32->data_size);
+        pbk32->name[0], pbk32->name[1], pbk32->name[2], pbk32->name[3]);
+    ((BANK_HEADER *) event)->data_size += sizeof(BANK32) + ALIGN(pbk32->data_size);
     }
   else
     {
-    _pbk->data_size = (WORD) (INT) pdata - (INT) (_pbk+1);
-    if (_pbk->type == TID_STRUCT && _pbk->data_size == 0)
+    BANK *pbk;
+
+    pbk = (BANK *) ((char *) (((BANK_HEADER *) event) + 1) + ((BANK_HEADER *) event)->data_size);
+    pbk->data_size = (WORD) (INT) pdata - (INT) (pbk+1);
+    if (pbk->type == TID_STRUCT && pbk->data_size == 0)
       printf("Warning: bank %c%c%c%c has zero size\n", 
-        _pbk->name[0], _pbk->name[1], _pbk->name[2], _pbk->name[3]);
-    ((BANK_HEADER *) event)->data_size += sizeof(BANK) + ALIGN(_pbk->data_size);
+        pbk->name[0], pbk->name[1], pbk->name[2], pbk->name[3]);
+    ((BANK_HEADER *) event)->data_size += sizeof(BANK) + ALIGN(pbk->data_size);
     }
 }
 
