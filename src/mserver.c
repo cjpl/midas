@@ -6,6 +6,9 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
+  Revision 1.40  2003/11/20 11:29:44  midas
+  Implemented db_check_record and use it in most places instead of db_create_record
+
   Revision 1.39  2003/04/24 13:47:38  midas
   Fixed compiler warning
 
@@ -783,6 +786,10 @@ INT convert_flags;
       status = db_enum_link(CHNDLE(0), CHNDLE(1), CINT(2), CPHNDLE(3));
       break;
 
+    case RPC_DB_GET_NEXT_LINK:
+      status = db_get_next_link(CHNDLE(0), CHNDLE(1), CPHNDLE(2));
+      break;
+
     case RPC_DB_GET_KEY:
       status = db_get_key(CHNDLE(0), CHNDLE(1), CARRAY(2));
       if (convert_flags)
@@ -871,6 +878,10 @@ INT convert_flags;
 
     case RPC_DB_CREATE_RECORD:
       status = db_create_record(CHNDLE(0), CHNDLE(1), CSTRING(2), CSTRING(3));
+      break;
+
+    case RPC_DB_CHECK_RECORD:
+      status = db_check_record(CHNDLE(0), CHNDLE(1), CSTRING(2), CSTRING(3), CBOOL(4));
       break;
 
     case RPC_DB_ADD_OPEN_RECORD:

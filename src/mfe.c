@@ -7,6 +7,9 @@
                 linked with user code to form a complete frontend
 
   $Log$
+  Revision 1.60  2003/11/20 11:29:44  midas
+  Implemented db_check_record and use it in most places instead of db_create_record
+
   Revision 1.59  2003/11/01 00:48:14  olchansk
   abort if cannot read /runinfo/run number
   abort if run number resets to zero
@@ -512,10 +515,10 @@ DWORD  dummy;
       }
     
     /* Create common subtree */
-    status = db_create_record(hDB, 0, str, EQUIPMENT_COMMON_STR);
+    status = db_check_record(hDB, 0, str, EQUIPMENT_COMMON_STR, TRUE);
     if (status != DB_SUCCESS)
       {
-      printf("Cannot init equipment record, probably other FE is using it\n");
+      printf("Cannot check equipment record, status = %d\n", status);
       ss_sleep(3000);
       }
     db_find_key(hDB, 0, str, &hKey);
@@ -542,7 +545,7 @@ DWORD  dummy;
     if (equipment[index].event_descrip)
       {
       if (equipment[index].format == FORMAT_FIXED)
-        db_create_record(hDB, 0, str, (char *)equipment[index].event_descrip);
+        db_check_record(hDB, 0, str, (char *)equipment[index].event_descrip, TRUE);
       else
         {
         /* create bank descriptions */
@@ -558,7 +561,12 @@ DWORD  dummy;
           if (bank_list->type == TID_STRUCT)
             {
             sprintf(str, "/Equipment/%s/Variables/%s", equipment[index].name, bank_list->name);
-            db_create_record(hDB, 0, str, strcomb(bank_list->init_str));
+            status = db_check_record(hDB, 0, str, strcomb(bank_list->init_str), TRUE);
+            if (status != DB_SUCCESS)
+              {
+              printf("Cannot check/create record \"%s\", status = %d\n", str, status);
+              ss_sleep(3000);
+              }
             }
           else
             {
@@ -579,24 +587,10 @@ DWORD  dummy;
     /*---- Create and initialize statistics tree -------------------*/
     sprintf(str, "/Equipment/%s/Statistics", equipment[index].name);
     
-    /*-PAA- Needed in case Statistics exists but size = 0 */
-    /*-SR- Not needed since db_create_record does a delete already */
-
-    status = db_find_key(hDB, 0, str, &hKey);
-    if (status == DB_SUCCESS)
-      {
-      status = db_delete_key(hDB, hKey, FALSE);
-      if (status != DB_SUCCESS)
-        {
-          printf("Cannot delete statistics record, error %d\n",status);
-          ss_sleep(3000);
-        }
-      }
-
-    status = db_create_record(hDB, 0, str, EQUIPMENT_STATISTICS_STR);
+    status = db_check_record(hDB, 0, str, EQUIPMENT_STATISTICS_STR, TRUE);
     if (status != DB_SUCCESS)
       {
-      printf("Cannot create statistics record, error %d\n",status);
+      printf("Cannot create/check statistics record, error %d\n",status);
       ss_sleep(3000);
       }
 

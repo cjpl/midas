@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.197  2003/11/20 11:29:44  midas
+  Implemented db_check_record and use it in most places instead of db_create_record
+
   Revision 1.196  2003/11/01 01:27:58  olchansk
   abort if cannot read /runinfo/run number
 
@@ -2721,8 +2724,14 @@ RUNINFO_STR(runinfo_str);
   size = sizeof(str);
   db_get_value(hDB, 0, "/Logger/Data dir", str, &size, TID_STRING, TRUE);
 
-  /* create/correct /runinfo structure */
-  db_create_record(hDB, 0, "/Runinfo", strcomb(runinfo_str));
+  /* check /runinfo structure */
+  status = db_check_record(hDB, 0, "/Runinfo", strcomb(runinfo_str), FALSE);
+  if (status == DB_STRUCT_MISMATCH)
+    {
+    cm_msg(MERROR, "cm_connect_experiment1", "Aborting on mismatching /Runinfo structure");
+    cm_disconnect_experiment();
+    abort();
+    }
 
   /* register server to be able to be called by other clients*/
   status = cm_register_server();
@@ -17177,7 +17186,7 @@ ALARM_ODB_STR(alarm_odb_str);
   if (status != DB_SUCCESS || alarm.type < 1 || alarm.type > AT_LAST)
     {
     /* make sure alarm record has right structure */
-    db_create_record(hDB, hkeyalarm, "", strcomb(alarm_odb_str));
+    db_check_record(hDB, hkeyalarm, "", strcomb(alarm_odb_str), TRUE);
 
     size = sizeof(alarm);
     status = db_get_record(hDB, hkeyalarm, &alarm, &size, 0);
@@ -17556,7 +17565,7 @@ ALARM_PERIODIC_STR(alarm_periodic_str);
     if (status != DB_SUCCESS || alarm.type < 1 || alarm.type > AT_LAST)
       {
       /* make sure alarm record has right structure */
-      db_create_record(hDB, hkey, "", strcomb(alarm_odb_str));
+      db_check_record(hDB, hkey, "", strcomb(alarm_odb_str), TRUE);
       size = sizeof(alarm);
       status = db_get_record(hDB, hkey, &alarm, &size, 0);
       if (status != DB_SUCCESS || alarm.type < 1 || alarm.type > AT_LAST)

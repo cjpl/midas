@@ -6,6 +6,9 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.72  2003/11/20 11:29:44  midas
+  Implemented db_check_record and use it in most places instead of db_create_record
+
   Revision 1.71  2003/11/01 01:12:38  olchansk
   abort on unexpected odb failures
 
@@ -3810,6 +3813,140 @@ INT              i;
 }
 
 /*------------------------------------------------------------------*/
+
+INT db_get_next_link(HNDLE hDB, HNDLE hKey, HNDLE *subkey_handle)
+/********************************************************************\
+
+  Routine: db_get_next_link
+
+  Purpose: Get next key in ODB after hKey
+
+  Input:
+    HNDLE hDB               Handle to the database
+    HNDLE hKey              Handle of key to enumerate, zero for the
+                            root key
+
+  Output:
+    HNDLE *subkey_handle    Handle of subkey which can be used in
+                            db_get_key and db_get_data
+
+  Function value:
+    DB_SUCCESS              Successful completion
+    DB_INVALID_HANDLE       Database handle is invalid
+    DB_NO_MORE_SUBKEYS      Last subkey reached
+
+\********************************************************************/
+{
+  if (rpc_is_remote())
+    return rpc_call(RPC_DB_GET_NEXT_LINK, hDB, hKey, subkey_handle);
+
+#ifdef LOCAL_ROUTINES
+{
+DATABASE_HEADER  *pheader;
+KEYLIST          *pkeylist;
+KEY              *pkey;
+INT              descent;
+
+  if (hDB > _database_entries || hDB <= 0)
+    {
+    cm_msg(MERROR, "db_enum_link", "invalid database handle");
+    return DB_INVALID_HANDLE;
+    }
+
+  if (!_database[hDB-1].attached)
+    {
+    cm_msg(MERROR, "db_enum_link", "invalid database handle");
+    return DB_INVALID_HANDLE;
+    }
+
+  *subkey_handle = 0;
+
+  /* first lock database */
+  db_lock_database(hDB);
+
+  pheader  = _database[hDB-1].database_header;
+  if (!hKey)
+    hKey = pheader->root_key;
+  pkey = (KEY *) ((char *) pheader + hKey);
+
+  /* check if hKey argument is correct */
+  if (!db_validate_hkey(pheader, hKey))
+    {
+    db_unlock_database(hDB);
+    return DB_INVALID_HANDLE;
+    }
+
+  descent = TRUE;
+  do
+    {
+    if (pkey->type != TID_KEY || !descent)
+      {
+      if (pkey->next_key)
+        {
+        /* key has next key, return it */
+        pkey = (KEY *) ((char *) pheader + pkey->next_key);
+
+        if (pkey->type != TID_KEY)
+          {
+          *subkey_handle = (PTYPE) pkey - (PTYPE) pheader;
+          db_unlock_database(hDB);
+          return DB_SUCCESS;
+          }
+
+        /* key has subkeys, so descent on the next iteration */
+        descent = TRUE;
+        }
+      else
+        {
+        if (pkey->parent_keylist == 0)
+          {
+          /* return if we are back to the root key */
+          db_unlock_database(hDB);
+          return DB_NO_MORE_SUBKEYS;
+          }
+
+        /* key is last in list, traverse up */
+        pkeylist = (KEYLIST *) ((char *) pheader + pkey->parent_keylist);
+
+        pkey = (KEY *) ((char *) pheader + pkeylist->parent);
+        descent = FALSE;
+        }
+      }
+    else
+      {
+      if (descent)
+        {
+        /* find first subkey */
+        pkeylist = (KEYLIST *) ((char *) pheader + pkey->data);
+
+        if (pkeylist->num_keys == 0)
+          {
+          /* if key has no subkeys, look for next key on this level */
+          descent = FALSE;
+          }
+        else
+          {
+          /* get first subkey */
+          pkey = (KEY *) ((char *) pheader + pkeylist->first_key);
+
+          if (pkey->type != TID_KEY)
+            {
+            *subkey_handle = (PTYPE) pkey - (PTYPE) pheader;
+            db_unlock_database(hDB);
+            return DB_SUCCESS;
+            }
+          }
+        }
+      }
+
+    } while (TRUE);
+}
+#endif /* LOCAL_ROUTINES */
+
+  return DB_SUCCESS;
+}
+
+/*------------------------------------------------------------------*/
 /** @name db_get_key()
 \begin{description}
 \item[Description:] Get key structure from a handle.
@@ -5792,17 +5929,17 @@ INT db_copy(HNDLE hDB, HNDLE hKey, char *buffer, INT *buffer_size, char *path)
 */
 INT db_paste(HNDLE hDB, HNDLE hKeyRoot, char *buffer)
 {
-  char             line[MAX_STRING_LENGTH];
-  char             title[MAX_STRING_LENGTH];
-  char             key_name[MAX_STRING_LENGTH];
-  char             data_str[MAX_STRING_LENGTH + 50];
-  char             test_str[MAX_STRING_LENGTH];
-  char             *pc, *pold, *data;
-  INT              data_size;
-  INT              tid, i, j, n_data, string_length, status, size;
-  HNDLE            hKey;
-  KEY              root_key;
-  BOOL             multi_line;
+char             line[MAX_STRING_LENGTH];
+char             title[MAX_STRING_LENGTH];
+char             key_name[MAX_STRING_LENGTH];
+char             data_str[MAX_STRING_LENGTH + 50];
+char             test_str[MAX_STRING_LENGTH];
+char             *pc, *pold, *data;
+INT              data_size;
+INT              tid, i, j, n_data, string_length, status, size;
+HNDLE            hKey;
+KEY              root_key;
+BOOL             multi_line;
 
   title[0] = 0;
   multi_line = FALSE;
@@ -7618,6 +7755,293 @@ INT db_create_record(HNDLE hDB, HNDLE hKey, char *key_name, char *init_str)
     }
 
   db_unlock_database(hDB);
+
+  return DB_SUCCESS;
+}
+
+/*------------------------------------------------------------------*/
+
+INT db_check_record(HNDLE hDB, HNDLE hKey, char *keyname, char *rec_str, BOOL correct)
+/********************************************************************\
+
+  Routine: db_check_record
+
+  Purpose: This function ensures that a certain ODB subtree matches
+           a given C structure, by comparing the init_str with the
+           current ODB structure. If the record does not exist at all,
+           it is created with the default values in init_str. If it
+           does exist but does not match the variables in init_str,
+           the function returns an error if correct=FALSE or calls
+           db_create_record if correct=TRUE.
+
+  Input:
+    HNDLE hDB               Handle to the database
+    HNDLE hKey              Handle for key where search starts, zero for root
+    char  *keyname          Name of key to search, can contain directories
+    char  *rec_str          ASCII representation of ODB record in the format
+                            of the db_copy/db_save functions
+    BOOL  correct           If TRUE, correct ODB record if necessary
+
+  Output:
+    none
+
+  Function value:
+    DB_SUCCESS              Successful completion
+    DB_INVALID_HANDLE       Database handle is invalid
+    DB_NO_KEY               Record does not exist and correct=FALSE
+    DB_STRUCT_MISMATCH      ODB structure does not match rec_str
+
+    <any return value from db_create_record if correct=TRUE>
+
+\********************************************************************/
+{
+char             line[MAX_STRING_LENGTH];
+char             title[MAX_STRING_LENGTH];
+char             key_name[MAX_STRING_LENGTH];
+char             info_str[MAX_STRING_LENGTH + 50];
+char             *pc, *pold;
+DWORD            tid;
+INT              i, j, n_data, string_length, status;
+HNDLE            hKeyRoot, hKeyTest;
+KEY              key;
+BOOL             multi_line;
+
+  if (rpc_is_remote())
+    return rpc_call(RPC_DB_CHECK_RECORD, hDB, hKey, keyname, rec_str, correct);
+
+  /* check if record exists */
+  status = db_find_key(hDB, hKey, keyname, &hKeyRoot);
+
+  /* create record if not */
+  if (status == DB_NO_KEY)
+    return db_create_record(hDB, hKey, keyname, rec_str);
+
+  assert(hKeyRoot);
+
+  title[0] = 0;
+  multi_line = FALSE;
+
+  db_get_key(hDB, hKeyRoot, &key);
+  if (key.type == TID_KEY)
+    /* get next subkey which is not of type TID_KEY */
+    db_get_next_link(hDB, hKeyRoot, &hKeyTest);
+  else
+    /* test root key itself */
+    hKeyTest = hKeyRoot;
+
+  if (hKeyTest == 0 && *rec_str != 0)
+    {
+    if (correct)
+      return db_create_record(hDB, hKey, keyname, rec_str);
+
+    return DB_STRUCT_MISMATCH;
+    }
+
+  do
+    {
+    if (*rec_str == 0)
+      break;
+
+    for(i=0 ; *rec_str != '\n' && *rec_str && i<MAX_STRING_LENGTH ; i++)
+      line[i] = *rec_str++;
+
+    if (i == MAX_STRING_LENGTH)
+      {
+      cm_msg(MERROR, "db_check_record", "line too long");
+      return DB_TRUNCATED;
+      }
+
+    line[i] = 0;
+    if (*rec_str == '\n')
+      rec_str++;
+
+    /* check if it is a section title */
+    if (line[0] == '[')
+      {
+      /* extract title and append '/' */
+      strcpy(title, line+1);
+      if (strchr(title, ']'))
+        *strchr(title, ']') = 0;
+      if (title[0] && title[strlen(title) - 1] != '/')
+        strcat(title, "/");
+      }
+    else
+      {
+      /* valid data line if it includes '=' and no ';' */
+      if (strchr(line, '=') && line[0] != ';')
+        {
+        /* copy type info and data */
+        pc = strchr(line, '=')+1;
+        while (*pc == ' ')
+          pc++;
+        strcpy(info_str, pc);
+
+        /* extract key name */
+        *strchr(line, '=') = 0;
+
+        pc = &line[ strlen(line)-1 ];
+        while (*pc == ' ')
+          *pc-- = 0;
+
+        key_name[0] = 0;
+        if (title[0] != '.')
+          strcpy(key_name, title);
+
+        strcat(key_name, line);
+
+        /* evaluate type info */
+        strcpy(line, info_str);
+        if (strchr(line, ' '))
+          *strchr(line, ' ') = 0;
+
+        n_data = 1;
+        if (strchr(line, '['))
+          {
+          n_data = atol(strchr(line, '[')+1);
+          *strchr(line, '[') = 0;
+          }
+
+        for (tid=0 ; tid<TID_LAST ; tid++)
+          if (strcmp(tid_name[tid], line) == 0)
+            break;
+
+        string_length = 0;
+
+        if (tid == TID_LAST)
+          cm_msg(MERROR, "db_check_record", "found unknown data type \"%s\" in ODB file", line);
+        else
+          {
+          /* skip type info */
+          pc = info_str;
+          while (*pc != ' ' && *pc)
+            pc++;
+          while ((*pc == ' ' || *pc == ':')&& *pc)
+            pc++;
+
+          if (n_data > 1)
+            {
+            info_str[0] = 0;
+            if (!*rec_str)
+              break;
+
+            for(j=0 ; *rec_str != '\n' && *rec_str ; j++)
+              info_str[j] = *rec_str++;
+            info_str[j] = 0;
+            if (*rec_str == '\n')
+              rec_str++;
+            }
+
+          for (i=0 ; i<n_data ; i++)
+            {
+            /* strip trailing \n */
+            pc = &info_str[strlen(info_str)-1];
+            while (*pc == '\n' || *pc == '\r')
+              *pc-- = 0;
+
+            if (tid == TID_STRING || tid == TID_LINK)
+              {
+              if (!string_length)
+                {
+                if (info_str[1] == '=')
+                  string_length = -1;
+                else
+                  string_length = atoi(info_str+1);
+                if (string_length > MAX_STRING_LENGTH)
+                  {
+                  string_length = MAX_STRING_LENGTH;
+                  cm_msg(MERROR, "db_check_record", "found string exceeding MAX_STRING_LENGTH");
+                  }
+                }
+
+              if (string_length == -1)
+                {
+                /* multi-line string */
+                if (strstr(rec_str, "\n====#$@$#====\n") != NULL)
+                  {
+                  string_length = (PTYPE) strstr(rec_str, "\n====#$@$#====\n") - (PTYPE) rec_str + 1;
+
+                  rec_str = strstr(rec_str, "\n====#$@$#====\n") + strlen("\n====#$@$#====\n");
+                  }
+                else
+                  cm_msg(MERROR, "db_check_record", "found multi-line string without termination sequence");
+                }
+              else
+                {
+                pc = info_str + 2;
+                while (*pc && *pc != ' ')
+                  pc++;
+                while (*pc && *pc == ' ')
+                  pc++;
+
+                /* limit string size */
+                *(pc + string_length -1 ) = 0;
+                }
+              }
+            else
+              {
+              pc = info_str;
+
+              if (n_data > 1 && info_str[0] == '[')
+                {
+                pc = strchr(info_str, ']')+1;
+                while (*pc && *pc == ' ')
+                  pc++;
+                }
+              }
+
+            if (i < n_data-1)
+              {
+              info_str[0] = 0;
+              if (!*rec_str)
+                break;
+
+              pold = rec_str;
+
+              for(j=0 ; *rec_str != '\n' && *rec_str ; j++)
+                info_str[j] = *rec_str++;
+              info_str[j] = 0;
+              if (*rec_str == '\n')
+                rec_str++;
+
+              /* test if valid data */
+              if (tid != TID_STRING && tid != TID_LINK)
+                {
+                if (info_str[0] == 0 ||
+                    (strchr(info_str, '=') && strchr(info_str, ':')))
+                  rec_str = pold;
+                }
+              }
+            }
+
+          /* if rec_str contains key, but not ODB, return mismatch */
+          if (!hKeyTest)
+            {
+            if (correct)
+              return db_create_record(hDB, hKey, keyname, rec_str);
+            
+            return DB_STRUCT_MISMATCH;
+            }
+
+          status = db_get_key(hDB, hKeyTest, &key);
+          assert(status == DB_SUCCESS);
+
+          /* check rec_str vs. ODB key */
+          if (!equal_ustring(key.name, key_name) ||
+              key.type != tid ||
+              key.num_values != n_data)
+            {
+            if (correct)
+              return db_create_record(hDB, hKey, keyname, rec_str);
+            
+            return DB_STRUCT_MISMATCH;
+            }
+
+          /* get next key in ODB */
+          db_get_next_link(hDB, hKeyTest, &hKeyTest);
+          }
+        }
+      }
+    } while (TRUE);
 
   return DB_SUCCESS;
 }

@@ -6,6 +6,9 @@
   Contents:     MIDAS logger program
 
   $Log$
+  Revision 1.69  2003/11/20 11:29:44  midas
+  Implemented db_check_record and use it in most places instead of db_create_record
+
   Revision 1.68  2003/11/01 00:46:53  olchansk
   abort if cannot read /runinfo/run number
 
@@ -2659,10 +2662,10 @@ struct tm    *tms;
 
     /* correct channel record */
     db_get_key(hDB, hKeyChannel, &key);
-    status = db_create_record(hDB, hKeyRoot, key.name, strcomb(chn_settings_str));
+    status = db_check_record(hDB, hKeyRoot, key.name, strcomb(chn_settings_str), TRUE);
     if (status != DB_SUCCESS && status != DB_OPEN_RECORD)
       {
-      cm_msg(MERROR, "tr_prestart", "Cannot create channel record");
+      cm_msg(MERROR, "tr_prestart", "Cannot create/check channel record");
       break;
       }
 

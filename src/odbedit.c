@@ -6,6 +6,9 @@
   Contents:     Command-line interface to the MIDAS online data base.
 
   $Log$
+  Revision 1.67  2003/11/20 11:29:45  midas
+  Implemented db_check_record and use it in most places instead of db_create_record
+
   Revision 1.66  2003/11/01 00:46:06  olchansk
   abort if cannot read /runinfo/run number
   abort if run number resets to zero
@@ -3012,27 +3015,17 @@ PRINT_INFO      print_info;
     /* test 3 */
     else if (param[0][0] == 't' && param[0][1] == '3')
       {
-      EVENT_HEADER *pevent;
-      WORD *pdata;
-      int fh;
+      i = j = 0;
+      do
+        {
+        status = db_get_next_link(hDB, i, &i);
+        if (i == 0)
+          break;
 
-      pevent = (EVENT_HEADER *) data;
-      bm_compose_event(pevent, 1, 2, 0, 123);
-
-      bk_init(pevent+1);
-      bk_create(pevent+1, "TEST", TID_WORD, &pdata);
-      *pdata++ = 1;
-      *pdata++ = 2;
-      *pdata++ = 3;
-      *pdata++ = 4;
-      bk_close(pevent+1, pdata);
-      pevent->data_size = bk_size(pevent+1);
-
-      fh = open("test.mid", O_WRONLY | O_CREAT | O_TRUNC, 0644);
-      write(fh, data, pevent->data_size + sizeof(EVENT_HEADER));
-      close(fh);
+        db_get_path(hDB, i, str, sizeof(str));
+        printf("%d: %s\n", j++, str);
+        } while (1);
       }
-
 
     /* exit/quit */
     else if ((param[0][0] == 'e' && param[0][1] == 'x' && param[0][2] == 'i') ||

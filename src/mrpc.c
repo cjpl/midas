@@ -6,6 +6,9 @@
   Contents:     List of MIDAS RPC functions with parameters
 
   $Log$
+  Revision 1.29  2003/11/20 11:29:44  midas
+  Implemented db_check_record and use it in most places instead of db_create_record
+
   Revision 1.28  2002/09/13 07:32:48  midas
   Added client name to cm_cleanup()
 
@@ -457,6 +460,14 @@ static RPC_LIST rpc_list_library[] = {
      {TID_INT,        RPC_IN},
      {TID_STRING,     RPC_IN},
      {TID_STRING,     RPC_IN},
+     {0} }},
+
+  { RPC_DB_CHECK_RECORD, "db_check_record",
+    {{TID_INT,        RPC_IN},
+     {TID_INT,        RPC_IN},
+     {TID_STRING,     RPC_IN},
+     {TID_STRING,     RPC_IN},
+     {TID_BOOL,       RPC_IN},
      {0} }},
 
   { RPC_DB_GET_RECORD, "db_get_record",
