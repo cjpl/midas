@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.132  2005/01/14 08:09:33  midas
+  Applied patch from John O'Donnell to load cuts from 'last.root'
+
   Revision 1.131  2005/01/10 10:14:49  midas
   root server accepts TCutG's from ROODY, patch from John O'Donnell
 
@@ -1807,28 +1810,59 @@ INT SaveRootHistograms(TFolder * folder, const char *filename)
 
 /*------------------------------------------------------------------*/
 
+// copy object from a last folder, to an online folder,
+// and call itself to handle subfolders
+void copy_from_last(TFolder *lastFolder, TFolder *onlineFolder) {
+
+  TIter next (lastFolder->GetListOfFolders());
+  while (TObject *obj = next()) {
+    const char *name = obj->GetName();
+
+    if (obj->InheritsFrom( "TFolder")) {
+
+      TFolder *onlineSubfolder = (TFolder *)onlineFolder->FindObject( name);
+      if (onlineSubfolder) copy_from_last( (TFolder *)obj, onlineSubfolder);
+    
+    } else if (obj->InheritsFrom( "TH1")) {
+
+      // still don't know how to do TH1s
+
+    } else if (obj->InheritsFrom( "TCutG")) {
+
+      TCutG *onlineObj = (TCutG *)onlineFolder->FindObject( name);
+      if (onlineObj) {
+        TCutG *lastObj = (TCutG *)obj;
+
+        lastObj->TAttMarker::Copy( *onlineObj);
+        lastObj->TAttFill::Copy( *onlineObj);
+        lastObj->TAttLine::Copy( *onlineObj);
+        lastObj->TNamed::Copy( *onlineObj);
+        onlineObj->Set( lastObj->GetN());
+        for (int i=0; i<lastObj->GetN(); ++i) {
+          onlineObj->SetPoint(i, lastObj->GetX()[i], lastObj->GetY()[i]);
+        }
+      }
+    }
+  }
+  return;
+}
+
+/*------------------------------------------------------------------*/
+
 // Load all objects from given file into given directory
-INT LoadRootHistograms(TFolder * folder, const char *filename)
+INT LoadRootHistograms(TFolder *folder, const char *filename)
 {
-   TFile *inf = new TFile(filename, "READ");
+   TFile *inf = TFile::Open(filename, "READ");
    if (inf == NULL)
-      printf("Error: File \"%s\" not found", filename);
+      printf("Error: File \"%s\" not found\n", filename);
    else {
 
-/* not yet implemented for histos in folders, TBD...
-
-      TIter next(inf->GetListOfKeys());
-      while (TObject * obj = next()) {
-         //if (obj->InheritsFrom("TH1")) // does not work???
-         {
-            dir->cd();
-            inf->Get(obj->GetName())->Clone();
-            savedir->cd();
-         }
-      }
-*/
-      inf->Close();
-      delete inf;
+     TFolder *lastHistos = (TFolder *)inf->Get( "histos");
+     if (lastHistos) {
+       // copy histos to online folder
+       copy_from_last( lastHistos, folder);
+       inf->Close();
+     }
    }
    return SUCCESS;
 }
@@ -3906,6 +3940,30 @@ void update_stats()
 
 /* h1_book and h2_book are now templates in midas.h */
 
+//==============================================================================
+  
+TCutG *cut_book (const char *name) {
+
+//------------------------------------------------------------------------------
+
+  open_subfolder( "cuts");
+
+  TFolder *folder (gHistoFolderStack->Last() ?
+    (TFolder *)gHistoFolderStack->Last() :
+    gManaHistosFolder);
+
+  TCutG *cut ((TCutG *)folder->FindObject( name));
+
+  if (! cut) {
+    cut = new TCutG();
+    cut->SetName( name);
+    folder->Add( cut);
+  }
+
+  close_subfolder();
+  return cut;
+}
+
 void open_subfolder(char *name)
 {
 
@@ -5710,7 +5768,7 @@ THREADTYPE root_server_thread(void *arg)
             //read new settings for a cut
             char name[256];
             sock->Recv(name, sizeof(name));
-            TCutG *cut = (TCutG*)gROOT->FindObject(name);
+            TCutG *cut = (TCutG*)gManaHistosFolder->FindObjectAny(name);
 
             message->Reset(kMESS_OBJECT);
             sock->Recv(message);
@@ -5725,7 +5783,7 @@ THREADTYPE root_server_thread(void *arg)
               newc->TNamed::Copy( *cut);
               cut->Set( newc->GetN());
               for (int i=0; i<cut->GetN(); ++i) {
-                newc->GetPoint(i, cut->GetX()[i], cut->GetY()[i]);
+                cut->SetPoint(i, newc->GetX()[i], newc->GetY()[i]);
               }
             } else {
               cm_msg(MERROR, "root server thread",
@@ -6036,23 +6094,15 @@ int main(int argc, char *argv[])
    }
 #endif                          /* HAVE_HBOOK */
 
-#ifdef USE_ROOT
-   /* load histos from last.xxx */
-   if (clp.online)
-      load_last_histos();
-#endif
-
    /* analyzer init function */
    if (mana_init() != CM_SUCCESS) {
       cm_disconnect_experiment();
       return 1;
    }
 
-#ifdef HAVE_HBOOK
    /* load histos from last.xxx */
    if (clp.online)
       load_last_histos();
-#endif
 
    /* reqister event requests */
    register_requests();
