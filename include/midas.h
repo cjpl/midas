@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.92  2002/05/13 17:56:36  midas
+  Added improved malloc/free functions
+
   Revision 1.91  2002/05/10 01:41:19  midas
   Added optional debug output to cm_transition
 
@@ -1348,6 +1351,22 @@ NULL }
 "Alarm Message = STRING : [80] Please do your shift checks",\
 "",\
 NULL }
+
+/*---- malloc/free routines for debugging --------------------------*/
+
+#ifdef _MEM_DBG
+#define M_MALLOC(x)   dbg_malloc((x), __FILE__, __LINE__)
+#define M_CALLOC(x,y) dbg_calloc((x), (y), __FILE__, __LINE__)
+#define M_FREE(x)     dbg_free  ((x), __FILE__, __LINE__)
+#else
+#define M_MALLOC(x) malloc(x)
+#define M_CALLOC(x,y) calloc(x,y)
+#define M_FREE(x) free(x)
+#endif
+
+void *dbg_malloc(size_t size, char *file, int line);
+void *dbg_calloc(size_t size, size_t count, char *file, int line);
+void dbg_free(void *adr, char *file, int line);
 
 /*---- CERN libray -------------------------------------------------*/
 
