@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.54  2001/11/05 16:31:27  midas
+  Added "page title" and changed "use email subject"
+
   Revision 1.53  2001/11/05 14:44:17  midas
   Fixed problem with long configuration files
 
@@ -299,8 +302,6 @@ char author_list[MAX_N_LIST][NAME_LENGTH] = {
 
 /* attribute flags */
 #define AF_REQUIRED           (1<<0)
-#define AF_EMAIL_SUBJECT      (1<<1)
-#define AF_USE_FOR_TITLE      (1<<2)
 
 char attr_list[MAX_N_ATTR][NAME_LENGTH];
 char attr_options[MAX_N_ATTR][MAX_N_LIST][NAME_LENGTH];
@@ -323,7 +324,7 @@ char attr_options_default[][MAX_N_LIST][NAME_LENGTH] = {
 
 int attr_flags_default[] = {
   AF_REQUIRED,
-  AF_EMAIL_SUBJECT,
+  0,
   0,
   0
 };
@@ -371,6 +372,61 @@ BOOL equal_ustring(char *str1, char *str2)
     return FALSE;
 
   return TRUE;
+}
+
+/*-------------------------------------------------------------------*/
+
+void strsubst(char *string, char name[][NAME_LENGTH], char value[][NAME_LENGTH], int n)
+/* subsitute "$name" with value corresponding to name */
+{
+int  i, j;
+char tmp[1000], str[256], uattr[256], *ps, *pt, *p;
+
+  pt = tmp;
+  ps = string;
+  for (p = strchr(ps, '$') ; p != NULL ; p = strchr(ps, '$'))
+    {
+    /* copy leading characters */
+    j = (int)p-(int)ps;
+    memcpy(pt, ps, j);
+    pt += j;
+    p++;
+
+    /* extract name */
+    strcpy(str, p);
+    for (j=0 ; j<(int)strlen(str) ; j++)
+      str[j] = toupper(str[j]);
+
+    /* search name */
+    for (i=0 ; i<n ; i++)
+      {
+      strcpy(uattr, name[i]);
+      for (j=0 ; j<(int)strlen(uattr) ; j++)
+        uattr[j] = toupper(uattr[j]);
+
+      if (strncmp(str, uattr, strlen(uattr)) == 0)
+        break;
+      }
+
+    /* copy value */
+    if (i<n)
+      {
+      strcpy(pt, value[i]);
+      pt += strlen(pt);
+      ps = p + strlen(uattr);
+      }
+    else
+      {
+      *pt++ = '$';
+      ps = p;
+      }
+    }
+
+  /* copy remainder */
+  strcpy(pt, ps);
+
+  /* return result */
+  strcpy(string, tmp);
 }
 
 /*-------------------------------------------------------------------*/
@@ -2285,26 +2341,6 @@ int  i, j, n, m;
           attr_flags[j] |= AF_REQUIRED;
       }
 
-    /* check if mail subject */
-    getcfg(logbook, "Use EMail Subject", list);
-    m = strbreak(list, tmp_list, MAX_N_ATTR);
-    for (i=0 ; i<m ; i++)
-      {
-      for (j=0 ; j<n ; j++)
-        if (equal_ustring(attr_list[j], tmp_list[i]))
-          attr_flags[j] |= AF_EMAIL_SUBJECT;
-      }
-
-    /* check if use for title */
-    getcfg(logbook, "Use for title", list);
-    m = strbreak(list, tmp_list, MAX_N_ATTR);
-    for (i=0 ; i<m ; i++)
-      {
-      for (j=0 ; j<n ; j++)
-        if (equal_ustring(attr_list[j], tmp_list[i]))
-          attr_flags[j] |= AF_USE_FOR_TITLE;
-      }
-
     }
   else
     {
@@ -2428,7 +2464,7 @@ char str[1000];
   rsprintf("Options Type = %s\n", str);
   getcfg(logbook, "Categories", str);
   rsprintf("Options Category = %s\n", str);
-  rsprintf("Use for title = Subject\n");
+  rsprintf("Page title = $subject\n");
   rsprintf("</pre>\n");
   rsprintf("<p>\n");
 
@@ -4022,7 +4058,7 @@ char   str[256], mail_to[256], mail_from[256], file_name[256],
        tag[80], subject[256], attrib[MAX_N_ATTR][NAME_LENGTH];
 char   *buffer[MAX_ATTACHMENTS], mail_param[1000];
 char   att_file[MAX_ATTACHMENTS][256];
-int    i, j, n, index, n_attr, n_mail, n_subj, suppress, status;
+int    i, j, n, index, n_attr, n_mail, suppress, status;
 
   n_attr = scan_attributes(logbook);
 
@@ -4136,10 +4172,6 @@ int    i, j, n, index, n_attr, n_mail, n_subj, suppress, status;
 
           sprintf(mail_text+strlen(mail_text), "Logbook             : %s\r\n", logbook);
 
-          /* default subject */
-          strcpy(subject, "New ELOG entry");
-          n_subj = 0;
-
           for (j=0 ; j<n_attr ; j++)
             {
             strcpy(str, "                                    ");
@@ -4147,18 +4179,13 @@ int    i, j, n, index, n_attr, n_mail, n_subj, suppress, status;
             sprintf(str+20, ": %s\r\n", getparam(attr_list[j]));
 
             strcpy(mail_text+strlen(mail_text), str);
-            if (attr_flags[j] & AF_EMAIL_SUBJECT)
-              {
-              if (n_subj == 0)
-                strcpy(subject, getparam(attr_list[j]));
-              else
-                {
-                strcat(subject, " - ");
-                strcat(subject, getparam(attr_list[j]));
-                }
-              n_subj++;
-              }
             }
+
+          /* compose subject from attributes */
+          if (getcfg(logbook, "Use Email Subject", subject))
+            strsubst(subject, attr_list, attrib, n_attr);
+          else
+            strcpy(subject, "New ELOG entry");
 
           sprintf(mail_text+strlen(mail_text), "\r\nLogbook URL         : %s%s/%s\r\n", elogd_full_url, logbook_enc, tag);
 
@@ -4605,13 +4632,10 @@ FILE   *f;
     {
     str[0] = 0;
 
-    for (i=0 ; i<n_attr ; i++)
-      if (attr_flags[i] & AF_USE_FOR_TITLE)
-        {
-        if (str[0])
-          strcat(str, " - ");
-        strcat(str, attrib[i]);
-        }
+    if (getcfg(logbook, "Page Title", str))
+      strsubst(str, attr_list, attrib, n_attr);
+    else
+      strcpy(str, "ELOG");
 
     if (str[0])
       show_standard_header(str, path);
