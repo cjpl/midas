@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.11  1999/01/19 10:26:39  midas
+  Changed CRATE and STATION macros to LAM_SOURCE and LAM_STATION
+
   Revision 1.10  1999/01/13 09:40:48  midas
   Added db_set_data_index2 function
 
@@ -331,8 +334,8 @@ typedef          INT       HNDLE;
 #define CH_LEFT   (CH_EXT+9)
 
 /* event sources in equipment */
-#define CRATE(n)  (n<<24)
-#define STATION(s) (1<<s)
+#define LAM_SOURCE(c, s)  (c<<24 | (s))
+#define LAM_STATION(s)    (1<<(s-1))
 
 /* CNAF commands */
 
