@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.7  1998/12/10 12:50:47  midas
+  Program abort with "!" now works without a return under UNIX
+
   Revision 1.6  1998/12/10 05:28:18  midas
   Removed convert-only flag, added -v (verbose) flag
 
@@ -2117,7 +2120,6 @@ EVENT_DEF    *event_def;
     {
     last_time_kb = actual_time;
 
-    ch = 0;
     while (ss_kbhit())
       {
       ch = ss_getchar(0);
@@ -3158,11 +3160,17 @@ INT status;
   /* reqister event requests */
   register_requests();
 
+  /* initialize ss_getchar */
+  ss_getchar(0);
+
   /* start main loop */
   if (clp.online)
     loop_online();
   else
     loop_runs_offline();
+
+  /* reset terminal */
+  ss_getchar(TRUE);
 
   /* call exit function */
   mana_exit();
