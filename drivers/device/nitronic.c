@@ -3,376 +3,368 @@
   Name:         nitronic.c
   Created by:   Stefan Ritt
 
-  Contents:     Nitronics High Voltage Device Driver
+  Contents:     Nitronic HVS 132 High Voltage Device Driver
 
   $Log$
-  Revision 1.1  1999/12/20 10:18:20  midas
-  Reorganized driver directory structure
-
-  Revision 1.2  1998/10/12 12:18:57  midas
-  Added Log tag in header
-
+  Revision 1.2  2000/10/19 13:00:42  midas
+  Initial revision
 
 \********************************************************************/
 
 #include <stdio.h>
 #include <math.h>
-
 #include "midas.h"
-#include "rs232.h"
+#include "bus\rs232.h"
 
-static HNDLE  hDB;
-static HNDLE  hKeyControl;
-static HNDLE  hKeyEvent, hKeyNames, hKeyDemand, hKeyMeasured, hKeyHVon;
-static EQUIPMENT *pEquipment;
+/*---- globals -----------------------------------------------------*/
 
-static int    hDevComm;
-static INT    num_channels;
-static float  voltage_limit;
-static float  update_sensitivity;
-static float  *demand;
-static float  *measured;
-static float  *demand_mirror;
-static float  *measured_mirror;
-static char   *names;
-static DWORD  *last_change;
-static BOOL   HVon;
+int rs232_hdev[2];
 
-static void read_channel(int ch);
-static void update_demand(INT, INT);
+typedef struct {
+  char rs232_port[NAME_LENGTH];
+  int  address;
+} NITRONIC_SETTINGS;
 
-/*----------------------------------------------------------------------------*/
+#define NITRONIC_SETTINGS_STR "\
+RS232 Port = STRING : [32] com1\n\
+Address = INT : 0\n\
+"
 
-#include <conio.h>
+typedef struct {
+  NITRONIC_SETTINGS settings;
+  int num_channels;
+  int hdev;                            /* device handle for RS232 device */
+} NITRONIC_INFO;
 
-int init_nitronic(HNDLE hdb, HNDLE hRootKey, EQUIPMENT *pEquip)
+/*---- device driver routines --------------------------------------*/
+
+void nitronic_switch(NITRONIC_INFO *info)
 {
-int  status, size;
-WORD current_limit, address;
-char com_port[15];
-char str[256];
-KEY  key;
-BOOL enabled;
+static INT last_address=-1;
+char str[80];
+INT  status;
 
-  hDB = hdb;
-  pEquipment = pEquip;
-
-  // Find LRS1440 subkey
-  status = db_find_key(hDB, hRootKey, "Nitronic", &hKeyControl);
-  if (status != DB_SUCCESS)
+  if (info->settings.address != last_address)
     {
-    cm_msg(MERROR, "init_nitronic", "Cannot find Nitronic entry in online database");
-    return FE_ERR_ODB;
-    }
-
-  // Check 'enabled' flag
-  enabled = FALSE;
-  size = sizeof(enabled);
-  db_get_value(hDB, hKeyControl, "Enabled", &enabled, &size, TID_BOOL);
-
-  // Don't go on if Nitronic is not on
-  if (!enabled)
-    return FE_ERR_DISABLED;
-
-  // Find event key
-  status = db_find_key(hDB, hKeyControl, "Event", &hKeyEvent);
-  if (status != DB_SUCCESS)
-    {
-    cm_msg(MERROR, "init_nitronic", "Cannot find event entry in online database specified in 'Event key'");
-    return FE_ERR_ODB;
-    }
-  status = db_find_key(hDB, hKeyEvent, "Names", &hKeyNames);
-  if (status != DB_SUCCESS)
-    {
-    cm_msg(MERROR, "init_nitronic", "Cannot find 'Names' entry in online database");
-    return FE_ERR_ODB;
-    }
-  status = db_find_key(hDB, hKeyEvent, "Demand", &hKeyDemand);
-  if (status != DB_SUCCESS)
-    {
-    cm_msg(MERROR, "init_nitronic", "Cannot find 'Demand' entry in online database");
-    return FE_ERR_ODB;
-    }
-  status = db_find_key(hDB, hKeyEvent, "Measured", &hKeyMeasured);
-  if (status != DB_SUCCESS)
-    {
-    cm_msg(MERROR, "init_nitronic", "Cannot find 'Measured' entry in online database");
-    return FE_ERR_ODB;
-    }
-  status = db_find_key(hDB, hKeyEvent, "HV on", &hKeyHVon);
-  if (status != DB_SUCCESS)
-    {
-    cm_msg(MERROR, "init_nitronic", "Cannot find 'HV on' entry in online database");
-    return FE_ERR_ODB;
-    }
-
-  // Get configuration settings
-  num_channels = 32;
-  size = sizeof(INT);
-  status = db_get_value(hDB, hKeyControl, "Channels", &num_channels, &size, TID_INT);
-  if (status != DB_SUCCESS)
-    {
-    cm_msg(MERROR, "init_nitronic", "Cannot find 'Channels' entry in online database");
-    return FE_ERR_ODB;
-    }
-
-  // Allocate memory for buffers
-  demand          = (float *) calloc(num_channels, sizeof(float));
-  demand_mirror   = (float *) calloc(num_channels, sizeof(float));
-  measured        = (float *) calloc(num_channels, sizeof(float));
-  measured_mirror = (float *) calloc(num_channels, sizeof(float));
-  last_change     = (DWORD *) calloc(num_channels, sizeof(DWORD));
-
-  if (!last_change)
-    {
-    cm_msg(MERROR, "init_nitronic", "Not enough memory");
-    return FE_ERR_ODB;
-    }
-
-  // Adjust number of channels according in ODB
-  db_get_key(hDB, hKeyDemand, &key);
-  if (key.num_values != num_channels)
-    {
-    printf("The number of HV channels in the frontend setting is different from the\n");
-    printf("number of channels in the HV event. Should the number of channels in the\n");
-    printf("HV event be adjusted? ([y]/n) ");
-    status = getchar();
-    printf("\n");
-
-    if (status == 'n' || status == 'N')
+    sprintf(str, "M%02d", info->settings.address);
+    rs232_puts(info->hdev, str);
+    status = rs232_waitfor(info->hdev, "\r+", str, 80, 5);
+    if (!status)
       {
-      printf("Nitronic module disabled");
-      return FE_ERR_DISABLED;
+      cm_msg(MERROR, "nitronic_init", 
+        "NITRONIC adr %d doesn't respond. Check power and RS232 connection.", 
+        info->settings.address);
+      return;
       }
 
-    // Adjust demand size
-    memset(demand, 0, sizeof(float) * num_channels);
-    size = sizeof(float) * num_channels;
-    db_get_data(hDB, hKeyDemand, demand, &size);
-    size = sizeof(float) * num_channels;
-    db_set_data(hDB, hKeyDemand, demand, size, num_channels, TID_FLOAT);
+    last_address = info->settings.address;
+    }
+}
 
-    // Adjust measured size
-    memset(measured, 0, sizeof(float) * num_channels);
-    size = sizeof(float) * num_channels;
-    db_get_data(hDB, hKeyMeasured, measured, &size);
-    size = sizeof(float) * num_channels;
-    db_set_data(hDB, hKeyMeasured, measured, size, num_channels, TID_FLOAT);
+/*------------------------------------------------------------------*/
 
-    // Adjust names size
-    db_get_key(hDB, hKeyNames, &key);
-    names = (char *) malloc(key.item_size * num_channels);
-    memset(names, 0, key.item_size * num_channels);
-    size = key.item_size * num_channels;
-    db_get_data(hDB, hKeyNames, names, &size);
-    size = key.item_size * num_channels;
-    db_set_data(hDB, hKeyNames, names, size, num_channels, TID_STRING);
-    free(names);
+INT nitronic_init(HNDLE hKey, void **pinfo, INT channels)
+{
+int          status, size, no;
+char         str[256];
+HNDLE        hDB;
+NITRONIC_INFO *info;
+
+  /* allocate info structure */
+  info = calloc(1, sizeof(NITRONIC_INFO));
+  *pinfo = info;
+
+  cm_get_experiment_database(&hDB, NULL);
+
+  /* create NITRONIC settings record */
+  status = db_create_record(hDB, hKey, "", NITRONIC_SETTINGS_STR);
+  if (status != DB_SUCCESS)
+    return FE_ERR_ODB;
+
+  size = sizeof(info->settings);
+  db_get_record(hDB, hKey, &info->settings, &size, 0);
+
+  info->num_channels = channels;
+
+  /* initialize RS232 port */
+  no = info->settings.rs232_port[3] - '0';
+  if (no < 1)
+    no = 1;
+  if (no > 2)
+    no = 2;
+
+  if (rs232_hdev[no-1])
+    info->hdev = rs232_hdev[no-1];
+  else
+    {
+    info->hdev = rs232_init(info->settings.rs232_port, 9600, 'N', 8, 1, 0);
+    if (info->hdev < 0)
+      {
+      cm_msg(MERROR, "nitronic_init", "Cannot access port \"%s\"", info->settings.rs232_port);
+      return FE_ERR_HW;
+      }
+
+    rs232_hdev[no-1] = info->hdev;
     }
 
-  voltage_limit = 3000.f;
-  size = sizeof(voltage_limit);
-  status = db_get_value(hDB, hKeyControl, "Voltage Limit", &voltage_limit, &size, TID_FLOAT);
+  rs232_debug(FALSE);
 
-  update_sensitivity = 3.f;
-  size = sizeof(update_sensitivity);
-  status = db_get_value(hDB, hKeyControl, "Update Sensitivity", &update_sensitivity, &size, TID_FLOAT);
-
-  current_limit = 3000;
-  size = sizeof(current_limit);
-  status = db_get_value(hDB, hKeyControl, "Current Limit", &current_limit, &size, TID_WORD);
-
-  address = 1;
-  size = sizeof(address);
-  status = db_get_value(hDB, hKeyControl, "Address", &address, &size, TID_WORD);
-
-  // Initialize measured_mirror
-  size = sizeof(float) * num_channels;
-  db_get_data(hDB, hKeyMeasured, measured_mirror, &size);
-
-  // Now initialize RS232 port
-  strcpy(com_port, "COM2");
-  size = sizeof(com_port);
-  status = db_get_value(hDB, hKeyControl, "Com Port", com_port, &size, TID_STRING);
-
-  hDevComm = com_init(com_port, 9600, 'N', 8, 1, 0);
-
-  // check if module is living 
-  sprintf(str, "M%02d", address);
-  com_puts(hDevComm, str);
-  status = com_waitfor(hDevComm, "\r+", str, 80, 2);
+  /* check if module is living  */
+  sprintf(str, "M%02d", info->settings.address);
+  rs232_puts(info->hdev, str);
+  status = rs232_waitfor(info->hdev, "\r+", str, 80, 2);
   if (!status)
     {
-    cm_msg(MERROR, "init_nitronic", "Nitronic doesn't respond. Check power and RS232 connection.");
+    cm_msg(MERROR, "nitronic_init", "NITRONIC adr %d doesn't respond. Check power and RS232 connection.", info->settings.address);
     return FE_ERR_HW;
     }
 
-  // set current limits
-  sprintf(str, "ICH01%04dA", current_limit);
-  com_puts(hDevComm, str);
-  com_waitfor(hDevComm, "\r+", str, 80, 5);
+  /* turn on HV main switch */
+  rs232_puts(info->hdev, "ONA");
+  rs232_waitfor(info->hdev, "\r+", str, 80, 5);
 
-  /**** open demand record ****/
-  db_open_record(hDB, hKeyDemand, demand, num_channels*sizeof(float), MODE_READ, update_demand, NULL);
-
-  /**** open HV on switch ****/
-  db_open_record(hDB, hKeyHVon, &HVon, sizeof(HVon), MODE_READ, update_demand, NULL);
-
-  /**** initially read all channels ****/
-  update_demand(0, 0);
-  read_channel(-1);
+  rs232_puts(info->hdev, "M16\r\n");
 
   return FE_SUCCESS;
 }
 
 /*----------------------------------------------------------------------------*/
 
-void exit_nitronic()
+INT nitronic_exit(NITRONIC_INFO *info)
 {
-  free(demand);
-  free(demand_mirror);
-  free(measured);
-  free(measured_mirror);
-  free(last_change);
-
-  com_exit(hDevComm);
-}
-
-/*----------------------------------------------------------------------------*/
-
-static void read_channel(int ch)
-{
-int   value, i, j;
-char  str[256];
-float max_diff;
-DWORD act_time, min_time;
-
-  if (ch == -1)
-    {
-    sprintf(str, "CH01A");
-    com_puts(hDevComm, str);
-    com_waitfor(hDevComm, "\r", str, 80, 5);
-    for (j=0 ; j < 32 ; j++)
-      {
-      com_waitfor(hDevComm, "\r", str, 80, 3);
-      if (j < num_channels)
-        {
-        sscanf(str+12, "%d", &value);
-        measured[j] = (float) value;
-        }
-      }
-    com_waitfor(hDevComm, "+", str, 80, 3);
-    }
-  else
-    {
-    sprintf(str, "CH%02dL", ch+1);
-    com_puts(hDevComm, str);
-    com_waitfor(hDevComm, "\r+", str, 80, 1);
-    sscanf(str+14, "%d", &value);
-
-    measured[ch] = (float) value;
-    }
-
-  // check how much channels have changed since last ODB update
-  act_time = ss_millitime();
-  max_diff = 0.f;
-  min_time = 10000;
+  rs232_exit(info->hdev);
   
-  for (i=0 ; i<num_channels ; i++)
-    {
-    if ( fabs(measured[i] - measured_mirror[i]) > max_diff)
-      max_diff = (float) fabs(measured[i] - measured_mirror[i]);
+  free(info);
 
-    if ( act_time - last_change[i] < min_time)
-      min_time = act_time - last_change[i];
-    }
-
-  // update if maximal change is more or equal update_sensitivity
-  if (max_diff >= update_sensitivity ||
-      (min_time < 2000 && max_diff > 0))
-    {
-    for (i=0 ; i<num_channels ; i++)
-      measured_mirror[i] = measured[i];
-
-    db_set_data(hDB, hKeyMeasured, measured, sizeof(float)*num_channels, num_channels, TID_FLOAT);
-
-//    UpdateStatistics("HV Nitronic", 0, 1);
-    }
+  return FE_SUCCESS;
 }
 
 /*----------------------------------------------------------------------------*/
 
-static void update_demand(INT hDB, INT hKey)
+INT nitronic_set(NITRONIC_INFO *info, INT channel, float value)
 {
-INT   i;
 char  str[80];
-DWORD act_time;
 
-  act_time = ss_millitime();
+  nitronic_switch(info);
 
-  if (hKey == hKeyHVon)
-    {
-    if (HVon)
-      {
-      com_puts(hDevComm, "ONA\r");
-      com_waitfor(hDevComm, "+", str, 80, 5);
-      }
-    else
-      {
-      com_puts(hDevComm, "OFFA\r");
-      com_waitfor(hDevComm, "+", str, 80, 5);
-      }
+  sprintf(str, "UCH%02d%04.0fL", channel+1, value);
 
-    }
-  else
-    for (i=0 ; i<num_channels ; i++)
-      {
-      // check for allowed voltage
-      if (demand[i] > voltage_limit)
-        demand[i] = voltage_limit;
+  rs232_puts(info->hdev, str);
+  rs232_waitfor(info->hdev, "+", str, 80, 1);
 
-      if (demand[i] != demand_mirror[i])
-        {
-        sprintf(str, "UCH%02d%04.0fL", i+1, demand[i]);
-        com_puts(hDevComm, str);
-        com_waitfor(hDevComm, "+", str, 80, 3);
-
-        demand_mirror[i] = demand[i];
-        last_change[i] = act_time;
-        }
-      }
-
-  pEquipment->odb_in++;
+  return FE_SUCCESS;
 }
 
 /*----------------------------------------------------------------------------*/
 
-void update_nitronic()
+INT nitronic_set_all(NITRONIC_INFO *info, INT channels, float value)
 {
-int        act;
-static int last=0;
-DWORD      act_time;
+char  str[80];
+INT   i;
 
-  act_time = ss_millitime();
+  nitronic_switch(info);
 
-  act = (last + 1) % num_channels;
-
-  // look for the next channel recently updated
-  while (!( act_time - last_change[act] < 5000 ||
-          ( act_time - last_change[act] < 20000 
-          &&  fabs(measured[act] - demand[act]) > 2*update_sensitivity)))
+  for (i=0 ; i<channels ; i++)
     {
-    act = (act + 1) % num_channels;
-    if (act == last)
-      {
-      act = (last + 1) % num_channels;
-      break;
-      }
+    sprintf(str, "UCH%02d%04.0fL", i+1, value);
+    rs232_puts(info->hdev, str);
+    rs232_waitfor(info->hdev, "+", str, 80, 3);
     }
 
-  read_channel(act);
-
-  last = act;
+  return FE_SUCCESS;
 }
 
 /*----------------------------------------------------------------------------*/
+
+INT nitronic_get(NITRONIC_INFO *info, INT channel, float *pvalue)
+{
+int   value;
+char  str[256];
+
+  nitronic_switch(info);
+
+  sprintf(str, "CH%02dL", channel+1);
+  rs232_puts(info->hdev, str);
+  rs232_waitfor(info->hdev, "\r+", str, 80, 1);
+  sscanf(str+14, "%d", &value);
+
+  *pvalue = (float) value;
+
+  return FE_SUCCESS;
+}
+
+/*----------------------------------------------------------------------------*/
+
+INT nitronic_get_current(NITRONIC_INFO *info, INT channel, float *pvalue)
+{
+int   value;
+char  str[256];
+
+  nitronic_switch(info);
+
+  sprintf(str, "CH%02dL", channel+1);
+  rs232_puts(info->hdev, str);
+  rs232_waitfor(info->hdev, "\r+", str, 80, 1);
+  sscanf(str+19, "%d", &value);
+
+  *pvalue = (float) value;
+
+  return FE_SUCCESS;
+}
+
+/*----------------------------------------------------------------------------*/
+
+INT nitronic_get_all(NITRONIC_INFO *info, INT channels, float *array)
+{
+int   value, i;
+char  str[256];
+
+  nitronic_switch(info);
+
+  sprintf(str, "CH01A");
+  rs232_puts(info->hdev, str);
+  rs232_waitfor(info->hdev, "\r", str, 80, 5);
+
+  for (i=0 ; i < 32 ; i++)
+    {
+    rs232_waitfor(info->hdev, "\r", str, 80, 5);
+    if (i < channels)
+      {
+      sscanf(str+12, "%d", &value);
+      array[i] = (float) value;
+      }
+    }
+  rs232_waitfor(info->hdev, "+", str, 80, 2);
+
+  return FE_SUCCESS;
+}
+
+/*----------------------------------------------------------------------------*/
+
+INT nitronic_get_current_all(NITRONIC_INFO *info, INT channels, float *array)
+{
+int   value, i;
+char  str[256];
+
+  nitronic_switch(info);
+
+  sprintf(str, "CH01A");
+  rs232_puts(info->hdev, str);
+  rs232_waitfor(info->hdev, "\r", str, 80, 5);
+
+  for (i=0 ; i < 32 ; i++)
+    {
+    rs232_waitfor(info->hdev, "\r", str, 80, 5);
+    if (i < channels)
+      {
+      sscanf(str+19, "%d", &value);
+      array[i] = (float) value;
+      }
+    }
+  rs232_waitfor(info->hdev, "+", str, 80, 2);
+
+  return FE_SUCCESS;
+}
+
+/*----------------------------------------------------------------------------*/
+
+INT nitronic_set_current_limit(NITRONIC_INFO *info, float limit)
+{
+char str[256];
+
+  nitronic_switch(info);
+
+  sprintf(str, "ICH01%04dA", (int)limit);
+  rs232_puts(info->hdev, str);
+  rs232_waitfor(info->hdev, "\r+", str, 80, 5);
+
+  return FE_SUCCESS;
+}
+
+/*---- device driver entry point -----------------------------------*/
+
+INT nitronic(INT cmd, ...)
+{
+va_list argptr;
+HNDLE   hKey;
+INT     channel, status;
+float   value, *pvalue;
+void    *info;
+
+  va_start(argptr, cmd);
+  status = FE_SUCCESS;
+
+  switch (cmd)
+    {
+    case CMD_INIT:
+      hKey = va_arg(argptr, HNDLE);
+      info = va_arg(argptr, void *);
+      channel = va_arg(argptr, INT);
+      status = nitronic_init(hKey, info, channel);
+      break;
+
+    case CMD_EXIT:
+      info = va_arg(argptr, void *);
+      status = nitronic_exit(info);
+      break;
+
+    case CMD_SET:
+      info = va_arg(argptr, void *);
+      channel = va_arg(argptr, INT);
+      value   = (float) va_arg(argptr, double);
+      status = nitronic_set(info, channel, value);
+      break;
+
+    case CMD_SET_ALL:
+      info = va_arg(argptr, void *);
+      channel = va_arg(argptr, INT);
+      value   = (float) va_arg(argptr, double);
+      status = nitronic_set_all(info, channel, value);
+      break;
+
+    case CMD_GET:
+      info = va_arg(argptr, void *);
+      channel = va_arg(argptr, INT);
+      pvalue  = va_arg(argptr, float*);
+      status = nitronic_get(info, channel, pvalue);
+      break;
+    
+    case CMD_GET_ALL:
+      info = va_arg(argptr, void *);
+      channel = va_arg(argptr, INT);
+      pvalue  = va_arg(argptr, float*);
+      status = nitronic_get_all(info, channel, pvalue);
+      break;
+
+    case CMD_GET_CURRENT:
+      info = va_arg(argptr, void *);
+      channel = va_arg(argptr, INT);
+      pvalue  = va_arg(argptr, float*);
+      status = nitronic_get_current(info, channel, pvalue);
+      break;
+    
+    case CMD_GET_CURRENT_ALL:
+      break;
+      
+    case CMD_SET_CURRENT_LIMIT:
+      info = va_arg(argptr, void *);
+      channel = va_arg(argptr, INT);
+      value = (float) va_arg(argptr, double);
+      if (channel == 0) /* one one limit for all channels */
+        status = nitronic_set_current_limit(info, value);
+      else
+        status = FE_SUCCESS;
+      break;
+
+    default:
+      cm_msg(MERROR, "nitronic device driver", "Received unknown command %d", cmd);
+      status = FE_ERR_DRIVER;
+      break;
+    }
+
+  va_end(argptr);
+
+  return status;
+}
+
+/*------------------------------------------------------------------*/
