@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.186  2003/04/22 10:09:06  midas
+  Added RPC_NODELAY option
+
   Revision 1.185  2003/04/16 19:34:42  pierre
   mv stdio.h, ctype.h into midasinc.h
 
@@ -9137,6 +9140,12 @@ struct hostent       *phe;
     return RPC_NET_ERROR;
     }
 
+  /* set TCP_NODELAY option for better performance */
+#ifdef OS_VXWORKS
+  i = 1;
+  setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, (char *) &i, sizeof(i));
+#endif
+
   /* send local computer info */
   rpc_get_name(local_prog_name);
   gethostname(local_host_name, sizeof(local_host_name));
@@ -9783,6 +9792,15 @@ INT rpc_set_option(HNDLE hConn, INT item, INT value)
         _server_connection.transport = value;
       else
         _client_connection[hConn-1].transport = value;
+      break;
+
+    case RPC_NODELAY:
+      if (hConn == -1)
+        setsockopt(_server_connection.send_sock, IPPROTO_TCP, 
+                   TCP_NODELAY, (char *)&value, sizeof(value));
+      else
+        setsockopt(_client_connection[hConn-1].send_sock, IPPROTO_TCP, 
+                   TCP_NODELAY, (char *)&value, sizeof(value));
       break;
 
     default:
