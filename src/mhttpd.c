@@ -6,6 +6,9 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
+  Revision 1.8  1999/01/20 13:51:56  midas
+  Fixed some bugs in displaying/setting slow control values
+
   Revision 1.7  1998/12/11 11:15:50  midas
   Rearranged URL to make it work under the KDE browser, but auto refresh still
   does not work there.
@@ -1824,9 +1827,9 @@ char   data[10000];
       {
       /* extract equipment name */
       eq_name[0] = 0;
-      if (strncmp(enc_path, "/Equipment/", 11) == 0)
+      if (strncmp(enc_path, "Equipment/", 10) == 0)
         {
-        strcpy(eq_name, enc_path+11);
+        strcpy(eq_name, enc_path+10);
         if (strchr(eq_name, '/'))
           *strchr(eq_name, '/') = 0;
         }
@@ -2437,9 +2440,9 @@ struct tm *gmt;
       {
       /* extract equipment name */
       eq_name[0] = 0;
-      if (strncmp(enc_path, "/Equipment/", 11) == 0)
+      if (strncmp(enc_path, "Equipment/", 10) == 0)
         {
-        strcpy(eq_name, enc_path+11);
+        strcpy(eq_name, enc_path+10);
         if (strchr(eq_name, '/'))
           *strchr(eq_name, '/') = 0;
         }
@@ -2533,7 +2536,7 @@ struct tm *gmt;
   
   if (strncmp(path, "SC/", 3) == 0)
     {
-    show_sc_page(hDB, path+3);
+    show_sc_page(hDB, dec_path+3);
     return;
     }
 
