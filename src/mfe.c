@@ -7,6 +7,9 @@
                 linked with user code to form a complete frontend
 
   $Log$
+  Revision 1.14  2000/02/25 20:22:49  midas
+  Added super-event scheme
+
   Revision 1.13  2000/02/24 22:38:19  midas
   Outcommented USE_EVENT_CHANNEL
 
@@ -149,8 +152,8 @@ Frontend file name = STRING : [256] \n\
 "
 
 #define EQUIPMENT_STATISTICS_STR "\
-Events sent = DWORD : 0\n\
-Events per sec. = DWORD : 0\n\
+Events sent = DOUBLE : 0\n\
+Events per sec. = DOUBLE : 0\n\
 kBytes per sec. = DOUBLE : 0\n\
 "
 
@@ -166,6 +169,7 @@ INT i, status;
   for (i=0 ; equipment[i].name[0] ; i++)
     {
     equipment[i].serial_number = 1;
+    equipment[i].subevent_number = 0;
     equipment[i].odb_in = equipment[i].odb_out = 0;
     }
 
@@ -645,7 +649,7 @@ INT            i;
 
     /* call user readout routine */
     *((EQUIPMENT **)(pevent+1)) = &equipment[i];
-    pevent->data_size = equipment[i].readout((char *) (pevent+1));
+    pevent->data_size = equipment[i].readout((char *) (pevent+1), 0);
 
     /* send event */
     if (pevent->data_size)
@@ -729,7 +733,7 @@ EVENT_HEADER *pevent;
   pevent->serial_number = interrupt_eq->serial_number++;
 
   /* call user readout routine */
-  pevent->data_size = interrupt_eq->readout((char *) (pevent+1));
+  pevent->data_size = interrupt_eq->readout((char *) (pevent+1), 0);
 
   /* send event */
   if (pevent->data_size)
@@ -838,8 +842,13 @@ char   str[30];
     else
       ss_printf(14, i+6, "Unknown  ");
 
-    ss_printf(25, i+6, "%ld       ", equipment[i].stats.events_sent);
-    ss_printf(36, i+6, "%ld       ", equipment[i].stats.events_per_sec);
+    if (equipment[i].stats.events_sent > 1E9)
+      ss_printf(25, i+6, "%1.3lfG     ", equipment[i].stats.events_sent/1E9);
+    else if (equipment[i].stats.events_sent > 1E6)
+      ss_printf(25, i+6, "%1.3lfM     ", equipment[i].stats.events_sent/1E6);
+    else
+      ss_printf(25, i+6, "%1.0lf      ", equipment[i].stats.events_sent);
+    ss_printf(36, i+6, "%1.1lf      ", equipment[i].stats.events_per_sec);
     ss_printf(47, i+6, "%1.1lf      ", equipment[i].stats.kbytes_per_sec);
     ss_printf(58, i+6, "%ld       ", equipment[i].odb_in);
     ss_printf(69, i+6, "%ld       ", equipment[i].odb_out);
@@ -858,7 +867,7 @@ EQUIPMENT      *eq;
 EVENT_HEADER   *pevent;
 DWORD          last_time_network=0, last_time_display=0,
                last_time_flush=0, readout_start;
-INT            i, j, index, status, ch, source;
+INT            i, j, index, status, ch, source, size;
 char           str[80];
 BOOL           buffer_done;
 
@@ -940,7 +949,7 @@ INT opt_max=0, opt_index=0, opt_tcp_size=128, opt_cnt=0;
 
           /* call user readout routine */
           *((EQUIPMENT **)(pevent+1)) = &equipment[index];
-          pevent->data_size = eq->readout((char *) (pevent+1));
+          pevent->data_size = eq->readout((char *) (pevent+1), 0);
 
           /* send event */
           if (pevent->data_size)
@@ -948,7 +957,7 @@ INT opt_max=0, opt_index=0, opt_tcp_size=128, opt_cnt=0;
             if (eq->buffer_handle)
               {
 #ifdef USE_EVENT_CHANNEL
-              dm_increment_pointer(eq->buffer_handle, 
+              dm_pointer_increment(eq->buffer_handle, 
                                    pevent->data_size + sizeof(EVENT_HEADER));
 #else
               rpc_flush_event();
@@ -999,12 +1008,52 @@ INT opt_max=0, opt_index=0, opt_tcp_size=128, opt_cnt=0;
           pevent->time_stamp    = actual_time;
           pevent->serial_number = eq->serial_number++;
 
-          /* put source at beginning of event, will be overwritten by user readout code,
-             just a special feature used by some multi-source applications */
+          /* put source at beginning of event, will be overwritten by 
+             user readout code, just a special feature used by some 
+             multi-source applications */
           *(INT *) (pevent+1) = source;
 
-          /* call user readout routine */
-          pevent->data_size = eq->readout((char *) (pevent+1));
+          if (eq->num_subevents)
+            {
+            eq->subevent_number = 0;
+            do
+              {
+              *(INT *) ((char *)(pevent+1)+pevent->data_size) = source;
+
+              /* call user readout routine for subevent indicating offset */
+              size = eq->readout((char *) (pevent+1), pevent->data_size);
+              pevent->data_size += size;
+              if (size > 0)
+                {
+                eq->subevent_number++;
+                eq->serial_number++;
+                }
+
+              /* wait for next event */
+              do
+                {
+                source = poll_event(eq_info->source, eq->poll_count, FALSE);
+
+                if (source == FALSE)
+                  {
+                  actual_millitime = ss_millitime();
+
+                  /* repeat no more than period */
+                  if (actual_millitime - readout_start > (DWORD) eq_info->period)
+                    break;
+                  }
+                } while (source == FALSE);
+
+              } while (eq->subevent_number < eq->num_subevents && source);
+
+            /* notify readout routine about end of super-event */
+            eq->readout((char *) (pevent+1), -1);
+            }
+          else
+            {
+            /* call user readout routine indicating event source */
+            pevent->data_size = eq->readout((char *) (pevent+1), 0);
+            }
 
           /* send event */
           if (pevent->data_size)
@@ -1020,7 +1069,11 @@ INT opt_max=0, opt_index=0, opt_tcp_size=128, opt_cnt=0;
 #endif
 
               eq->bytes_sent += pevent->data_size + sizeof(EVENT_HEADER);
-              eq->events_sent++;
+
+              if (eq->num_subevents)
+                eq->events_sent += eq->subevent_number;
+              else
+                eq->events_sent++;
               }
             }
           else
@@ -1098,12 +1151,9 @@ INT opt_max=0, opt_index=0, opt_tcp_size=128, opt_cnt=0;
         for (i=0 ; equipment[i].name[0] ; i++)
           {
           eq = &equipment[i];
-          j = eq->serial_number;
-          if (j > 0)
-            j--;
-          eq->stats.events_sent = j;
+          eq->stats.events_sent += eq->events_sent;
           eq->stats.events_per_sec =
-            (DWORD) (eq->events_sent/((actual_millitime-last_time_display)/1000.0));
+            eq->events_sent/((actual_millitime-last_time_display)/1000.0);
           eq->stats.kbytes_per_sec =
             eq->bytes_sent/1024.0/((actual_millitime-last_time_display)/1000.0);
 
