@@ -17,6 +17,9 @@
 
 
   $Log$
+  Revision 1.9  2002/05/29 13:35:47  midas
+  Added max_event_size_frag
+
   Revision 1.8  2002/05/13 22:21:08  midas
   Fixed typo
 
@@ -63,6 +66,9 @@ INT display_period = 1000;
 
 /* maximum event size produced by this frontend */
 INT max_event_size = 10000;
+
+/* maximum event size for fragmented events (EQ_FRAGMENTED) */
+INT max_event_size_frag = 5*1024*1024;
 
 /* buffer size to hold events */
 INT event_buffer_size = 10*10000;
