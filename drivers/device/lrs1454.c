@@ -6,6 +6,9 @@
   Contents:     LeCroy LRS1454/1458 Voltage Device Driver
 
   $Log$
+  Revision 1.9  2001/04/06 03:58:35  midas
+  Moved debugging flag into ODB for BD
+
   Revision 1.8  2001/04/06 01:57:12  midas
   Added #include <stdlib.h> for atof under Linux
 
@@ -89,8 +92,6 @@ char         str[1000];
   
   if (status != SUCCESS)
     return status;
-
-  info->bd(CMD_DEBUG, 1);
 
   /* wait for "NETPASSWORD:"  */
   BD_PUTS("\r");
@@ -266,6 +267,8 @@ char  str[256], *p;
   /* if connection lost, reconnect */
   if (status == 0)
     {
+    cm_msg(MERROR, "lrs1454_get", "Connection broken to LRS1454");
+
     /* get name of bus driver */
     info->bd(CMD_NAME, info->bd_info, str);
 
@@ -288,6 +291,8 @@ char  str[256], *p;
         } while (status != SUCCESS);
 
       printf("...success\n");
+
+      cm_msg(MINFO, "lrs1454_get", "Successfully reconnected to LRS1454");
 
       /* re-read value */
       return lrs1454_get(info, channel, pvalue);
