@@ -13,6 +13,9 @@
  *  Author:  Pierre-Andre Amaudruz Data Acquisition Group
  *
  *  $Log$
+ *  Revision 1.10  2002/02/08 06:46:42  pierre
+ *  fix doc++ comments
+ *
  *  Revision 1.9  2001/08/21 11:18:28  midas
  *  Added c,n to cam_interrupt_attach/detach, added comments
  *
@@ -106,7 +109,7 @@ EXTERNAL INLINE void EXPRT cam16i(const int c, const int n, const int a, const i
 */
 EXTERNAL INLINE void EXPRT cam24i(const int c, const int n, const int a, const int f, DWORD *d);
 
-/** cam8i\_q()
+/** cam8i_q()
     8 bits input with Q response.
     @memo 8 bits read with X, Q response.
     @param c crate number (0..)
@@ -120,7 +123,7 @@ EXTERNAL INLINE void EXPRT cam24i(const int c, const int n, const int a, const i
 */
 EXTERNAL INLINE void EXPRT cam8i_q(const int c, const int n, const int a, const int f, BYTE *d, int *x, int *q);
 
-/** cam16i\_q()
+/** cam16i_q()
     16 bits input with Q response.
     @memo 16 bits read with X, Q response.
     @param c crate number (0..)
@@ -134,7 +137,7 @@ EXTERNAL INLINE void EXPRT cam8i_q(const int c, const int n, const int a, const 
 */
 EXTERNAL INLINE void EXPRT cam16i_q(const int c, const int n, const int a, const int f, WORD *d, int *x, int *q);
 
-/** cam24i\_q()
+/** cam24i_q()
     24 bits input with Q response.
     @memo 24 bits read with X, Q response.
     @param c crate number (0..)
@@ -149,7 +152,7 @@ EXTERNAL INLINE void EXPRT cam16i_q(const int c, const int n, const int a, const
 EXTERNAL INLINE void EXPRT cam24i_q(const int c, const int n, const int a, const int f, DWORD *d, int *x, int *q);
 EXTERNAL INLINE void EXPRT cam8i_r(const int c, const int n, const int a, const int f, BYTE **d, const int r);
 
-/** cam16i\_r()
+/** cam16i_r()
     Repeat 16 bits input.
     @memo Repeat 16 bits read r times.
     @param c crate number (0..)
@@ -162,7 +165,7 @@ EXTERNAL INLINE void EXPRT cam8i_r(const int c, const int n, const int a, const 
 */
 EXTERNAL INLINE void EXPRT cam16i_r(const int c, const int n, const int a, const int f, WORD **d, const int r);
 
-/** cam24i\_r()
+/** cam24i_r()
     Repeat 24 bits input.
     @memo Repeat 24 bits read r times.
     @param c crate number (0..)
@@ -175,7 +178,7 @@ EXTERNAL INLINE void EXPRT cam16i_r(const int c, const int n, const int a, const
 */
 EXTERNAL INLINE void EXPRT cam24i_r(const int c, const int n, const int a, const int f, DWORD **d, const int r);
 
-/** cam8i\_rq()
+/** cam8i_rq()
     Repeat 8 bits input with Q stop.
     @memo Repeat 16 bits read r times while Q.
     @param c crate number (0..)
@@ -188,7 +191,7 @@ EXTERNAL INLINE void EXPRT cam24i_r(const int c, const int n, const int a, const
 */
 EXTERNAL INLINE void EXPRT cam8i_rq(const int c, const int n, const int a, const int f, BYTE **d, const int r);
 
-/** cam16i\_rq()
+/** cam16i_rq()
     Repeat 16 bits input with Q stop.
     @memo Repeat 16 bits read r times while Q.
     @param c crate number (0..)
@@ -201,7 +204,7 @@ EXTERNAL INLINE void EXPRT cam8i_rq(const int c, const int n, const int a, const
 */
 EXTERNAL INLINE void EXPRT cam16i_rq(const int c, const int n, const int a, const int f, WORD **d, const int r);
 
-/** cam24i\_rq
+/** cam24i_rq
     Repeat 24 bits input with Q stop.
     @memo Repeat 24 bits read r times while Q.
     @param c crate number (0..)
@@ -214,7 +217,7 @@ EXTERNAL INLINE void EXPRT cam16i_rq(const int c, const int n, const int a, cons
 */
 EXTERNAL INLINE void EXPRT cam24i_rq(const int c, const int n, const int a, const int f, DWORD **d, const int r);
 
-/** cam8i\_sa
+/** cam8i_sa
     Read the given CAMAC address and increment the sub-address by one. Repeat r times.
     \\ {\bf Examples:} \begin{verbatim}
     BYTE pbkdat[4];
@@ -236,7 +239,7 @@ EXTERNAL INLINE void EXPRT cam24i_rq(const int c, const int n, const int a, cons
 */
 EXTERNAL INLINE void EXPRT cam8i_sa(const int c, const int n, const int a, const int f, BYTE **d, const int r);
 
-/** cam16i\_sa
+/** cam16i_sa
     Read the given CAMAC address and increment the sub-address by one. Repeat r times.
     \\ {\bf Examples:} \begin{verbatim}
     WORD pbkdat[4];
@@ -258,11 +261,11 @@ EXTERNAL INLINE void EXPRT cam8i_sa(const int c, const int n, const int a, const
 */
 EXTERNAL INLINE void EXPRT cam16i_sa(const int c, const int n, const int a, const int f, WORD **d, const int r);
 
-/** cam24i\_sa()
+/** cam24i_sa()
     Read the given CAMAC address and increment the sub-address by one. Repeat r times.
     \\ {\bf Examples:} \begin{verbatim}
     DWORD pbkdat[8];
-    cam24i\_sa(crate, 5, 0, 2, &pbkdat, 8);
+    cam24i_sa(crate, 5, 0, 2, &pbkdat, 8);
     \end{verbatim} equivalent to : \begin{verbatim} 
     cam24i(crate, 5, 0, 2, &pbkdat[0]);
     cam24i(crate, 6, 0, 2, &pbkdat[1]);
@@ -280,11 +283,11 @@ EXTERNAL INLINE void EXPRT cam16i_sa(const int c, const int n, const int a, cons
 */
 EXTERNAL INLINE void EXPRT cam24i_sa(const int c, const int n, const int a, const int f, DWORD **d, const int r);
 
-/** cam8i\_sn()
+/** cam8i_sn()
     Read the given CAMAC address and increment the station number by one. Repeat r times.
     \\ {\bf Examples:} \begin{verbatim}
     BYTE pbkdat[4];
-    cam8i\_sa(crate, 5, 0, 2, &pbkdat, 4);
+    cam8i_sa(crate, 5, 0, 2, &pbkdat, 4);
     \end{verbatim} equivalent to : \begin{verbatim} 
     cam8i(crate, 5, 0, 2, &pbkdat[0]);
     cam8i(crate, 6, 0, 2, &pbkdat[1]);
@@ -302,11 +305,11 @@ EXTERNAL INLINE void EXPRT cam24i_sa(const int c, const int n, const int a, cons
 */
 EXTERNAL INLINE void EXPRT cam8i_sn(const int c, const int n, const int a, const int f, BYTE **d, const int r);
 
-/** cam16i\_sn()
+/** cam16i_sn()
     Read the given CAMAC address and increment the station number by one. Repeat r times.
     \\ {\bf Examples:} \begin{verbatim}
     WORD pbkdat[4];
-    cam16i\_sa(crate, 5, 0, 2, &pbkdat, 4);
+    cam16i_sa(crate, 5, 0, 2, &pbkdat, 4);
     \end{verbatim} equivalent to : \begin{verbatim} 
     cam16i(crate, 5, 0, 2, &pbkdat[0]);
     cam16i(crate, 6, 0, 2, &pbkdat[1]);
@@ -324,11 +327,11 @@ EXTERNAL INLINE void EXPRT cam8i_sn(const int c, const int n, const int a, const
 */
 EXTERNAL INLINE void EXPRT cam16i_sn(const int c, const int n, const int a, const int f, WORD **d, const int r);
 
-/** cam24i\_sn()
+/** cam24i_sn()
     Read the given CAMAC address and increment the station number by one. Repeat r times.
     \\ {\bf Examples:} \begin{verbatim}
     DWORD pbkdat[4];
-    cam24i\_sa(crate, 5, 0, 2, &pbkdat, 4);
+    cam24i_sa(crate, 5, 0, 2, &pbkdat, 4);
     \end{verbatim} equivalent to : \begin{verbatim} 
     cam24i(crate, 5, 0, 2, &pbkdat[0]);
     cam24i(crate, 6, 0, 2, &pbkdat[1]);
@@ -386,7 +389,7 @@ EXTERNAL INLINE void EXPRT cam16o(const int c, const int n, const int a, const i
 */
 EXTERNAL INLINE void EXPRT cam24o(const int c, const int n, const int a, const int f, DWORD  d);
 
-/** cam8o\_q()
+/** cam8o_q()
     Write data to given CAMAC address with Q response.
     @memo Write 8 bits data with Q.
     @param c crate number (0..)
@@ -400,7 +403,7 @@ EXTERNAL INLINE void EXPRT cam24o(const int c, const int n, const int a, const i
 */
 EXTERNAL INLINE void EXPRT cam8o_q(const int c, const int n, const int a, const int f, BYTE d, int *x, int *q);
 
-/** cam16o\_q()
+/** cam16o_q()
     Write data to given CAMAC address with Q response.
     @memo Write 16 bits data with Q.
     @param c crate number (0..)
@@ -414,7 +417,7 @@ EXTERNAL INLINE void EXPRT cam8o_q(const int c, const int n, const int a, const 
 */
 EXTERNAL INLINE void EXPRT cam16o_q(const int c, const int n, const int a, const int f, WORD d, int *x, int *q);
 
-/** cam24o\_q()
+/** cam24o_q()
     Write data to given CAMAC address with Q response.
     @memo Write 24 bits data with Q.
     @param c crate number (0..)
@@ -428,7 +431,7 @@ EXTERNAL INLINE void EXPRT cam16o_q(const int c, const int n, const int a, const
 */
 EXTERNAL INLINE void EXPRT cam24o_q(const int c, const int n, const int a, const int f, DWORD d, int *x, int *q);
 
-/** cam8o\_r()
+/** cam8o_r()
     Repeat write data to given CAMAC address r times.
     @memo Repeat Write 8 bits data.
     @param c crate number (0..)
@@ -440,7 +443,7 @@ EXTERNAL INLINE void EXPRT cam24o_q(const int c, const int n, const int a, const
 */
 EXTERNAL INLINE void EXPRT cam8o_r(const int c, const int n, const int a, const int f, BYTE *d, const int r);
 
-/** cam16o\_r()
+/** cam16o_r()
     Repeat write data to given CAMAC address r times.
     @memo Repeat Write 16 bits data.
     @param c crate number (0..)
@@ -452,7 +455,7 @@ EXTERNAL INLINE void EXPRT cam8o_r(const int c, const int n, const int a, const 
 */
 EXTERNAL INLINE void EXPRT cam16o_r(const int c, const int n, const int a, const int f, WORD *d, const int r);
 
-/** cam24o\_r()
+/** cam24o_r()
     Repeat write data to given CAMAC address r times.
     @memo Repeat Write 24 bits data.
     @param c crate number (0..)
@@ -468,7 +471,7 @@ EXTERNAL INLINE void EXPRT cam24o_r(const int c, const int n, const int a, const
 */
 EXTERNAL INLINE void EXPRT camo(const int c, const int n, const int a, const int f, WORD d);
 
-/** camc\_chk()
+/** camc_chk()
     Crate presence check.
     @memo Crate presence check.
     @param c crate number (0..)
@@ -487,7 +490,7 @@ EXTERNAL INLINE int  EXPRT camc_chk(const int c);
 */
 EXTERNAL INLINE void EXPRT camc(const int c, const int n, const int a, const int f);
 
-/** camc\_q()
+/** camc_q()
     CAMAC command with Q response (no data).
     @memo CAMAC command with Q.
     @param c crate number (0..)
@@ -499,7 +502,7 @@ EXTERNAL INLINE void EXPRT camc(const int c, const int n, const int a, const int
 */
 EXTERNAL INLINE void EXPRT camc_q(const int c, const int n, const int a, const int f, int *q);
 
-/** camc\_sa()
+/** camc_sa()
     Scan CAMAC command on sub-address.
     @memo Scan command on sub-address.
     @param c crate number (0..)
@@ -511,7 +514,7 @@ EXTERNAL INLINE void EXPRT camc_q(const int c, const int n, const int a, const i
 */
 EXTERNAL INLINE void EXPRT camc_sa(const int c, const int n, const int a, const int f, const int r);
 
-/** camc\_sn()
+/** camc_sn()
     Scan CAMAC command on station.
     @memo Scan command on station.
     @param c crate number (0..)
@@ -523,7 +526,7 @@ EXTERNAL INLINE void EXPRT camc_sa(const int c, const int n, const int a, const 
 */
 EXTERNAL INLINE void EXPRT camc_sn(const int c, const int n, const int a, const int f, const int r);
 
-/** cam\_init()
+/** cam_init()
     Initialize CAMAC for access.
     @memo CAMAC initilize.
     @return 1: success
@@ -531,13 +534,13 @@ EXTERNAL INLINE void EXPRT camc_sn(const int c, const int n, const int a, const 
 EXTERNAL INLINE int  EXPRT cam_init(void);
 EXTERNAL INLINE int  EXPRT cam_init_rpc(char *host_name, char *exp_name, char *fe_name, char *client_name, char *rpc_server);
 
-/** cam\_exit()
+/** cam_exit()
     Close CAMAC accesss.
     @memo Close CAMAC.
 */
 EXTERNAL INLINE void EXPRT cam_exit(void);
 
-/** cam\_inhibit\_set()
+/** cam_inhibit_set()
     Set Crate inhibit.
     @memo Set Crate inhibit.
     @param c crate number (0..)
@@ -545,7 +548,7 @@ EXTERNAL INLINE void EXPRT cam_exit(void);
 */
 EXTERNAL INLINE void EXPRT cam_inhibit_set(const int c);
 
-/** cam\_inhibit\_clear()
+/** cam_inhibit_clear()
     Clear Crate inhibit.
     @memo Clear Crate inhibit.
     @param c crate number (0..)
@@ -553,7 +556,7 @@ EXTERNAL INLINE void EXPRT cam_inhibit_set(const int c);
 */
 EXTERNAL INLINE void EXPRT cam_inhibit_clear(const int c);
 
-/** cam\_inhibit\_test()
+/** cam_inhibit_test()
     Test Crate Inhibit.
     @memo Test Crate inhibit.
     @param c crate number (0..)
@@ -561,7 +564,7 @@ EXTERNAL INLINE void EXPRT cam_inhibit_clear(const int c);
 */
 EXTERNAL INLINE int EXPRT cam_inhibit_test(const int c);
 
-/** cam\_crate\_clear()
+/** cam_crate_clear()
     Issue CLEAR to crate.
     @memo Clear Crate.
     @param c crate number (0..)
@@ -569,7 +572,7 @@ EXTERNAL INLINE int EXPRT cam_inhibit_test(const int c);
 */
 EXTERNAL INLINE void EXPRT cam_crate_clear(const int c);
 
-/** cam\_crate\_zinit()
+/** cam_crate_zinit()
     Issue Z to crate.
     @memo Z Crate.
     @param c crate number (0..)
@@ -577,7 +580,7 @@ EXTERNAL INLINE void EXPRT cam_crate_clear(const int c);
 */
 EXTERNAL INLINE void EXPRT cam_crate_zinit(const int c);
 
-/** cam\_lam\_enable()
+/** cam_lam_enable()
     Enable LAM generation for given station to the Crate controller.
     It doesn't enable the LAM of the actual station itself.
     @memo Enable LAM (Crate Controller).
@@ -587,7 +590,7 @@ EXTERNAL INLINE void EXPRT cam_crate_zinit(const int c);
 */
 EXTERNAL INLINE void EXPRT cam_lam_enable(const int c, const int n);
 
-/** cam\_lam\_disable()
+/** cam_lam_disable()
     Disable LAM generation for given station to the Crate controller.
     It doesn't disable the LAM of the actual station itself.
     @memo Disable LAM (Crate Controller).
@@ -597,7 +600,7 @@ EXTERNAL INLINE void EXPRT cam_lam_enable(const int c, const int n);
 */
 EXTERNAL INLINE void EXPRT cam_lam_disable(const int c, const int n);
 
-/** cam\_lam\_read()
+/** cam_lam_read()
     Reads in lam the lam pattern of the entire crate.
     @memo Read LAM of crate controller.
     @param c crate number (0..)
@@ -606,7 +609,7 @@ EXTERNAL INLINE void EXPRT cam_lam_disable(const int c, const int n);
 */
 EXTERNAL INLINE void EXPRT cam_lam_read(const int c, DWORD *lam);
 
-/** cam\_lam\_clear()
+/** cam_lam_clear()
     Clear the LAM register of the crate controller.
     It doesn't clear the LAM of the particular station.
     @memo Clear LAM register (Crate Controller).
@@ -617,7 +620,7 @@ EXTERNAL INLINE void EXPRT cam_lam_read(const int c, DWORD *lam);
 */
 EXTERNAL INLINE void EXPRT cam_lam_clear(const int c, const int n);
 
-/** cam\_lam\_wait()
+/** cam_lam_wait()
     Wait for a LAM to occur with a certain timeout. Return
     crate and station if LAM occurs.
     @memo Wait for LAM.
@@ -628,7 +631,7 @@ EXTERNAL INLINE void EXPRT cam_lam_clear(const int c, const int n);
 */
 EXTERNAL INLINE int EXPRT cam_lam_wait(int *c, DWORD *n, const int millisec);
 
-/** cam\_interrupt\_enable()
+/** cam_interrupt_enable()
     Enable interrupts in specific crate
     @memo Enable interrupts in crate controller.
     @param c crate number (0..)
@@ -636,7 +639,7 @@ EXTERNAL INLINE int EXPRT cam_lam_wait(int *c, DWORD *n, const int millisec);
 */
 EXTERNAL INLINE void EXPRT cam_interrupt_enable (const int c);
 
-/** cam\_interrupt\_disable()
+/** cam_interrupt_disable()
     Disables interrupts in specific crate
     @memo Disable interrupts in crate controller.
     @param c crate number (0..)
@@ -644,7 +647,7 @@ EXTERNAL INLINE void EXPRT cam_interrupt_enable (const int c);
 */
 EXTERNAL INLINE void EXPRT cam_interrupt_disable(const int c);
 
-/** cam\_interrupt\_test()
+/** cam_interrupt_test()
     Test Crate Interrupt.
     @memo Test Crate Interrupt.
     @param c crate number (0..)
@@ -652,7 +655,7 @@ EXTERNAL INLINE void EXPRT cam_interrupt_disable(const int c);
 */
 EXTERNAL INLINE int  EXPRT cam_interrupt_test(const int c);
 
-/** cam\_interrupt\_attach()
+/** cam_interrupt_attach()
     Attach service routine to LAM of specific crate and station.
     @memo Attach service routine.
     @param c crate number (0..)
@@ -661,7 +664,7 @@ EXTERNAL INLINE int  EXPRT cam_interrupt_test(const int c);
 */
 EXTERNAL INLINE void EXPRT cam_interrupt_attach(const int c, const int n, void (*isr)(void));
 
-/** cam\_interrupt\_detach()
+/** cam_interrupt_detach()
     Detach service routine from LAM.
     @memo Detach service routine.
     @param c crate number (0..)
