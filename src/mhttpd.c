@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.101  2000/03/13 09:41:53  midas
+  Added refresh of Web password
+
   Revision 1.100  2000/03/08 23:43:49  midas
   Fixed bug that wrong size was given to el_retrieve
 
@@ -765,7 +768,7 @@ void show_error(char *error)
 
 /*------------------------------------------------------------------*/
 
-void show_status_page(int refresh)
+void show_status_page(int refresh, char *cookie_wpwd)
 {
 int    i, j, k, status, size;
 BOOL   flag;
@@ -780,6 +783,7 @@ HNDLE  hDB, hkey, hLKey, hsubkey, hkeytmp;
 KEY    key;
 BOOL   ftp_mode, previous_mode;
 char   client_name[NAME_LENGTH];
+struct tm *gmt;
 
 RUNINFO_STR(runinfo_str);
 RUNINFO runinfo;
@@ -801,8 +805,18 @@ CHN_STATISTICS chn_stats;
   rsprintf("Server: MIDAS HTTP %s\r\n", cm_get_version());
   rsprintf("Content-Type: text/html\r\n");
   rsprintf("Pragma: no-cache\r\n");
-  rsprintf("Expires: Fri, 01 Jan 1983 00:00:00 GMT\r\n\r\n");
-  rsprintf("<html>\n");
+  rsprintf("Expires: Fri, 01 Jan 1983 00:00:00 GMT\r\n");
+  if (cookie_wpwd[0])
+    {
+    time(&now);
+    now += 3600;
+    gmt = gmtime(&now);
+    strftime(str, sizeof(str), "%A, %d-%b-%y %H:%M:%S GMT", gmt);
+
+    rsprintf("Set-Cookie: midas_wpwd=%s; path=/; expires=%s\r\n", cookie_wpwd, str);
+    }
+    
+  rsprintf("\r\n<html>\n");
 
   /* auto refresh */
   rsprintf("<head><meta http-equiv=\"Refresh\" content=\"%02d\">\n", refresh);
@@ -5330,7 +5344,7 @@ struct tm *gmt;
   
   if (path[0] == 0)
     {
-    show_status_page(refresh);
+    show_status_page(refresh, cookie_wpwd);
     return;
     }
 
