@@ -6,6 +6,9 @@
 #  Contents:     Makefile for MIDAS example frontend and analyzer
 #
 #  $Log$
+#  Revision 1.15  2003/04/14 13:46:30  midas
+#  Fixed bug that camacnu.o was not compiled after a 'make clean'
+#
 #  Revision 1.14  2003/04/08 00:13:07  olchansk
 #  add ranalyzer, the ROOT MIDAS analyzer
 #
@@ -120,7 +123,7 @@ LDFLAGS +=
 
 all: $(UFE) fal analyzer ranalyzer
 
-$(UFE): $(LIB) $(LIB_DIR)/mfe.o $(DRV_DIR)/bus/$(DRIVER).o $(UFE).c
+$(UFE): $(LIB) $(LIB_DIR)/mfe.o $(DRIVER).o $(UFE).c
 	$(CC) $(CFLAGS) $(OSFLAGS) -o $(UFE) $(UFE).c $(DRIVER).o \
 	$(LIB_DIR)/mfe.o $(LIB) $(LDFEFLAGS) $(LIBS)
 
