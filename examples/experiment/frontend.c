@@ -11,6 +11,9 @@
                 with one bank (SCLR).
 
   $Log$
+  Revision 1.6  1999/01/19 10:27:30  midas
+  Use new LAM_SOURCE and LAM_STATION macros
+
   Revision 1.5  1998/11/09 09:14:41  midas
   Added code to simulate random data
 
@@ -85,7 +88,7 @@ EQUIPMENT equipment[] = {
 #else
     EQ_POLLED,            /* equipment type */
 #endif
-    CRATE(0),             /* event source */
+    LAM_SOURCE(0,0xFFFFFF),/* event source crate 0, all stations */
     "MIDAS",              /* format */
     TRUE,                 /* enabled */
     RO_RUNNING |          /* read only when running */
@@ -226,17 +229,17 @@ DWORD lam;
     {
     cam_lam_read(source >> 24, &lam);
 
-    if (lam)
+    if (lam & (source & 0xFFFFFF))
       if (!test)
-        return TRUE;
+        return lam;
     }
 
-  return FALSE;
+  return 0;
 }
 
 /*-- Interrupt configuration ---------------------------------------*/
 
-INT interrupt_configure(INT cmd, INT source[], PTYPE adr)
+INT interrupt_configure(INT cmd, INT source, PTYPE adr)
 {
   switch(cmd)
     {
