@@ -6,6 +6,9 @@
 #  Contents:     Makefile for MIDAS binaries and examples under unix
 #
 #  $Log$
+#  Revision 1.20  2000/04/27 14:48:27  midas
+#  Added mgd.c in mhttpd
+#
 #  Revision 1.19  2000/04/20 23:26:12  pierre
 #  - Correct stripchart.tcl installation
 #
@@ -262,6 +265,9 @@ $(BIN_DIR)/%:$(SRC_DIR)/%.c
 
 $(BIN_DIR)/odbedit: $(SRC_DIR)/odbedit.c $(SRC_DIR)/cmdedit.c
 	$(CC) $(CFLAGS) $(OSFLAGS) -o $@ $(SRC_DIR)/odbedit.c $(SRC_DIR)/cmdedit.c $(LIB) $(LIBS)
+
+$(BIN_DIR)/mhttpd: $(SRC_DIR)/mhttpd.c $(SRC_DIR)/mgd.c
+	$(CC) $(CFLAGS) $(OSFLAGS) -o $@ $(SRC_DIR)/mhttpd.c $(SRC_DIR)/mgd.c $(LIB) $(LIBS) -lm
 
 $(PROGS): $(LIBNAME)
 
