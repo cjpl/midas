@@ -6,6 +6,9 @@
   Contents:     Command-line interface to the MIDAS online data base.
 
   $Log$
+  Revision 1.28  1999/10/05 13:16:11  midas
+  Added global alarm flag "/alarms/alarm system active"
+
   Revision 1.27  1999/09/27 13:49:05  midas
   Added bUnique parameter to cm_shutdown
 
@@ -121,6 +124,7 @@ void print_help(char *command)
   if (!command[0])
     {
     printf("Database commands ([] are options, <> are placeholders):\n\n");
+    printf("alarm                   - reset all alarms\n");
     printf("cd <dir>                - change current directory\n");
     printf("chat                    - enter chat mode\n");
     printf("chmod <mode> <key>      - change access mode of a key\n");
