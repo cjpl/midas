@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.56  2001/11/12 15:08:58  midas
+  Changes made in hospital
+
   Revision 1.55  2001/11/06 15:52:02  midas
   Fixed small bug
 
@@ -2564,7 +2567,15 @@ int  i;
   rsprintf("<font size=3 face=verdana,arial,helvetica,sans-serif color=%s><b>&nbsp;&nbsp;%s%s<b></font>\n", 
             gt("Title fontcolor"), logbook, text);
   rsprintf("&nbsp;</td>\n");
-  
+
+  /* middle cell */
+  if (*getparam("full_name"))
+    {
+    rsprintf("<td bgcolor=%s align=center>", gt("Title BGColor"));
+    rsprintf("<font size=1 face=verdana,arial,helvetica,sans-serif color=%s><b>&nbsp;&nbsp;Logged in as \"%s\"<b></font></td>\n", 
+              gt("Title fontcolor"), getparam("full_name"));
+    }
+
   /* right cell */
   rsprintf("<td bgcolor=%s align=right>", gt("Title BGColor"));
   if (*gt("Title image"))
@@ -2717,12 +2728,229 @@ int i;
 
 /*------------------------------------------------------------------*/
 
+int build_subst_list(char list[][NAME_LENGTH], char value[][NAME_LENGTH])
+{
+int  i;
+char str[256];
+struct hostent *phe;
+
+  /* copy attribute list */
+  for (i=0 ; i<scan_attributes(logbook) ; i++)
+    {
+    strcpy(list[i], attr_list[i]);
+    strcpy(value[i], getparam(attr_list[i]));
+    }
+
+  /* add remote host */
+  strcpy(list[i], "remote_host");
+
+  phe = gethostbyaddr((char *) &rem_addr, 4, PF_INET);
+  if (phe != NULL)
+    strcpy(str, phe->h_name);
+  else
+    strcpy(str, (char *)inet_ntoa(rem_addr));
+
+  strcpy(value[i++], str);
+
+  /* add user names */
+  strcpy(list[i], "short_name");
+  strcpy(value[i++], getparam("unm"));
+  strcpy(list[i], "long_name");
+  strcpy(value[i++], getparam("full_name"));
+
+  return i;
+}
+
+/*------------------------------------------------------------------*/
+
+void show_change_pwd_page()
+{
+char   str[256], line[256], *p, *pl, old_pwd[32], new_pwd[32];
+char   *buf;
+FILE   *f;
+int    i, wrong_pwd, size;
+double exp;
+time_t now;
+struct tm *gmt;
+
+
+  base64_encode(getparam("oldpwd"), old_pwd);
+  base64_encode(getparam("newpwd"), new_pwd);
+
+  getcfg(logbook, "Password file", str);
+  wrong_pwd = FALSE;
+
+  if (old_pwd[0] || new_pwd[0])
+    {
+    f = fopen(str, "r+b");
+    if (f != NULL)
+      {
+      fseek(f, 0, SEEK_END);
+      size = TELL(fileno(f));
+      fseek(f, 0, SEEK_SET);
+
+      buf = malloc(size+1);
+      fread(buf, 1, size, f);
+      buf[size] = 0;
+      pl = buf;
+
+      while (pl < buf+size)
+        {
+        for (i=0 ; pl[i] && pl[i] != '\r' && pl[i] != '\n' ; i++)
+          line[i] = pl[i];
+        line[i] = 0;
+
+        if (line[0] == ';' || line[0] == '#' || line[0] == 0)
+          {
+          pl += strlen(line);
+          while (*pl && (*pl == '\r' || *pl == '\n'))
+            pl++;
+          continue;
+          }
+
+        strcpy(str, line);
+        if (strchr(str, ':'))
+          *strchr(str, ':') = 0;
+        if (strcmp(str, getparam("unm")) == 0)
+          break;
+
+        pl += strlen(line);
+        while (*pl && (*pl == '\r' || *pl == '\n'))
+          pl++;
+        }
+    
+      /* if user found, check old password */
+      if (*getparam("unm") && (strcmp(str, getparam("unm")) == 0))
+        {
+        p = line+strlen(str);
+        if (*p)
+          p++;
+
+        strcpy(str, p);
+        if (strchr(str, ':'))
+          *strchr(str, ':') = 0;
+
+        if (strcmp(old_pwd, str) != 0)
+          wrong_pwd = TRUE;
+        }
+
+      /* replace password */
+      if (!wrong_pwd)
+        {
+        fseek(f, 0, SEEK_SET);
+        fwrite(buf, 1, pl-buf, f);
+
+        fprintf(f, "%s:%s:%s", getparam("unm"), new_pwd, getparam("full_name"));
+        
+        pl += strlen(line);
+        while (*pl && (*pl == '\r' || *pl == '\n'))
+          pl++;
+
+        fwrite(pl, 1, strlen(pl), f);
+
+#ifdef _MSC_VER
+        chsize(fileno(f), TELL(fileno(f)));
+#else
+        ftruncate(fileno(f), TELL(fileno(f)));
+#endif
+        }
+
+      free(buf);
+      fclose(f);
+
+      if (!wrong_pwd)
+        {
+        rsprintf("HTTP/1.1 302 Found\r\n");
+        rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
+        if (use_keepalive)
+          {
+          rsprintf("Connection: Keep-Alive\r\n");
+          rsprintf("Keep-Alive: timeout=60, max=10\r\n");
+          }
+
+        /* get optional expriation from configuration file */
+        exp = 24;
+        if (getcfg(logbook, "Login expiration", str))
+          exp = atof(str);
+
+        tzset();
+        time(&now);
+        now += (int) (3600*exp);
+        gmt = gmtime(&now);
+        strftime(str, sizeof(str), "%A, %d-%b-%y %H:%M:%S GMT", gmt);
+
+        rsprintf("Set-Cookie: upwd=%s; path=/%s; expires=%s\r\n", new_pwd, logbook_enc, str);
+
+        sprintf(str, "%s%s/", elogd_url, logbook_enc);
+        rsprintf("Location: %s\r\n\r\n<html>redir</html>\r\n", str);
+        return;
+        }
+      }
+    }
+
+  show_standard_header("ELOG change password", NULL);
+
+  rsprintf("<p><p><p><table border=%s width=50%% bgcolor=%s cellpadding=1 cellspacing=0 align=center>", 
+            gt("Border width"), gt("Frame color"));
+  rsprintf("<tr><td><table cellpadding=5 cellspacing=0 border=0 width=100%% bgcolor=%s>\n", gt("Frame color"));
+
+  if (wrong_pwd)
+    rsprintf("<tr><th bgcolor=#FF0000>Wrong password!</th></tr>\n");
+
+  rsprintf("<tr><td align=center bgcolor=%s>\n", gt("Title bgcolor"));
+  
+  rsprintf("<font color=%s>Change password for user \"%s\"</font></td></tr>\n", 
+           gt("Title fontcolor"), getparam("full_name"));
+  rsprintf("<tr><td align=center bgcolor=%s>Old Password:&nbsp;&nbsp;&nbsp;<input type=password name=oldpwd></td></tr>\n", gt("Cell BGColor"));
+  rsprintf("<tr><td align=center bgcolor=%s>New Password:&nbsp;&nbsp;&nbsp;<input type=password name=newpwd></td></tr>\n", gt("Cell BGColor"));
+
+  rsprintf("<tr><td align=center bgcolor=%s><input type=submit value=Submit></td></tr>", gt("Cell BGColor"));
+
+  rsprintf("</table></td></tr></table>\n");
+
+  rsprintf("</body></html>\r\n");
+}
+
+/*------------------------------------------------------------------*/
+
+BOOL allow_user(char *command)
+{
+char str[1000], users[2000];
+char list[MAX_N_LIST][NAME_LENGTH]; 
+int  i, n;
+
+  /* check for user level access */
+  if (!getcfg(logbook, "Password file", str))
+    return TRUE;
+
+  /* allow by default */
+  sprintf(str, "Allow %s", command);
+  if (!getcfg(logbook, str, users))
+    return TRUE;
+
+  /* check if current user in list */
+  n = strbreak(users, list, MAX_N_LIST);
+  for (i=0 ; i<n ; i++)
+    if (equal_ustring(list[i], getparam("unm")))
+      return TRUE;
+
+  sprintf(str, "Error: Command \"%s\" is not allowed for user \"%s\"", 
+          command, getparam("full_name"));
+  show_error(str);
+
+  return FALSE;
+}
+
+/*------------------------------------------------------------------*/
+
 void show_elog_new(char *path, BOOL bedit)
 {
 int    i, n_attr, index, size, wrap;
-char   str[256], *p, def_value[80], star[80], comment[10000];
+char   str[1000], *p, def_value[80], star[80], comment[10000];
+char   list[MAX_N_ATTR][NAME_LENGTH]; 
 char   date[80], attrib[MAX_N_ATTR][NAME_LENGTH], text[TEXT_SIZE], 
-       orig_tag[80], reply_tag[80], att[MAX_ATTACHMENTS][256], encoding[80];
+       orig_tag[80], reply_tag[80], att[MAX_ATTACHMENTS][256], encoding[80],
+       slist[MAX_N_ATTR+5][NAME_LENGTH], svalue[MAX_N_ATTR+5][NAME_LENGTH];
 time_t now;
 
   n_attr = scan_attributes(logbook);
@@ -2751,15 +2979,17 @@ time_t now;
       }
     }
 
-  /* remove author for replies */
-  /* ##
-  for (i=0 ; i<n_attr ; i++)
+  /* remove attributes for replies */
+  if (path && !bedit)
     {
-    if (attr_flags[i] & AF_ADD_REMOTE_ADDR)
-      if (path && !bedit)
+    getcfg(logbook, "Remove on reply", str);
+    strbreak(str, list, MAX_N_ATTR);
+    for (i=0 ; i<n_attr ; i++)
+      {
+      if (equal_ustring(attr_list[i], list[i]))
         attrib[i][0] = 0;
+      }
     }
-  */
 
   /* header */
   rsprintf("HTTP/1.1 200 Document follows\r\n");
@@ -2845,6 +3075,19 @@ time_t now;
         /* display checkbox */
         rsprintf("<tr><td nowrap bgcolor=%s><b>%s%s:</b></td><td bgcolor=%s><input type=checkbox name=\"%s\" value=1>\n",
                  gt("Categories bgcolor1"), attr_list[index], star, gt("Categories bgcolor2"), attr_list[index]);
+        }
+      else if (strchr(attr_options[index][0], '$'))
+        {
+        /* substitute attribute */
+        i = build_subst_list(slist, svalue);
+        strcpy(str, attr_options[index][0]);
+        strsubst(str, slist, svalue, i);
+
+        /* display fixed text box */
+        rsprintf("<tr><td nowrap bgcolor=%s><b>%s%s:</b></td>", gt("Categories bgcolor1"), attr_list[index], star);
+        rsprintf("<td bgcolor=%s><input type=\"text\" readonly size=80 maxlength=%d name=\"%s\" value=\"%s\"></td></tr>\n", 
+                  gt("Categories bgcolor2"), NAME_LENGTH, attr_list[index], str);
+        
         }
       else
         {
@@ -3298,7 +3541,7 @@ void show_elog_submit_find(INT past_n, INT last_n)
 {
 int    i, j, size, status, d1, m1, y1, d2, m2, y2, index, colspan, i_line, n_line, i_col;
 int    current_year, current_month, current_day, printable, n_logbook, lindex, n_attr,
-       reverse, number, n_attr_disp;
+       reverse, n_attr_disp, n_found;
 char   date[80], attrib[MAX_N_ATTR][NAME_LENGTH], disp_attr[MAX_N_ATTR][NAME_LENGTH], 
        list[10000], text[TEXT_SIZE], text1[TEXT_SIZE], text2[TEXT_SIZE],
        orig_tag[80], reply_tag[80], attachment[MAX_ATTACHMENTS][256], encoding[80];
@@ -3604,6 +3847,7 @@ FILE   *f;
   /*---- do find ----*/
 
   i_col = 0;
+  n_found = 0;
 
   old_data_dir[0] = 0;
   if (atoi(getparam("all")) == 1)
@@ -3696,8 +3940,6 @@ FILE   *f;
         }
       }
 
-    number = 1;
-    
     do
       {
       size = sizeof(text);
@@ -3833,6 +4075,8 @@ FILE   *f;
 
         /* filter passed: display line */
 
+        n_found++;
+
         strcpy(str, tag);
         if (strchr(str, '+'))
           *strchr(str, '+') = 0;
@@ -3851,7 +4095,7 @@ FILE   *f;
           size = printable ? 2 : 3;
           nowrap = printable ? "" : "nowrap";
 
-          rsprintf("<td align=center bgcolor=%s><font size=%d>%d</font></td>", col, size, number++);
+          rsprintf("<td align=center bgcolor=%s><font size=%d>%d</font></td>", col, size, n_found);
 
           if (atoi(getparam("all")) == 1)
             rsprintf("<td align=center %s bgcolor=%s><font size=%d>%s</font></td>", nowrap, col, size, logbook_list[lindex]);
@@ -3985,7 +4229,7 @@ FILE   *f;
           size = printable ? 2 : 3;
           nowrap = printable ? "" : "nowrap";
 
-          rsprintf("<td align=center bgcolor=%s><font size=%d>%d</font></td>", col, size, number++);
+          rsprintf("<td align=center bgcolor=%s><font size=%d>%d</font></td>", col, size, n_found);
 
           if (atoi(getparam("all")) == 1)
             rsprintf("<td align=center %s bgcolor=%s>%s</td>", nowrap, col, logbook_list[lindex]);
@@ -4040,7 +4284,19 @@ FILE   *f;
       } while (status == EL_SUCCESS);
     } /* for () */
 
-  rsprintf("</table></td></tr></table>\n");
+  rsprintf("</table></td></tr>\n");
+
+  if (n_found == 0)
+    {
+    rsprintf("<tr><td><table width=100%% border=%s cellpadding=%s cellspacing=1 bgcolor=%s>\n",
+           printable ? "1" : gt("Border width"), gt("Categories cellpadding"), gt("Frame color"));
+
+    rsprintf("<tr><td bgcolor=#FFB0B0 align=center><b>No entries found<b></td></tr>");
+    
+    rsprintf("</td></tr></table>\n");
+    }
+
+  rsprintf("</table>\n");
 
   /* add little logo */
   rsprintf("<center><font size=1 color=#A0A0A0><a href=\"http://midas.psi.ch/elog/\">ELOG V%s</a></font></center>", VERSION);
@@ -4058,9 +4314,10 @@ void submit_elog()
 {
 char   str[256], mail_to[256], mail_from[256], file_name[256],
        mail_text[10000], mail_list[MAX_N_LIST][NAME_LENGTH], list[10000], smtp_host[256], 
-       tag[80], subject[256], attrib[MAX_N_ATTR][NAME_LENGTH];
+       tag[80], subject[256], attrib[MAX_N_ATTR][NAME_LENGTH], subst_str[256];
 char   *buffer[MAX_ATTACHMENTS], mail_param[1000];
 char   att_file[MAX_ATTACHMENTS][256];
+char   slist[MAX_N_ATTR+5][NAME_LENGTH], svalue[MAX_N_ATTR+5][NAME_LENGTH];
 int    i, j, n, index, n_attr, n_mail, suppress, status;
 
   n_attr = scan_attributes(logbook);
@@ -4110,9 +4367,24 @@ int    i, j, n, index, n_attr, n_mail, suppress, status;
       }
     }
 
+  /* compile substitution list */
+  n = build_subst_list(slist, svalue);
+
   /* retrieve attributes */
   for (i=0 ; i<n_attr ; i++)
+    {
     strcpy(attrib[i], getparam(attr_list[i]));
+
+    if (!*getparam("edit"))
+      {
+      sprintf(str, "Subst %s", attr_list[i]);
+      if (getcfg(logbook, str, subst_str))
+        {
+        strsubst(subst_str, slist, svalue, n);
+        strcpy(attrib[i], subst_str);
+        }
+      }
+    }
 
   tag[0] = 0;
   if (*getparam("edit"))
@@ -4410,6 +4682,8 @@ FILE   *f;
 
   if (equal_ustring(command, "new"))
     {
+    if (!allow_user("new"))
+      return;
     show_elog_new(NULL, FALSE);
     return;
     }
@@ -4474,11 +4748,37 @@ FILE   *f;
     return;
     }
 
+  if (equal_ustring(command, "change password") ||
+      isparam("newpwd"))
+    {
+    show_change_pwd_page();
+    return;
+    }
+
   if (equal_ustring(command, "save"))
     {
     if (!save_config())
       return;
     redirect("");
+    return;
+    }
+
+  if (equal_ustring(command, "logout"))
+    {
+    rsprintf("HTTP/1.1 302 Found\r\n");
+    rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
+    if (use_keepalive)
+      {
+      rsprintf("Connection: Keep-Alive\r\n");
+      rsprintf("Keep-Alive: timeout=60, max=10\r\n");
+      }
+
+    /* delete user cookies */
+    rsprintf("Set-Cookie: upwd=; path=/%s; expires=Fri, 01 Jan 1983 00:00:00 GMT\r\n", logbook_enc, str);
+    rsprintf("Set-Cookie: unm=; path=/%s; expires=Fri, 01 Jan 1983 00:00:00 GMT\r\n", logbook_enc, str);
+
+    sprintf(str, "%s%s", elogd_url, logbook_enc);
+    rsprintf("Location: %s\r\n\r\n<html>redir</html>\r\n", str);
     return;
     }
 
@@ -4661,7 +4961,10 @@ FILE   *f;
   
   getcfg(logbook, "Menu commands", str);
   if (str[0] == 0)
-    strcpy(str, "New, Edit, Delete, Reply, Find, Last day, Last 10, Config, Help");
+    if (getcfg(logbook, "Password file", str)) 
+      strcpy(str, "New, Edit, Delete, Reply, Find, Last day, Last 10, Config, Change Password, Logout, Help");
+    else
+      strcpy(str, "New, Edit, Delete, Reply, Find, Last day, Last 10, Config, Help");
 
   n = strbreak(str, menu_item, MAX_N_LIST);
 
@@ -4727,7 +5030,12 @@ FILE   *f;
           }
         }
       else
-        rsprintf("&nbsp;<a href=\"/%s/%s?cmd=%s\">%s</a>&nbsp;|\n", logbook_enc, path, menu_item[i], menu_item[i]);
+        {
+        if (i < n-1)
+          rsprintf("&nbsp;<a href=\"/%s/%s?cmd=%s\">%s</a>&nbsp;|\n", logbook_enc, path, menu_item[i], menu_item[i]);
+        else
+          rsprintf("&nbsp;<a href=\"/%s/%s?cmd=%s\">%s</a>&nbsp;\n", logbook_enc, path, menu_item[i], menu_item[i]);
+        }
       }
 
     rsprintf("</small>\n");
@@ -5014,12 +5322,12 @@ FILE   *f;
 
 /*------------------------------------------------------------------*/
 
-BOOL check_write_password(char *logbook, char *password, char *redir)
+BOOL check_password(char *logbook, char *name, char *password, char *redir)
 {
 char  str[256];
 
-  /* get write password from configuration file */
-  if (getcfg(logbook, "Write password", str))
+  /* get password from configuration file */
+  if (getcfg(logbook, name, str))
     {
     if (strcmp(password, str) == 0)
       return TRUE;
@@ -5039,10 +5347,20 @@ char  str[256];
       rsprintf("<tr><th bgcolor=#FF0000>Wrong password!</th></tr>\n");
 
     rsprintf("<tr><td align=center bgcolor=%s>\n", gt("Title bgcolor"));
-    rsprintf("<font color=%s>Please enter password to obtain write access</font></td></tr>\n", 
-             gt("Title fontcolor"));
     
-    rsprintf("<tr><td align=center bgcolor=%s><input type=password name=wpwd></td></tr>\n", gt("Cell BGColor"));
+    if (strcmp(name, "Write password") == 0)
+      {
+      rsprintf("<font color=%s>Please enter password to obtain write access</font></td></tr>\n", 
+               gt("Title fontcolor"));
+      rsprintf("<tr><td align=center bgcolor=%s><input type=password name=wpassword></td></tr>\n", gt("Cell BGColor"));
+      }
+    else
+      {
+      rsprintf("<font color=%s>Please enter password to obtain administration access</font></td></tr>\n", 
+               gt("Title fontcolor"));
+      rsprintf("<tr><td align=center bgcolor=%s><input type=password name=apassword></td></tr>\n", gt("Cell BGColor"));
+      }
+
     rsprintf("<tr><td align=center bgcolor=%s><input type=submit value=Submit></td></tr>", gt("Cell BGColor"));
 
     rsprintf("</table></td></tr></table>\n");
@@ -5057,18 +5375,58 @@ char  str[256];
 
 /*------------------------------------------------------------------*/
 
-BOOL check_admin_password(char *logbook, char *password, char *redir)
+BOOL check_user_password(char *logbook, char *user, char *password, char *redir)
 {
-char  str[256];
+char  str[256], line[256], *p;
+FILE  *f;
 
-  /* get password from configuration file */
-  if (getcfg(logbook, "Admin password", str))
+  getcfg(logbook, "Password file", str);
+
+  f = fopen(str, "r");
+  if (f != NULL)
     {
-    if (strcmp(password, str) == 0)
-      return TRUE;
+    while (!feof(f))
+      {
+      line[0] = 0;
+      fgets(line, sizeof(line), f);
 
-    /* show web password page */
-    show_standard_header("ELOG password", NULL);
+      if (line[0] == ';' || line[0] == '#' || line[0] == 0)
+        continue;
+
+      strcpy(str, line);
+      if (strchr(str, ':'))
+        *strchr(str, ':') = 0;
+      if (strcmp(str, user) == 0)
+        break;
+      }
+    fclose(f);
+    
+    /* if user found, check password */
+    if (user[0] && (strcmp(str, user) == 0))
+      {
+      p = line+strlen(str);
+      if (*p)
+        p++;
+
+      strcpy(str, p);
+      if (strchr(str, ':'))
+        *strchr(str, ':') = 0;
+
+      if (strcmp(password, str) == 0)
+        {
+        p += strlen(str);
+        if (*p)
+          p++;
+        strcpy(str, p);
+        if (strchr(str, ':'))
+          *strchr(str, ':') = 0;
+        setparam("full_name", p);
+        return TRUE;
+        }
+      }
+
+    /* show login password page */
+    show_standard_header("ELOG login", NULL);
 
     /* define hidden fields for current destination */
     if (redir[0])
@@ -5082,10 +5440,12 @@ char  str[256];
       rsprintf("<tr><th bgcolor=#FF0000>Wrong password!</th></tr>\n");
 
     rsprintf("<tr><td align=center bgcolor=%s>\n", gt("Title bgcolor"));
-    rsprintf("<font color=%s>Please enter password to obtain administration access</font></td></tr>\n", 
-             gt("Title fontcolor"));
     
-    rsprintf("<tr><td align=center bgcolor=%s><input type=password name=apwd></td></tr>\n", gt("Cell BGColor"));
+    rsprintf("<font color=%s>Please login</font></td></tr>\n", 
+             gt("Title fontcolor"));
+    rsprintf("<tr><td align=center bgcolor=%s>Username:&nbsp;&nbsp;&nbsp;<input type=text name=uname></td></tr>\n", gt("Cell BGColor"));
+    rsprintf("<tr><td align=center bgcolor=%s>Password:&nbsp;&nbsp;&nbsp;<input type=password name=upassword></td></tr>\n", gt("Cell BGColor"));
+
     rsprintf("<tr><td align=center bgcolor=%s><input type=submit value=Submit></td></tr>", gt("Cell BGColor"));
 
     rsprintf("</table></td></tr></table>\n");
@@ -5095,7 +5455,11 @@ char  str[256];
     return FALSE;
     }
   else
-    return TRUE;
+    {
+    sprintf(line, "Error: Password file \"%s\" not found", str);
+    show_error(line);
+    return FALSE;
+    }
 }
 
 /*------------------------------------------------------------------*/
@@ -5173,7 +5537,7 @@ static char last_password[32];
 
 /*------------------------------------------------------------------*/
 
-void interprete(char *cookie_wpwd, char *cookie_apwd, char *path)
+void interprete(char *path)
 /********************************************************************\
 
   Routine: interprete
@@ -5181,7 +5545,6 @@ void interprete(char *cookie_wpwd, char *cookie_apwd, char *path)
   Purpose: Interprete parametersand generate HTML output.
 
   Input:
-    char *cookie_pwd        Cookie containing encrypted password
     char *path              Message path
 
   <implicit>
@@ -5193,7 +5556,7 @@ int    i, n, index;
 double exp;
 char   str[256], enc_pwd[80], file_name[256];
 char   enc_path[256], dec_path[256];
-char   *experiment, *wpassword, *apassword, *command, *value, *group;
+char   *experiment, *command, *value, *group;
 time_t now;
 struct tm *gmt;
 
@@ -5205,8 +5568,6 @@ struct tm *gmt;
   url_encode(enc_path);
 
   experiment = getparam("exp");
-  wpassword = getparam("wpwd");
-  apassword = getparam("apwd");
   command = getparam("cmd");
   value = getparam("value");
   group = getparam("group");
@@ -5267,12 +5628,12 @@ struct tm *gmt;
     data_dir[strlen(data_dir)] = DIR_SEPARATOR;
     }
     
-  if (wpassword[0])
+  if (*getparam("wpassword"))
     {
     /* check if password correct */
-    base64_encode(wpassword, enc_pwd);
+    base64_encode(getparam("wpassword"), enc_pwd);
 
-    if (!check_write_password(logbook, enc_pwd, getparam("redir")))
+    if (!check_password(logbook, "Write password", enc_pwd, getparam("redir")))
       return;
     
     rsprintf("HTTP/1.1 302 Found\r\n");
@@ -5294,19 +5655,19 @@ struct tm *gmt;
     gmt = gmtime(&now);
     strftime(str, sizeof(str), "%A, %d-%b-%y %H:%M:%S GMT", gmt);
 
-    rsprintf("Set-Cookie: elog_wpwd=%s; path=/%s; expires=%s\r\n", enc_pwd, logbook_enc, str);
+    rsprintf("Set-Cookie: wpwd=%s; path=/%s; expires=%s\r\n", enc_pwd, logbook_enc, str);
 
     sprintf(str, "%s%s/%s", elogd_url, logbook_enc, getparam("redir"));
     rsprintf("Location: %s\r\n\r\n<html>redir</html>\r\n", str);
     return;
     }
 
-  if (apassword[0])
+  if (*getparam("apassword"))
     {
     /* check if password correct */
-    base64_encode(apassword, enc_pwd);
+    base64_encode(getparam("apassword"), enc_pwd);
 
-    if (!check_admin_password(logbook, enc_pwd, getparam("redir")))
+    if (!check_password(logbook, "Admin password", enc_pwd, getparam("redir")))
       return;
     
     rsprintf("HTTP/1.1 302 Found\r\n");
@@ -5327,7 +5688,42 @@ struct tm *gmt;
     gmt = gmtime(&now);
     strftime(str, sizeof(str), "%A, %d-%b-%y %H:%M:%S GMT", gmt);
 
-    rsprintf("Set-Cookie: elog_apwd=%s; path=/%s; expires=%s\r\n", enc_pwd, logbook_enc, str);
+    rsprintf("Set-Cookie: apwd=%s; path=/%s; expires=%s\r\n", enc_pwd, logbook_enc, str);
+
+    sprintf(str, "%s%s/%s", elogd_url, logbook_enc, getparam("redir"));
+    rsprintf("Location: %s\r\n\r\n<html>redir</html>\r\n", str);
+    return;
+    }
+
+  if (*getparam("uname") && getparam("upassword"))
+    {
+    /* check if password correct */
+    base64_encode(getparam("upassword"), enc_pwd);
+
+    if (!check_user_password(logbook, getparam("uname"), enc_pwd, getparam("redir")))
+      return;
+    
+    rsprintf("HTTP/1.1 302 Found\r\n");
+    rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
+    if (use_keepalive)
+      {
+      rsprintf("Connection: Keep-Alive\r\n");
+      rsprintf("Keep-Alive: timeout=60, max=10\r\n");
+      }
+
+    /* get optional expriation from configuration file */
+    exp = 24;
+    if (getcfg(logbook, "Login expiration", str))
+      exp = atof(str);
+
+    tzset();
+    time(&now);
+    now += (int) (3600*exp);
+    gmt = gmtime(&now);
+    strftime(str, sizeof(str), "%A, %d-%b-%y %H:%M:%S GMT", gmt);
+
+    rsprintf("Set-Cookie: upwd=%s; path=/%s; expires=%s\r\n", enc_pwd, logbook_enc, str);
+    rsprintf("Set-Cookie: unm=%s; path=/%s; expires=%s\r\n", getparam("uname"), logbook_enc, str);
 
     sprintf(str, "%s%s/%s", elogd_url, logbook_enc, getparam("redir"));
     rsprintf("Location: %s\r\n\r\n<html>redir</html>\r\n", str);
@@ -5336,6 +5732,12 @@ struct tm *gmt;
 
   /*---- show ELog page --------------------------------------------*/
 
+  if (getcfg(logbook, "Password file", str))
+    {
+    if (!check_user_password(logbook, getparam("unm"), getparam("upwd"), path))
+      return;
+    }
+  
   if (equal_ustring(command, "new") ||
       equal_ustring(command, "edit") ||
       equal_ustring(command, "reply") ||
@@ -5343,7 +5745,7 @@ struct tm *gmt;
       equal_ustring(command, "delete"))
     {
     sprintf(str, "%s?cmd=%s", path, command);
-    if (!check_write_password(logbook, cookie_wpwd, str))
+    if (!check_password(logbook, "Write password", getparam("wpwd"), str))
       return;
     }
 
@@ -5351,7 +5753,7 @@ struct tm *gmt;
       equal_ustring(command, "config"))
     {
     sprintf(str, "%s?cmd=%s", path, command);
-    if (!check_admin_password(logbook, cookie_apwd, str))
+    if (!check_password(logbook, "Admin passowrd", getparam("apwd"), str))
       return;
     }
 
@@ -5361,12 +5763,10 @@ struct tm *gmt;
 
 /*------------------------------------------------------------------*/
 
-void decode_get(char *string, char *cookie_wpwd, char *cookie_apwd)
+void decode_get(char *string)
 {
 char path[256];
 char *p, *pitem;
-
-  initparam();
 
   strncpy(path, string, sizeof(path));
   path[255] = 0;
@@ -5400,17 +5800,16 @@ char *p, *pitem;
       }
     }
   
-  interprete(cookie_wpwd, cookie_apwd, path);
+  interprete(path);
 }
 
 /*------------------------------------------------------------------*/
 
-void decode_post(char *string, char *boundary, int length, char *cookie_wpwd, char *cookie_apwd)
+void decode_post(char *string, char *boundary, int length)
 {
 char *pinit, *p, *pitem, *ptmp, file_name[256], str[256];
 int  i, n;
 
-  initparam();
   for (i=0 ; i<MAX_ATTACHMENTS ; i++)
     _attachment_size[i]=  0;
 
@@ -5522,7 +5921,7 @@ int  i, n;
 
     } while ((INT)string - (INT)pinit < length);
 
-  interprete(cookie_wpwd, cookie_apwd, "");
+  interprete("");
 }
 
 /*------------------------------------------------------------------*/
@@ -5550,7 +5949,7 @@ void server_loop(int tcp_port, int daemon)
 int                  status, i, n, n_error, authorized, min, i_min, i_conn, length;
 struct sockaddr_in   serv_addr, acc_addr;
 char                 pwd[256], str[256], cl_pwd[256], *p;
-char                 cookie_wpwd[256], cookie_apwd[256], boundary[256], list[1000],
+char                 cookie[256], boundary[256], list[1000],
                      host_list[MAX_N_LIST][NAME_LENGTH], rem_host_name[256],
                      rem_host_ip[256];
 int                  lsock, len, flag, content_length, header_length;
@@ -5654,7 +6053,7 @@ struct timeval       timeout;
     if (FD_ISSET(lsock, &readfds))
       {
       len = sizeof(acc_addr);
-      _sock = accept( lsock,(struct sockaddr *) &acc_addr, &len);
+      _sock = accept(lsock, (struct sockaddr *) &acc_addr, &len);
 
       /* turn on lingering (borrowed from NCSA httpd code) */
       ling.l_onoff = 1;
@@ -5820,18 +6219,43 @@ struct timeval       timeout;
       if (!strchr(net_buffer, '\r'))
         goto error;
 
+      /* initialize parametr array */
+      initparam();
+      
       /* extract cookies */
-      cookie_wpwd[0] = 0;
-      if (strstr(net_buffer, "elog_wpwd=") != NULL)
+      if ((p = strstr(net_buffer, "Cookie:")) != NULL)
         {
-        strcpy(cookie_wpwd, strstr(net_buffer, "elog_wpwd=")+10);
-        cookie_wpwd[strcspn(cookie_wpwd, " ;\r\n")] = 0;
-        }
-      cookie_apwd[0] = 0;
-      if (strstr(net_buffer, "elog_apwd=") != NULL)
-        {
-        strcpy(cookie_apwd, strstr(net_buffer, "elog_apwd=")+10);
-        cookie_apwd[strcspn(cookie_apwd, " ;\r\n")] = 0;
+        p += 6;
+        do
+          {
+          p++;
+          while (*p && *p == ' ')
+            p++;
+          strncpy(str, p, sizeof(str));
+          
+          for (i=0 ; i<(int)strlen(str) ; i++)
+            if (str[i] == '=' || str[i] == ';')
+              break;
+
+          if (str[i] == '=')
+            {
+            str[i] = 0;
+            p += i+1;
+            for (i=0 ; *p && *p != ';' && *p != '\r' && *p != '\n' ; i++)
+              cookie[i] = *p++;
+            cookie[i] = 0;
+            }
+          else
+            {
+            /* empty cookie */
+            str[i] = 0;
+            cookie[0] = 0;
+            p += i;
+            }
+
+          /* store cookie as parameter */
+          setparam(str, cookie);
+          } while (*p && *p == ';');
         }
 
       memset(return_buffer, 0, sizeof(return_buffer));
@@ -5941,7 +6365,7 @@ struct timeval       timeout;
         else
           strcpy(rem_host_name, "");
 
-        strcpy(rem_host_ip, (char *)inet_ntoa(acc_addr.sin_addr));
+        strcpy(rem_host_ip, (char *)inet_ntoa(rem_addr));
 
         n = strbreak(list, host_list, MAX_N_LIST);
 
@@ -6135,13 +6559,13 @@ struct timeval       timeout;
             p++;
 
           /* decode command and return answer */
-          decode_get(p, cookie_wpwd, cookie_apwd);
+          decode_get(p);
           }
         else if (strncmp(net_buffer, "POST", 4) == 0)
           {
           if (verbose)
             printf("%s\n", net_buffer+header_length);
-          decode_post(net_buffer+header_length, boundary, content_length, cookie_wpwd, cookie_apwd);
+          decode_post(net_buffer+header_length, boundary, content_length);
           }
         else
           {
