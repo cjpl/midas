@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.270  2004/07/29 14:27:35  midas
+  Added red error display in status page
+
   Revision 1.269  2004/07/29 14:10:49  midas
   Added red error display in messages page
 
@@ -1820,7 +1823,7 @@ void show_status_page(int refresh, char *cookie_wpwd)
       }
    }
 
-  /*---- custom pages ----*/
+   /*---- custom pages ----*/
 
    db_find_key(hDB, 0, "/Custom", &hkey);
    if (hkey) {
@@ -1854,7 +1857,7 @@ void show_status_page(int refresh, char *cookie_wpwd)
       }
    }
 
-  /*---- run info ----*/
+   /*---- run info ----*/
 
    rsprintf("<tr align=center><td>Run #%d", runinfo.run_number);
 
@@ -1911,7 +1914,7 @@ void show_status_page(int refresh, char *cookie_wpwd)
       }
    }
 
-  /*---- time ----*/
+   /*---- time ----*/
 
    rsprintf("<tr align=center><td colspan=3>Start: %s", runinfo.start_time);
 
@@ -1922,7 +1925,7 @@ void show_status_page(int refresh, char *cookie_wpwd)
       rsprintf("<td colspan=3>Running time: %dh%02dm%02ds</tr>\n",
                difftime / 3600, difftime % 3600 / 60, difftime % 60);
 
-  /*---- run comment ----*/
+   /*---- run comment ----*/
 
    size = sizeof(str);
    if (db_get_value(hDB, 0, "/Experiment/Run parameters/Comment", str,
@@ -1930,7 +1933,7 @@ void show_status_page(int refresh, char *cookie_wpwd)
       rsprintf("<tr align=center><td colspan=6 bgcolor=#E0E0FF><b>%s</b></td></tr>\n",
                str);
 
-  /*---- Equipment list ----*/
+   /*---- Equipment list ----*/
 
    rsprintf("<tr><th>Equipment<th>FE Node<th>Events");
    rsprintf("<th>Event rate[/s]<th>Data rate[kB/s]<th>Analyzed</tr>\n");
@@ -2027,7 +2030,7 @@ void show_status_page(int refresh, char *cookie_wpwd)
       }
    }
 
-  /*---- Event Builder ----*/
+   /*---- Event Builder ----*/
 
    if (db_find_key(hDB, 0, ebname, &hkey) == DB_SUCCESS) {
       rsprintf
@@ -2091,7 +2094,7 @@ void show_status_page(int refresh, char *cookie_wpwd)
            analyze_ratio * 100.0);
    }
 
-  /*---- Logging channels ----*/
+   /*---- Logging channels ----*/
 
    rsprintf
        ("<tr><th colspan=2>Channel<th>Active<th>Events<th>MB written<th>GB total</tr>\n");
@@ -2170,7 +2173,7 @@ void show_status_page(int refresh, char *cookie_wpwd)
       }
    }
 
-  /*---- Lazy Logger ----*/
+   /*---- Lazy Logger ----*/
 
    if (db_find_key(hDB, 0, "/Lazy", &hkey) == DB_SUCCESS) {
       status = db_find_key(hDB, 0, "System/Clients", &hkey);
@@ -2266,16 +2269,21 @@ void show_status_page(int refresh, char *cookie_wpwd)
       rsprintf("</tr>\n");
    }
 
-  /*---- Messages ----*/
+   /*---- Messages ----*/
 
    rsprintf("<tr><td colspan=6>");
 
-   if (message_buffer[0])
-      rsprintf("<b>%s</b>", message_buffer);
+   if (message_buffer[0]) {
+
+      if (strchr(message_buffer+9, '[') && strchr(message_buffer+9, ':'))
+         rsprintf("<span style=\"color:white;background-color:red\"><b>%s</b></span>", message_buffer);
+      else
+         rsprintf("<b>%s</b>", message_buffer);
+   }
 
    rsprintf("</tr>");
 
-  /*---- Clients ----*/
+   /*---- Clients ----*/
 
    if (db_find_key(hDB, 0, "/System/Clients", &hkey) == DB_SUCCESS) {
       for (i = 0;; i++) {
@@ -9201,7 +9209,8 @@ void interprete(char *cookie_pwd, char *cookie_wpwd, char *path, int refresh)
       /* retrieve last message */
       size = 1000;
       cm_msg_retrieve(1, data, &size);
-      print_message(data);
+
+      receive_message(0, 0, NULL, data+25);
    }
 
    cm_get_experiment_database(&hDB, NULL);
