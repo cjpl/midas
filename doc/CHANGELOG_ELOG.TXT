@@ -1,3 +1,11 @@
+Version 1.1.2, released October 9th, 2001
+=========================================
+
+- Implemented keep-alive of connection. This speeds up considerably especially
+  when browsing through a logbook. It could be that with the Opera browser
+  there are some problems. In this case, start elogd with the "-k" flag to
+  turn keep-alive off.
+
 Version 1.1.1, released August 31th, 2001
 =========================================
 
