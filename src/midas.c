@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.96  2000/02/15 11:07:51  midas
+  Changed GET_xxx to bit flags
+
   Revision 1.95  2000/02/09 08:03:52  midas
   Fixed bracket indention
 
@@ -5431,7 +5434,7 @@ char            str[80];
                   bm_match_event(prequest->event_id, prequest->trigger_mask, pevent_test))
                 {
                 request_id = prequest->id;
-                if (prequest->sampling_type  == GET_ALL)
+                if (prequest->sampling_type & GET_ALL)
                   {
                   blocking = TRUE;
                   break;
@@ -5595,7 +5598,7 @@ char            str[80];
         if (prequest->valid &&
             bm_match_event(prequest->event_id, prequest->trigger_mask, pevent))
           {
-          if (prequest->sampling_type == GET_ALL)
+          if (prequest->sampling_type & GET_ALL)
             pclient[i].num_waiting_events++;
 
           num_requests_client++;
@@ -5786,7 +5789,7 @@ char            str[80];
                   bm_match_event(prequest->event_id, prequest->trigger_mask, pevent_test))
                 {
                 request_id = prequest->id;
-                if (prequest->sampling_type == GET_ALL)
+                if (prequest->sampling_type & GET_ALL)
                   {
                   blocking = TRUE;
                   break;

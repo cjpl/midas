@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.52  2000/02/15 11:07:50  midas
+  Changed GET_xxx to bit flags
+
   Revision 1.51  2000/02/09 09:32:00  midas
   Speed up analyzer start
 
@@ -166,7 +169,6 @@
 
 \********************************************************************/
 
-#include <stdio.h>
 #include "midas.h"
 #include "msystem.h"
 #include "hardware.h"
@@ -188,6 +190,30 @@
 /* missing in hbook.h */
 #ifndef HFNOV
 #define HFNOV(A1,A2)  CCALLSFSUB2(HFNOV,hfnov,INT,FLOATV,A1,A2) 
+#endif
+
+/* PVM include */
+#ifdef PVM
+#undef STRICT
+#include <pvm3.h>
+#endif
+
+/*----- PVM TAGS and data ------------------------------------------*/
+
+BOOL pvm_master, pvm_slave;
+
+#ifdef PVM
+#define TAG_DATA  1
+#define TAG_BOR   2
+#define TAG_EOR   3
+#define TAG_EXIT  4
+
+int  *pvm_tid;
+int  pvm_n_task;
+int  pvm_myparent;
+
+void pvm_eor();
+
 #endif
 
 /*------------------------------------------------------------------*/
@@ -250,6 +276,7 @@ struct {
   BOOL  quiet;
   BOOL  no_load;
   BOOL  daemon;
+  INT   n_task;
 } clp;
 
 struct {
@@ -260,31 +287,49 @@ struct {
   INT  n;
   INT  index;
 } clp_descrip[] = {
-  {'h', 
-   "<hostname>    MIDAS host to connect to when running the analyzer online", 
-   clp.host_name, TID_STRING, 1 },
+
+  {'c', 
+   "<filename1>   Configuration file name(s). May contain a '%05d' to be\n\
+     <filename2>   replaced by the run number. Up to ten files can be\n\
+         ...       specified in one \"-c\" statement", 
+   clp.config_file_name, TID_STRING, 10 },
+
+  {'d', 
+   "              Debug flag when started the analyzer fron a debugger.\n\
+                   Prevents the system to kill the analyzer when the\n\
+                   debugger stops at a breakpoint", 
+   &clp.debug, TID_BOOL, 0 },
+
+  {'D', 
+   "              Start analyzer as a daemon in the background (UNIX only).",
+   &clp.daemon, TID_BOOL, 0 },
 
   {'e', 
    "<experiment>  MIDAS experiment to connect to", 
    clp.exp_name, TID_STRING, 1 },
   
+  {'f', 
+   "                Filter events. Write original events to output file\n\
+                     only if analyzer accepts them (doesn't return ANA_SKIP).\n",
+   &clp.filter, TID_BOOL, 0 },
+
+  {'h', 
+   "<hostname>    MIDAS host to connect to when running the analyzer online", 
+   clp.host_name, TID_STRING, 1 },
+
   {'i', 
    "<filename1>   Input file name. May contain a '%05d' to be replaced by\n\
      <filename2>   the run number. Up to ten input files can be specified\n\
          ...       in one \"-i\" statement", 
    clp.input_file_name, TID_STRING, 10 },
 
-  {'o', 
-   "<filename>    Output file name. Extension may be .mid (MIDAS binary),\n\
-                   .asc (ASCII) or .rz (HBOOK). If the name contains a '%05d',\n\
-                   one output file is generated for each run.", 
-   clp.output_file_name, TID_STRING, 1 },
+  {'l', 
+   "              If set, don't load histos from last.rz when running online.",
+   &clp.no_load, TID_BOOL, 0 },
 
-  {'r', 
-   "<range>       Range of run numbers to analyzer like \"-r 120 125\"\n\
-                   to analyze runs 120 to 125 (inclusive). The \"-r\"\n\
-                   flag must be used with a '%05d' in the input file name.", 
-   clp.run_number, TID_INT, 2 },
+  {'L', 
+   "              HBOOK LREC size. Default is 8190.",
+   &clp.lrec, TID_INT, 0 },
 
   {'n', 
    "<count>       Analyze only \"count\" events.\n\
@@ -294,16 +339,11 @@ struct {
                    Analyze every n-th event from \"first\" to \"last\".",
    clp.n, TID_INT, 4 },
 
-  {'f', 
-   "                Filter events. Write original events to output file\n\
-                     only if analyzer accepts them (doesn't return ANA_SKIP).\n",
-   &clp.filter, TID_BOOL, 0 },
-
-  {'c', 
-   "<filename1>   Configuration file name(s). May contain a '%05d' to be\n\
-     <filename2>   replaced by the run number. Up to ten files can be\n\
-         ...       specified in one \"-c\" statement", 
-   clp.config_file_name, TID_STRING, 10 },
+  {'o', 
+   "<filename>    Output file name. Extension may be .mid (MIDAS binary),\n\
+                   .asc (ASCII) or .rz (HBOOK). If the name contains a '%05d',\n\
+                   one output file is generated for each run.", 
+   clp.output_file_name, TID_STRING, 1 },
 
   {'p', 
    "<param=value> Set individual parameters to a specific value.\n\
@@ -315,38 +355,31 @@ struct {
                    with the online data when ODB gets loaded from .mid file",
    clp.protect, TID_STRING, 10 },
 
-  {'w', 
-   "              Produce row-wise N-tuples in outpur .rz file. By\n\
-                   default, column-wise N-tuples are used.", 
-   &clp.rwnt, TID_BOOL, 0 },
-
-  {'v', 
-   "              Verbose output.",
-   &clp.verbose, TID_BOOL, 0 },
-
-  {'d', 
-   "              Debug flag when started the analyzer fron a debugger.\n\
-                   Prevents the system to kill the analyzer when the\n\
-                   debugger stops at a breakpoint", 
-   &clp.debug, TID_BOOL, 0 },
-
   {'q', 
    "              Quiet flag. If set, don't display run progress in\n\
                    offline mode.",
    &clp.quiet, TID_BOOL, 0 },
 
+  {'r', 
+   "<range>       Range of run numbers to analyzer like \"-r 120 125\"\n\
+                   to analyze runs 120 to 125 (inclusive). The \"-r\"\n\
+                   flag must be used with a '%05d' in the input file name.", 
+   clp.run_number, TID_INT, 2 },
 
-  {'l', 
-   "              If set, don't load histos from last.rz when running online.",
-   &clp.no_load, TID_BOOL, 0 },
+#ifdef PVM
+  {'t', 
+   "<n>           Parallelize analyzer using <n> tasks with PVM.",
+   &clp.n_task, TID_INT, 1 },
+#endif
 
-  {'L', 
-   "              HBOOK LREC size. Default is 8190.",
-   &clp.lrec, TID_INT, 0 },
+  {'v', 
+   "              Verbose output.",
+   &clp.verbose, TID_BOOL, 0 },
 
-  {'D', 
-   "              Start analyzer as a daemon in the background (UNIX only).",
-   &clp.daemon, TID_BOOL, 0 },
+  {'w', 
+   "              Produce row-wise N-tuples in outpur .rz file. By\n\
+                   default, column-wise N-tuples are used.", 
+   &clp.rwnt, TID_BOOL, 0 },
 
   { 0 }
 };
@@ -366,6 +399,7 @@ INT   out_format;
 BOOL  out_append;
 
 void update_stats();
+void odb_load(EVENT_HEADER *pevent);
 
 /*---- ODB records -------------------------------------------------*/
 
@@ -2625,8 +2659,94 @@ static char  *orig_event = NULL;
     printf("event %d, number %d, total size %d\n", 
       pevent->event_id, pevent->serial_number, pevent->data_size+sizeof(EVENT_HEADER));
 
-  /* increment event counter */
-  par->events_received++;
+  /* check keyboard once every second */
+  actual_time = ss_millitime();
+  if (!clp.online && actual_time - last_time_kb > 1000 && !clp.quiet && !pvm_slave)
+    {
+    last_time_kb = actual_time;
+
+    while (ss_kbhit())
+      {
+      ch = ss_getchar(0);
+      if (ch == -1)
+        ch = getchar();
+
+      if ((char) ch == '!')
+        return RPC_SHUTDOWN;
+      }
+    }
+
+  if (par == NULL)
+    {
+    /* load ODB with BOR event */
+    if (pevent->event_id == EVENTID_BOR)
+      {
+      /* get run number from BOR event */
+      current_run_number = pevent->serial_number;
+
+      /* set run number in ODB */
+      db_set_value(hDB, 0, "/Runinfo/Run number", &current_run_number, 
+                   sizeof(current_run_number), 1, TID_INT);
+
+      /* load ODB from event */
+      odb_load(pevent);
+
+      cm_msg(MERROR, "process_event", "ODB load");
+      }
+    }
+  else
+    /* increment event counter */
+    par->events_received++;
+
+#ifdef PVM
+
+  /* if master, distribute events to clients */
+  if (pvm_master)
+    {
+    struct timeval timeout;
+    int bufid, len, tag, tid;
+
+    /* wait on event request */
+    timeout.tv_sec  = 5;
+    timeout.tv_usec = 0;
+
+    bufid = pvm_trecv(-1, -1, &timeout);
+    if (bufid < 0)
+      {
+      pvm_perror("pvm_recv");
+      return RPC_SHUTDOWN;
+      }
+    if (bufid == 0)
+      {
+      printf("Timeout receiving data requests from slaves, aborting analyzer.\n");
+      return RPC_SHUTDOWN;
+      }
+
+    status = pvm_bufinfo(bufid, &len, &tag, &tid);
+    if (status < 0)
+      {
+      pvm_perror("pvm_bufinfo");
+      return RPC_SHUTDOWN;
+      }
+
+    /* send event */
+    pvm_initsend(PvmDataInPlace);
+    pvm_pkbyte((char *) pevent, pevent->data_size+sizeof(EVENT_HEADER), 1);
+    status = pvm_send(tid, TAG_DATA);
+    if (status < 0)
+      {
+      pvm_perror("pvm_send");
+      return RPC_SHUTDOWN;
+      }
+
+    if (par && (par->ar_info.sampling_type & GET_FARM))
+      return SUCCESS;
+    }
+#endif
+  
+  /* don't analyze BOR events */
+  if (par == NULL)
+    return SUCCESS;
 
   /* swap event if necessary */
   event_def = db_get_event_definition(pevent->event_id);
@@ -2711,7 +2831,6 @@ static char  *orig_event = NULL;
     write_event_hbook(NULL, pevent, par);
 
   /* put event in ODB once every second */
-  actual_time = ss_millitime();
   for (i=0 ; i<50 ; i++)
     {
     if (last_time_event[i].event_id == pevent->event_id)
@@ -2731,22 +2850,6 @@ static char  *orig_event = NULL;
       last_time_event[i].last_time = actual_time;
       write_event_odb(pevent);
       break;
-      }
-    }
-
-  /* check keyboard once every second */
-  if (!clp.online && actual_time - last_time_kb > 1000 && !clp.quiet)
-    {
-    last_time_kb = actual_time;
-
-    while (ss_kbhit())
-      {
-      ch = ss_getchar(0);
-      if (ch == -1)
-        ch = getchar();
-
-      if ((char) ch == '!')
-        return RPC_SHUTDOWN;
       }
     }
 
@@ -3042,63 +3145,6 @@ FILE     *f;
   return status;
 }
     
-/*---- Offline Code ------------------------------------------------*/
-
-INT iogets(gzFile file, char *str, int maxlen)
-{
-static char *buffer=NULL;
-static int  n=0, rp=0;
-INT    i, j;
-
-  if (!buffer)
-    buffer = malloc(10000);
-
-  /* if buffer empty, read it in */
-  if (rp >= n)
-    {
-    n = gzread(file, buffer, 10000);
-
-    if (n < 0)
-      printf("Error reading input file\n");
-
-    if (n <= 0)
-      {
-      str[0] = 0;
-      return -1;
-      }
-    rp = 0;
-    }
-
-  /* copy from buffer to str until end of line */
-  for (i=0 ; rp<n ; i++,rp++)
-    {
-    if (i >= maxlen)
-      return -1;
-
-    str[i] = buffer[rp];
-    if (buffer[rp] == '\n')
-      {
-      i++;
-      rp++;
-      break;
-      }
-    }
-  str[i] = 0;
-
-  if (rp >= n && str[i-1] != '\n')
-    {
-    /* line not fully in buffer, read next buffer */
-    j = iogets(file, str+i, maxlen-i);
-    if (j < 0)
-      {
-      str[0] = 0;
-      return -1;
-      }
-    }
-
-  return strlen(str);
-}
-
 /*------------------------------------------------------------------*/
 
 INT init_module_parameters(BOOL bclose)
@@ -3187,18 +3233,315 @@ INT bevid_2_mheader(EVENT_HEADER * pevent, DWORD * pybos)
 
 /*------------------------------------------------------------------*/
 
-INT analyze_file(INT run_number, char *input_file_name, char *output_file_name)
+void odb_load(EVENT_HEADER *pevent)
+{
+BOOL  flag;
+int   size, i, status;
+char  str[256];
+HNDLE hKey, hKeyRoot, hKeyEq;
+
+  flag = TRUE;
+  size = sizeof(flag);
+  sprintf(str, "/%s/ODB Load", analyzer_name);
+  db_get_value(hDB, 0, str, &flag, &size, TID_BOOL);
+
+  if (flag)
+    {
+    for (i=0 ; i<10 ; i++)
+      if (clp.protect[i][0] && !clp.quiet)
+        printf("Protect ODB tree \"%s\"\n", clp.protect[i]);
+
+    if (!clp.quiet)
+      printf("Load ODB from run %d...", current_run_number);
+    
+    if (flag == 1)
+      {
+      /* lock all ODB values except run parameters */
+      db_set_mode(hDB, 0, MODE_READ, TRUE);
+
+      db_find_key(hDB, 0, "/Experiment/Run Parameters", &hKey);
+      if (hKey)
+        db_set_mode(hDB, hKey, MODE_READ | MODE_WRITE | MODE_DELETE, TRUE);
+
+      /* and analyzer parameters */
+      sprintf(str, "/%s/Parameters", analyzer_name);
+      db_find_key(hDB, 0, str, &hKey);
+      if (hKey)
+        db_set_mode(hDB, hKey, MODE_READ | MODE_WRITE | MODE_DELETE, TRUE);
+
+      /* and equipment (except /variables) */
+      db_find_key(hDB, 0, "/Equipment", &hKeyRoot);
+      if (hKeyRoot)
+        {
+        db_set_mode(hDB, hKeyRoot, MODE_READ | MODE_WRITE | MODE_DELETE, FALSE);
+
+        for (i=0 ; ; i++)
+          {
+          status = db_enum_key(hDB, hKeyRoot, i, &hKeyEq);
+          if (status == DB_NO_MORE_SUBKEYS)
+            break;
+          
+          db_set_mode(hDB, hKeyEq, MODE_READ | MODE_WRITE | MODE_DELETE, TRUE);
+
+          db_find_key(hDB, hKeyEq, "Variables", &hKey);
+          if (hKey)
+            db_set_mode(hDB, hKey, MODE_READ, TRUE);
+          }
+        }
+
+      /* lock protected trees */
+      for (i=0 ; i<10 ; i++)
+        if (clp.protect[i][0])
+          {
+          db_find_key(hDB, 0, clp.protect[i], &hKey);
+          if (hKey)
+            db_set_mode(hDB, hKey, MODE_READ, TRUE);
+          }
+      }
+
+    /* close open records to parameters */
+    init_module_parameters(TRUE);
+
+    db_paste(hDB, 0, (char *) (pevent+1));
+
+    if (flag == 1)
+      db_set_mode(hDB, 0, MODE_READ | MODE_WRITE | MODE_DELETE, TRUE);
+
+    /* reload parameter files after BOR event */
+    if (!clp.quiet)
+      printf("OK\n");
+    load_parameters(current_run_number);
+
+    /* open module parameters again */
+    init_module_parameters(FALSE);
+    }
+}
+
+/*------------------------------------------------------------------*/
+
+#define MA_DEVICE_DISK        1
+#define MA_DEVICE_TAPE        2
+#define MA_DEVICE_FTP         3
+#define MA_DEVICE_PVM         4
+
+#define MA_FORMAT_MIDAS       (1<<0)
+#define MA_FORMAT_YBOS        (1<<2)
+#define MA_FORMAT_GZIP        (1<<3)
+
+typedef struct {
+  char    file_name[256];
+  int     format;
+  int     device;
+  int     fd;
+  gzFile  gzfile;
+/*FTP_CON ftp_con;*/
+} MA_FILE;
+
+/*------------------------------------------------------------------*/
+
+MA_FILE *ma_open(char* file_name)
+{
+char    *ext_str;
+int     status;
+MA_FILE *file;
+
+  cm_msg(MERROR, "ma_open", "Open file %s", file_name);
+  /* allocate MA_FILE structure */
+  file = calloc(sizeof(MA_FILE), 1);
+  if (file == NULL)
+    {
+    cm_msg(MERROR, "open_input_file", "Cannot allocate MA file structure");
+    return NULL;
+    }
+
+  /* save file name */
+  strcpy(file->file_name, file_name);
+
+  /* for now, just read from disk */
+  file->device = MA_DEVICE_DISK;
+
+  /* or from PVM */
+  if (pvm_slave)
+    file->device = MA_DEVICE_PVM;
+
+  /* check input file extension */
+  if (strchr(file_name, '.'))
+    {
+    ext_str = file_name + strlen(file_name)-1;
+    while (*ext_str != '.')
+      ext_str--;
+    }
+  else
+    ext_str = "";
+
+  if (strncmp(ext_str, ".gz", 3) == 0)
+    {
+    ext_str--;
+    while (*ext_str != '.' && ext_str > file_name)
+      ext_str--;
+    }
+
+  if (strncmp(file_name, "/dev/", 4) == 0) /* assume MIDAS tape */
+    file->format = MA_FORMAT_MIDAS;
+  else if (strncmp(ext_str, ".mid", 4) == 0)
+    file->format = MA_FORMAT_MIDAS;
+  else if (strncmp(ext_str, ".ybs", 4) == 0)
+    file->format = MA_FORMAT_YBOS;
+  else
+    {
+    printf("Unknown input data format \"%s\". Please use file extension .mid or mid.gz.\n", ext_str);
+    return NULL;
+    }
+
+  if (file->device == MA_DEVICE_DISK)
+    {
+    if (file->format == MA_FORMAT_YBOS)
+      {
+      status = yb_any_file_ropen(file_name, FORMAT_YBOS);
+      if (status != SS_SUCCESS)
+        {
+        printf("File %s not found\n", file_name);
+        return NULL;
+        }
+      }
+    else
+      {
+      file->gzfile = gzopen(file_name, "rb");
+      if (file == NULL)
+        {
+        printf("File %s not found\n", file_name);
+        return NULL;
+        }
+      }
+    }
+
+  return file;
+}
+  
+/*------------------------------------------------------------------*/
+
+int ma_close(MA_FILE *file)
+{
+  if (file->format == FORMAT_YBOS)
+    yb_any_file_rclose(FORMAT_YBOS);
+  else
+    gzclose(file->gzfile);
+
+  free(file);
+  return SUCCESS;
+}
+  
+/*------------------------------------------------------------------*/
+
+int ma_read_event(MA_FILE *file, EVENT_HEADER *pevent, int size)
+{ 
+int status, n;
+
+  if (file->device == MA_DEVICE_DISK)
+    {
+    if (file->format == MA_FORMAT_MIDAS)
+      {
+      if (size < sizeof(EVENT_HEADER))
+        {
+        cm_msg(MERROR, "ma_read_event", "Buffer size too small");
+        return -1;
+        }
+
+      /* read event header */
+      n = gzread(file->gzfile, pevent, sizeof(EVENT_HEADER));
+      if (n < sizeof(EVENT_HEADER))
+        {
+        if (n > 0)
+          printf("Unexpected end of file %s, last event skipped\n", file->file_name);
+        return -1;
+        }
+
+      /* read event */
+      n = 0;
+      if (pevent->data_size > 0)
+        {
+        if (size < (int)pevent->data_size+(int)sizeof(EVENT_HEADER))
+          {
+          cm_msg(MERROR, "ma_read_event", "Buffer size too small");
+          return -1;
+          }
+
+        n = gzread(file->gzfile, pevent+1, pevent->data_size);
+        if (n != (INT) pevent->data_size)
+          {
+          printf("Unexpected end of file %s, last event skipped\n", file->file_name);
+          return -1;
+          }
+        }
+
+      return n+sizeof(EVENT_HEADER);
+      }
+    else if (file->format == FORMAT_YBOS)
+      {
+      DWORD * pybos, readn;
+      if (ybos_event_get (&pybos, &readn) != SS_SUCCESS)
+        return -1;
+      status = yb_any_event_swap(FORMAT_YBOS, pybos);
+      memcpy((char *)(pevent+1), (char *)pybos, readn); 
+      status  = bevid_2_mheader(pevent, pybos);
+      }
+    }
+  else if (file->device == MA_DEVICE_PVM)
+    {
+#ifdef PVM
+    int bufid, len, tag, tid;
+    
+    /* send data request */
+    pvm_initsend(PvmDataInPlace);
+    pvm_send(pvm_myparent, TAG_DATA);
+
+    /* receive data */
+    bufid = pvm_recv(-1, -1);
+    if (bufid < 0)
+      {
+      pvm_perror("pvm_recv");
+      return -1;
+      }
+
+    status = pvm_bufinfo(bufid, &len, &tag, &tid);
+    if (status < 0)
+      {
+      pvm_perror("pvm_bufinfo");
+      return -1;
+      }
+
+    if (tag == TAG_EOR || tag == TAG_EXIT)
+      {
+      cm_msg(MERROR, "ma_read_event", "Receive tag %d", tag);
+      return -1;
+      }
+
+    status = pvm_upkbyte((char *)pevent, len, 1);
+    if (status < 0)
+      {
+      pvm_perror("pvm_upkbyte");
+      return -1;
+      }
+
+    return len;
+#endif
+    }
+
+  return 0;
+}
+
+/*------------------------------------------------------------------*/
+
+INT analyze_run(INT run_number, char *input_file_name, char *output_file_name)
 {
 EVENT_HEADER    *pevent, *pevent_unaligned;
 ANALYZE_REQUEST *par;
-INT             i, n, flag, size;
+INT             i, n, size;
 DWORD           num_events_in, num_events_out;
 char            error[256], str[256];
-char            *ext_str;
-INT             format, status;
-gzFile          file;
+INT             status;
+MA_FILE         *file;
 BOOL            skip;
-HNDLE           hKey, hKeyEq, hKeyRoot;
 DWORD           start_time;
 
   /* set output file name and flags in ODB */
@@ -3216,54 +3559,14 @@ DWORD           start_time;
   /* let changes propagate to modules */
   cm_yield(0);
 
-  /* check input file extension */
-  if (strchr(input_file_name, '.'))
+  /* open input file, will be changed to ma_open_file later... */
+  file = ma_open(input_file_name);
+  if (file == NULL)
     {
-    ext_str = input_file_name + strlen(input_file_name)-1;
-    while (*ext_str != '.')
-      ext_str--;
-    }
-  else
-    ext_str = "";
-
-  if (strncmp(ext_str, ".gz", 3) == 0)
-    {
-    ext_str--;
-    while (*ext_str != '.' && ext_str > input_file_name)
-      ext_str--;
-    }
-
-  if (strncmp(input_file_name, "/dev/", 4) == 0) /* assume MIDAS tape */
-    format = FORMAT_MIDAS;
-  else if (strncmp(ext_str, ".mid", 4) == 0)
-    format = FORMAT_MIDAS;
-  else if (strncmp(ext_str, ".ybs", 4) == 0)
-    format = FORMAT_YBOS;
-  else
-    {
-    printf("Unknown input data format \"%s\". Please use file extension .mid or mid.gz.\n", ext_str);
+    printf("Cannot open input file \"%s\"", input_file_name);
     return -1;
     }
 
-  if (format == FORMAT_YBOS)
-    {
-    status = yb_any_file_ropen(input_file_name, FORMAT_YBOS);
-    if (status != SS_SUCCESS)
-      {
-      printf("File %s not found\n", input_file_name);
-      return -1;
-      }
-    }
-  else
-    {
-    file = gzopen(input_file_name, "rb");
-    if (file == NULL)
-      {
-      printf("File %s not found\n", input_file_name);
-      return -1;
-      }
-    }
-  
   pevent_unaligned = malloc(MAX_EVENT_SIZE+sizeof(EVENT_HEADER));
   if (pevent_unaligned == NULL)
     {
@@ -3282,130 +3585,20 @@ DWORD           start_time;
   /* event loop */
   do
     {
-    if (format == FORMAT_MIDAS)
-      {
-      /* read event header */
-      n = gzread(file, pevent, sizeof(EVENT_HEADER));
-      if (n < sizeof(EVENT_HEADER))
-        {
-        if (n > 0)
-          printf("Unexpected end of file %s, last event skipped\n", input_file_name);
-
-        break;
-        }
-
-      /* read event */
-      if (pevent->data_size > 0)
-        {
-        n = gzread(file, pevent+1, pevent->data_size);
-        if (n != (INT) pevent->data_size)
-          {
-          printf("Unexpected end of file %s, last event skipped\n", input_file_name);
-          break;
-          }
-        }
-      }
-    else if (format == FORMAT_YBOS)
-      {
-      DWORD * pybos, readn;
-      if (ybos_event_get (&pybos, &readn) != SS_SUCCESS)
-        break;
-      status = yb_any_event_swap(FORMAT_YBOS, pybos);
-      memcpy((char *)(pevent+1), (char *)pybos, readn); 
-      status  = bevid_2_mheader(pevent, pybos);
-      }
+    /* read next event */
+    n = ma_read_event(file, pevent, MAX_EVENT_SIZE+sizeof(EVENT_HEADER));
+    if (n <= 0)
+      break;
 
     num_events_in++;
-
-    /* load ODB with BOR event */
-    if (pevent->event_id == EVENTID_BOR)
-      {
-      run_number = pevent->serial_number;
-      current_run_number = run_number;
-
-      flag = TRUE;
-      size = sizeof(flag);
-      sprintf(str, "/%s/ODB Load", analyzer_name);
-      db_get_value(hDB, 0, str, &flag, &size, TID_BOOL);
-
-      if (flag)
-        {
-        for (i=0 ; i<10 ; i++)
-          if (clp.protect[i][0] && !clp.quiet)
-            printf("Protect ODB tree \"%s\"\n", clp.protect[i]);
-
-        if (!clp.quiet)
-          printf("Load ODB from run %d...", run_number);
-        
-        if (flag == 1)
-          {
-          /* lock all ODB values except run parameters */
-          db_set_mode(hDB, 0, MODE_READ, TRUE);
-
-          db_find_key(hDB, 0, "/Experiment/Run Parameters", &hKey);
-          if (hKey)
-            db_set_mode(hDB, hKey, MODE_READ | MODE_WRITE | MODE_DELETE, TRUE);
-
-          /* and analyzer parameters */
-          sprintf(str, "/%s/Parameters", analyzer_name);
-          db_find_key(hDB, 0, str, &hKey);
-          if (hKey)
-            db_set_mode(hDB, hKey, MODE_READ | MODE_WRITE | MODE_DELETE, TRUE);
-
-          /* and equipment (except /variables) */
-          db_find_key(hDB, 0, "/Equipment", &hKeyRoot);
-          if (hKeyRoot)
-            {
-            db_set_mode(hDB, hKeyRoot, MODE_READ | MODE_WRITE | MODE_DELETE, FALSE);
-
-            for (i=0 ; ; i++)
-              {
-              status = db_enum_key(hDB, hKeyRoot, i, &hKeyEq);
-              if (status == DB_NO_MORE_SUBKEYS)
-                break;
-              
-              db_set_mode(hDB, hKeyEq, MODE_READ | MODE_WRITE | MODE_DELETE, TRUE);
-
-              db_find_key(hDB, hKeyEq, "Variables", &hKey);
-              if (hKey)
-                db_set_mode(hDB, hKey, MODE_READ, TRUE);
-              }
-            }
-
-          /* lock protected trees */
-          for (i=0 ; i<10 ; i++)
-            if (clp.protect[i][0])
-              {
-              db_find_key(hDB, 0, clp.protect[i], &hKey);
-              if (hKey)
-                db_set_mode(hDB, hKey, MODE_READ, TRUE);
-              }
-          }
-
-        /* close open records to parameters */
-        init_module_parameters(TRUE);
-
-        db_paste(hDB, 0, (char *) (pevent+1));
-
-        if (flag == 1)
-          db_set_mode(hDB, 0, MODE_READ | MODE_WRITE | MODE_DELETE, TRUE);
-
-        /* reload parameter files after BOR event */
-        if (!clp.quiet)
-          printf("OK\n");
-        load_parameters(run_number);
-
-        /* open module parameters again */
-        init_module_parameters(FALSE);
-
-        /* reinit start time */
-        start_time = ss_millitime();
-        }
-      }
 
     /* copy system events (BOR, EOR, MESSAGE) to output file */
     if (pevent->event_id < 0)
       {
+      status = process_event(NULL, pevent);
+      if (status < 0 || status == RPC_SHUTDOWN) /* disk full/stop analyzer */
+        break;
+
       if (out_file && out_format == FORMAT_MIDAS)
         {
         size = pevent->data_size + sizeof(EVENT_HEADER);
@@ -3416,12 +3609,15 @@ DWORD           start_time;
 
         if (status != SUCCESS)
           {
-          cm_msg(MERROR, "analyze_file", "Error writing to file (Disk full?)");
+          cm_msg(MERROR, "analyze_run", "Error writing to file (Disk full?)");
           return -1;
           }
 
         num_events_out++;
         }
+
+      /* reinit start time */
+      start_time = ss_millitime();
       }
 
     /* check if event is in event limit */
@@ -3511,14 +3707,16 @@ DWORD           start_time;
       printf("%s:%d  events, %1.2lfs\n", input_file_name, num_events_in, start_time/1000.0); 
     }
 
-  /* call analyzer eor routines */
-  eor(run_number, error);
+  /* signal EOR to slaves */
+#ifdef PVM
+  pvm_eor();
+#endif
 
-  if (format == FORMAT_YBOS)
-    yb_any_file_rclose(format);
-  else
-    gzclose(file);
-  
+  /* call analyzer eor routines */
+  eor(current_run_number, error);
+
+  ma_close(file);
+
   free(pevent_unaligned);
 
   return status;
@@ -3563,7 +3761,7 @@ BANK_LIST *bank_list;
       else
         strcpy(output_file_name, clp.output_file_name);
 
-      status = analyze_file(run_number, input_file_name, output_file_name);
+      status = analyze_run(run_number, input_file_name, output_file_name);
       }
     }
   else
@@ -3593,7 +3791,7 @@ BANK_LIST *bank_list;
       else
         strcpy(output_file_name, clp.output_file_name);
 
-      status = analyze_file(run_number, input_file_name, output_file_name);
+      status = analyze_run(run_number, input_file_name, output_file_name);
       }
     }
 
@@ -3635,6 +3833,163 @@ BANK_LIST *bank_list;
 
 /*------------------------------------------------------------------*/
 
+#ifdef PVM
+
+int pvm_main(char *argv[])
+{
+int  mytid, status, i;
+char path[256];
+
+  getcwd(path, 256);
+
+  mytid = pvm_mytid();
+  if (mytid < 0)
+    {
+    pvm_perror("pvm_mytid");
+    return 0;
+    }
+
+  chdir(path);
+
+  status = pvm_setopt(PvmRoute, PvmRouteDirect);
+  if (status < 0)
+    {
+    pvm_perror("pvm_setopt");
+    pvm_exit();
+    return 0;
+    }
+
+  pvm_myparent = pvm_parent();
+  if (pvm_myparent < 0 && pvm_myparent != PvmNoParent)
+    {
+    pvm_perror("pvm_parent");
+    pvm_exit();
+    return 0;
+    }
+
+  /* check if master */
+  if (pvm_myparent == PvmNoParent)
+    {
+    struct pvmhostinfo *hostp;
+    int  n_host, n_arch;
+
+#ifdef WIN32
+    char *p;
+    
+    /* use no path, executable must be under $PVM_ROOT$/bin/WIN32 */
+    p = argv[0]+strlen(argv[0])-1;
+    while (p > argv[0] && *p != '\\')
+      p--;
+    if (*p == '\\')
+      p++;
+    strcpy(path, p);
+#else
+    if (strchr(argv[0], '/') == 0)
+      {
+      getcwd(path, 256);
+      strcat(path, "/");
+      strcat(path, argv[0]);
+      }
+    else
+      strcpy(path, argv[0]);
+#endif
+
+    /* return if no parallelization selected */
+    if (clp.n_task == -1)
+      return SUCCESS;
+
+    /* Set number of slaves to start */
+    pvm_config(&n_host, &n_arch, &hostp);
+
+    pvm_n_task = n_host-1;
+    if (clp.n_task != 0)
+      pvm_n_task = clp.n_task;
+
+    if (pvm_n_task == 0)
+      return SUCCESS;
+
+    pvm_master = TRUE;
+
+    pvm_tid = malloc(sizeof(int)*pvm_n_task);
+
+    /* spawn slaves */
+    printf("Spawning %s %d times\n", path, pvm_n_task);
+    if (pvm_n_task == 1)
+      status = pvm_spawn(path, argv+1, PvmTaskDefault, NULL, pvm_n_task, pvm_tid);
+    else
+      status = pvm_spawn(path, argv+1, PvmTaskHost | PvmHostCompl, ".", pvm_n_task, pvm_tid);
+    if (status == 0)
+      {
+      pvm_perror("pvm_spawn");
+      pvm_exit();
+      return 0;
+      }
+
+    if (status < pvm_n_task)
+      {
+      printf("Trouble spawning slaves. Aborting. Error codes are:\n");
+      for(i=0 ; i<pvm_n_task ; i++)
+        printf("TID %d %d\n", i, pvm_tid[i]);
+
+      pvm_exit();
+      return 0;
+      }
+    }
+  else
+    {
+    pvm_master = FALSE;
+    pvm_slave = TRUE;
+    }
+
+  return SUCCESS;
+}
+
+/*------------------------------------------------------------------*/
+
+void pvm_eor()
+{
+struct timeval timeout;
+int bufid, len, tag, tid, i, status;
+
+  /* if master, distribute events to clients */
+  if (pvm_master)
+    {
+    for (i=0 ; i<pvm_n_task ; i++)
+      {
+      /* wait on event request */
+      timeout.tv_sec  = 5;
+      timeout.tv_usec = 0;
+
+      bufid = pvm_trecv(-1, -1, &timeout);
+      if (bufid < 0)
+        {
+        pvm_perror("pvm_recv");
+        return;
+        }
+      if (bufid == 0)
+        {
+        printf("Timeout receiving data requests from slaves, aborting analyzer.\n");
+        return;
+        }
+
+      pvm_bufinfo(bufid, &len, &tag, &tid);
+
+      /* send zero event */
+      pvm_initsend(PvmDataInPlace);
+      status = pvm_send(tid, TAG_DATA);
+      if (status < 0)
+        {
+        pvm_perror("pvm_send");
+        return;
+        }
+      }
+    }
+}
+
+#endif /* PVM */
+    
+/*------------------------------------------------------------------*/
+
 main(int argc, char *argv[])
 {
 INT status;
@@ -3665,6 +4020,12 @@ INT status;
   if (clp.online)
     clp.rwnt = TRUE;
 
+#ifdef PVM
+  status = pvm_main(argv);
+  if (status != CM_SUCCESS)
+    return 1;
+#endif
+  
   /* now connect to server */
   if (clp.online)
     {
@@ -3710,19 +4071,22 @@ INT status;
     }
   else
     {
-    status = cm_exist(analyzer_name, FALSE);
-    if (status == CM_SUCCESS)
+    if (!pvm_slave) /* slave could run on same machine... */
       {
-      /* kill hanging previous analyzer */
-      cm_cleanup();
-
       status = cm_exist(analyzer_name, FALSE);
       if (status == CM_SUCCESS)
         {
-        /* analyzer may only run once if offline */
-        status = cm_shutdown(analyzer_name, FALSE);
-        if (status == CM_SHUTDOWN)
-          printf("Previous analyzer stopped\n");
+        /* kill hanging previous analyzer */
+        cm_cleanup();
+
+        status = cm_exist(analyzer_name, FALSE);
+        if (status == CM_SUCCESS)
+          {
+          /* analyzer may only run once if offline */
+          status = cm_shutdown(analyzer_name, FALSE);
+          if (status == CM_SHUTDOWN)
+            printf("Previous analyzer stopped\n");
+          }
         }
       }
     }
@@ -3759,17 +4123,18 @@ INT status;
   register_requests();
 
   /* initialize ss_getchar */
-  if (!clp.quiet)
+  if (!clp.quiet && !pvm_slave)
     ss_getchar(0);
 
-  /* start main loop */
+  /*---- start main loop ----*/
+
   if (clp.online)
     loop_online();
   else
     loop_runs_offline();
 
   /* reset terminal */
-  if (!clp.quiet)
+  if (!clp.quiet && !pvm_slave)
     ss_getchar(TRUE);
 
   /* call exit function */
@@ -3777,6 +4142,11 @@ INT status;
 
   /* close network connection to server */
   cm_disconnect_experiment();
+
+#ifdef PVM
+  /* exit PVM */
+  pvm_exit();
+#endif
 
   return 0;
 }
