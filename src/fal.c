@@ -7,6 +7,9 @@
                 Most routines are from mfe.c mana.c and mlogger.c.
 
   $Log$
+  Revision 1.10  1999/02/22 11:04:00  midas
+  Fixed second bug with ss_getchar()
+
   Revision 1.9  1999/02/22 11:01:39  midas
   Fixed bug with ss_getchar()
 
@@ -3724,11 +3727,13 @@ char            str[80];
           ch = getchar();
 
         if (ch == '!')
-          break;
+          status = RPC_SHUTDOWN;
         }
 
       if (ch > 0)
         display(TRUE);
+      if (status == RPC_SHUTDOWN)
+        break;
 
       last_time_display = actual_time;
       }
