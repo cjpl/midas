@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.90  2001/12/11 13:41:31  midas
+  Added "MOptions" multiple options
+
   Revision 1.89  2001/12/11 10:20:58  midas
   Changed the way "language" is interpreted, no need to restart elogd after
   language change any more.
@@ -416,6 +419,7 @@ char author_list[MAX_N_LIST][NAME_LENGTH] = {
 /* attribute flags */
 #define AF_REQUIRED           (1<<0)
 #define AF_LOCKED             (1<<1)
+#define AF_MULTI              (1<<2)
 
 char attr_list[MAX_N_ATTR][NAME_LENGTH];
 char attr_options[MAX_N_ATTR][MAX_N_LIST][NAME_LENGTH];
@@ -2787,6 +2791,9 @@ int  i, j, n, m;
 
   if (getcfg(logbook, "Attributes", list))
     {
+    /* reset attribute flags */
+    memset(attr_flags, 0, sizeof(attr_flags));
+
     /* get attribute list */
     memset(attr_list, 0, sizeof(attr_list));
     n = strbreak(list, attr_list, MAX_N_ATTR);
@@ -2798,10 +2805,14 @@ int  i, j, n, m;
       sprintf(str, "Options %s", attr_list[i]);
       if (getcfg(logbook, str, list))
         strbreak(list, attr_options[i], MAX_N_LIST);
-      }
 
-    /* get flags for attributes */
-    memset(attr_flags, 0, sizeof(attr_flags));
+      sprintf(str, "MOptions %s", attr_list[i]);
+      if (getcfg(logbook, str, list))
+        {
+        strbreak(list, attr_options[i], MAX_N_LIST);
+        attr_flags[i] |= AF_MULTI;
+        }
+      }
 
     /* check if attribut required */
     getcfg(logbook, "Required Attributes", list);
@@ -3577,22 +3588,43 @@ time_t now;
         }
       else
         {
-        /* display drop-down box */
-        rsprintf("<tr><td nowrap bgcolor=%s><b>%s%s:</b></td><td bgcolor=%s><select name=\"%s\">\n",
-                 gt("Categories bgcolor1"), attr_list[index], star, gt("Categories bgcolor2"), attr_list[index]);
-
-        /* display emtpy option */
-        rsprintf("<option value=\"\">- %s -\n", loc("please select"));
-
-        for (i=0 ; i<MAX_N_LIST && attr_options[index][i][0] ; i++)
+        if (attr_flags[index] & AF_MULTI)
           {
-          if (equal_ustring(attr_options[index][i], attrib[index]))
-            rsprintf("<option selected value=\"%s\">%s\n", attr_options[index][i], attr_options[index][i]);
-          else
-            rsprintf("<option value=\"%s\">%s\n", attr_options[index][i], attr_options[index][i]);
-          }
+          /* display multiple check boxes */
+          rsprintf("<tr><td nowrap bgcolor=%s><b>%s%s:</b></td><td bgcolor=%s>\n",
+                   gt("Categories bgcolor1"), attr_list[index], star, gt("Categories bgcolor2"));
 
-        rsprintf("</select></td></tr>\n");
+          for (i=0 ; i<MAX_N_LIST && attr_options[index][i][0] ; i++)
+            {
+            sprintf(str, "%s%d", attr_list[index], i);
+
+            if (strstr(attrib[index], attr_options[index][i]))
+              rsprintf("<input type=checkbox checked name=\"%s\" value=\"%s\">%s&nbsp;\n", str, attr_options[index][i], attr_options[index][i]);
+            else
+              rsprintf("<input type=checkbox name=\"%s\" value=\"%s\">%s&nbsp;\n", str, attr_options[index][i], attr_options[index][i]);
+            }
+
+          rsprintf("</td></tr>\n");
+          }
+        else
+          {
+          /* display drop-down box */
+          rsprintf("<tr><td nowrap bgcolor=%s><b>%s%s:</b></td><td bgcolor=%s><select name=\"%s\">\n",
+                   gt("Categories bgcolor1"), attr_list[index], star, gt("Categories bgcolor2"), attr_list[index]);
+
+          /* display emtpy option */
+          rsprintf("<option value=\"\">- %s -\n", loc("please select"));
+
+          for (i=0 ; i<MAX_N_LIST && attr_options[index][i][0] ; i++)
+            {
+            if (equal_ustring(attr_options[index][i], attrib[index]))
+              rsprintf("<option selected value=\"%s\">%s\n", attr_options[index][i], attr_options[index][i]);
+            else
+              rsprintf("<option value=\"%s\">%s\n", attr_options[index][i], attr_options[index][i]);
+            }
+
+          rsprintf("</select></td></tr>\n");
+          }
         }
       }
     }
@@ -5141,8 +5173,33 @@ int    i, j, n, index, n_attr, n_mail, suppress, status;
   /* retrieve attributes */
   for (i=0 ; i<n_attr ; i++)
     {
-    strncpy(attrib[i], getparam(attr_list[i]), NAME_LENGTH);
-    attrib[i][NAME_LENGTH-1] = 0;
+    if (attr_flags[i] & AF_MULTI)
+      {
+      attrib[i][0] = 0;
+      for (j=0 ; j<MAX_N_LIST ; j++)
+        {
+        sprintf(str, "%s%d", attr_list[i], j);
+        if (getparam(str))
+          {
+          if (*getparam(str))
+            {
+            if (j>0)
+              strcat(attrib[i], " | ");
+            if (strlen(attrib[i]) + strlen(getparam(str)) < NAME_LENGTH-2)
+              strcat(attrib[i], getparam(str));
+            else
+              break;
+            }
+          }
+        else
+          break;
+        }
+      }
+    else
+      {
+      strncpy(attrib[i], getparam(attr_list[i]), NAME_LENGTH);
+      attrib[i][NAME_LENGTH-1] = 0;
+      }
 
     if (!*getparam("edit"))
       {
