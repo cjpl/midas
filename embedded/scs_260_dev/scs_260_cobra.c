@@ -6,6 +6,9 @@
   Contents:     Broadcast program for COBRA magnet
 
   $Log$
+  Revision 1.2  2005/03/17 11:19:24  ritt
+  Changed indentation
+
   Revision 1.1  2005/03/16 14:21:20  ritt
   Initial revision
 
@@ -24,7 +27,7 @@
 char *host_name = "MSCB001";    // used for DHCP
 
 /* set MAC address for first PSI address by default */
-unsigned char eth_src_hw_addr[ETH_ADDR_LEN] = { 0x00,0x50,0xC2,0x46,0xD0,0x00 };
+unsigned char eth_src_hw_addr[ETH_ADDR_LEN] = { 0x00, 0x50, 0xC2, 0x46, 0xD0, 0x00 };
 
 /*------------------------------------------------------------------*/
 
@@ -69,10 +72,10 @@ void setup(void)
    P3 = 0xFF;                   // P3 contains the data lines
 
    OSCICN = 0x83;               // set internal oscillator to run
-                                // at its maximum frequency
+   // at its maximum frequency
 
    CLKSEL = 0x00;               // Select the internal osc. as
-                                // the SYSCLK source
+   // the SYSCLK source
 
    //Turn on the PLL and increase the system clock by a factor of M/N = 2
    SFRPAGE = CONFIG_PAGE;
@@ -97,13 +100,13 @@ void setup(void)
    SFRPAGE = LEGACY_PAGE;
 
    EMI0CF = 0xD7;               // Split-Mode, non-multiplexed
-                                // on P0-P3 (use 0xF7 for P4 - P7)
+   // on P0-P3 (use 0xF7 for P4 - P7)
 
    EMI0TC = 0xB7;               // This value may be modified
-                                // according to SYSCLK to meet the
-                                // timing requirements for the CS8900A
-                                // For example, EMI0TC should be >= 0xB7
-                                // for a 100 MHz SYSCLK.
+   // according to SYSCLK to meet the
+   // timing requirements for the CS8900A
+   // For example, EMI0TC should be >= 0xB7
+   // for a 100 MHz SYSCLK.
 
    /* init memory */
    RS485_ENABLE = 0;
@@ -130,25 +133,25 @@ void yield()
 
 void tcp_server(void)
 {
-	unsigned char packet_type, i, n;
-	PSOCKET_INFO socket_ptr;
-	int sent, recvd;
+   unsigned char packet_type, i, n;
+   PSOCKET_INFO socket_ptr;
+   int sent, recvd;
    char socket_no;
    unsigned char dhcp_state;
 
-	socket_ptr = &sock_info[0];
-	recvd = 0;
+   socket_ptr = &sock_info[0];
+   recvd = 0;
 
    /* if no listening socket open, open or reopen it */
    if (mn_find_socket(TELNET_PORT, 0, null_addr, PROTO_TCP) == NULL) {
 
       /* count number of active sockets */
-      for (i=n=0 ; i<NUM_SOCKETS ; i++)
+      for (i = n = 0; i < NUM_SOCKETS; i++)
          if (SOCKET_ACTIVE(i))
             n++;
 
       /* leave one inactive socket for ping and arp requests */
-      if (n < NUM_SOCKETS-1) {
+      if (n < NUM_SOCKETS - 1) {
          socket_no = mn_open(null_addr, TELNET_PORT, 0, NO_OPEN, PROTO_TCP,
                              STD_TYPE, tcp_rx_buf[0], DATA_BUFF_LEN);
          if (socket_no >= 0) {
@@ -159,9 +162,7 @@ void tcp_server(void)
       }
    }
 
-   /* loop until we get a tcp packet, will open a socket automatically
-		if required.
-	*/
+   /* check DHCP status, renew if expired */
    dhcp_state = dhcp_lease.dhcp_state;
    if (dhcp_state == DHCP_DEAD)
       return;
@@ -170,37 +171,36 @@ void tcp_server(void)
    if (dhcp_state == DHCP_RENEWING || dhcp_state == DHCP_REBINDING)
       mn_dhcp_renew(dhcp_lease.org_lease_time);
 
- 	packet_type = mn_ip_recv();
+   packet_type = mn_ip_recv();
 
- 	if (packet_type & TCP_TYPE) {
-	   recvd = mn_tcp_recv(&socket_ptr);
-   	if (socket_ptr == NULL)
-   		return;
+   if (packet_type & TCP_TYPE) {
+      recvd = mn_tcp_recv(&socket_ptr);
+      if (socket_ptr == NULL)
+         return;
 
-      if (socket_ptr->tcp_state == TCP_CLOSED) { /* other side closed */
+      if (socket_ptr->tcp_state == TCP_CLOSED) {        /* other side closed */
          mn_abort(socket_ptr->socket_no);
          return;
       }
    }
 
- 	if (packet_type & UDP_TYPE) {
-	   recvd = mn_udp_recv(&socket_ptr);
-   	if (socket_ptr == NULL)
-   		return;
+   if (packet_type & UDP_TYPE) {
+      recvd = mn_udp_recv(&socket_ptr);
+      if (socket_ptr == NULL)
+         return;
    }
 
-   for (i=0 ; i<NUM_SOCKETS ; i++) {
+   for (i = 0; i < NUM_SOCKETS; i++) {
       socket_ptr = MK_SOCKET_PTR(i);
       if (socket_ptr->ip_proto == PROTO_TCP && TCP_TIMER_EXPIRED(socket_ptr) &&
-            (socket_ptr->send_len || socket_ptr->tcp_state >= TCP_FIN_WAIT_1))
-         {
+          (socket_ptr->send_len || socket_ptr->tcp_state >= TCP_FIN_WAIT_1)) {
          sent = mn_tcp_send(socket_ptr);
-   
+
          if (sent == TCP_NO_CONNECT || socket_ptr->tcp_state == TCP_CLOSED)
             mn_abort(socket_ptr->socket_no);
-   
+
          return;
-         }
+      }
    }
 
    return;
@@ -276,28 +276,26 @@ void main(void)
       tcp_server();
 
       if (time() - last_time >= 100) {
-      
+
          last_time = time();
-   
+
          /* send time and socket states */
-         sprintf(str, "Time: %1.3f:", (float)time()/100.0);
-         for (j=0 ; j<NUM_SOCKETS ; j++)
-            sprintf(str+strlen(str), " %bd", sock_info[j].tcp_state);
+         sprintf(str, "Time: %1.3f:", (float) time() / 100.0);
+         for (j = 0; j < NUM_SOCKETS; j++)
+            sprintf(str + strlen(str), " %bd", sock_info[j].tcp_state);
          strcat(str, "\r\n");
 
          /* broadcast data */
          udp_send(bc_sock, str, strlen(str));
 
          /* send data to all connected sockets */
-         for (i=0 ; i<NUM_SOCKETS ; i++) {
+         for (i = 0; i < NUM_SOCKETS; i++) {
             if (sock_info[i].tcp_state == TCP_ESTABLISHED) {
                tcp_send(i, str, strlen(str));
             }
          }
       }
-   
-     
+
+
    } while (1);
 }
-
-
