@@ -4,6 +4,9 @@ Name:         mevb.h
 
   Contents:     Event builder header file
   $Log$
+  Revision 1.4  2002/09/25 18:37:46  pierre
+  correct: header passing, user field, abort run
+
   Revision 1.3  2002/06/14 04:57:09  pierre
   revised for 1.9.x
 
@@ -16,6 +19,7 @@ Name:         mevb.h
 "Buffer = STRING : [32] SYSTEM",\
 "Format = STRING : [32] MIDAS",\
 "User build = BOOL : n",\
+"User Field = STRING : [64] ",\
 "Event mask = DWORD : 3",\
 "Hostname = STRING : [64] ",\
 "",\
@@ -33,7 +37,6 @@ NULL }
 "Buffer = STRING : [32] BUF1",\
 "Format = STRING : [32] MIDAS",\
 "Event mask = DWORD : 1",\
-"User Field = STRING : [64] ",\
 "",\
 "[Frag1/Statistics]",\
 "Events sent = DOUBLE : 0",\
@@ -61,6 +64,7 @@ typedef struct {
     char      buffer[32];
     char      format[32];
     BOOL      user_build;
+    char      user_field[64];
     DWORD     emask;
     char      hostname[64];
   } EBUILDER_SETTINGS;
@@ -71,7 +75,6 @@ typedef struct {
     char      buffer[32];
     char      format[32];
     DWORD     emask;
-    char      user_field[64];
   } EBUILDER_SETTINGS_CH;
 
 typedef struct {

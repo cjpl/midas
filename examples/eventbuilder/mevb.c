@@ -4,6 +4,9 @@ Name:         mevb.c
 
   Contents:     Main Event builder task.
   $Log$
+  Revision 1.7  2002/09/25 18:37:37  pierre
+  correct: header passing, user field, abort run
+
   Revision 1.6  2002/08/29 22:07:47  pierre
   fix event header, double task, EOR
 
@@ -37,7 +40,7 @@ EBUILDER_CHANNEL     ebch[MAX_CHANNELS];
 DWORD max_event_size = MAX_EVENT_SIZE;
 
 HNDLE hDB, hKey, hStatKey;
-BOOL  debug=FALSE, debug1=TRUE;
+BOOL  debug=FALSE, debug1=FALSE;
 
 BOOL  stop_requested = TRUE;
 BOOL  stopped = TRUE;
@@ -54,7 +57,7 @@ INT source_booking(INT nfrag);
 INT eb_mfragment_add(char * pdest, char * psrce, INT *size);
 INT eb_yfragment_add(char * pdest, char * psrce, INT *size);
 
-INT eb_begin_of_run(INT, char *);
+INT eb_begin_of_run(INT, char *, char *);
 INT eb_end_of_run(INT, char *);
 INT eb_user(INT, EBUILDER_CHANNEL *, EVENT_HEADER *, void *, INT *);
 
@@ -203,7 +206,7 @@ INT eb_yfragment_add(char * pdest, char * psrce, INT *size)
 /*--------------------------------------------------------------------*/
 INT tr_prestart(INT rn, char *error)
 {
-  INT fragn, status;
+  INT fragn, status, size;
   
   gbl_run = rn;
   printf("EBuilder-Starting New Run: %d\n", rn);
@@ -222,9 +225,14 @@ INT tr_prestart(INT rn, char *error)
       break;
     memset(&(ebch[fragn].stat), 0, sizeof(EBUILDER_STATISTICS));
   }
+
+  /* Update the user_field */
+  size = sizeof(ebset.user_field);
+  db_get_value(hDB, 0, "/Ebuilder/Settings/User Field"
+    , ebset.user_field, &size, TID_STRING, FALSE);
   
   /* Call BOR user function */
-  status = eb_begin_of_run(gbl_run, error);
+  status = eb_begin_of_run(gbl_run, ebset.user_field, error);
   if (status != EB_SUCCESS) {
     cm_msg(MERROR, "eb_prestart"
       , "run start aborted due to eb_begin_of_run (%d)", status);
@@ -451,24 +459,23 @@ INT source_scan(INT fmt, INT nfragment, HNDLE dest_hBuf, char * dest_event)
       /* Get fragment and store it in ebch[i].pfragment */
       size = max_event_size;
       status = bm_receive_event(ebch[i].hBuf, ebch[i].pfragment, &size, ASYNC);
-      printf("bm_receive_event status :%d\n", status);
       if (status == BM_SUCCESS) { /* event received */
         /* mask event */
         cdemask |= ebch[i].set.emask;
         /* Keep local serial */
         ebch[i].serial = ((EVENT_HEADER *) ebch[i].pfragment)->serial_number;
-
+        
         /* Swap event depending on data format */
-       if (fmt == FORMAT_YBOS) {
-         plrl = (DWORD *) (((EVENT_HEADER *) ebch[i].pfragment) + 1);
-         ybos_event_swap (plrl);
-       }
-       else if (fmt== FORMAT_MIDAS) {
-         /* Swap event if necessary */
-         psbh = (BANK_HEADER *) (((EVENT_HEADER *) ebch[i].pfragment) + 1);
-         bk_swap(psbh, FALSE);
-       }
-       
+        if (fmt == FORMAT_YBOS) {
+          plrl = (DWORD *) (((EVENT_HEADER *) ebch[i].pfragment) + 1);
+          ybos_event_swap (plrl);
+        }
+        else if (fmt== FORMAT_MIDAS) {
+          /* Swap event if necessary */
+          psbh = (BANK_HEADER *) (((EVENT_HEADER *) ebch[i].pfragment) + 1);
+          bk_swap(psbh, FALSE);
+        }
+        
         /* update local source statistics */
         ebch[i].stat.events_sent++;
         
@@ -513,19 +520,23 @@ INT source_scan(INT fmt, INT nfragment, HNDLE dest_hBuf, char * dest_event)
     
     /* Global event mismatch */
     if (event_mismatch) {
-      printf("\nevent_mismatch ");
+      char str[256];
+      char strsub[128];
+      cdemask = 0;
+      strcpy(str, "event mismatch: ");
       for (j=0;j<nfragment; j++) {
-        printf("Ser[%d]:%d ", j, ebch[j].serial);
+        sprintf (strsub, "Ser[%d]:%d ", j, ebch[j].serial);
+        strcat (str, strsub);
       }
-      printf("\n");
-      cm_msg(MERROR,"EBuilder","event mismatch at event %d",ebch[0].serial);
+      if (!stop_requested)
+        cm_msg(MERROR,"EBuilder", str);
       return EB_ERROR;
     }
     else {
       
       /* serial number match */
       /* wheel display */
-      if (wheel && (serial % 128)==0) {
+      if (wheel && (serial % 1024)==0) {
         printf("..Going...%c\r", bars[i_bar++ % 4]);
         fflush(stdout);
       }
@@ -561,7 +572,7 @@ INT source_scan(INT fmt, INT nfragment, HNDLE dest_hBuf, char * dest_event)
       
       /* Overall event to be sent */
       act_size = ((EVENT_HEADER *)dest_event)->data_size + sizeof(EVENT_HEADER);
-
+      
       /* Send event and wait for completion */
       status = rpc_send_event(dest_hBuf, dest_event, act_size, SYNC);
       if (status != BM_SUCCESS) {
@@ -583,7 +594,6 @@ INT source_scan(INT fmt, INT nfragment, HNDLE dest_hBuf, char * dest_event)
       cdemask = 0;
     } /* serial match */
   } /* cdemask == ebset.emask */ 
-  printf("end of scan :%d\n", status);
   return status;
 }
 
@@ -653,12 +663,12 @@ usage:
   /* check if Ebuilder is already running */
   status = cm_exist("Ebuilder", FALSE);
   if (status == CM_SUCCESS)
-    {
+  {
     cm_msg(MERROR,"Ebuilder","Ebuilder running already!.\n");
     cm_disconnect_experiment();
     return 1;
-    }
-
+  }
+  
   /* Connect to ODB */
   cm_get_experiment_database(&hDB, &hKey);
   
@@ -696,7 +706,7 @@ usage:
   db_get_value(hDB,0,"/Runinfo/state", &state, &size, TID_INT, TRUE);
   if (state != STATE_STOPPED)
   {
-    cm_msg(MERROR,"EBuilder","Run must be stopped before starting EBuilder");
+    cm_msg(MTALK,"EBuilder","Run must be stopped before starting EBuilder");
     goto error;
   }
   
@@ -810,7 +820,7 @@ usage:
               gbl_run, fragn, ebstat.events_sent);
             cm_msg(MINFO,"EBuilder","%s",strout);
             printf("Time between request and actual stop: %d ms\n",stop_time);
-	    break;
+            break;
           }
           else {
             ebch[fragn].timeout = 0;
@@ -827,9 +837,16 @@ usage:
       }
     }
     else if (status == EB_ERROR) {
-      cm_msg(MTALK,"EBuilder","Event mismatch - Stop the run");
-      cm_yield(1000);
-      status = SS_ABORT;
+      if(!stop_requested) {
+        stop_requested = TRUE;
+        status = cm_transition(TR_STOP, 0, NULL, 0, ASYNC, 0);
+        if (status != CM_SUCCESS) {
+          cm_msg(MERROR, "EBuilder", "Event mismatch - failed to stop run");
+          goto error;
+        }
+        cm_msg(MTALK,"EBuilder","Event mismatch - Stopping run...");
+        cdemask = 0;
+      }
     }
     else if (status == EB_SUCCESS) {
       for (i=0;i<nfragment;i++)
