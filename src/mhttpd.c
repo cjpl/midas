@@ -6,8 +6,8 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
-  Revision 1.75  1999/10/12 11:31:35  midas
-  Increased timeout for starting programs to 10s (needed for frontend)
+  Revision 1.76  1999/10/15 10:39:51  midas
+  Defined function rsputs, because rsprintf screwed if '%' in arguments
 
   Revision 1.74  1999/10/11 14:15:29  midas
   Use ss_system to launch programs
@@ -289,6 +289,16 @@ char system_list[20][NAME_LENGTH] = {
   "Target",
   "Beamline"
 };
+
+/*------------------------------------------------------------------*/
+
+void rsputs(const char *str, ...)
+{
+  if (strlen(return_buffer) + strlen(str) > sizeof(return_buffer))
+    strcpy(return_buffer, "<H1>Error: return buffer too small</H1>");
+  else
+    strcat(return_buffer, str);
+}
 
 /*------------------------------------------------------------------*/
 
@@ -1189,7 +1199,7 @@ HNDLE hDB;
   if (exp_name[0])
     rsprintf("<input type=hidden name=exp value=\"%s\">\n", exp_name);
 
-  rsprintf("<table border=3 cellpadding=2>\n");
+  rsprintf("<table columns=2 border=3 cellpadding=2>\n");
 
   /*---- title row ----*/
 
@@ -1198,8 +1208,8 @@ HNDLE hDB;
   db_get_value(hDB, 0, "/Experiment/Name", str, &size, TID_STRING);
   time(&now);
 
-  rsprintf("<tr><th colspan=1 bgcolor=#A0A0FF>MIDAS experiment \"%s\"", str);
-  rsprintf("<th colspan=1 bgcolor=#A0A0FF>%s</tr>\n", ctime(&now));
+  rsprintf("<tr><th bgcolor=#A0A0FF>MIDAS experiment \"%s\"", str);
+  rsprintf("<th bgcolor=#A0A0FF>%s</tr>\n", ctime(&now));
 
   /*---- menu buttons ----*/
 
@@ -1325,8 +1335,8 @@ HNDLE  hDB, hkey;
   str[0] = 0;
   db_get_value(hDB, 0, "/Experiment/Name", str, &size, TID_STRING);
 
-  rsprintf("<tr><th colspan=1 bgcolor=#A0A0FF>MIDAS Electronic Logbook");
-  rsprintf("<th colspan=1 bgcolor=#A0A0FF>Experiment \"%s\"</tr>\n", str);
+  rsprintf("<tr><th bgcolor=#A0A0FF>MIDAS Electronic Logbook");
+  rsprintf("<th bgcolor=#A0A0FF>Experiment \"%s\"</tr>\n", str);
 
   /*---- menu buttons ----*/
 
@@ -1930,12 +1940,12 @@ FILE   *f;
       
         if (equal_ustring(encoding, "plain"))
           {
-          rsprintf("<pre>");
-          rsprintf(text);
-          rsprintf("</pre>");
+          rsputs("<pre>");
+          rsputs(text);
+          rsputs("</pre>");
           }
         else
-          rsprintf(text);
+          rsputs(text);
 
         rsprintf("</tr>\n");
 
@@ -1989,7 +1999,7 @@ FILE   *f;
                       {
                       str[0] = 0;
                       fgets(str, sizeof(str), f);
-                      rsprintf(str);
+                      rsputs(str);
                       }
                     fclose(f);
                     }
@@ -2097,7 +2107,7 @@ HNDLE  hDB;
     {
     memset(line, 0, sizeof(line));
     fgets(line, sizeof(line), f);
-    rsprintf(line);
+    rsputs(line);
     }
   rsprintf("</pre>\n");
   fclose(f);
@@ -2579,8 +2589,8 @@ FILE  *f;
   str[0] = 0;
   db_get_value(hDB, 0, "/Experiment/Name", str, &size, TID_STRING);
 
-  rsprintf("<tr><th colspan=1 bgcolor=#A0A0FF>MIDAS Electronic Logbook");
-  rsprintf("<th colspan=1 bgcolor=#A0A0FF>Experiment \"%s\"</tr>\n", str);
+  rsprintf("<tr><th bgcolor=#A0A0FF>MIDAS Electronic Logbook");
+  rsprintf("<th bgcolor=#A0A0FF>Experiment \"%s\"</tr>\n", str);
 
   /*---- menu buttons ----*/
 
@@ -2695,13 +2705,13 @@ FILE  *f;
     rsprintf("<tr><td colspan=2>\n");
     if (equal_ustring(encoding, "plain"))
       {
-      rsprintf("<pre>");
-      rsprintf(text);
-      rsprintf("</pre>");
+      rsputs("<pre>");
+      rsputs(text);
+      rsputs("</pre>");
       }
     else
-      rsprintf(text);
-    rsprintf("</tr>\n", text);
+      rsputs(text);
+    rsputs("</tr>\n");
 
     for (index = 0 ; index < 3 ; index++)
       {
@@ -2751,7 +2761,7 @@ FILE  *f;
                 {
                 str[0] = 0;
                 fgets(str, sizeof(str), f);
-                rsprintf(str);
+                rsputs(str);
                 }
               fclose(f);
               }
@@ -4364,7 +4374,7 @@ char  str[256], ref[256], command[256], name[80];
     if (command[0])
       {
       ss_system(command);
-      for (i=0 ; i<100 ; i++)
+      for (i=0 ; i<50 ; i++)
         {
         if (cm_exist(name, FALSE) == CM_SUCCESS)
           break;
