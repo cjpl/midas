@@ -6,6 +6,9 @@
   Contents:     Command-line interface to the MIDAS online data base.
 
   $Log$
+  Revision 1.64  2003/05/09 07:40:05  midas
+  Added extra parameter to cm_get_environment
+
   Revision 1.63  2003/04/25 14:37:43  midas
   Fixed compiler warnings
 
@@ -3050,7 +3053,7 @@ int main(int argc, char *argv[])
 #endif
 {
 INT           status, i, odb_size, size;
-char          host_name[100], exp_name[NAME_LENGTH];
+char          host_name[HOST_NAME_LENGTH], exp_name[NAME_LENGTH];
 char          cmd[256], dir[100], str[256];
 BOOL          debug;
 HNDLE         hDB;
@@ -3065,7 +3068,7 @@ HNDLE         hDB;
 #else
 
   /* get default from environment */
-  cm_get_environment(host_name, exp_name);
+  cm_get_environment(host_name, sizeof(host_name), exp_name, sizeof(exp_name));
 
   /* parse command line parameters */
   for (i=1 ; i<argc ; i++)

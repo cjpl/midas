@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.98  2003/05/09 07:40:04  midas
+  Added extra parameter to cm_get_environment
+
   Revision 1.97  2003/05/02 09:03:01  midas
   Fixed buffer overflows by strlcpy()
 
@@ -524,7 +527,7 @@ extern INT pawc_size;
 /* command line parameters */
 struct {
   INT   online;
-  char  host_name[100];
+  char  host_name[HOST_NAME_LENGTH];
   char  exp_name[NAME_LENGTH];
   char  input_file_name[10][256];
   char  output_file_name[256];
@@ -5882,7 +5885,7 @@ int rargc;
 #endif
 
   /* get default from environment */
-  cm_get_environment(clp.host_name, clp.exp_name);
+  cm_get_environment(clp.host_name, sizeof(clp.host_name), clp.exp_name, sizeof(clp.exp_name));
 
 #ifdef HAVE_HBOOK
   /* set default lrec size */

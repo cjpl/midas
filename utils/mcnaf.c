@@ -6,6 +6,9 @@
   Contents:     CAMAC utility
 
     $Log$
+    Revision 1.19  2003/05/09 07:40:05  midas
+    Added extra parameter to cm_get_environment
+
     Revision 1.18  2003/04/23 23:08:19  pierre
     Fixed compiler warning
 
@@ -958,7 +961,7 @@ void help_page( INT which)
 
 int main(int argc, char **argv)
 {
-  char   host_name[30], exp_name[30], fe_name[256], rpc_server[256];
+  char   host_name[HOST_NAME_LENGTH], exp_name[NAME_LENGTH], fe_name[256], rpc_server[256];
   char   cmd[256];
   INT    i, status;
   BOOL   debug, cmd_mode=FALSE;
@@ -971,7 +974,7 @@ int main(int argc, char **argv)
   debug = FALSE;
   
   /* get parameters */
-  cm_get_environment (host_name, exp_name);
+  cm_get_environment(host_name, sizeof(host_name), exp_name, sizeof(exp_name));
   
   /* parse command line parameters */
   for (i=1 ; i<argc ; i++)

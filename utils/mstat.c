@@ -6,6 +6,9 @@
   Contents:     Display/log some pertinent information of the ODB
   
   $Log$
+  Revision 1.16  2003/05/09 07:40:05  midas
+  Added extra parameter to cm_get_environment
+
   Revision 1.15  2003/04/25 04:14:52  pierre
   Fixed compiler warning
 
@@ -599,7 +602,7 @@ int main(int argc,char **argv)
 {
   INT    status, last_time=0, file_mode;
   HNDLE  hDB, hKey;
-  char   host_name[HOST_NAME_LENGTH], expt_name[HOST_NAME_LENGTH], str[32];
+  char   host_name[HOST_NAME_LENGTH], expt_name[NAME_LENGTH], str[32];
   char   ch, svpath[256];
   INT    fHandle, i, j=0, last_max_line=0;
   INT    msg;
@@ -608,7 +611,7 @@ int main(int argc,char **argv)
   esc_flag = ESC_FLAG;
   
   /* set default */
-  cm_get_environment (host_name, expt_name);
+  cm_get_environment(host_name, sizeof(host_name), expt_name, sizeof(expt_name));
   svpath[0]=0;
   file_mode = 1;
   loop = 0;

@@ -6,6 +6,9 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.62  2003/05/09 07:40:05  midas
+  Added extra parameter to cm_get_environment
+
   Revision 1.61  2003/04/25 14:37:43  midas
   Fixed compiler warnings
 
@@ -7948,7 +7951,7 @@ int main(unsigned int argc,char **argv)
   expt_name[0] = 0;
 
   // get default
-  cm_get_environment (host_name, expt_name);
+  cm_get_environment(host_name, sizeof(host_name), expt_name, sizeof(expt_name));
 
   // get parameters
   for (i=1 ; i<argc ; i++)

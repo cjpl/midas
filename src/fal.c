@@ -7,6 +7,9 @@
                 Most routines are from mfe.c mana.c and mlogger.c.
 
   $Log$
+  Revision 1.36  2003/05/09 07:40:04  midas
+  Added extra parameter to cm_get_environment
+
   Revision 1.35  2003/04/25 14:37:43  midas
   Fixed compiler warnings
 
@@ -179,7 +182,7 @@ INT   run_number;
 DWORD actual_time;      /* current time in seconds since 1970 */
 DWORD actual_millitime;       /* current time in milliseconds */
 char  event_buffer[NET_BUFFER_SIZE];
-char  host_name[NAME_LENGTH];
+char  host_name[HOST_NAME_LENGTH];
 char  exp_name[NAME_LENGTH];
 HNDLE hDB;
 
@@ -4803,7 +4806,7 @@ BOOL  debug;
 #else
 
   /* get default from environment */
-  cm_get_environment(host_name, exp_name);
+  cm_get_environment(host_name, sizeof(host_name), exp_name, sizeof(exp_name));
 
   /* parse command line parameters */
   for (i=1 ; i<argc ; i++)

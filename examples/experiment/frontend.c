@@ -11,6 +11,9 @@
                 with one bank (SCLR).
 
   $Log$
+  Revision 1.20  2003/05/09 07:40:04  midas
+  Added extra parameter to cm_get_environment
+
   Revision 1.19  2003/04/28 15:33:05  midas
   Fixed compiler warnings
 
@@ -397,6 +400,7 @@ INT  q, timeout;
   /* clear TDC */
   camc(CRATE, SLOT_TDC, 0, 9);
 
+  pdata += 500;
   bk_close(pevent, pdata);
 
   /* clear IO unit LAM */

@@ -6,6 +6,9 @@
   Contents:     Speaks midas messages (UNIX version)
 
   $Log$
+  Revision 1.10  2003/05/09 07:40:05  midas
+  Added extra parameter to cm_get_environment
+
   Revision 1.9  2003/04/23 23:09:08  pierre
   Fixed compiler warning
 
@@ -141,12 +144,12 @@ int main(int argc, char *argv[])
 {
   BOOL   daemon=FALSE;
   INT    status, i;
-  char   host_name[NAME_LENGTH];
+  char   host_name[HOST_NAME_LENGTH];
   char   exp_name[NAME_LENGTH];
   char *speech_program = SPEECH_PROGRAM;
   
   /* get default from environment */
-  cm_get_environment(host_name, exp_name);
+  cm_get_environment(host_name, sizeof(host_name), exp_name, sizeof(exp_name));
   
   /* parse command line parameters */
   for (i=1 ; i<argc ; i++)

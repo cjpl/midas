@@ -6,6 +6,9 @@
   Contents:     Speaks midas messages
 
   $Log$
+  Revision 1.7  2003/05/09 07:40:05  midas
+  Added extra parameter to cm_get_environment
+
   Revision 1.6  2000/04/10 13:16:14  midas
   Added reconnect
 
@@ -104,11 +107,11 @@ char str[256], *pc;
 main(int argc, char *argv[])
 {
 INT    status, i, ch;
-char   host_name[NAME_LENGTH];
+char   host_name[HOST_NAME_LENGTH];
 char   exp_name[NAME_LENGTH];
 
   /* get default from environment */
-  cm_get_environment(host_name, exp_name);
+  cm_get_environment(host_name, sizeof(host_name), exp_name, sizeof(exp_name));
 
   /* parse command line parameters */
   for (i=1 ; i<argc ; i++)
