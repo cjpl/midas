@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus communication functions
 
   $Log$
+  Revision 1.68  2004/05/17 09:33:16  midas
+  Added #ifdef _USRDLL
+
   Revision 1.67  2004/05/10 18:58:14  midas
   Added _STRLCPY_DEFINED
 
@@ -786,7 +789,9 @@ int mscb_out(int index, unsigned char *buffer, int len, int flags)
                break;
          }
          if (timeout == TIMEOUT_OUT) {
+#ifndef _USRDLL
             printf("Automatic submaster reset.\n");
+#endif
 
             mscb_release(index);
             mscb_reset(index);
@@ -823,7 +828,9 @@ int mscb_out(int index, unsigned char *buffer, int len, int flags)
          }
 
          if (timeout == TIMEOUT_OUT) {
+#ifndef _USRDLL
             printf("Automatic submaster reset.\n");
+#endif
 
             mscb_release(index);
             mscb_reset(index);
@@ -1090,25 +1097,33 @@ int lpt_init(char *device, int index)
 
    mscb_fd[index].fd = open(device, O_RDWR);
    if (mscb_fd[index].fd < 0) {
+#ifndef _USRDLL
       perror("open");
       printf("Please make sure that device \"%s\" is world readable/writable\n", device);
+#endif
       return -1;
    }
 
    if (ioctl(mscb_fd[index].fd, PPCLAIM)) {
+#ifndef _USRDLL
       perror("PPCLAIM");
       printf("Please load driver via \"modprobe parport_pc\" as root\n");
+#endif
       return -1;
    }
 
    if (ioctl(mscb_fd[index].fd, PPRELEASE)) {
+#ifndef _USRDLL
       perror("PPRELEASE");
+#endif
       return -1;
    }
 
    i = IEEE1284_MODE_BYTE;
    if (ioctl(mscb_fd[index].fd, PPSETMODE, &i)) {
+#ifndef _USRDLL
       perror("PPSETMODE");
+#endif
       return -1;
    }
 #endif
@@ -1184,7 +1199,9 @@ int lpt_close(int fd)
    if (vi.dwPlatformId == VER_PLATFORM_WIN32_NT) {
       hdio = CreateFile("\\\\.\\directio", GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
       if (hdio == INVALID_HANDLE_VALUE) {
+#ifndef _USRDLL
          printf("mscb.c: Cannot access parallel port (No DirectIO driver installed)\n");
+#endif
          return -1;
       }
 
@@ -1565,8 +1582,10 @@ int mscb_exit(int fd)
    if (mscb_fd[fd - 1].type == MSCB_TYPE_USB)
       musb_close(mscb_fd[fd - 1].hr, mscb_fd[fd - 1].hw);
 
+   /* outcommented, other client (like Labview) could still use LPT ...
    if (mscb_fd[fd - 1].type == MSCB_TYPE_LPT)
       lpt_close(mscb_fd[fd - 1].fd);
+   */
 
    memset(&mscb_fd[fd - 1], 0, sizeof(MSCB_FD));
 
@@ -2747,7 +2766,9 @@ int mscb_read(int fd, int adr, unsigned char index, void *data, int *size)
    for (n = 0; n < 10; n++) {
       /* after five times, reset submaster */
       if (n == 5) {
+#ifndef _USRDLL
          printf("Automatic submaster reset.\n");
+#endif
 
          mscb_reset(fd);
          Sleep(100);
@@ -2762,7 +2783,9 @@ int mscb_read(int fd, int adr, unsigned char index, void *data, int *size)
       i = mscb_in(fd, buf, sizeof(buf), 10000);
 
       if (i == 1 && buf[0] == 0xFF) {
+#ifndef _USRDLL
          printf("Timeout from RS485 bus.\n");
+#endif
          return MSCB_TIMEOUT;
       }
 
@@ -2866,7 +2889,9 @@ int mscb_read_range(int fd, int adr, unsigned char index1, unsigned char index2,
    for (n = 0; n < 10; n++) {
       /* after five times, reset submaster */
       if (n == 5) {
+#ifndef _USRDLL
          printf("Automatic submaster reset.\n");
+#endif
 
          mscb_reset(fd);
          Sleep(100);
@@ -3213,11 +3238,11 @@ int mscb_select_device(char *device, int select)
 \********************************************************************/
 {
    char list[10][256], str[256];
-   int status, i, n, index, no_directio_flag;
+   int status, i, n, index, error_code;
 
    n = 0;
    *device = 0;
-   no_directio_flag = 0;
+   error_code = 0;
 
    /* search for temporary file descriptor */
    for (index = 0; index < MSCB_MAX_FD; index++)
@@ -3247,10 +3272,10 @@ int mscb_select_device(char *device, int select)
       mscb_fd[index].type = MSCB_TYPE_LPT;
 
       status = lpt_init(str, index);
-      if (status == -3)
-         no_directio_flag = 1;
-      if (status != -3)
-        lpt_close(mscb_fd[index].fd);
+      if (status < 0)
+         error_code = status;
+      else
+         lpt_close(mscb_fd[index].fd);
       memset(&mscb_fd[index], 0, sizeof(MSCB_FD));
       if (status == 0)
          sprintf(list[n++], str);
@@ -3259,8 +3284,10 @@ int mscb_select_device(char *device, int select)
    }
 
    if (n == 0) {
-      if (no_directio_flag)
+      if (error_code == -3)
          printf("mscb.c: Cannot access parallel port (No DirectIO driver installed)\n");
+      if (error_code == -4)
+         printf("mscb.c: Cannot access parallel port, locked by other application\n");
       return 0;
    }
 
