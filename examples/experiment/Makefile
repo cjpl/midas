@@ -6,6 +6,9 @@
 #  Contents:     Makefile for MIDAS example frontend and analyzer
 #
 #  $Log$
+#  Revision 1.10  2000/05/18 13:18:33  midas
+#  Added -lnsl for linux (problems with CERNLIB 2000)
+#
 #  Revision 1.9  2000/03/15 12:48:36  midas
 #  Added -Dextname for linux
 #
@@ -51,7 +54,7 @@ CFLAGS = -O3
 #FF = cc
 # for egcs g77, use this
 FF = g77
-LIBS = -lm -lz -lutil
+LIBS = -lm -lz -lutil -lnsl
 
 #-------------------------------------------------------------------
 # The following lines define direcories. Adjust if necessary
