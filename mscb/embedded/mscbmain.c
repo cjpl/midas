@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol main program
 
   $Log$
+  Revision 1.21  2002/11/29 08:02:52  midas
+  Fixed linux warnings
+
   Revision 1.20  2002/11/28 14:44:02  midas
   Removed SIZE_XBIT
 
@@ -156,7 +159,7 @@ unsigned char i;
   XBR1 = 0x00;
   XBR2 = 0x44;
 
-  P0MDOUT = 0x05;  // P0.0,2: TX = Push Pull
+  P0MDOUT = 0x05;  // P0.0,2: TX,RS485 = Push Pull
   P1MDOUT = 0x00;  // P1: LPT
   P2MDOUT = 0x00;  // P2: LPT
   P3MDOUT = 0xE0;  // P3.5,6,7: Optocouplers
@@ -165,10 +168,10 @@ unsigned char i;
   XBR1 = 0x00;
   XBR2 = 0x40; // Enable crossbar
 
-  PRT0CF = 0xFF;  // P0: TX = Push Pull
-  PRT1CF = 0xFF;  // P1
-  PRT2CF = 0x00;  // P2  Open drain for 5V LCD
-  PRT3CF = 0x00;  // P3
+  PRT0CF = 0x05;   // P0.0,2: TX,RS485 = Push Pull
+  PRT1CF = 0x00;   // P1
+  PRT2CF = 0x00;   // P2  Open drain for 5V LCD
+  PRT3CF = 0x00;   // P3
 #endif
 
   /* Select external quartz oscillator */
