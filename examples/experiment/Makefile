@@ -6,6 +6,9 @@
 #  Contents:     Makefile for MIDAS example frontend and analyzer
 #
 #  $Log$
+#  Revision 1.20  2003/07/14 14:53:11  midas
+#  Restructured driver directory
+#
 #  Revision 1.19  2003/05/09 22:52:15  pierre
 #  Add ROOTSYS condition on ROOT build
 #
@@ -86,7 +89,7 @@ endif
 #-------------------------------------------------------------------
 # The following lines define direcories. Adjust if necessary
 #                 
-DRV_DIR         = ../../drivers
+DRV_DIR         = ../../drivers/bus
 INC_DIR 	= ../../include
 LIB_DIR 	= ../../linux/lib
 #
@@ -126,8 +129,8 @@ $(UFE): $(LIB) $(LIB_DIR)/mfe.o $(DRIVER).o $(UFE).c
 	$(CC) $(CFLAGS) $(OSFLAGS) -o $(UFE) $(UFE).c $(DRIVER).o \
 	$(LIB_DIR)/mfe.o $(LIB) $(LDFEFLAGS) $(LIBS)
 
-$(DRIVER).o: $(DRV_DIR)/bus/$(DRIVER).c
-	$(CC) $(CFLAGS) $(OSFLAGS) -c -o $(DRIVER).o $(DRV_DIR)/bus/$(DRIVER).c
+$(DRIVER).o: $(DRV_DIR)/$(DRIVER).c
+	$(CC) $(CFLAGS) $(OSFLAGS) -c -o $(DRIVER).o $(DRV_DIR)/$(DRIVER).c
 
 analyzer: $(LIB) $(LIB_DIR)/rmana.o analyzer.o $(MODULES)
 	$(CXX) $(FFLAGS) -o $@ $(LIB_DIR)/rmana.o analyzer.o $(MODULES) \
