@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.47  1999/12/21 09:40:27  midas
+  Ajdusted spaces
+
   Revision 1.46  1999/12/20 22:12:15  pierre
   - moved yb_tid_size[] in ybos.c, declared extern
 
@@ -3255,14 +3258,14 @@ DWORD           start_time;
         }
       }
     else if (format == FORMAT_YBOS)
-    {
+      {
       DWORD * pybos, readn;
       if (ybos_event_get (&pybos, &readn) != SS_SUCCESS)
-       break;
+        break;
       status = yb_any_event_swap(FORMAT_YBOS, pybos);
       memcpy((char *)(pevent+1), (char *)pybos, readn); 
       status  = bevid_2_mheader(pevent, pybos);
-    }
+      }
 
     num_events_in++;
 
