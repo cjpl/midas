@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.69  1999/10/08 15:07:06  midas
+  Program check creates new internal alarm when triggered
+
   Revision 1.68  1999/10/08 13:21:20  midas
   Alarm system disabled when running offline
 
@@ -14925,7 +14928,7 @@ char   data[10000];
 
 /*------------------------------------------------------------------*/
 
-INT al_trigger_alarm(char *alarm_name, char *alarm_message)
+INT al_trigger_alarm(char *alarm_name, char *alarm_message, char *default_class)
 /********************************************************************\
 
   Routine: al_trigger_alarm
@@ -14933,9 +14936,11 @@ INT al_trigger_alarm(char *alarm_name, char *alarm_message)
   Purpose: Trigger a certain alarm
 
   Input:
-    char   *alarm_name      Alarm name, must be defined in 
-                            /alarms/alarms
+    char   *alarm_name      Alarm name, defined in /alarms/alarms
     char   *alarm_message   Optional message which goes with alarm
+    char   *default_class   If alarm is not yet defined under 
+                            /alarms/alarms/<alarm_name>, a new one
+                            is created and this default class is used.
 
   Output:
 
@@ -14975,6 +14980,9 @@ ALARM_STR(alarm_str);
     db_set_value(hDB, hkeyalarm, "Condition", str, 256, 1, TID_STRING); 
     status = TRUE;
     db_set_value(hDB, hkeyalarm, "Active", &status, sizeof(status), 1, TID_BOOL); 
+
+    if (default_class && default_class[0])
+      db_set_value(hDB, hkeyalarm, "Alarm Class", default_class, 32, 1, TID_STRING);
     }
 
   size = sizeof(alarm);
@@ -15086,7 +15094,7 @@ ALARM_CLASS ac;
       (INT)ss_time() - (INT)ac.system_message_last > ac.system_message_interval)
     {
     sprintf(str, "%s: %s", alarm_class, alarm_message);
-    cm_msg(MTALK, "al_trigger_alarm", str);
+    cm_msg(MTALK, "al_trigger_class", str);
     ac.system_message_last = ss_time();
     }
 
@@ -15119,7 +15127,7 @@ ALARM_CLASS ac;
   status = db_set_record(hDB, hkeyclass, &ac, sizeof(ac), 0);
   if (status != DB_SUCCESS)
     {
-    cm_msg(MERROR, "al_trigger_alarm", "Cannot update alarm class record");
+    cm_msg(MERROR, "al_trigger_class", "Cannot update alarm class record");
     return AL_ERROR_ODB;
     }
 
@@ -15312,7 +15320,8 @@ ALARM_STR(alarm_str);
       return SUCCESS;
       }
 
-    /* create default alarm class */
+    /* create default alarm classes */
+    status = db_create_record(hDB, 0, "/Alarms/Classes/Alarm", strcomb(alarm_class_str));
     status = db_create_record(hDB, 0, "/Alarms/Classes/Warning", strcomb(alarm_class_str));
     if (status != DB_SUCCESS)
       {
@@ -15347,7 +15356,7 @@ ALARM_STR(alarm_str);
       if (al_evaluate_condition(alarm.condition, value))
         {
         sprintf(str, alarm.alarm_message, value);
-        al_trigger_alarm(key.name, str);
+        al_trigger_alarm(key.name, str, alarm.alarm_class);
         }
       else
         {
@@ -15400,7 +15409,7 @@ ALARM_STR(alarm_str);
           if (program_info.alarm_class[0])
             {
             sprintf(str, "Program %s is not running", key.name);
-            al_trigger_class(program_info.alarm_class, str, TRUE);
+            al_trigger_alarm(key.name, str, program_info.alarm_class);
             }
 
           /* auto restart program */

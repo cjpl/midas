@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.68  1999/10/08 15:07:04  midas
+  Program check creates new internal alarm when triggered
+
   Revision 1.67  1999/10/08 08:38:09  midas
   Added "last<n> messages" feature
 
@@ -4270,7 +4273,7 @@ char  str[256], ref[256], condition[256], value[256];
 void show_programs_page()
 {
 INT   i, j, size, count;
-BOOL  restart, first;
+BOOL  restart, first, required;
 HNDLE hDB, hkeyroot, hkey, hkey_rc, hkeycl;
 KEY   key, keycl;
 char  str[256], ref[256], command[256], name[80];
@@ -4322,7 +4325,7 @@ char  str[256], ref[256], command[256], name[80];
 
   /*---- programs ----*/
 
-  rsprintf("<tr><th>Program<th>Running on host<th>Alarm<th>Autorestart</tr>\n");
+  rsprintf("<tr><th>Program<th>Running on host<th>Alarm class<th>Autorestart</tr>\n");
 
   /* go through all programs */
   db_find_key(hDB, 0, "/Programs", &hkeyroot);
@@ -4350,7 +4353,10 @@ char  str[256], ref[256], command[256], name[80];
       else
         sprintf(ref, "%sPrograms/%s", 
                 mhttpd_url, key.name);
-      rsprintf("<tr><td bgcolor=#C0C0FF><a href=\"%s\"><b>%s</b></a>", ref, key.name);
+
+      /* required? */
+      size = sizeof(required);
+      db_get_value(hDB, hkey, "Required", &required, &size, TID_BOOL);
 
       /* running */
       count = 0;
@@ -4375,7 +4381,10 @@ char  str[256], ref[256], command[256], name[80];
             db_get_value(hDB, hkeycl, "Host", str, &size, TID_STRING);
 
             if (first)
+              {
+              rsprintf("<tr><td bgcolor=#C0C0FF><a href=\"%s\"><b>%s</b></a>", ref, key.name);
               rsprintf("<td align=center bgcolor=#00FF00>");
+              }
             if (!first)
               rsprintf("<br>");
             rsprintf(str);
@@ -4385,9 +4394,16 @@ char  str[256], ref[256], command[256], name[80];
             }
           }
         }
-      if (count == 0)
-        rsprintf("<td align=center bgcolor=#FF0000>Not running");
 
+      if (count == 0 && required)
+        {
+        rsprintf("<tr><td bgcolor=#C0C0FF><a href=\"%s\"><b>%s</b></a>", ref, key.name);
+        rsprintf("<td align=center bgcolor=#FF0000>Not running");
+        }
+
+      /* dont display non-running programs which are not required */
+      if (count == 0 && !required)
+        continue;
 
       /* Alarm */
       size = sizeof(str);

@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.48  1999/10/08 15:07:04  midas
+  Program check creates new internal alarm when triggered
+
   Revision 1.47  1999/10/07 13:17:34  midas
   Put a few EXPRT im msystem.h to make NT happy, updated NT makefile
 
@@ -1088,7 +1091,7 @@ typedef struct {
 "Time triggered first = STRING : [32] ",\
 "Time triggered last = STRING : [32] ",\
 "Condition = STRING : [256] /Runinfo/Run number > 100",\
-"Alarm Class = STRING : [32] Warning",\
+"Alarm Class = STRING : [32] Alarm",\
 "Alarm Message = STRING : [80] Run number became too large",\
 "",\
 NULL }
@@ -1510,7 +1513,7 @@ INT EXPRT el_search_run(int run, char *return_tag);
 
 /*---- Alarm functions ----*/
 INT EXPRT al_check();
-INT EXPRT al_trigger_alarm(char *alarm_name, char *alarm_message);
+INT EXPRT al_trigger_alarm(char *alarm_name, char *alarm_message, char *default_class);
 INT EXPRT al_trigger_class(char *alarm_class, char *alarm_message, BOOL first);
 INT EXPRT al_reset_alarm(char *alarm_name);
 BOOL EXPRT al_evaluate_condition(char *condition, char *value);
