@@ -6,6 +6,10 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.9  1999/02/18 07:10:14  midas
+  - db_save now stores full path name in .odb file
+  - db_load loads .odb entries to absolute ODB location if they start with "[/...]"
+
   Revision 1.8  1999/01/22 10:31:49  midas
   Fixes status return from ss_mutex_create in db_open_database
 
@@ -4352,11 +4356,23 @@ KEY              root_key;
             else
               {
               /* create key and set value */
-              status = db_find_link(hDB, hKeyRoot, key_name, &hKey);
-              if (status == DB_NO_KEY)
+              if (key_name[0] == '/')
                 {
-                db_create_key(hDB, hKeyRoot, key_name, tid);
+                status = db_find_link(hDB, 0, key_name, &hKey);
+                if (status == DB_NO_KEY)
+                  {
+                  db_create_key(hDB, 0, key_name, tid);
+                  status = db_find_link(hDB, 0, key_name, &hKey);
+                  }
+                }
+              else
+                {
                 status = db_find_link(hDB, hKeyRoot, key_name, &hKey);
+                if (status == DB_NO_KEY)
+                  {
+                  db_create_key(hDB, hKeyRoot, key_name, tid);
+                  status = db_find_link(hDB, hKeyRoot, key_name, &hKey);
+                  }
                 }
               }
 
@@ -4515,7 +4531,7 @@ INT db_save(HNDLE hDB, HNDLE hKey, char *filename, BOOL bRemote)
 #ifdef LOCAL_ROUTINES
 {
 INT   hfile, size, buffer_size, n, status;
-char  *buffer;
+char  *buffer, path[256];
 
   /* open file */
   hfile = open(filename, O_WRONLY | O_CREAT | O_TRUNC | O_TEXT, 0644);
@@ -4524,6 +4540,8 @@ char  *buffer;
     cm_msg(MERROR, "db_save", "Cannot open file \"%s\"", filename);
     return DB_FILE_ERROR;
     }
+
+  db_get_path(hDB, hKey, path, sizeof(path));
 
   buffer_size = 10000;
   do
@@ -4536,7 +4554,7 @@ char  *buffer;
       }
 
     size = buffer_size;
-    status = db_copy(hDB, hKey, buffer, &size, "");
+    status = db_copy(hDB, hKey, buffer, &size, path);
     if (status != DB_TRUNCATED)
       {
       n = write(hfile, buffer, buffer_size-size);
