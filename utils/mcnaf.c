@@ -6,6 +6,10 @@
   Contents:     CAMAC utility
   
   $Log$
+  Revision 1.10  2000/04/18 22:07:31  pierre
+  - added cam_lam_clear private function.
+  - fix cc_services for N >= 28
+
   Revision 1.9  1999/12/08 00:04:48  pierre
   - Fix mcstd _r, _sa functions
 
@@ -90,25 +94,25 @@ char MCStd[31][32] = {
 
 /* structure for CAMAC definition */
 typedef struct {
-  INT       m;
-  INT				b;
-  INT				c;
-  INT				n;
-  INT				a;
-  INT				f;
-  WORD         d16;
-  DWORD        d24;
-  INT          r;
-  INT          w;
-  INT          q;
-  INT          x;
-  } CAMAC;
+    INT   m;
+    INT	  b;
+    INT	  c;
+    INT	  n;
+    INT	  a;
+    INT	  f;
+    WORD  d16;
+    DWORD d24;
+    INT   r;
+    INT   w;
+    INT   q;
+    INT   x;
+} CAMAC;
 
 
 /* Default CAMAC definition */
 CAMAC Prompt[2] ={ {24,0,0,1,2,0,0,0,1,0,0,0},
-             		   {0}
-                 };
+		   {0}
+};
 
 /* Default job file name */
 char     job_name[128]="cnaf.cnf";
@@ -131,27 +135,38 @@ void mcstd_func(CAMAC *PP);
 void cc_services (CAMAC *p)
 {
   if (p->n == 30)
-    {
-      if (p->a==9 && p->f==24)
-        cam_inhibit_clear(p->c);
-      else if (p->a==9 && p->f==26)
-        cam_inhibit_set(p->c);
-      else if (p->a>=0 && p->a<8 && p->f==1)
-        cam_lam_read(p->c, &p->d24);
-      else if (p->a>=13 && p->f==17)
-        cam_lam_enable(p->c, p->d24);
-      else if (p->a>=12 && p->f==17)
-        cam_lam_disable(p->c, p->d24);
+  {
+    if (p->a==9 && p->f==24)
+      cam_inhibit_clear(p->c);
+    else if (p->a==9 && p->f==26)
+      cam_inhibit_set(p->c);
+    else if (p->a>=0 && p->a<8 && p->f==1)
+      cam_lam_read(p->c, &p->d24);
+    else if (p->a>=13 && p->f==17)
+      cam_lam_enable(p->c, p->d24);
+    else if (p->a>=12 && p->f==17)
+      cam_lam_disable(p->c, p->d24);
 /*      else if (p->a>=13 && p->f==1)
-         we don't support that function "read lam mask" */
-    }
-  else if (p->n == 28)
-    {
-      if (p->a==8 && p->f==26)
-        cam_crate_zinit(p->c);
-      else if (p->a==9 && p->f==26)
-        cam_crate_clear(p->c);
-    }
+	we don't support that function "read lam mask" */
+  }
+  else if (p->n == 28 && (p->a==8 || p->a==9))
+  {
+    if (p->a==8 && p->f==26)
+      cam_crate_zinit(p->c);
+    else if (p->a==9 && p->f==26)
+      cam_crate_clear(p->c);
+  }
+  else
+    if (p->m == 24) /* Actual 24 bits CAMAC operation */
+      if (p->f<16)
+	cam24i_q(p->c, p->n, p->a, p->f, &p->d24, &p->x, &p->q);
+      else
+	cam24o_q(p->c, p->n, p->a, p->f, p->d24, &p->x, &p->q);
+    else /* Actual 16 bits CAMAC operation */
+      if (p->f<16)
+	cam16i_q(p->c, p->n, p->a, p->f, &p->d16, &p->x, &p->q);
+      else
+	cam16o_q(p->c, p->n, p->a, p->f, p->d16, &p->x, &p->q);
 }
 
 /*--------------------------------------------------------------------*/
@@ -169,205 +184,209 @@ void mcstd_func(CAMAC *PP)
   /* Load default CAMAC */
   // PP = &Prompt[1];
   while(1)
-	{
-		make_display_string(MCSTD, PP, paddr);
-		/* prompt */
-		printf("MCStd> [%s] :",paddr);
-		ss_gets(pstr,128);
-		
-		/* decode line */    
-		status = decode_line(PP, pstr);
-		p = PP;
-		if (status == LOOP)
-				status = pstatus;
-		if (status != SKIP & status != HELP) pstatus = status;
-		i = 0;
-		pdd16 = dd16;
-		pdd24 = dd24;
-		switch(status)
-		{
-			  /* system */
-	  case CAM_LAM_ENABLE:
-			  cam_lam_enable(p->c, p->n);
-			  printf("cam_lam_enable:C%i-N%i\n",p->c, p->n);
-			  break;
-	  case CAM_LAM_DISABLE:
-			  cam_lam_disable(p->c, p->n);
-			  printf("cam_lam_disable:C%i-N%i\n",p->c, p->n);
-				break;
-		case CAM_LAM_READ:
-				cam_lam_read(p->c, &lam);
-				printf("cam_lam_read:C%i-> 0x%x\n",p->c, lam);
-				break;
-		case CAM_INHIBIT_SET:
-				cam_inhibit_set(p->c);
-				printf("cam_inhibit_set:C%i\n",p->c);
-				break;
-		case CAM_INHIBIT_CLEAR:
-				cam_inhibit_clear(p->c);
-				printf("cam_inhibit_clear:C%i\n",p->c);
-				break;
-		case CAM_CRATE_CLEAR:
-				cam_crate_clear(p->c);
-				printf("cam_crate_clear:C%i\n",p->c);
-				break;
-		case CAM_CRATE_ZINIT:
-				cam_crate_zinit(p->c);
-				printf("cam_crate_zinit:C%i\n",p->c);
-				break;
-				/* command */
-		case CAMC:
-				do 
-				{
-						camc(p->c, p->n, p->a, p->f);
-						printf("camc:[R%i]-C%i-N%i-A%i-F%i\n", ++i, p->c, p->n, p->a, p->f);
-				} while (i<p->r);
-				break;
-		case CAMC_Q:
-				do 
-				{
-						camc_q(p->c, p->n, p->a, p->f, &p->q);
-						printf("camc_q:[R%i]-C%i-N%i-A%i-F%i -Q:%i\n", ++i, p->c, p->n, p->a, p->f, p->q);
-				} while (i<p->r);
-				break;
-		case CAMC_SA:
-				camc(p->c, p->n, p->a, p->f);
-				printf("camc_sa:C%i-N%i-A%i-F%i\n", p->c, p->n, p->a, p->f);
-				break;
-		case CAMC_SN:
-				camc(p->c, p->n, p->a, p->f);
-				printf("camc_sn:C%i-N%i-A%i-F%i\n", p->c, p->n, p->a, p->f);
-				break;
-				/* output */
-		case CAM16O:
-				do 
-				{
-						cam16o(p->c, p->n, p->a, p->f, p->d16);
-						printf("cam16o:[R%i]-C%i-N%i-A%i-F%i <- 0x%x\n", ++i, p->c, p->n, p->a, p->f, p->d16);
-				} while (i<p->r);
-				break;
-		case CAM24O:
-				do 
-				{
-						cam24o(p->c, p->n, p->a, p->f, p->d24);
-						printf("cam24o:[R%i]-C%i-N%i-A%i-F%i <- 0x%x\n", ++i, p->c, p->n, p->a, p->f, p->d24);
-				} while (i<p->r);
-				break;
-		case CAM16O_Q:
-				do 
-				{
-						cam16o_q(p->c, p->n, p->a, p->f, p->d16, &p->x, &p->q);
-						printf("cam16o_q:[R%i]-C%i-N%i-A%i-F%i <- 0x%x X:%i-Q:%i\n"
-													,++i , p->c, p->n, p->a, p->f, p->d16, p->x, p->q);
-				} while (i<p->r);
-				break;
-		case CAM24O_Q:
-				do 
-				{
-						cam24o_q(p->c, p->n, p->a, p->f, p->d24, &p->x, &p->q);
-						printf("cam24o_q:[R%i]-C%i-N%i-A%i-F%i <- 0x%x X:%i-Q:%i\n"
-													,++i , p->c, p->n, p->a, p->f, p->d24, p->x, p->q);
-				} while (i<p->r);
-				break;
-		case CAM16O_R:
-				cam16o_r(p->c, p->n, p->a, p->f, pdd16, p->r);
-				printf("cam16o_r:C%i-N%i-A%i-F%i <- 0x%x\n", p->c, p->n, p->a, p->f, p->d16);
-				break;
-		case CAM24O_R:
-				cam24o_r(p->c, p->n, p->a, p->f, pdd24, p->r);
-				printf("cam24o_r:C%i-N%i-A%i-F%i <- 0x%x\n", p->c, p->n, p->a, p->f, p->d24);
-				break;
-				/* inputs */
-		case CAM16I:
-				do 
-				{
-						cam16i(p->c, p->n, p->a, p->f, &p->d16);
-						printf("cam16i:[R%i]-C%i-N%i-A%i-F%i-> 0x%4.4x\n",++i ,p->c, p->n, p->a, p->f,p->d16);
-				} while (i<p->r);
-				break;
-		case CAM24I:
-				do 
-				{
-						cam24i(p->c, p->n, p->a, p->f, &p->d24);
-						printf("cam24i:[R%i]-C%i-N%i-A%i-F%i-> 0x%6.6x\n",++i, p->c, p->n, p->a, p->f,p->d24);
-				} while (i<p->r);
-				break;
-		case CAM16I_Q:
-				do 
-				{
-						cam16i_q(p->c, p->n, p->a, p->f, &p->d16, &p->x, &p->q);
-						printf("cam16i_q:[R%i]-C%i-N%i-A%i-F%i-> 0x%4.4x X:%i-Q:%i\n"
-													,++i ,p->c, p->n, p->a, p->f,p->d16, p->x, p->q);
-				} while (i<p->r);
-				break;
-		case CAM24I_Q:
-				do 
-				{
-						cam24i_q(p->c, p->n, p->a, p->f, &p->d24, &p->x, &p->q);
-						printf("cam24i_q:[R%i]-C%i-N%i-A%i-F%i-> 0x%6.6x X:%i-Q:%i\n"
-													,++i ,p->c, p->n, p->a, p->f,p->d24, p->x, p->q);
-				} while (i<p->r);
-				break;
-		case CAM16I_R:
-				memset(pdd16, 0, sizeof(dd16));
-				cam16i_r(p->c, p->n, p->a, p->f, &pdd16, p->r);
-				for (i=0;i<p->r;i++)
-						printf("cam16i_r:[R%i]-C%i-N%i-A%i-F%i-> 0x%4.4x\n",i+1, p->c, p->n, p->a, p->f,dd16[i]);
-				break;
-		case CAM24I_R:
-				memset(pdd24, 0, sizeof(dd24));
-				cam24i_r(p->c, p->n, p->a, p->f, &pdd24, p->r);
-				for (i=0;i<p->r;i++)
-						printf("cam24i_r:[R%i]-C%i-N%i-A%i-F%i-> 0x%6.6x\n",i+1, p->c, p->n, p->a, p->f,dd24[i]);
-				break;
-		case CAM16I_RQ:
-				memset(pdd16, 0, sizeof(dd16));
-				cam16i_rq(p->c, p->n, p->a, p->f, &pdd16, p->r);
-				for (i=0;i<p->r;i++)
-						printf("cam16i_rq:[R%i]-C%i-N%i-A%i-F%i-> 0x%4.4x\n",i+1, p->c, p->n, p->a, p->f,dd16[i]);
-				break;
-		case CAM24I_RQ:
-				memset(pdd24, 0, sizeof(dd24));
-				cam24i_rq(p->c, p->n, p->a, p->f, &pdd24, p->r);
-				for (i=0;i<p->r;i++)
-						printf("cam24i_rq:[R%i]-C%i-N%i-A%i-F%i-> 0x%6.6x\n",i+1, p->c, p->n, p->a, p->f,dd24[i]);
-				break;
-		case CAM16I_SA:
-				memset(pdd16, 0, sizeof(dd16));
-				cam16i_sa(p->c, p->n, p->a, p->f, &pdd16, p->r);
-				for (i=0;i<p->r;i++)
-						printf("cam16i_sa:[R%i]-C%i-N%i-A%i-F%i-> 0x%4.4x\n",i+1, p->c, p->n, p->a+i, p->f,dd16[i]);
-				break;
-		case CAM24I_SA:
-				memset(pdd24, 0, sizeof(dd24));
-				cam24i_sa(p->c, p->n, p->a, p->f, &pdd24, p->r);
-				for (i=0;i<p->r;i++)
-						printf("cam24i_sa:[R%i]-C%i-N%i-A%i-F%i-> 0x%6.6x\n",i+1, p->c, p->n, p->a+i, p->f,dd24[i]);
-				break;
-		case CAM16I_SN:
-				memset(pdd16, 0, sizeof(dd16));
-				cam16i_sa(p->c, p->n, p->a, p->f, &pdd16, p->r);
-				for (i=0;i<p->r;i++)
-						printf("cam16i_sn:[R%i]-C%i-N%i-A%i-F%i-> 0x%x\n",i+1, p->c, p->n+i, p->a, p->f,dd16[i]);
-				break;
-		case CAM24I_SN:
-				memset(pdd24, 0, sizeof(dd24));
-				cam24i_sn(p->c, p->n, p->a, p->f, &pdd24, p->r);
-				for (i=0;i<p->r;i++)
-						printf("cam24i_sn:[R%i]-C%i-N%i-A%i-F%i-> 0x%x\n",i+1, p->c, p->n+i, p->a, p->f,dd24[i]);
-				break;
-		case QUIT:
-				p->r = 1;
-				return;
-		case HELP:
-				help_page(MCSTD);
-				break;
-		case SKIP:
-				break;
-		default:
-				status = SKIP;
-				break;
-		}
+  {
+    make_display_string(MCSTD, PP, paddr);
+    /* prompt */
+    printf("MCStd> [%s] :",paddr);
+    ss_gets(pstr,128);
+    
+    /* decode line */    
+    status = decode_line(PP, pstr);
+    p = PP;
+    if (status == LOOP)
+      status = pstatus;
+    if (status != SKIP & status != HELP) pstatus = status;
+    i = 0;
+    pdd16 = dd16;
+    pdd24 = dd24;
+    switch(status)
+    {
+      /* system */
+    case CAM_LAM_ENABLE:
+      cam_lam_enable(p->c, p->n);
+      printf("cam_lam_enable:C%i-N%i\n",p->c, p->n);
+      break;
+    case CAM_LAM_DISABLE:
+      cam_lam_disable(p->c, p->n);
+      printf("cam_lam_disable:C%i-N%i\n",p->c, p->n);
+      break;
+    case CAM_LAM_READ:
+      cam_lam_read(p->c, &lam);
+      printf("cam_lam_read:C%i-> 0x%x\n",p->c, lam);
+      break;
+    case CAM_LAM_CLEAR:
+      cam_lam_clear(p->c, p->n);
+      printf("cam_lam_clear:C%i \n",p->c);
+      break;
+    case CAM_INHIBIT_SET:
+      cam_inhibit_set(p->c);
+      printf("cam_inhibit_set:C%i\n",p->c);
+      break;
+    case CAM_INHIBIT_CLEAR:
+      cam_inhibit_clear(p->c);
+      printf("cam_inhibit_clear:C%i\n",p->c);
+      break;
+    case CAM_CRATE_CLEAR:
+      cam_crate_clear(p->c);
+      printf("cam_crate_clear:C%i\n",p->c);
+      break;
+    case CAM_CRATE_ZINIT:
+      cam_crate_zinit(p->c);
+      printf("cam_crate_zinit:C%i\n",p->c);
+      break;
+      /* command */
+    case CAMC:
+      do 
+      {
+	camc(p->c, p->n, p->a, p->f);
+	printf("camc:[R%i]-C%i-N%i-A%i-F%i\n", ++i, p->c, p->n, p->a, p->f);
+      } while (i<p->r);
+      break;
+    case CAMC_Q:
+      do 
+      {
+	camc_q(p->c, p->n, p->a, p->f, &p->q);
+	printf("camc_q:[R%i]-C%i-N%i-A%i-F%i -Q:%i\n", ++i, p->c, p->n, p->a, p->f, p->q);
+      } while (i<p->r);
+      break;
+    case CAMC_SA:
+      camc(p->c, p->n, p->a, p->f);
+      printf("camc_sa:C%i-N%i-A%i-F%i\n", p->c, p->n, p->a, p->f);
+      break;
+    case CAMC_SN:
+      camc(p->c, p->n, p->a, p->f);
+      printf("camc_sn:C%i-N%i-A%i-F%i\n", p->c, p->n, p->a, p->f);
+      break;
+      /* output */
+    case CAM16O:
+      do 
+      {
+	cam16o(p->c, p->n, p->a, p->f, p->d16);
+	printf("cam16o:[R%i]-C%i-N%i-A%i-F%i <- 0x%x\n", ++i, p->c, p->n, p->a, p->f, p->d16);
+      } while (i<p->r);
+      break;
+    case CAM24O:
+      do 
+      {
+	cam24o(p->c, p->n, p->a, p->f, p->d24);
+	printf("cam24o:[R%i]-C%i-N%i-A%i-F%i <- 0x%x\n", ++i, p->c, p->n, p->a, p->f, p->d24);
+      } while (i<p->r);
+      break;
+    case CAM16O_Q:
+      do 
+      {
+	cam16o_q(p->c, p->n, p->a, p->f, p->d16, &p->x, &p->q);
+	printf("cam16o_q:[R%i]-C%i-N%i-A%i-F%i <- 0x%x X:%i-Q:%i\n"
+	       ,++i , p->c, p->n, p->a, p->f, p->d16, p->x, p->q);
+      } while (i<p->r);
+      break;
+    case CAM24O_Q:
+      do 
+      {
+	cam24o_q(p->c, p->n, p->a, p->f, p->d24, &p->x, &p->q);
+	printf("cam24o_q:[R%i]-C%i-N%i-A%i-F%i <- 0x%x X:%i-Q:%i\n"
+	       ,++i , p->c, p->n, p->a, p->f, p->d24, p->x, p->q);
+      } while (i<p->r);
+      break;
+    case CAM16O_R:
+      cam16o_r(p->c, p->n, p->a, p->f, pdd16, p->r);
+      printf("cam16o_r:C%i-N%i-A%i-F%i <- 0x%x\n", p->c, p->n, p->a, p->f, p->d16);
+      break;
+    case CAM24O_R:
+      cam24o_r(p->c, p->n, p->a, p->f, pdd24, p->r);
+      printf("cam24o_r:C%i-N%i-A%i-F%i <- 0x%x\n", p->c, p->n, p->a, p->f, p->d24);
+      break;
+      /* inputs */
+    case CAM16I:
+      do 
+      {
+	cam16i(p->c, p->n, p->a, p->f, &p->d16);
+	printf("cam16i:[R%i]-C%i-N%i-A%i-F%i-> 0x%4.4x\n",++i ,p->c, p->n, p->a, p->f,p->d16);
+      } while (i<p->r);
+      break;
+    case CAM24I:
+      do 
+      {
+	cam24i(p->c, p->n, p->a, p->f, &p->d24);
+	printf("cam24i:[R%i]-C%i-N%i-A%i-F%i-> 0x%6.6x\n",++i, p->c, p->n, p->a, p->f,p->d24);
+      } while (i<p->r);
+      break;
+    case CAM16I_Q:
+      do 
+      {
+	cam16i_q(p->c, p->n, p->a, p->f, &p->d16, &p->x, &p->q);
+	printf("cam16i_q:[R%i]-C%i-N%i-A%i-F%i-> 0x%4.4x X:%i-Q:%i\n"
+	       ,++i ,p->c, p->n, p->a, p->f,p->d16, p->x, p->q);
+      } while (i<p->r);
+      break;
+    case CAM24I_Q:
+      do 
+      {
+	cam24i_q(p->c, p->n, p->a, p->f, &p->d24, &p->x, &p->q);
+	printf("cam24i_q:[R%i]-C%i-N%i-A%i-F%i-> 0x%6.6x X:%i-Q:%i\n"
+	       ,++i ,p->c, p->n, p->a, p->f,p->d24, p->x, p->q);
+      } while (i<p->r);
+      break;
+    case CAM16I_R:
+      memset(pdd16, 0, sizeof(dd16));
+      cam16i_r(p->c, p->n, p->a, p->f, &pdd16, p->r);
+      for (i=0;i<p->r;i++)
+	printf("cam16i_r:[R%i]-C%i-N%i-A%i-F%i-> 0x%4.4x\n",i+1, p->c, p->n, p->a, p->f,dd16[i]);
+      break;
+    case CAM24I_R:
+      memset(pdd24, 0, sizeof(dd24));
+      cam24i_r(p->c, p->n, p->a, p->f, &pdd24, p->r);
+      for (i=0;i<p->r;i++)
+	printf("cam24i_r:[R%i]-C%i-N%i-A%i-F%i-> 0x%6.6x\n",i+1, p->c, p->n, p->a, p->f,dd24[i]);
+      break;
+    case CAM16I_RQ:
+      memset(pdd16, 0, sizeof(dd16));
+      cam16i_rq(p->c, p->n, p->a, p->f, &pdd16, p->r);
+      for (i=0;i<p->r;i++)
+	printf("cam16i_rq:[R%i]-C%i-N%i-A%i-F%i-> 0x%4.4x\n",i+1, p->c, p->n, p->a, p->f,dd16[i]);
+      break;
+    case CAM24I_RQ:
+      memset(pdd24, 0, sizeof(dd24));
+      cam24i_rq(p->c, p->n, p->a, p->f, &pdd24, p->r);
+      for (i=0;i<p->r;i++)
+	printf("cam24i_rq:[R%i]-C%i-N%i-A%i-F%i-> 0x%6.6x\n",i+1, p->c, p->n, p->a, p->f,dd24[i]);
+      break;
+    case CAM16I_SA:
+      memset(pdd16, 0, sizeof(dd16));
+      cam16i_sa(p->c, p->n, p->a, p->f, &pdd16, p->r);
+      for (i=0;i<p->r;i++)
+	printf("cam16i_sa:[R%i]-C%i-N%i-A%i-F%i-> 0x%4.4x\n",i+1, p->c, p->n, p->a+i, p->f,dd16[i]);
+      break;
+    case CAM24I_SA:
+      memset(pdd24, 0, sizeof(dd24));
+      cam24i_sa(p->c, p->n, p->a, p->f, &pdd24, p->r);
+      for (i=0;i<p->r;i++)
+	printf("cam24i_sa:[R%i]-C%i-N%i-A%i-F%i-> 0x%6.6x\n",i+1, p->c, p->n, p->a+i, p->f,dd24[i]);
+      break;
+    case CAM16I_SN:
+      memset(pdd16, 0, sizeof(dd16));
+      cam16i_sa(p->c, p->n, p->a, p->f, &pdd16, p->r);
+      for (i=0;i<p->r;i++)
+	printf("cam16i_sn:[R%i]-C%i-N%i-A%i-F%i-> 0x%x\n",i+1, p->c, p->n+i, p->a, p->f,dd16[i]);
+      break;
+    case CAM24I_SN:
+      memset(pdd24, 0, sizeof(dd24));
+      cam24i_sn(p->c, p->n, p->a, p->f, &pdd24, p->r);
+      for (i=0;i<p->r;i++)
+	printf("cam24i_sn:[R%i]-C%i-N%i-A%i-F%i-> 0x%x\n",i+1, p->c, p->n+i, p->a, p->f,dd24[i]);
+      break;
+    case QUIT:
+      p->r = 1;
+      return;
+    case HELP:
+      help_page(MCSTD);
+      break;
+    case SKIP:
+      break;
+    default:
+      status = SKIP;
+      break;
+    }
   }
 }
 
@@ -496,7 +515,7 @@ void cnafsub()
       {
 	for (j=0;j<p->r;j++)
 	{
-	  if (p->n == 28 || p->n == 30)
+	  if (p->n == 28 || p->n == 29 || p->n == 30)
 	    cc_services(p);
 	  else
 	    if (p->m == 24) /* Actual 24 bits CAMAC operation */
