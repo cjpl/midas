@@ -7,6 +7,9 @@
                 Most routines are from mfe.c mana.c and mlogger.c.
 
   $Log$
+  Revision 1.9  1999/02/22 11:01:39  midas
+  Fixed bug with ss_getchar()
+
   Revision 1.8  1999/02/22 08:00:03  midas
   Made FAL stop with "!" work under Linux
 
@@ -4036,6 +4039,9 @@ usage:
   /* initialize screen display */
   ss_sleep(2000);
   display(TRUE);
+
+  /* initialize ss_getchar */
+  ss_getchar(0);
 
   /* call main scheduler loop */
   scheduler();
