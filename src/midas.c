@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.76  1999/10/18 15:52:12  midas
+  Use "alarm count" to declare programs dead if inactive for 5 minutes
+
   Revision 1.75  1999/10/18 14:41:51  midas
   Use /programs/<name>/Watchdog timeout in all programs as timeout value. The
   default value can be submitted by calling cm_connect_experiment1(..., timeout)
@@ -15507,30 +15510,41 @@ ALARM_STR(alarm_str);
         }
 
       now = ss_time();
+      /* check once every minute */
       if (now - program_info.checked_last > 60)
         {
-        db_set_value(hDB, hkey, "Checked last", &now, sizeof(DWORD), 1, TID_DWORD);
+        program_info.checked_last = now;
 
         rpc_get_name(str);
         str[strlen(key.name)] = 0;
         if (!equal_ustring(str, key.name) &&
             cm_exist(key.name, FALSE) == CM_NO_CLIENT)
           {
-          /* if not running and alarm calss defined, trigger alarm */
-          if (program_info.alarm_class[0])
-            {
-            sprintf(str, "Program %s is not running", key.name);
-            al_trigger_alarm(key.name, str, program_info.alarm_class);
-            }
+          program_info.alarm_count++;
 
-          /* auto restart program */
-          if (program_info.auto_restart &&
-              program_info.start_command[0])
+          /* fire alarm when not running for 5 minues */
+          if (program_info.alarm_count >= 5)
             {
-            ss_system(program_info.start_command);
-            cm_msg(MTALK, "al_check", "Program %s restarted", key.name);
+            /* if not running and alarm calss defined, trigger alarm */
+            if (program_info.alarm_class[0])
+              {
+              sprintf(str, "Program %s is not running", key.name);
+              al_trigger_alarm(key.name, str, program_info.alarm_class);
+              }
+
+            /* auto restart program */
+            if (program_info.auto_restart &&
+                program_info.start_command[0])
+              {
+              ss_system(program_info.start_command);
+              cm_msg(MTALK, "al_check", "Program %s restarted", key.name);
+              }
             }
           }
+        else
+          program_info.alarm_count = 0;
+
+        db_set_record(hDB, hkey, &program_info, sizeof(program_info), 0);
         }
       }
     }
