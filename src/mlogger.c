@@ -6,6 +6,9 @@
   Contents:     MIDAS logger program
 
   $Log$
+  Revision 1.50  2002/05/09 02:17:37  midas
+  Abort logger start/run start if invalid link in history system
+
   Revision 1.49  2002/05/08 19:54:41  midas
   Added extra parameter to function db_get_value()
 
@@ -1545,15 +1548,15 @@ void log_history(HNDLE hDB, HNDLE hKey, void *info);
 
 INT open_history()
 {
-  INT      size, index, i_tag, status, i, j, li, max_event_id;
-  INT      n_var, n_tags, n_names;
-  HNDLE    hKeyRoot, hKeyVar, hKeyNames, hLinkKey, hVarKey, hKeyEq, hHistKey, hKey;
-  DWORD    history;
-  TAG      *tag;
-  KEY      key, varkey, linkkey, histkey;
-  WORD     event_id;
-  char     str[256], eq_name[NAME_LENGTH], hist_name[NAME_LENGTH];
-  BOOL     single_names;
+INT      size, index, i_tag, status, i, j, li, max_event_id;
+INT      n_var, n_tags, n_names;
+HNDLE    hKeyRoot, hKeyVar, hKeyNames, hLinkKey, hVarKey, hKeyEq, hHistKey, hKey;
+DWORD    history;
+TAG      *tag;
+KEY      key, varkey, linkkey, histkey;
+WORD     event_id;
+char     str[256], eq_name[NAME_LENGTH], hist_name[NAME_LENGTH];
+BOOL     single_names;
 
   /* set direcotry for history files */
   size = sizeof(str);
@@ -1777,7 +1780,9 @@ INT open_history()
         status = db_enum_key(hDB, hHistKey, i, &hKey);
         if (status == DB_NO_MORE_SUBKEYS)
           break;
-        if (db_get_key(hDB, hKey, &key) == DB_SUCCESS)
+
+        if (status == DB_SUCCESS &&
+            db_get_key(hDB, hKey, &key) == DB_SUCCESS)
           {
           if (key.type != TID_KEY)
             n_var++;
@@ -1787,6 +1792,7 @@ INT open_history()
           db_enum_link(hDB, hHistKey, i, &hKey);
           db_get_key(hDB, hKey, &key);
           cm_msg(MERROR, "open_history", "History link /History/Links/%s/%s is invalid", hist_name, key.name);
+          return 0;
           }
         }
 
@@ -2340,7 +2346,13 @@ BOOL         write_data, tape_flag = FALSE;
 
   /* reopen history channels if event definition has changed */
   close_history();
-  open_history();
+  status = open_history();
+  if (status != CM_SUCCESS)
+    {
+    sprintf(error, "Error in history system, aborting run start");
+    cm_msg(MERROR, "tr_prestart", error);
+    return 0;
+    }
 
   /* write transition event into history */
   eb.transition = STATE_RUNNING;
@@ -2600,9 +2612,6 @@ usage:
     db_protect_database(hDB);
     }
 
-  /* turn off message display, turn on message logging */
-  cm_set_msg_print(MT_ALL, 0, NULL);
-
   /* register transition callbacks */
   if (cm_register_transition(TR_PRESTART, tr_prestart) != CM_SUCCESS)
     {
@@ -2621,7 +2630,15 @@ usage:
   logger_init();
 
   /* open history logging */
-  open_history();
+  if (open_history() != CM_SUCCESS)
+    {
+    printf("Error in history system, aborting startup.\n");
+//##    cm_disconnect_experiment();
+//    return 1;
+    }
+
+  /* turn off message display, turn on message logging */
+  cm_set_msg_print(MT_ALL, 0, NULL);
 
   /* print startup message */
   size = sizeof(dir);
