@@ -1,3 +1,20 @@
+/********************************************************************\
+
+  Name:         hwtest.c
+  Created by:   Stefan Ritt
+
+  Contents:     Program which tests the architecture of the HW/OS
+
+  $Log$
+  Revision 1.2  1999/06/23 09:47:43  midas
+  Added (long int) and (long double)
+
+  Revision 1.2  1998/10/12 12:19:01  midas
+  Added Log tag in header
+
+
+\********************************************************************/
+
 #include <stdio.h>
 #include <string.h>
 
@@ -22,6 +39,8 @@ int    i;
   printf("sizeof(int)    = %d\n", sizeof(int));
   printf("sizeof(float)  = %d\n", sizeof(float));
   printf("sizeof(double) = %d\n", sizeof(double));
+  printf("sizeof(long int) = %d\n", sizeof(long int));
+  printf("sizeof(long double) = %d\n", sizeof(long double));
   printf("sizeof(char *) = %d\n", sizeof(p));
   if (sizeof(p) == 2)
     printf("...this looks like a 16-bit OS\n\n");
