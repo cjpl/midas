@@ -9,6 +9,9 @@
                 for SCS-700 PT100/PT1000 unit
 
   $Log$
+  Revision 1.3  2003/03/24 14:59:46  midas
+  Removed LCD code
+
   Revision 1.2  2003/03/19 16:35:03  midas
   Eliminated configuration parameters
 
@@ -187,7 +190,6 @@ static unsigned long on_time;
 void user_loop(void)
 {
 static unsigned char i;
-static unsigned long last_display;
 
   /* convert one channel at a time */
   i = (i+1) % 8;
@@ -195,17 +197,5 @@ static unsigned long last_display;
 
   /* set output according to power */
   set_power();
-
-  /* output temperature */
-  if (!DEBUG_MODE)
-    {
-    last_display = time();
-
-    lcd_goto(0, 0);
-    printf("0:%5.1fﬂC 1:%5.1fﬂC", user_data.temp[0], user_data.temp[1]);
-
-    lcd_goto(0, 1);
-    printf("2:%5.1fﬂC 3:%5.1fﬂC", user_data.temp[2], user_data.temp[3]);
-    }
 }
 
