@@ -10,6 +10,9 @@
   date        by    modification
   ---------   ---   ------------------------------------------------
 *  $Log$
+*  Revision 1.15  2001/07/20 20:36:19  pierre
+*  -Make ybk_close_... return bank size in bytes
+*
 *  Revision 1.14  2000/07/21 18:28:06  pierre
 *  - Include YBOS version >4.0 support by default, otherwise use in Makefile
 *    -DYBOS_VERSION_3_3 for MIDAS_PREF_FLAGS
@@ -249,14 +252,14 @@ INT   EXPRT bk_list (BANK_HEADER * pmbh, char * bklist);
 INT   EXPRT bk_find (BANK_HEADER * pmbh, char * bkname, DWORD * bklen, DWORD * bktype, void **pbk);
 void  EXPRT ybk_init        (DWORD *pevent);
 void  EXPRT ybk_create      (DWORD *pevent, char *bkname, DWORD btype, void *pbkdat);
-void  EXPRT ybk_close       (DWORD *pevent, void *pbkdat);
+INT   EXPRT ybk_close       (DWORD *pevent, void *pbkdat);
 INT   EXPRT ybk_size        (DWORD *pevent);
 INT   EXPRT ybk_list        (DWORD *pevent, char *bklist);
 INT   EXPRT ybk_locate      (DWORD *pevent, char * bkname, void *pdata);
 INT   EXPRT ybk_find        (DWORD *pevent, char *bkname, DWORD *bklength, DWORD *bktype, void **pbkdata);
 void  EXPRT ybk_create_chaos(DWORD *pevent, char *bname, DWORD btype, void *pbkdat);
 INT   EXPRT ybk_iterate     (DWORD *pevent, YBOS_BANK_HEADER ** pybkh, void ** pdata);
-void  EXPRT ybk_close_chaos (DWORD *pevent, DWORD btype, void *pbkdat);
+INT   EXPRT ybk_close_chaos (DWORD *pevent, DWORD btype, void *pbkdat);
 
 #ifdef INCLUDE_LOGGING
 INT   EXPRT ybos_log_open(LOG_CHN * log_chn, INT run_number);
