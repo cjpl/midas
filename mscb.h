@@ -6,6 +6,9 @@
   Contents:     Header fiel for MSCB funcions
 
   $Log$
+  Revision 1.31  2004/03/10 10:28:48  midas
+  Implemented test block write for speed tests
+
   Revision 1.30  2004/03/04 15:29:31  midas
   Added USB support
 
@@ -306,6 +309,7 @@ extern "C" {
    int EXPRT mscb_set_name(int fd, int adr, char *name);
    int EXPRT mscb_write(int fd, int adr, unsigned char index, void *data, int size);
    int EXPRT mscb_write_group(int fd, int adr, unsigned char index, void *data, int size);
+   int EXPRT mscb_write_block(int fd, int adr, unsigned char index, void *data, int size);
    int EXPRT mscb_flash(int fd, int adr);
    int EXPRT mscb_upload(int fd, int adr, char *buffer, int size);
    int EXPRT mscb_read(int fd, int adr, unsigned char index, void *data, int *size);

@@ -6,6 +6,9 @@
   Contents:     Command-line interface for the Midas Slow Control Bus
 
   $Log$
+  Revision 1.60  2004/03/10 10:28:47  midas
+  Implemented test block write for speed tests
+
   Revision 1.59  2004/03/09 15:37:09  midas
   Fixed problems with small strings
 
@@ -204,6 +207,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <fcntl.h>
+#include <time.h>
 #include "mscb.h"
 #include "rpc.h"
 
@@ -419,13 +423,14 @@ void cmd_loop(int fd, char *cmd, int adr)
    unsigned int data;
    unsigned char c;
    float value;
-   char str[256], line[256], dbuf[256];
+   char str[256], line[256], dbuf[100*1024];
    char param[10][100];
    char *pc, *p, *buffer;
    char name[256], chn_name[256][9];
    FILE *f, *cmd_file = NULL;
    MSCB_INFO info;
    MSCB_INFO_VAR info_var;
+   time_t start, now;
 
 
    /* open command file */
@@ -646,7 +651,6 @@ void cmd_loop(int fd, char *cmd, int adr)
                addr = atoi(param[1]);
 
             do {
-//##               status = mscb_addr(fd, MCMD_PING16, addr, 10, 1);
                status = mscb_addr(fd, MCMD_PING16, addr, 1, 1);
                if (status != MSCB_SUCCESS) {
                   if (status == MSCB_MUTEX)
@@ -1123,6 +1127,33 @@ void cmd_loop(int fd, char *cmd, int adr)
                   Sleep(10);
             }
             printf("%d\n", i);
+            while (kbhit())
+               getch();
+         }
+      }
+
+      /* block transfer test ---------- */
+      else if (match(param[0], "block")) {
+         int i, status;
+
+         if (current_addr < 0)
+            printf("You must first address an individual node\n");
+         else {
+            i = 0;
+            time(&start);
+            while (!kbhit()) {
+               status = mscb_write_block(fd, current_addr, 0, dbuf, 1024);
+               i += 1024;
+
+               time(&now);
+               if (now > start+1) {
+                  start = now;
+                  printf("%4.2lf kB/sec\r", i/1024.0);
+                  i = 0;
+                  fflush(stdout);
+               }
+            }
+            printf("\n", i);
             while (kbhit())
                getch();
          }

@@ -6,6 +6,9 @@
   Contents:     List of MSCB RPC functions with parameters
 
   $Log$
+  Revision 1.19  2004/03/10 10:28:48  midas
+  Implemented test block write for speed tests
+
   Revision 1.18  2004/03/05 14:00:33  midas
   *** empty log message ***
 
@@ -190,6 +193,22 @@ static RPC_LIST rpc_list[] = {
    ,
 
    {RPC_MSCB_WRITE, "mscb_write",
+    {{TID_INT, RPC_IN}
+     ,
+     {TID_INT, RPC_IN}
+     ,
+     {TID_BYTE, RPC_IN}
+     ,
+     {TID_ARRAY, RPC_IN | RPC_VARARRAY}
+     ,
+     {TID_INT, RPC_IN}
+     ,
+     {0}
+     }
+    }
+   ,
+
+   {RPC_MSCB_WRITE, "mscb_write_block",
     {{TID_INT, RPC_IN}
      ,
      {TID_INT, RPC_IN}

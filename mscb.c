@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus communication functions
 
   $Log$
+  Revision 1.58  2004/03/10 10:28:47  midas
+  Implemented test block write for speed tests
+
   Revision 1.57  2004/03/09 15:37:09  midas
   Fixed problems with small strings
 
@@ -570,7 +573,7 @@ int msend_usb(int fd, void *buf, int size)
    WriteFile((HANDLE) fd, buf, size, &n_written, NULL);
 #else
    n_written = usb_bulk_write((usb_dev_handle *) fd, 2, buf, size, 100);
-   usleep(0);
+   usleep(0); // needed for linux not to crash !!!!
 #endif
    return n_written;
 }
@@ -1399,7 +1402,7 @@ int mscb_init(char *device, int debug)
          buf[0] = MCMD_ECHO;
          mscb_out(index + 1, buf, 1, RS485_FLAG_CMD);
 
-         n = mscb_in(index + 1, buf, 2, 5000);
+         n = mscb_in(index + 1, buf, 2, 10000);
          mscb_release(index + 1);
 
          if (n == 2 && buf[0] == MCMD_ACK)
@@ -1831,7 +1834,7 @@ int mscb_info(int fd, int adr, MSCB_INFO * info)
    buf[1] = crc8(buf, 1);
    mscb_out(fd, buf, 2, RS485_FLAG_LONG_TO);
 
-   i = mscb_in(fd, buf, sizeof(buf), 5000);
+   i = mscb_in(fd, buf, sizeof(buf), 10000);
    mscb_release(fd);
 
    if (i < (int) sizeof(MSCB_INFO) + 2)
@@ -1900,7 +1903,7 @@ int mscb_info_variable(int fd, int adr, int index, MSCB_INFO_VAR * info)
    buf[2] = crc8(buf, 2);
    mscb_out(fd, buf, 3, RS485_FLAG_LONG_TO);
 
-   i = mscb_in(fd, buf, sizeof(buf), 5000);
+   i = mscb_in(fd, buf, sizeof(buf), 10000);
    mscb_release(fd);
 
    if (i < (int) sizeof(MSCB_INFO_VAR) + 3)
@@ -2167,13 +2170,90 @@ int mscb_write(int fd, int adr, unsigned char index, void *data, int size)
    }
 
    /* read acknowledge */
-   i = mscb_in(fd, ack, 2, 5000);
+   i = mscb_in(fd, ack, 2, 10000);
    mscb_release(fd);
    if (i < 2)
       return MSCB_TIMEOUT;
 
    if (ack[0] != MCMD_ACK || ack[1] != crc)
       return MSCB_CRC_ERROR;
+
+   return MSCB_SUCCESS;
+}
+
+/*------------------------------------------------------------------*/
+
+int mscb_write_block(int fd, int adr, unsigned char index, void *data, int size)
+/********************************************************************\
+
+  Routine: mscb_write_block
+
+  Purpose: Write block of data to single node
+
+  Input:
+    int fd                  File descriptor for connection
+    int adr                 Node address
+    unsigned char index     Variable index 0..255
+    void *data              Data to send
+    int size                Data size in bytes
+
+  Function value:
+    MSCB_SUCCESS            Successful completion
+    MSCB_TIMEOUT            Timeout receiving acknowledge
+    MSCB_CRC_ERROR          CRC error
+    MSCB_INVAL_PARAM        Parameter "size" has invalid value
+    MSCB_MUTEX              Cannot obtain mutex for mscb
+
+\********************************************************************/
+{
+   int i, n, status;
+   unsigned char buf[1024];
+
+   if (fd > MSCB_MAX_FD || fd < 1 || !mscb_fd[fd - 1].type)
+      return MSCB_INVAL_PARAM;
+
+   if (mrpc_connected(fd))
+      return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_WRITE, mscb_fd[fd - 1].remote_fd, adr, index, data, size);
+
+   if (size < 1)
+      return MSCB_INVAL_PARAM;
+
+   if (mscb_lock(fd) != MSCB_SUCCESS)
+      return MSCB_MUTEX;
+
+   status = mscb_addr(fd, MCMD_PING16, adr, 10, 0);
+   if (status != MSCB_SUCCESS) {
+      mscb_release(fd);
+      return status;
+   }
+
+   /*
+   Bulk test gave 128kb/sec, 10.3.04, SR
+
+   for (i=0 ; i<1024 ; i++)
+      buf[i] = RS485_FLAG_CMD;
+   
+   i = msend_usb(mscb_fd[fd - 1].hw, buf, 1024);
+   mscb_release(fd);
+   return MSCB_SUCCESS;
+   */
+
+   /* slice data in 60 byte blocks */
+   for (i=0 ; i<=size/60 ; i++) {
+      buf[0] = MCMD_WRITE_BLOCK;
+
+      n = 60;
+      if (size < (i+1)*60)
+         n = size - i*60;
+
+      if (n == 0)
+         break;
+
+      memcpy(buf+1, (char *)data+i*60, n);
+      mscb_out(fd, buf, n+1, RS485_FLAG_CMD);
+   }
+
+   mscb_release(fd);
 
    return MSCB_SUCCESS;
 }
@@ -2489,7 +2569,7 @@ int mscb_read(int fd, int adr, unsigned char index, void *data, int *size)
       mscb_out(fd, buf, 3, 0);
 
       /* read data */
-      i = mscb_in(fd, buf, sizeof(buf), 5000);
+      i = mscb_in(fd, buf, sizeof(buf), 10000);
 
       if (i == 1 && buf[0] == 0xFF) {
          printf("Timeout from RS485 bus.\n");
@@ -2609,7 +2689,7 @@ int mscb_read_range(int fd, int adr, unsigned char index1, unsigned char index2,
       mscb_out(fd, buf, 4, 0);
 
       /* read data */
-      i = mscb_in(fd, buf, 256, 5000);
+      i = mscb_in(fd, buf, 256, 10000);
 
       if (i < 2)
          continue;
@@ -2706,7 +2786,7 @@ int mscb_user(int fd, int adr, void *param, int size, void *result, int *rsize)
    }
 
    /* read result */
-   n = mscb_in(fd, buf, sizeof(buf), 5000);
+   n = mscb_in(fd, buf, sizeof(buf), 10000);
    mscb_release(fd);
 
    if (n < 0)
@@ -2783,7 +2863,7 @@ int mscb_echo(int fd, int adr, unsigned char d1, unsigned char *d2)
    }
 
    /* read result */
-   n = mscb_in(fd, buf, sizeof(buf), 5000);
+   n = mscb_in(fd, buf, sizeof(buf), 10000);
    mscb_release(fd);
 
    if (n < 0)
