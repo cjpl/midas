@@ -6,6 +6,9 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.27  1999/11/09 13:20:47  midas
+  Fixed compiler warning
+
   Revision 1.26  1999/11/09 13:17:26  midas
   Added secure ODB feature
 
@@ -1113,7 +1116,7 @@ INT db_lock_database(HNDLE hDB)
   _database[hDB-1].lock_cnt++;
 
   if (_database[hDB-1].protect)
-    ss_shm_unprotect(_database[hDB-1].shm_handle, &_database[hDB-1].database_header);
+    ss_shm_unprotect(_database[hDB-1].shm_handle, (void **) &_database[hDB-1].database_header);
 
   return DB_SUCCESS;
 }
