@@ -60,6 +60,11 @@ exec /bin/nice bltwish "$0" -- ${1+"$@"}
 # re-ordered some code (no functional change)
 #  Revision History:
 #    $Log$
+#    Revision 1.15  2002/08/26 22:12:40  midas
+#    Handle data that are arrays - queery MHIST for each element of the
+#    array and pretend they are different data words. Requested by TWIST.
+#    Fixed minor bugs wrt opening correct directories.
+#
 #    Revision 1.14  2002/06/15 00:32:10  midas
 #    Fix problem with having EPICS like ':' in variable name
 #
@@ -788,6 +793,22 @@ proc calc_best_scale { item } {
 	
 	set scale_ymin  [expr $mean - 8.* $stand_dev]  
 	set scale_ymax  [expr $mean + 8.* $stand_dev]  
+
+	if { [expr abs($scale_ymin- $scale_ymax) ] < 10.E-10 } {
+	    set scale_ymin [expr $mean - 1.]
+	    set scale_ymax [expr $mean + 1.]
+	}
+
+
+	if { [expr abs($scale_ymin)]  <10.E-20} {
+	    set scale_ymin [expr $mean  - 1.]
+	}
+	if { [expr abs($scale_ymax)]  <10.E-20} {
+	    set scale_ymax [expr $mean  + 1.]
+	}
+	
+
+
 	
 	#robustness check:
 	if { $scale_ymin >= $scale_ymax } {
@@ -951,8 +972,8 @@ proc read_mhist_file {open_file } {
 
     global exit_now
     global select_men
-    global event_ids_info ;#mhist event ID and name
-    global event_var      ;#varialbe name
+    global event_ids_info ; #mhist event ID and name
+    global event_var      ; #varialbe name
 
     global debug
     global debug_code     ; #general code debugging 
@@ -990,14 +1011,11 @@ proc read_mhist_file {open_file } {
 
     # get a new file or use the old ?
     if {$open_file} {
+	if {$debug_code} {puts "Debug: file path is $file_path"} 
 	# here we go..a *new* widget
 	set types {{"History files .hst" {.hst}}}
 	set hist_file [tk_getOpenFile -filetypes $types -initialdir $file_path]
-	# bug ! Mhist doesnt work with full path names. So for now: (resolved Nov-01)
-	# new option in mhist -z gives the path OR path is taken from file name
-	# set hist_file [lindex [split $hist_file /] end]
 	# but have to remember the path for the next call:
-	# set file_path [string range $hist_file 0 [string last "/" $hist_file]]
 	if {$hist_file !=""}  { set file_path [file dirname $hist_file] }
 
     } else {
@@ -1007,7 +1025,7 @@ proc read_mhist_file {open_file } {
 	}
     }
 
-    
+    if {$debug_code} {puts "Debug: file path is now $file_path"} 
     if ![string compare $hist_file ""] return
     # ok, so we have the file name. Now repeat the previous excercicse
     # of getting the event ID.
@@ -1031,15 +1049,24 @@ proc read_mhist_file {open_file } {
     if {$debug_code} {puts "debug: calling select_event_id"}
     if {[select_event_id]=="do_exit"} return
 
+    
+    # if an element is actually it self an array, expand that element to show
+    # all array elements as seperate event variables
+    if {[deal_with_array_vars]=="do_exit"} return
+
+
     # now do all the item selection stuff.
     if {$debug_code} {puts "debug: calling select_event_items"}
     if {[select_event_items old_file]=="do_exit"} return
 
     # now set the pick_event_var variables, just like before but using the results
     # from the list box retrieved from routine select_event_items
+    # selected_items is only the index to the stuff that was picked from the scroll
+    # list.
     foreach i $selected_items {
 	set var [ lindex $event_var($event_choice) $i]
 	set pick_event_var($var) 1
+	if {$debug_code} {puts "Have picked index $i and name is $var"}
     }
     
     # now calculate history time (needed only for plotting here
@@ -1101,13 +1128,34 @@ proc read_mhist_file {open_file } {
 	# was this guy enabled ?
 	if { !$pick_event_var($var)} { continue }
 
-	set exec_string \
+
+	# check if it was an array - if so, add -i option and remove brackets
+	if {[string match {*\[*\]} $var]} { 
+	    if {$debug_code} {puts "Debug: back in read mhist - array var case"}
+	    # extract index number:
+	    set num_elem [string range $var [string last "\[" $var] [string last "\]" $var]]
+	    set num_elem [string range $num_elem 1 [expr [string length $num_elem] -2]]
+	    # remove bracket:
+	    set new_var  [string range $var 0 [expr [string last "\[" $var] -1]]
+	    # add -i to exec_string
+	    if {$debug_code} {puts "Debug: array index is $num_elem  and new name $new_var"}
+	    set exec_string \
+		"$mhist_path/mhist -b -s $start_time \
+		-p $stop_time -t $history_interval -e $event_choice  -v \"$new_var\" -i $num_elem"
+	} else {
+
+	    set exec_string \
 		"$mhist_path/mhist -b -s $start_time \
 		-p $stop_time -t $history_interval -e $event_choice  -v \"$var\" "
+	}
+
+
 	# note the surround by quotes
 	# now add the path name to the files, in case we are not in the PWD.
-	set exec_string "$exec_string -z $file_path"
-	
+	if {$file_path !=""} {
+	    set exec_string "$exec_string -z $file_path"
+	}
+
 	# if we are not debugging....go for it.
 	if { [string compare $debug "mhist"]  } {
 	    if {$debug_code} {puts "debug2: Exec string is: $exec_string"}
@@ -1158,12 +1206,12 @@ proc read_mhist_file {open_file } {
 	while {![eof $file_hndl]} {
 	    gets $file_hndl string
 
-	    if { $debug_code } { puts "From file got string $string " }
+#	    if { $debug_code } { puts "From file got string $string " }
 	    if { [llength $string] == 2} {
 		set x_val [string toupper [lindex $string 0]]
 		set y_val [string toupper [lindex $string 1]]
 		if { [string first "NAN" $x_val]==-1 && [string first "NAN" $y_val]==-1} {
-		    if {$debug_code} {puts "Adding to item $item value (x,y) $x_val $y_val " }
+#		    if {$debug_code} {puts "Adding to item $item value (x,y) $x_val $y_val " }
 		    V_x_${item} append $x_val
 		    V_y_${item} append $y_val
 		} else {
@@ -1214,18 +1262,27 @@ proc read_mhist_file {open_file } {
 		
 		set item_min($item)  [expr $mean - 8.* $stand_dev]  
 		set item_max($item)  [expr $mean + 8.* $stand_dev]  
-		
+#		puts "before checl: min and max are $item_max($item) $item_min($item)  $mean"
 		#robustness check:
-		if { $item_min($item) >= $item_max($item) } {
+		if { [expr abs($item_min($item)-$item_max($item))] < 10.E-10 } {
 		    set item_min($item) [expr $mean - 1.]
 		    set item_max($item) [expr $mean + 1.]
 		}
+		if { [expr abs($item_min($item))]  <10.E-20} {
+		    set item_min($item) [expr $mean - 1.]
+		}
+		if { [expr abs($item_max($item))]  <10.E-20} {
+		    set item_max($item) [expr $mean + 1.]
+		}
+#		puts "min and max are $item_max($item) $item_min($item)"
 	    } else {
 		set mean      [ vector expr mean(V_y_$item) ] 
 		set item_min($item) [expr $mean - 100.]
 		set item_max($item) [expr $mean + 100.]
+#		puts "min and max are $item_max($item) $item_min($item) --------"
 	    }
 	    
+
 	    # from this max/min value, calculate the plotted normalized histo values:
 	    # do a vector calculation on this new guy.
 	    
@@ -1340,9 +1397,14 @@ proc read_present_mhist { } {
     # do selection of the event_id:
     if {$debug_code} {puts "Calling select_event_id"}
     if {[select_event_id]   =="do_exit"} return
+    
+    # if an element is actually it self an array, expand that element to show
+    # all array elements as seperate event variables i.e. DATA[5] become 5 seperate items in the list.
+    # see the -i option in mhist
+    if {$debug_code} {puts "Calling deal with arrays"}
+    if {[deal_with_array_vars]=="do_exit"} return
 
     if {$debug_code} {puts "Calling select_event_items"}
-
     if {[select_event_items today]=="do_exit"} return
 
     # now set the pick_event_var variables, just like before but using the results
@@ -1373,14 +1435,34 @@ proc read_present_mhist { } {
     
     foreach  var $event_var($event_choice) {
 
+	wm title  . "Loading data......... $var"
+	.main.middle.strip_chart    configure -background  red
+	update
+
 	# was this guy enabled ?
 	if { !$pick_event_var($var)} { continue }
-
-
-
-	set exec_string \
-		"$mhist_path/mhist -b -d $history_time -t $history_interval -e $event_choice  -v \"$var\" "
 	
+	# was it an array data word (must use -i to get the actual value)
+	if {[string match {*\[*\]} $var]} { 
+	    if {$debug_code} {puts "Debug: back in read mhist - array var case"}
+	    # extract index number:
+	    set num_elem [string range $var [string last "\[" $var] [string last "\]" $var]]
+	    set num_elem [string range $num_elem 1 [expr [string length $num_elem] -2]]
+	    # remove bracket:
+	    set new_var  [string range $var 0 [expr [string last "\[" $var] -1]]
+	    # add -i to exec_string
+	    if {$debug_code} {puts "Debug: array index is $num_elem  and new name $new_var"}
+	    
+	    set exec_string \
+      "$mhist_path/mhist -b -d $history_time -t $history_interval -e $event_choice  -v \"$new_var\" -i $num_elem"
+	} else {
+
+	    set exec_string \
+      "$mhist_path/mhist -b -d $history_time -t $history_interval -e $event_choice  -v \"$var\" "
+	}
+
+
+
 	if {$file_path !=""} { 
 	    set exec_string "$exec_string -z $file_path"
 	} 
@@ -1469,11 +1551,19 @@ proc read_present_mhist { } {
 	    set item_min($item)  [expr $mean - 8.* $stand_dev]  
 	    set item_max($item)  [expr $mean + 8.* $stand_dev]  
 	    
-	    #robustness check:
-	    if { $item_min($item) >= $item_max($item) } {
+	    #robustness check:	
+	    if { [expr abs($item_min($item)-$item_max($item))] < 10.E-10 } {
 		set item_min($item) [expr $mean - 1.]
 		set item_max($item) [expr $mean + 1.]
 	    }
+	    if { [expr abs($item_min($item))]  <10.E-20} {
+		set item_min($item) [expr $mean  - 1.]
+	    }
+	    if { [expr abs($item_max($item))]  <10.E-20} {
+		set item_max($item) [expr $mean + 1.]
+	    }
+
+
 	} else {
 	    set mean      [ vector expr mean(V_y_$item) ] 
 	    set item_min($item) [expr $mean - 100.]
@@ -1517,6 +1607,63 @@ proc read_present_mhist { } {
 
     return
 }
+
+
+#===================================================================
+#   DEAL WITH VARIABLES THAT ARE ACTUALLY ARRAYS
+# expand the actual variable list to include all elements as
+# seperate variables i.e. MY_AR[4] adds 4 new elements
+#===================================================================
+proc deal_with_array_vars { } {
+
+    global event_choice  # number of the chosen event
+    global event_var     # this is the list of list of variables
+    global debug_code
+
+    if {$debug_code} {puts "Debug: In deal with array vars "}
+
+#    set i 0
+#    puts "new list "
+#    foreach var $event_var($event_choice) {
+#	puts "$i $var"
+#    }
+	
+
+
+    set i 0
+    foreach var $event_var($event_choice) {
+	# look for [] in variable name
+	if {[string match {*\[*\]} $var]} {
+
+	    # extract the number of elements for this variable:
+	    set num_elem [string range $var [string last "\[" $var] [string last "\]" $var]]
+	    set num_elem [string range $num_elem 1 [expr [string length $num_elem] -2]]
+	    if {$debug_code} {puts "Debug: Found an array variable $var with $num_elem elements"}
+	    # expand the array and add each as a new element 
+	    for {set k 0} { $k < $num_elem} {incr k} {
+		set new_var_name [string range $var 0 [expr [string last "\[" $var] -1]]
+		set new_var_name ${new_var_name}\[$k\]
+		if {$k==0} {
+		    # replace the first -
+		    set event_var($event_choice) [lreplace $event_var($event_choice) $i $i $new_var_name]
+		} else {
+		    set event_var($event_choice) [linsert  $event_var($event_choice) $i $new_var_name]
+		}
+		incr i
+	    }
+	    incr i -1
+	}
+	incr i
+    }
+
+#    puts "new list "
+#    foreach var $event_var($event_choice) {
+#	puts $var
+#    }
+	
+    return ""
+}
+
 
 
 #===================================================================
@@ -1807,7 +1954,7 @@ proc select_event_id { } {
     global exit_now
     global select_men
     
-    global event_ids_info ;#mhist event ID and name
+    global event_ids_info ; #mhist event ID and name
 
 
     global debug
@@ -2010,7 +2157,7 @@ proc get_new_color { } {
     global color_pointer
     global max_color_number
 
-    set color {SpringGreen1 navy yellow orange  red cyan DarkGreen blue3  brown green goldenrod \
+    set color {SpringGreen1 navy purple orange  red cyan DarkGreen blue3  brown green goldenrod \
 	    orange maroon DarkSlateGrey purple blue4 LimeGreen sienna}
 
     set max_color_number 17
@@ -2054,7 +2201,7 @@ proc set_file_path { } {
     global tit_font
 
     # get current working dir as first guess
-    catch "exec pwd" file_path
+    if {$file_path==""} {catch "exec pwd" file_path}
 
 
     toplevel .inputbox                 ;# make a seperate window for this
@@ -2088,6 +2235,7 @@ proc set_file_path { } {
     update
     if {$debug_code}  { puts "Setting file path to $file_path"}
     return
+
     
 }
 
