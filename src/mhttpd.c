@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.223  2002/05/28 07:39:29  midas
+  Added HELO statement in sendmail
+
   Revision 1.222  2002/05/22 16:49:45  midas
   Avoid restarting of mhttpd if only one experiment defined
 
@@ -1039,7 +1042,7 @@ INT sendmail(char *smtp_host, char *from, char *to, char *subject, char *text)
 struct sockaddr_in   bind_addr;
 struct hostent       *phe;
 int                  s;
-char                 str[10000];
+char                 str[10000], hostname[256];
 time_t               now;
 
   /* create a new socket for connecting to remote server */
@@ -1064,6 +1067,11 @@ time_t               now;
     return -1;
     }
 
+  recv_string(s, str, sizeof(str), 3000);
+
+  gethostname(hostname, sizeof(hostname));
+  sprintf(str, "HELO %s\n", hostname);
+  send(s, str, strlen(str), 0);
   recv_string(s, str, sizeof(str), 3000);
 
   sprintf(str, "MAIL FROM: <%s>\n", from);
