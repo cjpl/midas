@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.142  2000/09/29 20:04:05  pierre
+  - Fix & for TID_STRING
+
   Revision 1.141  2000/09/28 13:02:05  midas
   Added manual triggered events
 
@@ -5332,7 +5335,7 @@ char  str[256], ref[256], condition[256], value[256];
 
         /* condition */
         size = sizeof(condition);
-        db_get_value(hDB, hkey, "Condition", &condition, &size, TID_STRING);
+        db_get_value(hDB, hkey, "Condition", condition, &size, TID_STRING);
 
         if (index == AT_EVALUATED)
           {
