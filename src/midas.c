@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.53  1999/09/21 14:15:04  midas
+  Replaces cm_execute by system()
+
   Revision 1.52  1999/09/21 13:48:04  midas
   Added programs check in al_check
 
@@ -14720,7 +14723,7 @@ ALARM_CLASS ac;
       ac.execute_interval > 0 &&
       (INT)ss_time() - (INT)ac.execute_last > ac.execute_interval)
     {
-    cm_execute(ac.execute_command, str, sizeof(str));
+    system(ac.execute_command);
     ac.execute_last = ss_time();
     }
 
@@ -15003,7 +15006,7 @@ ALARM_STR(alarm_str);
           if (program_info.auto_restart &&
               program_info.start_command[0])
             {
-            cm_execute(program_info.start_command, str, sizeof(str));
+            system(program_info.start_command);
             cm_msg(MTALK, "al_check", "Program %s restarted", key.name);
             }
           }

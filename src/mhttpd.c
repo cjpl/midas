@@ -6,6 +6,9 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
+  Revision 1.43  1999/09/21 14:15:03  midas
+  Replaces cm_execute by system()
+
   Revision 1.42  1999/09/21 13:47:39  midas
   Added "programs" page
 
@@ -390,7 +393,12 @@ void redirect(char *path)
   rsprintf("Server: MIDAS HTTP %s\r\n", cm_get_version());
 
   if (exp_name[0])
-    rsprintf("Location: %s%s?exp=%s\n\n<html>redir</html>\r\n", mhttpd_url, path, exp_name);
+    {
+    if (path[0] == '?')
+      rsprintf("Location: %s%s&exp=%s\n\n<html>redir</html>\r\n", mhttpd_url, path, exp_name);
+    else
+      rsprintf("Location: %s%s?exp=%s\n\n<html>redir</html>\r\n", mhttpd_url, path, exp_name);
+    }
   else
     rsprintf("Location: %s%s\n\n<html>redir</html>\r\n", mhttpd_url, path);
 }
@@ -3162,6 +3170,7 @@ KEY    key;
   rsprintf("<input type=submit name=cmd value=Create>\n");
   rsprintf("<input type=submit name=cmd value=Delete>\n");
   rsprintf("<input type=submit name=cmd value=Alarms>\n");
+  rsprintf("<input type=submit name=cmd value=Programs>\n");
   rsprintf("<input type=submit name=cmd value=Status>\n");
   rsprintf("<input type=submit name=cmd value=Help>\n");
   rsprintf("</tr>\n\n");
@@ -3840,7 +3849,7 @@ char  str[256], ref[256], command[256], name[80];
     db_get_value(hDB, 0, str, command, &size, TID_STRING);
     if (command[0])
       {
-      cm_execute(command, str, sizeof(str));
+      system(command);
       /* wait until program started */
       for (i=0 ; i<50 ; i++)
         {
