@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.170  2002/09/23 09:50:23  midas
+  Fixed problem with odbedit 'cleanup' command
+
   Revision 1.169  2002/09/18 16:39:16  pierre
   add bk_list()
 
@@ -5431,22 +5434,19 @@ BUFFER_CLIENT   *pbclient, *pbctmp;
 DATABASE_HEADER *pdbheader;
 DATABASE_CLIENT *pdbclient;
 KEY             *pkey;
-INT             actual_time, client_pid;
+INT             client_pid;
 INT             i, j, k, status, nc;
 BOOL            bDeleted;
 char            str[256];
-
-  actual_time = ss_millitime();
 
   /* check buffers */
   for (i=0 ; i<_buffer_entries ; i++)
     if (_buffer[i].attached)
       {
       /* update the last_activity entry to show that we are alive */
-buf_again:
       pheader = _buffer[i].buffer_header;
       pbclient = pheader->client;
-      pbclient[ _buffer[i].client_index ].last_activity = actual_time;
+      pbclient[ _buffer[i].client_index ].last_activity = ss_millitime();
 
       /* now check other clients */
       for (j=0 ; j<pheader->max_client_index ; j++,pbclient++)
@@ -5454,17 +5454,17 @@ buf_again:
             (client_name[0] == 0 || strncmp(pbclient->name, client_name, strlen(client_name)) == 0))
           {
           /* If client process has no activity, clear its buffer entry. */
-          if (abs(actual_time - pbclient->last_activity) > 2*WATCHDOG_INTERVAL)
+          if ((INT) ss_millitime() - pbclient->last_activity > 2*WATCHDOG_INTERVAL)
             {
             bm_lock_buffer(i+1);
             str[0] = 0;
 
             /* now make again the check with the buffer locked */
-            if (abs(actual_time - pbclient->last_activity) > 2*WATCHDOG_INTERVAL)
+            if ((INT) ss_millitime() - pbclient->last_activity > 2*WATCHDOG_INTERVAL)
               {
               sprintf(str, "Client %s on %s removed (HARD REMOVE) (idle %1.1lfs,TO %1.0lfs)",
                       pbclient->name, pheader->name,
-                      (actual_time - pbclient->last_activity)/1000.0,
+                      ((INT) ss_millitime() - pbclient->last_activity)/1000.0,
                       (2*WATCHDOG_INTERVAL)/1000.0);
 
               /* clear entry from client structure in buffer header */
@@ -5496,10 +5496,10 @@ buf_again:
             /* display info message after unlocking buffer */
             if (str[0])
               cm_msg(MINFO, "cm_cleanup", str);
-            }
 
-          /* go again through whole list */
-          goto buf_again;
+            /* go again through whole list */
+            j = 0;
+            }
           }
       }
 
@@ -5510,10 +5510,9 @@ buf_again:
       /* update the last_activity entry to show that we are alive */
       db_lock_database(i+1);
 
-odb_again:
       pdbheader = _database[i].database_header;
       pdbclient = pdbheader->client;
-      pdbclient[ _database[i].client_index ].last_activity = actual_time;
+      pdbclient[ _database[i].client_index ].last_activity = ss_millitime();
 
       /* now check other clients */
       for (j=0 ; j<pdbheader->max_client_index ; j++,pdbclient++)
@@ -5524,17 +5523,17 @@ odb_again:
 
           /* If client process has no activity, clear its buffer entry. */
 
-          if (abs(actual_time - pdbclient->last_activity) > 2*WATCHDOG_INTERVAL)
+          if ((INT) ss_millitime() - pdbclient->last_activity > 2*WATCHDOG_INTERVAL)
             {
             bDeleted = FALSE;
             str[0] = 0;
 
             /* now make again the check with the buffer locked */
-            if (abs(actual_time - pdbclient->last_activity) > 2*WATCHDOG_INTERVAL)
+            if ((INT) ss_millitime() - pdbclient->last_activity > 2*WATCHDOG_INTERVAL)
               {
               sprintf(str, "Client %s on %s removed (HARD REMOVE) (idle %1.1lfs,TO %1.0lfs)",
                            pdbclient->name, pdbheader->name,
-                           (actual_time - pdbclient->last_activity)/1000.0,
+                           ((INT) ss_millitime() - pdbclient->last_activity)/1000.0,
                            (2*WATCHDOG_INTERVAL)/1000.0);
 
               /* decrement notify_count for open records and clear exclusive mode */
@@ -5586,11 +5585,11 @@ odb_again:
               db_lock_database(i+1);
               pdbheader = _database[i].database_header;
               pdbclient = pdbheader->client;
+
+              /* go again though whole list */
+              j = 0;
               }
             }
-
-          /* go again though whole list */
-          goto odb_again;
           }
 
     db_unlock_database(i+1);
