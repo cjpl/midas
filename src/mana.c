@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.134  2005/03/08 07:53:34  ritt
+  Applied patch from John
+
   Revision 1.133  2005/02/22 09:22:26  ritt
   Changed __linux__ to OS_UNIX
 
@@ -1896,9 +1899,7 @@ INT CloseRootOutputFile()
 
    // save the histograms
    gManaOutputFile->cd();
-   TIter next(gManaHistosFolder->GetListOfFolders());
-   while (TObject * obj = next())
-      obj->Write();
+   gManaHistosFolder->Write();
 
    // close the output file
    gManaOutputFile->Write();
