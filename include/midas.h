@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.22  1999/04/23 11:43:15  midas
+  Increased version to 1.7.0
+
   Revision 1.21  1999/04/19 07:46:43  midas
   Added cm_msg_retrieve
 
@@ -89,7 +92,7 @@
    to the MIDAS library. First digit is major release, second
    digit is minor release, third digit is patch level */
 
-#define MIDAS_VERSION "1.6.3"
+#define MIDAS_VERSION "1.7.0"
 
 /*------------------------------------------------------------------*/
 
