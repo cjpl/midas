@@ -6,6 +6,10 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.137  2001/10/05 22:35:46  pierre
+  - change doc \_ to _
+  - Change MALLOC to M_MALLOC, FREE to M_FREE macros.
+
   Revision 1.136  2001/08/07 13:07:01  midas
   Return error if subprocess creation in rpc_server_accept fails
 
@@ -582,11 +586,11 @@ ERROR_TABLE _error_table[] =
 #undef MEM_DBG
 
 #ifdef MEM_DBG
-#define MALLOC(x) dbg_malloc((x), __FILE__, __LINE__)
-#define FREE(x)   dbg_free  ((x), __FILE__, __LINE__)
+#define M_MALLOC(x) dbg_malloc((x), __FILE__, __LINE__)
+#define M_FREE(x)   dbg_free  ((x), __FILE__, __LINE__)
 #else
-#define MALLOC(x) malloc(x)
-#define FREE(x) free(x)
+#define M_MALLOC(x) malloc(x)
+#define M_FREE(x) free(x)
 #endif
 
 void *dbg_malloc(int size, char *file, int line)
@@ -2045,14 +2049,14 @@ HNDLE hDB, hKey;
 }
 
 /*------------------------------------------------------------------*/
-/** cm\_get\_environment()
+/** cm_get_environment()
     \begin{description}
     \item[Description:] Returns MIDAS environment variables.
     \item[Remarks:] This function can be used to evaluate the standard MIDAS
     environment variables before connecting to an experiment
     (see \Ref{Environment variables}).
     The usual way is that the host name and experiment name are first derived
-    from the environment variables MIDAS\_SERVER\_HOST and MIDAS\_EXPT\_NAME.
+    from the environment variables MIDAS_SERVER_HOST and MIDAS_EXPT_NAME.
     They can then be superseded by command line parameters with -h and -e flags.
     \item[Example:]
     \begin{verbatim}
@@ -2094,9 +2098,9 @@ usage:
 \end{verbatim}
     \end{description}
     @memo Returns MIDAS environment variables.
-    @param host\_name Contents of MIDAS\_SERVER\_HOST environment variable.
-    @param exp\_name Contents of MIDAS\_EXPT\_NAME environment variable.
-    @return CM\_SUCCESS
+    @param host_name Contents of MIDAS_SERVER_HOST environment variable.
+    @param exp_name Contents of MIDAS_EXPT_NAME environment variable.
+    @return CM_SUCCESS
 */
 INT cm_get_environment(char *host_name, char *exp_name)
 {
@@ -2121,21 +2125,21 @@ void cm_check_connect(void)
 
 /*------------------------------------------------------------------*/
 
-/** cm\_connect\_experiment()
+/** cm_connect_experiment()
     \begin{description}
     \item[Description:] This function connects to an existing MIDAS experiment.
     This must be the first call in a MIDAS application.
     It opens three TCP connection to the remote host (one for RPC calls,
     one to send events and one for hot-link notifications from the remote host)
     and writes client information into the ODB under /System/Clients.
-    \item[Remarks:] All MIDAS applications should evaluate the MIDAS\_SERVER\_HOST
-    and MIDAS\_EXPT\_NAME environment variables as defaults to the host name and
+    \item[Remarks:] All MIDAS applications should evaluate the MIDAS_SERVER_HOST
+    and MIDAS_EXPT_NAME environment variables as defaults to the host name and
     experiment name (see \Ref{Environment variables}).
     For that purpose, the function \Ref{cm_get_environment()}
-    should be called prior to cm\_connect\_experiment(). If command line
+    should be called prior to cm_connect_experiment(). If command line
     parameters -h and -e are used, the evaluation should be done between
-    cm\_get\_environment() and cm\_connect\_experiment(). The function
-    cm\_disconnect\_experiment() must be called before a MIDAS application exits.
+    cm_get_environment() and cm_connect_experiment(). The function
+    cm_disconnect_experiment() must be called before a MIDAS application exits.
     \item[Example:]
     \begin{verbatim}
 #include <stdio.h>
@@ -2176,23 +2180,23 @@ usage:
 \end{verbatim}
     \end{description}
     @memo Connects to a MIDAS experiment.
-    @param host\_name Specifies host to connect to. Must be a valid IP host name.
+    @param host_name Specifies host to connect to. Must be a valid IP host name.
     The string can be empty ("") if to connect to the local computer.
-    @param exp\_name Specifies the experiment to connect to.
+    @param exp_name Specifies the experiment to connect to.
     If this string is empty, the number of defined experiments in exptab is checked.
     If only one experiment is defined, the function automatically connects to this
     one. If more than one experiment is defined, a list is presented and the user
     can interactively select one experiment.
-    @param client\_name Client name of the calling program as it can be seen by
+    @param client_name Client name of the calling program as it can be seen by
     others (like the scl command in ODBEdit).
     @param func Callback function to read in a password if security has
     been enabled. In all command line applications this function is NULL which
-    invokes an internal ss\_gets() function to read in a password.
+    invokes an internal ss_gets() function to read in a password.
     In windows environments (MS Windows, X Windows) a function can be supplied to
     open a dialog box and read in the password. The argument of this function must
     be the returned password.
-    @return CM\_SUCCESS, CM\_UNDEF\_EXP, CM\_SET\_ERROR, RPC\_NET\_ERROR, \\
-    CM\_VERSION\_MISMATCH MIDAS library version different on local and remote computer
+    @return CM_SUCCESS, CM_UNDEF_EXP, CM_SET_ERROR, RPC_NET_ERROR, \\
+    CM_VERSION_MISMATCH MIDAS library version different on local and remote computer
 */
 INT cm_connect_experiment(char *host_name, char *exp_name,
                           char *client_name, void (*func)(char*))
@@ -2736,7 +2740,7 @@ INT cm_disconnect_client(HNDLE hConn, BOOL bShutdown)
 }
 
 /*------------------------------------------------------------------*/
-/** cm\_disconnect\_experiment()
+/** cm_disconnect_experiment()
     \begin{description}
     \item[Description:] Disconnect from a MIDAS experiment.
     \item[Remarks:] Should be the last call to a MIDAS library function in an
@@ -2745,7 +2749,7 @@ INT cm_disconnect_client(HNDLE hConn, BOOL bShutdown)
     allocated memory. See \Ref{cm_connect_experiment} for example.
     \end{description}
     @memo Disconnect from a MIDAS experiment.
-    @return CM\_SUCCESS
+    @return CM_SUCCESS
 */
 INT cm_disconnect_experiment(void)
 {
@@ -2804,25 +2808,25 @@ INT cm_disconnect_experiment(void)
   /* free memory buffers */
   if (_event_buffer_size > 0)
     {
-    FREE(_event_buffer);
+    M_FREE(_event_buffer);
     _event_buffer_size = 0;
     }
 
   if (_net_recv_buffer_size > 0)
     {
-    FREE(_net_recv_buffer);
+    M_FREE(_net_recv_buffer);
     _net_recv_buffer_size = 0;
     }
 
   if (_net_send_buffer_size > 0)
     {
-    FREE(_net_send_buffer);
+    M_FREE(_net_send_buffer);
     _net_send_buffer_size = 0;
     }
 
   if (_tcp_buffer != NULL)
     {
-    FREE(_tcp_buffer);
+    M_FREE(_tcp_buffer);
     _tcp_buffer = NULL;
     }
 
@@ -3271,7 +3275,7 @@ HNDLE hDB, hKey;
 }
 
 /*------------------------------------------------------------------*/
-/** cm\_register\_transition
+/** cm_register_transition
     \begin{description}
     \item[Description:] Registers a callback function for run transitions.
     \item[Remarks:] This function internally registers the transition callback
@@ -3285,7 +3289,7 @@ HNDLE hDB, hKey;
     (Pre-start/Post-start/Pre-stop/Post-stop). The logger for example opens
     the logging files on pre-start and closes them on post-stop.
 
-    The callback function returns CM\_SUCCESS if it can perform the transition or
+    The callback function returns CM_SUCCESS if it can perform the transition or
     a value larger than one in case of error. An error string can be copied
     into the error variable.
 
@@ -3318,10 +3322,10 @@ main()
 \end{verbatim}
     \end{description}
     @memo Registers a callback function for run transitions.
-    @param transition Transition to register for. Can be TR\_PRESTART, TR\_START,
-    TR\_POSTSTART, TR\_PRSTOP, TR\_STOP, TR\_POSTSTOP, TR\_PAUSE or TR\_RESUME.
+    @param transition Transition to register for. Can be TR_PRESTART, TR_START,
+    TR_POSTSTART, TR_PRSTOP, TR_STOP, TR_POSTSTOP, TR_PAUSE or TR_RESUME.
     @param func Callback function.
-    @return CM\_SUCCESS
+    @return CM_SUCCESS
 */
 INT cm_register_transition(INT transition, INT (*func)(INT,char*))
 {
@@ -4249,16 +4253,16 @@ INT bm_match_event(short int event_id, short int trigger_mask,
 }
 
 /*------------------------------------------------------------------*/
-/** bm\_open\_buffer()
+/** bm_open_buffer()
     \begin{description}
     \item[Description:] Open an event buffer.
     \item[Remarks:] Two default buffers are created by the system.
     The "SYSTEM" buffer is used to
     exchange events and the "SYSMSG" buffer is used to exchange system messages.
     The name and size of the event buffers is defined in midas.h as
-    EVENT\_BUFFER\_NAME and EVENT\_BUFFER\_SIZE.
+    EVENT_BUFFER_NAME and EVENT_BUFFER_SIZE.
     Following example opens the "SYSTEM" buffer, requests events with ID 1 and
-    enters a main loop. Events are then received in process\_event()
+    enters a main loop. Events are then received in process_event()
     \item[Example:] \begin{verbatim}
     #include <stdio.h>
     #include "midas.h"
@@ -4291,13 +4295,13 @@ INT bm_match_event(short int event_id, short int trigger_mask,
     @param buffer_name Name of buffer
     @param buffer_size Size of buffer in bytes
     @param buffer_handle Buffer handle returned by function
-    @return BM\_SUCCESS, BM\_CREATED,\\
-    BM\_NO\_SHM Shared memory cannot be created \\
-    BM\_NO\_MUTEX Mutex cannot be created \\
-    BM\_NO\_MEMORY Not enough memory to create buffer descriptor \\
-    BM\_MEMSIZE\_MISMATCH Buffer size conflicts with an existing buffer of
+    @return BM_SUCCESS, BM_CREATED,\\
+    BM_NO_SHM Shared memory cannot be created \\
+    BM_NO_MUTEX Mutex cannot be created \\
+    BM_NO_MEMORY Not enough memory to create buffer descriptor \\
+    BM_MEMSIZE_MISMATCH Buffer size conflicts with an existing buffer of
     different size \\
-    BM\_INVALID\_PARAM Invalid parameter
+    BM_INVALID_PARAM Invalid parameter
 */
 INT bm_open_buffer(char *buffer_name, INT buffer_size, INT *buffer_handle)
 {
@@ -4537,14 +4541,14 @@ BUFFER_HEADER        *pheader;
 }
 
 /*------------------------------------------------------------------*/
-/** bm\_close\_buffer()
+/** bm_close_buffer()
     \begin{description}
     \item[Description:] Closes an event buffer previously opened with
     \Ref{bm_open_buffer()}.
     \end{description}
     @memo close event buffer.
     @param buffer_handle buffer handle
-    @return BM\_SUCCESS, BM\_INVALID\_HANDLE
+    @return BM_SUCCESS, BM_INVALID_HANDLE
 */
 INT bm_close_buffer(INT buffer_handle)
 {
@@ -4616,9 +4620,9 @@ INT           i, j, index, destroy_flag;
 
   /* free cache */
   if (_buffer[buffer_handle-1].read_cache_size > 0)
-    FREE(_buffer[buffer_handle-1].read_cache);
+    M_FREE(_buffer[buffer_handle-1].read_cache);
   if (_buffer[buffer_handle-1].write_cache_size > 0)
-    FREE(_buffer[buffer_handle-1].write_cache);
+    M_FREE(_buffer[buffer_handle-1].write_cache);
 
   /* check if anyone is waiting and wake him up */
   pclient = pheader->client;
@@ -5543,7 +5547,7 @@ INT bm_init_buffer_counters(INT buffer_handle)
 
 /*------------------------------------------------------------------*/
 
-/** bm\_set\_cache\_size()
+/** bm_set_cache_size()
     \begin{description}
     \item[Description:] Modifies buffer cache size.
     \item[Remarks:] Without a buffer cache, events are copied to/from the shared memory event
@@ -5565,7 +5569,7 @@ INT bm_init_buffer_counters(INT buffer_handle)
     @param buffer_handle buffer handle obtained via \Ref{bm_open_buffer()}
     @param read_size cache size for reading events in bytes, zero for no cache
     @param write_size cache size for writing events in bytes, zero for no cache
-    @return BM\_SUCCESS, BM\_INVALID\_HANDLE, BM\_NO\_MEMORY, BM\_INVALID\_PARAM
+    @return BM_SUCCESS, BM_INVALID_HANDLE, BM_NO_MEMORY, BM_INVALID_PARAM
 */
 INT bm_set_cache_size(INT buffer_handle, INT read_size, INT write_size)
 {
@@ -5605,11 +5609,11 @@ BUFFER        *pbuf;
   pbuf = &_buffer[buffer_handle-1];
 
   if (pbuf->read_cache_size > 0)
-    FREE(pbuf->read_cache);
+    M_FREE(pbuf->read_cache);
 
   if (read_size > 0)
     {
-    pbuf->read_cache = MALLOC(read_size);
+    pbuf->read_cache = M_MALLOC(read_size);
     if (pbuf->read_cache == NULL)
       {
       cm_msg(MERROR, "bm_set_cache_size", "not enough memory to allocate cache buffer");
@@ -5622,11 +5626,11 @@ BUFFER        *pbuf;
 
   /* manage write cache */
   if (pbuf->write_cache_size > 0)
-    FREE(pbuf->write_cache);
+    M_FREE(pbuf->write_cache);
 
   if (write_size > 0)
     {
-    pbuf->write_cache = MALLOC(write_size);
+    pbuf->write_cache = M_MALLOC(write_size);
     if (pbuf->write_cache == NULL)
       {
       cm_msg(MERROR, "bm_set_cache_size", "not enough memory to allocate cache buffer");
@@ -5644,12 +5648,12 @@ BUFFER        *pbuf;
 }
 
 /*------------------------------------------------------------------*/
-/** bm\_compose\_event()
+/** bm_compose_event()
     \begin{description}
     \item[Description:] Compose a Midas event header.
     \item[Remarks:] An event header can usually be set-up manually or
     through this routine. If the data size of the event is not known when
-    the header is composed, it can be set later with event\_header->data-size = <...>
+    the header is composed, it can be set later with event_header->data-size = <...>
     Following structure is created at the beginning of an event
     \begin{verbatim}
     typedef struct {
@@ -5672,7 +5676,7 @@ BUFFER        *pbuf;
     @param trigger_mask trigger mask of the event
     @param size size if the data part of the event in bytes
     @param serial serial number
-    @return BM\_SUCCESS
+    @return BM_SUCCESS
 */
 INT bm_compose_event(EVENT_HEADER *event_header,
                      short int event_id, short int trigger_mask,
@@ -5809,7 +5813,7 @@ BUFFER_CLIENT *pclient;
 }
 
 /*------------------------------------------------------------------*/
-/** bm\_request\_event()
+/** bm_request_event()
     \begin{description}
     \item[Description:] Place an event request based on certain characteristics.
     \item[Remarks:] Multiple event requests can be placed for each buffer, which
@@ -5819,27 +5823,27 @@ BUFFER_CLIENT *pclient;
     \item[Example:]
     \end{description}
     @memo event request.
-    @param buffer_handle buffer handle obtained via bm\_open\_buffer()
-    @param event_id event ID for requested events. Use EVENTID\_ALL
+    @param buffer_handle buffer handle obtained via bm_open_buffer()
+    @param event_id event ID for requested events. Use EVENTID_ALL
     to receive events with any ID.
     @param trigger_mask trigger mask for requested events.
     The requested events must have at least one bit in its
-    trigger mask common with the requested trigger mask. Use TRIGGER\_ALL to
+    trigger mask common with the requested trigger mask. Use TRIGGER_ALL to
     receive events with any trigger mask.
     @param sampling_type specifies how many events to receive.
-    A value of GET\_ALL receives all events which
+    A value of GET_ALL receives all events which
     match the specified event ID and trigger mask. If the events are consumed slower
-    than produced, the producer is automatically slowed down. A value of GET\_SOME
-    receives as much events as possible without slowing down the producer. GET\_ALL is
-    typically used by the logger, while GET\_SOME is typically used by analyzers.
+    than produced, the producer is automatically slowed down. A value of GET_SOME
+    receives as much events as possible without slowing down the producer. GET_ALL is
+    typically used by the logger, while GET_SOME is typically used by analyzers.
     @param request_id request ID returned by the function.
     This ID is passed to the callback routine and must
-    be used in the bm\_delete\_request() routine.
+    be used in the bm_delete_request() routine.
     @param func allback routine which gets called when an event of the
     specified type is received.
-    @return BM\_SUCCESS, BM\_INVALID\_HANDLE\\
-    BM\_NO\_MEMORY  too many requests. The value
-    MAX\_EVENT\_REQUESTS in midas.h should be
+    @return BM_SUCCESS, BM_INVALID_HANDLE\\
+    BM_NO_MEMORY  too many requests. The value
+    MAX_EVENT_REQUESTS in midas.h should be
     increased.
 */
 INT bm_request_event(HNDLE buffer_handle, short int event_id,
@@ -5997,19 +6001,19 @@ BUFFER_CLIENT *pclient;
 }
 
 /*------------------------------------------------------------------*/
-/** bm\_delete\_request()
+/** bm_delete_request()
     \begin{description}
     \item[Description:] Deletes an event request previously done with
     \Ref{bm_request_event()}.
     \item[Remarks:] When an event request gets deleted, events of that
     requested type are not received any more.
-    When a buffer is closed via bm\_close\_buffer(), all
+    When a buffer is closed via bm_close_buffer(), all
     event requests from that buffer are deleted automatically
     \item[Example:]
     \end{description}
     @memo delete event request.
     @param request_id request identifier given by \Ref{bm_request_event()}
-    @return BM\_SUCCESS, BM\_INVALID\_HANDLE
+    @return BM_SUCCESS, BM_INVALID_HANDLE
 */
 INT bm_delete_request(INT request_id)
 {
@@ -6026,7 +6030,7 @@ INT bm_delete_request(INT request_id)
 }
 
 /*------------------------------------------------------------------*/
-/** bm\_send\_event()
+/** bm_send_event()
     \begin{description}
     \item[Description:] Sends an event to a buffer.
     \item[Remarks:] This function check if the buffer has enough space for the
@@ -6066,18 +6070,18 @@ INT bm_delete_request(INT request_id)
     \end{verbatim}
     \end{description}
     @memo send event to buffer.
-    @param buffer_handle Buffer handle obtained via bm\_open\_buffer()
+    @param buffer_handle Buffer handle obtained via bm_open_buffer()
     @param source Address of event buffer
     @param buf_size Size of event including event header in bytes
     @param async_flag Synchronous/asynchronous flag. If FALSE, the function
     blocks if the buffer has not enough free space to receive the event.
     If TRUE, the function returns immediately with a
-    value of BM\_ASYNC\_RETURN without writing the event to the buffer
-    @return BM\_SUCCESS, BM\_INVALID\_HANDLE, BM\_INVALID\_PARAM\\
-    BM\_ASYNC\_RETURN Routine called with async\_flag == TRUE and
+    value of BM_ASYNC_RETURN without writing the event to the buffer
+    @return BM_SUCCESS, BM_INVALID_HANDLE, BM_INVALID_PARAM\\
+    BM_ASYNC_RETURN Routine called with async_flag == TRUE and
     buffer has not enough space to receive event\\
-    BM\_NO\_MEMORY   Event is too large for network buffer or event buffer.
-    One has to increase MAX\_EVENT\_SIZE or EVENT\_BUFFER\_SIZE in midas.h and
+    BM_NO_MEMORY   Event is too large for network buffer or event buffer.
+    One has to increase MAX_EVENT_SIZE or EVENT_BUFFER_SIZE in midas.h and
     recompile.
 */
 INT bm_send_event(INT buffer_handle, void *source, INT buf_size,
@@ -6451,7 +6455,7 @@ char            str[80];
 }
 
 /*------------------------------------------------------------------*/
-/** bm\_flush\_cache()
+/** bm_flush_cache()
     \begin{description}
     \item[Description:] Empty write cache.
     \item[Remarks:] This function should be used if events in the write cache
@@ -6465,12 +6469,12 @@ char            str[80];
     @param async_flag Synchronous/asynchronous flag.
     If FALSE, the function blocks if the buffer has not
     enough free space to receive the full cache. If TRUE, the function returns
-    immediately with a value of BM\_ASYNC\_RETURN without writing the cache.
-    @return BM\_SUCCESS, BM\_INVALID\_HANDLE\\
-    BM\_ASYNC\_RETURN Routine called with async\_flag == TRUE
+    immediately with a value of BM_ASYNC_RETURN without writing the cache.
+    @return BM_SUCCESS, BM_INVALID_HANDLE\\
+    BM_ASYNC_RETURN Routine called with async_flag == TRUE
     and buffer has not enough space to receive cache \\
-    BM\_NO\_MEMORY Event is too large for network buffer or event buffer.
-    One has to increase MAX\_EVENT\_SIZE or EVENT\_BUFFER\_SIZE in midas.h
+    BM_NO_MEMORY Event is too large for network buffer or event buffer.
+    One has to increase MAX_EVENT_SIZE or EVENT_BUFFER_SIZE in midas.h
     and recompile.
 */
 INT bm_flush_cache(INT buffer_handle, INT async_flag)
@@ -6804,18 +6808,18 @@ char            str[80];
 }
 
 /*------------------------------------------------------------------*/
-/** bm\_receive\_event()
+/** bm_receive_event()
     \begin{description}
     \item[Description:] Receives events directly.
     \item[Remarks:] This function is an alternative way to receive events without
     a main loop. It can be used in analysis systems which actively receive events,
     rather than using callbacks. A analysis package could for example contain its own
     command line interface. A command
-    like "receive 1000 events" could make it necessary to call bm\_receive\_event()
+    like "receive 1000 events" could make it necessary to call bm_receive_event()
     1000 times in a row to receive these events and then return back to the
     command line prompt.
-    \item[Example:] The according bm\_request\_event() call contains NULL as the
-    callback routine to indicate that bm\_receive\_event() is called to receive
+    \item[Example:] The according bm_request_event() call contains NULL as the
+    callback routine to indicate that bm_receive_event() is called to receive
     events.
     \begin{verbatim}
     #include <stdio.h>
@@ -6859,11 +6863,11 @@ char            str[80];
     header on return.
     @param async_flag Synchronous/asynchronous flag. If FALSE, the function
     blocks if no event is available. If TRUE, the function returns immediately
-    with a value of BM\_ASYNC\_RETURN without receiving any event. \\
-    @return BM\_SUCCESS, BM\_INVALID\_HANDLE \\
-    BM\_TRUNCATED   The event is larger than the destination buffer and was
+    with a value of BM_ASYNC_RETURN without receiving any event. \\
+    @return BM_SUCCESS, BM_INVALID_HANDLE \\
+    BM_TRUNCATED   The event is larger than the destination buffer and was
                    therefore truncated \\
-    BM\_ASYNC\_RETURN No event available
+    BM_ASYNC_RETURN No event available
 */
 INT bm_receive_event(INT buffer_handle, void *destination,
                      INT *buf_size, INT async_flag)
@@ -7339,7 +7343,7 @@ INT             old_read_pointer, new_read_pointer;
 
   if (_event_buffer_size == 0)
     {
-    _event_buffer = MALLOC(1000);
+    _event_buffer = M_MALLOC(1000);
     if (_event_buffer == NULL)
       {
       cm_msg(MERROR, "bm_push_event", "not enough memory to allocate cache buffer");
@@ -7818,7 +7822,7 @@ static BOOL          bMoreLast = FALSE;
 
   if (_event_buffer_size == 0)
     {
-    _event_buffer = MALLOC(MAX_EVENT_SIZE + sizeof(EVENT_HEADER));
+    _event_buffer = M_MALLOC(MAX_EVENT_SIZE + sizeof(EVENT_HEADER));
     if (!_event_buffer)
       {
       cm_msg(MERROR, "bm_poll_event", "not enough memory to allocate event buffer");
@@ -7896,7 +7900,7 @@ static BOOL          bMoreLast = FALSE;
 }
 
 /*------------------------------------------------------------------*/
-/** bm\_empty\_buffers()
+/** bm_empty_buffers()
     \begin{description}
     \item[Description:] Clears event buffer and cache.
     \item[Remarks:]If an event buffer is large and a consumer is slow in analyzing
@@ -7909,7 +7913,7 @@ static BOOL          bMoreLast = FALSE;
     many seconds after they have been made.
 
     To overcome this potential problem, the analyzer can call
-    bm\_empty\_buffers() just after the hardware change has been made which
+    bm_empty_buffers() just after the hardware change has been made which
     skips all old events contained in event buffers and read caches.
     Technically this is done by forwarding the read pointer of the client.
     No events are really deleted, they are still visible to other clients like
@@ -7923,7 +7927,7 @@ static BOOL          bMoreLast = FALSE;
     \end{description}
     @memo empty event buffer.
     @param void
-    @return BM\_SUCCESS
+    @return BM_SUCCESS
 */
 INT bm_empty_buffers()
 {
@@ -9619,7 +9623,7 @@ int             send_sock;
   /* init network buffer */
   if (_net_send_buffer_size == 0)
     {
-    _net_send_buffer = MALLOC(NET_BUFFER_SIZE);
+    _net_send_buffer = M_MALLOC(NET_BUFFER_SIZE);
     if (_net_send_buffer == NULL)
       {
       cm_msg(MERROR, "rpc_call", "not enough memory to allocate network buffer");
@@ -9920,7 +9924,7 @@ int             send_sock;
   /* init network buffer */
   if (_net_send_buffer_size == 0)
     {
-    _net_send_buffer = MALLOC(NET_BUFFER_SIZE);
+    _net_send_buffer = M_MALLOC(NET_BUFFER_SIZE);
     if (_net_send_buffer == NULL)
       {
       cm_msg(MERROR, "rpc_call", "not enough memory to allocate network buffer");
@@ -10247,7 +10251,7 @@ DWORD           aligned_buf_size;
 
   /* init network buffer */
   if (!_tcp_buffer)
-    _tcp_buffer = MALLOC(NET_TCP_SIZE);
+    _tcp_buffer = M_MALLOC(NET_TCP_SIZE);
   if (!_tcp_buffer)
     {
     cm_msg(MERROR, "rpc_send_event", "not enough memory to allocate network buffer");
@@ -10556,7 +10560,7 @@ INT         sock;
     else
       _server_acception[index].net_buffer_size = NET_BUFFER_SIZE;
 
-    _server_acception[index].net_buffer = MALLOC(_server_acception[index].net_buffer_size);
+    _server_acception[index].net_buffer = M_MALLOC(_server_acception[index].net_buffer_size);
     _server_acception[index].write_ptr = 0;
     _server_acception[index].read_ptr = 0;
     _server_acception[index].misalign = 0;
@@ -10765,7 +10769,7 @@ RPC_SERVER_ACCEPTION *psa;
     else
       psa->net_buffer_size = NET_BUFFER_SIZE;
 
-    psa->ev_net_buffer = MALLOC(psa->net_buffer_size);
+    psa->ev_net_buffer = M_MALLOC(psa->net_buffer_size);
     psa->ev_write_ptr = 0;
     psa->ev_read_ptr = 0;
     psa->ev_misalign = 0;
@@ -12481,7 +12485,7 @@ EVENT_HEADER *pevent;
   /* init network buffer */
   if (_net_recv_buffer_size == 0)
     {
-    _net_recv_buffer = MALLOC(NET_BUFFER_SIZE);
+    _net_recv_buffer = M_MALLOC(NET_BUFFER_SIZE);
     if (_net_recv_buffer == NULL)
       {
       cm_msg(MERROR, "rpc_server_receive", "not enough memory to allocate network buffer");
@@ -12621,7 +12625,7 @@ exit:
     closesocket(_server_acception[index].event_sock);
 
   /* free TCP cache */
-  FREE(_server_acception[index].net_buffer);
+  M_FREE(_server_acception[index].net_buffer);
   _server_acception[index].net_buffer = NULL;
 
   /* mark this entry as invalid */
@@ -12814,7 +12818,7 @@ exit:
     closesocket(_server_acception[index].event_sock);
 
   /* free TCP cache */
-  FREE(_server_acception[index].net_buffer);
+  M_FREE(_server_acception[index].net_buffer);
   _server_acception[index].net_buffer = NULL;
 
   /* mark this entry as invalid */
@@ -12832,10 +12836,10 @@ exit:
 \********************************************************************/
 
 /*------------------------------------------------------------------*/
-/** bk\_init()
+/** bk_init()
     \begin{description}
     \item[Description:] Initializes an event for Midas banks structure.
-    \item[Remarks:] Before banks can be created in an event, bk\_init()
+    \item[Remarks:] Before banks can be created in an event, bk_init()
     has to be called first.
     \end{description}
     @memo Initialize an event.
@@ -12872,11 +12876,11 @@ BOOL bk_is32(void *event)
 }
 
 /*------------------------------------------------------------------*/
-/** bk\_init32()
+/** bk_init32()
     \begin{description}
     \item[Description:] Initializes an event for Midas banks structure for large.
     bank size (> 32KBytes)
-    \item[Remarks:] Before banks can be created in an event, bk\_init32()
+    \item[Remarks:] Before banks can be created in an event, bk_init32()
     has to be called first.
     \end{description}
     @memo Initialize an event (> 32KBytes).
@@ -12890,11 +12894,11 @@ void bk_init32(void *event)
 }
 
 /*------------------------------------------------------------------*/
-/** bk\_size()
+/** bk_size()
     \begin{description}
     \item[Description:] Returns the size of an event containing banks.
     \item[Remarks:] The total size of an event is the value returned by
-    bk\_size() plus the size of the event header (sizeof(EVENT\_HEADER)).
+    bk_size() plus the size of the event header (sizeof(EVENT_HEADER)).
     \end{description}
     @memo compute event size.
     @param event pointer to the area of event
@@ -12906,7 +12910,7 @@ INT bk_size(void *event)
 }
 
 /*------------------------------------------------------------------*/
-/** bk\_create()
+/** bk_create()
     \begin{description}
     \item[Description:] Create a Midas bank.
     \item[Remarks:] The data pointer pdata must be used as an address to fill a
@@ -13033,13 +13037,13 @@ int    remaining;
 }
 
 /*------------------------------------------------------------------*/
-/** bk\_close()
+/** bk_close()
     \begin{description}
     \item[Description:] Close the Midas bank priviously created by \Ref{bk_create}.
     \item[Remarks:] The data pointer pdata must be obtained by \Ref{bk_create()} and
     used as an address to fill a bank. It is incremented with every value written
     to the bank and finally points to a location just after the last byte of the
-    bank. It is then passed to bk\_close() to finish the bank creation
+    bank. It is then passed to bk_close() to finish the bank creation
     \end{description}
     @memo Close bank.
     @param event pointer to current composed event
@@ -13075,7 +13079,7 @@ INT bk_close(void *event, void *pdata)
 }
 
 /*------------------------------------------------------------------*/
-/** bk\_locate()
+/** bk_locate()
     \begin{description}
     \item[Description:] Locates a MIDAS bank of given name inside an event.
     \item[Remarks:]
@@ -13134,7 +13138,7 @@ INT bk_locate(void *event, char *name, void *pdata)
 }
 
 /*------------------------------------------------------------------*/
-/** bk\_iterate()
+/** bk_iterate()
     \begin{description}
     \item[Description:] Iterates through banks inside an event.
     \item[Remarks:] The function can be used to enumerate all banks of an event.
@@ -13146,7 +13150,7 @@ INT bk_locate(void *event, char *name, void *pdata)
     WORD   data_size;
     } BANK;
     \end{verbatim}
-    where type is a TID\_xxx value and data\_size the size of the bank in bytes.
+    where type is a TID_xxx value and data_size the size of the bank in bytes.
     \item[Example:] \begin{verbatim}
     BANK *pbk;
     INT  size;
@@ -13229,11 +13233,11 @@ INT bk_iterate32(void *event, BANK32 **pbk, void *pdata)
 }
 
 /*------------------------------------------------------------------*/
-/** bk\_swap()
+/** bk_swap()
     \begin{description}
     \item[Description:] Swaps bytes from little endian to big endian or vice
     versa for a whole event.
-    \item[Remarks:] An event contains a flag which is set by bk\_init() to identify
+    \item[Remarks:] An event contains a flag which is set by bk_init() to identify
     the endian format of an event. If force is FALSE, this flag is evaluated and
     the event is only swapped if it is in the "wrong" format for this system.
     An event can be swapped to the "wrong" format on purpose for example by a
