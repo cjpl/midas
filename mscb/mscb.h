@@ -6,6 +6,9 @@
   Contents:     Header fiel for MSCB funcions
 
   $Log$
+  Revision 1.15  2002/11/27 15:40:05  midas
+  Added version, fixed few bugs
+
   Revision 1.14  2002/11/20 12:01:30  midas
   Added host to mscb_init
 
@@ -221,6 +224,7 @@ extern "C" {
 #endif
 
 int EXPRT mscb_init(char *device);
+void EXPRT mscb_get_version(char *lib_version, char *prot_version);
 void EXPRT mscb_check(char *device);
 int EXPRT mscb_exit(int fd);
 int EXPRT mscb_reset(int fd);
