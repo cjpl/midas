@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol main program
 
   $Log$
+  Revision 1.12  2002/10/07 15:16:32  midas
+  Added upgrade facility
+
   Revision 1.11  2002/10/04 09:03:20  midas
   Small mods for scs_300
 
@@ -81,6 +84,9 @@ extern char code node_name[];
 /* funtions in mscbutil.c */
 extern void rs232_output(void);
 
+/* forward declarations */
+void flash_upgrade(void);
+
 /*------------------------------------------------------------------*/
 
 
@@ -106,7 +112,8 @@ sbit WD_RESET       = CSR ^ 3;   // got rebooted by watchdog reset
 
 bit addressed;                   // true if node addressed
 bit new_address, debug_new_i, debug_new_o;    // used for LCD debug output
-bit flash;                       // used for EEPROM flashing
+bit flash_param;                 // used for EEPROM flashing
+bit flash_program;               // used for upgrading firmware
 
 /*------------------------------------------------------------------*/
 
@@ -496,7 +503,7 @@ MSCB_INFO_CHN code *pchn;
       sys_info.group_addr = *((unsigned int*)(in_buf+3));
 
       /* copy address to EEPROM */
-      flash = 1;
+      flash_param = 1;
 
       /* output new address */
       new_address = 1;
@@ -514,12 +521,13 @@ MSCB_INFO_CHN code *pchn;
       SYNC_MODE = in_buf[1];
       break;
 
-    case CMD_TRANSP: // TBD...
+    case CMD_UPGRADE:
+      flash_program = 1;
       break;
 
     case CMD_FLASH:
 
-      flash = 1;
+      flash_param = 1;
 
       /* send acknowledge */
       out_buf[0] = CMD_ACK;
@@ -631,6 +639,140 @@ MSCB_INFO_CHN code *pchn;
 
 }
 
+/*------------------------------------------------------------------*/
+
+void upgrade()
+{
+#ifdef CPU_CYGNAL
+unsigned char cmd, page;
+unsigned short i;
+unsigned char xdata *pw;
+unsigned char code  *pr;
+
+  /* disable all interrupts */
+  EA = 0;
+
+  /* setup UART0 */
+  SCON0 = 0xD0;   // Mode 3, 9 bit, receive enable
+  
+  T2CON = 0x34;   // timer 2 RX+TX mode
+  RCAP2H = 0xFF;
+  RCAP2L = 0x100-3;
+
+  /* disable watchdog */
+  WDTCN  = 0xDE;
+  WDTCN  = 0xAD;
+
+  do
+    {
+    /* receive command */
+    while (!RI0);
+    cmd = SBUF0;
+    RI0 = 0;
+
+    switch (cmd)
+      {
+      case 1: // return acknowledge
+        break;
+
+      case 2: // erase page
+        /* receive page */
+        while (!RI0);
+        page = SBUF0;
+        RI0 = 0;
+
+        /* erase page */
+#if defined(CPU_C8051F000)
+        FLSCL = (FLSCL & 0xF0) | 0x08; // set timer for 11.052 MHz clock
+#elif defined (CPU_C8051F020)
+        FLSCL = FLSCL  | 1;            // enable flash writes
+#endif
+        PSCTL = 0x03;                  // allow write and erase
+
+        pw = (char xdata *)(512 * page);
+        *pw = 0;
+        
+        FLSCL = (FLSCL & 0xF0);
+        PSCTL = 0x00;
+
+        break;
+
+      case 3: // program page
+        LED = LED_OFF;
+
+        /* receive page */
+        while (!RI0);
+        page = SBUF0;
+        RI0 = 0;
+
+        /* allow write */
+#if defined(CPU_C8051F000)
+        FLSCL = (FLSCL & 0xF0) | 0x08; // set timer for 11.052 MHz clock
+#elif defined (CPU_C8051F020)
+        FLSCL = FLSCL  | 1;            // enable flash writes
+#endif
+        PSCTL = 0x01;                  // allow write access
+
+        pw = (char xdata *)(512 * page);
+
+        for (i=0 ; i<512 ; i++)
+          {
+          /* receive byte */
+          while (!RI0);
+          RI0 = 0;
+
+          /* flash byte */
+          *pw++ = SBUF0;
+          }
+
+        /* disable write */
+        FLSCL = (FLSCL & 0xF0);
+        PSCTL = 0x00;
+        break;
+
+      case 4: // verify page
+        LED = LED_ON;
+
+        /* receive page */
+        while (!RI0);
+        page = SBUF0;
+        RI0 = 0;
+
+        pr = 512 * page;
+
+        RS485_ENABLE = 1;
+        for (i=0 ; i<512 ; i++)
+          {
+          TI0 = 0;
+          SBUF0 = *pr++;
+          while (TI0 == 0);
+          }
+        RS485_ENABLE = 0;
+        break;
+
+      case 5: // reboot
+        RSTSRC = 0x02;
+        break;
+
+      case 6: // return
+        break;
+      }
+
+    /* return acknowledge */
+    RS485_ENABLE = 1;
+    TI0 = 0;
+    SBUF0 = CMD_ACK;
+    while (TI0 == 0);
+    RS485_ENABLE = 0;
+
+    } while (cmd != 6);
+
+
+  EA = 1; // re-enable interrupts
+
+#endif // CPU_CYGNAL
+}
+
 /*------------------------------------------------------------------*\
 
   Main loop
@@ -662,10 +804,16 @@ void main(void)
       }
 
     /* flash EEPROM if asked by interrupt routine */
-    if (flash)
+    if (flash_param)
       {
-      flash = 0;
+      flash_param = 0;
       eeprom_flash();
+      }
+
+    if (flash_program)
+      {
+      flash_program = 1;
+      upgrade();
       }
 
     } while (1);

@@ -6,6 +6,9 @@
   Contents:     Command-line interface for the Midas Slow Control Bus
 
   $Log$
+  Revision 1.11  2002/10/07 15:16:32  midas
+  Added upgrade facility
+
   Revision 1.10  2002/10/03 15:30:40  midas
   Added linux support
 
@@ -68,6 +71,7 @@ void print_help()
   puts("reboot                     Reboot addressed node");
   puts("reset                      Reboot whole MSCB system");
   puts("terminal                   Enter teminal mode for SCS-210");
+  puts("upload <hex-file>          Upload new firmware to node");
 }
 
 /*------------------------------------------------------------------*/
@@ -564,6 +568,32 @@ MSCB_INFO_CHN info_chn;
         if (status != MSCB_SUCCESS)
           printf("Error: %d\n", status);
         }
+      }
+
+    /* upload */
+    else if (param[0][0] == 'u' && param[0][1] == 'p')
+      {
+      if (current_addr < 0)
+        printf("You must first address an individual node\n");
+      else
+        {
+        if (param[1][0] == 0)
+          {
+          printf("Enter name of HEX-file: ");
+          gets(str);
+          }
+        else
+          strcpy(str, param[1]);
+
+        if (str[strlen(str)-1] == '\n')
+          str[strlen(str)-1] = 0;
+        status = mscb_upload(fd, str);
+
+        if (status != MSCB_SUCCESS)
+          printf("Error: %d\n", status);
+        }
+      current_addr = -1;
+      current_group = -1;
       }
 
     /* test */
