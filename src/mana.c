@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.45  1999/12/17 00:10:47  pierre
+  - Add YBOS support.
+
   Revision 1.44  1999/11/29 14:04:31  midas
   Fixed bug that with RWNT all events were filled, even if buffer size = 0
 
@@ -150,6 +153,7 @@
 #include "msystem.h"
 #include "hardware.h"
 #include "zlib.h"
+#include "ybos.h"
 
 /* cernlib includes */
 #ifdef OS_WINNT
@@ -167,6 +171,18 @@
 #ifndef HFNOV
 #define HFNOV(A1,A2)  CCALLSFSUB2(HFNOV,hfnov,INT,FLOATV,A1,A2) 
 #endif
+
+INT yb_tid_size[] = {
+  0,         /* 0 not defined */
+  2,         /* 1 integer *2 */
+  1,         /* 2 ASCII bytes */
+  4,         /* 3 Integer *4*/
+  4,         /* 4 float *4 */
+  8,         /* 5 double */
+  0,         /* 6 undefined */
+  0,         /* 7 undefined */
+  1,         /* 8 logical*1 */
+  };
 
 /*------------------------------------------------------------------*/
 
@@ -2230,6 +2246,159 @@ WORD        bktype;
     
     } /* if (event_def->format == FORMAT_MIDAS) */
 
+   /*---- YBOS format ----------------------------------------------*/
+  
+  else if (event_def->format == FORMAT_YBOS)
+  {
+    YBOS_BANK_HEADER *pybk;
+    
+    /* first fill number block */
+    if (!clp.rwnt)
+      HFNTB(pevent->event_id, "Number");
+    
+    pbk = NULL;
+    exclude_all = TRUE;
+    do
+    {
+      /* scan all banks */
+      size = ybk_iterate((DWORD *) (pevent+1), &pybk, &pdata);
+      if (pybk == NULL)
+        break;
+      
+      /* in bytes */
+      size <<= 2;
+      
+      /* look if bank is in exclude list */
+      *((DWORD *) block_name) = pybk->name;
+      block_name[4] = 0;
+      
+      exclude = FALSE;
+      pbl = NULL;
+      if (par->bank_list != NULL)
+      {
+        for (i=0 ; par->bank_list[i].name[0] ; i++)
+          if ( *((DWORD *) par->bank_list[i].name) == pybk->name)
+	  {
+            pbl = &par->bank_list[i];
+            exclude = (pbl->output_flag == 0);
+            break;
+	  }
+        if (par->bank_list[i].name[0] == 0)
+          cm_msg(MERROR, "write_event_hbook", "Received unknown bank %s", block_name);
+      }
+      
+      /* fill CW N-tuple */
+      if (!exclude && pbl != NULL && !clp.rwnt)
+      {
+        /* set array size in bank list */
+        if ((pybk->type & 0xFF) < MAX_BKTYPE)
+	{
+          item_size = yb_tid_size[pybk->type & 0xFF];
+          if (item_size == 0)
+	  {
+            cm_msg(MERROR, "write_event_hbook", "Received bank %s with unknown item size", block_name);
+            continue;
+	  }
+	  
+          pbl->n_data = size / item_size;
+
+          /* check bank size */
+          if (pbl->n_data > pbl->size)
+            {
+            cm_msg(MERROR, "write_event_hbook", 
+              "Bank %s has more (%d) entries than maximum value (%d)", block_name, pbl->n_data,
+              pbl->size);
+            continue;
+            }
+
+          /* copy bank to buffer in bank list, DWORD aligned */
+          if (item_size >= 4)
+            {
+            size = min((INT)pbl->size*item_size, size);
+            memcpy(pbl->addr, pdata, size);
+            }
+          else if (item_size == 2)
+            for (i=0 ; i<(INT)pbl->n_data ; i++)
+              *((DWORD *) pbl->addr+i) = (DWORD) *((WORD *) pdata+i);
+          else if (item_size == 1)
+            for (i=0 ; i<(INT)pbl->n_data ; i++)
+              *((DWORD *) pbl->addr+i) = (DWORD) *((BYTE *) pdata+i);
+          }
+        else
+          {
+          /* hope that structure members are aligned as HBOOK thinks ... */
+          memcpy(pbl->addr, pdata, size);
+          }
+
+        /* fill N-tuple */
+        HFNTB(pevent->event_id, block_name);
+        }
+
+      /* fill RW N-tuple */
+      if (!exclude && pbl != NULL && clp.rwnt)
+      {
+        exclude_all = FALSE;
+	
+        item_size = yb_tid_size[pybk->type & 0xFF];
+        /* set array size in bank list */
+        if ((pybk->type & 0xFF) < MAX_BKTYPE)
+	{
+          n = size / item_size;
+	  
+          /* check bank size */
+          if (n > (INT)pbl->size)
+	  {
+            cm_msg(MERROR, "write_event_hbook", 
+		   "Bank %s has more (%d) entries than maximum value (%d)", block_name, n,
+		   pbl->size);
+            continue;
+	  }
+	  
+          /* convert bank to float values */
+          for (i=0 ; i<n ; i++)
+	  {
+            switch (pybk->type & 0xFF)
+	    {
+	    case I1_BKTYPE : 
+	      rwnt[pbl->n_data + i] = (float) (*((BYTE *) pdata+i));
+	      break;
+	    case I2_BKTYPE : 
+	      rwnt[pbl->n_data + i] = (float) (*((WORD *) pdata+i));
+	      break;
+	    case I4_BKTYPE : 
+	      rwnt[pbl->n_data + i] = (float) (*((DWORD *) pdata+i));
+	      break;
+	    case F4_BKTYPE : 
+	      rwnt[pbl->n_data + i] = (float) (*((float *) pdata+i));
+	      break;
+	    case D8_BKTYPE : 
+	      rwnt[pbl->n_data + i] = (float) (*((double *) pdata+i));
+	      break;
+	    }
+	  }
+	  
+	  /* zero padding */
+	  for ( ; i<(INT)pbl->size ; i++)
+	    rwnt[pbl->n_data + i] = 0.f;
+	}
+        else
+	{
+	  printf("YBOS is not supporting STRUCTURE banks \n");
+	}
+      }
+      
+    } while(TRUE);
+    
+    /* fill RW N-tuple */
+    if (clp.rwnt && file != NULL && !exclude_all)
+      HFN(pevent->event_id, rwnt);
+    
+    /* fill shared memory */
+    if (file == NULL)
+      HFNOV(pevent->event_id, rwnt);
+    
+  } /* if (event_def->format == FORMAT_YBOS) */
+  
   /*---- FIXED format ----------------------------------------------*/
   
   if (event_def->format == FORMAT_FIXED)
@@ -2955,6 +3124,34 @@ HNDLE      hkey;
 }
 
 /*------------------------------------------------------------------*/
+INT bevid_2_mheader(EVENT_HEADER * pevent, DWORD * pybos)
+{
+  INT   status;
+  DWORD bklen, bktyp, *pdata;
+  YBOS_BANK_HEADER *pybk;
+  
+  /* check if EVID is present if so display its content */
+  if ((status = ybk_find (pybos, "EVID", &bklen, &bktyp, (void *)&pybk)) == YB_SUCCESS)
+  {
+    pdata = (DWORD *)((YBOS_BANK_HEADER *)pybk + 1);
+    if (clp.verbose)
+    {
+      printf("--------- EVID --------- Event# %i ------Run#:%i--------\n"
+	     ,YBOS_EVID_EVENT_NB(pdata), YBOS_EVID_RUN_NUMBER(pdata)); 
+      printf("Evid:%4.4x- Mask:%4.4x- Serial:%i- Time:0x%x- Dsize:%i/0x%x"
+	     ,YBOS_EVID_EVENT_ID(pdata), YBOS_EVID_TRIGGER_MASK(pdata)
+	     ,YBOS_EVID_SERIAL(pdata), YBOS_EVID_TIME(pdata)
+	     ,pybk->length, pybk->length);
+    }
+    pevent->event_id      = YBOS_EVID_EVENT_ID(pdata);
+    pevent->trigger_mask  = YBOS_EVID_TRIGGER_MASK(pdata);
+    pevent->serial_number = YBOS_EVID_SERIAL(pdata);
+    pevent->time_stamp    = YBOS_EVID_TIME(pdata);
+    pevent->data_size     = pybk->length;
+  }
+  return SS_SUCCESS;
+}
+/*------------------------------------------------------------------*/
 
 INT analyze_file(INT run_number, char *input_file_name, char *output_file_name)
 {
@@ -3006,16 +3203,21 @@ DWORD           start_time;
     format = FORMAT_MIDAS;
   else if (strncmp(ext_str, ".mid", 4) == 0)
     format = FORMAT_MIDAS;
+  else if (strncmp(ext_str, ".ybs", 4) == 0)
+    format = FORMAT_YBOS;
   else
     {
     printf("Unknown input data format \"%s\". Please use file extension .mid or mid.gz.\n", ext_str);
     return -1;
     }
 
-  file = gzopen(input_file_name, "rb");
-
-  if (file == NULL)
-    {
+  if (format == FORMAT_YBOS)
+    status = yb_any_file_ropen(input_file_name, FORMAT_YBOS);
+  else
+    file = gzopen(input_file_name, "rb");
+  
+  if (file == NULL || status != SS_SUCCESS)
+  {
     printf("File %s not found\n", input_file_name);
     return -1;
     }
@@ -3061,6 +3263,15 @@ DWORD           start_time;
           }
         }
       }
+    else if (format == FORMAT_YBOS)
+    {
+      DWORD * pybos, readn;
+      if (ybos_event_get (&pybos, &readn) != SS_SUCCESS)
+       break;
+      status = yb_any_event_swap(FORMAT_YBOS, pybos);
+      memcpy((char *)(pevent+1), (char *)pybos, readn); 
+      status  = bevid_2_mheader(pevent, pybos);
+    }
 
     num_events_in++;
 
@@ -3248,8 +3459,11 @@ DWORD           start_time;
   /* call analyzer eor routines */
   eor(run_number, error);
 
-  gzclose(file);
-
+  if (format == FORMAT_YBOS)
+    yb_any_file_rclose(format);
+  else
+    gzclose(file);
+  
   free(pevent_unaligned);
 
   return status;
