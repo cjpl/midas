@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.180  2003/03/27 19:40:27  olchansk
+  fix infinite loop in cm_scan_experiments(). Why feof() does not work is a mystery, but I definitely saw fgets() return NULL and the subsequent feof() return 0.
+
   Revision 1.179  2003/03/22 07:06:47  olchansk
   prevent infinite loop in hs_read() and hs_dump() when reading broken history files.
 
@@ -1822,7 +1825,8 @@ char str[MAX_STRING_LENGTH], alt_str[MAX_STRING_LENGTH], *pdir;
     do
       {
       str[0] = 0;
-      fgets(str, 100, f);
+      if (fgets(str, 100, f) == NULL)
+        break;
       if (str[0] && str[0] != '#')
         {
         sscanf(str, "%s %s %s", exptab[i].name, exptab[i].directory,
