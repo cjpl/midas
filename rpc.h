@@ -6,6 +6,10 @@
   Contents:     Header fiel for MSCB RPC funcions
 
   $Log$
+  Revision 1.17  2004/10/03 18:08:43  olchansk
+  in server_execute(), abort() on unknown commands
+  replace ALIGN with ALIGN8 (same as in midas.h) to dodge namespace pollution on Darwin
+
   Revision 1.16  2004/03/10 13:28:25  midas
   mscb_init returns device name
 
@@ -181,7 +185,7 @@ typedef struct {
 #define RPC_ERR_TIMEOUT            5
 
 /* Align macro for data alignment on 8-byte boundary */
-#define ALIGN(x)  (((x)+7) & ~7)
+#define ALIGN8(x)  (((x)+7) & ~7)
 
 /* maximal network packed size */
 #define NET_TCP_SIZE           65535

@@ -6,6 +6,10 @@
   Contents:     List of MSCB RPC functions with parameters
 
   $Log$
+  Revision 1.23  2004/10/03 18:08:43  olchansk
+  in server_execute(), abort() on unknown commands
+  replace ALIGN with ALIGN8 (same as in midas.h) to dodge namespace pollution on Darwin
+
   Revision 1.22  2004/03/19 12:09:16  midas
   Upload with simplified CRC
 
@@ -82,11 +86,13 @@
 #include <fcntl.h>
 #include <time.h>
 
-#elif defined(__linux__)
+#elif defined(OS_UNIX)
 
 #include <unistd.h>
 #include <stdarg.h>
+#include <stdlib.h>
 #include <sys/types.h>
+#include <sys/time.h>
 #include <sys/socket.h>
 #include <netdb.h>
 #include <netinet/in.h>
@@ -392,6 +398,10 @@ int server_execute(int index, void *prpc_param[])
    int status;
 
    switch (index) {
+   default:
+      abort();
+      break;
+
    case RPC_MSCB_INIT:
       status = mscb_init(CSTRING(0), CINT(1), CINT(2));
       break;
@@ -504,21 +514,21 @@ int mrpc_execute(int sock, char *buffer)
       flags = rpc_list[index].param[i].flags;
 
       if (flags & RPC_IN) {
-         param_size = ALIGN(mtid_size[tid]);
+         param_size = ALIGN8(mtid_size[tid]);
 
          if (tid == TID_STRING || tid == TID_LINK)
-            param_size = ALIGN(1 + strlen((char *) (in_param_ptr)));
+            param_size = ALIGN8(1 + strlen((char *) (in_param_ptr)));
 
          if (flags & RPC_VARARRAY) {
             /* for arrays, the size is stored as a INT in front of the array */
             param_size = *((INT *) in_param_ptr);
-            param_size = ALIGN(param_size);
+            param_size = ALIGN8(param_size);
 
-            in_param_ptr += ALIGN(sizeof(INT));
+            in_param_ptr += ALIGN8(sizeof(INT));
          }
 
          if (tid == TID_STRUCT)
-            param_size = ALIGN(rpc_list[index].param[i].n);
+            param_size = ALIGN8(rpc_list[index].param[i].n);
 
          prpc_param[i] = in_param_ptr;
 
@@ -526,24 +536,24 @@ int mrpc_execute(int sock, char *buffer)
       }
 
       if (flags & RPC_OUT) {
-         param_size = ALIGN(mtid_size[tid]);
+         param_size = ALIGN8(mtid_size[tid]);
 
          if (flags & RPC_VARARRAY || tid == TID_STRING) {
             /* save maximum array length */
             max_size = *((INT *) in_param_ptr);
-            max_size = ALIGN(max_size);
+            max_size = ALIGN8(max_size);
 
             *((INT *) out_param_ptr) = max_size;
 
             /* save space for return array length */
-            out_param_ptr += ALIGN(sizeof(INT));
+            out_param_ptr += ALIGN8(sizeof(INT));
 
             /* use maximum array length from input */
             param_size += max_size;
          }
 
          if (rpc_list[index].param[i].tid == TID_STRUCT)
-            param_size = ALIGN(rpc_list[index].param[i].n);
+            param_size = ALIGN8(rpc_list[index].param[i].n);
 
          if ((int) out_param_ptr - (int) nc_out + param_size > NET_BUFFER_SIZE) {
             printf
@@ -575,21 +585,21 @@ int mrpc_execute(int sock, char *buffer)
       if (rpc_list[index].param[i].flags & RPC_OUT) {
          tid = rpc_list[index].param[i].tid;
          flags = rpc_list[index].param[i].flags;
-         param_size = ALIGN(mtid_size[tid]);
+         param_size = ALIGN8(mtid_size[tid]);
 
          if (tid == TID_STRING) {
             max_size = *((INT *) out_param_ptr);
             param_size = strlen((char *) prpc_param[i]) + 1;
-            param_size = ALIGN(param_size);
+            param_size = ALIGN8(param_size);
 
-            /* move string ALIGN(sizeof(INT)) left */
-            memcpy(out_param_ptr, out_param_ptr + ALIGN(sizeof(INT)), param_size);
+            /* move string ALIGN8(sizeof(INT)) left */
+            memcpy(out_param_ptr, out_param_ptr + ALIGN8(sizeof(INT)), param_size);
 
             /* move remaining parameters to end of string */
             memcpy(out_param_ptr + param_size,
-                   out_param_ptr + max_size + ALIGN(sizeof(INT)),
+                   out_param_ptr + max_size + ALIGN8(sizeof(INT)),
                    (int) last_param_ptr -
-                   ((int) out_param_ptr + max_size + ALIGN(sizeof(INT))));
+                   ((int) out_param_ptr + max_size + ALIGN8(sizeof(INT))));
          }
 
          if (flags & RPC_VARARRAY) {
@@ -598,19 +608,19 @@ int mrpc_execute(int sock, char *buffer)
             param_size = *((INT *) prpc_param[i + 1]);
             *((INT *) out_param_ptr) = param_size;
 
-            out_param_ptr += ALIGN(sizeof(INT));
+            out_param_ptr += ALIGN8(sizeof(INT));
 
-            param_size = ALIGN(param_size);
+            param_size = ALIGN8(param_size);
 
             /* move remaining parameters to end of array */
             memcpy(out_param_ptr + param_size,
-                   out_param_ptr + max_size + ALIGN(sizeof(INT)),
+                   out_param_ptr + max_size + ALIGN8(sizeof(INT)),
                    (int) last_param_ptr -
-                   ((int) out_param_ptr + max_size + ALIGN(sizeof(INT))));
+                   ((int) out_param_ptr + max_size + ALIGN8(sizeof(INT))));
          }
 
          if (tid == TID_STRUCT)
-            param_size = ALIGN(rpc_list[index].param[i].n);
+            param_size = ALIGN8(rpc_list[index].param[i].n);
 
          out_param_ptr += param_size;
       }
@@ -815,15 +825,15 @@ int mrpc_call(int sock, const int routine_id, ...)
             else
                arg_size = *((INT *) arg_tmp);
 
-            *((INT *) param_ptr) = ALIGN(arg_size);
-            param_ptr += ALIGN(sizeof(INT));
+            *((INT *) param_ptr) = ALIGN8(arg_size);
+            param_ptr += ALIGN8(sizeof(INT));
          }
 
          if (tid == TID_STRUCT || (flags & RPC_FIXARRAY))
             arg_size = rpc_list[index].param[i].n;
 
          /* always align parameter size */
-         param_size = ALIGN(arg_size);
+         param_size = ALIGN8(arg_size);
 
          if ((int) param_ptr - (int) nc + param_size > NET_BUFFER_SIZE) {
             printf
@@ -961,7 +971,7 @@ int mrpc_call(int sock, const int routine_id, ...)
 
          if (flags & RPC_VARARRAY) {
             arg_size = *((INT *) param_ptr);
-            param_ptr += ALIGN(sizeof(INT));
+            param_ptr += ALIGN8(sizeof(INT));
          }
 
          if (tid == TID_STRUCT || (flags & RPC_FIXARRAY))
@@ -972,7 +982,7 @@ int mrpc_call(int sock, const int routine_id, ...)
             memcpy((void *) *((char **) arg), param_ptr, arg_size);
 
          /* parameter size is always aligned */
-         param_size = ALIGN(arg_size);
+         param_size = ALIGN8(arg_size);
 
          switch (tid) {
          case TID_BYTE:
