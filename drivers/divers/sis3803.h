@@ -11,6 +11,9 @@
  *
  * Author:  Pierre-Andre Amaudruz Data Acquisition Group
    $Log$
+   Revision 1.2  2004/01/08 07:51:21  midas
+   Changed indentation
+
    Revision 1.1  2000/07/21 18:46:39  pierre
    - SIS3803 16ch 32-bit 200MHz scalers (www.struck.de)
 
@@ -38,57 +41,57 @@
 #define INLINE __inline
 #elif defined(__GNUC__)
 #define INLINE __inline__
-#else 
+#else
 #define INLINE
 #endif
 
-#define EXTERNAL extern 
+#define EXTERNAL extern
 
 #ifndef MIDAS_TYPE_DEFINED
 #define MIDAS_TYPE_DEFINED
 
 typedef unsigned short int WORD;
-typedef long int           INT;
+typedef long int INT;
 
 #ifdef __alpha
-typedef unsigned int       DWORD;
+typedef unsigned int DWORD;
 #else
-typedef unsigned long int  DWORD;
+typedef unsigned long int DWORD;
 #endif
 
-#endif /* MIDAS_TYPE_DEFINED */
+#endif                          /* MIDAS_TYPE_DEFINED */
 
 #ifdef PPCxxx
-#define A32D24	       0xfa000000              /* A32D24 camac base address */
+#define A32D24	       0xfa000000       /* A32D24 camac base address */
 #else
-#define A32D24	       0xf0000000              /* A32D24 camac base address */
+#define A32D24	       0xf0000000       /* A32D24 camac base address */
 #endif
 
 #define CSR_READ         0x0
-#define CSR_FULL         0xffffffff  /* CSR Read */
+#define CSR_FULL         0xffffffff     /* CSR Read */
 #define CSR_WRITE        0x0
-#define GET_MODE         0x0000000C  /* CSR read */
+#define GET_MODE         0x0000000C     /* CSR read */
 
-#define IS_REF1                0x00002000  /* CSR read */
+#define IS_REF1                0x00002000       /* CSR read */
 
-#define IS_LED                 0x00000001  /* CSR read */
-#define IS_IRQ_EN_BS0          0x00100000  /* CSR read */
-#define IS_IRQ_EN_BS1          0x00200000  /* CSR read */
-#define IS_IRQ_EN_BS2          0x00400000  /* CSR read */
-#define IS_IRQ_BS0             0x10000000  /* CSR read */
-#define IS_IRQ_BS1             0x20000000  /* CSR read */
-#define IS_IRQ_BS2             0x40000000  /* CSR read */
-#define IS_GBL_ENABLE          0x00008000  /* CSR read */
-#define IS_GBL_OVFL            0x00004000  /* CSR read */
-#define ENABLE_TEST_PULSE      0x00000030  /* CSR write */
-#define DISABLE_TEST_PULSE     0x00003000  /* CSR write */
-#define ENABLE_IRQ_EN_BS0      0x00100000  /* CSR write */
-#define ENABLE_IRQ_EN_BS1      0x00200000  /* CSR write */
-#define ENABLE_IRQ_EN_BS2      0x00400000  /* CSR write */
-#define DISABLE_IRQ_DI_BS0     0x10000000  /* CSR write */
-#define DISABLE_IRQ_DI_BS1     0x20000000  /* CSR write */
-#define DISABLE_IRQ_DI_BS2     0x40000000  /* CSR write */
-#define VME_IRQ_ENABLE         0x00000800  /* CSR write */
+#define IS_LED                 0x00000001       /* CSR read */
+#define IS_IRQ_EN_BS0          0x00100000       /* CSR read */
+#define IS_IRQ_EN_BS1          0x00200000       /* CSR read */
+#define IS_IRQ_EN_BS2          0x00400000       /* CSR read */
+#define IS_IRQ_BS0             0x10000000       /* CSR read */
+#define IS_IRQ_BS1             0x20000000       /* CSR read */
+#define IS_IRQ_BS2             0x40000000       /* CSR read */
+#define IS_GBL_ENABLE          0x00008000       /* CSR read */
+#define IS_GBL_OVFL            0x00004000       /* CSR read */
+#define ENABLE_TEST_PULSE      0x00000030       /* CSR write */
+#define DISABLE_TEST_PULSE     0x00003000       /* CSR write */
+#define ENABLE_IRQ_EN_BS0      0x00100000       /* CSR write */
+#define ENABLE_IRQ_EN_BS1      0x00200000       /* CSR write */
+#define ENABLE_IRQ_EN_BS2      0x00400000       /* CSR write */
+#define DISABLE_IRQ_DI_BS0     0x10000000       /* CSR write */
+#define DISABLE_IRQ_DI_BS1     0x20000000       /* CSR write */
+#define DISABLE_IRQ_DI_BS2     0x40000000       /* CSR write */
+#define VME_IRQ_ENABLE         0x00000800       /* CSR write */
 
 #define MODULE_ID             0x004
 #define IRQ_REG               0x004
@@ -121,39 +124,40 @@ typedef unsigned long int  DWORD;
 #define SIS3803_VECT_BASE 0x6f
 
 INLINE DWORD sis3803_module_ID(const DWORD b);
-INLINE void  sis3803_module_reset(const DWORD b);
+INLINE void sis3803_module_reset(const DWORD b);
 INLINE DWORD sis3803_IRQ_REG_read(const DWORD base_adr);
 INLINE DWORD sis3803_IRQ_REG_write(const DWORD base_adr, DWORD irq);
 INLINE DWORD sis3803_input_mode(const DWORD base_adr, DWORD mode);
 INLINE DWORD sis3803_ref1(const DWORD b, DWORD endis);
-INLINE void  sis3803_channel_enable(const DWORD b, DWORD pat);
-INLINE void  sis3803_channel_disable(const DWORD b, DWORD pat);
+INLINE void sis3803_channel_enable(const DWORD b, DWORD pat);
+INLINE void sis3803_channel_disable(const DWORD b, DWORD pat);
 INLINE DWORD sis3803_CSR_read(const DWORD b, const DWORD what);
 INLINE DWORD sis3803_CSR_write(const DWORD b, const DWORD what);
-INLINE void  sis3803_test_enable(const DWORD b);
-INLINE void  sis3803_test_disable(const DWORD b);
-INLINE void  sis3803_all_clear(const DWORD b);
-INLINE void  sis3803_all_enable(const DWORD b);
-INLINE void  sis3803_all_disable(const DWORD b);
-INLINE void  sis3803_grp1_clear(const DWORD b);
-INLINE void  sis3803_grp2_clear(const DWORD b);
-INLINE void  sis3803_single_clear(const DWORD b, const INT ch);
-INLINE void  sis3803_single_OVFL_clear(const DWORD b, const INT ch);
-INLINE void  sis3803_counter_read(const DWORD b, INT ch, DWORD *p);
-INLINE void  sis3803_all_read(const DWORD b, DWORD *p);
-INLINE void  sis3803_grp1_read(const DWORD  base_adr, DWORD * pvalue);
-INLINE void  sis3803_grp2_read(const DWORD  base_adr, DWORD * pvalue);
-INLINE void  sis3803_all_read_clear(const DWORD b, DWORD *p);
-INLINE void  sis3803_OVFL_grp1_read(const DWORD b, DWORD *p);
-INLINE void  sis3803_OVFL_grp2_read(const DWORD b, DWORD *p);
-INLINE void  sis3803_int_source (const DWORD base_adr, DWORD int_source);
-INLINE void  sis3803_int_source_enable (const DWORD base_adr, const int intnum);
-INLINE void  sis3803_int_source_disable (const DWORD base_adr, const int intnum);
-INLINE void  sis3803_int_clear (const DWORD base_adr, const int intnum);
-INLINE void  sis3803_int_attach (const DWORD base_adr, DWORD base_vect, int level, void (*isr)(void));
-INLINE void  sis3803_int_detach (const DWORD base_adr, DWORD base_vect, int level);
-void         sis3803_setup(const DWORD base_adr, int mode, int dsp);
-void         myStub_sis3803(void);
+INLINE void sis3803_test_enable(const DWORD b);
+INLINE void sis3803_test_disable(const DWORD b);
+INLINE void sis3803_all_clear(const DWORD b);
+INLINE void sis3803_all_enable(const DWORD b);
+INLINE void sis3803_all_disable(const DWORD b);
+INLINE void sis3803_grp1_clear(const DWORD b);
+INLINE void sis3803_grp2_clear(const DWORD b);
+INLINE void sis3803_single_clear(const DWORD b, const INT ch);
+INLINE void sis3803_single_OVFL_clear(const DWORD b, const INT ch);
+INLINE void sis3803_counter_read(const DWORD b, INT ch, DWORD * p);
+INLINE void sis3803_all_read(const DWORD b, DWORD * p);
+INLINE void sis3803_grp1_read(const DWORD base_adr, DWORD * pvalue);
+INLINE void sis3803_grp2_read(const DWORD base_adr, DWORD * pvalue);
+INLINE void sis3803_all_read_clear(const DWORD b, DWORD * p);
+INLINE void sis3803_OVFL_grp1_read(const DWORD b, DWORD * p);
+INLINE void sis3803_OVFL_grp2_read(const DWORD b, DWORD * p);
+INLINE void sis3803_int_source(const DWORD base_adr, DWORD int_source);
+INLINE void sis3803_int_source_enable(const DWORD base_adr, const int intnum);
+INLINE void sis3803_int_source_disable(const DWORD base_adr, const int intnum);
+INLINE void sis3803_int_clear(const DWORD base_adr, const int intnum);
+INLINE void sis3803_int_attach(const DWORD base_adr, DWORD base_vect, int level,
+                               void (*isr) (void));
+INLINE void sis3803_int_detach(const DWORD base_adr, DWORD base_vect, int level);
+void sis3803_setup(const DWORD base_adr, int mode, int dsp);
+void myStub_sis3803(void);
 
 void SIS3803_setup(const DWORD base_adr, int mode);
 void SIS3803_CSR_read(const DWORD base_adr);

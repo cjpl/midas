@@ -13,6 +13,9 @@
  * Author:  Pierre-Andre Amaudruz Data Acquisition Group
  * 
   $Log$
+  Revision 1.2  2004/01/08 07:51:21  midas
+  Changed indentation
+
   Revision 1.1  1999/12/20 10:18:23  midas
   Reorganized driver directory structure
 
@@ -30,7 +33,7 @@
 #include "vme.h"
 #endif
 
-#define A32D24	       0xf0000000              /* A32D16 access */
+#define A32D24	       0xf0000000       /* A32D16 access */
 
 /*------------------------------------------------------------------------------------*/
 #define VME_CLEAR_1151(_vmebase){\

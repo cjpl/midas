@@ -17,6 +17,9 @@
  * 
 
    $Log$
+   Revision 1.2  2004/01/08 07:51:21  midas
+   Changed indentation
+
    Revision 1.1  1999/12/20 10:18:23  midas
    Reorganized driver directory structure
 
@@ -37,30 +40,30 @@
 #define INLINE __inline
 #elif defined(__GNUC__)
 #define INLINE __inline__
-#else 
+#else
 #define INLINE
 #endif
 
-#define EXTERNAL extern 
+#define EXTERNAL extern
 
 #ifndef MIDAS_TYPE_DEFINED
 #define MIDAS_TYPE_DEFINED
 
-typedef  short int   INT;
+typedef short int INT;
 typedef unsigned short int WORD;
 
 #ifdef __alpha
-typedef unsigned int       DWORD;
+typedef unsigned int DWORD;
 #else
-typedef unsigned long int  DWORD;
+typedef unsigned long int DWORD;
 #endif
 
-#endif /* MIDAS_TYPE_DEFINED */
+#endif                          /* MIDAS_TYPE_DEFINED */
 
 #ifdef PPCxxx
-#define A32D24_1190	       0xfa000000              /* A32D24_1151 access */
+#define A32D24_1190	       0xfa000000       /* A32D24_1151 access */
 #else
-#define A32D24_1190	       0xf0000000              /* A32D24_1151 access */
+#define A32D24_1190	       0xf0000000       /* A32D24_1151 access */
 #endif
 
 /*-Macros--------------------------------------------------------*/
@@ -184,215 +187,211 @@ typedef unsigned long int  DWORD;
 /*---------------------------------------------------------------*/
 
 /*-Functions-----------------------------------------------------*/
-INLINE void lrs1190_enable (DWORD vmeBase)
+INLINE void lrs1190_enable(DWORD vmeBase)
 {
-  volatile DWORD local;
+   volatile DWORD local;
 
-  local = ((vmeBase) | 0x8002) | A32D24_1190;
-  *(WORD *)local = 0x1;
+   local = ((vmeBase) | 0x8002) | A32D24_1190;
+   *(WORD *) local = 0x1;
 }
 
 /*-Functions-----------------------------------------------------*/
-INLINE void lrs1190_disable (DWORD vmeBase)
+INLINE void lrs1190_disable(DWORD vmeBase)
 {
-  volatile DWORD local;
+   volatile DWORD local;
 
-  local = ((vmeBase) | 0x8002) | A32D24_1190;
-  *(WORD *)local = 0x0;
+   local = ((vmeBase) | 0x8002) | A32D24_1190;
+   *(WORD *) local = 0x0;
 }
 
 /*-Functions-----------------------------------------------------*/
-INLINE void lrs1190_reset (DWORD vmeBase)
+INLINE void lrs1190_reset(DWORD vmeBase)
 {
-  volatile DWORD local, dummy;
-  
-  local = vmeBase | A32D24_1190;
-  dummy = *(WORD *)local;
+   volatile DWORD local, dummy;
+
+   local = vmeBase | A32D24_1190;
+   dummy = *(WORD *) local;
 }
 
 /*-Functions-----------------------------------------------------*/
-INLINE void lrs1190_count (DWORD vmeBase, INT * count)
+INLINE void lrs1190_count(DWORD vmeBase, INT * count)
 {
-  volatile DWORD local;
-  
-  local = (vmeBase | 0x8000 | A32D24_1190);
-  *count = *(WORD *) local;
+   volatile DWORD local;
+
+   local = (vmeBase | 0x8000 | A32D24_1190);
+   *count = *(WORD *) local;
 }
 
 /*-input---------------------------------------------------------*/
-INLINE void lrs1190_readi4 (DWORD vmeBase, DWORD ** d, INT r)
+INLINE void lrs1190_readi4(DWORD vmeBase, DWORD ** d, INT r)
 {
-  volatile DWORD local, count;
-  
-  local = (vmeBase | 0x8000 | A32D24_1190);
-  count = *(WORD *) local;
-  if ((int)count <= r)
-    r = count;
-  local = vmeBase  | A32D24_1190;
-  while (r > 0)
-    {
-      *((*d)++) = *((DWORD *)local);
-      ((DWORD *)local)++;
+   volatile DWORD local, count;
+
+   local = (vmeBase | 0x8000 | A32D24_1190);
+   count = *(WORD *) local;
+   if ((int) count <= r)
+      r = count;
+   local = vmeBase | A32D24_1190;
+   while (r > 0) {
+      *((*d)++) = *((DWORD *) local);
+      ((DWORD *) local)++;
       r--;
-    }
+   }
 }
 
 /*-input---------------------------------------------------------*/
-INLINE void lrs1190_readl2 (DWORD vmeBase, WORD **d, INT r)
+INLINE void lrs1190_readl2(DWORD vmeBase, WORD ** d, INT r)
 {
-  volatile DWORD local, count;
-  
-  local = (vmeBase | 0x8000 | A32D24_1190);
-  count = *(WORD *) local;
-  if ((int)count <= r)
-    r = count;
-  local = vmeBase  | A32D24_1190;
-  while (r > 0)
-    {
+   volatile DWORD local, count;
+
+   local = (vmeBase | 0x8000 | A32D24_1190);
+   count = *(WORD *) local;
+   if ((int) count <= r)
+      r = count;
+   local = vmeBase | A32D24_1190;
+   while (r > 0) {
       *((*d)++) = *((WORD *) local);
-      ((DWORD *)local)++;
+      ((DWORD *) local)++;
       r--;
-    }
+   }
 }
 
 /*-input---------------------------------------------------------*/
-INLINE void lrs1190_readh2 (DWORD vmeBase, WORD **d, INT r)
+INLINE void lrs1190_readh2(DWORD vmeBase, WORD ** d, INT r)
 {
-  volatile DWORD local, count;
-  
-  local = (vmeBase | 0x8000 | A32D24_1190);
-  count = *(WORD *) local;
-  if ((int)count <= r)
-    r = count;
-  local = vmeBase  | A32D24_1190;
-  while (r > 0)
-    {
-      *((*d)++) = *(++((WORD *)local));
-      ((WORD *)local)++;
+   volatile DWORD local, count;
+
+   local = (vmeBase | 0x8000 | A32D24_1190);
+   count = *(WORD *) local;
+   if ((int) count <= r)
+      r = count;
+   local = vmeBase | A32D24_1190;
+   while (r > 0) {
+      *((*d)++) = *(++((WORD *) local));
+      ((WORD *) local)++;
       r--;
-    }
+   }
 }
 
 /*-input---------------------------------------------------------*/
-INLINE void lrs1190_readl2z (DWORD vmeBase, WORD **d, INT r)
+INLINE void lrs1190_readl2z(DWORD vmeBase, WORD ** d, INT r)
 {
-  volatile DWORD *local, count;
-  
-  local = (DWORD *)(vmeBase | 0x8000 | A32D24_1190);
-  count = *(WORD *) local;
-  if ((int)count <= r)
-    r = count;
-  local = (DWORD *)(vmeBase  | A32D24_1190);
+   volatile DWORD *local, count;
 
-  *((*d)++) = r;
-  while (r > 0)
-    {
+   local = (DWORD *) (vmeBase | 0x8000 | A32D24_1190);
+   count = *(WORD *) local;
+   if ((int) count <= r)
+      r = count;
+   local = (DWORD *) (vmeBase | A32D24_1190);
+
+   *((*d)++) = r;
+   while (r > 0) {
       *((*d)++) = *((WORD *) local);
       (local)++;
       r--;
-    }
+   }
 }
 
 /*-Tests---------------------------------------------------------*/
 void lrs1190(void)
 {
-  printf("\n---> LRS 1190 Dual port memory buffer (lrs1190.c) <---\n");
-  printf("Macro  : LRS1190_ENABLE (DWORD vmeBase);\n");
-  printf("Macro  : LRS1190_DISABLE (DWORD vmeBase);\n");
-  printf("Macro  : LRS1190_CLEAR (DWORD vmeBase);\n");
-  printf("Macro  : LRS1190_COUNT (DWORD vmeBase, int * count);\n");
-  printf("Macro  : LRS1190_READI4 (DWORD vmeBase, DWORD *d , int repeat);\n");
-  printf("Macro  : LRS1190_READL2 (DWORD vmeBase, WORD *d , int repeat);\n");
-  printf("Macro  : LRS1190_READH2 (DWORD vmeBase, WORD *d , int repeat);\n");
-  printf("Macro  : LRS1190_READL2_TONY (DWORD vmeBase, DWORD *d , int repeat);\n");
-  printf("Inline : lrs1190_enable (DWORD vmeBase);\n");
-  printf("Inline : lrs1190_disable (DWORD vmeBase);\n");
-  printf("Inline : lrs1190_clear (DWORD vmeBase);\n");
-  printf("Inline : lrs1190_count (DWORD vmeBase, int * count);\n");
-  printf("Inline : lrs1190_readi4 (DWORD vmeBase, DWORD *d , int repeat);\n");
-  printf("Inline : lrs1190_readl2 (DWORD vmeBase, DWORD *d , int repeat);\n");
-  printf("Inline : lrs1190_readh2 (DWORD vmeBase, DWORD *d , int repeat);\n");
-  printf("Inline : lrs1190_readl2_tony (DWORD vmeBase, DWORD *d , int repeat);\n");
-  printf("Test : ena1190  (0x7f0000)         <--- enable  VME buffer\n");
-  printf("Test : dis1190  (0x7f0000)         <--- disable VME buffer\n");
-  printf("Test : res1190  (0x7f0000)         <--- reset   VME buffer\n");
-  printf("Test : cn1190   (0x7f0000)         <--- read    WORD count register\n");
-  printf("Test : rd1190   (0x7f0000)         <--- read             VME buffer\n");
-  printf("Test : rd1190l  (0x7f0000)         <--- read low  WORD   VME buffer\n");
-  printf("Test : rd1190h  (0x7f0000)         <--- read high WORD   VME buffer\n");
+   printf("\n---> LRS 1190 Dual port memory buffer (lrs1190.c) <---\n");
+   printf("Macro  : LRS1190_ENABLE (DWORD vmeBase);\n");
+   printf("Macro  : LRS1190_DISABLE (DWORD vmeBase);\n");
+   printf("Macro  : LRS1190_CLEAR (DWORD vmeBase);\n");
+   printf("Macro  : LRS1190_COUNT (DWORD vmeBase, int * count);\n");
+   printf("Macro  : LRS1190_READI4 (DWORD vmeBase, DWORD *d , int repeat);\n");
+   printf("Macro  : LRS1190_READL2 (DWORD vmeBase, WORD *d , int repeat);\n");
+   printf("Macro  : LRS1190_READH2 (DWORD vmeBase, WORD *d , int repeat);\n");
+   printf("Macro  : LRS1190_READL2_TONY (DWORD vmeBase, DWORD *d , int repeat);\n");
+   printf("Inline : lrs1190_enable (DWORD vmeBase);\n");
+   printf("Inline : lrs1190_disable (DWORD vmeBase);\n");
+   printf("Inline : lrs1190_clear (DWORD vmeBase);\n");
+   printf("Inline : lrs1190_count (DWORD vmeBase, int * count);\n");
+   printf("Inline : lrs1190_readi4 (DWORD vmeBase, DWORD *d , int repeat);\n");
+   printf("Inline : lrs1190_readl2 (DWORD vmeBase, DWORD *d , int repeat);\n");
+   printf("Inline : lrs1190_readh2 (DWORD vmeBase, DWORD *d , int repeat);\n");
+   printf("Inline : lrs1190_readl2_tony (DWORD vmeBase, DWORD *d , int repeat);\n");
+   printf("Test : ena1190  (0x7f0000)         <--- enable  VME buffer\n");
+   printf("Test : dis1190  (0x7f0000)         <--- disable VME buffer\n");
+   printf("Test : res1190  (0x7f0000)         <--- reset   VME buffer\n");
+   printf("Test : cn1190   (0x7f0000)         <--- read    WORD count register\n");
+   printf("Test : rd1190   (0x7f0000)         <--- read             VME buffer\n");
+   printf("Test : rd1190l  (0x7f0000)         <--- read low  WORD   VME buffer\n");
+   printf("Test : rd1190h  (0x7f0000)         <--- read high WORD   VME buffer\n");
 }
 
-void ena1190 (DWORD vmeBase)
+void ena1190(DWORD vmeBase)
 {
-  lrs1190_enable(vmeBase);
+   lrs1190_enable(vmeBase);
 }
 
-void dis1190 (DWORD vmeBase)
+void dis1190(DWORD vmeBase)
 {
-  lrs1190_disable(vmeBase);
+   lrs1190_disable(vmeBase);
 }
 
-void res1190 (DWORD vmeBase)
+void res1190(DWORD vmeBase)
 {
-  lrs1190_reset(vmeBase);
+   lrs1190_reset(vmeBase);
 }
 
-void cn1190 (DWORD vmeBase)
+void cn1190(DWORD vmeBase)
 {
-  INT count;
-  lrs1190_count(vmeBase, &count);
-  printf("Inline counter %i\n",count);
-  LRS1190_COUNT(vmeBase, &count);
-  printf("Macro  counter %i\n",count);
+   INT count;
+   lrs1190_count(vmeBase, &count);
+   printf("Inline counter %i\n", count);
+   LRS1190_COUNT(vmeBase, &count);
+   printf("Macro  counter %i\n", count);
 }
 
-void rd1190l ( DWORD vmeBase , DWORD r)
+void rd1190l(DWORD vmeBase, DWORD r)
 {
-  DWORD dd[1024], *pdd;
-  INT i, buf_counter;
+   DWORD dd[1024], *pdd;
+   INT i, buf_counter;
 
-  for (i=0;i<1024;i++)
-    dd[i] = 0;
-  pdd = &dd[0];
-  lrs1190_disable (vmeBase);
-  lrs1190_count (vmeBase, &buf_counter);
-  printf("counter %i\n",buf_counter);
-  lrs1190_readl2 (vmeBase, (WORD **)&pdd , r);
-  lrs1190_enable (vmeBase);
-  for (i=0; i<buf_counter ;i++)
-    printf("%i-> %8.8x\n",i,dd[i]);
+   for (i = 0; i < 1024; i++)
+      dd[i] = 0;
+   pdd = &dd[0];
+   lrs1190_disable(vmeBase);
+   lrs1190_count(vmeBase, &buf_counter);
+   printf("counter %i\n", buf_counter);
+   lrs1190_readl2(vmeBase, (WORD **) & pdd, r);
+   lrs1190_enable(vmeBase);
+   for (i = 0; i < buf_counter; i++)
+      printf("%i-> %8.8x\n", i, dd[i]);
 }
 
-void rd1190h ( DWORD vmeBase , DWORD r)
+void rd1190h(DWORD vmeBase, DWORD r)
 {
-  DWORD dd[1024], *pdd;
-  INT i, buf_counter;
+   DWORD dd[1024], *pdd;
+   INT i, buf_counter;
 
-  for (i=0;i<1024;i++)
-    dd[i] = 0;
-  pdd = &dd[0];
-  lrs1190_disable (vmeBase);
-  lrs1190_count (vmeBase, &buf_counter);
-  printf("counter %i\n",buf_counter);
-  lrs1190_readh2 (vmeBase, (WORD **)&pdd , r);
-  lrs1190_enable (vmeBase);
-  for (i=0; i<buf_counter ;i++)
-    printf("%i-> %8.8x\n",i,dd[i]);
+   for (i = 0; i < 1024; i++)
+      dd[i] = 0;
+   pdd = &dd[0];
+   lrs1190_disable(vmeBase);
+   lrs1190_count(vmeBase, &buf_counter);
+   printf("counter %i\n", buf_counter);
+   lrs1190_readh2(vmeBase, (WORD **) & pdd, r);
+   lrs1190_enable(vmeBase);
+   for (i = 0; i < buf_counter; i++)
+      printf("%i-> %8.8x\n", i, dd[i]);
 }
 
-void rd1190 ( DWORD vmeBase , DWORD r)
+void rd1190(DWORD vmeBase, DWORD r)
 {
-  DWORD dd[1024], *pdd;
-  INT i, buf_counter;
+   DWORD dd[1024], *pdd;
+   INT i, buf_counter;
 
-  for (i=0;i<1024;i++)
-    dd[i] = 0;
-  pdd = &dd[0];
-  lrs1190_disable (vmeBase);
-  lrs1190_count (vmeBase, &buf_counter);
-  printf("counter %i\n",buf_counter);
-  lrs1190_readi4 (vmeBase, &pdd , r);
-  lrs1190_enable (vmeBase);
-  for (i=0; i<buf_counter ;i++)
-    printf("%i-> %8.8x\n",i,dd[i]);
+   for (i = 0; i < 1024; i++)
+      dd[i] = 0;
+   pdd = &dd[0];
+   lrs1190_disable(vmeBase);
+   lrs1190_count(vmeBase, &buf_counter);
+   printf("counter %i\n", buf_counter);
+   lrs1190_readi4(vmeBase, &pdd, r);
+   lrs1190_enable(vmeBase);
+   for (i = 0; i < buf_counter; i++)
+      printf("%i-> %8.8x\n", i, dd[i]);
 }

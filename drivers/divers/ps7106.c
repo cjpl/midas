@@ -3,9 +3,9 @@
   Name:         ps7106.c
   Created by:   Stefan Ritt
 
-  Cotents:      Routines for accessing Phillips Scientific 
+  Cotents:      Routines for accessing Phillips Scientific
                 7106 discriminators
-                
+
 
   Revision history
   ------------------------------------------------------------------
@@ -45,61 +45,59 @@ int ps7106_set(int crate, int slot, double thresh_value)
   <thresh_value> in millivolts.
 \********************************************************************/
 {
-INT             q;
-WORD            data, threshold;
+   INT q;
+   WORD data, threshold;
 
-  // Convert threshold value to register value
-  if (thresh_value > 1033 )
-    thresh_value = 1033;
-  if (thresh_value < 10)
-    thresh_value = 10;
-  threshold = (unsigned int) (thresh_value - 10);
+   // Convert threshold value to register value
+   if (thresh_value > 1033)
+      thresh_value = 1033;
+   if (thresh_value < 10)
+      thresh_value = 10;
+   threshold = (unsigned int) (thresh_value - 10);
 
-  /* Set remote mode */
-  camo(crate, slot, 0, SET_REMOTE_7106, 0);
+   /* Set remote mode */
+   camo(crate, slot, 0, SET_REMOTE_7106, 0);
 
-  /* Verify Remote mode */
-  camc_q(crate, slot, 0, TEST_REMOTE_7106, &q);
-  if (!q)
-    {
-    cm_msg(MERROR, "ps7106_set", "Error setting remote mode on crate %d, slot %d.\n", crate, slot);
+   /* Verify Remote mode */
+   camc_q(crate, slot, 0, TEST_REMOTE_7106, &q);
+   if (!q) {
+      cm_msg(MERROR, "ps7106_set", "Error setting remote mode on crate %d, slot %d.\n",
+             crate, slot);
 //    printf("Error setting remote mode on crate %d, slot %d.\n", crate, slot);
-    return -1;
-    }
+      return -1;
+   }
 
-  /* unmask all channels */
-  camo(crate, slot, 0, 16, 0xFFFF);
+   /* unmask all channels */
+   camo(crate, slot, 0, 16, 0xFFFF);
 
-  /* Write threshold */
-  camo(crate, slot, 0, WRITE_THRESH_7106, threshold);
-  ss_sleep(10);
+   /* Write threshold */
+   camo(crate, slot, 0, WRITE_THRESH_7106, threshold);
+   ss_sleep(10);
 
-  /* Verify threshold */
-  cami(crate, slot, 0, READ_THRESH_7106, &data);
-  data = data & 0x3FF;
-  if ( data != threshold )
-    {
-    cm_msg(MERROR, "ps7106_set", "Error setting threshold:\
+   /* Verify threshold */
+   cami(crate, slot, 0, READ_THRESH_7106, &data);
+   data = data & 0x3FF;
+   if (data != threshold) {
+      cm_msg(MERROR, "ps7106_set", "Error setting threshold:\
  requested %d (%4.0f mV), read %d", threshold, thresh_value, data);
 //    printf("Error setting threshold:\
-// requested %d (%4.0f mV), read %d", threshold, thresh_value, data);    
-    return -1;
-    }
+// requested %d (%4.0f mV), read %d", threshold, thresh_value, data);
+      return -1;
+   }
 
-  /* Measure threshold */
-  camo(crate, slot, 1, START_ADC_7106, threshold);
-  ss_sleep(10);
+   /* Measure threshold */
+   camo(crate, slot, 1, START_ADC_7106, threshold);
+   ss_sleep(10);
 
-  cami(crate, slot, 1, READ_THRESH_7106, &data);
-  data = data & 0x3FF;
+   cami(crate, slot, 1, READ_THRESH_7106, &data);
+   data = data & 0x3FF;
 
-  if (fabs((double) data - thresh_value) > 2.0)
-    {
-    cm_msg(MERROR, "ps7106_set", "Error setting threshold on crate %d, slot %d:\
+   if (fabs((double) data - thresh_value) > 2.0) {
+      cm_msg(MERROR, "ps7106_set", "Error setting threshold on crate %d, slot %d:\
  requested %1.0lfmV, measured %dmV", crate, slot, thresh_value, data);
 //    printf("Error setting threshold on crate %d, slot %d:\
 // requested %1.0lfmV, measured %dmV", crate, slot, thresh_value, data);
-    }
+   }
 
-  return 0;
+   return 0;
 }
