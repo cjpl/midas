@@ -6,6 +6,9 @@
 #  Contents:     Makefile for MIDAS binaries and examples under unix
 #
 #  $Log$
+#  Revision 1.26  2000/11/20 13:42:39  midas
+#  Install mcleanup
+#
 #  Revision 1.25  2000/11/20 13:13:06  midas
 #  Fixed little bug
 #
@@ -28,7 +31,7 @@
 #  Added mgd.c in mhttpd
 #
 #  Revision 1.19  2000/04/20 23:26:12  pierre
-#  - Correct stripchart.tcl installation
+#  - Correct stripchart.tcl installtion
 #
 #  Revision 1.18  2000/04/18 20:35:05  pierre
 #  - Added mchart and stripchart.tcl installation
@@ -393,6 +396,7 @@ install:
 	  cp $(BIN_DIR)/$$i $(SYSBIN_DIR) ; \
 	  chmod 755 $(SYSBIN_DIR)/$$i ; \
 	  done
+	cp mcleanup $(SYSBIN_DIR)
 	chmod +s $(SYSBIN_DIR)/dio
 	chmod +s $(SYSBIN_DIR)/mhttpd
 
