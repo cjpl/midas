@@ -6,6 +6,9 @@
   Contents:     Command-line interface for the Midas Slow Control Bus
 
   $Log$
+  Revision 1.44  2003/09/10 11:11:17  midas
+  Better error report on upload failure
+
   Revision 1.43  2003/09/09 14:43:22  midas
   Added unit farad
 
@@ -1064,8 +1067,11 @@ MSCB_INFO_VAR info_var;
           read(fh, buffer, size-1);
           close(fh);
           status = mscb_upload(fd, current_addr, buffer, size);
-          if (status != MSCB_SUCCESS)
+          if (status == MSCB_FORMAT_ERROR)
             printf("Syntax error in file \"%s\"\n", str);
+          else if (status == MSCB_TIMEOUT)
+            printf("Node %d does not respond\n", current_addr);
+
           free(buffer);
           }
         else
