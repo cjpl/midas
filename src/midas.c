@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.135  2001/08/07 08:07:09  midas
+  Fixed bug in el_retrieve with attachment decoding
+
   Revision 1.134  2001/06/27 11:55:50  midas
   Fixed compiler warnings (came from IRIX)
 
@@ -15877,13 +15880,17 @@ char    message[10000], thread[256], attachment_all[256];
     attachment1[0] = attachment2[0] = attachment3[0] = 0;
     p = strtok(attachment_all, ",");
     if (p != NULL)
+      {
       strcpy(attachment1, p);
-    p = strtok(NULL, ",");
-    if (p != NULL)
-      strcpy(attachment2, p);
-    p = strtok(NULL, ",");
-    if (p != NULL)
-      strcpy(attachment3, p);
+      p = strtok(NULL, ",");
+      if (p != NULL)
+        {
+        strcpy(attachment2, p);
+        p = strtok(NULL, ",");
+        if (p != NULL)
+          strcpy(attachment3, p);
+        }
+      }
     }
 
   /* conver thread in reply-to and reply-from */
