@@ -44,7 +44,7 @@ Section "ELOG system (required)"
   File c:\elog\default\*.gif
   File c:\elog\default\*.cfg
 
-  SetOutPath $INSTDIR\linux
+  SetOutPath $INSTDIR\demo
   File c:\elog\011108.log
     
   SetOutPath $INSTDIR
@@ -69,9 +69,9 @@ SectionEnd
 Section "Start Menu Shortcuts"
   CreateDirectory "$SMPROGRAMS\ELOG"
   CreateShortCut "$SMPROGRAMS\ELOG\ELOG server.lnk" "$INSTDIR\elogd.exe" "" "$INSTDIR\elogd.exe" 0 
-  Delete "$SMPROGRAMS\ELOG\Demo Logbook.lnk"
-  WriteINIStr "$SMPROGRAMS\ELOG\Demo Logbook.url" \
-              "InternetShortcut" "URL" "http://localhost/linux/"
+  Delete "$SMPROGRAMS\ELOG\Demo Logbook (start server first!).lnk"
+  WriteINIStr "$SMPROGRAMS\ELOG\Demo Logbook (start server first!).url" \
+              "InternetShortcut" "URL" "http://localhost/demo/"
   CreateShortCut "$SMPROGRAMS\ELOG\ELOG Documentation.lnk" "$INSTDIR\readme.html"
   CreateShortCut "$SMPROGRAMS\ELOG\Uninstall ELOG.lnk" "$INSTDIR\uninst_elog.exe" "" "$INSTDIR\uninst_elog.exe" 0
 SectionEnd
@@ -106,13 +106,20 @@ Section "Uninstall"
   Delete $INSTDIR\elogd.exe
   Delete $INSTDIR\elogd.cfg
   Delete $INSTDIR\readme.html
+  Delete $INSTDIR\config.html
+  Delete $INSTDIR\faq.html
+  Delete $INSTDIR\eloghelp_en.html
+  Delete $INSTDIR\eloghelp_fr.html
+  Delete $INSTDIR\eloghelp_ge.html
+  Delete $INSTDIR\eloglang.french
+  Delete $INSTDIR\eloglang.german
   Delete $INSTDIR\*.gif
   Delete $INSTDIR\*.jpg
   
   Delete $INSTDIR\default\*.*
-  Delete $INSTDIR\linux\*.*
+  Delete $INSTDIR\demo\*.*
   RMDir $INSTDIR\default
-  RMDir $INSTDIR\linux
+  RMDir $INSTDIR\demo
   
   ; MUST REMOVE UNINSTALLER, too
   Delete $INSTDIR\uninst_elog.exe
