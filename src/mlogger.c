@@ -6,6 +6,9 @@
   Contents:     MIDAS logger program
 
   $Log$
+  Revision 1.9  1999/05/03 10:39:56  midas
+  Log system hisotry not peridically, but on every change
+
   Revision 1.8  1999/04/29 12:14:34  midas
   Allow for open statistics record when starting run
 
@@ -52,7 +55,6 @@
 BOOL in_stop_transition = FALSE;
 BOOL auto_restart = FALSE;
 BOOL tape_message = TRUE;
-int  run_state;
 
 LOG_CHN log_chn[MAX_CHANNELS];
 
@@ -62,8 +64,6 @@ struct {
   INT   buffer_size;
   HNDLE hKeyVar;
 } hist_log[MAX_EVENTS];
-
-int hist_period = 10;
 
 HNDLE hDB;
 
@@ -102,6 +102,7 @@ typedef struct {
 
 void receive_event(HNDLE hBuf, HNDLE request_id, EVENT_HEADER *pheader, void *pevent);
 INT  log_write(LOG_CHN *log_chn, EVENT_HEADER *pheader);
+void log_system_history(HNDLE hDB, HNDLE hKey, void *info);
 
 /*== common code FAL/MLOGGER start =================================*/
 
@@ -1353,7 +1354,6 @@ BOOL     single_names;
   if (db_find_key(hDB, 0, "/History", &hKeyRoot) != DB_SUCCESS)
     {
     /* create default history keys */
-    db_set_value(hDB, 0, "/History/Period", &hist_period, sizeof(hist_period), 1, TID_INT);
 
     if (db_find_key(hDB, 0, "/Equipment/Trigger/Statistics/Events per sec.", &hKeyEq) == DB_SUCCESS)
       db_create_link(hDB, 0, "/History/Links/Trigger per sec.", "/Equipment/Trigger/Statistics/Events per sec.");
@@ -1361,11 +1361,6 @@ BOOL     single_names;
     if (db_find_key(hDB, 0, "/Equipment/Trigger/Statistics/kBytes per sec.", &hKeyEq) == DB_SUCCESS)
       db_create_link(hDB, 0, "/History/Links/Trigger kB per sec.", "/Equipment/Trigger/Statistics/kBytes per sec.");
     }
-
-  /* retrieve history period for system event */
-
-  size = sizeof(hist_period);
-  db_get_value(hDB, 0, "/History/Period", &hist_period, &size, TID_INT);
 
   /* define system history */
 
@@ -1403,6 +1398,9 @@ BOOL     single_names;
     /* get link target */
     db_enum_key(hDB, hKeyRoot, i, &hKey);
     db_get_key(hDB, hKey, &varkey);
+
+    /* hot-link */
+    db_open_record(hDB, hKey, NULL, varkey.total_size, MODE_READ, log_system_history, NULL);
 
     tag[i].type = varkey.type;
     tag[i].n_data = varkey.num_values;
@@ -1577,10 +1575,24 @@ BOOL     single_names;
 
 void close_history()
 {
-INT i;
+INT   i, status;
+HNDLE hKeyRoot, hKey;
 
-  /* close history */
-  for (i=0 ; i<MAX_EVENTS ; i++)
+  /* close system history */
+  status = db_find_key(hDB, 0, "/History/Links", &hKeyRoot);
+  if (status != DB_SUCCESS)
+    {
+    for (i=0 ; ; i++)
+      {
+      status = db_enum_key(hDB, hKeyRoot, i, &hKey);
+      if (status == DB_NO_MORE_SUBKEYS)
+        break;
+      db_close_record(hDB, hKey);
+      }
+    }
+
+  /* close event history */
+  for (i=1 ; i<MAX_EVENTS ; i++)
     if (hist_log[i].hKeyVar)
       {
       db_close_record(hDB, hist_log[i].hKeyVar);
@@ -1614,10 +1626,9 @@ INT i, size;
 
 /*------------------------------------------------------------------*/
 
-void log_system_history()
+void log_system_history(HNDLE hDB, HNDLE hKey, void *info)
 {
 INT   i, size, total_size, status;
-HNDLE hKey;
 KEY   key;
 
   for (i=0,total_size=0 ; ; i++)
@@ -2154,7 +2165,6 @@ char   host_name[100], exp_name[NAME_LENGTH], dir[256];
 BOOL   debug;
 DWORD  last_time_kb = 0;
 DWORD  last_time_hist = 0;
-HNDLE  hKey;
 
   /* get default from environment */
   cm_get_environment(host_name, exp_name);
@@ -2226,11 +2236,6 @@ usage:
   /* open history logging */
   open_history();
 
-  /* hotlink run state */
-  db_find_key(hDB, 0, "/Runinfo/State", &hKey);
-  if (hKey)
-    db_open_record(hDB, hKey, &run_state, sizeof(run_state), MODE_READ, NULL, NULL);
-  
   /* print startup message */
   size = sizeof(dir);
   db_get_value(hDB, 0, "/Logger/Data dir", dir, &size, TID_STRING);
@@ -2278,14 +2283,6 @@ usage:
         if ((char) ch == '!')
           break;
         }
-      }
-
-    /* check system history */
-    if (ss_millitime() - last_time_hist > (DWORD)hist_period*1000 && 
-        run_state == STATE_RUNNING)
-      {
-      last_time_hist = ss_millitime();
-      log_system_history();
       }
 
     } while (msg != RPC_SHUTDOWN && msg != SS_ABORT && ch != '!');
