@@ -7,6 +7,9 @@
                 (http://www1.psi.ch/~rohrer/secblctl.htm)
 
   $Log$
+  Revision 1.5  1999/11/15 11:20:51  midas
+  Added switch on of combis
+
   Revision 1.4  1999/11/12 09:38:04  midas
   Added notification message upon reconnect
 
@@ -170,6 +173,16 @@ BL_PSI_INFO *info;
   if (status != FE_SUCCESS)
     return status;
 
+  /* switch combis on */
+  send(info->sock, "SWON", 5, 0);
+  status = recv_string(info->sock, str, sizeof(str), 2000);
+  if (status <= 0)
+    {
+    cm_msg(MERROR, "bl_psi", "cannot retrieve data from %s",
+           info->bl_psi_settings.frontend_pc);
+    return FE_ERR_HW;
+    }
+  
   /* get channel names and initial values */
   status = send(info->sock, "RALL", 5, 0);
   if (status <= 0)
