@@ -6,6 +6,9 @@
   Contents:     RS232 communication routines for MS-DOS and NT
 
   $Log$
+  Revision 1.8  2001/02/26 11:56:55  midas
+  Added READ and WRITE functions
+
   Revision 1.7  2001/01/05 15:30:56  midas
   *** empty log message ***
 
@@ -540,6 +543,66 @@ INT rs232_exit(RS232_INFO *info)
 
 /*----------------------------------------------------------------------------*/
 
+int rs232_write(RS232_INFO *info, char *data, int size)
+{
+DWORD written, i;
+ 
+  if (debug_flag)
+    {
+    FILE *f;
+
+    f = fopen("rs232.log", "a");
+    fprintf(f, "write: ");
+    for (i=0 ; (int)i<size ; i++)
+      fprintf(f, "%X ", data[i]);
+    fprintf(f, "\n");
+    fclose(f);
+    }
+
+  WriteFile( (HANDLE) info->fd, data, size, &written, NULL);
+  return written;
+}
+
+/*----------------------------------------------------------------------------*/
+
+int rs232_read(RS232_INFO *info, char *data, int size, int timeout)
+{
+int           status, i, l;
+COMMTIMEOUTS  CommTimeOuts;
+
+  GetCommTimeouts((HANDLE) info->fd, &CommTimeOuts );
+
+  CommTimeOuts.ReadIntervalTimeout = 0;
+  CommTimeOuts.ReadTotalTimeoutMultiplier = 0;
+  CommTimeOuts.ReadTotalTimeoutConstant = timeout;
+  
+  SetCommTimeouts((HANDLE) info->fd, &CommTimeOuts);
+
+  memset(data, 0, size);
+  for (l=0 ; l<size ; l++)
+    {
+    status = ReadFile( (HANDLE) info->fd, data+l, 1, &i, NULL);
+    if (!status || i == 0)
+      break;
+    }
+  
+  if (debug_flag && l>0)
+    {
+    FILE *f;
+
+    f = fopen("rs232.log", "a");
+    fprintf(f, "read: ");
+    for (i=0 ; i<size ; i++)
+      fprintf(f, "%X ", data[i]);
+    fprintf(f, "\n");
+    fclose(f);
+    }
+
+  return l;
+}
+
+/*----------------------------------------------------------------------------*/
+
 int rs232_puts(RS232_INFO *info, char *str)
 {
 DWORD written;
@@ -699,6 +762,79 @@ int rs232_exit(RS232_INFO *info)
 
 /*----------------------------------------------------------------------------*/
 
+int rs232_write(RS232_INFO *info, char *data, int size)
+{
+int i;
+ 
+  if (debug_flag)
+    {
+    FILE *f;
+ 
+    f = fopen("rs232.log", "a");
+    fprintf(f, "write: ");
+    for (i=0 ; (int)i<size ; i++)
+      fprintf(f, "%X ", data[i]);
+    fprintf(f, "\n");
+    fclose(f);
+    }
+ 
+  i = write(info->fd, data, size);
+
+  return i;
+}
+
+/*----------------------------------------------------------------------------*/ 
+
+int rs232_read(RS232_INFO *info, char *str, int size, int timeout)
+{
+int    i, l;
+struct timeb start, now;
+double fstart, fnow; 
+
+  ftime(&start);
+  fstart = start.time+start.millitm/1000.0;
+  
+  memset(str, 0, size);
+  for (l=0 ; l<size-1 ;)
+    {
+    ioctl(info->fd, FIONREAD, &i);
+    if (i > 0)
+      {
+      i = read(info->fd, str+l, 1);
+ 
+      if (i == 1)
+        l++;
+      else
+        perror("read");
+      }
+ 
+    ftime(&now);
+    fnow = now.time+now.millitm/1000.0;
+
+    if (fnow - fstart >= timeout/1000.0)
+      break;
+ 
+    if (i == 0)
+      usleep(min(100000, timeout*1000));
+    }
+ 
+  if (debug_flag && l>0)
+    {
+    FILE *f;
+
+    f = fopen("rs232.log", "a");
+    fprintf(f, "read: ");
+    for (i=0 ; i<size ; i++)
+      fprintf(f, "%X ", data[i]);
+    fprintf(f, "\n");
+    fclose(f);
+    }
+ 
+  return l;
+}
+
+/*----------------------------------------------------------------------------*/
+
 int rs232_puts(RS232_INFO *info, char *str)
 {
 int i;
@@ -834,6 +970,21 @@ char       *str, *pattern;
     case CMD_EXIT:
       info = va_arg(argptr, void *);
       status = rs232_exit(info);
+      break;
+
+    case CMD_WRITE:
+      info = va_arg(argptr, void *);
+      str = va_arg(argptr, char *);
+      size = va_arg(argptr, int);
+      status = rs232_write(info, str, size);
+      break;
+
+    case CMD_READ:
+      info = va_arg(argptr, void *);
+      str = va_arg(argptr, char *);
+      size = va_arg(argptr, INT);
+      timeout = va_arg(argptr, INT);
+      status = rs232_read(info, str, size, timeout);
       break;
 
     case CMD_PUTS:
