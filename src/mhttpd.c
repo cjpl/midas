@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.235  2002/10/18 07:48:45  midas
+  Fixed time consuming display of runlog.txt
+
   Revision 1.234  2002/10/07 04:06:59  olchansk
   teach mhttpd about PNG images.
 
@@ -3388,11 +3391,11 @@ HNDLE  hDB;
 
   f = fopen(file_name, "r");
   if (f == NULL)
-  {
+    {
     rsprintf("<h3>Cannot find file \"%s\"</h3>\n", file_name);
     rsprintf("</body></html>\n");
     return;
-  }
+    }
 
   /*---- file contents ----*/
 
@@ -3449,7 +3452,7 @@ HNDLE  hDB;
   memmove(buffer, p, buf_size);
   buffer[buf_size] = 0;
 
-  rsputs2(buffer);
+  rsputs(buffer);
   
   rsprintf("</pre>\n");
 
@@ -4254,6 +4257,7 @@ char  def_button[][NAME_LENGTH] = {"8h", "24h", "7d" };
 
   size = sizeof(text);
   strcpy(str, path);
+  subject[0] = 0;
   msg_status = el_retrieve(str, date, &run, author, type, system, subject,
                            text, &size, orig_tag, reply_tag,
                            attachment[0], attachment[1], attachment[2],
