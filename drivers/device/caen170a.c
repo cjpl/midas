@@ -6,6 +6,9 @@
   Contents:     CAEN 170a High Voltage Device Driver
 
   $Log$
+  Revision 1.2  2002/05/08 20:51:41  midas
+  Added extra parameter to function db_get_value()
+
   Revision 1.1  1999/12/20 10:18:19  midas
   Reorganized driver directory structure
 
@@ -80,14 +83,14 @@ INT caen170a_init(HNDLE hKeyRoot, INT index, INT channels)
 	    return FE_ERR_ODB;
     }
   size = sizeof(caen.branch);
-  status = db_get_value(hDB, hKeyRoot, "Branch", &caen.branch, &size, TID_INT);
+  status = db_get_value(hDB, hKeyRoot, "Branch", &caen.branch, &size, TID_INT, TRUE);
   if (status != DB_SUCCESS)
     {
 	    cm_msg(MINFO, "caen170a_init", "Cannot find 'Branch' entry in ../Devices/HV170A database");
 	    return FE_ERR_ODB;
     }
-  status = db_get_value(hDB, hKeyRoot, "Crate",  &caen.crate, &size, TID_INT);
-  status = db_get_value(hDB, hKeyRoot, "Station", &caen.station , &size, TID_INT);
+  status = db_get_value(hDB, hKeyRoot, "Crate",  &caen.crate, &size, TID_INT, TRUE);
+  status = db_get_value(hDB, hKeyRoot, "Station", &caen.station , &size, TID_INT, TRUE);
   size = sizeof(caen.mainframe);
   status = db_find_key(hDB, hKeyRoot, "Mainframe", &hKeyFrame);
   status = db_get_data (hDB, hKeyFrame, &caen.mainframe[0], &size, TID_INT);
