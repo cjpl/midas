@@ -15,6 +15,9 @@
  *  Revision History: Oct/96  :
  *    1 April 97: S. Ritt, minor modification to supress compiler warnings
  *  $Log$
+ *  Revision 1.5  1998/10/22 12:40:34  midas
+ *  Added "oflag" to ss_tape_open()
+ *
  *  Revision 1.4  1998/10/19 17:45:42  pierre
  *  - new ybos_magta_write
  *
@@ -142,7 +145,7 @@ INT         status, written;
   /* Create device channel */
   if (type == LOG_TYPE_TAPE)
   {
-    return ss_tape_open(path, handle);
+    return ss_tape_open(path, O_WRONLY | O_CREAT | O_TRUNC, handle);
   }
   else if ((type == LOG_TYPE_DISK) && (format == FORMAT_YBOS))
   {

@@ -14,6 +14,9 @@
                 Brown, Prentice Hall
 
   $Log$
+  Revision 1.6  1998/10/22 12:40:34  midas
+  Added "oflag" to ss_tape_open()
+
   Revision 1.5  1998/10/13 06:52:57  midas
   Fixed error occuring when .ODB.SHM had zero size
 
@@ -3185,7 +3188,7 @@ int sopen(const char *path, int access, int shflag, int mode)
 
 /*------------------------------------------------------------------*/
 
-INT ss_tape_open(char *path, INT *channel)
+INT ss_tape_open(char *path, INT oflag, INT *channel)
 /********************************************************************\
 
   Routine: ss_tape_open
@@ -3195,7 +3198,8 @@ INT ss_tape_open(char *path, INT *channel)
   Input:
     char  *path             Name of tape
                             Under Windows NT, usually \\.\tape0
-                            Under UNIX, usually /dev/nrmt0
+                            Under UNIX, usually /dev/tape
+    INT   oflag             Open flags, same as open()
 
   Output:
     INT   *channel          Channel identifier
@@ -3212,7 +3216,7 @@ struct mtop arg;
 
   cm_enable_watchdog(FALSE);
 
-  *channel = open(path, O_RDWR | O_CREAT | O_TRUNC, 0644);
+  *channel = open(path, oflag, O_RDWR | O_CREAT | O_TRUNC, 0644);
   
   cm_enable_watchdog(TRUE);
 
