@@ -10,6 +10,9 @@
   date        by    modification
   ---------   ---   ------------------------------------------------
 *  $Log$
+*  Revision 1.13  2000/05/04 14:50:20  midas
+*  Return yb_tid_size[] via new function ybos_get_tid_size()
+*
 *  Revision 1.12  2000/04/26 19:11:45  pierre
 *  - Moved doc++ comments to ybos.c
 *
@@ -254,5 +257,6 @@ INT   EXPRT ybos_log_close(LOG_CHN * log_chn, INT run_number);
 #endif
 
 INT   EXPRT ybos_event_get (DWORD ** plrl, DWORD * size);
+INT   EXPRT ybos_get_tid_size(INT tid);
 
 /*------------ END --------------------------------------------------------------*/

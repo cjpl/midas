@@ -6,6 +6,9 @@
  *         amaudruz@triumf.ca                            Local:           6234
  * ---------------------------------------------------------------------------
    $Log$
+   Revision 1.27  2000/05/04 14:50:12  midas
+   Return yb_tid_size[] via new function ybos_get_tid_size()
+
    Revision 1.26  2000/04/26 19:10:25  pierre
    -Moved first round of doc++ comments from ybos.h to here
 
@@ -3803,6 +3806,14 @@ INT   yb_ymfile_update(int slot, int fmt, void * pevt)
     return YB_UNKNOWN_FORMAT;
 }
 #endif /* !FE_YBOS_SUPPORT */
+
+INT ybos_get_tid_size(INT tid)
+{
+  if (tid < 8)
+    return yb_tid_size[tid];
+  return 0;
+}
+
 /*------------------------------------------------------------------*/
 /*------------------------------------------------------------------*/
 /*------------------------------------------------------------------*/
