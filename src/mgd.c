@@ -19,6 +19,9 @@
   Contents:     GD graphics library to create Web images
 
   $Log$
+  Revision 1.4  2004/01/18 09:59:45  olchansk
+  remove bogus #include <malloc.h>
+
   Revision 1.3  2004/01/08 08:40:10  midas
   Implemented standard indentation
 
@@ -31,7 +34,6 @@
 
 \********************************************************************/
 
-#include <malloc.h>
 #include <stdio.h>
 #include <math.h>
 #include <string.h>
