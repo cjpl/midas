@@ -6,6 +6,9 @@
   Contents:     MSCB Device Driver.
 
   $Log$
+  Revision 1.8  2004/12/22 14:31:12  midas
+  Produce error message
+
   Revision 1.7  2004/04/30 07:58:17  midas
   Adjusted mscb_init()
 
@@ -126,12 +129,18 @@ INT mscbdev_init(HNDLE hkey, void **pinfo, INT channels, INT(*bd) (INT cmd, ...)
    /* initialize info structure */
    info->num_channels = channels;
 
-   info->fd = mscb_init(info->mscbdev_settings.device, 0, FALSE);
+   info->fd = mscb_init(info->mscbdev_settings.device, sizeof(info->mscbdev_settings.device), FALSE);
    if (info->fd < 0) {
       cm_msg(MERROR, "mscbdev_init", "Cannot connect to MSCB device \"%s\"",
              info->mscbdev_settings.device);
       return FE_ERR_HW;
    }
+
+   /* write back device */
+   status = db_set_value(hDB, hkey, "Device", &info->mscbdev_settings.device, 
+                         sizeof(info->mscbdev_settings.device), 1, TID_STRING);
+   if (status != DB_SUCCESS)
+      return FE_ERR_ODB;
 
    /* read initial variable sizes */
    addr_changed(0, 0, info);
@@ -181,18 +190,37 @@ INT mscbdev_set(MSCBDEV_INFO * info, INT channel, float value)
 
 INT mscbdev_get(MSCBDEV_INFO * info, INT channel, float *pvalue)
 {
-   INT size, value_int;
+   INT size, value_int, status;
+   static DWORD last_error = 0;
+   float value;
 
    if (info->mscbdev_settings.var_size[channel] == -1) {
       size = sizeof(float);
-      mscb_read(info->fd, info->mscbdev_settings.mscb_address[channel],
-                info->mscbdev_settings.mscb_index[channel], pvalue, &size);
+      status = mscb_read(info->fd, info->mscbdev_settings.mscb_address[channel],
+                info->mscbdev_settings.mscb_index[channel], &value, &size);
+      if (status != MSCB_SUCCESS) {
+         /* only produce error once every minute */
+         if (ss_time() - last_error >= 60) {
+            last_error = ss_time();
+            cm_msg(MERROR, "mscbdev_get", "Error reading MSCB bus");
+         }
+         return FE_ERR_HW;
+      }
+      *pvalue = value;
    } else {
       /* channel is int */
       size = info->mscbdev_settings.var_size[channel];
       value_int = 0;
-      mscb_read(info->fd, info->mscbdev_settings.mscb_address[channel],
-                info->mscbdev_settings.mscb_index[channel], &value_int, &size);
+      status = mscb_read(info->fd, info->mscbdev_settings.mscb_address[channel],
+                         info->mscbdev_settings.mscb_index[channel], &value_int, &size);
+      if (status != MSCB_SUCCESS) {
+         /* only produce error once every minute */
+         if (ss_time() - last_error >= 60) {
+            last_error = ss_time();
+            cm_msg(MERROR, "mscbdev_get", "Error reading MSCB bus");
+         }
+         return FE_ERR_HW;
+      }
       *pvalue = (float) value_int;
    }
 
