@@ -14,6 +14,9 @@
                 Brown, Prentice Hall
 
   $Log$
+  Revision 1.5  1998/10/13 06:52:57  midas
+  Fixed error occuring when .ODB.SHM had zero size
+
   Revision 1.4  1998/10/12 14:00:19  midas
   ss_open_shm returns memory size in case of failure
 
@@ -238,7 +241,7 @@ char   mem_name[256], file_name[256], path[256], *p;
   status = SS_SUCCESS;
 
   {
-  int             key, shmid, i, fh;
+  int             key, shmid, i, fh, file_size;
   struct shmid_ds buf;
   char            str[256];
 
@@ -268,7 +271,9 @@ char   mem_name[256], file_name[256], path[256], *p;
   else
     {
     /* if file exists, retrieve its size */
-    size = (INT) ss_file_size(file_name);
+    file_size = (INT) ss_file_size(file_name);
+    if (file_size > 0)
+      size = file_size;
     }
 
   /* get the shared memory, create if not existing */
