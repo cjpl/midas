@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.16  2001/07/26 10:25:54  midas
+  Fixed bug which omitted logbook name if only one is defined in elogd.cfg
+
   Revision 1.15  2001/07/26 09:31:07  midas
   Added URL = entry in elogd.cfg to support secure connections over stunnel
 
@@ -3416,6 +3419,8 @@ struct tm *gmt;
       show_selection_page();
       return;
       }
+
+    strcpy(logbook_enc, logbook);
     }
 
   /* get data dir from configuration file */
