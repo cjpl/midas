@@ -7,7 +7,8 @@
  *         amaudruz@triumf.ca
  * -----------------------------------------------------------------------------
  *  
- *  Description	: CAMAC interface for NUll drivers
+ *  Description	: CAMAC interface following the ESONE CAMAC calls.
+ *                for NUll drivers
  * 
  *  Requires 	: none
  *
@@ -16,6 +17,10 @@
  *  Author:  Pierre-Andre Amaudruz Data Acquisition Group
  * 
  *  Revision 1.0  1998        Pierre	 Initial revision
+ *  $Log$
+ *  Revision 1.2  1998/10/09 22:57:13  midas
+ *  -PAA- int to DWORD *lam
+ *
  *
  *------------------------------------------------------------------------ */
 
@@ -57,7 +62,7 @@ INLINE void cam_crate_clear(const int c){}
 INLINE void cam_crate_zinit(const int c){}
 INLINE void cam_lam_enable(const int c, const int n){}
 INLINE void cam_lam_disable(const int c, const int n){}
-INLINE void cam_lam_read(const int c, int *lam){*lam=1;}
+INLINE void cam_lam_read(const int c, DWORD *lam){}
 INLINE void cam_lam_clear(const int c, const int n){}
 INLINE void came_cn(int *ext, const int b, const int c, const int n, const int a){}
 INLINE void came_ext(const int ext, int *b, int *c, int *n, int *a){}
