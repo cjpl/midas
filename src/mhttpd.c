@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.291  2005/01/26 09:45:45  ritt
+  Removed 'unit' in custom page (covered already by format)
+
   Revision 1.290  2005/01/05 12:43:43  midas
   Fixed bug with weired history plots
 
@@ -5363,9 +5366,8 @@ void show_odb_tag(char *path, char *keypath, int n_var, BOOL bedit)
    [Name]    [Description]                       [Example]
 
    Src       ODB path for vairable to display    /Equipment/Environment/Variables/Input[0]
-   Format    Formt for float/double              %1.2f
+   Format    Formt for float/double              %1.2f Deg. C
    Font      Font to use                         small | medium | giant
-   Unit      Unit to display after value         Deg. C
    X         X-position in pixel                 90
    Y         Y-position from top                 67
    Align     horizontal align left/center/right  left
@@ -5377,7 +5379,6 @@ char *cgif_label_str[] = {
 "Src = STRING : [256] ",
 "Format = STRING : [32] %1.1f",
 "Font = STRING : [32] Medium",
-"Unit = STRING : [32] ",
 "X = INT : 0",
 "Y = INT : 0",
 "Align = INT : 0",
@@ -5390,7 +5391,6 @@ typedef struct {
    char src[256];
    char format[32];
    char font[32];
-   char unit[32];
    int x, y, align;
    char fgcolor[8];
    char bgcolor[8];
@@ -5528,9 +5528,6 @@ void show_custom_gif(char *name)
                db_sprintf(value, data, size, 0, vkey.type);
          } else
             db_sprintf(value, data, size, 0, vkey.type);
-
-         strlcat(value, " ", sizeof(value));
-         strlcat(value, label.unit, sizeof(value));
 
          sscanf(label.fgcolor, "%02x%02x%02x", &r, &g, &b);
          fgcol = gdImageColorAllocate(im, r, g, b);
