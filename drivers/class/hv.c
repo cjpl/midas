@@ -6,6 +6,9 @@
   Contents:     High Voltage Class Driver
 
   $Log$
+  Revision 1.7  2002/06/06 07:50:12  midas
+  Implemented scheme with DF_xxx flags
+
   Revision 1.6  2002/05/08 19:54:40  midas
   Added extra parameter to function db_get_value()
 
@@ -545,7 +548,9 @@ HV_INFO *hv_info;
       }
 
     status = pequipment->driver[i].dd(CMD_INIT, hKey, &pequipment->driver[i].dd_info,
-                                      pequipment->driver[i].channels, pequipment->driver[i].bd);
+                                      pequipment->driver[i].channels, 
+                                      pequipment->driver[i].flags,
+                                      pequipment->driver[i].bd);
     if (status != FE_SUCCESS)
       {
       free_mem(hv_info);

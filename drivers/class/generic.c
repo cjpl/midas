@@ -6,6 +6,9 @@
   Contents:     Generic Class Driver
 
   $Log$
+  Revision 1.6  2002/06/06 07:50:12  midas
+  Implemented scheme with DF_xxx flags
+
   Revision 1.5  2002/06/06 07:15:45  midas
   Added demand priority ODB/Device
 
@@ -68,7 +71,7 @@ typedef struct {
   void   **driver;
   INT    *channel_offset;
   void   **dd_info;
-  INT    *demand_priority;
+  INT    *flags;
 
 } GEN_INFO;
 
@@ -94,6 +97,7 @@ static void free_mem(GEN_INFO *gen_info)
   free(gen_info->dd_info);
   free(gen_info->channel_offset);
   free(gen_info->driver);
+  free(gen_info->flags);
 
   free(gen_info);
 }
@@ -168,8 +172,11 @@ EQUIPMENT *pequipment;
   for (i=0 ; i<gen_info->num_channels ; i++)
     if (gen_info->demand[i] != gen_info->demand_mirror[i])
       {
-      status = DRIVER(i)(CMD_SET, gen_info->dd_info[i], 
-                         i-gen_info->channel_offset[i], gen_info->demand[i]);
+      if ((gen_info->flags[i] & DF_READ_ONLY) == 0)
+        {
+        status = DRIVER(i)(CMD_SET, gen_info->dd_info[i], 
+                           i-gen_info->channel_offset[i], gen_info->demand[i]);
+        }
       gen_info->demand_mirror[i] = gen_info->demand[i];
       }
 
@@ -260,9 +267,9 @@ GEN_INFO *gen_info;
   gen_info->dd_info          = (void *)  calloc(gen_info->num_channels, sizeof(void*));
   gen_info->channel_offset   = (INT *)   calloc(gen_info->num_channels, sizeof(INT));
   gen_info->driver           = (void *)  calloc(gen_info->num_channels, sizeof(void*));
-  gen_info->demand_priority  = (INT *)   calloc(gen_info->num_channels, sizeof(INT));
+  gen_info->flags            = (INT *)   calloc(gen_info->num_channels, sizeof(INT));
 
-  if (!gen_info->demand_priority)
+  if (!gen_info->flags)
     {
     cm_msg(MERROR, "hv_init", "Not enough memory");
     return FE_ERR_ODB;
@@ -289,7 +296,8 @@ GEN_INFO *gen_info;
 
     status = pequipment->driver[i].dd(CMD_INIT, hKey, &pequipment->driver[i].dd_info,
                                       pequipment->driver[i].channels, 
-                                      pequipment->driver[i].cmd_disabled);
+                                      pequipment->driver[i].flags,
+                                      pequipment->driver[i].bd);
     if (status != FE_SUCCESS)
       {
       free_mem(gen_info);
@@ -311,7 +319,7 @@ GEN_INFO *gen_info;
     gen_info->driver[i] = pequipment->driver[index].dd;
     gen_info->dd_info[i] = pequipment->driver[index].dd_info;
     gen_info->channel_offset[i] = offset;
-    gen_info->demand_priority[i] = pequipment->driver[index].demand_priority;
+    gen_info->flags[i] = pequipment->driver[index].flags;
     }
 
   /*---- create demand variables ----*/
@@ -326,7 +334,7 @@ GEN_INFO *gen_info;
   /* let device driver overwrite demand values, if it supports it */
   for (i=0 ; i<gen_info->num_channels ; i++)
     {
-    if (gen_info->demand_priority[i] == PRIO_DEVICE)
+    if (gen_info->flags[i] & DF_PRIO_DEVICE)
       {
       DRIVER(i)(CMD_GET_DEMAND, gen_info->dd_info[i], 
                 i-gen_info->channel_offset[i], &gen_info->demand[i]);
