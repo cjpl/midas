@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol main program
 
   $Log$
+  Revision 1.24  2003/02/19 16:21:35  midas
+  Fixed bug with conf_param
+
   Revision 1.23  2003/02/19 16:04:50  midas
   Added code for ADuC812
 
@@ -712,7 +715,7 @@ MSCB_INFO_CHN code *pchn;
   
       /* copy LSB bytes */
       for (i=0 ; i<n ; i++)
-        if (conf_param[in_buf[1]].ud)
+        if (channel[in_buf[1]].ud)
           ((char idata *)channel[in_buf[1]].ud)[i] = in_buf[i_in-1-n+i];
       
       user_write(in_buf[1]);
@@ -742,7 +745,7 @@ MSCB_INFO_CHN code *pchn;
     
         /* copy LSB bytes */
         for (i=0 ; i<n ; i++)
-          if (channel[in_buf[1]].ud)
+          if (conf_param[in_buf[1]].ud)
             ((char idata *)conf_param[in_buf[1]].ud)[i] = in_buf[i_in-1-n+i];
         
         user_write_conf(in_buf[1]);
