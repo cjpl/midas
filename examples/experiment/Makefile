@@ -6,6 +6,9 @@
 #  Contents:     Makefile for MIDAS example frontend and analyzer
 #
 #  $Log$
+#  Revision 1.6  1999/12/22 00:05:00  pierre
+#  - Set default driver to camacnul
+#
 #  Revision 1.5  1999/12/21 10:15:29  midas
 #  Removed kernel flags
 #
@@ -44,7 +47,7 @@ LIBS = -lm -lz -lutil
 #-------------------------------------------------------------------
 # The following lines define direcories. Adjust if necessary
 #                 
-DRV_DIR         = ../../drivers
+DRV_DIR         = /midas/drivers
 INC_DIR 	= /usr/local/include
 LIB_DIR 	= /usr/local/lib
 CERNLIB_DIR	= /cern/pro/lib
@@ -57,8 +60,9 @@ MODULES 	= adccalib.o adcsum.o scaler.o
 #-------------------------------------------------------------------
 # Hardware driver can be (camacnul, kcs2926, kcs2927, hyt1331)
 #
-DRIVER = camacnul
-
+ifndef ($(DRIVER))
+  DRIVER = camacnul
+endif
 #-------------------------------------------------------------------
 # Frontend code name defaulted to frontend in this example.
 # comment out the line and run your own frontend as follow:
@@ -80,7 +84,7 @@ LDFLAGS +=
 
 all: $(UFE) analyzer
 
-$(UFE): $(LIB) $(LIB_DIR)/mfe.o $(DRIVER).o $(UFE).c
+$(UFE): $(LIB) $(LIB_DIR)/mfe.o $(DRV_DIR)/bus/$(DRIVER).o $(UFE).c
 	$(CC) $(CFLAGS) $(OSFLAGS) -o $(UFE) $(UFE).c $(DRIVER).o \
 	$(LIB_DIR)/mfe.o $(LIB) $(LDFEFLAGS) $(LIBS)
 
