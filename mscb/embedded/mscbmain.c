@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol main program
 
   $Log$
+  Revision 1.38  2004/03/04 15:27:52  midas
+  Download with ACK after 60 bytes
+
   Revision 1.37  2004/02/24 13:30:21  midas
   Implemented C8051F310 code
 
@@ -637,15 +640,8 @@ void interprete(void)
       break;
 
    case CMD_UPGRADE:
-
       flash_program = 1;
-
-      /* send acknowledge */
-      out_buf[0] = CMD_ACK;
-      out_buf[1] = in_buf[i_in - 1];
-      n_out = 2;
-      RS485_ENABLE = 1;
-      SBUF0 = out_buf[0];
+      /* acknowledge gets sent from upgrade() routine */
       break;
 
    case CMD_FLASH:
@@ -661,6 +657,7 @@ void interprete(void)
       break;
 
    case CMD_ECHO:
+      led_blink(0, 1, 50);
       out_buf[0] = CMD_ACK + 1;
       out_buf[1] = in_buf[1];
       out_buf[2] = crc8(out_buf, 2);
@@ -799,13 +796,10 @@ sbit led_0 = LED_0;
 void upgrade()
 {
 #ifdef CPU_CYGNAL
-   unsigned char cmd, page;
+   unsigned char cmd, page, crc, j, k;
    unsigned short i;
    unsigned char xdata *pw;
    unsigned char code *pr;
-
-   /* wait until acknowledge has been sent */
-   while (RS485_ENABLE);
 
    /* disable all interrupts */
    EA = 0;
@@ -820,10 +814,13 @@ void upgrade()
 
    cmd = page = 0;
 
-   /* send ready */
+   /* send acknowledge */
    RS485_ENABLE = 1;
    TI0 = 0;
-   SBUF0 = 0xBE;
+   SBUF0 = CMD_ACK;
+   while (TI0 == 0);
+   TI0 = 0;
+   SBUF0 = 0; // dummy CRC
    while (TI0 == 0);
    RS485_ENABLE = 0;
 
@@ -833,12 +830,13 @@ void upgrade()
 
       cmd = SBUF0;
       RI0 = 0;
+      crc = 0;
 
       switch (cmd) {
-      case 1:                  // return acknowledge
+      case 1:                      // return acknowledge
          break;
 
-      case 2:                   // erase page
+      case 2:                      // erase page
          /* receive page */
          while (!RI0);
          page = SBUF0;
@@ -865,12 +863,13 @@ void upgrade()
    
             FLSCL = (FLSCL & 0xF0);
             PSCTL = 0x00;
-         } else
-            cmd = 10;              // return 'protected' flag
+         } else {
+            crc = 0xFF;            // return 'protected' flag
+         }
 
          break;
 
-      case 3:                   // program page
+      case 3:                      // program page
 #ifdef LED_0
          led_0 = LED_OFF;
 #endif
@@ -884,13 +883,41 @@ void upgrade()
 #if defined(CPU_C8051F000)
          FLSCL = (FLSCL & 0xF0) | 0x08; // set timer for 11.052 MHz clock
 #elif defined (CPU_C8051F020)
-         FLSCL = FLSCL | 1;     // enable flash writes
+         FLSCL = FLSCL | 1;        // enable flash writes
 #endif
-         PSCTL = 0x01;          // allow write access
+         PSCTL = 0x01;             // allow write access
 
          pw = (char xdata *) (512 * page);
 
-         for (i = 0; i < 512; i++) {
+         for (j=0 ; j<8 ; j++) {
+   
+            /* receive 60 bytes */
+            for (k = 0; k < 60; k++) {
+               /* receive byte */
+               while (!RI0);
+   
+#if defined(CPU_C8051F310)
+               FLKEY = 0xA5;          // write flash key code
+               FLKEY = 0xF1;
+#endif
+               /* flash byte */
+               *pw++ = SBUF0;
+               RI0 = 0;
+            }
+   
+            /* send ACK after each 60 bytes */
+            RS485_ENABLE = 1;
+            TI0 = 0;
+            SBUF0 = CMD_ACK;
+            while (TI0 == 0);
+            TI0 = 0;
+            SBUF0 = 0;
+            while (TI0 == 0);
+            RS485_ENABLE = 0;
+         }
+
+         /* receive remaining 32 bytes */
+         for (k = 0; k < 32; k++) {
             /* receive byte */
             while (!RI0);
 
@@ -906,9 +933,10 @@ void upgrade()
          /* disable write */
          FLSCL = (FLSCL & 0xF0);
          PSCTL = 0x00;
+
          break;
 
-      case 4:                  // verify page
+      case 4:                      // verify page
 #ifdef LED_0
          led_0 = LED_ON;
 #endif
@@ -920,27 +948,27 @@ void upgrade()
 
          pr = 512 * page;
 
-         RS485_ENABLE = 1;
-         for (i = 0; i < 512; i++) {
-            TI0 = 0;
-            SBUF0 = *pr++;
-            while (TI0 == 0);
-         }
-         RS485_ENABLE = 0;
+         /* return CRC */
+         for (i = crc = 0; i < 512; i++)
+            crc = crc8_add(crc, *pr++);
+
          break;
 
-      case 5:                  // reboot
+      case 5:                      // reboot
          RSTSRC = 0x10;
          break;
 
-      case 6:                  // return
+      case 6:                      // return
          break;
       }
 
       /* return acknowledge */
       RS485_ENABLE = 1;
       TI0 = 0;
-      SBUF0 = cmd;
+      SBUF0 = CMD_ACK;
+      while (TI0 == 0);
+      TI0 = 0;
+      SBUF0 = crc;
       while (TI0 == 0);
       RS485_ENABLE = 0;
 
