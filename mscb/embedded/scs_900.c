@@ -9,6 +9,9 @@
                 for SCS-900 analog high precision I/O 
 
   $Log$
+  Revision 1.3  2004/02/24 13:29:35  midas
+  Made bipolar mode working
+
   Revision 1.2  2004/02/06 12:03:31  midas
   ADC works as well
 
@@ -62,8 +65,7 @@ sbit DAC_DIN  = P0 ^ 7;         // Data in
 struct {
    float adc[8];
    float dac[8];
-   char  dac_bip_ofs;           // bipolar offset in 10mV
-   char  mode;                  // 0=unipolar, 1=bipolar
+   char  bipolar;
 } idata user_data;
 
 MSCB_INFO_VAR code variables[] = {
@@ -86,9 +88,7 @@ MSCB_INFO_VAR code variables[] = {
    4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "DAC6", &user_data.dac[6],
    4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "DAC7", &user_data.dac[7],
 
-   1, UNIT_VOLT, PRFX_MILLI, 0, MSCBF_SIGNED, "BipOfs", &user_data.dac_bip_ofs,
-
-   1, UNIT_BYTE, 0, 0, 0, "Mode", &user_data.mode,
+   1, UNIT_BOOLEAN, 0, 0, 0, "Bipolar", &user_data.bipolar,
 
    0
 };
@@ -147,12 +147,10 @@ void user_init(unsigned char init)
    /* initial EEPROM value */
    if (init) {
 
-      for (i = 0; i < 8; i++) {
+      for (i = 0; i < 8; i++)
          user_data.dac[i] = 0;
-      }
 
-      user_data.dac_bip_ofs = 0;
-      user_data.mode = 0;
+      user_data.bipolar = 0;
    }
 
    /* set-up DAC & ADC */
@@ -166,7 +164,7 @@ void user_init(unsigned char init)
    for (i=0 ; i<8 ; i++)
       user_write(i+8);
 
-   user_write(33);
+   user_write(16);
 }
 
 #pragma NOAREGS
@@ -200,7 +198,7 @@ unsigned char i, m, b;
       DAC_SCK = 1;
       m >>= 1;
    }
-   b = d && 0xFF;
+   b = d & 0xFF;
    for (i=0,m=0x80 ; i<8 ; i++) {
       DAC_SCK = 0;
       DAC_DIN = (b & m) > 0;
@@ -211,13 +209,17 @@ unsigned char i, m, b;
    DAC_NCS = 1; // remove chip select
 }
 
-unsigned char dac_index[8] = {4, 5, 2, 3, 1, 0, 7, 6};
+unsigned char code dac_index[8] = {4, 5, 2, 3, 1, 0, 7, 6};
 
 void write_dac(unsigned char index) reentrant
 {
    unsigned short d;
 
-   d = user_data.dac[index] / 2.5 * 65535 + 0.5;
+   if (user_data.bipolar)
+      // add 5 V in pipolar mode
+      d = (user_data.dac[index] + 5)/ 10 * 65535 + 0.5;
+   else
+      d = user_data.dac[index] / 10 * 65535 + 0.5;
 
    /* do mapping */
    index = dac_index[index % 8];
@@ -344,7 +346,7 @@ void read_adc24(unsigned char a, unsigned long *d)
    ADC_NCS = 1;
 }
 
-unsigned char adc_index[8] = {6, 7, 0, 1, 2, 3, 4, 5};
+unsigned char code adc_index[8] = {6, 7, 0, 1, 2, 3, 4, 5};
 
 void adc_read()
 {
@@ -398,11 +400,19 @@ void adc_calib()
 
 void user_write(unsigned char index) reentrant
 {
+   unsigned char i;
+
    if (index > 7 && index < 16)
       write_dac(index-8);
 
-   if (index == 17)                    // set bipolar/unipoar
-      UNI_BIP = (user_data.mode & 0x01) > 0;
+   if (index == 16) {
+      // set bipolar/unipoar
+      UNI_BIP = !user_data.bipolar;
+
+      // set all voltages 
+      for (i=0 ; i<8 ; i++)
+        write_dac(i);
+   }
 }
 
 /*---- User read function ------------------------------------------*/
