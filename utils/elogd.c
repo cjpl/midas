@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.71  2001/11/21 15:03:35  midas
+  Added "resubmit as new entry" checkbox
+
   Revision 1.70  2001/11/21 13:31:47  midas
   Made "date format" also work in find result page
 
@@ -224,7 +227,7 @@
 \********************************************************************/
 
 /* Version of ELOG */
-#define VERSION "1.2.4"
+#define VERSION "1.2.5"
 
 #include <stdio.h>
 #include <sys/types.h>
@@ -3398,20 +3401,50 @@ time_t now;
       rsprintf("<input type=checkbox checked name=html value=1>Submit as HTML text\n");
     else
       rsprintf("<input type=checkbox name=html value=1>Submit as HTML text\n");
-
-    rsprintf("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\n");
     }
 
   if (getcfg(logbook, "Suppress default", str))
     {
     if (atoi(str) == 0)
-      rsprintf("<input type=checkbox name=suppress value=1>Suppress Email notification</tr>\n");
+      {
+      rsprintf("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\n");
+      rsprintf("<input type=checkbox name=suppress value=1>Suppress Email notification>\n");
+      }
     else if (atoi(str) == 1)
-      rsprintf("<input type=checkbox checked name=suppress value=1>Suppress Email notification</tr>\n");
+      {
+      rsprintf("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\n");
+      rsprintf("<input type=checkbox checked name=suppress value=1>Suppress Email notification\n");
+      }
     }
   else
-    rsprintf("<input type=checkbox name=suppress value=1>Suppress Email notification</tr>\n");
+    {
+    rsprintf("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\n");
+    rsprintf("<input type=checkbox name=suppress value=1>Suppress Email notification\n");
+    }
 
+  if (bedit)
+    {
+    if (getcfg(logbook, "Resubmit default", str))
+      {
+      if (atoi(str) == 0)
+        {
+        rsprintf("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\n");
+        rsprintf("<input type=checkbox name=resubmit value=1>Resubmit as new entry\n");
+        }
+      else if (atoi(str) == 1)
+        {
+        rsprintf("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\n");
+        rsprintf("<input type=checkbox checked name=resubmit value=1>Resubmit as new entry\n");
+        }
+      }
+    else
+      {
+      rsprintf("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\n");
+      rsprintf("<input type=checkbox name=resubmit value=1>Resubmit as new entry\n");
+      }
+    }
+
+  rsprintf("</tr>\n");
 
   if (getcfg(logbook, "Number attachments", str))
     n = atoi(str);
@@ -4783,9 +4816,22 @@ int    i, j, n, index, n_attr, n_mail, suppress, status;
       }
     }
 
-  tag[0] = 0;
-  if (*getparam("edit"))
-    strcpy(tag, getparam("orig"));
+  if (*getparam("edit") &&
+      *getparam("resubmit") &&
+      atoi(getparam("resubmit")) == 1)
+    {
+    /* delete old message */
+    el_delete_message(getparam("orig"));
+    unsetparam("orig");
+    
+    tag[0] = 0;
+    }
+  else
+    {
+    tag[0] = 0;
+    if (*getparam("edit"))
+      strcpy(tag, getparam("orig"));
+    }
 
   status = el_submit(attr_list, attrib, n_attr, getparam("text"), 
                      getparam("orig"), *getparam("html") ? "HTML" : "plain", 
