@@ -1,0 +1,53 @@
+Microsoft Visual Studio Solution File, Format Version 8.00
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "calib_520", "calib_520.vcproj", "{C6828F75-D049-4C68-835F-658836935B77}"
+	ProjectSection(ProjectDependencies) = postProject
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "calib_700", "calib_700.vcproj", "{D4FB9C68-F345-4724-831C-11E5BD95A691}"
+	ProjectSection(ProjectDependencies) = postProject
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "calib_hvr", "calib_hvr.vcproj", "{4BAA364F-AFEA-40FC-884C-157B236EEB97}"
+	ProjectSection(ProjectDependencies) = postProject
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "msc", "msc.vcproj", "{37E7DE0D-2C2A-4FB5-BDD4-6DF11832ABBB}"
+	ProjectSection(ProjectDependencies) = postProject
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mscb", "mscb.vcproj", "{5E9C6A84-F459-4E90-BE11-752D22DC2CE9}"
+	ProjectSection(ProjectDependencies) = postProject
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfiguration) = preSolution
+		Debug = Debug
+		Release = Release
+	EndGlobalSection
+	GlobalSection(ProjectConfiguration) = postSolution
+		{C6828F75-D049-4C68-835F-658836935B77}.Debug.ActiveCfg = Debug|Win32
+		{C6828F75-D049-4C68-835F-658836935B77}.Debug.Build.0 = Debug|Win32
+		{C6828F75-D049-4C68-835F-658836935B77}.Release.ActiveCfg = Release|Win32
+		{C6828F75-D049-4C68-835F-658836935B77}.Release.Build.0 = Release|Win32
+		{D4FB9C68-F345-4724-831C-11E5BD95A691}.Debug.ActiveCfg = Debug|Win32
+		{D4FB9C68-F345-4724-831C-11E5BD95A691}.Debug.Build.0 = Debug|Win32
+		{D4FB9C68-F345-4724-831C-11E5BD95A691}.Release.ActiveCfg = Release|Win32
+		{D4FB9C68-F345-4724-831C-11E5BD95A691}.Release.Build.0 = Release|Win32
+		{4BAA364F-AFEA-40FC-884C-157B236EEB97}.Debug.ActiveCfg = Debug|Win32
+		{4BAA364F-AFEA-40FC-884C-157B236EEB97}.Debug.Build.0 = Debug|Win32
+		{4BAA364F-AFEA-40FC-884C-157B236EEB97}.Release.ActiveCfg = Release|Win32
+		{4BAA364F-AFEA-40FC-884C-157B236EEB97}.Release.Build.0 = Release|Win32
+		{37E7DE0D-2C2A-4FB5-BDD4-6DF11832ABBB}.Debug.ActiveCfg = Debug|Win32
+		{37E7DE0D-2C2A-4FB5-BDD4-6DF11832ABBB}.Debug.Build.0 = Debug|Win32
+		{37E7DE0D-2C2A-4FB5-BDD4-6DF11832ABBB}.Release.ActiveCfg = Release|Win32
+		{37E7DE0D-2C2A-4FB5-BDD4-6DF11832ABBB}.Release.Build.0 = Release|Win32
+		{5E9C6A84-F459-4E90-BE11-752D22DC2CE9}.Debug.ActiveCfg = Debug|Win32
+		{5E9C6A84-F459-4E90-BE11-752D22DC2CE9}.Debug.Build.0 = Debug|Win32
+		{5E9C6A84-F459-4E90-BE11-752D22DC2CE9}.Release.ActiveCfg = Release|Win32
+		{5E9C6A84-F459-4E90-BE11-752D22DC2CE9}.Release.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+	EndGlobalSection
+	GlobalSection(ExtensibilityAddIns) = postSolution
+	EndGlobalSection
+EndGlobal
