@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.136  2001/08/07 13:07:01  midas
+  Return error if subprocess creation in rpc_server_accept fails
+
   Revision 1.135  2001/08/07 08:07:09  midas
   Fixed bug in el_retrieve with attachment decoding
 
@@ -11942,10 +11945,6 @@ static struct callback_addr callback;
             break;
             }
 
-          sprintf(str, "1 %s", cm_get_version()); /* 1 means ok */
-          send(sock, str, strlen(str)+1, 0);
-          closesocket(sock);
-
           strcpy(callback.directory, exptab[index].directory);
           strcpy(callback.user,      exptab[index].user);
 
@@ -11973,9 +11972,18 @@ static struct callback_addr callback;
 */
           status = ss_spawnv(P_NOWAIT, (char *) rpc_get_server_option(RPC_OSERVER_NAME), argv);
           if (status != SS_SUCCESS)
+            {
             cm_msg(MERROR, "rpc_server_accept", "cannot spawn subprocess");
 
-          break;
+            sprintf(str, "3"); /* 3 means cannot spawn subprocess */
+            send(sock, str, strlen(str)+1, 0);
+            closesocket(sock);
+            break;
+            }
+
+          sprintf(str, "1 %s", cm_get_version()); /* 1 means ok */
+          send(sock, str, strlen(str)+1, 0);
+          closesocket(sock);
           }
         else
           {
