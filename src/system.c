@@ -14,6 +14,9 @@
                 Brown, Prentice Hall
 
   $Log$
+  Revision 1.58  2001/08/22 13:51:46  midas
+  Reorganized directio functions
+
   Revision 1.57  2001/08/07 13:07:20  midas
   Fixed typo
 
@@ -5714,14 +5717,16 @@ char *p;
 
 /*------------------------------------------------------------------*/
 
-#ifdef OS_WINNT
-static HANDLE _hdio = 0;
-#endif
-
-INT ss_directio_init()
+INT ss_directio_give_port(INT start, INT end)
 {
 #ifdef OS_WINNT  
-OSVERSIONINFO vi;
+
+  /* under Windows NT, use DirectIO driver to open ports */
+
+  OSVERSIONINFO vi;
+  HANDLE hdio = 0;
+  DWORD buffer[] = {6, 0, 0, 0};
+  DWORD size;
 
   vi.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
   GetVersionEx(&vi);
@@ -5729,10 +5734,20 @@ OSVERSIONINFO vi;
   /* use DirectIO driver under NT to gain port access */
   if (vi.dwPlatformId == VER_PLATFORM_WIN32_NT)
     {
-    _hdio = CreateFile("\\\\.\\directio", GENERIC_READ, FILE_SHARE_READ, NULL,
-					 OPEN_EXISTING, 0, NULL);
-    if (_hdio == INVALID_HANDLE_VALUE)
-      return SS_NO_DRIVER;
+    hdio = CreateFile("\\\\.\\directio", GENERIC_READ, FILE_SHARE_READ, NULL,
+           OPEN_EXISTING, 0, NULL);
+    if (hdio == INVALID_HANDLE_VALUE)
+      {
+      printf("hyt1331.c: Cannot access IO ports (No DirectIO driver installed)\n");
+      return -1;
+      }
+
+    /* open ports */
+    buffer[1] = start;
+    buffer[2] = end;
+    if (!DeviceIoControl(hdio, (DWORD) 0x9c406000, &buffer, sizeof(buffer),
+             NULL, 0, &size, NULL))
+      return -1;
     }
 
   return SS_SUCCESS;
@@ -5743,52 +5758,40 @@ OSVERSIONINFO vi;
 
 /*------------------------------------------------------------------*/
 
-INT ss_directio_exit()
-{
-#ifdef OS_WINNT  
-  return CloseHandle(_hdio);
-#else
-  return SS_SUCCESS;
-#endif
-}
-
-/*------------------------------------------------------------------*/
-
-INT ss_directio_give_port(INT start, INT end)
-{
-#ifdef OS_WINNT  
-DWORD buffer[] = {6, start, end, 0};
-DWORD size;
-
-  if (_hdio <= 0)
-    return SS_NO_DRIVER;
-
-  if (DeviceIoControl(_hdio, (DWORD) 0x9c406000, &buffer, sizeof(buffer), 
-		      NULL, 0, &size, NULL))
-    return SS_SUCCESS;
-
-  return GetLastError();
-#else
-  return SS_SUCCESS;
-#endif
-}
-
-/*------------------------------------------------------------------*/
-
 INT ss_directio_lock_port(INT start, INT end)
 {
 #ifdef OS_WINNT  
-DWORD buffer[] = {7, start, end, 0};
-DWORD size;
 
-  if (_hdio <= 0)
-    return 0;
+  /* under Windows NT, use DirectIO driver to lock ports */
 
-  if (DeviceIoControl(_hdio, (DWORD) 0x9c406000, &buffer, sizeof(buffer), 
-		      NULL, 0, &size, NULL))
-    return 1;
+  OSVERSIONINFO vi;
+  HANDLE hdio;
+  DWORD buffer[] = {7, 0, 0, 0};
+  DWORD size;
 
-  return GetLastError();
+  vi.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
+  GetVersionEx(&vi);
+
+  /* use DirectIO driver under NT to gain port access */
+  if (vi.dwPlatformId == VER_PLATFORM_WIN32_NT)
+    {
+    hdio = CreateFile("\\\\.\\directio", GENERIC_READ, FILE_SHARE_READ, NULL,
+           OPEN_EXISTING, 0, NULL);
+    if (hdio == INVALID_HANDLE_VALUE)
+      {
+      printf("hyt1331.c: Cannot access IO ports (No DirectIO driver installed)\n");
+      return -1;
+      }
+
+    /* lock ports */
+    buffer[1] = start;
+    buffer[2] = end;
+    if (!DeviceIoControl(hdio, (DWORD) 0x9c406000, &buffer, sizeof(buffer),
+             NULL, 0, &size, NULL))
+      return -1;
+    }
+
+  return SS_SUCCESS;
 #else
   return SS_SUCCESS;
 #endif

@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.85  2001/08/22 13:51:14  midas
+  Reorganized directio functions
+
   Revision 1.84  2001/08/08 11:44:59  midas
   Release 1.8.3
 
@@ -1671,8 +1674,6 @@ char EXPRT *ss_gets(char *string, int size);
 void EXPRT *ss_ctrlc_handler(void (*func)(int));
 
 /*---- direct io routines ----*/
-INT EXPRT ss_directio_init(void);
-INT EXPRT ss_directio_exit(void);
 INT EXPRT ss_directio_give_port(INT start, INT end);
 INT EXPRT ss_directio_lock_port(INT start, INT end);
 
