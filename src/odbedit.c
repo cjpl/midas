@@ -5,13 +5,7 @@
 
   Contents:     Command-line interface to the MIDAS online data base.
 
-
-  Revision history
-  ------------------------------------------------------------------
-  date         by    modification
-  ---------    ---   ------------------------------------------------
-  13-FRB-95    SR    created
-
+  $LOG$
 
 \********************************************************************/
 
@@ -808,7 +802,7 @@ void compose_name(char *pwd, char *name, char *full_name)
 
 void command_loop(char *host_name, char *exp_name, char *cmd, char *start_dir)
 {
-INT             status, i, j, size, old_run_number, new_run_number, channel;
+INT             status, i, j, state, size, old_run_number, new_run_number, channel;
 char            line[256];
 char            param[10][100];
 char            str[256], name[256], *pc, data_str[256];
@@ -823,6 +817,7 @@ FILE            *cmd_file = NULL;
 DWORD           last_msg_time=0;
 char            message[256], client_name[256];
 INT             n1, n2;
+char            *state_char[] = { "U", "S", "P", "R" };
 
   cm_get_experiment_database(&hDB, &hKeyClient);
   
@@ -864,6 +859,13 @@ INT             n1, n2;
           strcat(str, ":");
           strcat(str, exp_name);
           }
+      state = STATE_STOPPED;
+      size = sizeof(state);
+      db_get_value(hDB, 0, "/Runinfo/State", &state, &size, TID_INT);
+      strcat(str, ":");
+      if (state > STATE_RUNNING)
+        state = 0;
+      strcat(str, state_char[state]);
       strcat(str, "]");
       pc = pwd+strlen(pwd)-1;
       while (*pc != '/' && pc != pwd)
