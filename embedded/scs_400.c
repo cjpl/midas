@@ -9,6 +9,9 @@
                 for SCS-400 thermo couple I/O
 
   $Log$
+  Revision 1.27  2004/06/16 11:41:16  midas
+  Added _n_sub_addr
+
   Revision 1.26  2004/01/07 12:56:15  midas
   Chaned line length
 
@@ -90,6 +93,9 @@ extern bit FREEZE_MODE;
 extern bit DEBUG_MODE;
 
 char code node_name[] = "SCS-400";
+
+/* declare number of sub-addresses to framework */
+unsigned char idata _n_sub_addr = 1;
 
 #define GAIN      0             // gain for internal PGA
 
