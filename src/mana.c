@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.123  2004/09/23 20:22:55  midas
+  Fixed compiler warnings under linux
+
   Revision 1.122  2004/09/23 19:21:24  midas
   Implemented folders for histos
 
@@ -67,7 +70,7 @@
   Implemented db_check_record and use it in most places instead of db_create_record
 
   Revision 1.103  2003/11/01 23:21:30  olchansk
-  per Stephan Ritt's request, remove #error Please defeine either -DHAVE_HBOOK or -DHAVE_ROOT
+  per Stephan Ritt's request, remove #error Please defeine either -DHAVE_HBOOK or -DUSE_ROOT
 
   Revision 1.102  2003/11/01 01:25:11  olchansk
   abort if cannto read /runinfo/run number
@@ -78,7 +81,7 @@
   Don't book NTUPLES for unknown events
 
   Revision 1.100  2003/10/29 14:33:46  midas
-  Test for either HAVE_HBOOK or HAVE_ROOT
+  Test for either HAVE_HBOOK or USE_ROOT
 
   Revision 1.99  2003/10/03 18:57:40  pierre
   fix error msg
@@ -96,7 +99,7 @@
   Moved ss_force_single_thread() befor cm_connect_experiment
 
   Revision 1.94  2003/04/25 14:04:26  midas
-  Fixed wrong #ifdef HAVE_ROOT
+  Fixed wrong #ifdef USE_ROOT
 
   Revision 1.93  2003/04/25 13:29:23  midas
   Added ss_force_single_thread()
@@ -126,7 +129,7 @@
 
   Revision 1.85  2003/04/20 02:59:13  olchansk
   merge ROOT code into mana.c
-  remove MANA_LITE, replaced with HAVE_HBOOK, HAVE_ROOT
+  remove MANA_LITE, replaced with HAVE_HBOOK, USE_ROOT
   ROOT histogramming support almost complete,
   ROOT TTree filling is missing
   all ROOT code is untested, but compiles with RH-8.0, GCC-3.2, ROOT v3.05.03
@@ -427,7 +430,7 @@
 
 /*------------------------------------------------------------------*/
 
-#ifdef HAVE_ROOT
+#ifdef USE_ROOT
 
 #undef abs
 
@@ -479,7 +482,7 @@ typedef struct {
 
 TREE_STRUCT tree_struct;
 
-#endif                          /* HAVE_ROOT */
+#endif                          /* USE_ROOT */
 
 /*------------------------------------------------------------------*/
 
@@ -689,7 +692,7 @@ struct {
           &clp.pvm_buf_size, TID_INT, 1},
 #endif
 
-#ifdef HAVE_ROOT
+#ifdef USE_ROOT
    {
    's', "<port>        Start ROOT histo server under <port>. If port==0, don't start server.",
           &clp.root_port, TID_INT, 1},
@@ -1122,7 +1125,7 @@ void banks_changed(INT hDB, INT hKey, void *info)
    book_ntuples();
    printf("N-tuples rebooked\n");
 #endif
-#ifdef HAVE_ROOT
+#ifdef USE_ROOT
    book_ttree();
    printf("ROOT TTree rebooked\n");
 #endif
@@ -1502,7 +1505,7 @@ INT book_ntuples(void)
 
 /*-- book TTree from ODB bank structures ---------------------------*/
 
-#ifdef HAVE_ROOT
+#ifdef USE_ROOT
 
 char ttree_types[][8] = {
    "",
@@ -1769,8 +1772,6 @@ INT SaveRootHistograms(TFolder * folder, const char *filename)
 // Load all objects from given file into given directory
 INT LoadRootHistograms(TFolder * folder, const char *filename)
 {
-   TDirectory *savedir = gDirectory;
-
    TFile *inf = new TFile(filename, "READ");
    if (inf == NULL)
       printf("Error: File \"%s\" not found", filename);
@@ -1847,7 +1848,7 @@ INT CloseRootOutputFile()
    return SUCCESS;
 }
 
-#endif                          /* HAVE_ROOT */
+#endif                          /* USE_ROOT */
 
 /*-- analyzer init routine -----------------------------------------*/
 
@@ -1932,7 +1933,7 @@ INT mana_init()
    }
 #endif                          /* HAVE_HBOOK */
 
-#ifdef HAVE_ROOT
+#ifdef USE_ROOT
    if (clp.online) {
       /* book online N-tuples only once when online */
       status = book_ttree();
@@ -1959,7 +1960,7 @@ INT mana_init()
 
          if (module[j]->init != NULL && module[j]->enabled) {
 
-#ifdef HAVE_ROOT
+#ifdef USE_ROOT
             /* create histo subfolder for module */
             sprintf(str, "Histos for module %s", module[j]->name);
             module[j]->histo_folder = gManaHistosFolder->AddFolder(module[j]->name, str);
@@ -2053,17 +2054,17 @@ INT bor(INT run_number, char *error)
       }
 #endif                          /* HAVE_HBOOK */
 
-#ifdef HAVE_ROOT
+#ifdef USE_ROOT
       /* clear histos */
       if (clp.online && out_info.clear_histos)
          ClearRootHistograms(gManaHistosFolder);
-#endif                          /* HAVE_ROOT */
+#endif                          /* USE_ROOT */
 
       /* clear tests */
       test_clear();
    }
 
-#ifdef HAVE_ROOT
+#ifdef USE_ROOT
    if (clp.online) {
       /* clear all trees online to avoid out-of-memory */
       for (i = 0; i < tree_struct.n_tree; i++)
@@ -2160,7 +2161,7 @@ INT bor(INT run_number, char *error)
          }
 
          else if (out_format == FORMAT_ROOT) {
-#ifdef HAVE_ROOT
+#ifdef USE_ROOT
             // ensure the output file is closed
             assert(gManaOutputFile == NULL);
 
@@ -2179,7 +2180,7 @@ INT bor(INT run_number, char *error)
             out_file = (FILE *) 1;
 #else
             cm_msg(MERROR, "bor", "ROOT support is not compiled in");
-#endif                          /* HAVE_ROOT */
+#endif                          /* USE_ROOT */
          }
 
          else {
@@ -2207,14 +2208,14 @@ INT bor(INT run_number, char *error)
       }
 #endif                          /* HAVE_HBOOK */
 
-#ifdef HAVE_ROOT
+#ifdef USE_ROOT
       /* book ROOT TTree */
       if (out_format == FORMAT_ROOT) {
          int status = book_ttree();
          if (status != SUCCESS)
             return status;
       }
-#endif                          /* HAVE_ROOT */
+#endif                          /* USE_ROOT */
 
    }
 
@@ -2281,9 +2282,9 @@ INT eor(INT run_number, char *error)
       }
 #endif                          /* HAVE_HBOOK */
 
-#ifdef HAVE_ROOT
+#ifdef USE_ROOT
       SaveRootHistograms(gManaHistosFolder, str);
-#endif                          /* HAVE_ROOT */
+#endif                          /* USE_ROOT */
    }
 
    /* close output file */
@@ -2297,11 +2298,11 @@ INT eor(INT run_number, char *error)
          cm_msg(MERROR, "eor", "HBOOK support is not compiled in");
 #endif                          /* HAVE_HBOOK */
       } else if (out_format == FORMAT_ROOT) {
-#ifdef HAVE_ROOT
+#ifdef USE_ROOT
          CloseRootOutputFile();
 #else
          cm_msg(MERROR, "eor", "ROOT support is not compiled in");
-#endif                          /* HAVE_ROOT */
+#endif                          /* USE_ROOT */
       } else {
          if (out_gzip)
             gzclose(out_file);
@@ -3196,7 +3197,7 @@ INT write_event_hbook(FILE * file, EVENT_HEADER * pevent, ANALYZE_REQUEST * par)
 
 /*---- ROOT output -------------------------------------------------*/
 
-#ifdef HAVE_ROOT
+#ifdef USE_ROOT
 
 INT write_event_ttree(FILE * file, EVENT_HEADER * pevent, ANALYZE_REQUEST * par)
 {
@@ -3369,7 +3370,7 @@ INT write_event_ttree(FILE * file, EVENT_HEADER * pevent, ANALYZE_REQUEST * par)
    return SUCCESS;
 }
 
-#endif                          /* HAVE_ROOT */
+#endif                          /* USE_ROOT */
 
 /*---- ODB output --------------------------------------------------*/
 
@@ -3637,10 +3638,10 @@ INT process_event(ANALYZE_REQUEST * par, EVENT_HEADER * pevent)
       if (out_format == FORMAT_HBOOK)
          status = write_event_hbook(out_file, pevent, par);
 #endif                          /* HAVE_HBOOK */
-#ifdef HAVE_ROOT
+#ifdef USE_ROOT
       if (out_format == FORMAT_ROOT)
          status = write_event_ttree(out_file, pevent, par);
-#endif                          /* HAVE_ROOT */
+#endif                          /* USE_ROOT */
       if (out_format == FORMAT_ASCII)
          status = write_event_ascii(out_file, pevent, par);
       if (out_format == FORMAT_MIDAS)
@@ -3659,7 +3660,7 @@ INT process_event(ANALYZE_REQUEST * par, EVENT_HEADER * pevent)
        && par->rwnt_buffer_size > 0)
       write_event_hbook(NULL, pevent, par);
 #endif                          /* HAVE_HBOOK */
-#ifdef HAVE_ROOT
+#ifdef USE_ROOT
    /* fill tree, should later be replaced by cyclic filling once it's implemented in ROOT */
    if (clp.online && par->rwnt_buffer_size > 0)
       write_event_ttree(NULL, pevent, par);
@@ -3858,7 +3859,7 @@ void update_stats()
 
 /*-- Book histos --------------------------------------------------*/
 
-#ifdef HAVE_ROOT
+#ifdef USE_ROOT
 
 
 void * h1_book(char *name, char *title, int bins, double min, double max)
@@ -4012,7 +4013,7 @@ void load_last_histos()
       }
 #endif                          /* HAVE_HBOOK */
 
-#ifdef HAVE_ROOT
+#ifdef USE_ROOT
       printf("Loading previous online histos from %s\n", str);
       LoadRootHistograms(gManaHistosFolder, str);
 #endif
@@ -4052,7 +4053,7 @@ void save_last_histos()
    }
 #endif
 
-#ifdef HAVE_ROOT
+#ifdef USE_ROOT
    SaveRootHistograms(gManaHistosFolder, str);
 #endif
 
@@ -4842,11 +4843,11 @@ INT loop_runs_offline()
          cm_msg(MERROR, "loop_runs_offline", "HBOOK support is not compiled in");
 #endif
       } else if (out_format == FORMAT_ROOT) {
-#ifdef HAVE_ROOT
+#ifdef USE_ROOT
          CloseRootOutputFile();
 #else
          cm_msg(MERROR, "loop_runs_offline", "ROOT support is not compiled in");
-#endif                          /* HAVE_ROOT */
+#endif                          /* USE_ROOT */
       } else {
          if (out_gzip)
             gzclose(out_file);
@@ -5520,13 +5521,13 @@ int pvm_merge()
 
 /*------------------------------------------------------------------*/
 
-#ifdef HAVE_ROOT
+#ifdef USE_ROOT
 
 /*==== ROOT socket histo server ====================================*/
 
 #if defined ( __linux__ )
 #define THREADRETURN
-#define THREADTYPE void*
+#define THREADTYPE void
 #endif
 #if defined( _MSC_VER )
 #define THREADRETURN 0
@@ -5610,7 +5611,7 @@ THREADTYPE root_server_thread(void *arg)
 
             TCollection *folders = folder->GetListOfFolders();
             TIterator *iterFolders = folders->MakeIterator();
-            while (obj = iterFolders->Next())
+            while ((obj = iterFolders->Next()) != NULL)
                names->Add(new TObjString(obj->GetName()));
 
             //write folder names
@@ -5764,7 +5765,7 @@ void *root_event_loop(void *arg)
    return NULL;
 }
 
-#endif                          /* HAVE_ROOT */
+#endif                          /* USE_ROOT */
 
 /*------------------------------------------------------------------*/
 
@@ -5785,7 +5786,7 @@ int main(int argc, char *argv[])
    PVM_DEBUG("Analyzer started: %s", str);
 #endif
 
-#ifdef HAVE_ROOT
+#ifdef USE_ROOT
    int argn = 1;
    char *argp = (char*)argv[0];
 
@@ -5841,7 +5842,7 @@ int main(int argc, char *argv[])
       return 1;
 #endif
 
-#ifdef HAVE_ROOT
+#ifdef USE_ROOT
    /* workaround for multi-threading with midas system calls */
    ss_force_single_thread();
 #endif
@@ -5949,7 +5950,7 @@ int main(int argc, char *argv[])
    size = sizeof(out_info);
    db_get_record(hDB, hkey, &out_info, &size, 0);
 
-#ifdef HAVE_ROOT
+#ifdef USE_ROOT
    /* create the folder for analyzer histograms */
    gManaHistosFolder = gROOT->GetRootFolder()->AddFolder("histos", "MIDAS Analyzer Histograms");
    gHistoFolderStack = new TObjArray();
@@ -5968,7 +5969,7 @@ int main(int argc, char *argv[])
    if (clp.root_port)
       start_root_socket_server(clp.root_port);
 
-#endif  /* HAVE_ROOT */
+#endif  /* USE_ROOT */
 
 #ifdef HAVE_HBOOK
    /* convert .root names to .rz names */
@@ -5996,7 +5997,7 @@ int main(int argc, char *argv[])
    }
 #endif                          /* HAVE_HBOOK */
 
-#ifdef HAVE_ROOT
+#ifdef USE_ROOT
    /* load histos from last.xxx */
    if (clp.online)
       load_last_histos();
@@ -6055,7 +6056,7 @@ int main(int argc, char *argv[])
    /* disconnect from experiment */
    cm_disconnect_experiment();
 
-#ifdef HAVE_ROOT
+#ifdef USE_ROOT
    if (clp.start_rint)
       manaApp->Run(true);
 #endif
