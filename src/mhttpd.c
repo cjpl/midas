@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.122  2000/05/08 08:38:28  midas
+  Run number display can be switched off via /Elog/Display run number
+
   Revision 1.121  2000/05/05 12:19:51  midas
   Added offset in history display
 
@@ -1543,8 +1546,12 @@ char   date[80], author[80], type[80], system[80], subject[256], text[10000],
        orig_tag[80], reply_tag[80], att1[256], att2[256], att3[256], encoding[80];
 time_t now;
 HNDLE  hDB, hkey;
+BOOL   display_run_number;
 
   cm_get_experiment_database(&hDB, NULL);
+  display_run_number = TRUE;
+  size = sizeof(BOOL);
+  db_get_value(hDB, 0, "/Elog/Display run number", &display_run_number , &size, TID_BOOL);
 
   /* get message for reply */
   type[0] = system[0] = 0;
@@ -1592,26 +1599,43 @@ HNDLE  hDB, hkey;
 
   /*---- entry form ----*/
 
-  if (bedit)
+  if (display_run_number)
     {
-    rsprintf("<tr><td bgcolor=#FFFF00>Entry date: %s<br>", date);
-    time(&now);                 
-    rsprintf("Revision date: %s", ctime(&now));
+    if (bedit)
+      {
+      rsprintf("<tr><td bgcolor=#FFFF00>Entry date: %s<br>", date);
+      time(&now);                 
+      rsprintf("Revision date: %s", ctime(&now));
+      }
+    else
+      {
+      time(&now);
+      rsprintf("<tr><td bgcolor=#FFFF00>Entry date: %s", ctime(&now));
+      }
+
+    if (!bedit)
+      {
+      run_number = 0;
+      size = sizeof(run_number);
+      db_get_value(hDB, 0, "/Runinfo/Run number", &run_number, &size, TID_INT);
+      }
+    rsprintf("<td bgcolor=#FFFF00>Run number: ");
+    rsprintf("<input type=\"text\" size=10 maxlength=10 name=\"run\" value=\"%d\"</tr>", run_number);
     }
   else
     {
-    time(&now);
-    rsprintf("<tr><td bgcolor=#FFFF00>Entry date: %s", ctime(&now));
+    if (bedit)
+      {
+      rsprintf("<tr><td colspan=2 bgcolor=#FFFF00>Entry date: %s<br>", date);
+      time(&now);                 
+      rsprintf("Revision date: %s", ctime(&now));
+      }
+    else
+      {
+      time(&now);
+      rsprintf("<tr><td colspan=2 bgcolor=#FFFF00>Entry date: %s", ctime(&now));
+      }
     }
-
-  if (!bedit)
-    {
-    run_number = 0;
-    size = sizeof(run_number);
-    db_get_value(hDB, 0, "/Runinfo/Run number", &run_number, &size, TID_INT);
-    }
-  rsprintf("<td bgcolor=#FFFF00>Run number: ");
-  rsprintf("<input type=\"text\" size=10 maxlength=10 name=\"run\" value=\"%d\"</tr>", run_number);
 
   if (bedit)
     {
@@ -1755,8 +1779,13 @@ time_t now;
 struct tm *tms;
 HNDLE  hDB, hkey, hkeyroot;
 KEY    key;
+BOOL   display_run_number;
 
+  /* get flag for displaying run number */
   cm_get_experiment_database(&hDB, NULL);
+  display_run_number = TRUE;
+  size = sizeof(BOOL);
+  db_get_value(hDB, 0, "/Elog/Display run number", &display_run_number , &size, TID_BOOL);
 
   /* header */
   rsprintf("HTTP/1.0 200 Document follows\r\n");
@@ -1839,11 +1868,14 @@ KEY    key;
   rsprintf(" <input type=\"text\" size=5 maxlength=5 name=\"y2\">");
   rsprintf("</tr>\n");
 
-  rsprintf("<tr><td bgcolor=#A0FFFF>Start run: ");
-  rsprintf("<td bgcolor=#A0FFFF><input type=\"text\" size=\"10\" maxlength=\"10\" name=\"r1\">\n");
-  rsprintf("<td bgcolor=#A0FFFF>End run: ");
-  rsprintf("<td bgcolor=#A0FFFF><input type=\"text\" size=\"10\" maxlength=\"10\" name=\"r2\">\n");
-  rsprintf("</tr>\n");
+  if (display_run_number)
+    {
+    rsprintf("<tr><td bgcolor=#A0FFFF>Start run: ");
+    rsprintf("<td bgcolor=#A0FFFF><input type=\"text\" size=\"10\" maxlength=\"10\" name=\"r1\">\n");
+    rsprintf("<td bgcolor=#A0FFFF>End run: ");
+    rsprintf("<td bgcolor=#A0FFFF><input type=\"text\" size=\"10\" maxlength=\"10\" name=\"r2\">\n");
+    rsprintf("</tr>\n");
+    }
 
   /* get type list from ODB */
   size = 20*NAME_LENGTH;
@@ -1904,17 +1936,21 @@ KEY    key;
 
 void show_elog_submit_query(INT last_n)
 {
-int    i, size, run, status, m1, d2, m2, y2, index, fh;
+int    i, size, run, status, m1, d2, m2, y2, index, fh, colspan;
 char   date[80], author[80], type[80], system[80], subject[256], text[10000], 
        orig_tag[80], reply_tag[80], attachment[3][256], encoding[80];
 char   str[256], str2[10000], tag[256], ref[80], file_name[256];
 HNDLE  hDB;
-BOOL   full, show_attachments;
+BOOL   full, show_attachments, display_run_number;
 DWORD  ltime_end, ltime_current, now;
 struct tm tms, *ptms;
 FILE   *f;
 
+  /* get flag for displaying run number */
   cm_get_experiment_database(&hDB, NULL);
+  display_run_number = TRUE;
+  size = sizeof(BOOL);
+  db_get_value(hDB, 0, "/Elog/Display run number", &display_run_number , &size, TID_BOOL);
 
   /* header */
   rsprintf("HTTP/1.0 200 Document follows\r\n");
@@ -1948,14 +1984,19 @@ FILE   *f;
   str[0] = 0;
   db_get_value(hDB, 0, "/Experiment/Name", str, &size, TID_STRING);
 
+  colspan = full ? 3 : 4;
+  if (!display_run_number)
+    colspan--;
+
   rsprintf("<tr><th colspan=3 bgcolor=#A0A0FF>MIDAS Electronic Logbook");
-  rsprintf("<th colspan=%d bgcolor=#A0A0FF>Experiment \"%s\"</tr>\n", full?3:4, str);
+  rsprintf("<th colspan=%d bgcolor=#A0A0FF>Experiment \"%s\"</tr>\n", colspan, str);
 
   /*---- menu buttons ----*/
 
   if (!full)
     {
-    rsprintf("<tr><td colspan=7 bgcolor=#C0C0C0>\n");
+    colspan = display_run_number ? 7 : 6;
+    rsprintf("<tr><td colspan=%d bgcolor=#C0C0C0>\n", colspan);
 
     rsprintf("<input type=submit name=cmd value=\"Query\">\n");
     rsprintf("<input type=submit name=cmd value=\"ELog\">\n");
@@ -2014,14 +2055,18 @@ FILE   *f;
 
   /*---- title row ----*/
 
+  colspan = full ? 6 : 7;
+  if (!display_run_number)
+    colspan--;
+
   if (*getparam("r1"))
     {
     if (*getparam("r2"))
       rsprintf("<tr><td colspan=%d bgcolor=#FFFF00><b>Query result between runs %s and %s</b></tr>\n",
-                full?6:7, getparam("r1"), getparam("r2"));
+                colspan, getparam("r1"), getparam("r2"));
     else
       rsprintf("<tr><td colspan=%d bgcolor=#FFFF00><b>Query result between run %s and today</b></tr>\n",
-                full?6:7, getparam("r1"));
+                colspan, getparam("r1"));
     }
   else 
     {
@@ -2030,7 +2075,7 @@ FILE   *f;
 
     else if (*getparam("m2") || *getparam("y2") || *getparam("d2"))
       rsprintf("<tr><td colspan=%d bgcolor=#FFFF00><b>Query result between %s %s %s and %s %d %d</b></tr>\n",
-                full?6:7, getparam("m1"), getparam("d1"), getparam("y1"),
+                colspan, getparam("m1"), getparam("d1"), getparam("y1"),
                 mname[m2], d2, y2);
     else
       {
@@ -2039,14 +2084,14 @@ FILE   *f;
       ptms->tm_year += 1900;
 
       rsprintf("<tr><td colspan=%d bgcolor=#FFFF00><b>Query result between %s %s %s and %s %d %d</b></tr>\n",
-                full?6:7, getparam("m1"), getparam("d1"), getparam("y1"),
+                colspan, getparam("m1"), getparam("d1"), getparam("y1"),
                 mname[ptms->tm_mon], ptms->tm_mday, ptms->tm_year);
       }
     }
 
   rsprintf("</tr>\n<tr>");
 
-  rsprintf("<td colspan=%d bgcolor=#FFA0A0>\n", full?6:7);
+  rsprintf("<td colspan=%d bgcolor=#FFA0A0>\n", colspan);
 
   if (*getparam("author"))
     rsprintf("Author: <b>%s</b>   ", getparam("author"));
@@ -2067,10 +2112,20 @@ FILE   *f;
 
   /*---- table titles ----*/
 
-  if (full)
-    rsprintf("<tr><th>Date<th>Run<th>Author<th>Type<th>System<th>Subject</tr>\n");
+  if (display_run_number)
+    {
+    if (full)
+      rsprintf("<tr><th>Date<th>Run<th>Author<th>Type<th>System<th>Subject</tr>\n");
+    else
+      rsprintf("<tr><th>Date<th>Run<th>Author<th>Type<th>System<th>Subject<th>Text</tr>\n");
+    }
   else
-    rsprintf("<tr><th>Date<th>Run<th>Author<th>Type<th>System<th>Subject<th>Text</tr>\n");
+    {
+    if (full)
+      rsprintf("<tr><th>Date<th>Author<th>Type<th>System<th>Subject</tr>\n");
+    else
+      rsprintf("<tr><th>Date<th>Author<th>Type<th>System<th>Subject<th>Text</tr>\n");
+    }
 
   /*---- do query ----*/
 
@@ -2193,8 +2248,16 @@ FILE   *f;
 
       if (full)
         {
-        rsprintf("<tr><td><a href=%s>%s</a><td>%d<td>%s<td>%s<td>%s<td>%s</tr>\n", ref, date, run, author, type, system, subject);
-        rsprintf("<tr><td colspan=6>");
+        if (display_run_number)
+          {
+          rsprintf("<tr><td><a href=%s>%s</a><td>%d<td>%s<td>%s<td>%s<td>%s</tr>\n", ref, date, run, author, type, system, subject);
+          rsprintf("<tr><td colspan=6>");
+          }
+        else
+          {
+          rsprintf("<tr><td><a href=%s>%s</a><td>%s<td>%s<td>%s<td>%s</tr>\n", ref, date, author, type, system, subject);
+          rsprintf("<tr><td colspan=5>");
+          }
       
         if (equal_ustring(encoding, "plain"))
           {
@@ -2205,38 +2268,54 @@ FILE   *f;
         else
           rsputs(text);
 
-        rsprintf("</tr>\n");
-
-        if (show_attachments)
+        if (!show_attachments && attachment[0][0])
           {
-          for (index = 0 ; index < 3 ; index++)
-            {
-            if (attachment[index][0])
-              {
-              for (i=0 ; i<(int)strlen(attachment[index]) ; i++)
-                str[i] = toupper(attachment[index][i]);
-              str[i] = 0;
-      
-              if (exp_name[0])
-                sprintf(ref, "%sEL/%s?exp=%s", 
-                        mhttpd_url, attachment[index], exp_name);
-              else
-                sprintf(ref, "%sEL/%s", 
-                        mhttpd_url, attachment[index]);
+          if (attachment[1][0])
+            rsprintf("Attachments: ");
+          else
+            rsprintf("Attachment: ");
+          }
+        else
+          rsprintf("</tr>\n");
 
+        for (index = 0 ; index < 3 ; index++)
+          {
+          if (attachment[index][0])
+            {
+            for (i=0 ; i<(int)strlen(attachment[index]) ; i++)
+              str[i] = toupper(attachment[index][i]);
+            str[i] = 0;
+    
+            if (exp_name[0])
+              sprintf(ref, "%sEL/%s?exp=%s", 
+                      mhttpd_url, attachment[index], exp_name);
+            else
+              sprintf(ref, "%sEL/%s", 
+                      mhttpd_url, attachment[index]);
+
+            if (!show_attachments)
+              {
+              rsprintf("<a href=\"%s\"><b>%s</b></a> ", 
+                        ref, attachment[index]+14);
+              }
+            else
+              {
+              colspan = display_run_number ? 6 : 5;
               if (strstr(str, ".GIF") ||
                   strstr(str, ".JPG"))
                 {
-                rsprintf("<tr><td colspan=6>Attachment: <a href=\"%s\"><b>%s</b></a><br>\n", 
-                          ref, attachment[index]+14);
-                rsprintf("<img src=\"%s\"></tr>", ref);
+                rsprintf("<tr><td colspan=%d>Attachment: <a href=\"%s\"><b>%s</b></a><br>\n", 
+                          colspan, ref, attachment[index]+14);
+                if (show_attachments)
+                  rsprintf("<img src=\"%s\"></tr>", ref);
                 }
               else
                 {
-                rsprintf("<tr><td colspan=6 bgcolor=#C0C0FF>Attachment: <a href=\"%s\"><b>%s</b></a>\n", 
-                          ref, attachment[index]+14);
-                if (!strstr(str, ".PS") &&
-                    !strstr(str, ".EPS"))
+                rsprintf("<tr><td colspan=%d bgcolor=#C0C0FF>Attachment: <a href=\"%s\"><b>%s</b></a>\n", 
+                          colspan, ref, attachment[index]+14);
+
+                if ((strstr(str, ".TXT") ||
+                     strchr(str, '.') == NULL) && show_attachments)
                   {
                   /* display attachment */
                   rsprintf("<br><pre>");
@@ -2269,10 +2348,17 @@ FILE   *f;
               }
             }
           }
+ 
+        if (!show_attachments && attachment[0][0])
+          rsprintf("</tr>\n");
+
         }
       else
         {
-        rsprintf("<tr><td>%s<td>%d<td>%s<td>%s<td>%s<td>%s\n", date, run, author, type, system, subject);
+        if (display_run_number)
+          rsprintf("<tr><td>%s<td>%d<td>%s<td>%s<td>%s<td>%s\n", date, run, author, type, system, subject);
+        else
+          rsprintf("<tr><td>%s<td>%s<td>%s<td>%s<td>%s\n", date, author, type, system, subject);
 
         rsprintf("<td><a href=%s>", ref);
       
@@ -2780,9 +2866,14 @@ char  date[80], author[80], type[80], system[80], subject[256], text[10000],
 HNDLE hDB, hkey, hkeyroot;
 KEY   key;
 FILE  *f;
+BOOL  display_run_number;
 
+  /* get flag for displaying run number */
   cm_get_experiment_database(&hDB, NULL);
-
+  display_run_number = TRUE;
+  size = sizeof(BOOL);
+  db_get_value(hDB, 0, "/Elog/Display run number", &display_run_number , &size, TID_BOOL);
+  
   /*---- interprete commands ---------------------------------------*/
 
   strcpy(command, getparam("cmd"));
@@ -2921,7 +3012,6 @@ FILE  *f;
       else
         rsprintf("Content-Type: application/octet-stream\r\n");
 
-      
       rsprintf("Content-Length: %d\r\n\r\n", length);
 
       /* return if file too big */
@@ -3142,9 +3232,15 @@ FILE  *f;
       rsprintf("<tr><td bgcolor=#FF0000 colspan=2 align=center><b>This is the first message in the ELog</b></tr>\n");
 
 
-    rsprintf("<tr><td bgcolor=#FFFF00>Entry date: <b>%s</b>", date);
+    if (display_run_number)
+      {
+      rsprintf("<tr><td bgcolor=#FFFF00>Entry date: <b>%s</b>", date);
 
-    rsprintf("<td bgcolor=#FFFF00>Run number: <b>%d</b></tr>\n\n", run);
+      rsprintf("<td bgcolor=#FFFF00>Run number: <b>%d</b></tr>\n\n", run);
+      }
+    else
+      rsprintf("<tr><td colspan=2 bgcolor=#FFFF00>Entry date: <b>%s</b></tr>\n\n", date);
+
 
     /* define hidded fields */
     strcpy(str, author);
