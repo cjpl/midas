@@ -8,6 +8,9 @@
                 Midas Slow Control Bus protocol
 
   $Log$
+  Revision 1.5  2004/01/07 12:56:15  midas
+  Chaned line length
+
   Revision 1.4  2004/01/07 12:52:23  midas
   Changed indentation
 
@@ -169,8 +172,7 @@ void user_read_conf(unsigned char channel)
 
 /*---- User function called vid CMD_USER command -------------------*/
 
-unsigned char user_func(unsigned char idata * data_in,
-                        unsigned char idata * data_out)
+unsigned char user_func(unsigned char idata * data_in, unsigned char idata * data_out)
 {
    /* return some dummy data */
    data_out[0] = data_in[0] + 1;

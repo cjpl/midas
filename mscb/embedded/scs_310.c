@@ -9,6 +9,9 @@
                 for SCS-310 GPIB Adapter
 
   $Log$
+  Revision 1.4  2004/01/07 12:56:15  midas
+  Chaned line length
+
   Revision 1.3  2004/01/07 12:52:23  midas
   Changed indentation
 
@@ -381,8 +384,7 @@ void user_loop(void)
       send(user_data.gpib_adr, user_data.output);
 
       /* receive buffer */
-      if (enter
-          (user_data.gpib_adr, user_data.input, sizeof(user_data.input)))
+      if (enter(user_data.gpib_adr, user_data.input, sizeof(user_data.input)))
          led_blink(2, 1, 100);
 
       /* stip NL */

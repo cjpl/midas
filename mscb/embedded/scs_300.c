@@ -9,6 +9,9 @@
                 for SCS-300 Parallel Port Interface
 
   $Log$
+  Revision 1.9  2004/01/07 12:56:15  midas
+  Chaned line length
+
   Revision 1.8  2004/01/07 12:52:23  midas
   Changed indentation
 
@@ -169,8 +172,7 @@ char getchar_nowait()
    LPT_SELECT = 1;
 }
 
-unsigned char gets_wait(char *str, unsigned char size,
-                        unsigned char timeout)
+unsigned char gets_wait(char *str, unsigned char size, unsigned char timeout)
 {
    unsigned long idata start;
    unsigned char i;

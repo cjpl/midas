@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol main program
 
   $Log$
+  Revision 1.36  2004/01/07 12:56:15  midas
+  Chaned line length
+
   Revision 1.35  2004/01/07 12:52:23  midas
   Changed indentation
 
@@ -455,13 +458,11 @@ void interprete(void)
 
    switch (in_buf[0]) {
    case CMD_ADDR_NODE8:
-      set_addressed(ADDR_NODE,
-                    in_buf[1] == *(unsigned char *) &sys_info.node_addr);
+      set_addressed(ADDR_NODE, in_buf[1] == *(unsigned char *) &sys_info.node_addr);
       break;
 
    case CMD_ADDR_NODE16:
-      set_addressed(ADDR_NODE,
-                    *(unsigned int *) &in_buf[1] == sys_info.node_addr);
+      set_addressed(ADDR_NODE, *(unsigned int *) &in_buf[1] == sys_info.node_addr);
       break;
 
    case CMD_ADDR_BC:
@@ -469,18 +470,15 @@ void interprete(void)
       break;
 
    case CMD_ADDR_GRP8:
-      set_addressed(ADDR_GROUP,
-                    in_buf[1] == *(unsigned char *) &sys_info.group_addr);
+      set_addressed(ADDR_GROUP, in_buf[1] == *(unsigned char *) &sys_info.group_addr);
       break;
 
    case CMD_ADDR_GRP16:
-      set_addressed(ADDR_GROUP,
-                    *(unsigned int *) &in_buf[1] == sys_info.group_addr);
+      set_addressed(ADDR_GROUP, *(unsigned int *) &in_buf[1] == sys_info.group_addr);
       break;
 
    case CMD_PING8:
-      set_addressed(ADDR_NODE,
-                    in_buf[1] == *(unsigned char *) &sys_info.node_addr);
+      set_addressed(ADDR_NODE, in_buf[1] == *(unsigned char *) &sys_info.node_addr);
       if (addressed) {
          out_buf[0] = CMD_ACK;
          n_out = 1;
@@ -490,8 +488,7 @@ void interprete(void)
       break;
 
    case CMD_PING16:
-      set_addressed(ADDR_NODE,
-                    *(unsigned int *) &in_buf[1] == sys_info.node_addr);
+      set_addressed(ADDR_NODE, *(unsigned int *) &in_buf[1] == sys_info.node_addr);
       if (addressed) {
          out_buf[0] = CMD_ACK;
          n_out = 1;
@@ -669,8 +666,7 @@ void interprete(void)
          }
       } else if (in_buf[0] == CMD_READ + 2)     // variable range
       {
-         if (in_buf[1] < n_variables && in_buf[2] < n_variables
-             && in_buf[1] < in_buf[2]) {
+         if (in_buf[1] < n_variables && in_buf[2] < n_variables && in_buf[1] < in_buf[2]) {
             /* calculate number of bytes to return */
             for (i = in_buf[1], n = 0; i <= in_buf[2]; i++) {
                user_read(i);
@@ -723,8 +719,7 @@ void interprete(void)
             if (variables[ch].ud) {
                if (n < 4)
                   /* copy LSB bytes, needed for BYTE if DWORD is sent */
-                  ((char idata *) variables[ch].ud)[i] =
-                      in_buf[i_in - 1 - n + i + j];
+                  ((char idata *) variables[ch].ud)[i] = in_buf[i_in - 1 - n + i + j];
                else
                   /* copy bytes in normal order, needed for strings */
                   ((char idata *) variables[ch].ud)[i] = in_buf[2 + j + i];

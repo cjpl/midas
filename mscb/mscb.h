@@ -6,6 +6,9 @@
   Contents:     Header fiel for MSCB funcions
 
   $Log$
+  Revision 1.29  2004/01/07 12:56:15  midas
+  Chaned line length
+
   Revision 1.28  2004/01/07 12:52:23  midas
   Changed indentation
 
@@ -277,27 +280,20 @@ extern "C" {
    int EXPRT mscb_reset(int fd);
    int EXPRT mscb_reboot(int fd, int adr);
    int EXPRT mscb_ping(int fd, int adr);
-   int EXPRT mscb_echo(int fd, int addr, unsigned char d1,
-                       unsigned char *d2);
+   int EXPRT mscb_echo(int fd, int addr, unsigned char d1, unsigned char *d2);
    int EXPRT mscb_info(int fd, int adr, MSCB_INFO * info);
-   int EXPRT mscb_info_variable(int fd, int adr, int index,
-                                MSCB_INFO_VAR * info);
+   int EXPRT mscb_info_variable(int fd, int adr, int index, MSCB_INFO_VAR * info);
    int EXPRT mscb_set_addr(int fd, int adr, int node, int group);
    int EXPRT mscb_set_name(int fd, int adr, char *name);
-   int EXPRT mscb_write(int fd, int adr, unsigned char index, void *data,
-                        int size);
-   int EXPRT mscb_write_group(int fd, int adr, unsigned char index,
-                              void *data, int size);
+   int EXPRT mscb_write(int fd, int adr, unsigned char index, void *data, int size);
+   int EXPRT mscb_write_group(int fd, int adr, unsigned char index, void *data, int size);
    int EXPRT mscb_flash(int fd, int adr);
    int EXPRT mscb_upload(int fd, int adr, char *buffer, int size);
-   int EXPRT mscb_read(int fd, int adr, unsigned char index, void *data,
-                       int *size);
+   int EXPRT mscb_read(int fd, int adr, unsigned char index, void *data, int *size);
    int EXPRT mscb_read_range(int fd, int adr, unsigned char index1,
                              unsigned char index2, void *data, int *size);
-   int EXPRT mscb_user(int fd, int adr, void *param, int size,
-                       void *result, int *rsize);
-   int EXPRT mscb_link(int fd, int adr, unsigned char index, void *data,
-                       int size);
+   int EXPRT mscb_user(int fd, int adr, void *param, int size, void *result, int *rsize);
+   int EXPRT mscb_link(int fd, int adr, unsigned char index, void *data, int size);
    int EXPRT mscb_addr(int fd, int cmd, int adr, int retry, int lock);
 
 #ifdef __cplusplus

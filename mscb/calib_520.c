@@ -6,6 +6,9 @@
   Contents:     Calibration program for SCS-520
 
   $Log$
+  Revision 1.3  2004/01/07 12:56:15  midas
+  Chaned line length
+
   Revision 1.2  2004/01/07 12:52:23  midas
   Changed indentation
 
@@ -54,8 +57,7 @@ int main(int argc, char *argv[])
    memset(str, 0, sizeof(str));
    memcpy(str, info.name, 8);
    if (strcmp(str, "GlblGain") != 0) {
-      printf
-          ("Incorrect software versionon SCS-520. Expect \"GlblGain\" on var #44.\n");
+      printf("Incorrect software versionon SCS-520. Expect \"GlblGain\" on var #44.\n");
       return 0;
    }
 

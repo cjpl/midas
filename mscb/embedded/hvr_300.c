@@ -9,6 +9,9 @@
                 for HVR_300 High Voltage Regulator
 
   $Log$
+  Revision 1.7  2004/01/07 12:56:15  midas
+  Chaned line length
+
   Revision 1.6  2004/01/07 12:52:23  midas
   Changed indentation
 
@@ -414,9 +417,7 @@ void read_current(void)
    }
 
    /* convert to Volt, opamp gain, divider & curr. resist, microamp */
-   current =
-       (float) c_average / i / 4096.0 * 2.5 / CUR_MULT * DIVIDER / RCURR *
-       1E6;
+   current = (float) c_average / i / 4096.0 * 2.5 / CUR_MULT * DIVIDER / RCURR * 1E6;
 
    /* calibrate */
    current = current * user_data.cur_gain + user_data.cur_offset;
@@ -434,8 +435,7 @@ void ramp_hv(void)
    unsigned char delta;
 
    /* only process ramping when HV is on and not tripped */
-   if ((user_data.control & CONTROL_HV_ON) &&
-       !(user_data.status & STATUS_ILIMIT)) {
+   if ((user_data.control & CONTROL_HV_ON) && !(user_data.status & STATUS_ILIMIT)) {
 
       if (demand_changed) {
          /* start ramping */
