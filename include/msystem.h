@@ -7,6 +7,9 @@
                 routines
 
   $Log$
+  Revision 1.42  2004/09/29 00:58:35  midas
+  Increased various constants
+
   Revision 1.41  2004/07/21 05:41:23  pierre
   fix dox doc
 
@@ -242,7 +245,7 @@ SWAP QWORD macro */
 Definition of implementation specific constants */
 #define MESSAGE_BUFFER_SIZE    100000   /**< buffer used for messages */
 #define MESSAGE_BUFFER_NAME    "SYSMSG" /**< buffer name for messages */
-#define MAX_RPC_CONNECTION     25       /**< server/client connections   */
+#define MAX_RPC_CONNECTION     64       /**< server/client connections   */
 #define MAX_STRING_LENGTH      256      /**< max string length for odb */
 #define NET_BUFFER_SIZE        (ALIGN8(MAX_EVENT_SIZE)+sizeof(EVENT_HEADER)+\
 4*8 + sizeof(NET_COMMAND_HEADER))

@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.139  2004/09/29 00:58:35  midas
+  Increased various constants
+
   Revision 1.138  2004/09/28 23:57:08  midas
   Added EQ_EB flag for event building
 
@@ -630,12 +633,12 @@ typedef INT midas_thread_t;
 
 #define NAME_LENGTH            32            /**< length of names, mult.of 8! */
 #define HOST_NAME_LENGTH       256           /**< length of TCP/IP names      */
-#define MAX_CLIENTS            32            /**< client processes per buf/db */
+#define MAX_CLIENTS            64            /**< client processes per buf/db */
 #define MAX_EVENT_REQUESTS     10            /**< event requests per client   */
-#define MAX_OPEN_RECORDS       100           /**< number of open DB records   */
+#define MAX_OPEN_RECORDS       256           /**< number of open DB records   */
 #define MAX_ODB_PATH           256           /**< length of path in ODB       */
 #define MAX_EXPERIMENT         32            /**< number of different exp.    */
-#define BANKLIST_MAX           32            /**< max # of banks in event     */
+#define BANKLIST_MAX           64            /**< max # of banks in event     */
 #define STRING_BANKLIST_MAX    BANKLIST_MAX * 4   /**< for bk_list()          */
 
 
