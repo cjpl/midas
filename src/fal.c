@@ -7,6 +7,10 @@
                 Most routines are from mfe.c mana.c and mlogger.c.
 
   $Log$
+  Revision 1.6  1999/01/19 12:42:57  midas
+  - equipment is registered before analyzer modules are initialized
+  - N-tuples are not booked if buffer size is zero in analyzer_request
+
   Revision 1.5  1999/01/15 12:55:03  midas
   Set /Analyzer/Bank switches/... to FALSE by default to avoid N-tuple
   overflow when an fal is started the first time
@@ -2495,6 +2499,10 @@ EVENT_DEF  *event_def;
   /* go through all analyzer requests (events) */
   for (index=0 ; analyze_request[index].event_name[0] ; index++)
     {
+    /* don't book N-tuples if buffer size is zero */
+    if (analyze_request[index].rwnt_buffer_size == 0)
+      continue;
+
     n_tag = 0;
   
     strcpy(rw_tag[n_tag++], "Run");
@@ -3984,6 +3992,9 @@ usage:
     }
   printf("OK\n");
 
+  /* reqister equipment in ODB */
+  register_equipment();
+
   /* initialize module parameters */
   if (init_module_parameters() != CM_SUCCESS)
     {
@@ -4005,9 +4016,6 @@ usage:
     return 0;
     }
   printf("OK\n");
-
-  /* reqister equipment in ODB */
-  register_equipment();
 
   /* reqister requests in ODB */
   register_requests();
