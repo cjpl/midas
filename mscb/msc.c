@@ -6,6 +6,9 @@
   Contents:     Command-line interface for the Midas Slow Control Bus
 
   $Log$
+  Revision 1.4  2001/09/04 07:33:15  midas
+  Added test function
+
   Revision 1.3  2001/08/31 12:23:50  midas
   Added mutex protection
 
@@ -16,6 +19,10 @@
   Initial revision
 
 \********************************************************************/
+
+#ifdef _MSC_VER
+#include <windows.h>
+#endif
 
 #include <stdio.h>
 #include <string.h>
@@ -441,6 +448,25 @@ MSCB_INFO_CHN info_chn;
         }
       }
 
+    /* test */
+    else if ((param[0][0] == 't' && param[0][1] == 'e'))
+      {
+      unsigned short d;
+
+      while(1)
+        {
+        status = mscb_write16("lpt1", 1, 1, 2000);
+        if (status != MSCB_SUCCESS)
+          printf("mscb_write16: error %d\n", status);
+        status = mscb_read16("lpt1", 2, 3, &d);
+        if (status != MSCB_SUCCESS)
+          printf("mscb_read16: error %d\n", status);
+        mscb_addr(fd, CMD_ADDR_NODE16, 1234);
+
+        Sleep(50);
+        }
+      }
+
     /* exit/quit */
     else if ((param[0][0] == 'e' && param[0][1] == 'x') ||
         (param[0][0] == 'q'))
@@ -502,8 +528,8 @@ int   debug;
 usage:
         printf("usage: msc [-p port] [-c Command] [-c @CommandFile] [-v]\n\n");
         printf("       -p     Specify port (LPT1 by default)\n");
-        printf("       -c     Execute command immediately");
-        printf("       -v     Produce verbose output");
+        printf("       -c     Execute command immediately\n");
+        printf("       -v     Produce verbose output\n\n");
         printf("For a list of valid commands start msc interactively\n");
         printf("and type \"help\".\n");
         return 0;
@@ -515,7 +541,7 @@ usage:
   fd = mscb_init(port);
   if (fd < 0)
     {
-    printf("Cannot open port \"%s\"\n");
+    printf("No SCS-SM1 present at port \"%s\"\n", port);
     return 0;
     }
 
