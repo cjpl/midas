@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.65  2000/10/30 10:07:24  midas
+  Fixed bug that "always true" test was cleared at the BOR
+
   Revision 1.64  2000/09/18 09:22:23  midas
   Fixed bug which limited output event size to 64k
 
@@ -746,15 +749,10 @@ int i;
     tl[i]->count = 0;
     tl[i]->value = FALSE;
     }
-}
 
-void test_reset()
-{
-int i;
-
-  /* reset all tests to FALSE except "always true" test */
-  for (i=1 ; i<n_test ; i++)
-    tl[i]->value = FALSE;
+  /* set "always true" test */
+  if (n_test > 0)
+    tl[0]->value = TRUE;
 }
 
 void test_increment()
