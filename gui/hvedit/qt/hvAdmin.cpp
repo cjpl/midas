@@ -16,6 +16,9 @@
     email                : andreas.suter@psi.ch
 
   $Log$
+  Revision 1.2  2003/05/12 16:19:09  suter_a
+  fixed problem with white spaces in '.hvEdit'
+
   Revision 1.1  2003/05/09 10:08:09  midas
   Initial revision
 
@@ -76,6 +79,7 @@ hvAdmin::hvAdmin()
         hvA_default_dir_hv_settings = str+strlen("DEFAULT_SETTING_DIR=");
 	//hvA_default_dir_hv_settings.remove("\n"); // Qt3.1
 	hvA_default_dir_hv_settings.truncate(hvA_default_dir_hv_settings.length()-1); // Qt3.0.3
+	hvA_default_dir_hv_settings=hvA_default_dir_hv_settings.stripWhiteSpace();
 	b_hvA_default_dir_hv_settings = TRUE;
       }
       // default directory were to find documentation.
@@ -83,6 +87,7 @@ hvAdmin::hvAdmin()
         hvA_default_dir_docu = str+strlen("DEFAULT_DOC_DIR=");
 	//hvA_default_dir_docu.remove("\n"); // Qt3.1
 	hvA_default_dir_docu.truncate(hvA_default_dir_docu.length()-1); // Qt3.0.3
+	hvA_default_dir_docu=hvA_default_dir_docu.stripWhiteSpace();
 	b_hvA_default_dir_docu = TRUE;
       }
       // midas root key for the hv equipment.
@@ -90,6 +95,7 @@ hvAdmin::hvAdmin()
         hvA_midas_odb_hv_root = str+strlen("MIDAS_KEY_HV_ROOT=");
         //hvA_midas_odb_hv_root.remove("\n"); // Qt3.1
 	hvA_midas_odb_hv_root.truncate(hvA_midas_odb_hv_root.length()-1); // Qt3.0.3
+	hvA_midas_odb_hv_root=hvA_midas_odb_hv_root.stripWhiteSpace();
 	b_hvA_midas_odb_hv_root = TRUE;
       }
       // midas names key for the hv equipment.
@@ -97,6 +103,7 @@ hvAdmin::hvAdmin()
         hvA_midas_odb_hv_names = str+strlen("MIDAS_KEY_HV_NAMES=");
 	//hvA_midas_odb_hv_names.remove("\n"); // Qt3.1
 	hvA_midas_odb_hv_names.truncate(hvA_midas_odb_hv_names.length()-1); // Qt3.0.3
+	hvA_midas_odb_hv_names=hvA_midas_odb_hv_names.stripWhiteSpace();
 	b_hvA_midas_odb_hv_names = TRUE;
       }
       // midas demand hv key for the hv equipment.
@@ -104,6 +111,7 @@ hvAdmin::hvAdmin()
         hvA_midas_odb_hv_demand = str+strlen("MIDAS_KEY_HV_DEMAND=");
 	//hvA_midas_odb_hv_demand.remove("\n"); // Qt3.1
 	hvA_midas_odb_hv_demand.truncate(hvA_midas_odb_hv_demand.length()-1); // Qt3.0.3
+	hvA_midas_odb_hv_demand=hvA_midas_odb_hv_demand.stripWhiteSpace();
 	b_hvA_midas_odb_hv_demand = TRUE;
       }
       // midas measured hv key for the hv equipment.
@@ -111,6 +119,7 @@ hvAdmin::hvAdmin()
         hvA_midas_odb_hv_measured = str+strlen("MIDAS_KEY_HV_MEASURED=");
 	//hvA_midas_odb_hv_measured.remove("\n"); // Qt3.1
 	hvA_midas_odb_hv_measured.truncate(hvA_midas_odb_hv_measured.length()-1); // Qt3.0.3
+	hvA_midas_odb_hv_measured=hvA_midas_odb_hv_measured.stripWhiteSpace();
 	b_hvA_midas_odb_hv_measured = TRUE;
       }
       // midas current key for the hv equipment.
@@ -118,6 +127,7 @@ hvAdmin::hvAdmin()
         hvA_midas_odb_hv_current = str+strlen("MIDAS_KEY_HV_CURRENT=");
 	//hvA_midas_odb_hv_current.remove("\n"); // Qt3.1
 	hvA_midas_odb_hv_current.truncate(hvA_midas_odb_hv_current.length()-1); // Qt3.0.3
+	hvA_midas_odb_hv_current=hvA_midas_odb_hv_current.stripWhiteSpace();
 	b_hvA_midas_odb_hv_current = TRUE;
       }
       // midas current limit key for the hv equipment.
@@ -125,6 +135,7 @@ hvAdmin::hvAdmin()
         hvA_midas_odb_hv_current_limit = str+strlen("MIDAS_KEY_HV_CURRENT_LIMIT=");
 	//hvA_midas_odb_hv_current_limit.remove("\n"); // Qt3.1
 	hvA_midas_odb_hv_current_limit.truncate(hvA_midas_odb_hv_current_limit.length()-1); // Qt3.0.3
+	hvA_midas_odb_hv_current_limit=hvA_midas_odb_hv_current_limit.stripWhiteSpace();
 	b_hvA_midas_odb_hv_current_limit = TRUE;
       }
     }
