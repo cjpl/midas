@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.69  2001/11/21 08:21:42  midas
+  Specify %20 in menu commands explicitly
+
   Revision 1.68  2001/11/20 16:14:37  midas
   Corrected "data:" format in sendmail
 
@@ -3907,10 +3910,13 @@ FILE   *f;
             }
           else
             {
+            strcpy(str, menu_item[i]);
+            url_encode(str);
+
             if (i < n-1)
-              rsprintf("&nbsp;<a href=\"/%s?cmd=%s\">%s</a>&nbsp;|\n", logbook_enc, menu_item[i], menu_item[i]);
+              rsprintf("&nbsp;<a href=\"/%s?cmd=%s\">%s</a>&nbsp;|\n", logbook_enc, str, menu_item[i]);
             else
-              rsprintf("&nbsp;<a href=\"/%s?cmd=%s\">%s</a>&nbsp;\n", logbook_enc, menu_item[i], menu_item[i]);
+              rsprintf("&nbsp;<a href=\"/%s?cmd=%s\">%s</a>&nbsp;\n", logbook_enc, str, menu_item[i]);
             }
           }
 
@@ -5483,10 +5489,13 @@ FILE   *f;
         }
       else
         {
+        strcpy(str, menu_item[i]);
+        url_encode(str);
+
         if (i < n-1)
-          rsprintf("&nbsp;<a href=\"/%s/%s?cmd=%s\">%s</a>&nbsp;|\n", logbook_enc, path, menu_item[i], menu_item[i]);
+          rsprintf("&nbsp;<a href=\"/%s/%s?cmd=%s\">%s</a>&nbsp;|\n", logbook_enc, path, str, menu_item[i]);
         else
-          rsprintf("&nbsp;<a href=\"/%s/%s?cmd=%s\">%s</a>&nbsp;\n", logbook_enc, path, menu_item[i], menu_item[i]);
+          rsprintf("&nbsp;<a href=\"/%s/%s?cmd=%s\">%s</a>&nbsp;\n", logbook_enc, path, str, menu_item[i]);
         }
       }
 
