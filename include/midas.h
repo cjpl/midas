@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.106  2003/03/22 06:56:12  olchansk
+  add DB_CORRUPTED error code
+
   Revision 1.105  2003/03/17 06:36:55  olchansk
   really remove Windows-style "\r" characters
 
@@ -775,6 +778,7 @@ Convert the coded LAM station to Station number.
 #define DB_OPEN_RECORD              320
 #define DB_OUT_OF_RANGE             321
 #define DB_INVALID_LINK             322
+#define DB_CORRUPTED                323
 
 /* System Services */
 #define SS_SUCCESS                    1
