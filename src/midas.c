@@ -6,6 +6,10 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.193  2003/10/12 22:56:33  olchansk
+  when submitting new Elog message, add the message text to the outgoing email.
+  add traps for some array overruns (see http://midas.triumf.ca/forum/Development%20Area/12)
+
   Revision 1.192  2003/09/04 11:47:48  midas
   Fixed problem with hKey in cm_transition
 
@@ -602,6 +606,7 @@
 
 #include "midas.h"
 #include "msystem.h"
+#include <assert.h>
 
 /*------------------------------------------------------------------*/
 /* data type sizes */
@@ -16265,6 +16270,8 @@ BOOL    bedit;
   sprintf(message+strlen(message), "Encoding: %s\n", encoding);
   sprintf(message+strlen(message), "========================================\n");
   strcat(message, text);
+
+  assert(strlen(message) < sizeof(message)); // bomb out on array overrun.
 
   size = 0;
   sprintf(start_str, "$Start$: %6d\n", size);
