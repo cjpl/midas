@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol commands
 
   $Log$
+  Revision 1.54  2005/03/21 10:56:02  ritt
+  Removed ADuC code
+
   Revision 1.53  2005/03/16 14:12:30  ritt
   Added subm_260
 
@@ -235,7 +238,6 @@
 #if defined(SCS_210)
 #include <c8051F120.h>
 #define CPU_C8051F120
-#define CPU_CYGNAL
 
 #define LED_0 P3 ^ 4
 #define LED_1 P3 ^ 3
@@ -248,7 +250,6 @@ sbit RS485_ENABLE = P3 ^ 5;
 #elif defined(SCS_220)
 #include <c8051F020.h>
 #define CPU_C8051F020
-#define CPU_CYGNAL
 
 #define LED_0 P3 ^ 4
 #define LED_1 P3 ^ 3
@@ -260,7 +261,6 @@ sbit RS485_SEC_ENABLE = P0 ^ 6;
 #elif defined(SUBM_250)
 #include "c8051F320.h" // don't use the one from Keil !!
 #define CPU_C8051F320
-#define CPU_CYGNAL
 
 #define LED_0 P1 ^ 2
 #define LED_1 P1 ^ 3
@@ -273,7 +273,6 @@ sbit RS485_ENABLE = P1 ^ 0;
 #elif defined(SUBM_260)
 #include <c8051F120.h>
 #define CPU_C8051F120
-#define CPU_CYGNAL
 
 #define LED_0 P1 ^ 2
 #define LED_1 P1 ^ 3
@@ -286,7 +285,6 @@ sbit RS485_ENABLE = P0 ^ 4;
 #elif defined(SCS_300) || defined(SCS_310)
 #include <c8051F020.h>
 #define CPU_C8051F020
-#define CPU_CYGNAL
 
 #define LED_0 P3 ^ 3
 #define LED_1 P3 ^ 4
@@ -297,7 +295,6 @@ sbit RS485_ENABLE = P3 ^ 5;
 #elif defined(SUBM_300)
 #include <c8051F020.h>
 #define CPU_C8051F020
-#define CPU_CYGNAL
 
 #define LED_0 P3 ^ 3
 #define LED_1 P3 ^ 4
@@ -310,7 +307,6 @@ sbit RS485_ENABLE = P3 ^ 5;
 #elif defined(SCS_400) || defined(SCS_500)
 #include <c8051F000.h>
 #define CPU_C8051F000
-#define CPU_CYGNAL
 
 #define LED_0 P3 ^ 4
 #define LED_ON 1
@@ -320,7 +316,6 @@ sbit RS485_ENABLE = P3 ^ 5;
 #elif defined(SCS_520) || defined(SCS_600) || defined(SCS_700) || defined (SCS_800) || defined (SCS_900) || defined (SCS_910)
 #include <c8051F000.h>
 #define CPU_C8051F000
-#define CPU_CYGNAL
 
 #define LED_0 P3 ^ 4
 #define LED_ON 0
@@ -330,7 +325,6 @@ sbit RS485_ENABLE = P3 ^ 5;
 #elif defined(SCS_1000)
 #include <c8051F120.h>
 #define CPU_C8051F120
-#define CPU_CYGNAL
 
 #define LED_0 P2 ^ 0
 #define LED_1 P0 ^ 6
@@ -346,7 +340,6 @@ sbit RS485_SEC_ENABLE = P0 ^ 4;
 #elif defined(SCS_1001)
 #include <c8051F120.h>
 #define CPU_C8051F120
-#define CPU_CYGNAL
 
 #define LED_0 P2 ^ 0
 #define LED_1 P0 ^ 6
@@ -362,7 +355,6 @@ sbit RS485_SEC_ENABLE = P0 ^ 4;
 #elif defined(HVR_400)
 #include <c8051F310.h>
 #define CPU_C8051F310
-#define CPU_CYGNAL
 
 #define LED_0 P2 ^ 4
 #define LED_1 P2 ^ 5 
@@ -375,7 +367,6 @@ sbit RS485_ENABLE = P0 ^ 7;
 #elif defined(HVR_500)
 #include <c8051F310.h>
 #define CPU_C8051F310
-#define CPU_CYGNAL
 
 #define LED_0 P2 ^ 7
 #define LED_1 P2 ^ 6 
@@ -475,7 +466,7 @@ sbit RS485_ENABLE = P0 ^ 7;
 
 /*---- MSCB commands -----------------------------------------------*/
 
-#define VERSION 0x19            // version 1.9
+#define VERSION 0x20            // version 2.0
 #define INTERCHAR_DELAY 20      // 20us between characters
 
 /* Version history:
