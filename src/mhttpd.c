@@ -6,6 +6,12 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
+  Revision 1.18  1999/08/24 13:45:44  midas
+  - Made Ctrl-C working
+  - Re-enabled reuse of port address
+  - Added http:// destinations to /alias
+  - Made refresh working under kfm (05 instead 5!)
+
   Revision 1.17  1999/08/13 09:41:07  midas
   Replaced getdomainname by gethostbyaddr
 
@@ -436,19 +442,22 @@ CHN_STATISTICS chn_stats;
   db_get_record(hDB, hkey, &runinfo, &size, 0);
 
   /* header */
-  rsprintf("HTTP/1.0 200 Document follows\r\n");
+  rsprintf("HTTP/1.1 200 OK\r\n");
   rsprintf("Server: MIDAS HTTP %s\r\n", cm_get_version());
-  rsprintf("Content-Type: text/html\r\n\r\n");
+  rsprintf("Content-Type: text/html\r\n");
+  rsprintf("Pragma: no-cache\r\n");
+  rsprintf("Expires: Fri, 01 Jan 1983 00:00:00 GMT\r\n\r\n");
+  rsprintf("<html>\n");
 
-  rsprintf("<html><head><title>MIDAS status</title></head>\n");
-  rsprintf("<body><form method=\"GET\" action=\"%s\">\n", mhttpd_url);
+  /* auto refresh */
+  rsprintf("<meta http-equiv=\"Refresh\" content=\"%02d\">\n", refresh);
+
+  rsprintf("<head><title>MIDAS status</title></head>\n<body>\n");
+  rsprintf("<form method=\"GET\" action=\"%s\">\n", mhttpd_url);
 
   /* define hidden field for experiment */
   if (exp_name[0])
     rsprintf("<input type=hidden name=exp value=\"%s\">\n", exp_name);
-
-  /* auto refresh */
-  rsprintf("<meta http-equiv=\"Refresh\" content=%d>\n\n", refresh);
 
   rsprintf("<table border=3 cellpadding=2>\n");
 
@@ -488,18 +497,29 @@ CHN_STATISTICS chn_stats;
     rsprintf("<tr><td colspan=6 bgcolor=#80FF80>\n");
     for (i=0 ; ; i++)
       {
-	    db_enum_link(hDB, hkey, i, &hsubkey);
-	    if (!hsubkey)
-	      break;
+      db_enum_link(hDB, hkey, i, &hsubkey);
+      if (!hsubkey)
+        break;
 
       db_get_key(hDB, hsubkey, &key);
 
-      if (exp_name[0])
-        sprintf(ref, "%sAlias/%s?exp=%s", mhttpd_url, key.name, exp_name);
-      else
-        sprintf(ref, "%sAlias/%s", mhttpd_url, key.name);
+      if (key.type == TID_STRING)
+        {
+        /* html link */
+        size = sizeof(ref);
+        db_get_data(hDB, hsubkey, ref, &size, TID_STRING);
+        rsprintf("<a href=\"%s\">%s</a> ", ref, key.name);
+        }
+      else if (key.type == TID_LINK)
+        {
+        /* odb link */
+        if (exp_name[0])
+          sprintf(ref, "%sAlias/%s?exp=%s", mhttpd_url, key.name, exp_name);
+        else
+          sprintf(ref, "%sAlias/%s", mhttpd_url, key.name);
 
-      rsprintf("<a href=\"%s\">%s</a> ", ref, key.name);
+        rsprintf("<a href=\"%s\">%s</a> ", ref, key.name);
+        }
       }
     }
 
@@ -825,15 +845,15 @@ time_t now;
   rsprintf("Server: MIDAS HTTP %s\r\n", cm_get_version());
   rsprintf("Content-Type: text/html\r\n\r\n");
 
-  rsprintf("<html><head><title>MIDAS messages</title></head>\n");
+  /* auto refresh */
+  rsprintf("<html>\n<meta http-equiv=\"Refresh\" content=\"%d\">\n\n", refresh);
+
+  rsprintf("<head><title>MIDAS messages</title></head>\n");
   rsprintf("<body><form method=\"GET\" action=\"%s\">\n", mhttpd_url);
 
   /* define hidden field for experiment */
   if (exp_name[0])
     rsprintf("<input type=hidden name=exp value=\"%s\">\n", exp_name);
-
-  /* auto refresh */
-  rsprintf("<meta http-equiv=\"Refresh\" content=%d>\n\n", refresh);
 
   rsprintf("<table border=3 cellpadding=2>\n");
 
@@ -2465,7 +2485,7 @@ struct tm *gmt;
     gmt = gmtime(&now);
     strftime(str, sizeof(str), "%A, %d-%b-%y %H:00:00 GMT", gmt);
 
-    rsprintf("Set-cookie: midas_pwd=%s; path=/; expires=%s\r\n", ss_crypt(password, "mi"), str);
+    rsprintf("Set-Cookie: midas_pwd=%s; path=/; expires=%s\r\n", ss_crypt(password, "mi"), str);
 
     if (exp_name[0])
       rsprintf("Location: %s?exp=%s\n\n<html>redir</html>\r\n", mhttpd_url, exp_name);
@@ -2719,13 +2739,15 @@ struct tm *gmt;
     /* redirect with cookie */
     rsprintf("HTTP/1.0 302 Found\r\n");
     rsprintf("Server: MIDAS HTTP %s\r\n", cm_get_version());
+    rsprintf("Content-Type: text/html\r\n");
 
-    rsprintf("Set-cookie: midas_refr=%d; path=/; expires=0\n", refresh);
+    rsprintf("Set-Cookie: midas_refr=%d; path=/; expires=0\r\n", refresh);
 
     if (exp_name[0])
-      rsprintf("Location: %s?exp=%s\n\n<html>redir</html>\r\n", mhttpd_url, exp_name);
+      rsprintf("Location: %s?exp=%s\r\n\r\n<html>redir</html>\r\n", mhttpd_url, exp_name);
     else
-      rsprintf("Location: %s\n\n<html>redir</html>\r\n", mhttpd_url);
+      rsprintf("Location: %s\r\n\r\n<html>redir</html>\r\n", mhttpd_url);
+
     return;
     }
 
@@ -2805,7 +2827,7 @@ int                  status, i, refresh;
 struct sockaddr_in   bind_addr, acc_addr;
 char                 host_name[256];
 char                 str[256], cookie_pwd[256];
-int                  lsock, sock, len;
+int                  lsock, sock, len, flag;
 struct hostent       *phe;
 char                 net_buffer[1000];
 struct linger        ling;
@@ -2854,19 +2876,24 @@ INT                  last_time=0;
     }
   strcpy(host_name, phe->h_name);
 
-  /* ...better without
-  flag = 1;
-  setsockopt(lsock, SOL_SOCKET, SO_REUSEADDR,
-             (char *) &flag, sizeof(INT));
-  */
-
   memcpy((char *)&(bind_addr.sin_addr), phe->h_addr, phe->h_length);
 
   status = bind(lsock, (struct sockaddr *)&bind_addr, sizeof(bind_addr));
   if (status < 0)
     {
-    printf("Cannot bind to port %d. Please use the \"-p\" flag to specify a different port.\n", tcp_port);
-    return;
+    /* try reusing address */
+    flag = 1;
+    setsockopt(lsock, SOL_SOCKET, SO_REUSEADDR,
+               (char *) &flag, sizeof(INT));
+    status = bind(lsock, (struct sockaddr *)&bind_addr, sizeof(bind_addr));
+
+    if (status < 0)
+      {
+      printf("Cannot bind to port %d.\nPlease use the \"-p\" flag to specify a different port\n", tcp_port);
+      return;
+      }
+    else
+      printf("Warning: port %d already in use\n", tcp_port);
     }
 
   /* listen for connection */
@@ -2889,10 +2916,14 @@ INT                  last_time=0;
     FD_ZERO(&readfds);
     FD_SET(lsock, &readfds);
 
-    timeout.tv_sec  = 1;
-    timeout.tv_usec = 0;
+    timeout.tv_sec  = 0;
+    timeout.tv_usec = 100000;
 
-    select(FD_SETSIZE, (void *) &readfds, NULL, NULL, (void *) &timeout);
+    do
+      {
+      status = select(FD_SETSIZE, (void *) &readfds, NULL, NULL, (void *) &timeout);
+      /* if an alarm signal was cought, restart with reduced timeout */
+      } while (status == -1 && errno == EINTR);
 
     if (FD_ISSET(lsock, &readfds))
       {
@@ -2961,7 +2992,7 @@ INT                  last_time=0;
 
       i = strlen(return_buffer);
       send(sock, return_buffer, i+1, 0);
- 
+
   error:
 
       closesocket(sock);
