@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol commands
 
   $Log$
+  Revision 1.41  2004/07/21 14:18:55  midas
+  Restructured timer usage
+
   Revision 1.40  2004/07/20 16:04:40  midas
   Implemented scs-1000 code
 
@@ -271,6 +274,11 @@ sbit RS485_ENABLE = P0 ^ 7;
 #define RI0      RI
 #define RB80     RB8
 #define ES0      ES
+#define PS0      PS
+#endif
+
+#ifdef CPU_C8051F020
+#define PS0      PS
 #endif
 
 #if defined(CPU_C8051F310) || defined(CPU_C8051F320)
