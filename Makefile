@@ -6,6 +6,9 @@
 #  Contents:     Makefile for MIDAS binaries and examples under unix
 #
 #  $Log$
+#  Revision 1.21  2000/05/11 14:21:34  midas
+#  Added webpaw
+#
 #  Revision 1.20  2000/04/27 14:48:27  midas
 #  Added mgd.c in mhttpd
 #
@@ -215,7 +218,8 @@ PROGS = $(BIN_DIR)/mserver $(BIN_DIR)/mhttpd \
 	$(BIN_DIR)/mdump $(BIN_DIR)/lazylogger \
 	$(BIN_DIR)/mlxspeaker $(BIN_DIR)/dio \
 	$(BIN_DIR)/odbhist $(BIN_DIR)/elog \
-	$(BIN_DIR)/mchart $(BIN_DIR)/stripchart.tcl
+	$(BIN_DIR)/mchart $(BIN_DIR)/stripchart.tcl \
+	$(BIN_DIR)/mchart $(BIN_DIR)/webpaw
 
 OBJS =  $(LIB_DIR)/midas.o $(LIB_DIR)/system.o $(LIB_DIR)/mrpc.o \
 	$(LIB_DIR)/odb.o $(LIB_DIR)/ybos.o $(LIB_DIR)/ftplib.o
@@ -369,14 +373,15 @@ install:
 	@echo "... "
 	@echo "... Installing utilities to $(SYSBIN_DIR)"
 	@echo "... "
-	@for i in mhist odbhist elog mtape mstat lazylogger mdump mcnaf mlxspeaker mchart stripchart.tcl; \
+	@for i in mhist odbhist elog mtape mstat lazylogger mdump mcnaf mlxspeaker mchart stripchart.tcl webpaw; \
 	  do \
 	  echo $$i ; \
 	  rm -f $(SYSBIN_DIR)/$$i ; \
 	  cp $(BIN_DIR)/$$i $(SYSBIN_DIR) ; \
 	  chmod 755 $(SYSBIN_DIR)/$$i ; \
-	  done
-	  ln -fs $(SYSBIN_DIR)/stripchart.tcl $(SYSBIN_DIR)/stripchart
+	done
+	ln -fs $(SYSBIN_DIR)/stripchart.tcl $(SYSBIN_DIR)/stripchart
+	chmod +s $(SYSBIN_DIR)/webpaw
 
 # include
 	@echo "... "
