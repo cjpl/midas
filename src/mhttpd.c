@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.174  2001/11/19 11:56:23  midas
+  Fixed bug in rsputs
+
   Revision 1.173  2001/10/17 10:08:03  midas
   Speeded up return of long pages like HV slow control
 
@@ -627,9 +630,15 @@ void show_hist_page(char *path, char *buffer, int *buffer_size, int refresh);
 void rsputs(const char *str)
 {
   if (strlen_retbuf + strlen(str) > sizeof(return_buffer))
+    {
     strcpy(return_buffer, "<H1>Error: return buffer too small</H1>");
+    strlen_retbuf = strlen(return_buffer);
+    }
   else
+    {
     strcpy(return_buffer+strlen_retbuf, str);
+    strlen_retbuf += strlen(str);
+    }
 }
 
 /*------------------------------------------------------------------*/
@@ -640,7 +649,10 @@ int i, j, k;
 char *p, link[256];
 
   if (strlen_retbuf + strlen(str) > sizeof(return_buffer))
+    {
     strcpy(return_buffer, "<H1>Error: return buffer too small</H1>");
+    strlen_retbuf = strlen(return_buffer);
+    }
   else
     {
     j = strlen_retbuf;
