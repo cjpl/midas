@@ -6,6 +6,9 @@
   Contents:     MIDAS logger program
 
   $Log$
+  Revision 1.21  1999/10/06 08:43:38  midas
+  Fixed bug with system history (event_id instead of index)
+
   Revision 1.20  1999/09/23 12:45:49  midas
   Added 32 bit banks
 
@@ -1810,7 +1813,7 @@ KEY   key;
     open_history();
     }
   else
-    hs_write_event(index, hist_log[index].buffer, hist_log[index].buffer_size);
+    hs_write_event(hist_log[index].event_id, hist_log[index].buffer, hist_log[index].buffer_size);
 
   hist_log[index].last_log = ss_time();
 
