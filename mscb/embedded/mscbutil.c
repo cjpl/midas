@@ -6,6 +6,9 @@
   Contents:     Various utility functions for MSCB protocol
 
   $Log$
+  Revision 1.17  2003/02/19 16:04:56  midas
+  Added code for ADuC812
+
   Revision 1.16  2003/01/30 08:40:02  midas
   Use USE_WATCHDOG flag
 
@@ -423,7 +426,9 @@ void sysclock_init(void)
   IP |= 0x08;         // Interrupt priority hight
 
   TMOD = TMOD | 0x10; // 16-bit counter
+#ifdef CPU_CYGNAL
   CKCON = 0x00;       // user SYSCLK/12
+#endif
   TH1 = 0xDB;         // load initial values
   TL1 = 0x00; 
   TR1 = 1;            // start timer 1
@@ -570,7 +575,7 @@ void watchdog_refresh(void)
 #ifdef CPU_ADUC812
   WDR1 = 1;
   WDR2 = 1;
-#endif;
+#endif
 
 #ifdef CPU_CYGNAL
   WDTCN = 0xA5;
@@ -589,11 +594,6 @@ void watchdog_refresh(void)
 
 \********************************************************************/
 
-#ifdef CPU_ADUC812
-#endif
-
-#ifdef CPU_CYGNAL
-
 void delay_ms(unsigned int ms)
 {
 unsigned int i;
@@ -604,6 +604,35 @@ unsigned int i;
     yield();
     }
 }
+
+#ifdef CPU_ADUC812
+
+void delay_us(unsigned int us)
+{
+unsigned char i;
+unsigned int  remaining_us;
+
+  if (us <= 250)
+    {
+    us /= 12;
+    for (i=(unsigned char)us ; i>0 ; i--);
+    }
+  else
+    {
+    remaining_us = us;
+    while (remaining_us > 250)
+      {
+      delay_us(250);
+      remaining_us -= 250;
+      }
+    if (us > 0)
+      delay_us(remaining_us);
+    }
+}
+
+#endif
+
+#ifdef CPU_CYGNAL
 
 void delay_us(unsigned int us)
 {
@@ -628,8 +657,8 @@ unsigned int  remaining_us;
     if (us > 0)
       delay_us(remaining_us);
     }
-
 }
+
 #endif
 
 /*------------------------------------------------------------------*/
@@ -652,26 +681,35 @@ void eeprom_read(void idata *dst, unsigned char len,
 {
 #ifdef CPU_ADUC812
 
-EEPROM_READ:
-        MOV     EADRL,A         ; set page
-        MOV     ECON,#1         ; read page
-        MOV     A,R1
-        DEC     A
-        MOV     @R0,EDATA1
-        JZ      EEPROM_RET
-        INC     R0
-        DEC     A
-        MOV     @R0,EDATA2
-        JZ      EEPROM_RET
-        INC     R0
-        DEC     A
-        MOV     @R0,EDATA3
-        JZ      EEPROM_RET
-        INC     R0
-        DEC     A
-        MOV     @R0,EDATA4
-EEPROM_RET:
-        RET
+  unsigned char i, ofs;
+  unsigned char idata *d;
+
+  d = dst;
+
+  ofs = *offset;
+  EADRL = ofs / 4;
+  ECON = 0x01; // read page
+
+  for (i=0 ; i<len ; i++,d++)
+    {
+    switch (ofs % 4)
+      {
+      case 0: *d = EDATA1; break;
+      case 1: *d = EDATA2; break;
+      case 2: *d = EDATA3; break;
+      case 3: *d = EDATA4; break;
+      }
+
+    ofs++;
+
+    if (ofs % 4 == 0)
+      {
+      EADRL = ofs / 4;
+      ECON = 0x01;  // read next page
+      }
+    }
+
+  *offset = ofs;
 
 #endif
 
@@ -693,7 +731,7 @@ EEPROM_RET:
 
 /*------------------------------------------------------------------*/
 
-void eeprom_write(void *src, unsigned char len, 
+void eeprom_write(void idata *src, unsigned char len, 
                   unsigned char *offset)
 /********************************************************************\
 
@@ -711,20 +749,40 @@ void eeprom_write(void *src, unsigned char len,
 {
 #ifdef CPU_ADUC812
 
-EEPROM_WRITE:
-        MOV     EADRL,A         ; select page
-        MOV     ECON,#5         ; erase page
-        MOV     EDATA1,@R0
-        INC     R0
-        MOV     EDATA2,@R0
-        INC     R0
-        MOV     EDATA3,@R0
-        INC     R0
-        MOV     EDATA4,@R0
-        INC     R0
-        MOV     ECON,#2         ; write page
-        RET
+  unsigned char i, ofs;
+  unsigned char idata *d;
 
+  d = src;
+
+  ofs = *offset;
+  EADRL = ofs / 4;
+  ECON = 0x01; // read page
+
+  for (i=0 ; i<len ; i++,d++)
+    {
+    switch (ofs % 4)
+      {
+      case 0: EDATA1 = *d; break;
+      case 1: EDATA2 = *d; break;
+      case 2: EDATA3 = *d; break;
+      case 3: EDATA4 = *d; 
+              ECON = 0x02;  // write page
+              break;
+      }
+
+    ofs++;
+
+    if (ofs % 4 == 0)
+      {
+      EADRL = ofs / 4;
+      ECON = 0x01;  // read next page
+      }
+    }
+
+  if (ofs % 4 != 0)
+    ECON = 0x02; // write last page
+
+  *offset = ofs;
 
 #endif
 
@@ -744,7 +802,7 @@ EEPROM_WRITE:
   s = src;
 
   for (i=0 ; i<len ; i++)        // write data
-    p[i] = s[i];
+    *p++ = *s++;
 
   PSCTL = 0x00;                  // don't allow write
   FLSCL = FLSCL & 0xF0;
@@ -767,6 +825,7 @@ void eeprom_erase(void)
 \********************************************************************/
 {
 #ifdef CPU_ADUC812
+  ECON = 0x06;
 #endif
 
 #ifdef CPU_CYGNAL
@@ -844,7 +903,11 @@ unsigned char offset, i;
     eeprom_read(conf_param[i].ud, conf_param[i].width, &offset);
 }
 
-/*------------------------------------------------------------------*\
+/*------------------------------------------------------------------*/
+
+bit lcd_present;
+
+#if !defined(CPU_ADUC812) // save code space
 
 /********************************************************************\
 
@@ -871,8 +934,6 @@ sbit LCD_DB7    = LCD ^ 7;
 sbit LCD_CLK    = LCD ^ 7; // pins for 4021 shift register
 sbit LCD_P_W    = LCD ^ 6;
 sbit LCD_SD     = LCD ^ 0;
-
-bit lcd_present;
 
 /*------------------------------------------------------------------*/
 
@@ -1026,4 +1087,6 @@ char i, d;
   return d;
 }
 */
+
+#endif /* CPU_ADUC812 */
 
