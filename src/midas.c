@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.168  2002/09/17 08:58:43  midas
+  Fix for watchdog timeout after tape operations
+
   Revision 1.167  2002/09/13 07:32:47  midas
   Added client name to cm_cleanup()
 
@@ -3222,6 +3225,9 @@ INT i;
 
       /* clear entry from client structure in buffer header */
       pclient->watchdog_timeout = timeout;
+
+      /* show activity */
+      pclient->last_activity = ss_millitime();
       }
 
     /* set watchdog flag of alll open databases */
@@ -3258,6 +3264,9 @@ INT i;
 
       /* clear entry from client structure in buffer header */
       pclient->watchdog_timeout = timeout;
+
+      /* show activity */
+      pclient->last_activity = ss_millitime();
 
       db_unlock_database(i);
       }
