@@ -9,6 +9,9 @@
                 for SCS-400 thermo couple I/O
 
   $Log$
+  Revision 1.14  2003/03/24 08:15:13  midas
+  Added constants for PI
+
   Revision 1.13  2003/03/23 10:20:43  midas
   Added LCD_SUPPORT flag
 
@@ -71,6 +74,7 @@ char code node_name[] = "SCS-400";
 struct {
   short demand[4];
   float temp[4];
+  float c_prop[4];
   float c_int[4];
   float p_int[4];
   char  power[4];
@@ -85,6 +89,10 @@ MSCB_INFO_VAR code variables[] = {
   4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp1",   &user_data.temp[1],
   4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp2",   &user_data.temp[2],
   4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp3",   &user_data.temp[3],
+  4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "CProp0",  &user_data.c_prop[0],
+  4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "CProp1",  &user_data.c_prop[1],
+  4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "CProp2",  &user_data.c_prop[2],
+  4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "CProp3",  &user_data.c_prop[3],
   4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "CInt0",   &user_data.c_int[0],
   4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "CInt1",   &user_data.c_int[1],
   4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "CInt2",   &user_data.c_int[2],
@@ -281,7 +289,7 @@ static unsigned long t;
       p = user_data.p_int[i];
 
       /* proportional part */
-      p += (user_data.demand[i] - user_data.temp[i]) * 1;
+      p += (user_data.demand[i] - user_data.temp[i]) * user_data.c_prop[i];
 
       if (p < 0)
         p = 0;
