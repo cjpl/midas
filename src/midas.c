@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.26  1999/04/15 15:43:06  midas
+  Added functionality for bm_receive_event in ASCII mode
+
   Revision 1.25  1999/04/15 09:58:42  midas
   Switched if (rpc_list[i].id == 0) statements
 
@@ -6233,7 +6236,7 @@ INT bm_notify_client(INT buffer_handle, INT request_id, int socket)
 
 \********************************************************************/
 {
-char         buffer[16];
+char         buffer[32];
 NET_COMMAND  *nc;
 INT          convert_flags;
 static DWORD last_time = 0;
@@ -6249,29 +6252,38 @@ static DWORD last_time = 0;
 
   last_time = ss_millitime();
 
-  nc = (NET_COMMAND *) buffer;
-
-  nc->header.routine_id  = MSG_BM;
-  nc->header.param_size  = 2*sizeof(INT);
-  *((INT *) nc->param)   = buffer_handle;
-  *((INT *) nc->param+1) = request_id;
-
   convert_flags = rpc_get_server_option(RPC_CONVERT_FLAGS);
-  if (convert_flags)
-    {
-    rpc_convert_single(&nc->header.routine_id, TID_DWORD, 
-                       RPC_OUTGOING, convert_flags);
-    rpc_convert_single(&nc->header.param_size, TID_DWORD, 
-                       RPC_OUTGOING, convert_flags);
-    rpc_convert_single(&nc->param[0], TID_DWORD, 
-                       RPC_OUTGOING, convert_flags);
-    rpc_convert_single(&nc->param[4], TID_DWORD, 
-                       RPC_OUTGOING, convert_flags);
-    }
 
-  /* send the update notification to the client */
-  send_tcp(socket, (char *) buffer, sizeof(NET_COMMAND_HEADER) + 
-           2*sizeof(INT), 0);
+  if (convert_flags & CF_ASCII)
+    {
+    sprintf(buffer, "MSG_BM&%d&%d", buffer_handle, request_id);
+    send_tcp(socket, buffer, strlen(buffer)+1, 0);
+    }
+  else
+    {
+    nc = (NET_COMMAND *) buffer;
+
+    nc->header.routine_id  = MSG_BM;
+    nc->header.param_size  = 2*sizeof(INT);
+    *((INT *) nc->param)   = buffer_handle;
+    *((INT *) nc->param+1) = request_id;
+
+    if (convert_flags)
+      {
+      rpc_convert_single(&nc->header.routine_id, TID_DWORD, 
+                         RPC_OUTGOING, convert_flags);
+      rpc_convert_single(&nc->header.param_size, TID_DWORD, 
+                         RPC_OUTGOING, convert_flags);
+      rpc_convert_single(&nc->param[0], TID_DWORD, 
+                         RPC_OUTGOING, convert_flags);
+      rpc_convert_single(&nc->param[4], TID_DWORD, 
+                         RPC_OUTGOING, convert_flags);
+      }
+
+    /* send the update notification to the client */
+    send_tcp(socket, (char *) buffer, sizeof(NET_COMMAND_HEADER) + 
+             2*sizeof(INT), 0);
+    }
 
   return BM_SUCCESS;
 }
@@ -10066,26 +10078,39 @@ char         return_buffer[ASCII_BUFFER_SIZE]; /* ASCII out */
 
       else if (flags & RPC_VARARRAY)
         {
-        param_size = *((INT *) prpc_param[i+1]);
-        array_tid  = *((INT *) prpc_param[i+2]);
-        num_values = *((INT *) prpc_param[i+3]);
-
-        /* assume fixed length for strings */
-        if (array_tid == TID_STRING)
-          item_size = param_size / num_values;
-        else
-          item_size = tid_size[array_tid];
-        
-        /* write number of elements to output */
-        sprintf(out_param_ptr, "%d", num_values);
-        out_param_ptr += strlen(out_param_ptr);
-
-        /* write array of values to output */
-        for (j=0 ; j<num_values ; j++)
+        if (rpc_list[index].id == RPC_BM_RECEIVE_EVENT)
           {
-          *out_param_ptr++ = '&';
-          db_sprintf(out_param_ptr, prpc_param[i], item_size, j, array_tid);
+          param_size = *((INT *) prpc_param[i+1]);
+          /* write number of bytes to output */
+          sprintf(out_param_ptr, "%d", param_size);
+          out_param_ptr += strlen(out_param_ptr)+1;  // '0' finishes param
+          memcpy(out_param_ptr, prpc_param[i], param_size);
+          out_param_ptr += param_size;
+          *out_param_ptr = 0;
+          }
+        else
+          {
+          param_size = *((INT *) prpc_param[i+1]);
+          array_tid  = *((INT *) prpc_param[i+2]);
+          num_values = *((INT *) prpc_param[i+3]);
+
+          /* assume fixed length for strings */
+          if (array_tid == TID_STRING)
+            item_size = param_size / num_values;
+          else
+            item_size = tid_size[array_tid];
+        
+          /* write number of elements to output */
+          sprintf(out_param_ptr, "%d", num_values);
           out_param_ptr += strlen(out_param_ptr);
+
+          /* write array of values to output */
+          for (j=0 ; j<num_values ; j++)
+            {
+            *out_param_ptr++ = '&';
+            db_sprintf(out_param_ptr, prpc_param[i], item_size, j, array_tid);
+            out_param_ptr += strlen(out_param_ptr);
+            }
           }
         }
 
