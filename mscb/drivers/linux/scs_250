@@ -2,7 +2,7 @@
 #
 # /etc/hotplug/usb/scs_250
 #
-# Sets up newly plugged in USB MSCB submaster SCS-250 camera so that 
+# Sets up newly plugged in MSCB-USB submaster SCS-250 so that 
 # all users can access it
 #
 
