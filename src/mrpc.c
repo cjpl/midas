@@ -6,6 +6,9 @@
   Contents:     List of MIDAS RPC functions with parameters
 
   $Log$
+  Revision 1.13  1999/09/15 13:33:36  midas
+  Added remote el_submit functionality
+
   Revision 1.12  1999/08/03 11:15:07  midas
   Added bm_skip_event
 
@@ -541,6 +544,24 @@ static RPC_LIST rpc_list_library[] = {
      {TID_INT,        RPC_IN | RPC_OUT},
      {TID_DWORD,      RPC_OUT}, 
      {TID_DWORD,      RPC_OUT}, 
+     {0} }},
+
+  /* elog funcions */
+
+  { RPC_EL_SUBMIT, "el_submit",
+    {{TID_INT,        RPC_IN},
+     {TID_STRING,     RPC_IN}, 
+     {TID_STRING,     RPC_IN}, 
+     {TID_STRING,     RPC_IN}, 
+     {TID_STRING,     RPC_IN}, 
+     {TID_STRING,     RPC_IN}, 
+     {TID_STRING,     RPC_IN}, 
+     {TID_STRING,     RPC_IN}, 
+     {TID_STRING,     RPC_IN}, 
+     {TID_ARRAY,      RPC_IN | RPC_VARARRAY}, 
+     {TID_INT,        RPC_IN},
+     {TID_STRING,     RPC_OUT}, 
+     {TID_INT,        RPC_IN},
      {0} }},
 
   /* run control */

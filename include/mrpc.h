@@ -7,6 +7,9 @@
   Contents:     Symbolic constants for internal RPC functions
 
   $Log$
+  Revision 1.11  1999/09/15 13:33:32  midas
+  Added remote el_submit functionality
+
   Revision 1.10  1999/08/03 11:15:07  midas
   Added bm_skip_event
 
@@ -119,6 +122,8 @@
 #define RPC_HS_READ                     11307
 #define RPC_HS_GET_VAR                  11308
 #define RPC_HS_GET_EVENT_ID             11309
+
+#define RPC_EL_SUBMIT                   11400
 
 #define RPC_RC_TRANSITION               12000
 

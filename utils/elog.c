@@ -6,6 +6,9 @@
   Contents:     Electronic logbook utility   
 
   $Log$
+  Revision 1.4  1999/09/15 13:33:36  midas
+  Added remote el_submit functionality
+
   Revision 1.3  1999/09/15 08:06:58  midas
   Use own Ctrl-C handler
 
@@ -136,13 +139,10 @@ void ctrlc_handler(int sig)
 main(int argc, char *argv[])
 {
 char      author[80], type[80], system[80], subject[256], text[10000], attachment[256];
-char      host_name[256], exp_name[NAME_LENGTH], str[256], dir[256], file_name[256], *p;
-char      buffer[10000];
-INT       i, size, status, run_number, read, written;
-DWORD     now;
-struct tm *tms;
+char      host_name[256], exp_name[NAME_LENGTH], str[256];
+char      *buffer;
+INT       i, size, status, run_number, fh;
 HNDLE     hkey;
-FILE      *f1, *f2;
 
   /* turn off system message */
   cm_set_msg_print(0, MT_ALL, puts);
@@ -246,85 +246,55 @@ usage:
   /* check if attachment exists */
   if (attachment[0])
     {
-    f1 = fopen(attachment, "r");
-    if (f1 == NULL)
+    fh = open(attachment, O_RDONLY | O_BINARY);
+    if (fh < 0)
       {
       printf("Attachment file \"%s\" does not exist.\n", attachment);
       cm_disconnect_experiment();
       return 0;
       }
-    else
-      fclose(f1);
     }
 
   /* get run number */
   size = sizeof(run_number);
   db_get_value(hDB, 0, "/Runinfo/Run number", &run_number, &size, TID_INT);
 
-  /*---- copy attachment file ----*/
+  /*---- open attachment file ----*/
 
-  /* strip path from filename */
-  strcpy(str, attachment);
-  p = str;
-  while (strchr(p, '\\'))
-    p = strchr(p, '\\')+1; /* NT */
-  while (strchr(p, '/'))
-    p = strchr(p, '/')+1;  /* Unix */
-  while (strchr(p, ']'))
-    p = strchr(p, ']')+1;  /* VMS */
-
-  /* assemble ELog filename */
-  if (p[0])
+  if (attachment[0])
     {
-    f1 = fopen(attachment, "rb");
-    
-    dir[0] = 0;
-    size = sizeof(dir);
-    memset(dir, 0, size);
-    db_get_value(hDB, 0, "/Logger/Data dir", dir, &size, TID_STRING);
-    if (dir[0] != 0)
-      if (dir[strlen(dir)-1] != DIR_SEPARATOR)
-        strcat(dir, DIR_SEPARATOR_STR);
+    size = lseek(fh, 0, SEEK_END);
+    lseek(fh, 0, SEEK_SET);
 
-#if !defined(OS_VXWORKS) 
-#if !defined(OS_VMS)
-    tzset();
-#endif
-#endif
-  
-    time(&now);
-    tms = localtime(&now);
-
-    sprintf(file_name, "%02d%02d%02d_%02d%02d%02d_%s",
-            tms->tm_year % 100, tms->tm_mon+1, tms->tm_mday,
-            tms->tm_hour, tms->tm_min, tms->tm_sec, p);
-    strcpy(attachment, file_name);
-    sprintf(file_name, "%s%02d%02d%02d_%02d%02d%02d_%s", dir, 
-            tms->tm_year % 100, tms->tm_mon+1, tms->tm_mday,
-            tms->tm_hour, tms->tm_min, tms->tm_sec, p);
-
-    /* write to destination */
-    f2 = fopen(file_name, "wb");
-
-    while (!feof(f1))
+    buffer = malloc(size);
+    if (buffer == NULL || size > 500*1024)
       {
-      read = fread(buffer, 1, sizeof(buffer), f1);
-      written = fwrite(buffer, 1, read, f2);
-
-      if (written != read)
-        {
-        printf("File \"%s\" could not be written.\n", file_name);
-        cm_disconnect_experiment();
-        return 0;
-        }
+      printf("Attachment file \"%s\" is too long (500k max).\n", attachment);
+      cm_disconnect_experiment();
+      return 0;
       }
 
-    fclose(f1);
-    fclose(f2);
+    i = read(fh, buffer, size);
+    if (i < size)
+      {
+      printf("Cannot fully read attachment file \"%s\".\n", attachment);
+      cm_disconnect_experiment();
+      return 0;
+      }
+
+    close(fh);
+    }
+  else
+    {
+    buffer = malloc(1);
+    size = 0;
     }
 
   /* now submit message */
-  el_submit(run_number, author, type, system, subject, text, "", "plain", attachment, NULL);
+  el_submit(run_number, author, type, system, subject, text, "", "plain", 
+            attachment, buffer, size, str, sizeof(str));
+
+  free(buffer);
 
   cm_disconnect_experiment();
 

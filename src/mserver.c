@@ -6,6 +6,9 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
+  Revision 1.17  1999/09/15 13:33:36  midas
+  Added remote el_submit functionality
+
   Revision 1.16  1999/08/03 11:15:07  midas
   Added bm_skip_event
 
@@ -859,6 +862,11 @@ INT convert_flags;
         }
       break;
 
+    case RPC_EL_SUBMIT:
+      status = el_submit(CINT(0), CSTRING(1), CSTRING(2), CSTRING(3), CSTRING(4),
+                         CSTRING(5), CSTRING(6), CSTRING(7), CSTRING(8), 
+                         CARRAY(9), CINT(10), CSTRING(11), CINT(12));
+      break;
     
     /* exit functions */
     case RPC_ID_EXIT:

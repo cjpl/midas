@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.37  1999/09/15 13:33:32  midas
+  Added remote el_submit functionality
+
   Revision 1.36  1999/09/14 15:15:43  midas
   Moved el_xxx funtions into midas.c
 
@@ -1369,7 +1372,8 @@ INT EXPRT el_retrieve(char *tag, char *date, int *run, char *author, char *type,
                 char *system, char *subject, char *text, int *textsize, 
                 char *orig_tag, char *reply_tag, char *attachment, char *encoding);
 INT EXPRT el_submit(int run, char *author, char *type, char *system, char *subject, 
-              char *text, char *reply_to, char *encoding, char *attachment, char *tag);
+              char *text, char *reply_to, char *encoding, char *filename, 
+              char *buffer, INT buffer_size, char *tag, INT tag_size);
 INT EXPRT el_search_message(char *tag, int *fh, BOOL walk);
 INT EXPRT el_search_run(int run, char *return_tag);
 
