@@ -1,0 +1,127 @@
+/********************************************************************\
+
+  Name:         mscb.h
+  Created by:   Stefan Ritt
+
+  Contents:     Midas Slow Control Bus protocol commands
+
+  $Log$
+  Revision 1.1  2002/07/05 08:12:46  midas
+  Moved files
+
+\********************************************************************/
+
+/*---- select here CPU type ----------------------------------------*/
+
+#undef CPU_ADUC812
+#define CPU_C8051F000
+
+/* selct include file according to CPU */
+#ifdef CPU_ADUC812
+#include <aduc812.h>
+#endif
+#ifdef CPU_C8051F000
+#include <c8051F000.h>
+#endif
+
+/*---- MSCB commands -----------------------------------------------*/
+
+#define VERSION 0x10;   // version 1.0
+
+#define CMD_ADDR_NODE8  0x09
+#define CMD_ADDR_NODE16 0x0A
+#define CMD_ADDR_BC     0x10
+#define CMD_ADDR_GRP8   0x11
+#define CMD_ADDR_GRP16  0x12
+#define CMD_PING8       0x19
+#define CMD_PING16      0x1A
+
+#define CMD_INIT        0x20
+#define CMD_GET_INFO    0x28
+#define CMD_SET_ADDR    0x34
+#define CMD_SET_BAUD    0x39
+
+#define CMD_FREEZE      0x41
+#define CMD_SYNC        0x49
+#define CMD_TRANSP      0x50
+#define CMD_USER        0x58
+
+#define CMD_TOKEN       0x60
+#define CMD_SET_FLAGS   0x69
+
+#define CMD_ACK         0x78
+
+#define CMD_WRITE_NA    0x80
+#define CMD_WRITE_ACK   0x88
+
+#define CMD_WRITE_CONF  0x90
+#define CMD_WRITE_CONF_PERM 0x98
+
+#define CMD_READ        0xA1
+#define CMD_READ_CONF   0xA9
+
+#define CMD_WRITE_BLOCK 0xB5
+#define CMD_READ_BLOCK  0xB9
+
+#define GET_INFO_GENERAL   0
+#define GET_INFO_CHANNEL   1
+#define GET_INFO_CONF      2
+
+#define SIZE_8BIT          1
+#define SIZE_16BIT         2
+#define SIZE_24BIT         3
+#define SIZE_32BIT         4
+
+/*---- flags from the configuration and status register (CSR) ------*/
+
+#define CSR_DEBUG       (1<<0)
+#define CSR_LCD_PRESENT (1<<1)
+#define CSR_SYNC_MODE   (1<<2)
+#define CSR_FREEZE_MODE (1<<3)
+#define CSR_WD_RESET    (1<<2)
+
+/*---- baud rates used ---------------------------------------------*/
+
+#define BD_9600            1
+#define BD_19200           2
+#define BD_28800           3
+#define BD_57600           4 
+#define BD_115200          5
+#define BD_172800          6
+#define BD_345600          7
+
+/*---- info structures ---------------------------------------------*/
+
+typedef struct {
+  unsigned char  protocol_version;
+  unsigned char  node_status;
+  unsigned char  n_channel;
+  unsigned char  n_conf;
+  unsigned short node_address;
+  unsigned short group_address;
+  unsigned short watchdog_resets;
+  char           node_name[16];
+  } MSCB_INFO;
+
+typedef struct {
+  unsigned char  channel_width;
+  unsigned char  phys_units;
+  unsigned char  status;
+  unsigned char  flags;
+  char           channel_name[8];
+  } MSCB_INFO_CHN;
+
+/*---- function declarations ---------------------------------------*/
+
+void watchdog_refresh(void);
+void delay_us(unsigned int us);
+void delay_ms(unsigned int ms);
+
+void lcd_setup();
+void lcd_clear();
+void lcd_goto(char x, char y);
+void lcd_putc(char c);
+void lcd_puts(char *str);
+char scs_lcd1_read();
+
+
