@@ -9,6 +9,9 @@
                 for SCS-400 thermo couple I/O
 
   $Log$
+  Revision 1.8  2003/02/27 10:44:30  midas
+  Added 'init' code
+
   Revision 1.7  2003/02/19 16:05:36  midas
   Added 'init' parameter to user_init
 
@@ -86,6 +89,8 @@ void user_write(unsigned char channel) reentrant;
 
 void user_init(unsigned char init)
 {
+unsigned char i;
+
 #ifdef CPU_ADUC812
   ADCCON1 = 0x7C; // power up ADC, 14.5us conv+acq time
   ADCCON2 = 0;    // select channel to convert
@@ -102,6 +107,9 @@ void user_init(unsigned char init)
   DAC1CN = 0x80;  // enable DAC1
 #endif
 
+  if (init)
+    for (i=0 ; i<8 ; i++)
+      user_data.power[i] = 0;
 }
 
 /*---- User write function -----------------------------------------*/
