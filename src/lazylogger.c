@@ -5,7 +5,11 @@
   Contents:     Disk to Tape copier for background job.
 
   $Log$
+  Revision 1.29  2002/10/22 03:45:09  pierre
+  add SS_NO_TAPE
+
   Revision 1.28  2002/09/27 20:03:30  pierre
+
   - Add before/after write tape ss_command for script functions
   - Add Modulo.Position option for split lazy channel (see doc)
   - Add Tape Data Append flag for moving to EOD on stream device
@@ -1238,13 +1242,10 @@ Function value:
   /* open any logging file (output) */
   if ((status = yb_any_file_wopen(dev_type, data_fmt, outfile, &hDev)) != 1) 
   {
-  /* This is NOT the sign of tape full
-  if (status == SS_DEV_BUSY)
-    return (status); */
     if ((ss_time() - last_error) > 60)
     {
       last_error = ss_time();
-      cm_msg(MERROR,"Lazy_copy","can not open %s, error %d",outfile, status);
+      cm_msg(MTALK,"Lazy_copy","can not open %s, error %d",outfile, status);
     }      
     return (FORCE_EXIT);
   }
@@ -1260,6 +1261,7 @@ Function value:
     cm_set_watchdog_params(watchdog_flag, watchdog_timeout);
     if (status != SS_SUCCESS) {
       cm_msg(MINFO,"Lazy","Error while Positioning Tape to EOD (%d)", status);
+      ss_tape_close(hDev);
       return (FORCE_EXIT);
     }
   }
@@ -1285,8 +1287,8 @@ Function value:
     }
     if (lazy.commandBefore[0])
     { char cmd[256];
-    sprintf(cmd,"%s %s %s %d",lazy.commandBefore, 
-      infile, outfile,blockn);
+    sprintf(cmd,"%s %s %s %d %s %i",lazy.commandBefore, 
+      infile, outfile,blockn,lazy.backlabel,lazyst.nfiles);
     cm_msg(MINFO,"Lazy","Exec pre file write script:%s",cmd);
     ss_system(cmd);
     }
@@ -1319,7 +1321,7 @@ Function value:
           /* szlazy is the requested block size. Why is it copied to cm_msg? 
           cm_msg(MERROR,"lazy_copy","Write error %i",szlazy); */
           cm_msg(MERROR,"lazy_copy","Write error ");
-          if(status == SS_TAPE_ERROR)
+          if(status == SS_NO_SPACE )
             return status;
           return (FORCE_EXIT); 
         }
@@ -1369,7 +1371,13 @@ Function value:
   if (equal_ustring(lazy.type, "Tape")) {
     blockn=ss_tape_get_blockn(hDev);
   }  
-  yb_any_file_wclose(hDev, dev_type, data_fmt);
+  status = yb_any_file_wclose(hDev, dev_type, data_fmt);
+  if(status!=SS_SUCCESS)
+    {
+      if(status == SS_NO_SPACE )
+	return status;
+      return (FORCE_EXIT); 
+    }
   /* request exit */
   return 0;
 }
@@ -1722,7 +1730,7 @@ Function value:
     cp_time = ss_millitime();
     if ((status = lazy_copy(outffile, inffile)) != 0)
     {
-      if (status == SS_TAPE_ERROR) {
+      if (status == SS_NO_SPACE) {
         /* Consider this case as EOT reached */
         eot_reached = TRUE;
         return status;
@@ -1730,7 +1738,7 @@ Function value:
       else if (status == FORCE_EXIT)
         return status;
       cm_msg(MERROR,"Lazy","copy failed -%s-%s-%i",lazy.path, lazyst.backfile, status);
-      return NOTHING_TODO;
+      return FORCE_EXIT;
     }
   } /* file exists */
   else
@@ -2100,6 +2108,11 @@ usage:
     if ((ss_millitime() - mainlast_time) > 10000)
     {
       status = lazy_main(channel, &lazyinfo[0]);
+      if(status == FORCE_EXIT)
+	{
+	  cm_msg(MERROR,"lazy","Previous error forces task exit");
+	  break;
+	}
       mainlast_time = ss_millitime();
     }      
     ch = 0;

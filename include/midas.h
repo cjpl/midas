@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.104  2002/10/22 03:46:33  pierre
+  add SS_NO_TAPE
+
   Revision 1.103  2002/09/19 17:50:22  pierre
   remove ^m
 
@@ -795,6 +798,7 @@ Convert the coded LAM station to Station number.
 #define SS_END_OF_TAPE              422
 #define SS_END_OF_FILE              423
 #define SS_FILE_EXISTS              424
+#define SS_NO_SPACE                 425
 
 /* Remote Procedure Calls */
 #define RPC_SUCCESS                   1
