@@ -6,6 +6,9 @@
 #  Contents:     Makefile for MIDAS binaries and examples under unix
 #
 #  $Log$
+#  Revision 1.46  2003/12/12 13:14:43  midas
+#  Fixed compiler warning via -Wno-unused-function
+#
 #  Revision 1.45  2003/06/25 18:22:53  pierre
 #  Added pthread support for UNIX version - DBM
 #
@@ -209,7 +212,7 @@ MIDAS_PREF_FLAGS  =
 # Common flags
 #
 CC = cc
-CFLAGS = -g -O2 -Wall -I$(INC_DIR) -I$(DRV_DIR) -L$(LIB_DIR) -DINCLUDE_FTPLIB
+CFLAGS = -g -O2 -Wall -I$(INC_DIR) -I$(DRV_DIR) -L$(LIB_DIR) -DINCLUDE_FTPLIB $(MIDAS_PREF_FLAGS) $(USERFLAGS)
 
 #-----------------------
 # OSF/1 (DEC UNIX)
@@ -220,7 +223,7 @@ endif
 
 ifeq ($(OSTYPE),osf1)
 OS_DIR = osf1
-OSFLAGS = -DOS_OSF1 $(MIDAS_PREF_FLAGS) $(USERFLAGS)
+OSFLAGS = -DOS_OSF1
 FFLAGS = -nofor_main -D 40000000 -T 20000000
 LIBS = -lc -lbsd
 SPECIFIC_OS_PRG = 
@@ -235,7 +238,7 @@ endif
 
 ifeq ($(OSTYPE),ultrix)
 OS_DIR = ultrix
-OSFLAGS = -DOS_ULTRIX -DNO_PTY $(MIDAS_PREF_FLAGS) $(USERFLAGS)
+OSFLAGS = -DOS_ULTRIX -DNO_PTY
 LIBS =
 SPECIFIC_OS_PRG = 
 endif
@@ -245,7 +248,7 @@ endif
 #
 ifeq ($(OSTYPE), FreeBSD)
 OS_DIR = freeBSD
-OSFLAGS = -DOS_FREEBSD $(MIDAS_PREF_FLAGS) $(USERFLAGS)
+OSFLAGS = -DOS_FREEBSD
 LIBS = -lbsd -lcompat
 SPECIFIC_OS_PRG = 
 endif
@@ -259,7 +262,7 @@ endif
 
 ifeq ($(OSTYPE),linux)
 OS_DIR = linux
-OSFLAGS = -DOS_LINUX -fPIC $(MIDAS_PREF_FLAGS) $(USERFLAGS)
+OSFLAGS = -DOS_LINUX -fPIC -Wno-unused-function
 LIBS = -lutil -lpthread
 SPECIFIC_OS_PRG = $(BIN_DIR)/mlxspeaker $(BIN_DIR)/dio
 endif
@@ -270,7 +273,7 @@ endif
 ifeq ($(OSTYPE),solaris)
 CC = gcc
 OS_DIR = solaris
-OSFLAGS = -DOS_SOLARIS $(MIDAS_PREF_FLAGS) $(USERFLAGS)
+OSFLAGS = -DOS_SOLARIS
 LIBS = -lsocket -lnsl
 SPECIFIC_OS_PRG = 
 endif
@@ -427,11 +430,11 @@ $(LIB_DIR)/mfe.o: msystem.h midas.h midasinc.h mrpc.h
 $(LIB_DIR)/fal.o: $(SRC_DIR)/fal.c msystem.h midas.h midasinc.h mrpc.h
 
 $(LIB_DIR)/fal.o: $(SRC_DIR)/fal.c msystem.h midas.h midasinc.h mrpc.h
-	$(CC) -Dextname -c $(CFLAGS) $(OSFLAGS) $(MANA_OPTION) -o $@ $<
+	$(CC) -Dextname -c $(CFLAGS) $(OSFLAGS) -o $@ $<
 $(LIB_DIR)/mana.o: $(SRC_DIR)/mana.c msystem.h midas.h midasinc.h mrpc.h
-	$(CC) -c $(CFLAGS) $(OSFLAGS) $(MANA_OPTION) -o $@ $<
+	$(CC) -c $(CFLAGS) $(OSFLAGS) -o $@ $<
 $(LIB_DIR)/hmana.o: $(SRC_DIR)/mana.c msystem.h midas.h midasinc.h mrpc.h
-	$(CC) -Dextname -DHAVE_HBOOK -c $(CFLAGS) $(OSFLAGS) $(MANA_OPTION) -o $@ $<
+	$(CC) -Dextname -DHAVE_HBOOK -c $(CFLAGS) $(OSFLAGS) -o $@ $<
 ifdef ROOTSYS
 $(LIB_DIR)/rmana.o: $(SRC_DIR)/mana.c msystem.h midas.h midasinc.h mrpc.h
 	$(CXX) -DHAVE_ROOT -c $(CFLAGS) $(OSFLAGS) $(ROOTCFLAGS) -o $@ $<
