@@ -9,6 +9,9 @@
                 for SCS-400 thermo couple I/O
 
   $Log$
+  Revision 1.15  2003/03/24 08:18:25  midas
+  Properly initialize new constants
+
   Revision 1.14  2003/03/24 08:15:13  midas
   Added constants for PI
 
@@ -170,7 +173,10 @@ unsigned char i;
 
 #ifdef CONTROL_4
     for (i=0 ; i<N_CHANNEL ; i++)
+       {
        user_data.c_int[i] = 0.01;
+       user_data.c_prop[i] = 1;
+       }
 #endif
     }
 }
@@ -274,7 +280,7 @@ float p;
 static unsigned long t;
 
   /* once every minute */
-  if (time() > t + 100*60) //##
+  if (time() > t + 100*60)
     {
     t = time();
 
