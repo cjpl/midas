@@ -6,6 +6,9 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
+  Revision 1.28  1999/09/14 09:47:36  midas
+  Fixed '/' and '\' handling with attachments
+
   Revision 1.27  1999/09/14 09:20:18  midas
   Finished reply
 
@@ -1125,7 +1128,7 @@ HNDLE  hDB, hkey;
 
   rsprintf("<td bgcolor=#FFA0A0><a href=\"%s\" target=\"ELog Type\">Type:</a> <select name=\"type\">\n", ref);
   for (i=0 ; i<20 && type_list[i][0] ; i++)
-    if (equal_ustring(type_list[i], "reply"))
+    if (path && equal_ustring(type_list[i], "reply"))
       rsprintf("<option selected value=\"%s\">%s\n", type_list[i], type_list[i]);
     else
       rsprintf("<option value=\"%s\">%s\n", type_list[i], type_list[i]);
@@ -1133,7 +1136,7 @@ HNDLE  hDB, hkey;
 
   rsprintf("<tr><td bgcolor=#A0FFA0><a href=\"%s\" target=\"ELog System\">  System:</a> <select name=\"system\">\n", ref);
   for (i=0 ; i<20 && system_list[i][0] ; i++)
-    if (equal_ustring(system_list[i], system))
+    if (path && equal_ustring(system_list[i], system))
       rsprintf("<option selected value=\"%s\">%s\n", system_list[i], system_list[i]);
     else
       rsprintf("<option value=\"%s\">%s\n", system_list[i], system_list[i]);
@@ -1176,7 +1179,8 @@ int    i, size;
 char   str[256];
 time_t now;
 struct tm *tms;
-HNDLE  hDB, hkey;
+HNDLE  hDB, hkey, hkeyroot;
+KEY    key;
 
   cm_get_experiment_database(&hDB, NULL);
 
@@ -1273,6 +1277,17 @@ HNDLE  hDB, hkey;
   rsprintf("<option value=\"\">\n");
   for (i=0 ; i<20 && type_list[i][0] ; i++)
     rsprintf("<option value=\"%s\">%s\n", type_list[i], type_list[i]);
+  /* add forms as types */
+  db_find_key(hDB, 0, "/Elog/Forms", &hkeyroot);
+  if (hkeyroot)
+    for (i=0 ; ; i++)
+      {
+      db_enum_link(hDB, hkeyroot, i, &hkey);
+      if (!hkey)
+        break;
+      db_get_key(hDB, hkey, &key);
+      rsprintf("<option value=\"%s\">%s\n", key.name, key.name);
+      }
   rsprintf("</select></tr>\n");
 
   rsprintf("<tr><td colspan=2 bgcolor=#A0FFA0>System: ");
@@ -4539,8 +4554,12 @@ HNDLE  hDB;
           *strchr(p, '\"') = 0;
 
         /* strip path from filename */
-        while (strchr(p, DIR_SEPARATOR))
-          p = strchr(p, DIR_SEPARATOR)+1;
+        while (strchr(p, '\\'))
+          p = strchr(p, '\\')+1; /* NT */
+        while (strchr(p, '/'))
+          p = strchr(p, '/')+1;  /* Unix */
+        while (strchr(p, ']'))
+          p = strchr(p, ']')+1;  /* VMS */
 
         /* assemble ELog filename */
         if (p[0])
