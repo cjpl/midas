@@ -6,6 +6,9 @@
   Contents:     Header fiel for MSCB funcions
 
   $Log$
+  Revision 1.11  2002/10/16 15:25:07  midas
+  xxx16 now does 32 bit exchange
+
   Revision 1.10  2002/10/09 11:06:46  midas
   Protocol version 1.1
 
@@ -226,11 +229,11 @@ int EXPRT mscb_read(int fd, unsigned char channel, unsigned int *data);
 int EXPRT mscb_read_conf(int fd, unsigned char channel, unsigned int *data);
 int EXPRT mscb_user(int fd, void *param, int size, void *result, int *rsize);
 
-int EXPRT mscb_write16(char *device, unsigned short addr, unsigned char channel, unsigned short data);
-int EXPRT mscb_write_conf16(char *device, unsigned short addr, unsigned char channel, unsigned short data);
+int EXPRT mscb_write16(char *device, unsigned short addr, unsigned char channel, unsigned int data, int size);
+int EXPRT mscb_write_conf16(char *device, unsigned short addr, unsigned char channel, unsigned int data, int size);
 
-int EXPRT mscb_read16(char *device, unsigned short addr, unsigned char channel, unsigned short *data);
-int EXPRT mscb_read_conf16(char *device, unsigned short addr, unsigned char channel, unsigned short *data);
+int EXPRT mscb_read16(char *device, unsigned short addr, unsigned char channel, unsigned int *data);
+int EXPRT mscb_read_conf16(char *device, unsigned short addr, unsigned char channel, unsigned int *data);
 
 int EXPRT mscb_reset1(char *device);
 
