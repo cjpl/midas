@@ -7,6 +7,9 @@
                 following the MIDAS CAMAC Standard for DirectIO
 
   $Log$
+  Revision 1.5  1999/02/22 19:10:37  pierre
+  - Remove came_xxx
+
   Revision 1.4  1998/11/19 22:31:43  pierre
   correct (*d)-- for the _rq in case of noQ
   Remove Q-stop for _sa and_sn
@@ -733,27 +736,5 @@ INLINE void cam_interrupt_detach(void)
 /*------------------------------------------------------------------*/
 
 INLINE int cam_init_rpc(char *host_name, char *exp_name, char *client_name, char *rpc_server){return 1;}
-INLINE void came_cn(int *ext, const int b, const int c, const int n, const int a) {}
-INLINE void came_ext(const int ext, int *b, int *c, int *n, int *a) {}
-INLINE void cam16ei(const int ext, const int f, WORD *d) {}
-INLINE void cam24ei(const int ext, const int f, DWORD *d) {}
-INLINE void cam16ei_q(const int ext, const int f, WORD *d, int *x, int *q) {}
-INLINE void cam24ei_q(const int ext, const int f, DWORD *d, int *x, int *q) {}
-INLINE void cam16ei_r(const int ext, const int f, WORD **d, const int r) {}
-INLINE void cam24ei_r(const int ext, const int f, DWORD **d, const int r) {}
-INLINE void cam16ei_rq(const int ext, const int f, WORD **d, const int r) {}
-INLINE void cam24ei_rq(const int ext, const int f, DWORD **d, const int r) {}
-INLINE void cam16ei_saq(const int ext, const int f, WORD **d, const int r) {}
-INLINE void cam24ei_saq(const int ext, const int f, DWORD **d, const int r) {}
-INLINE void cam16ei_snq(const int ext, const int f, WORD **d, const int r) {}
-INLINE void cam24ei_snq(const int ext, const int f, DWORD **d, const int r) {}
-INLINE void cam16eo(const int ext, const int f, WORD d) {}
-INLINE void cam24eo(const int ext, const int f, DWORD d) {}
-INLINE void cam16eo_q(const int ext, const int f, WORD d, int *x, int *q) {}
-INLINE void cam24eo_q(const int ext, const int f, DWORD d, int *x, int *q) {}
-INLINE void camec(const int ext, const int f) {}
-INLINE void camec_q(const int ext, const int f, int *x, int *q) {}
-INLINE void camec_sa(const int ext, const int f, const int r) {}
-INLINE void camec_sn(const int ext, const int f, const int r) {}
 
 /*------------------------------------------------------------------*/
