@@ -6,6 +6,9 @@
   Contents:     Header fiel for MSCB funcions
 
   $Log$
+  Revision 1.16  2002/11/28 13:04:36  midas
+  Implemented protocol version 1.2 (echo, read_channels)
+
   Revision 1.15  2002/11/27 15:40:05  midas
   Added version, fixed few bugs
 
@@ -76,7 +79,8 @@
 #define CMD_UPGRADE     0x50
 #define CMD_USER        0x58
 
-#define CMD_TOKEN       0x60
+#define CMD_ECHO        0x61
+#define CMD_TOKEN       0x68
 #define CMD_SET_FLAGS   0x69
 
 #define CMD_ACK         0x78
@@ -87,8 +91,8 @@
 #define CMD_WRITE_CONF  0x90
 #define CMD_FLASH       0x98
 
-#define CMD_READ        0xA1
-#define CMD_READ_CONF   0xA9
+#define CMD_READ        0xA0
+#define CMD_READ_CONF   0xA8
 
 #define CMD_WRITE_BLOCK 0xB5
 #define CMD_READ_BLOCK  0xB9
@@ -209,6 +213,20 @@ typedef struct {
 #define MSCB_MUTEX         5
 #define MSCB_FORMAT_ERROR  6
 
+/*---- Byte and Word swapping big endian <-> little endian ---------*/
+#define WORD_SWAP(x) { unsigned char _tmp;                               \
+                       _tmp= *((unsigned char *)(x));                    \
+                       *((unsigned char *)(x)) = *(((unsigned char *)(x))+1);     \
+                       *(((unsigned char *)(x))+1) = _tmp; }
+
+#define DWORD_SWAP(x) { unsigned char _tmp;                              \
+                       _tmp= *((unsigned char *)(x));                    \
+                       *((unsigned char *)(x)) = *(((unsigned char *)(x))+3);     \
+                       *(((unsigned char *)(x))+3) = _tmp;               \
+                       _tmp= *(((unsigned char *)(x))+1);                \
+                       *(((unsigned char *)(x))+1) = *(((unsigned char *)(x))+2); \
+                       *(((unsigned char *)(x))+2) = _tmp; }
+
 /*---- function declarations ---------------------------------------*/
 
 /* make functions callable from a C++ program */
@@ -230,6 +248,7 @@ int EXPRT mscb_exit(int fd);
 int EXPRT mscb_reset(int fd);
 int EXPRT mscb_reboot(int fd, int adr);
 int EXPRT mscb_ping(int fd, int adr);
+int EXPRT mscb_echo(int fd, int addr, unsigned char d1, unsigned char *d2);
 int EXPRT mscb_info(int fd, int adr, MSCB_INFO *info);
 int EXPRT mscb_info_channel(int fd, int adr, int type, int index, MSCB_INFO_CHN *info);
 int EXPRT mscb_set_addr(int fd, int adr, int node, int group);
@@ -239,6 +258,7 @@ int EXPRT mscb_write_conf(int fd, int adr, unsigned char channel, void *data, in
 int EXPRT mscb_flash(int fd, int adr);
 int EXPRT mscb_upload(int fd, int adr, char *buffer, int size);
 int EXPRT mscb_read(int fd, int adr, unsigned char channel, void *data, int *size);
+int EXPRT mscb_read_channels(int fd, int adr, unsigned char channel1, unsigned char channel2, void *data, int *size);
 int EXPRT mscb_read_conf(int fd, int adr, unsigned char channel, void *data, int *size);
 int EXPRT mscb_user(int fd, int adr, void *param, int size, void *result, int *rsize);
 

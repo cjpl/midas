@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus communication functions
 
   $Log$
+  Revision 1.23  2002/11/28 13:04:36  midas
+  Implemented protocol version 1.2 (echo, read_channels)
+
   Revision 1.22  2002/11/28 10:32:09  midas
   Implemented locking under linux
 
@@ -72,8 +75,8 @@
 
 \********************************************************************/
 
-#define MSCB_LIBRARY_VERSION   "1.0.0"
-#define MSCB_PROTOCOL_VERSION  "1.1"
+#define MSCB_LIBRARY_VERSION   "1.1.0"
+#define MSCB_PROTOCOL_VERSION  "1.2"
 
 #ifdef _MSC_VER           // Windows includes
 
@@ -96,20 +99,6 @@
 #include "rpc.h"
 
 /*------------------------------------------------------------------*/
-
-/* Byte and Word swapping big endian <-> little endian */
-#define WORD_SWAP(x) { unsigned char _tmp;                               \
-                       _tmp= *((unsigned char *)(x));                    \
-                       *((unsigned char *)(x)) = *(((unsigned char *)(x))+1);     \
-                       *(((unsigned char *)(x))+1) = _tmp; }
-
-#define DWORD_SWAP(x) { unsigned char _tmp;                              \
-                       _tmp= *((unsigned char *)(x));                    \
-                       *((unsigned char *)(x)) = *(((unsigned char *)(x))+3);     \
-                       *(((unsigned char *)(x))+3) = _tmp;               \
-                       _tmp= *(((unsigned char *)(x))+1);                \
-                       *(((unsigned char *)(x))+1) = *(((unsigned char *)(x))+2); \
-                       *(((unsigned char *)(x))+2) = _tmp; }
 
 /* file descriptor */
 
@@ -1225,13 +1214,13 @@ unsigned char buf[80];
   i = mscb_in(fd, buf, sizeof(buf), 5000);
   mscb_release(fd);
 
-  if (i<sizeof(MSCB_INFO_CHN)+2)
+  if (i<sizeof(MSCB_INFO_CHN)+3)
     return MSCB_TIMEOUT;
 
   memcpy(info, buf+2, sizeof(MSCB_INFO_CHN));
 
   /* do CRC check */
-  if (crc8((void *)info, sizeof(MSCB_INFO_CHN)) != buf[sizeof(MSCB_INFO_CHN)+2])
+  if (crc8(buf, sizeof(MSCB_INFO_CHN)+2) != buf[sizeof(MSCB_INFO_CHN)+2])
     return MSCB_CRC_ERROR;
 
   return MSCB_SUCCESS;
@@ -1581,7 +1570,8 @@ int mscb_upload(int fd, int adr, char *buffer, int size)
 
 \********************************************************************/
 {
-unsigned char  buf[512], crc, ack[2], image[0x8000], *line, len, type, ofh, ofl, d;
+unsigned char  buf[512], crc, ack[2], image[0x8000], *line;
+unsigned int   len, ofh, ofl, type, d;
 int            i, j, status, page;
 unsigned short ofs;
 
@@ -1601,7 +1591,7 @@ unsigned short ofs;
       sscanf(line+1, "%02x%02x%02x%02x", &len, &ofh, &ofl, &type);
       ofs = (ofh << 8) | ofl;
 
-      for (i=0 ; i<len ; i++)
+      for (i=0 ; i<(int)len ; i++)
         {
         sscanf(line+9+i*2, "%02x", &d);
         image[ofs+i] = d;
@@ -1812,7 +1802,7 @@ unsigned char buf[10], crc;
   /* try ten times */
   for (n=0 ; n<10 ; n++)
     {
-    buf[0] = CMD_READ;
+    buf[0] = CMD_READ+1;
     buf[1] = channel;
     buf[2] = crc8(buf, 2);
     mscb_out(fd, buf, 3, 0);
@@ -1835,6 +1825,90 @@ unsigned char buf[10], crc;
       DWORD_SWAP(data);
 
     *size = i-2;
+
+    mscb_release(fd);
+    return MSCB_SUCCESS;
+    }
+
+  mscb_release(fd);
+
+  if (i<2)
+    return MSCB_TIMEOUT;
+
+  return MSCB_CRC_ERROR;
+}
+
+/*------------------------------------------------------------------*/
+
+int mscb_read_channels(int fd, int adr, unsigned char channel1, unsigned char channel2, void *data, int *size)
+/********************************************************************\
+
+  Routine: mscb_read
+
+  Purpose: Read data from channel on node
+
+  Input:
+    int fd                  File descriptor for connection
+    int adr                 Node address
+    unsigned char channel1  First channel to read
+    unsigned char channel2  Last channel to read
+    int size                Buffer size for data
+
+  Output:
+    void *data              Received data
+    int  *size              Number of received bytes
+
+  Function value:
+    MSCB_SUCCESS            Successful completion
+    MSCB_TIMEOUT            Timeout receiving acknowledge
+    MSCB_CRC_ERROR          CRC error
+    MSCB_INVAL_PARAM        Parameter "size" has invalid value
+    MSCB_MUTEX              Cannot obtain mutex for mscb
+
+\********************************************************************/
+{
+int           i, n, status;
+unsigned char buf[256], crc;
+
+  memset(data, 0, *size);
+  if (rpc_connected())
+    return rpc_call(RPC_MSCB_READ_CHANNELS, fd, adr, channel1, channel2, data, size);
+
+  if (fd < 1 || mscb_fd[fd-1].fd == 0)
+    return MSCB_INVAL_PARAM;
+
+  if (mscb_lock(fd) != MSCB_SUCCESS)
+    return MSCB_MUTEX;
+
+  status = mscb_addr(fd, CMD_PING16, adr, 10);
+  if (status != MSCB_SUCCESS)
+    {
+    mscb_release(fd);
+    return status;
+    }
+
+  /* try ten times */
+  for (n=0 ; n<10 ; n++)
+    {
+    buf[0] = CMD_READ+2;
+    buf[1] = channel1;
+    buf[2] = channel2;
+    buf[3] = crc8(buf, 3);
+    mscb_out(fd, buf, 4, 0);
+
+    /* read data */
+    i = mscb_in(fd, buf, 256, 5000);
+
+    if (i<2)
+      continue;
+
+    crc = crc8(buf, i-1);
+
+    if (buf[0] != CMD_ACK+7 || buf[i-1] != crc)
+      continue;
+
+    memcpy(data, buf+2, i-3);
+    *size = i-3;
 
     mscb_release(fd);
     return MSCB_SUCCESS;
@@ -1899,7 +1973,7 @@ unsigned char buf[10], crc;
   /* try ten times */
   for (n=0 ; n<10 ; n++)
     {
-    buf[0] = CMD_READ_CONF;
+    buf[0] = CMD_READ_CONF+1;
     buf[1] = index;
     buf[2] = crc8(buf, 2);
     mscb_out(fd, buf, 3, 0);
@@ -2019,6 +2093,80 @@ unsigned char buf[80];
     *rsize = n-2;
   for (i=0 ; i<n-2 ; i++)
     ((char *)result)[i] = buf[1+i];
+
+  if (buf[n-1] != crc8(buf, n-1))
+    return MSCB_CRC_ERROR;
+
+  return MSCB_SUCCESS;
+}
+
+/*------------------------------------------------------------------*/
+
+int mscb_echo(int fd, int adr, unsigned char d1, unsigned char *d2)
+/********************************************************************\
+
+  Routine: mscb_echo
+
+  Purpose: Send byte and receive echo, useful for testing
+
+  Input:
+    int  fd                 File descriptor for connection
+    int  adr                Node address
+    unsigned char d1        Byte to send
+
+  Output:
+    unsigned char *d2       Received byte
+
+  Function value:
+    MSCB_SUCCESS            Successful completion
+    MSCB_TIMEOUT            Timeout receiving data
+    MSCB_CRC_ERROR          CRC error
+    MSCB_MUTEX              Cannot obtain mutex for mscb
+    MSCB_FORMAT_ERROR       "size" parameter too large
+
+\********************************************************************/
+{
+int n, status;
+unsigned char buf[80];
+
+  *d2 = 0xFF;
+
+  if (rpc_connected())
+    return rpc_call(RPC_MSCB_ECHO, fd, adr, d1, d2);
+
+  if (fd < 1 || mscb_fd[fd-1].fd == 0)
+    return MSCB_INVAL_PARAM;
+
+  if (mscb_lock(fd) != MSCB_SUCCESS)
+    return MSCB_MUTEX;
+
+  status = mscb_addr(fd, CMD_PING16, adr, 10);
+  if (status != MSCB_SUCCESS)
+    {
+    mscb_release(fd);
+    return status;
+    }
+
+  buf[0] = CMD_ECHO;
+  buf[1] = d1;
+
+  /* add CRC code and send data */
+  buf[2] = crc8(buf, 2);
+  status = mscb_out(fd, buf, 3, 0);
+  if (status != MSCB_SUCCESS)
+    {
+    mscb_release(fd);
+    return status;
+    }
+
+  /* read result */
+  n = mscb_in(fd, buf, sizeof(buf), 5000);
+  mscb_release(fd);
+
+  if (n<0)
+    return MSCB_TIMEOUT;
+
+  *d2 = buf[1];
 
   if (buf[n-1] != crc8(buf, n-1))
     return MSCB_CRC_ERROR;
