@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.21  2001/08/03 06:44:48  midas
+  Changed mail notification author from "name@host" to "name from host"
+
   Revision 1.20  2001/08/02 12:30:00  midas
   Fixed unix bug
 
@@ -2940,7 +2943,7 @@ char   file_name[256], line[1000];
 
 void submit_elog()
 {
-char   str[80], author[256], mail_to[256], mail_from[256],
+char   str[256], str1[256], str2[256], author[256], mail_to[256], mail_from[256],
        mail_text[256], mail_list[256], smtp_host[256], tag[80], *p;
 char   *buffer[MAX_ATTACHMENTS], mail_param[1000];
 char   att_file[MAX_ATTACHMENTS][256];
@@ -3028,7 +3031,18 @@ struct hostent *phe;
       strcpy(mail_to, p);
       sprintf(mail_from, "ELog@%s", host_name);
 
-      sprintf(mail_text, "A new entry has been submitted by %s:\n\n", author);
+      strcpy(str1, author);
+      if (strchr(str1, '@'))
+        {
+        strcpy(str2, strchr(str1, '@')+1);
+        *strchr(str1, '@') = 0;
+        }
+
+      if (strchr(author, '@'))
+        sprintf(mail_text, "A new entry has been submitted by %s from %s:\n\n", str1, str2);
+      else
+        sprintf(mail_text, "A new entry has been submitted by %s:\n\n", author);
+
       sprintf(mail_text+strlen(mail_text), "Logbook  : %s\n", logbook);
       sprintf(mail_text+strlen(mail_text), "Type     : %s\n", getparam("type"));
       sprintf(mail_text+strlen(mail_text), "Category : %s\n", getparam("category"));
