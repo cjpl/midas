@@ -9,6 +9,9 @@
                 for SCS-600 Digital I/O
 
   $Log$
+  Revision 1.5  2002/10/22 15:06:18  midas
+  Removed temporary OE test
+
   Revision 1.4  2002/10/16 15:24:38  midas
   Added units in descriptor
 
@@ -138,6 +141,7 @@ unsigned char d, i;
     SR_CLOCK = 1;
     delay_us(10);
     SR_CLOCK = 0;
+    delay_us(10);
     }
 
   /* second shift register */
@@ -148,6 +152,7 @@ unsigned char d, i;
     SR_CLOCK = 1;
     delay_us(10);
     SR_CLOCK = 0;
+    delay_us(10);
     }
 
   /* strobe for output and next input */
@@ -177,7 +182,6 @@ static bit first = 1;
         (old_in & (1<<i)) == 0)
       user_data.out ^= (1<<i);
     }
-  SR_OE = (user_data.out & 1) > 0;
 
   if (!DEBUG_MODE && time() > last+30)
     {
