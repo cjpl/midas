@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol commands
 
   $Log$
+  Revision 1.24  2003/06/05 14:47:16  midas
+  Added SCS-520
+
   Revision 1.23  2003/03/24 15:00:31  midas
   Implemented 16-bit magic at end of EEPROM data
 
@@ -116,7 +119,7 @@ sbit RS485_ENABLE =      P3^5;
 #define LED_ON 1
 
 /*--------------------------------*/
-#elif defined(SCS_600) || defined(SCS_700)
+#elif defined(SCS_520) || defined(SCS_600) || defined(SCS_700)
 #include <c8051F000.h>
 #define CPU_C8051F000
 #define CPU_CYGNAL

@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol main program
 
   $Log$
+  Revision 1.33  2003/06/05 14:47:25  midas
+  Added SCS-520
+
   Revision 1.32  2003/03/28 07:43:57  midas
   Removed delay_ms(0)
 
@@ -193,7 +196,7 @@ unsigned char i;
   XBR1 = 0x00;
   XBR2 = 0x44;
 
-  P0MDOUT = 0x05;  // P0.0,2: TX,RS485 = Push Pull
+  P0MDOUT = 0x01;  // P0.0: TX = Push Pull
   P1MDOUT = 0x00;  // P1: LPT
   P2MDOUT = 0x00;  // P2: LPT
   P3MDOUT = 0xE0;  // P3.5,6,7: Optocouplers
@@ -202,10 +205,10 @@ unsigned char i;
   XBR1 = 0x00;
   XBR2 = 0x40; // Enable crossbar
 
-  PRT0CF = 0x05;   // P0.0,2: TX,RS485 = Push Pull
+  PRT0CF = 0x01;   // P0.0: TX = Push Pull
   PRT1CF = 0x00;   // P1
   PRT2CF = 0x00;   // P2  Open drain for 5V LCD
-  PRT3CF = 0x00;   // P3
+  PRT3CF = 0x20;   // P3.5: RS485 enable = Push Pull
 #endif
 
   /* Select external quartz oscillator */
