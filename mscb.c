@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus communication functions
 
   $Log$
+  Revision 1.87  2005/03/21 15:26:32  ritt
+  Allow mscb000
+
   Revision 1.86  2005/03/21 13:15:32  ritt
   Added submaster software version
 
@@ -4073,8 +4076,8 @@ int set_mac_address(int fd)
    printf("Hostname (should be \"MSCBxxx\") : MSCB");
    fgets(str, sizeof(str), stdin);
    n = atoi(str);
-   if (n < 1 || n > 999) {
-      printf("Hostname must be in the range MSCB001 to MSCB999\n");
+   if (n < 0 || n > 999) {
+      printf("Hostname must be in the range MSCB000 to MSCB999\n");
       return 0;
    }
    sprintf(cfg.host_name, "MSCB%03d", n);
