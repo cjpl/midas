@@ -5,6 +5,10 @@
    Contents:     Dump event on screen with MIDAS or YBOS data format
  
    $Log$
+   Revision 1.14  2000/10/31 23:08:51  pierre
+   - Fix Duplicate ID/msk/fmt
+   - Fix db_get_value error on "Frontend name" due to Analyzer writing as [256]
+
    Revision 1.13  1999/11/23 21:14:38  pierre
    - Added option -j (online) -w j (replay) for bank list display only
 
@@ -74,16 +78,16 @@ INT    save_dsp = 1, evt_display=0;
 INT    speed=0, dsp_time=0, dsp_fmt=0, dsp_mode=0, file_mode, bl=-1;
 INT    consistency = 0, disp_bank_list = 0;
 BOOL   via_callback;
-char   strtmp[128];
 INT    i, data_fmt, count;
 KEY    key;
 HNDLE  hSubkey;
 INT    event_id, event_msk;
 typedef struct {
-   WORD id;
-   WORD msk;
-   WORD fmt;
-   char Fmt[8];
+    WORD id;
+    WORD msk;
+    WORD fmt;
+    char Fmt[8];
+    char Eqname[256];
 } FMT_ID;
 
 FMT_ID  eq[32];
@@ -98,41 +102,45 @@ DWORD data_format_check(EVENT_HEADER * pevent, INT * i)
   /* check in the active FE list for duplicate event ID */
   ii = 0;
   while (eq[ii].fmt)
+  {
+    jj = ii+1;
+    while (eq[jj].fmt)
     {
-      jj = ii+1;
-      while (eq[jj].fmt)
-       {
-         if ((eq[jj].id == eq[ii].id) && (eq[jj].msk == eq[ii].msk))
-            {
-              printf("PAA Duplicate event ID [%d] for different equipment", eq[jj].id);
-              printf(" dumping event in raw format\n");
-              dupflag = TRUE;
-            }
-          jj++;
-        }
-      ii++;
+      if ((eq[jj].fmt == eq[ii].fmt)
+	  && (eq[jj].id == eq[ii].id)
+	  && (eq[jj].msk == eq[ii].msk)
+	  && eq[ii].id != 0)
+      {
+	printf("Duplicate eventID[%d] between Eq:%s & %s"
+	       , eq[jj].id, eq[jj].Eqname, eq[ii].Eqname);
+	printf("Dumping event in raw format\n");
+	dupflag = TRUE;
+      }
+      jj++;
     }
+    ii++;
+  }
   if (data_fmt != 0)
-    {
-      *i = 0;
-      strcpy(eq[*i].Fmt, "GIVEN");
-      return data_fmt;
-    }
+  {
+    *i = 0;
+    strcpy(eq[*i].Fmt, "GIVEN");
+    return data_fmt;
+  }
   else
+  {
+    *i = 0;
+    if (dupflag)
+      strcpy(eq[*i].Fmt, "DUPLICATE");
+    else
     {
-      *i = 0;
-      if (dupflag)
-        strcpy(eq[*i].Fmt, "DUPLICATE");
-      else
-        {
-          do
-            {
-              if (pevent->event_id == eq[*i].id)
-                return eq[*i].fmt;
-              (*i)++;
-            } while (eq[*i].fmt);
-        }
+      do
+      {
+	if (pevent->event_id == eq[*i].id)
+	  return eq[*i].fmt;
+	(*i)++;
+      } while (eq[*i].fmt);
     }
+  }
   return 0;
 }
 
@@ -773,7 +781,7 @@ int main(unsigned int argc,char **argv)
   /* check if dir exists */
   if (db_find_key(hDB, 0, "/equipment", &hKey) == DB_SUCCESS)
   {
-    char strtmp[128], equclient[32];
+    char strtmp[256], equclient[32];
     INT  l = 0;
     for (i=0 ; ; i++)
     {
@@ -781,6 +789,7 @@ int main(unsigned int argc,char **argv)
       if (!hSubkey)
 	break;
       db_get_key(hDB, hSubkey, &key);
+      sprintf(eq[l].Eqname, key.name);
       /* check if client running this equipment is present */
       /* extract client name from equipment */
       size = sizeof(strtmp);
@@ -793,7 +802,6 @@ int main(unsigned int argc,char **argv)
 	 if (status = cm_exist(equclient,FALSE) != CM_SUCCESS)
 	 continue;
       */
-      
       size = sizeof(WORD);
       sprintf(strtmp,"/equipment/%s/common/event ID",key.name);
       db_get_value(hDB, 0, strtmp, &(eq[l]).id, &size, TID_WORD);
