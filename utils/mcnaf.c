@@ -6,6 +6,9 @@
   Contents:     CAMAC utility
   
   $Log$
+  Revision 1.9  1999/12/08 00:04:48  pierre
+  - Fix mcstd _r, _sa functions
+
   Revision 1.8  1998/11/23 16:17:37  pierre
   Fix bug: double CAMAC call since [P] implementation (visible in camacrpc)
   CVS:-----------------------------------------------------------------------
@@ -162,274 +165,281 @@ void mcstd_func(CAMAC *PP)
   DWORD *pdd24;
   DWORD lam;
   CAMAC *p;
-  pdd16 = &dd16[0];
-  pdd24 = &dd24[0];
-
-
+  
   /* Load default CAMAC */
   // PP = &Prompt[1];
   while(1)
-    {
-      make_display_string(MCSTD, PP, paddr);
-      /* prompt */
-      printf("MCStd> [%s] :",paddr);
-      ss_gets(pstr,128);
-      
-      /* decode line */    
-      status = decode_line(PP, pstr);
-      p = PP;
-      if (status == LOOP)
-	      status = pstatus;
-      if (status != SKIP & status != HELP) pstatus = status;
-      i = 0;
-      switch(status)
-   	{
-	  /* system */
-	case CAM_LAM_ENABLE:
-	  cam_lam_enable(p->c, p->n);
-	  printf("cam_lam_enable:C%i-N%i\n",p->c, p->n);
-	  break;
-	case CAM_LAM_DISABLE:
-	  cam_lam_disable(p->c, p->n);
-	  printf("cam_lam_disable:C%i-N%i\n",p->c, p->n);
-	  break;
-	case CAM_LAM_READ:
-	  cam_lam_read(p->c, &lam);
-	  printf("cam_lam_read:C%i-> 0x%x\n",p->c, lam);
-	  break;
-	case CAM_INHIBIT_SET:
-	  cam_inhibit_set(p->c);
-	  printf("cam_inhibit_set:C%i\n",p->c);
-	  break;
-	case CAM_INHIBIT_CLEAR:
-	  cam_inhibit_clear(p->c);
-	  printf("cam_inhibit_clear:C%i\n",p->c);
-	  break;
-	case CAM_CRATE_CLEAR:
-	  cam_crate_clear(p->c);
-	  printf("cam_crate_clear:C%i\n",p->c);
-	  break;
-	case CAM_CRATE_ZINIT:
-	  cam_crate_zinit(p->c);
-	  printf("cam_crate_zinit:C%i\n",p->c);
-	  break;
-	  /* command */
-	case CAMC:
-	  do 
-	    {
-	      camc(p->c, p->n, p->a, p->f);
-	      printf("camc:[R%i]-C%i-N%i-A%i-F%i\n", i++, p->c, p->n, p->a, p->f);
-	    } while (i<p->r);
-	  break;
-	case CAMC_Q:
-	  do 
-	    {
-	      camc_q(p->c, p->n, p->a, p->f, &p->q);
-	      printf("camc_q:[R%i]-C%i-N%i-A%i-F%i -Q:%i\n", i++, p->c, p->n, p->a, p->f, p->q);
-	    } while (i<p->r);
-	  break;
-	case CAMC_SA:
-	  camc(p->c, p->n, p->a, p->f);
-	  printf("camc_sa:C%i-N%i-A%i-F%i\n", p->c, p->n, p->a, p->f);
-	  break;
-	case CAMC_SN:
-	  camc(p->c, p->n, p->a, p->f);
-	  printf("camc_sn:C%i-N%i-A%i-F%i\n", p->c, p->n, p->a, p->f);
-	  break;
-	  /* output */
-	case CAM16O:
-	  do 
-	    {
-	      cam16o(p->c, p->n, p->a, p->f, p->d16);
-	      printf("cam16o:[R%i]-C%i-N%i-A%i-F%i <- 0x%x\n", i++, p->c, p->n, p->a, p->f, p->d16);
-	    } while (i<p->r);
-	  break;
-	case CAM24O:
-	  do 
-	    {
-	      cam24o(p->c, p->n, p->a, p->f, p->d24);
-	      printf("cam24o:[R%i]-C%i-N%i-A%i-F%i <- 0x%x\n", i++, p->c, p->n, p->a, p->f, p->d24);
-	    } while (i<p->r);
-	  break;
-	case CAM16O_Q:
-	  do 
-	    {
-	      cam16o_q(p->c, p->n, p->a, p->f, p->d16, &p->x, &p->q);
-	      printf("cam16o_q:[R%i]-C%i-N%i-A%i-F%i <- 0x%x X:%i-Q:%i\n"
-		     ,i++ , p->c, p->n, p->a, p->f, p->d16, p->x, p->q);
-	    } while (i<p->r);
-	  break;
-	case CAM24O_Q:
-	  do 
-	    {
-	      cam24o_q(p->c, p->n, p->a, p->f, p->d24, &p->x, &p->q);
-	      printf("cam24o_q:[R%i]-C%i-N%i-A%i-F%i <- 0x%x X:%i-Q:%i\n"
-		     ,i++ , p->c, p->n, p->a, p->f, p->d24, p->x, p->q);
-	    } while (i<p->r);
-	  break;
-	case CAM16O_R:
-	  cam16o_r(p->c, p->n, p->a, p->f, pdd16, p->r);
-	  printf("cam16o_r:C%i-N%i-A%i-F%i <- 0x%x\n", p->c, p->n, p->a, p->f, p->d16);
-	  break;
-	case CAM24O_R:
-	  cam24o_r(p->c, p->n, p->a, p->f, pdd24, p->r);
-	  printf("cam24o_r:C%i-N%i-A%i-F%i <- 0x%x\n", p->c, p->n, p->a, p->f, p->d24);
-	  break;
-	  /* inputs */
-	case CAM16I:
-	  do 
-	    {
-	      cam16i(p->c, p->n, p->a, p->f, &p->d16);
-	      printf("cam16i:[R%i]-C%i-N%i-A%i-F%i-> 0x%x\n",i++ ,p->c, p->n, p->a, p->f,p->d16);
-	    } while (i<p->r);
-	  break;
-	case CAM24I:
-	  do 
-	    {
-	      cam24i(p->c, p->n, p->a, p->f, &p->d24);
-	      printf("cam24i:[R%i]-C%i-N%i-A%i-F%i-> 0x%x\n",i++, p->c, p->n, p->a, p->f,p->d24);
-	    } while (i<p->r);
-	  break;
-	case CAM16I_Q:
-	  do 
-	    {
-	      cam16i_q(p->c, p->n, p->a, p->f, &p->d16, &p->x, &p->q);
-	      printf("cam16i_q:[R%i]-C%i-N%i-A%i-F%i-> 0x%x X:%i-Q:%i\n"
-		     ,i++ ,p->c, p->n, p->a, p->f,p->d16, p->x, p->q);
-	    } while (i<p->r);
-	  break;
-	case CAM24I_Q:
-	  do 
-	    {
-	      cam24i_q(p->c, p->n, p->a, p->f, &p->d24, &p->x, &p->q);
-	      printf("cam24i_q:[R%i]-C%i-N%i-A%i-F%i-> 0x%x X:%i-Q:%i\n"
-		     ,i++ ,p->c, p->n, p->a, p->f,p->d24, p->x, p->q);
-	    } while (i<p->r);
-	  break;
-	case CAM16I_R:
-	  cam16i_r(p->c, p->n, p->a, p->f, &pdd16, p->r);
-	  for (i=0;i<p->r;i++)
-	    printf("cam16i_r:[R%i]-C%i-N%i-A%i-F%i-> 0x%x\n",i, p->c, p->n, p->a, p->f,dd16[i]);
-	  break;
-	case CAM24I_R:
-	  cam24i_r(p->c, p->n, p->a, p->f, &pdd24, p->r);
-	  for (i=0;i<p->r;i++)
-	    printf("cam24i_rq:[R%i]-C%i-N%i-A%i-F%i-> 0x%x\n",i, p->c, p->n, p->a, p->f,dd24[i]);
-	  break;
-	case CAM16I_RQ:
-	  cam16i_rq(p->c, p->n, p->a, p->f, &pdd16, p->r);
-	  for (i=0;i<p->r;i++)
-	    printf("cam16i_rq:[R%i]-C%i-N%i-A%i-F%i-> 0x%x\n",i, p->c, p->n, p->a, p->f,dd16[i]);
-	  break;
-	case CAM24I_RQ:
-	  cam24i_rq(p->c, p->n, p->a, p->f, &pdd24, p->r);
-	  for (i=0;i<p->r;i++)
-	    printf("cam24i_rq:[R%i]-C%i-N%i-A%i-F%i-> 0x%x\n",i, p->c, p->n, p->a, p->f,dd24[i]);
-	  break;
-	case CAM16I_SA:
-	  cam16i_sa(p->c, p->n, p->a, p->f, &pdd16, p->r);
-	  for (i=0;i<p->r;i++)
-	    printf("cam16i_sa:[R%i]-C%i-N%i-A%i-F%i-> 0x%x\n",i, p->c, p->n, i, p->f,dd16[i]);
-	  break;
-	case CAM24I_SA:
-	  cam24i_sa(p->c, p->n, p->a, p->f, &pdd24, p->r);
-	  for (i=0;i<p->r;i++)
-	    printf("cam24i_sa:[R%i]-C%i-N%i-A%i-F%i-> 0x%x\n",i, p->c, p->n, i, p->f,dd24[i]);
-	  break;
-	case CAM16I_SN:
-	  cam16i_sa(p->c, p->n, p->a, p->f, &pdd16, p->r);
-	  for (i=0;i<p->r;i++)
-	    printf("cam16i_sn:[R%i]-C%i-N%i-A%i-F%i-> 0x%x\n",i, p->c, i, p->a, p->f,dd16[i]);
-	  break;
-	case CAM24I_SN:
-	  cam24i_sn(p->c, p->n, p->a, p->f, &pdd24, p->r);
-	  for (i=0;i<p->r;i++)
-	    printf("cam24i_sn:[R%i]-C%i-N%i-A%i-F%i-> 0x%x\n",i, p->c, i, p->a, p->f,dd24[i]);
-	  break;
-	case QUIT:
-      p->r = 1;
-	  return;
-	case HELP:
-	  help_page(MCSTD);
-    break;
-  case SKIP:
-	  break;
-  default:
-    status = SKIP;
-    break;
+	{
+		make_display_string(MCSTD, PP, paddr);
+		/* prompt */
+		printf("MCStd> [%s] :",paddr);
+		ss_gets(pstr,128);
+		
+		/* decode line */    
+		status = decode_line(PP, pstr);
+		p = PP;
+		if (status == LOOP)
+				status = pstatus;
+		if (status != SKIP & status != HELP) pstatus = status;
+		i = 0;
+		pdd16 = dd16;
+		pdd24 = dd24;
+		switch(status)
+		{
+			  /* system */
+	  case CAM_LAM_ENABLE:
+			  cam_lam_enable(p->c, p->n);
+			  printf("cam_lam_enable:C%i-N%i\n",p->c, p->n);
+			  break;
+	  case CAM_LAM_DISABLE:
+			  cam_lam_disable(p->c, p->n);
+			  printf("cam_lam_disable:C%i-N%i\n",p->c, p->n);
+				break;
+		case CAM_LAM_READ:
+				cam_lam_read(p->c, &lam);
+				printf("cam_lam_read:C%i-> 0x%x\n",p->c, lam);
+				break;
+		case CAM_INHIBIT_SET:
+				cam_inhibit_set(p->c);
+				printf("cam_inhibit_set:C%i\n",p->c);
+				break;
+		case CAM_INHIBIT_CLEAR:
+				cam_inhibit_clear(p->c);
+				printf("cam_inhibit_clear:C%i\n",p->c);
+				break;
+		case CAM_CRATE_CLEAR:
+				cam_crate_clear(p->c);
+				printf("cam_crate_clear:C%i\n",p->c);
+				break;
+		case CAM_CRATE_ZINIT:
+				cam_crate_zinit(p->c);
+				printf("cam_crate_zinit:C%i\n",p->c);
+				break;
+				/* command */
+		case CAMC:
+				do 
+				{
+						camc(p->c, p->n, p->a, p->f);
+						printf("camc:[R%i]-C%i-N%i-A%i-F%i\n", ++i, p->c, p->n, p->a, p->f);
+				} while (i<p->r);
+				break;
+		case CAMC_Q:
+				do 
+				{
+						camc_q(p->c, p->n, p->a, p->f, &p->q);
+						printf("camc_q:[R%i]-C%i-N%i-A%i-F%i -Q:%i\n", ++i, p->c, p->n, p->a, p->f, p->q);
+				} while (i<p->r);
+				break;
+		case CAMC_SA:
+				camc(p->c, p->n, p->a, p->f);
+				printf("camc_sa:C%i-N%i-A%i-F%i\n", p->c, p->n, p->a, p->f);
+				break;
+		case CAMC_SN:
+				camc(p->c, p->n, p->a, p->f);
+				printf("camc_sn:C%i-N%i-A%i-F%i\n", p->c, p->n, p->a, p->f);
+				break;
+				/* output */
+		case CAM16O:
+				do 
+				{
+						cam16o(p->c, p->n, p->a, p->f, p->d16);
+						printf("cam16o:[R%i]-C%i-N%i-A%i-F%i <- 0x%x\n", ++i, p->c, p->n, p->a, p->f, p->d16);
+				} while (i<p->r);
+				break;
+		case CAM24O:
+				do 
+				{
+						cam24o(p->c, p->n, p->a, p->f, p->d24);
+						printf("cam24o:[R%i]-C%i-N%i-A%i-F%i <- 0x%x\n", ++i, p->c, p->n, p->a, p->f, p->d24);
+				} while (i<p->r);
+				break;
+		case CAM16O_Q:
+				do 
+				{
+						cam16o_q(p->c, p->n, p->a, p->f, p->d16, &p->x, &p->q);
+						printf("cam16o_q:[R%i]-C%i-N%i-A%i-F%i <- 0x%x X:%i-Q:%i\n"
+													,++i , p->c, p->n, p->a, p->f, p->d16, p->x, p->q);
+				} while (i<p->r);
+				break;
+		case CAM24O_Q:
+				do 
+				{
+						cam24o_q(p->c, p->n, p->a, p->f, p->d24, &p->x, &p->q);
+						printf("cam24o_q:[R%i]-C%i-N%i-A%i-F%i <- 0x%x X:%i-Q:%i\n"
+													,++i , p->c, p->n, p->a, p->f, p->d24, p->x, p->q);
+				} while (i<p->r);
+				break;
+		case CAM16O_R:
+				cam16o_r(p->c, p->n, p->a, p->f, pdd16, p->r);
+				printf("cam16o_r:C%i-N%i-A%i-F%i <- 0x%x\n", p->c, p->n, p->a, p->f, p->d16);
+				break;
+		case CAM24O_R:
+				cam24o_r(p->c, p->n, p->a, p->f, pdd24, p->r);
+				printf("cam24o_r:C%i-N%i-A%i-F%i <- 0x%x\n", p->c, p->n, p->a, p->f, p->d24);
+				break;
+				/* inputs */
+		case CAM16I:
+				do 
+				{
+						cam16i(p->c, p->n, p->a, p->f, &p->d16);
+						printf("cam16i:[R%i]-C%i-N%i-A%i-F%i-> 0x%4.4x\n",++i ,p->c, p->n, p->a, p->f,p->d16);
+				} while (i<p->r);
+				break;
+		case CAM24I:
+				do 
+				{
+						cam24i(p->c, p->n, p->a, p->f, &p->d24);
+						printf("cam24i:[R%i]-C%i-N%i-A%i-F%i-> 0x%6.6x\n",++i, p->c, p->n, p->a, p->f,p->d24);
+				} while (i<p->r);
+				break;
+		case CAM16I_Q:
+				do 
+				{
+						cam16i_q(p->c, p->n, p->a, p->f, &p->d16, &p->x, &p->q);
+						printf("cam16i_q:[R%i]-C%i-N%i-A%i-F%i-> 0x%4.4x X:%i-Q:%i\n"
+													,++i ,p->c, p->n, p->a, p->f,p->d16, p->x, p->q);
+				} while (i<p->r);
+				break;
+		case CAM24I_Q:
+				do 
+				{
+						cam24i_q(p->c, p->n, p->a, p->f, &p->d24, &p->x, &p->q);
+						printf("cam24i_q:[R%i]-C%i-N%i-A%i-F%i-> 0x%6.6x X:%i-Q:%i\n"
+													,++i ,p->c, p->n, p->a, p->f,p->d24, p->x, p->q);
+				} while (i<p->r);
+				break;
+		case CAM16I_R:
+				memset(pdd16, 0, sizeof(dd16));
+				cam16i_r(p->c, p->n, p->a, p->f, &pdd16, p->r);
+				for (i=0;i<p->r;i++)
+						printf("cam16i_r:[R%i]-C%i-N%i-A%i-F%i-> 0x%4.4x\n",i+1, p->c, p->n, p->a, p->f,dd16[i]);
+				break;
+		case CAM24I_R:
+				memset(pdd24, 0, sizeof(dd24));
+				cam24i_r(p->c, p->n, p->a, p->f, &pdd24, p->r);
+				for (i=0;i<p->r;i++)
+						printf("cam24i_r:[R%i]-C%i-N%i-A%i-F%i-> 0x%6.6x\n",i+1, p->c, p->n, p->a, p->f,dd24[i]);
+				break;
+		case CAM16I_RQ:
+				memset(pdd16, 0, sizeof(dd16));
+				cam16i_rq(p->c, p->n, p->a, p->f, &pdd16, p->r);
+				for (i=0;i<p->r;i++)
+						printf("cam16i_rq:[R%i]-C%i-N%i-A%i-F%i-> 0x%4.4x\n",i+1, p->c, p->n, p->a, p->f,dd16[i]);
+				break;
+		case CAM24I_RQ:
+				memset(pdd24, 0, sizeof(dd24));
+				cam24i_rq(p->c, p->n, p->a, p->f, &pdd24, p->r);
+				for (i=0;i<p->r;i++)
+						printf("cam24i_rq:[R%i]-C%i-N%i-A%i-F%i-> 0x%6.6x\n",i+1, p->c, p->n, p->a, p->f,dd24[i]);
+				break;
+		case CAM16I_SA:
+				memset(pdd16, 0, sizeof(dd16));
+				cam16i_sa(p->c, p->n, p->a, p->f, &pdd16, p->r);
+				for (i=0;i<p->r;i++)
+						printf("cam16i_sa:[R%i]-C%i-N%i-A%i-F%i-> 0x%4.4x\n",i+1, p->c, p->n, p->a+i, p->f,dd16[i]);
+				break;
+		case CAM24I_SA:
+				memset(pdd24, 0, sizeof(dd24));
+				cam24i_sa(p->c, p->n, p->a, p->f, &pdd24, p->r);
+				for (i=0;i<p->r;i++)
+						printf("cam24i_sa:[R%i]-C%i-N%i-A%i-F%i-> 0x%6.6x\n",i+1, p->c, p->n, p->a+i, p->f,dd24[i]);
+				break;
+		case CAM16I_SN:
+				memset(pdd16, 0, sizeof(dd16));
+				cam16i_sa(p->c, p->n, p->a, p->f, &pdd16, p->r);
+				for (i=0;i<p->r;i++)
+						printf("cam16i_sn:[R%i]-C%i-N%i-A%i-F%i-> 0x%x\n",i+1, p->c, p->n+i, p->a, p->f,dd16[i]);
+				break;
+		case CAM24I_SN:
+				memset(pdd24, 0, sizeof(dd24));
+				cam24i_sn(p->c, p->n, p->a, p->f, &pdd24, p->r);
+				for (i=0;i<p->r;i++)
+						printf("cam24i_sn:[R%i]-C%i-N%i-A%i-F%i-> 0x%x\n",i+1, p->c, p->n+i, p->a, p->f,dd24[i]);
+				break;
+		case QUIT:
+				p->r = 1;
+				return;
+		case HELP:
+				help_page(MCSTD);
+				break;
+		case SKIP:
+				break;
+		default:
+				status = SKIP;
+				break;
+		}
   }
-}
 }
 
 /*--------------------------------------------------------------------*/
 void make_display_string(int from, CAMAC *p, char * saddr)
 {
   if (from == MAIN)
-    {
-  if (p->m == D24)
-    sprintf(saddr,"B%01dC%01dN%02dA%02dF%02d [%d/0x%06x Q%01dX%01d] R%dW%dM%2d"
-	    ,p->b,p->c,p->n,p->a,p->f,p->d24,p->d24,p->q,p->x,p->r,p->w,p->m);
+  {
+    if (p->m == D24)
+      sprintf(saddr,"B%01dC%01dN%02dA%02dF%02d [%d/0x%06x Q%01dX%01d] R%dW%dM%2d"
+	      ,p->b,p->c,p->n,p->a,p->f,p->d24,p->d24,p->q,p->x,p->r,p->w,p->m);
+    else
+      sprintf(saddr,"B%01dC%01dN%02dA%02dF%02d [%d/0x%04x Q%01dX%01d] R%dW%dM%2d"
+	      ,p->b,p->c,p->n,p->a,p->f,p->d16,p->d16,p->q,p->x,p->r,p->w,p->m);
+  }
   else
-    sprintf(saddr,"B%01dC%01dN%02dA%02dF%02d [%d/0x%04x Q%01dX%01d] R%dW%dM%2d"
-	    ,p->b,p->c,p->n,p->a,p->f,p->d16,p->d16,p->q,p->x,p->r,p->w,p->m);
-    }
-  else
-    {
+  {
     sprintf(saddr,"B%01dC%01dN%02dA%02dF%02d [%d/0x%06x] R%d"
 	    ,p->b,p->c,p->n,p->a,p->f,p->d24,p->d24,p->r);
-    }
+  }
 }
 
 /*--------------------------------------------------------------------*/
 INT  read_job_file(FILE * pF, INT action, void ** job, char * name)
+{
+  DWORD n;
+  char  line[128];
+  CAMAC * pjob;
+  
+  if (action == CHECK)
   {
-    DWORD n;
-    char  line[128];
-    CAMAC * pjob;
-
-    if (action == CHECK)
-      {
-        if (*name == 0)
-          sprintf(name,"%s",job_name);
-        pF = fopen(name, "r");
-        if (pF)
-          {
-            fclose (pF);
-            return JOB;
-          }
-        printf("CNAF-I- File not found :%s\n",name);
-        return SKIP;
-      }
-    else
-      {
-        pF = fopen(name, "r");
-        if (pF)
-          {
-           n = 0;
-		   /* count the total number of line */
-            while (fgets(line, 128, pF))
-              n++;
-			/* allocate memory for full job */
-            *job = malloc ((n+1)*sizeof(CAMAC));
-            pjob = *job;
-			/* preset the full job with 0 */
-            memset ((char *)pjob, 0, (n+1)*sizeof(CAMAC));
-			/* preset the first entry with the predefined CAMAC access */
-            memcpy((char *) pjob, (char *)Prompt, sizeof(CAMAC));
-            rewind (pF);
-            while (fgets(line, 128, pF))
-	      {
-		if (pjob->m == 0)
-		  /* load previous command before overwriting */
-		  memcpy((char *)pjob, (char *) (pjob-1), sizeof(CAMAC));
-		decode_line(pjob++, line);
-	      }
-            fclose (pF);
-            return JOB;
-          }
-      }
-      return SKIP;
+    if (*name == 0)
+      sprintf(name,"%s",job_name);
+    pF = fopen(name, "r");
+    if (pF)
+    {
+      fclose (pF);
+      return JOB;
+    }
+    printf("CNAF-I- File not found :%s\n",name);
+    return SKIP;
   }
+  else
+  {
+    pF = fopen(name, "r");
+    if (pF)
+    {
+      n = 0;
+      /* count the total number of line */
+      while (fgets(line, 128, pF))
+	n++;
+      /* allocate memory for full job */
+      *job = malloc ((n+1)*sizeof(CAMAC));
+      pjob = *job;
+      /* preset the full job with 0 */
+      memset ((char *)pjob, 0, (n+1)*sizeof(CAMAC));
+      /* preset the first entry with the predefined CAMAC access */
+      memcpy((char *) pjob, (char *)Prompt, sizeof(CAMAC));
+      rewind (pF);
+      while (fgets(line, 128, pF))
+      {
+	if (pjob->m == 0)
+	  /* load previous command before overwriting */
+	  memcpy((char *)pjob, (char *) (pjob-1), sizeof(CAMAC));
+	decode_line(pjob++, line);
+      }
+      fclose (pF);
+      return JOB;
+    }
+  }
+  return SKIP;
+}
 
 /*--------------------------------------------------------------------*/
 
@@ -441,105 +451,105 @@ void cnafsub()
   
   /* Loop return label */
   if (jobflag)
-    {
-      jobflag = FALSE;
-    }
+  {
+    jobflag = FALSE;
+  }
   
   /* Load default CAMAC */
   P = Prompt;
   while(1)
+  {
+    make_display_string(MAIN, P, addr);
+    /* prompt */
+    printf("mCNAF> [%s] :",addr);
+    ss_gets(str,128);
+    
+    /* decode line */    
+    status = decode_line(P, str);
+    if (status == QUIT)
+      return;
+    else if (status == MCSTD)
     {
-      make_display_string(MAIN, P, addr);
-      /* prompt */
-      printf("mCNAF> [%s] :",addr);
-      ss_gets(str,128);
-      
-      /* decode line */    
+      mcstd_func(P);
       status = decode_line(P, str);
-      if (status == QUIT)
-	return;
-      else if (status == MCSTD)
-	{
-	  mcstd_func(P);
-	  status = decode_line(P, str);
-	}
-      else if (status == HELP)
-	help_page(MAIN);
-      else if (status == JOB)
-	{
-	  printf("\nmCNAF> Job file name [%s]:",job_name);
-	  ss_gets (line,128);
-	  status = read_job_file(pF, CHECK, (void **) &job, line);
-	  if (status == JOB)
-	    {
-	      sprintf(job_name,"%s",line);
-	      status=read_job_file(pF, READ, (void **) &job, job_name);
-	    }
-	}
-      if (status == LOOP || status == JOB)
-	{
-	  if (status == LOOP)
-	    p = P;
-	  if (status == JOB)
-	    p = job;
-	  while (p->m)
-	    {
-      for (j=0;j<p->r;j++)
-		  {
-		    if (p->n == 28 || p->n == 30)
-		      cc_services(p);
-		    else
-		      if (p->m == 24) /* Actual 24 bits CAMAC operation */
-		        if (p->f<16)
-      			  cam24i_q(p->c, p->n, p->a, p->f, &p->d24, &p->x, &p->q);
-		        else
-			        cam24o_q(p->c, p->n, p->a, p->f, p->d24, &p->x, &p->q);
-		      else /* Actual 16 bits CAMAC operation */
-		        if (p->f<16)
-		      	  cam16i_q(p->c, p->n, p->a, p->f, &p->d16, &p->x, &p->q);
-		        else
-			        cam16o_q(p->c, p->n, p->a, p->f, p->d16, &p->x, &p->q);
-		      make_display_string(MAIN, p, addr);
-
-          /* Result display */
-		    if (p->r > 1)
-		      {
-		        /* repeat mode */
-		        if (status == JOB)
-			      {
-			        printf("\nmCNAF> [%s]",addr);
-			        if (p->w != 0)
-			          ss_sleep(p->w);
-			      }  
-            else
-			      {
-			        printf("mCNAF> [%s] <-%03i\n",addr,j+1);
-			        if (p->w != 0)
-			          ss_sleep(p->w);
-			        if (j > p->r-1)
-			          break;
-			      }
-		    }
-		  else
-		    {
-		      /* single command */
-		      if (status == JOB)
-			    {
-			      printf("mCNAF> [%s]\n",addr);
-			      if (p->w != 0)
-			        ss_sleep(p->w);
-			    }
-		    }
-		}
-    p++; 
-	    };
-	  if (status == JOB)
-	    {
-	      free (job);
-	      printf("\n");
-	    }
-	}
     }
+    else if (status == HELP)
+      help_page(MAIN);
+    else if (status == JOB)
+    {
+      printf("\nmCNAF> Job file name [%s]:",job_name);
+      ss_gets (line,128);
+      status = read_job_file(pF, CHECK, (void **) &job, line);
+      if (status == JOB)
+      {
+	sprintf(job_name,"%s",line);
+	status=read_job_file(pF, READ, (void **) &job, job_name);
+      }
+    }
+    if (status == LOOP || status == JOB)
+    {
+      if (status == LOOP)
+	p = P;
+      if (status == JOB)
+	p = job;
+      while (p->m)
+      {
+	for (j=0;j<p->r;j++)
+	{
+	  if (p->n == 28 || p->n == 30)
+	    cc_services(p);
+	  else
+	    if (p->m == 24) /* Actual 24 bits CAMAC operation */
+	      if (p->f<16)
+		cam24i_q(p->c, p->n, p->a, p->f, &p->d24, &p->x, &p->q);
+	      else
+		cam24o_q(p->c, p->n, p->a, p->f, p->d24, &p->x, &p->q);
+	    else /* Actual 16 bits CAMAC operation */
+	      if (p->f<16)
+		cam16i_q(p->c, p->n, p->a, p->f, &p->d16, &p->x, &p->q);
+	      else
+		cam16o_q(p->c, p->n, p->a, p->f, p->d16, &p->x, &p->q);
+	  make_display_string(MAIN, p, addr);
+	  
+          /* Result display */
+	  if (p->r > 1)
+	  {
+	    /* repeat mode */
+	    if (status == JOB)
+	    {
+	      printf("\nmCNAF> [%s]",addr);
+	      if (p->w != 0)
+		ss_sleep(p->w);
+	    }  
+            else
+	    {
+	      printf("mCNAF> [%s] <-%03i\n",addr,j+1);
+	      if (p->w != 0)
+		ss_sleep(p->w);
+	      if (j > p->r-1)
+		break;
+	    }
+	  }
+	  else
+	  {
+	    /* single command */
+	    if (status == JOB)
+	    {
+	      printf("mCNAF> [%s]\n",addr);
+	      if (p->w != 0)
+		ss_sleep(p->w);
+	    }
+	  }
+	}
+	p++; 
+      };
+      if (status == JOB)
+      {
+	free (job);
+	printf("\n");
+      }
+    }
+  }
 }
 
 /*--------------------------------------------------------------------*/
@@ -558,36 +568,36 @@ INT decode_line (CAMAC *P, char * ss)
   /* convert to uppercase */
   c = ss;
   while (*c)
-    {
-      *c = toupper(*c);
-      c++;
-    }
+  {
+    *c = toupper(*c);
+    c++;
+  }
   
   while (*s)
+  {
+    if (*s == 'G')
     {
-      if (*s == 'G')
-	    {
-	      while (*s)
-	        *p++ = *s++;
-	      break;
-	    }
-      if ((*s == 'B') || (*s == 'C') ||
-	  (*s == 'N') || (*s == 'A') ||
-	  (*s == 'F') || (*s == 'C') ||
-	  (*s == 'R') || (*s == 'W') || 
-	  (*s == 'G') || (*s == 'H') ||
-	  (*s == 'E') || (*s == 'Q'))
-	*p++ = ' ';
-      else if ((*s == 'X') || (*s == 'D') || (*s == 'O'))
-	    {
-	      *p++ = ' ';
-	      *p++ = *s++;
-	      while (*s)
-	        *p++ = *s++;
-	      break;
-	    };
-      *p++ = *s++;
+      while (*s)
+	*p++ = *s++;
+      break;
     }
+    if ((*s == 'B') || (*s == 'C') ||
+	(*s == 'N') || (*s == 'A') ||
+	(*s == 'F') || (*s == 'C') ||
+	(*s == 'R') || (*s == 'W') || 
+	(*s == 'G') || (*s == 'H') ||
+	(*s == 'E') || (*s == 'Q'))
+      *p++ = ' ';
+    else if ((*s == 'X') || (*s == 'D') || (*s == 'O'))
+    {
+      *p++ = ' ';
+      *p++ = *s++;
+      while (*s)
+	*p++ = *s++;
+      break;
+    };
+    *p++ = *s++;
+  }
   *p++ = ' ';
   
   p = pp;
@@ -595,295 +605,295 @@ INT decode_line (CAMAC *P, char * ss)
   if (cmd = strpbrk(p,"P"))
     return MCSTD;
   if (cmd = strpbrk(p,"G"))
+  {
+    for (i=0;;i++)
     {
-      for (i=0;;i++)
-        {
-          if (MCStd[i][0] == 0) break;
-          if (strstr(p+2, MCStd[i]) != NULL) 
-            return CAM_OFF+i;
-        }
-      return LOOP;
+      if (MCStd[i][0] == 0) break;
+      if (strstr(p+2, MCStd[i]) != NULL) 
+	return CAM_OFF+i;
     }
+    return LOOP;
+  }
   if (cmd = strpbrk(p,"H"))
     return HELP;
   if (cmd = strpbrk(p,"J"))
     return JOB;
-	if (cmd = strpbrk(p,"X"))
-	{
-		ps = strchr(cmd,' ');
-		*ps = 0;       
-		if (P->m == D24)
+  if (cmd = strpbrk(p,"X"))
+  {
+    ps = strchr(cmd,' ');
+    *ps = 0;       
+    if (P->m == D24)
+    {
+      tmp = strtoul((cmd+1),NULL,16);
+      if (tmp>=0x0 && tmp<=0xffffff)
       {
-        tmp = strtoul((cmd+1),NULL,16);
-        if (tmp>=0x0 && tmp<=0xffffff)
-          {
-            P->d24 = tmp;
-            ok = TRUE;
-          }
-        else
-          printf("mcnaf-E- Data out of range 0x0:0xffffff\n");
+	P->d24 = tmp;
+	ok = TRUE;
       }
-		else
+      else
+	printf("mcnaf-E- Data out of range 0x0:0xffffff\n");
+    }
+    else
+    {
+      tmp = strtoul((cmd+1),NULL,16);
+      if (tmp>=0x0 && tmp<=0xffff)
       {
-        tmp = strtoul((cmd+1),NULL,16);
-        if (tmp>=0x0 && tmp<=0xffff)
-          {
-            P->d16 = (WORD) tmp;
-            ok = TRUE;
-          }
-        else
-          printf("mcnaf-E- Data out of range 0x0:0xffff\n");
+	P->d16 = (WORD) tmp;
+	ok = TRUE;
       }
-    strncpy(cmd,empty,strlen(cmd));
-		*ps = ' '; 
-	}
-	if (cmd = strpbrk(p,"O"))
-	{
-		ps = strchr(cmd,' ');
-		*ps = 0;
-		if (P->m == D24)
-      {
-        tmp = strtoul((cmd+1),NULL,8);
-        if (tmp>=0 && tmp<=077777777)
-          {
-            P->d24 = tmp;
-            ok = TRUE;
-          }
-        else
-          printf("mcnaf-E- Data out of range O0:O77777777\n");
-      }
-		else
-      {
-        tmp = strtoul((cmd+1),NULL,8);
-        if (tmp>=00 && tmp<=0177777)
-          {
-            P->d16 = (WORD) tmp;
-            ok = TRUE;
-          }
-        else
-          printf("mcnaf-E- Data out of range O0:O177777\n");
-      }
+      else
+	printf("mcnaf-E- Data out of range 0x0:0xffff\n");
+    }
     strncpy(cmd,empty,strlen(cmd));
     *ps = ' '; 
-	}
-  if (cmd = strpbrk(p,"D"))
+  }
+  if (cmd = strpbrk(p,"O"))
+  {
+    ps = strchr(cmd,' ');
+    *ps = 0;
+    if (P->m == D24)
     {
-      ps = strchr(cmd,' ');
-      *ps = 0;
-      if (P->m == D24)
-	{
-	  tmp = strtoul((cmd+1),NULL,10);
-	  if (tmp>=0x0 && tmp<=0xffffff)
-	    {
-	      P->d24 = tmp;
-	      ok = TRUE;
-          }
-        else
-          printf("mcnaf-E- Data out of range 0:16777215\n");
-      }
-		else
+      tmp = strtoul((cmd+1),NULL,8);
+      if (tmp>=0 && tmp<=077777777)
       {
-        tmp = strtoul((cmd+1),NULL,10);
-        if (tmp>=0x0 && tmp<=0xffff)
-          {
-            P->d16 = (WORD) tmp;
-            ok = TRUE;
-          }
-        else
-          printf("mcnaf-E- Data out of range 0:65535\n");
+	P->d24 = tmp;
+	ok = TRUE;
       }
-    strncpy(cmd,empty,strlen(cmd));
-		*ps = ' '; 
-	}
-  if (cmd = strchr(p,'B'))
-    {
-      ps = strchr(cmd,' ');
-      *ps = 0;
-      tmp = atoi((cmd+1));
-      if (tmp<8 && tmp>=0)
-	{
-	  P->b = tmp;
-        ok = TRUE;
-	}
       else
-	printf("mcnaf-E- B out of range 0:7\n");
-      *ps = ' '; 
+	printf("mcnaf-E- Data out of range O0:O77777777\n");
     }
-  if (cmd = strchr(p,'C'))
+    else
     {
-      ps = strchr(cmd,' ');
-      *ps = 0;
+      tmp = strtoul((cmd+1),NULL,8);
+      if (tmp>=00 && tmp<=0177777)
+      {
+	P->d16 = (WORD) tmp;
+	ok = TRUE;
+      }
+      else
+	printf("mcnaf-E- Data out of range O0:O177777\n");
+    }
+    strncpy(cmd,empty,strlen(cmd));
+    *ps = ' '; 
+  }
+  if (cmd = strpbrk(p,"D"))
+  {
+    ps = strchr(cmd,' ');
+    *ps = 0;
+    if (P->m == D24)
+    {
+      tmp = strtoul((cmd+1),NULL,10);
+      if (tmp>=0x0 && tmp<=0xffffff)
+      {
+	P->d24 = tmp;
+	ok = TRUE;
+      }
+      else
+	printf("mcnaf-E- Data out of range 0:16777215\n");
+    }
+    else
+    {
+      tmp = strtoul((cmd+1),NULL,10);
+      if (tmp>=0x0 && tmp<=0xffff)
+      {
+	P->d16 = (WORD) tmp;
+	ok = TRUE;
+      }
+      else
+	printf("mcnaf-E- Data out of range 0:65535\n");
+    }
+    strncpy(cmd,empty,strlen(cmd));
+    *ps = ' '; 
+  }
+  if (cmd = strchr(p,'B'))
+  {
+    ps = strchr(cmd,' ');
+    *ps = 0;
     tmp = atoi((cmd+1));
     if (tmp<8 && tmp>=0)
-      {
-        P->c = tmp;
-        ok = TRUE;
-      }
+    {
+      P->b = tmp;
+      ok = TRUE;
+    }
+    else
+      printf("mcnaf-E- B out of range 0:7\n");
+    *ps = ' '; 
+  }
+  if (cmd = strchr(p,'C'))
+  {
+    ps = strchr(cmd,' ');
+    *ps = 0;
+    tmp = atoi((cmd+1));
+    if (tmp<8 && tmp>=0)
+    {
+      P->c = tmp;
+      ok = TRUE;
+    }
     else
       printf("mcnaf-E- C out of range 0:7\n");
-		*ps = ' '; 
-	}
-	if (cmd = strchr(p,'N'))
-	{
-		ps = strchr(cmd,' ');
-		*ps = 0;
+    *ps = ' '; 
+  }
+  if (cmd = strchr(p,'N'))
+  {
+    ps = strchr(cmd,' ');
+    *ps = 0;
     tmp = atoi((cmd+1));
     if (tmp<32 && tmp>=0)
-      {
-        P->n = tmp;
-        ok = TRUE;
-      }
+    {
+      P->n = tmp;
+      ok = TRUE;
+    }
     else
       printf("mcnaf-E- N out of range 0:31\n");
-		*ps = ' '; 
-	}
-	if (cmd = strchr(p,'A'))
-	{
-		ps = strchr(cmd,' ');
-		*ps = 0;
+    *ps = ' '; 
+  }
+  if (cmd = strchr(p,'A'))
+  {
+    ps = strchr(cmd,' ');
+    *ps = 0;
     tmp = atoi((cmd+1));
     if (tmp<16 && tmp>=0)
-      {
-        P->a = tmp;
-        ok = TRUE;
-      }
+    {
+      P->a = tmp;
+      ok = TRUE;
+    }
     else
       printf("mcnaf-E- A out of range 0:15\n");
-		*ps = ' '; 
-	}
-	if (cmd = strchr(p,'F'))
-	{
-		ps = strchr(cmd,' ');
-		*ps = 0;
+    *ps = ' '; 
+  }
+  if (cmd = strchr(p,'F'))
+  {
+    ps = strchr(cmd,' ');
+    *ps = 0;
     tmp = atoi((cmd+1));
     if (tmp<32 && tmp>=0)
-      {
-        P->f = tmp;
-        ok = TRUE;
-      }
+    {
+      P->f = tmp;
+      ok = TRUE;
+    }
     else
       printf("mcnaf-E- F out of range 0:31\n");
-		*ps = ' '; 
-	}
-	if (cmd = strchr(p,'R'))
-	{
-		ps = strchr(cmd,' ');
-		*ps = 0;
+    *ps = ' '; 
+  }
+  if (cmd = strchr(p,'R'))
+  {
+    ps = strchr(cmd,' ');
+    *ps = 0;
     tmp = atoi((cmd+1));
     if (tmp<1000 && tmp>=0)
-      {
-        if (tmp==0)
-          tmp = 1;
-        P->r = tmp;
-      }
+    {
+      if (tmp==0)
+	tmp = 1;
+      P->r = tmp;
+    }
     else
       printf("mcnaf-E- R out of range 1:1000\n");
-		*ps = ' '; 
-	}
-	if (cmd = strchr(p,'W'))
-	{
-		ps = strchr(cmd,' ');
-		*ps = 0;
+    *ps = ' '; 
+  }
+  if (cmd = strchr(p,'W'))
+  {
+    ps = strchr(cmd,' ');
+    *ps = 0;
     tmp = atoi((cmd+1));
     if (tmp<10001 || tmp>=0)
       P->w = tmp;
     else
       printf("mcnaf-E- W out of range 0:10000\n");
-		*ps = ' '; 
-	}
-	if (cmd = strchr(p,'M'))
-	{
-		ps = strchr(cmd,' ');
-		*ps = 0;
+    *ps = ' '; 
+  }
+  if (cmd = strchr(p,'M'))
+  {
+    ps = strchr(cmd,' ');
+    *ps = 0;
     tmp = atoi((cmd+1));
     if (tmp==D16 || tmp==D24)
       P->m = tmp;
     else
       printf("mcnaf-E- M out of range 16,24\n");
-		*ps = ' '; 
-	}
+    *ps = ' '; 
+  }
   if (ok)
     return LOOP;
-	if (cmd = strpbrk(p,"QE"))
-		return QUIT;
-	return SKIP;
+  if (cmd = strpbrk(p,"QE"))
+    return QUIT;
+  return SKIP;
 }
 
 /*--------------------------------------------------------------------*/
 void help_page( INT which)
 {
   if (which == MAIN)
-    {
-      printf("\n*-v%s----------- H E L P   C N A F -------------------*\n"
-	     ,cm_get_version());
-      printf("          Interactive Midas CAMAC command\n");
-      printf("          ===============================\n");
-      printf(" Output : Data [dec/hex X=0/1 - Q=0/1 ]\n");
-      printf(" Inputs : Bx :  Branch   [0 -  7]    Cx :  Crate    [0 -  7]\n");
-      printf("          Nx :  Slot     [1 - 31]    Ax :  SubAdd.  [0 - 15]\n");
-      printf("          Fx :  Function [0 - 31]    Mx :  Access mode [16,24]\n");
-      printf("           H :  HELP on   CNAF       E/Q:  Exit/Quit from CNAF\n");
-      printf("          Rx :  Repetition counter               [1 -   999]\n");
-      printf("          Wx :  Delay between command (ms)       [0 - 10000]\n");
-      printf("           P :  Switch to MCStd CAMAC operation\n");
-      printf("           J :  Perform JOB (command list from file )\n");
-      printf("                Same syntax as in interactive session\n");
-      printf("           G :  PERFORM ACTION of predefine set-up\n");
-      printf("           D :  Decimal     Data     [0 - max data_size]\n");
-      printf("           O :  Octal       Data     [0 - max data_size]\n");
-      printf("           X :  Hexadecimal Data     [0 - max data_size]\n");
-      printf("\n");
-      printf(">>>>>>>>>> Data has to be given LAST if needed in the command string <<<<<\n");
-      printf("\n");
-      printf(" The commands below are following the ESONE standard for a A2 controller\n");
-      printf(" N30A9F24 : Crate clear inhibit    N30A9F26 : Crate set inhibit\n");
-      printf(" N28A8F26 : Z crate                N28A9F26 : C crate\n");
-      printf(" N30A13F17: CC Lam enable          N30A12F17: CC Lam disable\n");
-      printf(" N30A0-7F1: CC read Lam\n");
-      printf("\n");
-      printf(" examples: ");
-      printf(">mcnaf -cl\"triggerFE\" -h local -e myexpt\n");
-      printf("      CNAF> [B0C1N30A00F00 [0/0x000000 Q0X0] R1W0M24] :n30a9f24\n");
-      printf("      CNAF> [B0C1N06A00F24 [0/0x000000 Q1X1] R1W0M24] :n6f9a0\n");
-    }
+  {
+    printf("\n*-v%s----------- H E L P   C N A F -------------------*\n"
+	   ,cm_get_version());
+    printf("          Interactive Midas CAMAC command\n");
+    printf("          ===============================\n");
+    printf(" Output : Data [dec/hex X=0/1 - Q=0/1 ]\n");
+    printf(" Inputs : Bx :  Branch   [0 -  7]    Cx :  Crate    [0 -  7]\n");
+    printf("          Nx :  Slot     [1 - 31]    Ax :  SubAdd.  [0 - 15]\n");
+    printf("          Fx :  Function [0 - 31]    Mx :  Access mode [16,24]\n");
+    printf("           H :  HELP on   CNAF       E/Q:  Exit/Quit from CNAF\n");
+    printf("          Rx :  Repetition counter               [1 -   999]\n");
+    printf("          Wx :  Delay between command (ms)       [0 - 10000]\n");
+    printf("           P :  Switch to MCStd CAMAC operation\n");
+    printf("           J :  Perform JOB (command list from file )\n");
+    printf("                Same syntax as in interactive session\n");
+    printf("           G :  PERFORM ACTION of predefine set-up\n");
+    printf("           D :  Decimal     Data     [0 - max data_size]\n");
+    printf("           O :  Octal       Data     [0 - max data_size]\n");
+    printf("           X :  Hexadecimal Data     [0 - max data_size]\n");
+    printf("\n");
+    printf(">>>>>>>>>> Data has to be given LAST if needed in the command string <<<<<\n");
+    printf("\n");
+    printf(" The commands below are following the ESONE standard for a A2 controller\n");
+    printf(" N30A9F24 : Crate clear inhibit    N30A9F26 : Crate set inhibit\n");
+    printf(" N28A8F26 : Z crate                N28A9F26 : C crate\n");
+    printf(" N30A13F17: CC Lam enable          N30A12F17: CC Lam disable\n");
+    printf(" N30A0-7F1: CC read Lam\n");
+    printf("\n");
+    printf(" examples: ");
+    printf(">mcnaf -cl\"triggerFE\" -h local -e myexpt\n");
+    printf("      CNAF> [B0C1N30A00F00 [0/0x000000 Q0X0] R1W0M24] :n30a9f24\n");
+    printf("      CNAF> [B0C1N06A00F24 [0/0x000000 Q1X1] R1W0M24] :n6f9a0\n");
+  }
   else
-    {
-      printf("\n*-v%s----------- H E L P   C N A F -------------------*\n"
-	     ,cm_get_version());
-      printf("          Interactive MCStd CAMAC command\n");
-      printf("The action taken is dependent on the driver implementation\n");
-      printf("[Q/E]            : Exit this level\n");
-      printf("[G] <function>   : Issue the given function on preset CAMAC address\n");
-      printf("Possible functions are:\n");
-      printf("cam16/24i        : 16/24bit input\n");
-      printf("cam16/24i_q      : 16/24bit input with Q response\n");
-      printf("cam16/24i_r      : 16/24bit input repeat until R reached (max 100)\n");
-      printf("cam16/24i_rq     : 16/24bit input repeat until NoQ or R reached (max 100)\n"); 
-      printf("cam16/24i_sa     : 16/24bit input scan R times over A\n");
-      printf("cam16/24i_sn     : 16/24bit input scan R times over N\n");
-      printf("cam16/24o        : 16/24bit output\n");
-      printf("cam16/24o_q      : 16/24bit output with Q response\n");
-      printf("cam16/24o_r      : 16/24bit output repeat R times\n");
-      printf("camc             : 16bit command \n");
-      printf("camc_q           : 16bit command with Q response\n");
-      printf("camc_sa          : 16bit command scan R times over A\n");
-      printf("camc_sn          : 16bit command scan R times over N\n");
-      printf("cam_lam_enable   : Enable lam in Crate controller ONLY\n");
-      printf("cam_lam_disable  : Disable lam in Crate controlled ONLY\n");
-      printf("cam_lam_read     : Read lam from Crate controller\n");
-      printf("cam_inhibit_clear: Reset Inhibit line in crate\n");
-      printf("cam_inhibit_set  : Set Inhibit line in crate\n");
-      printf("cam_crate_clear  : Generate a Clear cycle to the crate\n");
-      printf("cam_crate_zinit  : Generate a Z cycle to the crate\n");
-    }
+  {
+    printf("\n*-v%s----------- H E L P   C N A F -------------------*\n"
+	   ,cm_get_version());
+    printf("          Interactive MCStd CAMAC command\n");
+    printf("The action taken is dependent on the driver implementation\n");
+    printf("[Q/E]            : Exit this level\n");
+    printf("[G] <function>   : Issue the given function on preset CAMAC address\n");
+    printf("Possible functions are:\n");
+    printf("cam16/24i        : 16/24bit input\n");
+    printf("cam16/24i_q      : 16/24bit input with Q response\n");
+    printf("cam16/24i_r      : 16/24bit input repeat until R reached (max 100)\n");
+    printf("cam16/24i_rq     : 16/24bit input repeat until NoQ or R reached (max 100)\n"); 
+    printf("cam16/24i_sa     : 16/24bit input scan R times over A\n");
+    printf("cam16/24i_sn     : 16/24bit input scan R times over N\n");
+    printf("cam16/24o        : 16/24bit output\n");
+    printf("cam16/24o_q      : 16/24bit output with Q response\n");
+    printf("cam16/24o_r      : 16/24bit output repeat R times\n");
+    printf("camc             : 16bit command \n");
+    printf("camc_q           : 16bit command with Q response\n");
+    printf("camc_sa          : 16bit command scan R times over A\n");
+    printf("camc_sn          : 16bit command scan R times over N\n");
+    printf("cam_lam_enable   : Enable lam in Crate controller ONLY\n");
+    printf("cam_lam_disable  : Disable lam in Crate controlled ONLY\n");
+    printf("cam_lam_read     : Read lam from Crate controller\n");
+    printf("cam_inhibit_clear: Reset Inhibit line in crate\n");
+    printf("cam_inhibit_set  : Set Inhibit line in crate\n");
+    printf("cam_crate_clear  : Generate a Clear cycle to the crate\n");
+    printf("cam_crate_zinit  : Generate a Z cycle to the crate\n");
+  }
 }
-  /*--------------------------------------------------------------------*/
+/*--------------------------------------------------------------------*/
 
 int main(int argc, char **argv)
 {
-char   host_name[30], exp_name[30], client_name[256], rpc_server[256];
-INT    i, status;
-BOOL   debug;
+  char   host_name[30], exp_name[30], client_name[256], rpc_server[256];
+  INT    i, status;
+  BOOL   debug;
   
   /* set default */
   host_name[0] = '\0';
@@ -891,15 +901,15 @@ BOOL   debug;
   client_name[0] = '\0';
   rpc_server[0] = '\0';
   debug = FALSE;
-
+  
   /* get parameters */
   /* parse command line parameters */
   for (i=1 ; i<argc ; i++)
-    {
+  {
     if (argv[i][0] == '-' && argv[i][1] == 'd')
       debug = TRUE;
     else if (argv[i][0] == '-')
-      {
+    {
       if (i+1 >= argc || argv[i+1][0] == '-')
         goto usage;
       if (strncmp(argv[i],"-e",3) == 0)
@@ -911,24 +921,24 @@ BOOL   debug;
       else if (strncmp(argv[i],"-s",3)==0)
         strcpy(rpc_server, argv[++i]);
       else
-        {
-usage:
+      {
+     usage:
         printf("usage: mcnaf [-c Client] [-h Hostname] [-e Experiment] [-s RPC server]\n\n");
         return 0;
-        }
       }
     }
-
+  }
+  
   if (rpc_server[0])
     status = cam_init_rpc("", "", "", rpc_server);
   else
     status = cam_init_rpc(host_name, exp_name, client_name, "");
   if (status == SUCCESS)
-    {
-      status = cam_init();
-      if (status == SUCCESS)
-        cnafsub();
-    }
+  {
+    status = cam_init();
+    if (status == SUCCESS)
+      cnafsub();
+  }
   cam_exit();
   return 0;
 }
