@@ -6,6 +6,9 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.68  2003/10/28 09:48:18  midas
+  Made db_create_record() atomic by locking ODB
+
   Revision 1.67  2003/09/29 08:53:45  midas
   Fixed bug with ODB strings of 256 bytes length
 
@@ -7426,6 +7429,9 @@ INT db_create_record(HNDLE hDB, HNDLE hKey, char *key_name, char *init_str)
   if (rpc_is_remote())
     return rpc_call(RPC_DB_CREATE_RECORD, hDB, hKey, key_name, init_str);
 
+  /* make this function atomic */
+  db_lock_database(hDB);
+
   /* merge temporay record and original record */
   db_find_key(hDB, hKey, key_name, &hKeyOrig);
   if (hKeyOrig)
@@ -7434,7 +7440,10 @@ INT db_create_record(HNDLE hDB, HNDLE hKey, char *key_name, char *init_str)
     open_count = 0;
     db_scan_tree_link(hDB, hKeyOrig, 0, check_open_keys, NULL);
     if (open_count)
+      {
+      db_unlock_database(hDB);
       return DB_OPEN_RECORD;
+      }
 
     /* create temporary records */
     sprintf(str, "/System/Tmp/%1dI", ss_gettid());
@@ -7444,7 +7453,10 @@ INT db_create_record(HNDLE hDB, HNDLE hKey, char *key_name, char *init_str)
     db_create_key(hDB, 0, str, TID_KEY);
     status = db_find_key(hDB, 0, str, &hKeyTmp);
     if (status != DB_SUCCESS)
+      {
+      db_unlock_database(hDB);
       return status;
+      }
 
     sprintf(str, "/System/Tmp/%1dO", ss_gettid());
     db_find_key(hDB, 0, str, &hKeyTmpO);
@@ -7453,11 +7465,17 @@ INT db_create_record(HNDLE hDB, HNDLE hKey, char *key_name, char *init_str)
     db_create_key(hDB, 0, str, TID_KEY);
     status = db_find_key(hDB, 0, str, &hKeyTmpO);
     if (status != DB_SUCCESS)
+      {
+      db_unlock_database(hDB);
       return status;
+      }
 
     status = db_paste(hDB, hKeyTmp, init_str);
     if (status != DB_SUCCESS)
+      {
+      db_unlock_database(hDB);
       return status;
+      }
 
     buffer_size = 10000;
     buffer = (char *)malloc(buffer_size);
@@ -7472,13 +7490,18 @@ INT db_create_record(HNDLE hDB, HNDLE hKey, char *key_name, char *init_str)
         continue;
         }
       if (status != DB_SUCCESS)
+        {
+        db_unlock_database(hDB);
         return status;
+        }
+
       } while (status != DB_SUCCESS);
 
     status = db_paste(hDB, hKeyTmpO, buffer);
     if (status != DB_SUCCESS)
       {
       free(buffer);
+      db_unlock_database(hDB);
       return status;
       }
 
@@ -7496,6 +7519,7 @@ INT db_create_record(HNDLE hDB, HNDLE hKey, char *key_name, char *init_str)
       if (status != DB_SUCCESS)
         {
         free(buffer);
+        db_unlock_database(hDB);
         return status;
         }
       }
@@ -7514,14 +7538,17 @@ INT db_create_record(HNDLE hDB, HNDLE hKey, char *key_name, char *init_str)
       if (status != DB_SUCCESS)
         {
         free(buffer);
+        db_unlock_database(hDB);
         return status;
         }
+
       } while (status != DB_SUCCESS);
 
     status = db_paste(hDB, hKeyOrig, buffer);
     if (status != DB_SUCCESS)
       {
       free(buffer);
+      db_unlock_database(hDB);
       return status;
       }
 
@@ -7537,12 +7564,20 @@ INT db_create_record(HNDLE hDB, HNDLE hKey, char *key_name, char *init_str)
     db_create_key(hDB, hKey, key_name, TID_KEY);
     status = db_find_key(hDB, hKey, key_name, &hKeyTmp);
     if (status != DB_SUCCESS)
+      {
+      db_unlock_database(hDB);
       return status;
+      }
 
     status = db_paste(hDB, hKeyTmp, init_str);
     if (status != DB_SUCCESS)
+      {
+      db_unlock_database(hDB);
       return status;
+      }
     }
+
+  db_unlock_database(hDB);
 
   return DB_SUCCESS;
 }
