@@ -6,6 +6,9 @@
   Contents:     Command-line editor for ODBEdit
 
   $Log$
+  Revision 1.8  1999/06/23 09:35:41  midas
+  Switched back cursor to end of line for editing
+
   Revision 1.7  1998/12/10 16:32:14  midas
   Command line completion now also adds values if <tab> is pressed after full key
 
@@ -69,14 +72,12 @@ BOOL  escape_flag = 0;
   printf(prompt);
   fflush(stdout);
 
-  i = 0;
   hi = his_index;
   memset(line, 0, LINE_LENGTH);
   memset(history[hi], 0, LINE_LENGTH);
   strcpy(line, cmd);
   printf(line);
-  for (j=0 ; j<(int) strlen(line) ; j++)
-    printf("\b");
+  i = strlen(cmd);
   fflush(stdout);
 
   do
