@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.49  2001/10/31 11:12:02  midas
+  Changes made at home...
+
   Revision 1.48  2001/10/19 14:36:59  midas
   Added "Display email recipients", "suppress default = 2", moved SMTP host to
   [global]
@@ -282,10 +285,9 @@ char author_list[MAX_N_LIST][NAME_LENGTH] = {
 };
 
 /* attribute flags */
-#define AF_ADD_REMOTE_ADDR    (1<<0)
-#define AF_REQUIRED           (1<<1)
-#define AF_EMAIL_SUBJECT      (1<<2)
-#define AF_USE_FOR_TITLE      (1<<3)
+#define AF_REQUIRED           (1<<0)
+#define AF_EMAIL_SUBJECT      (1<<1)
+#define AF_USE_FOR_TITLE      (1<<2)
 
 char attr_list[MAX_N_ATTR][NAME_LENGTH];
 char attr_options[MAX_N_ATTR][MAX_N_LIST][NAME_LENGTH];
@@ -307,7 +309,7 @@ char attr_options_default[][MAX_N_LIST][NAME_LENGTH] = {
 };
 
 int attr_flags_default[] = {
-  AF_ADD_REMOTE_ADDR | AF_REQUIRED,
+  AF_REQUIRED,
   AF_EMAIL_SUBJECT,
   0,
   0
@@ -820,7 +822,7 @@ THEME default_theme [] = {
   "Title BGColor",          "#486090",   
   "Title Fontcolor",        "#FFFFFF",   
   "Title Cellpadding",      "0",         
-  "Title Image",            "elog.gif",          
+  "Title Image",            "",
                                          
   "Merge menus",            "1",
   "Use buttons",            "0",
@@ -2270,16 +2272,6 @@ int  i, j, n, m;
           attr_flags[j] |= AF_REQUIRED;
       }
 
-    /* check if add remote address */
-    getcfg(logbook, "Add Address", list);
-    m = strbreak(list, tmp_list, MAX_N_ATTR);
-    for (i=0 ; i<m ; i++)
-      {
-      for (j=0 ; j<n ; j++)
-        if (equal_ustring(attr_list[j], tmp_list[i]))
-          attr_flags[j] |= AF_ADD_REMOTE_ADDR;
-      }
-
     /* check if mail subject */
     getcfg(logbook, "Use EMail Subject", list);
     m = strbreak(list, tmp_list, MAX_N_ATTR);
@@ -2450,6 +2442,10 @@ void show_standard_header(char *title, char *path)
   rsprintf("HTTP/1.1 200 Document follows\r\n");
   rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
   rsprintf("Content-Type: text/html\r\n");
+
+  //##
+  rsprintf("Set-Cookie: elog_apwd=*; path=/%s; expires=Fri, 01 Jan 1983 00:00:00 GMT\r\n", logbook_enc);
+
   rsprintf("Pragma: no-cache\r\n");
   if (use_keepalive)
     {
@@ -2623,6 +2619,7 @@ struct tm *gmt;
     rsprintf("<body><h1>Not Found</h1>\r\n");
     rsprintf("The requested file <b>%s</b> was not found on this server<p>\r\n", file_name);
     rsprintf("<hr><address>ELOG version %s</address></body></html>\r\n\r\n", VERSION);
+    return_length = strlen_retbuf;
     keep_alive = 0;
     }
 }
@@ -2678,15 +2675,8 @@ char   str[256], *p, def_value[80], star[80], comment[10000];
 char   date[80], attrib[MAX_N_ATTR][NAME_LENGTH], text[TEXT_SIZE], 
        orig_tag[80], reply_tag[80], att[MAX_ATTACHMENTS][256], encoding[80];
 time_t now;
-BOOL   allow_edit;
 
   n_attr = scan_attributes(logbook);
-
-  allow_edit = TRUE;
-
-  /* get flag from configuration file */
-  if (getcfg(logbook, "Allow edit", str))
-    allow_edit= atoi(str);
 
   for (i=0 ; i<MAX_ATTACHMENTS ; i++)
     att[i][0] = 0;
@@ -2713,12 +2703,14 @@ BOOL   allow_edit;
     }
 
   /* remove author for replies */
+  /* ##
   for (i=0 ; i<n_attr ; i++)
     {
     if (attr_flags[i] & AF_ADD_REMOTE_ADDR)
       if (path && !bedit)
         attrib[i][0] = 0;
     }
+  */
 
   /* header */
   rsprintf("HTTP/1.1 200 Document follows\r\n");
@@ -2738,14 +2730,6 @@ BOOL   allow_edit;
 
   show_standard_title(logbook, "", 0);
 
-  if (bedit && !allow_edit)
-    {
-    rsprintf("<tr><td bgcolor=#FF8080 align=center><br><h1>Message editing disabled</h1></td></tr>\n");
-    rsprintf("</table>\n");
-    rsprintf("</body></html>\r\n");
-    return;
-    }
-  
   /*---- menu buttons ----*/
 
   rsprintf("<tr><td><table width=100%% border=0 cellpadding=%s cellspacing=1 bgcolor=%s>\n", 
@@ -2792,16 +2776,7 @@ BOOL   allow_edit;
   for (index = 0 ; index < n_attr ; index++)
     {
     if (bedit || path)
-      {
       strcpy(def_value, attrib[index]);
-
-      /* strip host address if present */
-      if (attr_flags[index] & AF_ADD_REMOTE_ADDR)
-        {
-        if (strchr(def_value, '@'))
-          *strchr(def_value, '@') = 0;
-        }
-      }
     else
       def_value[0] = 0;
 
@@ -2828,6 +2803,9 @@ BOOL   allow_edit;
         rsprintf("<tr><td nowrap bgcolor=%s><b>%s%s:</b></td><td bgcolor=%s><select name=\"%s\">\n",
                  gt("Categories bgcolor1"), attr_list[index], star, gt("Categories bgcolor2"), attr_list[index]);
       
+        /* display emtpy option */
+        rsprintf("<option value=\"\">- please select -\n");
+
         for (i=0 ; i<MAX_N_LIST && attr_options[index][i][0] ; i++)
           {
           if (equal_ustring(attr_options[index][i], def_value))
@@ -3087,17 +3065,111 @@ char   str[256];
 
 /*------------------------------------------------------------------*/
 
+void show_config_page()
+{
+int  fh, length;
+char *buffer;
+
+  /*---- header ----*/
+
+  show_standard_header("ELOG find", NULL);
+
+  /*---- title ----*/
+  
+  show_standard_title(logbook, "", 0);
+
+  /*---- menu buttons ----*/
+
+  rsprintf("<tr><td><table width=100%% border=0 cellpadding=%s cellspacing=1 bgcolor=%s>\n", 
+           gt("Menu1 cellpadding"), gt("Frame color"));
+
+  rsprintf("<tr><td align=%s bgcolor=%s>\n", gt("Menu1 Align"), gt("Menu1 BGColor"));
+
+  rsprintf("<input type=submit name=cmd value=Save>\n");
+  rsprintf("<input type=submit name=cmd value=Cancel>\n");
+  rsprintf("</td></tr></table></td></tr>\n\n");
+
+  /*---- entry form ----*/
+
+  /* overall table for message giving blue frame */
+  rsprintf("<tr><td><table width=100%% border=%s cellpadding=%s cellspacing=1 bgcolor=%s>\n", 
+           gt("Categories border"), gt("Categories cellpadding"), gt("Frame color"));
+
+  rsprintf("<tr><td colspan=2 bgcolor=%s>", gt("Categories bgcolor2"));
+
+  fh = open(cfg_file, O_RDONLY | O_BINARY);
+  if (fh < 0)
+    {
+    rsprintf("Cannot read configuration file <b>\"%s\"</b>", cfg_file);
+    rsprintf("</table></td></tr></table>\n");
+    rsprintf("</body></html>\r\n");
+    return;
+    }
+  length = lseek(fh, 0, SEEK_END);
+  lseek(fh, 0, SEEK_SET);
+  buffer = malloc(length+1);
+  if (buffer == NULL)
+    {
+    close(fh);
+    rsprintf("Error: out of memory<p>");
+    rsprintf("</table></td></tr></table>\n");
+    rsprintf("</body></html>\r\n");
+    return;
+    }
+  read(fh, buffer, length);
+  buffer[length] = 0;
+  close(fh);
+  
+  rsprintf("<textarea rows=40 cols=80 nowrap name=Text>");
+
+  rsputs(buffer);
+  free(buffer);
+
+  rsprintf("</textarea><br>\n");
+
+  rsprintf("</table></td></tr>\n");
+
+  /*---- menu buttons ----*/
+
+  rsprintf("<tr><td><table width=100%% border=0 cellpadding=%s cellspacing=1 bgcolor=%s>\n", 
+           gt("Menu1 cellpadding"), gt("Frame color"));
+
+  rsprintf("<tr><td align=%s bgcolor=%s>\n", gt("Menu1 Align"), gt("Menu1 BGColor"));
+
+  rsprintf("<input type=submit name=cmd value=Save>\n");
+  rsprintf("<input type=submit name=cmd value=Cancel>\n");
+  rsprintf("</td></tr></table>\n\n");
+  
+  rsprintf("</td></tr></table>\n\n");
+  rsprintf("</body></html>\r\n");
+}
+
+/*------------------------------------------------------------------*/
+
+int save_config()
+{
+int  fh;
+char str[80];
+
+  fh = open(cfg_file, O_RDWR | O_BINARY | O_TRUNC, 644);
+  if (fh < 0)
+    {
+    sprintf(str, "Cannot write to <b>%s</b>: %s", cfg_file, strerror(errno));
+    show_error(str);
+    return 0;
+    }
+  write(fh, _text, strlen(_text));
+  close(fh);
+
+  return 1;
+}
+
+/*------------------------------------------------------------------*/
+
 void show_elog_delete(char *path)
 {
 int    status;
 char   str[256];
-BOOL   allow_delete;
-
-  allow_delete = FALSE;
-
-  /* get flag from configuration file */
-  if (getcfg(logbook, "Allow delete", str))
-    allow_delete = atoi(str);
 
   /* redirect if confirm = NO */
   if (getparam("confirm") && *getparam("confirm") && 
@@ -3117,43 +3189,36 @@ BOOL   allow_delete;
   rsprintf("<tr><td><table cellpadding=5 cellspacing=0 border=0 width=100%% bgcolor=%s>\n", gt("Frame color"));
 
 
-  if (!allow_delete)
+  if (getparam("confirm") && *getparam("confirm"))
     {
-    rsprintf("<tr><td colspan=2 bgcolor=#FF8080 align=center><h1>Message deletion disabled</h1></td></tr>\n");
+    if (strcmp(getparam("confirm"), "Yes") == 0)
+      {
+      /* delete message */
+      status = el_delete_message(path);
+      rsprintf("<tr><td bgcolor=#80FF80 align=center>");
+      if (status == EL_SUCCESS)
+        rsprintf("<b>Message successfully deleted</b></tr>\n");
+      else
+        rsprintf("<b>Error deleting message: status = %d</b></tr>\n", status);
+
+      rsprintf("<input type=hidden name=cmd value=last>\n");
+      rsprintf("<tr><td bgcolor=%s align=center><input type=submit value=\"Goto last message\"></td></tr>\n", 
+                gt("Cell BGColor"));
+      }
     }
   else
     {
-    if (getparam("confirm") && *getparam("confirm"))
-      {
-      if (strcmp(getparam("confirm"), "Yes") == 0)
-        {
-        /* delete message */
-        status = el_delete_message(path);
-        rsprintf("<tr><td bgcolor=#80FF80 align=center>");
-        if (status == EL_SUCCESS)
-          rsprintf("<b>Message successfully deleted</b></tr>\n");
-        else
-          rsprintf("<b>Error deleting message: status = %d</b></tr>\n", status);
+    /* define hidden field for command */
+    rsprintf("<input type=hidden name=cmd value=delete>\n");
 
-        rsprintf("<input type=hidden name=cmd value=last>\n");
-        rsprintf("<tr><td bgcolor=%s align=center><input type=submit value=\"Goto last message\"></td></tr>\n", 
-                  gt("Cell BGColor"));
-        }
-      }
-    else
-      {
-      /* define hidden field for command */
-      rsprintf("<input type=hidden name=cmd value=delete>\n");
+    rsprintf("<tr><td bgcolor=%s align=center>", gt("Title bgcolor"));
+    rsprintf("<font color=%s><b>Are you sure to delete this message?</b></font></td></tr>\n", gt("Title fontcolor"));
 
-      rsprintf("<tr><td bgcolor=%s align=center>", gt("Title bgcolor"));
-      rsprintf("<font color=%s><b>Are you sure to delete this message?</b></font></td></tr>\n", gt("Title fontcolor"));
+    rsprintf("<tr><td bgcolor=%s align=center>%s</td></tr>\n", gt("Cell BGColor"), path);
 
-      rsprintf("<tr><td bgcolor=%s align=center>%s</td></tr>\n", gt("Cell BGColor"), path);
-
-      rsprintf("<tr><td bgcolor=%s align=center><input type=submit name=confirm value=Yes>\n", gt("Cell BGColor"));
-      rsprintf("<input type=submit name=confirm value=No>\n", gt("Cell BGColor"));
-      rsprintf("</td></tr>\n\n");
-      }
+    rsprintf("<tr><td bgcolor=%s align=center><input type=submit name=confirm value=Yes>\n", gt("Cell BGColor"));
+    rsprintf("<input type=submit name=confirm value=No>\n", gt("Cell BGColor"));
+    rsprintf("</td></tr>\n\n");
     }
 
   rsprintf("</table></td></tr></table>\n");
@@ -3924,7 +3989,7 @@ FILE   *f;
 
 void submit_elog()
 {
-char   str[256], mail_to[256], mail_from[256],
+char   str[256], mail_to[256], mail_from[256], file_name[256],
        mail_text[10000], mail_list[MAX_N_LIST][NAME_LENGTH], list[10000], smtp_host[256], 
        tag[80], subject[256], attrib[MAX_N_ATTR][NAME_LENGTH];
 char   *buffer[MAX_ATTACHMENTS], mail_param[1000];
@@ -3980,14 +4045,7 @@ int    i, j, n, index, n_attr, n_mail, n_subj, suppress, status;
 
   /* retrieve attributes */
   for (i=0 ; i<n_attr ; i++)
-    {
     strcpy(attrib[i], getparam(attr_list[i]));
-    if (attr_flags[i] & AF_ADD_REMOTE_ADDR)
-      {
-      strcat(attrib[i], "@");
-      strcat(attrib[i], host_name);
-      }
-    }
 
   tag[0] = 0;
   if (*getparam("edit"))
@@ -4074,7 +4132,14 @@ int    i, j, n, index, n_attr, n_mail, n_subj, suppress, status;
               }
             }
 
-          sprintf(mail_text+strlen(mail_text), "Link                : %s%s/%s\r\n", elogd_full_url, logbook_enc, tag);
+          sprintf(mail_text+strlen(mail_text), "\r\nLogbook URL         : %s%s/%s\r\n", elogd_full_url, logbook_enc, tag);
+
+          if (getcfg(logbook, "Email message body", str) &&
+              atoi(str) == 1)
+            {
+            sprintf(mail_text+strlen(mail_text), "\r\n=================================\r\n\r\n%s", 
+              getparam("text"));
+            }
 
           sendmail(smtp_host, mail_from, mail_to, subject, mail_text);
 
@@ -4095,6 +4160,14 @@ int    i, j, n, index, n_attr, n_mail, n_subj, suppress, status;
   for (i=0 ; i<MAX_ATTACHMENTS ; i++)
     if (buffer[i])
       free(buffer[i]);
+
+  if (getcfg(logbook, "Submit page", str))
+    {
+    strcpy(file_name, cfg_dir);
+    strcat(file_name, str);
+    send_file(file_name);
+    return;
+    }
 
   rsprintf("HTTP/1.1 302 Found\r\n");
   rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
@@ -4217,13 +4290,13 @@ char   date[80], text[TEXT_SIZE],  old_data_dir[256], tag[32],
 
   rsprintf("<tr><td bgcolor=#80FF80 align=center>");
   if (move)
-    rsprintf("<b>Message moved successfully from logbook \"%s\" to logbook \"%s\"</b></tr>\n", logbook, dst_logbook);
+    rsprintf("<b>Message moved successfully from \"%s\" to \"%s\"</b></tr>\n", logbook, dst_logbook);
   else
-    rsprintf("<b>Message copied successfully from logbook \"%s\" to logbook \"%s\"</b></tr>\n", logbook, dst_logbook);
+    rsprintf("<b>Message copied successfully from \"%s\" to \"%s\"</b></tr>\n", logbook, dst_logbook);
 
-  rsprintf("<tr><td bgcolor=%s align=center>Go to logbook <a href=\"/%s/%s\">%s</td></tr>\n", 
+  rsprintf("<tr><td bgcolor=%s align=center>Go to <a href=\"/%s/%s\">%s</td></tr>\n", 
             gt("Cell BGColor"), logbook, src_path, logbook);
-  rsprintf("<tr><td bgcolor=%s align=center>Go to logbook <a href=\"/%s\">%s</td></tr>\n", 
+  rsprintf("<tr><td bgcolor=%s align=center>Go to <a href=\"/%s\">%s</td></tr>\n", 
             gt("Cell BGColor"), dst_logbook, dst_logbook);
 
   rsprintf("</table></td></tr></table>\n");
@@ -4236,24 +4309,15 @@ char   date[80], text[TEXT_SIZE],  old_data_dir[256], tag[32],
 
 void show_elog_page(char *logbook, char *path)
 {
-int    size, i, msg_status, status, fh, length, first_message, last_message, index, n_attr;
+int    size, i, j, n, msg_status, status, fh, length, first_message, last_message, index, n_attr;
 char   str[256], orig_path[256], command[80], ref[256], file_name[256], attrib[MAX_N_ATTR][NAME_LENGTH];
-char   date[80], text[TEXT_SIZE], *buf,
+char   date[80], text[TEXT_SIZE],
        orig_tag[80], reply_tag[80], attachment[MAX_ATTACHMENTS][256], encoding[80], att[256], lattr[256];
+char   menu_item[MAX_N_LIST][NAME_LENGTH];
 FILE   *f;
-BOOL   allow_delete, allow_edit;
 
   n_attr = scan_attributes(logbook);
 
-  allow_delete = FALSE;
-  allow_edit = TRUE;
-
-  /* get flags from configuration file */
-  if (getcfg(logbook, "Allow delete", str))
-    allow_delete = atoi(str);
-  if (getcfg(logbook, "Allow edit", str))
-    allow_edit = atoi(str);
-  
   if (getcfg(logbook, "Types", str))
     {
     show_upgrade_page();
@@ -4336,13 +4400,27 @@ BOOL   allow_delete, allow_edit;
 
   if (equal_ustring(command, "copy to"))
     {
-    copy_to(path, getparam("dest"), 0);
+    copy_to(path, getparam("destc"), 0);
     return;
     }
 
   if (equal_ustring(command, "move to"))
     {
-    copy_to(path, getparam("dest"), 1);
+    copy_to(path, getparam("destm"), 1);
+    return;
+    }
+
+  if (equal_ustring(command, "config"))
+    {
+    show_config_page();
+    return;
+    }
+
+  if (equal_ustring(command, "save"))
+    {
+    if (!save_config())
+      return;
+    redirect("");
     return;
     }
 
@@ -4479,28 +4557,9 @@ BOOL   allow_delete, allow_edit;
 
   if (!path[0] && getcfg(logbook, "Welcome page", str))
     {
-    show_standard_header("", "");
-
-    strcpy(file_name, data_dir);
+    strcpy(file_name, cfg_dir);
     strcat(file_name, str);
-    fh = open(file_name, O_RDONLY | O_BINARY);
-    if (fh > 0)
-      {
-      lseek(fh, 0, SEEK_END);
-      size = TELL(fh);
-      lseek(fh, 0, SEEK_SET);
-
-      buf = malloc(size+1);
-
-      if (buf)
-        read(fh, buf, size);
-      buf[size] = 0;
-
-      rsputs(buf);
-      free(buf);
-
-      close(fh);
-      }
+    send_file(file_name);
     return;
     }
   
@@ -4545,124 +4604,76 @@ BOOL   allow_delete, allow_edit;
 
   rsprintf("<tr><td align=%s bgcolor=%s>\n", gt("Menu1 Align"), gt("Menu1 BGColor"));
   
+  getcfg(logbook, "Menu commands", str);
+  if (str[0] == 0)
+    strcpy(str, "New, Edit, Delete, Reply, Find, Last day, Last 10, Config, Help");
+
+  n = strbreak(str, menu_item, MAX_N_LIST);
+
   if (atoi(gt("Use buttons")) == 1)
     {
-    rsprintf("<input type=submit name=cmd value=New>\n");
-    if (allow_edit)
-      rsprintf("<input type=submit name=cmd value=Edit>\n");
-    if (allow_delete)
-      rsprintf("<input type=submit name=cmd value=Delete>\n");
-    rsprintf("<input type=submit name=cmd value=Reply>\n");
-    rsprintf("<input type=submit name=cmd value=Find>\n");
-    rsprintf("<input type=submit name=cmd value=\"Last day\">\n");
-    rsprintf("<input type=submit name=cmd value=\"Last 10\">\n");
-
-    if (getcfg(logbook, "Allow copy", str) &&
-        atoi(str) == 1)
+    for (i=0 ; i<n ; i++)
       {
-      rsprintf("<input type=submit name=cmd value=\"Copy to\">\n");
+      /* display menu item */
+      rsprintf("<input type=submit name=cmd value=\"%s\">\n", menu_item[i]);
 
-      /* put one link for each logbook except current one */
-      rsprintf("<select name=dest>\n");
-      for (i=0 ;  ; i++)
+      if (equal_ustring(menu_item[i], "copy to") ||
+          equal_ustring(menu_item[i], "move to"))
         {
-        if (!enumgrp(i, str))
-          break;
+        /* put one link for each logbook except current one */
+        rsprintf("<select name=dest%c>\n", menu_item[i][0]);
+        for (j=0 ;  ; j++)
+          {
+          if (!enumgrp(j, str))
+            break;
 
-        if (equal_ustring(str, "global"))
-          continue;
+          if (equal_ustring(str, "global"))
+            continue;
 
-        if (equal_ustring(str, logbook))
-          continue;
+          if (equal_ustring(str, logbook))
+            continue;
 
-        rsprintf("<option value=\"%s\">%s\n", str, str);
+          rsprintf("<option value=\"%s\">%s\n", str, str);
+          }
+        rsprintf("</select>\n");
         }
-      rsprintf("</select>\n");
       }
-
-    if (getcfg(logbook, "Allow move", str) &&
-        atoi(str) == 1)
-      {
-      rsprintf("<input type=submit name=cmd value=\"Move to\">\n");
-
-      /* put one link for each logbook except current one */
-      rsprintf("<select name=dest>\n");
-      for (i=0 ;  ; i++)
-        {
-        if (!enumgrp(i, str))
-          break;
-
-        if (equal_ustring(str, "global"))
-          continue;
-
-        if (equal_ustring(str, logbook))
-          continue;
-
-        rsprintf("<option value=\"%s\">%s\n", str, str);
-        }
-      rsprintf("</select>\n");
-      }
-
-    rsprintf("<input type=submit name=cmd value=\"Help\">\n");
     }
   else
     {
     rsprintf("<small>\n");
-    rsprintf("&nbsp;<a href=\"/%s?cmd=New\">New</a>&nbsp;|\n", logbook_enc);
-    if (allow_edit)
-      rsprintf("&nbsp;<a href=\"/%s/%s?cmd=Edit\">Edit</a>&nbsp|\n", logbook_enc, path);
-    if (allow_delete)
-      rsprintf("&nbsp;<a href=\"/%s/%s?cmd=Delete\">Delete</a>&nbsp|\n", logbook_enc, path);
-    rsprintf("&nbsp;<a href=\"/%s/%s?cmd=Reply\">Reply</a>&nbsp|\n", logbook_enc, path);
-    rsprintf("&nbsp;<a href=\"/%s?cmd=Find\">Find</a>&nbsp|\n", logbook_enc);
-    rsprintf("&nbsp;<a href=\"/%s?cmd=Last+day\">Last day</a>&nbsp|\n", logbook_enc);
-    rsprintf("&nbsp;<a href=\"/%s?cmd=Last+10\">Last 10</a>&nbsp|\n", logbook_enc);
 
-    if (getcfg(logbook, "Allow copy", str) &&
-        atoi(str) == 1)
+    for (i=0 ; i<n ; i++)
       {
-      /* put one link for each logbook except current one */
-      for (i=0 ;  ; i++)
+      /* display menu item */
+      if (equal_ustring(menu_item[i], "copy to") ||
+          equal_ustring(menu_item[i], "move to"))
         {
-        if (!enumgrp(i, str))
-          break;
+        /* put one link for each logbook except current one */
+        for (j=0 ;  ; j++)
+          {
+          if (!enumgrp(j, str))
+            break;
 
-        if (equal_ustring(str, "global"))
-          continue;
+          if (equal_ustring(str, "global"))
+            continue;
 
-        if (equal_ustring(str, logbook))
-          continue;
+          if (equal_ustring(str, logbook))
+            continue;
 
-        strcpy(ref, str);
-        url_encode(ref);
-        rsprintf("&nbsp;<a href=\"/%s/%s?cmd=Copy+to&dest=%s\">Copy to \"%s\"</a>&nbsp|\n", 
-                  logbook_enc, path, ref, str);
+          strcpy(ref, str);
+          url_encode(ref);
+          if (equal_ustring(menu_item[i], "copy to"))
+            rsprintf("&nbsp;<a href=\"/%s/%s?cmd=Copy+to&destc=%s\">Copy to \"%s\"</a>&nbsp|\n", 
+                      logbook_enc, path, ref, str);
+          else
+            rsprintf("&nbsp;<a href=\"/%s/%s?cmd=Move+to&destm=%s\">Move to \"%s\"</a>&nbsp|\n", 
+                      logbook_enc, path, ref, str);
+          }
         }
+      else
+        rsprintf("&nbsp;<a href=\"/%s?cmd=%s\">%s</a>&nbsp;|\n", logbook_enc, menu_item[i], menu_item[i]);
       }
-
-    if (getcfg(logbook, "Allow move", str) &&
-        atoi(str) == 1)
-      {
-      /* put one link for each logbook except current one */
-      for (i=0 ;  ; i++)
-        {
-        if (!enumgrp(i, str))
-          break;
-
-        if (equal_ustring(str, "global"))
-          continue;
-
-        if (equal_ustring(str, logbook))
-          continue;
-
-        strcpy(ref, str);
-        url_encode(ref);
-        rsprintf("&nbsp;<a href=\"/%s/%s?cmd=Move+to&dest=%s\">Move to \"%s\"</a>&nbsp|\n", 
-                  logbook_enc, path, ref, str);
-        }
-      }
-
-    rsprintf("&nbsp;<a href=\"/%s?cmd=Help\">Help</a>&nbsp\n", logbook_enc);
 
     rsprintf("</small>\n");
     }
@@ -4880,50 +4891,54 @@ BOOL   allow_delete, allow_edit;
 
         rsprintf("</td></tr></table></td></tr>\n");
 
-        if (strstr(att, ".GIF") ||
-            strstr(att, ".JPG") ||
-            strstr(att, ".PNG"))
+        if (!getcfg(logbook, "Show attachments", str) ||
+            atoi(str) == 1)
           {
-          rsprintf("<tr><td><table width=100%% border=0 cellpadding=0 cellspacing=1 bgcolor=%s>\n", gt("Frame color"));
-          rsprintf("<tr><td bgcolor=%s>", gt("Text bgcolor"));
-          rsprintf("<img src=\"%s\"></td></tr>", ref);
-          rsprintf("</table></td></tr>\n\n");
-          }
-        else
-          {
-          if (strstr(att, ".TXT") ||
-              strstr(att, ".ASC") ||
-              strchr(att, '.') == NULL)
+          if (strstr(att, ".GIF") ||
+              strstr(att, ".JPG") ||
+              strstr(att, ".PNG"))
             {
-            /* display attachment */
             rsprintf("<tr><td><table width=100%% border=0 cellpadding=0 cellspacing=1 bgcolor=%s>\n", gt("Frame color"));
             rsprintf("<tr><td bgcolor=%s>", gt("Text bgcolor"));
-            if (!strstr(att, ".HTML"))
-              rsprintf("<br><pre>");
-
-            strcpy(file_name, data_dir);
-            strcat(file_name, attachment[index]);
-
-            f = fopen(file_name, "rt");
-            if (f != NULL)
+            rsprintf("<img src=\"%s\"></td></tr>", ref);
+            rsprintf("</table></td></tr>\n\n");
+            }
+          else
+            {
+            if (strstr(att, ".TXT") ||
+                strstr(att, ".ASC") ||
+                strchr(att, '.') == NULL)
               {
-              while (!feof(f))
+              /* display attachment */
+              rsprintf("<tr><td><table width=100%% border=0 cellpadding=0 cellspacing=1 bgcolor=%s>\n", gt("Frame color"));
+              rsprintf("<tr><td bgcolor=%s>", gt("Text bgcolor"));
+              if (!strstr(att, ".HTML"))
+                rsprintf("<br><pre>");
+
+              strcpy(file_name, data_dir);
+              strcat(file_name, attachment[index]);
+
+              f = fopen(file_name, "rt");
+              if (f != NULL)
                 {
-                str[0] = 0;
-                fgets(str, sizeof(str), f);
+                while (!feof(f))
+                  {
+                  str[0] = 0;
+                  fgets(str, sizeof(str), f);
 
-                if (!strstr(att, ".HTML"))
-                  rsputs2(str);
-                else
-                  rsputs(str);
+                  if (!strstr(att, ".HTML"))
+                    rsputs2(str);
+                  else
+                    rsputs(str);
+                  }
+                fclose(f);
                 }
-              fclose(f);
-              }
 
-            if (!strstr(att, ".HTML"))
-              rsprintf("</pre>");
-            rsprintf("\n");
-            rsprintf("</td></tr></table></td></tr>\n");
+              if (!strstr(att, ".HTML"))
+                rsprintf("</pre>");
+              rsprintf("\n");
+              rsprintf("</td></tr></table></td></tr>\n");
+              }
             }
           }
         }
@@ -4987,12 +5002,12 @@ char  str[256];
 
 /*------------------------------------------------------------------*/
 
-BOOL check_delete_password(char *logbook, char *password, char *redir)
+BOOL check_admin_password(char *logbook, char *password, char *redir)
 {
 char  str[256];
 
-  /* get write password from configuration file */
-  if (getcfg(logbook, "Delete password", str))
+  /* get password from configuration file */
+  if (getcfg(logbook, "Admin password", str))
     {
     if (strcmp(password, str) == 0)
       return TRUE;
@@ -5012,10 +5027,10 @@ char  str[256];
       rsprintf("<tr><th bgcolor=#FF0000>Wrong password!</th></tr>\n");
 
     rsprintf("<tr><td align=center bgcolor=%s>\n", gt("Title bgcolor"));
-    rsprintf("<font color=%s>Please enter password to obtain delete access</font></td></tr>\n", 
+    rsprintf("<font color=%s>Please enter password to obtain administration access</font></td></tr>\n", 
              gt("Title fontcolor"));
     
-    rsprintf("<tr><td align=center bgcolor=%s><input type=password name=dpwd></td></tr>\n", gt("Cell BGColor"));
+    rsprintf("<tr><td align=center bgcolor=%s><input type=password name=apwd></td></tr>\n", gt("Cell BGColor"));
     rsprintf("<tr><td align=center bgcolor=%s><input type=submit value=Submit></td></tr>", gt("Cell BGColor"));
 
     rsprintf("</table></td></tr></table>\n");
@@ -5103,7 +5118,7 @@ static char last_password[32];
 
 /*------------------------------------------------------------------*/
 
-void interprete(char *cookie_wpwd, char *cookie_dpwd, char *path)
+void interprete(char *cookie_wpwd, char *cookie_apwd, char *path)
 /********************************************************************\
 
   Routine: interprete
@@ -5121,9 +5136,9 @@ void interprete(char *cookie_wpwd, char *cookie_dpwd, char *path)
 {
 int    i, n, index;
 double exp;
-char   str[256], enc_pwd[80];
+char   str[256], enc_pwd[80], file_name[256];
 char   enc_path[256], dec_path[256];
-char   *experiment, *wpassword, *dpassword, *command, *value, *group;
+char   *experiment, *wpassword, *apassword, *command, *value, *group;
 time_t now;
 struct tm *gmt;
 
@@ -5136,7 +5151,7 @@ struct tm *gmt;
 
   experiment = getparam("exp");
   wpassword = getparam("wpwd");
-  dpassword = getparam("dpwd");
+  apassword = getparam("apwd");
   command = getparam("cmd");
   value = getparam("value");
   group = getparam("group");
@@ -5148,6 +5163,15 @@ struct tm *gmt;
     strcpy(logbook_enc, experiment);
     strcpy(logbook, experiment);
     url_decode(logbook);
+    }
+
+  /* check for global welcome page if no logbook given */
+  if (!logbook[0] && getcfg("global", "Welcome page", str))
+    {
+    strcpy(file_name, cfg_dir);
+    strcat(file_name, str);
+    send_file(file_name);
+    return;
     }
 
   /* if no logbook given, display logbook selection page */
@@ -5222,12 +5246,12 @@ struct tm *gmt;
     return;
     }
 
-  if (dpassword[0])
+  if (apassword[0])
     {
     /* check if password correct */
-    base64_encode(dpassword, enc_pwd);
+    base64_encode(apassword, enc_pwd);
 
-    if (!check_delete_password(logbook, enc_pwd, getparam("redir")))
+    if (!check_admin_password(logbook, enc_pwd, getparam("redir")))
       return;
     
     rsprintf("HTTP/1.1 302 Found\r\n");
@@ -5240,7 +5264,7 @@ struct tm *gmt;
 
     /* get optional expriation from configuration file */
     exp = 24;
-    if (getcfg(logbook, "Delete password expiration", str))
+    if (getcfg(logbook, "Admin password expiration", str))
       exp = atof(str);
 
     time(&now);
@@ -5248,7 +5272,7 @@ struct tm *gmt;
     gmt = gmtime(&now);
     strftime(str, sizeof(str), "%A, %d-%b-%y %H:%M:%S GMT", gmt);
 
-    rsprintf("Set-Cookie: elog_dpwd=%s; path=/%s; expires=%s\r\n", enc_pwd, logbook_enc, str);
+    rsprintf("Set-Cookie: elog_apwd=%s; path=/%s; expires=%s\r\n", enc_pwd, logbook_enc, str);
 
     sprintf(str, "%s%s/%s", elogd_url, logbook_enc, getparam("redir"));
     rsprintf("Location: %s\r\n\r\n<html>redir</html>\r\n", str);
@@ -5268,10 +5292,11 @@ struct tm *gmt;
       return;
     }
 
-  if (equal_ustring(command, "delete"))
+  if (equal_ustring(command, "delete") ||
+      equal_ustring(command, "config"))
     {
     sprintf(str, "%s?cmd=%s", path, command);
-    if (!check_delete_password(logbook, cookie_dpwd, str))
+    if (!check_admin_password(logbook, cookie_apwd, str))
       return;
     }
 
@@ -5281,7 +5306,7 @@ struct tm *gmt;
 
 /*------------------------------------------------------------------*/
 
-void decode_get(char *string, char *cookie_wpwd, char *cookie_dpwd)
+void decode_get(char *string, char *cookie_wpwd, char *cookie_apwd)
 {
 char path[256];
 char *p, *pitem;
@@ -5320,12 +5345,12 @@ char *p, *pitem;
       }
     }
   
-  interprete(cookie_wpwd, cookie_dpwd, path);
+  interprete(cookie_wpwd, cookie_apwd, path);
 }
 
 /*------------------------------------------------------------------*/
 
-void decode_post(char *string, char *boundary, int length, char *cookie_wpwd, char *cookie_dpwd)
+void decode_post(char *string, char *boundary, int length, char *cookie_wpwd, char *cookie_apwd)
 {
 char *pinit, *p, *pitem, *ptmp, file_name[256], str[256];
 int  i, n;
@@ -5442,7 +5467,7 @@ int  i, n;
 
     } while ((INT)string - (INT)pinit < length);
 
-  interprete(cookie_wpwd, cookie_dpwd, "");
+  interprete(cookie_wpwd, cookie_apwd, "");
 }
 
 /*------------------------------------------------------------------*/
@@ -5470,7 +5495,7 @@ void server_loop(int tcp_port, int daemon)
 int                  status, i, n, n_error, authorized, min, i_min, i_conn, length;
 struct sockaddr_in   serv_addr, acc_addr;
 char                 pwd[256], str[256], cl_pwd[256], *p;
-char                 cookie_wpwd[256], cookie_dpwd[256], boundary[256], list[1000],
+char                 cookie_wpwd[256], cookie_apwd[256], boundary[256], list[1000],
                      host_list[MAX_N_LIST][NAME_LENGTH], rem_host_name[256],
                      rem_host_ip[256];
 int                  lsock, len, flag, content_length, header_length;
@@ -5747,11 +5772,11 @@ struct timeval       timeout;
         strcpy(cookie_wpwd, strstr(net_buffer, "elog_wpwd=")+10);
         cookie_wpwd[strcspn(cookie_wpwd, " ;\r\n")] = 0;
         }
-      cookie_dpwd[0] = 0;
-      if (strstr(net_buffer, "elog_dpwd=") != NULL)
+      cookie_apwd[0] = 0;
+      if (strstr(net_buffer, "elog_apwd=") != NULL)
         {
-        strcpy(cookie_dpwd, strstr(net_buffer, "elog_dpwd=")+10);
-        cookie_dpwd[strcspn(cookie_dpwd, " ;\r\n")] = 0;
+        strcpy(cookie_apwd, strstr(net_buffer, "elog_apwd=")+10);
+        cookie_apwd[strcspn(cookie_apwd, " ;\r\n")] = 0;
         }
 
       memset(return_buffer, 0, sizeof(return_buffer));
@@ -5783,7 +5808,8 @@ struct timeval       timeout;
             break;
           }
 
-        if (strstr(logbook, ".gif") || strstr(logbook, ".jpg") || strstr(logbook, ".png"))
+        if (strstr(logbook, ".gif") || strstr(logbook, ".jpg") || strstr(logbook, ".png") ||
+            strstr(logbook, ".htm"))
           {
           /* server file directly */
           strcpy(str, cfg_dir);
@@ -6054,13 +6080,13 @@ struct timeval       timeout;
             p++;
 
           /* decode command and return answer */
-          decode_get(p, cookie_wpwd, cookie_dpwd);
+          decode_get(p, cookie_wpwd, cookie_apwd);
           }
         else if (strncmp(net_buffer, "POST", 4) == 0)
           {
           if (verbose)
             printf("%s\n", net_buffer+header_length);
-          decode_post(net_buffer+header_length, boundary, content_length, cookie_wpwd, cookie_dpwd);
+          decode_post(net_buffer+header_length, boundary, content_length, cookie_wpwd, cookie_apwd);
           }
         else
           {
@@ -6254,11 +6280,11 @@ main(int argc, char *argv[])
 {
 int i;
 int tcp_port = 80, daemon = FALSE;
-char read_pwd[80], write_pwd[80], delete_pwd[80], str[80];
+char read_pwd[80], write_pwd[80], admin_pwd[80], str[80];
 time_t now;
 struct tm *tms;
 
-  read_pwd[0] = write_pwd[0] = delete_pwd[0] = logbook[0] = 0;
+  read_pwd[0] = write_pwd[0] = admin_pwd[0] = logbook[0] = 0;
 
   strcpy(cfg_file, "elogd.cfg");
 
@@ -6295,21 +6321,21 @@ struct tm *tms;
         strcpy(read_pwd, argv[++i]);
       else if (argv[i][1] == 'w')
         strcpy(write_pwd, argv[++i]);
-      else if (argv[i][1] == 'd')
-        strcpy(delete_pwd, argv[++i]);
+      else if (argv[i][1] == 'a')
+        strcpy(admin_pwd, argv[++i]);
       else if (argv[i][1] == 'l')
         strcpy(logbook, argv[++i]);
       else
         {
 usage:
-        printf("usage: %s [-p port] [-D] [-c file] [-r pwd] [-w pwd] [-d pwd] [-l loggbook]\n\n", argv[0]);
+        printf("usage: %s [-p port] [-D] [-c file] [-r pwd] [-w pwd] [-a pwd] [-l loggbook]\n\n", argv[0]);
         printf("       -p <port> TCP/IP port\n");
         printf("       -D become a daemon\n");
         printf("       -c <file> specify configuration file\n");
         printf("       -v debugging output\n");
         printf("       -r create/overwrite read password in config file\n");
         printf("       -w create/overwrite write password in config file\n");
-        printf("       -d create/overwrite delete password in config file\n");
+        printf("       -a create/overwrite admin password in config file\n");
         printf("       -l <logbook> specify logbook for -r and -w commands\n\n");
         printf("       -k do not use keep-alive\n\n");
         return 0;
@@ -6341,15 +6367,15 @@ usage:
     return 0;
     }
 
-  if (delete_pwd[0])
+  if (admin_pwd[0])
     {
     if (!logbook[0])
       {
       printf("Must specify a lookbook via the -l parameter.\n");
       return 0;
       }
-    base64_encode(delete_pwd, str);
-    create_password(logbook, "Delete Password", str);
+    base64_encode(admin_pwd, str);
+    create_password(logbook, "Admin Password", str);
     return 0;
     }
 
