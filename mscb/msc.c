@@ -6,6 +6,9 @@
   Contents:     Command-line interface for the Midas Slow Control Bus
 
   $Log$
+  Revision 1.29  2003/02/18 11:21:12  midas
+  Added repeat scan mode
+
   Revision 1.28  2003/01/30 08:34:06  midas
   Added [cf] flags to echo
 
@@ -175,7 +178,7 @@ NAME_TABLE unit_table[] = {
 void print_help()
 {
   puts("Available commands:\n");
-  puts("scan                       Scan bus for nodes");
+  puts("scan [r]                   Scan bus for nodes [repeat mode]");
   puts("ping <addr>                Ping node and set address");
   puts("addr <addr>                Set address");
   puts("gaddr <addr>               Set group address");
@@ -408,26 +411,32 @@ MSCB_INFO_CHN info_chn;
     /* scan */
     else if ((param[0][0] == 's' && param[0][1] == 'c'))
       {
-      for (i=0 ; i<0x10000 ; i++)
+      do
         {
-        printf("Test address %d\r", i);
-        fflush(stdout);
-        
-        status = mscb_ping(fd, i);
-
-        if (status == MSCB_SUCCESS)
+        for (i=0 ; i<0x10000 ; i++)
           {
-          status = mscb_info(fd, i, &info);
+          printf("Test address %d    \r", i);
+          fflush(stdout);
+        
+          status = mscb_ping(fd, i);
+
           if (status == MSCB_SUCCESS)
             {
-            printf("Found node \"%s\", node addr. %d (0x%04X), group addr. %d (0x%04X)      \n", 
-              info.node_name, i, i, info.group_address, info.group_address);
+            status = mscb_info(fd, i, &info);
+            if (status == MSCB_SUCCESS)
+              {
+              printf("Found node \"%s\", node addr. %d (0x%04X), group addr. %d (0x%04X)      \n", 
+                info.node_name, i, i, info.group_address, info.group_address);
+              }
             }
-          }
 
-        if (i == 1000)
-          i = 0xFFFE;
-        }
+          if (i == 1000)
+            i = 0xFFFE;
+          }
+        } while (param[1][0] == 'r' && !kbhit());
+
+      while (kbhit())
+        getch();
 
       printf("                       \n");
       }
