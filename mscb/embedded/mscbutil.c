@@ -6,6 +6,9 @@
   Contents:     Various utility functions for MSCB protocol
 
   $Log$
+  Revision 1.29  2004/03/04 14:35:45  midas
+  Updated baud rate table
+
   Revision 1.28  2004/02/24 13:30:21  midas
   Implemented C8051F310 code
 
@@ -95,9 +98,14 @@
 #include "mscb.h"
 #include <intrins.h>
 
-extern SYS_INFO sys_info;       // for eeprom functions
+#ifdef EEPROM_SUPPORT
+
+extern SYS_INFO sys_info;               // for eeprom functions
 extern MSCB_INFO_VAR code variables[];
-extern bit adr_led_on, adr_led_off;     // used for addressed LED flashing
+
+#endif
+
+#pragma NOAREGS                 // all functions can be called from interrupt routine!
 
 /*------------------------------------------------------------------*/
 
@@ -135,8 +143,6 @@ unsigned char code crc8_data[] = {
    0x74, 0x2a, 0xc8, 0x96, 0x15, 0x4b, 0xa9, 0xf7,
    0xb6, 0xe8, 0x0a, 0x54, 0xd7, 0x89, 0x6b, 0x35,
 };
-
-#pragma NOAREGS                 // all functions can be called from interrupt routine!
 
 unsigned char crc8(unsigned char *buffer, int len)
 /********************************************************************\
@@ -411,6 +417,15 @@ void uart_init(unsigned char port, unsigned char baud)
       0x100 - 48,   // 115200
       0x100 - 32,   // 172800
       0x100 - 16 }; // 345600
+#elif defined(CPU_C8051F320)
+   unsigned char code baud_table[] =
+     {0x100 - 0,    //  N/A
+      0x100 - 0,    //  N/A
+      0x100 - 208,  //  28800
+      0x100 - 104,  //  57600
+      0x100 - 52,   // 115200
+      0x100 - 35,   // 172800  2% error
+      0x100 - 17 }; // 345600  2% error
 #else
    unsigned char code baud_table[] =
      {0x100 - 36, 
@@ -425,9 +440,9 @@ void uart_init(unsigned char port, unsigned char baud)
    if (port);
 
    SCON0 = 0xD0;                // Mode 3, 9 bit, receive enable
-// SCON0 = 0x50;    // Mode 1, 8 bit, receive enable
+// SCON0 = 0x50;                // Mode 1, 8 bit, receive enable
 
-#if defined (CPU_C8051F310)
+#if defined(CPU_C8051F310) || defined(CPU_C8051F320)
    TMOD  |= 0x20;               // 8-bit counter with auto reload
    CKCON |= 0x08;               // use system clock
 
@@ -444,7 +459,7 @@ void uart_init(unsigned char port, unsigned char baud)
 
 #if defined(CPU_ADUC812)
    PS = 1;                      // serial interrupt high priority for slow ADuC
-#elif defined(CPU_C8051F310)
+#elif defined(CPU_C8051F310) || defined(CPU_C8051F320)
    IP = 0;                      // serial interrupt low priority
 #else
    PS = 0;                      // serial interrupt low priority
@@ -504,7 +519,7 @@ void sysclock_init(void)
 {
    unsigned char i;
 
-#if defined(CPU_C8051F310)      // --- use timer 2 for that device
+#if defined(CPU_C8051F310) || defined(CPU_C8051F320) // --- use timer 2 for those devices
 
    EA = 1;                      // general interrupt enable
    IE |= 0x20;                  // Enable Timer 2 interrupt
@@ -635,7 +650,7 @@ void led_int() reentrant using 2
 
 /*------------------------------------------------------------------*/
 
-#if defined(CPU_C8051F310)
+#if defined(CPU_C8051F310) || defined(CPU_C8051F320)
 
 void timer2_int(void) interrupt 5 using 2
 /********************************************************************\
@@ -716,7 +731,7 @@ void watchdog_refresh(void)
 
 #ifdef CPU_CYGNAL
 
-#if defined(CPU_C8051F310)
+#if defined(CPU_C8051F310) || defined(CPU_C8051F320)
    PCA0CPH4 = 0x00;
 #else
    WDTCN = 0xA5;
@@ -795,6 +810,8 @@ void delay_us(unsigned int us)
 #endif
 
 /*------------------------------------------------------------------*/
+
+#ifdef EEPROM_SUPPORT
 
 void eeprom_read(void * dst, unsigned char len, unsigned char *offset)
 /********************************************************************\
@@ -946,7 +963,7 @@ void eeprom_write(void * src, unsigned char len, unsigned char *offset)
    for (i = 0; i < len; i++) {  // write data
       b = *s++;
 
-#if defined(CPU_C8051F310)
+#if defined(CPU_C8051F310) || defined(CPU_C8051F320)
       FLKEY = 0xA5;             // write flash key code
       FLKEY = 0xF1;
 #endif
@@ -988,7 +1005,7 @@ void eeprom_erase(void)
 #endif
    PSCTL = 0x03;                        // allow write and erase
 
-#if defined(CPU_C8051F310)
+#if defined(CPU_C8051F310) || defined(CPU_C8051F320)
    p = EEPROM_OFFSET;                   // erase first page
    FLKEY = 0xA5;                        // write flash key code
    FLKEY = 0xF1;
@@ -1069,6 +1086,8 @@ unsigned char eeprom_retrieve(void)
 
    return (magic == 0x1234);
 }
+
+#endif /* EEPROM_SUPPORT */
 
 /*------------------------------------------------------------------*/
 
