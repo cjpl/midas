@@ -14,6 +14,9 @@
                 Brown, Prentice Hall
 
   $Log$
+  Revision 1.55  2001/04/23 08:25:41  midas
+  Use execvp instead execve so that mserver is searched in the full PATH
+
   Revision 1.54  2000/11/17 08:25:46  midas
   Added disable_shm_write flag for Linux cluster applications
 
@@ -1121,7 +1124,7 @@ INT ss_spawnv(INT mode, char *cmdname, char *argv[])
   if (child_pid == 0)
     {
     /* now we are in the child process ... */
-    child_pid = execve(cmdname, argv, environ);
+    child_pid = execvp(cmdname, argv);
     return BM_SUCCESS;
     }
   else
