@@ -14,6 +14,9 @@
  *  Revision    : 1.0  1998        Pierre	 Initial revision
  *                include linux-camac.h from linux drivers
  *  $Log$
+ *  Revision 1.2  1998/10/09 23:17:41  midas
+ *  -PAA- Made OS_LINUX dependent
+ *
  *  Revision 1.1  1998/10/09 22:43:35  midas
  *  -PAA- MCStd compliant for Linux driver
  *
@@ -32,6 +35,9 @@
 
 #include "midas.h"
 #include <stdio.h>
+#include "mcstd.h"
+
+#ifdef OS_LINUX
 #include <string.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -40,7 +46,6 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/ioctl.h>
-#include "mcstd.h"
 
 #ifndef DEVNAME
 #define DEVNAME		"/dev/camac"
@@ -945,3 +950,20 @@ int cblock( int n, int a, int f, int mode, int bits,
 	*count = cblock.count;
 	return 0;
 }
+#else
+INLINE void cam16i_q(const int c, const int n, const int a, const int f, WORD *d, int *x, int *q){*d=0;*q=*x=1;}
+INLINE void cam24i_q(const int c, const int n, const int a, const int f, DWORD *d, int *x, int *q){*d=0;*q=*x=1;}
+INLINE void cam16o_q(const int c, const int n, const int a, const int f, WORD d, int *x, int *q){*q=*x=1;}
+INLINE void cam24o_q(const int c, const int n, const int a, const int f, DWORD d, int *x, int *q){*q=*x=1;}
+INLINE int  cam_init(void){printf(" NOT OS_LINUX ==> simulation \n"); return 1;}
+INLINE int  cam_init_rpc(char *host_name, char *exp_name, char *client_name, char *rpc_server){return 1;}
+INLINE void cam_exit(void){printf(" WAS NOT OS_LINUX ==> simulation \n");}
+INLINE void cam_inhibit_set(const int c){}
+INLINE void cam_inhibit_clear(const int c){}
+INLINE void cam_crate_clear(const int c){}
+INLINE void cam_crate_zinit(const int c){}
+INLINE void cam_lam_enable(const int c, const int n){}
+INLINE void cam_lam_disable(const int c, const int n){}
+INLINE void cam_lam_read(const int c, DWORD *lam){}
+INLINE void cam_lam_clear(const int c, const int n){}
+#endif
