@@ -6,6 +6,9 @@
   Contents:     Display/log some pertinent information of the ODB
   
   $Log$
+  Revision 1.10  2000/02/28 17:57:06  pierre
+  - Change statistics to TID_DOUBLE for Super event implementation
+
   Revision 1.9  2000/02/25 18:51:51  pierre
   - include deferred transition messages
 
@@ -226,8 +229,8 @@ void compose_status(HNDLE hDB, HNDLE hKey)
 
 /* --------------------- Equipment tree -------------------------- */
 {
-  DWORD    equevtsend;
-  DWORD    equevtpsec;
+  double    equevtsend;
+  double    equevtpsec;
   char     equclient[256];
   char     equnode[256];
   double   equkbpsec;
@@ -245,76 +248,83 @@ void compose_status(HNDLE hDB, HNDLE hKey)
     sprintf(&(ststr[j][45]),"Event Rate[/s]");
     sprintf(&(ststr[j++][60]),"Data Rate[Kb/s]");
     for (i=0 ; ; i++)
-    {
-	    db_enum_key(hDB, hKey, i, &hSubkey);
-	    if (!hSubkey)
-	      break;
-	    db_get_key(hDB, hSubkey, &key);
-	    if ((key.type == TID_KEY) && 
-	      ((strstr(key.name,"ODB")) == NULL) &&
-	      ((strstr(key.name,"BOR")) == NULL) &&
-	      ((strstr(key.name,"EOR")) == NULL))
-	    {
-	      /* check if client running this equipment is present */
-	      /* extract client name from equipment */
-	      size = sizeof(equclient);
-	      sprintf(strtmp,"/equipment/%s/common/Frontend name",key.name);
-	      db_get_value(hDB, 0, strtmp, equclient, &size, TID_STRING);
-	      /* search client name under /system/clients/xxx/name */
-	      if (cm_exist(equclient,TRUE) == CM_SUCCESS)
-  	    {
-		      atleastone_active = TRUE;
-		      size = sizeof(equenabled);
-		      sprintf(strtmp,"/equipment/%s/common/enabled",key.name);
-		      db_get_value(hDB, 0, strtmp, &equenabled, &size, TID_BOOL);
-		      
-		      size = sizeof(equevtsend);
-		      sprintf(strtmp,"/equipment/%s/statistics/events sent",key.name);
-		      db_get_value(hDB, 0, strtmp, &equevtsend, &size, TID_DWORD);
-		      
-		      size = sizeof(equevtpsec);
-		      sprintf(strtmp,"/equipment/%s/statistics/events per sec.",key.name);
-		      db_get_value(hDB, 0, strtmp, &equevtpsec, &size, TID_DWORD);
-		      
-		      size = sizeof(equkbpsec);
-		      sprintf(strtmp,"/equipment/%s/statistics/kBytes per sec.",key.name);
-		      db_get_value(hDB, 0, strtmp, &equkbpsec, &size, TID_DOUBLE);
-		      
-		      size = sizeof(equnode);
-		      sprintf(strtmp,"/equipment/%s/common/Frontend host",key.name);
-		      db_get_value(hDB, 0, strtmp, equnode, &size, TID_STRING);
-		      {
-		        char *pp, sdummy[64];
-		        memset (sdummy,0,64);
-		        sprintf(&(ststr[j][0]),"%s ",key.name);
-		        pp = strchr(equnode,'.');
-		        if (pp != NULL) 
-		          sprintf(&(ststr[j][12]),"%s",strncpy(sdummy,equnode,pp-equnode));
-		        else
-		          sprintf(&(ststr[j][12]),"%s",strncpy(sdummy,equnode,strlen(equnode)));
-		        sprintf(&(ststr[j][30]),"%i",equevtsend);
-		        if (equenabled)
-		          {
-			        if (esc_flag)
-			          {
-			            sprintf(&(ststr[j][45]),"\033[7m%i\033[m",equevtpsec);
-			            sprintf(&(ststr[j++][67]),"%.1f",equkbpsec);
-			          }
-			        else
-			          {
-			            sprintf(&(ststr[j][45]),"%i",equevtpsec);
-			            sprintf(&(ststr[j++][60]),"%.1f",equkbpsec);
-			          }
-		          }
-		        else
-		          {
-		            sprintf(&(ststr[j][45]),"%i",equevtpsec);
-		            sprintf(&(ststr[j++][60]),"%.1f",equkbpsec);
-		          }
-		      } /* get value */
+      {
+	db_enum_key(hDB, hKey, i, &hSubkey);
+	if (!hSubkey)
+	  break;
+	db_get_key(hDB, hSubkey, &key);
+	if ((key.type == TID_KEY) && 
+	    ((strstr(key.name,"ODB")) == NULL) &&
+	    ((strstr(key.name,"BOR")) == NULL) &&
+	    ((strstr(key.name,"EOR")) == NULL))
+	  {
+	    /* check if client running this equipment is present */
+	    /* extract client name from equipment */
+	    size = sizeof(equclient);
+	    sprintf(strtmp,"/equipment/%s/common/Frontend name",key.name);
+	    db_get_value(hDB, 0, strtmp, equclient, &size, TID_STRING);
+	    /* search client name under /system/clients/xxx/name */
+	    if (cm_exist(equclient,TRUE) == CM_SUCCESS)
+	      {
+		atleastone_active = TRUE;
+		size = sizeof(equenabled);
+		sprintf(strtmp,"/equipment/%s/common/enabled",key.name);
+		db_get_value(hDB, 0, strtmp, &equenabled, &size, TID_BOOL);
+		
+		size = sizeof(equevtsend);
+		sprintf(strtmp,"/equipment/%s/statistics/events sent",key.name);
+		db_get_value(hDB, 0, strtmp, &equevtsend, &size, TID_DOUBLE);
+		
+		size = sizeof(equevtpsec);
+		sprintf(strtmp,"/equipment/%s/statistics/events per sec.",key.name);
+		db_get_value(hDB, 0, strtmp, &equevtpsec, &size, TID_DOUBLE);
+		
+		size = sizeof(equkbpsec);
+		sprintf(strtmp,"/equipment/%s/statistics/kBytes per sec.",key.name);
+		db_get_value(hDB, 0, strtmp, &equkbpsec, &size, TID_DOUBLE);
+		
+		size = sizeof(equnode);
+		sprintf(strtmp,"/equipment/%s/common/Frontend host",key.name);
+		db_get_value(hDB, 0, strtmp, equnode, &size, TID_STRING);
+		{
+		  char *pp, sdummy[64];
+		  memset (sdummy,0,64);
+		  sprintf(&(ststr[j][0]),"%s ",key.name);
+		  pp = strchr(equnode,'.');
+		  if (pp != NULL) 
+		    sprintf(&(ststr[j][12]),"%s",strncpy(sdummy,equnode,pp-equnode));
+		  else
+		    sprintf(&(ststr[j][12]),"%s",strncpy(sdummy,equnode,strlen(equnode)));
+
+		  if (equevtsend > 1E9)
+		    sprintf(&(ststr[j][30]),"%1.3lfG",equevtsend/1E9);
+		  else if (equevtsend > 1E6)
+		    sprintf(&(ststr[j][30]),"%1.3lfM",equevtsend/1E6);
+		  else
+		    sprintf(&(ststr[j][30]),"%1.0lf",equevtsend);
+
+		  if (equenabled)
+		    {
+		      if (esc_flag)
+			{
+			  sprintf(&(ststr[j][45]),"\033[7m%1.1lf\033[m",equevtpsec);
+			  sprintf(&(ststr[j++][67]),"%1.1lf",equkbpsec);
+			}
+		      else
+			{
+			  sprintf(&(ststr[j][45]),"%1.1lf",equevtpsec);
+			  sprintf(&(ststr[j++][60]),"%1.1lf",equkbpsec);
+			}
+		    }
+		  else
+		    {
+		      sprintf(&(ststr[j][45]),"%1.1lf",equevtpsec);
+		      sprintf(&(ststr[j++][60]),"%1.1lf",equkbpsec);
+		    }
+		} /* get value */
 	      } /* active */
-      } /* eor==NULL */
-    } /* for equipment */
+	  } /* eor==NULL */
+      } /* for equipment */
   }  
   /* Front-End message */
   if (!atleastone_active)
