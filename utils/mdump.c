@@ -5,6 +5,9 @@
    Contents:     Dump event on screen with MIDAS or YBOS data format
  
    $Log$
+   Revision 1.16  2002/01/28 20:52:07  pierre
+   add /EBuilder path for ID search
+
    Revision 1.15  2000/11/01 17:17:54  pierre
    -fix duplicate ID for different fmt.
 
@@ -780,26 +783,85 @@ int main(unsigned int argc,char **argv)
   /* connect to the database */
   cm_get_experiment_database(&hDB, &hKey);
   
-  memset ((char *) eq,0,32*sizeof(FMT_ID));
-  
-  /* check if dir exists */
-  if (db_find_key(hDB, 0, "/equipment", &hKey) == DB_SUCCESS)
-  {
-    char strtmp[256], equclient[32];
+
+  { /* ID block */
     INT  l = 0;
-    for (i=0 ; ; i++)
+    memset ((char *) eq,0,32*sizeof(FMT_ID));
+    /* check if dir exists */
+    if (db_find_key(hDB, 0, "/equipment", &hKey) == DB_SUCCESS)
     {
-      db_enum_key(hDB, hKey, i, &hSubkey);
-      if (!hSubkey)
-	break;
-      db_get_key(hDB, hSubkey, &key);
-      sprintf(eq[l].Eqname, key.name);
-      /* check if client running this equipment is present */
-      /* extract client name from equipment */
-      size = sizeof(strtmp);
-      sprintf(strtmp,"/equipment/%s/common/Frontend name",key.name);
-      db_get_value(hDB, 0, strtmp, equclient, &size, TID_STRING);
+      char strtmp[256], equclient[32];
+      for (i=0 ; ; i++)
+      {
+	db_enum_key(hDB, hKey, i, &hSubkey);
+	if (!hSubkey)
+	  break;
+	db_get_key(hDB, hSubkey, &key);
+	sprintf(eq[l].Eqname, key.name);
+	/* check if client running this equipment is present */
+	/* extract client name from equipment */
+	size = sizeof(strtmp);
+	sprintf(strtmp,"/equipment/%s/common/Frontend name",key.name);
+	db_get_value(hDB, 0, strtmp, equclient, &size, TID_STRING);
+	
+	/* search client name under /system/clients/xxx/name */
+	/* Outcommented 22 Dec 1997 SR because of problem when
+	   mdump is started before frontend 
+	   if (status = cm_exist(equclient,FALSE) != CM_SUCCESS)
+	   continue;
+	*/
+	size = sizeof(WORD);
+	sprintf(strtmp,"/equipment/%s/common/event ID",key.name);
+	db_get_value(hDB, 0, strtmp, &(eq[l]).id, &size, TID_WORD);
+	
+	size = sizeof(WORD);
+	sprintf(strtmp,"/equipment/%s/common/Trigger mask",key.name);
+	db_get_value(hDB, 0, strtmp, &(eq[l]).msk, &size, TID_WORD);
+	
+	size = 8;
+	sprintf(strtmp,"/equipment/%s/common/Format",key.name);
+	db_get_value(hDB, 0, strtmp, str, &size, TID_STRING);
+	if (equal_ustring(str, "YBOS"))
+	{
+	  eq[l].fmt = FORMAT_YBOS;
+	  strcpy(eq[l].Fmt,"YBOS");
+	}
+	else if (equal_ustring(str, "MIDAS"))
+	{
+	  eq[l].fmt = FORMAT_MIDAS;
+	  strcpy(eq[l].Fmt,"MIDAS");
+	}
+	else if (equal_ustring(str, "DUMP"))
+	{
+	  eq[l].fmt = FORMAT_MIDAS;
+	  strcpy(eq[l].Fmt,"DUMP");
+	}
+	else if (equal_ustring(str, "ASCII"))
+	{
+	  eq[l].fmt = FORMAT_MIDAS;
+	  strcpy(eq[l].Fmt,"ASCII");
+	}
+	else if (equal_ustring(str, "HBOOK"))
+	{
+	  eq[l].fmt = FORMAT_MIDAS;
+	  strcpy(eq[l].Fmt,"HBOOK");
+	}
+	else if (equal_ustring(str, "FIXED"))
+	{
+	  eq[l].fmt = FORMAT_MIDAS;
+	  strcpy(eq[l].Fmt,"FIXED");
+	}
+	l++;
+      }    
+    } /* for equipment */
+    
+    /* check for EBuilder */
+    if (db_find_key(hDB, 0, "/EBuilder/Settings", &hKey) == DB_SUCCESS)
+    {
+      char strtmp[256], equclient[32];
       
+      sprintf(eq[l].Eqname, "EBuilder");
+      /* check if client running this equipment is present */
       /* search client name under /system/clients/xxx/name */
       /* Outcommented 22 Dec 1997 SR because of problem when
 	 mdump is started before frontend 
@@ -807,49 +869,40 @@ int main(unsigned int argc,char **argv)
 	 continue;
       */
       size = sizeof(WORD);
-      sprintf(strtmp,"/equipment/%s/common/event ID",key.name);
-      db_get_value(hDB, 0, strtmp, &(eq[l]).id, &size, TID_WORD);
+      db_get_value(hDB, hKey, "Event ID", &(eq[l]).id, &size, TID_WORD);
       
       size = sizeof(WORD);
-      sprintf(strtmp,"/equipment/%s/common/Trigger mask",key.name);
-      db_get_value(hDB, 0, strtmp, &(eq[l]).msk, &size, TID_WORD);
+      db_get_value(hDB, hKey, "Trigger mask", &(eq[l]).msk, &size, TID_WORD);
       
       size = 8;
-      sprintf(strtmp,"/equipment/%s/common/Format",key.name);
-      db_get_value(hDB, 0, strtmp, str, &size, TID_STRING);
+      db_get_value(hDB, hKey, "Format", str, &size, TID_STRING);
       if (equal_ustring(str, "YBOS"))
       {
-	      eq[l].fmt = FORMAT_YBOS;
-	      strcpy(eq[l].Fmt,"YBOS");
+	eq[l].fmt = FORMAT_YBOS;
+	strcpy(eq[l].Fmt,"YBOS");
       }
       else if (equal_ustring(str, "MIDAS"))
       {
-	      eq[l].fmt = FORMAT_MIDAS;
-	      strcpy(eq[l].Fmt,"MIDAS");
+	eq[l].fmt = FORMAT_MIDAS;
+	strcpy(eq[l].Fmt,"MIDAS");
       }
-      else if (equal_ustring(str, "DUMP"))
+      else 
       {
-	      eq[l].fmt = FORMAT_MIDAS;
-	      strcpy(eq[l].Fmt,"DUMP");
-      }
-      else if (equal_ustring(str, "ASCII"))
-      {
-	      eq[l].fmt = FORMAT_MIDAS;
-	      strcpy(eq[l].Fmt,"ASCII");
-      }
-      else if (equal_ustring(str, "HBOOK"))
-      {
-	      eq[l].fmt = FORMAT_MIDAS;
-	      strcpy(eq[l].Fmt,"HBOOK");
-      }
-      else if (equal_ustring(str, "FIXED"))
-      {
-	      eq[l].fmt = FORMAT_MIDAS;
-	      strcpy(eq[l].Fmt,"FIXED");
+	printf("Format unknown for Event Builder (%s)\n", str);
+	goto error;
       }
       l++;
     }    
-  } /* for equipment */
+    /* Debug */
+    if (debug) {
+      i=0;
+      printf("ID\tMask\tFormat\tEq_name\n");
+      while (eq[i].fmt) {
+	printf("%d\t%d\t%s\t%s\n", eq[i].id, eq[i].msk, eq[i].Fmt, eq[i].Eqname);
+	i++;
+      }
+    }
+  } /* ID block */
   
   do
   {
