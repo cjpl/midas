@@ -6,6 +6,9 @@
   Contents:     System part of Analyzer code for sample experiment
 
   $Log$
+  Revision 1.12  2003/04/14 13:30:52  midas
+  Changed bank descriptions because of conflict in fal.c
+
   Revision 1.11  2003/04/07 23:54:43  olchansk
   add #include <string.h>
 
@@ -101,10 +104,12 @@ ANA_MODULE *trigger_module[] = {
 
 ASUM_BANK_STR(asum_bank_str);
 
-BANK_LIST trigger_bank_list[] = {
+ADC0_BANK_STR(ana_adc0_bank_str);
+
+BANK_LIST ana_trigger_bank_list[] = {
 
   /* online banks */
-  { "ADC0", TID_WORD, N_ADC, NULL },
+  { "ADC0", TID_STRUCT, sizeof(ADC0_BANK), ana_adc0_bank_str },
   { "TDC0", TID_WORD, N_TDC, NULL },
 
   /* calculated banks */
@@ -114,7 +119,7 @@ BANK_LIST trigger_bank_list[] = {
   { "" },
 };
 
-BANK_LIST scaler_bank_list[] = {
+BANK_LIST ana_scaler_bank_list[] = {
   /* online banks */
   { "SCLR", TID_DWORD,  N_ADC, NULL },
 
@@ -135,7 +140,7 @@ ANALYZE_REQUEST analyze_request[] = {
     "", "", 
     NULL,                 /* analyzer routine */
     trigger_module,       /* module list */
-    trigger_bank_list,    /* bank list */
+    ana_trigger_bank_list,/* bank list */
     1000,                 /* RWNT buffer size */
     TRUE,                 /* Use tests for this event */
   },
@@ -149,7 +154,7 @@ ANALYZE_REQUEST analyze_request[] = {
     "", "", 
     NULL,                 /* analyzer routine */
     scaler_module,        /* module list */
-    scaler_bank_list,     /* bank list */
+    ana_scaler_bank_list, /* bank list */
     100,                  /* RWNT buffer size */
   },
 
