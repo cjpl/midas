@@ -6,6 +6,9 @@
  *         amaudruz@triumf.ca                            Local:           6234
  * ---------------------------------------------------------------------------
    $Log$
+   Revision 1.54  2003/06/12 19:19:13  pierre
+   handle TID_STRUCT bank type (->8bit)
+
    Revision 1.53  2003/05/17 22:37:48  pierre
    ybos large file fix
 
@@ -3339,6 +3342,12 @@ none
     length_type = sizeof(char);
     strcpy (strbktype,"8 bit ASCII");
   }
+  if (type == TID_STRUCT)
+  {
+    length_type = sizeof(char);
+    strcpy (strbktype,"STRUCT (not supported->8 bits)");
+  }
+
   printf("\nBank:%s Length: %li(I*1)/%li(I*4)/%li(Type) Type:%s",
     bank_name,lrl, lrl>>2, lrl/length_type, strbktype);
   
@@ -3419,6 +3428,7 @@ none
       j++;
       break;
     case TID_BYTE :
+    case TID_STRUCT:
       if (j>15)
       {
         printf("\n%4i-> ",i);
