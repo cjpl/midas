@@ -6,6 +6,9 @@
   Contents:     Command-line interface for the Midas Slow Control Bus
 
   $Log$
+  Revision 1.58  2004/03/09 15:02:26  midas
+  Changed indentation
+
   Revision 1.57  2004/03/09 14:19:32  midas
   Fixed problems with write/read of strings
 
@@ -289,8 +292,7 @@ void print_help()
 
 /*------------------------------------------------------------------*/
 
-void print_channel_str(int index, MSCB_INFO_VAR * info_chn, void *pdata,
-                       int verbose, char *line)
+void print_channel_str(int index, MSCB_INFO_VAR * info_chn, void *pdata, int verbose, char *line)
 {
    char str[80];
    int i, data;
@@ -612,18 +614,16 @@ void cmd_loop(int fd, char *cmd, int adr)
                strncpy(str, info.node_name, sizeof(info.node_name));
                str[16] = 0;
                printf("Node name:        %s\n", str);
-               printf("Node address:     %d (0x%X)\n", info.node_address,
-                      info.node_address);
-               printf("Group address:    %d (0x%X)\n", info.group_address,
-                      info.group_address);
-               printf("Protocol version: %d.%d\n",
-                      info.protocol_version / 16, info.protocol_version % 16);
+               printf("Node address:     %d (0x%X)\n", info.node_address, info.node_address);
+               printf("Group address:    %d (0x%X)\n", info.group_address, info.group_address);
+               printf("Protocol version: %d.%d\n", info.protocol_version / 16, info.protocol_version % 16);
                printf("Watchdog resets:  %d\n", info.watchdog_resets);
 
                printf("\nVariables:\n");
                for (i = 0; i < info.n_variables; i++) {
                   mscb_info_variable(fd, current_addr, i, &info_var);
                   size = info_var.width;
+                  memset(dbuf, 0, sizeof(dbuf));
                   mscb_read(fd, current_addr, (unsigned char) i, dbuf, &size);
 
                   print_channel(i, &info_var, dbuf, 1);
@@ -734,8 +734,7 @@ void cmd_loop(int fd, char *cmd, int adr)
                puts("Please specify node name");
             else {
                strcpy(str, param[1]);
-               while (strlen(str) > 0 &&
-                      (str[strlen(str) - 1] == '\r' || str[strlen(str) - 1] == '\n'))
+               while (strlen(str) > 0 && (str[strlen(str) - 1] == '\r' || str[strlen(str) - 1] == '\n'))
                   str[strlen(str) - 1] = 0;
 
                mscb_set_name(fd, current_addr, str);
@@ -779,9 +778,8 @@ void cmd_loop(int fd, char *cmd, int adr)
                      if (strlen(str) > 0 && str[strlen(str) - 1] == '\n')
                         str[strlen(str) - 1] = 0;
 
-                     status =
-                         mscb_write(fd, current_addr, (unsigned char) addr,
-                                    str, info_var.width);
+//                     status = mscb_write(fd, current_addr, (unsigned char) addr, str, info_var.width);
+                     status = mscb_write(fd, current_addr, (unsigned char) addr, str, strlen(str)+1);
                   } else {
                      if (info_var.flags & MSCBF_FLOAT) {
                         value = (float) atof(param[2]);
@@ -795,8 +793,7 @@ void cmd_loop(int fd, char *cmd, int adr)
 
                      do {
 
-                        status = mscb_write(fd, current_addr, (unsigned char) addr,
-                                            &data, info_var.width);
+                        status = mscb_write(fd, current_addr, (unsigned char) addr, &data, info_var.width);
                         Sleep(100);
 
                      } while (param[3][0] && !kbhit());
@@ -808,8 +805,7 @@ void cmd_loop(int fd, char *cmd, int adr)
                   else
                      data = atoi(param[2]);
 
-                  status =
-                      mscb_write_group(fd, current_group, (unsigned char) addr, &data, 4);
+                  status = mscb_write_group(fd, current_group, (unsigned char) addr, &data, 4);
                }
 
                if (status != MSCB_SUCCESS)
@@ -836,14 +832,13 @@ void cmd_loop(int fd, char *cmd, int adr)
                   puts("Timeout or invalid channel number");
                else {
                   do {
+                     memset(dbuf, 0, sizeof(dbuf));
                      size = info_var.width;
-                     status =
-                         mscb_read(fd, current_addr, (unsigned char) addr, dbuf, &size);
+                     status = mscb_read(fd, current_addr, (unsigned char) addr, dbuf, &size);
                      if (status != MSCB_SUCCESS)
                         printf("Error: %d\n", status);
                      else if (size != info_var.width)
-                        printf("Error: Received %d bytes instead of %d", size,
-                               info_var.width);
+                        printf("Error: Received %d bytes instead of %d", size, info_var.width);
                      else
                         print_channel(addr, &info_var, dbuf, 0);
 
@@ -886,10 +881,8 @@ void cmd_loop(int fd, char *cmd, int adr)
                   strncpy(str, info.node_name, sizeof(info.node_name));
                   str[16] = 0;
                   fprintf(f, "Node name:        %s\n", str);
-                  fprintf(f, "Node address:     %d (0x%X)\n",
-                          info.node_address, info.node_address);
-                  fprintf(f, "Group address:    %d (0x%X)\n",
-                          info.group_address, info.group_address);
+                  fprintf(f, "Node address:     %d (0x%X)\n", info.node_address, info.node_address);
+                  fprintf(f, "Group address:    %d (0x%X)\n", info.group_address, info.group_address);
                   fprintf(f, "Protocol version: %d.%d\n",
                           info.protocol_version / 16, info.protocol_version % 16);
                   fprintf(f, "Watchdog resets:  %d\n", info.watchdog_resets);
@@ -965,8 +958,7 @@ void cmd_loop(int fd, char *cmd, int adr)
                                     str[strlen(str) - 1] = 0;
 
                                  status =
-                                     mscb_write(fd, current_addr,
-                                                (unsigned char) i, str, info_var.width);
+                                     mscb_write(fd, current_addr, (unsigned char) i, str, info_var.width);
                               } else {
                                  if (info_var.flags & MSCBF_FLOAT) {
                                     value = (float) atof(p);
@@ -976,8 +968,7 @@ void cmd_loop(int fd, char *cmd, int adr)
                                  }
 
                                  status =
-                                     mscb_write(fd, current_addr,
-                                                (unsigned char) i, &data, info_var.width);
+                                     mscb_write(fd, current_addr, (unsigned char) i, &data, info_var.width);
 
                                  /* blank padding */
                                  for (j = strlen(name); j < 8; j++)
@@ -1114,9 +1105,7 @@ void cmd_loop(int fd, char *cmd, int adr)
                status = mscb_echo(fd, 0, d1, &d2);
 
                if (d2 != d1) {
-                  printf
-                      ("%d\nReceived: %02X, should be %02X, status = %d\n",
-                       i, d2, d1, status);
+                  printf("%d\nReceived: %02X, should be %02X, status = %d\n", i, d2, d1, status);
 
                   if (param[1][0] != 'c' && param[1][1] != 'c')
                      break;
@@ -1200,8 +1189,7 @@ int main(int argc, char *argv[])
             strcpy(cmd, argv[++i]);
          } else {
           usage:
-            printf
-                ("usage: msc [-d host:device] [-a addr] [-c Command] [-c @CommandFile] [-v] [-i]\n\n");
+            printf("usage: msc [-d host:device] [-a addr] [-c Command] [-c @CommandFile] [-v] [-i]\n\n");
             printf("       -d     device, usually \"%s\" for parallel port,\n", device);
             printf("              or 0x378 for direct parallel port address,\n");
             printf("              or \"<host>:%s\" for RPC connection\n", device);
