@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol commands
 
   $Log$
+  Revision 1.42  2004/07/21 14:27:16  midas
+  Added PS0 to F120
+
   Revision 1.41  2004/07/21 14:18:55  midas
   Restructured timer usage
 
@@ -277,7 +280,7 @@ sbit RS485_ENABLE = P0 ^ 7;
 #define PS0      PS
 #endif
 
-#ifdef CPU_C8051F020
+#if defined(CPU_C8051F020) || defined(CPU_C8051F120)
 #define PS0      PS
 #endif
 
