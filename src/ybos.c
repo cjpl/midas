@@ -15,6 +15,11 @@
  *  Revision History: Oct/96  :
  *    1 April 97: S. Ritt, minor modification to supress compiler warnings
  *  $Log$
+ *  Revision 1.7  1998/11/20 14:57:54  pierre
+ *  added MIDAS fmt support for : -x (file replay [mdump])
+ *  			      FE file fragmentation (feodb_file_dump)
+ *  			      FE file recompostion (mdump -c)
+ *
  *  Revision 1.6  1998/10/22 12:48:41  midas
  *  Added brackets around (ybos.length-1) << 1 (got VC++ warning)
  *
@@ -43,34 +48,51 @@
 /* hidden prototypes */
 INT    ybos_extract_info(INT fmt, INT element);
 void   ybos_display_all_info(INT what);
+void   midas_display_all_info (INT what);
 
-void  display_raw_event(void * pevt, INT dsp_fmt);
+/* mdump */
+void  display_yraw_event(void * pevt, INT dsp_fmt);
+void  display_mraw_event(EVENT_HEADER * pevt, INT dsp_fmt);
 void  display_ybos_event(DWORD * pevt, INT dsp_fmt);
 void  display_midas_event(EVENT_HEADER * pevt, INT dsp_fmt);
-
 void  ybos_display_raw_bank(DWORD * pbk, INT dsp_fmt);
 void  ybos_display_ybos_bank( DWORD *pbk, INT dsp_fmt);
 void  midas_display_raw_bank(void  * pbk, INT dsp_fmt);
 void  midas_display_midas_bank(void *pbk, INT dsp_fmt);
 
+
+/* replay */
 INT   ybos_event_swap (DWORD * pevt);
+INT   ybos_event_get (INT bl, DWORD * prevent);
+INT   midas_event_get (INT bl, char * prevent);
 INT   ybos_open_datafile (char * filename);
+INT   midas_open_datafile (char * filename);
 INT   ybos_close_datafile (void);
+INT   midas_close_datafile (void);
 INT   ybos_skip_physrec (INT bl);
-INT   ybos_physhead_get (void);
-INT   ybos_physrec_get (void);
+INT   midas_skip_event (INT bl);
+INT   ybos_physhead_get (void);    
+INT   ybos_physrec_get (void);     
 INT   ybos_physhead_display (void);
 INT   ybos_physrec_display (void);
+INT   midas_physrec_display (void);
 INT   ybos_evtlen_display (void);
-INT   ybos_event_get (INT bl, DWORD * prevent);
+INT   midas_evtlen_display (void);
 
-INT   ybos_file_open(int *slot, char *pevt, char * svpath, INT file_mode);
-INT   ybos_file_update(int slot, char * pevent);
-INT   ybos_fefile_dump(EQUIPMENT * eqp, EVENT_HEADER * pevent, INT run_number, char * path);
+/* FE file transfer */
 INT   ybos_file_dump(INT hBuf, INT ev_ID, INT run_number, char * path);
+INT   ybos_fefile_dump(EQUIPMENT * eqp, EVENT_HEADER * pevent, INT run_number, char * path);
+INT   midas_fefile_dump(EQUIPMENT * eqp, EVENT_HEADER *pevent, INT run_number, char * path);
+INT   ybos_file_compose(char * pevt, INT fmt, char * svpath, INT file_mode);
+INT   midas_file_compose(char * pevt, INT fmt, char * svpath, INT file_mode);
+INT   ym_file_update(int slot, int fmt, char * pevt);
+INT   ym_file_open(int *slot, int fmt, char *pevt, char * svpath, INT file_mode);
 void  ybos_log_odb_dump(LOG_CHN *log_chn, short int event_id, INT run_number);
 
+/* mlogger */
 INT   ybos_log_open(LOG_CHN * log_chn, INT run_number);
+INT   ybos_magta_write( INT logH, char *pwt, INT nbytes);
+INT   midas_magta_write( INT logH, char *pwt, INT nbytes);
 INT   ybos_write(LOG_CHN * log_chn, EVENT_HEADER * pevent, INT evt_size);
 INT   ybos_flush_buffer(LOG_CHN * log_chn);
 INT   ybos_log_close(LOG_CHN * log_chn, INT run_number);
@@ -110,9 +132,10 @@ struct {
   DWORD    cur_block;                   /* current block number */
   DWORD    fmt;                         /* contains FORMAT type */
   DWORD    dev_type;                    /* Device type (tape, disk, ...) */
+  DWORD    run_number;                  /* run number */
 } rdlog;
 
-R_YBOS_FILE  yfile[MAX_YBOS_FILE];
+R_YM_FILE  ymfile[MAX_YM_FILE];
 
 char * plazy;
 INT    szlazy;
@@ -179,6 +202,18 @@ INT         status, written;
 #else
     status = write(*handle, (char *) pbot, magta[2]-4) == (INT) magta[2]-4 ? SS_SUCCESS : SS_FILE_ERROR;
 #endif
+  }
+  else if ((type == LOG_TYPE_DISK) && (format == FORMAT_MIDAS))
+  {
+#ifdef OS_WINNT       
+    *handle = (int) CreateFile(path, GENERIC_WRITE, FILE_SHARE_READ, NULL, 
+                      CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_WRITE_THROUGH | 
+                      FILE_FLAG_SEQUENTIAL_SCAN, 0);
+#else
+    *handle = open(path, O_WRONLY | O_CREAT | O_TRUNC | O_BINARY, 0644);
+#endif
+    if (*handle < 0)
+      return SS_FILE_ERROR;
   }
   else if ((type == LOG_TYPE_FTP) && (format == FORMAT_MIDAS))
   {
@@ -288,6 +323,30 @@ INT ybos_log_open(LOG_CHN *log_chn, INT run_number)
   return SS_SUCCESS;
 }
 
+
+
+/*------------------------------------------------------------------*/
+INT any_magta_write( INT logH, INT fmt, char *pwt, INT nbytes)
+/********************************************************************\
+  Routine: any_magta_write
+  Purpose: Special data write for any format
+  Input:
+    HANDLE logH        Devive handle
+    INT    fmt         Data format
+    char * pwt         pointer to data
+    INT    nbytes      data size in bytes
+  Output:
+    none
+ Function value:
+    error, success
+\********************************************************************/
+  {
+    if (fmt == FORMAT_MIDAS)
+      return midas_magta_write(logH, pwt,nbytes);
+    else
+      return ybos_magta_write(logH, pwt,nbytes);
+  }
+
 /*------------------------------------------------------------------*/
 INT ybos_magta_write( INT logH, char *pwt, INT nbytes)
 /********************************************************************\
@@ -310,6 +369,31 @@ INT ybos_magta_write( INT logH, char *pwt, INT nbytes)
 #else
         status = write(logH, (char *)((DWORD *)(magta+2)), 4) == 4 ? SS_SUCCESS : SS_FILE_ERROR;
 #endif
+#ifdef OS_WINNT
+        WriteFile((HANDLE) logH, (char *) pwt, nbytes, &written, NULL);
+        status = written == nbytes ? SS_SUCCESS : SS_FILE_ERROR;
+#else
+        status = write(logH, (char *)pwt, nbytes) == nbytes ? SS_SUCCESS : SS_FILE_ERROR;
+#endif
+        return status;
+  }
+
+/*------------------------------------------------------------------*/
+INT midas_magta_write( INT logH, char *pwt, INT nbytes)
+/********************************************************************\
+  Routine: ybos_magta_write
+  Purpose: Write event to logfile using MIDAS format
+  Input:
+    HANDLE logH        Devive handle
+    char * pwt         pointer to data
+    INT    nbytes      data size in bytes
+  Output:
+    none
+ Function value:
+    error, success
+\********************************************************************/
+  {
+    INT status, written;
 #ifdef OS_WINNT
         WriteFile((HANDLE) logH, (char *) pwt, nbytes, &written, NULL);
         status = written == nbytes ? SS_SUCCESS : SS_FILE_ERROR;
@@ -674,8 +758,8 @@ INT   ybos_file_dump(INT hBuf, INT ev_ID, INT run_number, char * path)
   INT nread, filesize, nfrag;
   INT allheader_size;
   DWORD *pbuf, *pcfile, *pybos;
-  YBOS_CFILE ybos_cfileh;
-  YBOS_PFILE ybos_pfileh;
+  YM_CFILE ybos_cfileh;
+  YM_PFILE ybos_pfileh;
   EVENT_HEADER  *pheader;
 
   /* check if file exists */
@@ -710,7 +794,7 @@ INT   ybos_file_dump(INT hBuf, INT ev_ID, INT run_number, char * path)
   ybos_cfileh.spare= 0xabcd;
 
   /* Fill file YBOS_PFILE header */
-  memset (ybos_pfileh.path,0,sizeof(YBOS_PFILE));
+  memset (ybos_pfileh.path,0,sizeof(YM_PFILE));
   /* first remove path if present */
   if (strrchr(path,'/') != NULL)
     {
@@ -725,8 +809,8 @@ INT   ybos_file_dump(INT hBuf, INT ev_ID, INT run_number, char * path)
   allheader_size = sizeof(EVENT_HEADER)
     + sizeof(YBOS_BANK_HEADER)           /* EVID bank header */
     + 5*sizeof(DWORD)                    /* EVID data size */
-    + sizeof(YBOS_CFILE)
-    + sizeof(YBOS_PFILE) + 64;
+    + sizeof(YM_CFILE)
+    + sizeof(YM_PFILE) + 64;
 
   /* Midas header and top of event */
   pheader = malloc(allheader_size + MAX_FRAG_SIZE);
@@ -754,12 +838,12 @@ INT   ybos_file_dump(INT hBuf, INT ev_ID, INT run_number, char * path)
       ybk_create(pybos, "CFIL", I4_BKTYPE, (DWORD *)&pbuf);
       /* save pointer for later */
       pcfile = pbuf;
-      (char *)pbuf += sizeof(YBOS_CFILE);
+      (char *)pbuf += sizeof(YM_CFILE);
       ybk_close(pybos, pbuf);
 
       ybk_create(pybos, "PFIL", A1_BKTYPE, (DWORD *)&pbuf);
-      memcpy((char *)pbuf,(char *)&ybos_pfileh,sizeof(YBOS_PFILE));
-      (char *)pbuf += sizeof(YBOS_PFILE);
+      memcpy((char *)pbuf,(char *)&ybos_pfileh,sizeof(YM_PFILE));
+      (char *)pbuf += sizeof(YM_PFILE);
       ybk_close(pybos, pbuf);
 
       ybk_create(pybos, "DFIL", A1_BKTYPE, (DWORD *)&pbuf);
@@ -773,7 +857,7 @@ INT   ybos_file_dump(INT hBuf, INT ev_ID, INT run_number, char * path)
       ybos_cfileh.current_fragment++;
       ybos_cfileh.fragment_size = nread;
       ybos_cfileh.current_read_byte += nread;
-      memcpy((char *)pcfile,(char *)&ybos_cfileh,sizeof(YBOS_CFILE));
+      memcpy((char *)pcfile,(char *)&ybos_cfileh,sizeof(YM_CFILE));
 
       /* close YBOS bank */
       ybk_close(pybos, pbuf);
@@ -812,12 +896,10 @@ INT   swap_any_event (INT data_fmt, void * prevent)
     status :  from the lower function
 \********************************************************************/
 {
-  INT status;
   if (data_fmt == FORMAT_MIDAS)
-     status = bk_swap(prevent, FALSE);
+     return bk_swap(prevent, FALSE);
   else if (data_fmt == FORMAT_YBOS)
-     status = ybos_event_swap ((DWORD *)prevent);
-  return(status);
+     return ybos_event_swap ((DWORD *)prevent);
 }
 
 /*------------------------------------------------------------------*/
@@ -926,26 +1008,26 @@ void display_any_event(void * pevt, INT data_fmt, INT dsp_mode, INT dsp_fmt)
   if (data_fmt == FORMAT_MIDAS)
     {
       if (dsp_mode == DSP_RAW)
-        display_raw_event((EVENT_HEADER *)pevt, dsp_fmt);
+        display_mraw_event((EVENT_HEADER *)pevt, dsp_fmt);
       if (dsp_mode == DSP_BANK)
         display_midas_event((EVENT_HEADER *)pevt, dsp_fmt);
     }
   else if (data_fmt == FORMAT_YBOS)
     {
       if (dsp_mode == DSP_RAW)
-        display_raw_event((DWORD *)pevt, dsp_fmt);
+        display_yraw_event((DWORD *)pevt, dsp_fmt);
       if (dsp_mode == DSP_BANK)
         display_ybos_event(pevt, dsp_fmt);
     }
   else
-    display_raw_event((EVENT_HEADER *)pevt, dsp_fmt);
+    display_yraw_event((EVENT_HEADER *)pevt, dsp_fmt);
   return;
 }
 
 /*------------------------------------------------------------------*/
-void display_raw_event(void * pheader, INT dsp_fmt)
+void display_yraw_event(void * pheader, INT dsp_fmt)
 /********************************************************************\
-  Routine: display_raw_event
+  Routine: display_yraw_event
   Purpose: display on screen the RAW data of an YBOS event.
   Input:
     void *  pevt           pointer to the LRL YBOS event
@@ -981,6 +1063,45 @@ void display_raw_event(void * pheader, INT dsp_fmt)
 }
 
 /*------------------------------------------------------------------*/
+void display_mraw_event(EVENT_HEADER * pheader, INT dsp_fmt)
+/********************************************************************\
+  Routine: display_mraw_event
+  Purpose: display on screen the RAW data of an MIDAS event.
+  Input:
+    EVENT_HEADER *  pevt           pointer to the MIDAS header event
+    INT     dsp_fmt        display format (DSP_DEC/HEX)
+  Output:
+    none
+  Function value:
+    none
+\********************************************************************/
+{
+  DWORD * pevt;
+  DWORD  lrl, j, i, total=0;
+
+  lrl = (pheader->data_size)/sizeof(DWORD);
+  pevt = (DWORD *)(pheader+1);
+ 
+  for (i=0;i<lrl; i+=NLINE)
+    {
+    printf ("%6.0d->: ",total);
+      for (j=0;j<NLINE;j++)
+     	{
+	     if ((i+j) < lrl)
+	      {
+          if (dsp_fmt == DSP_DEC)
+              printf ("%8.i ",*((DWORD *)(pevt)));
+          if (dsp_fmt == DSP_HEX)
+              printf ("%8.8x ",*((DWORD *)(pevt)));
+	      ((DWORD *)(pevt))++;
+	      }
+	    }
+      total += NLINE;
+      printf ("\n");
+    }
+}
+
+/*------------------------------------------------------------------*/
 void display_midas_event(EVENT_HEADER * pheader, INT dsp_fmt)
 /********************************************************************\
   Routine: display_midas_event
@@ -999,6 +1120,10 @@ void display_midas_event(EVENT_HEADER * pheader, INT dsp_fmt)
   char * pdata;
   INT    size;
 
+  if(pheader->event_id == EVENTID_BOR ||
+     pheader->event_id == EVENTID_EOR ||
+     pheader->event_id == EVENTID_MESSAGE)
+    return;
   pevt = (BANK_HEADER *) (pheader+1);
   pmbk = NULL;
   do
@@ -1636,6 +1761,8 @@ void midas_display_midas_bank( void *pbk, INT dsp_fmt)
 	              printf("%3.i ",*((BYTE *)pdata));
 	              break;
 	            case DSP_ASC:
+    	          printf("%1.1s ",(char *)pdata);
+                break;
 	            case DSP_HEX:
 	              printf("0x%2.2x ",*((BYTE *)pdata));
 	              break;
@@ -1664,7 +1791,7 @@ INT ybos_extract_info (INT fmt, INT element)
 {
   switch (rdlog.fmt)
     {
-    case YBOS_FMT:
+    case FORMAT_YBOS:
       switch (element)
 	    {
 	    case H_BLOCK_SIZE:
@@ -1697,7 +1824,7 @@ void ybos_display_all_info ( INT what)
   DWORD bz,hyl,ybn,of;
   switch (rdlog.fmt)
     {
-    case YBOS_FMT:
+    case FORMAT_YBOS:
       bz  = ybos_extract_info (rdlog.fmt,H_BLOCK_SIZE);
       hyl = ybos_extract_info (rdlog.fmt,H_HEAD_LEN);
       ybn = ybos_extract_info (rdlog.fmt,H_BLOCK_NUM);
@@ -1728,6 +1855,51 @@ void ybos_display_all_info ( INT what)
 }
 
 /*------------------------------------------------------------------*/
+void midas_display_all_info (INT what)
+/********************************************************************\
+  Routine: midas_display_all_info
+  Purpose: display on screen all the info about a MIDAS record.
+  Input:
+    INT     what              type of display.
+  Output:
+    none
+  Function value:
+    INT extracted value
+\********************************************************************/
+{
+  DWORD hml,mbn,run;
+  switch (rdlog.fmt)
+    {
+    case FORMAT_MIDAS:
+      hml = sizeof(EVENT_HEADER);
+      mbn = rdlog.cur_evt;
+      run = rdlog.run_number;
+      switch (what)
+	    {
+	    case D_RECORD:
+	      printf ("rec#%d- ",rdlog.cur_evt);
+        printf ("%irun %5dhml %5dmevt#\n",run, hml,mbn);
+	      break;
+	    case D_HEADER:
+	      printf ("rec#%d- ",rdlog.cur_evt);
+        printf ("%irun %5dhml %5dmevt#\n",run,hml,mbn);
+	      break;
+	    case D_EVTLEN:
+	      printf ("rec#%d- ",rdlog.cur_evt);
+        printf ("%irun %5dhml %5dmebt#",run,hml,mbn);
+	      printf ("%5del/x%x %5dev\n",rdlog.cur_evt_len,rdlog.cur_evt_len,rdlog.cur_evt);
+	      break;
+	    case D_EVENT:
+	      printf ("rec#%d- ",rdlog.cur_evt);
+        printf ("%irun %5dhml %5dmevt#\n",run,hml,mbn);
+	      break;
+	    }
+      break;
+    }
+  return;
+}
+
+/*------------------------------------------------------------------*/
 INT   open_any_datafile (INT data_fmt, char * datafile)
 /********************************************************************\
   Routine: open_any_datafile
@@ -1741,15 +1913,10 @@ INT   open_any_datafile (INT data_fmt, char * datafile)
     status : from lower function
 \********************************************************************/
 {
-  INT status;
   if (data_fmt == FORMAT_MIDAS)
-    {
-    }
+    return midas_open_datafile(datafile);
   else if (data_fmt == FORMAT_YBOS)
-    {
-      status = ybos_open_datafile(datafile);
-    }
-  return(status);
+    return ybos_open_datafile(datafile);
 }
 
 /*------------------------------------------------------------------*/
@@ -1811,7 +1978,7 @@ INT   ybos_open_datafile (char * filename)
     return (SS_FILE_ERROR);
 #endif
   }
-  rdlog.fmt           = YBOS_FMT;
+  rdlog.fmt           = FORMAT_YBOS;
   rdlog.block_size    = 4 * 8190;
   rdlog.header_ptr    = (DWORD *) malloc( sizeof( YBOS_PHYSREC_HEADER));
   ((YBOS_PHYSREC_HEADER *) rdlog.header_ptr)->block_size    = 8190-1;
@@ -1842,6 +2009,87 @@ INT   ybos_open_datafile (char * filename)
 }
 
 /*------------------------------------------------------------------*/
+INT   midas_open_datafile (char * filename)
+/********************************************************************\
+  Routine: midas_open_datafile
+  Purpose: open a MIDAS data file for replay
+  Input:
+    char *  filename       File to open.
+  Output:
+    none
+  Function value:
+    RDLOG_FAIL_OPEN        Failed to open file
+    RDLOG_FAIL_READING     Faile to read
+    RDLOG_BLOCK_TOO_BIG    Block size read too big for expected
+    RDLOG_UNKNOWN_FMT      Unknown data format on file
+    RDLOG_SUCCESS          File opened
+\********************************************************************/
+{
+  /* fill up record with file name */
+  strcpy (rdlog.name,filename);
+
+  /* find out what dev it is ? : check on /dev */
+  zipfile = FALSE;
+  if (strncmp(rdlog.name,"/dev",4) == 0)
+    {
+      /* tape device */
+      rdlog.dev_type = DLOG_TAPE;
+    }
+  else
+    {
+      /* disk device */
+      rdlog.dev_type = DLOG_DISK;
+      if (strncmp(filename+strlen(filename)-3,".gz",3) == 0)
+        zipfile = TRUE;
+    }
+
+  /* open file */
+  if(!zipfile)
+  {
+    if ((rdlog.handle = open(rdlog.name, O_RDONLY | O_BINARY, 0644 )) == -1 )
+    {
+      printf("dev name :%s Handle:%d \n",rdlog.name, rdlog.handle);
+      return(SS_FILE_ERROR);
+    }
+  }
+  else 
+  {
+#ifdef INCLUDE_ZLIB
+    filegz = gzopen(rdlog.name, "rb");
+    rdlog.handle=0;
+    if (filegz == NULL)
+    {
+      printf("dev name :%s gzopen error:%d \n",rdlog.name, rdlog.handle);
+      return(SS_FILE_ERROR);
+    }
+#else
+    cm_msg(MERROR,"ybos.c","Zlib not included ... gz file not supported");
+    return (SS_FILE_ERROR);
+#endif
+  }
+
+  /* book space for event */
+  prevent   = malloc(MAX_EVT_SIZE);
+  *prevent  = (DWORD) -1;
+
+  rdlog.fmt           = FORMAT_MIDAS;
+  rdlog.block_size    = MAX_EVENT_SIZE;
+  rdlog.header_ptr    = (DWORD *) malloc( sizeof( EVENT_HEADER));
+
+  /* allocate memory for physrec  rdlog structure */
+  rdlog.begrec_ptr  = (char *) malloc (rdlog.block_size);
+  memset ((char *) rdlog.begrec_ptr, -1, rdlog.block_size);
+
+  /* initialize pertinent variables */
+  rdlog.cur_block  = (DWORD) -1;
+  rdlog.cur_evt    = 0;
+  rdlog.rd_cur_ptr = rdlog.begrec_ptr;
+  /* the device pointer is left at the top of the record!
+     BUT YET NO RECORD IS READ */
+  return ( RDLOG_SUCCESS);
+}
+
+/*------------------------------------------------------------------*/
 INT   close_any_datafile (INT data_fmt)
 /********************************************************************\
   Routine: close_any_datafile
@@ -1854,15 +2102,10 @@ INT   close_any_datafile (INT data_fmt)
   status : from lower function
  /*******************************************************************/
 {
-  INT status;
   if (data_fmt == FORMAT_MIDAS)
-    {
-    }
+    return midas_close_datafile();
   else if (data_fmt == FORMAT_YBOS)
-    {
-      status = ybos_close_datafile();
-    }
-  return(status);
+    return ybos_close_datafile();
 }
 
 /*------------------------------------------------------------------*/
@@ -1870,6 +2113,46 @@ INT   ybos_close_datafile (void)
 /********************************************************************\
   Routine: ybos_close_datafile
   Purpose: Close YBOS data file for read.
+  Input:
+    none
+  Output:
+    none
+  Function value:
+  status : from lower function
+\********************************************************************/
+{
+  switch (rdlog.dev_type)
+    {
+    case DLOG_TAPE:
+    case DLOG_DISK:
+      /* close file */
+/*
+      if (zipfile)
+#ifdef INCLUDE_ZLIB
+        gzclose(rdlog.name);
+#endif      
+*/
+      if (rdlog.handle != 0)
+        close (rdlog.handle);
+      break;
+    }
+  /* free allocated memory, remove entry from list */
+/*
+  if ((DWORD *)rdlog.header_ptr != NULL)
+    free (rdlog.header_ptr);
+  if (rdlog.begrec_ptr != NULL)
+    free(rdlog.begrec_ptr);
+  if (prevent != NULL)
+    free(prevent);
+    */
+  return(RDLOG_SUCCESS);
+}
+
+/*------------------------------------------------------------------*/
+INT   midas_close_datafile (void)
+/********************************************************************\
+  Routine: midas_close_datafile
+  Purpose: Close MDIAS data file for read.
   Input:
     none
   Output:
@@ -1914,25 +2197,20 @@ INT   skip_any_physrec (INT data_fmt, INT bl)
   Input:
     INT data_fmt :  YBOS or MIDAS 
     INT bl:         block number (-1==all, 0 = first block)
+                    in case of MIDAS the bl represent an event
   Output:
     none
   Function value:
     status : from lower function
 \********************************************************************/
 {
-  INT status;
   if (data_fmt == FORMAT_MIDAS)
-    {
-    }
+    return midas_skip_event(bl);
   else if (data_fmt == FORMAT_YBOS)
-    {
-      status = ybos_skip_physrec(bl);
-    }
-  return(status);
+    return ybos_skip_physrec(bl);
 }
 
 /*------------------------------------------------------------------*/
-
 INT   ybos_skip_physrec (INT bl)
 /********************************************************************\
   Routine: ybos_skip_physrec
@@ -1969,6 +2247,42 @@ INT   ybos_skip_physrec (INT bl)
 }
 
 /*------------------------------------------------------------------*/
+INT   midas_skip_event (INT evt)
+/********************************************************************\
+  Routine: midas_skip_physrec
+  Purpose: skip event record on a MIDAS file.
+  Input:
+    INT     evt           event record number. (start at 0)
+                          if evt = -1 : skip skiping
+  Output:
+    none
+  Function value:
+    RDLOG_SUCCESS        Ok
+\********************************************************************/
+{
+  if (evt == -1)
+  {
+    if(midas_event_get(0, (char *)prevent) == RDLOG_SUCCESS)
+    return RDLOG_SUCCESS;
+  }
+  while (midas_event_get(0, (char *)prevent) == RDLOG_SUCCESS)
+  {
+    if((INT)rdlog.cur_evt < evt)
+      {
+	      printf("Skipping event_# ... ");
+	      printf("%d \r",rdlog.cur_evt);
+	      fflush (stdout);
+	    }
+     else
+     {
+	      printf ("\n");
+        return RDLOG_SUCCESS;
+     }
+  }
+  return RDLOG_DONE;
+}
+
+/*------------------------------------------------------------------*/
 INT   get_any_physrec (INT data_fmt)
 /********************************************************************\
   Routine: get_any_physrec
@@ -1981,15 +2295,10 @@ INT   get_any_physrec (INT data_fmt)
     status : from lower function
 \********************************************************************/
 {
-  INT status;
   if (data_fmt == FORMAT_MIDAS)
-    {
-    }
+    return midas_event_get(0,(char *) prevent);
   else if (data_fmt == FORMAT_YBOS)
-    {
-      status = ybos_physrec_get();
-    }
-  return(status);
+    return ybos_physrec_get();
 }
 
 /*------------------------------------------------------------------*/
@@ -2111,12 +2420,9 @@ void display_any_physhead (INT data_fmt, INT dsp_fmt)
 \********************************************************************/
 {
   if (data_fmt == FORMAT_MIDAS)
-    {
-    }
+    midas_display_all_info(D_HEADER);
   else if (data_fmt == FORMAT_YBOS)
-    {
-      ybos_display_all_info (D_HEADER);
-    }
+    ybos_display_all_info (D_HEADER);
   return;
 }
 
@@ -2136,12 +2442,9 @@ void display_any_physrec (INT data_fmt, INT dsp_fmt)
 \********************************************************************/
 {
   if (data_fmt == FORMAT_MIDAS)
-    {
-    }
+    midas_physrec_display();
   else if (data_fmt == FORMAT_YBOS)
-    {
-      ybos_physrec_display();
-    }
+    ybos_physrec_display();
   return;
 }
 
@@ -2184,6 +2487,44 @@ INT   ybos_physrec_display (void)
 }
 
 /*------------------------------------------------------------------*/
+INT   midas_physrec_display (void)
+/********************************************************************\
+  Routine: midas_physrec_display
+  Purpose: dump one MIDAS event in raw format.
+  Input:
+    none
+  Output:
+    none
+  Function value:
+    RDLOG_DONE            No more record to read
+    RDLOG_SUCCESS         Ok
+\********************************************************************/
+{
+  DWORD i,j,k , bz, *rec;
+
+  midas_display_all_info (D_RECORD);
+  /* adjust local pointer to top of record to include record header */
+  bz = rdlog.cur_evt_len + sizeof(EVENT_HEADER);
+  bz >>= 2;
+  rec =(DWORD *) (rdlog.begrec_ptr);
+  k = rdlog.cur_evt;
+  for (i=0;i<bz; i+=NLINE)
+    {
+      printf ("R(%d)[%d] = ",k,i);
+      for (j=0;j<NLINE;j++)
+      {
+        if (i+j < bz)
+        {
+          printf ("%8.8x ",*rec);
+          rec++;
+        }
+      }
+      printf ("\n");
+    }
+    return(RDLOG_SUCCESS);
+}
+
+/*------------------------------------------------------------------*/
 void display_any_evtlen (INT data_fmt, INT dsp_fmt)
 /********************************************************************\
   Routine: display_any_evtlen
@@ -2199,12 +2540,9 @@ void display_any_evtlen (INT data_fmt, INT dsp_fmt)
 /********************************************************************/
 {
   if (data_fmt == FORMAT_MIDAS)
-    {
-    }
+    midas_display_all_info (D_EVTLEN);
   else if (data_fmt == FORMAT_YBOS)
-    {
-      ybos_display_all_info (D_EVTLEN);
-    }
+    ybos_display_all_info (D_EVTLEN);
   return;
 }
 
@@ -2224,12 +2562,9 @@ INT   get_any_event (INT data_fmt, INT bl, void * prevent)
 {
   INT status;
   if (data_fmt == FORMAT_MIDAS)
-    {
-    }
+    status=midas_event_get (bl, (char *)prevent);
   else if (data_fmt == FORMAT_YBOS)
-    {
-      status=ybos_event_get (bl, (DWORD *)prevent);
-    }
+    status=ybos_event_get (bl, (DWORD *)prevent);
   return(status);
 }
 
@@ -2317,11 +2652,85 @@ INT   ybos_event_get (INT bl, DWORD * prevent)
 }
 
 /*------------------------------------------------------------------*/
-INT   ybos_file_compose(char * pevt, char * svpath, INT file_mode)
+INT   midas_event_get (INT bl, char * prevent)
 /********************************************************************\
-  Routine: ybos_file_compose
+  Routine: midas_event_get
+  Purpose: read one MIDAS event.
+  Input:
+    INT    bl            event number
+                         != -1 stop at the end of the current physical record
+  Output:
+    char * prevent      points to MIDAS HEADER 
+  Function value:
+    RDLOG_DONE           No more record to read
+    RDLOG_SUCCESS        Ok
+\********************************************************************/
+{
+  DWORD  status, evt_length;
+  
+  /* read one MIDAS event */
+  if (!zipfile)
+  {
+    if ((status = read(rdlog.handle, (char *)rdlog.begrec_ptr, sizeof(EVENT_HEADER))) <= 0)
+    return (RDLOG_DONE);
+  }
+#ifdef INCLUDE_ZLIB
+  else
+  {
+    status = gzread(filegz, (char *)rdlog.begrec_ptr, sizeof(EVENT_HEADER));
+    if (status <= 0)
+      return (RDLOG_DONE);
+  }
+#endif
+
+  evt_length = ((EVENT_HEADER *)rdlog.begrec_ptr)->data_size;
+  rdlog.rd_cur_ptr =  rdlog.begrec_ptr +  sizeof(EVENT_HEADER);
+  
+  /* read full MIDAS event record */
+  if (!zipfile)
+  {
+    if (read(rdlog.handle, rdlog.rd_cur_ptr, evt_length) <= 0)
+	    return (RDLOG_DONE);
+  }
+  else
+  {
+#ifdef INCLUDE_ZLIB
+    status = gzread(filegz, rdlog.rd_cur_ptr, evt_length);
+    if (status <= 0)
+      return (RDLOG_DONE);
+#endif
+  }
+ /* copy for lazy */
+ plazy = rdlog.begrec_ptr;
+ szlazy = evt_length+sizeof(EVENT_HEADER);
+
+ /* local save of the header */
+ memcpy (rdlog.header_ptr, rdlog.begrec_ptr, sizeof(EVENT_HEADER));
+
+ /* up comming event fully in block, copy event */
+ memcpy ((char *)prevent, rdlog.begrec_ptr, evt_length+sizeof(EVENT_HEADER));
+
+ /* event length */
+ rdlog.cur_evt_len = evt_length;
+ 
+  /* count events or run number */
+ if (((EVENT_HEADER *)rdlog.begrec_ptr)->event_id == EVENTID_BOR)
+   rdlog.run_number = ((EVENT_HEADER *)rdlog.begrec_ptr)->serial_number;
+ else if (((EVENT_HEADER *)rdlog.begrec_ptr)->event_id == EVENTID_EOR)
+   rdlog.run_number = ((EVENT_HEADER *)rdlog.begrec_ptr)->serial_number;
+ else
+  rdlog.cur_evt = ((EVENT_HEADER *)rdlog.begrec_ptr)->serial_number;
+
+ /* rd_cur left after the MIDAS header in any case. */
+ return(RDLOG_SUCCESS);
+}
+
+/*------------------------------------------------------------------*/
+INT   file_recompose(char * pevt, INT format, char * svpath, INT file_mode)
+/********************************************************************\
+  Routine: file_recompose
   Purpose: Receive event which are expected to be file oriented with
-           YBOS_xFILE header.
+           YM_xFILE header.
   Input:
     char * pevt           pointer to a YBOS event (->LRL).
     char * svpath         path where to save file
@@ -2336,8 +2745,38 @@ INT   ybos_file_compose(char * pevt, char * svpath, INT file_mode)
     status                 -x error of inner call
 \********************************************************************/
 {
-  YBOS_CFILE *pyfch;
-  YBOS_BANK_HEADER *pbkh;
+  INT status;
+  
+    if (format == FORMAT_MIDAS)
+      status = midas_file_compose(pevt, format, svpath, file_mode);
+    else if (format == FORMAT_YBOS)
+      status = ybos_file_compose(pevt, format, svpath, file_mode);
+    else
+      return -1;
+    return status;
+  }
+/*------------------------------------------------------------------*/
+INT   ybos_file_compose(char * pevt, INT fmt, char * svpath, INT file_mode)
+/********************************************************************\
+  Routine: ybos_file_compose
+  Purpose: Receive event which are expected to be file oriented with
+           YM_xFILE header.
+  Input:
+    char * pevt           pointer to a YBOS event (->LRL).
+    char * svpath         path where to save file
+    INT    file_mode      NO_RUN : save file under original name
+                          ADD_RUN: cat run number at end of file name
+  Output:
+    none
+  Function value:
+    RDLOG_SUCCESS         OP successfull
+    RDLOG_INCOMPLETE      file compose channels still open
+    RDLOG_COMPLETE        All file compose channels closed or complete
+    status                 -x error of inner call
+\********************************************************************/
+{
+  YM_CFILE *pyfch;
+  YBOS_BANK_HEADER *pybkh;
   DWORD *pbbkh;
   int slot, status;
   DWORD bklen, bktyp;
@@ -2347,8 +2786,8 @@ INT   ybos_file_compose(char * pevt, char * svpath, INT file_mode)
 
   if ((status = ybk_find ((DWORD *)pevt,"CFIL",&bklen,&bktyp , &pbbkh)) != YBOS_SUCCESS)
     return (status);
-  pbkh = (YBOS_BANK_HEADER *)pbbkh;
-  pyfch = (YBOS_CFILE *)(pbkh+1);
+  pybkh = (YBOS_BANK_HEADER *)pbbkh;
+  pyfch = (YM_CFILE *)(pybkh+1);
 
   /*
   printf("%i - %i - %i - %i - %i -%i -%i \n"
@@ -2359,14 +2798,14 @@ INT   ybos_file_compose(char * pevt, char * svpath, INT file_mode)
 	 */
 
   /* check if file is in progress */
-  for (slot=0;slot<MAX_YBOS_FILE;slot++)
+  for (slot=0;slot<MAX_YM_FILE;slot++)
     {
-      if ((yfile[slot].fHandle != 0) && (pyfch->file_ID == yfile[slot].file_ID))
+      if ((ymfile[slot].fHandle != 0) && (pyfch->file_ID == ymfile[slot].file_ID))
         {
 	  /* Yep file in progress for that file_ID */
-          if ((status = ybos_file_update(slot, pevt)) != RDLOG_SUCCESS)
+          if ((status = ym_file_update(slot, fmt, pevt)) != RDLOG_SUCCESS)
             {
-              printf("ybos_file_update() failed\n");
+              printf("ym_file_update() failed\n");
               return status;
             }
           goto check;
@@ -2375,23 +2814,23 @@ INT   ybos_file_compose(char * pevt, char * svpath, INT file_mode)
     }
   /* current fragment not registered => new file */
   /* open file, get slot back */
-  if((status = ybos_file_open(&slot, pevt, svpath, file_mode)) != RDLOG_SUCCESS)
+  if((status = ym_file_open(&slot, fmt, pevt, svpath, file_mode)) != RDLOG_SUCCESS)
     {
-      printf("ybos_file_open() failed\n");
+      printf("ym_file_open() failed\n");
       return status;
     }
   /* update file */
-  if ((status = ybos_file_update(slot,pevt)) != RDLOG_SUCCESS)
+  if ((status = ym_file_update(slot, fmt, pevt)) != RDLOG_SUCCESS)
     {
-      printf("ybos_file_update() failed\n");
+      printf("ym_file_update() failed\n");
       return status;
     }
 
 check:
   /* for completion of recovery on ALL files */
-  for (slot=0;slot<MAX_YBOS_FILE;slot++)
+  for (slot=0;slot<MAX_YM_FILE;slot++)
     {
-      if (yfile[slot].fHandle != 0)
+      if (ymfile[slot].fHandle != 0)
 	{
 	  /* Yes still some file composition in progress */
           return RDLOG_INCOMPLETE;
@@ -2402,10 +2841,90 @@ check:
 }
 
 /*------------------------------------------------------------------*/
-INT   ybos_file_open(int *slot, char *pevt, char * svpath, INT file_mode)
+INT   midas_file_compose(char * pevt, int fmt, char * svpath, INT file_mode)
 /********************************************************************\
-  Routine: ybos_file_open
-  Purpose: Prepare channel for receiving event of YBOS_FILE type.
+  Routine: ybos_file_compose
+  Purpose: Receive event which are expected to be file oriented with
+           YM_xFILE header.
+  Input:
+    char * pevt           pointer to a YBOS event (->LRL).
+    char * svpath         path where to save file
+    INT    file_mode      NO_RUN : save file under original name
+                          ADD_RUN: cat run number at end of file name
+  Output:
+    none
+  Function value:
+    RDLOG_SUCCESS         OP successfull
+    RDLOG_INCOMPLETE      file compose channels still open
+    RDLOG_COMPLETE        All file compose channels closed or complete
+    status                 -x error of inner call
+\********************************************************************/
+{
+  YM_CFILE *pmfch;
+  DWORD *pbbkh;
+  int slot, status;
+
+  if (file_mode == NO_RECOVER)
+    return RDLOG_SUCCESS;
+
+  if ((status = bk_locate (pevt,"CFIL", &pbbkh)) <= 0)
+    return (status);
+  pmfch = (YM_CFILE *)(pbbkh);
+
+  printf("%i - %i - %i - %i - %i -%i -%i \n"
+	 ,pmfch->file_ID, pmfch->size
+	 ,pmfch->fragment_size, pmfch->total_fragment
+	 ,pmfch->current_fragment, pmfch->current_read_byte
+	 , pmfch->run_number);
+	 
+  /* check if file is in progress */
+  for (slot=0;slot<MAX_YM_FILE;slot++)
+    {
+      if ((ymfile[slot].fHandle != 0) && (pmfch->file_ID == ymfile[slot].file_ID))
+        {
+	  /* Yep file in progress for that file_ID */
+          if ((status = ym_file_update(slot, fmt, pevt)) != RDLOG_SUCCESS)
+            {
+              printf("ym_file_update() failed\n");
+              return status;
+            }
+          goto check;
+        }
+      /* next slot */
+    }
+  /* current fragment not registered => new file */
+  /* open file, get slot back */
+  if((status = ym_file_open(&slot, fmt, pevt, svpath, file_mode)) != RDLOG_SUCCESS)
+    {
+      printf("ym_file_open() failed\n");
+      return status;
+    }
+  /* update file */
+  if ((status = ym_file_update(slot,fmt,pevt)) != RDLOG_SUCCESS)
+    {
+      printf("ym_file_update() failed\n");
+      return status;
+    }
+
+check:
+  /* for completion of recovery on ALL files */
+  for (slot=0;slot<MAX_YM_FILE;slot++)
+    {
+      if (ymfile[slot].fHandle != 0)
+	{
+	  /* Yes still some file composition in progress */
+          return RDLOG_INCOMPLETE;
+        }
+      /* next slot */
+    }
+  return RDLOG_COMPLETE;
+}
+
+/*------------------------------------------------------------------*/
+INT   ym_file_open(int *slot, int fmt, char *pevt, char * svpath, INT file_mode)
+/********************************************************************\
+  Routine: ym_file_open
+  Purpose: Prepare channel for receiving event of YM_FILE type.
   Input:
     char * pevt           pointer to the data portion of the event
     char * svpath         path where to save file
@@ -2419,10 +2938,10 @@ INT   ybos_file_open(int *slot, char *pevt, char * svpath, INT file_mode)
     RDLOG_NOMORE_SLOT      no more slot for starting dump
 \********************************************************************/
 {
-  YBOS_BANK_HEADER *pbkh;
+  YBOS_BANK_HEADER *pybkh;
   DWORD bklen, bktyp;
-  YBOS_CFILE *pyfch;
-  YBOS_PFILE *pyfph;
+  YM_CFILE *pymfch;
+  YM_PFILE *pymfph;
   DWORD *pbbkh;
   char * fpoint;
   char srun[16];
@@ -2431,80 +2950,90 @@ INT   ybos_file_open(int *slot, char *pevt, char * svpath, INT file_mode)
   /* initialize invalid slot */
   *slot = -1;
 
-  if ((status = ybk_find ((DWORD *)pevt,"CFIL",&bklen,&bktyp, &pbbkh)) != YBOS_SUCCESS)
-    return (status);
-  pbkh = (YBOS_BANK_HEADER *)pbbkh;
-  pyfch = (YBOS_CFILE *)(pbkh+1);
+  if (fmt == FORMAT_YBOS)
+    {
+      if ((status = ybk_find ((DWORD *)pevt,"CFIL",&bklen,&bktyp, &pbbkh)) != YBOS_SUCCESS)
+        return (status);
+      pybkh = (YBOS_BANK_HEADER *)pbbkh;
+      pymfch = (YM_CFILE *)(pybkh+1);
 
-  if ((status = ybk_find ((DWORD *)pevt,"PFIL",&bklen,&bktyp, &pbbkh)) != YBOS_SUCCESS)
-    return (status);
-  pbkh = (YBOS_BANK_HEADER *)pbbkh;
-  pyfph = (YBOS_PFILE *)(pbkh+1);
+      if ((status = ybk_find ((DWORD *)pevt,"PFIL",&bklen,&bktyp, &pbbkh)) != YBOS_SUCCESS)
+        return (status);
+      pybkh = (YBOS_BANK_HEADER *)pbbkh;
+      pymfph = (YM_PFILE *)(pybkh+1);
+    }
+  else if (fmt == FORMAT_MIDAS)
+    {
+      if ((status = bk_locate (pevt,"CFIL", &pbbkh)) <= 0)
+        return (status);
+      pymfch = (YM_CFILE *)(pbbkh);
 
+      if ((status = bk_locate (pevt,"PFIL", &pbbkh)) <= 0)
+        return (status);
+      pymfph = (YM_PFILE *)(pbbkh);
+    }
+  else 
+    return -2;
   /* find free slot */
-  for (i=0;i<MAX_YBOS_FILE; i++)
-    if (yfile[i].fHandle == 0)
+  for (i=0;i<MAX_YM_FILE; i++)
+    if (ymfile[i].fHandle == 0)
       break;
-  if (i<MAX_YBOS_FILE)
+  if (i<MAX_YM_FILE)
     {
       /* copy necessary file header info */
-      yfile[i].file_ID = pyfch->file_ID;
-      strcpy(yfile[i].path,pyfph->path);
+      ymfile[i].file_ID = pymfch->file_ID;
+      strcpy(ymfile[i].path,pymfph->path);
 
       /* extract file name */
-      fpoint = pyfph->path;
-      if (strrchr(pyfph->path,'/') > fpoint)
-        fpoint = strrchr(pyfph->path,'/');
-      if (strrchr(pyfph->path,'\\') > fpoint)
-        fpoint = strrchr(pyfph->path,'\\');
-      if (strrchr(pyfph->path,':') > fpoint)
-        fpoint = strrchr(pyfph->path,':');
+      fpoint = pymfph->path;
+      if (strrchr(pymfph->path,'/') > fpoint)
+        fpoint = strrchr(pymfph->path,'/');
+      if (strrchr(pymfph->path,'\\') > fpoint)
+        fpoint = strrchr(pymfph->path,'\\');
+      if (strrchr(pymfph->path,':') > fpoint)
+        fpoint = strrchr(pymfph->path,':');
 
       /* add path name */
       if (svpath[0] != 0)
 	    { 
-	      yfile[i].path[0]=0;
-	      strncat(yfile[i].path,svpath,strlen(svpath));
-	      strncat(yfile[i].path,fpoint+1,strlen(fpoint)-1);
-	      /*
-	        printf("output file:%s-\n",yfile[i].path);
-	        */
+	      ymfile[i].path[0]=0;
+	      strncat(ymfile[i].path,svpath,strlen(svpath));
 	    }
       if (file_mode == ADD_RUN)
 	    {  /* append run number */
-	      strcat (yfile[i].path,".");
-	      sprintf(srun,"Run%4.4i",pyfch->run_number);
-	      strncat (yfile[i].path,srun,strlen(srun));
+	      strcat (ymfile[i].path,".");
+	      sprintf(srun,"Run%4.4i",pymfch->run_number);
+	      strncat (ymfile[i].path,srun,strlen(srun));
 	      /*
-	      printf("output with run file:%s-\n",yfile[i].path);
+	      printf("output with run file:%s-\n",ymfile[i].path);
 	      */
 	    }
 
       /* open device */
-      if( (yfile[i].fHandle = open(yfile[i].path ,O_WRONLY | O_CREAT | O_TRUNC | O_BINARY, 0644)) == -1 )
+      if( (ymfile[i].fHandle = open(ymfile[i].path ,O_WRONLY | O_CREAT | O_TRUNC | O_BINARY, 0644)) == -1 )
 	    {
-	      yfile[i].fHandle = 0;
-	      printf("File %s cannot be created\n",yfile[i].path);
+	      ymfile[i].fHandle = 0;
+	      printf("File %s cannot be created\n",ymfile[i].path);
 	      return (RDLOG_FAIL_OPEN);
 	    }
     }
   else
     {
       /* no more slot */
-      printf("No more slot for file %s\n",pyfph->path);
+      printf("No more slot for file %s\n",pymfph->path);
       return RDLOG_NOMORE_SLOT;
     }
 
-  yfile[i].current_read_byte = 0;
-  yfile[i].current_fragment = 0;
+  ymfile[i].current_read_byte = 0;
+  ymfile[i].current_fragment = 0;
   *slot = i;
   return RDLOG_SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
-INT   ybos_file_update(int slot, char * pevt)
+INT   ym_file_update(int slot, int fmt, char * pevt)
 /********************************************************************\
-  Routine: ybos_file_update
+  Routine: ym_file_update
   Purpose: dump Midas/Ybos event to file for YBOS file oriented event type.
   Input:
     char * pevt           pointer to the data portion of the event.
@@ -2516,54 +3045,98 @@ INT   ybos_file_update(int slot, char * pevt)
 \********************************************************************/
 {
   DWORD *pbbkh;
-  YBOS_BANK_HEADER *pbkh;
+  YBOS_BANK_HEADER *pybkh;
   DWORD bklen, bktyp;
-  YBOS_CFILE *pyfch;
+  YM_CFILE *pyfch;
   char * pyfd;
+  YM_CFILE *pmfch;
+  char * pmfd;
   int status;
   int nwrite;
 
-  if ((status = ybk_find ((DWORD *)pevt,"CFIL",&bklen,&bktyp, &pbbkh)) != YBOS_SUCCESS)
-    return (status);
-  pbkh = (YBOS_BANK_HEADER *)pbbkh;
-  pyfch = (YBOS_CFILE *)(pbkh+1);
-
-  if ((status = ybk_find ((DWORD *)pevt,"DFIL",&bklen,&bktyp, &pbbkh)) != YBOS_SUCCESS)
-    return (status);
-  pbkh = (YBOS_BANK_HEADER *)pbbkh;
-  pyfd = (char *) (pbkh+1);
-
-  /* check sequence order */
-  if (yfile[slot].current_fragment + 1 != pyfch->current_fragment)
+  if (fmt == FORMAT_YBOS)
     {
-      printf("Out of sequence %i / %i\n"
-	     ,yfile[slot].current_fragment,pyfch->current_fragment);
-    }
-  /* dump fragment to file */
-  nwrite = write (yfile[slot].fHandle, pyfd, pyfch->fragment_size);
+    if ((status = ybk_find ((DWORD *)pevt,"CFIL",&bklen,&bktyp, &pbbkh)) != YBOS_SUCCESS)
+      return (status);
+    pybkh = (YBOS_BANK_HEADER *)pbbkh;
+    pyfch = (YM_CFILE *)(pybkh+1);
 
-  /* update current file record */
-  yfile[slot].current_read_byte += nwrite;
-  yfile[slot].current_fragment++;
-  /* check if file has to be closed */
-  if ( yfile[slot].current_fragment == pyfch->total_fragment)
+    if ((status = ybk_find ((DWORD *)pevt,"DFIL",&bklen,&bktyp, &pbbkh)) != YBOS_SUCCESS)
+      return (status);
+    pybkh = (YBOS_BANK_HEADER *)pbbkh;
+    pyfd = (char *) (pybkh+1);
+
+    /* check sequence order */
+    if (ymfile[slot].current_fragment + 1 != pyfch->current_fragment)
+      {
+        printf("Out of sequence %i / %i\n"
+	       ,ymfile[slot].current_fragment,pyfch->current_fragment);
+      }
+    /* dump fragment to file */
+    nwrite = write (ymfile[slot].fHandle, pyfd, pyfch->fragment_size);
+
+    /* update current file record */
+    ymfile[slot].current_read_byte += nwrite;
+    ymfile[slot].current_fragment++;
+    /* check if file has to be closed */
+    if ( ymfile[slot].current_fragment == pyfch->total_fragment)
+      {
+        /* file complete */
+        close (ymfile[slot].fHandle);
+        printf("File %s (%i) completed\n",ymfile[slot].path,ymfile[slot].current_read_byte);
+        /* cleanup slot */
+        ymfile[slot].fHandle = 0;
+        return RDLOG_SUCCESS;
+      } /* close file */
+    else
+      {
+        /* fragment retrieved wait next one */
+        return RDLOG_SUCCESS;
+      }
+  }
+  else if (fmt == FORMAT_MIDAS)
     {
-      /* file complete */
-      close (yfile[slot].fHandle);
-      printf("File %s (%i) completed\n",yfile[slot].path,yfile[slot].current_read_byte);
-      /* cleanup slot */
-      yfile[slot].fHandle = 0;
-      return RDLOG_SUCCESS;
-    } /* close file */
-  else
-    {
-      /* fragment retrieved wait next one */
-      return RDLOG_SUCCESS;
-    }
+      if ((status = bk_locate (pevt,"CFIL", &pbbkh)) <= 0)
+        return (status);
+      pmfch = (YM_CFILE *)(pbbkh);
+
+      if ((status = bk_locate (pevt,"DFIL", &pbbkh)) <= 0)
+        return (status);
+      pmfd = (char *) (pbbkh);
+
+      /* check sequence order */
+      if (ymfile[slot].current_fragment + 1 != pmfch->current_fragment)
+        {
+          printf("Out of sequence %i / %i\n"
+	         ,ymfile[slot].current_fragment,pmfch->current_fragment);
+        }
+      /* dump fragment to file */
+      nwrite = write (ymfile[slot].fHandle, pmfd, pmfch->fragment_size);
+
+      /* update current file record */
+      ymfile[slot].current_read_byte += nwrite;
+      ymfile[slot].current_fragment++;
+      /* check if file has to be closed */
+      if ( ymfile[slot].current_fragment == pmfch->total_fragment)
+        {
+          /* file complete */
+          close (ymfile[slot].fHandle);
+          printf("File %s (%i) completed\n",ymfile[slot].path,ymfile[slot].current_read_byte);
+          /* cleanup slot */
+          ymfile[slot].fHandle = 0;
+          return RDLOG_SUCCESS;
+        } /* close file */
+      else
+        {
+          /* fragment retrieved wait next one */
+          return RDLOG_SUCCESS;
+        }
+      }
 }
 #endif /* !FE_YBOS_SUPPORT */
 /*------------------------------------------------------------------*/
-INT   ybos_feodb_file_dump (EQUIPMENT * eqp, DWORD* pevent, INT run_number, char *path)
+INT   feodb_file_dump (EQUIPMENT * eqp, char * eqpname, 
+                       char * pevent, INT run_number, char *path)
 /********************************************************************\
   Routine: ybos_feodb_file_dump
   Purpose: Access ODB for the /Equipment/<equip_name>/Dump.
@@ -2579,12 +3152,28 @@ INT   ybos_feodb_file_dump (EQUIPMENT * eqp, DWORD* pevent, INT run_number, char
     0                      Successful completion
 \********************************************************************/
 {
+  EQUIPMENT *peqp;
   INT      index, size, status;
   HNDLE    hDB, hKey, hKeydump;
   char     strpath[MAX_FILE_PATH], Dumpfile[MAX_FILE_PATH];
   char     odb_entry[MAX_FILE_PATH];
+  BOOL     eqpfound = FALSE;
 
   cm_get_experiment_database(&hDB, &hKey);
+  peqp = eqp;
+
+  /* find the equipment info for this job */
+  while (*((peqp->name), eqpname) != 0)
+  {
+    if (equal_ustring((peqp->name), eqpname))
+    {
+      eqpfound = TRUE;
+      break;
+    }
+    peqp++;
+  }
+  if (!eqpfound)
+   return -1;
 
   /* loop over all channels */
   sprintf (odb_entry,"/Equipment/%s/Dump",path);
@@ -2598,12 +3187,15 @@ INT   ybos_feodb_file_dump (EQUIPMENT * eqp, DWORD* pevent, INT run_number, char
   while ((status = db_enum_key(hDB, hKey, index, &hKeydump))!= DB_NO_MORE_SUBKEYS)
     {
       if (status == DB_SUCCESS)
-	{
-	  size = sizeof(strpath);
-	  db_get_path(hDB, hKeydump, strpath, size);
-	  db_get_value(hDB, 0, strpath, Dumpfile, &size, TID_STRING);
-	  ybos_fefile_dump(eqp, (EVENT_HEADER *)pevent, run_number, Dumpfile);
-	}
+	    {
+	      size = sizeof(strpath);
+	      db_get_path(hDB, hKeydump, strpath, size);
+	      db_get_value(hDB, 0, strpath, Dumpfile, &size, TID_STRING);
+	      if (peqp->format == FORMAT_MIDAS)
+          midas_fefile_dump(peqp, (EVENT_HEADER *)pevent, run_number, Dumpfile);
+        else if (peqp->format == FORMAT_YBOS)
+          ybos_fefile_dump(peqp, (EVENT_HEADER *)pevent, run_number, Dumpfile);
+	    }
       index++;
     }
   return (RDLOG_SUCCESS);
@@ -2615,7 +3207,7 @@ INT  ybos_fefile_dump(EQUIPMENT * eqp, EVENT_HEADER *pevent, INT run_number, cha
   Routine: ybos_fefile_dump
   Purpose: Fragment file in order to send it through Midas.
            This version compose an event of the form of:
-           Midas_header[(YBOS_CFILE)(YBOS_PFILE)(YBOS_DFILE)]
+           Midas_header[(YM_CFILE)(YM_PFILE)(YM_DFILE)]
       	   Specific for the fe.
   Input:
     EQUIPMENT * eqp        Current equipment
@@ -2633,8 +3225,8 @@ INT  ybos_fefile_dump(EQUIPMENT * eqp, EVENT_HEADER *pevent, INT run_number, cha
     INT nread, filesize, nfrag;
     INT allheader_size;
     DWORD *pbuf, *pcfile, *pybos;
-    YBOS_CFILE ybos_cfileh;
-    YBOS_PFILE ybos_pfileh;
+    YM_CFILE ybos_cfileh;
+    YM_PFILE ybos_pfileh;
     int  send_sock, flag;
 
     /* check if file exists */
@@ -2662,7 +3254,7 @@ INT  ybos_fefile_dump(EQUIPMENT * eqp, EVENT_HEADER *pevent, INT run_number, cha
     srand( (unsigned)time( NULL ) );
     srand( (unsigned)time( NULL ) );
 
-    /* Fill file YBOS_CFILE header */
+    /* Fill file YM_CFILE header */
     ybos_cfileh.file_ID = rand();
     ybos_cfileh.size = filesize;
     ybos_cfileh.total_fragment = nfrag + (((filesize % MAX_FRAG_SIZE)==0) ? 0 : 1);
@@ -2671,8 +3263,8 @@ INT  ybos_fefile_dump(EQUIPMENT * eqp, EVENT_HEADER *pevent, INT run_number, cha
     ybos_cfileh.run_number= run_number;
     ybos_cfileh.spare= 0xabcd;
 
-    /* Fill file YBOS_PFILE header */
-    memset (ybos_pfileh.path,0,sizeof(YBOS_PFILE));
+    /* Fill file YM_PFILE header */
+    memset (ybos_pfileh.path,0,sizeof(YM_PFILE));
     /* first remove path if present */
     if (strrchr(path,'/') != NULL)
       {
@@ -2687,8 +3279,8 @@ INT  ybos_fefile_dump(EQUIPMENT * eqp, EVENT_HEADER *pevent, INT run_number, cha
     allheader_size = sizeof(EVENT_HEADER)
       + sizeof(YBOS_BANK_HEADER)           /* EVID bank header */
       + 5*sizeof(DWORD)                    /* EVID data size */
-      + sizeof(YBOS_CFILE)
-      + sizeof(YBOS_PFILE) + 64;
+      + sizeof(YM_CFILE)
+      + sizeof(YM_PFILE) + 64;
 
     flag = 0;
     pevent -= 1;
@@ -2720,12 +3312,12 @@ INT  ybos_fefile_dump(EQUIPMENT * eqp, EVENT_HEADER *pevent, INT run_number, cha
       ybk_create(pybos, "CFIL", I4_BKTYPE, (DWORD *)&pbuf);
       /* save pointer for later */
       pcfile = pbuf;
-      (char *)pbuf += sizeof(YBOS_CFILE);
+      (char *)pbuf += sizeof(YM_CFILE);
       ybk_close(pybos, pbuf);
 
       ybk_create(pybos, "PFIL", A1_BKTYPE, (DWORD *)&pbuf);
-      memcpy((char *)pbuf,(char *)&ybos_pfileh,sizeof(YBOS_PFILE));
-      (char *)pbuf += sizeof(YBOS_PFILE);
+      memcpy((char *)pbuf,(char *)&ybos_pfileh,sizeof(YM_PFILE));
+      (char *)pbuf += sizeof(YM_PFILE);
       ybk_close(pybos, pbuf);
 
       ybk_create(pybos, "DFIL", A1_BKTYPE, (DWORD *)&pbuf);
@@ -2739,7 +3331,7 @@ INT  ybos_fefile_dump(EQUIPMENT * eqp, EVENT_HEADER *pevent, INT run_number, cha
       ybos_cfileh.current_fragment++;
       ybos_cfileh.fragment_size = nread;
       ybos_cfileh.current_read_byte += nread;
-      memcpy((char *)pcfile,(char *)&ybos_cfileh,sizeof(YBOS_CFILE));
+      memcpy((char *)pcfile,(char *)&ybos_cfileh,sizeof(YM_CFILE));
 
       /* close YBOS bank */
       ybk_close(pybos, pbuf);
@@ -2766,6 +3358,176 @@ INT  ybos_fefile_dump(EQUIPMENT * eqp, EVENT_HEADER *pevent, INT run_number, cha
         bm_send_event(eqp->buffer_handle, pevent,
                        pevent->data_size + sizeof(EVENT_HEADER), SYNC);
 #endif
+          eqp->odb_out++; 
+        }
+    }
+  /* close file */
+  if( close( dmpf) )
+    {
+      printf("File was not closed\n");
+      return RDLOG_FAIL_CLOSE;
+    }
+  return RDLOG_SUCCESS;
+}
+
+/*------------------------------------------------------------------*/
+INT  midas_fefile_dump(EQUIPMENT * eqp, EVENT_HEADER *pevent, INT run_number, char * path)
+/********************************************************************\
+  Routine: midas_fefile_dump
+  Purpose: Fragment file in order to send it through Midas.
+           This version compose an event of the form of:
+           Midas_header[(MIDAS_CFILE)(MIDAS_PFILE)(MIDAS_DFILE)]
+      	   Specific for the fe.
+  Input:
+    EQUIPMENT * eqp        Current equipment
+    INT   run_number       currrent run_number
+    char * path            full file name specification
+  Output:
+    none
+  Function value:
+    RDLOG_SUCCESS          Successful completion
+    RDLOG_OPEN_FAILED      file doesn't exist
+    -2                     file not closed
+\********************************************************************/
+  {
+    INT dmpf, remaining;
+    INT nread, filesize, nfrag;
+    INT allheader_size;
+    DWORD *pbuf, *pcfile, *pmidas;
+    YM_CFILE midas_cfileh;
+    YM_PFILE midas_pfileh;
+    int  send_sock, flag;
+
+    /* check if file exists */
+    /* Open for read (will fail if file does not exist) */
+    if( (dmpf = open(path, O_RDONLY | O_BINARY, 0644 )) == -1 )
+  	  {
+	      cm_msg(MINFO,"midas_file_dump","File dump -Failure- on open file %s",path);
+	      return RDLOG_FAIL_OPEN;
+	    }
+
+    /* get file size */
+    filestat = malloc( sizeof(struct stat) );
+    stat(path,filestat);
+    filesize = filestat->st_size;
+    free(filestat);
+    cm_msg(MINFO,"midas_file_dump","Accessing File %s (%i)",path, filesize);
+
+    /*-PAA-Oct06/97 added for ring buffer option */
+    send_sock = rpc_get_send_sock();
+  
+    /* compute fragmentation & initialize*/
+    nfrag = filesize / MAX_FRAG_SIZE;
+
+    /* Generate a unique FILE ID */
+    srand( (unsigned)time( NULL ) );
+    srand( (unsigned)time( NULL ) );
+
+    /* Fill file YM_CFILE header */
+    midas_cfileh.file_ID = rand();
+    midas_cfileh.size = filesize;
+    midas_cfileh.total_fragment = nfrag + (((filesize % MAX_FRAG_SIZE)==0) ? 0 : 1);
+    midas_cfileh.current_fragment = 0;
+    midas_cfileh.current_read_byte = 0;
+    midas_cfileh.run_number= run_number;
+    midas_cfileh.spare= 0xabcd;
+
+    /* Fill file YM_PFILE header */
+    memset (midas_pfileh.path,0,sizeof(YM_PFILE));
+    /* first remove path if present */
+    if (strrchr(path,'/') != NULL)
+      {
+        strncpy(midas_pfileh.path
+	        ,strrchr(path,'/')+1
+	        ,strlen(strrchr(path,'/')));
+      }
+    else
+        strcpy(midas_pfileh.path, path);
+
+    /* allocate space */
+    allheader_size = sizeof(EVENT_HEADER)
+      + sizeof(BANK_HEADER)           /* EVID bank header */
+      + 5*sizeof(DWORD)                    /* EVID data size */
+      + sizeof(YM_CFILE)
+      + sizeof(YM_PFILE) + 64;
+
+    flag = 0;
+    pevent -= 1;
+
+    /* read file */
+    while (midas_cfileh.current_fragment <= nfrag)
+    {
+      /* pevent passed by fe for first event only */
+      if (flag)
+        pevent = eb_get_pointer();
+      flag = 1;
+
+      /* YBOS bank header */
+      pmidas = (DWORD *) ((EVENT_HEADER *) pevent+1);
+
+      /*-PAA-Oct06/97 for ring buffer reset the LRL */
+      bk_init(pmidas);
+
+      /*---- YBOS Event bank ----*/
+      bk_create(pmidas, "EVID", TID_DWORD, &pbuf);
+      *(pbuf)++ = midas_cfileh.current_fragment;          /* Event number */
+      *(pbuf)++ = (eqp->info.event_id <<16) | (eqp->info.trigger_mask);  /* Event_ID + Mask */
+      *(pbuf)++ = eqp->serial_number;                    /* Serial number */
+      *(pbuf)++ = ss_millitime();                        /* Time Stamp */
+      *(pbuf)++ = run_number;                            /* run number */
+      bk_close(pmidas, pbuf);
+
+      /* Create YBOS bank */
+      bk_create(pmidas, "CFIL", TID_DWORD, &pbuf);
+      /* save pointer for later */
+      pcfile = pbuf;
+      (char *)pbuf += sizeof(YM_CFILE);
+      bk_close(pmidas, pbuf);
+
+      bk_create(pmidas, "PFIL", TID_CHAR, &pbuf);
+      memcpy((char *)pbuf,(char *)&midas_pfileh,sizeof(YM_PFILE));
+      (char *)pbuf += sizeof(YM_PFILE);
+      bk_close(pmidas, pbuf);
+
+      bk_create(pmidas, "DFIL", TID_CHAR, (DWORD *)&pbuf);
+      /* compute data length */
+      remaining = filesize-midas_cfileh.current_read_byte;
+      nread = read(dmpf,(char *)pbuf,(remaining > MAX_FRAG_SIZE) ? MAX_FRAG_SIZE : remaining);
+
+      /* adjust target pointer */
+      (char *) pbuf += nread;
+      /* keep track of statistic */
+      midas_cfileh.current_fragment++;
+      midas_cfileh.fragment_size = nread;
+      midas_cfileh.current_read_byte += nread;
+      memcpy((char *)pcfile,(char *)&midas_cfileh,sizeof(YM_CFILE));
+
+      /* close YBOS bank */
+      bk_close(pmidas, pbuf);
+
+      /* Fill the Midas header */
+      bm_compose_event(pevent, eqp->info.event_id, eqp->info.trigger_mask
+		       , bk_size(pmidas), eqp->serial_number++);
+
+/*-PAA-Oct06/97 Added the ring buffer option for FE event send */
+      eqp->bytes_sent += pevent->data_size+sizeof(EVENT_HEADER);
+      eqp->events_sent++;
+      if (eqp->buffer_handle)
+        {
+/*-PAA- Jun98 These events should be sent directly as they come before the run
+        started. If the event channel has to be used, then care should be taken
+        if interrupt are being used too. May requires buffer checks like in
+        scheduler (mfe.c) */
+/* #undef USE_EVENT_CHANNEL */
+#ifdef USE_EVENT_CHANNEL
+        eb_increment_pointer(eqp->buffer_handle, 
+                             pevent->data_size + sizeof(EVENT_HEADER));
+#else
+        rpc_flush_event();
+        bm_send_event(eqp->buffer_handle, pevent,
+                       pevent->data_size + sizeof(EVENT_HEADER), SYNC);
+#endif
+        eqp->odb_out++; 
         }
     }
   /* close file */
