@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.86  1999/11/12 10:04:59  midas
+  Fixed bug with WATCHDOG_INTERVAL
+
   Revision 1.85  1999/11/10 15:05:16  midas
   Did some additional database locking
 
@@ -2519,7 +2522,7 @@ INT i;
 
     if (call_watchdog)
       /* restart watchdog */
-      ss_alarm(timeout, cm_watchdog);
+      ss_alarm(WATCHDOG_INTERVAL, cm_watchdog);
     else
       /* kill current timer */
       ss_alarm(0, cm_watchdog);
