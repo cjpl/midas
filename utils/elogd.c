@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.80  2001/12/06 15:47:24  midas
+  First version of localization
+
   Revision 1.79  2001/12/06 09:22:36  midas
   Fixed bug with "full_name"
 
@@ -977,6 +980,103 @@ int  i;
   return 0;
 }
 
+/*-------------------------------------------------------------------*/
+
+char *locbuffer = NULL;
+char **porig, **ptrans;
+
+/* localization support */
+char *loc(char *orig)
+{
+char str[256], file_name[256], *p;
+int  fh, length, n;
+
+  if (getcfg(logbook, "Language", str))
+    {
+    if (!locbuffer)
+      {
+      strcpy(file_name, cfg_dir);
+      strcat(file_name, str);
+
+      fh = open(file_name, O_RDONLY | O_BINARY);
+      if (fh < 0)
+        return orig;
+
+      length = lseek(fh, 0, SEEK_END);
+      lseek(fh, 0, SEEK_SET);
+      locbuffer = malloc(length+1);
+      if (locbuffer == NULL)
+        {
+        close(fh);
+        return orig;
+        }
+      read(fh, locbuffer, length);
+      locbuffer[length] = 0;
+      close(fh);
+
+      /* scan lines, setup orig-translated pointers */
+      p = locbuffer;
+      n = 0;
+      do
+        {
+        while (*p && (*p == '\r' || *p == '\n'))
+          p++;
+
+        if (*p && (*p == ';' || *p == '#' || *p == ' ' || *p == '\t'))
+          {
+          p = strchr(p, '\r');
+          continue;
+          }
+
+        if (n == 0)
+          {
+          porig = malloc(sizeof(char *) * 2);
+          ptrans = malloc(sizeof(char *) * 2);
+          }
+        else
+          {
+          porig = realloc(porig, sizeof(char *) * (n + 2));
+          ptrans = realloc(ptrans, sizeof(char *) * (n + 2));
+          }
+
+        porig[n] = p;
+        while (*p && (*p != '=' && *p != '\r' && *p != '\n'))
+          p++;
+
+        if (*p && *p != '=')
+          continue;
+
+        ptrans[n] = p + 1;
+        while (*ptrans[n] == ' ')
+          ptrans[n] ++;
+
+        /* remove '=' and surrounding blanks */
+        while (*p == '=' || *p == ' ')
+          *p-- = 0;
+
+        p = strchr(ptrans[n], '\r');
+        if (p)
+          *p++ = 0;
+
+        n++;
+        } while (p && *p);
+
+      porig[n] = NULL;
+      }
+
+    /* search string and return translation */
+    for (n = 0; porig[n] ; n++)
+      if (strcmp(orig, porig[n]) == 0)
+        {
+        if (*ptrans[n])
+          return ptrans[n];
+        return orig;
+        }
+    }
+   
+  return orig;
+}
+
 /*------------------------------------------------------------------*/
 
 /* Parameter extraction from themes file  */
@@ -1614,9 +1714,9 @@ BOOL    bedit;
     /* generate filename for attachment */
     afile_name[index][0] = file_name[0] = 0;
 
-    if (equal_ustring(afilename[index], "<delete>"))
+    if (equal_ustring(afilename[index], loc("<delete>")))
       {
-      strcpy(afile_name[index], "<delete>");
+      strcpy(afile_name[index], loc("<delete>"));
       }
     else if (afilename[index][0] && buffer_size[index] == 0)
       {
@@ -1762,7 +1862,7 @@ BOOL    bedit;
         if (p != NULL)
           p = strtok(NULL, ",");
 
-      if (p && (afile_name[i][0] || equal_ustring(afile_name[i], "<delete>")))
+      if (p && (afile_name[i][0] || equal_ustring(afile_name[i], loc("<delete>"))))
         {
         /* delete old attachment */
         strcpy(str, data_dir);
@@ -1770,7 +1870,7 @@ BOOL    bedit;
         remove(str);
         }
 
-      if (afile_name[i][0] && !equal_ustring(afile_name[i], "<delete>"))
+      if (afile_name[i][0] && !equal_ustring(afile_name[i], loc("<delete>")))
         {
         if (n == 0)
           {
@@ -1781,7 +1881,7 @@ BOOL    bedit;
           sprintf(message+strlen(message), ",%s", afile_name[i]);
         }
 
-      else if (p && !equal_ustring(afile_name[i], "<delete>"))
+      else if (p && !equal_ustring(afile_name[i], loc("<delete>")))
         {
         if (n == 0)
           {
@@ -2678,73 +2778,6 @@ int  i, j, n, m;
 
 /*------------------------------------------------------------------*/
 
-void show_help_page()
-{
-  rsprintf("HTTP/1.1 200 Document follows\r\n");
-  rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
-  rsprintf("Content-Type: text/html\r\n");
-  rsprintf("Pragma: no-cache\r\n");
-  if (use_keepalive)
-    {
-    rsprintf("Connection: Keep-Alive\r\n");
-    rsprintf("Keep-Alive: timeout=60, max=10\r\n");
-    }
-  rsprintf("Expires: Fri, 01 Jan 1983 00:00:00 GMT\r\n\r\n");
-
-  rsprintf("<html><head>\n");
-  rsprintf("<title>ELOG Electronic Logbook Help</title>\n");
-  rsprintf("</head>\n\n");
-
-  rsprintf("<body>\n");
-
-  rsprintf("<table border=%s width=100%% bgcolor=%s cellpadding=1 cellspacing=0 align=center>",
-            gt("Border width"), gt("Frame color"));
-  rsprintf("<tr><td><table cellpadding=5 cellspacing=0 border=0 width=100%% bgcolor=%s>\n", gt("Frame color"));
-
-  rsprintf("<tr><td align=center bgcolor=%s><font face=verdana,arial,helvetica,sans-serif size=5 color=%s>",
-            gt("Title bgcolor"), gt("Title fontcolor"));
-  rsprintf("ELOG Electronic Logbook Help<br><font size=2>Version %s</font></font></td></tr>\n", VERSION);
-
-  rsprintf("<tr><td bgcolor=#FFFFFF><br>The Electronic Logbook (<i>ELog</i>) can be used to store and retrieve messages\n");
-  rsprintf("through a Web interface. Depending on the configuration, the ELog system can host one or more <i>logbooks</i>,\n");
-  rsprintf("which are stored in separate sections on the server.<p></td></tr>\n");
-
-  rsprintf("<tr><td bgcolor=%s><font color=%s><b>Quick overview</b></font></td></tr>\n", gt("Title bgcolor"), gt("Title fontcolor"));
-
-  rsprintf("<tr><td bgcolor=#FFFFFF><br>Per default, the last entry in a logbook is displayed. One can use the browse buttons\n");
-  rsprintf("to display the first, previous, next and last message.<p>\n");
-
-  rsprintf("If one of the checkboxes next to one of the attribute fields is checked, only\n");
-  rsprintf("messages of that attribute are displayed with the browse buttons. This can be used as a quick filter to display\n");
-  rsprintf("only pages from a certain author or category.<p>\n");
-
-  rsprintf("The <b>New</b> button creates a new entry. With the <b>Edit</b> button one can edit an existing message,\n");
-  rsprintf("if this is allowed in the configuration file. The <b>Reply</b> button creates a reply to an existing message,\n");
-  rsprintf("similar like a reply to an email.<p>\n");
-
-  rsprintf("The <b>Find</b> button opens a query page, where messages from a logbook can be displayed based\n");
-  rsprintf("on filter rules. Each non-empty field works like an additional filter, which is and-ed with the other rules.\n");
-  rsprintf("If no filter is selected, all messages from a logbook are displayed. The <b>Last day</b> and <b>Last 10</b>\n");
-  rsprintf("buttons display all messages from the last 24 hours and the last ten messages, respectively.<p>\n");
-
-  rsprintf("</td></tr>\n");
-  rsprintf("<tr><td bgcolor=%s><font color=%s><b>More information</b></font></td></tr>\n", gt("Title bgcolor"), gt("Title fontcolor"));
-
-  rsprintf("<tr><td bgcolor=#FFFFFF><br>For more information, especially about the configuration of ELog, refer to the\n");
-  rsprintf("<A HREF=\"http://midas.psi.ch/elog\">ELOG home page</A>.<P>\n\n");
-
-  rsprintf("</td></tr></table></td></tr></table>\n\n");
-
-  rsprintf("<hr>\n");
-  rsprintf("<address>\n");
-  rsprintf("<a href=\"http://midas.psi.ch/~stefan\">S. Ritt</a>, 28 August 2001");
-  rsprintf("</address>");
-
-  rsprintf("</body></html>\r\n");
-}
-
-/*------------------------------------------------------------------*/
-
 void show_upgrade_page()
 {
 char str[1000];
@@ -2900,8 +2933,8 @@ int  i;
   if (*getparam("full_name"))
     {
     rsprintf("<td bgcolor=%s align=center>", gt("Title BGColor"));
-    rsprintf("<font size=1 face=verdana,arial,helvetica,sans-serif color=%s><b>&nbsp;&nbsp;Logged in as \"%s\"<b></font></td>\n",
-              gt("Title fontcolor"), getparam("full_name"));
+    rsprintf("<font size=1 face=verdana,arial,helvetica,sans-serif color=%s><b>&nbsp;&nbsp;%s \"%s\"<b></font></td>\n",
+              gt("Title fontcolor"), loc("Logged in as"), getparam("full_name"));
     }
 
   /* right cell */
@@ -2930,10 +2963,14 @@ void show_error(char *error)
 
   rsprintf("%s</tr>\n", error);
 
-  rsprintf("<tr><td bgcolor=%s align=center><input type=submit value=\"Back\"></td></tr>\n",
-            gt("Cell BGColor"));
+  rsprintf("<tr><td bgcolor=%s align=center>", gt("Cell BGColor"));
 
-  rsprintf("</table></td></tr></table>\n");
+  rsprintf("<button type=button onClick=history.back()>%s</button>\n", loc("Back"));
+  /*
+  rsprintf("<input type=submit value=\"%s\">", loc("Back"));
+  */
+
+  rsprintf("</td></tr>\n</table></td></tr></table>\n");
   rsprintf("</body></html>\n");
 }
 
@@ -3243,24 +3280,27 @@ struct tm *gmt;
       }
     }
 
-  show_standard_header("ELOG change password", NULL);
+  show_standard_header(loc("ELOG change password"), NULL);
 
   rsprintf("<p><p><p><table border=%s width=50%% bgcolor=%s cellpadding=1 cellspacing=0 align=center>",
             gt("Border width"), gt("Frame color"));
   rsprintf("<tr><td><table cellpadding=5 cellspacing=0 border=0 width=100%% bgcolor=%s>\n", gt("Frame color"));
 
   if (wrong_pwd)
-    rsprintf("<tr><th bgcolor=#FF0000>Wrong password!</th></tr>\n");
+    rsprintf("<tr><th bgcolor=#FF0000>%s!</th></tr>\n", loc("Wrong password"));
 
   rsprintf("<tr><td align=center bgcolor=%s>\n", gt("Title bgcolor"));
 
-  rsprintf("<font color=%s>Change password for user \"%s\"</font></td></tr>\n",
-           gt("Title fontcolor"), getparam("full_name"));
+  rsprintf("<font color=%s>%s \"%s\"</font></td></tr>\n",
+           gt("Title fontcolor"), loc("Change password for user"), getparam("full_name"));
 
-  rsprintf("<tr><td align=center bgcolor=%s>Old Password:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input type=password name=oldpwd></td></tr>\n", gt("Cell BGColor"));
-  rsprintf("<tr><td align=center bgcolor=%s>New Password:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input type=password name=newpwd></td></tr>\n", gt("Cell BGColor"));
+  rsprintf("<tr><td align=center bgcolor=%s>%s:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input type=password name=oldpwd></td></tr>\n", 
+           gt("Cell BGColor"), loc("Old Password"));
+  rsprintf("<tr><td align=center bgcolor=%s>%s:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input type=password name=newpwd></td></tr>\n", 
+           gt("Cell BGColor"), loc("New Password"));
 
-  rsprintf("<tr><td align=center bgcolor=%s><input type=submit value=Submit></td></tr>", gt("Cell BGColor"));
+  rsprintf("<tr><td align=center bgcolor=%s><input type=submit value=%s></td></tr>", 
+           gt("Cell BGColor"), loc("Submit"));
 
   rsprintf("</table></td></tr></table>\n");
 
@@ -3290,7 +3330,7 @@ int  i, n;
     if (equal_ustring(list[i], getparam("unm")))
       return TRUE;
 
-  sprintf(str, "Error: Command \"<b>%s</b>\" is not allowed for user \"<b>%s</b>\"",
+  sprintf(str, loc("Error: Command \"<b>%s</b>\" is not allowed for user \"<b>%s</b>\""),
           command, getparam("full_name"));
   show_error(str);
 
@@ -3372,8 +3412,8 @@ time_t now;
 
   rsprintf("<tr><td align=%s bgcolor=%s>\n", gt("Menu1 Align"), gt("Menu1 BGColor"));
 
-  rsprintf("<input type=submit name=cmd value=Submit>\n");
-  rsprintf("<input type=submit name=cmd value=Back>\n");
+  rsprintf("<input type=submit name=cmd value=%s>\n", loc("Submit"));
+  rsprintf("<input type=submit name=cmd value=%s>\n", loc("Back"));
   rsprintf("</td></tr></table></td></tr>\n\n");
 
   /*---- entry form ----*/
@@ -3387,8 +3427,8 @@ time_t now;
     {
     if (attr_flags[i] & AF_REQUIRED)
       {
-      rsprintf("<tr><td colspan=2 bgcolor=%s>Fields marked with <font color=red>*</font> are required.</td></tr>\n",
-               gt("Categories bgcolor1"));
+      rsprintf("<tr><td colspan=2 bgcolor=%s>%s <font color=red>*</font> %s</td></tr>\n",
+               gt("Categories bgcolor1"), loc("Fields marked with"), loc("are required"));
       break;
       }
     }
@@ -3396,13 +3436,13 @@ time_t now;
   time(&now);
   if (bedit)
     {
-    rsprintf("<tr><td nowrap bgcolor=%s width=10%%><b>Entry date:</b></td><td bgcolor=%s>%s</td></tr>\n\n",
-             gt("Categories bgcolor1"), gt("Categories bgcolor2"), date);
+    rsprintf("<tr><td nowrap bgcolor=%s width=10%%><b>%s:</b></td><td bgcolor=%s>%s</td></tr>\n\n",
+             gt("Categories bgcolor1"), loc("Entry date"), gt("Categories bgcolor2"), date);
     }
   else
     {
-    rsprintf("<tr><td nowrap bgcolor=%s width=10%%><b>Entry date:</b></td><td bgcolor=%s>%s</td></tr>\n\n",
-             gt("Categories bgcolor1"), gt("Categories bgcolor2"), ctime(&now));
+    rsprintf("<tr><td nowrap bgcolor=%s width=10%%><b>%s:</b></td><td bgcolor=%s>%s</td></tr>\n\n",
+             gt("Categories bgcolor1"), loc("Entry date"), gt("Categories bgcolor2"), ctime(&now));
     }
 
   /* display attributes */
@@ -3450,7 +3490,7 @@ time_t now;
                  gt("Categories bgcolor1"), attr_list[index], star, gt("Categories bgcolor2"), attr_list[index]);
 
         /* display emtpy option */
-        rsprintf("<option value=\"\">- please select -\n");
+        rsprintf("<option value=\"\">- %s -\n", loc("please select"));
 
         for (i=0 ; i<MAX_N_LIST && attr_options[index][i][0] ; i++)
           {
@@ -3546,9 +3586,9 @@ time_t now;
 
     /* HTML check box */
     if (bedit && encoding[0] == 'H')
-      rsprintf("<input type=checkbox checked name=html value=1>Submit as HTML text\n");
+      rsprintf("<input type=checkbox checked name=html value=1>%s\n", loc("Submit as HTML text"));
     else
-      rsprintf("<input type=checkbox name=html value=1>Submit as HTML text\n");
+      rsprintf("<input type=checkbox name=html value=1>%s\n", loc("Submit as HTML text"));
     }
 
   if (getcfg(logbook, "Suppress default", str))
@@ -3556,18 +3596,18 @@ time_t now;
     if (atoi(str) == 0)
       {
       rsprintf("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\n");
-      rsprintf("<input type=checkbox name=suppress value=1>Suppress Email notification>\n");
+      rsprintf("<input type=checkbox name=suppress value=1>%s>\n", loc("Suppress Email notification"));
       }
     else if (atoi(str) == 1)
       {
       rsprintf("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\n");
-      rsprintf("<input type=checkbox checked name=suppress value=1>Suppress Email notification\n");
+      rsprintf("<input type=checkbox checked name=suppress value=1>%s\n", loc("Suppress Email notification"));
       }
     }
   else
     {
     rsprintf("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\n");
-    rsprintf("<input type=checkbox name=suppress value=1>Suppress Email notification\n");
+    rsprintf("<input type=checkbox name=suppress value=1>%s\n", loc("Suppress Email notification"));
     }
 
   if (bedit)
@@ -3577,18 +3617,18 @@ time_t now;
       if (atoi(str) == 0)
         {
         rsprintf("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\n");
-        rsprintf("<input type=checkbox name=resubmit value=1>Resubmit as new entry\n");
+        rsprintf("<input type=checkbox name=resubmit value=1>%s\n", loc("Resubmit as new entry"));
         }
       else if (atoi(str) == 1)
         {
         rsprintf("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\n");
-        rsprintf("<input type=checkbox checked name=resubmit value=1>Resubmit as new entry\n");
+        rsprintf("<input type=checkbox checked name=resubmit value=1>%s\n", loc("Resubmit as new entry"));
         }
       }
     else
       {
       rsprintf("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\n");
-      rsprintf("<input type=checkbox name=resubmit value=1>Resubmit as new entry\n");
+      rsprintf("<input type=checkbox name=resubmit value=1>%s\n", loc("Resubmit as new entry"));
       }
     }
 
@@ -3606,24 +3646,24 @@ time_t now;
     {
     if (bedit)
       {
-      rsprintf("<tr><td colspan=2 align=center bgcolor=%s>If no attachments are resubmitted, the original ones are kept.<br>\n",
-                gt("Categories bgcolor1"));
-      rsprintf("To delete an old attachment, enter <code>&lt;delete&gt;</code> in the new attachment field.</td></tr>\n");
+      rsprintf("<tr><td colspan=2 align=center bgcolor=%s>%s.<br>\n",
+                gt("Categories bgcolor1"), loc("If no attachments are resubmitted, the original ones are kept"));
+      rsprintf("%s.</td></tr>\n", loc("To delete an old attachment, enter <code>&lt;delete&gt;</code> in the new attachment field"));
 
       for (i=0 ; i<n ; i++)
         {
         if (att[i][0])
           {
-          rsprintf("<tr><td align=right nowrap bgcolor=%s>Original attachment %d:<br>New attachment %d:</td>",
-                    gt("Categories bgcolor1"), i+1, i+1);
+          rsprintf("<tr><td align=right nowrap bgcolor=%s>%s %d:<br>%s %d:</td>",
+                    gt("Categories bgcolor1"), loc("Original attachment"), i+1, loc("New attachment"), i+1);
 
           rsprintf("<td bgcolor=%s>%s<br>", gt("Categories bgcolor2"), att[i]+14);
           rsprintf("<input type=\"file\" size=\"60\" maxlength=\"200\" name=\"attfile%d\" accept=\"filetype/*\"></td></tr>\n",
                     i+1);
           }
         else
-          rsprintf("<tr><td bgcolor=%s>Attachment %d:</td><td bgcolor=%s><input type=\"file\" size=\"60\" maxlength=\"200\" name=\"attfile%d\" accept=\"filetype/*\"></td></tr>\n",
-                    gt("Categories bgcolor1"), i+1, gt("Categories bgcolor2"), i+1);
+          rsprintf("<tr><td bgcolor=%s>%s %d:</td><td bgcolor=%s><input type=\"file\" size=\"60\" maxlength=\"200\" name=\"attfile%d\" accept=\"filetype/*\"></td></tr>\n",
+                    gt("Categories bgcolor1"), loc("Attachment"), i+1, gt("Categories bgcolor2"), i+1);
         }
 
       }
@@ -3631,8 +3671,8 @@ time_t now;
       {
       /* attachment */
       for (i=0 ; i<n ; i++)
-        rsprintf("<tr><td nowrap bgcolor=%s><b>Attachment %d:</b></td><td bgcolor=%s><input type=\"file\" size=\"60\" maxlength=\"200\" name=\"attfile%d\" accept=\"filetype/*\"></td></tr>\n",
-                 gt("Categories bgcolor1"), i+1, gt("Categories bgcolor2"), i+1);
+        rsprintf("<tr><td nowrap bgcolor=%s><b>%s %d:</b></td><td bgcolor=%s><input type=\"file\" size=\"60\" maxlength=\"200\" name=\"attfile%d\" accept=\"filetype/*\"></td></tr>\n",
+                 gt("Categories bgcolor1"), loc("Attachment"), i+1, gt("Categories bgcolor2"), i+1);
       }
     }
 
@@ -3645,8 +3685,8 @@ time_t now;
 
   rsprintf("<tr><td align=%s bgcolor=%s>\n", gt("Menu1 Align"), gt("Menu1 BGColor"));
 
-  rsprintf("<input type=submit name=cmd value=Submit>\n");
-  rsprintf("<input type=submit name=cmd value=Back>\n");
+  rsprintf("<input type=submit name=cmd value=%s>\n", loc("Submit"));
+  rsprintf("<input type=submit name=cmd value=%s>\n", loc("Back"));
   rsprintf("</td></tr></table></td></tr>\n\n");
 
   rsprintf("</td></tr></table>\n");
@@ -3664,7 +3704,7 @@ char   str[256];
 
   /*---- header ----*/
 
-  show_standard_header("ELOG find", NULL);
+  show_standard_header(loc("ELOG find"), NULL);
 
   /*---- title ----*/
 
@@ -3677,9 +3717,9 @@ char   str[256];
 
   rsprintf("<tr><td align=%s bgcolor=%s>\n", gt("Menu1 Align"), gt("Menu1 BGColor"));
 
-  rsprintf("<input type=submit name=cmd value=Search>\n");
-  rsprintf("<input type=reset value=\"Reset Form\">\n");
-  rsprintf("<input type=submit name=cmd value=Back>\n");
+  rsprintf("<input type=submit name=cmd value=%s>\n", loc("Search"));
+  rsprintf("<input type=reset value=\"%s\">\n", loc("Reset Form"));
+  rsprintf("<input type=submit name=cmd value=%s>\n", loc("Back"));
   rsprintf("</td></tr></table></td></tr>\n\n");
 
   /*---- entry form ----*/
@@ -3693,19 +3733,19 @@ char   str[256];
     rsprintf("<tr><td colspan=2 bgcolor=%s>", gt("Categories bgcolor2"));
 
     if (getcfg(logbook, "Summary on default", str) && atoi(str) == 1)
-      rsprintf("<input type=checkbox checked name=mode value=\"summary\">Summary only\n");
+      rsprintf("<input type=checkbox checked name=mode value=\"summary\">%s\n", loc("Summary only"));
     else
-      rsprintf("<input type=checkbox name=mode value=\"summary\">Summary only\n");
+      rsprintf("<input type=checkbox name=mode value=\"summary\">%s\n", loc("Summary only"));
     rsprintf("</td></tr>\n");
     }
   rsprintf("<td colspan=2 bgcolor=%s>", gt("Categories bgcolor2"));
-  rsprintf("<input type=checkbox name=attach value=1>Show attachments</td></tr>\n");
+  rsprintf("<input type=checkbox name=attach value=1>%s</td></tr>\n", loc("Show attachments"));
 
   rsprintf("<td colspan=2 bgcolor=%s>", gt("Categories bgcolor2"));
-  rsprintf("<input type=checkbox name=printable value=1>Printable output</td></tr>\n");
+  rsprintf("<input type=checkbox name=printable value=1>%s</td></tr>\n", loc("Printable output"));
 
   rsprintf("<td colspan=2 bgcolor=%s>", gt("Categories bgcolor2"));
-  rsprintf("<input type=checkbox name=reverse value=1>Sort in reverse order</td></tr>\n");
+  rsprintf("<input type=checkbox name=reverse value=1>%s</td></tr>\n", loc("Sort in reverse order"));
 
   /* count logbooks */
   for (i=0 ;  ; i++)
@@ -3720,10 +3760,10 @@ char   str[256];
   if (i > 2)
     {
     rsprintf("<td colspan=2 bgcolor=%s>", gt("Categories bgcolor2"));
-    rsprintf("<input type=checkbox name=all value=1>Search all logbooks</td></tr>\n");
+    rsprintf("<input type=checkbox name=all value=1>%s</td></tr>\n", loc("Search all logbooks"));
     }
 
-  rsprintf("<tr><td nowrap width=10%% bgcolor=%s>Start date:</td>", gt("Categories bgcolor1"));
+  rsprintf("<tr><td nowrap width=10%% bgcolor=%s>%s:</td>", gt("Categories bgcolor1"), loc("Start date"));
   rsprintf("<td bgcolor=%s><select name=\"m1\">\n", gt("Categories bgcolor2"));
 
   rsprintf("<option value=\"\">\n");
@@ -3740,7 +3780,7 @@ char   str[256];
   rsprintf("&nbsp;Year: <input type=\"text\" size=5 maxlength=5 name=\"y1\">");
   rsprintf("</td></tr>\n");
 
-  rsprintf("<tr><td bgcolor=%s>End date:</td>", gt("Categories bgcolor1"));
+  rsprintf("<tr><td bgcolor=%s>%s:</td>", gt("Categories bgcolor1"), loc("End date"));
   rsprintf("<td bgcolor=%s><select name=\"m2\">\n", gt("Categories bgcolor2"));
 
   rsprintf("<option value=\"\">\n");
@@ -3766,7 +3806,7 @@ char   str[256];
     if (attr_options[i][0][0] == 0)
       {
       rsprintf("<input type=\"text\" size=\"30\" maxlength=\"80\" name=\"%s\">\n", attr_list[i]);
-      rsprintf("<i>(case insensitive substring)</i>\n");
+      rsprintf("<i>%s</i>\n", loc("(case insensitive substring)"));
       }
     else
       {
@@ -3789,7 +3829,7 @@ char   str[256];
     rsprintf("<tr><td bgcolor=%s>Text:</td>",  gt("Categories bgcolor1"));
     rsprintf("<td bgcolor=%s><input type=\"text\" size=\"30\" maxlength=\"80\" name=\"subtext\">\n",
                gt("Categories bgcolor2"));
-    rsprintf("<i>(case insensitive substring)</i></td></tr>\n");
+    rsprintf("<i>%s</i></td></tr>\n", loc("(case insensitive substring)"));
     }
 
   rsprintf("</table></td></tr></table>\n");
@@ -3829,8 +3869,8 @@ char *buffer;
 
   rsprintf("<tr><td align=%s bgcolor=%s>\n", gt("Menu1 Align"), gt("Menu1 BGColor"));
 
-  rsprintf("<input type=submit name=cmd value=Save>\n");
-  rsprintf("<input type=submit name=cmd value=Cancel>\n");
+  rsprintf("<input type=submit name=cmd value=%s>\n", loc("Save"));
+  rsprintf("<input type=submit name=cmd value=%s>\n", loc("Cancel"));
   rsprintf("</td></tr></table></td></tr>\n\n");
 
   /*---- entry form ----*/
@@ -3880,8 +3920,8 @@ char *buffer;
 
   rsprintf("<tr><td align=%s bgcolor=%s>\n", gt("Menu1 Align"), gt("Menu1 BGColor"));
 
-  rsprintf("<input type=submit name=cmd value=Save>\n");
-  rsprintf("<input type=submit name=cmd value=Cancel>\n");
+  rsprintf("<input type=submit name=cmd value=%s>\n", loc("Save"));
+  rsprintf("<input type=submit name=cmd value=%s>\n", loc("Cancel"));
   rsprintf("</td></tr></table>\n\n");
 
   rsprintf("</td></tr></table>\n\n");
@@ -3898,14 +3938,14 @@ char str[80];
   fh = open(cfg_file, O_RDWR | O_BINARY | O_TRUNC, 644);
   if (fh < 0)
     {
-    sprintf(str, "Cannot open file <b>%s</b>: %s", cfg_file, strerror(errno));
+    sprintf(str, "%s: %s", loc("Cannot open file <b>%s</b>"), cfg_file, strerror(errno));
     show_error(str);
     return 0;
     }
   i = write(fh, _text, strlen(_text));
   if (i < (int)strlen(_text))
     {
-    sprintf(str, "Cannot write to <b>%s</b>: %s", cfg_file, strerror(errno));
+    sprintf(str, "%s: %s", loc("Cannot write to <b>%s</b>"), cfg_file, strerror(errno));
     show_error(str);
     close(fh);
     return 0;
@@ -3924,7 +3964,7 @@ char   str[256];
 
   /* redirect if confirm = NO */
   if (getparam("confirm") && *getparam("confirm") &&
-      strcmp(getparam("confirm"), "No") == 0)
+      strcmp(getparam("confirm"), loc("No")) == 0)
     {
     sprintf(str, "%s", path);
     redirect(str);
@@ -3939,36 +3979,37 @@ char   str[256];
             gt("Border width"), gt("Frame color"));
   rsprintf("<tr><td><table cellpadding=5 cellspacing=0 border=0 width=100%% bgcolor=%s>\n", gt("Frame color"));
 
-
   if (getparam("confirm") && *getparam("confirm"))
     {
-    if (strcmp(getparam("confirm"), "Yes") == 0)
+    if (strcmp(getparam("confirm"), loc("Yes")) == 0)
       {
       /* delete message */
       status = el_delete_message(path);
       rsprintf("<tr><td bgcolor=#80FF80 align=center>");
       if (status == EL_SUCCESS)
-        rsprintf("<b>Message successfully deleted</b></tr>\n");
+        rsprintf("<b>%s</b></tr>\n", loc("Message successfully deleted"));
       else
-        rsprintf("<b>Error deleting message: status = %d</b></tr>\n", status);
+        rsprintf("<b>%s = %d</b></tr>\n", loc("Error deleting message: status"), status);
 
-      rsprintf("<input type=hidden name=cmd value=Last>\n");
-      rsprintf("<tr><td bgcolor=%s align=center><input type=submit value=\"Goto last message\"></td></tr>\n",
-                gt("Cell BGColor"));
+      rsprintf("<input type=hidden name=cmd value=%s>\n", loc("Last"));
+      rsprintf("<tr><td bgcolor=%s align=center><input type=submit value=\"%s\"></td></tr>\n",
+                gt("Cell BGColor"), loc("Goto last message"));
       }
     }
   else
     {
     /* define hidden field for command */
-    rsprintf("<input type=hidden name=cmd value=Delete>\n");
+    rsprintf("<input type=hidden name=cmd value=%s>\n", loc("Delete"));
 
     rsprintf("<tr><td bgcolor=%s align=center>", gt("Title bgcolor"));
-    rsprintf("<font color=%s><b>Are you sure to delete this message?</b></font></td></tr>\n", gt("Title fontcolor"));
+    rsprintf("<font color=%s><b>%s</b></font></td></tr>\n", gt("Title fontcolor"), 
+            loc("Are you sure to delete this message?"));
 
     rsprintf("<tr><td bgcolor=%s align=center>%s</td></tr>\n", gt("Cell BGColor"), path);
 
-    rsprintf("<tr><td bgcolor=%s align=center><input type=submit name=confirm value=Yes>\n", gt("Cell BGColor"));
-    rsprintf("<input type=submit name=confirm value=No>\n", gt("Cell BGColor"));
+    rsprintf("<tr><td bgcolor=%s align=center><input type=submit name=confirm value=%s>\n", 
+              gt("Cell BGColor"), loc("Yes"));
+    rsprintf("<input type=submit name=confirm value=%s>\n", loc("No"));
     rsprintf("</td></tr>\n\n");
     }
 
@@ -4014,13 +4055,13 @@ FILE   *f;
 
   /*---- title ----*/
 
-  str[0] = 0;
+  strcpy(str, ", ");
   if (past_n == 1)
-    strcpy(str, ", Last day");
+    strcat(str, loc("Last day"));
   else if (past_n > 1)
-    sprintf(str, ", Last %d days", past_n);
+    sprintf(str+strlen(str), loc("Last %d days"), past_n);
   else if (last_n)
-    sprintf(str, ", Last %d messages", last_n);
+    sprintf(str+strlen(str), loc("Last %d entries"), last_n);
 
   if (printable)
     show_standard_title(logbook, str, 1);
@@ -4069,10 +4110,16 @@ FILE   *f;
           if (equal_ustring(menu_item[i], "Last x"))
             {
             if (past_n)
-              rsprintf("<input type=submit name=past value=\"Last %d days\">\n", past_n*2);
+              {
+              sprintf(str, loc("Last %d days"), past_n*2);
+              rsprintf("<input type=submit name=past value=\"%s\">\n", str);
+              }
 
             if (last_n)
-              rsprintf("<input type=submit name=last value=\"Last %d entries\">\n", last_n*2);
+              {
+              sprintf(str, loc("Last %d entries"), last_n*2);
+              rsprintf("<input type=submit name=last value=\"%s\">\n", str);
+              }
             }
           else
             rsprintf("<input type=submit name=cmd value=\"%s\">\n", menu_item[i]);
@@ -4087,10 +4134,16 @@ FILE   *f;
           if (equal_ustring(menu_item[i], "Last x"))
             {
             if (past_n)
-              rsprintf("&nbsp;<a href=\"/%s/past%d\">Last %d days</a>&nbsp;|\n", logbook_enc, past_n*2, past_n*2);
+              {
+              sprintf(str, loc("Last %d days"), past_n*2);
+              rsprintf("&nbsp;<a href=\"/%s/past%d\">%s</a>&nbsp;|\n", logbook_enc, past_n*2, str);
+              }
 
             if (last_n)
-              rsprintf("&nbsp;<a href=\"/%s/last%d\">Last %d entries</a>&nbsp;|\n", logbook_enc, last_n*2, last_n*2);
+              {
+              sprintf(str, loc("Last %d entries"), last_n*2);
+              rsprintf("&nbsp;<a href=\"/%s/last%d\">%s</a>&nbsp;|\n", logbook_enc, last_n*2, str);
+              }
             }
           else
             {
@@ -4110,13 +4163,19 @@ FILE   *f;
     else
       {
       if (past_n)
-        rsprintf("<input type=submit name=past value=\"Last %d days\">\n", past_n+1);
+        {
+        sprintf(str, loc("Last %d days"), past_n*2);
+        rsprintf("<input type=submit name=past value=\"%s\">\n", str);
+        }
 
       if (last_n)
-        rsprintf("<input type=submit name=last value=\"Last %d entries\">\n", last_n+10);
+        {
+        sprintf(str, loc("Last %d entries"), last_n*2);
+        rsprintf("<input type=submit name=last value=\"%s\">\n", str);
+        }
 
-      rsprintf("<input type=submit name=cmd value=Find>\n");
-      rsprintf("<input type=submit name=cmd value=Back>\n");
+      rsprintf("<input type=submit name=cmd value=%s>\n", loc("Find"));
+      rsprintf("<input type=submit name=cmd value=%s>\n", loc("Back"));
       }
 
     rsprintf("</td></tr></table></td></tr>\n\n");
@@ -4259,8 +4318,8 @@ FILE   *f;
             printable ? "1" : gt("Border width"), gt("Categories cellpadding"));
 
   if (*getparam("m1") || *getparam("y1") || *getparam("d1"))
-    rsprintf("<tr><td nowrap width=10%% bgcolor=%s><b>Start date:</b></td><td bgcolor=%s>%s %d, %d</td></tr>",
-              gt("Categories bgcolor1"), gt("Categories bgcolor2"), mname[m1-1], d1, y1);
+    rsprintf("<tr><td nowrap width=10%% bgcolor=%s><b>%s:</b></td><td bgcolor=%s>%s %d, %d</td></tr>",
+              gt("Categories bgcolor1"), loc("Start date"), gt("Categories bgcolor2"), mname[m1-1], d1, y1);
 
   if (*getparam("m2") || *getparam("y2") || *getparam("d2"))
     {
@@ -4277,8 +4336,8 @@ FILE   *f;
     ltime -= 3600*24;
     memcpy(&tms, localtime(&ltime), sizeof(struct tm));
 
-    rsprintf("<tr><td nowrap width=10%% bgcolor=%s><b>End date:</b></td><td bgcolor=%s>%s %d, %d</td></tr>",
-              gt("Categories bgcolor1"), gt("Categories bgcolor2"),
+    rsprintf("<tr><td nowrap width=10%% bgcolor=%s><b>%s:</b></td><td bgcolor=%s>%s %d, %d</td></tr>",
+              gt("Categories bgcolor1"), loc("End date"), gt("Categories bgcolor2"),
               mname[tms.tm_mon], tms.tm_mday, tms.tm_year + 1900);
     }
 
@@ -4291,7 +4350,7 @@ FILE   *f;
 
   if (*getparam("subtext"))
     {
-    rsprintf("<tr><td nowrap width=10%% bgcolor=%s><b>Text:</b></td>", gt("Categories bgcolor1"));
+    rsprintf("<tr><td nowrap width=10%% bgcolor=%s><b>%s:</b></td>", gt("Categories bgcolor1"), loc("Text"));
     rsprintf("<td bgcolor=%s><B style=\"color:black;background-color:#ffff66\">%s</B></td></tr>",
               gt("Categories bgcolor2"), getparam("subtext"));
     }
@@ -4717,15 +4776,15 @@ FILE   *f;
                     strstr(str, ".JPG") ||
                     strstr(str, ".PNG"))
                   {
-                  rsprintf("<tr><td colspan=%d bgcolor=%s><b>Attachment %d:</b> <a href=\"%s\">%s</a>\n",
-                            colspan, gt("List bgcolor2"), index+1, ref, attachment[index]+14);
+                  rsprintf("<tr><td colspan=%d bgcolor=%s><b>%s %d:</b> <a href=\"%s\">%s</a>\n",
+                            colspan, gt("List bgcolor2"), loc("Attachment"), index+1, ref, attachment[index]+14);
                   if (show_attachments)
                     rsprintf("</td></tr><tr><td colspan=%d bgcolor=#FFFFFF><img src=\"%s\"></td></tr>", colspan, ref);
                   }
                 else
                   {
-                  rsprintf("<tr><td colspan=%d bgcolor=%s><b>Attachment %d:</b> <a href=\"%s\">%s</a>\n",
-                            colspan, gt("List bgcolor2"), index+1, ref, attachment[index]+14);
+                  rsprintf("<tr><td colspan=%d bgcolor=%s><b>%s %d:</b> <a href=\"%s\">%s</a>\n",
+                            colspan, gt("List bgcolor2"), loc("Attachment"), index+1, ref, attachment[index]+14);
 
                   if ((strstr(str, ".TXT") ||
                        strstr(str, ".ASC") ||
@@ -4864,7 +4923,7 @@ FILE   *f;
     rsprintf("<tr><td><table width=100%% border=%s cellpadding=%s cellspacing=1 bgcolor=%s>\n",
            printable ? "1" : gt("Border width"), gt("Categories cellpadding"), gt("Frame color"));
 
-    rsprintf("<tr><td bgcolor=#FFB0B0 align=center><b>No entries found<b></td></tr>");
+    rsprintf("<tr><td bgcolor=#FFB0B0 align=center><b>%s<b></td></tr>", loc("No entries found"));
 
     rsprintf("</td></tr></table>\n");
     }
@@ -4909,7 +4968,7 @@ FILE   *f;
 
 void submit_elog()
 {
-char   str[256], mail_to[256], mail_from[256], file_name[256],
+char   str[256], mail_to[256], mail_from[256], file_name[256], error[1000],
        mail_text[10000], mail_list[MAX_N_LIST][NAME_LENGTH], list[10000], smtp_host[256],
        tag[80], subject[256], attrib[MAX_N_ATTR][NAME_LENGTH], subst_str[256];
 char   *buffer[MAX_ATTACHMENTS], mail_param[1000];
@@ -4930,11 +4989,14 @@ int    i, j, n, index, n_attr, n_mail, suppress, status;
       rsprintf("<tr><td><table cellpadding=5 cellspacing=0 border=0 width=100%% bgcolor=%s>\n", gt("Frame color"));
       rsprintf("<tr><td bgcolor=#FFB0B0 align=center>");
 
-      rsprintf("<i>Error: Attribute <b>%s</b> not supplied.</i><p>\n", attr_list[i]);
-      rsprintf("Please go back and enter the <b>%s</b> field.</tr>\n", attr_list[i]);
+      rsprintf("<i>");
+      rsprintf(loc("Error: Attribute <b>%s</b> not supplied"), attr_list[i]);
+      rsprintf(".</i><p>\n");
+      rsprintf(loc("Please go back and enter the <b>%s</b> field"), attr_list[i]);
+      rsprintf(".</tr>\n");
 
       rsprintf("<tr><td bgcolor=%s align=center>", gt("Cell BGColor"));
-      rsprintf("<button type=button onClick=history.back()>Back</button></td></tr>\n");
+      rsprintf("<button type=button onClick=history.back()>%s</button></td></tr>\n", loc("Back"));
 
 
       rsprintf("</table></td></tr></table>\n");
@@ -4948,21 +5010,10 @@ int    i, j, n, index, n_attr, n_mail, suppress, status;
     buffer[i] = NULL;
     sprintf(str, "attachment%d", i);
     strcpy(att_file[i], getparam(str));
-    if (att_file[i][0] && _attachment_size[i] == 0 && !equal_ustring(att_file[i], "<delete>"))
+    if (att_file[i][0] && _attachment_size[i] == 0 && !equal_ustring(att_file[i], loc("<delete>")))
       {
-      rsprintf("HTTP/1.1 200 Document follows\r\n");
-      rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
-      if (use_keepalive)
-        {
-        rsprintf("Connection: Keep-Alive\r\n");
-        rsprintf("Keep-Alive: timeout=60, max=10\r\n");
-        }
-      rsprintf("Content-Type: text/html\r\n\r\n");
-
-      rsprintf("<html><head><title>ELog Error</title></head>\n");
-      rsprintf("<i>Error: Attachment file <i>%s</i> not valid.</i><p>\n", getparam(str));
-      rsprintf("Please go back and enter a proper filename (use the <b>Browse</b> button).\n");
-      rsprintf("<body></body></html>\n");
+      sprintf(error, loc("Error: Attachment file <i>%s</i> invalid, please bo back and enter a proper file name"), getparam(str));
+      show_error(error);
       return;
       }
     }
@@ -5013,8 +5064,9 @@ int    i, j, n, index, n_attr, n_mail, suppress, status;
 
   if (status != EL_SUCCESS)
     {
-    sprintf(str, "New message cannot be written to directory \"%s\"<p>", data_dir);
-    strcat(str, "Please check that it exists and elogd has write access.");
+    sprintf(str, loc("New message cannot be written to directory \"%s\""), data_dir);
+    strcat(str, "\n<p>");
+    strcat(str, loc("Please check that it exists and elogd has write access"));
     show_error(str);
     return;
     }
@@ -5060,7 +5112,7 @@ int    i, j, n, index, n_attr, n_mail, suppress, status;
         if (!getcfg("global", "SMTP host", smtp_host))
           if (!getcfg("global", "SMTP host", smtp_host))
             {
-            show_error("No SMTP host defined in [global] section of configuration file");
+            show_error(loc("No SMTP host defined in [global] section of configuration file"));
             return;
             }
 
@@ -5076,9 +5128,10 @@ int    i, j, n, index, n_attr, n_mail, suppress, status;
           else
             sprintf(mail_from, "ELog@%s", host_name);
 
-          sprintf(mail_text, "A new entry has been submitted on %s:\r\n\r\n", host_name);
+          sprintf(mail_text, loc("A new entry has been submitted on %s"), host_name);
+          sprintf(mail_text+strlen(mail_text), "\r\n\r\n");
 
-          sprintf(mail_text+strlen(mail_text), "Logbook             : %s\r\n", logbook);
+          sprintf(mail_text+strlen(mail_text), "%s             : %s\r\n", loc("Logbook"), logbook);
 
           for (j=0 ; j<n_attr ; j++)
             {
@@ -5098,7 +5151,8 @@ int    i, j, n, index, n_attr, n_mail, suppress, status;
           else
             strcpy(subject, "New ELOG entry");
 
-          sprintf(mail_text+strlen(mail_text), "\r\nLogbook URL         : %s%s/%s\r\n", elogd_full_url, logbook_enc, tag);
+          sprintf(mail_text+strlen(mail_text), "\r\n%s URL         : %s%s/%s\r\n", 
+                  elogd_full_url, loc("Logbook"), logbook_enc, tag);
 
           if (getcfg(logbook, "Email message body", str) &&
               atoi(str) == 1)
@@ -5166,7 +5220,7 @@ char   date[80], text[TEXT_SIZE],  old_data_dir[256], tag[32],
 
   if (status != EL_SUCCESS)
     {
-    sprintf(str, "Messags %s cannot be read from logook \"%s\"<p>", src_path, logbook);
+    sprintf(str, loc("Messags %s cannot be read from logook \"%s\""), src_path, logbook);
     show_error(str);
     return;
     }
@@ -5225,8 +5279,9 @@ char   date[80], text[TEXT_SIZE],  old_data_dir[256], tag[32],
 
   if (status != EL_SUCCESS)
     {
-    sprintf(str, "New message cannot be written to directory \"%s\"<p>", data_dir);
-    strcat(str, "Please check that it exists and elogd has write access.");
+    sprintf(str, loc("New message cannot be written to directory \"%s\""), data_dir);
+    strcat(str, "\n<p>");
+    strcat(str, loc("Please check that it exists and elogd has write access"));
     show_error(str);
     return;
     }
@@ -5248,18 +5303,19 @@ char   date[80], text[TEXT_SIZE],  old_data_dir[256], tag[32],
     }
 
   /* display status message */
-  show_standard_header("Copy ELog entry", src_path);
+  show_standard_header(loc("Copy ELog entry"), src_path);
 
   rsprintf("<p><p><p><table border=%s width=50%% bgcolor=%s cellpadding=1 cellspacing=0 align=center>",
             gt("Border width"), gt("Frame color"));
   rsprintf("<tr><td><table cellpadding=5 cellspacing=0 border=0 width=100%% bgcolor=%s>\n", gt("Frame color"));
 
-  rsprintf("<tr><td bgcolor=#80FF80 align=center>");
+  rsprintf("<tr><td bgcolor=#80FF80 align=center><b>");
   if (move)
-    rsprintf("<b>Message moved successfully from \"%s\" to \"%s\"</b></tr>\n", logbook, dst_logbook);
+    rsprintf(loc("Message moved successfully from \"%s\" to \"%s\""), logbook, dst_logbook);
   else
-    rsprintf("<b>Message copied successfully from \"%s\" to \"%s\"</b></tr>\n", logbook, dst_logbook);
+    rsprintf(loc("Message copied successfully from \"%s\" to \"%s\""), logbook, dst_logbook);
 
+  rsprintf("</b></tr>\n");
   rsprintf("<tr><td bgcolor=%s align=center>Go to <a href=\"/%s/%s\">%s</td></tr>\n",
             gt("Cell BGColor"), logbook, src_path, logbook);
   rsprintf("<tr><td bgcolor=%s align=center>Go to <a href=\"/%s\">%s</td></tr>\n",
@@ -5277,7 +5333,7 @@ void show_elog_page(char *logbook, char *path)
 {
 int    size, i, j, n, msg_status, status, fh, length, first_message, last_message, index, n_attr;
 char   str[256], orig_path[256], command[80], ref[256], file_name[256], attrib[MAX_N_ATTR][NAME_LENGTH];
-char   date[80], text[TEXT_SIZE], menu_str[1000], cmd[256],
+char   date[80], text[TEXT_SIZE], menu_str[1000], other_str[1000], cmd[256],
        orig_tag[80], reply_tag[80], attachment[MAX_ATTACHMENTS][256], encoding[80], att[256], lattr[256];
 char   menu_item[MAX_N_LIST][NAME_LENGTH], format[80],
        slist[MAX_N_ATTR+10][NAME_LENGTH], svalue[MAX_N_ATTR+10][NAME_LENGTH];
@@ -5297,13 +5353,13 @@ FILE   *f;
 
   /* correct for image buttons */
   if (*getparam("cmd_first.x"))
-    strcpy(command, "First");
+    strcpy(command, loc("First"));
   if (*getparam("cmd_previous.x"))
-    strcpy(command, "Previous");
+    strcpy(command, loc("Previous"));
   if (*getparam("cmd_next.x"))
-    strcpy(command, "Next");
+    strcpy(command, loc("Next"));
   if (*getparam("cmd_last.x"))
-    strcpy(command, "Last");
+    strcpy(command, loc("Last"));
 
   /* check if command allowed for current user */
   if (!allow_user(command))
@@ -5313,22 +5369,62 @@ FILE   *f;
   getcfg(logbook, "Menu commands", menu_str);
   if (menu_str[0] == 0)
     {
+    strcpy(menu_str, loc("New"));
+    strcat(menu_str, ", ");
+    strcat(menu_str, loc("Edit"));
+    strcat(menu_str, ", ");
+    strcat(menu_str, loc("Delete"));
+    strcat(menu_str, ", ");
+    strcat(menu_str, loc("Reply"));
+    strcat(menu_str, ", ");
+    strcat(menu_str, loc("Find"));
+    strcat(menu_str, ", ");
+    strcat(menu_str, loc("Last day"));
+    strcat(menu_str, ", ");
+    strcat(menu_str, loc("Last 10"));
+    strcat(menu_str, ", ");
+    strcat(menu_str, loc("Config"));
+    strcat(menu_str, ", ");
+
     if (getcfg(logbook, "Password file", str))
-      strcpy(menu_str, "New, Edit, Delete, Reply, Find, Last day, Last 10, Config, Change Password, Logout, Help");
-    else
-      strcpy(menu_str, "New, Edit, Delete, Reply, Find, Last day, Last 10, Config, Help");
+      {
+      strcat(menu_str, loc("Change Password"));
+      strcat(menu_str, ", ");
+      strcat(menu_str, loc("Logout"));
+      strcat(menu_str, ", ");
+      }
+
+    strcat(menu_str, loc("Help"));
     }
+
+  strcpy(other_str, loc("Submit"));
+  strcat(other_str, " ");
+  strcat(other_str, loc("Back"));
+  strcat(other_str, " ");
+  strcat(other_str, loc("Search"));
+  strcat(other_str, " ");
+  strcat(other_str, loc("Save"));
+  strcat(other_str, " ");
+  strcat(other_str, loc("Cancel"));
+  strcat(other_str, " ");
+  strcat(other_str, loc("First"));
+  strcat(other_str, " ");
+  strcat(other_str, loc("Last"));
+  strcat(other_str, " ");
+  strcat(other_str, loc("Previous"));
+  strcat(other_str, " ");
+  strcat(other_str, loc("Next"));
 
   /* check if command is present in the menu list */
   if (command[0] && strstr(menu_str, command) == NULL &&
-      strstr("Submit Back Search Save Cancel First Last Previous Next", command) == NULL)
+      strstr(other_str, command) == NULL)
     {
-    sprintf(str, "Error: command \"<b>%s</b>\" not allowed", command);
+    sprintf(str, loc("Error: Command \"<b>%s</b>\" not allowed"), command);
     show_error(str);
     return;
     }
 
-  if (equal_ustring(command, "help"))
+  if (equal_ustring(command, loc("Help")))
     {
     if (getcfg(logbook, "Help URL", str))
       {
@@ -5336,17 +5432,20 @@ FILE   *f;
       return;
       }
 
-    show_help_page();
+    /* send local help file */
+    strcpy(file_name, cfg_dir);
+    strcat(file_name, "eloghelp.html");
+    send_file(file_name);
     return;
     }
 
-  if (equal_ustring(command, "new"))
+  if (equal_ustring(command, loc("New")))
     {
     show_elog_new(NULL, FALSE);
     return;
     }
 
-  if (equal_ustring(command, "edit"))
+  if (equal_ustring(command, loc("Edit")))
     {
     if (path[0])
       {
@@ -5355,68 +5454,68 @@ FILE   *f;
       }
     }
 
-  if (equal_ustring(command, "reply"))
+  if (equal_ustring(command, loc("Reply")))
     {
     show_elog_new(path, FALSE);
     return;
     }
 
-  if (equal_ustring(command, "submit"))
+  if (equal_ustring(command, loc("Submit")))
     {
     submit_elog();
     return;
     }
 
-  if (equal_ustring(command, "find"))
+  if (equal_ustring(command, loc("Find")))
     {
     show_elog_find();
     return;
     }
 
-  if (equal_ustring(command, "search"))
+  if (equal_ustring(command, loc("Search")))
     {
     show_elog_submit_find(0, 0);
     return;
     }
 
-  if (equal_ustring(command, "last day"))
+  if (equal_ustring(command, loc("Last day")))
     {
     redirect("past1");
     return;
     }
 
-  if (equal_ustring(command, "last 10"))
+  if (equal_ustring(command, loc("Last 10")))
     {
     redirect("last10");
     return;
     }
 
-  if (equal_ustring(command, "copy to"))
+  if (equal_ustring(command, loc("Copy to")))
     {
     copy_to(path, getparam("destc"), 0);
     return;
     }
 
-  if (equal_ustring(command, "move to"))
+  if (equal_ustring(command, loc("Move to")))
     {
     copy_to(path, getparam("destm"), 1);
     return;
     }
 
-  if (equal_ustring(command, "config"))
+  if (equal_ustring(command, loc("Config")))
     {
     show_config_page();
     return;
     }
 
-  if (equal_ustring(command, "change password") ||
+  if (equal_ustring(command, loc("Change Password")) ||
       isparam("newpwd"))
     {
     show_change_pwd_page();
     return;
     }
 
-  if (equal_ustring(command, "save"))
+  if (equal_ustring(command, loc("Save")))
     {
     if (!save_config())
       return;
@@ -5424,7 +5523,7 @@ FILE   *f;
     return;
     }
 
-  if (equal_ustring(command, "logout"))
+  if (equal_ustring(command, loc("Logout")))
     {
     rsprintf("HTTP/1.1 302 Found\r\n");
     rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
@@ -5460,7 +5559,7 @@ FILE   *f;
     return;
     }
 
-  if (equal_ustring(command, "delete"))
+  if (equal_ustring(command, loc("Delete")))
     {
     show_elog_delete(path);
     return;
@@ -5478,7 +5577,7 @@ FILE   *f;
     return;
     }
 
-  if (equal_ustring(command, "back") &&
+  if (equal_ustring(command, loc("Back")) &&
       getcfg(logbook, "Back to main", str) &&
       atoi(str) == 1)
     {
@@ -5518,25 +5617,25 @@ FILE   *f;
   /*---- check next/previous message -------------------------------*/
 
   last_message = first_message = FALSE;
-  if (equal_ustring(command, "next") || equal_ustring(command, "previous") ||
-      equal_ustring(command, "last") || equal_ustring(command, "first"))
+  if (equal_ustring(command, loc("Next")) || equal_ustring(command, loc("Previous")) ||
+      equal_ustring(command, loc("Last")) || equal_ustring(command, loc("First")))
     {
     strcpy(orig_path, path);
 
-    if (equal_ustring(command, "last") || equal_ustring(command, "first"))
+    if (equal_ustring(command, loc("Last")) || equal_ustring(command, loc("First")))
       path[0] = 0;
 
     do
       {
-      if (equal_ustring(command, "next") || equal_ustring(command, "first"))
+      if (equal_ustring(command, loc("Next")) || equal_ustring(command, loc("First")))
         strcat(path, "+1");
-      if (equal_ustring(command, "previous") || equal_ustring(command, "last"))
+      if (equal_ustring(command, loc("Previous")) || equal_ustring(command, loc("Last")))
         strcat(path, "-1");
 
-      status = el_search_message(path, NULL, TRUE, equal_ustring(command, "first"));
+      status = el_search_message(path, NULL, TRUE, equal_ustring(command, loc("First")));
       if (status != EL_SUCCESS)
         {
-        if (equal_ustring(command, "next"))
+        if (equal_ustring(command, loc("Next")))
           last_message = TRUE;
         else
           first_message = TRUE;
@@ -5651,8 +5750,8 @@ FILE   *f;
       /* display menu item */
       rsprintf("<input type=submit name=cmd value=\"%s\">\n", menu_item[i]);
 
-      if (equal_ustring(menu_item[i], "copy to") ||
-          equal_ustring(menu_item[i], "move to"))
+      if (equal_ustring(menu_item[i], loc("Copy to")) ||
+          equal_ustring(menu_item[i], loc("Move to")))
         {
         /* put one link for each logbook except current one */
         rsprintf("<select name=dest%c>\n", menu_item[i][0]);
@@ -5684,8 +5783,8 @@ FILE   *f;
       strcpy(cmd, menu_item[i]);
       cmd[7] = 0;
 
-      if (equal_ustring(cmd, "copy to") ||
-          equal_ustring(cmd, "move to"))
+      if (equal_ustring(cmd, loc("Copy to")) ||
+          equal_ustring(cmd, loc("Move to")))
         {
         /* if logbook supplied, put a link to that logbook */
         if (strlen(menu_item[i]) > 7)
@@ -5700,12 +5799,12 @@ FILE   *f;
 
           url_encode(ref);
 
-          if (equal_ustring(cmd, "copy to"))
-            rsprintf("&nbsp;<a href=\"/%s/%s?cmd=Copy+to&destc=%s\">%s</a>&nbsp|\n",
-                      logbook_enc, path, ref, menu_item[i]);
+          if (equal_ustring(cmd, loc("Copy to")))
+            rsprintf("&nbsp;<a href=\"/%s/%s?cmd=%s&destc=%s\">%s</a>&nbsp|\n",
+                      logbook_enc, path, loc("Copy to"), ref, menu_item[i]);
           else
-            rsprintf("&nbsp;<a href=\"/%s/%s?cmd=Move+to&destm=%s\">%s</a>&nbsp|\n",
-                      logbook_enc, path, ref, menu_item[i]);
+            rsprintf("&nbsp;<a href=\"/%s/%s?cmd=%s&destm=%s\">%s</a>&nbsp|\n",
+                      logbook_enc, path, loc("Move to"), ref, menu_item[i]);
           }
         else
           {
@@ -5724,11 +5823,11 @@ FILE   *f;
             strcpy(ref, str);
             url_encode(ref);
             if (equal_ustring(menu_item[i], "copy to"))
-              rsprintf("&nbsp;<a href=\"/%s/%s?cmd=Copy+to&destc=%s\">Copy to \"%s\"</a>&nbsp|\n",
-                        logbook_enc, path, ref, str);
+              rsprintf("&nbsp;<a href=\"/%s/%s?cmd=%s&destc=%s\">Copy to \"%s\"</a>&nbsp|\n",
+                        logbook_enc, path, loc("Copy to"), ref, str);
             else
-              rsprintf("&nbsp;<a href=\"/%s/%s?cmd=Move+to&destm=%s\">Move to \"%s\"</a>&nbsp|\n",
-                        logbook_enc, path, ref, str);
+              rsprintf("&nbsp;<a href=\"/%s/%s?cmd=%s&destm=%s\">Move to \"%s\"</a>&nbsp|\n",
+                        logbook_enc, path, loc("Move to"), ref, str);
             }
           }
         }
@@ -5771,21 +5870,21 @@ FILE   *f;
 
     if (atoi(gt("Menu2 use images")) == 1)
       {
-      rsprintf("<input type=image name=cmd_first border=0 alt=\"First entry\" src=\"/%s/first.gif\">\n",
-               logbook_enc);
-      rsprintf("<input type=image name=cmd_previous border=0 alt=\"Previous entry\" src=\"/%s/previous.gif\">\n",
-               logbook_enc);
-      rsprintf("<input type=image name=cmd_next border=0 alt=\"Next entry\" src=\"/%s/next.gif\">\n",
-               logbook_enc);
-      rsprintf("<input type=image name=cmd_last border=0 alt=\"Last entry\" src=\"/%s/last.gif\">\n",
-               logbook_enc);
+      rsprintf("<input type=image name=cmd_first border=0 alt=\"%s\" src=\"/%s/first.gif\">\n",
+               loc("First entry"), logbook_enc);
+      rsprintf("<input type=image name=cmd_previous border=0 alt=\"%s\" src=\"/%s/previous.gif\">\n",
+               loc("Previous entry"), logbook_enc);
+      rsprintf("<input type=image name=cmd_next border=0 alt=\"%s\" src=\"/%s/next.gif\">\n",
+               loc("Next entry"), logbook_enc);
+      rsprintf("<input type=image name=cmd_last border=0 alt=\"%s\" src=\"/%s/last.gif\">\n",
+               loc("Last entry"), logbook_enc);
       }
     else
       {
-      rsprintf("<input type=submit name=cmd value=First>\n");
-      rsprintf("<input type=submit name=cmd value=Previous>\n");
-      rsprintf("<input type=submit name=cmd value=Next>\n");
-      rsprintf("<input type=submit name=cmd value=Last>\n");
+      rsprintf("<input type=submit name=cmd value=%s>\n", loc("First"));
+      rsprintf("<input type=submit name=cmd value=%s>\n", loc("Previous"));
+      rsprintf("<input type=submit name=cmd value=%s>\n", loc("Next"));
+      rsprintf("<input type=submit name=cmd value=%s>\n", loc("Last"));
       }
 
     rsprintf("</td></tr>\n");
@@ -5812,23 +5911,25 @@ FILE   *f;
         break;
       }
     if (i < n_attr)
-      sprintf(str, " width <i>\"%s = %s\"</i>", attr_list[i], getparam(attr_list[i]));
+      sprintf(str, " %s <i>\"%s = %s\"</i>", loc("with"), attr_list[i], getparam(attr_list[i]));
     else
       str[0] = 0;
 
     if (last_message)
-      rsprintf("<tr><td bgcolor=#FF0000 colspan=2 align=center><b>This is the last entry %s</b></tr>\n", str);
+      rsprintf("<tr><td bgcolor=#FF0000 colspan=2 align=center><b>%s %s</b></tr>\n", 
+               loc("This is the last entry"), str);
 
     if (first_message)
-      rsprintf("<tr><td bgcolor=#FF0000 colspan=2 align=center><b>This is the first entry %s</b></tr>\n", str);
+      rsprintf("<tr><td bgcolor=#FF0000 colspan=2 align=center><b>%s %s</b></tr>\n", 
+               loc("This is the first entry"), str);
 
     /* check for mail submissions */
     if (*getparam("suppress"))
       {
       if (getcfg(logbook, "Suppress default", str) && atoi(str) == 1)
-        rsprintf("<tr><td colspan=2 bgcolor=#FFFFFF>Email notification suppressed</tr>\n");
+        rsprintf("<tr><td colspan=2 bgcolor=#FFFFFF>%s</tr>\n", loc("Email notification suppressed"));
       else
-        rsprintf("<tr><td colspan=2 bgcolor=#FF0000><b>Email notification suppressed</b></tr>\n");
+        rsprintf("<tr><td colspan=2 bgcolor=#FF0000><b>%s</b></tr>\n", loc("Email notification suppressed"));
       i = 1;
       }
     else
@@ -5840,7 +5941,7 @@ FILE   *f;
           {
           if (i==0)
             rsprintf("<tr><td colspan=2 bgcolor=#FFC020>");
-          rsprintf("Mail sent to <b>%s</b><br>\n", getparam(str));
+          rsprintf("%s <b>%s</b><br>\n", loc("Mail sent to"), getparam(str));
           }
         else
           break;
@@ -5872,12 +5973,12 @@ FILE   *f;
       mktime(&ts);
       strftime(str, sizeof(str), format, &ts);
 
-      rsprintf("<tr><td nowrap bgcolor=%s width=10%%><b>Entry date:</b></td><td bgcolor=%s>%s\n\n",
-               gt("Categories bgcolor1"), gt("Categories bgcolor2"), str);
+      rsprintf("<tr><td nowrap bgcolor=%s width=10%%><b>%s:</b></td><td bgcolor=%s>%s\n\n",
+               gt("Categories bgcolor1"), loc("Entry date"), gt("Categories bgcolor2"), str);
       }
     else
-      rsprintf("<tr><td nowrap bgcolor=%s width=10%%><b>Entry date:</b></td><td bgcolor=%s>%s\n\n",
-               gt("Categories bgcolor1"), gt("Categories bgcolor2"), date);
+      rsprintf("<tr><td nowrap bgcolor=%s width=10%%><b>%s:</b></td><td bgcolor=%s>%s\n\n",
+               gt("Categories bgcolor1"), loc("Entry date"), gt("Categories bgcolor2"), date);
 
     for (i=0 ; i<n_attr ; i++)
       rsprintf("<input type=hidden name=\"%s\" value=\"%s\">\n", attr_list[i], attrib[i]);
@@ -5993,8 +6094,8 @@ FILE   *f;
 
         rsprintf("<tr><td><table width=100%% border=0 cellpadding=0 cellspacing=1 bgcolor=%s>\n", gt("Frame color"));
 
-        rsprintf("<tr><td nowrap width=10%% bgcolor=%s><b>&nbsp;Attachment %d:</b></td>",
-                 gt("Categories bgcolor1"), index+1);
+        rsprintf("<tr><td nowrap width=10%% bgcolor=%s><b>&nbsp;%s %d:</b></td>",
+                 gt("Categories bgcolor1"), loc("Attachment"), index+1);
         rsprintf("<td bgcolor=%s>&nbsp;<a href=\"%s\">%s</a>\n",
                  gt("Categories bgcolor2"), ref, attachment[index]+14);
 
@@ -6110,7 +6211,7 @@ char  str[256];
       return TRUE;
 
     /* show web password page */
-    show_standard_header("ELOG password", NULL);
+    show_standard_header(loc("ELOG password"), NULL);
 
     /* define hidden fields for current destination */
     if (redir[0])
@@ -6121,24 +6222,24 @@ char  str[256];
     rsprintf("<tr><td><table cellpadding=5 cellspacing=0 border=0 width=100%% bgcolor=%s>\n", gt("Frame color"));
 
     if (password[0])
-      rsprintf("<tr><th bgcolor=#FF0000>Wrong password!</th></tr>\n");
+      rsprintf("<tr><th bgcolor=#FF0000>%s!</th></tr>\n", loc("Wrong password"));
 
     rsprintf("<tr><td align=center bgcolor=%s>\n", gt("Title bgcolor"));
 
     if (strcmp(name, "Write password") == 0)
       {
-      rsprintf("<font color=%s>Please enter password to obtain write access</font></td></tr>\n",
-               gt("Title fontcolor"));
+      rsprintf("<font color=%s>%s</font></td></tr>\n",
+               gt("Title fontcolor"), loc("Please enter password to obtain write access"));
       rsprintf("<tr><td align=center bgcolor=%s><input type=password name=wpassword></td></tr>\n", gt("Cell BGColor"));
       }
     else
       {
-      rsprintf("<font color=%s>Please enter password to obtain administration access</font></td></tr>\n",
-               gt("Title fontcolor"));
+      rsprintf("<font color=%s>%s</font></td></tr>\n",
+               gt("Title fontcolor"), loc("Please enter password to obtain administration access"));
       rsprintf("<tr><td align=center bgcolor=%s><input type=password name=apassword></td></tr>\n", gt("Cell BGColor"));
       }
 
-    rsprintf("<tr><td align=center bgcolor=%s><input type=submit value=Submit></td></tr>", gt("Cell BGColor"));
+    rsprintf("<tr><td align=center bgcolor=%s><input type=submit value=%s></td></tr>", gt("Cell BGColor"), loc("Submit"));
 
     rsprintf("</table></td></tr></table>\n");
 
@@ -6218,16 +6319,18 @@ FILE  *f;
     rsprintf("<tr><td><table cellpadding=5 cellspacing=0 border=0 width=100%% bgcolor=%s>\n", gt("Frame color"));
 
     if (password[0])
-      rsprintf("<tr><th bgcolor=#FF0000>Wrong password!</th></tr>\n");
+      rsprintf("<tr><th bgcolor=#FF0000>%s!</th></tr>\n", loc("Wrong password"));
 
     rsprintf("<tr><td align=center bgcolor=%s>\n", gt("Title bgcolor"));
 
-    rsprintf("<font color=%s>Please login</font></td></tr>\n",
-             gt("Title fontcolor"));
-    rsprintf("<tr><td align=center bgcolor=%s>Username:&nbsp;&nbsp;&nbsp;<input type=text name=uname></td></tr>\n", gt("Cell BGColor"));
-    rsprintf("<tr><td align=center bgcolor=%s>Password:&nbsp;&nbsp;&nbsp;<input type=password name=upassword></td></tr>\n", gt("Cell BGColor"));
+    rsprintf("<font color=%s>%s</font></td></tr>\n",
+             gt("Title fontcolor"), loc("Please login"));
+    rsprintf("<tr><td align=center bgcolor=%s>%s:&nbsp;&nbsp;&nbsp;<input type=text name=uname></td></tr>\n", 
+             gt("Cell BGColor"), loc("Username"));
+    rsprintf("<tr><td align=center bgcolor=%s>%s:&nbsp;&nbsp;&nbsp;<input type=password name=upassword></td></tr>\n", 
+             gt("Cell BGColor"), loc("Password"));
 
-    rsprintf("<tr><td align=center bgcolor=%s><input type=submit value=Submit></td></tr>", gt("Cell BGColor"));
+    rsprintf("<tr><td align=center bgcolor=%s><input type=submit value=%s></td></tr>", gt("Cell BGColor"), loc("Submit"));
 
     rsprintf("</table></td></tr></table>\n");
 
@@ -6287,8 +6390,8 @@ char str[10000], logbook[256];
   else
     {
     rsprintf("<font size=5 color=#FFFFFF>\n");
-    rsprintf("Several logbooks are defined on this host.<BR>\n");
-    rsprintf("Please select the one to connect to:</font></td></tr>\n");
+    rsprintf("%s.<BR>\n", loc("Several logbooks are defined on this host"));
+    rsprintf("%s:</font></td></tr>\n", loc("Please select the one to connect to"));
     }
 
   for (i=0 ;  ; i++)
@@ -6528,21 +6631,21 @@ struct tm *gmt;
       return;
     }
 
-  if (equal_ustring(command, "new") ||
-      equal_ustring(command, "edit") ||
-      equal_ustring(command, "reply") ||
-      equal_ustring(command, "submit") ||
-      equal_ustring(command, "delete"))
+  if (equal_ustring(command, loc("New")) ||
+      equal_ustring(command, loc("Edit")) ||
+      equal_ustring(command, loc("Reply")) ||
+      equal_ustring(command, loc("Submit")) ||
+      equal_ustring(command, loc("Delete")))
     {
     sprintf(str, "%s?cmd=%s", path, command);
     if (!check_password(logbook, "Write password", getparam("wpwd"), str))
       return;
     }
 
-  if (equal_ustring(command, "delete")  ||
-      equal_ustring(command, "config")  ||
-      equal_ustring(command, "copy to") ||
-      equal_ustring(command, "move to"))
+  if (equal_ustring(command, loc("Delete"))  ||
+      equal_ustring(command, loc("Config"))  ||
+      equal_ustring(command, loc("Copy to")) ||
+      equal_ustring(command, loc("Move to")))
     {
     sprintf(str, "%s?cmd=%s", path, command);
     if (!check_password(logbook, "Admin password", getparam("apwd"), str))
