@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol commands
 
   $Log$
+  Revision 1.47  2004/12/21 10:46:28  midas
+  Added mapping of scs_xxx to SCS_xxx
+
   Revision 1.46  2004/12/10 11:22:28  midas
   Changed baud rates
 
@@ -146,12 +149,65 @@
 
 \********************************************************************/
 
+/*---- map small defines from makefile to capital defines ----------*/
+
+#ifdef scs_210
+#define SCS_210
+#endif
+#ifdef subm_250
+#define SUBM_250
+#endif
+#ifdef subm_300
+#define SUBM_300
+#endif
+#ifdef scs_210
+#define SCS_210
+#endif
+#ifdef scs_300
+#define SCS_300
+#endif
+#ifdef scs_310
+#define SCS_310
+#endif
+#ifdef scs_400
+#define SCS_400
+#endif
+#ifdef scs_500
+#define SCS_500
+#endif
+#ifdef scs_520
+#define SCS_520
+#endif
+#ifdef scs_600
+#define SCS_600
+#endif
+#ifdef scs_700
+#define SCS_700
+#endif
+#ifdef scs_800
+#define SCS_800
+#endif
+#ifdef scs_900
+#define SCS_900
+#endif
+#ifdef scs_910
+#define SCS_910
+#endif
+#ifdef scs_1000
+#define SCS_1000
+#endif
+#ifdef hvr_200
+#define hvr_200
+#endif
+#ifdef hvr_300
+#define HVR_300
+#endif
+
 /*---- CPU specific items ------------------------------------------*/
 
 /* default flags */
 #define USE_WATCHDOG
 #undef  LCD_SUPPORT
-#undef  LCD_DEBUG      // debug output on LCD
 #define EEPROM_SUPPORT
 
 /*--------------------------------*/
@@ -411,6 +467,7 @@ typedef struct {
 #define MSCBF_HIDDEN   (1<<3)   // used for internal config parameters
 #define MSCBF_REMIN    (1<<4)   // get variable from remote node on subbus
 #define MSCBF_REMOUT   (1<<5)   // send variable to remote node on subbus
+#define MSCBF_INVALID  (1<<6)   // cannot read remote variable
 
 /* physical units */
 
@@ -507,9 +564,11 @@ void eeprom_flash(void);
 unsigned char eeprom_retrieve(void);
 
 void uart_init(unsigned char port, unsigned char baud);
-unsigned char uart1_send(char *buffer, int size);
+
+unsigned char uart1_send(char *buffer, int size, unsigned char bit9);
 unsigned char uart1_receive(char *buffer, int size);
 void send_remote_var(unsigned char i);
+unsigned char ping(unsigned short addr);
 
 void sysclock_init(void);
 unsigned long time(void);
