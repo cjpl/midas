@@ -6,6 +6,9 @@
   Contents:     LeCroy LRS1454/1458 Voltage Device Driver
 
   $Log$
+  Revision 1.8  2001/04/06 01:57:12  midas
+  Added #include <stdlib.h> for atof under Linux
+
   Revision 1.7  2001/04/06 01:33:57  midas
   Addef fflush
 
@@ -33,6 +36,7 @@
 #include <math.h>
 #include <string.h>
 #include <stdarg.h>
+#include <stdlib.h>
 #include "midas.h"
 
 /*---- globals -----------------------------------------------------*/
