@@ -70,7 +70,7 @@ F90=fl32.exe
 # ADD BASE F90 /I "WinRel/"
 # ADD F90 /FR /I "Release/"
 # ADD BASE CPP /nologo /MD /W3 /GX /O2 /D "NDEBUG" /D "WIN32" /D "_WINDOWS" /D "_MBCS" /D "_AFXDLL" /FR /Yu"stdafx.h" /c
-# ADD CPP /nologo /MT /W3 /GX /O2 /I "..\..\include" /D "NDEBUG" /D "WIN32" /D "_WINDOWS" /D "_MBCS" /Fr /YX /FD /c
+# ADD CPP /nologo /MT /W3 /GX /O2 /I "\midas\include" /D "NDEBUG" /D "WIN32" /D "_WINDOWS" /D "_MBCS" /Fr /YX /FD /c
 # ADD MTL /mktyplib203
 # ADD BASE RSC /l 0x409 /d "NDEBUG" /d "_AFXDLL"
 # ADD RSC /l 0x409 /d "NDEBUG"
