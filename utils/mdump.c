@@ -1,11 +1,13 @@
  /********************************************************************\
- 
    Name:         mdump.c
    Created by:   Pierre-Andre Amaudruz
  
    Contents:     Dump event on screen with MIDAS or YBOS data format
  
    $Log$
+   Revision 1.13  1999/11/23 21:14:38  pierre
+   - Added option -j (online) -w j (replay) for bank list display only
+
    Revision 1.12  1999/11/23 15:35:41  midas
    Check for BM_CREATED when opening buffer
 
@@ -64,12 +66,13 @@
 #define  REP_RECORD    2
 #define  REP_LENGTH    3
 #define  REP_EVENT     4
+#define  REP_BANKLIST  5
 
 char   bank_name[4], sbank_name[4], svpath[128];
 INT    hBufEvent;
-INT    save_dsp, evt_display=0;
+INT    save_dsp = 1, evt_display=0;
 INT    speed=0, dsp_time=0, dsp_fmt=0, dsp_mode=0, file_mode, bl=-1;
-INT    consistency = 0;
+INT    consistency = 0, disp_bank_list = 0;
 BOOL   via_callback;
 char   strtmp[128];
 INT    i, data_fmt, count;
@@ -92,8 +95,6 @@ DWORD data_format_check(EVENT_HEADER * pevent, INT * i)
   INT jj, ii;
   BOOL dupflag = FALSE;
   
-
-  return FORMAT_MIDAS;
   /* check in the active FE list for duplicate event ID */
   ii = 0;
   while (eq[ii].fmt)
@@ -176,6 +177,7 @@ int replog (int data_fmt, char * rep_file, int bl, int action)
     
     case REP_LENGTH:
     case REP_EVENT:
+    case REP_BANKLIST:
     /* skip will read atleast on record */
     if (yb_any_physrec_skip(data_fmt, bl) != YB_SUCCESS)
       return (-1);
@@ -188,6 +190,25 @@ int replog (int data_fmt, char * rep_file, int bl, int action)
 	      printf("mdump recompose error %i\n");
       if (action == REP_LENGTH)
 	      status = yb_any_all_info_display (D_EVTLEN);
+      if (action == REP_BANKLIST)
+      {
+        if (data_fmt == FORMAT_YBOS)
+	        status = ybk_list ((DWORD *)pmyevt, banklist);
+        else if (data_fmt == FORMAT_MIDAS)
+        {
+         pme = (EVENT_HEADER *)pmyevt;
+         if (pme->event_id == EVENTID_BOR ||
+             pme->event_id == EVENTID_EOR ||
+             pme->event_id == EVENTID_MESSAGE)
+           continue;
+	        printf("Evid:%4.4x- Mask:%4.4x- Serial:%d- Time:0x%x- Dsize:%d/0x%x\n"
+	             ,pme->event_id, pme->trigger_mask ,pme->serial_number
+	             ,pme->time_stamp, pme->data_size, pme->data_size);
+         pmbkh = (BANK_HEADER *)(((EVENT_HEADER *)pmyevt)+1);
+         status = bk_list (pmbkh, banklist);
+        }
+	      printf("#banks:%i Bank list:-%s-\n",status,banklist);
+      }
       else if ((action == REP_EVENT) && 
 	       (event_id == EVENTID_ALL) &&
 	       (event_msk == TRIGGER_ALL) &&
@@ -259,7 +280,7 @@ int replog (int data_fmt, char * rep_file, int bl, int action)
         else
         { /* no user request ==> display any event */
 	        printf("------------------------ Event# %i --------------------------------\n", i++);
-	        yb_any_event_display(pmyevt, data_fmt, dsp_mode, dsp_fmt);
+          yb_any_event_display(pmyevt, data_fmt, dsp_mode, dsp_fmt);
         }
       }
     }
@@ -353,6 +374,12 @@ void process_event(HNDLE hBuf, HNDLE request_id, EVENT_HEADER *pheader, void *pe
 	             ,pheader->event_id, pheader->trigger_mask ,pheader->serial_number
 	             ,pheader->time_stamp, pheader->data_size, pheader->data_size);
 	      
+	      if (disp_bank_list)
+        {
+          status = ybk_list (plrl, banklist);
+	        printf("#banks:%i Bank list:-%s-\n",status,banklist);
+        }
+        else
 	        yb_any_event_display(plrl, FORMAT_YBOS, dsp_mode, dsp_fmt);
       }
     }
@@ -377,8 +404,18 @@ void process_event(HNDLE hBuf, HNDLE request_id, EVENT_HEADER *pheader, void *pe
 	      }
       }   
       else
-      { /* Full event */
-	      yb_any_event_display(pheader, FORMAT_MIDAS, dsp_mode, dsp_fmt);
+      { /* Full event or bank list only*/
+	      if (disp_bank_list)
+        {
+	      /* event header */
+	        printf("Evid:%4.4x- Mask:%4.4x- Serial:%d- Time:0x%x- Dsize:%d/0x%x\n"
+	             ,pheader->event_id, pheader->trigger_mask ,pheader->serial_number
+	             ,pheader->time_stamp, pheader->data_size, pheader->data_size);
+          status = bk_list (pmbh, banklist);
+	        printf("#banks:%i Bank list:-%s-\n",status,banklist);
+        }
+        else
+          yb_any_event_display(pheader, FORMAT_MIDAS, dsp_mode, dsp_fmt);
       }
     }
     else 
@@ -453,7 +490,7 @@ int main(unsigned int argc,char **argv)
     for (i=1 ; i<argc ; i++)
     {
       if (argv[i][0] == '-' && argv[i][1] == 'd')
-	debug = TRUE;
+      	debug = TRUE;
       else if (argv[i][0] == '-')
       {
 	if (i+1 >= argc || argv[i+1][0] == '-')
@@ -488,6 +525,8 @@ int main(unsigned int argc,char **argv)
 	    action = REP_LENGTH;
 	  else if (strncmp(str,"e",1)==0)
 	    action = REP_EVENT;
+	  else if (strncmp(str,"j",1)==0)
+	    action = REP_BANKLIST;
 	}
 	else if (strncmp(argv[i],"-p",2) == 0)
 	  strcpy(svpath, argv[++i]);
@@ -524,7 +563,7 @@ int main(unsigned int argc,char **argv)
 	  printf("                  -i evt_id (any) : event id from the FE\n");
 	  printf("                  -k mask (any)   : trigger_mask from FE setting\n");
 	  printf(">>> -i and -k are valid for YBOS ONLY if EVID bank is present in the event\n");
-	  printf("                  -w what         : Header, Record, Length, Event (Event)\n");
+	  printf("                  -w what         : Header, Record, Length, Event, Jbank_list\n");
 	  printf(">>> Header & Record are not supported for MIDAS as no physical record structure\n");
 	  printf("                  -f format (auto): data representation (x/d/ascii) def:bank header content\n");
 	  printf("                  -p path (null)  : path for file composition (see -c)\n");
@@ -548,6 +587,8 @@ int main(unsigned int argc,char **argv)
 	speed = 1;
       else if (strncmp(argv[i],"-y",2) == 0)
 	consistency = 1;
+      else if (strncmp(argv[i],"-j",2) == 0)
+	disp_bank_list = 1;
       else if (argv[i][0] == '-')
       {
 	if (i+1 >= argc || argv[i+1][0] == '-')
@@ -619,6 +660,7 @@ int main(unsigned int argc,char **argv)
 	  printf("                  -c compose      : retrieve file from event (Addrun#/Norun#)\n");
 	  printf("                  -w time         : insert wait in [sec] between each display\n");
 	  printf("                  -m mode         : Display mode either Bank or raw\n");
+    printf("                  -j              : Display # of banks and bank name list only\n");
 	  printf("                  -b bank name    : search for bank name (case sensitive)\n");
 	  printf("                  -i evt_id (any) : event id from the FE\n");
 	  printf("                  -k mask (any)   : trigger_mask from FE setting\n");
