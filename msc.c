@@ -6,6 +6,9 @@
   Contents:     Command-line interface for the Midas Slow Control Bus
 
   $Log$
+  Revision 1.53  2004/03/05 14:00:01  midas
+  Fixed bug with string transfer
+
   Revision 1.52  2004/03/04 16:10:49  midas
   Fixed compiler warning
 
@@ -291,7 +294,7 @@ void print_channel_str(int index, MSCB_INFO_VAR * info_chn, void *pdata,
    if (info_chn->unit == UNIT_STRING) {
       memset(str, 0, sizeof(str));
       strncpy(str, pdata, info_chn->width);
-      sprintf(line + strlen(line), "string  \"%s\"", str);
+      sprintf(line + strlen(line), "STR%02d    \"%s\"", info_chn->width, str);
    } else {
       data = *((int *) pdata);
       switch (info_chn->width) {
@@ -607,7 +610,7 @@ void cmd_loop(int fd, char *cmd, int adr)
                printf("\nVariables:\n");
                for (i = 0; i < info.n_variables; i++) {
                   mscb_info_variable(fd, current_addr, i, &info_var);
-                  size = sizeof(data);
+                  size = sizeof(dbuf);
                   mscb_read(fd, current_addr, (unsigned char) i, dbuf, &size);
 
                   print_channel(i, &info_var, dbuf, 1);
@@ -820,7 +823,7 @@ void cmd_loop(int fd, char *cmd, int adr)
                   puts("Timeout or invalid channel number");
                else {
                   do {
-                     size = sizeof(data);
+                     size = sizeof(dbuf);
                      status =
                          mscb_read(fd, current_addr, (unsigned char) addr, dbuf, &size);
                      if (status != MSCB_SUCCESS)
