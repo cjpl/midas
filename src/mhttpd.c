@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.159  2001/07/24 13:28:43  midas
+  Use form names as subject
+
   Revision 1.158  2001/07/24 10:43:44  midas
   Added custom pages
 
@@ -1931,13 +1934,14 @@ void el_format(char *text, char *encoding)
 
 void show_elog_new(char *path, BOOL bedit, char *odb_att)
 {
-int    i, size, run_number, wrap;
+int    i, j, size, run_number, wrap;
 char   str[256], ref[256], *p;
 char   date[80], author[80], type[80], system[80], subject[256], text[10000], 
        orig_tag[80], reply_tag[80], att1[256], att2[256], att3[256], encoding[80];
 time_t now;
-HNDLE  hDB, hkey;
+HNDLE  hDB, hkey, hsubkey;
 BOOL   display_run_number;
+KEY    key;
 
   cm_get_experiment_database(&hDB, NULL);
   display_run_number = TRUE;
@@ -2049,6 +2053,20 @@ BOOL   display_run_number;
   db_find_key(hDB, 0, "/Elog/Types", &hkey);
   if (hkey)
     db_get_data(hDB, hkey, type_list, &size, TID_STRING);
+
+  /* add types from forms */
+  for (j = 0 ; j<20 && type_list[j][0] ; j++);
+  db_find_key(hDB, 0, "/Elog/Forms", &hkey);
+  if (hkey)
+    for (i=0 ; j<20 ; i++)
+      {
+      db_enum_link(hDB, hkey, i, &hsubkey);
+      if (!hsubkey)
+        break;
+
+      db_get_key(hDB, hsubkey, &key);
+      strncpy(type_list[j++], key.name, NAME_LENGTH);
+      }
 
   /* get system list from ODB */
   size = 20*NAME_LENGTH;
@@ -3355,7 +3373,7 @@ KEY   key;
   
   str[0] = 0;
   el_submit(atoi(getparam("run")), getparam("author"), getparam("form"),
-            "General", "", text, "", "plain", "", NULL, 0, "", NULL, 0, "", NULL, 0, str, sizeof(str));
+            "General", getparam("form"), text, "", "plain", "", NULL, 0, "", NULL, 0, "", NULL, 0, str, sizeof(str));
 
   rsprintf("HTTP/1.0 302 Found\r\n");
   rsprintf("Server: MIDAS HTTP %s\r\n", cm_get_version());
@@ -4520,10 +4538,11 @@ char str[256], *ps;
 
 void show_custom_page(char *path)
 {
-int    size, i_edit, i_set, edit, index, n_var;
+int    size, i_edit, i_set, index, n_var;
 char   str[10000], data[10000], ctext[10000], keypath[256], *p, *ps;
 HNDLE  hDB, hkey;
 KEY    key;
+BOOL   bedit;
 
   cm_get_experiment_database(&hDB, NULL);
 
@@ -4554,7 +4573,7 @@ KEY    key;
     p = ps = ctext;
     do
       {
-      p = find_odb_tag(ps, keypath, &edit);
+      p = find_odb_tag(ps, keypath, &bedit);
       if (p != NULL)
         *p = 0;
       rsputs(ps);
@@ -4589,7 +4608,7 @@ KEY    key;
         db_get_data_index(hDB, hkey, data, &size, index, key.type);
         db_sprintf(str, data, key.item_size, 0, key.type);
 
-        if (edit)
+        if (bedit)
           {
           if (n_var == i_set)
             {
