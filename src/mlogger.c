@@ -6,6 +6,9 @@
   Contents:     MIDAS logger program
 
   $Log$
+  Revision 1.31  1999/11/10 10:38:36  midas
+  Lock database for db_notify_clients
+
   Revision 1.30  1999/11/09 13:17:26  midas
   Added secure ODB feature
 
@@ -1864,7 +1867,9 @@ KEY   key;
   hist_log[index].last_log = ss_time();
 
   /* simulate odb key update for hot links connected to system history */
+  db_lock_database(hDB);
   db_notify_clients(hDB, hist_log[index].hKeyVar, FALSE);
+  db_unlock_database(hDB);
 
 }
 
