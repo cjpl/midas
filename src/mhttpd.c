@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.69  1999/10/08 22:00:29  midas
+  Finished editing of elog messages
+
   Revision 1.68  1999/10/08 15:07:04  midas
   Program check creates new internal alarm when triggered
 
@@ -1261,7 +1264,7 @@ void el_format(char *text, char *encoding)
 
 void show_elog_new(char *path, BOOL bedit)
 {
-int    i, size, run_number;
+int    i, size, run_number, wrap;
 char   str[256], ref[256], *p;
 char   date[80], author[80], type[80], system[80], subject[256], text[10000], 
        orig_tag[80], reply_tag[80], att1[256], att2[256], att3[256], encoding[80];
@@ -1394,18 +1397,18 @@ HNDLE  hDB, hkey;
 
   if (path)
     {
-    /*
-    rsprintf("<tr><td colspan=2 bgcolor=#E0E0FF><i>Original entry:</i><br><br>\n");
-    el_format(text, encoding);
-    rsprintf("</tr>\n");
-    */
-
     /* hidden text for original message */
     rsprintf("<input type=hidden name=orig value=\"%s\">\n", path);
+
+    if (bedit)
+      rsprintf("<input type=hidden name=edit value=1>\n");
     }
   
+  /* increased wrapping for replys (leave space for '> ' */
+  wrap = (path && !bedit) ? 78 : 76;
+  
   rsprintf("<tr><td colspan=2>Text:<br>\n");
-  rsprintf("<textarea rows=10 cols=80 wrap=hard name=Text>");
+  rsprintf("<textarea rows=10 cols=%d wrap=hard name=Text>", wrap);
 
   if (path)
     {
@@ -1443,7 +1446,10 @@ HNDLE  hDB, hkey;
     rsprintf("<input type=checkbox checked name=html value=1>Submit as HTML text</tr>\n");
   else
     rsprintf("<input type=checkbox name=html value=1>Submit as HTML text</tr>\n");
-  
+
+  if (bedit && att1[0])
+    rsprintf("<tr><td colspan=2 align=center bgcolor=#8080FF>If no attachment are resubmitted, the original ones are kept</tr>\n");
+
   /* attachment */
   rsprintf("<tr><td colspan=2>Attachment1: <input type=\"file\" size=\"60\" maxlength=\"256\" name=\"attfile1\" value=\"%s\" accept=\"filetype/*\"></tr>\n", att1);
   rsprintf("<tr><td colspan=2>Attachment2: <input type=\"file\" size=\"60\" maxlength=\"256\" name=\"attfile2\" value=\"%s\" accept=\"filetype/*\"></tr>\n", att2);
@@ -2173,6 +2179,10 @@ char str[80], author[256];
   strcat(author, "@");
   strcat(author, remote_host_name);
 
+  str[0] = 0;
+  if (*getparam("edit"))
+    strcpy(str, getparam("orig"));
+
   el_submit(atoi(getparam("run")), author, getparam("type"),
             getparam("system"), getparam("subject"), getparam("text"), 
             getparam("orig"), *getparam("html") ? "HTML" : "plain", 
@@ -2184,10 +2194,20 @@ char str[80], author[256];
   rsprintf("HTTP/1.0 302 Found\r\n");
   rsprintf("Server: MIDAS HTTP %s\r\n", cm_get_version());
 
-  if (exp_name[0])
-    rsprintf("Location: %sEL/?exp=%s&msg=%s\n\n<html>redir</html>\r\n", mhttpd_url, exp_name, str);
+  if (*getparam("edit"))
+    {
+    if (exp_name[0])
+      rsprintf("Location: %sEL/%s?exp=%s\n\n<html>redir</html>\r\n", mhttpd_url, str, exp_name);
+    else
+      rsprintf("Location: %sEL/%s\n\n<html>redir</html>\r\n", mhttpd_url, str);
+    }
   else
-    rsprintf("Location: %sEL/?msg=%s\n\n<html>redir</html>\r\n", mhttpd_url, str);
+    {
+    if (exp_name[0])
+      rsprintf("Location: %sEL/?exp=%s\n\n<html>redir</html>\r\n", mhttpd_url, exp_name);
+    else
+      rsprintf("Location: %sEL/%s\n\n<html>redir</html>\r\n", mhttpd_url, str);
+    }
 
 }
 
@@ -2242,9 +2262,9 @@ KEY   key;
   rsprintf("Server: MIDAS HTTP %s\r\n", cm_get_version());
 
   if (exp_name[0])
-    rsprintf("Location: %sEL/?exp=%s&msg=%s\n\n<html>redir</html>\r\n", mhttpd_url, exp_name, str);
+    rsprintf("Location: %sEL/%s?exp=%s\n\n<html>redir</html>\r\n", mhttpd_url, str, exp_name);
   else
-    rsprintf("Location: %sEL/?msg=%s\n\n<html>redir</html>\r\n", mhttpd_url, str);
+    rsprintf("Location: %sEL/%s\n\n<html>redir</html>\r\n", mhttpd_url, str);
 }
 
 /*------------------------------------------------------------------*/
@@ -4921,13 +4941,6 @@ struct tm *gmt;
 
   if (equal_ustring(command, "elog"))
     {
-    redirect("EL/");
-    return;
-    }
-
-  if (*getparam("msg"))
-    {
-    sprintf(str, "EL/%s", getparam("msg"));
     redirect("EL/");
     return;
     }

@@ -6,6 +6,9 @@
   Contents:     List of MIDAS RPC functions with parameters
 
   $Log$
+  Revision 1.16  1999/10/08 22:00:30  midas
+  Finished editing of elog messages
+
   Revision 1.15  1999/09/27 13:02:32  midas
   Added new el_submit in mserver
 
@@ -572,7 +575,7 @@ static RPC_LIST rpc_list_library[] = {
      {TID_STRING,     RPC_IN}, 
      {TID_ARRAY,      RPC_IN | RPC_VARARRAY}, 
      {TID_INT,        RPC_IN},
-     {TID_STRING,     RPC_OUT}, 
+     {TID_STRING,     RPC_IN, RPC_OUT}, 
      {TID_INT,        RPC_IN},
      {0} }},
 
