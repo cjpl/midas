@@ -9,6 +9,9 @@
                 for SCS-600 Digital I/O
 
   $Log$
+  Revision 1.19  2004/04/07 11:06:17  midas
+  Version 1.7.1
+
   Revision 1.18  2004/03/04 14:33:22  midas
   *** empty log message ***
 
@@ -71,6 +74,9 @@
 extern bit DEBUG_MODE;
 
 char code node_name[] = "SCS-600";
+
+/* declare number of sub-addresses to framework */
+unsigned char idata _n_sub_addr = 1;
 
 #undef SINGLE_SHOT               /* #define/#undef for single shot capability */
 

@@ -9,6 +9,9 @@
                 for SCS-900 analog high precision I/O 
 
   $Log$
+  Revision 1.4  2004/04/07 11:06:17  midas
+  Version 1.7.1
+
   Revision 1.3  2004/02/24 13:29:35  midas
   Made bipolar mode working
 
@@ -28,6 +31,9 @@ extern bit FREEZE_MODE;
 extern bit DEBUG_MODE;
 
 char code node_name[] = "SCS-900";
+
+/* declare number of sub-addresses to framework */
+unsigned char idata _n_sub_addr = 1;
 
 sbit UNI_BIP = P0 ^ 2;          // Unipolar/bipolar DAC switch
 

@@ -9,6 +9,9 @@
                 for SCS-700 PT100/PT1000 unit
 
   $Log$
+  Revision 1.9  2004/04/07 11:06:17  midas
+  Version 1.7.1
+
   Revision 1.8  2004/01/07 12:56:15  midas
   Chaned line length
 
@@ -42,6 +45,9 @@ extern bit FREEZE_MODE;
 extern bit DEBUG_MODE;
 
 char code node_name[] = "SCS-700";
+
+/* declare number of sub-addresses to framework */
+unsigned char idata _n_sub_addr = 1;
 
 #define GAIN      0             // gain for internal PGA
 

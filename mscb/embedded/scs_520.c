@@ -9,6 +9,9 @@
                 for SCS-520 analog I/O with current option
 
   $Log$
+  Revision 1.6  2004/04/07 11:06:17  midas
+  Version 1.7.1
+
   Revision 1.5  2004/01/07 12:56:15  midas
   Chaned line length
 
@@ -33,6 +36,9 @@ extern bit FREEZE_MODE;
 extern bit DEBUG_MODE;
 
 char code node_name[] = "SCS-520";
+
+/* declare number of sub-addresses to framework */
+unsigned char idata _n_sub_addr = 1;
 
 sbit UNI_BIP = P0 ^ 3;          // Unipolar/bipolar switch
 sbit SR_CLOCK = P0 ^ 4;         // Shift register clock

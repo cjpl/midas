@@ -9,6 +9,9 @@
                 for SCS-800 capacitance meter
 
   $Log$
+  Revision 1.4  2004/04/07 11:06:17  midas
+  Version 1.7.1
+
   Revision 1.3  2004/01/07 12:52:23  midas
   Changed indentation
 
@@ -28,6 +31,9 @@ extern bit FREEZE_MODE;
 extern bit DEBUG_MODE;
 
 char code node_name[] = "SCS-800";
+
+/* declare number of sub-addresses to framework */
+unsigned char idata _n_sub_addr = 1;
 
 sbit SR_CLOCK = P0 ^ 4;         // Shift register clock
 sbit SR_STROBE = P0 ^ 5;        // Storage register clock

@@ -10,6 +10,9 @@
                 Pfeiffer Dual Gauge TPG262 vacuum sensor
 
   $Log$
+  Revision 1.10  2004/04/07 11:06:17  midas
+  Version 1.7.1
+
   Revision 1.9  2004/01/07 12:52:23  midas
   Changed indentation
 
@@ -47,6 +50,10 @@ extern bit FREEZE_MODE;
 extern bit DEBUG_MODE;
 
 char code node_name[] = "TPG262";
+
+/* declare number of sub-addresses to framework */
+unsigned char idata _n_sub_addr = 1;
+
 bit terminal_mode;
 
 /*---- Define variable parameters returned to CMD_GET_INFO command ----*/
