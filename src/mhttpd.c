@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.77  1999/10/15 10:54:03  midas
+  Changed column width in elog page
+
   Revision 1.76  1999/10/15 10:39:51  midas
   Defined function rsputs, because rsprintf screwed if '%' in arguments
 
@@ -2581,7 +2584,7 @@ FILE  *f;
   if (exp_name[0])
     rsprintf("<input type=hidden name=exp value=\"%s\">\n", exp_name);
 
-  rsprintf("<table border=2 cellpadding=2 width=\"100%%\">\n");
+  rsprintf("<table cols=2 border=2 cellpadding=2>\n");
 
   /*---- title row ----*/
 
