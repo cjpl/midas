@@ -7,6 +7,9 @@
                 following the MIDAS CAMAC Standard under DIRECTIO
 
   $Log$
+  Revision 1.5  1998/11/25 15:57:01  midas
+  Outcommented printf statements for auto subadress increment
+
   Revision 1.4  1998/11/19 22:35:17  pierre
   This version is not yet using all the features of controller.
   The _sa, _rq and maybe the _r will be revised soon.
@@ -69,6 +72,9 @@
 #define INP(_p) _inp((unsigned short) (_p))
 #define INPW(_p) _inpw((unsigned short) (_p))
 #elif defined( OS_LINUX )
+#if !defined(__OPTIMIZE__)
+#error Please compile hyt1331.c with the -O flag to make port access possible
+#endif
 #include <asm/io.h>
 #include <unistd.h>
 #define OUTP(_p, _d) outb(_d, _p)
@@ -78,9 +84,11 @@
 #endif
 
 /*- Global var -----------------------------------------------------*/
+
 BOOL  gbl_sw1d=FALSE;
 
 /*------------------------------------------------------------------*/
+
 INLINE void cam8i(const int c, const int n, const int a, const int f, 
                   unsigned char *d)
 {
@@ -96,6 +104,7 @@ INLINE void cam8i(const int c, const int n, const int a, const int f,
 }
 
 /*------------------------------------------------------------------*/
+
 INLINE void cami(const int c, const int n, const int a, const int f, 
                  WORD *d)
 {
@@ -112,6 +121,7 @@ WORD adr, status;
 }
 
 /*------------------------------------------------------------------*/
+
 INLINE void cam16i(const int c, const int n, const int a, const int f, 
                    WORD *d)
 {
@@ -119,6 +129,7 @@ INLINE void cam16i(const int c, const int n, const int a, const int f,
 }
 
 /*------------------------------------------------------------------*/
+
 INLINE void cam24i(const int c, const int n, const int a, const int f, 
                    DWORD *d)
 {
@@ -137,6 +148,7 @@ unsigned short adr, status;
 }
 
 /*------------------------------------------------------------------*/
+
 INLINE void cam8i_q(const int c, const int n, const int a, const int f, 
                     unsigned char *d, int *x, int *q)
 {
@@ -155,6 +167,7 @@ unsigned short adr, status;
 }
 
 /*------------------------------------------------------------------*/
+
 INLINE void cam16i_q(const int c, const int n, const int a, const int f, 
                      WORD *d, int *x, int *q)
 {
@@ -174,6 +187,7 @@ WORD adr, status;
 }
 
 /*------------------------------------------------------------------*/
+
 INLINE void cam24i_q(const int c, const int n, const int a, const int f, 
                      DWORD *d, int *x, int *q)
 {
@@ -195,6 +209,7 @@ WORD adr, status;
 }
 
 /*------------------------------------------------------------------*/
+
 INLINE void cam16i_r(const int c, const int n, const int a, const int f, 
                      WORD **d, const int r)
 {
@@ -218,6 +233,7 @@ WORD adr, i, status;
 }
 
 /*------------------------------------------------------------------*/
+
 INLINE void cam24i_r(const int c, const int n, const int a, const int f, 
                      DWORD **d, const int r)
 {
@@ -228,6 +244,7 @@ WORD i;
 }
 
 /*------------------------------------------------------------------*/
+
 INLINE void cam16i_rq(const int c, const int n, const int a, const int f, 
                       WORD **d, const int r)
 {
@@ -272,6 +289,7 @@ int  x, q, fail;
 }
 
 /*------------------------------------------------------------------*/
+
 INLINE void cam24i_rq(const int c, const int n, const int a, const int f, 
                       DWORD **d, const int r)
 {
@@ -289,6 +307,7 @@ int i, x, q;
 }
 
 /*------------------------------------------------------------------*/
+
 INLINE void cam16i_sa(const int c, const int n, const int a, const int f, 
                       WORD **d, const int r)
 {
@@ -315,7 +334,9 @@ INLINE void cam16i_sa(const int c, const int n, const int a, const int f,
     for (i=a;i<r;i++)
       cami(c, n, i, f, (*d)++);
 }
+
 /*------------------------------------------------------------------*/
+
 INLINE void cam24i_sa(const int c, const int n, const int a, const int f, 
                       DWORD **d, const int r)
 {
@@ -351,6 +372,7 @@ WORD adr, i;
 }
 
 /*------------------------------------------------------------------*/
+
 INLINE void cam16i_sn(const int c, const int n, const int a, const int f, 
                       WORD **d, const int r)
 {
@@ -361,6 +383,7 @@ int i;
 }
 
 /*------------------------------------------------------------------*/
+
 INLINE void cam24i_sn(const int c, const int n, const int a, const int f, 
                       DWORD **d, const int r)
 {
@@ -371,6 +394,7 @@ int i;
 }
 
 /*------------------------------------------------------------------*/
+
 INLINE void cam8o(const int c, const int n, const int a, const int f, 
                   unsigned char d)
 {
@@ -384,6 +408,7 @@ unsigned int adr;
 }
 
 /*------------------------------------------------------------------*/
+
 INLINE void camo(const int c, const int n, const int a, const int f, 
                  WORD d)
 {
@@ -398,6 +423,7 @@ unsigned int adr;
 }
 
 /*------------------------------------------------------------------*/
+
 INLINE void cam16o(const int c, const int n, const int a, const int f, 
                    WORD d)
 {
@@ -405,6 +431,7 @@ INLINE void cam16o(const int c, const int n, const int a, const int f,
 }
 
 /*------------------------------------------------------------------*/
+
 INLINE void cam24o(const int c, const int n, const int a, const int f, 
                    DWORD d)
 {
@@ -420,6 +447,7 @@ unsigned int adr;
 }
 
 /*------------------------------------------------------------------*/
+
 INLINE void cam16o_q(const int c, const int n, const int a, const int f, 
                      WORD d, int *x, int *q)
 {
@@ -438,6 +466,7 @@ unsigned int adr, status;
 }
 
 /*------------------------------------------------------------------*/
+
 INLINE void cam24o_q(const int c, const int n, const int a, const int f, 
                      DWORD d, int *x, int *q)
 {
@@ -457,6 +486,7 @@ unsigned int adr, status;
 }
 
 /*------------------------------------------------------------------*/
+
 INLINE void cam8o_r(const int c, const int n, const int a, const int f, 
                     BYTE *d, const int r)
 {
@@ -475,6 +505,7 @@ INLINE void cam8o_r(const int c, const int n, const int a, const int f,
 }
 
 /*------------------------------------------------------------------*/
+
 INLINE void cam16o_r(const int c, const int n, const int a, const int f, 
                      WORD *d, const int r)
 {
@@ -519,6 +550,7 @@ WORD adr, i;
 }
 
 /*------------------------------------------------------------------*/
+
 INLINE int camc_chk(const int c)
 {
 unsigned int adr, n, a, f;
@@ -539,6 +571,7 @@ unsigned int adr, n, a, f;
 }
 
 /*------------------------------------------------------------------*/
+
 INLINE void camc(const int c, const int n, const int a, const int f)
 {
 unsigned int adr;
@@ -550,6 +583,7 @@ unsigned int adr;
 }
 
 /*------------------------------------------------------------------*/
+
 INLINE void camc_q(const int c, const int n, const int a, const int f, int *q)
 {
 unsigned int adr, status;
@@ -564,6 +598,7 @@ unsigned int adr, status;
 }
 
 /*------------------------------------------------------------------*/
+
 INLINE void camc_sa(const int c, const int n, const int a, const int f, const int r)
 {
 int i;
@@ -573,6 +608,7 @@ int i;
 }
 
 /*------------------------------------------------------------------*/
+
 INLINE void camc_sn(const int c, const int n, const int a, const int f, const int r)
 {
 int i;
@@ -582,19 +618,20 @@ int i;
 }
 
 /*------------------------------------------------------------------*/
+
 #ifdef _MSC_VER
 static HANDLE _hdio = 0;
 #endif
 
 INLINE int cam_init(void)
 {
-  unsigned char status;
-  unsigned int adr;
+unsigned char status;
+unsigned int adr;
   
 #ifdef _MSC_VER
-  OSVERSIONINFO vi;
-  DWORD buffer[] = {6, CAMAC_BASE, CAMAC_BASE+4*0x10, 0};
-  DWORD size;
+OSVERSIONINFO vi;
+DWORD buffer[] = {6, CAMAC_BASE, CAMAC_BASE+4*0x10, 0};
+DWORD size;
   
   vi.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
   GetVersionEx(&vi);
@@ -605,7 +642,10 @@ INLINE int cam_init(void)
       _hdio = CreateFile("\\\\.\\directio", GENERIC_READ, FILE_SHARE_READ, NULL,
 			 OPEN_EXISTING, 0, NULL);
       if (_hdio == INVALID_HANDLE_VALUE)
+        {
+        printf("hyt1331.c: Cannot access IO ports (No DirectIO driver installed)\n");
 	return -1;
+        }
     }
   
   if (!DeviceIoControl(_hdio, (DWORD) 0x9c406000, &buffer, sizeof(buffer), 
@@ -613,6 +653,15 @@ INLINE int cam_init(void)
     return -1;
 #endif _MSC_VER
 #ifdef OS_LINUX
+
+  /*
+  if (ioperm(CAMAC_BASE, 4*0x10, 1) < 0)
+    {
+    printf("hyt1331.c: Cannot access IO ports (no root privileges)\n");
+    return -1;
+    }
+  */
+
   /* You cannot access Directly CAMAC without su privilege 
      due to ioperm protection. In order to run this code you need
      a su access given by Dio prg. to know more about it contact us */
@@ -623,23 +672,24 @@ INLINE int cam_init(void)
   status = INP(CAMAC_BASE+6);
   if (!(status & 0x40))
     {
-      gbl_sw1d = FALSE;
-      printf("HYT1331: Auto increment disabled by SW1D. camxxi_sa won't work. 0x%x\n",status);
+    gbl_sw1d = FALSE;
+    /* printf("hyt1331.c: Auto increment disabled by SW1D. camxxi_sa won't work. 0x%x\n",status); */
     }
   else
     {
-      gbl_sw1d = TRUE;
-      printf("HYT1331: Auto increment enabled by SW1D. camxxi_sa will work. 0x%x\n",status);
+    gbl_sw1d = TRUE;
+    /* printf("hyt1331.c: Auto increment enabled by SW1D. camxxi_sa will work. 0x%x\n",status); */
     }
   return SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
+
 INLINE void cam_exit(void)
 {
 #ifdef _MSC_VER
-  DWORD buffer[] = {6, CAMAC_BASE, CAMAC_BASE+4*0x10, 0};
-  DWORD size;
+DWORD buffer[] = {6, CAMAC_BASE, CAMAC_BASE+4*0x10, 0};
+DWORD size;
   
   if (_hdio <= 0)
     return;
@@ -650,6 +700,7 @@ INLINE void cam_exit(void)
 }
 
 /*------------------------------------------------------------------*/
+
 INLINE void cam_inhibit_set(const int c)
 {
   unsigned int adr;
@@ -659,6 +710,7 @@ INLINE void cam_inhibit_set(const int c)
 }
 
 /*------------------------------------------------------------------*/
+
 INLINE void cam_inhibit_clear(const int c)
 {
   unsigned int adr;
@@ -668,6 +720,7 @@ INLINE void cam_inhibit_clear(const int c)
 }
 
 /*------------------------------------------------------------------*/
+
 INLINE void cam_crate_clear(const int c)
 {
   unsigned int adr;
@@ -677,6 +730,7 @@ INLINE void cam_crate_clear(const int c)
 }
 
 /*------------------------------------------------------------------*/
+
 INLINE void cam_crate_zinit(const int c)
 {
 unsigned int adr;
@@ -686,6 +740,7 @@ unsigned int adr;
 }
 
 /*------------------------------------------------------------------*/
+
 INLINE void cam_lam_enable(const int c, const int n)
 { 
   /* enable the station number */
@@ -701,6 +756,7 @@ INLINE void cam_lam_enable(const int c, const int n)
 }
 
 /*------------------------------------------------------------------*/
+
 INLINE void cam_lam_disable(const int c, const int n)
 { 
   /* disable the station number */
@@ -715,6 +771,7 @@ INLINE void cam_lam_disable(const int c, const int n)
 }
 
 /*------------------------------------------------------------------*/
+
 INLINE void cam_lam_read(const int c, DWORD *lam)
 {
   /* return a BITWISE coded station NOT the station number 
@@ -734,6 +791,7 @@ INLINE void cam_lam_read(const int c, DWORD *lam)
 }
 
 /*------------------------------------------------------------------*/
+
 INLINE void cam_lam_clear(const int c, const int n)
 { 
 unsigned int adr;
@@ -752,6 +810,7 @@ unsigned int adr;
 }
 
 /*------------------------------------------------------------------*/
+
 INLINE void cam_interrupt_enable(void)
 {
 unsigned char mask;
@@ -762,6 +821,7 @@ unsigned char mask;
 }
 
 /*------------------------------------------------------------------*/
+
 INLINE void cam_interrupt_disable(void)
 {
 unsigned char mask;
@@ -772,6 +832,7 @@ unsigned char mask;
 }
 
 /*------------------------------------------------------------------*/
+
 static void (*old_handler)(void) = NULL;
 
 INLINE void cam_interrupt_attach(void (*isr)(void))
@@ -783,6 +844,7 @@ INLINE void cam_interrupt_attach(void (*isr)(void))
 }
 
 /*------------------------------------------------------------------*/
+
 INLINE void cam_interrupt_detach(void)
 {
 #ifdef __MSDOS__
@@ -792,6 +854,7 @@ INLINE void cam_interrupt_detach(void)
 }
 
 /*------------------------------------------------------------------*/
+
 INLINE int cam_init_rpc(char *host_name, char *exp_name, char *client_name, char *rpc_server){return 1;}
 INLINE void came_cn(int *ext, const int b, const int c, const int n, const int a) {}
 INLINE void came_ext(const int ext, int *b, int *c, int *n, int *a) {}
@@ -817,3 +880,8 @@ INLINE void camec_sa(const int ext, const int f, const int r) {}
 INLINE void camec_sn(const int ext, const int f, const int r) {}
 
 /*------------------------------------------------------------------*/
+
+
+
+
+
