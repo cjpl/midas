@@ -14,6 +14,9 @@
                 Brown, Prentice Hall
 
   $Log$
+  Revision 1.13  1998/11/25 23:44:24  midas
+  Removed O_RDWR... in ss_tape_open()
+
   Revision 1.12  1998/10/29 15:56:40  midas
   Printout note about unimplemented tape status command
 
@@ -3494,7 +3497,7 @@ struct mtop arg;
 
   cm_enable_watchdog(FALSE);
 
-  *channel = open(path, oflag, O_RDWR | O_CREAT | O_TRUNC, 0644);
+  *channel = open(path, oflag, 0644);
   
   cm_enable_watchdog(TRUE);
 
