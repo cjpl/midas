@@ -6,6 +6,9 @@
   Contents:     Electronic logbook utility   
 
   $Log$
+  Revision 1.9  1999/10/06 06:56:32  midas
+  Added "modification" to message type
+
   Revision 1.8  1999/09/28 11:05:50  midas
   Use external editor for composing text
 
@@ -42,6 +45,7 @@ char type_list[20][NAME_LENGTH] = {
   "Severe error",
   "Fix",
   "Info",
+  "Modification",
   "Complaints",
   "Reply",
   "Alarm",
