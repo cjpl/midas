@@ -6,6 +6,9 @@
   Contents:     Web server for remote PAW display
 
   $Log$
+  Revision 1.27  2000/11/06 12:02:58  midas
+  Added -s [prompt] flag
+
   Revision 1.26  2000/10/16 07:39:45  midas
   Changed parameter separation character from '#' to '&'
 
@@ -134,6 +137,8 @@ char remote_host_name[256];
 int  _debug;
 char debug_file[256];
 int  _sock=0, _quit;
+
+char paw_prompt[80];
 
 #ifndef O_BINARY
 #define O_BINARY 0
@@ -559,9 +564,12 @@ char *pd, *p, str[256];
 int read_paw(int pipe, char *delim, char *result)
 {
 fd_set readfds;
-char   str[10000];
+char   str[30000], tmp[30000];
 struct timeval timeout;
 int    i;
+
+  sprintf(str, "\n##WAIT FOR: \"%s\"\n", delim);
+  debug_message(str);
 
   memset(str, 0, sizeof(str));
 
@@ -576,16 +584,20 @@ int    i;
 
     if (FD_ISSET(pipe, &readfds))
       {
-      i = read(pipe, str+strlen(str), sizeof(str)-1-strlen(str));
+      memset(tmp, 0, sizeof(tmp));
+      i = read(pipe, tmp, sizeof(tmp)-1);
       if (i <= 0)
         break;
+
+      debug_message(tmp);
+
+      if (strlen(tmp) + strlen(str) < sizeof(str))
+        strcat(str, tmp);      
       }
     else
       {
       if (result)
         strcpy(result, str);
-
-      debug_message(str);
 
       return ERR_TIMEOUT;
       }
@@ -603,8 +615,6 @@ int    i;
 
   if (result)
     strcpy(result, str);
-
-  debug_message(str);
 
   if (i <= 0)
     return ERR_PIPE;
@@ -646,14 +656,14 @@ int    status;
       write(pipe, str, 2);
 
       /* wait for prompt */
-      status = read_paw(pipe, "PAW > ", str);
+      status = read_paw(pipe, paw_prompt, str);
       if (status != SUCCESS)
         return status;
 
       /* disable shell command */
       sprintf(str, "vis shell off; vis vis off;\n");
       write(pipe, str, strlen(str));
-      status = read_paw(pipe, "PAW > ", str);
+      status = read_paw(pipe, paw_prompt, str);
       if (status != SUCCESS)
         return status;
       }
@@ -678,7 +688,7 @@ int    status;
 
       write(pipe, str, strlen(str));
 
-      status = read_paw(pipe, "PAW > ", str);
+      status = read_paw(pipe, paw_prompt, str);
       return status;
       }
 
@@ -689,7 +699,7 @@ int    status;
     write(pipe, str, strlen(str));
 
     /* wait for prompt */
-    status = read_paw(pipe, "PAW > ", result);
+    status = read_paw(pipe, paw_prompt, result);
     if (status != SUCCESS)
       return status;
 
@@ -700,12 +710,12 @@ int    status;
       write(pipe, str, strlen(str));
 
       /* wait for prompt */
-      status = read_paw(pipe, "PAW > ", str);
+      status = read_paw(pipe, paw_prompt, str);
       if (status != SUCCESS)
         return status;
       }
 
-    if (strstr(str, "PAW > ") && result)
+    if (strstr(str, paw_prompt) && result)
       {
       strcpy(result, str);
       return SUCCESS;
@@ -1790,6 +1800,7 @@ char pwd[256], str[256];
   /* parse command line parameters */
   _debug = 0;
   pwd[0] = 0;
+  strcpy(paw_prompt, "PAW > ");
   for (i=1 ; i<argc ; i++)
     {
     if (argv[i][0] == '-' && argv[i][1] == 'D')
@@ -1806,16 +1817,19 @@ char pwd[256], str[256];
         goto usage;
       if (argv[i][1] == 'p')
         tcp_port = atoi(argv[++i]);
-      else if (argv[i][1] == 'P')
+      else if (argv[i][1] == 's')
+        strcpy(paw_prompt, argv[++i]);
+      else if (argv[i][1] == 'w')
         strcpy(pwd, argv[++i]);
       else
         {
 usage:
-        printf("usage: %s [-p port] [-d [file]] [-D] [-P password]\n\n", argv[0]);
-        printf("       -p set port under which webpaw runs (default: 80)");
+        printf("usage: %s [-p port] [-s prompt] [-d [file]] [-D] [-w password]\n\n", argv[0]);
+        printf("       -p set port under which webpaw runs (default: 80)\n");
+        printf("       -s use alternative PAW prompt (instead \"PAW > \")\n");
         printf("       -d [file] display debug messages, optionally put them into file\n");
         printf("       -D become a daemon\n");
-        printf("       -P create/overwrite password in webpaw.cfg\n\n");
+        printf("       -w create/overwrite password in webpaw.cfg\n\n");
         return 1;
         }
       }
