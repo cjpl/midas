@@ -6,6 +6,9 @@
  *         amaudruz@triumf.ca                            Local:           6234
  * ---------------------------------------------------------------------------
    $Log$
+   Revision 1.39  2002/06/08 06:05:22  pierre
+   improve mdump display format
+
    Revision 1.38  2002/05/28 17:34:19  pierre
    Fix bug for large events (bigger than 8192 bytes), Renee Poutissou
 
@@ -3199,7 +3202,7 @@ void ybos_bank_display(YBOS_BANK_HEADER * pybk, INT dsp_fmt)
 	j = 0;
 	i += 8;
       }
-      if (dsp_fmt == DSP_DEC) printf("%8.3e ",*((float *)pdata));
+      if ((dsp_fmt == DSP_DEC) || (dsp_fmt == DSP_UNK)) printf("%8.3e ",*((float *)pdata));
       if (dsp_fmt == DSP_HEX) printf("0x%8.8x ",*((DWORD *)pdata));
       pdata++;
       j++;
@@ -3212,19 +3215,19 @@ void ybos_bank_display(YBOS_BANK_HEADER * pybk, INT dsp_fmt)
 	i += 8;
       }
       if (dsp_fmt == DSP_DEC) printf("%8.1i ",*((DWORD *)pdata));
-      if (dsp_fmt == DSP_HEX) printf("0x%8.8x ",*((DWORD *)pdata));
+      if ((dsp_fmt == DSP_HEX) || (dsp_fmt == DSP_UNK)) printf("0x%8.8x ",*((DWORD *)pdata));
       pdata++;
       j++;
       break;
     case I2_BKTYPE :
       if (j>7)
       {
-	printf("\n%4i-> ",i);
-	j = 0;
-	i += 8;
+        printf("\n%4i-> ",i);
+        j = 0;
+        i += 8;
       }
       if (dsp_fmt == DSP_DEC) printf("%5.1i ",*((WORD *)pdata));
-      if (dsp_fmt == DSP_HEX) printf("0x%4.4x ",*((WORD *)pdata));
+      if ((dsp_fmt == DSP_HEX) || (dsp_fmt == DSP_UNK)) printf("0x%4.4x ",*((WORD *)pdata));
       ((WORD *)pdata)++;
       j++;
       break;
@@ -3235,8 +3238,8 @@ void ybos_bank_display(YBOS_BANK_HEADER * pybk, INT dsp_fmt)
 	j = 0;
 	i += 16;
       }
+      if ((dsp_fmt == DSP_ASC) || (dsp_fmt == DSP_UNK)) printf("%1.1s ",(char *)pdata);
       if (dsp_fmt == DSP_DEC) printf("%2.i ",*((BYTE *)pdata));
-      if (dsp_fmt == DSP_ASC) printf("%1.1s ",(char *)pdata);
       if (dsp_fmt == DSP_HEX) printf("0x%2.2x ",*((BYTE *)pdata));
       ((BYTE *)pdata)++;
       j++;
@@ -3248,7 +3251,7 @@ void ybos_bank_display(YBOS_BANK_HEADER * pybk, INT dsp_fmt)
 	j = 0;
 	i += 8;
       }
-      if (dsp_fmt == DSP_DEC) printf("%4.i ",*((BYTE *)pdata));
+      if ((dsp_fmt == DSP_DEC) || (dsp_fmt == DSP_UNK)) printf("%4.i ",*((BYTE *)pdata));
       if (dsp_fmt == DSP_HEX) printf("0x%2.2x ",*((BYTE *)pdata));
       ((BYTE *)pdata)++;
       j++;
@@ -3301,20 +3304,35 @@ void midas_bank_display( BANK * pbk, INT dsp_fmt)
     length_type = sizeof (float);
     strcpy (strbktype,"Real*4 (FMT machine dependent)");
   }
-  if ((type == TID_DWORD) || (type == TID_INT))
+  if (type == TID_DWORD)
   {
     length_type = sizeof (DWORD);
-    strcpy (strbktype,"Integer*4");
+    strcpy (strbktype,"Unsigned Integer*4");
   }
-  if ((type == TID_WORD) || (type == TID_SHORT))
+  if (type == TID_INT)
+  {
+    length_type = sizeof (INT);
+    strcpy (strbktype,"Signed Integer*4");
+  }
+  if (type == TID_WORD)
   {
     length_type = sizeof (WORD);
-    strcpy (strbktype,"Integer*2");
+    strcpy (strbktype,"Unsigned Integer*2");
+  }
+  if (type == TID_SHORT)
+  {
+    length_type = sizeof (SHORT);
+    strcpy (strbktype,"Signed Integer*2");
   }
   if (type == TID_BYTE)
   {
     length_type = sizeof (BYTE);
-    strcpy (strbktype,"8 bit Bytes");
+    strcpy (strbktype,"Unsigned Bytes");
+  }
+  if (type == TID_SBYTE)
+  {
+    length_type = sizeof (BYTE);
+    strcpy (strbktype,"Signed Bytes");
   }
   if (type == TID_BOOL)
   {
@@ -3323,7 +3341,7 @@ void midas_bank_display( BANK * pbk, INT dsp_fmt)
   }
   if (type == TID_CHAR)
   {
-    length_type = sizeof(char);
+    length_type = sizeof(CHAR);
     strcpy (strbktype,"8 bit ASCII");
   }
   printf("\nBank:%s Length: %i(I*1)/%i(I*4)/%i(Type) Type:%s",
@@ -3352,12 +3370,23 @@ void midas_bank_display( BANK * pbk, INT dsp_fmt)
 	j = 0;
 	i += 8;
       }
-      if (dsp_fmt == DSP_DEC) printf("%8.3e ",*((float *)pdata));
+      if ((dsp_fmt == DSP_DEC) || (dsp_fmt == DSP_UNK)) printf("%8.3e ",*((float *)pdata));
       if (dsp_fmt == DSP_HEX) printf("0x%8.8x ",*((DWORD *)pdata));
       ((DWORD *)pdata)++;
       j++;
       break;
     case TID_DWORD :
+      if (j>7)
+      {
+        printf("\n%4i-> ",i);
+        j = 0;
+        i += 8;
+      }
+      if (dsp_fmt == DSP_DEC) printf("%8.1i ",*((DWORD *)pdata));
+      if ((dsp_fmt == DSP_HEX) || (dsp_fmt == DSP_UNK)) printf("0x%8.8x ",*((DWORD *)pdata));
+      ((DWORD *)pdata)++;
+      j++;
+      break;
     case TID_INT :
       if (j>7)
       {
@@ -3365,12 +3394,23 @@ void midas_bank_display( BANK * pbk, INT dsp_fmt)
 	j = 0;
 	i += 8;
       }
-      if (dsp_fmt == DSP_DEC) printf("%8.1i ",*((DWORD *)pdata));
+      if ((dsp_fmt == DSP_DEC) || (dsp_fmt == DSP_UNK)) printf("%8.1i ",*((DWORD *)pdata));
       if (dsp_fmt == DSP_HEX) printf("0x%8.8x ",*((DWORD *)pdata));
       ((DWORD *)pdata)++;
       j++;
       break;
     case TID_WORD :
+      if (j>7)
+      {
+        printf("\n%4i-> ",i);
+        j = 0;
+        i += 8;
+      }
+      if (dsp_fmt == DSP_DEC) printf("%5.1i ",*((WORD *)pdata));
+      if ((dsp_fmt == DSP_HEX) || (dsp_fmt == DSP_UNK)) printf("0x%4.4x ",*((WORD *)pdata));
+      ((WORD *)pdata)++;
+      j++;
+      break;
     case TID_SHORT :
       if (j>7)
       {
@@ -3378,12 +3418,23 @@ void midas_bank_display( BANK * pbk, INT dsp_fmt)
 	j = 0;
 	i += 8;
       }
-      if (dsp_fmt == DSP_DEC) printf("%5.1i ",*((WORD *)pdata));
+      if ((dsp_fmt == DSP_DEC) || (dsp_fmt == DSP_UNK)) printf("%5.1i ",*((WORD *)pdata));
       if (dsp_fmt == DSP_HEX) printf("0x%4.4x ",*((WORD *)pdata));
       ((WORD *)pdata)++;
       j++;
       break;
     case TID_BYTE :
+      if (j>15)
+      {
+        printf("\n%4i-> ",i);
+        j = 0;
+        i += 16;
+      }
+      if (dsp_fmt == DSP_DEC) printf("%4.i ",*((BYTE *)pdata));
+      if ((dsp_fmt == DSP_HEX) || (dsp_fmt == DSP_UNK)) printf("0x%2.2x ",*((BYTE *)pdata));
+      pdata++;
+      j++;
+      break;
     case TID_SBYTE :
       if (j>15)
       {
@@ -3391,7 +3442,7 @@ void midas_bank_display( BANK * pbk, INT dsp_fmt)
 	j = 0;
 	i += 16;
       }
-      if (dsp_fmt == DSP_DEC) printf("%4.i ",*((BYTE *)pdata));
+      if ((dsp_fmt == DSP_DEC) || (dsp_fmt == DSP_UNK)) printf("%4.i ",*((BYTE *)pdata));
       if (dsp_fmt == DSP_HEX) printf("0x%2.2x ",*((BYTE *)pdata));
       pdata++;
       j++;
@@ -3415,7 +3466,7 @@ void midas_bank_display( BANK * pbk, INT dsp_fmt)
 	i += 16;
       }
       if (dsp_fmt == DSP_DEC) printf("%3.i ",*((BYTE *)pdata));
-      if (dsp_fmt == DSP_ASC) printf("%1.1s ",(char *)pdata);
+      if ((dsp_fmt == DSP_ASC) || (dsp_fmt == DSP_UNK)) printf("%1.1s ",(char *)pdata);
       if (dsp_fmt == DSP_HEX) printf("0x%2.2x ",*((BYTE *)pdata));
       pdata++;
       j++;
