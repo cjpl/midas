@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.135  2004/09/28 17:13:32  midas
+  Added startup debug code for mserver
+
   Revision 1.134  2004/09/23 19:22:04  midas
   Added histo booking funcitons
 
@@ -2081,6 +2084,7 @@ extern "C" {
    INT EXPRT rpc_get_name(char *name);
    INT EXPRT rpc_is_remote(void);
    INT EXPRT rpc_set_debug(void (*func) (char *), INT mode);
+   void EXPRT rpc_debug_print(char *str);
 
    INT EXPRT rpc_register_server(INT server_type, char *name, INT * port,
                                  INT(*func) (INT, void **));
