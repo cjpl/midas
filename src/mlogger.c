@@ -6,6 +6,9 @@
   Contents:     MIDAS logger program
 
   $Log$
+  Revision 1.5  1998/11/25 23:43:42  midas
+  Addef fflush() after printf(".. bars ..")
+
   Revision 1.4  1998/10/29 14:37:01  midas
   Added '!' to stop logger
 
@@ -305,6 +308,7 @@ MIDAS_INFO  *info;
 
 #ifndef FAL_MAIN
   printf("%c\r", bars[i_bar++ % 4]);
+  fflush(stdout);
 #endif
 
   /* write record to device */
