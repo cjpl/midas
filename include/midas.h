@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.110  2003/04/15 08:16:48  midas
+  Increased default ODB size to 1M
+
   Revision 1.109  2003/04/14 12:58:16  midas
   Added event_descrip to equipment
 
@@ -500,7 +503,7 @@ typedef          INT       HNDLE;
 #define EVENT_BUFFER_NAME      "SYSTEM" /* buffer name for commands */
 #define MAX_EVENT_SIZE         0x80000   /* maximum event size 512k */
 #define DEFAULT_EVENT_BUFFER_SIZE 0x200000; /* 2M                   */
-#define DEFAULT_ODB_SIZE       100000   /* online database          */
+#define DEFAULT_ODB_SIZE       0x100000  /* online database 1M      */
 
 #define NAME_LENGTH            32    /* length of names, mult.of 8! */
 #define HOST_NAME_LENGTH       256   /* length of TCP/IP names      */
