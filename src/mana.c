@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.94  2003/04/25 14:04:26  midas
+  Fixed wrong #ifdef HAVE_ROOT
+
   Revision 1.93  2003/04/25 13:29:23  midas
   Added ss_force_single_thread()
 
@@ -6043,10 +6046,10 @@ int rargc;
 
   /* workaround for multi-threading with midas system calls */
   ss_force_single_thread();
-
 #endif
 
-#endif
+#endif /* HAVE_ROOT */
+
 #ifdef HAVE_HBOOK
   /* convert .root names to .rz names */
   if (strstr(out_info.last_histo_filename, ".root"))
@@ -6079,7 +6082,8 @@ int rargc;
 
   /*---- start main loop ----*/
 
-#ifdef OS_LINUX
+/* multi-threaded root server only under Linux */
+#if defined(HAVE_ROOT) && defined(OS_LINUX)
   /* start event thread */
   TThread *th2 = new TThread("root_event_loop", root_event_loop, NULL);
   th2->Run();
