@@ -6,6 +6,9 @@
 #  Contents:     UNIX Makefile for MIDAS EPICS slow control frontend
 #
 #  $Log$
+#  Revision 1.2  1999/12/21 09:37:38  midas
+#  Adjusted for new driver names
+#
 #  Revision 1.1  1999/09/22 12:24:02  midas
 #  *** empty log message ***
 #
@@ -43,7 +46,7 @@ DRV_DIR		= ../../drivers
 #-------------------------------------------------------------------
 # Drivers needed by the frontend program
 #                 
-DRIVERS         = camacnul.o cd_gen.o chn_acc.o
+DRIVERS         = camacnul.o generic.o epics_ca.o
 
 ####################################################################
 # Lines below here should not be edited
@@ -60,6 +63,15 @@ all: fe_epics
 
 fe_epics:  $(LIB) $(LIB_DIR)/mfe.o frontend.o $(DRIVERS)
 	$(CC) -o fe_epics frontend.o $(LIB_DIR)/mfe.o $(DRIVERS) $(LIB) $(LDFLAGS) $(LIBS)
+
+camacnul.o: $(DRV_DIR)/bus/camacnul.c
+	$(CC) $(CFLAGS) $(OSFLAGS) -c $< -o $@
+
+generic.o: $(DRV_DIR)/class/generic.c
+	$(CC) $(CFLAGS) $(OSFLAGS) -c $< -o $@
+
+epics_ca.o: $(DRV_DIR)/device/epics_ca.c
+	$(CC) $(CFLAGS) $(OSFLAGS) -c $< -o $@
 
 .c.o:
 	$(CC) $(CFLAGS) $(OSFLAGS) -c $<
