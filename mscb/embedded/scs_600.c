@@ -9,6 +9,9 @@
                 for SCS-600 Digital I/O
 
   $Log$
+  Revision 1.13  2003/07/17 14:23:24  midas
+  Turn output off immediately if button pressed
+
   Revision 1.12  2003/06/11 14:12:18  midas
   Removed LCD output
 
@@ -299,6 +302,13 @@ unsigned long        expired;
     if (cycle == 0)
       for (i=0 ; i<8 ; i++)
         ca[i] = 0;
+    }
+
+  /* turn output off according to main switch */
+  for (i=0 ; i<8 ; i++)
+    {
+    if (!user_data.out[i])
+      output &= ~(1<<i);
     }
 
   /* set outputs according to main switch */
