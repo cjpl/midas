@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.49  2000/01/21 08:38:47  midas
+  Added event size check for analyzer event extension
+
   Revision 1.48  2000/01/20 12:04:31  midas
   Fixed bug when opening offline files
 
@@ -2632,13 +2635,16 @@ static char  *orig_event = NULL;
   /*---- analyze event ----*/
 
   /* call non-modular analyzer if defined */
-  status = CM_SUCCESS;
   if (par->analyzer)
+    {
     status = par->analyzer(pevent, (void *) (pevent+1));
 
-  /* don't continue if event was rejected */
-  if (status == ANA_SKIP)
-    return 0;
+    /* don't continue if event was rejected */
+    if (status == ANA_SKIP)
+      return 0;
+    }
+
+  i = bk_size(pevent+1);
 
   /* loop over analyzer modules */
   module = par->ana_module;
@@ -2652,6 +2658,14 @@ static char  *orig_event = NULL;
       if (status == ANA_SKIP)
         return 0;
       }
+    }
+
+  /* check if event got too large */
+  if (event_def->format == FORMAT_MIDAS)
+    {
+    i = bk_size(pevent+1);
+    if (i > MAX_EVENT_SIZE)
+      cm_msg(MERROR, "process_event", "Event got too large (%d Bytes) in analyzer", i);
     }
 
   /* increment tests */
