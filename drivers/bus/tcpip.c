@@ -6,6 +6,9 @@
   Contents:     TCP/IP socket communication routines
 
   $Log$
+  Revision 1.5  2001/04/06 03:58:34  midas
+  Moved debugging flag into ODB for BD
+
   Revision 1.4  2001/04/05 05:53:34  midas
   Added CMD_NAME
 
@@ -23,16 +26,18 @@
 #include "midas.h"
 #include "msystem.h"
 
-static int debug_flag = 0, debug_last = 0, debug_first = TRUE;
+static int debug_last = 0, debug_first = TRUE;
 
 typedef struct {
   char host[256];
   int  port;
+  int  debug;
 } TCPIP_SETTINGS;
 
 #define TCPIP_SETTINGS_STR "\
 Host = STRING : [256] myhost.my.domain\n\
 Port = INT : 23\n\
+Debug = INT : 0\n\
 "
 
 typedef struct {
@@ -42,7 +47,7 @@ typedef struct {
 
 /*----------------------------------------------------------------------------*/
 
-void tcpip_debug(char *dbg_str)
+void tcpip_debug(TCPIP_INFO *info, char *dbg_str)
 {
 FILE *f;
 int delta;
@@ -60,7 +65,7 @@ int delta;
   debug_first = FALSE;
   fprintf(f, "{%d} %s\n", delta, dbg_str);
 
-  if (debug_flag > 1)
+  if (info->settings.debug > 1)
     printf("{%d} %s\n", delta, dbg_str);
 
   fclose(f);
@@ -163,7 +168,7 @@ int tcpip_write(TCPIP_INFO *info, char *data, int size)
 {
 int i;
  
-  if (debug_flag)
+  if (info->settings.debug)
     {
     char dbg_str[256];
 
@@ -171,7 +176,7 @@ int i;
     for (i=0 ; (int)i<size ; i++)
       sprintf(dbg_str+strlen(dbg_str), "%X ", data[i]);
 
-    tcpip_debug(dbg_str);
+    tcpip_debug(info, dbg_str);
     }
  
   i = send(info->fd, data, size, 0);
@@ -226,7 +231,7 @@ int            i, status, n;
 
     } while (1); /* while (buffer[n-1] && buffer[n-1] != 10); */
 
-  if (debug_flag)
+  if (info->settings.debug)
     {
     char dbg_str[256];
 
@@ -238,7 +243,7 @@ int            i, status, n;
       for (i=0 ; i<n ; i++)
         sprintf(dbg_str+strlen(dbg_str), "%X ", data[i]);
 
-    tcpip_debug(dbg_str);
+    tcpip_debug(info, dbg_str);
     }
 
   return n;
@@ -250,12 +255,12 @@ int tcpip_puts(TCPIP_INFO *info, char *str)
 {
 int i;
  
-  if (debug_flag)
+  if (info->settings.debug)
     {
     char dbg_str[256];
 
     sprintf(dbg_str, "puts: %s", str); 
-    tcpip_debug(dbg_str);
+    tcpip_debug(info, dbg_str);
     }
 
   i = send(info->fd, str, strlen(str), 0);
@@ -316,7 +321,7 @@ int            i, status, n;
 
     } while (1); /* while (buffer[n-1] && buffer[n-1] != 10); */
 
-  if (debug_flag)
+  if (info->settings.debug)
     {
     char dbg_str[256];
 
@@ -327,7 +332,7 @@ int            i, status, n;
     else
       sprintf(dbg_str+strlen(dbg_str), "%s", str);
 
-    tcpip_debug(dbg_str);
+    tcpip_debug(info, dbg_str);
     }
  
   return n;
@@ -427,8 +432,9 @@ char       *str, *pattern;
       break;
 
     case CMD_DEBUG:
+      info = va_arg(argptr, void *);
       status = va_arg(argptr, INT);
-      debug_flag = status;
+      ((TCPIP_INFO*)info)->settings.debug = status;
       break;
     }
 
