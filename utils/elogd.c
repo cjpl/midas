@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.96  2001/12/14 14:24:45  midas
+  Couple of changes, see CHANGELOG
+
   Revision 1.95  2001/12/14 12:48:44  midas
   Fixed concatenation of lines in password file, thanks to Michael Buselli
 
@@ -302,7 +305,7 @@
 \********************************************************************/
 
 /* Version of ELOG */
-#define VERSION "1.3.0"
+#define VERSION "1.3.1"
 
 #include <stdio.h>
 #include <sys/types.h>
@@ -331,6 +334,8 @@
 
 #define DIR_SEPARATOR '/'
 #define DIR_SEPARATOR_STR "/"
+
+#define __USE_XOPEN /* needed for crypt() */
 
 typedef int BOOL;
 
@@ -628,6 +633,15 @@ unsigned int t, pad;
   *d = 0;
   while (pad--)
     *(--d) = '=';
+}
+
+void do_crypt(char *s, char *d)
+{
+#ifdef USE_CRYPT
+  strcpy(d, crypt(s, "el"));
+#else
+  base64_encode(s, d);
+#endif
 }
 
 /*-------------------------------------------------------------------*/
@@ -3250,8 +3264,8 @@ time_t now;
 struct tm *gmt;
 
 
-  base64_encode(getparam("oldpwd"), old_pwd);
-  base64_encode(getparam("newpwd"), new_pwd);
+  do_crypt(getparam("oldpwd"), old_pwd);
+  do_crypt(getparam("newpwd"), new_pwd);
 
   getcfg(logbook, "Password file", str);
   wrong_pwd = FALSE;
@@ -4625,12 +4639,17 @@ FILE   *f;
     if (n_logbook > 1)
       {
       /* set data_dir from logbook */
-      getcfg(logbook_list[lindex], "Data dir", data_dir);
-      if (data_dir[strlen(data_dir)-1] != DIR_SEPARATOR)
+      getcfg(logbook_list[lindex], "Data dir", str);
+      if (str[0] == DIR_SEPARATOR || str[1] == ':')
+        strcpy(data_dir, str);
+      else
         {
-        data_dir[strlen(data_dir)+1] = 0;
-        data_dir[strlen(data_dir)] = DIR_SEPARATOR;
+        strcpy(data_dir, cfg_dir);
+        strcat(data_dir, str);
         }
+      
+      if (data_dir[strlen(data_dir)-1] != DIR_SEPARATOR)
+        strcat(data_dir, DIR_SEPARATOR_STR);
       }
 
     if (past_n)
@@ -5163,35 +5182,60 @@ char   str[256], mail_to[256], mail_from[256], file_name[256], error[1000],
 char   *buffer[MAX_ATTACHMENTS], mail_param[1000];
 char   att_file[MAX_ATTACHMENTS][256];
 char   slist[MAX_N_ATTR+10][NAME_LENGTH], svalue[MAX_N_ATTR+10][NAME_LENGTH];
-int    i, j, n, first, index, n_attr, n_mail, suppress, status;
+int    i, j, n, missing, first, index, n_attr, n_mail, suppress, status;
 
   n_attr = scan_attributes(logbook);
 
   /* check for required attributs */
+  missing = 0;
   for (i=0 ; i<n_attr ; i++)
-    if ((attr_flags[i] & AF_REQUIRED) && *getparam(attr_list[i]) == 0)
+    if (attr_flags[i] & AF_REQUIRED)
       {
-      show_standard_header("ELOG error", "");
+      if ((attr_flags[i] & AF_MULTI) == 0 && *getparam(attr_list[i]) == 0)
+        {
+        missing = 1;
+        break;
+        }
+      if ((attr_flags[i] & AF_MULTI))
+        {
+        for (j=0 ; j<MAX_N_LIST ; j++)
+          {
+          sprintf(str, "%s%d", attr_list[i], j);
+          if (getparam(str) && *getparam(str))
+            break;
+          }
 
-      rsprintf("<p><p><p><table border=%s width=50%% bgcolor=%s cellpadding=1 cellspacing=0 align=center>",
-                gt("Border width"), gt("Frame color"));
-      rsprintf("<tr><td><table cellpadding=5 cellspacing=0 border=0 width=100%% bgcolor=%s>\n", gt("Frame color"));
-      rsprintf("<tr><td bgcolor=#FFB0B0 align=center>");
-
-      rsprintf("<i>");
-      rsprintf(loc("Error: Attribute <b>%s</b> not supplied"), attr_list[i]);
-      rsprintf(".</i><p>\n");
-      rsprintf(loc("Please go back and enter the <b>%s</b> field"), attr_list[i]);
-      rsprintf(".</tr>\n");
-
-      rsprintf("<tr><td bgcolor=%s align=center>", gt("Cell BGColor"));
-      rsprintf("<button type=button onClick=history.back()>%s</button></td></tr>\n", loc("Back"));
-
-
-      rsprintf("</table></td></tr></table>\n");
-      rsprintf("</body></html>\n");
-      return;
+        if (j == MAX_N_LIST)
+          {
+          missing = 1;
+          break;
+          }
+        }
       }
+
+  if (missing)
+    {
+    show_standard_header("ELOG error", "");
+
+    rsprintf("<p><p><p><table border=%s width=50%% bgcolor=%s cellpadding=1 cellspacing=0 align=center>",
+              gt("Border width"), gt("Frame color"));
+    rsprintf("<tr><td><table cellpadding=5 cellspacing=0 border=0 width=100%% bgcolor=%s>\n", gt("Frame color"));
+    rsprintf("<tr><td bgcolor=#FFB0B0 align=center>");
+
+    rsprintf("<i>");
+    rsprintf(loc("Error: Attribute <b>%s</b> not supplied"), attr_list[i]);
+    rsprintf(".</i><p>\n");
+    rsprintf(loc("Please go back and enter the <b>%s</b> field"), attr_list[i]);
+    rsprintf(".</tr>\n");
+
+    rsprintf("<tr><td bgcolor=%s align=center>", gt("Cell BGColor"));
+    rsprintf("<button type=button onClick=history.back()>%s</button></td></tr>\n", loc("Back"));
+
+
+    rsprintf("</table></td></tr></table>\n");
+    rsprintf("</body></html>\n");
+    return;
+    }
 
   /* check for valid attachment files */
   for (i=0 ; i<MAX_ATTACHMENTS ; i++)
@@ -5472,12 +5516,17 @@ char   date[80], text[TEXT_SIZE],  old_data_dir[256], tag[32],
   /* switch to destination logbook data directory */
 
   strcpy(old_data_dir, data_dir);
-  getcfg(dst_logbook, "Data dir", data_dir);
-  if (data_dir[strlen(data_dir)-1] != DIR_SEPARATOR)
+  getcfg(dst_logbook, "Data dir", str);
+  if (str[0] == DIR_SEPARATOR || str[1] == ':')
+    strcpy(data_dir, str);
+  else
     {
-    data_dir[strlen(data_dir)+1] = 0;
-    data_dir[strlen(data_dir)] = DIR_SEPARATOR;
+    strcpy(data_dir, cfg_dir);
+    strcat(data_dir, str);
     }
+
+  if (data_dir[strlen(data_dir)-1] != DIR_SEPARATOR)
+    strcat(data_dir, DIR_SEPARATOR_STR);
 
   tag[0] = 0;
   status = el_submit(attr_list, attrib, n_attr, text,
@@ -6519,12 +6568,14 @@ char  str[256];
 
 BOOL check_user_password(char *logbook, char *user, char *password, char *redir)
 {
-char  str[256], line[256], *p;
+char  str[256], line[256], file_name[256], *p;
 FILE  *f;
 
   getcfg(logbook, "Password file", str);
+  strcpy(file_name, cfg_dir);
+  strcat(file_name, str);
 
-  f = fopen(str, "r");
+  f = fopen(file_name, "r");
   if (f != NULL)
     {
     while (!feof(f))
@@ -6604,7 +6655,7 @@ FILE  *f;
     }
   else
     {
-    sprintf(line, "Error: Password file \"%s\" not found", str);
+    sprintf(line, "Error: Password file \"%s\" not found", file_name);
     show_error(line);
     return FALSE;
     }
@@ -6778,17 +6829,22 @@ struct tm *gmt;
     loadtheme(NULL); /* get default values */
 
   /* get data dir from configuration file */
-  getcfg(logbook, "Data dir", data_dir);
-  if (data_dir[strlen(data_dir)-1] != DIR_SEPARATOR)
+  getcfg(logbook, "Data dir", str);
+  if (str[0] == DIR_SEPARATOR || str[1] == ':')
+    strcpy(data_dir, str);
+  else
     {
-    data_dir[strlen(data_dir)+1] = 0;
-    data_dir[strlen(data_dir)] = DIR_SEPARATOR;
+    strcpy(data_dir, cfg_dir);
+    strcat(data_dir, str);
     }
+  
+  if (data_dir[strlen(data_dir)-1] != DIR_SEPARATOR)
+    strcat(data_dir, DIR_SEPARATOR_STR);
 
   if (*getparam("wpassword"))
     {
     /* check if password correct */
-    base64_encode(getparam("wpassword"), enc_pwd);
+    do_crypt(getparam("wpassword"), enc_pwd);
 
     if (!check_password(logbook, "Write password", enc_pwd, getparam("redir")))
       return;
@@ -6828,7 +6884,7 @@ struct tm *gmt;
   if (*getparam("apassword"))
     {
     /* check if password correct */
-    base64_encode(getparam("apassword"), enc_pwd);
+    do_crypt(getparam("apassword"), enc_pwd);
 
     if (!check_password(logbook, "Admin password", enc_pwd, getparam("redir")))
       return;
@@ -6868,7 +6924,7 @@ struct tm *gmt;
   if (*getparam("uname") && getparam("upassword"))
     {
     /* check if password correct */
-    base64_encode(getparam("upassword"), enc_pwd);
+    do_crypt(getparam("upassword"), enc_pwd);
 
     if (!check_user_password(logbook, getparam("uname"), enc_pwd, getparam("redir")))
       return;
@@ -7766,7 +7822,7 @@ struct timeval       timeout;
           if (strchr(cl_pwd, ':'))
             {
             p = strchr(cl_pwd, ':')+1;
-            base64_encode(p, str);
+            do_crypt(p, str);
             strcpy(cl_pwd, str);
 
             /* check authorization */
@@ -8098,7 +8154,7 @@ usage:
       printf("Must specify a lookbook via the -l parameter.\n");
       return 0;
       }
-    base64_encode(read_pwd, str);
+    do_crypt(read_pwd, str);
     create_password(logbook, "Read Password", str);
     return 0;
     }
@@ -8110,7 +8166,7 @@ usage:
       printf("Must specify a lookbook via the -l parameter.\n");
       return 0;
       }
-    base64_encode(write_pwd, str);
+    do_crypt(write_pwd, str);
     create_password(logbook, "Write Password", str);
     return 0;
     }
@@ -8122,7 +8178,7 @@ usage:
       printf("Must specify a lookbook via the -l parameter.\n");
       return 0;
       }
-    base64_encode(admin_pwd, str);
+    do_crypt(admin_pwd, str);
     create_password(logbook, "Admin Password", str);
     return 0;
     }
