@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.63  1999/10/04 11:54:14  midas
+  Submit full alarm string to execute command
+
   Revision 1.62  1999/09/30 22:59:06  pierre
   - fix bk_close for BK32
 
@@ -15040,7 +15043,7 @@ INT al_trigger_class(char *alarm_class, char *alarm_message, BOOL first)
 {
 int         status, size, state;
 HNDLE       hDB, hkeyclass;
-char        str[256], tag[32];
+char        str[256], command[256], tag[32];
 ALARM_CLASS ac;
 
   cm_get_experiment_database(&hDB, NULL);
@@ -15082,8 +15085,9 @@ ALARM_CLASS ac;
       ac.execute_interval > 0 &&
       (INT)ss_time() - (INT)ac.execute_last > ac.execute_interval)
     {
-    sprintf(str, ac.execute_command, alarm_message);
-    system(str);
+    sprintf(str, "%s: %s", alarm_class, alarm_message);
+    sprintf(command, ac.execute_command, str);
+    system(command);
     ac.execute_last = ss_time();
     }
 
