@@ -11,6 +11,10 @@
                 one bank (SCLR).
 
   $Log$
+  Revision 1.5  2001/04/30 19:55:16  pierre
+  - Correct max_event_size, event_buffer_size declaration
+  - fix data increment in read_event_trigger for double pointer
+
   Revision 1.4  2000/03/01 18:04:38  pierre
   - include Super event support
 
@@ -47,11 +51,14 @@ char *frontend_file_name = __FILE__;
 BOOL frontend_call_loop = FALSE;
 
 /* a frontend status page is displayed with this frequency in ms */
-INT display_period = 000;
+INT display_period = 3000;
 
+/* maximum event size produced by this frontend */
+INT max_event_size = 10000;
+   
 /* buffer size to hold events */
-INT event_buffer_size = DEFAULT_EVENT_BUFFER_SIZE;
-
+INT event_buffer_size = 10*10000;
+   
 /*-- Function declarations -----------------------------------------*/
 INT frontend_init();
 INT frontend_exit();
@@ -288,7 +295,7 @@ INT read_trigger_event(char *pevent, INT off)
     j = tr2;
   ybk_create((DWORD *)pevent, "ADC0", I4_BKTYPE, (DWORD *)(&pbkdat));
   for (i=0 ; i<j ; i++)
-    *pbkdat++ = i & 0xFFF;
+    *((DWORD *)pbkdat)++ = i & 0xFFF;
   ybk_close((DWORD *)pevent, pbkdat);
 
   ybk_create((DWORD *)pevent, "TDC0", I2_BKTYPE, (DWORD *)(&pbkdat));
@@ -296,7 +303,7 @@ INT read_trigger_event(char *pevent, INT off)
     *((WORD *)pbkdat)++ = (WORD)(0x10+i) & 0xFFFF;
   ybk_close((DWORD *) pevent, pbkdat);
 
-  ybk_create_chaos((DWORD *)pevent, "POJA", I2_BKTYPE, (DWORD *)(&pbkdat));
+  ybk_create_chaos((DWORD *)pevent, "OTHR", I2_BKTYPE, (DWORD *)(&pbkdat));
   for (i=0 ; i<16 ; i++)
     *((WORD *)pbkdat)++ = (WORD) (0x20+i+1) & 0xFFFF;
   ybk_close_chaos((DWORD *) pevent, I2_BKTYPE, pbkdat);
