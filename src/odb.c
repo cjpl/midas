@@ -6,6 +6,9 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.45  2002/05/14 04:25:42  midas
+  Added quotes
+
   Revision 1.44  2002/05/08 19:54:41  midas
   Added extra parameter to function db_get_value()
 
@@ -4057,7 +4060,7 @@ KEY              *pkey;
     {
     memset(data, 0, *buf_size);
     db_unlock_database(hDB);
-    cm_msg(MERROR, "db_get_data_index", "index (%d) exceeds array length (%d) for key %s", 
+    cm_msg(MERROR, "db_get_data_index", "index (%d) exceeds array length (%d) for key \"%s\"", 
            index, pkey->num_values, pkey->name);
     return DB_OUT_OF_RANGE;
     }
