@@ -7,6 +7,9 @@
                 following the MIDAS CAMAC Standard under DIRECTIO
 
   $Log$
+  Revision 1.9  2001/07/24 10:47:14  midas
+  Fixed small bug with directIO communication
+
   Revision 1.8  2001/04/05 05:53:13  midas
   Removed adr
 
@@ -740,7 +743,7 @@ INLINE int cam_init(void)
 INLINE void cam_exit(void)
 {
 #ifdef _MSC_VER
-  DWORD buffer[] = {6, CAMAC_BASE, CAMAC_BASE+4*0x10, 0};
+  DWORD buffer[] = {7, CAMAC_BASE, CAMAC_BASE+4*0x10, 0};
   DWORD size;
   
   if (_hdio <= 0)
