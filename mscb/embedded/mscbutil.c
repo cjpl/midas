@@ -6,6 +6,9 @@
   Contents:     Various utility functions for MSCB protocol
 
   $Log$
+  Revision 1.25  2003/09/23 09:21:17  midas
+  *** empty log message ***
+
   Revision 1.24  2003/06/27 13:52:17  midas
   Added led_mode()
 
@@ -398,7 +401,6 @@ void uart_init(unsigned char port, unsigned char baud)
     unsigned char baud      1:9600,2:19200,3:28800,4:57600,
                             5:115200,6:172800,7:345600 Baud
 
-
 \********************************************************************/
 {
 unsigned char code baud_table[] = 
@@ -456,9 +458,7 @@ void sysclock_init(void)
 
   Purpose: Initial sytem clock via timer 1
 
-
-
-\********************************************************************/
+*********************************************************************/
 {
 
   EA = 1;             // general interrupt enable

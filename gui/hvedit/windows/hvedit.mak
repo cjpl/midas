@@ -33,7 +33,7 @@ INTDIR=.\Debug
 OutDir=.\Debug
 # End Custom Macros
 
-ALL : "..\bin\hvedit.exe" "$(OUTDIR)\hvedit.pch" "$(OUTDIR)\hvedit.bsc"
+ALL : "..\..\..\nt\bin\hvedit.exe" "$(OUTDIR)\hvedit.pch" "$(OUTDIR)\hvedit.bsc"
 
 
 CLEAN :
@@ -65,15 +65,15 @@ CLEAN :
 	-@erase "$(INTDIR)\vc60.pdb"
 	-@erase "$(OUTDIR)\hvedit.bsc"
 	-@erase "$(OUTDIR)\hvedit.pdb"
-	-@erase "..\bin\hvedit.exe"
-	-@erase "..\bin\hvedit.ilk"
+	-@erase "..\..\..\nt\bin\hvedit.exe"
+	-@erase "..\..\..\nt\bin\hvedit.ilk"
 
 "$(OUTDIR)" :
     if not exist "$(OUTDIR)/$(NULL)" mkdir "$(OUTDIR)"
 
 F90=fl32.exe
 CPP=cl.exe
-CPP_PROJ=/nologo /MDd /W3 /Gm /GX /ZI /Od /I "..\..\include" /D "_DEBUG" /D "WIN32" /D "_WINDOWS" /D "_AFXDLL" /D "_MBCS" /FR"$(INTDIR)\\" /Fp"$(INTDIR)\hvedit.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
+CPP_PROJ=/nologo /MDd /W3 /Gm /GX /ZI /Od /I "\midas\include" /D "_DEBUG" /D "WIN32" /D "_WINDOWS" /D "_AFXDLL" /D "_MBCS" /FR"$(INTDIR)\\" /Fp"$(INTDIR)\hvedit.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
 
 .c{$(INTDIR)}.obj::
    $(CPP) @<<
@@ -144,9 +144,9 @@ LINK32_OBJS= \
 	"$(INTDIR)\PrintDlg.obj" \
 	"$(INTDIR)\STDAFX.OBJ" \
 	"$(INTDIR)\HVEDIT.res" \
-	"..\LIB\midas.lib"
+	"..\..\..\NT\LIB\midas.lib"
 
-"..\bin\hvedit.exe" : "$(OUTDIR)" $(DEF_FILE) $(LINK32_OBJS)
+"..\..\..\nt\bin\hvedit.exe" : "$(OUTDIR)" $(DEF_FILE) $(LINK32_OBJS)
     $(LINK32) @<<
   $(LINK32_FLAGS) $(LINK32_OBJS)
 <<
@@ -159,7 +159,7 @@ INTDIR=.\Release
 OutDir=.\Release
 # End Custom Macros
 
-ALL : "..\bin\hvedit.exe" "$(OUTDIR)\hvedit.pch" "$(OUTDIR)\hvedit.bsc"
+ALL : "..\..\..\nt\bin\hvedit.exe" "$(OUTDIR)\hvedit.pch" "$(OUTDIR)\hvedit.bsc"
 
 
 CLEAN :
@@ -189,14 +189,14 @@ CLEAN :
 	-@erase "$(INTDIR)\STDAFX.SBR"
 	-@erase "$(INTDIR)\vc60.idb"
 	-@erase "$(OUTDIR)\hvedit.bsc"
-	-@erase "..\bin\hvedit.exe"
+	-@erase "..\..\..\nt\bin\hvedit.exe"
 
 "$(OUTDIR)" :
     if not exist "$(OUTDIR)/$(NULL)" mkdir "$(OUTDIR)"
 
 F90=fl32.exe
 CPP=cl.exe
-CPP_PROJ=/nologo /MT /W3 /GX /O2 /I "..\..\include" /D "NDEBUG" /D "WIN32" /D "_WINDOWS" /D "_MBCS" /Fr"$(INTDIR)\\" /Fp"$(INTDIR)\hvedit.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
+CPP_PROJ=/nologo /MT /W3 /GX /O2 /I "\midas\include" /D "NDEBUG" /D "WIN32" /D "_WINDOWS" /D "_MBCS" /Fr"$(INTDIR)\\" /Fp"$(INTDIR)\hvedit.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
 
 .c{$(INTDIR)}.obj::
    $(CPP) @<<
@@ -267,9 +267,9 @@ LINK32_OBJS= \
 	"$(INTDIR)\PrintDlg.obj" \
 	"$(INTDIR)\STDAFX.OBJ" \
 	"$(INTDIR)\HVEDIT.res" \
-	"..\LIB\midas.lib"
+	"..\..\..\NT\LIB\midas.lib"
 
-"..\bin\hvedit.exe" : "$(OUTDIR)" $(DEF_FILE) $(LINK32_OBJS)
+"..\..\..\nt\bin\hvedit.exe" : "$(OUTDIR)" $(DEF_FILE) $(LINK32_OBJS)
     $(LINK32) @<<
   $(LINK32_FLAGS) $(LINK32_OBJS)
 <<
@@ -347,7 +347,7 @@ SOURCE=.\STDAFX.CPP
 
 !IF  "$(CFG)" == "HVEDIT - Win32 Debug"
 
-CPP_SWITCHES=/nologo /MDd /W3 /Gm /GX /ZI /Od /I "..\..\include" /D "_DEBUG" /D "WIN32" /D "_WINDOWS" /D "_AFXDLL" /D "_MBCS" /FR"$(INTDIR)\\" /Fp"$(INTDIR)\hvedit.pch" /Yc"stdafx.h" /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
+CPP_SWITCHES=/nologo /MDd /W3 /Gm /GX /ZI /Od /I "\midas\include" /D "_DEBUG" /D "WIN32" /D "_WINDOWS" /D "_AFXDLL" /D "_MBCS" /FR"$(INTDIR)\\" /Fp"$(INTDIR)\hvedit.pch" /Yc"stdafx.h" /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
 
 "$(INTDIR)\STDAFX.OBJ"	"$(INTDIR)\STDAFX.SBR"	"$(INTDIR)\hvedit.pch" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
@@ -357,7 +357,7 @@ CPP_SWITCHES=/nologo /MDd /W3 /Gm /GX /ZI /Od /I "..\..\include" /D "_DEBUG" /D 
 
 !ELSEIF  "$(CFG)" == "HVEDIT - Win32 Release"
 
-CPP_SWITCHES=/nologo /MT /W3 /GX /O2 /I "..\..\include" /D "NDEBUG" /D "WIN32" /D "_WINDOWS" /D "_MBCS" /Fr"$(INTDIR)\\" /Fp"$(INTDIR)\hvedit.pch" /Yc"stdafx.h" /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
+CPP_SWITCHES=/nologo /MT /W3 /GX /O2 /I "\midas\include" /D "NDEBUG" /D "WIN32" /D "_WINDOWS" /D "_MBCS" /Fr"$(INTDIR)\\" /Fp"$(INTDIR)\hvedit.pch" /Yc"stdafx.h" /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
 
 "$(INTDIR)\STDAFX.OBJ"	"$(INTDIR)\STDAFX.SBR"	"$(INTDIR)\hvedit.pch" : $(SOURCE) "$(INTDIR)"
 	$(CPP) @<<
