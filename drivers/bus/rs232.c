@@ -6,6 +6,9 @@
   Contents:     RS232 communication routines for MS-DOS and NT
 
   $Log$
+  Revision 1.5  2001/01/05 15:08:22  midas
+  Fine-tuned timeout in rs232_gets
+
   Revision 1.4  2001/01/04 11:25:19  midas
   Added flow control (0=off, 1=CTS/DSR, 2=XON/XOFF)
 
@@ -552,8 +555,7 @@ DWORD written;
 
 int rs232_gets(RS232_INFO *info, char *str, int size, char *pattern, int timeout)
 {
-int           i, status;
-DWORD         read;
+int           i, l;
 COMMTIMEOUTS  CommTimeOuts;
 
   GetCommTimeouts((HANDLE) info->fd, &CommTimeOuts );
@@ -565,17 +567,22 @@ COMMTIMEOUTS  CommTimeOuts;
   SetCommTimeouts((HANDLE) info->fd, &CommTimeOuts);
 
   memset(str, 0, size);
-  for (i=0 ; i<size-1 ; i++)
+  for (l=0 ; l<size-1 ; l++)
     {
-    status = ReadFile( (HANDLE) info->fd, str+i, 1, &read, NULL);
-    if (!status || read == 0)
-      return 0;
-
-    if (strstr(str, pattern) != NULL)
+    status = ReadFile( (HANDLE) info->fd, str+l, 1, &i, NULL);
+    if (!status || i == 0)
+      {
+      if (pattern && pattern[0])
+        return 0;
       break;
+      }
+
+    if (pattern && pattern[0])
+      if (strstr(str, pattern) != NULL)
+        break;
     }
   
-  if (debug_flag)
+  if (debug_flag && l>0)
     {
     FILE *f;
 
@@ -584,7 +591,7 @@ COMMTIMEOUTS  CommTimeOuts;
     fclose(f);
     }
 
-  return i+1;
+  return l;
 }
 
 #endif
@@ -596,6 +603,7 @@ COMMTIMEOUTS  CommTimeOuts;
 #include <stdio.h>
 #include <string.h>
 #include <sys/ioctl.h>
+#include <sys/timeb.h>
 #include <fcntl.h>
 #include <termios.h>
 #include <unistd.h>
@@ -604,8 +612,7 @@ COMMTIMEOUTS  CommTimeOuts;
 
 int rs232_open(char *port, int baud, char parity, int data_bit, int stop_bit, int flow_control)
 {
-int  fd, flags, i;
-char str[80];
+int  fd, i;
 struct termios tio;
 
 struct {
@@ -688,7 +695,7 @@ int rs232_exit(RS232_INFO *info)
 
 int rs232_puts(RS232_INFO *info, char *str)
 {
-int i, j;
+int i;
  
   if (debug_flag)
     {
@@ -708,46 +715,50 @@ int i, j;
 
 int rs232_gets(RS232_INFO *info, char *str, int size, char *pattern, int timeout)
 {
-int  i, l, start_time;
-char c;
- 
-  start_time = time(NULL);
+int    i, l;
+struct timeb start, now;
+double fstart, fnow; 
+
+  ftime(&start);
+  fstart = start.time+start.millitm/1000.0;
+  
   memset(str, 0, size);
-  l = 0;
- 
-  do
+  for (l=0 ; l<size-1 ;)
     {
     ioctl(info->fd, FIONREAD, &i);
     if (i > 0)
       {
       i = read(info->fd, str+l, 1);
  
-      if (i > 0)
-        l += i;
+      if (i == 1)
+        l++;
       else
         perror("read");
       }
  
-    if (strstr(str, pattern) != NULL)
-      break;
+    if (pattern && pattern[0])
+      if (strstr(str, pattern) != NULL)
+        break;
  
-    if (l == size - 1)
-      break;
+    ftime(&now);
+    fnow = now.time+now.millitm/1000.0;
 
-    if (time(NULL) - start_time >= timeout/1000)
-      return 0;
+    if (fnow - fstart >= timeout/1000.0)
+      {
+      if (pattern && pattern[0])
+        return 0;
+      break;
+      }
  
     if (i == 0)
-      usleep(100000);
+      usleep(min(100000, timeout*1000));
 
-    } while (1);
- 
-  str[l] = 0;
+    };
  
   if (debug_flag && l>0)
     {
     FILE *f;
- 
+
     f = fopen("rs232.log", "a");
     fprintf(f, "getstr %s: %s\n", pattern, str);
     fclose(f);
