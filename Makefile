@@ -6,6 +6,9 @@
 #  Contents:     Makefile for MIDAS binaries and examples under unix
 #
 #  $Log$
+#  Revision 1.34  2002/01/23 11:27:32  midas
+#  Removed elogd (now separate package)
+#
 #  Revision 1.33  2001/10/05 22:32:38  pierre
 #  - added mvmestd in install include.
 #  - change ybos.c to ybos.o in mdump build rule.
@@ -265,8 +268,6 @@ PROGS = $(BIN_DIR)/mserver $(BIN_DIR)/mhttpd \
 	$(BIN_DIR)/mtape $(BIN_DIR)/mhist \
 	$(BIN_DIR)/mstat $(BIN_DIR)/mcnaf \
 	$(BIN_DIR)/mdump $(BIN_DIR)/lazylogger \
-	$(BIN_DIR)/webpaw $(BIN_DIR)/elogd \
-	$(BIN_DIR)/odbhist $(BIN_DIR)/elog \
 	$(BIN_DIR)/mchart $(BIN_DIR)/stripchart.tcl \
 	$(SPECIFIC_OS_PRG)
 
@@ -399,8 +400,6 @@ $(BIN_DIR)/dio: $(UTL_DIR)/dio.c
 $(BIN_DIR)/stripchart.tcl: $(UTL_DIR)/stripchart.tcl
 	cp -f $(UTL_DIR)/stripchart.tcl $(BIN_DIR)/. 
 
-$(BIN_DIR)/elogd: $(UTL_DIR)/elogd.c
-	$(CC) $(CFLAGS) -o $@ $(UTL_DIR)/elogd.c
 
 #####################################################################
 
@@ -436,7 +435,7 @@ install:
 	@echo "... "
 	@echo "... Installing utilities to $(SYSBIN_DIR)"
 	@echo "... "
-	@for i in mhist odbhist elog mtape mstat lazylogger mdump mcnaf mlxspeaker mchart stripchart.tcl webpaw elogd; \
+	@for i in mhist odbhist elog mtape mstat lazylogger mdump mcnaf mlxspeaker mchart stripchart.tcl webpaw; \
 	  do \
 	  echo $$i ; \
 	  rm -f $(SYSBIN_DIR)/$$i ; \
@@ -445,7 +444,6 @@ install:
 	done
 	ln -fs $(SYSBIN_DIR)/stripchart.tcl $(SYSBIN_DIR)/stripchart
 	chmod +s $(SYSBIN_DIR)/webpaw
-	chmod +s $(SYSBIN_DIR)/elogd
 
 # include
 	@echo "... "
