@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.107  2003/03/26 21:09:46  midas
+  Corrected version string
+
   Revision 1.106  2003/03/22 06:56:12  olchansk
   add DB_CORRUPTED error code
 
@@ -346,7 +349,7 @@
    to the MIDAS library. First digit is major release, second
    digit is minor release, third digit is patch level */
 
-#define MIDAS_VERSION "1.9.1"
+#define MIDAS_VERSION "1.9.2"
 
 /*------------------------------------------------------------------*/
 
