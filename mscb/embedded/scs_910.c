@@ -9,6 +9,9 @@
                 for SCS-910 20-chn analog in
 
   $Log$
+  Revision 1.6  2004/10/29 13:11:51  midas
+  Changed UNIPOLAR to DIFFERENTIAL
+
   Revision 1.5  2004/10/29 11:16:06  midas
   Added N_CHANNEL
 
@@ -36,12 +39,12 @@ extern bit DEBUG_MODE;
 
 char code node_name[] = "SCS-910";
 
-#undef UNIPOLAR
+#undef DIFFERENTIAL
 
-#ifdef UNIPOLAR
-#define N_CHANNEL 40
-#else
+#ifdef DIFFERENTIAL
 #define N_CHANNEL 20
+#else
+#define N_CHANNEL 40
 #endif
 
 /* declare number of sub-addresses to framework */
@@ -106,7 +109,7 @@ MSCB_INFO_VAR code variables[] = {
    { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC18", &user_data.adc[18] },
    { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC19", &user_data.adc[19] },
 
-#ifdef UNIPOLAR
+#ifndef DIFFERENTIAL
    { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC20", &user_data.adc[20] },
    { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC21", &user_data.adc[21] },
    { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC22", &user_data.adc[22] },
@@ -150,7 +153,7 @@ MSCB_INFO_VAR code variables[] = {
    { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "GAIN18", &user_data.gain[18] },
    { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "GAIN19", &user_data.gain[19] },
 
-#ifdef UNIPOLAR
+#ifndef DIFFERENTIAL
    { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "GAIN20", &user_data.gain[20] },
    { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "GAIN21", &user_data.gain[21] },
    { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "GAIN22", &user_data.gain[22] },
@@ -364,10 +367,10 @@ void read_adc24(unsigned char n, unsigned char a, unsigned long *d)
    set_adc_ncs(n, 1);
 }
 
-#ifdef UNIPOLAR
-unsigned char code adc_index[] = {14, 15, 4, 5, 2, 3, 0, 1, 6, 7};
-#else
+#ifdef DIFFERENTIAL
 unsigned char code adc_index[] = {12, 10, 9, 8, 11};
+#else
+unsigned char code adc_index[] = {14, 15, 4, 5, 2, 3, 0, 1, 6, 7};
 #endif
 
 static unsigned char iadc, ichn;
@@ -389,10 +392,10 @@ void adc_read()
 
    read_adc24(iadc, REG_ADCDATA, &value);
 
-#ifdef UNIPOLAR
-   ivalue = iadc * 10 + ichn;
-#else
+#ifdef DIFFERENTIAL
    ivalue = iadc * 5 + ichn;
+#else
+   ivalue = iadc * 10 + ichn;
 #endif
 
    /* convert to volts */
@@ -407,10 +410,10 @@ void adc_read()
 
    /* start next channel on this ADC */
    next = ichn+1;
-#ifdef UNIPOLAR
-   if (next == 10)
-#else
+#ifdef DIFFERENTIAL
    if (next == 5)
+#else
+   if (next == 10)
 #endif
      next = 0;
    i = adc_index[next];
@@ -421,10 +424,10 @@ void adc_read()
    if (iadc == 4) {
      iadc = 0;
      ichn++;
-#ifdef UNIPOLAR
-     if (ichn == 10)
-#else
+#ifdef DIFFERENTIAL
      if (ichn == 5)
+#else
+     if (ichn == 10)
 #endif
         ichn = 0;
    }
