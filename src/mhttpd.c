@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.124  2000/05/08 15:19:36  midas
+  Display alarm condition for internal alarms
+
   Revision 1.123  2000/05/08 14:29:38  midas
   Added delete option in ELog
 
@@ -2992,6 +2995,7 @@ BOOL  display_run_number, allow_delete;
 
   if (equal_ustring(command, "new"))
     {
+    al_trigger_alarm("CsI Scaler", "CsI #115 fluctuated by 0.02", "Warning", "Deviation > 0.02", AT_INTERNAL);
     show_elog_new(NULL, FALSE, NULL);
     return;
     }
@@ -5014,7 +5018,7 @@ char  str[256], ref[256], condition[256], value[256];
     else if (index == AT_INTERNAL)
       {
       rsprintf("<tr><th align=center colspan=6 bgcolor=#A0FFFF>Internal alarms</tr>\n");
-      rsprintf("<tr><th>Alarm<th>State<th>First triggered<th>Class<th colspan=2>Condition</tr>\n");
+      rsprintf("<tr><th>Alarm<th>State<th>First triggered<th>Class<th colspan=2>Condition/Message</tr>\n");
       }
 
     /* go through all alarms */
@@ -5099,10 +5103,14 @@ char  str[256], ref[256], condition[256], value[256];
           rsprintf("<td colspan=2>");
           strencode(condition);
           }
-        else if (index == AT_INTERNAL && triggered)
+        else if (index == AT_INTERNAL)
           {
           size = sizeof(str);
-          db_get_value(hDB, hkey, "Alarm message", str, &size, TID_STRING);
+          if (triggered)
+            db_get_value(hDB, hkey, "Alarm message", str, &size, TID_STRING);
+          else
+            db_get_value(hDB, hkey, "Condition", str, &size, TID_STRING);
+
           rsprintf("<td colspan=2>%s", str);
           }
 
