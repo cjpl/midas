@@ -15,6 +15,9 @@
  *  Application :
  *  Author      : Pierre-Andre Amaudruz Data Acquisition Group
  *  $Log$
+ *  Revision 1.12  2005/02/18 06:29:56  olchanski
+ *  Fix compilation on VxWorks
+ *
  *  Revision 1.11  2004/10/06 18:56:55  pierre
  *  fix definition MVME
  *
@@ -413,7 +416,7 @@ INLINE int cam_init(void)
    int branch = 0, crate, vmecrate, err, am;
 
    /* Open in A24D16 */
-   vh = vme_open(0, MVME_A24D16);
+   vh = vme_open(0, MVME_AMOD_A24);
    if (vh >= 0) {
       am = MVME_AMOD_A24_ND;
       vme_ioctl(vh, MVME_IOCTL_AMOD_SET, &am);
