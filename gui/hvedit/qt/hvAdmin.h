@@ -10,6 +10,9 @@
     email                : andreas.suter@psi.ch
 
   $Log$
+  Revision 1.2  2003/10/27 11:22:59  suter_a
+  use new QSettings for default settings. Changed the routines accordingly.
+
   Revision 1.1  2003/05/09 10:08:09  midas
   Initial revision
 
@@ -36,8 +39,6 @@
 
 #include <qstring.h>
 
-#include "midas.h"
-
 class hvAdmin
 {
   // construct
@@ -55,15 +56,15 @@ class hvAdmin
     QString hvA_midas_odb_hv_measured;
     QString hvA_midas_odb_hv_current;
     QString hvA_midas_odb_hv_current_limit;
-    BOOL    b_hvA_default_dir_hv_settings;
-    BOOL    b_hvA_default_dir_docu;
-    BOOL    b_hvA_midas_odb_hv_root;
-    BOOL    b_hvA_midas_odb_hv_names;
-    BOOL    b_hvA_midas_odb_hv_demand;
-    BOOL    b_hvA_midas_odb_hv_measured;
-    BOOL    b_hvA_midas_odb_hv_current;
-    BOOL    b_hvA_midas_odb_hv_current_limit;
-    
+    bool    b_hvA_default_dir_hv_settings;
+    bool    b_hvA_default_dir_docu;
+    bool    b_hvA_midas_odb_hv_root;
+    bool    b_hvA_midas_odb_hv_names;
+    bool    b_hvA_midas_odb_hv_demand;
+    bool    b_hvA_midas_odb_hv_measured;
+    bool    b_hvA_midas_odb_hv_current;
+    bool    b_hvA_midas_odb_hv_current_limit;
+
   // operations
   public:
     QString *getHVDefaultDir() { return &hvA_default_dir_hv_settings; };
