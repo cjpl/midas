@@ -14,6 +14,9 @@
                 Brown, Prentice Hall
 
   $Log$
+  Revision 1.41  1999/09/17 11:48:08  midas
+  Alarm system half finished
+
   Revision 1.40  1999/09/15 08:57:10  midas
   Fixed bug im send_tcp
 
@@ -1519,6 +1522,7 @@ INT ss_mutex_wait_for(HNDLE mutex_handle, INT timeout)
   Function value:
     SS_SUCCESS              Successful completion
     SS_NO_MUTEX             Invalid mutex handle
+    SS_TIMEOUT              Timeout
 
 \********************************************************************/
 {
@@ -1530,6 +1534,9 @@ INT ss_mutex_wait_for(HNDLE mutex_handle, INT timeout)
                                timeout == 0 ? INFINITE : timeout);
   if (status == WAIT_FAILED)
     return SS_NO_MUTEX;
+  if (status == WAIT_TIMEOUT)
+    return SS_TIMEOUT;
+
   return SS_SUCCESS;
 #endif /* OS_WINNT */
 #ifdef OS_VMS
@@ -1549,52 +1556,61 @@ INT ss_mutex_wait_for(HNDLE mutex_handle, INT timeout)
 
 #endif /* OS_VXWORKS */
 #ifdef OS_UNIX
- {
+{
+  DWORD  start_time;
   struct sembuf sb;
 
 #if (defined(OS_LINUX) && !defined(_SEM_SEMUN_UNDEFINED)) || defined(OS_FREEBSD)
   union semun arg;
 #else
-    union semun {
-      INT             val;
-      struct semid_ds *buf;
-      ushort          *array;
-    } arg;
+  union semun {
+    INT             val;
+    struct semid_ds *buf;
+    ushort          *array;
+  } arg;
 #endif
     
-    sb.sem_num = 0;
-    sb.sem_op = -1; /* decrement semaphore */
-    sb.sem_flg = SEM_UNDO;
+  sb.sem_num = 0;
+  sb.sem_op = -1; /* decrement semaphore */
+  sb.sem_flg = SEM_UNDO;
     
-    /* don't request the mutex when in asynchronous state
-       and mutex was locked already by foreground process */
-    if (ss_in_async_routine_flag)
-      if (semctl(mutex_handle, 0, GETPID, arg) == getpid())
-        if (semctl(mutex_handle, 0, GETVAL, arg) == 0)
-	  {
-            skip_mutex_handle = mutex_handle;
-            return SS_SUCCESS;
-	  }
+  /* don't request the mutex when in asynchronous state
+     and mutex was locked already by foreground process */
+  if (ss_in_async_routine_flag)
+    if (semctl(mutex_handle, 0, GETPID, arg) == getpid())
+      if (semctl(mutex_handle, 0, GETVAL, arg) == 0)
+        {
+        skip_mutex_handle = mutex_handle;
+        return SS_SUCCESS;
+        }
     
-    skip_mutex_handle = -1;
+  skip_mutex_handle = -1;
     
-    do
+  start_time = ss_millitime();
+
+  do
+    {
+    status = semop(mutex_handle, &sb, 1);
+        
+    /* return on success */
+    if (status == 0)
+      break;
+        
+    /* retry if interrupted by a ss_wake signal */
+    if (errno == EINTR)
       {
-        status = semop(mutex_handle, &sb, 1);
+      /* return if timeout expired */
+      if (ss_millitime() - start_time > timeout)
+        return SS_TIMEOUT;
+
+      continue;
+      }
         
-        /* return on success */
-        if (status == 0)
-          break;
-        
-        /* retry if interrupted by a ss_wake signal */
-        if (errno == EINTR)
-          continue;
-        
-        return SS_NO_MUTEX;
-      } while (1);
+    return SS_NO_MUTEX;
+    } while (1);
     
-    return SS_SUCCESS;
-  }
+  return SS_SUCCESS;
+}
 #endif /* OS_UNIX */
   
 #ifdef OS_MSDOS

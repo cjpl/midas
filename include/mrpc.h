@@ -7,6 +7,9 @@
   Contents:     Symbolic constants for internal RPC functions
 
   $Log$
+  Revision 1.12  1999/09/17 11:48:05  midas
+  Alarm system half finished
+
   Revision 1.11  1999/09/15 13:33:32  midas
   Added remote el_submit functionality
 
@@ -124,6 +127,9 @@
 #define RPC_HS_GET_EVENT_ID             11309
 
 #define RPC_EL_SUBMIT                   11400
+
+#define RPC_AL_CHECK                    11500
+#define RPC_AL_TRIGGER_ALARM            11501
 
 #define RPC_RC_TRANSITION               12000
 

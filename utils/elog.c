@@ -6,6 +6,9 @@
   Contents:     Electronic logbook utility   
 
   $Log$
+  Revision 1.6  1999/09/17 11:48:08  midas
+  Alarm system half finished
+
   Revision 1.5  1999/09/16 07:36:10  midas
   Added automatic host name in author field
 
@@ -34,6 +37,7 @@ char type_list[20][NAME_LENGTH] = {
   "Fix",
   "Complaints",
   "Reply",
+  "Alarm",
   "Test",
   "Other"
 };
@@ -145,7 +149,7 @@ char      author[80], type[80], system[80], subject[256], text[10000], attachmen
 char      host_name[256], exp_name[NAME_LENGTH], str[256], lhost_name[256];
 char      *buffer;
 struct hostent *phe;
-INT       i, size, status, run_number, fh;
+INT       i, size, status, fh;
 HNDLE     hkey;
 
   /* turn off system message */
@@ -259,10 +263,6 @@ usage:
       }
     }
 
-  /* get run number */
-  size = sizeof(run_number);
-  db_get_value(hDB, 0, "/Runinfo/Run number", &run_number, &size, TID_INT);
-
   /*---- open attachment file ----*/
 
   if (attachment[0])
@@ -316,7 +316,7 @@ usage:
   strcat(author, lhost_name);
 
   /* now submit message */
-  el_submit(run_number, author, type, system, subject, text, "", "plain", 
+  el_submit(0, author, type, system, subject, text, "", "plain", 
             attachment, buffer, size, str, sizeof(str));
 
   free(buffer);

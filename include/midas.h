@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.38  1999/09/17 11:48:04  midas
+  Alarm system half finished
+
   Revision 1.37  1999/09/15 13:33:32  midas
   Added remote el_submit functionality
 
@@ -598,6 +601,12 @@ typedef          INT       HNDLE;
 #define EL_FIRST_MSG                905
 #define EL_LAST_MSG                 906
 
+/* Alarm */
+#define AL_SUCCESS                    1
+#define AL_INVALID_CLASS           1002
+#define AL_ERROR_ODB               1003
+#define AL_RESET                   1004
+
 /* Slow control commands */
 #define CMD_INIT                      1
 #define CMD_EXIT                      2
@@ -1157,6 +1166,8 @@ INT EXPRT cm_connect_client(char *client_name, HNDLE *hConn);
 INT EXPRT cm_disconnect_client(HNDLE hConn, BOOL bShutdown);
 INT EXPRT cm_set_experiment_database(HNDLE hDB, HNDLE hKeyClient);
 INT EXPRT cm_get_experiment_database(HNDLE *hDB, HNDLE *hKeyClient);
+INT EXPRT cm_set_experiment_mutex(INT mutex_alarm, INT mutex_elog);
+INT EXPRT cm_get_experiment_mutex(INT *mutex_alarm, INT *mutex_elog);
 INT EXPRT cm_set_client_info(HNDLE hDB, HNDLE *hKeyClient, char *host_name, char *client_name, INT computer_id, char *password);
 INT EXPRT cm_get_client_info(char *client_name);
 INT EXPRT cm_set_watchdog_params(BOOL call_watchdog, INT timeout);
@@ -1376,6 +1387,11 @@ INT EXPRT el_submit(int run, char *author, char *type, char *system, char *subje
               char *buffer, INT buffer_size, char *tag, INT tag_size);
 INT EXPRT el_search_message(char *tag, int *fh, BOOL walk);
 INT EXPRT el_search_run(int run, char *return_tag);
+
+/*---- Alarm functions ----*/
+INT EXPRT al_check();
+INT EXPRT al_trigger_alarm(char *alarm_class, char *alarm_message);
+INT EXPRT al_reset_alarm(char *alarm_class);
 
 /*---- analyzer functions ----*/
 void EXPRT test_register(ANA_TEST *t);

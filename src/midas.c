@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.48  1999/09/17 11:48:06  midas
+  Alarm system half finished
+
   Revision 1.47  1999/09/15 13:33:34  midas
   Added remote el_submit functionality
 
@@ -236,6 +239,8 @@ static INT            _send_sock;
 
 static void           (*_debug_print)(char*) = NULL;
 static INT            _debug_mode = 0;
+
+static INT            _watchdog_last_called = 0;
 
 /* table for transition functions */
 
@@ -850,8 +855,9 @@ static HNDLE _hDB=0;         /* Database handle */
 static INT   _hardware_type;                                  
 static char  _client_name[NAME_LENGTH];
 static char  _path_name[MAX_STRING_LENGTH];
-static INT  _call_watchdog     = TRUE;
-static INT  _watchdog_timeout  = DEFAULT_WATCHDOG_TIMEOUT;
+static INT   _call_watchdog     = TRUE;
+static INT   _watchdog_timeout  = DEFAULT_WATCHDOG_TIMEOUT;
+static INT   _mutex_alarm, _mutex_elog;
 
 /*------------------------------------------------------------------*/
 
@@ -1548,7 +1554,7 @@ INT cm_connect_experiment1(char *host_name, char *exp_name,
 
 \********************************************************************/
 {
-INT   status, i;
+INT   status, i, mutex_elog, mutex_alarm;
 char  local_host_name[HOST_NAME_LENGTH];
 char  client_name1[NAME_LENGTH];
 char  password[NAME_LENGTH], str[NAME_LENGTH], exp_name1[NAME_LENGTH];
@@ -1619,6 +1625,21 @@ HNDLE hDB, hKeyClient;
       }
 
     cm_set_path(exptab[i].directory);
+
+    /* create alarm and elog mutexes */
+    status = ss_mutex_create("alarm", &mutex_alarm);
+    if (status != SS_CREATED && status != SS_SUCCESS)
+      {
+      cm_msg(MERROR,"cm_connect_experiment", "Cannot create alarm mutex");
+      return status;
+      }
+    status = ss_mutex_create("elog", &mutex_elog);
+    if (status != SS_CREATED && status != SS_SUCCESS)
+      {
+      cm_msg(MERROR,"cm_connect_experiment", "Cannot create elog mutex");
+      return status;
+      }
+    cm_set_experiment_mutex(mutex_alarm, mutex_elog);
     }
 
   /* open ODB */
@@ -2042,6 +2063,7 @@ char local_host_name[HOST_NAME_LENGTH], client_name[80];
 
 #ifdef LOCAL_ROUTINES
     ss_alarm(0, cm_watchdog);
+    _watchdog_last_called = 0;
 #endif
 
     /* delete client info */
@@ -2122,6 +2144,33 @@ INT cm_set_experiment_database(HNDLE hDB, HNDLE hKeyClient)
 
 /*------------------------------------------------------------------*/
 
+INT cm_set_experiment_mutex(INT mutex_alarm, INT mutex_elog)
+/********************************************************************\
+
+  Routine: cm_set_experiment_mutex
+
+  Purpose: Set the handle to the experiment wide mutexes
+
+  Input:
+    INT    mutex_alarm      Alarm mutex
+    INT    mutex_elog       Elog mutex
+
+  Output:
+    none
+
+  Function value:
+    CM_SUCCESS              Successful completion
+
+\********************************************************************/
+{
+  _mutex_alarm = mutex_alarm;
+  _mutex_elog  = mutex_elog;
+
+  return CM_SUCCESS;
+}
+
+/*------------------------------------------------------------------*/
+
 INT cm_get_experiment_database(HNDLE *hDB, HNDLE *hKeyClient)
 /********************************************************************\
 
@@ -2156,6 +2205,35 @@ INT cm_get_experiment_database(HNDLE *hDB, HNDLE *hKeyClient)
     if (hKeyClient != NULL)
       *hKeyClient = rpc_get_server_option(RPC_CLIENT_HANDLE);
     }
+
+  return CM_SUCCESS;
+}
+
+/*------------------------------------------------------------------*/
+
+INT cm_get_experiment_mutex(INT *mutex_alarm, INT *mutex_elog)
+/********************************************************************\
+
+  Routine: cm_get_experiment_mutex
+
+  Purpose: Get the handle to the experiment wide mutexes
+
+  Input:
+    none
+
+  Output:
+    INT    mutex_alarm      Alarm mutex
+    INT    mutex_elog       Elog mutex
+
+  Function value:
+    CM_SUCCESS              Successful completion
+
+\********************************************************************/
+{
+  if (mutex_alarm)
+    *mutex_alarm = _mutex_alarm;
+  if (mutex_elog)
+    *mutex_elog = _mutex_elog;
 
   return CM_SUCCESS;
 }
@@ -3528,8 +3606,6 @@ INT i;
 /*-- Watchdog routines ---------------------------------------------*/
 
 #ifdef LOCAL_ROUTINES
-
-static INT  _watchdog_last_called=0;
 
 /*------------------------------------------------------------------*/
 
@@ -8191,7 +8267,7 @@ INT i;
         break;
     }
   else if (_server_type == ST_SINGLE || _server_type == ST_REMOTE)
-    i = _server_acception_index - 1;
+    i = max(0,_server_acception_index - 1);
   else
     i = 0;
 
@@ -13675,13 +13751,29 @@ INT el_submit(int run, char *author, char *type, char *system, char *subject,
 
 #ifdef LOCAL_ROUTINES
 {
-int     size, fh, status;
+INT     size, fh, status, run_number, mutex;
 struct  tm *tms;
 char    file_name[256], afile_name[256], dir[256], str[256], 
         start_str[80], end_str[80], last[80];
 HNDLE   hDB;
 time_t  now;
 char    message[10000], *p;
+
+  cm_get_experiment_database(&hDB, NULL);
+
+  /* request semaphore */
+  cm_get_experiment_mutex(NULL, &mutex);
+  ss_mutex_wait_for(mutex, 0);
+
+  /* get run number from ODB if not given */
+  if (run > 0)
+    run_number = 0;
+  else
+    {
+    /* get run number */
+    size = sizeof(run_number);
+    db_get_value(hDB, 0, "/Runinfo/Run number", &run_number, &size, TID_INT);
+    }
 
   /* generate filename for attachment */
   afile_name[0] = file_name[0] = 0;
@@ -13701,7 +13793,6 @@ char    message[10000], *p;
     /* assemble ELog filename */
     if (p[0])
       {
-      cm_get_experiment_database(&hDB, NULL);
       dir[0] = 0;
       if (hDB > 0)
         {
@@ -13767,7 +13858,10 @@ char    message[10000], *p;
 
   fh = open(file_name, O_CREAT | O_RDWR | O_BINARY, 0644);
   if (fh < 0)
+    {
+    ss_mutex_release(mutex);
     return EL_FILE_ERROR;
+    }
 
   strcpy(str, ctime(&now)+4);
   str[15] = 0;
@@ -13777,7 +13871,7 @@ char    message[10000], *p;
     sprintf(message+strlen(message), "Thread: %16s %16s\n", reply_to, "0");
   else
     sprintf(message+strlen(message), "Thread: %16s %16s\n", "0", "0");
-  sprintf(message+strlen(message), "Run: %d\n", run);
+  sprintf(message+strlen(message), "Run: %d\n", run_number);
   sprintf(message+strlen(message), "Author: %s\n", author);
   sprintf(message+strlen(message), "Type: %s\n", type);
   sprintf(message+strlen(message), "System: %s\n", system);
@@ -13843,6 +13937,9 @@ char    message[10000], *p;
 
       } while (TRUE);
     }
+
+  /* release elog mutex */
+  ss_mutex_release(mutex);
 }
 #endif /* LOCAL_ROUTINES */
 
