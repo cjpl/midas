@@ -2,6 +2,10 @@
 # $Revision$
 #
 
+# ElogLang.French - French interface file for ELOG 1.2.7+
+# version 1.2 - 13/12/01 by Fred Pacquier <fredp@mygale.org>
+#
+
 #
 # Menu commands
 #
@@ -14,7 +18,7 @@ Last day = Dernier jour
 Last 10 = 10 Dernières entrées
 Config = Configuration
 Change Password = Changer le mot de passe
-Logout = Se Déconnecter
+Logout = Se déconnecter
 Help = Aide
 Back = Retour
 Submit = Valider
@@ -37,17 +41,17 @@ Go to = Aller à
 #
 Wrong password =  Mot de passe incorrect
 Please login = Connexion
-Username = utilisateur
-Password = mot de passe
-Old Password = ancien mot de passe
-New Password = nouveau mot de passe
+Username = Utilisateur
+Password = Mot de passe
+Old Password = Ancien mot de passe
+New Password = Nouveau mot de passe
 ELOG password = mot de passe ELOG
 ELOG change password = Changer le mot de passe ELOG
 Please enter password to obtain write access = Entrez le mot de passe pour l'accès en écriture
 Please enter password to obtain administration access = Entrez le mot de passe pour l'accès administrateur
 Several logbooks are defined on this host = Il y a plusieurs registres sur ce serveur
 Please select the one to connect to = Choisissez celui auquel vous souhaitez vous connecter
-Change password for user = changer le mot de passe de l'utilisateur
+Change password for user = Changer le mot de passe de l'utilisateur
 
 #
 # Entry display
@@ -69,6 +73,8 @@ To delete an old attachment, enter <code>&lt;delete&gt;</code> in the new attach
 Attachment = Attachement
 Attachments = Attachements
 No message available = Aucune entrée disponible
+Reply to this = Réponse
+In reply to = En réponse à
 
 #
 # Submit entry
@@ -87,6 +93,7 @@ New attachment = Nouvel attachement
 #
 # Find display
 #
+ELOG search result = ELOG - résultat de la recherche
 ELOG find = Recherche ELOG
 Find = Chercher
 Search = Lancer la recherche
