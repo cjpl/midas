@@ -1,6 +1,6 @@
 /********************************************************************\
 
-  Name:         hvr_300.c
+  Name:         hvr_200.c
   Created by:   Stefan Ritt
 
 
@@ -9,28 +9,7 @@
                 for HVR_300 High Voltage Regulator
 
   $Log$
-  Revision 1.1  2004/02/24 13:30:07  midas
-  Initial revision
-
-  Revision 1.7  2004/01/07 12:56:15  midas
-  Chaned line length
-
-  Revision 1.6  2004/01/07 12:52:23  midas
-  Changed indentation
-
-  Revision 1.5  2003/11/13 12:27:11  midas
-  Extent regulation region to 5V
-
-  Revision 1.4  2003/09/23 09:20:56  midas
-  Second version: new resistor values, config bits, split CSR
-
-  Revision 1.3  2003/03/19 16:35:03  midas
-  Eliminated configuration parameters
-
-  Revision 1.2  2003/02/25 09:42:08  midas
-  Fixed problem with current trip during ramping
-
-  Revision 1.1  2003/02/21 13:42:28  midas
+  Revision 1.2  2004/03/04 14:33:01  midas
   Initial revision
 
 \********************************************************************/
@@ -45,10 +24,10 @@ extern bit DEBUG_MODE;
 char code node_name[] = "HVR-200";
 
 /* calculate voltage divider */
-#define DIVIDER ((41E6 + 56E3) / 56E3)
+#define DIVIDER ((41E6 + 33E3) / 33E3)
 
 /* current resistor */
-#define RCURR 100E3
+#define RCURR 56E3
 
 /* current multiplier */
 #define CUR_MULT 15
@@ -87,8 +66,9 @@ sbit DAC_DIN  = P1 ^ 4;         // Data in
 #define REG_ADCGAIN    6
 #define REG_IOCONTROL  7
 
+#define ADC_SF_VALUE  82        // SF value for 50Hz rejection
+
 bit demand_changed, ramp_up, ramp_down, current_limit_changed;
-unsigned long demand_changed_time;
 float v_actual;
 
 /*---- Define variable parameters returned to CMD_GET_INFO command ----*/
@@ -180,9 +160,6 @@ void user_init(unsigned char init)
 {
    P2MDOUT = 0xF0; //P2.4-7: enable Push/Pull for LEDs
 
-//   P2MDIN  = 0xF3; // P2.2 as analog input
-
-
    SET_ADDR = 1; /* use as input */
 
    /* initial nonzero EEPROM values */
@@ -191,7 +168,7 @@ void user_init(unsigned char init)
       user_data.trip_cnt = 0;
       user_data.ramp_up = 0;
       user_data.ramp_down = 0;
-      user_data.v_limit = 1200;
+      user_data.v_limit = 3000;
       user_data.i_limit = 3000;
       user_data.trip_max = 0;
 
@@ -204,8 +181,8 @@ void user_init(unsigned char init)
    }
 
    /* default control register */
-   //##user_data.control = CONTROL_REGULATION;
-   user_data.control = CONTROL_HV_ON;
+   user_data.control = CONTROL_REGULATION;
+   //user_data.control = CONTROL_HV_ON;
    user_data.status = 0;
    JU1 = 1;
    JU2 = 1;
@@ -216,8 +193,7 @@ void user_init(unsigned char init)
    ADC_NRDY = 1; // input
    ADC_DIN = 1;  // input
 
-   write_adc(REG_FILTER, 82);                   // SF value for 50Hz rejection
-   //write_adc(REG_MODE, 3);                      // continuous conversion
+   write_adc(REG_FILTER, ADC_SF_VALUE);
 
    /* force update */
    demand_changed = 1;
@@ -233,7 +209,6 @@ void user_write(unsigned char index) reentrant
    if (index == 0) {
       /* indicate new demand voltage */
       demand_changed = 1;
-      demand_changed_time = time();
    }
 
    if (index == 1 || index == 4) {
@@ -242,15 +217,12 @@ void user_write(unsigned char index) reentrant
 
       /* indicate new demand voltage */
       demand_changed = 1;
-      demand_changed_time = time();
    }
 
    /* re-check voltage limit */
    if (index == 8) {
       demand_changed = 1;
-      demand_changed_time = time();
    }
-
 }
 
 /*---- User read function ------------------------------------------*/
@@ -486,32 +458,42 @@ unsigned char code adc_index[8] = {7, 6, 5, 4, 3, 2, 1, 0 };
 
 void adc_read(unsigned char channel, float *value)
 {
-   unsigned long d;
-
-   /*
-   write_adc(REG_IOCONTROL, 0x33);
-   write_adc(REG_IOCONTROL, 0x30);
-   */
+   unsigned long d, start_time;
 
    /* start conversion */
    channel = adc_index[channel % 8];
    write_adc(REG_CONTROL, channel << 4 | 0x0F); // adc_chn, +2.56V range
    write_adc(REG_MODE, 2);                      // single conversion
 
+   start_time = time();
+
    while (ADC_NRDY) {
       yield();
       ramp_hv();      // do ramping while reading ADC
+
+      /* abort if no ADC ready after 300ms */
+      if (time() - start_time > 30) {
+         
+         /* reset ADC */
+         ADC_NRES = 0;
+         delay_ms(100);
+         ADC_NRES = 1;
+         delay_ms(300);
+
+         write_adc(REG_FILTER, ADC_SF_VALUE);
+
+         *value = 0;
+         return;
+      }
    }
 
    read_adc24(REG_ADCDATA, &d);
 
-   // read_adc8(REG_STATUS, &s);
-
    /* convert to volts */
    *value = ((float)d / (1l<<24)) * 2.56;
 
-   /* round result to 5 digits */
-   *value = floor(*value*1E5+0.5)/1E5;
+   /* round result to 6 digits */
+   *value = floor(*value*1E6+0.5)/1E6;
 }
 
 /*------------------------------------------------------------------*/
@@ -647,8 +629,6 @@ void ramp_hv(void)
                ramp_up = 0;
                user_data.status &= ~STATUS_RAMP_UP;
 
-               /* make regulation loop faster */
-               demand_changed_time = time();
             }
 
             set_hv(0, v_actual);
@@ -670,8 +650,6 @@ void ramp_hv(void)
                ramp_down = 0;
                user_data.status &= ~STATUS_RAMP_DOWN;
 
-               /* make regulation loop faster */
-               demand_changed_time = time();
             }
 
             set_hv(0, v_actual);
@@ -690,36 +668,41 @@ void regulation(void)
        !(user_data.status & STATUS_ILIMIT)) {
       if (user_data.control & CONTROL_REGULATION) {
 
-         /* apply correction if outside +-0.02V window */
-         if (user_data.v_meas > user_data.v_demand + 0.02 ||
-             user_data.v_meas < user_data.v_demand - 0.02) {
-            v_actual = user_data.v_demand;
-            user_data.v_dac += user_data.v_demand - user_data.v_meas;
+         v_actual = user_data.v_demand;
 
+         /* correct if difference is at least half a LSB */
+         if (fabs(user_data.v_demand - user_data.v_meas) / DIVIDER / 2.5 * 65536 > 0.5) {
+   
+            user_data.v_dac += user_data.v_demand - user_data.v_meas;
+   
             /* only allow +-2V fine regulation range */
             if (user_data.v_dac < user_data.v_demand - 2)
                user_data.v_dac = user_data.v_demand - 2;
-
+   
             if (user_data.v_dac > user_data.v_demand + 2)
                user_data.v_dac = user_data.v_demand + 2;
-
+   
             demand_changed = 0;
             set_hv(0, user_data.v_dac);
          }
+
       } else {
          /* set voltage directly */
          if (demand_changed) {
-            if (!(user_data.control & CONTROL_HV_ON))
-               set_hv(0, 0);
-            else {
-               v_actual = user_data.v_demand;
-               user_data.v_dac = user_data.v_demand;
-               set_hv(0, user_data.v_demand);
-            }
+            v_actual = user_data.v_demand;
+            user_data.v_dac = user_data.v_demand;
+            set_hv(0, user_data.v_demand);
 
             demand_changed = 0;
          }
       }
+   }
+
+   /* if HV switched off, set DAC to zero */
+   if (!(user_data.control & CONTROL_HV_ON) && demand_changed) {
+      user_data.v_dac = 0;
+      set_hv(0, 0);
+      demand_changed = 0;
    }
 }
 
