@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.154  2001/06/27 12:29:35  midas
+  Added auto refresh to history page
+
   Revision 1.153  2001/06/15 09:13:09  midas
   Display "<" and ">" correctly
 
@@ -554,7 +557,7 @@ struct {
   ""
 };
 
-void show_hist_page(char *path, char *buffer, int *buffer_size);
+void show_hist_page(char *path, char *buffer, int *buffer_size, int refresh);
 
 /*------------------------------------------------------------------*/
 
@@ -950,7 +953,7 @@ void show_help_page()
 
 /*------------------------------------------------------------------*/
 
-void show_header(HNDLE hDB, char *title, char *path, int colspan)
+void show_header(HNDLE hDB, char *title, char *path, int colspan, int refresh)
 {
 time_t now;
 char   str[256];
@@ -961,7 +964,13 @@ int    size;
   rsprintf("Server: MIDAS HTTP %s\r\n", cm_get_version());
   rsprintf("Content-Type: text/html\r\n\r\n");
 
-  rsprintf("<html><head><title>%s</title></head>\n", title);
+  rsprintf("<html><head>\n");
+  
+  /* auto refresh */
+  if (refresh)
+    rsprintf("<meta http-equiv=\"Refresh\" content=\"%02d\">\n", refresh);
+    
+  rsprintf("<title>%s</title></head>\n", title);
   rsprintf("<body><form method=\"GET\" action=\"%s%s\">\n\n",
             mhttpd_url, path);
 
@@ -1446,7 +1455,7 @@ CHN_STATISTICS chn_stats;
 	   rsprintf("<tr><td><a href=\"%s\">%s</a><td align=center bgcolor=#00FF00>%s@%s", 
 		    ref, key.name, equipment.frontend_name, equipment.frontend_host);
 	 else
-	   rsprintf("<tr><td><a href=\"%s\">%s</a><td align=center bgcolor=#F6BF00>%s@%s",
+	   rsprintf("<tr><td><a href=\"%s\">%s</a><td align=center bgcolor=#FFFF00>%s@%s",
 		    ref, key.name, equipment.frontend_name, equipment.frontend_host);
       }
 	 
@@ -2277,7 +2286,7 @@ BOOL   allow_delete;
 
   /* header */
   sprintf(str, "EL/%s", path);
-  show_header(hDB, "Delete ELog entry", str, 1);
+  show_header(hDB, "Delete ELog entry", str, 1, 0);
 
   if (!allow_delete)
     {
@@ -3152,7 +3161,7 @@ struct hostent *phe;
             }
           *strchr(str, '?') = 0;
           }
-        show_hist_page(str, buffer[i], &size);
+        show_hist_page(str, buffer[i], &size, 0);
         strcpy(att_file[i], str);
         _attachment_buffer[i] = buffer[i];
         _attachment_size[i] = size;
@@ -3891,7 +3900,7 @@ char   data_str[256], hex_str[256];
     }
 
   sprintf(str, "SC/%s/%s", eq_name, group);
-  show_header(hDB, "MIDAS slow control", str, 5);
+  show_header(hDB, "MIDAS slow control", str, 5, 0);
 
   /*---- menu buttons ----*/
 
@@ -4711,7 +4720,7 @@ char  data_str[256];
 
   cm_get_experiment_database(&hDB, NULL);
 
-  show_header(hDB, "Start run", "", 1);
+  show_header(hDB, "Start run", "", 1, 0);
 
   rsprintf("<tr><th bgcolor=#A0A0FF colspan=2>Start new run</tr>\n");
   rsprintf("<tr><td>Run number");
@@ -4788,7 +4797,7 @@ KEY    key;
     strcpy(dec_path, "");
     }
 
-  show_header(hDB, "MIDAS online database", enc_path, 1);
+  show_header(hDB, "MIDAS online database", enc_path, 1, 0);
 
   /* find key via path */
   status = db_find_key(hDB, 0, dec_path, &hkeyroot);
@@ -5018,7 +5027,7 @@ char   data[10000];
       }
     db_get_key(hDB, hkey, &key);
 
-    show_header(hDB, "Set value", enc_path, 1);
+    show_header(hDB, "Set value", enc_path, 1, 0);
 
     if (index >0)
       rsprintf("<input type=hidden name=index value=\"%d\">\n", index);
@@ -5152,7 +5161,7 @@ HNDLE hDB, hkey;
     {
     /* without value, show find dialog */
 
-    show_header(hDB, "Find value", enc_path, 1);
+    show_header(hDB, "Find value", enc_path, 1, 0);
 
     rsprintf("<tr><th bgcolor=#A0A0FF colspan=2>Find string in Online Database</tr>\n");
     rsprintf("<tr><td>Enter substring (case insensitive)\n");
@@ -5172,7 +5181,7 @@ HNDLE hDB, hkey;
     }
   else
     {
-    show_header(hDB, "Search results", enc_path, 1);
+    show_header(hDB, "Search results", enc_path, 1, 0);
 
     rsprintf("<tr><td colspan=2 bgcolor=#A0A0A0>\n");
     rsprintf("<input type=submit name=cmd value=Find>\n");
@@ -5212,7 +5221,7 @@ KEY   key;
     {
     /* without value, show create dialog */
 
-    show_header(hDB, "Create ODB entry", enc_path, 1);
+    show_header(hDB, "Create ODB entry", enc_path, 1, 0);
 
     rsprintf("<tr><th bgcolor=#A0A0FF colspan=2>Create ODB entry</tr>\n");
 
@@ -5334,7 +5343,7 @@ KEY   key;
     {
     /* without value, show delete dialog */
 
-    show_header(hDB, "Delete ODB entry", enc_path, 1);
+    show_header(hDB, "Delete ODB entry", enc_path, 1, 0);
 
     rsprintf("<tr><th bgcolor=#A0A0FF colspan=2>Delete ODB entry</tr>\n");
 
@@ -5416,7 +5425,7 @@ char  str[256], ref[256], condition[256], value[256];
 
   cm_get_experiment_database(&hDB, NULL);
 
-  show_header(hDB, "Alarms", "", 3);
+  show_header(hDB, "Alarms", "", 3, 0);
 
   /*---- menu buttons ----*/
 
@@ -5612,7 +5621,7 @@ char  str[256], ref[256], command[256], name[80];
     return;
     }
 
-  show_header(hDB, "Programs", "", 3);
+  show_header(hDB, "Programs", "", 3, 0);
 
   /*---- menu buttons ----*/
 
@@ -5764,7 +5773,7 @@ HNDLE hDB;
 
   cm_get_experiment_database(&hDB, NULL);
 
-  show_header(hDB, "Configure", "", 1);
+  show_header(hDB, "Configure", "", 1, 0);
 
   rsprintf("<tr><th bgcolor=#A0A0FF colspan=2>Configure</tr>\n");
 
@@ -6648,7 +6657,7 @@ error:
 
 /*------------------------------------------------------------------*/
 
-void show_hist_page(char *path, char *buffer, int *buffer_size)
+void show_hist_page(char *path, char *buffer, int *buffer_size, int refresh)
 {
 char   str[256], ref[256], ref2[256], paramstr[256];
 char   *poffset, *pscale, *pmag, *pindex;
@@ -6758,7 +6767,7 @@ float  factor[2];
   cm_get_experiment_database(&hDB, NULL);
 
   sprintf(str, "HS/%s", path);
-  show_header(hDB, "History", str, 1);
+  show_header(hDB, "History", str, 1, refresh);
 
   /* menu buttons */
   rsprintf("<tr><td colspan=2 bgcolor=#C0C0C0>\n");
@@ -7310,7 +7319,7 @@ struct tm *gmt;
         return;
       }
 
-    show_hist_page(dec_path+3, NULL, NULL);
+    show_hist_page(dec_path+3, NULL, NULL, refresh);
     return;
     }
 
