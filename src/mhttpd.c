@@ -6,6 +6,9 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
+  Revision 1.19  1999/08/26 15:19:05  midas
+  Added Next/Previous button
+
   Revision 1.18  1999/08/24 13:45:44  midas
   - Made Ctrl-C working
   - Re-enabled reuse of port address
@@ -77,7 +80,10 @@ BOOL connected;
 #define MAX_PARAM  32
 
 char _param[MAX_PARAM][NAME_LENGTH];
-char _value[MAX_PARAM][256];
+char _value[MAX_PARAM][10000];
+
+int el_retrieve(char *tag, char *date, int *run, char *author, char *type, char *subject, 
+                char *text, int *size);
 
 /*------------------------------------------------------------------*/
 
@@ -211,14 +217,11 @@ char *pd, *p, str[256];
 
 /*------------------------------------------------------------------*/
 
-#define MESSAGE_SIZE 20
-char message_buffer[MESSAGE_SIZE][256];
-int  message_index;
+char message_buffer[256];
 
 INT print_message(const char *message)
 {
-  strcpy(message_buffer[message_index], message);
-  message_index = (message_index + 1) % MESSAGE_SIZE;
+  strcpy(message_buffer, message);
   return SUCCESS;
 }
 
@@ -413,7 +416,7 @@ int    size;
 
 /*------------------------------------------------------------------*/
 
-void show_status_page(HNDLE hDB, int refresh)
+void show_status_page(int refresh)
 {
 int  i, size;
 BOOL flag;
@@ -424,7 +427,7 @@ time_t now, difftime;
 DWORD  analyzed;
 double analyze_ratio;
 float  value;
-HNDLE  hkey, hsubkey, hkeytmp;
+HNDLE  hDB, hkey, hsubkey, hkeytmp;
 KEY    key;
 BOOL   ftp_mode;
 
@@ -434,6 +437,8 @@ EQUIPMENT_INFO equipment;
 EQUIPMENT_STATS equipment_stats;
 CHN_SETTINGS chn_settings;
 CHN_STATISTICS chn_stats;
+
+  cm_get_experiment_database(&hDB, NULL);
 
   /* create/correct /runinfo structure */
   db_create_record(hDB, 0, "/Runinfo", strcomb(runinfo_str));
@@ -485,8 +490,10 @@ CHN_STATISTICS chn_stats;
   rsprintf("<input type=submit name=cmd value=ODB>\n");
   rsprintf("<input type=submit name=cmd value=CNAF>\n");
   rsprintf("<input type=submit name=cmd value=Messages>\n");
+  rsprintf("<input type=submit name=cmd value=ELog>\n");
   rsprintf("<input type=submit name=cmd value=Config>\n");
   rsprintf("<input type=submit name=cmd value=Help>\n");
+
   rsprintf("</tr>\n\n");
 
   /*---- aliases ----*/
@@ -518,7 +525,7 @@ CHN_STATISTICS chn_stats;
         else
           sprintf(ref, "%sAlias/%s", mhttpd_url, key.name);
 
-        rsprintf("<a href=\"%s\">%s</a> ", ref, key.name);
+        rsprintf("<a href=\"%s\" target=\"%s\">%s</a> ", ref, key.name, key.name);
         }
       }
     }
@@ -791,12 +798,8 @@ CHN_STATISTICS chn_stats;
 
   rsprintf("<tr><td colspan=6>");
 
-  i = message_index - 1;
-  if (i<0)
-    i = MESSAGE_SIZE -1 ;
-
-  if (message_buffer[i][0])
-    rsprintf("<b>%s</b>", message_buffer[i]);
+  if (message_buffer[0])
+    rsprintf("<b>%s</b>", message_buffer);
 
   rsprintf("</tr>");
 
@@ -834,11 +837,14 @@ CHN_STATISTICS chn_stats;
 
 /*------------------------------------------------------------------*/
 
-void show_messages_page(HNDLE hDB, int refresh)
+void show_messages_page(int refresh, int more)
 {
-int i, size;
-char str[256];
+int  size;
+char str[256], buffer[10000], *pline;
 time_t now;
+HNDLE hDB;
+
+  cm_get_experiment_database(&hDB, NULL);
 
   /* header */
   rsprintf("HTTP/1.0 200 Document follows\r\n");
@@ -846,7 +852,8 @@ time_t now;
   rsprintf("Content-Type: text/html\r\n\r\n");
 
   /* auto refresh */
-  rsprintf("<html>\n<meta http-equiv=\"Refresh\" content=\"%d\">\n\n", refresh);
+  if (refresh > 0)
+    rsprintf("<html>\n<meta http-equiv=\"Refresh\" content=\"%d\">\n\n", refresh);
 
   rsprintf("<head><title>MIDAS messages</title></head>\n");
   rsprintf("<body><form method=\"GET\" action=\"%s\">\n", mhttpd_url);
@@ -880,16 +887,37 @@ time_t now;
   /*---- messages ----*/
 
   rsprintf("<tr><td colspan=2>\n");
-  if (message_buffer[message_index][0])
-    i = message_index;
-  else 
-    i = 0;
+
+  /* more button */
+  if (!more)
+    rsprintf("<input type=submit name=cmd value=More><p>\n");
+
+  if (more)
+    size = sizeof(buffer);
+  else
+    size = 1000;
+
+  cm_msg_retrieve(buffer, &size);
+  pline = buffer;
+
   do
     {
-    if (message_buffer[i][0])
-      rsprintf("%s<br>\n", message_buffer[i]);
-    i = (i + 1) % MESSAGE_SIZE;
-    } while (i != message_index && message_buffer[i][0]);
+    /* extract single line */
+    if (strchr(pline, '\n'))
+      {
+      *strchr(pline, '\n') = 0;
+      }
+    else
+      break;
+
+    if (strchr(pline, '\r'))
+      *strchr(pline, '\r') = 0;
+
+    rsprintf("%s<br>\n", pline);
+    pline += strlen(pline);
+    while (! *pline) pline++;
+
+    } while (1);
 
   rsprintf("</tr></table>\n");
   rsprintf("</body></html>\r\n");
@@ -897,14 +925,548 @@ time_t now;
 
 /*------------------------------------------------------------------*/
 
-void show_sc_page(HNDLE hDB, char *path)
+void show_elog_page(int mode)
+{
+int   i, size, run, status;
+char  str[256], date[80], author[80], type[80], subject[256], text[10000];
+HNDLE hDB;
+
+  cm_get_experiment_database(&hDB, NULL);
+
+  /* header */
+  rsprintf("HTTP/1.0 200 Document follows\r\n");
+  rsprintf("Server: MIDAS HTTP %s\r\n", cm_get_version());
+  rsprintf("Content-Type: text/html\r\n\r\n");
+
+  rsprintf("<html><head><title>MIDAS ELog</title></head>\n");
+  rsprintf("<body><form method=\"GET\" action=\"%s\">\n", mhttpd_url);
+
+  /* define hidden field for experiment */
+  if (exp_name[0])
+    rsprintf("<input type=hidden name=exp value=\"%s\">\n", exp_name);
+
+  rsprintf("<table border=2 cellpadding=2 width=\"100%%\">\n");
+
+  /*---- title row ----*/
+
+  size = sizeof(str);
+  str[0] = 0;
+  db_get_value(hDB, 0, "/Experiment/Name", str, &size, TID_STRING);
+
+  rsprintf("<tr><th colspan=1 bgcolor=#A0A0FF>MIDAS Electronic Logbook");
+  rsprintf("<th colspan=1 bgcolor=#A0A0FF>Experiment \"%s\"</tr>\n", str);
+
+  /*---- menu buttons ----*/
+
+  rsprintf("<tr><td bgcolor=#C0C0C0>\n");
+
+  rsprintf("<input type=submit name=cmd value=New>\n");
+  rsprintf("<input type=submit name=cmd value=Reply>\n");
+  rsprintf("<input type=submit name=cmd value=Query>\n");
+
+  rsprintf("<td bgcolor=#C0C0C0>");
+  rsprintf("<input type=submit name=cmd value=Next>\n");
+  rsprintf("<input type=submit name=cmd value=Previous>\n");
+
+  rsprintf("</tr>\n\n");
+
+  /*---- messages ----*/
+
+  size = sizeof(text);
+  strcpy(str, getparam("msg"));
+
+  if (mode == 1)
+    strcat(str, "+1");
+  if (mode == -1)
+    strcat(str, "-1");
+  
+  status = el_retrieve(str, date, &run, author, type, subject, text, &size);
+
+  if (status != EL_SUCCESS)
+    rsprintf("<tr><td bgcolor=#FF0000 colspan=2 align=center><h1>No message available</h1></tr>\n");
+  else
+    {
+    /* define hidden field for message id */
+    rsprintf("<input type=hidden name=msg value=\"%s\">\n", str);
+
+    rsprintf("<tr><td bgcolor=#FFFF00>Entry date: <b>%s</b>", date);
+
+    rsprintf("<td bgcolor=#FFFF00>Run number: <b>%d</b></tr>", run);
+
+    rsprintf("<tr><td bgcolor=#FFA0A0>Author: <b>%s</b>\n", author);
+    rsprintf("<td bgcolor=#FFA0A0>Type: <b>%s</b></tr>\n", type);
+
+    rsprintf("<tr><td bgcolor=#A0FFA0 colspan=2>Subject: <b>%s</b></tr>\n", subject);
+
+    rsprintf("<tr><td colspan=2>\n");
+
+    for (i=0 ; i<(int) strlen(text) ; i++)
+      {
+      switch (text[i])
+        {
+        case '\n': rsprintf("<br>\n"); break;
+        case '<': rsprintf("&lt;"); break;
+        case '>': rsprintf("&gt;"); break;
+        case '&': rsprintf("&amp;"); break;
+        case '\"': rsprintf("&quot;"); break;
+        default: rsprintf("%c", text[i]);
+        }
+      }
+    rsprintf("</tr>\n", text);
+    }
+
+  rsprintf("</table>\n");
+  rsprintf("</body></html>\r\n");
+}
+
+/*------------------------------------------------------------------*/
+
+void show_elog_new()
+{
+int  size, run_number;
+char str[256];
+time_t now;
+HNDLE hDB;
+
+  cm_get_experiment_database(&hDB, NULL);
+
+  /* header */
+  rsprintf("HTTP/1.0 200 Document follows\r\n");
+  rsprintf("Server: MIDAS HTTP %s\r\n", cm_get_version());
+  rsprintf("Content-Type: text/html\r\n\r\n");
+
+  rsprintf("<html><head><title>MIDAS ELog</title></head>\n");
+//  rsprintf("<body><form method=\"POST\" action=\"%s\" enctype=\"multipart/form-data\">\n", mhttpd_url);
+  rsprintf("<body><form method=\"GET\" action=\"%s\">\n", mhttpd_url);
+
+  /* define hidden field for experiment */
+  if (exp_name[0])
+    rsprintf("<input type=hidden name=exp value=\"%s\">\n", exp_name);
+
+  rsprintf("<table border=3 cellpadding=2>\n");
+
+  /*---- title row ----*/
+
+  size = sizeof(str);
+  str[0] = 0;
+  db_get_value(hDB, 0, "/Experiment/Name", str, &size, TID_STRING);
+
+  rsprintf("<tr><th colspan=1 bgcolor=#A0A0FF>MIDAS Electronic Logbook");
+  rsprintf("<th colspan=1 bgcolor=#A0A0FF>Experiment \"%s\"</tr>\n", str);
+
+  /*---- menu buttons ----*/
+
+  rsprintf("<tr><td colspan=2 bgcolor=#C0C0C0>\n");
+
+  rsprintf("<input type=submit name=cmd value=Submit>\n");
+  rsprintf("</tr>\n\n");
+
+  /*---- entry form ----*/
+
+  time(&now);
+  rsprintf("<tr><td bgcolor=#FFFF00>Entry date: %s", ctime(&now));
+
+  size = sizeof(run_number);
+  db_get_value(hDB, 0, "/Runinfo/Run number", &run_number, &size, TID_INT);
+  rsprintf("<td bgcolor=#FFFF00>Run number: ");
+  rsprintf("<input type=\"text\" size=10 maxlength=10 name=\"run\" value=\"%d\"</tr>", run_number);
+
+  rsprintf("<tr><td bgcolor=#FFA0A0>Author: <input type=\"text\" size=\"15\" maxlength=\"80\" name=\"Author\">\n");
+
+  rsprintf("<td bgcolor=#FFA0A0>Type: <select name=\"type\">\n");
+
+  rsprintf("<option value=\"Routine\"> Routine\n");
+  rsprintf("<option value=\"Shift summary\"> Shift summary\n");
+  rsprintf("<option value=\"Fix\"> Fix\n");
+  rsprintf("<option value=\"Minor error\"> Minor error\n");
+  rsprintf("<option value=\"Severe error\"> Severe error\n");
+  rsprintf("<option value=\"Complaints\"> Complaints\n");
+  rsprintf("<option value=\"Test\"> Test\n");
+  rsprintf("<option value=\"Other\"> Other\n");
+  rsprintf("</select></tr>\n");
+
+  rsprintf("<tr><td colspan=2 bgcolor=#A0FFA0>Subject: <input type=text size=80 maxlength=\"256\" name=Subject></tr>\n");
+
+  rsprintf("<tr><td colspan=2>Text:<br><textarea rows=10 cols=80 name=Text></textarea></tr>\n");
+
+  /* attachment */
+  rsprintf("<tr><td colspan=2>Attachment: <input type=\"file\" size=\"50\" maxlength=\"256\" name=\"attfile\" value=\"\"> </tr>\n");
+
+  rsprintf("</tr></table>\n");
+  rsprintf("</body></html>\r\n");
+}
+
+/*------------------------------------------------------------------*/
+
+int el_submit(int run, char *author, char *type, char *subject, 
+              char *text, char *tag)
+/********************************************************************\
+
+  Routine: el_submit
+
+  Purpose: Submit an ELog entry
+
+  Input:
+    int    run              Run number
+    char   *author          Message author
+    char   *type            Message type
+    char   *subject         Subject
+    char   *text            Message text
+
+  Output:
+    char   *tag             Message tag in the form YYMMDD.offset
+
+  Function value:
+    EL_SUCCESS              Successful completion
+
+\********************************************************************/
+{
+int     size, fh;
+struct  tm *tms;
+char    file_name[256], dir[256], str[256], start_str[80], end_str[80];
+HNDLE   hDB;
+time_t  now;
+char    message[10000];
+
+  /* generate new file name YYMMDD.log in data directory */
+  cm_get_experiment_database(&hDB, NULL);
+  size = sizeof(dir);
+  memset(dir, 0, size);
+  db_get_value(hDB, 0, "/Logger/Data dir", dir, &size, TID_STRING);
+  if (dir[0] != 0)
+    if (dir[strlen(dir)-1] != DIR_SEPARATOR)
+      strcat(dir, DIR_SEPARATOR_STR);
+
+#if !defined(OS_VXWORKS) 
+#if !defined(OS_VMS)
+  tzset();
+#endif
+#endif
+
+  time(&now);
+  tms = localtime(&now);
+
+  sprintf(file_name, "%s%02d%02d%02d.log", dir, 
+          tms->tm_year, tms->tm_mon+1, tms->tm_mday);
+
+  fh = open(file_name, O_CREAT | O_RDWR | O_BINARY, 0644);
+  if (fh < 0)
+    return EL_FILE_ERROR;
+
+  strcpy(str, ctime(&now)+4);
+  str[15] = 0;
+
+  sprintf(message, "Date: %s\n", str);
+  sprintf(message+strlen(message), "Run: %d\n", run);
+  sprintf(message+strlen(message), "Author: %s\n", author);
+  sprintf(message+strlen(message), "Type: %s\n", type);
+  sprintf(message+strlen(message), "Subject: %s\n", subject);
+  sprintf(message+strlen(message), "========================================\n");
+  strcat(message, text);
+  strcat(message, "\n");
+
+  /* go to EOF and record position */
+  lseek(fh, 0, SEEK_END);
+  size = 0;
+  sprintf(start_str, "$Start$: %8d %8d\n", TELL(fh), size);
+  sprintf(end_str,   "$End$:   %8d %8d\n\f", TELL(fh), size);
+
+  size = strlen(message)+strlen(start_str)+strlen(end_str);
+
+  if (tag != NULL)
+    sprintf(tag, "%02d%02d%02d.%d", tms->tm_year, tms->tm_mon+1, tms->tm_mday, TELL(fh));
+
+  sprintf(start_str, "$Start$: %8d %8d\n", TELL(fh), size);
+  sprintf(end_str,   "$End$:   %8d %8d\n\f", TELL(fh), size);
+
+  write(fh, start_str, strlen(start_str));
+  write(fh, message, strlen(message));
+  write(fh, end_str, strlen(end_str));
+  close(fh);
+
+  return EL_SUCCESS;
+}
+
+/*------------------------------------------------------------------*/
+
+void el_decode(char *message, char *key, char *result)
+{
+char *pc;
+
+  *result = 0;
+
+  if (strstr(message, key))
+    {
+    for (pc=strstr(message, key)+strlen(key) ; *pc != '\n' ; )
+      *result++ = *pc++;
+    *result = 0;
+    }
+}
+
+INT el_search_message(char *tag, int *fh)
+{
+int    i, size, offset, direction;
+struct tm *tms;
+DWORD  lt, ltime;
+char   str[256], file_name[256], dir[256];
+HNDLE  hDB;
+
+#if !defined(OS_VXWORKS) 
+#if !defined(OS_VMS)
+  tzset();
+#endif
+#endif
+
+  /* open file */
+  cm_get_experiment_database(&hDB, NULL);
+  size = sizeof(dir);
+  memset(dir, 0, size);
+  db_get_value(hDB, 0, "/Logger/Data dir", dir, &size, TID_STRING);
+  if (dir[0] != 0)
+    if (dir[strlen(dir)-1] != DIR_SEPARATOR)
+      strcat(dir, DIR_SEPARATOR_STR);
+
+  /* check tag for direction */
+  direction = 0;
+  if (strpbrk(tag, "+-"))
+    {
+    direction = atoi(strpbrk(tag, "+-"));
+    *strpbrk(tag, "+-") = 0;
+    }
+
+  /* if tag is given, open file directly */
+  if (tag[0])
+    {
+    strcpy(str, tag);
+    if (strchr(str, '.'))
+      {
+      offset = atoi(strchr(str, '.')+1);
+      *strchr(str, '.') = 0;
+      }
+    else
+      return EL_FILE_ERROR;
+
+    sprintf(file_name, "%s%s.log", dir, str);
+
+    *fh = open(file_name, O_RDONLY | O_BINARY, 0644);
+    if (*fh < 0)
+      return EL_FILE_ERROR;
+
+    lseek(*fh, offset, SEEK_SET);
+    }
+
+  /* open most recent file if no tag given */
+  if (tag[0] == 0)
+    {
+    time(&ltime);
+    lt = ltime;
+    do
+      {
+      tms = localtime(&lt);
+
+      sprintf(file_name, "%s%02d%02d%02d.log", dir, 
+              tms->tm_year, tms->tm_mon+1, tms->tm_mday);
+      *fh = open(file_name, O_RDONLY | O_BINARY, 0644);
+
+      lt -= 3600*24; /* one day back */
+
+      } while (*fh < 0 && (INT)ltime-(INT)lt < 3600*24*365);
+
+    if (*fh < 0)
+      return EL_FILE_ERROR;
+
+    /* remember tag */
+    sprintf(tag, "%02d%02d%02d", tms->tm_year, tms->tm_mon+1, tms->tm_mday);
+
+    lseek(*fh, 0, SEEK_END);
+
+    sprintf(tag+strlen(tag), ".%d", TELL(*fh));
+    }
+
+
+  if (direction == -1)
+    {
+    /* seek previous message */
+
+    if (TELL(*fh) == 0)
+      {
+      /* go back one day */
+      }
+
+    /* read previous message size */
+    lseek(*fh, -28, SEEK_CUR);
+    i = read(*fh, str, 28);
+    if (i <= 0)
+      return EL_FILE_ERROR;
+
+    if (strncmp(str, "$End$: ", 7) == 0)
+      {
+      size = atoi(str+18);
+      lseek(*fh, -size, SEEK_CUR);
+      }
+    else
+      return EL_FILE_ERROR;
+
+    /* adjust tag */
+    sprintf(strchr(tag, '.')+1, "%d", TELL(*fh));
+    }
+
+  if (direction == 1)
+    {
+    /* seek next message */
+
+    /* read current message size */
+    i = read(*fh, str, 28);
+    if (i <= 0)
+      return EL_FILE_ERROR;
+    lseek(*fh, -28, SEEK_CUR);
+
+    if (strncmp(str, "$Start$: ", 9) == 0)
+      {
+      size = atoi(str+18);
+      lseek(*fh, size, SEEK_CUR);
+      }
+    else
+      return EL_FILE_ERROR;
+
+    /* if EOF, goto next day */
+    i = read(*fh, str, 28);
+    if (i < 28)
+      {
+      }
+    lseek(*fh, -28, SEEK_CUR);
+
+    /* adjust tag */
+    sprintf(strchr(tag, '.')+1, "%d", TELL(*fh));
+    }
+
+  return EL_SUCCESS;
+}
+
+INT el_retrieve(char *tag, char *date, int *run, char *author, char *type, char *subject, 
+                char *text, int *textsize)
+/********************************************************************\
+
+  Routine: el_retrieve
+
+  Purpose: Retrieve an ELog entry by its message tab
+
+  Input:
+    char   *tag             tag in the form YYMMDD.offset
+    int    *size            Size of text buffer
+
+  Output:
+    char   *tag             tag of retrieved message
+    char   *date            Date/time of message recording
+    int    *run             Run number
+    char   *author          Message author
+    char   *type            Message type
+    char   *subject         Subject
+    char   *text            Message text
+    int    *size            Actual message text size
+
+  Function value:
+    EL_SUCCESS              Successful completion
+
+\********************************************************************/
+{
+int     size, fh, offset, status;
+char    str[256], *p;
+char    message[10000];
+
+  if (tag[0])
+    {
+    el_search_message(tag, &fh);
+    }
+  else
+    {
+    /* open most recent message */
+    strcpy(tag, "-1");
+    status = el_search_message(tag, &fh);
+    if (status != EL_SUCCESS)
+      return status;
+    }
+
+  /* extract message size */
+  offset = TELL(fh);
+  read(fh, str, 26);
+  size = atoi(str+18);
+  read(fh, message, size);
+
+  close(fh);
+
+  /* decode message */
+  if (strstr(message, "Run: "))
+    *run = atoi(strstr(message, "Run: ")+5);
+    
+  el_decode(message, "Date: ", date);
+  el_decode(message, "Author: ", author);
+  el_decode(message, "Type: ", type);
+  el_decode(message, "Subject: ", subject);
+
+  p = strstr(message, "========================================\n");
+
+  if (p != NULL)
+    {
+    p += 41;
+    if ((int) strlen(p) >= *textsize)
+      {
+      strncpy(text, p, *textsize-1);
+      text[*textsize-1] = 0;
+      return EL_TRUNCATED;
+      }
+    else
+      {
+      strcpy(text, p);
+    
+      /* strip end tag */
+      if (strstr(text, "$End$"))
+        *strstr(text, "$End$") = 0;
+      
+      *textsize = strlen(text);
+      }
+    }
+  else
+    {
+    text[0] = 0;
+    *textsize = 0;
+    }
+
+  return EL_SUCCESS;
+}
+
+/*------------------------------------------------------------------*/
+
+void submit_elog()
+{
+char str[80];
+
+  el_submit(atoi(getparam("run")), getparam("author"), getparam("type"),
+            getparam("subject"), getparam("text"), str);
+
+  rsprintf("HTTP/1.0 302 Found\r\n");
+  rsprintf("Server: MIDAS HTTP %s\r\n", cm_get_version());
+
+  if (exp_name[0])
+    rsprintf("Location: %sEL/?exp=%s&msg=%s\n\n<html>redir</html>\r\n", mhttpd_url, exp_name, str);
+  else
+    rsprintf("Location: %sEL/?msg=%s\n\n<html>redir</html>\r\n", mhttpd_url, str);
+
+}
+
+/*------------------------------------------------------------------*/
+
+
+void show_sc_page(char *path)
 {
 int    i, j, k, colspan, size;
 char   str[256], eq_name[32], group[32], name[32], ref[256];
 char   group_name[MAX_GROUPS][32], data[256];
-HNDLE  hkey, hkeyeq, hkeyset, hkeynames, hkeyvar, hkeyroot;
+HNDLE  hDB, hkey, hkeyeq, hkeyset, hkeynames, hkeyvar, hkeyroot;
 KEY    eqkey, key, varkey;
 char   data_str[256], hex_str[256];
+
+  cm_get_experiment_database(&hDB, NULL);
 
   /* split path into equipment and group */
   strcpy(eq_name, path);
@@ -1351,15 +1913,17 @@ char   data_str[256], hex_str[256];
 
 /*------------------------------------------------------------------*/
 
-void show_cnaf_page(HNDLE hDB)
+void show_cnaf_page()
 {
 char  *cmd, str[256], *pd;
 int   c, n, a, f, d, q, x, r, ia, id, w;
 int   i, size, status;
-HNDLE hrootkey, hsubkey, hkey;
+HNDLE hDB, hrootkey, hsubkey, hkey;
 
 static char client_name[NAME_LENGTH];
 static HNDLE hconn = 0;
+
+  cm_get_experiment_database(&hDB, NULL);
 
   /* find FCNA server if not specified */
   if (hconn == 0)
@@ -1704,15 +2268,17 @@ char  data_str[256];
 
 /*------------------------------------------------------------------*/
 
-void show_odb_page(HNDLE hDB, char *enc_path, char *dec_path)
+void show_odb_page(char *enc_path, char *dec_path)
 {
 int    i, j, size, status;
 char   str[256], tmp_path[256], url_path[256], 
        data_str[256], hex_str[256], ref[256], keyname[32];
 char   *p, *pd;
 char   data[10000];
-HNDLE  hkey, hkeyroot;
+HNDLE  hDB, hkey, hkeyroot;
 KEY    key;
+
+  cm_get_experiment_database(&hDB, NULL);
 
   if (strcmp(enc_path, "root") == 0)
     {
@@ -1911,13 +2477,15 @@ KEY    key;
 
 /*------------------------------------------------------------------*/
 
-void show_set_page(HNDLE hDB, char *enc_path, char *dec_path, char *group, int index, char *value)
+void show_set_page(char *enc_path, char *dec_path, char *group, int index, char *value)
 {
 int    status, size;
-HNDLE  hkey;
+HNDLE  hDB, hkey;
 KEY    key;
 char   data_str[256], str[256], *p, eq_name[NAME_LENGTH];
 char   data[10000];
+
+  cm_get_experiment_database(&hDB, NULL);
 
   /* show set page if no value is given */
   if (value[0] == 0)
@@ -2049,9 +2617,11 @@ char   data[10000];
 
 /*------------------------------------------------------------------*/
 
-void show_find_page(HNDLE hDB, char *enc_path, char *value)
+void show_find_page(char *enc_path, char *value)
 {
-HNDLE hkey;
+HNDLE hDB, hkey;
+
+  cm_get_experiment_database(&hDB, NULL);
 
   if (value[0] == 0)
     {
@@ -2102,14 +2672,16 @@ HNDLE hkey;
 
 /*------------------------------------------------------------------*/
 
-void show_create_page(HNDLE hDB, char *enc_path, char *dec_path, char *value, 
+void show_create_page(char *enc_path, char *dec_path, char *value, 
                       int index, int type)
 {
 char  str[256], link[256], *p;
 char  data[10000];
 int   status;
-HNDLE hkey;
+HNDLE hDB, hkey;
 KEY   key;
+
+  cm_get_experiment_database(&hDB, NULL);
 
   if (value[0] == 0)
     {
@@ -2224,12 +2796,14 @@ KEY   key;
 
 /*------------------------------------------------------------------*/
 
-void show_delete_page(HNDLE hDB, char *enc_path, char *dec_path, char *value, int index)
+void show_delete_page(char *enc_path, char *dec_path, char *value, int index)
 {
 char  str[256];
 int   i, status;
-HNDLE hkeyroot, hkey;
+HNDLE hDB, hkeyroot, hkey;
 KEY   key;
+
+  cm_get_experiment_database(&hDB, NULL);
 
   if (value[0] == 0)
     {
@@ -2307,9 +2881,12 @@ KEY   key;
 
 /*------------------------------------------------------------------*/
 
-void show_config_page(HNDLE hDB, int refresh)
+void show_config_page(int refresh)
 {
 char str[80];
+HNDLE hDB;
+
+  cm_get_experiment_database(&hDB, NULL);
 
   show_header(hDB, "Configure", "", 1);
 
@@ -2576,7 +3153,7 @@ struct tm *gmt;
 
     if (value[0] == 0)
       {
-      show_start_page(hDB);
+      show_start_page();
       }
     else
       {
@@ -2678,7 +3255,7 @@ struct tm *gmt;
 
   if (equal_ustring(command, "set"))
     {
-    show_set_page(hDB, enc_path, dec_path, group, index, value);
+    show_set_page(enc_path, dec_path, group, index, value);
     return;
     }
 
@@ -2686,7 +3263,7 @@ struct tm *gmt;
   
   if (equal_ustring(command, "find"))
     {
-    show_find_page(hDB, enc_path, value);
+    show_find_page(enc_path, value);
     return;
     }
 
@@ -2694,7 +3271,7 @@ struct tm *gmt;
   
   if (equal_ustring(command, "create"))
     {
-    show_create_page(hDB, enc_path, dec_path, value, index, atoi(getparam("type")));
+    show_create_page(enc_path, dec_path, value, index, atoi(getparam("type")));
     return;
     }
 
@@ -2702,7 +3279,7 @@ struct tm *gmt;
   
   if (equal_ustring(command, "delete"))
     {
-    show_delete_page(hDB, enc_path, dec_path, value, index);
+    show_delete_page(enc_path, dec_path, value, index);
     return;
     }
 
@@ -2710,7 +3287,7 @@ struct tm *gmt;
   
   if (equal_ustring(command, "CNAF") || strncmp(path, "/CNAF", 5) == 0)
     {
-    show_cnaf_page(hDB);
+    show_cnaf_page();
     return;
     }
 
@@ -2718,15 +3295,59 @@ struct tm *gmt;
   
   if (equal_ustring(command, "config"))
     {
-    show_config_page(hDB, refresh);
+    show_config_page(refresh);
     return;
     }
 
-  /*---- Messages command --------------------------------------------*/
+  /*---- Messages command ------------------------------------------*/
   
   if (equal_ustring(command, "messages"))
     {
-    show_messages_page(hDB, refresh);
+    show_messages_page(refresh, FALSE);
+    return;
+    }
+
+  if (equal_ustring(command, "more"))
+    {
+    show_messages_page(0, TRUE);
+    return;
+    }
+
+  /*---- ELog command ----------------------------------------------*/
+
+  if (equal_ustring(command, "elog"))
+    {
+    redirect("EL/");
+    return;
+    }
+
+  if (strncmp(path, "EL/", 3) == 0)
+    {
+    show_elog_page(0);
+    return;
+    }
+  
+  if (equal_ustring(command, "new"))
+    {
+    show_elog_new();
+    return;
+    }
+
+  if (equal_ustring(command, "submit"))
+    {
+    submit_elog();
+    return;
+    }
+
+  if (equal_ustring(command, "next"))
+    {
+    show_elog_page(1);
+    return;
+    }
+
+  if (equal_ustring(command, "previous"))
+    {
+    show_elog_page(-1);
     return;
     }
 
@@ -2755,7 +3376,7 @@ struct tm *gmt;
   
   if (strncmp(path, "SC/", 3) == 0)
     {
-    show_sc_page(hDB, dec_path+3);
+    show_sc_page(dec_path+3);
     return;
     }
 
@@ -2763,7 +3384,7 @@ struct tm *gmt;
   
   if (path[0] == 0)
     {
-    show_status_page(hDB, refresh);
+    show_status_page(refresh);
     return;
     }
 
@@ -2771,7 +3392,7 @@ struct tm *gmt;
 
   if (path[0])
     {
-    show_odb_page(hDB, enc_path, dec_path);
+    show_odb_page(enc_path, dec_path);
     return;
     }
 }
@@ -2821,6 +3442,8 @@ char *p, *pitem;
 
 /*------------------------------------------------------------------*/
 
+char net_buffer[1000000];
+
 void server_loop(int tcp_port)
 {
 int                  status, i, refresh;
@@ -2829,7 +3452,6 @@ char                 host_name[256];
 char                 str[256], cookie_pwd[256];
 int                  lsock, sock, len, flag;
 struct hostent       *phe;
-char                 net_buffer[1000];
 struct linger        ling;
 fd_set               readfds;
 struct timeval       timeout;
@@ -2919,11 +3541,15 @@ INT                  last_time=0;
     timeout.tv_sec  = 0;
     timeout.tv_usec = 100000;
 
+#ifdef OS_UNIX
     do
       {
       status = select(FD_SETSIZE, (void *) &readfds, NULL, NULL, (void *) &timeout);
       /* if an alarm signal was cought, restart with reduced timeout */
       } while (status == -1 && errno == EINTR);
+#else
+    status = select(FD_SETSIZE, (void *) &readfds, NULL, NULL, (void *) &timeout);
+#endif
 
     if (FD_ISSET(lsock, &readfds))
       {
@@ -2943,18 +3569,25 @@ INT                  last_time=0;
         {
         i = recv(sock, net_buffer+len, sizeof(net_buffer)-len, 0);
       
+
         /* abort if connection got broken */
-        if (i<=0)
+        if (i<0)
           goto error;
 
         if (i>0)
           len += i;
 
         /* finish when empty line received */
-        if (len>4 && strcmp(&net_buffer[len-4], "\r\n\r\n") == 0)
-          break;
-        if (len>6 && strcmp(&net_buffer[len-6], "\r\r\n\r\r\n") == 0)
-          break;
+        if (strstr(net_buffer, "GET") != NULL)
+          {
+          if (len>4 && strcmp(&net_buffer[len-4], "\r\n\r\n") == 0)
+            break;
+          if (len>6 && strcmp(&net_buffer[len-6], "\r\r\n\r\r\n") == 0)
+            break;
+          }
+        else
+          printf(net_buffer);
+
 
         } while (1);
 
