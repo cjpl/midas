@@ -6,6 +6,9 @@
   Contents:     Command-line interface for the Midas Slow Control Bus
 
   $Log$
+  Revision 1.3  2001/08/31 12:23:50  midas
+  Added mutex protection
+
   Revision 1.2  2001/08/31 11:35:20  midas
   Added "wp" command in msc.c, changed parport to device in mscb.c
 
@@ -250,7 +253,10 @@ MSCB_INFO_CHN info_chn;
         status = mscb_addr(fd, CMD_PING16, addr);
         if (status != MSCB_SUCCESS)
           {
-          printf("Node %d does not respond\n", addr);
+          if (status == MSCB_MUTEX)
+            printf("MSCB used by other process\n");
+          else
+            printf("Node %d does not respond\n", addr);
           current_addr = -1;
           current_group = -1;
           }
