@@ -6,6 +6,9 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
+  Revision 1.37  2003/01/14 11:24:07  midas
+  Write error to midas.log if user does not exist
+
   Revision 1.36  2002/10/21 00:25:14  olchansk
   catch/ignore SIGPIPE
 
@@ -381,7 +384,8 @@ BOOL   inetd;
 
     /* change the directory and uid */
     if (callback.directory[0])
-      chdir(callback.directory);
+      if (chdir(callback.directory) != 0)
+        cm_msg(MERROR, "main", "Cannot change to directory \"%s\"", callback.directory);
 
 #ifdef OS_UNIX
 
@@ -391,16 +395,22 @@ BOOL   inetd;
       struct passwd *pw;
 
       pw = getpwnam(callback.user);
-
-      if(setgid(pw->pw_gid) < 0 || initgroups(pw->pw_name, pw->pw_gid) < 0)
-        cm_msg(MERROR, "main", "Unable to set group premission for user %s", callback.user);
+      if (pw == NULL)
+        {
+        cm_msg(MERROR, "main", "Cannot change UID, unknown user \"%s\"", callback.user);
+        }
       else
         {
-        if(setuid(pw->pw_uid) < 0)
-          cm_msg(MERROR, "main", "Unable to set user ID for %s", callback.user);
+        if(setgid(pw->pw_gid) < 0 || initgroups(pw->pw_name, pw->pw_gid) < 0)
+          cm_msg(MERROR, "main", "Unable to set group premission for user %s", callback.user);
         else
-          cm_msg(MLOG, "main", "Changed UID to user %s (GID %d, UID %d)", callback.user,
-                 pw->pw_gid, pw->pw_uid);
+          {
+          if(setuid(pw->pw_uid) < 0)
+            cm_msg(MERROR, "main", "Unable to set user ID for %s", callback.user);
+          else
+            cm_msg(MLOG, "main", "Changed UID to user %s (GID %d, UID %d)", callback.user,
+                   pw->pw_gid, pw->pw_uid);
+          }
         }
 
       }
