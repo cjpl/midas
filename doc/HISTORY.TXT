@@ -1,13 +1,159 @@
 Revision History
 ================
 
+Version 1.8.0, released March 6, 2000
+-------------------------------------
+
+- We made major modifications in the equipment and runinfo ODB trees so we switched
+  to a new major version.
+
+- Added deferred transitions:
+
+In some experiments, it can happen that a run transition like start/stop/pause/resume
+should only be done after certain hardware requirements are met. Examples are "scans"
+where a scan of some beamline element for example should first be finished before
+the run can be stopped. Another example is to start a run only when a target has been
+cooled down or the beam comes back after a shutdown. To accomodate this, deferred
+transitions have been introduced. Here is how it works:
+
+1) The frontend registers a deferred transition handler like
+
+  cm_register_deferred_transition(TR_STOP, callback);
+
+where callback is a function which has to decide when the transition shouldbe done.
+
+2) Write the callback function. It can look like
+
+BOOL callback(INT transition, BOOL first)
+{
+static DWORD t;
+
+  if (first)
+    {
+    t = ss_time();
+    printf("Stop requested\n");
+    }
+
+  return ss_time() > t + 10;
+}
+  
+If the transition is requested by entering "stop" in odbedit or by pressing the
+stop button in the web interface, the function is called once with first = TRUE.
+Then it is called periodically with first = FALSE and can return FALSE if the
+transition should not be performed or TRUE if it should be performed. In the above
+example all it does is to note the current time the first time, and then return TRUE
+when ten seconds have elapes. Thus the stop tranistion is deferred by ten seconds.
+Of course in a real application it has to check the hardware when it is finished.
+
+Once a client has registered a callback, the odbedit command "start/stop/.." prints
+a notification that the transition is in progress. If one wants to stop the run anyhow
+without waiting for the frontend, on can issue a "stop now" command.
+
+- Introduced "super"-events. Some experiments produce very small but many events.
+In this case, the "signal-to-noise" ratio between the MIDAS event header and the
+user data is pretty poor, since the event header contains 16 bytes. To overcome this
+problem and to improve performance, several of this small events can now be packed into
+one MIDAS event. To distinguish the events, they are called sub-events and super-events.
+To define the number of sub-event per super-event, one changes a number in the equipment
+list like:
+
+  { "Trigger",            /* equipment name */
+    1, 0,                 /* event ID, trigger mask */
+    "SYSTEM",             /* event buffer */
+
+    ...
+
+    0,                    /* stop run after this event limit */
+    1000,                 /* number of sub events */
+    0,                    /* don't log history */
+
+    ...
+  },
+  
+*** please note that all existing frontends have to be changed to contain
+    the "number of sub events" parameter. If this feature is not used, it
+    should be zero ***
+
+This causes the readout routine to be called 1000 times before any MIDAS event is
+sent to the backend. To simplify the composition of the events, the readout routine
+contains a new parameter "offset", which contains the current offset in the 
+super-event for the next sub-event.
+
+*** please also note that all existing frontends have also to be changed
+    to contain the offset parameter, even if it is not used ***
+
+If it is desired to put all sub-events into a bank, more complicated operations have
+to be performed. On the first call (offset==0), the bank has to be opened, then the
+bank has to be filled until the number of subevents is reached. To close the bank,
+the readout routine is called with offset==-1 to indicate the end of super-event.
+The code could look like this:
+
+INT read_trigger_event(char *pevent, INT offset)
+{
+static WORD *pdata;
+int    a;
+
+  if (offset == 0)
+    {
+    /* init bank structure */
+    bk_init(pevent);
+
+    /* create ADC bank */
+    bk_create(pevent, "ADC0", TID_WORD, &pdata);
+    }
+
+  if (offset == -1)
+    {
+    bk_close(pevent, pdata);
+    return bk_size(pevent);
+    }
+
+  /* read ADC values */
+  for (a=0 ; a<N_ADC ; a++)
+    cami(CRATE, SLOT_ADC, a, 0, pdata++);
+
+  if (offset == 0)
+    return N_ADC*sizeof(WORD)+sizeof(BANK_HEADER)+sizeof(BANK);
+
+  return N_ADC*sizeof(WORD);
+}
+
+- The EPICS devices driver has been revised to incorporate the ability to set the
+EPICS CA channel labels (.DESC descriptors) from the MIDAS ODB.
+
+- Auto restart has been added to the frontend. If the frontend stop the run after
+a number of events, and the /logger/auto restart falg is "y", the frontend starts
+the next run after five seconds automatically.
+
+- The rhosts directory under /Experiment/Security has been renamed to 
+"allowed hosts". In addition, an "allowed programs" directory has been added which
+can be used to grant certain MIDAS program to access the experiment without
+supplying a password, independent from where they have been started. This feature
+can be used to grant mhttpd access without password submission.
+
+- A WWW password has been added. It can be created/changed by typing webpasswd in 
+ODBEDIT just like the standard MIDAS password. Once activated, it prevents any
+web access which "modifies" the experiment, like ODB modifications, ELOG submissions
+or start/stop of the run.
+
+- Contol-C handling has been improved. In certain cases in can happen that pressing
+Control-C produces the message "Received break. Aborting...", but the program is in
+an endless loop and cannot gracefully exit. If then Ctrl-C is pressed twice, a "hard"
+abort is done, which is equivalent of killing the process (kill -9 under unix).
+
+- The file in which the analyzer running online saves and loads its last histograms
+(last.rz) can now specdified with /analyzer/output/last hist filename.
+
+- Added -P flag into analyzer to protect certain subtrees from being overwritten
+  by the ODB dump from the .mid file.
+
 Version 1.7.1, released Feb 9, 2000
 -----------------------------------
 
 - Skipped versions 1.6.5 to 1.6.9 because we switched to a new protocol, which is
   not compatible with 1.6.x. Version 1.7.0 was only for internal usage.
 
-- Fixed Y2K problem (:-)
+- Fixed Y2K problem
 
 - Added alarm system, still lacking documentation (:-(
 
