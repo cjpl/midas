@@ -6,6 +6,13 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.133  2000/08/11 07:30:59  midas
+  Reworked chaning of Slow Control values:
+  - /Equipment/<name>/Settings/Editable can contain a list of values which
+    can be chanted
+  - When clicking a variable, a in-place edit field opens instead of jumping
+    into the ODB edit mode and never coming back
+
   Revision 1.132  2000/06/20 07:24:59  midas
   Increased history/display/<panel>/name length from 32 to 64
 
@@ -3525,9 +3532,39 @@ BOOL  display_run_number, allow_delete;
 
 /*------------------------------------------------------------------*/
 
+BOOL is_editable(char *eq_name, char *var_name)
+{
+HNDLE hDB, hkey;
+KEY   key;
+char  str[256];
+int   i, size;
+
+  cm_get_experiment_database(&hDB, NULL);
+  sprintf(str, "/Equipment/%s/Settings/Editable", eq_name);
+  db_find_key(hDB, 0, str, &hkey);
+
+  /* if no editable entry found, use default */
+  if (!hkey)
+    {
+    return (equal_ustring(var_name, "Demand") ||
+            equal_ustring(var_name, "Output") ||
+            strncmp(var_name, "D_", 2) == 0);
+    }
+
+  db_get_key(hDB, hkey, &key);
+  for (i=0 ; i<key.num_values ; i++)
+    {
+    size = sizeof(str);
+    db_get_data_index(hDB, hkey, str, &size, i, TID_STRING);
+    if (equal_ustring(var_name, str))
+      return TRUE;
+    }
+  return FALSE;
+}
+
 void show_sc_page(char *path)
 {
-int    i, j, k, colspan, size;
+int    i, j, k, colspan, size, n_var, i_edit, i_set;
 char   str[256], eq_name[32], group[32], name[32], ref[256];
 char   group_name[MAX_GROUPS][32], data[256];
 HNDLE  hDB, hkey, hkeyeq, hkeyset, hkeynames, hkeyvar, hkeyroot;
@@ -3535,6 +3572,16 @@ KEY    eqkey, key, varkey;
 char   data_str[256], hex_str[256];
 
   cm_get_experiment_database(&hDB, NULL);
+
+  /* check if variable to edit */
+  i_edit = -1;
+  if (equal_ustring(getparam("cmd"), "Edit"))
+    i_edit = atoi(getparam("index"));
+
+  /* check if variable to set */
+  i_set = -1;
+  if (equal_ustring(getparam("cmd"), "Set"))
+    i_set = atoi(getparam("index"));
 
   /* split path into equipment and group */
   strcpy(eq_name, path);
@@ -3576,7 +3623,8 @@ char   data_str[256], hex_str[256];
       }
     }
 
-  show_header(hDB, "MIDAS slow control", "", 5);
+  sprintf(str, "SC/%s/%s", eq_name, group);
+  show_header(hDB, "MIDAS slow control", str, 5);
 
   /*---- menu buttons ----*/
 
@@ -3642,6 +3690,7 @@ char   data_str[256], hex_str[256];
 
   /*---- display SC ----*/
 
+  n_var = 0;
   sprintf(str, "/Equipment/%s/Settings/Names", eq_name);
   db_find_key(hDB, 0, str, &hkey);
 
@@ -3776,9 +3825,45 @@ char   data_str[256], hex_str[256];
         db_get_data_index(hDB, hkey, data, &size, i, varkey.type);
         db_sprintf(str, data, varkey.item_size, 0, varkey.type);
 
-        if (equal_ustring(varkey.name, "Demand") ||
-            equal_ustring(varkey.name, "Output"))
+        if (is_editable(eq_name, varkey.name))
           {
+          if (n_var == i_set)
+            {
+            /* set value */
+            strcpy(str, getparam("value"));
+            db_sscanf(str, data, &size, 0, varkey.type);
+            db_set_data_index(hDB, hkey, data, size, i, varkey.type);
+
+            /* read back value */
+            size = sizeof(data);
+            db_get_data_index(hDB, hkey, data, &size, i, varkey.type);
+            db_sprintf(str, data, varkey.item_size, 0, varkey.type);
+            }
+          if (n_var == i_edit)
+            {
+            rsprintf("<td align=center><input type=text size=10 maxlenth=80 name=value value=\"%s\">\n", 
+                       str);
+            rsprintf("<input type=submit size=20 name=cmd value=Set></tr>\n");
+            rsprintf("<input type=hidden name=index value=%d>\n", i_edit);
+            rsprintf("<input type=hidden name=cmd value=Set>\n");
+            n_var++;
+            }
+          else
+            {
+            if (exp_name[0])
+              sprintf(ref, "%sSC/%s/%s?cmd=Edit&index=%d&exp=%s", 
+                      mhttpd_url, eq_name, group, n_var, exp_name);
+            else
+              sprintf(ref, "%sSC/%s/%s?cmd=Edit&index=%d", 
+                      mhttpd_url, eq_name, group, n_var);
+
+            rsprintf("<td align=center><a href=\"%s\">%s</a>", 
+                      ref, str);
+            n_var++;
+            }
+
+          
+          /*
           if (exp_name[0])
             sprintf(ref, "%sEquipment/%s/Variables/%s?cmd=Set&index=%d&group=%s&exp=%s", 
                     mhttpd_url, eq_name, varkey.name, i, group, exp_name);
@@ -3788,6 +3873,7 @@ char   data_str[256], hex_str[256];
 
           rsprintf("<td align=center><a href=\"%s\">%s</a>", 
                     ref, str);
+          */
           }
         else
           rsprintf("<td align=center>%s", str);
@@ -3954,18 +4040,43 @@ char   data_str[256], hex_str[256];
           db_get_data_index(hDB, hkey, data, &size, j, varkey.type);
           db_sprintf(str, data, varkey.item_size, 0, varkey.type);
 
-          if (equal_ustring(varkey.name, "Demand") ||
-              equal_ustring(varkey.name, "Output"))
+          if (is_editable(eq_name, varkey.name))
             {
-            if (exp_name[0])
-              sprintf(ref, "%sEquipment/%s/Variables/%s?cmd=Set&index=%d&group=%s&exp=%s", 
-                      mhttpd_url, eq_name, varkey.name, j, group, exp_name);
-            else
-              sprintf(ref, "%sEquipment/%s/Variables/%s?cmd=Set&index=%d&group=%s", 
-                      mhttpd_url, eq_name, varkey.name, j, group);
+            if (n_var == i_set)
+              {
+              /* set value */
+              strcpy(str, getparam("value"));
+              db_sscanf(str, data, &size, 0, varkey.type);
+              db_set_data_index(hDB, hkey, data, size, j, varkey.type);
 
-            rsprintf("<td align=center><a href=\"%s\">%s</a>", 
-                      ref, str);
+              /* read back value */
+              size = sizeof(data);
+              db_get_data_index(hDB, hkey, data, &size, j, varkey.type);
+              db_sprintf(str, data, varkey.item_size, 0, varkey.type);
+              }
+            if (n_var == i_edit)
+              {
+              rsprintf("<td align=center><input type=text size=10 maxlenth=80 name=value value=\"%s\">\n", 
+                         str);
+              rsprintf("<input type=submit size=20 name=cmd value=Set></tr>\n");
+              rsprintf("<input type=hidden name=index value=%d>\n", i_edit);
+              rsprintf("<input type=hidden name=cmd value=Set>\n");
+              n_var++;
+              }
+            else
+              {
+              if (exp_name[0])
+                sprintf(ref, "%sSC/%s/%s?cmd=Edit&index=%d&exp=%s", 
+                        mhttpd_url, eq_name, group, n_var, exp_name);
+              else
+                sprintf(ref, "%sSC/%s/%s?cmd=Edit&index=%d", 
+                        mhttpd_url, eq_name, group, n_var);
+
+              rsprintf("<td align=center><a href=\"%s\">%s</a>", 
+                        ref, str);
+              n_var++;
+              }
+
             }
           else
             rsprintf("<td align=center>%s", str);
@@ -7076,7 +7187,8 @@ struct tm *gmt;
 
   /*---- set command -----------------------------------------------*/
 
-  if (equal_ustring(command, "set"))
+  if (equal_ustring(command, "set") &&
+      strncmp(path, "SC/", 3) != 0)
     {
     sprintf(str, "%s?cmd=set", enc_path);
     if (!check_web_password(cookie_wpwd, str, experiment))
