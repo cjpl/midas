@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.187  2002/02/04 03:00:10  midas
+  Fixed bug with offset
+
   Revision 1.186  2002/02/04 02:41:21  midas
   Added offset for history display
 
@@ -7242,7 +7245,7 @@ float       upper_limit[MAX_VARS], lower_limit[MAX_VARS];
         }
 
       /* apply factor and offset */
-      y[i][j] *= factor[i] + offset[i];
+      y[i][j] = y[i][j]*factor[i] + offset[i];
 
       /* calculate ymin and ymax */
       if ((i == 0 || index != -1) && j == 0)
