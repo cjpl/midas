@@ -7,6 +7,9 @@
                 linked with user code to form a complete frontend
 
   $Log$
+  Revision 1.13  2000/02/24 22:38:19  midas
+  Outcommented USE_EVENT_CHANNEL
+
   Revision 1.12  2000/02/24 22:29:24  midas
   Added deferred transitions
 
@@ -78,7 +81,7 @@ extern INT  interrupt_configure(INT cmd, INT source, PTYPE adr);
 
 /* globals */
 
-#undef USE_EVENT_CHANNEL
+/* #define USE_EVENT_CHANNEL */
 
 #define USER_MAX_EVENT_SIZE 10000 /* max event size for the FE in bytes */ 
 #define SERVER_CACHE_SIZE  100000 /* event cache before buffer */
