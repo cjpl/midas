@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.208  2002/05/13 21:53:18  midas
+  Removed bars in run marker display
+
   Revision 1.207  2002/05/13 21:47:00  midas
   Avoid overwriting of run marker number
 
@@ -7839,7 +7842,6 @@ double      yb1, yb2, yf1, yf2, ybase;
           if (xs > xmaxm)
             {
             gdImageStringUp(im, gdFontSmall, xs+0, y2+2+gdFontSmall->w*strlen(str), str, black);
-            gdImageLine(im, xs, y2-1, xs-2+gdFontSmall->h, y2-1, black);
             xmaxm = xs-2+gdFontSmall->h;
             }
           }
@@ -7848,7 +7850,6 @@ double      yb1, yb2, yf1, yf2, ybase;
           if (xs+2-gdFontSmall->h > xmaxm)
             {
             gdImageStringUp(im, gdFontSmall, xs+2-gdFontSmall->h, y2+2+gdFontSmall->w*strlen(str), str, black);
-            gdImageLine(im, xs+2-gdFontSmall->h, y2-1, xs-1, y2-1, black);
             xmaxm = xs-1;
             }
           }
