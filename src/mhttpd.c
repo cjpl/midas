@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.217  2002/05/16 23:21:07  midas
+  Fixed reconnection due to experiment names with different case
+
   Revision 1.216  2002/05/16 23:16:24  midas
   Fixed bug in history configuration page
 
@@ -9206,7 +9209,7 @@ struct tm *gmt;
   /*---- experiment connect ----------------------------------------*/
 
   /* disconnect from previous experiment if current is different */
-  if (connected && strcmp(exp_name, experiment) != 0)
+  if (connected && !equal_ustring(exp_name, experiment))
     {
     cm_disconnect_experiment();
     connected = FALSE;
