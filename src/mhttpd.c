@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.206  2002/05/11 01:23:49  midas
+  Fix wrong variable size in ODB
+
   Revision 1.205  2002/05/10 20:29:12  midas
   Fixed another small bug
 
@@ -3599,7 +3602,7 @@ struct hostent *phe;
       /* check if valid ODB tree */
       if (db_find_key(hDB, 0, path, &hkey) == DB_SUCCESS)
         {
-        buffer[i] = malloc(100000);
+        buffer[i] = M_MALLOC(100000);
         gen_odb_attachment(path, buffer[i]);
         strcpy(att_file[i], path);
         strcat(att_file[i], ".html");
@@ -3610,7 +3613,7 @@ struct hostent *phe;
       else if ((fh = open(path1, O_RDONLY | O_BINARY)) >= 0)
         {
         size = lseek(fh, 0, SEEK_END);
-        buffer[i] = malloc(size);
+        buffer[i] = M_MALLOC(size);
         lseek(fh, 0, SEEK_SET);
         read(fh, buffer[i], size);
         close(fh);
@@ -3620,7 +3623,7 @@ struct hostent *phe;
         }
       else if (strncmp(path, "/HS/", 4) == 0)
         {
-        buffer[i] = malloc(100000);
+        buffer[i] = M_MALLOC(100000);
         size = 100000;
         strcpy(str, path+4);
         if (strchr(str, '?'))
@@ -3791,7 +3794,7 @@ struct hostent *phe;
 
   for (i=0 ; i<3 ; i++)
     if (buffer[i])
-      free(buffer[i]);
+      M_FREE(buffer[i]);
 
   rsprintf("HTTP/1.0 302 Found\r\n");
   rsprintf("Server: MIDAS HTTP %s\r\n", cm_get_version());
@@ -7334,8 +7337,8 @@ double      yb1, yb2, yf1, yf2, ybase;
 
   name_size = n_event*NAME_LENGTH;
   id_size = n_event*sizeof(INT);
-  event_name_list = malloc(name_size);
-  event_id_list = malloc(id_size);
+  event_name_list = M_MALLOC(name_size);
+  event_id_list = M_MALLOC(id_size);
   status = hs_enum_events(0, event_name_list, (DWORD*)&name_size, event_id_list, (DWORD*)&id_size);
   if (status != HS_SUCCESS)
     {
@@ -7772,6 +7775,8 @@ double      yb1, yb2, yf1, yf2, ybase;
   /* draw axis frame */
   taxis(im, gdFontSmall, black, ltgrey, x1, y1, x2-x1, width, 3, 5, 9, 10, 0, 
         ss_time()-scale+toffset,  ss_time()+toffset);
+  
+  /* use following line for a X-axis in seconds instead of a time axis */
   //haxis(im, gdFontSmall, black, ltgrey, x1, y1, x2-x1, 3, 5, 9, 10, 0, xmin,  xmax);
   vaxis(im, gdFontSmall, black, ltgrey, x1, y1, y1-y2, -3, -5, -7, -8, x2-x1, ymin, ymax, logaxis);
   gdImageLine(im, x1, y2, x2, y2, black);
@@ -7792,7 +7797,7 @@ double      yb1, yb2, yf1, yf2, ybase;
     state = NULL;
     if (status != HS_UNDEFINED_VAR)
       {
-      state = malloc(sizeof(DWORD)*n_marker);
+      state = M_MALLOC(sizeof(DWORD)*n_marker);
       for (j=0 ; j<(int)n_marker ; j++)
         state[j] = *((DWORD *) ybuffer+j);
       }
@@ -7832,7 +7837,7 @@ double      yb1, yb2, yf1, yf2, ybase;
       }
 
     if (state)
-      free(state);
+      M_FREE(state);
     }
   
   for (i=0 ; i<n_vars ; i++)
@@ -7967,9 +7972,9 @@ double      yb1, yb2, yf1, yf2, ybase;
 error:
 
   if (event_name_list)
-    free(event_name_list);
+    M_FREE(event_name_list);
   if (event_id_list)
-    free(event_id_list);
+    M_FREE(event_id_list);
 
   /* generate GIF */
 	gdImageInterlace(im, 1);
@@ -8169,7 +8174,16 @@ char   *hist_col[] =
         sprintf(str, "/History/Display/%s/Variables", path);
         db_find_key(hDB, 0, str, &hKeyVar);
         if (hKeyVar)
+          {
+          /* make sure size is correct */
+          if (index == 0)
+            {
+            db_delete_key(hDB, hKeyVar, FALSE);
+            db_create_key(hDB, 0, str, TID_STRING);
+            db_find_key(hDB, 0, str, &hKeyVar);
+            }
           db_set_data_index(hDB, hKeyVar, var_name, 2*NAME_LENGTH, index, TID_STRING);
+          }
 
         sprintf(str, "/History/Display/%s/Factor", path);
         db_find_key(hDB, 0, str, &hKey);
@@ -8334,9 +8348,14 @@ char   *hist_col[] =
       {
       /* from ODB else */
       sprintf(str, "/History/Display/%s/Variables", path);
-      size = sizeof(display_name);
+      db_find_key(hDB, 0, str, &hKey);
+
       memset(display_name, 0, size);
-      db_get_value(hDB, 0, str, display_name, &size, TID_STRING, FALSE);
+      for (i=0 ; i< 10 ; i++)
+        {
+        size = 2*NAME_LENGTH;
+        db_get_data_index(hDB, hKey, display_name[i], &size, i, TID_STRING);
+        }
       }
       
     /* loop over equipment */
