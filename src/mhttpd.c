@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.257  2003/10/31 10:07:27  midas
+  Added 'run parameter/comment' in status display
+
   Revision 1.256  2003/10/29 13:25:38  midas
   Removed snprintf (not available under Windows)
 
@@ -1536,7 +1539,7 @@ void show_status_page(int refresh, char *cookie_wpwd)
 {
 int    i, j, k, status, size, type;
 BOOL   flag, first;
-char   str[256], name[32], ref[256], bgcol[32], fgcol[32], alarm_class[32];
+char   str[1000], name[32], ref[256], bgcol[32], fgcol[32], alarm_class[32];
 char   *trans_name[] = {"Start", "Stop", "Pause", "Resume"};
 time_t now, difftime;
 double analyzed, analyze_ratio, d;
@@ -1892,6 +1895,13 @@ CHN_STATISTICS chn_stats;
   else
     rsprintf("<td colspan=3>Running time: %dh%02dm%02ds</tr>\n",
              difftime/3600, difftime%3600/60,difftime%60);
+
+  /*---- run comment ----*/
+
+  size = sizeof(str);
+  if (db_get_value(hDB, 0, "/Experiment/Run parameters/Comment", str, 
+                   &size, TID_STRING, FALSE) == DB_SUCCESS)
+    rsprintf("<tr align=center><td colspan=6 bgcolor=#E0E0FF><b>%s</b></td></tr>\n", str);
 
   /*---- Equipment list ----*/
 
