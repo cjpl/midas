@@ -15,6 +15,9 @@
  *  Application :
  *  Author      : Pierre-Andre Amaudruz Data Acquisition Group
  *  $Log$
+ *  Revision 1.5  2002/02/08 06:52:10  pierre
+ *  add inhibit_test, interrupt_test
+ *
  *  Revision 1.4  2002/01/28 20:14:16  pierre
  *  added macros, fix camc_chk
  *
@@ -441,6 +444,13 @@ INLINE void cam_inhibit_set(const int c)
 
 /*---------------------------------------------------------------*/
 
+INLINE int cam_inhibit_test(const int c)
+{
+  return 1;
+}
+
+/*---------------------------------------------------------------*/
+
 INLINE void cam_inhibit_clear(const int c)
 {
   camc(c,30,9,24);
@@ -507,6 +517,14 @@ INLINE void cam_interrupt_enable(const int c)
 INLINE void cam_interrupt_disable(const int c)
 {
   printf("cam_interrupt_disable - Not yet implemented\n");
+}
+
+/*---------------------------------------------------------------*/
+
+INLINE int cam_interrupt_test(const int c)
+{
+  printf("cam_interrupt_test - Not yet implemented\n");
+  return 0;
 }
 
 /*---------------------------------------------------------------*/
