@@ -6,8 +6,8 @@
   Contents:     Midas Slow Control Bus communication functions
 
   $Log$
-  Revision 1.1  2001/07/20 07:30:46  midas
-  Initial revision
+  Revision 1.2  2001/08/31 11:04:39  midas
+  Added write16 and read16 (for LabView)
 
 
 \********************************************************************/
@@ -372,7 +372,7 @@ int i, n, len, status;
 
 /*------------------------------------------------------------------*/
 
-int mscb_init(int parport)
+int mscb_init(char *device)
 /********************************************************************\
 
   Routine: mscb_init
@@ -380,7 +380,8 @@ int mscb_init(int parport)
   Purpose: Initialize and open MSCB 
 
   Input:
-    int  parport            Either 1 (lpt1) or 2 (lpt2)
+    char *device            Under NT: lpt1 or lpt2
+                            Under Linux: /dev/parport0 or /dev/parport1
 
   Function value:
     int fd                  device descriptor for connection, -1 if
@@ -399,10 +400,16 @@ int i;
     return -1;
 
 #ifdef _MSC_VER
+
+  if (strlen(device) == 4)
+    i = atoi(device+3);
+  else
+    return -1;
+  
   /* derive base address from device name */
-  if (parport == 1)
+  if (i == 1)
     mscb_fd[i].fd = 0x378;
-  else if (parport == 2)
+  else if (i == 2)
     mscb_fd[i].fd = 0x278;
   else
     return -1;
@@ -483,7 +490,11 @@ int mscb_exit(int fd)
 
 \********************************************************************/
 {
+  if (fd > MSCB_MAX_FD)
+    return MSCB_INVAL_PARAM;
+
 #ifdef _MSC_VER
+  {
   OSVERSIONINFO vi;
   DWORD buffer[4];
   DWORD size;
@@ -512,8 +523,10 @@ int mscb_exit(int fd)
   if (!DeviceIoControl(hdio, (DWORD) 0x9c406000, &buffer, sizeof(buffer), 
 		  NULL, 0, &size, NULL))
     return -1;
-
+  }
 #endif
+
+  memset(&mscb_fd[fd], 0, sizeof(MSCB_FD));
 
   return MSCB_SUCCESS;
 }
@@ -786,7 +799,7 @@ int mscb_write_na(int fd, unsigned char channel, unsigned int data, int size)
 
   Input:
     int fd                  File descriptor for connection
-    unsigned char channel   Channel indes 0..255
+    unsigned char channel   Channel index 0..255
     unsigned int  data      Data to send
     int size                Data size in bytes 1..4 for byte, word, 
                             and dword
@@ -829,7 +842,7 @@ int mscb_write(int fd, unsigned char channel, unsigned int data, int size)
 
   Input:
     int fd                  File descriptor for connection
-    unsigned char channel   Channel indes 0..255
+    unsigned char channel   Channel index 0..255
     unsigned int  data      Data to send
     int size                Data size in bytes 1..4 for byte, word, 
                             and dword
@@ -1090,6 +1103,212 @@ unsigned char buf[80];
 
   if (result[i-1] != crc8(result, i-1))
     return MSCB_CRC_ERROR;
+
+  return MSCB_SUCCESS;
+}
+
+
+/*------------------------------------------------------------------*/
+
+int mscb_write16(char *device, unsigned short addr, unsigned char channel, unsigned short data)
+/********************************************************************\
+
+  Routine: mscb_write16
+
+  Purpose: Write data to channel on a node with acknowledge
+
+  Input:
+    int  parport            Either 1 (lpt1) or 2 (lpt2)
+    unsigned int  addr      Node address
+    unsigned char channel   Channel index 0..255
+    unsigned int  data      Data to send
+
+  Function value:
+    MSCB_SUCCESS            Successful completion
+    MSCB_TIMEOUT            Timeout receiving acknowledge
+    MSCB_CRC_ERROR          CRC error
+    MSCB_INVAL_PARAM        Parameter "parport" has invalid value
+
+\********************************************************************/
+{
+int fd, status;
+
+  fd = mscb_init(device);
+  if (fd < 0)
+    return MSCB_INVAL_PARAM;
+
+  status = mscb_addr(fd, CMD_PING16, addr);
+  if (status != MSCB_SUCCESS)
+    {
+    mscb_exit(fd);
+    return status;
+    }
+
+  status = mscb_write(fd, channel, data, 2);
+  if (status != MSCB_SUCCESS)
+    {
+    mscb_exit(fd);
+    return status;
+    }
+
+  mscb_exit(fd);
+
+  return MSCB_SUCCESS;
+}
+
+/*------------------------------------------------------------------*/
+
+int mscb_write_conf16(char *device, unsigned short addr, unsigned char channel, 
+                      unsigned short data, int perm)
+/********************************************************************\
+
+  Routine: mscb_write_conf16
+
+  Purpose: Write configuration parameter to a node with acknowledge
+
+  Input:
+    int  parport            Either 1 (lpt1) or 2 (lpt2)
+    unsigned int  addr      Node address
+    unsigned char channel   Channel index 0..254, 255 for node CSR
+    unsigned int  data      Data to send
+    int perm                If 1, write permanently to EEPROM
+
+  Function value:
+    MSCB_SUCCESS            Successful completion
+    MSCB_TIMEOUT            Timeout receiving acknowledge
+    MSCB_CRC_ERROR          CRC error
+    MSCB_INVAL_PARAM        Parameter "parport" has invalid value
+
+\********************************************************************/
+{
+int fd, status;
+  
+  fd = mscb_init(device);
+  if (fd < 0)
+    return MSCB_INVAL_PARAM;
+
+  status = mscb_addr(fd, CMD_PING16, addr);
+  if (status != MSCB_SUCCESS)
+    {
+    mscb_exit(fd);
+    return status;
+    }
+
+  status = mscb_write_conf(fd, channel, data, 2, perm);
+  if (status != MSCB_SUCCESS)
+    {
+    mscb_exit(fd);
+    return status;
+    }
+
+  mscb_exit(fd);
+
+  return MSCB_SUCCESS;
+}
+
+/*------------------------------------------------------------------*/
+
+int mscb_read16(int parport, unsigned short addr, unsigned char channel, unsigned short *data)
+/********************************************************************\
+
+  Routine: mscb_read16
+
+  Purpose: Read data from channel on a node
+
+  Input:
+    int  parport            Either 1 (lpt1) or 2 (lpt2)
+    unsigned int  addr      Node address
+    unsigned char channel   Channel index 0..255
+
+  Output
+    unsigned int  *data     Received data
+
+  Function value:
+    MSCB_SUCCESS            Successful completion
+    MSCB_TIMEOUT            Timeout receiving acknowledge
+    MSCB_CRC_ERROR          CRC error
+    MSCB_INVAL_PARAM        Parameter "parport" has invalid value
+
+\********************************************************************/
+{
+int fd, status;
+unsigned long d;
+
+  fd = mscb_init(parport);
+  if (fd < 0)
+    return MSCB_INVAL_PARAM;
+
+  status = mscb_addr(fd, CMD_PING16, addr);
+  if (status != MSCB_SUCCESS)
+    {
+    mscb_exit(fd);
+    return status;
+    }
+
+  status = mscb_read(fd, channel, &d);
+  if (status != MSCB_SUCCESS)
+    {
+    mscb_exit(fd);
+    return status;
+    }
+
+  mscb_exit(fd);
+
+  *data = (unsigned short) d;
+
+  return MSCB_SUCCESS;
+}
+
+/*------------------------------------------------------------------*/
+
+int mscb_read_conf16(int parport, unsigned short addr, unsigned char channel, 
+                     unsigned short *data)
+/********************************************************************\
+
+  Routine: mscb_write_conf16
+
+  Purpose: Read configuration parameter from node
+
+  Input:
+    int  parport            Either 1 (lpt1) or 2 (lpt2)
+    unsigned int  addr      Node address
+    unsigned char channel   Channel index 0..254, 255 for node CSR
+
+  Output:
+    unsigned int  *data     Received data
+
+  Function value:
+    MSCB_SUCCESS            Successful completion
+    MSCB_TIMEOUT            Timeout receiving acknowledge
+    MSCB_CRC_ERROR          CRC error
+    MSCB_INVAL_PARAM        Parameter "parport" has invalid value
+
+\********************************************************************/
+{
+int fd, status;
+unsigned long d;
+  
+  fd = mscb_init(parport);
+  if (fd < 0)
+    return MSCB_INVAL_PARAM;
+
+  status = mscb_addr(fd, CMD_PING16, addr);
+  if (status != MSCB_SUCCESS)
+    {
+    mscb_exit(fd);
+    return status;
+    }
+
+  status = mscb_read_conf(fd, channel, &d);
+  if (status != MSCB_SUCCESS)
+    {
+    mscb_exit(fd);
+    return status;
+    }
+
+  mscb_exit(fd);
+
+  *data = (unsigned short) d;
 
   return MSCB_SUCCESS;
 }
