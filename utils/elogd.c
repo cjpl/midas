@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.70  2001/11/21 13:31:47  midas
+  Made "date format" also work in find result page
+
   Revision 1.69  2001/11/21 08:21:42  midas
   Specify %20 in menu commands explicitly
 
@@ -3803,7 +3806,7 @@ char   date[80], attrib[MAX_N_ATTR][NAME_LENGTH], disp_attr[MAX_N_ATTR][NAME_LEN
        list[10000], text[TEXT_SIZE], text1[TEXT_SIZE], text2[TEXT_SIZE],
        orig_tag[80], reply_tag[80], attachment[MAX_ATTACHMENTS][256], encoding[80];
 char   str[256], tag[256], ref[256], file_name[256], col[80], old_data_dir[256];
-char   logbook_list[100][256], lb_enc[256], *nowrap;
+char   logbook_list[100][256], lb_enc[256], *nowrap, format[80];
 char   menu_str[1000], menu_item[MAX_N_LIST][NAME_LENGTH];
 char   *p , *pt, *pt1, *pt2;
 BOOL   full, show_attachments;
@@ -4432,7 +4435,30 @@ FILE   *f;
           if (atoi(getparam("all")) == 1)
             rsprintf("<td align=center %s bgcolor=%s><font size=%d>%s</font></td>", nowrap, col, size, logbook_list[lindex]);
 
-          rsprintf("<td align=center %s bgcolor=%s><font size=%d>%s</font></td>", nowrap, col, size, date);
+          if (getcfg(logbook, "Date format", format))
+            {
+            struct tm ts;
+
+            memset(&ts, 0, sizeof(ts));
+
+            for (i=0 ; i<12 ; i++)
+              if (strncmp(date+4, mname[i], 3) == 0)
+                break;
+            ts.tm_mon = i;
+
+            ts.tm_mday = atoi(date+8);
+            ts.tm_hour = atoi(date+11);
+            ts.tm_min  = atoi(date+14);
+            ts.tm_sec  = atoi(date+17);
+            ts.tm_year = atoi(date+20)-1900;
+
+            mktime(&ts);
+            strftime(str, sizeof(str), format, &ts);
+            }
+          else
+            strcpy(str, date);
+
+          rsprintf("<td align=center %s bgcolor=%s><font size=%d>%s</font></td>", nowrap, col, size, str);
 
           for (i=0 ; i<n_attr ; i++)
             {
