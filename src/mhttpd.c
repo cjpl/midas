@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.254  2003/10/13 00:07:40  olchansk
+  refuse run number zero and abort on corrupted run numbers
+
   Revision 1.253  2003/10/12 22:56:33  olchansk
   when submitting new Elog message, add the message text to the outgoing email.
   add traps for some array overruns (see http://midas.triumf.ca/forum/Development%20Area/12)
@@ -2449,6 +2452,12 @@ KEY    key;
                 text, &size, orig_tag, reply_tag, att1, att2, att3, encoding);
     }
 
+  if (run_number < 0)
+    {
+    cm_msg(MERROR, "show_elog_new", "aborting on attempt to use invalid run number %d",run_number);
+    abort();
+    }
+
   /* header */
   rsprintf("HTTP/1.0 200 Document follows\r\n");
   rsprintf("Server: MIDAS HTTP %s\r\n", cm_get_version());
@@ -2504,6 +2513,13 @@ KEY    key;
       size = sizeof(run_number);
       db_get_value(hDB, 0, "/Runinfo/Run number", &run_number, &size, TID_INT, TRUE);
       }
+
+    if (run_number < 0)
+      {
+      cm_msg(MERROR, "show_elog_new", "aborting on attempt to use invalid run number %d",run_number);
+      abort();
+      }
+
     rsprintf("<td bgcolor=#FFFF00>Run number: ");
     rsprintf("<input type=\"text\" size=10 maxlength=10 name=\"run\" value=\"%d\"</tr>", run_number);
     }
@@ -3580,6 +3596,13 @@ KEY    key;
   run_number = 0;
   size = sizeof(run_number);
   db_get_value(hDB, 0, "/Runinfo/Run number", &run_number, &size, TID_INT, TRUE);
+
+  if (run_number < 0)
+    {
+    cm_msg(MERROR, "show_form_query", "aborting on attempt to use invalid run number %d",run_number);
+    abort();
+    }
+
   rsprintf("<td bgcolor=#FFFF00>Run number: ");
   rsprintf("<input type=\"text\" size=10 maxlength=10 name=\"run\" value=\"%d\"</tr>", run_number);
 
@@ -5727,6 +5750,12 @@ char  data_str[256], comment[1000];
   /* run number */
   size = sizeof(rn);
   db_get_value(hDB, 0, "/Runinfo/Run number", &rn, &size, TID_INT, TRUE);
+
+  if (rn < 0) // value "zero" is okey
+    {
+    cm_msg(MERROR, "show_start_page", "aborting on attempt to use invalid run number %d",rn);
+    abort();
+    }
 
   size = sizeof(i);
   if (db_find_key(hDB, 0, "/Experiment/Edit on start/Edit Run number", &hkey) == DB_SUCCESS &&
@@ -9682,6 +9711,15 @@ struct tm *gmt;
         }
 
       i = atoi(value);
+      if (i <= 0)
+        {
+        cm_msg(MERROR, "interprete", "Start run: invalid run number %d",i);
+        memset(str,0,sizeof(str));
+        snprintf(str,sizeof(str)-1,"Invalid run number %d",i);
+        show_error(str);
+        return;
+        }
+
       status = cm_transition(TR_START, i, str, sizeof(str), SYNC, FALSE);
       if (status != CM_SUCCESS && status != CM_DEFERRED_TRANSITION)
         show_error(str);

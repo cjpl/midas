@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.194  2003/10/13 00:07:40  olchansk
+  refuse run number zero and abort on corrupted run numbers
+
   Revision 1.193  2003/10/12 22:56:33  olchansk
   when submitting new Elog message, add the message text to the outgoing email.
   add traps for some array overruns (see http://midas.triumf.ca/forum/Development%20Area/12)
@@ -3783,7 +3786,7 @@ static BOOL first;
       {
       if (((BOOL (*)(INT,BOOL))_deferred_trans_table[i].func)(_requested_transition, first))
         {
-        status = cm_transition(_requested_transition | TR_DEFERRED, 0, str, 256, SYNC, FALSE);
+        status = cm_transition(_requested_transition | TR_DEFERRED, 0, str, sizeof(str), SYNC, FALSE);
         if (status != CM_SUCCESS)
           cm_msg(MERROR, "cm_check_deferred_transition",
                  "Cannot perform deferred transition: %s", str);
@@ -3902,6 +3905,12 @@ PROGRAM_INFO program_info;
     {
     size = sizeof(run_number);
     db_get_value(hDB, 0, "Runinfo/Run number", &run_number, &size, TID_INT, TRUE);
+    }
+
+  if (run_number <= 0)
+    {
+    cm_msg(MERROR, "cm_transition", "aborting on attempt to use invalid run number %d",run_number);
+    abort();
     }
 
   /* Set new run number in ODB */
@@ -16067,6 +16076,12 @@ BOOL    bedit;
     /* get run number */
     size = sizeof(run_number);
     db_get_value(hDB, 0, "/Runinfo/Run number", &run_number, &size, TID_INT, TRUE);
+    }
+
+  if (run_number < 0)
+    {
+    cm_msg(MERROR, "el_submit", "aborting on attempt to use invalid run number %d", run_number);
+    abort();
     }
 
   for (index = 0 ; index < 3 ; index++)
