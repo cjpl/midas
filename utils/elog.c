@@ -6,6 +6,9 @@
   Contents:     Electronic logbook utility   
 
   $Log$
+  Revision 1.14  2001/05/23 13:04:19  midas
+  Added password functionality
+
   Revision 1.13  2001/05/23 10:48:21  midas
   elog can be used with elogd now
 
@@ -41,29 +44,37 @@
 
 typedef int INT;
 
-char type_list[20][32] = {
-  "Routine",
-  "Shift summary",
-  "Minor error",
-  "Severe error",
-  "Fix",
-  "Info",
-  "Modification",
-  "Complaints",
-  "Reply",
-  "Alarm",
-  "Test",
-  "Other"
-};
+/*------------------------------------------------------------------*/
 
-char system_list[20][32] = {
-  "General",
-  "DAQ",
-  "Detector",
-  "Electronics",
-  "Target",
-  "Beamline"
-};
+char *map= "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+
+void base64_encode(char *s, char *d)
+{
+unsigned int t, pad;
+
+  pad = 3 - strlen(s) % 3;
+  while (*s)
+    {
+    t =   (*s++) << 16;
+    if (*s)
+      t |=  (*s++) << 8;
+    if (*s)
+      t |=  (*s++) << 0;
+    
+    *(d+3) = map[t & 63];
+    t >>= 6;
+    *(d+2) = map[t & 63];
+    t >>= 6;
+    *(d+1) = map[t & 63];
+    t >>= 6;
+    *(d+0) = map[t & 63];
+
+    d += 4;
+    }
+  *d = 0;
+  while (pad--)
+    *(--d) = '=';
+}
 
 /*------------------------------------------------------------------*/
 
@@ -82,8 +93,9 @@ char *p;
 
 /*------------------------------------------------------------------*/
 
-INT query_params(char *host_name, int *port, char *author, char *type, char *syst, 
-                 char *subject, char *text, char *textfile, char attachment[3][256])
+INT query_params(char *host_name, int *port, char *logbook, char *password, char *author, char *type, 
+                 char *category, char *subject, char *text, 
+                 char *textfile, char attachment[3][256])
 {
 char str[1000], tmpfile[256];
 FILE *f;
@@ -103,6 +115,12 @@ int  i, query_attachment;
     sgets(str, 80);
     if (str[0])
       *port = atoi(str);
+
+    printf("Logbook/Experiment []: ");
+    sgets(logbook, 80);
+
+    printf("Password []: ");
+    sgets(password, 80);
     }
 
   query_attachment = (author[0] == 0 && attachment[0][0] == 0);
@@ -117,34 +135,14 @@ int  i, query_attachment;
 
   if (!type[0])
     {
-    printf("Select a message type from following list:\n<");
-    for (i=0 ; i<20 && type_list[i][0] ; i++)
-      {
-      if (i % 8 == 7)
-        printf("\n");
-      if (type_list[i+1][0])
-        printf("%s,", type_list[i]);
-      else
-        printf("%s>\n", type_list[i]);
-      }
-
+    printf("Enter message type:\n<");
     sgets(type, 80);
     }
 
-  if (!syst[0])
+  if (!category[0])
     {
-    printf("Select a system from following list:\n<");
-    for (i=0 ; i<20 && system_list[i][0] ; i++)
-      {
-      if (i % 8 == 7)
-        printf("\n");
-      if (system_list[i+1][0])
-        printf("%s,", system_list[i]);
-      else
-        printf("%s>\n", system_list[i]);
-      }
-
-    sgets(syst, 80);
+    printf("Enter category:\n<");
+    sgets(category, 80);
     }
 
   if (!subject[0])
@@ -167,7 +165,7 @@ int  i, query_attachment;
 
       fprintf(f, "Author: %s\n", author);
       fprintf(f, "Type: %s\n", type);
-      fprintf(f, "System: %s\n", syst);
+      fprintf(f, "Category: %s\n", category);
       fprintf(f, "Subject: %s\n", subject);
       fprintf(f, "--------------------------------\n");
       fclose(f);
@@ -199,11 +197,11 @@ int  i, query_attachment;
           if (strchr(type, '\n'))
             *strchr(type, '\n') = 0;
           }
-        else if (strncmp(str, "System: ", 8) == 0)
+        else if (strncmp(str, "Category: ", 8) == 0)
           {
-          strcpy(syst, str+8);
-          if (strchr(syst, '\n'))
-            *strchr(syst, '\n') = 0;
+          strcpy(category, str+8);
+          if (strchr(category, '\n'))
+            *strchr(category, '\n') = 0;
           }
         else if (strncmp(str, "Subject: ", 9) == 0)
           {
@@ -265,7 +263,7 @@ int  i, query_attachment;
 char request[600000], response[10000], content[600000];
 
 INT submit_elog(char *host, int port, char *experiment, char *passwd,
-                char *author, char *type, char *system, char *subject, 
+                char *author, char *type, char *category, char *subject, 
                 char *text,
                 char *afilename1, char *buffer1, INT buffer_size1, 
                 char *afilename2, char *buffer2, INT buffer_size2, 
@@ -283,7 +281,7 @@ INT submit_elog(char *host, int port, char *experiment, char *passwd,
     int    run              Run number
     char   *author          Message author
     char   *type            Message type
-    char   *system          Message system
+    char   *category        Message category
     char   *subject         Subject
     char   *text            Message text
 
@@ -299,7 +297,7 @@ INT submit_elog(char *host, int port, char *experiment, char *passwd,
 int                  status, sock, i, n, header_length, content_length;
 struct hostent       *phe;
 struct sockaddr_in   bind_addr;
-char                 host_name[256], boundary[80], *p;
+char                 host_name[256], boundary[80], str[80], *p;
 
 #if defined( _MSC_VER )
   {
@@ -372,9 +370,9 @@ char                 host_name[256], boundary[80], *p;
   sprintf(content+strlen(content), 
           "%s\r\nContent-Disposition: form-data; name=\"Author\"\r\n\r\n%s\r\n", boundary, author);
   sprintf(content+strlen(content), 
-          "%s\r\nContent-Disposition: form-data; name=\"type\"\r\n\r\n%s\r\n", boundary, type);
+          "%s\r\nContent-Disposition: form-data; name=\"Type\"\r\n\r\n%s\r\n", boundary, type);
   sprintf(content+strlen(content), 
-          "%s\r\nContent-Disposition: form-data; name=\"system\"\r\n\r\n%s\r\n", boundary, system);
+          "%s\r\nContent-Disposition: form-data; name=\"Category\"\r\n\r\n%s\r\n", boundary, category);
   sprintf(content+strlen(content), 
           "%s\r\nContent-Disposition: form-data; name=\"Subject\"\r\n\r\n%s\r\n", boundary, subject);
   sprintf(content+strlen(content), 
@@ -435,22 +433,28 @@ char                 host_name[256], boundary[80], *p;
   sprintf(request, "POST / HTTP/1.0\r\n");
   sprintf(request+strlen(request), "Content-Type: multipart/form-data; boundary=%s\r\n", boundary);
   sprintf(request+strlen(request), "Host: %s\r\n", host_name);
+  sprintf(request+strlen(request), "User-Agent: ELOG\r\n");
   sprintf(request+strlen(request), "Content-Length: %d\r\n", content_length);
 
   if (passwd[0])
-    sprintf(request+strlen(request), "Cookie: midas_wpwd: %s\r\n", content_length);
+    {
+    base64_encode(passwd, str);
+    sprintf(request+strlen(request), "Cookie: elog_wpwd=%s\r\n", str);
+    }
 
   strcat(request, "\r\n");
 
   header_length = strlen(request);
   memcpy(request+header_length, content, content_length);
 
+  /*
     {
     FILE *f;
     f = fopen("elog.log", "w");
     fwrite(request, header_length+content_length, 1, f);
     fclose(f);
     }
+  */
 
   /* send request */
   send(sock, request, header_length+content_length, 0);
@@ -478,6 +482,10 @@ char                 host_name[256], boundary[80], *p;
   /* check response status */
   if (strstr(response, "302 Found"))
     printf("Message successfully transmitted\n");
+  else if (strstr(response, "Logbook Selection"))
+    printf("No logbook specified\n\n");
+  else if (strstr(response, "Enter password"))
+    printf("Missing or invalid password\n");
   else
     printf("Error transmitting message\n");
 
@@ -488,14 +496,14 @@ char                 host_name[256], boundary[80], *p;
 
 main(int argc, char *argv[])
 {
-char      author[80], type[80], system[80], subject[256], text[10000];
-char      host_name[256], exp_name[32], textfile[256];
+char      author[80], type[80], category[80], subject[256], text[10000];
+char      host_name[256], logbook[32], textfile[256], password[80];
 char      *buffer[3], attachment[3][256];
 INT       att_size[3];
 INT       i, n, status, fh, n_att, size, port;
 
-  author[0] = type[0] = system[0] = subject[0] = text[0] = textfile[0] = 0;
-  host_name[0] = exp_name[0] = n_att = 0;
+  author[0] = type[0] = category[0] = subject[0] = text[0] = textfile[0] = 0;
+  host_name[0] = logbook[0] = password[0] = n_att = 0;
   port = 80;
   for (i=0 ; i<3 ; i++)
     {
@@ -515,14 +523,16 @@ INT       i, n, status, fh, n_att, size, port;
         strcpy(host_name, argv[++i]);
       else if (argv[i][1] == 'p')
         port = atoi(argv[++i]);
-      else if (argv[i][1] == 'e')
-        strcpy(exp_name, argv[++i]);
+      else if (argv[i][1] == 'l')
+        strcpy(logbook, argv[++i]);
+      else if (argv[i][1] == 'w')
+        strcpy(password, argv[++i]);
       else if (argv[i][1] == 'a')
         strcpy(author, argv[++i]);
       else if (argv[i][1] == 't')
         strcpy(type, argv[++i]);
-      else if (argv[i][1] == 's')
-        strcpy(system, argv[++i]);
+      else if (argv[i][1] == 'c')
+        strcpy(category, argv[++i]);
       else if (argv[i][1] == 'b')
         strcpy(subject, argv[++i]);
       else if (argv[i][1] == 'f')
@@ -532,8 +542,8 @@ INT       i, n, status, fh, n_att, size, port;
       else
         {
 usage:
-        printf("\nusage: elog -h <hostname> [-p port] [-e experiment]\n");
-        printf("          -a <author> -t <type> -s <system> -b <subject>\n");
+        printf("\nusage: elog -h <hostname> [-p port] [-l logbook/experiment]\n");
+        printf("          [-w password] -a <author> -t <type> -c <category> -b <subject>\n");
         printf("          [-f <attachment>] [-m <textfile>|<text>]\n");
         printf("\nArguments with blanks must be enclosed in quotes\n");
         printf("The elog message can either be submitted on the command line\n");
@@ -546,7 +556,7 @@ usage:
     }
 
   /* complete missing parameters */
-  status = query_params(host_name, &port, author, type, system, subject, 
+  status = query_params(host_name, &port, logbook, password, author, type, category, subject, 
                         text, textfile, attachment);
   if (status != 1)
     return 0;
@@ -616,7 +626,7 @@ usage:
     }
 
   /* now submit message */
-  submit_elog(host_name, port, exp_name, "", author, type, system, subject, text,
+  submit_elog(host_name, port, logbook, password, author, type, category, subject, text,
              attachment[0], buffer[0], att_size[0], 
              attachment[1], buffer[1], att_size[1], 
              attachment[2], buffer[2], att_size[2]);
