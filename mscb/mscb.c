@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus communication functions
 
   $Log$
+  Revision 1.25  2002/11/29 09:01:50  midas
+  Added <unistd.h>
+
   Revision 1.24  2002/11/28 14:44:09  midas
   Removed SIZE_XBIT
 
@@ -88,6 +91,7 @@
 
 #elif defined(__linux__)  // Linux includes
 
+#include <unistd.h>
 #include <string.h>
 #include <sys/types.h>
 #include <sys/ioctl.h>
