@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol commands
 
   $Log$
+  Revision 1.45  2004/10/29 12:45:59  midas
+  Increased EEPROM page to 4kB
+
   Revision 1.44  2004/09/25 01:14:54  midas
   Started implementing slave port on SCS-1000
 
@@ -291,9 +294,11 @@ sbit RS485_ENABLE = P0 ^ 7;
 #endif
 
 #if defined(CPU_C8051F310) || defined(CPU_C8051F320)
-#define EEPROM_OFFSET 0x3A00 // 0x3A00-0x3DFF = 1024 bytes
+#define EEPROM_OFFSET 0x3A00 // 0x3A00-0x3DFF = 1kB
+#define N_EEPROM_PAGE      2 // 2 pages @ 512 bytes
 #else
-#define EEPROM_OFFSET 0x8000
+#define EEPROM_OFFSET 0x6000 // 0x6000-0x6FFF = 4kB
+#define N_EEPROM_PAGE      8 // 8 pages @ 512 bytes
 #endif
 
 /*---- MSCB commands -----------------------------------------------*/
