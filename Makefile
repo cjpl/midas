@@ -6,6 +6,9 @@
 #  Contents:     Makefile for MIDAS binaries and examples under unix
 #
 #  $Log$
+#  Revision 1.66  2005/02/22 09:20:55  ritt
+#  Moved _LARGEFILE64_SOURCE into linux section
+#
 #  Revision 1.65  2004/10/06 19:00:41  olchansk
 #  Fix "make install": delete old optional items (libmidas.so, hmana.o, rmana.o) if we do not install newer versions
 #
@@ -304,9 +307,6 @@ CC = cc
 CXX = g++
 CFLAGS = -g -O2 -Wall -Wuninitialized -I$(INC_DIR) -I$(DRV_DIR) -L$(LIB_DIR) -DINCLUDE_FTPLIB $(MIDAS_PREF_FLAGS) $(USERFLAGS)
 
-# >2GB file support
-CFLAGS += -D_LARGEFILE64_SOURCE
-
 #-----------------------
 # OSF/1 (DEC UNIX)
 #
@@ -371,6 +371,10 @@ OSTYPE = linux
 endif
 
 ifeq ($(OSTYPE),linux)
+
+# >2GB file support
+CFLAGS += -D_LARGEFILE64_SOURCE
+
 OS_DIR = linux
 OSFLAGS = -DOS_LINUX -fPIC -Wno-unused-function
 LIBS = -lutil -lpthread
