@@ -502,20 +502,21 @@ int mxml_close_file(MXML_WRITER *writer)
 
 /*------------------------------------------------------------------*/
 
-PMXML_NODE mxml_create_root_node(char *name)
+PMXML_NODE mxml_create_root_node()
 /* create root node of an XML tree */
 {
    PMXML_NODE root;
 
    root = (PMXML_NODE)calloc(sizeof(MXML_NODE), 1);
-   strcpy(root->name, name);
+   strcpy(root->name, "root");
+   root->node_type = DOCUMENT_NODE;
 
    return root;
 }
 
 /*------------------------------------------------------------------*/
 
-PMXML_NODE mxml_add_node_at(PMXML_NODE parent, char *node_name, char *value, int index)
+PMXML_NODE mxml_add_node_at(PMXML_NODE parent, int node_type, char *node_name, char *value, int index)
 /* add a subnode (child) to an existing parent node as a specific position */
 {
    PMXML_NODE pnode, pchild;
@@ -548,6 +549,7 @@ PMXML_NODE mxml_add_node_at(PMXML_NODE parent, char *node_name, char *value, int
    pnode = &parent->child[index];
    memset(pnode, 0, sizeof(MXML_NODE));
    strlcpy(pnode->name, node_name, sizeof(pnode->name));
+   pnode->node_type = node_type;
    pnode->parent = parent;
    
    parent->n_children++;
@@ -563,10 +565,10 @@ PMXML_NODE mxml_add_node_at(PMXML_NODE parent, char *node_name, char *value, int
 
 /*------------------------------------------------------------------*/
 
-PMXML_NODE mxml_add_node(PMXML_NODE parent, char *node_name, char *value)
+PMXML_NODE mxml_add_node(PMXML_NODE parent, int node_type, char *node_name, char *value)
 /* add a subnode (child) to an existing parent node at the end */
 {
-   return mxml_add_node_at(parent, node_name, value, parent->n_children);
+   return mxml_add_node_at(parent, node_type, node_name, value, parent->n_children);
 }
 
 /*------------------------------------------------------------------*/
@@ -655,28 +657,9 @@ int mxml_find_nodes1(PMXML_NODE tree, char *xml_path, PMXML_NODE **nodelist, int
    p1 = xml_path;
    pnode = tree;
 
-   if (*p1 && *p1 == '/') {
-
-      /* if path starts with '/', compare root node */
+   /* skip leading '/' */
+   if (*p1 && *p1 == '/')
       p1++;
-
-      p2 = p1;
-      while (*p2 && *p2 != '/')
-         p2++;
-      len = (size_t)p2 - (size_t)p1;
-      if (len >= sizeof(node_name))
-         return 0;
-
-      memcpy(node_name, p1, len);
-      node_name[len] = 0;
-
-      if (strcmp(pnode->name, node_name) != 0)
-         return 0;
-
-      p1 = p2;
-      if (*p1 == '/')
-         p1++;
-   }
 
    do {
       p2 = p1;
@@ -1026,7 +1009,8 @@ PMXML_NODE mxml_parse_buffer(char *buf, char *error, int error_size)
    p = buf;
    line_number = 1;
 
-   root = ptree = NULL;
+   root = mxml_create_root_node();
+   ptree = root;
 
    /* parse file contents */
    do {
@@ -1047,6 +1031,12 @@ PMXML_NODE mxml_parse_buffer(char *buf, char *error, int error_size)
          if (strncmp(p, "!--", 3) == 0) {
             
             /* found comment */
+
+            pnew = mxml_add_node(ptree, COMMENT_NODE, "Comment", NULL);
+            pv = p+3;
+            while (*pv == ' ')
+               pv++;
+
             p += 3;
             if (strstr(p, "-->") == NULL)
                return read_error(HERE, "Unterminated comment");
@@ -1056,11 +1046,21 @@ PMXML_NODE mxml_parse_buffer(char *buf, char *error, int error_size)
                   line_number++;
                p++;
             }
+
+            len = (size_t)p - (size_t)pv;
+            pnew->value = (char *)malloc(len+1);
+            memcpy(pnew->value, pv, len);
+            pnew->value[len] = 0;
+            mxml_decode(pnew->value);
+
             p += 3;
 
          } else if (*p == '?') {
 
             /* found ?...? element */
+            pnew = mxml_add_node(ptree, PROCESSING_INSTRUCTION_NODE, "PI", NULL);
+            pv = p+1;
+
             p++;
             if (strstr(p, "?>") == NULL)
                return read_error(HERE, "Unterminated ?...? element");
@@ -1070,6 +1070,13 @@ PMXML_NODE mxml_parse_buffer(char *buf, char *error, int error_size)
                   line_number++;
                p++;
             }
+
+            len = (size_t)p - (size_t)pv;
+            pnew->value = (char *)malloc(len+1);
+            memcpy(pnew->value, pv, len);
+            pnew->value[len] = 0;
+            mxml_decode(pnew->value);
+
             p += 2;
 
          } else {
@@ -1114,14 +1121,11 @@ PMXML_NODE mxml_parse_buffer(char *buf, char *error, int error_size)
 
             } else {
             
-               if (root != NULL && ptree == NULL)
+               if (ptree == NULL)
                   return read_error(HERE, "Unexpected second top level node");
 
                /* allocate new element structure in parent tree */
-               if (root == NULL) {
-                  pnew = ptree = root = mxml_create_root_node(node_name);
-               } else
-                  pnew = mxml_add_node(ptree, node_name, NULL);
+               pnew = mxml_add_node(ptree, ELEMENT_NODE, node_name, NULL);
 
                while (*p && isspace(*p)) {
                   if (*p == '\n')
@@ -1342,14 +1346,17 @@ int mxml_write_tree(char *file_name, PMXML_NODE tree)
 /* write a complete XML tree to a file */
 {
    MXML_WRITER *writer;
+   int i;
 
    assert(tree);
    writer = mxml_open_file(file_name);
    if (!writer)
       return FALSE;
 
-   if (!mxml_write_subtree(writer, tree))
-      return FALSE;
+   for (i=0 ; i<tree->n_children ; i++)
+      if (tree->child[i].node_type == ELEMENT_NODE) // skip PI and comments
+         if (!mxml_write_subtree(writer, &tree->child[i]))
+            return FALSE;
 
    if (!mxml_close_file(writer))
       return FALSE;
@@ -1370,6 +1377,9 @@ void mxml_debug_tree(PMXML_NODE tree, int level)
    for (i=0 ; i<level ; i++)
       printf("  ");
    printf("Valu: %s\n", tree->value);
+   for (i=0 ; i<level ; i++)
+      printf("  ");
+   printf("Type: %d\n", tree->node_type);
 
    for (j=0 ; j<tree->n_attributes ; j++) {
       for (i=0 ; i<level ; i++)
