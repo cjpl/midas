@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.112  2003/04/22 10:09:21  midas
+  Added RPC_NODELAY option
+
   Revision 1.111  2003/04/15 10:50:00  midas
   Removed unnecessary elements in KEY structure
 
@@ -593,6 +596,7 @@ typedef          INT       HNDLE;
 #define RPC_CLIENT_HANDLE  9
 #define RPC_SEND_SOCK      10
 #define RPC_WATCHDOG_TIMEOUT 11
+#define RPC_NODELAY        12
 
 #define RPC_TCP            0
 #define RPC_FTCP           1
