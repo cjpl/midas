@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.127  2000/11/14 12:19:24  midas
+  Fixed bug in cm_msg_retrieve, added improved "more" feature in message display
+
   Revision 1.126  2000/11/14 08:17:04  midas
   Added number of messages for cm_msg_retrieve and in odbedit "old" command
 
@@ -1261,18 +1264,26 @@ HNDLE hDB, hKey;
     message[*buf_size-1] = 0;
     fclose(f);
 
+    /* strip line break */
+    p = message+(*buf_size-2);
+    while(p != message && (*p == '\n' || *p == '\r'))
+      *(p--) = 0;
+
     /* trim buffer so that last n_messages remain */
-    p = message+(*buf_size-3);
     for (i=0 ; i<n_message ; i++)
       {
       while (p != message && *p != '\n')
         p--;
 
-      if (*p == '\n')
+      while (p != message && (*p == '\n' || *p == '\r'))
         p--;
       }
-    while (*p == '\n' || *p == '\r')
+    if (p != message)
+      {
       p++;
+      while (*p == '\n' || *p == '\r')
+        p++;
+      }
 
     *buf_size = (*buf_size-1) - ((PTYPE)p-(PTYPE)message);
 
