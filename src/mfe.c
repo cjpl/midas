@@ -7,6 +7,9 @@
                 linked with user code to form a complete frontend
 
   $Log$
+  Revision 1.66  2004/09/21 21:09:15  midas
+  Updated event statistics to ODB properly at EOR
+
   Revision 1.65  2004/05/07 19:40:11  midas
   Replaced min/max by MIN/MAX macros
 
@@ -371,6 +374,7 @@ INT tr_start(INT rn, char *error)
 INT tr_prestop(INT rn, char *error)
 {
    INT status, i;
+   EQUIPMENT *eq;
 
    /* disable interrupts */
    interrupt_enable(FALSE);
@@ -400,6 +404,16 @@ INT tr_prestop(INT rn, char *error)
             return err;
          }
       }
+
+   /* update final statistics record in ODB */
+   for (i = 0; equipment[i].name[0]; i++) {
+      eq = &equipment[i];
+      eq->stats.events_sent += eq->events_sent;
+      eq->bytes_sent = 0;
+      eq->events_sent = 0;
+   }
+
+   db_send_changed_records();
 
    return status;
 }
@@ -585,7 +599,8 @@ INT register_equipment(void)
       db_find_key(hDB, 0, str, &hKey);
       equipment[index].hkey_variables = hKey;
 
-    /*---- Create and initialize statistics tree -------------------*/
+      /*---- Create and initialize statistics tree -------------------*/
+      
       sprintf(str, "/Equipment/%s/Statistics", equipment[index].name);
 
       status = db_check_record(hDB, 0, str, EQUIPMENT_STATISTICS_STR, TRUE);
@@ -615,7 +630,8 @@ INT register_equipment(void)
          ss_sleep(3000);
       }
 
-    /*---- open event buffer ---------------------------------------*/
+      /*---- open event buffer ---------------------------------------*/
+
       if (eq_info->buffer[0]) {
          status =
              bm_open_buffer(eq_info->buffer, EVENT_BUFFER_SIZE,
