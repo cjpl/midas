@@ -6,6 +6,9 @@
   Contents:     Disk to Tape copier for background job
 
   $Log$
+  Revision 1.9  1999/06/23 09:48:42  midas
+  Added FTP functionality
+
   Revision 1.8  1999/05/06 19:18:53  pierre
   - replace [%] by (%)
 
@@ -37,6 +40,7 @@
 \********************************************************************/
 
 #include "midas.h"
+#include <signal.h>
 #include "msystem.h"
 #include "ybos.h"
 
@@ -117,6 +121,7 @@ BOOL      zap_flag, msg_flag;
 BOOL      copy_continue = TRUE;
 INT       data_fmt, dev_type;
 char      lazylog[MAX_STRING_LENGTH];
+BOOL      full_bck_flag = FALSE;
 
 /* prototypes */
 BOOL lazy_file_exists(char * dir, char * file);
@@ -136,58 +141,23 @@ INT lazy_log_update(INT action, INT index, INT run, char * label, char * file);
 /*------------------------------------------------------------------*/
 INT lazy_log_update(INT action, INT index, INT run, char * label, char * file)
 {
-  time_t   full_time;
-  FILE *pF;
-  char str[MAX_FILE_PATH];
-  char strtime[25];
-  BOOL addtitle=FALSE;
+  char str[80];
+  
+  /* log Lazy logger to midas.log only */
+  if (action == NEW_FILE)
+    sprintf(str,"%s[%i] %s%s  %9.2e  file  NEW\n"
+	    , label, lazyst.nfiles
+	    ,lazy.path, lazyst.backfile, lazyst.file_size);
+  else if (action == REMOVE_FILE)
+    sprintf(str,"%i  %s file  REMOVED\n"
+            , run, file);
+  else if (action == REMOVE_ENTRY)
+    sprintf(str,"%s[%i] %i entry REMOVED\n"
+            , label, index,  run);
+  cm_msg(MINFO,"log",str); // fputs (str,pF);
+  return 0;
+}
 
-  /* update lazy.log */
-    sprintf(lazylog, "%s/lazy.log", lazy.dir);
-    if ((pF=fopen(lazylog, "r")) == NULL)
-      addtitle = TRUE;
-    if (pF != NULL) fclose (pF);        
-      pF = fopen(lazylog, "a");
-    if (pF)
-    {
-      if (addtitle)
-        {         
-        sprintf(str,"Date , List label[file#] , Device name , Run# , file name , file size[KB]\n");
-          fputs (str,pF);
-          sprintf(str,"------------------------------------------------------------------\n");
-          fputs (str,pF);
-        }
-      time(&full_time);
-      strcpy(strtime, ctime(&full_time));
-      strtime[24] = 0;
-      if (action == NEW_FILE)
-        {
-          sprintf(str,"%s , %s[%i] , %s , %i , %s , %9.2e , file  NEW\n"
-            , strtime, label, lazyst.nfiles
-            ,lazy.path, run, lazyst.backfile, lazyst.file_size);
-          fputs (str,pF);
-        }
-      else if (action == REMOVE_FILE)
-        {
-          sprintf(str,"%s ,       ,     , %i , %s ,  , file  REMOVED\n"
-            , strtime, run, file);
-          fputs (str,pF);
-        }
-      else if (action == REMOVE_ENTRY)
-        {
-          sprintf(str,"%s , %s[%i],     ,  %i ,   ,  , entry REMOVED\n"
-            , strtime, label, index,  run);
-          fputs (str,pF);
-        }
-        fclose (pF);
-      return 0;
-    }
-    else
-    {
-      cm_msg(MERROR,"Lazy","cannot open %s",lazylog);
-      return -1;  
-    }
-  }
 /*------------------------------------------------------------------*/
 INT ss_run_extract(char * name)
 /********************************************************************\
@@ -795,6 +765,7 @@ INT lazy_copy( char * outfile, char * infile)
 {
   INT status, no_cpy_last_time=0;
   INT last_time, cpy_loop_time;
+  static INT last_error = 0;
   char * pext;
 
   pext = malloc(strlen(infile));
@@ -814,13 +785,19 @@ INT lazy_copy( char * outfile, char * infile)
   /* open any logging file (output) */
   if ((status = yb_any_file_wopen(dev_type, data_fmt, outfile, &hDev)) != 1) 
     {
-      cm_msg(MERROR,"Lazy","cannot open %s [%d]",outfile, status);
+      if ((ss_time() - last_error) > 15*60)
+      {
+	last_error = ss_time();
+	cm_msg(MERROR,"lazy_copy","cannot open %s [%d]",outfile, status);
+      }      
       return FORCE_EXIT;
-    }      
+    }
+  /* reset error message */
+  last_error = 0;
   
   /* open input data file */
   if (yb_any_file_ropen (infile, data_fmt) != YB_SUCCESS)
-    return (-3);
+    return (FORCE_EXIT);
 
   /* force a statistics update on the first loop */
   cpy_loop_time = -2000;
@@ -828,56 +805,59 @@ INT lazy_copy( char * outfile, char * infile)
   if (msg_flag) cm_msg(MUSER,"Lazy","Starting lazy job on %s",lazyst.backfile);
   /* infinite loop while copying */
   while (1)
-    {  
-      if (copy_continue)
-        {
-          if (yb_any_physrec_get(data_fmt, &plazy, &szlazy ) == YB_SUCCESS)
-            {
-              status = yb_any_log_write(hDev, data_fmt, dev_type, plazy, szlazy);
-              if (status != SS_SUCCESS)
-                {
-                  cm_msg(MERROR,"Lazy","lazy_copy Write error %i",szlazy);
-                  return -4; 
-                }
-                lazyst.cur_size += (float) szlazy / 1024;
-                lazyst.cur_dev_size += (float) szlazy / 1024;
-                if ((ss_millitime() - cpy_loop_time) > 2000)
-                {
-                  /* update statistics */
-                  lazy_statistics_update(cpy_loop_time);
-
-                  /* check conditions */
-                  copy_continue = lazy_condition_check();
-
-                  /* update check loop */
-                  cpy_loop_time = ss_millitime();
-
-                  /* yield quickly */
-                  status = cm_yield(1);
-                  if (status == RPC_SHUTDOWN || status == SS_ABORT)
-                    cm_msg(MINFO,"Lazy","Abort postponed until end of copy %d[%]"
-                           ,lazyst.progress);
-                }
-            } /* get physrec */
-          else
-            break;
-        } /* copy_continue */
+  {  
+    if (copy_continue)
+    {
+      if (yb_any_physrec_get(data_fmt, &plazy, &szlazy ) == YB_SUCCESS)
+      {
+	status = yb_any_log_write(hDev, data_fmt, dev_type, plazy, szlazy);
+	if (status != SS_SUCCESS)
+	{
+	  /* close source file */
+	  yb_any_file_rclose(dev_type);
+	  
+	  cm_msg(MERROR,"lazy_copy","Write error %i",szlazy);
+	  return FORCE_EXIT; 
+	}
+	lazyst.cur_size += (float) szlazy / 1024;
+	lazyst.cur_dev_size += (float) szlazy / 1024;
+	if ((ss_millitime() - cpy_loop_time) > 2000)
+	{
+	  /* update statistics */
+	  lazy_statistics_update(cpy_loop_time);
+	  
+	  /* check conditions */
+	  copy_continue = lazy_condition_check();
+	  
+	  /* update check loop */
+	  cpy_loop_time = ss_millitime();
+	  
+	  /* yield quickly */
+	  status = cm_yield(1);
+	  if (status == RPC_SHUTDOWN || status == SS_ABORT)
+	    cm_msg(MINFO,"Lazy","Abort postponed until end of copy %d[%]"
+		   ,lazyst.progress);
+	}
+      } /* get physrec */
       else
-        { /* !copy_continue */
-          status = cm_yield(1000);
-          if (status == RPC_SHUTDOWN || status == SS_ABORT)
-            return FORCE_EXIT;
-          if ((ss_millitime() - no_cpy_last_time) > 5000)
-            {
-              copy_continue = lazy_condition_check();
-              no_cpy_last_time = ss_millitime();
-            }
-        } /* !copy_continue */
-    } /* while forever */
-
+	break;
+    } /* copy_continue */
+    else
+    { /* !copy_continue */
+      status = cm_yield(1000);
+      if (status == RPC_SHUTDOWN || status == SS_ABORT)
+	return FORCE_EXIT;
+      if ((ss_millitime() - no_cpy_last_time) > 5000)
+      {
+	copy_continue = lazy_condition_check();
+	no_cpy_last_time = ss_millitime();
+      }
+    } /* !copy_continue */
+  } /* while forever */
+  
   /* update for last the statistics */
-   lazy_statistics_update(cpy_loop_time);
-
+  lazy_statistics_update(cpy_loop_time);
+  
   /* close log device */
   yb_any_file_rclose(dev_type);
   
@@ -973,8 +953,23 @@ INT lazy_main (HNDLE hDB, HNDLE hKey)
   
   /* check if space on device (none empty tape label) */
   if (lazy.backlabel[0] == '\0')
+  {
+    full_bck_flag = TRUE;
     return NOTHING_TODO;
-  
+  }
+  else
+  {
+    if (full_bck_flag)
+    {
+      full_bck_flag = FALSE;
+      size = sizeof(lazyst);
+      memset(&lazyst,0,size);
+      if (db_find_key(hDB, 0, "/Lazy/Statistics",&hKeyst) == DB_SUCCESS)
+	status = db_set_record(hDB, hKeyst, &lazyst, size, 0);
+      else
+	cm_msg(MERROR,"Lazy","did not find /Lazy/Statistics for zapping");
+    }
+  }
   /* check if data dir is none empty */
   if (lazy.dir[0] == '\0')
     {
@@ -1094,13 +1089,7 @@ INT lazy_main (HNDLE hDB, HNDLE hKey)
           db_set_value (hDB, 0, "/Lazy/Settings/List label"
                         , lazy.backlabel, size, 1, TID_STRING);
 
-          /* reset the statistics */
-          size = sizeof(lazyst);
-          memset(&lazyst,0,size);
-          if (db_find_key(hDB, 0, "/Lazy/Statistics",&hKeyst) == DB_SUCCESS)
-            status = db_set_record(hDB, hKeyst, &lazyst, size, 0);
-          else
-            cm_msg(MERROR,"Lazy","did not find /Lazy/Statistics for zapping");
+	  full_bck_flag = TRUE;
           cm_msg(MINFO,"Lazy","Not enough space for next copy on backup device!");
           return NOTHING_TODO;
         }
@@ -1118,8 +1107,15 @@ INT lazy_main (HNDLE hDB, HNDLE hKey)
       else if(dev_type == LOG_TYPE_TAPE)
           strcpy(outffile, lazy.path); 
       else if(dev_type == LOG_TYPE_FTP)
+        {
+          if (lazy.path[0] != 0)
+            if (lazy.path[strlen(lazy.path)-1] != DIR_SEPARATOR)
+              strcat(lazy.path, DIR_SEPARATOR_STR);
           strcpy(outffile, lazy.path); 
-           
+          strcat(outffile, ",");
+	  strcat(outffile, lazyst.backfile);
+        }
+            
       /* Finally do the copy */
       if ((status = lazy_copy(outffile, inffile)) != 0)
         {
@@ -1215,6 +1211,9 @@ int main(unsigned int argc,char **argv)
          return 0;
         }
     }
+
+  /* Handle SIGPIPE signals generated from errors on the pipe */
+  signal( SIGPIPE, SIG_IGN );
   
   /* connect to experiment */
   status = cm_connect_experiment(host_name, expt_name, "LazyLogger", 0);
@@ -1310,8 +1309,6 @@ int main(unsigned int argc,char **argv)
       if ((ss_millitime() - mainlast_time) > 10000)
         {
           status = lazy_main( hDB, hKey );
-          if (status == FORCE_EXIT)
-            break;
           mainlast_time = ss_millitime();
         }      
       ch = 0;
