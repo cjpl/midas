@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.119  2004/07/09 10:02:01  midas
+  Added patch in write_event_midas from Paul Knowles
+
   Revision 1.118  2004/05/07 19:40:11  midas
   Replaced min/max by MIN/MAX macros
 
@@ -835,29 +838,23 @@ EVENT_DEF *db_get_event_definition(short int event_id)
    char str[80];
    HNDLE hKey, hKeyRoot;
    WORD id;
-
-#define EVENT_DEF_CACHE_SIZE 30
    static EVENT_DEF *event_def = NULL;
-
-   /* allocate memory for cache */
-   if (event_def == NULL)
-      event_def = (EVENT_DEF *) calloc(EVENT_DEF_CACHE_SIZE, sizeof(EVENT_DEF));
-
-   /* lookup if event definition in cache */
-   for (i = 0; event_def[i].event_id; i++)
-      if (event_def[i].event_id == event_id)
-         return &event_def[i];
+   static int n_cache = 0;
 
    /* search free cache entry */
-   for (index = 0; index < EVENT_DEF_CACHE_SIZE; index++)
-      if (event_def[index].event_id == 0)
-         break;
+   for (index = 0; index < n_cache ; index++)
+      if (event_def[index].event_id == event_id)
+         return &event_def[index];
 
-   if (index == EVENT_DEF_CACHE_SIZE) {
-      cm_msg(MERROR, "db_get_event_definition", "too many event definitions");
-      return NULL;
-   }
+   /* If we get here, we have an undefined ID;
+      allocate memory for it, zero it, then cache the ODB data */
+   n_cache = index+1;
 
+   event_def = (EVENT_DEF *) realloc(event_def, (n_cache)*sizeof(EVENT_DEF));
+   assert(event_def);
+   
+   memset(&event_def[index], 0, sizeof(EVENT_DEF));
+   
    /* check for system events */
    if (event_id < 0) {
       event_def[index].event_id = event_id;
@@ -2691,7 +2688,7 @@ INT write_event_midas(FILE * file, EVENT_HEADER * pevent, ANALYZE_REQUEST * par)
          } while (1);
 
          /* set event size in header */
-         size = (PTYPE) pdata_copy - (PTYPE) pbuf;
+         size = ALIGN8((PTYPE) pdata_copy - (PTYPE) pbuf);
          pevent_copy->data_size = size;
          size += sizeof(EVENT_HEADER);
       }
