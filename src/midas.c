@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.148  2002/05/08 22:15:24  pierre
+  add db_get_value arg doc
+
   Revision 1.147  2002/05/08 19:54:40  midas
   Added extra parameter to function db_get_value()
 
@@ -2951,7 +2954,7 @@ the parameter can be NULL.
  int   size;
  db_get_experiment_database(&hdb, &hkeyclient);
  size = sizeof(name);
- db_get_value(hdb, hkeyclient, "Name", name, &size, TID_STRING);
+ db_get_value(hdb, hkeyclient, "Name", name, &size, TID_STRING, TRUE);
  printf("My name is %s\n", name);
 \end{verbatim}
 \end{description}
