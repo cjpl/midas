@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.126  2000/05/16 11:47:37  midas
+  Change "experiment" to "logbook" in elog mode
+
   Revision 1.125  2000/05/11 14:13:04  midas
   Fixed two bugs
 
@@ -1620,7 +1623,10 @@ BOOL   display_run_number;
   db_get_value(hDB, 0, "/Experiment/Name", str, &size, TID_STRING);
 
   rsprintf("<tr><th bgcolor=#A0A0FF>MIDAS Electronic Logbook");
-  rsprintf("<th bgcolor=#A0A0FF>Experiment \"%s\"</tr>\n", str);
+  if (elog_mode)
+    rsprintf("<th bgcolor=#A0A0FF>Logbook \"%s\"</tr>\n", str);
+  else
+    rsprintf("<th bgcolor=#A0A0FF>Experiment \"%s\"</tr>\n", str);
 
   /*---- menu buttons ----*/
 
@@ -5632,7 +5638,7 @@ DWORD       bsize, tsize;
 int         length, aoffset, toffset;
 int         flag, x1, y1, x2, y2, xs, ys, xold, yold;
 int         white, black, grey, ltgrey, red, green, blue, curve_col[MAX_VARS];
-char        str[256], panel[NAME_LENGTH], name[256], *p, odbpath[256];
+char        str[256], panel[NAME_LENGTH], *p, odbpath[256];
 INT         var_index[MAX_VARS], *event_id_list, event_id;
 DWORD       name_size, id_size, type;
 char        event_name[MAX_VARS][NAME_LENGTH], *event_name_list;
