@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.165  2002/09/09 17:57:14  pierre
+  #if !defined(OS_VXWORKS) for eb_ & hs_ section
+
   Revision 1.164  2002/06/25 19:39:48  pierre
   doc++ functions
 
@@ -13750,7 +13753,7 @@ INT bk_swap(void *event, BOOL force)
 }
 
 /*------------------------------------------------------------------*/
-
+#if !defined(OS_VXWORKS)
 /********************************************************************\
 *                                                                    *
 *                 History functions                                  *
@@ -15633,7 +15636,7 @@ char         str[80];
 
   return HS_SUCCESS;
 }
-
+#endif /* OS_VXWORKS hs section */
 /*------------------------------------------------------------------*/
 
 /********************************************************************\
@@ -17313,7 +17316,7 @@ ALARM_PERIODIC_STR(alarm_periodic_str);
 }
 
 /*------------------------------------------------------------------*/
-
+#if !defined(OS_VXWORKS)
 /********************************************************************\
 *                                                                    *
 *                 Event buffer functions                             *
@@ -17673,6 +17676,7 @@ INT  size, i;
 
   return CM_SUCCESS;
 }
+#endif  /* OS_VXWORKS  eb section */
 
 /*------------------------------------------------------------------*/
 
