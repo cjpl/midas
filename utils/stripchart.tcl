@@ -50,6 +50,9 @@ exec bltwish "$0" -- ${1+"$@"}
 #
 #  Revision History:
 #    $Log$
+#    Revision 1.5  2000/06/02 20:40:59  pierre
+#    - Correct file date decoding due to octal (04) instead of decimal
+#
 #    Revision 1.4  2000/05/01 16:34:41  pierre
 #    - Added File .hst selection
 #    - Improve X-axis labels
@@ -227,9 +230,9 @@ proc select_graph {item} {
 
     # add day of the week if using the history command
     if {$doing_mhist} {
-	$fgraph xaxis configure -loose 0 -title "" -command {my_clock_format "%d.%m %H:%M"}
+	$fgraph xaxis configure -loose 1 -title "" -command {my_clock_format "%d.%m %H:%M"}
     } else {
-	$fgraph xaxis configure -loose 0 -title "" -command {my_clock_format %H:%M}
+	$fgraph xaxis configure -loose 1 -title "" -command {my_clock_format %H:%M}
     }
 	
     $fgraph element create line 
@@ -937,7 +940,18 @@ proc read_mhist { } {
 
 proc calc_history_stop_time {day_part mon_part yre_part} {
     global history_unit history_amount
-    
+
+# problem - if the amount starts with 0, like 08 say, tcl
+# thinks its octal !
+# So check whether its two digits:if so trim of leading zero.
+
+    if {[string length $day_part] == 2} {
+	set day_part [string trimleft $day_part 0]
+    }
+    if {[string length $mon_part] == 2} {
+	set mon_part [string trimleft $mon_part 0]
+    }
+
     switch -glob -- $history_unit {
 	"days"   {
 	    set lday_part  [expr $day_part + $history_amount ]
