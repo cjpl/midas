@@ -9,6 +9,9 @@ Name "ELOG"
 ; The file to write
 OutFile "elog${VERSION}.exe"
 
+; Overwrite setting
+SetOverwrite on
+
 ; The default installation directory
 InstallDir $PROGRAMFILES\ELOG
 ; Registry key to check for directory (so if you install again, it will 
@@ -29,7 +32,7 @@ Section "ELOG system (required)"
   File utils\elog*.c
   File nt\bin\elog*.exe
   File /oname=elogd.cfg c:\elog\elogd_sample.cfg 
-  File m:\html\elog\eloghelp.html
+  File utils\eloghelp_en.html
   
   File /oname=readme.html m:\html\elog\index.html
   File m:\html\elog\config.html
@@ -56,8 +59,10 @@ SectionEnd
 ; optional section
 Section "Multi-language support"
   SetOutPath $INSTDIR
-  File m:\html\elog\eloghelp.german
-  File m:\html\elog\eloglang.german
+  File utils\eloghelp_ge.html
+  File utils\eloghelp_fr.html
+  File utils\eloglang.german
+  File utils\eloglang.french
 SectionEnd
 
 ; optional section
