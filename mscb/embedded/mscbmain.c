@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol main program
 
   $Log$
+  Revision 1.45  2004/05/18 14:16:39  midas
+  Do watchdog disable first in setup()
+
   Revision 1.44  2004/04/30 08:00:53  midas
   LED only blinks on writing
 
@@ -216,12 +219,25 @@ bit new_address, debug_new_i, debug_new_o;      // used for LCD debug output
 bit flash_param;                // used for EEPROM flashing
 bit flash_program;              // used for upgrading firmware
 bit reboot;                     // used for rebooting
+bit configured;                 // TRUE if node is configured
 
 /*------------------------------------------------------------------*/
 
 void setup(void)
 {
    unsigned char i, adr;
+
+   /* first disable watchdog */
+#ifdef CPU_CYGNAL
+#if defined(CPU_C8051F310)
+   PCA0MD = 0x00;
+#else
+   WDTCN = 0xDE;
+   WDTCN = 0xAD;
+#endif
+#else /* CPU_CYGNAL */
+
+#endif
 
 #ifdef CPU_CYGNAL
 
@@ -248,7 +264,6 @@ void setup(void)
    P0MDIN  = 0xF3;              // P0.2&3 as analog input for Xtal
 
    /* Select external quartz oscillator */
-   PCA0MD = 0x00;               // disable watchdog
    OSCXCN = 0x67;
    for (i=0 ; i<255 ; i++);
    while ((OSCXCN & 0x80) == 0);
@@ -285,14 +300,13 @@ void setup(void)
 #if defined(CPU_C8051F310)
 
 #ifdef USE_WATCHDOG
-   PCA0MD = 0x00;               // disable watchdog
    PCA0CPL4 = 255;              // 71.1 msec
    PCA0MD = 0x40;               // enable watchdog
 #endif
 
    /* enable reset pin and watchdog reset */
    RSTSRC = 0x09;
-#else
+#else /* CPU_C8051F310 */
 
 #ifdef USE_WATCHDOG
    WDTCN = 0x07;                // 95 msec
@@ -326,6 +340,7 @@ void setup(void)
    RS485_ENABLE = 0;
    i_in = i_out = n_out = 0;
    _cur_sub_addr = 0;
+   configured = 0;
 
    uart_init(0, BD_115200);
 
@@ -355,8 +370,13 @@ void setup(void)
       /* call user initialization routine with initialization */
       user_init(1);
 
+	  /* outcommented, keep unconfigured state until explicit flash through command
       eeprom_flash();
+	  */
    } else
+      /* remember configured flag */
+      configured = 1;
+
       /* call user initialization routine without initialization */
       user_init(0);
 
@@ -365,13 +385,14 @@ void setup(void)
    if (WDS)
 #endif
 #ifdef CPU_CYGNAL
-      if (RSTSRC & 0x08)
+   if (RSTSRC & 0x08)
 #endif
       {
-         WD_RESET = 1;
-         sys_info.wd_counter++;
-         eeprom_flash();
-      }
+      WD_RESET = 1;
+      sys_info.wd_counter++;
+      eeprom_flash();
+   }
+
 #ifdef LCD_SUPPORT
    lcd_setup();
 
@@ -1103,6 +1124,10 @@ void yield(void)
 #endif
 #endif
 
+   /* blink LED if not configured */
+   if (!configured)
+      led_blink(0, 1, 150);
+
    /* flash EEPROM if asked by interrupt routine */
    if (flash_param) {
       flash_param = 0;
@@ -1111,6 +1136,7 @@ void yield(void)
       sys_info.wd_counter = 0;
 
       eeprom_flash();
+	  configured = 1;
    }
 
    if (flash_program) {
