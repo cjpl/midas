@@ -7,6 +7,9 @@
                 SUBM250 running on Cygnal C8051F320
 
   $Log$
+  Revision 1.7  2004/12/21 10:46:47  midas
+  Adjusted timeouts
+
   Revision 1.6  2004/07/21 14:18:55  midas
   Restructured timer usage
 
@@ -241,13 +244,22 @@ unsigned char rs485_send()
 
 void rs485_receive()
 {
-unsigned char i, n;
+unsigned char  n;
+unsigned short i, to;
 
    if (rs485_flags & RS485_FLAG_NO_ACK)
       return;
 
+   if (rs485_flags & RS485_FLAG_SHORT_TO)
+      to = 4;     // 400 us for PING
+   else if (rs485_flags & RS485_FLAG_LONG_TO)    
+      to = 10000; // 1 s for flash/upgrade
+   else 
+      to = 100;   // 10 ms for other commands
+
    n = 0;
-   for (i = 0; i<100 ; i++) {
+
+   for (i = 0; i<to ; i++) {
 
       /* check for PING acknowledge (single byte) */
       if ((usb_rx_buf[1] == MCMD_PING16 ||
@@ -275,16 +287,12 @@ unsigned char i, n;
          }
       }
 
-      if (rs485_flags & RS485_FLAG_SHORT_TO)        // 200us for PING
-         delay_us(2);
-      else if (rs485_flags & RS485_FLAG_LONG_TO)    // 1 s for flash/upgrade
-         delay_ms(10);
-      else
-         delay_us(100);                             // 10ms for other commands
+      watchdog_refresh();
+      delay_us(100);
    }
 
    /* send timeout */
-   if (i == 100) {
+   if (i == to) {
       usb_tx_buf[0] = 0xFF;
       usb_send(usb_tx_buf, 1);
    }
@@ -298,6 +306,7 @@ unsigned char i, n;
 
 void main(void)
 {
+ 
    setup();
    usb_init(usb_rx_buf, &n_usb_rx);
    n_usb_rx = 0;
