@@ -9,6 +9,9 @@
                 for SCS-300 Parallel Port Interface
 
   $Log$
+  Revision 1.5  2003/02/19 16:05:36  midas
+  Added 'init' parameter to user_init
+
   Revision 1.4  2003/01/16 16:29:49  midas
   Removed SIZE_32
 
@@ -78,7 +81,7 @@ void user_write(unsigned char channel) reentrant;
 
 /*---- User init function ------------------------------------------*/
 
-void user_init(void)
+void user_init(unsigned char init)
 {
   /* set initial state of lines */
   LPT_DATA   = 0xFF;

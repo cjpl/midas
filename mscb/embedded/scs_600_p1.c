@@ -9,6 +9,9 @@
                 for SCS-600 Digital I/O
 
   $Log$
+  Revision 1.3  2003/02/19 16:05:36  midas
+  Added 'init' parameter to user_init
+
   Revision 1.2  2002/11/22 15:43:03  midas
   Made user_write reentrant
 
@@ -102,21 +105,20 @@ void user_write(unsigned char channel) reentrant;
 
 /*---- User init function ------------------------------------------*/
 
-void user_init(void)
+void user_init(unsigned char init)
 {
 unsigned char i;
 
   PRT1CF = 0xFF;  // push-pull for P1
   /* initialize configuration data */
 
-  if (user_conf.power[0] <= 0 || user_conf.power[0] > 100)
+  if (init)
     {
     for (i=0 ; i<8 ; i++)
       {
       user_data.out[i] = 0;
       user_conf.power[i] = 100;
       }
-    eeprom_flash();
     }
 }
 

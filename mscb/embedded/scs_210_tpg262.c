@@ -10,6 +10,9 @@
                 Pfeiffer Dual Gauge TPG262 vacuum sensor
 
   $Log$
+  Revision 1.7  2003/02/19 16:05:36  midas
+  Added 'init' parameter to user_init
+
   Revision 1.6  2002/11/28 14:44:02  midas
   Removed SIZE_XBIT
 
@@ -78,15 +81,11 @@ void write_gain(void);
 
 /*---- User init function ------------------------------------------*/
 
-void user_init(void)
+void user_init(unsigned char init)
 {
   /* initialize UART1 */
-  if (user_conf.baud == 0xFF ||
-      user_conf.baud == 0)
-    {
+  if (init)
     user_conf.baud = 1; // 9600 by default
-    eeprom_flash();
-    }
 
   uart_init(1, user_conf.baud);
 }
