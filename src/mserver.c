@@ -6,6 +6,9 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
+  Revision 1.51  2004/09/28 20:37:03  midas
+  Added more debugging info
+
   Revision 1.50  2004/09/28 20:21:05  midas
   Fixed missing LF in debug output
 
@@ -199,8 +202,12 @@ void debug_print(char *msg)
    if (f != NULL) {
       fprintf(f, "%s\n", msg);
       fclose(f);
-   } else
-      printf("Cannot open \"mserver.log\": %s\n", strerror(errno));
+   } else {
+      char str[256];
+
+      getcwd(str, sizeof(str));
+      printf("Cannot open \"%s\\mserver.log\": %s\n", str, strerror(errno));
+   }
 }
 
 /*---- main --------------------------------------------------------*/
