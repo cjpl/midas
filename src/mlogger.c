@@ -6,6 +6,9 @@
   Contents:     MIDAS logger program
 
   $Log$
+  Revision 1.66  2003/10/13 00:26:40  olchansk
+  abort on use of invalid run number zero on auto restart
+
   Revision 1.65  2003/05/14 14:09:25  midas
   Better error messages
 
@@ -3274,6 +3277,12 @@ usage:
         auto_restart = 0;
         size = sizeof(run_number);
         db_get_value(hDB, 0, "/Runinfo/Run number", &run_number, &size, TID_INT, TRUE);
+
+        if (run_number <= 0)
+          {
+          cm_msg(MERROR, "main", "aborting on attempt to use invalid run number %d", run_number);
+          abort();
+          }
 
         cm_msg(MTALK, "main", "starting new run");
         status = cm_transition(TR_START, run_number+1, NULL, 0, ASYNC, FALSE);
