@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.120  2003/06/12 18:34:37  pierre
+  add ss_tape_get_blockn
+
   Revision 1.119  2003/05/09 07:40:04  midas
   Added extra parameter to cm_get_environment
 
@@ -1857,6 +1860,7 @@ INT EXPRT ss_tape_rewind(INT channel);
 INT EXPRT ss_tape_spool(INT channel);
 INT EXPRT ss_tape_mount(INT channel);
 INT EXPRT ss_tape_unmount(INT channel);
+INT EXPRT ss_tape_get_blockn(INT channel);
 
 /*---- disk routines ----*/
 double EXPRT ss_disk_free(char *path);
