@@ -9,8 +9,11 @@
 		See further comment in fe1.c (replace 1 by 2)
 		
   $Log$
-  Revision 1.1  2002/01/17 20:22:16  pierre
-  Initial revision
+  Revision 1.2  2002/07/13 05:46:34  pierre
+  added frag declaration
+
+  Revision 1.1.1.1  2002/01/17 20:22:16  pierre
+  Initial Version
 
 \********************************************************************/
 
@@ -39,6 +42,7 @@ INT display_period = 3000;
 
 /* maximum event size produced by this frontend */
 INT max_event_size = 1000;
+INT max_event_size_frag = 0;
 
 /* buffer size to hold events */
 INT event_buffer_size = 10*1000;
