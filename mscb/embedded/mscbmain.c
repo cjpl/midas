@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol main program
 
   $Log$
+  Revision 1.10  2002/10/03 15:31:53  midas
+  Various modifications
+
   Revision 1.9  2002/08/12 12:12:28  midas
   Added zero padding
 
@@ -38,10 +41,6 @@
 #include <stdio.h>
 #include <string.h>
 #include "mscb.h"
-
-/* bit definitions */
-sbit LED =               P3^4;   // red LED on SCS100/SCS101
-sbit RS485_ENABLE =      P3^5;   // enable bit for MAX1483
 
 /* GET_INFO attributes */
 #define GET_INFO_GENERAL 0
@@ -76,6 +75,12 @@ extern char code node_name[];
 
 /*------------------------------------------------------------------*/
 
+/* funtions in mscbutil.c */
+extern void rs232_output(void);
+
+/*------------------------------------------------------------------*/
+
+
 /* variables in internal RAM */
 
 unsigned char idata in_buf[10], out_buf[8];  // move buffers to IDATA 
@@ -106,17 +111,29 @@ void setup(void)
 {
 unsigned char i;
 
-#ifdef CPU_C8051F000
+#ifdef CPU_CYGNAL
   
+  /* Port configuration (1 = Push Pull Output) */
+
+#ifdef CPU_C8051F020
+  XBR0 = 0x04; // Enable UART0 & UART1
+  XBR1 = 0x00;
+  XBR2 = 0x44;
+
+  P0MDOUT = 0x05;  // P0.0,2: TX = Push Pull
+  P1MDOUT = 0x00;  // P1: LPT
+  P2MDOUT = 0x00;  // P2: LPT
+  P3MDOUT = 0xE0;  // P3.5,6,7: Optocouplers
+#else
   XBR0 = 0x04; // Enable RX/TX
   XBR1 = 0x00;
   XBR2 = 0x40; // Enable crossbar
 
-  /* Port configuration (1 = Push Pull Output) */
   PRT0CF = 0xFF;  // P0: TX = Push Pull
   PRT1CF = 0xFF;  // P1
   PRT2CF = 0x00;  // P2  Open drain for 5V LCD
   PRT3CF = 0x00;  // P3
+#endif
 
   /* Disable watchdog (for LCD setup with delays) */
   WDTCN  = 0xDE;
@@ -128,12 +145,15 @@ unsigned char i;
 
 #endif
 
+  /* start system clock */
+  sysclock_init();
+
   /* init memory */
   CSR = 0;
-  LED = 0;
+  LED = LED_OFF;
   RS485_ENABLE = 0;
 
-  uart_init(BD_115200);
+  uart_init(0, BD_115200);
 
   /* retrieve EEPROM data */
   eeprom_retrieve();
@@ -147,11 +167,11 @@ unsigned char i;
     sys_info.wd_counter = 0;
 
     // init channel variables
-    for (i=0 ; channel[i].width ; i++)
+    for (i=0 ; channel[i].name[0] ; i++)
       memset(channel[i].ud, 0, channel[i].width);
   
     // init configuration parameters 
-    for (i=0 ; conf_param[i].width ; i++)
+    for (i=0 ; conf_param[i].name[0] ; i++)
       memset(conf_param[i].ud, 0, conf_param[i].width);
 
     eeprom_flash();
@@ -161,7 +181,7 @@ unsigned char i;
 #ifdef CPU_ADUC812
   if (WDS)
 #endif
-#ifdef CPU_C8051F000
+#ifdef CPU_CYGNAL
   if (RSTSRC & 0x08)
 #endif
     {
@@ -172,15 +192,18 @@ unsigned char i;
 
   lcd_setup();
   lcd_clear();
+
+#ifndef SCS_210 // do not print to UART1
   printf("AD:%04X GA:%04X WD:%d", sys_info.node_addr, 
           sys_info.group_addr, sys_info.wd_counter);
+#endif
 
   /* Blink LED */
   for (i=0 ; i<5 ; i++)
     {
-    LED = 1;
+    LED = LED_ON;
     delay_ms(100);
-    LED = 0;
+    LED = LED_OFF;
     delay_ms(200);
     }
 
@@ -191,7 +214,7 @@ unsigned char i;
   WDCON = 0xE0;      // 2048 msec
   WDE = 1;
 #endif
-#ifdef CPU_C8051F000
+#ifdef CPU_CYGNAL
   WDTCN=0x07;        // 95 msec
 #endif
 
@@ -237,11 +260,11 @@ void interprete(void);
 
 void serial_int(void) interrupt 4 using 1
 {
-  if (TI)
+  if (TI0)
     {
     /* character has been transferred */
     
-    TI = 0;               // clear TI flag
+    TI0 = 0;               // clear TI flag
 
     i_out++;              // increment output counter
     if (i_out == n_out)
@@ -252,23 +275,24 @@ void serial_int(void) interrupt 4 using 1
       }
     else
       {
-      SBUF = out_buf[i_out];  // send character
+      SBUF0 = out_buf[i_out];  // send character
       }
     }
-  else
+
+  if (RI0)
     {
     /* character has been received */
 
-    if (!RB8 && !addressed)
+    if (!RB80 && !addressed)
       {
-      RI = 0;
+      RI0 = 0;
       i_in = 0;
       return;           // discard data if not bit9 and not addressed
       }
 
-    RB8 = 0;
-    in_buf[i_in++] = SBUF;
-    RI = 0;
+    RB80 = 0;
+    in_buf[i_in++] = SBUF0;
+    RI0 = 0;
 
     if (i_in == 1)
       {
@@ -318,13 +342,13 @@ void set_addressed(unsigned char mode, bit flag)
   if (flag)
     {
     addressed = 1;
-    LED = 1;
+    LED = LED_ON;
     addr_mode = mode;
     }
   else
     {
     addressed = 0;
-    LED = 0;
+    LED = LED_OFF;
     addr_mode = ADDR_NONE;
     }
 }
@@ -333,9 +357,9 @@ void send_byte(unsigned char d, unsigned char data *crc)
 {
   if (crc)
     *crc = crc8_add(*crc, d);
-  SBUF = d;
-  while (!TI);
-  TI = 0;
+  SBUF0 = d;          
+  while (!TI0);
+  TI0 = 0;
 }
 
 void interprete(void)
@@ -374,7 +398,7 @@ MSCB_INFO_CHN code *pchn;
         out_buf[0] = CMD_ACK;
         n_out = 1;
         RS485_ENABLE = 1;
-        SBUF = CMD_ACK;
+        SBUF0 = CMD_ACK;
         }
       break;
 
@@ -385,12 +409,12 @@ MSCB_INFO_CHN code *pchn;
         out_buf[0] = CMD_ACK;
         n_out = 1;
         RS485_ENABLE = 1;
-        SBUF = CMD_ACK;
+        SBUF0 = CMD_ACK;
         }
       break;
 
     case CMD_INIT:
-#ifdef CPU_C8051F000
+#ifdef CPU_CYGNAL
       RSTSRC = 0x02;   // force power-on reset
 #endif
       break;
@@ -398,7 +422,7 @@ MSCB_INFO_CHN code *pchn;
     case CMD_GET_INFO:
       /* general info */
 
-      ES = 0;                     // temporarily disable serial interrupt
+      ES0 = 0;                     // temporarily disable serial interrupt
       crc = 0;
       RS485_ENABLE = 1;
 
@@ -408,12 +432,12 @@ MSCB_INFO_CHN code *pchn;
       send_byte(CSR, &crc);       // send node status
 
       for (i=0 ; ; i++)           // send number of channels
-        if (channel[i].width == 0)
+        if (channel[i].name[0] == 0)
           break;
       send_byte(i, &crc);
 
       for (i=0 ; ; i++)           // send number of configuration parameters
-        if (conf_param[i].width == 0)
+        if (conf_param[i].name[0] == 0)
           break;
       send_byte(i, &crc);
 
@@ -432,7 +456,7 @@ MSCB_INFO_CHN code *pchn;
       send_byte(crc, NULL);                        // send CRC code
 
       RS485_ENABLE = 0;
-      ES = 1;                                      // re-enable serial interrupts
+      ES0 = 1;                                      // re-enable serial interrupts
       break;
 
     case CMD_GET_INFO+2:
@@ -443,7 +467,7 @@ MSCB_INFO_CHN code *pchn;
       else
         pchn = conf_param+in_buf[2];
       
-      ES = 0;                     // temporarily disable serial interrupt
+      ES0 = 0;                     // temporarily disable serial interrupt
       crc = 0;
       RS485_ENABLE = 1;
 
@@ -460,7 +484,7 @@ MSCB_INFO_CHN code *pchn;
       send_byte(crc, NULL);                        // send CRC code
 
       RS485_ENABLE = 0;
-      ES = 1;                                      // re-enable serial interrupts
+      ES0 = 1;                                      // re-enable serial interrupts
       break;
 
     case CMD_SET_ADDR:
@@ -476,7 +500,7 @@ MSCB_INFO_CHN code *pchn;
       break;
 
     case CMD_SET_BAUD:
-      uart_init(in_buf[1]);
+      // uart_init(0, in_buf[1]);
       break;
 
     case CMD_FREEZE:
@@ -499,24 +523,32 @@ MSCB_INFO_CHN code *pchn;
       out_buf[1] = in_buf[i_in-1];
       n_out = 2;
       RS485_ENABLE = 1;
-      SBUF = out_buf[0];
+      SBUF0 = out_buf[0];
       break;
 
     case CMD_READ:
-      user_read(in_buf[1]);  // let user readout routine update data buffer
-
       n = channel[in_buf[1]].width; // number of bytes to return
 
-      out_buf[0] = CMD_ACK + n;
-      for (i=0 ; i<n ; i++)
-        out_buf[1+i] = ((char idata *)channel[in_buf[1]].ud)[i];  // copy user data
+      if (n == 0)
+        {
+        n = user_read(in_buf[1]);  // for 0-bit channels, user routine returns bytes
+        out_buf[0] = CMD_ACK + n;
+        }
+      else
+        {
+        user_read(in_buf[1]);
 
-      out_buf[1+i] = crc8(out_buf, 1 + n); // generate CRC code
+        out_buf[0] = CMD_ACK + n;
+        for (i=0 ; i<n ; i++)
+          out_buf[1+i] = ((char idata *)channel[in_buf[1]].ud)[i];  // copy user data
+        }
+
+      out_buf[1+n] = crc8(out_buf, 1 + n); // generate CRC code
 
       /* send result */
       n_out = 2 + n;
       RS485_ENABLE = 1;
-      SBUF = out_buf[0];
+      SBUF0 = out_buf[0];
 
       break;
 
@@ -534,7 +566,7 @@ MSCB_INFO_CHN code *pchn;
       /* send result */
       n_out = 2 + n;
       RS485_ENABLE = 1;
-      SBUF = out_buf[0];
+      SBUF0 = out_buf[0];
 
       break;
     }
@@ -546,7 +578,7 @@ MSCB_INFO_CHN code *pchn;
     out_buf[n+1] = crc8(out_buf, n+1);
     n_out = n+2;
     RS485_ENABLE = 1;
-    SBUF = out_buf[0];
+    SBUF0 = out_buf[0];
     }
 
   if (cmd == CMD_WRITE_NA ||
@@ -566,7 +598,7 @@ MSCB_INFO_CHN code *pchn;
       out_buf[1] = in_buf[i_in-1];
       n_out = 2;
       RS485_ENABLE = 1;
-      SBUF = out_buf[0];
+      SBUF0 = out_buf[0];
       }
     }
 
@@ -591,7 +623,7 @@ MSCB_INFO_CHN code *pchn;
     out_buf[1] = in_buf[i_in-1];
     n_out = 2;
     RS485_ENABLE = 1;
-    SBUF = out_buf[0];
+    SBUF0 = out_buf[0];
     }
 
 }
@@ -614,6 +646,9 @@ void main(void)
     /* output debug info to LCD if asked by interrupt routine */
     debug_output();
 
+    /* output RS232 data if present */
+    rs232_output();
+    
     /* output new address to LCD if available */
     if (new_address)
       {

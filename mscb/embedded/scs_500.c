@@ -9,6 +9,9 @@
                 for SCS-500 analog I/O
 
   $Log$
+  Revision 1.5  2002/10/03 15:31:53  midas
+  Various modifications
+
   Revision 1.4  2002/08/12 12:11:49  midas
   No voltage output in debug mode
 
@@ -127,6 +130,8 @@ void user_init(void)
 
   /* write gains */
   write_gain();
+
+  // DEBUG_MODE = 1;
 }
 
 /*---- User write function -----------------------------------------*/
@@ -233,9 +238,9 @@ void user_read_conf(unsigned char channel)
 unsigned char user_func(unsigned char idata *data_in,
                         unsigned char idata *data_out)
 {
-  /* return some dummy data */
-  data_out[0] = data_in[0]+1;
-  data_out[1] = data_in[1]+1;
+  /* echo input data */
+  data_out[0] = data_in[0];
+  data_out[1] = data_in[1];
   return 2;
 }
 

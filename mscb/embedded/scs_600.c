@@ -9,6 +9,9 @@
                 for SCS-600 Digital I/O
 
   $Log$
+  Revision 1.2  2002/10/03 15:31:53  midas
+  Various modifications
+
   Revision 1.1  2002/07/12 15:20:08  midas
   Initial revision
 
@@ -122,9 +125,10 @@ void user_read_conf(unsigned char channel)
 unsigned char user_func(unsigned char idata *data_in,
                         unsigned char idata *data_out)
 {
-  if (data_in);
-  if (data_out);
-  return 0;
+  /* echo input data */
+  data_out[0] = data_in[0];
+  data_out[1] = data_in[1];
+  return 2;
 }
 
 /*---- User loop function ------------------------------------------*/

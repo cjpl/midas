@@ -9,6 +9,9 @@
                 for SCS-400 thermo couple I/O
 
   $Log$
+  Revision 1.2  2002/10/03 15:31:53  midas
+  Various modifications
+
   Revision 1.1  2002/08/08 06:46:03  midas
   Initial revision
 
@@ -17,10 +20,13 @@
 #include <stdio.h>
 #include "mscb.h"
 
+extern bit FREEZE_MODE;
+extern bit DEBUG_MODE;
+
 char code node_name[] = "SCS-400";
 
 #define GAIN      0   // gain for internal PGA
-#define AVERAGE  10   // average 2^10 times
+#define AVERAGE  12   // average 2^12 times
 
 /*---- Define channels and configuration parameters returned to
        the CMD_GET_INFO command                                 ----*/
@@ -28,8 +34,8 @@ char code node_name[] = "SCS-400";
 /* data buffer (mirrored in EEPROM) */
 
 struct {
-  unsigned char power[4];
-  unsigned int  adc[8];
+  unsigned char  power[4];
+  float          temp[4];
 } user_data;
 
 
@@ -38,14 +44,10 @@ MSCB_INFO_CHN code channel[] = {
   1, 0, 0, 0, "Power1", &user_data.power[1],
   1, 0, 0, 0, "Power2", &user_data.power[2],
   1, 0, 0, 0, "Power3", &user_data.power[3],
-  2, 0, 0, 0, "ADC0", &user_data.adc[0],
-  2, 0, 0, 0, "ADC1", &user_data.adc[1],
-  2, 0, 0, 0, "ADC2", &user_data.adc[2],
-  2, 0, 0, 0, "ADC3", &user_data.adc[3],
-  2, 0, 0, 0, "ADC4", &user_data.adc[4],
-  2, 0, 0, 0, "ADC5", &user_data.adc[5],
-  2, 0, 0, 0, "ADC6", &user_data.adc[6],
-  2, 0, 0, 0, "ADC7", &user_data.adc[7],
+  4, 0, 0, MSCBF_FLOAT, "Temp0", &user_data.temp[0],
+  4, 0, 0, MSCBF_FLOAT, "Temp1", &user_data.temp[1],
+  4, 0, 0, MSCBF_FLOAT, "Temp2", &user_data.temp[2],
+  4, 0, 0, MSCBF_FLOAT, "Temp3", &user_data.temp[3],
   0
 };
 
@@ -120,18 +122,19 @@ void user_read_conf(unsigned char channel)
 unsigned char user_func(unsigned char idata *data_in,
                         unsigned char idata *data_out)
 {
-  /* return some dummy data */
-  data_out[0] = data_in[0]+1;
-  data_out[1] = data_in[1]+1;
+  /* echo input data */
+  data_out[0] = data_in[0];
+  data_out[1] = data_in[1];
   return 2;
 }
 
 /*---- User loop function ------------------------------------------*/
 
-void adc_read(channel, unsigned int *d)
+void adc_read(channel, float *d)
 {
 unsigned long value;
 unsigned int  i;
+float t;
 
   AMX0SL = channel & 0x0F;
   ADC0CF = 0xE0 | (GAIN & 0x07);  // 16 system clocks and gain
@@ -154,8 +157,11 @@ unsigned int  i;
   if (AVERAGE > 4)
     value >>= (AVERAGE-4);
 
+  /* convert to volts, times two (divider), times 100deg/Volt */
+  t = value  / 65536.0 * 2.5 * 2 * 100;
+
   DISABLE_INTERRUPTS;
-  *d = value;
+  *d = t;
   ENABLE_INTERRUPTS;
 }
 
@@ -185,23 +191,22 @@ static unsigned char i;
 static unsigned long last_display;
 
   /* convert one channel at a time */
-  i = (i+1) % 8;
-  if (i>8)
-  adc_read(i, &user_data.adc[i]);
+  i = (i+1) % 4;
+  adc_read(i, &user_data.temp[i]);
 
   /* set output according to power */
   set_power();
 
-  /* output ADC value once a second */
-  if (time() - last_display > 100)
+  /* output temperature */
+  if (!DEBUG_MODE)
     {
     last_display = time();
 
     lcd_goto(0, 0);
-    printf("CH1: %6.4f V", user_data.adc[0] / 65536.0 * 2.5);
+    printf("0:%5.1fﬂC 1:%5.1fﬂC", user_data.temp[0], user_data.temp[1]);
 
     lcd_goto(0, 1);
-    printf("CH2: %6.4f V", user_data.adc[1] / 65536.0 * 2.5);
+    printf("2:%5.1fﬂC 3:%5.1fﬂC", user_data.temp[2], user_data.temp[3]);
     }
 }
 

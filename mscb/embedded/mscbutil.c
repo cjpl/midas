@@ -6,6 +6,9 @@
   Contents:     Various utility functions for MSCB protocol
 
   $Log$
+  Revision 1.8  2002/10/03 15:31:53  midas
+  Various modifications
+
   Revision 1.7  2002/08/08 06:46:15  midas
   Added time functions
 
@@ -131,7 +134,19 @@ unsigned char index;
 
 /*------------------------------------------------------------------*/
 
-void uart_init(unsigned char baud)
+#ifdef SCS_210 // SCS_210 uses UAR0 & UART1
+
+bit  ti1_shadow;
+
+char xdata rbuf[1024];
+char xdata sbuf[1024];
+
+unsigned char xdata * data rbuf_rp;
+unsigned char xdata * data rbuf_wp;
+unsigned char xdata * data sbuf_rp;
+unsigned char xdata * data sbuf_wp;
+
+void uart_init(unsigned char port, unsigned char baud)
 /********************************************************************\
 
   Routine: uart_init
@@ -148,6 +163,175 @@ void uart_init(unsigned char baud)
 unsigned char code baud_table[] = 
   { 0x100-36, 0x100-18, 0x100-12, 0x100-6, 0x100-3, 0x100-2, 0x100-1 };
 
+  if (port == 0)
+    {
+    SCON0 = 0xD0;   // Mode 3, 9 bit, receive enable
+  // SCON0 = 0x50;    // Mode 1, 8 bit, receive enable
+  
+    T2CON = 0x34;  // timer 2 RX+TX mode
+    RCAP2H = 0xFF;
+    RCAP2L = baud_table[baud-1];
+  
+    IE |= 0x10;    // enable serial interrupt
+    IP &= ~0x10;   // serial interrupt low priority
+    EA = 1;        // general interrupt enable
+    }
+  else
+    {
+    SCON1 = 0x50;  // Mode 1, 8 bit, receive enable
+  
+    T4CON = 0x34;  // timer 4 RX+TX mode
+    RCAP4H = 0xFF;
+    RCAP4L = baud_table[baud-1];
+  
+    EIE2 |= 0x40;  // enable serial interrupt
+    EIP2 &= ~0x40; // serial interrupt low priority
+    EA = 1;        // general interrupt enable
+
+    rbuf_rp = rbuf_wp = rbuf;
+    sbuf_rp = sbuf_wp = sbuf;
+
+    ti1_shadow = 1;
+    }
+}
+
+/*---- UART1 handling ----------------------------------------------*/
+
+void serial_int1(void) interrupt 20 using 2
+{
+  if (SCON1 & 0x02) // TI1
+    {
+    /* character has been transferred */
+    
+    SCON1 &= ~0x02;       // clear TI flag
+    ti1_shadow = 1;
+    }
+
+  if (SCON1 & 0x01) // RI1
+    {
+    /* check for buffer overflow */
+    if (rbuf_wp + 1 == rbuf_rp)
+      {
+      SCON1 &= ~0x01;       // clear RI flag
+      return;
+      }
+
+    /* character has been received */
+    *rbuf_wp++ = SBUF1;
+    if (rbuf_wp == rbuf+sizeof(rbuf))
+      rbuf_wp = rbuf;
+
+    SCON1 &= ~0x01;       // clear RI flag
+
+    LED_SEC = LED_ON;
+    }
+}
+
+/*------------------------------------------------------------------*/
+
+void rs232_output(void)
+/* check RS232 output buffer to send data */
+{
+  if (sbuf_wp != sbuf_rp && ti1_shadow == 1)
+    {
+    ti1_shadow = 0;
+    SBUF1 = *sbuf_rp++;
+    if (sbuf_rp == sbuf+sizeof(sbuf))
+      sbuf_rp = sbuf;
+    }
+}
+
+/*------------------------------------------------------------------*/
+
+char getchar(void)
+{
+char c;
+
+  do
+    {
+    if (rbuf_wp != rbuf_rp)
+      {
+      c = *rbuf_rp++;
+      if (rbuf_rp == rbuf+sizeof(rbuf))
+        rbuf_rp = rbuf;
+
+      if (rbuf_wp == rbuf_rp)
+        LED_SEC = LED_OFF;
+
+      if (c == '\r') /* make gets() happy */
+        return '\n';
+
+      return c;
+      }
+    watchdog_refresh();
+    } while (1);
+}
+
+/*------------------------------------------------------------------*/
+
+char getchar_nowait(void)
+{
+char c;
+
+  if (rbuf_wp != rbuf_rp)
+    {
+    c = *rbuf_rp++;
+    if (rbuf_rp == rbuf+sizeof(rbuf))
+      rbuf_rp = rbuf;
+
+    if (rbuf_wp == rbuf_rp)
+      LED_SEC = LED_OFF;
+
+    return c;
+    }
+  return -1;
+}
+
+/*------------------------------------------------------------------*/
+
+char putchar(char c)
+{
+  /* check if buffer overflow */
+  if (sbuf_wp + 1 == sbuf_rp)
+    return c;
+
+  *sbuf_wp++ = c;
+  if (sbuf_wp == sbuf+sizeof(sbuf))
+    sbuf_wp = sbuf;
+
+  return c;
+}
+
+/*------------------------------------------------------------------*/
+
+void flush(void)
+{
+  while (sbuf_wp != sbuf_rp)
+    rs232_output();
+}
+
+#else // non-SCS_210
+
+/*------------------------------------------------------------------*/
+
+void uart_init(unsigned char port, unsigned char baud)
+/********************************************************************\
+
+  Routine: uart_init
+
+  Purpose: Initial serial interface
+
+  Input:
+    unsigned char baud      1:9600,2:19200,3:28800,4:57600,
+                            5:115200,6:172800,7:345600 Baud
+
+
+\********************************************************************/
+{
+unsigned char code baud_table[] = 
+  { 0x100-36, 0x100-18, 0x100-12, 0x100-6, 0x100-3, 0x100-2, 0x100-1 };
+
+  if (port);
 
   SCON = 0xD0;   // Mode 3, 9 bit, receive enable
 // SCON = 0x50;    // Mode 1, 8 bit, receive enable
@@ -161,6 +345,14 @@ unsigned char code baud_table[] =
   EA = 1;        // general interrupt enable
   RB8 = 0;       // clear read bit 9
 }
+
+/*------------------------------------------------------------------*/
+
+void rs232_output(void)
+{
+}
+
+#endif
 
 /*------------------------------------------------------------------*/
 
@@ -259,14 +451,17 @@ void watchdog_refresh(void)
 #ifdef CPU_ADUC812
 #endif
 
-#ifdef CPU_C8051F000
+#ifdef CPU_CYGNAL
 
 void delay_ms(unsigned int ms)
 {
 unsigned int i;
 
   for (i=0 ; i<ms ; i++)
+    {
     delay_us(1000);
+    watchdog_refresh();
+    }
 }
 
 void delay_us(unsigned int us)
@@ -339,7 +534,7 @@ EEPROM_RET:
 
 #endif
 
-#ifdef CPU_C8051F000
+#ifdef CPU_CYGNAL
 
   unsigned char i;
   unsigned char code *p;
@@ -392,7 +587,7 @@ EEPROM_WRITE:
 
 #endif
 
-#ifdef CPU_C8051F000
+#ifdef CPU_CYGNAL
   unsigned char xdata *p;
   unsigned char i;
   unsigned char idata *s;
@@ -426,7 +621,7 @@ void eeprom_erase(void)
 #ifdef CPU_ADUC812
 #endif
 
-#ifdef CPU_C8051F000
+#ifdef CPU_CYGNAL
   unsigned char xdata *p;
 
   FLSCL = (FLSCL & 0xF0) | 0x08; // set timer for 11.052 MHz clock
@@ -623,11 +818,15 @@ void lcd_goto(char x, char y)
 
 /*------------------------------------------------------------------*/
 
+#if !defined(SCS_210)
+
 char putchar(char c)
 {
   lcd_out(c, 1);
   return c;
 }
+
+#endif
 
 /*------------------------------------------------------------------*/
 
@@ -645,6 +844,7 @@ void lcd_puts(char *str)
 
 \********************************************************************/
 
+/*
 char scs_lcd1_read()
 {
 char i, d;
@@ -669,5 +869,5 @@ char i, d;
 
   return d;
 }
-
+*/
 

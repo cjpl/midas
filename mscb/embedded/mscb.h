@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol commands
 
   $Log$
+  Revision 1.6  2002/10/03 15:31:53  midas
+  Various modifications
+
   Revision 1.5  2002/08/08 06:45:38  midas
   Added time functions
 
@@ -23,17 +26,54 @@
 
 \********************************************************************/
 
-/*---- select here CPU type ----------------------------------------*/
+/*---- CPU specific items ------------------------------------------*/
 
-#undef CPU_ADUC812
-#define CPU_C8051F000
+/*--------------------------------*/
+#if defined(SCS_210)
+#include <c8051F020.h>
+#define CPU_C8051F020
+#define CPU_CYGNAL
 
-/* selct include file according to CPU */
-#ifdef CPU_ADUC812
-#include <aduc812.h>
-#endif
-#ifdef CPU_C8051F000
+sbit LED =               P3^4;
+sbit LED_SEC =           P3^3;
+sbit RS485_ENABLE =      P3^5;
+#define LED_ON 0
+
+/*--------------------------------*/
+#elif defined(SCS_300)
+#include <c8051F020.h>
+#define CPU_C8051F020
+#define CPU_CYGNAL
+
+sbit LED =               P3^3;
+sbit LED_SEC =           P3^4;
+sbit RS485_ENABLE =      P3^5;
+#define LED_ON 0
+
+/*--------------------------------*/
+#elif defined(SCS_400) || defined(SCS_500) || defined(SCS_600)
 #include <c8051F000.h>
+#define CPU_C8051F000
+#define CPU_CYGNAL
+
+sbit LED =               P3^4;
+sbit RS485_ENABLE =      P3^5;
+#define LED_ON 1
+
+/*--------------------------------*/
+#else
+#error Please define SCD_xxx in project options
+#endif
+
+#define LED_OFF !LED_ON
+
+/* map SBUF0 & Co. to SBUF */
+#ifndef CPU_C8051F020
+#define SBUF0    SBUF
+#define TI0      TI
+#define RI0      RI
+#define RB80     RB8
+#define ES0      ES
 #endif
 
 /*---- MSCB commands -----------------------------------------------*/
@@ -79,6 +119,7 @@
 #define GET_INFO_CHANNEL   1
 #define GET_INFO_CONF      2
 
+#define SIZE_0BIT          0
 #define SIZE_8BIT          1
 #define SIZE_16BIT         2
 #define SIZE_24BIT         3
@@ -119,10 +160,12 @@ typedef struct {
   unsigned char width;    // width in bytes
   unsigned char units;    // physical units (not yet used)
   unsigned char status;   // status (not yet used)
-  unsigned char flags;    // flags (not yet used)
+  unsigned char flags;    // flags
   char          name[8];  // name
   void data     *ud;      // point to user data buffer
 } MSCB_INFO_CHN;
+
+#define MSCBF_FLOAT  (1<<0) // channel in floating point format
 
 typedef struct {          // system info stored in EEPROM
 unsigned int  node_addr;
@@ -149,10 +192,13 @@ void lcd_putc(char c);
 void lcd_puts(char *str);
 char scs_lcd1_read();
 
+char getchar_nowait(void);
+void flush(void);
+
 void eeprom_flash(void); 
 void eeprom_retrieve(void);
 
-void uart_init(unsigned char baud);
+void uart_init(unsigned char port, unsigned char baud);
 
 void sysclock_init(void);
 unsigned long time(void);
