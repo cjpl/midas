@@ -9,12 +9,16 @@
                 for SCS-900 analog high precision I/O 
 
   $Log$
+  Revision 1.2  2004/02/06 12:03:31  midas
+  ADC works as well
+
   Revision 1.1  2004/02/05 16:30:54  midas
   DAC works
 
 \********************************************************************/
 
 #include <stdio.h>
+#include <math.h>
 #include "mscb.h"
 
 extern bit FREEZE_MODE;
@@ -58,10 +62,6 @@ sbit DAC_DIN  = P0 ^ 7;         // Data in
 struct {
    float adc[8];
    float dac[8];
-/*
-   char  dac_ofs[8];            // channel offset in mV
-   char  dac_gain[8];           // channel gain
-*/
    char  dac_bip_ofs;           // bipolar offset in 10mV
    char  mode;                  // 0=unipolar, 1=bipolar
 } idata user_data;
@@ -86,26 +86,6 @@ MSCB_INFO_VAR code variables[] = {
    4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "DAC6", &user_data.dac[6],
    4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "DAC7", &user_data.dac[7],
 
-   /*
-   1, UNIT_VOLT, PRFX_MILLI, 0, MSCBF_SIGNED, "DACOfs0", &user_data.dac_ofs[0],
-   1, UNIT_VOLT, PRFX_MILLI, 0, MSCBF_SIGNED, "DACOfs1", &user_data.dac_ofs[1],
-   1, UNIT_VOLT, PRFX_MILLI, 0, MSCBF_SIGNED, "DACOfs2", &user_data.dac_ofs[2],
-   1, UNIT_VOLT, PRFX_MILLI, 0, MSCBF_SIGNED, "DACOfs3", &user_data.dac_ofs[3],
-   1, UNIT_VOLT, PRFX_MILLI, 0, MSCBF_SIGNED, "DACOfs4", &user_data.dac_ofs[4],
-   1, UNIT_VOLT, PRFX_MILLI, 0, MSCBF_SIGNED, "DACOfs5", &user_data.dac_ofs[5],
-   1, UNIT_VOLT, PRFX_MILLI, 0, MSCBF_SIGNED, "DACOfs6", &user_data.dac_ofs[6],
-   1, UNIT_VOLT, PRFX_MILLI, 0, MSCBF_SIGNED, "DACOfs7", &user_data.dac_ofs[7],
-
-   1, UNIT_FACTOR, 0, 0, MSCBF_SIGNED, "DACGain0", &user_data.dac_gain[0],
-   1, UNIT_FACTOR, 0, 0, MSCBF_SIGNED, "DACGain1", &user_data.dac_gain[1],
-   1, UNIT_FACTOR, 0, 0, MSCBF_SIGNED, "DACGain2", &user_data.dac_gain[2],
-   1, UNIT_FACTOR, 0, 0, MSCBF_SIGNED, "DACGain3", &user_data.dac_gain[3],
-   1, UNIT_FACTOR, 0, 0, MSCBF_SIGNED, "DACGain4", &user_data.dac_gain[4],
-   1, UNIT_FACTOR, 0, 0, MSCBF_SIGNED, "DACGain5", &user_data.dac_gain[5],
-   1, UNIT_FACTOR, 0, 0, MSCBF_SIGNED, "DACGain6", &user_data.dac_gain[6],
-   1, UNIT_FACTOR, 0, 0, MSCBF_SIGNED, "DACGain7", &user_data.dac_gain[7],
-   */
-
    1, UNIT_VOLT, PRFX_MILLI, 0, MSCBF_SIGNED, "BipOfs", &user_data.dac_bip_ofs,
 
    1, UNIT_BYTE, 0, 0, 0, "Mode", &user_data.mode,
@@ -121,6 +101,8 @@ MSCB_INFO_VAR code variables[] = {
 
 void user_write(unsigned char index) reentrant;
 void write_adc(unsigned char a, unsigned char d);
+
+unsigned char adc_chn = 0;
 
 /*---- User init function ------------------------------------------*/
 
@@ -146,6 +128,7 @@ void user_init(unsigned char init)
       P0.7    DAC_CLR
     */
    PRT0CF = 0xB9;
+   P0 = 0xFF;
 
    /* push-pull:
       P1.0    
@@ -155,18 +138,17 @@ void user_init(unsigned char init)
 
       P1.4    ADC_NCS
       P1.5    
-      P1.6    ADC_DOUT 
-      P1.7
+      P1.6 
+      P1.7    ADC_DIN
     */
-   PRT1CF = 0x5C;
+   PRT1CF = 0x9C;
+   P1 = 0xFF;
 
    /* initial EEPROM value */
    if (init) {
 
       for (i = 0; i < 8; i++) {
          user_data.dac[i] = 0;
-//         user_data.dac_ofs[i] = 0;
-//         user_data.dac_gain[i] = 0;
       }
 
       user_data.dac_bip_ofs = 0;
@@ -176,7 +158,9 @@ void user_init(unsigned char init)
    /* set-up DAC & ADC */
    DAC_CLR = 1;
    ADC_NRES = 1;
-//   write_adc(REG_MODE, 2);
+   write_adc(REG_FILTER, 82);                   // SF value for 50Hz rejection
+   write_adc(REG_MODE, 3);                      // continuous conversion
+   write_adc(REG_CONTROL, adc_chn << 4 | 0x0F); // Chn. 1, +2.56V range
 
    /* write DACs and UNI_BIP */
    for (i=0 ; i<8 ; i++)
@@ -187,30 +171,41 @@ void user_init(unsigned char init)
 
 #pragma NOAREGS
 
-/*---- ADC and DAC functions ---------------------------------------*/
+/*---- DAC functions -----------------------------------------------*/
 
 void write_dac_cmd(unsigned char cmd, unsigned char adr, unsigned short d)
 {
-unsigned char i;
+unsigned char i, m, b;
 
    DAC_NCS = 0; // chip select
 
-   for (i=0 ; i<4 ; i++) {
+   for (i=0,m=8 ; i<4 ; i++) {
       DAC_SCK = 0;
-      DAC_DIN = (cmd & (1 << (3-i))) > 0;
+      DAC_DIN = (cmd & m) > 0;
       DAC_SCK = 1;
+      m >>= 1;
    }
    
-   for (i=0 ; i<4 ; i++) {
+   for (i=0,m=8 ; i<4 ; i++) {
       DAC_SCK = 0;
-      DAC_DIN = (adr & (1 << (3-i))) > 0;
+      DAC_DIN = (adr & m) > 0;
       DAC_SCK = 1;
+      m >>= 1;
    }
 
-   for (i=0 ; i<16 ; i++) {
+   b = d >> 8;
+   for (i=0,m=0x80 ; i<8 ; i++) {
       DAC_SCK = 0;
-      DAC_DIN = (d & (1 << (15-i))) > 0;
+      DAC_DIN = (b & m) > 0;
       DAC_SCK = 1;
+      m >>= 1;
+   }
+   b = d && 0xFF;
+   for (i=0,m=0x80 ; i<8 ; i++) {
+      DAC_SCK = 0;
+      DAC_DIN = (b & m) > 0;
+      DAC_SCK = 1;
+      m >>= 1;
    }
 
    DAC_NCS = 1; // remove chip select
@@ -229,9 +224,11 @@ void write_dac(unsigned char index) reentrant
    write_dac_cmd(0x3, index, d);
 }
 
+/*---- ADC functions -----------------------------------------------*/
+
 void write_adc(unsigned char a, unsigned char d)
 {
-   unsigned char i;
+   unsigned char i, m;
 
    /* write to communication register */
 
@@ -245,10 +242,11 @@ void write_adc(unsigned char a, unsigned char d)
    }
 
    /* register address */
-   for (i=0 ; i<4 ; i++) {
+   for (i=0,m=8 ; i<4 ; i++) {
       ADC_SCLK = 0;
-      ADC_DIN  = (a & (1 << (3-i))) > 0;
+      ADC_DIN  = (a & m) > 0;
       ADC_SCLK = 1;
+      m >>= 1;
    }
 
    ADC_NCS = 1;
@@ -257,43 +255,153 @@ void write_adc(unsigned char a, unsigned char d)
 
    ADC_NCS = 0;
 
-   for (i=0 ; i<8 ; i++) {
+   for (i=0,m=0x80 ; i<8 ; i++) {
       ADC_SCLK = 0;
-      ADC_DIN  = (d & (1 << (7-i))) > 0;
+      ADC_DIN  = (d & m) > 0;
+      ADC_SCLK = 1;
+      m >>= 1;
+   }
+
+   ADC_NCS = 1;
+}
+
+void read_adc8(unsigned char a, unsigned char *d)
+{
+   unsigned char i, m;
+
+   /* write to communication register */
+
+   ADC_NCS = 0;
+   
+   /* write zero to !WEN and one to R/!W */
+   for (i=0 ; i<4 ; i++) {
+      ADC_SCLK = 0;
+      ADC_DIN  = (i == 1);
+      ADC_SCLK = 1;
+   }
+
+   /* register address */
+   for (i=0,m=8 ; i<4 ; i++) {
+      ADC_SCLK = 0;
+      ADC_DIN  = (a & m) > 0;
+      ADC_SCLK = 1;
+      m >>= 1;
+   }
+
+   ADC_NCS = 1;
+
+   /* read from selected data register */
+
+   ADC_NCS = 0;
+
+   for (i=0,m=0x80,*d=0 ; i<8 ; i++) {
+      ADC_SCLK = 0;
+      if (ADC_DOUT)
+         *d |= m;
+      ADC_SCLK = 1;
+      m >>= 1;
+   }
+
+   ADC_NCS = 1;
+}
+
+void read_adc24(unsigned char a, unsigned long *d)
+{
+   unsigned char i, m;
+
+   /* write to communication register */
+
+   ADC_NCS = 0;
+   
+   /* write zero to !WEN and one to R/!W */
+   for (i=0 ; i<4 ; i++) {
+      ADC_SCLK = 0;
+      ADC_DIN  = (i == 1);
+      ADC_SCLK = 1;
+   }
+
+   /* register address */
+   for (i=0,m=8 ; i<4 ; i++) {
+      ADC_SCLK = 0;
+      ADC_DIN  = (a & m) > 0;
+      ADC_SCLK = 1;
+      m >>= 1;
+   }
+
+   ADC_NCS = 1;
+
+   /* read from selected data register */
+
+   ADC_NCS = 0;
+
+   for (i=0,*d=0 ; i<24 ; i++) {
+      *d <<= 1;
+      ADC_SCLK = 0;
+      *d |= ADC_DOUT;
       ADC_SCLK = 1;
    }
 
    ADC_NCS = 1;
 }
 
-void adc_read(channel, float *d)
+unsigned char adc_index[8] = {6, 7, 0, 1, 2, 3, 4, 5};
+
+void adc_read()
 {
+   unsigned char i;
    unsigned long value;
    float gvalue;
 
-   value = 0; //## change to read ADC
+   if (ADC_NRDY)
+       return;
+
+   read_adc24(REG_ADCDATA, &value);
 
    /* convert to volts */
-   gvalue = value / 65536.0 * 2.5;
+   gvalue = ((float)value / (1l<<24)) * 2.56;
+
+   /* round result to 5 digits */
+   gvalue = floor(gvalue*1E5+0.5)/1E5;
 
    DISABLE_INTERRUPTS;
-   *d = gvalue;
+   user_data.adc[adc_chn] = gvalue;
    ENABLE_INTERRUPTS;
+
+   /* start next conversion */
+   adc_chn = (adc_chn + 1) % 8;
+   i = adc_index[adc_chn];
+   write_adc(REG_CONTROL, i << 4 | 0x0F); // adc_chn, +2.56V range
+}
+
+void adc_calib()
+{
+   unsigned char i;
+
+   for (i=0 ; i<8 ; i++) {
+
+      write_adc(REG_CONTROL, i << 4 | 0x0F);
+
+      /* zero calibration */
+      write_adc(REG_MODE, 4);
+      while (ADC_NRDY) led_blink(1, 1, 100);
+
+      /* full scale calibration */
+      write_adc(REG_MODE, 5);
+      while (ADC_NRDY) led_blink(1, 1, 100);
+   }
+
+   /* restart continuous conversion */
+   write_adc(REG_MODE, 3);
 }
 
 /*---- User write function -----------------------------------------*/
 
 void user_write(unsigned char index) reentrant
 {
-   if (index == 0)
-      write_adc(REG_MODE, 2);
-   if (index == 1)
-      write_adc(REG_MODE, 0x08);
-
    if (index > 7 && index < 16)
       write_dac(index-8);
 
-   if (index == 33)                    // set bipolar/unipoar
+   if (index == 17)                    // set bipolar/unipoar
       UNI_BIP = (user_data.mode & 0x01) > 0;
 }
 
@@ -319,8 +427,5 @@ unsigned char user_func(unsigned char *data_in, unsigned char *data_out)
 
 void user_loop(void)
 {
-   static unsigned char i = 0;
-
-   adc_read(i, &user_data.adc[i]);
-   i = (i + 1) % 8;
+   adc_read();
 }
