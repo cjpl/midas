@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol commands
 
   $Log$
+  Revision 1.37  2004/05/14 07:55:48  midas
+  Remove EEPROM support for SCS_300
+
   Revision 1.36  2004/05/12 13:18:36  midas
   *** empty log message ***
 
@@ -156,7 +159,9 @@ sbit RS485_ENABLE = P1 ^ 0;
 #define LED_ON 0
 sbit RS485_ENABLE = P3 ^ 5;
 
+#if defined(SCS_300)
 #undef EEPROM_SUPPORT
+#endif
 
 /*--------------------------------*/
 #elif defined(SCS_400) || defined(SCS_500)
