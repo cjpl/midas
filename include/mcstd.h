@@ -13,6 +13,9 @@
  *  Author:  Pierre-Andre Amaudruz Data Acquisition Group
  *
  *  $Log$
+ *  Revision 1.13  2004/01/13 00:50:53  pierre
+ *  fix dox comment for vxworks
+ *
  *  Revision 1.12  2004/01/08 08:40:09  midas
  *  Implemented standard indentation
  *
@@ -781,4 +784,8 @@ Detach service routine from LAM.
 #ifdef __cplusplus
 }
 #endif
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          /**dox***************************************************************//** @} */// end of mcstdfunctinoh/**dox***************************************************************//** @} */// end of mcstdinclude
+
+/**dox***************************************************************/
+/** @} */ /* end of mcstdfunctinoh */
+/**dox***************************************************************/
+/** @} */ /* end of mcstdinclude */

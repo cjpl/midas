@@ -6,6 +6,9 @@
  *         amaudruz@triumf.ca                            Local:           6234
  * ---------------------------------------------------------------------------
    $Log$
+   Revision 1.59  2004/01/13 00:51:36  pierre
+   fix dox comment for vxworks
+
    Revision 1.58  2004/01/08 08:40:11  midas
    Implemented standard indentation
 
@@ -3846,7 +3849,7 @@ YB_SUCCESS         Successful completion
 #endif                          /* DOXYGEN_SHOULD_SKIP_THIS */
 
 /**dox***************************************************************/
-                                                      /** @} */// end of ybosbankc
+/** @} */ /* end of ybosbankc */
 
 /**dox***************************************************************/
-                                                      /** @} */// end of ybosincludecode
+/** @} */ /* end of ybosincludecode */

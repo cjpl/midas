@@ -7,6 +7,9 @@
                 routines
 
   $Log$
+  Revision 1.36  2004/01/13 00:51:15  pierre
+  fix dox comment for vxworks
+
   Revision 1.35  2004/01/12 23:03:42  pierre
   fix dox
 
@@ -170,7 +173,7 @@ data representations
 #define DR_ASCII            (1<<7)  /**< - */
 
 /**dox***************************************************************/
-                                                      /** @} */// end of msdefineh
+/** @} */ /* end of msdefineh */
 
 /**dox***************************************************************/
 /** @addtogroup msmacroh
@@ -212,7 +215,7 @@ SWAP QWORD macro */
                        *(((BYTE *)(x))+4) = _tmp; }
 
 /**dox***************************************************************/
-                                                      /** @} */// end of msmacroh
+/** @} */ /* end of msmacroh */
 
 /**dox***************************************************************/
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
@@ -523,7 +526,7 @@ typedef struct {
 } REQUEST_LIST;
 
 /**dox***************************************************************/
-                                                      /** @} */// end of mssectionh
+/** @} */ /* end of mssectionh */
 
 /**dox***************************************************************/
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
@@ -752,4 +755,6 @@ extern "C" {
 #endif
 /**dox***************************************************************/
 #endif                          /* DOXYGEN_SHOULD_SKIP_THIS */
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          /**dox***************************************************************//** @} */// end of msystemincludecode
+
+/**dox***************************************************************/
+/** @} */ /* end of msystemincludecode */
