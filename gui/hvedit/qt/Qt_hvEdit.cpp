@@ -15,6 +15,9 @@
     email                : andreas.suter@psi.ch
 
   $Log$
+  Revision 1.4  2003/10/21 14:39:06  suter_a
+  added scaling
+
   Revision 1.3  2003/05/13 17:29:44  midas
   Fixed compiler warnings
 
@@ -999,6 +1002,55 @@ void Qt_hvEdit::onSet()
 }
 
 //*******************************************************************************************************
+//  implementation of onScale
+//*******************************************************************************************************
+void Qt_hvEdit::onScale()
+{
+  float scale = hve_Scale_comboBox->currentText().toFloat(); // read comboBox value
+  int   device, i, j;
+
+
+  // check if selection is HV and not 'current limit'
+  if (hve_HV_tabWidget->currentPageIndex() != 0) { // i.e. not HV demand tab
+    QMessageBox::critical(0, "ERROR", "You cannot only scale 'demand HV'.", QMessageBox::Ok, QMessageBox::NoButton);
+    return;
+  }
+
+  // check if scale is in reasonable bounds
+  if (scale < 0.f) {
+    QMessageBox::critical(0, "ERROR", "You cannot scale by negative values!", QMessageBox::Ok, QMessageBox::NoButton);
+    return;
+  }
+  if (scale > 2.f) {
+    if ( QMessageBox::warning(0, "WARNING", "<b><p>You are going to scale by "
+            +hve_Scale_comboBox->currentText()+".<p>Are you serious about it?<\b>",
+           QMessageBox::Yes, QMessageBox::No) == QMessageBox::No )
+      return;
+  }
+
+  // get device selection
+  device = hve_Device_listBox->currentItem();
+  j = 0; // device channel counter
+  for (i=0; i<m_nChannels; i++) { // i = all over channel counter
+    if (m_Group[i] == device) { // check if correct device
+      if (hve_HV_tabWidget->currentPageIndex() == 0) { // i.e. HV demand tab
+        if (hve_HV_table->isSelected(j,HV_DEMAND)) { // get HV selection
+	  // save current value into restore buffer
+	  m_Restore[i] = m_Demand[i];
+          // set voltage
+          m_Demand[i] *= scale;
+        }
+      }
+      j++;
+    }
+  }
+  if (hve_HV_tabWidget->currentPageIndex() == 0) { // i.e. HV demand tab
+    updateODB_demand(-1);
+    updateTable(-1);
+  }
+}
+
+//*******************************************************************************************************
 //  implementation of hvValueChanged
 //*******************************************************************************************************
 void Qt_hvEdit::hvValueChanged(int row, int col)
@@ -1081,6 +1133,8 @@ void Qt_hvEdit::disableNotConnected()
   hve_Zero_pushButton->setEnabled(FALSE);
   hve_Restore_pushButton->setEnabled(FALSE);
   hve_SelectAll_pushButton->setEnabled(FALSE);
+  hve_Scale_pushButton->setEnabled(FALSE);
+  hve_Scale_comboBox->setEnabled(FALSE);
 }
 
 //*******************************************************************************************************
@@ -1106,6 +1160,8 @@ void Qt_hvEdit::enableConnected()
   hve_Zero_pushButton->setEnabled(TRUE);
   hve_Restore_pushButton->setEnabled(TRUE);
   hve_SelectAll_pushButton->setEnabled(TRUE);
+  hve_Scale_pushButton->setEnabled(TRUE);
+  hve_Scale_comboBox->setEnabled(TRUE);
 }
 
 //*******************************************************************************************************
@@ -1287,7 +1343,7 @@ void Qt_hvEdit::increment(const float incr)
   for (i=0; i<m_nChannels; i++) { // i = all over channel counter
     if (m_Group[i] == device) { // check if correct device
       if (hve_HV_tabWidget->currentPageIndex() == 0) { // i.e. HV demand tab
-        if (hve_HV_table->isSelected(j,HV_DEMAND)) { // get current selection
+        if (hve_HV_table->isSelected(j,HV_DEMAND)) { // get HV selection
 	  // save current value into restore buffer
 	  m_Restore[i] = m_Demand[i];
           // set voltage
