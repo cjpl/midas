@@ -6,6 +6,9 @@
   Contents:     Generic Class Driver
 
   $Log$
+  Revision 1.6  1999/11/12 09:34:11  midas
+  Fixed compiler warning
+
   Revision 1.5  1999/11/08 13:54:53  midas
   Initialize demand_mirror with invalid value
 
@@ -310,7 +313,7 @@ GEN_INFO *gen_info;
     {
     DRIVER(i)(CMD_GET_DEMAND, gen_info->dd_info[i], 
               i-gen_info->channel_offset[i], &gen_info->demand[i]);
-    gen_info->demand_mirror[i] = -12345; /* invalid value */
+    gen_info->demand_mirror[i] = -12345.f; /* invalid value */
     }
   /* write back demand values */
   status = db_find_key(hDB, gen_info->hKeyRoot, "Variables/Demand", &gen_info->hKeyDemand);
