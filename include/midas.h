@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.82  2001/04/05 05:51:03  midas
+  Added CMD_NAME
+
   Revision 1.81  2001/04/04 04:12:08  midas
   changed slow control commands
 
@@ -801,6 +804,7 @@ Convert the coded LAM station to Station number.
 #define CMD_PUTS                    102
 #define CMD_GETS                    103
 #define CMD_DEBUG                   104
+#define CMD_NAME                    105
 
 /* macros for bus driver access */
 #define BD_PUTS(s)       info->bd(CMD_PUTS, info->bd_info, s)
