@@ -6,6 +6,9 @@
   Contents:     MIDAS logger program
 
   $Log$
+  Revision 1.65  2003/05/14 14:09:25  midas
+  Better error messages
+
   Revision 1.64  2003/05/09 07:40:05  midas
   Added extra parameter to cm_get_environment
 
@@ -1395,7 +1398,8 @@ EVENT_TREE *et;
 
     if (!equal_ustring(str, "MIDAS"))
       {
-      cm_msg(MERROR, "root_book_events", "ROOT output format currently only supported for MIDAS events");
+      cm_msg(MERROR, "root_book_events", 
+        "ROOT output only for MIDAS events, but %s in %s format", eqkey.name, str);
       return 0;
       }
 
