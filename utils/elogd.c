@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.17  2001/07/26 10:37:32  midas
+  Removed "status" button on query result
+
   Revision 1.16  2001/07/26 10:25:54  midas
   Fixed bug which omitted logbook name if only one is defined in elogd.cfg
 
@@ -2302,7 +2305,6 @@ FILE   *f;
 
     rsprintf("<input type=submit name=cmd value=\"Query\">\n");
     rsprintf("<input type=submit name=cmd value=\"ELog\">\n");
-    rsprintf("<input type=submit name=cmd value=\"Status\">\n");
     rsprintf("</tr>\n\n");
     }
 
