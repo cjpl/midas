@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.14  1999/03/02 10:00:37  midas
+  Used ANA_SKIP/CONTINUE for skipping events
+
   Revision 1.13  1999/02/22 11:55:20  midas
   Fixed bug with rebooking of N-tuples
 
@@ -2141,7 +2144,7 @@ EVENT_DEF    *event_def;
     status = par->analyzer(pevent, (void *) (pevent+1));
 
   /* don't continue if event was rejected */
-  if (status == 0)
+  if (status == ANA_SKIP)
     return 0;
 
   /* loop over analyzer modules */
@@ -2153,7 +2156,7 @@ EVENT_DEF    *event_def;
       status = module[i]->analyzer(pevent, (void *) (pevent+1));
 
       /* don't continue if event was rejected */
-      if (status == 0)
+      if (status == ANA_SKIP)
         return 0;
       }
     }
