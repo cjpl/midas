@@ -6,6 +6,9 @@
  *         amaudruz@triumf.ca                            Local:           6234
  * ---------------------------------------------------------------------------
    $Log$
+   Revision 1.45  2002/09/18 16:37:55  pierre
+   remove bk_list()
+
    Revision 1.44  2002/08/29 22:12:16  pierre
    WORD casting for evt display
 
@@ -315,60 +318,6 @@ struct {
 /*--BANK MANIPULATION-----------------------------------------------*/
 /*------------------------------------------------------------------*/
 /*------------------------------------------------------------------*/
-/** @name bk_list()
-    \begin{description}
-    \item[Description:] extract the MIDAS bank name listing of an event.
-    \item[Remarks:] The bklist should be dimensioned with YB_STRING_BANKLIST_MAX
-    which correspond to a max of YB_BANKLIST_MAX (midas.h:32) banks.
-    \end{description}
-    @memo fill a string will all the bank names in the event.
-    @param pmbh  pointer to the bank header (pheader+1).
-    @param bklist returned ASCII string, has to be booked with YB_STRING_BANKLIST_MAX.
-    @return number of bank found in this event.
-*/
-INT bk_list (BANK_HEADER * pmbh, char * bklist)
-{ /* Full event */
-  DWORD nbk, size;
-  BANK * pmbk;
-  BANK32 * pmbk32;
-  char * pdata;
-  pmbk = NULL;
-  pmbk32 = NULL;
-  
-  /* compose bank list */
-  bklist[0] = 0;
-  nbk=0;
-  do
-  {
-    /* scan all banks for bank name only */
-    if (bk_is32(pmbh))
-    {
-      size = bk_iterate32(pmbh, &pmbk32, &pdata);
-      if (pmbk32 == NULL)
-        break;
-    }
-    else
-    {
-      size = bk_iterate(pmbh, &pmbk, &pdata);
-      if (pmbk == NULL)
-        break;
-    }
-    nbk++;
-    
-    if (nbk> YB_BANKLIST_MAX)
-    {
-      cm_msg(MINFO,"bk_list","over %i banks -> truncated",YB_BANKLIST_MAX);
-      return (nbk);
-    }
-    if (bk_is32(pmbh))
-      strncat (bklist,(char *) pmbk32->name,4);
-    else
-      strncat (bklist,(char *) pmbk->name,4);
-  }
-  while (1);
-  return (nbk);
-}
-
 /*------------------------------------------------------------------*/
 INT bk_find (BANK_HEADER * pmbh, char * bkname, DWORD * bklen, DWORD * bktype, void **pbk)
 /*
