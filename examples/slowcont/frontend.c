@@ -17,6 +17,9 @@
 
 
   $Log$
+  Revision 1.7  2002/03/13 08:39:28  midas
+  Use bus drivers in examples
+
   Revision 1.6  2000/08/21 10:49:11  midas
   Added max_event_size
 
@@ -39,7 +42,8 @@
 #include "midas.h"
 #include "class/hv.h"
 #include "class/multi.h"
-#include "device/null.h"
+#include "device/nulldev.h"
+#include "bus/null.h"
 
 /*-- Globals -------------------------------------------------------*/
 
@@ -64,13 +68,13 @@ INT event_buffer_size = 10*10000;
 
 /* device driver list */
 DEVICE_DRIVER hv_driver[] = {
-  { "HV",      null, 16 },
+  { "Dummy Device", nulldev, 16, null },
   { "" }
 };
 
 DEVICE_DRIVER multi_driver[] = {
-  { "Input",   null, 2, CH_INPUT },
-  { "Output",  null, 2, CH_OUTPUT },
+  { "Input",   nulldev, 2, null, CH_INPUT },
+  { "Output",  nulldev, 2, null, CH_OUTPUT },
   { "" }
 };
 
@@ -97,7 +101,7 @@ EQUIPMENT equipment[] = {
     NULL,                 /* init string */
   },
 
-  { "Multimeter",         /* equipment name */
+  { "Environmant",        /* equipment name */
     4, 0,                 /* event ID, trigger mask */
     "SYSTEM",             /* event buffer */
     EQ_SLOW,              /* equipment type */
