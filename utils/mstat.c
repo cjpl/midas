@@ -6,6 +6,9 @@
   Contents:     Display/log some pertinent information of the ODB
   
   $Log$
+  Revision 1.15  2003/04/25 04:14:52  pierre
+  Fixed compiler warning
+
   Revision 1.14  2003/04/23 23:53:54  pierre
   Fixed compiler warning
 
@@ -76,12 +79,11 @@ INT rn;
 /* Global variables 
  *  (required since no way to pass these inside callbacks) */
 INT      numprocs;
-DWORD    checktime, lastchecktime;
+DWORD    checktime, lastchecktime, delta_time;
 INT      nlocal;
 HNDLE    hKeynlocal, hKeychktime;
 BOOL     active_flag, esc_flag;
-
-DWORD    loop, delta_time, cur_max_line;
+INT      loop, cur_max_line;
 char     ststr[MAX_LINE][LINE_LENGTH];
 
 /*------------------------------------------------------------------*/
@@ -108,12 +110,12 @@ INT open_log_midstat(INT file_mode, INT runn, char * svpath)
       if( (fHandle = open(svpath ,O_WRONLY | O_CREAT | O_TRUNC , 0644)) == -1 )
 #endif
 #ifdef OS_WINNT
-	if( (fHandle = _open(svpath ,O_WRONLY | O_CREAT | O_TRUNC | O_BINARY,  S_IWRITE)) == -1 )
-	  
+    if( (fHandle = _open(svpath ,O_WRONLY | O_CREAT | O_TRUNC | O_BINARY,  S_IWRITE)) == -1 )
+      
 #endif
-	  {
-	    printf("File %s cannot be created\n",svpath);
-	  }
+      {
+        printf("File %s cannot be created\n",svpath);
+      }
   return (fHandle);
 }
 
@@ -173,10 +175,10 @@ void compose_status(HNDLE hDB, HNDLE hKey)
   str[24] = 0;
   if (active_flag)
     sprintf(&(ststr[j++][0]),"*-v%s- MIDAS status -- Alarm Checker active-------%s-*"
-	    ,cm_get_version(),str);
+        ,cm_get_version(),str);
   else
     sprintf(&(ststr[j++][0]),"*-v%s- MIDAS status page -------------------------%s-*"
-	    ,cm_get_version(),str);
+        ,cm_get_version(),str);
 
   sprintf(&(ststr[j][0]),"Experiment:%s",ex);
   sprintf(&(ststr[j][23]), "Run#:%d",rn);
@@ -190,9 +192,9 @@ void compose_status(HNDLE hDB, HNDLE hKey)
     else
     {
       if (esc_flag)
-	sprintf(&(ststr[j][35]), "State:\033[1m%s\033[m",cs);
+    sprintf(&(ststr[j][35]), "State:\033[1m%s\033[m",cs);
       else
-	sprintf(&(ststr[j][36]), "State:%s",cs);
+    sprintf(&(ststr[j][36]), "State:%s",cs);
     }
   }
   else
@@ -210,10 +212,10 @@ void compose_status(HNDLE hDB, HNDLE hKey)
     difftime = full_time - tb;
     if (esc_flag)
       sprintf(&(ststr[j++][66]),"Run time :%02ld:%02ld:%02ld",
-	      difftime/3600,difftime%3600/60,difftime%60);
+          difftime/3600,difftime%3600/60,difftime%60);
     else
       sprintf(&(ststr[j++][54]),"     Run time :%02ld:%02ld:%02ld",
-	      difftime/3600,difftime%3600/60,difftime%60);
+          difftime/3600,difftime%3600/60,difftime%60);
   }         
   else if (rs == STATE_STOPPED)
   {
@@ -223,10 +225,10 @@ void compose_status(HNDLE hDB, HNDLE hKey)
       difftime = tsb - tb;
     if (esc_flag)
       sprintf(&(ststr[j++][54]),"Full Run time :%02ld:%02ld:%02ld",
-	      difftime/3600,difftime%3600/60,difftime%60);
+          difftime/3600,difftime%3600/60,difftime%60);
     else
       sprintf(&(ststr[j++][54]),"Full Run time :%02ld:%02ld:%02ld",
-	      difftime/3600,difftime%3600/60,difftime%60);
+          difftime/3600,difftime%3600/60,difftime%60);
     
     sprintf(&(ststr[j][42])," Stop time:%s",spt);
   }
@@ -261,78 +263,78 @@ void compose_status(HNDLE hDB, HNDLE hKey)
     {
       db_enum_key(hDB, hKey, i, &hSubkey);
       if (!hSubkey)
-	break;
+    break;
       db_get_key(hDB, hSubkey, &key);
       if ((key.type == TID_KEY) && 
-	  ((strstr(key.name,"ODB")) == NULL) &&
-	  ((strstr(key.name,"BOR")) == NULL) &&
-	  ((strstr(key.name,"EOR")) == NULL))
+      ((strstr(key.name,"ODB")) == NULL) &&
+      ((strstr(key.name,"BOR")) == NULL) &&
+      ((strstr(key.name,"EOR")) == NULL))
       {
-	/* check if client running this equipment is present */
-	/* extract client name from equipment */
-	size = sizeof(equclient);
-	sprintf(strtmp,"/equipment/%s/common/Frontend name",key.name);
-	db_get_value(hDB, 0, strtmp, equclient, &size, TID_STRING, TRUE);
-	/* search client name under /system/clients/xxx/name */
-	if (cm_exist(equclient,TRUE) == CM_SUCCESS)
-	{
-	  atleastone_active = TRUE;
-	  size = sizeof(equenabled);
-	  sprintf(strtmp,"/equipment/%s/common/enabled",key.name);
-	  db_get_value(hDB, 0, strtmp, &equenabled, &size, TID_BOOL, TRUE);
-	  
-	  size = sizeof(equevtsend);
-	  sprintf(strtmp,"/equipment/%s/statistics/events sent",key.name);
-	  db_get_value(hDB, 0, strtmp, &equevtsend, &size, TID_DOUBLE, TRUE);
-	  
-	  size = sizeof(equevtpsec);
-	  sprintf(strtmp,"/equipment/%s/statistics/events per sec.",key.name);
-	  db_get_value(hDB, 0, strtmp, &equevtpsec, &size, TID_DOUBLE, TRUE);
-	  
-	  size = sizeof(equkbpsec);
-	  sprintf(strtmp,"/equipment/%s/statistics/kBytes per sec.",key.name);
-	  db_get_value(hDB, 0, strtmp, &equkbpsec, &size, TID_DOUBLE, TRUE);
-	  
-	  size = sizeof(equnode);
-	  sprintf(strtmp,"/equipment/%s/common/Frontend host",key.name);
-	  db_get_value(hDB, 0, strtmp, equnode, &size, TID_STRING, TRUE);
-	  {
-	    char *pp, sdummy[64];
-	    memset (sdummy,0,64);
-	    sprintf(&(ststr[j][0]),"%s ",key.name);
-	    pp = strchr(equnode,'.');
-	    if (pp != NULL) 
-	      sprintf(&(ststr[j][12]),"%s",strncpy(sdummy,equnode,pp-equnode));
-	    else
-	      sprintf(&(ststr[j][12]),"%s",strncpy(sdummy,equnode,strlen(equnode)));
-	    
-	    if (equevtsend > 1E9)
-	      sprintf(&(ststr[j][30]),"%1.3lfG",equevtsend/1E9);
-	    else if (equevtsend > 1E6)
-	      sprintf(&(ststr[j][30]),"%1.3lfM",equevtsend/1E6);
-	    else
-	      sprintf(&(ststr[j][30]),"%1.0lf",equevtsend);
-	    
-	    if (equenabled)
-	    {
-	      if (esc_flag)
-	      {
-		sprintf(&(ststr[j][45]),"\033[7m%1.1lf\033[m",equevtpsec);
-		sprintf(&(ststr[j++][67]),"%1.1lf",equkbpsec);
-	      }
-	      else
-	      {
-		sprintf(&(ststr[j][45]),"%1.1lf",equevtpsec);
-		sprintf(&(ststr[j++][60]),"%1.1lf",equkbpsec);
-	      }
-	    }
-	    else
-	    {
-	      sprintf(&(ststr[j][45]),"%1.1lf",equevtpsec);
-	      sprintf(&(ststr[j++][60]),"%1.1lf",equkbpsec);
-	    }
-	  } /* get value */
-	} /* active */
+    /* check if client running this equipment is present */
+    /* extract client name from equipment */
+    size = sizeof(equclient);
+    sprintf(strtmp,"/equipment/%s/common/Frontend name",key.name);
+    db_get_value(hDB, 0, strtmp, equclient, &size, TID_STRING, TRUE);
+    /* search client name under /system/clients/xxx/name */
+    if (cm_exist(equclient,TRUE) == CM_SUCCESS)
+    {
+      atleastone_active = TRUE;
+      size = sizeof(equenabled);
+      sprintf(strtmp,"/equipment/%s/common/enabled",key.name);
+      db_get_value(hDB, 0, strtmp, &equenabled, &size, TID_BOOL, TRUE);
+      
+      size = sizeof(equevtsend);
+      sprintf(strtmp,"/equipment/%s/statistics/events sent",key.name);
+      db_get_value(hDB, 0, strtmp, &equevtsend, &size, TID_DOUBLE, TRUE);
+      
+      size = sizeof(equevtpsec);
+      sprintf(strtmp,"/equipment/%s/statistics/events per sec.",key.name);
+      db_get_value(hDB, 0, strtmp, &equevtpsec, &size, TID_DOUBLE, TRUE);
+      
+      size = sizeof(equkbpsec);
+      sprintf(strtmp,"/equipment/%s/statistics/kBytes per sec.",key.name);
+      db_get_value(hDB, 0, strtmp, &equkbpsec, &size, TID_DOUBLE, TRUE);
+      
+      size = sizeof(equnode);
+      sprintf(strtmp,"/equipment/%s/common/Frontend host",key.name);
+      db_get_value(hDB, 0, strtmp, equnode, &size, TID_STRING, TRUE);
+      {
+        char *pp, sdummy[64];
+        memset (sdummy,0,64);
+        sprintf(&(ststr[j][0]),"%s ",key.name);
+        pp = strchr(equnode,'.');
+        if (pp != NULL) 
+          sprintf(&(ststr[j][12]),"%s",strncpy(sdummy,equnode,pp-equnode));
+        else
+          sprintf(&(ststr[j][12]),"%s",strncpy(sdummy,equnode,strlen(equnode)));
+        
+        if (equevtsend > 1E9)
+          sprintf(&(ststr[j][30]),"%1.3lfG",equevtsend/1E9);
+        else if (equevtsend > 1E6)
+          sprintf(&(ststr[j][30]),"%1.3lfM",equevtsend/1E6);
+        else
+          sprintf(&(ststr[j][30]),"%1.0lf",equevtsend);
+        
+        if (equenabled)
+        {
+          if (esc_flag)
+          {
+        sprintf(&(ststr[j][45]),"\033[7m%1.1lf\033[m",equevtpsec);
+        sprintf(&(ststr[j++][67]),"%1.1lf",equkbpsec);
+          }
+          else
+          {
+        sprintf(&(ststr[j][45]),"%1.1lf",equevtpsec);
+        sprintf(&(ststr[j++][60]),"%1.1lf",equkbpsec);
+          }
+        }
+        else
+        {
+          sprintf(&(ststr[j][45]),"%1.1lf",equevtpsec);
+          sprintf(&(ststr[j++][60]),"%1.1lf",equkbpsec);
+        }
+      } /* get value */
+    } /* active */
       } /* eor==NULL */
     } /* for equipment */
   }  
@@ -382,80 +384,80 @@ if (   (cm_exist("logger",FALSE) == CM_SUCCESS)
     {
       db_enum_key(hDB, hKey, i, &hSubkey);
       if (!hSubkey)
-	break;
+    break;
       db_get_key(hDB, hSubkey, &key);
       if (key.type == TID_KEY)
       {
-	size = sizeof(lactive);
-	sprintf(strtmp,"/logger/channels/%s/settings/active",key.name);
-	db_get_value(hDB, 0, strtmp, &lactive, &size, TID_BOOL, TRUE);
-	sprintf(lstate,"No"); if (lactive) sprintf(lstate,"Yes");
-	size = sizeof(lpath);
-	sprintf(strtmp,"/logger/channels/%s/settings/Filename",key.name);
-	db_get_value(hDB, 0, strtmp, lpath, &size, TID_STRING, TRUE);
-	
-	/* substitue "%d" by current run number */
-	str[0] = 0;
-	strcat(str,lpath);
-	if (strchr(str, '%'))
-	  sprintf(path, str, rn);
-	else
-	  strcpy(path, str);
-	strcpy(lpath, path);
-	
-	size = sizeof(ltype);
-	sprintf(strtmp,"/logger/channels/%s/settings/type",key.name);
-	db_get_value(hDB, 0, strtmp, ltype, &size, TID_STRING, TRUE);
-	
-	size = sizeof(levt);
-	sprintf(strtmp,"/logger/channels/%s/statistics/Events written",key.name);
-	db_get_value(hDB, 0, strtmp, &levt, &size, TID_DOUBLE, TRUE);
-	
-	size = sizeof(lbyt);
-	sprintf(strtmp,"/logger/channels/%s/statistics/Bytes written",key.name);
-	db_get_value(hDB, 0, strtmp, &lbyt, &size, TID_DOUBLE, TRUE);
-	lbyt /= 1024;
-	if (lactive)
-	{
-	  if (esc_flag)
-	  {	
-	    sprintf(&(ststr[j][0]),"  \033[7m%s\033[m",key.name);
-	    if (wd == 1)
-	      sprintf(&(ststr[j][15]),"%s",lstate);
-	    else
-	      sprintf(&(ststr[j][15]),"(%s)",lstate);
-	    sprintf(&(ststr[j][22]),"%s",ltype);
-	    sprintf(&(ststr[j][32]), "%s",lpath);
-	    sprintf(&(ststr[j][52]), "%.0f",levt);
-	    sprintf(&(ststr[j++][67]), "%9.2e",lbyt);
-	  }
-	  else	/* no esc */
-	  {
-	    sprintf(&(ststr[j][0]),"  %s",key.name);
-	    if (wd == 1)
-	      sprintf(&(ststr[j][8]),"%s",lstate);
-	    else
-	      sprintf(&(ststr[j][8]),"(%s)",lstate);
-	    sprintf(&(ststr[j][15]),"%s",ltype);
-	    sprintf(&(ststr[j][25]), "%s",lpath);
-	    sprintf(&(ststr[j][45]), "%.0f",levt);
-	    sprintf(&(ststr[j++][60]), "%9.2e",lbyt);
-	  }
-	}
-	else /* not active */
-	{		
-	  sprintf(&(ststr[j][0]),"  %s",key.name);
-	  if (wd == 1)
-	    sprintf(&(ststr[j][8]),"%s",lstate);
-	  else
-	    sprintf(&(ststr[j][8]),"(%s)",lstate);
-	  sprintf(&(ststr[j][15]),"%s",ltype);
-	  sprintf(&(ststr[j][25]), "%s",lpath);
-	  sprintf(&(ststr[j][45]), "%.0f",levt);
-	  sprintf(&(ststr[j++][60]), "%9.2e",lbyt);
-	}
-      }	 /* key */
-    }	/* for */
+    size = sizeof(lactive);
+    sprintf(strtmp,"/logger/channels/%s/settings/active",key.name);
+    db_get_value(hDB, 0, strtmp, &lactive, &size, TID_BOOL, TRUE);
+    sprintf(lstate,"No"); if (lactive) sprintf(lstate,"Yes");
+    size = sizeof(lpath);
+    sprintf(strtmp,"/logger/channels/%s/settings/Filename",key.name);
+    db_get_value(hDB, 0, strtmp, lpath, &size, TID_STRING, TRUE);
+    
+    /* substitue "%d" by current run number */
+    str[0] = 0;
+    strcat(str,lpath);
+    if (strchr(str, '%'))
+      sprintf(path, str, rn);
+    else
+      strcpy(path, str);
+    strcpy(lpath, path);
+    
+    size = sizeof(ltype);
+    sprintf(strtmp,"/logger/channels/%s/settings/type",key.name);
+    db_get_value(hDB, 0, strtmp, ltype, &size, TID_STRING, TRUE);
+    
+    size = sizeof(levt);
+    sprintf(strtmp,"/logger/channels/%s/statistics/Events written",key.name);
+    db_get_value(hDB, 0, strtmp, &levt, &size, TID_DOUBLE, TRUE);
+    
+    size = sizeof(lbyt);
+    sprintf(strtmp,"/logger/channels/%s/statistics/Bytes written",key.name);
+    db_get_value(hDB, 0, strtmp, &lbyt, &size, TID_DOUBLE, TRUE);
+    lbyt /= 1024;
+    if (lactive)
+    {
+      if (esc_flag)
+      { 
+        sprintf(&(ststr[j][0]),"  \033[7m%s\033[m",key.name);
+        if (wd == 1)
+          sprintf(&(ststr[j][15]),"%s",lstate);
+        else
+          sprintf(&(ststr[j][15]),"(%s)",lstate);
+        sprintf(&(ststr[j][22]),"%s",ltype);
+        sprintf(&(ststr[j][32]), "%s",lpath);
+        sprintf(&(ststr[j][52]), "%.0f",levt);
+        sprintf(&(ststr[j++][67]), "%9.2e",lbyt);
+      }
+      else  /* no esc */
+      {
+        sprintf(&(ststr[j][0]),"  %s",key.name);
+        if (wd == 1)
+          sprintf(&(ststr[j][8]),"%s",lstate);
+        else
+          sprintf(&(ststr[j][8]),"(%s)",lstate);
+        sprintf(&(ststr[j][15]),"%s",ltype);
+        sprintf(&(ststr[j][25]), "%s",lpath);
+        sprintf(&(ststr[j][45]), "%.0f",levt);
+        sprintf(&(ststr[j++][60]), "%9.2e",lbyt);
+      }
+    }
+    else /* not active */
+    {       
+      sprintf(&(ststr[j][0]),"  %s",key.name);
+      if (wd == 1)
+        sprintf(&(ststr[j][8]),"%s",lstate);
+      else
+        sprintf(&(ststr[j][8]),"(%s)",lstate);
+      sprintf(&(ststr[j][15]),"%s",ltype);
+      sprintf(&(ststr[j][25]), "%s",lpath);
+      sprintf(&(ststr[j][45]), "%.0f",levt);
+      sprintf(&(ststr[j++][60]), "%9.2e",lbyt);
+    }
+      }  /* key */
+    }   /* for */
   } /* exists */
 }
 else
@@ -513,7 +515,7 @@ else
 
             if (k==0)
             {
-	      ststr[j++][0] = '\0';
+          ststr[j++][0] = '\0';
 //              sprintf(ststr[j++],"");
               sprintf(&(ststr[j][0]),"Lazy Label");
               sprintf(&(ststr[j][15]),"Progress");
@@ -547,39 +549,39 @@ else
 
       sprintf(&(ststr[j][0]),"Clients:");
       for (i=0 ; ; i++)
-	    {
-	      db_enum_key(hDB, hKey, i, &hSubkey);
-	      if (!hSubkey)
-	        break;
-	      db_get_key(hDB, hSubkey, &key);
-	      
-	      memset (strtmp,0,sizeof(strtmp));
-	      size = sizeof(clientn);
-	      sprintf(strtmp,"name");
-	      db_get_value(hDB, hSubkey, strtmp, clientn, &size, TID_STRING, TRUE);
-	      memset (strtmp,0,sizeof(strtmp));
-	      size = sizeof(clienth);
-	      sprintf(strtmp,"host");
-	      db_get_value(hDB, hSubkey, strtmp, clienth, &size, TID_STRING, TRUE);
-	      if (ii>2)
-	        {
-	          ii=0;
-	          ststr[++j][0] = '\0';
-	        }
-	      memset (sdummy,0,64);
-	      pp = strchr(clienth,'.');
-	      if (pp != NULL) 
-	        sprintf(&(ststr[j][10+23*ii]),"%s/%s",clientn,strncpy(sdummy,clienth,pp-clienth));
-	      else
-	        sprintf(&(ststr[j][10+23*ii]),"%s/%s",clientn,clienth);
-	      ii++;
-	    }
+        {
+          db_enum_key(hDB, hKey, i, &hSubkey);
+          if (!hSubkey)
+            break;
+          db_get_key(hDB, hSubkey, &key);
+          
+          memset (strtmp,0,sizeof(strtmp));
+          size = sizeof(clientn);
+          sprintf(strtmp,"name");
+          db_get_value(hDB, hSubkey, strtmp, clientn, &size, TID_STRING, TRUE);
+          memset (strtmp,0,sizeof(strtmp));
+          size = sizeof(clienth);
+          sprintf(strtmp,"host");
+          db_get_value(hDB, hSubkey, strtmp, clienth, &size, TID_STRING, TRUE);
+          if (ii>2)
+            {
+              ii=0;
+              ststr[++j][0] = '\0';
+            }
+          memset (sdummy,0,64);
+          pp = strchr(clienth,'.');
+          if (pp != NULL) 
+            sprintf(&(ststr[j][10+23*ii]),"%s/%s",clientn,strncpy(sdummy,clienth,pp-clienth));
+          else
+            sprintf(&(ststr[j][10+23*ii]),"%s/%s",clientn,clienth);
+          ii++;
+        }
       j++;
     }
   
   if (loop == 1)
     sprintf(ststr[j++],"*- [!<cr>] to Exit --- [R<cr>] to Refresh -------------------- Delay:%2.li [sec]-*"
-	    ,delta_time/1000);
+        ,delta_time/1000);
   else
     sprintf(ststr[j++],"*------------------------------------------------------------------------------*");
   
@@ -596,11 +598,10 @@ else
 int main(int argc,char **argv)
 {
   INT    status, last_time=0, file_mode;
-  DWORD  j=0, i, last_max_line=0;
   HNDLE  hDB, hKey;
   char   host_name[HOST_NAME_LENGTH], expt_name[HOST_NAME_LENGTH], str[32];
   char   ch, svpath[256];
-  INT    fHandle;
+  INT    fHandle, i, j=0, last_max_line=0;
   INT    msg;
   BOOL   debug;
   
@@ -624,27 +625,27 @@ int main(int argc,char **argv)
     else if (argv[i][0] == '-')
     {
       if (i+1 >= argc || argv[i+1][0] == '-')
-	goto usage;
+    goto usage;
       if (strncmp(argv[i],"-w",2) == 0)
-	delta_time = 1000 * (atoi (argv[++i]));
+    delta_time = 1000 * (atoi (argv[++i]));
       else if (strncmp(argv[i],"-f",2) == 0)
-	strcpy(svpath, argv[++i]);
+    strcpy(svpath, argv[++i]);
       else if (strncmp(argv[i],"-e",2) == 0)
-	strcpy(expt_name, argv[++i]);
+    strcpy(expt_name, argv[++i]);
       else if (strncmp(argv[i],"-h",2)==0)
-	strcpy(host_name, argv[++i]);
+    strcpy(host_name, argv[++i]);
       else if (strncmp(argv[i],"-c",2) == 0) {
-	strcpy(str, argv[++i]);
-	if (strncmp(str,"n",1)==0 || strncmp(str,"N",1)==0)
-	  file_mode = 0;
+    strcpy(str, argv[++i]);
+    if (strncmp(str,"n",1)==0 || strncmp(str,"N",1)==0)
+      file_mode = 0;
       }
       else
       {
      usage:
-	printf("usage: mstat  -l (loop) -w delay (5sec) -f filename (null)\n");
-	printf("              -c compose (Addrun#/norun#)\n");
-	printf("             [-h Hostname] [-e Experiment]\n\n");
-	return 0;
+    printf("usage: mstat  -l (loop) -w delay (5sec) -f filename (null)\n");
+    printf("              -c compose (Addrun#/norun#)\n");
+    printf("             [-h Hostname] [-e Experiment]\n\n");
+    return 0;
       }
     }
   }
@@ -679,12 +680,12 @@ int main(int argc,char **argv)
       compose_status(hDB, hKey);
       while ((j<cur_max_line ) && (ststr[j][0] != '\0'))
       {
-	strncpy(svpath,ststr[j],80);
-	svpath[80] = '\0';
-	printf("%s\n",svpath);
-	write(fHandle,"\n",1);
-	write(fHandle, ststr[j], strlen(ststr[j])); 
-	j++;
+    strncpy(svpath,ststr[j],80);
+    svpath[80] = '\0';
+    printf("%s\n",svpath);
+    write(fHandle,"\n",1);
+    write(fHandle, ststr[j], strlen(ststr[j])); 
+    j++;
       }
       close (fHandle);
     }
@@ -694,9 +695,9 @@ int main(int argc,char **argv)
       compose_status(hDB, hKey);
       while ((j<cur_max_line) && (ststr[j][0] != '\0'))
       { 
-	strncpy(svpath,ststr[j++],80);
-	svpath[80] = '\0';
-	printf("%s\n",svpath);
+    strncpy(svpath,ststr[j++],80);
+    svpath[80] = '\0';
+    printf("%s\n",svpath);
       }
     }
   }
@@ -710,28 +711,28 @@ int main(int argc,char **argv)
     {
       if ((ss_millitime() - last_time) > delta_time)
       {
-	last_time = ss_millitime();
-	compose_status(hDB, hKey);
-	if (cur_max_line < last_max_line)
-	  ss_clear_screen();
-	last_max_line = cur_max_line;
-	
-	j = 0;
-	while ((j<cur_max_line) && (ststr[j][0] != '\0')) {
-	  ss_printf(0, j, "%s",ststr[j]);
-	  j++;
-	}
+    last_time = ss_millitime();
+    compose_status(hDB, hKey);
+    if (cur_max_line < last_max_line)
+      ss_clear_screen();
+    last_max_line = cur_max_line;
+    
+    j = 0;
+    while ((j<cur_max_line) && (ststr[j][0] != '\0')) {
+      ss_printf(0, j, "%s",ststr[j]);
+      j++;
+    }
       }
       ch = 0;
       while (ss_kbhit())
       {
-	ch = ss_getchar(0);
-	if (ch == -1)
-	  ch = getchar();
-	if (ch == 'R')
-	  ss_clear_screen();
-	if ((char) ch == '!')
-	  break;
+    ch = ss_getchar(0);
+    if (ch == -1)
+      ch = getchar();
+    if (ch == 'R')
+      ss_clear_screen();
+    if ((char) ch == '!')
+      break;
       }
       msg = cm_yield(200);
     } while (msg != RPC_SHUTDOWN && msg != SS_ABORT && ch != '!');
