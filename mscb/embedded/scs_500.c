@@ -9,6 +9,9 @@
                 for SCS-500 analog I/O
 
   $Log$
+  Revision 1.4  2002/08/12 12:11:49  midas
+  No voltage output in debug mode
+
   Revision 1.3  2002/08/08 06:47:27  midas
   Fixed typo
 
@@ -30,6 +33,7 @@
 #include "mscb.h"
 
 extern bit FREEZE_MODE;
+extern bit DEBUG_MODE;
 
 char code node_name[] = "SCS-500";
 
@@ -280,11 +284,14 @@ unsigned char i;
     for (i=0 ; i<8 ; i++)
       adc_read(i, &user_data.adc[i]);
 
-    lcd_goto(0, 0);
-    printf("CH1: %6.4f V", user_data.adc[0] / 65536.0 * 2.5);
-
-    lcd_goto(0, 1);
-    printf("CH2: %6.4f V", user_data.adc[1] / 65536.0 * 2.5);
+    if (!DEBUG_MODE)
+      {
+      lcd_goto(0, 0);
+      printf("CH1: %6.4f V", user_data.adc[0] / 65536.0 * 2.5);
+  
+      lcd_goto(0, 1);
+      printf("CH2: %6.4f V", user_data.adc[1] / 65536.0 * 2.5);
+      }
     }
 }
 
