@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus communication functions
 
   $Log$
+  Revision 1.17  2002/10/28 14:26:30  midas
+  Changes from Japan
+
   Revision 1.16  2002/10/16 15:25:06  midas
   xxx16 now does 32 bit exchange
 
@@ -93,7 +96,8 @@
 #define MSCB_MAX_FD 10
 
 typedef struct {
-  int fd;
+  char device[256];
+  int  fd;
 } MSCB_FD;
 
 MSCB_FD mscb_fd[MSCB_MAX_FD];
@@ -595,6 +599,11 @@ int           index, i;
 int           status;
 unsigned char c;
 
+  /* search if old file descriptor */
+  for (index=0 ; index<MSCB_MAX_FD ; index++)
+    if (strcmp(mscb_fd[index].device, device) == 0)
+      return index+1;
+
   /* search for new file descriptor */
   for (index=0 ; index<MSCB_MAX_FD ; index++)
     if (mscb_fd[index].fd == 0)
@@ -602,6 +611,8 @@ unsigned char c;
 
   if (index == MSCB_MAX_FD)
     return -1;
+
+  strcpy(mscb_fd[index].device, device);
 
 #ifdef _MSC_VER
 
@@ -755,6 +766,8 @@ int i, fd, d;
   mscb_init(device);
   fd = 1;
 
+  mscb_lock();
+
   printf("Toggling %s output pins, hit ENTER to stop.\n", device);
   printf("GND = 19-25, toggling 2-9, 1, 14, 16 and 17\n\n");
   do
@@ -804,16 +817,20 @@ int i, fd, d;
 
   while (kbhit())
     getch();
+
+  mscb_release();
 }
 
 /*------------------------------------------------------------------*/
 
-int mscb_addr(int fd, int cmd, int adr)
+static int mscb_addr(int fd, int cmd, int adr)
 /********************************************************************\
 
   Routine: mscb_addr
 
-  Purpose: Address node or nodes
+  Purpose: Address node or nodes, only used internall from read and
+           write routines. A MSCB lock has to be obtained outside
+           of this routine!
 
   Input:
     int fd                  File descriptor for connection
@@ -839,9 +856,6 @@ unsigned char buf[10];
 int i;
 
   buf[0] = cmd;
-
-  if (mscb_lock() != MSCB_SUCCESS)
-    return MSCB_MUTEX;
 
   if (cmd == CMD_ADDR_NODE8 ||
       cmd == CMD_ADDR_GRP8 ||
@@ -881,36 +895,44 @@ int i;
     memset(buf, 0, sizeof(buf));
     mscb_out(fd, buf, 10, 1);
 
-    mscb_release();
     return  MSCB_TIMEOUT;
     }
 
-  mscb_release();
   return MSCB_SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
 
-int mscb_reboot(int fd)
+int mscb_reboot(int fd, int adr)
 /********************************************************************\
 
   Routine: mscb_reboot
 
-  Purpose: Reboot addressed node(s) by sending CMD_INIT
+  Purpose: Reboot node by sending CMD_INIT
 
   Input:
     int fd                  File descriptor for connection
+    int adr                 Node address
 
   Function value:
     MSCB_SUCCESS            Successful completion
     MSCB_MUTEX              Cannot obtain mutex for mscb
+    MSCB_TIMEOUT            Timeout receiving ping acknowledge
 
 \********************************************************************/
 {
 unsigned char buf[10];
+int status;
 
   if (mscb_lock() != MSCB_SUCCESS)
     return MSCB_MUTEX;
+
+  status = mscb_addr(fd, CMD_PING16, adr);
+  if (status != MSCB_SUCCESS)
+    {
+    mscb_release();
+    return status;
+    }
 
   buf[0] = CMD_INIT;
   buf[1] = crc8(buf, 1);
@@ -962,53 +984,41 @@ unsigned int timeout;
 
 /*------------------------------------------------------------------*/
 
-int mscb_set_baud(int fd, int baud)
+int mscb_ping(int fd, int adr)
 /********************************************************************\
 
-  Routine: mscb_set_baud
+  Routine: mscb_info
 
-  Purpose: Set baud rate of all addressed nodes and submaster
+  Purpose: Ping node to see if it's alive
 
   Input:
     int fd                  File descriptor for connection
-    int baud                Baud rate. One of the BD_xxxx values
-                            defined in mscb.h
+    int adr                 Node address
+
+  Output:
+    none
 
   Function value:
     MSCB_SUCCESS            Successful completion
-    MSCB_TIMEOUT            Timeout
+    MSCB_TIMEOUT            Timeout receiving data
     MSCB_MUTEX              Cannot obtain mutex for mscb
 
 \********************************************************************/
 {
 int status;
-unsigned char buf[10];
 
   if (mscb_lock() != MSCB_SUCCESS)
     return MSCB_MUTEX;
 
-  /* address all nodes */
-  status = mscb_addr(fd, CMD_ADDR_BC, 0);
-  if (status != MSCB_SUCCESS)
-    {
-    mscb_release();
-    return status;
-    }
-
-  buf[0] = CMD_SET_BAUD;
-  buf[1] = baud;
-  buf[2] = crc8(buf, 2);
-
-  status = mscb_out(fd, buf, 3, 0);
+  status = mscb_addr(fd, CMD_PING16, adr);
 
   mscb_release();
-
   return status;
 }
 
 /*------------------------------------------------------------------*/
-
-int mscb_info(int fd, MSCB_INFO *info)
+  
+int mscb_info(int fd, int adr, MSCB_INFO *info)
 /********************************************************************\
 
   Routine: mscb_info
@@ -1017,6 +1027,7 @@ int mscb_info(int fd, MSCB_INFO *info)
 
   Input:
     int fd                  File descriptor for connection
+    int adr                 Node address
 
   Output:
     MSCB_INFO *info         Info structure defined in mscb.h
@@ -1029,11 +1040,18 @@ int mscb_info(int fd, MSCB_INFO *info)
 
 \********************************************************************/
 {
-int i;
+int i, status;
 unsigned char buf[80];
 
   if (mscb_lock() != MSCB_SUCCESS)
     return MSCB_MUTEX;
+
+  status = mscb_addr(fd, CMD_PING16, adr);
+  if (status != MSCB_SUCCESS)
+    {
+    mscb_release();
+    return status;
+    }
 
   buf[0] = CMD_GET_INFO;
   buf[1] = crc8(buf, 1);
@@ -1060,7 +1078,7 @@ unsigned char buf[80];
 
 /*------------------------------------------------------------------*/
 
-int mscb_info_channel(int fd, int type, int index, MSCB_INFO_CHN *info)
+int mscb_info_channel(int fd, int adr, int type, int index, MSCB_INFO_CHN *info)
 /********************************************************************\
 
   Routine: mscb_info_channel
@@ -1069,6 +1087,7 @@ int mscb_info_channel(int fd, int type, int index, MSCB_INFO_CHN *info)
 
   Input:
     int fd                  File descriptor for connection
+    int adr                 Node address
     int type                Channel type, one of
                               GET_INFO_WRITE
                               GET_INFO_READ
@@ -1086,11 +1105,18 @@ int mscb_info_channel(int fd, int type, int index, MSCB_INFO_CHN *info)
 
 \********************************************************************/
 {
-int i;
+int i, status;
 unsigned char buf[80];
 
   if (mscb_lock() != MSCB_SUCCESS)
     return MSCB_MUTEX;
+
+  status = mscb_addr(fd, CMD_PING16, adr);
+  if (status != MSCB_SUCCESS)
+    {
+    mscb_release();
+    return status;
+    }
 
   buf[0] = CMD_GET_INFO+2;
   buf[1] = type;
@@ -1115,15 +1141,16 @@ unsigned char buf[80];
 
 /*------------------------------------------------------------------*/
 
-int mscb_set_addr(int fd, int node, int group)
+int mscb_set_addr(int fd, int adr, int node, int group)
 /********************************************************************\
 
   Routine: mscb_set_addr
 
-  Purpose: Set node and group address of an addressed node
+  Purpose: Set node and group address of an node
 
   Input:
     int fd                  File descriptor for connection
+    int adr                 Node address
     int node                16-bit node address
     int group               16-bit group address
 
@@ -1134,9 +1161,17 @@ int mscb_set_addr(int fd, int node, int group)
 \********************************************************************/
 {
 unsigned char buf[8];
+int status;
 
   if (mscb_lock() != MSCB_SUCCESS)
     return MSCB_MUTEX;
+
+  status = mscb_addr(fd, CMD_PING16, adr);
+  if (status != MSCB_SUCCESS)
+    {
+    mscb_release();
+    return status;
+    }
 
   buf[0] = CMD_SET_ADDR;
   buf[1] = (unsigned char ) (node >> 8);
@@ -1153,15 +1188,16 @@ unsigned char buf[8];
 
 /*------------------------------------------------------------------*/
 
-int mscb_write_na(int fd, unsigned char channel, unsigned int data, int size)
+int mscb_write_group(int fd, int adr, unsigned char channel, void *data, int size)
 /********************************************************************\
 
   Routine: mscb_write_na
 
-  Purpose: Write data to channel on addressed node
+  Purpose: Write data to channels on group of nodes
 
   Input:
     int fd                  File descriptor for connection
+    int adr                 Group address
     unsigned char channel   Channel index 0..255
     unsigned int  data      Data to send
     int size                Data size in bytes 1..4 for byte, word,
@@ -1173,8 +1209,8 @@ int mscb_write_na(int fd, unsigned char channel, unsigned int data, int size)
 
 \********************************************************************/
 {
-int i;
-unsigned int d;
+int i, status;
+unsigned char *d;
 unsigned char buf[10];
 
   if (size > 4 || size < 1)
@@ -1183,14 +1219,18 @@ unsigned char buf[10];
   if (mscb_lock() != MSCB_SUCCESS)
     return MSCB_MUTEX;
 
+  status = mscb_addr(fd, CMD_ADDR_GRP16, adr);
+  if (status != MSCB_SUCCESS)
+    {
+    mscb_release();
+    return status;
+    }
+
   buf[0] = CMD_WRITE_NA+size+1;
   buf[1] = channel;
 
   for (i=0,d=data ; i<size ; i++)
-    {
-    buf[2+size-1-i] = d & 0xFF;
-    d >>= 8;
-    }
+    buf[2+size-1-i] = *d++;
 
   buf[2+i] = crc8(buf, 2+i);
   mscb_out(fd, buf, 3+i, 0);
@@ -1202,17 +1242,18 @@ unsigned char buf[10];
 
 /*------------------------------------------------------------------*/
 
-int mscb_write(int fd, unsigned char channel, unsigned int data, int size)
+int mscb_write(int fd, int adr, unsigned char channel, void *data, int size)
 /********************************************************************\
 
   Routine: mscb_write
 
-  Purpose: Write data to channel on addressed node with acknowledge
+  Purpose: Write data to channel on single node
 
   Input:
     int fd                  File descriptor for connection
+    int adr                 Node address
     unsigned char channel   Channel index 0..255
-    unsigned int  data      Data to send
+    void *data              Data to send
     int size                Data size in bytes 1..4 for byte, word,
                             and dword
 
@@ -1225,9 +1266,9 @@ int mscb_write(int fd, unsigned char channel, unsigned int data, int size)
 
 \********************************************************************/
 {
-int           i;
-unsigned int  d;
+int           i, status;
 unsigned char buf[10], crc, ack[2];
+unsigned char *d;
 
   if (size > 4 || size < 1)
     return MSCB_INVAL_PARAM;
@@ -1235,14 +1276,18 @@ unsigned char buf[10], crc, ack[2];
   if (mscb_lock() != MSCB_SUCCESS)
     return MSCB_MUTEX;
 
+  status = mscb_addr(fd, CMD_PING16, adr);
+  if (status != MSCB_SUCCESS)
+    {
+    mscb_release();
+    return status;
+    }
+
   buf[0] = CMD_WRITE_ACK+size+1;
   buf[1] = channel;
 
   for (i=0,d=data ; i<size ; i++)
-    {
-    buf[2+size-1-i] = d & 0xFF;
-    d >>= 8;
-    }
+    buf[2+size-1-i] = *d++;
 
   crc = crc8(buf, 2+i);
   buf[2+i] = crc;
@@ -1262,15 +1307,16 @@ unsigned char buf[10], crc, ack[2];
 
 /*------------------------------------------------------------------*/
 
-int mscb_write_conf(int fd, unsigned char channel, unsigned int data, int size)
+int mscb_write_conf(int fd, int adr, unsigned char channel, void *data, int size)
 /********************************************************************\
 
   Routine: mscb_write_conf
 
-  Purpose: Write configuration parameter to addressed node with acknowledge
+  Purpose: Write configuration parameter to node with acknowledge
 
   Input:
     int fd                  File descriptor for connection
+    int adr                 Node address
     unsigned char channel   Channel index 0..254, 255 for node CSR
     unsigned int  data      Data to send
     int size                Data size in bytes 1..4 for byte, word,
@@ -1285,8 +1331,8 @@ int mscb_write_conf(int fd, unsigned char channel, unsigned int data, int size)
 
 \********************************************************************/
 {
-int           i;
-unsigned int  d;
+int           i, status;
+unsigned char *d;
 unsigned char buf[10], crc, ack[2];
 
   if (size > 4 || size < 1)
@@ -1295,14 +1341,18 @@ unsigned char buf[10], crc, ack[2];
   if (mscb_lock() != MSCB_SUCCESS)
     return MSCB_MUTEX;
 
+  status = mscb_addr(fd, CMD_PING16, adr);
+  if (status != MSCB_SUCCESS)
+    {
+    mscb_release();
+    return status;
+    }
+
   buf[0] = CMD_WRITE_CONF+size+1;
   buf[1] = channel;
 
   for (i=0,d=data ; i<size ; i++)
-    {
-    buf[2+size-1-i] = d & 0xFF;
-    d >>= 8;
-    }
+    buf[2+size-1-i] = *d++;
 
   crc = crc8(buf, 2+i);
   buf[2+i] = crc;
@@ -1323,7 +1373,7 @@ unsigned char buf[10], crc, ack[2];
 
 /*------------------------------------------------------------------*/
 
-int mscb_flash(int fd)
+int mscb_flash(int fd, int adr)
 /********************************************************************\
 
   Routine: mscb_flash
@@ -1334,6 +1384,7 @@ int mscb_flash(int fd)
 
   Input:
     int fd                  File descriptor for connection
+    int adr                 Node address
                             and dword
 
   Function value:
@@ -1345,11 +1396,18 @@ int mscb_flash(int fd)
 
 \********************************************************************/
 {
-int           i;
+int           i, status;
 unsigned char buf[10], crc, ack[2];
 
   if (mscb_lock() != MSCB_SUCCESS)
     return MSCB_MUTEX;
+
+  status = mscb_addr(fd, CMD_PING16, adr);
+  if (status != MSCB_SUCCESS)
+    {
+    mscb_release();
+    return status;
+    }
 
   buf[0] = CMD_FLASH;
   crc = crc8(buf, 1);
@@ -1371,17 +1429,17 @@ unsigned char buf[10], crc, ack[2];
 
 /*------------------------------------------------------------------*/
 
-int mscb_upload(int fd, char *filename)
+int mscb_upload(int fd, int adr, char *buffer, int size)
 /********************************************************************\
 
   Routine: mscb_upload
 
-  Purpose: Upload new firmware to currently addressed node
+  Purpose: Upload new firmware to node
 
 
   Input:
     int fd                  File descriptor for connection
-                            and dword
+    int adr                 Node address
     char *filename          File name for Intel HEX file
 
   Function value:
@@ -1390,27 +1448,19 @@ int mscb_upload(int fd, char *filename)
     MSCB_CRC_ERROR          CRC error
     MSCB_INVAL_PARAM        Parameter "size" has invalid value
     MSCB_MUTEX              Cannot obtain mutex for mscb
+    MSCB_FORMAT_ERROR       Error in HEX file format
 
 \********************************************************************/
 {
-unsigned char  buf[512], crc, ack[2], image[0x8000], line[80], len, type, ofh, ofl, d;
-int            i, j, page;
+unsigned char  buf[512], crc, ack[2], image[0x8000], *line, len, type, ofh, ofl, d;
+int            i, j, status, page;
 unsigned short ofs;
-FILE           *f;
 
-  f = fopen(filename, "rt");
-  if (f == NULL)
-    {
-    printf("Error: Cannot find file \"%s\"\n", filename);
-    return MSCB_FILE_ERROR;
-    }
-
-  /* read HEX file */
+  /* interprete HEX file */
   memset(image, 0xFF, sizeof(image));
+  line = buffer;
   do
     {
-    fgets(line, sizeof(line), f);
-
     if (line[0] == ':')
       {
       sscanf(line+1, "%02x%02x%02x%02x", &len, &ofh, &ofl, &type);
@@ -1421,20 +1471,23 @@ FILE           *f;
         sscanf(line+9+i*2, "%02x", &d);
         image[ofs+i] = d;
         }
+      line = strchr(line, '\r');
+      if (line && *line == '\n')
+        line++;
       }
     else
-      {
-      printf("Error: invalid HEX format in file %s\n", filename);
-      return MSCB_FILE_ERROR;
-      }
+      return MSCB_FORMAT_ERROR;
 
-    } while (!feof(f));
+    } while (*line);
 
   if (mscb_lock() != MSCB_SUCCESS)
-    {
-    printf("Error: other program is using MSCB system\n");
-    fclose(f);
     return MSCB_MUTEX;
+
+  status = mscb_addr(fd, CMD_PING16, adr);
+  if (status != MSCB_SUCCESS)
+    {
+    mscb_release();
+    return status;
     }
 
   /* send upgrade command */
@@ -1448,7 +1501,6 @@ FILE           *f;
   if (i<2)
     {
     printf("Error: Upload not implemented in remote node\n");
-    fclose(f);
     mscb_release();
     return MSCB_TIMEOUT;
     }
@@ -1456,7 +1508,6 @@ FILE           *f;
   if (ack[0] != CMD_ACK || ack[1] != crc)
     {
     printf("Error: Cannot set remote node into upload mode\n");
-    fclose(f);
     mscb_release();
     return MSCB_CRC_ERROR;
     }
@@ -1472,7 +1523,6 @@ FILE           *f;
   if (i == 30 || ack[0] != 0xBE)
     {
     printf("Error: timeout from remote node\n");
-    fclose(f);
     mscb_release();
     return MSCB_TIMEOUT;
     }
@@ -1500,7 +1550,6 @@ FILE           *f;
         if (mscb_in1(fd, ack, 100000) != MSCB_SUCCESS)
           {
           printf("Error: timeout from remote node for erase page\n");
-          fclose(f);
           mscb_release();
           return MSCB_TIMEOUT;
           }
@@ -1521,7 +1570,6 @@ FILE           *f;
         if (mscb_in1(fd, ack, 100000) != MSCB_SUCCESS)
           {
           printf("Error: timeout from remote node for program page\n");
-          fclose(f);
           mscb_release();
           return MSCB_TIMEOUT;
           }
@@ -1551,7 +1599,6 @@ FILE           *f;
         if (j == 10)
           {
           printf("Error: error on page verification (tried 10 times)\n");
-          fclose(f);
           mscb_release();
           return MSCB_TIMEOUT;
           }
@@ -1574,22 +1621,22 @@ FILE           *f;
   buf[0] = 5;
   mscb_out(fd, buf, 1, 0);
 
-  fclose(f);
   mscb_release();
   return MSCB_SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
 
-int mscb_read(int fd, unsigned char channel, unsigned int *data)
+int mscb_read(int fd, int adr, unsigned char channel, unsigned int *data)
 /********************************************************************\
 
   Routine: mscb_read
 
-  Purpose: Read data from channel on addressed node
+  Purpose: Read data from channel on node
 
   Input:
     int fd                  File descriptor for connection
+    int adr                 Node address
     unsigned char channel   Channel index 0..255
     int size                Data size in bytes 1..4 for byte, word,
                             and dword for data to receive
@@ -1606,11 +1653,18 @@ int mscb_read(int fd, unsigned char channel, unsigned int *data)
 
 \********************************************************************/
 {
-int           i;
+int           i, status;
 unsigned char buf[10], crc;
 
   if (mscb_lock() != MSCB_SUCCESS)
     return MSCB_MUTEX;
+
+  status = mscb_addr(fd, CMD_PING16, adr);
+  if (status != MSCB_SUCCESS)
+    {
+    mscb_release();
+    return status;
+    }
 
   buf[0] = CMD_READ;
   buf[1] = channel;
@@ -1641,15 +1695,16 @@ unsigned char buf[10], crc;
 
 /*------------------------------------------------------------------*/
 
-int mscb_read_conf(int fd, unsigned char index, unsigned int *data)
+int mscb_read_conf(int fd, int adr, unsigned char index, unsigned int *data)
 /********************************************************************\
 
   Routine: mscb_read_conf
 
-  Purpose: Read configuration parameter on addressed node
+  Purpose: Read configuration parameter on node
 
   Input:
     int fd                  File descriptor for connection
+    int adr                 Node address
     unsigned char index     Parameter index 0..255
     int size                Size of data buffer
 
@@ -1665,11 +1720,18 @@ int mscb_read_conf(int fd, unsigned char index, unsigned int *data)
 
 \********************************************************************/
 {
-int           i;
+int           i, status;
 unsigned char buf[10], crc;
 
   if (mscb_lock() != MSCB_SUCCESS)
     return MSCB_MUTEX;
+
+  status = mscb_addr(fd, CMD_PING16, adr);
+  if (status != MSCB_SUCCESS)
+    {
+    mscb_release();
+    return status;
+    }
 
   buf[0] = CMD_READ_CONF;
   buf[1] = index;
@@ -1700,7 +1762,7 @@ unsigned char buf[10], crc;
 
 /*------------------------------------------------------------------*/
 
-int mscb_user(int fd, void *param, int size, void *result, int *rsize)
+int mscb_user(int fd, int adr, void *param, int size, void *result, int *rsize)
 /********************************************************************\
 
   Routine: mscb_user
@@ -1709,6 +1771,7 @@ int mscb_user(int fd, void *param, int size, void *result, int *rsize)
 
   Input:
     int  fd                 File descriptor for connection
+    int adr                 Node address
     char *param             Parameters passed to user function, no CRC code
     int  size               Size of parameters in bytes
     int  *rsize             Size of result buffer
@@ -1730,6 +1793,13 @@ unsigned char buf[80];
 
   if (mscb_lock() != MSCB_SUCCESS)
     return MSCB_MUTEX;
+
+  status = mscb_addr(fd, CMD_PING16, adr);
+  if (status != MSCB_SUCCESS)
+    {
+    mscb_release();
+    return status;
+    }
 
   buf[0] = CMD_USER+size;
 
@@ -1767,397 +1837,4 @@ unsigned char buf[80];
     return MSCB_CRC_ERROR;
 
   return MSCB_SUCCESS;
-}
-
-
-/*------------------------------------------------------------------*/
-
-static int _fd = 0;
-
-int mscb_write16(char *device, unsigned short addr, unsigned char channel, unsigned int data, int size)
-/********************************************************************\
-
-  Routine: mscb_write16
-
-  Purpose: Write data to channel on a node with acknowledge
-
-  Input:
-    int  parport            Either 1 (lpt1) or 2 (lpt2)
-    unsigned int  addr      Node address
-    unsigned char channel   Channel index 0..255
-    void          data      Data to send
-    int           size      Size of data (1..4)
-
-  Function value:
-    MSCB_SUCCESS            Successful completion
-    MSCB_TIMEOUT            Timeout receiving acknowledge
-    MSCB_CRC_ERROR          CRC error
-    MSCB_INVAL_PARAM        Cannot open device
-    MSCB_MUTEX              Cannot obtain mutex for mscb
-
-\********************************************************************/
-{
-unsigned char buf[10], ack[10], crc;
-int           i, r;
-unsigned int  d;
-
-  if (_fd == 0)
-    {
-    _fd = mscb_init(device);
-    if (_fd < 0)
-      return MSCB_INVAL_PARAM;
-    }
-
-  mscb_lock();
-
-  for (i=0 ; i<10 ; i++)
-    {
-    /* send address command */
-    buf[0] = CMD_ADDR_NODE16;
-    buf[1] = (unsigned char) (addr >> 8);
-    buf[2] = (unsigned char) (addr & 0xFF);
-    buf[3] = crc8(buf, 3);
-    mscb_out(_fd, buf, 4, 1);
-
-    /* send write command */
-    buf[0] = CMD_WRITE_ACK+size+1;
-    buf[1] = channel;
-
-    for (i=0,d=data ; i<size ; i++)
-      {
-      buf[2+size-1-i] = d & 0xFF;
-      d >>= 8;
-      }
-
-    crc = crc8(buf, 2+i);
-    buf[2+i] = crc;
-    mscb_out(_fd, buf, 3+i, 0);
-    
-    /* read acknowledge */
-    r = mscb_in(_fd, ack, 2, 5000);
-
-    if (r == 2 && ack[0] == CMD_ACK && ack[1] == crc)
-      break;
-
-    if (i == 9)
-      {
-      mscb_release();
-
-      if (r<2)
-        return MSCB_TIMEOUT;
-
-      return MSCB_CRC_ERROR;
-      }
-
-    /* send 0's to overflow partially filled node receive buffer */
-    memset(buf, 0, sizeof(buf));
-    mscb_out(_fd, buf, 10, 1);
-    Sleep(100);
-    }
-
-  mscb_release();
-  return MSCB_SUCCESS;
-}
-
-/*------------------------------------------------------------------*/
-
-int mscb_write_conf16(char *device, unsigned short addr, unsigned char index,
-                      unsigned int data, int size)
-/********************************************************************\
-
-  Routine: mscb_write_conf16
-
-  Purpose: Write configuration parameter to a node with acknowledge
-
-  Input:
-    int  parport            Either 1 (lpt1) or 2 (lpt2)
-    unsigned int  addr      Node address
-    unsigned char index     Parameter index 0..254, 255 for node CSR
-    unsigned int  data      Data to send
-    int           size      Size of data (1..4)
-
-  Function value:
-    MSCB_SUCCESS            Successful completion
-    MSCB_TIMEOUT            Timeout receiving acknowledge
-    MSCB_CRC_ERROR          CRC error
-    MSCB_INVAL_PARAM        Cannot open device
-    MSCB_MUTEX              Cannot obtain mutex for mscb
-
-\********************************************************************/
-{
-unsigned char buf[10], ack[10], crc;
-int           i, r;
-unsigned int  d;
-
-  if (_fd == 0)
-    {
-    _fd = mscb_init(device);
-    if (_fd < 0)
-      return MSCB_INVAL_PARAM;
-    }
-
-  mscb_lock();
-
-  for (i=0 ; i<10 ; i++)
-    {
-    /* send address command */
-    buf[0] = CMD_ADDR_NODE16;
-    buf[1] = (unsigned char) (addr >> 8);
-    buf[2] = (unsigned char) (addr & 0xFF);
-    buf[3] = crc8(buf, 3);
-    mscb_out(_fd, buf, 4, 1);
-
-    /* send write command */
-    buf[0] = CMD_WRITE_CONF+size+1;
-    buf[1] = index;
-
-    for (i=0,d=data ; i<size ; i++)
-      {
-      buf[2+size-1-i] = d & 0xFF;
-      d >>= 8;
-      }
-
-    crc = crc8(buf, 2+i);
-    buf[2+i] = crc;
-    mscb_out(_fd, buf, 3+i, 0);
-
-    /* read acknowledge */
-    r = mscb_in(_fd, ack, 2, 5000);
-
-    if (r == 2 && ack[0] == CMD_ACK && ack[1] == crc)
-      break;
-
-    if (i == 9)
-      {
-      mscb_release();
-
-      if (r<2)
-        return MSCB_TIMEOUT;
-
-      return MSCB_CRC_ERROR;
-      }
-
-    /* send 0's to overflow partially filled node receive buffer */
-    memset(buf, 0, sizeof(buf));
-    mscb_out(_fd, buf, 10, 1);
-    Sleep(100);
-    }
-
-  mscb_release();
-  return MSCB_SUCCESS;
-}
-
-/*------------------------------------------------------------------*/
-
-int mscb_read16(char *device, unsigned short addr, unsigned char channel, unsigned int *data)
-/********************************************************************\
-
-  Routine: mscb_read16
-
-  Purpose: Read data from channel on a node
-
-  Input:
-    char *device            Device name passed to mscb_init
-    unsigned int  addr      Node address
-    unsigned char channel   Channel index 0..255
-
-  Output
-    unsigned int  *data     Received data
-
-  Function value:
-    MSCB_SUCCESS            Successful completion
-    MSCB_TIMEOUT            Timeout receiving acknowledge
-    MSCB_CRC_ERROR          CRC error
-    MSCB_INVAL_PARAM        Cannot open device
-    MSCB_MUTEX              Cannot obtain mutex for mscb
-
-\********************************************************************/
-{
-unsigned char buf[10], crc;
-int           i, r;
-
-  if (_fd == 0)
-    {
-    _fd = mscb_init(device);
-    if (_fd < 0)
-      return MSCB_INVAL_PARAM;
-    }
-
-  mscb_lock();
-
-  for (i=0 ; i<10 ; i++)
-    {
-    /* send address command */
-    buf[0] = CMD_ADDR_NODE16;
-    buf[1] = (unsigned char) (addr >> 8);
-    buf[2] = (unsigned char) (addr & 0xFF);
-    buf[3] = crc8(buf, 3);
-    mscb_out(_fd, buf, 4, 1);
-
-    /* send read command */
-    buf[0] = CMD_READ;
-    buf[1] = channel;
-    buf[2] = crc8(buf, 2);
-    mscb_out(_fd, buf, 3, 0);
-
-    /* read data */
-    r = mscb_in(_fd, buf, 10, 5000);
-    mscb_release();
-
-    if (r>=3)
-      {
-      crc = crc8(buf, r-1);
-
-      *data = 0;
-      memcpy(data, buf+1, r-2);
-      if (r-2 == 2)
-        WORD_SWAP(data);
-      if (r-2 == 4)
-        DWORD_SWAP(data);
-
-      if (buf[0] == CMD_ACK+r-2 && buf[r-1] == crc)
-        {
-        mscb_release();
-        return MSCB_SUCCESS;
-        }
-      }
-
-    if (i == 9)
-      {
-      mscb_release();
-
-      if (r<3)
-        return MSCB_TIMEOUT;
-
-      return MSCB_CRC_ERROR;
-      }
-
-    /* send 0's to overflow partially filled node receive buffer */
-    memset(buf, 0, sizeof(buf));
-    mscb_out(_fd, buf, 10, 1);
-    Sleep(100);
-    }
-
-  mscb_release();
-  return MSCB_SUCCESS;
-}
-
-/*------------------------------------------------------------------*/
-
-int mscb_read_conf16(char *device, unsigned short addr, unsigned char index,
-                     unsigned int *data)
-/********************************************************************\
-
-  Routine: mscb_read_conf16
-
-  Purpose: Read configuration parameter from node
-
-  Input:
-    char *device            Device name passed to mscb_init
-    unsigned int  addr      Node address
-    unsigned char index     Parameter index 0..254, 255 for node CSR
-
-  Output:
-    unsigned int  *data     Received data
-
-  Function value:
-    MSCB_SUCCESS            Successful completion
-    MSCB_TIMEOUT            Timeout receiving acknowledge
-    MSCB_CRC_ERROR          CRC error
-    MSCB_INVAL_PARAM        Cannot open device
-    MSCB_MUTEX              Cannot obtain mutex for mscb
-
-\********************************************************************/
-{
-unsigned char buf[10], crc;
-int           i, r;
-
-  if (_fd == 0)
-    {
-    _fd = mscb_init(device);
-    if (_fd < 0)
-      return MSCB_INVAL_PARAM;
-    }
-
-  mscb_lock();
-
-  for (i=0 ; i<10 ; i++)
-    {
-    /* send address command */
-    buf[0] = CMD_ADDR_NODE16;
-    buf[1] = (unsigned char) (addr >> 8);
-    buf[2] = (unsigned char) (addr & 0xFF);
-    buf[3] = crc8(buf, 3);
-    mscb_out(_fd, buf, 4, 1);
-
-    /* send read command */
-    buf[0] = CMD_READ_CONF;
-    buf[1] = index;
-    buf[2] = crc8(buf, 2);
-    mscb_out(_fd, buf, 3, 0);
-
-    /* read data */
-    r = mscb_in(_fd, buf, 10, 5000);
-    mscb_release();
-
-    if (r >= 3)
-      {
-      crc = crc8(buf, r-1);
-
-      *data = *((unsigned short *)(buf+1));
-      WORD_SWAP(data);
-
-      if (buf[0] == CMD_ACK+r-2 && buf[r-1] == crc)
-        {
-        mscb_release();
-        return MSCB_SUCCESS;
-        }
-      }
-
-    if (i == 9)
-      {
-      mscb_release();
-
-      if (r<3)
-        return MSCB_TIMEOUT;
-
-      return MSCB_CRC_ERROR;
-      }
-
-    /* send 0's to overflow partially filled node receive buffer */
-    memset(buf, 0, sizeof(buf));
-    mscb_out(_fd, buf, 10, 1);
-    Sleep(100);
-    }
-
-  mscb_release();
-  return MSCB_SUCCESS;
-}
-
-/*------------------------------------------------------------------*/
-
-int mscb_reset1(char *device)
-/********************************************************************\
-
-  Routine: mscb_reset1
-
-  Purpose: Reset submaster via hardware reset
-
-  Input:
-    char *device            Device name passed to mscb_init
-
-  Function value:
-    MSCB_SUCCESS            Successful completion
-    MSCB_MUTEX              Cannot obtain mutex for mscb
-
-\********************************************************************/
-{
-  if (_fd == 0)
-    {
-    _fd = mscb_init(device);
-    if (_fd < 0)
-      return MSCB_INVAL_PARAM;
-    }
-
-  return mscb_reset(_fd);
 }
