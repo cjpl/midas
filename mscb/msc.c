@@ -6,6 +6,10 @@
   Contents:     Command-line interface for the Midas Slow Control Bus
 
   $Log$
+  Revision 1.69  2004/10/03 18:02:33  olchansk
+  Do automatic system dependance (copied from midas/Makefile)
+  add support for MacOSX aka darwin
+
   Revision 1.68  2004/09/10 12:27:21  midas
   Version 1.7.5
 
@@ -218,7 +222,7 @@
 #include <conio.h>
 #include <io.h>
 
-#elif defined(__linux__)
+#elif defined(OS_UNIX)
 
 #define O_BINARY 0
 

@@ -6,10 +6,30 @@
 #  tomasz.brys@psi.ch
 #
 
+# get OS type from shell
+OSTYPE = $(shell uname)
+
+ifeq ($(OSTYPE),Darwin)
+OSTYPE = darwin
+endif
+
+ifeq ($(OSTYPE),Linux)
+OSTYPE = linux
+endif
+
 OUTNAME       = msc 
-CC            = gcc -g
-FLAGS         = -Wall
-LIBS	      = -lusb
+CC            = gcc -g -O2
+FLAGS         = -Wall -Wuninitialized
+
+ifeq ($(OSTYPE),linux)
+CC   += -DOS_UNIX -DOS_LINUX -DUSE_LIBUSB
+LIBS  = -lusb
+endif
+
+ifeq ($(OSTYPE),darwin)
+CC   += -DOS_UNIX -DOS_DARWIN
+LIBS  = -lIOKit /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation
+endif
 
 all: $(OUTNAME)
 
