@@ -7,6 +7,11 @@
                 routines
 
   $Log$
+  Revision 1.6  1999/01/21 23:01:13  pierre
+  - Change ss_create_thread to ss_thread_create.
+  - Include VX_TASK_SPAWN struct for ss_thread_create.
+  - Adjust dm_async_area_read arg for ss_thread_create.
+
   Revision 1.5  1999/01/20 08:55:43  midas
   - Renames ss_xxx_mutex to ss_mutex_xxx
   - Added timout flag to ss_mutex_wait_for
@@ -413,6 +418,18 @@ typedef struct {
 #define LOG_TYPE_TAPE 2
 #define LOG_TYPE_FTP  3
 
+
+/*---- VxWorks specific taskSpawn arguments ----------------------*/
+typedef struct {
+char    name[32];
+int     priority;
+int     options;
+int     stackSize;
+int     arg1,arg2,arg3,arg4,arg5,arg6,arg7,arg8,arg9,arg10;
+} VX_TASK_SPAWN;
+ 
+
+
 /*---- Channels for ss_suspend_set_dispatch() ----------------------*/
 #define CH_IPC        1
 #define CH_CLIENT     2
@@ -490,7 +507,7 @@ INT ss_resume(INT port, INT msg, INT param1, INT param2);
 INT ss_suspend_exit(void);
 INT ss_exception_handler(void (*func)());
 INT EXPRT ss_suspend(INT millisec, INT msg);
-INT EXPRT ss_create_thread(INT (*func)(void *), void *param);
+INT EXPRT ss_thread_create(INT (*func)(void *), void *param);
 INT EXPRT ss_get_struct_align(void);
 
 /*---- socket routines ----*/
@@ -520,7 +537,7 @@ EVENT_HEADER EXPRT *dm_pointer_get(void);
 INT  EXPRT dm_pointer_increment(INT buffer_handle, INT event_size);
 INT  EXPRT dm_area_send(void);
 INT  EXPRT dm_area_flush(void);
-void EXPRT dm_async_area_send(void);
+INT  EXPRT dm_async_area_send(void *pointer);
 /*---- Include RPC identifiers -------------------------------------*/
 
 #include "mrpc.h"
