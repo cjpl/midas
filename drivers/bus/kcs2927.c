@@ -7,6 +7,9 @@
                 following the MIDAS CAMAC Standard for DirectIO
 
   $Log$
+  Revision 1.3  2000/09/26 07:10:50  midas
+  Added DO_IOPERM for debugging as root
+
   Revision 1.2  2000/09/07 17:17:14  pierre
   -Add fe_name
 
@@ -606,9 +609,24 @@ DWORD size;
     return -1;
 #endif _MSC_VER
 #ifdef OS_LINUX
-  /* You cannot access Directly CAMAC without su privilege 
-     due to ioperm protection. In order to run this code you need
-     a su access given by Dio prg. to know more about it contact us */
+  /* 
+  In order to access the IO ports of the CAMAC interface, one needs
+  to call the ioperm() function for those ports. This requires root
+  privileges. For normal operation, this is performed by the "dio"
+  program, which is a "setuid" program having temporarily root privi-
+  lege. So the frontend is started with "dio frontend". Since the
+  frontend cannot be debugged through the dio program, we suplly here
+  the direct ioperm call which requires the program to be run as root,
+  making it possible to debug it. The program has then to be compiled
+  with "gcc -DDO_IOPERM -o frontend frontend.c kcs2927.c ..."
+  */
+
+#ifdef DO_IOPERM
+  ioperm(0x80, 1 , 1);
+  if (ioperm(CAMAC_BASE, 4*0x10, 1) < 0)
+    printf("hyt1331.c: Cannot call ioperm() (no root privileges)\n");
+#endif  
+
 #endif
   return SUCCESS;
 }
