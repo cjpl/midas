@@ -6,6 +6,9 @@
 #  Contents:     Makefile for MIDAS binaries and examples under unix
 #
 #  $Log$
+#  Revision 1.47  2004/01/06 13:25:26  midas
+#  Added 'indent' target
+#
 #  Revision 1.46  2003/12/12 13:14:43  midas
 #  Fixed compiler warning via -Wno-unused-function
 #
@@ -565,6 +568,9 @@ install:
 	  chmod 644 $(SYSLIB_DIR)/libz.a ;\
         fi;
 
+
+indent:
+	find . -name "*.[hc]" -exec indent -kr -nut -i3 {} \;
 
 clean:
 	rm -f $(LIB_DIR)/*.o *~ \#*
