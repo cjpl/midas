@@ -6,6 +6,9 @@
 #  Contents:     Makefile for MIDAS binaries and examples under unix
 #
 #  $Log$
+#  Revision 1.24  2000/11/20 11:40:36  midas
+#  Added pmana.o for parallelized analyzer
+#
 #  Revision 1.23  2000/09/29 21:00:35  pierre
 #  - Add SPECIFIC_OS_PRG in PROGS
 #  - Define SPECIFIC_OS_PRG or each OS
@@ -249,7 +252,7 @@ VPATH = $(LIB_DIR):$(INC_DIR)
 
 all:    $(OS_DIR) $(LIB_DIR) $(BIN_DIR) \
 	$(LIBNAME) $(SHLIB) \
-	$(LIB_DIR)/mana.o $(LIB_DIR)/mfe.o \
+	$(LIB_DIR)/mana.o $(LIB_DIR)/pmana.o $(LIB_DIR)/mfe.o \
 	$(PROGS)
 
 examples: $(EXAMPLES)
@@ -336,8 +339,13 @@ $(LIB_DIR)/ftplib.o: msystem.h midas.h midasinc.h
 #
 
 $(LIB_DIR)/mfe.o: msystem.h midas.h midasinc.h mrpc.h
+	$(CC) -Dextname -c $(CFLAGS) $(OSFLAGS) -o $@ $<
+
 $(LIB_DIR)/mana.o: $(SRC_DIR)/mana.c msystem.h midas.h midasinc.h mrpc.h
 	$(CC) -Dextname -c $(CFLAGS) $(OSFLAGS) -o $@ $<
+
+$(LIB_DIR)/pmana.o: $(SRC_DIR)/mana.c msystem.h midas.h midasinc.h mrpc.h
+	$(CC) -Dextname -DPVM -c $(CFLAGS) $(OSFLAGS) -o $@ $<
 
 #
 # utilities
@@ -428,7 +436,7 @@ install:
           mkdir -p $(SYSLIB_DIR); \
         fi;
 
-	@for i in libmidas.so libmidas.a mana.o mfe.o ; \
+	@for i in libmidas.so libmidas.a mana.o pmana.o mfe.o ; \
 	  do \
 	  echo $$i ; \
 	  rm -f $(SYSLIB_DIR)/$$i ;\
