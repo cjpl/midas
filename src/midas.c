@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.230  2005/02/16 14:59:05  ritt
+  Implemented >2GB file support for midas.log
+
   Revision 1.229  2004/12/17 08:16:06  midas
   Fixed compiler warnings
 
@@ -1122,8 +1125,7 @@ INT cm_msg_log(INT message_type, const char *message)
    char filename[256];
    char path[256];
    char str[256];
-   FILE *f;
-   INT status, size;
+   INT status, size, fh;
    HNDLE hDB, hKey;
 
    if (rpc_is_remote())
@@ -1161,15 +1163,16 @@ INT cm_msg_log(INT message_type, const char *message)
       } else
          strcpy(path, "midas.log");
 
-      f = fopen(path, "a");
-      if (f == NULL) {
+      fh = open(path, O_WRONLY | O_CREAT | O_APPEND | O_LARGEFILE, 0644);
+      if (fh < 0) {
          printf("Cannot open message log file %s\n", path);
       } else {
          strcpy(str, ss_asctime());
-         fprintf(f, str);
-         fprintf(f, " %s\n", message);
-
-         fclose(f);
+         write(fh, str, strlen(str));
+         write(fh, " ", 1);
+         write(fh, message, strlen(message));
+         write(fh, "\n", 1);
+         close(fh);
       }
    }
 
