@@ -6,6 +6,9 @@
   Contents:     Various utility functions for MSCB protocol
 
   $Log$
+  Revision 1.3  2002/07/08 08:51:05  midas
+  Wrote eeprom functions
+
   Revision 1.2  2002/07/05 15:27:39  midas
   Initial revision
 
@@ -100,8 +103,8 @@ void uart_init(unsigned char baud)
 
 \********************************************************************/
 {
-unsigned char baud_table[] = 
-  {0x100-36, 0x100-18, 0x100-12, 0x100-6, 0x100-3, 0x100-2, 0x100-1};
+unsigned char code baud_table[] = 
+  { 0x100-36, 0x100-18, 0x100-12, 0x100-6, 0x100-3, 0x100-2, 0x100-1 };
 
 
   SCON = 0xD0;   // Mode 3, 9 bit, receive enable
@@ -187,7 +190,7 @@ unsigned int  remaining_us;
 
 /*------------------------------------------------------------------*/
 
-void eeprom_read(unsigned char idata *dst, unsigned char len, 
+void eeprom_read(void idata *dst, unsigned char len, 
                  unsigned char offset)
 /********************************************************************\
 
@@ -231,19 +234,21 @@ EEPROM_RET:
 
   unsigned char i;
   unsigned char code *p;
+  unsigned char idata *d;
 
   p = 0x8000; // read from 128-byte EEPROM page
   p += offset;
+  d = dst;
 
   for (i=0 ; i<len ; i++)
-    dst[i] = p[i];
+    d[i] = p[i];
 
 #endif
 }
 
 /*------------------------------------------------------------------*/
 
-void eeprom_write(unsigned char idata *src, unsigned char len, 
+void eeprom_write(void idata *src, unsigned char len, 
                   unsigned char offset)
 /********************************************************************\
 
@@ -280,6 +285,7 @@ EEPROM_WRITE:
 #ifdef CPU_C8051F000
   unsigned char xdata *p;
   unsigned char i;
+  unsigned char idata *s;
 
   FLSCL = (FLSCL & 0xF0) | 0x08; // set timer for 11.052 MHz clock
   PSCTL = 0x03;                  // allow write and erase
@@ -289,9 +295,11 @@ EEPROM_WRITE:
 
   PSCTL = 0x01;                  // allow write
 
-  p = 0x8000 + offset;           // write data
-  for (i=0 ; i<len ; i++)
-    p[i] = src[i];
+  p = 0x8000 + offset;
+  s = src;
+
+  for (i=0 ; i<len ; i++)        // write data
+    p[i] = s[i];
 
   PSCTL = 0x00;                  // don't allow write
 #endif
