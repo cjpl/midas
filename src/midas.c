@@ -6,6 +6,12 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.91  1999/12/08 00:25:20  pierre
+  - add cm_get_path in cm_msg_retrieve for midas.log location.
+  - mod dm_buffer_create for arg "max user event size".
+  - fix dm_area_flush.
+  - fix other compilation warnings for OSF/1
+
   Revision 1.90  1999/11/26 08:31:58  midas
   midas.log is now places in the same directory as the .SHM files in case
   there is no data dir in the ODB
@@ -833,7 +839,7 @@ HNDLE hDB, hKey;
   cm_get_experiment_database(&hDB, NULL);
 
   if (hDB)
-    {
+  {
     status = db_find_key(hDB, 0, "/Logger/Data dir", &hKey);
     if (status == DB_SUCCESS)
       {
@@ -851,8 +857,16 @@ HNDLE hDB, hKey;
       strcat(path, filename);
       }
     else
-      strcpy(path, "midas.log");
+    {
+      cm_get_path(dir);
+      if (dir[0] != 0)
+        if (dir[strlen(dir)-1] != DIR_SEPARATOR)
+          strcat(dir, DIR_SEPARATOR_STR);
+
+      strcpy(path, dir);
+      strcat(path, "midas.log");
     }
+  }
   else
     strcpy(path, "midas.log");
 
@@ -7717,7 +7731,7 @@ struct hostent       *phe;
 
       if (FD_ISSET(sock, &readfds))
         {
-        status = recv(sock, (char *) &buffer, sizeof(buffer), 0);
+        status = recv(sock, (char *) buffer, sizeof(buffer), 0);
         if (status<=0)
           {
           /* connection broken -> reset */
@@ -7819,8 +7833,8 @@ struct hostent       *phe;
   i = recv_string(sock, str, sizeof(str), 3000);
   if (i<=0)
     {
-    cm_msg(MERROR, "rpc_client_connect", "timeout on receive remote computer info");
-    return RPC_NET_ERROR;
+      cm_msg(MERROR, "rpc_client_connect", "%s\ntimeout on receive remote computer info", str);
+      return RPC_NET_ERROR;
     }
 
   remote_hw_type = version[0] = 0;
@@ -14365,13 +14379,13 @@ BOOL    bedit;
             if (dir[strlen(dir)-1] != DIR_SEPARATOR)
               strcat(dir, DIR_SEPARATOR_STR);
           }
-
-    #if !defined(OS_VXWORKS) 
-    #if !defined(OS_VMS)
+	
+#if !defined(OS_VXWORKS) 
+#if !defined(OS_VMS)
         tzset();
-    #endif
-    #endif
-  
+#endif
+#endif
+	
         time(&now);
         tms = localtime(&now);
 
@@ -16155,16 +16169,17 @@ typedef struct {
   DMEM_AREA area2;     /* mem buffer area 2 */
   DWORD    serial;     /* overall buffer serial# for evt order     */
   INT      action;     /* for multi thread configuration */
-  DWORD       last_active;/* switch time stamp */
+  DWORD last_active;    /* switch time stamp */
   HNDLE sem_send;      /* semaphore for dm_task */
   HNDLE sem_flush;     /* semaphore for dm_task */
   } DMEM_BUFFER;
 
 DMEM_BUFFER  dm;
+INT          dm_user_max_event_size;
 extern       _opt_tcp_size;
 
 /*------------------------------------------------------------------*/
-INT dm_buffer_create(INT size)
+INT dm_buffer_create(INT size, INT user_max_event_size)
 /********************************************************************\
   Routine: dm_buffer_create
 
@@ -16172,11 +16187,13 @@ INT dm_buffer_create(INT size)
            any other dm_xxx function
   Input:
     INT    size             Size in bytes
+    INT    user_max_event_size  
   Output:
     none
   Function value:
     CM_SUCCESS              Successful completion
     BM_NO_MEMORY            Out of memory
+    BM_MEMSIZE_MISMATCH     event size too large
 \********************************************************************/
 {
 
@@ -16186,6 +16203,14 @@ INT dm_buffer_create(INT size)
   dm.area2.pt = malloc(size);
   if (dm.area2.pt == NULL)
     return (BM_NO_MEMORY);
+
+  /* check user event size against the system MAX_EVENT_SIZE */
+  if (user_max_event_size > MAX_EVENT_SIZE)
+  {
+    cm_msg(MERROR,"dm_buffer_create","user max event size too large");
+    return BM_MEMSIZE_MISMATCH;
+  }
+  dm_user_max_event_size = user_max_event_size;  
   
   memset(dm.area1.pt, 0, size);
   memset(dm.area2.pt, 0, size);
@@ -16210,14 +16235,14 @@ INT dm_buffer_create(INT size)
   dm.area1.full = dm.area2.full = FALSE;
   
   /* Reset serial buffer number with proper starting sequence */
-  dm.area1.serial = 0;
-  dm.area2.serial = 1;
+  dm.area1.serial = dm.area2.serial = 0;
   /* ensure proper serial on next increment */
   dm.serial = 1;
 
   /* set active buffer time stamp */
   dm.last_active = ss_millitime();
   
+  /* get socket for event sending */
   _send_sock = rpc_get_event_sock();
   
 #ifdef DM_DUAL_THREAD
@@ -16279,7 +16304,6 @@ INT dm_buffer_release(void)
     CM_SUCCESS              Successful completion
 \********************************************************************/
 {
-  printf(" in release ---------------------\n");
   if (dm.area1.pt)
     {
       free (dm.area1.pt);
@@ -16309,7 +16333,7 @@ INT dm_buffer_release(void)
 }
 
 /*------------------------------------------------------------------*/
-INLINE DMEM_AREA * dm_area_switch(void)
+ INLINE DMEM_AREA * dm_area_switch(void)
 /********************************************************************\
   Routine: dm_area_switch
 
@@ -16330,7 +16354,7 @@ INLINE DMEM_AREA * dm_area_switch(void)
 
   if (!full1 && !full2)
     {
-      if (dm.area2.serial > dm.area1.serial)
+      if (dm.area1.serial <= dm.area2.serial)
         return (&(dm.area1));
       else
         return (&(dm.area2));
@@ -16347,7 +16371,7 @@ INLINE DMEM_AREA * dm_area_switch(void)
   return (NULL);}
 
 /*------------------------------------------------------------------*/
-BOOL dm_area_full (void)
+INLINE BOOL dm_area_full (void)
 /********************************************************************\
   Routine: dm_area_full
 
@@ -16387,8 +16411,8 @@ INLINE BOOL dm_active_full (void)
      as I don't switch buffer here */
   if (dm.pa->full)
     return TRUE;
-  return ( ((PTYPE)dm.pa->pb - (PTYPE)dm.pa->pw) <
-           (MAX_EVENT_SIZE+sizeof(EVENT_HEADER)+sizeof(INT)));
+  return ( ((PTYPE)dm.pa->pb - (PTYPE)dm.pa->pw) < (INT)
+           (dm_user_max_event_size+sizeof(EVENT_HEADER)+sizeof(INT)));
 }
 
 /*------------------------------------------------------------------*/
@@ -16396,7 +16420,7 @@ DWORD dm_buffer_time_get (void)
 /********************************************************************\
   Routine: dm_buffer_time_get
 
-  Purpose: return the time from the last buffe switch.
+  Purpose: return the time from the last buffer switch.
 
   Input:
     none
@@ -16457,7 +16481,7 @@ EVENT_HEADER *dm_pointer_get(void)
     { 
       dm.pa = dm_area_switch();
       if (dm.pa != NULL)
-            return (EVENT_HEADER *) (dm.pa->pw + sizeof(INT));
+        return (EVENT_HEADER *) (dm.pa->pw + sizeof(INT));
       ss_sleep(200);
 #ifdef DM_DEBUG
           printf(" waiting for space ... %i  dm_buffer  %i %i %i %i %i \n",ss_millitime() - timeout,
@@ -16471,7 +16495,7 @@ EVENT_HEADER *dm_pointer_get(void)
 }
 
 /*------------------------------------------------------------------*/
-INT dm_pointer_increment(INT buffer_handle, INT event_size)
+dm_pointer_increment(INT buffer_handle, INT event_size)
 /********************************************************************\
   Routine: dm_pointer_increment
 
@@ -16492,7 +16516,10 @@ INT aligned_event_size;
 
   /* if not connected remotely, use bm_send_event */
  if (_send_sock == 0)
-     return bm_send_event(buffer_handle, dm.pa->pw+sizeof(INT), event_size, SYNC);
+ {
+    *((INT *) dm.pa->pw) = buffer_handle;
+    return bm_send_event(buffer_handle, dm.pa->pw+sizeof(INT), event_size, SYNC);
+ }
   aligned_event_size = ALIGN(event_size);
   
   *((INT *) dm.pa->pw) = buffer_handle;
@@ -16528,7 +16555,11 @@ INLINE INT dm_buffer_send(DMEM_AREA * larea)
   INT  tot_size, nwrite;
   char * lpt;
 
-  /* alias */
+  /* if not connected remotely, use bm_send_event */
+ if (_send_sock == 0)
+	return bm_flush_cache(*((INT *) dm.pa->pw), ASYNC);
+	
+	/* alias */
   lpt = larea->pt;
 
   /* Get overall buffer size */
@@ -16608,7 +16639,6 @@ INT dm_area_send(void)
     status = dm_buffer_send(&dm.area1);
   else if (dm.area2.full)
     status = dm_buffer_send(&dm.area2);
-
   if (status != CM_SUCCESS)
     return status;                  /* catch transfer error too */
 
@@ -16812,8 +16842,9 @@ INT dm_area_flush(void)
       if (status != CM_SUCCESS)
         return status;
     }
-  /* reset current area to #1 */
-  dm.pa = &dm.area1;
+  /* reset serial counter */
+  dm.area1.serial = dm.area2.serial = 0;
+  dm.last_active = ss_millitime();
   return CM_SUCCESS;
 #endif
 }
