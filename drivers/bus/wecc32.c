@@ -12,6 +12,9 @@
 		this driver. For info contact midas@triumf.ca
 		
   $Log$
+  Revision 1.3  2001/10/16 20:47:51  pierre
+  Update cam_interrupt_() args
+
   Revision 1.2  2000/09/07 17:17:33  pierre
   -Add fe_name
 
@@ -94,7 +97,7 @@ typedef struct
     char *base;		/* base of range, got with mmap */
 } CC32_DEVICE;
 
-/*--PAA--- inclusion of cc32lib.h for simplicity---------------------------------------*/
+/*--PAA--- inclusion of cc32lib.h for simplicity-------------------*/
 typedef void* CC32_HANDLE;  /* type of the device handle */
 
 #define MAX_PCI_ADD 4
@@ -104,40 +107,41 @@ CC32_HANDLE handle[MAX_PCI_ADD] = {NULL, NULL, NULL, NULL};
 /*------------------------------------------------------------------*/
 int cc32_open(char *cszPath, CC32_HANDLE *handle)
 {
-	CC32_DEVICE *dev;
-	
-	*handle = (CC32_HANDLE)0;
-	
-	dev = (CC32_DEVICE *)malloc(sizeof(CC32_DEVICE));
-	if (!dev) return errno;
-	
-	dev->fileNo = 0;
-	dev->base   = (char *)0;
-	
-	if (!(dev->f = fopen(cszPath,"r"))) 
-    	{
-		int error = errno;
-		
-		free(dev);
-
-	return error;
-	}
-	
-	dev->fileNo = fileno(dev->f);
-	
-	dev->base = (char *)mmap(0, WINDOW_SIZE, PROT_READ, MAP_FILE | MAP_PRIVATE, dev->fileNo, 0);
-	if (dev->base == (char *)-1)
-	{
-		int error = errno;
-		
-		fclose(dev->f);
-		free(dev);
-		return error;	
-	} 
-
-	*handle = (CC32_HANDLE)dev;
-	
-	return 0;
+  CC32_DEVICE *dev;
+  
+  *handle = (CC32_HANDLE)0;
+  
+  dev = (CC32_DEVICE *)malloc(sizeof(CC32_DEVICE));
+  if (!dev) return errno;
+  
+  dev->fileNo = 0;
+  dev->base   = (char *)0;
+  
+  if (!(dev->f = fopen(cszPath,"r"))) 
+  {
+    int error = errno;
+    
+    free(dev);
+    
+    return error;
+  }
+  
+  dev->fileNo = fileno(dev->f);
+  
+  dev->base = (char *)mmap(0, WINDOW_SIZE, PROT_READ, MAP_FILE | MAP_PRIVATE
+			   , dev->fileNo, 0);
+  if (dev->base == (char *)-1)
+  {
+    int error = errno;
+    
+    fclose(dev->f);
+    free(dev);
+    return error;	
+  } 
+  
+  *handle = (CC32_HANDLE)dev;
+  
+  return 0;
 }
 /*------------------------------------------------------------------*/
 int cc32_close(CC32_HANDLE handle)
@@ -166,16 +170,15 @@ int cc32_close(CC32_HANDLE handle)
 INLINE void cami(const int c, const int n, const int a, const int f, 
                  WORD *d)
 {
-  if (handle[c])
-    *d = *pwCC32_ADR(((CC32_DEVICE *)handle[c])->base, n, a, f);
+  cam16i(c,n,a,f,d);
 }
 
 /*------------------------------------------------------------------*/
 INLINE void cam16i(const int c, const int n, const int a, const int f, 
                    WORD *d)
 {
-  if (handle[c])
-   *d = *pwCC32_ADR(((CC32_DEVICE *)handle[c])->base, n, a, f);
+  if (handle[c]) 
+    *d = *pwCC32_ADR(((CC32_DEVICE *)handle[c])->base, n, a, f);
 }
 
 /*------------------------------------------------------------------*/
@@ -183,7 +186,8 @@ INLINE void cam24i(const int c, const int n, const int a, const int f,
                    DWORD *d)
 {
   if (handle[c])
-   *d = *plCC32_ADR(((CC32_DEVICE *)handle[c])->base, n, a, f);
+    *d = *plCC32_ADR(((CC32_DEVICE *)handle[c])->base, n, a, f);
+  *d &= 0xFFFFFF;
 }
 
 /*------------------------------------------------------------------*/
@@ -195,7 +199,7 @@ INLINE void cam16i_q(const int c, const int n, const int a, const int f,
    {
      erg = *plCC32_ADR(((CC32_DEVICE *)handle[c])->base, n, a, f);
      *q = (erg & 0x80000000) ? 1 : 0;
-     *x = (erg& 0x40000000)  ? 1 : 0;
+     *x = (erg & 0x40000000)  ? 1 : 0;
      *d = (WORD) (erg & 0x0000ffff);
    }
 }
@@ -212,6 +216,7 @@ INLINE void cam24i_q(const int c, const int n, const int a, const int f,
      *d &= 0x00ffffff;
    }
 }
+
 /*------------------------------------------------------------------*/
 INLINE void cam16i_r(const int c, const int n, const int a, const int f, 
                      WORD **d, const int r)
@@ -288,7 +293,7 @@ INLINE void cam24i_sa(const int c, const int n, const int a, const int f,
   
   if (handle[c])
     for(i=0;i<r;i++)
-      *(*d)++ = *plCC32_ADR(((CC32_DEVICE *)handle[c])->base, n, a+1, f);
+      *(*d)++ = *plCC32_ADR(((CC32_DEVICE *)handle[c])->base, n, a+i, f);
 }
 
 /*------------------------------------------------------------------*/
@@ -315,15 +320,15 @@ INLINE void cam24i_sn(const int c, const int n, const int a, const int f,
 INLINE void camo(const int c, const int n, const int a, const int f, 
                  WORD d)
 {
-  if (handle[c])
-    *pwCC32_ADR(((CC32_DEVICE *)handle[c])->base, n, a, f) = d;
+  cam16o(c, n, a, f, d);
 }
 
 /*------------------------------------------------------------------*/
 INLINE void cam16o(const int c, const int n, const int a, const int f, 
                    WORD d)
 {
-  camo(c, n, a, f, d);
+  if (handle[c])
+    *pwCC32_ADR(((CC32_DEVICE *)handle[c])->base, n, a, f) = d;
 }
 
 /*------------------------------------------------------------------*/
@@ -388,9 +393,9 @@ INLINE int camc_chk(const int c)
 /*------------------------------------------------------------------*/
 INLINE void camc(const int c, const int n, const int a, const int f)
 {
-  WORD temp;
+  DWORD temp;
   if (handle[c])
-    temp = *pwCC32_ADR(((CC32_DEVICE *)handle[c])->base, n, a, f);
+    temp = *plCC32_ADR(((CC32_DEVICE *)handle[c])->base, n, a, f);
 }
 
 /*------------------------------------------------------------------*/
@@ -498,11 +503,18 @@ INLINE void cam_lam_enable(const int c, const int n)
   DWORD mask;
   if (handle[c])
   {
+//    printf("c%d n%d ", c, n);
     mask = *plCC32_ADR(((CC32_DEVICE *)handle[c])->base, 28, 1, 0);
+    mask &= 0xffffff;
+//    printf("mask 0x%x ", mask);
     mask |= (1<<(n-1));
-    *plCC32_ADR(((CC32_DEVICE *)handle[c])->base, 28, 0, 16) = mask;
+//    printf("Enable mask:0x%x ",mask);
+    *plCC32_ADR(((CC32_DEVICE *)handle[c])->base, 28, 1, 16) = mask;
+    mask = *plCC32_ADR(((CC32_DEVICE *)handle[c])->base, 28, 1, 0);
+//    printf("Final Enable mask:0x%x\n", mask);
   }
 }
+
 /*------------------------------------------------------------------*/
 INLINE void cam_lam_disable(const int c, const int n)
 { 
@@ -511,7 +523,7 @@ INLINE void cam_lam_disable(const int c, const int n)
   {
     mask = *plCC32_ADR(((CC32_DEVICE *)handle[c])->base, 28, 1, 0);
     mask &= ~(1<<(n-1));
-    *plCC32_ADR(((CC32_DEVICE *)handle[c])->base, 28, 0, 16) = mask;
+    *plCC32_ADR(((CC32_DEVICE *)handle[c])->base, 28, 1, 16) = mask;
   }
 }
 
@@ -531,20 +543,20 @@ INLINE void cam_lam_clear(const int c, const int n)
   if (handle[c])
     {
       /* station F10 */
-      *pwCC32_ADR(((CC32_DEVICE *)handle[c])->base, n, 0, 10) = 0;
+//      *pwCC32_ADR(((CC32_DEVICE *)handle[c])->base, n, 0, 10) = 0;
       /* CC32 */
       *pwCC32_ADR(((CC32_DEVICE *)handle[c])->base, 28, 0, 16) = 0;
     }
 }
 
 /*------------------------------------------------------------------*/
-INLINE void cam_interrupt_enable(void)
+INLINE void cam_interrupt_enable(const int c)
 {
   printf("not implemented\n");
 }
 
 /*------------------------------------------------------------------*/
-INLINE void cam_interrupt_disable(void)
+INLINE void cam_interrupt_disable(const int c)
 {
   printf("not implemented\n");
 }
@@ -552,18 +564,19 @@ INLINE void cam_interrupt_disable(void)
 /*------------------------------------------------------------------*/
 static void (*old_handler)(void) = NULL;
 
-INLINE void cam_interrupt_attach(void (*isr)(void))
+INLINE void cam_interrupt_attach(const int c, const int n, void (*isr)(void))
 { 
   printf("not implemented\n");
 }
 
 /*------------------------------------------------------------------*/
-INLINE void cam_interrupt_detach(void)
+INLINE void cam_interrupt_detach(const int c, const int n)
 {
   printf("not implemented\n");
 }
 
 /*------------------------------------------------------------------*/
-INLINE int cam_init_rpc(char *host_name, char *exp_name, char *fe_name, char *client_name, char *rpc_server){return 1;}
+INLINE int cam_init_rpc(char *host_name, char *exp_name, char *fe_name
+			, char *client_name, char *rpc_server){return 1;}
 
 /*------------------------------------------------------------------*/
