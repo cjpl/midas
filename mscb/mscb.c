@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus communication functions
 
   $Log$
+  Revision 1.47  2003/10/03 14:08:07  midas
+  Added locking parameter to mscb_addr
+
   Revision 1.46  2003/09/30 08:03:41  midas
   Implemented multiple RPC connections
 
@@ -144,7 +147,7 @@
 
 \********************************************************************/
 
-#define MSCB_LIBRARY_VERSION   "1.5.1"
+#define MSCB_LIBRARY_VERSION   "1.5.2"
 #define MSCB_PROTOCOL_VERSION  "1.4"
 
 #ifdef _MSC_VER           // Windows includes
@@ -371,7 +374,6 @@ int mscb_lock(int fd)
 {
 #ifdef _MSC_VER
 int status;
-
   if (mutex_handle == 0)
     mutex_handle = CreateMutex(NULL, FALSE, "mscb");
 
@@ -954,7 +956,9 @@ char          host[256], port[256];
 
 #endif
 
-  mscb_lock(index+1);
+  status = mscb_lock(index+1);
+  if (status != MSCB_SUCCESS)
+    return -3;
 
   /* set initial state of handshake lines */
   pp_wcontrol(index+1, LPT_RESET, 0);
@@ -1112,7 +1116,7 @@ int i, fd, d;
 
 /*------------------------------------------------------------------*/
 
-int mscb_addr(int fd, int cmd, int adr, int retry)
+int mscb_addr(int fd, int cmd, int adr, int retry, int lock)
 /********************************************************************\
 
   Routine: mscb_addr
@@ -1134,6 +1138,7 @@ int mscb_addr(int fd, int cmd, int adr, int retry)
 
     int adr                 Node or group address
     int retry               Number of retries
+    int lock                Lock MSCB if TRUE
 
   Function value:
     MSCB_SUCCESS            Successful completion
@@ -1149,7 +1154,13 @@ int i, n, status;
     return MSCB_INVAL_PARAM;
 
   if (mrpc_connected(fd))
-    return mrpc_call(mscb_fd[fd-1].fd, RPC_MSCB_ADDR, mscb_fd[fd-1].remote_fd, cmd, adr, retry);
+    return mrpc_call(mscb_fd[fd-1].fd, RPC_MSCB_ADDR, mscb_fd[fd-1].remote_fd, cmd, adr, retry, lock);
+
+  if (lock)
+    {
+    if (mscb_lock(fd) != MSCB_SUCCESS)
+      return MSCB_MUTEX;
+    }
 
   for (n = 0 ; n < retry ; n++)
     {
@@ -1179,7 +1190,11 @@ int i, n, status;
       }
 
     if (status != MSCB_SUCCESS)
+      {
+      if (lock)
+        mscb_release(fd);
       return MSCB_SUBM_ERROR;
+      }
 
     if (cmd == MCMD_PING8 || cmd == MCMD_PING16)
       {
@@ -1187,7 +1202,11 @@ int i, n, status;
       i = mscb_in1(fd, buf, 1000);
 
       if (i == MSCB_SUCCESS && buf[0] == MCMD_ACK)
+        {
+        if (lock)
+          mscb_release(fd);
         return MSCB_SUCCESS;
+        }
 
       if (retry > 1)
         {
@@ -1202,8 +1221,15 @@ int i, n, status;
       /* try again.... */
       }
     else
+      {
+      if (lock)
+        mscb_release(fd);
       return MSCB_SUCCESS;
+      }
     }
+
+  if (lock)
+    mscb_release(fd);
 
   return MSCB_TIMEOUT;
 }
@@ -1240,7 +1266,7 @@ int status;
   if (mscb_lock(fd) != MSCB_SUCCESS)
     return MSCB_MUTEX;
 
-  status = mscb_addr(fd, MCMD_PING16, adr, 10);
+  status = mscb_addr(fd, MCMD_PING16, adr, 10, FALSE);
   if (status != MSCB_SUCCESS)
     {
     mscb_release(fd);
@@ -1327,7 +1353,7 @@ int status;
   if (mscb_lock(fd) != MSCB_SUCCESS)
     return MSCB_MUTEX;
 
-  status = mscb_addr(fd, MCMD_PING16, adr, 1);
+  status = mscb_addr(fd, MCMD_PING16, adr, 1, FALSE);
 
   mscb_release(fd);
   return status;
@@ -1369,7 +1395,7 @@ unsigned char buf[256];
   if (mscb_lock(fd) != MSCB_SUCCESS)
     return MSCB_MUTEX;
 
-  status = mscb_addr(fd, MCMD_PING16, adr, 10);
+  status = mscb_addr(fd, MCMD_PING16, adr, 10, FALSE);
   if (status != MSCB_SUCCESS)
     {
     mscb_release(fd);
@@ -1437,7 +1463,7 @@ unsigned char buf[80];
   if (mscb_lock(fd) != MSCB_SUCCESS)
     return MSCB_MUTEX;
 
-  status = mscb_addr(fd, MCMD_PING16, adr, 10);
+  status = mscb_addr(fd, MCMD_PING16, adr, 10, FALSE);
   if (status != MSCB_SUCCESS)
     {
     mscb_release(fd);
@@ -1498,14 +1524,14 @@ int status;
     return MSCB_MUTEX;
 
   /* check if destination address is alive */
-  status = mscb_addr(fd, MCMD_PING16, node, 10);
+  status = mscb_addr(fd, MCMD_PING16, node, 10, FALSE);
   if (status == MSCB_SUCCESS)
     {
     mscb_release(fd);
     return MSCB_ADDR_EXISTS;
     }
 
-  status = mscb_addr(fd, MCMD_PING16, adr, 10);
+  status = mscb_addr(fd, MCMD_PING16, adr, 10, FALSE);
   if (status != MSCB_SUCCESS)
     {
     mscb_release(fd);
@@ -1557,7 +1583,7 @@ int status, i;
   if (mscb_lock(fd) != MSCB_SUCCESS)
     return MSCB_MUTEX;
 
-  status = mscb_addr(fd, MCMD_PING16, adr, 10);
+  status = mscb_addr(fd, MCMD_PING16, adr, 10, FALSE);
   if (status != MSCB_SUCCESS)
     {
 
@@ -1621,7 +1647,7 @@ unsigned char buf[256];
   if (mscb_lock(fd) != MSCB_SUCCESS)
     return MSCB_MUTEX;
 
-  status = mscb_addr(fd, MCMD_ADDR_GRP16, adr, 10);
+  status = mscb_addr(fd, MCMD_ADDR_GRP16, adr, 10, FALSE);
   if (status != MSCB_SUCCESS)
     {
     mscb_release(fd);
@@ -1684,7 +1710,7 @@ unsigned char *d;
   if (mscb_lock(fd) != MSCB_SUCCESS)
     return MSCB_MUTEX;
 
-  status = mscb_addr(fd, MCMD_PING16, adr, 10);
+  status = mscb_addr(fd, MCMD_PING16, adr, 10, FALSE);
   if (status != MSCB_SUCCESS)
     {
     mscb_release(fd);
@@ -1765,7 +1791,7 @@ unsigned char buf[10], crc, ack[2];
   if (mscb_lock(fd) != MSCB_SUCCESS)
     return MSCB_MUTEX;
 
-  status = mscb_addr(fd, MCMD_PING16, adr, 10);
+  status = mscb_addr(fd, MCMD_PING16, adr, 10, FALSE);
   if (status != MSCB_SUCCESS)
     {
     mscb_release(fd);
@@ -1854,7 +1880,7 @@ unsigned short ofs;
   if (mscb_lock(fd) != MSCB_SUCCESS)
     return MSCB_MUTEX;
 
-  status = mscb_addr(fd, MCMD_PING16, adr, 10);
+  status = mscb_addr(fd, MCMD_PING16, adr, 10, FALSE);
   if (status != MSCB_SUCCESS)
     {
     mscb_release(fd);
@@ -2038,7 +2064,7 @@ unsigned char buf[256], crc;
   if (mscb_lock(fd) != MSCB_SUCCESS)
     return MSCB_MUTEX;
 
-  status = mscb_addr(fd, MCMD_PING16, adr, 10);
+  status = mscb_addr(fd, MCMD_PING16, adr, 10, FALSE);
   if (status != MSCB_SUCCESS)
     {
     mscb_release(fd);
@@ -2158,7 +2184,7 @@ unsigned char buf[256], crc;
   if (mscb_lock(fd) != MSCB_SUCCESS)
     return MSCB_MUTEX;
 
-  status = mscb_addr(fd, MCMD_PING16, adr, 10);
+  status = mscb_addr(fd, MCMD_PING16, adr, 10, FALSE);
   if (status != MSCB_SUCCESS)
     {
     mscb_release(fd);
@@ -2252,7 +2278,7 @@ unsigned char buf[80];
   if (mscb_lock(fd) != MSCB_SUCCESS)
     return MSCB_MUTEX;
 
-  status = mscb_addr(fd, MCMD_PING16, adr, 10);
+  status = mscb_addr(fd, MCMD_PING16, adr, 10, FALSE);
   if (status != MSCB_SUCCESS)
     {
     mscb_release(fd);
@@ -2340,7 +2366,7 @@ unsigned char buf[80];
   if (mscb_lock(fd) != MSCB_SUCCESS)
     return MSCB_MUTEX;
 
-  status = mscb_addr(fd, MCMD_PING16, adr, 1);
+  status = mscb_addr(fd, MCMD_PING16, adr, 1, FALSE);
   if (status != MSCB_SUCCESS)
     {
     mscb_release(fd);

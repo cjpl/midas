@@ -6,6 +6,9 @@
   Contents:     List of MSCB RPC functions with parameters
 
   $Log$
+  Revision 1.14  2003/10/03 14:08:07  midas
+  Added locking parameter to mscb_addr
+
   Revision 1.13  2003/09/30 08:03:41  midas
   Implemented multiple RPC connections
 
@@ -199,6 +202,7 @@ static RPC_LIST rpc_list[] = {
   { RPC_MSCB_ADDR, "mscb_addr",
     {{TID_INT,        RPC_IN}, 
      {TID_INT,        RPC_IN}, 
+     {TID_INT,        RPC_IN},
      {TID_INT,        RPC_IN},
      {TID_INT,        RPC_IN},
      {0} }},
@@ -423,7 +427,7 @@ int status;
       break;
 
     case RPC_MSCB_ADDR:
-      status = mscb_addr(CINT(0), CINT(1), CINT(2), CINT(3));
+      status = mscb_addr(CINT(0), CINT(1), CINT(2), CINT(3), CINT(4));
       break;
     }
 
