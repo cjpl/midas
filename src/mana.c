@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.4  1998/10/22 07:11:15  midas
+  *** empty log message ***
+
   Revision 1.3  1998/10/19 16:40:44  midas
   ASCII output of multi-module LRS1877 now possible
 
@@ -547,8 +550,8 @@ EVENT_DEF  *event_def;
         event_def = db_get_event_definition((short int) analyze_request[index].ar_info.event_id);
         if (event_def == NULL)
           {
-          cm_msg(MERROR, "book_ntuples", "Cannot find definition of event #%s in ODB", 
-                 analyze_request[index].ar_info.event_id);
+          cm_msg(MERROR, "book_ntuples", "Cannot find definition of event %s in ODB", 
+                 analyze_request[index].event_name);
           return 0;
           }
 
