@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.62  2000/03/02 21:57:31  midas
+  Added new slow control commands
+
   Revision 1.61  2000/03/01 00:52:34  midas
   Added num_subevents into equipment, made events_sent a double
 
@@ -686,20 +689,22 @@ typedef          INT       HNDLE;
 #define AL_RESET                   1004
 
 /* Slow control commands */
-#define CMD_INIT                      1
-#define CMD_EXIT                      2
-#define CMD_IDLE                      3
-#define CMD_SET                       4
-#define CMD_SET_ALL                   5
-#define CMD_GET                       6
-#define CMD_GET_ALL                   7
-#define CMD_GET_CURRENT               8
-#define CMD_GET_CURRENT_ALL           9
-#define CMD_SET_CURRENT_LIMIT        10
-#define CMD_GET_DEMAND               11
-#define CMD_GET_DEFAULT_NAME         12
-#define CMD_GET_DEFAULT_THRESHOLD    13
-#define CMD_SET_LABEL                14
+#define CMD_INIT                    (1<<1)
+#define CMD_EXIT                    (1<<2)
+#define CMD_IDLE                    (1<<3)
+#define CMD_SET                     (1<<4)
+#define CMD_SET_ALL                 (1<<5)
+#define CMD_GET                     (1<<6)
+#define CMD_GET_ALL                 (1<<7)
+#define CMD_GET_CURRENT             (1<<8)
+#define CMD_GET_CURRENT_ALL         (1<<9)
+#define CMD_SET_CURRENT_LIMIT      (1<<10)
+#define CMD_GET_DEMAND             (1<<11)
+#define CMD_GET_DEFAULT_NAME       (1<<12)
+#define CMD_GET_DEFAULT_THRESHOLD  (1<<13)
+#define CMD_SET_LABEL              (1<<14)
+#define CMD_ENABLE_COMMAND         (1<<15)
+#define CMD_DISABLE_COMMAND        (1<<16)
 
 /* Commands for interrupt events */
 #define CMD_INTERRUPT_ENABLE        100
@@ -843,6 +848,7 @@ typedef struct {
   INT    (*dd)(INT cmd, ...);         /* Device driver entry point         */
   INT    channels;                    /* Number of channels                */
   DWORD  type;                        /* channel type, combination of CH_xxx*/
+  DWORD  cmd_disabled;                /* Mask of disabled commands         */
   void   *dd_info;                    /* Private info for device driver    */
 } DEVICE_DRIVER;
 
