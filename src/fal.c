@@ -7,6 +7,9 @@
                 Most routines are from mfe.c mana.c and mlogger.c.
 
   $Log$
+  Revision 1.17  2000/09/28 13:02:02  midas
+  Added manual triggered events
+
   Revision 1.16  2000/08/10 11:37:27  midas
   Made PAW global memory name variable under /analyzer/output/global memeory name
   to run more than one online analyzer instance on one machine
@@ -87,10 +90,13 @@
 
 #define FAL_MAIN
 
-#define LOGGER_TIMEOUT 60000
+#define LOGGER_TIMEOUT      60000
+
+#define SERVER_CACHE_SIZE  100000 /* event cache before buffer */
 
 #define MAX_CHANNELS 10
 #define MAX_EVENTS   10
+#define MAX_HISTORY  20
 
 char *fal_name = "FAL";
 
@@ -172,7 +178,8 @@ Format = STRING : [8] FIXED\n\
 Enabled = BOOL : 0\n\
 Read on = INT : 0\n\
 Period = INT : 0\n\
-Event limit = DWORD : 0\n\
+Event limit = DOUBLE : 0\n\
+Num subevents = DWORD : 0\n\
 Log history = INT : 0\n\
 Frontend host = STRING : [32] \n\
 Frontend name = STRING : [32] \n\
@@ -180,8 +187,8 @@ Frontend file name = STRING : [256] \n\
 "
 
 #define EQUIPMENT_STATISTICS_STR "\
-Events sent = DWORD : 0\n\
-Events per sec. = DWORD : 0\n\
+Events sent = DOUBLE : 0\n\
+Events per sec. = DOUBLE : 0\n\
 kBytes per sec. = DOUBLE : 0\n\
 "
 
@@ -196,9 +203,9 @@ Host = STRING : [32] \n\
 "
 
 #define ANALYZER_STATS_STR "\
-Events received = DWORD : 0\n\
-Events per sec. = DWORD : 0\n\
-Events written = DWORD : 0\n\
+Events received = DOUBLE : 0\n\
+Events per sec. = DOUBLE : 0\n\
+Events written = DOUBLE : 0\n\
 "
 
 #define OUT_INFO_STR "\
@@ -223,6 +230,8 @@ typedef struct {
 
 /* forward declarations */
 
+void send_event(WORD event_id);
+void display(BOOL binit);
 void send_all_periodic_events(INT transition);
 void receive_event(HNDLE hBuf, HNDLE request_id, EVENT_HEADER *pevent);
 INT  log_write(LOG_CHN *log_chn, EVENT_HEADER *pevent);
@@ -336,6 +345,7 @@ EVENT_HEADER *pevent;
       bm_compose_event(pevent, event_id, MIDAS_MAGIC, buffer_size-sizeof(EVENT_HEADER)-size+1, 
                        run_number);
       log_write(log_chn, pevent);
+      free(pevent);
       break;
       }
 
@@ -606,15 +616,19 @@ INT          status;
   else
     {
     /* check if file exists */
-    log_chn->handle = open(log_chn->path, O_RDONLY);
-    if (log_chn->handle > 0)
+    if (strstr(log_chn->path, "null") == NULL)
       {
-      close(log_chn->handle);
-      free(info->buffer);
-      free(info);
-      log_chn->handle = 0;
-      return SS_FILE_EXISTS;
+      log_chn->handle = open(log_chn->path, O_RDONLY);
+      if (log_chn->handle > 0)
+        {
+        close(log_chn->handle);
+        free(info->buffer);
+        free(info);
+        log_chn->handle = 0;
+        return SS_FILE_EXISTS;
+        }
       }
+
 #ifdef OS_WINNT       
     log_chn->handle = (int) CreateFile(log_chn->path, GENERIC_WRITE, FILE_SHARE_READ, NULL, 
                       CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_WRITE_THROUGH | 
@@ -1373,7 +1387,7 @@ INT status;
     }
   else /* default format is MIDAS */
     {
-	  log_chn->format = FORMAT_MIDAS;
+    log_chn->format = FORMAT_MIDAS;
     status = midas_log_open(log_chn, run_number);
     }
 
@@ -1409,7 +1423,7 @@ INT log_write(LOG_CHN *log_chn, EVENT_HEADER *pevent)
 {
 INT    status, size, izero, watchdog_timeout;
 DWORD  actual_time, start_time;
-BOOL   watchdog_flag;
+BOOL   watchdog_flag, flag;
 static BOOL stop_requested = FALSE;
 static DWORD last_checked = 0;
 HNDLE  htape, stats_hkey;
@@ -1431,7 +1445,7 @@ double dzero;
     status = midas_write(log_chn, pevent, pevent->data_size+sizeof(EVENT_HEADER));
 
   actual_time = ss_millitime();
-  if (actual_time - start_time > 3000)
+  if ((int)actual_time - (int)start_time > 3000)
     cm_msg(MINFO, "log_write", "Write operation took %d ms", actual_time - start_time);
 
   if (status != SS_SUCCESS && !stop_requested)
@@ -1465,8 +1479,11 @@ double dzero;
     
     /* check if autorestart, main loop will take care of it */
     size = sizeof(BOOL);
-    auto_restart = FALSE;
-    db_get_value(hDB, 0, "/Logger/Auto restart", &auto_restart, &size, TID_BOOL);
+    flag = FALSE;
+    db_get_value(hDB, 0, "/Logger/Auto restart", &flag, &size, TID_BOOL);
+
+    if (flag)
+      auto_restart = ss_time() + 20; /* start in 20 sec. */
 
     return status;
     }
@@ -1488,8 +1505,11 @@ double dzero;
     
     /* check if autorestart, main loop will take care of it */
     size = sizeof(BOOL);
-    auto_restart = FALSE;
-    db_get_value(hDB, 0, "/Logger/Auto restart", &auto_restart, &size, TID_BOOL);
+    flag = FALSE;
+    db_get_value(hDB, 0, "/Logger/Auto restart", &flag, &size, TID_BOOL);
+
+    if (flag)
+      auto_restart = ss_time() + 20; /* start in 20 sec. */
 
     return status;
     }
@@ -1582,6 +1602,7 @@ BOOL     single_names;
   if (db_find_key(hDB, 0, "/History", &hKeyRoot) != DB_SUCCESS)
     {
     /* create default history keys */
+    db_create_key(hDB, 0, "/History/Links", TID_KEY);
 
     if (db_find_key(hDB, 0, "/Equipment/Trigger/Statistics/Events per sec.", &hKeyEq) == DB_SUCCESS)
       db_create_link(hDB, 0, "/History/Links/System/Trigger per sec.", "/Equipment/Trigger/Statistics/Events per sec.");
@@ -1602,7 +1623,7 @@ BOOL     single_names;
     }
 
   /* loop over equipment */
-  for (index=0; index < MAX_EVENTS ; index++)
+  for (index=0; index < MAX_HISTORY ; index++)
     {
     status = db_enum_key(hDB, hKeyRoot, index, &hKeyEq);
     if (status != DB_SUCCESS)
@@ -1691,6 +1712,13 @@ BOOL     single_names;
             /* append variable key name for single name array */
             if (single_names)
               {
+              if (strlen(tag[i_tag].name)+1+strlen(varkey.name) >= NAME_LENGTH)
+                {
+                cm_msg(MERROR, "open_history", "Name for history entry \"%s %s\" too long",
+                       tag[i_tag].name, varkey.name);
+                free(tag);
+                return 0;
+                }
               strcat(tag[i_tag].name, " ");
               strcat(tag[i_tag].name, varkey.name);
               }
@@ -1746,103 +1774,112 @@ BOOL     single_names;
       }
     }
 
+  if (index == MAX_HISTORY)
+    {
+    cm_msg(MERROR, "open_history", "too many equipments for history");
+    return 0;
+    }
+
   /*---- define linked trees ---------------------------------------*/
 
   /* round up event id */
   max_event_id = ((int) ((max_event_id+1)/ 10)+1) * 10;
 
   status = db_find_key(hDB, 0, "/History/Links", &hKeyRoot);
-  if (status != DB_SUCCESS)
+  if (status == DB_SUCCESS)
     {
-    cm_msg(MERROR, "open_history", "Cannot find /History/Links entry in database");
-    return 0;
-    }
-
-  for (li = 0 ; ; li++)
-    {
-    status = db_enum_link(hDB, hKeyRoot, li, &hHistKey);
-    if (status == DB_NO_MORE_SUBKEYS)
-      break;
-
-    db_get_key(hDB, hHistKey, &histkey);
-    strcpy(hist_name, histkey.name);
-    db_enum_key(hDB, hKeyRoot, li, &hHistKey);
-
-    db_get_key(hDB, hHistKey, &key);
-    if (key.type != TID_KEY)
+    for (li = 0 ; ; li++)
       {
-      cm_msg(MERROR, "open_history", "Only subkeys allows in /history/links");
-      continue;
-      }
-
-    /* count subkeys in link */
-    for (i=n_var=0 ;; i++)
-      {
-      status = db_enum_key(hDB, hHistKey, i, &hKey);
+      status = db_enum_link(hDB, hKeyRoot, li, &hHistKey);
       if (status == DB_NO_MORE_SUBKEYS)
         break;
-      db_get_key(hDB, hKey, &key);
+
+      db_get_key(hDB, hHistKey, &histkey);
+      strcpy(hist_name, histkey.name);
+      db_enum_key(hDB, hKeyRoot, li, &hHistKey);
+
+      db_get_key(hDB, hHistKey, &key);
       if (key.type != TID_KEY)
-        n_var++;
-      }
-
-    if (n_var == 0)
-      cm_msg(MERROR, "open_history", "History event %s has no variables in ODB", hist_name);
-
-    /* create tag array */
-    tag = malloc(sizeof(TAG)*n_var);
-
-    for (i=0,size=0,n_var=0 ;; i++)
-      {
-      status = db_enum_link(hDB, hHistKey, i, &hLinkKey);
-      if (status == DB_NO_MORE_SUBKEYS)
-        break;
-
-      /* get link key */
-      db_get_key(hDB, hLinkKey, &linkkey);
-
-      if (linkkey.type == TID_KEY)
+        {
+        cm_msg(MERROR, "open_history", "Only subkeys allows in /history/links");
         continue;
+        }
 
-      strcpy(tag[n_var].name, linkkey.name);
+      /* count subkeys in link */
+      for (i=n_var=0 ;; i++)
+        {
+        status = db_enum_key(hDB, hHistKey, i, &hKey);
+        if (status == DB_NO_MORE_SUBKEYS)
+          break;
+        db_get_key(hDB, hKey, &key);
+        if (key.type != TID_KEY)
+          n_var++;
+        }
 
-      /* get link target */
-      db_enum_key(hDB, hHistKey, i, &hVarKey);
-      db_get_key(hDB, hVarKey, &varkey);
+      if (n_var == 0)
+        cm_msg(MERROR, "open_history", "History event %s has no variables in ODB", hist_name);
 
-      /* hot-link individual values */
-      if (histkey.type == TID_KEY)
-        db_open_record(hDB, hVarKey, NULL, varkey.total_size, MODE_READ, log_system_history, (void *) index);
+      /* create tag array */
+      tag = malloc(sizeof(TAG)*n_var);
 
-      tag[n_var].type = varkey.type;
-      tag[n_var].n_data = varkey.num_values;
-      size += varkey.total_size;
-      n_var++;
-      }
+      for (i=0,size=0,n_var=0 ;; i++)
+        {
+        status = db_enum_link(hDB, hHistKey, i, &hLinkKey);
+        if (status == DB_NO_MORE_SUBKEYS)
+          break;
 
-    /* hot-link whole subtree */
-    if (histkey.type == TID_LINK)
-      db_open_record(hDB, hHistKey, NULL, size, MODE_READ, log_system_history, (void *) index);
+        /* get link key */
+        db_get_key(hDB, hLinkKey, &linkkey);
 
-    hs_define_event(max_event_id, hist_name, tag, sizeof(TAG)*n_var);
-    free(tag);
+        if (linkkey.type == TID_KEY)
+          continue;
 
-    /* define system history */
+        strcpy(tag[n_var].name, linkkey.name);
+
+        /* get link target */
+        db_enum_key(hDB, hHistKey, i, &hVarKey);
+        db_get_key(hDB, hVarKey, &varkey);
+
+        /* hot-link individual values */
+        if (histkey.type == TID_KEY)
+          db_open_record(hDB, hVarKey, NULL, varkey.total_size, MODE_READ, log_system_history, (void *) index);
+
+        tag[n_var].type = varkey.type;
+        tag[n_var].n_data = varkey.num_values;
+        size += varkey.total_size;
+        n_var++;
+        }
+
+      /* hot-link whole subtree */
+      if (histkey.type == TID_LINK)
+        db_open_record(hDB, hHistKey, NULL, size, MODE_READ, log_system_history, (void *) index);
+
+      hs_define_event(max_event_id, hist_name, tag, sizeof(TAG)*n_var);
+      free(tag);
+
+      /* define system history */
   
-    hist_log[index].event_id = max_event_id;
-    hist_log[index].hKeyVar = hHistKey;
-    hist_log[index].buffer_size = size;
-    hist_log[index].buffer = malloc(size);
-    hist_log[index].period = 10; /* 10 sec default period */
-    hist_log[index].last_log = 0;
-    if (hist_log[index].buffer == NULL)
-      {
-      cm_msg(MERROR, "open_history", "cannot allocate history buffer");
-      return 0;
-      }
+      hist_log[index].event_id = max_event_id;
+      hist_log[index].hKeyVar = hHistKey;
+      hist_log[index].buffer_size = size;
+      hist_log[index].buffer = malloc(size);
+      hist_log[index].period = 10; /* 10 sec default period */
+      hist_log[index].last_log = 0;
+      if (hist_log[index].buffer == NULL)
+        {
+        cm_msg(MERROR, "open_history", "cannot allocate history buffer");
+        return 0;
+        }
 
-    index++;
-    max_event_id++;
+      index++;
+      max_event_id++;
+
+      if (index == MAX_HISTORY)
+        {
+        cm_msg(MERROR, "open_history", "too many equipments for history");
+        return 0;
+        }
+      }
     }
   
   return CM_SUCCESS;
@@ -1869,7 +1906,7 @@ HNDLE hKeyRoot, hKey;
     }
 
   /* close event history */
-  for (i=1 ; i<MAX_EVENTS ; i++)
+  for (i=1 ; i<MAX_HISTORY ; i++)
     if (hist_log[i].hKeyVar)
       {
       db_close_record(hDB, hist_log[i].hKeyVar);
@@ -1883,11 +1920,11 @@ void log_history(HNDLE hDB, HNDLE hKey, void *info)
 {
 INT i, size;
 
-  for (i=0 ; i<MAX_EVENTS ; i++)
+  for (i=0 ; i<MAX_HISTORY ; i++)
     if (hist_log[i].hKeyVar == hKey)
       break;
 
-  if (i == MAX_EVENTS)
+  if (i == MAX_HISTORY)
     return;
 
   /* check if over period */
@@ -1937,12 +1974,14 @@ KEY   key;
     open_history();
     }
   else
-    hs_write_event(index, hist_log[index].buffer, hist_log[index].buffer_size);
+    hs_write_event(hist_log[index].event_id, hist_log[index].buffer, hist_log[index].buffer_size);
 
   hist_log[index].last_log = ss_time();
 
   /* simulate odb key update for hot links connected to system history */
+  db_lock_database(hDB);
   db_notify_clients(hDB, hist_log[index].hKeyVar, FALSE);
+  db_unlock_database(hDB);
 
 }
 
@@ -1951,8 +1990,7 @@ KEY   key;
 INT log_callback(INT index, void *prpc_param[])
 {
 HNDLE  hKeyRoot, hKeyChannel;
-INT    i, status, size, channel, izero, htape, online_mode;
-DWORD  watchdog_timeout;
+INT    i, status, size, channel, izero, htape, online_mode, watchdog_timeout;
 BOOL   watchdog_flag;
 char   str[256];
 double dzero;
@@ -2181,8 +2219,9 @@ BOOL         write_data, tape_flag = FALSE;
       else
         log_chn[index].type = LOG_TYPE_DISK;
 
-      /* if disk, precede filename with directory */
-      if (log_chn[index].type == LOG_TYPE_DISK)
+      /* if disk, precede filename with directory if not already there */
+      if (log_chn[index].type == LOG_TYPE_DISK &&
+          strchr(chn_settings->filename, DIR_SEPARATOR) == NULL)
         {
         size = sizeof(dir);
         dir[0] = 0;
@@ -3437,15 +3476,30 @@ DWORD           actual_time;
 
 /*------------------------------------------------------------------*/
 
+INT manual_trigger(INT index, void *prpc_param[])
+{
+WORD event_id;
+
+  event_id = CWORD(0);
+  send_event(event_id);
+
+  if (display_period)
+    display(FALSE);
+
+  return SUCCESS;
+}
+
+/*------------------------------------------------------------------*/
+
 void register_equipment(void)
 {
-INT             index, count, size, status;
+INT             index, count, size, status, i, j, k, n;
 char            str[256];
 EQUIPMENT_INFO  *eq_info;
 EQUIPMENT_STATS *eq_stats;
 DWORD           start_time, delta_time;
 HNDLE           hKey;
-BOOL            bFirst = TRUE;
+BOOL   manual_trig_flag = FALSE;
 
   /* get current ODB run state */
   size = sizeof(run_state);
@@ -3467,12 +3521,16 @@ BOOL            bFirst = TRUE;
       ss_sleep(5000);
       }
 
+    /* init status */
+    equipment[index].status = FE_SUCCESS;
+
     sprintf(str, "/Equipment/%s/Common", equipment[index].name);
     
     /* get last event limit from ODB */
     db_find_key(hDB, 0, str, &hKey);
+    size = sizeof(eq_info->event_limit);
     if (hKey)
-      db_get_value(hDB, hKey, "Event limit", &eq_info->event_limit, &size, TID_DWORD);
+      db_get_value(hDB, hKey, "Event limit", &eq_info->event_limit, &size, TID_DOUBLE);
     
     /* Create common subtree */
     status = db_create_record(hDB, 0, str, EQUIPMENT_COMMON_STR);
@@ -3529,23 +3587,32 @@ BOOL            bFirst = TRUE;
     /*---- open event buffer ---------------------------------------*/
     if (eq_info->buffer[0])
       {
-      bm_open_buffer(eq_info->buffer, EVENT_BUFFER_SIZE, &equipment[index].buffer_handle);
+      status = bm_open_buffer(eq_info->buffer, EVENT_BUFFER_SIZE, &equipment[index].buffer_handle);
+      if (status != BM_SUCCESS && status != BM_CREATED)
+        {
+        cm_msg(MERROR, "register_equipment", 
+               "Cannot open event buffer. Try to reduce EVENT_BUFFER_SIZE in midas.h \
+and rebuild the system.");
+        return;
+        }
 
       /* set the default buffer cache size */
-      bm_set_cache_size(equipment[index].buffer_handle, 0, 100000);
+      bm_set_cache_size(equipment[index].buffer_handle, 0, SERVER_CACHE_SIZE);
       }
     else
       equipment[index].buffer_handle = 0;
 
     /*---- evaluate polling count ----------------------------------*/
-    if (eq_info->eq_type == EQ_POLLED)
+    if (eq_info->eq_type & EQ_POLLED)
       {
-      printf("Calibrating");
+      if (display_period)
+        printf("Calibrating");
 
       count = 1;
       do
         {
-        printf(".");
+        if (display_period)
+          printf(".");
 
         start_time = ss_millitime();
 
@@ -3561,19 +3628,35 @@ BOOL            bFirst = TRUE;
 
       equipment[index].poll_count = (INT) ((double) eq_info->period / 100 * count);
 
-      printf("OK\n");
+      if (display_period)
+        printf("OK\n");
       }
 
     /*---- initialize slow control equipment -----------------------*/
-    if (eq_info->eq_type == EQ_SLOW)
+    if (eq_info->eq_type & EQ_SLOW)
       {
+      /* resolve duplicate device names */
+      for (i=0 ; equipment[index].driver[i].name[0] ; i++)
+        for (j=i+1 ; equipment[index].driver[j].name[0] ; j++)
+          if (equal_ustring(equipment[index].driver[i].name,
+                            equipment[index].driver[j].name))
+            {
+            strcpy(str, equipment[index].driver[i].name);
+            for (k=0,n=0 ; equipment[index].driver[k].name[0] ; k++)
+              if (equal_ustring(str, equipment[index].driver[k].name))
+                sprintf(equipment[index].driver[k].name, "%s_%d", str, n++);
+            
+            break;
+            }
+  
       /* loop over equipment list and call class driver's init method */
       if (eq_info->enabled)
         equipment[index].status = equipment[index].cd(CMD_INIT, &equipment[index]);
       else
         {
         equipment[index].status = FE_ERR_DISABLED;
-        cm_msg(MINFO, "frontend_init", "Equipment %d disabled", equipment[index].name);
+        cm_msg(MINFO, "register_equipment", "Equipment %s disabled in file \"frontend.c\"",
+                       equipment[index].name);
         }
 
       /* let user read error messages */
@@ -3581,6 +3664,14 @@ BOOL            bFirst = TRUE;
         ss_sleep(3000);
       }
 
+    /*---- register callback for manual triggered events -----------*/
+    if (eq_info->eq_type & EQ_MANUAL_TRIG)
+      {
+      if (!manual_trig_flag)
+        cm_register_function(RPC_MANUAL_TRIG, manual_trigger); 
+
+      manual_trig_flag = TRUE;
+      }
     }
 }
 
@@ -3694,11 +3785,10 @@ INT ana_callback(INT index, void *prpc_param[])
 
 /*------------------------------------------------------------------*/
 
-void send_all_periodic_events(INT transition)
+void send_event(WORD event_id)
 {
 EQUIPMENT_INFO *eq_info;
 EVENT_HEADER   *pevent;
-DWORD          actual_time;
 INT            i;
 
   pevent = (EVENT_HEADER *) event_buffer;
@@ -3707,7 +3797,60 @@ INT            i;
     {
     eq_info = &equipment[i].info;
 
-    if ((eq_info->eq_type != EQ_PERIODIC && eq_info->eq_type != EQ_SLOW) || 
+    if (eq_info->event_id != event_id)
+      continue;
+
+    pevent->event_id      = eq_info->event_id;
+    pevent->trigger_mask  = eq_info->trigger_mask;
+    pevent->data_size     = 0;
+    pevent->time_stamp    = ss_time();
+    pevent->serial_number = equipment[i].serial_number++;
+
+    equipment[i].last_called = ss_millitime();
+
+    /* call user readout routine */
+    *((EQUIPMENT **)(pevent+1)) = &equipment[i];
+    pevent->data_size = equipment[i].readout((char *) (pevent+1), 0);
+
+    /* send event */
+    if (pevent->data_size)
+      {
+      equipment[i].bytes_sent += pevent->data_size + sizeof(EVENT_HEADER);
+      equipment[i].events_sent++;
+
+      equipment[i].stats.events_sent += equipment[i].events_sent;
+      equipment[i].events_sent = 0;
+
+      /* process event locally */
+      process_event(pevent);
+
+      /* send event to buffer */
+      if (equipment[i].buffer_handle)
+        {
+        bm_send_event(equipment[i].buffer_handle, pevent,
+                      pevent->data_size + sizeof(EVENT_HEADER), SYNC);
+        
+        /* flush buffer cache */
+        bm_flush_cache(equipment[i].buffer_handle, SYNC);
+        }
+      }
+    else
+      equipment[i].serial_number--;
+    }
+}
+
+/*------------------------------------------------------------------*/
+
+void send_all_periodic_events(INT transition)
+{
+EQUIPMENT_INFO *eq_info;
+INT            i;
+
+  for (i=0 ; equipment[i].name[0] ; i++)
+    {
+    eq_info = &equipment[i].info;
+
+    if ((!(eq_info->eq_type & EQ_PERIODIC) && !(eq_info->eq_type & EQ_SLOW)) || 
         !eq_info->enabled)
       continue;
 
@@ -3720,40 +3863,7 @@ INT            i;
     if (transition == TR_RESUME && (eq_info->read_on & RO_RESUME) == 0)
       continue;
 
-    actual_time = ss_millitime();
-
-    pevent->event_id      = eq_info->event_id;
-    pevent->trigger_mask  = eq_info->trigger_mask;
-    pevent->data_size     = 0;
-    pevent->time_stamp    = ss_millitime();
-    pevent->serial_number = equipment[i].serial_number++;
-
-    equipment[i].last_called = actual_time;
-
-    /* call user readout routine */
-    pevent->data_size = equipment[i].readout((char *) (pevent+1), 0);
-
-    /* send event */
-    if (pevent->data_size)
-      {
-      equipment[i].bytes_sent += pevent->data_size;
-      equipment[i].events_sent++;
-
-      /* process event */
-      process_event(pevent);
-
-      /* send event to buffer */
-      if (equipment[i].buffer_handle)
-        {
-        bm_send_event(equipment[i].buffer_handle, pevent, 
-                      pevent->data_size + sizeof(EVENT_HEADER), SYNC);
-
-        /* flush buffer cache */
-        bm_flush_cache(equipment[i].buffer_handle, SYNC);
-        }
-      }
-    else
-      equipment[i].serial_number--;
+    send_event(eq_info->event_id);
     }
 }
 
@@ -3837,12 +3947,20 @@ char   str[30];
     else
       ss_printf(14, i+6, "Unknown  ");
 
-    ss_printf(25, i+6, "%ld       ", equipment[i].stats.events_sent);
-    ss_printf(36, i+6, "%ld       ", equipment[i].stats.events_per_sec);
+    if (equipment[i].stats.events_sent > 1E9)
+      ss_printf(25, i+6, "%1.3lfG     ", equipment[i].stats.events_sent/1E9);
+    else if (equipment[i].stats.events_sent > 1E6)
+      ss_printf(25, i+6, "%1.3lfM     ", equipment[i].stats.events_sent/1E6);
+    else
+      ss_printf(25, i+6, "%1.0lf      ", equipment[i].stats.events_sent);
+    ss_printf(36, i+6, "%1.1lf      ", equipment[i].stats.events_per_sec);
     ss_printf(47, i+6, "%1.1lf      ", equipment[i].stats.kbytes_per_sec);
     ss_printf(58, i+6, "%ld       ", equipment[i].odb_in);
     ss_printf(69, i+6, "%ld       ", equipment[i].odb_out);
     }
+
+  /* go to next line */
+  ss_printf(0, i+6, "");
 }
 
 /*------------------------------------------------------------------*/
@@ -3853,15 +3971,19 @@ EQUIPMENT_INFO  *eq_info;
 EQUIPMENT       *eq;
 ANALYZE_REQUEST *ar;
 EVENT_HEADER    *pevent;
-DWORD           actual_time, last_time_network=0, last_time_display=0,
+DWORD           actual_time, actual_millitime, 
+                last_time_network=0, last_time_display=0,
                 readout_start, source;
 INT             i, j, index, status, ch, size;
 char            str[80];
 
   pevent = (EVENT_HEADER *) event_buffer;
 
+  /*----------------- MAIN equipment loop ------------------------------*/
+
   do
     {
+    actual_millitime = ss_millitime();
     actual_time = ss_millitime();
 
     /*---- loop over equipment table -------------------------------*/
@@ -3877,6 +3999,14 @@ char            str[80];
       if (!eq_info->enabled)
         continue;
 
+      if (equipment[index].status != FE_SUCCESS)
+        continue;
+
+      /*---- call idle routine for slow control equipment ----*/
+      if ((eq_info->eq_type & EQ_SLOW) &&
+          equipment[index].status == FE_SUCCESS)
+        equipment[index].cd(CMD_IDLE, &equipment[index]);
+
       if (run_state == STATE_STOPPED && (eq_info->read_on & RO_STOPPED) == 0)
         continue;
       if (run_state == STATE_PAUSED  && (eq_info->read_on & RO_PAUSED)  == 0)
@@ -3885,7 +4015,7 @@ char            str[80];
         continue;
 
       /*---- check periodic events ----*/
-      if (eq_info->eq_type == EQ_PERIODIC || eq_info->eq_type == EQ_SLOW)
+      if ((eq_info->eq_type & EQ_PERIODIC) || (eq_info->eq_type & EQ_SLOW))
         {
         if (eq_info->period == 0)
           continue;
@@ -3933,7 +4063,7 @@ char            str[80];
         }
 
       /*---- check polled events ----*/
-      if (eq_info->eq_type == EQ_POLLED)
+      if (eq_info->eq_type & EQ_POLLED)
         {
         /* compose MIDAS event header */
         pevent->event_id      = eq_info->event_id;
@@ -3994,7 +4124,7 @@ char            str[80];
         }
 
       /*---- call idle routine for slow control equipment ----*/
-      if (eq_info->eq_type == EQ_SLOW &&
+      if ((eq_info->eq_type & EQ_SLOW) &&
           equipment[i].status == FE_SUCCESS)
         equipment[i].cd(CMD_IDLE, &equipment[i]);
       }
@@ -4378,9 +4508,9 @@ usage:
 
   /* close slow control drivers */
   for (i=0 ; equipment[i].name[0] ; i++)
-    if (equipment[i].info.eq_type == EQ_SLOW &&
+    if ((equipment[i].info.eq_type & EQ_SLOW) &&
         equipment[i].status == FE_SUCCESS)
-      equipment[i].cd(CMD_EXIT, 0);
+      equipment[i].cd(CMD_EXIT, &equipment[i]);
 
   /* close history logging */
   close_history();

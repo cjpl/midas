@@ -7,6 +7,9 @@
   Contents:     Symbolic constants for internal RPC functions
 
   $Log$
+  Revision 1.14  2000/09/28 13:01:25  midas
+  Added manual triggered events
+
   Revision 1.13  2000/08/21 07:05:47  midas
   Added cm_msg_log1(...,facility) to be compatible with older programs
 
@@ -145,6 +148,8 @@
 
 #define RPC_CNAF16                      16000
 #define RPC_CNAF24                      16001
+
+#define RPC_MANUAL_TRIG                 17000
 
 #define RPC_ID_WATCHDOG                 99997
 #define RPC_ID_SHUTDOWN                 99998

@@ -11,6 +11,9 @@
                 with one bank (SCLR).
 
   $Log$
+  Revision 1.12  2000/09/28 13:02:02  midas
+  Added manual triggered events
+
   Revision 1.11  2000/08/21 10:32:51  midas
   Added max_event_size, set event_buffer_size = 10*max_event_size
 
@@ -129,7 +132,8 @@ EQUIPMENT equipment[] = {
   { "Scaler",             /* equipment name */
     2, 0,                 /* event ID, trigger mask */
     "SYSTEM",             /* event buffer */
-    EQ_PERIODIC,          /* equipment type */
+    EQ_PERIODIC | 
+    EQ_MANUAL_TRIG,       /* equipment type */
     0,                    /* event source */
     "MIDAS",              /* format */
     TRUE,                 /* enabled */
@@ -268,7 +272,8 @@ DWORD lam;
 
   for (i=0 ; i<count ; i++)
     {
-    cam_lam_read(LAM_SOURCE_CRATE(source), &lam);
+    //cam_lam_read(LAM_SOURCE_CRATE(source), &lam);
+    lam = 0;
 
     if (lam & LAM_SOURCE_STATION(source))
       if (!test)

@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.71  2000/09/28 13:01:25  midas
+  Added manual triggered events
+
   Revision 1.70  2000/08/21 14:19:11  midas
   bk_close return bank size
 
@@ -479,10 +482,11 @@ typedef          INT       HNDLE;
 #define TR_DEFERRED   (1<<12)
 
 /* Equipment types */
-#define EQ_PERIODIC   1
-#define EQ_POLLED     2
-#define EQ_INTERRUPT  3
-#define EQ_SLOW       4
+#define EQ_PERIODIC   (1<<0)
+#define EQ_POLLED     (1<<1)
+#define EQ_INTERRUPT  (1<<2)
+#define EQ_SLOW       (1<<3)
+#define EQ_MANUAL_TRIG (1<<4)
 
 /* Read - On flags */
 #define RO_RUNNING    (1<<0)
