@@ -6,6 +6,9 @@
   Cotents:      Routines for accessing VME under VxWorks
                 
   $Log$
+  Revision 1.6  2005/02/18 06:29:57  olchanski
+  Fix compilation on VxWorks
+
   Revision 1.5  2004/10/06 18:57:05  pierre
   fix definition MVME
 
@@ -50,41 +53,13 @@
 /*------------------------------------------------------------------*/
 int vme_open(int device, int mode)
 {
-   /* derive device name */
-   switch (mode) {
-   case MVME_A16D16:
-   case MVME_A16D32:
-
-      break;
-   case MVME_A24D16:
-   case MVME_A24D32:
-
-      break;
-   case MVME_A32D16:
-   case MVME_A32D32:
-
-      break;
-
-   default:
-      printf("Unknown VME mode %d\n", mode);
-      return -1;
-   }
-
-   /* open device */
-
-   /* select swapping mode */
-
-   /* set data mode */
-
-   /* switch on block transfer */
-
-   return (int) 1;
+   return 1;
 }
 
 /*------------------------------------------------------------------*/
 int vme_close(int vh)
 {
-   return (int) 1;
+   return 1;
 }
 
 /*------------------------------------------------------------------*/
@@ -93,7 +68,7 @@ static int last_dma = -1;
 int vme_read(int vh, void *dst, int vme_addr, int size, int dma)
 {
   int *ptr, status;
-  status = sysBusToLocalAdrs(MVME_AM_STD_USR_DATA, vme_addr, &ptr);
+  status = sysBusToLocalAdrs(VME_AM_STD_USR_DATA, vme_addr, &ptr);
   switch (size) {
   case 2:
     *((WORD *)dst) = *((WORD *)ptr);
@@ -116,7 +91,7 @@ int vme_read(int vh, void *dst, int vme_addr, int size, int dma)
 int vme_write(int vh, void *src, int vme_addr, int size, int dma)
 {
   int *ptr, status;
-  status = sysBusToLocalAdrs(MVME_AM_STD_USR_DATA, vme_addr, &ptr);
+  status = sysBusToLocalAdrs(VME_AM_STD_USR_DATA, vme_addr, &ptr);
   switch (size) {
   case 2:
     *((WORD *)ptr) = *((WORD *)src);
@@ -138,7 +113,7 @@ int vme_write(int vh, void *src, int vme_addr, int size, int dma)
 int vme_mmap(int vh, void **ptr, int vme_addr, int size)
 {
    int status;
-   status = sysBusToLocalAdrs(MVME_AM_STD_USR_DATA, vme_addr, (int *) ptr);
+   status = sysBusToLocalAdrs(VME_AM_STD_USR_DATA, vme_addr, (int *) ptr);
    return status == SUCCESS ? 1 : (int) status;
 }
 
