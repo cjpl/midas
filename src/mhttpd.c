@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.193  2002/03/13 08:36:51  midas
+  Added periodic alarms, more buttons in Elog display
+
   Revision 1.192  2002/02/26 09:29:07  midas
   Fixed bug where query in elog stopped at 12:00
 
@@ -1194,7 +1197,7 @@ int    size;
   if (exp_name[0])
     rsprintf("<input type=hidden name=exp value=\"%s\">\n", exp_name);
 
-  rsprintf("<table border=3 cellpadding=1>\n");
+  rsprintf("<table border=3 cellpadding=2>\n");
   rsprintf("<tr><th colspan=%d bgcolor=#A0A0FF>MIDAS experiment \"%s\"", colspan, str);
 
   if (refresh > 0)
@@ -1297,7 +1300,7 @@ void show_status_page(int refresh, char *cookie_wpwd)
 {
 int    i, j, k, status, size, type;
 BOOL   flag, first;
-char   str[256], name[32], ref[256];
+char   str[256], name[32], ref[256], bgcol[32], fgcol[32], alarm_class[32];
 char   *yn[] = {"No", "Yes"};
 char   *state[] = {"", "Stopped", "Paused", "Running" };
 char   *trans_name[] = {"Start", "Stop", "Pause", "Resume"};
@@ -1427,22 +1430,37 @@ CHN_STATISTICS chn_stats;
         if (!hsubkey)
           break;
 
-        flag = 0;
         size = sizeof(flag);
         db_get_value(hDB, hsubkey, "Triggered", &flag, &size, TID_INT);
         if (flag)
           {
+          /*
           if (exp_name[0])
             sprintf(ref, "/?exp=%s&cmd=alarms", exp_name);
           else
             sprintf(ref, "/?cmd=alarms");
+          */
+
+          size = sizeof(alarm_class);
+          db_get_value(hDB, hsubkey, "Alarm Class", alarm_class, &size, TID_STRING);
+
+          strcpy(bgcol, "red");
+          sprintf(str, "/Alarms/Classes/%s/Display BGColor", alarm_class);
+          size = sizeof(bgcol);
+          db_get_value(hDB, 0, str, bgcol, &size, TID_STRING);
+
+          strcpy(fgcol, "black");
+          sprintf(str, "/Alarms/Classes/%s/Display FGColor", alarm_class);
+          size = sizeof(fgcol);
+          db_get_value(hDB, 0, str, fgcol, &size, TID_STRING);
 
           size = sizeof(str);
-          db_get_value(hDB, hsubkey, "Alarm Class", str, &size, TID_STRING);
+          db_get_value(hDB, hsubkey, "Alarm Message", str, &size, TID_STRING);
 
-          rsprintf("<tr><td colspan=6 bgcolor=#FF0000 align=center><h1><a href=\"%s\">%s</a></h1></tr>\n",
-                   ref, str);
-          break;
+          rsprintf("<tr><td colspan=6 bgcolor=\"%s\" align=center>", bgcol);
+
+          rsprintf("<font color=\"%s\" size=+3>%s: %s</font></tr>\n",
+                   fgcol, alarm_class, str);
           }
         }
       }
@@ -2788,6 +2806,14 @@ FILE   *f;
   if (!display_run_number)
     colspan--;
 
+  /* menu buttons */
+  rsprintf("<tr><td colspan=%d bgcolor=#C0C0C0>\n", colspan);
+  rsprintf("<input type=submit name=cmd value=Query>\n");
+  rsprintf("<input type=submit name=cmd value=Last>\n");
+  if (!elog_mode)
+    rsprintf("<input type=submit name=cmd value=Status>\n");
+  rsprintf("</tr>\n");
+
   if (*getparam("r1"))
     {
     if (*getparam("r2"))
@@ -2803,10 +2829,10 @@ FILE   *f;
       {
       if (exp_name[0])
         rsprintf("<tr><td colspan=6><a href=\"last%d?exp=%s\">Last %d days</a></tr>\n",
-                  last_n+1, exp_name, last_n+1);
+                  last_n*2, exp_name, last_n*2);
       else
         rsprintf("<tr><td colspan=6><a href=\"last%d\">Last %d days</a></tr>\n",
-                  last_n+1, last_n+1);
+                  last_n*2, last_n*2);
 
       if (last_n == 1)
         rsprintf("<tr><td colspan=6 bgcolor=#FFFF00><b>Last 24 hours</b></tr>\n");
@@ -3840,6 +3866,12 @@ BOOL  display_run_number, allow_delete;
     return;
     }
 
+  if (equal_ustring(command, "last week"))
+    {
+    redirect("EL/last7");
+    return;
+    }
+
   if (equal_ustring(command, "delete"))
     {
     show_elog_delete(path);
@@ -4067,6 +4099,7 @@ BOOL  display_run_number, allow_delete;
   rsprintf("<input type=submit name=cmd value=Reply>\n");
   rsprintf("<input type=submit name=cmd value=Query>\n");
   rsprintf("<input type=submit name=cmd value=\"Last 24 hours\">\n");
+  rsprintf("<input type=submit name=cmd value=\"Last week\">\n");
 
   /* check forms from ODB */
   db_find_key(hDB, 0, "/Elog/Forms", &hkeyroot);
@@ -6116,25 +6149,51 @@ KEY   key;
 
 void show_alarm_page()
 {
-INT   i, size, triggered, type, index;
-BOOL  active;
-HNDLE hDB, hkeyroot, hkey;
-KEY   key;
-char  str[256], ref[256], condition[256], value[256];
+INT    i, size, triggered, type, index, ai;
+BOOL   active;
+HNDLE  hDB, hkeyroot, hkey;
+KEY    key;
+char   str[256], ref[256], condition[256], value[256];
+time_t now, last, interval;
+INT    al_list[] = { AT_EVALUATED, AT_PROGRAM, AT_INTERNAL, AT_PERIODIC };
 
   cm_get_experiment_database(&hDB, NULL);
 
-  show_header(hDB, "Alarms", "", 3, 0);
+  /* header */
+  rsprintf("HTTP/1.0 200 Document follows\r\n");
+  rsprintf("Server: MIDAS HTTP %s\r\n", cm_get_version());
+  rsprintf("Content-Type: text/html\r\n\r\n");
+
+  rsprintf("<html><head>\n");
+  rsprintf("<title>Alarms</title></head>\n");
+  rsprintf("<body>\n");
+
+  /* title row */
+  size = sizeof(str);
+  str[0] = 0;
+  db_get_value(hDB, 0, "/Experiment/Name", str, &size, TID_STRING);
+  time(&now);
+
+  /* define hidden field for experiment */
+  if (exp_name[0])
+    rsprintf("<input type=hidden name=exp value=\"%s\">\n", exp_name);
+
+  rsprintf("<form method=\"GET\" action=\"/\">\n");
+
+  rsprintf("<table border=3 cellpadding=2>\n");
+  rsprintf("<tr><th colspan=4 bgcolor=#A0A0FF>MIDAS experiment \"%s\"", str);
+  rsprintf("<th colspan=3 bgcolor=#A0A0FF>%s</tr>\n", ctime(&now));
 
   /*---- menu buttons ----*/
 
-  rsprintf("<tr><td colspan=6 bgcolor=#C0C0C0>\n");
+  rsprintf("<tr>\n");
+  rsprintf("<td colspan=7 bgcolor=#C0C0C0>\n");
 
   rsprintf("<input type=submit name=cmd value=\"Reset all alarms\">\n");
   rsprintf("<input type=submit name=cmd value=\"Alarms on/off\">\n");
   rsprintf("<input type=submit name=cmd value=Status>\n");
 
-  rsprintf("</tr>\n\n");
+  rsprintf("</tr></form>\n\n");
 
   /*---- global flag ----*/
 
@@ -6147,27 +6206,34 @@ char  str[256], ref[256], condition[256], value[256];
       sprintf(ref, "/Alarms/Alarm System active?cmd=set&exp=%s", exp_name);
     else
       sprintf(ref, "/Alarms/Alarm System active?cmd=set");
-    rsprintf("<tr><td align=center colspan=6 bgcolor=#FFC0C0><a href=\"%s\"><h1>Alarm system disabled</h1></a></tr>", ref);
+    rsprintf("<tr><td align=center colspan=7 bgcolor=#FFC0C0><a href=\"%s\"><h1>Alarm system disabled</h1></a></tr>", ref);
     }
 
   /*---- alarms ----*/
 
-  for (index = AT_EVALUATED ; index>=AT_INTERNAL ; index--)
+  for (ai = 0 ; ai < AT_LAST; ai++)
     {
+    index = al_list[ai];
+
     if (index == AT_EVALUATED)
       {
-      rsprintf("<tr><th align=center colspan=6 bgcolor=#A0FFFF>Evaluated alarms</tr>\n");
-      rsprintf("<tr><th>Alarm<th>State<th>First triggered<th>Class<th>Condition<th>Current value</tr>\n");
+      rsprintf("<tr><th align=center colspan=7 bgcolor=#C0C0C0>Evaluated alarms</tr>\n");
+      rsprintf("<tr><th>Alarm<th>State<th>First triggered<th>Class<th>Condition<th>Current value<th></tr>\n");
       }
     else if (index == AT_PROGRAM)
       {
-      rsprintf("<tr><th align=center colspan=6 bgcolor=#A0FFFF>Program alarms</tr>\n");
-      rsprintf("<tr><th>Alarm<th>State<th>First triggered<th>Class<th colspan=2>Condition</tr>\n");
+      rsprintf("<tr><th align=center colspan=7 bgcolor=#C0C0C0>Program alarms</tr>\n");
+      rsprintf("<tr><th>Alarm<th>State<th>First triggered<th>Class<th colspan=2>Condition<th></tr>\n");
       }
     else if (index == AT_INTERNAL)
       {
-      rsprintf("<tr><th align=center colspan=6 bgcolor=#A0FFFF>Internal alarms</tr>\n");
-      rsprintf("<tr><th>Alarm<th>State<th>First triggered<th>Class<th colspan=2>Condition/Message</tr>\n");
+      rsprintf("<tr><th align=center colspan=7 bgcolor=#C0C0C0>Internal alarms</tr>\n");
+      rsprintf("<tr><th>Alarm<th>State<th>First triggered<th>Class<th colspan=2>Condition/Message<th></tr>\n");
+      }
+    else if (index == AT_PERIODIC)
+      {
+      rsprintf("<tr><th align=center colspan=7 bgcolor=#C0C0C0>Periodic alarms</tr>\n");
+      rsprintf("<tr><th>Alarm<th>State<th>First triggered<th>Class<th colspan=2>Time/Message<th></tr>\n");
       }
 
     /* go through all alarms */
@@ -6189,11 +6255,20 @@ char  str[256], ref[256], condition[256], value[256];
         if (type != index)
           continue;
 
-        /* alarm */
+        /* start form for each alarm to make "reset" button work */
+        if (exp_name[0])
+          sprintf(ref, "/%s?exp=%s", key.name, exp_name);
+        else
+          sprintf(ref, "/%s", key.name);
+
+        rsprintf("<form method=\"GET\" action=\"%s\">\n", ref);
+
+        /* alarm name */
         if (exp_name[0])
           sprintf(ref, "/Alarms/Alarms/%s?exp=%s", key.name, exp_name);
         else
           sprintf(ref, "/Alarms/Alarms/%s", key.name);
+        
         rsprintf("<tr><td bgcolor=#C0C0FF><a href=\"%s\"><b>%s</b></a>", ref, key.name);
 
         /* state */
@@ -6258,8 +6333,41 @@ char  str[256], ref[256], condition[256], value[256];
 
           rsprintf("<td colspan=2>%s", str);
           }
+        else if (index == AT_PERIODIC)
+          {
+          size = sizeof(str);
+          if (triggered)
+            db_get_value(hDB, hkey, "Alarm message", str, &size, TID_STRING);
+          else
+            {
+            size = sizeof(last);
+            db_get_value(hDB, hkey, "Checked last", &last, &size, TID_DWORD);
+            if (last == 0)
+              {
+              last = ss_time();
+              db_set_value(hDB, hkey, "Checked last", &last, size, 1, TID_DWORD);
+              }
+
+            size = sizeof(interval);
+            db_get_value(hDB, hkey, "Check interval", &interval, &size, TID_INT);
+            last += interval;
+            strcpy(value, ctime(&last));
+            value[16] = 0;
+
+            sprintf(str, "Alarm triggers at %s", value);
+            }
+
+          rsprintf("<td colspan=2>%s", str);
+          }
+
+        rsprintf("<td>\n");
+        if (triggered)
+          rsprintf("<input type=submit name=cmd value=\"Reset\">\n");
+        else
+          rsprintf("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;");
 
         rsprintf("</tr>\n");
+        rsprintf("</form>\n");
         }
       }
     }
@@ -6613,7 +6721,7 @@ double base[] = {1,2,5,10,20,50,100,200,500,1000};
 
 /*------------------------------------------------------------------*/
 
-void sec_to_label(char *result, int sec, int base)
+void sec_to_label(char *result, int sec, int base, int force_date)
 {
 char      mon[80];
 struct tm *tms;
@@ -6622,16 +6730,32 @@ struct tm *tms;
   strcpy(mon, mname[tms->tm_mon]);
   mon[3] = 0;
   
-  if (base < 600)
-    sprintf(result, "%02d:%02d:%02d", tms->tm_hour, tms->tm_min, tms->tm_sec);
-  else if (base < 3600*3)
-    sprintf(result, "%02d:%02d", tms->tm_hour, tms->tm_min);
-  else if (base < 3600*24)
-    sprintf(result, "%02d %s %02d %02d:%02d", 
-      tms->tm_mday, mon, tms->tm_year % 100,
-      tms->tm_hour, tms->tm_min);
+  if (force_date)
+    {
+    if (base < 600)
+      sprintf(result, "%02d %s %02d %02d:%02d:%02d", 
+        tms->tm_mday, mon, tms->tm_year % 100,
+        tms->tm_hour, tms->tm_min, tms->tm_sec);
+    else if (base < 3600*24)
+      sprintf(result, "%02d %s %02d %02d:%02d", 
+        tms->tm_mday, mon, tms->tm_year % 100,
+        tms->tm_hour, tms->tm_min);
+    else
+      sprintf(result, "%02d %s %02d", tms->tm_mday, mon, tms->tm_year % 100);
+    }
   else
-    sprintf(result, "%02d %s %02d", tms->tm_mday, mon, tms->tm_year % 100);
+    {
+    if (base < 600)
+      sprintf(result, "%02d:%02d:%02d", tms->tm_hour, tms->tm_min, tms->tm_sec);
+    else if (base < 3600*3)
+      sprintf(result, "%02d:%02d", tms->tm_hour, tms->tm_min);
+    else if (base < 3600*24)
+      sprintf(result, "%02d %s %02d %02d:%02d", 
+        tms->tm_mday, mon, tms->tm_year % 100,
+        tms->tm_hour, tms->tm_min);
+    else
+      sprintf(result, "%02d %s %02d", tms->tm_mday, mon, tms->tm_year % 100);
+    }
 }
 
 void taxis(gdImagePtr im, gdFont *font, int col, int gcol,
@@ -6643,9 +6767,21 @@ int    dx, x_act, label_dx, major_dx, x_screen, maxwidth;
 int    tick_base, major_base, label_base, xs, xl;
 char   str[80];
 int    base[] = {1,5,10,60,300,600,1800,3600,3600*6,3600*12,3600*24,0};
+time_t ltime;
+int    force_date, d1, d2;
+struct tm *ptms;
 
   if (xmax <= xmin || width <= 0)
     return;
+
+  /* force date display if xmax not today */
+  ltime = ss_time();
+  ptms = localtime(&ltime);
+  d1 = ptms->tm_mday;
+  ltime = (time_t) xmax;
+  ptms = localtime(&ltime);
+  d2 = ptms->tm_mday;
+  force_date = (d1 != d2);
 
   /* use 5 pixel as min tick distance */
   dx = (int)((xmax - xmin)/ (double) (width/5)+0.5);
@@ -6673,7 +6809,7 @@ int    base[] = {1,5,10,60,300,600,1800,3600,3600*6,3600*12,3600*24,0};
 
   do
     {
-    sec_to_label(str, (int)(xmin+0.5), label_dx);
+    sec_to_label(str, (int)(xmin+0.5), label_dx, force_date);
     maxwidth = font->h/2 * strlen(str);
 
     /* increasing label_dx, if labels would overlap */
@@ -6715,7 +6851,7 @@ int    base[] = {1,5,10,60,300,600,1800,3600,3600*6,3600*12,3600*24,0};
           /**** label ****/
           if (label != 0)
             {
-            sec_to_label(str, x_act, label_dx);
+            sec_to_label(str, x_act, label_dx, force_date);
 
             /* if labels at edge, shift them in */
             xl = (int)xs-font->w*strlen(str)/2;
@@ -7498,7 +7634,7 @@ double      yb1, yb2, yf1, yf2, ybase;
 
   /* draw axis frame */
   taxis(im, gdFontSmall, black, ltgrey, x1, y1, x2-x1, width, 3, 5, 9, 10, 0, 
-    ss_time()-scale+toffset,  ss_time()+toffset);
+        ss_time()-scale+toffset,  ss_time()+toffset);
   //haxis(im, gdFontSmall, black, ltgrey, x1, y1, x2-x1, 3, 5, 9, 10, 0, xmin,  xmax);
   vaxis(im, gdFontSmall, black, ltgrey, x1, y1, y1-y2, -3, -5, -7, -8, x2-x1, ymin, ymax, logaxis);
   gdImageLine(im, x1, y2, x2, y2, black);
@@ -7964,17 +8100,6 @@ char   def_button[][NAME_LENGTH] = {"10m", "1h", "3h", "12h", "24h", "3d", "7d" 
     return;
     }
 
-  cm_get_experiment_database(&hDB, NULL);
-
-  sprintf(str, "HS/%s", path);
-  show_header(hDB, "History", str, 1, refresh);
-
-  /* menu buttons */
-  rsprintf("<tr><td colspan=2 bgcolor=#C0C0C0>\n");
-  rsprintf("<input type=submit name=cmd value=ODB>\n");
-  rsprintf("<input type=submit name=cmd value=Alarms>\n");
-  rsprintf("<input type=submit name=cmd value=Status></tr>\n");
-
   /* evaluate offset shift */
   if (equal_ustring(getparam("shift"), "<"))
     offset -= scale/2;
@@ -8001,6 +8126,17 @@ char   def_button[][NAME_LENGTH] = {"10m", "1h", "3h", "12h", "24h", "3d", "7d" 
       offset = 0;
     scale *= 2;
     }
+
+  cm_get_experiment_database(&hDB, NULL);
+
+  sprintf(str, "HS/%s", path);
+  show_header(hDB, "History", str, 1, offset == 0 ? refresh : 0);
+
+  /* menu buttons */
+  rsprintf("<tr><td colspan=2 bgcolor=#C0C0C0>\n");
+  rsprintf("<input type=submit name=cmd value=ODB>\n");
+  rsprintf("<input type=submit name=cmd value=Alarms>\n");
+  rsprintf("<input type=submit name=cmd value=Status></tr>\n");
 
   /* define hidden field for parameters */
   if (pscale && *pscale)
@@ -8817,6 +8953,16 @@ struct tm *gmt;
       return;
 
     al_reset_alarm(NULL);
+    redirect("?cmd=alarms");
+    return;
+    }
+
+  if (equal_ustring(command, "reset"))
+    {
+    if (!check_web_password(cookie_wpwd, "?cmd=reset%20all%20alarms", experiment))
+      return;
+
+    al_reset_alarm(dec_path);
     redirect("?cmd=alarms");
     return;
     }
