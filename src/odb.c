@@ -6,6 +6,9 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.98  2004/10/04 23:54:29  midas
+  Implemented ODB version
+
   Revision 1.97  2004/10/01 17:32:31  midas
   Do not abort if invalid link in db_create_record() is found
 
@@ -1084,6 +1087,7 @@ INT db_open_database(char *database_name, INT database_size,
          memset(pheader, 0, sizeof(DATABASE_HEADER) + 2 * ALIGN8(database_size / 2));
 
          strcpy(pheader->name, database_name);
+         pheader->version = DATABASE_VERSION;
          pheader->key_size = ALIGN8(database_size / 2);
          pheader->data_size = ALIGN8(database_size / 2);
          pheader->root_key = sizeof(DATABASE_HEADER);
@@ -1120,6 +1124,13 @@ INT db_open_database(char *database_name, INT database_size,
          pkeylist->parent = (PTYPE) pkey - (PTYPE) pheader;
          pkeylist->num_keys = 0;
          pkeylist->first_key = 0;
+      }
+
+      /* check database version */
+      if (pheader->version != DATABASE_VERSION) {
+         cm_msg(MERROR, "db_open_database", "Different database format: Shared memory is %d, program is %d",
+            pheader->version, DATABASE_VERSION);
+         return DB_VERSION_MISMATCH;
       }
 
       /* create mutex for the database */
