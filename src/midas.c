@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.27  1999/04/16 15:13:28  midas
+  bm_notify_client notifies ASCII client (Java) always
+
   Revision 1.26  1999/04/15 15:43:06  midas
   Added functionality for bm_receive_event in ASCII mode
 
@@ -5015,8 +5018,11 @@ INT             request_id;
       }
 
   /* shift read pointer of own client */
+/* 16.4.99 SR, outcommented to receive own messages
+
   if (pclient[my_client_index].read_pointer == old_write_pointer)
     pclient[my_client_index].read_pointer = pheader->write_pointer;
+*/
 
   /* calculate global read pointer as "minimum" of client read pointers */
   min_wp = pheader->write_pointer;
@@ -5366,8 +5372,11 @@ INT             request_id;
       }
 
   /* shift read pointer of own client */
+/* 16.4.99 SR, outcommented to receive own messages
+
   if (pclient[my_client_index].read_pointer == old_write_pointer)
     pclient[my_client_index].read_pointer = pheader->write_pointer;
+*/
 
   /* calculate global read pointer as "minimum" of client read pointers */
   min_wp = pheader->write_pointer;
@@ -6246,13 +6255,13 @@ static DWORD last_time = 0;
   if(!_buffer[buffer_handle-1].callback)
     return DB_SUCCESS;
 
+  convert_flags = rpc_get_server_option(RPC_CONVERT_FLAGS);
+
   /* only send notification once each 500ms */
-  if (ss_millitime()-last_time < 500)
+  if (ss_millitime()-last_time < 500 && !(convert_flags & CF_ASCII))
     return DB_SUCCESS;
 
   last_time = ss_millitime();
-
-  convert_flags = rpc_get_server_option(RPC_CONVERT_FLAGS);
 
   if (convert_flags & CF_ASCII)
     {
