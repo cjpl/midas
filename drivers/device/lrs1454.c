@@ -6,6 +6,9 @@
   Contents:     LeCroy LRS1454/1458 Voltage Device Driver
 
   $Log$
+  Revision 1.3  2001/01/04 11:17:23  midas
+  Implemented Bus Driver scheme
+
   Revision 1.2  2000/12/18 09:45:39  midas
   changed CR-LF
 
@@ -16,20 +19,17 @@
 
 #include <stdio.h>
 #include <math.h>
+#include <string.h>
+#include <stdarg.h>
 #include "midas.h"
-#include "bus\rs232.h"
 
 /*---- globals -----------------------------------------------------*/
 
-int rs232_hdev[10];
-
 typedef struct {
-  char rs232_port[NAME_LENGTH];
   int  polarity[16];
 } lrs1454_SETTINGS;
 
 #define LRS1454_SETTINGS_STR "\
-RS232 Port = STRING : [32] com1\n\
 Polarity = INT[16] :\n\
 [0] -1\n\
 [1] -1\n\
@@ -51,87 +51,73 @@ Polarity = INT[16] :\n\
 typedef struct {
   lrs1454_SETTINGS settings;
   int num_channels;
-  int hdev;                       /* device handle for RS232 device */
-} lrs1454_INFO;
+  INT (*bd)(INT cmd, ...);             /* bus driver entry function */
+  void *bd_info;                      /* private info of bus driver */
+} LRS1454_INFO;
 
 /*---- device driver routines --------------------------------------*/
 
-INT lrs1454_init(HNDLE hKey, void **pinfo, INT channels)
+INT lrs1454_init(HNDLE hkey, void **pinfo, INT channels, INT (*bd)(INT cmd, ...))
 {
 int          status, size, i;
 char         str[256], *p;
-HNDLE        hDB;
-lrs1454_INFO *info;
+HNDLE        hDB, hkeydd;
+LRS1454_INFO *info;
 
   /* allocate info structure */
-  info = calloc(1, sizeof(lrs1454_INFO));
+  info = (LRS1454_INFO *) calloc(1, sizeof(LRS1454_INFO));
   *pinfo = info;
 
   cm_get_experiment_database(&hDB, NULL);
 
   /* create lrs1454 settings record */
-  status = db_create_record(hDB, hKey, "", LRS1454_SETTINGS_STR);
+  status = db_create_record(hDB, hkey, "DD", LRS1454_SETTINGS_STR);
   if (status != DB_SUCCESS)
     return FE_ERR_ODB;
 
+  db_find_key(hDB, hkey, "DD", &hkeydd);
   size = sizeof(info->settings);
-  db_get_record(hDB, hKey, &info->settings, &size, 0);
+  db_get_record(hDB, hkeydd, &info->settings, &size, 0);
 
   info->num_channels = channels;
+  info->bd = bd;
 
-  /* initialize RS232 port */
-  p = info->settings.rs232_port;
-  while (*p && !isdigit(*p))
-    p++;
+  /* initialize bus driver */
+  if (!bd)
+    return FE_ERR_ODB;
 
-  i = *p - '0';
+  status = bd(CMD_INIT, hkey, &info->bd_info);
+  
+  if (status != SUCCESS)
+    return status;
 
-  if (i < 0)
-    i = 0;
-  if (i > 4)
-    i = 4;
-
-  if (rs232_hdev[i])
-    info->hdev = rs232_hdev[i];
-  else
-    {
-    info->hdev = rs232_init(info->settings.rs232_port, 9600, 'N', 8, 1, 0);
-    if (info->hdev < 0)
-      {
-      cm_msg(MERROR, "lrs1454_init", "Cannot access port \"%s\"", info->settings.rs232_port);
-      return FE_ERR_HW;
-      }
-
-    rs232_hdev[i] = info->hdev;
-    }
-
-  rs232_debug(FALSE);
+  bd(CMD_DEBUG, FALSE);
 
   /* check if module is living  */
-  rs232_puts(info->hdev, "\r");
-  status = rs232_waitfor(info->hdev, ">", str, 80, 2);
-  rs232_puts(info->hdev, "1450\r");
-  status = rs232_waitfor(info->hdev, ">", str, 80, 2);
+  BD_PUTS("\r");
+  BD_GETS(str, sizeof(str), ">", 2000);
+  BD_PUTS("1450\r");
+  status = BD_GETS(str, sizeof(str), ">", 2000);
   if (!status)
     {
-    cm_msg(MERROR, "lrs1454_init", "lrs1454 at port %s doesn't respond. Check power and RS232 connection.", info->settings.rs232_port);
+    cm_msg(MERROR, "lrs1454_init", "lrs1454 doesn't respond. Check power and connection.");
     return FE_ERR_HW;
     }
 
   /* go into EDIT mode */
-  rs232_puts(info->hdev, "EDIT\r");
-  rs232_waitfor(info->hdev, ">", str, 80, 5);
+  BD_PUTS("EDIT\r");
+  BD_GETS(str, sizeof(str), ">", 2000);
 
   /* turn on HV main switch */
-  rs232_puts(info->hdev, "HVON\r");
-  rs232_waitfor(info->hdev, ">", str, 80, 5);
+  BD_PUTS("HVON\r");
+  BD_GETS(str, sizeof(str), ">", 2000);
 
   /* enable cheannels */
   for (i=0 ; i<info->num_channels ; i++)
     {
     sprintf(str, "LD L%d.%d CE 1\r", i/12, i%12);
-    rs232_puts(info->hdev, str);
-    rs232_waitfor(info->hdev, ">", str, 80, 1);
+    BD_PUTS(str);
+    BD_GETS(str, sizeof(str), ">", 2000);
     }
 
   return FE_SUCCESS;
@@ -139,10 +125,10 @@ lrs1454_INFO *info;
 
 /*----------------------------------------------------------------------------*/
 
-INT lrs1454_exit(lrs1454_INFO *info)
+INT lrs1454_exit(LRS1454_INFO *info)
 {
-  rs232_puts(info->hdev, "quit\r");
-  rs232_exit(info->hdev);
+  BD_PUTS("quit\r");
+  info->bd(CMD_EXIT, info->bd_info);
 
   free(info);
 
@@ -151,22 +137,22 @@ INT lrs1454_exit(lrs1454_INFO *info)
 
 /*----------------------------------------------------------------------------*/
 
-INT lrs1454_set(lrs1454_INFO *info, INT channel, float value)
+INT lrs1454_set(LRS1454_INFO *info, INT channel, float value)
 {
 char  str[80];
 
   sprintf(str, "LD L%d.%d DV %1.1f\r", channel/12, channel%12,
           info->settings.polarity[channel/12]*value);
 
-  rs232_puts(info->hdev, str);
-  rs232_waitfor(info->hdev, ">", str, 80, 1);
+  BD_PUTS(str);
+  BD_GETS(str, sizeof(str), ">", 1000);
 
   return FE_SUCCESS;
 }
 
 /*----------------------------------------------------------------------------*/
 
-INT lrs1454_set_all(lrs1454_INFO *info, INT channels, float value)
+INT lrs1454_set_all(LRS1454_INFO *info, INT channels, float value)
 {
 char  str[80];
 INT   i;
@@ -174,8 +160,8 @@ INT   i;
   for (i=0 ; i<channels ; i++)
     {
     sprintf(str, "LD L%d.%d DV %1.1f\r", i/12, i%12, value);
-    rs232_puts(info->hdev, str);
-    rs232_waitfor(info->hdev, ">", str, 80, 3);
+    BD_PUTS(str);
+    BD_GETS(str, sizeof(str), ">", 1000);
     }
 
   return FE_SUCCESS;
@@ -183,25 +169,26 @@ INT   i;
 
 /*----------------------------------------------------------------------------*/
 
-INT lrs1454_get(lrs1454_INFO *info, INT channel, float *pvalue)
+INT lrs1454_get(LRS1454_INFO *info, INT channel, float *pvalue)
 {
 int   status;
 char  str[256], *p;
 
   sprintf(str, "RC L%d.%d MV\r", channel/12, channel%12);
-  rs232_puts(info->hdev, str);
-  status = rs232_waitfor(info->hdev, ">", str, 80, 1);
+  BD_PUTS(str);
+  status = BD_GETS(str, sizeof(str), ">", 1000);
 
+  /* if connection lost, reconnect */
   if (status == 0)
     {
-    rs232_puts(info->hdev, "\r");
-    rs232_waitfor(info->hdev, ">", str, 80, 1);
+    BD_PUTS("\r");
+    BD_GETS(str, sizeof(str), ">", 1000);
     }
 
   if (strstr(str, "to begin"))
     {
-    rs232_puts(info->hdev, "1450\r");
-    rs232_waitfor(info->hdev, ">", str, 80, 1);
+    BD_PUTS("1450\r");
+    BD_GETS(str, sizeof(str), ">", 1000);
     return lrs1454_get(info, channel, pvalue);
     }
   p = str+strlen(str)-1;;
@@ -215,13 +202,13 @@ char  str[256], *p;
 
 /*----------------------------------------------------------------------------*/
 
-INT lrs1454_get_current(lrs1454_INFO *info, INT channel, float *pvalue)
+INT lrs1454_get_current(LRS1454_INFO *info, INT channel, float *pvalue)
 {
 char  str[256], *p;
 
   sprintf(str, "RC L%d.%d MC\r", channel/12, channel%12);
-  rs232_puts(info->hdev, str);
-  rs232_waitfor(info->hdev, ">", str, 80, 1);
+  BD_PUTS(str);
+  BD_GETS(str, sizeof(str), ">", 1000);
 
   p = str+strlen(str)-1;;
   while (*p && *p != ' ')
@@ -234,7 +221,7 @@ char  str[256], *p;
 
 /*----------------------------------------------------------------------------*/
 
-INT lrs1454_get_all(lrs1454_INFO *info, INT channels, float *array)
+INT lrs1454_get_all(LRS1454_INFO *info, INT channels, float *array)
 {
 int   i, j;
 char  str[256], *p;
@@ -242,8 +229,8 @@ char  str[256], *p;
   for (i=0 ; i<channels/12 ; i++)
     {
     sprintf(str, "RC L%d MV\r", i);
-    rs232_puts(info->hdev, str);
-    rs232_waitfor(info->hdev, ">", str, 256, 1);
+    BD_PUTS(str);
+    BD_GETS(str, sizeof(str), ">", 5000);
 
     p = strstr(str, "MV")+3;
     p = strstr(p, "MV")+3;
@@ -260,7 +247,7 @@ char  str[256], *p;
 
 /*----------------------------------------------------------------------------*/
 
-INT lrs1454_get_current_all(lrs1454_INFO *info, INT channels, float *array)
+INT lrs1454_get_current_all(LRS1454_INFO *info, INT channels, float *array)
 {
 int   i, j;
 char  str[256], *p;
@@ -268,8 +255,8 @@ char  str[256], *p;
   for (i=0 ; i<channels/12 ; i++)
     {
     sprintf(str, "RC L%d MC\r", i);
-    rs232_puts(info->hdev, str);
-    rs232_waitfor(info->hdev, ">", str, 256, 1);
+    BD_PUTS(str);
+    BD_GETS(str, sizeof(str), ">", 5000);
 
     p = strstr(str, "MC")+3;
     p = strstr(p, "MC")+3;
@@ -286,15 +273,15 @@ char  str[256], *p;
 
 /*----------------------------------------------------------------------------*/
 
-INT lrs1454_set_current_limit(lrs1454_INFO *info, int channel, float limit)
+INT lrs1454_set_current_limit(LRS1454_INFO *info, int channel, float limit)
 {
 char  str[80];
 
   sprintf(str, "LD L%d.%d TC %1.1f\r", channel/12, channel%12,
           info->settings.polarity[channel/16]*limit);
 
-  rs232_puts(info->hdev, str);
-  rs232_waitfor(info->hdev, ">", str, 80, 1);
+  BD_PUTS(str);
+  BD_GETS(str, sizeof(str), ">", 1000);
 
   return FE_SUCCESS;
 }
@@ -307,7 +294,7 @@ va_list argptr;
 HNDLE   hKey;
 INT     channel, status;
 float   value, *pvalue;
-void    *info;
+void    *info, *bd;
 
   va_start(argptr, cmd);
   status = FE_SUCCESS;
@@ -318,7 +305,8 @@ void    *info;
       hKey = va_arg(argptr, HNDLE);
       info = va_arg(argptr, void *);
       channel = va_arg(argptr, INT);
-      status = lrs1454_init(hKey, info, channel);
+      bd = va_arg(argptr, void *);
+      status = lrs1454_init(hKey, info, channel, bd);
       break;
 
     case CMD_EXIT:
