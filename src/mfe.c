@@ -7,6 +7,9 @@
                 linked with user code to form a complete frontend
 
   $Log$
+  Revision 1.11  1999/12/08 00:50:29  pierre
+  - fix EVID (ybos: strncpy to strncmp)
+
   Revision 1.10  1999/11/24 00:49:59  pierre
   - YBOS reject EVID bank in udpate_odb with eb_functions
 
@@ -565,7 +568,7 @@ WORD              bktype;
 	    name[4] = 0;
 
       /* reject EVID bank */
-      if (strncpy(name, "EVID", 4) == 0)
+      if (strncmp(name, "EVID", 4) == 0)
         continue;
 
       /* correct YBS number of entries */
