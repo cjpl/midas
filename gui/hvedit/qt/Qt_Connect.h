@@ -15,6 +15,10 @@
     email                : andreas.suter@psi.ch
 
   $Log$
+  Revision 1.2  2003/12/30 14:54:26  suter_a
+  "doxygenized" code, i.e. added comments which can be handled by doxygen in
+  order to generate html- and latex-docu.
+
   Revision 1.1  2003/05/09 10:08:09  midas
   Initial revision
 
@@ -51,7 +55,7 @@ class Qt_Connect : public Qt_Connect_Base
 
   // Attributes
   private:
-    cmExperiment *cmExp;
+    cmExperiment *cmExp; //!< Pointer to a MIDAS experiment object.
 
   // Slots
   public slots:

@@ -12,6 +12,10 @@
     email                : andreas.suter@psi.ch
 
   $Log$
+  Revision 1.3  2003/12/30 14:54:26  suter_a
+  "doxygenized" code, i.e. added comments which can be handled by doxygen in
+  order to generate html- and latex-docu.
+
   Revision 1.2  2003/05/13 17:29:44  midas
   Fixed compiler warnings
 
@@ -39,10 +43,14 @@
 #include "cmExperiment.h"
 
 //**********************************************************************
-// get Password callback routine -- CANNOT be a class member since
-// the c-calling midas routine needs a pointer to void which cannot
-// be accomplished be casting!
-//**********************************************************************
+/*!
+ * <p>get password callback routine - <em>CANNOT</em> be a class member 
+ * since the c-calling midas routine needs a pointer to void which cannot
+ * be accomplished be casting!
+ *
+ * <p><b>return:</b> void
+ * \param password is a pointer to the password variable.
+ */
 void GetPassword(char *password)
 {
   // create password dialog
@@ -52,8 +60,16 @@ void GetPassword(char *password)
 }
 
 //**********************************************************************
-// Constructor
-//**********************************************************************
+/*!
+ * <p>Creates an object to a MIDAS experiment.
+ *
+ * \param strClientName Name of the client which connects to the experiment, e.g. 'hvEdit'
+ * \param parent The parent of an object may be viewed as the object's owner. Setting 
+ *               <em>parent</em> to 0 constructs an object with no parent. If the object 
+ *               is a widget, it will become a top-level window.  
+ * \param name   Name of the object. The object name is some text that can be used to 
+ *               identify a QObject.
+ */
 cmExperiment::cmExperiment(QString strClientName, QObject *parent,
                            const char *name) : QObject(parent, name)
 {
@@ -66,17 +82,26 @@ cmExperiment::cmExperiment(QString strClientName, QObject *parent,
 }
 
 //**********************************************************************
-// Destructor
-//**********************************************************************
+/*!
+ * <p>Destroys the object.
+ */
 cmExperiment::~cmExperiment()
 {
 }
 
 //**********************************************************************
-// Connect
-// 
-// connects to a midas experiment.
-//**********************************************************************
+/*!
+ * <p>Establishes the connection to a MIDAS experiment, running on the
+ * host strHostName.
+ *
+ * <p><b>return:</b> 
+ *   - TRUE, if connection to the experiment is established
+ *   - FALSE, otherwise
+ *
+ * \param strHostName Name of the host on which the MIDAS experiment runs.
+ * \param strExperimentName Name of the MIDAS experiment to which one wants to connect
+ * \param strClientName Name of the client which connects to the experiment, e.g. 'hvEdit'
+ */
 BOOL cmExperiment::Connect(QString strHostName, QString strExperimentName, QString strClientName)
 {
   int status;
@@ -124,10 +149,11 @@ BOOL cmExperiment::Connect(QString strHostName, QString strExperimentName, QStri
 }
 
 //**********************************************************************
-// Disconnect
-//
-// disconnect from midas experiment.
-//**********************************************************************
+/*!
+ * <p>Disconnects from an already connected MIDAS experiment.
+ *
+ * <p><b>return:</b> void
+ */
 void cmExperiment::Disconnect()
 {
   cm_disconnect_experiment();
@@ -135,15 +161,18 @@ void cmExperiment::Disconnect()
 }
 
 //**********************************************************************
-// StartTimer
-//
-// since all midas clients cyclically have to tell that they are still
-// alive, such a cyclical timer is needed, which is implemented here.
-// This cyclic timer works the following way: Once it is started, it
-// runs in the background till timeout is reached. At timeout it calls
-// a time out routine (timeOutProc) and the whole things starts all over
-// again.
-//**********************************************************************
+/*!
+ * <p>Since all MIDAS clients cyclically have to tell that they are still
+ * alive, such a cyclical timer is needed, which is implemented here.
+ * This cyclic timer works the following way: Once it is started, it
+ * runs in the background till timeout is reached. At timeout it calls
+ * a time out routine (timeOutProc) and the whole things starts all over
+ * again.
+ *
+ * <p><b>return:</b> 
+ *   - TRUE if timer could have been started
+ *   - FALSE otherwise
+ */
 BOOL cmExperiment::StartTimer()
 {
   if (m_bTimerStarted)
@@ -167,13 +196,14 @@ BOOL cmExperiment::StartTimer()
 }
 
 //**********************************************************************
-// slot timeOutProc
-// 
-// This routine is the time out routine of StartTimer and is cyclically 
-// called. It self tells midas that hvEdit is still alive and checks
-// if midas itself is alive and if midas (for what ever reason) kick
-// hvEdit out.
-//**********************************************************************
+/*!
+ * <p> This routine is the time out routine of StartTimer and is cyclically 
+ * called. It self tells MIDAS that hvEdit is still alive and checks
+ * if MIDAS itself is alive and if MIDAS (for what ever reason) kick
+ * hvEdit out.
+ *
+ * <p><b>return:</b> void 
+ */
 void cmExperiment::timeOutProc()
 {
   int status;

@@ -10,6 +10,10 @@
     email                : andreas.suter@psi.ch
 
   $Log$
+  Revision 1.2  2003/12/30 14:54:26  suter_a
+  "doxygenized" code, i.e. added comments which can be handled by doxygen in
+  order to generate html- and latex-docu.
+
   Revision 1.1  2003/05/09 10:08:09  midas
   Initial revision
 
@@ -32,11 +36,12 @@
 #include <qmessagebox.h>
 
 //****************************************************************************************
-//
-// MidasMessage translates midas error messages to Qt Dialogs.
-//
-//****************************************************************************************
-
+/*!
+ * <p>MidasMessage translates midas error messages to Qt Dialogs.
+ *
+ * <p><b>return:</b> 0
+ * \param str error message.
+ */
 int MidasMessage(const char *str)
 {
   char name[NAME_LENGTH];

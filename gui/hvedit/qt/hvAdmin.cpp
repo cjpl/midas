@@ -39,6 +39,10 @@
     email                : andreas.suter@psi.ch
 
   $Log$
+  Revision 1.4  2003/12/30 14:54:26  suter_a
+  "doxygenized" code, i.e. added comments which can be handled by doxygen in
+  order to generate html- and latex-docu.
+
   Revision 1.3  2003/10/27 11:22:59  suter_a
   use new QSettings for default settings. Changed the routines accordingly.
 
@@ -66,12 +70,7 @@
  *                                                                         *
  ***************************************************************************/
 
-/*
-#include <stdio.h>
-#include <string.h>
-*/
-
-#include <stdlib.h>
+//#include <stdlib.h>
 
 #include <qstring.h>
 #include <qsettings.h>
@@ -81,11 +80,11 @@
 #include "hvAdmin.h"
 
 //**********************************************************************
-// hvAdmin constructor
-//
-// Tries to read '$HOME/.qt/hvEdit' file in order to get the correct ODB pathes.
-// If '$HOME/.qt/hvEdit' doesn't exist, default pathes are tried.
-//**********************************************************************
+/*!
+ * <p>Tries to read '$HOME/.qt/hveditrc' file in order to get the correct ODB pathes.
+ * If '$HOME/.qt/hveditrc' doesn't exist, default pathes are tried, and a warning
+ * is sent to the MIDAS message system.
+ */
 hvAdmin::hvAdmin()
 {
   QSettings settings;
@@ -141,8 +140,9 @@ hvAdmin::hvAdmin()
 }
 
 //**********************************************************************
-// hvAdmin destructor
-//**********************************************************************
+/*!
+ * <p>Destroys the object.
+ */
 hvAdmin::~hvAdmin()
 {
 }

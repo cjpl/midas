@@ -15,6 +15,10 @@
     email                : andreas.suter@psi.ch
 
   $Log$
+  Revision 1.2  2003/12/30 14:54:26  suter_a
+  "doxygenized" code, i.e. added comments which can be handled by doxygen in
+  order to generate html- and latex-docu.
+
   Revision 1.1  2003/05/09 10:08:09  midas
   Initial revision
 
@@ -49,7 +53,7 @@ class Qt_Pwd : public Qt_Pwd_Base
 
   // Attributes
   private:
-    char *pwd;
+    char *pwd; //!< holds the password string
 
   // Slots
   public slots:
