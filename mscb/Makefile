@@ -10,7 +10,9 @@ OUTNAME       = msc
 CC            = gcc 
 FLAGS         = -Wall
 
-all: mscb.o
+all: $(OUTNAME)
+
+$(OUTNAME): mscb.o msc.o rpc.o
 	$(CC) $(FLAGS) mscb.o msc.o rpc.o -o $(OUTNAME)
 
 rpc.o: rpc.c rpc.h
