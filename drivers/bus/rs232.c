@@ -6,6 +6,9 @@
   Contents:     RS232 communication routines for MS-DOS and NT
 
   $Log$
+  Revision 1.4  2001/01/04 11:25:19  midas
+  Added flow control (0=off, 1=CTS/DSR, 2=XON/XOFF)
+
   Revision 1.3  2001/01/04 10:22:22  midas
   Read characters individually under Linux
 
@@ -31,6 +34,7 @@ typedef struct {
   char parity;
   int  data_bit;
   int  stop_bit;
+  int  flow_control;
 } RS232_SETTINGS;
 
 #define RS232_SETTINGS_STR "\
@@ -39,6 +43,7 @@ Baud = INT : 9600\n\
 Parity = CHAR : N\n\
 Data Bit = INT : 8\n\
 Stop Bit = INT : 1\n\
+Flow control = INT : 0\n\
 "
 
 typedef struct {
@@ -87,11 +92,11 @@ struct {
 
 /* ------------------------- rs232_open ----------------------------- */
 
-int rs232_open(char *port, int baud, char parity, int data_bit, int stop_bit)
+int rs232_open(char *port, int baud, char parity, int data_bit, int stop_bit, int flow_control)
 /*********************************************************************
 * Initialize serial port according to parameters. Install interrupt  *
 * handler and uninstall it on exit.                                  *
-* mode == 0: no handshake; 1: CTS/DSR; 2: XON/XOFF                   *
+* flow_control == 0: no handshake; 1: CTS/DSR; 2: XON/XOFF           *
 *********************************************************************/
 {
 #define CTS  0x10            /**** Bit masks for handshake lines ****/
@@ -435,7 +440,7 @@ int old_write_mark;
         /**** write received char into the ringbuffer ****/
         ccb[port].ring_buff[ccb[port].write_mark] = c;
 
-old_write_mark = ccb[port].write_mark;
+        old_write_mark = ccb[port].write_mark;
 
         ccb[port].write_mark = (ccb[port].write_mark + 1) % RING_BUFF_LEN;
 
@@ -450,8 +455,8 @@ old_write_mark = ccb[port].write_mark;
         if (ccb[port].write_mark == ccb[port].read_mark)
           {
           ccb[port].com_error = 1;
-cprintf("old_write_mark: %d, write_mark: %d, read_mark: %d\n\r",
-         old_write_mark, ccb[port].write_mark, ccb[port].read_mark);
+          cprintf("old_write_mark: %d, write_mark: %d, read_mark: %d\n\r",
+                   old_write_mark, ccb[port].write_mark, ccb[port].read_mark);
 
           ccb[port].read_mark = (ccb[port].read_mark + 1) % RING_BUFF_LEN;
           }
@@ -470,7 +475,7 @@ cprintf("old_write_mark: %d, write_mark: %d, read_mark: %d\n\r",
 
 #include <stdio.h>
 
-int rs232_open(char *port, int baud, char parity, int data_bit, int stop_bit)
+int rs232_open(char *port, int baud, char parity, int data_bit, int stop_bit, int flow_control)
 {
 char          str[80];
 DCB           dcb ;
@@ -597,7 +602,7 @@ COMMTIMEOUTS  CommTimeOuts;
 #include <stdlib.h>
 #include <stdarg.h>
 
-int rs232_open(char *port, int baud, char parity, int data_bit, int stop_bit)
+int rs232_open(char *port, int baud, char parity, int data_bit, int stop_bit, int flow_control)
 {
 int  fd, flags, i;
 char str[80];
@@ -643,8 +648,10 @@ struct {
   if (parity == 'O')
     tio.c_cflag |= PARENB | PARODD;
 
-  /* tio.c_cflag |= CRTSCTS; */
-  /* tio.c_iflag |= IXON | IXOFF; */
+  if (flow_control == 1)
+    tio.c_cflag |= CRTSCTS;
+  if (flow_control == 2)
+    tio.c_iflag |= IXON | IXOFF; 
 
   tio.c_lflag = 0;
   tio.c_cc[VMIN] = 1;
@@ -777,7 +784,8 @@ RS232_INFO    *info;
   /* open port */
   info->fd = rs232_open(info->settings.port, 
                         info->settings.baud, info->settings.parity, 
-                        info->settings.data_bit, info->settings.stop_bit);
+                        info->settings.data_bit, info->settings.stop_bit,
+                        info->settings.flow_control);
 
   if (info->fd < 0)
     return FE_ERR_HW;
