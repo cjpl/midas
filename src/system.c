@@ -14,6 +14,9 @@
                 Brown, Prentice Hall
 
   $Log$
+  Revision 1.72  2003/06/12 18:40:59  pierre
+  include ss_tape_get_blockn
+
   Revision 1.71  2003/05/02 09:03:01  midas
   Fixed buffer overflows by strlcpy()
 
@@ -4973,6 +4976,49 @@ struct mtop arg;
 
   return CM_SUCCESS;
 }
+
+/*------------------------------------------------------------------*/
+INT ss_tape_get_blockn(INT channel)
+/********************************************************************\
+Routine: ss_tape_get_blockn
+Purpose: Ask the tape channel for the present block number
+Input:
+INT   *channel          Channel identifier
+Function value:
+blockn:  >0 = block number, =0 option not available, <0 errno
+\********************************************************************/
+{
+  INT    status;
+  
+#ifdef OS_UNIX
+  struct mtpos arg;
+  
+  cm_enable_watchdog(FALSE);
+  status = ioctl(channel, MTIOCPOS, &arg);
+  cm_enable_watchdog(TRUE);
+  if (status < 0) {
+    if (errno == EIO)
+      return 0;
+    else {
+      cm_msg(MERROR, "ss_tape_get_blockn", strerror(errno));
+      return -errno;
+    }
+  }
+  return (arg.mt_blkno);
+
+#endif /* OS_UNIX */
+  
+#ifdef OS_WINNT
+  TAPE_GET_MEDIA_PARAMETERS media;
+  INT size;
+  /* I'm not sure the partition count corresponds to the block count */
+  status = GetTapeParameters((HANDLE) channel
+			     , GET_TAPE_MEDIA_INFORMATION 
+			     , &size, &media);
+  return (media.PartitionCount);
+#endif 
+}
+
 
 /*------------------------------------------------------------------*/
 
