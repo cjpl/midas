@@ -6,6 +6,9 @@
   Contents:     Command-line interface for the Midas Slow Control Bus
 
   $Log$
+  Revision 1.65  2004/04/05 10:10:27  midas
+  Fixed linux warnings
+
   Revision 1.64  2004/03/19 12:09:16  midas
   Upload with simplified CRC
 
@@ -1177,7 +1180,7 @@ void cmd_loop(int fd, char *cmd, int adr)
                   fflush(stdout);
                }
             }
-            printf("\n", i);
+            printf("%d\n", i);
             while (kbhit())
                getch();
          }
