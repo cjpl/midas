@@ -6,6 +6,10 @@
   Contents:     Command-line editor for ODBEdit
 
   $Log$
+  Revision 1.6  1998/11/02 08:41:41  midas
+  - Added fflush() at the beginning
+  - Fixed bug with <arrow up> under UNIX
+
   Revision 1.5  1998/10/29 14:52:17  midas
   <tab> completion now also works if not at the end of the line
 
@@ -70,6 +74,7 @@ BOOL  escape_flag = 0;
   printf(line);
   for (j=0 ; j<(int) strlen(line) ; j++)
     printf("\b");
+  fflush(stdout);
 
   do
     {
@@ -193,8 +198,12 @@ BOOL  escape_flag = 0;
       if (history[(hi + MAX_HISTORY - 1) % MAX_HISTORY][0])
         {
         hi = (hi + MAX_HISTORY - 1) % MAX_HISTORY;
-        for (j=0 ; j<(INT) strlen(line) ; j++)
-          printf("\b \b");
+        i = strlen(line);
+        printf("\r%s", prompt);
+        for (j=0 ; j<i ; j++)
+          printf(" ");
+        for (j=0 ; j<i ; j++)
+          printf("\b");
         memcpy(line, history[hi], 256);
         i = strlen(line);
         for (j=0 ; j<i ; j++)
@@ -208,8 +217,12 @@ BOOL  escape_flag = 0;
       if (history[hi][0])
         {
         hi = (hi+1) % MAX_HISTORY;
-        for (j=0 ; j<(INT) strlen(line) ; j++)
-          printf("\b \b");
+        i = strlen(line);
+        printf("\r%s", prompt);
+        for (j=0 ; j<i ; j++)
+          printf(" ");
+        for (j=0 ; j<i ; j++)
+          printf("\b");
         memcpy(line, history[hi], 256);
         i = strlen(line);
         for (j=0 ; j<i ; j++)
