@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.129  2000/05/24 08:00:32  midas
+  Use gethostbyaddr only when creating new elog entry -> fix hangups
+
   Revision 1.128  2000/05/23 13:45:48  midas
   Added possibility to use local files as attachments (via /EL/?cmd=New&file=xxx)
 
@@ -411,7 +414,7 @@ char _value[MAX_PARAM][VALUE_SIZE];
 char _text[TEXT_SIZE];
 char *_attachment_buffer[3];
 INT  _attachment_size[3];
-char remote_host_name[256];
+struct in_addr remote_addr;
 INT  _sock;
 BOOL elog_mode = FALSE;
 
@@ -2787,6 +2790,7 @@ char   *buffer[3], *p, *pitem;
 HNDLE  hDB, hkey;
 char   att_file[3][256];
 int    i, fh, size;
+struct hostent *phe;
 
   cm_get_experiment_database(&hDB, NULL);
   strcpy(att_file[0], getparam("attachment0"));
@@ -2893,9 +2897,19 @@ int    i, fh, size;
     }
 
   /* add remote host name to author */
+  phe = gethostbyaddr((char *) &remote_addr, 4, PF_INET);
+  if (phe == NULL)
+    {
+    /* use IP number instead */
+    strcpy(str, (char *)inet_ntoa(remote_addr));
+    }
+  else
+    strcpy(str, phe->h_name);
+      
+
   strcpy(author, getparam("author"));
   strcat(author, "@");
-  strcat(author, remote_host_name);
+  strcat(author, str);
 
   str[0] = 0;
   if (*getparam("edit"))
@@ -7549,15 +7563,8 @@ INT                  last_time=0;
       ling.l_linger = 600;
       setsockopt(_sock, SOL_SOCKET, SO_LINGER, (char *) &ling, sizeof(ling));
 
-      /* ret remote host name */
-      phe = gethostbyaddr((char *) &acc_addr.sin_addr, 4, PF_INET);
-      if (phe == NULL)
-        {
-        /* use IP number instead */
-        strcpy(remote_host_name, (char *)inet_ntoa(acc_addr.sin_addr));
-        }
-      else
-        strcpy(remote_host_name, phe->h_name);
+      /* save remote host address */
+      memcpy(&remote_addr, &(acc_addr.sin_addr), sizeof(remote_addr));
 
       memset(net_buffer, 0, sizeof(net_buffer));
       len = 0;
