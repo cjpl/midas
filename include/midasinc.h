@@ -7,6 +7,9 @@
   Contents:     Includes all necessary include files
 
   $Log$
+  Revision 1.4  1999/01/18 17:25:36  pierre
+  - Add extra lib for dm_() for OS_VxWorks
+
   Revision 1.3  1998/10/28 11:06:42  midas
   Added NO_PTY for solaris and ultrix
 
@@ -99,6 +102,13 @@
 #include <ioLib.h>
 #include <netinet/tcp.h>
 #include <sys/stat.h>
+
+#ifdef DM_DUAL_THREAD
+#include <semLib.h>
+#include <taskLib.h>
+#include <symLib.h>
+#include <errnoLib.h>
+#endif
 
 #endif
 
