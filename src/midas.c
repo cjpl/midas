@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.10  1999/01/18 17:50:35  pierre
+  - Added dm_...() functions for Dual Memory buffer handling.
+
   Revision 1.9  1998/12/11 17:00:02  midas
   Fixed a few typos
 
@@ -38,7 +41,6 @@
 #include "msystem.h"
 
 /*------------------------------------------------------------------*/
-
 /* data type sizes */
 INT tid_size[] = {
   0, /* tid == 0 not defined                               */
@@ -6647,7 +6649,7 @@ INT rpc_register_functions(RPC_LIST *new_list, INT (*func)(INT,void**))
 
   Function value:
    RPC_SUCCESS              Successful completion
-   RPC_NO_MEMORY            Out of memeory
+   RPC_NO_MEMORY            Out of memory
    RPC_DOUBLE_DEFINED       
 
 \********************************************************************/
@@ -12795,6 +12797,764 @@ INT  size, i;
     return BM_MORE_EVENTS;
 
   return CM_SUCCESS;
+}
+
+/*------------------------------------------------------------------*/
+/********************************************************************\
+*                                                                    *
+*                 Semaphore functions                                *
+*                                                                    *
+* dm_semaphore_create(SEM_TYPE sem):                                 *
+* dm_semaphore_release(SEM_TYPE sem);                                *
+* dm_semaphore_give(SEM_TYPE sem);                                   *
+* dm_semaphore_wait_forever(SEM_TYPE sem);                           *
+* dm_semaphore_wait(SEM_TYPE sem, INT timeout);                      *
+*                                                                    *
+*                                                                    *
+*                                                                    *
+\********************************************************************/
+#ifdef OS_VXWORKS
+#define SEM_TYPE SEM_ID
+#else
+#define SEM_TYPE int
+#endif
+
+#define DM_FLUSH       10    /* flush request for DUAL_THREAD */
+#define DM_SEND        11    /* FULL send request for DUAL_THREAD */
+#define DM_KILL        12    /* Kill request for 2nd thread */  
+#define DM_TIMEOUT     13    /* "timeout" return state in flush request for DUAL_THREAD */  
+#define DM_ACTIVE_NULL 14    /* "both buffer were/are FULL with no valid area"
+                                 return state */
+#define DM_POSTPONE   400
+
+/* prototypes */
+INT  dm_semaphore_create(SEM_TYPE *sem);
+void dm_semaphore_release(SEM_TYPE sem);
+void dm_semaphore_give(SEM_TYPE sem);
+void dm_semaphore_wait_forever(SEM_TYPE sem);
+INT  dm_semaphore_wait(SEM_TYPE sem, INT timeout);
+
+/*------------------------------------------------------------------*/
+INLINE INT  dm_semaphore_create(SEM_TYPE *sem)
+{
+#ifdef OS_VXWORKS
+    if ((*sem = semBCreate(SEM_Q_FIFO, SEM_EMPTY)) == NULL)
+      return 0;
+    return CM_SUCCESS;
+#else
+    printf("dm_semaphore_create(SEM_TYPE sem) not yet implemented for this OS\n");
+    return 0;
+#endif    
+}
+
+/*------------------------------------------------------------------*/
+INLINE void dm_semaphore_release(SEM_TYPE sem)
+{
+#ifdef OS_VXWORKS
+  semDelete(sem);
+#else
+    printf("dm_semaphore_release(SEM_TYPE sem) not yet implemented for this OS\n");
+#endif    
+}
+
+/*------------------------------------------------------------------*/
+INLINE void dm_semaphore_give(SEM_TYPE sem)
+{
+#ifdef OS_VXWORKS
+    semGive(sem);
+#else
+    printf("dm_semaphore_give(SEM_TYPE sem) not yet implemented for this OS\n");
+#endif    
+}
+
+/*------------------------------------------------------------------*/
+INLINE void dm_semaphore_wait_forever(SEM_TYPE sem)
+{
+#ifdef OS_VXWORKS
+  semTake(sem, WAIT_FOREVER);
+#else
+  printf("dm_semaphore_wait_forever(SEM_TYPE sem) not yet implemented for this OS\n");
+#endif    
+}
+
+/*------------------------------------------------------------------*/
+INLINE INT dm_semaphore_wait(SEM_TYPE sem, int timeout)
+/********************************************************************\
+  Routine: dm_sempahore_wait
+
+  Purpose: Setup a dual memory buffer. Has to be called initially before
+           any other dm_xxx function
+  Input:
+    INT    size             Size in bytes
+  Output:
+    none
+  Function value:
+    CM_SUCCESS              Successful completion
+    DM_TIMEOUT              Time out
+\********************************************************************/
+{
+#ifdef OS_VXWORKS
+  INT status;
+  status = semTake(sem, timeout);
+  if (status == ERROR)
+    return DM_TIMEOUT;
+  else 
+    return CM_SUCCESS;
+#else
+  printf("dm_semaphore_wait(SEM_TYPE sem) not yet implemented for this OS\n");
+  return CM_SUCCESS;
+#endif    
+}
+/*------------------------------------------------------------------*/
+
+/*------------------------------------------------------------------*/
+/********************************************************************\
+*                                                                    *
+*                 Dual memory buffer functions                       *
+*                                                                    *
+* Provide a dual memory buffer scheme for handling front-end         *
+* event. This code as been requested for allowing contemporary       *
+* task handling a)acquisition, b)network transfer if possible.       *
+* The pre-compiler switch will determine the mode of operation.      *
+* if DM_DUAL_THREAD is defined in mfe.c, it is expected to have      *
+* a seperate task taking care of the dm_area_send                    *
+*                                                                    *
+* "*" : visible functions                                            *
+* dm_buffer_create():     *Setup the dual memory buffer              *
+*                          If in VxWorks : Setup semaphore           *
+*                                          Spawn second thread       *
+* dm_buffer_release():    *Release memory allocation for dm          *
+*                          If in VxWorks : Force a kill of 2nd thread*
+*                                          Remove semaphore          *
+* dm_area_full():         *Check for both area being full            *
+*                          None blocking, may be used for interrupt  *
+*                          disable.                                  *
+* dm_pointer_get()     :  *Check memory space and return pointer     *
+*                          Blocking function with timeout if no more *
+*                          space for next event. If error will abort.*
+* dm_pointer_increment(): *Move pointer to next free location        *
+*                          None blocking. performs bm_send_event if  *
+*                          local connection.                         *
+* dm_area_send():         *Transfer FULL buffer(s)                   *
+*                          None blocking function.                   *
+*                          if DUAL_THREAD: Give sem_send semaphore   *
+*                          else transfer FULL buffer                 *
+* dm_area_flush():        *Transfer all remaining events from dm     *
+*                          Blocking function with timeout            *
+*                          if DUAL_THREAD: Give sem_flush semaphore. * 
+* dm_async_area_send():    Secondary thread handling DUAL_THREAD     *
+*                          mechanism. Serves 2 requests:             *
+*                          dm_send:  Transfer FULL buffer only.      *
+*                          dm_flush: Transfer ALL buffers.           *
+* dm_area_switch():        internal, used by dm_pointer_get()        *
+* dm_buffer_full():        internal: check space in current buffer   *
+* dm_buffer_send():        internal: send data for given area        *
+\********************************************************************/
+
+typedef struct {
+  char *        pt;       /* top pointer    memory buffer          */
+  char *        pw;       /* write pointer  memory buffer          */
+  char *        pe;       /* end   pointer  memory buffer          */
+  char *        pb;       /* bottom pointer memory buffer          */
+  BOOL          full;     /* TRUE if memory buffer is full         */
+  DWORD       serial;     /* full buffer serial# for evt order     */
+  } DMEM_AREA;
+
+typedef struct {
+  DMEM_AREA *  pa;     /* active memory buffer */
+  DMEM_AREA area1;     /* mem buffer area 1 */
+  DMEM_AREA area2;     /* mem buffer area 2 */
+  DWORD    serial;     /* overall buffer serial# for evt order     */
+  INT      action;     /* for multi thread configuration */
+  SEM_TYPE sem_send;   /* semaphore for dm_async_area_send */
+  SEM_TYPE sem_flush;  /* semaphore for dm_async_area_flush */
+  } DMEM_BUFFER;
+
+DMEM_BUFFER  dm;
+static INT   _send_sock;
+extern       _opt_tcp_size;
+
+/*------------------------------------------------------------------*/
+INT dm_buffer_create(INT size)
+/********************************************************************\
+  Routine: dm_buffer_create
+
+  Purpose: Setup a dual memory buffer. Has to be called initially before
+           any other dm_xxx function
+  Input:
+    INT    size             Size in bytes
+  Output:
+    none
+  Function value:
+    CM_SUCCESS              Successful completion
+    BM_NO_MEMORY            Out of memory
+\********************************************************************/
+{
+  
+  dm.area1.pt = malloc(size);
+  if (dm.area1.pt == NULL)
+    return (BM_NO_MEMORY);
+  dm.area2.pt = malloc(size);
+  if (dm.area2.pt == NULL)
+    return (BM_NO_MEMORY);
+  
+  memset(dm.area1.pt, 0, size);
+  memset(dm.area2.pt, 0, size);
+  
+  dm.area1.pb = dm.area1.pt + size;
+  dm.area1.pw = dm.area1.pe = dm.area1.pt;
+  dm.area2.pb = dm.area2.pt + size;
+  dm.area2.pw = dm.area2.pe = dm.area2.pt;
+  
+  /* activate first area */
+  dm.pa = &dm.area1;
+  
+  /* Default not full */
+  dm.area1.full = dm.area2.full = FALSE;
+  
+  /* Reset serial buffer number with proper starting sequence */
+  dm.area1.serial = 0;
+  dm.area2.serial = 1;
+  /* insure proper serial on next increment */
+  dm.serial = 1;
+  
+  _send_sock = rpc_get_event_sock();
+  
+#ifdef DM_DUAL_THREAD
+  
+#ifdef OS_VXWORKS
+  /* create semaphore */
+  if (dm_semaphore_create(&dm.sem_send) != CM_SUCCESS)
+    {
+      cm_msg(MERROR,"dm_buffer_create","error in dm_semaphore_create send");
+      return 0;
+    }
+  if (dm_semaphore_create(&dm.sem_flush) != CM_SUCCESS)
+    {
+      cm_msg(MERROR,"dm_buffer_create","error in dm_semaphore_create flush");
+      return 0;
+    }
+
+  /* spawn async_area_send */
+  taskSpawn ("areaSend",120,0,20000, (FUNCPTR) dm_async_area_send
+	     ,0,0,0,0,0,0,0,0,0,0);
+#else
+  printf("spawned task not yet implemented for this OS\n");
+  return 0;
+#endif /* OS */
+  
+#endif /* DM_DUAL_THREAD */
+  
+  return CM_SUCCESS;
+}
+
+/*------------------------------------------------------------------*/
+INT dm_buffer_release(void)
+/********************************************************************\
+  Routine: dm_buffer_release
+
+  Purpose: Release dual memory buffers
+  Input:
+    none
+  Output:
+    none
+  Function value:
+    CM_SUCCESS              Successful completion
+\********************************************************************/
+{
+  if (dm.area1.pt)
+    free (dm.area1.pt);
+  if (dm.area2.pt)
+    free (dm.area2.pt);
+
+  dm.serial = 0;
+  dm.area1.full = dm.area2.full = TRUE;
+  dm.area1.serial = dm.area2.serial = 0;
+
+#ifdef DM_DUAL_THREAD
+  /* kill spawned async_area_send */
+    dm.action = DM_KILL;
+    dm_semaphore_give(dm.sem_send);
+    dm_semaphore_give(dm.sem_flush);
+    ss_sleep(500);
+
+  /* release semaphore */
+  dm_semaphore_release(dm.sem_send);
+  dm_semaphore_release(dm.sem_flush);
+#endif
+
+  return CM_SUCCESS;
+}
+
+/*------------------------------------------------------------------*/
+INLINE DMEM_AREA * dm_area_switch(void)
+/********************************************************************\
+  Routine: dm_area_switch
+
+  Purpose: set active area to the other empty area or NULL if both
+           area are full.
+  Input:
+    none
+  Output:
+    none
+  Function value:
+    char *            Pointer to active area or NULL
+\********************************************************************/
+{
+  if (!dm.area1.full)
+    return (&(dm.area1));
+  else if (!dm.area2.full)
+    return (&(dm.area2));
+  return (NULL);
+}
+
+/*------------------------------------------------------------------*/
+BOOL dm_area_full (void)
+/********************************************************************\
+  Routine: dm_area_full
+
+  Purpose: Test if both area are full in order to block interrupt
+  Input:
+    none
+  Output:
+    none
+  Function value:
+    BOOL	       TRUE if not enough space for another event
+\********************************************************************/
+{
+  if (dm.pa == NULL || (dm.area1.full && dm.area2.full))
+    return TRUE;
+  return FALSE;
+}
+
+/*------------------------------------------------------------------*/
+INLINE BOOL dm_buffer_full (void)
+/********************************************************************\
+  Routine: dm_buffer_full
+
+  Purpose: Test if there is sufficient space in either event buffer 
+	         for another event.
+  Input:
+    none
+  Output:
+    none
+  Function value:
+    BOOL	       TRUE if not enough space for another event
+\********************************************************************/
+{
+  INT free;
+
+  /* catch both full areas, waiting for transfer */
+  if (dm.pa == NULL)
+    return TRUE;
+  else if (!dm.pa->full)
+    free = (PTYPE)dm.pa->pb - (PTYPE)dm.pa->pw;
+  else if (!dm.area1.full)
+    free = (PTYPE)dm.area1.pb - (PTYPE)dm.area1.pw;
+  else if (!dm.area2.full)
+    free = (PTYPE)dm.area2.pb - (PTYPE)dm.area2.pw;
+  return (free < MAX_EVENT_SIZE+sizeof(EVENT_HEADER)+sizeof(INT));
+}
+
+/*------------------------------------------------------------------*/
+EVENT_HEADER *dm_pointer_get(void)
+/********************************************************************\
+  Routine: dm_pointer_get
+
+  Purpose: Get pointer to next free location in event buffer.
+           after 10 tries, it times out return NULL indicating a 
+           serious problem, i.e. abort.
+  REMARK : Cannot be called twice in a raw due to +sizeof(INT)
+  Input:
+    none
+  Output:
+    DM_BUFFER * dm    local valid dm to work on
+  Function value:
+    EVENT_HEADER *    Pointer to free location
+    NULL              cannot after several attempt get free space => abort
+\********************************************************************/
+{
+  int timeout, status;
+  
+  /* shortcut for speed */
+  if (!dm_buffer_full())
+    return (EVENT_HEADER *) (dm.pa->pw + sizeof(INT));
+  
+  /* We have to switch buffer */
+  timeout = ss_millitime();   /* with timeout */
+  while (dm_buffer_full() && ((ss_millitime() - timeout) < 5000))
+    { /* not enough space for event in current buffer */
+      if (dm.pa != NULL)
+        { /* Current area is full */
+	  
+          /* Tag current are with global dm.serial for order consistency */
+          dm.pa->serial = dm.serial++;
+	  
+          /* mark current area full */
+          dm.pa->full = TRUE;
+	  
+	  /* Trigger or do data transfer (Now/don't wait) */
+  	  if ((status = dm_area_send()) == RPC_NET_ERROR)
+	    {
+	      cm_msg(MERROR,"dm_pointer_get()","Net error or timeout %i",status);
+	      return NULL;
+	    }
+	  
+          /* switch to other area
+	     if both area are FULL return NULL */
+          dm.pa = dm_area_switch();
+	  
+	  /* Check if valid pointer */
+	  if (dm.pa != NULL)
+	    return (EVENT_HEADER *) (dm.pa->pw + sizeof(INT));
+	}	  
+      else 
+	{
+	  /* Both area are full, force a transfer now since rate is so high. 
+	     Stay in while loop until area has been switched */
+  	  if ((status = dm_area_flush()) == RPC_NET_ERROR)
+	    {
+	      cm_msg(MERROR,"dm_pointer_get()","Net error or timeout %i", status);
+	      return NULL;
+	    }
+	}
+    } /* while full and not timeout */
+  
+  if ((ss_millitime() - timeout) > 5000)
+    {
+      /* Time running out abort */
+      cm_msg(MERROR,"dm_pointer_get","Timeout due to buffer full");
+      return NULL;
+    }
+  else
+    return (EVENT_HEADER *) (dm.pa->pw + sizeof(INT));
+}
+
+/*------------------------------------------------------------------*/
+INT dm_pointer_increment(INT buffer_handle, INT event_size)
+/********************************************************************\
+  Routine: dm_pointer_increment
+
+  Purpose: Increment write pointer of event buffer after an event
+           has been copied into the buffer (at an address previously
+           obtained via dm_pointer_get)
+  Input:
+    INT buffer_handle         Buffer handle event should be sent to
+    INT event_size            Event size in bytes including header
+  Output:
+    none
+  Function value:
+    CM_SUCCESS                Successful completion
+    status                    from bm_send_event for local connection
+\********************************************************************/
+{
+INT aligned_event_size;
+
+  /* if not connected remotely, use bm_send_event */
+ if (_send_sock == 0)
+   return bm_send_event(buffer_handle, dm.pa->pw+sizeof(INT), event_size, SYNC);
+
+  aligned_event_size = ALIGN(event_size);
+
+  /* copy buffer handle */
+  *((INT *) dm.pa->pw) = buffer_handle;
+
+  /* adjust write pointer */
+  dm.pa->pw += sizeof(INT) + aligned_event_size;
+
+  /* adjust end pointer */
+  dm.pa->pe = dm.pa->pw;
+
+  return CM_SUCCESS;
+}
+
+/*------------------------------------------------------------------*/
+INLINE INT dm_buffer_send(DMEM_AREA * larea)
+/********************************************************************\
+  Routine: dm_buffer_send
+
+  Purpose: Ship data to the cache in fact!
+           Basically the same do loop is done in the send_tcp.
+           but _opt_tcp_size preveal if <= NET_TCP_SIZE.
+           Introduced for bringing tcp option to user code.
+  Input:
+    DMEM_AREA * larea   The area to work with.
+  Output:
+    none
+  Function value:
+    CM_SUCCESS       Successful completion
+    DM_ACTIVE_NULL   Both area were/are full
+    RPC_NET_ERROR    send error
+\********************************************************************/
+{
+  INT  tot_size, j, i, nfrag, nwrite;
+  char * lpt;
+
+  if (larea == NULL)
+    return DM_ACTIVE_NULL;
+
+  lpt = larea->pt;
+
+  /* Get overall buffer size */
+  tot_size = (PTYPE) larea->pe - (PTYPE) lpt;
+
+  /* shortcut for speed */
+  if (tot_size == 0)
+    return CM_SUCCESS;
+
+  nfrag  =    tot_size / _opt_tcp_size;
+  nfrag += (((tot_size % _opt_tcp_size)==0) ? 0 : 1);
+
+  /*  printf("dm_buffer_send size %i, frag %i, sock %i pt %p\n",
+	 tot_size, nfrag, _send_sock, lpt); 
+  */
+
+  for (j=0; j < nfrag; j++)
+    {
+      /* send buffer */
+      nwrite = send_tcp(_send_sock, lpt, (tot_size > _opt_tcp_size) ? _opt_tcp_size : tot_size, 0);
+      if (i < 0)
+        {
+          cm_msg(MERROR, "dm_buffer_send", "send_tcp() failed");
+          return RPC_NET_ERROR;
+        }
+      lpt += nwrite;      
+      tot_size -= nwrite;  
+    }
+
+  /* reset area */
+  larea->pw = larea->pe = larea->pt;
+  larea->full = FALSE;
+  return CM_SUCCESS;
+}
+
+/*------------------------------------------------------------------*/
+INT dm_area_send(void)
+/********************************************************************\
+  Routine: dm_area_send
+
+  Purpose: Empty the FULL area only in proper event order
+           Meant to be use either in mfe.c scheduler on every event
+           
+  Dual memory scheme: 
+   DM_DUAL_THREAD : Trigger sem_send
+   !DM_DUAL_THREAD: empty full buffer in order, return active to area1
+                    if dm.pa is NULL (were both full) and now both are empty
+
+  Input:
+    none
+  Output:
+    none
+  Function value:
+    CM_SUCCESS                Successful completion
+    RPC_NET_ERROR             send error
+\********************************************************************/
+{
+#ifdef DM_DUAL_THREAD
+  /* force a DM_SEND if possible. Don't wait for completion */
+  dm.action = DM_SEND;
+  dm_semaphore_give(dm.sem_send);
+  return CM_SUCCESS;
+#else
+  INT status;
+  
+  /* if no DUAL thread everything is local then */
+  if (dm.area1.full || dm.area2.full)
+    {
+      /* select the full area */
+      if (dm.area1.full && dm.area2.full)
+        if (dm.area1.serial <= dm.area2.serial)
+          status = dm_buffer_send(&dm.area1);
+        else
+          status = dm_buffer_send(&dm.area2);
+      else if (dm.area1.full)
+        status = dm_buffer_send(&dm.area1);
+      else if (dm.area2.full)
+        status = dm_buffer_send(&dm.area2);
+      if (status != CM_SUCCESS)
+        return status;                  /* catch transfer error too */
+    }
+  if (dm.pa == NULL)
+    {
+    printf(" sync send dm.pa:%p full 1%i 2%i\n", dm.pa, dm.area1.full, dm.area2.full);
+    dm.pa = &dm.area1;
+    }
+  return CM_SUCCESS;
+#endif
+}
+
+/*------------------------------------------------------------------*/
+void dm_async_area_send(void)
+/********************************************************************\
+  Routine: dm_async_area_send
+
+  Purpose: async send events doing a double purpose:
+        a) send full buffer if found (DM_SEND) set by dm_buffer_full
+        b) flush full areas (DM_FLUSH) set by dm_area_flush
+  Input:
+    none
+  Output:
+    none
+  Function value:
+    none
+\********************************************************************/
+{
+#ifdef DM_DUAL_THREAD
+  INT status, timeout;
+  
+  printf("Waiting for Semaphores initialization ... in task areaSend\n");
+  
+  /* Check or Wait for semaphore to be setup */
+  timeout = ss_millitime();
+  while ((ss_millitime()-timeout < 3000) && (dm.sem_send == 0))
+    ss_sleep(200);
+  if (dm.sem_send == 0)
+    goto kill;
+  
+  /* Main FOREVER LOOP */
+  printf("Waiting for Semaphores... in task areaSend\n");
+  while (1)
+    {
+      if (dm.pa != NULL)
+	/* wait semaphore here ........*/ 
+	dm_semaphore_wait_forever(dm.sem_send);
+      if (dm.action == DM_SEND)
+	{
+	  /* DM_SEND : Empty a single full buffer only. */
+	  if (dm.area1.full || dm.area2.full)
+	    {
+	      /* select the full area */
+	      if (dm.area1.full && dm.area2.full)
+		if (dm.area1.serial <= dm.area2.serial)
+		  status = dm_buffer_send(&dm.area1);
+		else
+		  status = dm_buffer_send(&dm.area2);
+	      else if (dm.area1.full)
+		status = dm_buffer_send(&dm.area1);
+	      else if (dm.area2.full)
+		status = dm_buffer_send(&dm.area2);
+	      if (status == RPC_NET_ERROR)
+		{
+		  cm_msg(MERROR,"dm_async_area_send","network error");
+		  goto kill;
+		}
+	      /* but by now both area may be full again and dm.pa shows NULL.
+		 Check dm.pa and full if so force another send buffer before
+		 returning to wait semaphore.
+		 The goal here is to never return with dm.pa==NULL */
+	      /*	      if (dm.pa == NULL)
+		{
+		  printf(" Async send dm.pa %p  (1)%i (2)%i\n",
+			 dm.pa, dm.area1.pw-dm.area1.pt,
+			 dm.area2.pw-dm.area2.pt);
+		}
+	      */
+	    } /* go back waiting for semaphore */
+    	} /* if DM_SEND */
+      
+      /* check for flush */
+      if (dm.action == DM_FLUSH)
+	{
+	  /* DM_FLUSH: User is waiting for completion (i.e. No more incomming 
+	     events) Empty both are in order */
+	  /* select in order both area independently of being full or not*/
+	  if (dm.area1.serial <= dm.area2.serial)
+	    {
+	      status = dm_buffer_send(&dm.area1);
+	      if (status == RPC_NET_ERROR)
+		goto error;
+	      status = dm_buffer_send(&dm.area2);
+	      if (status == RPC_NET_ERROR)
+		goto error;
+	    }
+	  else
+	    {
+	      status = dm_buffer_send(&dm.area2);
+	      if (status == RPC_NET_ERROR)
+		goto error;
+	      status = dm_buffer_send(&dm.area1);
+	      if (status == RPC_NET_ERROR)
+		goto error;
+	    }
+	  
+	  /* reset area */
+	  dm.pa = &dm.area1;
+	  
+	  /* release user */
+	  dm_semaphore_give(dm.sem_flush);
+	} /* if FLUSH */
+      if (dm.action == DM_KILL)
+	goto kill;
+      
+    } /* FOREVER (go back wainting for semaphore) */
+  
+  /* kill spawn now */
+ error:
+  cm_msg(MERROR,"dm_area_flush","aSync Net error");
+ kill:
+  dm_semaphore_give(dm.sem_flush);
+  cm_msg(MERROR,"areaSend","task areaSend exiting now");  
+  exit;
+#else
+  printf("DM_DUAL_THREAD not defined\n");
+#endif
+}
+
+/*------------------------------------------------------------------*/
+INT dm_area_flush(void)
+/********************************************************************\
+  Routine: dm_area_flush
+
+  Purpose: Flush all the events in the areas.
+           Used in mfe for BOR events, periodic events and
+           if rate to low in main loop once a second. The standard
+           data transfer should be done/triggered by dm_area_send (sync/async)
+           in dm_pointer_get(). 
+  Input:
+    none
+  Output:
+    none
+  Function value:
+    CM_SUCCESS       Successful completion
+    RPC_NET_ERROR    send error
+    DM_TIMEOUT       time out on DM_DUAL_THREAD
+\********************************************************************/
+{
+  INT status;
+#ifdef DM_DUAL_THREAD
+  /* request FULL flush */
+  dm.action = DM_FLUSH;
+  dm_semaphore_give(dm.sem_send);
+  
+  /* important to wait for completion before continue with timeout
+     timeout specifide in ticks, (1/60 sec I think)*/
+  status = dm_semaphore_wait(dm.sem_flush,120);
+  return status;
+#else
+  /* full flush done here */
+  /* select in order both area independently of being full or not*/
+	if (dm.area1.serial <= dm.area2.serial)
+	  {
+	    status = dm_buffer_send(&dm.area1);
+	    if (status == RPC_NET_ERROR)
+	      return status;
+	    status = dm_buffer_send(&dm.area2);
+	    if (status == RPC_NET_ERROR)
+	      return status;
+	  }
+	else
+	  {
+	    status = dm_buffer_send(&dm.area2);
+	    if (status == RPC_NET_ERROR)
+	      return status;
+	    status = dm_buffer_send(&dm.area1);
+	    if (status == RPC_NET_ERROR)
+	      return status;
+    }
+  /* reset current area */
+  dm.pa = &dm.area1;
+  return CM_SUCCESS;
+#endif
 }
 
 /*------------------------------------------------------------------*/
