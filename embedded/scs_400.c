@@ -9,6 +9,9 @@
                 for SCS-400 thermo couple I/O
 
   $Log$
+  Revision 1.22  2003/04/16 09:48:50  midas
+  Turned off PID loop by default
+
   Revision 1.21  2003/04/16 09:40:31  midas
   Added PID_CONTROL
 
@@ -80,7 +83,7 @@ char code node_name[] = "SCS-400";
 
 /*---- Define variable parameters returned to the CMD_GET_INFO command ----*/
 
-#define PID_CONTROL      // activate/deactivate PID control loop
+#undef PID_CONTROL      // activate/deactivate PID control loop
 
 /* data buffer (mirrored in EEPROM) */
 
@@ -335,7 +338,7 @@ unsigned long        expired;
 
 /*------------------------------------------------------------------*/
 
-#ifdef CONTROL_4
+#ifdef PID_CONTROL
 
 void do_control(void)
 {
@@ -380,7 +383,7 @@ void user_loop(void)
   /* read temperature */
   adc_read();
 
-#ifdef CONTROL_4
+#ifdef PID_CONTROL
   /* do regulation */
   do_control();
 #endif
