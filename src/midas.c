@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.179  2003/03/22 07:06:47  olchansk
+  prevent infinite loop in hs_read() and hs_dump() when reading broken history files.
+
   Revision 1.178  2003/01/14 12:19:23  midas
   Removed unnecessary code
 
@@ -15237,8 +15240,15 @@ char         *cache;
   old_def_offset = -1;
   *n = 0;
   prev_time = 0;
+  last_irec_time = 0;
   do
     {
+    if (irec.time < last_irec_time)
+      {
+      cm_msg(MERROR, "hs_read", "corrupted history data: time does not increase: %d -> %d",last_irec_time,irec.time);
+      *tbsize = *dbsize = *n = 0;
+      return HS_FILE_ERROR;
+      }
     last_irec_time = irec.time;
     if (irec.event_id == event_id &&
         irec.time <= end_time &&
@@ -15535,8 +15545,14 @@ struct tm    *tms;
   /* read records, skip wrong IDs */
   old_def_offset = -1;
   prev_time = 0;
+  last_irec_time = 0;
   do
     {
+    if (irec.time < last_irec_time)
+      {
+      cm_msg(MERROR, "hs_dump", "corrupted history data: time does not increase: %d -> %d",last_irec_time,irec.time);
+      return HS_FILE_ERROR;
+      }
     last_irec_time = irec.time;
     if (irec.event_id == event_id &&
         irec.time <= end_time &&
