@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.164  2002/06/25 19:39:48  pierre
+  doc++ functions
+
   Revision 1.163  2002/06/25 19:00:36  pierre
   doc++ functions
 
@@ -15656,42 +15659,35 @@ char *pc;
     }
 }
 
+/** @name el_submit()
+\begin{description}
+\item[Description:] Submit an ELog entry.
+\item[Remarks:] .
+\item[Example:] \begin{verbatim}
+  \end{verbatim}
+\end{description}
+@memo submit an Elog entry.
+@param run Run Number.
+@param author Message author.
+@param type Message type.
+@param system Message system.
+@param subject Subject.
+@param text Message text.
+@param reply_to In reply to this message.
+@param encoding Text encoding, either HTML or plain.
+@param afilename1/2/3 File name of attachment.
+@param buffer1/2/3 File contents.
+@param buffer_size1/2/3 Size of buffer in bytes.
+@param tag If given, edit existing message.
+@param tag_size Maximum size of tag.
+@return EL_SUCCESS
+*/
 INT el_submit(int run, char *author, char *type, char *system, char *subject,
               char *text, char *reply_to, char *encoding,
               char *afilename1, char *buffer1, INT buffer_size1,
               char *afilename2, char *buffer2, INT buffer_size2,
               char *afilename3, char *buffer3, INT buffer_size3,
               char *tag, INT tag_size)
-/********************************************************************\
-
-  Routine: el_submit
-
-  Purpose: Submit an ELog entry
-
-  Input:
-    int    run              Run number
-    char   *author          Message author
-    char   *type            Message type
-    char   *system          Message system
-    char   *subject         Subject
-    char   *text            Message text
-    char   *reply_to        In reply to this message
-    char   *encoding        Text encoding, either HTML or plain
-
-    char   *afilename1/2/3  File name of attachment
-    char   *buffer1/2/3     File contents
-    INT    *buffer_size1/2/3 Size of buffer in bytes
-    char   *tag             If given, edit existing message
-    INT    *tag_size        Maximum size of tag
-
-  Output:
-    char   *tag             Message tag in the form YYMMDD.offset
-    INT    *tag_size        Size of returned tag
-
-  Function value:
-    EL_SUCCESS              Successful completion
-
-\********************************************************************/
 {
   if (rpc_is_remote())
     return rpc_call(RPC_EL_SUBMIT, run, author, type, system, subject,
@@ -16618,141 +16614,144 @@ char    *buffer;
 
 BOOL al_evaluate_condition(char *condition, char *value)
 {
-HNDLE  hDB, hkey;
-int    i, j, index, size;
-KEY    key;
-double value1, value2;
-char   str[256], op[3], function[80];
-char   data[10000];
-DWORD  time;
-
+  HNDLE  hDB, hkey;
+  int    i, j, index, size;
+  KEY    key;
+  double value1, value2;
+  char   str[256], op[3], function[80];
+  char   data[10000];
+  DWORD  time;
+  
   strcpy(str, condition);
   op[1] = op[2] = 0;
   value1 = value2 = 0;
   index = 0;
-
+  
   /* find value and operator */
   for (i=strlen(str)-1 ; i>0 ; i--)
     if (strchr("<>=!", str[i]) != NULL)
       break;
-  op[0] = str[i];
-  value2 = atof(str+i+1);
-  str[i] = 0;
-
-  if (i>0 && strchr("<>=!", str[i-1]))
-    {
-    op[1] = op[0];
-    op[0] = str[--i];
+    op[0] = str[i];
+    value2 = atof(str+i+1);
     str[i] = 0;
-    }
-
-  i--;
-  while (i>0 && str[i] == ' ')
-    i--;
-  str[i+1] = 0;
-
-  /* check if function */
-  function[0] = 0;
-  if (str[i] == ')')
+    
+    if (i>0 && strchr("<>=!", str[i-1]))
     {
-    str[i--] = 0;
-    if (strchr(str, '('))
+      op[1] = op[0];
+      op[0] = str[--i];
+      str[i] = 0;
+    }
+    
+    i--;
+    while (i>0 && str[i] == ' ')
+      i--;
+    str[i+1] = 0;
+    
+    /* check if function */
+    function[0] = 0;
+    if (str[i] == ')')
+    {
+      str[i--] = 0;
+      if (strchr(str, '('))
       {
-      *strchr(str, '(') = 0;
-      strcpy(function, str);
-      for (i=strlen(str)+1,j=0 ; str[i] ; i++,j++)
-        str[j] = str[i];
-      str[j] = 0;
-      i = j-1;
+        *strchr(str, '(') = 0;
+        strcpy(function, str);
+        for (i=strlen(str)+1,j=0 ; str[i] ; i++,j++)
+          str[j] = str[i];
+        str[j] = 0;
+        i = j-1;
       }
     }
-
-  /* find key */
-  if (str[i] == ']')
+    
+    /* find key */
+    if (str[i] == ']')
     {
-    str[i--] = 0;
-    while (i>0 && isdigit(str[i]))
-      i--;
-    index = atoi(str+i+1);
-    str[i] = 0;
+      str[i--] = 0;
+      while (i>0 && isdigit(str[i]))
+        i--;
+      index = atoi(str+i+1);
+      str[i] = 0;
     }
-
-  cm_get_experiment_database(&hDB, NULL);
-  db_find_key(hDB, 0, str, &hkey);
-  if (!hkey)
+    
+    cm_get_experiment_database(&hDB, NULL);
+    db_find_key(hDB, 0, str, &hkey);
+    if (!hkey)
     {
-    cm_msg(MERROR, "al_evaluate_condition", "Cannot find key %s to evaluate alarm condition", str);
+      cm_msg(MERROR, "al_evaluate_condition", "Cannot find key %s to evaluate alarm condition", str);
+      if (value)
+        strcpy(value, "unknown");
+      return FALSE;
+    }
+    
+    if (equal_ustring(function, "access"))
+    {
+      /* check key access time */
+      db_get_key_time(hDB, hkey, &time);
+      sprintf(str, "%d", time);
+      value1 = atof(str);
+    }
+    else
+    {
+      /* get key data and convert to double */
+      db_get_key(hDB, hkey, &key);
+      size = sizeof(data);
+      db_get_data(hDB, hkey, data, &size, key.type);
+      db_sprintf(str, data, size, index, key.type);
+      value1 = atof(str);
+    }
+    
+    /* return value */
     if (value)
-      strcpy(value, "unknown");
+      strcpy(value, str);
+    
+    /* now do logical operation */
+    if (strcmp(op, "=") == 0)
+      return value1 == value2;
+    if (strcmp(op, "==") == 0)
+      return value1 == value2;
+    if (strcmp(op, "!=") == 0)
+      return value1 != value2;
+    if (strcmp(op, "<") == 0)
+      return value1 < value2;
+    if (strcmp(op, ">") == 0)
+      return value1 > value2;
+    if (strcmp(op, "<=") == 0)
+      return value1 <= value2;
+    if (strcmp(op, ">=") == 0)
+      return value1 >= value2;
+    
     return FALSE;
-    }
-
-  if (equal_ustring(function, "access"))
-    {
-    /* check key access time */
-    db_get_key_time(hDB, hkey, &time);
-    sprintf(str, "%d", time);
-    value1 = atof(str);
-    }
-  else
-    {
-    /* get key data and convert to double */
-    db_get_key(hDB, hkey, &key);
-    size = sizeof(data);
-    db_get_data(hDB, hkey, data, &size, key.type);
-    db_sprintf(str, data, size, index, key.type);
-    value1 = atof(str);
-    }
-
-  /* return value */
-  if (value)
-    strcpy(value, str);
-
-  /* now do logical operation */
-  if (strcmp(op, "=") == 0)
-    return value1 == value2;
-  if (strcmp(op, "==") == 0)
-    return value1 == value2;
-  if (strcmp(op, "!=") == 0)
-    return value1 != value2;
-  if (strcmp(op, "<") == 0)
-    return value1 < value2;
-  if (strcmp(op, ">") == 0)
-    return value1 > value2;
-  if (strcmp(op, "<=") == 0)
-    return value1 <= value2;
-  if (strcmp(op, ">=") == 0)
-    return value1 >= value2;
-
-  return FALSE;
 }
 
 /*------------------------------------------------------------------*/
+/** @name al_trigger_alarm()
+\begin{description}
+\item[Description:] Trigger a certain alarm.
+\item[Remarks:] .
+\item[Example:] \begin{verbatim}
+  ...
+  lazy.alarm[0] = 0;
+  size = sizeof(lazy.alarm);
+  db_get_value(hDB, pLch->hKey, "Settings/Alarm Class", lazy.alarm, &size, TID_STRING, TRUE);
 
+  // trigger alarm if defined
+  if (lazy.alarm[0])
+    al_trigger_alarm("Tape", "Tape full...load new one!", lazy.alarm, "Tape full", AT_INTERNAL);
+  ...
+  \end{verbatim}
+\end{description}
+@memo Trigger an alarm.
+@param alarm_name Alarm name, defined in /alarms/alarms
+@param alarm_message Optional message which goes with alarm
+@param default_class If alarm is not yet defined under
+                    /alarms/alarms/<alarm_name>, a new one
+                    is created and this default class is used.
+@param cond_str String displayed in alarm condition
+@param type Alarm type, one of AT_xxx
+@return AL_SUCCESS, AL_INVALID_NAME
+*/
 INT al_trigger_alarm(char *alarm_name, char *alarm_message, char *default_class,
                      char *cond_str, INT type)
-/********************************************************************\
-
-  Routine: al_trigger_alarm
-
-  Purpose: Trigger a certain alarm
-
-  Input:
-    char   *alarm_name      Alarm name, defined in /alarms/alarms
-    char   *alarm_message   Optional message which goes with alarm
-    char   *default_class   If alarm is not yet defined under
-                            /alarms/alarms/<alarm_name>, a new one
-                            is created and this default class is used.
-    char   cond_str         String displayed in alarm condition
-    INT    type             Alarm type, one of AT_xxx
-
-  Output:
-
-  Function value:
-    AL_INVALID_NAME         Alarm name not defined
-    AL_SUCCESS              Successful completion
-
-\********************************************************************/
 {
   if (rpc_is_remote())
     return rpc_call(RPC_AL_TRIGGER_ALARM, alarm_name, alarm_message,
