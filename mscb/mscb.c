@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus communication functions
 
   $Log$
+  Revision 1.16  2002/10/16 15:25:06  midas
+  xxx16 now does 32 bit exchange
+
   Revision 1.15  2002/10/09 15:48:13  midas
   Fixed bug with download
 
@@ -1771,7 +1774,7 @@ unsigned char buf[80];
 
 static int _fd = 0;
 
-int mscb_write16(char *device, unsigned short addr, unsigned char channel, unsigned short data)
+int mscb_write16(char *device, unsigned short addr, unsigned char channel, unsigned int data, int size)
 /********************************************************************\
 
   Routine: mscb_write16
@@ -1782,7 +1785,8 @@ int mscb_write16(char *device, unsigned short addr, unsigned char channel, unsig
     int  parport            Either 1 (lpt1) or 2 (lpt2)
     unsigned int  addr      Node address
     unsigned char channel   Channel index 0..255
-    unsigned int  data      Data to send
+    void          data      Data to send
+    int           size      Size of data (1..4)
 
   Function value:
     MSCB_SUCCESS            Successful completion
@@ -1795,6 +1799,7 @@ int mscb_write16(char *device, unsigned short addr, unsigned char channel, unsig
 {
 unsigned char buf[10], ack[10], crc;
 int           i, r;
+unsigned int  d;
 
   if (_fd == 0)
     {
@@ -1815,14 +1820,19 @@ int           i, r;
     mscb_out(_fd, buf, 4, 1);
 
     /* send write command */
-    buf[0] = CMD_WRITE_ACK+3;
+    buf[0] = CMD_WRITE_ACK+size+1;
     buf[1] = channel;
-    buf[2] = (data >> 8);
-    buf[3] = data & 0xFF;
-    crc = crc8(buf, 4);
-    buf[4] = crc;
-    mscb_out(_fd, buf, 5, 0);
 
+    for (i=0,d=data ; i<size ; i++)
+      {
+      buf[2+size-1-i] = d & 0xFF;
+      d >>= 8;
+      }
+
+    crc = crc8(buf, 2+i);
+    buf[2+i] = crc;
+    mscb_out(_fd, buf, 3+i, 0);
+    
     /* read acknowledge */
     r = mscb_in(_fd, ack, 2, 5000);
 
@@ -1852,7 +1862,7 @@ int           i, r;
 /*------------------------------------------------------------------*/
 
 int mscb_write_conf16(char *device, unsigned short addr, unsigned char index,
-                      unsigned short data)
+                      unsigned int data, int size)
 /********************************************************************\
 
   Routine: mscb_write_conf16
@@ -1864,6 +1874,7 @@ int mscb_write_conf16(char *device, unsigned short addr, unsigned char index,
     unsigned int  addr      Node address
     unsigned char index     Parameter index 0..254, 255 for node CSR
     unsigned int  data      Data to send
+    int           size      Size of data (1..4)
 
   Function value:
     MSCB_SUCCESS            Successful completion
@@ -1876,6 +1887,7 @@ int mscb_write_conf16(char *device, unsigned short addr, unsigned char index,
 {
 unsigned char buf[10], ack[10], crc;
 int           i, r;
+unsigned int  d;
 
   if (_fd == 0)
     {
@@ -1896,13 +1908,18 @@ int           i, r;
     mscb_out(_fd, buf, 4, 1);
 
     /* send write command */
-    buf[0] = CMD_WRITE_CONF+3;
+    buf[0] = CMD_WRITE_CONF+size+1;
     buf[1] = index;
-    buf[2] = (data >> 8);
-    buf[3] = data & 0xFF;
-    crc = crc8(buf, 4);
-    buf[4] = crc;
-    mscb_out(_fd, buf, 5, 0);
+
+    for (i=0,d=data ; i<size ; i++)
+      {
+      buf[2+size-1-i] = d & 0xFF;
+      d >>= 8;
+      }
+
+    crc = crc8(buf, 2+i);
+    buf[2+i] = crc;
+    mscb_out(_fd, buf, 3+i, 0);
 
     /* read acknowledge */
     r = mscb_in(_fd, ack, 2, 5000);
@@ -1932,7 +1949,7 @@ int           i, r;
 
 /*------------------------------------------------------------------*/
 
-int mscb_read16(char *device, unsigned short addr, unsigned char channel, unsigned short *data)
+int mscb_read16(char *device, unsigned short addr, unsigned char channel, unsigned int *data)
 /********************************************************************\
 
   Routine: mscb_read16
@@ -1987,12 +2004,16 @@ int           i, r;
     r = mscb_in(_fd, buf, 10, 5000);
     mscb_release();
 
-    if (r >= 3)
+    if (r>=3)
       {
       crc = crc8(buf, r-1);
 
-      *data = *((unsigned short *)(buf+1));
-      WORD_SWAP(data);
+      *data = 0;
+      memcpy(data, buf+1, r-2);
+      if (r-2 == 2)
+        WORD_SWAP(data);
+      if (r-2 == 4)
+        DWORD_SWAP(data);
 
       if (buf[0] == CMD_ACK+r-2 && buf[r-1] == crc)
         {
@@ -2024,7 +2045,7 @@ int           i, r;
 /*------------------------------------------------------------------*/
 
 int mscb_read_conf16(char *device, unsigned short addr, unsigned char index,
-                     unsigned short *data)
+                     unsigned int *data)
 /********************************************************************\
 
   Routine: mscb_read_conf16
