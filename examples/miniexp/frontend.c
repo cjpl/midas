@@ -11,6 +11,9 @@
                 with one bank (SCLR).
 
   $Log$
+  Revision 1.5  2003/08/20 21:35:20  pierre
+  fix max_event_size
+
   Revision 1.4  2001/12/17 18:35:35  pierre
   update for newer version
 
@@ -67,6 +70,9 @@ INT display_period = 3000;
 
 /* maximum event size produced by this frontend */
 INT max_event_size = 10000;
+
+/* maximum event size for fragmented events (EQ_FRAGMENTED) */                                                                                                   
+INT max_event_size_frag = 5*1024*1024;                                                                                                                           
 
 /* buffer size to hold events */
 INT event_buffer_size = 10*10000;
