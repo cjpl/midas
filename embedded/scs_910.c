@@ -9,6 +9,9 @@
                 for SCS-910 20-chn analog in
 
   $Log$
+  Revision 1.3  2004/09/10 14:40:47  midas
+  Fixed problem in bipolar 910 mode
+
   Revision 1.2  2004/09/10 13:05:49  midas
   *** empty log message ***
 
@@ -27,7 +30,7 @@ extern bit DEBUG_MODE;
 
 char code node_name[] = "SCS-910";
 
-#define UNIPOLAR
+#undef UNIPOLAR
 
 /* declare number of sub-addresses to framework */
 unsigned char idata _n_sub_addr = 1;
@@ -349,7 +352,11 @@ void adc_read()
 
    /* start next channel on this ADC */
    next = ichn+1;
+#ifdef UNIPOLAR
    if (next == 10)
+#else
+   if (next == 5)
+#endif
      next = 0;
    i = adc_index[next];
    write_adc(iadc, REG_CONTROL, (i << 4) | 0x0F); // adc_chn, +2.56V range
@@ -359,7 +366,11 @@ void adc_read()
    if (iadc == 4) {
      iadc = 0;
      ichn++;
+#ifdef UNIPOLAR
      if (ichn == 10)
+#else
+     if (ichn == 5)
+#endif
         ichn = 0;
    }
 }
