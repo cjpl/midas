@@ -6,6 +6,9 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
+  Revision 1.46  2004/09/28 16:51:14  midas
+  Put mserver.log into /tmp under Linux
+
   Revision 1.45  2004/01/18 09:56:32  olchansk
   ss_thread_create() does not return SS_NO_THREAD
 
@@ -175,7 +178,12 @@ void debug_print(char *msg)
    FILE *f;
 
    /* print message to file */
+#ifdef OS_LINUX
+   f = fopen("/tmp/mserver.log", "a");
+#else
    f = fopen("mserver.log", "a");
+#endif
+
    if (f != NULL) {
       fprintf(f, "%s\n", msg);
       fclose(f);
@@ -302,7 +310,11 @@ int main(int argc, char **argv)
                printf("               -s    Single process server\n");
                printf("               -t    Multi threaded server\n");
                printf("               -m    Multi process server (default)\n");
+#ifdef OS_LINUX
+               printf("               -d    Write debug info to \"/tmp/mserver.log\"\n\n");
+#else
                printf("               -d    Write debug info to \"mserver.log\"\n\n");
+#endif
                printf("               -D    Write debug info to stdout\n\n");
                return 0;
             }
