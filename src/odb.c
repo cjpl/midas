@@ -6,6 +6,9 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.40  2001/07/24 10:44:13  midas
+  Added multi-line strings
+
   Revision 1.39  2001/04/03 12:46:23  midas
   Removed "killed client" comment from SOR command
 
@@ -4811,12 +4814,44 @@ BOOL   bWritten;
           {
           sprintf(line, "%s = %s : ", key.name, tid_name[key.type]);
 
-          db_sprintf(str, data, key.item_size, 0, key.type);
-        
-          if (key.type == TID_STRING || key.type == TID_LINK)
-            sprintf(line+strlen(line), "[%d] ", key.item_size);
+          if (key.type == TID_STRING && strchr(data, '\n') != NULL)
+            {
+            /* multiline string */
+            sprintf(line+strlen(line), "[====#$@$#====]\n");
 
-          sprintf(line+strlen(line), "%s\n", str);
+            /* copy line to buffer */
+            if ((INT) (strlen(line)+1) > *buffer_size)
+              {
+              free(data);
+              return DB_TRUNCATED;
+              }
+
+            strcpy(buffer, line);
+            buffer += strlen(line);
+            *buffer_size -= strlen(line);
+
+            /* copy multiple lines to buffer */
+            if (key.item_size > *buffer_size)
+              {
+              free(data);
+              return DB_TRUNCATED;
+              }
+
+            strcpy(buffer, data);
+            buffer += strlen(data);
+            *buffer_size -= strlen(data);
+
+            strcpy(line, "\n====#$@$#====\n");
+            }
+          else
+            {
+            db_sprintf(str, data, key.item_size, 0, key.type);
+        
+            if (key.type == TID_STRING || key.type == TID_LINK)
+              sprintf(line+strlen(line), "[%d] ", key.item_size);
+  
+            sprintf(line+strlen(line), "%s\n", str);
+            }
           }
         else
           {
@@ -4924,12 +4959,47 @@ BOOL   bWritten;
         {
         sprintf(line+strlen(line), "%s = %s : ", key.name, tid_name[key.type]);
 
-        db_sprintf(str, data, key.item_size, 0, key.type);
-        
-        if (key.type == TID_STRING || key.type == TID_LINK)
-          sprintf(line+strlen(line), "[%d] ", key.item_size);
+        if (key.type == TID_STRING && strchr(data, '\n') != NULL)
+          {
+          /* multiline string */
+          sprintf(line+strlen(line), "[====#$@$#====]\n");
 
-        sprintf(line+strlen(line), "%s\n", str);
+          /* ensure string limiter */
+          data[size-1] = 0; 
+
+          /* copy line to buffer */
+          if ((INT) (strlen(line)+1) > *buffer_size)
+            {
+            free(data);
+            return DB_TRUNCATED;
+            }
+
+          strcpy(buffer, line);
+          buffer += strlen(line);
+          *buffer_size -= strlen(line);
+
+          /* copy multiple lines to buffer */
+          if (key.item_size > *buffer_size)
+            {
+            free(data);
+            return DB_TRUNCATED;
+            }
+
+          strcpy(buffer, data);
+          buffer += strlen(data);
+          *buffer_size -= strlen(data);
+
+          strcpy(line, "\n====#$@$#====\n");
+          }
+        else
+          {
+          db_sprintf(str, data, key.item_size, 0, key.type);
+      
+          if (key.type == TID_STRING || key.type == TID_LINK)
+            sprintf(line+strlen(line), "[%d] ", key.item_size);
+
+          sprintf(line+strlen(line), "%s\n", str);
+          }
         }
       else
         {
@@ -5022,8 +5092,10 @@ INT              data_size;
 INT              tid, i, j, n_data, string_length, status, size;
 HNDLE            hKey;
 KEY              root_key;
+BOOL             multi_line;
 
   title[0] = 0;
+  multi_line = FALSE;
 
   if (hKeyRoot == 0)
     db_find_key(hDB, hKeyRoot, "", &hKeyRoot);
@@ -5145,35 +5217,69 @@ KEY              root_key;
             if (tid == TID_STRING || tid == TID_LINK)
               {
               if (!string_length)
-                string_length = atoi(data_str+1);
-              if (string_length > MAX_STRING_LENGTH)
                 {
-                string_length = MAX_STRING_LENGTH;
-                cm_msg(MERROR, "db_paste", "found string exceeding MAX_STRING_LENGTH");
-                }
-
-              pc = data_str + 2;
-              while (*pc && *pc != ' ')
-                pc++;
-              while (*pc && *pc == ' ')
-                pc++;
-
-              /* limit string size */
-              *(pc + string_length -1 ) = 0;
-
-              /* increase data buffer if necessary */
-              if (string_length*(i+1) >= data_size)
-                {
-                data_size += 1000;
-                data = realloc(data, data_size);
-                if (data == NULL)
+                if (data_str[1] == '=')
+                  string_length = -1;
+                else
+                  string_length = atoi(data_str+1);
+                if (string_length > MAX_STRING_LENGTH)
                   {
-                  cm_msg(MERROR, "db_paste", "cannot allocate data buffer");
-                  return DB_NO_MEMORY;
+                  string_length = MAX_STRING_LENGTH;
+                  cm_msg(MERROR, "db_paste", "found string exceeding MAX_STRING_LENGTH");
                   }
                 }
 
-              strcpy(data + string_length*i, pc);
+              if (string_length == -1)
+                {
+                /* multi-line string */
+                if (strstr(buffer, "\n====#$@$#====\n") != NULL)
+                  {
+                  string_length = (PTYPE) strstr(buffer, "\n====#$@$#====\n") - (PTYPE) buffer + 1;
+
+                  if (string_length >= data_size)
+                    {
+                    data_size += string_length + 100;
+                    data = realloc(data, data_size);
+                    if (data == NULL)
+                      {
+                      cm_msg(MERROR, "db_paste", "cannot allocate data buffer");
+                      return DB_NO_MEMORY;
+                      }
+                    }
+
+                  memset(data, 0, data_size);
+                  strncpy(data, buffer, string_length);
+                  data[string_length-1] = 0;
+                  buffer = strstr(buffer, "\n====#$@$#====\n") + strlen("\n====#$@$#====\n");
+                  }
+                else
+                  cm_msg(MERROR, "db_paste", "found multi-line string without termination sequence");
+                }
+              else
+                {
+                pc = data_str + 2;
+                while (*pc && *pc != ' ')
+                  pc++;
+                while (*pc && *pc == ' ')
+                  pc++;
+
+                /* limit string size */
+                *(pc + string_length -1 ) = 0;
+
+                /* increase data buffer if necessary */
+                if (string_length*(i+1) >= data_size)
+                  {
+                  data_size += 1000;
+                  data = realloc(data, data_size);
+                  if (data == NULL)
+                    {
+                    cm_msg(MERROR, "db_paste", "cannot allocate data buffer");
+                    return DB_NO_MEMORY;
+                    }
+                  }
+
+                strcpy(data + string_length*i, pc);
+                }
               }
             else
               {
