@@ -6,6 +6,9 @@
   Contents:     LeCroy LRS1454/1458 Voltage Device Driver
 
   $Log$
+  Revision 1.16  2003/10/29 13:08:56  midas
+  Added blanks
+
   Revision 1.15  2003/10/06 09:18:20  midas
   Fix segfault if module does not report voltage
 
@@ -334,7 +337,7 @@ char  str[256], *p;
         cm_yield(0);
         } while (status != SUCCESS);
 
-      printf("...success\n");
+      printf("...success              \n");
 
       cm_msg(MINFO, "lrs1454_get", "Successfully reconnected to LRS1454");
 
