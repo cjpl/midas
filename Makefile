@@ -1,3 +1,4 @@
+
 #####################################################################
 #
 #  Name:         Makefile
@@ -6,6 +7,10 @@
 #  Contents:     Makefile for MIDAS binaries and examples under unix
 #
 #  $Log$
+#  Revision 1.51  2004/01/18 10:15:08  olchansk
+#  add support for macosx aka darwin
+#  make building shared library dependant on NEED_SHLIB, enabled by default
+#
 #  Revision 1.50  2004/01/16 05:31:02  pierre
 #  mcleanup again
 #
@@ -216,6 +221,11 @@ SYSINC_DIR = $(PREFIX)/include
 #  -DYBOS_VERSION_3_3  for YBOS up to version 3.3 
 MIDAS_PREF_FLAGS  =
 
+#
+# Uncomment the next line to build the midas shared library
+#
+NEED_SHLIB=1
+
 #####################################################################
 # Nothing needs to be modified after this line 
 #####################################################################
@@ -263,6 +273,22 @@ OS_DIR = freeBSD
 OSFLAGS = -DOS_FREEBSD
 LIBS = -lbsd -lcompat
 SPECIFIC_OS_PRG = 
+endif
+
+#-----------------------
+# MacOSX/Darwin is just a funny Linux
+#
+ifeq ($(OSTYPE),Darwin)
+OSTYPE = darwin
+endif
+
+ifeq ($(OSTYPE),darwin)
+OS_DIR = darwin
+OSFLAGS = -DOS_LINUX -DOS_DARWIN -DHAVE_STRLCPY -fPIC -Wno-unused-function
+LIBS = -lpthread
+SPECIFIC_OS_PRG = $(BIN_DIR)/mlxspeaker
+NEED_RANLIB=1
+NEED_SHLIB=
 endif
 
 #-----------------------
@@ -338,17 +364,18 @@ OBJS =  $(LIB_DIR)/midas.o $(LIB_DIR)/system.o $(LIB_DIR)/mrpc.o \
 	$(LIB_DIR)/odb.o $(LIB_DIR)/ybos.o $(LIB_DIR)/ftplib.o
 
 LIBNAME=$(LIB_DIR)/libmidas.a
+LIB    =$(LIBNAME)
+ifdef NEED_SHLIB
 SHLIB = $(LIB_DIR)/libmidas.so
-LIB =   -lmidas
-# Uncomment this for static linking of midas executables
-#LIB =   $(LIBNAME)
+LIB   = $(SHLIB)
+endif
 VPATH = $(LIB_DIR):$(INC_DIR)
 
 all:    $(OS_DIR) $(LIB_DIR) $(BIN_DIR) \
 	$(LIBNAME) $(SHLIB) \
 	$(ANALYZER) \
 	$(LIB_DIR)/mfe.o \
-	$(LIB_DIR)/fal.o $(PROGS)
+ 	$(LIB_DIR)/fal.o $(PROGS)
 
 examples: $(EXAMPLES)
 
@@ -429,10 +456,15 @@ $(EXAMPLES): $(LIBNAME)
 $(LIBNAME): $(OBJS)
 	rm -f $@
 	ar -crv $@ $^
+ifdef NEED_RANLIB
+	ranlib $@
+endif
 
+ifdef NEED_SHLIB
 $(SHLIB): $(OBJS)
 	rm -f $@
 	ld -shared -o $@ $^ $(LIBS) -lc
+endif
 
 #
 # frontend and backend framework
