@@ -29,17 +29,17 @@ Its basic functionality are:
 - Alarm monitoring/control
 - ... and more ...
 
-The ...
-- @ref Start_page
-- @ref ODB_page
-- @ref Equipment_page
-- @ref CNAF_page
-- @ref Message_page
-- @ref Elog_page
-- @ref Program_page
-- @ref History_page
-- @ref Alarm_page
-- @ref Custom_page
+Each section is further described below:
+- @ref Start_page - Run control page
+- @ref ODB_page - Online Database manipulation (equivalent to ODBedit)
+- @ref Equipment_page (Frontend info)
+- @ref CNAF_page (CAMAC access page)
+- @ref Message_page (Message Log) 
+- @ref Elog_page (Electronic Log)
+- @ref Program_page (Program control)
+- @ref History_page (History display)
+- @ref Alarm_page (Alarm control)
+- @ref Custom_page (User defined Web page)
 
 <hr> 
 
@@ -324,22 +324,24 @@ end of a run.
  * </center> 
 
 <hr> @section History_page History page
-This page reflects the @ref History_System settings. It lists on the top of the
-page the possible pannels defined in the ODB. A serie of buttons defines the full time
-scale of the graph and the <b> "\>" "+" "-" ">" ">>" </b> buttons permit the shifting of the
-graph in the time direction. The main graph will always display all the defined channels
-but clicking on the boxed channel names will supersede the page with this single channel.
-Elog message with the current history display as attachement for reference is
-possible using the \b Elog button.
+This page reflects the @ref History_System settings (CVS r1.271). It lists on the
+top of the page the possible group names containing a list of panels defined in
+the ODB.
+Next a serie of buttons defines the time scale of the graph with predefined time
+window, <b> "<<","<" "+" "-" ">" ">>" </b> buttons permit the shifting of the
+graph in the time direction. Other buttons will allow graph resizing, Elog attachment
+creation, configuration of the panel and custom time frame graph display.
+By default a single group is created "Default" containing the trigger rate for the
+"Trigger" equipment.
 
-From version 1.9.0, the history page display has been greatly improved:
+The configuration options for a given panel consists in:
 - Zooming capability, run markers, logarithmic scale.
 - Data query in time.
 - Time scale in date format.
 - Web based page creation ("new" button) for up to 10 history channels per page.
 
  * <center> History page.
- *  \image html history19.jpg
+ *  \image html history20.jpg
  *  \image latex history19.eps "History page." width=12cm
  * </center> 
 
