@@ -8,6 +8,9 @@
                 (http://www1.psi.ch/~rohrer/secblctl.htm)
 
   $Log$
+  Revision 1.3  1999/11/11 11:50:52  midas
+  Added default name and update threshold
+
   Revision 1.2  1999/11/11 10:41:44  midas
   Fixed compiler warning
 
@@ -288,6 +291,7 @@ HNDLE   hKey;
 INT     channel, status;
 float   value, *pvalue;
 void    *info;
+char    *name;
 
   va_start(argptr, cmd);
   status = FE_SUCCESS;
@@ -325,6 +329,22 @@ void    *info;
       channel = va_arg(argptr, INT);
       pvalue  = va_arg(argptr, float*);
       status = bb_psi_get_demand(info, channel, pvalue);
+      break;
+
+    case CMD_GET_DEFAULT_NAME:
+      info = va_arg(argptr, void *);
+      channel = va_arg(argptr, INT);
+      name = va_arg(argptr, char *);
+      strcpy(name, "BBlocker");
+      status = FE_SUCCESS;
+      break;
+
+    case CMD_GET_DEFAULT_THRESHOLD:
+      info = va_arg(argptr, void *);
+      channel = va_arg(argptr, INT);
+      pvalue  = va_arg(argptr, float*);
+      *pvalue = 0.1f;
+      status = FE_SUCCESS;
       break;
 
     default:
