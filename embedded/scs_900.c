@@ -9,6 +9,9 @@
                 for SCS-900 analog high precision I/O 
 
   $Log$
+  Revision 1.5  2004/09/10 12:27:23  midas
+  Version 1.7.5
+
   Revision 1.4  2004/04/07 11:06:17  midas
   Version 1.7.1
 
@@ -35,10 +38,7 @@ char code node_name[] = "SCS-900";
 /* declare number of sub-addresses to framework */
 unsigned char idata _n_sub_addr = 1;
 
-sbit UNI_BIP = P0 ^ 2;          // Unipolar/bipolar DAC switch
-
 /* AD7718 pins */
-sbit ADC_P2   = P1 ^ 0;         // P2
 sbit ADC_P1   = P1 ^ 1;         // P1
 sbit ADC_NRES = P1 ^ 2;         // !Reset
 sbit ADC_SCLK = P1 ^ 3;         // Serial Clock
@@ -53,6 +53,10 @@ sbit DAC_SCK  = P0 ^ 4;         // Serial Clock
 sbit DAC_CLR  = P0 ^ 5;         // Clear
 sbit DAC_DOUT = P0 ^ 6;         // Data out
 sbit DAC_DIN  = P0 ^ 7;         // Data in
+
+/* analog switch */
+sbit UNI_DAC = P1 ^ 0;          // DAC bipolar/unipolar
+sbit UNI_ADC = P0 ^ 2;          // ADC bipolar/unipolar
 
 /* AD7718 registers */
 #define REG_STATUS     0
@@ -71,7 +75,9 @@ sbit DAC_DIN  = P0 ^ 7;         // Data in
 struct {
    float adc[8];
    float dac[8];
-   char  bipolar;
+   char  uni_dac;
+   char  uni_adc;
+   char  adc_25;
 } idata user_data;
 
 MSCB_INFO_VAR code variables[] = {
@@ -94,7 +100,9 @@ MSCB_INFO_VAR code variables[] = {
    4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "DAC6", &user_data.dac[6],
    4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "DAC7", &user_data.dac[7],
 
-   1, UNIT_BOOLEAN, 0, 0, 0, "Bipolar", &user_data.bipolar,
+   1, UNIT_BOOLEAN, 0, 0, 0, "Uni DAC", &user_data.uni_dac,
+   1, UNIT_BOOLEAN, 0, 0, 0, "Uni ADC", &user_data.uni_adc,
+   1, UNIT_BOOLEAN, 0, 0, 0, "2.5V ADC", &user_data.adc_25,
 
    0
 };
@@ -121,11 +129,12 @@ void user_init(unsigned char init)
    ADC0CN = 0x00;               // disable ADC 
    DAC0CN = 0x00;               // disable DAC0
    DAC1CN = 0x00;               // disable DAC1
+   REF0CN = 0x00;               // disenable internal reference
 
    /* push-pull:
       P0.0    TX
       P0.1
-      P0.2
+      P0.2    SW_ADC
       P0.3    DAC_NCS
 
       P0.4    DAC_SCK
@@ -133,11 +142,11 @@ void user_init(unsigned char init)
       P0.6 
       P0.7    DAC_CLR
     */
-   PRT0CF = 0xB9;
+   PRT0CF = 0xBD;
    P0 = 0xFF;
 
    /* push-pull:
-      P1.0    
+      P1.0    SW_DAC
       P1.1
       P1.2    ADC_NRES
       P1.3    ADC_SCLK
@@ -147,7 +156,7 @@ void user_init(unsigned char init)
       P1.6 
       P1.7    ADC_DIN
     */
-   PRT1CF = 0x9C;
+   PRT1CF = 0x9D;
    P1 = 0xFF;
 
    /* initial EEPROM value */
@@ -155,8 +164,6 @@ void user_init(unsigned char init)
 
       for (i = 0; i < 8; i++)
          user_data.dac[i] = 0;
-
-      user_data.bipolar = 0;
    }
 
    /* set-up DAC & ADC */
@@ -171,6 +178,14 @@ void user_init(unsigned char init)
       user_write(i+8);
 
    user_write(16);
+
+   /* swich unipolar/bipolar */
+   user_data.uni_dac = 0;
+   user_data.uni_adc = 0;
+   user_data.adc_25 = 0;
+   
+   UNI_DAC = user_data.uni_dac;
+   UNI_ADC = !user_data.uni_adc;
 }
 
 #pragma NOAREGS
@@ -221,11 +236,23 @@ void write_dac(unsigned char index) reentrant
 {
    unsigned short d;
 
-   if (user_data.bipolar)
-      // add 5 V in pipolar mode
-      d = (user_data.dac[index] + 5)/ 10 * 65535 + 0.5;
-   else
+   if (user_data.uni_dac) {
+      if (user_data.dac[index] < 0)
+         user_data.dac[index] = 0;
+  
+      if (user_data.dac[index] > 10)
+         user_data.dac[index] = 10;
+
       d = user_data.dac[index] / 10 * 65535 + 0.5;
+   } else {
+      if (user_data.dac[index] < -10)
+         user_data.dac[index] = -10;
+  
+      if (user_data.dac[index] > 10)
+         user_data.dac[index] = 10;
+
+      d = (user_data.dac[index] + 10) / 20 * 65535 + 0.5;
+   }
 
    /* do mapping */
    index = dac_index[index % 8];
@@ -371,6 +398,14 @@ void adc_read()
    /* round result to 5 digits */
    gvalue = floor(gvalue*1E5+0.5)/1E5;
 
+   /* apply range */
+   if (user_data.adc_25 == 0) {
+      if (user_data.uni_adc)
+         gvalue *= 10.0/2.56;
+      else
+         gvalue = gvalue/2.56*20.0 - 10;
+   }
+
    DISABLE_INTERRUPTS;
    user_data.adc[adc_chn] = gvalue;
    ENABLE_INTERRUPTS;
@@ -406,19 +441,8 @@ void adc_calib()
 
 void user_write(unsigned char index) reentrant
 {
-   unsigned char i;
-
    if (index > 7 && index < 16)
       write_dac(index-8);
-
-   if (index == 16) {
-      // set bipolar/unipoar
-      UNI_BIP = !user_data.bipolar;
-
-      // set all voltages 
-      for (i=0 ; i<8 ; i++)
-        write_dac(i);
-   }
 }
 
 /*---- User read function ------------------------------------------*/
