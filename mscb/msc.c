@@ -6,6 +6,9 @@
   Contents:     Command-line interface for the Midas Slow Control Bus
 
   $Log$
+  Revision 1.63  2004/03/11 09:57:46  midas
+  Changed error strings
+
   Revision 1.62  2004/03/10 13:28:25  midas
   mscb_init returns device name
 
@@ -1282,7 +1285,10 @@ int main(int argc, char *argv[])
          printf("\nNo write access to MSCB submaster at %s\n", device);
          puts("Please install hotplug script \"/etc/hotplug/usb/scs_250\".\n");
       } else
-         printf("Cannot connect to device \"%s\"\n", device);
+         if (device[0])
+            printf("Cannot connect to device \"%s\"\n", device);\
+         else
+            printf("No MSCB submaster found\n");
 
 #ifdef _MSC_VER
       puts("\n-- hit any key to exit --");
