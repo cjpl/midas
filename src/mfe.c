@@ -7,6 +7,9 @@
                 linked with user code to form a complete frontend
 
   $Log$
+  Revision 1.22  2000/08/09 11:37:56  midas
+  Rearranged serial number increments
+
   Revision 1.21  2000/07/11 16:43:40  pierre
   - Fix serial number for POLL super event.
 
@@ -1032,7 +1035,7 @@ INT opt_max=0, opt_index=0, opt_tcp_size=128, opt_cnt=0;
           pevent->trigger_mask  = eq_info->trigger_mask;
           pevent->data_size     = 0;
           pevent->time_stamp    = actual_time;
-          pevent->serial_number = eq->serial_number++;
+          pevent->serial_number = eq->serial_number;
 
           /* put source at beginning of event, will be overwritten by 
              user readout code, just a special feature used by some 
@@ -1042,7 +1045,6 @@ INT opt_max=0, opt_index=0, opt_tcp_size=128, opt_cnt=0;
           if (eq->info.num_subevents)
             {
             eq->subevent_number = 0;
-	    eq->serial_number--;
             do
               {
               *(INT *) ((char *)(pevent+1)+pevent->data_size) = source;
@@ -1080,6 +1082,10 @@ INT opt_max=0, opt_index=0, opt_tcp_size=128, opt_cnt=0;
             {
             /* call user readout routine indicating event source */
             pevent->data_size = eq->readout((char *) (pevent+1), 0);
+
+            /* increment serial number if event read out sucessfully */
+            if (pevent->data_size)
+              eq->serial_number++;
             }
 
           /* send event */
@@ -1103,8 +1109,6 @@ INT opt_max=0, opt_index=0, opt_tcp_size=128, opt_cnt=0;
                 eq->events_sent++;
               }
             }
-          else
-            eq->serial_number--;
 
           actual_millitime = ss_millitime();
 
