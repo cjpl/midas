@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.146  2002/05/07 22:27:56  midas
+  Fixed bug that history files did not get closed on hs_read
+
   Revision 1.145  2002/03/13 08:38:00  midas
   Added periodic alarms
 
@@ -14656,6 +14659,9 @@ char         *cache;
     if (i < cache_size)
       {
       free(cache);
+      close(fh);
+      close(fhd);
+      close(fhi);
       return HS_FILE_ERROR;
       }
     }
@@ -14748,6 +14754,9 @@ char         *cache;
             *n = *tbsize = *dbsize = 0;
             if (cache)
               free(cache);
+            close(fh);
+            close(fhd);
+            close(fhi);
             return HS_NO_MEMORY;
             }
           read(fh, (char *)tag, drec.data_size);
@@ -14777,6 +14786,9 @@ char         *cache;
             *n = *tbsize = *dbsize = 0;
             if (cache)
               free(cache);
+            close(fh);
+            close(fhd);
+            close(fhi);
             return HS_WRONG_INDEX;
             }
 
@@ -14813,6 +14825,9 @@ char         *cache;
             *tbsize = (*n) * sizeof(DWORD);
             if (cache)
               free(cache);
+            close(fh);
+            close(fhd);
+            close(fhi);
             return HS_TRUNCATED;
             }
 
@@ -14910,6 +14925,9 @@ char         *cache;
 
   if (cache)
     free(cache);
+  close(fh);
+  close(fhd);
+  close(fhi);
 
   *dbsize = *n * var_size;
   *tbsize = *n * sizeof(DWORD);
@@ -15150,6 +15168,9 @@ struct tm    *tms;
 
   free(tag);
   free(old_tag);
+  close(fh);
+  close(fhd);
+  close(fhi);
 
   return HS_SUCCESS;
 }
