@@ -6,6 +6,9 @@
   Contents:     Magnetic tape manipulation program for MIDAS tapes
 
   $Log$
+  Revision 1.14  2003/06/12 18:41:47  pierre
+  add block# display on dir if available
+
   Revision 1.13  2003/06/09 19:14:52  pierre
   fix buffer size for dir
 
@@ -59,7 +62,7 @@ INT tape_dir(INT channel, INT count)
 {
 EVENT_HEADER *event;
 char         buffer[TAPE_BUFFER_SIZE];
-INT          status, size, index;
+INT          status, size, index, blockn;
 
   event = (EVENT_HEADER *) buffer;
   for (index=0 ; index<count ; index++)
@@ -123,10 +126,16 @@ try_again:
       printf("File on tape is no MIDAS data\n");
 #endif
       }
-    else
-      printf("Found run #%ld recorded on %s", event->serial_number,
-              ctime(&event->time_stamp));
-
+    else {
+      blockn = ss_tape_get_blockn(channel);
+      if (blockn > 0)
+	printf("Found run #%ld at block#:%d recorded on %s"
+	       , event->serial_number, blockn, 
+	       ctime(&event->time_stamp));
+      else
+	printf("Found run #%ld recorded on %s", event->serial_number,
+	       ctime(&event->time_stamp));
+    }
     if (index < count-1)
       {
       printf("Spooling tape...\r");
@@ -161,8 +170,7 @@ char         buffer[TAPE_BUFFER_SIZE], str[80];
 try_again:
     n = TAPE_BUFFER_SIZE;
     status = ss_tape_read(channel, buffer, &n);
-    if (status != SS_SUCCESS)
-      {
+    if (status != SS_SUCCESS)      {
       if (status == SS_END_OF_TAPE)
         {
         printf("End of tape reached.\n");
