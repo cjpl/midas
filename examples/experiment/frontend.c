@@ -11,8 +11,8 @@
                 with one bank (SCLR).
 
   $Log$
-  Revision 1.13  2002/05/16 18:32:25  midas
-  Added manually triggered events
+  Revision 1.14  2002/05/16 21:09:53  midas
+  Added max_event_size_frag
 
   Revision 1.11  2000/08/21 10:32:51  midas
   Added max_event_size, set event_buffer_size = 10*max_event_size
@@ -73,6 +73,9 @@ INT display_period = 3000;
 
 /* maximum event size produced by this frontend */
 INT max_event_size = 10000;
+
+/* maximum event size for fragmented events (EQ_FRAGMENTED) */
+INT max_event_size_frag = 5*1024*1024;
 
 /* buffer size to hold events */
 INT event_buffer_size = 10*10000;
