@@ -6,6 +6,9 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.8  1999/01/22 10:31:49  midas
+  Fixes status return from ss_mutex_create in db_open_database
+
   Revision 1.7  1999/01/20 08:55:44  midas
   - Renames ss_xxx_mutex to ss_mutex_xxx
   - Added timout flag to ss_mutex_wait_for
@@ -643,7 +646,7 @@ INT                  timeout;
 
   /* create mutex for the database */
   status = ss_mutex_create(database_name, &(_database[handle].mutex));
-  if (status != SS_SUCCESS)
+  if (status != SS_SUCCESS && status != SS_CREATED)
     {
     *hDB = 0;
     return DB_NO_MUTEX;
