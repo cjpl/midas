@@ -6,8 +6,8 @@
 #  Contents:     Makefile for mevb MIDAS example 
 #
 #  $Log$
-#  Revision 1.1  2002/01/17 20:22:16  pierre
-#  Initial revision
+#  Revision 1.1.1.2  2002/01/17 21:37:44  pierre
+#  Initial Version
 #
 #####################################################################
 
@@ -38,9 +38,10 @@ LIBS = -lm -lz -lutil -lnsl
 #-------------------------------------------------------------------
 # The following lines define direcories. Adjust it if necessary.
 #                 
-DRV_DIR         = /midas/drivers
-INC_DIR 	= /usr/local/include
-LIB_DIR 	= /midas/linux/lib
+DRV_DIR         = ../../drivers
+INC_DIR         = /usr/local/include
+LIB_DIR         = /usr/local/lib
+CERNLIB_DIR     = /cern/pro/lib
 
 #-------------------------------------------------------------------
 # Hardware driver can be (camacnul, kcs2926, kcs2927, hyt1331)
