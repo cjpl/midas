@@ -7,6 +7,9 @@
                 linked with user code to form a complete frontend
 
   $Log$
+  Revision 1.50  2003/04/14 05:12:54  pierre
+  fix send_event for handle=0
+
   Revision 1.49  2003/04/01 19:22:44  pierre
   fix update_odb for hKeyl copy
 
@@ -849,41 +852,41 @@ KEY               key;
 
 int send_event(INT index)
 {
-EQUIPMENT_INFO *eq_info;
-EVENT_HEADER   *pevent, *pfragment;
-char           *pdata;
-unsigned char  *pd;
-INT            i;
-DWORD          sent, size;
-INT            err;
-static void    *frag_buffer = NULL;
+  EQUIPMENT_INFO *eq_info;
+  EVENT_HEADER   *pevent, *pfragment;
+  char           *pdata;
+  unsigned char  *pd;
+  INT            i;
+  DWORD          sent, size;
+  INT            err;
+  static void    *frag_buffer = NULL;
 
   eq_info = &equipment[index].info;
 
   /* check for fragmented event */
   if (eq_info->eq_type & EQ_FRAGMENTED)
-    {
+  {
     if (frag_buffer == NULL)
       frag_buffer = malloc(max_event_size_frag);
 
     if (frag_buffer == NULL)
-      {
+    {
       cm_msg(MERROR, "send_event", "Not enough memory to allocate buffer for fragmented events");
       return SS_NO_MEMORY;
-      }
+    }
 
     pevent = frag_buffer;
-    }
+  }
   else
-    {
+  {
     /* return value should be valid pointer. if NULL BIG error ==> abort  */
     pevent = dm_pointer_get();
     if (pevent == NULL)
-      {
+    {
       cm_msg(MERROR, "send_event", "dm_pointer_get not returning valid pointer");
       return SS_NO_MEMORY;
-      }
     }
+  }
 
   /* compose MIDAS event header */
   pevent->event_id      = eq_info->event_id;
@@ -900,24 +903,24 @@ static void    *frag_buffer = NULL;
 
   /* send event */
   if (pevent->data_size)
-    {
+  {
     if (eq_info->eq_type & EQ_FRAGMENTED)
-      {
+    {
       /* fragment event */
       if (pevent->data_size+sizeof(EVENT_HEADER) > (DWORD) max_event_size_frag)
-        {
+      {
         cm_msg(MERROR, "send_event", "Event size %ld larger than maximum size %d for frag. ev.",
-               (long)(pevent->data_size+sizeof(EVENT_HEADER)), max_event_size_frag);
+          (long)(pevent->data_size+sizeof(EVENT_HEADER)), max_event_size_frag);
         return SS_NO_MEMORY;
-        }
+      }
 
       /* compose fragments */
       pfragment = dm_pointer_get();
       if (pfragment == NULL)
-        {
+      {
         cm_msg(MERROR, "send_event", "dm_pointer_get not returning valid pointer");
         return SS_NO_MEMORY;
-        }
+      }
 
       /* compose MIDAS event header */
       memcpy(pfragment, pevent, sizeof(EVENT_HEADER));
@@ -927,19 +930,19 @@ static void    *frag_buffer = NULL;
       pd = (char *)(pfragment+1);
       size = pevent->data_size;
       for (i=0 ; i<4 ; i++)
-        {
+      {
         pd[i] = (unsigned char)(size & 0xFF); /* little endian, please! */
         size >>= 8;
-        }
+      }
 
       pfragment->data_size = sizeof(DWORD);
 
       pdata=(char *)(pevent+1);
 
       for (i=0,sent=0 ; sent<pevent->data_size ; i++)
-        {
+      {
         if (i>0)
-          {
+        {
           pfragment = dm_pointer_get();
 
           /* compose MIDAS event header */
@@ -950,127 +953,129 @@ static void    *frag_buffer = NULL;
           size = pevent->data_size - sent; 
           if (size > max_event_size-sizeof(EVENT_HEADER))
             size = max_event_size-sizeof(EVENT_HEADER);
-            
+
           memcpy(pfragment+1, pdata, size);
           pfragment->data_size = size;
           sent += size;
           pdata += size;
-          }
+        }
 
         /* send event to buffer */
         if (equipment[index].buffer_handle)
-          {
+        {
 #ifdef USE_EVENT_CHANNEL
           dm_pointer_increment(equipment[index].buffer_handle, 
-                               pfragment->data_size + sizeof(EVENT_HEADER));
+            pfragment->data_size + sizeof(EVENT_HEADER));
 #else
           rpc_flush_event();
           err = bm_send_event(equipment[index].buffer_handle, pfragment,
-                  pfragment->data_size + sizeof(EVENT_HEADER), SYNC);
-      if (err != BM_SUCCESS)
+            pfragment->data_size + sizeof(EVENT_HEADER), SYNC);
+          if (err != BM_SUCCESS)
+          {
+            cm_msg(MERROR,"send_event","bm_send_event(SYNC) error %d",err);
+            return err;
+          }
+#endif
+        }
+      }
+
+      if (equipment[index].buffer_handle) {
+#ifndef USE_EVENT_CHANNEL
+        err = bm_flush_cache(equipment[index].buffer_handle, SYNC);
+        if (err != BM_SUCCESS)
+        {
+          cm_msg(MERROR,"send_event","bm_flush_cache(SYNC) error %d",err);
+          return err;
+        }
+#endif
+      }
+    }
+    else
+    {
+      /* send unfragmented event */
+
+      if (pevent->data_size+sizeof(EVENT_HEADER) > (DWORD) max_event_size)
+      {
+        cm_msg(MERROR, "send_event", "Event size %ld larger than maximum size %d",
+          (long)(pevent->data_size+sizeof(EVENT_HEADER)), max_event_size);
+        return SS_NO_MEMORY;
+      }
+
+      /* send event to buffer */
+      if (equipment[index].buffer_handle)
+      {
+#ifdef USE_EVENT_CHANNEL
+        dm_pointer_increment(equipment[index].buffer_handle, 
+          pevent->data_size + sizeof(EVENT_HEADER));
+#else
+        rpc_flush_event();
+        err = bm_send_event(equipment[index].buffer_handle, pevent,
+          pevent->data_size + sizeof(EVENT_HEADER), SYNC);
+        if (err != BM_SUCCESS)
         {
           cm_msg(MERROR,"send_event","bm_send_event(SYNC) error %d",err);
           return err;
         }
-#endif
-          }
-        }
-
-#ifndef USE_EVENT_CHANNEL
-      err = bm_flush_cache(equipment[index].buffer_handle, SYNC);
-      if (err != BM_SUCCESS)
-    {
-      cm_msg(MERROR,"send_event","bm_flush_cache(SYNC) error %d",err);
-      return err;
-    }
-#endif
-      }
-    else
-      {
-      /* send unfragmented event */
-
-      if (pevent->data_size+sizeof(EVENT_HEADER) > (DWORD) max_event_size)
-        {
-        cm_msg(MERROR, "send_event", "Event size %ld larger than maximum size %d",
-               (long)(pevent->data_size+sizeof(EVENT_HEADER)), max_event_size);
-        return SS_NO_MEMORY;
-        }
-
-      /* send event to buffer */
-      if (equipment[index].buffer_handle)
-        {
-  #ifdef USE_EVENT_CHANNEL
-        dm_pointer_increment(equipment[index].buffer_handle, 
-                             pevent->data_size + sizeof(EVENT_HEADER));
-  #else
-        rpc_flush_event();
-        err = bm_send_event(equipment[index].buffer_handle, pevent,
-                      pevent->data_size + sizeof(EVENT_HEADER), SYNC);
-    if (err != BM_SUCCESS)
-      {
-        cm_msg(MERROR,"send_event","bm_send_event(SYNC) error %d",err);
-        return err;
-      }
         err = bm_flush_cache(equipment[index].buffer_handle, SYNC);
-    if (err != BM_SUCCESS)
-      {
-        cm_msg(MERROR,"send_event","bm_flush_cache(SYNC) error %d",err);
-        return err;
-      }
-  #endif
+        if (err != BM_SUCCESS)
+        {
+          cm_msg(MERROR,"send_event","bm_flush_cache(SYNC) error %d",err);
+          return err;
         }
+#endif
+      }
 
       /* send event to ODB if RO_ODB flag is set or history is on. Do not
-         send SLOW events since the class driver does that */
+      send SLOW events since the class driver does that */
       if ((eq_info->read_on & RO_ODB) ||
-          (eq_info->history > 0 && (eq_info->eq_type & ~EQ_SLOW)))
-        {
+        (eq_info->history > 0 && (eq_info->eq_type & ~EQ_SLOW)))
+      {
         update_odb(pevent, equipment[index].hkey_variables, equipment[index].format);
         equipment[index].odb_out++;
-        }
       }
+    }
 
     equipment[index].bytes_sent += pevent->data_size + sizeof(EVENT_HEADER);
     equipment[index].events_sent++;
 
     equipment[index].stats.events_sent += equipment[index].events_sent;
     equipment[index].events_sent = 0;
-    }
+  }
   else
     equipment[index].serial_number--;
 
   /* emtpy event buffer */
 #ifdef USE_EVENT_CHANNEL
   {
-  INT status;
-  if ((status = dm_area_flush()) != CM_SUCCESS)
-    cm_msg(MERROR,"send_event","dm_area_flush: %i", status);
+    INT status;
+    if ((status = dm_area_flush()) != CM_SUCCESS)
+      cm_msg(MERROR,"send_event","dm_area_flush: %i", status);
   }
 #endif
 
   for (i=0 ; equipment[i].name[0] ; i++)
     if (equipment[i].buffer_handle)
-      {
-    INT err = bm_flush_cache(equipment[i].buffer_handle, SYNC);
-    if (err != BM_SUCCESS)
+    {
+      INT err = bm_flush_cache(equipment[i].buffer_handle, SYNC);
+      if (err != BM_SUCCESS)
       {
         cm_msg(MERROR,"send_event","bm_flush_cache(SYNC) error %d",err);
         return err;
       }
-      }
+    }
 
-  return CM_SUCCESS;
+    return CM_SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
 
 void send_all_periodic_events(INT transition)
 {
-EQUIPMENT_INFO *eq_info;
-INT            i;
+  EQUIPMENT_INFO *eq_info;
+  INT            i;
 
   for (i=0 ; equipment[i].name[0] ; i++)
-    {
+  {
     eq_info = &equipment[i].info;
 
     if (!eq_info->enabled || equipment[i].status != FE_SUCCESS)
@@ -1086,7 +1091,7 @@ INT            i;
       continue;
 
     send_event(i);
-    }
+  }
 }
 
 /*------------------------------------------------------------------*/
@@ -1098,25 +1103,25 @@ void interrupt_enable(BOOL flag)
   interrupt_enabled = flag;
 
   if (interrupt_eq)
-    {
+  {
     if (interrupt_enabled)
       interrupt_configure(CMD_INTERRUPT_ENABLE,0,0);
     else
       interrupt_configure(CMD_INTERRUPT_DISABLE,0,0);
-    }
+  }
 }
 
 /*------------------------------------------------------------------*/
 
 void interrupt_routine(void)
 {
-EVENT_HEADER *pevent;
+  EVENT_HEADER *pevent;
 
   /* get pointer for upcoming event.
-     This is a blocking call if no space available */
+  This is a blocking call if no space available */
   if ((pevent = dm_pointer_get()) == NULL)
     cm_msg(MERROR, "interrupt_routine", "interrupt, dm_pointer_get returned NULL");
-  
+
   /* compose MIDAS event header */
   pevent->event_id      = interrupt_eq->info.event_id;
   pevent->trigger_mask  = interrupt_eq->info.trigger_mask;
@@ -1129,34 +1134,34 @@ EVENT_HEADER *pevent;
 
   /* send event */
   if (pevent->data_size)
-    {
+  {
     interrupt_eq->bytes_sent += pevent->data_size + sizeof(EVENT_HEADER);
     interrupt_eq->events_sent++;
 
     if (interrupt_eq->buffer_handle)
-      {
+    {
 #ifdef USE_EVENT_CHANNEL
       dm_pointer_increment(interrupt_eq->buffer_handle, 
-                           pevent->data_size + sizeof(EVENT_HEADER));
+        pevent->data_size + sizeof(EVENT_HEADER));
 #else
       rpc_send_event(interrupt_eq->buffer_handle, pevent,
-                     pevent->data_size + sizeof(EVENT_HEADER), SYNC);
+        pevent->data_size + sizeof(EVENT_HEADER), SYNC);
 #endif
-      }
+    }
 
     /* send event to ODB */
     if (interrupt_eq->info.read_on & RO_ODB ||
-        interrupt_eq->info.history)
-      {
+      interrupt_eq->info.history)
+    {
       if (actual_millitime - interrupt_eq->last_called > ODB_UPDATE_TIME)
-        {
+      {
         interrupt_eq->last_called = actual_millitime;
         memcpy(interrupt_odb_buffer, pevent, pevent->data_size + sizeof(EVENT_HEADER));
         interrupt_odb_buffer_valid = TRUE;
         interrupt_eq->odb_out++;
-        }
       }
     }
+  }
   else
     interrupt_eq->serial_number--;
 
