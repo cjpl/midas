@@ -6,6 +6,9 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
+  Revision 1.37  1999/09/16 10:02:12  midas
+  Drop root privileges after binding to port 80
+
   Revision 1.36  1999/09/16 07:36:10  midas
   Added automatic host name in author field
 
@@ -4393,6 +4396,12 @@ INT                  last_time=0;
     else
       printf("Warning: port %d already in use\n", tcp_port);
     }
+
+#ifdef OS_UNIX
+  /* give up root privilege */
+  setuid(getuid());
+  setgid(getgid());
+#endif
 
   /* listen for connection */
   status = listen(lsock, SOMAXCONN);
