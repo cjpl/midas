@@ -6,6 +6,9 @@
   Contents:     MIDAS logger program
 
   $Log$
+  Revision 1.91  2004/12/14 22:31:58  olchansk
+  Add name of the data stream to the "Write operation took N ms" warning.
+
   Revision 1.90  2004/11/16 19:50:44  midas
   Replace '\' by '\' for MySQL
 
@@ -2466,7 +2469,7 @@ INT log_write(LOG_CHN * log_chn, EVENT_HEADER * pevent)
 
    actual_time = ss_millitime();
    if ((int) actual_time - (int) start_time > 3000)
-      cm_msg(MINFO, "log_write", "Write operation took %d ms", actual_time - start_time);
+      cm_msg(MINFO, "log_write", "Write operation on %s took %d ms", log_chn->path, actual_time - start_time);
 
    if (status != SS_SUCCESS && !stop_requested) {
       if (status == SS_IO_ERROR)
