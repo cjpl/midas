@@ -7,6 +7,9 @@
                 Most routines are from mfe.c mana.c and mlogger.c.
 
   $Log$
+  Revision 1.22  2001/01/30 09:13:04  midas
+  Correct for increased event size
+
   Revision 1.21  2000/10/30 10:07:23  midas
   Fixed bug that "always true" test was cleared at the BOR
 
@@ -3534,6 +3537,7 @@ INT             i, status;
 ANA_MODULE      **module;
 ANALYZE_REQUEST *par;
 DWORD           actual_time;
+EVENT_DEF       *event_def;                
 
   /* log event to all channels  */
   for (i=0 ; i<MAX_CHANNELS ; i++)
@@ -3574,6 +3578,16 @@ DWORD           actual_time;
             return;
           }
         }
+
+      /* correct for increased event size */
+      event_def = db_get_event_definition(pevent->event_id);
+      if (event_def == NULL)
+        return;
+
+      if (event_def->format == FORMAT_MIDAS)
+        pevent->data_size = bk_size((void *) (pevent+1));
+      if (event_def->format == FORMAT_YBOS)
+        pevent->data_size = ybk_size((void *) (pevent+1));
 
       /* increment tests */
       test_increment();
@@ -4233,14 +4247,15 @@ char            str[80];
           /* send event */
           if (pevent->data_size)
             {
-            process_event(pevent);
-
             if (eq->buffer_handle)
               bm_send_event(eq->buffer_handle, pevent,
                             pevent->data_size + sizeof(EVENT_HEADER), SYNC);
 
             eq->bytes_sent += pevent->data_size;
             eq->events_sent++;
+
+            /* analyze and log event */
+            process_event(pevent);
             }
           else
             eq->serial_number--;
