@@ -6,6 +6,9 @@
   Contents:     Electronic logbook utility   
 
   $Log$
+  Revision 1.10  1999/10/08 22:00:30  midas
+  Finished editing of elog messages
+
   Revision 1.9  1999/10/06 06:56:32  midas
   Added "modification" to message type
 
@@ -474,6 +477,7 @@ usage:
   strcat(author, lhost_name);
 
   /* now submit message */
+  str[0] = 0;
   el_submit(0, author, type, system, subject, text, "", "plain", 
             attachment[0], buffer[0], att_size[0], 
             attachment[1], buffer[1], att_size[1], 

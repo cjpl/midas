@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.70  1999/10/08 22:00:30  midas
+  Finished editing of elog messages
+
   Revision 1.69  1999/10/08 15:07:06  midas
   Program check creates new internal alarm when triggered
 
@@ -14074,6 +14077,23 @@ char         str[80];
 *                                                                    *
 \********************************************************************/
 
+void el_decode(char *message, char *key, char *result)
+{
+char *pc;
+
+  if (result == NULL)
+    return;
+
+  *result = 0;
+
+  if (strstr(message, key))
+    {
+    for (pc=strstr(message, key)+strlen(key) ; *pc != '\n' ; )
+      *result++ = *pc++;
+    *result = 0;
+    }
+}
+
 INT el_submit(int run, char *author, char *type, char *system, char *subject, 
               char *text, char *reply_to, char *encoding, 
               char *afilename1, char *buffer1, INT buffer_size1, 
@@ -14099,7 +14119,7 @@ INT el_submit(int run, char *author, char *type, char *system, char *subject,
     char   *afilename1/2/3  File name of attachment
     char   *buffer1/2/3     File contents
     INT    *buffer_size1/2/3 Size of buffer in bytes
-
+    char   *tag             If given, edit existing message
     INT    *tag_size        Maximum size of tag
 
   Output:
@@ -14121,15 +14141,18 @@ INT el_submit(int run, char *author, char *type, char *system, char *subject,
 
 #ifdef LOCAL_ROUTINES
 {
-INT     size, fh, status, run_number, mutex, buffer_size, index;
+INT     n, size, fh, status, run_number, mutex, buffer_size, index, offset, tail_size;
 struct  tm *tms;
 char    afilename[256], file_name[256], afile_name[3][256], dir[256], str[256], 
-        start_str[80], end_str[80], last[80];
+        start_str[80], end_str[80], last[80], date[80], thread[80], attachment[256];
 HNDLE   hDB;
 time_t  now;
 char    message[10000], *p, *buffer;
+BOOL    bedit;
 
   cm_get_experiment_database(&hDB, NULL);
+
+  bedit = (tag[0] != 0);
 
   /* request semaphore */
   cm_get_experiment_mutex(NULL, &mutex);
@@ -14243,53 +14266,112 @@ char    message[10000], *p, *buffer;
 #endif
 #endif
 
-  time(&now);
-  tms = localtime(&now);
-
-  sprintf(file_name, "%s%02d%02d%02d.log", dir, 
-          tms->tm_year % 100, tms->tm_mon+1, tms->tm_mday);
-
-  fh = open(file_name, O_CREAT | O_RDWR | O_BINARY, 0644);
-  if (fh < 0)
+  if (bedit)
     {
-    ss_mutex_release(mutex);
-    return EL_FILE_ERROR;
+    /* edit existing message */
+    strcpy(str, tag);
+    if (strchr(str, '.'))
+      {
+      offset = atoi(strchr(str, '.')+1);
+      *strchr(str, '.') = 0;
+      }
+    sprintf(file_name, "%s%s.log", dir, str);
+    fh = open(file_name, O_CREAT | O_RDWR | O_BINARY, 0644);
+    if (fh < 0)
+      {
+      ss_mutex_release(mutex);
+      return EL_FILE_ERROR;
+      }
+    lseek(fh, offset, SEEK_SET);
+    read(fh, str, 16);
+    size = atoi(str+9);
+    read(fh, message, size);
+
+    el_decode(message, "Date: ", date);
+    el_decode(message, "Thread: ", thread);
+    el_decode(message, "Attachment: ", attachment);
+
+    /* buffer tail of logfile */
+    lseek(fh, 0, SEEK_END);
+    tail_size = TELL(fh) - (offset+size);
+
+    if (tail_size > 0)
+      {
+      buffer = malloc(tail_size);
+      if (buffer == NULL)
+        {
+        close(fh);
+        ss_mutex_release(mutex);
+        return EL_FILE_ERROR;
+        }
+
+      lseek(fh, offset+size, SEEK_SET);
+      n = read(fh, buffer, tail_size);
+      }
+    lseek(fh, offset, SEEK_SET);
     }
-
-  strcpy(str, ctime(&now));
-  str[24] = 0;
-
-  sprintf(message, "Date: %s\n", str);
-  if (reply_to[0])
-    sprintf(message+strlen(message), "Thread: %16s %16s\n", reply_to, "0");
   else
-    sprintf(message+strlen(message), "Thread: %16s %16s\n", "0", "0");
+    {
+    /* create new message */
+    time(&now);
+    tms = localtime(&now);
+
+    sprintf(file_name, "%s%02d%02d%02d.log", dir, 
+            tms->tm_year % 100, tms->tm_mon+1, tms->tm_mday);
+
+    fh = open(file_name, O_CREAT | O_RDWR | O_BINARY, 0644);
+    if (fh < 0)
+      {
+      ss_mutex_release(mutex);
+      return EL_FILE_ERROR;
+      }
+    
+    strcpy(date, ctime(&now));
+    date[24] = 0;
+
+    if (reply_to[0])
+      sprintf(thread, "%16s %16s", reply_to, "0");
+    else
+      sprintf(thread, "%16s %16s", "0", "0");
+  
+    lseek(fh, 0, SEEK_END);
+    }
+  
+  /* compose message */
+
+  sprintf(message, "Date: %s\n", date);
+  sprintf(message+strlen(message), "Thread: %s\n", thread);
   sprintf(message+strlen(message), "Run: %d\n", run_number);
   sprintf(message+strlen(message), "Author: %s\n", author);
   sprintf(message+strlen(message), "Type: %s\n", type);
   sprintf(message+strlen(message), "System: %s\n", system);
   sprintf(message+strlen(message), "Subject: %s\n", subject);
 
-  sprintf(message+strlen(message), "Attachment: %s", afile_name[0]);
-  if (afile_name[1][0])
-    sprintf(message+strlen(message), ",%s", afile_name[1]);
-  if (afile_name[2][0])
-    sprintf(message+strlen(message), ",%s", afile_name[2]);
+  /* keep original attachment if edit and no new attachment */
+  if (bedit && afile_name[0][0] == 0 && afile_name[1][0] == 0 &&
+                afile_name[2][0] == 0)
+    sprintf(message+strlen(message), "Attachment: %s", attachment);
+  else
+    {
+    sprintf(message+strlen(message), "Attachment: %s", afile_name[0]);
+    if (afile_name[1][0])
+      sprintf(message+strlen(message), ",%s", afile_name[1]);
+    if (afile_name[2][0])
+      sprintf(message+strlen(message), ",%s", afile_name[2]);
+    }
   sprintf(message+strlen(message), "\n");
   
   sprintf(message+strlen(message), "Encoding: %s\n", encoding);
   sprintf(message+strlen(message), "========================================\n");
   strcat(message, text);
 
-  /* go to EOF and record position */
-  lseek(fh, 0, SEEK_END);
   size = 0;
   sprintf(start_str, "$Start$: %6d\n", size);
   sprintf(end_str,   "$End$:   %6d\n\f", size);
 
   size = strlen(message)+strlen(start_str)+strlen(end_str);
 
-  if (tag != NULL)
+  if (tag != NULL && !bedit)
     sprintf(tag, "%02d%02d%02d.%d", tms->tm_year % 100, tms->tm_mon+1, tms->tm_mday, TELL(fh));
 
   sprintf(start_str, "$Start$: %6d\n", size);
@@ -14298,10 +14380,20 @@ char    message[10000], *p, *buffer;
   write(fh, start_str, strlen(start_str));
   write(fh, message, strlen(message));
   write(fh, end_str, strlen(end_str));
+
+  if (bedit && tail_size > 0)
+    {
+    n = write(fh, buffer, tail_size);
+    free(buffer);
+    
+    /* truncate file here */
+    chsize(fh, TELL(fh));
+    }
+
   close(fh);
 
   /* if reply, mark original message */
-  if (reply_to[0])
+  if (reply_to[0] && !bedit)
     {
     strcpy(last, reply_to);
     do
@@ -14346,23 +14438,6 @@ char    message[10000], *p, *buffer;
 }
 
 /*------------------------------------------------------------------*/
-
-void el_decode(char *message, char *key, char *result)
-{
-char *pc;
-
-  if (result == NULL)
-    return;
-
-  *result = 0;
-
-  if (strstr(message, key))
-    {
-    for (pc=strstr(message, key)+strlen(key) ; *pc != '\n' ; )
-      *result++ = *pc++;
-    *result = 0;
-    }
-}
 
 INT el_search_message(char *tag, int *fh, BOOL walk)
 {
