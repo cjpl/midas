@@ -6,6 +6,9 @@
   Contents:     Command-line interface to the MIDAS online data base.
 
   $Log$
+  Revision 1.69  2003/12/12 09:46:14  midas
+  Fixed compiler warning
+
   Revision 1.68  2003/11/24 08:22:46  midas
   Changed timeouts from INT to DWORD, added ignore_timeout to cm_cleanup, adde '-f' flag to ODBEdit 'cleanup'
 
@@ -2523,7 +2526,7 @@ PRINT_INFO      print_info;
               DWORD timeout, last;
 
               status = cm_get_watchdog_info(hDB, name, &timeout, &last);
-              printf("%-10d %-10d", timeout, last);
+              printf("%-10ld %-10ld", timeout, last);
               }
 
             printf("\n");
