@@ -6,6 +6,9 @@
  *         amaudruz@triumf.ca                            Local:           6234
  * ---------------------------------------------------------------------------
    $Log$
+   Revision 1.36  2002/03/05 01:17:24  pierre
+   Add default case, TID_SBYTE
+
    Revision 1.35  2002/03/05 01:04:37  pierre
    add TID_SHORT for display
 
@@ -562,6 +565,9 @@ INT ybk_close_chaos(DWORD *plrl, DWORD bktype, void *pbkdat)
   case I1_BKTYPE:
   case A1_BKTYPE:
     *__pchaosi4 = (DWORD) ( (BYTE *)pbkdat - (BYTE *)__pchaosi4 - 4);
+    break;
+  default:
+    printf(" unknown YBOS bank type (%d)\n", bktype);
     break;
   }
   
@@ -3228,6 +3234,10 @@ void ybos_bank_display(YBOS_BANK_HEADER * pybk, INT dsp_fmt)
       ((BYTE *)pdata)++;
       j++;
       break;
+     default :
+      printf("ybos_bak_display-E- Unknown bank type %i\n",pybk->type);
+      break;
+     
     } /* switch */
   } /* while next bank */
   printf ("\n");
@@ -3355,6 +3365,7 @@ void midas_bank_display( BANK * pbk, INT dsp_fmt)
       j++;
       break;
     case TID_BYTE :
+    case TID_SBYTE :
       if (j>15)
       {
 	printf("\n%4i-> ",i);
@@ -3389,6 +3400,10 @@ void midas_bank_display( BANK * pbk, INT dsp_fmt)
       if (dsp_fmt == DSP_HEX) printf("0x%2.2x ",*((BYTE *)pdata));
       pdata++;
       j++;
+      break;
+    default:
+      printf("bank type not supported (%d)\n", type);
+      return;
       break;
     }
   } /* end of bank */
@@ -3440,7 +3455,7 @@ void midas_bank_display32( BANK32 * pbk, INT dsp_fmt)
       length_type = sizeof (DWORD);
       strcpy (strbktype,"Integer*4");
     }
-  if (type == TID_WORD)
+  if ((type == TID_WORD) || (type == TID_SHORT))
     {
       length_type = sizeof (WORD);
       strcpy (strbktype,"Integer*2");
@@ -3507,6 +3522,7 @@ void midas_bank_display32( BANK32 * pbk, INT dsp_fmt)
       j++;
       break;
     case TID_WORD :
+    case TID_SHORT :
       if (j>7)
       {
 	printf("\n%4i-> ",i);
@@ -3519,6 +3535,7 @@ void midas_bank_display32( BANK32 * pbk, INT dsp_fmt)
       j++;
       break;
     case TID_BYTE :
+    case TID_SBYTE :
       if (j>15)
       {
 	printf("\n%4i-> ",i);
@@ -3553,6 +3570,10 @@ void midas_bank_display32( BANK32 * pbk, INT dsp_fmt)
       if (dsp_fmt == DSP_HEX) printf("0x%2.2x ",*((BYTE *)pdata));
       pdata++;
       j++;
+      break;
+    default:
+      printf("bank type not supported (%d)\n", type);
+      return;
       break;
     }
   } /* end of bank */
