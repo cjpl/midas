@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.84  2001/08/08 11:44:59  midas
+  Release 1.8.3
+
   Revision 1.83  2001/06/27 12:16:30  midas
   Added OS_IRIX
 
@@ -277,7 +280,7 @@
    to the MIDAS library. First digit is major release, second
    digit is minor release, third digit is patch level */
 
-#define MIDAS_VERSION "1.8.2"
+#define MIDAS_VERSION "1.8.3"
 
 /*------------------------------------------------------------------*/
 
