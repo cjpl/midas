@@ -6,6 +6,9 @@
   Contents:     Various utility functions for MSCB protocol
 
   $Log$
+  Revision 1.46  2005/01/06 14:49:01  midas
+  Added scs_220
+
   Revision 1.45  2004/12/21 10:45:42  midas
   Made secondary port on SCS-1000 working
 
@@ -250,7 +253,7 @@ unsigned char crc8_add(unsigned char crc, unsigned int c)
 
 /*------------------------------------------------------------------*/
 
-#ifdef SCS_210 // SCS_210 uses UAR0 & UART1
+#if defined(SCS_210) | defined(SCS_220) // SCS_210/220 uses UAR0 & UART1
 
 bit ti1_shadow = 1;
 
@@ -270,6 +273,11 @@ void serial_int1(void) interrupt 20 using 2
       /* character has been transferred */
       SCON1 &= ~0x02;           // clear TI flag
       ti1_shadow = 1;
+
+#ifdef SCS_220
+      if (sbuf_wp == sbuf_rp)
+         RS485_SEC_ENABLE = 0;
+#endif
    }
 
    if (SCON1 & 0x01) {          // RI1
@@ -297,6 +305,9 @@ void rs232_output(void)
 {
    if (sbuf_wp != sbuf_rp && ti1_shadow == 1) {
       ti1_shadow = 0;
+#ifdef SCS_220
+      RS485_SEC_ENABLE = 1;
+#endif
       SBUF1 = *sbuf_rp++;
       if (sbuf_rp == sbuf + sizeof(sbuf))
          sbuf_rp = sbuf;
@@ -523,7 +534,7 @@ void rs232_output(void) // dummy
 
 /*------------------------------------------------------------------*/
 
-#else // SCS_210 | SCS_1000
+#else // SCS_210 | SCS_220 | SCS_1000
 
 void rs232_output(void) // dummy
 {
@@ -653,7 +664,7 @@ void uart_init(unsigned char port, unsigned char baud)
       EIE2 |= 0x40;                // enable serial interrupt
       EIP2 &= ~0x40;               // serial interrupt low priority      
 
-#ifdef SCS_210
+#if defined(SCS_210) | defined(SCS_220)
       uart1_init_buffer();
 #endif
 
