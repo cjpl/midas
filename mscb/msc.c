@@ -6,6 +6,9 @@
   Contents:     Command-line interface for the Midas Slow Control Bus
 
   $Log$
+  Revision 1.6  2002/07/08 15:00:40  midas
+  Added reboot command
+
   Revision 1.5  2001/10/31 11:15:17  midas
   Added IO check function
 
@@ -27,6 +30,7 @@
 #include <windows.h>
 #endif
 
+#include <conio.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -42,6 +46,7 @@ void print_help()
   puts("addr <addr>                Address node for further commands");    
   puts("gaddr <addr>               Address group of nodes");    
   puts("info                       Retrive node info");    
+  puts("reboot                     Reboot addressed node");    
   puts("sa <addr> <gaddr>          Set node and group address of addressed node");    
   puts("debug 0/1                  Turn debuggin off/on on node (LCD output)");    
   puts("\nwrite <channel> <value>    Write to node channel");
@@ -90,7 +95,7 @@ MSCB_INFO_CHN info_chn;
     if (!cmd[0])
       {
       if (current_addr >= 0)
-        printf("node%d> ", current_addr);
+        printf("node0x%X> ", current_addr);
       else if (current_group >= 0)
         printf("group%d> ", current_group);
       else
@@ -247,6 +252,14 @@ MSCB_INFO_CHN info_chn;
         }
       }
 
+    /* reboot */
+    else if ((param[0][0] == 'r' && param[0][1] == 'e'))
+      {
+      mscb_reset(fd);
+      current_addr = -1;
+      current_group = -1;
+      }
+
     /* ping */
     else if ((param[0][0] == 'p' && param[0][1] == 'i') ||
              (param[0][0] == 'a' && param[0][1] == 'd')) 
@@ -370,7 +383,7 @@ MSCB_INFO_CHN info_chn;
             data = atoi(param[2]);
 
           if (current_addr >= 0)
-            status = mscb_write(fd, (unsigned char)addr, data, 4);
+            status = mscb_write(fd, (unsigned char)addr, data, 1);
           else if (current_group >= 0)
             status = mscb_write_na(fd, (unsigned char)addr, data, 4);
 
@@ -454,19 +467,24 @@ MSCB_INFO_CHN info_chn;
     /* test */
     else if ((param[0][0] == 't' && param[0][1] == 'e'))
       {
-      unsigned short d;
+      unsigned int d, r;
 
-      while(1)
+      while(!kbhit())
         {
-        status = mscb_write16("lpt1", 1, 1, 2000);
-        if (status != MSCB_SUCCESS)
-          printf("mscb_write16: error %d\n", status);
-        status = mscb_read16("lpt1", 2, 3, &d);
-        if (status != MSCB_SUCCESS)
-          printf("mscb_read16: error %d\n", status);
-        mscb_addr(fd, CMD_ADDR_NODE16, 1234);
+        d = (rand() & 0xFF);
 
-        Sleep(50);
+        status = mscb_write(fd, 1, d, 1);
+        if (status != MSCB_SUCCESS)
+          printf("status = %d\n", status);
+
+        status = mscb_read(fd, 1, &r);
+        if (status != MSCB_SUCCESS)
+          printf("status = %d\n", status);
+
+        if (d != r)
+          printf("%d - %d\n", d, r);
+
+        // Sleep(10);
         }
       }
 
@@ -553,7 +571,7 @@ usage:
   fd = mscb_init(port);
   if (fd < 0)
     {
-    printf("No SCS-SM1 present at port \"%s\"\n", port);
+    printf("No MSCB submaster present at port \"%s\"\n", port);
     return 0;
     }
 
