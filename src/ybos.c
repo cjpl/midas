@@ -6,6 +6,9 @@
  *         amaudruz@triumf.ca                            Local:           6234
  * -----------------------------------------------------------------------------
    $Log$
+   Revision 1.12  1999/01/22 09:29:51  midas
+   Fixed typo with braces
+
    Revision 1.11  1999/01/20 08:39:19  midas
    Fixed even more compiler warnings
 
@@ -1879,8 +1882,8 @@ INT  yb_any_dev_os_write(INT handle, INT type, void * prec, DWORD nbytes, DWORD 
     }
 #endif
   else if (type == LOG_TYPE_TAPE)
-#ifdef OS_UNIX
     { /* --------- TAPE ----------*/
+#ifdef OS_UNIX
       do
       {
         status = write(handle, (char *)prec, nbytes);
@@ -1897,7 +1900,6 @@ INT  yb_any_dev_os_write(INT handle, INT type, void * prec, DWORD nbytes, DWORD 
 #endif /* OS_UNIX */
 
 #ifdef OS_WINNT
-    {
       WriteFile((HANDLE) handle, (char *)prec, nbytes, written, NULL);
       if (*written != nbytes)
         {
@@ -1906,8 +1908,8 @@ INT  yb_any_dev_os_write(INT handle, INT type, void * prec, DWORD nbytes, DWORD 
         return SS_IO_ERROR;
         }
       return SS_SUCCESS;      /* return for TAPE */
-    }
 #endif /* OS_WINNT */
+    }
   else if (type == LOG_TYPE_FTP)
 #ifdef INCLUDE_FTPLIB
     {
