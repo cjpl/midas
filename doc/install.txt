@@ -3,9 +3,9 @@ How to install MIDAS under Unix
 
 Currently, following Unix systems are directly supported:
 
+Linux
 DEC Unix (OSF/1)
 DEC Ultrix
-Linux
 FreeBSD
 
 The system can probably compiled under other versions with minor
@@ -62,6 +62,11 @@ makefile to select the correct operating system if necessary.
   cd <home>/midas/midas-x.xx
   make
 
+On some distributions you might get linker errors due to different shared
+libraries. In this case try to build the static executables:
+
+  make USERFLAGS=-static
+
 5) Install the MIDAS binaries and library. Edit the target directories
 in the makefile if the default values (/usr/local/bin, /usr/local/lib
 and /usr/local/include) don't suit you. Then enter as a super-user:
@@ -83,7 +88,7 @@ Run ldconfig as root to make the library known to the system.
 
 7) Make sure the CERN library is installed properly. The MIDAS
 analyzer needs libpacklib.a which is usually installed under
-/cern/pro/lib.
+/cern/pro/lib. PAW should be installed under /cern/pro/bin.
 
 8) Create a working directory which hosts the frontend and analyzer
 program of your experiment (in the following example called "online"). 
@@ -130,8 +135,16 @@ at the N-tuples and histos:
   PAW> hi/list
   PAW> hi/pl 1000
 
-12) If everything workes sucesfully, you can edit the frontend and
-analyzer to suit your experiment.
+12) If everything workes successfully, you can edit the frontend and
+analyzer to suit your experiment. If you use a real CAMAC driver in
+the frontend, it has to access the hardware directly. To be able
+to do this from a non-root account, start the frontend with
+
+  dio ./frontend
+
+The dio program is a little wrapper program which opens the ports
+used by CAMAC drivers. dio has to have the setuid-bit set, which is
+normally done during installation.
 
 13) If the frontend runs on another computer, the MIDAS server program
 has to be installed. You can either start mserver manually or via
