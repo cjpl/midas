@@ -7,6 +7,9 @@
 #                using HBOOK functionality
 #
 #  $Log$
+#  Revision 1.4  2003/07/14 14:51:45  midas
+#  Restructured driver directory
+#
 #  Revision 1.3  2003/05/09 09:58:23  midas
 #  Removed ranalyzer from Makefile
 #
@@ -40,7 +43,7 @@ LIBS = -lm -lz -lutil -lnsl
 #-------------------------------------------------------------------
 # The following lines define direcories. Adjust if necessary
 #                 
-DRV_DIR         = ../../drivers
+DRV_DIR         = ../../drivers/bus
 INC_DIR 	= /usr/local/include
 LIB_DIR 	= /usr/local/lib
 #
@@ -84,15 +87,15 @@ $(UFE): $(LIB) $(LIB_DIR)/mfe.o $(DRIVER).o $(UFE).c
 	$(CC) $(CFLAGS) $(OSFLAGS) -o $(UFE) $(UFE).c $(DRIVER).o \
 	$(LIB_DIR)/mfe.o $(LIB) $(LDFEFLAGS) $(LIBS)
 
-$(DRIVER).o: $(DRV_DIR)/bus/$(DRIVER).c
-	$(CC) $(CFLAGS) $(OSFLAGS) -c -o $(DRIVER).o $(DRV_DIR)/bus/$(DRIVER).c
+$(DRIVER).o: $(DRV_DIR)/$(DRIVER).c
+	$(CC) $(CFLAGS) $(OSFLAGS) -c -o $(DRIVER).o $(DRV_DIR)/$(DRIVER).c
 
 analyzer: $(LIB) $(LIB_DIR)/hmana.o analyzer.o $(MODULES)
 	$(FF) $(FFLAGS) -o analyzer $(LIB_DIR)/hmana.o analyzer.o \
 	$(MODULES) $(CERNLIB_PACK) \
 	$(LIB) $(LDFLAGS) $(LIBS)
 
-fal: $(LIB) $(LIB_DIR)/fal.o $(DRV_DIR)/bus/$(DRIVER).o $(UFE).c $(MODULES) $(UFE).o analyzer.o
+fal: $(LIB) $(LIB_DIR)/fal.o $(DRIVER).o $(UFE).c $(MODULES) $(UFE).o analyzer.o
 	$(FF) $(FFLAGS) -o fal $(LIB_DIR)/fal.o $(UFE).o $(DRIVER).o \
 	analyzer.o $(MODULES) $(CERNLIB_PACK) \
 	$(LIB) $(LDFEFLAGS) $(LIBS)
