@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.72  2001/01/29 15:27:43  midas
+  Added some \n for parallel version
+
   Revision 1.71  2000/11/20 12:18:58  midas
   Merge more than 10 RZ files
 
@@ -3905,7 +3908,7 @@ DWORD           start_time;
   if (pvm_master)
     {
     if (status == RPC_SHUTDOWN)
-      printf("Shutting down distributed analyzers, please wait...\n"); 
+      printf("\nShutting down distributed analyzers, please wait...\n"); 
     pvm_eor(status == RPC_SHUTDOWN ? TAG_EXIT : TAG_EOR);
 
     /* merge slave output files */
@@ -4602,6 +4605,8 @@ ANA_TEST       *tst_buf;
 DWORD          count;
 char           str[256];
 
+  printf("\n");
+
   for (i=0 ; i<pvm_n_task ; i++)
     pvmc[i].eor_sent = FALSE;
 
@@ -4735,6 +4740,8 @@ char           str[256];
         break;
 
     } while (j<pvm_n_task);
+
+  printf("\n");
 
   return SUCCESS;
 }
