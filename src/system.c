@@ -14,6 +14,9 @@
                 Brown, Prentice Hall
 
   $Log$
+  Revision 1.88  2005/03/08 07:53:56  ritt
+  Test for isnan macro (which is defined in root)
+
   Revision 1.87  2004/12/23 09:38:55  midas
   Fixed compiler warning
 
@@ -5976,7 +5979,9 @@ double ss_nan()
 }
 #ifdef OS_WINNT
 #include <float.h>
+#ifndef isnan
 #define isnan(x) _isnan(x)
+#endif
 #elif defined(OS_LINUX)
 #include <math.h>
 #endif
