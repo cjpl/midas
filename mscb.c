@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus communication functions
 
   $Log$
+  Revision 1.63  2004/03/19 12:09:16  midas
+  Upload with simplified CRC
+
   Revision 1.62  2004/03/11 09:58:10  midas
   mscb_init() does not ask for device if running under labview
 
@@ -193,7 +196,7 @@
 \********************************************************************/
 
 #define MSCB_LIBRARY_VERSION   "1.6.1"
-#define MSCB_PROTOCOL_VERSION  "1.6"
+#define MSCB_PROTOCOL_VERSION  "1.7"
 
 #ifdef _MSC_VER                 // Windows includes
 
@@ -2450,7 +2453,7 @@ int mscb_flash(int fd, int adr)
 
 /*------------------------------------------------------------------*/
 
-int mscb_upload(int fd, int adr, char *buffer, int size)
+int mscb_upload(int fd, int adr, char *buffer, int size, int debug)
 /********************************************************************\
 
   Routine: mscb_upload
@@ -2462,6 +2465,7 @@ int mscb_upload(int fd, int adr, char *buffer, int size)
     int fd                  File descriptor for connection
     int adr                 Node address
     char *filename          File name for Intel HEX file
+    int debug               If true, produce detailed debugging output
 
   Function value:
     MSCB_SUCCESS            Successful completion
@@ -2475,7 +2479,7 @@ int mscb_upload(int fd, int adr, char *buffer, int size)
 {
    unsigned char buf[512], crc, ack[2], image[0x10000], *line;
    unsigned int len, ofh, ofl, type, d;
-   int i, status, page;
+   int i, status, page, retry;
    unsigned short ofs;
 
    if (fd > MSCB_MAX_FD || fd < 1 || !mscb_fd[fd - 1].type)
@@ -2534,9 +2538,14 @@ int mscb_upload(int fd, int adr, char *buffer, int size)
          if (image[page * 512 + i] != 0xFF)
             break;
 
+      retry = 0;
+
       if (i < 512) {
          do {
-            printf("E");
+            if (debug)
+               printf("Erase page   0x%04X - ", page * 512);
+            else
+               printf("E");
             fflush(stdout);
 
             /* erase page */
@@ -2551,7 +2560,10 @@ int mscb_upload(int fd, int adr, char *buffer, int size)
 
             if (ack[1] == 0xFF) {
                /* protected page, so finish */
-               printf("\bX");
+               if (debug)
+                  printf("found protected page, exit\n");
+               else
+                  printf("\bX");
                fflush(stdout);
                goto prog_error;
             }
@@ -2561,7 +2573,13 @@ int mscb_upload(int fd, int adr, char *buffer, int size)
                goto prog_error;
             }
 
-            printf("\bP");
+            if (debug)
+               printf("ok\n");
+
+            if (debug)
+               printf("Program page 0x%04X - ", page * 512);
+            else
+               printf("\bP");
             fflush(stdout);
 
             /* program page */
@@ -2569,9 +2587,11 @@ int mscb_upload(int fd, int adr, char *buffer, int size)
             buf[1] = page;
             mscb_out(fd, buf, 2, RS485_FLAG_NO_ACK);
 
-            for (i = 0; i < 512; i++)
+
+            for (i = crc = 0; i < 512; i++) {
                buf[i] = image[page * 512 + i];
-            crc = crc8(buf, 512);
+               crc += buf[i];
+            }
 
             /* chop down page in 60 byte segments (->USB) */
             for (i = 0; i < 8; i++) {
@@ -2598,8 +2618,14 @@ int mscb_upload(int fd, int adr, char *buffer, int size)
                goto prog_error;
             }
 
+            if (debug)
+               printf("ok\n");
+
             /* verify page */
-            printf("\bV");
+            if (debug)
+               printf("Verify page  0x%04X - ", page * 512);
+            else
+               printf("\bV");
             fflush(stdout);
 
             /* verify page */
@@ -2613,13 +2639,27 @@ int mscb_upload(int fd, int adr, char *buffer, int size)
             }
 
             /* compare CRCs */
-            if (ack[1] == crc)
+            if (ack[1] == crc) {
+               if (debug)
+                  printf("ok (CRC = 0x%02X)\n", crc);
                break;
+            }
+
+            if (debug)
+               printf("CRC error (0x%02X != 0x%02X)\n", crc, ack[1]);
 
             /* reprogram page until verified */
+            retry++;
+            if (retry == 10) {
+               printf("\nToo many retries, aborting\n");
+               goto prog_error;
+               break;
+            }
+
          } while (1);
 
-         printf("\b=");
+         if (!debug)
+            printf("\b=");
          fflush(stdout);
       }
    }
