@@ -6,6 +6,14 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.258  2003/11/01 01:37:33  olchansk
+  stop frobbing /runinfo on every show_status_page(), this
+    used to tickle the race condition in db_create_record(). Not it only
+    tickles generally deficient error handling in the db_xxx() code.
+  abort if cannot read /runinfo/run number
+  setbuf(stderr,0)
+  setbuf(stdout,0)
+
   Revision 1.257  2003/10/31 10:07:27  midas
   Added 'run parameter/comment' in status display
 
@@ -1561,11 +1569,28 @@ CHN_STATISTICS chn_stats;
 
   cm_get_experiment_database(&hDB, NULL);
 
-  /* create/correct /runinfo structure */
-  db_create_record(hDB, 0, "/Runinfo", strcomb(runinfo_str));
-  db_find_key(hDB, 0, "/Runinfo", &hkey);
+  status = db_find_key(hDB, 0, "/Runinfo", &hkey);
+  if (status == SUCCESS)
+    {
+    /* do nothing */
+    }
+  else if (status == DB_NO_KEY)
+    {
+    /* create/correct /runinfo structure */
+    status = db_create_record(hDB, 0, "/Runinfo", strcomb(runinfo_str));
+    assert(status == SUCCESS);
+    status = db_find_key(hDB, 0, "/Runinfo", &hkey);
+    assert(status == SUCCESS);
+    }
+  else
+    {
+    cm_msg(MERROR, "show_status_page", "aborting on failure to find /RunInfo, status %d",status);
+    abort();
+    }
+
   size = sizeof(runinfo);
-  db_get_record(hDB, hkey, &runinfo, &size, 0);
+  status = db_get_record(hDB, hkey, &runinfo, &size, 0);
+  assert(status == SUCCESS);
 
   /* header */
   rsprintf("HTTP/1.1 200 OK\r\n");
@@ -2446,7 +2471,7 @@ int i;
 
 void show_elog_new(char *path, BOOL bedit, char *odb_att)
 {
-int    i, j, size, run_number, wrap;
+int    i, j, size, run_number, wrap, status;
 char   str[256], ref[256], *p;
 char   date[80], author[80], type[80], system[80], subject[256], text[10000],
        orig_tag[80], reply_tag[80], att1[256], att2[256], att3[256], encoding[80];
@@ -2533,7 +2558,8 @@ KEY    key;
       {
       run_number = 0;
       size = sizeof(run_number);
-      db_get_value(hDB, 0, "/Runinfo/Run number", &run_number, &size, TID_INT, TRUE);
+      status = db_get_value(hDB, 0, "/Runinfo/Run number", &run_number, &size, TID_INT, TRUE);
+      assert(status == SUCCESS);
       }
 
     if (run_number < 0)
@@ -3569,7 +3595,7 @@ HNDLE  hDB;
 
 void show_form_query()
 {
-int    i=0, size, run_number;
+int    i=0, size, run_number, status;
 char   str[256];
 time_t now;
 HNDLE  hDB, hkey, hkeyroot;
@@ -3617,7 +3643,8 @@ KEY    key;
 
   run_number = 0;
   size = sizeof(run_number);
-  db_get_value(hDB, 0, "/Runinfo/Run number", &run_number, &size, TID_INT, TRUE);
+  status = db_get_value(hDB, 0, "/Runinfo/Run number", &run_number, &size, TID_INT, TRUE);
+  assert(status == SUCCESS);
 
   if (run_number < 0)
     {
@@ -5771,7 +5798,8 @@ char  data_str[256], comment[1000];
 
   /* run number */
   size = sizeof(rn);
-  db_get_value(hDB, 0, "/Runinfo/Run number", &rn, &size, TID_INT, TRUE);
+  status = db_get_value(hDB, 0, "/Runinfo/Run number", &rn, &size, TID_INT, TRUE);
+  assert(status == SUCCESS);
 
   if (rn < 0) // value "zero" is okey
     {
@@ -10647,6 +10675,9 @@ int main(int argc, char *argv[])
 {
 int i;
 int daemon = FALSE;
+
+  setbuf(stdout,NULL);
+  setbuf(stderr,NULL);
 
   /* parse command line parameters */
   no_disconnect = FALSE;
