@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.41  1999/07/21 09:22:01  midas
+  Added Ctrl-C handler to cm_connect_experiment and cm_yield
+
   Revision 1.40  1999/06/28 12:01:21  midas
   Added hs_fdump
 
@@ -243,6 +246,8 @@ TRANS_TABLE _trans_table[] =
 static BOOL _server_registered = FALSE;
 
 static INT rpc_transition_dispatch(INT index, void *prpc_param[]);
+
+void cm_ctrlc_handler(int sig);
 
 typedef struct {
   INT code;
@@ -1668,6 +1673,9 @@ HNDLE hDB, hKeyClient;
   /* call cm_check_connect when exiting */
   atexit((void (*)(void))cm_check_connect);
 
+  /* register ctrl-c handler */
+  ss_ctrlc_handler(cm_ctrlc_handler);
+
   return CM_SUCCESS;
 }
 
@@ -2855,6 +2863,16 @@ INT cm_dispatch_ipc(char *message, int socket)
 
 /*------------------------------------------------------------------*/
 
+BOOL _ctrlc_pressed = FALSE;
+
+void cm_ctrlc_handler(int sig)
+{
+  printf("Received break. Aborting...\n");
+  _ctrlc_pressed = TRUE;
+}
+
+/*------------------------------------------------------------------*/
+
 INT cm_yield(INT millisec)
 /********************************************************************\
 
@@ -2885,6 +2903,10 @@ INT cm_yield(INT millisec)
 {
 INT   status;
 BOOL  bMore;
+
+  /* check for ctrl-c */
+  if (_ctrlc_pressed)
+    return RPC_SHUTDOWN;
 
   /* check for available events */
   if (rpc_is_remote())
