@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.138  2004/09/28 23:57:08  midas
+  Added EQ_EB flag for event building
+
   Revision 1.137  2004/09/28 20:05:47  midas
   Revised debug logging for mserver
 
@@ -757,6 +760,8 @@ Equipment types */
 #define EQ_SLOW       (1<<3)   /**< Slow Control Event */
 #define EQ_MANUAL_TRIG (1<<4)  /**< Manual triggered Event */
 #define EQ_FRAGMENTED (1<<5)   /**< Fragmented Event */
+#define EQ_EB         (1<<6)   /**< Event run through the event builder */
+
 
 /** 
 Read - On flags */
