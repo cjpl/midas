@@ -6,6 +6,9 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
+  Revision 1.50  2004/09/28 20:21:05  midas
+  Fixed missing LF in debug output
+
   Revision 1.49  2004/09/28 20:05:59  midas
   Revised debug logging for mserver
 
@@ -197,7 +200,7 @@ void debug_print(char *msg)
       fprintf(f, "%s\n", msg);
       fclose(f);
    } else
-      printf("Cannot open \"mserver.log\".");
+      printf("Cannot open \"mserver.log\": %s\n", strerror(errno));
 }
 
 /*---- main --------------------------------------------------------*/
@@ -413,10 +416,10 @@ int main(int argc, char **argv)
          rpc_set_debug(debug_print, 1);
          if (callback.directory[0]) {
             if (callback.user[0])
-               rpc_debug_printf("Start subprocess in %s under user %s\n",
+               rpc_debug_printf("Start subprocess in %s under user %s",
                       callback.directory, callback.user);
             else
-               rpc_debug_printf("Start subprocess in %s\n", callback.directory);
+               rpc_debug_printf("Start subprocess in %s", callback.directory);
 
          } else
             rpc_debug_printf("Start subprocess in current directory");
