@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.64  1999/10/07 13:17:34  midas
+  Put a few EXPRT im msystem.h to make NT happy, updated NT makefile
+
   Revision 1.63  1999/10/06 18:01:12  midas
   Fixed bug with subject in new messages
 
@@ -253,8 +256,6 @@ char system_list[20][NAME_LENGTH] = {
   "Target",
   "Beamline"
 };
-
-BOOL al_evaluate_condition(char *condition, char *value);
 
 /*------------------------------------------------------------------*/
 

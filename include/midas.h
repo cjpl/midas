@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.47  1999/10/07 13:17:34  midas
+  Put a few EXPRT im msystem.h to make NT happy, updated NT makefile
+
   Revision 1.46  1999/10/06 08:56:33  midas
   Added /programs/xxx/required flag
 
@@ -1510,6 +1513,7 @@ INT EXPRT al_check();
 INT EXPRT al_trigger_alarm(char *alarm_name, char *alarm_message);
 INT EXPRT al_trigger_class(char *alarm_class, char *alarm_message, BOOL first);
 INT EXPRT al_reset_alarm(char *alarm_name);
+BOOL EXPRT al_evaluate_condition(char *condition, char *value);
 
 /*---- analyzer functions ----*/
 void EXPRT test_register(ANA_TEST *t);

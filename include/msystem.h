@@ -7,6 +7,9 @@
                 routines
 
   $Log$
+  Revision 1.14  1999/10/07 13:17:34  midas
+  Put a few EXPRT im msystem.h to make NT happy, updated NT makefile
+
   Revision 1.13  1999/10/04 10:37:51  midas
   Removed reduced MAX_EVENT_SIZE for VxWorks
 
@@ -514,14 +517,14 @@ INT ss_close_shm(char *name, void *adr, HNDLE handle, INT destroy_flag);
 INT ss_flush_shm(char *name, void *adr, INT size);
 INT ss_spawnv(INT mode, char *cmdname, char *argv[]);
 INT ss_shell(int sock);
-INT ss_getpid(void);
-INT ss_gettid(void);
+INT EXPRT ss_getpid(void);
+INT EXPRT ss_gettid(void);
 INT ss_getthandle(void);
 INT ss_set_async_flag(INT flag);
-INT ss_mutex_create(char *mutex_name, HNDLE *mutex_handle);
-INT ss_mutex_wait_for(HNDLE mutex_handle, INT timeout);
-INT ss_mutex_release(HNDLE mutex_handle);
-INT ss_mutex_delete(HNDLE mutex_handle, INT destroy_flag);
+INT EXPRT ss_mutex_create(char *mutex_name, HNDLE *mutex_handle);
+INT EXPRT ss_mutex_wait_for(HNDLE mutex_handle, INT timeout);
+INT EXPRT ss_mutex_release(HNDLE mutex_handle);
+INT EXPRT ss_mutex_delete(HNDLE mutex_handle, INT destroy_flag);
 INT ss_wake(INT pid, INT tid, INT thandle);
 INT ss_alarm(INT millitime, void (*func)(int));
 INT ss_suspend_get_port(INT* port);
