@@ -7,6 +7,9 @@
                 Most routines are from mfe.c mana.c and mlogger.c.
 
   $Log$
+  Revision 1.15  1999/10/18 14:46:04  midas
+  fixed compiler warning
+
   Revision 1.14  1999/10/18 14:41:50  midas
   Use /programs/<name>/Watchdog timeout in all programs as timeout value. The
   default value can be submitted by calling cm_connect_experiment1(..., timeout)
@@ -1394,8 +1397,8 @@ INT log_close(LOG_CHN *log_chn, INT run_number)
 
 INT log_write(LOG_CHN *log_chn, EVENT_HEADER *pevent)
 {
-int    status, size, izero;
-DWORD  actual_time, start_time, watchdog_timeout;
+INT    status, size, izero, watchdog_timeout;
+DWORD  actual_time, start_time;
 BOOL   watchdog_flag;
 static BOOL stop_requested = FALSE;
 static DWORD last_checked = 0;
