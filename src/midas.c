@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.85  1999/11/10 15:05:16  midas
+  Did some additional database locking
+
   Revision 1.84  1999/11/10 13:56:12  midas
   Alarm record only gets created when old one mismatches
 
@@ -2483,28 +2486,40 @@ INT i;
       DATABASE_CLIENT  *pclient;
       INT              index;
 
+      db_lock_database(i);
       index   = _database[i-1].client_index;
       pheader = _database[i-1].database_header;
       pclient  = &pheader->client[index];
 
       if (rpc_get_server_option(RPC_OSERVER_TYPE) == ST_SINGLE &&
           _database[i-1].index != rpc_get_server_acception())
+        {
+        db_unlock_database(i);
         continue;
+        }
   
       if (rpc_get_server_option(RPC_OSERVER_TYPE) != ST_SINGLE &&
           _database[i-1].index != ss_gettid())
+        {
+        db_unlock_database(i);
         continue;
+        }
 
       if (!_database[i-1].attached)
+        {
+        db_unlock_database(i);
         continue;
+        }
 
       /* clear entry from client structure in buffer header */
       pclient->watchdog_timeout = timeout;
+
+      db_unlock_database(i);
       }
 
     if (call_watchdog)
       /* restart watchdog */
-      cm_watchdog(0);
+      ss_alarm(timeout, cm_watchdog);
     else
       /* kill current timer */
       ss_alarm(0, cm_watchdog);
@@ -2601,6 +2616,7 @@ INT i;
       {
       *timeout = pclient->watchdog_timeout;
       *last = ss_millitime() - pclient->last_activity;
+      db_unlock_database(hDB);
       return CM_SUCCESS;
       }
 
@@ -15564,13 +15580,13 @@ ALARM_STR(alarm_str);
 
     size = sizeof(alarm);
     status = db_get_record(hDB, hkey, &alarm, &size, 0);
-    if (status != DB_SUCCESS || alarm.type < AT_INTERNAL || alamr.type > AT_EVALUATED)
+    if (status != DB_SUCCESS || alarm.type < AT_INTERNAL || alarm.type > AT_EVALUATED)
       {
       /* make sure alarm record has right structure */
       db_create_record(hDB, hkey, "", strcomb(alarm_str));
       size = sizeof(alarm);
       status = db_get_record(hDB, hkey, &alarm, &size, 0);
-      if (status != DB_SUCCESS || alarm.type < AT_INTERNAL || alamr.type > AT_EVALUATED)
+      if (status != DB_SUCCESS || alarm.type < AT_INTERNAL || alarm.type > AT_EVALUATED)
         {
         cm_msg(MERROR, "al_check", "Cannot get alarm record");
         continue;
