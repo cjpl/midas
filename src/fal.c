@@ -7,6 +7,9 @@
                 Most routines are from mfe.c mana.c and mlogger.c.
 
   $Log$
+  Revision 1.38  2003/12/01 07:51:04  midas
+  Added extra parameter to cm_cleanup()
+
   Revision 1.37  2003/11/14 13:39:08  midas
   Added auto restart to FAL
 
@@ -4872,7 +4875,7 @@ usage:
   if (status == CM_SUCCESS)
     {
     /* try to cleanup hanging FAL */
-    cm_cleanup(fal_name);
+    cm_cleanup(fal_name, FALSE);
 
     /* let user read message */
     ss_sleep(2000);
