@@ -6,6 +6,9 @@
   Contents:     Command-line interface for the Midas Slow Control Bus
 
   $Log$
+  Revision 1.73  2004/12/08 10:42:18  midas
+  Version 1.7.8
+
   Revision 1.72  2004/10/27 07:42:07  midas
   Changed hotplug warning
 
@@ -324,7 +327,7 @@ void print_help()
    puts("reset                      Reboot whole MSCB system");
    puts("sa <addr> <gaddr>          Set node and group address of addressed node");
    puts("save <file>                Save current node variables");
-   puts("scan [r]                   Scan bus for nodes [repeat mode]");
+   puts("scan [r] [a]               Scan bus for nodes [repeat mode] [all]");
    puts("sn <name>                  Set node name (up to 16 characters)");
    puts("terminal                   Enter teminal mode for SCS-210");
    puts("upload <hex-file> [debug]  Upload new firmware to node [with debug info]");
@@ -603,17 +606,19 @@ void cmd_loop(int fd, char *cmd, int adr)
                   break;
                }
 
-               if (i && i % 1000 == 0 && status != MSCB_SUCCESS) {
-                  i += 999;
-                  if (i == 64999)
-                     i = 0xFFFE;
-               }
+               if (param[1][0] != 'a' && param[2][0] != 'a')
+                  if (i && i % 1000 == 0 && status != MSCB_SUCCESS) {
+                     i += 999;
+                     if (i == 64999)
+                        i = 0xFFFE;
+                  }
 
-               if (i && i % 100 == 0 && status != MSCB_SUCCESS) {
-                  i += 99;
-                  if (i == 65499)
-                     i = 0xFFFE;
-               }
+               if (param[1][0] != 'a' && param[2][0] != 'a')
+                  if (i && i % 100 == 0 && status != MSCB_SUCCESS) {
+                     i += 99;
+                     if (i == 65499)
+                        i = 0xFFFE;
+                  }
 
                if (kbhit())
                   break;
@@ -641,15 +646,16 @@ void cmd_loop(int fd, char *cmd, int adr)
                   break;
                }
 
-               if (i && (i & 0xFF) == 0 && status != MSCB_SUCCESS) {
-                  i += 0xFF;
-               }
+               if (param[1][0] != 'a' && param[2][0] != 'a')
+                  if (i && (i & 0xFF) == 0 && status != MSCB_SUCCESS) {
+                     i += 0xFF;
+                  }
 
                if (kbhit())
                   break;
             }
 
-         } while (param[1][0] == 'r' && !kbhit());
+         } while ((param[1][0] == 'r' || param[2][0] == 'r') && !kbhit());
 
          while (kbhit())
             getch();
