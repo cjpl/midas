@@ -1684,6 +1684,10 @@ INT             n1, n2;
         {
         printf("Run is already started\n");
         }
+      else if (i == STATE_PAUSED)
+        {
+        printf("Run is paused, please use \"resume\"\n");
+        }
       else
         {
         /* check if transition in progress */
