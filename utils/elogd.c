@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.55  2001/11/06 15:52:02  midas
+  Fixed small bug
+
   Revision 1.54  2001/11/05 16:31:27  midas
   Added "page title" and changed "use email subject"
 
@@ -4067,7 +4070,7 @@ int    i, j, n, index, n_attr, n_mail, suppress, status;
     if ((attr_flags[i] & AF_REQUIRED) && *getparam(attr_list[i]) == 0)
       {
       rsprintf("HTTP/1.1 200 Document follows\r\n");
-      rsprintf("Server: ELOG HTTP %s\r\n");
+      rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
       if (use_keepalive)
         {
         rsprintf("Connection: Keep-Alive\r\n");
@@ -6092,7 +6095,7 @@ struct timeval       timeout;
         {
         /* return request for authorization */
         rsprintf("HTTP/1.1 401 Authorization Required\r\n");
-        rsprintf("Server: ELOG HTTPD 1.0\r\n");
+        rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
         rsprintf("WWW-Authenticate: Basic realm=\"%s\"\r\n", logbook);
         rsprintf("Connection: close\r\n");
         rsprintf("Content-Type: text/html\r\n\r\n");
