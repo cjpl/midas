@@ -7,6 +7,10 @@
                 linked with user code to form a complete frontend
 
   $Log$
+  Revision 1.59  2003/11/01 00:48:14  olchansk
+  abort if cannot read /runinfo/run number
+  abort if run number resets to zero
+
   Revision 1.58  2003/10/29 15:33:48  midas
   Properly display message about stopped previous frontend
 
@@ -195,6 +199,7 @@
 \********************************************************************/
 
 #include <stdio.h>
+#include <assert.h>
 #include "midas.h"
 #include "msystem.h"
 #include "mcstd.h"
@@ -477,7 +482,8 @@ DWORD  dummy;
   db_get_value(hDB, 0, "/Runinfo/State", &run_state, &size, TID_INT, TRUE);
   size = sizeof(run_number);
   run_number = 1;
-  db_get_value(hDB, 0, "/Runinfo/Run number", &run_number, &size, TID_INT, TRUE);
+  status = db_get_value(hDB, 0, "/Runinfo/Run number", &run_number, &size, TID_INT, TRUE);
+  assert(status == SUCCESS);
 
   /* scan EQUIPMENT table from FRONTEND.C */
   for (index=0 ; equipment[index].name[0] ; index++)
@@ -1772,7 +1778,14 @@ INT err;
           {
           auto_restart = 0;
           size = sizeof(run_number);
-          db_get_value(hDB, 0, "/Runinfo/Run number", &run_number, &size, TID_INT, TRUE);
+          status = db_get_value(hDB, 0, "/Runinfo/Run number", &run_number, &size, TID_INT, TRUE);
+          assert(status == SUCCESS);
+
+          if (run_number <= 0)
+            {
+            cm_msg(MERROR, "main", "aborting on attempt to use invalid run number %d", run_number);
+            abort();
+            }
 
           cm_msg(MTALK, "main", "starting new run");
           status = cm_transition(TR_START, run_number+1, NULL, 0, SYNC, FALSE);
