@@ -6,6 +6,9 @@
   Contents:     MIDAS logger program
 
   $Log$
+  Revision 1.89  2004/11/16 19:14:32  midas
+  Fixed wrong CR/LF
+
   Revision 1.88  2004/11/09 21:19:06  pierre
   - change VARCHAR for TEXT
   - add NOT NULL for PRIMARY KEY
