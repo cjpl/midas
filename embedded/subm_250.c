@@ -7,6 +7,9 @@
                 SUBM250 running on Cygnal C8051F320
 
   $Log$
+  Revision 1.4  2004/03/12 07:15:24  midas
+  Enabled watchdog
+
   Revision 1.3  2004/03/10 10:28:48  midas
   Implemented test block write for speed tests
 
@@ -114,8 +117,8 @@ void setup(void)
 
    /* enable watchdog */
    PCA0MD = 0x00;               // disable watchdog
-//   PCA0CPL4 = 255;              // 71.1 msec
-//   PCA0MD = 0x40;               // enable watchdog
+   PCA0CPL4 = 255;              // 71.1 msec
+   PCA0MD = 0x40;               // enable watchdog
 
    /* enable reset pin and watchdog reset */
    RSTSRC = 0x09;
@@ -311,6 +314,7 @@ void main(void)
             /* wait for data to be received */
             rs485_receive();
          }
+
       }
 
    } while (1);
