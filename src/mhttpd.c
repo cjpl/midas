@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.282  2004/12/14 23:36:03  olchansk
+  Implement "minimum" and "maximum" clamping for history graphs
+
   Revision 1.281  2004/12/14 23:25:30  olchansk
   Renee's improvements to http data logging
 
@@ -7415,6 +7418,8 @@ void generate_hist_graph(char *path, char *buffer, int *buffer_size,
    gdPoint poly[3];
    float upper_limit[MAX_VARS], lower_limit[MAX_VARS];
    double yb1, yb2, yf1, yf2, ybase;
+   float minvalue = -HUGE_VAL;
+   float maxvalue = +HUGE_VAL;
 
    static char *ybuffer;
    static DWORD *tbuffer;
@@ -7587,6 +7592,21 @@ void generate_hist_graph(char *path, char *buffer, int *buffer_size,
       size = sizeof(logaxis);
       logaxis = 0;
       db_get_value(hDB, hkeypanel, "Log axis", &logaxis, &size, TID_BOOL, TRUE);
+
+      /* get min value */
+      size = sizeof(minvalue);
+      minvalue = -HUGE_VAL;
+      db_get_value(hDB, hkeypanel, "Minimum", &minvalue, &size, TID_FLOAT, TRUE);
+
+      /* get max value */
+      size = sizeof(maxvalue);
+      maxvalue = +HUGE_VAL;
+      db_get_value(hDB, hkeypanel, "Maximum", &maxvalue, &size, TID_FLOAT, TRUE);
+
+      if ((minvalue==0)&&(maxvalue==0)) {
+        minvalue = -HUGE_VAL;
+        maxvalue = +HUGE_VAL;
+      }
 
       /* get runmarker flag */
       size = sizeof(runmarker);
@@ -7794,12 +7814,24 @@ void generate_hist_graph(char *path, char *buffer, int *buffer_size,
             break;
          }
 
+	 /* avoid NaNs */
+         if (!finite(y[i][j]))
+            y[i][j] = 0;
+
          /* avoid overflow */
          if (y[i][j] > 1E30)
             y[i][j] = 1E30f;
 
          /* apply factor and offset */
          y[i][j] = y[i][j] * factor[i] + offset[i];
+
+
+         /* apply minimum and maximum clamping */
+         if (y[i][j] > maxvalue)
+           y[i][j] = maxvalue;
+
+         if (y[i][j] < minvalue)
+           y[i][j] = minvalue;
 
          /* calculate ymin and ymax */
          if ((i == 0 || index != -1) && j == 0)
