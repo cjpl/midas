@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.83  2001/06/27 12:16:30  midas
+  Added OS_IRIX
+
   Revision 1.82  2001/04/05 05:51:03  midas
   Added CMD_NAME
 
@@ -303,7 +306,7 @@
 #endif
 #endif
 
-#if defined(OS_LINUX) || defined(OS_OSF1) || defined(OS_ULTRIX) || defined(OS_FREEBSD) || defined(OS_SOLARIS)
+#if defined(OS_LINUX) || defined(OS_OSF1) || defined(OS_ULTRIX) || defined(OS_FREEBSD) || defined(OS_SOLARIS) || defined(OS_IRIX)
 #define OS_UNIX
 #endif
 
