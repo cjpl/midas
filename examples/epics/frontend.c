@@ -3,20 +3,13 @@
   Name:         frontend.c
   Created by:   Stefan Ritt
 
-  Contents:     Example Slow Control Frontend program. Defines two
-                slow control equipments, one for a HV device and one
-                for a multimeter (usually a general purpose PC plug-in
-                card with A/D inputs/outputs. As a device driver,
-                the "null" driver is used which simulates a device
-                without accessing any hardware. The used class drivers
-                cd_hv and cd_multi act as a link between the ODB and
-                the equipment and contain some functionality like
-                ramping etc. To form a fully functional frontend,
-                the device driver "null" has to be replaces with
-                real device drivers.
-
+  Contents:     Example Slow Control Frontend for beamline control
+                through EPICS channel access.
 
   $Log$
+  Revision 1.2  1999/09/22 12:01:09  midas
+  Fixed compiler warning
+
   Revision 1.1  1999/09/22 09:19:25  midas
   Added sources
 
@@ -37,7 +30,7 @@
 /*-- Globals -------------------------------------------------------*/
 
 /* The frontend name (client name) as seen by other MIDAS clients   */
-char *frontend_name = "SC Frontend";
+char *frontend_name = "BL Frontend";
 /* The frontend file name, don't change it */
 char *frontend_file_name = __FILE__;
 
@@ -64,7 +57,7 @@ EQUIPMENT equipment[] = {
     3, 0,                 /* event ID, trigger mask */
     "SYSTEM",             /* event buffer */
     EQ_SLOW,              /* equipment type */
-    {0},                  /* event source */
+    0,                    /* event source */
     "FIXED",              /* format */
     TRUE,                 /* enabled */
     RO_RUNNING |
