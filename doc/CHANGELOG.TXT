@@ -1,6 +1,18 @@
 Revision History
 ================
 
+Version 1.9.3, released May 17th, 2003
+--------------------------------------
+
+- Support for ROOT output in logger and analyzer
+- ROOT online histos for analyzer
+- examples/experiment now uses ROOT, examples/hbookexpt old HBOOK
+- added simple rmidas histo display
+- cleanup makefile for different analyzers
+- bugs in mhttpd fixed
+- implemented ODB validitation
+- fixed buffer overflows in mhttpd
+- several other small modifications and bug fixes
 
 Version 1.9.2, released Oct 04, 2002
 ------------------------------------
