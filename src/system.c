@@ -14,6 +14,10 @@
                 Brown, Prentice Hall
 
   $Log$
+  Revision 1.24  1999/04/16 15:11:28  midas
+  ss_suspends forwards more MSG_BM UPD messages (needed for JMidas seeing
+  its own messages in parallel to an ODB key update like run start)
+
   Revision 1.23  1999/02/06 00:10:35  pierre
   -Fix timeout unit for ss_mutex_wait_for under VxWorks
 
@@ -2918,8 +2922,11 @@ char                str[100];
           size = recvfrom(_suspend_struct[index].ipc_recv_socket, (char *)buffer_tmp,
 					          sizeof(buffer), 0, (void *) &from_addr, (void *)&size);
 
-          /* make sure all ODB messages get through */
-          if (buffer_tmp[0] == MSG_ODB)
+          /* don't forward same MSG_BM as above */
+          if (!(buffer_tmp[0] == MSG_BM && 
+                buffer_tmp[0] == buffer[0] &&
+                buffer_tmp[1] == buffer[1] &&
+                buffer_tmp[2] == buffer[2]))
 	          if (_suspend_struct[index].ipc_dispatch)
 		          _suspend_struct[index].ipc_dispatch(buffer_tmp[0], buffer_tmp[1], buffer_tmp[2], 
 					          server_socket);
