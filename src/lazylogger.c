@@ -6,6 +6,9 @@
   Contents:     Disk to Tape copier for background job
 
   $Log$
+  Revision 1.19  2000/09/29 16:05:48  pierre
+  - Fix &arg on db_calls with TID_STRING
+
   Revision 1.18  2000/03/30 06:38:35  pierre
   - Added field "../settings/Execute after rewind" for "after rewind" execution.
 
@@ -525,9 +528,9 @@ INT lazy_select_purge(HNDLE hKey, INT channel, LAZY_INFO * pLall, char * fmt, ch
 
   /* get current specification */
   size = sizeof(cdir);
-  db_get_value(hDB, hKey, "Settings/Data dir", &cdir, &size, TID_STRING);
+  db_get_value(hDB, hKey, "Settings/Data dir", cdir, &size, TID_STRING);
   size = sizeof(cff);
-  db_get_value(hDB, hKey, "Settings/filename format", &cff, &size, TID_STRING);
+  db_get_value(hDB, hKey, "Settings/filename format", cff, &size, TID_STRING);
   while (1)
   {
     /* try to find the oldest matching run present in the list AND on disk */
@@ -543,9 +546,9 @@ INT lazy_select_purge(HNDLE hKey, INT channel, LAZY_INFO * pLall, char * fmt, ch
       if (((pLall+i)->hKey) && (hKey != (pLall+i)->hKey))
       { /* valid channel */
         size = sizeof(ddir);
-        db_get_value(hDB, (pLall+i)->hKey, "Settings/Data dir", &ddir, &size, TID_STRING);
+        db_get_value(hDB, (pLall+i)->hKey, "Settings/Data dir", ddir, &size, TID_STRING);
         size = sizeof(ff);
-        db_get_value(hDB, (pLall+i)->hKey, "Settings/filename format", &ff, &size, TID_STRING);
+        db_get_value(hDB, (pLall+i)->hKey, "Settings/filename format", ff, &size, TID_STRING);
 
         if ((strcmp(ddir, cdir) == 0) && (strcmp(ff, cff) == 0))
           (pLall+i)->match = TRUE;
@@ -654,9 +657,9 @@ void lazy_maintain_check(HNDLE hKey, LAZY_INFO * pLall)
 
     /* get current specification */
     size = sizeof(cdir);
-    db_get_value(hDB, hKey, "Settings/Data dir", &cdir, &size, TID_STRING);
+    db_get_value(hDB, hKey, "Settings/Data dir", cdir, &size, TID_STRING);
     size = sizeof(cff);
-    db_get_value(hDB, hKey, "Settings/filename format", &cff, &size, TID_STRING);
+    db_get_value(hDB, hKey, "Settings/filename format", cff, &size, TID_STRING);
 
 
     /* build matching dir and ff */
@@ -665,9 +668,9 @@ void lazy_maintain_check(HNDLE hKey, LAZY_INFO * pLall)
       if (((pLall+i)->hKey) && (hKey != (pLall+i)->hKey))
       { /* valid channel */
         size = sizeof(dir);
-        db_get_value(hDB, (pLall+i)->hKey, "Settings/Data dir", &dir, &size, TID_STRING);
+        db_get_value(hDB, (pLall+i)->hKey, "Settings/Data dir", dir, &size, TID_STRING);
         size = sizeof(ff);
-        db_get_value(hDB, (pLall+i)->hKey, "Settings/filename format", &ff, &size, TID_STRING);
+        db_get_value(hDB, (pLall+i)->hKey, "Settings/filename format", ff, &size, TID_STRING);
 
         if ((strcmp(dir, cdir) == 0) && (strcmp(ff, cff) == 0))
         {
