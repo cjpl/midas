@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.137  2000/08/23 10:57:47  midas
+  Break lines if more than 10 history panels
+
   Revision 1.136  2000/08/22 14:25:27  midas
   Changed BG color of program list on status page (avoid yellow)
 
@@ -6613,6 +6616,8 @@ float  factor[2];
           rsprintf("<a href=\"%sHS/%s\">%s</a> ", 
                     mhttpd_url, key.name, key.name);
         }
+      if (i % 10 == 9)
+        rsprintf("<br>\n");
       }
 
   rsprintf("</tr>\n");
