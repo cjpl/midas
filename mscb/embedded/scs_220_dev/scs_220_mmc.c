@@ -10,6 +10,9 @@
                 MEG magnet mapping machine
 
   $Log$
+  Revision 1.2  2005/03/23 12:31:39  ritt
+  Fixed problem with zero readings in repeat mode
+
   Revision 1.1  2005/01/07 14:37:02  midas
   Initial revision
 
@@ -100,10 +103,11 @@ unsigned char user_func(unsigned char *data_in, unsigned char *data_out)
 
 /*---- User loop function ------------------------------------------*/
 
+char xdata str[32];
+
 void read_axis(unsigned char axis)
 {
 unsigned char i, j, c;
-char idata str[32];
 float value;
 
    strcpy(str, "\002");            // STX
@@ -128,17 +132,30 @@ float value;
    
    printf(str);
    flush();
-   i = gets_wait(str, 24, 20);
+   memset(str, 0, sizeof(str));
+   i = gets_wait(str, 24, 50);
 
    if (i > 16) {
+
+      /* Somtimes, a wrong character slips into str if msc does a
+	     read repeat. In that case F appears at str[16], so just
+		 ignore the reading */
+      if (str[16] == 'F')
+	     return;
+
       value = (float) (atoi(str+16) / 10.0);
       if (str[15] == 'F')
          value = -value;
+
+	  if (axis == 2 && value == 0)
+	     i = i+1;
+      DISABLE_INTERRUPTS;
       switch (axis) {
          case 0: user_data.z   = value; break;
          case 1: user_data.r   = value; break;
          case 2: user_data.phi = value; break;
       }
+      ENABLE_INTERRUPTS;
    }
    
 }
