@@ -6,6 +6,9 @@
   Contents:     Generic Class Driver
 
   $Log$
+  Revision 1.7  2003/10/30 12:39:42  midas
+  Don't overwrite number of channels from ODB
+
   Revision 1.6  2002/06/06 07:50:12  midas
   Implemented scheme with DF_xxx flags
 
@@ -231,25 +234,20 @@ GEN_INFO *gen_info;
     gen_info->format = FORMAT_YBOS;
 
   /* count total number of channels */
-  db_create_key(hDB, gen_info->hKeyRoot, "Settings/Channels", TID_KEY);
-  db_find_key(hDB, gen_info->hKeyRoot, "Settings/Channels", &hKey);
-
   for (i=0,gen_info->num_channels=0 ; pequipment->driver[i].name[0] ; i++)
     {
-    /* ODB value has priority over driver list in channel number */
-    size = sizeof(INT);
-    db_get_value(hDB, hKey, pequipment->driver[i].name, 
-                 &pequipment->driver[i].channels, &size, TID_INT, TRUE);
-    
     if (pequipment->driver[i].channels == 0)
-      pequipment->driver[i].channels = 1;
+      {
+      cm_msg(MERROR, "gen_init", "Driver with zero channels not allowed");
+      return FE_ERR_ODB;
+      }
 
     gen_info->num_channels += pequipment->driver[i].channels;
     }
 
   if (gen_info->num_channels == 0)
     {
-    cm_msg(MERROR, "hv_init", "No channels found in device driver list");
+    cm_msg(MERROR, "gen_init", "No channels found in device driver list");
     return FE_ERR_ODB;
     }
 
