@@ -6,6 +6,9 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.50  2002/06/10 07:06:55  midas
+  Added 'lock' parameter to db_remove_open_record() to work also remotely
+
   Revision 1.49  2002/05/22 00:18:43  midas
   Don't write to ODB in db_open_rec() if in MODE_ALLOC)
 
@@ -933,7 +936,7 @@ INT              index, destroy_flag, i, j;
   /* close all open records */
   for (i=0 ; i<pclient->max_index ; i++)
     if (pclient->open_record[i].handle)
-      db_remove_open_record(hDB, pclient->open_record[i].handle);
+      db_remove_open_record(hDB, pclient->open_record[i].handle, FALSE);
 
   /* mark entry in _database as empty */
   _database[hDB-1].attached = FALSE;
@@ -6591,7 +6594,7 @@ INT             i;
 
 /*------------------------------------------------------------------*/
 
-INT db_remove_open_record(HNDLE hDB, HNDLE hKey)
+INT db_remove_open_record(HNDLE hDB, HNDLE hKey, BOOL lock)
 /********************************************************************\
 
   Routine: db_remove_open_record
@@ -6610,6 +6613,9 @@ DATABASE_CLIENT *pclient;
 KEY             *pkey;
 INT             i, index;
 
+  if (lock)
+    db_lock_database(hDB);
+
   pheader  = _database[hDB-1].database_header;
   pclient  = &pheader->client[_database[hDB-1].client_index];
 
@@ -6619,7 +6625,12 @@ INT             i, index;
       break;
 
   if (index == pclient->max_index)
+    {
+    if (lock)
+      db_unlock_database(hDB);
+
     return DB_INVALID_HANDLE;
+    }
 
   /* decrement notify_count */
   pkey = (KEY *) ((char *) pheader + hKey);
@@ -6640,6 +6651,8 @@ INT             i, index;
       break;
   pclient->max_index = i+1;
 
+  if (lock)
+    db_unlock_database(hDB);
 }
 #endif /* LOCAL_ROUTINES */
 
@@ -7176,9 +7189,7 @@ INT i;
     return DB_INVALID_HANDLE;
 
   /* remove record entry from database structure */
-  db_lock_database(hDB);
-  db_remove_open_record(hDB, hKey);
-  db_unlock_database(hDB);
+  db_remove_open_record(hDB, hKey, TRUE);
 
   /* free local memory */
   if (_record_list[i].access_mode & MODE_ALLOC)

@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.100  2002/06/10 07:06:55  midas
+  Added 'lock' parameter to db_remove_open_record() to work also remotely
+
   Revision 1.99  2002/06/06 07:49:46  midas
   Added DF_xxx flags for device drivers
 
@@ -1684,7 +1687,7 @@ INT EXPRT db_send_changed_records(void);
 INT EXPRT db_get_open_records(HNDLE hDB, HNDLE hKey, char *str, INT buf_size, BOOL fix);
 
 INT EXPRT db_add_open_record(HNDLE hDB, HNDLE hKey, WORD access_mode);
-INT EXPRT db_remove_open_record(HNDLE hDB, HNDLE hKey);
+INT EXPRT db_remove_open_record(HNDLE hDB, HNDLE hKey, BOOL lock);
 
 INT EXPRT db_load(HNDLE hdb, HNDLE key_handle, char *filename, BOOL bRemote);
 INT EXPRT db_save(HNDLE hdb, HNDLE key_handle, char *filename, BOOL bRemote);
