@@ -6,6 +6,9 @@
   Contents:     Header fiel for MSCB RPC funcions
 
   $Log$
+  Revision 1.7  2003/05/12 10:30:45  midas
+  Fixed name collisions with midas library
+
   Revision 1.6  2003/03/19 16:35:03  midas
   Eliminated configuration parameters
 
@@ -156,7 +159,7 @@ typedef struct {
 
 /* function declarations */
 
-void rpc_server_loop(void);
-int  rpc_connect(char *host_name);
-int  rpc_connected();
-int  rpc_call(const int routine_id, ...);
+void mrpc_server_loop(void);
+int  mrpc_connect(char *host_name);
+int  mrpc_connected();
+int  mrpc_call(const int routine_id, ...);

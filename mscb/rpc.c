@@ -6,6 +6,9 @@
   Contents:     List of MSCB RPC functions with parameters
 
   $Log$
+  Revision 1.10  2003/05/12 10:30:45  midas
+  Fixed name collisions with midas library
+
   Revision 1.9  2003/03/25 09:42:57  midas
   Added debugging facility
 
@@ -189,7 +192,7 @@ static RPC_LIST rpc_list[] = {
 /*------------------------------------------------------------------*/
 
 /* data type sizes */
-INT tid_size[] = {
+INT mtid_size[] = {
   0, /* tid == 0 not defined                               */
   1, /* TID_BYTE      unsigned byte         0       255    */
   1, /* TID_SBYTE     signed byte         -128      127    */
@@ -248,14 +251,14 @@ va_list argptr;
 
 /*------------------------------------------------------------------*/
 
-int recv_tcp(int sock, char *buffer, int buffer_size)
+int mrecv_tcp(int sock, char *buffer, int buffer_size)
 {
 INT         param_size, n_received, n;
 NET_COMMAND *nc;
 
   if (buffer_size < sizeof(NET_COMMAND_HEADER))
     {
-    printf("recv_tcp_server: buffer too small");
+    printf("mrecv_tcp_server: buffer too small");
     return -1;
     }
 
@@ -298,7 +301,7 @@ NET_COMMAND *nc;
 
 /*------------------------------------------------------------------*/
 
-int send_tcp(int sock, char *buffer, int buffer_size)
+int msend_tcp(int sock, char *buffer, int buffer_size)
 {
 int count, status;
 
@@ -407,7 +410,7 @@ int status;
 
 /*------------------------------------------------------------------*/
 
-int rpc_execute(int sock, char *buffer)
+int mrpc_execute(int sock, char *buffer)
 {
 INT          i, index, routine_id, status;
 char         *in_param_ptr, *out_param_ptr, *last_param_ptr;
@@ -431,7 +434,7 @@ char         return_buffer[NET_BUFFER_SIZE];
   index = i;
   if (rpc_list[i].id == 0)
     {
-    printf("rpc_execute: Invalid rpc ID (%d)\n", routine_id);
+    printf("mrpc_execute: Invalid rpc ID (%d)\n", routine_id);
     return RPC_INVALID_ID;
     }
 
@@ -445,7 +448,7 @@ char         return_buffer[NET_BUFFER_SIZE];
 
     if (flags & RPC_IN)
       {
-      param_size  = ALIGN(tid_size[ tid ]);
+      param_size  = ALIGN(mtid_size[ tid ]);
 
       if (tid == TID_STRING || tid == TID_LINK)
         param_size = ALIGN(1+strlen((char *) (in_param_ptr)));
@@ -469,7 +472,7 @@ char         return_buffer[NET_BUFFER_SIZE];
 
     if (flags & RPC_OUT)
       {
-      param_size  = ALIGN(tid_size[tid]);
+      param_size  = ALIGN(mtid_size[tid]);
 
       if (flags & RPC_VARARRAY || tid == TID_STRING)
         {
@@ -492,7 +495,7 @@ char         return_buffer[NET_BUFFER_SIZE];
       if ((int) out_param_ptr - (int) nc_out + param_size >
           NET_BUFFER_SIZE)
         {
-        printf("rpc_execute: return parameters (%d) too large for network buffer (%d)\n",
+        printf("mrpc_execute: return parameters (%d) too large for network buffer (%d)\n",
                (int) out_param_ptr - (int) nc_out + param_size, NET_BUFFER_SIZE);
         return RPC_EXCEED_BUFFER;
         }
@@ -521,7 +524,7 @@ char         return_buffer[NET_BUFFER_SIZE];
       {
       tid   = rpc_list[index].param[i].tid;
       flags = rpc_list[index].param[i].flags;
-      param_size  = ALIGN(tid_size[ tid ]);
+      param_size  = ALIGN(mtid_size[ tid ]);
 
       if (tid == TID_STRING)
         {
@@ -568,12 +571,12 @@ char         return_buffer[NET_BUFFER_SIZE];
   nc_out->header.routine_id = status;
   nc_out->header.param_size = param_size;
 
-  status = send_tcp(sock, return_buffer,
+  status = msend_tcp(sock, return_buffer,
                     sizeof(NET_COMMAND_HEADER) + param_size);
 
   if (status < 0)
     {
-    printf("rpc_execute: send_tcp() failed\n");
+    printf("mrpc_execute: msend_tcp() failed\n");
     return RPC_NET_ERROR;
     }
 
@@ -584,7 +587,7 @@ char         return_buffer[NET_BUFFER_SIZE];
 
 int _sock = 0;
 
-int rpc_connect(char *host_name)
+int mrpc_connect(char *host_name)
 { 
 INT                  status;
 struct sockaddr_in   bind_addr;
@@ -604,7 +607,7 @@ struct hostent       *phe;
   _sock = socket(AF_INET, SOCK_STREAM, 0);
   if (_sock == -1)
     {
-    perror("rpc_connect");
+    perror("mrpc_connect");
     return RPC_NET_ERROR;
     }
 
@@ -617,7 +620,7 @@ struct hostent       *phe;
   status = bind(_sock, (void *)&bind_addr, sizeof(bind_addr));
   if (status < 0)
     {
-    perror("rpc_connect");
+    perror("mrpc_connect");
     return RPC_NET_ERROR;
     }
 
@@ -630,7 +633,7 @@ struct hostent       *phe;
   phe = gethostbyname(host_name);
   if (phe == NULL)
     {
-    perror("rpc_connect");
+    perror("mrpc_connect");
     return RPC_NET_ERROR;
     }
   memcpy((char *)&(bind_addr.sin_addr), phe->h_addr, phe->h_length);
@@ -638,7 +641,7 @@ struct hostent       *phe;
   status = connect(_sock, (void *) &bind_addr, sizeof(bind_addr));
   if (status != 0)
     {
-    perror("rpc_connect");
+    perror("mrpc_connect");
     return RPC_NET_ERROR;
     }
 
@@ -647,14 +650,14 @@ struct hostent       *phe;
 
 /*------------------------------------------------------------------*/
 
-int rpc_connected()
+int mrpc_connected()
 {
   return _sock > 0;
 }
 
 /*------------------------------------------------------------------*/
 
-int rpc_disconnect()
+int mrpc_disconnect()
 {
   closesocket(_sock);
   return RPC_SUCCESS; 
@@ -662,7 +665,7 @@ int rpc_disconnect()
 
 /*------------------------------------------------------------------*/
 
-void rpc_va_arg(va_list* arg_ptr, int arg_type, void *arg)
+void mrpc_va_arg(va_list* arg_ptr, int arg_type, void *arg)
 {
   switch(arg_type)
     {
@@ -691,7 +694,7 @@ void rpc_va_arg(va_list* arg_ptr, int arg_type, void *arg)
 
 /*------------------------------------------------------------------*/
 
-int rpc_call(const int routine_id, ...)
+int mrpc_call(const int routine_id, ...)
 {
 va_list         ap, aptmp;
 char            str[256], arg[8], arg_tmp[8];
@@ -716,7 +719,7 @@ time_t          now;
   index = i;
   if (rpc_list[i].id == 0)
     {
-    printf("rpc_call: invalid rpc ID (%d)", routine_id);
+    printf("mrpc_call: invalid rpc ID (%d)", routine_id);
     return RPC_INVALID_ID;
     }
 
@@ -748,14 +751,14 @@ time_t          now;
       arg_type = TID_DOUBLE;
 
     /* get pointer to argument */
-    rpc_va_arg(&ap, arg_type, arg);
+    mrpc_va_arg(&ap, arg_type, arg);
 
     if (flags & RPC_IN)
       {
       if (bpointer)
-        arg_size = tid_size[tid];
+        arg_size = mtid_size[tid];
       else
-        arg_size = tid_size[arg_type];
+        arg_size = mtid_size[arg_type];
 
       /* for strings, the argument size depends on the string length */
       if (tid == TID_STRING || tid == TID_LINK)
@@ -766,7 +769,7 @@ time_t          now;
       if (flags & RPC_VARARRAY)
         {
         memcpy(&aptmp, &ap, sizeof(ap));
-        rpc_va_arg(&aptmp, TID_ARRAY, arg_tmp);
+        mrpc_va_arg(&aptmp, TID_ARRAY, arg_tmp);
 
         if (flags & RPC_OUT)
           arg_size = *((INT *) *((void **) arg_tmp));
@@ -786,7 +789,7 @@ time_t          now;
       if ((int) param_ptr - (int) nc + param_size >
           NET_BUFFER_SIZE)
         {
-        printf("rpc_call: parameters (%d) too large for network buffer (%d)",
+        printf("mrpc_call: parameters (%d) too large for network buffer (%d)",
                (int) param_ptr - (int) nc + param_size, NET_BUFFER_SIZE);
         return RPC_EXCEED_BUFFER;
         }
@@ -833,10 +836,10 @@ time_t          now;
   send_size = nc->header.param_size + sizeof(NET_COMMAND_HEADER);
 
   /* send and wait for reply on send socket */
-  i = send_tcp(_sock, (char *) nc, send_size);
+  i = msend_tcp(_sock, (char *) nc, send_size);
   if (i != send_size)
     {
-    printf("rpc_call: send_tcp() failed\n");
+    printf("mrpc_call: msend_tcp() failed\n");
     return RPC_NET_ERROR;
     }
 
@@ -851,21 +854,21 @@ time_t          now;
 
   if (!FD_ISSET(_sock, &readfds))
     {
-    printf("rpc_call: rpc timeout, routine = \"%s\"", rpc_list[index].name);
+    printf("mrpc_call: rpc timeout, routine = \"%s\"", rpc_list[index].name);
 
-    /* disconnect to avoid that the reply to this rpc_call comes at
-       the next rpc_call */
-    rpc_disconnect();
+    /* disconnect to avoid that the reply to this mrpc_call comes at
+       the next mrpc_call */
+    mrpc_disconnect();
 
     return RPC_ERR_TIMEOUT;
     }
 
   /* receive result on send socket */
-  i = recv_tcp(_sock, net_buffer, NET_BUFFER_SIZE);
+  i = mrecv_tcp(_sock, net_buffer, NET_BUFFER_SIZE);
 
   if (i<=0)
     {
-    printf("rpc_call: recv_tcp() failed, routine = \"%s\"", rpc_list[index].name);
+    printf("mrpc_call: mrecv_tcp() failed, routine = \"%s\"", rpc_list[index].name);
     return RPC_NET_ERROR;
     }
 
@@ -892,12 +895,12 @@ time_t          now;
     if (tid == TID_FLOAT && !bpointer)
       arg_type = TID_DOUBLE;
 
-    rpc_va_arg(&ap, arg_type, arg);
+    mrpc_va_arg(&ap, arg_type, arg);
 
     if (rpc_list[index].param[i].flags & RPC_OUT)
       {
       tid = rpc_list[index].param[i].tid;
-      arg_size = tid_size[tid];
+      arg_size = mtid_size[tid];
 
       if (tid == TID_STRING || tid == TID_LINK)
         arg_size = strlen((char *) (param_ptr)) + 1;
@@ -948,7 +951,7 @@ time_t          now;
 
 /*------------------------------------------------------------------*/
 
-void rpc_server_loop(void)
+void mrpc_server_loop(void)
 {
 int                  i, status, sock, lsock, len, flag;
 struct sockaddr_in   serv_addr, acc_addr;
@@ -972,7 +975,7 @@ struct timeval       timeout;
 
   if (lsock == -1)
     {
-    perror("rpc_server_loop");
+    perror("mrpc_server_loop");
     return;
     }
 
@@ -990,7 +993,7 @@ struct timeval       timeout;
   status = bind(lsock, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
   if (status < 0)
     {
-    perror("rpc_server_loop");
+    perror("mrpc_server_loop");
     return;
     }
 
@@ -998,7 +1001,7 @@ struct timeval       timeout;
   status = listen(lsock, SOMAXCONN);
   if (status < 0)
     {
-    perror("rpc_server_loop");
+    perror("mrpc_server_loop");
     return;
     }
 
@@ -1052,7 +1055,7 @@ struct timeval       timeout;
       for (i= 0 ; i<N_MAX_CONNECTION ; i++)
         if (rpc_sock[i] > 0 && FD_ISSET(rpc_sock[i], &readfds))
           {
-          len = recv_tcp(rpc_sock[i], net_buffer, NET_BUFFER_SIZE);
+          len = mrecv_tcp(rpc_sock[i], net_buffer, NET_BUFFER_SIZE);
           if (len < 0)
             {
             /* close broken connection */
@@ -1061,7 +1064,7 @@ struct timeval       timeout;
             rpc_sock[i] = 0;
             }
           else
-            rpc_execute(rpc_sock[i], net_buffer);
+            mrpc_execute(rpc_sock[i], net_buffer);
           }
       }
 

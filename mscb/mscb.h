@@ -6,6 +6,9 @@
   Contents:     Header fiel for MSCB funcions
 
   $Log$
+  Revision 1.23  2003/05/12 10:30:45  midas
+  Fixed name collisions with midas library
+
   Revision 1.22  2003/04/03 08:21:44  midas
   Added submaster check
 
@@ -79,39 +82,39 @@
 
 /*---- MSCB commands -----------------------------------------------*/
 
-#define CMD_ADDR_NODE8  0x09
-#define CMD_ADDR_NODE16 0x0A
-#define CMD_ADDR_BC     0x10
-#define CMD_ADDR_GRP8   0x11
-#define CMD_ADDR_GRP16  0x12
-#define CMD_PING8       0x19
-#define CMD_PING16      0x1A
+#define MCMD_ADDR_NODE8  0x09
+#define MCMD_ADDR_NODE16 0x0A
+#define MCMD_ADDR_BC     0x10
+#define MCMD_ADDR_GRP8   0x11
+#define MCMD_ADDR_GRP16  0x12
+#define MCMD_PING8       0x19
+#define MCMD_PING16      0x1A
 
-#define CMD_INIT        0x20
-#define CMD_GET_INFO    0x28
-#define CMD_SET_ADDR    0x34
-#define CMD_SET_BAUD    0x39
+#define MCMD_INIT        0x20
+#define MCMD_GET_INFO    0x28
+#define MCMD_SET_ADDR    0x34
+#define MCMD_SET_BAUD    0x39
 
-#define CMD_FREEZE      0x41
-#define CMD_SYNC        0x49
-#define CMD_UPGRADE     0x50
-#define CMD_USER        0x58
+#define MCMD_FREEZE      0x41
+#define MCMD_SYNC        0x49
+#define MCMD_UPGRADE     0x50
+#define MCMD_USER        0x58
 
-#define CMD_ECHO        0x61
-#define CMD_TOKEN       0x68
-#define CMD_SET_FLAGS   0x69
+#define MCMD_ECHO        0x61
+#define MCMD_TOKEN       0x68
+#define MCMD_SET_FLAGS   0x69
 
-#define CMD_ACK         0x78
+#define MCMD_ACK         0x78
 
-#define CMD_WRITE_NA    0x80
-#define CMD_WRITE_ACK   0x88
+#define MCMD_WRITE_NA    0x80
+#define MCMD_WRITE_ACK   0x88
 
-#define CMD_FLASH       0x98
+#define MCMD_FLASH       0x98
 
-#define CMD_READ        0xA0
+#define MCMD_READ        0xA0
 
-#define CMD_WRITE_BLOCK 0xB5
-#define CMD_READ_BLOCK  0xB9
+#define MCMD_WRITE_BLOCK 0xB5
+#define MCMD_READ_BLOCK  0xB9
 
 #define GET_INFO_GENERAL   0
 #define GET_INFO_VARIABLE  1
