@@ -7,6 +7,9 @@
                 Most routines are from mfe.c mana.c and mlogger.c.
 
   $Log$
+  Revision 1.4  1998/11/09 09:15:12  midas
+  Merged new code from mana.c, mlogger.c and mfe.c
+
   Revision 1.3  1998/10/12 12:19:01  midas
   Added Log tag in header
 
@@ -17,6 +20,7 @@
 #include "msystem.h"
 #include "hardware.h"
 #include "ftplib.h"
+#include "mcstd.h"
 
 #define INCLUDE_LOGGING
 #include "ybos.h"
@@ -318,7 +322,7 @@ INT tape_open(char *dev, INT *handle)
 INT  status, count;
 char buffer[16];
 
-  status = ss_tape_open(dev, handle);
+  status = ss_tape_open(dev, O_RDWR | O_CREAT | O_TRUNC, handle);
   if (status != SS_SUCCESS)
     return status;
 
@@ -355,6 +359,11 @@ INT   status;
 short port;
 char  *token, host_name[HOST_NAME_LENGTH], 
       user[32], pass[32], directory[256], file_name[256];
+
+  /* 
+  destination should have the form:
+  host, port, user, password, directory, run%05d.mid
+  */
 
   /* break destination in components */
   token = strtok(destination, ",");
@@ -1437,7 +1446,7 @@ static DWORD last_checked = 0;
 
 /*---- open_history ------------------------------------------------*/
 
-void log_history(HNDLE hDB, HNDLE hKey);
+void log_history(HNDLE hDB, HNDLE hKey, void *info);
 
 INT open_history()
 {
@@ -1622,7 +1631,7 @@ INT i;
 
 /*---- log_history -------------------------------------------------*/
 
-void log_history(HNDLE hDB, HNDLE hKey)
+void log_history(HNDLE hDB, HNDLE hKey, void *info)
 {
 INT i, size;
 
@@ -1649,13 +1658,15 @@ INT i, size;
 INT log_callback(INT index, void *prpc_param[])
 {
 HNDLE  hKeyRoot, hKeyChannel;
-INT    i, status, size, channel, izero;
+INT    i, status, size, channel, izero, htape, online_mode;
 char   str[256];
 double dzero;
 
   /* rewind tapes */
   if (index == RPC_LOG_REWIND)
     {
+    channel = *((INT *) prpc_param[0]);
+
     /* loop over all channels */
     status = db_find_key(hDB, 0, "/Logger/Channels", &hKeyRoot);
     if (status != DB_SUCCESS)
@@ -1664,11 +1675,20 @@ double dzero;
       return 0;
       }
 
+    /* check online mode */
+    online_mode = 0;
+    size = sizeof(online_mode);
+    db_get_value(hDB, 0, "/Runinfo/online mode", &online_mode, &size, TID_INT); 
+
     for (i=0; i<MAX_CHANNELS ; i++)
       {
       status = db_enum_key(hDB, hKeyRoot, i, &hKeyChannel);
       if (status == DB_NO_MORE_SUBKEYS)
         break;
+
+      /* skip if wrong channel, -1 means rewind all channels */
+      if (channel != i && channel != -1)
+        continue;
 
       if (status == DB_SUCCESS)
         {
@@ -1684,12 +1704,14 @@ double dzero;
           if (status != DB_SUCCESS)
             continue;
 
-          if (ss_tape_open(str, &channel) == SS_SUCCESS)
+          if (ss_tape_open(str, O_RDONLY, &htape) == SS_SUCCESS)
             {
             cm_msg(MTALK, "log_callback", "rewinding tape #%d, please wait", i);
 
             cm_set_watchdog_params(TRUE, 300000);  /* 5 min for tape rewind */
-            ss_tape_rewind(channel);
+            ss_tape_rewind(htape);
+            if (online_mode)
+              ss_tape_unmount(htape);
             cm_set_watchdog_params(TRUE, LOGGER_TIMEOUT);
 
             cm_msg(MINFO, "log_callback", "Tape %s rewound sucessfully", str);
@@ -1697,7 +1719,7 @@ double dzero;
           else
             cm_msg(MERROR, "log_callback", "Cannot rewind tape %s", str);
 
-          ss_tape_close(channel);
+          ss_tape_close(htape);
 
           /* clear statistics */
           dzero = izero = 0;
@@ -2428,7 +2450,7 @@ char hbook_types[][8] = {
 
 INT book_ntuples(void);
 
-void banks_changed(INT hDB, INT hKey)
+void banks_changed(INT hDB, INT hKey, void *info)
 {
   book_ntuples();
   print_message("N-tuples rebooked");
@@ -3196,7 +3218,7 @@ BOOL            bFirst = TRUE;
       {
       /* loop over equipment list and call class driver's init method */
       if (eq_info->enabled)
-        equipment[index].status = equipment[index].cd(CMD_INIT, (INT) &equipment[index]);
+        equipment[index].status = equipment[index].cd(CMD_INIT, &equipment[index]);
       else
         {
         equipment[index].status = FE_ERR_DISABLED;
@@ -3623,7 +3645,7 @@ char            str[80];
       /*---- call idle routine for slow control equipment ----*/
       if (eq_info->eq_type == EQ_SLOW &&
           equipment[i].status == FE_SUCCESS)
-        equipment[i].cd(CMD_IDLE, (INT) &equipment[i]);
+        equipment[i].cd(CMD_IDLE, &equipment[i]);
       }
 
     /*---- call frontend_loop periodically -------------------------*/
@@ -3742,10 +3764,8 @@ INT   i, count;
   x      = CPDWORD(8);
   q      = CPDWORD(9);
 
-//  printf("cmd=%d n=%d a=%d f=%d\n", cmd, n, a, f);
-
   /* determine repeat count */
-  if (cmd < (1<<4))
+  if (index == RPC_CNAF16)
     count = *size / sizeof(WORD);  /* 16 bit */
   else
     count = *size / sizeof(DWORD); /* 24 bit */
@@ -3767,37 +3787,40 @@ INT   i, count;
       cam_crate_zinit(c);
       break;
 
-    /*---- 16 bit ----*/
+    case CNAF_TEST:
+      break;
 
-    case CNAF_16:
-      for (i=0 ; i<count ; i++)
+    case CNAF:
+      if (index == RPC_CNAF16)
+        {
+        for (i=0 ; i<count ; i++)
+          if (f<16)
+            cam16i_q(c, n, a, f, pword, (int *) x, (int *) q);
+          else
+            cam16o_q(c, n, a, f, pword[i], (int *) x, (int *) q);
+        }
+      else
+        {
+        for (i=0 ; i<count ; i++)
+          if (f<16)
+            cam24i_q(c, n, a, f, pdword, (int *) x, (int *) q);
+          else
+            cam24o_q(c, n, a, f, pdword[i], (int *) x, (int *) q);
+        }
+
+      break;
+
+    case CNAF_nQ:
+      if (index == RPC_CNAF16)
+        {
         if (f<16)
-          cam16i_q(c, n, a, f, pword, x, q);
-        else
-          cam16o_q(c, n, a, f, pword[i], x, q);
-      break;
-
-    case CNAF_16nQ:
-      if (f<16)
-        cam16i_rq(c, n, a, f, &pword, count);
-
-      /* return reduced return size */
-      *size = (int) pword - (int) pdata;
-      break;
-
-    /*---- 24 bit ----*/
-
-    case CNAF_24:
-      for (i=0 ; i<count ; i++)
+          cam16i_rq(c, n, a, f, (WORD **) &pdword, count);
+        }
+      else
+        {
         if (f<16)
-          cam24i_q(c, n, a, f, pdword, x, q);
-        else
-          cam24o_q(c, n, a, f, pdword[i], x, q);
-      break;
-
-    case CNAF_24nQ:
-      if (f<16)
-        cam24i_rq(c, n, a, f, &pdword, count);
+          cam24i_rq(c, n, a, f, &pdword, count);
+        }
 
       /* return reduced return size */
       *size = (int) pdword - (int) pdata;
@@ -3807,9 +3830,10 @@ INT   i, count;
       printf("cnaf: Unknown command 0x%X\n", cmd);
     }
 
+  printf("cmd=%d c=%d n=%d a=%d f=%d d=%X\n", cmd, c, n, a, f, pdword[0]);
+
   return RPC_SUCCESS;
 }
-
 
 /*------------------------------------------------------------------*/
 
@@ -3935,7 +3959,8 @@ usage:
   cm_msg_register(receive_message);
 
   /* register CNAF callback */
-  cm_register_function(RPC_CNAF, cnaf_callback); 
+  cm_register_function(RPC_CNAF16, cnaf_callback); 
+  cm_register_function(RPC_CNAF24, cnaf_callback); 
 
   /* register callback for clearing histos */
   cm_register_function(RPC_ANA_CLEAR_HISTOS, ana_callback);
