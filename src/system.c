@@ -14,6 +14,9 @@
                 Brown, Prentice Hall
 
   $Log$
+  Revision 1.66  2003/04/09 13:42:53  midas
+  Made file compile under C++
+
   Revision 1.65  2003/03/26 21:08:44  midas
   Removed tabs
 
@@ -1328,7 +1331,7 @@ INT ss_shell(int sock)
     FD_SET(sock, &readfds);
     timeout.tv_sec  = 0;
     timeout.tv_usec = 100;
-    select(FD_SETSIZE, (void *) &readfds, NULL, NULL, (void *) &timeout);
+    select(FD_SETSIZE, &readfds, NULL, NULL, &timeout);
 
     if (FD_ISSET(sock, &readfds))
       {
@@ -2422,7 +2425,7 @@ static int          sock = 0;
   FD_SET(sock, &readfds);
   do
     {
-    status = select(FD_SETSIZE, (void *) &readfds, NULL, NULL, (void *) &timeout);
+    status = select(FD_SETSIZE, &readfds, NULL, NULL, &timeout);
 
     /* if an alarm signal was cought, restart select with reduced timeout */
     if (status == -1 && timeout.tv_sec >= WATCHDOG_INTERVAL / 1000)
@@ -2926,13 +2929,13 @@ struct hostent       *phe;
   memcpy((char *)&(bind_addr.sin_addr), phe->h_addr, phe->h_length);
 #endif
 
-  status = bind(sock, (void *)&bind_addr, sizeof(bind_addr));
+  status = bind(sock, (struct sockaddr *)&bind_addr, sizeof(bind_addr));
   if (status < 0)
     return SS_SOCKET_ERROR;
 
   /* find out which port OS has chosen */
   i = sizeof(bind_addr);
-  getsockname(sock, (void *)&bind_addr, (void *)&i);
+  getsockname(sock, (struct sockaddr *)&bind_addr, (int *)&i);
   
   _suspend_struct[index].ipc_recv_socket  = sock;
   _suspend_struct[index].ipc_port    = ntohs(bind_addr.sin_port);
@@ -2993,7 +2996,7 @@ INT index;
   if (_suspend_struct == NULL)
     {
     /* create a new entry for this thread */
-    _suspend_struct = malloc(sizeof(SUSPEND_STRUCT));
+    _suspend_struct = (SUSPEND_STRUCT *)malloc(sizeof(SUSPEND_STRUCT));
     memset(_suspend_struct, 0, sizeof(SUSPEND_STRUCT));
     if (_suspend_struct == NULL)
       return SS_NO_MEMORY;
@@ -3023,7 +3026,7 @@ INT index;
     if (index == _suspend_entries)
       {
       /* if not found, create new one */
-      _suspend_struct = realloc(_suspend_struct, 
+      _suspend_struct = (SUSPEND_STRUCT *)realloc(_suspend_struct, 
 			  sizeof(SUSPEND_STRUCT) * (_suspend_entries+1));
       memset(&_suspend_struct[_suspend_entries], 0, sizeof(SUSPEND_STRUCT));
 
@@ -3315,9 +3318,9 @@ char                str[100], buffer[80], buffer_tmp[80];
     do
       {
       if (millisec < 0)
-        status = select(FD_SETSIZE, (void *) &readfds, NULL, NULL, NULL); /* blocking */
+        status = select(FD_SETSIZE, &readfds, NULL, NULL, NULL); /* blocking */
       else
-	      status = select(FD_SETSIZE, (void *) &readfds, NULL, NULL, (void *) &timeout);
+	      status = select(FD_SETSIZE, &readfds, NULL, NULL, &timeout);
 
       /* if an alarm signal was cought, restart select with reduced timeout */
       if (status == -1 && timeout.tv_sec >= WATCHDOG_INTERVAL / 1000)
@@ -3431,7 +3434,7 @@ char                str[100], buffer[80], buffer_tmp[80];
       /* receive IPC message */
       size = sizeof(struct sockaddr);
       size = recvfrom(_suspend_struct[index].ipc_recv_socket, 
-		                  buffer, sizeof(buffer), 0, (void *)&from_addr, (void *)&size);
+		                  buffer, sizeof(buffer), 0, &from_addr, (int *)&size);
 
       /* find out if this thread is connected as a server */
       server_socket = 0;
@@ -3453,13 +3456,13 @@ char                str[100], buffer[80], buffer_tmp[80];
 	      timeout.tv_sec  = 0;
 	      timeout.tv_usec = 0;
 
-	      status = select(FD_SETSIZE, (void *) &readfds, NULL, NULL, (void *) &timeout);
+	      status = select(FD_SETSIZE, &readfds, NULL, NULL, &timeout);
 
 	      if (status != -1 && FD_ISSET(_suspend_struct[index].ipc_recv_socket, &readfds))
           {
           size = sizeof(struct sockaddr);
           size = recvfrom(_suspend_struct[index].ipc_recv_socket, buffer_tmp,
-					                sizeof(buffer_tmp), 0, (void *) &from_addr, (void *)&size);
+					                sizeof(buffer_tmp), 0, &from_addr, &size);
 
           /* don't forward same MSG_BM as above */
           if (buffer_tmp[0] != 'B' ||
@@ -3533,7 +3536,7 @@ INT status, index;
 
   status = sendto(_suspend_struct[index].ipc_send_socket, message, 
                   strlen(message)+1, 0, 
-                  (void *) &_suspend_struct[index].bind_addr, 
+                  (struct sockaddr *)&_suspend_struct[index].bind_addr, 
                   sizeof(struct sockaddr_in));
 
   if (status != (INT)strlen(message)+1)
@@ -3653,7 +3656,7 @@ struct timeval timeout;
 
       do
 	      {
-	      status = select(FD_SETSIZE, (void *) &readfds, NULL, NULL, (void *) &timeout);
+	      status = select(FD_SETSIZE, &readfds, NULL, NULL, &timeout);
 
 	      /* if an alarm signal was cought, restart select with reduced timeout */
 	      if (status == -1 && timeout.tv_sec >= WATCHDOG_INTERVAL / 1000)
@@ -3988,7 +3991,7 @@ start:
 
     do
       {
-      status = select(FD_SETSIZE, (void *) &readfds, NULL, NULL, (void *) &timeout);
+      status = select(FD_SETSIZE, &readfds, NULL, NULL, &timeout);
       } while (status == -1);
 
     /*
@@ -4052,7 +4055,7 @@ start:
 
     do
       {
-      status = select(FD_SETSIZE, (void *) &readfds, NULL, NULL, (void *) &timeout);
+      status = select(FD_SETSIZE, &readfds, NULL, NULL, &timeout);
       } while (status == -1);
 
     /*
@@ -4295,7 +4298,8 @@ char str[256];
 #endif /* OS_UNIX */
 
 #ifdef OS_WINNT
-INT status, channel, size;
+INT status, channel;
+DWORD size;
 TAPE_GET_MEDIA_PARAMETERS m;
 TAPE_GET_DRIVE_PARAMETERS d;
 double x;
@@ -4406,10 +4410,11 @@ INT status;
 #endif /* OS_UNIX */
 
 #ifdef OS_WINNT
-INT status, written;
+INT status;
+DWORD written;
 
   WriteFile((HANDLE) channel, pdata, count, &written, NULL);
-  if (written != count)
+  if (written != (DWORD)count)
     {
     status = GetLastError();
     cm_msg(MERROR, "ss_tape_write", "error %d", status);
@@ -4476,7 +4481,8 @@ INT n, status;
 
 #elif defined(OS_WINNT) /* OS_UNIX */
 
-INT read, status;
+INT status;
+DWORD read;
 
   if (!ReadFile((HANDLE) channel, pdata, *count, &read, NULL))
     {
@@ -4549,7 +4555,7 @@ struct mtop arg;
 #ifdef OS_WINNT
 
 TAPE_GET_DRIVE_PARAMETERS d;
-INT size;
+DWORD size;
 
   size = sizeof(TAPE_GET_DRIVE_PARAMETERS);
   GetTapeParameters((HANDLE) channel, GET_TAPE_DRIVE_INFORMATION, &size, &d);
@@ -5097,7 +5103,7 @@ INT ss_file_find(char * path, char * pattern, char **plist)
   strcat(str,pattern);
   first = 1;
   i = 0;
-  lpfdata = malloc(sizeof(WIN32_FIND_DATA));
+  lpfdata = (WIN32_FIND_DATA *)malloc(sizeof(WIN32_FIND_DATA));
   *plist = (char *) malloc(MAX_STRING_LENGTH);
   pffile = FindFirstFile(str, lpfdata);
   if (pffile == INVALID_HANDLE_VALUE)

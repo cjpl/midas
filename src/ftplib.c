@@ -8,6 +8,9 @@
   Contents:     File Transfer Protocol library
 
   $Log$
+  Revision 1.4  2003/04/09 13:42:40  midas
+  Made file compile under C++
+
   Revision 1.3  1999/02/12 11:52:13  midas
   Fixed bug that i was not initialized in ftp_get
 
@@ -100,12 +103,12 @@ struct hostent       *phe;
 #ifdef OS_UNIX
   do
     {
-    status = connect(sock, (void *) &bind_addr, sizeof(bind_addr));
+    status = connect(sock, &bind_addr, sizeof(bind_addr));
 
     /* don't return if an alarm signal was cought */
     } while (status == -1 && errno == EINTR); 
 #else
-  status = connect(sock, (void *) &bind_addr, sizeof(bind_addr));
+  status = connect(sock, (struct sockaddr *)&bind_addr, sizeof(bind_addr));
 #endif  
 
   if (status != 0)
@@ -295,13 +298,13 @@ char   *a,*b;
   data.sin_port        = htons(0) ;
   data.sin_addr.s_addr = *(unsigned long *) *(host->h_addr_list);
 
-  if (bind(listen_socket, (void *)&data, sizeof(data)) == -1)
+  if (bind(listen_socket, (struct sockaddr *)&data, sizeof(data)) == -1)
     {
     closesocket(listen_socket);
     return FTP_NET_ERROR;
     }
 
-  if (getsockname(listen_socket, (void *)&data, &len) < 0 )
+  if (getsockname(listen_socket, (struct sockaddr *)&data, &len) < 0 )
     {
     closesocket(listen_socket);
     return FTP_NET_ERROR;
@@ -325,7 +328,7 @@ char   *a,*b;
   if (status >= 0)
     return status;
 
-  data_socket = accept(listen_socket, (void *)&from, &fromlen);
+  data_socket = accept(listen_socket, (struct sockaddr *)&from, &fromlen);
 
   if (data_socket == -1)
     {

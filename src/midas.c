@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.182  2003/04/09 13:42:47  midas
+  Made file compile under C++
+
   Revision 1.181  2003/03/28 07:59:50  midas
   Removed old code
 
@@ -742,9 +745,9 @@ int  i;
     {
     _n_mem++;
     if (!_mem_loc)
-      _mem_loc = malloc(sizeof(DBG_MEM_LOC));
+      _mem_loc = (DBG_MEM_LOC *) malloc(sizeof(DBG_MEM_LOC));
     else
-      _mem_loc = realloc(_mem_loc, sizeof(DBG_MEM_LOC)*_n_mem);
+      _mem_loc = (DBG_MEM_LOC *) realloc(_mem_loc, sizeof(DBG_MEM_LOC)*_n_mem);
     }
 
   _mem_loc[i].adr = adr;
@@ -2735,7 +2738,7 @@ struct hostent       *phe;
     /* don't return if an alarm signal was cought */
     } while (status == -1 && errno == EINTR);
 #else
-  status = connect(sock, (void *) &bind_addr, sizeof(bind_addr));
+  status = connect(sock, (struct sockaddr *) &bind_addr, sizeof(bind_addr));
 #endif
 
   if (status != 0)
@@ -3604,7 +3607,7 @@ HNDLE hDB, hKey;
 
   for (i=0 ; _deferred_trans_table[i].transition ; i++)
     if (_deferred_trans_table[i].transition == transition)
-      _deferred_trans_table[i].func = (void *) func;
+      _deferred_trans_table[i].func = (int (*)(int, char*)) func;
 
   /* set new transition mask */
   mask |= transition;
@@ -4231,7 +4234,7 @@ RUNINFO_STR(runinfo_str);
     size = sizeof(str);
     db_get_value(hDB, 0, "/Experiment/Name", str, &size, TID_STRING, TRUE);
     sprintf(buffer, "%s %s %d", str, cm_get_version(), run_number);
-    sendto(sock, buffer, strlen(buffer), 0, (void *) &addr, sizeof(addr));
+    sendto(sock, buffer, strlen(buffer), 0, (struct sockaddr *) &addr, sizeof(addr));
     closesocket(sock);
     }
 
@@ -4618,7 +4621,7 @@ BUFFER_HEADER        *pheader;
   /* allocate new space for the new buffer descriptor */
   if (_buffer_entries == 0)
     {
-    _buffer = M_MALLOC(sizeof(BUFFER));
+    _buffer = (BUFFER *) M_MALLOC(sizeof(BUFFER));
     memset(_buffer, 0, sizeof(BUFFER));
     if (_buffer == NULL)
       {
@@ -4656,7 +4659,7 @@ BUFFER_HEADER        *pheader;
     /* if not found, create new one */
     if (i == _buffer_entries)
       {
-      _buffer = realloc(_buffer, sizeof(BUFFER) * (_buffer_entries+1));
+      _buffer = (BUFFER *) realloc(_buffer, sizeof(BUFFER) * (_buffer_entries+1));
       memset(&_buffer[_buffer_entries], 0, sizeof(BUFFER));
 
       _buffer_entries++;
@@ -4683,7 +4686,7 @@ BUFFER_HEADER        *pheader;
 
   /* open shared memory region */
   status = ss_shm_open(buffer_name, sizeof(BUFFER_HEADER) + buffer_size,
-                       (void *) &(_buffer[handle].buffer_header),
+                       (void **) &(_buffer[handle].buffer_header),
                        &shm_handle);
 
   if (status == SS_NO_MEMORY || status == SS_FILE_ERROR)
@@ -4719,7 +4722,7 @@ BUFFER_HEADER        *pheader;
         return BM_MEMSIZE_MISMATCH;
 
       status = ss_shm_open(buffer_name, sizeof(BUFFER_HEADER) + buffer_size,
-                           (void *) &(_buffer[handle].buffer_header),
+                           (void **) &(_buffer[handle].buffer_header),
                            &shm_handle);
 
       if (status == SS_NO_MEMORY || status == SS_FILE_ERROR)
@@ -4811,7 +4814,7 @@ BUFFER_HEADER        *pheader;
   bm_init_buffer_counters(handle + 1);
 
   /* setup dispatcher for receive events */
-  ss_suspend_set_dispatch(CH_IPC, 0, cm_dispatch_ipc);
+  ss_suspend_set_dispatch(CH_IPC, 0, (int (*)(void))cm_dispatch_ipc);
 
   if (shm_created) return BM_CREATED;
 }
@@ -4926,7 +4929,7 @@ INT           i, j, index, destroy_flag;
     _buffer_entries--;
 
   if (_buffer_entries > 0)
-    _buffer = realloc(_buffer, sizeof(BUFFER) * (_buffer_entries));
+    _buffer = (BUFFER *) realloc(_buffer, sizeof(BUFFER) * (_buffer_entries));
   else
     {
     M_FREE(_buffer);
@@ -5926,7 +5929,7 @@ BUFFER        *pbuf;
 
   if (read_size > 0)
     {
-    pbuf->read_cache = M_MALLOC(read_size);
+    pbuf->read_cache = (char *) M_MALLOC(read_size);
     if (pbuf->read_cache == NULL)
       {
       cm_msg(MERROR, "bm_set_cache_size", "not enough memory to allocate cache buffer");
@@ -5943,7 +5946,7 @@ BUFFER        *pbuf;
 
   if (write_size > 0)
     {
-    pbuf->write_cache = M_MALLOC(write_size);
+    pbuf->write_cache = (char *) M_MALLOC(write_size);
     if (pbuf->write_cache == NULL)
       {
       cm_msg(MERROR, "bm_set_cache_size", "not enough memory to allocate cache buffer");
@@ -6169,7 +6172,7 @@ INT  index, status;
   /* allocate new space for the local request list */
   if (_request_list_entries == 0)
     {
-    _request_list = M_MALLOC(sizeof(REQUEST_LIST));
+    _request_list = (REQUEST_LIST *) M_MALLOC(sizeof(REQUEST_LIST));
     memset(_request_list, 0, sizeof(REQUEST_LIST));
     if (_request_list == NULL)
       {
@@ -6190,7 +6193,7 @@ INT  index, status;
     /* if not found, create new one */
     if (index == _request_list_entries)
       {
-      _request_list = realloc(_request_list,
+      _request_list = (REQUEST_LIST *)realloc(_request_list,
                               sizeof(REQUEST_LIST)*(_request_list_entries+1));
       if (_request_list == NULL)
         {
@@ -7656,7 +7659,7 @@ INT             old_read_pointer, new_read_pointer;
 
   if (_event_buffer_size == 0)
     {
-    _event_buffer = M_MALLOC(1000);
+    _event_buffer = (EVENT_HEADER *)M_MALLOC(1000);
     if (_event_buffer == NULL)
       {
       cm_msg(MERROR, "bm_push_event", "not enough memory to allocate cache buffer");
@@ -7773,7 +7776,7 @@ LOOP:
 
           if (total_size > _event_buffer_size)
             {
-            _event_buffer = realloc(_event_buffer, total_size);
+            _event_buffer = (EVENT_HEADER *)realloc(_event_buffer, total_size);
             _event_buffer_size = total_size;
             }
 
@@ -8147,7 +8150,7 @@ static BOOL          bMoreLast = FALSE;
 
   if (_event_buffer_size == 0)
     {
-    _event_buffer = M_MALLOC(MAX_EVENT_SIZE + sizeof(EVENT_HEADER));
+    _event_buffer = (EVENT_HEADER *)M_MALLOC(MAX_EVENT_SIZE + sizeof(EVENT_HEADER));
     if (!_event_buffer)
       {
       cm_msg(MERROR, "bm_poll_event", "not enough memory to allocate event buffer");
@@ -8391,7 +8394,7 @@ INT i;
     defrag_buffer[i].event_id = (pevent->event_id & 0x0FFF);
     defrag_buffer[i].data_size = *(DWORD *)pdata;
     defrag_buffer[i].received = 0;
-    defrag_buffer[i].pevent = malloc(sizeof(EVENT_HEADER)+defrag_buffer[i].data_size);
+    defrag_buffer[i].pevent = (EVENT_HEADER *)malloc(sizeof(EVENT_HEADER)+defrag_buffer[i].data_size);
 
     if (defrag_buffer[i].pevent == NULL)
       {
@@ -8608,18 +8611,18 @@ void rpc_convert_single(void *data, INT tid, INT flags, INT convert_flags)
       ((convert_flags & CF_VAX2IEEE) && (flags & RPC_OUTGOING)) )
     {
     if (tid == TID_FLOAT)
-      rpc_ieee2vax_float(data);
+      rpc_ieee2vax_float((float *)data);
     if (tid == TID_DOUBLE)
-      rpc_ieee2vax_double(data);
+      rpc_ieee2vax_double((double *)data);
     }
 
   if (((convert_flags & CF_IEEE2VAX) && (flags & RPC_OUTGOING))  ||
       ((convert_flags & CF_VAX2IEEE) && !(flags & RPC_OUTGOING)) )
     {
     if (tid == TID_FLOAT)
-      rpc_vax2ieee_float(data);
+      rpc_vax2ieee_float((float *)data);
     if (tid == TID_DOUBLE)
-      rpc_vax2ieee_double(data);
+      rpc_vax2ieee_double((double *)data);
     }
 }
 
@@ -8780,9 +8783,9 @@ INT i, j, iold, inew;
 
   /* allocate new memory for rpc_list */
   if (rpc_list == NULL)
-    rpc_list = M_MALLOC(sizeof(RPC_LIST) * (inew+1));
+    rpc_list = (RPC_LIST *)M_MALLOC(sizeof(RPC_LIST) * (inew+1));
   else
-    rpc_list = realloc(rpc_list, sizeof(RPC_LIST) * (iold+inew+1));
+    rpc_list = (RPC_LIST *)realloc(rpc_list, sizeof(RPC_LIST) * (iold+inew+1));
 
   if (rpc_list == NULL)
     {
@@ -8928,7 +8931,7 @@ char        net_buffer[256];
       timeout.tv_sec  = 0;
       timeout.tv_usec = 0;
 
-      select(FD_SETSIZE, (void *) &readfds, NULL, NULL, (void *) &timeout);
+      select(FD_SETSIZE, &readfds, NULL, NULL, &timeout);
 
       if (FD_ISSET(sock, &readfds))
         {
@@ -9033,7 +9036,7 @@ struct hostent       *phe;
 
       do
         {
-        status = select(FD_SETSIZE, (void *) &readfds, NULL, NULL, (void *) &timeout);
+        status = select(FD_SETSIZE, &readfds, NULL, NULL, &timeout);
         } while (status == -1); /* dont return if an alarm signal was cought */
 
       if (FD_ISSET(sock, &readfds))
@@ -9120,7 +9123,7 @@ struct hostent       *phe;
     /* don't return if an alarm signal was cought */
     } while (status == -1 && errno == EINTR);
 #else
-  status = connect(sock, (void *) &bind_addr, sizeof(bind_addr));
+  status = connect(sock, (struct sockaddr *) &bind_addr, sizeof(bind_addr));
 #endif
 
   if (status != 0)
@@ -9293,11 +9296,11 @@ struct hostent       *phe;
   memcpy((char *)&(bind_addr.sin_addr), phe->h_addr, phe->h_length);
 #endif
 
-  status = bind(lsock1, (void *) &bind_addr, sizeof(bind_addr));
+  status = bind(lsock1, (struct sockaddr *) &bind_addr, sizeof(bind_addr));
   bind_addr.sin_port = 0;
-  status = bind(lsock2, (void *) &bind_addr, sizeof(bind_addr));
+  status = bind(lsock2, (struct sockaddr *) &bind_addr, sizeof(bind_addr));
   bind_addr.sin_port = 0;
-  status = bind(lsock3, (void *) &bind_addr, sizeof(bind_addr));
+  status = bind(lsock3, (struct sockaddr *) &bind_addr, sizeof(bind_addr));
   if (status < 0)
     {
     cm_msg(MERROR, "rpc_server_connect", "cannot bind");
@@ -9316,11 +9319,11 @@ struct hostent       *phe;
 
   /* find out which port OS has chosen */
   size = sizeof(bind_addr);
-  getsockname(lsock1, (void *)&bind_addr, (void *)&size);
+  getsockname(lsock1, (struct sockaddr *)&bind_addr, (int *)&size);
   listen_port1 = ntohs(bind_addr.sin_port);
-  getsockname(lsock2, (void *)&bind_addr, (void *)&size);
+  getsockname(lsock2, (struct sockaddr *)&bind_addr, (int *)&size);
   listen_port2 = ntohs(bind_addr.sin_port);
-  getsockname(lsock3, (void *)&bind_addr, (void *)&size);
+  getsockname(lsock3, (struct sockaddr *)&bind_addr, (int *)&size);
   listen_port3 = ntohs(bind_addr.sin_port);
 
   /* create a new socket for connecting to remote server */
@@ -9357,12 +9360,12 @@ struct hostent       *phe;
 #ifdef OS_UNIX
   do
     {
-    status = connect(sock, (void *) &bind_addr, sizeof(bind_addr));
+    status = connect(sock, (struct sockaddr *) &bind_addr, sizeof(bind_addr));
 
     /* don't return if an alarm signal was cought */
     } while (status == -1 && errno == EINTR);
 #else
-  status = connect(sock, (void *) &bind_addr, sizeof(bind_addr));
+  status = connect(sock, (struct sockaddr *) &bind_addr, sizeof(bind_addr));
 #endif
 
   if (status != 0)
@@ -9418,13 +9421,13 @@ struct hostent       *phe;
   /* wait for callback on send and recv socket */
   size = sizeof(bind_addr);
   _server_connection.send_sock =
-    accept(lsock1, (void *)&bind_addr, (void *)&size);
+    accept(lsock1, (struct sockaddr *)&bind_addr, (int *)&size);
 
   _server_connection.recv_sock =
-    accept(lsock2, (void *)&bind_addr, (void *)&size);
+    accept(lsock2, (struct sockaddr *)&bind_addr, (int *)&size);
 
   _server_connection.event_sock =
-    accept(lsock3, (void *)&bind_addr, (void *)&size);
+    accept(lsock3, (struct sockaddr *)&bind_addr, (int *)&size);
 
   if (_server_connection.send_sock == -1 ||
       _server_connection.recv_sock == -1 ||
@@ -9472,7 +9475,7 @@ struct hostent       *phe;
   _server_connection.remote_hw_type = remote_hw_type;
 
   /* set dispatcher which receives database updates */
-  ss_suspend_set_dispatch(CH_CLIENT, &_server_connection, rpc_client_dispatch);
+  ss_suspend_set_dispatch(CH_CLIENT, &_server_connection, (int (*)(void))rpc_client_dispatch);
 
   return RPC_SUCCESS;
 }
@@ -10097,7 +10100,7 @@ int             send_sock;
   /* init network buffer */
   if (_net_send_buffer_size == 0)
     {
-    _net_send_buffer = M_MALLOC(NET_BUFFER_SIZE);
+    _net_send_buffer = (char *)M_MALLOC(NET_BUFFER_SIZE);
     if (_net_send_buffer == NULL)
       {
       cm_msg(MERROR, "rpc_client_call", "not enough memory to allocate network buffer");
@@ -10263,7 +10266,7 @@ int             send_sock;
 
     do
       {
-      status = select(FD_SETSIZE, (void *) &readfds, NULL, NULL, (void *) &timeout);
+      status = select(FD_SETSIZE, &readfds, NULL, NULL, &timeout);
 
       /* if an alarm signal was cought, restart select with reduced timeout */
       if (status == -1 && timeout.tv_sec >= WATCHDOG_INTERVAL / 1000)
@@ -10401,7 +10404,7 @@ int             send_sock;
   /* init network buffer */
   if (_net_send_buffer_size == 0)
     {
-    _net_send_buffer = M_MALLOC(NET_BUFFER_SIZE);
+    _net_send_buffer = (char *)M_MALLOC(NET_BUFFER_SIZE);
     if (_net_send_buffer == NULL)
       {
       cm_msg(MERROR, "rpc_call", "not enough memory to allocate network buffer");
@@ -10566,7 +10569,7 @@ int             send_sock;
 
     do
       {
-      status = select(FD_SETSIZE, (void *) &readfds, NULL, NULL, (void *) &timeout);
+      status = select(FD_SETSIZE, &readfds, NULL, NULL, &timeout);
 
       /* if an alarm signal was cought, restart select with reduced timeout */
       if (status == -1 && timeout.tv_sec >= WATCHDOG_INTERVAL / 1000)
@@ -10728,7 +10731,7 @@ DWORD           aligned_buf_size;
 
   /* init network buffer */
   if (!_tcp_buffer)
-    _tcp_buffer = M_MALLOC(NET_TCP_SIZE);
+    _tcp_buffer = (char *)M_MALLOC(NET_TCP_SIZE);
   if (!_tcp_buffer)
     {
     cm_msg(MERROR, "rpc_send_event", "not enough memory to allocate network buffer");
@@ -10807,7 +10810,7 @@ DWORD           aligned_buf_size;
              _tcp_buffer + _tcp_wp, sizeof(NET_COMMAND_HEADER) + 16, 0);
 
     /* send data */
-    send_tcp(_server_connection.send_sock, source, aligned_buf_size, 0);
+    send_tcp(_server_connection.send_sock, (char *)source, aligned_buf_size, 0);
 
     /* send last two parameters */
     *((INT *) (&nc->param[0])) = buf_size;
@@ -11039,7 +11042,7 @@ INT         sock;
     else
       _server_acception[index].net_buffer_size = NET_BUFFER_SIZE;
 
-    _server_acception[index].net_buffer = M_MALLOC(_server_acception[index].net_buffer_size);
+    _server_acception[index].net_buffer = (char *)M_MALLOC(_server_acception[index].net_buffer_size);
     _server_acception[index].write_ptr = 0;
     _server_acception[index].read_ptr = 0;
     _server_acception[index].misalign = 0;
@@ -11252,7 +11255,7 @@ RPC_SERVER_ACCEPTION *psa;
     else
       psa->net_buffer_size = NET_BUFFER_SIZE;
 
-    psa->ev_net_buffer = M_MALLOC(psa->net_buffer_size);
+    psa->ev_net_buffer = (char *)M_MALLOC(psa->net_buffer_size);
     psa->ev_write_ptr = 0;
     psa->ev_read_ptr = 0;
     psa->ev_misalign = 0;
@@ -11532,7 +11535,7 @@ struct hostent       *phe;
   memcpy((char *)&(bind_addr.sin_addr), phe->h_addr, phe->h_length);
 #endif
 
-  status = bind(_lsock, (void *)&bind_addr, sizeof(bind_addr));
+  status = bind(_lsock, (struct sockaddr *)&bind_addr, sizeof(bind_addr));
   if (status < 0)
     {
     cm_msg(MERROR, "rpc_register_server", "bind() failed: %s", strerror(errno));
@@ -11555,15 +11558,15 @@ struct hostent       *phe;
   if (port && *port == 0)
     {
     size = sizeof(bind_addr);
-    getsockname(_lsock, (void *)&bind_addr, (void *)&size);
+    getsockname(_lsock, (struct sockaddr *)&bind_addr, (int *)&size);
     *port = ntohs(bind_addr.sin_port);
     }
 
   /* define callbacks for ss_suspend */
   if (server_type == ST_REMOTE)
-    ss_suspend_set_dispatch(CH_LISTEN, &_lsock, rpc_client_accept);
+    ss_suspend_set_dispatch(CH_LISTEN, &_lsock, (int (*)(void))rpc_client_accept);
   else
-    ss_suspend_set_dispatch(CH_LISTEN, &_lsock, rpc_server_accept);
+    ss_suspend_set_dispatch(CH_LISTEN, &_lsock, (int (*)(void))rpc_server_accept);
 
   return RPC_SUCCESS;
 }
@@ -12150,8 +12153,8 @@ char         return_buffer[ASCII_BUFFER_SIZE]; /* ASCII out */
 
       if (tid == TID_STRING && !(flags & RPC_VARARRAY))
         {
-        strcpy(out_param_ptr, prpc_param[i]);
-        param_size = strlen(prpc_param[i]);
+        strcpy(out_param_ptr, (char *)prpc_param[i]);
+        param_size = strlen((char *)prpc_param[i]);
         }
 
       else if (flags & RPC_VARARRAY)
@@ -12319,7 +12322,7 @@ static struct callback_addr callback;
   if (lsock > 0)
     {
     size = sizeof(acc_addr);
-    sock = accept(lsock, (void *)&acc_addr, (void *)&size);
+    sock = accept(lsock, (struct sockaddr *)&acc_addr, (int *)&size);
 
     if (sock == -1)
       return RPC_NET_ERROR;
@@ -12330,7 +12333,7 @@ static struct callback_addr callback;
 
     size = sizeof(acc_addr);
     sock = lsock;
-    getpeername(sock, (void *) &acc_addr, (void *)&size);
+    getpeername(sock, (struct sockaddr *) &acc_addr, (int *)&size);
     }
 
   /* receive string with timeout */
@@ -12560,7 +12563,7 @@ INT                  convert_flags;
 char                 net_buffer[256], *p;
 
   size = sizeof(acc_addr);
-  sock = accept(lsock, (void *)&acc_addr, (void *)&size);
+  sock = accept(lsock, (struct sockaddr *)&acc_addr, (int *)&size);
 
   if (sock == -1)
     return RPC_NET_ERROR;
@@ -12647,7 +12650,7 @@ char                 net_buffer[256], *p;
 
   /* set callback function for ss_suspend */
   ss_suspend_set_dispatch(CH_SERVER, _server_acception,
-                          rpc_server_receive);
+                          (int (*)(void))rpc_server_receive);
 
   return RPC_SUCCESS;
 }
@@ -12728,7 +12731,7 @@ int                  flag;
     /* don't return if an alarm signal was cought */
     } while (status == -1 && errno == EINTR);
 #else
-  status = connect(recv_sock, (void *) &bind_addr, sizeof(bind_addr));
+  status = connect(recv_sock, (struct sockaddr *) &bind_addr, sizeof(bind_addr));
 #endif
 
   if (status != 0)
@@ -12743,12 +12746,12 @@ int                  flag;
 #ifdef OS_UNIX
   do
     {
-    status = connect(send_sock, (void *) &bind_addr, sizeof(bind_addr));
+    status = connect(send_sock, (struct sockaddr *) &bind_addr, sizeof(bind_addr));
 
     /* don't return if an alarm signal was cought */
     } while (status == -1 && errno == EINTR);
 #else
-  status = connect(send_sock, (void *) &bind_addr, sizeof(bind_addr));
+  status = connect(send_sock, (struct sockaddr *) &bind_addr, sizeof(bind_addr));
 #endif
 
   if (status != 0)
@@ -12763,12 +12766,12 @@ int                  flag;
 #ifdef OS_UNIX
   do
     {
-    status = connect(event_sock, (void *) &bind_addr, sizeof(bind_addr));
+    status = connect(event_sock, (struct sockaddr *) &bind_addr, sizeof(bind_addr));
 
     /* don't return if an alarm signal was cought */
     } while (status == -1 && errno == EINTR);
 #else
-  status = connect(event_sock, (void *) &bind_addr, sizeof(bind_addr));
+  status = connect(event_sock, (struct sockaddr *) &bind_addr, sizeof(bind_addr));
 #endif
 
   if (status != 0)
@@ -12829,7 +12832,7 @@ int                  flag;
 
   /* set callback function for ss_suspend */
   ss_suspend_set_dispatch(CH_SERVER, _server_acception,
-                          rpc_server_receive);
+                          (int (*)(void))rpc_server_receive);
 
   if (rpc_get_server_option(RPC_OSERVER_TYPE) != ST_REMOTE)
     printf("Connection to %s:%s established\n",
@@ -12943,7 +12946,7 @@ EVENT_HEADER *pevent;
   /* init network buffer */
   if (_net_recv_buffer_size == 0)
     {
-    _net_recv_buffer = M_MALLOC(NET_BUFFER_SIZE);
+    _net_recv_buffer = (char *)M_MALLOC(NET_BUFFER_SIZE);
     if (_net_recv_buffer == NULL)
       {
       cm_msg(MERROR, "rpc_server_receive", "not enough memory to allocate network buffer");
@@ -13242,7 +13245,7 @@ struct timeval  timeout;
 
       do
         {
-        status = select(FD_SETSIZE, (void *) &readfds, NULL, NULL, (void *) &timeout);
+        status = select(FD_SETSIZE, &readfds, NULL, NULL, &timeout);
 
         /* if an alarm signal was cought, restart select with reduced timeout */
         if (status == -1 && timeout.tv_sec >= WATCHDOG_INTERVAL / 1000)
@@ -13726,7 +13729,7 @@ INT bk_iterate(void *event, BANK **pbk, void *pdata)
 
   if ((DWORD) *pbk - (DWORD) event >= ((BANK_HEADER *) event)->data_size + sizeof(BANK_HEADER))
     {
-    *pbk = *((void **)pdata) = NULL;
+    *pbk = *((BANK **)pdata) = NULL;
     return 0;
     }
 
@@ -13764,7 +13767,7 @@ INT bk_iterate32(void *event, BANK32 **pbk, void *pdata)
 
   if ((DWORD) *pbk - (DWORD) event >= ((BANK_HEADER *) event)->data_size + sizeof(BANK_HEADER))
     {
-    *pbk = *((void **)pdata) = NULL;
+    *pbk = *((BANK32 **)pdata) = NULL;
     return 0;
     }
 
@@ -13852,7 +13855,7 @@ INT bk_swap(void *event, BOOL force)
         while ((PTYPE) pdata < (PTYPE) pbk)
           {
           WORD_SWAP(pdata);
-          ((WORD *)pdata)++;
+          pdata = (void *)(((WORD *)pdata)+1);
           }
         break;
 
@@ -13863,7 +13866,7 @@ INT bk_swap(void *event, BOOL force)
         while ((PTYPE) pdata < (PTYPE) pbk)
           {
           DWORD_SWAP(pdata);
-          ((DWORD *)pdata)++;
+          pdata = (void *)(((DWORD *)pdata)+1);
           }
         break;
 
@@ -13871,7 +13874,7 @@ INT bk_swap(void *event, BOOL force)
         while ((PTYPE) pdata < (PTYPE) pbk)
           {
           QWORD_SWAP(pdata);
-          ((double *)pdata)++;
+          pdata = (void *)(((double *)pdata)+1);
           }
         break;
       }
@@ -14196,7 +14199,7 @@ struct tm    *tmb;
   /* allocate new space for the new history descriptor */
   if (_history_entries == 0)
     {
-    _history = M_MALLOC(sizeof(HISTORY));
+    _history = (HISTORY *)M_MALLOC(sizeof(HISTORY));
     memset(_history, 0, sizeof(HISTORY));
     if (_history == NULL)
       return HS_NO_MEMORY;
@@ -14214,7 +14217,7 @@ struct tm    *tmb;
     /* if not found, create new one */
     if (i == _history_entries)
       {
-      _history = realloc(_history, sizeof(HISTORY) * (_history_entries+1));
+      _history = (HISTORY *)realloc(_history, sizeof(HISTORY) * (_history_entries+1));
       memset(&_history[_history_entries], 0, sizeof(HISTORY));
 
       _history_entries++;
@@ -14283,7 +14286,7 @@ struct tm    *tmb;
     strcpy(_history[index].event_name, event_name);
     _history[index].base_time = mktime(tmb);
     _history[index].n_tag = size/sizeof(TAG);
-    _history[index].tag = M_MALLOC(size);
+    _history[index].tag = (TAG *)M_MALLOC(size);
     memcpy(_history[index].tag, tag, size);
 
     /* search previous definition */
@@ -14301,7 +14304,7 @@ struct tm    *tmb;
     /* if definition found, compare it with new one */
     if (def_rec.event_id == event_id)
       {
-      buffer = M_MALLOC(size);
+      buffer = (char *)M_MALLOC(size);
       memset(buffer, 0, size);
 
       lseek(fh, def_rec.def_offset, SEEK_SET);
@@ -14351,7 +14354,7 @@ struct tm    *tmb;
     fhd = _history[index].def_fh;
 
     /* compare definition with previous definition */
-    buffer = M_MALLOC(size);
+    buffer = (char *)M_MALLOC(size);
     memset(buffer, 0, size);
 
     lseek(fh, _history[index].def_offset, SEEK_SET);
@@ -14663,7 +14666,7 @@ DEF_RECORD def_rec;
 
   /* allocate event id array */
   lseek(fhd, 0, SEEK_END);
-  id = M_MALLOC(TELL(fhd)/sizeof(def_rec)*sizeof(DWORD));
+  id = (DWORD *)M_MALLOC(TELL(fhd)/sizeof(def_rec)*sizeof(DWORD));
   lseek(fhd, 0, SEEK_SET);
 
   /* loop over index file */
@@ -14933,7 +14936,7 @@ TAG          *tag;
 
   /* read event definition */
   n = rec.data_size/sizeof(TAG);
-  tag = M_MALLOC(rec.data_size);
+  tag = (TAG *)M_MALLOC(rec.data_size);
   read(fh, (char *)tag, rec.data_size);
 
   if (n*NAME_LENGTH > (INT)*size ||
@@ -15046,7 +15049,7 @@ TAG          *tag;
 
   /* read event definition */
   n = rec.data_size/sizeof(TAG);
-  tag = M_MALLOC(rec.data_size);
+  tag = (TAG *)M_MALLOC(rec.data_size);
   read(fh, (char *)tag, rec.data_size);
 
   /* search variable */
@@ -15165,7 +15168,7 @@ char         *cache;
 
   if (cache_size > 0)
     {
-    cache = M_MALLOC(cache_size);
+    cache = (char *)M_MALLOC(cache_size);
     if (cache)
       {
       lseek(fhi, 0, SEEK_SET);
@@ -15275,7 +15278,7 @@ char         *cache;
           read(fh, (char *)&drec, sizeof(drec));
           read(fh, str, NAME_LENGTH);
 
-          tag = M_MALLOC(drec.data_size);
+          tag = (TAG *)M_MALLOC(drec.data_size);
           if (tag == NULL)
             {
             *n = *tbsize = *dbsize = 0;
@@ -15429,7 +15432,7 @@ char         *cache;
       lseek(fhi, 0, SEEK_END);
       cache_size = TELL(fhi);
       lseek(fhi, 0, SEEK_SET);
-      cache = M_MALLOC(cache_size);
+      cache = (char *)M_MALLOC(cache_size);
       if (cache)
         {
         i = read(fhi, cache, cache_size);
@@ -15579,9 +15582,9 @@ struct tm    *tms;
           read(fh, str, NAME_LENGTH);
 
           if (tag == NULL)
-            tag = M_MALLOC(drec.data_size);
+            tag = (TAG *)M_MALLOC(drec.data_size);
           else
-            tag = realloc(tag, drec.data_size);
+            tag = (TAG *)realloc(tag, drec.data_size);
           if (tag == NULL)
             return HS_NO_MEMORY;
           read(fh, (char *)tag, drec.data_size);
@@ -15603,9 +15606,9 @@ struct tm    *tms;
             printf("\n");
 
             if (old_tag == NULL)
-              old_tag = M_MALLOC(drec.data_size);
+              old_tag = (TAG *)M_MALLOC(drec.data_size);
             else
-              old_tag = realloc(old_tag, drec.data_size);
+              old_tag = (TAG *)realloc(old_tag, drec.data_size);
             memcpy(old_tag, tag, drec.data_size);
             old_n_tag = n_tag;
             }
@@ -16016,7 +16019,7 @@ BOOL    bedit;
 
     if (tail_size > 0)
       {
-      buffer = M_MALLOC(tail_size);
+      buffer = (char *)M_MALLOC(tail_size);
       if (buffer == NULL)
         {
         close(fh);
@@ -16281,7 +16284,7 @@ HNDLE  hDB;
   /* open most recent file if no tag given */
   if (tag[0] == 0)
     {
-    time(&lt);
+    time((long *)&lt);
     ltime = lt;
     do
       {
@@ -16395,7 +16398,7 @@ HNDLE  hDB;
     if (i < 15)
       {
       close(*fh);
-      time(&lact);
+      time((long *)&lact);
 
       lt = ltime;
       do
@@ -16718,7 +16721,7 @@ char    *buffer;
 
   if (tail_size > 0)
     {
-    buffer = M_MALLOC(tail_size);
+    buffer = (char *)M_MALLOC(tail_size);
     if (buffer == NULL)
       {
       close(fh);
@@ -17500,7 +17503,7 @@ INT eb_create_buffer(INT size)
 
 \********************************************************************/
 {
-  _event_ring_buffer = M_MALLOC(size);
+  _event_ring_buffer = (char *)M_MALLOC(size);
   if (_event_ring_buffer == NULL)
     return BM_NO_MEMORY;
 
@@ -17921,10 +17924,10 @@ INT dm_buffer_create(INT size, INT user_max_event_size)
 \********************************************************************/
 {
 
-  dm.area1.pt = M_MALLOC(size);
+  dm.area1.pt = (char *)M_MALLOC(size);
   if (dm.area1.pt == NULL)
     return (BM_NO_MEMORY);
-  dm.area2.pt = M_MALLOC(size);
+  dm.area2.pt = (char *)M_MALLOC(size);
   if (dm.area2.pt == NULL)
     return (BM_NO_MEMORY);
 
