@@ -6,6 +6,9 @@
   Contents:     High Voltage Class Driver
 
   $Log$
+  Revision 1.16  2003/10/30 12:37:33  midas
+  Don't overwrite number of channels from ODB
+
   Revision 1.15  2003/10/06 09:17:10  midas
   Output commect if # channels overwritten by ODB
 
@@ -417,7 +420,7 @@ EQUIPMENT *pequipment;
 
 INT hv_init(EQUIPMENT *pequipment)
 {
-int   status, size, i, j, index, offset, channels;
+int   status, size, i, j, index, offset;
 char  str[256];
 HNDLE hDB, hKey, hNames;
 HV_INFO *hv_info;
@@ -444,25 +447,13 @@ HV_INFO *hv_info;
     hv_info->format = FORMAT_YBOS;
 
   /* count total number of channels */
-  db_create_key(hDB, hv_info->hKeyRoot, "Settings/Channels", TID_KEY);
-  db_find_key(hDB, hv_info->hKeyRoot, "Settings/Channels", &hKey);
-
   for (i=0,hv_info->num_channels=0 ; pequipment->driver[i].name[0] ; i++)
     {
-    /* ODB value has priority over driver list in channel number */
-    size = sizeof(INT);
-    db_get_value(hDB, hKey, pequipment->driver[i].name, 
-                 &channels, &size, TID_INT, TRUE);
-
-    if (channels != pequipment->driver[i].channels)
-      {
-      printf("\nNumber of HV channels overwritten by ODB (%d -> %d).\n", 
-        pequipment->driver[i].channels, channels);
-      pequipment->driver[i].channels = channels;
-      }
-
     if (pequipment->driver[i].channels == 0)
-      pequipment->driver[i].channels = 1;
+      {
+      cm_msg(MERROR, "hv_init", "Driver with zero channels not allowed");
+      return FE_ERR_ODB;
+      }
 
     hv_info->num_channels += pequipment->driver[i].channels;
     }

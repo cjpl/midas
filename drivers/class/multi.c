@@ -6,6 +6,9 @@
   Contents:     Multimeter Class Driver
 
   $Log$
+  Revision 1.11  2003/10/30 12:38:21  midas
+  Don't overwrite number of channels from ODB
+
   Revision 1.10  2003/09/30 19:48:45  midas
   Output channels with DF_PRIO_DEVICE are now bidirectionally linked
 
@@ -281,16 +284,8 @@ MULTI_INFO *m_info;
     m_info->format = FORMAT_YBOS;
 
   /* count total number of channels */
-  db_create_key(hDB, m_info->hKeyRoot, "Settings/Channels", TID_KEY);
-  db_find_key(hDB, m_info->hKeyRoot, "Settings/Channels", &hKey);
-
   for (i=m_info->num_channels_input=m_info->num_channels_output=0 ; pequipment->driver[i].name[0] ; i++)
     {
-    /* ODB value has priority over driver list */
-    size = sizeof(INT);
-    db_get_value(hDB, hKey, pequipment->driver[i].name, 
-                 &pequipment->driver[i].channels, &size, TID_INT, TRUE);
-
     if (pequipment->driver[i].flags & DF_INPUT)
       m_info->num_channels_input += pequipment->driver[i].channels;
     if (pequipment->driver[i].flags & DF_OUTPUT)
