@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.225  2004/11/10 01:05:46  pierre
+  fix transition problem
+
   Revision 1.224  2004/10/07 22:04:17  pierre
   Doxygen correction
 
@@ -3431,9 +3434,10 @@ INT cm_set_transition_sequence(INT transition, INT sequence_number)
    cm_get_experiment_database(&hDB, &hKey);
 
    for (i = 0; i < 13; i++)
-      if (trans_name[i].transition == transition)
+	   if (trans_name[i].transition == transition){
+          _trans_table[i].sequence_number = sequence_number;
          break;
-
+	   }
    sprintf(str, "Transition %s", trans_name[i].name);
 
    /* unlock database */
