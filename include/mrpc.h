@@ -1,3 +1,4 @@
+
 /********************************************************************\
 
   Name:         MRPC.H
@@ -7,6 +8,9 @@
   Contents:     Symbolic constants for internal RPC functions
 
   $Log$
+  Revision 1.20  2004/01/28 01:21:44  pierre
+  fix double slash for VxWorks
+
   Revision 1.19  2004/01/08 08:40:09  midas
   Implemented standard indentation
 
@@ -194,7 +198,7 @@ routine IDs for RPC calls
 /*------------------------------------------------------------------*/
 
 /**dox***************************************************************/
-                                                      /** @} */// end of rpcdefineh
+/** @} *//* end of rpcdefineh */
 
 /**dox***************************************************************/
-                                                      /** @} */// end of rpcincludecode
+/** @} *//* end of rpcincludecode */
