@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.77  2001/01/04 11:27:37  midas
+  Added bus driver commands and structures
+
   Revision 1.76  2000/11/20 12:23:17  midas
   Version 1.8.2
 
@@ -756,22 +759,31 @@ Convert the coded LAM station to Station number.
 #define AL_RESET                   1004
 
 /* Slow control commands */
-#define CMD_INIT                    (1<<1)
-#define CMD_EXIT                    (1<<2)
-#define CMD_IDLE                    (1<<3)
-#define CMD_SET                     (1<<4)
-#define CMD_SET_ALL                 (1<<5)
-#define CMD_GET                     (1<<6)
-#define CMD_GET_ALL                 (1<<7)
-#define CMD_GET_CURRENT             (1<<8)
-#define CMD_GET_CURRENT_ALL         (1<<9)
-#define CMD_SET_CURRENT_LIMIT      (1<<10)
-#define CMD_GET_DEMAND             (1<<11)
-#define CMD_GET_DEFAULT_NAME       (1<<12)
-#define CMD_GET_DEFAULT_THRESHOLD  (1<<13)
-#define CMD_SET_LABEL              (1<<14)
-#define CMD_ENABLE_COMMAND         (1<<15)
-#define CMD_DISABLE_COMMAND        (1<<16)
+#define CMD_INIT                    (1<<0)
+#define CMD_EXIT                    (1<<1)
+#define CMD_IDLE                    (1<<2)
+#define CMD_SET                     (1<<3)
+#define CMD_SET_ALL                 (1<<4)
+#define CMD_GET                     (1<<5)
+#define CMD_GET_ALL                 (1<<6)
+#define CMD_GET_CURRENT             (1<<7)
+#define CMD_GET_CURRENT_ALL         (1<<8)
+#define CMD_SET_CURRENT_LIMIT       (1<<9)
+#define CMD_GET_DEMAND             (1<<10)
+#define CMD_GET_DEFAULT_NAME       (1<<11)
+#define CMD_GET_DEFAULT_THRESHOLD  (1<<12)
+#define CMD_SET_LABEL              (1<<13)
+#define CMD_ENABLE_COMMAND         (1<<14)
+#define CMD_DISABLE_COMMAND        (1<<15)
+
+/* Bus driver commands */
+#define CMD_PUTS                    100
+#define CMD_GETS                    101
+#define CMD_DEBUG                   102
+
+/* macros for bus driver access */
+#define BD_PUTS(s)       info->bd(CMD_PUTS, info->bd_info, s)
+#define BD_GETS(s,z,p,t) info->bd(CMD_GETS, info->bd_info, s, z, p, t)
 
 /* Commands for interrupt events */
 #define CMD_INTERRUPT_ENABLE        100
@@ -935,8 +947,15 @@ typedef struct {
 
 typedef struct {
   char   name[NAME_LENGTH];           /* Driver name                       */
+  INT    (*bd)(INT cmd, ...);         /* Device driver entry point         */
+  void   *bd_info;                    /* Private info for bus driver       */
+} BUS_DRIVER;
+
+typedef struct {
+  char   name[NAME_LENGTH];           /* Driver name                       */
   INT    (*dd)(INT cmd, ...);         /* Device driver entry point         */
   INT    channels;                    /* Number of channels                */
+  INT    (*bd)(INT cmd, ...);         /* Bus driver entry point            */
   DWORD  type;                        /* channel type, combination of CH_xxx*/
   DWORD  cmd_disabled;                /* Mask of disabled commands         */
   void   *dd_info;                    /* Private info for device driver    */
