@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.52  2001/11/05 12:37:36  midas
+  Version 1.2.1
+
   Revision 1.51  2001/11/05 12:36:15  midas
   Added <errno.h> for Unix include files
 
@@ -167,7 +170,7 @@
 \********************************************************************/
 
 /* Version of ELOG */
-#define VERSION "1.2.0"
+#define VERSION "1.2.1"
 
 #include <stdio.h>
 #include <sys/types.h>
