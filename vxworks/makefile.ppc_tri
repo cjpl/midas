@@ -15,7 +15,7 @@ OBJ_DIR  = ppcobj
 
 # targets
 OBJS    = $(OBJ_DIR)/midas.o $(OBJ_DIR)/system.o $(OBJ_DIR)/mrpc.o $(OBJ_DIR)/odb.o $(OBJ_DIR)/ybos.o
-DRIVERS = $(OBJ_DIR)/cd_hv.o $(OBJ_DIR)/cd_multi.o \
+DRIVERS = $(OBJ_DIR)/hv.o $(OBJ_DIR)/multi.o \
 	  $(OBJ_DIR)/ces8210.o $(OBJ_DIR)/lrs1151.o $(OBJ_DIR)/lrs1190.o \
 	  $(OBJ_DIR)/vmeio.o $(OBJ_DIR)/esone.o $(OBJ_DIR)/camacnul.o \
       $(OBJ_DIR)/camacrpc.o
@@ -84,34 +84,28 @@ $(OBJ_DIR)/mfe.o:   $(SRC_DIR)/mfe.c
 	$(CC) -c $(CFLAGS) -o $(OBJ_DIR)/mfe.o $(SRC_DIR)/mfe.c
 
 ## General purpose drivers 
-$(OBJ_DIR)/null.o:      $(DRV_DIR)/null.c
-	$(CC) $(CFLAGS) $(OSFLAGS) -c -o $(OBJ_DIR)/null.o $(DRV_DIR)/null.c
-$(OBJ_DIR)/cd_hv.o:     $(DRV_DIR)/cd_hv.c
-	$(CC) $(CFLAGS) $(OSFLAGS) -c -o $(OBJ_DIR)/cd_hv.o $(DRV_DIR)/cd_hv.c
-$(OBJ_DIR)/cd_multi.o:  $(DRV_DIR)/cd_multi.c
-	$(CC) $(CFLAGS) $(OSFLAGS) -c -o $(OBJ_DIR)/cd_multi.o $(DRV_DIR)/cd_multi.c
-$(OBJ_DIR)/lrs4032.o:   $(DRV_DIR)/lrs4032.c
-	$(CC) $(CFLAGS) $(OSFLAGS) -c -o $(OBJ_DIR)/lrs4032.o $(DRV_DIR)/lrs4032.c
-$(OBJ_DIR)/caen170a.o:  $(DRV_DIR)/caen170a.c
-	$(CC) $(CFLAGS) $(OSFLAGS) -c -o $(OBJ_DIR)/caen170a.o $(DRV_DIR)/caen170a.c
-$(OBJ_DIR)/lrs1151.o:   $(DRV_DIR)/lrs1151.c
-	$(CC) $(CFLAGS) $(OSFLAGS) -c -o $(OBJ_DIR)/lrs1151.o $(DRV_DIR)/lrs1151.c
-$(OBJ_DIR)/lrs1190.o:   $(DRV_DIR)/lrs1190.c
-	$(CC) $(CFLAGS) $(OSFLAGS) -c -o $(OBJ_DIR)/lrs1190.o $(DRV_DIR)/lrs1190.c
-$(OBJ_DIR)/esone.o:     $(DRV_DIR)/esone.c
-	$(CC) $(CFLAGS) $(OSFLAGS) -c -o $(OBJ_DIR)/esone.o $(DRV_DIR)/esone.c
-$(OBJ_DIR)/camacnul.o:     $(DRV_DIR)/camacnul.c
-	$(CC) $(CFLAGS) $(OSFLAGS) -c -o $(OBJ_DIR)/camacnul.o $(DRV_DIR)/camacnul.c
-$(OBJ_DIR)/camacrpc.o:     $(DRV_DIR)/camacnul.c
-	$(CC) $(CFLAGS) $(OSFLAGS) -c -o $(OBJ_DIR)/camacrpc.o $(DRV_DIR)/camacrpc.c
-$(OBJ_DIR)/ces8210.o:   $(DRV_DIR)/ces8210.c
-	$(CC) $(CFLAGS) $(OSFLAGS) -c -o $(OBJ_DIR)/ces8210.o $(DRV_DIR)/ces8210.c
-$(OBJ_DIR)/caenv488.o:   $(DRV_DIR)/caenv488.c
-	$(CC) $(CFLAGS) $(OSFLAGS) -c -o $(OBJ_DIR)/caenv488.o $(DRV_DIR)/caenv488.c
-$(OBJ_DIR)/vmeio.o:     $(DRV_DIR)/vmeio.c
-	$(CC) $(CFLAGS) $(OSFLAGS) -c -o $(OBJ_DIR)/vmeio.o $(DRV_DIR)/vmeio.c
-$(OBJ_DIR)/mtest.o:     $(DRV_DIR)/mtest.c
-	$(CC) $(CFLAGS) $(OSFLAGS) -c -o $(OBJ_DIR)/mtest.o $(DRV_DIR)/mtest.c
+$(OBJ_DIR)/null.o:      $(DRV_DIR)/device/null.c
+	$(CC) $(CFLAGS) $(OSFLAGS) -c -o $(OBJ_DIR)/null.o $(DRV_DIR)/device/null.c
+$(OBJ_DIR)/hv.o:     $(DRV_DIR)/class/hv.c
+	$(CC) $(CFLAGS) $(OSFLAGS) -c -o $(OBJ_DIR)/hv.o $(DRV_DIR)/class/hv.c
+$(OBJ_DIR)/multi.o:  $(DRV_DIR)/class/multi.c
+	$(CC) $(CFLAGS) $(OSFLAGS) -c -o $(OBJ_DIR)/multi.o $(DRV_DIR)/class/multi.c
+$(OBJ_DIR)/lrs4032.o:   $(DRV_DIR)/divers/lrs4032.c
+	$(CC) $(CFLAGS) $(OSFLAGS) -c -o $(OBJ_DIR)/lrs4032.o $(DRV_DIR)/divers/lrs4032.c
+$(OBJ_DIR)/lrs1151.o:   $(DRV_DIR)/divers/lrs1151.c
+	$(CC) $(CFLAGS) $(OSFLAGS) -c -o $(OBJ_DIR)/lrs1151.o $(DRV_DIR)/divers/lrs1151.c
+$(OBJ_DIR)/lrs1190.o:   $(DRV_DIR)/divers/lrs1190.c
+	$(CC) $(CFLAGS) $(OSFLAGS) -c -o $(OBJ_DIR)/lrs1190.o $(DRV_DIR)/divers/lrs1190.c
+$(OBJ_DIR)/esone.o:     $(DRV_DIR)/bus/esone.c
+	$(CC) $(CFLAGS) $(OSFLAGS) -c -o $(OBJ_DIR)/esone.o $(DRV_DIR)/bus/esone.c
+$(OBJ_DIR)/camacnul.o:     $(DRV_DIR)/bus/camacnul.c
+	$(CC) $(CFLAGS) $(OSFLAGS) -c -o $(OBJ_DIR)/camacnul.o $(DRV_DIR)/bus/camacnul.c
+$(OBJ_DIR)/camacrpc.o:     $(DRV_DIR)/bus/camacrpc.c
+	$(CC) $(CFLAGS) $(OSFLAGS) -c -o $(OBJ_DIR)/camacrpc.o $(DRV_DIR)/bus/camacrpc.c
+$(OBJ_DIR)/ces8210.o:   $(DRV_DIR)/bus/ces8210.c
+	$(CC) $(CFLAGS) $(OSFLAGS) -c -o $(OBJ_DIR)/ces8210.o $(DRV_DIR)/bus/ces8210.c
+$(OBJ_DIR)/vmeio.o:     $(DRV_DIR)/divers/vmeio.c
+	$(CC) $(CFLAGS) $(OSFLAGS) -c -o $(OBJ_DIR)/vmeio.o $(DRV_DIR)/divers/vmeio.c
 
 #$(OBJ_DIR)/sc: $(OBJ) $(SRC_DIR)/mfe.c $(WORK_DIR)/frontend.c $(DRV_DIR)/lrs4032.c
 #	$(CC) $(CFLAGS) -c -o $(OBJ_DIR)/mfe.o $(SRC_DIR)/mfe.c
