@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.8  1998/10/28 12:05:57  midas
+  Fixed minor compiler warning
+
   Revision 1.7  1998/10/28 12:01:30  midas
   Added version number to run start notification
 
@@ -2571,7 +2574,7 @@ RUNINFO_STR(runinfo_str);
     memset(&addr, 0, sizeof(addr));
     addr.sin_family      = AF_INET;
     addr.sin_port        = htons((short) MIDAS_TCP_PORT+1);
-    addr.sin_addr.s_addr = htonl(2172735051);
+    addr.sin_addr.s_addr = htonl(2172735051u);
 
     str[0] = 0;
     size = sizeof(str);
