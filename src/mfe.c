@@ -7,6 +7,9 @@
                 linked with user code to form a complete frontend
 
   $Log$
+  Revision 1.63  2004/03/19 09:31:43  midas
+  Re-formatted comments
+
   Revision 1.62  2004/01/08 08:40:10  midas
   Implemented standard indentation
 
@@ -1294,13 +1297,13 @@ INT scheduler(void)
 #endif
 #endif
 
-  /*----------------- MAIN equipment loop ------------------------------*/
+   /*----------------- MAIN equipment loop ------------------------------*/
 
    do {
       actual_millitime = ss_millitime();
       actual_time = ss_time();
 
-    /*---- loop over equipment table -------------------------------*/
+      /*---- loop over equipment table -------------------------------*/
       for (index = 0;; index++) {
          eq = &equipment[index];
          eq_info = &eq->info;
@@ -1315,7 +1318,7 @@ INT scheduler(void)
          if (eq->status != FE_SUCCESS)
             continue;
 
-      /*---- call idle routine for slow control equipment ----*/
+         /*---- call idle routine for slow control equipment ----*/
          if ((eq_info->eq_type & EQ_SLOW) && eq->status == FE_SUCCESS) {
             if (eq_info->event_limit > 0 && run_state == STATE_RUNNING) {
                if (actual_time - eq->last_idle >= (DWORD) eq_info->event_limit) {
@@ -1333,7 +1336,7 @@ INT scheduler(void)
          if (run_state == STATE_RUNNING && (eq_info->read_on & RO_RUNNING) == 0)
             continue;
 
-      /*---- check periodic events ----*/
+         /*---- check periodic events ----*/
          if ((eq_info->eq_type & EQ_PERIODIC) || (eq_info->eq_type & EQ_SLOW)) {
             if (eq_info->period == 0)
                continue;
@@ -1357,7 +1360,7 @@ INT scheduler(void)
          }
 
          /* end of periodic equipments */
- /*---- check polled events ----*/
+         /*---- check polled events ----*/
          if (eq_info->eq_type & EQ_POLLED) {
             readout_start = actual_millitime;
             pevent = NULL;
@@ -1491,7 +1494,7 @@ INT scheduler(void)
             }
          }
 
-      /*---- send interrupt events ----*/
+         /*---- send interrupt events ----*/
          if (eq_info->eq_type & EQ_INTERRUPT) {
             /* not much to do as work being done independently in interrupt_routine() */
 
@@ -1504,7 +1507,7 @@ INT scheduler(void)
 
          }
 
-      /*---- check if event limit is reached ----*/
+         /*---- check if event limit is reached ----*/
          if (eq_info->eq_type != EQ_SLOW &&
              eq_info->event_limit > 0 &&
              eq->stats.events_sent + eq->events_sent >= eq_info->event_limit &&
@@ -1526,17 +1529,17 @@ INT scheduler(void)
          }
       }
 
-    /*---- call frontend_loop periodically -------------------------*/
+      /*---- call frontend_loop periodically -------------------------*/
       if (frontend_call_loop) {
          status = frontend_loop();
          if (status != CM_SUCCESS)
             status = RPC_SHUTDOWN;
       }
 
-    /*---- check for deferred transitions --------------------------*/
+      /*---- check for deferred transitions --------------------------*/
       cm_check_deferred_transition();
 
-    /*---- calculate rates and update status page periodically -----*/
+      /*---- calculate rates and update status page periodically -----*/
       if (force_update ||
           (display_period
            && actual_millitime - last_time_display > (DWORD) display_period)
@@ -1616,7 +1619,7 @@ INT scheduler(void)
          last_time_display = actual_millitime;
       }
 
-    /*---- check to flush cache ------------------------------------*/
+      /*---- check to flush cache ------------------------------------*/
       if (actual_millitime - last_time_flush > 1000) {
          last_time_flush = actual_millitime;
 
@@ -1687,7 +1690,7 @@ INT scheduler(void)
          }
       }
 
-    /*---- check network messages ----------------------------------*/
+      /*---- check network messages ----------------------------------*/
       if (run_state == STATE_RUNNING && interrupt_eq == NULL) {
          /* only call yield once every 500ms when running */
          if (actual_millitime - last_time_network > 500) {
