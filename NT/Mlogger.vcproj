@@ -12,7 +12,7 @@
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory=".\Debug"
+			OutputDirectory="\midas\nt\bin"
 			IntermediateDirectory=".\Debug"
 			ConfigurationType="1"
 			UseOfMFC="0"
@@ -224,6 +224,15 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath="..\src\mxml.c">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions="HAVE_STRLCPY"/>
+				</FileConfiguration>
+			</File>
+			<File
 				RelativePath="..\src\odb.c">
 				<FileConfiguration
 					Name="Debug|Win32">
@@ -300,6 +309,9 @@
 				RelativePath="..\include\msystem.h">
 			</File>
 			<File
+				RelativePath="..\include\mxml.h">
+			</File>
+			<File
 				RelativePath="..\..\mysql\include\mysql.h">
 			</File>
 			<File
@@ -310,9 +322,13 @@
 			Name="Resource Files"
 			Filter="ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe">
 		</Filter>
-		<File
-			RelativePath="..\..\mysql\lib\debug\mysqlclient.lib">
-		</File>
+		<Filter
+			Name="Libraries"
+			Filter="">
+			<File
+				RelativePath="..\..\mysql\lib\opt\mysqlclient.lib">
+			</File>
+		</Filter>
 	</Files>
 	<Globals>
 	</Globals>

@@ -72,7 +72,7 @@
 		</Configuration>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory=".\debug"
+			OutputDirectory="\midas\nt\bin"
 			IntermediateDirectory=".\debug"
 			ConfigurationType="1"
 			UseOfMFC="0"
@@ -195,6 +195,15 @@
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
 						BrowseInformation="1"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\mxml.c">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions="HAVE_STRLCPY"/>
 				</FileConfiguration>
 			</File>
 			<File
