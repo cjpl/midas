@@ -14,6 +14,9 @@
                 Brown, Prentice Hall
 
   $Log$
+  Revision 1.45  1999/10/12 13:42:37  midas
+  Use execl in ss_system
+
   Revision 1.44  1999/10/11 14:45:37  midas
   Fixed bug
 
@@ -1361,7 +1364,12 @@ INT ss_system(char *command)
   if ( (pid = fork()) < 0)
     return SS_ABORT;
   else if (pid != 0)
+    {
+    /* avoid <defunc> parent processes */
+    signal(SIGCHLD, catch_sigchld);
+
     return SS_SUCCESS; /* parent returns */
+    }
 
   /* child continues here... */
 
@@ -1389,16 +1397,11 @@ INT ss_system(char *command)
     }
 
   setsid();               /* become session leader */
-  chdir("/");             /* change working direcotry (not on NFS!) */
+  /* chdir("/"); */       /* change working direcotry (not on NFS!) */
   umask(0);               /* clear our file mode createion mask */
 
   /* execute command */
-  system(command);
-
-  /* exit process */
-  exit(0);
-
-  return SS_SUCCESS;
+  execl("/bin/sh", "sh", "-c", command, NULL);
 
 #else
 
