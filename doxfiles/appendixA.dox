@@ -1,7 +1,7 @@
 /*! @page AppendixA Data format
 
 \htmlonly <img ALIGN="left" alt="previous.gif" src="previous.gif"> \endhtmlonly 
-@ref Util - @ref Top - @ref AppendixB 
+@ref Utilities - @ref Top - @ref AppendixB 
 \htmlonly <img alt="next.gif" src="next.gif"> \endhtmlonly
 
 
@@ -153,6 +153,6 @@ The Offset is computed with the following rules:
 - The mark of the end of file is defined with a logical record length set to -1.
 
 \htmlonly <img ALIGN="left" alt="previous.gif" src="previous.gif"> \endhtmlonly 
-@ref Util - @ref Top - @ref AppendixB 
+@ref Utilities - @ref Top - @ref AppendixB 
 \htmlonly <img alt="next.gif" src="next.gif"> \endhtmlonly
 */

@@ -10,17 +10,25 @@ anywhere in the documentation.
 This section will maintain an up-to-date information with a log 
 of the latest documentation on past and current features. It will also
 mention the wish list documentation on current developments.
+ 
 
-
-- <b> Current doc revision: 1.9.3-1 </b>
+- <b> Current doc revision: 1.9.3-3 </b>
 - <b> Software version: 1.9.3 </b>
 - <b> Latest tarball : <a href=http://midas.triumf.ca/download> 1.9.3-1 </a> </b>
 - <b> Latest RPM : <a href=http://midas.triumf.ca/download> 1.9.2-1  </a> </b>
 
+
+- In writing
+ - <b> Epics Slow Control documentation </b>
+
+- NEW
+ - <b> Analyzer documention revision @ref analyzer_struct </b>
+ - <b> Watchdog bug fix (RH9.0) </b>
+
 - <b> Restructured Midas distribution </b>
   - In the same effort as the documentation, the midas tree and CVS have been  
   modified. The <a href=http://midas.triumf.ca/download> download area </a> now
-  contains separate directories for doc, addon, publications etc.
+  contains separate directories for doc, add-ons, publications etc.
   
 - <b> [DOCUMENTATION in progress] </b>
   - A large effort has been put on the documentation for switching from the
@@ -44,7 +52,7 @@ mention the wish list documentation on current developments.
   - @ref mlogger_task: New Data format \b ROOT and corresponding file extension
     \b root
   - @ref rmidas_task: Initial Root/Midas GUI for Histogram and Run control.
-  - @ref ROOT_analyzer: New framework for Online/Offline Root analysis using socket
+  - @ref analyzer_struct: New framework for Online/Offline Root analysis using socket
     connection.
   - \b Makefile for ROOT, remove \b MANA_LITE, create @ref HAVE_ROOT, @ref HAVE_HBOOK.
   -  New Analyzer \b mana, \b hmana, \b rmana depending on the type of package.
@@ -68,9 +76,9 @@ logger, odbedit and implements new features in particular for the history pages 
 interface. The detail list of the modifications can be found in
 <a href=http://midas.triumf.ca/download/CHANGELOG> CHANGELOG </a>.
     - <b>[EQ_FRAGMENTED]</b> Possibility to send extremely large event through the system without
-      modification of the system configuration (see @ref The_Equipment_Structure )
+      modification of the system configuration (see @ref The_Equipment_Structure)
     - <b>[logger subdir option]</b> Allows to redirect the data files to a subdirectory based on 
-      the time of the creation of the data file (see @ref ODB_Logger_Tree ).
+      the time of the creation of the data file (see @ref ODB_Logger_Tree).
     - Option for building an analyzer without the CERN library (HBOOK)
       (see @ref AppendixD).
     - <b>[ MOD. REQ.]</b> This release requires several modifications in the

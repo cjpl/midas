@@ -9,45 +9,52 @@ as well as the different @ref Environment_variables options for its operation.
 
 <hr> @section building_option Building Options
 
-By default Midas is build with a minimum of pre-compiler flags. But the @ref Makefile 
+- By default Midas is build with a minimum of pre-compiler flags. But the @ref Makefile 
 contains options for the user to apply customization by enabling internal options 
 already available in the package.
-- @ref YBOS_VERSION_3_3 , @ref EVID_TWIST , @ref INCLUDE_FTPLIB , @ref INCLUDE_ZLIB , 
+ - @ref YBOS_VERSION_3_3 , @ref EVID_TWIST , @ref INCLUDE_FTPLIB , @ref INCLUDE_ZLIB , 
   @ref SPECIFIC_OS_PRG
 
-Other flags are avaiable at the application level:
-- @ref HAVE_CAMAC , @ref HAVE_ROOT , @ref HAVE_HBOOK , 
+- Other flags are avaiable at the application level:
+ - @ref HAVE_CAMAC , @ref HAVE_ROOT , @ref HAVE_HBOOK , 
   @ref USE_EVENT_CHANNEL ,  @ref DM_DUAL_THREAD , @ref USE_INT
 
-By default the midas applications are built for use with dynamic library 
+- By default the midas applications are built for use with dynamic library 
 \b libmidas.so. If static build is required the whole package can be built using the 
-option \b static
-
+option \b static.
 \code
-make static
+> make static
 \endcode
 
-For development it could be useful to built individual application in static. This 
+- The basic Midas package builds without external package library reference. But it does try
+to build an extra core analyzer application to be used in conjunction with ROOT 
+if $ROOTSYS is found. This is required ONLY if the examples/experiment makefile is used for 
+generating a complete Midas/ROOT analyzer application.
+
+- In case of HBOOK/PAW analyzer application, the build should be done from examples/hbookexpt
+directory and the environment variable CERNLIB_PACK should be pointing to a valid cernpacklib.a
+library.
+
+- For development it could be useful to built individual application in static. This 
 can be done using the @ref USERFLAGS option such as:
-
 \code
-rm linux/bin/mstat; make USERFLAGS=-static linux/bin/mstat
+> rm linux/bin/mstat; make USERFLAGS=-static linux/bin/mstat
 \endcode
 
-The current OS support is done through fix flag established in the general
+- The current OS support is done through fix flag established in the general
 @ref Makefile. Currently the OS supported are:
-- \b OS_OSF1 , \b OS_ULTRIX , \b OS_FREEBSD ,  \b OS_LINUX , \b OS_SOLARIS.
+ - \b OS_OSF1 , \b OS_ULTRIX , \b OS_FREEBSD ,  \b OS_LINUX , \b OS_SOLARIS.
 
-For \b OS_IRIX please contact Pierre. The \b OS_VMS is not included in the Makefile
+- For \b OS_IRIX please contact Pierre. The \b OS_VMS is not included in the Makefile
 as it requires a particular makefile and since several years now the VMS support
 has been dropped. 
 \code
 OSFLAGS = -DOS_LINUX ...
 \endcode
 
-Other OS supported are: 
-- OS_WINNT : See file makefile.nt.
-- OS_VXWORKS : See file makefile.ppc_tri.
+- Other OS supported are: 
+ - OS_WINNT : See file makefile.nt. 
+ - OS_VXWORKS : See file makefile.ppc_tri.
 
 <hr> @section USERFLAGS USERFLAGS
 This flag can be used at the command prompt for individual application built.
@@ -64,28 +71,29 @@ MIDAS_PREF_FLAGS  = -DYBOS_VERSION_3_3 -DEVID_TWIST
 
 <hr> @section HAVE_CAMAC HAVE_CAMAC
 This flag enable the CAMAC RPC service within the frontend code. The application
-@ref mcnaf_task and the web @ref CNAF_page are then enabled (default undefined).
+@ref mcnaf_task and the web @ref CNAF_page are by default not CAMAC enabled
+(HAVE_CAMAC undefined).
 
 <hr> @section HAVE_ROOT HAVE_ROOT
 This flag is used for the midas @ref analyzer_task in the case \b ROOT environment
 is required. An example of the makefile resides in \b examples/experiment/Makefile.
 This flag is enabled by the presence of a valid \b ROOTSYS environment variable.
 In the case \b ROOTSYS is not found the analyzer is build without \b ROOT support.
-In this later case, the application @ref rmidas_task will be missing. (See also 
-@ref MANA_LITE).
+In this later case, the application @ref rmidas_task will be missing. refer to @ref analyzer_struct
+for further details.
 
 <hr> @section HAVE_HBOOK HAVE_HBOOK
-This flag is used for \b examples/hbook/Makefile for building the midas @ref analyzer_task
-against HBOOK and \b PAW. In the case the HBOOK library is not found the analyzer will be
-is build without HBOOK support.
+This flag is used for \b examples/hbookexpt/Makefile for building the midas @ref analyzer_task
+against \b HBOOK and \b PAW. The path to the cernlib is requested and expected to be found under
+/cern/pro/lib (see makefile). This can always be overwritten during the makefile using the
+following command:
+\code
+make CERNLIB_PACK=<your path>/libpacklib.a
+\endcode
 
-@anchor MANA_LITE <b> In this later case, this "lite" version of the analyzer without
-CERN library or ROOT, no histograms nor Ntuples will be generated.
-This allow the user to implement his/her own graphical interface. This
-"lite" version provides a "analyzer like" environment for monitoring tasks where
-results may be put back in the ODB or pushed to a secondary logging channel.
-This flag affect: mana.c, fal.c, analyzer.c, adccalib.c, adcsum.c from the
-default distribution. </b>
+- For operation of the analyzer \b without \b HBOOK or \b ROOT, refer to @ref analyzer_struct
+for further details.
+
 
 <hr> @section SPECIFIC_OS_PRG SPECIFIC_OS_PRG
 This flag is for internal Makefile preference. Used in particular for additional
@@ -101,10 +109,9 @@ FTP support "INCLUDE_FTPLIB" Application such as the @ref mlogger_task,
 
 <hr> @section INCLUDE_ZLIB INCLUDE_ZLIB
 The applications @ref lazylogger_task, @ref mdump_task can be built with \b zlib.a
-in order to gain direct access to the data files with the extension
-\b mid.gz or \b ybs.gz (module ybos.c). Building the application static
-prevent to rebuild the whole midas package.
-The analyzer \b mana has this option already enabled.
+in order to gain direct access to the data within a file with extension
+\b mid.gz or \b ybs.gz. By default this option is disabled except for the system analyzer
+core code \b mana.c.
 \code
 make USERFLAGS=-DINCLUDE_ZLIB linux/lib/ybos.o
 make USERFLAGS=-static linux/bin/mdump
@@ -121,19 +128,19 @@ make USERFLAGS=-DYBOS_VERSION_3_3 linux/lib/ybos.o
 <hr> @section DM_DUAL_THREAD DM_DUAL_THREAD
 Valid only under VxWorks. This flag enable the dual thread task when running the
 frontend code under VxWorks. The main function calls are the dm_xxxx in @ref midas.c
-(Refer to Pierre for more information).
+(Contact Pierre for more information).
 
 <hr> @section USE_EVENT_CHANNEL USE_EVENT_CHANNEL
 To be used in conjunction with the @ref DM_DUAL_THREAD.
 
 <hr> @section USE_INT USE_INT
 In @ref mfe.c. Enable the use of interrupt mechanism. This option is so far only valid
-under VxWorks Operating system. (refer to Stefan or Pierre for further information).
+under VxWorks Operating system. (Contact Stefan or Pierre for further information).
 
 <hr> @section Environment_variables Environment variables
 Midas uses a several environment variables to facilitate the different application
 startup.
-
+ 
 @subsection  MIDAS_EXPTAB MIDAS_EXPTAB
  This variable specify the location of the \b exptab file containing the predefined
  midas experiment. The default location is for OS_UNIX: /etc, /. For OS_WINNT:

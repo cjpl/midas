@@ -3,7 +3,7 @@
 \htmlonly <img ALIGN="left" alt="previous.gif" src="previous.gif"> \endhtmlonly 
 @ref AppendixA - @ref Top - @ref AppendixC 
 \htmlonly <img alt="next.gif" src="next.gif"> \endhtmlonly
-
+ 
 Drivers included in the driver's directory of the MIDAS distribution support
 various hardware modules.
 The driver library is continuously extended to suit the needs of various experiments.

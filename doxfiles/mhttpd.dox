@@ -1,7 +1,7 @@
 /*! @page mhttpd_task mhttpd task
 
  \htmlonly <img ALIGN="left" alt="previous.gif" src="previous.gif"> \endhtmlonly 
- @ref Util - @ref Top - @ref AppendixA
+ @ref Utilities - @ref Top - @ref AppendixA
  \htmlonly <img alt="next.gif" src="next.gif"> \endhtmlonly
 
 
@@ -96,11 +96,11 @@ the \<status> button.
    - <b> Arguments </b> to the script. Midas Symbolic link are permitted.
    - <b> Example </b>: The <b> Example </b> below defines a script names
     \b doit with 2 <b> Arguments </b> (run\# device) which will be invoked when the button
-    \<doit\> is pressed.
+    \<doit> is pressed.
     \code
     odbedit
     mkdir Script
-    cd Script
+    cd Script 
     mkdir doit
     cd doit
     create string cmd
@@ -520,7 +520,7 @@ The insertion of a new Custom page requires the following steps:
  * </center> 
  
  \htmlonly <img ALIGN="left" alt="previous.gif" src="previous.gif"> \endhtmlonly 
- @ref Util - @ref Top - @ref AppendixA
+ @ref Utilities - @ref Top - @ref AppendixA
  \htmlonly <img alt="next.gif" src="next.gif"> \endhtmlonly
 
  */

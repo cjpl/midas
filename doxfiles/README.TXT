@@ -19,15 +19,15 @@ Midas Documentation Build Procedure:
 ===================================
 Pre-requisite: 
 1) Midas source code installed on your computer under <midas>
-2) file midas-images.tar.gz downloaded on your <somewhere> on your computer
+2) file midas-images.tar.gz downloaded to <midas/doxfiles/>
 3) Doxygen utility already installed.
 
-cd        <midas>/doxfiles/                          << Location for docmentation
-tar      -zxvf <somewhere>/midasdoc-images.tar.gz    << insert the images dir
-doxygen   midox.cfg                                  << generate the documentation
-                                                        with doxygen.
+cd        <midas>/doxfiles/                 << Location for docmentation
+tar      -zxvf midasdoc-images.tar.gz       << insert the images dir
+doxygen   midox.cfg                         << generate the documentation
+                                               with doxygen.
 
-This will generate new subdirectories under <midas>/doxfiles/(html, latex, man, rtf)
+This will generate new subdirectories under :
+<midas>/doxfiles/{html, latex, man, rtf}
 The html/index.html and latex/refman.tex are the main documentation.
 The latex/ directory contains a Makefile for ps and pdf generation.
-

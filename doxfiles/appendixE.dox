@@ -267,7 +267,7 @@ the @ref mmacroh, @ref msmacroh, @ref ybosmacroh header files.
   - @ref WORD_SWAP 
   - @ref DWORD_SWAP 
   - @ref QWORD_SWAP 
-<br><br>
+  <br><br>
  - <b> MIDAS Event Header manipulation</b>
   Every event travelling through the Midas system has a "Event Header" containing
   the minimum information required to identify its content. The size of the header
@@ -292,7 +292,7 @@ INT adc_calib(EVENT_HEADER *pheader, void *pevent)
   INT    i, n_adc;
   WORD   *pdata;
   float  *cadc;
-
+ 
   // look for ADC0 bank, return if not present 
   n_adc = bk_locate(pevent, "ADC0", &pdata);
   if (n_adc == 0 || n_adc > N_ADC)
