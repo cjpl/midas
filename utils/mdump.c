@@ -5,6 +5,9 @@
    Contents:     Dump event on screen with MIDAS or YBOS data format
  
    $Log$
+   Revision 1.19  2002/05/22 17:32:56  pierre
+   Fixed bug with wrong size
+
    Revision 1.18  2002/05/15 00:23:26  pierre
    string length for Format
 
@@ -878,7 +881,7 @@ int main(unsigned int argc,char **argv)
       size = sizeof(WORD);
       db_get_value(hDB, hKey, "Trigger mask", &(eq[l]).msk, &size, TID_WORD, TRUE);
       
-      size = 8;
+      size = sizeof(str);
       db_get_value(hDB, hKey, "Format", str, &size, TID_STRING, TRUE);
       if (equal_ustring(str, "YBOS"))
       {
