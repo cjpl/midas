@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.41  1999/11/26 12:04:49  midas
+  Added additional error message when creating module parameters in ODB
+
   Revision 1.40  1999/11/23 15:49:41  midas
   Allocate local event buffers according to MAX_EVENT_SIZE
 
@@ -2906,7 +2909,11 @@ HNDLE      hkey;
         else
           {
           if (module[j]->init_str)
-            db_create_record(hDB, 0, str, strcomb(module[j]->init_str));
+            if (db_create_record(hDB, 0, str, strcomb(module[j]->init_str)) != DB_SUCCESS)
+              {
+              cm_msg(MERROR, "init_module_parameters", "Cannot create \"%s\" parameters in ODB", str);
+              return 0;
+              }
 
           db_find_key(hDB, 0, str, &hkey);
           if (db_open_record(hDB, hkey, module[j]->parameters, module[j]->param_size, 
