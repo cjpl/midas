@@ -15,8 +15,8 @@ nmake -f calib_520.mak CFG="calib_520 - Win32 Release" Clean
 nmake -f calib_520.mak CFG="calib_520 - Win32 Release"
 nmake -f calib_700.mak CFG="calib_700 - Win32 Release" Clean
 nmake -f calib_700.mak CFG="calib_700 - Win32 Release"
-nmake -f calib_900.mak CFG="calib_700 - Win32 Release" Clean
-nmake -f calib_900.mak CFG="calib_700 - Win32 Release"
+nmake -f calib_900.mak CFG="calib_900 - Win32 Release" Clean
+nmake -f calib_900.mak CFG="calib_900 - Win32 Release"
 nmake -f calib_hvr.mak CFG="calib_hvr - Win32 Release" Clean
 nmake -f calib_hvr.mak CFG="calib_hvr - Win32 Release"
 
