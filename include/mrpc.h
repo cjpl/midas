@@ -7,6 +7,9 @@
   Contents:     Symbolic constants for internal RPC functions
 
   $Log$
+  Revision 1.7  1999/04/15 09:59:22  midas
+  Added RPC_CM_EXIST
+
   Revision 1.6  1999/04/13 12:20:42  midas
   Added db_get_data1 (for Java)
 
@@ -39,6 +42,7 @@
 #define RPC_CM_TIME                     11008
 #define RPC_CM_MSG                      11009
 #define RPC_CM_TRANSITION               11010
+#define RPC_CM_EXIST                    11011
 
 #define RPC_BM_OPEN_BUFFER              11100
 #define RPC_BM_CLOSE_BUFFER             11101
