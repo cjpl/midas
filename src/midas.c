@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.172  2002/10/04 09:05:39  midas
+  Set timeout to 0 in cm_enable_watchdog(FALSE)
+
   Revision 1.171  2002/09/23 18:13:49  pierre
   correct cm_cleanup() rpc_call arg list
 
@@ -5197,7 +5200,7 @@ static BOOL call_flag = FALSE;
     call_flag = _call_watchdog;
     timeout = _watchdog_timeout;
     if (call_flag)
-      cm_set_watchdog_params(FALSE, timeout);
+      cm_set_watchdog_params(FALSE, 0);
     }
 
   return CM_SUCCESS;
