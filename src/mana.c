@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.77  2002/05/09 01:57:37  midas
+  Set 'events to ODB' TRUE by default
+
   Revision 1.76  2002/05/08 22:15:03  pierre
   add db_get_value arg
 
@@ -574,7 +577,7 @@ Histo Dump = BOOL : 0\n\
 Histo Dump Filename = STRING : [256] his%05d.rz\n\
 Clear histos = BOOL : 1\n\
 Last Histo Filename = STRING : [256] last.rz\n\
-Events to ODB = BOOL : 0\n\
+Events to ODB = BOOL : 1\n\
 Global Memory Name = STRING : [8] ONLN\n\
 "
 
