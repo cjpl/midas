@@ -19,6 +19,9 @@
   Contents:     GD graphics library to create Web images
 
   $Log$
+  Revision 1.2  2002/05/11 01:23:23  midas
+  Added malloc/free debugging
+
   Revision 1.1  2000/04/28 09:10:57  midas
   Initial revision
 
@@ -30,6 +33,7 @@
 #include <math.h>
 #include <string.h>
 #include <stdlib.h>
+#include <midas.h>
 #include "mgd.h"
 
 int gdFontGiantData[] = {
@@ -421,15 +425,15 @@ gdImagePtr gdImageCreate(int sx, int sy)
 {
 	int i;
 	gdImagePtr im;
-	im = (gdImage *) malloc(sizeof(gdImage));
-	im->pixels = (unsigned char **) malloc(sizeof(unsigned char *) * sx);
+	im = (gdImage *) M_MALLOC(sizeof(gdImage));
+	im->pixels = (unsigned char **) M_MALLOC(sizeof(unsigned char *) * sx);
 	im->polyInts = 0;
 	im->polyAllocated = 0;
 	im->brush = 0;
 	im->tile = 0;
 	im->style = 0;
 	for (i=0; (i<sx); i++) {
-		im->pixels[i] = (unsigned char *) calloc(
+		im->pixels[i] = (unsigned char *) M_CALLOC(
 			sy, sizeof(unsigned char));
 	}	
 	im->sx = sx;
@@ -444,16 +448,16 @@ void gdImageDestroy(gdImagePtr im)
 {
 	int i;
 	for (i=0; (i<im->sx); i++) {
-		free(im->pixels[i]);
+		M_FREE(im->pixels[i]);
 	}	
-	free(im->pixels);
+	M_FREE(im->pixels);
 	if (im->polyInts) {
-			free(im->polyInts);
+			M_FREE(im->polyInts);
 	}
 	if (im->style) {
-		free(im->style);
+		M_FREE(im->style);
 	}
-	free(im);
+	M_FREE(im);
 }
 
 int gdImageColorClosest(gdImagePtr im, int r, int g, int b)
@@ -2397,8 +2401,8 @@ void gdImageCopyResized(gdImagePtr dst, gdImagePtr src, int dstX, int dstY, int 
 	/* We only need to use floating point to determine the correct
 		stretch vector for one line's worth. */
 	double accum;
-	stx = (int *) malloc(sizeof(int) * srcW);
-	sty = (int *) malloc(sizeof(int) * srcH);
+	stx = (int *) M_MALLOC(sizeof(int) * srcW);
+	sty = (int *) M_MALLOC(sizeof(int) * srcH);
 	accum = 0;
 	for (i=0; (i < srcW); i++) {
 		int got;
@@ -2467,8 +2471,8 @@ void gdImageCopyResized(gdImagePtr dst, gdImagePtr src, int dstX, int dstY, int 
 			toy++;
 		}
 	}
-	free(stx);
-	free(sty);
+	M_FREE(stx);
+	M_FREE(sty);
 }
 
 void gdImagePolygon(gdImagePtr im, gdPointPtr p, int n, int c)
@@ -2501,7 +2505,7 @@ void gdImageFilledPolygon(gdImagePtr im, gdPointPtr p, int n, int c)
 		return;
 	}
 	if (!im->polyAllocated) {
-		im->polyInts = (int *) malloc(sizeof(int) * n);
+		im->polyInts = (int *) M_MALLOC(sizeof(int) * n);
 		im->polyAllocated = n;
 	}		
 	if (im->polyAllocated < n) {
@@ -2614,10 +2618,10 @@ int gdCompareInt(const void *a, const void *b)
 void gdImageSetStyle(gdImagePtr im, int *style, int noOfPixels)
 {
 	if (im->style) {
-		free(im->style);
+		M_FREE(im->style);
 	}
 	im->style = (int *) 
-		malloc(sizeof(int) * noOfPixels);
+		M_MALLOC(sizeof(int) * noOfPixels);
 	memcpy(im->style, style, sizeof(int) * noOfPixels);
 	im->styleLength = noOfPixels;
 	im->stylePos = 0;
