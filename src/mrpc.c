@@ -6,6 +6,9 @@
   Contents:     List of MIDAS RPC functions with parameters
 
   $Log$
+  Revision 1.17  1999/10/08 22:15:04  midas
+  Added ftruncate for LINUX
+
   Revision 1.16  1999/10/08 22:00:30  midas
   Finished editing of elog messages
 
@@ -586,6 +589,7 @@ static RPC_LIST rpc_list_library[] = {
 
   { RPC_AL_TRIGGER_ALARM, "al_trigger_alarm",
     {{TID_STRING,     RPC_IN}, 
+     {TID_STRING,     RPC_IN},
      {TID_STRING,     RPC_IN},
      {0} }},
 

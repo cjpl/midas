@@ -6,6 +6,9 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
+  Revision 1.20  1999/10/08 22:15:04  midas
+  Added ftruncate for LINUX
+
   Revision 1.19  1999/09/27 13:02:32  midas
   Added new el_submit in mserver
 
@@ -882,7 +885,7 @@ INT convert_flags;
       break;
 
     case RPC_AL_TRIGGER_ALARM:
-      status = al_trigger_alarm(CSTRING(0), CSTRING(1));
+      status = al_trigger_alarm(CSTRING(0), CSTRING(1), CSTRING(2));
       break;
 
     /* exit functions */
