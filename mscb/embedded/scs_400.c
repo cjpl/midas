@@ -9,6 +9,9 @@
                 for SCS-400 thermo couple I/O
 
   $Log$
+  Revision 1.21  2003/04/16 09:40:31  midas
+  Added PID_CONTROL
+
   Revision 1.20  2003/03/26 11:50:58  midas
   Adjusted c_int
 
@@ -77,11 +80,11 @@ char code node_name[] = "SCS-400";
 
 /*---- Define variable parameters returned to the CMD_GET_INFO command ----*/
 
-#define CONTROL_4     // control works only with 4 channels
+#define PID_CONTROL      // activate/deactivate PID control loop
 
 /* data buffer (mirrored in EEPROM) */
 
-#ifdef CONTROL_4
+#ifdef PID_CONTROL
 
 #define N_CHANNEL 2
 
