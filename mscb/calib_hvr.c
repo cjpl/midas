@@ -6,6 +6,9 @@
   Contents:     Calibration program for HVR-200
 
   $Log$
+  Revision 1.12  2005/03/21 10:57:25  ritt
+  Version 2.0.0
+
   Revision 1.11  2005/02/22 13:21:35  ritt
   Calibration with hvr_500
 
@@ -82,7 +85,7 @@ int main(int argc, char *argv[])
 
    /* open port */
    *str = 0;
-   fd = mscb_init(str, sizeof(str), 0);
+   fd = mscb_init(str, sizeof(str), "", 0);
    if (fd < 0) {
       if (str[0])
          printf("Cannot connect to device \"%s\".\n", str);

@@ -6,6 +6,9 @@
   Contents:     Calibration program for SCS-900
 
   $Log$
+  Revision 1.2  2005/03/21 10:57:25  ritt
+  Version 2.0.0
+
   Revision 1.1  2005/02/16 12:18:24  ritt
   Initial revision
 
@@ -30,7 +33,7 @@ int main(int argc, char *argv[])
 
    /* open port */
    *str = 0;
-   fd = mscb_init(str, sizeof(str), 0);
+   fd = mscb_init(str, sizeof(str), "", 0);
    if (fd < 0) {
       if (str[0])
          printf("Cannot connect to device \"%s\".\n", str);
