@@ -7,6 +7,9 @@
                 linked with user code to form a complete frontend
 
   $Log$
+  Revision 1.32  2001/01/29 09:50:53  midas
+  Changed send_event() parameter from event_id to equipment index
+
   Revision 1.31  2000/11/14 08:30:03  midas
   SLOW events are not any more sent to the ODB when the history is on
 
@@ -189,7 +192,7 @@ EQUIPMENT     *interrupt_eq = NULL;
 EVENT_HEADER  *interrupt_odb_buffer;
 BOOL          interrupt_odb_buffer_valid;
 
-void send_event(WORD event_id);
+void send_event(INT index);
 void send_all_periodic_events(INT transition);
 void interrupt_routine(void);
 void interrupt_enable(BOOL flag);
@@ -350,10 +353,13 @@ INT status;
 
 INT manual_trigger(INT index, void *prpc_param[])
 {
-WORD event_id;
+WORD event_id, i;
 
   event_id = CWORD(0);
-  send_event(event_id);
+
+  for (i=0 ; equipment[i].name[0] ; i++)
+    if (equipment[i].info.event_id == event_id)
+      send_event(i);
 
   if (display_period)
     display(FALSE);
@@ -711,81 +717,75 @@ WORD              bktype;
 
 /*------------------------------------------------------------------*/
 
-void send_event(WORD event_id)
+void send_event(INT index)
 {
 EQUIPMENT_INFO *eq_info;
 EVENT_HEADER   *pevent;
 INT            i;
 
-  for (i=0 ; equipment[i].name[0] ; i++)
+  eq_info = &equipment[index].info;
+
+  /* return value should be valid pointer. if NULL BIG error ==> abort  */
+  pevent = dm_pointer_get();
+  if (pevent == NULL)
     {
-    eq_info = &equipment[i].info;
+    cm_msg(MERROR, "send_event", "dm_pointer_get not returning valid pointer");
+    return;
+    }
 
-    if (eq_info->event_id != event_id)
-      continue;
+  pevent->event_id      = eq_info->event_id;
+  pevent->trigger_mask  = eq_info->trigger_mask;
+  pevent->data_size     = 0;
+  pevent->time_stamp    = ss_time();
+  pevent->serial_number = equipment[index].serial_number++;
 
-    /* return value should be valid pointer. if NULL BIG error ==> abort  */
-    pevent = dm_pointer_get();
-    if (pevent == NULL)
+  equipment[index].last_called = ss_millitime();
+
+  /* call user readout routine */
+  *((EQUIPMENT **)(pevent+1)) = &equipment[index];
+  pevent->data_size = equipment[index].readout((char *) (pevent+1), 0);
+
+  /* send event */
+  if (pevent->data_size)
+    {
+    if (pevent->data_size+sizeof(EVENT_HEADER) > (DWORD) max_event_size)
       {
-      cm_msg(MERROR, "send_event", "dm_pointer_get not returning valid pointer");
+      cm_msg(MERROR, "send_event", "Event size %d larger than maximum size %d",
+             pevent->data_size+sizeof(EVENT_HEADER), max_event_size);
       return;
       }
 
-    pevent->event_id      = eq_info->event_id;
-    pevent->trigger_mask  = eq_info->trigger_mask;
-    pevent->data_size     = 0;
-    pevent->time_stamp    = ss_time();
-    pevent->serial_number = equipment[i].serial_number++;
+    equipment[index].bytes_sent += pevent->data_size + sizeof(EVENT_HEADER);
+    equipment[index].events_sent++;
 
-    equipment[i].last_called = ss_millitime();
+    equipment[index].stats.events_sent += equipment[index].events_sent;
+    equipment[index].events_sent = 0;
 
-    /* call user readout routine */
-    *((EQUIPMENT **)(pevent+1)) = &equipment[i];
-    pevent->data_size = equipment[i].readout((char *) (pevent+1), 0);
-
-    /* send event */
-    if (pevent->data_size)
+    /* send event to buffer */
+    if (equipment[index].buffer_handle)
       {
-      if (pevent->data_size+sizeof(EVENT_HEADER) > (DWORD) max_event_size)
-        {
-        cm_msg(MERROR, "send_event", "Event size %d larger than maximum size %d",
-               pevent->data_size+sizeof(EVENT_HEADER), max_event_size);
-        return;
-        }
-
-      equipment[i].bytes_sent += pevent->data_size + sizeof(EVENT_HEADER);
-      equipment[i].events_sent++;
-
-      equipment[i].stats.events_sent += equipment[i].events_sent;
-      equipment[i].events_sent = 0;
-
-      /* send event to buffer */
-      if (equipment[i].buffer_handle)
-        {
 #ifdef USE_EVENT_CHANNEL
-        dm_pointer_increment(equipment[i].buffer_handle, 
-                             pevent->data_size + sizeof(EVENT_HEADER));
+      dm_pointer_increment(equipment[index].buffer_handle, 
+                           pevent->data_size + sizeof(EVENT_HEADER));
 #else
-        rpc_flush_event();
-        bm_send_event(equipment[i].buffer_handle, pevent,
-                      pevent->data_size + sizeof(EVENT_HEADER), SYNC);
-        bm_flush_cache(equipment[i].buffer_handle, SYNC);
+      rpc_flush_event();
+      bm_send_event(equipment[index].buffer_handle, pevent,
+                    pevent->data_size + sizeof(EVENT_HEADER), SYNC);
+      bm_flush_cache(equipment[index].buffer_handle, SYNC);
 #endif
-        }
-
-      /* send event to ODB if RO_ODB flag is set or history is on. Do not
-         send SLOW events since the class driver does that */
-      if ((eq_info->read_on & RO_ODB) ||
-          (eq_info->history > 0 && (eq_info->eq_type & ~EQ_SLOW)))
-        {
-        update_odb(pevent, equipment[i].hkey_variables, equipment[i].format);
-        equipment[i].odb_out++;
-        }
       }
-    else
-      equipment[i].serial_number--;
+
+    /* send event to ODB if RO_ODB flag is set or history is on. Do not
+       send SLOW events since the class driver does that */
+    if ((eq_info->read_on & RO_ODB) ||
+        (eq_info->history > 0 && (eq_info->eq_type & ~EQ_SLOW)))
+      {
+      update_odb(pevent, equipment[index].hkey_variables, equipment[index].format);
+      equipment[index].odb_out++;
+      }
     }
+  else
+    equipment[index].serial_number--;
 
   /* emtpy event buffer */
 #ifdef USE_EVENT_CHANNEL
@@ -824,7 +824,7 @@ INT            i;
     if (transition == TR_RESUME && (eq_info->read_on & RO_RESUME) == 0)
       continue;
 
-    send_event(eq_info->event_id);
+    send_event(i);
     }
 }
 
