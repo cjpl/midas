@@ -6,6 +6,9 @@
   Contents:     MIDAS logger program
 
   $Log$
+  Revision 1.12  1999/06/25 08:29:01  midas
+  Fixed bug which prevented logge to write data when JMidas is open
+
   Revision 1.11  1999/06/23 13:38:08  midas
   Increased ASCII buffer in dump_write
 
@@ -1829,7 +1832,7 @@ BOOL         write_data, tape_flag = FALSE;
       break;
       }
 
-    if (status == DB_SUCCESS)
+    if (status == DB_SUCCESS || status == DB_OPEN_RECORD)
       {
       /* check if channel is already open */
       if (log_chn[index].handle || log_chn[index].ftp_con)
@@ -2172,6 +2175,7 @@ char   host_name[100], exp_name[NAME_LENGTH], dir[256];
 BOOL   debug;
 DWORD  last_time_kb = 0;
 DWORD  last_time_hist = 0;
+DWORD  last_time_stat = 0;
 
   /* get default from environment */
   cm_get_environment(host_name, exp_name);
@@ -2256,8 +2260,12 @@ usage:
     {
     msg = cm_yield(1000);
 
-    /* update channel statistics */
-    db_send_changed_records();
+    /* update channel statistics once every second */
+    if (ss_millitime() - last_time_stat > 1000)
+      {
+      last_time_stat = ss_millitime();
+      db_send_changed_records();
+      }
 
     /* check for auto restart */
     if (auto_restart)
