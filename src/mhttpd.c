@@ -6,6 +6,9 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
+  Revision 1.41  1999/09/17 15:59:03  midas
+  Added internal alarms
+
   Revision 1.40  1999/09/17 15:11:18  midas
   Fixed bug (triggered is INT, not BOOL)
 
@@ -3773,7 +3776,14 @@ char  str[256], ref[256];
       /* condition */
       size = sizeof(str);
       db_get_value(hDB, hkey, "Condition", &str, &size, TID_STRING);
-      rsprintf("<td>%s", str);
+      if (equal_ustring(str, "INTERNAL") && triggered)
+        {
+        size = sizeof(str);
+        db_get_value(hDB, hkey, "Alarm message", &str, &size, TID_STRING);
+        rsprintf("<td>%s", str);
+        }
+      else
+        rsprintf("<td>%s", str);
       }
     }
 
@@ -4199,7 +4209,7 @@ struct tm *gmt;
   if (equal_ustring(command, "reset all alarms"))
     {
     al_reset_alarm(NULL);
-    show_alarm_page();
+    redirect("?cmd=alarms");
     return;
     }
 

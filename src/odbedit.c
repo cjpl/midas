@@ -6,6 +6,9 @@
   Contents:     Command-line interface to the MIDAS online data base.
 
   $Log$
+  Revision 1.23  1999/09/17 15:59:04  midas
+  Added internal alarms
+
   Revision 1.22  1999/09/17 15:06:50  midas
   Moved al_check into cm_yield() and rpc_server_thread
 
@@ -2497,6 +2500,7 @@ PRINT_INFO      print_info;
     /* test 3 */
     else if (param[0][0] == 't' && param[0][1] == '3')
       {
+      al_trigger_alarm("Analyzer alarm", "Histos have been moved");
       }
 
     /* exit/quit */
