@@ -14,6 +14,9 @@
                 Brown, Prentice Hall
 
   $Log$
+  Revision 1.15  1998/12/10 10:45:43  midas
+  Improved tape error codes under NT (now same as UNIX)
+
   Revision 1.14  1998/12/10 10:17:34  midas
   Improved tape status return values under UNIX
 
@@ -3828,12 +3831,19 @@ INT n, status;
 INT read, status;
 
   if (!ReadFile((HANDLE) channel, pdata, *count, &read, NULL))
+    {
     status = GetLastError();
+    if (status == ERROR_NO_DATA_DETECTED)
+      status = SS_END_OF_TAPE;
+    else if (status == ERROR_FILEMARK_DETECTED)
+      status = SS_END_OF_FILE;
+    else if (status == ERROR_MORE_DATA)
+      status = SS_SUCCESS;
+    else
+      printf("unexpected tape error: n=%d, errno=%d\n", read, status);
+    }
   else
     status = SS_SUCCESS;
-
-  if (status == ERROR_NO_DATA_DETECTED)
-    status = SS_END_OF_TAPE;
 
   *count = read;
   return status;

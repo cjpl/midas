@@ -6,6 +6,9 @@
   Contents:     Magnetic tape manipulation program for MIDAS tapes
 
   $Log$
+  Revision 1.11  1998/12/10 10:45:43  midas
+  Improved tape error codes under NT (now same as UNIX)
+
   Revision 1.10  1998/12/10 10:19:56  midas
   - Improved end-of-file and end-of-tape handling
   - Added [last] parameter for backup command
@@ -59,7 +62,7 @@ try_again:
     /* read event header at current position */
     size = sizeof(buffer);
     status = ss_tape_read(channel, buffer, &size);
-    if (size != sizeof(buffer))
+    if (status != SS_SUCCESS)
       {
       if (status == SS_END_OF_TAPE)
         {
@@ -111,7 +114,7 @@ try_again:
       unlink("/tmp/.mtf");
       unlink("/tmp/.mt");
 #else
-      printf("Data on tape is no MIDAS data\n");
+      printf("File on tape is no MIDAS data\n");
 #endif
       }
     else
