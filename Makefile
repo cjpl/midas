@@ -6,6 +6,9 @@
 #  Contents:     Makefile for MIDAS binaries and examples under unix
 #
 #  $Log$
+#  Revision 1.48  2004/01/07 08:20:27  midas
+#  Added -l90 to indent
+#
 #  Revision 1.47  2004/01/06 13:25:26  midas
 #  Added 'indent' target
 #
@@ -570,7 +573,7 @@ install:
 
 
 indent:
-	find . -name "*.[hc]" -exec indent -kr -nut -i3 {} \;
+	find . -name "*.[hc]" -exec indent -kr -nut -i3 -l90 {} \;
 
 clean:
 	rm -f $(LIB_DIR)/*.o *~ \#*
