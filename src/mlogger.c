@@ -6,6 +6,9 @@
   Contents:     MIDAS logger program
 
   $Log$
+  Revision 1.41  2000/11/10 08:37:47  midas
+  Use DELAYED_STOP variable for wait loop in tr_poststop
+
   Revision 1.40  2000/11/06 11:41:28  midas
   Create /history/links if not present
 
@@ -2311,18 +2314,25 @@ char   str[256];
       /* wait until buffer is empty */
       if (log_chn[i].buffer_handle)
         {
-        INT n_bytes;
+#ifdef DELAYED_STOP
+        DWORD start_time;
 
+        start_time = ss_millitime();
         do
           {
-
+          cm_yield(100);
+          } while (ss_millitime() - start_time < DELAYED_STOP);
+#else
+        INT n_bytes;
+        do
+          {
           bm_get_buffer_level(log_chn[i].buffer_handle, &n_bytes);
           if (n_bytes > 0)
             cm_yield(100);
-
           } while (n_bytes > 0);
-        }
 #endif
+        }
+#endif /* FAL_MAIN */
 
       /* close logging channel */
       log_close(&log_chn[i], run_number);
