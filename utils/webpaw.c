@@ -6,6 +6,9 @@
   Contents:     Web server for remote PAW display
 
   $Log$
+  Revision 1.33  2001/08/02 07:33:30  midas
+  Open Elog form in new window
+
   Revision 1.32  2001/06/15 07:29:52  midas
   Version 1.0.10
 
@@ -341,7 +344,7 @@ int  fh;
               while (*p == ' ')
                 p++;
               pstr = str;
-              while (*p && *p != '\n')
+              while (*p && *p != '\n' && *p != '\r')
                 *pstr++ = *p++;
               *pstr-- = 0;
               while (*pstr == ' ')
@@ -1166,7 +1169,7 @@ int    fh, i, j, length, status, height;
       
       if (getcfg("Global", "Elog", elog))
         {
-        rsprintf("<p><a href=\"%s\">Create ELog with this picture</a><br>\r\n", elog);
+        rsprintf("<p><a target=_blank href=\"%s\">Create ELog with this picture</a><br>\r\n", elog);
         }
 
       /* put reference to image */
