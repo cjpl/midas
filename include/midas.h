@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.80  2001/02/26 11:57:46  midas
+  Added CMD_READ and CMD_WRITE
+
   Revision 1.79  2001/01/29 09:51:54  midas
   Put if defined(__linux__) under #if !defined(OS_LINUX)
 
@@ -789,9 +792,11 @@ Convert the coded LAM station to Station number.
 #define CMD_DISABLE_COMMAND        (1<<15)
 
 /* Bus driver commands */
-#define CMD_PUTS                    100
-#define CMD_GETS                    101
-#define CMD_DEBUG                   102
+#define CMD_WRITE                   100
+#define CMD_READ                    101
+#define CMD_PUTS                    102
+#define CMD_GETS                    103
+#define CMD_DEBUG                   104
 
 /* macros for bus driver access */
 #define BD_PUTS(s)       info->bd(CMD_PUTS, info->bd_info, s)
