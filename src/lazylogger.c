@@ -6,6 +6,9 @@
   Contents:     Disk to Tape copier for background job
 
   $Log$
+  Revision 1.20  2000/10/12 18:59:34  pierre
+  - Correct label for "Copy Rate" in KB
+
   Revision 1.19  2000/09/29 16:05:48  pierre
   - Fix &arg on db_calls with TID_STRING
 
@@ -163,7 +166,7 @@ File size [Bytes] = FLOAT : 0.0\n\
 KBytes copied = FLOAT : 0.0\n\
 Total Bytes copied = FLOAT : 0.0\n\
 Copy progress [%] = FLOAT : 0\n\
-Copy Rate [bytes per s] = FLOAT : 0\n\
+Copy Rate [Kbytes per s] = FLOAT : 0\n\
 Backup status [%] = FLOAT : 0\n\
 Number of Files = INT : 0\n\
 Current Lazy run = INT : 0\n\
@@ -192,7 +195,7 @@ float file_size;               /* file size in bytes*/
 float cur_size;                /* current bytes copied */
 float cur_dev_size;            /* Total bytes backup on device */
 float progress;                /* copy % */
-float copy_rate;               /* copy rate */
+float copy_rate;               /* copy rate Kb/s */
 float bckfill;                 /* backup fill % */
 INT nfiles;                    /* # of backuped files */
 INT cur_run;                   /* current or last lazy run number done (for info only) */
@@ -1191,7 +1194,7 @@ INT lazy_main (INT channel, LAZY_INFO * pLall)
   double freepercent, svfree;
   char pufile[MAX_FILE_PATH], inffile[MAX_FILE_PATH], outffile[MAX_FILE_PATH];
   BOOL donepurge, watchdog_flag;
-  INT watchdog_timeout;
+  INT watchdog_timeout, pid;
   LAZY_INFO * pLch;
 
   /* current channel */
@@ -1450,7 +1453,7 @@ INT lazy_main (INT channel, LAZY_INFO * pLall)
 	    { char cmd[256];
 	       sprintf(cmd,"%s %s %s %s",lazy.command, lazy.path,  pLch->name, pre_label);
 	       cm_msg(MINFO,"lazy_main","Exec post-rewind script:%s",cmd);
-	       ss_system(cmd);
+	       ss_system(cmd, &pid);
 	    }
 	    return NOTHING_TODO;
 	  }
