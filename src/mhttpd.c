@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.148  2000/12/18 08:08:03  midas
+  Added subtree with symbolic links in /Scripts system
+
   Revision 1.147  2000/12/15 08:52:58  midas
   Added "/Sript" facility and "/Alias new window" tree
 
@@ -955,6 +958,81 @@ void show_error(char *error)
 
 /*------------------------------------------------------------------*/
 
+void exec_script(HNDLE hkey)
+/********************************************************************\
+
+  Routine: exec_script
+
+  Purpose: Execute script from /Script tree
+
+  exec_script is enabled by the tree /Script
+  The /Script struct is composed of list of keys
+  from which the name of the key is the button name
+  and the sub-structure is a record as follow:
+
+  /Script/<button_name> = <script command> (TID_STRING)
+
+  The "Script command", containing possible arguements,
+  is directly executed.
+
+  /Script/<button_name>/<script command>
+                        <soft link1>|<arg1>
+                        <soft link2>|<arg2>
+                           ...
+
+  The arguments for the script are derived from the
+  subtree below <button_name>, where <button_name> must be
+  TID_KEY. The subtree may then contain arguments or links 
+  to other values in the ODB, like run number etc.
+
+\********************************************************************/
+{
+INT    i, size;
+KEY    key;
+HNDLE  hDB, hsubkey;
+char   command[256];
+char   data[1000], str[256];
+
+  cm_get_experiment_database(&hDB, NULL);
+  db_get_key(hDB, hkey, &key);
+  command[0] = 0;
+
+  if (key.type == TID_STRING)
+    {
+    size = sizeof(command);
+    db_get_data(hDB, hkey, command, &size, TID_STRING);
+    }
+  else
+    for (i=0 ; ; i++)
+      {
+      db_enum_key(hDB, hkey, i, &hsubkey);
+	    if (!hsubkey)
+	      break;  
+	    db_get_key(hDB, hsubkey, &key);
+
+      if (key.type != TID_KEY)
+        {
+        size = sizeof(data);
+        db_get_data(hDB, hsubkey, data, &size, key.type);
+        db_sprintf(str, data, key.item_size, 0, key.type);
+
+        if (i>0)
+          strcat(command, " ");
+
+        strcat(command, str);
+        }
+      }
+  
+  /* printf("exec_script: %s\n", command); */
+
+  if (command[0])
+    ss_system(command);
+
+  return;
+}
+
+/*------------------------------------------------------------------*/
+
 void show_status_page(int refresh, char *cookie_wpwd)
 {
 int    i, j, k, status, size, type;
@@ -1061,7 +1139,7 @@ CHN_STATISTICS chn_stats;
 	    if (!hsubkey)
 	      break;  
 	    db_get_key(hDB, hsubkey, &key);
-      rsprintf("<input type=submit name=script value=%s>\n", key.name);
+      rsprintf("<input type=submit name=script value=\"%s\">\n", key.name);
       }
     }
 
@@ -6961,7 +7039,7 @@ HNDLE  hkey, hsubkey, hDB, hconn;
 KEY    key;
 char   str[256], *p;
 char   enc_path[256], dec_path[256], eq_name[NAME_LENGTH], fe_name[NAME_LENGTH];
-char   data[10000], script[256];
+char   data[10000];
 char   *experiment, *password, *wpassword, *command, *value, *group;
 char   exp_list[MAX_EXPERIMENT][NAME_LENGTH];
 time_t now;
@@ -7147,13 +7225,17 @@ struct tm *gmt;
 
     sprintf(str, "/Script/%s", getparam("script"));
     
-    script[0] = 0;
-    size = sizeof(script);
-    db_get_value(hDB, 0, str, script, &size, TID_STRING);
-    if (script[0])
-      ss_system(script);
+    db_find_key(hDB, 0, str, &hkey);
 
-    redirect("");
+    if (hkey)
+      {
+      /* for NT: close reply socket before starting subprocess */
+      redirect2("");
+      exec_script(hkey);
+      }
+    else
+      redirect("");
+
     return;
     }
 
