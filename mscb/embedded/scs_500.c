@@ -9,6 +9,9 @@
                 for SCS-500 analog I/O
 
   $Log$
+  Revision 1.10  2002/10/28 14:26:30  midas
+  Changes from Japan
+
   Revision 1.9  2002/10/23 05:46:04  midas
   Fixed bug with wrong gain bits
 
@@ -62,10 +65,10 @@ sbit SR_DATA    = P0 ^ 6;    // Serial data
 /* data buffer (mirrored in EEPROM) */
 
 struct {
-  unsigned char p1;
+  float         adc[8];
   unsigned int  dac0;
   unsigned int  dac1;
-  float         adc[8];
+  unsigned char p1;
 } idata user_data;
 
 struct {
@@ -78,9 +81,6 @@ struct {
 float idata gain[8];     // gain resulting from PGA bits
 
 MSCB_INFO_CHN code channel[] = {
-  1, UNIT_BYTE, 0, 0,           0, "P1",   &user_data.p1,
-  2, UNIT_WORD, 0, 0,           0, "DAC0", &user_data.dac0,
-  2, UNIT_WORD, 0, 0,           0, "DAC1", &user_data.dac1,
   4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC0", &user_data.adc[0],
   4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC1", &user_data.adc[1],
   4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC2", &user_data.adc[2],
@@ -89,6 +89,9 @@ MSCB_INFO_CHN code channel[] = {
   4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC5", &user_data.adc[5],
   4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC6", &user_data.adc[6],
   4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC7", &user_data.adc[7],
+  2, UNIT_WORD, 0, 0,           0, "DAC0", &user_data.dac0,
+  2, UNIT_WORD, 0, 0,           0, "DAC1", &user_data.dac1,
+  1, UNIT_BYTE, 0, 0,           0, "P1",   &user_data.p1,
   0
 };
 
@@ -243,38 +246,27 @@ unsigned char i;
   for (i=0 ; i<4 ; i++)
     {
     SR_DATA = ((user_conf.gain[3-i] & 0x02) > 0); // first bit ext. PGA
-    delay_us(10);
     SR_CLOCK = 1;
-    delay_us(10);
     SR_CLOCK = 0;
-    delay_us(10);
 
     SR_DATA = ((user_conf.gain[3-i] & 0x01) > 0); // second bit ext. PGA
-    delay_us(10);
     SR_CLOCK = 1;
-    delay_us(10);
     SR_CLOCK = 0;
     }
   
   for (i=0 ; i<4 ; i++)
     {
     SR_DATA = ((user_conf.gain[7-i] & 0x02) > 0); // first bit ext. PGA
-    delay_us(10);
     SR_CLOCK = 1;
-    delay_us(10);
     SR_CLOCK = 0;
 
     SR_DATA = ((user_conf.gain[7-i] & 0x01) > 0); // second bit ext. PGA
-    delay_us(10);
     SR_CLOCK = 1;
-    delay_us(10);
     SR_CLOCK = 0;
     }
 
   SR_DATA   = 0;
-  delay_us(10);
   SR_STROBE = 1;
-  delay_us(10);
   SR_STROBE = 0;
 }
 

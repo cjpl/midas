@@ -6,6 +6,9 @@
   Contents:     Header fiel for MSCB funcions
 
   $Log$
+  Revision 1.13  2002/10/28 14:26:30  midas
+  Changes from Japan
+
   Revision 1.12  2002/10/22 15:03:38  midas
   Added UNIT_FACTOR
 
@@ -198,7 +201,7 @@ typedef struct {
 #define MSCB_TIMEOUT       3
 #define MSCB_INVAL_PARAM   4
 #define MSCB_MUTEX         5
-#define MSCB_FILE_ERROR    6
+#define MSCB_FORMAT_ERROR  6
 
 /*---- function declarations ---------------------------------------*/
 
@@ -218,28 +221,19 @@ int EXPRT mscb_init(char *device);
 void EXPRT mscb_check(char *device);
 int EXPRT mscb_exit(int fd);
 int EXPRT mscb_reset(int fd);
-int EXPRT mscb_reboot(int fd);
-int EXPRT mscb_set_baud(int fd, int baud);
-int EXPRT mscb_addr(int fd, int cmd, int adr);
-int EXPRT mscb_info(int fd, MSCB_INFO *info);
-int EXPRT mscb_info_channel(int fd, int type, int index, MSCB_INFO_CHN *info);
-int EXPRT mscb_set_addr(int fd, int node, int group);
-int EXPRT mscb_write(int fd, unsigned char channel, unsigned int data, int size);
-int EXPRT mscb_write_na(int fd, unsigned char channel, unsigned int data, int size);
-int EXPRT mscb_write_conf(int fd, unsigned char channel, unsigned int data, int size);
-int EXPRT mscb_flash(int fd);
-int EXPRT mscb_upload(int fd, char *filename);
-int EXPRT mscb_read(int fd, unsigned char channel, unsigned int *data);
-int EXPRT mscb_read_conf(int fd, unsigned char channel, unsigned int *data);
-int EXPRT mscb_user(int fd, void *param, int size, void *result, int *rsize);
-
-int EXPRT mscb_write16(char *device, unsigned short addr, unsigned char channel, unsigned int data, int size);
-int EXPRT mscb_write_conf16(char *device, unsigned short addr, unsigned char channel, unsigned int data, int size);
-
-int EXPRT mscb_read16(char *device, unsigned short addr, unsigned char channel, unsigned int *data);
-int EXPRT mscb_read_conf16(char *device, unsigned short addr, unsigned char channel, unsigned int *data);
-
-int EXPRT mscb_reset1(char *device);
+int EXPRT mscb_reboot(int fd, int adr);
+int EXPRT mscb_ping(int fd, int adr);
+int EXPRT mscb_info(int fd, int adr, MSCB_INFO *info);
+int EXPRT mscb_info_channel(int fd, int adr, int type, int index, MSCB_INFO_CHN *info);
+int EXPRT mscb_set_addr(int fd, int adr, int node, int group);
+int EXPRT mscb_write(int fd, int adr, unsigned char channel, void *data, int size);
+int EXPRT mscb_write_group(int fd, int adr, unsigned char channel, void *data, int size);
+int EXPRT mscb_write_conf(int fd, int adr, unsigned char channel, void *data, int size);
+int EXPRT mscb_flash(int fd, int adr);
+int EXPRT mscb_upload(int fd, int adr, char *buffer, int size);
+int EXPRT mscb_read(int fd, int adr, unsigned char channel, unsigned int *data);
+int EXPRT mscb_read_conf(int fd, int adr, unsigned char channel, unsigned int *data);
+int EXPRT mscb_user(int fd, int adr, void *param, int size, void *result, int *rsize);
 
 #ifdef __cplusplus
 }
