@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus communication functions
 
   $Log$
+  Revision 1.28  2003/02/27 10:44:05  midas
+  Two-cygle communication with submaster to avoid data collision
+
   Revision 1.27  2003/01/27 16:11:14  midas
   Switched to version 1.1.1
 
@@ -87,7 +90,7 @@
 
 \********************************************************************/
 
-#define MSCB_LIBRARY_VERSION   "1.1.1"
+#define MSCB_LIBRARY_VERSION   "1.2.0"
 #define MSCB_PROTOCOL_VERSION  "1.2"
 
 #ifdef _MSC_VER           // Windows includes
@@ -457,9 +460,6 @@ int i, timeout;
     if (timeout == TIMEOUT_OUT)
       return MSCB_TIMEOUT;
 
-    /* switch to output mode */
-    pp_setdir(fd, 0);
-
     /* output data byte */
     pp_wdata(fd, buffer[i]);
 
@@ -482,16 +482,12 @@ int i, timeout;
     if (timeout == TIMEOUT_OUT)
       {
       pp_wdata(fd, 0xFF);
-      pp_setdir(fd, 1);
       pp_wcontrol(fd, LPT_STROBE, 0);
       return MSCB_TIMEOUT;
       }
 
     /* remove data, make port available for input */
     pp_wdata(fd, 0xFF);
-
-    /* switch to input mode */
-    pp_setdir(fd, 1);
 
     /* remove strobe */
     pp_wcontrol(fd, LPT_STROBE, 0);
@@ -533,13 +529,39 @@ int i;
   if (i == timeout)
     return MSCB_TIMEOUT;
 
+  /* switch to input mode */
+  pp_setdir(fd, 1);
+
+  /* signal switch to input */
+  pp_wcontrol(fd, LPT_ACK, 1);
+
+  /* wait for data ready */
+  for (i=0 ; i<1000 ; i++)
+    {
+    if (!pp_rstatus(fd, LPT_DATAREADY))
+      break;
+    }
+
   /* read data */
   *c = pp_rdata(fd);
 
-  /* set acknowlege, switch port to output */
+  /* signal data read */
+  pp_wcontrol(fd, LPT_ACK, 0);
+
+  /* wait for mode switch */
+  for (i=0 ; i<1000 ; i++)
+    {
+    if (pp_rstatus(fd, LPT_DATAREADY))
+      break;
+    }
+
+  /* switch to output mode */
+  pp_setdir(fd, 0);
+
+  /* indicate mode switch */
   pp_wcontrol(fd, LPT_ACK, 1);
 
-  /* wait for DATAREADY to be removed */
+  /* wait for end of cycle */
   for (i=0 ; i<1000 ; i++)
     {
     if (!pp_rstatus(fd, LPT_DATAREADY))
@@ -771,8 +793,8 @@ char          host[256], port[256];
   /* set initial state of handshake lines */
   pp_wcontrol(index+1, LPT_STROBE, 0);
 
-  /* switch to input mode */
-  pp_setdir(index+1, 1);
+  /* switch to output mode */
+  pp_setdir(index+1, 0);
   
   /* check if SM alive */
   if (pp_rstatus(index+1, LPT_BUSY))
@@ -908,7 +930,7 @@ int i, fd, d;
 
 /*------------------------------------------------------------------*/
 
-static int mscb_addr(int fd, int cmd, int adr, int retry)
+int mscb_addr(int fd, int cmd, int adr, int retry)
 /********************************************************************\
 
   Routine: mscb_addr
@@ -988,6 +1010,8 @@ int i, n;
 
       /* try again.... */
       }
+    else
+      return MSCB_SUCCESS;
     }
 
   return MSCB_TIMEOUT;
@@ -2158,7 +2182,7 @@ int mscb_echo(int fd, int adr, unsigned char d1, unsigned char *d2)
 {
 int n, status;
 unsigned char buf[80];
-
+ 
   *d2 = 0xFF;
 
   if (rpc_connected())
@@ -2170,12 +2194,7 @@ unsigned char buf[80];
   if (mscb_lock(fd) != MSCB_SUCCESS)
     return MSCB_MUTEX;
 
-  status = mscb_addr(fd, CMD_PING16, adr, 10);
-  if (status != MSCB_SUCCESS)
-    {
-    mscb_release(fd);
-    return status;
-    }
+  mscb_addr(fd, CMD_ADDR_NODE16, adr, 1);
 
   buf[0] = CMD_ECHO;
   buf[1] = d1;
