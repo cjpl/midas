@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.134  2000/08/14 10:42:47  midas
+  Display error message if variable not found in history file
+
   Revision 1.133  2000/08/11 07:30:59  midas
   Reworked chaning of Slow Control values:
   - /Equipment/<name>/Settings/Editable can contain a list of values which
@@ -6142,6 +6145,13 @@ float       upper_limit[MAX_VARS], lower_limit[MAX_VARS];
     status = hs_read(event_id, ss_time()-scale-toffset, ss_time()-toffset, scale/1000, 
                      var_name[i], var_index[i], tbuffer, &tsize, ybuffer, &bsize, 
                      &type, &n_point[i]);
+
+    if (status == HS_UNDEFINED_VAR)
+      {
+      sprintf(str, "Variable \"%s\" not found in history", var_name[i]);
+      gdImageString(im, gdFontGiant, width/2-(strlen(str)*gdFontGiant->w)/2, height/2, str, red);
+      goto error;
+      }
 
     for (j=0 ; j<(int)n_point[i] ; j++)
       {
