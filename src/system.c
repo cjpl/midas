@@ -14,6 +14,11 @@
                 Brown, Prentice Hall
 
   $Log$
+  Revision 1.67  2003/04/21 03:16:50  olchansk
+  in ss_daemon_init(), if keep_stdout, keep BOTH stdout AND stderr.
+  It makes no sense to keep stdout and close stderr.
+  Stefan okey'ed this change ages ago, but I never commited it, until now.
+
   Revision 1.66  2003/04/09 13:42:53  midas
   Made file compile under C++
 
@@ -1476,7 +1481,7 @@ INT ss_daemon_init(BOOL keep_stdout)
      routines writing to stdout etc won't cause havoc. Copied from smbd */
   for (i=0 ; i<3 ; i++) 
     {
-    if (keep_stdout && i == 1)
+    if (keep_stdout && ((i==1)||(i==2)))
       continue;
 
     close(i);
