@@ -1,31 +1,49 @@
-#ifndef _VW_MIDAS
-typedef long             int_32;
-typedef unsigned long   uint_32;
-typedef unsigned short  uint_16;
-typedef char            uint_08;
-#endif
-
-
+#ifndef VMEIO_INCLUDE
+#define VMEIO_INCLUDE
 #include "stdio.h"
+#include "string.h"
+
+#ifdef OS_VXWORKS
 #include "vme.h"
 #include "vxWorks.h"
 #include "intLib.h"
 #include "sys/fcntlcom.h"
+#ifdef PPCxxx
+#include "arch/ppc/ivPpc.h"
+#else
 #include "arch/mc68k/ivMc68k.h"
+#endif
 #include "taskLib.h"
-/*
-#include "semLib.h"
-#include "loadLib.h"
-#include "moduleLib.h"
-#include "symLib.h"
-#include "logLib.h"
-#include "errnoLib.h"
-#include "wdLib.h"
-*/
+#endif
 
-/* from "arch/mc68k/ivMc68k.h" */
-#define IVEC_TO_INUM(intVec)    ((int) (intVec) >> 2)
-#define INUM_TO_IVEC(intNum)    ((VOIDFUNCPTR *) ((intNum) << 2))
+#if defined( _MSC_VER )
+#define INLINE __inline
+#elif defined(__GNUC__)
+#define INLINE __inline__
+#else 
+#define INLINE
+#endif
+
+#define EXTERNAL extern 
+
+#ifndef MIDAS_TYPE_DEFINED
+#define MIDAS_TYPE_DEFINED
+
+typedef unsigned short int WORD;
+
+#ifdef __alpha
+typedef unsigned int       DWORD;
+#else
+typedef unsigned long int  DWORD;
+#endif
+
+#endif /* MIDAS_TYPE_DEFINED */
+
+#ifdef PPCxxx
+#define A32D24	       0xfa000000              /* A32D24 camac base address */
+#else
+#define A32D24	       0xf0000000              /* A32D24 camac base address */
+#endif
 
 #define ENABLE_INT      0x00
 #define SET_INT_SYNC    0x01
@@ -39,17 +57,20 @@ typedef char            uint_08;
 
 #define VMEIO_VECT_BASE 0x7f
 
+void myStub(void);
 void vmeio (void);
-void set_vmeio_intsync (uint_32 * base_addr, uint_32 pattern);
-void set_vmeio_pulse (uint_32 * base_addr, uint_32 pattern);
-void read_vmeio_sync (uint_32 * base_addr, uint_32 * data);
-void read_vmeio_async (uint_32 * base_addr, uint_32 * data);
-void write_vmeio_pulse (uint_32 * base_addr, uint_32 data);
-void write_vmeio_latch (uint_32 * base_addr, uint_32 data);
-void clear_vmeio (uint_32 * base_addr);
-void read_vmeio_status (uint_32 * base_addr, uint_32 * data);
-void int_vmeio_clr(uint_32 * base_adr);
-void int_vmeio_enable (uint_32 * base_adr, uint_32 intnum);
-void int_vmeio_disable (uint_32 * base_adr, uint_32 intnum);
-void int_vmeio_book (uint_32 * base_adr, uint_32 base_vect, uint_32 intnum, uint_32 isr_routine );
-void int_vmeio_unbook (uint_32 * base_adr, uint_32 base_vect, uint_32 intnum);
+void vmeio_intsync_set (DWORD  base_adr, DWORD pattern);
+void vmeio_pulse_set (const DWORD base_adr, DWORD pattern);
+void vmeio_sync_read (const DWORD base_adr, DWORD * data);
+void vmeio_async_read (const DWORD base_adr, DWORD * data);
+void vmeio_pulse_write (const DWORD base_adr, DWORD data);
+void vmeio_latch_write (const DWORD base_adr, DWORD data);
+void vmeio_clear (const DWORD base_adr);
+void vmeio_status_read (const DWORD base_adr, DWORD * data);
+void vmeio_int_clear(const DWORD base_adr);
+void vmeio_int_enable (const DWORD base_adr, int intnum);
+void vmeio_int_disable (const DWORD base_adr, int intnum);
+void vmeio_int_attach (const DWORD base_adr, DWORD base_vect, int intnum, void (*isr)(void));
+void vmeio_int_detach (const DWORD base_adr, DWORD base_vect, int intnum);
+
+#endif
