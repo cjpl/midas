@@ -6,6 +6,9 @@
   Contents:     MIDAS logger program
 
   $Log$
+  Revision 1.87  2004/11/09 20:33:25  pierre
+  *** empty log message ***
+
   Revision 1.86  2004/10/01 23:35:54  midas
   Removed PRE/POST transitions and implemented sequence order of transitions
 
@@ -514,16 +517,13 @@ int mysql_query_debug(MYSQL *db, char *query)
 {
    int status;
 
-   /* comment in these lines if you need debugging output
+   /* comment in these lines if you need debugging output */
    printf("\nSQL query: %s\n", query); 
-   */
    
    status = mysql_query(db, query);
    
-   /*
    if (status)
       printf("SQL error: %s\n", mysql_error(db));
-   */
    return status;
 }
 
@@ -572,7 +572,7 @@ int sql_get_columns(HNDLE hKeyRoot, SQL_LIST **sql_list)
             strcpy(str, "DATETIME");
             ctime_to_datetime((*sql_list)[i].data);
          } else
-            sprintf(str, "VARCHAR (%d)", key.item_size);
+            sprintf(str, " TEXT");
 
       } else {
          switch (key.type) {
@@ -616,7 +616,7 @@ SQL_LIST *sql_list;
    }
 
    for (i=0 ; i<n_col ; i++)
-      sprintf(query+strlen(query), "`%s` %s, ", sql_list[i].column_name, sql_list[i].column_type);
+      sprintf(query+strlen(query), "`%s` %s  NOT NULL, ", sql_list[i].column_name, sql_list[i].column_type);
       
    sprintf(query+strlen(query), "PRIMARY KEY (`%s`))", sql_list[0].column_name);
    free(sql_list);
@@ -709,7 +709,7 @@ char  query[256];
 
 int sql_insert(MYSQL *db, char *database, char *table, HNDLE hKeyRoot, BOOL create_flag)
 {
-char      query[5000];
+char      query[5000], *pstr;
 int       status, i, n_col;
 SQL_LIST *sql_list;
 
@@ -731,6 +731,7 @@ SQL_LIST *sql_list;
    strlcat(query, ") VALUES (", sizeof(query));
 
    for (i=0 ; i<n_col ; i++) {
+     while ((pstr = strchr(sql_list[i].data, DIR_SEPARATOR)) != NULL)  *pstr = '/';
       sprintf(query+strlen(query), "'%s'", sql_list[i].data);
       if (i<n_col-1)
          strcat(query, ", ");
