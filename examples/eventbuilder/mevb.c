@@ -4,8 +4,11 @@ Name:         mevb.c
 
   Contents:     Main Event builder task.
   $Log$
-  Revision 1.1  2002/01/17 19:49:54  pierre
-  Initial revision
+  Revision 1.2  2002/01/17 23:34:14  pierre
+  doc++ format
+
+  Revision 1.1.1.1  2002/01/17 19:49:54  pierre
+  Initial Version
 
 \********************************************************************/
 
@@ -50,7 +53,7 @@ INT eb_user(INT, EBUILDER_CHANNEL *, EVENT_HEADER *, void *, INT *);
 
 
 /*--------------------------------------------------------------------*/
-/** eb_mfragment_add_()
+/* eb_mfragment_add_()
 @memo append one fragment to current destination event.
 @param fmt Data format
 @param pdest Destination pointer
@@ -523,7 +526,7 @@ INT source_unbooking(nfrag)
 }
 
 /*--------------------------------------------------------------------*/
-/** source_scan
+/* source_scan()
   Scan all the fragment source once per call.
   1) This will retrieve the full midas event not swapped (except the
   MIDAS_HEADER) for each fragment if possible. The fragment will
