@@ -100,7 +100,7 @@ EXTERNAL INLINE void EXPRT cam_crate_clear  (const int c);
 EXTERNAL INLINE void EXPRT cam_crate_zinit  (const int c);
 EXTERNAL INLINE void EXPRT cam_lam_enable   (const int c, const int n);
 EXTERNAL INLINE void EXPRT cam_lam_disable  (const int c, const int n);
-EXTERNAL INLINE void EXPRT cam_lam_read     (const int c, int *lam);
+EXTERNAL INLINE void EXPRT cam_lam_read     (const int c, DOWRD *lam);
 EXTERNAL INLINE void EXPRT cam_lam_clear    (const int c, const int n);
 EXTERNAL INLINE void EXPRT came_cn   (int *ext, const int b, const int c, const int n, const int a);
 EXTERNAL INLINE void EXPRT came_ext  (const int ext, int *b, int *c, int *n, int *a);
@@ -126,12 +126,12 @@ EXTERNAL INLINE void EXPRT camec_sa  (const int ext, const int f, const int r);
 EXTERNAL INLINE void EXPRT camec_sn  (const int ext, const int f, const int r);
 EXTERNAL INLINE void EXPRT cam_interrupt_enable (void);
 EXTERNAL INLINE void EXPRT cam_interrupt_disable(void);
-EXTERNAL INLINE void EXPRT cam_interrupt_attach (void (*isr)());
+EXTERNAL INLINE void EXPRT cam_interrupt_attach (void (*isr)(void));
 EXTERNAL INLINE void EXPRT cam_interrupt_detach (void);
 EXTERNAL INLINE void EXPRT cam_glint_enable     (void);
 EXTERNAL INLINE void EXPRT cam_glint_disable    (void);
-EXTERNAL INLINE void EXPRT cam_glint_attach     (int lam, void (*isr)());
-EXTERNAL INLINE void EXPRT cam_glint_detach();
+EXTERNAL INLINE void EXPRT cam_glint_attach     (int lam, void (*isr)(void));
+EXTERNAL INLINE void EXPRT cam_glint_detach(void);
 
 #ifdef __cplusplus
 }
