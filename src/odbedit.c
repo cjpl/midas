@@ -6,6 +6,9 @@
   Contents:     Command-line interface to the MIDAS online data base.
 
   $Log$
+  Revision 1.15  1999/04/19 07:47:25  midas
+  Added "old" command to display old messages
+
   Revision 1.14  1999/04/16 15:12:13  midas
   cm_set_msg_print changed so that info messages are not received twice
 
@@ -109,6 +112,7 @@ void print_help(char *command)
     printf("mkdir <subdir>          - make new <subdir>\n");
     printf("move <key> [top/bottom/[n]] - move key to position in keylist\n");
     printf("msg [user] <msg>        - compose user message\n");
+    printf("old                     - display old messages\n");
     printf("passwd                  - change MIDAS password\n");
     printf("pause                   - pause current run\n");
     printf("pwd                     - show current directory\n");
@@ -2284,6 +2288,14 @@ PRINT_INFO      print_info;
         } while(message[0]);
 
       last_msg_time = ss_time();
+      }
+
+    /* old */
+    else if (param[0][0] == 'o' && param[0][1] == 'l')
+      {
+      size = 1000;
+      cm_msg_retrieve(data, &size);
+      printf(data);
       }
 
     /* cleanup */
