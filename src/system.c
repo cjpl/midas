@@ -14,6 +14,9 @@
                 Brown, Prentice Hall
 
   $Log$
+  Revision 1.21  1999/01/22 09:48:16  midas
+  Added return statements for MSDOS in mutex routines
+
   Revision 1.20  1999/01/21 23:14:05  pierre
   - Fix comments.
   - Incorporate ss_mutex_... for OS_VXWORS.
@@ -736,7 +739,7 @@ INT ss_getpid(void)
 
   return 0;
 
-#endif /* OS_MS_DOS */
+#endif /* OS_MSDOS */
 }
 
 /*------------------------------------------------------------------*/
@@ -971,7 +974,7 @@ INT ss_shell(int sock)
   // Save the handle to the current STDOUT. 
   hSaveStdout = GetStdHandle(STD_OUTPUT_HANDLE); 
   
-  /* Create a pipe for the child's STDOUT. */
+  // Create a pipe for the child's STDOUT.
   if (! CreatePipe(&hChildStdoutRd, &hChildStdoutWr, &saAttr, 0)) 
     return 0; 
   
@@ -983,7 +986,7 @@ INT ss_shell(int sock)
   // Save the handle to the current STDERR. 
   hSaveStderr = GetStdHandle(STD_ERROR_HANDLE); 
   
-  /* Create a pipe for the child's STDERR. */
+  // Create a pipe for the child's STDERR.
   if (! CreatePipe(&hChildStderrRd, &hChildStderrWr, &saAttr, 0)) 
     return 0; 
   
@@ -995,7 +998,7 @@ INT ss_shell(int sock)
   // Save the handle to the current STDIN. 
   hSaveStdin = GetStdHandle(STD_INPUT_HANDLE); 
   
-  /* Create a pipe for the child's STDIN. */
+  // Create a pipe for the child's STDIN.
   if (! CreatePipe(&hChildStdinRd, &hChildStdinWr, &saAttr, 0)) 
     return 0; 
   
@@ -1027,8 +1030,8 @@ INT ss_shell(int sock)
       NULL,          // primary thread security attributes 
       TRUE,          // handles are inherited 
       0,             // creation flags 
-		     NULL,          /* use parent's environment  */
-		     NULL,          /* use parent's current directory */
+	    NULL,          // use parent's environment
+	    NULL,          // use parent's current directory
       &siStartInfo,  // STARTUPINFO pointer 
       &piProcInfo))  // receives PROCESS_INFORMATION 
     return 0;
@@ -1253,14 +1256,12 @@ INT ss_thread_create(INT (*thread_func)(void *), void *param)
 #endif /* OS_VXWORKS */
   
 #ifdef OS_UNIX
-
   return SS_NO_THREAD;
 #endif /* OS_UNIX */
 }
 
 /*------------------------------------------------------------------*/
 
-/*-PAA #ifdef LOCAL_ROUTINES */
 static INT skip_mutex_handle = -1;
 
 INT ss_mutex_create(char *name, HNDLE *mutex_handle)
@@ -1286,6 +1287,7 @@ INT ss_mutex_create(char *name, HNDLE *mutex_handle)
 
   Function value:
     SS_CREATED              Mutex was created
+    SS_SUCCESS              Mutex existed already and was attached
     SS_NO_MUTEX             Cannot create mutex
 
 \********************************************************************/
@@ -1296,11 +1298,13 @@ char mutex_name[256], path[256], file_name[256];
   sprintf(mutex_name, "MX_%s", name);
 
 #ifdef OS_VXWORKS
+
   /* semBCreate is a Binary semaphore which is under VxWorks a optimized mutex
      refering to the "programmer's Guide 5.3.1 */
-    if ((*((SEM_ID *)mutex_handle) = semBCreate(SEM_Q_FIFO, SEM_EMPTY)) == NULL)
-      return SS_NO_MUTEX;
-    return SS_CREATED;
+  if ((*((SEM_ID *)mutex_handle) = semBCreate(SEM_Q_FIFO, SEM_EMPTY)) == NULL)
+    return SS_NO_MUTEX;
+  return SS_CREATED;
+
 #endif /* OS_VXWORKS */
 
  /* Build the filename out of the path and the name of the mutex */
@@ -1330,7 +1334,7 @@ char mutex_name[256], path[256], file_name[256];
   if (*mutex_handle == 0)
     return SS_NO_MUTEX;
 
-  return SS_SUCCESS;
+  return SS_CREATED;
 
 #endif /* OS_WINNT */
 #ifdef OS_VMS
@@ -1357,7 +1361,7 @@ char mutex_name[256], path[256], file_name[256];
   if (*mutex_handle == 0)
     return SS_NO_MUTEX;
 
-  return SS_SUCCESS;
+  return SS_CREATED;
   }
 
 #endif /* OS_VMS */
@@ -1421,6 +1425,10 @@ char mutex_name[256], path[256], file_name[256];
   return SS_SUCCESS;
   }
 #endif /* OS_UNIX */
+
+#ifdef OS_MSDOS
+  return SS_NO_MUTEX;
+#endif
 }
 
 /*------------------------------------------------------------------*/
@@ -1527,6 +1535,10 @@ INT status;
   return SS_SUCCESS;
   }
 #endif /* OS_UNIX */
+
+#ifdef OS_MSDOS
+  return SS_NO_MUTEX;
+#endif
 }
 
 /*------------------------------------------------------------------*/
@@ -1600,6 +1612,10 @@ INT status;
   return SS_SUCCESS;
   }
 #endif /* OS_UNIX */
+
+#ifdef OS_MSDOS
+  return SS_NO_MUTEX;
+#endif
 }
 
 /*------------------------------------------------------------------*/
@@ -1663,9 +1679,11 @@ INT ss_mutex_delete(HNDLE mutex_handle, INT destroy_flag)
   return SS_SUCCESS;
 
 #endif /* OS_UNIX */
-}
 
-/*-PAA #endif */ /* LOCAL_ROUTINES */
+#ifdef OS_MSDOS
+  return SS_NO_MUTEX;
+#endif
+}
 
 /*------------------------------------------------------------------*/
 
