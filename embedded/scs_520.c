@@ -9,6 +9,9 @@
                 for SCS-520 analog I/O with current option
 
   $Log$
+  Revision 1.8  2004/06/09 12:27:29  midas
+  Re-enabled DAC
+
   Revision 1.7  2004/05/12 13:10:48  midas
   Removed variables (stack overflow!)
 
@@ -57,7 +60,7 @@ bit gain_flag;                  // set when new gains need to be set
 
 struct {
    float adc[8];
-//##   float dac0, dac1;
+   float dac0, dac1;
    unsigned char p1;
    unsigned char adc_average;   // average 2^(adc_average+4)
    unsigned char range[8];      // see below
@@ -94,8 +97,8 @@ MSCB_INFO_VAR code variables[] = {
    4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC5", &user_data.adc[5],
    4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC6", &user_data.adc[6],
    4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC7", &user_data.adc[7],
-//##   4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "DAC0", &user_data.dac0,
-//##   4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "DAC1", &user_data.dac1,
+   4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "DAC0", &user_data.dac0,
+   4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "DAC1", &user_data.dac1,
    1, UNIT_BYTE, 0, 0, 0, "P1", &user_data.p1,
 
    1, UNIT_COUNT, 0, 0, 0, "ADCAvrg", &user_data.adc_average,
@@ -198,8 +201,8 @@ void user_init(unsigned char init)
          user_data.ofs[i] = 0;
 //##         user_data.bip_ofs[i] = 0;
       }
-//##      user_data.dac0 = 0;
-//##      user_data.dac1 = 0;
+      user_data.dac0 = 0;
+      user_data.dac1 = 0;
       user_data.p1 = 0xff;
    }
 
@@ -273,11 +276,11 @@ void write_gain(void) reentrant
 void user_write(unsigned char index) reentrant
 {
    unsigned char i;
+   unsigned short d;
 
    switch (index) {
    case 8:                     // DAC0
       /* assume -10V..+10V range */
-/*##
       d = ((user_data.dac0 + 10) / 20) * 0x1000;
       if (d >= 0x1000)
          d = 0x0FFF;
@@ -290,12 +293,10 @@ void user_write(unsigned char index) reentrant
       DAC0L = d & 0xFF;
       DAC0H = d >> 8;
 #endif
-##*/
       break;
 
    case 9:                     // DAC1
       /* assume -10V..+10V range */
-/*##
       d = ((user_data.dac1 + 10) / 20) * 0x1000;
       if (d >= 0x1000)
          d = 0x0FFF;
@@ -308,7 +309,6 @@ void user_write(unsigned char index) reentrant
       DAC1L = d & 0xFF;
       DAC1H = d >> 8;
 #endif
-##*/
       break;
 
    case 10:                    // p1 
