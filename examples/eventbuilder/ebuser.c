@@ -6,6 +6,9 @@
   Contents:     User section for the Event builder
 
   $Log$
+  Revision 1.10  2004/10/04 23:55:57  pierre
+  move ebuilder into equipment list
+
   Revision 1.9  2004/09/29 16:25:04  pierre
   change Ebuilder structure
 
@@ -43,13 +46,80 @@ The Event builder user file
 #include "mevb.h"
 #include "ybos.h"
 
-INT eb_begin_of_run(INT, char *, char *);
-INT eb_end_of_run(INT, char *);
-INT ebuser(INT, EBUILDER_CHANNEL *, EVENT_HEADER *, void *, INT *);
+/*-- Globals -------------------------------------------------------*/
+
+/* The frontend name (client name) as seen by other MIDAS clients   */
+char *frontend_name = "Ebuilder";
+
+/* The frontend file name, don't change it */
+char *frontend_file_name = __FILE__;
+
+/* frontend_loop is called periodically if this variable is TRUE    */
+BOOL ebuilder_call_loop = FALSE;
+
+/* A frontend status page is displayed with this frequency in ms */
+INT display_period = 3000;
+
+/* maximum event size produced by this frontend */
+INT max_event_size = 10000;
+
+/* maximum event size for fragmented events (EQ_FRAGMENTED) */
+INT max_event_size_frag = 5 * 1024 * 1024;
+
+/* buffer size to hold events */
+INT event_buffer_size = 10 * 10000;
 
 /**
 Globals */
 INT lModulo = 100;              ///< Global var for testing
+
+/*-- Function declarations -----------------------------------------*/
+INT ebuilder_init();
+INT ebuilder_exit();
+INT eb_begin_of_run(INT, char *, char *);
+INT eb_end_of_run(INT, char *);
+INT ebuilder_loop();
+INT ebuser(INT, BOOL mismatch, EBUILDER_CHANNEL *, EVENT_HEADER *, void *, INT *);
+INT read_scaler_event(char *pevent, INT off);
+
+/*-- Equipment list ------------------------------------------------*/
+EQUIPMENT equipment[] = {
+   {"EB",                /* equipment name */
+    {1, 0,                   /* event ID, trigger mask */
+     "SYSTEM",               /* event buffer */
+     0,                      /* equipment type */
+     0,                      /* event source */
+     "MIDAS",                /* format */
+     TRUE,                   /* enabled */
+     },
+    },
+
+  {""}
+};
+
+#ifdef __cplusplus
+}
+#endif
+/********************************************************************/
+/********************************************************************/
+
+/********************************************************************/
+INT ebuilder_init()
+{
+  return EB_SUCCESS;
+}
+
+/********************************************************************/
+INT ebuilder_exit()
+{
+  return EB_SUCCESS;
+}
+
+/********************************************************************/
+INT ebuilder_loop()
+{
+  return EB_SUCCESS;
+}
 
 /********************************************************************/
 /** 
@@ -61,7 +131,7 @@ Hook to the event builder task at PreStart transition.
 */
 INT eb_begin_of_run(INT rn, char *UserField, char *error)
 {
-   printf("In eb_begin_of_run User_field:%s \n", UserField);
+  printf("In eb_begin_of_run for run:%d User_field:%s \n", rn, UserField);
    lModulo = atoi(UserField);
    return EB_SUCCESS;
 }
@@ -140,25 +210,36 @@ For YBOS format, use the following example.
 @param dest_size Destination event size in bytes.
 @return EB_SUCCESS
 */
-INT eb_user(INT nfrag, EBUILDER_CHANNEL * ebch, EVENT_HEADER * pheader, void *pevent,
-            INT * dest_size)
+INT eb_user(INT nfrag, BOOL mismatch, EBUILDER_CHANNEL * ebch
+            , EVENT_HEADER * pheader, void *pevent, INT * dest_size)
 {
-   INT i, dest_serial, frag_size, serial;
-   DWORD *plrl;
+  INT i, dest_serial, frag_size, serial;
+  DWORD *psrcData;
 
-   dest_serial = pheader->serial_number;
-   printf("DSer#:%d ", dest_serial);
-
-   // Loop over fragments.
-   for (i = 0; i < nfrag; i++) {
-      frag_size = ((EVENT_HEADER *) ebch[i].pfragment)->data_size;
+  if (mismatch){
+    printf("Serial number do not match across fragments\n");
+    for (i = 0; i < nfrag; i++) {
       serial = ((EVENT_HEADER *) ebch[i].pfragment)->serial_number;
-      printf("Frg#:%d Dsz:%d Ser:%d ", i + 1, frag_size, serial);
+      printf("Ser[%i]:%d ", i + 1, serial);
+    }
+    printf("\n");
+    return EB_USER_ERROR;
+  }
 
-       // For YBOS fragment Access.
-      plrl = (DWORD *) (((EVENT_HEADER *) ebch[i].pfragment) + 1);
-   }
+  // Destination access 
+  dest_serial = pheader->serial_number;
+  printf("DSer#:%d ", dest_serial);
 
-   printf("\n");
-   return EB_SUCCESS;
+  if (dest_serial == 505) return EB_USER_ERROR;
+  // Loop over fragments.
+  for (i = 0; i < nfrag; i++) {
+    frag_size = ((EVENT_HEADER *) ebch[i].pfragment)->data_size;
+    serial = ((EVENT_HEADER *) ebch[i].pfragment)->serial_number;
+    printf("Frg#:%d Dsz:%d Ser:%d ", i + 1, frag_size, serial);
+    // For Data fragment Access.
+    psrcData = (DWORD *) (((EVENT_HEADER *) ebch[i].pfragment) + 1);
+  }
+
+  printf("\n");
+  return EB_SUCCESS;
 }
