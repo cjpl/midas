@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol commands
 
   $Log$
+  Revision 1.13  2002/11/20 12:02:09  midas
+  Fixed bug with secondary LED
+
   Revision 1.12  2002/11/06 16:45:42  midas
   Revised LED blinking scheme
 
@@ -55,6 +58,7 @@
 sbit LED =               P3^4;
 sbit LED_SEC =           P3^3;
 sbit RS485_ENABLE =      P3^5;
+#define LED_2
 #define LED_ON 0
 
 /*--------------------------------*/
@@ -66,6 +70,7 @@ sbit RS485_ENABLE =      P3^5;
 sbit LED =               P3^3;
 sbit LED_SEC =           P3^4;
 sbit RS485_ENABLE =      P3^5;
+#define LED_2
 #define LED_ON 0
 
 /*--------------------------------*/
@@ -75,7 +80,6 @@ sbit RS485_ENABLE =      P3^5;
 #define CPU_CYGNAL
 
 sbit LED =               P3^4;
-sbit LED_SEC =           P3^4;
 sbit RS485_ENABLE =      P3^5;
 #define LED_ON 1
 
