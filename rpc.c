@@ -6,6 +6,9 @@
   Contents:     List of MSCB RPC functions with parameters
 
   $Log$
+  Revision 1.18  2004/03/05 14:00:33  midas
+  *** empty log message ***
+
   Revision 1.17  2004/03/04 15:29:24  midas
   Added USB support
 
@@ -360,9 +363,11 @@ void debug_log(char *format, ...)
    vsprintf(str, (char *) format, argptr);
    va_end(argptr);
 
+   /* if debug flag equals 2, write to stdout */
    if (_debug_flag == 2)
       write(fileno(stdout), str, strlen(str));
    else {
+      /* else write to file */
       fh = open("mscb_debug.log", O_CREAT | O_WRONLY | O_APPEND, 0644);
       if (fh < 0)
          return;
