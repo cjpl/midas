@@ -6,6 +6,9 @@
 #  Contents:     Makefile for MIDAS example frontend and analyzer
 #
 #  $Log$
+#  Revision 1.14  2003/04/08 00:13:07  olchansk
+#  add ranalyzer, the ROOT MIDAS analyzer
+#
 #  Revision 1.13  2002/05/10 05:23:18  pierre
 #  add MANA_LITE option
 #
@@ -89,6 +92,7 @@ endif
 # List of analyzer modules
 #                 
 MODULES 	= adccalib.o adcsum.o scaler.o
+RMODULES 	= radccalib.o radcsum.o rscaler.o
 
 #-------------------------------------------------------------------
 # Hardware driver can be (camacnul, kcs2926, kcs2927, hyt1331)
@@ -114,7 +118,7 @@ CC = cc
 CFLAGS += -g -I$(INC_DIR) -I$(DRV_DIR)
 LDFLAGS +=
 
-all: $(UFE) fal analyzer
+all: $(UFE) fal analyzer ranalyzer
 
 $(UFE): $(LIB) $(LIB_DIR)/mfe.o $(DRV_DIR)/bus/$(DRIVER).o $(UFE).c
 	$(CC) $(CFLAGS) $(OSFLAGS) -o $(UFE) $(UFE).c $(DRIVER).o \
@@ -128,13 +132,29 @@ analyzer: $(LIB) $(LIB_DIR)/mana.o analyzer.o $(MODULES)
 	$(MODULES) $(CERNLIB_PACK) \
 	$(LIB) $(LDFLAGS) $(LIBS)
 
+ranalyzer: $(LIB) $(LIB_DIR)/rmana.o ranalyzer.o $(RMODULES)
+	$(CXX) $(FFLAGS) -o ranalyzer $(LIB_DIR)/rmana.o ranalyzer.o $(RMODULES) \
+	$(LIB) $(LDFLAGS) $(LIBS)
+
 fal: $(LIB) $(LIB_DIR)/fal.o $(DRV_DIR)/bus/$(DRIVER).o $(UFE).c $(MODULES) $(UFE).o analyzer.o
 	$(FF) $(FFLAGS) -o fal $(LIB_DIR)/fal.o $(UFE).o $(DRIVER).o \
 	analyzer.o $(MODULES) $(CERNLIB_PACK) \
 	$(LIB) $(LDFEFLAGS) $(LIBS)
 
+ranalyzer.o: analyzer.c
+	$(CXX) -DMANA_LITE $(USERFLAGS) $(CFLAGS) $(OSFLAGS) -o $@ -c $<
+
+rscaler.o: scaler.c
+	$(CXX) -DMANA_LITE $(USERFLAGS) $(CFLAGS) $(OSFLAGS) -o $@ -c $<
+
+radccalib.o: adccalib.c
+	$(CXX) -DMANA_LITE $(USERFLAGS) $(CFLAGS) $(OSFLAGS) -o $@ -c $<
+
+radcsum.o: adcsum.c
+	$(CXX) -DMANA_LITE $(USERFLAGS) $(CFLAGS) $(OSFLAGS) -o $@ -c $<
+
 .c.o:
-	$(CC) $(USERFLAGS) $(CFLAGS) $(OSFLAGS) -c $<
+	$(CC) $(USERFLAGS) $(CFLAGS) $(OSFLAGS) -o $@ -c $<
 
 clean:
 	rm -f *.o *~ \#*
