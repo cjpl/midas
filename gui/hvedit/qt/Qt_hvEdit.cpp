@@ -15,6 +15,9 @@
     email                : andreas.suter@psi.ch
 
   $Log$
+  Revision 1.2  2003/05/09 10:43:41  midas
+  Fixed compiler warning
+
   Revision 1.1  2003/05/09 10:08:09  midas
   Initial revision
 
@@ -1346,6 +1349,9 @@ void namesChanged(int,int,void*)
 void HVChanged(HNDLE hDB, HNDLE hKey, void *info)
 {
   Qt_hvEdit  *dlg;
+
+  if (hDB);
+  if (hKey);
 
   dlg = (Qt_hvEdit *) info;
   if (dlg == NULL) {
