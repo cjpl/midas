@@ -14,6 +14,9 @@
                 Brown, Prentice Hall
 
   $Log$
+  Revision 1.40  1999/09/15 08:57:10  midas
+  Fixed bug im send_tcp
+
   Revision 1.39  1999/09/15 08:05:51  midas
   Ctrl-C handle can now be turned off by using SIG_DFL
 
@@ -3166,7 +3169,7 @@ INT send_tcp(int sock, char *buffer, DWORD buffer_size, INT flags)
 
 \********************************************************************/
 {
-DWORD count, i;
+DWORD count;
 INT   status;
 
   if (buffer_size <= NET_TCP_SIZE)
@@ -3174,20 +3177,19 @@ INT   status;
   else
     {
     /* split buffer in several transfers */
-    count = 0;
 
-    for (i=0 ; i<buffer_size-NET_TCP_SIZE ; i+=NET_TCP_SIZE)
+    for (count=0 ; count<buffer_size-NET_TCP_SIZE ; )
       {
-      status = send(sock, buffer+i, NET_TCP_SIZE, flags);
+      status = send(sock, buffer+count, NET_TCP_SIZE, flags);
       if (status != -1)
 	      count += status;
       else
 	      return status;
       }
 
-    if (i<buffer_size)
+    while (count<buffer_size)
       {
-      status = send(sock, buffer+i, buffer_size - i, flags);
+      status = send(sock, buffer+count, buffer_size - count, flags);
       if (status != -1)
 	      count += status;
       else
@@ -3196,7 +3198,6 @@ INT   status;
 
     return count;
     }
-
 }
 
 /*------------------------------------------------------------------*/
