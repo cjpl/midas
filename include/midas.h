@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.127  2004/01/19 16:53:35  olchansk
+  add midas_thread_t
+
   Revision 1.126  2004/01/17 05:35:53  olchansk
   replace #define ALIGN() with ALIGN8() to dodge namespace pollution under macosx
   hide strlcpy() & co #ifdef HAVE_STRLCPY (macosx already has strlcpy())
@@ -461,7 +464,7 @@ The main include file
 #endif
 #endif
 
-#if defined(OS_LINUX) || defined(OS_OSF1) || defined(OS_ULTRIX) || defined(OS_FREEBSD) || defined(OS_SOLARIS) || defined(OS_IRIX)
+#if defined(OS_LINUX) || defined(OS_OSF1) || defined(OS_ULTRIX) || defined(OS_FREEBSD) || defined(OS_SOLARIS) || defined(OS_IRIX) || defined(OS_DARWIN)
 #define OS_UNIX
 #endif
 
@@ -532,6 +535,16 @@ typedef INT HNDLE;
 #define PTYPE              long int
 #else
 #define PTYPE              int
+#endif
+
+/* need system-dependant thread type */
+#if defined(OS_WINNT)
+typedef HANDLE midas_thread_t;
+#elif defined(OS_UNIX)
+#include <pthread.h>
+typedef pthread_t midas_thread_t;
+#else
+typedef INT midas_thread_t;
 #endif
 
 #define TRUE  1
