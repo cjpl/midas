@@ -1,0 +1,83 @@
+#-----------------------------------------------------------------------------
+#  Copyright (c) 1993      TRIUMF Data Acquistion Group
+#  Please leave this header in any reproduction of that distribution
+# 
+#  TRIUMF Data Acquisition Group, 4004 Wesbrook Mall, Vancouver, B.C. V6T 2A3
+#  Email: online@triumf.ca           Tel: (604) 222-1047  Fax: (604) 222-1074
+# -----------------------------------------------------------------------------
+#  
+#  Description:
+# 	Makefile for mcnaf under linux using either
+#	DirectIO (mdcnaf) or Linux driver (mcnaf)
+#  Usage: gmake DRIVER=xxx
+#         Where xxx can be either :
+#	  camacnul, camacrpc, hyt1331, kcs2926, kcs2927, dsp004
+# 	  ex: gmake DRIVER=camacrpc
+#  Remarks: in order to run mdcnaf under (hyt1331, kcs2926, kcs2927, dsp004)
+#           you need to :
+#           1) compile the driver with CAMAC_BASE = 0x280
+#	    2) spawn this task using the Dio to gain IO permission.
+#           		ex : Dio mdcnaf
+#
+#  Author:  Pierre-Andre Amaudruz Data Acquisition Group
+# 
+#  Revision History:
+#    $Log$
+#    Revision 1.1  1998/10/23 09:15:48  midas
+#    Moved makefile.mcnaf from examples\basic\ to utils\
+#
+#    Revision 1.1  1998/10/09 22:36:01  midas
+#    -PAA- for DirectIO and for Linux drivers
+#
+#
+
+BIN_DIR = $(HOME)/bin
+MIDAS_INC_DIR= /midas/include
+MIDAS_DRV_DIR= /midas/drivers
+MIDAS_LIB_DIR= /midas/linux/lib
+LIBS = $(MIDAS_LIB_DIR)/libmidas.a
+#
+CC   = gcc
+INCLUDES = -I$(MIDAS_INC_DIR)
+OSFLAGS = -DOS_LINUX -DOS_UNIX
+CFLAGS  = -O3
+DIO_LDFLAGS = -DMODULE -D__KERNEL__ 
+DRV_LDFLAGS =
+
+all: mdcnaf mcnaf rmobj
+
+mdcnaf: mcnaf.o $(DRIVER).o
+	$(CC) $(CFLAGS) $(INCLUDES) $(OSFLAGS) -o mdcnaf mcnaf.o $(DRIVER).o $(DIO_LDFLAGS) $(LIBS) 
+
+mcnaf: mcnaf.o camaclx.o
+	$(CC) $(CFLAGS) $(INCLUDES) $(OSFLAGS) -o mcnaf mcnaf.o camaclx.o $(DRV_LDFLAGS) $(LIBS) 
+
+mcnaf.o: mcnaf.c
+	$(CC) $(CFLAGS) $(INCLUDES) $(OSFLAGS) -c -o mcnaf.o mcnaf.c 
+
+camacrpc.o: $(MIDAS_DRV_DIR)/camacrpc.c
+	$(CC) $(CFLAGS) $(INCLUDES) $(OSFLAGS) -c -o camacrpc.o $(MIDAS_DRV_DIR)/camacrpc.c
+
+camacnul.o: $(MIDAS_DRV_DIR)/camacnul.c
+	$(CC) $(CFLAGS) $(INCLUDES) $(OSFLAGS) -c -o camacnul.o $(MIDAS_DRV_DIR)/camacnul.c
+
+hyt1331.o: $(MIDAS_DRV_DIR)/hyt1331.c
+	$(CC) $(CFLAGS) $(INCLUDES) $(OSFLAGS) -c -o hyt1331.o $(MIDAS_DRV_DIR)/hyt1331.c
+
+dsp004.o: $(MIDAS_DRV_DIR)/dsp004.c
+	$(CC) $(CFLAGS) $(INCLUDES) $(OSFLAGS) -c -o dsp004.o $(MIDAS_DRV_DIR)/dsp004.c
+
+kcs2926.o: $(MIDAS_DRV_DIR)/kcs2926.c
+	$(CC) $(CFLAGS) $(INCLUDES) $(OSFLAGS) -c -o kcs2926.o $(MIDAS_DRV_DIR)/kcs2926.c
+
+kcs2927.o: $(MIDAS_DRV_DIR)/kcs2927.c
+	$(CC) $(CFLAGS) $(INCLUDES) $(OSFLAGS) -c -o kcs2927.o $(MIDAS_DRV_DIR)/kcs2927.c
+
+camaclx.o: $(MIDAS_DRV_DIR)/camaclx.c
+	$(CC) $(CFLAGS) $(INCLUDES) $(OSFLAGS) -c -o camaclx.o $(MIDAS_DRV_DIR)/camaclx.c
+
+rmobj:
+	rm *.o
+
+clean cleanup:
+	rm *.o mcnaf mdcnaf
