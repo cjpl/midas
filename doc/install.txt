@@ -90,6 +90,10 @@ Run ldconfig as root to make the library known to the system.
 analyzer needs libpacklib.a which is usually installed under
 /cern/pro/lib. PAW should be installed under /cern/pro/bin.
 
+From version 1.9.3 on, the MIDAS analyzer can be used with 
+ROOT. In that case, install ROOT and make sure the environment
+variable ROOTSYS is set properly (refer to the ROOT documentation).
+
 8) Create a working directory which hosts the frontend and analyzer
 program of your experiment (in the following example called "online"). 
 Copy the example experiment as a starting point: 
@@ -98,13 +102,31 @@ Copy the example experiment as a starting point:
   cd <home>/online
   cp <home>/midas/midas-x.xx/examples/experiment/* .
 
+If you want to build an analyzer which uses HBOOK instead of ROOT,
+copy from a different location:
+
+  cp <home>/midas/midas-x.xx/example/hbookexpt/* .
+
 9) Edit the makefile in the working directory to select the correct
-operating system and the proper directories. Then build the example
-frontend and analyzer:
+operating system and the proper directories. Most probable you have
+to correct the DRV_DIR, which should point to 
+<home>/midas/midas-x.xx/drivers/bus
+Then build the example frontend and analyzer:
 
   make
 
-10) Set the environment variable MIDAS_DIR to point to your directory:
+10) Create the file /etc/exptab containing following line:
+
+test <home>/online <login name> 
+
+This defines the experiment "test" (you can of course choose
+any other name) running in the directory <home>/online. If you access
+the MIDAS system from another computer like a frontend, the MIDAS
+server process switchs to the user UID using <login name>.
+
+If you do not have root privileges (and thus cannot write into /etc),
+you can alternatively set the environment variable MIDAS_DIR to point 
+to your directory:
 
   setenv MIDAS_DIR <home>/online
 
@@ -201,13 +223,17 @@ describing the experiment name, the directory and the user name.
 Create this file with an editor and write following line to define 
 an experiment called "Sample":
 
-Sample <home>/online <your name>
+Sample <home>/online <login name>
 
 where <home> stands for your home directory (like /usr/users/john) 
-and <your name> is your login name.
+and <login name> is your login name.
 
 To test the server, start odbedit with the host flag
 
   odbedit -h <your-host>
+
+Note that if you create the exptab file, you should not use
+the MIDAS_DIR environment variable.
+
 
 
