@@ -6,6 +6,9 @@
   Contents:     High Voltage Class Driver
 
   $Log$
+  Revision 1.5  2002/03/14 13:02:48  midas
+  Added ramping speed for both up/down
+
   Revision 1.4  2001/04/04 04:14:04  midas
   Use CMD_SET_CURRENT_LIMIT_ALL, use CMD_SET_ALL when more than 10% of channel have changed
 
@@ -56,7 +59,8 @@ typedef struct {
   float  *update_threshold_current;
   float  *voltage_limit;
   float  *current_limit;
-  float  *ramp_speed;
+  float  *rampup_speed;
+  float  *rampdown_speed;
 
   /* mirror arrays */
   float  *demand_mirror;
@@ -89,7 +93,8 @@ static void free_mem(HV_INFO *hv_info)
   free(hv_info->update_threshold_current);
   free(hv_info->voltage_limit);
   free(hv_info->current_limit);
-  free(hv_info->ramp_speed);
+  free(hv_info->rampup_speed);
+  free(hv_info->rampdown_speed);
 
   free(hv_info->demand_mirror);
   free(hv_info->measured_mirror);
@@ -219,21 +224,33 @@ float delta;
   for (i=0 ; i<hv_info->num_channels ; i++)
     if (hv_info->demand[i] != hv_info->demand_mirror[i])
       {
-      if (hv_info->ramp_speed[i] == 0)
-        delta = hv_info->demand[i] - hv_info->demand_mirror[i];
-      else
-        delta = (float) ((ss_millitime() - 
-                  hv_info->last_change[i])/1000.0 * hv_info->ramp_speed[i]);
-      delta = (float) (INT) abs(delta);
+        {
+        if (hv_info->demand[i] > hv_info->demand_mirror[i])
+          {
+          if (hv_info->rampup_speed[i] == 0)
+            delta = hv_info->demand[i] - hv_info->demand_mirror[i];
+          else
+            delta = (float) ((ss_millitime() - 
+                     hv_info->last_change[i])/1000.0 * hv_info->rampup_speed[i]);
+          }
+        else
+          {
+          if (hv_info->rampdown_speed[i] == 0)
+            delta = hv_info->demand_mirror[i] - hv_info->demand[i];
+          else
+            delta = (float) ((ss_millitime() - 
+                     hv_info->last_change[i])/1000.0 * hv_info->rampdown_speed[i]);
+          }
+        }
       
       if (delta > 0)
         {
         if (hv_info->demand[i] > hv_info->demand_mirror[i])
           hv_info->demand_mirror[i] = 
-            min(hv_info->demand[i], hv_info->demand_mirror[i] + abs(delta));
+            min(hv_info->demand[i], hv_info->demand_mirror[i] + delta);
         else
           hv_info->demand_mirror[i] = 
-            max(hv_info->demand[i], hv_info->demand_mirror[i] - abs(delta));
+            max(hv_info->demand[i], hv_info->demand_mirror[i] - delta);
 
         status = DRIVER(i)(CMD_SET, hv_info->dd_info[i], 
                            i-hv_info->channel_offset[i], hv_info->demand_mirror[i]);
@@ -263,7 +280,8 @@ EQUIPMENT *pequipment;
 
   /* check how many channels differ */
   for (i=1,n=0 ; i<hv_info->num_channels ; i++)
-    if (hv_info->demand[i] != hv_info->demand_mirror[i] && hv_info->ramp_speed[i] == 0)
+    if ((hv_info->demand[i] > hv_info->demand_mirror[i] && hv_info->rampup_speed[i] == 0) ||
+        (hv_info->demand[i] < hv_info->demand_mirror[i] && hv_info->rampdown_speed[i] == 0))
       n++;
 
   /* if more than 10% differ, use SET_ALL command which is faster in that case */
@@ -295,7 +313,8 @@ EQUIPMENT *pequipment;
           abs(hv_info->measured[i] - hv_info->demand[i]) > 100)
         {
         /* set directly if no ramping */
-        if (hv_info->ramp_speed[i] == 0)
+        if ((hv_info->demand[i] > hv_info->demand_mirror[i] && hv_info->rampup_speed[i] == 0) ||
+            (hv_info->demand[i] < hv_info->demand_mirror[i] && hv_info->rampdown_speed[i] == 0))
           {
           status = DRIVER(i)(CMD_SET, hv_info->dd_info[i], 
                              i-hv_info->channel_offset[i], hv_info->demand[i]);
@@ -396,7 +415,8 @@ HV_INFO *hv_info;
   hv_info->update_threshold_current = (float *) calloc(hv_info->num_channels, sizeof(float));
   hv_info->voltage_limit    = (float *) calloc(hv_info->num_channels, sizeof(float));
   hv_info->current_limit    = (float *) calloc(hv_info->num_channels, sizeof(float));
-  hv_info->ramp_speed       = (float *) calloc(hv_info->num_channels, sizeof(float));
+  hv_info->rampup_speed     = (float *) calloc(hv_info->num_channels, sizeof(float));
+  hv_info->rampdown_speed   = (float *) calloc(hv_info->num_channels, sizeof(float));
 
   hv_info->demand_mirror    = (float *) calloc(hv_info->num_channels, sizeof(float));
   hv_info->measured_mirror  = (float *) calloc(hv_info->num_channels, sizeof(float));
@@ -458,12 +478,24 @@ HV_INFO *hv_info;
 
   /* Ramp speed */
   for (i=0 ; i<hv_info->num_channels ; i++)
-    hv_info->ramp_speed[i] = 0.f; /* disabled by default */
-  db_merge_data(hDB, hv_info->hKeyRoot, "Settings/Ramping Speed", 
-                hv_info->ramp_speed, sizeof(float) * hv_info->num_channels, 
+    {
+    /* disabled by default */
+    hv_info->rampup_speed[i] = 0.f;
+    hv_info->rampdown_speed[i] = 0.f;
+    }
+
+  db_merge_data(hDB, hv_info->hKeyRoot, "Settings/Ramp Up Speed", 
+                hv_info->rampup_speed, sizeof(float) * hv_info->num_channels, 
                 hv_info->num_channels, TID_FLOAT);
-  db_find_key(hDB, hv_info->hKeyRoot, "Settings/Ramping Speed", &hKey);
-  db_open_record(hDB, hKey, hv_info->ramp_speed, sizeof(float) * hv_info->num_channels, 
+  db_find_key(hDB, hv_info->hKeyRoot, "Settings/Ramp Up Speed", &hKey);
+  db_open_record(hDB, hKey, hv_info->rampup_speed, sizeof(float) * hv_info->num_channels, 
+                 MODE_READ, NULL, NULL);
+
+  db_merge_data(hDB, hv_info->hKeyRoot, "Settings/Ramp Down Speed", 
+                hv_info->rampdown_speed, sizeof(float) * hv_info->num_channels, 
+                hv_info->num_channels, TID_FLOAT);
+  db_find_key(hDB, hv_info->hKeyRoot, "Settings/Ramp Down Speed", &hKey);
+  db_open_record(hDB, hKey, hv_info->rampdown_speed, sizeof(float) * hv_info->num_channels, 
                  MODE_READ, NULL, NULL);
 
   /*---- Create/Read variables ----*/
