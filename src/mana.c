@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.96  2003/04/30 12:58:50  midas
+  Load HBOOK histos after booking
+
   Revision 1.95  2003/04/28 11:13:18  midas
   Moved ss_force_single_thread() befor cm_connect_experiment
 
@@ -1920,9 +1923,6 @@ double     dummy;
   /* create global memory */
   if (clp.online)
     {
-    HLIMAP(pawc_size/4, out_info.global_memory_name);
-    printf("\nGLOBAL MEMORY NAME = %s\n", out_info.global_memory_name);
-
     /* book online N-tuples only once when online */
     status = book_ntuples();
     if (status != SUCCESS)
@@ -1932,16 +1932,11 @@ double     dummy;
     {
     if (equal_ustring(clp.output_file_name, "OFLN"))
       {
-      HLIMAP(pawc_size/4, "OFLN");
-      printf("\nGLOBAL MEMORY NAME = %s\n", "OFLN");
-
       /* book online N-tuples only once when online */
       status = book_ntuples();
       if (status != SUCCESS)
         return status;
       }
-    else
-      HLIMIT(pawc_size/4);
     }
 #endif /* HAVE_HBOOK */
 
@@ -6066,10 +6061,31 @@ int rargc;
   db_set_record(hDB, hkey, &out_info, size, 0);
 #endif
 
+#ifdef HAVE_HBOOK
+  /* create global memory */
+  if (clp.online)
+    {
+    HLIMAP(pawc_size/4, out_info.global_memory_name);
+    printf("\nGLOBAL MEMORY NAME = %s\n", out_info.global_memory_name);
+    }
+  else
+    {
+    if (equal_ustring(clp.output_file_name, "OFLN"))
+      {
+      HLIMAP(pawc_size/4, "OFLN");
+      printf("\nGLOBAL MEMORY NAME = %s\n", "OFLN");
+      }
+    else
+      HLIMIT(pawc_size/4);
+    }
+#endif /* HAVE_HBOOK */
 
+
+#ifdef HAVE_ROOT
   /* load histos from last.xxx */
   if (clp.online)
     load_last_histos();
+#endif
 
   /* analyzer init function */
   if (mana_init() != CM_SUCCESS)
@@ -6077,6 +6093,12 @@ int rargc;
     cm_disconnect_experiment();
     return 1;
     }
+
+#ifdef HAVE_HBOOK
+  /* load histos from last.xxx */
+  if (clp.online)
+    load_last_histos();
+#endif
 
   /* reqister event requests */
   register_requests();
