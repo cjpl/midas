@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.2  2001/05/21 15:28:45  midas
+  Implemented multiple logbooks
+
   Revision 1.1  2001/05/18 13:31:33  midas
   Initial revision
 
@@ -19,20 +22,33 @@
 #include <stdlib.h>
 
 #ifdef _MSC_VER
-
 #define OS_WINNT
+
+#define DIR_SEPARATOR '\\'
+
 #include <windows.h>
 #include <io.h>
 #include <time.h>
 #else
 
 #define OS_UNIX
+
+#define TRUE 1
+#define FALSE 0
+
+#define DIR_SEPARATOR '/'
+
+typedef int BOOL;
+typedef unsigned long int DWORD;
+
 #include <netdb.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <sys/time.h>
 #include <unistd.h>
 #include <signal.h>
+#include <time.h>
+
 #define closesocket(s) close(s)
 #define O_BINARY 0
 #endif
@@ -54,8 +70,10 @@ typedef int INT;
 char return_buffer[WEB_BUFFER_SIZE];
 int  return_length;
 char elogd_url[256];
-char logbook_title[32];
+char loogbook[32];
+char logbook[32];
 char data_dir[256];
+char cfg_file[256];
 
 #define MAX_GROUPS    32
 #define MAX_PARAM    100
@@ -216,7 +234,7 @@ INT ss_daemon_init()
   int i, fd, pid;
 
   if ( (pid = fork()) < 0)
-    return SS_ABORT;
+    return 0;
   else if (pid != 0)
     exit(0); /* parent finished */
 
@@ -232,12 +250,12 @@ INT ss_daemon_init()
       fd = open("/dev/null", O_WRONLY, 0);
     if (fd < 0) 
       {
-      cm_msg(MERROR, "ss_system", "Can't open /dev/null");
+      printf("Can't open /dev/null");
       return;
       }
     if (fd != i)
       {
-      cm_msg(MERROR, "ss_system", "Did not get file descriptor");
+      printf("Did not get file descriptor");
       return;
       }
     }
@@ -253,7 +271,7 @@ INT ss_daemon_init()
 
 /*------------------------------------------------------------------*/
 
-/* Parameter extraction from elogd.cfg similar to win.ini */
+/* Parameter extraction from configuration file similar to win.ini */
 
 char *cfgbuffer;
 
@@ -271,7 +289,7 @@ int  fh;
     if (cfgbuffer)
       free(cfgbuffer);
 
-    fh = open("elogd.cfg", O_RDONLY | O_BINARY);
+    fh = open(cfg_file, O_RDONLY | O_BINARY);
     if (fh < 0)
       return 0;
     length = lseek(fh, 0, SEEK_END);
@@ -417,6 +435,50 @@ int  i;
           }
         }
       }
+    if (p)
+      p = strchr(p, '\n');
+    if (p)
+      p++;
+    } while (p);
+
+  return 0;
+}
+
+/*------------------------------------------------------------------*/
+
+int enumgrp(int index, char *group)
+{
+char str[256], *p, *pstr;
+int  i;
+
+  /* open configuration file */
+  if (!cfgbuffer)
+    getcfg("dummy", "dummy", str);
+  if (!cfgbuffer)
+    return 0;
+
+  /* search group */
+  p = cfgbuffer;
+  i = 0;
+  do
+    {
+    if (*p == '[')
+      {
+      p++;
+      pstr = str;
+      while (*p && *p != ']' && *p != '\n' && *p != '\r')
+        *pstr++ = *p++;
+      *pstr = 0;
+
+      if (i == index)
+        {
+        strcpy(group, str);
+        return 1;
+        }
+
+      i++;
+      }
+
     if (p)
       p = strchr(p, '\n');
     if (p)
@@ -1494,7 +1556,7 @@ void redirect(char *path)
   rsprintf("HTTP/1.0 302 Found\r\n");
   rsprintf("Server: ELOG HTTP 1.0\r\n");
 
-  rsprintf("Location: %s%s\n\n<html>redir</html>\r\n", elogd_url, path);
+  rsprintf("Location: %s%s/%s\n\n<html>redir</html>\r\n", elogd_url, logbook, path);
 }
 
 void redirect2(char *path)
@@ -1543,15 +1605,15 @@ time_t now;
   rsprintf("Content-Type: text/html\r\n\r\n");
 
   rsprintf("<html><head><title>%s</title></head>\n", title);
-  rsprintf("<body><form method=\"GET\" action=\"%s%s\">\n\n",
-            elogd_url, path);
+  rsprintf("<body><form method=\"GET\" action=\"%s%s/%s\">\n\n",
+            elogd_url, logbook, path);
 
   /* title row */
 
   time(&now);
 
   rsprintf("<table border=3 cellpadding=1>\n");
-  rsprintf("<tr><th colspan=%d bgcolor=#A0A0FF>Electronic Logbook \"%s\"", colspan, logbook_title);
+  rsprintf("<tr><th colspan=%d bgcolor=#A0A0FF>Electronic Logbook \"%s\"", colspan, logbook);
   rsprintf("<th colspan=%d bgcolor=#A0A0FF>%s</tr>\n", colspan, ctime(&now));
 }
 
@@ -1646,14 +1708,15 @@ time_t now;
   rsprintf("Content-Type: text/html\r\n\r\n");
 
   rsprintf("<html><head><title>MIDAS ELog</title></head>\n");
-  rsprintf("<body><form method=\"POST\" action=\"%s\" enctype=\"multipart/form-data\">\n", elogd_url);
+  rsprintf("<body><form method=\"POST\" action=\"%s%s\" enctype=\"multipart/form-data\">\n", 
+            elogd_url, logbook);
 
   rsprintf("<table border=3 cellpadding=5>\n");
 
   /*---- title row ----*/
 
   rsprintf("<tr><th bgcolor=#A0A0FF>ELOG");
-  rsprintf("<th bgcolor=#A0A0FF>Logbook \"%s\"</tr>\n", logbook_title);
+  rsprintf("<th bgcolor=#A0A0FF>Logbook \"%s\"</tr>\n", logbook);
 
   /*---- menu buttons ----*/
 
@@ -1811,14 +1874,14 @@ struct tm *tms;
   rsprintf("Content-Type: text/html\r\n\r\n");
 
   rsprintf("<html><head><title>MIDAS ELog</title></head>\n");
-  rsprintf("<body><form method=\"GET\" action=\"%s\">\n", elogd_url);
+  rsprintf("<body><form method=\"GET\" action=\"%s%s\">\n", elogd_url, logbook);
 
   rsprintf("<table border=3 cellpadding=5>\n");
 
   /*---- title row ----*/
 
   rsprintf("<tr><th colspan=2 bgcolor=#A0A0FF>ELOG");
-  rsprintf("<th colspan=2 bgcolor=#A0A0FF>Logbook \"%s\"</tr>\n", logbook_title);
+  rsprintf("<th colspan=2 bgcolor=#A0A0FF>Logbook \"%s\"</tr>\n", logbook);
   
   /*---- menu buttons ----*/
 
@@ -1879,10 +1942,14 @@ struct tm *tms;
   rsprintf("</tr>\n");
 
   /* get type list from configuration file */
-  //##
+  for (i=0 ; ; i++)
+    if (!enumcfg("Message Types", type_list[i], NULL, i))
+      break;
 
-  /* get system list from configuration file */
-  //##
+  /* get category list from configuration file */
+  for (i=0 ; ; i++)
+    if (!enumcfg("Message Categories", category_list[i], NULL, i))
+      break;
 
   rsprintf("<tr><td colspan=2 bgcolor=#FFA0A0>Author: ");
   rsprintf("<input type=\"test\" size=\"15\" maxlength=\"80\" name=\"author\">\n");
@@ -1924,7 +1991,7 @@ BOOL   allow_delete;
   allow_delete = FALSE;
 
   /* get flag from configuration file */
-  if (getcfg("Global", "Allow delete", str))
+  if (getcfg(logbook, "Allow delete", str))
     allow_delete = atoi(str);
 
   /* redirect if confirm = NO */
@@ -1999,7 +2066,7 @@ FILE   *f;
   rsprintf("Content-Type: text/html\r\n\r\n");
 
   rsprintf("<html><head><title>MIDAS ELog</title></head>\n");
-  rsprintf("<body><form method=\"GET\" action=\"%s\">\n", elogd_url);
+  rsprintf("<body><form method=\"GET\" action=\"%s%s\">\n", elogd_url, logbook);
 
   rsprintf("<table border=3 cellpadding=2 width=\"100%%\">\n");
 
@@ -2024,7 +2091,7 @@ FILE   *f;
   colspan = full ? 2 : 3;
 
   rsprintf("<tr><th colspan=3 bgcolor=#A0A0FF>ELOG");
-  rsprintf("<th colspan=%d bgcolor=#A0A0FF>Logbook \"%s\"</tr>\n", colspan, logbook_title);
+  rsprintf("<th colspan=%d bgcolor=#A0A0FF>Logbook \"%s\"</tr>\n", colspan, logbook);
 
   /*---- menu buttons ----*/
 
@@ -2311,7 +2378,7 @@ FILE   *f;
       strcpy(str, tag);
       if (strchr(str, '+'))
         *strchr(str, '+') = 0;
-      sprintf(ref, "%s%s", elogd_url, str);
+      sprintf(ref, "%s%s/%s", elogd_url, logbook, str);
 
       strncpy(str, text, 80);
       str[80] = 0;
@@ -2348,7 +2415,7 @@ FILE   *f;
               str[i] = toupper(attachment[index][i]);
             str[i] = 0;
     
-            sprintf(ref, "%s%s", elogd_url, attachment[index]);
+            sprintf(ref, "%s%s/%s", elogd_url, logbook, attachment[index]);
 
             if (!show_attachments)
               {
@@ -2436,7 +2503,7 @@ char   file_name[256], line[1000];
   rsprintf("Content-Type: text/html\r\n\r\n");
 
   rsprintf("<html><head><title>MIDAS File Display</title></head>\n");
-  rsprintf("<body><form method=\"GET\" action=\"%s\">\n", elogd_url);
+  rsprintf("<body><form method=\"GET\" action=\"%s%s\">\n", elogd_url, logbook);
 
   rsprintf("<table border=3 cellpadding=1 width=\"100%%\">\n");
 
@@ -2444,7 +2511,7 @@ char   file_name[256], line[1000];
 
 
   rsprintf("<tr><th bgcolor=#A0A0FF>MIDAS File Display");
-  rsprintf("<th bgcolor=#A0A0FF>Logbook \"%s\"</tr>\n", logbook_title);
+  rsprintf("<th bgcolor=#A0A0FF>Logbook \"%s\"</tr>\n", logbook);
 
   /*---- menu buttons ----*/
 
@@ -2586,15 +2653,12 @@ struct hostent *phe;
   rsprintf("HTTP/1.0 302 Found\r\n");
   rsprintf("Server: ELOG HTTP 1.0\r\n");
 
-  if (*getparam("edit"))
-    rsprintf("Location: %s%s\n\n<html>redir</html>\r\n", elogd_url, str);
-  else
-    rsprintf("Location: %s%s\n\n<html>redir</html>\r\n", elogd_url, str);
+  rsprintf("Location: %s%s/%s\n\n<html>redir</html>\r\n", elogd_url, logbook, str);
 }
 
 /*------------------------------------------------------------------*/
 
-void show_elog_page(char *path)
+void show_elog_page(char *logbook, char *path)
 {
 int   size, i, run, msg_status, status, fh, length, first_message, last_message, index;
 char  str[256], orig_path[256], command[80], ref[256], file_name[256];
@@ -2606,7 +2670,7 @@ BOOL  allow_delete;
   allow_delete = FALSE;
 
   /* get flag from configuration file */
-  if (getcfg("Global", "Allow delete", str))
+  if (getcfg(logbook, "Allow delete", str))
     allow_delete = atoi(str);
   
   /*---- interprete commands ---------------------------------------*/
@@ -2747,11 +2811,11 @@ BOOL  allow_delete;
 
   last_message = first_message = FALSE;
   if (equal_ustring(command, "next") || equal_ustring(command, "previous") ||
-      equal_ustring(command, "past"))
+      equal_ustring(command, "last"))
     {
     strcpy(orig_path, path);
 
-    if (equal_ustring(command, "past"))
+    if (equal_ustring(command, "last"))
       path[0] = 0;
 
     do
@@ -2844,14 +2908,14 @@ BOOL  allow_delete;
   rsprintf("Content-Type: text/html\r\n\r\n");
 
   rsprintf("<html><head><title>MIDAS ELog</title></head>\n");
-  rsprintf("<body><form method=\"GET\" action=\"%s%s\">\n", elogd_url, str);
+  rsprintf("<body><form method=\"GET\" action=\"%s%s/%s\">\n", elogd_url, logbook, str);
 
   rsprintf("<table cols=2 border=2 cellpadding=2>\n");
 
   /*---- title row ----*/
 
   rsprintf("<tr><th bgcolor=#A0A0FF>ELOG");
-  rsprintf("<th bgcolor=#A0A0FF>Logbook \"%s\"</tr>\n", logbook_title);
+  rsprintf("<th bgcolor=#A0A0FF>Logbook \"%s\"</tr>\n", logbook);
 
   /*---- menu buttons ----*/
 
@@ -2879,12 +2943,12 @@ BOOL  allow_delete;
     rsprintf("<tr><td colspan=2 bgcolor=#F0F0F0>");
     if (orig_tag[0])
       {
-      sprintf(ref, "%s%s", elogd_url, orig_tag);
+      sprintf(ref, "%s%s/%s", elogd_url, logbook, orig_tag);
       rsprintf("  <a href=\"%s\">Original message</a>  ", ref);
       }
     if (reply_tag[0])
       {
-      sprintf(ref, "%s%s", elogd_url, reply_tag);
+      sprintf(ref, "%s%s/%s", elogd_url, logbook, reply_tag);
       rsprintf("  <a href=\"%s\">Reply to this message</a>  ", ref);
       }
     rsprintf("</tr>\n");
@@ -2959,7 +3023,7 @@ BOOL  allow_delete;
           att[i] = toupper(attachment[index][i]);
         att[i] = 0;
       
-        sprintf(ref, "%s%s", elogd_url, attachment[index]);
+        sprintf(ref, "%s%s/%s", elogd_url, logbook, attachment[index]);
 
         if (strstr(att, ".GIF") ||
             strstr(att, ".JPG"))
@@ -3020,7 +3084,7 @@ void show_password_page(char *password, char *experiment)
 
   rsprintf("<html><head><title>Enter password</title></head><body>\n\n");
 
-  rsprintf("<form method=\"GET\" action=\"%s\">\n\n", elogd_url);
+  rsprintf("<form method=\"GET\" action=\"%s%s\">\n\n", elogd_url, logbook);
 
   rsprintf("<table border=1 cellpadding=5>");
 
@@ -3038,12 +3102,12 @@ void show_password_page(char *password, char *experiment)
 
 /*------------------------------------------------------------------*/
 
-BOOL check_web_password(char *password, char *redir)
+BOOL check_web_password(char *logbook, char *password, char *redir)
 {
 char  str[256];
 
   /* get write password from configuration file */
-  if (getcfg("Global", "Write password", str))
+  if (getcfg(logbook, "Write password", str))
     {
     if (strcmp(password, str) == 0)
       return TRUE;
@@ -3055,7 +3119,7 @@ char  str[256];
 
     rsprintf("<html><head><title>Enter password</title></head><body>\n\n");
 
-    rsprintf("<form method=\"GET\" action=\"%s\">\n\n", elogd_url);
+    rsprintf("<form method=\"GET\" action=\"%s%s\">\n\n", elogd_url, logbook);
 
     /* define hidden fields for current experiment and destination */
     if (redir[0])
@@ -3078,6 +3142,45 @@ char  str[256];
     }
   else
     return TRUE;
+}
+
+/*------------------------------------------------------------------*/
+
+void show_selection_page()
+{
+int  i;
+char str[80], logbook[80];
+
+  rsprintf("HTTP/1.0 200 Document follows\r\n");
+  rsprintf("Server: ELOG HTTP 1.0\r\n");
+  rsprintf("Content-Type: text/html\r\n\r\n");
+
+  rsprintf("<html>\n");
+  rsprintf("<head>\n");
+  rsprintf("<title>ELOG Logbook Selection</title>\n");
+  rsprintf("</head>\n\n");
+
+  rsprintf("<body>\n\n");
+
+  rsprintf("<table border=3 cellpadding=5><tr><td colspan=2 bgcolor=#80FF80>\n");
+  rsprintf("Several logbooks are defined on this host.<BR>\n");
+  rsprintf("Please select the one to connect to:</td><tr>\n");
+
+  for (i=0 ;  ; i++)
+    {
+    if (!enumgrp(i, logbook))
+      break;
+
+    rsprintf("<tr><td bgcolor=#FFFF00><a href=\"%s%s\">%s</a>", elogd_url, logbook, logbook);
+
+    str[0] = 0;
+    getcfg(logbook, "Comment", str);
+    rsprintf("<td>%s</td></tr>\n", str);
+    }
+
+  rsprintf("</table></body>\n");
+  rsprintf("</html>\r\n");
+  
 }
 
 /*------------------------------------------------------------------*/
@@ -3131,19 +3234,27 @@ struct tm *gmt;
   group = getparam("group");
   index = atoi(getparam("index"));
 
-  /* get data dir from configuration file */
-  getcfg("Global", "Data dir", data_dir);
-    
-  /* get logbook title from configuration file */
-  if (!getcfg("Global", "Logbook title", logbook_title))
-    strcpy(logbook_title, "Default");
+  /* if no logbook given, display logbook selection page */
+  if (!logbook[0])
+    {
+    show_selection_page();
+    return;
+    }
 
+  /* get data dir from configuration file */
+  getcfg(logbook, "Data dir", data_dir);
+  if (data_dir[strlen(data_dir)-1] != DIR_SEPARATOR)
+    {
+    data_dir[strlen(data_dir)+1] = 0;
+    data_dir[strlen(data_dir)] = DIR_SEPARATOR;
+    }
+    
   if (wpassword[0])
     {
     /* check if password correct */
     base64_encode(wpassword, enc_pwd);
 
-    if (!check_web_password(enc_pwd, getparam("redir")))
+    if (!check_web_password(logbook, enc_pwd, getparam("redir")))
       return;
     
     rsprintf("HTTP/1.0 302 Found\r\n");
@@ -3154,9 +3265,9 @@ struct tm *gmt;
     gmt = gmtime(&now);
     strftime(str, sizeof(str), "%A, %d-%b-%y %H:%M:%S GMT", gmt);
 
-    rsprintf("Set-Cookie: elog_wpwd=%s; path=/; expires=%s\r\n", enc_pwd, str);
+    rsprintf("Set-Cookie: elog_wpwd=%s; path=/%s; expires=%s\r\n", enc_pwd, logbook, str);
 
-    sprintf(str, "%s%s", elogd_url, getparam("redir"));
+    sprintf(str, "%s%s/%s", elogd_url, logbook, getparam("redir"));
     rsprintf("Location: %s\n\n<html>redir</html>\r\n", str);
     return;
     }
@@ -3168,11 +3279,11 @@ struct tm *gmt;
       equal_ustring(command, "reply"))
     {
     sprintf(str, "%s?cmd=%s", path, command);
-    if (!check_web_password(cookie_wpwd, str))
+    if (!check_web_password(logbook, cookie_wpwd, str))
       return;
     }
 
-  show_elog_page(dec_path);
+  show_elog_page(logbook, dec_path);
   return;
 }
 
@@ -3185,7 +3296,7 @@ char *p, *pitem;
 
   initparam();
 
-  strncpy(path, string+1, sizeof(path)); /* strip leading '/' */
+  strncpy(path, string, sizeof(path));
   path[255] = 0;
   if (strchr(path, '?'))
     *strchr(path, '?') = 0;
@@ -3421,6 +3532,10 @@ INT                  last_time=0;
       printf("Warning: port %d already in use\n", tcp_port);
     }
 
+
+  /* open configuration file */
+  getcfg("dummy", "dummy", str);
+
 #ifdef OS_UNIX
   /* give up root privilege */
   setuid(getuid());
@@ -3456,15 +3571,7 @@ INT                  last_time=0;
     timeout.tv_sec  = 0;
     timeout.tv_usec = 100000;
 
-#ifdef OS_UNIX
-    do
-      {
-      status = select(FD_SETSIZE, (void *) &readfds, NULL, NULL, (void *) &timeout);
-      /* if an alarm signal was cought, restart with reduced timeout */
-      } while (status == -1 && errno == EINTR);
-#else
     status = select(FD_SETSIZE, (void *) &readfds, NULL, NULL, (void *) &timeout);
-#endif
 
     if (FD_ISSET(lsock, &readfds))
       {
@@ -3493,15 +3600,8 @@ INT                  last_time=0;
         timeout.tv_sec  = 6;
         timeout.tv_usec = 0;
 
-#ifdef OS_UNIX
-        do
-          {
-          status = select(FD_SETSIZE, (void *) &readfds, NULL, NULL, (void *) &timeout);
-          /* if an alarm signal was cought, restart with reduced timeout */
-          } while (status == -1 && errno == EINTR);
-#else
         status = select(FD_SETSIZE, (void *) &readfds, NULL, NULL, (void *) &timeout);
-#endif
+
         if (FD_ISSET(_sock, &readfds))
           i = recv(_sock, net_buffer+len, sizeof(net_buffer)-len, 0);
         else
@@ -3533,7 +3633,13 @@ INT                  last_time=0;
           {
           if (header_length == 0)
             {
-            /* extrac header and content length */
+            /* extract logbook */
+            strncpy(str, net_buffer+6, 32);
+            if (strstr(str, "HTTP"))
+              *(strstr(str, "HTTP")-1) = 0;
+            strcpy(logbook, str);
+            
+            /* extract header and content length */
             if (strstr(net_buffer, "Content-Length:"))
               content_length = atoi(strstr(net_buffer, "Content-Length:") + 15);
             boundary[0] = 0;
@@ -3585,9 +3691,19 @@ INT                  last_time=0;
       
       return_length = 0;
 
+      /* extract logbook */
+      if (strncmp(net_buffer, "GET", 3) == 0)
+        {
+        p = net_buffer+5;
+        logbook[0] = 0;
+        for (i=0 ; *p && *p != '/' && *p != '?' && *p != ' '; i++)
+          logbook[i] = *p++;
+        logbook[i] = 0;
+        }
+      
       /* ask for password if configured */
       authorized = 1;
-      if (getcfg("Global", "Read Password", pwd))
+      if (getcfg(logbook, "Read Password", pwd))
         {
         authorized = 0;
 
@@ -3624,7 +3740,7 @@ INT                  last_time=0;
         /* return request for authorization */
         rsprintf("HTTP/1.1 401 Authorization Required\r\n");
         rsprintf("Server: ELOG HTTPD 1.0\r\n");
-        rsprintf("WWW-Authenticate: Basic realm=\"ELOG\"\r\n");
+        rsprintf("WWW-Authenticate: Basic realm=\"%s\"\r\n", logbook);
         rsprintf("Connection: close\r\n");
         rsprintf("Content-Type: text/html\r\n\r\n");
 
@@ -3642,6 +3758,10 @@ INT                  last_time=0;
         }
       else
         {
+
+        //##
+        printf("\n\n\n%s\n", net_buffer);
+
         if (strncmp(net_buffer, "GET", 3) == 0)
           {
           /* extract path and commands */
@@ -3651,12 +3771,24 @@ INT                  last_time=0;
             goto error;
           *(strstr(net_buffer, "HTTP")-1)=0;
 
+          /* skip logbook from path */
+          p = net_buffer+5;
+          for (i=0 ; *p && *p != '/' && *p != '?'; p++);
+          while (*p && *p == '/')
+            p++;
+
           /* decode command and return answer */
-          decode_get(net_buffer+4, cookie_wpwd);
+          decode_get(p, cookie_wpwd);
+          }
+        else if (strncmp(net_buffer, "POST", 4) == 0)
+          {
+          decode_post(net_buffer+header_length, boundary, content_length, cookie_wpwd);
           }
         else
           {
-          decode_post(net_buffer+header_length, boundary, content_length, cookie_wpwd);
+          net_buffer[50] = 0;
+          sprintf(str, "Unknown request:<p>%s", net_buffer);
+          show_error(str);
           }
         }
 
@@ -3678,25 +3810,25 @@ INT                  last_time=0;
 
 /*------------------------------------------------------------------*/
 
-void create_password(char *name, char *pwd)
+void create_password(char *logbook, char *name, char *pwd)
 {
 int  fh, length, i;
 char *cfgbuffer, str[256], *p;
 
-  fh = open("elogd.cfg", O_RDONLY);
+  fh = open(cfg_file, O_RDONLY);
   if (fh < 0)
     {
     /* create new file */
-    fh = open("elogd.cfg", O_CREAT | O_WRONLY, 0640);
+    fh = open(cfg_file, O_CREAT | O_WRONLY, 0640);
     if (fh < 0)
       {
-      printf("Cannot create \"elogd.cfg\".\n");
+      printf("Cannot create \"%d\".\n", cfg_file);
       return;
       }
-    sprintf(str, "[Global]\n%s=%s\n", name, pwd);
+    sprintf(str, "[%s]\n%s=%s\n", logbook, name, pwd);
     write(fh, str, strlen(str));
     close(fh);
-    printf("File \"elogd.cfg\" created with password.\n");
+    printf("File \"%s\" created with password in loogbook \"%s\".\n", cfg_file, logbook);
     return;
     }
 
@@ -3713,43 +3845,79 @@ char *cfgbuffer, str[256], *p;
   cfgbuffer[length] = 0;
   close(fh);
 
-  fh = open("elogd.cfg", O_TRUNC | O_WRONLY, 0640);
+  fh = open(cfg_file, O_TRUNC | O_WRONLY, 0640);
 
-  if (strstr(cfgbuffer, name))
+  sprintf(str, "[%s]", logbook);
+  
+  /* check if logbook exists already */
+  if (strstr(cfgbuffer, str))
     {
-    /* replace existing password */
-    p = strstr(cfgbuffer, name);
-    i = (int) p - (int) cfgbuffer;
-    write(fh, cfgbuffer, i);
-    sprintf(str, "%s=%s\n", name, pwd);
-    write(fh, str, strlen(str));
-    
-    /* write remainder of file */
-    while (*p && *p != '\n')
-      p++;
-    if (*p && *p == '\n')
-      p++;
-    write(fh, p, strlen(p));
+    p = strstr(cfgbuffer, str);
+
+    /* search password in current logbook */
+    do 
+      {
+      while (*p && *p != '\n')
+        p++;
+      if (*p && *p == '\n')
+        p++;
+
+      if (strncmp(p, name, strlen(name)) == 0)
+        {
+        /* replace existing password */
+        i = (int) p - (int) cfgbuffer;
+        write(fh, cfgbuffer, i);
+        sprintf(str, "%s=%s\n", name, pwd);
+        write(fh, str, strlen(str));
+
+        printf("Password replaced in loogbook \"%s\".\n", logbook);
+
+        while (*p && *p != '\n')
+          p++;
+        if (*p && *p == '\n')
+          p++;
+
+        /* write remainder of file */
+        write(fh, p, strlen(p));
+
+        free(cfgbuffer);
+        close(fh);
+        return;
+        }
+
+      } while (*p && *p != '[');
+
+    if (!*p || *p == '[')
+      {
+      /* enter password into current logbook */
+      p = strstr(cfgbuffer, str);
+      while (*p && *p != '\n')
+        p++;
+      if (*p && *p == '\n')
+        p++;
+      
+      i = (int) p - (int) cfgbuffer;
+      write(fh, cfgbuffer, i);
+      sprintf(str, "%s=%s\n", name, pwd);
+      write(fh, str, strlen(str));
+
+      printf("Password added to loogbook \"%s\".\n", logbook);
+
+      /* write remainder of file */
+      write(fh, p, strlen(p));
+
+      free(cfgbuffer);
+      close(fh);
+      return;
+      }
     }
-  else if (strstr(cfgbuffer, "[Global]"))
+  else /* write new logbook entry */
     {
-    /* add password to [General] section */
-    p = strstr(cfgbuffer, "[Global]")+9;
-    while (*p && (*p == '\r' || *p == '\n'))
-      p++;
-    i = (int) p - (int) cfgbuffer;
-    write(fh, cfgbuffer, i);
-    sprintf(str, "%s=%s\n", name, pwd);
+    write(fh, cfgbuffer, strlen(cfgbuffer));
+    sprintf(str, "\n[%s]\n%s=%s\n\n", logbook, name, pwd);
     write(fh, str, strlen(str));
-    
-    /* write remainder of file */
-    write(fh, p, strlen(p));
-    }
-  else
-    {
-    sprintf(str, "[Global]\n%s=%s\n\n", name, pwd);
-    write(fh, str, strlen(str));
-    write(fh, cfgbuffer, length);
+
+    printf("Password added to new loogbook \"%s\".\n", logbook);
     }
 
   free(cfgbuffer);
@@ -3764,7 +3932,9 @@ int i;
 int tcp_port = 80, daemon = FALSE;
 char read_pwd[80], write_pwd[80], str[80];
 
-  read_pwd[0] = write_pwd[0] = 0;
+  read_pwd[0] = write_pwd[0] = logbook[0] = 0;
+
+  strcpy(cfg_file, "elogd.cfg");
 
   /* parse command line parameters */
   for (i=1 ; i<argc ; i++)
@@ -3777,17 +3947,24 @@ char read_pwd[80], write_pwd[80], str[80];
         goto usage;
       if (argv[i][1] == 'p')
         tcp_port = atoi(argv[++i]);
+      else if (argv[i][1] == 'c')
+        strcpy(cfg_file, argv[++i]);
       else if (argv[i][1] == 'r')
         strcpy(read_pwd, argv[++i]);
       else if (argv[i][1] == 'w')
         strcpy(write_pwd, argv[++i]);
+      else if (argv[i][1] == 'l')
+        strcpy(logbook, argv[++i]);
       else
         {
 usage:
-        printf("usage: %s [-p port] [-D]\n\n", argv[0]);
+        printf("usage: %s [-p port] [-D] [-c file] [-r pwd] [-w pwd] [-l loggbook]\n\n", argv[0]);
+        printf("       -p <port> TCP/IP port\n");
         printf("       -D become a daemon\n");
-        printf("       -r create/overwrite read password in elogd.cfg\n");
-        printf("       -w create/overwrite write password in elogd.cfg\n\n");
+        printf("       -c <file> specify configuration file\n");
+        printf("       -r create/overwrite read password in config file\n");
+        printf("       -w create/overwrite write password in config file\n");
+        printf("       -l <loogbook> specify logbook for -r and -w commands\n\n");
         return 0;
         }
       }
@@ -3795,15 +3972,25 @@ usage:
   
   if (read_pwd[0])
     {
+    if (!logbook[0])
+      {
+      printf("Must specify a lookbook via the -l parameter.\n");
+      return 0;
+      }
     base64_encode(read_pwd, str);
-    create_password("Read Password", str);
+    create_password(logbook, "Read Password", str);
     return 0;
     }
 
   if (write_pwd[0])
     {
+    if (!logbook[0])
+      {
+      printf("Must specify a lookbook via the -l parameter.\n");
+      return 0;
+      }
     base64_encode(write_pwd, str);
-    create_password("Write Password", str);
+    create_password(logbook, "Write Password", str);
     return 0;
     }
 
