@@ -1,0 +1,115 @@
+#####################################################################
+#
+#  Name:         Makefile
+#  Created by:   Stefan Ritt
+#
+#  Contents:     Makefile for MIDAS example frontend and analyzer
+#
+#  Revision history
+#  ------------------------------------------------------------------
+#  date         by    modification
+#  ---------    ---   -----------------------------------------------
+#  05-SEP-97    SR    created
+#
+#####################################################################
+
+#--------------------------------------------------------------------
+# The following lines contain specific switches for different UNIX
+# systems. Find the one which matches your OS and outcomment the 
+# lines below.
+
+#-------------------------------------------------------------------
+# The following lines define direcories. Adjust if necessary
+#                 
+INC_DIR 	= /usr/local/include
+LIB_DIR 	= /usr/local/lib
+CERNLIB_DIR	= /cern/pro/lib
+
+#-----------------------
+# Common flags
+#
+CC = cc
+CFLAGS = -g -I$(INC_DIR)
+
+#-----------------------
+# OSF/1 (DEC UNIX)
+#
+ifeq ($(HOSTTYPE),alpha)
+OSTYPE = osf1
+endif
+
+ifeq ($(OSTYPE),osf1)
+OS_DIR = osf1
+OSFLAGS = -DOS_OSF1 -DOS_UNIX
+FFLAGS = -nofor_main -D 40000000 -T 20000000
+LIBS = -lbsd
+endif
+
+#-----------------------
+# Ultrix
+#
+ifeq ($(HOSTTYPE),mips)
+OSTYPE = ultrix
+endif
+
+ifeq ($(OSTYPE),ultrix)
+OS_DIR = ultrix
+OSFLAGS = -DOS_ULTRIX -DOS_UNIX
+LIBS =
+endif
+
+#-----------------------
+# FreeBSD
+#
+ifeq ($(OSTYPE), FreeBSD)
+OS_DIR = freeBSD
+OSFLAGS = -DOS_FREEBSD -DOS_UNIX
+LIBS = -lbsd -lcompat
+endif
+
+#-----------------------
+# This is for Linux
+#
+ifeq ($(OSTYPE),Linux)
+OSTYPE = linux
+endif
+
+ifeq ($(OSTYPE),linux)
+OS_DIR = linux
+OSFLAGS = -DOS_LINUX -DOS_UNIX
+LIBS = -lbsd
+endif
+
+#-----------------------
+# This is for Solaris
+#
+ifeq ($(OSTYPE),solaris)
+CC = gcc
+OS_DIR = solaris
+OSFLAGS = -DOS_SOLARIS -DOS_UNIX
+LIBS = -lsocket -lnsl
+endif
+
+#-------------------------------------------------------------------
+# List of analyzer modules
+#                 
+MODULES 	= adccalib.o adcsum.o scaler.o
+
+####################################################################
+# Lines below here should not be edited
+####################################################################
+
+LIB = $(LIB_DIR)/libmidas.a
+
+all: $(UFE) 
+
+$(UFE): $(LIB) $(LIB_DIR)/mfe.o $(UFE).o
+	$(CC) $(CFLAGS) $(OSFLAGS) -c -o $(UFE).o $(UFE).c 
+	$(CC) $(CFLAGS) -o $(UFE) $(UFE).o $(LIB_DIR)/mfe.o \
+	$(LIB) $(LDFLAGS) $(LIBS)
+
+.c.o:
+	$(CC) $(CFLAGS) $(OSFLAGS) -c $<
+
+clean:
+	rm -f *.o *~ \#*

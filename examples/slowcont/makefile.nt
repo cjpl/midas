@@ -1,0 +1,57 @@
+#####################################################################
+#
+#  Name:         Makefile
+#  Created by:   Stefan Ritt
+#
+#  Contents:     Makefile for MIDAS slow control example under NT
+#
+#  Revision history
+#  ------------------------------------------------------------------
+#  date         by    modification
+#  ---------    ---   -----------------------------------------------
+#  13-NOV-97    SR    created
+#
+#####################################################################
+
+
+#-------------------------------------------------------------------
+# The following lines define direcories. Adjust if necessary
+#                 
+INC_DIR 	= \midas\include
+DRV_DIR         = \midas\drivers
+LIB_DIR 	= \midas\nt\lib
+
+#-------------------------------------------------------------------
+# Used drivers
+#                 
+
+DRIVERS = cd_hv.obj cd_multi.obj null.obj
+
+####################################################################
+# Lines below here should not be edited
+####################################################################
+
+LIBRARY = $(LIB_DIR)\midas.lib
+
+# compiler
+CC = cl
+CFLAGS = /I$(INC_DIR) /I$(DRV_DIR) /nologo /D WIN32
+LDFLAGS =
+
+all: frontend.exe
+
+frontend.exe:  $(LIBRARY) $(LIB_DIR)\mfe.obj frontend.c $(DRIVERS)
+	$(CC) $(CFLAGS) /Fefrontend.exe $(LIB_DIR)\mfe.obj $(DRIVERS) frontend.c $(LIBRARY) $(LDFLAGS) $(LIBS) wsock32.lib
+
+.c.obj:
+	$(CC) $(CFLAGS) /c $<
+
+cd_hv.obj:
+	$(CC) $(CFLAGS) /c $(DRV_DIR)\cd_hv.c
+cd_multi.obj:
+	$(CC) $(CFLAGS) /c $(DRV_DIR)\cd_multi.c
+null.obj:
+	$(CC) $(CFLAGS) /c $(DRV_DIR)\null.c
+	
+clean:
+	del *.obj
