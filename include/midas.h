@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.148  2005/01/14 08:08:54  midas
+  Defined cut_book()
+
   Revision 1.147  2004/12/23 09:36:25  midas
   Implemented NaNs
 
@@ -2418,6 +2421,8 @@ extern "C" {
     */
    #define H1_BOOK(n,t,b,min,max) (h1_book<TH1F>(n,t,b,min,max))
    #define H2_BOOK(n,t,xb,xmin,xmax,yb,ymin,ymax) (h2_book<TH2F>(n,t,xb,xmin,xmax,yb,ymin,ymax))
+
+   TCutG *cut_book( const char *name);
 #endif /* USE_ROOT */
 
 #endif
