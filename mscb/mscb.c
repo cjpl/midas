@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus communication functions
 
   $Log$
+  Revision 1.27  2003/01/27 16:11:14  midas
+  Switched to version 1.1.1
+
   Revision 1.26  2003/01/27 16:10:09  midas
   Keep port in input mode by default (not to collide with submaster)
 
@@ -84,7 +87,7 @@
 
 \********************************************************************/
 
-#define MSCB_LIBRARY_VERSION   "1.1.0"
+#define MSCB_LIBRARY_VERSION   "1.1.1"
 #define MSCB_PROTOCOL_VERSION  "1.2"
 
 #ifdef _MSC_VER           // Windows includes
