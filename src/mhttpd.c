@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.165  2001/07/31 12:20:39  midas
+  Increased display limit to 1000
+
   Revision 1.164  2001/07/31 12:16:35  midas
   Don't display long (>500 values) arrays in ODB/SC any more
 
@@ -4457,9 +4460,9 @@ char   data_str[256], hex_str[256];
         sprintf(str, "/Equipment/%s/Settings/Names %s", eq_name, varkey.name);
         db_find_key(hDB, 0, str, &hkeyset);
 
-        if (varkey.num_values > 500)
+        if (varkey.num_values > 1000)
           rsprintf("<tr><td colspan=9>%s<td align=center><i>... %d values ...</i>", 
-                    name, varkey.num_values);
+                    varkey.name, varkey.num_values);
         else
           {
           for (j=0 ; j<varkey.num_values ; j++)
@@ -5339,7 +5342,7 @@ KEY    key;
       else
         {
         /* check for exceeding length */
-        if (key.num_values > 500)
+        if (key.num_values > 1000)
           rsprintf("<tr><td bgcolor=#FFFF00>%s<td><i>... %d values ...</i>\n", keyname, key.num_values);
         else
           {
