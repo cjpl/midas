@@ -6,6 +6,9 @@
   Contents:     Web server for remote PAW display
 
   $Log$
+  Revision 1.5  2000/05/15 13:47:13  midas
+  Increase banner height
+
   Revision 1.4  2000/05/15 12:44:52  midas
   Switched to new webpaw.cfg format, added logo display
 
@@ -642,7 +645,7 @@ int    fh, i, j, length, status, height;
 
     rsprintf("<frameset cols=\"300,*\">\r\n");
     rsprintf("  <frame name=kumacs src=kumacs.html marginwidth=1 marginheight=1 scrollling=auto>\r\n");
-    rsprintf("  <frameset rows=\"%d,*\" frameborder=no>\r\n", height);
+    rsprintf("  <frameset rows=\"%d,*\" frameborder=no>\r\n", height+10);
     rsprintf("    <frame name=banner src=banner.html marginwidth=10 marginheight=1 scrolling=no>\r\n");
     rsprintf("    <frame name=contents src=contents.html marginwidth=10 marginheight=5 scrolling=auto>\r\n");
     rsprintf("  </frameset>\r\n");
