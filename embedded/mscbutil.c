@@ -6,6 +6,9 @@
   Contents:     Various utility functions for MSCB protocol
 
   $Log$
+  Revision 1.16  2003/01/30 08:40:02  midas
+  Use USE_WATCHDOG flag
+
   Revision 1.15  2002/11/20 12:02:39  midas
   Fixed bug with secondary LED
 
@@ -562,6 +565,8 @@ void watchdog_refresh(void)
 
 \********************************************************************/
 {
+#ifdef USE_WATCHDOG
+
 #ifdef CPU_ADUC812
   WDR1 = 1;
   WDR2 = 1;
@@ -569,6 +574,8 @@ void watchdog_refresh(void)
 
 #ifdef CPU_CYGNAL
   WDTCN = 0xA5;
+#endif
+
 #endif
 }
 
