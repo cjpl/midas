@@ -8,6 +8,9 @@
                 following the MIDAS CAMAC Standard under DIRECTIO
 
   $Log$
+  Revision 1.14  2001/08/22 13:53:32  midas
+  Fixed small bug
+
   Revision 1.13  2001/08/16 09:39:12  midas
   Changed comments
 
@@ -755,7 +758,7 @@ INLINE int cam_interrupt_test(const int c)
 
   adr = io_base[c >> 2]+((c % 3)<<4);
   status = (BYTE) INP(adr+6);
-  return (status & 2) > 0;
+  return (status & (1<<2)) > 0;
 }
 
 /*------------------------------------------------------------------*/
@@ -785,9 +788,9 @@ INLINE void cam_lam_clear(const int c, const int n)
 {
   unsigned int adr;
 
-  /* 
+  /*
   note that the LAM flip-flop in unit must be cleared via
-  
+
     camc(c, n, 0, 10);
 
   in the user code prior to the call of cam_lam_clear()
@@ -892,7 +895,7 @@ int directio_lock_port(DWORD start, DWORD end)
 {
 #ifdef _MSC_VER
 
-  /* under Windows NT, use DirectIO driver to open ports */
+  /* under Windows NT, use DirectIO driver to lock ports */
 
   OSVERSIONINFO vi;
   HANDLE hdio;
