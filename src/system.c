@@ -14,6 +14,9 @@
                 Brown, Prentice Hall
 
   $Log$
+  Revision 1.4  1998/10/12 14:00:19  midas
+  ss_open_shm returns memory size in case of failure
+
   Revision 1.3  1998/10/12 12:19:03  midas
   Added Log tag in header
 
@@ -279,7 +282,7 @@ char   mem_name[256], file_name[256], path[256], *p;
   if (shmid == -1)
     {
     if (errno == EINVAL)
-      cm_msg(MERROR, "ss_open_shm", "shmget() failed, shared memory size exceeds system limit");
+      cm_msg(MERROR, "ss_open_shm", "shmget() failed, shared memory size %d exceeds system limit", size);
     else
       cm_msg(MERROR, "ss_open_shm", "shmget() failed, errno = %d", errno);
 
