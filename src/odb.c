@@ -6,6 +6,9 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.46  2002/05/14 06:33:02  midas
+  db_create_link now return DB_NO_KEY if destination of link doesn't exist
+
   Revision 1.45  2002/05/14 04:25:42  midas
   Added quotes
 
@@ -1584,11 +1587,23 @@ INT db_create_link(HNDLE hDB, HNDLE hKey,
     DB_INVALID_HANDLE       Database handle is invalid
     DB_FULL                 Shared memory is full
     DB_KEY_EXIST            Key exists already
+    DB_NO_KEY               Destination key doesn't exist
 
 \********************************************************************/
 {
+HNDLE hkey;
+int   status;
+
   if (rpc_is_remote())
     return rpc_call(RPC_DB_CREATE_LINK, hDB, hKey, link_name, destination);
+
+  /* check if destination exists */
+  status = db_find_key(hDB, hKey, destination, &hkey);
+  if (status != DB_SUCCESS)
+    {
+    cm_msg(MERROR, "db_create_link", "Link destination \"%s\" does not exist", destination);
+    return DB_NO_KEY;
+    }
 
   return db_set_value(hDB, hKey, link_name, destination, 
                       strlen(destination)+1, 1, TID_LINK);
