@@ -10,6 +10,9 @@
                 Pfeiffer Dual Gauge TPG262 vacuum sensor
 
   $Log$
+  Revision 1.11  2004/07/30 10:22:03  midas
+  Added MSCBF_DATALESS
+
   Revision 1.10  2004/04/07 11:06:17  midas
   Version 1.7.1
 
@@ -68,11 +71,11 @@ struct {
 
 
 MSCB_INFO_VAR code variables[] = {
-   1, UNIT_ASCII, 0, 0, 0, "RS232", 0,
-   4, UNIT_PASCAL, 0, 0, MSCBF_FLOAT, "P1", &user_data.p1,
-   4, UNIT_PASCAL, 0, 0, MSCBF_FLOAT, "P2", &user_data.p2,
+   1, UNIT_ASCII,  0, 0, MSCBF_DATALESS, "RS232",               0,
+   4, UNIT_PASCAL, 0, 0,    MSCBF_FLOAT, "P1",      &user_data.p1,
+   4, UNIT_PASCAL, 0, 0,    MSCBF_FLOAT, "P2",      &user_data.p2,
 
-   1, UNIT_BAUD, 0, 0, 0, "Baud", &user_data.baud,
+   1, UNIT_BAUD,   0, 0,              0, "Baud",  &user_data.baud,
    0
 };
 
