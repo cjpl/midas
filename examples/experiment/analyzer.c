@@ -6,6 +6,9 @@
   Contents:     System part of Analyzer code for sample experiment
 
   $Log$
+  Revision 1.11  2003/04/07 23:54:43  olchansk
+  add #include <string.h>
+
   Revision 1.10  2002/05/10 05:22:34  pierre
   add MANA_LITE #ifdef
 
@@ -38,6 +41,7 @@
                                                         
 /* standard includes */
 #include <stdio.h>
+#include <string.h>
 #include <time.h>
 
 /* midas includes */
