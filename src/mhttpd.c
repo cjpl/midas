@@ -6,8 +6,8 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
-  Revision 1.47  1999/09/24 00:53:09  pierre
-  - Modified the Lazy status line for multiple channels
+  Revision 1.48  1999/09/27 08:57:29  midas
+  Use <pre> for plain text
 
   Revision 1.46  1999/09/22 08:57:08  midas
   Implemented auto start and auto stop in /programs
@@ -214,7 +214,7 @@ char system_list[20][NAME_LENGTH] = {
 void rsprintf(const char *format, ...)
 {
 va_list argptr;
-char    str[256];
+char    str[10000];
 
   va_start(argptr, format);
   vsprintf(str, (char *) format, argptr);
@@ -934,108 +934,66 @@ CHN_STATISTICS chn_stats;
 
   /*---- Lazy Logger ----*/
 
-  if (db_find_key(hDB, 0, "/Lazy", &hkey) == DB_SUCCESS)
-  {
-    INT  status, size, i, j, k;
-    BOOL previous_mode;
-    HNDLE  hKeyClient, hLKey, hKey, hSubkey;
-    char   client_name[NAME_LENGTH];
-
-    status = db_find_key(hDB, 0, "System/Clients", &hKey);
-    if (status != DB_SUCCESS)
-      return;
-
-    k = 0;
-    previous_mode  = -1;
-    /* loop over all clients */
-    for (j=0 ; ; j++)
+  if (db_find_key(hDB, 0, "Lazy", &hkey) == DB_SUCCESS)
     {
-      status = db_enum_key(hDB, hKey, j, &hSubkey);
-      if (status == DB_NO_MORE_SUBKEYS)
-        break;
+    size = sizeof(str);
+    db_get_value(hDB, 0, "/Lazy/Settings/Backup Type", str, &size, TID_STRING);
+    ftp_mode = equal_ustring(str, "FTP");
 
-      if (hSubkey == hKeyClient)
-        continue;
+    if (ftp_mode)
+      rsprintf("<tr><th colspan=2>Lazy Destination<th>Progress<th>File Name<th>Speed [kb/s]<th>Total</tr>\n");
+    else
+      rsprintf("<tr><th colspan=2>Lazy Label<th>Progress<th>File Name<th># Files<th>Total</tr>\n");
 
-      if (status == DB_SUCCESS)
+    if (ftp_mode)
       {
-        /* get client name */
-        size = sizeof(client_name);
-        db_get_value(hDB, hSubkey, "Name", client_name, &size, TID_STRING);
-        client_name[4] = 0; /* search only for the 4 first char */
-        if (equal_ustring(client_name, "Lazy"))
-        {
-          sprintf(str, "/Lazy/%s", &client_name[5]);  
-          status = db_find_key(hDB, 0, str, &hLKey);
-          if (status == DB_SUCCESS)
-          {
-            size = sizeof(str);
-            db_get_value(hDB, hLKey, "Settings/Backup Type", str, &size, TID_STRING);
-            ftp_mode = equal_ustring(str, "FTP");
-            
-            if (previous_mode != ftp_mode)
-              k = 0;
-            if (k == 0)
-            {
-              if (ftp_mode)
-                rsprintf("<tr><th colspan=2>Lazy Destination<th>Progress<th>File Name<th>Speed [kb/s]<th>Total</tr>\n");
-              else
-                rsprintf("<tr><th colspan=2>Lazy Label<th>Progress<th>File Name<th># Files<th>Total</tr>\n");
-            }
-            previous_mode = ftp_mode;
-            if (ftp_mode)
-              {
-              size = sizeof(str);
-              db_get_value(hDB, hLKey, "Settings/Path", str, &size, TID_STRING);
-              if (strchr(str, ','))
-                *strchr(str, ',') = 0;
-              }
-            else
-              {
-              size = sizeof(str);
-              db_get_value(hDB, hLKey, "Settings/List Label", str, &size, TID_STRING);
-              if (str[0] == 0)
-                strcpy(str, "(empty)");
-              }
-
-            if (exp_name[0])
-              sprintf(ref, "%s/Lazy/%s/Settings?exp=%s", mhttpd_url, &client_name[5], exp_name);
-            else
-              sprintf(ref, "%s/Lazy", mhttpd_url);
-
-            rsprintf("<tr><td colspan=2><B><a href=\"%s\">%s</a></B>", ref, str);
-
-            size = sizeof(value);
-            db_get_value(hDB, hLKey, "Statistics/Copy progress [%]", &value, &size, TID_FLOAT);
-            rsprintf("<td align=center>%1.0f %%", value);
-
-            size = sizeof(str);
-            db_get_value(hDB, hLKey, "Statistics/Backup File", str, &size, TID_STRING);
-            rsprintf("<td align=center>%s", str);
-
-            if (ftp_mode)
-              {
-              size = sizeof(value);
-              db_get_value(hDB, hLKey, "Statistics/Copy Rate [KB per sec]", &value, &size, TID_FLOAT);
-              rsprintf("<td align=center>%1.1f", value);
-              }
-            else
-              {
-              size = sizeof(i);
-              db_get_value(hDB, hLKey, "/Statistics/Number of files", &i, &size, TID_INT);
-              rsprintf("<td align=center>%d", i);
-              }
-
-            size = sizeof(value);
-            db_get_value(hDB, hLKey, "Statistics/Backup status [%]", &value, &size, TID_FLOAT);
-            rsprintf("<td align=center>%1.1f %%", value);
-            k++;
-          }
-        }
+      size = sizeof(str);
+      db_get_value(hDB, 0, "/Lazy/Settings/Path", str, &size, TID_STRING);
+      if (strchr(str, ','))
+        *strchr(str, ',') = 0;
       }
-    }
+    else
+      {
+      size = sizeof(str);
+      db_get_value(hDB, 0, "/Lazy/Settings/List Label", str, &size, TID_STRING);
+      if (str[0] == 0)
+        strcpy(str, "(empty)");
+      }
+
+    if (exp_name[0])
+      sprintf(ref, "%sLazy/Settings?exp=%s", mhttpd_url, exp_name);
+    else
+      sprintf(ref, "%sLazy/Settings", mhttpd_url);
+
+    rsprintf("<tr><td colspan=2><B><a href=\"%s\">%s</a></B>", ref, str);
+
+    size = sizeof(value);
+    db_get_value(hDB, 0, "/Lazy/Statistics/Copy progress [%]", &value, &size, TID_FLOAT);
+    rsprintf("<td align=center>%1.0f %%", value);
+
+    size = sizeof(str);
+    db_get_value(hDB, 0, "/Lazy/Statistics/Backup File", str, &size, TID_STRING);
+    rsprintf("<td align=center>%s", str);
+
+    if (ftp_mode)
+      {
+      size = sizeof(value);
+      db_get_value(hDB, 0, "/Lazy/Statistics/Copy Rate [KB per sec]", &value, &size, TID_FLOAT);
+      rsprintf("<td align=center>%1.1f", value);
+      }
+    else
+      {
+      size = sizeof(i);
+      db_get_value(hDB, 0, "/Lazy/Statistics/Number of files", &i, &size, TID_INT);
+      rsprintf("<td align=center>%d", i);
+      }
+
+    size = sizeof(value);
+    db_get_value(hDB, 0, "/Lazy/Statistics/Backup status [%]", &value, &size, TID_FLOAT);
+    rsprintf("<td align=center>%1.1f %%", value);
+
     rsprintf("</tr>\n");
-  }
+    }
 
   /*---- Messages ----*/
 
@@ -1179,7 +1137,6 @@ int i;
     if (encoding[0] == 'H')
       switch (text[i])
         {
-        case '\n': rsprintf("<br>\n"); break;
         default: rsprintf("%c", text[i]);
         }
     else
@@ -1316,7 +1273,7 @@ HNDLE  hDB, hkey;
   rsprintf("<textarea rows=10 cols=80 name=Text></textarea></tr>\n");
 
   /* HTML check box */
-  rsprintf("<tr><td><input type=\"checkbox\" name=\"html\" value=\"1\">Text contains HTML tags\n");
+  rsprintf("<tr><td><input type=\"checkbox\" name=\"html\" value=\"1\">Submit as HTML text\n");
   
   /* attachment */
   rsprintf("<td>Attachment: <input type=\"file\" size=\"30\" maxlength=\"256\" name=\"attfile\" accept=\"filetype/*\" value=\"\">\n");
@@ -2322,6 +2279,20 @@ KEY   key;
       rsprintf("<td bgcolor=#A0FFA0><input type=\"checkbox\" name=\"lsubject\" value=\"1\">");
     rsprintf("  Subject: <b>%s</b></tr>\n", subject);
 
+    
+    /* message text */
+    rsprintf("<tr><td colspan=2>\n");
+    if (equal_ustring(encoding, "plain"))
+      {
+      rsprintf("<pre>");
+      rsprintf(text);
+      rsprintf("</pre>");
+      }
+    else
+      rsprintf(text);
+    // el_format(text, encoding);
+    rsprintf("</tr>\n", text);
+
     if (attachment[0])
       {
       for (i=0 ; i<(int)strlen(attachment) ; i++)
@@ -2348,11 +2319,6 @@ KEY   key;
         }
       }
 
-    rsprintf("<tr><td colspan=2>\n");
-
-    el_format(text, encoding);
-
-    rsprintf("</tr>\n", text);
     }
 
   rsprintf("</table>\n");
