@@ -8,6 +8,9 @@
                 following the MIDAS CAMAC Standard under DIRECTIO
 
   $Log$
+  Revision 1.17  2002/01/16 14:54:52  midas
+  Removed debugging printf()
+
   Revision 1.16  2002/01/16 14:40:45  midas
   Fixed bug with gbl_sw1d
 
@@ -603,7 +606,6 @@ INLINE int camc_chk(const int c)
   n = (BYTE) INP(adr+10);
   f = (BYTE) INP(adr+10);
 
-  printf("camc_chk: %d(2) %d(1) %d(32)\r", a, n, f);
   if (n != 1 || a != 2 || f != 32)
     return -1;
 
