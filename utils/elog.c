@@ -6,6 +6,9 @@
   Contents:     Electronic logbook utility   
 
   $Log$
+  Revision 1.18  2001/11/06 15:52:17  midas
+  Added general attributes
+
   Revision 1.17  2001/10/12 08:40:02  midas
   Fixed bug when submitting text files and an additional (garbage) lines was
   added
@@ -54,7 +57,9 @@
 
 typedef int INT;
 
-#define MAX_ATTACHMENTS 10
+#define MAX_ATTACHMENTS  10
+#define NAME_LENGTH     100
+#define MAX_N_ATTR       20
 
 int verbose;
 
@@ -107,177 +112,12 @@ char *p;
 
 /*------------------------------------------------------------------*/
 
-INT query_params(char *host_name, int *port, char *logbook, char *password, char *author, char *type, 
-                 char *category, char *subject, char *text, 
-                 char *textfile, char attachment[MAX_ATTACHMENTS][256])
-{
-char str[1000], tmpfile[256];
-FILE *f;
-int  i, query_attachment;
-
-  if (!host_name[0])
-    {
-    while (!host_name[0])
-      {
-      printf("Host name: ");
-      sgets(host_name, 80);
-      if (!host_name[0])
-        printf("Author must be supplied!\n");
-      }
-
-    printf("Port [80]: ");
-    sgets(str, 80);
-    if (str[0])
-      *port = atoi(str);
-
-    printf("Logbook/Experiment []: ");
-    sgets(logbook, 80);
-
-    printf("Password []: ");
-    sgets(password, 80);
-    }
-
-  query_attachment = (author[0] == 0 && attachment[0][0] == 0);
-
-  while (!author[0])
-    {
-    printf("Author: ");
-    sgets(author, 80);
-    if (!author[0])
-      printf("Author must be supplied!\n");
-    }
-
-  if (!type[0])
-    {
-    printf("Enter message type: ");
-    sgets(type, 80);
-    }
-
-  if (!category[0])
-    {
-    printf("Enter category: ");
-    sgets(category, 80);
-    }
-
-  if (!subject[0])
-    {
-    printf("Subject: ");
-    sgets(subject, 256);
-    }
-
-  if (!text[0] && !textfile[0])
-    {
-    if (getenv("EDITOR"))
-      {
-      sprintf(tmpfile, "tmp.txt");
-      f = fopen(tmpfile, "wt");
-      if (f == NULL)
-        {
-        printf("Cannot open temporary file for editor.\n");
-        exit(1);
-        }
-
-      fprintf(f, "Author: %s\n", author);
-      fprintf(f, "Type: %s\n", type);
-      fprintf(f, "Category: %s\n", category);
-      fprintf(f, "Subject: %s\n", subject);
-      fprintf(f, "--------------------------------\n");
-      fclose(f);
-
-      sprintf(str, "%s %s", getenv("EDITOR"), tmpfile);
-      system(str);
-
-      f = fopen(tmpfile, "rt");
-      if (f == NULL)
-        {
-        printf("Cannot open temporary file for editor.\n");
-        exit(1);
-        }
-
-      text[0] = 0;
-      while (!feof(f))
-        {
-        str[0] = 0;
-        fgets(str, sizeof(str), f);
-        if (strncmp(str, "Author: ", 8) == 0)
-          {
-          strcpy(author, str+8);
-          if (strchr(author, '\n'))
-            *strchr(author, '\n') = 0;
-          }
-        else if (strncmp(str, "Type: ", 6) == 0)
-          {
-          strcpy(type, str+6);
-          if (strchr(type, '\n'))
-            *strchr(type, '\n') = 0;
-          }
-        else if (strncmp(str, "Category: ", 8) == 0)
-          {
-          strcpy(category, str+8);
-          if (strchr(category, '\n'))
-            *strchr(category, '\n') = 0;
-          }
-        else if (strncmp(str, "Subject: ", 9) == 0)
-          {
-          strcpy(subject, str+9);
-          if (strchr(subject, '\n'))
-            *strchr(subject, '\n') = 0;
-          }
-        else if (strcmp(str, "--------------------------------\n") == 0)
-          {
-          }
-        else
-          strcat(text, str);
-        }
-      fclose(f);
-      remove(tmpfile);
-      }
-    else
-      {
-      printf("Finish message text with empty line!\nMessage text: ");
-      do
-        {
-        sgets(str, 1000);
-        if (str[0])
-          {
-          strcat(text, str);
-          strcat(text, "\n");
-          }
-        } while (str[0]);
-      }
-    }
-
-  if (query_attachment)
-    {
-    for (i=0 ; i<MAX_ATTACHMENTS ; i++)
-      {
-      do
-        {
-        printf("Optional file attachment %d: ", i+1);
-        sgets(attachment[i], 256);
-        if (!attachment[i][0])
-          break;
-        f = fopen(attachment[i], "r");
-        if (f == NULL)
-          printf("File does not exist!\n");
-        else
-          fclose(f);
-        } while (f == NULL);
-
-      if (!attachment[i][0])
-        break;
-      }
-    }
-
-  return 1;
-}
-
-/*------------------------------------------------------------------*/
-
 char request[600000], response[10000], content[600000];
 
 INT submit_elog(char *host, int port, char *experiment, char *passwd,
-                char *author, char *type, char *category, char *subject, 
+                char attrib_name[MAX_N_ATTR][NAME_LENGTH],
+                char attrib[MAX_N_ATTR][NAME_LENGTH],
+                int  n_attr,
                 char *text,
                 char afilename[MAX_ATTACHMENTS][256], 
                 char *buffer[MAX_ATTACHMENTS], 
@@ -293,10 +133,8 @@ INT submit_elog(char *host, int port, char *experiment, char *passwd,
     in     port             ELog server port number
     char   *passwd          Web password
     int    run              Run number
-    char   *author          Message author
-    char   *type            Message type
-    char   *category        Message category
-    char   *subject         Subject
+    char   *attrib_name     Attribute names
+    char   *attrib          Attribute values
     char   *text            Message text
 
     char   afilename[]      File names of attachments
@@ -384,14 +222,10 @@ char                 host_name[256], boundary[80], str[80], *p;
     sprintf(content+strlen(content), 
             "%s\r\nContent-Disposition: form-data; name=\"exp\"\r\n\r\n%s\r\n", boundary, experiment);
   
-  sprintf(content+strlen(content), 
-          "%s\r\nContent-Disposition: form-data; name=\"Author\"\r\n\r\n%s\r\n", boundary, author);
-  sprintf(content+strlen(content), 
-          "%s\r\nContent-Disposition: form-data; name=\"Type\"\r\n\r\n%s\r\n", boundary, type);
-  sprintf(content+strlen(content), 
-          "%s\r\nContent-Disposition: form-data; name=\"Category\"\r\n\r\n%s\r\n", boundary, category);
-  sprintf(content+strlen(content), 
-          "%s\r\nContent-Disposition: form-data; name=\"Subject\"\r\n\r\n%s\r\n", boundary, subject);
+  for (i=0 ; i<n_attr ; i++)
+    sprintf(content+strlen(content), 
+            "%s\r\nContent-Disposition: form-data; name=\"%s\"\r\n\r\n%s\r\n", boundary, attrib_name[i], attrib[i]);
+
   sprintf(content+strlen(content), 
           "%s\r\nContent-Disposition: form-data; name=\"Text\"\r\n\r\n%s\r\n%s\r\n", boundary, text, boundary);
 
@@ -494,14 +328,15 @@ char                 host_name[256], boundary[80], str[80], *p;
 
 main(int argc, char *argv[])
 {
-char      author[80], type[80], category[80], subject[256], text[10000];
+char      str[1000], text[10000];
 char      host_name[256], logbook[32], textfile[256], password[80];
 char      *buffer[MAX_ATTACHMENTS], attachment[MAX_ATTACHMENTS][256];
 INT       att_size[MAX_ATTACHMENTS];
-INT       i, n, status, fh, n_att, size, port;
+INT       i, n, fh, n_att, n_attr, size, port;
+char      attr_name[MAX_N_ATTR][NAME_LENGTH], attrib[MAX_N_ATTR][NAME_LENGTH]; 
 
-  author[0] = type[0] = category[0] = subject[0] = text[0] = textfile[0] = 0;
-  host_name[0] = logbook[0] = password[0] = n_att = 0;
+  text[0] = textfile[0] = 0;
+  host_name[0] = logbook[0] = password[0] = n_att = n_attr = 0;
   port = 80;
   for (i=0 ; i<MAX_ATTACHMENTS ; i++)
     {
@@ -530,13 +365,21 @@ INT       i, n, status, fh, n_att, size, port;
         else if (argv[i][1] == 'w')
           strcpy(password, argv[++i]);
         else if (argv[i][1] == 'a')
-          strcpy(author, argv[++i]);
-        else if (argv[i][1] == 't')
-          strcpy(type, argv[++i]);
-        else if (argv[i][1] == 'c')
-          strcpy(category, argv[++i]);
-        else if (argv[i][1] == 'b')
-          strcpy(subject, argv[++i]);
+          {
+          strcpy(str, argv[++i]);
+          if (strchr(str, '='))
+            {
+            strcpy(attrib[n_attr], strchr(str, '=')+1);
+            *strchr(str, '=') = 0;
+            strcpy(attr_name[n_attr], str);
+            n_attr++;
+            }
+          else
+            {
+            printf("Error: Attributes must be supplied in the form \"-a <attribute>=<value>\".\n");
+            return 0;
+            }
+          }
         else if (argv[i][1] == 'f')
           strcpy(attachment[n_att++], argv[++i]);
         else if (argv[i][1] == 'm')
@@ -544,13 +387,17 @@ INT       i, n, status, fh, n_att, size, port;
         else
           {
   usage:
-          printf("\nusage: elog -h <hostname> [-p port] [-l logbook/experiment]\n");
-          printf("          [-w password] -a <author> -t <type> -c <category> -b <subject>\n");
-          printf("          [-f <attachment>] [-m <textfile>|<text>]\n");
-          printf("          [-v] for verbose output\n");
+          printf("\nusage: elog -h <hostname> [-p port]\n");
+          printf("           [-l logbook/experiment]\n");
+          printf("           [-v]                     for verbose output\n");
+          printf("           [-w password]            write password defined on server\n");
+          printf("           [-f <attachment>]        (up to %d times)\n", MAX_ATTACHMENTS);
+          printf("           -a <attribute>=<value>   (up to %d times)\n", MAX_N_ATTR);
+          printf("           -m <textfile>] | <text>\n");
           printf("\nArguments with blanks must be enclosed in quotes\n");
           printf("The elog message can either be submitted on the command line\n");
-          printf("or in a file with the -m flag.\n");
+          printf("or in a file with the -m flag. Multiple attributes and attachments\n");
+          printf("can be supplied\n");
           return 0;
           }
         }
@@ -559,11 +406,10 @@ INT       i, n, status, fh, n_att, size, port;
       }
     }
 
-  /* complete missing parameters */
-  status = query_params(host_name, &port, logbook, password, author, type, category, subject, 
-                        text, textfile, attachment);
-  if (status != 1)
-    return 0;
+  if (host_name[0] == 0 ||
+      n_attr == 0 ||
+      (text[0] == 0 && textfile[0] == 0))
+    goto usage;
 
   /*---- open text file ----*/
 
@@ -632,8 +478,9 @@ INT       i, n, status, fh, n_att, size, port;
     }
 
   /* now submit message */
-  submit_elog(host_name, port, logbook, password, author, type, category, subject, text,
-             attachment, buffer, att_size); 
+  submit_elog(host_name, port, logbook, password, 
+              attr_name, attrib, n_attr, text,
+              attachment, buffer, att_size); 
 
   for (i=0 ; i<MAX_ATTACHMENTS ; i++)
     if (buffer[i])
