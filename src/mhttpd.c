@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.63  1999/10/06 18:01:12  midas
+  Fixed bug with subject in new messages
+
   Revision 1.62  1999/10/06 07:57:55  midas
   Added "last 10 messages" feature
 
@@ -1257,6 +1260,8 @@ HNDLE  hDB, hkey;
   /* get message for reply */
   type[0] = system[0] = 0;
   att1[0] = att2[0] = att3[0] = 0;
+  subject[0] = 0;
+
   if (path)
     {
     strcpy(str, path);
