@@ -6,6 +6,9 @@
 #  Contents:     Makefile for MIDAS binaries and examples under unix
 #
 #  $Log$
+#  Revision 1.10  1999/08/03 13:14:33  midas
+#  Removed -DPIC, added dio to normal utils compilation
+#
 #  Revision 1.9  1999/07/22 19:42:58  pierre
 #  - Added USERFLAGS to allow other options (-DUSERFLAGS=-static)
 #
@@ -134,7 +137,7 @@ endif
 
 ifeq ($(OSTYPE),linux)
 OS_DIR = linux
-OSFLAGS = -DOS_LINUX -DOS_UNIX -fpic -DPIC $(USERFLAGS)
+OSFLAGS = -DOS_LINUX -DOS_UNIX -fPIC $(USERFLAGS)
 LIBS = -lbsd -lutil
 endif
 
@@ -180,7 +183,7 @@ PROGS = $(BIN_DIR)/mserver $(BIN_DIR)/mhttpd \
 	$(BIN_DIR)/mtape $(BIN_DIR)/mhist \
 	$(BIN_DIR)/mstat $(BIN_DIR)/mcnaf \
 	$(BIN_DIR)/mdump $(BIN_DIR)/lazylogger \
-	$(BIN_DIR)/mlxspeaker
+	$(BIN_DIR)/mlxspeaker $(BIN_DIR)/dio
 
 OBJS =  $(LIB_DIR)/midas.o $(LIB_DIR)/system.o $(LIB_DIR)/mrpc.o \
 	$(LIB_DIR)/odb.o $(LIB_DIR)/ybos.o $(LIB_DIR)/ftplib.o
@@ -292,6 +295,9 @@ $(BIN_DIR)/mcnaf: $(UTL_DIR)/mcnaf.c $(DRV_DIR)/camacrpc.c
 $(BIN_DIR)/mdump: $(UTL_DIR)/mdump.c $(SRC_DIR)/ybos.c
 	$(CC) $(CFLAGS) $(OSFLAGS) -o $@ $(UTL_DIR)/mdump.c $(SRC_DIR)/ybos.c $(LIB) -lz $(LIBS)
 
+$(BIN_DIR)/dio: $(DRV_DIR)/dio.c
+	$(CC) $(CFLAGS) $(OSFLAGS) -o $@ $(DRV_DIR)/dio.c $(LIB) $(LIBS)
+
 #####################################################################
 
 install:
@@ -305,15 +311,14 @@ install:
           mkdir -p $(SYSBIN_DIR); \
         fi;
 
-	@for i in mserver mhttpd odbedit mlogger ; \
+	@for i in mserver mhttpd odbedit mlogger dio ; \
 	  do \
 	  echo $$i ; \
 	  rm -f $(SYSBIN_DIR)/$$i ; \
 	  cp $(BIN_DIR)/$$i $(SYSBIN_DIR) ; \
 	  chmod 755 $(SYSBIN_DIR)/$$i ; \
 	  done
-	gcc -o $(SYSBIN_DIR)/Dio $(DRV_DIR)/dio.c
-	chmod +s $(SYSBIN_DIR)/Dio
+	chmod +s $(SYSBIN_DIR)/dio
 
 # utilities
 	@echo "... "
