@@ -10,6 +10,9 @@
                 Turbomolecular Pump with TC600 Electronics
 
   $Log$
+  Revision 1.6  2003/03/21 13:36:22  midas
+  Default address 1
+
   Revision 1.5  2003/03/21 08:28:15  midas
   Fixed bug with LSB bytes
 
@@ -81,7 +84,7 @@ void user_init(unsigned char init)
   if (init)
     {
     user_data.baud = 1; // 9600 by default
-    user_data.address = 0;
+    user_data.address = 1;
     }
 
   uart_init(1, user_data.baud);
