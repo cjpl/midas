@@ -6,6 +6,9 @@
   Contents:     MIDAS history display utility
 
   $Log$
+  Revision 1.7  2003/04/23 23:53:41  pierre
+  Fixed compiler warning
+
   Revision 1.6  2000/07/24 14:27:34  midas
   Did some cosmetics
 
@@ -385,7 +388,7 @@ int  getstr;
 
 /*------------------------------------------------------------------*/
 
-main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
 int cfg, print;
 

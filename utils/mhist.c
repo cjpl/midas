@@ -6,6 +6,9 @@
   Contents:     MIDAS history display utility
 
   $Log$
+  Revision 1.18  2003/04/23 23:54:04  pierre
+  Fixed compiler warning
+
   Revision 1.17  2003/01/13 15:47:56  midas
   Fixed a few bugs, now -l is working with -f
 
@@ -115,7 +118,7 @@ void write_hist_speed()
     
   } while (act_time - start_time < 10000);
   
-  printf("%d events (%d kB) per sec.\n", j/(act_time-start_time)*1000, 
+  printf("%ld events (%ld kB) per sec.\n", j/(act_time-start_time)*1000, 
     bytes/1024/(act_time-start_time)*1000);
 }
 
@@ -139,7 +142,7 @@ void generate_hist()
     for (j=0 ; j<100 ; j++)
       hv[j] = j+i/10.f;
     hs_write_event(2, hv, sizeof(hv));
-    printf("%d\n", ss_time());
+    printf("%ld\n", ss_time());
     ss_sleep(1000);
   }
 }
@@ -170,7 +173,7 @@ INT query_params(DWORD *ev_id, DWORD *start_time, DWORD *end_time,
   if (n>1)
   {
     printf("\nSelect event ID: ");
-    scanf("%d", ev_id);
+    scanf("%ld", ev_id);
   }
   else
     *ev_id = event_id[0];
@@ -185,14 +188,14 @@ INT query_params(DWORD *ev_id, DWORD *start_time, DWORD *end_time,
   printf("\nAvailable variables:\n");
   for (i=0 ; i<n ; i++)
     if (var_n[i] > 1)
-      printf("%d: %s[%d]\n", i, var_names+i*NAME_LENGTH, var_n[i]);
+      printf("%ld: %s[%ld]\n", i, var_names+i*NAME_LENGTH, var_n[i]);
     else
-      printf("%d: %s\n", i, var_names+i*NAME_LENGTH);
+      printf("%ld: %s\n", i, var_names+i*NAME_LENGTH);
     
     *index = var_index = 0;
     if (n>1)
     {
-      printf("\nSelect variable (0..%d,-1 for all): ", n-1);
+      printf("\nSelect variable (0..%ld,-1 for all): ", n-1);
       scanf("%d", &var_index);
       if (var_index >= (INT) n)
         var_index = n-1;
@@ -201,7 +204,7 @@ INT query_params(DWORD *ev_id, DWORD *start_time, DWORD *end_time,
       if (var_index >= 0 && *var_n_data > 1 && *var_type != TID_STRING)
       {
         printf("\nSelect index (0..%d): ", *var_n_data-1);
-        scanf("%d", index);
+        scanf("%ld", index);
       }
     }
     
@@ -211,12 +214,12 @@ INT query_params(DWORD *ev_id, DWORD *start_time, DWORD *end_time,
       strcpy(var_name, var_names+var_index*NAME_LENGTH);
     
     printf("\nHow many hours: ");
-    scanf("%d", &hour);
+    scanf("%ld", &hour);
     *start_time = ss_time()-hour*3600;
     *end_time = ss_time();
     
     printf("\nInterval [sec]: ");
-    scanf("%d", interval);
+    scanf("%ld", interval);
     printf("\n");
     
     free(var_names);
@@ -273,9 +276,9 @@ char       *var_names;
     hs_enum_vars(ltime, event_id[i], var_names, &bytes, var_n, &n_bytes);
     for (j=0 ; j<nv ; j++)
       if (var_n[j] > 1)
-        printf("%d: %s[%d]\n", j, var_names+j*NAME_LENGTH, var_n[j]);
+        printf("%ld: %s[%ld]\n", j, var_names+j*NAME_LENGTH, var_n[j]);
       else
-        printf("%d: %s\n", j, var_names+j*NAME_LENGTH);
+        printf("%ld: %s\n", j, var_names+j*NAME_LENGTH);
     
       free(var_n);
       free(var_names);
@@ -296,7 +299,7 @@ char       buffer[10000];
 DWORD      tbuffer[1000];
 DWORD      i, size, tbsize, n, type;
 char       str[256];
-INT        status;
+INT        status=0;
   
   do
     {
@@ -311,7 +314,7 @@ INT        status;
     for (i=0 ; i<n ; i++)
       {
       if (binary_time)
-        sprintf(str, "%i ", tbuffer[i]);
+        sprintf(str, "%li ", tbuffer[i]);
       else
         {
         sprintf(str, "%s", ctime(&tbuffer[i])+4);
@@ -346,7 +349,7 @@ char       buffer[50][10000];
 DWORD      tbuffer[1000];
 DWORD      i, size[50], tbsize, n[50], type[50], idx;
 char       str[256];
-INT        status, j;
+INT        status=0, j;
   
   if (index2 > index1+49) 
     {
@@ -376,11 +379,11 @@ INT        status, j;
       }
     } while (status == HS_TRUNCATED);
   
-  printf("mhist for Var:%s[%d:%d]\n", var_name, index1, index2);
+  printf("mhist for Var:%s[%ld:%ld]\n", var_name, index1, index2);
   for (i=0 ; i<n[0] ; i++)
     {
     if (binary_time)
-      sprintf(str, "%i ", tbuffer[i]);
+      sprintf(str, "%li ", tbuffer[i]);
     else
       {
       sprintf(str, "%s", ctime(&tbuffer[i])+4);
@@ -463,9 +466,9 @@ DWORD convert_time(char *t)
 
 /*------------------------------------------------------------------*/
 
-main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
-DWORD    status, event_id, start_time=0, end_time, interval, index, index1, index2=0;
+DWORD    status, event_id, start_time=0, end_time, interval, index, index1=0, index2=0;
 INT      i, var_n_data;
 BOOL     list_query;
 DWORD    var_type;
