@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.227  2002/05/29 07:33:41  midas
+  Increase WEB_BUFFER_SIZE and added warning if too small
+
   Revision 1.226  2002/05/29 07:25:12  midas
   Fixed bug with shutting down programs
 
@@ -694,7 +697,8 @@
 /* time until mhttpd disconnects from MIDAS */
 #define CONNECT_TIME  3600*24
 
-#define WEB_BUFFER_SIZE 1000000
+/* size of buffer for incoming data, must fit sum of all attachments */
+#define WEB_BUFFER_SIZE 2000000
 
 char return_buffer[WEB_BUFFER_SIZE];
 int  strlen_retbuf;
@@ -718,7 +722,7 @@ INT  _attachment_size[3];
 struct in_addr remote_addr;
 INT  _sock;
 BOOL elog_mode = FALSE;
-BOOL debug = FALSE;
+BOOL verbose = FALSE;
 
 char *mname[] = {
   "January",
@@ -10276,6 +10280,41 @@ struct linger        ling;
         if (i>0)
           len += i;
 
+        /* check if net_buffer too small */
+        if (len >= sizeof(net_buffer))
+          {
+          /* drain incoming remaining data */
+          do
+            {
+            FD_ZERO(&readfds);
+            FD_SET(_sock, &readfds);
+
+            timeout.tv_sec  = 2;
+            timeout.tv_usec = 0;
+
+            status = select(FD_SETSIZE, (void *) &readfds, NULL, NULL, (void *) &timeout);
+
+            if (FD_ISSET(_sock, &readfds))
+              i = recv(_sock, net_buffer, sizeof(net_buffer), 0);
+            else
+              break;
+            } while (i);
+
+          memset(return_buffer, 0, sizeof(return_buffer));
+          strlen_retbuf = 0;
+          return_length = 0;
+
+          show_error("Submitted attachment too large, please increase WEB_BUFFER_SIZE in mhttpd.c and recompile");
+          send(_sock, return_buffer, strlen_retbuf+1, 0);
+          if (verbose)
+            {
+            printf("==== Return ================================\n");
+            puts(return_buffer);
+            printf("\n\n");
+            }
+          goto error;
+          }
+
         if (i == 0)
           {
           n_error++;
@@ -10364,7 +10403,7 @@ struct linger        ling;
 
       return_length = 0;
 
-      if (debug)
+      if (verbose)
         printf("\n%s\n", net_buffer);
 
       if (strncmp(net_buffer, "GET", 3) == 0)
@@ -10390,8 +10429,12 @@ struct linger        ling;
         if (return_length == 0)
           return_length = strlen(return_buffer)+1;
 
-        if (debug)
-          printf("=======================\n%s\n\n", return_buffer);
+        if (verbose)
+          {
+          printf("==== Return ================================\n");
+          puts(return_buffer);
+          printf("\n\n");
+          }
 
         i = send_tcp(_sock, return_buffer, return_length, 0);
         if (i != return_length)
@@ -10441,7 +10484,7 @@ int tcp_port = 80, daemon = FALSE;
     if (argv[i][0] == '-' && argv[i][1] == 'D')
       daemon = TRUE;
     if (argv[i][0] == '-' && argv[i][1] == 'd')
-      debug = TRUE;
+      verbose = TRUE;
     else if (argv[i][0] == '-' && argv[i][1] == 'E')
       elog_mode = TRUE;
     else if (argv[i][0] == '-' && argv[i][1] == 'c')
