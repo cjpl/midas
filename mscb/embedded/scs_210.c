@@ -9,6 +9,9 @@
                 for SCS-210 RS232 node
 
   $Log$
+  Revision 1.12  2004/06/16 11:39:55  midas
+  Added external watchdog
+
   Revision 1.11  2004/04/07 11:06:17  midas
   Version 1.7.1
 
@@ -175,6 +178,9 @@ unsigned char user_func(unsigned char *data_in, unsigned char *data_out)
 
 /*---- User loop function ------------------------------------------*/
 
+/* external watchdog */
+sbit EWD = P0 ^ 6;
+
 void user_loop(void)
 {
    char c;
@@ -209,4 +215,6 @@ void user_loop(void)
       }
    }
 
+   /* toggle external watchdog */
+   EWD = !EWD;
 }
