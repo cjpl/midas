@@ -6,6 +6,9 @@
   Contents:     Disk to Tape copier for background job
 
   $Log$
+  Revision 1.1  1999/10/06 07:05:10  midas
+  Moved lazylogger from utils to src
+
   Revision 1.14  1999/10/06 00:42:28  pierre
   - added -c <lazy_channel> option
   - fix log message path and index
@@ -184,7 +187,7 @@ INT lazy_log_update(INT action, INT index, INT run, char * label, char * file)
       sprintf(str, "%s: %s %1.3lfMB file COPIED",
               label, lazyst.backfile, lazyst.file_size/1024.0/1024.0);
     else
-      sprintf(str,"%s[%i] %s%s  %9.2e[MB] file  NEW\n",
+      sprintf(str,"%s[%i] %s%s  %9.2e[MB] file NEW",
 	            label, lazyst.nfiles,
 	            lazy.path, lazyst.backfile, 
               lazyst.file_size/1024.0/1024.0);
