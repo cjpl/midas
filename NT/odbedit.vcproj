@@ -197,7 +197,7 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\src\mxml.c">
+				RelativePath="..\..\mxml\mxml.c">
 				<FileConfiguration
 					Name="Debug|Win32">
 					<Tool
@@ -279,7 +279,7 @@
 				RelativePath="..\include\msystem.h">
 			</File>
 			<File
-				RelativePath="..\include\mxml.h">
+				RelativePath="..\..\mxml\mxml.h">
 			</File>
 		</Filter>
 		<Filter
