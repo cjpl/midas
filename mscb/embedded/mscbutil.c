@@ -6,6 +6,9 @@
   Contents:     Various utility functions for MSCB protocol
 
   $Log$
+  Revision 1.24  2003/06/27 13:52:17  midas
+  Added led_mode()
+
   Revision 1.23  2003/03/24 15:00:31  midas
   Implemented 16-bit magic at end of EEPROM data
 
@@ -489,6 +492,18 @@ void sysclock_init(void)
 
 /*------------------------------------------------------------------*/
 
+static bit led1_mode, led2_mode;
+ 
+void led_mode(int led, int flag) reentrant
+{
+  if (led == 1)
+    led1_mode = flag;
+  if (led == 2)
+    led2_mode = flag;
+}
+
+/*------------------------------------------------------------------*/
+
 void led_blink(int led, int n, int interval) reentrant
 /********************************************************************\
 
@@ -552,7 +567,12 @@ void timer1_int(void) interrupt 3 using 2
       led_pri_timer = led_pri_int;
       led_pri_n--;
       if (led_pri_n == 0)
-        LED = LED_OFF;
+        {
+        if (led1_mode)
+          LED = LED_ON;
+        else
+          LED = LED_OFF;
+        }
       }
     }
 
@@ -568,7 +588,12 @@ void timer1_int(void) interrupt 3 using 2
       led_sec_timer = led_sec_int;
       led_sec_n--;
       if (led_sec_n == 0)
-        LED_SEC = LED_OFF;
+        {
+        if (led2_mode)
+          LED_SEC = LED_ON;
+        else
+          LED_SEC = LED_OFF;
+        }
       }
     }
 
