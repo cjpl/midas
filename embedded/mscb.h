@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol commands
 
   $Log$
+  Revision 1.7  2002/10/04 09:03:20  midas
+  Small mods for scs_300
+
   Revision 1.6  2002/10/03 15:31:53  midas
   Various modifications
 
@@ -69,6 +72,7 @@ sbit RS485_ENABLE =      P3^5;
 
 /* map SBUF0 & Co. to SBUF */
 #ifndef CPU_C8051F020
+#define SCON0    SCON
 #define SBUF0    SBUF
 #define TI0      TI
 #define RI0      RI
