@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.111  2003/12/17 07:59:50  midas
+  Improved previous error display
+
   Revision 1.110  2003/12/17 07:52:32  midas
   Added error display if experiment not defined
 
@@ -6068,7 +6071,18 @@ int rargc;
 
   status = cm_connect_experiment1(clp.host_name, clp.exp_name, analyzer_name, NULL, odb_size,
                                   DEFAULT_WATCHDOG_TIMEOUT);
-  if (status != CM_SUCCESS)
+
+  if (status == CM_UNDEF_EXP)
+    {
+    printf("\nError: Experiment \"%s\" not defined.\n", clp.exp_name);
+    if (getenv("MIDAS_DIR"))
+      {
+      printf("Note that \"MIDAS_DIR\" is defined, which results in a single experiment\n");
+      printf("called \"Default\". If you want to use the \"exptab\" file, undefine \"MIDAS_DIR\".\n");
+      }
+    return 1;
+    }
+  else if (status != CM_SUCCESS)
     {
     cm_get_error(status, str);
     printf("\nError: %s\n", str);
