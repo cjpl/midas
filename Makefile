@@ -6,6 +6,9 @@
 #  Contents:     Makefile for MIDAS binaries and examples under unix
 #
 #  $Log$
+#  Revision 1.44  2003/05/13 11:08:28  midas
+#  Build rmana.o only if ROOTSYS defined
+#
 #  Revision 1.43  2003/05/09 22:44:42  pierre
 #  add ROOTSYS path to root-config
 #
@@ -306,8 +309,11 @@ PROGS = $(BIN_DIR)/mserver $(BIN_DIR)/mhttpd \
 	$(BIN_DIR)/melog \
 	$(SPECIFIC_OS_PRG)
 
+ANALYZER = $(LIB_DIR)/mana.o $(LIB_DIR)/hmana.o
+
 ifdef ROOTSYS
 PROGS += $(BIN_DIR)/rmidas
+ANALYZER += $(LIB_DIR)/rmana.o
 endif
 
 OBJS =  $(LIB_DIR)/midas.o $(LIB_DIR)/system.o $(LIB_DIR)/mrpc.o \
@@ -322,7 +328,7 @@ VPATH = $(LIB_DIR):$(INC_DIR)
 
 all:    $(OS_DIR) $(LIB_DIR) $(BIN_DIR) \
 	$(LIBNAME) $(SHLIB) \
-	$(LIB_DIR)/mana.o $(LIB_DIR)/hmana.o $(LIB_DIR)/rmana.o \
+	$(ANALYZER) \
 	$(LIB_DIR)/mfe.o \
 	$(LIB_DIR)/fal.o $(PROGS)
 
