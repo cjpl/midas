@@ -36,7 +36,9 @@
 LIBS = -lbsd -lm -lutil /usr/lib/libf2c.a
 OSFLAGS = -DOS_LINUX -DOS_UNIX -Dextname
 FF = cc
-#FF = g77 necessary for egcs instead "cc"
+# for egcs g77 instead of f2c, uncomment following
+#FF = g77
+#LIBS = -lbsd -lm -lutil
 
 #-------------------------------------------------------------------
 # The following lines define direcories. Adjust if necessary
