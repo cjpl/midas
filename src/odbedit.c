@@ -6,6 +6,9 @@
   Contents:     Command-line interface to the MIDAS online data base.
 
   $Log$
+  Revision 1.20  1999/07/21 09:22:02  midas
+  Added Ctrl-C handler to cm_connect_experiment and cm_yield
+
   Revision 1.19  1999/07/15 07:49:17  midas
   Added analyzer name to "make" command
 
@@ -1112,8 +1115,6 @@ INT status;
     {
     if (status == SS_ABORT)
       printf("Server connection broken.\n");
-    else 
-      printf("\nODBEdit shut down by remote request.\n");
 
     cm_disconnect_experiment();
     exit(0);

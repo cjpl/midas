@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.25  1999/07/21 09:22:01  midas
+  Added Ctrl-C handler to cm_connect_experiment and cm_yield
+
   Revision 1.24  1999/07/15 07:35:25  midas
   Added Ctrl-C handling
 
@@ -128,9 +131,6 @@ HNDLE hDB;
 
 /* run number */
 DWORD current_run_number;
-
-/* Ctrl-C flag to stop analyzer gracefully */
-BOOL ctrlc = FALSE;
 
 /* analyze_request defined in analyze.c or anasys.c */
 extern ANALYZE_REQUEST analyze_request[];
@@ -2377,10 +2377,6 @@ EVENT_DEF    *event_def;
       }
     }
 
-  /* check Ctrl-C */
-  if (ctrlc)
-    return RPC_SHUTDOWN;
-
   return SUCCESS;
 }
 
@@ -2613,10 +2609,6 @@ int      ch;
       if ((char) ch == '!')
         break;
       }
-
-    /* check Ctrl-C */
-    if (ctrlc)
-      break;
 
     if (analyzer_loop_period == 0)
       status = cm_yield(1000);
@@ -2990,6 +2982,9 @@ DWORD           start_time;
           num_events_out++;
         if (status < 0 || status == RPC_SHUTDOWN) /* disk full/stop analyzer */
           break;
+
+        /* check for Ctrl-C */
+        status = cm_yield(0);
         }
       if (status < 0 || status == RPC_SHUTDOWN)
         break;
@@ -3144,14 +3139,6 @@ BANK_LIST *bank_list;
 
 /*------------------------------------------------------------------*/
 
-void ctrlc_handler(int sig)
-{
-  printf("Received break. Aborting...\n");
-  ctrlc = TRUE;
-}
-
-/*------------------------------------------------------------------*/
-
 main(int argc, char *argv[])
 {
 INT status;
@@ -3248,9 +3235,6 @@ INT status;
   /* initialize ss_getchar */
   if (!clp.quiet)
     ss_getchar(0);
-
-  /* register ctrl-c handler */
-  ss_ctrlc_handler(ctrlc_handler);
 
   /* start main loop */
   if (clp.online)
