@@ -7,6 +7,9 @@
                 following the MIDAS CAMAC Standard for DirectIO
 
   $Log$
+  Revision 1.3  1998/11/19 22:28:36  pierre
+  Remove Q-stop for _sa and_sn
+
   Revision 1.2  1998/10/12 12:18:56  midas
   Added Log tag in header
 
@@ -212,7 +215,10 @@ int i, x, q;
     {
     cam16i_q(c, n, a, f, (*d)++, &x, &q);
     if (!q)
-      break;
+      {
+        (*d)--;
+        break;
+      }
     }
 }
 
@@ -227,7 +233,10 @@ int i, x, q;
     {
     cam24i_q(c, n, a, f, (*d)++, &x, &q);
     if (!q)
-      break;
+      {
+        (*d)--;
+        break;
+      }
     }
 }
 
@@ -279,14 +288,9 @@ INLINE void cam24i_sa(const int c, const int n, const int a, const int f,
 INLINE void cam16i_sn(const int c, const int n, const int a, const int f, 
                       WORD **d, const int r)
 {
-int i, x, q;
-
+  int i;
   for (i=0 ; i<r ; i++)
-    {
-    cam16i_q(c, n+i, a, f, (*d)++, &x, &q);
-    if (!q)
-      break;
-    }
+    cam16i(c, n+i, a, f, (*d)++);
 }
 
 /*------------------------------------------------------------------*/
@@ -294,14 +298,9 @@ int i, x, q;
 INLINE void cam24i_sn(const int c, const int n, const int a, const int f, 
                       DWORD **d, const int r)
 {
-int i, x, q;
-
+  int i;
   for (i=0 ; i<r ; i++)
-    {
-    cam24i_q(c, n+i, a, f, (*d)++, &x, &q);
-    if (!q)
-      break;
-    }
+    cam24i(c, n+i, a, f, (*d)++);
 }
 
 /*------------------------------------------------------------------*/
@@ -309,6 +308,8 @@ int i, x, q;
 INLINE void cam8o(const int c, const int n, const int a, const int f, 
                   unsigned char d)
 {
+  printf("cam_8o not implemented\n");
+
 }
 
 /*------------------------------------------------------------------*/
@@ -386,6 +387,7 @@ INLINE void cam24o_q(const int c, const int n, const int a, const int f,
 INLINE void cam8o_r(const int c, const int n, const int a, const int f, 
                     BYTE *d, const int r)
 {
+  printf("cam8o_r not implemented\n");
 }
 
 /*------------------------------------------------------------------*/
@@ -629,33 +631,36 @@ INLINE void cam_lam_read(const int c, DWORD *lam)
 
 INLINE void cam_lam_clear(const int c, const int n)
 { 
-  camc(c,n,0,9);
 }
 
 /*------------------------------------------------------------------*/
 
 INLINE void cam_interrupt_enable(void)
 {
+  printf("cam_interrupt_enable not implemented\n");
 }
 
 /*------------------------------------------------------------------*/
 
 INLINE void cam_interrupt_disable(void)
 {
+  printf("cam_interrupt_disable not implemented\n");
 }
 
 /*------------------------------------------------------------------*/
 
 static void (*old_handler)(void) = NULL;
 
-INLINE void cam_interrupt_attach(void (*isr)())
+INLINE void cam_interrupt_attach(void (*isr)(void))
 { 
+  printf("cam_interrupt_attach not implemented\n");
 }
 
 /*------------------------------------------------------------------*/
 
 INLINE void cam_interrupt_detach(void)
 {
+  printf("cam_interrupt_detach not implemented\n");
 }
 
 /*------------------------------------------------------------------*/
