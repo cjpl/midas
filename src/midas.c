@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.196  2003/11/01 01:27:58  olchansk
+  abort if cannot read /runinfo/run number
+
   Revision 1.195  2003/10/30 12:03:11  midas
   Removed tabs
 
@@ -3907,7 +3910,8 @@ PROGRAM_INFO program_info;
   if (run_number == 0)
     {
     size = sizeof(run_number);
-    db_get_value(hDB, 0, "Runinfo/Run number", &run_number, &size, TID_INT, TRUE);
+    status = db_get_value(hDB, 0, "Runinfo/Run number", &run_number, &size, TID_INT, TRUE);
+    assert(status == SUCCESS);
     }
 
   if (run_number <= 0)
@@ -3924,6 +3928,7 @@ PROGRAM_INFO program_info;
 
     status = db_set_value(hDB, 0, "Runinfo/Run number",
                           &run_number, sizeof(run_number), 1, TID_INT);
+    assert(status == SUCCESS);
     if (status != DB_SUCCESS)
       cm_msg(MERROR, "cm_transition", "cannot set Runinfo/Run number in database");
     }
@@ -16078,7 +16083,8 @@ BOOL    bedit;
     {
     /* get run number */
     size = sizeof(run_number);
-    db_get_value(hDB, 0, "/Runinfo/Run number", &run_number, &size, TID_INT, TRUE);
+    status = db_get_value(hDB, 0, "/Runinfo/Run number", &run_number, &size, TID_INT, TRUE);
+    assert(status == SUCCESS);
     }
 
   if (run_number < 0)
