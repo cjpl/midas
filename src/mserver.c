@@ -6,6 +6,9 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
+  Revision 1.25  2000/09/29 16:29:52  pierre
+  - add BOOL arg in db_get_open_records
+
   Revision 1.24  2000/08/21 07:05:48  midas
   Added cm_msg_log1(...,facility) to be compatible with older programs
 
@@ -819,7 +822,7 @@ INT convert_flags;
       break;
 
     case RPC_DB_GET_OPEN_RECORDS:
-      status = db_get_open_records(CHNDLE(0), CHNDLE(1), CSTRING(2), CINT(3));
+      status = db_get_open_records(CHNDLE(0), CHNDLE(1), CSTRING(2), CINT(3), CBOOL(4));
       break;
 
     /* history functions */
