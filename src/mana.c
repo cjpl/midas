@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.50  2000/02/01 08:26:09  midas
+  Added -P (protect) flag
+
   Revision 1.49  2000/01/21 08:38:47  midas
   Added event size check for analyzer event extension
 
@@ -236,6 +239,7 @@ struct {
   BOOL  filter;
   char  config_file_name[10][256];
   char  param[10][256];
+  char  protect[10][256];
   BOOL  rwnt;
   INT   lrec;
   BOOL  debug;
@@ -302,6 +306,11 @@ struct {
    "<param=value> Set individual parameters to a specific value.\n\
                    Overrides any setting in configuration files",
    clp.param, TID_STRING, 10 },
+
+  {'P', 
+   "<ODB tree>    Protect an ODB subtree from being overwritten\n\
+                   with the online data when ODB gets loaded from .mid file",
+   clp.protect, TID_STRING, 10 },
 
   {'w', 
    "              Produce row-wise N-tuples in outpur .rz file. By\n\
@@ -3307,6 +3316,10 @@ DWORD           start_time;
 
       if (flag)
         {
+        for (i=0 ; i<10 ; i++)
+          if (clp.protect[i][0] && !clp.quiet)
+            printf("Protect ODB tree \"%s\"\n", clp.protect[i]);
+
         if (!clp.quiet)
           printf("Load ODB from run %d...", run_number);
         
@@ -3344,6 +3357,15 @@ DWORD           start_time;
                 db_set_mode(hDB, hKey, MODE_READ, TRUE);
               }
             }
+
+          /* lock protected trees */
+          for (i=0 ; i<10 ; i++)
+            if (clp.protect[i][0])
+              {
+              db_find_key(hDB, 0, clp.protect[i], &hKey);
+              if (hKey)
+                db_set_mode(hDB, hKey, MODE_READ, TRUE);
+              }
           }
 
         /* close open records to parameters */
