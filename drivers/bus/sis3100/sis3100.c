@@ -7,6 +7,9 @@
                 VME controller using sis1100w.lib
 
   $Log$
+  Revision 1.4  2004/12/07 08:28:42  midas
+  Revised MVMESTD
+
   Revision 1.3  2004/11/25 07:13:20  midas
   Added PLX defines
 
@@ -37,7 +40,8 @@ int n_sis3100, i_sis3100;
 typedef struct {
    struct SIS1100_Device_Struct sis1100_dev;
    int amod;
-   int dma;
+   int dmode;
+   int dma_mode;
    int fifo_mode;
 } SIS3100_DEVICE;
 
@@ -65,7 +69,7 @@ int mvme_init()
 
       /* default values */
       sis3100_device[i].amod      = MVME_AMOD_A32;
-      sis3100_device[i].dma       = 0;
+      sis3100_device[i].dma_mode  = 0;
       sis3100_device[i].fifo_mode = 0;
 	}
 
@@ -156,12 +160,21 @@ int mvme_ioctl(int req, int *param)
          else
             return MVME_NO_CRATE;
          break;
+
       case MVME_IOCTL_AMOD_SET:
          sis3100_device[i_sis3100].amod = *param;
          break;
       case MVME_IOCTL_AMOD_GET:
          *param = sis3100_device[i_sis3100].amod;
          break;
+
+      case MVME_IOCTL_DMODE_SET:
+         sis3100_device[i_sis3100].dmode = *param;
+         break;
+      case MVME_IOCTL_DMODE_GET:
+         *param = sis3100_device[i_sis3100].dmode;
+         break;
+
       case MVME_IOCTL_FIFO_SET:
          sis3100_device[i_sis3100].fifo_mode = *param;
          break;
@@ -170,10 +183,11 @@ int mvme_ioctl(int req, int *param)
          break;
 
       case MVME_IOCTL_DMA_SET:
-         return MVME_UNSUPPORTED;
+         sis3100_device[i_sis3100].dma_mode = *param;
+         break;
       case MVME_IOCTL_DMA_GET:
-         return MVME_UNSUPPORTED;
-
+         *param = sis3100_device[i_sis3100].dma_mode;
+         break;
    }
 
    return MVME_SUCCESS;
