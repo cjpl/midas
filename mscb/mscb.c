@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus communication functions
 
   $Log$
+  Revision 1.3  2001/08/31 11:35:20  midas
+  Added "wp" command in msc.c, changed parport to device in mscb.c
+
   Revision 1.2  2001/08/31 11:04:39  midas
   Added write16 and read16 (for LabView)
 
@@ -1208,7 +1211,7 @@ int fd, status;
 
 /*------------------------------------------------------------------*/
 
-int mscb_read16(int parport, unsigned short addr, unsigned char channel, unsigned short *data)
+int mscb_read16(char *device, unsigned short addr, unsigned char channel, unsigned short *data)
 /********************************************************************\
 
   Routine: mscb_read16
@@ -1216,7 +1219,7 @@ int mscb_read16(int parport, unsigned short addr, unsigned char channel, unsigne
   Purpose: Read data from channel on a node
 
   Input:
-    int  parport            Either 1 (lpt1) or 2 (lpt2)
+    char *device            Device name passed to mscb_init
     unsigned int  addr      Node address
     unsigned char channel   Channel index 0..255
 
@@ -1234,7 +1237,7 @@ int mscb_read16(int parport, unsigned short addr, unsigned char channel, unsigne
 int fd, status;
 unsigned long d;
 
-  fd = mscb_init(parport);
+  fd = mscb_init(device);
   if (fd < 0)
     return MSCB_INVAL_PARAM;
 
@@ -1261,7 +1264,7 @@ unsigned long d;
 
 /*------------------------------------------------------------------*/
 
-int mscb_read_conf16(int parport, unsigned short addr, unsigned char channel, 
+int mscb_read_conf16(char *device, unsigned short addr, unsigned char channel, 
                      unsigned short *data)
 /********************************************************************\
 
@@ -1270,7 +1273,7 @@ int mscb_read_conf16(int parport, unsigned short addr, unsigned char channel,
   Purpose: Read configuration parameter from node
 
   Input:
-    int  parport            Either 1 (lpt1) or 2 (lpt2)
+    char *device            Device name passed to mscb_init
     unsigned int  addr      Node address
     unsigned char channel   Channel index 0..254, 255 for node CSR
 
@@ -1288,7 +1291,7 @@ int mscb_read_conf16(int parport, unsigned short addr, unsigned char channel,
 int fd, status;
 unsigned long d;
   
-  fd = mscb_init(parport);
+  fd = mscb_init(device);
   if (fd < 0)
     return MSCB_INVAL_PARAM;
 

@@ -6,6 +6,9 @@
   Contents:     Header fiel for MSCB funcions
 
   $Log$
+  Revision 1.3  2001/08/31 11:35:20  midas
+  Added "wp" command in msc.c, changed parport to device in mscb.c
+
   Revision 1.2  2001/08/31 11:05:18  midas
   Added write16 and read16 (for LabView)
 
@@ -138,11 +141,11 @@ int EXPRT mscb_read_conf(int fd, unsigned char channel, unsigned int *data);
 int EXPRT mscb_user(int fd, unsigned char *param, int size, 
                     unsigned char *result, int *rsize);
 
-int EXPRT mscb_write16(int parport, unsigned short addr, unsigned char channel, unsigned short data);
-int EXPRT mscb_write_conf16(int parport, unsigned short addr, unsigned char channel, unsigned short data, int perm);
+int EXPRT mscb_write16(char *device, unsigned short addr, unsigned char channel, unsigned short data);
+int EXPRT mscb_write_conf16(char *device, unsigned short addr, unsigned char channel, unsigned short data, int perm);
 
-int EXPRT mscb_read16(int parport, unsigned short addr, unsigned char channel, unsigned short *data);
-int EXPRT mscb_read_conf16(int parport, unsigned short addr, unsigned char channel, unsigned short *data);
+int EXPRT mscb_read16(char *device, unsigned short addr, unsigned char channel, unsigned short *data);
+int EXPRT mscb_read_conf16(char *device, unsigned short addr, unsigned char channel, unsigned short *data);
 
 #ifdef __cplusplus
 }
