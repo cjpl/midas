@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.12  2001/06/20 08:33:14  midas
+  Added "summary on last"
+
   Revision 1.11  2001/06/19 10:55:40  midas
   Variable number of attachments, revised attachment editing
 
@@ -2240,7 +2243,11 @@ FILE   *f;
   /* get mode */
   if (past_n || last_n)
     {
-    full = TRUE;
+    if (getcfg(logbook, "Summary on last", str))
+      full = !atoi(str);
+    else
+      full = TRUE;
+
     show_attachments = FALSE;
     }
   else
