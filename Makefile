@@ -7,6 +7,9 @@
 #  Contents:     Makefile for MIDAS binaries and examples under unix
 #
 #  $Log$
+#  Revision 1.62  2004/09/24 23:19:59  midas
+#  Use 'install', don't install rmana.o if no ROOT present
+#
 #  Revision 1.61  2004/09/23 20:23:25  midas
 #  Use -DUSE_ROOT instead of -DHAVE_ROOT in mana.c
 #
@@ -411,7 +414,11 @@ PROGS = $(BIN_DIR)/mserver $(BIN_DIR)/mhttpd \
 	$(BIN_DIR)/melog \
 	$(SPECIFIC_OS_PRG)
 
-ANALYZER = $(LIB_DIR)/mana.o $(LIB_DIR)/hmana.o
+ANALYZER = $(LIB_DIR)/mana.o
+
+ifdef CERNLIB
+ANALYZER += $(LIB_DIR)/hmana.o
+endif
 
 ifdef ROOTSYS
 PROGS += $(BIN_DIR)/rmidas
@@ -612,12 +619,10 @@ install:
 
 	@for i in mserver mhttpd odbedit mlogger dio ; \
 	  do \
-	  echo $$i ; \
-	  rm -f $(SYSBIN_DIR)/$$i ; \
-	  cp $(BIN_DIR)/$$i $(SYSBIN_DIR) ; \
-	  chmod 755 $(SYSBIN_DIR)/$$i ; \
+	  install -v -m 755 $(BIN_DIR)/$$i $(SYSBIN_DIR) ; \
 	  done
-	cp $(UTL_DIR)/mcleanup $(SYSBIN_DIR)
+
+	install -v -m 755 $(UTL_DIR)/mcleanup $(SYSBIN_DIR)
 	chmod +s $(SYSBIN_DIR)/dio
 	chmod +s $(SYSBIN_DIR)/mhttpd
 
@@ -627,11 +632,8 @@ install:
 	@echo "... "
 	@for i in mhist melog odbhist mtape mstat lazylogger mdump mcnaf mlxspeaker mchart stripchart.tcl webpaw; \
 	  do \
-	  echo $$i ; \
-	  rm -f $(SYSBIN_DIR)/$$i ; \
-	  cp $(BIN_DIR)/$$i $(SYSBIN_DIR) ; \
-	  chmod 755 $(SYSBIN_DIR)/$$i ; \
-	done
+	  install -v -m 755 $(BIN_DIR)/$$i $(SYSBIN_DIR) ; \
+	  done
 	ln -fs $(SYSBIN_DIR)/stripchart.tcl $(SYSBIN_DIR)/stripchart
 	chmod +s $(SYSBIN_DIR)/webpaw
 
@@ -647,9 +649,7 @@ install:
 
 	@for i in midas msystem midasinc mrpc ybos cfortran hbook hardware mcstd mvmestd esone mfbstd ; \
 	  do \
-	  echo $$i.h ; \
-	  cp $(INC_DIR)/$$i.h $(SYSINC_DIR) ; \
-	  chmod 644 $(SYSINC_DIR)/$$i.h ; \
+	  install -v -m 644 $(INC_DIR)/$$i.h $(SYSINC_DIR) ; \
 	  done
 
 # library + objects
@@ -662,29 +662,27 @@ install:
           mkdir -p $(SYSLIB_DIR); \
         fi;
 
-	@for i in libmidas.a mana.o hmana.o rmana.o mfe.o fal.o ; \
+	@for i in libmidas.a mana.o mfe.o fal.o ; \
 	  do \
-	  echo $$i ; \
-	  rm -f $(SYSLIB_DIR)/$$i ;\
-	  cp $(LIB_DIR)/$$i $(SYSLIB_DIR) ; \
-	  chmod 644 $(SYSLIB_DIR)/$$i ; \
+	  install -v -m 644 $(LIB_DIR)/$$i $(SYSLIB_DIR) ; \
 	  done
 
+ifdef CERNLIB
+	install -v -m 644 $(LIB_DIR)/hmana.o $(SYSLIB_DIR)
+endif
+ifdef ROOTSYS
+	install -v -m 644 $(LIB_DIR)/rmana.o $(SYSLIB_DIR)
+endif
+
 ifdef NEED_SHLIB
-	  echo libmidas.so
-	  rm -f $(SYSLIB_DIR)/libmidas.so
-	  cp $(LIB_DIR)/libmidas.so $(SYSLIB_DIR)
-	  chmod 644 $(SYSLIB_DIR)/libmidas.so
+	install -v -m 644 $(LIB_DIR)/libmidas.so $(SYSLIB_DIR)
 endif
 
 	@if [ -d  $(ZLIB_DIR) ] ; then \
-	  cp $(ZLIB_DIR)/zlib.h $(SYSINC_DIR) ;\
-	  chmod 644 $(SYSINC_DIR)/zlib.h ;\
-	  cp $(ZLIB_DIR)/zconf.h $(SYSINC_DIR) ;\
-	  chmod 644 $(SYSINC_DIR)/zconf.h ;\
-	  cp $(ZLIB_DIR)/libz.a $(SYSLIB_DIR) ;\
-	  chmod 644 $(SYSLIB_DIR)/libz.a ;\
-        fi;
+	  install -v -m 644 $(ZLIB_DIR)/zlib.h $(SYSINC_DIR) ;\
+	  install -v -m 644 $(ZLIB_DIR)/zconf.h $(SYSINC_DIR) ;\
+	  install -v -m 644 $(ZLIB_DIR)/libz.a $(SYSLIB_DIR) ;\
+	fi;
 
 
 indent:
