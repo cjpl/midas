@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.86  2003/04/20 03:07:12  olchansk
+  fix botched #ifdef HAVE_HBOOK around ana_callback()
+
   Revision 1.85  2003/04/20 02:59:13  olchansk
   merge ROOT code into mana.c
   remove MANA_LITE, replaced with HAVE_HBOOK, HAVE_ROOT
@@ -3505,14 +3508,14 @@ INT i;
 
 /*------------------------------------------------------------------*/
 
+#ifdef HAVE_HBOOK
 INT ana_callback(INT index, void *prpc_param[])
 {
-#ifdef HAVE_HBOOK
   if (index == RPC_ANA_CLEAR_HISTOS)
     clear_histos_hbook(CINT(0),CINT(1));
-#endif
   return RPC_SUCCESS;
 }
+#endif
 
 /*------------------------------------------------------------------*/
 
@@ -5299,7 +5302,7 @@ INT status;
       }
     }
 
-#ifndef HAVE_HBOOK
+#ifdef HAVE_HBOOK
   /* register callback for clearing histos */
   cm_register_function(RPC_ANA_CLEAR_HISTOS, ana_callback);
 #endif
