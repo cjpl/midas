@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.195  2003/10/30 12:03:11  midas
+  Removed tabs
+
   Revision 1.194  2003/10/13 00:07:40  olchansk
   refuse run number zero and abort on corrupted run numbers
 
@@ -2505,16 +2508,16 @@ usage:
 INT cm_connect_experiment(char *host_name, char *exp_name,
                           char *client_name, void (*func)(char*))
 {
-  INT status;
-  char str[256];
+INT status;
+char str[256];
 
   status = cm_connect_experiment1(host_name, exp_name, client_name,
-          func, DEFAULT_ODB_SIZE, DEFAULT_WATCHDOG_TIMEOUT);
+                                  func, DEFAULT_ODB_SIZE, DEFAULT_WATCHDOG_TIMEOUT);
   if (status != CM_SUCCESS)
-  {
+    {
     cm_get_error(status, str);
     puts(str);
-  }
+    }
 
   return status;
 }
