@@ -6,6 +6,9 @@
   Contents:     Web server for remote PAW display
 
   $Log$
+  Revision 1.6  2000/05/15 14:27:11  midas
+  Embed images in .html file
+
   Revision 1.5  2000/05/15 13:47:13  midas
   Increase banner height
 
@@ -238,6 +241,8 @@ int  i;
   /* open configuration file */
   if (!cfgbuffer)
     getcfg("dummy", "dummy", str);
+  if (!cfgbuffer)
+    return 0;
 
   /* search group */
   p = cfgbuffer;
@@ -664,6 +669,31 @@ int    fh, i, j, length, status, height;
   /* display banner */
   if (equal_ustring(path, "banner.html"))
     {
+    rsprintf("HTTP/1.0 200 Document follows\r\n");
+    rsprintf("Server: WebPAW\r\n");
+    rsprintf("Content-Type: text/html\r\n\r\n");
+    rsprintf("<html><body>\r\n");
+
+    if (getcfg("Global", "Logo", str))
+      {
+      rsprintf("<a target=_top href=\"http://midas.psi.ch/webpaw/\">\r\n");
+      rsprintf("<img src=banner.gif alt=banner.gif></a>\r\n");
+      }
+    else
+      {
+
+      /* title row */
+      rsprintf("<b><a target=_top href=\"http://midas.psi.ch/webpaw/\">WebPAW</a> on %s</b>\r\n", 
+                host_name);
+      }
+    
+    rsprintf("</body></html>\r\n");
+    return;
+    }
+
+  /* display banner */
+  if (equal_ustring(path, "banner.gif"))
+    {
     if (getcfg("Global", "Logo", str))
       {
       fh = open(str, O_RDONLY | O_BINARY);
@@ -692,19 +722,6 @@ int    fh, i, j, length, status, height;
         close(fh);
         }
       }
-    else
-      {
-      rsprintf("HTTP/1.0 200 Document follows\r\n");
-      rsprintf("Server: WebPAW\r\n");
-      rsprintf("Content-Type: text/html\r\n\r\n");
-      rsprintf("<html><body>\r\n");
-
-      /* title row */
-      rsprintf("<b><a target=_top href=\"http://midas.psi.ch/webpaw/\">WebPAW</a> on %s</b>\r\n", 
-                host_name);
-    
-      rsprintf("</body></html>\r\n");
-      }
     return;
     }
 
@@ -732,7 +749,7 @@ int    fh, i, j, length, status, height;
 
     if (!enumcfg("Kumacs", display_name, kumac_name, 0))
       {
-      rsprintf("No macros defined</body></html>\r\n");
+      rsprintf("<center>No macros defined in <i>webpaw.cfg</i></center></body></html>\r\n");
       return;
       }
 
@@ -744,6 +761,8 @@ int    fh, i, j, length, status, height;
       }
     else
       cur_group[0] = 0;
+
+    rsprintf("<ul>\r\n");
 
     for (i=0 ; ; i++)
       {
@@ -773,7 +792,7 @@ int    fh, i, j, length, status, height;
     
             urlEncode(kumac_name);
             format(display_name, str);
-            rsprintf("<li><a href=\"/%s.gif\" target=contents>%s</a></li>\r\n", 
+            rsprintf("<li><a href=\"/%s.html\" target=contents>%s</a></li>\r\n", 
                       kumac_name, str);
             }
 
@@ -785,25 +804,46 @@ int    fh, i, j, length, status, height;
         /* single kumac found */
         urlEncode(kumac_name);
         format(display_name, str);
-        rsprintf("<li><a href=\"%s.gif\" target=contents>%s</a></li>\r\n", 
+        rsprintf("<li><a href=\"%s.html\" target=contents>%s</a></li>\r\n", 
                   kumac_name, str);
         }
 
       }
 
+    rsprintf("</ul>\r\n");
+
+    rsprintf("</body></html>\r\n");
+    return;
+    }
+
+  /* display contents */
+  if (strstr(path, ".html") ||
+      getparam("submit") || getparam("cmd"))
+    {
+    rsprintf("HTTP/1.0 200 Document follows\r\n");
+    rsprintf("Server: WebPAW\r\n");
+    rsprintf("Content-Type: text/html\r\n\r\n");
+    rsprintf("<html><body>\r\n");
+
+    if (getparam("cmd"))
+      strcpy(str, getparam("cmd"));
+    else
+      strcpy(str, path);
+
+    if (strstr(path, ".html"))
+      *strstr(str, ".html") = 0;
+    rsprintf("<img src=\"%s.gif\" alt=contents.gif></a>\r\n", str);
+    
     rsprintf("</body></html>\r\n");
     return;
     }
 
   /* forward command to paw and display result */
-  if (equal_ustring(path, "contents.html") || 
-      strstr(path, ".gif") ||
+  if (strstr(path, ".gif") ||
       getparam("submit") || getparam("cmd"))
     {
     if (getparam("restart"))
       strcpy(str, "restart");
-    else if (getparam("cmd"))
-      strcpy(str, getparam("cmd"));
     else
       strcpy(str, path);
 
@@ -811,7 +851,7 @@ int    fh, i, j, length, status, height;
     if (strstr(path, ".gif"))
       *strstr(str, ".gif") = 0;
 
-    if (equal_ustring(path, "contents.html"))
+    if (equal_ustring(path, "contents.gif"))
       str[0] = 0;
 
 #ifndef _MSC_VER
