@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.20  2001/08/02 12:30:00  midas
+  Fixed unix bug
+
   Revision 1.19  2001/08/02 12:26:43  midas
   Fine-tunes mail facility, fixed a few bugs
 
@@ -333,7 +336,7 @@ INT sendmail(char *smtp_host, char *from, char *to, char *subject, char *text)
 {
 struct sockaddr_in   bind_addr;
 struct hostent       *phe;
-int                  s, status;
+int                  s;
 char                 str[10000];
 time_t               now;
 
@@ -353,18 +356,7 @@ time_t               now;
     return -1;
   memcpy((char *)&(bind_addr.sin_addr), phe->h_addr, phe->h_length);
 
-#ifdef OS_UNIX
-  do
-    {
-    status = connect(s, (void *) &bind_addr, sizeof(bind_addr));
-
-    /* don't return if an alarm signal was cought */
-    } while (status == -1 && errno == EINTR); 
-#else
-  status = connect(s, (void *) &bind_addr, sizeof(bind_addr));
-#endif  
-
-  if (status != 0)
+  if (connect(s, (void *) &bind_addr, sizeof(bind_addr)) < 0)
     {
     closesocket(s);
     return -1;
