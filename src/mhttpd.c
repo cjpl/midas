@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.75  1999/10/12 11:31:35  midas
+  Increased timeout for starting programs to 10s (needed for frontend)
+
   Revision 1.74  1999/10/11 14:15:29  midas
   Use ss_system to launch programs
 
@@ -4361,7 +4364,7 @@ char  str[256], ref[256], command[256], name[80];
     if (command[0])
       {
       ss_system(command);
-      for (i=0 ; i<50 ; i++)
+      for (i=0 ; i<100 ; i++)
         {
         if (cm_exist(name, FALSE) == CM_SUCCESS)
           break;
