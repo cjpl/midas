@@ -60,6 +60,9 @@ exec /bin/nice bltwish "$0" -- ${1+"$@"}
 # re-ordered some code (no functional change)
 #  Revision History:
 #    $Log$
+#    Revision 1.10  2002/03/22 23:31:49  pierre
+#    add exclusion of '%'
+#
 #    Revision 1.9  2001/12/13 20:31:59  pierre
 #    add cursor, page display, reduce timeout
 #
@@ -922,7 +925,8 @@ proc read_mhist_file {open_file } {
 	# set hist_file [lindex [split $hist_file /] end]
 	# but have to remember the path for the next call:
 	# set file_path [string range $hist_file 0 [string last "/" $hist_file]]
-	set file_path [file dirname $hist_file]
+	if {$hist_file !=""}  { set file_path [file dirname $hist_file] }
+
     } else {
 	if {$hist_file==""} { 
 	    tk_messageBox -message "You need to open a file first \n"
@@ -1915,6 +1919,7 @@ proc filter_bad_chars {word} {
     regsub -all {\]}  $word "_"  word    ;# eliminate ']' characters
     regsub -all " "   $word "_"  word    ;# eliminate ' ' characters
     regsub -all "#"   $word "_nr_"  word    ;# eliminate '#' characters
+    regsub -all "%"   $word "_"     word    ;# eliminate '%' characters
     return $word
 }
 
@@ -2364,6 +2369,8 @@ set data_fname  $item_fname([lindex $item_list 0])   ;# just grab the first file
 # main plotting loop:
 
 set prev_update_time  0            ;# last time the data file was written
+
+set time_limit 600
 
 while {1} {
 
