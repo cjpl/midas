@@ -5,12 +5,8 @@
 
   Contents:     Declarations for ybos data format
 
-  $Log$
-  Revision 1.2  1998/10/12 12:19:01  midas
-  Added Log tag in header
 
-
-  Previous revision history
+  Revision history
   ------------------------------------------------------------------
   date        by    modification
   ---------   ---   ------------------------------------------------
@@ -120,8 +116,8 @@
 #define MAX_DLOG_LABEL_SIZE     32    /* max data logger label size */
 #define MAX_FILE_PATH          128
 #define YBOS_FMT                 0    /* known data logger data format */
-#define DLOG_TAPE                1    /* type of device (tape file) */
-#define DLOG_DISK                2    /* type of device (disk file) */
+#define DLOG_DISK                1    /* type of device (disk file) */
+#define DLOG_TAPE                2    /* type of device (tape file) */
 #define VT                       1    /* type of device for error log */
 
 /*---- Macros for YBOS ------------------------*/
@@ -222,7 +218,7 @@ INT   EXPRT close_any_datafile (INT data_fmt);
 
 INT   EXPRT open_any_logfile (INT log_type, INT data_fmt, char * device_name, HNDLE * hDev);
 INT   EXPRT close_any_logfile (INT log_type, HNDLE hDev);
-
+INT   EXPRT ybos_magta_write( HANDLE logH, char *pwt, INT nbytes);
 INT   EXPRT ybos_odb_file_dump(INT hBuf, INT ev_ID, INT run_number, char * path);
 INT   EXPRT ybos_feodb_file_dump(EQUIPMENT * eqp, DWORD* pevent, INT run_number, char * path);
 INT   EXPRT ybos_file_compose(char * pevent, char * path, INT file_mode);
