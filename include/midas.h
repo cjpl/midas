@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.44  1999/09/27 12:54:55  midas
+  Finished alarm system
+
   Revision 1.43  1999/09/23 12:45:48  midas
   Added 32 bit banks
 
@@ -1119,7 +1122,7 @@ typedef struct {
 typedef struct {
   INT           id;
   char          *name;
-  RPC_PARAM     param[15];
+  RPC_PARAM     param[20];
   INT           (*dispatch)(INT,void**);
 } RPC_LIST;
 
@@ -1483,10 +1486,14 @@ INT EXPRT hs_fdump(char *file_name, DWORD id);
 /*---- ELog functions ----*/
 INT EXPRT el_retrieve(char *tag, char *date, int *run, char *author, char *type, 
                 char *system, char *subject, char *text, int *textsize, 
-                char *orig_tag, char *reply_tag, char *attachment, char *encoding);
+                char *orig_tag, char *reply_tag, 
+                char *attachment1, char *attachment2, char *attachment3, char *encoding);
 INT EXPRT el_submit(int run, char *author, char *type, char *system, char *subject, 
-              char *text, char *reply_to, char *encoding, char *filename, 
-              char *buffer, INT buffer_size, char *tag, INT tag_size);
+              char *text, char *reply_to, char *encoding, 
+              char *afilename1, char *buffer1, INT buffer_size1, 
+              char *afilename2, char *buffer2, INT buffer_size2, 
+              char *afilename3, char *buffer3, INT buffer_size3, 
+              char *tag, INT tag_size);
 INT EXPRT el_search_message(char *tag, int *fh, BOOL walk);
 INT EXPRT el_search_run(int run, char *return_tag);
 
