@@ -6,6 +6,9 @@
   Cotents:      Routines for accessing VME under VxWorks
                 
   $Log$
+  Revision 1.3  2004/02/06 01:15:27  pierre
+  fix new definition
+
   Revision 1.2  2004/01/08 08:40:08  midas
   Implemented standard indentation
 
@@ -111,9 +114,9 @@ int vme_unmap(int vh, void *ptr, int size)
 int vme_ioctl(int vh, int request, int *param)
 {
    switch (request) {
-   case IOCTL_AMOD_SET:
+   case VME_IOCTL_AMOD_SET:
       break;
-   case IOCTL_AMOD_GET:
+   case VME_IOCTL_AMOD_GET:
       break;
    }
    return SUCCESS;
