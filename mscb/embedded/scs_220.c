@@ -9,6 +9,9 @@
                 for SCS-220 RS-485 node
 
   $Log$
+  Revision 1.3  2005/01/07 14:37:46  midas
+  Changed label
+
   Revision 1.2  2005/01/07 09:29:05  midas
   Version 1.7.a
 
@@ -44,7 +47,7 @@ struct {
 } xdata user_data;
 
 MSCB_INFO_VAR code variables[] = {
-   1,   UNIT_ASCII,  0, 0, MSCBF_DATALESS, "RS232", 0,
+   1,   UNIT_ASCII,  0, 0, MSCBF_DATALESS, "RS485", 0,
    32,  UNIT_STRING, 0, 0,              0, "Output", &user_data.output[0],
    32,  UNIT_STRING, 0, 0,              0, "Input", &user_data.input[0],
    1,   UNIT_BAUD,   0, 0,              0, "Baud", &user_data.baud,
