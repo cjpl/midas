@@ -9,6 +9,9 @@
                 for HVR_300 High Voltage Regulator
 
   $Log$
+  Revision 1.6  2004/05/14 15:10:09  midas
+  Fixed bug with status bits
+
   Revision 1.5  2004/04/30 07:59:22  midas
   LED on when HV is on
 
@@ -818,8 +821,13 @@ void read_temperature(void)
       /* read node configuration */
       if (JU1 == 0)
          user_data[i].status |= STATUS_NEGATIVE;
+      else
+         user_data[i].status &= ~STATUS_NEGATIVE;
+
       if (JU2 == 0)
          user_data[i].status |= STATUS_LOWCUR;
+      else
+         user_data[i].status &= ~STATUS_LOWCUR;
    }
 }
 
