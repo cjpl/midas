@@ -6,9 +6,14 @@
   Contents:     Command-line interface to the MIDAS online data base.
 
   $Log$
-  Revision 1.5  1998/10/12 11:00:29  midas
-  Added $Log$ in header
+  Revision 1.6  1998/10/12 11:59:11  midas
+  Added $Log$ tag in header
 
+  Revision 1.5  1998/10/12 11:00:29  midas
+  Added $Log$
+  Added Revision 1.6  1998/10/12 11:59:11  midas
+  Added Added $Log$ tag in header
+  Added in header
 
 \********************************************************************/
 

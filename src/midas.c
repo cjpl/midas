@@ -5,12 +5,10 @@
 
   Contents:     MIDAS main library funcitons
 
+  $Log$
+  Revision 1.2  1998/10/12 11:59:10  midas
+  Added $Log$ tag in header
 
-  Revision history
-  ------------------------------------------------------------------
-  date         by    modification
-  ---------    ---   ------------------------------------------------
-  28-NOV-93    SR    created
 
 \********************************************************************/
 

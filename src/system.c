@@ -13,7 +13,12 @@
                 found in "UNIX distributed programming" by Chris
                 Brown, Prentice Hall
 
-  Revision history
+  $Log$
+  Revision 1.2  1998/10/12 11:59:11  midas
+  Added $Log$ tag in header
+
+
+  Previous Revision history
   ------------------------------------------------------------------
   date        by    modification
   ---------   ---   ------------------------------------------------

@@ -5,17 +5,10 @@
 
   Contents:     MIDAS online database functions
 
+  $Log$
+  Revision 1.2  1998/10/12 11:59:11  midas
+  Added $Log$ tag in header
 
-  Revision history
-  ------------------------------------------------------------------
-  date         by    modification
-  ---------    ---   ------------------------------------------------
-  13-FEB-95    SR    created
-  05-APR-97    SR    ODB notifications also sent to own client
-  23-MAY-97    SR    db_open_record calls db_close_record if
-                     record has already been opened
-  23-MAY-97    SR    db_load can load single keys
-  25-AUF-98    SR    added *info to db_open_record
 
 \********************************************************************/
 
