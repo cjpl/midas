@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.25  1999/04/15 09:58:42  midas
+  Switched if (rpc_list[i].id == 0) statements
+
   Revision 1.24  1999/04/13 12:20:43  midas
   Added db_get_data1 (for Java)
 
@@ -3709,6 +3712,9 @@ INT cm_exist(char *name, BOOL bUnique)
 INT    status, i, size;
 HNDLE  hDB, hKeyClient, hKey, hSubkey;
 char   client_name[NAME_LENGTH];
+
+  if (rpc_is_remote())
+    return rpc_call(RPC_CM_EXIST, name, bUnique);
 
   cm_get_experiment_database(&hDB, &hKeyClient);
 
@@ -9543,8 +9549,8 @@ char         return_buffer[NET_BUFFER_SIZE];
   routine_id = nc_in->header.routine_id & ~TCP_FAST;
 
   for (i=0 ;; i++)
-    if (rpc_list[i].id == routine_id ||
-        rpc_list[i].id == 0)
+    if (rpc_list[i].id == 0 ||
+        rpc_list[i].id == routine_id)
       break;
   index = i;
   if (rpc_list[i].id == 0)
@@ -9884,8 +9890,8 @@ char         return_buffer[ASCII_BUFFER_SIZE]; /* ASCII out */
 
   /* find entry in rpc_list */
   for (i=0 ;; i++)
-    if (strcmp(arpc_param[0], rpc_list[i].name) == 0 ||
-        rpc_list[i].id == 0)
+    if (rpc_list[i].id == 0 ||
+        strcmp(arpc_param[0], rpc_list[i].name) == 0)
       break;
   index = i;
   routine_id = rpc_list[i].id;
@@ -9976,7 +9982,7 @@ char         return_buffer[ASCII_BUFFER_SIZE]; /* ASCII out */
 
       if (flags & RPC_VARARRAY || tid == TID_STRING)
         {
-        // reserve maximum array length
+        /* reserve maximum array length */
         param_size = atoi(arpc_param[index_in]);
         param_size = ALIGN(param_size);
         }
