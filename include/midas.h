@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.59  2000/02/25 22:22:45  midas
+  Added abort feature in db_scan_tree
+
   Revision 1.58  2000/02/25 20:22:23  midas
   Added super-event scheme
 
@@ -1405,7 +1408,7 @@ INT EXPRT db_find_key(HNDLE hdb, HNDLE hkey, char *name, HNDLE *hsubkey);
 INT EXPRT db_find_link(HNDLE hDB, HNDLE hKey, char *key_name, HNDLE *subhKey);
 INT EXPRT db_find_key1(HNDLE hdb, HNDLE hkey, char *name, HNDLE *hsubkey);
 INT EXPRT db_find_link1(HNDLE hDB, HNDLE hKey, char *key_name, HNDLE *subhKey);
-INT EXPRT db_scan_tree(HNDLE hDB, HNDLE hKey, int level, void (*callback)(HNDLE,HNDLE,KEY*,INT,void *), void *info);
+INT EXPRT db_scan_tree(HNDLE hDB, HNDLE hKey, int level, INT (*callback)(HNDLE,HNDLE,KEY*,INT,void *), void *info);
 INT EXPRT db_scan_tree_link(HNDLE hDB, HNDLE hKey, int level, void (*callback)(HNDLE,HNDLE,KEY*,INT,void *), void *info);
 INT EXPRT db_get_path(HNDLE hDB, HNDLE hKey, char *path, INT buf_size);
 INT EXPRT db_delete_key(HNDLE database_handle, HNDLE key_handle, BOOL follow_links);
