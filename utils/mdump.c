@@ -6,6 +6,9 @@
    Contents:     Dump event on screen with MIDAS or YBOS data format
  
    $Log$
+   Revision 1.10  1999/09/29 20:36:24  pierre
+   - fix yb_any_bank_display
+
    Revision 1.9  1999/07/23 07:04:54  midas
    Fixed compiler warnings
 
@@ -156,102 +159,102 @@ int replog (int data_fmt, char * rep_file, int bl, int action)
     do
     {
       if (action == REP_HEADER)
-	status = yb_any_all_info_display (D_HEADER);
+      	status = yb_any_all_info_display (D_HEADER);
       else if (action == REP_RECORD)
-	status = yb_any_physrec_display(data_fmt);
+	      status = yb_any_physrec_display(data_fmt);
       if ((status == YB_DONE) || (bl != -1))
-	break;
+	    break;
     }
     while (yb_any_physrec_get(data_fmt, &physrec, &physize) == YB_SUCCESS);
     break;
     
-  case REP_LENGTH:
-  case REP_EVENT:
+    case REP_LENGTH:
+    case REP_EVENT:
     /* skip will read atleast on record */
     if (yb_any_physrec_skip(data_fmt, bl) != YB_SUCCESS)
       return (-1);
     i = 0;
-    while (yb_any_event_get(data_fmt, (void *)&pmyevt, &evtlen) == YB_SUCCESS)
+    while (yb_any_event_get(data_fmt, (void **)&pmyevt, &evtlen) == YB_SUCCESS)
     {
       status = yb_any_event_swap(data_fmt, pmyevt);
       if (file_mode != YB_NO_RECOVER)
-	if ((status = yb_file_recompose(pmyevt, data_fmt, svpath, file_mode)) != YB_SUCCESS)
-	  printf("mdump recompose error %i\n");
+    	if ((status = yb_file_recompose(pmyevt, data_fmt, svpath, file_mode)) != YB_SUCCESS)
+	      printf("mdump recompose error %i\n");
       if (action == REP_LENGTH)
 	      status = yb_any_all_info_display (D_EVTLEN);
       else if ((action == REP_EVENT) && 
 	       (event_id == EVENTID_ALL) &&
 	       (event_msk == TRIGGER_ALL) &&
 	       (sbank_name[0] ==0) )
-            { /* a quick by-pass to prevent bank search if not necessary */
-	            printf("------------------------ Event# %i --------------------------------\n", i++);
-	            yb_any_event_display(pmyevt, data_fmt, dsp_mode, dsp_fmt);
-            }
+      { /* a quick by-pass to prevent bank search if not necessary */
+	      printf("------------------------ Event# %i --------------------------------\n", i++);
+	      yb_any_event_display(pmyevt, data_fmt, dsp_mode, dsp_fmt);
+      }
       else if (action == REP_EVENT)
       {
-	id = EVENTID_ALL;
-	msk = TRIGGER_ALL;
-	if (data_fmt == FORMAT_MIDAS)
-	{
-	  pme = (EVENT_HEADER *)pmyevt;
-	  id = pme->event_id;
-	  msk = pme->trigger_mask;
-	  /* Search bank if necessary */
-	  if (sbank_name[0] != 0)
-	  { /* bank name given through argument list */
-	    bank_found = FALSE;
-	    pmbkh = (BANK_HEADER *)(((EVENT_HEADER *)pmyevt)+1);
-      if ((pmbkh->data_size + 8) == ((EVENT_HEADER *)pmyevt)->data_size)
+        id = EVENTID_ALL;
+        msk = TRIGGER_ALL;
+        if (data_fmt == FORMAT_MIDAS)
         {
-	        if ((status = bk_find (pmbkh, sbank_name, &bklen, &bktyp, (void *)&pybk)) == SS_SUCCESS)
-	        { /* given bank found in list */
-	          status = bk_list (pmbkh, banklist);
-	          bank_found = TRUE;
+	        pme = (EVENT_HEADER *)pmyevt;
+	        id = pme->event_id;
+	        msk = pme->trigger_mask;
+	        /* Search bank if necessary */
+	        if (sbank_name[0] != 0)
+	        { /* bank name given through argument list */
+	          bank_found = FALSE;
+	          pmbkh = (BANK_HEADER *)(((EVENT_HEADER *)pmyevt)+1);
+            if ((pmbkh->data_size + 8) == ((EVENT_HEADER *)pmyevt)->data_size)
+            {
+	            if ((status = bk_find (pmbkh, sbank_name, &bklen, &bktyp, (void *)&pybk)) == SS_SUCCESS)
+	            { /* given bank found in list */
+	              status = bk_list (pmbkh, banklist);
+	              bank_found = TRUE;
+	            }
+            }
+          }
+        }
+        else if (data_fmt == FORMAT_YBOS)
+        {   
+	        /* check id EVID found in event for id and msk selection */
+	        if ((status = ybk_find ((DWORD *)pmyevt, "EVID", &bklen, &bktyp, (void *)&pybk)) == YB_SUCCESS)
+	        {
+	          pdata = (DWORD *)((YBOS_BANK_HEADER *)pybk + 1);
+	          id  = (short int)(YBOS_EVID_EVENT_ID(pdata));
+	          msk = (short int)(YBOS_EVID_TRIGGER_MASK(pdata));
+	        }
+	        /* Search bank if necessary */
+	        if (sbank_name[0] != 0)
+	        { /* bank name given through argument list */
+	          bank_found = FALSE;
+	          if ((status = ybk_find ((DWORD *)pmyevt,sbank_name,&bklen,&bktyp,(void *)&pybk)) == YB_SUCCESS)
+	          { /* given bank found in list */
+	            status = ybk_list ((DWORD *)pmyevt, banklist);
+	            bank_found = TRUE;
+	          }
+	        }   
+        }
+        /* check user request through switch setting (id, msk ,bank) */
+        if ((event_msk != TRIGGER_ALL) || (event_id != EVENTID_ALL) || (sbank_name[0] !=0))
+        { /* check request or skip event if not satisfied */
+	        if (((event_id != EVENTID_ALL)  && (id != event_id)) ||  /* id check ==> skip */
+	            ((event_msk != TRIGGER_ALL) && (msk != event_msk)||  /* msk check ==> skip */
+	             (sbank_name[0] !=0) && !bank_found))               /* bk check ==> skip */
+	        { /* skip event */
+	          printf("Searching for Bank -%s- Skiping event...%i\r",sbank_name,i++);
+	          fflush(stdout);
+	        }
+	        else
+	        { /* request match ==> display any event */
+	          printf("------------------------ Event# %i --------------------------------\n", i++);
+	          yb_any_event_display(pmyevt, data_fmt, dsp_mode, dsp_fmt);
 	        }
         }
-      }
-	}
-	else if (data_fmt == FORMAT_YBOS)
-	{   
-	  /* check id EVID found in event for id and msk selection */
-	  if ((status = ybk_find ((DWORD *)pmyevt, "EVID", &bklen, &bktyp, (void *)&pybk)) == YB_SUCCESS)
-	  {
-	    pdata = (DWORD *)((YBOS_BANK_HEADER *)pybk + 1);
-	    id  = (short int)(YBOS_EVID_EVENT_ID(pdata));
-	    msk = (short int)(YBOS_EVID_TRIGGER_MASK(pdata));
-	  }
-	  /* Search bank if necessary */
-	  if (sbank_name[0] != 0)
-	  { /* bank name given through argument list */
-	    bank_found = FALSE;
-	    if ((status = ybk_find ((DWORD *)pmyevt,sbank_name,&bklen,&bktyp,(void *)&pybk)) == YB_SUCCESS)
-	    { /* given bank found in list */
-	      status = ybk_list ((DWORD *)pmyevt, banklist);
-	      bank_found = TRUE;
-	    }
-	  }   
-	}
-	/* check user request through switch setting (id, msk ,bank) */
-	if ((event_msk != TRIGGER_ALL) || (event_id != EVENTID_ALL) || (sbank_name[0] !=0))
-	{ /* check request or skip event if not satisfied */
-	  if (((event_id != EVENTID_ALL)  && (id != event_id)) ||  /* id check ==> skip */
-	      ((event_msk != TRIGGER_ALL) && (msk != event_msk)||  /* msk check ==> skip */
-	       (sbank_name[0] !=0) && !bank_found))               /* bk check ==> skip */
-	  { /* skip event */
-	    printf("Searching for Bank -%s- Skiping event...%i\r",sbank_name,i++);
-	    fflush(stdout);
-	  }
-	  else
-	  { /* request match ==> display any event */
-	    printf("------------------------ Event# %i --------------------------------\n", i++);
-	    yb_any_event_display(pmyevt, data_fmt, dsp_mode, dsp_fmt);
-	  }
-	}
-	else
-	{ /* no user request ==> display any event */
-	  printf("------------------------ Event# %i --------------------------------\n", i++);
-	  yb_any_event_display(pmyevt, data_fmt, dsp_mode, dsp_fmt);
-	}
+        else
+        { /* no user request ==> display any event */
+	        printf("------------------------ Event# %i --------------------------------\n", i++);
+	        yb_any_event_display(pmyevt, data_fmt, dsp_mode, dsp_fmt);
+        }
       }
     }
     break;
@@ -328,7 +331,7 @@ void process_event(HNDLE hBuf, HNDLE request_id, EVENT_HEADER *pheader, void *pe
 	              status = ybk_list (plrl, banklist);
 	              printf("#banks:%i Bank list:-%s-\n",status,banklist);
 	              printf("Bank:%s - Length (I*4):%i - Type:%i - pBk:0x%p\n",sbank_name, bklen,bktyp,pybk);
-	              yb_any_bank_display(pybk, FORMAT_YBOS, dsp_mode, dsp_fmt);
+	              yb_any_bank_display(NULL, pybk, FORMAT_YBOS, dsp_mode, dsp_fmt);
 	            }
 	            else
 	            {
@@ -351,14 +354,14 @@ void process_event(HNDLE hBuf, HNDLE request_id, EVENT_HEADER *pheader, void *pe
 	     (yb_any_event_swap(FORMAT_MIDAS, pheader) == SS_SUCCESS))
     { /* ---- MIDAS FMT ---- */
       if (file_mode != YB_NO_RECOVER)
-	status = yb_file_recompose(pheader, internal_data_fmt, svpath, file_mode);  
+	      status = yb_file_recompose(pheader, internal_data_fmt, svpath, file_mode);  
       if (sbank_name[0] != 0)
       {
 	      if (bk_find (pmbh, sbank_name, &bklen, &bktyp, (void *)&pmbk) == SS_SUCCESS)
 	      { /* bank name given through argument list */
 	        status = bk_list (pmbh, banklist);
 	        printf("#banks:%i Bank list:-%s-",status,banklist);
-	        yb_any_bank_display(pmbk, FORMAT_MIDAS, dsp_mode, dsp_fmt);
+	        yb_any_bank_display(pmbh, pmbk, FORMAT_MIDAS, dsp_mode, dsp_fmt);
 	      }
 	      else
 	      {
