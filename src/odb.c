@@ -6,6 +6,9 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.109  2005/03/27 21:48:37  ritt
+  Save odb under root in XML
+
   Revision 1.108  2005/03/24 21:53:51  ritt
   Fixed problem with saving subtrees in XML
 
@@ -5948,7 +5951,7 @@ INT db_paste_xml(HNDLE hDB, HNDLE hKeyRoot, char *buffer)
 {
    char error[256];
    INT status;
-   PMXML_NODE tree;
+   PMXML_NODE tree, node;
 
    if (hKeyRoot == 0)
       db_find_key(hDB, hKeyRoot, "", &hKeyRoot);
@@ -5960,7 +5963,13 @@ INT db_paste_xml(HNDLE hDB, HNDLE hKeyRoot, char *buffer)
       return DB_TYPE_MISMATCH;
    }
 
-   status = db_paste_node(hDB, hKeyRoot, tree);
+   node = mxml_find_node(tree, "odb");
+   if (node == NULL) {
+      puts("Cannot find element \"odb\" in XML data");
+      return DB_TYPE_MISMATCH;
+   }
+
+   status = db_paste_node(hDB, hKeyRoot, node);
 
    mxml_free_tree(tree);
 
