@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.63  2000/03/08 17:35:56  midas
+  Version 1.8.0
+
   Revision 1.62  2000/03/02 21:57:31  midas
   Added new slow control commands
 
@@ -213,7 +216,7 @@
    to the MIDAS library. First digit is major release, second
    digit is minor release, third digit is patch level */
 
-#define MIDAS_VERSION "1.7.1"
+#define MIDAS_VERSION "1.8.0"
 
 /*------------------------------------------------------------------*/
 
