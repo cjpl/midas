@@ -6,6 +6,9 @@
   Contents:     Command-line interface for the Midas Slow Control Bus
 
   $Log$
+  Revision 1.39  2003/06/05 14:46:44  midas
+  Added load/save facility
+
   Revision 1.38  2003/06/05 12:35:26  midas
   Display 8-bit signed values correctly
 
@@ -153,15 +156,15 @@ typedef struct {
 } NAME_TABLE;
 
 NAME_TABLE prefix_table[] = {
-  { PRFX_PICO,  "Pico",   },
-  { PRFX_NANO,  "Nano",   },
-  { PRFX_MICRO, "Micro",  },
-  { PRFX_MILLI, "Milli",  },
+  { PRFX_PICO,  "pico",   },
+  { PRFX_NANO,  "nano",   },
+  { PRFX_MICRO, "micro",  },
+  { PRFX_MILLI, "milli",  },
   { PRFX_NONE,  "",       },
-  { PRFX_KILO,  "Kilo",   },
-  { PRFX_MEGA,  "Mega",   },
-  { PRFX_GIGA,  "Giga",   },
-  { PRFX_TERA,  "Tera",   },
+  { PRFX_KILO,  "kilo",   },
+  { PRFX_MEGA,  "mega",   },
+  { PRFX_GIGA,  "giga",   },
+  { PRFX_TERA,  "tera",   },
   { 0                     }
 };
 
@@ -207,46 +210,51 @@ NAME_TABLE unit_table[] = {
 void print_help()
 {
   puts("Available commands:\n");
-  puts("scan [r]                   Scan bus for nodes [repeat mode]");
-  puts("ping <addr>                Ping node and set address");
   puts("addr <addr>                Set address");
+  puts("debug 0/1                  Turn debuggin off/on on node (LCD output)");
+  puts("echo [fc]                  Perform echo test [fast,continuous]");
+  puts("flash                      Flash parameters into EEPROM");
   puts("gaddr <addr>               Set group address");
   puts("info                       Retrive node info");
-  puts("sa <addr> <gaddr>          Set node and group address of addressed node");
-  puts("sn <name>                  Set node name (up to 16 characters)");
-  puts("debug 0/1                  Turn debuggin off/on on node (LCD output)");
-  puts("\nwrite <index> <value>    Write node variable");
+  puts("load <file>                Load node variables");
+  puts("ping <addr>                Ping node and set address");
   puts("read <index> [r]           Read node variable [repeat mode]");
-  puts("flash                      Flash parameters into EEPROM");
   puts("reboot                     Reboot addressed node");
   puts("reset                      Reboot whole MSCB system");
+  puts("sa <addr> <gaddr>          Set node and group address of addressed node");
+  puts("save <file>                Save current node variables");
+  puts("scan [r]                   Scan bus for nodes [repeat mode]");
+  puts("sn <name>                  Set node name (up to 16 characters)");
   puts("terminal                   Enter teminal mode for SCS-210");
   puts("upload <hex-file>          Upload new firmware to node");
   puts("version                    Display version number");
-  puts("echo [fc]                  Perform echo test [fast,continuous]");
+  puts("write <index> <value>      Write node variable");
+
+  puts("");
 }
 
 /*------------------------------------------------------------------*/
 
-void print_channel(int index, MSCB_INFO_VAR *info_chn, void *pdata, int verbose)
+void print_channel_str(int index, MSCB_INFO_VAR *info_chn, void *pdata, int verbose, char *line)
 {
 char str[80];
 int  i, data;
-
+          
+  line[0] = 0;
   if (verbose)
     {
     memset(str, 0, sizeof(str));
     strncpy(str, info_chn->name, 8);
     for (i=strlen(str) ; i<9 ; i++)
       str[i] = ' ';
-    printf("%2d: %s ", index, str);
+    sprintf(line+strlen(line), "%3d: %s ", index, str);
     }
 
   if (info_chn->unit == UNIT_STRING)
     {
     memset(str, 0, sizeof(str));
     strncpy(str, pdata, info_chn->width);
-    printf("string  \"%s\"", str);
+    sprintf(line+strlen(line), "string  \"%s\"", str);
     }
   else
     {
@@ -259,46 +267,46 @@ int  i, data;
 
       case 1:  
         if (info_chn->flags & MSCBF_SIGNED)
-          printf(" 8bit %8d (0x%02X/", (char)data, data); 
+          sprintf(line+strlen(line), " 8bit S %15d (0x%02X/", (char)data, data); 
         else
-          printf(" 8bit %8u (0x%02X/", data, data); 
+          sprintf(line+strlen(line), " 8bit U %15u (0x%02X/", data, data); 
         for (i=0 ; i<8 ; i++)
           if (data & (0x80 >> i))
-            printf("1");
+            sprintf(line+strlen(line), "1");
           else
-            printf("0");
-        printf(")");
+            sprintf(line+strlen(line), "0");
+        sprintf(line+strlen(line), ")");
         break;
 
       case 2: 
         if (info_chn->flags & MSCBF_SIGNED)
-          printf("16bit %8d (0x%04X)", data, data); 
+          sprintf(line+strlen(line), "16bit S %15d (0x%04X)", data, data); 
         else
-          printf("16bit %8u (0x%04X)", data, data); 
+          sprintf(line+strlen(line), "16bit U %15u (0x%04X)", data, data); 
         break;
 
       case 3: 
         if (info_chn->flags & MSCBF_SIGNED)
-          printf("24bit %8d (0x%06X)", data, data); 
+          sprintf(line+strlen(line), "24bit S %15d (0x%06X)", data, data); 
         else
-          printf("24bit %8u (0x%06X)", data, data); 
+          sprintf(line+strlen(line), "24bit U %15u (0x%06X)", data, data); 
         break;
       
       case 4: 
         if (info_chn->flags & MSCBF_FLOAT)
-          printf("32bit %8.6lg", *((float *)&data));
+          sprintf(line+strlen(line), "32bit F %15.6lg", *((float *)&data));
         else
           {
           if (info_chn->flags & MSCBF_SIGNED)
-            printf("32bit %8d (0x%08X)", data, data);
+            sprintf(line+strlen(line), "32bit S %15d (0x%08X)", data, data);
           else
-            printf("32bit %8u (0x%08X)", data, data);
+            sprintf(line+strlen(line), "32bit U %15u (0x%08X)", data, data);
           }
         break;
       }
     }
 
-  printf(" ");
+  sprintf(line+strlen(line), " ");
 
   /* evaluate prfix */
   if (info_chn->prefix)
@@ -307,7 +315,7 @@ int  i, data;
       if (prefix_table[i].id == info_chn->prefix)
         break;
     if (prefix_table[i].id)
-      printf(prefix_table[i].name);
+      sprintf(line+strlen(line), prefix_table[i].name);
     }
 
   /* evaluate unit */
@@ -317,27 +325,54 @@ int  i, data;
       if (unit_table[i].id == info_chn->unit)
         break;
     if (unit_table[i].id)
-      printf(unit_table[i].name);
+      sprintf(line+strlen(line), unit_table[i].name);
     }
 
   if (verbose)
-    printf("\n");
+    sprintf(line+strlen(line), "\n");
   else
-    printf("            \r");
+    sprintf(line+strlen(line), "                    \r");
+}
+
+void print_channel(int index, MSCB_INFO_VAR *info_chn, void *pdata, int verbose)
+{
+char str[256];
+
+  print_channel_str(index, info_chn, pdata, verbose, str);
+  fputs(str, stdout);
+}
+/*------------------------------------------------------------------*/
+
+int match(char *str, char *cmd)
+{
+int i;
+
+  if (str[0] == '\r' || str[0] == '\n')
+    return 0;
+
+  for (i=0 ; i<(int)strlen(str) ; i++)
+    {
+    if (toupper(str[i]) != toupper(cmd[i]) &&
+        str[i] != '\r' && str[i] != '\n')
+      return 0;
+    }
+
+  return 1;
 }
 
 /*------------------------------------------------------------------*/
 
 void cmd_loop(int fd, char *cmd, int adr)
 {
-int           i, fh, status, size, nparam, addr, gaddr, current_addr, current_group;
+int           i, j, fh, status, size, nparam, addr, gaddr, current_addr, current_group;
 unsigned int  data;
 unsigned char c;
 float         value;
 char          str[256], line[256], dbuf[256];
 char          param[10][100];
-char          *pc, *buffer;
-FILE          *cmd_file = NULL;
+char          *pc, *p, *buffer;
+char          name[256], chn_name[256][9];
+FILE          *f, *cmd_file = NULL;
 MSCB_INFO     info;
 MSCB_INFO_VAR info_var;
 
@@ -437,13 +472,13 @@ MSCB_INFO_VAR info_var;
       nparam++;
       } while (*pc);
 
-    /* help */
+    /* help ---------- */
     if ((param[0][0] == 'h' && param[0][1] == 'e') ||
          param[0][0] == '?')
       print_help();
 
-    /* version */
-    else if (param[0][0] == 'v')
+    /* version ---------- */
+    else if (match(param[0], "version"))
       {
       char lib[32], prot[32];
 
@@ -452,8 +487,8 @@ MSCB_INFO_VAR info_var;
       printf("MSCB protocol version : %s\n", prot);
       }
 
-    /* scan */
-    else if ((param[0][0] == 's' && param[0][1] == 'c'))
+    /* scan ---------- */
+    else if (match(param[0], "scan"))
       {
       do
         {
@@ -493,8 +528,8 @@ MSCB_INFO_VAR info_var;
       printf("                       \n");
       }
 
-    /* info */
-    else if (param[0][0] == 'i')
+    /* info ---------- */
+    else if (match(param[0], "info"))
       {
       if (current_addr < 0)
         printf("You must first address an individual node\n");
@@ -528,20 +563,8 @@ MSCB_INFO_VAR info_var;
         }
       }
 
-    /* reboot */
-    else if ((param[0][0] == 'r' && param[0][1] == 'e') && param[0][2] == 'b')
-      {
-      mscb_reboot(fd, current_addr);
-      }
-
-    /* reset */
-    else if ((param[0][0] == 'r' && param[0][1] == 'e') && param[0][2] == 's')
-      {
-      mscb_reset(fd);
-      }
-
-    /* ping */
-    else if (param[0][0] == 'p')
+    /* ping ---------- */
+    else if (match(param[0], "ping"))
       {
       if (!param[1][0])
         puts("Please specify node address");
@@ -573,8 +596,8 @@ MSCB_INFO_VAR info_var;
         }
       }
 
-    /* address */
-    else if ((param[0][0] == 'a'))
+    /* address ---------- */
+    else if (match(param[0], "addr"))
       {
       if (!param[1][0])
         puts("Please specify node address");
@@ -591,8 +614,8 @@ MSCB_INFO_VAR info_var;
         }
       }
 
-    /* ga, set group address */
-    else if ((param[0][0] == 'g' && param[0][1] == 'a'))
+    /* ga, set group address ---------- */
+    else if (match(param[0], "ga"))
       {
       if (!param[1][0])
         puts("Please specify node address");
@@ -608,8 +631,8 @@ MSCB_INFO_VAR info_var;
         }
       }
 
-    /* sa, set node address */
-    else if ((param[0][0] == 's' && param[0][1] == 'a'))
+    /* sa, set node address ---------- */
+    else if (match(param[0], "sa"))
       {
       if (current_addr < 0)
         printf("You must first address an individual node\n");
@@ -638,8 +661,8 @@ MSCB_INFO_VAR info_var;
         }
       }
 
-    /* sn, set node name */
-    else if ((param[0][0] == 's' && param[0][1] == 'n'))
+    /* sn, set node name ---------- */
+    else if (match(param[0], "sn"))
       {
       if (current_addr < 0)
         printf("You must first address an individual node\n");
@@ -659,8 +682,8 @@ MSCB_INFO_VAR info_var;
         }
       }
 
-    /* debug */
-    else if ((param[0][0] == 'd' && param[0][1] == 'e'))
+    /* debug ---------- */
+    else if (match(param[0], "debug"))
       {
       if (current_addr < 0)
         printf("You must first address an individual node\n");
@@ -679,8 +702,8 @@ MSCB_INFO_VAR info_var;
         }
       }
 
-    /* write */
-    else if ((param[0][0] == 'w' && param[0][1] == 'r'))
+    /* write ---------- */
+    else if (match(param[0], "write"))
       {
       if (current_addr < 0 && current_group < 0)
         printf("You must first address a node or a group\n");
@@ -739,8 +762,8 @@ MSCB_INFO_VAR info_var;
         }
       }
 
-    /* read */
-    else if ((param[0][0] == 'r' && param[0][1] == 'e'))
+    /* read ---------- */
+    else if (match(param[0], "read"))
       {
       if (current_addr < 0)
         printf("You must first address an individual node\n");
@@ -781,8 +804,167 @@ MSCB_INFO_VAR info_var;
         }
       }
 
-    /* terminal */
-    else if ((param[0][0] == 't' && param[0][1] == 'e' && param[0][2] == 'r'))
+    /* save ---------- */
+    else if (match(param[0], "save"))
+      {
+      if (current_addr < 0)
+        printf("You must first address an individual node\n");
+      else
+        {
+        if (param[1][0] == 0)
+          {
+          printf("Enter file name: ");
+          fgets(str, sizeof(str), stdin);
+          }
+        else
+          strcpy(str, param[1]);
+
+        if (str[strlen(str)-1] == '\n')
+          str[strlen(str)-1] = 0;
+
+        f = fopen(str, "wt");
+        if (f == NULL)
+          {
+          printf("Cannot open file %s\n", str);
+          }
+        else
+          {
+          status = mscb_info(fd, current_addr, &info);
+          if (status == MSCB_CRC_ERROR)
+            puts("CRC Error");
+          else if (status != MSCB_SUCCESS)
+            puts("No response from node");
+          else
+            {
+            strncpy(str, info.node_name, sizeof(info.node_name));
+            str[16] = 0;
+            fprintf(f, "Node name:        %s\n", str);
+            fprintf(f, "Node address:     %d (0x%X)\n", info.node_address, info.node_address);
+            fprintf(f, "Group address:    %d (0x%X)\n", info.group_address, info.group_address);
+            fprintf(f, "Protocol version: %d.%d\n", info.protocol_version/16, info.protocol_version % 16);
+            fprintf(f, "Watchdog resets:  %d\n", info.watchdog_resets);
+
+            fprintf(f, "\nVariables:\n");
+            for (i=0 ; i<info.n_variables ; i++)
+              {
+              mscb_info_variable(fd, current_addr, i, &info_var);
+              size = sizeof(data);
+              mscb_read(fd, current_addr, (unsigned char)i, dbuf, &size);
+
+              print_channel_str(i, &info_var, dbuf, 1, str);
+              fprintf(f, str);
+              }
+            }
+
+          fclose(f);
+          }
+        }
+      }
+
+    /* load ---------- */
+    else if (match(param[0], "load"))
+      {
+      if (current_addr < 0)
+        printf("You must first address an individual node\n");
+      else
+        {
+        if (param[1][0] == 0)
+          {
+          printf("Enter file name: ");
+          fgets(str, sizeof(str), stdin);
+          }
+        else
+          strcpy(str, param[1]);
+
+        if (str[strlen(str)-1] == '\n')
+          str[strlen(str)-1] = 0;
+
+        /* get list of channel names */
+        status = mscb_info(fd, current_addr, &info);
+        if (status == MSCB_CRC_ERROR)
+          puts("CRC Error");
+        else if (status != MSCB_SUCCESS)
+          puts("No response from node");
+        else
+          {
+          memset(chn_name, 0, sizeof(chn_name));
+          for (i=0 ; i<info.n_variables ; i++)
+            {
+            mscb_info_variable(fd, current_addr, i, &info_var);
+            strcpy(chn_name[i], info_var.name);
+            }
+
+          f = fopen(str, "rt");
+          if (f)
+            {
+            do
+              {
+              line[0] = 0;
+              fgets(line, sizeof(line), f);
+
+              if (line[3] == ':' && line[4] == ' ')
+                {
+                /* variable found, extract it */
+                for (i=0 ; i<8 && line[i+5] != ' '; i++)
+                  name[i] = line[i+5];
+                name[i] = 0;
+
+                p = line+23;
+                while (*p && *p == ' ')
+                  p++;
+
+                /* search for channel with same name */
+                for (i=0 ; chn_name[i][0] ; i++)
+                  if (strcmp(chn_name[i], name) == 0)
+                    {
+                    mscb_info_variable(fd, current_addr, i, &info_var);
+
+                    if (info_var.unit == UNIT_STRING)
+                      {
+                      memset(str, 0, sizeof(str));
+                      strncpy(str, p, info_var.width);
+                      if (strlen(str) > 0 && str[strlen(str)-1] == '\n')
+                        str[strlen(str)-1] = 0;
+
+                      status = mscb_write(fd, current_addr, (unsigned char)i, str, info_var.width);
+                      }
+                    else
+                      {
+                      if (info_var.flags & MSCBF_FLOAT)
+                        {
+                        value = (float)atof(p);
+                        memcpy(&data, &value, sizeof(float));
+                        }
+                      else
+                        {
+                        data = atoi(p);
+                        }
+
+                      status = mscb_write(fd, current_addr, (unsigned char)i, &data, info_var.width);
+
+                      /* blank padding */
+                      for (j=strlen(name) ; j<8 ; j++)
+                        name[j] = ' ';
+                      name[j] = 0;
+
+                      printf("%03d: %s %s", i, name, p);
+                      }
+
+                    break;
+                    }
+                }
+              } while (!feof(f));
+
+            fclose(f);
+            }
+          else
+            printf("File \"%s\" not found\n", str);
+          }
+        }
+      }
+
+    /* terminal ---------- */
+    else if (match(param[0], "terminal"))
       {
       int  d, status;
 
@@ -827,8 +1009,8 @@ MSCB_INFO_VAR info_var;
         getch();
       }
 
-    /* flash */
-    else if (param[0][0] == 'f' && param[0][1] == 'l')
+    /* flash ---------- */
+    else if (match(param[0], "flash"))
       {
       if (current_addr < 0)
         printf("You must first address an individual node\n");
@@ -841,8 +1023,8 @@ MSCB_INFO_VAR info_var;
         }
       }
 
-    /* upload */
-    else if (param[0][0] == 'u' && param[0][1] == 'p')
+    /* upload ---------- */
+    else if (match(param[0], "upload"))
       {
       if (current_addr < 0)
         printf("You must first address an individual node\n");
@@ -878,8 +1060,20 @@ MSCB_INFO_VAR info_var;
         }
       }
 
-    /* echo test */
-    else if (param[0][0] == 'e' && param[0][1] == 'c')
+    /* reboot ---------- */
+    else if (match(param[0], "reboot"))
+      {
+      mscb_reboot(fd, current_addr);
+      }
+
+    /* reset ---------- */
+    else if (match(param[0], "reset"))
+      {
+      mscb_reset(fd);
+      }
+
+    /* echo test ---------- */
+    else if (match(param[0], "echo"))
       {
       unsigned char d1, d2;
       int i, status;
@@ -918,8 +1112,9 @@ MSCB_INFO_VAR info_var;
           getch();
         }
       }
-
-    else if (param[0][0] == 't' && param[0][1] == '1')
+       
+    /* test1 ---------- */
+    else if (match(param[0], "t1"))
       {
       data = atoi(param[1]);
       mscb_link(fd, current_addr, 8, &data, 4);
@@ -927,9 +1122,9 @@ MSCB_INFO_VAR info_var;
       printf("Data: %d\n", data);
       }
 
-    /* exit/quit */
-    else if ((param[0][0] == 'e' && param[0][1] == 'x') ||
-        (param[0][0] == 'q'))
+    /* exit/quit ---------- */
+    else if (match(param[0], "exit") ||
+             match(param[0], "quit"))
       break;
 
     else if (param[0][0] == 0);
