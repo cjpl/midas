@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.32  2001/08/14 09:37:22  midas
+  Mail notification did not contain host name. Fixed.
+
   Revision 1.31  2001/08/09 13:51:42  midas
   Added "suppress default" flag
 
@@ -163,6 +166,7 @@ char return_buffer[WEB_BUFFER_SIZE];
 int  return_length;
 char host_name[256];
 char elogd_url[256];
+char elogd_full_url[256];
 char loogbook[32];
 char logbook[32];
 char logbook_enc[40];
@@ -3144,7 +3148,7 @@ struct hostent *phe;
           sprintf(mail_text+strlen(mail_text), "Type     : %s\n", getparam("type"));
           sprintf(mail_text+strlen(mail_text), "Category : %s\n", getparam("category"));
           sprintf(mail_text+strlen(mail_text), "Subject  : %s\n", getparam("subject"));
-          sprintf(mail_text+strlen(mail_text), "Link     : %s%s/%s\n", elogd_url, logbook_enc, tag);
+          sprintf(mail_text+strlen(mail_text), "Link     : %s%s/%s\n", elogd_full_url, logbook_enc, tag);
 
           sendmail(smtp_host, mail_from, mail_to, 
             index == 0 ? getparam("type") : getparam("category"), mail_text);
@@ -4360,7 +4364,7 @@ INT                  last_time=0;
           goto error;
           }
         }
-      
+
       /* set my own URL */
       getcfg("global", "URL", str);
       if (str[0])
@@ -4368,18 +4372,17 @@ INT                  last_time=0;
         if (str[strlen(str)-1] != '/')
           strcat(str, "/");
         strcpy(elogd_url, str);
+        strcpy(elogd_full_url, str);
         }
       else
         {
         /* use relative pathnames */
         sprintf(elogd_url, "/");
 
-        /* old code for absolute pathnames
         if (tcp_port == 80)
-          sprintf(elogd_url, "http://%s/", host_name);
+          sprintf(elogd_full_url, "http://%s/", host_name);
         else
-          sprintf(elogd_url, "http://%s:%d/", host_name, tcp_port);
-        */
+          sprintf(elogd_full_url, "http://%s:%d/", host_name, tcp_port);
         }
 
       /* ask for password if configured */
