@@ -1,3 +1,15 @@
+/********************************************************************\
+  
+  Name:         mcnaf.c
+  Created by:   Pierre-Andre Amaudruz
+  
+  Contents:     CAMAC utility
+  
+  $Log$
+  Revision 1.4  1998/10/13 16:56:53  pierre
+  -PAA- Add log header
+
+\********************************************************************/
 #include <stdio.h>
 #include "midas.h"
 #include "msystem.h"
