@@ -6,6 +6,9 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
+  Revision 1.34  2002/09/13 07:32:48  midas
+  Added client name to cm_cleanup()
+
   Revision 1.33  2002/06/10 22:58:07  pierre
   add lock flag in remove_record
 
@@ -466,7 +469,7 @@ INT convert_flags;
       break;
 
     case RPC_CM_CLEANUP:
-      status = cm_cleanup();
+      status = cm_cleanup(CSTRING(0));
       break;
 
     case RPC_CM_GET_WATCHDOG_INFO:

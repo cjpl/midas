@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.167  2002/09/13 07:32:47  midas
+  Added client name to cm_cleanup()
+
   Revision 1.166  2002/09/12 10:42:20  midas
   Added note to cm_cleanup()
 
@@ -5366,22 +5369,37 @@ char   client_name[NAME_LENGTH];
 
 /*------------------------------------------------------------------*/
 
-INT cm_cleanup(void)
+INT cm_cleanup(char *client_name)
 /********************************************************************\
 
   Routine: cm_cleanup
 
-  Purpose: Remove all hanging clients, even if their watchdog flags
-           are off.
+  Input:
+    char   name             Client name, if zero check all clients
 
-           **** NOTE ****
+  Purpose: Remove hanging clients independent of their watchdog
+           timeout.
+
            Since this function does not obey the client watchdog
            timeout, it should be only called to remove clients which
-           have their watchdog checking turned off. The normal client
-           removement is done via cm_watchdog().
+           have their watchdog checking turned off or which are
+           known to be dead. The normal client removement is done 
+           via cm_watchdog().
 
-  Input:
-    none
+           Currently (Sept. 02) there are two applications for that:
+
+           1) The ODBEdit command "cleanup", which can be used to
+              remove clients which have their watchdog checking off,
+              like the analyzer started with the "-d" flag for a
+              debugging session.
+
+           2) The frontend init code to remove previous frontends.
+              This can be helpful if a frontend dies. Normally,
+              one would have to wait 60 sec. for a crashed frontend
+              to be removed. Only then one can start again the
+              frontend. Since the frontend init code contains a
+              call to cm_cleanup(<frontend_name>), one can restart
+              a frontend immediately.
 
   Output:
     none
@@ -5413,13 +5431,15 @@ char            str[256];
     if (_buffer[i].attached)
       {
       /* update the last_activity entry to show that we are alive */
+buf_again:
       pheader = _buffer[i].buffer_header;
       pbclient = pheader->client;
       pbclient[ _buffer[i].client_index ].last_activity = actual_time;
 
       /* now check other clients */
       for (j=0 ; j<pheader->max_client_index ; j++,pbclient++)
-        if (pbclient->pid)
+        if (j != _buffer[i].client_index && pbclient->pid && 
+            (client_name[0] == 0 || strncmp(pbclient->name, client_name, strlen(client_name)) == 0))
           {
           /* If client process has no activity, clear its buffer entry. */
           if (abs(actual_time - pbclient->last_activity) > 2*WATCHDOG_INTERVAL)
@@ -5465,6 +5485,9 @@ char            str[256];
             if (str[0])
               cm_msg(MINFO, "cm_cleanup", str);
             }
+
+          /* go again through whole list */
+          goto buf_again;
           }
       }
 
@@ -5474,13 +5497,16 @@ char            str[256];
       {
       /* update the last_activity entry to show that we are alive */
       db_lock_database(i+1);
+
+odb_again:
       pdbheader = _database[i].database_header;
       pdbclient = pdbheader->client;
       pdbclient[ _database[i].client_index ].last_activity = actual_time;
 
       /* now check other clients */
       for (j=0 ; j<pdbheader->max_client_index ; j++,pdbclient++)
-        if (pdbclient->pid)
+        if (j != _database[i].client_index && pdbclient->pid && 
+            (client_name[0] == 0 || strncmp(pdbclient->name, client_name, strlen(client_name)) == 0))
           {
           client_pid = pdbclient->tid;
 
@@ -5550,6 +5576,9 @@ char            str[256];
               pdbclient = pdbheader->client;
               }
             }
+
+          /* go again though whole list */
+          goto odb_again;
           }
 
     db_unlock_database(i+1);
