@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.221  2004/10/04 17:55:24  midas
+  Fixed bug in cm_msg() with incorrect buffer size for 'message file'
+
   Revision 1.220  2004/10/04 15:35:25  midas
   Removed error triggered by bm_close_all_buffers()
 
@@ -1122,6 +1125,7 @@ INT cm_msg_log(INT message_type, const char *message)
                   strcat(dir, DIR_SEPARATOR_STR);
 
             strcpy(filename, "midas.log");
+            size = sizeof(filename);
             db_get_value(hDB, 0, "/Logger/Message file", filename, &size, TID_STRING,
                          TRUE);
 
@@ -1214,6 +1218,7 @@ INT cm_msg_log1(INT message_type, const char *message, const char *facility)
                strcat(filename, ".log");
             } else {
                strcpy(filename, "midas.log");
+               size = sizeof(filename);
                db_get_value(hDB, 0, "/Logger/Message file", filename, &size, TID_STRING,
                             TRUE);
             }
@@ -1577,6 +1582,7 @@ INT cm_msg_retrieve(INT n_message, char *message, INT * buf_size)
                strcat(dir, DIR_SEPARATOR_STR);
 
          strcpy(filename, "midas.log");
+         size = sizeof(filename);
          db_get_value(hDB, 0, "/Logger/Message file", filename, &size, TID_STRING, TRUE);
 
          strcpy(path, dir);
