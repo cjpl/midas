@@ -15,6 +15,10 @@
     email                : andreas.suter@psi.ch
 
   $Log$
+  Revision 1.2  2003/12/30 14:54:26  suter_a
+  "doxygenized" code, i.e. added comments which can be handled by doxygen in
+  order to generate html- and latex-docu.
+
   Revision 1.1  2003/05/09 10:08:09  midas
   Initial revision
 
@@ -42,27 +46,40 @@
 #include "Qt_Connect.h"
 
 //*******************************************************************************************************
-//  default Constructor
-//*******************************************************************************************************
+/*!
+ * <p>Shows the 'connect to' dialog which is used to establish the connection
+ * to a MIDAS experiment. 
+ * 
+ * \param cmExp Pointer to a MIDAS experiment object
+ * \param parent Pointer to the parent widget.
+ * \param name Pointer to the internal name
+ * \param modal Flag telling if the widget is going to be modal or not.
+ * \param fl The widget flags argument, f, is normally 0, but it can be set to 
+ *           customize the window frame of a top-level widget (i.e. parent must be 0). 
+ *           To customize the frame, set the WStyle_Customize flag OR'ed with any 
+ *           of the Qt::WidgetFlags.  
+ */
 Qt_Connect::Qt_Connect(cmExperiment *cmExp, QWidget *parent, const char *name,
                        bool modal, WFlags fl) : Qt_Connect_Base(parent, name, modal, fl)
 {
-  Qt_Connect::cmExp = cmExp; // links local experiment name to the global one
+  Qt_Connect::cmExp = cmExp; // links local experiment to the global one
   host_lineEdit->setFocus(); // set the focus to the host name field
 }
 
 //*******************************************************************************************************
-//  default Destructor
-//*******************************************************************************************************
+/*!
+ * <p>Destroys the object.
+ */
 Qt_Connect::~Qt_Connect()
 {
 }
 
 //*******************************************************************************************************
-//  implement slot getExpList()
-//
-//  gets the experiment-list from host and displays it.
-//*******************************************************************************************************
+/*!
+ * <p>Gets the list of experiments from 'host' and displays them.
+ *
+ * <p><b>Return:</b> void.
+ */
 void Qt_Connect::getExpList()
 {
   cmExp->SetHostName(host_lineEdit->text());        // gets the host name
@@ -87,10 +104,11 @@ void Qt_Connect::getExpList()
 }
 
 //*******************************************************************************************************
-//  implement slot gotExperiment()
-//
-//  gets the selected experiment from the list and terminates the GUI.
-//*******************************************************************************************************
+/*!
+ * <p>Gets the selected experiment from the list and terminates the GUI.
+ *
+ * <p><b>Return:</b> void.
+ */
 void Qt_Connect::gotExperiment()
 {
   cmExp->SetExperimentName(exp_listBox->currentText());

@@ -15,6 +15,10 @@
     email                : andreas.suter@psi.ch
 
   $Log$
+  Revision 1.5  2003/12/30 14:54:26  suter_a
+  "doxygenized" code, i.e. added comments which can be handled by doxygen in
+  order to generate html- and latex-docu.
+
   Revision 1.4  2003/10/21 14:39:06  suter_a
   added scaling
 
@@ -78,8 +82,18 @@
 #include "globals.h"
 
 //*******************************************************************************************************
-//  Constructor
-//*******************************************************************************************************
+/*!
+ * <p>Constructes the hvEdit widget and initializes it properly.
+ *
+ * \param hvA Pointer to the administration class object.
+ * \param cmExp Pointer to the experiment class object.
+ * \param parent Pointer to the parent widget.
+ * \param name Pointer to the internal name.
+ * \param fl The widget flags argument, f, is normally 0, but it can be set to 
+ *           customize the window frame of a top-level widget (i.e. parent must be 0). 
+ *           To customize the frame, set the WStyle_Customize flag OR'ed with any 
+ *           of the Qt::WidgetFlags.  
+ */
 Qt_hvEdit::Qt_hvEdit(hvAdmin *hvA, cmExperiment *cmExp, QWidget *parent, const char *name,
           WFlags fl) : Qt_hvEdit_Base(parent, name, fl)
 {
@@ -124,32 +138,51 @@ Qt_hvEdit::Qt_hvEdit(hvAdmin *hvA, cmExperiment *cmExp, QWidget *parent, const c
 }
 
 //*******************************************************************************************************
-//  Destructor
-//*******************************************************************************************************
+/*!
+ * <p>Destroys the object. If not disconnected from the experiment, first disconnects
+ * from the experiment.
+ */
 Qt_hvEdit::~Qt_hvEdit()
 {
   disconnectFromExp();
 }
 
 //*******************************************************************************************************
-//  implementation of setHostName
-//*******************************************************************************************************
+/*!
+ * <p>Sets the host name in the GUI
+ *
+ * <p><b>Return:</b> void
+ *
+ * \param host String holding the host name. 
+ */
 void Qt_hvEdit::setHostName(QString host)
 {
   hve_Host_lineEdit->setText(host);
 }
 
 //*******************************************************************************************************
-//  implementation of setExpName
-//*******************************************************************************************************
+/*!
+ * <p>Sets the experiment name in the GUI
+ *
+ * <p><b>Return:</b> void
+ *
+ * \param experiment String holding the experiment name. 
+ */
 void Qt_hvEdit::setExpName(QString experiment)
 {
   hve_Exp_lineEdit->setText(experiment);
 }
 
 //*******************************************************************************************************
-//  implementation of updateChannelDefinitions
-//*******************************************************************************************************
+/*!
+ * <p>This function establishes all the hot-links between the ODB and the local 
+ * structures. In case there are already hot-link established, they will be first
+ * closed the memory free'd before they will be newly established.
+ *
+ * <p><b>Return:</b>
+ *   - TRUE if everthing went smooth
+ *   - FALSE otherwise
+ */
 BOOL Qt_hvEdit::updateChannelDefinitions()
 {
   int  i;
@@ -242,8 +275,13 @@ BOOL Qt_hvEdit::updateChannelDefinitions()
 }
 
 //*******************************************************************************************************
-//  implementation of updateTable
-//*******************************************************************************************************
+/*!
+ * <p>This function updates the HV and Current Limit tables.
+ *
+ * <p><b>Return:</b> void
+ *
+ * \param ch channel to be updated. If ch < 0 <em>ALL</em> channels are going to be updated at once.
+ */
 void Qt_hvEdit::updateTable(int ch)
 {
   int  i, offset;
@@ -366,26 +404,30 @@ void Qt_hvEdit::updateTable(int ch)
 }
 
 //*******************************************************************************************************
-//  implementation of fileOpen
-//
-//  SYNTAX of the high voltage files:
-//    The high voltage files are ascii files with the extension '.hv'
-//    The single entries are organized as following
-//    (1) Comment lines start with '!'
-//    (2) A line indicating the device group is needed. It has the syntax: "D >device_group_name<"
-//        where the " indicate the begin and end of line, respectively.
-//    (3) A single device channel has the syntax:
-//	  S (CH_No) $(Voltage)kV %(Current)mA &(Name)
-//
-//        S		keyword at the beginning of the line
-//        (CH_No) 	channel number (1-32 for the Nitronic HVS 132)
-//        $(Voltage)	voltage in kV, e.g. $1.34kV
-//        %(Current)	current limit in mA, e.g. %0.12mA
-//        &(Name)	name of the channel (no spaces allowed)
-//
-//        a typical line would be: S 13 $1.34kV %0.07mA &Anode_MCP2
-//
-//*******************************************************************************************************
+/*!
+ * <p>Opens a file open dialog and reads an existing high voltage file (extension *.hv).
+ * In order to identify for which device and which channels are meant, the following syntax
+ * for these files was introduced:
+ *
+ * <p>SYNTAX of the high voltage files:<br>
+ * The high voltage files are ascii files with the extension '.hv'<br>
+ * The single entries are organized as following
+ *    -# Comment lines start with '!'
+ *    -# A line indicating the device group is needed. It has the syntax:<br> 
+ *       "D >device_group_name<" <br>
+ *       where the " indicate the begin and end of line, respectively.
+ *    -# A single device channel has the syntax:<br>
+ *       S (CH_No) \$(Voltage)kV %(Current)mA &(Name)<br><br>
+ *       - <b>S</b>              keyword at the beginning of the line
+ *       - <b>(CH_No)</b>        channel number (1-32 for the Nitronic HVS 132)
+ *       - <b>\$(Voltage)</b>    voltage in kV, e.g. $1.34kV
+ *       - <b>%(Current)</b>     current limit in mA, e.g. %0.12mA
+ *       - <b>&(Name)</b>        name of the channel (no spaces allowed)
+ *
+ * <p>A typical line would be: S 13 $1.34kV %0.07mA &Anode_MCP2
+ * 
+ * <p><b>Return:</b> void
+ */
 void Qt_hvEdit::fileOpen()
 {
   FILE *fp;
@@ -507,8 +549,12 @@ void Qt_hvEdit::fileOpen()
 }
 
 //*******************************************************************************************************
-//  implementation of fileSave
-//*******************************************************************************************************
+/*!
+ * <p>Opens a file save dialog and saves the file in the format as described in
+ * Qt_hvEdit::fileOpen()
+ *
+ * <p><b>Return:</b> void
+ */
 void Qt_hvEdit::fileSave()
 {
   int     i, offset;
@@ -609,8 +655,12 @@ void Qt_hvEdit::fileSave()
 }
 
 //*******************************************************************************************************
-//  implementation of filePrint
-//*******************************************************************************************************
+/*!
+ * <p>Opens a file print dialog and when a printer was chosen, the data
+ * are going to be sent in the correct format.
+ *
+ * <p><b>Return:</b> void
+ */
 void Qt_hvEdit::filePrint()
 {
   int     i, offset;
@@ -699,8 +749,13 @@ void Qt_hvEdit::filePrint()
 }
 
 //*******************************************************************************************************
-//  implementation of fileExit
-//*******************************************************************************************************
+/*!
+ * <p>Terminates the hvEdit application. In case that there is still an active
+ * connection between MIDAS and hvEdit, this connection will be shut down properly
+ * first.
+ *
+ * <p><b>Return:</b> void 
+ */
 void Qt_hvEdit::fileExit()
 {
   int ans;
@@ -717,16 +772,22 @@ void Qt_hvEdit::fileExit()
 }
 
 //*******************************************************************************************************
-//  implementation of helpIndex
-//*******************************************************************************************************
+/*!
+ * <p><b>Not implemented yet.</b>
+ *
+ * <p><b>Return:</b> void 
+ */
 void Qt_hvEdit::helpIndex()
 {
   QMessageBox::information(0, "INFO", "help index not implemented yet.", QMessageBox::Ok);
 }
 
 //*******************************************************************************************************
-//  implementation of helpContents
-//*******************************************************************************************************
+/*!
+ * <p>Starts an online help assistant.
+ *
+ * <p><b>Return:</b> void 
+ */
 void Qt_hvEdit::helpContents()
 {
 
@@ -738,8 +799,11 @@ void Qt_hvEdit::helpContents()
 }
 
 //*******************************************************************************************************
-//  implementation of helpAbout
-//*******************************************************************************************************
+/*!
+ * <p>Pops up an about widget.
+ *
+ * <p><b>Return:</b> void 
+ */
 void Qt_hvEdit::helpAbout()
 {
   Qt_hvEditAbout *hvEditAbout = new Qt_hvEditAbout();
@@ -747,16 +811,25 @@ void Qt_hvEdit::helpAbout()
 }
 
 //*******************************************************************************************************
-//  implementation of helpAboutQt
-//*******************************************************************************************************
+/*!
+ * <p>Pops up an Qt about widget.
+ *
+ * <p><b>Return:</b> void 
+ */
 void Qt_hvEdit::helpAboutQt()
 {
   QMessageBox::aboutQt(this, "a Qt application.");
 }
 
 //*******************************************************************************************************
-//  implementation of connectToExp
-//*******************************************************************************************************
+/*!
+ * <p>Tries to connect to a MIDAS experiment. It creates first an instance from Qt_Connect, which
+ * allows to select a MIDAs experiment. Having a valid experiment name and host, it tries
+ * to connect to this experiment/host. If successful it updates the GUI, otherwise it
+ * displays an error message, cleans up and quit.
+ *
+ * <p><b>Return:</b> void 
+ */
 void Qt_hvEdit::connectToExp()
 {
   // Dialog for getting the HostName and the ExperimentName
@@ -791,8 +864,11 @@ void Qt_hvEdit::connectToExp()
 }
 
 //*******************************************************************************************************
-//  implementation of disconnectToExp
-//*******************************************************************************************************
+/*!
+ * <p>Disconnects from a MIDAS experiment and cleans up the GUI.
+ *
+ * <p><b>Return:</b> void 
+ */
 void Qt_hvEdit::disconnectFromExp()
 {
   closeKeys();
@@ -810,8 +886,12 @@ void Qt_hvEdit::disconnectFromExp()
 }
 
 //*******************************************************************************************************
-//  implementation of changedDeviceSelection
-//*******************************************************************************************************
+/*!
+ * <p>If the device selection is changed, the table of the tab section is going to
+ * switch to the corresponding device.
+ *
+ * <p><b>Return:</b> void 
+ */
 void Qt_hvEdit::changedDeviceSelection()
 {
   m_iGroup = hve_Device_listBox->currentItem();
@@ -821,8 +901,12 @@ void Qt_hvEdit::changedDeviceSelection()
 }
 
 //*******************************************************************************************************
-//  implementation of onSelectAll
-//*******************************************************************************************************
+/*!
+ * <p>If the 'select all' button is pressed, this function actually selects the 
+ * high voltage demand column.
+ *
+ * <p><b>Return:</b> void 
+ */
 void Qt_hvEdit::onSelectAll()
 {
   //hve_HV_table->selectColumn(HV_DEMAND); // Qt3.1
@@ -835,8 +919,12 @@ void Qt_hvEdit::onSelectAll()
 }
 
 //*******************************************************************************************************
-//  implementation of onSwitchAllChannelOff
-//*******************************************************************************************************
+/*!
+ * <p>If the 'switch all channels off' button is pressed, this function sets all
+ * the HV demand values to zero.
+ *
+ * <p><b>Return:</b> void 
+ */
 void Qt_hvEdit::onSwitchAllChannelsOff()
 {
   int result, i;
@@ -846,7 +934,7 @@ void Qt_hvEdit::onSwitchAllChannelsOff()
 
   if (result == QMessageBox::Yes) {
     for (i=0 ; i<m_nChannels ; i++) {
-      if (m_Demand[i] > 0)
+      if (m_Demand[i] != 0)
         m_Restore[i] = m_Demand[i];
       m_Demand[i] = 0.f;
     }
@@ -857,8 +945,12 @@ void Qt_hvEdit::onSwitchAllChannelsOff()
 }
 
 //*******************************************************************************************************
-//  implementation of onZero
-//*******************************************************************************************************
+/*!
+ * <p>If the 'zero' button is pressed, this function sets the selected channel(s)
+ * of the HV demand value to zero.
+ *
+ * <p><b>Return:</b> void 
+ */
 void Qt_hvEdit::onZero()
 {
   int i, j;
@@ -888,8 +980,11 @@ void Qt_hvEdit::onZero()
 }
 
 //*******************************************************************************************************
-//  implementation of onRestore
-//*******************************************************************************************************
+/*!
+ * <p>If the 'restore' button is pressed, this function restores to the last HV setting before.
+ *
+ * <p><b>Return:</b> void 
+ */
 void Qt_hvEdit::onRestore()
 {
   int i, j;
@@ -916,56 +1011,96 @@ void Qt_hvEdit::onRestore()
 }
 
 //*******************************************************************************************************
-//  implementation of onM100
-//*******************************************************************************************************
+/*!
+ * <p>If the '-1.0' button is pressed, this function reduces all the selected HV or Current Limit
+ * values by an amount of 1.0. In the case of the HV this means reduce the demand high voltage by
+ * 1.0 kV, whereas in the case of the Current Limit it means reduce the current limit value by 
+ * 1.0 mA.
+ *
+ * <p><b>Return:</b> void 
+ */
 void Qt_hvEdit::onM100()
 {
   increment(-1.0f);
 }
 
 //*******************************************************************************************************
-//  implementation of onM010
-//*******************************************************************************************************
+/*!
+ * <p>If the '-0.1' button is pressed, this function reduces all the selected HV or Current Limit
+ * values by an amount of 0.1. In the case of the HV this means reduce the demand high voltage by
+ * 0.1 kV, whereas in the case of the Current Limit it means reduce the current limit value by 
+ * 0.1 mA.
+ *
+ * <p><b>Return:</b> void 
+ */
 void Qt_hvEdit::onM010()
 {
   increment(-0.1f);
 }
 
 //*******************************************************************************************************
-//  implementation of onM001
-//*******************************************************************************************************
+/*!
+ * <p>If the '-0.01' button is pressed, this function reduces all the selected HV or Current Limit
+ * values by an amount of 0.01. In the case of the HV this means reduce the demand high voltage by
+ * 0.01 kV, whereas in the case of the Current Limit it means reduce the current limit value by 
+ * 0.01 mA.
+ *
+ * <p><b>Return:</b> void 
+ */
 void Qt_hvEdit::onM001()
 {
   increment(-0.01f);
 }
 
 //*******************************************************************************************************
-//  implementation of onP100
-//*******************************************************************************************************
+/*!
+ * <p>If the '+1.0' button is pressed, this function increases all the selected HV or Current Limit
+ * values by an amount of 1.0. In the case of the HV this means increase the demand high voltage by
+ * 1.0 kV, whereas in the case of the Current Limit it means increase the current limit value by 
+ * 1.0 mA.
+ *
+ * <p><b>Return:</b> void 
+ */
 void Qt_hvEdit::onP100()
 {
   increment(1.0f);
 }
 
 //*******************************************************************************************************
-//  implementation of onP010
-//*******************************************************************************************************
+/*!
+ * <p>If the '+0.1' button is pressed, this function increases all the selected HV or Current Limit
+ * values by an amount of 0.1. In the case of the HV this means increase the demand high voltage by
+ * 0.1 kV, whereas in the case of the Current Limit it means increase the current limit value by 
+ * 0.1 mA.
+ *
+ * <p><b>Return:</b> void 
+ */
 void Qt_hvEdit::onP010()
 {
   increment(0.1f);
 }
 
 //*******************************************************************************************************
-//  implementation of onP001
-//*******************************************************************************************************
+/*!
+ * <p>If the '+0.01' button is pressed, this function increases all the selected HV or Current Limit
+ * values by an amount of 0.01. In the case of the HV this means increase the demand high voltage by
+ * 0.01 kV, whereas in the case of the Current Limit it means increase the current limit value by 
+ * 0.01 mA.
+ *
+ * <p><b>Return:</b> void 
+ */
 void Qt_hvEdit::onP001()
 {
   increment(0.01f);
 }
 
 //*******************************************************************************************************
-//  implementation of onSet
-//*******************************************************************************************************
+/*!
+ * <p>On pressing the 'set' button, this function sets the value from the 'Input:' field
+ * to all of the selection (HV Demand or Current Limit). 
+ *
+ * <p><b>Return:</b> void 
+ */
 void Qt_hvEdit::onSet()
 {
   int i, j;
@@ -1002,8 +1137,12 @@ void Qt_hvEdit::onSet()
 }
 
 //*******************************************************************************************************
-//  implementation of onScale
-//*******************************************************************************************************
+/*!
+ * <p>On pressing the 'scale by factor' button, this function multiplies the values of
+ * all selections (HV Demand or Current Limit) by this value. 
+ *
+ * <p><b>Return:</b> void 
+ */
 void Qt_hvEdit::onScale()
 {
   float scale = hve_Scale_comboBox->currentText().toFloat(); // read comboBox value
@@ -1051,8 +1190,15 @@ void Qt_hvEdit::onScale()
 }
 
 //*******************************************************************************************************
-//  implementation of hvValueChanged
-//*******************************************************************************************************
+/*!
+ * <p>If an element of the HV table is changed within the table, this function is handling it.
+ * It updates all the necessary fields and sends the HV demand value to the ODB. 
+ *
+ * <p><b>Return:</b> void 
+ * 
+ * \param row Row of the table
+ * \param col Column of the table
+ */
 void Qt_hvEdit::hvValueChanged(int row, int col)
 {
   int i, j;
@@ -1081,8 +1227,15 @@ void Qt_hvEdit::hvValueChanged(int row, int col)
 }
 
 //*******************************************************************************************************
-//  implementation of currentLimitValueChanged
-//*******************************************************************************************************
+/*!
+ * <p>If an element of the Current Limit table is changed within the table, this function is handling it.
+ * It updates all the necessary fields and sends the current limit value to the ODB. 
+ *
+ * <p><b>Return:</b> void 
+ * 
+ * \param row Row of the table
+ * \param col Column of the table
+ */
 void Qt_hvEdit::currentLimitValueChanged(int row, int col)
 {
   int i, j;
@@ -1111,8 +1264,12 @@ void Qt_hvEdit::currentLimitValueChanged(int row, int col)
 }
 
 //*******************************************************************************************************
-//  implementation of disableNotConnected
-//*******************************************************************************************************
+/*!
+ * <p>Disables all the fields, buttons and menu entries which make no sence if not connected
+ * to an experiment.
+ *
+ * <p><b>Return:</b> void 
+ */
 void Qt_hvEdit::disableNotConnected()
 {
   connectToExpAction->setEnabled(TRUE);
@@ -1138,8 +1295,12 @@ void Qt_hvEdit::disableNotConnected()
 }
 
 //*******************************************************************************************************
-//  implementation of enableConnected
-//*******************************************************************************************************
+/*!
+ * <p>Enables all the fields, buttons and menu entries which make any sence if connected
+ * to an experiment.
+ *
+ * <p><b>Return:</b> void 
+ */
 void Qt_hvEdit::enableConnected()
 {
   connectToExpAction->setEnabled(FALSE);
@@ -1165,8 +1326,13 @@ void Qt_hvEdit::enableConnected()
 }
 
 //*******************************************************************************************************
-//  implementation of openKeys
-//*******************************************************************************************************
+/*!
+ * <p>Opens all the necessary keys of the ODB.
+ *
+ * <p><b>Return:</b>
+ *   - TRUE if all the ODB Keys could have been opened.
+ *   - FALSE otherwise. 
+ */
 BOOL Qt_hvEdit::openKeys()
 {
   // Root key
@@ -1203,8 +1369,11 @@ BOOL Qt_hvEdit::openKeys()
 }
 
 //*******************************************************************************************************
-//  implementation of closeKeys
-//*******************************************************************************************************
+/*!
+ * <p>Closes all the keys of the ODB.
+ *
+ * <p><b>Return:</b> void
+ */
 void Qt_hvEdit::closeKeys()
 {
   if (rootKey) {
@@ -1234,8 +1403,11 @@ void Qt_hvEdit::closeKeys()
 }
 
 //*******************************************************************************************************
-//  implementation of freeMem
-//*******************************************************************************************************
+/*!
+ * <p>Free's all the local memory.
+ *
+ * <p><b>Return:</b> void
+ */
 void Qt_hvEdit::freeMem()
 {
   // free local memory
@@ -1252,8 +1424,14 @@ void Qt_hvEdit::freeMem()
 }
 
 //*******************************************************************************************************
-//  implementation of channelIndex
-//*******************************************************************************************************
+/*!
+ * <p>Translates a channel index of a device to a channel index
+ * of HV ODB.
+ *
+ * <p><b>Return:</b> channel index of the HV ODB
+ *
+ * \param ch channel index of a HV device.
+ */
 int Qt_hvEdit::channelIndex(int ch)
 {
   int i,j;
@@ -1272,8 +1450,11 @@ int Qt_hvEdit::channelIndex(int ch)
 }
 
 //*******************************************************************************************************
-//  implementation of clearTable
-//*******************************************************************************************************
+/*!
+ * <p>Clears the HV/Current Limit tables.
+ *
+ * <p><b>Return:</b> void
+ */
 void Qt_hvEdit::clearTable()
 {
   int i, j;
@@ -1290,8 +1471,14 @@ void Qt_hvEdit::clearTable()
 }
 
 //*******************************************************************************************************
-//  implementation of updateODB_demand
-//*******************************************************************************************************
+/*!
+ * <p>Sets the HV demand value in the ODB. If 'ch' is larger than zero,
+ * only a single channel is written, otherwise the whole array is written.
+ *
+ * <p><b>Return:</b> void
+ *
+ * \param ch channel of the HV ODB
+ */
 void Qt_hvEdit::updateODB_demand(int ch)
 {
   int status, size;
@@ -1310,8 +1497,14 @@ void Qt_hvEdit::updateODB_demand(int ch)
 }
 
 //*******************************************************************************************************
-//  implementation of updateODB_currentLimit
-//*******************************************************************************************************
+/*!
+ * <p>Sets the Current Limit value in the ODB. If 'ch' is larger than zero,
+ * only a single channel is written, otherwise the whole array is written.
+ *
+ * <p><b>Return:</b> void
+ *
+ * \param ch channel of the HV ODB
+ */
 void Qt_hvEdit::updateODB_currentLimit(int ch)
 {
   int status, size;
@@ -1330,8 +1523,13 @@ void Qt_hvEdit::updateODB_currentLimit(int ch)
 }
 
 //*******************************************************************************************************
-//  implementation of increment
-//*******************************************************************************************************
+/*!
+ * <p>Increments the current selectio of the active tab by the amount 'incr'.
+ *
+ * <p><b>Return:</b> void
+ *
+ * \param incr Value by which the selected cells shall be incremented.
+ */
 void Qt_hvEdit::increment(const float incr)
 {
   int i, j;
@@ -1368,8 +1566,16 @@ void Qt_hvEdit::increment(const float incr)
 }
 
 //*******************************************************************************************************
-//
-//*******************************************************************************************************
+/*!
+ * <p>Searches a sub-string sandwiched between 'first' and 'last'.
+ *
+ * <p><b>Return:</b> Pointer to the sub-string
+ * 
+ * \param str    haystack, i.e. long string containing sub-string
+ * \param first  sub-string in front of the searched one
+ * \param last   sub-string following of the searched one
+ * \param result pointer to the result string
+ */
 QString *Qt_hvEdit::findSub(char str[], char first[], char last[], QString *result)
 {
    char sub[80], *lp;
@@ -1386,10 +1592,12 @@ QString *Qt_hvEdit::findSub(char str[], char first[], char last[], QString *resu
 }
 
 //*******************************************************************************************************
-//  implementation of namesChanged
-//    A member function cannot be passed to db_open_record. Therefore, NamesChanged
-//    works as a stub to call updateChannelDefinition
-//*******************************************************************************************************
+/*!
+ * <p>A member function cannot be passed to db_open_record. Therefore, NamesChanged
+ *    works as a stub to call Qt_hvEdit::updateChannelDefinition.
+ *
+ * <p><b>Return:</b> void
+ */
 void namesChanged(int,int,void*)
 {
   Qt_hvEdit *dlg;
@@ -1400,17 +1608,23 @@ void namesChanged(int,int,void*)
 }
 
 //*******************************************************************************************************
-//  implementation of namesChanged
-//    This function gets linked to the open records (demand and measured)
-//    by the db_open_record calls. Whenever a record changes, cm_yield
-//    first updates the local copy of the record and then calls odb_update
-//*******************************************************************************************************
+/*!
+ * <p>This function gets linked to the open records (demand and measured)
+ *    by the db_open_record calls. Whenever a record changes, cm_yield
+ *    first updates the local copy of the record and then calls odb_update
+ *
+ * <p><b>Return:</b> void
+ *
+ * \param hDB  Handle to the ODB.
+ * \param hKey Handle to the corresponding key.
+ * \param info Pointer to the GUI.
+ */
 void HVChanged(HNDLE hDB, HNDLE hKey, void *info)
 {
   Qt_hvEdit  *dlg;
 
-  if (hDB);
-  if (hKey);
+  if (hDB);  // only there to cheat the compiler warning hDB never used ...
+  if (hKey); // only there to cheat the compiler warning hKey never used ...
 
   dlg = (Qt_hvEdit *) info;
   if (dlg == NULL) {

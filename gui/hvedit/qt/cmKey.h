@@ -10,6 +10,10 @@
     email                : andreas.suter@psi.ch
 
   $Log$
+  Revision 1.2  2003/12/30 14:54:26  suter_a
+  "doxygenized" code, i.e. added comments which can be handled by doxygen in
+  order to generate html- and latex-docu.
+
   Revision 1.1  2003/05/09 10:08:09  midas
   Initial revision
 
@@ -46,20 +50,27 @@ class cmKey
 
   // Attributes
   private:
-    HNDLE  m_hDB;
-    HNDLE  m_hKey;
-    BOOL   m_bValid;
-    KEY    m_Key;
-    cmExperiment *m_pExperiment;
+    HNDLE  m_hDB;     //!< Main handle to the ODB of MIDAS.
+    HNDLE  m_hKey;    //!< Handle to a key in the ODB.
+    BOOL   m_bValid;  //!< Validator flag, showing if the searched key is accessible or existing.
+    KEY    m_Key;     //!< MIDAS Structure to the key. Holding informations about the content of the key.
+    cmExperiment *m_pExperiment; //!< Pointer to a MIDAS experiment object.
 
   // Operations
   public:
+    //! Returns the Main handle of the ODB.
     HNDLE   GetHdb()  { return m_hDB; };
+    //! Returns the key. 
     HNDLE   GetHkey() { return m_hKey; };
+    //! Returns if the searched key is accessible or existing.
     BOOL    IsValid() { return m_bValid; };
+    //! Returns the type of the key.
     INT     GetType() { return m_Key.type; };
+    //! Returns the item size of the key.
     INT     GetItemSize() { return m_Key.item_size; };
+    //! Returns the access mode of the key
     WORD    GetAccessMode() { return m_Key.access_mode; };
+    //! Returns the number of elements contained in the key.
     INT     GetNumValues() { return m_Key.num_values; };
     INT     UpdateKey();
     INT     HotLink(void *addr, WORD access, void (*dispatcher)(INT,INT,void*), void *window);
