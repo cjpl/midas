@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.43  2001/10/12 10:46:05  midas
+  Fixed bug which caused problems with the "find" function
+
   Revision 1.42  2001/10/12 07:18:47  midas
   - Fixed CRLF problem with sendmail, thanks to Michael Jones
   - Fixed problem that first logbook page can be viewed even with read PW
@@ -1092,6 +1095,9 @@ char   *file_list;
       for (i=0,min=9999999 ; i<n ; i++)
         {
         d = atoi(file_list+i*MAX_PATH_LENGTH);
+        if (d == 0)
+          continue;
+
         if (d < 900000)
           d += 1000000; /* last century */
 
