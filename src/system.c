@@ -14,6 +14,9 @@
                 Brown, Prentice Hall
 
   $Log$
+  Revision 1.57  2001/08/07 13:07:20  midas
+  Fixed typo
+
   Revision 1.56  2001/06/27 12:16:00  midas
   Fixed compiler warnings for IRIX
 
@@ -1128,7 +1131,7 @@ INT ss_spawnv(INT mode, char *cmdname, char *argv[])
     {
     /* now we are in the child process ... */
     child_pid = execvp(cmdname, argv);
-    return BM_SUCCESS;
+    return SS_SUCCESS;
     }
   else
     {
