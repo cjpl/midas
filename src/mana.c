@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.92  2003/04/25 11:53:22  midas
+  Added ROOT histo server
+
   Revision 1.91  2003/04/23 15:30:17  midas
   Fixed compiler warnings under g++
 
@@ -318,7 +321,7 @@
 
 /* missing in hbook.h */
 #ifndef HFNOV
-#define HFNOV(A1,A2)  CCALLSFSUB2(HFNOV,hfnov,INT,FLOATV,A1,A2) 
+#define HFNOV(A1,A2)  CCALLSFSUB2(HFNOV,hfnov,INT,FLOATV,A1,A2)
 #endif
 
 #ifndef HMERGE
@@ -339,11 +342,20 @@
 #include <TFile.h>
 #include <TTree.h>
 #include <TLeaf.h>
+#include <TSocket.h>
+#include <TServerSocket.h>
+#include <TMessage.h>
+#include <TObjString.h>
+
+#ifdef OS_LINUX
+#include <TThread.h>
+#endif
 
 /* Our own ROOT global objects */
 
-TDirectory* gManaHistsDir   = NULL; // Container for all histograms
-TFile*      gManaOutputFile = NULL; // MIDAS output file
+TApplication* manaApp;
+TDirectory*   gManaHistsDir   = NULL; // Container for all histograms
+TFile*        gManaOutputFile = NULL; // MIDAS output file
 
 /* MIDAS output tree structure holing one tree per event type */
 
@@ -384,7 +396,7 @@ char     msg[256], str[256];
 
   if (pvm_start_time == 0)
     pvm_start_time = ss_millitime();
- 
+
   va_start(argptr, format);
   vsprintf(msg, (char *) format, argptr);
   va_end(argptr);
@@ -524,51 +536,51 @@ struct {
   INT  index;
 } clp_descrip[] = {
 
-  {'c', 
+  {'c',
    "<filename1>   Configuration file name(s). May contain a '%05d' to be\n\
      <filename2>   replaced by the run number. Up to ten files can be\n\
-         ...       specified in one \"-c\" statement", 
+         ...       specified in one \"-c\" statement",
    clp.config_file_name, TID_STRING, 10 },
 
-  {'d', 
+  {'d',
    "              Debug flag when started the analyzer fron a debugger.\n\
                    Prevents the system to kill the analyzer when the\n\
-                   debugger stops at a breakpoint", 
+                   debugger stops at a breakpoint",
    &clp.debug, TID_BOOL, 0 },
 
-  {'D', 
+  {'D',
    "              Start analyzer as a daemon in the background (UNIX only).",
    &clp.daemon, TID_BOOL, 0 },
 
-  {'e', 
-   "<experiment>  MIDAS experiment to connect to", 
+  {'e',
+   "<experiment>  MIDAS experiment to connect to",
    clp.exp_name, TID_STRING, 1 },
-  
-  {'f', 
+
+  {'f',
    "              Filter mode. Write original events to output file\n\
                    only if analyzer accepts them (doesn't return ANA_SKIP).\n",
    &clp.filter, TID_BOOL, 0 },
 
-  {'h', 
-   "<hostname>    MIDAS host to connect to when running the analyzer online", 
+  {'h',
+   "<hostname>    MIDAS host to connect to when running the analyzer online",
    clp.host_name, TID_STRING, 1 },
 
-  {'i', 
+  {'i',
    "<filename1>   Input file name. May contain a '%05d' to be replaced by\n\
      <filename2>   the run number. Up to ten input files can be specified\n\
-         ...       in one \"-i\" statement", 
+         ...       in one \"-i\" statement",
    clp.input_file_name, TID_STRING, 10 },
 
-  {'l', 
+  {'l',
    "              If set, don't load histos from last histo file when\n\
                    running online.",
    &clp.no_load, TID_BOOL, 0 },
 
-  {'L', 
+  {'L',
    "              HBOOK LREC size. Default is 8190.",
    &clp.lrec, TID_INT, 0 },
 
-  {'n', 
+  {'n',
    "<count>       Analyze only \"count\" events.\n\
      <first> <last>\n\
                    Analyze only events from \"first\" to \"last\".\n\
@@ -576,52 +588,52 @@ struct {
                    Analyze every n-th event from \"first\" to \"last\".",
    clp.n, TID_INT, 4 },
 
-  {'o', 
+  {'o',
    "<filename>    Output file name. Extension may be .mid (MIDAS binary),\n\
                    .asc (ASCII) or .rz (HBOOK). If the name contains a '%05d',\n\
                    one output file is generated for each run. Use \"OFLN\" as\n\
                    output file name to creaate a HBOOK shared memory instead\n\
-                   of a file.", 
+                   of a file.",
    clp.output_file_name, TID_STRING, 1 },
 
-  {'p', 
+  {'p',
    "<param=value> Set individual parameters to a specific value.\n\
                    Overrides any setting in configuration files",
    clp.param, TID_STRING, 10 },
 
-  {'P', 
+  {'P',
    "<ODB tree>    Protect an ODB subtree from being overwritten\n\
                    with the online data when ODB gets loaded from .mid file",
    clp.protect, TID_STRING, 10 },
 
-  {'q', 
+  {'q',
    "              Quiet flag. If set, don't display run progress in\n\
                    offline mode.",
    &clp.quiet, TID_BOOL, 0 },
 
-  {'r', 
+  {'r',
    "<range>       Range of run numbers to analyzer like \"-r 120 125\"\n\
                    to analyze runs 120 to 125 (inclusive). The \"-r\"\n\
-                   flag must be used with a '%05d' in the input file name.", 
+                   flag must be used with a '%05d' in the input file name.",
    clp.run_number, TID_INT, 2 },
 
 #ifdef PVM
-  {'t', 
+  {'t',
    "<n>           Parallelize analyzer using <n> tasks with PVM.",
    &clp.n_task, TID_INT, 1 },
 
-  {'b', 
+  {'b',
    "<n>           Buffer size for parallelization in kB.",
    &clp.pvm_buf_size, TID_INT, 1 },
 #endif
 
-  {'v', 
+  {'v',
    "              Verbose output.",
    &clp.verbose, TID_BOOL, 0 },
 
-  {'w', 
+  {'w',
    "              Produce row-wise N-tuples in outpur .rz file. By\n\
-                   default, column-wise N-tuples are used.", 
+                   default, column-wise N-tuples are used.",
    &clp.rwnt, TID_BOOL, 0 },
 
   { 0 }
@@ -710,7 +722,7 @@ INT index, i, j, size;
         if (clp_descrip[j].type == TID_STRING)
           strcpy((char *) clp_descrip[j].data + clp_descrip[j].index*256, argv[index]);
         else
-          db_sscanf(argv[index], clp_descrip[j].data, 
+          db_sscanf(argv[index], clp_descrip[j].data,
                     &size, clp_descrip[j].index, clp_descrip[j].type);
 
         if (clp_descrip[j].n > 1)
@@ -718,7 +730,7 @@ INT index, i, j, size;
 
         if (clp_descrip[j].index > clp_descrip[j].n)
           {
-          printf("Note more than %d options possible for flag -%c\n", 
+          printf("Note more than %d options possible for flag -%c\n",
                  clp_descrip[j].n, clp_descrip[j].flag_char);
           return 0;
           }
@@ -735,7 +747,7 @@ INT index, i, j, size;
   return SUCCESS;
 
 usage:
-  
+
   printf("usage: analyzer [options]\n\n");
   printf("valid options are:\n");
   for (i=0 ; clp_descrip[i].flag_char ; i++)
@@ -754,7 +766,7 @@ int   size;
 
   cm_get_experiment_database(&hDB, NULL);
   db_find_key(hDB, 0, "/Logger/Data dir", &hkey);
-  
+
   if (hkey)
     {
     size = sizeof(str);
@@ -1042,22 +1054,22 @@ KEY   key;
 char hbook_types[][8] = {
   "",
   ":U:8",  /* TID_BYTE      */
-  ":I:8",  /* TID_SBYTE     */          
-  ":I:8",  /* TID_CHAR      */          
-  ":U:16", /* TID_WORD      */          
-  ":I:16", /* TID_SHORT     */          
-  ":U*4",  /* TID_DWORD     */          
-  ":I*4",  /* TID_INT       */          
-  ":I*4",  /* TID_BOOL      */          
-  ":R*4",  /* TID_FLOAT     */          
-  ":R*8",  /* TID_DOUBLE    */          
-  ":U:8",  /* TID_BITFIELD  */          
-  ":C:32", /* TID_STRING    */          
-  "",      /* TID_ARRAY     */     
-  "",      /* TID_STRUCT    */     
-  "",      /* TID_KEY       */     
-  "",      /* TID_LINK      */     
-  "",      /* TID_LAST      */     
+  ":I:8",  /* TID_SBYTE     */
+  ":I:8",  /* TID_CHAR      */
+  ":U:16", /* TID_WORD      */
+  ":I:16", /* TID_SHORT     */
+  ":U*4",  /* TID_DWORD     */
+  ":I*4",  /* TID_INT       */
+  ":I*4",  /* TID_BOOL      */
+  ":R*4",  /* TID_FLOAT     */
+  ":R*8",  /* TID_DOUBLE    */
+  ":U:8",  /* TID_BITFIELD  */
+  ":C:32", /* TID_STRING    */
+  "",      /* TID_ARRAY     */
+  "",      /* TID_STRUCT    */
+  "",      /* TID_KEY       */
+  "",      /* TID_LINK      */
+  "",      /* TID_LAST      */
 
 };
 
@@ -1116,7 +1128,7 @@ EVENT_DEF  *event_def;
         sprintf(str, "/%s/Bank switches/%s", analyzer_name, bank_list->name);
         bank_list->output_flag = FALSE;
         size = sizeof(DWORD);
-        db_get_value(hDB, 0, str, &bank_list->output_flag, &size, TID_DWORD, TRUE); 
+        db_get_value(hDB, 0, str, &bank_list->output_flag, &size, TID_DWORD, TRUE);
         }
     }
 
@@ -1136,7 +1148,7 @@ EVENT_DEF  *event_def;
       HBNT(analyze_request[index].ar_info.event_id, analyze_request[index].event_name, " ");
 
       /* book run number/event number/time */
-      HBNAME(analyze_request[index].ar_info.event_id, "Number", 
+      HBNAME(analyze_request[index].ar_info.event_id, "Number",
              (int *)&analyze_request[index].number, "Run:U*4,Number:U*4,Time:U*4");
 
       bank_list = analyze_request[index].bank_list;
@@ -1146,7 +1158,7 @@ EVENT_DEF  *event_def;
         event_def = db_get_event_definition((short int) analyze_request[index].ar_info.event_id);
         if (event_def == NULL)
           {
-          cm_msg(MERROR, "book_ntuples", "Cannot find definition of event %s in ODB", 
+          cm_msg(MERROR, "book_ntuples", "Cannot find definition of event %s in ODB",
                  analyze_request[index].event_name);
           return 0;
           }
@@ -1179,7 +1191,7 @@ EVENT_DEF  *event_def;
             strcat(str, hbook_types[key.type]);
           else
             {
-            cm_msg(MERROR, "book_ntuples", "Key %s in event %s is of type %s with no HBOOK correspondence", 
+            cm_msg(MERROR, "book_ntuples", "Key %s in event %s is of type %s with no HBOOK correspondence",
                             key.name, analyze_request[index].event_name, rpc_tid_name(key.type));
             return 0;
             }
@@ -1190,11 +1202,11 @@ EVENT_DEF  *event_def;
         ch_tags[strlen(ch_tags)-1] = 0;
         db_get_record_size(hDB, event_def->hDefKey, 0, &size);
         analyze_request[index].addr = calloc(1, size);
-  
+
         strcpy(block_name, analyze_request[index].event_name);
         block_name[8] = 0;
 
-        HBNAME(analyze_request[index].ar_info.event_id, block_name, 
+        HBNAME(analyze_request[index].ar_info.event_id, block_name,
                analyze_request[index].addr, ch_tags);
         }
       else
@@ -1208,7 +1220,7 @@ EVENT_DEF  *event_def;
           if (bank_list->type != TID_STRUCT)
             {
             sprintf(str, "N%s[0,%d]", bank_list->name, bank_list->size);
-            HBNAME(analyze_request[index].ar_info.event_id, 
+            HBNAME(analyze_request[index].ar_info.event_id,
                    bank_list->name, (INT *) &bank_list->n_data, str);
 
             sprintf(str, "%s(N%s)", bank_list->name, bank_list->name);
@@ -1218,11 +1230,11 @@ EVENT_DEF  *event_def;
               strcat(str, hbook_types[bank_list->type]);
             else
               {
-              cm_msg(MERROR, "book_ntuples", "Bank %s is of type %s with no HBOOK correspondence", 
+              cm_msg(MERROR, "book_ntuples", "Bank %s is of type %s with no HBOOK correspondence",
                               bank_list->name, rpc_tid_name(bank_list->type));
               return 0;
               }
-                            
+
             if (rpc_tid_size(bank_list->type) == 0)
               {
               cm_msg(MERROR, "book_ntuples", "Bank %s is of type with unknown size", bank_list->name);
@@ -1230,8 +1242,8 @@ EVENT_DEF  *event_def;
               }
 
             bank_list->addr = calloc(bank_list->size, max(4, rpc_tid_size(bank_list->type)));
-      
-            HBNAME(analyze_request[index].ar_info.event_id, 
+
+            HBNAME(analyze_request[index].ar_info.event_id,
                    bank_list->name, bank_list->addr, str);
             }
           else
@@ -1265,7 +1277,7 @@ EVENT_DEF  *event_def;
                 strcat(str, hbook_types[key.type]);
               else
                 {
-                cm_msg(MERROR, "book_ntuples", "Key %s in bank %s is of type %s with no HBOOK correspondence", 
+                cm_msg(MERROR, "book_ntuples", "Key %s in bank %s is of type %s with no HBOOK correspondence",
                                 key.name, bank_list->name, rpc_tid_name(key.type));
                 return 0;
                 }
@@ -1275,8 +1287,8 @@ EVENT_DEF  *event_def;
 
             ch_tags[strlen(ch_tags)-1] = 0;
             bank_list->addr = calloc(1, bank_list->size);
-      
-            HBNAME(analyze_request[index].ar_info.event_id, 
+
+            HBNAME(analyze_request[index].ar_info.event_id,
                    bank_list->name, bank_list->addr, ch_tags);
             }
           }
@@ -1303,7 +1315,7 @@ EVENT_DEF  *event_def;
         }
 
       n_tag = 0;
-    
+
       strcpy(rw_tag[n_tag++], "Run");
       strcpy(rw_tag[n_tag++], "Number");
       strcpy(rw_tag[n_tag++], "Time");
@@ -1345,7 +1357,7 @@ EVENT_DEF  *event_def;
               strncpy(rw_tag[n_tag++], str, 8);
 
               if (clp.verbose)
-                printf("NT #%d-%d: %s\n", analyze_request[index].ar_info.event_id, 
+                printf("NT #%d-%d: %s\n", analyze_request[index].ar_info.event_id,
                                           n_tag+1, str);
 
               if (n_tag >= 512)
@@ -1357,12 +1369,12 @@ EVENT_DEF  *event_def;
           else
             {
             strncpy(rw_tag[n_tag++], key_name, 8);
-          
+
             if (clp.verbose)
-              printf("NT #%d-%d: %s\n", analyze_request[index].ar_info.event_id, 
+              printf("NT #%d-%d: %s\n", analyze_request[index].ar_info.event_id,
                                         n_tag, key_name);
             }
-          
+
           if (n_tag >= 512)
             {
             cm_msg(MERROR, "book_ntuples", "Too much tags for RW N-tupeles (512 maximum)");
@@ -1389,7 +1401,7 @@ EVENT_DEF  *event_def;
               strncpy(rw_tag[n_tag++], str, 8);
 
               if (clp.verbose)
-                printf("NT #%d-%d: %s\n", analyze_request[index].ar_info.event_id, 
+                printf("NT #%d-%d: %s\n", analyze_request[index].ar_info.event_id,
                                           n_tag, str);
               if (n_tag >= 512)
                 {
@@ -1426,9 +1438,9 @@ EVENT_DEF  *event_def;
                   strncpy(rw_tag[n_tag++], str, 8);
 
                   if (clp.verbose)
-                    printf("NT #%d-%d: %s\n", analyze_request[index].ar_info.event_id, 
+                    printf("NT #%d-%d: %s\n", analyze_request[index].ar_info.event_id,
                                               n_tag, str);
-                  
+
                   if (n_tag >= 512)
                     {
                     cm_msg(MERROR, "book_ntuples", "Too much tags for RW N-tupeles (512 maximum)");
@@ -1439,10 +1451,10 @@ EVENT_DEF  *event_def;
                 {
                 strncpy(rw_tag[n_tag++], key_name, 8);
                 if (clp.verbose)
-                  printf("NT #%d-%d: %s\n", analyze_request[index].ar_info.event_id, 
+                  printf("NT #%d-%d: %s\n", analyze_request[index].ar_info.event_id,
                                             n_tag, key_name);
                 }
-              
+
               if (n_tag >= 512)
                 {
                 cm_msg(MERROR, "book_ntuples", "Too much tags for RW N-tupeles (512 maximum)");
@@ -1462,7 +1474,7 @@ EVENT_DEF  *event_def;
         HDELET(id);
 
       if (clp.online || equal_ustring(clp.output_file_name, "OFLN"))
-        HBOOKN(id, block_name, n_tag, " ", 
+        HBOOKN(id, block_name, n_tag, " ",
                n_tag*analyze_request[index].rwnt_buffer_size, rw_tag);
       else
         HBOOKN(id, block_name, n_tag, "//OFFLINE", 5120, rw_tag);
@@ -1486,22 +1498,22 @@ EVENT_DEF  *event_def;
 char ttree_types[][8] = {
   "",
   "b",  /* TID_BYTE      */
-  "B",  /* TID_SBYTE     */          
-  "b",  /* TID_CHAR      */          
-  "s",  /* TID_WORD      */          
-  "S",  /* TID_SHORT     */          
-  "i",  /* TID_DWORD     */          
-  "I",  /* TID_INT       */          
-  "I",  /* TID_BOOL      */          
-  "F",  /* TID_FLOAT     */          
-  "D",  /* TID_DOUBLE    */          
-  "b",  /* TID_BITFIELD  */          
-  "C",  /* TID_STRING    */          
-  "",      /* TID_ARRAY     */     
-  "",      /* TID_STRUCT    */     
-  "",      /* TID_KEY       */     
-  "",      /* TID_LINK      */     
-  "",      /* TID_LAST      */     
+  "B",  /* TID_SBYTE     */
+  "b",  /* TID_CHAR      */
+  "s",  /* TID_WORD      */
+  "S",  /* TID_SHORT     */
+  "i",  /* TID_DWORD     */
+  "I",  /* TID_INT       */
+  "I",  /* TID_BOOL      */
+  "F",  /* TID_FLOAT     */
+  "D",  /* TID_DOUBLE    */
+  "b",  /* TID_BITFIELD  */
+  "C",  /* TID_STRING    */
+  "",      /* TID_ARRAY     */
+  "",      /* TID_STRUCT    */
+  "",      /* TID_KEY       */
+  "",      /* TID_LINK      */
+  "",      /* TID_LAST      */
 
 };
 
@@ -1536,7 +1548,7 @@ EVENT_TREE *et;
         sprintf(str, "/%s/Bank switches/%s", analyzer_name, bank_list->name);
         bank_list->output_flag = FALSE;
         size = sizeof(DWORD);
-        db_get_value(hDB, 0, str, &bank_list->output_flag, &size, TID_DWORD, TRUE); 
+        db_get_value(hDB, 0, str, &bank_list->output_flag, &size, TID_DWORD, TRUE);
         }
     }
 
@@ -1556,7 +1568,7 @@ EVENT_TREE *et;
       tree_struct.event_tree = (EVENT_TREE *)realloc(tree_struct.event_tree, sizeof(EVENT_TREE)*tree_struct.n_tree);
 
     et = tree_struct.event_tree + (tree_struct.n_tree - 1);
-    
+
     et->event_id = analyze_request[index].ar_info.event_id;
     et->n_branch = 0;
 
@@ -1573,7 +1585,7 @@ EVENT_TREE *et;
     et->branch[et->n_branch] = et->tree->Branch("Number", &analyze_request[index].number, "Run/I:Number/I:Time/i");
     strcpy(et->branch_name, "Number");
     et->n_branch++;
-    
+
     bank_list = analyze_request[index].bank_list;
     if (bank_list == NULL)
       {
@@ -1581,7 +1593,7 @@ EVENT_TREE *et;
       event_def = db_get_event_definition((short int) analyze_request[index].ar_info.event_id);
       if (event_def == NULL)
         {
-        cm_msg(MERROR, "book_ttree", "Cannot find definition of event %s in ODB", 
+        cm_msg(MERROR, "book_ttree", "Cannot find definition of event %s in ODB",
                analyze_request[index].event_name);
         return 0;
         }
@@ -1606,7 +1618,7 @@ EVENT_TREE *et;
           strcat(leaf_tags, ttree_types[key.type]);
         else
           {
-          cm_msg(MERROR, "book_ttree", "Key %s in event %s is of type %s with no TTREE correspondence", 
+          cm_msg(MERROR, "book_ttree", "Key %s in event %s is of type %s with no TTREE correspondence",
                           key.name, analyze_request[index].event_name, rpc_tid_name(key.type));
           return 0;
           }
@@ -1641,11 +1653,11 @@ EVENT_TREE *et;
             strcat(leaf_tags, ttree_types[bank_list->type]);
           else
             {
-            cm_msg(MERROR, "book_ttree", "Bank %s is of type %s with no TTREE correspondence", 
+            cm_msg(MERROR, "book_ttree", "Bank %s is of type %s with no TTREE correspondence",
                             bank_list->name, rpc_tid_name(bank_list->type));
             return 0;
             }
-                        
+
           if (rpc_tid_size(bank_list->type) == 0)
             {
             cm_msg(MERROR, "book_ttree", "Bank %s is of type with unknown size", bank_list->name);
@@ -1684,7 +1696,7 @@ EVENT_TREE *et;
               strcat(leaf_tags, ttree_types[key.type]);
             else
               {
-              cm_msg(MERROR, "book_ttree", "Key %s in bank %s is of type %s with no HBOOK correspondence", 
+              cm_msg(MERROR, "book_ttree", "Key %s in bank %s is of type %s with no HBOOK correspondence",
                               key.name, bank_list->name, rpc_tid_name(key.type));
               return 0;
               }
@@ -1692,7 +1704,7 @@ EVENT_TREE *et;
             }
 
           leaf_tags[strlen(leaf_tags)-1] = 0;
-  
+
           et->branch = (TBranch **)realloc(et->branch, sizeof(TBranch *) * (et->n_branch + 1));
           et->branch_name = (char *)realloc(et->branch_name, NAME_LENGTH * (et->n_branch + 1));
           et->branch_filled = (int *)realloc(et->branch_filled, sizeof(int) * (et->n_branch + 1));
@@ -1785,19 +1797,19 @@ int i;
 
   // ensure that we do have an open file
   assert(gManaOutputFile != NULL);
-  
+
   // save the histograms
   gManaOutputFile->cd();
   TIter next(gManaHistsDir->GetList());
   while (TObject *obj = next())
     obj->Write();
-  
+
   // close the output file
   gManaOutputFile->Write();
   gManaOutputFile->Close();
   delete gManaOutputFile;
   gManaOutputFile = NULL;
-  
+
   // delete the output trees
   for (i=0 ; i<tree_struct.n_tree ; i++)
     if (tree_struct.event_tree[i].branch)
@@ -1812,7 +1824,7 @@ int i;
   /* delete event tree */
   free(tree_struct.event_tree);
   tree_struct.event_tree = NULL;
-  
+
   // go to ROOT root directory
   gROOT->cd();
 
@@ -1844,7 +1856,7 @@ double     dummy;
       return 0;
       }
     }
-  
+
   /* create ODB structures for banks */
   for (i=0 ; analyze_request[i].event_name[0] ; i++)
     {
@@ -1947,7 +1959,7 @@ double     dummy;
       module[j]->enabled = TRUE;
       size = sizeof(BOOL);
       db_get_value(hDB, 0, str, &module[j]->enabled, &size, TID_BOOL, TRUE);
-  
+
       if (module[j]->init != NULL && module[j]->enabled)
         module[j]->init();
       }
@@ -1987,7 +1999,7 @@ BANK_LIST  *bank_list;
 
   /* load parameters */
   load_parameters(run_number);
-  
+
   for (i=0 ; analyze_request[i].event_name[0] ; i++)
     {
     /* copy output flag from ODB to bank_list */
@@ -2060,7 +2072,7 @@ BANK_LIST  *bank_list;
         sprintf(file_name, str, run_number);
       else
         strcpy(file_name, str);
-    
+
       /* check output file extension */
       out_gzip = FALSE;
       if (strchr(file_name, '.'))
@@ -2125,7 +2137,7 @@ BANK_LIST  *bank_list;
 #else
         QUEST[9] = 65000;
 #endif
-        
+
         HBSET("BSIZE", HBOOK_LREC, status);
         HROPEN(1, "OFFLINE", file_name, "NQ", lrec, status);
         if (status != 0)
@@ -2141,9 +2153,9 @@ BANK_LIST  *bank_list;
         cm_msg(MERROR, "bor", "HBOOK support is not compiled in");
 #endif /* HAVE_HBOOK */
         }
-    
+
       else if (out_format == FORMAT_ROOT)
-      
+
         {
 #ifdef HAVE_ROOT
         // ensure the output file is closed
@@ -2167,7 +2179,7 @@ BANK_LIST  *bank_list;
         cm_msg(MERROR, "bor", "ROOT support is not compiled in");
 #endif /* HAVE_ROOT */
         }
-      
+
       else
         {
         if (out_gzip)
@@ -2220,7 +2232,7 @@ BANK_LIST  *bank_list;
       if (module[j]->bor != NULL && module[j]->enabled)
         module[j]->bor(run_number);
     }
-  
+
   /* call main analyzer BOR routine */
   return ana_begin_of_run(run_number, error);
 }
@@ -2358,7 +2370,7 @@ INT i, status, n_bytes;
 
   if (rpc_is_remote())
     while (bm_poll_event(TRUE));
-  else 
+  else
     for (i=0 ; analyze_request[i].event_name[0] ; i++)
       {
       do
@@ -2367,7 +2379,7 @@ INT i, status, n_bytes;
         if (n_bytes > 0)
           cm_yield(100);
         } while (n_bytes > 0);
-      } 
+      }
 
   /* update statistics */
   update_stats();
@@ -2418,7 +2430,7 @@ INT            status, size, i, j, count;
 BOOL           exclude;
 BANK_HEADER    *pbh;
 BANK_LIST      *pbl;
-EVENT_DEF      *event_def;  
+EVENT_DEF      *event_def;
 BANK           *pbk;
 BANK32         *pbk32;
 void           *pdata;
@@ -2445,7 +2457,7 @@ WORD           bktype;
   else if (pevent->event_id == EVENTID_EOR)
     sprintf(pbuf, "%%ID EOR NR %d\n", (int)pevent->serial_number);
   else
-    sprintf(pbuf, "%%ID %d TR %d NR %d\n", pevent->event_id, pevent->trigger_mask, 
+    sprintf(pbuf, "%%ID %d TR %d NR %d\n", pevent->event_id, pevent->trigger_mask,
                                            (int)pevent->serial_number);
   STR_INC(pbuf,buffer);
 
@@ -2491,7 +2503,7 @@ WORD           bktype;
         {
         if (rpc_tid_size(bktype & 0xFF))
           size /= rpc_tid_size(bktype & 0xFF);
-    
+
         lrs1882 = (LRS1882_DATA *) pdata;
         lrs1877 = (LRS1877_DATA *) pdata;
 
@@ -2552,7 +2564,7 @@ WORD           bktype;
               lrs1877_header = (LRS1877_HEADER *) &lrs1877[i];
 
               /* print header */
-              sprintf(pbuf, "GA %d BF %d CN %d", 
+              sprintf(pbuf, "GA %d BF %d CN %d",
                   lrs1877_header->geo_addr, lrs1877_header->buffer, lrs1877_header->count);
               strcat(pbuf, "\n");
               STR_INC(pbuf,buffer);
@@ -2563,7 +2575,7 @@ WORD           bktype;
               for (j=1 ; j<count ; j++)
                 {
                 /* print data */
-                sprintf(pbuf, "GA %d CH %02d ED %d DA %1.1lf", 
+                sprintf(pbuf, "GA %d CH %02d ED %d DA %1.1lf",
                   lrs1877[i].geo_addr, lrs1877[i+j].channel, lrs1877[i+j].edge, lrs1877[i+j].data*0.5);
                 strcat(pbuf, "\n");
                 STR_INC(pbuf,buffer);
@@ -2578,9 +2590,9 @@ WORD           bktype;
               db_sprintf(pbuf, pdata, size, i, bktype & 0xFF);
 
             else if ((bktype & 0xFF00) == TID_LRS1882)
-              sprintf(pbuf, "GA %d CH %02d DA %d", 
+              sprintf(pbuf, "GA %d CH %02d DA %d",
                 lrs1882[i].geo_addr, lrs1882[i].channel, lrs1882[i].data);
-      
+
             else if ((bktype & 0xFF00) == TID_PCOS3)
               sprintf(pbuf, "TBD");
             else
@@ -2650,7 +2662,7 @@ INT            status, size = 0, i;
 BOOL           exclude;
 BANK_HEADER    *pbh;
 BANK_LIST      *pbl;
-EVENT_DEF      *event_def;  
+EVENT_DEF      *event_def;
 BANK           *pbk;
 BANK32         *pbk32;
 char           *pdata, *pdata_copy;
@@ -2676,7 +2688,7 @@ static char    *buffer = NULL;
     /* copy only banks which are turned on via /analyzer/bank switches */
 
     /*---- MIDAS format ----------------------------------------------*/
-  
+
     event_def = db_get_event_definition(pevent->event_id);
     if (event_def == NULL)
       return SUCCESS;
@@ -2765,7 +2777,7 @@ static char    *buffer = NULL;
     status = gzwrite(file, pevent_copy, size) == size ? SUCCESS : SS_FILE_ERROR;
   else
     status = fwrite(pevent_copy, 1, size, file) == (size_t) size ? SUCCESS : SS_FILE_ERROR;
-  
+
   return status;
 }
 
@@ -2776,15 +2788,15 @@ static char    *buffer = NULL;
 INT write_event_hbook(FILE *file, EVENT_HEADER *pevent, ANALYZE_REQUEST *par)
 {
 INT         i, j, k, n, size, item_size, status;
-BANK        *pbk;                      
+BANK        *pbk;
 BANK32      *pbk32;
-BANK_LIST   *pbl;                      
+BANK_LIST   *pbl;
 BANK_HEADER *pbh;
-void        *pdata;                    
+void        *pdata;
 BOOL        exclude, exclude_all;
-char        block_name[5];             
-float       rwnt[512];                 
-EVENT_DEF   *event_def;                
+char        block_name[5];
+float       rwnt[512];
+EVENT_DEF   *event_def;
 HNDLE       hkey;
 KEY         key;
 DWORD       bkname;
@@ -2817,7 +2829,7 @@ WORD        bktype;
     }
 
   /*---- MIDAS format ----------------------------------------------*/
-  
+
   if (event_def->format == FORMAT_MIDAS)
     {
     /* first fill number block */
@@ -2885,7 +2897,7 @@ WORD        bktype;
           /* check bank size */
           if (pbl->n_data > pbl->size)
             {
-            cm_msg(MERROR, "write_event_hbook", 
+            cm_msg(MERROR, "write_event_hbook",
               "Bank %s has more (%d) entries than maximum value (%d)", block_name, pbl->n_data,
               pbl->size);
             continue;
@@ -2928,7 +2940,7 @@ WORD        bktype;
           /* check bank size */
           if (n > (INT)pbl->size)
             {
-            cm_msg(MERROR, "write_event_hbook", 
+            cm_msg(MERROR, "write_event_hbook",
               "Bank %s has more (%d) entries than maximum value (%d)", block_name, n,
               pbl->size);
             continue;
@@ -2939,19 +2951,19 @@ WORD        bktype;
             {
             switch (bktype & 0xFF)
               {
-              case TID_BYTE : 
+              case TID_BYTE :
                 rwnt[pbl->n_data + i] = (float) (*((BYTE *) pdata+i));
                 break;
-              case TID_WORD : 
+              case TID_WORD :
                 rwnt[pbl->n_data + i] = (float) (*((WORD *) pdata+i));
                 break;
-              case TID_DWORD : 
+              case TID_DWORD :
                 rwnt[pbl->n_data + i] = (float) (*((DWORD *) pdata+i));
                 break;
-              case TID_FLOAT : 
+              case TID_FLOAT :
                 rwnt[pbl->n_data + i] = (float) (*((float *) pdata+i));
                 break;
-              case TID_DOUBLE : 
+              case TID_DOUBLE :
                 rwnt[pbl->n_data + i] = (float) (*((double *) pdata+i));
                 break;
               }
@@ -2981,28 +2993,28 @@ WORD        bktype;
               {
               switch (key.type & 0xFF)
                 {
-                case TID_BYTE : 
+                case TID_BYTE :
                   rwnt[k++] = (float) (*((BYTE *) pdata+j));
                   break;
-                case TID_WORD : 
+                case TID_WORD :
                   rwnt[k++] = (float) (*((WORD *) pdata+j));
                   break;
-                case TID_SHORT : 
+                case TID_SHORT :
                   rwnt[k++] = (float) (*((short int *) pdata+j));
                   break;
-                case TID_INT : 
+                case TID_INT :
                   rwnt[k++] = (float) (*((INT *) pdata+j));
                   break;
-                case TID_DWORD : 
+                case TID_DWORD :
                   rwnt[k++] = (float) (*((DWORD *) pdata+j));
                   break;
-                case TID_BOOL : 
+                case TID_BOOL :
                   rwnt[k++] = (float) (*((BOOL *) pdata+j));
                   break;
-                case TID_FLOAT : 
+                case TID_FLOAT :
                   rwnt[k++] = (float) (*((float *) pdata+j));
                   break;
-                case TID_DOUBLE : 
+                case TID_DOUBLE :
                   rwnt[k++] = (float) (*((double *) pdata+j));
                   break;
                 }
@@ -3023,19 +3035,19 @@ WORD        bktype;
     /* fill shared memory */
     if (file == NULL)
       HFNOV(pevent->event_id, rwnt);
-    
+
     } /* if (event_def->format == FORMAT_MIDAS) */
 
   /*---- YBOS format ----------------------------------------------*/
-  
+
   else if (event_def->format == FORMAT_YBOS)
     {
     YBOS_BANK_HEADER *pybk;
-    
+
     /* first fill number block */
     if (!clp.rwnt)
       HFNTB(pevent->event_id, "Number");
-    
+
     pbk = NULL;
     exclude_all = TRUE;
     do
@@ -3044,14 +3056,14 @@ WORD        bktype;
       size = ybk_iterate((DWORD *) (pevent+1), &pybk, &pdata);
       if (pybk == NULL)
         break;
-      
+
       /* in bytes */
       size <<= 2;
-      
+
       /* look if bank is in exclude list */
       *((DWORD *) block_name) = pybk->name;
       block_name[4] = 0;
-      
+
       exclude = FALSE;
       pbl = NULL;
       if (par->bank_list != NULL)
@@ -3066,7 +3078,7 @@ WORD        bktype;
         if (par->bank_list[i].name[0] == 0)
           cm_msg(MERROR, "write_event_hbook", "Received unknown bank %s", block_name);
         }
-      
+
       /* fill CW N-tuple */
       if (!exclude && pbl != NULL && !clp.rwnt)
       {
@@ -3085,7 +3097,7 @@ WORD        bktype;
           /* check bank size */
           if (pbl->n_data > pbl->size)
             {
-            cm_msg(MERROR, "write_event_hbook", 
+            cm_msg(MERROR, "write_event_hbook",
               "Bank %s has more (%d) entries than maximum value (%d)", block_name, pbl->n_data,
               pbl->size);
             continue;
@@ -3128,35 +3140,35 @@ WORD        bktype;
           /* check bank size */
           if (n > (INT)pbl->size)
             {
-            cm_msg(MERROR, "write_event_hbook", 
+            cm_msg(MERROR, "write_event_hbook",
                          "Bank %s has more (%d) entries than maximum value (%d)", block_name, n,
                          pbl->size);
             continue;
             }
-  
+
           /* convert bank to float values */
           for (i=0 ; i<n ; i++)
             {
             switch (pybk->type & 0xFF)
                     {
-                    case I1_BKTYPE : 
+                    case I1_BKTYPE :
                       rwnt[pbl->n_data + i] = (float) (*((BYTE *) pdata+i));
                       break;
-                    case I2_BKTYPE : 
+                    case I2_BKTYPE :
                       rwnt[pbl->n_data + i] = (float) (*((WORD *) pdata+i));
                       break;
-                    case I4_BKTYPE : 
+                    case I4_BKTYPE :
                       rwnt[pbl->n_data + i] = (float) (*((DWORD *) pdata+i));
                       break;
-                    case F4_BKTYPE : 
+                    case F4_BKTYPE :
                       rwnt[pbl->n_data + i] = (float) (*((float *) pdata+i));
                       break;
-                    case D8_BKTYPE : 
+                    case D8_BKTYPE :
                       rwnt[pbl->n_data + i] = (float) (*((double *) pdata+i));
                       break;
                     }
                   }
-  
+
                 /* zero padding */
                 for ( ; i<(INT)pbl->size ; i++)
                   rwnt[pbl->n_data + i] = 0.f;
@@ -3166,21 +3178,21 @@ WORD        bktype;
                 printf("YBOS is not supporting STRUCTURE banks \n");
           }
         }
-      
+
       } while(TRUE);
-    
+
     /* fill RW N-tuple */
     if (clp.rwnt && file != NULL && !exclude_all)
       HFN(pevent->event_id, rwnt);
-    
+
     /* fill shared memory */
     if (file == NULL)
       HFNOV(pevent->event_id, rwnt);
-    
+
   } /* if (event_def->format == FORMAT_YBOS) */
-  
+
   /*---- FIXED format ----------------------------------------------*/
-  
+
   if (event_def->format == FORMAT_FIXED)
     {
     if (clp.rwnt)
@@ -3204,28 +3216,28 @@ WORD        bktype;
           {
           switch (key.type & 0xFF)
             {
-            case TID_BYTE : 
+            case TID_BYTE :
               rwnt[k++] = (float) (*((BYTE *) pdata+j));
               break;
-            case TID_WORD : 
+            case TID_WORD :
               rwnt[k++] = (float) (*((WORD *) pdata+j));
               break;
-            case TID_SHORT : 
+            case TID_SHORT :
               rwnt[k++] = (float) (*((short int *) pdata+j));
               break;
-            case TID_INT : 
+            case TID_INT :
               rwnt[k++] = (float) (*((INT *) pdata+j));
               break;
-            case TID_DWORD : 
+            case TID_DWORD :
               rwnt[k++] = (float) (*((DWORD *) pdata+j));
               break;
-            case TID_BOOL : 
+            case TID_BOOL :
               rwnt[k++] = (float) (*((BOOL *) pdata+j));
               break;
-            case TID_FLOAT : 
+            case TID_FLOAT :
               rwnt[k++] = (float) (*((float *) pdata+j));
               break;
-            case TID_DOUBLE : 
+            case TID_DOUBLE :
               rwnt[k++] = (float) (*((double *) pdata+j));
               break;
             }
@@ -3264,14 +3276,14 @@ WORD        bktype;
 INT write_event_ttree(FILE *file, EVENT_HEADER *pevent, ANALYZE_REQUEST *par)
 {
 INT         i, bklen;
-BANK        *pbk;                      
+BANK        *pbk;
 BANK32      *pbk32;
-BANK_LIST   *pbl;                      
+BANK_LIST   *pbl;
 BANK_HEADER *pbh;
-void        *pdata;                    
+void        *pdata;
 BOOL        exclude, exclude_all;
-char        bank_name[5];             
-EVENT_DEF   *event_def;                
+char        bank_name[5];
+EVENT_DEF   *event_def;
 DWORD       bkname;
 WORD        bktype;
 EVENT_TREE  *et;
@@ -3294,7 +3306,7 @@ TBranch     *branch;
   par->number.time = pevent->time_stamp;
 
   /*---- MIDAS format ----------------------------------------------*/
-  
+
   if (event_def->format == FORMAT_MIDAS)
     {
     /* find event in tree structure */
@@ -3375,7 +3387,7 @@ TBranch     *branch;
 
         if (i == et->n_branch)
           {
-          cm_msg(MERROR, "write_event_ttree", "Received unknown bank %s", bank_name);          
+          cm_msg(MERROR, "write_event_ttree", "Received unknown bank %s", bank_name);
           continue;
           }
 
@@ -3414,12 +3426,12 @@ TBranch     *branch;
     if (file != NULL && !exclude_all)
       et->tree->Fill();
 
-    
+
     } /* if (event_def->format == FORMAT_MIDAS) */
 
-  
+
   /*---- FIXED format ----------------------------------------------*/
-  
+
   if (event_def->format == FORMAT_FIXED)
     {
     /* find event in tree structure */
@@ -3450,7 +3462,7 @@ INT write_event_odb(EVENT_HEADER *pevent)
 {
 INT            status, size, n_data, i;
 BANK_HEADER    *pbh;
-EVENT_DEF      *event_def;  
+EVENT_DEF      *event_def;
 BANK           *pbk;
 BANK32         *pbk32;
 void           *pdata;
@@ -3493,7 +3505,7 @@ WORD           bktype;
       n_data = size;
       if (rpc_tid_size(bktype & 0xFF))
         n_data /= rpc_tid_size(bktype & 0xFF);
-  
+
       /* get bank key */
       *((DWORD *) name) = bkname;
       name[4] = 0;
@@ -3520,7 +3532,7 @@ WORD           bktype;
           if (key.type != TID_STRING && key.type != TID_LINK)
             pdata = (void *) VALIGN(pdata, min(ss_get_struct_align(), key.item_size));
 
-          status = db_set_data(hDB, hKey, pdata, key.item_size*key.num_values, 
+          status = db_set_data(hDB, hKey, pdata, key.item_size*key.num_values,
                                key.num_values, key.type);
           if (status != DB_SUCCESS)
             {
@@ -3587,7 +3599,7 @@ static char  *orig_event = NULL;
 
   /* verbose output */
   if (clp.verbose)
-    printf("event %d, number %d, total size %d\n", 
+    printf("event %d, number %d, total size %d\n",
            (int)pevent->event_id,
            (int)pevent->serial_number,
            (int)(pevent->data_size+sizeof(EVENT_HEADER)));
@@ -3621,7 +3633,7 @@ static char  *orig_event = NULL;
       current_run_number = pevent->serial_number;
 
       /* set run number in ODB */
-      db_set_value(hDB, 0, "/Runinfo/Run number", &current_run_number, 
+      db_set_value(hDB, 0, "/Runinfo/Run number", &current_run_number,
                    sizeof(current_run_number), 1, TID_INT);
 
       /* load ODB from event */
@@ -3646,7 +3658,7 @@ static char  *orig_event = NULL;
     }
 
 #endif
-  
+
   /* don't analyze special (BOR,MESSAGE,...) events */
   if (par == NULL)
     return SUCCESS;
@@ -3666,7 +3678,7 @@ static char  *orig_event = NULL;
       orig_event = (char*)malloc(MAX_EVENT_SIZE+sizeof(EVENT_HEADER));
     memcpy(orig_event, pevent, pevent->data_size+sizeof(EVENT_HEADER));
     }
-  
+
   /*---- analyze event ----*/
 
   /* call non-modular analyzer if defined */
@@ -3722,7 +3734,7 @@ static char  *orig_event = NULL;
   /* in filter mode, use original event */
   if (clp.filter)
     pevent = (EVENT_HEADER *) orig_event;
-  
+
   /* write resulting event */
   if (out_file)
     {
@@ -3753,7 +3765,7 @@ static char  *orig_event = NULL;
   if ((clp.online || equal_ustring(clp.output_file_name, "OFLN")) && par->rwnt_buffer_size > 0)
     write_event_hbook(NULL, pevent, par);
 #endif /* HAVE_HBOOK */
-  
+
   /* put event in ODB once every second */
   if (out_info.events_to_odb)
     for (i=0 ; i<50 ; i++)
@@ -3847,8 +3859,8 @@ INT i;
                        receive_event);
       else
         analyze_request[i].request_id = -1;
-      } 
-  
+      }
+
 }
 
 /*------------------------------------------------------------------*/
@@ -3915,7 +3927,7 @@ HNDLE    hKey;
 }
 
 /*------------------------------------------------------------------*/
-      
+
 void update_stats()
 {
 int i;
@@ -3929,7 +3941,7 @@ DWORD    actual_time;
     last_time = actual_time;
 
   if (actual_time - last_time == 0)
-    return; 
+    return;
 
   for (i=0 ; analyze_request[i].event_name[0] ; i++)
     {
@@ -4057,7 +4069,7 @@ char str[256];
 #ifdef HAVE_ROOT
   SaveRootHistograms(gManaHistsDir, str);
 #endif
-  
+
 }
 
 /*------------------------------------------------------------------*/
@@ -4121,7 +4133,7 @@ int      ch;
 
   return status;
 }
-    
+
 /*------------------------------------------------------------------*/
 
 INT init_module_parameters(BOOL bclose)
@@ -4164,7 +4176,7 @@ HNDLE      hkey;
             }
 
           db_find_key(hDB, 0, str, &hkey);
-          if (db_open_record(hDB, hkey, module[j]->parameters, module[j]->param_size, 
+          if (db_open_record(hDB, hkey, module[j]->parameters, module[j]->param_size,
                              MODE_READ, NULL, NULL) != DB_SUCCESS)
             {
             cm_msg(MERROR, "init_module_parameters", "Cannot open \"%s\" parameters in ODB", str);
@@ -4174,8 +4186,8 @@ HNDLE      hkey;
         }
       }
     }
- 
-  return SUCCESS;  
+
+  return SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
@@ -4185,7 +4197,7 @@ INT bevid_2_mheader(EVENT_HEADER * pevent, DWORD * pybos)
   INT   status;
   DWORD bklen, bktyp, *pdata;
   YBOS_BANK_HEADER *pybk;
-  
+
   /* check if EVID is present if so display its content */
   if ((status = ybk_find (pybos, "EVID", &bklen, &bktyp, (void **)&pybk)) == YB_SUCCESS)
   {
@@ -4193,7 +4205,7 @@ INT bevid_2_mheader(EVENT_HEADER * pevent, DWORD * pybos)
     if (clp.verbose)
     {
       printf("--------- EVID --------- Event# %i ------Run#:%i--------\n"
-             ,(int)(YBOS_EVID_EVENT_NB(pdata)),(int)(YBOS_EVID_RUN_NUMBER(pdata))); 
+             ,(int)(YBOS_EVID_EVENT_NB(pdata)),(int)(YBOS_EVID_RUN_NUMBER(pdata)));
       printf("Evid:%4.4x- Mask:%4.4x- Serial:%i- Time:0x%x- Dsize:%i/0x%x"
              ,(int)YBOS_EVID_EVENT_ID(pdata),(int)YBOS_EVID_TRIGGER_MASK(pdata)
              ,(int)YBOS_EVID_SERIAL(pdata),(int)YBOS_EVID_TIME(pdata)
@@ -4230,7 +4242,7 @@ HNDLE hKey, hKeyRoot, hKeyEq;
 
     if (!clp.quiet)
       printf("Load ODB from run %d...", (int)current_run_number);
-    
+
     if (flag == 1)
       {
       /* lock all ODB values except run parameters */
@@ -4257,7 +4269,7 @@ HNDLE hKey, hKeyRoot, hKeyEq;
           status = db_enum_key(hDB, hKeyRoot, i, &hKeyEq);
           if (status == DB_NO_MORE_SUBKEYS)
             break;
-          
+
           db_set_mode(hDB, hKeyEq, MODE_READ | MODE_WRITE | MODE_DELETE, TRUE);
 
           db_find_key(hDB, hKeyEq, "Variables", &hKey);
@@ -4398,7 +4410,7 @@ MA_FILE *file;
 
   return file;
 }
-  
+
 /*------------------------------------------------------------------*/
 
 int ma_close(MA_FILE *file)
@@ -4411,11 +4423,11 @@ int ma_close(MA_FILE *file)
   free(file);
   return SUCCESS;
 }
-  
+
 /*------------------------------------------------------------------*/
 
 int ma_read_event(MA_FILE *file, EVENT_HEADER *pevent, int size)
-{ 
+{
 int status, n;
 
   if (file->device == MA_DEVICE_DISK)
@@ -4473,7 +4485,7 @@ int status, n;
       if (ybos_event_get (&pybos, &readn) != SS_SUCCESS)
         return -1;
       status = yb_any_event_swap(FORMAT_YBOS, pybos);
-      memcpy((char *)(pevent+1), (char *)pybos, readn); 
+      memcpy((char *)(pevent+1), (char *)pybos, readn);
       status  = bevid_2_mheader(pevent, pybos);
       return readn;
       }
@@ -4484,7 +4496,7 @@ int status, n;
     int bufid, len, tag, tid;
     EVENT_HEADER *pe;
     struct timeval timeout;
-    
+
     /* check if anything in buffer */
     if (file->wp > file->rp)
       {
@@ -4494,7 +4506,7 @@ int status, n;
       file->rp += size;
       return size;
       }
-    
+
     /* send data request */
     pvm_initsend(PvmDataInPlace);
     pvm_send(pvm_myparent, TAG_DATA);
@@ -4707,14 +4719,14 @@ DWORD           start_time;
       if (!clp.quiet)
         {
         if (out_file)
-          printf("%s:%d  %s:%d  events\r", input_file_name, (int)num_events_in, 
+          printf("%s:%d  %s:%d  events\r", input_file_name, (int)num_events_in,
                                            out_info.filename, (int)num_events_out);
         else
-          printf("%s:%d  events\r", input_file_name, (int)num_events_in); 
+          printf("%s:%d  events\r", input_file_name, (int)num_events_in);
 
 #ifndef OS_WINNT
         fflush(stdout);
-#endif  
+#endif
         }
       }
     } while(1);
@@ -4728,7 +4740,7 @@ DWORD           start_time;
   if (pvm_master)
     {
     if (status == RPC_SHUTDOWN)
-      printf("\nShutting down distributed analyzers, please wait...\n"); 
+      printf("\nShutting down distributed analyzers, please wait...\n");
     pvm_eor(status == RPC_SHUTDOWN ? TAG_EXIT : TAG_EOR);
 
     /* merge slave output files */
@@ -4741,10 +4753,10 @@ DWORD           start_time;
     if (!clp.quiet)
       {
       if (out_file)
-        printf("%s:%d  %s:%d  events, %1.2lfs\n", input_file_name, num_events_in, 
+        printf("%s:%d  %s:%d  events, %1.2lfs\n", input_file_name, num_events_in,
                out_info.filename, num_events_out, start_time/1000.0);
       else
-        printf("%s:%d  events, %1.2lfs\n", input_file_name, num_events_in, start_time/1000.0); 
+        printf("%s:%d  events, %1.2lfs\n", input_file_name, num_events_in, start_time/1000.0);
       }
     }
   else if (pvm_slave)
@@ -4755,10 +4767,10 @@ DWORD           start_time;
     if (!clp.quiet)
       {
       if (out_file)
-        printf("%s:%d  %s:%d  events, %1.2lfs\n", input_file_name, num_events_in, 
+        printf("%s:%d  %s:%d  events, %1.2lfs\n", input_file_name, num_events_in,
                out_info.filename, num_events_out, start_time/1000.0);
       else
-        printf("%s:%d  events, %1.2lfs\n", input_file_name, num_events_in, start_time/1000.0); 
+        printf("%s:%d  events, %1.2lfs\n", input_file_name, num_events_in, start_time/1000.0);
       }
 
     eor(current_run_number, error);
@@ -4786,10 +4798,10 @@ DWORD           start_time;
     if (!clp.quiet)
       {
       if (out_file)
-        printf("%s:%d  %s:%d  events, %1.2lfs\n", input_file_name, num_events_in, 
+        printf("%s:%d  %s:%d  events, %1.2lfs\n", input_file_name, num_events_in,
                out_info.filename, num_events_out, start_time/1000.0);
       else
-        printf("%s:%d  events, %1.2lfs\n", input_file_name, num_events_in, start_time/1000.0); 
+        printf("%s:%d  events, %1.2lfs\n", input_file_name, num_events_in, start_time/1000.0);
       }
 
     /* call analyzer eor routines */
@@ -4803,10 +4815,10 @@ DWORD           start_time;
   if (!clp.quiet)
     {
     if (out_file)
-      printf("%s:%d  %s:%d  events, %1.2lfs\n", input_file_name, (int)num_events_in, 
+      printf("%s:%d  %s:%d  events, %1.2lfs\n", input_file_name, (int)num_events_in,
              out_info.filename, (int)num_events_out, start_time/1000.0);
     else
-      printf("%s:%d  events, %1.2lfs\n", input_file_name, (int)num_events_in, start_time/1000.0); 
+      printf("%s:%d  events, %1.2lfs\n", input_file_name, (int)num_events_in, start_time/1000.0);
     }
 
   /* call analyzer eor routines */
@@ -4997,7 +5009,7 @@ struct timeval timeout;
 
 #ifdef WIN32
     char *p;
-    
+
     /* use no path, executable must be under $PVM_ROOT$/bin/WIN32 */
     p = argv[0]+strlen(argv[0])-1;
     while (p > argv[0] && *p != '\\')
@@ -5289,7 +5301,7 @@ int    i, bufid, len, tag, tid, status;
 
   pvm_pkbyte((char *) pvmc[i].buffer, pvmc[i].wp, 1);
 
-  PVM_DEBUG("pvm_send_buffer: send %d events (%1.1lfkB) to client %d", 
+  PVM_DEBUG("pvm_send_buffer: send %d events (%1.1lfkB) to client %d",
              pvmc[i].n_events, pvmc[i].wp/1024.0, i);
 
   status = pvm_send(tid, TAG_DATA);
@@ -5486,7 +5498,7 @@ char           str[256];
 
       pvm_pkbyte((char *) pvmc[j].buffer, pvmc[j].wp, 1);
 
-      PVM_DEBUG("pvm_eor: send %d events (%1.1lfkB) to client %d", 
+      PVM_DEBUG("pvm_eor: send %d events (%1.1lfkB) to client %d",
                  pvmc[j].n_events, pvmc[j].wp/1024.0, j);
 
       status = pvm_send(tid, TAG_DATA);
@@ -5656,7 +5668,164 @@ char ext[10], *p;
 }
 
 #endif /* PVM */
-    
+
+/*------------------------------------------------------------------*/
+
+#ifdef HAVE_ROOT
+
+void *server_thread(void *arg)
+/*
+  Server histograms to remove clients
+*/
+{
+int  i;
+char str[32];
+
+  TSocket *s = (TSocket *)arg;
+
+  do
+    {
+    if (s->Recv(str, sizeof(str)) <= 0)
+      {
+      printf("Closed connection from %s\n", s->GetInetAddress().GetHostName());
+      s->Close();
+      delete s;
+      return NULL;
+      }
+    else
+      {
+      printf("Received \"%s\"\n", str);
+
+      TMessage *mess = new TMessage(kMESS_OBJECT);
+
+      if (strcmp(str, "LIST") == 0)
+        {
+        /* build name array */
+
+        TObjArray *names = new TObjArray(100);
+
+        TIter next(gManaHistsDir->GetList());
+        while (TObject *obj = next())
+          if (obj->InheritsFrom("TH1"))
+            names->Add(new TObjString(obj->GetName()));
+
+        /* send "names" array */
+        mess->Reset();
+        mess->WriteObject(names);
+        s->Send(*mess);
+
+        for (i=0 ; i<names->GetLast()+1 ; i++)
+          delete (TObjString *)names->At(i);
+
+        delete names;
+        }
+
+      else if (strncmp(str, "GET", 3) == 0)
+        {
+        /* search histo */
+        TObject *obj;
+        TIter next(gManaHistsDir->GetList());
+
+        while ((obj = next()))
+          {
+          if (strcmp(str+4, obj->GetName()) == 0)
+            break;
+          }
+
+        if (!obj)
+          {
+          s->Send("Error");
+          }
+        else
+          {
+          /* send single histo */
+          mess->Reset();
+          mess->WriteObject(obj);
+          s->Send(*mess);
+          }
+        }
+
+      else if (strncmp(str, "CLEAR", 5) == 0)
+        {
+        /* search histo */
+        TObject *obj;
+        TIter next(gManaHistsDir->GetList());
+
+        while ((obj = next()))
+          {
+          if (strcmp(str+6, obj->GetName()) == 0)
+            break;
+          }
+
+        if (!obj)
+          {
+          s->Send("Error");
+          }
+        else
+          {
+          /* clear histo */
+#ifdef OS_LINUX
+          TThread::Lock();
+          ((TH1 *)obj)->Reset();
+          TThread::UnLock();
+#endif
+
+          /* send single histo */
+          s->Send("OK");
+          }
+        }
+
+      delete mess;
+      }
+
+    } while (1); /* do forever */
+}
+
+/*------------------------------------------------------------------*/
+
+void *root_server_loop(void *arg)
+/*
+   Server loop listening for incoming network connections on port
+   9090. Starts a searver_thread for each connection.
+*/
+{
+  printf("Root server listening...\n");
+  TServerSocket *lsock = new TServerSocket(9090, kTRUE);
+
+  do
+    {
+    TSocket *s = lsock->Accept();
+    s->Send("RMSERV 1.0");
+    printf("New connection from %s\n", s->GetInetAddress().GetHostName());
+
+    /* start a new server thread */
+#ifdef OS_LINUX
+    TThread *th = new TThread("server_thread", server_thread, s);
+    th->Run();
+#endif
+    } while (1);
+
+}
+
+/*------------------------------------------------------------------*/
+
+void *root_event_loop(void *arg)
+/*
+  Thread wrapper around main event loop
+*/
+{
+  if (clp.online)
+    loop_online();
+  else
+    loop_runs_offline();
+
+  gSystem->ExitLoop();
+
+  return NULL;
+}
+
+#endif /* HAVE_ROOT */
+
 /*------------------------------------------------------------------*/
 
 int main(int argc, char *argv[])
@@ -5693,7 +5862,7 @@ int rargc;
   rargv[rargc] = (char *)malloc(3);
   rargv[rargc++] = "-b";
 
-  TApplication theApp("ranalyzer", &rargc, rargv);
+  manaApp = new TApplication("ranalyzer", &rargc, rargv);
 
   /* free argument memory */
   free(rargv[0]);
@@ -5748,7 +5917,7 @@ int rargc;
   if (status != CM_SUCCESS)
     return 1;
 #endif
-  
+
   /* now connect to server */
   if (clp.online)
     {
@@ -5781,7 +5950,7 @@ int rargc;
       printf("Please select another analyzer name in analyzer.c or stop other analyzer.\n");
       return 1;
       }
-  
+
     /* register transitions if started online */
     if (cm_register_transition(TR_PRESTART, tr_prestart) != CM_SUCCESS ||
         cm_register_transition(TR_STOP, tr_stop) != CM_SUCCESS ||
@@ -5860,6 +6029,13 @@ int rargc;
     strcpy(out_info.histo_dump_filename, "his%05d.root");
 
   db_set_record(hDB, hkey, &out_info, size, 0);
+
+#ifdef OS_LINUX
+  /* start socket server */
+  TThread *th1 = new TThread("root_server_loop", root_server_loop, NULL);
+  th1->Run();
+#endif
+
 #endif
 
   /* load histos from last.xxx */
@@ -5882,10 +6058,18 @@ int rargc;
 
   /*---- start main loop ----*/
 
+#ifdef OS_LINUX
+  /* start event thread */
+  TThread *th2 = new TThread("root_event_loop", root_event_loop, NULL);
+  th2->Run();
+
+  manaApp->Run();
+#else
   if (clp.online)
     loop_online();
   else
     loop_runs_offline();
+#endif
 
   /* reset terminal */
   if (!clp.quiet && !pvm_slave)
