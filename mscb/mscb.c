@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus communication functions
 
   $Log$
+  Revision 1.54  2004/03/09 11:55:50  midas
+  Fixed linux usb code
+
   Revision 1.53  2004/03/05 19:39:52  midas
   Better usb error reporting
 
@@ -560,6 +563,7 @@ int msend_usb(int fd, void *buf, int size)
    WriteFile((HANDLE)fd, buf, size, &n_written, NULL);
 #else
    n_written = usb_bulk_write((usb_dev_handle*)fd, 2, buf, size, 100);
+   usleep(0);
 #endif
    return n_written;
 }
@@ -598,17 +602,23 @@ int mrecv_usb(int fd, void *buf, int size, int timeout)
    CloseHandle(overlapped.hEvent);
 #else
    usb_dev_handle *dev;
+   int i;
 
    dev = (usb_dev_handle *)fd;
 
-   if (usb_claim_interface(dev, 0) <0)
-      return -1;
-
    if (timeout < 1000)
       timeout = 1000; // at least 1ms
-   n_read = usb_bulk_read(dev, 1, buf, size, timeout/1000);
+   for (i=0 ; i<10 ; i++)
+     {
+     n_read = usb_bulk_read(dev, 1, buf, size, timeout/1000);
+     //printf("##mrecv_usb(%X): %d\n", dev, n_read);
 
-   usb_release_interface(dev, 0);
+     if (n_read < 0)
+       usleep(10000);
+     else
+       break;
+     }
+
 #endif
    return n_read;
 }
@@ -1229,7 +1239,12 @@ int musb_init(int index, int *fdr, int *fdw)
                      return -1;
 
                   if (usb_set_configuration(udev, 1) < 0)
-                     return -1;
+                     return -5;
+
+		  /* see if we have write access */
+                  if (usb_claim_interface(udev, 0) < 0)
+		     return -5;
+		  usb_release_interface(udev, 0);
 
                   *fdr = (int)udev;
                   *fdw = (int)udev;
@@ -1293,7 +1308,7 @@ int mscb_init(char *device, int debug)
 
 \********************************************************************/
 {
-   int index, i;
+   int index, i, n;
    int status;
    char host[256], port[256], dev3[256], buf[10];
 
@@ -1382,18 +1397,23 @@ int mscb_init(char *device, int debug)
       if (status < 0)
          return status;
 
-      mscb_lock(index+1);
+      /* linux needs some time to start-up ...??? */
+      for (i=0 ; i<10 ; i++) {
+         mscb_lock(index+1);
 
-      /* check if submaster alive */
-      buf[0] = MCMD_ECHO;
-      mscb_out(index+1, buf, 1, RS485_FLAG_CMD);
+         /* check if submaster alive */
+         buf[0] = MCMD_ECHO;
+         mscb_out(index+1, buf, 1, RS485_FLAG_CMD);
 
-      i = mscb_in(index+1, buf, 2, 5000);
-      mscb_release(index+1);
+         n = mscb_in(index+1, buf, 2, 5000);
+         mscb_release(index+1);
 
-      if (i != 2 || buf[0] != MCMD_ACK)
-         return -4;
-
+         if (n == 2 && buf[0] == MCMD_ACK)
+	    break;
+      }
+      
+      if (n != 2 || buf[0] != MCMD_ACK)
+        return -4;
    }
 
    return index + 1;
@@ -2963,7 +2983,7 @@ int mscb_select_device(char *device)
       mscb_fd[index].type = MSCB_TYPE_LPT;
 
       status = lpt_init(str, index);
-      lpt_close(index);
+      lpt_close(mscb_fd[index].fd);
       memset(&mscb_fd[index], 0, sizeof(MSCB_FD));
       if (status == 0)
          sprintf(list[n++], str);
