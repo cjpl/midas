@@ -3,6 +3,7 @@ Signature=$CHICAGO$
 Class=MSCB
 ClassGUID={CBEB3FB1-AE9F-471c-9016-9B6AC6DCD323}
 Provider=%MFGNAME%
+DriverVer=03/04/2004
 
 [Manufacturer]
 %MFGNAME%=DeviceList
@@ -14,7 +15,7 @@ DefaultDestDir=10,System32\Drivers
 mscbusb.sys=1
 
 [SourceDisksNames]
-1=%INSTDISK%
+1=%INSTDISK%,,,
 
 [DeviceList]
 %DESCRIPTION%=DriverInstall,USB\VID_10C4&PID_1175
