@@ -6,6 +6,9 @@
   Contents:     Various utility functions for MSCB protocol
 
   $Log$
+  Revision 1.43  2004/12/08 10:42:18  midas
+  Version 1.7.8
+
   Revision 1.42  2004/10/29 12:46:06  midas
   Increased EEPROM page to 4kB
 
@@ -1199,6 +1202,7 @@ void eeprom_erase(void)
 #if defined(CPU_C8051F310) || defined(CPU_C8051F320)
 
 // Erasing more than one page crashed the uC ???
+#undef N_EEPROM_PAGE
 #define N_EEPROM_PAGE 1
 
    p = EEPROM_OFFSET; 
