@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.83  2001/12/07 11:41:19  midas
+  Made "move to" and "copy to" work with other languages
+
   Revision 1.82  2001/12/07 10:05:30  midas
   Fixed major bug with memcpy(rem_addr...), many thanks to Frank Schnell!
 
@@ -5332,10 +5335,10 @@ char   date[80], text[TEXT_SIZE],  old_data_dir[256], tag[32],
     rsprintf(loc("Message copied successfully from \"%s\" to \"%s\""), logbook, dst_logbook);
 
   rsprintf("</b></tr>\n");
-  rsprintf("<tr><td bgcolor=%s align=center>Go to <a href=\"/%s/%s\">%s</td></tr>\n",
-            gt("Cell BGColor"), logbook, src_path, logbook);
-  rsprintf("<tr><td bgcolor=%s align=center>Go to <a href=\"/%s\">%s</td></tr>\n",
-            gt("Cell BGColor"), dst_logbook, dst_logbook);
+  rsprintf("<tr><td bgcolor=%s align=center>%s <a href=\"/%s/%s\">%s</td></tr>\n",
+            gt("Cell BGColor"), loc("Go to"), logbook, src_path, logbook);
+  rsprintf("<tr><td bgcolor=%s align=center>%s <a href=\"/%s\">%s</td></tr>\n",
+            gt("Cell BGColor"), loc("Go to"), dst_logbook, dst_logbook);
 
   rsprintf("</table></td></tr></table>\n");
   rsprintf("</body></html>\r\n");
@@ -5347,7 +5350,7 @@ char   date[80], text[TEXT_SIZE],  old_data_dir[256], tag[32],
 
 void show_elog_page(char *logbook, char *path)
 {
-int    size, i, j, n, msg_status, status, fh, length, first_message, last_message, index, n_attr;
+int    size, i, j, len, n, msg_status, status, fh, length, first_message, last_message, index, n_attr;
 char   str[256], orig_path[256], command[80], ref[256], file_name[256], attrib[MAX_N_ATTR][NAME_LENGTH];
 char   date[80], text[TEXT_SIZE], menu_str[1000], other_str[1000], cmd[256],
        orig_tag[80], reply_tag[80], attachment[MAX_ATTACHMENTS][256], encoding[80], att[256], lattr[256];
@@ -5776,14 +5779,27 @@ FILE   *f;
     {
     for (i=0 ; i<n ; i++)
       {
-      /* display menu item */
-      rsprintf("<input type=submit name=cmd value=\"%s\">\n", menu_item[i]);
+      /* strip "logbook" from "move to / copy to" commands */
+      strcpy(cmd, menu_item[i]);
+      if (strchr(cmd, '\"'))
+        *strchr(cmd, '\"') = 0;
 
-      if (equal_ustring(menu_item[i], loc("Copy to")) ||
-          equal_ustring(menu_item[i], loc("Move to")))
+      /* strip trailing blanks */
+      while (cmd[strlen(cmd)-1] == ' ')
+        cmd[strlen(cmd)-1] = 0;
+
+      /* display menu item */
+      rsprintf("<input type=submit name=cmd value=\"%s\">\n", cmd);
+
+      if (equal_ustring(cmd, loc("Copy to")) ||
+          equal_ustring(cmd, loc("Move to")))
         {
         /* put one link for each logbook except current one */
-        rsprintf("<select name=dest%c>\n", menu_item[i][0]);
+        if (equal_ustring(cmd, loc("Copy to")))
+          rsprintf("<select name=destc>\n");
+        else
+          rsprintf("<select name=destm>\n");
+
         for (j=0 ;  ; j++)
           {
           if (!enumgrp(j, str))
@@ -5809,20 +5825,31 @@ FILE   *f;
       {
       /* display menu item */
 
+      /* strip "logbook" from "move to / copy to" commands */
       strcpy(cmd, menu_item[i]);
-      cmd[7] = 0;
+      if (strchr(cmd, '\"'))
+        *strchr(cmd, '\"') = 0;
+
+      /* strip trailing blanks */
+      while (cmd[strlen(cmd)-1] == ' ')
+        cmd[strlen(cmd)-1] = 0;
 
       if (equal_ustring(cmd, loc("Copy to")) ||
           equal_ustring(cmd, loc("Move to")))
         {
+        if (equal_ustring(cmd, loc("Copy to")))
+          len = strlen(loc("Copy to"));
+        else
+          len = strlen(loc("Move to"));
+
         /* if logbook supplied, put a link to that logbook */
-        if (strlen(menu_item[i]) > 7)
+        if ((int)strlen(menu_item[i]) > len)
           {
           /* extract logbook */
-          if (menu_item[i][8] == '"')
-            strcpy(ref, menu_item[i]+9);
+          if (menu_item[i][len+1] == '"')
+            strcpy(ref, menu_item[i]+len+2);
           else
-            strcpy(ref, menu_item[i]+8);
+            strcpy(ref, menu_item[i]+len+1);
           if (strchr(ref, '"'))
             *strchr(ref, '"') = 0;
 
