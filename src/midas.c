@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.114  2000/05/05 14:20:05  midas
+  Do online mode check in al_trigger_alarm
+
   Revision 1.113  2000/04/26 20:27:06  pierre
   -Added doc++ comments on some functions.
 
@@ -15703,6 +15706,13 @@ BOOL        flag;
 ALARM_STR(alarm_str);
 
   cm_get_experiment_database(&hDB, NULL);
+
+  /* check online mode */
+  flag = TRUE;
+  size = sizeof(flag);
+  db_get_value(hDB, 0, "/Runinfo/Online Mode", &flag, &size, TID_INT);
+  if (!flag)
+    return AL_SUCCESS;
 
   /* find alarm */
   sprintf(str, "/Alarms/Alarms/%s", alarm_name);
