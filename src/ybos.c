@@ -6,6 +6,9 @@
  *         amaudruz@triumf.ca                            Local:           6234
  * ---------------------------------------------------------------------------
    $Log$
+   Revision 1.33  2001/11/09 20:28:16  pierre
+   Fix replay for YBOS format
+
    Revision 1.32  2001/09/14 17:04:57  pierre
    fix gzread for Midas fmt
 
@@ -695,7 +698,7 @@ INT ybk_find (DWORD *plrl, char * bkname, DWORD * bklen, DWORD * bktype, void **
     @param plrl pointer to the area of event
     @param bkname name of the bank to be located.
     @param pdata pointer to the first data of the located bank.
-    @return  YB_SUCCESS, YB_BANK_NOT_FOUND, YB_WRONG_BANK_TYPE
+    @return  Number of DWORD in bank or YB_BANK_NOT_FOUND, YB_WRONG_BANK_TYPE (<0)
 */
 INT ybk_locate (DWORD *plrl, char * bkname, void *pdata)
 {
@@ -721,13 +724,13 @@ INT ybk_locate (DWORD *plrl, char * bkname, void *pdata)
 
       /* return pointer to data section */
       *((void **)pdata) = pybk+1;
-      return (YB_SUCCESS);
+      return (pybk->length - 1);
     }
     else
-  	{
+    {
       /* skip to next bank */
       pybk = (YBOS_BANK_HEADER *)(((DWORD *) pybk) + pybk->length + 4);
-	  }
+    }
   }
   return (YB_BANK_NOT_FOUND);
 }
@@ -2726,7 +2729,7 @@ INT   ybos_event_get (DWORD ** plrl, DWORD * readn)
   my.evtn++;
   
   /*-PAA- Dec99 Danny adjust event size in I*4 */
-  /* my.evtlen = evt_length-4; */
+  my.evtlen = evt_length; 
   /* in bytes for the world */
   *readn = my.evtlen<<2;
   *plrl = (DWORD *)my.pylrl;
@@ -3582,7 +3585,7 @@ INT   yb_file_recompose(void * pevt, INT format, char * svpath, INT file_mode)
 
   if (format == FORMAT_YBOS)
     {
-      if ((status = ybk_locate((DWORD *)pevt,"CFIL", &pmyfch)) != YB_SUCCESS)
+      if ((status = ybk_locate((DWORD *)pevt,"CFIL", &pmyfch)) <= 0)
         return (status);
     }
   else if (format == FORMAT_MIDAS)
@@ -3675,9 +3678,9 @@ INT   yb_ymfile_open(int *slot, int fmt, void *pevt, char * svpath, INT file_mod
 
   if (fmt == FORMAT_YBOS)
     {
-      if ((status = ybk_locate((DWORD *)pevt,"CFIL", &pmyfch)) != YB_SUCCESS)
+      if ((status = ybk_locate((DWORD *)pevt,"CFIL", &pmyfch)) <= 0)
         return (status);
-      if ((status = ybk_locate((DWORD *)pevt,"PFIL", &pmyfph)) != YB_SUCCESS)
+      if ((status = ybk_locate((DWORD *)pevt,"PFIL", &pmyfph)) <= 0)
         return (status);
     }
   else if (fmt == FORMAT_MIDAS)
@@ -3776,9 +3779,9 @@ INT   yb_ymfile_update(int slot, int fmt, void * pevt)
 
   if (fmt == FORMAT_YBOS)
     {
-    if ((status = ybk_locate((DWORD *)pevt,"CFIL", &pmyfch)) != YB_SUCCESS)
+    if ((status = ybk_locate((DWORD *)pevt,"CFIL", &pmyfch)) <= 0)
       return (status);
-    if ((status = ybk_locate((DWORD *)pevt,"DFIL", &pmyfd)) != YB_SUCCESS)
+    if ((status = ybk_locate((DWORD *)pevt,"DFIL", &pmyfd)) <= 0)
       return (status);
 
     /* check sequence order */
