@@ -4,6 +4,9 @@ Name:         mevb.c
 
   Contents:     Main Event builder task.
   $Log$
+  Revision 1.6  2002/08/29 22:07:47  pierre
+  fix event header, double task, EOR
+
   Revision 1.5  2002/07/13 05:45:49  pierre
   added swap before user function
 
@@ -34,7 +37,7 @@ EBUILDER_CHANNEL     ebch[MAX_CHANNELS];
 DWORD max_event_size = MAX_EVENT_SIZE;
 
 HNDLE hDB, hKey, hStatKey;
-BOOL  debug=FALSE, debug1=FALSE;
+BOOL  debug=FALSE, debug1=TRUE;
 
 BOOL  stop_requested = TRUE;
 BOOL  stopped = TRUE;
@@ -70,19 +73,20 @@ INT eb_mfragment_add(char * pdest, char * psrce, INT *size)
 {
   BANK_HEADER  *psbh, *pdbh;
   char         *psdata, *pddata;
-  INT          bksize, status;
+  INT          bksize;
   
   /* Condition for new EVENT the data_size should be ZERO */
   *size = ((EVENT_HEADER *) pdest)->data_size;
+
+  /* destination pointer */
+  pddata  = pdest + *size + sizeof(EVENT_HEADER);
+    
   if (*size) {
     /* NOT the first fragment */
     
-    /* destination pointer */
-    pddata  = pdest + *size + sizeof(EVENT_HEADER);
-    
-    /* Swap event if necessary */
+    /* Swap event source if necessary */
     psbh = (BANK_HEADER *) (((EVENT_HEADER *)psrce)+1);
-    status = bk_swap(psbh, FALSE);
+    bk_swap(psbh, FALSE);
     
     /* source pointer */
     psbh    = (BANK_HEADER *)(((EVENT_HEADER *)psrce)+1);
@@ -104,15 +108,19 @@ INT eb_mfragment_add(char * pdest, char * psrce, INT *size)
     *size = ((EVENT_HEADER *) pdest)->data_size;
   }
   else {
-    /* First event (without the event header) */
+    /* First event without the event header but with the 
+    bank header as the size is zero */
     *size = ((EVENT_HEADER *) psrce)->data_size;
     
     /* Swap event if necessary */
     psbh = (BANK_HEADER *) (((EVENT_HEADER *)psrce)+1);
-    status = bk_swap(psbh, FALSE);
+    bk_swap(psbh, FALSE);
     
-    /* copy */
-    memcpy (pdest, psrce, *size + sizeof(EVENT_HEADER));
+    /* copy first fragment */
+    memcpy (pddata, psbh, *size);
+    
+    /* update destination event size */
+    ((EVENT_HEADER *) pdest)->data_size = *size;
   }
   return CM_SUCCESS;
 }
@@ -121,8 +129,8 @@ INT eb_mfragment_add(char * pdest, char * psrce, INT *size)
 INT eb_yfragment_add(char * pdest, char * psrce, INT *size)
 {
 /* pdest : EVENT_HEADER pointer
-psrce : EVENT_HEADER pointer
-Keep pbkh for later incrementation
+   psrce : EVENT_HEADER pointer
+   Keep pbkh for later incrementation
   */
   char         *psdata, *pddata;
   DWORD        *pslrl, *pdlrl;
@@ -131,12 +139,13 @@ Keep pbkh for later incrementation
   /* Condition for new EVENT the data_size should be ZERO */
   *size = ((EVENT_HEADER *) pdest)->data_size;
   
+  /* destination pointer skip the header as it has been already
+  composed and the usere may have modified it on purpose (Midas Control) */
+  pddata  = pdest + *size + sizeof(EVENT_HEADER);
+    
   /* the Midas header is present for logger */
   if (*size)
   { /* already filled with a fragment */
-    
-    /* destination pointer (MIDAS control) */
-    pddata  = pdest + *size + sizeof(EVENT_HEADER);
     
     /* source pointer: number of DWORD (lrl included) */
     pslrl   = (DWORD *)(((EVENT_HEADER *)psrce)+1);
@@ -166,8 +175,9 @@ Keep pbkh for later incrementation
   }
   else
   { /* new destination event */
-    /* The composed event should have the MIDAS header.
-    Will be stripped by the logger.
+    /* The composed event has already the MIDAS header.
+    which may have been modified by the user in ebuser.c
+    Will be stripped by the logger (YBOS).
     Copy the first full event ( no EVID suppression )
     First event (without the event header) */
     
@@ -177,11 +187,15 @@ Keep pbkh for later incrementation
     /* Swap event if necessary */
     status = ybos_event_swap(pslrl);
     
-    /* size in byte */
+    /* size in byte from the source midas header */
     *size = ((EVENT_HEADER *) psrce)->data_size;
+
+    /* copy first fragment */
+    memcpy (pddata, (char *) pslrl, *size);
+
+    /* update destination Midas header event size */
+   ((EVENT_HEADER *) pdest)->data_size += *size;
     
-    /* copy */
-    memcpy (pdest, psrce, *size + sizeof(EVENT_HEADER));
   }
   return CM_SUCCESS;
 }
@@ -437,6 +451,7 @@ INT source_scan(INT fmt, INT nfragment, HNDLE dest_hBuf, char * dest_event)
       /* Get fragment and store it in ebch[i].pfragment */
       size = max_event_size;
       status = bm_receive_event(ebch[i].hBuf, ebch[i].pfragment, &size, ASYNC);
+      printf("bm_receive_event status :%d\n", status);
       if (status == BM_SUCCESS) { /* event received */
         /* mask event */
         cdemask |= ebch[i].set.emask;
@@ -446,12 +461,12 @@ INT source_scan(INT fmt, INT nfragment, HNDLE dest_hBuf, char * dest_event)
         /* Swap event depending on data format */
        if (fmt == FORMAT_YBOS) {
          plrl = (DWORD *) (((EVENT_HEADER *) ebch[i].pfragment) + 1);
-         status = ybos_event_swap (plrl);
+         ybos_event_swap (plrl);
        }
        else if (fmt== FORMAT_MIDAS) {
          /* Swap event if necessary */
          psbh = (BANK_HEADER *) (((EVENT_HEADER *) ebch[i].pfragment) + 1);
-         status = bk_swap(psbh, FALSE);
+         bk_swap(psbh, FALSE);
        }
        
         /* update local source statistics */
@@ -544,9 +559,11 @@ INT source_scan(INT fmt, INT nfragment, HNDLE dest_hBuf, char * dest_event)
         }
       } /* skip user_build */
       
+      /* Overall event to be sent */
+      act_size = ((EVENT_HEADER *)dest_event)->data_size + sizeof(EVENT_HEADER);
+
       /* Send event and wait for completion */
-      status = rpc_send_event(dest_hBuf, dest_event, 
-        act_size+sizeof(EVENT_HEADER), SYNC);
+      status = rpc_send_event(dest_hBuf, dest_event, act_size, SYNC);
       if (status != BM_SUCCESS) {
         if (debug) 
           printf("rpc_send_event returned error %d, event_size %d\n", 
@@ -556,7 +573,7 @@ INT source_scan(INT fmt, INT nfragment, HNDLE dest_hBuf, char * dest_event)
       }
       
       /* Keep track of the total byte count */
-      gbl_bytes_sent += act_size+sizeof(EVENT_HEADER);
+      gbl_bytes_sent += act_size;
       
       /* update destination event count */
       ebstat.events_sent++;
@@ -566,6 +583,7 @@ INT source_scan(INT fmt, INT nfragment, HNDLE dest_hBuf, char * dest_event)
       cdemask = 0;
     } /* serial match */
   } /* cdemask == ebset.emask */ 
+  printf("end of scan :%d\n", status);
   return status;
 }
 
@@ -632,6 +650,15 @@ usage:
   if (status != CM_SUCCESS)
     return 1;
   
+  /* check if Ebuilder is already running */
+  status = cm_exist("Ebuilder", FALSE);
+  if (status == CM_SUCCESS)
+    {
+    cm_msg(MERROR,"Ebuilder","Ebuilder running already!.\n");
+    cm_disconnect_experiment();
+    return 1;
+    }
+
   /* Connect to ODB */
   cm_get_experiment_database(&hDB, &hKey);
   
@@ -742,6 +769,7 @@ usage:
   do {
     if (run_state != STATE_RUNNING) {
       /* skip the source scan and yield */
+      status = cm_yield(100);
       goto skip;
     }
     
@@ -782,6 +810,7 @@ usage:
               gbl_run, fragn, ebstat.events_sent);
             cm_msg(MINFO,"EBuilder","%s",strout);
             printf("Time between request and actual stop: %d ms\n",stop_time);
+	    break;
           }
           else {
             ebch[fragn].timeout = 0;
