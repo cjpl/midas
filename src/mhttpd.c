@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.195  2002/05/07 22:41:23  midas
+  Disabled lingering
+
   Revision 1.194  2002/03/19 08:04:07  midas
   Fixed few small bugs, thanks to Thomas Prokscha
 
@@ -9332,7 +9335,6 @@ struct sockaddr_in   bind_addr, acc_addr;
 char                 cookie_pwd[256], cookie_wpwd[256], boundary[256];
 int                  lsock, len, flag, content_length, header_length;
 struct hostent       *phe;
-struct linger        ling;
 fd_set               readfds;
 struct timeval       timeout;
 INT                  last_time=0;
@@ -9365,22 +9367,16 @@ INT                  last_time=0;
   bind_addr.sin_addr.s_addr = htonl(INADDR_ANY);
   bind_addr.sin_port        = htons((short) tcp_port);
 
+  /* try reusing address */
+  flag = 1;
+  setsockopt(lsock, SOL_SOCKET, SO_REUSEADDR,
+             (char *) &flag, sizeof(INT));
   status = bind(lsock, (struct sockaddr *)&bind_addr, sizeof(bind_addr));
+
   if (status < 0)
     {
-    /* try reusing address */
-    flag = 1;
-    setsockopt(lsock, SOL_SOCKET, SO_REUSEADDR,
-               (char *) &flag, sizeof(INT));
-    status = bind(lsock, (struct sockaddr *)&bind_addr, sizeof(bind_addr));
-
-    if (status < 0)
-      {
-      printf("Cannot bind to port %d.\nPlease try later or use the \"-p\" flag to specify a different port\n", tcp_port);
-      return;
-      }
-    else
-      printf("Warning: port %d already in use\n", tcp_port);
+    printf("Cannot bind to port %d.\nPlease try later or use the \"-p\" flag to specify a different port\n", tcp_port);
+    return;
     }
 
   /* get host name for mail notification */
@@ -9446,9 +9442,12 @@ INT                  last_time=0;
       last_time = (INT) ss_time();
 
       /* turn on lingering (borrowed from NCSA httpd code) */
+
+      /* outcommented, gave occasional hangups on Linux 
       ling.l_onoff = 1;
       ling.l_linger = 600;
       setsockopt(_sock, SOL_SOCKET, SO_LINGER, (char *) &ling, sizeof(ling));
+      */
 
       /* save remote host address */
       memcpy(&remote_addr, &(acc_addr.sin_addr), sizeof(remote_addr));
