@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol main program
 
   $Log$
+  Revision 1.62  2005/03/21 10:56:02  ritt
+  Removed ADuC code
+
   Revision 1.61  2005/03/08 14:52:32  ritt
   Adapted SCS_210 to F121 CPU
 
@@ -287,18 +290,12 @@ void setup(void)
    _flkey = 0;
 
    /* first disable watchdog */
-#ifdef CPU_CYGNAL
 #if defined(CPU_C8051F310)
    PCA0MD = 0x00;
 #else
    WDTCN = 0xDE;
    WDTCN = 0xAD;
 #endif
-#else /* CPU_CYGNAL */
-
-#endif
-
-#ifdef CPU_CYGNAL
 
    /* Port and oscillator configuration */
 
@@ -376,18 +373,6 @@ void setup(void)
 
 #endif
 
-#endif
-
-   /* enable watchdog */
-#ifdef CPU_ADUC812
-#ifdef USE_WATCHDOG
-   WDCON = 0xE0;                // 2048 msec
-   WDE = 1;
-#endif
-#endif
-
-#ifdef CPU_CYGNAL
-
 #if defined(CPU_C8051F310)
 
 #ifdef USE_WATCHDOG
@@ -420,8 +405,6 @@ void setup(void)
 #endif /* not F120 */
 
 #endif /* not F310 */
-
-#endif /* CPU_CYGNAL */
 
    /* start system clock */
    sysclock_init();
@@ -514,13 +497,8 @@ void setup(void)
       /* call user initialization routine without initialization */
       user_init(0);
 
-   /* check if reset by watchdog */
-#ifdef CPU_ADUC812
-      if (WDS)
-#endif
-#ifdef CPU_CYGNAL
-       if (RSTSRC & 0x08)
-#endif
+      /* check if reset by watchdog */
+      if (RSTSRC & 0x08)
          {
          WD_RESET = 1;
          sys_info.wd_counter++;
@@ -555,16 +533,16 @@ void serial_int(void) interrupt 4 using 1
    if (TI0) {
       /* character has been transferred */
 
-      TI0 = 0;                  // clear TI flag
+      TI0 = 0;                   // clear TI flag
 
-      i_out++;                  // increment output counter
+      i_out++;                   // increment output counter
       if (i_out == n_out) {
-         i_out = 0;             // send buffer empty, clear pointer
-         out_buf_empty = 1;     // and set flag
-         RS485_ENABLE = 0;      // disable RS485 driver
+         i_out = 0;              // send buffer empty, clear pointer
+         out_buf_empty = 1;      // and set flag
+         RS485_ENABLE = 0;       // disable RS485 driver
       } else {
          DELAY_US(INTERCHAR_DELAY);
-         SBUF0 = out_buf[i_out];        // send character
+         SBUF0 = out_buf[i_out]; // send character
       }
    }
 
@@ -589,26 +567,25 @@ void serial_int(void) interrupt 4 using 1
          }
 
          /* initialize command length if first byte */
-         cmd_len = (in_buf[0] & 0x07) + 2;      // + cmd + crc
+         cmd_len = (in_buf[0] & 0x07) + 2;    // + cmd + crc
       }
 
       if (i_in == 2 && cmd_len == 9) {
          /* variable length command */
-         cmd_len = in_buf[1] + 3;       // + cmd + N + crc
+         cmd_len = in_buf[1] + 3;             // + cmd + N + crc
       }
 
-      if (i_in == sizeof(in_buf))       // check for buffer overflow
-      {
+      if (i_in == sizeof(in_buf)) {   // check for buffer overflow
          i_in = 0;
-         return;                // don't interprete command
+         return;                      // don't interprete command
       }
 
-      if (i_in < cmd_len)       // return if command not yet complete
+      if (i_in < cmd_len)             // return if command not yet complete
          return;
 
       if (in_buf[i_in - 1] != crc8(in_buf, i_in - 1)) {
          i_in = 0;
-         return;                // return if CRC code does not match
+         return;                      // return if CRC code does not match
       }
 
       DELAY_US(INTERCHAR_DELAY);
@@ -1145,7 +1122,6 @@ sbit led_0 = LED_0;
 
 void upgrade()
 {
-#ifdef CPU_CYGNAL
    unsigned char cmd, page, crc, j, k;
    unsigned short i;
    unsigned char xdata *pw;
@@ -1428,8 +1404,6 @@ erase_ok:
 
 
    EA = 1;                      // re-enable interrupts
-
-#endif                          // CPU_CYGNAL
 }
 
 /*------------------------------------------------------------------*\
@@ -1499,17 +1473,11 @@ void yield(void)
       flash_param = 0;
 
    if (reboot) {
-#ifdef CPU_CYGNAL
 #ifdef CPU_C8051F120
       SFRPAGE = LEGACY_PAGE;
 #endif
 
       RSTSRC = 0x10;         // force software reset
-#else
-      WDCON = 0x00;          // 16 msec
-      WDE = 1;
-      while (1);             // should be hardware reset later...
-#endif
    }
 
 }

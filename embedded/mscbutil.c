@@ -6,6 +6,9 @@
   Contents:     Various utility functions for MSCB protocol
 
   $Log$
+  Revision 1.52  2005/03/21 10:56:02  ritt
+  Removed ADuC code
+
   Revision 1.51  2005/03/16 14:12:45  ritt
   Added subm_260
 
@@ -971,19 +974,10 @@ void watchdog_refresh(void)
 {
 #ifdef USE_WATCHDOG
 
-#ifdef CPU_ADUC812
-   WDR1 = 1;
-   WDR2 = 1;
-#endif
-
-#ifdef CPU_CYGNAL
-
 #if defined(CPU_C8051F310) || defined(CPU_C8051F320)
    PCA0CPH4 = 0x00;
 #else
    WDTCN = 0xA5;
-#endif
-
 #endif
 
 #endif
@@ -1008,31 +1002,6 @@ void delay_ms(unsigned int ms)
       yield();
    }
 }
-
-#ifdef CPU_ADUC812
-
-void delay_us(unsigned int us)
-{
-   unsigned char i;
-   unsigned int remaining_us;
-
-   if (us <= 250) {
-      us /= 12;
-      for (i = (unsigned char) us; i > 0; i--);
-   } else {
-      remaining_us = us;
-      while (remaining_us > 250) {
-         delay_us(250);
-         remaining_us -= 250;
-      }
-      if (us > 0)
-         delay_us(remaining_us);
-   }
-}
-
-#endif
-
-#ifdef CPU_CYGNAL
 
 void delay_us(unsigned int us)
 {
@@ -1070,8 +1039,6 @@ void delay_us(unsigned int us)
    }
 }
 
-#endif
-
 /*------------------------------------------------------------------*/
 
 #ifdef EEPROM_SUPPORT
@@ -1091,49 +1058,6 @@ void eeprom_read(void * dst, unsigned char len, unsigned short *offset)
 
 \********************************************************************/
 {
-#ifdef CPU_ADUC812
-
-   unsigned char i, ofs;
-   unsigned char *d;
-
-   watchdog_refresh();
-
-   d = dst;
-
-   ofs = *offset;
-   EADRL = ofs / 4;
-   ECON = 0x01;                 // read page
-
-   for (i = 0; i < len; i++, d++) {
-      switch (ofs % 4) {
-      case 0:
-         *d = EDATA1;
-         break;
-      case 1:
-         *d = EDATA2;
-         break;
-      case 2:
-         *d = EDATA3;
-         break;
-      case 3:
-         *d = EDATA4;
-         break;
-      }
-
-      ofs++;
-
-      if (ofs % 4 == 0) {
-         EADRL = ofs / 4;
-         ECON = 0x01;           // read next page
-      }
-   }
-
-   *offset = ofs;
-
-#endif
-
-#ifdef CPU_CYGNAL
-
    unsigned char i;
    unsigned char code *p;
    unsigned char *d;
@@ -1147,7 +1071,6 @@ void eeprom_read(void * dst, unsigned char len, unsigned short *offset)
       d[i] = p[i];
 
    *offset += len;
-#endif
 }
 
 /*------------------------------------------------------------------*/
@@ -1167,50 +1090,6 @@ void eeprom_write(void * src, unsigned char len, unsigned short *offset)
 
 \********************************************************************/
 {
-#ifdef CPU_ADUC812
-
-   unsigned char i, ofs;
-   unsigned char *d;
-
-   d = src;
-
-   ofs = *offset;
-   EADRL = ofs / 4;
-   ECON = 0x01;                 // read page
-
-   for (i = 0; i < len; i++, d++) {
-      switch (ofs % 4) {
-      case 0:
-         EDATA1 = *d;
-         break;
-      case 1:
-         EDATA2 = *d;
-         break;
-      case 2:
-         EDATA3 = *d;
-         break;
-      case 3:
-         EDATA4 = *d;
-         ECON = 0x02;           // write page
-         break;
-      }
-
-      ofs++;
-
-      if (ofs % 4 == 0) {
-         EADRL = ofs / 4;
-         ECON = 0x01;           // read next page
-      }
-   }
-
-   if (ofs % 4 != 0)
-      ECON = 0x02;              // write last page
-
-   *offset = ofs;
-
-#endif
-
-#ifdef CPU_CYGNAL
    unsigned char xdata *p;      // xdata pointer causes MOVX command
    unsigned char i, b;
    unsigned char *s;
@@ -1253,7 +1132,6 @@ void eeprom_write(void * src, unsigned char len, unsigned short *offset)
    ENABLE_INTERRUPTS;
 
    watchdog_refresh();
-#endif
 }
 
 /*------------------------------------------------------------------*/
@@ -1268,12 +1146,6 @@ void eeprom_erase(void)
 \********************************************************************/
 {
    int i;
-
-#ifdef CPU_ADUC812
-   ECON = 0x06;
-#endif
-
-#ifdef CPU_CYGNAL
    unsigned char xdata *p;
 
    if (_flkey != 0xF1)
@@ -1317,9 +1189,8 @@ void eeprom_erase(void)
 
    PSCTL = 0x00;                        // don't allow write
    FLSCL = FLSCL & 0xF0;
-#endif
 
-  ENABLE_INTERRUPTS;
+   ENABLE_INTERRUPTS;
 }
 
 /*------------------------------------------------------------------*/
