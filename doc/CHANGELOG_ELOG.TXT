@@ -1,3 +1,22 @@
+Version 1.2.4, released November xxth, 2001
+===========================================
+
+- Added "date format" option
+- Put "copy to" and "move to" under administrative password
+- String "<mailto:user@host>" now gets correctly converted into a hot link
+- Use "comment =" string instead of logbook in page title
+- Logout takes you back to logbook selection page
+- Made http://<host>/<logbook>/?cmd=Last&<attribute>=<value> working
+- Added submit button also at bottom of page
+- Added "Enable browsing" flag
+- Implemeted default options in [global] section of elogd.cfg
+- Fixed a bug that $logbook substitution did not work in email subject
+- Added "Use Email from = <string>"
+- Made "bottom text" work with query page
+- Added option "find menu commands"
+- Added command "last x" to "find menu commands"
+- Last x gets now multiplied by 2 each time instead of added one
+
 Version 1.2.3, released November 15th, 2001
 ===========================================
 
