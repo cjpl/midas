@@ -13,6 +13,9 @@
 #  13-NOV-97    SR    created
 #
 #  $Log$
+#  Revision 1.8  2004/10/19 04:53:02  pierre
+#  add USE_ROOT
+#
 #  Revision 1.7  2004/09/30 23:20:46  midas
 #  Use USE_ROOT for mana.c
 #
@@ -49,7 +52,7 @@ LIBRARY = $(LIB_DIR)\midas.lib
 
 # compiler
 CC = cl
-CFLAGS = /I$(INC_DIR) /I$(ROOT_DIR)/include /nologo /GX /D WIN32
+CFLAGS = /I$(INC_DIR) /I$(ROOT_DIR)/include /nologo /GX /D WIN32 /D USE_ROOT
 
 all: frontend.exe analyzer.exe
 
