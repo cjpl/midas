@@ -6,6 +6,9 @@
   Contents:     Header fiel for MSCB funcions
 
   $Log$
+  Revision 1.14  2002/11/20 12:01:30  midas
+  Added host to mscb_init
+
   Revision 1.13  2002/10/28 14:26:30  midas
   Changes from Japan
 
@@ -231,8 +234,8 @@ int EXPRT mscb_write_group(int fd, int adr, unsigned char channel, void *data, i
 int EXPRT mscb_write_conf(int fd, int adr, unsigned char channel, void *data, int size);
 int EXPRT mscb_flash(int fd, int adr);
 int EXPRT mscb_upload(int fd, int adr, char *buffer, int size);
-int EXPRT mscb_read(int fd, int adr, unsigned char channel, unsigned int *data);
-int EXPRT mscb_read_conf(int fd, int adr, unsigned char channel, unsigned int *data);
+int EXPRT mscb_read(int fd, int adr, unsigned char channel, void *data, int *size);
+int EXPRT mscb_read_conf(int fd, int adr, unsigned char channel, void *data, int *size);
 int EXPRT mscb_user(int fd, int adr, void *param, int size, void *result, int *rsize);
 
 #ifdef __cplusplus
