@@ -11,8 +11,8 @@
                 with one bank (SCLR).
 
   $Log$
-  Revision 1.1  1999/02/22 12:24:56  midas
-  Initial revision
+  Revision 1.2  1999/02/24 16:26:46  midas
+  Added some "real" readout code
 
   Revision 1.7  1999/01/20 09:03:38  midas
   Added LAM_SOURCE_CRATE and LAM_SOURCE_STATION macros
@@ -66,6 +66,13 @@ INT event_buffer_size = DEFAULT_EVENT_BUFFER_SIZE;
 #define N_ADC  8  
 #define N_TDC  8  
 #define N_SCLR 8
+
+/* CAMAC crate and slots */
+#define CRATE      0
+#define SLOT_IO   23
+#define SLOT_ADC   1
+#define SLOT_TDC   2
+#define SLOT_SCLR  3
 
 /*-- Function declarations -----------------------------------------*/
 
@@ -160,7 +167,21 @@ EQUIPMENT equipment[] = {
 
 INT frontend_init()
 {
-  /* put here hardware initialization */
+  /* hardware initialization */
+
+  cam_init();
+  cam_crate_clear(CRATE);
+  cam_crate_zinit(CRATE);
+
+  /* enable LAM in IO unit */
+  camc(CRATE, SLOT_IO, 0, 26);
+
+  /* enable LAM in crate controller */
+  cam_lam_enable(CRATE, SLOT_IO);
+  
+  /* reset external LAM Flip-Flop */
+  camo(CRATE, SLOT_IO, 1, 16, 0xFF);
+  camo(CRATE, SLOT_IO, 1, 16, 0);
 
   /* print message and return FE_ERR_HW if frontend should not be started */
 
@@ -266,6 +287,7 @@ INT interrupt_configure(INT cmd, INT source, PTYPE adr)
 INT read_trigger_event(char *pevent)
 {
 WORD *pdata, a;
+INT  q, timeout;
 
   /* init bank structure */
   bk_init(pevent);
@@ -273,11 +295,25 @@ WORD *pdata, a;
   /* create ADC bank */
   bk_create(pevent, "ADC0", TID_WORD, &pdata);
 
+  /* wait for ADC conversion */
+  for (timeout = 100 ; timeout > 0 ; timeout--)
+    {
+    camc_q(CRATE, SLOT_ADC, 0, 8, &q);
+    if (q)
+      break;
+    }
+  if (timeout == 0)
+    ss_printf(0, 10, "No ADC gate!");
+
   /* read ADC bank */
   for (a=0 ; a<N_ADC ; a++)
-    cami(1, 1, a, 0, pdata++);
-    /* instead of using cami(), use following line to "simulate" data */
-    /* *pdata++ = rand() % 1024; */
+    cami(CRATE, SLOT_ADC, a, 0, pdata++);
+
+  /* instead of using cami(), use following line to "simulate" data */
+  /* *pdata++ = rand() % 1024; */
+
+  /* clear ADC */
+  camc(CRATE, SLOT_ADC, 0, 9);
 
   bk_close(pevent, pdata);
 
@@ -286,9 +322,22 @@ WORD *pdata, a;
 
   /* read TDC bank */
   for (a=0 ; a<N_TDC ; a++)
-    cami(1, 2, a, 0, pdata++);
+    cami(CRATE, SLOT_TDC, a, 0, pdata++);
+
+  /* clear TDC */
+  camc(CRATE, SLOT_TDC, 0, 9);
 
   bk_close(pevent, pdata);
+
+  /* clear IO unit LAM */
+  camc(CRATE, SLOT_IO, 0, 10);
+
+  /* clear LAM in crate controller */
+  cam_lam_clear(CRATE, SLOT_IO);
+  
+  /* reset external LAM Flip-Flop */
+  camo(CRATE, SLOT_IO, 1, 16, 0xFF);
+  camo(CRATE, SLOT_IO, 1, 16, 0);
 
   return bk_size(pevent);
 }
@@ -307,7 +356,7 @@ DWORD *pdata, a;
 
   /* read scaler bank */
   for (a=0 ; a<N_SCLR ; a++)
-    cam24i(1, 3, a, 0, pdata++);
+    cam24i(CRATE, SLOT_SCLR, a, 0, pdata++);
 
   bk_close(pevent, pdata);
 
