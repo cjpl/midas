@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.113  2003/04/22 12:00:56  midas
+  Added rpc_client_check
+
   Revision 1.112  2003/04/22 10:09:21  midas
   Added RPC_NODELAY option
 
@@ -1785,7 +1788,7 @@ INT EXPRT rpc_call(const INT routine_id, ...);
 INT EXPRT rpc_tid_size(INT id);
 char EXPRT *rpc_tid_name(INT id);
 INT EXPRT rpc_server_connect(char *host_name, char *exp_name);
-INT EXPRT rpc_client_connect(char *host_name, INT midas_port, HNDLE *hConnection);
+INT EXPRT rpc_client_connect(char *host_name, INT midas_port, char *client_name, HNDLE *hConnection);
 INT EXPRT rpc_client_disconnect(HNDLE hConn, BOOL bShutdown);
 
 INT EXPRT rpc_send_event(INT buffer_handle, void *source, INT buf_size, INT async_flag);
