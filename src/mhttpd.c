@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.167  2001/08/02 13:07:10  midas
+  Fixed a bug in the mail system
+
   Revision 1.166  2001/08/02 12:52:54  midas
   Added email facility
 
@@ -3429,17 +3432,18 @@ struct hostent *phe;
     for (i=0 ; p ; i++)
       {
       strcpy(mail_to, p);
+      sprintf(mail_from, "MIDAS@%s", host_name);
 
       size = sizeof(str);
       str[0] = 0;
       db_get_value(hDB, 0, "/Experiment/Name", str, &size, TID_STRING);
-      sprintf(mail_from, "MIDAS@%s", host_name);
 
       sprintf(mail_text, "A new entry has been submitted by %s:\n\n", author);
-      sprintf(mail_text+strlen(mail_text), "Type    : %s\n", getparam("type"));
-      sprintf(mail_text+strlen(mail_text), "System  : %s\n", getparam("system"));
-      sprintf(mail_text+strlen(mail_text), "Subject : %s\n", getparam("subject"));
-      sprintf(mail_text+strlen(mail_text), "Link    : %sEL/%s\n", mhttpd_url, tag);
+      sprintf(mail_text+strlen(mail_text), "Experiment : %s\n", str);
+      sprintf(mail_text+strlen(mail_text), "Type       : %s\n", getparam("type"));
+      sprintf(mail_text+strlen(mail_text), "System     : %s\n", getparam("system"));
+      sprintf(mail_text+strlen(mail_text), "Subject    : %s\n", getparam("subject"));
+      sprintf(mail_text+strlen(mail_text), "Link       : %sEL/%s\n", mhttpd_url, tag);
 
       sendmail(smtp_host, mail_from, mail_to, getparam("type"), mail_text);
 
@@ -3475,15 +3479,18 @@ struct hostent *phe;
     for (i=0 ; p ; i++)
       {
       strcpy(mail_to, p);
+      sprintf(mail_from, "MIDAS@%s", host_name);
 
       size = sizeof(str);
       str[0] = 0;
       db_get_value(hDB, 0, "/Experiment/Name", str, &size, TID_STRING);
-      sprintf(mail_from, "MIDAS experiment %s", str);
 
       sprintf(mail_text, "A new entry has been submitted by %s:\n\n", author);
-      sprintf(mail_text+strlen(mail_text), "Subject: %s\n", getparam("subject"));
-      sprintf(mail_text+strlen(mail_text), "Link:    %sEL/%s\n", mhttpd_url, tag);
+      sprintf(mail_text+strlen(mail_text), "Experiment : %s\n", str);
+      sprintf(mail_text+strlen(mail_text), "Type       : %s\n", getparam("type"));
+      sprintf(mail_text+strlen(mail_text), "System     : %s\n", getparam("system"));
+      sprintf(mail_text+strlen(mail_text), "Subject    : %s\n", getparam("subject"));
+      sprintf(mail_text+strlen(mail_text), "Link       : %sEL/%s\n", mhttpd_url, tag);
 
       sendmail(smtp_host, mail_from, mail_to, getparam("system"), mail_text);
 
@@ -3993,7 +4000,7 @@ BOOL  display_run_number, allow_delete;
         {
         if (i==0)
           rsprintf("<tr><td colspan=2 bgcolor=#FFC020>");
-        rsprintf("Mail sent to %s<br>\n", getparam(str));
+        rsprintf("Mail sent to <b>%s</b><br>\n", getparam(str));
         }
       else
         break;
