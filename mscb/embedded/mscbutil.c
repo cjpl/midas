@@ -6,6 +6,9 @@
   Contents:     Various utility functions for MSCB protocol
 
   $Log$
+  Revision 1.51  2005/03/16 14:12:45  ritt
+  Added subm_260
+
   Revision 1.50  2005/03/08 14:52:32  ritt
   Adapted SCS_210 to F121 CPU
 
@@ -480,6 +483,7 @@ unsigned char i;
 
       ti1_shadow = 0;
 
+      DELAY_US(INTERCHAR_DELAY);
       SBUF1 = *buffer++;
       while (ti1_shadow == 0);
 
@@ -694,7 +698,7 @@ void uart_init(unsigned char port, unsigned char baud)
       EIE2 |= 0x40;                // enable serial interrupt
       EIP2 &= ~0x40;               // serial interrupt low priority
 
-#if defined(SCS_210) | defined(SCS_220)
+#if defined(SCS_210) | defined(SCS_220) | defined(SCS_1000) | defined(SCS_1001)
       uart1_init_buffer();
 #endif
 
@@ -711,7 +715,6 @@ void uart_init(unsigned char port, unsigned char baud)
 
       EIE2 |= 0x40;                // enable serial interrupt
       EIP2 &= ~0x40;               // serial interrupt low priority
-      uart1_init_buffer();
 #endif
    }
 
@@ -825,6 +828,8 @@ void led_int() reentrant using 2
 
 /*------------------------------------------------------------------*/
 
+extern void tcp_timer(void);
+
 void timer0_int(void) interrupt 1 using 2
 /********************************************************************\
 
@@ -836,6 +841,10 @@ void timer0_int(void) interrupt 1 using 2
 
 \********************************************************************/
 {
+#ifdef SUBM_260
+   tcp_timer();
+#else /* SUBM_260 */
+
 #if defined(CPU_C8051F120)
    TH0 = 0xAF;                  // for 98 MHz clock
 #elif defined(CPU_C8051F310)
@@ -843,10 +852,13 @@ void timer0_int(void) interrupt 1 using 2
 #else
    TH0 = 0xDC;                  // reload timer values, let LSB freely run
 #endif
+
+#endif /* !SUBM_260 */
    _systime++;                  // increment system time
 
    led_int();
 }
+
 
 /*------------------------------------------------------------------*/
 
