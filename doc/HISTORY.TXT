@@ -1,6 +1,20 @@
 Revision History
 ================
 
+Version 1.6.4, released Aug 6, 1999
+-----------------------------------
+
+- Debugged FTP mode in lazylogger
+
+- Added bm_skip_event
+
+- Added Ctrl-C handler
+
+- Added JMidas graphical control program written in Java. This should be considered
+  a pre-beta program, which is not intended for serious use, just for demonstration.
+  It needs JDK 1.2. For Linux look at http://www.blackdown.org.
+
+
 Version 1.6.3, released Feb 18, 1999
 ------------------------------------
 
