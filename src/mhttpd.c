@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.220  2002/05/22 05:27:37  midas
+  Make history display configuration page work with unnamed arrays
+
   Revision 1.219  2002/05/21 23:02:36  midas
   Put <empty> in event selection list (problems with netsacpe) and fixed problem with followed links in history configuration
 
@@ -8605,10 +8608,25 @@ char   *hist_col[] =
             else
               str[0] = 0;
 
-            if (equal_ustring(str, var_name))
-              rsprintf("<option selected value=\"%s\">%s\n", varkey.name, varkey.name);
+            if (varkey.num_values > 0)
+              {
+              for (j=0 ; j<varkey.num_values ; j++)
+                {
+                sprintf(var_name, "%s[%d]", varkey.name, j);
+
+                if (equal_ustring(str, var_name))
+                  rsprintf("<option selected value=\"%s\">%s\n", var_name, var_name);
+                else
+                  rsprintf("<option value=\"%s\">%s\n", var_name, var_name);
+                }
+              }
             else
-              rsprintf("<option value=\"%s\">%s\n", varkey.name, varkey.name);
+              {
+              if (equal_ustring(str, var_name))
+                rsprintf("<option selected value=\"%s\">%s\n", varkey.name, varkey.name);
+              else
+                rsprintf("<option value=\"%s\">%s\n", varkey.name, varkey.name);
+              }
             }
           }
         }
