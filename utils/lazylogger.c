@@ -6,6 +6,10 @@
   Contents:     Disk to Tape copier for background job
 
   $Log$
+  Revision 1.14  1999/10/06 00:42:28  pierre
+  - added -c <lazy_channel> option
+  - fix log message path and index
+
   Revision 1.13  1999/09/27 16:23:56  pierre
   - Changed KB to Bytes references
 
@@ -53,7 +57,6 @@
 \********************************************************************/
 
 #include "midas.h"
-#include <signal.h>
 #include "msystem.h"
 #include "ybos.h"
 
@@ -82,7 +85,7 @@ Data format = STRING : [8] MIDAS\n\
 Filename format = STRING : [128] run%05d.mid\n\
 Backup type = STRING : [8] Disk\n\
 Path = STRING : [128] \n\
-Capacity (Bytes) = FLOAT : 5e6\n\
+Capacity (Bytes) = FLOAT : 5e9\n\
 List label= STRING : [128] \n\
 "
 #define LAZY_STATISTICS_STRING "\
@@ -172,14 +175,19 @@ INT lazy_log_update(INT action, INT index, INT run, char * label, char * file)
   /* log Lazy logger to midas.log only */
   if (action == NEW_FILE)
     {
-    if (equal_ustring(lazy.type, "FTP"))
+    /* keep track of number of file on that channel */
+    lazyst.nfiles++;
+    if (lazy.path[strlen(lazy.path)-1] != DIR_SEPARATOR)
+     strcat(lazy.path, DIR_SEPARATOR_STR);
+
+     if (equal_ustring(lazy.type, "FTP"))
       sprintf(str, "%s: %s %1.3lfMB file COPIED",
               label, lazyst.backfile, lazyst.file_size/1024.0/1024.0);
     else
-      sprintf(str,"%s[%i] %s%s  %9.2e  file  NEW\n",
+      sprintf(str,"%s[%i] %s%s  %9.2e[MB] file  NEW\n",
 	            label, lazyst.nfiles,
 	            lazy.path, lazyst.backfile, 
-              lazyst.file_size);
+              lazyst.file_size/1024.0/1024.0);
     }
 
   else if (action == REMOVE_FILE)
@@ -585,7 +593,7 @@ INT lazy_update_list(LAZY_INFO * pLinfo)
    DB_SUCCESS   : update ok
 \********************************************************************/
 {
-  INT  size;
+  INT  size, ifiles;
   char * ptape = NULL, str[MAX_FILE_PATH];
   KEY Keylabel;
   INT  mone=-1;
@@ -604,24 +612,24 @@ INT lazy_update_list(LAZY_INFO * pLinfo)
   if (db_find_key(hDB, hKey, lazy.backlabel, &hKeylabel) == DB_SUCCESS)
     { /* run array already present ==> append run */
       db_get_key(hDB, hKeylabel, &Keylabel);
-      lazyst.nfiles = Keylabel.num_values; 
+      ifiles = Keylabel.num_values; 
       ptape = malloc(Keylabel.total_size);
       size = Keylabel.total_size;
       db_get_data(hDB, hKeylabel, ptape, &size, TID_INT);
       if ((size == sizeof(INT)) && (*ptape == -1))
-        {
-          lazyst.nfiles = 1;
-          size = sizeof(INT);
-          memcpy((char *)ptape, (char *)&lazyst.cur_run, sizeof(INT));
-        }
+      {
+        ifiles = 1;
+        size = sizeof(INT);
+        memcpy((char *)ptape, (char *)&lazyst.cur_run, sizeof(INT));
+      }
       else
-        {
-          ptape = realloc((char *)ptape, size+sizeof(INT));
-          memcpy((char *)ptape+size, (char *)&lazyst.cur_run, sizeof(INT));
-          lazyst.nfiles += 1;
-          size += sizeof(INT);
-        }
-      db_set_data (hDB, hKeylabel, (char *)ptape, size, lazyst.nfiles, TID_INT);
+      {
+        ptape = realloc((char *)ptape, size+sizeof(INT));
+        memcpy((char *)ptape+size, (char *)&lazyst.cur_run, sizeof(INT));
+        ifiles += 1;
+        size += sizeof(INT);
+      }
+      db_set_data (hDB, hKeylabel, (char *)ptape, size, ifiles, TID_INT);
     }
   else
     { /* new run array ==> */
@@ -1083,12 +1091,12 @@ INT lazy_main (INT channel, LAZY_INFO * pLall)
   if (tobe_backup < 0)
     return NOTHING_TODO;
   
-  /* ckeck if mode is on oldest (keep = -x)
+  /* ckeck if mode is on oldest (staybehind = -x)
      else take current run - keep file */
   if (lazy.staybehind < 0)
     lazyst.cur_run = tobe_backup;
   else
-    lazyst.cur_run = lazyst.cur_run - lazy.staybehind;
+    lazyst.cur_run -= lazy.staybehind;
   
   /* Get current run number */
   size = sizeof(cur_acq_run);
@@ -1174,24 +1182,6 @@ INT lazy_main (INT channel, LAZY_INFO * pLall)
   /* Check again if the backup file is present in the logger dir */
   if (lazy_file_exists(lazy.dir, lazyst.backfile))
   {
-    /* check if space on backup device */
-    if (lazy.capacity < (lazyst.cur_dev_size + lazyst.file_size))
-    {
-      /* not enough space => reset list label */
-      lazy.backlabel[0]='\0';
-      size = sizeof(lazy.backlabel);
-      db_set_value (hDB, pLch->hKey, "Settings/List label"
-                    , lazy.backlabel, size, 1, TID_STRING);
-      full_bck_flag = TRUE;
-      cm_msg(MINFO,"Lazy","Not enough space for next copy on backup device!");
-      lazy.alarm[0] = 0;
-      size = sizeof(lazy.alarm);
-      db_get_value(hDB, pLch->hKey,  "Settings/Alarm Class", lazy.alarm, &size, TID_STRING);
-      if (lazy.alarm[0])
-        al_trigger_class(lazy.alarm, "Tape full, Please rewind current tape and load new one!", TRUE);
-      return NOTHING_TODO;
-    }
-    
     /* compose the destination file name */
     if (dev_type == LOG_TYPE_DISK)
     {
@@ -1212,7 +1202,40 @@ INT lazy_main (INT channel, LAZY_INFO * pLall)
       strcat(outffile, ",");
       strcat(outffile, lazyst.backfile);
     }
-          
+
+    /* check if space on backup device */
+    if (lazy.capacity < (lazyst.cur_dev_size + lazyst.file_size))
+    {
+      /* not enough space => reset list label */
+      lazy.backlabel[0]='\0';
+      size = sizeof(lazy.backlabel);
+      db_set_value (hDB, pLch->hKey, "Settings/List label"
+                    , lazy.backlabel, size, 1, TID_STRING);
+      full_bck_flag = TRUE;
+      cm_msg(MINFO,"Lazy","Not enough space for next copy on backup device!");
+      
+      /* rewind device if TAPE type */
+      if(dev_type == LOG_TYPE_TAPE)
+      {
+        int channel;
+
+        cm_msg(MINFO,"Lazy","backup device rewinding...");
+        ss_tape_open(outffile, O_RDONLY, &channel);
+        ss_tape_rewind(channel);
+        ss_tape_close(channel);
+
+        /* Setup alarm */
+        lazy.alarm[0] = 0;
+        size = sizeof(lazy.alarm);
+        db_get_value(hDB, pLch->hKey,  "Settings/Alarm Class", lazy.alarm, &size, TID_STRING);
+      
+        /* trigger alarm if defined */
+        if (lazy.alarm[0])
+          al_trigger_class(lazy.alarm, "Tape full, Please remove current tape and load new one!", TRUE);
+        return NOTHING_TODO;
+      }
+    }
+    
     /* Finally do the copy */
     if ((status = lazy_copy(outffile, inffile)) != 0)
     {
@@ -1240,6 +1263,7 @@ INT lazy_main (INT channel, LAZY_INFO * pLall)
 /*------------------------------------------------------------------*/
 int main(unsigned int argc,char **argv)
 {
+  char      channel_name[32];
   char      host_name[HOST_NAME_LENGTH];
   char      expt_name[HOST_NAME_LENGTH];
   BOOL      debug;
@@ -1249,6 +1273,7 @@ int main(unsigned int argc,char **argv)
   /* set default */
   host_name[0] = 0;
   expt_name[0] = 0;
+  channel_name[0] = 0;
   zap_flag = FALSE;
   msg_flag = FALSE;
   
@@ -1272,12 +1297,15 @@ int main(unsigned int argc,char **argv)
         strcpy(expt_name, argv[++i]);
       else if (strncmp(argv[i],"-h",2)==0)
         strcpy(host_name, argv[++i]);
+      else if (strncmp(argv[i],"-c",2)==0)
+        strcpy(channel_name, argv[++i]);
     }
     else
     {
     usage:
     printf("usage: lazylogger [-h <Hostname>] [-e <Experiment>]\n");
-    printf("                  [-z zap statistics] [-t (talk msg)\n\n");
+    printf("                  [-z zap statistics] [-t (talk msg)\n");
+    printf("                  [-c channel name (Disk)\n\n");
     printf(" Quick man :\n");
     printf(" The Lazy/Settings tree is composed of the following parameters:\n");
     printf(" Maintain free space [%](0): purge source device to maintain free space on the source directory\n");
@@ -1323,7 +1351,7 @@ int main(unsigned int argc,char **argv)
   /* create a common mutex for the independent lazylogger */
   status = ss_mutex_create("LAZY", &lazy_mutex);
 
-  /* check lazy status for multiple clients */
+  /* check lazy status for multiple channels */
   cm_get_experiment_database(&hDB, &hKey);
   if (db_find_key(hDB, 0, "/Lazy", &hKey) == DB_SUCCESS)
   {
@@ -1331,7 +1359,7 @@ int main(unsigned int argc,char **argv)
     KEY key;
     char strclient[32];
     INT  j=0;
-    for (i=0 ; ; i++)
+    for (i=0; ; i++)
     {
 	    db_enum_key(hDB, hKey, i, &hSubkey);
 	    if (!hSubkey)
@@ -1342,34 +1370,39 @@ int main(unsigned int argc,char **argv)
         /* compose client name */
         sprintf(strclient, "Lazy_%s", key.name);
         if (cm_exist(strclient,TRUE) == CM_SUCCESS)
-          lazyinfo[j].active = TRUE;
+         lazyinfo[j].active = TRUE;
         else
           lazyinfo[j].active = FALSE;
         strcpy(lazyinfo[j].name, key.name);
+
         lazyinfo[j].hKey = hSubkey;
         j++;
       }
     }
   }  
-else
+  else
   {
+    /* create settings tree */	
     char str[32];
-    /* create/update settings */	
     channel = 0;
+    if (channel_name[0] != 0) sprintf(lazyinfo[channel].name, channel_name);
     sprintf(str, "/Lazy/%s/Settings", lazyinfo[channel].name);
     db_create_record(hDB, 0, str, LAZY_SETTINGS_STRING);
   }
-  /* Selection of client */
-  {
+
+  {/* Selection of client */
     INT i, j;
     char str[32];
 
     if (lazyinfo[0].hKey)
     {
-      printf(" Available lazy to connect to\n");
-      i=0;
-      j=1;
-      while (lazyinfo[i].hKey)
+      if (channel_name[0] == 0)
+      {
+        /* command prompt */
+        printf(" Available Lazy channels to connect to:\n");
+        i=0;
+        j=1;
+        while (lazyinfo[i].hKey)
         {
           if (!lazyinfo[i].active)
             printf("%d) Lazy %s \n", j, lazyinfo[i].name);
@@ -1377,60 +1410,102 @@ else
             printf(".) Lazy %s already active\n", lazyinfo[i].name);
           j++; i++;
         }
-      printf("Enter client number or new lazy client name: ");
-      i = atoi(ss_gets(str, 32));
-      if (i == 0)
-        { /* new entry */
-          char strclient[32];
-          for (j=0 ; j < MAX_LAZY_CHANNEL; j++)
-            {
-              if (lazyinfo[j].hKey == 0)
-                {
-                  /* compose client name */
-                  sprintf(strclient, "Lazy_%s", str);
-                  if (cm_exist(strclient,TRUE) == CM_SUCCESS)
-                    lazyinfo[j].active = TRUE;
-                  else
-                    lazyinfo[j].active = FALSE;
-                  strcpy(lazyinfo[j].name, str);
-                  lazyinfo[j].hKey = 0;
-                  channel = j;
-                  break;
-                }
-            }
+        printf("Enter client number or new lazy client name: ");
+        i = atoi(ss_gets(str, 32));
+        if ((i==0) && ((strlen(str) == 0) || (strncmp(str," ",1) == 0)))
+        {
+          cm_msg(MERROR,"Lazy","Please specify a valid channel name (%s)",str);
+          goto error;
         }
+      }
+      else
+      {
+        /* Skip the command prompt for serving the -c option */
+        /* 
+        scan if channel_name already exists 
+        Yes : check if client is running
+              Yes : get out (goto error)
+              No  : connect (extract index)
+        No  : new channel (i=0)
+        */
+        i=0; j=-1;
+        while (lazyinfo[i].hKey)
+        {
+          if (equal_ustring(channel_name, lazyinfo[i].name))
+          {
+            /* correct name => check active  */
+            if (lazyinfo[i].active)
+            {
+              cm_msg(MERROR,"Lazy","Lazy channel ""%s"" already running!", lazyinfo[i].name);
+              goto error;
+            }     
+            j=i;
+          }
+          i++;
+        }
+        if (j==-1)
+        {
+          /* new entry */
+          i = 0;
+          sprintf(str, "%s", channel_name);
+        }
+        else
+        {
+          /* connect to */
+          i = j+1;
+        }
+      }
+      if (i == 0)
+      { /* new entry */
+        char strclient[32];
+        for (j=0 ; j < MAX_LAZY_CHANNEL; j++)
+        {
+          if (lazyinfo[j].hKey == 0)
+          {
+            /* compose client name */
+            sprintf(strclient, "Lazy_%s", str);
+            if (cm_exist(strclient,TRUE) == CM_SUCCESS)
+              lazyinfo[j].active = TRUE;
+            else
+              lazyinfo[j].active = FALSE;
+            strcpy(lazyinfo[j].name, str);
+            lazyinfo[j].hKey = 0;
+            channel = j;
+            break;
+          }
+        }
+      }
       else if (!lazyinfo[i-1].active)
         channel = i-1;
       else
         channel = -1;
-    }
+    } 
 
-  if ((channel < 0) && (lazyinfo[channel].hKey != 0))
-    goto error;
-  if (channel < 0)
-    channel = 0;
+    if ((channel < 0) && (lazyinfo[channel].hKey != 0))
+      goto error;
+    if (channel < 0)
+      channel = 0;
 
-  {
-    char str[128];
+    { /* creation of the lazy channel */
+      char str[128];
 
-    if (lazyinfo[channel].hKey == 0)
-      printf(" Creating Lazy channel %s\n", lazyinfo[channel].name);
+      if (lazyinfo[channel].hKey == 0)
+        printf(" Creating Lazy channel %s\n", lazyinfo[channel].name);
     
-    /* create/update settings */	
-    sprintf(str, "/Lazy/%s/Settings", lazyinfo[channel].name);
-    db_create_record(hDB, 0, str, LAZY_SETTINGS_STRING);
-    /* create/update statistics */
-    sprintf(str, "/Lazy/%s/Statistics", lazyinfo[channel].name);
-    db_create_record(hDB, 0, str, LAZY_STATISTICS_STRING);
-    sprintf(str, "/Lazy/%s", lazyinfo[channel].name);
-    db_find_key(hDB, 0, str, &lazyinfo[channel].hKey);
+      /* create/update settings */	
+      sprintf(str, "/Lazy/%s/Settings", lazyinfo[channel].name);
+      db_create_record(hDB, 0, str, LAZY_SETTINGS_STRING);
+      /* create/update statistics */
+      sprintf(str, "/Lazy/%s/Statistics", lazyinfo[channel].name);
+      db_create_record(hDB, 0, str, LAZY_STATISTICS_STRING);
+      sprintf(str, "/Lazy/%s", lazyinfo[channel].name);
+      db_find_key(hDB, 0, str, &lazyinfo[channel].hKey);
+    }
   }
-}
   /* disconnect  from expriment */
   cm_disconnect_experiment();
   
-  /* reconnect to experiment with proper name */
-  {
+  { /* reconnect to experiment with proper name */
     char str[32];
     sprintf(str, "Lazy_%s", lazyinfo[channel].name);
     status = cm_connect_experiment(host_name, expt_name, str, 0);
@@ -1450,23 +1525,24 @@ else
   printf("Lazy_%s starting... ""!"" to exit \n", lazyinfo[channel].name);
 
   if (zap_flag)
-    {
-      /* reset the statistics */
-      cm_msg(MINFO,"lazy","zapping %s/statistics content", lazyinfo[channel].name);
-      size = sizeof(lazyst);
-      memset(&lazyst,0,size);
-      if (db_find_key(hDB, lazyinfo[channel].hKey, "Statistics",&hKeyst) == DB_SUCCESS)
-        status = db_set_record(hDB, hKeyst, &lazyst, size, 0);
-      else
-        cm_msg(MERROR,"Lazy","did not find %s/Statistics for zapping", lazyinfo[channel].name);
-    }
+  {
+    /* reset the statistics */
+    cm_msg(MINFO,"lazy","zapping %s/statistics content", lazyinfo[channel].name);
+    size = sizeof(lazyst);
+    memset(&lazyst,0,size);
+    if (db_find_key(hDB, lazyinfo[channel].hKey, "Statistics",&hKeyst) == DB_SUCCESS)
+      status = db_set_record(hDB, hKeyst, &lazyst, size, 0);
+    else
+      cm_msg(MERROR,"Lazy","did not find %s/Statistics for zapping", lazyinfo[channel].name);
+  }
   
   /* get value once & hot links the run state */
   db_find_key(hDB,0,"/runinfo/state",&hKey);
   size = sizeof(run_state);
   db_get_data(hDB, hKey, &run_state, &size, TID_INT);
   status = db_open_record(hDB, hKey, &run_state, sizeof(run_state), MODE_READ, NULL, NULL);
-  if (status != DB_SUCCESS){
+  if (status != DB_SUCCESS)
+  {
     cm_msg(MERROR, "run_state", "cannot open variable record");
   }
   /* hot link for statistics in write mode */
@@ -1474,14 +1550,16 @@ else
   if (db_find_key(hDB,lazyinfo[channel].hKey,"Statistics",&hKey) == DB_SUCCESS)
     db_get_record(hDB, hKey, &lazyst, &size, 0);
   status = db_open_record(hDB, hKey, &lazyst, sizeof(lazyst), MODE_WRITE, NULL, NULL);
-  if (status != DB_SUCCESS){
+  if (status != DB_SUCCESS)
+  {
     cm_msg(MERROR, "%s/Statistics", "cannot open variable record", lazyinfo[channel].name);
   }
   /* get /settings once & hot link settings in read mode */
   db_find_key(hDB,lazyinfo[channel].hKey,"Settings",&hKey);
   size = sizeof(lazy);
   status = db_open_record(hDB, hKey, &lazy, sizeof(lazy), MODE_READ, NULL, NULL);
-  if (status != DB_SUCCESS){
+  if (status != DB_SUCCESS)
+  {
     cm_msg(MERROR, "%s/Settings", "cannot open variable record", lazyinfo[channel].name);
   }
 
@@ -1495,27 +1573,29 @@ else
   }
 
   mainlast_time = 0;
+
   /* initialize ss_getchar() */
   ss_getchar(0);
 
   do
+  {
+    msg = cm_yield(2000);
+    if ((ss_millitime() - mainlast_time) > 10000)
     {
-      msg = cm_yield(2000);
-      if ((ss_millitime() - mainlast_time) > 10000)
-        {
-          status = lazy_main(channel, &lazyinfo[0]);
-          mainlast_time = ss_millitime();
-        }      
-      ch = 0;
-      while (ss_kbhit())
-        {
-        ch = ss_getchar(0);
-        if (ch == -1)
-          ch = getchar();
-        if ((char) ch == '!')
-          break;
-        }
-     } while (msg != RPC_SHUTDOWN && msg != SS_ABORT && ch != '!');
+      status = lazy_main(channel, &lazyinfo[0]);
+      mainlast_time = ss_millitime();
+    }      
+    ch = 0;
+    while (ss_kbhit())
+    {
+      ch = ss_getchar(0);
+    if (ch == -1)
+      ch = getchar();
+    if ((char) ch == '!')
+      break;
+    }
+   } while (msg != RPC_SHUTDOWN && msg != SS_ABORT && ch != '!');
+
 error:
     cm_disconnect_experiment();
   return 1;
