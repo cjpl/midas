@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.81  2002/09/17 22:12:10  pierre
+  add arg to cm_cleanup
+
   Revision 1.80  2002/08/13 14:34:18  midas
   Added event header byte swapping for offline analysis on RS6000 system
 
@@ -5017,7 +5020,7 @@ INT status;
       if (status == CM_SUCCESS)
         {
         /* kill hanging previous analyzer */
-        cm_cleanup();
+        cm_cleanup(analyzer_name);
 
         status = cm_exist(analyzer_name, FALSE);
         if (status == CM_SUCCESS)
