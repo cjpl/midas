@@ -14,67 +14,18 @@
  *  Author      :  Pierre-Andre Amaudruz Data Acquisition Group
  *  Revision 1.0:  1998/Mar/20 Pierre	   Inline function
     $Log$
+    Revision 1.3  1999/09/29 21:04:19  pierre
+    - include vmeio.h
+
     Revision 1.2  1999/05/06 18:36:20  pierre
     - PPCxxx support
-
  *
  *---------------------------------------------------------------------------*/
+
 #include "stdio.h"
 #include "string.h"
 
-#ifdef OS_VXWORKS
-#include "vme.h"
-#include "vxWorks.h"
-#include "intLib.h"
-#include "sys/fcntlcom.h"
-#ifdef PPCxxx
-#include "arch/ppc/ivPpc.h"
-#else
-#include "arch/mc68k/ivMc68k.h"
-#endif
-#include "taskLib.h"
-#endif
-
-#if defined( _MSC_VER )
-#define INLINE __inline
-#elif defined(__GNUC__)
-#define INLINE __inline__
-#else 
-#define INLINE
-#endif
-
-#define EXTERNAL extern 
-
-#ifndef MIDAS_TYPE_DEFINED
-#define MIDAS_TYPE_DEFINED
-
-typedef unsigned short int WORD;
-
-#ifdef __alpha
-typedef unsigned int       DWORD;
-#else
-typedef unsigned long int  DWORD;
-#endif
-
-#endif /* MIDAS_TYPE_DEFINED */
-
-#ifdef PPCxxx
-#define A32D24	       0xfa000000              /* A32D24 camac base address */
-#else
-#define A32D24	       0xf0000000              /* A32D24 camac base address */
-#endif
-
-#define ENABLE_INT      0x00
-#define SET_INT_SYNC    0x01
-#define SET_PULSE       0x02
-#define WRITE_PULSE     0x03
-#define WRITE_LATCH     0x04
-#define READ_SYNC       0x05
-#define READ_ASYNC      0x06
-#define READ_STATUS     0x07
-#define CLEAR_VMEIO     0x07
-
-#define VMEIO_VECT_BASE 0x7f
+#include "vmeio.h"
 
 void myStub(void)
 {
