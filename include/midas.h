@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.16  1999/02/18 13:06:27  midas
+  Release 1.6.3
+
   Revision 1.15  1999/02/18 11:20:39  midas
   Added "level" parameter to db_scan_tree and db_scan_tree_link
 
@@ -71,7 +74,7 @@
    to the MIDAS library. First digit is major release, second
    digit is minor release, third digit is patch level */
 
-#define MIDAS_VERSION "1.6.2"
+#define MIDAS_VERSION "1.6.3"
 
 /*------------------------------------------------------------------*/
 
