@@ -7,6 +7,9 @@
                 Most routines are from mfe.c mana.c and mlogger.c.
 
   $Log$
+  Revision 1.39  2003/12/12 12:32:13  midas
+  Fixed HBOOK compiler warnings
+
   Revision 1.38  2003/12/01 07:51:04  midas
   Added extra parameter to cm_cleanup()
 
@@ -213,6 +216,8 @@ int quest_[100];
 int *PAWC;
 extern int QUEST[100];
 #endif
+
+char *bstr = " ";
 
 /*---- ODB records -------------------------------------------------*/
 
@@ -1490,8 +1495,8 @@ INT log_close(LOG_CHN *log_chn, INT run_number)
 
 INT log_write(LOG_CHN *log_chn, EVENT_HEADER *pevent)
 {
-INT    status=0, size, izero, watchdog_timeout;
-DWORD  actual_time, start_time;
+INT    status=0, size, izero;
+DWORD  actual_time, start_time, watchdog_timeout;
 BOOL   watchdog_flag, flag;
 static BOOL stop_requested = FALSE;
 static DWORD last_checked = 0;
@@ -2088,7 +2093,8 @@ KEY   key;
 INT log_callback(INT index, void *prpc_param[])
 {
 HNDLE  hKeyRoot, hKeyChannel;
-INT    i, status, size, channel, izero, htape, online_mode, watchdog_timeout;
+INT    i, status, size, channel, izero, htape, online_mode;
+DWORD  watchdog_timeout;
 BOOL   watchdog_flag;
 char   str[256];
 double dzero;
@@ -2751,8 +2757,8 @@ BANK_LIST  *bank_list;
     for (i=0 ; analyze_request[i].event_name[0] ; i++)
       if (analyze_request[i].bank_list != NULL)
         if (HEXIST(analyze_request[i].ar_info.event_id))
-          HRESET(analyze_request[i].ar_info.event_id, " ");
-    HRESET(0, " ");
+          HRESET(analyze_request[i].ar_info.event_id, bstr);
+    HRESET(0, bstr);
 
     test_clear();
     }
@@ -2842,7 +2848,8 @@ char       str[256], file_name[256];
     else
       strcpy(file_name, str);
 
-    HRPUT(0, file_name, "NT");
+    strcpy(str, "NT");
+    HRPUT(0, file_name, str);
     }
 #endif
   run_state = STATE_STOPPED;
@@ -3230,7 +3237,7 @@ EVENT_DEF  *event_def;
     if (HEXIST(id))
       HDELET(id);
 
-    HBOOKN(id, block_name,n_tag, " ",
+    HBOOKN(id, block_name,n_tag, bstr,
            n_tag*analyze_request[index].rwnt_buffer_size, rw_tag);
 
     if (!HEXIST(id))
@@ -4145,12 +4152,12 @@ INT i;
     printf("Clear ID %d to ID %d\n", id1, id2);
     for (i=id1 ; i<=id2 ; i++)
       if (HEXIST(i))
-        HRESET(i, " ");
+        HRESET(i, bstr);
     }
   else
     {
     printf("Clear ID %d\n", id1);
-    HRESET(id1, " ");
+    HRESET(id1, bstr);
     }
 #endif
   return SUCCESS;
