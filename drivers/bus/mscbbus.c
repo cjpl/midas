@@ -6,6 +6,9 @@
   Contents:     MSCB bus driver to transport ASCII commands to scs_210 
 
   $Log$
+  Revision 1.2  2005/03/24 22:48:37  ritt
+  Changed parameters to mscb_init
+
   Revision 1.1  2004/12/13 12:59:15  midas
   Initial revision
 
@@ -203,7 +206,7 @@ int mscbbus_init(HNDLE hkey, void **pinfo)
    db_get_record(hDB, hkeybd, &info->settings, &size, 0);
 
    /* open port */
-   info->fd = mscb_init(info->settings.port, sizeof(info->settings.port), FALSE);
+   info->fd = mscb_init(info->settings.port, sizeof(info->settings.port), "", FALSE);
 
    if (info->fd < 0)
       return FE_ERR_HW;
