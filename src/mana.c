@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.17  1999/06/23 09:37:26  midas
+  Print time for offline analysis
+
   Revision 1.16  1999/05/20 07:37:22  midas
   Fixed bug with ss_getchar() when running online
 
@@ -2605,6 +2608,7 @@ INT             format, status;
 gzFile          file;
 BOOL            skip;
 HNDLE           hKey, hKeyEq, hKeyRoot;
+DWORD           start_time;
 
   /* set output file name and flags in ODB */
   sprintf(str, "/%s/Output/Filename", analyzer_name);
@@ -2668,6 +2672,8 @@ HNDLE           hKey, hKeyEq, hKeyRoot;
   bor(run_number, error);
 
   num_events_in = num_events_out = 0;
+
+  start_time = ss_millitime();
 
   /* event loop */
   do
@@ -2762,6 +2768,9 @@ HNDLE           hKey, hKeyEq, hKeyRoot;
 
         /* open module parameters again */
         init_module_parameters(FALSE);
+
+        /* reinit start time */
+        start_time = ss_millitime();
         }
       }
 
@@ -2858,12 +2867,14 @@ HNDLE           hKey, hKeyEq, hKeyRoot;
       }
     } while(1);
 
+  start_time = ss_millitime() - start_time;
+
   update_stats();
   if (out_file)
-    printf("%s:%d  %s:%d  events\n", input_file_name, num_events_in, 
-                                     out_info.filename, num_events_out);
+    printf("%s:%d  %s:%d  events, %1.2lfs\n", input_file_name, num_events_in, 
+           out_info.filename, num_events_out, start_time/1000.0);
   else
-    printf("%s:%d  events\n", input_file_name, num_events_in); 
+    printf("%s:%d  events, %1.2lfs\n", input_file_name, num_events_in, start_time/1000.0); 
 
   /* call analyzer eor routines */
   eor(run_number, error);
