@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.118  2000/05/04 12:03:59  midas
+  Added -E for ELog mode (only display elog pages, no experiment status etc.)
+
   Revision 1.117  2000/05/04 08:10:30  midas
   Fixed bug with wrong factor in history display
 
@@ -378,6 +381,7 @@ char *_attachment_buffer[3];
 INT  _attachment_size[3];
 char remote_host_name[256];
 INT  _sock;
+BOOL elog_mode = FALSE;
 
 char *mname[] = {
   "January",
@@ -2313,7 +2317,8 @@ HNDLE  hDB;
   rsprintf("<tr><td colspan=2 bgcolor=#C0C0C0>\n");
 
   rsprintf("<input type=submit name=cmd value=\"ELog\">\n");
-  rsprintf("<input type=submit name=cmd value=\"Status\">\n");
+  if (!elog_mode)
+    rsprintf("<input type=submit name=cmd value=\"Status\">\n");
   rsprintf("</tr></table>\n\n");
 
   /*---- open file ----*/
@@ -3062,7 +3067,9 @@ FILE  *f;
       }
 
   rsprintf("<input type=submit name=cmd value=Runlog>\n");
-  rsprintf("<input type=submit name=cmd value=Status>\n");
+
+  if (!elog_mode)
+    rsprintf("<input type=submit name=cmd value=Status>\n");
   rsprintf("</tr>\n");
 
   rsprintf("<tr><td colspan=2 bgcolor=#E0E0E0>");
@@ -4152,18 +4159,26 @@ KEY    key;
   /*---- menu buttons ----*/
 
   rsprintf("<tr><td colspan=2 bgcolor=#A0A0A0>\n");
-  rsprintf("<input type=submit name=cmd value=Find>\n");
-  rsprintf("<input type=submit name=cmd value=Create>\n");
-  rsprintf("<input type=submit name=cmd value=Delete>\n");
-  rsprintf("<input type=submit name=cmd value=Alarms>\n");
-  rsprintf("<input type=submit name=cmd value=Programs>\n");
-  rsprintf("<input type=submit name=cmd value=Status>\n");
-  rsprintf("<input type=submit name=cmd value=Help>\n");
-  rsprintf("</tr>\n");
+  if (elog_mode)
+    {
+    rsprintf("<input type=submit name=cmd value=ELog>\n");
+    rsprintf("</tr>\n");
+    }
+  else
+    {
+    rsprintf("<input type=submit name=cmd value=Find>\n");
+    rsprintf("<input type=submit name=cmd value=Create>\n");
+    rsprintf("<input type=submit name=cmd value=Delete>\n");
+    rsprintf("<input type=submit name=cmd value=Alarms>\n");
+    rsprintf("<input type=submit name=cmd value=Programs>\n");
+    rsprintf("<input type=submit name=cmd value=Status>\n");
+    rsprintf("<input type=submit name=cmd value=Help>\n");
+    rsprintf("</tr>\n");
 
-  rsprintf("<tr><td colspan=2 bgcolor=#A0A0A0>\n");
-  rsprintf("<input type=submit name=cmd value=\"Create Elog from this page\">\n");
-  rsprintf("</tr>\n");
+    rsprintf("<tr><td colspan=2 bgcolor=#A0A0A0>\n");
+    rsprintf("<input type=submit name=cmd value=\"Create Elog from this page\">\n");
+    rsprintf("</tr>\n");
+    }
 
   /*---- ODB display -----------------------------------------------*/
 
@@ -6878,6 +6893,12 @@ struct tm *gmt;
   
   if (path[0] == 0)
     {
+    if (elog_mode)
+      {
+      redirect("EL/");
+      return;
+      }
+
     show_status_page(refresh, cookie_wpwd);
     return;
     }
@@ -7373,6 +7394,8 @@ int tcp_port = 80, daemon = FALSE;
     {
     if (argv[i][0] == '-' && argv[i][1] == 'D')
       daemon = TRUE;
+    else if (argv[i][0] == '-' && argv[i][1] == 'E')
+      elog_mode = TRUE;
     else if (argv[i][0] == '-' && argv[i][1] == 'c')
       no_disconnect = TRUE;
     else if (argv[i][0] == '-')
@@ -7386,6 +7409,7 @@ int tcp_port = 80, daemon = FALSE;
 usage:
         printf("usage: %s [-p port] [-D] [-c]\n\n", argv[0]);
         printf("       -D become a daemon\n");
+        printf("       -E only display ELog system\n");
         printf("       -c don't disconnect from experiment\n");
         return 0;
         }
