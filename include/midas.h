@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.69  2000/08/11 11:43:50  midas
+  Added cm_msg1 to produce messages which go to a differnt logging file
+
   Revision 1.68  2000/06/07 10:49:07  midas
   Release 1.8.1
 
@@ -1439,6 +1442,7 @@ void EXPRT cm_ack_ctrlc_pressed();
 
 INT EXPRT cm_set_msg_print(INT system_mask, INT user_mask, int (*func)(const char*));
 INT EXPRT cm_msg(INT message_type, char* filename, INT line, const char *routine, const char *format, ...);
+INT EXPRT cm_msg1(INT message_type, char* filename, INT line, const char *facility, const char *routine, const char *format, ...);
 INT EXPRT cm_msg_register(void (*func)(HNDLE,HNDLE,EVENT_HEADER*,void*));
 INT EXPRT cm_msg_retrieve(char *message, INT *buf_size);
 

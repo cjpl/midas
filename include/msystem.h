@@ -7,6 +7,9 @@
                 routines
 
   $Log$
+  Revision 1.18  2000/08/11 11:43:50  midas
+  Added cm_msg1 to produce messages which go to a differnt logging file
+
   Revision 1.17  1999/12/08 00:34:24  pierre
   - EXPRT db_un/lock_database.
   - mod dm_buffer_create arg list.
@@ -478,7 +481,7 @@ int     arg1,arg2,arg3,arg4,arg5,arg6,arg7,arg8,arg9,arg10;
 INT EXPRT cm_set_path(char *path);
 INT EXPRT cm_get_path(char *path);
 INT cm_dispatch_ipc(char *message, int socket);
-INT EXPRT cm_msg_log(INT message_type, char *message);
+INT EXPRT cm_msg_log(INT message_type, const char *message, const char *facility);
 void EXPRT name2c(char *str);
 
 /*---- buffer manager ----*/
