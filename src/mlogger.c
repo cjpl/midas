@@ -6,6 +6,9 @@
   Contents:     MIDAS logger program
 
   $Log$
+  Revision 1.51  2002/05/09 02:30:56  midas
+  Removed temporary outcommenting
+
   Revision 1.50  2002/05/09 02:17:37  midas
   Abort logger start/run start if invalid link in history system
 
@@ -2633,8 +2636,8 @@ usage:
   if (open_history() != CM_SUCCESS)
     {
     printf("Error in history system, aborting startup.\n");
-//##    cm_disconnect_experiment();
-//    return 1;
+    cm_disconnect_experiment();
+    return 1;
     }
 
   /* turn off message display, turn on message logging */
