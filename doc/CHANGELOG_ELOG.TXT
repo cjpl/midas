@@ -1,0 +1,12 @@
+Version 1.0.1, released July 24, 2001
+=====================================
+
+- Use subject as page title, useful when bookmarking pages
+- Display text with "http://xxx" in logbook pages as active links
+- Increase password expiration from 1h to 1d for computers with daylight
+  savings time incorrectly set
+
+Version 1.0.0, released June 20, 2001
+=====================================
+
+Initial revision
