@@ -1323,16 +1323,14 @@ int mxml_write_tree(char *file_name, PMXML_NODE tree)
 /* write a complete XML tree to a file */
 {
    MXML_WRITER *writer;
-   int i;
 
    assert(tree);
    writer = mxml_open_file(file_name);
    if (!writer)
       return FALSE;
 
-   for (i=0 ; i<tree->n_children ; i++)
-      if (!mxml_write_subtree(writer, &tree->child[i]))
-         return FALSE;
+   if (!mxml_write_subtree(writer, tree))
+      return FALSE;
 
    if (!mxml_close_file(writer))
       return FALSE;
