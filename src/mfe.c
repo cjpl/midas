@@ -7,6 +7,9 @@
                 linked with user code to form a complete frontend
 
   $Log$
+  Revision 1.47  2003/03/28 09:13:05  midas
+  Added warning for uncreated structured banks
+
   Revision 1.46  2003/03/28 08:55:11  midas
   Added code for structured banks
 
@@ -735,15 +738,15 @@ KEY               key;
       *((DWORD *) name) = bkname;
       name[4] = 0;
 
-      status = db_find_key(hDB, hKey, name, &hKeyRoot);
-      if (status != DB_SUCCESS)
-        {
-        cm_msg(MERROR, "update_odb", "received unknown bank %s", name);
-        continue;
-        }
-
       if (bktype == TID_STRUCT)
         {
+        status = db_find_key(hDB, hKey, name, &hKeyRoot);
+        if (status != DB_SUCCESS)
+          {
+          cm_msg(MERROR, "update_odb", "please create bank %s in frontend_init()", name);
+          continue;
+          }
+
         /* write structured bank */
         for (i=0 ;; i++)
           {
@@ -760,7 +763,7 @@ KEY               key;
                                key.num_values, key.type);
           if (status != DB_SUCCESS)
             {
-            cm_msg(MERROR, "write_event_odb", "cannot write %s to ODB", name);
+            cm_msg(MERROR, "update_odb", "cannot write %s to ODB", name);
             continue;
             }
 
@@ -770,18 +773,9 @@ KEY               key;
         }
       else
         {
-        db_get_key(hDB, hKeyRoot, &key);
-
         /* write variable length bank  */
         if (n_data > 0)
-          {
-          status = db_set_data(hDB, hKeyRoot, pdata, size, n_data, key.type);
-          if (status != DB_SUCCESS)
-            {
-            cm_msg(MERROR, "write_event_odb", "cannot write %s to ODB", name);
-            continue;
-            }
-          }
+          db_set_value(hDB, hKey, name, pdata, size, n_data, bktype & 0xFF);
         }
 
       } while (1);
