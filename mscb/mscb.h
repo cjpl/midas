@@ -6,6 +6,9 @@
   Contents:     Header fiel for MSCB funcions
 
   $Log$
+  Revision 1.42  2005/03/08 12:41:27  ritt
+  Version 1.9.0
+
   Revision 1.41  2005/02/22 13:21:20  ritt
   Added 38400 baud
 
@@ -168,6 +171,14 @@
 
 #define GET_INFO_GENERAL   0
 #define GET_INFO_VARIABLE  1
+
+#define UCMD_ECHO          1
+#define UCMD_ERASE         2
+#define UCMD_PROGRAM       3
+#define UCMD_VERIFY        4
+#define UCMD_READ          5
+#define UCMD_REBOOT        6
+#define UCMD_RETURN        7
 
 /*---- flags from the configuration and status register (CSR) ------*/
 
@@ -350,7 +361,8 @@ extern "C" {
    int EXPRT mscb_write_group(int fd, int adr, unsigned char index, void *data, int size);
    int EXPRT mscb_write_block(int fd, int adr, unsigned char index, void *data, int size);
    int EXPRT mscb_flash(int fd, int adr);
-   int EXPRT mscb_upload(int fd, int adr, char *buffer, int size, int debug, int verify);
+   int EXPRT mscb_upload(int fd, int adr, char *buffer, int size, int debug);
+   int EXPRT mscb_verify(int fd, int adr, char *buffer, int size);
    int EXPRT mscb_read(int fd, int adr, unsigned char index, void *data, int *size);
    int EXPRT mscb_read_range(int fd, int adr, unsigned char index1,
                              unsigned char index2, void *data, int *size);

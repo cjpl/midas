@@ -6,6 +6,9 @@
   Contents:     Command-line interface for the Midas Slow Control Bus
 
   $Log$
+  Revision 1.77  2005/03/08 12:41:26  ritt
+  Version 1.9.0
+
   Revision 1.76  2005/01/07 09:29:05  midas
   Version 1.7.a
 
@@ -339,7 +342,8 @@ void print_help()
    puts("scan [r] [a]               Scan bus for nodes [repeat mode] [all]");
    puts("sn <name>                  Set node name (up to 16 characters)");
    puts("terminal                   Enter teminal mode for SCS-210");
-   puts("upload <hex-file> [debug|verify] Upload new firmware to node [with debug info|verify only]");
+   puts("upload <hex-file> [debug]  Upload new firmware to node [with debug info]");
+   puts("verify <hex-file>          Compare current firmware with file");
    puts("version                    Display version number");
    puts("write <index> <value> [r]  Write node variable");
 
@@ -711,7 +715,7 @@ void cmd_loop(int fd, char *cmd, int adr)
                if (info.protocol_version / 16 != majv || info.protocol_version % 16 != minv) {
                   printf("\nWARNING: Protocol version on node (%d.%d) differs from local version (%s).\n",
                      info.protocol_version / 16, info.protocol_version % 16, prot);
-                  printf("Problems may arise communicating with this node.\n\n");
+                  printf("Problems may arise communicating with this node. Please upgrade.\n\n");
                }
             }
          }
@@ -1182,11 +1186,47 @@ void cmd_loop(int fd, char *cmd, int adr)
                close(fh);
 
                if (param[2][0] == 'd')
-                  status = mscb_upload(fd, current_addr, buffer, size, TRUE, FALSE);
-               else if (param[2][0] == 'v')
-                  status = mscb_upload(fd, current_addr, buffer, size, FALSE, TRUE);
+                  status = mscb_upload(fd, current_addr, buffer, size, TRUE);
                else
-                  status = mscb_upload(fd, current_addr, buffer, size, FALSE, FALSE);
+                  status = mscb_upload(fd, current_addr, buffer, size, FALSE);
+
+               if (status == MSCB_FORMAT_ERROR)
+                  printf("Syntax error in file \"%s\"\n", str);
+               else if (status == MSCB_TIMEOUT)
+                  printf("Node %d does not respond\n", current_addr);
+
+               free(buffer);
+            } else
+               printf("File \"%s\" not found\n", str);
+         }
+      }
+
+      /* verify ---------- */
+      else if (match(param[0], "verify")) {
+         if (current_addr < 0)
+            printf("You must first address an individual node\n");
+         else {
+            if (param[1][0] == 0) {
+               printf("Enter name of HEX-file: ");
+               fgets(str, sizeof(str), stdin);
+            } else
+               strcpy(str, param[1]);
+
+            if (str[strlen(str) - 1] == '\n')
+               str[strlen(str) - 1] = 0;
+
+            fh = open(str, O_RDONLY | O_BINARY);
+            if (fh > 0) {
+               if (param[2][0])
+                  printf("Uploading file %s\n", str);
+               size = lseek(fh, 0, SEEK_END) + 1;
+               lseek(fh, 0, SEEK_SET);
+               buffer = malloc(size);
+               memset(buffer, 0, size);
+               read(fh, buffer, size - 1);
+               close(fh);
+
+               status = mscb_verify(fd, current_addr, buffer, size);
 
                if (status == MSCB_FORMAT_ERROR)
                   printf("Syntax error in file \"%s\"\n", str);
