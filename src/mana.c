@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.53  2000/03/01 23:04:18  midas
+  Added correct_num_events
+
   Revision 1.52  2000/02/15 11:07:50  midas
   Changed GET_xxx to bit flags
 
@@ -414,9 +417,9 @@ Host = STRING : [32] \n\
 "
 
 #define ANALYZER_STATS_STR "\
-Events received = DWORD : 0\n\
-Events per sec. = DWORD : 0\n\
-Events written = DWORD : 0\n\
+Events received = DOUBLE : 0\n\
+Events per sec. = DOUBLE : 0\n\
+Events written = DOUBLE : 0\n\
 "
 
 #define OUT_INFO_STR "\
@@ -2645,6 +2648,14 @@ struct {
   DWORD     last_time;
 } last_time_event[50];
 
+ANALYZE_REQUEST *_current_par;
+
+void correct_num_events(INT i)
+{
+  if (_current_par)
+    _current_par->events_received += i-1;
+}
+
 INT process_event(ANALYZE_REQUEST *par, EVENT_HEADER *pevent)
 {
 INT          i, status, ch;
@@ -2658,6 +2669,9 @@ static char  *orig_event = NULL;
   if (clp.verbose)
     printf("event %d, number %d, total size %d\n", 
       pevent->event_id, pevent->serial_number, pevent->data_size+sizeof(EVENT_HEADER));
+
+  /* save analyze_request for event number correction */
+  _current_par = par;
 
   /* check keyboard once every second */
   actual_time = ss_millitime();
@@ -3012,7 +3026,7 @@ DWORD    actual_time;
     ar_stats->events_received += analyze_request[i].events_received;
     ar_stats->events_written += analyze_request[i].events_written;
     ar_stats->events_per_sec =
-      (DWORD) (analyze_request[i].events_received / ((actual_time-last_time)/1000.0));
+      (analyze_request[i].events_received / ((actual_time-last_time)/1000.0));
     analyze_request[i].events_received = 0;
     analyze_request[i].events_written = 0;
     }
