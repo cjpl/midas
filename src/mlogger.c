@@ -6,6 +6,9 @@
   Contents:     MIDAS logger program
 
   $Log$
+  Revision 1.39  2000/06/20 07:06:45  midas
+  Added check for history name length
+
   Revision 1.38  2000/05/05 08:05:31  midas
   Avoid message "write operation took ..." if time gets adjusted by xntp
 
@@ -1633,6 +1636,13 @@ BOOL     single_names;
             /* append variable key name for single name array */
             if (single_names)
               {
+              if (strlen(tag[i_tag].name)+1+strlen(varkey.name) >= NAME_LENGTH)
+                {
+                cm_msg(MERROR, "open_history", "Name for history entry \"%s %s\" too long",
+                       tag[i_tag].name, varkey.name);
+                free(tag);
+                return 0;
+                }
               strcat(tag[i_tag].name, " ");
               strcat(tag[i_tag].name, varkey.name);
               }
