@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.115  2003/05/02 09:03:01  midas
+  Fixed buffer overflows by strlcpy()
+
   Revision 1.114  2003/04/22 15:14:09  midas
   Added #undef GetCurrentTime
 
@@ -1672,6 +1675,8 @@ INT EXPRT cm_msg_register(void (*func)(HNDLE,HNDLE,EVENT_HEADER*,void*));
 INT EXPRT cm_msg_retrieve(INT n_message, char *message, INT *buf_size);
 
 BOOL EXPRT equal_ustring(char *str1, char *str2);
+size_t strlcpy(char *dst, const char *src, size_t size);
+size_t strlcat(char *dst, const char *src, size_t size);
 
 /*---- buffer manager ----*/
 INT EXPRT bm_open_buffer(char *buffer_name, INT buffer_size, INT *buffer_handle);

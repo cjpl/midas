@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.189  2003/05/02 09:03:01  midas
+  Fixed buffer overflows by strlcpy()
+
   Revision 1.188  2003/04/25 13:54:04  midas
   Fixed compiler warnings
 
@@ -813,6 +816,74 @@ int  i;
         _mem_loc[i].size, (unsigned int)_mem_loc[i].adr);
   fclose(f);
 
+}
+
+/*---- strlcpy and strlcat to avoid buffer overflow ----------------*/
+
+/*
+ * Copy src to string dst of size siz.  At most siz-1 characters
+ * will be copied.  Always NUL terminates (unless size == 0).
+ * Returns strlen(src); if retval >= siz, truncation occurred.
+ */
+size_t strlcpy(char *dst, const char *src, size_t size)
+{
+char *d = dst;
+const char *s = src;
+size_t n = size;
+
+  /* Copy as many bytes as will fit */
+  if (n != 0 && --n != 0)
+    {
+    do
+      {
+      if ((*d++ = *s++) == 0)
+        break;
+      } while (--n != 0);
+    }
+
+  /* Not enough room in dst, add NUL and traverse rest of src */
+  if (n == 0)
+    {
+    if (size != 0)
+      *d = '\0';    /* NUL-terminate dst */
+    while (*s++);
+    }
+
+  return (s - src - 1); /* count does not include NUL */
+}
+
+/*
+ * Appends src to string dst of size siz (unlike strncat, siz is the
+ * full size of dst, not space left).  At most siz-1 characters
+ * will be copied.  Always NUL terminates (unless size <= strlen(dst)).
+ * Returns strlen(src) + MIN(size, strlen(initial dst)).
+ * If retval >= size, truncation occurred.
+ */
+size_t strlcat(char *dst, const char *src, size_t size)
+{
+char *d = dst;
+const char *s = src;
+size_t n = size;
+size_t dlen;
+
+	/* Find the end of dst and adjust bytes left but don't go past end */
+	while (n-- != 0 && *d != '\0')
+		d++;
+	dlen = d - dst;
+	n = size - dlen;
+
+	if (n == 0)
+		return(dlen + strlen(s));
+	while (*s != '\0') {
+		if (n != 1) {
+			*d++ = *s;
+			n--;
+		}
+		s++;
+	}
+	*d = '\0';
+
+	return(dlen + (s - src));	/* count does not include NUL */
 }
 
 /*------------------------------------------------------------------*/
@@ -1795,10 +1866,10 @@ char str[MAX_STRING_LENGTH], alt_str[MAX_STRING_LENGTH], *pdir;
   /* MIDAS_DIR overrides exptab */
   if (getenv("MIDAS_DIR"))
     {
-    strcpy(str, getenv("MIDAS_DIR"));
+    strlcpy(str, getenv("MIDAS_DIR"), sizeof(str));
 
     strcpy(exptab[0].name, "Default");
-    strcpy(exptab[0].directory, getenv("MIDAS_DIR"));
+    strlcpy(exptab[0].directory, getenv("MIDAS_DIR"), sizeof(exptab[0].directory));
     exptab[0].user[0] = 0;
 
     return CM_SUCCESS;
@@ -1807,9 +1878,9 @@ char str[MAX_STRING_LENGTH], alt_str[MAX_STRING_LENGTH], *pdir;
   /* default directory for different OSes */
 #if defined (OS_WINNT)
   if (getenv("SystemRoot"))
-    strcpy(str, getenv("SystemRoot"));
+    strlcpy(str, getenv("SystemRoot"), sizeof(str));
   else if (getenv("windir"))
-    strcpy(str, getenv("windir"));
+    strlcpy(str, getenv("windir"), sizeof(str));
   else
     strcpy(str, "");
 
@@ -1827,8 +1898,8 @@ char str[MAX_STRING_LENGTH], alt_str[MAX_STRING_LENGTH], *pdir;
   /* MIDAS_EXPTAB overrides default directory */
   if (getenv("MIDAS_EXPTAB"))
     {
-    strcpy(str, getenv("MIDAS_EXPTAB"));
-    strcpy(alt_str, getenv("MIDAS_EXPTAB"));
+    strlcpy(str, getenv("MIDAS_EXPTAB"), sizeof(str));
+    strlcpy(alt_str, getenv("MIDAS_EXPTAB"), sizeof(alt_str));
     }
 
   /* read list of available experiments */
@@ -2323,10 +2394,10 @@ INT cm_get_environment(char *host_name, char *exp_name)
   host_name[0] = exp_name[0] = 0;
 
   if (getenv("MIDAS_SERVER_HOST"))
-    strcpy(host_name, getenv("MIDAS_SERVER_HOST"));
+    strlcpy(host_name, getenv("MIDAS_SERVER_HOST"), sizeof(host_name));
 
   if (getenv("MIDAS_EXPT_NAME"))
-    strcpy(exp_name, getenv("MIDAS_EXPT_NAME"));
+    strlcpy(exp_name, getenv("MIDAS_EXPT_NAME"), sizeof(exp_name));
 
   return CM_SUCCESS;
 }
