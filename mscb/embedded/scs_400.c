@@ -9,6 +9,9 @@
                 for SCS-400 thermo couple I/O
 
   $Log$
+  Revision 1.28  2005/03/21 12:54:31  ritt
+  Implemented 8 channels with PID regulation
+
   Revision 1.27  2004/06/16 11:41:16  midas
   Added _n_sub_addr
 
@@ -101,13 +104,13 @@ unsigned char idata _n_sub_addr = 1;
 
 /*---- Define variable parameters returned to the CMD_GET_INFO command ----*/
 
-#undef PID_CONTROL              // activate/deactivate PID control loop
+#define PID_CONTROL             // activate/deactivate PID control loop
 
 /* data buffer (mirrored in EEPROM) */
 
 #ifdef PID_CONTROL
 
-#define N_CHANNEL 2
+#define N_CHANNEL 8
 
 struct {
    short demand[N_CHANNEL];
@@ -118,23 +121,65 @@ struct {
    float power[N_CHANNEL];
    short ofs[N_CHANNEL];
    unsigned short period;
-} idata user_data;
+} xdata user_data;
 
 MSCB_INFO_VAR code variables[] = {
    2, UNIT_CELSIUS, 0, 0, MSCBF_SIGNED, "Demand0", &user_data.demand[0],
    2, UNIT_CELSIUS, 0, 0, MSCBF_SIGNED, "Demand1", &user_data.demand[1],
+   2, UNIT_CELSIUS, 0, 0, MSCBF_SIGNED, "Demand2", &user_data.demand[2],
+   2, UNIT_CELSIUS, 0, 0, MSCBF_SIGNED, "Demand3", &user_data.demand[3],
+   2, UNIT_CELSIUS, 0, 0, MSCBF_SIGNED, "Demand4", &user_data.demand[4],
+   2, UNIT_CELSIUS, 0, 0, MSCBF_SIGNED, "Demand5", &user_data.demand[5],
+   2, UNIT_CELSIUS, 0, 0, MSCBF_SIGNED, "Demand6", &user_data.demand[6],
+   2, UNIT_CELSIUS, 0, 0, MSCBF_SIGNED, "Demand7", &user_data.demand[7],
    4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp0", &user_data.temp[0],
    4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp1", &user_data.temp[1],
+   4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp2", &user_data.temp[2],
+   4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp3", &user_data.temp[3],
+   4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp4", &user_data.temp[4],
+   4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp5", &user_data.temp[5],
+   4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp6", &user_data.temp[6],
+   4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp7", &user_data.temp[7],
    4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "CProp0", &user_data.c_prop[0],
    4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "CProp1", &user_data.c_prop[1],
+   4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "CProp2", &user_data.c_prop[2],
+   4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "CProp3", &user_data.c_prop[3],
+   4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "CProp4", &user_data.c_prop[4],
+   4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "CProp5", &user_data.c_prop[5],
+   4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "CProp6", &user_data.c_prop[6],
+   4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "CProp7", &user_data.c_prop[7],
    4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "CInt0", &user_data.c_int[0],
    4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "CInt1", &user_data.c_int[1],
+   4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "CInt2", &user_data.c_int[2],
+   4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "CInt3", &user_data.c_int[3],
+   4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "CInt4", &user_data.c_int[4],
+   4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "CInt5", &user_data.c_int[5],
+   4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "CInt6", &user_data.c_int[6],
+   4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "CInt7", &user_data.c_int[7],
    4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "PInt0", &user_data.p_int[0],
    4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "PInt1", &user_data.p_int[1],
+   4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "PInt2", &user_data.p_int[2],
+   4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "PInt3", &user_data.p_int[3],
+   4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "PInt4", &user_data.p_int[4],
+   4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "PInt5", &user_data.p_int[5],
+   4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "PInt6", &user_data.p_int[6],
+   4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "PInt7", &user_data.p_int[7],
    4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "Power0", &user_data.power[0],
    4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "Power1", &user_data.power[1],
+   4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "Power2", &user_data.power[2],
+   4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "Power3", &user_data.power[3],
+   4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "Power4", &user_data.power[4],
+   4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "Power5", &user_data.power[5],
+   4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "Power6", &user_data.power[6],
+   4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "Power7", &user_data.power[7],
    2, UNIT_CELSIUS, 0, 0, MSCBF_SIGNED, "Ofs0", &user_data.ofs[0],
    2, UNIT_CELSIUS, 0, 0, MSCBF_SIGNED, "Ofs1", &user_data.ofs[1],
+   2, UNIT_CELSIUS, 0, 0, MSCBF_SIGNED, "Ofs2", &user_data.ofs[2],
+   2, UNIT_CELSIUS, 0, 0, MSCBF_SIGNED, "Ofs3", &user_data.ofs[3],
+   2, UNIT_CELSIUS, 0, 0, MSCBF_SIGNED, "Ofs4", &user_data.ofs[4],
+   2, UNIT_CELSIUS, 0, 0, MSCBF_SIGNED, "Ofs5", &user_data.ofs[5],
+   2, UNIT_CELSIUS, 0, 0, MSCBF_SIGNED, "Ofs6", &user_data.ofs[6],
+   2, UNIT_CELSIUS, 0, 0, MSCBF_SIGNED, "Ofs7", &user_data.ofs[7],
    2, UNIT_SECOND, 0, 0, 0, "Period", &user_data.period,
    0
 };
