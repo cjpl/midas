@@ -6,6 +6,9 @@
   Contents:     Header fiel for MSCB RPC funcions
 
   $Log$
+  Revision 1.13  2004/03/04 15:29:27  midas
+  Added USB support
+
   Revision 1.12  2004/01/08 08:40:09  midas
   Implemented standard indentation
 
@@ -179,4 +182,4 @@ void mrpc_server_loop(void);
 int mrpc_connect(char *host_name);
 int mrpc_connected(int fd);
 int mrpc_disconnect(int sock);
-int mrpc_call(const int routine_id, ...);
+int mrpc_call(int fdi, const int routine_id, ...);

@@ -6,6 +6,9 @@
   Contents:     List of MSCB RPC functions with parameters
 
   $Log$
+  Revision 1.17  2004/03/04 15:29:24  midas
+  Added USB support
+
   Revision 1.16  2004/01/07 12:56:15  midas
   Chaned line length
 
@@ -377,7 +380,7 @@ int mrecv_tcp(int sock, char *buffer, int buffer_size)
    NET_COMMAND *nc;
 
    if (buffer_size < sizeof(NET_COMMAND_HEADER)) {
-      printf("mrecv_tcp_server: buffer too small");
+      printf("mrecv_tcp_server: buffer too small\n");
       return -1;
    }
 
@@ -796,7 +799,7 @@ void mrpc_va_arg(va_list * arg_ptr, int arg_type, void *arg)
 
 /*------------------------------------------------------------------*/
 
-int mrpc_call(const int sock, const int routine_id, ...)
+int mrpc_call(int sock, const int routine_id, ...)
 {
    va_list ap, aptmp;
    char str[256], arg[8], arg_tmp[8];
@@ -819,7 +822,7 @@ int mrpc_call(const int sock, const int routine_id, ...)
          break;
    index = i;
    if (rpc_list[i].id == 0) {
-      printf("mrpc_call: invalid rpc ID (%d)", routine_id);
+      printf("mrpc_call: invalid rpc ID (%d)\n", routine_id);
       return RPC_INVALID_ID;
    }
 
@@ -884,7 +887,7 @@ int mrpc_call(const int sock, const int routine_id, ...)
 
          if ((int) param_ptr - (int) nc + param_size > NET_BUFFER_SIZE) {
             printf
-                ("mrpc_call: parameters (%d) too large for network buffer (%d)",
+                ("mrpc_call: parameters (%d) too large for network buffer (%d)\n",
                  (int) param_ptr - (int) nc + param_size, NET_BUFFER_SIZE);
             return RPC_EXCEED_BUFFER;
          }
@@ -969,7 +972,7 @@ int mrpc_call(const int sock, const int routine_id, ...)
    select(FD_SETSIZE, (void *) &readfds, NULL, NULL, (void *) &timeout);
 
    if (!FD_ISSET(sock, &readfds)) {
-      printf("mrpc_call: rpc timeout, routine = \"%s\"", rpc_list[index].name);
+      printf("mrpc_call: rpc timeout, routine = \"%s\"\n", rpc_list[index].name);
 
       /* disconnect to avoid that the reply to this mrpc_call comes at
          the next mrpc_call */
@@ -982,7 +985,7 @@ int mrpc_call(const int sock, const int routine_id, ...)
    i = mrecv_tcp(sock, net_buffer, NET_BUFFER_SIZE);
 
    if (i <= 0) {
-      printf("mrpc_call: mrecv_tcp() failed, routine = \"%s\"", rpc_list[index].name);
+      printf("mrpc_call: mrecv_tcp() failed, routine = \"%s\"\n", rpc_list[index].name);
       return RPC_NET_ERROR;
    }
 
