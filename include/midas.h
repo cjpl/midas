@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.24  1999/04/30 10:58:20  midas
+  Added mode to rpc_set_debug
+
   Revision 1.23  1999/04/27 11:11:39  midas
   Added rpc_register_client
 
@@ -1211,7 +1214,7 @@ INT EXPRT rpc_set_option(HNDLE hConn, INT item, INT value);
 INT EXPRT rpc_set_name(char *name);
 INT EXPRT rpc_get_name(char *name);
 INT EXPRT rpc_is_remote(void);
-INT EXPRT rpc_set_debug(void (*func)(char*));
+INT EXPRT rpc_set_debug(void (*func)(char*), INT mode);
 
 INT EXPRT rpc_register_server(INT server_type, char *name, INT *port, INT (*func)(INT,void**));
 INT EXPRT rpc_register_client(char *name, RPC_LIST *list);
