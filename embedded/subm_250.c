@@ -7,6 +7,9 @@
                 SUBM250 running on Cygnal C8051F320
 
   $Log$
+  Revision 1.2  2004/03/09 14:19:08  midas
+  Increased default timeout
+
   Revision 1.1  2004/03/04 14:36:52  midas
   Initial revision
 
@@ -255,7 +258,7 @@ unsigned char i, n;
       else if (rs485_flags & RS485_FLAG_LONG_TO)    // 100ms for flash
          delay_ms(1);
       else
-         delay_us(10);                              // 1ms for other commands
+         delay_us(100);                             //  10ms for other commands
    }
 
    /* send timeout */
