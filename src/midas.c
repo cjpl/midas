@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.229  2004/12/17 08:16:06  midas
+  Fixed compiler warnings
+
   Revision 1.228  2004/12/14 09:07:18  olchansk
   Add 5 minute timeouts to locking in bm_lock_buffer(), el_submit, el_delete_message()
 
@@ -792,12 +795,12 @@ struct {
    int transition;
    char name[32];
 } trans_name[] = {
-   {TR_START, "START",}, 
-   {TR_STOP, "STOP",}, 
-   {TR_PAUSE, "PAUSE",}, 
-   {TR_RESUME, "RESUME",}, 
-   {TR_DEFERRED, "DEFERRED",},
-};
+   {
+   TR_START, "START",}, {
+   TR_STOP, "STOP",}, {
+   TR_PAUSE, "PAUSE",}, {
+   TR_RESUME, "RESUME",}, {
+TR_DEFERRED, "DEFERRED",},};
 
 /* Globals */
 #ifdef OS_MSDOS
@@ -841,7 +844,7 @@ static INT _watchdog_last_called = 0;
 typedef struct {
    INT transition;
    INT sequence_number;
-   INT(*func) (INT, char *);
+    INT(*func) (INT, char *);
 } TRANS_TABLE;
 
 #define MAX_TRANSITIONS 20
@@ -1669,7 +1672,7 @@ INT cm_msg_retrieve(INT n_message, char *message, INT * buf_size)
 }
 
 /**dox***************************************************************/
-/** @} */ /* end of msgfunctionc */
+                   /** @} *//* end of msgfunctionc */
 
 /**dox***************************************************************/
 /** @addtogroup cmfunctionc
@@ -1741,7 +1744,7 @@ INT cm_time(DWORD * time)
 }
 
 /**dox***************************************************************/
-/** @} */ /* end of cmfunctionc */
+                   /** @} *//* end of cmfunctionc */
 
 /********************************************************************\
 *                                                                    *
@@ -1807,7 +1810,7 @@ INT cm_get_path(char *path)
 }
 
 /**dox***************************************************************/
-/** @} */ /* end of cmfunctionc */
+                   /** @} *//* end of cmfunctionc */
 
 /**dox***************************************************************/
 /** @addtogroup cmfunctionc
@@ -2154,7 +2157,7 @@ INT cm_set_client_info(HNDLE hDB, HNDLE * hKeyClient, char *host_name,
       /* set host name */
       status =
           db_set_value(hDB, hKey, "Host", host_name, HOST_NAME_LENGTH, 1, TID_STRING);
-      if (status != DB_SUCCESS){
+      if (status != DB_SUCCESS) {
          db_unlock_database(hDB);
          return status;
       }
@@ -2162,7 +2165,7 @@ INT cm_set_client_info(HNDLE hDB, HNDLE * hKeyClient, char *host_name,
       /* set computer id */
       status = db_set_value(hDB, hKey, "Hardware type", &hw_type,
                             sizeof(hw_type), 1, TID_INT);
-      if (status != DB_SUCCESS){
+      if (status != DB_SUCCESS) {
          db_unlock_database(hDB);
          return status;
       }
@@ -2170,7 +2173,7 @@ INT cm_set_client_info(HNDLE hDB, HNDLE * hKeyClient, char *host_name,
       /* set server port */
       data = 0;
       status = db_set_value(hDB, hKey, "Server Port", &data, sizeof(INT), 1, TID_INT);
-      if (status != DB_SUCCESS){
+      if (status != DB_SUCCESS) {
          db_unlock_database(hDB);
          return status;
       }
@@ -3365,24 +3368,24 @@ INT cm_register_transition(INT transition, INT(*func) (INT, char *), INT sequenc
    char str[256];
 
    /* check for valid transition */
-   if (transition != TR_START && transition != TR_STOP && 
+   if (transition != TR_START && transition != TR_STOP &&
        transition != TR_PAUSE && transition != TR_RESUME) {
-         cm_msg(MERROR, "cm_transition", "Invalid transition request \"%d\"", transition);
-         return CM_INVALID_TRANSITION;
-      }
+      cm_msg(MERROR, "cm_transition", "Invalid transition request \"%d\"", transition);
+      return CM_INVALID_TRANSITION;
+   }
 
    cm_get_experiment_database(&hDB, &hKey);
 
    rpc_register_function(RPC_RC_TRANSITION, rpc_transition_dispatch);
 
    /* find empty slot */
-   for (i = 0; i < MAX_TRANSITIONS ; i++)
-      if (!_trans_table[i].transition) 
+   for (i = 0; i < MAX_TRANSITIONS; i++)
+      if (!_trans_table[i].transition)
          break;
 
    if (i == MAX_TRANSITIONS) {
-      cm_msg(MERROR, "cm_register_transition", 
-         "To many transition registrations. Please increase MAX_TRANSITIONS and recompile");
+      cm_msg(MERROR, "cm_register_transition",
+             "To many transition registrations. Please increase MAX_TRANSITIONS and recompile");
       return CM_TOO_MANY_REQUESTS;
    }
 
@@ -3409,7 +3412,9 @@ INT cm_register_transition(INT transition, INT(*func) (INT, char *), INT sequenc
       status = db_get_key(hDB, hKeyTrans, &key);
       if (status != DB_SUCCESS)
          return status;
-      status = db_set_data_index(hDB, hKeyTrans, &sequence_number, sizeof(INT), key.num_values, TID_INT);      
+      status =
+          db_set_data_index(hDB, hKeyTrans, &sequence_number, sizeof(INT), key.num_values,
+                            TID_INT);
       if (status != DB_SUCCESS)
          return status;
    }
@@ -3434,33 +3439,32 @@ INT cm_set_transition_sequence(INT transition, INT sequence_number)
    char str[256];
 
    /* check for valid transition */
-   if (transition != TR_START && transition != TR_STOP && 
+   if (transition != TR_START && transition != TR_STOP &&
        transition != TR_PAUSE && transition != TR_RESUME) {
-         cm_msg(MERROR, "cm_transition", "Invalid transition request \"%d\"", transition);
-         return CM_INVALID_TRANSITION;
-      }
+      cm_msg(MERROR, "cm_transition", "Invalid transition request \"%d\"", transition);
+      return CM_INVALID_TRANSITION;
+   }
 
    cm_get_experiment_database(&hDB, &hKey);
 
    /* Find the transition type from the list */
    for (i = 0; i < 13; i++)
-       if (trans_name[i].transition == transition)
+      if (trans_name[i].transition == transition)
          break;
    sprintf(str, "Transition %s", trans_name[i].name);
 
    /* Change local sequence number for this transition type */
    for (i = 0; i < MAX_TRANSITIONS; i++)
-       if (_trans_table[i].transition == transition){
-          _trans_table[i].sequence_number = sequence_number;
+      if (_trans_table[i].transition == transition) {
+         _trans_table[i].sequence_number = sequence_number;
          break;
-       }
+      }
 
    /* unlock database */
    db_set_mode(hDB, hKey, MODE_READ | MODE_WRITE, TRUE);
 
    /* set value */
-   status =
-       db_set_value(hDB, hKey, str, &sequence_number, sizeof(INT), 1, TID_INT);
+   status = db_set_value(hDB, hKey, str, &sequence_number, sizeof(INT), 1, TID_INT);
    if (status != DB_SUCCESS)
       return status;
 
@@ -3600,15 +3604,15 @@ INT cm_check_deferred_transition()
 #endif                          /* DOXYGEN_SHOULD_SKIP_THIS */
 
 typedef struct {
-   int  sequence_number;
+   int sequence_number;
    char host_name[HOST_NAME_LENGTH];
    char client_name[NAME_LENGTH];
-   int  port;
+   int port;
 } TR_CLIENT;
 
-int tr_compare(const void *arg1, const void *arg2) 
+int tr_compare(const void *arg1, const void *arg2)
 {
-   return ((TR_CLIENT *)arg1)->sequence_number - ((TR_CLIENT*)arg2)->sequence_number;
+   return ((TR_CLIENT *) arg1)->sequence_number - ((TR_CLIENT *) arg2)->sequence_number;
 }
 
 /********************************************************************/
@@ -3658,7 +3662,7 @@ INT cm_transition(INT transition, INT run_number, char *perror, INT strsize,
    HNDLE hDB, hRootKey, hSubkey, hKey, hKeylocal, hConn, hKeyTrans;
    DWORD seconds;
    char host_name[HOST_NAME_LENGTH], client_name[NAME_LENGTH],
-     str[256], error[256], tr_key_name[256];
+       str[256], error[256], tr_key_name[256];
    KEY key;
    BOOL deferred;
    PROGRAM_INFO program_info;
@@ -3669,10 +3673,10 @@ INT cm_transition(INT transition, INT run_number, char *perror, INT strsize,
 
    /* check for valid transition */
    if (transition != TR_START && transition != TR_STOP &&
-      transition != TR_PAUSE && transition != TR_RESUME) {
-         cm_msg(MERROR, "cm_transition", "Invalid transition request \"%d\"", transition);
-         return CM_INVALID_TRANSITION;
-      }
+       transition != TR_PAUSE && transition != TR_RESUME) {
+      cm_msg(MERROR, "cm_transition", "Invalid transition request \"%d\"", transition);
+      return CM_INVALID_TRANSITION;
+   }
 
    /* get key of local client */
    cm_get_experiment_database(&hDB, &hKeylocal);
@@ -3699,7 +3703,8 @@ INT cm_transition(INT transition, INT run_number, char *perror, INT strsize,
       if (debug_flag == 1)
          printf("Setting run number %d in ODB\n", run_number);
       if (debug_flag == 2)
-         cm_msg(MDEBUG, "cm_transition", "cm_transition: Setting run number %d in ODB", run_number);
+         cm_msg(MDEBUG, "cm_transition", "cm_transition: Setting run number %d in ODB",
+                run_number);
 
       status = db_set_value(hDB, 0, "Runinfo/Run number",
                             &run_number, sizeof(run_number), 1, TID_INT);
@@ -3744,7 +3749,7 @@ INT cm_transition(INT transition, INT run_number, char *perror, INT strsize,
          if (status == DB_SUCCESS) {
             size = sizeof(sequence_number);
             status = db_get_value(hDB, hSubkey, tr_key_name,
-                                 &sequence_number, &size, TID_INT, FALSE);
+                                  &sequence_number, &size, TID_INT, FALSE);
 
             /* if registered for deferred transition, set flag in ODB and return */
             if (status == DB_SUCCESS) {
@@ -3754,10 +3759,12 @@ INT cm_transition(INT transition, INT run_number, char *perror, INT strsize,
                             sizeof(int), 1, TID_INT);
 
                if (debug_flag == 1)
-                  printf("---- Transition %s deferred by client \"%s\" ----\n", trans_name[i].name, str);
+                  printf("---- Transition %s deferred by client \"%s\" ----\n",
+                         trans_name[i].name, str);
                if (debug_flag == 2)
-                  cm_msg(MDEBUG, "cm_transition", "cm_transition: ---- Transition %s deferred by client \"%s\" ----", 
-                     trans_name[i].name, str);
+                  cm_msg(MDEBUG, "cm_transition",
+                         "cm_transition: ---- Transition %s deferred by client \"%s\" ----",
+                         trans_name[i].name, str);
 
                if (perror)
                   sprintf(perror, "Transition deferred by client \"%s\"", str);
@@ -3858,7 +3865,8 @@ INT cm_transition(INT transition, INT run_number, char *perror, INT strsize,
    if (debug_flag == 1)
       printf("---- Transition %s started ----\n", trans_name[i].name);
    if (debug_flag == 2)
-      cm_msg(MDEBUG, "cm_transition", "cm_transition: ---- Transition %s started ----", trans_name[i].name);
+      cm_msg(MDEBUG, "cm_transition", "cm_transition: ---- Transition %s started ----",
+             trans_name[i].name);
 
    sprintf(tr_key_name, "Transition %s", trans_name[i].name);
 
@@ -3878,15 +3886,18 @@ INT cm_transition(INT transition, INT run_number, char *perror, INT strsize,
 
             db_get_key(hDB, hKeyTrans, &key);
 
-            for (j=0 ; j<key.num_values ; j++) {
+            for (j = 0; j < key.num_values; j++) {
                size = sizeof(sequence_number);
-               status = db_get_data_index(hDB, hKeyTrans, &sequence_number, &size, j, TID_INT);
+               status =
+                   db_get_data_index(hDB, hKeyTrans, &sequence_number, &size, j, TID_INT);
                assert(status == DB_SUCCESS);
 
                if (tr_client == NULL)
                   tr_client = (TR_CLIENT *) malloc(sizeof(TR_CLIENT));
                else
-                  tr_client = (TR_CLIENT *) realloc(tr_client, sizeof(TR_CLIENT)*(n_tr_clients+1));
+                  tr_client =
+                      (TR_CLIENT *) realloc(tr_client,
+                                            sizeof(TR_CLIENT) * (n_tr_clients + 1));
                assert(tr_client);
 
                tr_client[n_tr_clients].sequence_number = sequence_number;
@@ -3897,7 +3908,8 @@ INT cm_transition(INT transition, INT run_number, char *perror, INT strsize,
                } else {
                   /* get client info */
                   size = sizeof(client_name);
-                  db_get_value(hDB, hSubkey, "Name", client_name, &size, TID_STRING, TRUE);
+                  db_get_value(hDB, hSubkey, "Name", client_name, &size, TID_STRING,
+                               TRUE);
                   strcpy(tr_client[n_tr_clients].client_name, client_name);
 
                   size = sizeof(port);
@@ -3920,16 +3932,17 @@ INT cm_transition(INT transition, INT run_number, char *perror, INT strsize,
       qsort(tr_client, n_tr_clients, sizeof(TR_CLIENT), tr_compare);
 
    /* contact ordered clients for transition */
-   for (index=0 ; index<n_tr_clients; index++) {
+   for (index = 0; index < n_tr_clients; index++) {
       /* erase error string */
       error[0] = 0;
 
       if (debug_flag == 1)
-         printf("\n==== Found client \"%s\" with sequence number %d\n", tr_client[index].client_name, 
-            tr_client[index].sequence_number);
+         printf("\n==== Found client \"%s\" with sequence number %d\n",
+                tr_client[index].client_name, tr_client[index].sequence_number);
       if (debug_flag == 2)
-         cm_msg(MDEBUG, "cm_transition", "cm_transition: ==== Found client \"%s\" with sequence number %d",
-            tr_client[index].client_name, tr_client[index].sequence_number);
+         cm_msg(MDEBUG, "cm_transition",
+                "cm_transition: ==== Found client \"%s\" with sequence number %d",
+                tr_client[index].client_name, tr_client[index].sequence_number);
 
       /* if own client call transition callback directly */
       if (tr_client[index].port == 0) {
@@ -3942,20 +3955,22 @@ INT cm_transition(INT transition, INT run_number, char *perror, INT strsize,
             if (debug_flag == 1)
                printf("Calling local transition callback\n");
             if (debug_flag == 2)
-               cm_msg(MDEBUG, "cm_transition", "cm_transition: Calling local transition callback");
+               cm_msg(MDEBUG, "cm_transition",
+                      "cm_transition: Calling local transition callback");
 
             status = _trans_table[i].func(run_number, error);
 
             if (debug_flag == 1)
                printf("Local transition callback finished\n");
             if (debug_flag == 2)
-               cm_msg(MDEBUG, "cm_transition", "cm_transition: Local transition callback finished");
+               cm_msg(MDEBUG, "cm_transition",
+                      "cm_transition: Local transition callback finished");
          } else
             status = CM_SUCCESS;
 
          if (perror != NULL)
             memcpy(perror, error, (INT) strlen(error) + 1 < strsize ?
-                     strlen(error) + 1 : strsize);
+                   strlen(error) + 1 : strsize);
 
          if (status != CM_SUCCESS) {
             free(tr_client);
@@ -3963,33 +3978,34 @@ INT cm_transition(INT transition, INT run_number, char *perror, INT strsize,
          }
 
       } else {
-         
+
          /* contact client if transition mask set */
          if (debug_flag == 1)
-            printf("Connecting to client \"%s\" on host %s...\n", 
-               tr_client[index].client_name, tr_client[index].host_name);
+            printf("Connecting to client \"%s\" on host %s...\n",
+                   tr_client[index].client_name, tr_client[index].host_name);
          if (debug_flag == 2)
-            cm_msg(MDEBUG, "cm_transition", 
-               "cm_transition: Connecting to client \"%s\" on host %s...", 
-               tr_client[index].client_name, tr_client[index].host_name);
+            cm_msg(MDEBUG, "cm_transition",
+                   "cm_transition: Connecting to client \"%s\" on host %s...",
+                   tr_client[index].client_name, tr_client[index].host_name);
 
          /* client found -> connect to its server port */
-         status = rpc_client_connect(tr_client[index].host_name, tr_client[index].port, 
+         status = rpc_client_connect(tr_client[index].host_name, tr_client[index].port,
                                      tr_client[index].client_name, &hConn);
          if (status != RPC_SUCCESS) {
-            cm_msg(MERROR, "cm_transition", "cannot connect to client \"%s\" on host %s, port %d",
-                     tr_client[index].client_name, tr_client[index].host_name, 
-                     tr_client[index].port);
+            cm_msg(MERROR, "cm_transition",
+                   "cannot connect to client \"%s\" on host %s, port %d",
+                   tr_client[index].client_name, tr_client[index].host_name,
+                   tr_client[index].port);
             continue;
          }
 
          if (debug_flag == 1)
-            printf("Connection established to client \"%s\" on host %s\n", 
-              tr_client[index].client_name, tr_client[index].host_name);
+            printf("Connection established to client \"%s\" on host %s\n",
+                   tr_client[index].client_name, tr_client[index].host_name);
          if (debug_flag == 2)
-            cm_msg(MDEBUG, "cm_transition", 
-               "cm_transition: Connection established to client \"%s\" on host %s", 
-                tr_client[index].client_name, tr_client[index].host_name);
+            cm_msg(MDEBUG, "cm_transition",
+                   "cm_transition: Connection established to client \"%s\" on host %s",
+                   tr_client[index].client_name, tr_client[index].host_name);
 
          /* call RC_TRANSITION on remote client with increased timeout */
          old_timeout = rpc_get_option(hConn, RPC_OTIMEOUT);
@@ -3999,16 +4015,17 @@ INT cm_transition(INT transition, INT run_number, char *perror, INT strsize,
          if (async_flag == ASYNC)
             rpc_set_option(hConn, RPC_OTRANSPORT, RPC_FTCP);
 
-         if (debug_flag== 1)
-            printf("Executing RPC transition client \"%s\" on host %s...\n", 
-              tr_client[index].client_name, tr_client[index].host_name);
+         if (debug_flag == 1)
+            printf("Executing RPC transition client \"%s\" on host %s...\n",
+                   tr_client[index].client_name, tr_client[index].host_name);
          if (debug_flag == 2)
-            cm_msg(MDEBUG, "cm_transition", 
-               "cm_transition: Executing RPC transition client \"%s\" on host %s...", 
-                 tr_client[index].client_name, tr_client[index].host_name);
+            cm_msg(MDEBUG, "cm_transition",
+                   "cm_transition: Executing RPC transition client \"%s\" on host %s...",
+                   tr_client[index].client_name, tr_client[index].host_name);
 
          status = rpc_client_call(hConn, RPC_RC_TRANSITION, transition,
-            run_number, error, strsize, tr_client[index].sequence_number);
+                                  run_number, error, strsize,
+                                  tr_client[index].sequence_number);
 
          /* reset timeout */
          rpc_set_option(hConn, RPC_OTIMEOUT, old_timeout);
@@ -4018,16 +4035,16 @@ INT cm_transition(INT transition, INT run_number, char *perror, INT strsize,
             rpc_set_option(hConn, RPC_OTRANSPORT, RPC_TCP);
 
          if (debug_flag == 1)
-            printf("RPC transition finished client \"%s\" on host %s\n", 
-              tr_client[index].client_name, tr_client[index].host_name);
+            printf("RPC transition finished client \"%s\" on host %s\n",
+                   tr_client[index].client_name, tr_client[index].host_name);
          if (debug_flag == 2)
-            cm_msg(MDEBUG, "cm_transition", 
-               "cm_transition: RPC transition finished client \"%s\" on host %s", 
-                 tr_client[index].client_name, tr_client[index].host_name);
+            cm_msg(MDEBUG, "cm_transition",
+                   "cm_transition: RPC transition finished client \"%s\" on host %s",
+                   tr_client[index].client_name, tr_client[index].host_name);
 
          if (perror != NULL)
             memcpy(perror, error, (INT) strlen(error) + 1 < strsize ?
-                     strlen(error) + 1 : strsize);
+                   strlen(error) + 1 : strsize);
 
          if (status != CM_SUCCESS) {
             free(tr_client);
@@ -4046,8 +4063,8 @@ INT cm_transition(INT transition, INT run_number, char *perror, INT strsize,
    if (debug_flag == 1)
       printf("\n---- Transition %s finished ----\n", trans_name[i].name);
    if (debug_flag == 2)
-      cm_msg(MDEBUG, "cm_transition", 
-         "cm_transition: ---- Transition %s finished ----", trans_name[i].name);
+      cm_msg(MDEBUG, "cm_transition",
+             "cm_transition: ---- Transition %s finished ----", trans_name[i].name);
 
    /* set new run state in database */
    if (transition == TR_START || transition == TR_RESUME)
@@ -4377,7 +4394,7 @@ INT cm_register_function(INT id, INT(*func) (INT, void **))
 #endif                          /* DOXYGEN_SHOULD_SKIP_THIS */
 
 /**dox***************************************************************/
-/** @} */ /* end of cmfunctionc */
+                   /** @} *//* end of cmfunctionc */
 
 /**dox***************************************************************/
 /** @addtogroup bmfunctionc
@@ -4812,7 +4829,7 @@ INT bm_close_all_buffers(void)
 }
 
 /**dox***************************************************************/
-/** @} */ /* end of bmfunctionc */
+                   /** @} *//* end of bmfunctionc */
 
 /**dox***************************************************************/
 /** @addtogroup cmfunctionc
@@ -5548,10 +5565,12 @@ INT bm_lock_buffer(INT buffer_handle)
       return BM_INVALID_HANDLE;
    }
 
-   status = ss_mutex_wait_for(_buffer[buffer_handle - 1].mutex, 5*60*1000);
+   status = ss_mutex_wait_for(_buffer[buffer_handle - 1].mutex, 5 * 60 * 1000);
 
    if (status != SS_SUCCESS) {
-      cm_msg(MERROR, "bm_lock_buffer", "Cannot lock buffer handle %d, ss_mutex_wait_for() status %d", buffer_handle, status);
+      cm_msg(MERROR, "bm_lock_buffer",
+             "Cannot lock buffer handle %d, ss_mutex_wait_for() status %d", buffer_handle,
+             status);
       abort();
       return BM_INVALID_HANDLE;
    }
@@ -5639,7 +5658,7 @@ INT bm_init_buffer_counters(INT buffer_handle)
 #endif                          /* DOXYGEN_SHOULD_SKIP_THIS */
 
 /**dox***************************************************************/
-/** @} */ /* end of cmfunctionc */
+                   /** @} *//* end of cmfunctionc */
 
 /**dox***************************************************************/
 /** @addtogroup bmfunctionc
@@ -6144,10 +6163,10 @@ INT bm_send_event(INT buffer_handle, void *source, INT buf_size, INT async_flag)
 
    /* check if event size defined in header matches buf_size */
    if (ALIGN8(buf_size) != (INT) ALIGN8(((EVENT_HEADER *) source)->data_size +
-                                      sizeof(EVENT_HEADER))) {
+                                        sizeof(EVENT_HEADER))) {
       cm_msg(MERROR, "bm_send_event", "event size (%d) mismatch in header (%d)",
              ALIGN8(buf_size), (INT) ALIGN8(((EVENT_HEADER *) source)->data_size +
-                                          sizeof(EVENT_HEADER)));
+                                            sizeof(EVENT_HEADER)));
       return BM_INVALID_PARAM;
    }
 
@@ -7919,12 +7938,13 @@ void bm_defragment_event(HNDLE buffer_handle, HNDLE request_id,
 \********************************************************************/
 {
    INT i;
-   static int j=-1;
-   
+   static int j = -1;
+
    if ((pevent->event_id & 0xF000) == EVENTID_FRAG1) {
     /*---- start new event ----*/
 
-      printf("First Frag detected : Ser#:%d ID=0x%x \n", pevent->serial_number, pevent->event_id);
+      printf("First Frag detected : Ser#:%ld ID=0x%x \n", pevent->serial_number,
+             pevent->event_id);
       /* check if fragments already stored */
       for (i = 0; i < MAX_DEFRAG_EVENTS; i++)
          if (defrag_buffer[i].event_id == (pevent->event_id & 0x0FFF))
@@ -7975,12 +7995,10 @@ void bm_defragment_event(HNDLE buffer_handle, HNDLE request_id,
       defrag_buffer[i].pevent->event_id = defrag_buffer[i].event_id;
       defrag_buffer[i].pevent->data_size = defrag_buffer[i].data_size;
 
-      printf("First frag[%d] (ID %d) Ser#:%d sz:%d\n"
-             , i, defrag_buffer[i].event_id
-	     , pevent->serial_number
-	     , defrag_buffer[i].data_size);
-      j=0;
-      
+      printf("First frag[%d] (ID %d) Ser#:%ld sz:%ld\n", i, defrag_buffer[i].event_id,
+             pevent->serial_number, defrag_buffer[i].data_size);
+      j = 0;
+
       return;
    }
 
@@ -7995,11 +8013,9 @@ void bm_defragment_event(HNDLE buffer_handle, HNDLE request_id,
       memset(&defrag_buffer[i].event_id, 0, sizeof(EVENT_DEFRAG_BUFFER));
       cm_msg(MERROR, "bm_defragement_event",
              "Received fragment without first fragment (ID %d) Ser#:%d",
-             pevent->event_id & 0x0FFF, pevent->serial_number );
-      printf("Received fragment without first fragment (ID 0x%x) Ser#:%d Sz:%d\n"
-             , pevent->event_id
-	     , pevent->serial_number
-	     , pevent->data_size );
+             pevent->event_id & 0x0FFF, pevent->serial_number);
+      printf("Received fragment without first fragment (ID 0x%x) Ser#:%ld Sz:%ld\n",
+             pevent->event_id, pevent->serial_number, pevent->data_size);
       return;
    }
 
@@ -8008,9 +8024,8 @@ void bm_defragment_event(HNDLE buffer_handle, HNDLE request_id,
       free(defrag_buffer[i].pevent);
       memset(&defrag_buffer[i].event_id, 0, sizeof(EVENT_DEFRAG_BUFFER));
       cm_msg(MERROR, "bm_defragement_event",
-             "Received fragments with more data (%d) than event size (%d)"
-	     , pevent->data_size + defrag_buffer[i].received
-	     , defrag_buffer[i].data_size);
+             "Received fragments with more data (%d) than event size (%d)",
+             pevent->data_size + defrag_buffer[i].received, defrag_buffer[i].data_size);
       return;
    }
 
@@ -8018,17 +8033,15 @@ void bm_defragment_event(HNDLE buffer_handle, HNDLE request_id,
           defrag_buffer[i].received, pdata, pevent->data_size);
 
    defrag_buffer[i].received += pevent->data_size;
-   
-   printf("Other frag[%d][%d] (ID %d) Ser#:%d sz:%d\n"
-	  , i, j++, defrag_buffer[i].event_id
-	  , pevent->serial_number
-	  , pevent->data_size);
-   
-   
+
+   printf("Other frag[%d][%d] (ID %d) Ser#:%ld sz:%ld\n", i, j++,
+          defrag_buffer[i].event_id, pevent->serial_number, pevent->data_size);
+
+
    if (defrag_buffer[i].received == defrag_buffer[i].data_size) {
-     /* event complete */
-     dispatcher(buffer_handle, request_id, defrag_buffer[i].pevent,
-		defrag_buffer[i].pevent + 1);
+      /* event complete */
+      dispatcher(buffer_handle, request_id, defrag_buffer[i].pevent,
+                 defrag_buffer[i].pevent + 1);
       free(defrag_buffer[i].pevent);
       memset(&defrag_buffer[i].event_id, 0, sizeof(EVENT_DEFRAG_BUFFER));
    }
@@ -8038,7 +8051,7 @@ void bm_defragment_event(HNDLE buffer_handle, HNDLE request_id,
 #endif                          /* DOXYGEN_SHOULD_SKIP_THIS */
 
 /**dox***************************************************************/
-/** @} */ /* end of bmfunctionc */
+                   /** @} *//* end of bmfunctionc */
 
 /**dox***************************************************************/
 /** @addtogroup rpcfunctionc
@@ -10473,7 +10486,7 @@ static INT rpc_transition_dispatch(INT index, void *prpc_param[])
    *(CSTRING(2)) = 0;
 
    if (index == RPC_RC_TRANSITION) {
-      for (i = 0; i<MAX_TRANSITIONS ; i++)
+      for (i = 0; i < MAX_TRANSITIONS; i++)
          if (_trans_table[i].transition == CINT(0) &&
              _trans_table[i].sequence_number == CINT(4))
             break;
@@ -10492,8 +10505,7 @@ static INT rpc_transition_dispatch(INT index, void *prpc_param[])
             trf_wp = (trf_wp + 1) % 10;
             status = RPC_SUCCESS;
          }
-      }
-      else
+      } else
          status = RPC_SUCCESS;
 
    } else {
@@ -10541,7 +10553,7 @@ int cm_query_transition(int *transition, int *run_number, int *trans_time)
       *run_number = tr_fifo[trf_rp].run_number;
 
    if (trans_time)
-      *trans_time = (int)tr_fifo[trf_rp].trans_time;
+      *trans_time = (int) tr_fifo[trf_rp].trans_time;
 
    trf_rp = (trf_rp + 1) % 10;
 
@@ -11575,7 +11587,7 @@ INT rpc_execute_ascii(INT sock, char *buffer)
    /*********************************\
    *   call dispatch function        *
    \*********************************/
-  
+
    if (rpc_list[index].dispatch)
       status = rpc_list[index].dispatch(routine_id, prpc_param);
    else
@@ -11770,13 +11782,13 @@ INT rpc_server_accept(int lsock)
    /* receive string with timeout */
    i = recv_string(sock, net_buffer, 256, 10000);
    rpc_debug_printf("Received command: %s", net_buffer);
- 
+
    if (i > 0) {
       command = (char) toupper(net_buffer[0]);
 
       switch (command) {
       case 'S':
-               
+
          /*----------- shutdown listener ----------------------*/
          closesocket(sock);
          return RPC_SHUTDOWN;
@@ -11787,7 +11799,7 @@ INT rpc_server_accept(int lsock)
          break;
 
       case 'I':
-               
+
          /*----------- return available experiments -----------*/
          cm_scan_experiments();
          for (i = 0; i < MAX_EXPERIMENT && exptab[i].name[0]; i++) {
@@ -11799,7 +11811,7 @@ INT rpc_server_accept(int lsock)
          break;
 
       case 'C':
-               
+
          /*----------- connect to experiment -----------*/
 
          /* get callback information */
@@ -11896,12 +11908,11 @@ INT rpc_server_accept(int lsock)
             argv[9] = NULL;
 
             rpc_debug_printf("Spawn: %s %s %s %s %s %s %s %s %s %s",
-               argv[0], argv[1], argv[2], argv[3], argv[4],
-               argv[5], argv[6], argv[7], argv[8], argv[9]);
+                             argv[0], argv[1], argv[2], argv[3], argv[4],
+                             argv[5], argv[6], argv[7], argv[8], argv[9]);
 
-            status = ss_spawnv(P_NOWAIT, 
-                          (char *) rpc_get_server_option(RPC_OSERVER_NAME),
-                          argv);
+            status = ss_spawnv(P_NOWAIT,
+                               (char *) rpc_get_server_option(RPC_OSERVER_NAME), argv);
 
             if (status != SS_SUCCESS) {
                rpc_debug_printf("Cannot spawn subprocess: %s\n", strerror(errno));
@@ -12251,7 +12262,8 @@ INT rpc_server_callback(struct callback_addr * pcallback)
 
    if (rpc_get_server_option(RPC_OSERVER_TYPE) != ST_REMOTE)
       rpc_debug_printf("Connection to %s:%s established\n",
-             _server_acception[index].host_name, _server_acception[index].prog_name);
+                       _server_acception[index].host_name,
+                       _server_acception[index].prog_name);
 
    return RPC_SUCCESS;
 
@@ -12419,8 +12431,8 @@ INT rpc_server_receive(INT index, int sock, BOOL check)
          if (status == SS_EXIT || status == RPC_SHUTDOWN) {
             if (rpc_get_server_option(RPC_OSERVER_TYPE) != ST_REMOTE)
                rpc_debug_printf("Connection to %s:%s closed\n",
-                      _server_acception[index].host_name,
-                      _server_acception[index].prog_name);
+                                _server_acception[index].host_name,
+                                _server_acception[index].prog_name);
             goto exit;
          }
 
@@ -12704,7 +12716,7 @@ INT rpc_check_channels(void)
 #endif                          /* DOXYGEN_SHOULD_SKIP_THIS */
 
 /**dox***************************************************************/
-/** @} */ /* end of rpcfunctionc */
+                   /** @} *//* end of rpcfunctionc */
 
 /**dox***************************************************************/
 /** @addtogroup bkfunctionc
@@ -13313,7 +13325,7 @@ INT bk_swap(void *event, BOOL force)
 }
 
 /**dox***************************************************************/
-/** @} */ /* end of bkfunctionc */
+                   /** @} *//* end of bkfunctionc */
 
 /**dox***************************************************************/
 /** @addtogroup hsfunctionc
@@ -14232,8 +14244,8 @@ INT hs_count_vars(DWORD ltime, DWORD event_id, DWORD * count)
 
 
 /********************************************************************/
-INT hs_enum_vars(DWORD ltime, DWORD event_id, char *var_name, DWORD *size,
-                 DWORD *var_n, DWORD *n_size)
+INT hs_enum_vars(DWORD ltime, DWORD event_id, char *var_name, DWORD * size,
+                 DWORD * var_n, DWORD * n_size)
 /********************************************************************\
 
   Routine: hs_enum_vars
@@ -14307,10 +14319,10 @@ INT hs_enum_vars(DWORD ltime, DWORD event_id, char *var_name, DWORD *size,
    tag = (TAG *) M_MALLOC(rec.data_size);
    read(fh, (char *) tag, rec.data_size);
 
-   if (n * NAME_LENGTH > (INT) *size || n * sizeof(DWORD) > *n_size) {
-      
+   if (n * NAME_LENGTH > (INT) * size || n * sizeof(DWORD) > *n_size) {
+
       /* store partial definition */
-      for (i = 0; i < (INT) *size / NAME_LENGTH; i++) {
+      for (i = 0; i < (INT) * size / NAME_LENGTH; i++) {
          strcpy(var_name + i * NAME_LENGTH, tag[i].name);
          var_n[i] = tag[i].n_data;
       }
@@ -15099,7 +15111,7 @@ INT hs_fdump(char *file_name, DWORD id, BOOL binary_time)
 #endif                          /* DOXYGEN_SHOULD_SKIP_THIS */
 
 /**dox***************************************************************/
-/** @} */ /* end of hsfunctionc */
+                   /** @} *//* end of hsfunctionc */
 
 /**dox***************************************************************/
 /** @addtogroup elfunctionc
@@ -15132,7 +15144,7 @@ void el_decode(char *message, char *key, char *result, int size)
       *result = 0;
    }
 
-   assert((int)strlen(rstart) < size);
+   assert((int) strlen(rstart) < size);
 }
 
 /**dox***************************************************************/
@@ -15193,10 +15205,11 @@ INT el_submit(int run, char *author, char *type, char *system, char *subject,
 
       /* request semaphore */
       cm_get_experiment_mutex(NULL, &mutex);
-      status = ss_mutex_wait_for(mutex, 5*60*1000);
+      status = ss_mutex_wait_for(mutex, 5 * 60 * 1000);
       if (status != SS_SUCCESS) {
-        cm_msg(MERROR, "el_submit", "Cannot lock experiment mutex, ss_mutex_wait_for() status %d", status);
-        abort();
+         cm_msg(MERROR, "el_submit",
+                "Cannot lock experiment mutex, ss_mutex_wait_for() status %d", status);
+         abort();
       }
 
       /* get run number from ODB if not given */
@@ -15401,7 +15414,7 @@ INT el_submit(int run, char *author, char *type, char *system, char *subject,
       sprintf(message + strlen(message), "========================================\n");
       strcat(message, text);
 
-      assert(strlen(message) < sizeof(message)); /* bomb out on array overrun. */
+      assert(strlen(message) < sizeof(message));        /* bomb out on array overrun. */
 
       size = 0;
       sprintf(start_str, "$Start$: %6d\n", size);
@@ -15655,7 +15668,7 @@ INT el_search_message(char *tag, int *fh, BOOL walk)
          close(*fh);
          return EL_FILE_ERROR;
       }
-        
+
       /* make sure the input string to atoi() is zero-terminated:
        * $End$:      355garbage
        * 01234567890123456789 */
@@ -15693,7 +15706,7 @@ INT el_search_message(char *tag, int *fh, BOOL walk)
        * 01234567890123456789 */
       str[15] = 0;
 
-      size = atoi(str+9);
+      size = atoi(str + 9);
       assert(size > 15);
 
       lseek(*fh, size, SEEK_CUR);
@@ -15790,22 +15803,22 @@ INT el_retrieve(char *tag, char *date, int *run, char *author, char *type,
    offset = TELL(fh);
    rd = read(fh, str, 15);
    assert(rd == 15);
-   
+
    /* make sure the input string is zero-terminated before we call atoi() */
    str[15] = 0;
 
    /* get size */
-   size = atoi(str+9);
-   
-   assert(strncmp(str,"$Start$:",8) == 0);
+   size = atoi(str + 9);
+
+   assert(strncmp(str, "$Start$:", 8) == 0);
    assert(size > 15);
    assert(size < sizeof(message));
-   
+
    memset(message, 0, sizeof(message));
 
    rd = read(fh, message, size);
    assert(rd > 0);
-   assert((rd+15 == size)||(rd == size));
+   assert((rd + 15 == size) || (rd == size));
 
    close(fh);
 
@@ -15813,14 +15826,14 @@ INT el_retrieve(char *tag, char *date, int *run, char *author, char *type,
    if (strstr(message, "Run: ") && run)
       *run = atoi(strstr(message, "Run: ") + 5);
 
-   el_decode(message, "Date: ",     date,     80); /* size from show_elog_submit_query() */
+   el_decode(message, "Date: ", date, 80);      /* size from show_elog_submit_query() */
    el_decode(message, "Thread: ", thread, sizeof(thread));
-   el_decode(message, "Author: ",   author,   80); /* size from show_elog_submit_query() */
-   el_decode(message, "Type: ",     type,     80); /* size from show_elog_submit_query() */
-   el_decode(message, "System: ",   system,   80); /* size from show_elog_submit_query() */
-   el_decode(message, "Subject: ",  subject, 256); /* size from show_elog_submit_query() */
+   el_decode(message, "Author: ", author, 80);  /* size from show_elog_submit_query() */
+   el_decode(message, "Type: ", type, 80);      /* size from show_elog_submit_query() */
+   el_decode(message, "System: ", system, 80);  /* size from show_elog_submit_query() */
+   el_decode(message, "Subject: ", subject, 256);       /* size from show_elog_submit_query() */
    el_decode(message, "Attachment: ", attachment_all, sizeof(attachment_all));
-   el_decode(message, "Encoding: ", encoding, 80); /* size from show_elog_submit_query() */
+   el_decode(message, "Encoding: ", encoding, 80);      /* size from show_elog_submit_query() */
 
    /* break apart attachements */
    if (attachment1 && attachment2 && attachment3) {
@@ -15837,9 +15850,9 @@ INT el_retrieve(char *tag, char *date, int *run, char *author, char *type,
          }
       }
 
-      assert(strlen(attachment1) < 256); /* size from show_elog_submit_query() */
-      assert(strlen(attachment2) < 256); /* size from show_elog_submit_query() */
-      assert(strlen(attachment3) < 256); /* size from show_elog_submit_query() */
+      assert(strlen(attachment1) < 256);        /* size from show_elog_submit_query() */
+      assert(strlen(attachment2) < 256);        /* size from show_elog_submit_query() */
+      assert(strlen(attachment3) < 256);        /* size from show_elog_submit_query() */
    }
 
    /* conver thread in reply-to and reply-from */
@@ -15984,10 +15997,11 @@ INT el_delete_message(char *tag)
 
    /* request semaphore */
    cm_get_experiment_mutex(NULL, &mutex);
-   status = ss_mutex_wait_for(mutex, 5*60*1000);
+   status = ss_mutex_wait_for(mutex, 5 * 60 * 1000);
    if (status != SS_SUCCESS) {
-     cm_msg(MERROR, "el_delete_message", "Cannot lock experiment mutex, ss_mutex_wait_for() status %d", status);
-     abort();
+      cm_msg(MERROR, "el_delete_message",
+             "Cannot lock experiment mutex, ss_mutex_wait_for() status %d", status);
+      abort();
    }
 
 
@@ -16065,7 +16079,7 @@ INT el_delete_message(char *tag)
 #endif                          /* DOXYGEN_SHOULD_SKIP_THIS */
 
 /**dox***************************************************************/
-/** @} */ /* end of elfunctionc */
+                   /** @} *//* end of elfunctionc */
 
 /**dox***************************************************************/
 /** @addtogroup alfunctionc
@@ -16733,7 +16747,7 @@ INT al_check()
 /**dox***************************************************************/
 #endif                          /* DOXYGEN_SHOULD_SKIP_THIS */
 
-/** @} */ /* end of alfunctionc */
+                   /** @} *//* end of alfunctionc */
 
 /***** sKIP eb_xxx **************************************************/
 /**dox***************************************************************/
@@ -17826,7 +17840,7 @@ INT dm_area_flush(void)
 #endif                          /* DOXYGEN_SHOULD_SKIP_THIS */
 
 /**dox***************************************************************/
-/** @} */ /* end of dmfunctionc */
+                   /** @} *//* end of dmfunctionc */
 
 /**dox***************************************************************/
-/** @} */ /* end of midasincludecode */
+                   /** @} *//* end of midasincludecode */
