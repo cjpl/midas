@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus communication functions
 
   $Log$
+  Revision 1.90  2005/04/01 10:51:47  ritt
+  Fixed wrong CRC
+
   Revision 1.89  2005/03/21 15:33:54  ritt
   Added missing #includes
 
@@ -2788,7 +2791,7 @@ int mscb_write_block(int fd, int adr, unsigned char index, void *data, int size)
 
       memcpy(buf+7, (char *)data+i*58, n);
       crc = crc8(buf+4, 3 + n);
-      buf[3 + n] = crc;
+      buf[7 + n] = crc;
 
       mscb_out(fd, buf, n+8, RS485_FLAG_ADR_CYCLE);
 
