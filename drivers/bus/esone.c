@@ -7,6 +7,9 @@
                 MCSTD (Midas Camac Standard)
 
   $Log$
+  Revision 1.7  2002/02/01 19:11:33  pierre
+  doc++ cleanup
+
   Revision 1.6  2001/12/17 18:25:05  pierre
   include cclnk, cculk, ccrgl from khy1331
 
@@ -114,7 +117,7 @@ INLINE void cdreg(int *ext, const int b, const int c, const int n, const int a)
 
     The range of the f is hardware dependent. The number indicated below are for
     standard ANSI/IEEE Std (758-1979) \\
-    Execute cam16i for f<8, cam16o for f>15, camc\_q for (f>7 or f>23)
+    Execute cam16i for f<8, cam16o for f>15, camc_q for (f>7 or f>23)
     
     @memo 16 bit function.
     @param f function code (0..31)
@@ -155,7 +158,7 @@ INLINE void cssa(const int f, int ext, unsigned short *d, int *q)
     
     The range of the f is hardware dependent. The number indicated below are for
     standard ANSI/IEEE Std (758-1979) \\
-    Execute cam24i for f<8, cam24o for f>15, camc\_q for (f>7 or f>23)
+    Execute cam24i for f<8, cam24o for f>15, camc_q for (f>7 or f>23)
     
     @memo 24 bit function.
     @param f function code (0..31)
@@ -192,7 +195,7 @@ int b,c,n,a,x;
 /** cccc
     Control Crate Clear.
 
-    Generate Crate Clear function. Execute cam\_crate\_clear()
+    Generate Crate Clear function. Execute cam_crate_clear()
     
     @memo Crate Clear.
     @param ext external address
@@ -210,7 +213,7 @@ int b, c, n, a;
 /** cccz
     Control Crate Z.
 
-    Generate Dataway Initialize. Execute cam\_crate\_zinit()
+    Generate Dataway Initialize. Execute cam_crate_zinit()
     
     @memo Crate Z.
     @param ext external address
@@ -228,7 +231,7 @@ int b, c, n, a;
 /** ccci
     Control Crate I.
 
-    Set or Clear Dataway Inhibit, Execute cam\_inhinit\_set() /clear()
+    Set or Clear Dataway Inhibit, Execute cam_inhinit_set() /clear()
     
     @memo Crate I.
     @param ext external address
@@ -250,7 +253,7 @@ int b, c, n, a;
 /** ctci
     Test Crate I.
 
-    Test Crate Inhibit, Execute cam\_inhibit\_test()
+    Test Crate Inhibit, Execute cam_inhibit_test()
     
     @memo Crate I.
     @param ext external address
