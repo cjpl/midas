@@ -238,6 +238,9 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath="..\drivers\device\lrs1440.c">
+			</File>
+			<File
 				RelativePath="..\src\MFE.C">
 				<FileConfiguration
 					Name="Release|Win32">
@@ -313,9 +316,12 @@
 						Name="VCCLCompilerTool"
 						Optimization="0"
 						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions="_STRLCPY_DEFINED"
+						PreprocessorDefinitions="HAVE_STRLCPY"
 						BrowseInformation="1"/>
 				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\drivers\bus\mscbbus.c">
 			</File>
 			<File
 				RelativePath="..\drivers\device\mscbdev.c">
@@ -481,6 +487,9 @@
 		<Filter
 			Name="Header Files"
 			Filter="h;hpp;hxx;hm;inl;fi;fd">
+			<File
+				RelativePath="..\include\midas.h">
+			</File>
 		</Filter>
 		<Filter
 			Name="Resource Files"

@@ -3,6 +3,7 @@
 	ProjectType="Visual C++"
 	Version="7.10"
 	Name="calib_700"
+	ProjectGUID="{3597AB61-3278-45BB-B401-FEEACA843346}"
 	SccProjectName=""
 	SccLocalPath="">
 	<Platforms>
