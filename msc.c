@@ -6,6 +6,9 @@
   Contents:     Command-line interface for the Midas Slow Control Bus
 
   $Log$
+  Revision 1.80  2005/03/21 13:15:29  ritt
+  Added submaster software version
+
   Revision 1.79  2005/03/21 10:57:25  ritt
   Version 2.0.0
 
@@ -1449,6 +1452,9 @@ int main(int argc, char *argv[])
       } else if (fd == EMSCB_COMM_ERROR) {
          printf("\nCannot communicate with MSCB submaster at %s\n", device);
          puts("Please disconnect and reconnect submaster\n");
+      } else if (fd == EMSCB_SUBM_VERSION) {
+         printf("\nSubmaster at %s has old version\n", device);
+         puts("Please upgrade submaster software\n");
       } else if (fd == EMSCB_NOT_FOUND) {
          printf("\nCannot find USB submaster\n");
       } else if (fd == EMSCB_WRONG_PASSWORD) {

@@ -7,6 +7,9 @@
                 SUBM250 running on Cygnal C8051F320
 
   $Log$
+  Revision 1.10  2005/03/21 13:16:05  ritt
+  Added submaster software version
+
   Revision 1.9  2005/03/21 12:54:13  ritt
   Implemented new Bit9 handling
 
@@ -42,6 +45,8 @@
 #include <intrins.h>
 #include "mscb.h"
 #include "usb.h"
+
+#define VERSION 0x20  // used for PC-Submaster communication
 
 /*------------------------------------------------------------------*/
 
@@ -217,7 +222,7 @@ void execute()
       /* return echo */
       led_blink(1, 1, 50);
       usb_tx_buf[0] = MCMD_ACK;
-      usb_tx_buf[1] = 0;  // reserved for future use
+      usb_tx_buf[1] = VERSION;
       usb_send(usb_tx_buf, 2);
    }
 

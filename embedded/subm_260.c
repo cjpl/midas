@@ -7,6 +7,9 @@
                 SUBM260 running on Cygnal C8051F120
 
   $Log$
+  Revision 1.3  2005/03/21 13:16:05  ritt
+  Added submaster software version
+
   Revision 1.2  2005/03/21 10:51:34  ritt
   Added network configuration
 
@@ -20,6 +23,8 @@
 #include <intrins.h>
 #include "mscb.h"
 #include "net.h"
+
+#define VERSION 0x20  // used for PC-Submaster communication
 
 /*------------------------------------------------------------------*/
 
@@ -310,7 +315,7 @@ unsigned char execute(char socket_no)
       /* return echo */
       led_blink(1, 1, 50);
       rs485_rx_buf[0] = MCMD_ACK;
-      rs485_rx_buf[1] = 0;  // reserved for future use
+      rs485_rx_buf[1] = VERSION;
       tcp_send(socket_no, rs485_rx_buf, 2);
       return 2;
    }

@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus communication functions
 
   $Log$
+  Revision 1.86  2005/03/21 13:15:32  ritt
+  Added submaster software version
+
   Revision 1.85  2005/03/21 12:53:43  ritt
   Increased too small buffers
 
@@ -1736,6 +1739,7 @@ int mscb_init(char *device, int bufsize, char *password, int debug)
     EMSCB_NO_WRITE_ACCESS   No write access under linux
     EMSCB_WRONG_PASSWORD    Wrong password
     EMSCB_LPT_ERROR         Error talking to LPT submaster
+    EMSCB_SUMB_VERSION      Submaster has wrong protocol version
 
 \********************************************************************/
 {
@@ -1856,8 +1860,14 @@ int mscb_init(char *device, int bufsize, char *password, int debug)
          n = mscb_in(index + 1, buf, 2, 10000);
          mscb_release(index + 1);
 
-         if (n == 2 && buf[0] == MCMD_ACK)
+         if (n == 2 && buf[0] == MCMD_ACK) {
+            
+            /* check version */
+            if (buf[1] < 0x20) 
+               return EMSCB_SUBM_VERSION;
+
             break;
+         }
       }
 
       if (n != 2 || buf[0] != MCMD_ACK)
