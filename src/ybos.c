@@ -6,6 +6,9 @@
  *         amaudruz@triumf.ca                            Local:           6234
  * ---------------------------------------------------------------------------
    $Log$
+   Revision 1.48  2003/04/11 18:56:47  pierre
+   Made file compile under VC++ 5.0
+
    Revision 1.47  2003/04/10 15:51:18  pierre
    remove bk_find
 
@@ -434,12 +437,12 @@ INT  ybk_close(DWORD *plrl, void *pbkdat)
   if (((DWORD) pbkdat & 0x1) != 0)
   {         
     *((BYTE *)pbkdat) = 0x0f;
-    ((BYTE *)pbkdat)++;
+    pbkdat = (void *)(((BYTE *)pbkdat)+1);
   }
   if (((DWORD) pbkdat & 0x2) != 0)
   {
     *((WORD *)pbkdat) = 0x0ffb;
-    ((WORD *)pbkdat)++;
+    pbkdat = (void *)(((WORD *)pbkdat)+1);
   }
   
   /* length in byte */
@@ -699,7 +702,8 @@ INT   ybk_iterate (DWORD *plrl, YBOS_BANK_HEADER ** pybkh , void ** pdata)
     
     if ((*pybkh)->type > I1_BKTYPE)
     {
-      *pybkh = (YBOS_BANK_HEADER *) *pdata = NULL;
+      *pdata = NULL;
+      *pybkh = (YBOS_BANK_HEADER *) *pdata;
       return (YB_WRONG_BANK_TYPE);
     }
     
@@ -742,7 +746,8 @@ INT   ybk_iterate (DWORD *plrl, YBOS_BANK_HEADER ** pybkh , void ** pdata)
   else
   {
     /* no more bank in this event */
-    *pybkh = (YBOS_BANK_HEADER *) *pdata = NULL;
+    *pdata = NULL;
+    *pybkh = (YBOS_BANK_HEADER *) *pdata;
     return (-1);
   }
 }
@@ -938,7 +943,7 @@ SS_FILE_ERROR       file access error
     
     /* save pointer for later */
     pcfile = pbuf;
-    (char *)pbuf += sizeof(YM_CFILE);                             
+    pbuf = (DWORD *)(((char *)pbuf) + sizeof(YM_CFILE));
     if (eqp->format == FORMAT_YBOS)
       ybk_close(pmy, pbuf);
     else if (eqp->format == FORMAT_MIDAS)
@@ -950,7 +955,7 @@ SS_FILE_ERROR       file access error
     else if (eqp->format == FORMAT_MIDAS)
       bk_create(pmy, "PFIL", TID_CHAR, &pbuf);
     memcpy((char *)pbuf,(char *)&myp_fileh,sizeof(YM_PFILE));
-    (char *)pbuf += sizeof(YM_PFILE);
+    pbuf = (DWORD *)(((char *)pbuf) + sizeof(YM_CFILE));
     if (eqp->format == FORMAT_YBOS)
       ybk_close(pmy, pbuf);
     else if (eqp->format == FORMAT_MIDAS)
@@ -965,7 +970,7 @@ SS_FILE_ERROR       file access error
     remaining = filesize-myc_fileh.current_read_byte;
     nread = read(dmpf,(char *)pbuf,(remaining > MAX_FRAG_SIZE) ? MAX_FRAG_SIZE : remaining);
     /* adjust target pointer */
-    (char *) pbuf += nread;
+    pbuf = (DWORD *)(((char *)pbuf) + nread);
     /* keep track of statistic */
     myc_fileh.current_fragment++;
     myc_fileh.fragment_size = nread;
@@ -1203,7 +1208,7 @@ error, success
       return SS_SUCCESS;
     
     /* skip if MUSER  but not Log message enabled */
-    if (MT_USER & !log_chn->settings.log_messages)
+    if (MT_USER && !log_chn->settings.log_messages)
       return SS_SUCCESS;
     
     /* ASCII event has to be recasted YBOS */
@@ -1234,7 +1239,7 @@ error, success
       ybk_create(pbktop, "MODB", A1_BKTYPE, &pbkdat);
     
     memcpy ((char *)pbkdat, (char *)(pevent+1), pevent->data_size);
-    (char *) pbkdat += datasize;
+    pbkdat = (DWORD *)(((char *) pbkdat) + datasize);
     ybk_close(pbktop, pbkdat);
     
     /* event size in bytes for Midas */
@@ -1697,8 +1702,12 @@ status : from lower function
     free (ptopmrd);
   if (my.pmp != NULL)
     free (my.pmp);
-  (void *)my.pyh = (void *)my.pmagta = (void *)my.pylrl = NULL;
-  (void *)my.pmp = (void *)my.pmh = ptopmrd = NULL;
+  my.pylrl = NULL;
+  my.pyh = NULL;
+  my.pmagta = NULL;
+  my.pmp = NULL;
+  my.pmh = NULL;
+  ptopmrd = NULL;
   return(YB_SUCCESS);
 }
 
@@ -2548,7 +2557,7 @@ YB_SWAP_ERROR          swapping error
       while ((BYTE *) pevt < (BYTE *) pnextb)
       {
         QWORD_SWAP(pevt);
-        ((double *)pevt)++;
+        pevt = (DWORD *)(((double *)pevt)+1);
       }
       break;
     case I4_BKTYPE :
@@ -2563,7 +2572,7 @@ YB_SWAP_ERROR          swapping error
       while ((BYTE *) pevt < (BYTE *) pnextb)
       {
         WORD_SWAP(pevt);
-        ((WORD *)pevt)++;
+        pevt = (DWORD *)(((WORD *)pevt)+1);
       }
       break;
     case I1_BKTYPE :
@@ -2743,7 +2752,7 @@ YB_SUCCESS        Ok
   {
     fpart = (my.pmp+my.size) - (char *)my.pme;
     memcpy(my.pmh, my.pme, fpart);
-    (char *)my.pmh += fpart;
+    my.pmh = (EVENT_HEADER *) (((char *)my.pmh) + fpart);
     leftover = sizeof(EVENT_HEADER) - fpart; 
     status = midas_physrec_get((void *)my.pmp, &size);
     if (status != YB_SUCCESS)
@@ -2751,13 +2760,13 @@ YB_SUCCESS        Ok
     memset (my.pmp+size, -1, my.size - size); 
     my.pme = (EVENT_HEADER *) my.pmp;
     memcpy(my.pmh, my.pme, leftover);
-    (char *)my.pme += leftover;
+    my.pme = (EVENT_HEADER *)(((char *)my.pme) + leftover);
     my.pmh = (EVENT_HEADER *)*pevent;
   }
   else
   {
     memcpy(my.pmh, my.pme, sizeof(EVENT_HEADER));
-    (char *)my.pme += sizeof(EVENT_HEADER);
+    my.pme = (EVENT_HEADER *)(((char *)my.pme) + sizeof(EVENT_HEADER));
   }
   /* leave with pmh  to destination header
   pmrd to destination event (pmh+1)
@@ -2789,7 +2798,7 @@ YB_SUCCESS        Ok
   /* copy left over or full event if no Xing */
   *readn  = my.evtlen = my.pmh->data_size + sizeof(EVENT_HEADER);
   memcpy(my.pmrd, my.pme, leftover);
-  (char *) my.pme  += leftover; 
+  my.pme = (EVENT_HEADER *) (((char *) my.pme) + leftover); 
   my.evtn++;
   return YB_SUCCESS;
 }
@@ -3123,7 +3132,7 @@ none
         i += 8;
       }
       printf("%15.5le  ",*((double *)pdata));
-      ((double *)pdata)++;
+      pdata = (DWORD *)(((double *)pdata)+1);
       j++;
       break;
     case F4_BKTYPE :
@@ -3159,7 +3168,7 @@ none
       }
       if (dsp_fmt == DSP_DEC) printf("%5.1i ",*((WORD *)pdata));
       if ((dsp_fmt == DSP_HEX) || (dsp_fmt == DSP_UNK)) printf("0x%4.4x ",*((WORD *)pdata));
-      ((WORD *)pdata)++;
+      pdata = (DWORD *)(((WORD *)pdata)+1);
       j++;
       break;
     case A1_BKTYPE :
@@ -3172,7 +3181,7 @@ none
       if ((dsp_fmt == DSP_ASC) || (dsp_fmt == DSP_UNK)) printf("%1.1s ",(char *)pdata);
       if (dsp_fmt == DSP_DEC) printf("%2.i ",*((BYTE *)pdata));
       if (dsp_fmt == DSP_HEX) printf("0x%2.2x ",*((BYTE *)pdata));
-      ((BYTE *)pdata)++;
+      pdata = (DWORD *)(((BYTE *)pdata)+1);
       j++;
       break;
     case I1_BKTYPE :
@@ -3184,7 +3193,7 @@ none
       }
       if ((dsp_fmt == DSP_DEC) || (dsp_fmt == DSP_UNK)) printf("%4.i ",*((BYTE *)pdata));
       if (dsp_fmt == DSP_HEX) printf("0x%2.2x ",*((BYTE *)pdata));
-      ((BYTE *)pdata)++;
+      pdata = (DWORD *)(((BYTE *)pdata)+1);
       j++;
       break;
     default :
@@ -3291,7 +3300,7 @@ none
         i += 4;
       }
       printf("%15.5le    ",*((double *)pdata));
-      ((double *)pdata)++;
+      pdata = (char *)(((double *)pdata)+1);
       j++;
       break;
     case TID_FLOAT :
@@ -3303,7 +3312,7 @@ none
       }
       if ((dsp_fmt == DSP_DEC) || (dsp_fmt == DSP_UNK)) printf("%8.3e ",*((float *)pdata));
       if (dsp_fmt == DSP_HEX) printf("0x%8.8x ",*((DWORD *)pdata));
-      ((DWORD *)pdata)++;
+      pdata = (char *)(((DWORD *)pdata)+1);
       j++;
       break;
     case TID_DWORD :
@@ -3315,7 +3324,7 @@ none
       }
       if (dsp_fmt == DSP_DEC) printf("%8.1i ",*((DWORD *)pdata));
       if ((dsp_fmt == DSP_HEX) || (dsp_fmt == DSP_UNK)) printf("0x%8.8x ",*((DWORD *)pdata));
-      ((DWORD *)pdata)++;
+      pdata = (char *)(((DWORD *)pdata)+1);
       j++;
       break;
     case TID_INT :
@@ -3327,7 +3336,7 @@ none
       }
       if ((dsp_fmt == DSP_DEC) || (dsp_fmt == DSP_UNK)) printf("%8.1i ",*((DWORD *)pdata));
       if (dsp_fmt == DSP_HEX) printf("0x%8.8x ",*((DWORD *)pdata));
-      ((DWORD *)pdata)++;
+      pdata = (char *)(((DWORD *)pdata)+1);
       j++;
       break;
     case TID_WORD :
@@ -3339,7 +3348,7 @@ none
       }
       if (dsp_fmt == DSP_DEC) printf("%5.1i ",*((WORD *)pdata));
       if ((dsp_fmt == DSP_HEX) || (dsp_fmt == DSP_UNK)) printf("0x%4.4x ",*((WORD *)pdata));
-      ((WORD *)pdata)++;
+      pdata = (char *)(((WORD *)pdata)+1);
       j++;
       break;
     case TID_SHORT :
@@ -3351,7 +3360,7 @@ none
       }
       if ((dsp_fmt == DSP_DEC) || (dsp_fmt == DSP_UNK)) printf("%5.1i ",*((WORD *)pdata));
       if (dsp_fmt == DSP_HEX) printf("0x%4.4x ",*((WORD *)pdata));
-      ((WORD *)pdata)++;
+      pdata = (char *)(((WORD *)pdata)+1);
       j++;
       break;
     case TID_BYTE :
@@ -3386,7 +3395,7 @@ none
         i += 16;
       }
       (*((BOOL *)pdata) != 0 ) ? printf("Y ") : printf("N ");
-      ((DWORD *)pdata)++;
+      pdata = (char *)(((DWORD *)pdata)+1);
       j++;
       break;
     case TID_CHAR :
@@ -3494,7 +3503,7 @@ none
       }
       if (dsp_fmt == DSP_DEC || (dsp_fmt == DSP_UNK)) printf("%8.3e ",*((double *)pdata));
       if (dsp_fmt == DSP_HEX) printf("0x%16.16x ",*((double *)pdata));
-      ((double *)pdata)++;
+      pdata = (char *)(((double *)pdata)+1);
       j++;
       break;
     case TID_FLOAT :
@@ -3506,7 +3515,7 @@ none
       }
       if (dsp_fmt == DSP_DEC || (dsp_fmt == DSP_UNK)) printf("%8.3e ",*((float *)pdata));
       if (dsp_fmt == DSP_HEX) printf("0x%8.8x ",*((DWORD *)pdata));
-      ((DWORD *)pdata)++;
+      pdata = (char *)(((DWORD *)pdata)+1);
       j++;
       break;
     case TID_DWORD :
@@ -3519,7 +3528,8 @@ none
       }
       if (dsp_fmt == DSP_DEC || (dsp_fmt == DSP_UNK)) printf("%8.1i ",*((DWORD *)pdata));
       if (dsp_fmt == DSP_HEX) printf("0x%8.8x ",*((DWORD *)pdata));
-      ((DWORD *)pdata)++;
+      pdata = (char *)((DWORD *)pdata +1);
+//      ((DWORD *)pdata)++;
       j++;
       break;
     case TID_WORD :
@@ -3532,7 +3542,7 @@ none
       }
       if (dsp_fmt == DSP_DEC) printf("%5.1i ",*((WORD *)pdata));
       if (dsp_fmt == DSP_HEX || (dsp_fmt == DSP_UNK)) printf("0x%4.4x ",*((WORD *)pdata));
-      ((WORD *)pdata)++;
+      pdata = (char *)(((DWORD *)pdata)+1);
       j++;
       break;
     case TID_BYTE :
@@ -3556,7 +3566,7 @@ none
         i += 16;
       }
       (*((BOOL *)pdata) != 0 ) ? printf("Y ") : printf("N ");
-      ((DWORD *)pdata)++;
+      pdata = (char *)(((DWORD *)pdata)+1);
       j++;
       break;
     case TID_CHAR :
