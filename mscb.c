@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus communication functions
 
   $Log$
+  Revision 1.52  2004/03/05 16:30:09  midas
+  Added libusb code
+
   Revision 1.51  2004/03/05 14:00:19  midas
   Return if no submaster present
 
@@ -172,12 +175,14 @@
 #include <unistd.h>
 #include <string.h>
 #include <stdlib.h>
+#include <ctype.h>
 #include <sys/types.h>
 #include <sys/ioctl.h>
 #include <sys/time.h>
 #include <fcntl.h>
 #include <linux/parport.h>
 #include <linux/ppdev.h>
+#include <usb.h>
 
 #endif
 
@@ -371,20 +376,20 @@ unsigned char crc8(unsigned char *data, int len)
 int strieq(const char *str1, const char *str2)
 {
    if (str1 == NULL && str2 != NULL)
-      return FALSE;
+      return 0;
    if (str1 != NULL && str2 == NULL)
-      return FALSE;
+      return 0;
    if (str1 == NULL && str2 == NULL)
-      return TRUE;
+      return 1;
 
    while (*str1)
       if (toupper(*str1++) != toupper(*str2++))
-         return FALSE;
+         return 0;
 
    if (*str2)
-      return FALSE;
+      return 0;
 
-   return TRUE;
+   return 1;
 }
 
 /*------------------------------------------------------------------*/
@@ -412,8 +417,13 @@ int mscb_lock(int fd)
 
 #elif defined(__linux__)
 
-   if (ioctl(mscb_fd[fd - 1].fd, PPCLAIM))
-      return 0;
+   if (mscb_fd[fd - 1].type == MSCB_TYPE_LPT) {
+      if (ioctl(mscb_fd[fd - 1].fd, PPCLAIM))
+         return 0;
+   } else if (mscb_fd[fd - 1].type == MSCB_TYPE_USB) {
+      if (usb_claim_interface((usb_dev_handle *)mscb_fd[fd - 1].hr, 0) <0)
+         return 0;
+   }
 
 #endif
    return MSCB_SUCCESS;
@@ -430,8 +440,13 @@ int mscb_release(int fd)
 
 #elif defined(__linux__)
 
-   if (ioctl(mscb_fd[fd - 1].fd, PPRELEASE))
-      return 0;
+   if (mscb_fd[fd - 1].type == MSCB_TYPE_LPT) {
+      if (ioctl(mscb_fd[fd - 1].fd, PPRELEASE))
+         return 0;
+   } else if (mscb_fd[fd - 1].type == MSCB_TYPE_USB) {
+      if (usb_release_interface((usb_dev_handle *)mscb_fd[fd - 1].hr, 0) <0)
+         return 0;
+   }
 
 #endif
    return MSCB_SUCCESS;
@@ -536,18 +551,25 @@ unsigned char pp_rdata(int fd)
 
 int msend_usb(int fd, void *buf, int size)
 {
-	int n_written;
+   int n_written;
 
+#ifdef _MSC_VER
    WriteFile((HANDLE)fd, buf, size, &n_written, NULL);
-	return n_written;
+#else
+   n_written = usb_bulk_write((usb_dev_handle*)fd, 2, buf, size, 100);
+#endif
+   return n_written;
 }
 
 /*------------------------------------------------------------------*/
 
 int mrecv_usb(int fd, void *buf, int size, int timeout)
 {
-	int status, n_read;
+   int n_read;
+
+#ifdef _MSC_VER
    OVERLAPPED overlapped;
+   int status;
 
    memset(&overlapped, 0, sizeof(overlapped));
    overlapped.hEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
@@ -571,8 +593,21 @@ int mrecv_usb(int fd, void *buf, int size, int timeout)
    }
 
    CloseHandle(overlapped.hEvent);
+#else
+   usb_dev_handle *dev;
 
-	return n_read;
+   dev = (usb_dev_handle *)fd;
+
+   if (usb_claim_interface(dev, 0) <0)
+      return -1;
+
+   if (timeout < 1000)
+      timeout = 1000; // at least 1ms
+   n_read = usb_bulk_read(dev, 1, buf, size, timeout/1000);
+
+   usb_release_interface(dev, 0);
+#endif
+   return n_read;
 }
 
 /*------------------------------------------------------------------*/
@@ -614,7 +649,7 @@ int mscb_out(int index, unsigned char *buffer, int len, int flags)
       memcpy(usb_buf+1, buffer, len);
 
       /* send on OUT pipe */
-      i = msend_usb(mscb_fd[index-1].hw, usb_buf, len+1); 
+      i = msend_usb(mscb_fd[index-1].hw, usb_buf, len+1);
       if (i != len+1) {
          return MSCB_TIMEOUT;
       }
@@ -880,7 +915,7 @@ int lpt_init(char *device, int index)
     int  index              Index to mscb_fd[] array
 
   Output:
-    int  mscb_fd[index].fd  File descriptor for device or 
+    int  mscb_fd[index].fd  File descriptor for device or
                             DirectIO address
   Function value:
     0                       Successful completion
@@ -900,7 +935,7 @@ int lpt_init(char *device, int index)
    DWORD size;
    HANDLE hdio;
 
-   
+
    /* derive base address from device name */
    if (atoi(device+3) == 1)
       mscb_fd[index].fd = 0x378;
@@ -935,10 +970,12 @@ int lpt_init(char *device, int index)
 
 #elif defined(__linux__)
 
+   int i;
+
    mscb_fd[index].fd = open(device, O_RDWR);
    if (mscb_fd[index].fd < 0) {
       perror("open");
-      printf("Please make sure that device \"%s\" is world readable/writable\n", port);
+      printf("Please make sure that device \"%s\" is world readable/writable\n", device);
       return -1;
    }
 
@@ -978,7 +1015,7 @@ int lpt_init(char *device, int index)
    /* check if SM alive */
    if (pp_rstatus(index + 1, LPT_BUSY)) {
       //printf("mscb.c: No SM present on parallel port\n");
-      mscb_release(mscb_fd[index].fd);
+      mscb_release(index + 1);
       return -2;
    }
 
@@ -1055,6 +1092,8 @@ int lpt_close(int fd)
 
 /*---- USB access functions ----------------------------------------*/
 
+#ifdef _MSC_VER
+
 #include <setupapi.h>
 #include <initguid.h>  /* Required for GUID definition */
 
@@ -1062,10 +1101,10 @@ int lpt_close(int fd)
 #pragma comment (lib, "setupapi.lib")
 
 // {CBEB3FB1-AE9F-471c-9016-9B6AC6DCD323}
-DEFINE_GUID(GUID_CLASS_MSCB_BULK, 
+DEFINE_GUID(GUID_CLASS_MSCB_BULK,
 0xcbeb3fb1, 0xae9f, 0x471c, 0x90, 0x16, 0x9b, 0x6a, 0xc6, 0xdc, 0xd3, 0x23);
 
-int usb_init(int index, HANDLE *hUSBRead, HANDLE *hUSBWrite)
+int usb_init(int index, int *hUSBRead, int *hUSBWrite)
 {
    GUID guid;
    HDEVINFO hDevInfoList;
@@ -1102,7 +1141,7 @@ int usb_init(int index, HANDLE *hUSBRead, HANDLE *hUSBWrite)
          predictedLength = requiredLength = 0;
 
          SetupDiGetDeviceInterfaceDetail(hDevInfoList, &deviceInfoData, NULL, // Not yet allocated
-                                         0,  // Set output buffer length to zero 
+                                         0,  // Set output buffer length to zero
                                          &requiredLength,    // Find out memory requirement
                                          NULL);
 
@@ -1134,9 +1173,9 @@ int usb_init(int index, HANDLE *hUSBRead, HANDLE *hUSBWrite)
       if (hUSBRead) {
          // Get the read handle
          sprintf(str, "%s\\PIPE00", device_name);
-         *hUSBRead = CreateFile(str,
-                                GENERIC_WRITE | GENERIC_READ, FILE_SHARE_WRITE | FILE_SHARE_READ, NULL,
-                                OPEN_EXISTING, FILE_FLAG_OVERLAPPED, NULL);
+         *hUSBRead = (int) CreateFile(str,
+                                GENERIC_WRITE | GENERIC_READ, FILE_SHARE_WRITE | FILE_SHARE_READ,
+                                NULL, OPEN_EXISTING, FILE_FLAG_OVERLAPPED, NULL);
 
          if (*hUSBRead == INVALID_HANDLE_VALUE)
             return -1;
@@ -1145,9 +1184,9 @@ int usb_init(int index, HANDLE *hUSBRead, HANDLE *hUSBWrite)
       if (hUSBWrite) {
          // Get the write handle
          sprintf(str, "%s\\PIPE01", device_name);
-         *hUSBWrite = CreateFile(str,
-                                 GENERIC_WRITE | GENERIC_READ, FILE_SHARE_WRITE | FILE_SHARE_READ, NULL,
-                                 OPEN_EXISTING, 0, NULL);
+         *hUSBWrite = (int) CreateFile(str,
+                                 GENERIC_WRITE | GENERIC_READ, FILE_SHARE_WRITE | FILE_SHARE_READ,
+                                 NULL, OPEN_EXISTING, 0, NULL);
 
          if (*hUSBWrite == INVALID_HANDLE_VALUE)
             return -1;
@@ -1159,12 +1198,61 @@ int usb_init(int index, HANDLE *hUSBRead, HANDLE *hUSBWrite)
    return 0;
 }
 
+#else
+
+int musb_init(int index, int *fdr, int *fdw)
+{
+   struct usb_bus *bus;
+   struct usb_device *dev;
+   usb_dev_handle *udev;
+   int found = 0;
+
+   usb_init();
+   usb_find_busses();
+   usb_find_devices();
+
+   for (bus = usb_busses ; bus ; bus = bus->next) {
+      for (dev = bus->devices; dev; dev = dev->next) {
+
+         if (dev->descriptor.idVendor == 0x10C4 &&
+             dev->descriptor.idProduct == 0x1175) {
+
+            found++;
+            if (found == index+1) {
+
+               if (fdr && fdw) {
+                  udev = usb_open(dev);
+                  if (!udev)
+                     return -1;
+
+                  if (usb_set_configuration(udev, 1) < 0)
+                     return -1;
+
+                  *fdr = (int)udev;
+                  *fdw = (int)udev;
+               }
+
+               return 0;
+            }
+         }
+      }
+   }
+
+   return -1;
+}
+
+#endif
+
 /*------------------------------------------------------------------*/
 
-void usb_close(int fdr, int fdw)
+void musb_close(int fdr, int fdw)
 {
+#ifdef _MSC_VER
    CloseHandle((HANDLE)fdr);
    CloseHandle((HANDLE)fdw);
+#else
+   usb_close((usb_dev_handle *)fdr);
+#endif
 }
 
 /*------------------------------------------------------------------*/
@@ -1277,7 +1365,7 @@ int mscb_init(char *device, int debug)
       mscb_fd[index].type = MSCB_TYPE_USB;
 
    /*---- initialize submaster ----*/
-   
+
    if (mscb_fd[index].type == MSCB_TYPE_LPT) {
 
       status = lpt_init(device, index);
@@ -1287,7 +1375,7 @@ int mscb_init(char *device, int debug)
 
    if (mscb_fd[index].type == MSCB_TYPE_USB) {
 
-      status = usb_init(atoi(device+3), (HANDLE *)&mscb_fd[index].hr, (HANDLE *)&mscb_fd[index].hw);
+      status = musb_init(atoi(device+3), &mscb_fd[index].hr, &mscb_fd[index].hw);
       if (status < 0)
          return status;
 
@@ -1334,7 +1422,7 @@ int mscb_exit(int fd)
    }
 
    if (mscb_fd[fd-1].type == MSCB_TYPE_USB)
-      usb_close(mscb_fd[fd-1].hr, mscb_fd[fd-1].hw);
+      musb_close(mscb_fd[fd-1].hr, mscb_fd[fd-1].hw);
 
    if (mscb_fd[fd-1].type == MSCB_TYPE_LPT)
       lpt_close(mscb_fd[fd-1].fd);
@@ -1579,7 +1667,7 @@ int mscb_reboot(int fd, int adr)
    if (mscb_lock(fd) != MSCB_SUCCESS)
       return MSCB_MUTEX;
 
-   status = mscb_addr(fd, MCMD_PING16, adr, 10, FALSE);
+   status = mscb_addr(fd, MCMD_PING16, adr, 10, 0);
    if (status != MSCB_SUCCESS) {
       mscb_release(fd);
       return status;
@@ -1632,11 +1720,10 @@ int mscb_reset(int fd)
 
       buf[0] = MCMD_INIT;
       mscb_out(fd, buf, 1, RS485_FLAG_CMD);
-      usb_close(mscb_fd[fd -1].hr, mscb_fd[fd -1].hw);
+      musb_close(mscb_fd[fd -1].hr, mscb_fd[fd -1].hw);
       Sleep(1000);
-      usb_init(atoi(mscb_fd[fd-1].device+3), 
-               (HANDLE *)&mscb_fd[fd -1].hr, 
-               (HANDLE *)&mscb_fd[fd -1].hw);
+      musb_init(atoi(mscb_fd[fd-1].device+3),
+               &mscb_fd[fd -1].hr, &mscb_fd[fd -1].hw);
    }
 
    mscb_release(fd);
@@ -1678,7 +1765,7 @@ int mscb_ping(int fd, int adr)
    if (mscb_lock(fd) != MSCB_SUCCESS)
       return MSCB_MUTEX;
 
-   status = mscb_addr(fd, MCMD_PING16, adr, 1, FALSE);
+   status = mscb_addr(fd, MCMD_PING16, adr, 1, 0);
 
    mscb_release(fd);
    return status;
@@ -1721,7 +1808,7 @@ int mscb_info(int fd, int adr, MSCB_INFO * info)
    if (mscb_lock(fd) != MSCB_SUCCESS)
       return MSCB_MUTEX;
 
-   status = mscb_addr(fd, MCMD_PING16, adr, 10, FALSE);
+   status = mscb_addr(fd, MCMD_PING16, adr, 10, 0);
    if (status != MSCB_SUCCESS) {
       mscb_release(fd);
       return status;
@@ -1789,7 +1876,7 @@ int mscb_info_variable(int fd, int adr, int index, MSCB_INFO_VAR * info)
    if (mscb_lock(fd) != MSCB_SUCCESS)
       return MSCB_MUTEX;
 
-   status = mscb_addr(fd, MCMD_PING16, adr, 10, FALSE);
+   status = mscb_addr(fd, MCMD_PING16, adr, 10, 0);
    if (status != MSCB_SUCCESS) {
       mscb_release(fd);
       return status;
@@ -1850,13 +1937,13 @@ int mscb_set_addr(int fd, int adr, int node, int group)
       return MSCB_MUTEX;
 
    /* check if destination address is alive */
-   status = mscb_addr(fd, MCMD_PING16, node, 10, FALSE);
+   status = mscb_addr(fd, MCMD_PING16, node, 10, 0);
    if (status == MSCB_SUCCESS) {
       mscb_release(fd);
       return MSCB_ADDR_EXISTS;
    }
 
-   status = mscb_addr(fd, MCMD_PING16, adr, 10, FALSE);
+   status = mscb_addr(fd, MCMD_PING16, adr, 10, 0);
    if (status != MSCB_SUCCESS) {
       mscb_release(fd);
       return status;
@@ -1908,7 +1995,7 @@ int mscb_set_name(int fd, int adr, char *name)
    if (mscb_lock(fd) != MSCB_SUCCESS)
       return MSCB_MUTEX;
 
-   status = mscb_addr(fd, MCMD_PING16, adr, 10, FALSE);
+   status = mscb_addr(fd, MCMD_PING16, adr, 10, 0);
    if (status != MSCB_SUCCESS) {
 
       mscb_release(fd);
@@ -1972,7 +2059,7 @@ int mscb_write_group(int fd, int adr, unsigned char index, void *data, int size)
    if (mscb_lock(fd) != MSCB_SUCCESS)
       return MSCB_MUTEX;
 
-   status = mscb_addr(fd, MCMD_ADDR_GRP16, adr, 10, FALSE);
+   status = mscb_addr(fd, MCMD_ADDR_GRP16, adr, 10, 0);
    if (status != MSCB_SUCCESS) {
       mscb_release(fd);
       return status;
@@ -2035,7 +2122,7 @@ int mscb_write(int fd, int adr, unsigned char index, void *data, int size)
    if (mscb_lock(fd) != MSCB_SUCCESS)
       return MSCB_MUTEX;
 
-   status = mscb_addr(fd, MCMD_PING16, adr, 10, FALSE);
+   status = mscb_addr(fd, MCMD_PING16, adr, 10, 0);
    if (status != MSCB_SUCCESS) {
       mscb_release(fd);
       return status;
@@ -2113,7 +2200,7 @@ int mscb_flash(int fd, int adr)
    if (mscb_lock(fd) != MSCB_SUCCESS)
       return MSCB_MUTEX;
 
-   status = mscb_addr(fd, MCMD_PING16, adr, 10, FALSE);
+   status = mscb_addr(fd, MCMD_PING16, adr, 10, 0);
    if (status != MSCB_SUCCESS) {
       mscb_release(fd);
       return status;
@@ -2198,7 +2285,7 @@ int mscb_upload(int fd, int adr, char *buffer, int size)
    if (mscb_lock(fd) != MSCB_SUCCESS)
       return MSCB_MUTEX;
 
-   status = mscb_addr(fd, MCMD_PING16, adr, 10, FALSE);
+   status = mscb_addr(fd, MCMD_PING16, adr, 10, 0);
    if (status != MSCB_SUCCESS) {
       mscb_release(fd);
       return status;
@@ -2244,7 +2331,7 @@ int mscb_upload(int fd, int adr, char *buffer, int size)
                printf("\bX");
                fflush(stdout);
                goto prog_error;
-            } 
+            }
 
             if (ack[0] != MCMD_ACK) {
                printf("\nError: received wrong acknowledge for erase page 0x%04X\n", page * 512);
@@ -2368,7 +2455,7 @@ int mscb_read(int fd, int adr, unsigned char index, void *data, int *size)
    if (mscb_lock(fd) != MSCB_SUCCESS)
       return MSCB_MUTEX;
 
-   status = mscb_addr(fd, MCMD_PING16, adr, 10, FALSE);
+   status = mscb_addr(fd, MCMD_PING16, adr, 10, 0);
    if (status != MSCB_SUCCESS) {
       mscb_release(fd);
       return status;
@@ -2483,7 +2570,7 @@ int mscb_read_range(int fd, int adr, unsigned char index1,
    if (mscb_lock(fd) != MSCB_SUCCESS)
       return MSCB_MUTEX;
 
-   status = mscb_addr(fd, MCMD_PING16, adr, 10, FALSE);
+   status = mscb_addr(fd, MCMD_PING16, adr, 10, 0);
    if (status != MSCB_SUCCESS) {
       mscb_release(fd);
       return status;
@@ -2575,7 +2662,7 @@ int mscb_user(int fd, int adr, void *param, int size, void *result, int *rsize)
    if (mscb_lock(fd) != MSCB_SUCCESS)
       return MSCB_MUTEX;
 
-   status = mscb_addr(fd, MCMD_PING16, adr, 10, FALSE);
+   status = mscb_addr(fd, MCMD_PING16, adr, 10, 0);
    if (status != MSCB_SUCCESS) {
       mscb_release(fd);
       return status;
@@ -2662,7 +2749,7 @@ int mscb_echo(int fd, int adr, unsigned char d1, unsigned char *d2)
       return MSCB_MUTEX;
 
    if (adr) {
-      status = mscb_addr(fd, MCMD_PING16, adr, 1, FALSE);
+      status = mscb_addr(fd, MCMD_PING16, adr, 1, 0);
       if (status != MSCB_SUCCESS) {
          mscb_release(fd);
          return status;
@@ -2823,7 +2910,7 @@ int mscb_select_device(char *device)
 
   Routine: mscb_select_device
 
-  Purpose: Select MSCB submaster device. Show dialog if sevral 
+  Purpose: Select MSCB submaster device. Show dialog if sevral
            possibilities
 
   Input:
@@ -2847,7 +2934,7 @@ int mscb_select_device(char *device)
 
    /* check USB devices */
    for (i=0 ; i<127 ; i++) {
-      status = usb_init(i, NULL, NULL);
+      status = musb_init(i, NULL, NULL);
       if (status != -1)
          sprintf(list[n++], "usb%d", i);
       else
