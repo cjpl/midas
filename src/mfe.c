@@ -7,6 +7,9 @@
                 linked with user code to form a complete frontend
 
   $Log$
+  Revision 1.23  2000/08/09 12:02:43  midas
+  Evaluate return status in tr_xxx functions properly
+
   Revision 1.22  2000/08/09 11:37:56  midas
   Rearranged serial number increments
 
@@ -208,18 +211,18 @@ INT i, status;
     {
     run_state = STATE_RUNNING;
     run_number = rn;
+
+    send_all_periodic_events(TR_START);
+
+    if (display_period)
+      {
+      ss_printf(14, 2, "Running ");
+      ss_printf(36, 2, "%d", rn);
+      }
+
+    /* enable interrupts */
+    interrupt_enable(TRUE);
     }
-
-  send_all_periodic_events(TR_START);
-
-  if (display_period)
-    {
-    ss_printf(14, 2, "Running ");
-    ss_printf(36, 2, "%d", rn);
-    }
-
-  /* enable interrupts */
-  interrupt_enable(TRUE);
     
   return status;
 }
@@ -235,18 +238,20 @@ INT status;
 
   status = end_of_run(rn, error);
 
-  /* don't send events if already stopped */
-  if (run_state != STATE_STOPPED)
-    send_all_periodic_events(TR_STOP);
-
   if (status == CM_SUCCESS)
     {
+    /* don't send events if already stopped */
+    if (run_state != STATE_STOPPED)
+      send_all_periodic_events(TR_STOP);
+
     run_state = STATE_STOPPED;
     run_number = rn;
-    }
 
-  if (display_period)
-    ss_printf(14, 2, "Stopped ");
+    if (display_period)
+      ss_printf(14, 2, "Stopped ");
+    }
+  else
+    interrupt_enable(TRUE);
 
   return status;
 }
@@ -266,12 +271,14 @@ INT status;
     {
     run_state = STATE_PAUSED;
     run_number = rn;
+
+    send_all_periodic_events(TR_PAUSE);
+
+    if (display_period)
+      ss_printf(14, 2, "Paused  ");
     }
-
-  send_all_periodic_events(TR_PAUSE);
-
-  if (display_period)
-    ss_printf(14, 2, "Paused  ");
+  else
+    interrupt_enable(TRUE);
 
   return status;
 }
@@ -288,15 +295,15 @@ INT status;
     {
     run_state = STATE_RUNNING;
     run_number = rn;
+
+    send_all_periodic_events(TR_RESUME);
+
+    if (display_period)
+      ss_printf(14, 2, "Running ");
+
+    /* enable interrupts */
+    interrupt_enable(TRUE);
     }
-
-  send_all_periodic_events(TR_RESUME);
-
-  if (display_period)
-    ss_printf(14, 2, "Running ");
-
-  /* enable interrupts */
-  interrupt_enable(TRUE);
 
   return status;
 }
