@@ -6,6 +6,9 @@
   Contents:     Magnetic tape manipulation program for MIDAS tapes
 
   $Log$
+  Revision 1.9  1998/11/02 08:42:10  midas
+  Fixed bug in command line parameter processing
+
   Revision 1.8  1998/10/29 15:54:32  midas
   Added detection of other than MIDAS files on tape
 
@@ -44,7 +47,6 @@ INT tape_dir(INT channel, INT count)
 EVENT_HEADER *event;
 char         buffer[1024];
 INT          status, size, index;
-FILE         *f;
 
   event = (EVENT_HEADER *) buffer;
   for (index=0 ; index<count ; index++)
@@ -67,6 +69,8 @@ FILE         *f;
     if (event->event_id != EVENTID_BOR || event->trigger_mask != MIDAS_MAGIC)
       {
 #ifdef OS_UNIX
+      FILE *f;
+
       f = fopen("/tmp/.mt", "w");
       fwrite(buffer, sizeof(buffer), 1, f);
       fclose(f);
@@ -183,8 +187,7 @@ char         buffer[TAPE_BUFFER_SIZE], str[80];
 
 INT tape_backup(INT channel, INT count, char *file_name)
 {
-EVENT_HEADER *pevent;
-INT          status, index, n, fh, size, mb;
+INT          n, fh, size, mb;
 char         buffer[TAPE_BUFFER_SIZE], str[256];
 
   if (strchr(file_name, '%'))
@@ -265,14 +268,14 @@ char cmd[100], tape_name[256], file_name[256];
   for (i=1 ; i<argc ; i++)
     {
     if (argv[i][0] == '-' && argv[i][1] == 'v')
-        verbose = TRUE;
+      verbose = TRUE;
     else if (argv[i][0] == '-')
       {
       if (i+1 >= argc || argv[i+1][0] == '-')
         goto usage;
       if (argv[i][1] == 'f')
         strcpy(tape_name, argv[++i]);
-      if (argv[i][1] == 'd')
+      else if (argv[i][1] == 'd')
         strcpy(file_name, argv[++i]);
       else 
         goto usage;
