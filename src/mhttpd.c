@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.269  2004/07/29 14:10:49  midas
+  Added red error display in messages page
+
   Revision 1.268  2004/07/12 14:16:03  midas
   Increase dynamically history buffer size
 
@@ -2354,7 +2357,7 @@ void show_messages_page(int refresh, int n_message)
    rsprintf("<input type=submit name=cmd value=Help>\n");
    rsprintf("</tr>\n\n");
 
-  /*---- messages ----*/
+   /*---- messages ----*/
 
    rsprintf("<tr><td colspan=2>\n");
 
@@ -2387,7 +2390,13 @@ void show_messages_page(int refresh, int n_message)
       while (*pline == '\r' || *pline == '\n')
          pline++;
 
-      rsprintf("%s<br>\n", line);
+      /* check for error */
+      if (strchr(line+26, '[') && strchr(line+25, ':'))
+         rsprintf("<span style=\"color:white;background-color:red\">%s</span>", line);
+      else
+         rsprintf("%s", line);
+
+      rsprintf("<br>\n");
    } while (!eob && *pline);
 
    rsprintf("</tr></table>\n");
