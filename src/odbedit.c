@@ -6,6 +6,9 @@
   Contents:     Command-line interface to the MIDAS online data base.
 
   $Log$
+  Revision 1.56  2002/05/14 03:50:37  midas
+  Protect /Logger/Data dir on load command
+
   Revision 1.55  2002/05/10 01:41:19  midas
   Added optional debug output to cm_transition
 
@@ -2028,7 +2031,16 @@ PRINT_INFO      print_info;
     else if (param[0][0] == 'l' && param[0][1] == 'o')
       {
       db_find_key(hDB, 0, pwd, &hKey);
+
+      /* protect /Logger/Data dir */
+      db_find_key(hDB, 0, "/Logger/Data dir", &hSubkey);
+      if (hSubkey)
+        db_set_mode(hDB, hSubkey, MODE_READ, TRUE);
+
       db_load(hDB, hKey, param[1], FALSE);
+
+      if (hSubkey)
+        db_set_mode(hDB, hSubkey, MODE_READ | MODE_WRITE | MODE_DELETE, TRUE);
       }
 
     /* save */
