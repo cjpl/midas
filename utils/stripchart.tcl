@@ -60,8 +60,8 @@ exec /bin/nice bltwish "$0" -- ${1+"$@"}
 # re-ordered some code (no functional change)
 #  Revision History:
 #    $Log$
-#    Revision 1.13  2002/05/30 18:16:56  midas
-#    Ignore MCHART colours - they dont well - use my color table instead
+#    Revision 1.14  2002/06/15 00:32:10  midas
+#    Fix problem with having EPICS like ':' in variable name
 #
 #    Revision 1.8  2001/12/08 01:05:43  pierre
 #    correct path, new display
@@ -1014,7 +1014,7 @@ proc read_mhist_file {open_file } {
     catch "exec rm -f /tmp/${file_pref}mhist" error_var
     set exec_string "$mhist_path/mhist -f $hist_file -l"
 
-    if {$debug_code} {puts "debug: exec string is  $exec_string"}
+    if {$debug_code} {puts "debug1: exec string is  $exec_string"}
     
     catch "exec $exec_string > /tmp/${file_pref}mhist" error_var
     if {$error_var !="" } {
@@ -1110,7 +1110,7 @@ proc read_mhist_file {open_file } {
 	
 	# if we are not debugging....go for it.
 	if { [string compare $debug "mhist"]  } {
-	    if {$debug_code} {puts "Exec string is: $exec_string"}
+	    if {$debug_code} {puts "debug2: Exec string is: $exec_string"}
 	    catch {exec rm -f /tmp/${file_pref}mhist_data} error_var
 	    catch "exec $exec_string > /tmp/${file_pref}mhist_data"  error_var
 	}
@@ -1388,7 +1388,7 @@ proc read_present_mhist { } {
 
 	# if we are not debugging....go for it.
 	if { [string compare $debug "mhist"]  } {
-	    if {$debug_code} {puts "Debug: exec string is:  $exec_string > /tmp/${file_pref}mhist_data"}
+	    if {$debug_code} {puts "Debug5: exec string is:  $exec_string > /tmp/${file_pref}mhist_data"}
 	    catch {exec rm -f /tmp/${file_pref}mhist_data} error_var
 	    catch "exec $exec_string > /tmp/${file_pref}mhist_data"  error_var
 	}
@@ -1530,6 +1530,7 @@ proc select_event_items { today_or_file} {
     global history_time history_interval history_unit history_amount
 
     global exit_now
+    global debug_code
     # ok, now display and pick list of events_names. Use checkbutton
     toplevel .select_vars
     wm title .select_vars "mhist variable select"
@@ -1568,6 +1569,7 @@ proc select_event_items { today_or_file} {
     # fill the list box
     set i 0
     foreach var $event_var($event_choice) {
+	if {$debug_code} {puts "List contains $var"}
 	set pick_event_var($var) 0
 	.select_vars.col1row3.listb insert end $var
         .select_vars.col1row3.listb selection set $i
@@ -1965,8 +1967,9 @@ proc get_mhist_list { } {
 		while {[string first "midas.c" $string ] !=-1 } {
 		    gets $file_hndl string
 		}
-		# split list at :, then grab the second part of the list
-		set nam [lindex [split $string :] 1]
+		# take everything beyond the first :
+		set pos  [string first ":" $string]
+		set nam  [string range $string [expr $pos +1 ] end ]
 		set nam [string trim $nam]
 		if {[string length $nam] !=0} {
 		    lappend event_var($evid) $nam 
