@@ -9,6 +9,9 @@
                 for HVR_300 High Voltage Regulator
 
   $Log$
+  Revision 1.7  2004/07/22 13:08:10  midas
+  Implemented idle command
+
   Revision 1.6  2004/05/14 15:10:09  midas
   Fixed bug with status bits
 
@@ -101,6 +104,7 @@ float xdata v_actual[N_HV_CHN];
 /* CSR control bits */
 #define CONTROL_HV_ON      (1<<0)
 #define CONTROL_REGULATION (1<<1)
+#define CONTROL_IDLE       (1<<2)
 
 /* CSR status bits */
 #define STATUS_NEGATIVE    (1<<0)
@@ -136,29 +140,30 @@ struct {
 } xdata user_data[N_HV_CHN];
 
 MSCB_INFO_VAR code variables[] = {
-   1, UNIT_BYTE, 0, 0, 0, "Control", &user_data[0].control,                      // 0
-   4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "Vdemand", &user_data[0].v_demand,           // 1
-   4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "Vmeas", &user_data[0].v_meas,               // 2
-   4, UNIT_AMPERE, PRFX_MICRO, 0, MSCBF_FLOAT, "Imeas", &user_data[0].i_meas,    // 3
-   1, UNIT_BYTE, 0, 0, 0, "Status", &user_data[0].status,                        // 4
-   1, UNIT_COUNT, 0, 0, 0, "TripCnt", &user_data[0].trip_cnt,                    // 5
 
-   2, UNIT_VOLT, 0, 0, 0, "RampUp", &user_data[0].ramp_up,                       // 6
-   2, UNIT_VOLT, 0, 0, 0, "RampDown", &user_data[0].ramp_down,                   // 7
-   4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "Vlimit", &user_data[0].v_limit,             // 8 
-   4, UNIT_AMPERE, PRFX_MICRO, 0, MSCBF_FLOAT, "Ilimit", &user_data[0].i_limit,  // 9
-   1, UNIT_COUNT, 0, 0, 0, "TripMax", &user_data[0].trip_max,                    // 10
+   1, UNIT_BYTE,            0, 0,           0, "Control", &user_data[0].control,     // 0
+   4, UNIT_VOLT,            0, 0, MSCBF_FLOAT, "Vdemand", &user_data[0].v_demand,    // 1
+   4, UNIT_VOLT,            0, 0, MSCBF_FLOAT, "Vmeas",   &user_data[0].v_meas,      // 2
+   4, UNIT_AMPERE, PRFX_MICRO, 0, MSCBF_FLOAT, "Imeas",   &user_data[0].i_meas,      // 3
+   1, UNIT_BYTE,            0, 0,           0, "Status",  &user_data[0].status,      // 4
+   1, UNIT_COUNT,           0, 0,           0, "TripCnt", &user_data[0].trip_cnt,    // 5
+
+   2, UNIT_VOLT,            0, 0,           0, "RampUp",  &user_data[0].ramp_up,     // 6
+   2, UNIT_VOLT,            0, 0,           0, "RampDown",&user_data[0].ramp_down,   // 7
+   4, UNIT_VOLT,            0, 0, MSCBF_FLOAT, "Vlimit",  &user_data[0].v_limit,     // 8 
+   4, UNIT_AMPERE, PRFX_MICRO, 0, MSCBF_FLOAT, "Ilimit",  &user_data[0].i_limit,     // 9
+   1, UNIT_COUNT,           0, 0,           0, "TripMax", &user_data[0].trip_max,    // 10
 
    /* calibration constants */
-   4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT, "ADCgain", &user_data[0].adc_gain,         // 11
-   4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADCofs", &user_data[0].adc_offset,          // 12
-   4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT, "DACgain", &user_data[0].dac_gain,         // 13
-   4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "DACofs", &user_data[0].dac_offset,          // 14
-   4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT, "CURgain", &user_data[0].cur_gain,         // 15
-   4, UNIT_AMPERE, PRFX_MICRO, 0, MSCBF_FLOAT, "CURofs", &user_data[0].cur_offset, // 16
+   4, UNIT_FACTOR,          0, 0, MSCBF_FLOAT, "ADCgain", &user_data[0].adc_gain,    // 11
+   4, UNIT_VOLT,            0, 0, MSCBF_FLOAT, "ADCofs",  &user_data[0].adc_offset,  // 12
+   4, UNIT_FACTOR,          0, 0, MSCBF_FLOAT, "DACgain", &user_data[0].dac_gain,    // 13
+   4, UNIT_VOLT,            0, 0, MSCBF_FLOAT, "DACofs",  &user_data[0].dac_offset,  // 14
+   4, UNIT_FACTOR,          0, 0, MSCBF_FLOAT, "CURgain", &user_data[0].cur_gain,    // 15
+   4, UNIT_AMPERE, PRFX_MICRO, 0, MSCBF_FLOAT, "CURofs",  &user_data[0].cur_offset,  // 16
 
-   4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp", &user_data[0].temperature,        // 17
-   4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "VDAC", &user_data[0].v_dac,                 // 18
+   4, UNIT_CELSIUS,         0, 0, MSCBF_FLOAT, "Temp",    &user_data[0].temperature, // 17
+   4, UNIT_VOLT,            0, 0, MSCBF_FLOAT, "VDAC",    &user_data[0].v_dac,       // 18
    0
 };
 
@@ -840,20 +845,23 @@ void user_loop(void)
    /* loop over all HV channels */
    for (channel=0 ; channel<N_HV_CHN ; channel++) {
 
-      /* outcommented until implemented in HW
-      if (chn_bits[channel] & CUR_LIMIT_CHANGED) {
-         set_current_limit(user_data[channel].i_limit);
-         chn_bits[channel] &= ~CUR_LIMIT_CHANGED;
+      if ((user_data[0].control & CONTROL_IDLE) == 0) {
+
+         /* outcommented until implemented in HW
+         if (chn_bits[channel] & CUR_LIMIT_CHANGED) {
+            set_current_limit(user_data[channel].i_limit);
+            chn_bits[channel] &= ~CUR_LIMIT_CHANGED;
+         }
+         */
+
+         /* instead, use software limit */
+         check_current(channel);
+   
+         read_hv(channel);
+         ramp_hv(channel);
+         regulation(channel);
+         read_current(channel);
       }
-      */
-
-      /* instead, use software limit */
-      check_current(channel);
-
-      read_hv(channel);
-      ramp_hv(channel);
-      regulation(channel);
-      read_current(channel);
    }
 
    read_temperature();
