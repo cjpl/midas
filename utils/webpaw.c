@@ -6,6 +6,9 @@
   Contents:     Web server for remote PAW display
 
   $Log$
+  Revision 1.40  2004/01/18 09:58:56  olchansk
+  fix compilation on macosx
+
   Revision 1.39  2004/01/08 08:40:11  midas
   Implemented standard indentation
 
@@ -149,7 +152,11 @@
 #include <unistd.h>
 #include <signal.h>
 #include <ctype.h>
+#ifdef OS_DARWIN
+#include <util.h>
+#else
 #include <pty.h>
+#endif
 #include <arpa/inet.h>
 #define closesocket(s) close(s)
 #endif
