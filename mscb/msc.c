@@ -6,6 +6,9 @@
   Contents:     Command-line interface for the Midas Slow Control Bus
 
   $Log$
+  Revision 1.22  2002/11/28 13:04:36  midas
+  Implemented protocol version 1.2 (echo, read_channels)
+
   Revision 1.21  2002/11/27 15:40:05  midas
   Added version, fixed few bugs
 
@@ -163,6 +166,7 @@ void print_help()
   puts("terminal                   Enter teminal mode for SCS-210");
   puts("upload <hex-file>          Upload new firmware to node");
   puts("version                    Display version number");
+  puts("echo                       Perform echo test");
 }
 
 /*------------------------------------------------------------------*/
@@ -410,10 +414,10 @@ MSCB_INFO_CHN info_chn;
       else
         {
         status = mscb_info(fd, current_addr, &info);
-        if (status != MSCB_SUCCESS)
-          {
-          printf("No response from node\n");
-          }
+        if (status == MSCB_CRC_ERROR)
+          puts("CRC Error");
+        else if (status != MSCB_SUCCESS)
+          puts("No response from node");
         else
           {
           printf("Node name:        %s\n", info.node_name);
@@ -628,22 +632,29 @@ MSCB_INFO_CHN info_chn;
           {
           addr = atoi(param[1]);
 
-          mscb_info_channel(fd, current_addr, GET_INFO_CHANNEL, addr, &info_chn);
+          status = mscb_info_channel(fd, current_addr, GET_INFO_CHANNEL, addr, &info_chn);
 
-          do
+          if (status == MSCB_CRC_ERROR)
+            puts("CRC Error");
+          else if (status != MSCB_SUCCESS)
+            puts("Timeout or invalid channel number");
+          else
             {
-            size = sizeof(data);
-            status = mscb_read(fd, current_addr, (unsigned char)addr, &data, &size);
-            if (status != MSCB_SUCCESS)
-              printf("Error: %d\n", status);
-            else
-              print_channel(addr, &info_chn, data, 0);
-            } while (param[2][0] && !kbhit());
+            do
+              {
+              size = sizeof(data);
+              status = mscb_read(fd, current_addr, (unsigned char)addr, &data, &size);
+              if (status != MSCB_SUCCESS)
+                printf("Error: %d\n", status);
+              else
+                print_channel(addr, &info_chn, data, 0);
+              } while (param[2][0] && !kbhit());
 
-          while (kbhit())
-            getch();
+            while (kbhit())
+              getch();
 
-          printf("\n");
+            printf("\n");
+            }
           }
         }
       }
@@ -807,22 +818,21 @@ MSCB_INFO_CHN info_chn;
         }
       }
 
-    /* test */
-    else if (param[0][0] == 't' && param[0][1] == 'e' && param[0][2] == 's')
+    /* echo test */
+    else if (param[0][0] == 'e')
       {
-      unsigned short d1, d2;
-      int size, i, status;
+      unsigned char d1, d2;
+      int i, status;
 
       i = 0;
       while (!kbhit())
         {
         d1 = rand();
 
-        size = sizeof(d2);
-        status = mscb_user(fd, current_addr, &d1, sizeof(d1), &d2, &size);
+        status = mscb_echo(fd, current_addr, d1, &d2);
 
         if (d2 != d1)
-          printf("%d\nReceived: %04X, should be %04X, status = %d\n", i, d2, d1, status);
+          printf("%d\nReceived: %02X, should be %02X, status = %d\n", i, d2, d1, status);
 
         i++;
         if (i % 100 == 0)
@@ -833,8 +843,8 @@ MSCB_INFO_CHN info_chn;
 
         //Sleep(10);
         }
-
       }
+
     else if (param[0][0] == 't' && param[0][1] == '1')
       {
       }

@@ -6,6 +6,9 @@
   Contents:     List of MSCB RPC functions with parameters
 
   $Log$
+  Revision 1.4  2002/11/28 13:04:36  midas
+  Implemented protocol version 1.2 (echo, read_channels)
+
   Revision 1.3  2002/11/27 16:26:22  midas
   Fixed errors under linux
 
@@ -134,6 +137,15 @@ static RPC_LIST rpc_list[] = {
      {TID_INT,        RPC_IN | RPC_OUT}, 
      {0} }},
 
+  { RPC_MSCB_READ, "mscb_read_channels",
+    {{TID_INT,        RPC_IN}, 
+     {TID_INT,        RPC_IN}, 
+     {TID_BYTE,       RPC_IN},
+     {TID_BYTE,       RPC_IN},
+     {TID_ARRAY,      RPC_OUT | RPC_VARARRAY}, 
+     {TID_INT,        RPC_IN | RPC_OUT}, 
+     {0} }},
+
   { RPC_MSCB_READ_CONF, "mscb_read_conf",
     {{TID_INT,        RPC_IN}, 
      {TID_INT,        RPC_IN}, 
@@ -151,7 +163,14 @@ static RPC_LIST rpc_list[] = {
      {TID_INT,        RPC_IN | RPC_OUT}, 
      {0} }},
 
-   { 0 }
+  { RPC_MSCB_ECHO, "mscb_echo",
+    {{TID_INT,        RPC_IN}, 
+     {TID_INT,        RPC_IN}, 
+     {TID_BYTE,       RPC_IN},
+     {TID_BYTE,       RPC_OUT},
+     {0} }},
+
+  { 0 }
 
 };
 
@@ -330,8 +349,16 @@ int status;
       status = mscb_read(CINT(0), CINT(1), CBYTE(2), CARRAY(3), CPINT(4));
       break;
 
+    case RPC_MSCB_READ_CHANNELS:
+      status = mscb_read_channels(CINT(0), CINT(1), CBYTE(2), CBYTE(3), CARRAY(4), CPINT(5));
+      break;
+
     case RPC_MSCB_READ_CONF:
       status = mscb_read_conf(CINT(0), CINT(1), CBYTE(2), CARRAY(3), CPINT(4));
+      break;
+
+    case RPC_MSCB_ECHO:
+      status = mscb_echo(CINT(0), CINT(1), CBYTE(2), CPBYTE(3));
       break;
 
     case RPC_MSCB_USER:
