@@ -7,6 +7,9 @@
                 routines
 
   $Log$
+  Revision 1.4  1999/01/18 17:28:47  pierre
+  - Added prototypes for dm_()
+
   Revision 1.3  1998/10/27 10:54:03  midas
   Added ss_shell()
 
@@ -497,14 +500,23 @@ INT recv_string(int sock, char *buffer, DWORD buffer_size, INT flags);
 INT EXPRT ss_syslog(const char *message);
 
 /*---- event buffer routines ----*/
-INT EXPRT eb_create_buffer(INT size);
-INT EXPRT eb_free_buffer(void);
+INT  EXPRT eb_create_buffer(INT size);
+INT  EXPRT eb_free_buffer(void);
 BOOL EXPRT eb_buffer_full(void);
 BOOL EXPRT eb_buffer_empty(void);
 EVENT_HEADER EXPRT *eb_get_pointer(void);
-INT EXPRT eb_increment_pointer(INT buffer_handle, INT event_size);
-INT EXPRT eb_send_events(BOOL send_all);
+INT  EXPRT eb_increment_pointer(INT buffer_handle, INT event_size);
+INT  EXPRT eb_send_events(BOOL send_all);
 
+/*---- dual memory event buffer routines ----*/
+INT  EXPRT dm_buffer_create(INT size);
+INT  EXPRT dm_buffer_release(void);
+BOOL EXPRT dm_area_full(void);
+EVENT_HEADER EXPRT *dm_pointer_get(void);
+INT  EXPRT dm_pointer_increment(INT buffer_handle, INT event_size);
+INT  EXPRT dm_area_send(void);
+INT  EXPRT dm_area_flush(void);
+void EXPRT dm_async_area_send(void);
 /*---- Include RPC identifiers -------------------------------------*/
 
 #include "mrpc.h"
