@@ -6,6 +6,10 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.204  2004/03/31 17:35:40  olchansk
+  fix the infamous problem with "last NN days broken" in Elog
+  catch more memory overruns in the elog code
+
   Revision 1.203  2004/03/19 09:58:22  midas
   Changed client inactivity time check in cm_watchdog
 
@@ -14814,8 +14818,9 @@ INT hs_fdump(char *file_name, DWORD id, BOOL binary_time)
 \********************************************************************/
 
 /********************************************************************/
-void el_decode(char *message, char *key, char *result)
+void el_decode(char *message, char *key, char *result, int size)
 {
+   char *rstart = result;
    char *pc;
 
    if (result == NULL)
@@ -14828,6 +14833,8 @@ void el_decode(char *message, char *key, char *result)
          *result++ = *pc++;
       *result = 0;
    }
+
+   assert(strlen(rstart) < size);
 }
 
 /**dox***************************************************************/
@@ -15020,9 +15027,9 @@ INT el_submit(int run, char *author, char *type, char *system, char *subject,
          size = atoi(str + 9);
          read(fh, message, size);
 
-         el_decode(message, "Date: ", date);
-         el_decode(message, "Thread: ", thread);
-         el_decode(message, "Attachment: ", attachment);
+         el_decode(message, "Date: ", date, sizeof(date));
+         el_decode(message, "Thread: ", thread, sizeof(thread));
+         el_decode(message, "Attachment: ", attachment, sizeof(attachment));
 
          /* buffer tail of logfile */
          lseek(fh, 0, SEEK_END);
@@ -15092,7 +15099,7 @@ INT el_submit(int run, char *author, char *type, char *system, char *subject,
       sprintf(message + strlen(message), "========================================\n");
       strcat(message, text);
 
-      assert(strlen(message) < sizeof(message));        // bomb out on array overrun.
+      assert(strlen(message) < sizeof(message)); /* bomb out on array overrun. */
 
       size = 0;
       sprintf(start_str, "$Start$: %6d\n", size);
@@ -15103,6 +15110,9 @@ INT el_submit(int run, char *author, char *type, char *system, char *subject,
       if (tag != NULL && !bedit)
          sprintf(tag, "%02d%02d%02d.%d", tms->tm_year % 100, tms->tm_mon + 1,
                  tms->tm_mday, (int) TELL(fh));
+
+      /* size has to fit in 6 digits */
+      assert(size < 999999);
 
       sprintf(start_str, "$Start$: %6d\n", size);
       sprintf(end_str, "$End$:   %6d\n\f", size);
@@ -15339,13 +15349,20 @@ INT el_search_message(char *tag, int *fh, BOOL walk)
          return EL_FILE_ERROR;
       }
 
-      if (strncmp(str, "$End$: ", 7) == 0) {
-         size = atoi(str + 7);
-         lseek(*fh, -size, SEEK_CUR);
-      } else {
+      if (strncmp(str, "$End$: ", 7) != 0) {
          close(*fh);
          return EL_FILE_ERROR;
       }
+        
+      /* make sure the input string to atoi() is zero-terminated:
+       * $End$:      355garbage
+       * 01234567890123456789 */
+      str[15] = 0;
+
+      size = atoi(str + 7);
+      assert(size > 15);
+
+      lseek(*fh, -size, SEEK_CUR);
 
       /* adjust tag */
       sprintf(strchr(tag, '.') + 1, "%d", (int) TELL(*fh));
@@ -15364,13 +15381,20 @@ INT el_search_message(char *tag, int *fh, BOOL walk)
       }
       lseek(*fh, -15, SEEK_CUR);
 
-      if (strncmp(str, "$Start$: ", 9) == 0) {
-         size = atoi(str + 9);
-         lseek(*fh, size, SEEK_CUR);
-      } else {
+      if (strncmp(str, "$Start$: ", 9) != 0) {
          close(*fh);
          return EL_FILE_ERROR;
       }
+
+      /* make sure the input string to atoi() is zero-terminated
+       * $Start$:    606garbage
+       * 01234567890123456789 */
+      str[15] = 0;
+
+      size = atoi(str+9);
+      assert(size > 15);
+
+      lseek(*fh, size, SEEK_CUR);
 
       /* if EOF, goto next day */
       i = read(*fh, str, 15);
@@ -15444,7 +15468,7 @@ INT el_retrieve(char *tag, char *date, int *run, char *author, char *type,
 
 \********************************************************************/
 {
-   int size, fh, offset, search_status;
+   int size, fh = 0, offset, search_status, rd;
    char str[256], *p;
    char message[10000], thread[256], attachment_all[256];
 
@@ -15462,10 +15486,24 @@ INT el_retrieve(char *tag, char *date, int *run, char *author, char *type,
 
    /* extract message size */
    offset = TELL(fh);
-   read(fh, str, 16);
-   size = atoi(str + 9);
+   rd = read(fh, str, 15);
+   assert(rd == 15);
+   
+   /* make sure the input string is zero-terminated before we call atoi() */
+   str[15] = 0;
+
+   /* get size */
+   size = atoi(str+9);
+   
+   assert(strncmp(str,"$Start$:",8) == 0);
+   assert(size > 15);
+   assert(size < sizeof(message));
+   
    memset(message, 0, sizeof(message));
-   read(fh, message, size);
+
+   rd = read(fh, message, size);
+   assert(rd > 0);
+   assert((rd+15 == size)||(rd == size));
 
    close(fh);
 
@@ -15473,14 +15511,14 @@ INT el_retrieve(char *tag, char *date, int *run, char *author, char *type,
    if (strstr(message, "Run: ") && run)
       *run = atoi(strstr(message, "Run: ") + 5);
 
-   el_decode(message, "Date: ", date);
-   el_decode(message, "Thread: ", thread);
-   el_decode(message, "Author: ", author);
-   el_decode(message, "Type: ", type);
-   el_decode(message, "System: ", system);
-   el_decode(message, "Subject: ", subject);
-   el_decode(message, "Attachment: ", attachment_all);
-   el_decode(message, "Encoding: ", encoding);
+   el_decode(message, "Date: ",     date,     80); /* size from show_elog_submit_query() */
+   el_decode(message, "Thread: ", thread, sizeof(thread));
+   el_decode(message, "Author: ",   author,   80); /* size from show_elog_submit_query() */
+   el_decode(message, "Type: ",     type,     80); /* size from show_elog_submit_query() */
+   el_decode(message, "System: ",   system,   80); /* size from show_elog_submit_query() */
+   el_decode(message, "Subject: ",  subject, 256); /* size from show_elog_submit_query() */
+   el_decode(message, "Attachment: ", attachment_all, sizeof(attachment_all));
+   el_decode(message, "Encoding: ", encoding, 80); /* size from show_elog_submit_query() */
 
    /* break apart attachements */
    if (attachment1 && attachment2 && attachment3) {
@@ -15496,6 +15534,10 @@ INT el_retrieve(char *tag, char *date, int *run, char *author, char *type,
                strcpy(attachment3, p);
          }
       }
+
+      assert(strlen(attachment1) < 256); /* size from show_elog_submit_query() */
+      assert(strlen(attachment2) < 256); /* size from show_elog_submit_query() */
+      assert(strlen(attachment3) < 256); /* size from show_elog_submit_query() */
    }
 
    /* conver thread in reply-to and reply-from */
