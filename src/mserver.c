@@ -6,6 +6,9 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
+  Revision 1.29  2002/03/14 14:15:44  midas
+  Fixed bug with setuid
+
   Revision 1.28  2001/08/07 12:51:50  midas
   If no full path is given as argv[0] (line under xinetd), use
   /usr/local/bin/mserver as default
@@ -359,10 +362,13 @@ BOOL   inetd;
       if(setgid(pw->pw_gid) < 0 || initgroups(pw->pw_name, pw->pw_gid) < 0)
         cm_msg(MERROR, "main", "Unable to set group premission for user %s", callback.user);
       else
-        cm_msg(MLOG, "main", "Changed UID to user %s", callback.user);
-
-      if(setreuid(0, pw->pw_uid) < 0)
-        cm_msg(MERROR, "main", "Unable to set user ID for %s", callback.user);
+        {
+        if(setuid(pw->pw_uid) < 0)
+          cm_msg(MERROR, "main", "Unable to set user ID for %s", callback.user);
+        else
+          cm_msg(MLOG, "main", "Changed UID to user %s (GID %d, UID %d)", callback.user,
+                 pw->pw_gid, pw->pw_uid);
+        }
 
       }
 #endif
