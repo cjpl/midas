@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.134  2004/09/23 19:22:04  midas
+  Added histo booking funcitons
+
   Revision 1.133  2004/09/17 16:10:11  midas
   Added new timeout errors
 
@@ -1413,6 +1416,7 @@ typedef struct {
    INT param_size;                    /**< Size of parameter structure       */
    char **init_str;                   /**< Parameter init string             */
    BOOL enabled;                      /**< Enabled flag                      */
+   void *histo_folder;
 } ANA_MODULE;
 
 typedef struct {
@@ -2196,6 +2200,13 @@ extern "C" {
    void EXPRT test_register(ANA_TEST * t);
    void EXPRT add_data_dir(char *result, char *file);
    void EXPRT lock_histo(INT id);
+   void *h1_book(char *name, char *title, int bins, double min, double max);
+   void *h2_book(char *name, char *title, int bx, double xmin, double xmax, int by, double ymin, double ymax);
+   void open_subfolder(char *name);
+   void close_subfolder();
+
+#define H1_BOOK(n,t,b,min,max) ((TH1F*)h1_book(n,t,b,min,max))
+#define H2_BOOK(n,t,xb,xmin,xmax,yb,ymin,ymax) ((TH2F*)h2_book(n,t,xb,xmin,xmax,yb,ymin,ymax))
 
 #ifdef __cplusplus
 }
