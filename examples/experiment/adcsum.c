@@ -10,6 +10,9 @@
                 in the ODB and transferred to experim.h.
 
   $Log$
+  Revision 1.9  2003/11/14 13:43:10  midas
+  Fixed type
+
   Revision 1.8  2003/04/28 15:33:05  midas
   Fixed compiler warnings
 
@@ -47,7 +50,7 @@
 #include "experim.h"
 #include "analyzer.h"
 
-/* foot includes */
+/* root includes */
 #include <TH1F.h>
 #include <TDirectory.h>
 
