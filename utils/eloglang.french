@@ -1,0 +1,132 @@
+#
+# $Revision$
+#
+
+#
+# Menu commands
+#
+New = Créer
+Edit = Modifier
+Delete = Supprimer
+Reply = Répondre
+Find = Chercher
+Last day = Dernier jour
+Last 10 = 10 Dernières entrées
+Config = Configuration
+Change Password = Changer le mot de passe
+Logout = Se Déconnecter
+Help = Aide
+Back = Retour
+Submit = Valider
+First = Première
+First entry = Première Entrée
+Last = Dernière
+Last entry = Dernière Entrée
+Previous = Précédente
+Previous entry = Entrée Précédente
+Next = Suivante
+Next entry = Entrée Suivante
+Copy to = Copier vers
+Move to = Déplacer vers
+Save = Enregistrer
+Cancel = Annuler
+Go to = Aller à
+
+#
+# Login & password screens
+#
+Wrong password =  Mot de passe incorrect
+Please login = Connexion
+Username = utilisateur
+Password = mot de passe
+Old Password = ancien mot de passe
+New Password = nouveau mot de passe
+ELOG password = mot de passe ELOG
+ELOG change password = Changer le mot de passe ELOG
+Please enter password to obtain write access = Entrez le mot de passe pour l'accès en écriture
+Please enter password to obtain administration access = Entrez le mot de passe pour l'accès administrateur
+Several logbooks are defined on this host = Il y a plusieurs registres sur ce serveur
+Please select the one to connect to = Choisissez celui auquel vous souhaitez vous connecter
+Change password for user = changer le mot de passe de l'utilisateur
+
+#
+# Entry display
+#
+Logged in as = Connecté sous
+Entry date = Date de création
+with = avec
+This is the last entry = Ceci est la dernière entrée
+This is the first entry = Ceci est la première entrée
+Email sent to = Mél envoyé à
+Email notification suppressed = Notification mél désactivée
+please select = choisissez
+Submit as HTML text = Code HTML
+Suppress Email notification = Désactiver la notification mél.
+Resubmit as new entry = Positionner comme une nouvelle entrée
+If no attachments are resubmitted, the original ones are kept = Si un nouvel attachement n'est pas spécifié, l'ancien est conservé
+To delete an old attachment, enter <code>&lt;delete&gt;</code> in the new attachment field = Pour supprimer un attachement existant, saisir comme nouvelle valeur <code>&lt;plonk&gt;</code>
+<delete> = <plonk>
+Attachment = Attachement
+Attachments = Attachements
+No message available = Aucune entrée disponible
+
+#
+# Submit entry
+#
+ELOG Error = Erreur ELOG
+Fields marked with = Les champs marqués
+are required = sont obligatoires
+Error: Attachment file <i>%s</i> invalid, please bo back and enter a proper file name = Erreur : le fichier <i>%s</i> est invalide, revenez en arrière et spécifiez un nom de fichier correct
+New message cannot be written to directory "%s" = Le nouveau message ne peut pas être écrit dans le répertoire "%s"
+Please check that it exists and elogd has write access = Vérifier qu'il existe bien et qu'elogd a le droit d'y écrire
+Error: Attribute <b>%s</b> not supplied = Erreur : l'attribut <b>%s</b> n'est pas spécifié
+Please go back and enter the <b>%s</b> field = Revenez en arrière et renseignez le champ <b>%s</b>
+Original attachment = Ancien attachement
+New attachment = Nouvel attachement
+
+#
+# Find display
+#
+ELOG find = Recherche ELOG
+Find = Chercher
+Search = Lancer la recherche
+Reset Form = Réinitaliser le formulaire
+Summary only = Résumé seulement
+Show attachments = Montrer les attachements
+Printable output = Sortie pour impression
+Sort in reverse order = Tri inversé
+Start date = Date de début
+End date = Date de fin
+Year = Année
+Text = Texte
+(case insensitive substring) = (casse non prise en compte)
+Search all logbooks = Chercher dans tous les registres
+Last %d days = %d Derniers jours
+Last %d entries = %d Dernières entrées
+No entries found = Aucune entrée trouvée
+
+#
+# Email, Copy/Move, Delete
+#
+A new entry has been submitted on %s = Une nouvelle entrée a été créée le %s
+Logbook = Registre
+Copy ELog entry = Copier l'entrée ELog
+Message moved successfully from "%s" to "%s" = Entrée déplacée de "%s" vers "%s"
+Message copied successfully from "%s" to "%s" = Entrée copiée de "%s" vers "%s"
+Are you sure to delete this message? = Confirmez-vous la suppression de cette entrée ?
+Yes = Oui
+No = Non
+Message successfully deleted = Entrée supprimée
+Error deleting message: status = Erreur lors de la suppression de l'entrée : Status
+Goto last message = Aller à la dernière entrée
+
+#
+# Error messages
+#
+Error: Command "<b>%s</b>" not allowed = Erreur : commande "<b>%s</b>" non autorisée
+Error: Command "<b>%s</b>" is not allowed for user "<b>%s</b>" = Erreur: commande "<b>%s</b>" non autorisée pour l'utilisateur "<b>%s</b>"
+Cannot open file <b>%s</b> = Erreur d'ouverture du fichier <b>%s</b>
+Cannot write to <b>%s</b> = Erreur d'écriture dans le fichier <b>%s</b>
+No SMTP host defined in [global] section of configuration file = Aucun serveur SMTP n'est défini dans la section [global] du fichier de configuration
+Message %s cannot be read from logbook "%s" = L'entrée %s ne peut pas être lue dans le registre "%s"
+New message cannot be written to directory "%s" =  La nouvelle entrée %s ne peut pas être créée dans le registre "%s"
