@@ -20,6 +20,9 @@ Version 1.2.0, released October 19th, 2001
 - Added "Display search" list
 - Added "HELO" statement in SMTP communication, thanks to David Monk.
 - Added "Welcome title" for logbook selection page
+- Moved "SMTP host" to [global] section
+- Added "Display email recipients = 0/1"
+- Added "Suppress default = 2" for no checkbox at all
 
 Version 1.1.3, released October 12th, 2001
 ==========================================
