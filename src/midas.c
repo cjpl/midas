@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.210  2004/07/15 14:58:12  midas
+  Fixed severe bug in bm_check_buffers which crashed the logger during run stop
+
   Revision 1.209  2004/07/12 12:23:03  midas
   Fixed small bug in hs_enum_vars()
 
@@ -7375,7 +7378,12 @@ INT bm_check_buffers()
             continue;
 
          do {
-            status = bm_push_event(_buffer[index].buffer_header->name);
+
+            /* one bm_push_event could cause a run stop and a buffer close, which
+               would crash the next call to bm_push_event(). So check for valid
+               buffer on each call */
+            if (index < _buffer_entries && _buffer[index].buffer_header->name != NULL)
+               status = bm_push_event(_buffer[index].buffer_header->name);
 
             if (status != BM_MORE_EVENTS)
                break;
