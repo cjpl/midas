@@ -7,6 +7,10 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.28  1999/08/12 14:39:10  midas
+  Fixed bug where from serveral input files specified via "-i xxx.mid yyy.mid"
+  only the last one was contained in the output file.
+
   Revision 1.27  1999/08/12 14:09:31  midas
   Changed -f flag from filter ID to "copy original event if analyer accepts it"
 
@@ -3045,8 +3049,9 @@ BANK_LIST *bank_list;
     printf("Running analyzer offline. Stop with \"!\"\n");
 
   run_number = 0;
-  out_append = (strchr(clp.input_file_name[0], '%') != NULL) &&
-               (strchr(clp.output_file_name, '%') == NULL);
+  out_append = ((strchr(clp.input_file_name[0], '%') != NULL) &&
+                (strchr(clp.output_file_name, '%') == NULL)) ||
+                 clp.input_file_name[1][0];
 
   /* loop over range of files */
   if (clp.run_number[0] > 0)
@@ -3098,8 +3103,6 @@ BANK_LIST *bank_list;
         strcpy(output_file_name, clp.output_file_name);
 
       status = analyze_file(run_number, input_file_name, output_file_name);
-      if (status != CM_SUCCESS)
-        break;
       }
     }
 
