@@ -19,6 +19,9 @@
 		See mchart -h for further info.
 		
   $Log$
+  Revision 1.2  2000/04/20 18:22:38  pierre
+  - added "%" to "_" substitution for variable names (midas group, tcl parsing)
+
   Revision 1.1  2000/04/18 20:29:15  pierre
   - Periodic Midas chart graph data generator. (new application)
 
@@ -255,6 +258,7 @@ INT mchart_get_array(FILE * f, char * eqpstr, HNDLE hDB, HNDLE hSubkey, KEY key,
 	sprintf(field,"%s[%i]", key.name, i);
     }
     while (pspace = strstr(field," ")) *pspace = '_';
+    while (pspace = strstr(field,"%")) *pspace = '_';
     if (key.type == TID_INT)
     {
       value = (float) *((INT *) (pdata+(i*key.item_size)));
