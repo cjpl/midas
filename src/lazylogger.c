@@ -6,6 +6,10 @@
   Contents:     Disk to Tape copier for background job
 
   $Log$
+  Revision 1.22  2000/10/17 21:12:39  pierre
+  - Return KB rate to B and correct code (*1000)
+  - Fix ss_system for single arg
+
   Revision 1.21  2000/10/17 20:56:50  pierre
   *** empty log message ***
 
@@ -1444,7 +1448,8 @@ INT lazy_main (INT channel, LAZY_INFO * pLall)
 	    /* Setup alarm */
 	    lazy.alarm[0] = 0;
 	    size = sizeof(lazy.alarm);
-	    db_get_value(hDB, pLch->hKey,  "Settings/Alarm Class", lazy.alarm, &size, TID_STRING);
+	    db_get_value(hDB, pLch->hKey, "Settings/Alarm Class"
+			 , lazy.alarm, &size, TID_STRING);
 	    
 	    /* trigger alarm if defined */
 	    if (lazy.alarm[0])
