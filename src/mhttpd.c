@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.81  1999/10/20 09:22:39  midas
+  Added -c flag
+
   Revision 1.80  1999/10/19 11:04:13  midas
   Changed expiration date of midas_ref cookie to one year
 
@@ -248,7 +251,7 @@ char return_buffer[1000000];
 int  return_length;
 char mhttpd_url[256];
 char exp_name[32];
-BOOL connected;
+BOOL connected, no_disconnect;
 
 #define MAX_GROUPS 32
 #define MAX_PARAM  100
@@ -5502,7 +5505,7 @@ INT                  last_time=0;
     ss_ctrlc_handler(ctrlc_handler);
 
     /* check if disconnect from experiment */
-    if ((INT) ss_time() - last_time > CONNECT_TIME && connected)
+    if ((INT) ss_time() - last_time > CONNECT_TIME && connected && !no_disconnect)
       {
       cm_disconnect_experiment();
       connected = FALSE;
@@ -5530,10 +5533,13 @@ int i;
 int tcp_port = 80, daemon = FALSE;
 
   /* parse command line parameters */
+  no_disconnect = FALSE;
   for (i=1 ; i<argc ; i++)
     {
     if (argv[i][0] == '-' && argv[i][1] == 'D')
       daemon = TRUE;
+    else if (argv[i][0] == '-' && argv[i][1] == 'c')
+      no_disconnect = TRUE;
     else if (argv[i][0] == '-')
       {
       if (i+1 >= argc || argv[i+1][0] == '-')
@@ -5543,7 +5549,9 @@ int tcp_port = 80, daemon = FALSE;
       else
         {
 usage:
-        printf("usage: %s [-p port] [-D]\n", argv[0]);
+        printf("usage: %s [-p port] [-D] [-c]\n\n", argv[0]);
+        printf("       -D become a daemon\n");
+        printf("       -c don't disconnect from experiment\n");
         return 0;
         }
       }
