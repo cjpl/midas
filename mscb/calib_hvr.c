@@ -6,6 +6,9 @@
   Contents:     Calibration program for HVR-200
 
   $Log$
+  Revision 1.10  2004/12/22 16:03:24  midas
+  Implemented VGain calibration
+
   Revision 1.9  2004/07/29 15:47:38  midas
   Fixed wrong warning with current offset
 
@@ -59,9 +62,10 @@
 #define CH_ADCOFS      12
 #define CH_DACGAIN     13
 #define CH_DACOFS      14
-#define CH_CURGAIN     15
-#define CH_CUROFS      16
-#define CH_TEMP        17
+#define CH_CURVGAIN    15
+#define CH_CURGAIN     16
+#define CH_CUROFS      17
+#define CH_TEMP        18
 
 /*------------------------------------------------------------------*/
 
@@ -71,7 +75,7 @@ int main(int argc, char *argv[])
    int fd, adr, size, d;
    char str[80];
    float v_adc1, v_adc2, v_multi1, v_multi2,
-       adc_gain, adc_ofs, dac_gain, dac_ofs, i1, i2, i_gain, i_ofs;
+       adc_gain, adc_ofs, dac_gain, dac_ofs, i1, i2, i_vgain, i_gain, i_ofs;
    MSCB_INFO_VAR info;
 
    /* open port */
@@ -134,8 +138,8 @@ int main(int argc, char *argv[])
       mscb_write(fd, adr, CH_ADCGAIN, &f, sizeof(float));
       mscb_write(fd, adr, CH_DACGAIN, &f, sizeof(float));
 
-      /* set current limit to 3mA */
-      f = 3000;
+      /* set current limit to 2.5mA */
+      f = 2500;
       mscb_write(fd, adr, CH_ILIMIT, &f, sizeof(float));
 
       /* set demand to 100V */
@@ -223,19 +227,76 @@ int main(int argc, char *argv[])
       d = 0;
       mscb_write(fd, adr, CH_RAMPUP, &d, sizeof(short));
       mscb_write(fd, adr, CH_RAMPDOWN, &d, sizeof(short));
-      mscb_write(fd, adr, CH_CUROFS, &f, sizeof(float));        /* CURofs  */
+      mscb_write(fd, adr, CH_CURVGAIN, &f, sizeof(float));
+      mscb_write(fd, adr, CH_CUROFS, &f, sizeof(float)); 
       mscb_write(fd, adr, CH_VDEMAND, &f, sizeof(float));
 
       f = 1;
-      mscb_write(fd, adr, CH_CURGAIN, &f, sizeof(float));       /* CURgain */
+      mscb_write(fd, adr, CH_CURGAIN, &f, sizeof(float));
 
-      /* set current limit to 3mA */
-      f = 3000;
+      /* set current limit to 2.5mA */
+      f = 2500;
       mscb_write(fd, adr, CH_ILIMIT, &f, sizeof(float));
 
       /* set CSR to HV on, no regulation */
       d = 1;
       mscb_write(fd, adr, CH_CONTROL, &d, 1);
+
+      printf("\nPlease disconnect everything from output,\n");
+      printf("connect 1300V to input and press ENTER\n");
+      fgets(str, sizeof(str), stdin);
+
+      /* set demand to 100V */
+      f = 100;
+      mscb_write(fd, adr, CH_VDEMAND, &f, sizeof(float));
+
+      /* wait voltage to settle */
+      Sleep(3000);
+
+      /* read current */
+      size = sizeof(float);
+      mscb_read(fd, adr, CH_IMEAS, &i1, &size);
+      printf("Current at 100V: %1.1lf uA\n", i1);
+
+      do {
+         /* set demand to 900V */
+         f = 900;
+         mscb_write(fd, adr, CH_VDEMAND, &f, sizeof(float));
+
+         /* wait voltage to settle */
+         Sleep(3000);
+
+         /* read voltage */
+         size = sizeof(float);
+         mscb_read(fd, adr, CH_VMEAS, &v_adc1, &size);
+
+         if (v_adc1 < 890) {
+            v_adc2 = 900 - v_adc1 + 100;
+            v_adc2 = (float) ((int) (v_adc2 / 100.0) * 100);
+
+            printf("Only %1.1lf V can be reached on output,\n", v_adc1);
+            printf("please increase input voltage by %1.0lf V and press ENTER.\n",
+                   v_adc2);
+            fgets(str, sizeof(str), stdin);
+         }
+
+      } while (v_adc1 < 890);
+
+      /* read current */
+      size = sizeof(float);
+      mscb_read(fd, adr, CH_IMEAS, &i2, &size);
+      printf("Current at 900V: %1.1lf uA\n", i2);
+
+      /* calculate voltage-current correction */
+      i_vgain = (float) (i1 - i2) /(900 - 100);
+
+      printf("\n\nCalculated calibration constant:\n");
+      printf("I vgain:  %1.5lf\n", i_vgain);
+      mscb_write(fd, adr, CH_CURVGAIN, &i_vgain, sizeof(float));
+
+      /* remove HV */
+      f = 0;
+      mscb_write(fd, adr, CH_VDEMAND, &f, sizeof(float));
 
       printf("\nPlease connect 1MOhm resistor to output,\n");
       printf("connect 1300V to input and press ENTER\n");
