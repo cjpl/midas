@@ -6,6 +6,9 @@
   Contents:     RS232 communication routines for MS-DOS and NT
 
   $Log$
+  Revision 1.3  2001/01/04 10:22:22  midas
+  Read characters individually under Linux
+
   Revision 1.2  2001/01/03 16:05:10  midas
   Adapted Bus Driver scheme to rs232
 
@@ -708,14 +711,9 @@ char c;
   do
     {
     ioctl(info->fd, FIONREAD, &i);
-    if (i >= size)
-      i = size - 1;
     if (i > 0)
       {
-      if (l + i >= size)
-        i = size - 1 - l;
-
-      i = read(info->fd, str+l, i);
+      i = read(info->fd, str+l, 1);
  
       if (i > 0)
         l += i;
