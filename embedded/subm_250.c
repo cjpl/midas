@@ -7,6 +7,9 @@
                 SUBM250 running on Cygnal C8051F320
 
   $Log$
+  Revision 1.8  2005/02/16 13:14:50  ritt
+  Version 1.8.0
+
   Revision 1.7  2004/12/21 10:46:47  midas
   Adjusted timeouts
 
@@ -33,6 +36,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <intrins.h>
 #include "mscb.h"
 #include "usb.h"
 
@@ -159,10 +163,12 @@ void serial_int(void) interrupt 4 using 1
       TI0 = 0;
 
       /* transmit next byte */
+
       i_rs485_tx++;
-      if (i_rs485_tx < n_usb_rx)
+      if (i_rs485_tx < n_usb_rx) {
+         DELAY_US(INTERCHAR_DELAY);
          SBUF0 = usb_rx_buf[i_rs485_tx];
-      else {
+      } else {
          /* end of buffer */
          RS485_ENABLE = 0;
          i_rs485_tx = n_usb_rx = 0;
@@ -234,6 +240,7 @@ unsigned char rs485_send()
       /* set bit9 */
       TB80 = (rs485_flags & RS485_FLAG_BIT9) > 0;
 
+      DELAY_US(INTERCHAR_DELAY);
       RS485_ENABLE = 1;
       SBUF0 = usb_rx_buf[1];
       i_rs485_tx = 1;

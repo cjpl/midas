@@ -9,6 +9,9 @@
                 for SCS-520 analog I/O with current option
 
   $Log$
+  Revision 1.9  2005/02/16 13:14:50  ritt
+  Version 1.8.0
+
   Revision 1.8  2004/06/09 12:27:29  midas
   Re-enabled DAC
 
@@ -46,10 +49,10 @@ char code node_name[] = "SCS-520";
 /* declare number of sub-addresses to framework */
 unsigned char idata _n_sub_addr = 1;
 
-sbit UNI_BIP = P0 ^ 3;          // Unipolar/bipolar switch
-sbit SR_CLOCK = P0 ^ 4;         // Shift register clock
+sbit UNI_BIP   = P0 ^ 3;        // Unipolar/bipolar switch
+sbit SR_CLOCK  = P0 ^ 4;        // Shift register clock
 sbit SR_STROBE = P0 ^ 5;        // Storage register clock
-sbit SR_DATA = P0 ^ 6;          // Serial data
+sbit SR_DATA   = P0 ^ 6;        // Serial data
 sbit SR_DATAIN = P0 ^ 7;        // Serial data input
 
 bit gain_flag;                  // set when new gains need to be set
@@ -66,9 +69,9 @@ struct {
    unsigned char range[8];      // see below
    char ofs[8];                 // channel offset in mV
    char gain[8];                // channel gain
-//##   char bip_ofs[8];             // bipolar offset in 10mV
+   char bip_ofs[8];             // bipolar offset in 10mV
    unsigned char cur_mode;      // current bit for each channel
-} idata user_data;
+} xdata user_data;
 
 /* Usage of range:
 
@@ -102,6 +105,7 @@ MSCB_INFO_VAR code variables[] = {
    1, UNIT_BYTE, 0, 0, 0, "P1", &user_data.p1,
 
    1, UNIT_COUNT, 0, 0, 0, "ADCAvrg", &user_data.adc_average,
+   
    1, UNIT_BYTE, 0, 0, 0, "Range0", &user_data.range[0],
    1, UNIT_BYTE, 0, 0, 0, "Range1", &user_data.range[1],
    1, UNIT_BYTE, 0, 0, 0, "Range2", &user_data.range[2],
@@ -111,42 +115,32 @@ MSCB_INFO_VAR code variables[] = {
    1, UNIT_BYTE, 0, 0, 0, "Range6", &user_data.range[6],
    1, UNIT_BYTE, 0, 0, 0, "Range7", &user_data.range[7],
 
-   1, UNIT_VOLT, PRFX_MILLI, 0, MSCBF_SIGNED, "Ofs0", &user_data.ofs[0],
-   1, UNIT_VOLT, PRFX_MILLI, 0, MSCBF_SIGNED, "Ofs1", &user_data.ofs[1],
-   1, UNIT_VOLT, PRFX_MILLI, 0, MSCBF_SIGNED, "Ofs2", &user_data.ofs[2],
-   1, UNIT_VOLT, PRFX_MILLI, 0, MSCBF_SIGNED, "Ofs3", &user_data.ofs[3],
-   1, UNIT_VOLT, PRFX_MILLI, 0, MSCBF_SIGNED, "Ofs4", &user_data.ofs[4],
-   1, UNIT_VOLT, PRFX_MILLI, 0, MSCBF_SIGNED, "Ofs5", &user_data.ofs[5],
-   1, UNIT_VOLT, PRFX_MILLI, 0, MSCBF_SIGNED, "Ofs6", &user_data.ofs[6],
-   1, UNIT_VOLT, PRFX_MILLI, 0, MSCBF_SIGNED, "Ofs7", &user_data.ofs[7],
+   1, UNIT_VOLT, PRFX_MILLI, 0, MSCBF_SIGNED | MSCBF_HIDDEN, "Ofs0", &user_data.ofs[0],
+   1, UNIT_VOLT, PRFX_MILLI, 0, MSCBF_SIGNED | MSCBF_HIDDEN, "Ofs1", &user_data.ofs[1],
+   1, UNIT_VOLT, PRFX_MILLI, 0, MSCBF_SIGNED | MSCBF_HIDDEN, "Ofs2", &user_data.ofs[2],
+   1, UNIT_VOLT, PRFX_MILLI, 0, MSCBF_SIGNED | MSCBF_HIDDEN, "Ofs3", &user_data.ofs[3],
+   1, UNIT_VOLT, PRFX_MILLI, 0, MSCBF_SIGNED | MSCBF_HIDDEN, "Ofs4", &user_data.ofs[4],
+   1, UNIT_VOLT, PRFX_MILLI, 0, MSCBF_SIGNED | MSCBF_HIDDEN, "Ofs5", &user_data.ofs[5],
+   1, UNIT_VOLT, PRFX_MILLI, 0, MSCBF_SIGNED | MSCBF_HIDDEN, "Ofs6", &user_data.ofs[6],
+   1, UNIT_VOLT, PRFX_MILLI, 0, MSCBF_SIGNED | MSCBF_HIDDEN, "Ofs7", &user_data.ofs[7],
 
-   1, UNIT_FACTOR, 0, 0, MSCBF_SIGNED, "Gain0", &user_data.gain[0],
-   1, UNIT_FACTOR, 0, 0, MSCBF_SIGNED, "Gain1", &user_data.gain[1],
-   1, UNIT_FACTOR, 0, 0, MSCBF_SIGNED, "Gain2", &user_data.gain[2],
-   1, UNIT_FACTOR, 0, 0, MSCBF_SIGNED, "Gain3", &user_data.gain[3],
-   1, UNIT_FACTOR, 0, 0, MSCBF_SIGNED, "Gain4", &user_data.gain[4],
-   1, UNIT_FACTOR, 0, 0, MSCBF_SIGNED, "Gain5", &user_data.gain[5],
-   1, UNIT_FACTOR, 0, 0, MSCBF_SIGNED, "Gain6", &user_data.gain[6],
-   1, UNIT_FACTOR, 0, 0, MSCBF_SIGNED, "Gain7", &user_data.gain[7],
+   1, UNIT_FACTOR, 0, 0, MSCBF_SIGNED | MSCBF_HIDDEN, "Gain0", &user_data.gain[0],
+   1, UNIT_FACTOR, 0, 0, MSCBF_SIGNED | MSCBF_HIDDEN, "Gain1", &user_data.gain[1],
+   1, UNIT_FACTOR, 0, 0, MSCBF_SIGNED | MSCBF_HIDDEN, "Gain2", &user_data.gain[2],
+   1, UNIT_FACTOR, 0, 0, MSCBF_SIGNED | MSCBF_HIDDEN, "Gain3", &user_data.gain[3],
+   1, UNIT_FACTOR, 0, 0, MSCBF_SIGNED | MSCBF_HIDDEN, "Gain4", &user_data.gain[4],
+   1, UNIT_FACTOR, 0, 0, MSCBF_SIGNED | MSCBF_HIDDEN, "Gain5", &user_data.gain[5],
+   1, UNIT_FACTOR, 0, 0, MSCBF_SIGNED | MSCBF_HIDDEN, "Gain6", &user_data.gain[6],
+   1, UNIT_FACTOR, 0, 0, MSCBF_SIGNED | MSCBF_HIDDEN, "Gain7", &user_data.gain[7],
 
-/*##
-   1, UNIT_VOLT, PRFX_MILLI, 0, MSCBF_SIGNED, "BipOfs0",
-   &user_data.bip_ofs[0],
-   1, UNIT_VOLT, PRFX_MILLI, 0, MSCBF_SIGNED, "BipOfs1",
-   &user_data.bip_ofs[1],
-   1, UNIT_VOLT, PRFX_MILLI, 0, MSCBF_SIGNED, "BipOfs2",
-   &user_data.bip_ofs[2],
-   1, UNIT_VOLT, PRFX_MILLI, 0, MSCBF_SIGNED, "BipOfs3",
-   &user_data.bip_ofs[3],
-   1, UNIT_VOLT, PRFX_MILLI, 0, MSCBF_SIGNED, "BipOfs4",
-   &user_data.bip_ofs[4],
-   1, UNIT_VOLT, PRFX_MILLI, 0, MSCBF_SIGNED, "BipOfs5",
-   &user_data.bip_ofs[5],
-   1, UNIT_VOLT, PRFX_MILLI, 0, MSCBF_SIGNED, "BipOfs6",
-   &user_data.bip_ofs[6],
-   1, UNIT_VOLT, PRFX_MILLI, 0, MSCBF_SIGNED, "BipOfs7",
-   &user_data.bip_ofs[7],
-*/
+   1, UNIT_VOLT, PRFX_MILLI, 0, MSCBF_SIGNED | MSCBF_HIDDEN, "BipOfs0", &user_data.bip_ofs[0],
+   1, UNIT_VOLT, PRFX_MILLI, 0, MSCBF_SIGNED | MSCBF_HIDDEN, "BipOfs1", &user_data.bip_ofs[1],
+   1, UNIT_VOLT, PRFX_MILLI, 0, MSCBF_SIGNED | MSCBF_HIDDEN, "BipOfs2", &user_data.bip_ofs[2],
+   1, UNIT_VOLT, PRFX_MILLI, 0, MSCBF_SIGNED | MSCBF_HIDDEN, "BipOfs3", &user_data.bip_ofs[3],
+   1, UNIT_VOLT, PRFX_MILLI, 0, MSCBF_SIGNED | MSCBF_HIDDEN, "BipOfs4", &user_data.bip_ofs[4],
+   1, UNIT_VOLT, PRFX_MILLI, 0, MSCBF_SIGNED | MSCBF_HIDDEN, "BipOfs5", &user_data.bip_ofs[5],
+   1, UNIT_VOLT, PRFX_MILLI, 0, MSCBF_SIGNED | MSCBF_HIDDEN, "BipOfs6", &user_data.bip_ofs[6],
+   1, UNIT_VOLT, PRFX_MILLI, 0, MSCBF_SIGNED | MSCBF_HIDDEN, "BipOfs7", &user_data.bip_ofs[7],
 
    0
 };
@@ -199,7 +193,7 @@ void user_init(unsigned char init)
       for (i = 0; i < 8; i++) {
          user_data.range[i] = 0;
          user_data.ofs[i] = 0;
-//##         user_data.bip_ofs[i] = 0;
+         user_data.bip_ofs[i] = 0;
       }
       user_data.dac0 = 0;
       user_data.dac1 = 0;
@@ -401,8 +395,8 @@ void adc_read(channel, float *d)
       gvalue = gvalue - 1;
 
    /* correct for bipolar offset */
-//##   if (user_data.range[channel] & 0x04)
-//##      gvalue += user_data.bip_ofs[channel] / 1000.0;
+   if (user_data.range[channel] & 0x04)
+      gvalue += user_data.bip_ofs[channel] / 1000.0;
 
    /* external voltage divider */
    gvalue *= 10;
