@@ -6,6 +6,10 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.89  2001/12/11 10:20:58  midas
+  Changed the way "language" is interpreted, no need to restart elogd after
+  language change any more.
+
   Revision 1.88  2001/12/11 09:39:28  midas
   Format "entry date" according to "date format"
 
@@ -280,7 +284,7 @@
 \********************************************************************/
 
 /* Version of ELOG */
-#define VERSION "1.2.7"
+#define VERSION "1.3.0"
 
 #include <stdio.h>
 #include <sys/types.h>
@@ -1012,16 +1016,28 @@ char **porig, **ptrans;
 /* localization support */
 char *loc(char *orig)
 {
-char str[256], file_name[256], *p;
+char language[256], file_name[256], *p;
 int  fh, length, n;
-static int first = 1;
+static char old_language[256];
 
-  if (first)
+  getcfg("global", "Language", language);
+
+  if (!equal_ustring(language, old_language))
     {
-    if (getcfg("global", "Language", str))
+    if (equal_ustring(language, "english") ||
+        language[0] == 0)
+      {
+      if (locbuffer)
+        {
+        free(locbuffer);
+        locbuffer = NULL;
+        }
+      }
+    else
       {
       strcpy(file_name, cfg_dir);
-      strcat(file_name, str);
+      strcat(file_name, "eloglang.");
+      strcat(file_name, language);
 
       fh = open(file_name, O_RDONLY | O_BINARY);
       if (fh < 0)
@@ -1093,7 +1109,7 @@ static int first = 1;
       porig[n] = NULL;
       }
 
-    first = 0;
+    strcpy(old_language, language);
     }
 
   if (!locbuffer)
@@ -5541,7 +5557,17 @@ FILE   *f;
 
     /* send local help file */
     strcpy(file_name, cfg_dir);
-    strcat(file_name, "eloghelp_en.html");
+    strcat(file_name, "eloglang_");
+
+    if (getcfg("global", "Language", str))
+      {
+      str[2] = 0;
+      strcat(file_name, str);
+      }
+    else
+      strcat(file_name, "en");
+    strcat(file_name, ".html");
+
     f = fopen(file_name, "r");
     if (f == NULL)
       redirect3("http://midas.psi.ch/elog/eloghelp_en.html");
