@@ -6,6 +6,9 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
+  Revision 1.16  1999/08/12 15:49:36  midas
+  dito
+
   Revision 1.15  1999/08/12 15:48:01  midas
   Fixed compiler warnings
 
@@ -2852,7 +2855,7 @@ INT                  last_time=0;
 {
 char domain_name[256];
 
-  getdomainname(domain_name, sizeof(domain));
+  getdomainname(domain_name, sizeof(domain_name));
   if (strchr(host_name, '.') == NULL)
     strcat(host_name, domain_name);
 }
