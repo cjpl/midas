@@ -6,6 +6,9 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.17  1999/05/03 10:41:35  midas
+  Show open record function now scans all links, not keys
+
   Revision 1.16  1999/04/30 13:19:55  midas
   Changed inter-process communication (ss_resume, bm_notify_clients, etc)
   to strings so that server process can receive it's own watchdog produced
@@ -2205,7 +2208,7 @@ INT db_get_open_records(HNDLE hDB, HNDLE hKey, char *str, INT buf_size)
   if (rpc_is_remote())
     return rpc_call(RPC_DB_GET_OPEN_RECORDS, hDB, hKey, str, buf_size);
 
-  db_scan_tree(hDB, hKey, 0, db_find_open_records, str);
+  db_scan_tree_link(hDB, hKey, 0, db_find_open_records, str);
   return DB_SUCCESS;
 }
 
