@@ -8,6 +8,9 @@
                 following the MIDAS CAMAC Standard under DIRECTIO
 
   $Log$
+  Revision 1.15  2001/09/04 12:53:41  midas
+  Fixed small bug
+
   Revision 1.14  2001/08/22 13:53:32  midas
   Fixed small bug
 
@@ -1031,7 +1034,7 @@ unsigned int  dfn, vend, vend_id, dev_id;
   buffer[3] = n_dev+1;
   if (!DeviceIoControl(hdio, (DWORD) 0x9c406000, &buffer, sizeof(buffer),
                        retbuf, sizeof(retbuf), &size, NULL))
-    return -1;
+    return 0;
 
   if (size == 0)
     return 0;
