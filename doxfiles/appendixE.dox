@@ -235,7 +235,7 @@ Within these files, all the functions have been categorized depending on their s
 Several group of MACROs are available for simplifying user job on setting or getting Midas
 information. They are also listed in the @ref Midas_Library. All of them are defined in
 the @ref mmacroh, @ref msmacroh, @ref ybosmacroh header files.
-- <b> Message Macros</b>.
+- <b>Message Macros</b>.
   These Macros compact the 3 first arguments of the cm_msg() call.
   It replaces the type of message, the routine name and the line number in the
   C-code. See example in cm_msg().
@@ -246,29 +246,27 @@ the @ref mmacroh, @ref msmacroh, @ref ybosmacroh header files.
   - @ref MLOG : Info message which is only logged (MT_LOG, __FILE__, __LINE__)
   - @ref MTALK : Info message for speech system (MT_TALK, __FILE__, __LINE__)
   - @ref MCALL : Info message for telephone call (MT_CALL, __FILE__, __LINE__)
-- <b>DAQ Event/LAM Macros</b> To be used in the frontend/analyzer code.
-  - <b>CAMAC LAM manipulation</b>
+- <b>DAQ Event/LAM Macros</b>. To be used in the frontend/analyzer code.
+  - <b>CAMAC LAM manipulation</b>.
   These Macros are used in the frontend code to interact with the LAM register.
   Usualy the CAMAC Crate Controler has the feature to register one bit per slot and
   be able to present this register to the user. It may even have the option to
   mask off this register to allow to set a "general" LAM register containing
   either "1" (At least one LAM from the masked LAM is set) or "0" ( no LAM set
   from the maksed LAM register).
-  <br><br>
   The poll_event() uses this feature and return a variable which contains a
   bit-wise value of the current LAM register in the Crate Controller.
   - @ref LAM_SOURCE
   - @ref LAM_STATION
   - @ref LAM_SOURCE_CRATE
   - @ref LAM_SOURCE_STATION
--  BYTE swap manipulation
+- <b>BYTE swap manipulation</b>.
   These Macros can be used in the backend analyzer when <b> little-endian/big-endian </b>
   are mixed in the event.
   - @ref WORD_SWAP 
   - @ref DWORD_SWAP 
   - @ref QWORD_SWAP 
-  <br><br>
- - <b> MIDAS Event Header manipulation</b>
+- <b>MIDAS Event Header manipulation</b>.
   Every event travelling through the Midas system has a "Event Header" containing
   the minimum information required to identify its content. The size of the header
   has been kept as small as possible in order to minimize its impact on the data
@@ -285,7 +283,7 @@ the @ref mmacroh, @ref msmacroh, @ref ybosmacroh header files.
   - @ref EVENT_ID
   - @ref SERIAL_NUMBER
   - @ref TIME_STAMP
-    - from examples/experiment/adccalib.c
+   - from examples/experiment/adccalib.c
   \code
 INT adc_calib(EVENT_HEADER *pheader, void *pevent)
 {
@@ -303,7 +301,7 @@ INT adc_calib(EVENT_HEADER *pheader, void *pevent)
   ...
 }
   \endcode
-  - from examples/experiment/frontend.c}
+   - from examples/experiment/frontend.c
   \code
 INT read_trigger_event(char *pevent, INT off)
 {

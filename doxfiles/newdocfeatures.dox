@@ -22,7 +22,7 @@ mention the wish list documentation on current developments.
  - <b> Epics Slow Control documentation </b>
 
 - NEW
- - <b> Introduce @ref MIDASSYS environment variable
+ - <b> Introduce @ref MIDASSYS environment variable </b>
  - <b> Analyzer documention revision @ref analyzer_struct </b>
  - <b> Watchdog bug fix (RH9.0) </b>
 

@@ -344,7 +344,7 @@ Logger                          DIR
   of a tape logging, the filename specifies a tape device like /dev/nrmt0 or /dev/nst0
   under UNIX or \\\\.\\tape0 under Windows NT.
     - In FTP mode, the filename specifies the access information for the FTP server.
-  It has the following format
+  It has the following format:
   \code
   <host name>, <port number>, <user name>, <password>, <directory>, <file name>
   \endcode
@@ -356,12 +356,11 @@ Logger                          DIR
   \endcode
   - [Format] Specifies the format to be used for writing the data to the logging
   channel. It can one of the five value: MIDAS, YBOS, ROOT, ASCII and DUMP.
-  The MIDAS and YBOS binary formats @ref Midas_format and @ref YBOS_format 
-  , respectively. 
+  The MIDAS and YBOS binary formats @ref Midas_format and @ref YBOS_format, respectively. 
   The extention for the file name has to match one of the following.
       - \b .mid  for \b MIDAS 
       - \b .ybs  for \b YBOS 
-      - \b .root  for \b ROOT 
+      - \b .root for \b ROOT 
       - \b .asc  for \b ASCII 
       - \b .txt  for \b DUMP 
   The ASCII format converts events into readable text format which can be easily
