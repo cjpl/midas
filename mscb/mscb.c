@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus communication functions
 
   $Log$
+  Revision 1.4  2001/08/31 12:23:50  midas
+  Added mutex protection
+
   Revision 1.3  2001/08/31 11:35:20  midas
   Added "wp" command in msc.c, changed parport to device in mscb.c
 
@@ -176,6 +179,46 @@ unsigned char crc8_code, index;
     }
 
   return crc8_code;
+}
+
+/*------------------------------------------------------------------*/
+
+#ifdef _MSC_VER
+static HANDLE mutex_handle = 0;
+#endif
+
+int mscb_lock()
+{
+#ifdef _MSC_VER
+int status;
+
+  if (mutex_handle == 0)
+    mutex_handle = CreateMutex(NULL, FALSE, "mscb");
+
+  if (mutex_handle == 0)
+    return 0;
+  
+  status = WaitForSingleObject(mutex_handle, 1000);
+
+  if (status == WAIT_FAILED)
+    return 0;
+  if (status == WAIT_TIMEOUT)
+    return 0;
+#endif
+  return MSCB_SUCCESS;
+}
+
+int mscb_release()
+{
+#ifdef _MSC_VER
+int status;
+
+  status = ReleaseMutex(mutex_handle);
+  if (status == FALSE)
+    return 0;
+
+#endif
+  return MSCB_SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
@@ -559,6 +602,7 @@ int mscb_addr(int fd, int cmd, int adr)
   Function value:
     MSCB_SUCCESS            Successful completion
     MSCB_TIMEOUT            Timeout receiving ping acknowledge
+    MSCB_MUTEX              Cannot obtain mutex for mscb
 
 \********************************************************************/
 {
@@ -567,6 +611,9 @@ int i;
 
   buf[0] = cmd;
 
+  if (mscb_lock() != MSCB_SUCCESS)
+    return MSCB_MUTEX;
+  
   if (cmd == CMD_ADDR_NODE8 ||
       cmd == CMD_ADDR_GRP8 ||
       cmd == CMD_PING8)
@@ -595,12 +642,15 @@ int i;
     /* read back ping reply, 2ms timeout */
     i = mscb_in1(fd, buf, 2000);
 
-    // printf("%X\n", buf[0]);
+    mscb_release();
+    
     if (i == MSCB_SUCCESS && buf[0] == CMD_ACK)
       return MSCB_SUCCESS;
 
     return  MSCB_TIMEOUT;
     }
+
+  mscb_release();
 
   return MSCB_SUCCESS;
 }
@@ -619,14 +669,20 @@ int mscb_reset(int fd)
 
   Function value:
     MSCB_SUCCESS            Successful completion
+    MSCB_MUTEX              Cannot obtain mutex for mscb
 
 \********************************************************************/
 {
 unsigned char buf[10];
 
+  if (mscb_lock() != MSCB_SUCCESS)
+    return MSCB_MUTEX;
+
   buf[0] = CMD_INIT;
   buf[1] = crc8(buf, 1);
   mscb_out(fd, buf, 2, FALSE);
+
+  mscb_release();
 
   return MSCB_SUCCESS;
 }
@@ -648,22 +704,31 @@ int mscb_set_baud(int fd, int baud)
   Function value:
     MSCB_SUCCESS            Successful completion
     MSCB_TIMEOUT            Timeout
+    MSCB_MUTEX              Cannot obtain mutex for mscb
 
 \********************************************************************/
 {
 int status;
 unsigned char buf[10];
 
+  if (mscb_lock() != MSCB_SUCCESS)
+    return MSCB_MUTEX;
+
   /* address all nodes */
   status = mscb_addr(fd, CMD_ADDR_BC, 0);
   if (status != MSCB_SUCCESS)
+    {
+    mscb_release();
     return status;
+    }
 
   buf[0] = CMD_SET_BAUD;
   buf[1] = baud;
   buf[2] = crc8(buf, 2);
 
   status = mscb_out(fd, buf, 3, FALSE);
+
+  mscb_release();
 
   return status;
 }
@@ -687,17 +752,23 @@ int mscb_info(int fd, MSCB_INFO *info)
     MSCB_SUCCESS            Successful completion
     MSCB_TIMEOUT            Timeout receiving data
     MSCB_CRC_ERROR          CRC error
+    MSCB_MUTEX              Cannot obtain mutex for mscb
 
 \********************************************************************/
 {
 int i;
 unsigned char buf[80];
 
+  if (mscb_lock() != MSCB_SUCCESS)
+    return MSCB_MUTEX;
+
   buf[0] = CMD_GET_INFO;
   buf[1] = crc8(buf, 1);
   mscb_out(fd, buf, 2, FALSE);
 
   i = mscb_in(fd, buf, sizeof(buf), 5000);
+  mscb_release();
+  
   if (i<sizeof(MSCB_INFO)+2)
     return MSCB_TIMEOUT;
 
@@ -734,11 +805,15 @@ int mscb_info_channel(int fd, int type, int index, MSCB_INFO_CHN *info)
     MSCB_SUCCESS            Successful completion
     MSCB_TIMEOUT            Timeout receiving data
     MSCB_CRC_ERROR          CRC error
+    MSCB_MUTEX              Cannot obtain mutex for mscb
 
 \********************************************************************/
 {
 int i;
 unsigned char buf[80];
+
+  if (mscb_lock() != MSCB_SUCCESS)
+    return MSCB_MUTEX;
 
   buf[0] = CMD_GET_INFO+2;
   buf[1] = type;
@@ -747,6 +822,8 @@ unsigned char buf[80];
   mscb_out(fd, buf, 4, FALSE);
 
   i = mscb_in(fd, buf, sizeof(buf), 5000);
+  mscb_release();
+
   if (i<sizeof(MSCB_INFO_CHN)+2)
     return MSCB_TIMEOUT;
   
@@ -775,10 +852,14 @@ int mscb_set_addr(int fd, int node, int group)
                               
   Function value:
     MSCB_SUCCESS            Successful completion
+    MSCB_MUTEX              Cannot obtain mutex for mscb
 
 \********************************************************************/
 {
 unsigned char buf[8];
+
+  if (mscb_lock() != MSCB_SUCCESS)
+    return MSCB_MUTEX;
 
   buf[0] = CMD_SET_ADDR;
   buf[1] = (unsigned char ) (node & 0xFF);
@@ -787,6 +868,8 @@ unsigned char buf[8];
   buf[4] = (unsigned char ) (group >> 8);  
   buf[5] = crc8(buf, 5);
   mscb_out(fd, buf, 6, FALSE);
+
+  mscb_release();
 
   return MSCB_SUCCESS;
 }
@@ -809,6 +892,7 @@ int mscb_write_na(int fd, unsigned char channel, unsigned int data, int size)
 
   Function value:
     MSCB_SUCCESS            Successful completion
+    MSCB_MUTEX              Cannot obtain mutex for mscb
 
 \********************************************************************/
 {
@@ -818,6 +902,9 @@ unsigned char buf[10];
 
   if (size > 4 || size < 1)
     return MSCB_INVAL_PARAM;
+
+  if (mscb_lock() != MSCB_SUCCESS)
+    return MSCB_MUTEX;
 
   buf[0] = CMD_WRITE_NA+size+1;
   buf[1] = channel;
@@ -830,6 +917,8 @@ unsigned char buf[10];
 
   buf[2+i] = crc8(buf, 2+i);
   mscb_out(fd, buf, 3+i, FALSE);
+
+  mscb_release();
 
   return MSCB_SUCCESS;
 }
@@ -855,6 +944,7 @@ int mscb_write(int fd, unsigned char channel, unsigned int data, int size)
     MSCB_TIMEOUT            Timeout receiving acknowledge
     MSCB_CRC_ERROR          CRC error
     MSCB_INVAL_PARAM        Parameter "size" has invalid value
+    MSCB_MUTEX              Cannot obtain mutex for mscb
 
 \********************************************************************/
 {
@@ -864,6 +954,9 @@ unsigned char buf[10], crc, ack[2];
 
   if (size > 4 || size < 1)
     return MSCB_INVAL_PARAM;
+
+  if (mscb_lock() != MSCB_SUCCESS)
+    return MSCB_MUTEX;
 
   buf[0] = CMD_WRITE_ACK+size+1;
   buf[1] = channel;
@@ -880,7 +973,7 @@ unsigned char buf[10], crc, ack[2];
 
   /* read acknowledge */
   i = mscb_in(fd, ack, 2, 5000);
-
+  mscb_release();
   if (i<2)
     return MSCB_TIMEOUT;
 
@@ -913,6 +1006,7 @@ int mscb_write_conf(int fd, unsigned char channel, unsigned int data, int size,
     MSCB_TIMEOUT            Timeout receiving acknowledge
     MSCB_CRC_ERROR          CRC error
     MSCB_INVAL_PARAM        Parameter "size" has invalid value
+    MSCB_MUTEX              Cannot obtain mutex for mscb
 
 \********************************************************************/
 {
@@ -922,6 +1016,9 @@ unsigned char buf[10], crc, ack[2];
 
   if (size > 4 || size < 1)
     return MSCB_INVAL_PARAM;
+
+  if (mscb_lock() != MSCB_SUCCESS)
+    return MSCB_MUTEX;
 
   if (perm)
     buf[0] = CMD_WRITE_CONF_PERM+size+1;
@@ -942,6 +1039,7 @@ unsigned char buf[10], crc, ack[2];
 
   /* read acknowledge, 100ms timeout */
   i = mscb_in(fd, ack, 2, 100000);
+  mscb_release();
 
   if (i<2)
     return MSCB_TIMEOUT;
@@ -975,11 +1073,15 @@ int mscb_read(int fd, unsigned char channel, unsigned int *data)
     MSCB_TIMEOUT            Timeout receiving acknowledge
     MSCB_CRC_ERROR          CRC error
     MSCB_INVAL_PARAM        Parameter "size" has invalid value
+    MSCB_MUTEX              Cannot obtain mutex for mscb
 
 \********************************************************************/
 {
 int           i;
 unsigned char buf[10], crc;
+
+  if (mscb_lock() != MSCB_SUCCESS)
+    return MSCB_MUTEX;
 
   buf[0] = CMD_READ;
   buf[1] = channel;
@@ -988,6 +1090,7 @@ unsigned char buf[10], crc;
 
   /* read data */
   i = mscb_in(fd, buf, 10, 5000);
+  mscb_release();
 
   if (i<3)
     return MSCB_TIMEOUT;
@@ -1025,11 +1128,15 @@ int mscb_read_conf(int fd, unsigned char index, unsigned int *data)
     MSCB_TIMEOUT            Timeout receiving acknowledge
     MSCB_CRC_ERROR          CRC error
     MSCB_INVAL_PARAM        Parameter "size" has invalid value
+    MSCB_MUTEX              Cannot obtain mutex for mscb
 
 \********************************************************************/
 {
 int           i;
 unsigned char buf[10], crc;
+
+  if (mscb_lock() != MSCB_SUCCESS)
+    return MSCB_MUTEX;
 
   buf[0] = CMD_READ_CONF;
   buf[1] = index;
@@ -1038,6 +1145,7 @@ unsigned char buf[10], crc;
 
   /* read data */
   i = mscb_in(fd, buf, 10, 5000);
+  mscb_release();
 
   if (i<3)
     return MSCB_TIMEOUT;
@@ -1059,9 +1167,9 @@ int mscb_user(int fd, unsigned char *param, int size,
               unsigned char *result, int *rsize)
 /********************************************************************\
 
-  Routine: mscb_info
+  Routine: mscb_user
 
-  Purpose: Retrieve info on addressd node
+  Purpose: Call user function on node
 
   Input:
     int  fd                 File descriptor for connection
@@ -1077,11 +1185,15 @@ int mscb_user(int fd, unsigned char *param, int size,
     MSCB_SUCCESS            Successful completion
     MSCB_TIMEOUT            Timeout receiving data
     MSCB_CRC_ERROR          CRC error
+    MSCB_MUTEX              Cannot obtain mutex for mscb
 
 \********************************************************************/
 {
 int i, status;
 unsigned char buf[80];
+
+  if (mscb_lock() != MSCB_SUCCESS)
+    return MSCB_MUTEX;
 
   buf[0] = CMD_USER+size;
 
@@ -1092,13 +1204,21 @@ unsigned char buf[80];
   buf[1+i] = crc8(buf, 1+i);
   status = mscb_out(fd, buf, 2+i, FALSE);
   if (status != MSCB_SUCCESS)
+    {
+    mscb_release();
     return status;
+    }
 
   if (result == NULL)
+    {
+    mscb_release();
     return MSCB_SUCCESS;
+    }
 
   /* read result */
   i = mscb_in(fd, result, *rsize, 5000);
+  mscb_release();
+  
   *rsize = i;
 
   if (i<0)
@@ -1130,20 +1250,28 @@ int mscb_write16(char *device, unsigned short addr, unsigned char channel, unsig
     MSCB_SUCCESS            Successful completion
     MSCB_TIMEOUT            Timeout receiving acknowledge
     MSCB_CRC_ERROR          CRC error
-    MSCB_INVAL_PARAM        Parameter "parport" has invalid value
+    MSCB_INVAL_PARAM        Cannot open device
+    MSCB_MUTEX              Cannot obtain mutex for mscb
 
 \********************************************************************/
 {
 int fd, status;
 
+  if (mscb_lock() != MSCB_SUCCESS)
+    return MSCB_MUTEX;
+
   fd = mscb_init(device);
   if (fd < 0)
+    {
+    mscb_release();
     return MSCB_INVAL_PARAM;
+    }
 
   status = mscb_addr(fd, CMD_PING16, addr);
   if (status != MSCB_SUCCESS)
     {
     mscb_exit(fd);
+    mscb_release();
     return status;
     }
 
@@ -1151,10 +1279,13 @@ int fd, status;
   if (status != MSCB_SUCCESS)
     {
     mscb_exit(fd);
+    mscb_release();
     return status;
     }
 
   mscb_exit(fd);
+
+  mscb_release();
 
   return MSCB_SUCCESS;
 }
@@ -1180,20 +1311,28 @@ int mscb_write_conf16(char *device, unsigned short addr, unsigned char channel,
     MSCB_SUCCESS            Successful completion
     MSCB_TIMEOUT            Timeout receiving acknowledge
     MSCB_CRC_ERROR          CRC error
-    MSCB_INVAL_PARAM        Parameter "parport" has invalid value
+    MSCB_INVAL_PARAM        Cannot open device
+    MSCB_MUTEX              Cannot obtain mutex for mscb
 
 \********************************************************************/
 {
 int fd, status;
   
+  if (mscb_lock() != MSCB_SUCCESS)
+    return MSCB_MUTEX;
+
   fd = mscb_init(device);
   if (fd < 0)
+    {
+    mscb_release();
     return MSCB_INVAL_PARAM;
+    }
 
   status = mscb_addr(fd, CMD_PING16, addr);
   if (status != MSCB_SUCCESS)
     {
     mscb_exit(fd);
+    mscb_release();
     return status;
     }
 
@@ -1201,10 +1340,13 @@ int fd, status;
   if (status != MSCB_SUCCESS)
     {
     mscb_exit(fd);
+    mscb_release();
     return status;
     }
 
   mscb_exit(fd);
+
+  mscb_release();
 
   return MSCB_SUCCESS;
 }
@@ -1230,21 +1372,29 @@ int mscb_read16(char *device, unsigned short addr, unsigned char channel, unsign
     MSCB_SUCCESS            Successful completion
     MSCB_TIMEOUT            Timeout receiving acknowledge
     MSCB_CRC_ERROR          CRC error
-    MSCB_INVAL_PARAM        Parameter "parport" has invalid value
+    MSCB_INVAL_PARAM        Cannot open device
+    MSCB_MUTEX              Cannot obtain mutex for mscb
 
 \********************************************************************/
 {
 int fd, status;
 unsigned long d;
 
+  if (mscb_lock() != MSCB_SUCCESS)
+    return MSCB_MUTEX;
+
   fd = mscb_init(device);
   if (fd < 0)
+    {
+    mscb_release();
     return MSCB_INVAL_PARAM;
+    }
 
   status = mscb_addr(fd, CMD_PING16, addr);
   if (status != MSCB_SUCCESS)
     {
     mscb_exit(fd);
+    mscb_release();
     return status;
     }
 
@@ -1252,10 +1402,13 @@ unsigned long d;
   if (status != MSCB_SUCCESS)
     {
     mscb_exit(fd);
+    mscb_release();
     return status;
     }
 
   mscb_exit(fd);
+
+  mscb_release();
 
   *data = (unsigned short) d;
 
@@ -1284,21 +1437,29 @@ int mscb_read_conf16(char *device, unsigned short addr, unsigned char channel,
     MSCB_SUCCESS            Successful completion
     MSCB_TIMEOUT            Timeout receiving acknowledge
     MSCB_CRC_ERROR          CRC error
-    MSCB_INVAL_PARAM        Parameter "parport" has invalid value
+    MSCB_INVAL_PARAM        Cannot open device
+    MSCB_MUTEX              Cannot obtain mutex for mscb
 
 \********************************************************************/
 {
 int fd, status;
 unsigned long d;
   
+  if (mscb_lock() != MSCB_SUCCESS)
+    return MSCB_MUTEX;
+
   fd = mscb_init(device);
   if (fd < 0)
+    {
+    mscb_release();
     return MSCB_INVAL_PARAM;
+    }
 
   status = mscb_addr(fd, CMD_PING16, addr);
   if (status != MSCB_SUCCESS)
     {
     mscb_exit(fd);
+    mscb_release();
     return status;
     }
 
@@ -1306,11 +1467,14 @@ unsigned long d;
   if (status != MSCB_SUCCESS)
     {
     mscb_exit(fd);
+    mscb_release();
     return status;
     }
 
   mscb_exit(fd);
 
+  mscb_release();
+ 
   *data = (unsigned short) d;
 
   return MSCB_SUCCESS;
