@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol main program
 
   $Log$
+  Revision 1.16  2002/11/06 16:45:42  midas
+  Revised LED blinking scheme
+
   Revision 1.15  2002/10/16 15:24:12  midas
   Fixed bug for reboot
 
@@ -93,6 +96,7 @@ extern char code node_name[];
 /* funtions in mscbutil.c */
 extern void rs232_output(void);
 extern bit lcd_present;
+extern void watchdog_refresh(void);
 
 /* forward declarations */
 void flash_upgrade(void);
@@ -105,7 +109,7 @@ void flash_upgrade(void);
 unsigned char idata in_buf[10], out_buf[8];
 
 unsigned char idata i_in, last_i_in, final_i_in, n_out, i_out, cmd_len;
-unsigned char idata crc_code, addr_mode, led_blink;
+unsigned char idata crc_code, addr_mode;
 
 SYS_INFO sys_info;
 
@@ -155,14 +159,20 @@ unsigned char i;
   PRT3CF = 0x00;  // P3
 #endif
 
-  /* Disable watchdog (for LCD setup with delays) */
-  WDTCN  = 0xDE;
-  WDTCN  = 0xAD;
-
   /* Select external quartz oscillator */
   OSCXCN = 0x66;  // Crystal mode, Power Factor 22E6
   OSCICN = 0x08;  // CLKSL=1 (external)
 
+#endif
+
+  /* enable watchdog */
+#ifdef CPU_ADUC812
+  WDCON = 0xE0;      // 2048 msec
+  WDE = 1;
+#endif
+#ifdef CPU_CYGNAL
+  WDTCN = 0x07;      // 95 msec
+  WDTCN = 0xA5;      // start watchdog
 #endif
 
   /* start system clock */
@@ -171,6 +181,7 @@ unsigned char i;
   /* init memory */
   CSR = 0;
   LED = LED_OFF;
+  LED_SEC = LED_OFF;
   RS485_ENABLE = 0;
   i_in = i_out = n_out = 0;
 
@@ -219,44 +230,12 @@ unsigned char i;
             sys_info.group_addr, sys_info.wd_counter);
     }
 
-  /* Blink LED */
-  led_blink = 5;
-  LED = LED_ON;
-
-  /* enable watchdog */
-#ifdef CPU_ADUC812
-  WDCON = 0xE0;      // 2048 msec
-  WDE = 1;
-#endif
-#ifdef CPU_CYGNAL
-  WDTCN = 0x07;      // 95 msec
-  WDTCN = 0xA5;      // start watchdog
-#endif
+  /* Blink LEDs */
+  led_blink(1, 5, 150);
+  led_blink(2, 5, 150);
 
   /* start system clock */
   sysclock_init();
-}
-
-/*------------------------------------------------------------------*/
-
-void blink_led()
-{
-static long last = 0;
-
-  if (led_blink > 0)
-    {
-    if (time() > last+20) 
-      LED = LED_OFF;
-    if (time() > last+30)
-      {
-      led_blink--;
-      if (led_blink > 0)
-        {
-        LED = LED_ON;
-        last = time();
-        }
-      }
-    }
 }
 
 /*------------------------------------------------------------------*/
@@ -379,13 +358,12 @@ void set_addressed(unsigned char mode, bit flag)
   if (flag)
     {
     addressed = 1;
-    LED = LED_ON;
+    led_blink(1, 1, 50);
     addr_mode = mode;
     }
   else
     {
     addressed = 0;
-    LED = LED_OFF;
     addr_mode = ADDR_NONE;
     }
 }
@@ -817,6 +795,18 @@ unsigned char code  *pr;
 
 /*------------------------------------------------------------------*\
 
+  Yield should be called periodically by applications with long loops
+  to insure proper watchdog refresh
+
+\*------------------------------------------------------------------*/
+
+void yield(void)
+{
+  watchdog_refresh();
+}
+
+/*------------------------------------------------------------------*\
+
   Main loop
 
 \*------------------------------------------------------------------*/
@@ -827,9 +817,9 @@ void main(void)
 
   do
     {
-    watchdog_refresh();
+    yield();
+
     user_loop();
-    blink_led();
 
     /* output debug info to LCD if asked by interrupt routine */
     debug_output();
