@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.132  2000/06/20 07:24:59  midas
+  Increased history/display/<panel>/name length from 32 to 64
+
   Revision 1.131  2000/06/15 06:54:43  midas
   Fixed bug with ymin == ymax
 
@@ -5841,7 +5844,7 @@ float       upper_limit[MAX_VARS], lower_limit[MAX_VARS];
 
     if (j == n_event)
       {
-      sprintf(str, "Event %s from panel %s not found in history", event_name[i], panel);
+      sprintf(str, "Event \"%s\" from panel \"%s\" not found in history", event_name[i], panel);
       gdImageString(im, gdFontGiant, width/2-(strlen(str)*gdFontGiant->w)/2, height/2, str, red);
       goto error;
       }
@@ -6257,7 +6260,7 @@ error:
 
 void show_hist_page(char *path, char *buffer, int *buffer_size)
 {
-char   str[80], ref[80], ref2[80], paramstr[256];
+char   str[256], ref[256], ref2[256], paramstr[256];
 char   *poffset, *pscale, *pmag, *pindex;
 HNDLE  hDB, hkey, hkeyp;
 KEY    key;
@@ -6433,9 +6436,9 @@ float  factor[2];
     {
     /* create default panel */
     strcpy(str, "System:Trigger per sec.");
-    strcpy(str+NAME_LENGTH, "System:Trigger kB per sec.");
+    strcpy(str+2*NAME_LENGTH, "System:Trigger kB per sec.");
     db_set_value(hDB, 0, "/History/Display/Trigger rate/Variables", 
-                 str, NAME_LENGTH*2, 2, TID_STRING);
+                 str, NAME_LENGTH*4, 2, TID_STRING);
 
     factor[0] = 1;
     factor[1] = 1;
