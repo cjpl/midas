@@ -644,7 +644,7 @@ defined html page specified by the map.
 
 In addition of these initial features, multiple ODB values can be superimposed 
 at define location on the image. Each entry will have a ODB tree associated to it
-defining the ODB variable, X/Y position, unit, color, etc...
+defining the ODB variable, X/Y position, color, etc...
 
 \code
 [local:Default:Stopped]myexpt.gif>mkdir Labels
@@ -667,7 +667,6 @@ Key name                        Type    #Val  Size  Last Opn Mode Value
 Src                             STRING  1     256   2m   0   RWD
 Format                          STRING  1     32    2m   0   RWD  %1.1f
 Font                            STRING  1     32    2m   0   RWD  Medium
-Unit                            STRING  1     32    2m   0   RWD
 X                               INT     1     4     2m   0   RWD  0
 Y                               INT     1     4     2m   0   RWD  0
 Align                           INT     1     4     2m   0   RWD  0
@@ -681,19 +680,19 @@ left corner of the label. The other fields associated to this label are self-exp
 [local:Default:Stopped]Rate>set src "/Equipment/Trigger/statistics/kbytes per sec."
 [local:Default:Stopped]Rate>set x 330
 [local:Default:Stopped]Rate>set y 250 
-[local:Default:Stopped]Rate>set unit kB/s
+[local:Default:Stopped]Rate>set format "Rate:%1.1f kB/s"
 \endcode
 
 Once the initial label is created, the simplest way to extent to multiple labels is to
 copy the existing label sub-tree and modify the label parameters.
 \code
 [local:Default:Stopped]Labels>cd .. 
-[local:Default:Stopped]Labels>copy Rate Events
+[local:Default:Stopped]Labels>copy Rate Event
 [local:Default:Stopped]Labels>cd Events/
 [local:Default:Stopped]Event>set src "/Equipment/Trigger/statistics/events per sec."
-[local:Default:Stopped]Event>set Unit #Evts
-[local:Default:Stopped]Event>set y 250
-[local:Default:Stopped]Event>set x 200
+[local:Default:Stopped]Event>set Format "Rate:%1.1f evt/s"
+[local:Default:Stopped]Event>set y 170
+[local:Default:Stopped]Event>set x 250
 \endcode
 
 In the same manner, you can create bars used for level representation.
@@ -710,7 +709,7 @@ This code will setup two ODB values defined by the fields src.
 14:05:58 [mhttpd] [mhttpd.c:5508:show_custom_gif] Empty Src key for bars "Rate"
 [local:Default:Stopped]Labels>cd Rate/
 [local:Default:Stopped]Rate>set src "/Equipment/Trigger/statistics/kbytes per sec."
-[local:Default:Stopped]Rate>set x 500
+[local:Default:Stopped]Rate>set x 4640
 [local:Default:Stopped]Rate>set y 210 
 [local:Default:Stopped]Rate>set max 1e6 
 [local:Default:Stopped]Labels>cd .. 
@@ -720,7 +719,7 @@ This code will setup two ODB values defined by the fields src.
 [local:Default:Stopped]Event>set direction 1
 [local:Default:Stopped]Event>set y 240
 [local:Default:Stopped]Event>set x 450
-[local:Default:Stopped]Rate>set max 1e4 
+[local:Default:Stopped]Rate>set max 1e6 
 \endcode
 
 Following the same principle as for the labels, by creating Bars/<bar name>, the
