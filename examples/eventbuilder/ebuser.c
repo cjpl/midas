@@ -6,6 +6,9 @@
   Contents:     User section for the Event builder
 
   $Log$
+  Revision 1.12  2004/10/07 23:12:30  pierre
+  add bank creation from user code
+
   Revision 1.11  2004/10/07 20:08:34  pierre
   1.9.5
 
@@ -74,7 +77,7 @@ INT event_buffer_size = 10 * 10000;
 
 /**
 Globals */
-INT lModulo = 100;              ///< Global var for testing
+INT lModulo = 100;              ///< Global var for testing passed at BOR
 
 /*-- Function declarations -----------------------------------------*/
 INT ebuilder_init();
@@ -84,6 +87,8 @@ INT eb_end_of_run(INT, char *);
 INT ebuilder_loop();
 INT ebuser(INT, BOOL mismatch, EBUILDER_CHANNEL *, EVENT_HEADER *, void *, INT *);
 INT read_scaler_event(char *pevent, INT off);
+extern EBUILDER_SETTINGS ebset;
+extern BOOL debug;
 
 /*-- Equipment list ------------------------------------------------*/
 EQUIPMENT equipment[] = {
@@ -219,7 +224,10 @@ INT eb_user(INT nfrag, BOOL mismatch, EBUILDER_CHANNEL * ebch
 {
   INT i, dest_serial, frag_size, serial;
   DWORD *psrcData;
+  DWORD  *pdata;
 
+  //
+  // Do some extra fragment consistency check
   if (mismatch){
     printf("Serial number do not match across fragments\n");
     for (i = 0; i < nfrag; i++) {
@@ -230,20 +238,42 @@ INT eb_user(INT nfrag, BOOL mismatch, EBUILDER_CHANNEL * ebch
     return EB_USER_ERROR;
   }
 
-  // Destination access
-  dest_serial = pheader->serial_number;
-  printf("DSer#:%d ", dest_serial);
-
-  // if (dest_serial == 505) return EB_USER_ERROR;
-  // Loop over fragments.
+  //
+  // Include my own bank
+  bk_init(pevent);
+  bk_create(pevent, "MYOW", TID_DWORD, &pdata);
   for (i = 0; i < nfrag; i++) {
-    frag_size = ((EVENT_HEADER *) ebch[i].pfragment)->data_size;
-    serial = ((EVENT_HEADER *) ebch[i].pfragment)->serial_number;
-    printf("Frg#:%d Dsz:%d Ser:%d ", i + 1, frag_size, serial);
-    // For Data fragment Access.
-    psrcData = (DWORD *) (((EVENT_HEADER *) ebch[i].pfragment) + 1);
+    *pdata++ = ((EVENT_HEADER *) ebch[i].pfragment)->serial_number;
+    *pdata++ = ((EVENT_HEADER *) ebch[i].pfragment)->time_stamp;
   }
+  *dest_size = bk_close(pevent, pdata);
+  pheader->data_size = *dest_size + sizeof(EVENT_HEADER);
 
-  printf("\n");
+
+  //
+  // Destination access
+  // dest_serial = pheader->serial_number;
+  // printf("DSer#:%d ", dest_serial);
+
+  // Stop run if condition requires
+  // if (dest_serial == 505) return EB_USER_ERROR;
+
+  // Skip event if condition requires
+  // if (dest_serial == 505) return EB_SKIP;
+
+  //
+  // Loop over fragments.
+  if (debug) {
+    for (i = 0; i < nfrag; i++) {
+      if (ebset.preqfrag[i]) { // printf if channel enable
+        frag_size = ((EVENT_HEADER *) ebch[i].pfragment)->data_size;
+        serial = ((EVENT_HEADER *) ebch[i].pfragment)->serial_number;
+        printf("Frg#:%d Dsz:%d Ser:%d ", i + 1, frag_size, serial);
+        // For Data fragment Access.
+        psrcData = (DWORD *) (((EVENT_HEADER *) ebch[i].pfragment) + 1);
+      }
+    }
+    printf("\n");
+  }
   return EB_SUCCESS;
 }
