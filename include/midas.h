@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.114  2003/04/22 15:14:09  midas
+  Added #undef GetCurrentTime
+
   Revision 1.113  2003/04/22 12:00:56  midas
   Added rpc_client_check
 
@@ -1462,6 +1465,9 @@ void dbg_free(void *adr, char *file, int line);
 #define PAWC_DEFINE(size) \
 INT PAWC_NAME[size/4];    \
 INT pawc_size = size
+
+/* bug in ROOT include files */
+#undef GetCurrentTime
 
 /*---- RPC ---------------------------------------------------------*/
 
