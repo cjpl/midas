@@ -1,6 +1,30 @@
 Revision History
 ================
 
+Version 1.8.2, released November 20, 2000
+-----------------------------------------
+
+- Parallelized Midas analyzer using the PVM system. 
+  See http://pibeta.psi.ch/handbook/analyzer/parallel.html for some details
+
+- Added use_tests in analyzer request to make "analyzer tests" work correctly
+  This needs modification of existing "analyzer.c" files.
+
+- Added manual triggered events, use EQ_MANUAL_TRIG in FE equipment list to
+  display a button in mhttpd to trigger that event manually. Might be useful
+  for "histogram" type of events.
+
+- Added number of messages for cm_msg_retrieve and in odbedit "old" command
+  
+- Fixed various bugs in history system
+
+- bk_close returns bank size
+
+- Added cm_msg1 to produce messages which go to a differnt logging file
+
+- Create default /runinfo structure in cm_connect_experiment
+
+
 Version 1.8.1, released June 7, 2000
 ------------------------------------
 
