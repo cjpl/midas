@@ -6,6 +6,9 @@
   Contents:     Command-line interface for the Midas Slow Control Bus
 
   $Log$
+  Revision 1.5  2001/10/31 11:15:17  midas
+  Added IO check function
+
   Revision 1.4  2001/09/04 07:33:15  midas
   Added test function
 
@@ -490,7 +493,7 @@ main(int argc, char *argv[])
 {
 int   i, fd;
 char  cmd[256], port[100];
-int   debug;
+int   debug, check_io;
 
   cmd[0] = 0;
 #ifdef _MSC_VER
@@ -501,13 +504,15 @@ int   debug;
   strcpy(port, "");
 #endif
 
-  debug = 0;
+  debug = check_io = 0;
 
   /* parse command line parameters */
   for (i=1 ; i<argc ; i++)
     {
     if (argv[i][0] == '-' && argv[i][1] == 'v')
       debug = 1;
+    if (argv[i][0] == '-' && argv[i][1] == 'i')
+      check_io = 1;
     else if (argv[i][0] == '-')
       {
       if (i+1 >= argc || argv[i+1][0] == '-')
@@ -526,15 +531,22 @@ int   debug;
       else
         {
 usage:
-        printf("usage: msc [-p port] [-c Command] [-c @CommandFile] [-v]\n\n");
+        printf("usage: msc [-p port] [-c Command] [-c @CommandFile] [-v] [-i]\n\n");
         printf("       -p     Specify port (LPT1 by default)\n");
         printf("       -c     Execute command immediately\n");
         printf("       -v     Produce verbose output\n\n");
+        printf("       -i     Check IO pins of port\n\n");
         printf("For a list of valid commands start msc interactively\n");
         printf("and type \"help\".\n");
         return 0;
         }
       }
+    }
+
+  if (check_io)
+    {
+    mscb_check(port);
+    return 0;
     }
 
   /* open port */
