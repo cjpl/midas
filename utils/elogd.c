@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.57  2001/11/12 15:22:27  midas
+  Fixed bug with admin password and checking of allowed commands
+
   Revision 1.56  2001/11/12 15:08:58  midas
   Changes made in hospital
 
@@ -4668,6 +4671,10 @@ FILE   *f;
   if (*getparam("cmd_last.x"))
     strcpy(command, "last");
 
+  /* check if command allowd for current user */
+  if (!allow_user(command))
+    return;
+  
   if (equal_ustring(command, "help"))
     {
     if (getcfg(logbook, "Help URL", str))
@@ -4682,8 +4689,6 @@ FILE   *f;
 
   if (equal_ustring(command, "new"))
     {
-    if (!allow_user("new"))
-      return;
     show_elog_new(NULL, FALSE);
     return;
     }
@@ -5753,7 +5758,7 @@ struct tm *gmt;
       equal_ustring(command, "config"))
     {
     sprintf(str, "%s?cmd=%s", path, command);
-    if (!check_password(logbook, "Admin passowrd", getparam("apwd"), str))
+    if (!check_password(logbook, "Admin password", getparam("apwd"), str))
       return;
     }
 
