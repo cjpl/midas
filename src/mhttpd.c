@@ -6,6 +6,9 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
+  Revision 1.11  1999/06/05 13:59:48  midas
+  Converted ftp entry into ftp://host/dir/file
+
   Revision 1.10  1999/04/19 07:48:21  midas
   Message display uses cm_msg_retrieve to display old messages
 
@@ -618,9 +621,9 @@ CHN_STATISTICS chn_stats;
     {
     for (i=0 ; ; i++)
       {
-	    db_enum_key(hDB, hkey, i, &hsubkey);
-	    if (!hsubkey)
-	      break;
+      db_enum_key(hDB, hkey, i, &hsubkey);
+      if (!hsubkey)
+        break;
 
       db_get_key(hDB, hsubkey, &key);
 
@@ -634,10 +637,30 @@ CHN_STATISTICS chn_stats;
 
       /* filename */
       
-		  if (strchr(chn_settings.filename, '%'))
-		    sprintf(str, chn_settings.filename, runinfo.run_number);
-		  else
-		    strcpy(str, chn_settings.filename);
+      if (strchr(chn_settings.filename, '%'))
+        sprintf(str, chn_settings.filename, runinfo.run_number);
+      else
+        strcpy(str, chn_settings.filename);
+
+      if (equal_ustring(chn_settings.type, "FTP"))
+        {
+        char *token, orig[256];
+
+        strcpy(orig, str);
+
+        strcpy(str, "ftp://");
+        token = strtok(orig, ", ");
+        strcat(str, token);
+        token = strtok(NULL, ", ");
+        token = strtok(NULL, ", ");
+        token = strtok(NULL, ", ");
+        token = strtok(NULL, ", ");
+        strcat(str, "/");
+        strcat(str, token);
+        strcat(str, "/");
+        token = strtok(NULL, ", ");
+        strcat(str, token);
+        }
 
       if (exp_name[0])
         sprintf(ref, "%sLogger/Channels/%s/Settings?exp=%s", mhttpd_url, key.name, exp_name);
