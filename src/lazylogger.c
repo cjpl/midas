@@ -5,6 +5,9 @@
   Contents:     Disk to Tape copier for background job.
 
   $Log$
+  Revision 1.35  2003/11/07 05:51:10  pierre
+  delete temp /Programs/Lazy, fix rate
+
   Revision 1.34  2003/11/01 00:38:11  olchansk
   abort if cannot read Runinfo/Run number
 
@@ -1042,7 +1045,8 @@ Function value:
 \********************************************************************/
 {
   /* update rate [kb/s] statistics */
-  lazyst.copy_rate = 1000.f * (lazyst.cur_size - lastsz) / (ss_millitime() - cploop_time);
+  if ((ss_millitime() - cploop_time) > 100)
+    lazyst.copy_rate = 1000.f * (lazyst.cur_size - lastsz) / (ss_millitime() - cploop_time);
   
   /* update % statistics */
   if (lazyst.file_size != 0.0f)
@@ -1790,6 +1794,7 @@ int main(int argc,char **argv)
     else
     {
 usage:
+    printf("Lazylogger: Multi channel background data copier\n");
     printf("usage: lazylogger [-h <Hostname>] [-e <Experiment>]\n");
     printf("                  [-z zap statistics] [-t (talk msg)\n");
     printf("                  [-c channel name (Disk) -D to start as a daemon\n\n");
@@ -2013,6 +2018,21 @@ usage:
   
   cm_get_experiment_database(&hDB, &hKey);
   
+  /* Remove temporary Lazy entry */
+  {
+    HNDLE hPkey;
+
+    status = db_find_key(hDB, 0, "Programs/Lazy", &hPkey);
+    if (status == DB_SUCCESS)
+    {
+      status = db_delete_key(hDB, hPkey, FALSE);
+      if (status != DB_SUCCESS)
+      {
+        cm_msg(MERROR,"Lazy", "Cannot delete /Programs/Lazy");
+      }
+    }
+  }
+
   /* turn on keepalive messages with increased timeout */
   if (debug)
     cm_set_watchdog_params(TRUE, 0);
