@@ -13,6 +13,9 @@
  *  Author:  Pierre-Andre Amaudruz Data Acquisition Group
  *
  *  $Log$
+ *  Revision 1.7  2001/08/13 11:25:34  midas
+ *  Added some new functions
+ *
  *  Revision 1.6  2000/08/10 07:49:04  midas
  *  Added client name together with frontend name in cam_init_rpc
  *
@@ -40,14 +43,14 @@
 #endif
 #endif
 
-#define EXTERNAL extern 
-
 /* make functions under WinNT dll exportable */
 #if defined(_MSC_VER) && defined(MIDAS_DLL)
 #define EXPRT __declspec(dllexport)
 #else
 #define EXPRT
 #endif
+
+#define EXTERNAL extern
 
 #ifndef MIDAS_TYPE_DEFINED
 #define MIDAS_TYPE_DEFINED
@@ -71,7 +74,7 @@ typedef unsigned long int  DWORD;
 #ifdef __cplusplus
 extern "C" {
 #endif
-EXTERNAL INLINE void EXPRT cam8i    (const int c, const int n, const int a, const int f, BYTE *d);
+EXTERNAL INLINE void EXPRT cam8i(const int c, const int n, const int a, const int f, BYTE *d);
 
 /** cam16i()
     16 bits input.
@@ -441,6 +444,14 @@ EXTERNAL INLINE void EXPRT cam_inhibit_set  (const int c);
 */
 EXTERNAL INLINE void EXPRT cam_inhibit_clear(const int c);
 
+/** cam\_inhibit\_test()
+    Test Crate Inhibit.
+    @memo Test Crate inhibit.
+    @param c crate number (0..)
+    @return 1 for set, 0 for cleared
+*/
+EXTERNAL INLINE int EXPRT cam_inhibit_test(const int c);
+
 /** cam\_crate\_clear()
     Issue CLEAR to crate.
     @memo Clear Crate.
@@ -497,8 +508,9 @@ EXTERNAL INLINE void EXPRT cam_lam_read(const int c, DWORD *lam);
 */
 EXTERNAL INLINE void EXPRT cam_lam_clear    (const int c, const int n);
 
-EXTERNAL INLINE void EXPRT cam_interrupt_enable (void);
-EXTERNAL INLINE void EXPRT cam_interrupt_disable(void);
+EXTERNAL INLINE void EXPRT cam_interrupt_enable (const int c);
+EXTERNAL INLINE void EXPRT cam_interrupt_disable(const int c);
+EXTERNAL INLINE int  EXPRT cam_interrupt_test   (const int c);
 EXTERNAL INLINE void EXPRT cam_interrupt_attach (void (*isr)(void));
 EXTERNAL INLINE void EXPRT cam_interrupt_detach (void);
 EXTERNAL INLINE void EXPRT cam_glint_enable     (void);
