@@ -9,6 +9,9 @@
                 for SCS-910 20-chn analog in
 
   $Log$
+  Revision 1.5  2004/10/29 11:16:06  midas
+  Added N_CHANNEL
+
   Revision 1.4  2004/10/12 11:02:41  midas
   Version 1.7.6
 
@@ -33,7 +36,13 @@ extern bit DEBUG_MODE;
 
 char code node_name[] = "SCS-910";
 
-#define UNIPOLAR
+#undef UNIPOLAR
+
+#ifdef UNIPOLAR
+#define N_CHANNEL 40
+#else
+#define N_CHANNEL 20
+#endif
 
 /* declare number of sub-addresses to framework */
 unsigned char idata _n_sub_addr = 1;
@@ -70,13 +79,8 @@ sbit AD4_DOUT = P0 ^ 7;         // Data out
 /* data buffer (mirrored in EEPROM) */
 
 struct {
-#ifdef UNIPOLAR
-   float adc[40];
-   float gain[40];
-#else
-   float adc[20];
-   float gain[20];
-#endif
+   float adc[N_CHANNEL];
+   float gain[N_CHANNEL];
 } xdata user_data;
 
 MSCB_INFO_VAR code variables[] = {
@@ -227,11 +231,7 @@ void user_init(unsigned char init)
 
    /* initial EEPROM value */
    if (init) {
-#ifdef UNIPOLAR
-      for (i=0 ; i<40 ; i++)
-#else
-      for (i=0 ; i<20 ; i++)
-#endif
+      for (i=0 ; i<N_CHANNEL ; i++)
          user_data.gain[i] = 1;
    }
 
