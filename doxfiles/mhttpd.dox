@@ -360,7 +360,23 @@ of the \em al_...()  functions.
 - [Periodic alarms] Triggered by timeout condition defined in the alarm setting.
 
 <hr> @section Custom_page Custom page
-The Custom page is available from the Version 1.8.3.
+The Custom page is available since version 1.8.3. It has been improved during version
+1.9.5 (mhttpd.c CVS-1.288). 
+
+This custom web page provides to the user a mean of creating a secondary personal
+web page activated within the standard Midas web interface. This custom page can
+contain specific links to the ODB and therefore present in a more compact way the
+essential parameter of the controlled experiment. Two mode of operations are
+available:
+- @ref Internal_html : The html code is fully stored in the Online Database (ODB). 
+       This page is web editable. 
+- @ref External_html : ODB contains a link to an external html document. 
+
+The new @ref External_html feature remove the html code size restriction and support
+multiple custom web page. In addition, to each html document, a dynamic ODB linked 
+image extend the display presentation capability of the controlled experiment.
+
+@subsection Internal_html Internal HTML document.
 
 This page reflects the html content of a given ODB key under the \b /Custom/
 key. If keys are defined in the ODB under the \b /Custom/ the name of the key
@@ -394,7 +410,7 @@ Reference to an history page.
 
 
 The insertion of a new Custom page requires the following steps:
-- Create an initial html file using your prefered HTML editor.
+- Create an initial html file using your favorite HTML editor.
 - Insert the ODB HTML tags at your wish.
 - Invoke ODBedit, create the Custom directory, import the html file.
 
@@ -416,9 +432,9 @@ The insertion of a new Custom page requires the following steps:
   [local:midas:Stopped]/Custom>
   \endcode
 
-- Once the file is load into ODB, you can \b ONLY- edit it through the web 
+- Once the file is load into ODB, you can \b ONLY edit it through the web 
   (as long as the mhttpd is active). Clicking on the \b ODB(button) ...
-  Custom(Key) ... Edit(Hyperlink at the bottom of the key)-. The Custom page
+  Custom(Key) ... Edit(Hyperlink at the bottom of the key). The Custom page
   can also be exported back to a ASCII file using the ODBedit command "export"
   \code
   Tue> odbedit
@@ -432,7 +448,7 @@ The insertion of a new Custom page requires the following steps:
   forces the page to be open within the current frame.
   If this character is omitted, the page will be spawned into a new frame (default).
 
-- If the custom page name is set to \b Status- (no "&") it will become the default
+- If the custom page name is set to \b Status (no "&") it will become the default
   midas Web page!
 
 - html code <b> Example </b> mcustom.html
@@ -456,54 +472,32 @@ The insertion of a new Custom page requires the following steps:
   <input type=submit name=cmd value=Status>
   <input type=submit name=cmd value=Start>
   <input type=submit name=cmd value=Stop>
-
   <td>
   <input type=submit name=cmd value=ODB>
   <input type=submit name=cmd value=History>
   <input type=submit name=cmd value=Elog></td>
-  </td>
-
-  <td>
-  <div align=right><b>LTNO experiment </b></div>
-  </td>
-  </tr>
-
-  <tr>
-  <td><b>Cryostat section:</b>
+  <td><div align=right><b>LTNO experiment </b></div>
+  </td></tr>
+  <tr><td><b>Cryostat section:</b>
   <br>LN2 Bath Level : <odb src="/equipment/cryostat/variables/measured[12]">
   <br>Run# : <odb src="/runinfo/run number" edit=1>
-  <br>Run#: <odb src="/runinfo/run number">
   <br>Run#: <odb src="/runinfo/run number"></td>
-
   <td WIDTH="100%" BGCOLOR="#009900"><b>RF source section:</b>
-  <br>Run#: <odb src="/runinfo/run number">
-  <br>Run#: <odb src="/runinfo/run number">
-  <br>Run#: <odb src="/runinfo/run number">
   <br>Run#: <odb src="/runinfo/run number"></td>
   <td WIDTH="50%" BGCOLOR="#FF6600"><b>Run section:</b>
   <br>Start Time: <odb src="/runinfo/start time">
   <br>Stop Time: <odb src="/runinfo/stop time">
-  <br>Run#: <odb src="/runinfo/run number">
   <br>Run#: <odb src="/runinfo/run number"></td>
   </tr>
-
   <tr>
   <td BGCOLOR="#CC6600"><b>Sucon magnet section:</b>
-  <br>Run#: <odb src="/runinfo/run number">
-  <br>Run#: <odb src="/runinfo/run number">
-  <br>Run#: <odb src="/runinfo/run number">
   <br>Run#: <odb src="/runinfo/run number"></td>
 
   <td BGCOLOR="#FFCC33"><b>Scalers section:</b>
   <br>Beam Current: <odb src="/equipment/epics/variables/measured[10]">
-  <br>Run#: <odb src="/runinfo/run number">
-  <br>Run#: <odb src="/runinfo/run number">
   <br>Run#: <odb src="/runinfo/run number"></td>
 
   <td BGCOLOR="#66FFFF"><b>Polarity section:</b>
-  <br>Run#: <odb src="/runinfo/run number">
-  <br>Run#: <odb src="/runinfo/run number">
-  <br>Run#: <odb src="/runinfo/run number">
   <br>Run#: <odb src="/runinfo/run number"></td>
   </tr>
   </table></center>
@@ -516,13 +510,250 @@ The insertion of a new Custom page requires the following steps:
 </html>
 \endcode
  
- * <center> web page produced by mcustom.html.
- *  \image html mhcustom3.gif
- *  \image latex mhcustom3.eps "web page produced by mcustom.html." width=12cm
- * </center> 
- 
+@subsection External_html External referenced HTML document.
+
+In the case the custom web page is rather large and complex, it becomes easier to handle
+such file through normal html editor and skip the reloading of the file in the ODB.
+(import/export).
+This is now possible by providing an external reference of the web page in the /Custom
+directory of the ODB.
+In addition special ODB settings are available to allow GIF image insertion and ODB fields
+bars and fillup area superimposed on the image. This powerful new extention brings the mhttpd
+capability closer to other experiment web control similar to EPICS.
+
+The HTML examples below should operate in conjunction of the standard demo midas example found
+in midas/examples/experiment. myexpt.html, xcumstom.odb and myexpt.gif can be found
+in the midas/examples/custom directory.
+
+Using your favorite html editor, you can create a custom page including any of the 
+options described in the @ref Internal_html. Once the mhttpd application is started
+and connected to a valid Midas experiment, you can activate this page as follow:
+\code
+[local:Default:Stopped]/>pwd
+/
+[local:Default:Stopped]/>mkdir Custom
+[local:Default:Stopped]/>cd Custom
+[local:Default:Stopped]/Custom>create string Dewpoint&
+String length [32]: 256
+[local:Default:Stopped]/Custom>set Dewpoint& \doc\cooling\dewpoint.html
+\endcode
+
+\b Note: This link refers to a local html document. In the case an external HTML is 
+requires, the definition should be placed under /Alias (see also @ref ODB_Alias_Tree).
+\code
+[local:Default:Stopped]/>mkdir Alias
+[local:Default:Stopped]/>cd alias
+[local:Default:Stopped]/alias>create string WebDewpoint&
+String length [32]: 256
+[local:Default:Stopped]/alias>set WebDewpoint& "http://www.decatur.de/javascript/dew/index.html"
+\endcode
+
+After refreshing the Midas status web page, the link \b Dewpoint should be visible
+in the top area of the page. The "&" is to prevent a new frame to be displayed
+(see @ref ODB_Alias_Tree). Clicking on it will bring you to your custom html documentation.
+In the case you want to extend the flexibility of your page by including features such as:
+- "live" ODB values position in a particular location of the page.
+- "bar level" showing graphically levels or rate etc.
+- "color level" where color is used as level indicator.
+you need to setup specific ODB tree related to a particular page.
+This overlay of the requested features is done on a GIF file representing you background 
+experimental layout for example. myexpt.html can be found in the examples/custom directory.
+For the full operation of this custom demo, you'll need to have the frontend "sample frontend"
+(midas/example/experiment/frontend.c), mlogger, mhttpd running.
+
+Html document \b myexpt.html
+\code
+<html>
+ <head>
+  <title>MyExperiment Demo Status</title>
+  <meta http-equiv="Refresh" content="30">
+ </head>
+ <body>
+   <form name="form1" method="Get" action="/CS/MyExpt&">
+   <table border=3 cellpadding=2>
+  <tr><th bgcolor="#A0A0FF">Demo Experiment<th bgcolor="#A0A0FF">Custom Monitor/Control</tr> 
+  <tr><td> <b><font color="#ff0000">Actions: </font></b><input
+      value="Status" name="cmd" type="submit"> <input type="submit"
+      name="cmd" value="Start"><input type="submit" name="cmd" value="Stop">
+  </td><td>
+  <center> <a href="http://midas.triumf.ca/doc/html/index.html"> Help </a></center>
+  </td></tr>
+  <td>Current run #: <b><odb src="/Runinfo/run number"></b></td>
+  <td>#events: <b><odb src="/Equipment/Trigger/Statistics/Events sent"></b></td>
+  </tr><tr>
+  <td>Event Rate [/sec]: <b><odb src="/Equipment/Trigger/Statistics/Events per sec."></b></td>
+  <td>Data Rate [kB/s]: <b><odb src="/Equipment/Trigger/Statistics/kBytes per sec."></b></td>
+  </tr><tr>
+  <td>Cell Pressure: <b><odb src="/Equipment/NewEpics/Variables/CellPressure"></b></td>
+  <td>FaradayCup   : <b><odb src="/Equipment/NewEpics/Variables/ChargeFaradayCup"></b></td>
+  </tr><tr>
+  <td>Q1 Setpoint: <b><odb src="/Equipment/NewEpics/Variables/EpicsVars[17]" edit=1></b></td>
+  <td>Q2 Setpoint: <b><odb src="/Equipment/NewEpics/Variables/EpicsVars[19]" edit=1></b></td>
+  </tr><tr>
+  <th> <img src="http://localhost:8080/HS/Default/Trigger%20rate.gif?
+                  exp=default&amp;scale=12h&amp;width=250">
+  </th>
+  <th> <img src="http://localhost:8080/HS/Default/Scaler%20rate.gif?
+                  exp=default&amp;scale=10m&amp;width=250"></th>
+  </tr>
+  <tr><td colspan=2>
+  <map name="myexpt.map">
+     <area shape=rect coords="140,70, 420,170" 
+     href="http://midas.triumf.ca/doc/html/index.html" title="Midas Doc">
+     <area shape=rect coords="200,200,400,400"
+     href="http://localhost:8080" title="Switch pump">
+     <area shape=rect coords="230,515,325,600"
+     href="http://localhost:8080" title="Logger in color level (using Fill)">
+  <img src="myexpt.gif" border=1 usemap="#myexpt.map">
+  </map>
+  </td></tr>
+   </table></form>
+  </body>
+</html>  
+\endcode
+
+To activate this HTML document, it has to be defined in the ODB as follow:
+\code
+[local:Default:Stopped]/>cd /Custom
+[local:Default:Stopped]/Custom>create string Myexpt&
+String length [32]: 256
+[local:Default:Stopped]/Custom>set Myexpt& \midas\examples\custom\myexpt.html
+\endcode
+
+ After refresh, the ODB values will be displayed, the mapping is still not active.
+ as no reference to the gif location has been given yet.
+\code
+[local:Default:Stopped]/Custom>mkdir Images
+[local:Default:Stopped]/Custom>cd Images/
+[local:Default:Stopped]Images>mkdir myexpt.gif
+[local:Default:Stopped]Images>cd myexpt.gif/
+[local:Default:Stopped]myexpt.gif>create string Background
+String length [32]: 256
+[local:Default:Stopped]myexpt.gif>set Background \midas\examples\custom\myexpt.gif
+\endcode
+
+After refresh, the file \b myexpt.gif should by visible. The mapping based on myexpt.map
+is active, hovering the mouse over the boxes will display the associated
+titles (Midas Doc, Switch pump, etc), By clicking on either box the browser will go to the
+defined html page specified by the map.
+
+* <center> Custom web page with external reference to html document.
+*  \image html mhxcustom01.gif
+*  \image latex mhxcustom01.eps "Custom web external to html document." width=10cm
+* </center> 
+
+In addition of these initial features, multiple ODB values can be superimposed 
+at define location on the image. Each entry will have a ODB tree associated to it
+defining the ODB variable, X/Y position, unit, color, etc...
+
+\code
+[local:Default:Stopped]myexpt.gif>mkdir Labels
+[local:Default:Stopped]myexpt.gif>cd labels
+[local:Default:Stopped]Labels>mkdir Rate
+
+>>>>>>>> Refresh web page <<<<<<<<
+
+12:32:38 [mhttpd] [mhttpd.c:5508:show_custom_gif] Empty Src key for label "Rate"
+\endcode
+
+Creating "Labels/<label name>" sub-directory under the gif file name, will automatically
+at the \b next web page refresh complete its filling with default value for the structure
+for that label.
+\code
+[local:Default:Stopped]Labels>cd Rate/
+[local:Default:Stopped]Rate>ls -l
+Key name                        Type    #Val  Size  Last Opn Mode Value
+---------------------------------------------------------------------------
+Src                             STRING  1     256   2m   0   RWD
+Format                          STRING  1     32    2m   0   RWD  %1.1f
+Font                            STRING  1     32    2m   0   RWD  Medium
+Unit                            STRING  1     32    2m   0   RWD
+X                               INT     1     4     2m   0   RWD  0
+Y                               INT     1     4     2m   0   RWD  0
+Align                           INT     1     4     2m   0   RWD  0
+FGColor                         STRING  1     8     2m   0   RWD  000000
+BGColor                         STRING  1     8     2m   0   RWD  FFFFFF
+\endcode
+
+The \b Src should point to a valid ODB Key variable. The X,Y fields position the top
+left corner of the label. The other fields associated to this label are self-explanatory. 
+\code
+[local:Default:Stopped]Rate>set src "/Equipment/Trigger/statistics/kbytes per sec."
+[local:Default:Stopped]Rate>set x 330
+[local:Default:Stopped]Rate>set y 250 
+[local:Default:Stopped]Rate>set unit kB/s
+\endcode
+
+Once the initial label is created, the simplest way to extent to multiple labels is to
+copy the existing label sub-tree and modify the label parameters.
+\code
+[local:Default:Stopped]Labels>cd .. 
+[local:Default:Stopped]Labels>copy Rate Events
+[local:Default:Stopped]Labels>cd Events/
+[local:Default:Stopped]Event>set src "/Equipment/Trigger/statistics/events per sec."
+[local:Default:Stopped]Event>set Unit #Evts
+[local:Default:Stopped]Event>set y 250
+[local:Default:Stopped]Event>set x 200
+\endcode
+
+In the same manner, you can create bars used for level representation.
+This code will setup two ODB values defined by the fields src.
+\code
+[local:Default:Stopped]myexpt.gif>pwd
+/Custom/Images/myexpt.gif
+[local:Default:Stopped]myexpt.gif>mkdir Bars
+[local:Default:Stopped]myexpt.gif>cd bars/
+[local:Default:Stopped]Labels>mkdir Rate
+
+>>>>>>>> Refresh web page <<<<<<<<
+
+14:05:58 [mhttpd] [mhttpd.c:5508:show_custom_gif] Empty Src key for bars "Rate"
+[local:Default:Stopped]Labels>cd Rate/
+[local:Default:Stopped]Rate>set src "/Equipment/Trigger/statistics/kbytes per sec."
+[local:Default:Stopped]Rate>set x 500
+[local:Default:Stopped]Rate>set y 210 
+[local:Default:Stopped]Rate>set max 1e6 
+[local:Default:Stopped]Labels>cd .. 
+[local:Default:Stopped]Labels>copy Rate Events
+[local:Default:Stopped]Labels>cd Events/
+[local:Default:Stopped]Event>set src "/logger/channles/0/statistics/events written"
+[local:Default:Stopped]Event>set direction 1
+[local:Default:Stopped]Event>set y 240
+[local:Default:Stopped]Event>set x 450
+[local:Default:Stopped]Rate>set max 1e4 
+\endcode
+
+Following the same principle as for the labels, by creating Bars/<bar name>, the
+structure for the rate will be filled with a default setting after refreshing the
+custom midas page. The different parameters are self-explanatory.
+
+The last option available is the Fills where an area can be filled with different
+colors depending on the given ODB value (src parameter). The color selection is
+mapped by correspondance of the index of the Limit array to the Fillcolor array.
+Presently the structure is not pre-defined and need to be entered by hand. 
+\code
+[/Custom/Images/myexpt.gif/Fills/Level]
+Src = STRING : [256] /equipment/Trigger/statistics/events sent
+X = INT : 250
+Y = INT : 550
+Limits = DOUBLE[4] :
+[0] 0
+[1] 10
+[2] 10000
+[3] 100000
+Fillcolors = STRING[4] :
+[8] 00FF00
+[8] AAFF00
+[8] AA0000
+[8] FF0000
+\endcode
+
+* <center> Custom web page with external reference to html document.
+*  \image html mhxcustom02.gif
+*  \image latex mhxcustom02.eps "Custom web external to html document." width=10cm
+* </center> 
+
  \htmlonly <img ALIGN="left" alt="previous.gif" src="previous.gif"> \endhtmlonly 
  @ref Utilities - @ref Top - @ref AppendixA
  \htmlonly <img alt="next.gif" src="next.gif"> \endhtmlonly
-
  */
