@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.56  1999/10/04 14:11:43  midas
+  Added full display for query
+
   Revision 1.55  1999/09/29 21:08:54  pierre
   - Modified the Lazy status line for multiple channels
 
@@ -959,7 +962,7 @@ CHN_STATISTICS chn_stats;
   {
     INT  status, size, i, j, k;
     BOOL previous_mode;
-    HNDLE  hKeyClient, hLKey, hKey, hSubkey;
+    HNDLE  hLKey, hKey, hSubkey;
     char   client_name[NAME_LENGTH];
 
     status = db_find_key(hDB, 0, "System/Clients", &hKey);
@@ -974,9 +977,6 @@ CHN_STATISTICS chn_stats;
       status = db_enum_key(hDB, hKey, j, &hSubkey);
       if (status == DB_NO_MORE_SUBKEYS)
         break;
-
-      if (hSubkey == hKeyClient)
-        continue;
 
       if (status == DB_SUCCESS)
       {
@@ -1392,7 +1392,13 @@ KEY    key;
 
   /*---- entry form ----*/
 
+  rsprintf("<tr><td colspan=2 bgcolor=#C0C000>");
+  rsprintf("<input type=checkbox name=mode value=\"summary\">Summary only\n");
+  rsprintf("<td colspan=2 bgcolor=#C0C000>");
+  rsprintf("<input type=checkbox name=attach value=1>Show attachments</tr>\n");
+
   time(&now);
+  now -= 3600*24;
   tms = localtime(&now);
   tms->tm_year += 1900;
 
@@ -1406,7 +1412,14 @@ KEY    key;
       rsprintf("<option value=\"%s\">%s\n", mname[i], mname[i]);
   rsprintf("</select>\n");
 
-  rsprintf(" <input type=\"text\" size=3 maxlength=3 name=\"d1\" value=\"%d\">", tms->tm_mday);
+  rsprintf("<select name=\"d1\">");
+  for (i=0 ; i<31 ; i++)
+    if (i+1 == tms->tm_mday)
+      rsprintf("<option selected value=%d>%d\n", i+1, i+1);
+    else
+      rsprintf("<option value=%d>%d\n", i+1, i+1);
+  rsprintf("</select>\n");
+
   rsprintf(" <input type=\"text\" size=5 maxlength=5 name=\"y1\" value=\"%d\">", tms->tm_year);
   rsprintf("</tr>\n");
 
@@ -1418,7 +1431,12 @@ KEY    key;
     rsprintf("<option value=\"%s\">%s\n", mname[i], mname[i]);
   rsprintf("</select>\n");
 
-  rsprintf(" <input type=\"text\" size=3 maxlength=3 name=\"d2\">");
+  rsprintf("<select name=\"d2\">");
+  rsprintf("<option selected value=\"\">\n");
+  for (i=0 ; i<31 ; i++)
+    rsprintf("<option value=%d>%d\n", i+1, i+1);
+  rsprintf("</select>\n");
+
   rsprintf(" <input type=\"text\" size=5 maxlength=5 name=\"y2\">");
   rsprintf("</tr>\n");
 
@@ -1483,13 +1501,15 @@ KEY    key;
 
 void show_elog_submit_query()
 {
-int    i, size, run, status, m1, d2, m2, y2;
+int    i, size, run, status, m1, d2, m2, y2, index;
 char   date[80], author[80], type[80], system[80], subject[256], text[10000], 
        orig_tag[80], reply_tag[80], attachment[3][256], encoding[80];
-char   str[256], str2[256], tag[256], ref[80];
+char   str[256], str2[256], tag[256], ref[80], file_name[256];
 HNDLE  hDB;
-DWORD  ltime_end, ltime_current;
-struct tm tms;
+BOOL   full, show_attachments;
+DWORD  ltime_end, ltime_current, now;
+struct tm tms, *ptms;
+FILE   *f;
 
   cm_get_experiment_database(&hDB, NULL);
 
@@ -1505,8 +1525,12 @@ struct tm tms;
   if (exp_name[0])
     rsprintf("<input type=hidden name=exp value=\"%s\">\n", exp_name);
 
-  rsprintf("<table border=3 cellpadding=5 width=\"100%%\">\n");
+  rsprintf("<table border=3 cellpadding=2 width=\"100%%\">\n");
 
+  /* get mode */
+  full = !(*getparam("mode"));
+  show_attachments = (*getparam("attach") > 0);
+  
   /*---- title row ----*/
 
   size = sizeof(str);
@@ -1514,16 +1538,19 @@ struct tm tms;
   db_get_value(hDB, 0, "/Experiment/Name", str, &size, TID_STRING);
 
   rsprintf("<tr><th colspan=3 bgcolor=#A0A0FF>MIDAS Electronic Logbook");
-  rsprintf("<th colspan=4 bgcolor=#A0A0FF>Experiment \"%s\"</tr>\n", str);
+  rsprintf("<th colspan=%d bgcolor=#A0A0FF>Experiment \"%s\"</tr>\n", full?3:4, str);
 
   /*---- menu buttons ----*/
 
-  rsprintf("<tr><td colspan=7 bgcolor=#C0C0C0>\n");
+  if (!full)
+    {
+    rsprintf("<tr><td colspan=7 bgcolor=#C0C0C0>\n");
 
-  rsprintf("<input type=submit name=cmd value=\"Query\">\n");
-  rsprintf("<input type=submit name=cmd value=\"ELog\">\n");
-  rsprintf("<input type=submit name=cmd value=\"Status\">\n");
-  rsprintf("</tr>\n\n");
+    rsprintf("<input type=submit name=cmd value=\"Query\">\n");
+    rsprintf("<input type=submit name=cmd value=\"ELog\">\n");
+    rsprintf("<input type=submit name=cmd value=\"Status\">\n");
+    rsprintf("</tr>\n\n");
+    }
 
   /*---- convert end date to ltime ----*/
 
@@ -1576,26 +1603,33 @@ struct tm tms;
   if (*getparam("r1"))
     {
     if (*getparam("r2"))
-      rsprintf("<tr><td colspan=7 bgcolor=#FFFF00><b>Query result between runs %s and %s</b></tr>\n",
-                getparam("r1"), getparam("r2"));
+      rsprintf("<tr><td colspan=%d bgcolor=#FFFF00><b>Query result between runs %s and %s</b></tr>\n",
+                full?6:7, getparam("r1"), getparam("r2"));
     else
-      rsprintf("<tr><td colspan=7 bgcolor=#FFFF00><b>Query result between run %s and today</b></tr>\n",
-                getparam("r1"));
+      rsprintf("<tr><td colspan=%d bgcolor=#FFFF00><b>Query result between run %s and today</b></tr>\n",
+                full?6:7, getparam("r1"));
     }
   else 
     {
     if (*getparam("m2") || *getparam("y2") || *getparam("d2"))
-      rsprintf("<tr><td colspan=7 bgcolor=#FFFF00><b>Query result between %s %s %s and %s %d %d</b></tr>\n",
-                getparam("m1"), getparam("d1"), getparam("y1"),
+      rsprintf("<tr><td colspan=%d bgcolor=#FFFF00><b>Query result between %s %s %s and %s %d %d</b></tr>\n",
+                full?6:7, getparam("m1"), getparam("d1"), getparam("y1"),
                 mname[m2], d2, y2);
     else
-      rsprintf("<tr><td colspan=7 bgcolor=#FFFF00><b>Query result between %s %s %s and today</b></tr>\n",
-                getparam("m1"), getparam("d1"), getparam("y1"));
+      {
+      time(&now);
+      ptms = localtime(&now);
+      ptms->tm_year += 1900;
+
+      rsprintf("<tr><td colspan=%d bgcolor=#FFFF00><b>Query result between %s %s %s and %s %d %d</b></tr>\n",
+                full?6:7, getparam("m1"), getparam("d1"), getparam("y1"),
+                mname[ptms->tm_mon], ptms->tm_mday, ptms->tm_year);
+      }
     }
 
   rsprintf("</tr>\n<tr>");
 
-  rsprintf("<td colspan=7 bgcolor=#FFA0A0>\n");
+  rsprintf("<td colspan=%d bgcolor=#FFA0A0>\n", full?6:7);
 
   if (*getparam("author"))
     rsprintf("Author: <b>%s</b>   ", getparam("author"));
@@ -1613,7 +1647,10 @@ struct tm tms;
 
   /*---- table titles ----*/
 
-  rsprintf("<tr><th>Date<th>Run<th>Author<th>Type<th>System<th>Subject<th>Text</tr>\n");
+  if (full)
+    rsprintf("<tr><th>Date<th>Run<th>Author<th>Type<th>System<th>Subject</tr>\n");
+  else
+    rsprintf("<tr><th>Date<th>Run<th>Author<th>Type<th>System<th>Subject<th>Text</tr>\n");
 
   /*---- do query ----*/
 
@@ -1703,14 +1740,96 @@ struct tm tms;
 
       strncpy(str, text, 80);
       str[80] = 0;
-      rsprintf("<tr><td>%s<td>%d<td>%s<td>%s<td>%s<td>%s\n", date, run, author, type, system, subject);
 
+      if (full)
+        {
+        rsprintf("<tr><td><a href=%s>%s</a><td>%d<td>%s<td>%s<td>%s<td>%s</tr>\n", ref, date, run, author, type, system, subject);
+        rsprintf("<tr><td colspan=6>");
+      
+        if (equal_ustring(encoding, "plain"))
+          {
+          rsprintf("<pre>");
+          rsprintf(text);
+          rsprintf("</pre>");
+          }
+        else
+          rsprintf(text);
 
-      rsprintf("<td><a href=%s>", ref);
+        rsprintf("</tr>\n");
+
+        if (show_attachments)
+          {
+          for (index = 0 ; index < 3 ; index++)
+            {
+            if (attachment[index][0])
+              {
+              for (i=0 ; i<(int)strlen(attachment[index]) ; i++)
+                str[i] = toupper(attachment[index][i]);
+              str[i] = 0;
       
-      el_format(str, encoding);
+              if (exp_name[0])
+                sprintf(ref, "%sEL/%s?exp=%s", 
+                        mhttpd_url, attachment[index], exp_name);
+              else
+                sprintf(ref, "%sEL/%s", 
+                        mhttpd_url, attachment[index]);
+
+              if (strstr(str, ".GIF") ||
+                  strstr(str, ".JPG"))
+                {
+                rsprintf("<tr><td colspan=6>Attachment: <a href=\"%s\"><b>%s</b></a><br>\n", 
+                          ref, attachment[index]+14);
+                rsprintf("<img src=%s></tr>", ref);
+                }
+              else
+                {
+                rsprintf("<tr><td colspan=6 bgcolor=#C0C0FF>Attachment: <a href=\"%s\"><b>%s</b></a>\n", 
+                          ref, attachment[index]+14);
+                if (!strstr(str, ".PS") &&
+                    !strstr(str, ".EPS"))
+                  {
+                  /* display attachment */
+                  rsprintf("<br><pre>");
+
+                  file_name[0] = 0;
+                  size = sizeof(file_name);
+                  memset(file_name, 0, size);
+                  db_get_value(hDB, 0, "/Logger/Data dir", file_name, &size, TID_STRING);
+                  if (file_name[0] != 0)
+                    if (file_name[strlen(file_name)-1] != DIR_SEPARATOR)
+                      strcat(file_name, DIR_SEPARATOR_STR);
+                  strcat(file_name, attachment[index]);
+
+                  f = fopen(file_name, "rt");
+                  if (f != NULL)
+                    {
+                    while (!feof(f))
+                      {
+                      str[0] = 0;
+                      fgets(str, sizeof(str), f);
+                      rsprintf(str);
+                      }
+                    fclose(f);
+                    }
+
+                  rsprintf("</pre>\n");
+                  }
+                rsprintf("</tr>\n");
+                }
+              }
+            }
+          }
+        }
+      else
+        {
+        rsprintf("<tr><td>%s<td>%d<td>%s<td>%s<td>%s<td>%s\n", date, run, author, type, system, subject);
+
+        rsprintf("<td><a href=%s>", ref);
       
-      rsprintf("</a></tr>\n");
+        el_format(str, encoding);
+      
+        rsprintf("</a></tr>\n");
+        }
       }
 
     } while (status == EL_SUCCESS);
