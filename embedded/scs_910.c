@@ -9,6 +9,9 @@
                 for SCS-910 20-chn analog in
 
   $Log$
+  Revision 1.2  2004/09/10 13:05:49  midas
+  *** empty log message ***
+
   Revision 1.1  2004/09/10 12:27:24  midas
   Version 1.7.5
 
@@ -24,7 +27,7 @@ extern bit DEBUG_MODE;
 
 char code node_name[] = "SCS-910";
 
-#undef UNIPOLAR
+#define UNIPOLAR
 
 /* declare number of sub-addresses to framework */
 unsigned char idata _n_sub_addr = 1;
