@@ -9,6 +9,9 @@
                 for SCS-300 Parallel Port Interface
 
   $Log$
+  Revision 1.4  2003/01/16 16:29:49  midas
+  Removed SIZE_32
+
   Revision 1.3  2002/11/28 13:03:41  midas
   Protocol version 1.2
 
@@ -42,10 +45,10 @@ struct {
 } user_data;
 
 MSCB_INFO_CHN code channel[] = {
-  SIZE_32BIT, UNIT_UNDEFINED, 0, 0, MSCBF_FLOAT, "Data0", &user_data.value[0],
-  SIZE_32BIT, UNIT_UNDEFINED, 0, 0, MSCBF_FLOAT, "Data1", &user_data.value[1],
-  SIZE_32BIT, UNIT_UNDEFINED, 0, 0, MSCBF_FLOAT, "Data2", &user_data.value[2],
-  SIZE_32BIT, UNIT_UNDEFINED, 0, 0, MSCBF_FLOAT, "Data3", &user_data.value[3],
+  4, UNIT_UNDEFINED, 0, 0, MSCBF_FLOAT, "Data0", &user_data.value[0],
+  4, UNIT_UNDEFINED, 0, 0, MSCBF_FLOAT, "Data1", &user_data.value[1],
+  4, UNIT_UNDEFINED, 0, 0, MSCBF_FLOAT, "Data2", &user_data.value[2],
+  4, UNIT_UNDEFINED, 0, 0, MSCBF_FLOAT, "Data3", &user_data.value[3],
   0
 };
 
@@ -209,12 +212,14 @@ void user_loop(void)
 char idata str[32];
 unsigned char i, n;
 
-  return;
+  return; // do not execute example code
+
+  /* this could be some example code to demonstrate a 4 chn readout */
 
   for (i=0 ; i<4 ; i++)
     {
     /* send data request */
-    printf("READ %d\r\n", i);
+    printf("READ %d\r\n", i); // goes through putchar()
 
     /* wait for reply for 2 seconds */
     n = gets_wait(str, sizeof(str), 200);
