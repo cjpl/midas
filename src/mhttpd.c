@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.87  1999/11/10 10:39:35  midas
+  Changed text field size for ODB set page
+
   Revision 1.86  1999/11/08 14:31:09  midas
   Added hotlink to auto restart in status page
 
@@ -3914,8 +3917,13 @@ char   data[10000];
     if (equal_ustring(data_str, "<NULL>"))
       data_str[0] = 0;
 
-    rsprintf("<input type=\"text\" size=\"20\" maxlength=\"80\" name=\"value\" value=\"%s\">\n",
-              data_str);
+    size = 20;
+    if (strlen(data_str) > size)
+      size = strlen(data_str)+3;
+    if (size > 80)
+      size = 80;
+    rsprintf("<input type=\"text\" size=%d maxlength=256 name=\"value\" value=\"%s\">\n",
+              size, data_str);
     rsprintf("</tr>\n");
 
     rsprintf("<tr><td align=center colspan=2>");
@@ -5384,7 +5392,7 @@ INT                  last_time=0;
 
     if (status < 0)
       {
-      printf("Cannot bind to port %d.\nPlease use the \"-p\" flag to specify a different port\n", tcp_port);
+      printf("Cannot bind to port %d.\nPlease try later or use the \"-p\" flag to specify a different port\n", tcp_port);
       return;
       }
     else
