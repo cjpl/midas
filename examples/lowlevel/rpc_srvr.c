@@ -9,6 +9,9 @@
 
 
   $Log$
+  Revision 1.2  1999/10/26 11:20:43  midas
+  Fixed wrong parameters in rpc_set_debug
+
   Revision 1.1  1999/04/27 11:10:56  midas
   Added files to CVS
 
@@ -92,7 +95,7 @@ INT status, port;
   rpc_register_functions(rpc_list, rpc_dispatch);
 
   /* Print debugging messages */
-  rpc_set_debug(puts);
+  rpc_set_debug((void (*)(char*))puts, 0);
 
   /* Server loop */
   while (cm_yield(1000) != RPC_SHUTDOWN);
