@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.97  2000/03/01 23:04:49  midas
+  Avoid analyzer ratio > 1
+
   Revision 1.96  2000/03/01 00:53:14  midas
   Use double events_sent values
 
@@ -1037,6 +1040,8 @@ CHN_STATISTICS chn_stats;
                          &analyzed, &size, TID_DOUBLE) == DB_SUCCESS &&
             equipment_stats.events_sent > 0)
           analyze_ratio = analyzed / equipment_stats.events_sent;
+        if (analyze_ratio > 1)
+          analyze_ratio = 1;
         }
       
       d = equipment_stats.events_sent;
