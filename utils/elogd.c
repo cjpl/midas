@@ -6,6 +6,11 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.28  2001/08/08 11:02:11  midas
+  Added separate password for message deletion
+  Authors are displayed in a drop-down box on the query page
+  A button "suppress Email notification" has been added
+
   Revision 1.27  2001/08/07 13:26:27  midas
   Increase size of author, type and cat. list to 100
 
@@ -2207,7 +2212,10 @@ BOOL   allow_edit;
   if (bedit && encoding[0] == 'H')
     rsprintf("<input type=checkbox checked name=html value=1>Submit as HTML text</tr>\n");
   else
-    rsprintf("<input type=checkbox name=html value=1>Submit as HTML text</tr>\n");
+    rsprintf("<input type=checkbox name=html value=1>Submit as HTML text\n");
+
+  rsprintf("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\n");
+  rsprintf("<input type=checkbox name=suppress value=1>Suppress Email notification</tr>\n");
 
   if (bedit)
     {
@@ -2320,6 +2328,22 @@ char   *p, list[10000];
   rsprintf(" <input type=\"text\" size=5 maxlength=5 name=\"y2\">");
   rsprintf("</tr>\n");
 
+  /* get optional author list from configuration file */
+  if (getcfg(logbook, "Authors", list))
+    {
+    memset(author_list, 0, sizeof(author_list));
+    p = strtok(list, ",");
+    for (i=0 ; p && i<MAX_N_LIST ; i++)
+      {
+      strcpy(author_list[i], p);
+      p = strtok(NULL, ",");
+      if (!p)
+        break;
+      while (*p == ' ')
+        p++;
+      }
+    }
+
   /* get type list from configuration file */
   if (getcfg(logbook, "Types", list))
     {
@@ -2353,7 +2377,17 @@ char   *p, list[10000];
     }
 
   rsprintf("<tr><td colspan=2 bgcolor=#FFA0A0>Author: ");
-  rsprintf("<input type=\"test\" size=\"15\" maxlength=\"80\" name=\"author\">\n");
+
+  if (author_list[0][0] == 0)
+    rsprintf("<input type=\"text\" size=\"15\" maxlength=\"80\" name=\"author\">\n");
+  else
+    {
+    rsprintf("<select name=\"author\">\n");
+    rsprintf("<option value=\"\">\n");
+    for (i=0 ; i<MAX_N_LIST && author_list[i][0] ; i++)
+      rsprintf("<option value=\"%s\">%s\n", author_list[i], author_list[i]);
+    rsprintf("</select></tr>\n");
+    }
 
   rsprintf("<td colspan=2 bgcolor=#FFA0A0>Type: ");
   rsprintf("<select name=\"type\">\n");
@@ -2980,7 +3014,7 @@ char   str[256], str1[256], str2[256], author[256], mail_to[256], mail_from[256]
        mail_text[256], mail_list[256], smtp_host[256], tag[80], *p;
 char   *buffer[MAX_ATTACHMENTS], mail_param[1000];
 char   att_file[MAX_ATTACHMENTS][256];
-int    i, index, n_mail;
+int    i, index, n_mail, suppress;
 struct hostent *phe;
 
   /* check for author */
@@ -3043,73 +3077,81 @@ struct hostent *phe;
             _attachment_size, 
             tag, sizeof(tag));
 
+  suppress = atoi(getparam("suppress"));
+
   /* check for mail submissions */
   mail_param[0] = 0;
   n_mail = 0;
 
-  for (index=0 ; index < 3 ; index++)
+  if (suppress)
     {
-    if (index == 0)
-      sprintf(str, "Email %s", getparam("type"));
-    else if (index == 1)
-      sprintf(str, "Email %s", getparam("category"));
-    else
-      sprintf(str, "Email ALL");
-
-    if (getcfg(logbook, str, mail_list))
+    strcpy(mail_param, "?suppress=1");
+    }
+  else
+    {
+    for (index=0 ; index < 3 ; index++)
       {
-      if (verbose)
-        printf("\n%s to %s\n\n", str, mail_list);
-    
-      if (!getcfg(logbook, "SMTP host", smtp_host))
-        if (!getcfg(logbook, "SMTP host", smtp_host))
-          {
-          show_error("No SMTP host defined in configuration file");
-          return;
-          }
-    
-      p = strtok(mail_list, ",");
-      for (i=0 ; p ; i++)
+      if (index == 0)
+        sprintf(str, "Email %s", getparam("type"));
+      else if (index == 1)
+        sprintf(str, "Email %s", getparam("category"));
+      else
+        sprintf(str, "Email ALL");
+
+      if (getcfg(logbook, str, mail_list))
         {
-        strcpy(mail_to, p);
-        sprintf(mail_from, "ELog@%s", host_name);
-
-        strcpy(str1, author);
-        if (strchr(str1, '@'))
+        if (verbose)
+          printf("\n%s to %s\n\n", str, mail_list);
+    
+        if (!getcfg(logbook, "SMTP host", smtp_host))
+          if (!getcfg(logbook, "SMTP host", smtp_host))
+            {
+            show_error("No SMTP host defined in configuration file");
+            return;
+            }
+    
+        p = strtok(mail_list, ",");
+        for (i=0 ; p ; i++)
           {
-          strcpy(str2, strchr(str1, '@')+1);
-          *strchr(str1, '@') = 0;
+          strcpy(mail_to, p);
+          sprintf(mail_from, "ELog@%s", host_name);
+
+          strcpy(str1, author);
+          if (strchr(str1, '@'))
+            {
+            strcpy(str2, strchr(str1, '@')+1);
+            *strchr(str1, '@') = 0;
+            }
+
+          if (strchr(author, '@'))
+            sprintf(mail_text, "A new entry has been submitted by %s from %s:\n\n", str1, str2);
+          else
+            sprintf(mail_text, "A new entry has been submitted by %s:\n\n", author);
+
+          sprintf(mail_text+strlen(mail_text), "Logbook  : %s\n", logbook);
+          sprintf(mail_text+strlen(mail_text), "Type     : %s\n", getparam("type"));
+          sprintf(mail_text+strlen(mail_text), "Category : %s\n", getparam("category"));
+          sprintf(mail_text+strlen(mail_text), "Subject  : %s\n", getparam("subject"));
+          sprintf(mail_text+strlen(mail_text), "Link     : %s%s/%s\n", elogd_url, logbook_enc, tag);
+
+          sendmail(smtp_host, mail_from, mail_to, 
+            index == 0 ? getparam("type") : getparam("category"), mail_text);
+
+          if (mail_param[0] == 0)
+            strcpy(mail_param, "?");
+          else
+            strcat(mail_param, "&");
+          sprintf(mail_param+strlen(mail_param), "mail%d=%s", n_mail++, mail_to);
+
+          p = strtok(NULL, ",");
+          if (!p)
+            break;
+          while (*p == ' ')
+            p++;
           }
-
-        if (strchr(author, '@'))
-          sprintf(mail_text, "A new entry has been submitted by %s from %s:\n\n", str1, str2);
-        else
-          sprintf(mail_text, "A new entry has been submitted by %s:\n\n", author);
-
-        sprintf(mail_text+strlen(mail_text), "Logbook  : %s\n", logbook);
-        sprintf(mail_text+strlen(mail_text), "Type     : %s\n", getparam("type"));
-        sprintf(mail_text+strlen(mail_text), "Category : %s\n", getparam("category"));
-        sprintf(mail_text+strlen(mail_text), "Subject  : %s\n", getparam("subject"));
-        sprintf(mail_text+strlen(mail_text), "Link     : %s%s/%s\n", elogd_url, logbook_enc, tag);
-
-        sendmail(smtp_host, mail_from, mail_to, 
-          index == 0 ? getparam("type") : getparam("category"), mail_text);
-
-        if (mail_param[0] == 0)
-          strcpy(mail_param, "?");
-        else
-          strcat(mail_param, "&");
-        sprintf(mail_param+strlen(mail_param), "mail%d=%s", n_mail++, mail_to);
-
-        p = strtok(NULL, ",");
-        if (!p)
-          break;
-        while (*p == ' ')
-          p++;
         }
       }
     }
-
 
   for (i=0 ; i<MAX_ATTACHMENTS ; i++)
     if (buffer[i])
@@ -3437,18 +3479,27 @@ BOOL  allow_delete, allow_edit;
       rsprintf("<tr><td bgcolor=#FF0000 colspan=2 align=center><b>This is the first message in the ELog</b></tr>\n");
 
     /* check for mail submissions */
-    for (i=0 ; ; i++)
+    if (*getparam("suppress"))
       {
-      sprintf(str, "mail%d", i);
-      if (*getparam(str))
-        {
-        if (i==0)
-          rsprintf("<tr><td colspan=2 bgcolor=#FFC020>");
-        rsprintf("Mail sent to <b>%s</b><br>\n", getparam(str));
-        }
-      else
-        break;
+      rsprintf("<tr><td colspan=2 bgcolor=#FF0000><b>Email notification suppressed</b>");
+      i = 1;
       }
+    else
+      {
+      for (i=0 ; ; i++)
+        {
+        sprintf(str, "mail%d", i);
+        if (*getparam(str))
+          {
+          if (i==0)
+            rsprintf("<tr><td colspan=2 bgcolor=#FFC020>");
+          rsprintf("Mail sent to <b>%s</b><br>\n", getparam(str));
+          }
+        else
+          break;
+        }
+      }
+
     if (i>0)
       rsprintf("</tr>\n");
 
@@ -3585,7 +3636,7 @@ void show_password_page(char *password, char *experiment)
 
 /*------------------------------------------------------------------*/
 
-BOOL check_web_password(char *logbook, char *password, char *redir)
+BOOL check_write_password(char *logbook, char *password, char *redir)
 {
 char  str[256];
 
@@ -3609,6 +3660,44 @@ char  str[256];
 
     rsprintf("<tr><th bgcolor=#A0A0FF>Please enter password to obtain write access</tr>\n");
     rsprintf("<tr><td align=center><input type=password name=wpwd></tr>\n");
+    rsprintf("<tr><td align=center><input type=submit value=Submit></tr>");
+
+    rsprintf("</table>\n");
+
+    rsprintf("</body></html>\r\n");
+
+    return FALSE;
+    }
+  else
+    return TRUE;
+}
+
+/*------------------------------------------------------------------*/
+
+BOOL check_delete_password(char *logbook, char *password, char *redir)
+{
+char  str[256];
+
+  /* get write password from configuration file */
+  if (getcfg(logbook, "Delete password", str))
+    {
+    if (strcmp(password, str) == 0)
+      return TRUE;
+
+    /* show web password page */
+    show_standard_header("ELOG password", NULL);
+
+    /* define hidden fields for current destination */
+    if (redir[0])
+      rsprintf("<input type=hidden name=redir value=\"%s\">\n", redir);
+
+    rsprintf("<table border=1 cellpadding=5>");
+
+    if (password[0])
+      rsprintf("<tr><th bgcolor=#FF0000>Wrong password!</tr>\n");
+
+    rsprintf("<tr><th bgcolor=#A0A0FF>Please enter password to obtain delete access</tr>\n");
+    rsprintf("<tr><td align=center><input type=password name=dpwd></tr>\n");
     rsprintf("<tr><td align=center><input type=submit value=Submit></tr>");
 
     rsprintf("</table>\n");
@@ -3679,7 +3768,7 @@ static char last_password[32];
 
 /*------------------------------------------------------------------*/
 
-void interprete(char *cookie_wpwd, char *path)
+void interprete(char *cookie_wpwd, char *cookie_dpwd, char *path)
 /********************************************************************\
 
   Routine: interprete
@@ -3696,9 +3785,10 @@ void interprete(char *cookie_wpwd, char *path)
 \********************************************************************/
 {
 int    index;
+double exp;
 char   str[256], enc_pwd[80];
 char   enc_path[256], dec_path[256];
-char   *experiment, *wpassword, *command, *value, *group;
+char   *experiment, *wpassword, *dpassword, *command, *value, *group;
 time_t now;
 struct tm *gmt;
 
@@ -3711,6 +3801,7 @@ struct tm *gmt;
 
   experiment = getparam("exp");
   wpassword = getparam("wpwd");
+  dpassword = getparam("dpwd");
   command = getparam("cmd");
   value = getparam("value");
   group = getparam("group");
@@ -3751,18 +3842,51 @@ struct tm *gmt;
     /* check if password correct */
     base64_encode(wpassword, enc_pwd);
 
-    if (!check_web_password(logbook, enc_pwd, getparam("redir")))
+    if (!check_write_password(logbook, enc_pwd, getparam("redir")))
       return;
     
     rsprintf("HTTP/1.0 302 Found\r\n");
     rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
 
+    /* get optional expriation from configuration file */
+    exp = 24;
+    if (getcfg(logbook, "Write password expiration", str))
+      exp = atof(str);
+
     time(&now);
-    now += 3600*24;
+    now += (int) (3600*exp);
     gmt = gmtime(&now);
     strftime(str, sizeof(str), "%A, %d-%b-%y %H:%M:%S GMT", gmt);
 
     rsprintf("Set-Cookie: elog_wpwd=%s; path=/%s; expires=%s\r\n", enc_pwd, logbook_enc, str);
+
+    sprintf(str, "%s%s/%s", elogd_url, logbook_enc, getparam("redir"));
+    rsprintf("Location: %s\n\n<html>redir</html>\r\n", str);
+    return;
+    }
+
+  if (dpassword[0])
+    {
+    /* check if password correct */
+    base64_encode(dpassword, enc_pwd);
+
+    if (!check_delete_password(logbook, enc_pwd, getparam("redir")))
+      return;
+    
+    rsprintf("HTTP/1.0 302 Found\r\n");
+    rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
+
+    /* get optional expriation from configuration file */
+    exp = 24;
+    if (getcfg(logbook, "Delete password expiration", str))
+      exp = atof(str);
+
+    time(&now);
+    now += (int) (3600*exp);
+    gmt = gmtime(&now);
+    strftime(str, sizeof(str), "%A, %d-%b-%y %H:%M:%S GMT", gmt);
+
+    rsprintf("Set-Cookie: elog_dpwd=%s; path=/%s; expires=%s\r\n", enc_pwd, logbook_enc, str);
 
     sprintf(str, "%s%s/%s", elogd_url, logbook_enc, getparam("redir"));
     rsprintf("Location: %s\n\n<html>redir</html>\r\n", str);
@@ -3774,10 +3898,18 @@ struct tm *gmt;
   if (equal_ustring(command, "new") ||
       equal_ustring(command, "edit") ||
       equal_ustring(command, "reply") ||
-      equal_ustring(command, "submit"))
+      equal_ustring(command, "submit") ||
+      equal_ustring(command, "delete"))
     {
     sprintf(str, "%s?cmd=%s", path, command);
-    if (!check_web_password(logbook, cookie_wpwd, str))
+    if (!check_write_password(logbook, cookie_wpwd, str))
+      return;
+    }
+
+  if (equal_ustring(command, "delete"))
+    {
+    sprintf(str, "%s?cmd=%s", path, command);
+    if (!check_delete_password(logbook, cookie_dpwd, str))
       return;
     }
 
@@ -3787,7 +3919,7 @@ struct tm *gmt;
 
 /*------------------------------------------------------------------*/
 
-void decode_get(char *string, char *cookie_wpwd)
+void decode_get(char *string, char *cookie_wpwd, char *cookie_dpwd)
 {
 char path[256];
 char *p, *pitem;
@@ -3826,12 +3958,12 @@ char *p, *pitem;
       }
     }
   
-  interprete(cookie_wpwd, path);
+  interprete(cookie_wpwd, cookie_dpwd, path);
 }
 
 /*------------------------------------------------------------------*/
 
-void decode_post(char *string, char *boundary, int length, char *cookie_wpwd)
+void decode_post(char *string, char *boundary, int length, char *cookie_wpwd, char *cookie_dpwd)
 {
 char *pinit, *p, *pitem, *ptmp, file_name[256], str[256];
 int  i, n;
@@ -3941,7 +4073,7 @@ int  i, n;
 
     } while ((INT)string - (INT)pinit < length);
   
-  interprete(cookie_wpwd, "");
+  interprete(cookie_wpwd, cookie_dpwd, "");
 }
 
 /*------------------------------------------------------------------*/
@@ -3962,7 +4094,7 @@ void server_loop(int tcp_port, int daemon)
 int                  status, i, n_error, authorized;
 struct sockaddr_in   bind_addr, acc_addr;
 char                 pwd[256], str[256], cl_pwd[256], *p;
-char                 cookie_wpwd[256], boundary[256];
+char                 cookie_wpwd[256], cookie_dpwd[256], boundary[256];
 int                  lsock, len, flag, content_length, header_length;
 struct hostent       *phe;
 struct linger        ling;
@@ -4181,6 +4313,12 @@ INT                  last_time=0;
         strcpy(cookie_wpwd, strstr(net_buffer, "elog_wpwd=")+10);
         cookie_wpwd[strcspn(cookie_wpwd, " ;\r\n")] = 0;
         }
+      cookie_dpwd[0] = 0;
+      if (strstr(net_buffer, "elog_dpwd=") != NULL)
+        {
+        strcpy(cookie_dpwd, strstr(net_buffer, "elog_dpwd=")+10);
+        cookie_dpwd[strcspn(cookie_dpwd, " ;\r\n")] = 0;
+        }
 
       memset(return_buffer, 0, sizeof(return_buffer));
 
@@ -4311,11 +4449,11 @@ INT                  last_time=0;
             p++;
 
           /* decode command and return answer */
-          decode_get(p, cookie_wpwd);
+          decode_get(p, cookie_wpwd, cookie_dpwd);
           }
         else if (strncmp(net_buffer, "POST", 4) == 0)
           {
-          decode_post(net_buffer+header_length, boundary, content_length, cookie_wpwd);
+          decode_post(net_buffer+header_length, boundary, content_length, cookie_wpwd, cookie_dpwd);
           }
         else
           {
@@ -4463,11 +4601,11 @@ main(int argc, char *argv[])
 {
 int i;
 int tcp_port = 80, daemon = FALSE;
-char read_pwd[80], write_pwd[80], str[80];
+char read_pwd[80], write_pwd[80], delete_pwd[80], str[80];
 time_t now;
 struct tm *tms;
 
-  read_pwd[0] = write_pwd[0] = logbook[0] = 0;
+  read_pwd[0] = write_pwd[0] = delete_pwd[0] = logbook[0] = 0;
 
   strcpy(cfg_file, "elogd.cfg");
 
@@ -4500,18 +4638,21 @@ struct tm *tms;
         strcpy(read_pwd, argv[++i]);
       else if (argv[i][1] == 'w')
         strcpy(write_pwd, argv[++i]);
+      else if (argv[i][1] == 'd')
+        strcpy(delete_pwd, argv[++i]);
       else if (argv[i][1] == 'l')
         strcpy(logbook, argv[++i]);
       else
         {
 usage:
-        printf("usage: %s [-p port] [-D] [-c file] [-r pwd] [-w pwd] [-l loggbook]\n\n", argv[0]);
+        printf("usage: %s [-p port] [-D] [-c file] [-r pwd] [-w pwd] [-d pwd] [-l loggbook]\n\n", argv[0]);
         printf("       -p <port> TCP/IP port\n");
         printf("       -D become a daemon\n");
         printf("       -c <file> specify configuration file\n");
         printf("       -v debugging output\n");
         printf("       -r create/overwrite read password in config file\n");
         printf("       -w create/overwrite write password in config file\n");
+        printf("       -d create/overwrite delete password in config file\n");
         printf("       -l <loogbook> specify logbook for -r and -w commands\n\n");
         return 0;
         }
@@ -4539,6 +4680,18 @@ usage:
       }
     base64_encode(write_pwd, str);
     create_password(logbook, "Write Password", str);
+    return 0;
+    }
+
+  if (delete_pwd[0])
+    {
+    if (!logbook[0])
+      {
+      printf("Must specify a lookbook via the -l parameter.\n");
+      return 0;
+      }
+    base64_encode(delete_pwd, str);
+    create_password(logbook, "Delete Password", str);
     return 0;
     }
 
