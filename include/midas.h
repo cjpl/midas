@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.78  2001/01/22 08:26:58  midas
+  Added evaluation of __linux__
+
   Revision 1.77  2001/01/04 11:27:37  midas
   Added bus driver commands and structures
 
@@ -280,6 +283,10 @@
 #if defined ( vxw )
 #define OS_VXWORKS
 #undef OS_UNIX
+#endif
+
+#if defined ( __linux__ )
+#define OS_LINUX
 #endif
 
 #if defined(OS_LINUX) || defined(OS_OSF1) || defined(OS_ULTRIX) || defined(OS_FREEBSD) || defined(OS_SOLARIS)
