@@ -1,3 +1,8 @@
+Version 1.0.2, released July 26, 2001
+=====================================
+- Added URL = flag in elgod.cfg file and update documentation accourdingly
+  to support secure connections over STUNNEL and SSH
+
 Version 1.0.1, released July 24, 2001
 =====================================
 
