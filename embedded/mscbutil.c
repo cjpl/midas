@@ -6,6 +6,9 @@
   Contents:     Various utility functions for MSCB protocol
 
   $Log$
+  Revision 1.20  2003/03/14 13:47:54  midas
+  Added SCS_310 code
+
   Revision 1.19  2003/03/06 11:01:13  midas
   Priority inversion for slow ADuC
 
@@ -1062,7 +1065,7 @@ void lcd_goto(char x, char y)
 
 /*------------------------------------------------------------------*/
 
-#if !defined(SCS_210) && !defined(SCS_300)
+#if !defined(SCS_210) && !defined(SCS_300) && !defined(SCS_310)
 
 char putchar(char c)
 {

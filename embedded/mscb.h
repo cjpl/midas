@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol commands
 
   $Log$
+  Revision 1.20  2003/03/14 13:47:54  midas
+  Added SCS_310 code
+
   Revision 1.19  2003/03/06 16:08:50  midas
   Protocol version 1.3 (change node name)
 
@@ -82,7 +85,7 @@ sbit RS485_ENABLE =      P3^5;
 #define LED_ON 0
 
 /*--------------------------------*/
-#elif defined(SCS_300)
+#elif defined(SCS_300) || defined(SCS_310)
 #include <c8051F020.h>
 #define CPU_C8051F020
 #define CPU_CYGNAL

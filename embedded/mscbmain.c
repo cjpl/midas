@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol main program
 
   $Log$
+  Revision 1.27  2003/03/14 13:47:54  midas
+  Added SCS_310 code
+
   Revision 1.26  2003/03/06 16:08:50  midas
   Protocol version 1.3 (change node name)
 
@@ -136,7 +139,7 @@ void flash_upgrade(void);
 
 /* variables in internal RAM (indirect addressing) */
 
-unsigned char idata in_buf[20], out_buf[8];
+unsigned char idata in_buf[20], out_buf[20];
 
 unsigned char idata i_in, last_i_in, final_i_in, n_out, i_out, cmd_len;
 unsigned char idata crc_code, addr_mode, n_channel, n_param;
@@ -436,7 +439,7 @@ void set_addressed(unsigned char mode, bit flag)
     }
 }
 
-void send_byte(unsigned char d, unsigned char data *crc)
+static void send_byte(unsigned char d, unsigned char data *crc)
 {
   if (crc)
     *crc = crc8_add(*crc, d);
@@ -447,7 +450,7 @@ void send_byte(unsigned char d, unsigned char data *crc)
 
 void interprete(void)
 {
-unsigned char crc, cmd, i, j, n;
+unsigned char crc, cmd, i, j, n, ch;
 MSCB_INFO_CHN code *pchn;
 
   cmd = (in_buf[0] & 0xF8); // strip length field
@@ -659,9 +662,21 @@ MSCB_INFO_CHN code *pchn;
           {
           user_read(in_buf[1]);
     
-          out_buf[0] = CMD_ACK + n;
-          for (i=0 ; i<n ; i++)
-            out_buf[1+i] = ((char idata *)channel[in_buf[1]].ud)[i];  // copy user data
+          if (n > 6)
+            {
+            /* variable length buffer */
+            out_buf[0] = CMD_ACK + 7;
+            out_buf[1] = n;
+            for (i=0 ; i<n ; i++)
+              out_buf[2+i] = ((char idata *)channel[in_buf[1]].ud)[i];  // copy user data
+            n++; 
+            }
+          else
+            {
+            out_buf[0] = CMD_ACK + n;
+            for (i=0 ; i<n ; i++)
+              out_buf[1+i] = ((char idata *)channel[in_buf[1]].ud)[i];  // copy user data
+            }
           }
     
         out_buf[1+n] = crc8(out_buf, 1 + n); // generate CRC code
@@ -740,16 +755,24 @@ MSCB_INFO_CHN code *pchn;
   if (cmd == CMD_WRITE_NA ||
       cmd == CMD_WRITE_ACK)
     {
-    if (in_buf[1] < n_channel)
+    /* offset to data */
+    if ((in_buf[0] & 0x07) == 0x07) // variable length
+      j = 1;
+    else
+      j = 0;
+
+    ch = in_buf[1+j];
+      
+    if (ch < n_channel)
       {
-      n = channel[in_buf[1]].width;
+      n = channel[ch].width;
   
       /* copy LSB bytes */
       for (i=0 ; i<n ; i++)
-        if (channel[in_buf[1]].ud)
-          ((char idata *)channel[in_buf[1]].ud)[i] = in_buf[i_in-1-n+i];
+        if (channel[ch].ud)
+          ((char idata *)channel[ch].ud)[i] = in_buf[i_in-1-n+i+j];
       
-      user_write(in_buf[1]);
+      user_write(ch);
   
       if (cmd == CMD_WRITE_ACK)
         {
