@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.118  2003/05/08 19:36:24  midas
+  Changed size_t into INT
+
   Revision 1.117  2003/05/07 10:55:47  midas
   Export strlcpy
 
@@ -1681,8 +1684,8 @@ INT EXPRT cm_msg_register(void (*func)(HNDLE,HNDLE,EVENT_HEADER*,void*));
 INT EXPRT cm_msg_retrieve(INT n_message, char *message, INT *buf_size);
 
 BOOL EXPRT equal_ustring(char *str1, char *str2);
-size_t EXPRT strlcpy(char *dst, const char *src, size_t size);
-size_t EXPRT strlcat(char *dst, const char *src, size_t size);
+INT EXPRT strlcpy(char *dst, const char *src, INT size);
+INT EXPRT strlcat(char *dst, const char *src, INT size);
 
 /*---- buffer manager ----*/
 INT EXPRT bm_open_buffer(char *buffer_name, INT buffer_size, INT *buffer_handle);

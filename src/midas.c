@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.190  2003/05/08 19:36:32  midas
+  Changed size_t into INT
+
   Revision 1.189  2003/05/02 09:03:01  midas
   Fixed buffer overflows by strlcpy()
 
@@ -825,11 +828,11 @@ int  i;
  * will be copied.  Always NUL terminates (unless size == 0).
  * Returns strlen(src); if retval >= siz, truncation occurred.
  */
-size_t strlcpy(char *dst, const char *src, size_t size)
+INT strlcpy(char *dst, const char *src, INT size)
 {
 char *d = dst;
 const char *s = src;
-size_t n = size;
+INT n = size;
 
   /* Copy as many bytes as will fit */
   if (n != 0 && --n != 0)
@@ -859,12 +862,12 @@ size_t n = size;
  * Returns strlen(src) + MIN(size, strlen(initial dst)).
  * If retval >= size, truncation occurred.
  */
-size_t strlcat(char *dst, const char *src, size_t size)
+INT strlcat(char *dst, const char *src, INT size)
 {
 char *d = dst;
 const char *s = src;
-size_t n = size;
-size_t dlen;
+INT n = size;
+INT dlen;
 
 	/* Find the end of dst and adjust bytes left but don't go past end */
 	while (n-- != 0 && *d != '\0')
