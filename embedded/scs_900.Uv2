@@ -111,9 +111,9 @@ Options 1,0,0  // Target 'ICE'
  LX51DAS ()
  LX51IDS ()
   OPTDL (S8051.DLL)()(DCYG.DLL)(-pCYGF000)(S8051.DLL)()(TCYG.DLL)(-pCYGF000)
-  OPTDBG 2046,-1,()()()()()()()()()() (BIN\CygC8051F.dll)()()()
- FLASH1 { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }
- FLASH2 ()
+  OPTDBG 2046,-1,()()()()()()()()()() (BIN\SiC8051F.dll)()()()
+ FLASH1 { 1,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }
+ FLASH2 (BIN\SiC8051F.dll)
  FLASH3 ("" ())
 EndOpt
 
