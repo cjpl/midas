@@ -6,8 +6,11 @@
   Contents:     High Voltage Class Driver
 
   $Log$
+  Revision 1.13  2003/09/23 09:16:37  midas
+  Added <math.h>
+
   Revision 1.12  2003/08/26 23:27:40  pierre
-  Cannot use // to denote comments because this does not compile under VxWorks; replaced all new // introduced on 2003/06/03 by /* ... */
+  Cannot use // to denote comments because this does not compile under VxWorks; replaced all new // introduced on 2003/06/03 by normal comments
 
   Revision 1.11  2003/06/03 09:09:39  suter_a
   allow negative high voltage values and adopeted hv_ramp accordingly
@@ -55,6 +58,7 @@
 \********************************************************************/
 
 #include <stdio.h>
+#include <math.h>
 #include "midas.h"
 #include "ybos.h"
 
