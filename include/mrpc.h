@@ -7,6 +7,9 @@
   Contents:     Symbolic constants for internal RPC functions
 
   $Log$
+  Revision 1.16  2003/04/15 12:52:23  midas
+  Removed db_show_mem
+
   Revision 1.15  2002/05/10 01:41:19  midas
   Added optional debug output to cm_transition
 
@@ -117,7 +120,6 @@
 #define RPC_DB_GET_DATA_INDEX           11231
 #define RPC_DB_GET_KEY_TIME             11232
 #define RPC_DB_GET_OPEN_RECORDS         11233
-#define RPC_DB_SHOW_MEM                 11234
 #define RPC_DB_FLUSH_DATABASE           11235
 #define RPC_DB_SET_DATA_INDEX2          11236
 #define RPC_DB_GET_KEY_INFO             11237

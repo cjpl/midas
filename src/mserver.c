@@ -6,6 +6,9 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
+  Revision 1.38  2003/04/15 12:52:34  midas
+  Removed db_show_mem
+
   Revision 1.37  2003/01/14 11:24:07  midas
   Write error to midas.log if user does not exist
 
@@ -676,10 +679,6 @@ INT convert_flags;
 
     /* database functions */
     
-    case RPC_DB_SHOW_MEM:
-      status = db_show_mem(CHNDLE(0), CSTRING(1), CINT(2));
-      break;
-    
     case RPC_DB_OPEN_DATABASE:
 
 #ifdef OS_WINNT
@@ -794,8 +793,6 @@ INT convert_flags;
         rpc_convert_single(&pkey->total_size, TID_INT, RPC_OUTGOING, convert_flags);
         rpc_convert_single(&pkey->item_size, TID_INT, RPC_OUTGOING, convert_flags);
         rpc_convert_single(&pkey->access_mode, TID_WORD, RPC_OUTGOING, convert_flags);
-        rpc_convert_single(&pkey->lock_mode, TID_WORD, RPC_OUTGOING, convert_flags);
-        rpc_convert_single(&pkey->exclusive_client, TID_WORD, RPC_OUTGOING, convert_flags);
         rpc_convert_single(&pkey->notify_count, TID_WORD, RPC_OUTGOING, convert_flags);
         rpc_convert_single(&pkey->next_key, TID_INT, RPC_OUTGOING, convert_flags);
         rpc_convert_single(&pkey->parent_keylist, TID_INT, RPC_OUTGOING, convert_flags);
