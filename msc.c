@@ -6,6 +6,9 @@
   Contents:     Command-line interface for the Midas Slow Control Bus
 
   $Log$
+  Revision 1.14  2002/10/22 15:04:34  midas
+  Added repeat readout mode
+
   Revision 1.13  2002/10/09 15:48:13  midas
   Fixed bug with download
 
@@ -110,6 +113,7 @@ NAME_TABLE unit_table[] = {
   UNIT_PERCENT,    "percent", 
   UNIT_PPM,        "RPM", 
   UNIT_COUNT,      "counts",
+  UNIT_FACTOR,     "factor",
   0
 };
 
@@ -125,8 +129,8 @@ void print_help()
   puts("info                       Retrive node info");
   puts("sa <addr> <gaddr>          Set node and group address of addressed node");
   puts("debug 0/1                  Turn debuggin off/on on node (LCD output)");
-  puts("\nwrite <channel> <value>    Write to node channel");
-  puts("read <channel>             Read from node channel");
+  puts("\nwrite <channel> <value>  Write to node channel");
+  puts("read <channel> [r]         Read from node channel [repeat mode]");
   puts("wc <index> <value>         Write configuration parameter");
   puts("flash                      Flash parameters into EEPROM");
   puts("rc <index>                 Read configuration parameter");
@@ -138,16 +142,20 @@ void print_help()
 
 /*------------------------------------------------------------------*/
 
-print_channel(int index, MSCB_INFO_CHN *info_chn, int data)
+print_channel(int index, MSCB_INFO_CHN *info_chn, int data, int verbose)
 {
 char str[80];
 int  i;
 
-  memset(str, 0, sizeof(str));
-  strncpy(str, info_chn->name, 8);
-  for (i=strlen(str) ; i<9 ; i++)
-    str[i] = ' ';
-  printf("%2d: %s ", index, str);
+  if (verbose)
+    {
+    memset(str, 0, sizeof(str));
+    strncpy(str, info_chn->name, 8);
+    for (i=strlen(str) ; i<9 ; i++)
+      str[i] = ' ';
+    printf("%2d: %s ", index, str);
+    }
+
   switch(info_chn->width)
     {
     case SIZE_0BIT:  
@@ -210,7 +218,10 @@ int  i;
       printf(unit_table[i].name);
     }
 
-  printf("\n");
+  if (verbose)
+    printf("\n");
+  else
+    printf("            \r");
 }
 
 /*------------------------------------------------------------------*/
@@ -219,6 +230,7 @@ void cmd_loop(int fd, char *cmd, int adr)
 {
 int           i, status, nparam, addr, gaddr, current_addr, current_group;
 unsigned int  data;
+float         value;
 char          str[256], line[256];
 char          param[10][100];
 char          *pc;
@@ -346,7 +358,7 @@ MSCB_INFO_CHN info_chn;
     /* scan */
     else if ((param[0][0] == 's' && param[0][1] == 'c'))
       {
-      for (i=0 ; i<1000 ; i++)
+      for (i=0 ; i<0x10000 ; i++)
         {
         printf("Test address %d\r", i);
         fflush(stdout);
@@ -358,18 +370,16 @@ MSCB_INFO_CHN info_chn;
           printf("Found node \"%s\", node addr. %d (0x%04X), group addr. %d (0x%04X)      \n", 
             info.node_name, i, i, info.group_address, info.group_address);
           }
+        if (i == 1000)
+          i = 0xFFFE;
         }
-      status = mscb_addr(fd, CMD_PING16, 0xFFFF);
-      if (status == MSCB_SUCCESS)
-        printf("Found node 0xFFFF\n");
-      else
-        printf("                    \n");
 
+      printf("                       \n");
       current_addr = -1;
       }
 
     /* info */
-    else if ((param[0][0] == 'i' && param[0][1] == 'n') && param[0][2] == 'f')
+    else if (param[0][0] == 'i')
       {
       if (current_addr < 0)
         printf("You must first address an individual node\n");
@@ -410,7 +420,7 @@ MSCB_INFO_CHN info_chn;
             mscb_info_channel(fd, GET_INFO_CHANNEL, i, &info_chn);
             mscb_read(fd, (unsigned char)i, &data);
 
-            print_channel(i, &info_chn, data);
+            print_channel(i, &info_chn, data, 1);
             }
 
           printf("\nConfiguration Parameters:\n");
@@ -419,7 +429,7 @@ MSCB_INFO_CHN info_chn;
             mscb_info_channel(fd, GET_INFO_CONF, i, &info_chn);
             mscb_read_conf(fd, (unsigned char)i, &data);
 
-            print_channel(i, &info_chn, data);
+            print_channel(i, &info_chn, data, 1);
             }
           }
         }
@@ -558,15 +568,33 @@ MSCB_INFO_CHN info_chn;
           {
           addr = atoi(param[1]);
 
-          if (param[2][1] == 'x')
-            sscanf(param[2]+2, "%lx", &data);
-          else
-            data = atoi(param[2]);
-
           if (current_addr >= 0)
-            status = mscb_write(fd, (unsigned char)addr, data, 4);
+            {
+            mscb_info_channel(fd, GET_INFO_CHANNEL, addr, &info_chn);
+            if (info_chn.flags & MSCBF_FLOAT)
+              {
+              value = (float)atof(param[2]);
+              memcpy(&data, &value, sizeof(float));
+              }
+            else
+              {
+              if (param[2][1] == 'x')
+                sscanf(param[2]+2, "%lx", &data);
+              else
+                data = atoi(param[2]);
+              }
+
+            status = mscb_write(fd, (unsigned char)addr, data, info_chn.width);
+            }
           else if (current_group >= 0)
+            {
+            if (param[2][1] == 'x')
+              sscanf(param[2]+2, "%lx", &data);
+            else
+              data = atoi(param[2]);
+
             status = mscb_write_na(fd, (unsigned char)addr, data, 4);
+            }
 
           if (status != MSCB_SUCCESS)
             printf("Error: %d\n", status);
@@ -587,11 +615,21 @@ MSCB_INFO_CHN info_chn;
           {
           addr = atoi(param[1]);
 
-          status = mscb_read(fd, (unsigned char)addr, &data);
-          if (status != MSCB_SUCCESS)
-            printf("Error: %d\n", status);
-          else
-            printf("%d (0x%X)\n", data, data);
+          mscb_info_channel(fd, GET_INFO_CHANNEL, addr, &info_chn);
+
+          do
+            {
+            status = mscb_read(fd, (unsigned char)addr, &data);
+            if (status != MSCB_SUCCESS)
+              printf("Error: %d\n", status);
+            else
+              print_channel(addr, &info_chn, data, 0);
+            } while (param[2][0] && !kbhit());
+
+          while (kbhit())
+            getch();
+
+          printf("\n");
           }
         }
       }
@@ -609,15 +647,29 @@ MSCB_INFO_CHN info_chn;
           {
           addr = atoi(param[1]);
 
-          if (param[2][1] == 'x')
-            sscanf(param[2]+2, "%lx", &data);
+          if (current_addr >= 0)
+            {
+            mscb_info_channel(fd, GET_INFO_CONF, addr, &info_chn);
+            if (info_chn.flags & MSCBF_FLOAT)
+              {
+              value = (float)atof(param[2]);
+              memcpy(&data, &value, sizeof(float));
+              }
+            else
+              {
+              if (param[2][1] == 'x')
+                sscanf(param[2]+2, "%lx", &data);
+              else
+                data = atoi(param[2]);
+              }
+
+            status = mscb_write_conf(fd, (unsigned char)addr, data, info_chn.width);
+
+            if (status != MSCB_SUCCESS)
+              printf("Error: %d\n", status);
+            }
           else
-            data = atoi(param[2]);
-
-          status = mscb_write_conf(fd, (unsigned char)addr, data, 4);
-
-          if (status != MSCB_SUCCESS)
-            printf("Error: %d\n", status);
+            printf("Please address individual node first.\n");
           }
         }
       }
