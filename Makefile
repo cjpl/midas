@@ -6,6 +6,9 @@
 #  Contents:     Makefile for MIDAS binaries and examples under unix
 #
 #  $Log$
+#  Revision 1.2  1998/11/22 20:13:26  midas
+#  Added fal.o to standard installation
+#
 #  Revision 1.1  1998/11/22 20:10:33  midas
 #  Changed makefile to Makefile
 #
@@ -162,7 +165,7 @@ OBJS =  $(LIB_DIR)/midas.o $(LIB_DIR)/system.o $(LIB_DIR)/mrpc.o \
 LIB =   $(LIB_DIR)/libmidas.a
 
 all:    $(OS_DIR) $(LIB_DIR) $(BIN_DIR) \
-	$(LIB_DIR)/mana.o $(LIB_DIR)/mfe.o \
+	$(LIB_DIR)/mana.o $(LIB_DIR)/mfe.o $(LIB_DIR)/fal.o \
 	$(BIN_DIR)/mserver $(BIN_DIR)/mhttpd \
 	$(BIN_DIR)/mlogger $(BIN_DIR)/odbedit \
 	$(BIN_DIR)/mtape $(BIN_DIR)/mhist \
@@ -262,6 +265,8 @@ $(LIB_DIR)/mfe.o: $(SRC_DIR)/mfe.c $(INC_DIR)/msystem.h $(INC_DIR)/midas.h $(INC
 	$(CC) -c $(CFLAGS) $(OSFLAGS) -o $(LIB_DIR)/mfe.o $(SRC_DIR)/mfe.c
 $(LIB_DIR)/mana.o: $(SRC_DIR)/mana.c $(INC_DIR)/msystem.h $(INC_DIR)/midas.h $(INC_DIR)/midasinc.h $(INC_DIR)/mrpc.h
 	$(CC) -Dextname -c $(CFLAGS) $(OSFLAGS) -o $(LIB_DIR)/mana.o $(SRC_DIR)/mana.c
+$(LIB_DIR)/fal.o: $(SRC_DIR)/fal.c $(INC_DIR)/msystem.h $(INC_DIR)/midas.h $(INC_DIR)/midasinc.h $(INC_DIR)/mrpc.h
+	$(CC) -c $(CFLAGS) $(OSFLAGS) -o $(LIB_DIR)/fal.o $(SRC_DIR)/fal.c
 
 #
 # utilities
@@ -339,7 +344,7 @@ install:
           mkdir -p $(SYSLIB_DIR); \
         fi;
 
-	@for i in libmidas.a mana.o mfe.o ; \
+	@for i in libmidas.a mana.o mfe.o fal.o ; \
 	  do \
 	  echo $$i ; \
 	  cp $(LIB_DIR)/$$i $(SYSLIB_DIR) ; \
