@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.9  1999/01/08 15:00:53  midas
+  Analyzer does not stop if a file in a range of files is missing
+
   Revision 1.8  1998/12/16 11:07:41  midas
   - verbose output (via -v flag) for N-Tuple booking
   - error message if histo dump is on when running online
@@ -2773,7 +2776,7 @@ HNDLE           hKey, hKeyEq, hKeyRoot;
 
   if (file == NULL)
     {
-    printf("Cannot open file %s\n", input_file_name);
+    printf("File %s not found\n", input_file_name);
     return -1;
     }
 
@@ -3046,8 +3049,6 @@ BANK_LIST *bank_list;
         strcpy(output_file_name, clp.output_file_name);
 
       status = analyze_file(run_number, input_file_name, output_file_name);
-      if (status != CM_SUCCESS)
-        break;
       }
     }
   else
