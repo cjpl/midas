@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.29  1999/08/13 13:49:14  midas
+  Extract current_run_number from BOR event
+
   Revision 1.28  1999/08/12 14:39:10  midas
   Fixed bug where from serveral input files specified via "-i xxx.mid yyy.mid"
   only the last one was contained in the output file.
@@ -1340,6 +1343,9 @@ INT        lrec;
 
     } /* if (out_file == NULL) */
 
+  /* save run number */
+  current_run_number = run_number;
+
   /* call bor for modules */
   for (i=0 ; analyze_request[i].event_name[0] ; i++)
     {
@@ -1348,9 +1354,6 @@ INT        lrec;
       if (module[j]->bor != NULL && module[j]->enabled)
         module[j]->bor(run_number);
     }
-
-  /* save run number */
-  current_run_number = run_number;
   
   /* call main analyzer BOR routine */
   return ana_begin_of_run(run_number, error);
@@ -2851,6 +2854,7 @@ DWORD           start_time;
     if (pevent->event_id == EVENTID_BOR)
       {
       run_number = pevent->serial_number;
+      current_run_number = run_number;
 
       flag = TRUE;
       size = sizeof(flag);
