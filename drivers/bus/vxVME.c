@@ -6,6 +6,9 @@
   Cotents:      Routines for accessing VME under VxWorks
                 
   $Log$
+  Revision 1.4  2004/06/23 17:07:54  pierre
+  add read/write func code
+
   Revision 1.3  2004/02/06 01:15:27  pierre
   fix new definition
 
@@ -86,14 +89,46 @@ static int last_dma = -1;
 
 int vme_read(int vh, void *dst, int vme_addr, int size, int dma)
 {
-   return (int) 1;
+  int *ptr, status;
+  status = sysBusToLocalAdrs(VME_AM_STD_USR_DATA, vme_addr, &ptr);
+  switch (size) {
+  case 2:
+    *((WORD *)dst) = *((WORD *)ptr);
+    break;
+  case 4:
+    *((DWORD *)dst) = *((DWORD *)ptr);
+#if 0
+    printf("size:%d - dst:[%p]=0x%x - vme:0x%x - ptr:%p\n"
+	   , size, dst, *((DWORD *)dst), vme_addr, ptr);
+#endif
+    break;
+  default:
+    printf ("no go \n");
+  }
+  return (int) 1;
 }
 
 /*------------------------------------------------------------------*/
 
 int vme_write(int vh, void *src, int vme_addr, int size, int dma)
 {
-   return (int) 1;
+  int *ptr, status;
+  status = sysBusToLocalAdrs(VME_AM_STD_USR_DATA, vme_addr, &ptr);
+  switch (size) {
+  case 2:
+    *((WORD *)ptr) = *((WORD *)src);
+    break;
+  case 4:
+    *((DWORD *)ptr) = *((DWORD *)src);
+#if 0
+    printf("size:%d - src:[%p]=0x%x - vme:0x%x - ptr:%p\n", size, src, *((DWORD
+									  *)src), vme_addr, ptr);
+#endif
+    break;
+  default:
+    printf ("no go \n");
+  }
+  return (int) 1;
 }
 
 /*------------------------------------------------------------------*/
