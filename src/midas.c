@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.51  1999/09/17 15:59:03  midas
+  Added internal alarms
+
   Revision 1.50  1999/09/17 15:06:48  midas
   Moved al_check into cm_yield() and rpc_server_thread
 
@@ -14619,8 +14622,18 @@ ALARM       alarm;
   db_find_key(hDB, 0, str, &hkeyalarm);
   if (!hkeyalarm)
     {
-    cm_msg(MERROR, "al_trigger_alarm", "Alarm %s not found in ODB", alarm_name);
-    return AL_INVALID_NAME;
+    /* alarm must be an internal analyzer alarm, so create a default alarm */
+    status = db_create_record(hDB, 0, str, alarm_str);
+    db_find_key(hDB, 0, str, &hkeyalarm);
+    if (!hkeyalarm)
+      {
+      cm_msg(MERROR, "al_trigger_alarm", "Cannot create alarm record");
+      return AL_ERROR_ODB;
+      }
+    strcpy(str, "INTERNAL");
+    db_set_value(hDB, hkeyalarm, "Condition", str, 256, 1, TID_STRING); 
+    status = TRUE;
+    db_set_value(hDB, hkeyalarm, "Active", &status, sizeof(status), 1, TID_BOOL); 
     }
 
   size = sizeof(alarm);
@@ -14629,6 +14642,18 @@ ALARM       alarm;
     {
     cm_msg(MERROR, "al_trigger_alarm", "Cannot get alarm record");
     return AL_ERROR_ODB;
+    }
+
+  /* if internal alarm, check if active and check interval */
+  if (equal_ustring(alarm.condition, "INTERNAL"))
+    {
+    if (!alarm.active)
+      return AL_SUCCESS;
+    if ((INT)ss_time() - (INT)alarm.checked_last < alarm.check_interval)
+      return AL_SUCCESS;
+
+    /* no the alarm will be triggeres, so save time */
+    alarm.checked_last = ss_time();
     }
 
   /* get alarm class */
@@ -14647,6 +14672,13 @@ ALARM       alarm;
     {
     cm_msg(MERROR, "al_trigger_alarm", "Cannot get alarm class record");
     return AL_ERROR_ODB;
+    }
+
+  /* write back alarm message for internal alarms */
+  if (equal_ustring(alarm.condition, "INTERNAL"))
+    {
+    strncpy(alarm.alarm_message, alarm_message, 79);
+    alarm.alarm_message[79] = 0;
     }
 
   /* write system message */
@@ -14885,11 +14917,13 @@ ALARM     alarm;
       continue;
       }
 
-    /* if condition is true, trigger alarm */
+    /* check alarm only when active and not internal */
     if (alarm.active &&
+        !equal_ustring(alarm.condition, "INTERNAL") &&
         alarm.check_interval > 0 &&
         (INT)ss_time() - (INT)alarm.checked_last > alarm.check_interval)
       {
+      /* if condition is true, trigger alarm */
       if (al_evaluate_condition(alarm.condition))
         al_trigger_alarm(key.name, alarm.alarm_message);
       else
