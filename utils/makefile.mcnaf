@@ -27,6 +27,9 @@
 # 
 #  Revision History:
 #    $Log$
+#    Revision 1.8  2004/08/26 20:17:51  pierre
+#    add pthread lib
+#
 #    Revision 1.7  2002/05/08 22:17:17  pierre
 #    improve comments, add MIDAS_BASE
 #
@@ -61,7 +64,7 @@ MIDAS_BASE= ..
 INC_DIR= $(MIDAS_BASE)/include
 DRV_DIR= $(MIDAS_BASE)/drivers
 LIB_DIR= $(MIDAS_BASE)/linux/lib
-LIBS = $(LIB_DIR)/libmidas.a -lutil
+LIBS = $(LIB_DIR)/libmidas.a -lutil -lpthread
 SYSBIN_DIR = /usr/local/bin
 #
 CC   = gcc
