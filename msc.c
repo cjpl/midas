@@ -6,6 +6,9 @@
   Contents:     Command-line interface for the Midas Slow Control Bus
 
   $Log$
+  Revision 1.38  2003/06/05 12:35:26  midas
+  Display 8-bit signed values correctly
+
   Revision 1.37  2003/05/12 13:49:17  midas
   Added address check for SET_ADDR command
 
@@ -256,7 +259,7 @@ int  i, data;
 
       case 1:  
         if (info_chn->flags & MSCBF_SIGNED)
-          printf(" 8bit %8d (0x%02X/", data, data); 
+          printf(" 8bit %8d (0x%02X/", (char)data, data); 
         else
           printf(" 8bit %8u (0x%02X/", data, data); 
         for (i=0 ; i<8 ; i++)
