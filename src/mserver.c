@@ -6,6 +6,9 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
+  Revision 1.49  2004/09/28 20:05:59  midas
+  Revised debug logging for mserver
+
   Revision 1.48  2004/09/28 18:11:35  midas
   Added -D daemon mode
 
@@ -289,7 +292,7 @@ int main(int argc, char **argv)
    }
 
    if (!inetd && argc < 7)
-      cm_msg(MLOG, "main", "%s started interactively", argv[0]);
+      printf("%s started interactively\n", argv[0]);
 
    if (argc < 7) {
       debug = daemon = FALSE;
@@ -332,14 +335,14 @@ int main(int argc, char **argv)
          if (daemon || inetd)
             rpc_set_debug(debug_print, 1);
          else
-            rpc_set_debug((void (*)(char *)) puts, 2);
+            rpc_set_debug((void (*)(char *)) puts, 1);
 
          sprintf(str, "Arguments: ");
          for (i=0 ; i<argc ; i++)
             sprintf(str+strlen(str), " %s", argv[i]);
-         rpc_debug_print(str);
+         rpc_debug_printf(str);
 
-         rpc_debug_print("Debugging mode is on");
+         rpc_debug_printf("Debugging mode is on");
       }
 
       /* if command line parameter given, start according server type */
@@ -352,10 +355,7 @@ int main(int argc, char **argv)
          printf
              ("NOTE: THE MULTI THREADED SERVER IS BUGGY, ONLY USE IT FOR TEST PURPOSES\n");
          printf("Multi thread server started\n");
-      } else if (server_type == ST_SINGLE)
-         printf("Single thread server started\n");
-      else if (server_type == ST_MPROCESS)
-         printf("Multi process server started\n");
+      }
 
       /* register server */
       if (rpc_register_server(server_type, argv[0],
@@ -376,6 +376,7 @@ int main(int argc, char **argv)
       /* run forever */
       while (ss_suspend(5000, 0) != RPC_SHUTDOWN);
    } else {
+      
       /* here we come if this program is started as a subprocess */
 
       memset(&callback, 0, sizeof(callback));
@@ -409,22 +410,23 @@ int main(int argc, char **argv)
       callback.index = 0;
 
       if (callback.debug) {
+         rpc_set_debug(debug_print, 1);
          if (callback.directory[0]) {
             if (callback.user[0])
-               cm_msg(MLOG, "main", "Start subprocess in %s under user %s",
+               rpc_debug_printf("Start subprocess in %s under user %s\n",
                       callback.directory, callback.user);
             else
-               cm_msg(MLOG, "main", "Start subprocess in %s", callback.directory);
+               rpc_debug_printf("Start subprocess in %s\n", callback.directory);
 
          } else
-            cm_msg(MLOG, "main", "Start subprocess in current directory");
+            rpc_debug_printf("Start subprocess in current directory");
       }
 
       /* change the directory and uid */
       if (callback.directory[0])
          if (chdir(callback.directory) != 0)
-            cm_msg(MERROR, "main", "Cannot change to directory \"%s\"",
-                   callback.directory);
+            rpc_debug_printf("Cannot change to directory \"%s\"",
+                             callback.directory);
 
 #ifdef OS_UNIX
 
@@ -434,31 +436,30 @@ int main(int argc, char **argv)
 
          pw = getpwnam(callback.user);
          if (pw == NULL) {
+            rpc_debug_printf("Cannot change UID, unknown user \"%s\"",
+                             callback.user);
             cm_msg(MERROR, "main", "Cannot change UID, unknown user \"%s\"",
                    callback.user);
          } else {
-            if (setgid(pw->pw_gid) < 0 || initgroups(pw->pw_name, pw->pw_gid) < 0)
+            if (setgid(pw->pw_gid) < 0 || initgroups(pw->pw_name, pw->pw_gid) < 0) {
+               rpc_debug_printf("Unable to set group premission for user %s",
+                                callback.user);
                cm_msg(MERROR, "main", "Unable to set group premission for user %s",
                       callback.user);
-            else {
-               if (setuid(pw->pw_uid) < 0)
+            } else {
+               if (setuid(pw->pw_uid) < 0) {
+                  rpc_debug_printf("Unable to set user ID for %s", callback.user);
                   cm_msg(MERROR, "main", "Unable to set user ID for %s", callback.user);
-               else
+               } else {
+                  rpc_debug_printf("Changed UID to user %s (GID %d, UID %d)",
+                         callback.user, pw->pw_gid, pw->pw_uid);
                   cm_msg(MLOG, "main", "Changed UID to user %s (GID %d, UID %d)",
                          callback.user, pw->pw_gid, pw->pw_uid);
+               }
             }
          }
-
       }
 #endif
-
-      if (callback.debug) {
-         printf("Debuggin mode is on.\n");
-         if (callback.debug == 1)
-            rpc_set_debug(debug_print, 1);
-         else
-            rpc_set_debug((void (*)(char *)) puts, 2);
-      }
 
       rpc_register_server(ST_SUBPROCESS, NULL, NULL, rpc_server_dispatch);
 
