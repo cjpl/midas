@@ -14,6 +14,12 @@
                 Brown, Prentice Hall
 
   $Log$
+  Revision 1.20  1999/01/21 23:14:05  pierre
+  - Fix comments.
+  - Incorporate ss_mutex_... for OS_VXWORS.
+  - Rename ss_create_mutex() to ss_thread_create()
+  - Incorporate ss_thread_create for OS_VXWORS.
+
   Revision 1.19  1999/01/20 08:55:44  midas
   - Renames ss_xxx_mutex to ss_mutex_xxx
   - Added timout flag to ss_mutex_wait_for
@@ -730,7 +736,7 @@ INT ss_getpid(void)
 
   return 0;
 
-#endif /* OS_VXWORKS */
+#endif /* OS_MS_DOS */
 }
 
 /*------------------------------------------------------------------*/
@@ -943,56 +949,56 @@ INT ss_shell(int sock)
 \********************************************************************/
 {
 #ifdef OS_WINNT
-
-HANDLE hChildStdinRd, hChildStdinWr, hChildStdinWrDup, 
-       hChildStdoutRd, hChildStdoutWr, 
-       hChildStderrRd, hChildStderrWr, 
-       hSaveStdin, hSaveStdout, hSaveStderr; 
- 
-SECURITY_ATTRIBUTES saAttr; 
-PROCESS_INFORMATION piProcInfo; 
-STARTUPINFO         siStartInfo; 
-char                buffer[256], cmd[256]; 
-DWORD               dwRead, dwWritten, dwAvail, i, i_cmd;
-fd_set              readfds;
-struct timeval      timeout;
-
+  
+  HANDLE hChildStdinRd, hChildStdinWr, hChildStdinWrDup, 
+    hChildStdoutRd, hChildStdoutWr, 
+    hChildStderrRd, hChildStderrWr, 
+    hSaveStdin, hSaveStdout, hSaveStderr; 
+  
+  SECURITY_ATTRIBUTES saAttr; 
+  PROCESS_INFORMATION piProcInfo; 
+  STARTUPINFO         siStartInfo; 
+  char                buffer[256], cmd[256]; 
+  DWORD               dwRead, dwWritten, dwAvail, i, i_cmd;
+  fd_set              readfds;
+  struct timeval      timeout;
+  
   // Set the bInheritHandle flag so pipe handles are inherited. 
   saAttr.nLength = sizeof(SECURITY_ATTRIBUTES); 
   saAttr.bInheritHandle = TRUE; 
   saAttr.lpSecurityDescriptor = NULL; 
- 
+  
   // Save the handle to the current STDOUT. 
   hSaveStdout = GetStdHandle(STD_OUTPUT_HANDLE); 
- 
-  // Create a pipe for the child's STDOUT. 
+  
+  /* Create a pipe for the child's STDOUT. */
   if (! CreatePipe(&hChildStdoutRd, &hChildStdoutWr, &saAttr, 0)) 
     return 0; 
- 
+  
   // Set a write handle to the pipe to be STDOUT. 
   if (! SetStdHandle(STD_OUTPUT_HANDLE, hChildStdoutWr)) 
     return 0; 
-
-
+  
+  
   // Save the handle to the current STDERR. 
   hSaveStderr = GetStdHandle(STD_ERROR_HANDLE); 
- 
-  // Create a pipe for the child's STDERR. 
+  
+  /* Create a pipe for the child's STDERR. */
   if (! CreatePipe(&hChildStderrRd, &hChildStderrWr, &saAttr, 0)) 
     return 0; 
- 
+  
   // Set a read handle to the pipe to be STDERR. 
   if (! SetStdHandle(STD_ERROR_HANDLE, hChildStderrWr)) 
     return 0; 
-
+  
   
   // Save the handle to the current STDIN. 
   hSaveStdin = GetStdHandle(STD_INPUT_HANDLE); 
- 
-  // Create a pipe for the child's STDIN. 
+  
+  /* Create a pipe for the child's STDIN. */
   if (! CreatePipe(&hChildStdinRd, &hChildStdinWr, &saAttr, 0)) 
     return 0; 
- 
+  
   // Set a read handle to the pipe to be STDIN. 
   if (! SetStdHandle(STD_INPUT_HANDLE, hChildStdinRd)) 
     return 0; 
@@ -1021,8 +1027,8 @@ struct timeval      timeout;
       NULL,          // primary thread security attributes 
       TRUE,          // handles are inherited 
       0,             // creation flags 
-      NULL,          // use parent's environment 
-      NULL,          // use parent's current directory 
+		     NULL,          /* use parent's environment  */
+		     NULL,          /* use parent's current directory */
       &siStartInfo,  // STARTUPINFO pointer 
       &piProcInfo))  // receives PROCESS_INFORMATION 
     return 0;
@@ -1179,10 +1185,10 @@ struct termios tios;
 
 /*------------------------------------------------------------------*/
 
-INT ss_create_thread(INT (*thread_func)(void *), void *param)
+INT ss_thread_create(INT (*thread_func)(void *), void *param)
 /********************************************************************\
 
-  Routine: ss_create_thread
+  Routine: ss_thread_create
 
   Purpose: Create a thread
 
@@ -1224,17 +1230,37 @@ INT ss_create_thread(INT (*thread_func)(void *), void *param)
   return SS_NO_THREAD;
 
 #endif /* OS_VMS */
+
+#ifdef OS_VXWORKS
+/* taskSpawn which could be considered as a thread under VxWorks
+   requires several argument beside the thread args 
+   taskSpawn (taskname, priority, option, stacksize, entry_point
+              , arg1, arg2, ... , arg9, arg10)
+   all the arg will have to be retrieved from the param list.
+   through a structure to be simpler  */
+
+  INT status;
+  VX_TASK_SPAWN *ts;
+
+  ts = (VX_TASK_SPAWN *)param;
+  status = taskSpawn(ts->name, ts->priority, ts->options
+		     , ts->stackSize, (FUNCPTR) thread_func
+		     , ts->arg1, ts->arg2, ts->arg3, ts->arg4, ts->arg5
+		     , ts->arg6, ts->arg7, ts->arg8, ts->arg9, ts->arg10);
+  if (status == ERROR)
+    return SS_NO_THREAD;
+  return SS_SUCCESS;
+#endif /* OS_VXWORKS */
+  
 #ifdef OS_UNIX
 
   return SS_NO_THREAD;
-
 #endif /* OS_UNIX */
 }
 
 /*------------------------------------------------------------------*/
 
-#ifdef LOCAL_ROUTINES
-
+/*-PAA #ifdef LOCAL_ROUTINES */
 static INT skip_mutex_handle = -1;
 
 INT ss_mutex_create(char *name, HNDLE *mutex_handle)
@@ -1243,6 +1269,14 @@ INT ss_mutex_create(char *name, HNDLE *mutex_handle)
   Routine: ss_mutex_create
 
   Purpose: Create a mutex with a specific name
+  
+    Remark: Under VxWorks the specific semaphore handling is 
+            different than other OS. But VxWorks provides
+            the POSIX-compatible semaphore interface.
+            Under POSIX, no timeout is supported.
+            So for the time being, we keep the pure VxWorks
+            The semaphore type is a Binary instead of mutex
+            as the binary is an optimized mutex.
 
   Input:
     char   *name            Name of the mutex to create
@@ -1261,7 +1295,15 @@ char mutex_name[256], path[256], file_name[256];
   /* Add a leading SM_ to the mutex name */
   sprintf(mutex_name, "MX_%s", name);
 
-  /* Build the filename out of the path and the name of the mutex */
+#ifdef OS_VXWORKS
+  /* semBCreate is a Binary semaphore which is under VxWorks a optimized mutex
+     refering to the "programmer's Guide 5.3.1 */
+    if ((*((SEM_ID *)mutex_handle) = semBCreate(SEM_Q_FIFO, SEM_EMPTY)) == NULL)
+      return SS_NO_MUTEX;
+    return SS_CREATED;
+#endif /* OS_VXWORKS */
+
+ /* Build the filename out of the path and the name of the mutex */
   cm_get_path(path);
   if (path[0] == 0)
     {
@@ -1378,7 +1420,6 @@ char mutex_name[256], path[256], file_name[256];
 
   return SS_SUCCESS;
   }
-
 #endif /* OS_UNIX */
 }
 
@@ -1427,8 +1468,16 @@ INT status;
 
   return SS_SUCCESS;
 #endif /* OS_VMS */
-#ifdef OS_UNIX
+#ifdef OS_VXWORKS
+  {
+  status = semTake((SEM_ID)mutex_handle, timeout == 0 ? WAIT_FOREVER : timeout);
+  if (status == ERROR)
+    return SS_NO_MUTEX;
+  return SS_SUCCESS;
+  }
+#endif /* OS_VXWORKS */
 
+#ifdef OS_UNIX
   {
   struct sembuf sb;
   INT           status;
@@ -1477,7 +1526,6 @@ INT status;
 
   return SS_SUCCESS;
   }
-
 #endif /* OS_UNIX */
 }
 
@@ -1524,8 +1572,15 @@ INT status;
   return SS_SUCCESS;
 
 #endif /* OS_VMS */
-#ifdef OS_UNIX
 
+#ifdef OS_VXWORKS
+
+  if (semGive((SEM_ID)mutex_handle) == ERROR)
+    return SS_NO_MUTEX;
+  return SS_SUCCESS;
+#endif /* OS_VXWORKS */
+
+#ifdef OS_UNIX
   {
   struct sembuf sb;
 
@@ -1544,7 +1599,6 @@ INT status;
 
   return SS_SUCCESS;
   }
-
 #endif /* OS_UNIX */
 }
 
@@ -1583,8 +1637,15 @@ INT ss_mutex_delete(HNDLE mutex_handle, INT destroy_flag)
   return SS_SUCCESS;
 
 #endif /* OS_VMS */
-#ifdef OS_UNIX
 
+#ifdef OS_VXWORKS
+   /* no code for VxWorks destroy yet */
+   if (semDelete((SEM_ID) mutex_handle) == ERROR)
+     return SS_NO_MUTEX;
+   return SS_SUCCESS;
+#endif /* OS_VXWORKS */
+
+#ifdef OS_UNIX
 #if defined(OS_LINUX) || defined(OS_FREEBSD)
   union semun arg;
 #else
@@ -1604,7 +1665,7 @@ INT ss_mutex_delete(HNDLE mutex_handle, INT destroy_flag)
 #endif /* OS_UNIX */
 }
 
-#endif /* LOCAL_ROUTINES */
+/*-PAA #endif */ /* LOCAL_ROUTINES */
 
 /*------------------------------------------------------------------*/
 
