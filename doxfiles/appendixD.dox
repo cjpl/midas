@@ -141,6 +141,10 @@ under VxWorks Operating system. (Contact Stefan or Pierre for further informatio
 Midas uses a several environment variables to facilitate the different application
 startup.
  
+@subsection  MIDASSYS MIDASSYS
+ From version 1.9.4 this environmental variable is required. It should point
+to the main path of the installed Midas package. The application odbedit
+will generate a warning message in the case this variable is not defined.
 @subsection  MIDAS_EXPTAB MIDAS_EXPTAB
  This variable specify the location of the \b exptab file containing the predefined
  midas experiment. The default location is for OS_UNIX: /etc, /. For OS_WINNT:
