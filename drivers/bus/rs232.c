@@ -6,6 +6,9 @@
   Contents:     RS232 communication routines for MS-DOS and NT
 
   $Log$
+  Revision 1.11  2001/06/20 09:10:36  midas
+  Implemented flow control under NT (Fixed problems with W2k)
+
   Revision 1.10  2001/04/10 21:39:23  pierre
   - Fix rs232_read fprintf (...str)
 
@@ -517,6 +520,24 @@ COMMTIMEOUTS  CommTimeOuts;
 
   sprintf(str, "baud=%d parity=%c data=%d stop=%d", baud, parity, data_bit, stop_bit);
   BuildCommDCB(str, &dcb);
+
+  if (flow_control == 1)
+    {
+    dcb.fOutX = dcb.fInX = FALSE;
+    //dcb.fDtrControl = DTR_CONTROL_HANDSHAKE;
+    //dcb.fRtsControl = RTS_CONTROL_HANDSHAKE;
+    dcb.fOutxCtsFlow = dcb.fOutxDsrFlow = TRUE;
+    }
+  else if (flow_control == 2)
+    {
+    dcb.fOutX = dcb.fInX = TRUE;
+    dcb.fOutxCtsFlow = dcb.fOutxDsrFlow = FALSE;
+    }
+  else
+    {
+    dcb.fOutX = dcb.fInX = FALSE;
+    dcb.fOutxCtsFlow = dcb.fOutxDsrFlow = FALSE;
+    }
 
   if (SetCommState(hDev, &dcb) == FALSE)
     return -1;
