@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.22  1999/03/23 10:37:39  midas
+  Fixed bug in cm_set_watchdog_params which causes mtape report ODB errors
+
   Revision 1.21  1999/02/12 10:55:03  midas
   Accepted PAA's modification in cm_set_watchdog_params()
 
@@ -2049,9 +2052,12 @@ INT i;
     /* write timeout value to client enty in ODB */
     cm_get_experiment_database(&hDB, &hKey);
 
-    db_set_mode(hDB, hKey, MODE_READ | MODE_WRITE, TRUE);
-    db_set_value(hDB, hKey, "Link timeout", &timeout, sizeof(timeout), 1, TID_INT);
-    db_set_mode(hDB, hKey, MODE_READ, TRUE);
+    if (hDB)
+      {
+      db_set_mode(hDB, hKey, MODE_READ | MODE_WRITE, TRUE);
+      db_set_value(hDB, hKey, "Link timeout", &timeout, sizeof(timeout), 1, TID_INT);
+      db_set_mode(hDB, hKey, MODE_READ, TRUE);
+      }
     }
   else
     {
