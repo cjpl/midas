@@ -6,6 +6,9 @@
   Contents:     CMX Micronet data types and prototypes
 
   $Log$
+  Revision 1.2  2005/03/17 14:20:38  ritt
+  Increased number of sockets
+
   Revision 1.1  2005/03/16 14:15:48  ritt
   Initial revision
 
@@ -13,7 +16,7 @@
 
 #define IP_ADDR_LEN          4     // number of bytes in IP address
 #define ETH_ADDR_LEN         6     // number of bytes in ethernet hardware address
-#define NUM_SOCKETS          4     // must match definition in netlib.lib
+#define NUM_SOCKETS         16     // must match definition in netlib.lib
 
 #define IP_VER               4
 #define MIN_IHL              5
