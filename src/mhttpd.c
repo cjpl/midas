@@ -6,6 +6,9 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
+  Revision 1.10  1999/04/19 07:48:21  midas
+  Message display uses cm_msg_retrieve to display old messages
+
   Revision 1.9  1999/02/18 11:23:50  midas
   Added level parameter to search_callback
 
@@ -2165,7 +2168,7 @@ void interprete(char *cookie_pwd, char *path, int refresh)
 int    i, j, n, status, size, run_state, index;
 HNDLE  hkey, hsubkey, hDB;
 KEY    key;
-char   str[256], *p;
+char   str[256], *p, *ps, *pe;
 char   enc_path[256], dec_path[256], eq_name[NAME_LENGTH];
 char   data[10000];
 char   *experiment, *password, *command, *value, *group;
@@ -2238,6 +2241,22 @@ struct tm *gmt;
 
     /* redirect message display, turn on message logging */
     cm_set_msg_print(MT_ALL, MT_ALL, print_message);
+
+    /* retrieve old messages */
+    size = 1000;
+    cm_msg_retrieve(data, &size);
+    ps = data;
+    do
+      {
+      if ((pe = strchr(ps, '\n')) != NULL)
+        {
+        *pe = 0;
+        print_message(ps);
+        ps = pe+1;
+        }
+      } while (pe != NULL);
+    if (*ps)
+      print_message(ps);
     }
 
   cm_get_experiment_database(&hDB, NULL);
