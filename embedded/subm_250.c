@@ -7,6 +7,9 @@
                 SUBM250 running on Cygnal C8051F320
 
   $Log$
+  Revision 1.9  2005/03/21 12:54:13  ritt
+  Implemented new Bit9 handling
+
   Revision 1.8  2005/02/16 13:14:50  ritt
   Version 1.8.0
 
@@ -44,7 +47,9 @@
 
 unsigned char xdata usb_tx_buf[EP1_PACKET_SIZE];
 unsigned char xdata usb_rx_buf[EP2_PACKET_SIZE];
-unsigned char n_usb_rx, i_rs485_tx, i_rs485_rx;
+unsigned char n_usb_rx, n_rs485_tx, i_rs485_tx, i_rs485_rx;
+
+unsigned char rs485_tx_bit9[4];
 
 /*------------------------------------------------------------------*/
 
@@ -96,8 +101,7 @@ extern void watchdog_refresh(void);
 #define RS485_FLAG_SHORT_TO  (1<<2)
 #define RS485_FLAG_LONG_TO   (1<<3)
 #define RS485_FLAG_CMD       (1<<4)
-
-unsigned char rs485_flags;
+#define RS485_FLAG_ADR_CYCLE (1<<5)
 
 /*------------------------------------------------------------------*/
 
@@ -165,13 +169,20 @@ void serial_int(void) interrupt 4 using 1
       /* transmit next byte */
 
       i_rs485_tx++;
-      if (i_rs485_tx < n_usb_rx) {
+      if (i_rs485_tx < n_rs485_tx) {
+
+         /* set bit9 according to array */
+         if (i_rs485_tx < 5 && rs485_tx_bit9[i_rs485_tx-1])
+            TB80 = 1;
+         else
+            TB80 = 0;
+
          DELAY_US(INTERCHAR_DELAY);
          SBUF0 = usb_rx_buf[i_rs485_tx];
       } else {
          /* end of buffer */
          RS485_ENABLE = 0;
-         i_rs485_tx = n_usb_rx = 0;
+         i_rs485_tx = n_rs485_tx = 0;
       }
    }
 
@@ -219,27 +230,37 @@ void execute()
 
 /*------------------------------------------------------------------*/
 
-unsigned char rs485_send()
+unsigned char rs485_send(unsigned char len, unsigned char flags)
 {
-   rs485_flags = usb_rx_buf[0];
+   unsigned char i;
 
    /* clear receive buffer */
    i_rs485_rx = 0;
 
-   if (rs485_flags & RS485_FLAG_CMD) {
+   if (flags & RS485_FLAG_CMD) {
 
       /* execute direct command */
       execute();
-      n_usb_rx = 0;
       return 0;
 
    } else {
 
       /* send buffer to RS485 */
+      memset(rs485_tx_bit9, 0, sizeof(rs485_tx_bit9));
 
-      /* set bit9 */
-      TB80 = (rs485_flags & RS485_FLAG_BIT9) > 0;
+      /* set all bit9 if BIT9 flag */
+      if (flags & RS485_FLAG_BIT9)
+         for (i=1 ; i<len && i<5 ; i++)
+            rs485_tx_bit9[i-1] = 1;
 
+      /* set first four bit9 if ADR_CYCLE flag */
+      if (flags & RS485_FLAG_ADR_CYCLE)
+         for (i=0 ; i<4 ; i++)
+            rs485_tx_bit9[i] = 1;
+
+      TB80 = rs485_tx_bit9[0];
+
+      n_rs485_tx = len;
       DELAY_US(INTERCHAR_DELAY);
       RS485_ENABLE = 1;
       SBUF0 = usb_rx_buf[1];
@@ -249,7 +270,7 @@ unsigned char rs485_send()
    return 1;
 }
 
-void rs485_receive()
+void rs485_receive(unsigned char rs485_flags)
 {
 unsigned char  n;
 unsigned short i, to;
@@ -313,7 +334,8 @@ unsigned short i, to;
 
 void main(void)
 {
- 
+   unsigned char flags;
+
    setup();
    usb_init(usb_rx_buf, &n_usb_rx);
    n_usb_rx = 0;
@@ -326,16 +348,22 @@ void main(void)
 
          /* signal incoming data */
          led_blink(0, 1, 50);
-         if (rs485_send()) {
+
+         flags = usb_rx_buf[0];
+         n_rs485_tx = n_usb_rx;
+
+         if (rs485_send(n_rs485_tx, flags)) {
 
             /* wait until sent */
-            while (n_usb_rx)
+            while (n_rs485_tx)
                yield();
 
             /* wait for data to be received */
-            rs485_receive();
+            rs485_receive(flags);
          }
 
+         /* mark USB receive buffer empty */
+         n_usb_rx = 0;
       }
 
    } while (1);
