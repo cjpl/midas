@@ -8,6 +8,9 @@
                 and four buttons
 
   $Log$
+  Revision 1.5  2005/02/16 14:17:58  ritt
+  Two-speed menu increment
+
   Revision 1.4  2005/02/16 13:14:50  ritt
   Version 1.8.0
 
@@ -402,6 +405,8 @@ void lcd_menu()
             }
             if (b2 && time() > last_b2 + 70)
                var_inc(pvar, -1);
+            if (b2 && time() > last_b2 + 500)
+               var_inc(pvar, -9);
             if (!b2)
                last_b2 = 0;
 
@@ -412,6 +417,8 @@ void lcd_menu()
             }
             if (b3 && time() > last_b3 + 70)
                var_inc(pvar, 1);
+            if (b3 && time() > last_b3 + 500)
+               var_inc(pvar, 9);
             if (!b3)
                last_b3 = 0;
 
