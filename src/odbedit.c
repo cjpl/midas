@@ -6,13 +6,11 @@
   Contents:     Command-line interface to the MIDAS online data base.
 
   $Log$
+  Revision 1.8  1998/10/12 12:23:51  midas
+  Added run state character in ODBEdit prompt
+
   Revision 1.7  1998/10/12 12:19:03  midas
   Added Log tag in header
-
-  Revision 1.6  1998/10/12 11:59:11  midas
-  Added Log tag in header
-
-  Revision 1.5  1998/10/12 11:00:29  midas
 
 \********************************************************************/
 
