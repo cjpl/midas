@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol commands
 
   $Log$
+  Revision 1.48  2005/01/06 14:48:55  midas
+  Added scs_220
+
   Revision 1.47  2004/12/21 10:46:28  midas
   Added mapping of scs_xxx to SCS_xxx
 
@@ -154,14 +157,14 @@
 #ifdef scs_210
 #define SCS_210
 #endif
+#ifdef scs_220
+#define SCS_220
+#endif
 #ifdef subm_250
 #define SUBM_250
 #endif
 #ifdef subm_300
 #define SUBM_300
-#endif
-#ifdef scs_210
-#define SCS_210
 #endif
 #ifdef scs_300
 #define SCS_300
@@ -220,6 +223,18 @@
 #define LED_1 P3 ^ 3
 #define LED_ON 0
 sbit RS485_ENABLE = P3 ^ 5;
+
+/*--------------------------------*/
+#elif defined(SCS_220)
+#include <c8051F020.h>
+#define CPU_C8051F020
+#define CPU_CYGNAL
+
+#define LED_0 P3 ^ 4
+#define LED_1 P3 ^ 3
+#define LED_ON 0
+sbit RS485_ENABLE = P3 ^ 5;
+sbit RS485_SEC_ENABLE = P0 ^ 6;
 
 /*--------------------------------*/
 #elif defined(SUBM_250)
