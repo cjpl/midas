@@ -9,6 +9,9 @@
                 for Keithley Model 2000 Multimeter
 
   $Log$
+  Revision 1.7  2004/12/13 11:13:43  midas
+  Modified terminal mode
+
   Revision 1.6  2004/07/30 10:22:03  midas
   Added MSCBF_DATALESS
 
@@ -39,9 +42,10 @@ char code node_name[] = "Kei2000";
 /* declare number of sub-addresses to framework */
 unsigned char idata _n_sub_addr = 1;
 
-bit terminal_mode, term_flag;
-xdata char term_buf[80];
-char tbwp, tbrp;
+xdata char term_obuf[250], term_ibuf[250];
+unsigned long last_read;
+unsigned char towp;
+unsigned char tiwp, tirp;
 
 /*---- Define channels and configuration parameters returned to
        the CMD_GET_INFO command                                 ----*/
@@ -82,8 +86,8 @@ sbit GPIB_REM  = P2 ^ 0;         // Pin 17
 #pragma NOAREGS
 
 void user_write(unsigned char index) reentrant;
-char send(unsigned char adr, char *str);
-char send_byte(unsigned char b);
+unsigned char send(unsigned char adr, char *str);
+unsigned char send_byte(unsigned char b);
 
 bit demand_changed;
 
@@ -111,8 +115,6 @@ void user_init(unsigned char init)
    send_byte(0x14);             // DCL
    GPIB_ATN = 1;
 
-   terminal_mode = 0;
-
    if (init) {
       user_data.gpib_adr = 16;
    }
@@ -121,41 +123,46 @@ void user_init(unsigned char init)
 /*---- User write function -----------------------------------------*/
 
 /* buffers in mscbmain.c */
-extern unsigned char xdata in_buf[300], out_buf[300];
+extern unsigned char xdata in_buf[64], out_buf[64];
 
 void user_write(unsigned char index) reentrant
 {
+   unsigned char i, n;
+
    if (index == 0) {
-      if (in_buf[2] == 27)
-         terminal_mode = 0;
-      else if (in_buf[2] == 0) {
-         terminal_mode = 1;
-         term_flag = 0;
-         tbwp = 0;
-         tbrp = 0;
-      } else {
-         /* put byte in terminal buffer for main loop */
-         term_buf[tbwp] = in_buf[2];
-         if (tbwp < sizeof(term_buf))
-            tbwp++;
+      /* put bytes in terminal buffer for main loop */
+      n = in_buf[1]-1;
+      for (i=0 ; i<n ; i++) {
+         term_obuf[towp++] = in_buf[3 + i];
+         if (towp == sizeof(term_obuf))
+            towp--;
       }
+
    } else
-      demand_changed = 1;
+       demand_changed = 1;
 }
 
 /*---- User read function ------------------------------------------*/
 
 unsigned char user_read(unsigned char index)
 {
+   unsigned char n;
+
    if (index == 0) {
-      if (terminal_mode && term_flag == 2) {
-         out_buf[1] = term_buf[tbrp++];
-         if (tbrp == tbwp) {
-            tbrp = tbwp = 0;
-            term_flag = 0;
-         }
-         return 1;
+
+      /* prevent reads for 1s */
+      last_read = time();
+
+      for (n=0 ; n<32 ; n++) {
+         if (tirp != tiwp) {
+            out_buf[2 + n] = term_ibuf[tirp++];
+            if (tirp == sizeof(term_ibuf))
+               tirp = 0;
+         } else
+            break;
       }
+
+      return n;
    }
 
    return 0;
@@ -173,7 +180,7 @@ unsigned char user_func(unsigned char *data_in, unsigned char *data_out)
 
 /*---- Functions for GPIB port -------------------------------------*/
 
-char send_byte(unsigned char b)
+unsigned char send_byte(unsigned char b)
 {
    unsigned int i;
 
@@ -218,7 +225,7 @@ char send_byte(unsigned char b)
 
 /*------------------------------------------------------------------*/
 
-char send(unsigned char adr, char *str)
+unsigned char send(unsigned char adr, char *str)
 {
    unsigned char i;
 
@@ -246,7 +253,7 @@ char send(unsigned char adr, char *str)
 
 /*------------------------------------------------------------------*/
 
-char enter(unsigned char adr, char *str, char maxlen)
+unsigned char enter(unsigned char adr, char *str, unsigned char maxlen)
 {
    unsigned long t;
    unsigned char i, flag;
@@ -327,10 +334,9 @@ idata char str[32];
 
 void user_loop(void)
 {
-   static unsigned long t;
 
-   if (!terminal_mode && time() > t + 100) {
-      t = time();
+   if (time() > last_read + 100) {
+      last_read = time();
 
       send(user_data.gpib_adr, ":FETCH?");
       if (enter(user_data.gpib_adr, str, sizeof(str)))
@@ -339,31 +345,30 @@ void user_loop(void)
          user_data.reading = 0;
    }
 
-   if (terminal_mode) {
-      /* check terminal buffer */
+   /* check terminal buffer */
+   if (towp > 0 && (term_obuf[towp - 1] == 13 || term_obuf[towp - 1] == 0)) {
+      
       DISABLE_INTERRUPTS;
-      if (tbwp > 0 && term_buf[tbwp - 1] == 13) {
-         /* add trailing "0" */
-         if (tbwp == sizeof(term_buf))
-            tbwp--;
-         term_buf[tbwp] = 0;
+   
+      /* add trailing "0" */
+      if (towp == sizeof(term_obuf))
+         towp--;
+      term_obuf[towp] = 0;
 
-         /* send buffer */
-         send(user_data.gpib_adr, term_buf);
+      /* send buffer */
+      send(user_data.gpib_adr, term_obuf);
+      towp = 0;
 
-         led_blink(1, 1, 100);
+      /* receive buffer */
+      tiwp = enter(user_data.gpib_adr, term_ibuf, sizeof(term_ibuf));
+      tirp = 0;
 
-         /* receive buffer */
-         tbwp = enter(user_data.gpib_adr, term_buf, sizeof(term_buf));
+      /* add newline */
+      if (tiwp > 0 && tiwp < sizeof(term_ibuf)-1)
+         term_ibuf[tiwp++] = 10;
 
-         if (tbwp > 0) {
-            /* add newline */
-            term_buf[tbwp++] = 10;
-            term_flag = 1;
-         } else
-            term_flag = 0;
-      }
       ENABLE_INTERRUPTS;
    }
+
 
 }
