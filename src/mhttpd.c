@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.100  2000/03/08 23:43:49  midas
+  Fixed bug that wrong size was given to el_retrieve
+
   Revision 1.99  2000/03/08 22:42:01  midas
   Fixed problem with elog froms and several experiments
 
@@ -2621,6 +2624,7 @@ FILE  *f;
         break;
         }
 
+      size = sizeof(text);
       el_retrieve(path, date, &run, author, type, system, subject, 
                   text, &size, orig_tag, reply_tag, 
                   attachment[0], attachment[1], attachment[2], 
