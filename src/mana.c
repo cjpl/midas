@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.67  2000/11/08 15:03:00  midas
+  Fixed bug that elapsed time was zero after EOR event
+
   Revision 1.66  2000/11/08 14:47:40  midas
   Analyzer now stops with '!' also in -r (multi run) mode
 
@@ -3685,8 +3688,9 @@ DWORD           start_time;
         num_events_out++;
         }
 
-      /* reinit start time */
-      start_time = ss_millitime();
+      /* reinit start time after BOR event */
+      if (pevent->event_id == EVENTID_BOR)
+        start_time = ss_millitime();
       }
 
     /* check if event is in event limit */
