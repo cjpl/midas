@@ -6,6 +6,9 @@
 #  Contents:     UNIX Makefile for MIDAS slow control frontend
 #
 #  $Log$
+#  Revision 1.3  2003/08/20 21:01:39  pierre
+#  add phtread lib
+#
 #  Revision 1.2  1999/10/26 12:08:31  midas
 #  Switched to shared midas library
 #
@@ -21,7 +24,7 @@
 # lines below.
 
 # This is for Linux ----------------
-LIBS = -lutil
+LIBS = -lutil -lpthread
 OSFLAGS = -DOS_LINUX -fPIC
 
 # This is for OSF1 -----------------

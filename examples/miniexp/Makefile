@@ -6,6 +6,9 @@
 #  Contents:     Makefile for MIDAS example frontend and analyzer
 #
 #  $Log$
+#  Revision 1.4  2003/08/20 21:02:00  pierre
+#  add phtread lib
+#
 #  Revision 1.3  2001/12/17 18:39:34  pierre
 #  remove analyzer modules
 #
@@ -66,7 +69,7 @@ CFLAGS = -O3
 #FF = cc
 # for egcs g77, use this
 FF = g77
-LIBS = -lm -lz -lutil -lnsl
+LIBS = -lm -lz -lutil -lnsl -lpthread
 
 #-------------------------------------------------------------------
 # The following lines define direcories. Adjust if necessary

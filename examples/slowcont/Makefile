@@ -6,6 +6,9 @@
 #  Contents:     UNIX Makefile for MIDAS slow control frontend
 #
 #  $Log$
+#  Revision 1.3  2003/08/20 21:02:12  pierre
+#  add phtread lib
+#
 #  Revision 1.2  2002/05/29 13:36:42  midas
 #  Added nulldev driver
 #
@@ -21,7 +24,7 @@
 # lines below.
 
 # This is for Linux ----------------
-LIBS = -lbsd -lm -lutil
+LIBS = -lbsd -lm -lutil -lpthread
 OSFLAGS = -DOS_LINUX
 
 # This is for OSF1 -----------------
