@@ -1,0 +1,54 @@
+Installations instructions for SCS_250 MSCB-USB adapter
+=======================================================
+S. Ritt, A. Suter, Dec. 2004
+
+The SCS-250 MSCB-USB submaster can be used under Linux without
+a kernel driver. However, the libusb library must be present to
+be linked to the mscb.c library.
+
+In order to make the SCS-250 device accessible by non-root users,
+a hotplug script has to be installed. Follow these steps:
+
+1) Add the line from the file usb.usermap_scs_250 to the file
+   /etc/hotplug/usb.usermap
+   
+2) Copy the script scs_250 to /etc/hotplug/usb. By default, it
+   gives all users access to scs_250. If you want to restict it to
+   a single user, modify it like 
+
+...   
+then
+    chown <user> "${DEVICE}"
+    chmod 0666 "${DEVICE}"
+fi
+...
+
+   where <user> has to be replaced by the user name which should
+   have access to the device.
+   
+   
+There is an additional comment from Andreas Suter <andreas.suter@psi.ch>:
+-------------------------------------------------------------------------
+
+A few comments and warnings: The usb devices are 'automatically' mounted
+via hotplug mechanism under /proc/bus/usb/MMM/NNN, where MMM and NNN are
+numbers (e.g. /proc/bus/usb/005/003). The script scs_250 is called when
+adding the MSCB USB device and is changing the ownership and access
+rights. Problem: The above statement is only true if scs_250 is the only
+script under /etc/hotplug/usb. If there are more scripts, the stupid
+hotplug mechanism is calling ALL the scripts present there. The culprit
+is the function load_drivers found in /etc/hotplug/hotplug.functions. It
+calles the function usbmodules which returns a list with all the
+possible hotplug­scripts possibly able to handle the plugged in USB
+device (MSCB USB). Then it loops over ALL these scripts, instead of
+filtering just the sensible one (scs_250 in our case). Depending on the
+order of the calls not the expected thing is happening. Since in our
+case we are dealing with a measuring PC, I just changed all the scripts
+(scs_250, usbcam) that nemu is owner and has full access, whereas all
+the others have no rights. This is only an ugly workaround but I didn't
+want to fool around in system bash­scripts. Therefore I have fed this
+problem to AIT in the hope they will find a simple solution. In
+principle this should be possible since load_drivers also gets the
+Vendor and Prod. ID so that intelligent parsing of
+/etc/hotplug/usb.usermap should easily allow to filter the correct scipt
+out?!
