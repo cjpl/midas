@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.88  2001/12/11 09:39:28  midas
+  Format "entry date" according to "date format"
+
   Revision 1.87  2001/12/11 09:14:51  midas
   Added elog language files
 
@@ -3388,7 +3391,7 @@ void show_elog_new(char *path, BOOL bedit)
 {
 int    i, n, n_attr, index, size, wrap, fh, length;
 char   str[1000], preset[1000], *p, star[80], comment[10000];
-char   list[MAX_N_ATTR][NAME_LENGTH], file_name[256], *buffer;
+char   list[MAX_N_ATTR][NAME_LENGTH], file_name[256], *buffer, format[256];
 char   date[80], attrib[MAX_N_ATTR][NAME_LENGTH], text[TEXT_SIZE],
        orig_tag[80], reply_tag[80], att[MAX_ATTACHMENTS][256], encoding[80],
        slist[MAX_N_ATTR+10][NAME_LENGTH], svalue[MAX_N_ATTR+10][NAME_LENGTH];
@@ -3481,13 +3484,41 @@ time_t now;
   time(&now);
   if (bedit)
     {
+    if (getcfg(logbook, "Date format", format))
+      {
+      struct tm ts;
+
+      memset(&ts, 0, sizeof(ts));
+
+      for (i=0 ; i<12 ; i++)
+        if (strncmp(date+4, mname[i], 3) == 0)
+          break;
+      ts.tm_mon = i;
+
+      ts.tm_mday = atoi(date+8);
+      ts.tm_hour = atoi(date+11);
+      ts.tm_min  = atoi(date+14);
+      ts.tm_sec  = atoi(date+17);
+      ts.tm_year = atoi(date+20)-1900;
+
+      mktime(&ts);
+      strftime(str, sizeof(str), format, &ts);
+      }
+    else
+      strcpy(str, date);
+
     rsprintf("<tr><td nowrap bgcolor=%s width=10%%><b>%s:</b></td><td bgcolor=%s>%s</td></tr>\n\n",
-             gt("Categories bgcolor1"), loc("Entry date"), gt("Categories bgcolor2"), date);
+             gt("Categories bgcolor1"), loc("Entry date"), gt("Categories bgcolor2"), str);
     }
   else
     {
+    if (getcfg(logbook, "Date format", format))
+      strftime(str, sizeof(str), format, localtime(&now));
+    else
+      strcpy(str, ctime(&now));
+    
     rsprintf("<tr><td nowrap bgcolor=%s width=10%%><b>%s:</b></td><td bgcolor=%s>%s</td></tr>\n\n",
-             gt("Categories bgcolor1"), loc("Entry date"), gt("Categories bgcolor2"), ctime(&now));
+             gt("Categories bgcolor1"), loc("Entry date"), gt("Categories bgcolor2"), str);
     }
 
   /* display attributes */
@@ -5510,10 +5541,10 @@ FILE   *f;
 
     /* send local help file */
     strcpy(file_name, cfg_dir);
-    strcat(file_name, "eloghelp.html");
+    strcat(file_name, "eloghelp_en.html");
     f = fopen(file_name, "r");
     if (f == NULL)
-      redirect3("http://midas.psi.ch/elog/eloghelp.html");
+      redirect3("http://midas.psi.ch/elog/eloghelp_en.html");
     else
       {
       fclose(f);
