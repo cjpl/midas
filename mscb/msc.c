@@ -6,6 +6,9 @@
   Contents:     Command-line interface for the Midas Slow Control Bus
 
   $Log$
+  Revision 1.35  2003/04/03 08:21:44  midas
+  Added submaster check
+
   Revision 1.34  2003/03/25 09:42:57  midas
   Added debugging facility
 
@@ -464,6 +467,11 @@ MSCB_INFO_VAR info_var;
                 str, i, i, info.group_address, info.group_address);
               }
             }
+          else if (status == MSCB_SUBM_ERROR)
+            {
+            printf("Error: Submaster not responding\n");
+            break;
+            }
 
           if (i == 1000)
             i = 0xFFFE;
@@ -540,6 +548,8 @@ MSCB_INFO_VAR info_var;
           {
           if (status == MSCB_MUTEX)
             printf("MSCB used by other process\n");
+          else if (status == MSCB_SUBM_ERROR)
+            printf("Error: Submaster not responding\n");
           else
             printf("Node %d does not respond\n", addr);
           current_addr = -1;
