@@ -14,6 +14,9 @@
                 Brown, Prentice Hall
 
   $Log$
+  Revision 1.47  1999/11/09 08:36:54  midas
+  Don't use console IO under Windows 95
+
   Revision 1.46  1999/10/27 13:37:04  midas
   Added blank line
 
@@ -5318,6 +5321,40 @@ static   INT repeat_char;
 HANDLE   hConsole;
 DWORD    nCharsRead;
 INPUT_RECORD ir;
+OSVERSIONINFO vi;
+
+  /* find out if we are under W95 */
+  vi.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
+  GetVersionEx(&vi);
+
+  if (vi.dwPlatformId != VER_PLATFORM_WIN32_NT)
+    {
+    /* under W95, console doesn't work properly */
+    int c;
+
+    if (!kbhit())
+      return 0;
+
+    c = getch();
+    if (c == 224)
+      {
+      c = getch();
+      switch(c)
+        {
+        case 71: return CH_HOME;
+        case 72: return CH_UP;
+        case 73: return CH_PUP;
+        case 75: return CH_LEFT;
+        case 77: return CH_RIGHT;
+        case 79: return CH_END;
+        case 80: return CH_DOWN;
+        case 81: return CH_PDOWN;
+        case 82: return CH_INSERT;
+        case 83: return CH_DELETE;
+        }
+      }
+    return c;
+    }
 
   hConsole = GetStdHandle(STD_INPUT_HANDLE);
 
