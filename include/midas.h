@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.61  2000/03/01 00:52:34  midas
+  Added num_subevents into equipment, made events_sent a double
+
   Revision 1.60  2000/02/29 02:09:33  midas
   Added cm_is_ctrlc_pressed and cm_ack_ctrlc_pressed
 
@@ -844,20 +847,21 @@ typedef struct {
 } DEVICE_DRIVER;
 
 typedef struct {
-  WORD   event_id;                    /* Event ID associated with equipm.  */
-  WORD   trigger_mask;                /* Trigger mask                      */
-  char   buffer[NAME_LENGTH];         /* Event buffer to send events into  */
-  INT    eq_type;                     /* One of EQ_xxx                     */
-  INT    source;                      /* Event source (LAM/IRQ)            */
-  char   format[8];                   /* Data format to produce            */
-  BOOL   enabled;                     /* Enable flag                       */
-  INT    read_on;                     /* Combination of Read-On flags RO_xxx */
-  INT    period;                      /* Readout interval/Polling time in ms */
-  DWORD  event_limit;                 /* Stop run when limit is reached    */
-  INT    history;                     /* Log history                       */
-  char   frontend_host[NAME_LENGTH];  /* Host on which FE is running       */
-  char   frontend_name[NAME_LENGTH];  /* Frontend name                     */
-  char   frontend_file_name[256];     /* Source file used for user FE      */
+  WORD    event_id;                    /* Event ID associated with equipm.  */
+  WORD    trigger_mask;                /* Trigger mask                      */
+  char    buffer[NAME_LENGTH];         /* Event buffer to send events into  */
+  INT     eq_type;                     /* One of EQ_xxx                     */
+  INT     source;                      /* Event source (LAM/IRQ)            */
+  char    format[8];                   /* Data format to produce            */
+  BOOL    enabled;                     /* Enable flag                       */
+  INT     read_on;                     /* Combination of Read-On flags RO_xxx */
+  INT     period;                      /* Readout interval/Polling time in ms */
+  double  event_limit;                 /* Stop run when limit is reached    */
+  DWORD   num_subevents;               /* Number of events in super event */
+  INT     history;                     /* Log history                       */
+  char    frontend_host[NAME_LENGTH];  /* Host on which FE is running       */
+  char    frontend_name[NAME_LENGTH];  /* Frontend name                     */
+  char    frontend_file_name[256];     /* Source file used for user FE      */
 } EQUIPMENT_INFO;
 
 typedef struct {
@@ -872,7 +876,6 @@ typedef struct eqpmnt {
   char   name[NAME_LENGTH];             /* Equipment name                  */
   EQUIPMENT_INFO info;                  /* From above                      */
   INT    (*readout)(char *, INT);       /* Pointer to user readout routine */
-  DWORD  num_subevents;                 /* Number of events in super event */
   INT    (*cd)(INT cmd, PEQUIPMENT);    /* Class driver routine            */
   DEVICE_DRIVER *driver;                /* Device driver list              */
   char   *init_string;                  /* Init string for fixed events    */
@@ -958,9 +961,9 @@ typedef struct {
 } AR_INFO;
 
 typedef struct {
-  DWORD  events_received;
-  DWORD  events_per_sec;
-  DWORD  events_written;
+  double  events_received;
+  double  events_per_sec;
+  double  events_written;
 } AR_STATS;
 
 typedef struct {
