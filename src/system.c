@@ -14,6 +14,9 @@
                 Brown, Prentice Hall
 
   $Log$
+  Revision 1.16  1998/12/10 10:54:52  midas
+  Forwarded ss_tape_status to 'mt' under UNIX
+
   Revision 1.15  1998/12/10 10:45:43  midas
   Improved tape error codes under NT (now same as UNIX)
 
@@ -3642,7 +3645,10 @@ INT ss_tape_status(char *path)
 \********************************************************************/
 {
 #ifdef OS_UNIX
-  printf("Not implemented under UNIX\n");
+char str[256];
+  /* let 'mt' do the job */
+  sprintf(str, "mt -f %s status", path);
+  system(str);
 #endif /* OS_UNIX */
 
 #ifdef OS_WINNT
