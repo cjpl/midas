@@ -10,10 +10,9 @@ Group (Libraries)
 
 File 1,1,<.\scs_260_cobra.c><scs_260_cobra.c> 0x0 
 File 1,1,<..\mscbutil.c><mscbutil.c> 0x0 
-File 1,1,<..\..\netlib\dhcp.c><dhcp.c> 0x0 
 File 2,5,<..\mscb.h><mscb.h> 0x0 
 File 2,5,<..\net.h><net.h> 0x0 
-File 3,4,<..\netlib.LIB><netlib.LIB> 0x423EA46C 
+File 3,4,<..\netlib.LIB><netlib.LIB> 0x423EB27C 
 
 
 Options 1,0,0  // Target 'Download'
@@ -114,7 +113,7 @@ Options 1,0,0  // Target 'Download'
  LX51DAS ()
  LX51IDS ()
   OPTDL (S8051.DLL)()(DCYG.DLL)(-pCYGF121)(S8051.DLL)()(TCYG.DLL)(-pCYGF121)
-  OPTDBG 49150,-1,()()()()()()()()()() (BIN\SiC8051F.dll)()()()
+  OPTDBG 2046,-1,()()()()()()()()()() (BIN\SiC8051F.dll)()()()
  FLASH1 { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }
  FLASH2 ()
  FLASH3 ("" ())
