@@ -6,6 +6,9 @@
   Contents:     Electronic logbook utility   
 
   $Log$
+  Revision 1.3  2004/01/18 09:58:21  olchansk
+  fix format mismatch warning between %d and sizeof(foo)
+
   Revision 1.2  2004/01/08 08:40:11  midas
   Implemented standard indentation
 
@@ -452,7 +455,7 @@ int main(int argc, char *argv[])
 
       if (size > sizeof(text) - 1) {
          printf("Message file \"%s\" is too long (%d bytes max).\n", textfile,
-                sizeof(text));
+                (int)sizeof(text));
          return 0;
       }
 
