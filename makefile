@@ -6,6 +6,9 @@
 #  Contents:     Makefile for MIDAS binaries and examples under unix
 #
 #  $Log$
+#  Revision 1.3  1998/10/19 17:54:36  pierre
+#  - Add lazylogger task
+#
 #  Revision 1.2  1998/10/12 12:18:55  midas
 #  Added Log tag in header
 #
@@ -158,7 +161,7 @@ all:    $(OS_DIR) $(LIB_DIR) $(BIN_DIR) \
 	$(BIN_DIR)/mlogger $(BIN_DIR)/odbedit \
 	$(BIN_DIR)/mtape $(BIN_DIR)/mhist \
 	$(BIN_DIR)/mstat $(BIN_DIR)/mcnaf \
-	$(BIN_DIR)/mdump
+	$(BIN_DIR)/mdump $(BIN_DIR)/lazylogger
 
 examples: $(EXAMPLES)
 
@@ -268,6 +271,8 @@ $(BIN_DIR)/mhist:  $(LIB) $(UTL_DIR)/mhist.c
 	$(CC) $(CFLAGS) $(OSFLAGS) -o $(BIN_DIR)/mhist  $(UTL_DIR)/mhist.c $(LIB)  $(LIBS)
 $(BIN_DIR)/mstat:  $(LIB) $(UTL_DIR)/mstat.c 
 	$(CC) $(CFLAGS) $(OSFLAGS) $(CC_INCLUDES) -o $(BIN_DIR)/mstat $(UTL_DIR)/mstat.c $(LIB) $(LIBS)
+$(BIN_DIR)/lazylogger:  $(LIB) $(UTL_DIR)/lazylogger.c 
+	$(CC) $(CFLAGS) $(OSFLAGS) $(CC_INCLUDES) -o $(BIN_DIR)/lazylogger $(UTL_DIR)/lazylogger.c $(LIB) $(LIBS)
 
 #####################################################################
 
@@ -294,7 +299,7 @@ install:
 	@echo "... Installing utilities to $(SYSBIN_DIR)"
 	@echo "... "
 
-	@for i in mhist mtape mstat mdump mcnaf ; \
+	@for i in mhist mtape mstat lazylogger mdump mcnaf ; \
 	  do \
 	  echo $$i ; \
 	  cp $(BIN_DIR)/$$i $(SYSBIN_DIR) ; \
