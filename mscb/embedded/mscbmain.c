@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol main program
 
   $Log$
+  Revision 1.34  2003/06/27 13:52:07  midas
+  Added missing clock reset
+
   Revision 1.33  2003/06/05 14:47:25  midas
   Added SCS-520
 
@@ -225,6 +228,12 @@ unsigned char i;
 #ifdef CPU_CYGNAL
   WDTCN = 0x07;      // 95 msec
   WDTCN = 0xA5;      // start watchdog
+
+  /* enable missing clock reset */
+  OSCICN |= 0x80; // MSCLKE = 1
+
+  /* enable reset pin and watchdog reset */
+  RSTSRC = 0x09;
 #endif
 
   /* start system clock */
