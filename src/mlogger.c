@@ -6,6 +6,9 @@
   Contents:     MIDAS logger program
 
   $Log$
+  Revision 1.4  1998/10/29 14:37:01  midas
+  Added '!' to stop logger
+
   Revision 1.3  1998/10/22 12:40:34  midas
   Added "oflag" to ss_tape_open()
 
@@ -2025,9 +2028,10 @@ INT i;
 
 main(int argc, char *argv[])
 {
-INT    status, msg, i, size, run_number;
+INT    status, msg, i, size, run_number, ch;
 char   host_name[100], exp_name[NAME_LENGTH], dir[256];
 BOOL   debug;
+DWORD  last_time_kb = 0;
 
   /* get default from environment */
   cm_get_environment(host_name, exp_name);
@@ -2102,7 +2106,8 @@ usage:
   /* print startup message */
   size = sizeof(dir);
   db_get_value(hDB, 0, "/Logger/Data dir", dir, &size, TID_STRING);
-  printf("MIDAS logger started. Data directory is %s\n", dir);
+  printf("MIDAS logger started. Stop with \"!\"\n");
+  printf("Data directory is %s\n", dir);
 
   do
     {
@@ -2127,7 +2132,24 @@ usage:
         cm_msg(MERROR, "main", "cannot restart run");
       }
 
-    } while (msg != RPC_SHUTDOWN && msg != SS_ABORT);
+    /* check keyboard once every second */
+    if (ss_millitime() - last_time_kb > 1000)
+      {
+      last_time_kb = ss_millitime();
+
+      ch = 0;
+      while (ss_kbhit())
+        {
+        ch = ss_getchar(0);
+        if (ch == -1)
+          ch = getchar();
+
+        if ((char) ch == '!')
+          break;
+        }
+      }
+
+    } while (msg != RPC_SHUTDOWN && msg != SS_ABORT && ch != '!');
   
   /* close history logging */
   close_history();
