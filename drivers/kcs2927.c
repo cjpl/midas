@@ -7,8 +7,10 @@
                 following the MIDAS CAMAC Standard for DirectIO
 
   $Log$
-  Revision 1.3  1998/11/05 21:31:33  pierre
-  -PAA- Fix cam_lam_disable mask
+  Revision 1.4  1998/11/19 22:31:43  pierre
+  correct (*d)-- for the _rq in case of noQ
+  Remove Q-stop for _sa and_sn
+  Fix 24x_ data access
 
   Revision 1.2  1998/10/12 12:18:56  midas
   Added Log tag in header
@@ -187,7 +189,7 @@ INLINE void cam24i(const int c, const int n, const int a, const int f,
   OUTPW(CSR,GO);
   while(!(INPW(CSR)&DONE));
   *((unsigned short *)d)  =INPW(DLR);
-  *((unsigned short *)d+1)=INPW(DHR);
+  *((unsigned char *)d+2) =INP(DHR);
 }
 
 /*------------------------------------------------------------------*/
@@ -195,6 +197,7 @@ INLINE void cam24i(const int c, const int n, const int a, const int f,
 INLINE void cam8i_q(const int c, const int n, const int a, const int f, 
                     unsigned char *d, int *x, int *q)
 {
+  printf("cam8i_q not implemented\n");
 }
 
 /*------------------------------------------------------------------*/
@@ -225,7 +228,7 @@ INLINE void cam24i_q(const int c, const int n, const int a, const int f,
   OUTPW(CSR,GO);
   while(!(INPW(CSR)&DONE));
   *((unsigned short *)d)  =INPW(DLR);
-  *((unsigned short *)d+1)=INPW(DHR);
+  *((unsigned char *)d+2) =INP(DHR);
   *q=(((INPW(CSR)>>1)&1)^1);
   *x=(((INPW(CSR)>>2)&1)^1);
 }
@@ -245,7 +248,7 @@ INLINE void cam16i_r(const int c, const int n, const int a, const int f,
   {
     OUTPW(CSR,GO);
     while(!(INPW(CSR)&DONE));
-    *((unsigned short *)d)  =INPW(DLR);
+    *((unsigned short *)(*d))  =INPW(DLR);
     (*d)++;
   }
 }
@@ -265,8 +268,8 @@ INLINE void cam24i_r(const int c, const int n, const int a, const int f,
   {
     OUTPW(CSR,GO);
     while(!(INPW(CSR)&DONE));
-    *((unsigned short *)d)  =INPW(DLR);
-    *((unsigned short *)d+1)=INPW(DHR);
+    *((unsigned short *)(*d))  =INPW(DLR);
+    *(((unsigned char *) *d)+2) = INP(DHR);
     (*d)++;
   }
 }
@@ -282,7 +285,10 @@ int i, x, q;
     {
     cam16i_q(c, n, a, f, (*d)++, &x, &q);
     if (!q)
-      break;
+      {
+	      (*d)--;
+	      break;
+      }
     }
 }
 
@@ -297,7 +303,10 @@ int i, x, q;
     {
     cam24i_q(c, n, a, f, (*d)++, &x, &q);
     if (!q)
-      break;
+      {
+	      (*d)--;
+	      break;
+      }
     }
 }
 
@@ -317,7 +326,7 @@ INLINE void cam16i_sa(const int c, const int n, const int a, const int f,
     while(!(INPW(CSR)&DONE));
     OUTPW(CSR,GO);
     while(!(INPW(CSR)&DONE));
-    *((unsigned short *)d)  =INPW(DLR);
+    *((unsigned short *)(*d))  =INPW(DLR);
     aa++;
     (*d)++;
   }
@@ -339,8 +348,8 @@ INLINE void cam24i_sa(const int c, const int n, const int a, const int f,
     while(!(INPW(CSR)&DONE));
     OUTPW(CSR,GO);
     while(!(INPW(CSR)&DONE));
-    *((unsigned short *)d)  =INPW(DLR);
-    *((unsigned short *)d+1)=INPW(DHR);
+    *((unsigned short *)(*d))  =INPW(DLR);
+    *(((unsigned char *) *d)+2) = INP(DHR);
     aa++;
     (*d)++;
   }
@@ -351,14 +360,10 @@ INLINE void cam24i_sa(const int c, const int n, const int a, const int f,
 INLINE void cam16i_sn(const int c, const int n, const int a, const int f, 
                       WORD **d, const int r)
 {
-int i, x, q;
+int i;
 
   for (i=0 ; i<r ; i++)
-    {
-    cam16i_q(c, n+i, a, f, (*d)++, &x, &q);
-    if (!q)
-      break;
-    }
+    cam16i(c, n+i, a, f, (*d)++);
 }
 
 /*------------------------------------------------------------------*/
@@ -366,14 +371,10 @@ int i, x, q;
 INLINE void cam24i_sn(const int c, const int n, const int a, const int f, 
                       DWORD **d, const int r)
 {
-int i, x, q;
+int i;
 
   for (i=0 ; i<r ; i++)
-    {
-    cam24i_q(c, n+i, a, f, (*d)++, &x, &q);
-    if (!q)
-      break;
-    }
+    cam24i(c, n+i, a, f, (*d)++);
 }
 
 /*------------------------------------------------------------------*/
@@ -381,6 +382,7 @@ int i, x, q;
 INLINE void cam8o(const int c, const int n, const int a, const int f, 
                   unsigned char d)
 {
+  printf("cam8o not implemented\n");
 }
 
 /*------------------------------------------------------------------*/
@@ -414,8 +416,8 @@ INLINE void cam24o(const int c, const int n, const int a, const int f,
   OUTPW(NAF,(n << N_SHIFT) | (a << A_SHIFT) | f);
   while(!(INPW(CSR)&DONE));
   OUTPW(MCR, WS_24BIT);
-  OUTPW(DLR,    (unsigned char)  d);
-  OUTPW(DHR, *(((unsigned char *) &d)+1));
+  OUTPW(DLR, (unsigned short) d);
+  OUTP(DHR, *(((unsigned char *) (&d))+2));
   OUTPW(CSR,GO);
   while(!(INPW(CSR)&DONE));
 }
@@ -429,7 +431,7 @@ INLINE void cam16o_q(const int c, const int n, const int a, const int f,
   OUTPW(NAF,(n << N_SHIFT) | (a << A_SHIFT) | f);
   while(!(INPW(CSR)&DONE));
   OUTPW(MCR, WS_16BIT);
-  OUTPW(DLR,    (unsigned char)  d);
+  OUTPW(DLR,    (unsigned short)  d);
   OUTPW(CSR,GO);
   while(!(INPW(CSR)&DONE));
   *q=(((INPW(CSR)>>1)&1)^1);
@@ -445,8 +447,8 @@ INLINE void cam24o_q(const int c, const int n, const int a, const int f,
   OUTPW(NAF,(n << N_SHIFT) | (a << A_SHIFT) | f);
   while(!(INPW(CSR)&DONE));
   OUTPW(MCR, WS_24BIT);
-  OUTPW(DLR,    (unsigned char)  d);
-  OUTPW(DHR, *(((unsigned char *) &d)+1));
+  OUTPW(DLR, (unsigned short) d);
+  OUTP(DHR, *(((unsigned char *) (&d))+2));
   OUTPW(CSR,GO);
   while(!(INPW(CSR)&DONE));
   *q=(((INPW(CSR)>>1)&1)^1);
@@ -473,7 +475,7 @@ INLINE void cam16o_r(const int c, const int n, const int a, const int f,
   OUTPW(MCR, WS_16BIT);
   for (i=0; i<r ; i++)
   {
-    OUTPW(DLR,  *((unsigned char *) d));
+    OUTPW(DLR,  *((unsigned short *) d));
     OUTPW(CSR,GO);
     while(!(INPW(CSR)&DONE));
   }
@@ -492,8 +494,8 @@ INLINE void cam24o_r(const int c, const int n, const int a, const int f,
   OUTPW(MCR, WS_24BIT);
   for (i=0; i<r ; i++)
   {
-    OUTPW(DLR,  *((unsigned char *) d));
-    OUTPW(DHR, *(((unsigned char *) d)+1));
+    OUTPW(DLR,  *((unsigned short *) d));
+    OUTP(DHR, *(((unsigned char *) (&d))+2));
     OUTPW(CSR,GO);
     while(!(INPW(CSR)&DONE));
   }
@@ -526,7 +528,7 @@ INLINE void camc(const int c, const int n, const int a, const int f)
   OUTPW(CCR, c);
   OUTPW(NAF,(n << N_SHIFT) | (a << A_SHIFT) | f);
   while(!(INPW(CSR)&DONE));
-  OUTPW(MCR, WS_24BIT);
+  OUTPW(MCR, WS_16BIT);
   OUTPW(CSR,GO);
   while(!(INPW(CSR)&DONE));
 }
@@ -538,7 +540,7 @@ INLINE void camc_q(const int c, const int n, const int a, const int f, int *q)
   OUTPW(CCR, c);
   OUTPW(NAF,(n << N_SHIFT) | (a << A_SHIFT) | f);
   while(!(INPW(CSR)&DONE));
-  OUTPW(MCR, WS_24BIT);
+  OUTPW(MCR, WS_16BIT);
   OUTPW(CSR,GO);
   while(!(INPW(CSR)&DONE));
   *q=(((INPW(CSR)>>1)&1)^1);
@@ -548,8 +550,8 @@ INLINE void camc_q(const int c, const int n, const int a, const int f, int *q)
 
 INLINE void camc_sa(const int c, const int n, const int a, const int f, const int r)
 {
-int i;
-
+  int i;
+  
   for (i=0 ; i<r ; i++)
     camc(c, n, a+i, f);
 }
@@ -558,7 +560,7 @@ int i;
 
 INLINE void camc_sn(const int c, const int n, const int a, const int f, const int r)
 {
-int i;
+  int i;
 
   for (i=0 ; i<r ; i++)
     camc(c, n+i, a, f);
@@ -696,33 +698,36 @@ INLINE void cam_lam_read(const int c, DWORD *lam)
 
 INLINE void cam_lam_clear(const int c, const int n)
 { 
-  camc(c,n,0,9);
 }
 
 /*------------------------------------------------------------------*/
 
 INLINE void cam_interrupt_enable(void)
 {
+  printf("cam_interrupt_enable not implemented\n");
 }
 
 /*------------------------------------------------------------------*/
 
 INLINE void cam_interrupt_disable(void)
 {
+  printf("cam_interrupt_disable not implemented\n");
 }
 
 /*------------------------------------------------------------------*/
 
 static void (*old_handler)(void) = NULL;
 
-INLINE void cam_interrupt_attach(void (*isr)())
+INLINE void cam_interrupt_attach(void (*isr)(void))
 { 
+  printf("cam_interrupt_attach not implemented\n");
 }
 
 /*------------------------------------------------------------------*/
 
 INLINE void cam_interrupt_detach(void)
 {
+  printf("caminterrupt_detach not implemented\n");
 }
 
 /*------------------------------------------------------------------*/
