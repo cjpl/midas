@@ -14,6 +14,9 @@
                 Brown, Prentice Hall
 
   $Log$
+  Revision 1.9  1998/10/28 12:02:52  midas
+  Added NO_PTY to ss_shell()
+
   Revision 1.8  1998/10/28 11:07:45  midas
   Added ss_shell for UNIX
 
@@ -1103,7 +1106,7 @@ struct termios tios;
       select(FD_SETSIZE, (void *) &readfds, NULL, NULL, NULL);
 
       if (FD_ISSET(sock, &readfds))
-	{
+        {
         memset(buffer, 0, sizeof(buffer));
         i = recv(sock, buffer, sizeof(buffer), 0);
         if (i <= 0)
