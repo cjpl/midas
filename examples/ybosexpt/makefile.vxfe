@@ -47,32 +47,27 @@ CC_OPTIM         =
 CC_OPTIM_NORMAL  = -O -fstrength-reduce -fcombine-regs
 CC_OPTIM_TARGET  = -O -fvolatile
 
-
 # Define Current Configuration
 CC_OPTIM	 = 
 CC_INCLUDES      = -I$(INC_DIR) -I$(VXW_DIR) 
 CC_WARNINGS	 = $(CC_WARNINGS_NONE)
-CC_DEFINES	 = -Dvxw -m68040 -DCPU=$(CPU) $(DEFINE_CC) $(EXTRA_DEFINE)
+CC_DEFINES	 = -DOS_VXWORKS -m68040 -DCPU=$(CPU) $(DEFINE_CC) $(EXTRA_DEFINE)
 
 CFLAGS = $(CC_OPTIM) $(CC_WARNINGS) $(CC_INCLUDES) $(CC_COMPILER) $(CC_DEFINES)
 
-#-------------------------------------------------------------------
-# List of analyzer modules
 #                 
-MODULES 	= 
-
 ####################################################################
 # Lines below here should not be edited
 ####################################################################
-DRIVER = camacnul
-LIB = $(LIB_DIR)/libmidas.a
-INCLUDE = -I$(INC_DIR)
+DRIVER   = ces8210
+LIB      = $(LIB_DIR)/libmidas.a
+INCLUDES = 
 
 all: $(OBJ_DIR) $(OBJ_DIR)/$(DRIVER).o $(OBJ_DIR)/$(UFE) 
 
 $(OBJ_DIR)/$(UFE): $(LIB) $(OBJ_DIR)/$(DRIVER).o 
 	$(CC) $(CFLAGS) $(INCLUDES) $(OSFLAGS) -c -o $(OBJ_DIR)/$(UFE).o $(DRV_DIR)/$(UFE).c
-	$(LD) -o $(OBJ_DIR)/mfe.o -r $(SYSOBJ_DIR)/mfe.o $(OBJ_DIR)/$(UFE).o 
+	$(LD) -o $(OBJ_DIR)/mfe.o -r $(SYSOBJ_DIR)/mfe.o $(OBJ_DIR)/$(UFE).o $(OBJ_DIR)/$(DRIVER).o 
 
 $(OBJ_DIR)/$(DRIVER).o: $(DRV_DIR)/$(DRIVER).c
 	$(CC) $(CFLAGS) $(INCLUDES) $(OSFLAGS) -c -o $(OBJ_DIR)/$(DRIVER).o $(DRV_DIR)/$(DRIVER).c
