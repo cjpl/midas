@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.112  2000/04/25 11:55:42  midas
+  Adjusted tabs for history functions
+
   Revision 1.111  2000/04/17 16:28:21  pierre
   - Added arg "BOOL binary_time" to hs_dump(), hs_fdump() for mhist -b
 
@@ -13002,7 +13005,7 @@ DEF_RECORD   def_rec;
       irec.offset = TELL(fh) - sizeof(rec);
       write(fhi, (char *)&irec, sizeof(irec));
 
-      printf("ID %d, %s\n", rec.event_id, ctime((const time_t *)&irec.time)+4);
+      /* printf("ID %d, %s\n", rec.event_id, ctime((const time_t *)&irec.time)+4); */
 
       /* skip data */
       lseek(fh, rec.data_size, SEEK_CUR);
@@ -14523,36 +14526,36 @@ char         str[80];
     n = read(fh, (char *)&rec, sizeof(rec));
     if (n < sizeof(rec))
       break;
-
+    
     /* check if record type is definition */
     if (rec.record_type == RT_DEF)
       {
       /* read name */
       read(fh, event_name, sizeof(event_name));
-
+      
       if (rec.event_id == id || id == 0)
         printf("Event definition %s, ID %d\n", event_name, rec.event_id);
-
+      
       /* skip tags */
       lseek(fh, rec.data_size, SEEK_CUR);
       }
     else
       {
       /* print data record */
-	if (binary_time)
-	  sprintf(str, "%i ",rec.time);
-	else
-	{
-	  strcpy(str, ctime((const time_t *)&rec.time)+4);
-	  str[15] = 0;
-	}
-	if (rec.event_id == id || id == 0)
-	  printf("ID %d, %s, size %d\n", rec.event_id, str, rec.data_size);
-
+      if (binary_time)
+        sprintf(str, "%i ",rec.time);
+      else
+        {
+        strcpy(str, ctime((const time_t *)&rec.time)+4);
+        str[15] = 0;
+        }
+      if (rec.event_id == id || id == 0)
+        printf("ID %d, %s, size %d\n", rec.event_id, str, rec.data_size);
+      
       /* skip data */
       lseek(fh, rec.data_size, SEEK_CUR);
       }
-
+    
     } while (TRUE);
 
   close(fh);
