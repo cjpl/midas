@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.79  1999/10/18 11:47:33  midas
+  Corrected link to lazy settings
+
   Revision 1.78  1999/10/15 12:15:52  midas
   Added daemon function
 
@@ -1096,9 +1099,9 @@ CHN_STATISTICS chn_stats;
               }
 
             if (exp_name[0])
-              sprintf(ref, "%s/Lazy/%s/Settings?exp=%s", mhttpd_url, &client_name[5], exp_name);
+              sprintf(ref, "%sLazy/%s/Settings?exp=%s", mhttpd_url, &client_name[5], exp_name);
             else
-              sprintf(ref, "%s/Lazy", mhttpd_url);
+              sprintf(ref, "%sLazy/%s/Settings", mhttpd_url, &client_name[5]);
 
             rsprintf("<tr><td colspan=2><B><a href=\"%s\">%s</a></B>", ref, str);
 
