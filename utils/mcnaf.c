@@ -6,6 +6,9 @@
   Contents:     CAMAC utility
 
     $Log$
+    Revision 1.18  2003/04/23 23:08:19  pierre
+    Fixed compiler warning
+
     Revision 1.17  2002/06/05 04:12:23  pierre
     pass cmd_flag arg, remove printf
 
@@ -234,7 +237,7 @@ void mcstd_func(CAMAC *PP)
       break;
     case CAM_LAM_READ:
       cam_lam_read(p->c, &lam);
-      printf("cam_lam_read:C%i-> 0x%x\n",p->c, lam);
+      printf("cam_lam_read:C%i-> 0x%lx\n",p->c, lam);
       break;
     case CAM_LAM_CLEAR:
       cam_lam_clear(p->c, p->n);
@@ -291,7 +294,7 @@ void mcstd_func(CAMAC *PP)
       do 
       {
         cam24o(p->c, p->n, p->a, p->f, p->d24);
-        printf("cam24o:[R%i]-C%i-N%i-A%i-F%i <- 0x%x\n", ++i, p->c, p->n, p->a, p->f, p->d24);
+        printf("cam24o:[R%i]-C%i-N%i-A%i-F%i <- 0x%lx\n", ++i, p->c, p->n, p->a, p->f, p->d24);
       } while (i<p->r);
       break;
     case CAM16O_Q:
@@ -306,7 +309,7 @@ void mcstd_func(CAMAC *PP)
       do 
       {
         cam24o_q(p->c, p->n, p->a, p->f, p->d24, &p->x, &p->q);
-        printf("cam24o_q:[R%i]-C%i-N%i-A%i-F%i <- 0x%x X:%i-Q:%i\n"
+        printf("cam24o_q:[R%i]-C%i-N%i-A%i-F%i <- 0x%lx X:%i-Q:%i\n"
           ,++i , p->c, p->n, p->a, p->f, p->d24, p->x, p->q);
       } while (i<p->r);
       break;
@@ -316,7 +319,7 @@ void mcstd_func(CAMAC *PP)
       break;
     case CAM24O_R:
       cam24o_r(p->c, p->n, p->a, p->f, pdd24, p->r);
-      printf("cam24o_r:C%i-N%i-A%i-F%i <- 0x%x\n", p->c, p->n, p->a, p->f, p->d24);
+      printf("cam24o_r:C%i-N%i-A%i-F%i <- 0x%lx\n", p->c, p->n, p->a, p->f, p->d24);
       break;
       /* inputs */
     case CAM16I:
@@ -330,7 +333,7 @@ void mcstd_func(CAMAC *PP)
       do 
       {
         cam24i(p->c, p->n, p->a, p->f, &p->d24);
-        printf("cam24i:[R%i]-C%i-N%i-A%i-F%i-> 0x%6.6x\n",++i, p->c, p->n, p->a, p->f,p->d24);
+        printf("cam24i:[R%i]-C%i-N%i-A%i-F%i-> 0x%6.6lx\n",++i, p->c, p->n, p->a, p->f,p->d24);
       } while (i<p->r);
       break;
     case CAM16I_Q:
@@ -345,7 +348,7 @@ void mcstd_func(CAMAC *PP)
       do 
       {
         cam24i_q(p->c, p->n, p->a, p->f, &p->d24, &p->x, &p->q);
-        printf("cam24i_q:[R%i]-C%i-N%i-A%i-F%i-> 0x%6.6x X:%i-Q:%i\n"
+        printf("cam24i_q:[R%i]-C%i-N%i-A%i-F%i-> 0x%6.6lx X:%i-Q:%i\n"
           ,++i ,p->c, p->n, p->a, p->f,p->d24, p->x, p->q);
       } while (i<p->r);
       break;
@@ -359,7 +362,7 @@ void mcstd_func(CAMAC *PP)
       memset(pdd24, 0, sizeof(dd24));
       cam24i_r(p->c, p->n, p->a, p->f, &pdd24, p->r);
       for (i=0;i<p->r;i++)
-        printf("cam24i_r:[R%i]-C%i-N%i-A%i-F%i-> 0x%6.6x\n",i+1, p->c, p->n, p->a, p->f,dd24[i]);
+        printf("cam24i_r:[R%i]-C%i-N%i-A%i-F%i-> 0x%6.6lx\n",i+1, p->c, p->n, p->a, p->f,dd24[i]);
       break;
     case CAM16I_RQ:
       memset(pdd16, 0, sizeof(dd16));
@@ -371,7 +374,7 @@ void mcstd_func(CAMAC *PP)
       memset(pdd24, 0, sizeof(dd24));
       cam24i_rq(p->c, p->n, p->a, p->f, &pdd24, p->r);
       for (i=0;i<p->r;i++)
-        printf("cam24i_rq:[R%i]-C%i-N%i-A%i-F%i-> 0x%6.6x\n",i+1, p->c, p->n, p->a, p->f,dd24[i]);
+        printf("cam24i_rq:[R%i]-C%i-N%i-A%i-F%i-> 0x%6.6lx\n",i+1, p->c, p->n, p->a, p->f,dd24[i]);
       break;
     case CAM16I_SA:
       memset(pdd16, 0, sizeof(dd16));
@@ -383,7 +386,7 @@ void mcstd_func(CAMAC *PP)
       memset(pdd24, 0, sizeof(dd24));
       cam24i_sa(p->c, p->n, p->a, p->f, &pdd24, p->r);
       for (i=0;i<p->r;i++)
-        printf("cam24i_sa:[R%i]-C%i-N%i-A%i-F%i-> 0x%6.6x\n",i+1, p->c, p->n, p->a+i, p->f,dd24[i]);
+        printf("cam24i_sa:[R%i]-C%i-N%i-A%i-F%i-> 0x%6.6lx\n",i+1, p->c, p->n, p->a+i, p->f,dd24[i]);
       break;
     case CAM16I_SN:
       memset(pdd16, 0, sizeof(dd16));
@@ -395,7 +398,7 @@ void mcstd_func(CAMAC *PP)
       memset(pdd24, 0, sizeof(dd24));
       cam24i_sn(p->c, p->n, p->a, p->f, &pdd24, p->r);
       for (i=0;i<p->r;i++)
-        printf("cam24i_sn:[R%i]-C%i-N%i-A%i-F%i-> 0x%x\n",i+1, p->c, p->n+i, p->a, p->f,dd24[i]);
+        printf("cam24i_sn:[R%i]-C%i-N%i-A%i-F%i-> 0x%lx\n",i+1, p->c, p->n+i, p->a, p->f,dd24[i]);
       break;
     case QUIT:
       p->r = 1;
@@ -418,7 +421,7 @@ void make_display_string(int from, CAMAC *p, char * saddr)
   if (from == MAIN)
   {
     if (p->m == D24)
-      sprintf(saddr,"B%01dC%01dN%02dA%02dF%02d [%d/0x%06x Q%01dX%01d] R%dW%dM%2d"
+      sprintf(saddr,"B%01dC%01dN%02dA%02dF%02d [%ld/0x%06lx Q%01dX%01d] R%dW%dM%2d"
       ,p->b,p->c,p->n,p->a,p->f,p->d24,p->d24,p->q,p->x,p->r,p->w,p->m);
     else
       sprintf(saddr,"B%01dC%01dN%02dA%02dF%02d [%d/0x%04x Q%01dX%01d] R%dW%dM%2d"
@@ -426,7 +429,7 @@ void make_display_string(int from, CAMAC *p, char * saddr)
   }
   else
   {
-    sprintf(saddr,"B%01dC%01dN%02dA%02dF%02d [%d/0x%06x] R%d"
+    sprintf(saddr,"B%01dC%01dN%02dA%02dF%02d [%ld/0x%06lx] R%d"
       ,p->b,p->c,p->n,p->a,p->f,p->d24,p->d24,p->r);
   }
 }
@@ -489,7 +492,7 @@ INT cnafsub(BOOL cmd_mode, char * cmd)
 {
   char str[128], line[128];
   INT  status, j;
-  CAMAC *P, *p, *job;
+  CAMAC *P, *p=NULL, *job;
   
   /* Loop return label */
   if (jobflag)
@@ -666,9 +669,9 @@ INT decode_line (CAMAC *P, char * ss)
   
   p = pp;
   
-  if (cmd = strpbrk(p,"P"))
+  if ((cmd = strpbrk(p,"P")))
     return MCSTD;
-  if (cmd = strpbrk(p,"G"))
+  if ((cmd = strpbrk(p,"G")))
   {
     for (i=0;;i++)
     {
@@ -678,11 +681,11 @@ INT decode_line (CAMAC *P, char * ss)
     }
     return LOOP;
   }
-  if (cmd = strpbrk(p,"H"))
+  if ((cmd = strpbrk(p,"H")))
     return HELP;
-  if (cmd = strpbrk(p,"J@"))
+  if ((cmd = strpbrk(p,"J@")))
     return JOB;
-  if (cmd = strpbrk(p,"X"))
+  if ((cmd = strpbrk(p,"X")))
   {
     ps = strchr(cmd,' ');
     *ps = 0;       
@@ -711,7 +714,7 @@ INT decode_line (CAMAC *P, char * ss)
     strncpy(cmd,empty,strlen(cmd));
     *ps = ' '; 
   }
-  if (cmd = strpbrk(p,"O"))
+  if ((cmd = strpbrk(p,"O")))
   {
     ps = strchr(cmd,' ');
     *ps = 0;
@@ -740,7 +743,7 @@ INT decode_line (CAMAC *P, char * ss)
     strncpy(cmd,empty,strlen(cmd));
     *ps = ' '; 
   }
-  if (cmd = strpbrk(p,"D"))
+  if ((cmd = strpbrk(p,"D")))
   {
     ps = strchr(cmd,' ');
     *ps = 0;
@@ -769,7 +772,7 @@ INT decode_line (CAMAC *P, char * ss)
     strncpy(cmd,empty,strlen(cmd));
     *ps = ' '; 
   }
-  if (cmd = strchr(p,'B'))
+  if ((cmd = strchr(p,'B')))
   {
     ps = strchr(cmd,' ');
     *ps = 0;
@@ -783,7 +786,7 @@ INT decode_line (CAMAC *P, char * ss)
       printf("mcnaf-E- B out of range 0:7\n");
     *ps = ' '; 
   }
-  if (cmd = strchr(p,'C'))
+  if ((cmd = strchr(p,'C')))
   {
     ps = strchr(cmd,' ');
     *ps = 0;
@@ -797,7 +800,7 @@ INT decode_line (CAMAC *P, char * ss)
       printf("mcnaf-E- C out of range 0:7\n");
     *ps = ' '; 
   }
-  if (cmd = strchr(p,'N'))
+  if ((cmd = strchr(p,'N')))
   {
     ps = strchr(cmd,' ');
     *ps = 0;
@@ -811,7 +814,7 @@ INT decode_line (CAMAC *P, char * ss)
       printf("mcnaf-E- N out of range 0:31\n");
     *ps = ' '; 
   }
-  if (cmd = strchr(p,'A'))
+  if ((cmd = strchr(p,'A')))
   {
     ps = strchr(cmd,' ');
     *ps = 0;
@@ -825,7 +828,7 @@ INT decode_line (CAMAC *P, char * ss)
       printf("mcnaf-E- A out of range 0:15\n");
     *ps = ' '; 
   }
-  if (cmd = strchr(p,'F'))
+  if ((cmd = strchr(p,'F')))
   {
     ps = strchr(cmd,' ');
     *ps = 0;
@@ -839,7 +842,7 @@ INT decode_line (CAMAC *P, char * ss)
       printf("mcnaf-E- F out of range 0:31\n");
     *ps = ' '; 
   }
-  if (cmd = strchr(p,'R'))
+  if ((cmd = strchr(p,'R')))
   {
     ps = strchr(cmd,' ');
     *ps = 0;
@@ -854,7 +857,7 @@ INT decode_line (CAMAC *P, char * ss)
       printf("mcnaf-E- R out of range 1:1000\n");
     *ps = ' '; 
   }
-  if (cmd = strchr(p,'W'))
+  if ((cmd = strchr(p,'W')))
   {
     ps = strchr(cmd,' ');
     *ps = 0;
@@ -865,7 +868,7 @@ INT decode_line (CAMAC *P, char * ss)
       printf("mcnaf-E- W out of range 0:10000\n");
     *ps = ' '; 
   }
-  if (cmd = strchr(p,'M'))
+  if ((cmd = strchr(p,'M')))
   {
     ps = strchr(cmd,' ');
     *ps = 0;
@@ -878,7 +881,7 @@ INT decode_line (CAMAC *P, char * ss)
   }
   if (ok)
     return LOOP;
-  if (cmd = strpbrk(p,"QE"))
+  if ((cmd = strpbrk(p,"QE")))
     return QUIT;
   return SKIP;
 }

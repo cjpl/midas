@@ -19,6 +19,9 @@
     See mchart -h for further info.
 
   $Log$
+  Revision 1.9  2003/04/23 23:08:33  pierre
+  Fixed compiler warning
+
   Revision 1.8  2002/06/03 06:07:15  midas
   Added extra parameter to ss_daemon_init to keep stdout
 
@@ -275,8 +278,8 @@ INT mchart_get_array(FILE * f, char * eqpstr, HNDLE hDB
     }
 
     /* substitution for tcl */
-    while (pspace = strstr(field," ")) *pspace = '_';
-    while (pspace = strstr(field,"%")) *pspace = '_';
+    while ((pspace = strstr(field," "))) *pspace = '_';
+    while ((pspace = strstr(field,"%"))) *pspace = '_';
 
     /* fill data file */
     if (key.type == TID_INT)
@@ -292,7 +295,7 @@ INT mchart_get_array(FILE * f, char * eqpstr, HNDLE hDB
     else if (key.type == TID_DWORD)
     {
       value = (float) *((DWORD *) (pdata+(i*key.item_size)));
-      fprintf(f, "%s %d\n", field, *((DWORD *) (pdata+(i*key.item_size))));
+      fprintf(f, "%s %ld\n", field, *((DWORD *) (pdata+(i*key.item_size))));
     }
     else if (key.type == TID_FLOAT)
     {
@@ -371,12 +374,12 @@ INT mchart_compose(HNDLE hDB, char * confpath, char * datapath, char * eqpstr)
 }
 
 /*------------------------------------------------------------------*/
-int main(unsigned int argc,char **argv)
+int main(int argc,char **argv)
 {
   char command[128];
   BOOL   daemon, keep_strip=FALSE;
-  INT    status, last_time;
-  DWORD  i, last_max_line=0;
+  INT    status, last_time=0;
+  DWORD  i;
   HNDLE  hDB, hKey;
   char   host_name[HOST_NAME_LENGTH], expt_name[HOST_NAME_LENGTH];
   char   eqpstr[128]={'\0'};

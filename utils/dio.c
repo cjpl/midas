@@ -11,6 +11,9 @@
                 dio frontend
 
   $Log$
+  Revision 1.3  2003/04/23 23:08:57  pierre
+  Fixed compiler warning
+
   Revision 1.2  2001/08/14 10:04:56  midas
   Use iopl() instead of ioperm() to access PCI ports > 0x3FF
 
@@ -27,12 +30,13 @@
 \********************************************************************/
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/io.h>
 
 int main( int argc, char **argv )
 {
-  int i;
   int status;
 
   /* Grant access to the device's ioports */
