@@ -1,19 +1,5 @@
-o avoid item count changes if record or parent is open
-o make "!" inf MFE working under Win95
-o make ss_getchar working under Win95
-
-switch many channels on/off in SCFE
-switch all HVs off and start run -> scfe busy
-FTP to archive: disconnect when run paused
 logger displays run progress
-mhttpd lazy display
-
 "[" in ODBEdit inside name
-think about physical record on tape
-
-automatic client start / check
-alarm ODB value checker
-
 revise & split manual
 
 
