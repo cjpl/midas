@@ -6,6 +6,9 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.108  2005/03/24 21:53:51  ritt
+  Fixed problem with saving subtrees in XML
+
   Revision 1.107  2005/03/24 21:00:18  ritt
   Added XML functions
 
@@ -5256,9 +5259,11 @@ INT db_load(HNDLE hDB, HNDLE hKeyRoot, char *filename, BOOL bRemote)
 
    buffer[n] = 0;
 
-   if (strncmp(buffer, "<?xml version=\"1.0\"", 19) == 0)
+   if (strncmp(buffer, "<?xml version=\"1.0\"", 19) == 0) {
       status = db_paste_xml(hDB, hKeyRoot, buffer);
-   else
+      if (status != DB_SUCCESS)
+         printf("Error in file \"%s\"\n", filename);
+   } else
       status = db_paste(hDB, hKeyRoot, buffer);
 
    close(hfile);
@@ -5949,7 +5954,7 @@ INT db_paste_xml(HNDLE hDB, HNDLE hKeyRoot, char *buffer)
       db_find_key(hDB, hKeyRoot, "", &hKeyRoot);
 
    /* parse XML buffer */
-   tree = mxml_parse_buffer(buffer, error, sizeof(error), "");
+   tree = mxml_parse_buffer(buffer, error, sizeof(error));
    if (tree == NULL) {
       puts(error);
       return DB_TYPE_MISMATCH;
@@ -6248,19 +6253,16 @@ INT db_save_xml_key(HNDLE hDB, HNDLE hKey, INT level, MXML_WRITER *writer)
    char str[MAX_STRING_LENGTH * 2], *data;
    HNDLE hSubkey;
    KEY key;
-   DATABASE_HEADER *pheader;
 
    status = db_get_key(hDB, hKey, &key);
    if (status != DB_SUCCESS)
       return status;
 
-   pheader = _database[hDB - 1].database_header;
-
    if (key.type == TID_KEY) {
 
       /* save opening tag for subtree */
       
-      if (hKey != pheader->root_key) {
+      if (level > 0) {
          mxml_start_element(writer, "dir");
          mxml_write_attribute(writer, "name", key.name);
       }
@@ -6278,7 +6280,7 @@ INT db_save_xml_key(HNDLE hDB, HNDLE hKey, INT level, MXML_WRITER *writer)
       }
 
       /* save closing tag for subtree */
-      if (hKey != pheader->root_key)
+      if (level > 0)
          mxml_end_element(writer);
 
    } else {
