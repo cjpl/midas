@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.76  2001/12/04 14:43:53  midas
+  Changed global "Welcome page" into "Selection page"
+
   Revision 1.75  2001/12/04 12:13:21  midas
   Fixed "Date format" problem in short listings
 
@@ -6355,8 +6358,8 @@ struct tm *gmt;
     url_decode(logbook);
     }
 
-  /* check for global welcome page if no logbook given */
-  if (!logbook[0] && getcfg("global", "Welcome page", str))
+  /* check for global selection page if no logbook given */
+  if (!logbook[0] && getcfg("global", "Selection page", str))
     {
     strcpy(file_name, cfg_dir);
     strcat(file_name, str);
