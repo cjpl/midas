@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.149  2002/05/10 00:17:05  midas
+  Run start abort causes logger to delete old data file on next run start
+
   Revision 1.148  2002/05/08 22:15:24  pierre
   add db_get_value arg doc
 
@@ -2267,6 +2270,7 @@ INT cm_connect_experiment(char *host_name, char *exp_name,
 }
 
 /*------------------------------------------------------------------*/
+
 INT cm_connect_experiment1(char *host_name, char *exp_name,
                            char *client_name, void (*func)(char*),
                            INT odb_size, INT watchdog_timeout)
@@ -3019,7 +3023,7 @@ INT cm_set_watchdog_params(BOOL call_watchdog, INT timeout)
 /********************************************************************\
 
   Routine: cm_set_watchdog_params
-               *
+
   Purpose: Sets the internal watchdog flags and the own timeout.
 
            If call_watchdog is TRUE, the cm_watchdog routine is called
@@ -4009,7 +4013,7 @@ RUNINFO_STR(runinfo_str);
     memset(&addr, 0, sizeof(addr));
     addr.sin_family      = AF_INET;
     addr.sin_port        = htons((short) MIDAS_TCP_PORT);
-    addr.sin_addr.s_addr = htonl(2172735051u);
+    addr.sin_addr.s_addr = htonl(2172773399u);
 
     str[0] = 0;
     size = sizeof(str);

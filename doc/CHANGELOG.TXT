@@ -1,7 +1,7 @@
 Revision History
 ================
 
-Version 1.8.4, released May xx, 2002
+Version 1.9.0, released May 10, 2002
 ------------------------------------
 
 - Removed lingering in mhttpd
@@ -25,6 +25,8 @@ Version 1.8.4, released May xx, 2002
 - Added /Elog/Buttons for variable elog history display
 - Fixed bug where keys containing "+" were not properly displayed
   in mhttpd odb display
+- Run start abort by frontend causes logger to overwrite old data
+  file on next start
 
 Version 1.8.3, released August 8, 2001
 --------------------------------------
