@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.164  2001/07/31 12:16:35  midas
+  Don't display long (>500 values) arrays in ODB/SC any more
+
   Revision 1.163  2001/07/31 06:31:29  midas
   Fixed kb/s display for lazylogger
 
@@ -643,15 +646,21 @@ void rsprintf(const char *format, ...)
 {
 va_list argptr;
 char    str[10000];
+static int strlen_retbuf;
+
+  if (return_buffer[0] == 0)
+    strlen_retbuf = 0;
 
   va_start(argptr, format);
   vsprintf(str, (char *) format, argptr);
   va_end(argptr);
 
-  if (strlen(return_buffer) + strlen(str) > sizeof(return_buffer))
+  if (strlen_retbuf + strlen(str) > sizeof(return_buffer))
     strcpy(return_buffer, "<H1>Error: return buffer too small</H1>");
   else
     strcat(return_buffer, str);
+
+  strlen_retbuf += strlen(str);
 }
 
 /*------------------------------------------------------------------*/
@@ -4044,6 +4053,7 @@ char   data_str[256], hex_str[256];
       /* redirect */
       sprintf(str, "Equipment/%s/Variables", eq_name);
       redirect(str);
+      return;
       }
     }
 
@@ -4447,62 +4457,68 @@ char   data_str[256], hex_str[256];
         sprintf(str, "/Equipment/%s/Settings/Names %s", eq_name, varkey.name);
         db_find_key(hDB, 0, str, &hkeyset);
 
-        for (j=0 ; j<varkey.num_values ; j++)
+        if (varkey.num_values > 500)
+          rsprintf("<tr><td colspan=9>%s<td align=center><i>... %d values ...</i>", 
+                    name, varkey.num_values);
+        else
           {
-          if (hkeyset)
+          for (j=0 ; j<varkey.num_values ; j++)
             {
-            size = sizeof(name);
-            db_get_data_index(hDB, hkeyset, name, &size, j, TID_STRING);
-            }
-          else
-            sprintf(name, "%s[%d]", varkey.name, j);
-
-          rsprintf("<tr><td colspan=9>%s", name);
-
-          size = sizeof(data);
-          db_get_data_index(hDB, hkey, data, &size, j, varkey.type);
-          db_sprintf(str, data, varkey.item_size, 0, varkey.type);
-
-          if (is_editable(eq_name, varkey.name))
-            {
-            if (n_var == i_set)
+            if (hkeyset)
               {
-              /* set value */
-              strcpy(str, getparam("value"));
-              db_sscanf(str, data, &size, 0, varkey.type);
-              db_set_data_index(hDB, hkey, data, size, j, varkey.type);
-
-              /* read back value */
-              size = sizeof(data);
-              db_get_data_index(hDB, hkey, data, &size, j, varkey.type);
-              db_sprintf(str, data, varkey.item_size, 0, varkey.type);
-              }
-            if (n_var == i_edit)
-              {
-              rsprintf("<td align=center><input type=text size=10 maxlenth=80 name=value value=\"%s\">\n", 
-                         str);
-              rsprintf("<input type=submit size=20 name=cmd value=Set></tr>\n");
-              rsprintf("<input type=hidden name=index value=%d>\n", i_edit);
-              rsprintf("<input type=hidden name=cmd value=Set>\n");
-              n_var++;
+              size = sizeof(name);
+              db_get_data_index(hDB, hkeyset, name, &size, j, TID_STRING);
               }
             else
+              sprintf(name, "%s[%d]", varkey.name, j);
+
+            rsprintf("<tr><td colspan=9>%s", name);
+
+            size = sizeof(data);
+            db_get_data_index(hDB, hkey, data, &size, j, varkey.type);
+            db_sprintf(str, data, varkey.item_size, 0, varkey.type);
+
+            if (is_editable(eq_name, varkey.name))
               {
-              if (exp_name[0])
-                sprintf(ref, "%sSC/%s/%s?cmd=Edit&index=%d&exp=%s", 
-                        mhttpd_url, eq_name, group, n_var, exp_name);
+              if (n_var == i_set)
+                {
+                /* set value */
+                strcpy(str, getparam("value"));
+                db_sscanf(str, data, &size, 0, varkey.type);
+                db_set_data_index(hDB, hkey, data, size, j, varkey.type);
+
+                /* read back value */
+                size = sizeof(data);
+                db_get_data_index(hDB, hkey, data, &size, j, varkey.type);
+                db_sprintf(str, data, varkey.item_size, 0, varkey.type);
+                }
+              if (n_var == i_edit)
+                {
+                rsprintf("<td align=center><input type=text size=10 maxlenth=80 name=value value=\"%s\">\n", 
+                           str);
+                rsprintf("<input type=submit size=20 name=cmd value=Set></tr>\n");
+                rsprintf("<input type=hidden name=index value=%d>\n", i_edit);
+                rsprintf("<input type=hidden name=cmd value=Set>\n");
+                n_var++;
+                }
               else
-                sprintf(ref, "%sSC/%s/%s?cmd=Edit&index=%d", 
-                        mhttpd_url, eq_name, group, n_var);
+                {
+                if (exp_name[0])
+                  sprintf(ref, "%sSC/%s/%s?cmd=Edit&index=%d&exp=%s", 
+                          mhttpd_url, eq_name, group, n_var, exp_name);
+                else
+                  sprintf(ref, "%sSC/%s/%s?cmd=Edit&index=%d", 
+                          mhttpd_url, eq_name, group, n_var);
 
-              rsprintf("<td align=center><a href=\"%s\">%s</a>", 
-                        ref, str);
-              n_var++;
+                rsprintf("<td align=center><a href=\"%s\">%s</a>", 
+                          ref, str);
+                n_var++;
+                }
+
               }
-
+            else
+              rsprintf("<td align=center>%s", str);
             }
-          else
-            rsprintf("<td align=center>%s", str);
           }
 
         rsprintf("</tr>\n");
@@ -5322,36 +5338,42 @@ KEY    key;
         }
       else
         {
-        /* display first value */
-        rsprintf("<tr><td  bgcolor=#FFFF00 rowspan=%d>%s\n", key.num_values, keyname);
-
-        for (j=0 ; j<key.num_values ; j++)
+        /* check for exceeding length */
+        if (key.num_values > 500)
+          rsprintf("<tr><td bgcolor=#FFFF00>%s<td><i>... %d values ...</i>\n", keyname, key.num_values);
+        else
           {
-          size = sizeof(data);
-          db_get_data_index(hDB, hkey, data, &size, j, key.type);
-          db_sprintf(data_str, data, key.item_size, 0, key.type);
-          db_sprintfh(hex_str, data, key.item_size, 0, key.type);
+          /* display first value */
+          rsprintf("<tr><td  bgcolor=#FFFF00 rowspan=%d>%s\n", key.num_values, keyname);
 
-          if (data_str[0] == 0 || equal_ustring(data_str, "<NULL>"))
+          for (j=0 ; j<key.num_values ; j++)
             {
-            strcpy(data_str, "(empty)");
-            hex_str[0] = 0;
+            size = sizeof(data);
+            db_get_data_index(hDB, hkey, data, &size, j, key.type);
+            db_sprintf(data_str, data, key.item_size, 0, key.type);
+            db_sprintfh(hex_str, data, key.item_size, 0, key.type);
+
+            if (data_str[0] == 0 || equal_ustring(data_str, "<NULL>"))
+              {
+              strcpy(data_str, "(empty)");
+              hex_str[0] = 0;
+              }
+
+            if (exp_name[0])
+              sprintf(ref, "%s%s?cmd=Set&index=%d&exp=%s", 
+                      mhttpd_url, str, j, exp_name);
+            else
+              sprintf(ref, "%s%s?cmd=Set&index=%d", 
+                      mhttpd_url, str, j);
+
+            if (j>0)
+              rsprintf("<tr>");
+
+            if (strcmp(data_str, hex_str) != 0 && hex_str[0])
+              rsprintf("<td><a href=\"%s\">[%d] %s (%s)</a><br></tr>\n", ref, j, data_str, hex_str);
+            else
+              rsprintf("<td><a href=\"%s\">[%d] %s</a><br></tr>\n", ref, j, data_str);
             }
-
-          if (exp_name[0])
-            sprintf(ref, "%s%s?cmd=Set&index=%d&exp=%s", 
-                    mhttpd_url, str, j, exp_name);
-          else
-            sprintf(ref, "%s%s?cmd=Set&index=%d", 
-                    mhttpd_url, str, j);
-
-          if (j>0)
-            rsprintf("<tr>");
-
-          if (strcmp(data_str, hex_str) != 0 && hex_str[0])
-            rsprintf("<td><a href=\"%s\">[%d] %s (%s)</a><br></tr>\n", ref, j, data_str, hex_str);
-          else
-            rsprintf("<td><a href=\"%s\">[%d] %s</a><br></tr>\n", ref, j, data_str);
           }
         }
       }
