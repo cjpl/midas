@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.24  1999/07/15 07:35:25  midas
+  Added Ctrl-C handling
+
   Revision 1.23  1999/07/15 06:51:17  midas
   Don't call ss_getchar in "quiet" mode not to block tty
 
@@ -125,6 +128,9 @@ HNDLE hDB;
 
 /* run number */
 DWORD current_run_number;
+
+/* Ctrl-C flag to stop analyzer gracefully */
+BOOL ctrlc = FALSE;
 
 /* analyze_request defined in analyze.c or anasys.c */
 extern ANALYZE_REQUEST analyze_request[];
@@ -2371,6 +2377,10 @@ EVENT_DEF    *event_def;
       }
     }
 
+  /* check Ctrl-C */
+  if (ctrlc)
+    return RPC_SHUTDOWN;
+
   return SUCCESS;
 }
 
@@ -2603,6 +2613,10 @@ int      ch;
       if ((char) ch == '!')
         break;
       }
+
+    /* check Ctrl-C */
+    if (ctrlc)
+      break;
 
     if (analyzer_loop_period == 0)
       status = cm_yield(1000);
@@ -3130,6 +3144,14 @@ BANK_LIST *bank_list;
 
 /*------------------------------------------------------------------*/
 
+void ctrlc_handler(int sig)
+{
+  printf("Received break. Aborting...\n");
+  ctrlc = TRUE;
+}
+
+/*------------------------------------------------------------------*/
+
 main(int argc, char *argv[])
 {
 INT status;
@@ -3226,6 +3248,9 @@ INT status;
   /* initialize ss_getchar */
   if (!clp.quiet)
     ss_getchar(0);
+
+  /* register ctrl-c handler */
+  ss_ctrlc_handler(ctrlc_handler);
 
   /* start main loop */
   if (clp.online)
