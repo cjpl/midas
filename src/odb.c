@@ -6,6 +6,9 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.6  1999/01/19 12:42:08  midas
+  Records can be open several times with different dispatchers
+
   Revision 1.5  1999/01/13 09:40:49  midas
   Added db_set_data_index2 function
 
@@ -5823,17 +5826,6 @@ char str[256];
     }
   else
     {
-    /* check for an existing entry */
-    for (index=0 ; index<_record_list_entries ; index++)
-      if (_record_list[index].handle == hKey &&
-          _record_list[index].hDB == hDB &&
-          _record_list[index].data == ptr &&
-          _record_list[index].info == info)
-        {
-        db_close_record(hDB, hKey);
-        break;
-        }
-
     /* check for a deleted entry */
     for (index=0 ; index<_record_list_entries ; index++)
       if (!_record_list[index].handle)
@@ -6068,7 +6060,7 @@ INT db_update_record(INT hDB, INT hKey, int socket)
 
 \********************************************************************/
 {
-INT         i, size, convert_flags;
+INT         i, size, convert_flags, status;
 INT         buffer[16];
 NET_COMMAND *nc;
 
@@ -6102,24 +6094,26 @@ NET_COMMAND *nc;
     return DB_SUCCESS;
     }
 
+  status = DB_INVALID_HANDLE;
+
+  /* check all entries for matching key */
   for (i=0 ; i<_record_list_entries ; i++)
     if (_record_list[i].handle == hKey)
-      break;
+      {
+      status = DB_SUCCESS;
 
-  if (i == _record_list_entries)
-    return DB_INVALID_HANDLE;
+      /* get updated data if record not opened in write mode */
+      if ((_record_list[i].access_mode & MODE_WRITE) == 0)
+        {
+        size = _record_list[i].buf_size;
+        if (_record_list[i].data != NULL)
+          db_get_record(hDB, hKey, _record_list[i].data, &size, 0);
 
-  /* get updated data if record not opened in write mode */
-  if ((_record_list[i].access_mode & MODE_WRITE) == 0)
-    {
-    size = _record_list[i].buf_size;
-    if (_record_list[i].data != NULL)
-      db_get_record(hDB, hKey, _record_list[i].data, &size, 0);
-
-    /* call dispatcher if requested */
-    if (_record_list[i].dispatcher)
-      _record_list[i].dispatcher(hDB, hKey, _record_list[i].info);
-    }
+        /* call dispatcher if requested */
+        if (_record_list[i].dispatcher)
+          _record_list[i].dispatcher(hDB, hKey, _record_list[i].info);
+        }
+      }
 
   return DB_SUCCESS;
 }
