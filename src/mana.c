@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.122  2004/09/23 19:21:24  midas
+  Implemented folders for histos
+
   Revision 1.121  2004/08/02 07:53:31  midas
   Do a tree->Reset() after rwnt_buffer_size tree fills
 
@@ -433,6 +436,7 @@
 #include <TKey.h>
 #include <TROOT.h>
 #include <TH1.h>
+#include <TH2.h>
 #include <TFile.h>
 #include <TTree.h>
 #include <TLeaf.h>
@@ -441,6 +445,8 @@
 #include <TMessage.h>
 #include <TObjString.h>
 #include <TSystem.h>
+#include <TFolder.h>
+#include <TRint.h>
 
 #ifdef OS_LINUX
 #include <TThread.h>
@@ -449,8 +455,9 @@
 /* Our own ROOT global objects */
 
 TApplication *manaApp;
-TDirectory *gManaHistsDir = NULL;       // Container for all histograms
-TFile *gManaOutputFile = NULL;  // MIDAS output file
+TFolder *gManaHistosFolder = NULL;   // Container for all histograms
+TFile *gManaOutputFile = NULL;       // MIDAS output file
+TObjArray *gHistoFolderStack = NULL; // 
 
 /* MIDAS output tree structure holing one tree per event type */
 
@@ -623,6 +630,7 @@ struct {
    INT n_task;
    INT pvm_buf_size;
    INT root_port;
+   BOOL start_rint;
 } clp;
 
 struct {
@@ -685,6 +693,10 @@ struct {
    {
    's', "<port>        Start ROOT histo server under <port>. If port==0, don't start server.",
           &clp.root_port, TID_INT, 1},
+
+   {
+   'R', "              Start ROOT interpreter after analysis has finished.",
+          &clp.start_rint, TID_BOOL, 0},
 #endif
    
    {
@@ -1734,7 +1746,7 @@ INT book_ttree()
 /*-- root histogram routines ---------------------------------------*/
 
 // Save all objects from given directory into given file
-INT SaveRootHistograms(TDirectory * dir, const char *filename)
+INT SaveRootHistograms(TFolder * folder, const char *filename)
 {
    TDirectory *savedir = gDirectory;
    TFile *outf = new TFile(filename, "RECREATE", "Midas Analyzer Histograms");
@@ -1744,10 +1756,7 @@ INT SaveRootHistograms(TDirectory * dir, const char *filename)
    }
 
    outf->cd();
-   TIter next(dir->GetList());
-   while (TObject * obj = next())
-      obj->Write();
-
+   folder->Write();
    outf->Close();
    delete outf;
    // restore current directory
@@ -1758,16 +1767,18 @@ INT SaveRootHistograms(TDirectory * dir, const char *filename)
 /*------------------------------------------------------------------*/
 
 // Load all objects from given file into given directory
-INT LoadRootHistograms(TDirectory * dir, const char *filename)
+INT LoadRootHistograms(TFolder * folder, const char *filename)
 {
    TDirectory *savedir = gDirectory;
-   dir->cd();
+
    TFile *inf = new TFile(filename, "READ");
    if (inf == NULL)
       printf("Error: File \"%s\" not found", filename);
    else {
-      TIter next(inf->GetListOfKeys());
 
+/* not yet implemented for histos in folders, TBD...
+
+      TIter next(inf->GetListOfKeys());
       while (TObject * obj = next()) {
          //if (obj->InheritsFrom("TH1")) // does not work???
          {
@@ -1776,20 +1787,19 @@ INT LoadRootHistograms(TDirectory * dir, const char *filename)
             savedir->cd();
          }
       }
+*/
       inf->Close();
       delete inf;
    }
-   // restore current directory
-   savedir->cd();
    return SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
 
 // Clear all TH1 objects in the given directory
-INT ClearRootHistograms(TDirectory * dir)
+INT ClearRootHistograms(TFolder * folder)
 {
-   TIter next(dir->GetList());
+   TIter next(folder->GetListOfFolders());
    while (TObject * obj = next())
       if (obj->InheritsFrom("TH1"))
          ((TH1 *) obj)->Reset();
@@ -1807,7 +1817,7 @@ INT CloseRootOutputFile()
 
    // save the histograms
    gManaOutputFile->cd();
-   TIter next(gManaHistsDir->GetList());
+   TIter next(gManaHistosFolder->GetListOfFolders());
    while (TObject * obj = next())
       obj->Write();
 
@@ -1940,14 +1950,25 @@ INT mana_init()
    for (i = 0; analyze_request[i].event_name[0]; i++) {
       module = analyze_request[i].ana_module;
       for (j = 0; module != NULL && module[j] != NULL; j++) {
+         
          /* copy module enabled flag to ana_module */
          sprintf(str, "/%s/Module switches/%s", analyzer_name, module[j]->name);
          module[j]->enabled = TRUE;
          size = sizeof(BOOL);
          db_get_value(hDB, 0, str, &module[j]->enabled, &size, TID_BOOL, TRUE);
 
-         if (module[j]->init != NULL && module[j]->enabled)
+         if (module[j]->init != NULL && module[j]->enabled) {
+
+#ifdef HAVE_ROOT
+            /* create histo subfolder for module */
+            sprintf(str, "Histos for module %s", module[j]->name);
+            module[j]->histo_folder = gManaHistosFolder->AddFolder(module[j]->name, str);
+            gHistoFolderStack->Clear();
+            gHistoFolderStack->Add((TObject *)module[j]->histo_folder);
+#endif
+
             module[j]->init();
+         }
       }
    }
 
@@ -1965,8 +1986,9 @@ INT mana_exit()
    for (i = 0; analyze_request[i].event_name[0]; i++) {
       module = analyze_request[i].ana_module;
       for (j = 0; module != NULL && module[j] != NULL; j++)
-         if (module[j]->exit != NULL && module[j]->enabled)
+         if (module[j]->exit != NULL && module[j]->enabled) {
             module[j]->exit();
+         }
    }
 
    /* call main analyzer exit routine */
@@ -2034,7 +2056,7 @@ INT bor(INT run_number, char *error)
 #ifdef HAVE_ROOT
       /* clear histos */
       if (clp.online && out_info.clear_histos)
-         ClearRootHistograms(gManaHistsDir);
+         ClearRootHistograms(gManaHistosFolder);
 #endif                          /* HAVE_ROOT */
 
       /* clear tests */
@@ -2204,8 +2226,9 @@ INT bor(INT run_number, char *error)
    for (i = 0; analyze_request[i].event_name[0]; i++) {
       module = analyze_request[i].ana_module;
       for (j = 0; module != NULL && module[j] != NULL; j++)
-         if (module[j]->bor != NULL && module[j]->enabled)
+         if (module[j]->bor != NULL && module[j]->enabled) {
             module[j]->bor(run_number);
+         }
    }
 
    /* call main analyzer BOR routine */
@@ -2225,8 +2248,9 @@ INT eor(INT run_number, char *error)
    for (i = 0; analyze_request[i].event_name[0]; i++) {
       module = analyze_request[i].ana_module;
       for (j = 0; module != NULL && module[j] != NULL; j++)
-         if (module[j]->eor != NULL && module[j]->enabled)
+         if (module[j]->eor != NULL && module[j]->enabled) {
             module[j]->eor(run_number);
+         }
    }
 
    /* call main analyzer BOR routine */
@@ -2258,7 +2282,7 @@ INT eor(INT run_number, char *error)
 #endif                          /* HAVE_HBOOK */
 
 #ifdef HAVE_ROOT
-      SaveRootHistograms(gManaHistsDir, str);
+      SaveRootHistograms(gManaHistosFolder, str);
 #endif                          /* HAVE_ROOT */
    }
 
@@ -3570,6 +3594,7 @@ INT process_event(ANALYZE_REQUEST * par, EVENT_HEADER * pevent)
    module = par->ana_module;
    for (i = 0; module != NULL && module[i] != NULL; i++) {
       if (module[i]->enabled) {
+
          status = module[i]->analyzer(pevent, (void *) (pevent + 1));
 
          /* don't continue if event was rejected */
@@ -3831,6 +3856,74 @@ void update_stats()
    last_time = actual_time;
 }
 
+/*-- Book histos --------------------------------------------------*/
+
+#ifdef HAVE_ROOT
+
+
+void * h1_book(char *name, char *title, int bins, double min, double max)
+{
+   TH1F *hist;
+
+   /* check if histo already exists */
+   if (!gHistoFolderStack->Last())
+      hist = (TH1F *) gManaHistosFolder->FindObjectAny(name);
+   else
+      hist = (TH1F *) ((TFolder *)gHistoFolderStack->Last())->FindObjectAny(name);
+
+   if (hist == NULL) {
+      hist = new TH1F(name, title, bins, min, max);
+      if (!gHistoFolderStack->Last())
+         gManaHistosFolder->Add(hist);
+      else
+         ((TFolder *)gHistoFolderStack->Last())->Add(hist);
+   }
+
+   return hist;
+}
+
+void * h2_book(char *name, char *title, int xbins, double xmin, double xmax, 
+                                        int ybins, double ymin, double ymax)
+{
+   TH2F *hist;
+
+   /* check if histo already exists */
+   if (!gHistoFolderStack->Last())
+      hist = (TH2F *) gManaHistosFolder->FindObjectAny(name);
+   else
+      hist = (TH2F *) ((TFolder *)gHistoFolderStack->Last())->FindObjectAny(name);
+
+   if (hist == NULL) {
+      hist = new TH2F(name, title, xbins, xmin, xmax, ybins, ymin, ymax);
+      if (!gHistoFolderStack->Last())
+         gManaHistosFolder->Add(hist);
+      else
+         ((TFolder *)gHistoFolderStack->Last())->Add(hist);
+   }
+
+   return hist;
+}
+
+void open_subfolder(char *name)
+{
+
+   TFolder *current = (TFolder *)gHistoFolderStack->Last();
+
+   if (!current)
+      current = gManaHistosFolder;
+
+   TFolder *subfolder = new TFolder(name, name);
+   current->Add(subfolder);
+   gHistoFolderStack->Add(subfolder);
+}
+
+void close_subfolder()
+{
+   if (gHistoFolderStack->Last())
+      gHistoFolderStack->Remove(gHistoFolderStack->Last());
+}
+
+#endif
 
 /*-- Clear histos --------------------------------------------------*/
 #ifdef HAVE_HBOOK
@@ -3921,7 +4014,7 @@ void load_last_histos()
 
 #ifdef HAVE_ROOT
       printf("Loading previous online histos from %s\n", str);
-      LoadRootHistograms(gManaHistsDir, str);
+      LoadRootHistograms(gManaHistosFolder, str);
 #endif
    }
 }
@@ -3960,7 +4053,7 @@ void save_last_histos()
 #endif
 
 #ifdef HAVE_ROOT
-   SaveRootHistograms(gManaHistsDir, str);
+   SaveRootHistograms(gManaHistosFolder, str);
 #endif
 
 }
@@ -5429,109 +5522,21 @@ int pvm_merge()
 
 #ifdef HAVE_ROOT
 
-void *server_thread(void *arg)
-/*
-  Server histograms to remove clients
-*/
-{
-   int i;
-   char str[32];
+/*==== ROOT socket histo server ====================================*/
 
-   TSocket *s = (TSocket *) arg;
-
-   do {
-      if (s->Recv(str, sizeof(str)) <= 0) {
-         printf("Closed connection from %s\n", s->GetInetAddress().GetHostName());
-         s->Close();
-         delete s;
-         return NULL;
-      } else {
-         printf("Received \"%s\"\n", str);
-
-         TMessage *mess = new TMessage(kMESS_OBJECT);
-
-         if (strcmp(str, "LIST") == 0) {
-            /* build name array */
-
-            TObjArray *names = new TObjArray(100);
-
-            TIter next(gManaHistsDir->GetList());
-            while (TObject * obj = next())
-               if (obj->InheritsFrom("TH1") ||
-                   obj->InheritsFrom("TH2") ||
-                   obj->InheritsFrom("TTree"))
-                  names->Add(new TObjString(obj->GetName()));
-
-            /* send "names" array */
-            mess->Reset();
-            mess->WriteObject(names);
-            s->Send(*mess);
-
-            for (i = 0; i < names->GetLast() + 1; i++)
-               delete(TObjString *) names->At(i);
-
-            delete names;
-         }
-
-         else if (strncmp(str, "GET", 3) == 0) {
-            /* search histo */
-            TObject *obj;
-            TIter next(gManaHistsDir->GetList());
-
-            while ((obj = next())) {
-               if (strcmp(str + 4, obj->GetName()) == 0)
-                  break;
-            }
-
-            if (!obj) {
-               s->Send("Error");
-            } else {
-               /* send single histo or tree */
-               mess->Reset();
-               mess->WriteObject(obj);
-               s->Send(*mess);
-            }
-         }
-
-         else if (strncmp(str, "CLEAR", 5) == 0) {
-            /* search histo */
-            TObject *obj;
-            TIter next(gManaHistsDir->GetList());
-
-            while ((obj = next())) {
-               if (strcmp(str + 6, obj->GetName()) == 0)
-                  break;
-            }
-
-            if (!obj) {
-               s->Send("Error");
-            } else {
-               /* clear histo */
-#ifdef OS_LINUX
-               TThread::Lock();
-               ((TH1 *) obj)->Reset();
-               TThread::UnLock();
+#if defined ( __linux__ )
+#define THREADRETURN
+#define THREADTYPE void*
 #endif
-
-               /* send single histo */
-               s->Send("OK");
-            }
-         }
-
-         delete mess;
-      }
-
-   } while (1);                 /* do forever */
-}
+#if defined( _MSC_VER )
+#define THREADRETURN 0
+#define THREADTYPE DWORD WINAPI
+#endif
 
 /*------------------------------------------------------------------*/
 
-void *root_server_loop(void *arg)
 /*
-   Server loop listening for incoming network connections on port
-   specified by command line option -s. Starts a searver_thread for 
-   each connection.
-*/
+void *root_server_loop(void *arg)
 {
    printf("Root server listening on port %d...\n", clp.root_port);
    TServerSocket *lsock = new TServerSocket(clp.root_port, kTRUE);
@@ -5541,12 +5546,205 @@ void *root_server_loop(void *arg)
       s->Send("RMSERV 1.0");
       printf("New connection from %s\n", s->GetInetAddress().GetHostName());
 
-      /* start a new server thread */
 #ifdef OS_LINUX
       TThread *th = new TThread("server_thread", server_thread, s);
       th->Run();
 #endif
    } while (1);
+}
+*/
+
+/*------------------------------------------------------------------*/
+
+TFolder *ReadFolderPointer(TSocket *fSocket) 
+{
+   //read pointer to current folder
+   TMessage *message = new TMessage(kMESS_OBJECT);
+   fSocket->Recv(message);
+   Int_t p;
+   *message>>p;
+   delete message;
+   return (TFolder*)p;
+}
+
+/*------------------------------------------------------------------*/
+
+THREADTYPE root_server_thread(void *arg)
+/*
+  Serve histograms over TCP/IP socket link
+*/
+{
+   char request[256];
+
+   TSocket *sock = (TSocket *) arg;
+
+   do {
+
+      /* close connection if client has disconnected */
+      if (sock->Recv(request, sizeof(request)) <= 0) {
+         printf("Closed connection from %s\n", sock->GetInetAddress().GetHostName());
+         sock->Close();
+         delete sock;
+         return THREADRETURN;
+
+      } else {
+
+         printf("Received \"%s\"\n", request);
+
+         TMessage *message = new TMessage(kMESS_OBJECT);
+
+         if (strcmp(request, "GetListOfFolders") == 0) {
+            
+            TFolder *folder = ReadFolderPointer(sock);
+            if (folder==NULL) {
+               message->Reset(kMESS_OBJECT);
+               message->WriteObject(NULL);
+               sock->Send(*message);
+               delete message;
+               continue;
+            }
+
+            //get folder names
+            TObject *obj;
+            TObjArray *names = new TObjArray(100);
+
+            TCollection *folders = folder->GetListOfFolders();
+            TIterator *iterFolders = folders->MakeIterator();
+            while (obj = iterFolders->Next())
+               names->Add(new TObjString(obj->GetName()));
+
+            //write folder names
+            message->Reset(kMESS_OBJECT);
+            message->WriteObject(names);
+            sock->Send(*message);
+
+            for (int i = 0; i < names->GetLast() + 1; i++)
+               delete(TObjString *) names->At(i);
+
+            delete names;
+
+            delete message;
+
+         } else if (strncmp(request, "FindObject", 10) == 0) {
+
+            TFolder *folder = ReadFolderPointer(sock);
+
+            //get object
+            TObject *obj;
+            if (strncmp(request+10, "Any", 3) == 0)
+               obj = folder->FindObjectAny(request+14);
+            else
+               obj = folder->FindObject(request+11);
+
+            //write object
+            if (!obj)
+               sock->Send("Error");
+            else {
+               message->Reset(kMESS_OBJECT);
+               message->WriteObject(obj);
+               sock->Send(*message);
+            }
+            delete message;
+ 
+         } else if (strncmp(request, "FindFullPathName", 16) == 0) {
+
+            TFolder *folder = ReadFolderPointer(sock);
+
+            //find path
+            const char* path = folder->FindFullPathName(request+17);
+
+            //write path
+            if (!path) {
+               sock->Send("Error");
+            } else {
+               TObjString *obj = new TObjString(path);
+               message->Reset(kMESS_OBJECT);
+               message->WriteObject(obj);
+               sock->Send(*message);
+               delete obj;
+            }
+            delete message;
+         
+         } else if (strncmp(request, "Occurence", 9) == 0) {
+
+            TFolder *folder = ReadFolderPointer(sock);
+
+            //read object
+            message->Reset(kMESS_OBJECT);
+            sock->Recv(message);
+            TObject *obj = ((TObject*) message->ReadObject(message->GetClass()));
+
+            //get occurence
+            Int_t retValue = folder->Occurence(obj);
+
+            //write occurence
+            message->Reset(kMESS_OBJECT);
+            *message<<retValue;
+            sock->Send(*message);
+
+            delete message;
+
+         } else if (strncmp(request, "GetPointer", 10) == 0) {
+
+            //find object
+            TObject *obj = gROOT->FindObjectAny(request+11);
+
+            //write pointer
+            message->Reset(kMESS_ANY);
+            int p = (PTYPE)obj;
+            *message<<p;
+            sock->Send(*message);
+
+            delete message;
+         }
+      }
+   } while (1);
+
+   return THREADRETURN;
+}
+
+/*------------------------------------------------------------------*/
+
+THREADTYPE root_socket_server(void *arg)
+{
+// Server loop listening for incoming network connections on specified port.
+// Starts a searver_thread for each connection.
+   int port;
+   
+   port = *(int*)arg;
+
+   printf("Root server listening on port %d...\n", port);
+   TServerSocket *lsock = new TServerSocket(port, kTRUE);
+
+   do {
+      TSocket *sock = lsock->Accept();
+
+#if defined ( __linux__ )
+      TThread *thread = new TThread("Server", root_server_thread, sock);
+      thread->Run();
+#endif
+#if defined( _MSC_VER )
+      LPDWORD lpThreadId=0;
+      CloseHandle(CreateThread(NULL,1024,&root_server_thread,sock,0,lpThreadId));
+#endif
+   } while (1);
+
+   return THREADRETURN;
+}
+
+/*------------------------------------------------------------------*/
+
+void start_root_socket_server(int port) 
+{
+   static int pport = port;
+#if defined ( __linux__ )
+   TThread *thread = new TThread("server_loop", root_socket_server, &pport);
+   thread->Run();
+#endif
+#if defined( _MSC_VER )
+   LPDWORD lpThreadId=0;
+   CloseHandle(CreateThread(NULL,1024,&root_socket_server,&pport,0,lpThreadId));
+#endif
 }
 
 /*------------------------------------------------------------------*/
@@ -5588,26 +5786,10 @@ int main(int argc, char *argv[])
 #endif
 
 #ifdef HAVE_ROOT
-   char **rargv;
-   int rargc;
+   int argn = 1;
+   char *argp = (char*)argv[0];
 
-   /* copy first argument */
-   rargc = 0;
-   rargv = (char **) malloc(sizeof(char *) * 2);
-   rargv[rargc] = (char *) malloc(strlen(argv[rargc]) + 1);
-   strcpy(rargv[rargc], argv[rargc]);
-   rargc++;
-
-   /* append argument "-b" for batch mode without graphics */
-   rargv[rargc] = (char *) malloc(3);
-   rargv[rargc++] = "-b";
-
-   manaApp = new TApplication("ranalyzer", &rargc, rargv);
-
-   /* free argument memory */
-   free(rargv[0]);
-   free(rargv[1]);
-   free(rargv);
+   manaApp = new TRint("ranalyzer", &argn, &argp, NULL, 0, true);
 
    /* default server port */
    clp.root_port = 9090;
@@ -5768,12 +5950,10 @@ int main(int argc, char *argv[])
    db_get_record(hDB, hkey, &out_info, &size, 0);
 
 #ifdef HAVE_ROOT
-   /* create the directory for analyzer histograms */
-   gManaHistsDir = new TDirectory("MidasHists", "MIDAS Analyzer Histograms", "");
-   assert(gManaHistsDir != NULL);
-
-   /* make all ROOT objects created in user module init() functions to into gManaHistsDir */
-   gManaHistsDir->cd();
+   /* create the folder for analyzer histograms */
+   gManaHistosFolder = gROOT->GetRootFolder()->AddFolder("histos", "MIDAS Analyzer Histograms");
+   gHistoFolderStack = new TObjArray();
+   gROOT->GetListOfBrowsables()->Add(gManaHistosFolder, "histos");
 
    /* convert .rz names to .root names */
    if (strstr(out_info.last_histo_filename, ".rz"))
@@ -5784,15 +5964,11 @@ int main(int argc, char *argv[])
 
    db_set_record(hDB, hkey, &out_info, sizeof(out_info), 0);
 
-#ifdef OS_LINUX
    /* start socket server */
-   if (clp.root_port) {
-      TThread *th1 = new TThread("root_server_loop", root_server_loop, NULL);
-      th1->Run();
-   }
-#endif
+   if (clp.root_port)
+      start_root_socket_server(clp.root_port);
 
-#endif                          /* HAVE_ROOT */
+#endif  /* HAVE_ROOT */
 
 #ifdef HAVE_HBOOK
    /* convert .root names to .rz names */
@@ -5831,6 +6007,7 @@ int main(int argc, char *argv[])
       cm_disconnect_experiment();
       return 1;
    }
+
 #ifdef HAVE_HBOOK
    /* load histos from last.xxx */
    if (clp.online)
@@ -5844,21 +6021,12 @@ int main(int argc, char *argv[])
    if (!clp.quiet && !pvm_slave)
       ss_getchar(0);
 
-  /*---- start main loop ----*/
+   /*---- start main loop ----*/
 
-/* multi-threaded root server only under Linux */
-#if defined(HAVE_ROOT) && defined(OS_LINUX)
-   /* start event thread */
-   TThread *th2 = new TThread("root_event_loop", root_event_loop, NULL);
-   th2->Run();
-
-   manaApp->Run();
-#else
    if (clp.online)
       loop_online();
    else
       loop_runs_offline();
-#endif
 
    /* reset terminal */
    if (!clp.quiet && !pvm_slave)
@@ -5886,6 +6054,11 @@ int main(int argc, char *argv[])
 
    /* disconnect from experiment */
    cm_disconnect_experiment();
+
+#ifdef HAVE_ROOT
+   if (clp.start_rint)
+      manaApp->Run(true);
+#endif
 
    return 0;
 }
