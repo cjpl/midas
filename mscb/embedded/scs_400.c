@@ -9,6 +9,9 @@
                 for SCS-400 thermo couple I/O
 
   $Log$
+  Revision 1.19  2003/03/25 11:08:54  midas
+  Removed outcommenting
+
   Revision 1.18  2003/03/24 15:43:04  midas
   Fixed bug on power setting
 
@@ -234,7 +237,7 @@ float t;
 
     ADCINT = 0;
     ADBUSY = 1;
-    //while (!ADCINT);  // wait until conversion ready, does NOT work with ADBUSY!
+    while (!ADCINT);  // wait until conversion ready, does NOT work with ADBUSY!
 
     ENABLE_INTERRUPTS;
 
