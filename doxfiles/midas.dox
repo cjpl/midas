@@ -10,14 +10,14 @@
    feel free to browse through the following Web sites:
    <a HREF=http://midas.psi.ch> Switzerland </a>, 
    <a HREF=http://midas.triumf.ca> Canada </a>
-
+  
   Chapters are: 
   \arg @ref NDF : Whats new in Midas.
   \arg @ref Intro : Some intial words and description
   \arg @ref Comp : listing 
   \arg @ref quickstart : The HowTo for installation.
   \arg @ref Internal : The main internal components of the system 
-  \arg @ref Util : The Midas applications.
+  \arg @ref Utilities : The Midas applications.
   \arg @ref AppendixA : Supported data format
   \arg @ref AppendixB : Supported hardware.
   \arg @ref AppendixC : CAMAC and VME access function call.

@@ -504,7 +504,7 @@ Experiment                      DIR
   \b /Experiment/Edit on Start/Edit run number 
   as a boolean variable the ability of editing the run number is
   enabled or disabled. By default if this key is not present the run number
-  is editable. 
+  is editable.  
   <br><br>
   \code 
   [local]/>create key "Experiment/Edit on start"
@@ -1016,10 +1016,8 @@ is established between the frontend and the ODB itself.
 
  * <center>
  *  HotLink process
- * \htmlonly <img src="hotlink.gif" alt="hotlink" 
- * style="width: 300px; height: 225px;">
- * </center>\endhtmlonly 
- *  \image latex hotlink.eps "HotLink process" width=12cm
+ * \image html hotlink.gif 
+ * \image latex hotlink.eps "HotLink process" width=12cm
  * </center> 
 
 First the parameters have to be defined in the ODB under the Settings tree

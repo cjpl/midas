@@ -1,11 +1,11 @@
-/*! \page Intro Introduction
+/*! @page Intro Introduction
 
 \htmlonly <img ALIGN="left" alt="previous.gif" src="previous.gif"> \endhtmlonly 
 @ref Top - @ref Top - @ref NDF
 \htmlonly <img alt="next.gif" src="next.gif"> \endhtmlonly
 
 <em> ... A few words... </em>
-
+ 
 Acquiring, collecting and analyzing data is the essence of mankind to satisfy
 his urge for understanding natural phenomena by comparing "real" events to his own
 symbolic representation. These fundamental steps paved human evolution and in the
@@ -38,6 +38,9 @@ The Maximum Integrated Data Acquisition System (MIDAS) is a general-purpose
 system for event based data acquisition in small and medium scale physics 
 experiments. It has been developed at the Paul Scherrer Institute (Switzerland)
 and at TRIUMF (Canada) between 1993 and 2000 (Release of Version 1.8.0).
+Presently ongoing development are more focused on the interfacing capability of
+the Midas package to external applications such as ROOT for data analysis 
+(see @ref analyzer_struct). 
 
 Midas is based on a modular networking capability and a central database system.
 MIDAS consists of a C library and several applications. They run on many

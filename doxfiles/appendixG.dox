@@ -6,7 +6,7 @@
 
 Feel free to ask questions to one of us (
 <a href=mailto:midas@psi.ch> Stefan Ritt </a>,
-<a href=mailto:midas@triumf.ca> Pierre-Andr&ecuate Amaudruz</a>)
+<a href=mailto:midas@triumf.ca> Pierre-Andre Amaudruz</a>)
 or visit the <a href=http://midas.triumf.ca/forum> Midas Forum </a>
 
 -# <b> Why the CAMAC frontend generate a core dump (linux)?</b>
@@ -84,6 +84,57 @@ or visit the <a href=http://midas.triumf.ca/forum> Midas Forum </a>
   for <b> Online Mode</b>. This flag may have been turned off due to analysis
   replay using this ODB. Set this key back to 1 to get the alarm to work again.
   <br><br>
+-# <b> How do I extend an array in ODB? </b>
+  - When listing the array from ODB with the -l switch, you get a column indicating
+  the index of the listed array. You can extend the array by setting the array value 
+  at the new index. The intermediate indices will be fill with the default value
+  depending on the type of the array. This can easly corrected by using the 
+  wildcard to access all or a range of indices.
+  \code 
+[local:midas:S]/>mkdir tmp
+[local:midas:S]/>cd tmp
+[local:midas:S]/tmp>create int number
+[local:midas:S]/tmp>create string foo
+String length [32]: 
+[local:midas:S]/tmp>ls -l
+Key name                        Type    #Val  Size  Last Opn Mode Value
+---------------------------------------------------------------------------
+number                          INT     1     4     >99d 0   RWD  0
+foo                             STRING  1     32    1s   0   RWD  
+[local:midas:S]/tmp>set number[4] 5
+[local:midas:S]/tmp>set foo[3]
+[local:midas:S]/tmp>ls -l
+Key name                        Type    #Val  Size  Last Opn Mode Value
+---------------------------------------------------------------------------
+number                          INT     5     4     12s  0   RWD  
+                                        [0]             0
+                                        [1]             0
+                                        [2]             0
+                                        [3]             0
+                                        [4]             5
+foo                             STRING  4     32    2s   0   RWD  
+                                        [0]             
+                                        [1]             
+                                        [2]             
+                                        [3]             
+[local:midas:S]/tmp>set number[1..3] 9
+[local:midas:S]/tmp>set foo[2] "A default string"
+[local:midas:S]/tmp>ls -l
+Key name                        Type    #Val  Size  Last Opn Mode Value
+---------------------------------------------------------------------------
+number                          INT     5     4     26s  0   RWD  
+                                        [0]             0
+                                        [1]             9
+                                        [2]             9
+                                        [3]             9
+                                        [4]             5
+foo                             STRING  4     32    3s   0   RWD  
+                                        [0]             
+                                        [1]             
+                                        [2]             A default string
+                                        [3]             
+  \endcode
+  
 -# How do I ...
   - ...
   <br><br>

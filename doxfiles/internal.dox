@@ -1,7 +1,7 @@
 /*! \page Internal Internal features
 
 \htmlonly <img ALIGN="left" alt="previous.gif" src="previous.gif"> \endhtmlonly 
-@ref quickstart - @ref Top - @ref Util
+@ref quickstart - @ref Top - @ref Utilities
 \htmlonly <img alt="next.gif" src="next.gif"> \endhtmlonly
 
 This section refers to the Midas built-in capabilities. The following sections 
@@ -34,7 +34,8 @@ into an "event" and send to the back-end computer for logging and/or analysis.
 The frontend program (image) consists of a system framework contained in mfe.c
 (hidden to the user) and a user part contained in frontend.c .
 The hardware access is only apparent in the user code.
-Several libraries and drivers exist for various bus systems like CAMAC VME or RS232.
+
+Several libraries and drivers exist for various bus systems like CAMAC, VME or RS232.
 They are located in the drivers directory of the MIDAS distribution.
 Some libraries consist only of a header file, others of a C file plus a header file.
 The file names usually refer to the manufacturer abbreviation followed by
@@ -45,8 +46,8 @@ ESONE standard routines for CAMAC are supplied and permit to re-use the frontend
 between different platform as well as different CAMAC hardware interface without
 the need of modification of the code.
 
-The user frontend code consists of a several sections described in order below.
-Example of frontend code can be found under the \em ../examples/experiment  directory:
+The user frontend code consists of several sections described in order below.
+Example of frontend code can be found under the \b ../examples/experiment directory:
 
 - <b> [Global declaration] </b>
 Up to the User global section  the declarations are system wide and should not
@@ -110,11 +111,19 @@ INT frontend_loop();
 INT read_trigger_event(char *pevent, INT off);
 INT read_scaler_event(char *pevent, INT off);
 \endcode
-- \b [Remark] Each equipment has the option to force it-self to run at individual
-transition time see @ref The_Equipment_Structure  / RO_RUNNING . At transition time
+  - \b [Remark] Each equipment has the option to force it-self to run at individual
+transition time see @ref ro_mode . At transition time
 the system functions begin_of_run(), end_of_run(), pause_run(), resume_run() 
 runs \b prior the equipment functions. This gives the system the chance to take basic
-action on the transition request (Enable/disable LAM) before the equipment runs. 
+action on the transition request (Enable/disable LAM) before the equipment runs. The sequence
+of operation is the following:
+   - frontend_init() : Runs once after system initialization, before equipment registration.
+   - begin_of_run() : Runs after systerm statistics reset, before any other Equipments at each
+      Begining of Run request.
+   - pause_run(): Runs before any other Equipments at each Run Pause request.
+   - resume_run(): Runs before any other Equipments at each Run Resume request.
+   - end_of_run(): Runs before any other Equipments at each End of Run request.
+   - frontend_exit(): Runs once before Slow Control Equipment exit. 
 
 - <b> [Equipment definition] </b>
 See @ref The_Equipment_Structure for further explanation.
@@ -145,13 +154,6 @@ EQUIPMENT equipment[] = {
   ...
 \endcode 
 
-- <b> [Pre-defined functions] </b>
-The sequence of function calls throughout the frontend code is the following:
-<center>
-\b frontend_init(), begin_of_run(), [pause_run()/resume_run()], end_of_run()
-   , frontend_exit()
-</center>
-
 - [frontend_init()]
   This function run once only at the application startup.
   Allows hardware checking, loading/setting of global variables,
@@ -170,13 +172,13 @@ The sequence of function calls throughout the frontend code is the following:
   Allows to update user parameter, load/setup/clear hardware. At the exit of this function
   the acquisition should be armed and ready to test the LAM.
   In case of CAMAC frontend, the LAM has to be declared to the Crate Controller.
-  The function {\b cam_lam_enable(CRATE, SLOT_IO)  is then necessary in order to enable
+  The function \b cam_lam_enable(CRATE, SLOT_IO)  is then necessary in order to enable
   the proper LAM source station. The LAM source station has to alos be enabled (F26).
-
-  The argument {\b run_number  provides the current run number being started.
-  The argument {\b error  can be used for returning a message to the system.
-  This string will be logged into the {\b midas.log  file.
-
+  <br><br>
+  The argument \b run_number  provides the current run number being started.
+  The argument \b error  can be used for returning a message to the system.
+  This string will be logged into the {b midas.log  file.
+  <br><br>
   \code 
     // clear units
     camc(CRATE, SLOT_C212, 0, 9);
@@ -197,14 +199,14 @@ The sequence of function calls throughout the frontend code is the following:
   \endcode
 
 - [poll_event()]
-  If the equipment definition is {\b EQ_POLLED  as a acquisition
-  type, the {\b poll_event  will be call as often as possible over the corresponding
+  If the equipment definition is \b EQ_POLLED  as a acquisition
+  type, the \b poll_event  will be call as often as possible over the corresponding
   poll time (ex:500ms see @ref The_Equipment_Structure ) given by each polling equipment.
-  The code below shows a typical CAMAC LAM polling loop. The {\b source  corresponds
+  The code below shows a typical CAMAC LAM polling loop. The \b source  corresponds
   to a bitwise LAM station susceptible to generate LAM for that particular equipement.
   If the LAM is ORed for several station and is independent of the equipment, the
   LAM test can be simplified (see example below) 
-
+  <br><br>
   \code
   // Trigger event routines ---------------------------------------
   INT poll_event(INT source, INT count, BOOL test)
@@ -214,7 +216,7 @@ The sequence of function calls throughout the frontend code is the following:
   {
     int   i;
     DWORD lam;
-
+ 
     for (i=0 ; i<count ; i++)
       {
         cam_lam_read(LAM_SOURCE_CRATE(source), &lam);
@@ -223,74 +225,73 @@ The sequence of function calls throughout the frontend code is the following:
         if (lam)                              // Any LAM (independent of the equipment)
            if (!test)
             return lam;
-
+ 
     return 0; 
   \endcode
-
+  <br><br>
   - <b> [Remark] </b> When multiple LAM source is specified for a given equipment like:
   \code
       LAM_SOURCE(JW_C,  LAM_STATION(GE_N)
                       | LAM_STATION(JW_N)),
   \endcode
-
   The polling function will pass to the readout function the actual LAM pattern
   read during the last polling. This pattern is a bitwise LAM station. The content
-  of the {\b pevent  will be overwritten. This option allows you to determine which
+  of the \b pevent will be overwritten. This option allows you to determine which
   of the station has been the real source of the LAM.
-
+  
   \code
-INT read_trigger_event(char *pevent, INT off)
-{
-  DWORD lam;
-
-  lam = *((DWORD *)pevent);
-
-  // check LAM versus MCS station
-  // The clear is performed at the end of the readout function
-  if (lam & LAM_STATION(JW_N))
+  INT read_trigger_event(char *pevent, INT off)
   {
-   ...
-     ... 
-\endcode
+    DWORD lam;
+
+    lam = *((DWORD *)pevent);
+
+    // check LAM versus MCS station
+    // The clear is performed at the end of the readout function
+    if (lam & LAM_STATION(JW_N))
+    {
+     ...
+       ... 
+  }
+  \endcode
 
 - [read_trigger_event()]
   Event readout function defined in the equipment list. Refer to further section
   for event composition explanation @ref FIXED_event_construction ,
   @ref MIDAS_event_construction , @ref YBOS_event_construction .
-
-  \code
-  // Event readout -------------------------------------------------
-  INT read_trigger_event(char *pevent, INT off)
-  {
-    WORD *pdata, a;
-
-    // init bank structure
-    bk_init(pevent);
-
-    // create ADC bank
-    bk_create(pevent, "ADC0", TID_WORD, &pdata);
-    ...
-  \endcode
+\code
+// Event readout -------------------------------------------------
+INT read_trigger_event(char *pevent, INT off)
+{
+  WORD *pdata, a;
+ 
+  // init bank structure
+  bk_init(pevent);
+ 
+  // create ADC bank
+  bk_create(pevent, "ADC0", TID_WORD, &pdata);
+  ...
+}
+\endcode
 
  - [pause / resume_of_run()]
-These two functions are called respectively upon "Pause" and
-"Resume" command. Any code relevant to the upcoming run state can be
-include. Possible commands when CAMAC is involved can be
-cam_inhibit_set(CRATE) and cam_inhibit_clear(CRATE).  
-
-The argument \b run_number provides the current run number being paused/resumed.
-The argument \b error  can be used for returning a message to the system.
-This string will be logged into the midas.log  file.
+  These two functions are called respectively upon "Pause" and
+  "Resume" command. Any code relevant to the upcoming run state can be
+  include. Possible commands when CAMAC is involved can be
+  cam_inhibit_set(CRATE) and cam_inhibit_clear(CRATE).  
+  The argument \b run_number provides the current run number being paused/resumed.
+  The argument \b error  can be used for returning a message to the system.
+  This string will be logged into the midas.log  file.
 
 - [end_of_run()]
   For every "stop run" transition this function is called and provides
   opportunity to disable the hardware. In case of CAMAC frontend the
   LAM should be disable.
-
+  <br><br>
   The argument \b run_number  provides the current run number being ended.
   The argument \b error  can be used for returning a message to the system.
   This string will be logged into the midas.log file.
-
+  <br><br>
   \code
     // set and clear OR1320 pattern bits or close run gate.
     camo(CRATE, SLOT_OR1320, 0, 18, 0x0CC3);
@@ -449,7 +450,7 @@ data format identical throughout the equipment definition.
 - [TRUE] "enable" switch for the equipment. Only when enable (TRUE) the related
 equipment is active.
 
-- [@ref RO_RUNNING] Specify when the read-out of an event should be occurring
+- \anchor ro_mode [ RO_RUNNING] Specify when the read-out of an event should be occurring
 (transition state) or be enabled (state). Following options are possible:
 
 <table cellpadding="3" ALIGN="center" cellspacing="3" border="1" BORDERCOLOR="#f00000" BGCOLOR="00ffff">
@@ -981,7 +982,7 @@ ramping etc. It uses a "device driver" to access the channels.
 These drivers implement only very simple commands like "set channel"
 and "read channel". The device drivers themselves can use bus drivers like
 RS232 or GPIB to control the actual device.
-
+ 
  * <center> Class driver, Device and Bus driver in the slow control system
  *  \image html classes2.jpg
  *  \image latex classes2.eps "Class driver, Device and Bus driver in the slow control system" width=12cm
@@ -1064,7 +1065,7 @@ The definition of the options can be found in the ODB data base under
 
 <hr> @section Log_File Log file
 
-Midas provides a general log file \b midas.log  for recording system and
+Midas provides a general log file \b midas.log for recording system and
 user messages across the different components of the data acquisition clients.
 The location of this file is dependent on the mode of installation of the system.
 -# [without @ref ODB_Logger_Tree] In this case the location is defined
@@ -1103,7 +1104,7 @@ Fri Mar 24 12:19:57 2000 [MChart] Program MChart on host koslx0 stopped
 \endcode  
 
 \htmlonly <img ALIGN="left" alt="previous.gif" src="previous.gif"> \endhtmlonly 
-@ref quickstart - @ref Top - @ref Util
+@ref quickstart - @ref Top - @ref Utilities
 \htmlonly <img alt="next.gif" src="next.gif"> \endhtmlonly
 
 */

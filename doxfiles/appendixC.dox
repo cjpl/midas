@@ -3,7 +3,7 @@
 \htmlonly <img ALIGN="left" alt="previous.gif" src="previous.gif"> \endhtmlonly 
 @ref AppendixB - @ref Top - @ref AppendixD 
 \htmlonly <img alt="next.gif" src="next.gif"> \endhtmlonly
-
+ 
 Midas defines its own set of CAMAC and VME calls in order to unify the different hardware
 modules that it supports. This interface method permits to be totally hardware as well
 as OS \b independent. The same user code developed on a system can be used as

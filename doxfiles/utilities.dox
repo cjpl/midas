@@ -1,4 +1,4 @@
-/*! @page Util Utilities
+/*! @page Utilities
 
 \htmlonly <img ALIGN="left" alt="previous.gif" src="previous.gif"> \endhtmlonly 
 @ref Internal - @ref Top - @ref AppendixA
@@ -20,7 +20,7 @@ provide access to the Online data base and run control.
 - @ref mspeaker_task : Speech synthesizer
 - @ref mcnaf_task : CAMAC standalone application 
 - @ref mhttpd_task : Midas Web server
-- @ref Elog_task : Electronic entry application 
+- @ref melog_task : Electronic entry application 
 - @ref mhist_task : History retrieval application
 - @ref mchart_task : Standalone Chart display application
 - @ref mtape_task : Tape device manipulator
@@ -204,50 +204,54 @@ controllable from the Online Database editor @ref odbedit_task.
 For more detailed information see @ref analyzer_struct
 
 - <b> Arguments </b> 
-  - [-h ] : help
-  - [-h hostname ] : host name (see @ref odbedit_task)
-  - [-e exptname ] : experiment name (see @ref odbedit_task)
-  - [-D ] : start program as a daemon (UNIX only).
-  - [-i \\<filename1\> \<filename2\>]: Input file name.
-    May contain a '%05d' to be replaced by the run number.
-    Up to ten input files can be specified in one "-i" statement.
-  - [-o \<filename\>] : Output file name. Extension may be .mid (MIDAS binary),
-                   .asc (ASCII) or .rz (HBOOK). If the name contains a '%05d',
-                   one output file is generated for each run.
-  - [-r \<range\>] : Range of run numbers to analyzer like "-r 120 125"
-                   to analyze runs 120 to 125 (inclusive). The "-r"
-                   flag must be used with a '%05d' in the input file name.
-  - [-n \<count\>] : Analyze only "count" events.
-  - [-n \<first\> \<last\>] : Analyze only events from "first" to "last".
-  - [-n \<first\> \<last\> \<n\>] : Analyze every n-th event from "first" to "last".
-  - [-f ] :  Filter events. Write original events to output file
-                  only if analyzer accepts them (doesn't return ANA_SKIP).
-  - [-c \<filename1\> \<filename2\>] :  Configuration file name(s).
-    May contain a '%05d' to be replaced by the run number.
-    Up to ten files can be specified in one "-c" statement.
-  - [-p \<param=value\>] : Set individual parameters to a specific value.
-                   Overrides any setting in configuration files
-  - [-w ] : Produce row-wise N-tuples in outpur .rz file. By
-                default, column-wise N-tuples are used.
-  - [-v ] : Verbose output.
-  - [-d ] : Debug flag when started the analyzer fron a debugger.
-                Prevents the system to kill the analyzer when the
-                debugger stops at a breakpoint
-  - [-q ] : Quiet flag. If set, don't display run progress in offline mode.
-  - [-l ] : If set, don't load histos from last.rz when running online.
-  - [-L] :  HBOOK LREC size. Default is 8190.
-  - [-P \<ODB tree\>] Protect an ODB subtree from being overwritten
-                   with the online data when ODB gets loaded from .mid.
-
+ - -c \<filename1> \<filename2> Configuration file name(s).
+                     May contain a '%05d' to be replaced by the run number.
+                     Up to ten files can be specified in one "-c" statement.
+ - -d                Debug flag when started the analyzer fron a debugger.
+                     Prevents the system to kill the analyzer when the
+                     debugger stops at a breakpoint
+ - -D                Start analyzer as a daemon in the background (UNIX only).
+ - -e \<experiment>  MIDAS experiment to connect to. (see @ref odbedit_task)
+ - -f                Filter mode. Write original events to output file
+                     only if analyzer accepts them (doesn't return ANA_SKIP).
+ - -h \<hostname>    MIDAS host to connect to when running the analyzer online
+                     (see @ref odbedit_task)
+ - -i \<filename1> \<filename2> Input file name. May contain a '%05d' to be
+            replaced by the run number. 
+            Up to ten input files can be specified in one "-i" statement.
+ - -l                If set, don't load histos from last histo file when
+                     running online.
+ - -L                HBOOK LREC size. Default is 8190.
+ - -n \<count>         Analyze only "count" events.
+ - -n \<first> \<last> Analyze only events from "first" to "last".
+ - -n \<first> \<last> \<n> Analyze every n-th event from "first" to "last".
+ - -o \<filename>   Output file name. Extension may be .mid (MIDAS binary),
+                    .asc (ASCII) or .rz (HBOOK). If the name contains a '%05d',
+                    one output file is generated for each run. Use "OFLN" as
+                    output file name to creaate a HBOOK shared memory instead
+                    of a file.
+ - -p \<param=value> Set individual parameters to a specific value.
+                    Overrides any setting in configuration files
+ - -P \<ODB tree>   Protect an ODB subtree from being overwritten
+                    with the online data when ODB gets loaded from .mid file
+ - -q               Quiet flag. If set, don't display run progress in
+                    offline mode.
+ - -r \<range>      Range of run numbers to analyzer like "-r 120 125"
+                    to analyze runs 120 to 125 (inclusive). The "-r"
+                    flag must be used with a '%05d' in the input file name.
+ - -s \<port#>      Specify the ROOT server TCP/IP port number (default 9090).
+ - -v               Verbose output.
+ - -w               Produce row-wise N-tuples in outpur .rz file. By
+                    default, column-wise N-tuples are used.
 - <b> Remarks </b>
-  - The creation of the \b experim.h is done through the \b odbedit\> make \<analyzer\>.
-  In order to include your \b analyzer section, the ODB \b /\<Analyzer\>/Parameters has to be
+  - The creation of the \b experim.h is done through the \b odbedit> make \<analyzer>.
+  In order to include your \b analyzer section, the ODB \b /\<Analyzer>/Parameters has to be
   present.
 
 - <b> Usage </b>
  \code
   >analyzer
-  >analyzer -D
+  >analyzer -D -r 9092
   >analyzer -i run00023.mid -o run00023.rz -w
   >analyzer -i run%05d.mid -o runall.rz -r 23 75 -w 
  \endcode
@@ -725,7 +729,7 @@ conditions:
   The \b midas/utils/makefile.mcnaf will build a collection of \b mcnaf
   applications which are hardware dependent, see <b> Example </b> below:
   - <b>[miocnaf]</b> cnaf application using the declared CAMAC hardware DRIVER
-    (kcs2927 in this case). To be used with \b dio- CAMAC application starter
+    (kcs2927 in this case). To be used with \b dio CAMAC application starter
     (see @ref dio_task).
   - <b>[mwecnaf]</b> cnaf application using the WI-E-N-ER PCI/CAMAC interface
     (see @ref CAMAC_drivers). Please contact mailto:midas@triumf.ca
@@ -774,7 +778,7 @@ rm *.o
   \endcode
 
 
-<hr> @section Elog_task Elog task
+<hr> @section melog_task melog task
 Electronic Log utility. Submit full Elog entry to the specified Elog port.
 
 - <b> Arguments </b>
@@ -797,11 +801,11 @@ Electronic Log utility. Submit full Elog entry to the specified Elog port.
  specification of the attribute. In case of multiple attachement, only one "-f"
  is required followed by up to 10 file names.
  \code
- >elog -h myhost -p 8081 -l myexpt -a author=pierre "Just a elog message"
- >elog -h myhost -p 8081 -l myexpt -a author=pierre -f file2attach.txt \
+ >melog -h myhost -p 8081 -l myexpt -a author=pierre "Just a elog message"
+ >melog -h myhost -p 8081 -l myexpt -a author=pierre -f file2attach.txt \
                  "Just this message with an attachement"
- >elog -h myhost -p 8081 -l myexpt -a author=pierre -m file_containing_the_message.txt
- >elog -h myhost -p 8081 -l myexpt -a Author=pierre -a Type=routine -a system=general \
+ >melog -h myhost -p 8081 -l myexpt -a author=pierre -m file_containing_the_message.txt
+ >melog -h myhost -p 8081 -l myexpt -a Author=pierre -a Type=routine -a system=general \
                  -a Subject="my test" "A full Elog message"
 \endcode
 - <b> Remarks </b>
@@ -1117,7 +1121,7 @@ Operates on @ref mchart_task data or on Midas history save-set files.
 - <b> Example </b>
  \code
  > stripchart.tcl -h
- \endcode
+ \endcode 
 @anchor gstripchart
  * <center> gstripchart display with parameters and data pop-up.
  *  \image html gstripchart1.jpg
@@ -1129,13 +1133,13 @@ Operates on @ref mchart_task data or on Midas history save-set files.
  *  \image latex stripchart1.eps "stripchart.tcl mhist mode: main window with pull-downs." width=12cm
  * </center> 
 
- * <center> stripchart.tcl: Online data, running in conjunction with mchart.
- *  \image html stripchart3.jpg
- *  \image latex stripchart3.eps "stripchart.tcl: Online data, running in conjunction with mchart." width=12cm
+ * <center> stripchart.tcl Online data, running in conjunction with mchart
+ *  \image html stripchart2.jpg
+ *  \image latex stripchart2.eps "stripchart.tcl Online data, running in conjunction with mchart" width=12cm
  * </center> 
 
 <hr> @section rmidas_task rmidas task
- Root/Midas remote GUI application for root histograms and run control under the ROOT.
+ Root/Midas remote GUI application for root histograms and possible run control under the ROOT.
  environment.
 
 - <b> Arguments </b>
@@ -1148,6 +1152,12 @@ Operates on @ref mchart_task data or on Midas history save-set files.
  \code
  >rmidas midasserver.domain
  \endcode
+ 
+ * <center> rmidas display sample. Using the example/experiment/ demo setup.
+ *  \image html rmidas.jpg
+ *  \image latex rmidas.eps "rmidas display sample. Using the example/experiment/ demo setup." width=12cm
+ * </center> 
+ 
 
 <hr> @section hvedit_task hvedit task
  High Voltage editor, graphical interface to the Slow Control System. Originally for

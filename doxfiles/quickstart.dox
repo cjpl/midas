@@ -9,7 +9,7 @@
 This section is under revision to better reflect the latest installation and 
 basic operation of the <b>Midas package</b>.
 </STRONG>
-
+ 
 ...
 This section will... describes step-by-step the installation procedure of the Midas package
 on several platform as well as the procedure to run a demo sample experiment.
@@ -96,7 +96,7 @@ Several system files needs to be modified for the full Midas implementation.
   The system environment \b LD_LIBRARY_PATH can used instead.
   - <b>/etc/exptab :</b> Midas Experiment definition file (see below).
 <br><br>
--# <b> Experiment definition: </b>
+-# \anchor Experiment_Definition <b> Experiment definition: </b>
   Midas system supports multiple experiment running contemporary on the same computer.
   Even though it may not be efficient, this capability makes sense when the experiments
   are simple detector lab setups which shared hardware resources for data collection.
@@ -118,7 +118,7 @@ Several system files needs to be modified for the full Midas implementation.
   <br><br>
   \b exptab file is composed of one line per experiment definition. Each line
   contains three parameters, i.e:
-  <b>experiment name</b> <b>experiment directory name</b> <b>user name</b>.
+  <b>experiment name</b>, <b>experiment directory name</b> and <b>user name</b>.
   Example:
   \code
   #
@@ -133,7 +133,7 @@ Several system files needs to be modified for the full Midas implementation.
   <br><br>
 -# <b> Compilation & Build: </b>
   You should be able to rebuild the full package once the Midas tree structure has been
-  placed in your temporary directory. The compilation and link will try to generate the rmidas
+  placed in your temporary directory. The compilation and link will try to generate the \b rmidas
   application which requires \b ROOT. The application \b mana will also be compiled for \b HBOOK and 
   \b ROOT. Look in the make listing below for the @ref HAVE_HBOOK, @ref HAVE_ROOT. 
   <br><br>
@@ -223,7 +223,29 @@ Several system files needs to be modified for the full Midas implementation.
   <br><br>
 -# <b> Demo examples: </b>
   The midas file structure contains examples of code which can be (should be) used for template.
-  In the <b> midas/examples/experiment</b> you will find a full set of frontend and analysis code.
+  In the <b> midas/examples/experiment</b> you will find a full set for frontend and analysis code.
+  The building of this example is performed with the \b Makefile of this directory. The reference
+  to the Midas package is done relative to your current location (../../include). In the case the 
+  content of this directory is copied to a different location (template), you will need to
+  modify the local parameters within the Makefile
+  \code
+  #-------------------------------------------------------------------
+  # The following lines define direcories. Adjust if necessary
+  #                 
+  DRV_DIR   = ../../drivers/bus
+  INC_DIR   = ../../include
+  LIB_DIR   = ../../linux/lib
+ \endcode
+  Replace by: 
+  \code
+  #-------------------------------------------------------------------
+  # The following lines define direcories. Adjust if necessary
+  #                 
+  DRV_DIR   = /home/mydir/midas/drivers/bus
+  INC_DIR   = /usr/local/include
+  LIB_DIR   = /usr/local//lib
+ \endcode
+<br><br>
   \code 
   > cd /home/mydir/midas/examples/experiment
   > make 
@@ -247,6 +269,9 @@ Several system files needs to be modified for the full Midas implementation.
   -lGraf3d -lGpad -lTree -lRint -lPostscript -lMatrix -lPhysics -lpthread -lm -ldl 
   -rdynamic -lThread -lm -lz -lutil -lnsl -lpthread
 >  
+  \endcode
+  For testing the system, you can start the frontend as follow:
+  \code
 > frontend
   Event buffer size      :     100000
   Buffer allocation      : 2 x 100000

@@ -12,7 +12,7 @@ EQUIPMENT equipment[] = {
     "BUF1",                // event buffer
     ...
 \endcode
-
+ 
 The user has the possibility of interfering into the event building process
 at several stages:
 - [Begin of run] Like in the frontend, a hook to the begin of run is available
