@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.132  2001/05/22 09:27:13  midas
+  Fixed bug when searching old messages
+
   Revision 1.131  2001/04/10 01:17:44  midas
   Fixed bug in cm_msg_retrieve which screwed up message display in mhttpd
 
@@ -15596,7 +15599,15 @@ HNDLE  hDB;
         sprintf(tag, "%02d%02d%02d.0", tms->tm_year % 100, tms->tm_mon+1, tms->tm_mday);
         }
 
-      } while (*fh < 0 && abs((INT)lt-(INT)ltime) < 3600*24*365);
+      /* in forward direction, stop today */
+      if (direction != -1 && ltime > (DWORD)time(NULL))
+        break;
+
+      /* in backward direction, goe back 10 years */
+      if (direction == -1 && abs((INT)lt-(INT)ltime) > 3600*24*365*10)
+        break;
+
+      } while (*fh < 0);
 
     if (*fh < 0)
       return EL_FILE_ERROR;
