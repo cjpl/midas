@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus communication functions
 
   $Log$
+  Revision 1.71  2004/07/21 14:18:29  midas
+  Added more debugging info
+
   Revision 1.70  2004/07/08 11:14:59  midas
   Implemented reconnect for USB
 
@@ -2546,7 +2549,7 @@ int mscb_upload(int fd, int adr, char *buffer, int size, int debug)
 {
    unsigned char buf[512], crc, ack[2], image[0x10000], *line;
    unsigned int len, ofh, ofl, type, d;
-   int i, status, page, retry;
+   int i, status, page, flash_size, n_page, last_page, retry;
    unsigned short ofs;
 
    if (fd > MSCB_MAX_FD || fd < 1 || !mscb_fd[fd - 1].type)
@@ -2558,6 +2561,7 @@ int mscb_upload(int fd, int adr, char *buffer, int size, int debug)
    /* interprete HEX file */
    memset(image, 0xFF, sizeof(image));
    line = buffer;
+   flash_size = 0;
    do {
       if (line[0] == ':') {
          sscanf(line + 1, "%02x%02x%02x%02x", &len, &ofh, &ofl, &type);
@@ -2567,6 +2571,8 @@ int mscb_upload(int fd, int adr, char *buffer, int size, int debug)
             sscanf(line + 9 + i * 2, "%02x", &d);
             image[ofs + i] = d;
          }
+         
+         flash_size += len;
          line = strchr(line, '\r') + 1;
          if (line && *line == '\n')
             line++;
@@ -2575,6 +2581,24 @@ int mscb_upload(int fd, int adr, char *buffer, int size, int debug)
 
    } while (*line);
 
+   if (debug) {
+      /* count pages and byes */
+      n_page = 0;
+      last_page = -1;
+      for (page = 0; page < 128; page++) {
+         /* check if page contains data */
+         for (i = 0; i < 512; i++) {
+            if (image[page * 512 + i] != 0xFF) {
+               if (page != last_page) {
+                  last_page = page;
+                  n_page++;
+               }
+            }
+         }
+      }
+
+      printf("Found %d valid pages (%d bytes) in HEX file\n", n_page, flash_size);
+   }
 
    if (mscb_lock(fd) != MSCB_SUCCESS)
       return MSCB_MUTEX;
@@ -2591,12 +2615,20 @@ int mscb_upload(int fd, int adr, char *buffer, int size, int debug)
    buf[1] = crc;
    mscb_out(fd, buf, 2, RS485_FLAG_LONG_TO);
 
-   /* wait for ready, 100msec timeout */
-   if (mscb_in(fd, ack, 2, 100000) != 2) {
-      printf("Error: timeout from remote node\n");
+   /* wait for ready, 1 sec timeout */
+   if (mscb_in(fd, ack, 2, 1000000) != 2) {
+      printf("Error: timeout receiving upgrade acknowledge from remote node\n");
+
+      /* send exit upgrade command, in case node gets to upgrade routine later */
+      buf[0] = 6;
+      mscb_out(fd, buf, 1, RS485_FLAG_LONG_TO);
+
       mscb_release(fd);
       return MSCB_TIMEOUT;
    }
+
+   if (debug)
+      printf("Received acknowledge for upgrade command\n");
 
    /* program pages up to 64k */
    for (page = 0; page < 128; page++) {
