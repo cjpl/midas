@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.129  2001/01/30 08:28:13  midas
+  Use va_arg(..., double) for float numbers
+
   Revision 1.128  2000/12/06 02:58:24  midas
   Put extended error information for bind() call
 
@@ -9519,7 +9522,8 @@ void rpc_va_arg(va_list* arg_ptr, INT arg_type, void *arg)
 
     case TID_DWORD:    *((DWORD *) arg) = va_arg(*arg_ptr, DWORD); break;
 
-    case TID_FLOAT:    *((float *) arg) = va_arg(*arg_ptr, float); break;
+    /* float variables are passed as double by the compiler */
+    case TID_FLOAT:    *((float *) arg) = (float) va_arg(*arg_ptr, double); break;
 
     case TID_DOUBLE:   *((double *) arg) = va_arg(*arg_ptr, double); break;
 
