@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.139  2000/08/28 11:04:17  midas
+  Optimized header decoding
+
   Revision 1.138  2000/08/24 14:39:35  midas
   Added password check for slow control value change
 
@@ -7786,23 +7789,27 @@ INT                  last_time=0;
           }
         else if (strstr(net_buffer, "POST") != NULL)
           {
-          if (strstr(net_buffer, "Content-Length:"))
-            content_length = atoi(strstr(net_buffer, "Content-Length:") + 15);
-          boundary[0] = 0;
-          if (strstr(net_buffer, "boundary="))
+          if (header_length == 0)
             {
-            strncpy(boundary, strstr(net_buffer, "boundary=")+9, sizeof(boundary));
-            if (strchr(boundary, '\r'))
-              *strchr(boundary, '\r') = 0;
+            /* extrac header and content length */
+            if (strstr(net_buffer, "Content-Length:"))
+              content_length = atoi(strstr(net_buffer, "Content-Length:") + 15);
+            boundary[0] = 0;
+            if (strstr(net_buffer, "boundary="))
+              {
+              strncpy(boundary, strstr(net_buffer, "boundary=")+9, sizeof(boundary));
+              if (strchr(boundary, '\r'))
+                *strchr(boundary, '\r') = 0;
+              }
+
+            if (strstr(net_buffer, "\r\n\r\n"))
+              header_length = (INT)strstr(net_buffer, "\r\n\r\n") - (INT)net_buffer + 4;
+
+            if (strstr(net_buffer, "\r\r\n\r\r\n"))
+              header_length = (INT)strstr(net_buffer, "\r\r\n\r\r\n") - (INT)net_buffer + 6;
+
+            net_buffer[header_length-1] = 0;
             }
-
-          if (strstr(net_buffer, "\r\n\r\n"))
-            header_length = (INT)strstr(net_buffer, "\r\n\r\n") - (INT)net_buffer + 4;
-
-          if (strstr(net_buffer, "\r\r\n\r\r\n"))
-            header_length = (INT)strstr(net_buffer, "\r\r\n\r\r\n") - (INT)net_buffer + 6;
-
-          net_buffer[header_length-1] = 0;
 
           if (header_length > 0 && len >= header_length+content_length)
             break;
