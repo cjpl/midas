@@ -6,6 +6,9 @@
   Contents:     Command-line interface for the Midas Slow Control Bus
 
   $Log$
+  Revision 1.25  2003/01/15 13:15:20  midas
+  Added hints for problem solving
+
   Revision 1.24  2002/11/29 08:02:52  midas
   Fixed linux warnings
 
@@ -992,6 +995,26 @@ usage:
       printf("No MSCB submaster present at port \"%s\"\n", device);
     else
       printf("Cannot connect to device \"%s\"\n", device);
+
+    puts("\nMake sure that");
+    puts("");
+    puts("o The MSCB submaster is correctly connected to the parallel port");
+    puts("o The MSCB submaster has power (green LED on)");
+    puts("");
+    puts("If this is a new installation, check in the PC BIOS that");
+    puts("");
+    puts("o LPT1 is in bi-directional (or EPP) mode, NOT ECP mode");
+    puts("o LPT1 is configured to address 0x378 (hex)");
+    puts("o If BIOS seems ok, you can check the pin I/O with a logic probe");
+    puts("  and the \"msc -i\" command which toggles the pins of the parallel port");
+    puts("o If the port is configured to another address than 0x378, use");
+    puts("  \"msc -d 0xabc\" with \"0xabc\" the correct address");
+
+    puts("\n-- hit any key to exit --");
+
+    while (!kbhit());
+    while (kbhit())
+      getch();
 
     return 0;
     }
