@@ -6,6 +6,9 @@
   Contents:     Command-line interface for the Midas Slow Control Bus
 
   $Log$
+  Revision 1.54  2004/03/05 16:29:41  midas
+  Fixed compiler warnings
+
   Revision 1.53  2004/03/05 14:00:01  midas
   Fixed bug with string transfer
 
@@ -178,6 +181,7 @@
 #define O_BINARY 0
 
 #include <unistd.h>
+#include <ctype.h>
 
 #endif
 
@@ -324,7 +328,7 @@ void print_channel_str(int index, MSCB_INFO_VAR * info_chn, void *pdata,
 
       case 3:
          if (info_chn->flags & MSCBF_SIGNED)
-            sprintf(line + strlen(line), "24bit S %15d (0x%06X)", (long) data, data);
+            sprintf(line + strlen(line), "24bit S %15ld (0x%06X)", (long) data, data);
          else
             sprintf(line + strlen(line), "24bit U %15u (0x%06X)", data, data);
          break;
@@ -576,7 +580,7 @@ void cmd_loop(int fd, char *cmd, int adr)
                if (kbhit())
                   break;
             }
-         
+
          } while (param[1][0] == 'r' && !kbhit());
 
          while (kbhit())
@@ -630,8 +634,8 @@ void cmd_loop(int fd, char *cmd, int adr)
                addr = atoi(param[1]);
 
             do {
-//##               status = mscb_addr(fd, MCMD_PING16, addr, 10, TRUE);
-               status = mscb_addr(fd, MCMD_PING16, addr, 1, TRUE);
+//##               status = mscb_addr(fd, MCMD_PING16, addr, 10, 1);
+               status = mscb_addr(fd, MCMD_PING16, addr, 1, 1);
                if (status != MSCB_SUCCESS) {
                   if (status == MSCB_MUTEX)
                      printf("MSCB used by other process\n");
@@ -664,7 +668,7 @@ void cmd_loop(int fd, char *cmd, int adr)
             else
                addr = atoi(param[1]);
 
-            mscb_addr(fd, MCMD_ADDR_NODE16, addr, 1, TRUE);
+            mscb_addr(fd, MCMD_ADDR_NODE16, addr, 1, 1);
             current_addr = addr;
             current_group = -1;
          }
@@ -781,7 +785,7 @@ void cmd_loop(int fd, char *cmd, int adr)
                      }
 
                      do {
-                     
+
                         status = mscb_write(fd, current_addr, (unsigned char) addr,
                                             &data, info_var.width);
                         Sleep(100);
@@ -1159,7 +1163,7 @@ int main(int argc, char *argv[])
 
    cmd[0] = 0;
    adr = 0;
-   
+
    debug = check_io = server = 0;
    device[0] = 0;
 
