@@ -6,6 +6,9 @@
   Contents:     Header fiel for MSCB RPC funcions
 
   $Log$
+  Revision 1.12  2004/01/08 08:40:09  midas
+  Implemented standard indentation
+
   Revision 1.11  2004/01/07 12:56:15  midas
   Chaned line length
 
@@ -42,7 +45,7 @@
 
 \********************************************************************/
 
-                                                        /* Data types *//*                      min      max    */
+                                                                                                                                                        /* Data types *//*                      min      max    */
 #define TID_BYTE      1         /* unsigned byte         0       255    */
 #define TID_SBYTE     2         /* signed byte         -128      127    */
 #define TID_CHAR      3         /* single character      0       255    */
