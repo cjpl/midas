@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.145  2002/03/13 08:38:00  midas
+  Added periodic alarms
+
   Revision 1.144  2002/02/02 11:33:45  midas
   Fixed bug in hs_read with small history files
 
@@ -16373,7 +16376,7 @@ HNDLE       hDB, hkeyalarm;
 char        str[256];
 ALARM       alarm;
 BOOL        flag;
-ALARM_STR(alarm_str);
+ALARM_ODB_STR(alarm_odb_str);
 
   cm_get_experiment_database(&hDB, NULL);
 
@@ -16390,7 +16393,7 @@ ALARM_STR(alarm_str);
   if (!hkeyalarm)
     {
     /* alarm must be an internal analyzer alarm, so create a default alarm */
-    status = db_create_record(hDB, 0, str, strcomb(alarm_str));
+    status = db_create_record(hDB, 0, str, strcomb(alarm_odb_str));
     db_find_key(hDB, 0, str, &hkeyalarm);
     if (!hkeyalarm)
       {
@@ -16405,7 +16408,7 @@ ALARM_STR(alarm_str);
     }
 
   /* set parameters for internal alarms */
-  if (type != AT_EVALUATED)
+  if (type != AT_EVALUATED && type != AT_PERIODIC)
     {
     db_set_value(hDB, hkeyalarm, "Type", &type, sizeof(INT), 1, TID_INT);
     strcpy(str, cond_str);
@@ -16414,10 +16417,10 @@ ALARM_STR(alarm_str);
 
   size = sizeof(alarm);
   status = db_get_record(hDB, hkeyalarm, &alarm, &size, 0);
-  if (status != DB_SUCCESS || alarm.type < AT_INTERNAL || alarm.type > AT_EVALUATED)
+  if (status != DB_SUCCESS || alarm.type < 1 || alarm.type > AT_LAST)
     {
     /* make sure alarm record has right structure */
-    db_create_record(hDB, hkeyalarm, "", strcomb(alarm_str));
+    db_create_record(hDB, hkeyalarm, "", strcomb(alarm_odb_str));
 
     size = sizeof(alarm);
     status = db_get_record(hDB, hkeyalarm, &alarm, &size, 0);
@@ -16429,7 +16432,7 @@ ALARM_STR(alarm_str);
     }
 
   /* if internal alarm, check if active and check interval */
-  if (alarm.type != AT_EVALUATED)
+  if (alarm.type != AT_EVALUATED && alarm.type != AT_PERIODIC)
     {
     /* check global alarm flag */
     flag = TRUE;
@@ -16449,7 +16452,7 @@ ALARM_STR(alarm_str);
     }
 
   /* write back alarm message for internal alarms */
-  if (alarm.type != AT_EVALUATED)
+  if (alarm.type != AT_EVALUATED && alarm.type != AT_PERIODIC)
     {
     strncpy(alarm.alarm_message, alarm_message, 79);
     alarm.alarm_message[79] = 0;
@@ -16724,7 +16727,8 @@ PROGRAM_INFO program_info;
 BOOL         flag;
 
 ALARM_CLASS_STR(alarm_class_str);
-ALARM_STR(alarm_str);
+ALARM_ODB_STR(alarm_odb_str);
+ALARM_PERIODIC_STR(alarm_periodic_str);
 
   cm_get_experiment_database(&hDB, NULL);
 
@@ -16756,7 +16760,15 @@ ALARM_STR(alarm_str);
   if (!hkeyroot)
     {
     /* create default ODB alarm */
-    status = db_create_record(hDB, 0, "/Alarms/Alarms/Test", strcomb(alarm_str));
+    status = db_create_record(hDB, 0, "/Alarms/Alarms/Demo ODB", strcomb(alarm_odb_str));
+    db_find_key(hDB, 0, "/Alarms/Alarms", &hkeyroot);
+    if (!hkeyroot)
+      {
+      ss_mutex_release(mutex);
+      return SUCCESS;
+      }
+
+    status = db_create_record(hDB, 0, "/Alarms/Alarms/Demo periodic", strcomb(alarm_periodic_str));
     db_find_key(hDB, 0, "/Alarms/Alarms", &hkeyroot);
     if (!hkeyroot)
       {
@@ -16784,16 +16796,35 @@ ALARM_STR(alarm_str);
 
     size = sizeof(alarm);
     status = db_get_record(hDB, hkey, &alarm, &size, 0);
-    if (status != DB_SUCCESS || alarm.type < AT_INTERNAL || alarm.type > AT_EVALUATED)
+    if (status != DB_SUCCESS || alarm.type < 1 || alarm.type > AT_LAST)
       {
       /* make sure alarm record has right structure */
-      db_create_record(hDB, hkey, "", strcomb(alarm_str));
+      db_create_record(hDB, hkey, "", strcomb(alarm_odb_str));
       size = sizeof(alarm);
       status = db_get_record(hDB, hkey, &alarm, &size, 0);
-      if (status != DB_SUCCESS || alarm.type < AT_INTERNAL || alarm.type > AT_EVALUATED)
+      if (status != DB_SUCCESS || alarm.type < 1 || alarm.type > AT_LAST)
         {
         cm_msg(MERROR, "al_check", "Cannot get alarm record");
         continue;
+        }
+      }
+
+    /* check periodic alarm only when active */
+    if (alarm.active &&
+        alarm.type == AT_PERIODIC &&
+        alarm.check_interval > 0 &&
+        (INT)ss_time() - (INT)alarm.checked_last > alarm.check_interval)
+      {
+      /* if checked_last has not been set, set it to current time */
+      if (alarm.checked_last == 0)
+        {
+        alarm.checked_last = ss_time();
+        db_set_record(hDB, hkey, &alarm, size, 0);
+        }
+      else
+        {
+        sprintf(str, alarm.alarm_message, value);
+        al_trigger_alarm(key.name, str, alarm.alarm_class, "", AT_PERIODIC);
         }
       }
 
@@ -16859,7 +16890,7 @@ ALARM_STR(alarm_str);
           {
           program_info.alarm_count++;
 
-          /* fire alarm when not running for 5 minues */
+          /* fire alarm when not running for 5 minutes */
           if (program_info.alarm_count >= 5)
             {
             /* if not running and alarm calss defined, trigger alarm */
