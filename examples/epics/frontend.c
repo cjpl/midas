@@ -3,10 +3,13 @@
   Name:         frontend.c
   Created by:   Stefan Ritt
 
-  Contents:     Example Slow Control Frontend for beamline control
+  Contents:     Example Slow Control Frontend for equipment control
                 through EPICS channel access.
 
   $Log$
+  Revision 1.6  2000/03/02 21:54:48  midas
+  Added comments concerning channel names and possibility to disable functions
+
   Revision 1.5  1999/12/21 09:37:00  midas
   Use new driver names
 
@@ -41,7 +44,7 @@ char *frontend_name = "BL Frontend";
 char *frontend_file_name = __FILE__;
 
 /* frontend_loop is called periodically if this variable is TRUE    */
-BOOL frontend_call_loop = FALSE;
+BOOL frontend_call_loop = TRUE;
 
 /* a frontend status page is displayed with this frequency in ms    */
 INT display_period = 1000;
@@ -51,9 +54,38 @@ INT event_buffer_size = DEFAULT_EVENT_BUFFER_SIZE;
 
 /*-- Equipment list ------------------------------------------------*/
 
+/* 
+The following statement allocates 10 channels for the beamline
+control through the epics channel access device driver. The 
+EPICS channel names are stored under 
+   
+  /Equipment/Beamline/Settings/Devices/Beamline
+
+while the channel names as the midas slow control sees them are
+under 
+
+  /Equipment/Bemaline/Settings/Names
+
+An example set of channel names is saved in the triumf.odb file
+in this directory and can be loaded into the ODB with the odbedit
+command
+
+  load triumf.odb
+
+before the frontend is started. The CMD_SET_LABEL statement 
+actually defines who determines the label name. If this flag is
+set, the CMD_SET_LABEL command in the device driver is disabled,
+therefore the label is taken from EPICS, otherwise the label is
+taken from MIDAS and set in EPICS.
+
+The same can be done with the demand values. If the command
+CMD_SET_DEMAND is disabled, the demand value is always determied
+by EPICS.
+*/
+
 /* device driver list */
 DEVICE_DRIVER epics_driver[] = {
-  { "Beamline",  epics_ca, 10 },
+  { "Beamline", epics_ca, 10, 0, CMD_SET_LABEL }, /* disable CMD_SET_LABEL */
   { "" }
 };
 
@@ -70,6 +102,7 @@ EQUIPMENT equipment[] = {
     RO_TRANSITIONS,       /* read when running and on transitions */
     60000,                /* read every 60 sec */
     0,                    /* stop run after this event limit */
+    0,                    /* number of sub events */
     1,                    /* log history every event */
     "", "", "",
     cd_gen_read,          /* readout routine */
@@ -81,7 +114,6 @@ EQUIPMENT equipment[] = {
   { "" }
 };
 
-
 /*-- Dummy routines ------------------------------------------------*/
 
 INT  poll_event(INT source[], INT count, BOOL test) {return 1;};
@@ -91,6 +123,9 @@ INT  interrupt_configure(INT cmd, INT source[], PTYPE adr) {return 1;};
 
 INT frontend_init()
 {
+  /* anable/disable certain command in device driver */
+
+
   return CM_SUCCESS;
 }
 
@@ -105,6 +140,9 @@ INT frontend_exit()
 
 INT frontend_loop()
 {
+  /* slow down frontend not to eat all CPU cycles */
+  ss_sleep(200);
+
   return CM_SUCCESS;
 }
 
