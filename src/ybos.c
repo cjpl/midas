@@ -6,6 +6,9 @@
  *         amaudruz@triumf.ca                            Local:           6234
  * -----------------------------------------------------------------------------
    $Log$
+   Revision 1.23  1999/12/20 22:15:53  pierre
+   - remove #define INCLUDE_FTP due to VxWorks (moved into Makefile)
+
    Revision 1.22  1999/12/17 19:49:01  pierre
    - fix return event length in ybos_event_get
 
@@ -119,7 +122,7 @@
  *                
 /*---------------------------------------------------------------------------*/
 /* include files */
-#define INCLUDE_FTPLIB
+/* moved #define INCLUDE_FTPLIB into makefile (!vxWorks) */
 
 #include "midas.h"
 #include "msystem.h"
@@ -134,6 +137,19 @@
 
 #define INCLUDE_LOGGING
 #include "ybos.h"
+
+INT yb_tid_size[] = {
+  0,         /* 0 not defined */
+  2,         /* 1 integer *2 */
+  1,         /* 2 ASCII bytes */
+  4,         /* 3 Integer *4*/
+  4,         /* 4 float *4 */
+  8,         /* 5 double */
+  0,         /* 6 undefined */
+  0,         /* 7 undefined */
+  1,         /* 8 logical*1 */
+  };
+
 
 /*---- Hidden prototypes ---------------------------------------------------*/
 /* File fragmentation and recovery */
