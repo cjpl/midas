@@ -7,6 +7,9 @@
                 linked with user code to form a complete frontend
 
   $Log$
+  Revision 1.51  2003/04/14 12:40:23  midas
+  Create ODB entries for structured banks derived from BANK_LIST in frontend.c
+
   Revision 1.50  2003/04/14 05:12:54  pierre
   fix send_event for handle=0
 
@@ -444,6 +447,8 @@ EQUIPMENT_STATS *eq_stats;
 DWORD  start_time, delta_time;
 HNDLE  hKey;
 BOOL   manual_trig_flag = FALSE;
+BANK_LIST *bank_list;
+DWORD  dummy;
 
   /* get current ODB run state */
   size = sizeof(run_state);
@@ -507,10 +512,40 @@ BOOL   manual_trig_flag = FALSE;
 
     /*---- Create variables record ---------------------------------*/
     sprintf(str, "/Equipment/%s/Variables", equipment[index].name);
-    if (equipment[index].init_string)
-      db_create_record(hDB, 0, str, equipment[index].init_string);
+    if (equipment[index].event_descrip)
+      {
+      if (equipment[index].format == FORMAT_FIXED)
+        db_create_record(hDB, 0, str, (char *)equipment[index].event_descrip);
+      else
+        {
+        /* create bank descriptions */
+        bank_list = (BANK_LIST *)equipment[index].event_descrip;
+
+        for (; bank_list->name[0] ; bank_list++)
+          {
+          /* mabye needed later...
+          if (bank_list->output_flag == 0)
+            continue;
+          */
+
+          if (bank_list->type == TID_STRUCT)
+            {
+            sprintf(str, "/Equipment/%s/Variables/%s", equipment[index].name, bank_list->name);
+            db_create_record(hDB, 0, str, strcomb(bank_list->init_str));
+            }
+          else
+            {
+            sprintf(str, "/Equipment/%s/Variables/%s", equipment[index].name, bank_list->name);
+            dummy = 0;
+            db_set_value(hDB, 0, str, &dummy, rpc_tid_size(bank_list->type), 1, bank_list->type);
+            }
+          }
+        }
+      }
     else
       db_create_key(hDB, 0, str, TID_KEY);
+
+    sprintf(str, "/Equipment/%s/Variables", equipment[index].name);
     db_find_key(hDB, 0, str, &hKey);
     equipment[index].hkey_variables = hKey;
 
@@ -523,12 +558,12 @@ BOOL   manual_trig_flag = FALSE;
     status = db_find_key(hDB, 0, str, &hKey);
     if (status == DB_SUCCESS)
       {
-    status = db_delete_key(hDB, hKey, FALSE);
-    if (status != DB_SUCCESS)
-      {
-        printf("Cannot delete statistics record, error %d\n",status);
-        ss_sleep(3000);
-      }
+      status = db_delete_key(hDB, hKey, FALSE);
+      if (status != DB_SUCCESS)
+        {
+          printf("Cannot delete statistics record, error %d\n",status);
+          ss_sleep(3000);
+        }
       }
 
     status = db_create_record(hDB, 0, str, EQUIPMENT_STATISTICS_STR);
@@ -752,7 +787,7 @@ KEY               key;
         status = db_find_key(hDB, hKey, name, &hKeyRoot);
         if (status != DB_SUCCESS)
           {
-          cm_msg(MERROR, "update_odb", "please create bank %s in frontend_init()", name);
+          cm_msg(MERROR, "update_odb", "please define bank %s in BANK_LIST in frontend.c", name);
           continue;
           }
 
@@ -784,7 +819,7 @@ KEY               key;
         {
         /* write variable length bank  */
         if (n_data > 0)
-          db_set_value(hDB, hKeyl, name, pdata, size, n_data, bktype & 0xFF);
+          db_set_value(hDB, hKey, name, pdata, size, n_data, bktype & 0xFF);
         }
 
       } while (1);
@@ -1442,17 +1477,22 @@ INT err;
             {
             if (eq->buffer_handle)
               {
+              /* send always first event to ODB */
+              if (pevent->serial_number == 1)
+                update_odb(pevent, eq->hkey_variables, eq->format);
+
 #ifdef USE_EVENT_CHANNEL
               dm_pointer_increment(eq->buffer_handle, 
                                    pevent->data_size + sizeof(EVENT_HEADER));
 #else
               status = rpc_send_event(eq->buffer_handle, pevent,
-                      pevent->data_size + sizeof(EVENT_HEADER), SYNC);
-          if (status != SUCCESS)
-        {
-          cm_msg(MERROR, "scheduler", "rpc_send_event error %d",status);
-          goto net_error;
-        }
+                                      pevent->data_size + sizeof(EVENT_HEADER), SYNC);
+
+              if (status != SUCCESS)
+                {
+                cm_msg(MERROR, "scheduler", "rpc_send_event error %d", status);
+                goto net_error;
+                }
 #endif
 
               eq->bytes_sent += pevent->data_size + sizeof(EVENT_HEADER);
