@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.228  2004/12/14 09:07:18  olchansk
+  Add 5 minute timeouts to locking in bm_lock_buffer(), el_submit, el_delete_message()
+
   Revision 1.227  2004/11/26 20:42:52  pierre
   fix comment for VxWorks
 
@@ -5538,12 +5541,21 @@ INT bm_lock_buffer(INT buffer_handle)
 
 \********************************************************************/
 {
+   int status;
+
    if (buffer_handle > _buffer_entries || buffer_handle <= 0) {
       cm_msg(MERROR, "bm_lock_buffer", "invalid buffer handle %d", buffer_handle);
       return BM_INVALID_HANDLE;
    }
 
-   ss_mutex_wait_for(_buffer[buffer_handle - 1].mutex, 0);
+   status = ss_mutex_wait_for(_buffer[buffer_handle - 1].mutex, 5*60*1000);
+
+   if (status != SS_SUCCESS) {
+      cm_msg(MERROR, "bm_lock_buffer", "Cannot lock buffer handle %d, ss_mutex_wait_for() status %d", buffer_handle, status);
+      abort();
+      return BM_INVALID_HANDLE;
+   }
+
    return BM_SUCCESS;
 }
 
@@ -15181,7 +15193,11 @@ INT el_submit(int run, char *author, char *type, char *system, char *subject,
 
       /* request semaphore */
       cm_get_experiment_mutex(NULL, &mutex);
-      ss_mutex_wait_for(mutex, 0);
+      status = ss_mutex_wait_for(mutex, 5*60*1000);
+      if (status != SS_SUCCESS) {
+        cm_msg(MERROR, "el_submit", "Cannot lock experiment mutex, ss_mutex_wait_for() status %d", status);
+        abort();
+      }
 
       /* get run number from ODB if not given */
       if (run > 0)
@@ -15968,7 +15984,12 @@ INT el_delete_message(char *tag)
 
    /* request semaphore */
    cm_get_experiment_mutex(NULL, &mutex);
-   ss_mutex_wait_for(mutex, 0);
+   status = ss_mutex_wait_for(mutex, 5*60*1000);
+   if (status != SS_SUCCESS) {
+     cm_msg(MERROR, "el_delete_message", "Cannot lock experiment mutex, ss_mutex_wait_for() status %d", status);
+     abort();
+   }
+
 
    /* generate file name YYMMDD.log in data directory */
    cm_get_experiment_database(&hDB, NULL);
