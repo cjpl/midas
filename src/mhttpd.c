@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.117  2000/05/04 08:10:30  midas
+  Fixed bug with wrong factor in history display
+
   Revision 1.116  2000/05/02 14:56:58  midas
   Fixed bug with '/' and '\' in history attachments
 
@@ -6074,7 +6077,7 @@ float  factor[2];
     factor[0] = 1;
     factor[1] = 1;
     db_set_value(hDB, 0, "/History/Display/Trigger rate/Factor", 
-                 &i, sizeof(float), 2, TID_FLOAT);
+                 factor, 2*sizeof(float), 2, TID_FLOAT);
 
     i = 3600;
     db_set_value(hDB, 0, "/History/Display/Trigger rate/Timescale", 
