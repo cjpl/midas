@@ -10,6 +10,9 @@
   date        by    modification
   ---------   ---   ------------------------------------------------
 *  $Log$
+*  Revision 1.9  1999/09/30 22:52:16  pierre
+*  - arg of yb_any_bank_display
+*
 *  Revision 1.8  1999/06/23 09:59:22  midas
 *  Added D8_BKTYPE
 *
@@ -206,7 +209,7 @@ typedef struct {
 INT   EXPRT yb_file_recompose(void * pevt, INT fmt, char * svpath, INT file_mode);
 INT   EXPRT feodb_file_dump (EQUIPMENT * eqp, char * eqpname,char * pevent, INT run_number, char *path);
 
-void  EXPRT yb_any_bank_display(void * pbk, INT fmt, INT dsp_mode, INT dsp_fmt);
+void  EXPRT yb_any_bank_display(void * pmbh, void * pbk, INT fmt, INT dsp_mode, INT dsp_fmt);
 void  EXPRT yb_any_event_display(void * pevt, INT data_fmt, INT dsp_mode, INT dsp_fmt);
 INT   EXPRT yb_any_all_info_display (INT what);
 INT   EXPRT yb_any_physrec_display(INT data_fmt);
