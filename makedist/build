@@ -2,6 +2,9 @@
 #Usage: build <version>
 #Build MIDAS standard distribution
 
+# go to midas root
+cd ..
+
 set version = $argv[1]
 set dir = /tmp/midas-$version
 set archive = midas-$version.tar.gz
