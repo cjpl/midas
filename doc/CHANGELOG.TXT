@@ -1,6 +1,26 @@
 Revision History
 ================
 
+
+Version 1.9.2, released Oct 04, 2002
+------------------------------------
+
+- odbedit: <tab> completion is working with flags too.
+- odbedit: Load protect the data dir if changed.
+- mdump: Display data in bank default type.
+- lazylogger: Implement extra field settings for tape manipulation
+- lazylogger: "Tape Data Append" flag,
+- lazylogger: multiple lazylogger instance with split run capability
+- lazylogger: Message with block number for Tape.
+- mlxspeaker: Added possible system call to wav file for "beeping" user
+              before message.
+- mhist: Add index range for -i with -v.
+- eventbuilder: Revised version with user code.
+- stripchart.tcl: Handle arrayes.
+- cm_cleanup() accept single client name as argument.
+- fix rpc_db_get_key_info()
+- fix ces8210 driver.  
+
 Version 1.9.1, released May 22, 2002
 ------------------------------------
 
