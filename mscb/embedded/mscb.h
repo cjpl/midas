@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol commands
 
   $Log$
+  Revision 1.33  2004/03/19 12:09:06  midas
+  Upload with simplified CRC
+
   Revision 1.32  2004/03/19 07:10:33  midas
   Changed pinout for GPIB
 
@@ -231,7 +234,7 @@ sbit RS485_ENABLE = P0 ^ 7;
 
 /*---- MSCB commands -----------------------------------------------*/
 
-#define VERSION 0x16            // version 1.6
+#define VERSION 0x17            // version 1.7
 
 /* Version history:
 
@@ -242,6 +245,7 @@ sbit RS485_ENABLE = P0 ^ 7;
 1.4 Remove CMD_xxxs_CONF
 1.5 Return 0x0A for protected pages on upload
 1.6 Upload subpages of 60 bytes with ACK
+1.7 Upload with simplified CRC code
 */
 
 #define CMD_ADDR_NODE8  0x09

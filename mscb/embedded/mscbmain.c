@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol main program
 
   $Log$
+  Revision 1.42  2004/03/19 12:09:06  midas
+  Upload with simplified CRC
+
   Revision 1.41  2004/03/19 08:15:29  midas
   Moved upgrade & co to yield()
 
@@ -974,9 +977,9 @@ void upgrade()
 
          pr = 512 * page;
 
-         /* return CRC */
+         /* return simplified CRC */
          for (i = crc = 0; i < 512; i++)
-            crc = crc8_add(crc, *pr++);
+            crc += *pr++;
 
          break;
 
