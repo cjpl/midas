@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.83  1999/10/28 09:01:25  midas
+  Added show_error to display proper HTTP header in error messages
+
   Revision 1.82  1999/10/22 10:48:25  midas
   Added auto restart in status page
 
@@ -691,6 +694,23 @@ int    size;
   rsprintf("<table border=3 cellpadding=1>\n");
   rsprintf("<tr><th colspan=%d bgcolor=#A0A0FF>MIDAS experiment \"%s\"", colspan, str);
   rsprintf("<th colspan=%d bgcolor=#A0A0FF>%s</tr>\n", colspan, ctime(&now));
+}
+
+/*------------------------------------------------------------------*/
+
+void show_error(char *error)
+{
+time_t now;
+char   str[256];
+int    size;
+
+  /* header */
+  rsprintf("HTTP/1.0 200 Document follows\r\n");
+  rsprintf("Server: MIDAS HTTP %s\r\n", cm_get_version());
+  rsprintf("Content-Type: text/html\r\n\r\n");
+
+  rsprintf("<html><head><title>MIDAS error</title></head>\n");
+  rsprintf("<body><H1>%s</H1></body></html>\n", error);
 }
 
 /*------------------------------------------------------------------*/
@@ -4781,13 +4801,13 @@ struct tm *gmt;
     {
     if (run_state != STATE_RUNNING)
       {
-      rsprintf("<html><body><h1>Run is not running</h1><p></body><html>\n");
+      show_error("Run is not running");
       return;
       }
 
     status = cm_transition(TR_PAUSE, 0, str, sizeof(str), SYNC);
     if (status != CM_SUCCESS)
-      rsprintf("<html><body>Error pausing run: %s</body>", str);
+      show_error(str);
     else
       redirect("");
 
@@ -4800,13 +4820,13 @@ struct tm *gmt;
     {
     if (run_state != STATE_PAUSED)
       {
-      rsprintf("<html><body><h1>Run is not paused </h1><p></body><html>\n");
+      show_error("Run is not paused");
       return;
       }
 
     status = cm_transition(TR_RESUME, 0, str, sizeof(str), SYNC);
     if (status != CM_SUCCESS)
-      rsprintf("<html><body>Error resuming run: %s</body>", str);
+      show_error(str);
     else
       redirect("");
 
@@ -4819,7 +4839,7 @@ struct tm *gmt;
     {
     if (run_state == STATE_RUNNING)
       {
-      rsprintf("<html><body><h1>Run is already started</h1><p></body><html>\n");
+      show_error("Run is already started");
       return;
       }
 
@@ -4855,7 +4875,7 @@ struct tm *gmt;
       i = atoi(value);
       status = cm_transition(TR_START, i, str, sizeof(str), SYNC);
       if (status != CM_SUCCESS)
-        rsprintf("<html><body>Error starting run: %s</body>", str);
+        show_error(str);
       else
         redirect("");
       }
@@ -4868,13 +4888,13 @@ struct tm *gmt;
     {
     if (run_state != STATE_RUNNING)
       {
-      rsprintf("<html><body><h1>Run is not running</h1><p></body><html>\n");
+      show_error("Run is not running");
       return;
       }
 
     status = cm_transition(TR_STOP, 0, str, sizeof(str), SYNC);
     if (status != CM_SUCCESS)
-      rsprintf("<html><body>Error stopping run: %s</body>", str);
+      show_error(str);
     else
       redirect("");
 
