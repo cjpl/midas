@@ -6,35 +6,11 @@
   Contents:     Electronic logbook utility   
 
   $Log$
+  Revision 1.13  2001/05/23 10:48:21  midas
+  elog can be used with elogd now
+
   Revision 1.12  2000/09/01 15:49:26  midas
   Elog is now submitted via mhttpd
-
-  Revision 1.11  2000/05/08 14:29:39  midas
-  Added delete option in ELog
-
-  Revision 1.10  1999/10/08 22:00:30  midas
-  Finished editing of elog messages
-
-  Revision 1.9  1999/10/06 06:56:32  midas
-  Added "modification" to message type
-
-  Revision 1.8  1999/09/28 11:05:50  midas
-  Use external editor for composing text
-
-  Revision 1.7  1999/09/27 12:54:28  midas
-  Added -m flag
-
-  Revision 1.6  1999/09/17 11:48:08  midas
-  Alarm system half finished
-
-  Revision 1.5  1999/09/16 07:36:10  midas
-  Added automatic host name in author field
-
-  Revision 1.4  1999/09/15 13:33:36  midas
-  Added remote el_submit functionality
-
-  Revision 1.3  1999/09/15 08:06:58  midas
-  Use own Ctrl-C handler
 
   Revision 1.1  1999/09/14 15:15:27  midas
   Initial revision
