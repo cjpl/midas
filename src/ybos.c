@@ -6,6 +6,9 @@
  *         amaudruz@triumf.ca                            Local:           6234
  * ---------------------------------------------------------------------------
    $Log$
+   Revision 1.53  2003/05/17 22:37:48  pierre
+   ybos large file fix
+
    Revision 1.52  2003/04/23 23:09:30  pierre
    Fixed compiler warning
 
@@ -2701,16 +2704,25 @@ YB_SUCCESS        Ok
     /* adjust temporary evt pointer all in I*4 */
     ptmp = my.pylrl + fpart;
     
-    while ( (evt_length - fpart) > 0)
+    if ( (evt_length - fpart) == 0)
     {
-      lpart = evt_length - fpart;
-      if (lpart > (YBOS_PHYREC_SIZE - YBOS_HEADER_LENGTH))
-        lpart = (YBOS_PHYREC_SIZE - YBOS_HEADER_LENGTH);
-      
       /* get next physical record */
       if ((status=ybos_physrec_get (&prec, &size)) != YB_SUCCESS)
         return (status);
-      
+      my.pyrd = (DWORD *)my.pyh + my.pyh->header_length;      
+    }
+    else
+    { 
+      while ( (evt_length - fpart) > 0)
+      {
+	lpart = evt_length - fpart;
+	if (lpart > (YBOS_PHYREC_SIZE - YBOS_HEADER_LENGTH))
+	  lpart = (YBOS_PHYREC_SIZE - YBOS_HEADER_LENGTH);
+	
+	/* get next physical record */
+	if ((status=ybos_physrec_get (&prec, &size)) != YB_SUCCESS)
+	  return (status);
+	
         /* pyrd is left at the next lrl but here we comming from
         a cross boundary request so read just the pyrd to 
       pyh+header_length */
@@ -2718,11 +2730,12 @@ YB_SUCCESS        Ok
       /* now copy remaining from temporary pointer */
       memcpy ((char *)ptmp, (char *)my.pyrd, lpart<<2);
       
-      /* adjust pointer to next valid data (LRL) 
-      should be equivalent to pyh+pyh->offset */
-      my.pyrd += lpart;
-      fpart += lpart;
-      ptmp += lpart;         ;
+	/* adjust pointer to next valid data (LRL) 
+	   should be equivalent to pyh+pyh->offset */
+	my.pyrd += lpart;
+	fpart += lpart;
+	ptmp += lpart;
+      } 
     }
     if ( my.pyrd !=  (DWORD *)my.pyh + my.pyh->offset)
     {
