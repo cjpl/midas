@@ -7,6 +7,9 @@
                 following the MIDAS CAMAC Standard for DirectIO
 
   $Log$
+  Revision 1.2  2000/07/11 16:39:38  pierre
+  - Fix bug for i_sa, i_r functions
+
   Revision 1.1  1999/12/20 10:18:11  midas
   Reorganized driver directory structure
 
@@ -95,7 +98,7 @@ INLINE void cami(const int c, const int n, const int a, const int f,
   OUTP(FUN,f);
   OUTP(CACY,1);
   while (((INT) ((INP(OPST) ) & 0x7) != 5) && loop > 0)
-      loop--;
+    loop--;
   if (loop == 0)
     printf("cami: status:0x%x\n",(INT) ((INP(OPST) ) & 0x7));
   *((char *)d)  =(unsigned char)INP(RL);
@@ -165,7 +168,7 @@ INLINE void cam24i_q(const int c, const int n, const int a, const int f,
   *((char *)d)  =(unsigned char)INP(RL);
   *((char *)d+1)=(unsigned char)INP(RM);
   *((char *)d+2)=(unsigned char)INP(RH);
-  *((char *)d+3)=0;
+  *((char *)d+3)= 0;
   *q = INP(LXQ);
   *x = *q>>1 & 1;
   *q &= 1;
@@ -173,7 +176,7 @@ INLINE void cam24i_q(const int c, const int n, const int a, const int f,
 /*------------------------------------------------------------------*/
 INLINE void cam16i_r(const int c, const int n, const int a, const int f, 
                      WORD **d, const int r){
-  WORD i;
+  WORD i, loop;
 
   OUTP(CDMA, (((c&0x3)-1)<<4));
   OUTP(STA,n);
@@ -182,16 +185,22 @@ INLINE void cam16i_r(const int c, const int n, const int a, const int f,
   for (i=0 ; i<r ; i++)
   {
     OUTP(CACY,1);
-    while ((INT) (INP(OPST) & 0x7) != 5)
-    *((char *)d)  =(unsigned char)INP(RL);
-    *((char *)d+1)=(unsigned char)INP(RM);
+    loop = 1000;
+    while (((INT) ((INP(OPST) ) & 0x7) != 5) && loop > 0)
+      loop--;
+    if (loop == 0){
+      printf("cam16i_r: status:0x%x\n",(INT) ((INP(OPST) ) & 0x7));
+      return;
+    }
+    *((char *) (*d)  ) =(unsigned char)INP(RL);
+    *((char *) (*d)+1) =(unsigned char)INP(RM);
     (*d)++;
   }
 }
 /*------------------------------------------------------------------*/
 INLINE void cam24i_r(const int c, const int n, const int a, const int f, 
                      DWORD **d, const int r){
-  WORD i;
+  WORD i, loop;
   
   OUTP(CDMA, (((c&0x3)-1)<<4));
   OUTP(STA,n);
@@ -200,11 +209,17 @@ INLINE void cam24i_r(const int c, const int n, const int a, const int f,
   for (i=0 ; i<r ; i++)
   {
     OUTP(CACY,1);
-    while ((INT) (INP(OPST) & 0x7) != 5)
-    *((char *)d)  =(unsigned char)INP(RL);
-    *((char *)d+1)=(unsigned char)INP(RM);
-    *((char *)d+2)=(unsigned char)INP(RH);
-    *((char *)d+3)=0;
+    loop = 1000;
+    while (((INT) ((INP(OPST) ) & 0x7) != 5) && loop > 0)
+      loop--;
+    if (loop == 0){
+      printf("cam24i_r: status:0x%x\n",(INT) ((INP(OPST) ) & 0x7));
+      return;
+    }
+    *((char *) (*d)  ) =(unsigned char)INP(RL);
+    *((char *) (*d)+1) =(unsigned char)INP(RM);
+    *((char *) (*d)+2) =(unsigned char)INP(RH);
+    *((char *) (*d)+3) = 0;
     (*d)++;
   }
 }
@@ -235,44 +250,57 @@ int i, x, q;
 /*------------------------------------------------------------------*/
 INLINE void cam16i_sa(const int c, const int n, const int a, const int f, 
                       WORD **d, const int r){
-  int i, aa;
-
+  int i, aa, loop;
+  
   OUTP(CDMA, (((c&0x3)-1)<<4));
   OUTP(STA,n);
   OUTP(FUN,f);
   aa = a;
   for (i=0 ; i<r ; i++)
-  {
-    OUTP(ADD,aa);
-    OUTP(CACY,1);
-    while ((INT) (INP(OPST) & 0x7) != 5)
-    *((char *)d)  =(unsigned char)INP(RL);
-    *((char *)d+1)=(unsigned char)INP(RM);
-    (*d)++;
-    aa++;
-  }
+    {
+      OUTP(ADD,aa);
+      OUTP(CACY,1);
+      loop = 10;
+      while (((INT) ((INP(OPST) ) & 0x7) != 5) && loop > 0)
+        loop--;
+      if (loop == 0)
+        {
+          printf("cam16i_sa: status:0x%x\n",(INT) ((INP(OPST) ) & 0x7));
+          return;
+        }
+      *((char *) (*d)  ) =(unsigned char)INP(RL);
+      *((char *) (*d)+1) =(unsigned char)INP(RM);
+      (*d)++;
+      aa++;
+    }
 }
 /*------------------------------------------------------------------*/
 INLINE void cam24i_sa(const int c, const int n, const int a, const int f, 
                       DWORD **d, const int r){
-  int i, aa;
-
+  int i, aa, loop;
+  
   OUTP(CDMA, (((c&0x3)-1)<<4));
   OUTP(STA,n);
   OUTP(FUN,f);
   aa = a;
   for (i=0 ; i<r ; i++)
-  {
-    OUTP(ADD,aa);
-    OUTP(CACY,1);
-    while ((INT) (INP(OPST) & 0x7) != 5)
-    *((char *)d)  =(unsigned char)INP(RL);
-    *((char *)d+1)=(unsigned char)INP(RM);
-    *((char *)d+2)=(unsigned char)INP(RH);
-    *((char *)d+3)=0;
-    (*d)++;
-    aa++;
-  }
+    {
+      OUTP(ADD,aa);
+      OUTP(CACY,1);
+      loop = 1000;
+      while (((INT) ((INP(OPST) ) & 0x7) != 5) && loop > 0)
+        loop--;
+      if (loop == 0){
+        printf("cam24i_sa: status:0x%x\n",(INT) ((INP(OPST) ) & 0x7));
+        return;
+      }
+      *((char *) (*d)  ) =(unsigned char)INP(RL);
+      *((char *) (*d)+1) =(unsigned char)INP(RM);
+      *((char *) (*d)+2) =(unsigned char)INP(RH);
+      *((char *) (*d)+3) = 0;
+      (*d)++;
+      aa++;
+    }
 }
 /*------------------------------------------------------------------*/
 INLINE void cam16i_sn(const int c, const int n, const int a, const int f, 
@@ -314,7 +342,7 @@ INLINE void camo(const int c, const int n, const int a, const int f,
   OUTP(WM, *(((unsigned char *) &d)+1));
   OUTP(CACY,1);
   while (((INT) ((INP(OPST) ) & 0x7) != 5) && loop > 0)
-      loop--;
+    loop--;
   if (loop == 0)
     printf("cami: status:0x%x\n",(INT) ((INP(OPST) ) & 0x7));
 }
