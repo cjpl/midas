@@ -9,6 +9,9 @@
                 for HVR_300 High Voltage Regulator
 
   $Log$
+  Revision 1.8  2004/07/29 15:48:27  midas
+  Disabled temp. measurement (unreliable)
+
   Revision 1.7  2004/07/22 13:08:10  midas
   Implemented idle command
 
@@ -214,6 +217,7 @@ void user_init(unsigned char init)
    for (i=0 ; i<N_HV_CHN ; i++) {
       user_data[i].control = CONTROL_REGULATION;
       user_data[i].status = 0;
+      user_data[i].temperature = 0;
    }
 
    JU1 = 1;
@@ -784,6 +788,8 @@ void regulation(unsigned char channel)
 
 /*------------------------------------------------------------------*/
 
+#ifdef NOT_RELIABLE
+
 void read_temperature(void)
 {
    float temperature;
@@ -836,6 +842,8 @@ void read_temperature(void)
    }
 }
 
+#endif
+
 /*---- User loop function ------------------------------------------*/
 
 void user_loop(void)
@@ -864,5 +872,5 @@ void user_loop(void)
       }
    }
 
-   read_temperature();
+   // read_temperature();
 }
