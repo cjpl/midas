@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.231  2002/05/31 09:32:07  midas
+  Drain mail server messages
+
   Revision 1.230  2002/05/31 09:26:41  midas
   Added '/Elog/Host name' for mail notification
 
@@ -1095,6 +1098,14 @@ time_t               now;
 
   recv_string(s, str, sizeof(str), 3000);
   if (verbose) puts(str);
+
+  /* drain server messages */
+  do
+    {
+    str[0] = 0;
+    recv_string(s, str, sizeof(str), 300);
+    if (verbose) puts(str);
+    } while (str[0]);
 
   sprintf(str, "HELO %s\n", host_name);
   send(s, str, strlen(str), 0);
