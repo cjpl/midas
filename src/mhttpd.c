@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.179  2001/12/13 08:39:02  midas
+  Added "/Experiment/Edit on start/Edit run number"
+
   Revision 1.178  2001/12/05 11:31:44  midas
   Changed creation of "/Logger/History dir"
 
@@ -5372,7 +5375,13 @@ char  data_str[256], comment[1000];
   size = sizeof(i);
   db_get_value(hDB, 0, "/Runinfo/Run number", &i, &size, TID_INT);
 
-  rsprintf("<td><input type=text size=20 maxlength=80 name=value value=%d></tr>\n", i+1);
+  size = sizeof(i);
+  if (db_find_key(hDB, 0, "/Experiment/Edit on start/Edit Run number", &hkey) &&
+      db_get_data(hDB, hkey, &i, &size, TID_BOOL) &&
+      i == 0)
+    rsprintf("<td><input type=hidden name=value value=%d>%d</tr>\n", i+1, i+1);
+  else
+    rsprintf("<td><input type=text size=20 maxlength=80 name=value value=%d></tr>\n", i+1);
 
   /* run parameters */
   db_find_key(hDB, 0, "/Experiment/Edit on start", &hkey);
@@ -5388,6 +5397,9 @@ char  data_str[256], comment[1000];
 
       db_get_key(hDB, hsubkey, &key);
       strcpy(str, key.name);
+
+      if (equal_ustring(str, "Edit run number"))
+        continue;
 
       db_enum_key(hDB, hkey, i, &hsubkey);
       db_get_key(hDB, hsubkey, &key);
