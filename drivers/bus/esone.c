@@ -1,36 +1,21 @@
-/*-----------------------------------------------------------------------------
- *  Copyright (c) 1998      TRIUMF Data Acquistion Group
- *  Please leave this header in any reproduction of that distribution
- * 
- *  TRIUMF Data Acquisition Group, 4004 Wesbrook Mall, Vancouver, B.C. V6T 2A3
- *  Email: online@triumf.ca           Tel: (604) 222-1047  Fax: (604) 222-1074
- *         amaudruz@triumf.ca
- * -----------------------------------------------------------------------------
- *  
- *  Description	: CAMAC interface for ESONE standard using mcstd.h
- *	
- *  Requires 	: 
- *
- *  Application : Any CAMAC application
- *
- *  Author:  Stefan Ritt & Pierre-Andre Amaudruz
- * 
- *  Revision 1.0  1998        Pierre	 Initial revision
-   $Log$
-   Revision 1.2  2000/04/26 19:14:41  pierre
-   - Moved doc++ comments from esone.h to here.
+/********************************************************************
 
-   Revision 1.1  1999/12/20 10:18:11  midas
-   Reorganized driver directory structure
+  Name:         esone.c
+  Created by:   Pierre-Andre Amaudruz & Stefan Ritt
 
-   Revision 1.3  1999/02/20 00:41:38  pierre
-   - include CVS Log
+  Contents:     CAMAC interface for ESONE standard using 
+                MCSTD (Midas Camac Standard)
 
- *
- *---------------------------------------------------------------------------*/
+  $Log$
+  Revision 1.3  2001/08/14 09:43:30  midas
+  Initial revision
+
+\********************************************************************/
+
 #include <stdio.h>
 #include "mcstd.h"
 #include "esone.h"
+
 #ifndef INLINE 
 #if defined( _MSC_VER )
 #define INLINE __inline
@@ -41,21 +26,64 @@
 #endif
 #endif
 
-/*--external-----------------------------------------------------*/
-INLINE void came_cn(int *ext, const int b, const int c, const int n, const int a){
+/*-- external representation added to MCSTD ------------------------*/
+
+INLINE void came_cn(int *ext, const int b, const int c, const int n, const int a)
+{
   *ext = (b<<24 | (c<<16) | (n<<8) | a);
 }
 
-/*--external-----------------------------------------------------*/
-INLINE void came_ext(const int ext, int *b, int *c, int *n, int *a){
+/*------------------------------------------------------------------*/
+
+INLINE void came_ext(const int ext, int *b, int *c, int *n, int *a)
+{
   *b = (ext >> 24) & 0x7;
   *c = (ext >> 16) & 0x7;
   *n = (ext >>  8) & 0x1f;
   *a = (ext >>  0) & 0xf;
 }
 
-/*-- REAL ESONE INTERFACE ---------------------------------------*/
-/*--External-----------------------------------------------------*/
+/*********************************************************************
+*  ESONE functions                                                   *
+*********************************************************************/
+
+/*-- initialization ------------------------------------------------*/
+
+/** ccinit
+    CAMAC initialization
+
+    CAMAC initialization must be called before any other ESONE
+    subroutine call
+    
+    @memo CAMAC initialization.
+    @return void
+*/
+INLINE void ccinit(void)
+{
+  cam_init();
+}	
+
+/*------------------------------------------------------------------*/
+
+/** fccinit
+    CAMAC initialization with return status
+
+    fccinit can be called instead of ccinit to determine if the
+    initialization was successful
+    
+    @memo CAMAC initialization.
+    @return 1 for success, 0 for failure
+*/
+INLINE int fccinit(void)
+{
+  if (cam_init() == SUCCESS)
+    return 1;
+  
+  return 0;
+}	
+
+/*-- external representation ---------------------------------------*/
+
 /** cdreg
     Control Declaration REGister.
 
@@ -71,12 +99,13 @@ INLINE void came_ext(const int ext, int *b, int *c, int *n, int *a){
     @param a sub-address (0..15)
     @return void
 */
-INLINE void cdreg (int *ext, const int b, const int c, const int n, const int a)
-{ /* ext encoding */
-  came_cn (ext, b, c, n, a);
+INLINE void cdreg(int *ext, const int b, const int c, const int n, const int a)
+{
+  came_cn(ext, b, c, n, a);
 }
 
-/*--16bit ESONE--------------------------------------------------*/
+/*-- 16bit functions -----------------------------------------------*/
+
 /** cssa
     Control Short Operation.
 
@@ -93,31 +122,32 @@ INLINE void cdreg (int *ext, const int b, const int c, const int n, const int a)
     @param q Q response
     @return void
 */
-INLINE void cssa (const int f, int ext, unsigned short *d, int *q)
-{ /* 16bit action */
-  static int b,c,n,a,x;
+INLINE void cssa(const int f, int ext, unsigned short *d, int *q)
+{
+int b,c,n,a,x;
   
   if (f < 8)
-  {
+    {
     /* read */
     came_ext(ext, &b, &c, &n, &a);
     cam16i_q(c,n,a,f,d,&x,q);
-  }
+    }
   else if (f >15)
-  {
+    {
     /* write */
     came_ext(ext, &b, &c, &n, &a);
     cam16o_q(c,n,a,f,*d,&x,q);
-  }
+    }
   else if ((f > 7) || (f > 23))
-  {
+    {
     /* command */
     came_ext(ext, &b, &c, &n, &a);
     camc_q(c,n,a,f,q);
-  }
+    }
 }
 
-/*--24bit ESONE--------------------------------------------------*/
+/*-- 24bit functions -----------------------------------------------*/
+
 /** cfsa
     Control Full Operation.
     
@@ -134,31 +164,32 @@ INLINE void cssa (const int f, int ext, unsigned short *d, int *q)
     @param q Q response
     @return void
 */
-INLINE void cfsa (const int f, const int ext, unsigned long *d, int *q)
-{ /* 24bit action */
-  static int b,c,n,a,x;
+INLINE void cfsa(const int f, const int ext, unsigned long *d, int *q)
+{
+int b,c,n,a,x;
   
   if (f < 8)
-  {
+    {
     /* read */
     came_ext(ext, &b, &c, &n, &a);
     cam24i_q(c,n,a,f,d,&x,q);
-  }
+    }
   else if (f >15)
-  {
+    {
     /* write */
     came_ext(ext, &b, &c, &n, &a);
     cam24o_q(c,n,a,f,*d,&x,q);
-  }
+    }
   else if ((f > 7) || (f > 23))
-  {
+    {
     /* command */
     came_ext(ext, &b, &c, &n, &a);
     camc_q(c,n,a,f,q);
-  }
+    }
 }
 
-/*--ESONE General functions--------------------------------------*/
+/*-- general functions----------------------------------------------*/
+
 /** cccc
     Control Crate Clear.
 
@@ -169,14 +200,15 @@ INLINE void cfsa (const int f, const int ext, unsigned long *d, int *q)
     @return void
 */
 INLINE void cccc(const int ext)
-{ /* C cycle */
-  int b, c, n, a;
+{
+int b, c, n, a;
   
   came_ext(ext, &b, &c, &n, &a);
-  cam_crate_clear (c);
+  cam_crate_clear(c);
 }	
 
-/*--ESONE General functions--------------------------------------*/
+/*------------------------------------------------------------------*/
+
 /** cccz
     Control Crate Z.
 
@@ -187,19 +219,19 @@ INLINE void cccc(const int ext)
     @return void
 */
 INLINE void cccz(const int ext)
-{ /* Z cycle */
-  int b, c, n, a;
+{
+int b, c, n, a;
   
   came_ext(ext, &b, &c, &n, &a);
-  cam_crate_zinit (c);
+  cam_crate_zinit(c);
 }	
 
-/*--ESONE General functions--------------------------------------*/
+/*------------------------------------------------------------------*/
+
 /** ccci
     Control Crate I.
 
     Set or Clear Dataway Inhibit, Execute cam\_inhinit\_set() /clear()
-    which is equivalent to c=c,n=30,a=9,f26/f24
     
     @memo Crate I.
     @param ext external address
@@ -207,8 +239,8 @@ INLINE void cccz(const int ext)
     @return void
 */
 INLINE void ccci(const int ext, int l)
-{ /* Set / Reset Inhibit */
-  int b, c, n, a;
+{
+int b, c, n, a;
   
   came_ext(ext, &b, &c, &n, &a);
   if (l)
@@ -217,58 +249,76 @@ INLINE void ccci(const int ext, int l)
     cam_inhibit_clear(c);
 }	
 
-/*--ESONE General functions--------------------------------------*/
+/*------------------------------------------------------------------*/
+
+/** ctci
+    Test Crate I.
+
+    Test Crate Inhibit, Execute cam\_inhibit\_test()
+    
+    @memo Crate I.
+    @param ext external address
+    @param l action l=0 -> Clear I, l=1 -> Set I
+    @return void
+*/
+INLINE void ctci(const int ext, int *l)
+{
+int b, c, n, a;
+  
+  came_ext(ext, &b, &c, &n, &a);
+  *l = cam_inhibit_test(c);
+}	
+
+/*------------------------------------------------------------------*/
+
 /** cccd
     Control Crate D.
 
-    Enable or Disable Crate Demand. Execute c=c,n=30,a=10,f=26 for enable
-    , f24 for disable.
-    \\ {\bf Has not been tested}
+    Enable or Disable Crate Demand.
     
     @memo Crate D.
     @param ext external address
     @param l action l=0 -> Clear D, l=1 -> Set D
     @return void
 */
-INLINE void  cccd(const int ext, int l)
-{ /* Enable / Disable Crate Demand */
-  int b, c, n, a;
+INLINE void cccd(const int ext, int l)
+{
+int b, c, n, a;
   
   came_ext(ext, &b, &c, &n, &a);
   
   if (l)
-    camc (c,30,10,26);          /* c=c,n=30,a=10,f=26 */
+    cam_interrupt_enable(c);
   else
-    camc (c,30,10,24);          /* c=c,n=30,a=10,f=24 */
+    cam_interrupt_disable(c);
 }
 
-/*--ESONE General functions--------------------------------------*/
+/*------------------------------------------------------------------*/
+
 /** ctcd
     Control Test Crate D.
 
-    Test Crate Demand. Execute c=c,n=30,a=10,f=27.
-    \\ {\bf Has not been tested}
+    Test Crate Demand.
     
     @memo Test Crate D.
     @param ext external address
     @param l D cleared -> l=0, D set -> l=1
     @return void
 */
-INLINE void  ctcd(const int ext, int *l)
-{ /* Test Crate Demand Enabled */
-  int b, c, n, a, x;
-  unsigned short dtemp;
-
+INLINE void ctcd(const int ext, int *l)
+{
+int b, c, n, a;
+  
   came_ext(ext, &b, &c, &n, &a);
-  cam16i_q (c,30,10,27,&dtemp,&x,l);        /* c=c,n=30,a=10,f=27 */
+  *l = cam_interrupt_test(c);
 }
 
-/*--ESONE General functions--------------------------------------*/
+/*------------------------------------------------------------------*/
+
 /** cdlam
     Control Declare LAM.
 
     Declare LAM, Identical to cdreg.
-    \\ {\bf Has not been tested}
     
     @memo Declare LAM.
     @param lam external LAM address
@@ -279,39 +329,40 @@ INLINE void  ctcd(const int ext, int *l)
     @param inta[2] implementation dependent
     @return void
 */
-INLINE void  cdlam(int *lam, const int b, const int c, const int n, const int a
-                   , const int inta[2])
-{ /* Declare LAM */
+INLINE void cdlam(int *lam, const int b, const int c, const int n, 
+                  const int a, const int inta[2])
+{
   /* inta[2] ignored */
-  cdreg (lam, b, c, n, a);
+  cdreg(lam, b, c, n, a);
 }
 
-/*--ESONE General functions--------------------------------------*/
+/*------------------------------------------------------------------*/
+
 /** ctgl
     Control Test Demand Present.
 
-    Test the Graded LAM register. Execute c=c,n=30,a=11,f=27.
-    \\ {\bf Has not been tested}
+    Test the LAM register.
     
     @memo Test GL.
     @param lam external LAM register address
     @param l  l !=0 if any LAM is set.
     @return void
 */
-INLINE void  ctgl(const int ext, int *l)
-{ /* Test Crate Demand Present */
-  int b, c, n, a;
+INLINE void ctgl(const int ext, int *l)
+{
+int b, c, n, a, lam;
 
   came_ext(ext, &b, &c, &n, &a);
-  camc_q (c,30,11,27,l);        /* c=c,n=30,a=11,f=27 */
+  cam_lam_read(c, &lam);
+  *l = (lam > 0);
 }
 
-/*--ESONE General functions--------------------------------------*/
+/*------------------------------------------------------------------*/
+
 /** cclm
     Control Crate LAM.
 
     Enable or Disable LAM. Execute F24 for disable, F26 for enable.
-    \\ {\bf Has not been tested}
     
     @memo dis/enable LAM.
     @param lam external address
@@ -319,9 +370,9 @@ INLINE void  ctgl(const int ext, int *l)
     @return void
 */
 INLINE void  cclm(const int lam, int l)
-{ /* Enable/Disable LAM */
-  int b, c, n, a;
-  /*  may requires a0 */
+{
+int b, c, n, a;
+
   came_ext(lam, &b, &c, &n, &a);
   
   if (l)
@@ -330,30 +381,30 @@ INLINE void  cclm(const int lam, int l)
     camc (c,n,0,24);
 }
 
-/*--ESONE General functions--------------------------------------*/
+/*------------------------------------------------------------------*/
+
 /** cclc
     Control Clear LAM.
     Clear the LAM of th estaion pointer by the lam address.
-    \\ {\bf Has not been tested}
 
     @memo Clear LAM.
     @param lam external address
     @return void
 */
 INLINE void  cclc(const int lam)
-{ /* Clear LAM */
-  int b, c, n, a;
-  /*  may requires a0 */
+{
+int b, c, n, a;
+
   came_ext(lam, &b, &c, &n, &a);
-  camc (c,n,0,10);
+  camc(c, n, 0, 10);
 }
 
-/*--ESONE General functions--------------------------------------*/
+/*------------------------------------------------------------------*/
+
 /** ctlm
     Test LAM.
 
-    Test the LAM of the station pointed by lam. Performs an F10
-    \\ {\bf Has not been tested}
+    Test the LAM of the station pointed by lam. Performs an F8
     
     @memo Test LAM.
     @param lam external address
@@ -361,20 +412,17 @@ INLINE void  cclc(const int lam)
     @return void
 */
 INLINE void  ctlm(const int lam, int *l)
-{ /* Test LAM */
-  /* inta[2] ignored */
-  int x;
-  static int b,c,n,a;
-  static WORD dtemp;
+{
+int  b,c,n,a;
   
   came_ext(lam, &b, &c, &n, &a);
-  cam16i_q(c,n,a,10,&dtemp,&x,l);
+  camc_q(c, n, a, 8, l);
 }
 
-/*--ESONE General functions--------------------------------------*/
+/*------------------------------------------------------------------*/
+
 /** cfga
     Control Full (24bit) word General Action.
-    \\ {\bf Has not been tested}
 
     @memo General external address scan function.
     @param f function code
@@ -387,16 +435,42 @@ INLINE void  ctlm(const int lam, int *l)
     @return void
 */
 INLINE void  cfga(int f[], int exta[], int intc[], int qa[], int cb[])
-{ /* Multiple Action */
-  int i;
-  for (i=0;i<cb[0];i++)
-  {
-    cfsa(f[i],exta[i],(unsigned long *)(&(intc[i])),&(qa[i]));
-  }
+{
+int i;
+
+  for (i=0 ; i<cb[0] ; i++)
+    cfsa(f[i], exta[i], (unsigned long *)(&(intc[i])), &(qa[i]));
+
   cb[1] = cb[0];
 }
 
-/*--ESONE General functions--------------------------------------*/
+/*------------------------------------------------------------------*/
+
+/** csga
+    Control (16bit) word General Action.
+
+    @memo General external address scan function.
+    @param f function code
+    @param exta[] external address array
+    @param intc[] data array
+    @param qa[] Q response array
+    @param cb[] control block array \\
+    cb[0] : number of function to perform \\
+    cb[1] : returned number of function performed
+    @return void
+*/
+INLINE void  csga(int f[], int exta[], int intc[], int qa[], int cb[])
+{
+int i;
+
+  for (i=0 ; i<cb[0] ; i++)
+    cssa(f[i], exta[i], (unsigned short *)(&(intc[i])), &(qa[i]));
+
+  cb[1] = cb[0];
+}
+
+/*------------------------------------------------------------------*/
+
 /** cfmad
     Control Full (24bit) Address Q scan.
 
@@ -406,7 +480,6 @@ INLINE void  cfga(int f[], int exta[], int intc[], int qa[], int cb[])
     or current external address exceeds extb[1].
 
     {\it implementation of cb[2] for LAM recognition is not implemented.}
-    \\ {\bf Has not been tested}
     
     @memo Address scan function.
     @param f function code
@@ -420,11 +493,11 @@ INLINE void  cfga(int f[], int exta[], int intc[], int qa[], int cb[])
     cb[1] : returned number of function performed
     @return void
 */
-INLINE void  cfmad(int f, int extb[], int intc[], int cb[])
-{ /* Address scan */
-  int j, count;
-  int x, q, b, c, n, a;
-  unsigned long exts, extc, exte;
+INLINE void cfmad(int f, int extb[], int intc[], int cb[])
+{
+int j, count;
+int x, q, b, c, n, a;
+unsigned long exts, extc, exte;
   
   exts = extb[0];
   exte = extb[1];
@@ -432,33 +505,94 @@ INLINE void  cfmad(int f, int extb[], int intc[], int cb[])
   j = 0;
   came_ext(exts, &b, &c, &n, &a);
   do
-  {
-    cam24i_q(c,n,a,f,(unsigned long *)&intc[j],&x, &q);
+    {
+    cam24i_q(c, n, a, f, (unsigned long *)&intc[j], &x, &q);
     if (q == 0)
-    {
-      a = 0;                /* set subaddress to zero */
-      n++;                  /* select next slot */
+      {
+      a = 0;     /* set subaddress to zero */
+      n++;       /* select next slot */
       j++;
-    }
+      }
     else
-    {
-      a++;                  /* increment address */
-      ++cb[1];		/* increment tally count */
-      ++intc;		/* next data array */
+      {
+      a++;       /* increment address */
+      ++cb[1];	 /* increment tally count */
+      ++intc;		 /* next data array */
       --count;
-    }
-    came_cn ((int *)&extc,b,c,n,a);
-    if (extc > exte) count = 0; /* force exit */
-  }
-  while (count);
+      }
+    came_cn ((int *)&extc, b, c, n, a);
+    
+    if (extc > exte) 
+      count = 0; /* force exit */
+
+  } while (count);
 }
 
-/*--ESONE General functions--------------------------------------*/
+/*------------------------------------------------------------------*/
+
+/** csmad
+    Control (16bit) Address Q scan.
+
+    Scan all sub-address while Q=1 from a0..a15 max from address extb[0] and store
+    corresponding data in intc[]. If Q=0 while A<15 or A=15 then cross station boundary is applied
+    (n-> n+1) and sub-address is reset (a=0). Perform action until either cb[0] action are performed
+    or current external address exceeds extb[1].
+
+    {\it implementation of cb[2] for LAM recognition is not implemented.}
+    
+    @memo Address scan function.
+    @param f function code
+    @param extb[] external address array \\
+    extb[0] : first valid external address \\
+    extb[1] : last valid external address
+    @param intc[] data array
+    @param qa[] Q response array
+    @param cb[] control block array \\
+    cb[0] : number of function to perform \\
+    cb[1] : returned number of function performed
+    @return void
+*/
+INLINE void csmad(int f, int extb[], int intc[], int cb[])
+{
+int j, count;
+int x, q, b, c, n, a;
+unsigned long exts, extc, exte;
+  
+  exts = extb[0];
+  exte = extb[1];
+  count = cb[0];
+  j = 0;
+  came_ext(exts, &b, &c, &n, &a);
+  do
+    {
+    cam16i_q(c, n, a, f, (unsigned short *)&intc[j], &x, &q);
+    if (q == 0)
+      {
+      a = 0;     /* set subaddress to zero */
+      n++;       /* select next slot */
+      j++;
+      }
+    else
+      {
+      a++;       /* increment address */
+      ++cb[1];	 /* increment tally count */
+      ++intc;		 /* next data array */
+      --count;
+      }
+    came_cn((int *)&extc, b, c, n, a);
+    
+    if (extc > exte) 
+      count = 0; /* force exit */
+
+  } while (count);
+}
+
+/*------------------------------------------------------------------*/
+
 /** cfubc
     Control Full (24bit) Block Repeat with Q-stop.
 
     Execute function f on address ext with data intc[] while Q.
-    \\ {\bf Has not been tested}
     
     @memo Repeat function Q-stop.
     @param f function code
@@ -469,33 +603,68 @@ INLINE void  cfmad(int f, int extb[], int intc[], int cb[])
     cb[1] : returned number of function performed
     @return void
 */
-INLINE void  cfubc(const int f, int ext, int intc[], int cb[])
-{ /* Q-Stop mode block transfer */
-  int count, q;
+INLINE void cfubc(const int f, int ext, int intc[], int cb[])
+{
+int count, q;
   
   count = cb[0];
   do
-  {
-    cfsa (f,ext,(unsigned long *)intc, &q);
+    {
+    cfsa(f,ext,(unsigned long *)intc, &q);
     if (q == 0)
       count = 0;	/* stop on no q */
     else
-    {
+      {
       ++cb[1];		/* increment tally count */
-      ++intc;		/* next data array */
+      ++intc;		  /* next data array */
       --count;
-    }
-  }
-  while (count);
+      }
+    } while (count);
 }
 
-/*--ESONE General functions--------------------------------------*/
+/*------------------------------------------------------------------*/
+
+/** csubc
+    Control (16bit) Block Repeat with Q-stop.
+
+    Execute function f on address ext with data intc[] while Q.
+    
+    @memo Repeat function Q-stop.
+    @param f function code
+    @param ext external address array
+    @param intc[] data array
+    @param cb[] control block array \\
+    cb[0] : number of function to perform \\
+    cb[1] : returned number of function performed
+    @return void
+*/
+INLINE void csubc(const int f, int ext, int intc[], int cb[])
+{
+int count, q;
+  
+  count = cb[0];
+  do
+    {
+    cssa(f,ext,(unsigned short *)intc, &q);
+    if (q == 0)
+      count = 0;	/* stop on no q */
+    else
+      {
+      ++cb[1];		/* increment tally count */
+      ++intc;		  /* next data array */
+      --count;
+      }
+    } while (count);
+}
+
+/*------------------------------------------------------------------*/
+
 /** cfubr
-    Control Full (24bit) Block Repeat.
+    Repeat Mode Block Transfer (24bit).
 
     Execute function f on address ext with data intc[] if Q.
     If noQ keep current intc[] data. Repeat cb[0] times. 
-    \\ {\bf Has not been tested}
+
     @memo  Repeat function.
     @param f function code
     @param ext external address array
@@ -505,19 +674,55 @@ INLINE void  cfubc(const int f, int ext, int intc[], int cb[])
     cb[1] : returned number of function performed
     @return void
 */
-INLINE void cfubr(const int f,int ext,int intc[],int cb[])
-{ /* Repeat mode block transfer */
-  int q, count;
+INLINE void cfubr(const int f, int ext, int intc[], int cb[])
+{
+int q, count;
   
   count = cb[0];
   do
-  {
+    {
     do
-      cfsa (f, ext,(unsigned long *)intc, &q);
-    while (q == 0);
+      {
+      cfsa(f, ext, (unsigned long *)intc, &q);
+      } while (q == 0);
+
     ++cb[1];		/* increment tally count */
-    ++intc;		/* next data array */
+    ++intc;		  /* next data array */
     --count;
-  }
-  while (count);
+    } while (count);
+}
+
+/*------------------------------------------------------------------*/
+
+/** csubr
+    Repeat Mode Block Transfer (16bit).
+
+    Execute function f on address ext with data intc[] if Q.
+    If noQ keep current intc[] data. Repeat cb[0] times. 
+
+    @memo  Repeat function.
+    @param f function code
+    @param ext external address array
+    @param intc[] data array
+    @param cb[] control block array \\
+    cb[0] : number of function to perform \\
+    cb[1] : returned number of function performed
+    @return void
+*/
+INLINE void csubr(const int f, int ext, int intc[], int cb[])
+{
+int q, count;
+  
+  count = cb[0];
+  do
+    {
+    do
+      {
+      cssa(f, ext, (unsigned short *)intc, &q);
+      } while (q == 0);
+
+    ++cb[1];		/* increment tally count */
+    ++intc;		  /* next data array */
+    --count;
+    } while (count);
 }
