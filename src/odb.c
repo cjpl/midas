@@ -6,6 +6,9 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.89  2004/03/26 10:10:01  midas
+  Moved dead client check code to end of db_open_database
+
   Revision 1.88  2004/03/26 09:50:12  midas
   Added database record cleanup to db_open_database
 
@@ -1110,42 +1113,6 @@ INT db_open_database(char *database_name, INT database_size,
        */
 
       /*
-         remove dead clients
-       */
-#ifdef ESRCH
-      /* Only enable this for systems that define ESRCH and hope that
-         they also support kill(pid,0) */
-      for (i = 0; i < MAX_CLIENTS; i++) {
-         int k;
-
-         errno = 0;
-         kill(pheader->client[i].pid, 0);
-         if (errno == ESRCH) {
-            cm_msg(MERROR, "db_open_database",
-                   "removing client %s, pid %d, index %d because the pid no longer exists",
-                   pheader->client[i].name, pheader->client[i].pid, i);
-
-            /* decrement notify_count for open records and clear exclusive mode */
-            for (k = 0; k < pheader->client[i].max_index; k++)
-               if (pheader->client[i].open_record[k].handle) {
-                  pkey = (KEY *) ((char *) pheader +
-                                  pheader->client[i].open_record[k].handle);
-                  if (pkey->notify_count > 0)
-                     pkey->notify_count--;
-
-                  if (pheader->client[i].open_record[k].access_mode & MODE_WRITE)
-                     db_set_mode(handle + 1, pheader->client[i].open_record[k].handle,
-                                 (WORD) (pkey->access_mode & ~MODE_EXCLUSIVE),
-                                 2);
-               }
-
-            /* clear entry from client structure in database header */
-            memset(&(pheader->client[i]), 0, sizeof(DATABASE_CLIENT));
-         }
-      }
-#endif
-
-      /*
          update the client count
        */
       pheader->num_clients = 0;
@@ -1214,8 +1181,6 @@ INT db_open_database(char *database_name, INT database_size,
           */
       }
 
-      db_unlock_database(handle + 1);
-
       /* setup _database entry */
       _database[handle].database_data = _database[handle].database_header + 1;
       _database[handle].attached = TRUE;
@@ -1232,6 +1197,43 @@ INT db_open_database(char *database_name, INT database_size,
 
       /* setup dispatcher for updated records */
       ss_suspend_set_dispatch(CH_IPC, 0, (int (*)(void)) cm_dispatch_ipc);
+
+
+      /* remove dead clients */
+
+#ifdef ESRCH
+      /* Only enable this for systems that define ESRCH and hope that
+         they also support kill(pid,0) */
+      for (i = 0; i < MAX_CLIENTS; i++) {
+         int k;
+
+         errno = 0;
+         kill(pheader->client[i].pid, 0);
+         if (errno == ESRCH) {
+            cm_msg(MERROR, "db_open_database",
+                   "removing client %s, pid %d, index %d because the pid no longer exists",
+                   pheader->client[i].name, pheader->client[i].pid, i);
+
+            /* decrement notify_count for open records and clear exclusive mode */
+            for (k = 0; k < pheader->client[i].max_index; k++)
+               if (pheader->client[i].open_record[k].handle) {
+                  pkey = (KEY *) ((char *) pheader +
+                                  pheader->client[i].open_record[k].handle);
+                  if (pkey->notify_count > 0)
+                     pkey->notify_count--;
+
+                  if (pheader->client[i].open_record[k].access_mode & MODE_WRITE)
+                     db_set_mode(handle + 1, pheader->client[i].open_record[k].handle,
+                                 (WORD) (pkey->access_mode & ~MODE_EXCLUSIVE), 2);
+               }
+
+            /* clear entry from client structure in database header */
+            memset(&(pheader->client[i]), 0, sizeof(DATABASE_CLIENT));
+         }
+      }
+#endif
+
+      db_unlock_database(handle + 1);
 
       if (shm_created)
          return DB_CREATED;
