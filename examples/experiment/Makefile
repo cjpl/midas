@@ -6,6 +6,9 @@
 #  Contents:     Makefile for MIDAS example frontend and analyzer
 #
 #  $Log$
+#  Revision 1.13  2002/05/10 05:23:18  pierre
+#  add MANA_LITE option
+#
 #  Revision 1.12  2000/12/01 09:35:18  midas
 #  Added fal
 #
@@ -37,6 +40,14 @@
 #  - Add DRIVER selection and UFE option
 #
 #####################################################################
+#
+# Specify the mode of operation for the analyzer
+# #USERFLAGS=-DMANA_LITE  with HBOOK (default)
+# USERFLAGS=-DMANA_LITE  without HBOOK 
+# During the Midas installation, mana.o has to be compiled
+# with the -DMANA_LITE in the case of mana_lite.
+# See the general Makefile.
+#USERFLAGS = -DMANA_LITE
 
 #--------------------------------------------------------------------
 # The following lines contain specific switches for different UNIX
@@ -68,8 +79,12 @@ LIBS = -lm -lz -lutil -lnsl
 DRV_DIR         = ../../drivers
 INC_DIR 	= /usr/local/include
 LIB_DIR 	= /usr/local/lib
-CERNLIB_DIR	= /cern/pro/lib
-
+#
+# Link with or without CERNLIB
+ifndef USERFLAGS
+CERNLIB_PACK	= /cern/pro/lib/libpacklib.a
+endif
+#
 #-------------------------------------------------------------------
 # List of analyzer modules
 #                 
@@ -110,16 +125,16 @@ $(DRIVER).o: $(DRV_DIR)/bus/$(DRIVER).c
 
 analyzer: $(LIB) $(LIB_DIR)/mana.o analyzer.o $(MODULES)
 	$(FF) $(FFLAGS) -o analyzer $(LIB_DIR)/mana.o analyzer.o \
-	$(MODULES) $(CERNLIB_DIR)/libpacklib.a \
+	$(MODULES) $(CERNLIB_PACK) \
 	$(LIB) $(LDFLAGS) $(LIBS)
 
 fal: $(LIB) $(LIB_DIR)/fal.o $(DRV_DIR)/bus/$(DRIVER).o $(UFE).c $(MODULES) $(UFE).o analyzer.o
 	$(FF) $(FFLAGS) -o fal $(LIB_DIR)/fal.o $(UFE).o $(DRIVER).o \
-	analyzer.o $(MODULES) $(CERNLIB_DIR)/libpacklib.a \
+	analyzer.o $(MODULES) $(CERNLIB_PACK) \
 	$(LIB) $(LDFEFLAGS) $(LIBS)
 
 .c.o:
-	$(CC) $(CFLAGS) $(OSFLAGS) -c $<
+	$(CC) $(USERFLAGS) $(CFLAGS) $(OSFLAGS) -c $<
 
 clean:
 	rm -f *.o *~ \#*
