@@ -6,6 +6,9 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
+  Revision 1.23  2000/08/11 11:43:51  midas
+  Added cm_msg1 to produce messages which go to a differnt logging file
+
   Revision 1.22  1999/11/22 08:44:25  midas
   Fixed missing parameter in cm_set_client_info
 
@@ -424,7 +427,7 @@ INT convert_flags;
       break;
 
     case RPC_CM_MSG_LOG:
-      status = cm_msg_log(CINT(0), CSTRING(1));
+      status = cm_msg_log(CINT(0), CSTRING(1), CSTRING(2));
       break;
 
     case RPC_CM_EXECUTE:

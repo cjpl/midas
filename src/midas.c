@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.119  2000/08/11 11:43:51  midas
+  Added cm_msg1 to produce messages which go to a differnt logging file
+
   Revision 1.118  2000/08/10 08:04:56  midas
   Create default /runinfo structure in cm_connect_experiment
 
@@ -647,7 +650,7 @@ INT cm_set_msg_print(INT system_mask, INT user_mask, int (*func)(const char*))
 
 /*------------------------------------------------------------------*/
 
-INT cm_msg_log(INT message_type, char *message)
+INT cm_msg_log(INT message_type, const char *message, const char *facility)
 /********************************************************************\
 
   Routine: cm_msg_log
@@ -658,6 +661,8 @@ INT cm_msg_log(INT message_type, char *message)
   Input:
     INT    message_type      Message type 
     char   *message          Message string
+    char   *facility         Message facility, filename in which
+                             messages will be written
 
   Output:
     none
@@ -677,7 +682,7 @@ HNDLE hDB, hKey;
 
 
   if (rpc_is_remote())
-    return rpc_call(RPC_CM_MSG_LOG, message_type, message);
+    return rpc_call(RPC_CM_MSG_LOG, message_type, message, facility);
 
   if (message_type != MT_DEBUG)
     {
@@ -695,8 +700,16 @@ HNDLE hDB, hKey;
           if (dir[strlen(dir)-1] != DIR_SEPARATOR)
             strcat(dir, DIR_SEPARATOR_STR);
         
-        strcpy(filename, "midas.log");
-        db_get_value(hDB, 0, "/Logger/Message file", filename, &size, TID_STRING);
+        if (facility)
+          {
+          strcpy(filename, facility);
+          strcat(filename, ".log");
+          }
+        else
+          {
+          strcpy(filename, "midas.log");
+          db_get_value(hDB, 0, "/Logger/Message file", filename, &size, TID_STRING);
+          }
 
         strcpy(path, dir);
         strcat(path, filename);
@@ -709,11 +722,25 @@ HNDLE hDB, hKey;
             strcat(dir, DIR_SEPARATOR_STR);
 
         strcpy(path, dir);
-        strcat(path, "midas.log");
+        if (facility)
+          {
+          strcat(path, facility);
+          strcat(path, ".log");
+          }
+        else
+          strcat(path, "midas.log");
         }
       }
     else
-      strcpy(path, "midas.log");
+      {
+      if (facility)
+        {
+        strcpy(path, facility);
+        strcat(path, ".log");
+        }
+      else
+        strcpy(path, "midas.log");
+      }
 
     f = fopen(path, "a");
     if (f==NULL)
@@ -735,7 +762,7 @@ HNDLE hDB, hKey;
 /*------------------------------------------------------------------*/
 
 INT cm_msg(INT message_type, char* filename, INT line, 
-            const char *routine, const char *format, ...)
+           const char *routine, const char *format, ...)
 /********************************************************************\
 
   Routine: cm_msg (MIDAS-message)
@@ -854,7 +881,141 @@ static BOOL  in_routine = FALSE;
     }
 
   /* log message */
-  cm_msg_log(message_type, send_message);
+  cm_msg_log(message_type, send_message, NULL);
+
+  in_routine = FALSE;
+
+  return CM_SUCCESS;
+}
+
+/*------------------------------------------------------------------*/
+
+INT cm_msg1(INT message_type, char* filename, INT line, 
+            const char *facility, const char *routine, const char *format, ...)
+/********************************************************************\
+
+  Routine: cm_msg (MIDAS-message)
+
+  Purpose: This routine gets called whenever an internal error occurs
+           or an informative message is produced. Different message
+           types can be enabled or disabled by setting the type bits
+           via cm_set_msg_print.
+           
+
+  Input:
+    INT   message_type      (1<<0): Error
+                            (1<<1): Info
+                            (1<<2): Debug
+                            (1<<3): User
+                            (1<<4): Only logged
+                            (1<<5): Talked by speech system
+
+    char  *filename         Name of source file where error occured
+    INT   line              Line number where error occured
+    char  *facility         Logging file name
+
+    char  *routine          Routine name
+    char  *error format     Error message to print out
+    ...                     Parameters like for printf()
+  Output:
+    none                        
+
+  Function value:
+    CM_SUCCESS              Sucessful completion
+    <return value form bm_open_buffer>
+
+\********************************************************************/
+{
+va_list      argptr;
+char         event[1000], str[256], local_message[256], send_message[256], *pc;
+EVENT_HEADER *pevent;
+INT          status;
+static BOOL  in_routine = FALSE;
+
+  /* avoid recursive calles */
+  if (in_routine)
+    return 0;
+
+  in_routine = TRUE;
+
+  /* strip path */
+  pc = filename + strlen(filename);
+  while (*pc != '\\' && *pc != '/' && pc != filename)
+    pc--;
+  if (pc != filename)
+    pc++;  
+
+  /* print client name into string */
+  if (message_type == MT_USER)
+    sprintf(send_message, "[%s] ", routine);
+  else
+    {
+    rpc_get_name(str);
+    if (str[0])
+      sprintf(send_message, "[%s] ", str);
+    else
+      send_message[0] = 0;
+    }
+
+  local_message[0] = 0;
+
+  /* preceed error messages with file and line info */
+  if (message_type == MT_ERROR)
+    {
+    sprintf(str, "[%s:%ld:%s] ", pc, line, routine);
+    strcat(send_message, str);
+    strcat(local_message, str);
+    }
+
+  /* print argument list into message */
+  va_start(argptr, format);
+  vsprintf(str, (char *) format, argptr);
+  va_end(argptr);
+
+  if (facility)
+    sprintf(local_message+strlen(local_message), "{%s} ", facility);
+  
+  strcat(send_message, str);
+  strcat(local_message, str);
+
+  /* call user function if set via cm_set_msg_print */
+  if (_message_print != NULL &&
+      (message_type & _message_mask_user) != 0)
+    _message_print(local_message);
+
+  /* return if system mask is not set */
+  if ((message_type & _message_mask_system) == 0)
+    {
+    in_routine = FALSE;
+    return CM_SUCCESS;
+    }
+
+  /* copy message to event */
+  pevent = (EVENT_HEADER *) event;
+  strcpy(event + sizeof(EVENT_HEADER), send_message);
+
+  /* send event if not of type MLOG */
+  if (message_type != MT_LOG)
+    {
+    /* if no message buffer already opened, do so now */
+    if (_msg_buffer == 0)
+      {
+      status = bm_open_buffer(MESSAGE_BUFFER_NAME, MESSAGE_BUFFER_SIZE, &_msg_buffer);
+      if (status != BM_SUCCESS && status != BM_CREATED)
+        {
+        in_routine = FALSE;
+        return status;
+        }
+      }
+
+    /* setup the event header and send the message */
+    bm_compose_event(pevent, EVENTID_MESSAGE, (WORD) message_type,
+                     strlen(event + sizeof(EVENT_HEADER))+1, 0);
+    bm_send_event(_msg_buffer, event, pevent->data_size+sizeof(EVENT_HEADER), SYNC);
+    }
+
+  /* log message */
+  cm_msg_log(message_type, send_message, facility);
 
   in_routine = FALSE;
 

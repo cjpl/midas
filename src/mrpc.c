@@ -6,6 +6,9 @@
   Contents:     List of MIDAS RPC functions with parameters
 
   $Log$
+  Revision 1.20  2000/08/11 11:43:51  midas
+  Added cm_msg1 to produce messages which go to a differnt logging file
+
   Revision 1.19  1999/11/19 09:49:58  midas
   Fixed bug with wrong default watchdog timeout in cm_connect_experiment1
 
@@ -110,6 +113,7 @@ static RPC_LIST rpc_list_library[] = {
 
   { RPC_CM_MSG_LOG, "cm_msg_log",
     {{TID_INT,        RPC_IN},
+     {TID_STRING,     RPC_IN},
      {TID_STRING,     RPC_IN},
      {0} }},
 
