@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.131  2000/06/15 06:54:43  midas
+  Fixed bug with ymin == ymax
+
   Revision 1.130  2000/06/06 10:52:27  midas
   Increase max. number of colums in slow control page to 9
 
@@ -6089,6 +6092,13 @@ float       upper_limit[MAX_VARS], lower_limit[MAX_VARS];
     ymax += (ymax-ymin)/20.f;
     if (ymin != 0)
       ymin -= (ymax-ymin)/20.f;
+    }
+
+  /* avoid ymin == ymax */
+  if (ymax == ymin)
+    {
+    ymax += 1;
+    ymin -= 1;
     }
 
   /* calculate X limits */
