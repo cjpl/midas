@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus communication functions
 
   $Log$
+  Revision 1.73  2004/09/10 12:27:21  midas
+  Version 1.7.5
+
   Revision 1.72  2004/07/29 13:55:18  midas
   Version 1.7.4
 
@@ -222,7 +225,7 @@
 
 \********************************************************************/
 
-#define MSCB_LIBRARY_VERSION   "1.7.4"
+#define MSCB_LIBRARY_VERSION   "1.7.5"
 #define MSCB_PROTOCOL_VERSION  "1.7"
 
 #ifdef _MSC_VER                 // Windows includes

@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol main program
 
   $Log$
+  Revision 1.53  2004/09/10 12:27:22  midas
+  Version 1.7.5
+
   Revision 1.52  2004/07/20 16:04:40  midas
   Implemented scs-1000 code
 
@@ -420,7 +423,12 @@ void setup(void)
    for (i=0 ; i<sizeof(out_buf) ; i++)
       out_buf[i] = 0;
 
+   /* initialize UART(s) */
    uart_init(0, BD_115200);
+
+#ifdef SCS_1000
+   uart_init(1, BD_115200);
+#endif
 
 #ifdef LCD_SUPPORT
    lcd_setup();

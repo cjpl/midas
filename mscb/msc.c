@@ -6,6 +6,9 @@
   Contents:     Command-line interface for the Midas Slow Control Bus
 
   $Log$
+  Revision 1.68  2004/09/10 12:27:21  midas
+  Version 1.7.5
+
   Revision 1.67  2004/07/21 14:18:19  midas
   Added more debugging info
 
@@ -337,7 +340,17 @@ void print_channel_str(int index, MSCB_INFO_VAR * info_chn, void *pdata, int ver
    if (info_chn->unit == UNIT_STRING) {
       memset(str, 0, sizeof(str));
       strncpy(str, pdata, info_chn->width);
-      sprintf(line + strlen(line), "STR%02d    \"%s\"", info_chn->width, str);
+      sprintf(line + strlen(line), "STR%02d    \"", info_chn->width);
+      for(i=0 ; i<(int)strlen(str); i++)
+         switch (str[i]) {
+         case 1: strcat(line, "\\001"); break;
+         case 2: strcat(line, "\\002"); break;
+         case 9: strcat(line, "\\t"); break;
+         case 10: strcat(line, "\\n"); break;
+         case 13: strcat(line, "\\r"); break;
+         default: line[strlen(line)+1] = 0; line[strlen(line)] = str[i]; break;
+      }
+      strcat(line, "\"");
    } else {
       data = *((int *) pdata);
       switch (info_chn->width) {
