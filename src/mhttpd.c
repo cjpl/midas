@@ -6,6 +6,10 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.253  2003/10/12 22:56:33  olchansk
+  when submitting new Elog message, add the message text to the outgoing email.
+  add traps for some array overruns (see http://midas.triumf.ca/forum/Development%20Area/12)
+
   Revision 1.252  2003/10/10 22:47:40  olchansk
   fix crash in mhttpd when runinfo.state is corrupted
 
@@ -766,6 +770,7 @@
 \********************************************************************/
 
 #include <math.h>
+#include <assert.h>
 #include "midas.h"
 #include "msystem.h"
 #include "mgd.h"
@@ -3737,7 +3742,7 @@ time_t now;
 void submit_elog()
 {
 char   str[80], author[256], path[256], path1[256];
-char   mail_to[256], mail_from[256], mail_text[256], mail_list[256],
+char   mail_to[256], mail_from[256], mail_text[10000], mail_list[256],
        smtp_host[256], tag[80], mail_param[1000];
 char   *buffer[3], *p, *pitem;
 HNDLE  hDB, hkey;
@@ -3919,6 +3924,9 @@ char   mhttpd_full_url[256];
         str[0] = 0;
         db_get_value(hDB, 0, "/Experiment/Name", str, &size, TID_STRING, TRUE);
 
+        // zero out the array. needed because later strncat() does not always add the trailing '\0'
+        memset(mail_text,0,sizeof(mail_text));
+
         sprintf(mail_text, "A new entry has been submitted by %s:\n\n", author);
         sprintf(mail_text+strlen(mail_text), "Experiment : %s\n", str);
         sprintf(mail_text+strlen(mail_text), "Type       : %s\n", getparam("type"));
@@ -3929,6 +3937,16 @@ char   mhttpd_full_url[256];
           sprintf(mail_text+strlen(mail_text), "Link       : %sEL/%s?exp=%s\n", mhttpd_full_url, tag, exp_name);
         else
           sprintf(mail_text+strlen(mail_text), "Link       : %sEL/%s\n", mhttpd_full_url, tag);
+
+        assert(strlen(mail_text) + 100 < sizeof(mail_text)); // bomb out on array overrun.
+
+        strcat(mail_text+strlen(mail_text),"\n");
+        // this strncat() depends on the mail_text array being zeroed out:
+        // strncat() does not always add the trailing '\0'
+        strncat(mail_text+strlen(mail_text),getparam("text"),sizeof(mail_text)-strlen(mail_text)-50);
+        strcat(mail_text+strlen(mail_text),"\n");
+
+        assert(strlen(mail_text) < sizeof(mail_text)); // bomb out on array overrun.
 
         sendmail(smtp_host, mail_from, mail_to, getparam("type"), mail_text);
 
