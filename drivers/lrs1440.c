@@ -6,6 +6,9 @@
   Contents:     LeCroy LRS 1440 High Voltage Device Driver
 
   $Log$
+  Revision 1.5  1999/06/25 13:50:10  midas
+  Reduced timeout from 3s to 1s
+
   Revision 1.4  1999/01/14 17:01:44  midas
   Added rs232 port sharing
 
@@ -194,7 +197,7 @@ char  str[80];
   sprintf(str, "W%04.0f C%02d\r", info->settings.polarity[channel/16]*value, channel);
 
   rs232_puts(info->hdev, str);
-  rs232_waitfor(info->hdev, "\r\n\r\n", str, 80, 3);
+  rs232_waitfor(info->hdev, "\r\n\r\n", str, 80, 1);
 
   return FE_SUCCESS;
 }
