@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.182  2002/01/31 13:25:43  midas
+  Added log axis in history display and relative path names
+
   Revision 1.181  2002/01/31 09:43:22  midas
   Fixed small bug with 'Edit run number'
 
@@ -565,7 +568,7 @@ char return_buffer[WEB_BUFFER_SIZE];
 int  strlen_retbuf;
 int  return_length;
 char host_name[256];
-char mhttpd_url[256];
+char mhttpd_full_url[256];
 char exp_name[32];
 BOOL connected, no_disconnect;
 
@@ -986,12 +989,12 @@ void redirect(char *path)
   if (exp_name[0])
     {
     if (strchr(path, '?'))
-      rsprintf("Location: %s%s&exp=%s\n\n<html>redir</html>\r\n", mhttpd_url, path, exp_name);
+      rsprintf("Location: /%s&exp=%s\n\n<html>redir</html>\r\n", path, exp_name);
     else
-      rsprintf("Location: %s%s?exp=%s\n\n<html>redir</html>\r\n", mhttpd_url, path, exp_name);
+      rsprintf("Location: /%s?exp=%s\n\n<html>redir</html>\r\n", path, exp_name);
     }
   else
-    rsprintf("Location: %s%s\n\n<html>redir</html>\r\n", mhttpd_url, path);
+    rsprintf("Location: /%s\n\n<html>redir</html>\r\n", path);
 }
 
 void redirect2(char *path)
@@ -1033,11 +1036,11 @@ char        path[MAX_ODB_PATH], data[10000];
       {
       /* for keys, don't display data value */
       if (exp_name[0])
-        rsprintf("<tr><td bgcolor=#FFD000><a href=\"%s?exp=%s&path=%s\">%s</a></tr>\n",
-               mhttpd_url, exp_name, str1, path);
+        rsprintf("<tr><td bgcolor=#FFD000><a href=\"/?exp=%s&path=%s\">%s</a></tr>\n",
+               exp_name, str1, path);
       else
-        rsprintf("<tr><td bgcolor=#FFD000><a href=\"%s%s\">%s</a></tr>\n",
-               mhttpd_url, str1, path);
+        rsprintf("<tr><td bgcolor=#FFD000><a href=\"/%s\">%s</a></tr>\n",
+               str1, path);
       }
     else
       {
@@ -1059,18 +1062,16 @@ char        path[MAX_ODB_PATH], data[10000];
           db_sprintf(data_str, data, key->item_size, 0, key->type);
 
         if (exp_name[0])
-          sprintf(ref, "%s%s?cmd=Set&exp=%s",
-                  mhttpd_url, str1, exp_name);
+          sprintf(ref, "/%s?cmd=Set&exp=%s", str1, exp_name);
         else
-          sprintf(ref, "%s%s?cmd=Set",
-                  mhttpd_url, str1);
+          sprintf(ref, "/%s?cmd=Set", str1);
 
         rsprintf("<tr><td bgcolor=#FFFF00>");
 
         if (exp_name[0])
-          rsprintf("<a href=\"%s%s?exp=%s\">%s</a>/%s", mhttpd_url, path, exp_name, path, key->name);
+          rsprintf("<a href=\"/%s?exp=%s\">%s</a>/%s", path, exp_name, path, key->name);
         else
-          rsprintf("<a href=\"%s%s\">%s</a>/%s", mhttpd_url, path, path, key->name);
+          rsprintf("<a href=\"/%s\">%s</a>/%s", path, path, key->name);
 
         rsprintf("<td><a href=\"%s\">%s</a></tr>\n", ref, data_str);
         }
@@ -1086,11 +1087,9 @@ char        path[MAX_ODB_PATH], data[10000];
           db_sprintf(data_str, data, key->item_size, i, key->type);
 
           if (exp_name[0])
-            sprintf(ref, "%s%s?cmd=Set&index=%d&exp=%s",
-                    mhttpd_url, str1, i, exp_name);
+            sprintf(ref, "/%s?cmd=Set&index=%d&exp=%s", str1, i, exp_name);
           else
-            sprintf(ref, "%s%s?cmd=Set&index=%d",
-                    mhttpd_url, str1, i);
+            sprintf(ref, "/%s?cmd=Set&index=%d", str1, i);
 
           if (i>0)
             rsprintf("<tr>");
@@ -1152,8 +1151,7 @@ int    size;
     rsprintf("<meta http-equiv=\"Refresh\" content=\"%02d\">\n", refresh);
 
   rsprintf("<title>%s</title></head>\n", title);
-  rsprintf("<body><form method=\"GET\" action=\"%s%s\">\n\n",
-            mhttpd_url, path);
+  rsprintf("<body><form method=\"GET\" action=\"/%s\">\n\n", path);
 
   /* title row */
 
@@ -1317,7 +1315,7 @@ CHN_STATISTICS chn_stats;
   rsprintf("<head><meta http-equiv=\"Refresh\" content=\"%02d\">\n", refresh);
 
   rsprintf("<title>MIDAS status</title></head>\n");
-  rsprintf("<body><form method=\"GET\" action=\"%s\">\n", mhttpd_url);
+  rsprintf("<body><form method=\"GET\" action=\"/\">\n");
 
   /* define hidden field for experiment */
   if (exp_name[0])
@@ -1400,9 +1398,9 @@ CHN_STATISTICS chn_stats;
         if (flag)
           {
           if (exp_name[0])
-            sprintf(ref, "%s?exp=%s&cmd=alarms", mhttpd_url, exp_name);
+            sprintf(ref, "/?exp=%s&cmd=alarms", exp_name);
           else
-            sprintf(ref, "%s?cmd=alarms", mhttpd_url);
+            sprintf(ref, "/?cmd=alarms");
 
           size = sizeof(str);
           db_get_value(hDB, hsubkey, "Alarm Class", str, &size, TID_STRING);
@@ -1489,9 +1487,9 @@ CHN_STATISTICS chn_stats;
         {
         /* odb link */
         if (exp_name[0])
-          sprintf(ref, "%sAlias/%s?exp=%s", mhttpd_url, key.name, exp_name);
+          sprintf(ref, "/Alias/%s?exp=%s", key.name, exp_name);
         else
-          sprintf(ref, "%sAlias/%s", mhttpd_url, key.name);
+          sprintf(ref, "/Alias/%s", key.name);
 
         if (new_window)
           rsprintf("<a href=\"%s\" target=\"_blank\">%s</a> ", ref, name);
@@ -1527,9 +1525,9 @@ CHN_STATISTICS chn_stats;
       if (key.type == TID_STRING)
         {
         if (exp_name[0])
-          sprintf(ref, "%sCS/%s?exp=%s", mhttpd_url, key.name, exp_name);
+          sprintf(ref, "/CS/%s?exp=%s", key.name, exp_name);
         else
-          sprintf(ref, "%sCS/%s", mhttpd_url, key.name);
+          sprintf(ref, "/CS/%s", key.name);
 
         if (new_window)
           rsprintf("<a href=\"%s\" target=\"_blank\">%s</a> ", ref, name);
@@ -1559,9 +1557,9 @@ CHN_STATISTICS chn_stats;
         rsprintf("<br><b>%s requested</b>", trans_name[i]);
 
   if (exp_name[0])
-    sprintf(ref, "%sAlarms/Alarm system active?cmd=set&exp=%s", mhttpd_url, exp_name);
+    sprintf(ref, "/Alarms/Alarm system active?cmd=set&exp=%s", exp_name);
   else
-    sprintf(ref, "%sAlarms/Alarm system active?cmd=set", mhttpd_url);
+    sprintf(ref, "/Alarms/Alarm system active?cmd=set");
 
   size = sizeof(flag);
   db_get_value(hDB, 0, "/Alarms/Alarm system active", &flag, &size, TID_BOOL);
@@ -1569,9 +1567,9 @@ CHN_STATISTICS chn_stats;
   rsprintf("<td bgcolor=#%s><a href=\"%s\">Alarms: %s</a>", str, ref, flag ? "On" : "Off");
 
   if (exp_name[0])
-    sprintf(ref, "%sLogger/Auto restart?cmd=set&exp=%s", mhttpd_url, exp_name);
+    sprintf(ref, "/Logger/Auto restart?cmd=set&exp=%s", exp_name);
   else
-    sprintf(ref, "%sLogger/Auto restart?cmd=set", mhttpd_url);
+    sprintf(ref, "/Logger/Auto restart?cmd=set");
 
   size = sizeof(flag);
   db_get_value(hDB, 0, "/Logger/Auto restart", &flag, &size, TID_BOOL);
@@ -1647,9 +1645,9 @@ CHN_STATISTICS chn_stats;
         }
 
       if (exp_name[0])
-        sprintf(ref, "%sSC/%s?exp=%s", mhttpd_url, key.name, exp_name);
+        sprintf(ref, "/SC/%s?exp=%s", key.name, exp_name);
       else
-        sprintf(ref, "%sSC/%s", mhttpd_url, key.name);
+        sprintf(ref, "/SC/%s", key.name);
 
       /* check if client running this equipment is present */
       if (cm_exist(equipment.frontend_name, TRUE) != CM_SUCCESS)
@@ -1711,14 +1709,14 @@ CHN_STATISTICS chn_stats;
     rsprintf("<tr><th>EBuilder<th>Node<th>Tot. Events<th>Tot. Rate[/s]<th>Tot. Data[kB/s]<th>Analyzed</tr>\n");
 
     if (exp_name[0])
-      sprintf(ref, "%s%s/Channels?exp=%s", mhttpd_url, ebname, exp_name);
+      sprintf(ref, "/%s/Channels?exp=%s", ebname, exp_name);
     else
-      sprintf(ref, "%s%s/Channels", mhttpd_url, ebname);
+      sprintf(ref, "/%s/Channels", ebname);
     rsprintf("<tr><td><font color=\"#cc66cc\"><a href=\"%s\">Chan.</a>&nbsp;",ref);
     if (exp_name[0])
-      sprintf(ref, "%s%s/Settings?exp=%s", mhttpd_url, ebname, exp_name);
+      sprintf(ref, "/%s/Settings?exp=%s", ebname, exp_name);
     else
-      sprintf(ref, "%s%s/Settings", mhttpd_url, ebname);
+      sprintf(ref, "/%s/Settings", ebname);
     rsprintf("<a href=\"%s\">Settings</a>",ref);
 
     /* Extract general setting */
@@ -1821,9 +1819,9 @@ CHN_STATISTICS chn_stats;
         }
 
       if (exp_name[0])
-        sprintf(ref, "%sLogger/Channels/%s/Settings?exp=%s", mhttpd_url, key.name, exp_name);
+        sprintf(ref, "/Logger/Channels/%s/Settings?exp=%s", key.name, exp_name);
       else
-        sprintf(ref, "%sLogger/Channels/%s/Settings", mhttpd_url, key.name);
+        sprintf(ref, "/Logger/Channels/%s/Settings", key.name);
 
       rsprintf("<tr><td colspan=2><B><a href=\"%s\">%s</a></B> %s", ref, key.name, str);
 
@@ -1907,9 +1905,9 @@ CHN_STATISTICS chn_stats;
               }
 
             if (exp_name[0])
-              sprintf(ref, "%sLazy/%s/Settings?exp=%s", mhttpd_url, &client_name[5], exp_name);
+              sprintf(ref, "/Lazy/%s/Settings?exp=%s", &client_name[5], exp_name);
             else
-              sprintf(ref, "%sLazy/%s/Settings", mhttpd_url, &client_name[5]);
+              sprintf(ref, "/Lazy/%s/Settings", &client_name[5]);
 
             rsprintf("<tr><td colspan=2><B><a href=\"%s\">%s</a></B>", ref, str);
 
@@ -2011,7 +2009,7 @@ BOOL eob;
     rsprintf("<meta http-equiv=\"Refresh\" content=\"%d\">\n\n", refresh);
 
   rsprintf("<title>MIDAS messages</title></head>\n");
-  rsprintf("<body><form method=\"GET\" action=\"%s\">\n", mhttpd_url);
+  rsprintf("<body><form method=\"GET\" action=\"/\">\n");
 
   /* define hidden field for experiment */
   if (exp_name[0])
@@ -2178,8 +2176,7 @@ KEY    key;
   rsprintf("Content-Type: text/html\r\n\r\n");
 
   rsprintf("<html><head><title>MIDAS ELog</title></head>\n");
-  rsprintf("<body><form method=\"POST\" action=\"%s\" enctype=\"multipart/form-data\">\n", mhttpd_url);
-//  rsprintf("<body><form method=\"GET\" action=\"%sEL/\">\n", mhttpd_url);
+  rsprintf("<body><form method=\"POST\" action=\"/\" enctype=\"multipart/form-data\">\n");
 
   /* define hidden field for experiment */
   if (exp_name[0])
@@ -2288,9 +2285,9 @@ KEY    key;
     db_get_data(hDB, hkey, system_list, &size, TID_STRING);
 
   if (exp_name[0])
-    sprintf(ref, "%sELog/?exp=%s", mhttpd_url, exp_name);
+    sprintf(ref, "/ELog/?exp=%s", exp_name);
   else
-    sprintf(ref, "%sELog/", mhttpd_url);
+    sprintf(ref, "/ELog/");
 
   rsprintf("<td bgcolor=#FFA0A0><a href=\"%s\" target=\"_blank\">Type:</a> <select name=\"type\">\n", ref);
   for (i=0 ; i<20 && type_list[i][0] ; i++)
@@ -2416,7 +2413,7 @@ BOOL   display_run_number;
   rsprintf("Content-Type: text/html\r\n\r\n");
 
   rsprintf("<html><head><title>MIDAS ELog</title></head>\n");
-  rsprintf("<body><form method=\"GET\" action=\"%sEL/\">\n", mhttpd_url);
+  rsprintf("<body><form method=\"GET\" action=\"/EL/\">\n");
 
   /* define hidden field for experiment */
   if (exp_name[0])
@@ -2652,7 +2649,7 @@ FILE   *f;
   rsprintf("Content-Type: text/html\r\n\r\n");
 
   rsprintf("<html><head><title>MIDAS ELog</title></head>\n");
-  rsprintf("<body><form method=\"GET\" action=\"%sEL/\">\n", mhttpd_url);
+  rsprintf("<body><form method=\"GET\" action=\"/EL/\">\n");
 
   /* define hidden field for experiment */
   if (exp_name[0])
@@ -2951,9 +2948,9 @@ FILE   *f;
       if (strchr(str, '+'))
         *strchr(str, '+') = 0;
       if (exp_name[0])
-        sprintf(ref, "%sEL/%s?exp=%s", mhttpd_url, str, exp_name);
+        sprintf(ref, "/EL/%s?exp=%s", str, exp_name);
       else
-        sprintf(ref, "%sEL/%s", mhttpd_url, str);
+        sprintf(ref, "/EL/%s", str);
 
       strncpy(str, text, 80);
       str[80] = 0;
@@ -2999,11 +2996,9 @@ FILE   *f;
             str[i] = 0;
 
             if (exp_name[0])
-              sprintf(ref, "%sEL/%s?exp=%s",
-                      mhttpd_url, attachment[index], exp_name);
+              sprintf(ref, "/EL/%s?exp=%s", attachment[index], exp_name);
             else
-              sprintf(ref, "%sEL/%s",
-                      mhttpd_url, attachment[index]);
+              sprintf(ref, "/EL/%s", attachment[index]);
 
             if (!show_attachments)
               {
@@ -3105,7 +3100,7 @@ HNDLE  hDB;
   rsprintf("Content-Type: text/html\r\n\r\n");
 
   rsprintf("<html><head><title>MIDAS File Display</title></head>\n");
-  rsprintf("<body><form method=\"GET\" action=\"%sEL/\">\n", mhttpd_url);
+  rsprintf("<body><form method=\"GET\" action=\"/EL/\">\n");
 
   /* define hidden field for experiment */
   if (exp_name[0])
@@ -3195,7 +3190,7 @@ KEY    key;
   rsprintf("Content-Type: text/html\r\n\r\n");
 
   rsprintf("<html><head><title>MIDAS ELog</title></head>\n");
-  rsprintf("<body><form method=\"GET\" action=\"%sEL/\">\n", mhttpd_url);
+  rsprintf("<body><form method=\"GET\" action=\"/EL/\">\n");
 
   if (*getparam("form") == 0)
     return;
@@ -3562,7 +3557,7 @@ struct hostent *phe;
       sprintf(mail_text+strlen(mail_text), "Type       : %s\n", getparam("type"));
       sprintf(mail_text+strlen(mail_text), "System     : %s\n", getparam("system"));
       sprintf(mail_text+strlen(mail_text), "Subject    : %s\n", getparam("subject"));
-      sprintf(mail_text+strlen(mail_text), "Link       : %sEL/%s\n", mhttpd_url, tag);
+      sprintf(mail_text+strlen(mail_text), "Link       : %sEL/%s\n", mhttpd_full_url, tag);
 
       sendmail(smtp_host, mail_from, mail_to, getparam("type"), mail_text);
 
@@ -3609,7 +3604,7 @@ struct hostent *phe;
       sprintf(mail_text+strlen(mail_text), "Type       : %s\n", getparam("type"));
       sprintf(mail_text+strlen(mail_text), "System     : %s\n", getparam("system"));
       sprintf(mail_text+strlen(mail_text), "Subject    : %s\n", getparam("subject"));
-      sprintf(mail_text+strlen(mail_text), "Link       : %sEL/%s\n", mhttpd_url, tag);
+      sprintf(mail_text+strlen(mail_text), "Link       : %sEL/%s\n", mhttpd_full_url, tag);
 
       sendmail(smtp_host, mail_from, mail_to, getparam("system"), mail_text);
 
@@ -3632,13 +3627,13 @@ struct hostent *phe;
   rsprintf("Server: MIDAS HTTP %s\r\n", cm_get_version());
 
   if (exp_name[0])
-    rsprintf("Location: %sEL/%s?exp=%s%s\n\n<html>redir</html>\r\n", mhttpd_url, tag, exp_name, mail_param);
+    rsprintf("Location: /EL/%s?exp=%s%s\n\n<html>redir</html>\r\n", tag, exp_name, mail_param);
   else
     {
     if (mail_param[0])
-      rsprintf("Location: %sEL/%s?%s\n\n<html>redir</html>\r\n", mhttpd_url, tag, mail_param+1);
+      rsprintf("Location: /EL/%s?%s\n\n<html>redir</html>\r\n", tag, mail_param+1);
     else
-      rsprintf("Location: %sEL/%s\n\n<html>redir</html>\r\n", mhttpd_url, tag);
+      rsprintf("Location: /EL/%s\n\n<html>redir</html>\r\n", tag);
     }
 }
 
@@ -3713,20 +3708,6 @@ KEY   key;
   setparam("html", "");
 
   submit_elog();
-
-  /*
-  str[0] = 0;
-  el_submit(atoi(getparam("run")), getparam("author"), getparam("form"),
-            "General", getparam("form"), text, "", "plain", "", NULL, 0, "", NULL, 0, "", NULL, 0, str, sizeof(str));
-
-  rsprintf("HTTP/1.0 302 Found\r\n");
-  rsprintf("Server: MIDAS HTTP %s\r\n", cm_get_version());
-
-  if (exp_name[0])
-    rsprintf("Location: %sEL/?exp=%s\n\n<html>redir</html>\r\n", mhttpd_url, exp_name);
-  else
-    rsprintf("Location: %sEL/\n\n<html>redir</html>\r\n", mhttpd_url);
-  */
 }
 
 /*------------------------------------------------------------------*/
@@ -4015,7 +3996,7 @@ BOOL  display_run_number, allow_delete;
   rsprintf("Content-Type: text/html\r\n\r\n");
 
   rsprintf("<html><head><title>MIDAS ELog - %s</title></head>\n", subject);
-  rsprintf("<body><form method=\"GET\" action=\"%sEL/%s\">\n", mhttpd_url, str);
+  rsprintf("<body><form method=\"GET\" action=\"/EL/%s\">\n", str);
 
   /* define hidden field for experiment */
   if (exp_name[0])
@@ -4079,21 +4060,17 @@ BOOL  display_run_number, allow_delete;
     if (orig_tag[0])
       {
       if (exp_name[0])
-        sprintf(ref, "%sEL/%s?exp=%s",
-                mhttpd_url, orig_tag, exp_name);
+        sprintf(ref, "/EL/%s?exp=%s", orig_tag, exp_name);
       else
-        sprintf(ref, "%sEL/%s",
-                mhttpd_url, orig_tag);
+        sprintf(ref, "/EL/%s", orig_tag);
       rsprintf("  <a href=\"%s\">Original message</a>  ", ref);
       }
     if (reply_tag[0])
       {
       if (exp_name[0])
-        sprintf(ref, "%sEL/%s?exp=%s",
-                mhttpd_url, reply_tag, exp_name);
+        sprintf(ref, "/EL/%s?exp=%s", reply_tag, exp_name);
       else
-        sprintf(ref, "%sEL/%s",
-                mhttpd_url, reply_tag);
+        sprintf(ref, "/EL/%s", reply_tag);
       rsprintf("  <a href=\"%s\">Reply to this message</a>  ", ref);
       }
     rsprintf("</tr>\n");
@@ -4194,11 +4171,9 @@ BOOL  display_run_number, allow_delete;
         att[i] = 0;
 
         if (exp_name[0])
-          sprintf(ref, "%sEL/%s?exp=%s",
-                  mhttpd_url, attachment[index], exp_name);
+          sprintf(ref, "/EL/%s?exp=%s", attachment[index], exp_name);
         else
-          sprintf(ref, "%sEL/%s",
-                  mhttpd_url, attachment[index]);
+          sprintf(ref, "/EL/%s", attachment[index]);
 
         if (strstr(att, ".GIF") ||
             strstr(att, ".JPG"))
@@ -4398,11 +4373,9 @@ char   data_str[256], hex_str[256];
             else
               {
               if (exp_name[0])
-                rsprintf("<a href=\"%sSC/%s?exp=%s\">%s</a> ",
-                          mhttpd_url, eqkey.name, exp_name, eqkey.name);
+                rsprintf("<a href=\"/SC/%s?exp=%s\">%s</a> ", eqkey.name, exp_name, eqkey.name);
               else
-                rsprintf("<a href=\"%sSC/%s?\">%s</a> ",
-                          mhttpd_url, eqkey.name, eqkey.name);
+                rsprintf("<a href=\"/SC/%s?\">%s</a> ", eqkey.name, eqkey.name);
               }
             break;
             }
@@ -4434,11 +4407,9 @@ char   data_str[256], hex_str[256];
     else
       {
       if (exp_name[0])
-        rsprintf("<a href=\"%sSC/%s/All?exp=%s\">All</a> ",
-                  mhttpd_url, eq_name, exp_name);
+        rsprintf("<a href=\"/SC/%s/All?exp=%s\">All</a> ", eq_name, exp_name);
       else
-        rsprintf("<a href=\"%sSC/%s/All?\">All</a> ",
-                  mhttpd_url, eq_name);
+        rsprintf("<a href=\"/SC/%s/All?\">All</a> ", eq_name);
       }
 
     /* collect groups */
@@ -4472,11 +4443,11 @@ char   data_str[256], hex_str[256];
       else
         {
         if (exp_name[0])
-          rsprintf("<a href=\"%sSC/%s/%s?exp=%s\">%s</a> ",
-                    mhttpd_url, eq_name, group_name[i], exp_name, group_name[i]);
+          rsprintf("<a href=\"/SC/%s/%s?exp=%s\">%s</a> ",
+                    eq_name, group_name[i], exp_name, group_name[i]);
         else
-          rsprintf("<a href=\"%sSC/%s/%s?\">%s</a> ",
-                    mhttpd_url, eq_name, group_name[i], group_name[i]);
+          rsprintf("<a href=\"/SC/%s/%s?\">%s</a> ",
+                    eq_name, group_name[i], group_name[i]);
         }
       }
     rsprintf("</tr>\n");
@@ -4580,29 +4551,16 @@ char   data_str[256], hex_str[256];
           else
             {
             if (exp_name[0])
-              sprintf(ref, "%sSC/%s/%s?cmd=Edit&index=%d&exp=%s",
-                      mhttpd_url, eq_name, group, n_var, exp_name);
+              sprintf(ref, "/SC/%s/%s?cmd=Edit&index=%d&exp=%s",
+                      eq_name, group, n_var, exp_name);
             else
-              sprintf(ref, "%sSC/%s/%s?cmd=Edit&index=%d",
-                      mhttpd_url, eq_name, group, n_var);
+              sprintf(ref, "/SC/%s/%s?cmd=Edit&index=%d",
+                      eq_name, group, n_var);
 
             rsprintf("<td align=center><a href=\"%s\">%s</a>",
                       ref, str);
             n_var++;
             }
-
-
-          /*
-          if (exp_name[0])
-            sprintf(ref, "%sEquipment/%s/Variables/%s?cmd=Set&index=%d&group=%s&exp=%s",
-                    mhttpd_url, eq_name, varkey.name, i, group, exp_name);
-          else
-            sprintf(ref, "%sEquipment/%s/Variables/%s?cmd=Set&index=%d&group=%s",
-                    mhttpd_url, eq_name, varkey.name, i, group);
-
-          rsprintf("<td align=center><a href=\"%s\">%s</a>",
-                    ref, str);
-          */
           }
         else
           rsprintf("<td align=center>%s", str);
@@ -4622,11 +4580,9 @@ char   data_str[256], hex_str[256];
     else
       {
       if (exp_name[0])
-        rsprintf("<a href=\"%sSC/%s?exp=%s\">All</a> ",
-                  mhttpd_url, eq_name, exp_name);
+        rsprintf("<a href=\"/SC/%s?exp=%s\">All</a> ", eq_name, exp_name);
       else
-        rsprintf("<a href=\"%sSC/%s?\">All</a> ",
-                  mhttpd_url, eq_name);
+        rsprintf("<a href=\"/SC/%s?\">All</a> ", eq_name);
       }
 
     /* groups from Variables tree */
@@ -4648,11 +4604,11 @@ char   data_str[256], hex_str[256];
       else
         {
         if (exp_name[0])
-          rsprintf("<a href=\"%sSC/%s/%s?exp=%s\">%s</a> ",
-                    mhttpd_url, eq_name, key.name, exp_name, key.name);
+          rsprintf("<a href=\"/SC/%s/%s?exp=%s\">%s</a> ",
+                    eq_name, key.name, exp_name, key.name);
         else
-          rsprintf("<a href=\"%sSC/%s/%s?\">%s</a> ",
-                    mhttpd_url, eq_name, key.name, key.name);
+          rsprintf("<a href=\"/SC/%s/%s?\">%s</a> ",
+                    eq_name, key.name, key.name);
         }
       }
 
@@ -4799,11 +4755,11 @@ char   data_str[256], hex_str[256];
               else
                 {
                 if (exp_name[0])
-                  sprintf(ref, "%sSC/%s/%s?cmd=Edit&index=%d&exp=%s",
-                          mhttpd_url, eq_name, group, n_var, exp_name);
+                  sprintf(ref, "/SC/%s/%s?cmd=Edit&index=%d&exp=%s",
+                          eq_name, group, n_var, exp_name);
                 else
-                  sprintf(ref, "%sSC/%s/%s?cmd=Edit&index=%d",
-                          mhttpd_url, eq_name, group, n_var);
+                  sprintf(ref, "/SC/%s/%s?cmd=Edit&index=%d",
+                          eq_name, group, n_var);
 
                 rsprintf("<td align=center><a href=\"%s\">%s</a>",
                           ref, str);
@@ -5002,9 +4958,9 @@ BOOL   bedit;
           else
             {
             if (exp_name[0])
-              rsprintf("<a href=\"%sCS/%s?exp=%s&cmd=Edit&index=%d\">", mhttpd_url, path, exp_name, n_var++);
+              rsprintf("<a href=\"/CS/%s?exp=%s&cmd=Edit&index=%d\">", path, exp_name, n_var++);
             else
-              rsprintf("<a href=\"%sCS/%s?cmd=Edit&index=%d\">", mhttpd_url, path, n_var++);
+              rsprintf("<a href=\"/CS/%s?cmd=Edit&index=%d\">", path, n_var++);
 
             rsputs(str);
             rsprintf("</a>");
@@ -5071,7 +5027,7 @@ static HNDLE hconn = 0;
   rsprintf("Content-Type: text/html\r\n\r\n");
 
   rsprintf("<html><head><title>MIDAS CAMAC interface</title></head>\n");
-  rsprintf("<body><form method=\"GET\" action=\"%s/CNAF\">\n\n", mhttpd_url);
+  rsprintf("<body><form method=\"GET\" action=\"/CNAF\">\n\n");
 
   /* title row */
 
@@ -5268,8 +5224,7 @@ int i;
   for (i=0 ; i<MAX_EXPERIMENT ; i++)
     {
     if (exp_list[i][0])
-      rsprintf("<a href=\"%s?exp=%s\">%s</a><p>", mhttpd_url,
-                exp_list[i], exp_list[i]);
+      rsprintf("<a href=\"/?exp=%s\">%s</a><p>", exp_list[i], exp_list[i]);
     }
 
   rsprintf("</body>\n");
@@ -5287,7 +5242,7 @@ void show_password_page(char *password, char *experiment)
 
   rsprintf("<html><head><title>Enter password</title></head><body>\n\n");
 
-  rsprintf("<form method=\"GET\" action=\"%s\">\n\n", mhttpd_url);
+  rsprintf("<form method=\"GET\" action=\"/\">\n\n");
 
   /* define hidden fields for current experiment */
   if (experiment[0])
@@ -5333,7 +5288,7 @@ char  str[256];
 
     rsprintf("<html><head><title>Enter password</title></head><body>\n\n");
 
-    rsprintf("<form method=\"GET\" action=\"%s\">\n\n", mhttpd_url);
+    rsprintf("<form method=\"GET\" action=\"/\">\n\n");
 
     /* define hidden fields for current experiment and destination */
     if (experiment[0])
@@ -5533,9 +5488,9 @@ KEY    key;
   /* display root key */
   rsprintf("<tr><td colspan=2 align=center><b>");
   if (exp_name[0])
-    rsprintf("<a href=\"%sroot?exp=%s\">/</a> \n", mhttpd_url, exp_name);
+    rsprintf("<a href=\"/root?exp=%s\">/</a> \n", exp_name);
   else
-    rsprintf("<a href=\"%sroot?\">/</a> \n", mhttpd_url);
+    rsprintf("<a href=\"/root?\">/</a> \n");
 
   strcpy(tmp_path, "");
 
@@ -5556,11 +5511,9 @@ KEY    key;
     urlEncode(url_path);
 
     if (exp_name[0])
-      rsprintf("<a href=\"%s%s?&exp=%s\">%s</a>\n / ",
-               mhttpd_url, url_path, exp_name, str);
+      rsprintf("<a href=\"/%s?&exp=%s\">%s</a>\n / ", url_path, exp_name, str);
     else
-      rsprintf("<a href=\"%s%s\">%s</a>\n / ",
-               mhttpd_url, url_path, str);
+      rsprintf("<a href=\"/%s\">%s</a>\n / ", url_path, str);
 
     strcat(tmp_path, "/");
     if (*p == '/')
@@ -5596,11 +5549,11 @@ KEY    key;
       {
       /* for keys, don't display data value */
       if (exp_name[0])
-        rsprintf("<tr><td colspan=2 bgcolor=#FFD000><a href=\"%s%s?exp=%s\">%s</a><br></tr>\n",
-               mhttpd_url, str, exp_name, keyname);
+        rsprintf("<tr><td colspan=2 bgcolor=#FFD000><a href=\"/%s?exp=%s\">%s</a><br></tr>\n",
+               str, exp_name, keyname);
       else
-        rsprintf("<tr><td colspan=2 bgcolor=#FFD000><a href=\"%s%s\">%s</a><br></tr>\n",
-               mhttpd_url, str, keyname);
+        rsprintf("<tr><td colspan=2 bgcolor=#FFD000><a href=\"/%s\">%s</a><br></tr>\n",
+               str, keyname);
       }
     else
       {
@@ -5623,11 +5576,9 @@ KEY    key;
           }
 
         if (exp_name[0])
-          sprintf(ref, "%s%s?cmd=Set&exp=%s",
-                  mhttpd_url, str, exp_name);
+          sprintf(ref, "/%s?cmd=Set&exp=%s", str, exp_name);
         else
-          sprintf(ref, "%s%s?cmd=Set",
-                  mhttpd_url, str);
+          sprintf(ref, "/%s?cmd=Set", str);
 
         if (strcmp(data_str, hex_str) != 0 && hex_str[0])
           rsprintf("<tr><td bgcolor=#FFFF00>%s<td><a href=\"%s\">%s (%s)</a><br></tr>\n",
@@ -5676,11 +5627,9 @@ KEY    key;
               }
 
             if (exp_name[0])
-              sprintf(ref, "%s%s?cmd=Set&index=%d&exp=%s",
-                      mhttpd_url, str, j, exp_name);
+              sprintf(ref, "/%s?cmd=Set&index=%d&exp=%s", str, j, exp_name);
             else
-              sprintf(ref, "%s%s?cmd=Set&index=%d",
-                      mhttpd_url, str, j);
+              sprintf(ref, "/%s?cmd=Set&index=%d", str, j);
 
             if (j>0)
               rsprintf("<tr>");
@@ -6154,11 +6103,9 @@ char  str[256], ref[256], condition[256], value[256];
   if (!active)
     {
     if (exp_name[0])
-      sprintf(ref, "%sAlarms/Alarm System active?cmd=set&exp=%s",
-              mhttpd_url, exp_name);
+      sprintf(ref, "/Alarms/Alarm System active?cmd=set&exp=%s", exp_name);
     else
-      sprintf(ref, "%sAlarms/Alarm System active?cmd=set",
-              mhttpd_url);
+      sprintf(ref, "/Alarms/Alarm System active?cmd=set");
     rsprintf("<tr><td align=center colspan=6 bgcolor=#FFC0C0><a href=\"%s\"><h1>Alarm system disabled</h1></a></tr>", ref);
     }
 
@@ -6203,11 +6150,9 @@ char  str[256], ref[256], condition[256], value[256];
 
         /* alarm */
         if (exp_name[0])
-          sprintf(ref, "%sAlarms/Alarms/%s?exp=%s",
-                  mhttpd_url, key.name, exp_name);
+          sprintf(ref, "/Alarms/Alarms/%s?exp=%s", key.name, exp_name);
         else
-          sprintf(ref, "%sAlarms/Alarms/%s",
-                  mhttpd_url, key.name);
+          sprintf(ref, "/Alarms/Alarms/%s", key.name);
         rsprintf("<tr><td bgcolor=#C0C0FF><a href=\"%s\"><b>%s</b></a>", ref, key.name);
 
         /* state */
@@ -6237,11 +6182,9 @@ char  str[256], ref[256], condition[256], value[256];
         db_get_value(hDB, hkey, "Alarm Class", str, &size, TID_STRING);
 
         if (exp_name[0])
-          sprintf(ref, "%sAlarms/Classes/%s?exp=%s",
-                  mhttpd_url, str, exp_name);
+          sprintf(ref, "/Alarms/Classes/%s?exp=%s", str, exp_name);
         else
-          sprintf(ref, "%sAlarms/Classes/%s",
-                  mhttpd_url, str);
+          sprintf(ref, "/Alarms/Classes/%s", str);
         rsprintf("<td align=center><a href=\"%s\">%s</a>", ref, str);
 
         /* condition */
@@ -6367,11 +6310,9 @@ char  str[256], ref[256], command[256], name[80];
         continue;
 
       if (exp_name[0])
-        sprintf(ref, "%sPrograms/%s?exp=%s",
-                mhttpd_url, key.name, exp_name);
+        sprintf(ref, "/Programs/%s?exp=%s", key.name, exp_name);
       else
-        sprintf(ref, "%sPrograms/%s",
-                mhttpd_url, key.name);
+        sprintf(ref, "/Programs/%s", key.name);
 
       /* required? */
       size = sizeof(required);
@@ -6430,11 +6371,9 @@ char  str[256], ref[256], command[256], name[80];
       if (str[0])
         {
         if (exp_name[0])
-          sprintf(ref, "%sAlarms/Classes/%s?exp=%s",
-                  mhttpd_url, str, exp_name);
+          sprintf(ref, "/Alarms/Classes/%s?exp=%s", str, exp_name);
         else
-          sprintf(ref, "%sAlarms/Classes/%s",
-                  mhttpd_url, str);
+          sprintf(ref, "/Alarms/Classes/%s", str);
         rsprintf("<td bgcolor=#FFFF00 align=center><a href=\"%s\">%s</a>", ref, str);
         }
       else
@@ -6638,7 +6577,7 @@ double base[] = {1,2,5,10,20,50,100,200,500,1000};
 int vaxis(gdImagePtr im, gdFont *font, int col, int gcol,
            int x1, int y1, int width,
            int minor, int major, int text, int label,
-           int grid, double ymin, double ymax)
+           int grid, double ymin, double ymax, BOOL logaxis)
 {
 double dy, int_dy, frac_dy, y_act, label_dy, major_dy, y_screen;
 int    tick_base, major_base, label_base, n_sig1, n_sig2, max_tick, ys, max_width;
@@ -6649,47 +6588,56 @@ double base[] = {1,2,5,10,20,50,100,200,500,1000};
     return 0;
 
   /* use 5 as min tick distance */
-  max_tick = (int) ((double) (width/5) + 1);
-
-  dy = (ymax - ymin)/ (double) (width/5);
-
-  frac_dy = modf(log(dy)/LN10, &int_dy);
-  if (frac_dy <0) { frac_dy+=1; int_dy -=1; }
-
-  tick_base = frac_dy < LOG2 ? 1 :
-              frac_dy < LOG5 ? 2 : 3;
-  major_base = label_base = tick_base + 1;
-
-  /* rounding up of dy, label_dy */
-  dy = pow(10, int_dy) * base[tick_base];
-  major_dy = pow(10, int_dy) * base[major_base];
-  label_dy = major_dy;
-
-  /* number of significant digits */
-  if (ymin == 0)
-    n_sig1 = 0;
-  else
-    n_sig1 = (int) floor(log(fabs(ymin))/LN10) -
-             (int) floor(log(fabs(label_dy))/LN10) + 1;
-
-  if (ymax == 0)
-    n_sig2 = 0;
-  else
-    n_sig2 = (int) floor(log(fabs(ymax))/LN10) -
-             (int) floor(log(fabs(label_dy))/LN10) + 1;
-
-  n_sig1 = max(n_sig1, n_sig2);
-  n_sig1 = max(n_sig1, 4);
-
-  /* increasing label_dy, if labels would overlap */
-  while (label_dy/(ymax-ymin)*width < 1.5*font->h)
+  if (logaxis)
     {
-    label_base++;
-    label_dy = pow(10, int_dy) * base[label_base];
-    if (label_base % 3 == 2 && major_base % 3 == 1)
+    max_tick = (int) ((log(ymax)/LN10 - log(ymin)/LN10) * 10 + 1);
+    dy = pow(10, floor(log(ymin)/LN10-0.00001));
+    label_dy = major_dy = dy * 10;
+    n_sig1 = 4;
+    }
+  else
+    {
+    max_tick = (int) ((double) (width/5) + 1);
+    dy = (ymax - ymin)/ (double) (width/5);
+
+    frac_dy = modf(log(dy)/LN10, &int_dy);
+    if (frac_dy <0) { frac_dy+=1; int_dy -=1; }
+
+    tick_base = frac_dy < LOG2 ? 1 :
+                frac_dy < LOG5 ? 2 : 3;
+    major_base = label_base = tick_base + 1;
+
+    /* rounding up of dy, label_dy */
+    dy = pow(10, int_dy) * base[tick_base];
+    major_dy = pow(10, int_dy) * base[major_base];
+    label_dy = major_dy;
+
+    /* number of significant digits */
+    if (ymin == 0)
+      n_sig1 = 0;
+    else
+      n_sig1 = (int) floor(log(fabs(ymin))/LN10) -
+               (int) floor(log(fabs(label_dy))/LN10) + 1;
+
+    if (ymax == 0)
+      n_sig2 = 0;
+    else
+      n_sig2 = (int) floor(log(fabs(ymax))/LN10) -
+               (int) floor(log(fabs(label_dy))/LN10) + 1;
+
+    n_sig1 = max(n_sig1, n_sig2);
+    n_sig1 = max(n_sig1, 4);
+
+    /* increasing label_dy, if labels would overlap */
+    while (label_dy/(ymax-ymin)*width < 1.5*font->h)
       {
-      major_base++;
-      major_dy = pow(10, int_dy) * base[major_base];
+      label_base++;
+      label_dy = pow(10, int_dy) * base[label_base];
+      if (label_base % 3 == 2 && major_base % 3 == 1)
+        {
+        major_base++;
+        major_dy = pow(10, int_dy) * base[major_base];
+        }
       }
     }
 
@@ -6701,7 +6649,10 @@ double base[] = {1,2,5,10,20,50,100,200,500,1000};
 
   do
     {
-    y_screen = y1 - (y_act-ymin)/(ymax-ymin)*width;
+    if (logaxis)
+      y_screen = y1 - (log(y_act)-log(ymin))/(log(ymax)-log(ymin))*width;
+    else
+      y_screen = y1 - (y_act-ymin)/(ymax-ymin)*width;
     ys = (int) (y_screen+0.5);
 
     if (y_screen < y1 - width - 0.001) break;
@@ -6754,6 +6705,12 @@ double base[] = {1,2,5,10,20,50,100,200,500,1000};
               gdImageLine(im, x1, ys, x1 + grid, ys, col);
             }
           }
+        if (logaxis)
+          {
+          dy *= 10;
+          major_dy *= 10;
+          label_dy *= 10;
+          }
 
         }
       else
@@ -6799,6 +6756,7 @@ DWORD       n_point[MAX_VARS];
 int         x[MAX_VARS][1000];
 float       y[MAX_VARS][1000];
 float       factor[MAX_VARS];
+BOOL        logaxis;
 float       xmin, xmax, ymin, ymax;
 char        ybuffer[8000];
 DWORD       tbuffer[1000];
@@ -6965,6 +6923,11 @@ float       upper_limit[MAX_VARS], lower_limit[MAX_VARS];
     /* get factors */
     size = sizeof(factor);
     db_get_value(hDB, hkeypanel, "Factor", factor, &size, TID_FLOAT);
+
+    /* get axis type */
+    size = sizeof(logaxis);
+    logaxis = 0;
+    db_get_value(hDB, hkeypanel, "Log axis", &logaxis, &size, TID_BOOL);
 
     /* make ODB path from tag name */
     odbpath[0] = 0;
@@ -7202,16 +7165,41 @@ float       upper_limit[MAX_VARS], lower_limit[MAX_VARS];
     ymax = 1;
   else
     {
-    ymax += (ymax-ymin)/20.f;
-    if (ymin != 0)
-      ymin -= (ymax-ymin)/20.f;
+    if (logaxis)
+      {
+      ymax *= 1.5;
+      ymin /= 1.5;
+      }
+    else
+      {
+      ymax += (ymax-ymin)/20.f;
+
+      if (ymin != 0)
+        ymin -= (ymax-ymin)/20.f;
+      }
     }
 
   /* avoid ymin == ymax */
   if (ymax == ymin)
     {
-    ymax += 1;
-    ymin -= 1;
+    if (logaxis)
+      {
+      ymax *= 2;
+      ymin /= 2;
+      }
+    else
+      {
+      ymax += 1;
+      ymin -= 1;
+      }
+    }
+
+  if (logaxis)
+    {
+    if (ymax <= 0)
+      ymax = 1;
+    if (ymin <= 0)
+      ymin = 1E-5f;
     }
 
   /* calculate X limits */
@@ -7219,7 +7207,7 @@ float       upper_limit[MAX_VARS], lower_limit[MAX_VARS];
   xmax = (float) (-toffset/3600.0);
 
   /* caluclate required space for Y-axis */
-  aoffset = vaxis(im, gdFontSmall, black, ltgrey, 0, 0, height, -3, -5, -7, -8, 0, ymin, ymax);
+  aoffset = vaxis(im, gdFontSmall, black, ltgrey, 0, 0, height, -3, -5, -7, -8, 0, ymin, ymax, logaxis);
   aoffset += 2;
 
   x1 = aoffset;
@@ -7231,7 +7219,7 @@ float       upper_limit[MAX_VARS], lower_limit[MAX_VARS];
 
   /* draw axis frame */
   haxis(im, gdFontSmall, black, ltgrey, x1, y1, x2-x1, 3, 5, 9, 10, 0, xmin,  xmax);
-  vaxis(im, gdFontSmall, black, ltgrey, x1, y1, y1-y2, -3, -5, -7, -8, x2-x1, ymin, ymax);
+  vaxis(im, gdFontSmall, black, ltgrey, x1, y1, y1-y2, -3, -5, -7, -8, x2-x1, ymin, ymax, logaxis);
   gdImageLine(im, x1, y2, x2, y2, black);
   gdImageLine(im, x2, y2, x2, y1, black);
 
@@ -7243,7 +7231,16 @@ float       upper_limit[MAX_VARS], lower_limit[MAX_VARS];
     /* draw alarm limits */
     if (lower_limit[i] != -12345)
       {
-      ys = (int) (y1-(lower_limit[i]-ymin)/(ymax-ymin)*(y1-y2)+0.5);
+      if (logaxis)
+        {
+        if (lower_limit[i] <= 0)
+          ys = y1;
+        else
+          ys = (int) (y1-(log(lower_limit[i])-log(ymin))/(log(ymax)-log(ymin))*(y1-y2)+0.5);
+        }
+      else
+        ys = (int) (y1-(lower_limit[i]-ymin)/(ymax-ymin)*(y1-y2)+0.5);
+
       gdImageDashedLine(im, x1, ys, x2, ys, curve_col[i]);
 
       poly[0].x = x1;
@@ -7257,7 +7254,16 @@ float       upper_limit[MAX_VARS], lower_limit[MAX_VARS];
       }
     if (upper_limit[i] != -12345)
       {
-      ys = (int) (y1-(upper_limit[i]-ymin)/(ymax-ymin)*(y1-y2)+0.5);
+      if (logaxis)
+        {
+        if (upper_limit[i] <= 0)
+          ys = y1;
+        else
+          ys = (int) (y1-(log(upper_limit[i])-log(ymin))/(log(ymax)-log(ymin))*(y1-y2)+0.5);
+        }
+      else
+        ys = (int) (y1-(upper_limit[i]-ymin)/(ymax-ymin)*(y1-y2)+0.5);
+
       gdImageDashedLine(im, x1, ys, x2, ys, curve_col[i]);
 
       poly[0].x = x1;
@@ -7273,7 +7279,17 @@ float       upper_limit[MAX_VARS], lower_limit[MAX_VARS];
     for (j=0 ; j<(int)n_point[i] ; j++)
       {
       xs = (int) ((x[i][j]/3600.0-xmin)/(xmax-xmin)*(x2-x1)+x1+0.5);
-      ys = (int) (y1-(y[i][j]-ymin)/(ymax-ymin)*(y1-y2)+0.5);
+
+      if (logaxis)
+        {
+        if (y[i][j] <= 0)
+          ys = y1;
+        else
+          ys = (int) (y1-(log(y[i][j])-log(ymin))/(log(ymax)-log(ymin))*(y1-y2)+0.5);
+        }
+      else
+        ys = (int) (y1-(y[i][j]-ymin)/(ymax-ymin)*(y1-y2)+0.5);
+
       if (j>0)
         gdImageLine(im, xold, yold, xs, ys, curve_col[i]);
       xold = xs;
@@ -7539,11 +7555,9 @@ float  factor[2];
   else
     {
     if (exp_name[0])
-      rsprintf("<a href=\"%sHS/All?exp=%s\">ALL</a> ",
-                mhttpd_url, exp_name);
+      rsprintf("<a href=\"/HS/All?exp=%s\">ALL</a> ", exp_name);
     else
-      rsprintf("<a href=\"%sHS/All\">ALL</a> ",
-                mhttpd_url);
+      rsprintf("<a href=\"/HS/All\">ALL</a> ");
     }
 
   db_find_key(hDB, 0, "/History/Display", &hkey);
@@ -7584,11 +7598,9 @@ float  factor[2];
       else
         {
         if (exp_name[0])
-          rsprintf("<a href=\"%sHS/%s?exp=%s\">%s</a> ",
-                    mhttpd_url, key.name, exp_name, key.name);
+          rsprintf("<a href=\"/HS/%s?exp=%s\">%s</a> ", key.name, exp_name, key.name);
         else
-          rsprintf("<a href=\"%sHS/%s\">%s</a> ",
-                    mhttpd_url, key.name, key.name);
+          rsprintf("<a href=\"/HS/%s\">%s</a> ", key.name, key.name);
         }
       if (i % 10 == 9)
         rsprintf("<br>\n");
@@ -7648,20 +7660,16 @@ float  factor[2];
           if (paramstr[0])
             {
             if (exp_name[0])
-              sprintf(ref, "%sHS/%s?exp=%s%s&index=%d",
-                      mhttpd_url, path, exp_name, paramstr, i);
+              sprintf(ref, "/HS/%s?exp=%s%s&index=%d", path, exp_name, paramstr, i);
             else
-              sprintf(ref, "%sHS/%s?%s&index=%d",
-                      mhttpd_url, path, paramstr, i);
+              sprintf(ref, "/HS/%s?%s&index=%d", path, paramstr, i);
             }
           else
             {
             if (exp_name[0])
-              sprintf(ref, "%sHS/%s?exp=%s&index=%d",
-                      mhttpd_url, path, exp_name, i);
+              sprintf(ref, "/HS/%s?exp=%s&index=%d", path, exp_name, i);
             else
-              sprintf(ref, "%sHS/%s?index=%d",
-                      mhttpd_url, path, i);
+              sprintf(ref, "/HS/%s?index=%d", path, i);
             }
 
           rsprintf("  <area shape=rect coords=\"%d,%d,%d,%d\" href=\"%s\">\r\n",
@@ -7674,20 +7682,16 @@ float  factor[2];
       if (paramstr[0])
         {
         if (exp_name[0])
-          sprintf(ref, "%sHS/%s?exp=%s%s",
-                  mhttpd_url, path, exp_name, paramstr);
+          sprintf(ref, "/HS/%s?exp=%s%s", path, exp_name, paramstr);
         else
-          sprintf(ref, "%sHS/%s?%s",
-                  mhttpd_url, path, paramstr);
+          sprintf(ref, "/HS/%s?%s", path, paramstr);
         }
       else
         {
         if (exp_name[0])
-          sprintf(ref, "%sHS/%s?exp=%s",
-                  mhttpd_url, path, exp_name);
+          sprintf(ref, "/HS/%s?exp=%s", path, exp_name);
         else
-          sprintf(ref, "%sHS/%s",
-                  mhttpd_url, path);
+          sprintf(ref, "/HS/%s", path);
         }
 
       if (equal_ustring(pmag, "Large"))
@@ -7711,20 +7715,16 @@ float  factor[2];
     if (paramstr[0])
       {
       if (exp_name[0])
-        sprintf(ref, "%sHS/%s.gif?exp=%s%s",
-                mhttpd_url, path, exp_name, paramstr);
+        sprintf(ref, "/HS/%s.gif?exp=%s%s", path, exp_name, paramstr);
       else
-        sprintf(ref, "%sHS/%s.gif?%s",
-                mhttpd_url, path, paramstr);
+        sprintf(ref, "/HS/%s.gif?%s", path, paramstr);
       }
     else
       {
       if (exp_name[0])
-        sprintf(ref, "%sHS/%s.gif?exp=%s",
-                mhttpd_url, path, exp_name);
+        sprintf(ref, "/HS/%s.gif?exp=%s", path, exp_name);
       else
-        sprintf(ref, "%sHS/%s.gif",
-                mhttpd_url, path);
+        sprintf(ref, "/HS/%s.gif", path);
       }
 
     /* put reference to graph */
@@ -7748,17 +7748,13 @@ float  factor[2];
 
         if (exp_name[0])
           {
-          sprintf(ref, "%sHS/%s.gif?exp=%s&width=Small",
-                  mhttpd_url, key.name, exp_name);
-          sprintf(ref2, "%sHS/%s?exp=%s",
-                  mhttpd_url, key.name, exp_name);
+          sprintf(ref, "/HS/%s.gif?exp=%s&width=Small", key.name, exp_name);
+          sprintf(ref2, "/HS/%s?exp=%s", key.name, exp_name);
           }
         else
           {
-          sprintf(ref, "%sHS/%s.gif?width=Small",
-                  mhttpd_url, key.name);
-          sprintf(ref2, "%sHS/%s",
-                  mhttpd_url, key.name);
+          sprintf(ref, "/HS/%s.gif?width=Small", key.name);
+          sprintf(ref2, "/HS/%s", key.name);
           }
 
         if (i % 2 == 0)
@@ -7929,9 +7925,9 @@ struct tm *gmt;
     rsprintf("Set-Cookie: midas_pwd=%s; path=/; expires=%s\r\n", ss_crypt(password, "mi"), str);
 
     if (exp_name[0])
-      rsprintf("Location: %s?exp=%s\n\n<html>redir</html>\r\n", mhttpd_url, exp_name);
+      rsprintf("Location: /?exp=%s\n\n<html>redir</html>\r\n", exp_name);
     else
-      rsprintf("Location: %s\n\n<html>redir</html>\r\n", mhttpd_url);
+      rsprintf("Location: /\n\n<html>redir</html>\r\n");
     return;
     }
 
@@ -7951,7 +7947,7 @@ struct tm *gmt;
 
     rsprintf("Set-Cookie: midas_wpwd=%s; path=/; expires=%s\r\n", ss_crypt(wpassword, "mi"), str);
 
-    sprintf(str, "%s%s", mhttpd_url, getparam("redir"));
+    sprintf(str, "/%s", getparam("redir"));
     if (exp_name[0])
       {
       if (strchr(str, '?'))
@@ -8412,9 +8408,9 @@ struct tm *gmt;
     rsprintf("Set-Cookie: midas_refr=%d; path=/; expires=%s\r\n", refresh, str);
 
     if (exp_name[0])
-      rsprintf("Location: %s?exp=%s\r\n\r\n<html>redir</html>\r\n", mhttpd_url, exp_name);
+      rsprintf("Location: /?exp=%s\r\n\r\n<html>redir</html>\r\n", exp_name);
     else
-      rsprintf("Location: %s\r\n\r\n<html>redir</html>\r\n", mhttpd_url);
+      rsprintf("Location: /\r\n\r\n<html>redir</html>\r\n");
 
     return;
     }
@@ -8703,29 +8699,8 @@ INT                  last_time=0;
   /* bind local node name and port to socket */
   memset(&bind_addr, 0, sizeof(bind_addr));
   bind_addr.sin_family      = AF_INET;
-  bind_addr.sin_addr.s_addr = 0;
+  bind_addr.sin_addr.s_addr = htonl(INADDR_ANY);
   bind_addr.sin_port        = htons((short) tcp_port);
-
-  gethostname(host_name, sizeof(host_name));
-
-  phe = gethostbyname(host_name);
-  if (phe == NULL)
-    {
-    printf("Cannot retrieve host name\n");
-    return;
-    }
-  phe = gethostbyaddr(phe->h_addr, sizeof(int), AF_INET);
-  if (phe == NULL)
-    {
-    printf("Cannot retrieve host name\n");
-    return;
-    }
-
-  /* if domain name is not in host name, hope to get it from phe */
-  if (strchr(host_name, '.') == NULL)
-    strcpy(host_name, phe->h_name);
-
-  memcpy((char *)&(bind_addr.sin_addr), phe->h_addr, phe->h_length);
 
   status = bind(lsock, (struct sockaddr *)&bind_addr, sizeof(bind_addr));
   if (status < 0)
@@ -8744,6 +8719,22 @@ INT                  last_time=0;
     else
       printf("Warning: port %d already in use\n", tcp_port);
     }
+
+  /* get host name for mail notification */
+  gethostname(host_name, sizeof(host_name));
+
+  phe = gethostbyname(host_name);
+  if (phe != NULL)
+    phe = gethostbyaddr(phe->h_addr, sizeof(int), AF_INET);
+
+  /* if domain name is not in host name, hope to get it from phe */
+  if (strchr(host_name, '.') == NULL)
+    strcpy(host_name, phe->h_name);
+
+  if (tcp_port == 80)
+    sprintf(mhttpd_full_url, "http://%s/", host_name);
+  else
+    sprintf(mhttpd_full_url, "http://%s:%d/", host_name, tcp_port);
 
 #ifdef OS_UNIX
   /* give up root privilege */
@@ -8764,12 +8755,6 @@ INT                  last_time=0;
     printf("Cannot listen\n");
     return;
     }
-
-  /* set my own URL */
-  if (tcp_port == 80)
-    sprintf(mhttpd_url, "http://%s/", host_name);
-  else
-    sprintf(mhttpd_url, "http://%s:%d/", host_name, tcp_port);
 
   printf("Server listening...\n");
   do
