@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.55  2000/02/09 08:03:27  midas
+  Changed version to 1.7.1
+
   Revision 1.54  1999/12/08 00:29:34  pierre
   - Add CM_SET_LABEL for cd_gen/dd_epca (chn_acc)
 
@@ -189,7 +192,7 @@
    to the MIDAS library. First digit is major release, second
    digit is minor release, third digit is patch level */
 
-#define MIDAS_VERSION "1.7.0"
+#define MIDAS_VERSION "1.7.1"
 
 /*------------------------------------------------------------------*/
 
