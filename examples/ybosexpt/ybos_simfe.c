@@ -1,7 +1,7 @@
 /********************************************************************\
 
-  Name:         frontend.c
-  Created by:   Stefan Ritt
+  Name:         ybos_simfe.c
+  Created by:   Stefan Ritt/Pierre-A. Amaudruz
 
   Contents:     Experiment specific readout code (user part) of
                 Midas frontend. This example simulates a "trigger
@@ -11,6 +11,9 @@
                 one bank (SCLR).
 
   $Log$
+  Revision 1.6  2001/10/05 22:38:45  pierre
+  correct cam_interrupt_xxx() arg list.
+
   Revision 1.5  2001/04/30 19:55:16  pierre
   - Correct max_event_size, event_buffer_size declaration
   - fix data increment in read_event_trigger for double pointer
@@ -40,6 +43,8 @@ extern "C" {
 #endif
 
 /*-- Globals -------------------------------------------------------*/
+#define   CRATE    1
+#define   LAM_SLOT 1
 INT poll_val  = 10; /* .1% */
 INT tr1 = 16, tr2 = 200;
 /* The frontend name (client name) as seen by other MIDAS clients   */
@@ -265,16 +270,16 @@ INT interrupt_configure(INT cmd, INT source[], PTYPE adr)
   switch(cmd)
     {
     case CMD_INTERRUPT_ENABLE:
-      cam_interrupt_enable();
+      cam_interrupt_enable(CRATE);
       break;
     case CMD_INTERRUPT_DISABLE:
-      cam_interrupt_disable();
+      cam_interrupt_disable(CRATE);
       break;
     case CMD_INTERRUPT_ATTACH:
-      cam_interrupt_attach((void (*)(void))adr);
+      cam_interrupt_attach(CRATE, LAM_SLOT, (void (*)(void))adr);
       break;
     case CMD_INTERRUPT_DETACH:
-      cam_interrupt_detach();
+      cam_interrupt_detach(CRATE, LAM_SLOT);
       break;
     }
   return SUCCESS;
