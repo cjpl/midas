@@ -6,6 +6,9 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.20  1999/05/31 11:13:59  midas
+  Fixed bug which caused ODB ASCII files to be saved with leading "//" instead "/"
+
   Revision 1.19  1999/05/06 15:28:18  midas
   Fixed bug in db_sprintf where '0' was not returned in data size for strings
 
@@ -4364,7 +4367,7 @@ BOOL   bWritten;
         }
 
       strcpy(str, full_path);
-      if (str[0])
+      if (str[strlen(str)-1] != '/')
         strcat(str, "/");
       strcat(str, key.name);
 
