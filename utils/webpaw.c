@@ -6,6 +6,9 @@
   Contents:     Web server for remote PAW display
 
   $Log$
+  Revision 1.11  2000/05/17 07:17:57  midas
+  Added version number
+
   Revision 1.10  2000/05/17 07:08:54  midas
   Disable shell command via "visibility"
 
@@ -59,6 +62,9 @@
 #include <signal.h>
 #define closesocket(s) close(s)
 #endif
+
+/* Version of WebPAW */
+#define VERSION "1.0.1"
 
 #define WEB_BUFFER_SIZE 100000
 #define MAX_PARAM           10
@@ -681,7 +687,7 @@ int    fh, i, j, length, status, height;
 
     /* return frameset if no path is given */
     rsprintf("<html>\r\n");
-    rsprintf("<head><title>WebPAW on %s</title></head>\r\n\r\n", host_name);
+    rsprintf("<head><title>WebPAW V%s on %s</title></head>\r\n\r\n", VERSION, host_name);
 
     if (getcfg("Global", "Logo height", str))
       height = atoi(str);
@@ -723,8 +729,8 @@ int    fh, i, j, length, status, height;
       {
 
       /* title row */
-      rsprintf("<b><a target=_top href=\"http://midas.psi.ch/webpaw/\">WebPAW</a> on %s</b>\r\n", 
-                host_name);
+      rsprintf("<b><a target=_top href=\"http://midas.psi.ch/webpaw/\">WebPAW</a> V%s on %s</b>\r\n", 
+                VERSION, host_name);
       }
     
     rsprintf("</body></html>\r\n");
