@@ -6,6 +6,10 @@
   Contents:     Disk to Tape copier for background job
 
   $Log$
+  Revision 1.6  1999/10/13 00:29:26  pierre
+  - Added -D for daemon
+  - fix return code for ss_file_remove in lazy_main
+
   Revision 1.5  1999/10/08 08:01:09  midas
   Changed format from %lf to %1.0lf for postponed message
 
@@ -1153,13 +1157,15 @@ INT lazy_main (INT channel, LAZY_INFO * pLall)
           status = ss_file_remove(pufile);
           if (status != 0)
             cm_msg(MERROR, "Lazy","ss_file_remove not performed %d",status);
-         
-          status = lazy_log_update(REMOVE_FILE, 0, purun, NULL, pufile);
-          donepurge = TRUE;
+          else
+          {
+            status = lazy_log_update(REMOVE_FILE, 0, purun, NULL, pufile);
+            donepurge = TRUE;
 
-          /* update donelist (remove run entry as the file has been deleted */
-          if ((status=lazy_remove_entry(channel, pLall, purun)) != 0)
+            /* update donelist (remove run entry as the file has been deleted */
+            if ((status=lazy_remove_entry(channel, pLall, purun)) != 0)
             cm_msg(MERROR, "Lazy","remove_entry not performed %d",status);
+          }
         }
         freepercent = 100. * ss_disk_free(lazy.dir) / ss_disk_size(lazy.dir);
         if (svfree == freepercent)
@@ -1282,7 +1288,7 @@ int main(unsigned int argc,char **argv)
   char      channel_name[32];
   char      host_name[HOST_NAME_LENGTH];
   char      expt_name[HOST_NAME_LENGTH];
-  BOOL      debug;
+  BOOL      debug, daemon;
   INT       msg, ch, size, status, mainlast_time;
   DWORD     i;
   
@@ -1292,7 +1298,7 @@ int main(unsigned int argc,char **argv)
   channel_name[0] = 0;
   zap_flag = FALSE;
   msg_flag = FALSE;
-  debug = FALSE;
+  debug = daemon = FALSE;
   
   /* set default */
   cm_get_environment (host_name, expt_name);
@@ -1302,6 +1308,8 @@ int main(unsigned int argc,char **argv)
   {
     if (argv[i][0] == '-' && argv[i][1] == 'd')
       debug = TRUE;
+    else if (argv[i][0] == '-' && argv[i][1] == 'D')
+      daemon = TRUE;
     else if (strncmp(argv[i],"-z",2) == 0)
       zap_flag = TRUE;
     else if (strncmp(argv[i],"-t",2) == 0)
@@ -1359,7 +1367,12 @@ int main(unsigned int argc,char **argv)
 #ifdef SIGPIPE  
   signal( SIGPIPE, SIG_IGN );
 #endif
-  
+  if (daemon)
+  {
+    printf("Becoming a daemon...\n");
+    ss_daemon_init();
+  }
+
   /* connect to experiment */
   status = cm_connect_experiment(host_name, expt_name, "LazyChecker", 0);
   if (status != CM_SUCCESS)
