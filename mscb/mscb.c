@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus communication functions
 
   $Log$
+  Revision 1.65  2004/04/05 10:10:27  midas
+  Fixed linux warnings
+
   Revision 1.64  2004/03/19 12:57:59  midas
   Version 1.7.0
 
@@ -698,7 +701,7 @@ int mrecv_usb(int fd, void *buf, int size)
    dev = (usb_dev_handle *) fd;
 
    for (i = 0; i < 10; i++) {
-      n_read = usb_bulk_read(dev, 1, buf, 1000);
+      n_read = usb_bulk_read(dev, 1, buf, size, 1000);
       //printf("##mrecv_usb(%X): %d\n", dev, n_read);
 
       if (n_read < 0)
