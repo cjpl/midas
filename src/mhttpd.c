@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.212  2002/05/14 19:54:20  pierre
+  small bug
+
   Revision 1.211  2002/05/14 19:17:35  midas
   Removed addition of .txt to files
 
@@ -3287,11 +3290,11 @@ HNDLE  hDB;
 
   f = fopen(file_name, "r");
   if (f == NULL)
-    {
+  {
     rsprintf("<h3>Cannot find file \"%s\"</h3>\n", file_name);
     rsprintf("</body></html>\n");
     return;
-    }
+  }
 
   /*---- file contents ----*/
 
@@ -3351,7 +3354,6 @@ HNDLE  hDB;
   rsputs2(buffer);
   
   rsprintf("</pre>\n");
-  fclose(f);
 
   rsprintf("</td></tr></table></body></html>\r\n");
 }
