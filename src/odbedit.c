@@ -6,6 +6,10 @@
   Contents:     Command-line interface to the MIDAS online data base.
 
   $Log$
+  Revision 1.60  2003/03/14 06:07:25  pierre
+  - Add arg for cleanup
+  - change data_str[50000] for print_key (Custom up to 50K)
+
   Revision 1.59  2002/09/13 07:32:48  midas
   Added client name to cm_cleanup()
 
@@ -227,7 +231,7 @@ void print_help(char *command)
     printf("chat                    - enter chat mode\n");
     printf("chmod <mode> <key>      - change access mode of a key\n");
     printf("                          1=read | 2=write | 4=delete\n");
-    printf("cleanup                 - delete hanging clients\n");
+    printf("cleanup [clientname]    - delete hanging clients\n");
     printf("copy <src> <dest>       - copy a subtree to a new location\n");
     printf("create <type> <key>     - create a key of a certain type\n");
     printf("create <type> <key>[n]  - create an array of size [n]\n");
@@ -401,7 +405,7 @@ int c;
 INT print_key(HNDLE hDB, HNDLE hKey, KEY *key, INT level, void *info)
 {
 INT         i, size, status;
-static char data_str[10000], line[256];
+static char data_str[50000], line[256];
 DWORD       delta;
 PRINT_INFO  *pi;
 
@@ -2819,7 +2823,10 @@ PRINT_INFO      print_info;
       {
       HNDLE hBuf;
       bm_open_buffer(EVENT_BUFFER_NAME, EVENT_BUFFER_SIZE, &hBuf);
-      cm_cleanup("");
+      if (param[1][0])
+        cm_cleanup(param[1]);
+      else
+        cm_cleanup("");
       bm_close_buffer(hBuf);
 
       db_find_key(hDB, 0, "/", &hKey);
