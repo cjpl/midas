@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus communication functions
 
   $Log$
+  Revision 1.39  2003/05/12 14:28:14  midas
+  Added linux include files
+
   Revision 1.38  2003/05/12 13:49:17  midas
   Added address check for SET_ADDR command
 
@@ -132,8 +135,10 @@
 
 #include <unistd.h>
 #include <string.h>
+#include <stdlib.h>
 #include <sys/types.h>
 #include <sys/ioctl.h>
+#include <sys/time.h>
 #include <fcntl.h>
 #include <linux/parport.h>
 #include <linux/ppdev.h>
