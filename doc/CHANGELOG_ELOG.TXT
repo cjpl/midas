@@ -1,3 +1,20 @@
+Version 1.2.6, released December 4th, 2001
+==========================================
+
+- Fixed bug with "resubmit as new entry" and deleted attachments
+- Fixed bug where "submit as HTML" got deleted on resubmit
+- Display locked attributes as text only (no input field)
+- Added FAQ about "Last 10" page as default logbook page
+- Added -h flag for multi-homed hosts; thanks to Scott Erickson
+
+Version 1.2.5, released November 21st, 2001
+===========================================
+
+- Removed "Revision date:" from edit form (should better be done via an
+  attribute, preset to $date)
+- Fixed bug with "Welcome page"
+- Added "resubmit as new entry" checkbox
+
 Version 1.2.4, released November 20th, 2001
 ===========================================
 
