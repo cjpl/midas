@@ -6,6 +6,9 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.95  2004/09/17 19:58:09  midas
+  Do not allow empty key names in db_create_key
+
   Revision 1.94  2004/09/17 00:17:55  midas
   Added timeout handling for ODB locking
 
@@ -1670,7 +1673,7 @@ Create a new key in a database
 @param hKey  Key handle to start with, 0 for root
 @param key_name    Name of key in the form "/key/key/key"
 @param type        Type of key, one of TID_xxx (see @ref Midas_Data_Types)
-@return DB_SUCCESS, DB_INVALID_HANDLE, DB_FULL, DB_KEY_EXIST, DB_NO_ACCESS
+@return DB_SUCCESS, DB_INVALID_HANDLE, DB_INVALID_PARAM, DB_FULL, DB_KEY_EXIST, DB_NO_ACCESS
 */
 INT db_create_key(HNDLE hDB, HNDLE hKey, char *key_name, DWORD type)
 {
@@ -1726,6 +1729,12 @@ INT db_create_key(HNDLE hDB, HNDLE hKey, char *key_name, DWORD type)
       do {
          /* extract single key from key_name */
          pkey_name = extract_key(pkey_name, str);
+         
+         /* do not allow empty names, like '/dir/dir//dir/' */
+         if (str[0] == 0) {
+            db_unlock_database(hDB);
+            return DB_INVALID_PARAM;
+         }
 
          /* check if parent or current directory */
          if (strcmp(str, "..") == 0) {
@@ -5995,7 +6004,7 @@ INT db_save_xml_key(HNDLE hDB, HNDLE hKey, INT level, INT fh)
          strlcat(line, str, sizeof(line));
          strlcat(line, "</key>\n", sizeof(line));
       
-      } else { // array of values
+      } else { /* array of values */
         
          strlcat(line, "\n", sizeof(line));
          write(fh, line, strlen(line));
