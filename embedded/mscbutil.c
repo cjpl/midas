@@ -6,6 +6,9 @@
   Contents:     Various utility functions for MSCB protocol
 
   $Log$
+  Revision 1.30  2004/03/19 08:15:29  midas
+  Moved upgrade & co to yield()
+
   Revision 1.29  2004/03/04 14:35:45  midas
   Updated baud rate table
 
@@ -976,7 +979,7 @@ void eeprom_write(void * src, unsigned char len, unsigned char *offset)
 
    *offset += len;
 
-   yield();
+   watchdog_refresh();
 #endif
 }
 
@@ -1042,7 +1045,7 @@ void eeprom_flash(void)
    unsigned short magic;
 
    eeprom_erase();
-   yield();
+   watchdog_refresh();
 
    offset = 0;
 

@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol main program
 
   $Log$
+  Revision 1.41  2004/03/19 08:15:29  midas
+  Moved upgrade & co to yield()
+
   Revision 1.40  2004/03/09 15:37:09  midas
   Fixed problems with small strings
 
@@ -1013,6 +1016,52 @@ void upgrade()
 void yield(void)
 {
    watchdog_refresh();
+
+   /* output debug info to LCD if asked by interrupt routine */
+   debug_output();
+
+   /* output RS232 data if present */
+   rs232_output();
+
+   /* output new address to LCD if available */
+#if !defined(CPU_ADUC812) && !defined(SCS_300) && !defined(SCS_210)     // SCS210/300 redefine printf()
+#ifdef LCD_DEBUG
+   if (new_address) {
+      new_address = 0;
+      lcd_clear();
+      printf("AD:%04X GA:%04X WD:%d", sys_info.node_addr,
+             sys_info.group_addr, sys_info.wd_counter);
+   }
+#endif
+#endif
+
+   /* flash EEPROM if asked by interrupt routine */
+   if (flash_param) {
+      flash_param = 0;
+
+      /* reset watchdog counts */
+      sys_info.wd_counter = 0;
+
+      eeprom_flash();
+   }
+
+   if (flash_program) {
+      flash_program = 0;
+
+      /* go to "bootloader" program */
+      upgrade();
+   }
+
+   if (reboot) {
+#ifdef CPU_CYGNAL
+      RSTSRC = 0x10;         // force power-on reset
+#else
+      WDCON = 0x00;          // 16 msec
+      WDE = 1;
+      while (1);             // should be hardware reset later...
+#endif
+   }
+
 }
 
 /*------------------------------------------------------------------*\
@@ -1027,54 +1076,7 @@ void main(void)
 
    do {
       yield();
-
       user_loop();
-
-      /* output debug info to LCD if asked by interrupt routine */
-      debug_output();
-
-      /* output RS232 data if present */
-      rs232_output();
-
-      /* output new address to LCD if available */
-#if !defined(CPU_ADUC812) && !defined(SCS_300) && !defined(SCS_210)     // SCS210/300 redefine printf()
-#ifdef LCD_DEBUG
-      if (new_address) {
-         new_address = 0;
-         lcd_clear();
-         printf("AD:%04X GA:%04X WD:%d", sys_info.node_addr,
-                sys_info.group_addr, sys_info.wd_counter);
-      }
-#endif
-#endif
-
-      /* flash EEPROM if asked by interrupt routine */
-      if (flash_param) {
-         flash_param = 0;
-
-         /* reset watchdog counts */
-         sys_info.wd_counter = 0;
-
-         eeprom_flash();
-      }
-
-      if (flash_program) {
-         flash_program = 0;
-
-         /* go to "bootloader" program */
-         upgrade();
-      }
-
-      if (reboot) {
-#ifdef CPU_CYGNAL
-         RSTSRC = 0x10;         // force power-on reset
-#else
-         WDCON = 0x00;          // 16 msec
-         WDE = 1;
-         while (1);             // should be hardware reset later...
-#endif
-      }
-
    } while (1);
 
 }
