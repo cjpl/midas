@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus communication functions
 
   $Log$
+  Revision 1.36  2003/05/12 10:30:45  midas
+  Fixed name collisions with midas library
+
   Revision 1.35  2003/04/03 08:21:44  midas
   Added submaster check
 
@@ -649,7 +652,7 @@ int i, n, len, status;
   n = 0;
   len = -1;
 
-  /* wait for CMD_ACK command */
+  /* wait for MCMD_ACK command */
   do
     {
     status = mscb_in1(fd, buffer, timeout);
@@ -659,7 +662,7 @@ int i, n, len, status;
       return -1;
 
     /* check for Acknowledge */
-    if ((buffer[0] & 0xF8) == CMD_ACK)
+    if ((buffer[0] & 0xF8) == MCMD_ACK)
       {
       len = buffer[n++] & 0x7;
 
@@ -740,14 +743,14 @@ char          host[256], port[256];
       strcpy(port, DEF_DEVICE);
     strcpy(host, device);
     *strchr(host, ':') = 0;
-    if (rpc_connect(host) != RPC_SUCCESS)
+    if (mrpc_connect(host) != RPC_SUCCESS)
       return -1;
     }
   else
     strcpy(port, device);
 
-  if (rpc_connected())
-    return rpc_call(RPC_MSCB_INIT, port, debug);
+  if (mrpc_connected())
+    return mrpc_call(RPC_MSCB_INIT, port, debug);
 
   /* search for new file descriptor */
   for (index=0 ; index<MSCB_MAX_FD ; index++)
@@ -890,8 +893,8 @@ int mscb_exit(int fd)
 
 \********************************************************************/
 {
-  if (rpc_connected())
-    return rpc_call(RPC_MSCB_EXIT, fd);
+  if (mrpc_connected())
+    return mrpc_call(RPC_MSCB_EXIT, fd);
 
   if (fd > MSCB_MAX_FD)
     return MSCB_INVAL_PARAM;
@@ -998,13 +1001,13 @@ int mscb_addr(int fd, int cmd, int adr, int retry)
   Input:
     int fd                  File descriptor for connection
     int cmd                 Addressing mode, one of
-                              CMD_ADDR_BC
-                              CMD_ADDR_NODE8
-                              CMD_ADDR_GRP8
-                              CMD_PING8
-                              CMD_ADDR_NODE16
-                              CMD_ADDR_GRP16
-                              CMD_PING16
+                              MCMD_ADDR_BC
+                              MCMD_ADDR_NODE8
+                              MCMD_ADDR_GRP8
+                              MCMD_PING8
+                              MCMD_ADDR_NODE16
+                              MCMD_ADDR_GRP16
+                              MCMD_PING16
 
     int adr                 Node or group address
     int retry               Number of retries
@@ -1023,17 +1026,17 @@ int i, n, status;
     {
     buf[0] = cmd;
 
-    if (cmd == CMD_ADDR_NODE8 ||
-        cmd == CMD_ADDR_GRP8 ||
-        cmd == CMD_PING8)
+    if (cmd == MCMD_ADDR_NODE8 ||
+        cmd == MCMD_ADDR_GRP8 ||
+        cmd == MCMD_PING8)
       {
       buf[1] = (unsigned char) adr;
       buf[2] = crc8(buf, 2);
       status = mscb_out(fd, buf, 3, 1);
       }
-    else if (cmd == CMD_ADDR_NODE16 ||
-             cmd == CMD_ADDR_GRP16 ||
-             cmd == CMD_PING16)
+    else if (cmd == MCMD_ADDR_NODE16 ||
+             cmd == MCMD_ADDR_GRP16 ||
+             cmd == MCMD_PING16)
       {
       buf[1] = (unsigned char) (adr >> 8);
       buf[2] = (unsigned char) (adr & 0xFF);
@@ -1049,12 +1052,12 @@ int i, n, status;
     if (status != MSCB_SUCCESS)
       return MSCB_SUBM_ERROR;
 
-    if (cmd == CMD_PING8 || cmd == CMD_PING16)
+    if (cmd == MCMD_PING8 || cmd == MCMD_PING16)
       {
       /* read back ping reply, 1ms timeout */
       i = mscb_in1(fd, buf, 1000);
 
-      if (i == MSCB_SUCCESS && buf[0] == CMD_ACK)
+      if (i == MSCB_SUCCESS && buf[0] == MCMD_ACK)
         return MSCB_SUCCESS;
 
       if (retry > 1)
@@ -1083,7 +1086,7 @@ int mscb_reboot(int fd, int adr)
 
   Routine: mscb_reboot
 
-  Purpose: Reboot node by sending CMD_INIT
+  Purpose: Reboot node by sending MCMD_INIT
 
   Input:
     int fd                  File descriptor for connection
@@ -1099,8 +1102,8 @@ int mscb_reboot(int fd, int adr)
 unsigned char buf[10];
 int status;
 
-  if (rpc_connected())
-    return rpc_call(RPC_MSCB_REBOOT, fd, adr);
+  if (mrpc_connected())
+    return mrpc_call(RPC_MSCB_REBOOT, fd, adr);
 
   if (fd < 1 || mscb_fd[fd-1].fd == 0)
     return MSCB_INVAL_PARAM;
@@ -1108,14 +1111,14 @@ int status;
   if (mscb_lock(fd) != MSCB_SUCCESS)
     return MSCB_MUTEX;
 
-  status = mscb_addr(fd, CMD_PING16, adr, 10);
+  status = mscb_addr(fd, MCMD_PING16, adr, 10);
   if (status != MSCB_SUCCESS)
     {
     mscb_release(fd);
     return status;
     }
 
-  buf[0] = CMD_INIT;
+  buf[0] = MCMD_INIT;
   buf[1] = crc8(buf, 1);
   mscb_out(fd, buf, 2, 0);
 
@@ -1142,8 +1145,8 @@ int mscb_reset(int fd)
 
 \********************************************************************/
 {
-  if (rpc_connected())
-    return rpc_call(RPC_MSCB_RESET, fd);
+  if (mrpc_connected())
+    return mrpc_call(RPC_MSCB_RESET, fd);
 
   if (fd < 1 || mscb_fd[fd-1].fd == 0)
     return MSCB_INVAL_PARAM;
@@ -1188,8 +1191,8 @@ int mscb_ping(int fd, int adr)
 {
 int status;
 
-  if (rpc_connected())
-    return rpc_call(RPC_MSCB_PING, fd, adr);
+  if (mrpc_connected())
+    return mrpc_call(RPC_MSCB_PING, fd, adr);
 
   if (fd < 1 || mscb_fd[fd-1].fd == 0)
     return MSCB_INVAL_PARAM;
@@ -1197,7 +1200,7 @@ int status;
   if (mscb_lock(fd) != MSCB_SUCCESS)
     return MSCB_MUTEX;
 
-  status = mscb_addr(fd, CMD_PING16, adr, 1);
+  status = mscb_addr(fd, MCMD_PING16, adr, 1);
 
   mscb_release(fd);
   return status;
@@ -1230,8 +1233,8 @@ int mscb_info(int fd, int adr, MSCB_INFO *info)
 int i, status;
 unsigned char buf[256];
 
-  if (rpc_connected())
-    return rpc_call(RPC_MSCB_INFO, fd, adr, info);
+  if (mrpc_connected())
+    return mrpc_call(RPC_MSCB_INFO, fd, adr, info);
 
   if (fd < 1 || mscb_fd[fd-1].fd == 0)
     return MSCB_INVAL_PARAM;
@@ -1239,14 +1242,14 @@ unsigned char buf[256];
   if (mscb_lock(fd) != MSCB_SUCCESS)
     return MSCB_MUTEX;
 
-  status = mscb_addr(fd, CMD_PING16, adr, 10);
+  status = mscb_addr(fd, MCMD_PING16, adr, 10);
   if (status != MSCB_SUCCESS)
     {
     mscb_release(fd);
     return status;
     }
 
-  buf[0] = CMD_GET_INFO;
+  buf[0] = MCMD_GET_INFO;
   buf[1] = crc8(buf, 1);
   mscb_out(fd, buf, 2, 0);
 
@@ -1298,8 +1301,8 @@ int mscb_info_variable(int fd, int adr, int index, MSCB_INFO_VAR *info)
 int i, status;
 unsigned char buf[80];
 
-  if (rpc_connected())
-    return rpc_call(RPC_MSCB_INFO_VARIABLE, fd, adr, index, info);
+  if (mrpc_connected())
+    return mrpc_call(RPC_MSCB_INFO_VARIABLE, fd, adr, index, info);
 
   if (fd < 1 || mscb_fd[fd-1].fd == 0)
     return MSCB_INVAL_PARAM;
@@ -1307,14 +1310,14 @@ unsigned char buf[80];
   if (mscb_lock(fd) != MSCB_SUCCESS)
     return MSCB_MUTEX;
 
-  status = mscb_addr(fd, CMD_PING16, adr, 10);
+  status = mscb_addr(fd, MCMD_PING16, adr, 10);
   if (status != MSCB_SUCCESS)
     {
     mscb_release(fd);
     return status;
     }
 
-  buf[0] = CMD_GET_INFO+1;
+  buf[0] = MCMD_GET_INFO+1;
   buf[1] = index;
   buf[2] = crc8(buf, 2);
   mscb_out(fd, buf, 3, 0);
@@ -1358,8 +1361,8 @@ int mscb_set_addr(int fd, int adr, int node, int group)
 unsigned char buf[8];
 int status;
 
-  if (rpc_connected())
-    return rpc_call(RPC_MSCB_SET_ADDR, fd, adr, node, group);
+  if (mrpc_connected())
+    return mrpc_call(RPC_MSCB_SET_ADDR, fd, adr, node, group);
 
   if (fd < 1 || mscb_fd[fd-1].fd == 0)
     return MSCB_INVAL_PARAM;
@@ -1367,7 +1370,7 @@ int status;
   if (mscb_lock(fd) != MSCB_SUCCESS)
     return MSCB_MUTEX;
 
-  status = mscb_addr(fd, CMD_PING16, adr, 10);
+  status = mscb_addr(fd, MCMD_PING16, adr, 10);
   if (status != MSCB_SUCCESS)
     {
 
@@ -1375,7 +1378,7 @@ int status;
     return status;
     }
 
-  buf[0] = CMD_SET_ADDR;
+  buf[0] = MCMD_SET_ADDR;
   buf[1] = (unsigned char ) (node >> 8);
   buf[2] = (unsigned char ) (node & 0xFF);
   buf[3] = (unsigned char ) (group >> 8);
@@ -1411,8 +1414,8 @@ int mscb_set_name(int fd, int adr, char *name)
 unsigned char buf[256];
 int status, i;
 
-  if (rpc_connected())
-    return rpc_call(RPC_MSCB_SET_NAME, fd, adr, name);
+  if (mrpc_connected())
+    return mrpc_call(RPC_MSCB_SET_NAME, fd, adr, name);
 
   if (fd < 1 || mscb_fd[fd-1].fd == 0)
     return MSCB_INVAL_PARAM;
@@ -1420,7 +1423,7 @@ int status, i;
   if (mscb_lock(fd) != MSCB_SUCCESS)
     return MSCB_MUTEX;
 
-  status = mscb_addr(fd, CMD_PING16, adr, 10);
+  status = mscb_addr(fd, MCMD_PING16, adr, 10);
   if (status != MSCB_SUCCESS)
     {
 
@@ -1428,7 +1431,7 @@ int status, i;
     return status;
     }
 
-  buf[0] = CMD_SET_ADDR | 0x07;
+  buf[0] = MCMD_SET_ADDR | 0x07;
   for (i=0 ; i<16 && name[i] ; i++)
     buf[2+i] = name[i];
 
@@ -1472,8 +1475,8 @@ int i, status;
 unsigned char *d;
 unsigned char buf[256];
 
-  if (rpc_connected())
-    return rpc_call(RPC_MSCB_WRITE_GROUP, fd, adr, index, data, size);
+  if (mrpc_connected())
+    return mrpc_call(RPC_MSCB_WRITE_GROUP, fd, adr, index, data, size);
 
   if (size > 4 || size < 1)
     return MSCB_INVAL_PARAM;
@@ -1484,14 +1487,14 @@ unsigned char buf[256];
   if (mscb_lock(fd) != MSCB_SUCCESS)
     return MSCB_MUTEX;
 
-  status = mscb_addr(fd, CMD_ADDR_GRP16, adr, 10);
+  status = mscb_addr(fd, MCMD_ADDR_GRP16, adr, 10);
   if (status != MSCB_SUCCESS)
     {
     mscb_release(fd);
     return status;
     }
 
-  buf[0] = CMD_WRITE_NA+size+1;
+  buf[0] = MCMD_WRITE_NA+size+1;
   buf[1] = index;
 
   for (i=0,d=data ; i<size ; i++)
@@ -1535,8 +1538,8 @@ int           i, status;
 unsigned char buf[256], crc, ack[2];
 unsigned char *d;
 
-  if (rpc_connected())
-    return rpc_call(RPC_MSCB_WRITE, fd, adr, index, data, size);
+  if (mrpc_connected())
+    return mrpc_call(RPC_MSCB_WRITE, fd, adr, index, data, size);
 
   if (size < 1)
     return MSCB_INVAL_PARAM;
@@ -1547,7 +1550,7 @@ unsigned char *d;
   if (mscb_lock(fd) != MSCB_SUCCESS)
     return MSCB_MUTEX;
 
-  status = mscb_addr(fd, CMD_PING16, adr, 10);
+  status = mscb_addr(fd, MCMD_PING16, adr, 10);
   if (status != MSCB_SUCCESS)
     {
     mscb_release(fd);
@@ -1556,7 +1559,7 @@ unsigned char *d;
 
   if (size < 7)
     {
-    buf[0] = CMD_WRITE_ACK+size+1;
+    buf[0] = MCMD_WRITE_ACK+size+1;
     buf[1] = index;
 
     for (i=0,d=data ; i<size ; i++)
@@ -1568,7 +1571,7 @@ unsigned char *d;
     }
   else
     {
-    buf[0] = CMD_WRITE_ACK+7;
+    buf[0] = MCMD_WRITE_ACK+7;
     buf[1] = size + 1;
     buf[2] = index;
 
@@ -1586,7 +1589,7 @@ unsigned char *d;
   if (i<2)
     return MSCB_TIMEOUT;
 
-  if (ack[0] != CMD_ACK || ack[1] != crc)
+  if (ack[0] != MCMD_ACK || ack[1] != crc)
     return MSCB_CRC_ERROR;
 
   return MSCB_SUCCESS;
@@ -1619,8 +1622,8 @@ int mscb_flash(int fd, int adr)
 int           i, status;
 unsigned char buf[10], crc, ack[2];
 
-  if (rpc_connected())
-    return rpc_call(RPC_MSCB_FLASH, fd, adr);
+  if (mrpc_connected())
+    return mrpc_call(RPC_MSCB_FLASH, fd, adr);
 
   if (fd < 1 || mscb_fd[fd-1].fd == 0)
     return MSCB_INVAL_PARAM;
@@ -1628,14 +1631,14 @@ unsigned char buf[10], crc, ack[2];
   if (mscb_lock(fd) != MSCB_SUCCESS)
     return MSCB_MUTEX;
 
-  status = mscb_addr(fd, CMD_PING16, adr, 10);
+  status = mscb_addr(fd, MCMD_PING16, adr, 10);
   if (status != MSCB_SUCCESS)
     {
     mscb_release(fd);
     return status;
     }
 
-  buf[0] = CMD_FLASH;
+  buf[0] = MCMD_FLASH;
   crc = crc8(buf, 1);
   buf[1] = crc;
   mscb_out(fd, buf, 2, 0);
@@ -1647,7 +1650,7 @@ unsigned char buf[10], crc, ack[2];
   if (i<2)
     return MSCB_TIMEOUT;
 
-  if (ack[0] != CMD_ACK || ack[1] != crc)
+  if (ack[0] != MCMD_ACK || ack[1] != crc)
     return MSCB_CRC_ERROR;
 
   return MSCB_SUCCESS;
@@ -1683,8 +1686,8 @@ unsigned int   len, ofh, ofl, type, d;
 int            i, j, status, page;
 unsigned short ofs;
 
-  if (rpc_connected())
-    return rpc_call(RPC_MSCB_UPLOAD, fd, adr, buffer, size);
+  if (mrpc_connected())
+    return mrpc_call(RPC_MSCB_UPLOAD, fd, adr, buffer, size);
 
   if (fd < 1 || mscb_fd[fd-1].fd == 0)
     return MSCB_INVAL_PARAM;
@@ -1717,7 +1720,7 @@ unsigned short ofs;
   if (mscb_lock(fd) != MSCB_SUCCESS)
     return MSCB_MUTEX;
 
-  status = mscb_addr(fd, CMD_PING16, adr, 10);
+  status = mscb_addr(fd, MCMD_PING16, adr, 10);
   if (status != MSCB_SUCCESS)
     {
     mscb_release(fd);
@@ -1725,7 +1728,7 @@ unsigned short ofs;
     }
 
   /* send upgrade command */
-  buf[0] = CMD_UPGRADE;
+  buf[0] = MCMD_UPGRADE;
   crc = crc8(buf, 1);
   buf[1] = crc;
   mscb_out(fd, buf, 2, 0);
@@ -1739,7 +1742,7 @@ unsigned short ofs;
     return MSCB_TIMEOUT;
     }
 
-  if (ack[0] != CMD_ACK || ack[1] != crc)
+  if (ack[0] != MCMD_ACK || ack[1] != crc)
     {
     printf("Error: Cannot set remote node into upload mode\n");
     mscb_release(fd);
@@ -1891,8 +1894,8 @@ int           i, n, status;
 unsigned char buf[256], crc;
 
   memset(data, 0, *size);
-  if (rpc_connected())
-    return rpc_call(RPC_MSCB_READ, fd, adr, index, data, size);
+  if (mrpc_connected())
+    return mrpc_call(RPC_MSCB_READ, fd, adr, index, data, size);
 
   if (fd < 1 || mscb_fd[fd-1].fd == 0)
     return MSCB_INVAL_PARAM;
@@ -1900,7 +1903,7 @@ unsigned char buf[256], crc;
   if (mscb_lock(fd) != MSCB_SUCCESS)
     return MSCB_MUTEX;
 
-  status = mscb_addr(fd, CMD_PING16, adr, 10);
+  status = mscb_addr(fd, MCMD_PING16, adr, 10);
   if (status != MSCB_SUCCESS)
     {
     mscb_release(fd);
@@ -1910,7 +1913,7 @@ unsigned char buf[256], crc;
   /* try ten times */
   for (n=0 ; n<10 ; n++)
     {
-    buf[0] = CMD_READ+1;
+    buf[0] = MCMD_READ+1;
     buf[1] = index;
     buf[2] = crc8(buf, 2);
     mscb_out(fd, buf, 3, 0);
@@ -1923,10 +1926,10 @@ unsigned char buf[256], crc;
 
     crc = crc8(buf, i-1);
 
-    if ((buf[0] != CMD_ACK+i-2 && buf[0] != CMD_ACK+7) || buf[i-1] != crc)
+    if ((buf[0] != MCMD_ACK+i-2 && buf[0] != MCMD_ACK+7) || buf[i-1] != crc)
       continue;
 
-    if (buf[0] == CMD_ACK+7)
+    if (buf[0] == MCMD_ACK+7)
       {
       if (i-3 > *size)
         {
@@ -2001,8 +2004,8 @@ int           i, n, status;
 unsigned char buf[256], crc;
 
   memset(data, 0, *size);
-  if (rpc_connected())
-    return rpc_call(RPC_MSCB_READ_RANGE, fd, adr, index1, index2, data, size);
+  if (mrpc_connected())
+    return mrpc_call(RPC_MSCB_READ_RANGE, fd, adr, index1, index2, data, size);
 
   if (fd < 1 || mscb_fd[fd-1].fd == 0)
     return MSCB_INVAL_PARAM;
@@ -2010,7 +2013,7 @@ unsigned char buf[256], crc;
   if (mscb_lock(fd) != MSCB_SUCCESS)
     return MSCB_MUTEX;
 
-  status = mscb_addr(fd, CMD_PING16, adr, 10);
+  status = mscb_addr(fd, MCMD_PING16, adr, 10);
   if (status != MSCB_SUCCESS)
     {
     mscb_release(fd);
@@ -2020,7 +2023,7 @@ unsigned char buf[256], crc;
   /* try ten times */
   for (n=0 ; n<10 ; n++)
     {
-    buf[0] = CMD_READ+2;
+    buf[0] = MCMD_READ+2;
     buf[1] = index1;
     buf[2] = index2;
     buf[3] = crc8(buf, 3);
@@ -2034,7 +2037,7 @@ unsigned char buf[256], crc;
 
     crc = crc8(buf, i-1);
 
-    if (buf[0] != CMD_ACK+7 || buf[i-1] != crc)
+    if (buf[0] != MCMD_ACK+7 || buf[i-1] != crc)
       continue;
 
     memcpy(data, buf+2, i-3);
@@ -2086,8 +2089,8 @@ unsigned char buf[80];
 
   memset(result, 0, *rsize);
 
-  if (rpc_connected())
-    return rpc_call(RPC_MSCB_USER, fd, adr, param, size, result, rsize);
+  if (mrpc_connected())
+    return mrpc_call(RPC_MSCB_USER, fd, adr, param, size, result, rsize);
 
   if (fd < 1 || mscb_fd[fd-1].fd == 0)
     return MSCB_INVAL_PARAM;
@@ -2095,7 +2098,7 @@ unsigned char buf[80];
   if (mscb_lock(fd) != MSCB_SUCCESS)
     return MSCB_MUTEX;
 
-  status = mscb_addr(fd, CMD_PING16, adr, 10);
+  status = mscb_addr(fd, MCMD_PING16, adr, 10);
   if (status != MSCB_SUCCESS)
     {
     mscb_release(fd);
@@ -2105,7 +2108,7 @@ unsigned char buf[80];
   if (size > 4 || size < 0)
     return MSCB_FORMAT_ERROR;
 
-  buf[0] = CMD_USER+size;
+  buf[0] = MCMD_USER+size;
 
   for (i=0 ; i<size ; i++)
     buf[1+i] = ((char *)param)[i];
@@ -2174,8 +2177,8 @@ unsigned char buf[80];
  
   *d2 = 0xFF;
 
-  if (rpc_connected())
-    return rpc_call(RPC_MSCB_ECHO, fd, adr, d1, d2);
+  if (mrpc_connected())
+    return mrpc_call(RPC_MSCB_ECHO, fd, adr, d1, d2);
 
   if (fd < 1 || mscb_fd[fd-1].fd == 0)
     return MSCB_INVAL_PARAM;
@@ -2183,14 +2186,14 @@ unsigned char buf[80];
   if (mscb_lock(fd) != MSCB_SUCCESS)
     return MSCB_MUTEX;
 
-  status = mscb_addr(fd, CMD_PING16, adr, 1);
+  status = mscb_addr(fd, MCMD_PING16, adr, 1);
   if (status != MSCB_SUCCESS)
     {
     mscb_release(fd);
     return status;
     }
 
-  buf[0] = CMD_ECHO;
+  buf[0] = MCMD_ECHO;
   buf[1] = d1;
 
   /* add CRC code and send data */
@@ -2219,7 +2222,7 @@ unsigned char buf[80];
 
 /*------------------------------------------------------------------*/
 
-unsigned long ss_millitime()
+unsigned long millitime()
 {
 #ifdef _MSC_VER
   return (int) GetTickCount();
@@ -2286,9 +2289,9 @@ MSCB_INFO_VAR info;
     else
       {
       /* retrieve data from node */
-      if (ss_millitime() > cache[i].last + CACHE_PERIOD)
+      if (millitime() > cache[i].last + CACHE_PERIOD)
         {
-        cache[i].last = ss_millitime();
+        cache[i].last = millitime();
 
         s = cache[i].size;
         status = mscb_read(fd, adr, index, cache[i].data, &s);
