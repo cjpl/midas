@@ -6,6 +6,9 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
+  Revision 1.34  1999/09/15 09:33:05  midas
+  Re-establish ctrlc-handler
+
   Revision 1.33  1999/09/15 09:30:49  midas
   Added Ctrl-C handler
 
@@ -4564,6 +4567,8 @@ INT                  last_time=0;
       closesocket(sock);
       }
 
+    /* re-establish ctrl-c handler */
+    ss_ctrlc_handler(ctrlc_handler);
 
     /* check if disconnect from experiment */
     if ((INT) ss_time() - last_time > CONNECT_TIME && connected)
