@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.146  2004/10/07 00:54:02  midas
+  Implemented templates for histo booking from John O'Donnell
+
   Revision 1.145  2004/10/06 22:35:37  midas
   Added CM_TOO_MANY_REQUESTS
 
@@ -486,7 +489,7 @@ The main include file
  *  
  *  @{  */
 
-#define MIDAS_VERSION "1.9.4"
+#define MIDAS_VERSION "1.9.5"
 #define DATABASE_VERSION 2   /* has to be changed whenenver binary ODB format changes*/
 
 /**dox***************************************************************/
@@ -528,6 +531,12 @@ The main include file
 #endif
 
 /*------------------------------------------------------------------*/
+
+#ifdef USE_ROOT
+#include <TObjArray.h>
+#include <TFolder.h>
+#include <TCutG.h>
+#endif
 
 /* Define basic data types */
 
@@ -2241,16 +2250,170 @@ extern "C" {
    void EXPRT test_register(ANA_TEST * t);
    void EXPRT add_data_dir(char *result, char *file);
    void EXPRT lock_histo(INT id);
-   void EXPRT *h1_book(char *name, char *title, int bins, double min, double max);
-   void EXPRT *h2_book(char *name, char *title, int bx, double xmin, double xmax, int by, double ymin, double ymax);
+
    void EXPRT open_subfolder(char *name);
    void EXPRT close_subfolder();
-
-#define H1_BOOK(n,t,b,min,max) ((TH1F*)h1_book(n,t,b,min,max))
-#define H2_BOOK(n,t,xb,xmin,xmax,yb,ymin,ymax) ((TH2F*)h2_book(n,t,xb,xmin,xmax,yb,ymin,ymax))
-
 #ifdef __cplusplus
 }
+
+#ifdef USE_ROOT
+   /* root functions really are C++ functions */
+   extern TFolder *gManaHistosFolder;
+   extern TObjArray *gHistoFolderStack;
+
+   // book functions put a root object in a suitable folder
+   // for histos, there are a lot of types, so we use templates.
+   // for other objects we have one function per object
+   template<typename TH1X>
+   TH1X EXPRT *h1_book(const char *name, const char *title,
+		       int bins, double min, double max)
+   {
+      TH1X *hist;
+
+      /* check if histo already exists */
+      if (!gHistoFolderStack->Last())
+         hist = (TH1X *) gManaHistosFolder->FindObjectAny(name);
+      else
+         hist = (TH1X *) ((TFolder *)gHistoFolderStack->Last())->FindObjectAny(name);
+
+      if (hist == NULL) {
+         hist = new TH1X(name, title, bins, min, max);
+         if (!gHistoFolderStack->Last())
+            gManaHistosFolder->Add(hist);
+         else
+            ((TFolder *)gHistoFolderStack->Last())->Add(hist);
+      }
+
+      return hist;
+   }
+
+   template<typename TH1X>
+   TH1X EXPRT *h1_book(const char *name, const char *title,
+		       int bins, double edges[])
+   {
+      TH1X *hist;
+
+      /* check if histo already exists */
+      if (!gHistoFolderStack->Last())
+         hist = (TH1X *) gManaHistosFolder->FindObjectAny(name);
+      else
+         hist = (TH1X *) ((TFolder *)gHistoFolderStack->Last())->FindObjectAny(name);
+
+      if (hist == NULL) {
+         hist = new TH1X(name, title, bins, edges);
+         if (!gHistoFolderStack->Last())
+            gManaHistosFolder->Add(hist);
+         else
+            ((TFolder *)gHistoFolderStack->Last())->Add(hist);
+      }
+
+      return hist;
+   }
+
+   template<typename TH2X>
+   TH2X EXPRT *h2_book(const char *name, const char *title,
+	     	       int xbins, double xmin, double xmax,
+                       int ybins, double ymin, double ymax)
+   {
+      TH2X *hist;
+
+      /* check if histo already exists */
+      if (!gHistoFolderStack->Last())
+         hist = (TH2X *) gManaHistosFolder->FindObjectAny(name);
+      else
+         hist = (TH2X *) ((TFolder *)gHistoFolderStack->Last())->FindObjectAny(name);
+
+      if (hist == NULL) {
+         hist = new TH2X(name, title, xbins, xmin, xmax, ybins, ymin, ymax);
+         if (!gHistoFolderStack->Last())
+            gManaHistosFolder->Add(hist);
+         else
+            ((TFolder *)gHistoFolderStack->Last())->Add(hist);
+      }
+
+      return hist;
+   }
+
+   template<typename TH2X>
+   TH2X EXPRT *h2_book(const char *name, const char *title,
+	  	       int xbins, double xmin, double xmax,
+                       int ybins, double yedges[])
+   {
+      TH2X *hist;
+
+      /* check if histo already exists */
+      if (!gHistoFolderStack->Last())
+         hist = (TH2X *) gManaHistosFolder->FindObjectAny(name);
+      else
+         hist = (TH2X *) ((TFolder *)gHistoFolderStack->Last())->FindObjectAny(name);
+
+      if (hist == NULL) {
+         hist = new TH2X(name, title, xbins, xmin, xmax, ybins, yedges);
+         if (!gHistoFolderStack->Last())
+            gManaHistosFolder->Add(hist);
+         else
+            ((TFolder *)gHistoFolderStack->Last())->Add(hist);
+      }
+
+      return hist;
+   }
+
+   template<typename TH2X>
+   TH2X EXPRT *h2_book(const char *name, const char *title,
+		       int xbins, double xedges[],
+                       int ybins, double ymin, double ymax)
+   {
+      TH2X *hist;
+
+      /* check if histo already exists */
+      if (!gHistoFolderStack->Last())
+         hist = (TH2X *) gManaHistosFolder->FindObjectAny(name);
+      else
+         hist = (TH2X *) ((TFolder *)gHistoFolderStack->Last())->FindObjectAny(name);
+
+      if (hist == NULL) {
+         hist = new TH2X(name, title, xbins, xedges, ybins, ymin, ymax);
+         if (!gHistoFolderStack->Last())
+            gManaHistosFolder->Add(hist);
+         else
+            ((TFolder *)gHistoFolderStack->Last())->Add(hist);
+      }
+
+      return hist;
+   }
+
+   template<typename TH2X>
+   TH2X EXPRT *h2_book(const char *name, const char *title,
+		       int xbins, double xedges[],
+                       int ybins, double yedges[])
+   {
+      TH2X *hist;
+
+      /* check if histo already exists */
+      if (!gHistoFolderStack->Last())
+         hist = (TH2X *) gManaHistosFolder->FindObjectAny(name);
+      else
+         hist = (TH2X *) ((TFolder *)gHistoFolderStack->Last())->FindObjectAny(name);
+
+      if (hist == NULL) {
+         hist = new TH2X(name, title, xbins, xedges, ybins, yedges);
+         if (!gHistoFolderStack->Last())
+            gManaHistosFolder->Add(hist);
+         else
+            ((TFolder *)gHistoFolderStack->Last())->Add(hist);
+      }
+
+      return hist;
+   }
+
+   /*
+    * the following two macros allow for simple fortran like usage
+    * for the most common histo types
+    */
+   #define H1_BOOK(n,t,b,min,max) (h1_book<TH1F>(n,t,b,min,max))
+   #define H2_BOOK(n,t,xb,xmin,xmax,yb,ymin,ymax) (h2_book<TH2F>(n,t,xb,xmin,xmax,yb,ymin,ymax))
+#endif /* USE_ROOT */
+
 #endif
 #endif                          /* _MIDAS_H */
 /**dox***************************************************************/
