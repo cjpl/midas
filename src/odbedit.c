@@ -6,6 +6,9 @@
   Contents:     Command-line interface to the MIDAS online data base.
 
   $Log$
+  Revision 1.51  2001/10/03 08:36:23  midas
+  Return "invalid link" in odbedit
+
   Revision 1.50  2001/10/03 08:20:19  midas
   Fixed small bug in parameter checking of "del" command
 
@@ -1594,8 +1597,11 @@ PRINT_INFO      print_info;
           else
             status = db_find_key(hDB, hKey, param[i], &hKey);
 
-          if (status != DB_SUCCESS)
+          if (status == DB_NO_KEY)
             printf("key %s not found\n", param[i]);
+
+          if (status == DB_INVALID_LINK)
+            printf("link %s points to invalid location\n", param[i]);
           }
         }
 
