@@ -12,6 +12,9 @@
                 and transferred to experim.h.
 
   $Log$
+  Revision 1.10  2004/09/23 19:22:49  midas
+  Use new histo booking
+
   Revision 1.9  2004/01/08 08:40:08  midas
   Implemented standard indentation
 
@@ -55,7 +58,6 @@
 /* root includes */
 #include <TH1F.h>
 #include <TTree.h>
-#include <TDirectory.h>
 
 /*-- Parameters ----------------------------------------------------*/
 
@@ -87,9 +89,7 @@ ANA_MODULE adc_calib_module = {
 
 /*-- module-local variables ----------------------------------------*/
 
-extern TDirectory *gManaHistsDir;
-
-static TH1F *gAdcHists[N_ADC];
+static TH1F *hAdcHists[N_ADC];
 
 /*-- init routine --------------------------------------------------*/
 
@@ -110,10 +110,7 @@ INT adc_calib_init(void)
       sprintf(name, "CADC%02d", i);
       sprintf(title, "ADC %d", i);
 
-      gAdcHists[i] = (TH1F *) gManaHistsDir->GetList()->FindObject(name);
-
-      if (gAdcHists[i] == NULL)
-         gAdcHists[i] = new TH1F(name, title, ADC_N_BINS, ADC_X_LOW, ADC_X_HIGH);
+      hAdcHists[i] = H1_BOOK(name, title, ADC_N_BINS, ADC_X_LOW, ADC_X_HIGH);
    }
 
    return SUCCESS;
@@ -163,7 +160,7 @@ INT adc_calib(EVENT_HEADER * pheader, void *pevent)
    /* fill ADC histos if above threshold */
    for (i = 0; i < N_ADC; i++)
       if (cadc[i] > (float) adccalib_param.histo_threshold)
-         gAdcHists[i]->Fill(cadc[i], 1);
+         hAdcHists[i]->Fill(cadc[i], 1);
 
    /* close calculated bank */
    bk_close(pevent, cadc + N_ADC);
