@@ -7,6 +7,9 @@
 #                Windows NT
 #
 #  $Log$
+#  Revision 1.9  2002/03/02 08:22:13  midas
+#  Use $WINDIR instead of c:\winnt
+#
 #  Revision 1.8  2002/02/05 02:02:48  midas
 #  Remved elog
 #
@@ -34,7 +37,7 @@
 #
 # System directories
 #
-SYSBIN_DIR = c:\winnt\system32
+SYSBIN_DIR = $(WINDIR)\system32
 SYSLIB_DIR = c:\msdev\lib
 SYSINC_DIR = c:\msdev\include
 #
