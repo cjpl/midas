@@ -6,6 +6,9 @@
 #  Contents:     Makefile for MIDAS binaries and examples under unix
 #
 #  $Log$
+#  Revision 1.45  2003/06/25 18:22:53  pierre
+#  Added pthread support for UNIX version - DBM
+#
 #  Revision 1.44  2003/05/13 11:08:28  midas
 #  Build rmana.o only if ROOTSYS defined
 #
@@ -257,7 +260,7 @@ endif
 ifeq ($(OSTYPE),linux)
 OS_DIR = linux
 OSFLAGS = -DOS_LINUX -fPIC $(MIDAS_PREF_FLAGS) $(USERFLAGS)
-LIBS = -lutil
+LIBS = -lutil -lpthread
 SPECIFIC_OS_PRG = $(BIN_DIR)/mlxspeaker $(BIN_DIR)/dio
 endif
 
