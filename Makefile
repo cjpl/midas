@@ -6,6 +6,9 @@
 #  Contents:     Makefile for MIDAS binaries and examples under unix
 #
 #  $Log$
+#  Revision 1.40  2003/04/18 01:49:49  olchansk
+#  Add "rmidas"
+#
 #  Revision 1.39  2003/04/16 23:28:56  olchansk
 #  change cflags to -g -O2 -Wall -Wunitialized for maximum warnings (-Wuninitialized does not work with -O2)
 #  if ROOTSYS is set, build mlogger with ROOT support
@@ -293,6 +296,10 @@ PROGS = $(BIN_DIR)/mserver $(BIN_DIR)/mhttpd \
 	$(BIN_DIR)/melog \
 	$(SPECIFIC_OS_PRG)
 
+ifdef ROOTSYS
+PROGS += $(BIN_DIR)/rmidas
+endif
+
 OBJS =  $(LIB_DIR)/midas.o $(LIB_DIR)/system.o $(LIB_DIR)/mrpc.o \
 	$(LIB_DIR)/odb.o $(LIB_DIR)/ybos.o $(LIB_DIR)/ftplib.o
 
@@ -341,9 +348,13 @@ $(BIN_DIR):
 
 ifdef ROOTSYS
 ROOTLIBS:= -Wl,-rpath,$(ROOTSYS)/lib -L$(ROOTSYS)/lib -lCore -lCint -lHist -lTree -lMatrix -ldl
+ROOTGLIBS:= -Wl,-rpath,$(ROOTSYS)/lib -L$(ROOTSYS)/lib -lCore -lCint -lHist -lGraf -lGraf3d -lGpad -lTree -lRint -lPostscript -lMatrix -lPhysics -lGui -ldl
 
 $(BIN_DIR)/mlogger: $(BIN_DIR)/%: $(SRC_DIR)/%.c
 	$(CXX) $(CFLAGS) $(OSFLAGS) -DHAVE_ROOT -I$(ROOTSYS)/include -o $@ $< $(LIB) $(ROOTLIBS) $(LIBS)
+
+$(BIN_DIR)/rmidas: $(BIN_DIR)/%: $(SRC_DIR)/%.c
+	$(CXX) $(CFLAGS) $(OSFLAGS) -DHAVE_ROOT -I$(ROOTSYS)/include -o $@ $< $(LIB) $(ROOTGLIBS) $(LIBS)
 endif
 
 $(BIN_DIR)/%:$(SRC_DIR)/%.c
