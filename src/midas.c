@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.144  2002/02/02 11:33:45  midas
+  Fixed bug in hs_read with small history files
+
   Revision 1.143  2002/01/30 13:03:34  midas
   Fixed small bug in history function
 
@@ -14672,7 +14675,12 @@ char         *cache;
     read(fhi, (char *)&irec, sizeof(irec));
     if (irec.time > start_time)
       delta = -abs(delta);
-    lseek(fhi, (delta-1)*sizeof(irec), SEEK_CUR);
+
+    i = TELL(fhi) + (delta-1)*sizeof(irec);
+    if (i <= 0)
+      lseek(fhi, 0, SEEK_SET);
+    else
+      lseek(fhi, (delta-1)*sizeof(irec), SEEK_CUR);
     read(fhi, (char *)&irec, sizeof(irec));
     }
   else
@@ -14691,7 +14699,11 @@ char         *cache;
     pirec = (INDEX_RECORD *) (cache+cp);
     if (pirec->time > start_time)
       delta = -abs(delta);
-    cp = cp + delta*sizeof(irec);
+    
+    if (cp <= delta*(int)sizeof(irec))
+      cp = 0;
+    else
+      cp = cp + delta*sizeof(irec);
 
     if (cp >= cache_size)
       cp = cache_size - sizeof(irec);
@@ -14817,11 +14829,6 @@ char         *cache;
     /* read next index record */
     if (cache)
       {
-      if (cp < cache_size)
-        {
-        memcpy(&irec, cache+cp, sizeof(irec));
-        cp += sizeof(irec);
-        }
       if (cp >= cache_size)
         {
         i = -1;
@@ -14830,6 +14837,12 @@ char         *cache;
         }
       else
         i = sizeof(irec);
+
+      if (cp < cache_size)
+        {
+        memcpy(&irec, cache+cp, sizeof(irec));
+        cp += sizeof(irec);
+        }
       }
     else
       i = read(fhi, (char *)&irec, sizeof(irec));
@@ -14973,12 +14986,17 @@ struct tm    *tms;
     if (irec.time > start_time)
       delta = -delta;
 
-    lseek(fhi, (delta-1)*sizeof(irec), SEEK_CUR);
+    i = lseek(fhi, (delta-1)*sizeof(irec), SEEK_CUR);
     } while (abs(delta) > 1 && irec.time != start_time);
   read(fhi, (char *)&irec, sizeof(irec));
   if (irec.time > start_time)
     delta = -abs(delta);
-  lseek(fhi, (delta-1)*sizeof(irec), SEEK_CUR);
+
+  i = TELL(fhi) + (delta-1)*sizeof(irec);
+  if (i <= 0)
+    lseek(fhi, 0, SEEK_SET);
+  else
+    lseek(fhi, (delta-1)*sizeof(irec), SEEK_CUR);
   read(fhi, (char *)&irec, sizeof(irec));
 
   /* read records, skip wrong IDs */
@@ -15044,11 +15062,12 @@ struct tm    *tms;
         if (binary_time)
           printf("%i ",irec.time);
         else
-        {
-    sprintf(str, "%s", ctime((const time_t *)&irec.time)+4);
-    str[20] = '\t';
-    printf(str);
-        }
+          {
+          sprintf(str, "%s", ctime((const time_t *)&irec.time)+4);
+          str[20] = '\t';
+          printf(str);
+          }
+
         /* read data */
         read(fh, data_buffer, rec.data_size);
 
