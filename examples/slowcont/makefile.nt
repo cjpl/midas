@@ -25,7 +25,7 @@ LIB_DIR 	= \midas\nt\lib
 # Used drivers
 #                 
 
-DRIVERS = hv.obj multi.obj null.obj camacnul.obj
+DRIVERS = hv.obj multi.obj nulldev.obj null.obj camacnul.obj
 
 ####################################################################
 # Lines below here should not be edited
@@ -50,8 +50,10 @@ hv.obj:
 	$(CC) $(CFLAGS) /c $(DRV_DIR)\class\hv.c
 multi.obj:
 	$(CC) $(CFLAGS) /c $(DRV_DIR)\class\multi.c
+nulldev.obj:
+	$(CC) $(CFLAGS) /c $(DRV_DIR)\device\nulldev.c
 null.obj:
-	$(CC) $(CFLAGS) /c $(DRV_DIR)\device\null.c
+	$(CC) $(CFLAGS) /c $(DRV_DIR)\bus\null.c
 camacnul.obj:
 	$(CC) $(CFLAGS) /c $(DRV_DIR)\bus\camacnul.c
 	
