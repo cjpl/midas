@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.207  2002/05/13 21:47:00  midas
+  Avoid overwriting of run marker number
+
   Revision 1.206  2002/05/11 01:23:49  midas
   Fix wrong variable size in ODB
 
@@ -1214,8 +1217,9 @@ int    size;
   /* header */
   rsprintf("HTTP/1.0 200 Document follows\r\n");
   rsprintf("Server: MIDAS HTTP %s\r\n", cm_get_version());
-  rsprintf("Content-Type: text/html\r\n\r\n");
+  rsprintf("Content-Type: text/html; charset=iso-8859-1\r\n\r\n");
 
+  rsprintf("<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\">\n");
   rsprintf("<html><head>\n");
 
   /* auto refresh */
@@ -1237,12 +1241,12 @@ int    size;
     rsprintf("<input type=hidden name=exp value=\"%s\">\n", exp_name);
 
   rsprintf("<table border=3 cellpadding=2>\n");
-  rsprintf("<tr><th colspan=%d bgcolor=#A0A0FF>MIDAS experiment \"%s\"", colspan, str);
+  rsprintf("<tr><th colspan=%d bgcolor=\"#A0A0FF\">MIDAS experiment \"%s\"", colspan, str);
 
   if (refresh > 0)
-    rsprintf("<th colspan=%d bgcolor=#A0A0FF>%s &nbsp;&nbsp;Refr:%d</tr>\n", colspan, ctime(&now), refresh);
+    rsprintf("<th colspan=%d bgcolor=\"#A0A0FF\">%s &nbsp;&nbsp;Refr:%d</tr>\n", colspan, ctime(&now), refresh);
   else
-    rsprintf("<th colspan=%d bgcolor=#A0A0FF>%s</tr>\n", colspan, ctime(&now));
+    rsprintf("<th colspan=%d bgcolor=\"#A0A0FF\">%s</tr>\n", colspan, ctime(&now));
 }
 
 /*------------------------------------------------------------------*/
@@ -1252,7 +1256,7 @@ void show_error(char *error)
   /* header */
   rsprintf("HTTP/1.0 200 Document follows\r\n");
   rsprintf("Server: MIDAS HTTP %s\r\n", cm_get_version());
-  rsprintf("Content-Type: text/html\r\n\r\n");
+  rsprintf("Content-Type: text/html; charset=iso-8859-1\r\n\r\n");
 
   rsprintf("<html><head><title>MIDAS error</title></head>\n");
   rsprintf("<body><H1>%s</H1></body></html>\n", error);
@@ -1372,7 +1376,7 @@ CHN_STATISTICS chn_stats;
   /* header */
   rsprintf("HTTP/1.1 200 OK\r\n");
   rsprintf("Server: MIDAS HTTP %s\r\n", cm_get_version());
-  rsprintf("Content-Type: text/html\r\n");
+  rsprintf("Content-Type: text/html; charset=iso-8859-1\r\n");
   rsprintf("Pragma: no-cache\r\n");
   rsprintf("Expires: Fri, 01 Jan 1983 00:00:00 GMT\r\n");
   if (cookie_wpwd[0])
@@ -2092,7 +2096,7 @@ BOOL eob;
   /* header */
   rsprintf("HTTP/1.0 200 Document follows\r\n");
   rsprintf("Server: MIDAS HTTP %s\r\n", cm_get_version());
-  rsprintf("Content-Type: text/html\r\n\r\n");
+  rsprintf("Content-Type: text/html; charset=iso-8859-1\r\n\r\n");
 
   rsprintf("<html><head>\n");
 
@@ -2265,7 +2269,7 @@ KEY    key;
   /* header */
   rsprintf("HTTP/1.0 200 Document follows\r\n");
   rsprintf("Server: MIDAS HTTP %s\r\n", cm_get_version());
-  rsprintf("Content-Type: text/html\r\n\r\n");
+  rsprintf("Content-Type: text/html; charset=iso-8859-1\r\n\r\n");
 
   rsprintf("<html><head><title>MIDAS ELog</title></head>\n");
   rsprintf("<body><form method=\"POST\" action=\"/\" enctype=\"multipart/form-data\">\n");
@@ -2502,7 +2506,7 @@ BOOL   display_run_number;
   /* header */
   rsprintf("HTTP/1.0 200 Document follows\r\n");
   rsprintf("Server: MIDAS HTTP %s\r\n", cm_get_version());
-  rsprintf("Content-Type: text/html\r\n\r\n");
+  rsprintf("Content-Type: text/html; charset=iso-8859-1\r\n\r\n");
 
   rsprintf("<html><head><title>MIDAS ELog</title></head>\n");
   rsprintf("<body><form method=\"GET\" action=\"/EL/\">\n");
@@ -2738,7 +2742,7 @@ FILE   *f;
   /* header */
   rsprintf("HTTP/1.0 200 Document follows\r\n");
   rsprintf("Server: MIDAS HTTP %s\r\n", cm_get_version());
-  rsprintf("Content-Type: text/html\r\n\r\n");
+  rsprintf("Content-Type: text/html; charset=iso-8859-1\r\n\r\n");
 
   rsprintf("<html><head><title>MIDAS ELog</title></head>\n");
   rsprintf("<body><form method=\"GET\" action=\"/EL/\">\n");
@@ -3217,7 +3221,7 @@ HNDLE  hDB;
   /* header */
   rsprintf("HTTP/1.0 200 Document follows\r\n");
   rsprintf("Server: MIDAS HTTP %s\r\n", cm_get_version());
-  rsprintf("Content-Type: text/html\r\n\r\n");
+  rsprintf("Content-Type: text/html; charset=iso-8859-1\r\n\r\n");
 
   rsprintf("<html><head><title>MIDAS File Display %s</title></head>\n", path);
   rsprintf("<body><form method=\"GET\" action=\"/EL/%s\">\n", path);
@@ -3360,7 +3364,7 @@ KEY    key;
   /* header */
   rsprintf("HTTP/1.0 200 Document follows\r\n");
   rsprintf("Server: MIDAS HTTP %s\r\n", cm_get_version());
-  rsprintf("Content-Type: text/html\r\n\r\n");
+  rsprintf("Content-Type: text/html; charset=iso-8859-1\r\n\r\n");
 
   rsprintf("<html><head><title>MIDAS ELog</title></head>\n");
   rsprintf("<body><form method=\"GET\" action=\"/EL/\">\n");
@@ -3577,7 +3581,7 @@ struct hostent *phe;
     {
     rsprintf("HTTP/1.0 200 Document follows\r\n");
     rsprintf("Server: MIDAS HTTP %s\r\n", cm_get_version());
-    rsprintf("Content-Type: text/html\r\n\r\n");
+    rsprintf("Content-Type: text/html; charset=iso-8859-1\r\n\r\n");
 
     rsprintf("<html><head><title>ELog Error</title></head>\n");
     rsprintf("<i>Error: No author supplied.</i><p>\n");
@@ -3660,7 +3664,7 @@ struct hostent *phe;
         {
         rsprintf("HTTP/1.0 200 Document follows\r\n");
         rsprintf("Server: MIDAS HTTP %s\r\n", cm_get_version());
-        rsprintf("Content-Type: text/html\r\n\r\n");
+        rsprintf("Content-Type: text/html; charset=iso-8859-1\r\n\r\n");
 
         rsprintf("<html><head><title>ELog Error</title></head>\n");
         rsprintf("<i>Error: Attachment file <i>%s</i> not valid.</i><p>\n", getparam(str));
@@ -3825,7 +3829,7 @@ KEY   key;
     {
     rsprintf("HTTP/1.0 200 Document follows\r\n");
     rsprintf("Server: MIDAS HTTP %s\r\n", cm_get_version());
-    rsprintf("Content-Type: text/html\r\n\r\n");
+    rsprintf("Content-Type: text/html; charset=iso-8859-1\r\n\r\n");
 
     rsprintf("<html><head><title>ELog Error</title></head>\n");
     rsprintf("<i>Error: No author supplied.</i><p>\n");
@@ -4176,7 +4180,7 @@ char  def_button[][NAME_LENGTH] = {"8h", "24h", "7d" };
   /* header */
   rsprintf("HTTP/1.0 200 Document follows\r\n");
   rsprintf("Server: MIDAS HTTP %s\r\n", cm_get_version());
-  rsprintf("Content-Type: text/html\r\n\r\n");
+  rsprintf("Content-Type: text/html; charset=iso-8859-1\r\n\r\n");
 
   rsprintf("<html><head><title>MIDAS ELog - %s</title></head>\n", subject);
   rsprintf("<body><form method=\"GET\" action=\"/EL/%s\">\n", str);
@@ -5087,7 +5091,7 @@ BOOL   bedit;
 
   rsprintf("HTTP/1.0 200 Document follows\r\n");
   rsprintf("Server: MIDAS HTTP %s\r\n", cm_get_version());
-  rsprintf("Content-Type: text/html\r\n\r\n");
+  rsprintf("Content-Type: text/html; charset=iso-8859-1\r\n\r\n");
 
   sprintf(str, "/Custom/%s", path);
 
@@ -5229,7 +5233,7 @@ static HNDLE hconn = 0;
   /* header */
   rsprintf("HTTP/1.0 200 Document follows\r\n");
   rsprintf("Server: MIDAS HTTP %s\r\n", cm_get_version());
-  rsprintf("Content-Type: text/html\r\n\r\n");
+  rsprintf("Content-Type: text/html; charset=iso-8859-1\r\n\r\n");
 
   rsprintf("<html><head><title>MIDAS CAMAC interface</title></head>\n");
   rsprintf("<body><form method=\"GET\" action=\"/CNAF\">\n\n");
@@ -5415,7 +5419,7 @@ int i;
 
   rsprintf("HTTP/1.0 200 Document follows\r\n");
   rsprintf("Server: MIDAS HTTP %s\r\n", cm_get_version());
-  rsprintf("Content-Type: text/html\r\n\r\n");
+  rsprintf("Content-Type: text/html; charset=iso-8859-1\r\n\r\n");
 
   rsprintf("<html>\n");
   rsprintf("<head>\n");
@@ -5443,7 +5447,7 @@ void show_password_page(char *password, char *experiment)
 {
   rsprintf("HTTP/1.0 200 Document follows\r\n");
   rsprintf("Server: MIDAS HTTP %s\r\n", cm_get_version());
-  rsprintf("Content-Type: text/html\r\n\r\n");
+  rsprintf("Content-Type: text/html; charset=iso-8859-1\r\n\r\n");
 
   rsprintf("<html><head><title>Enter password</title></head><body>\n\n");
 
@@ -5489,7 +5493,7 @@ char  str[256];
     /* show web password page */
     rsprintf("HTTP/1.0 200 Document follows\r\n");
     rsprintf("Server: MIDAS HTTP %s\r\n", cm_get_version());
-    rsprintf("Content-Type: text/html\r\n\r\n");
+    rsprintf("Content-Type: text/html; charset=iso-8859-1\r\n\r\n");
 
     rsprintf("<html><head><title>Enter password</title></head><body>\n\n");
 
@@ -6293,7 +6297,7 @@ INT    al_list[] = { AT_EVALUATED, AT_PROGRAM, AT_INTERNAL, AT_PERIODIC };
   /* header */
   rsprintf("HTTP/1.0 200 Document follows\r\n");
   rsprintf("Server: MIDAS HTTP %s\r\n", cm_get_version());
-  rsprintf("Content-Type: text/html\r\n\r\n");
+  rsprintf("Content-Type: text/html; charset=iso-8859-1\r\n\r\n");
 
   rsprintf("<html><head>\n");
   rsprintf("<title>Alarms</title></head>\n");
@@ -7248,7 +7252,7 @@ gdGifBuffer gb;
 int         i, j, k, l, n_vars, size, status, n_event, row, x_marker;
 DWORD       bsize, tsize, n_marker, *state, run_number;
 int         length, aoffset;
-int         flag, x1, y1, x2, y2, xs, xs_old, ys, xold, yold;
+int         flag, x1, y1, x2, y2, xs, xs_old, ys, xold, yold, xmaxm;
 int         white, black, grey, ltgrey, red, green, blue, curve_col[MAX_VARS], state_col[3];
 char        str[256], panel[NAME_LENGTH], *p, odbpath[256];
 INT         var_index[MAX_VARS], *event_id_list, event_id;
@@ -7814,6 +7818,7 @@ double      yb1, yb2, yf1, yf2, ybase;
     if (status != HS_UNDEFINED_VAR)
       {
       xs_old = -1;
+      xmaxm = x1;
       for (j=0 ; j<(int)n_marker ; j++)
         {
         x_marker = tbuffer[j] - ss_time();
@@ -7830,9 +7835,23 @@ double      yb1, yb2, yf1, yf2, ybase;
         sprintf(str, "%d", run_number);
 
         if (state[j] == STATE_RUNNING)
-          gdImageString(im, gdFontSmall, xs+2, y2+1, str, black);
+          {
+          if (xs > xmaxm)
+            {
+            gdImageStringUp(im, gdFontSmall, xs+0, y2+2+gdFontSmall->w*strlen(str), str, black);
+            gdImageLine(im, xs, y2-1, xs-2+gdFontSmall->h, y2-1, black);
+            xmaxm = xs-2+gdFontSmall->h;
+            }
+          }
         else if (state[j] == STATE_STOPPED)
-          gdImageString(im, gdFontSmall, xs-2-gdFontSmall->w*strlen(str), y2+1, str, black);
+          {
+          if (xs+2-gdFontSmall->h > xmaxm)
+            {
+            gdImageStringUp(im, gdFontSmall, xs+2-gdFontSmall->h, y2+2+gdFontSmall->w*strlen(str), str, black);
+            gdImageLine(im, xs+2-gdFontSmall->h, y2-1, xs-1, y2-1, black);
+            xmaxm = xs-1;
+            }
+          }
         }
       }
 
@@ -8242,17 +8261,17 @@ char   *hist_col[] =
   show_header(hDB, "History Config", str, 3, 0);
 
   /* menu buttons */
-  rsprintf("<tr><td colspan=6 bgcolor=#C0C0C0>\n");
+  rsprintf("<tr><td colspan=6 bgcolor=\"#C0C0C0\">\n");
   rsprintf("<input type=submit name=cmd value=Save>\n");
   rsprintf("<input type=submit name=cmd value=Cancel>\n");
   rsprintf("<input type=submit name=cmd value=Refresh>\n");
   rsprintf("<input type=submit name=cmd value=\"Delete Panel\">\n");
   rsprintf("</td></tr>\n");
 
-  rsprintf("<tr><td colspan=6 bgcolor=#FFFF00 align=center><b>Panel \"%s\"</b></td></tr>", path);
+  rsprintf("<tr><td colspan=6 bgcolor=\"#FFFF00\" align=center><b>Panel \"%s\"</b>\n", path);
 
   /* hidden command for refresh */
-  rsprintf("<input type=hidden name=cmd value=Refresh>\n");
+  rsprintf("<input type=hidden name=cmd value=Refresh></td></tr>\n");
 
   /* time scale */
   if (equal_ustring(cmd, "refresh"))
@@ -8263,7 +8282,7 @@ char   *hist_col[] =
     size = NAME_LENGTH;
     db_get_value(hDB, 0, ref, str, &size, TID_STRING, TRUE);
     }
-  rsprintf("<tr><td bgcolor=#E0E0E0 colspan=6>Time scale: &nbsp;&nbsp;<input type=text name=timescale value=%s>", str);
+  rsprintf("<tr><td bgcolor=\"#E0E0E0\" colspan=6>Time scale: &nbsp;&nbsp;<input type=text name=timescale value=%s></td></tr>\n", str);
 
   /* ylow_zero */
   if (equal_ustring(cmd, "refresh"))
@@ -8275,9 +8294,9 @@ char   *hist_col[] =
     db_get_value(hDB, 0, ref, &flag, &size, TID_BOOL, TRUE);
     }
   if (flag)
-    rsprintf("<tr><td bgcolor=#E0E0E0 colspan=6><input type=checkbox checked name=zero_ylow value=1>", str);
+    rsprintf("<tr><td bgcolor=\"#E0E0E0\" colspan=6><input type=checkbox checked name=zero_ylow value=1>", str);
   else
-    rsprintf("<tr><td bgcolor=#E0E0E0 colspan=6><input type=checkbox name=zero_ylow value=1>", str);
+    rsprintf("<tr><td bgcolor=\"#E0E0E0\" colspan=6><input type=checkbox name=zero_ylow value=1>", str);
   rsprintf("&nbsp;&nbsp;Zero Ylow</td></tr>\n");
 
   /* log_axis */
@@ -8290,9 +8309,9 @@ char   *hist_col[] =
     db_get_value(hDB, 0, ref, &flag, &size, TID_BOOL, TRUE);
     }
   if (flag)
-    rsprintf("<tr><td bgcolor=#E0E0E0 colspan=6><input type=checkbox checked name=log_axis value=1>", str);
+    rsprintf("<tr><td bgcolor=\"#E0E0E0\" colspan=6><input type=checkbox checked name=log_axis value=1>", str);
   else
-    rsprintf("<tr><td bgcolor=#E0E0E0 colspan=6><input type=checkbox name=log_axis value=1>", str);
+    rsprintf("<tr><td bgcolor=\"#E0E0E0\" colspan=6><input type=checkbox name=log_axis value=1>", str);
   rsprintf("&nbsp;&nbsp;Logarighmic Y axis</td></tr>\n");
 
   /* run_markers */
@@ -8305,9 +8324,9 @@ char   *hist_col[] =
     db_get_value(hDB, 0, ref, &flag, &size, TID_BOOL, TRUE);
     }
   if (flag)
-    rsprintf("<tr><td bgcolor=#E0E0E0 colspan=6><input type=checkbox checked name=run_markers value=1>", str);
+    rsprintf("<tr><td bgcolor=\"#E0E0E0\" colspan=6><input type=checkbox checked name=run_markers value=1>", str);
   else
-    rsprintf("<tr><td bgcolor=#E0E0E0 colspan=6><input type=checkbox name=run_markers value=1>", str);
+    rsprintf("<tr><td bgcolor=\"#E0E0E0\" colspan=6><input type=checkbox name=run_markers value=1>", str);
   rsprintf("&nbsp;&nbsp;Show run markers</td></tr>\n");
 
   /*---- events and variables ----*/
@@ -8316,7 +8335,7 @@ char   *hist_col[] =
 
   for (index=0 ; index<10 ; index++)
     {
-    rsprintf("<tr><td bgcolor=%s>&nbsp;<td>\n", hist_col[index]);
+    rsprintf("<tr><td bgcolor=\"%s\">&nbsp;<td>\n", hist_col[index]);
 
     rsprintf("<select name=\"event%d\" size=1 onChange=\"document.form1.submit()\">\n", index);
 
@@ -8576,7 +8595,7 @@ char   *hist_col[] =
     rsprintf("</tr>\n");
     }
 
-  rsprintf("</table>\n");
+  rsprintf("</table></form>\n");
   rsprintf("</body></html>\r\n");
 }
 
@@ -8617,7 +8636,7 @@ char   def_button[][NAME_LENGTH] = {"10m", "1h", "3h", "12h", "24h", "3d", "7d" 
     {
     sprintf(str, "HS/%s", path);
     show_header(hDB, "History", str, 1, 0);
-    rsprintf("<tr><td align=center bgcolor=#FFFF00 colspan=2>Panel name:&nbsp;&nbsp;&nbsp;");
+    rsprintf("<tr><td align=center bgcolor=\"#FFFF00\" colspan=2>Panel name:&nbsp;&nbsp;&nbsp;");
     rsprintf("<input type=text size=15 maxlength=31 name=panel>\n");
     rsprintf("</td></tr>\n");
 
@@ -8775,7 +8794,7 @@ char   def_button[][NAME_LENGTH] = {"10m", "1h", "3h", "12h", "24h", "3d", "7d" 
   show_header(hDB, "History", str, 1, offset == 0 ? refresh : 0);
 
   /* menu buttons */
-  rsprintf("<tr><td colspan=2 bgcolor=#C0C0C0>\n");
+  rsprintf("<tr><td colspan=2 bgcolor=\"#C0C0C0\">\n");
   rsprintf("<input type=submit name=cmd value=ODB>\n");
   rsprintf("<input type=submit name=cmd value=Alarms>\n");
   rsprintf("<input type=submit name=cmd value=Status>\n");
@@ -8820,7 +8839,7 @@ char   def_button[][NAME_LENGTH] = {"10m", "1h", "3h", "12h", "24h", "3d", "7d" 
   rsprintf("</td></tr>\n");
 
   /* links for history panels */
-  rsprintf("<tr><td colspan=2 bgcolor=#FFFF00>\n");
+  rsprintf("<tr><td colspan=2 bgcolor=\"#FFFF00\">\n");
   if (path[0])
     rsprintf("<i>Panel:</i>&nbsp;&nbsp;&nbsp;\n");
   else
@@ -8900,7 +8919,7 @@ char   def_button[][NAME_LENGTH] = {"10m", "1h", "3h", "12h", "24h", "3d", "7d" 
   if (path[0] && !equal_ustring(path, "All"))
     {
     /* navigation links */
-    rsprintf("<tr><td bgcolor=#A0FFA0>\n");
+    rsprintf("<tr><td bgcolor=\"#A0FFA0\">\n");
 
     sprintf(str, "/History/Display/%s/Buttons", path);
     db_find_key(hDB, 0, str, &hkeybutton);
@@ -8930,7 +8949,7 @@ char   def_button[][NAME_LENGTH] = {"10m", "1h", "3h", "12h", "24h", "3d", "7d" 
       rsprintf("<input type=submit name=shift value=\">>\">\n");
       }
 
-    rsprintf("<td bgcolor=#A0FFA0>\n");
+    rsprintf("<td bgcolor=\"#A0FFA0\">\n");
     rsprintf("<input type=submit name=width value=Large>\n");
     rsprintf("<input type=submit name=width value=Small>\n");
     rsprintf("<input type=submit name=cmd value=\"Create ELog\">\n");
@@ -9709,7 +9728,7 @@ struct tm *gmt;
     /* redirect with cookie */
     rsprintf("HTTP/1.0 302 Found\r\n");
     rsprintf("Server: MIDAS HTTP %s\r\n", cm_get_version());
-    rsprintf("Content-Type: text/html\r\n");
+    rsprintf("Content-Type: text/html; charset=iso-8859-1\r\n");
 
     time(&now);
     now += 3600*24*365;
