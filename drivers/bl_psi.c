@@ -7,6 +7,9 @@
                 (http://www1.psi.ch/~rohrer/secblctl.htm)
 
   $Log$
+  Revision 1.4  1999/11/12 09:38:04  midas
+  Added notification message upon reconnect
+
   Revision 1.3  1999/11/12 09:24:52  midas
   Added reconnect
 
@@ -275,7 +278,12 @@ char str[1024];
 
         if (status != FE_SUCCESS)
           return FE_ERR_HW;
+        else
+          cm_msg(MINFO, "bl_psi_rall", "sucessfully reconneccted to %s",
+                 info->bl_psi_settings.frontend_pc);
         }
+      else
+        return FE_SUCCESS;
       }
 
     status = recv_string(info->sock, str, sizeof(str), 5000);
