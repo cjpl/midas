@@ -8,6 +8,9 @@
                 CAMAC frontend (mfe.c)
 
   $Log$
+  Revision 1.4  2002/05/08 19:54:40  midas
+  Added extra parameter to function db_get_value()
+
   Revision 1.3  2001/08/28 08:43:46  midas
   Changed dummy interrupt function parameters
 
@@ -125,7 +128,7 @@ HNDLE hDB, hKey, hRootKey, hSubkey;
           if (status == DB_SUCCESS)
             {
             size = sizeof(str);
-            db_get_value(hDB, hSubkey, "Name", str, &size, TID_STRING);
+            db_get_value(hDB, hSubkey, "Name", str, &size, TID_STRING, TRUE);
             break;
             }
           }
@@ -603,8 +606,8 @@ void cam_lam_clear(const int c, const int n)
 }
 
 /*------------------------------------------------------------------*/
-void cam_interrupt_enable(int c){}
-void cam_interrupt_disable(int c){}
-void cam_interrupt_attach(int c, int n, void (*isr)(void)){}
-void cam_interrupt_detach(int c, int n){}
+void cam_interrupt_enable(const int c){}
+void cam_interrupt_disable(const int c){}
+void cam_interrupt_attach(const int c, const int n, void (*isr)(void)){}
+void cam_interrupt_detach(const int c, const int n){}
 /*------------------------------------------------------------------*/

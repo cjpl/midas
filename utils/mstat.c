@@ -6,6 +6,9 @@
   Contents:     Display/log some pertinent information of the ODB
   
   $Log$
+  Revision 1.13  2002/05/08 19:54:41  midas
+  Added extra parameter to function db_get_value()
+
   Revision 1.12  2001/02/16 19:08:52  pierre
   - fix FAL test
 
@@ -139,7 +142,7 @@ void compose_status(HNDLE hDB, HNDLE hKey)
   DWORD tb, tsb;
 
   size = sizeof(rs);
-  db_get_value(hDB, 0, "/Runinfo/State", &rs, &size, TID_INT);
+  db_get_value(hDB, 0, "/Runinfo/State", &rs, &size, TID_INT, TRUE);
   if (rs == STATE_RUNNING)
     strcpy (cs,"Running");
   if (rs == STATE_PAUSED)
@@ -147,21 +150,21 @@ void compose_status(HNDLE hDB, HNDLE hKey)
   if (rs == STATE_STOPPED)
     strcpy (cs,"Stopped");
   size = sizeof(rn);
-  db_get_value(hDB, 0, "/Runinfo/run number", &rn, &size, TID_INT);
+  db_get_value(hDB, 0, "/Runinfo/run number", &rn, &size, TID_INT, TRUE);
   size = sizeof(stt);
-  db_get_value(hDB, 0, "/Runinfo/start time", stt, &size, TID_STRING);
+  db_get_value(hDB, 0, "/Runinfo/start time", stt, &size, TID_STRING, TRUE);
   size = sizeof(spt);
-  db_get_value(hDB, 0, "/Runinfo/stop time", spt, &size, TID_STRING);
+  db_get_value(hDB, 0, "/Runinfo/stop time", spt, &size, TID_STRING, TRUE);
   size = sizeof(tb);
-  db_get_value(hDB, 0, "/runinfo/Start Time binary", &tb, &size, TID_DWORD);
+  db_get_value(hDB, 0, "/runinfo/Start Time binary", &tb, &size, TID_DWORD, TRUE);
   size = sizeof(tsb);
-  db_get_value(hDB, 0, "/runinfo/Stop Time binary", &tsb, &size, TID_DWORD);
+  db_get_value(hDB, 0, "/runinfo/Stop Time binary", &tsb, &size, TID_DWORD, TRUE);
   size = sizeof(rt);
-  db_get_value(hDB, 0, "/Runinfo/Requested transition", &rt, &size, TID_INT);
+  db_get_value(hDB, 0, "/Runinfo/Requested transition", &rt, &size, TID_INT, TRUE);
 
   /* Experiment info */
   size = sizeof(ex);
-  db_get_value(hDB, 0, "/experiment/name", ex, &size, TID_STRING);
+  db_get_value(hDB, 0, "/experiment/name", ex, &size, TID_STRING, TRUE);
 
   j =0;
   time(&full_time);
@@ -268,30 +271,30 @@ void compose_status(HNDLE hDB, HNDLE hKey)
 	/* extract client name from equipment */
 	size = sizeof(equclient);
 	sprintf(strtmp,"/equipment/%s/common/Frontend name",key.name);
-	db_get_value(hDB, 0, strtmp, equclient, &size, TID_STRING);
+	db_get_value(hDB, 0, strtmp, equclient, &size, TID_STRING, TRUE);
 	/* search client name under /system/clients/xxx/name */
 	if (cm_exist(equclient,TRUE) == CM_SUCCESS)
 	{
 	  atleastone_active = TRUE;
 	  size = sizeof(equenabled);
 	  sprintf(strtmp,"/equipment/%s/common/enabled",key.name);
-	  db_get_value(hDB, 0, strtmp, &equenabled, &size, TID_BOOL);
+	  db_get_value(hDB, 0, strtmp, &equenabled, &size, TID_BOOL, TRUE);
 	  
 	  size = sizeof(equevtsend);
 	  sprintf(strtmp,"/equipment/%s/statistics/events sent",key.name);
-	  db_get_value(hDB, 0, strtmp, &equevtsend, &size, TID_DOUBLE);
+	  db_get_value(hDB, 0, strtmp, &equevtsend, &size, TID_DOUBLE, TRUE);
 	  
 	  size = sizeof(equevtpsec);
 	  sprintf(strtmp,"/equipment/%s/statistics/events per sec.",key.name);
-	  db_get_value(hDB, 0, strtmp, &equevtpsec, &size, TID_DOUBLE);
+	  db_get_value(hDB, 0, strtmp, &equevtpsec, &size, TID_DOUBLE, TRUE);
 	  
 	  size = sizeof(equkbpsec);
 	  sprintf(strtmp,"/equipment/%s/statistics/kBytes per sec.",key.name);
-	  db_get_value(hDB, 0, strtmp, &equkbpsec, &size, TID_DOUBLE);
+	  db_get_value(hDB, 0, strtmp, &equkbpsec, &size, TID_DOUBLE, TRUE);
 	  
 	  size = sizeof(equnode);
 	  sprintf(strtmp,"/equipment/%s/common/Frontend host",key.name);
-	  db_get_value(hDB, 0, strtmp, equnode, &size, TID_STRING);
+	  db_get_value(hDB, 0, strtmp, equnode, &size, TID_STRING, TRUE);
 	  {
 	    char *pp, sdummy[64];
 	    memset (sdummy,0,64);
@@ -357,11 +360,11 @@ if (   (cm_exist("logger",FALSE) == CM_SUCCESS)
   /* logger */
   sprintf(ststr[j++],"");
   size = sizeof(datadir);
-  db_get_value(hDB, 0, "/logger/data dir", datadir, &size, TID_STRING);
+  db_get_value(hDB, 0, "/logger/data dir", datadir, &size, TID_STRING, TRUE);
   size = sizeof(mesfil);
-  db_get_value(hDB, 0, "/logger/message file", mesfil, &size, TID_STRING);
+  db_get_value(hDB, 0, "/logger/message file", mesfil, &size, TID_STRING, TRUE);
   size = sizeof(wd);
-  db_get_value(hDB, 0, "/logger/write data", &wd, &size, TID_BOOL);
+  db_get_value(hDB, 0, "/logger/write data", &wd, &size, TID_BOOL, TRUE);
   sprintf(&ststr[j][0], "Logger Data dir: %s",datadir);
   sprintf(&ststr[j++][45], "Message File: %s",mesfil);
   
@@ -384,11 +387,11 @@ if (   (cm_exist("logger",FALSE) == CM_SUCCESS)
       {
 	size = sizeof(lactive);
 	sprintf(strtmp,"/logger/channels/%s/settings/active",key.name);
-	db_get_value(hDB, 0, strtmp, &lactive, &size, TID_BOOL);
+	db_get_value(hDB, 0, strtmp, &lactive, &size, TID_BOOL, TRUE);
 	sprintf(lstate,"No"); if (lactive) sprintf(lstate,"Yes");
 	size = sizeof(lpath);
 	sprintf(strtmp,"/logger/channels/%s/settings/Filename",key.name);
-	db_get_value(hDB, 0, strtmp, lpath, &size, TID_STRING);
+	db_get_value(hDB, 0, strtmp, lpath, &size, TID_STRING, TRUE);
 	
 	/* substitue "%d" by current run number */
 	str[0] = 0;
@@ -401,15 +404,15 @@ if (   (cm_exist("logger",FALSE) == CM_SUCCESS)
 	
 	size = sizeof(ltype);
 	sprintf(strtmp,"/logger/channels/%s/settings/type",key.name);
-	db_get_value(hDB, 0, strtmp, ltype, &size, TID_STRING);
+	db_get_value(hDB, 0, strtmp, ltype, &size, TID_STRING, TRUE);
 	
 	size = sizeof(levt);
 	sprintf(strtmp,"/logger/channels/%s/statistics/Events written",key.name);
-	db_get_value(hDB, 0, strtmp, &levt, &size, TID_DOUBLE);
+	db_get_value(hDB, 0, strtmp, &levt, &size, TID_DOUBLE, TRUE);
 	
 	size = sizeof(lbyt);
 	sprintf(strtmp,"/logger/channels/%s/statistics/Bytes written",key.name);
-	db_get_value(hDB, 0, strtmp, &lbyt, &size, TID_DOUBLE);
+	db_get_value(hDB, 0, strtmp, &lbyt, &size, TID_DOUBLE, TRUE);
 	lbyt /= 1024;
 	if (lactive)
 	{
@@ -486,7 +489,7 @@ else
       {
         /* get client name */
         size = sizeof(client_name);
-        db_get_value(hDB, hSubkey, "Name", client_name, &size, TID_STRING);
+        db_get_value(hDB, hSubkey, "Name", client_name, &size, TID_STRING, TRUE);
         client_name[4] = 0; /* search only for the 4 first char */
         if (equal_ustring(client_name, "Lazy"))
         {
@@ -495,16 +498,16 @@ else
           if (status == DB_SUCCESS)
           {
             size = sizeof(tl);
-            db_get_value(hDB, hlKey, "/Settings/List label", tl, &size, TID_STRING);
+            db_get_value(hDB, hlKey, "/Settings/List label", tl, &size, TID_STRING, TRUE);
             if (*tl == '\0')  sprintf(tl,"<empty>");
             size = sizeof(cr);
-            db_get_value(hDB, hlKey, "statistics/Copy progress [%]", &cr, &size, TID_FLOAT);
+            db_get_value(hDB, hlKey, "statistics/Copy progress [%]", &cr, &size, TID_FLOAT, TRUE);
             size = sizeof(nf);    
-            db_get_value(hDB, hlKey, "statistics/Number of Files", &nf, &size, TID_INT);
+            db_get_value(hDB, hlKey, "statistics/Number of Files", &nf, &size, TID_INT, TRUE);
             size = sizeof(bs);
-            db_get_value(hDB, hlKey, "statistics/Backup status [%]", &bs, &size, TID_FLOAT);
+            db_get_value(hDB, hlKey, "statistics/Backup status [%]", &bs, &size, TID_FLOAT, TRUE);
             size = sizeof(bn);
-            db_get_value(hDB, hlKey, "statistics/Backup file", bn, &size, TID_STRING);
+            db_get_value(hDB, hlKey, "statistics/Backup file", bn, &size, TID_STRING, TRUE);
 
             if (k==0)
             {
@@ -550,11 +553,11 @@ else
 	      memset (strtmp,0,sizeof(strtmp));
 	      size = sizeof(clientn);
 	      sprintf(strtmp,"name",key.name);
-	      db_get_value(hDB, hSubkey, strtmp, clientn, &size, TID_STRING);
+	      db_get_value(hDB, hSubkey, strtmp, clientn, &size, TID_STRING, TRUE);
 	      memset (strtmp,0,sizeof(strtmp));
 	      size = sizeof(clienth);
 	      sprintf(strtmp,"host",key.name);
-	      db_get_value(hDB, hSubkey, strtmp, clienth, &size, TID_STRING);
+	      db_get_value(hDB, hSubkey, strtmp, clienth, &size, TID_STRING, TRUE);
 	      if (ii>2)
 	        {
 	          ii=0;

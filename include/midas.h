@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.89  2002/05/08 19:54:40  midas
+  Added extra parameter to function db_get_value()
+
   Revision 1.88  2002/03/19 22:15:40  pierre
   Added  ~defined (OS_IRIX)
 
@@ -1594,7 +1597,7 @@ INT EXPRT db_protect_database(HNDLE database_handle);
 INT EXPRT db_create_key(HNDLE hdb, HNDLE key_handle, char *key_name, DWORD type);
 INT EXPRT db_create_link(HNDLE hdb, HNDLE key_handle, char *link_name, char *destination);
 INT EXPRT db_set_value(HNDLE hdb, HNDLE hKeyRoot, char *key_name, void *data, INT size, INT num_values, DWORD type);
-INT EXPRT db_get_value(HNDLE hdb, HNDLE hKeyRoot, char *key_name, void *data, INT *size, DWORD type);
+INT EXPRT db_get_value(HNDLE hdb, HNDLE hKeyRoot, char *key_name, void *data, INT *size, DWORD type, BOOL create);
 INT EXPRT db_find_key(HNDLE hdb, HNDLE hkey, char *name, HNDLE *hsubkey);
 INT EXPRT db_find_link(HNDLE hDB, HNDLE hKey, char *key_name, HNDLE *subhKey);
 INT EXPRT db_find_key1(HNDLE hdb, HNDLE hkey, char *name, HNDLE *hsubkey);

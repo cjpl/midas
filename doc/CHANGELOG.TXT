@@ -1,19 +1,39 @@
 Revision History
 ================
 
+Version 1.8.4, released May xx, 2002
+------------------------------------
+
+- Removed lingering in mhttpd
+- Fixed big bug that history files did not get closed in hs_hread. This
+  cause mhttpd to crash after ~100 history updates
+- Added /Experiment/Parameter Comment feature
+- If custom page /Custom/Status is present, it gets displayed instead of
+  the standard status page
+- Speeded up return of long pages like HV slow control
+- Added "/logger/history dir" and "/logger/elog dir"
+- Added event builder section in mhttpd
+- Added "/Experiment/Edit on start/Edit run number" to disable default
+  behaviour of editing the run number on start
+- Added log axis and time axis in history display
+- Added run marks in history display
+- Added zoom and offset feature in history display
+- Fixed bug where query in elog stopped at 12:00
+- Added periodic alarms
+- Fixed problem that <tab> completion was not working if only one
+  value in directory
+- Added /Elog/Buttons for variable elog history display
+- Fixed bug where keys containing "+" were not properly displayed
+  in mhttpd odb display
+
 Version 1.8.3, released August 8, 2001
 --------------------------------------
 
 - Fixed problems occuring under RedHat 7.1
-
 - modified mserver.c to run under xinetd
-
 - put xinetd configuration info into INSTALL file
-
 - added /Custom tree in ODB for mhttpd to display user-specific pages
-
 - standalone elogd program included for offline logbook display
-
 - added mail notification in elog in mhttpd
 
 Version 1.8.2, released November 20, 2000
@@ -21,40 +41,26 @@ Version 1.8.2, released November 20, 2000
 
 - Parallelized Midas analyzer using the PVM system. 
   See http://pibeta.psi.ch/handbook/analyzer/parallel.html for some details
-
 - Added use_tests in analyzer request to make "analyzer tests" work correctly
   This needs modification of existing "analyzer.c" files.
-
 - Added manual triggered events, use EQ_MANUAL_TRIG in FE equipment list to
   display a button in mhttpd to trigger that event manually. Might be useful
   for "histogram" type of events.
-
 - Added number of messages for cm_msg_retrieve and in odbedit "old" command
-  
 - Fixed various bugs in history system
-
 - bk_close returns bank size
-
 - Added cm_msg1 to produce messages which go to a differnt logging file
-
 - Create default /runinfo structure in cm_connect_experiment
-
 
 Version 1.8.1, released June 7, 2000
 ------------------------------------
 
 - Set environment variable MIDAS_DIR as the default data directory in /logger/data dir
-
 - Added MIDAS_EXPTAB environmant variable to point to "exptab" directory
-
 - Added delete option in elog system
-
 - ODB directories can now be attached to elog messages
-
 - Added history graphics display in mhttpd
-
 - Added -E flag to mhttpd to work only as an elog server (w/o any MIDAS experiment)
-
 - Added WebPAW display. See http://midas.psi.ch/webpaw
 
 Version 1.8.0, released March 6, 2000
@@ -214,100 +220,65 @@ Version 1.7.1, released Feb 9, 2000
 
 - Skipped versions 1.6.5 to 1.6.9 because we switched to a new protocol, which is
   not compatible with 1.6.x. Version 1.7.0 was only for internal usage.
-
 - Fixed Y2K problem
-
 - Added alarm system, still lacking documentation (:-(
-
 - Added automatic program start/stop on run transitions (/programs/excute on start run)
-
 - Added auto start/stop under /programs. So programs can be automatically started
   at the beginning of a run or stopped at the end of a run
-
 - Added 32-bit MIDAS banks. Use bk_init32 to create 32-bit banks.
-
 - Added electronic log book. Use "elog" program to submit an electronic logbook 
   entry or the Elog page in mhttpd.
-
 - Use /programs/<name>/Watchdog timeout in all programs as timeout value. The
   default value can be submitted by calling cm_connect_experiment1(..., timeout)
-
 - Fixed certain mutex bugs when accessing the ODB which caused MIDAS to crash 
   once in a while.
-
 - Events bigger than the buffer cache automatically bypass the cache.
-
 - midas.log is now placed in the same directory as the .SHM files in case
   there is no data dir in the ODB
-
 - Fixed lots of bugs, please refer to individual source files.
 
 Version 1.6.4, released Aug 6, 1999
 -----------------------------------
 
 - Debugged FTP mode in lazylogger
-
 - Added bm_skip_event
-
 - Added Ctrl-C handler
-
 - Added JMidas graphical control program written in Java. This should be considered
   a pre-beta program, which is not intended for serious use, just for demonstration.
   It needs JDK 1.2. For Linux look at http://www.blackdown.org.
-
 
 Version 1.6.3, released Feb 18, 1999
 ------------------------------------
 
 - Added MIDAS format to lazylogger
-
 - Added FTP support to lazylogger
-
 - Added debug logging facility to mserver (-d flag)
-
 - Added dm_xxx() funciton for Dual Memory buffer handling
-
 - ODBEdit saves .odb files now with full ODB pathname. When loading those
   files, they are written to their original location independent of the
   current path in the ODB
-
 - ODBEdit now accepts wildcards in the "ls" and "set" commands
-
 - ODB records can now be open several times with different dispatch functions
   which are all called when the record is changed
-
 - Added db_set_data_index2 function to avoid too many record updates when
   setting an array of values
-
 - BOOL values are displayed as 'y' and 'n' in the ODB
-
 - Added message display in mhttpd
-
 - Added hex display in mhttpd ODB display
-
 - Logger can now be stopped tiwh "!"
-
 - Fixed watchdog timeout on remote tape operations
-
 - Analyzer prints error message if histo dump flag is on when running offline
-
 - Analyzer does not stop if a file in a range of files is missing
-
 - Set /Analyzer/Bank switches/... to FALSE by default to avoid N-tuple
   overflow when an analyzer is started the first time
-
 - Assume MIDAS data format on /dev/... input
-
 - Analyzers puts current offline run number into ODB
-
 - Added -f flag to filter events in analyzer
-
 
 Version 1.6.2, released Dec 10, 1998
 ------------------------------------
 
 - Added -v (verbose) flag to analyzer
-
 - Program abort with "!" (without return) now also works under Unix
 
 Version 1.6.1, released Oct 28, 1998
@@ -325,28 +296,18 @@ Version 1.6, released Oct 23, 1998, after switching to 1.x.x numbering scheme
 
 - Introduces CVS (concurrent version system) for revision control. All files
   have how a LOG in their header shich shows their revision
-
 - Class & device drivers have now their own local memory so they
   can be used in different equipment
-
 - Wrote EPICS Channel Access device driver ch_acc.c
-
 - Fixed a bug in mfe.c which had to do with the event_buffer_size
-
 - Added prepaus, postpause, preresume and postresume tranistions
-
 - Modified the frontend tr_pause request to tr_prepause, so that the frontend
   first stops sending events when a run is paused.
-
 - Fixed "odbedit aborted" when ODBEdit normally exits.
-
 - Removed gethostbyname from client connection acception to speed up the
   connection process to a frontend or analyzer when they are busy.
-
 - Fixed minor bus in mana.c
-
 - Some revisions of the drivers/ directory
-
 - Modified version scheme from 1.06 to 1.6.0 where last digit is patch level
 
 Version 1.05, intermediate version, never released
@@ -356,25 +317,16 @@ Version 1.04, released Aug 6, 1998
 -----------------------------------
 
 - Version after Pion-Beta beamtime '98
-
 - Fixed some bugs in mhttpd
-
 - HTTPD written
-
 - fixed byte swapping bug in fcna function
-
 - Defined macro language for frontend (midas_macro.h), example is in 
   \midas\examples\macro.
-
 - Limited shared memory size for Solaris
-
 - Rewrote VxWorks makefiles, replaced "ar" in unix makefile by "ld"
-
 - Support for multiple LAMs in frontend
-
 - Wrote camacrpc.c which emulates MIDAS CAMAC Standard functions
   from mcstd.h through RPC server camacrpc.c.
-
 - MCNAF uses camacrpc.c. If linked to other CAMAC drivers, MCNAF
   can be used locally on a computer which has CAMAC access.
 

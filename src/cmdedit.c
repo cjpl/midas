@@ -6,6 +6,9 @@
   Contents:     Command-line editor for ODBEdit
 
   $Log$
+  Revision 1.10  2002/05/08 19:54:40  midas
+  Added extra parameter to function db_get_value()
+
   Revision 1.9  2000/10/23 14:34:38  midas
   Fixed output of '%' when editing
 
@@ -258,10 +261,7 @@ BOOL  escape_flag = 0;
     /* tab */
     if (c == 9 && dir != NULL)
       {
-      if (strlen(line) == 0)
-        status = dir(line, &i);
-      else
-        status = dir(line, &i);
+      status = dir(line, &i);
 
       /* redraw line */
       fputc('\r', stdout);

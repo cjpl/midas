@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.75  2002/05/08 19:54:40  midas
+  Added extra parameter to function db_get_value()
+
   Revision 1.74  2001/11/09 20:27:53  pierre
   Fix replay for YBOS format
 
@@ -733,12 +736,12 @@ static EVENT_DEF *event_def=NULL;
       }
 
     size = sizeof(id);
-    status = db_get_value(hDB, hKey, "Common/Event ID", &id, &size, TID_WORD);
+    status = db_get_value(hDB, hKey, "Common/Event ID", &id, &size, TID_WORD, TRUE);
     if (status != DB_SUCCESS)
       continue;
 
     size = sizeof(type);
-    status = db_get_value(hDB, hKey, "Common/Type", &type, &size, TID_INT);
+    status = db_get_value(hDB, hKey, "Common/Type", &type, &size, TID_INT, TRUE);
     if (status != DB_SUCCESS)
       continue;
 
@@ -750,7 +753,7 @@ static EVENT_DEF *event_def=NULL;
 
       size = sizeof(str);
       str[0] = 0;
-      db_get_value(hDB, hKey, "Common/Format", str, &size, TID_STRING);
+      db_get_value(hDB, hKey, "Common/Format", str, &size, TID_STRING, TRUE);
 
       if (equal_ustring(str, "Fixed"))
         event_def[index].format = FORMAT_FIXED;
@@ -988,7 +991,7 @@ EVENT_DEF  *event_def;
   ntuple_flag = 1;
   size = sizeof(ntuple_flag);
   sprintf(str, "/%s/Book N-tuples", analyzer_name);
-  db_get_value(hDB, 0, str, &ntuple_flag, &size, TID_BOOL);
+  db_get_value(hDB, 0, str, &ntuple_flag, &size, TID_BOOL, TRUE);
 
   if (!ntuple_flag)
     return SUCCESS;
@@ -1004,7 +1007,7 @@ EVENT_DEF  *event_def;
         sprintf(str, "/%s/Bank switches/%s", analyzer_name, bank_list->name);
         bank_list->output_flag = FALSE;
         size = sizeof(DWORD);
-        db_get_value(hDB, 0, str, &bank_list->output_flag, &size, TID_DWORD); 
+        db_get_value(hDB, 0, str, &bank_list->output_flag, &size, TID_DWORD, TRUE); 
         }
     }
 
@@ -1472,7 +1475,7 @@ double     dummy;
       sprintf(str, "/%s/Module switches/%s", analyzer_name, module[j]->name);
       module[j]->enabled = TRUE;
       size = sizeof(BOOL);
-      db_get_value(hDB, 0, str, &module[j]->enabled, &size, TID_BOOL);
+      db_get_value(hDB, 0, str, &module[j]->enabled, &size, TID_BOOL, TRUE);
   
       if (module[j]->init != NULL && module[j]->enabled)
         module[j]->init();
@@ -1527,7 +1530,7 @@ INT        lrec;
         sprintf(str, "/%s/Bank switches/%s", analyzer_name, bank_list->name);
         bank_list->output_flag = FALSE;
         size = sizeof(DWORD);
-        db_get_value(hDB, 0, str, &bank_list->output_flag, &size, TID_DWORD);
+        db_get_value(hDB, 0, str, &bank_list->output_flag, &size, TID_DWORD, TRUE);
         }
 
     /* copy module enabled flag to ana_module */
@@ -1537,7 +1540,7 @@ INT        lrec;
       sprintf(str, "/%s/Module switches/%s", analyzer_name, module[j]->name);
       module[j]->enabled = TRUE;
       size = sizeof(BOOL);
-      db_get_value(hDB, 0, str, &module[j]->enabled, &size, TID_BOOL);
+      db_get_value(hDB, 0, str, &module[j]->enabled, &size, TID_BOOL, TRUE);
       }
 
     }
@@ -3435,7 +3438,7 @@ HNDLE hKey, hKeyRoot, hKeyEq;
   flag = TRUE;
   size = sizeof(flag);
   sprintf(str, "/%s/ODB Load", analyzer_name);
-  db_get_value(hDB, 0, str, &flag, &size, TID_BOOL);
+  db_get_value(hDB, 0, str, &flag, &size, TID_BOOL, TRUE);
 
   if (flag)
     {

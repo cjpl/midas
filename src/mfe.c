@@ -7,6 +7,9 @@
                 linked with user code to form a complete frontend
 
   $Log$
+  Revision 1.37  2002/05/08 19:54:40  midas
+  Added extra parameter to function db_get_value()
+
   Revision 1.36  2001/11/21 08:37:32  midas
   Took out db_delete_key for statistics again (not needed)
 
@@ -397,10 +400,10 @@ BOOL   manual_trig_flag = FALSE;
   /* get current ODB run state */
   size = sizeof(run_state);
   run_state = STATE_STOPPED;
-  db_get_value(hDB, 0, "/Runinfo/State", &run_state, &size, TID_INT);
+  db_get_value(hDB, 0, "/Runinfo/State", &run_state, &size, TID_INT, TRUE);
   size = sizeof(run_number);
   run_number = 1;
-  db_get_value(hDB, 0, "/Runinfo/Run number", &run_number, &size, TID_INT);
+  db_get_value(hDB, 0, "/Runinfo/Run number", &run_number, &size, TID_INT, TRUE);
 
   /* scan EQUIPMENT table from FRONTEND.C */
   for (index=0 ; equipment[index].name[0] ; index++)
@@ -425,7 +428,7 @@ BOOL   manual_trig_flag = FALSE;
       db_find_key(hDB, 0, str, &hKey);
       size = sizeof(double);
       if (hKey)
-        db_get_value(hDB, hKey, "Event limit", &eq_info->event_limit, &size, TID_DOUBLE);
+        db_get_value(hDB, hKey, "Event limit", &eq_info->event_limit, &size, TID_DOUBLE, TRUE);
       }
     
     /* Create common subtree */
@@ -1317,7 +1320,7 @@ INT opt_max=0, opt_index=0, opt_tcp_size=128, opt_cnt=0;
         /* check if autorestart, main loop will take care of it */
         size = sizeof(BOOL);
         flag = FALSE;
-        db_get_value(hDB, 0, "/Logger/Auto restart", &flag, &size, TID_BOOL);
+        db_get_value(hDB, 0, "/Logger/Auto restart", &flag, &size, TID_BOOL, TRUE);
 
         if (flag)
           auto_restart = ss_time() + 20; /* restart in 20 sec. */
@@ -1471,7 +1474,7 @@ INT opt_max=0, opt_index=0, opt_tcp_size=128, opt_cnt=0;
         {
         /* check if really stopped */
         size = sizeof(state);
-        status = db_get_value(hDB, 0, "Runinfo/State", &state, &size, TID_INT);
+        status = db_get_value(hDB, 0, "Runinfo/State", &state, &size, TID_INT, TRUE);
         if (status != DB_SUCCESS)
           cm_msg(MERROR, "cm_transition", "cannot get Runinfo/State in database");
 
@@ -1479,7 +1482,7 @@ INT opt_max=0, opt_index=0, opt_tcp_size=128, opt_cnt=0;
           {
           auto_restart = 0;
           size = sizeof(run_number);
-          db_get_value(hDB, 0, "/Runinfo/Run number", &run_number, &size, TID_INT);
+          db_get_value(hDB, 0, "/Runinfo/Run number", &run_number, &size, TID_INT, TRUE);
 
           cm_msg(MTALK, "main", "starting new run");
           status = cm_transition(TR_START, run_number+1, NULL, 0, SYNC);

@@ -5,6 +5,9 @@
    Contents:     Dump event on screen with MIDAS or YBOS data format
  
    $Log$
+   Revision 1.17  2002/05/08 19:54:41  midas
+   Added extra parameter to function db_get_value()
+
    Revision 1.16  2002/01/28 20:52:07  pierre
    add /EBuilder path for ID search
 
@@ -802,7 +805,7 @@ int main(unsigned int argc,char **argv)
 	/* extract client name from equipment */
 	size = sizeof(strtmp);
 	sprintf(strtmp,"/equipment/%s/common/Frontend name",key.name);
-	db_get_value(hDB, 0, strtmp, equclient, &size, TID_STRING);
+	db_get_value(hDB, 0, strtmp, equclient, &size, TID_STRING, TRUE);
 	
 	/* search client name under /system/clients/xxx/name */
 	/* Outcommented 22 Dec 1997 SR because of problem when
@@ -812,15 +815,15 @@ int main(unsigned int argc,char **argv)
 	*/
 	size = sizeof(WORD);
 	sprintf(strtmp,"/equipment/%s/common/event ID",key.name);
-	db_get_value(hDB, 0, strtmp, &(eq[l]).id, &size, TID_WORD);
+	db_get_value(hDB, 0, strtmp, &(eq[l]).id, &size, TID_WORD, TRUE);
 	
 	size = sizeof(WORD);
 	sprintf(strtmp,"/equipment/%s/common/Trigger mask",key.name);
-	db_get_value(hDB, 0, strtmp, &(eq[l]).msk, &size, TID_WORD);
+	db_get_value(hDB, 0, strtmp, &(eq[l]).msk, &size, TID_WORD, TRUE);
 	
 	size = 8;
 	sprintf(strtmp,"/equipment/%s/common/Format",key.name);
-	db_get_value(hDB, 0, strtmp, str, &size, TID_STRING);
+	db_get_value(hDB, 0, strtmp, str, &size, TID_STRING, TRUE);
 	if (equal_ustring(str, "YBOS"))
 	{
 	  eq[l].fmt = FORMAT_YBOS;
@@ -858,8 +861,6 @@ int main(unsigned int argc,char **argv)
     /* check for EBuilder */
     if (db_find_key(hDB, 0, "/EBuilder/Settings", &hKey) == DB_SUCCESS)
     {
-      char strtmp[256], equclient[32];
-      
       sprintf(eq[l].Eqname, "EBuilder");
       /* check if client running this equipment is present */
       /* search client name under /system/clients/xxx/name */
@@ -869,13 +870,13 @@ int main(unsigned int argc,char **argv)
 	 continue;
       */
       size = sizeof(WORD);
-      db_get_value(hDB, hKey, "Event ID", &(eq[l]).id, &size, TID_WORD);
+      db_get_value(hDB, hKey, "Event ID", &(eq[l]).id, &size, TID_WORD, TRUE);
       
       size = sizeof(WORD);
-      db_get_value(hDB, hKey, "Trigger mask", &(eq[l]).msk, &size, TID_WORD);
+      db_get_value(hDB, hKey, "Trigger mask", &(eq[l]).msk, &size, TID_WORD, TRUE);
       
       size = 8;
-      db_get_value(hDB, hKey, "Format", str, &size, TID_STRING);
+      db_get_value(hDB, hKey, "Format", str, &size, TID_STRING, TRUE);
       if (equal_ustring(str, "YBOS"))
       {
 	eq[l].fmt = FORMAT_YBOS;

@@ -6,6 +6,9 @@
   Contents:     Disk to Tape copier for background job
 
   $Log$
+  Revision 1.26  2002/05/08 19:54:40  midas
+  Added extra parameter to function db_get_value()
+
   Revision 1.25  2001/07/25 07:54:01  midas
   Fixed compiler warnings
 
@@ -550,9 +553,9 @@ INT lazy_select_purge(HNDLE hKey, INT channel, LAZY_INFO * pLall, char * fmt, ch
 
   /* get current specification */
   size = sizeof(cdir);
-  db_get_value(hDB, hKey, "Settings/Data dir", cdir, &size, TID_STRING);
+  db_get_value(hDB, hKey, "Settings/Data dir", cdir, &size, TID_STRING, TRUE);
   size = sizeof(cff);
-  db_get_value(hDB, hKey, "Settings/filename format", cff, &size, TID_STRING);
+  db_get_value(hDB, hKey, "Settings/filename format", cff, &size, TID_STRING, TRUE);
   while (1)
   {
     /* try to find the oldest matching run present in the list AND on disk */
@@ -568,9 +571,9 @@ INT lazy_select_purge(HNDLE hKey, INT channel, LAZY_INFO * pLall, char * fmt, ch
       if (((pLall+i)->hKey) && (hKey != (pLall+i)->hKey))
       { /* valid channel */
         size = sizeof(ddir);
-        db_get_value(hDB, (pLall+i)->hKey, "Settings/Data dir", ddir, &size, TID_STRING);
+        db_get_value(hDB, (pLall+i)->hKey, "Settings/Data dir", ddir, &size, TID_STRING, TRUE);
         size = sizeof(ff);
-        db_get_value(hDB, (pLall+i)->hKey, "Settings/filename format", ff, &size, TID_STRING);
+        db_get_value(hDB, (pLall+i)->hKey, "Settings/filename format", ff, &size, TID_STRING, TRUE);
 
         if ((strcmp(ddir, cdir) == 0) && (strcmp(ff, cff) == 0))
           (pLall+i)->match = TRUE;
@@ -640,7 +643,7 @@ void lazy_settings_hotlink(HNDLE hDB, HNDLE hKey, void * info)
 
   /* check if Maintain has been touched */
   size = sizeof(maintain);
-  db_get_value(hDB, hKey, "Maintain free space(%)", &maintain, &size, TID_INT);
+  db_get_value(hDB, hKey, "Maintain free space(%)", &maintain, &size, TID_INT, TRUE);
   if (maintain != 0)
     maintain_touched = TRUE;
   else
@@ -672,16 +675,16 @@ void lazy_maintain_check(HNDLE hKey, LAZY_INFO * pLall)
 
   /* check is Maintain free is enabled */
   size = sizeof(maintain);
-  db_get_value(hDB, hKey, "Settings/Maintain free space(%)", &maintain, &size, TID_INT);
+  db_get_value(hDB, hKey, "Settings/Maintain free space(%)", &maintain, &size, TID_INT, TRUE);
   if (maintain != 0)
   {
     /* scan other channels */
 
     /* get current specification */
     size = sizeof(cdir);
-    db_get_value(hDB, hKey, "Settings/Data dir", cdir, &size, TID_STRING);
+    db_get_value(hDB, hKey, "Settings/Data dir", cdir, &size, TID_STRING, TRUE);
     size = sizeof(cff);
-    db_get_value(hDB, hKey, "Settings/filename format", cff, &size, TID_STRING);
+    db_get_value(hDB, hKey, "Settings/filename format", cff, &size, TID_STRING, TRUE);
 
 
     /* build matching dir and ff */
@@ -690,15 +693,15 @@ void lazy_maintain_check(HNDLE hKey, LAZY_INFO * pLall)
       if (((pLall+i)->hKey) && (hKey != (pLall+i)->hKey))
       { /* valid channel */
         size = sizeof(dir);
-        db_get_value(hDB, (pLall+i)->hKey, "Settings/Data dir", dir, &size, TID_STRING);
+        db_get_value(hDB, (pLall+i)->hKey, "Settings/Data dir", dir, &size, TID_STRING, TRUE);
         size = sizeof(ff);
-        db_get_value(hDB, (pLall+i)->hKey, "Settings/filename format", ff, &size, TID_STRING);
+        db_get_value(hDB, (pLall+i)->hKey, "Settings/filename format", ff, &size, TID_STRING, TRUE);
 
         if ((strcmp(dir, cdir) == 0) && (strcmp(ff, cff) == 0))
         {
           /* check "maintain free space" */
           size = sizeof(maintain);
-          db_get_value(hDB, (pLall+i)->hKey, "Settings/Maintain free space(%)", &maintain, &size, TID_INT);
+          db_get_value(hDB, (pLall+i)->hKey, "Settings/Maintain free space(%)", &maintain, &size, TID_INT, TRUE);
           if (maintain)
           {
             /* disable and inform */
@@ -1316,7 +1319,7 @@ INT lazy_main (INT channel, LAZY_INFO * pLall)
   
   /* Get current run number */
   size = sizeof(cur_acq_run);
-  db_get_value (hDB, 0, "Runinfo/Run number", &cur_acq_run, &size, TID_INT);
+  db_get_value (hDB, 0, "Runinfo/Run number", &cur_acq_run, &size, TID_INT, TRUE);
   
   /* update "maintain free space */
   lazy_maintain_check(pLch->hKey, pLall);
@@ -1465,7 +1468,7 @@ INT lazy_main (INT channel, LAZY_INFO * pLall)
 	    lazy.alarm[0] = 0;
 	    size = sizeof(lazy.alarm);
 	    db_get_value(hDB, pLch->hKey, "Settings/Alarm Class"
-			 , lazy.alarm, &size, TID_STRING);
+			 , lazy.alarm, &size, TID_STRING, TRUE);
 	    
 	    /* trigger alarm if defined */
 	    if (lazy.alarm[0])

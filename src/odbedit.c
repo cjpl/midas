@@ -6,6 +6,9 @@
   Contents:     Command-line interface to the MIDAS online data base.
 
   $Log$
+  Revision 1.54  2002/05/08 19:54:41  midas
+  Added extra parameter to function db_get_value()
+
   Revision 1.53  2002/05/08 01:32:22  midas
   Fixed problem with <tab> on single entries
 
@@ -1211,7 +1214,7 @@ char *file_name = "experim.h";
 
       size = sizeof(str);
       str[0] = 0;
-      db_get_value(hDB, hKeyEq, "Common/Format", str, &size, TID_STRING);
+      db_get_value(hDB, hKeyEq, "Common/Format", str, &size, TID_STRING, TRUE);
       
       /* if event is in fixed format, extract header file */
       if (equal_ustring(str, "Fixed"))
@@ -1354,11 +1357,11 @@ char  *state_str[]  = { "Unknown", "Stopped", "Paused", "Running" };
 
   size = sizeof(mask);
   strcpy(mask, "[%h:%e:%s]%p>");
-  db_get_value(hDB, 0, "/System/Prompt", mask, &size, TID_STRING);
+  db_get_value(hDB, 0, "/System/Prompt", mask, &size, TID_STRING, TRUE);
 
   state = STATE_STOPPED;
   size = sizeof(state);
-  db_get_value(hDB, 0, "/Runinfo/State", &state, &size, TID_INT);
+  db_get_value(hDB, 0, "/Runinfo/State", &state, &size, TID_INT, TRUE);
   if (state > STATE_RUNNING)
     state = 0;
 
@@ -2167,7 +2170,7 @@ PRINT_INFO      print_info;
             if (status == DB_SUCCESS)
               {
               size = sizeof(client_name);
-              db_get_value(hDB, hSubkey, "Name", client_name, &size, TID_STRING);
+              db_get_value(hDB, hSubkey, "Name", client_name, &size, TID_STRING, TRUE);
               break;
               }
             }
@@ -2296,8 +2299,8 @@ PRINT_INFO      print_info;
 
       /* check if run is stopped and no transition in progress */
       size = sizeof(i);
-      db_get_value(hDB, 0, "/Runinfo/State", &i, &size, TID_INT);
-      db_get_value(hDB, 0, "/Runinfo/Transition in progress", &j, &size, TID_INT);
+      db_get_value(hDB, 0, "/Runinfo/State", &i, &size, TID_INT, TRUE);
+      db_get_value(hDB, 0, "/Runinfo/Transition in progress", &j, &size, TID_INT, TRUE);
       if (i != STATE_STOPPED || j == 1)
         {
         printf("Cannot rewind tapes when run is not stopped or transition in progress\n");
@@ -2327,7 +2330,7 @@ PRINT_INFO      print_info;
             if (status == DB_SUCCESS)
               {
               size = sizeof(client_name);
-              db_get_value(hDB, hSubkey, "Name", client_name, &size, TID_STRING);
+              db_get_value(hDB, hSubkey, "Name", client_name, &size, TID_STRING, TRUE);
               break;
               }
             }
@@ -2424,13 +2427,13 @@ PRINT_INFO      print_info;
           if (status == DB_SUCCESS)
             {
             size = sizeof(name);
-            db_get_value(hDB, hSubkey, "Name", name, &size, TID_STRING);
+            db_get_value(hDB, hSubkey, "Name", name, &size, TID_STRING, TRUE);
             printf(name);
             for (j=0 ; j<20-(int)strlen(name) ; j++)
               printf(" ");
 
             size = sizeof(str);
-            db_get_value(hDB, hSubkey, "Host", str, &size, TID_STRING);
+            db_get_value(hDB, hSubkey, "Host", str, &size, TID_STRING, TRUE);
             printf(str);
             for (j=0 ; j<20-(int)strlen(str) ; j++)
               printf(" ");
@@ -2456,7 +2459,7 @@ PRINT_INFO      print_info;
       /* check if run is already started */
       size = sizeof(i);
       i = STATE_STOPPED;
-      db_get_value(hDB, 0, "/Runinfo/State", &i, &size, TID_INT);
+      db_get_value(hDB, 0, "/Runinfo/State", &i, &size, TID_INT, TRUE);
       if (i == STATE_RUNNING)
         {
         printf("Run is already started\n");
@@ -2469,7 +2472,7 @@ PRINT_INFO      print_info;
         {
         /* check if transition in progress */
         i = 0;
-        db_get_value(hDB, 0, "/Runinfo/Transition in progress", &i, &size, TID_INT);
+        db_get_value(hDB, 0, "/Runinfo/Transition in progress", &i, &size, TID_INT, TRUE);
         if (i == 1)
           {
           printf("Start/Stop already in progress, please try again later\n");
@@ -2479,7 +2482,7 @@ PRINT_INFO      print_info;
           {
           /* get present run number */
           old_run_number = 0;
-          db_get_value(hDB, 0, "/Runinfo/Run number", &old_run_number, &size, TID_INT);
+          db_get_value(hDB, 0, "/Runinfo/Run number", &old_run_number, &size, TID_INT, TRUE);
 
           /* edit run parameter if command is not "start now" */
           if ((param[1][0] == 'n' && param[1][1] == 'o' && param[1][2] == 'w') ||
@@ -2578,7 +2581,7 @@ PRINT_INFO      print_info;
       /* check if transition in progress */
       i = 0;
       size = sizeof(INT);
-      db_get_value(hDB, 0, "/Runinfo/Transition in progress", &i, &size, TID_INT);
+      db_get_value(hDB, 0, "/Runinfo/Transition in progress", &i, &size, TID_INT, TRUE);
       if (i == 1)
         {
         printf("Start/Stop already in progress, please try again later\n");
@@ -2589,7 +2592,7 @@ PRINT_INFO      print_info;
         /* check if run is stopped */
         state = STATE_STOPPED;
         size = sizeof(i);
-        db_get_value(hDB, 0, "/Runinfo/State", &state, &size, TID_INT);
+        db_get_value(hDB, 0, "/Runinfo/State", &state, &size, TID_INT, TRUE);
         str[0] = 0;
         if (state == STATE_STOPPED && !cmd_mode)
           {
@@ -2625,7 +2628,7 @@ PRINT_INFO      print_info;
       /* check if run is started */
       i = STATE_STOPPED;
       size = sizeof(i);
-      db_get_value(hDB, 0, "/Runinfo/State", &i, &size, TID_INT);
+      db_get_value(hDB, 0, "/Runinfo/State", &i, &size, TID_INT, TRUE);
       if (i != STATE_RUNNING)
         {
         printf("Run is not started\n");
@@ -2652,7 +2655,7 @@ PRINT_INFO      print_info;
       /* check if run is paused */
       i = STATE_STOPPED;
       size = sizeof(i);
-      db_get_value(hDB, 0, "/Runinfo/State", &i, &size, TID_INT);
+      db_get_value(hDB, 0, "/Runinfo/State", &i, &size, TID_INT, TRUE);
       if (i != STATE_PAUSED)
         {
         printf("Run is not paused\n");
@@ -3061,7 +3064,7 @@ usage:
     {
     cm_get_experiment_database(&hDB, NULL);
     size = NAME_LENGTH;
-    db_get_value(hDB, 0, "/Experiment/Name", exp_name, &size, TID_STRING);
+    db_get_value(hDB, 0, "/Experiment/Name", exp_name, &size, TID_STRING, TRUE);
     }
 
   /* command loop */

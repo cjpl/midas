@@ -6,6 +6,9 @@
   Contents:     Multimeter Class Driver
 
   $Log$
+  Revision 1.4  2002/05/08 19:54:40  midas
+  Added extra parameter to function db_get_value()
+
   Revision 1.3  2002/03/14 13:03:15  midas
   Fixed small bug
 
@@ -195,7 +198,7 @@ MULTI_INFO *m_info;
 
   /* save event format */
   size = sizeof(str);
-  db_get_value(hDB, m_info->hKeyRoot, "Common/Format", str, &size, TID_STRING);
+  db_get_value(hDB, m_info->hKeyRoot, "Common/Format", str, &size, TID_STRING, TRUE);
 
   if (equal_ustring(str, "Fixed"))
     m_info->format = FORMAT_FIXED;
@@ -213,7 +216,7 @@ MULTI_INFO *m_info;
     /* ODB value has priority over driver list */
     size = sizeof(INT);
     db_get_value(hDB, hKey, pequipment->driver[i].name, 
-                 &pequipment->driver[i].channels, &size, TID_INT);
+                 &pequipment->driver[i].channels, &size, TID_INT, TRUE);
 
     if (pequipment->driver[i].type == CH_INPUT)
       m_info->num_channels_input += pequipment->driver[i].channels;
