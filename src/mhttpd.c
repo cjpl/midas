@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.135  2000/08/21 12:43:09  midas
+  Added "last x days" feature in Elog
+
   Revision 1.134  2000/08/14 10:42:47  midas
   Display error message if variable not found in history file
 
@@ -2073,13 +2076,13 @@ BOOL   allow_delete;
 
 void show_elog_submit_query(INT last_n)
 {
-int    i, size, run, status, m1, d2, m2, y2, index, fh, colspan;
+int    i, size, run, status, m1, d2, m2, y2, index, colspan;
 char   date[80], author[80], type[80], system[80], subject[256], text[10000], 
        orig_tag[80], reply_tag[80], attachment[3][256], encoding[80];
 char   str[256], str2[10000], tag[256], ref[80], file_name[256];
 HNDLE  hDB;
 BOOL   full, show_attachments, display_run_number;
-DWORD  ltime_end, ltime_current, now;
+DWORD  ltime_start, ltime_end, ltime_current, now;
 struct tm tms, *ptms;
 FILE   *f;
 
@@ -2146,7 +2149,7 @@ FILE   *f;
 
   /*---- convert end date to ltime ----*/
 
-  ltime_end = 0;
+  ltime_end = ltime_start = 0;
 
   if (!last_n)
     {
@@ -2211,7 +2214,15 @@ FILE   *f;
   else 
     {
     if (last_n)
-      rsprintf("<tr><td colspan=6 bgcolor=#FFFF00><b>Last ten messages</b></tr>\n");
+      {
+      rsprintf("<tr><td colspan=6><a href=\"last%d\">Last %d days</a></tr>\n", 
+                last_n+1, last_n+1);
+
+      if (last_n == 1)
+        rsprintf("<tr><td colspan=6 bgcolor=#FFFF00><b>Last 24 hours</b></tr>\n");
+      else
+        rsprintf("<tr><td colspan=6 bgcolor=#FFFF00><b>Last %d days</b></tr>\n", last_n);
+      }
 
     else if (*getparam("m2") || *getparam("y2") || *getparam("d2"))
       rsprintf("<tr><td colspan=%d bgcolor=#FFFF00><b>Query result between %s %s %s and %s %d %d</b></tr>\n",
@@ -2271,15 +2282,11 @@ FILE   *f;
 
   if (last_n)
     {
-    strcpy(tag, "-1");
-    el_search_message(tag, &fh, TRUE);
-    close(fh);
-    for (i=1 ; i<last_n ; i++)
-      {
-      strcat(tag, "-1");
-      el_search_message(tag, &fh, TRUE);
-      close(fh);
-      }
+    time(&now);
+    ltime_start = now-3600*24*last_n;
+    ptms = localtime(&ltime_start);
+
+    sprintf(tag, "%02d%02d%02d.0", ptms->tm_year % 100, ptms->tm_mon+1, ptms->tm_mday);
     }
   else if (*getparam("r1"))
     {
@@ -2305,20 +2312,27 @@ FILE   *f;
     if (*getparam("r2") && atoi(getparam("r2")) < run)
       break;
 
+    /* convert date to unix format */
+    memset(&tms, 0, sizeof(struct tm));
+    tms.tm_year = (tag[0]-'0')*10 + (tag[1]-'0');
+    tms.tm_mon  = (tag[2]-'0')*10 + (tag[3]-'0') -1;
+    tms.tm_mday = (tag[4]-'0')*10 + (tag[5]-'0');
+    tms.tm_hour = (date[11]-'0')*10 + (date[12]-'0');
+    tms.tm_min  = (date[14]-'0')*10 + (date[15]-'0');
+    tms.tm_sec  = (date[17]-'0')*10 + (date[18]-'0');
+
+    if (tms.tm_year < 90)
+      tms.tm_year += 100;
+    ltime_current = mktime(&tms);
+    
+    /* check for start date */
+    if (ltime_start > 0)
+      if (ltime_current < ltime_start)
+        continue;
+
     /* check for end date */
     if (ltime_end > 0)
       {
-      /* extract time structure from tag */
-      memset(&tms, 0, sizeof(struct tm));
-      tms.tm_year = (tag[0]-'0')*10 + (tag[1]-'0');
-      tms.tm_mon  = (tag[2]-'0')*10 + (tag[3]-'0') -1;
-      tms.tm_mday = (tag[4]-'0')*10 + (tag[5]-'0');
-      tms.tm_hour = 12;
-
-      if (tms.tm_year < 90)
-        tms.tm_year += 100;
-      ltime_current = mktime(&tms);
-
       if (ltime_current > ltime_end)
         break;
       }
@@ -3112,9 +3126,9 @@ BOOL  display_run_number, allow_delete;
     return;
     }
 
-  if (equal_ustring(command, "last 10 entries"))
+  if (equal_ustring(command, "last 24 hours"))
     {
-    redirect("EL/last10");
+    redirect("EL/last1");
     return;
     }
 
@@ -3338,7 +3352,7 @@ BOOL  display_run_number, allow_delete;
     rsprintf("<input type=submit name=cmd value=Delete>\n");
   rsprintf("<input type=submit name=cmd value=Reply>\n");
   rsprintf("<input type=submit name=cmd value=Query>\n");
-  rsprintf("<input type=submit name=cmd value=\"Last 10 entries\">\n");
+  rsprintf("<input type=submit name=cmd value=\"Last 24 hours\">\n");
 
   /* check forms from ODB */
   db_find_key(hDB, 0, "/Elog/Forms", &hkeyroot);
