@@ -7,6 +7,9 @@
                 ting to a SYSTEM buffer and sending some data.
 
   $Log$
+  Revision 1.7  1999/11/23 11:48:40  midas
+  Replaced random() by rand(), since random doesn't exist under NT
+
   Revision 1.6  1999/11/09 13:22:12  midas
   Changed event size slightly to be above 10
 
@@ -99,7 +102,7 @@ char          host_name[256];
       for (i=0 ; i<10 ; i++)
         {
         if (variable_size)
-          act_size = (random() % (size-10)) + 10;
+          act_size = (rand() % (size-10)) + 10;
         else
           act_size = size;
 
