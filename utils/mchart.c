@@ -19,6 +19,9 @@
     See mchart -h for further info.
 
   $Log$
+  Revision 1.8  2002/06/03 06:07:15  midas
+  Added extra parameter to ss_daemon_init to keep stdout
+
   Revision 1.7  2002/05/10 23:57:37  pierre
   pass arg to stripchart + cosmetics
 
@@ -471,7 +474,7 @@ int main(unsigned int argc,char **argv)
   if (daemon && !(create || create_only))
   {
     printf("Becoming a daemon...\n");
-    ss_daemon_init();
+    ss_daemon_init(FALSE);
   }
 
   if (daemon)

@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.79  2002/06/03 06:07:15  midas
+  Added extra parameter to ss_daemon_init to keep stdout
+
   Revision 1.78  2002/05/10 05:21:50  pierre
   add MANA_LITE #ifdef
 
@@ -4923,7 +4926,7 @@ INT status;
     {
     printf("Becoming a daemon...\n");
     clp.quiet = TRUE;
-    ss_daemon_init();
+    ss_daemon_init(FALSE);
     }
 
   /* set default buffer size */

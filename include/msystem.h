@@ -7,6 +7,9 @@
                 routines
 
   $Log$
+  Revision 1.24  2002/06/03 06:07:14  midas
+  Added extra parameter to ss_daemon_init to keep stdout
+
   Revision 1.23  2002/05/16 18:01:13  midas
   Added subdir creation in logger and improved program restart scheme
 
@@ -577,7 +580,7 @@ INT ss_shm_protect(HNDLE handle, void *adr);
 INT ss_shm_unprotect(HNDLE handle, void **adr);
 INT ss_spawnv(INT mode, char *cmdname, char *argv[]);
 INT ss_shell(int sock);
-INT EXPRT ss_daemon_init();
+INT EXPRT ss_daemon_init(BOOL keep_stdout);
 INT EXPRT ss_system(char *command);
 INT  EXPRT ss_exec(char * cmd, INT * child_pid);
 BOOL EXPRT ss_existpid(INT pid);

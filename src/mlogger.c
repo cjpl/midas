@@ -6,6 +6,9 @@
   Contents:     MIDAS logger program
 
   $Log$
+  Revision 1.58  2002/06/03 06:07:15  midas
+  Added extra parameter to ss_daemon_init to keep stdout
+
   Revision 1.57  2002/05/16 22:15:07  midas
   Added conditional code for mkdir()
 
@@ -2677,7 +2680,7 @@ usage:
   if (daemon)
     {
     printf("Becoming a daemon...\n");
-    ss_daemon_init();
+    ss_daemon_init(FALSE);
     }
 
   status = cm_connect_experiment(host_name, exp_name, "Logger", NULL);

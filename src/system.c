@@ -14,6 +14,9 @@
                 Brown, Prentice Hall
 
   $Log$
+  Revision 1.60  2002/06/03 06:07:15  midas
+  Added extra parameter to ss_daemon_init to keep stdout
+
   Revision 1.59  2002/05/28 11:30:21  midas
   Made send_tcp() send always all bytes
 
@@ -1418,7 +1421,7 @@ struct termios tios;
 
 static BOOL _daemon_flag;
 
-INT ss_daemon_init()
+INT ss_daemon_init(BOOL keep_stdout)
 /********************************************************************\
 
   Routine: ss_daemon_init
@@ -1455,6 +1458,9 @@ INT ss_daemon_init()
      routines writing to stdout etc won't cause havoc. Copied from smbd */
   for (i=0 ; i<3 ; i++) 
     {
+    if (keep_stdout && i == 2)
+      continue;
+
     close(i);
     fd = open("/dev/null", O_RDWR, 0);
     if (fd < 0) 

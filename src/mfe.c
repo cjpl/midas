@@ -7,6 +7,9 @@
                 linked with user code to form a complete frontend
 
   $Log$
+  Revision 1.40  2002/06/03 06:07:15  midas
+  Added extra parameter to ss_daemon_init to keep stdout
+
   Revision 1.39  2002/05/15 23:43:56  midas
   Added event fragmentation
 
@@ -1694,12 +1697,12 @@ main(int argc, char *argv[])
 #endif
 {
 INT  status, i, dm_size;
-BOOL daemon; 
+INT  daemon; 
 
   host_name[0] = 0;
   exp_name[0] = 0;
   debug = FALSE;
-  daemon = FALSE;
+  daemon = 0;
 
 #ifdef OS_VXWORKS
   if (ahost_name)
@@ -1718,7 +1721,9 @@ BOOL daemon;
     if (argv[i][0] == '-' && argv[i][1] == 'd')
       debug = TRUE;
     else if (argv[i][0] == '-' && argv[i][1] == 'D')
-      daemon = TRUE;
+      daemon = 1;
+    else if (argv[i][0] == '-' && argv[i][1] == 'O')
+      daemon = 2;
     else if (argv[i][0] == '-')
       {
       if (i+1 >= argc || argv[i+1][0] == '-')
@@ -1730,7 +1735,10 @@ BOOL daemon;
       else
         {
 usage:
-        printf("usage: frontend [-h Hostname] [-e Experiment] [-d]\n\n");
+        printf("usage: frontend [-h Hostname] [-e Experiment] [-d] [-D] [-O]\n");
+        printf("         [-d]     Used to debug the frontend\n");
+        printf("         [-D]     Become a daemon\n");
+        printf("         [-O]     Become a daemon but keep stdout\n");
         return 0;
         }
       }
@@ -1789,7 +1797,7 @@ usage:
   if (daemon)
     {
     printf("\nBecoming a daemon...\n");
-    ss_daemon_init();
+    ss_daemon_init(daemon == 2);
     }
 
   /* now connect to server */

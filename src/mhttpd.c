@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.232  2002/06/03 06:07:15  midas
+  Added extra parameter to ss_daemon_init to keep stdout
+
   Revision 1.231  2002/05/31 09:32:07  midas
   Drain mail server messages
 
@@ -10249,7 +10252,7 @@ struct linger        ling;
   if (daemon)
     {
     printf("Becoming a daemon...\n");
-    ss_daemon_init();
+    ss_daemon_init(FALSE);
     }
 
   /* listen for connection */
