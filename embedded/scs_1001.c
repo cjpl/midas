@@ -9,6 +9,9 @@
                 for SCS-1001 stand alone control unit
 
   $Log$
+  Revision 1.2  2005/02/16 14:17:58  ritt
+  Two-speed menu increment
+
   Revision 1.1  2005/02/16 13:17:25  ritt
   Initial revision
 
@@ -73,8 +76,8 @@ MSCB_INFO_VAR code variables[] = {
    { 1, UNIT_BOOLEAN, 0, 0, 0,        "Dout2",   &user_data.dout[2],   0, 1, 1 },
    { 1, UNIT_BOOLEAN, 0, 0, 0,        "Dout3",   &user_data.dout[3],   0, 1, 1 },
 
-   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "DAC0",    &user_data.dac[0],  -10, 10, 0.1 }, // 8
-   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "DAC1",    &user_data.dac[1],  -10, 10, 0.1 },
+   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "DAC0",    &user_data.dac[0],  -10, 10, 0.01 }, // 8
+   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "DAC1",    &user_data.dac[1],  -10, 10, 0.01 },
 
    { 1, UNIT_BOOLEAN, 0, 0, 0,        "Din0",    &user_data.din[0] },  // 10
    { 1, UNIT_BOOLEAN, 0, 0, 0,        "Din1",    &user_data.din[1] },
