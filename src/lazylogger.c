@@ -6,6 +6,11 @@
   Contents:     Disk to Tape copier for background job
 
   $Log$
+  Revision 1.17  1999/12/13 23:23:47  pierre
+  - Add rm_time, cp_time in log message
+  - Save <channel>_recover.odb with untouched "list label"
+  - Change DIR_SEPARATOR to "/" for FTP connection
+
   Revision 1.16  1999/12/08 00:38:41  pierre
   - Add creation/update of "<channel>_recover.odb" after each copy
 
@@ -217,13 +222,13 @@ BOOL lazy_file_exists(char * dir, char * file);
 INT  lazy_main (INT, LAZY_INFO *);
 INT  lazy_copy( char * dev, char * file);
 INT  lazy_file_compose(char * fmt , char * dir, INT num, char * ffile, char * file);
-INT  lazy_update_list(LAZY_INFO *);
+INT  lazy_update_list(LAZY_INFO *, DWORD cp);
 INT  lazy_select_purge(HNDLE,  INT ch, LAZY_INFO *, char * fmt, char * dir, char * pufile, INT * run);
 INT  lazy_load_params( HNDLE hDB, HNDLE hKey );
 INT  build_log_list(char * fmt, char * dir, DIRLOG ** plog);
 INT  build_done_list(HNDLE, INT **);
 INT  cmp_log2donelist (DIRLOG * plog, INT * pdo);
-INT  lazy_log_update(INT action, INT run, char * label, char * file);
+INT  lazy_log_update(INT action, INT run, char * label, char * file, DWORD rm);
 int  lazy_remove_entry(INT ch, LAZY_INFO *, int run);
 void lazy_settings_hotlink(HNDLE hDB, HNDLE hKey, void * info);
 void lazy_maintain_check(HNDLE hKey, LAZY_INFO * pLall);
@@ -246,7 +251,7 @@ INT lazy_file_remove(char * pufile)
 }
 
 /*------------------------------------------------------------------*/
-INT lazy_log_update(INT action, INT run, char * label, char * file)
+INT lazy_log_update(INT action, INT run, char * label, char * file, DWORD perf_time)
 {
   char str[MAX_FILE_PATH];
   
@@ -257,18 +262,18 @@ INT lazy_log_update(INT action, INT run, char * label, char * file)
     lazyst.nfiles++;
 
     if (equal_ustring(lazy.type, "FTP"))
-      sprintf(str, "%s: %s %1.3lfMB file COPIED",
-              label, lazyst.backfile, lazyst.file_size/1024.0/1024.0);
+      sprintf(str, "%s: (cp:%.1fs) %s %1.3lfMB file COPIED",
+              label, (float)perf_time/1000., lazyst.backfile, lazyst.file_size/1024.0/1024.0);
     else
-      sprintf(str,"%s[%i] %s%c%s %1.3lfMB file NEW",
-	      label, lazyst.nfiles,
+      sprintf(str,"%s[%i] (cp:%.1fs) %s%c%s %1.3lfMB file NEW",
+	      label, lazyst.nfiles, (float)perf_time/1000.,
 	      lazy.path, DIR_SEPARATOR, lazyst.backfile, 
               lazyst.file_size/1024.0/1024.0);
     }
 
   else if (action == REMOVE_FILE)
-    sprintf(str,"%i  %s file REMOVED",
-            run, file);
+    sprintf(str,"%i (rm:%dms) %s file REMOVED",
+            run, perf_time, file);
   
   else if (action == REMOVE_ENTRY)
     sprintf(str,"%s run#%i entry REMOVED", 
@@ -746,7 +751,7 @@ int lazy_remove_entry(INT channel, LAZY_INFO * pLall, int run)
             db_set_data(hDB,hSubkey,potherlist,nother*sizeof(INT), nother, TID_INT);
           else
             db_delete_key(hDB,hSubkey,FALSE);
-          lazy_log_update(REMOVE_ENTRY, run, (pLall+k)->name, NULL);
+          lazy_log_update(REMOVE_ENTRY, run, (pLall+k)->name, NULL, 0);
         }
       }
     }
@@ -756,7 +761,7 @@ int lazy_remove_entry(INT channel, LAZY_INFO * pLall, int run)
 }
 
 /*------------------------------------------------------------------*/
-INT lazy_update_list(LAZY_INFO * pLinfo)
+INT lazy_update_list(LAZY_INFO * pLinfo, DWORD cp)
 /********************************************************************\
   Routine: lazy_update_list
   Purpose: update the /lazy/list tree with the info from lazy{}
@@ -811,7 +816,7 @@ INT lazy_update_list(LAZY_INFO * pLinfo)
       db_set_value(hDB, hKey, lazy.backlabel, &lazyst.cur_run, size, 1, TID_INT);
     }
 
-  lazy_log_update(NEW_FILE, lazyst.cur_run, lazy.backlabel, lazyst.backfile);
+  lazy_log_update(NEW_FILE, lazyst.cur_run, lazy.backlabel, lazyst.backfile, cp);
   
   if (msg_flag) cm_msg(MTALK,"Lazy","         lazy job %s done!",lazyst.backfile);
   
@@ -1171,6 +1176,7 @@ INT lazy_main (INT channel, LAZY_INFO * pLall)
   Function value:
 \********************************************************************/
 {
+  DWORD   cp_time;
   DIRLOG *pdirlog=NULL;
   INT *pdonelist=NULL;
   INT size,cur_acq_run, status, tobe_backup, purun;
@@ -1314,13 +1320,16 @@ INT lazy_main (INT channel, LAZY_INFO * pLall)
         /* check if beyond keep file + 1 */
         if (purun < (cur_acq_run - abs(lazy.staybehind) - 1 ))
         {
+	  DWORD rm_time;
           /* remove file */
+	  rm_time = ss_millitime();
           status = lazy_file_remove(pufile);
+	  rm_time = ss_millitime()- rm_time;
           if (status == SS_FILE_ERROR)
               cm_msg(MERROR, "Lazy","lazy_file_remove failed on file %s",pufile);
           else
           {
-            status = lazy_log_update(REMOVE_FILE, purun, NULL, pufile);
+            status = lazy_log_update(REMOVE_FILE, purun, NULL, pufile, rm_time);
             donepurge = TRUE;
 
             /* update donelist (remove run entry as the file has been deleted */
@@ -1377,9 +1386,14 @@ INT lazy_main (INT channel, LAZY_INFO * pLall)
       strcpy(outffile, lazy.path); 
     else if(dev_type == LOG_TYPE_FTP)
     {
+/*
       if (lazy.path[0] != 0)
         if (lazy.path[strlen(lazy.path)-1] != DIR_SEPARATOR)
           strcat(lazy.path, DIR_SEPARATOR_STR);
+*/
+      if (lazy.path[0] != 0)
+        if (lazy.path[strlen(lazy.path)-1] != '/')
+          strcat(lazy.path, "/");
       strcpy(outffile, lazy.path); 
       strcat(outffile, ",");
       strcat(outffile, lazyst.backfile);
@@ -1387,79 +1401,74 @@ INT lazy_main (INT channel, LAZY_INFO * pLall)
 
     /* check if space on backup device */
     if (lazy.capacity < (lazyst.cur_dev_size + lazyst.file_size))
-    {
-      /* not enough space => reset list label */
-      lazy.backlabel[0]='\0';
-      size = sizeof(lazy.backlabel);
-      db_set_value (hDB, pLch->hKey, "Settings/List label"
-                    , lazy.backlabel, size, 1, TID_STRING);
-      full_bck_flag = TRUE;
-      cm_msg(MINFO,"Lazy","Not enough space for next copy on backup device!");
-      
-      /* rewind device if TAPE type */
-      if(dev_type == LOG_TYPE_TAPE)
       {
-        int channel;
-
-        cm_msg(MINFO,"Lazy","backup device rewinding...");
-        ss_tape_open(outffile, O_RDONLY, &channel);
-        cm_get_watchdog_params(&watchdog_flag, &watchdog_timeout);
-        cm_set_watchdog_params(watchdog_flag, 300000);  /* 5 min for tape rewind */
-        ss_tape_unmount(channel);
-        ss_tape_close(channel);
-        cm_set_watchdog_params(watchdog_flag, watchdog_timeout);
-
-        /* Setup alarm */
-        lazy.alarm[0] = 0;
-        size = sizeof(lazy.alarm);
-        db_get_value(hDB, pLch->hKey,  "Settings/Alarm Class", lazy.alarm, &size, TID_STRING);
-      
-        /* trigger alarm if defined */
-        if (lazy.alarm[0])
-          al_trigger_alarm("Tape", "Tape full, Please remove current tape and load new one!", lazy.alarm,
-                           "Tape full", AT_INTERNAL);
-        return NOTHING_TODO;
+	/* not enough space => reset list label */
+	lazy.backlabel[0]='\0';
+	size = sizeof(lazy.backlabel);
+	db_set_value (hDB, pLch->hKey, "Settings/List label"
+		      , lazy.backlabel, size, 1, TID_STRING);
+	full_bck_flag = TRUE;
+	cm_msg(MINFO,"Lazy","Not enough space for next copy on backup device!");
+	
+	/* rewind device if TAPE type */
+	if(dev_type == LOG_TYPE_TAPE)
+	  {
+	    int channel;
+	    
+	    cm_msg(MINFO,"Lazy","backup device rewinding...");
+	    ss_tape_open(outffile, O_RDONLY, &channel);
+	    cm_get_watchdog_params(&watchdog_flag, &watchdog_timeout);
+	    cm_set_watchdog_params(watchdog_flag, 300000);  /* 5 min for tape rewind */
+	    ss_tape_unmount(channel);
+	    ss_tape_close(channel);
+	    cm_set_watchdog_params(watchdog_flag, watchdog_timeout);
+	    
+	    /* Setup alarm */
+	    lazy.alarm[0] = 0;
+	    size = sizeof(lazy.alarm);
+	    db_get_value(hDB, pLch->hKey,  "Settings/Alarm Class", lazy.alarm, &size, TID_STRING);
+	    
+	    /* trigger alarm if defined */
+	    if (lazy.alarm[0])
+	      al_trigger_alarm("Tape", "Tape full, Please remove current tape and load new one!", lazy.alarm,
+			       "Tape full", AT_INTERNAL);
+	    return NOTHING_TODO;
+	  }
       }
-    }
     
     /* Finally do the copy */
+    cp_time = ss_millitime();
     if ((status = lazy_copy(outffile, inffile)) != 0)
-    {
-      if (status == FORCE_EXIT)
-        return status;
-      cm_msg(MERROR,"Lazy","copy failed -%s-%s-%i",lazy.path, lazyst.backfile, status);
-      return NOTHING_TODO;
-    }
+      {
+	if (status == FORCE_EXIT)
+	  return status;
+	cm_msg(MERROR,"Lazy","copy failed -%s-%s-%i",lazy.path, lazyst.backfile, status);
+	return NOTHING_TODO;
+      }
   } /* file exists */
   else
-  {
-    cm_msg(MERROR,"Lazy","lazy_file_exists file %s doesn't exists",lazyst.backfile);
-    return NOTHING_TODO;
-  }              
-
+    {
+      cm_msg(MERROR,"Lazy","lazy_file_exists file %s doesn't exists",lazyst.backfile);
+      return NOTHING_TODO;
+    }              
+  
   /* Update the list */
-  if ((status = lazy_update_list(pLch)) != DB_SUCCESS)
-  {
-    cm_msg(MERROR,"Lazy","lazy_update failed");
-    return NOTHING_TODO;
-  }
-
+  cp_time = ss_millitime() - cp_time;
+  if ((status = lazy_update_list(pLch, cp_time)) != DB_SUCCESS)
+    {
+      cm_msg(MERROR,"Lazy","lazy_update failed");
+      return NOTHING_TODO;
+    }
+  
   /* generate/update a <channel>_recover.odb file when everything is Ok 
      after each file copy */
   {
     char str[128];
-
+    /* leave "list label" as it is, as long as the _recover.odb is loaded before
+       the lazylogger is started with NO -z things should be fine */
     /* save the recover with "List Label" empty */
-    str[0] ='\0';
-    size = sizeof(str);
-    db_set_value (hDB, pLch->hKey, "Settings/List label"
-                  , str, size, 1, TID_STRING);
     sprintf(str,"%s%s_recover.odb", lazy.dir, pLch->name);
     db_save(hDB, pLch->hKey, str, TRUE);
-    size = sizeof(lazy.backlabel);
-    db_set_value (hDB, pLch->hKey, "Settings/List label"
-                  , lazy.backlabel, size, 1, TID_STRING);
-
   }
 
   return NOTHING_TODO;
