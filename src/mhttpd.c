@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.204  2002/05/10 20:18:30  stefan
+  Fixed small bugs
+
   Revision 1.203  2002/05/10 19:22:03  midas
   Added history panel editor
 
@@ -8350,7 +8353,9 @@ char   *hist_col[] =
         /* get equipment name */
         db_get_key(hDB, hKeyEq, &key);
 
-        if (strncmp(display_name[index], key.name, strlen(key.name)) == 0)
+        strcpy(str, display_name[index]);
+        str[strlen(key.name)] = 0;
+        if (equal_ustring(str, key.name))
           rsprintf("<option selected value=\"%s\">%s\n", key.name, key.name);
         else
           rsprintf("<option value=\"%s\">%s\n", key.name, key.name);
@@ -8549,6 +8554,8 @@ char   *hist_col[] =
     rsprintf("</tr>\n");
     }
 
+  rsprintf("</table>\n");
+  rsprintf("</body></html>\r\n");
 }
 
 /*------------------------------------------------------------------*/
