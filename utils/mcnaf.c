@@ -6,6 +6,9 @@
   Contents:     CAMAC utility
   
   $Log$
+  Revision 1.15  2001/07/20 00:49:29  pierre
+  - Added -c option and -c @filename.
+
   Revision 1.14  2000/11/02 17:54:58  pierre
   - Fix job repeat, uses command RxWx.
 
@@ -131,11 +134,11 @@ char     job_name[128]="cnaf.cnf";
 
 HNDLE    hDB, hKey, hConn; 
 FILE *   pF;
-BOOL     jobflag;
-char     addr[128];
+BOOL     jobflag, cmd_mode=FALSE;
+char     addr[128], cmd[256];
 
 /* prototype */
-void cnafsub();
+INT  cnafsub();
 void help_page(INT which);
 INT  decode_line (CAMAC *p, char * str);
 INT  read_job_file(FILE * pF, INT action, void ** job, char * name);
@@ -475,7 +478,7 @@ INT  read_job_file(FILE * pF, INT action, void ** job, char * name)
 
 /*--------------------------------------------------------------------*/
 
-void cnafsub()
+INT cnafsub()
 {
   char str[128], line[128];
   INT  status, j;
@@ -491,15 +494,20 @@ void cnafsub()
   P = Prompt;
   while(1)
   {
-    make_display_string(MAIN, P, addr);
-    /* prompt */
-    printf("mCNAF> [%s] :",addr);
-    ss_gets(str,128);
+    if (!cmd_mode) {
+      make_display_string(MAIN, P, addr);
+      /* prompt */
+      printf("mCNAF> [%s] :",addr);
+      ss_gets(str,128);
+    }
+    else {
+      strcpy(str, cmd);
+    }
     
     /* decode line */    
     status = decode_line(P, str);
     if (status == QUIT)
-      return;
+      return status;
     else if (status == MCSTD)
     {
       mcstd_func(P);
@@ -509,79 +517,90 @@ void cnafsub()
       help_page(MAIN);
     else if (status == JOB)
     {
+    if (!cmd_mode) {
       printf("\nmCNAF> Job file name [%s]:",job_name);
       ss_gets (line,128);
-      status = read_job_file(pF, CHECK, (void **) &job, line);
-      if (status == JOB)
+    }
+    else {
+      strcpy(job_name, &str[1]);
+    }
+    status = read_job_file(pF, CHECK, (void **) &job, line);
+    if (status == JOB)
       {
-	sprintf(job_name,"%s",line);
-	status=read_job_file(pF, READ, (void **) &job, job_name);
+	      sprintf(job_name,"%s",line);
+	      status=read_job_file(pF, READ, (void **) &job, job_name);
       }
     }
     if (status == LOOP || status == JOB)
     {
       for (j=0;j<P->r;j++)
       {
-	if (status == LOOP)
-	  p = P;
-	if (status == JOB)
-	  p = job;
-	while (p->m)
-	{
-	  if (p->n == 28 || p->n == 29 || p->n == 30)
-	    cc_services(p);
-	  else
-	    if (p->m == 24) /* Actual 24 bits CAMAC operation */
-	      if (p->f<16)
-		cam24i_q(p->c, p->n, p->a, p->f, &p->d24, &p->x, &p->q);
-	      else
-		cam24o_q(p->c, p->n, p->a, p->f, p->d24, &p->x, &p->q);
-	    else /* Actual 16 bits CAMAC operation */
-	      if (p->f<16)
-		cam16i_q(p->c, p->n, p->a, p->f, &p->d16, &p->x, &p->q);
-	      else
-		cam16o_q(p->c, p->n, p->a, p->f, p->d16, &p->x, &p->q);
-	  make_display_string(MAIN, p, addr);
-	  
-          /* Result display */
-	  if (p->r > 1)
+	  if (status == LOOP)
+	    p = P;
+	  if (status == JOB)
+	    p = job;
+	  while (p->m)
 	  {
-	    /* repeat mode */
-	    if (status == JOB)
+	    if (p->n == 28 || p->n == 29 || p->n == 30)
+	      cc_services(p);
+	    else
+	      if (p->m == 24) /* Actual 24 bits CAMAC operation */
+	        if (p->f<16)
+		  cam24i_q(p->c, p->n, p->a, p->f, &p->d24, &p->x, &p->q);
+	        else
+		  cam24o_q(p->c, p->n, p->a, p->f, p->d24, &p->x, &p->q);
+	      else /* Actual 16 bits CAMAC operation */
+	        if (p->f<16)
+		  cam16i_q(p->c, p->n, p->a, p->f, &p->d16, &p->x, &p->q);
+	        else
+		  cam16o_q(p->c, p->n, p->a, p->f, p->d16, &p->x, &p->q);
+	    make_display_string(MAIN, p, addr);
+	    
+            /* Result display */
+	    if (p->r > 1)
 	    {
-	      printf("\nmCNAF> [%s]",addr);
-	      if (p->w != 0)
-		ss_sleep(p->w);
-	    }  
-            else
-	    {
-	      printf("mCNAF> [%s] <-%03i\n",addr,j+1);
-	      if (p->w != 0)
-		ss_sleep(p->w);
-	      if (j > p->r-1)
-		break;
+	      /* repeat mode */
+	      if (status == JOB)
+	      {
+	        if (!cmd_mode)
+            printf("\nmCNAF> [%s]",addr);
+	        if (p->w != 0)
+		  ss_sleep(p->w);
+	      }  
+	      else
+	      {
+	        if (!cmd_mode) 
+            printf("mCNAF> [%s] <-%03i\n",addr,j+1);
+	        if (p->w != 0)
+	          ss_sleep(p->w);
+	        if (j > p->r-1)
+		  break;
+	      }
 	    }
-	  }
-	  else
-	  {
-	    /* single command */
-	    if (status == JOB)
+	    else
 	    {
-	      printf("mCNAF> [%s]\n",addr);
-	      if (p->w != 0)
-		ss_sleep(p->w);
+	      /* single command */
+	      if (status == JOB)
+	      {
+	        if (!cmd_mode) 
+            printf("mCNAF> [%s]\n",addr);
+	        if (p->w != 0)
+		        ss_sleep(p->w);
+	      }
 	    }
+	    p++;
 	  }
-	  p++;
-	}
       };
       if (status == JOB)
       {
-	free (job);
-	printf("\n");
+	      free (job);
+        if (!cmd_mode) 
+          printf("\n");
       }
     }
+    if (cmd_mode) break;
   }
+  return status;
 }
 
 /*--------------------------------------------------------------------*/
@@ -648,7 +667,7 @@ INT decode_line (CAMAC *P, char * ss)
   }
   if (cmd = strpbrk(p,"H"))
     return HELP;
-  if (cmd = strpbrk(p,"J"))
+  if (cmd = strpbrk(p,"J@"))
     return JOB;
   if (cmd = strpbrk(p,"X"))
   {
@@ -954,10 +973,21 @@ int main(int argc, char **argv)
         strcpy(fe_name, argv[++i]);
       else if (strncmp(argv[i],"-s",3)==0)
         strcpy(rpc_server, argv[++i]);
+      else if (argv[i][1] == 'c')
+        {
+        if (strlen(argv[i]) >= 256)
+          {
+          printf("error: command line too long (>256).\n");
+          return 0;
+          }
+        strcpy(cmd, argv[++i]);
+        cmd_mode = TRUE;
+        }
       else
       {
      usage:
-        printf("usage: mcnaf [-f Frontend] [-h Hostname] [-e Experiment] [-s RPC server]\n\n");
+        printf("usage: mcnaf [-f Frontend] [-h Hostname] [-e Experiment] [-s RPC server]\n");
+	      printf("             [-c Command] [-c @CommandFile] \n\n");
         return 0;
       }
     }
@@ -971,8 +1001,9 @@ int main(int argc, char **argv)
     {
     status = cam_init();
     if (status == SUCCESS)
-      cnafsub();
+      status = cnafsub();
     }
   cam_exit();
-  return 0;
+  printf("status:%d\n", status);
+  return status;
 }
