@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.212  2004/09/17 01:00:55  midas
+  Lock ODB during startup of programs
+
   Revision 1.211  2004/07/15 14:59:35  midas
   Fixed compiler warning
 
@@ -2044,6 +2047,9 @@ INT cm_set_client_info(HNDLE hDB, HNDLE * hKeyClient, char *host_name,
          }
       }
 
+      /* make following operation atomic by locking database */
+      db_lock_database(hDB);
+
       /* check if entry with this pid exists already */
       pid = ss_gettid();
 
@@ -2089,6 +2095,7 @@ INT cm_set_client_info(HNDLE hDB, HNDLE * hKeyClient, char *host_name,
       sprintf(str, "System/Clients/%0d/Name", pid);
       status = db_set_value(hDB, 0, str, name, NAME_LENGTH, 1, TID_STRING);
       if (status != DB_SUCCESS) {
+         db_unlock_database(hDB);
          cm_msg(MERROR, "cm_set_client_info", "cannot set client name");
          return status;
       }
@@ -2107,34 +2114,44 @@ INT cm_set_client_info(HNDLE hDB, HNDLE * hKeyClient, char *host_name,
       /* set host name */
       status =
           db_set_value(hDB, hKey, "Host", host_name, HOST_NAME_LENGTH, 1, TID_STRING);
-      if (status != DB_SUCCESS)
+      if (status != DB_SUCCESS){
+         db_unlock_database(hDB);
          return status;
+      }
 
       /* set computer id */
       status = db_set_value(hDB, hKey, "Hardware type", &hw_type,
                             sizeof(hw_type), 1, TID_INT);
-      if (status != DB_SUCCESS)
+      if (status != DB_SUCCESS){
+         db_unlock_database(hDB);
          return status;
+      }
 
       /* set server port */
       data = 0;
       status = db_set_value(hDB, hKey, "Server Port", &data, sizeof(INT), 1, TID_INT);
-      if (status != DB_SUCCESS)
+      if (status != DB_SUCCESS){
+         db_unlock_database(hDB);
          return status;
+      }
 
       /* set transition mask */
       data = 0;
       status = db_set_value(hDB, hKey, "Transition Mask", &data,
                             sizeof(DWORD), 1, TID_DWORD);
-      if (status != DB_SUCCESS)
+      if (status != DB_SUCCESS){
+         db_unlock_database(hDB);
          return status;
+      }
 
       /* set deferred transition mask */
       data = 0;
       status = db_set_value(hDB, hKey, "Deferred Transition Mask", &data,
                             sizeof(DWORD), 1, TID_DWORD);
-      if (status != DB_SUCCESS)
+      if (status != DB_SUCCESS){
+         db_unlock_database(hDB);
          return status;
+      }
 
       /* lock client entry */
       db_set_mode(hDB, hKey, MODE_READ, TRUE);
@@ -2157,6 +2174,9 @@ INT cm_set_client_info(HNDLE hDB, HNDLE * hKeyClient, char *host_name,
       cm_set_watchdog_params(call_watchdog, watchdog_timeout);
       if (call_watchdog)
          ss_alarm(WATCHDOG_INTERVAL, cm_watchdog);
+
+      /* end of atomic operations */
+      db_unlock_database(hDB);
 
       /* touch notify key to inform others */
       data = 0;
@@ -4837,18 +4857,18 @@ void cm_watchdog(int dummy)
                   bDeleted = TRUE;
                }
 
-               db_unlock_database(i + 1);
-
-               /* display info message after unlocking db */
-               if (str[0])
-                  cm_msg(MINFO, "cm_watchdog", str);
-
-               /* delete client entry after unlocking db */
+               /* delete client entry before unlocking db */
                if (bDeleted) {
                   status = cm_delete_client_info(i + 1, client_pid);
                   if (status != CM_SUCCESS)
                      cm_msg(MERROR, "cm_watchdog", "cannot delete client info");
                }
+
+               db_unlock_database(i + 1);
+
+               /* display info message after unlocking db */
+               if (str[0])
+                  cm_msg(MINFO, "cm_watchdog", str);
             }
       }
 
