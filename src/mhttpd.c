@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.173  2001/10/17 10:08:03  midas
+  Speeded up return of long pages like HV slow control
+
   Revision 1.172  2001/10/15 09:24:26  midas
   Fixed small bug with new comment display on start page
 
@@ -535,6 +538,7 @@
 #define WEB_BUFFER_SIZE 1000000
 
 char return_buffer[WEB_BUFFER_SIZE];
+int  strlen_retbuf;
 int  return_length;
 char host_name[256];
 char mhttpd_url[256];
@@ -622,10 +626,10 @@ void show_hist_page(char *path, char *buffer, int *buffer_size, int refresh);
 
 void rsputs(const char *str)
 {
-  if (strlen(return_buffer) + strlen(str) > sizeof(return_buffer))
+  if (strlen_retbuf + strlen(str) > sizeof(return_buffer))
     strcpy(return_buffer, "<H1>Error: return buffer too small</H1>");
   else
-    strcat(return_buffer, str);
+    strcpy(return_buffer+strlen_retbuf, str);
 }
 
 /*------------------------------------------------------------------*/
@@ -635,11 +639,11 @@ void rsputs2(const char *str)
 int i, j, k;
 char *p, link[256];
 
-  if (strlen(return_buffer) + strlen(str) > sizeof(return_buffer))
+  if (strlen_retbuf + strlen(str) > sizeof(return_buffer))
     strcpy(return_buffer, "<H1>Error: return buffer too small</H1>");
   else
     {
-    j = strlen(return_buffer);
+    j = strlen_retbuf;
     for (i=0 ; i<(int)strlen(str) ; i++)
       {
       if (strncmp(str+i, "http://", 7) == 0)
@@ -651,7 +655,7 @@ char *p, link[256];
         link[k] = 0;
 
         sprintf(return_buffer+j, "<a href=\"http://%s\">http://%s</a>", link, link);
-        j = strlen(return_buffer);
+        j += strlen(return_buffer+j);
         }
       else
         switch (str[i])
@@ -663,6 +667,7 @@ char *p, link[256];
       }
 
     return_buffer[j] = 0;
+    strlen_retbuf = j;
     }  
 }
 
@@ -672,10 +677,6 @@ void rsprintf(const char *format, ...)
 {
 va_list argptr;
 char    str[10000];
-static int strlen_retbuf;
-
-  if (return_buffer[0] == 0)
-    strlen_retbuf = 0;
 
   va_start(argptr, format);
   vsprintf(str, (char *) format, argptr);
@@ -684,7 +685,7 @@ static int strlen_retbuf;
   if (strlen_retbuf + strlen(str) > sizeof(return_buffer))
     strcpy(return_buffer, "<H1>Error: return buffer too small</H1>");
   else
-    strcat(return_buffer, str);
+    strcpy(return_buffer+strlen_retbuf, str);
 
   strlen_retbuf += strlen(str);
 }
@@ -8799,6 +8800,7 @@ INT                  last_time=0;
         refresh = DEFAULT_REFRESH;
 
       memset(return_buffer, 0, sizeof(return_buffer));
+      strlen_retbuf = 0;
 
       if (strncmp(net_buffer, "GET", 3) != 0 &&
           strncmp(net_buffer, "POST", 4) != 0)
