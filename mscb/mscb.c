@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus communication functions
 
   $Log$
+  Revision 1.44  2003/07/18 07:40:07  midas
+  Version 1.4.9
+
   Revision 1.43  2003/07/14 10:18:27  midas
   HW RESET uses negative logic
 
@@ -135,7 +138,7 @@
 
 \********************************************************************/
 
-#define MSCB_LIBRARY_VERSION   "1.4.8"
+#define MSCB_LIBRARY_VERSION   "1.4.9"
 #define MSCB_PROTOCOL_VERSION  "1.4"
 
 #ifdef _MSC_VER           // Windows includes
