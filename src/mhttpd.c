@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.263  2004/01/19 16:56:49  olchansk
+  use ss_timezone()
+
   Revision 1.262  2004/01/08 08:40:10  midas
   Implemented standard indentation
 
@@ -6980,7 +6983,7 @@ void taxis(gdImagePtr im, gdFont * font, int col, int gcol,
          break;
    } while (1);
 
-   x_act = (int) floor((double) (xmin - timezone) / label_dx) * label_dx + timezone;
+   x_act = (int) floor((double) (xmin - ss_timezone()) / label_dx) * label_dx + ss_timezone();
 
    gdImageLine(im, x1, y1, x1 + width, y1, col);
 
@@ -6992,8 +6995,8 @@ void taxis(gdImagePtr im, gdFont * font, int col, int gcol,
          break;
 
       if (x_screen >= x1) {
-         if ((x_act - timezone) % major_dx == 0) {
-            if ((x_act - timezone) % label_dx == 0) {
+         if ((x_act - ss_timezone()) % major_dx == 0) {
+            if ((x_act - ss_timezone()) % label_dx == 0) {
           /**** label tick mark ****/
                gdImageLine(im, xs, y1, xs, y1 + text, col);
 
