@@ -6,6 +6,9 @@
   Contents:     Speaks midas messages
 
   $Log$
+  Revision 1.3  1999/07/06 09:03:16  midas
+  Changed include directory for provoice to c:
+
   Revision 1.2  1998/10/12 12:19:04  midas
   Added Log tag in header
 
@@ -14,7 +17,7 @@
 
 #include "midas.h"
 #include "msystem.h"
-#include "\provoice\include\fbvspch.h"
+#include "c:\provoice\include\fbvspch.h"
 
 LPSTR           lpPhonetics;
 LPSPEECHBLOCK   lpSCB;
