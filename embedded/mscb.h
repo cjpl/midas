@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol commands
 
   $Log$
+  Revision 1.53  2005/03/16 14:12:30  ritt
+  Added subm_260
+
   Revision 1.52  2005/03/08 14:52:32  ritt
   Adapted SCS_210 to F121 CPU
 
@@ -267,6 +270,19 @@ sbit RS485_ENABLE = P1 ^ 0;
 #undef EEPROM_SUPPORT
 
 /*--------------------------------*/
+#elif defined(SUBM_260)
+#include <c8051F120.h>
+#define CPU_C8051F120
+#define CPU_CYGNAL
+
+#define LED_0 P1 ^ 2
+#define LED_1 P1 ^ 3
+#define LED_ON 0
+sbit RS485_ENABLE = P0 ^ 4;
+
+#undef EEPROM_SUPPORT
+
+/*--------------------------------*/
 #elif defined(SCS_300) || defined(SCS_310)
 #include <c8051F020.h>
 #define CPU_C8051F020
@@ -415,11 +431,18 @@ sbit RS485_ENABLE = P0 ^ 7;
 
 /*---- Delay macro to be used in interrupt routines etc. -----------*/
 
-#if defined(CPU_C8051F120)
+#if defined(SUBM_260)
 #define DELAY_US(_us) { \
    unsigned char _i,_j; \
    for (_i = (unsigned char) _us; _i > 0; _i--) \
-      for (_j=9 ; _j>0 ; _j--) \
+      for (_j=2 ; _j>0 ; _j--) \
+         _nop_(); \
+}
+#elif defined(CPU_C8051F120)
+#define DELAY_US(_us) { \
+   unsigned char _i,_j; \
+   for (_i = (unsigned char) _us; _i > 0; _i--) \
+      for (_j=19 ; _j>0 ; _j--) \
          _nop_(); \
 }
 #elif defined(CPU_C8051F310)
@@ -452,7 +475,7 @@ sbit RS485_ENABLE = P0 ^ 7;
 
 /*---- MSCB commands -----------------------------------------------*/
 
-#define VERSION 0x19            // version 1.8
+#define VERSION 0x19            // version 1.9
 #define INTERCHAR_DELAY 20      // 20us between characters
 
 /* Version history:
@@ -636,8 +659,12 @@ typedef struct {                // system info stored in EEPROM
    char node_name[16];
 } SYS_INFO;
 
+#ifndef ENABLE_INTERRUPTS
 #define ENABLE_INTERRUPTS { EA = 1; }
+#endif
+#ifndef DISABLE_INTERRUPTS
 #define DISABLE_INTERRUPTS { EA = 0; }
+#endif
 
 /*---- function declarations ---------------------------------------*/
 
