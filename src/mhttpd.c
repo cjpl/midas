@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.66  1999/10/07 14:04:49  midas
+  Added select() before recv() to avoid hangups
+
   Revision 1.65  1999/10/07 13:31:18  midas
   Fixed truncated date in el_submit, cut off @host in author search
 
@@ -5275,7 +5278,25 @@ INT                  last_time=0;
       header_length = 0;
       do
         {
-        i = recv(_sock, net_buffer+len, sizeof(net_buffer)-len, 0);
+        FD_ZERO(&readfds);
+        FD_SET(_sock, &readfds);
+
+        timeout.tv_sec  = 1;
+        timeout.tv_usec = 0;
+
+#ifdef OS_UNIX
+        do
+          {
+          status = select(FD_SETSIZE, (void *) &readfds, NULL, NULL, (void *) &timeout);
+          /* if an alarm signal was cought, restart with reduced timeout */
+          } while (status == -1 && errno == EINTR);
+#else
+        status = select(FD_SETSIZE, (void *) &readfds, NULL, NULL, (void *) &timeout);
+#endif
+        if (FD_ISSET(_sock, &readfds))
+          i = recv(_sock, net_buffer+len, sizeof(net_buffer)-len, 0);
+        else
+          goto error;
       
         /* abort if connection got broken */
         if (i<0)
