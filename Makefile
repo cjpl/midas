@@ -7,6 +7,10 @@
 #  Contents:     Makefile for MIDAS binaries and examples under unix
 #
 #  $Log$
+#  Revision 1.59  2004/09/18 04:33:26  olchansk
+#  Add support for linking with the static libRoot.a: use "make NEED_LIBROOTA=1"
+#  This is experimental and untested. Compilation and linking tested on RHL9 with ROOT v4.00.08.
+#
 #  Revision 1.58  2004/09/18 04:10:12  olchansk
 #  Per discussion with Stefan, make the default to build and use static libmidas.a.
 #  To build midas with the dynamic libmidas.so, use "make NEED_SHLIB=1"
@@ -246,6 +250,7 @@ MIDAS_PREF_FLAGS  =
 
 #
 # Option to build the midas shared library
+#
 # To link midas with the static libmidas.a, say "make ... NEED_SHLIB="
 # To link midas with the shared libmidas.so, say "make ... NEED_SHLIB=1"
 #
@@ -255,6 +260,13 @@ NEED_SHLIB=
 # Option to set the shared library path on MIDAS executables
 #
 NEED_RPATH=1
+
+#
+# Option to use the static ROOT library libRoot.a
+#
+# To link midas with the static ROOT library, say "make ... NEED_LIBROOTA=1"
+#
+NEED_LIBROOTA=
 
 #####################################################################
 # Nothing needs to be modified after this line 
@@ -447,6 +459,11 @@ ROOTCFLAGS  := $(shell $(ROOTSYS)/bin/root-config --cflags)
 ifdef NEED_RPATH
 ROOTLIBS   += -Wl,-rpath,$(ROOTSYS)/lib
 ROOTGLIBS  += -Wl,-rpath,$(ROOTSYS)/lib
+endif
+
+ifdef NEED_LIBROOTA
+ROOTLIBS    := $(ROOTSYS)/lib/libRoot.a -lssl -ldl -lcrypt
+ROOTGLIBS   := $(ROOTLIBS) -lfreetype
 endif
 
 $(BIN_DIR)/mlogger: $(BIN_DIR)/%: $(SRC_DIR)/%.c
