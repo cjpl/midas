@@ -14,6 +14,9 @@
                 Brown, Prentice Hall
 
   $Log$
+  Revision 1.76  2004/01/08 06:36:10  pierre
+  Doxygen the file
+
   Revision 1.75  2003/10/16 22:53:57  midas
   Changed return values for ss_thread_create to return threadId.
   Added ss_thread_kill for killing the passed threadId. (DBM - Triumf)
@@ -270,6 +273,28 @@
 
 \********************************************************************/
 
+/**dox***************************************************************/
+/** @file system.c
+The Midas System file
+*/
+
+/** @defgroup msfunctionc  System Functions (ss_xxx)
+ */
+
+/**dox***************************************************************/
+/** @addtogroup msystemincludecode
+ *  
+ *  @{  */
+
+/**dox***************************************************************/
+/** @addtogroup msfunctionc
+ *  
+ *  @{  */
+
+/**dox***************************************************************/
+#ifndef DOXYGEN_SHOULD_SKIP_THIS
+
+
 #include "midas.h"
 #include "msystem.h"
 
@@ -278,14 +303,12 @@ static INT ss_in_async_routine_flag = 0;
 #include <signal.h>
 
 /*------------------------------------------------------------------*/
-
 /* globals */
 
 /* if set, don't write to *SHM file (used for Linux cluster) */
 BOOL disable_shm_write = FALSE;
 
 /*------------------------------------------------------------------*/
-
 INT ss_set_async_flag(INT flag)
 /********************************************************************\
 
@@ -307,16 +330,15 @@ INT ss_set_async_flag(INT flag)
 
 \********************************************************************/
 {
-INT old_flag;
+   INT old_flag;
 
-  old_flag = ss_in_async_routine_flag;
-  ss_in_async_routine_flag = flag;
-  return old_flag;
+   old_flag = ss_in_async_routine_flag;
+   ss_in_async_routine_flag = flag;
+   return old_flag;
 }
 
 /*------------------------------------------------------------------*/
-
-INT ss_shm_open(char *name, INT size, void **adr, HNDLE *handle)
+INT ss_shm_open(char *name, INT size, void **adr, HNDLE * handle)
 /********************************************************************\
 
   Routine: ss_shm_open
@@ -341,226 +363,211 @@ INT ss_shm_open(char *name, INT size, void **adr, HNDLE *handle)
 
 \********************************************************************/
 {
-INT    status;
-char   mem_name[256], file_name[256], path[256];
+   INT status;
+   char mem_name[256], file_name[256], path[256];
 
-  /* Add a leading SM_ to the memory name */
-  sprintf(mem_name, "SM_%s", name);
+   /* Add a leading SM_ to the memory name */
+   sprintf(mem_name, "SM_%s", name);
 
-  /* Build the filename out of the path, and the name of the shared memory. */
-  cm_get_path(path);
-  if (path[0] == 0)
-    {
-    getcwd(path, 256);
+   /* Build the filename out of the path, and the name of the shared memory. */
+   cm_get_path(path);
+   if (path[0] == 0) {
+      getcwd(path, 256);
 #if defined(OS_VMS)
 #elif defined(OS_UNIX)
-    strcat(path, "/");
+      strcat(path, "/");
 #elif defined(OS_WINNT)
-    strcat(path, "\\");
+      strcat(path, "\\");
 #endif
-    }
+   }
 
-  strcpy(file_name, path);
+   strcpy(file_name, path);
 #if defined (OS_UNIX)
-  strcat(file_name, "."); /* dot file under UNIX */
+   strcat(file_name, ".");      /* dot file under UNIX */
 #endif
-  strcat(file_name, name);
-  strcat(file_name, ".SHM");
+   strcat(file_name, name);
+   strcat(file_name, ".SHM");
 
 #ifdef OS_WINNT
 
-  status = SS_SUCCESS;
+   status = SS_SUCCESS;
 
-  {
-  HANDLE hFile, hMap;
-  char   str[256], *p;
-  DWORD  file_size;
+   {
+      HANDLE hFile, hMap;
+      char str[256], *p;
+      DWORD file_size;
 
-  /* make the memory name unique using the pathname. This is necessary
-     because NT doesn't use ftok. So if different experiments are
-     running in different directories, they should not see the same
-     shared memory */
-  strcpy(str, path);
+      /* make the memory name unique using the pathname. This is necessary
+         because NT doesn't use ftok. So if different experiments are
+         running in different directories, they should not see the same
+         shared memory */
+      strcpy(str, path);
 
-  /* replace special chars by '*' */
-  while (strpbrk(str, "\\: "))
-    *strpbrk(str, "\\: ") = '*';
-  strcat(str, mem_name);
+      /* replace special chars by '*' */
+      while (strpbrk(str, "\\: "))
+         *strpbrk(str, "\\: ") = '*';
+      strcat(str, mem_name);
 
-  /* convert to uppercase */
-  p = str;
-  while (*p)
-    *p++ = (char) toupper(*p);
+      /* convert to uppercase */
+      p = str;
+      while (*p)
+         *p++ = (char) toupper(*p);
 
-  hMap = OpenFileMapping(FILE_MAP_ALL_ACCESS, FALSE, str);
-  if (hMap == 0)
-    {
-    hFile = CreateFile(file_name, GENERIC_READ | GENERIC_WRITE,
-                       FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_ALWAYS,
-                       FILE_ATTRIBUTE_NORMAL, 0);
-    if (!hFile)
-      {
-      cm_msg(MERROR, "ss_shm_open", "CreateFile() failed");
-      return SS_FILE_ERROR;
+      hMap = OpenFileMapping(FILE_MAP_ALL_ACCESS, FALSE, str);
+      if (hMap == 0) {
+         hFile = CreateFile(file_name, GENERIC_READ | GENERIC_WRITE,
+                            FILE_SHARE_READ | FILE_SHARE_WRITE, NULL,
+                            OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0);
+         if (!hFile) {
+            cm_msg(MERROR, "ss_shm_open", "CreateFile() failed");
+            return SS_FILE_ERROR;
+         }
+
+         file_size = GetFileSize(hFile, NULL);
+         if (file_size != 0xFFFFFFFF && file_size > 0)
+            size = file_size;
+
+         hMap = CreateFileMapping(hFile, NULL, PAGE_READWRITE, 0, size, str);
+
+         if (!hMap) {
+            status = GetLastError();
+            cm_msg(MERROR, "ss_shm_open", "CreateFileMapping() failed, error %d", status);
+            return SS_FILE_ERROR;
+         }
+
+         CloseHandle(hFile);
+         status = SS_CREATED;
       }
 
-    file_size = GetFileSize(hFile, NULL);
-    if (file_size != 0xFFFFFFFF && file_size > 0)
-      size = file_size;
+      *adr = MapViewOfFile(hMap, FILE_MAP_ALL_ACCESS, 0, 0, 0);
+      *handle = (HNDLE) hMap;
 
-    hMap = CreateFileMapping(hFile, NULL, PAGE_READWRITE,
-           0, size, str);
-
-    if (!hMap)
-      {
-      status = GetLastError();
-      cm_msg(MERROR, "ss_shm_open", "CreateFileMapping() failed, error %d", status);
-      return SS_FILE_ERROR;
+      if (adr == NULL) {
+         cm_msg(MERROR, "ss_shm_open", "MapViewOfFile() failed");
+         return SS_NO_MEMORY;
       }
 
-    CloseHandle(hFile);
-    status = SS_CREATED;
-    }
+      return status;
+   }
 
-  *adr = MapViewOfFile(hMap, FILE_MAP_ALL_ACCESS, 0, 0, 0);
-  *handle = (HNDLE) hMap;
-
-  if (adr == NULL)
-    {
-    cm_msg(MERROR, "ss_shm_open", "MapViewOfFile() failed");
-    return SS_NO_MEMORY;
-    }
-
-  return status;
-  }
-
-#endif /* OS_WINNT*/
+#endif                          /* OS_WINNT */
 #ifdef OS_VMS
 
-  status = SS_SUCCESS;
+   status = SS_SUCCESS;
 
-  {
-  int addr[2];
-  $DESCRIPTOR(memname_dsc, "dummy");
-  $DESCRIPTOR(filename_dsc, "dummy");
-  memname_dsc.dsc$w_length = strlen(mem_name);
-  memname_dsc.dsc$a_pointer = mem_name;
-  filename_dsc.dsc$w_length = strlen(file_name);
-  filename_dsc.dsc$a_pointer = file_name;
+   {
+      int addr[2];
+      $DESCRIPTOR(memname_dsc, "dummy");
+      $DESCRIPTOR(filename_dsc, "dummy");
+      memname_dsc.dsc$w_length = strlen(mem_name);
+      memname_dsc.dsc$a_pointer = mem_name;
+      filename_dsc.dsc$w_length = strlen(file_name);
+      filename_dsc.dsc$a_pointer = file_name;
 
-  addr[0] = size;
-  addr[1] = 0;
+      addr[0] = size;
+      addr[1] = 0;
 
-  status = ppl$create_shared_memory( &memname_dsc, addr,
-             &PPL$M_NOUNI, &filename_dsc);
+      status = ppl$create_shared_memory(&memname_dsc, addr, &PPL$M_NOUNI, &filename_dsc);
 
-  if (status == PPL$_CREATED)
-    status = SS_CREATED;
-  else if (status != PPL$_NORMAL)
-    status = SS_FILE_ERROR;
+      if (status == PPL$_CREATED)
+         status = SS_CREATED;
+      else if (status != PPL$_NORMAL)
+         status = SS_FILE_ERROR;
 
-  *adr = (void *) addr[1];
-  *handle = 0;      /* not used under VMS */
+      *adr = (void *) addr[1];
+      *handle = 0;              /* not used under VMS */
 
-  if (adr == NULL)
-    return SS_NO_MEMORY;
+      if (adr == NULL)
+         return SS_NO_MEMORY;
 
-  return status;
-  }
+      return status;
+   }
 
-#endif /* OS_VMS */
+#endif                          /* OS_VMS */
 #ifdef OS_UNIX
 
-  status = SS_SUCCESS;
+   status = SS_SUCCESS;
 
-  {
-  int             key, shmid, fh, file_size;
-  struct shmid_ds buf;
-  char            str[256];
+   {
+      int key, shmid, fh, file_size;
+      struct shmid_ds buf;
+      char str[256];
 
-  /* create a unique key from the file name */
-  key = ftok(file_name, 'M');
+      /* create a unique key from the file name */
+      key = ftok(file_name, 'M');
 
-  /* if file doesn't exist, create it */
-  if (key == -1)
-    {
-    fh = open(file_name, O_CREAT | O_TRUNC | O_BINARY, 0644);
-    close(fh);
-    key = ftok(file_name, 'M');
+      /* if file doesn't exist, create it */
+      if (key == -1) {
+         fh = open(file_name, O_CREAT | O_TRUNC | O_BINARY, 0644);
+         close(fh);
+         key = ftok(file_name, 'M');
 
-    if (key == -1)
-      {
-      cm_msg(MERROR, "ss_shm_open", "ftok() failed");
-      return SS_FILE_ERROR;
+         if (key == -1) {
+            cm_msg(MERROR, "ss_shm_open", "ftok() failed");
+            return SS_FILE_ERROR;
+         }
+
+         status = SS_CREATED;
+
+         /* delete any previously created memory */
+
+         shmid = shmget(key, 0, 0);
+         shmctl(shmid, IPC_RMID, &buf);
+      } else {
+         /* if file exists, retrieve its size */
+         file_size = (INT) ss_file_size(file_name);
+         if (file_size > 0)
+            size = file_size;
       }
 
-    status = SS_CREATED;
+      /* get the shared memory, create if not existing */
+      shmid = shmget(key, size, 0);
+      if (shmid == -1) {
+         shmid = shmget(key, size, IPC_CREAT);
+         status = SS_CREATED;
+      }
 
-    /* delete any previously created memory */
+      if (shmid == -1) {
+         if (errno == EINVAL)
+            cm_msg(MERROR, "ss_shm_open",
+                   "shmget() failed, shared memory size %d exceeds system limit", size);
+         else
+            cm_msg(MERROR, "ss_shm_open", "shmget() failed, errno = %d", errno);
 
-    shmid = shmget(key, 0, 0);
-    shmctl(shmid, IPC_RMID, &buf);
-    }
-  else
-    {
-    /* if file exists, retrieve its size */
-    file_size = (INT) ss_file_size(file_name);
-    if (file_size > 0)
-      size = file_size;
-    }
+         return SS_NO_MEMORY;
+      }
 
-  /* get the shared memory, create if not existing */
-  shmid = shmget(key, size, 0);
-  if (shmid == -1)
-    {
-    shmid = shmget(key, size, IPC_CREAT);
-    status = SS_CREATED;
-    }
+      buf.shm_perm.uid = getuid();
+      buf.shm_perm.gid = getgid();
+      buf.shm_perm.mode = 0666;
+      shmctl(shmid, IPC_SET, &buf);
 
-  if (shmid == -1)
-    {
-    if (errno == EINVAL)
-      cm_msg(MERROR, "ss_shm_open", "shmget() failed, shared memory size %d exceeds system limit", size);
-    else
-      cm_msg(MERROR, "ss_shm_open", "shmget() failed, errno = %d", errno);
+      *adr = shmat(shmid, 0, 0);
+      *handle = (HNDLE) shmid;
 
-    return SS_NO_MEMORY;
-    }
+      if ((*adr) == (void *) (-1)) {
+         sprintf(str, "shmat() failed, errno = %d", errno);
+         cm_msg(MERROR, "ss_shm_open", str);
+         return SS_NO_MEMORY;
+      }
 
-  buf.shm_perm.uid  = getuid();
-  buf.shm_perm.gid  = getgid();
-  buf.shm_perm.mode = 0666;
-  shmctl(shmid, IPC_SET, &buf);
+      /* if shared memory was created, try to load it from file */
+      if (status == SS_CREATED) {
+         fh = open(file_name, O_RDONLY, 0644);
+         if (fh == -1)
+            fh = open(file_name, O_CREAT | O_RDWR, 0644);
+         else
+            read(fh, *adr, size);
+         close(fh);
+      }
 
-  *adr = shmat(shmid, 0, 0);
-  *handle = (HNDLE) shmid;
+      return status;
+   }
 
-  if ( (*adr) == (void *) (-1) )
-    {
-    sprintf(str, "shmat() failed, errno = %d", errno);
-    cm_msg(MERROR, "ss_shm_open", str);
-    return SS_NO_MEMORY;
-    }
-
-  /* if shared memory was created, try to load it from file */
-  if (status == SS_CREATED)
-    {
-    fh = open(file_name, O_RDONLY, 0644);
-    if (fh == -1)
-      fh = open(file_name, O_CREAT | O_RDWR, 0644);
-    else
-      read(fh, *adr, size);
-    close(fh);
-    }
-
-  return status;
-  }
-
-#endif /* OS_UNIX */
+#endif                          /* OS_UNIX */
 }
 
 /*------------------------------------------------------------------*/
-
 INT ss_shm_close(char *name, void *adr, HNDLE handle, INT destroy_flag)
 /********************************************************************\
 
@@ -586,44 +593,43 @@ INT ss_shm_close(char *name, void *adr, HNDLE handle, INT destroy_flag)
 
 \********************************************************************/
 {
-char   mem_name[256], file_name[256], path[256];
+   char mem_name[256], file_name[256], path[256];
 
-  /*
-  append a leading SM_ to the memory name to resolve name conflicts
-  with mutex or semaphore names
-  */
-  sprintf(mem_name, "SM_%s", name);
+   /*
+      append a leading SM_ to the memory name to resolve name conflicts
+      with mutex or semaphore names
+    */
+   sprintf(mem_name, "SM_%s", name);
 
-  /* append .SHM and preceed the path for the shared memory file name */
-  cm_get_path(path);
-  if (path[0] == 0)
-    {
-    getcwd(path, 256);
+   /* append .SHM and preceed the path for the shared memory file name */
+   cm_get_path(path);
+   if (path[0] == 0) {
+      getcwd(path, 256);
 #if defined(OS_VMS)
 #elif defined(OS_UNIX)
-    strcat(path, "/");
+      strcat(path, "/");
 #elif defined(OS_WINNT)
-    strcat(path, "\\");
+      strcat(path, "\\");
 #endif
-    }
+   }
 
-  strcpy(file_name, path);
+   strcpy(file_name, path);
 #if defined (OS_UNIX)
-  strcat(file_name, "."); /* dot file under UNIX */
+   strcat(file_name, ".");      /* dot file under UNIX */
 #endif
-  strcat(file_name, name);
-  strcat(file_name, ".SHM");
+   strcat(file_name, name);
+   strcat(file_name, ".SHM");
 
 #ifdef OS_WINNT
 
-  if (!UnmapViewOfFile(adr))
-    return SS_INVALID_ADDRESS;
+   if (!UnmapViewOfFile(adr))
+      return SS_INVALID_ADDRESS;
 
-  CloseHandle((HANDLE) handle);
+   CloseHandle((HANDLE) handle);
 
-  return SS_SUCCESS;
+   return SS_SUCCESS;
 
-#endif /* OS_WINNT*/
+#endif                          /* OS_WINNT */
 #ifdef OS_VMS
 /* outcommented because ppl$delete... makes privilege violation
   {
@@ -648,69 +654,59 @@ char   mem_name[256], file_name[256], path[256];
   return SS_INVALID_ADDRESS;
   }
 */
-  return SS_INVALID_ADDRESS;
+   return SS_INVALID_ADDRESS;
 
-#endif /* OS_VMS */
+#endif                          /* OS_VMS */
 #ifdef OS_UNIX
 
-  {
-  struct shmid_ds buf;
-  FILE   *fh;
+   {
+      struct shmid_ds buf;
+      FILE *fh;
 
-  /* get info about shared memory */
-  if (shmctl(handle, IPC_STAT, &buf) < 0)
-    {
-    cm_msg(MERROR, "ss_shm_close", "shmctl() failed");
-    return SS_INVALID_HANDLE;
-    }
-
-  /* copy to file and destroy if we are the last one */
-  if (buf.shm_nattch == 1)
-    {
-    if (!disable_shm_write)
-      {
-      fh = fopen(file_name, "w");
-
-      if (fh == NULL)
-        {
-        cm_msg(MERROR, "ss_shm_close", "Cannot write to file %s, please check protection", file_name);
-        }
-      else
-        {
-        /* write shared memory to file */
-        fwrite(adr, 1, buf.shm_segsz, fh);
-        fclose(fh);
-        }
+      /* get info about shared memory */
+      if (shmctl(handle, IPC_STAT, &buf) < 0) {
+         cm_msg(MERROR, "ss_shm_close", "shmctl() failed");
+         return SS_INVALID_HANDLE;
       }
 
-    if (shmdt(adr) < 0)
-      {
-      cm_msg(MERROR, "ss_shm_close", "shmdt() failed");
-      return SS_INVALID_ADDRESS;
+      /* copy to file and destroy if we are the last one */
+      if (buf.shm_nattch == 1) {
+         if (!disable_shm_write) {
+            fh = fopen(file_name, "w");
+
+            if (fh == NULL) {
+               cm_msg(MERROR, "ss_shm_close",
+                      "Cannot write to file %s, please check protection", file_name);
+            } else {
+               /* write shared memory to file */
+               fwrite(adr, 1, buf.shm_segsz, fh);
+               fclose(fh);
+            }
+         }
+
+         if (shmdt(adr) < 0) {
+            cm_msg(MERROR, "ss_shm_close", "shmdt() failed");
+            return SS_INVALID_ADDRESS;
+         }
+
+         if (shmctl(handle, IPC_RMID, &buf) < 0) {
+            cm_msg(MERROR, "ss_shm_close", "shmctl(RMID) failed");
+            return SS_INVALID_ADDRESS;
+         }
+      } else
+         /* only detach if we are not the last */
+      if (shmdt(adr) < 0) {
+         cm_msg(MERROR, "ss_shm_close", "shmdt() failed");
+         return SS_INVALID_ADDRESS;
       }
 
-    if (shmctl(handle, IPC_RMID, &buf) < 0)
-      {
-      cm_msg(MERROR, "ss_shm_close", "shmctl(RMID) failed");
-      return SS_INVALID_ADDRESS;
-      }
-    }
-  else
-    /* only detach if we are not the last */
-    if (shmdt(adr) < 0)
-      {
-      cm_msg(MERROR, "ss_shm_close", "shmdt() failed");
-      return SS_INVALID_ADDRESS;
-      }
+      return SS_SUCCESS;
+   }
 
-  return SS_SUCCESS;
-  }
-
-#endif /* OS_UNIX */
+#endif                          /* OS_UNIX */
 }
 
 /*------------------------------------------------------------------*/
-
 INT ss_shm_protect(HNDLE handle, void *adr)
 /********************************************************************\
 
@@ -734,24 +730,21 @@ INT ss_shm_protect(HNDLE handle, void *adr)
 {
 #ifdef OS_WINNT
 
-  if (!UnmapViewOfFile(adr))
-    return SS_INVALID_ADDRESS;
+   if (!UnmapViewOfFile(adr))
+      return SS_INVALID_ADDRESS;
 
-#endif /* OS_WINNT*/
+#endif                          /* OS_WINNT */
 #ifdef OS_UNIX
 
-  if (shmdt(adr) < 0)
-    {
-    cm_msg(MERROR, "ss_shm_protect", "shmdt() failed");
-    return SS_INVALID_ADDRESS;
-    }
-
-#endif /* OS_UNIX */
-  return SS_SUCCESS;
+   if (shmdt(adr) < 0) {
+      cm_msg(MERROR, "ss_shm_protect", "shmdt() failed");
+      return SS_INVALID_ADDRESS;
+   }
+#endif                          /* OS_UNIX */
+   return SS_SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
-
 INT ss_shm_unprotect(HNDLE handle, void **adr)
 /********************************************************************\
 
@@ -775,32 +768,27 @@ INT ss_shm_unprotect(HNDLE handle, void **adr)
 {
 #ifdef OS_WINNT
 
-  *adr = MapViewOfFile((HANDLE)handle, FILE_MAP_ALL_ACCESS, 0, 0, 0);
+   *adr = MapViewOfFile((HANDLE) handle, FILE_MAP_ALL_ACCESS, 0, 0, 0);
 
-  if (*adr == NULL)
-    {
-    cm_msg(MERROR, "ss_shm_unprotect", "MapViewOfFile() failed");
-    return SS_NO_MEMORY;
-    }
-
-#endif /* OS_WINNT*/
+   if (*adr == NULL) {
+      cm_msg(MERROR, "ss_shm_unprotect", "MapViewOfFile() failed");
+      return SS_NO_MEMORY;
+   }
+#endif                          /* OS_WINNT */
 #ifdef OS_UNIX
 
-  *adr = shmat(handle, 0, 0);
+   *adr = shmat(handle, 0, 0);
 
-  if ( (*adr) == (void *) (-1) )
-    {
-    cm_msg(MERROR, "ss_shm_unprotect", "shmat() failed, errno = %d", errno);
-    return SS_NO_MEMORY;
-    }
+   if ((*adr) == (void *) (-1)) {
+      cm_msg(MERROR, "ss_shm_unprotect", "shmat() failed, errno = %d", errno);
+      return SS_NO_MEMORY;
+   }
+#endif                          /* OS_UNIX */
 
-#endif /* OS_UNIX */
-
-  return SS_SUCCESS;
+   return SS_SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
-
 INT ss_shm_flush(char *name, void *adr, INT size)
 /********************************************************************\
 
@@ -822,73 +810,68 @@ INT ss_shm_flush(char *name, void *adr, INT size)
 
 \********************************************************************/
 {
-char   mem_name[256], file_name[256], path[256];
+   char mem_name[256], file_name[256], path[256];
 
-  /*
-  append a leading SM_ to the memory name to resolve name conflicts
-  with mutex or semaphore names
-  */
-  sprintf(mem_name, "SM_%s", name);
+   /*
+      append a leading SM_ to the memory name to resolve name conflicts
+      with mutex or semaphore names
+    */
+   sprintf(mem_name, "SM_%s", name);
 
-  /* append .SHM and preceed the path for the shared memory file name */
-  cm_get_path(path);
-  if (path[0] == 0)
-    {
-    getcwd(path, 256);
+   /* append .SHM and preceed the path for the shared memory file name */
+   cm_get_path(path);
+   if (path[0] == 0) {
+      getcwd(path, 256);
 #if defined(OS_VMS)
 #elif defined(OS_UNIX)
-    strcat(path, "/");
+      strcat(path, "/");
 #elif defined(OS_WINNT)
-    strcat(path, "\\");
+      strcat(path, "\\");
 #endif
-    }
+   }
 
-  strcpy(file_name, path);
+   strcpy(file_name, path);
 #if defined (OS_UNIX)
-  strcat(file_name, "."); /* dot file under UNIX */
+   strcat(file_name, ".");      /* dot file under UNIX */
 #endif
-  strcat(file_name, name);
-  strcat(file_name, ".SHM");
+   strcat(file_name, name);
+   strcat(file_name, ".SHM");
 
 #ifdef OS_WINNT
 
-  if (!FlushViewOfFile(adr, size))
-    return SS_INVALID_ADDRESS;
+   if (!FlushViewOfFile(adr, size))
+      return SS_INVALID_ADDRESS;
 
-  return SS_SUCCESS;
+   return SS_SUCCESS;
 
-#endif /* OS_WINNT*/
+#endif                          /* OS_WINNT */
 #ifdef OS_VMS
 
-  return SS_SUCCESS;
+   return SS_SUCCESS;
 
-#endif /* OS_VMS */
+#endif                          /* OS_VMS */
 #ifdef OS_UNIX
 
-  if (!disable_shm_write)
-    {
-    FILE   *fh;
+   if (!disable_shm_write) {
+      FILE *fh;
 
-    fh = fopen(file_name, "w");
+      fh = fopen(file_name, "w");
 
-    if (fh == NULL)
-      {
-      cm_msg(MERROR, "ss_shm_flush", "Cannot write to file %s, please check protection", file_name);
+      if (fh == NULL) {
+         cm_msg(MERROR, "ss_shm_flush",
+                "Cannot write to file %s, please check protection", file_name);
+      } else {
+         /* write shared memory to file */
+         fwrite(adr, 1, size, fh);
+         fclose(fh);
       }
-    else
-      {
-      /* write shared memory to file */
-      fwrite(adr, 1, size, fh);
-      fclose(fh);
-      }
-    }
-  return SS_SUCCESS;
+   }
+   return SS_SUCCESS;
 
-#endif /* OS_UNIX */
+#endif                          /* OS_UNIX */
 }
 
 /*------------------------------------------------------------------*/
-
 INT ss_getthandle(void)
 /********************************************************************\
 
@@ -908,43 +891,41 @@ INT ss_getthandle(void)
 \********************************************************************/
 {
 #ifdef OS_WINNT
-HANDLE hThread;
+   HANDLE hThread;
 
-  /*
-  Under Windows NT, it's a little bit tricky to get a thread handle
-  which can be passed to other processes. First the calling process
-  has to duplicate the GetCurrentThread() handle, then the process
-  which gets this handle also has to use DuplicateHandle with the
-  target process as its own. Then this duplicated handle can be used
-  to the SupendThread() and ResumeThread() functions.
-  */
+   /*
+      Under Windows NT, it's a little bit tricky to get a thread handle
+      which can be passed to other processes. First the calling process
+      has to duplicate the GetCurrentThread() handle, then the process
+      which gets this handle also has to use DuplicateHandle with the
+      target process as its own. Then this duplicated handle can be used
+      to the SupendThread() and ResumeThread() functions.
+    */
 
-  DuplicateHandle(GetCurrentProcess(), GetCurrentThread(),
-      GetCurrentProcess(), &hThread, THREAD_ALL_ACCESS,
-      TRUE, 0);
+   DuplicateHandle(GetCurrentProcess(), GetCurrentThread(),
+                   GetCurrentProcess(), &hThread, THREAD_ALL_ACCESS, TRUE, 0);
 
-  return (int) hThread;
+   return (int) hThread;
 
-#endif /* OS_WINNT */
+#endif                          /* OS_WINNT */
 #ifdef OS_VMS
 
-  return 0;
+   return 0;
 
-#endif /* OS_VMS */
+#endif                          /* OS_VMS */
 #ifdef OS_UNIX
 
-  return ss_getpid();
+   return ss_getpid();
 
-#endif /* OS_VMS */
+#endif                          /* OS_VMS */
 }
 
-#endif /* LOCAL_ROUTINES */
+#endif                          /* LOCAL_ROUTINES */
 
 /*------------------------------------------------------------------*/
-
 struct {
-  char   c;
-  double d;
+   char c;
+   double d;
 } test_align;
 
 INT ss_get_struct_align()
@@ -970,11 +951,10 @@ INT ss_get_struct_align()
 
 \********************************************************************/
 {
-  return (PTYPE) (&test_align.d) - (PTYPE) &test_align.c;
+   return (PTYPE) (&test_align.d) - (PTYPE) & test_align.c;
 }
 
 /*------------------------------------------------------------------*/
-
 INT ss_getpid(void)
 /********************************************************************\
 
@@ -995,29 +975,29 @@ INT ss_getpid(void)
 {
 #ifdef OS_WINNT
 
-  return (int) GetCurrentProcessId();
+   return (int) GetCurrentProcessId();
 
-#endif /* OS_WINNT */
+#endif                          /* OS_WINNT */
 #ifdef OS_VMS
 
-  return getpid();
+   return getpid();
 
-#endif /* OS_VMS */
+#endif                          /* OS_VMS */
 #ifdef OS_UNIX
 
-  return getpid();
+   return getpid();
 
-#endif /* OS_UNIX */
+#endif                          /* OS_UNIX */
 #ifdef OS_VXWORKS
 
-  return 0;
+   return 0;
 
-#endif /* OS_VXWORKS */
+#endif                          /* OS_VXWORKS */
 #ifdef OS_MSDOS
 
-  return 0;
+   return 0;
 
-#endif /* OS_MSDOS */
+#endif                          /* OS_MSDOS */
 }
 
 /*------------------------------------------------------------------*/
@@ -1026,7 +1006,7 @@ static BOOL _single_thread = FALSE;
 
 void ss_force_single_thread()
 {
-  _single_thread = TRUE;
+   _single_thread = TRUE;
 }
 
 INT ss_gettid(void)
@@ -1047,35 +1027,35 @@ INT ss_gettid(void)
 
 \********************************************************************/
 {
-  /* if forced to single thread mode, simply return fake TID */
-  if (_single_thread)
-    return 1;
+   /* if forced to single thread mode, simply return fake TID */
+   if (_single_thread)
+      return 1;
 
 #ifdef OS_MSDOS
 
-  return 0;
+   return 0;
 
-#endif /* OS_MSDOS */
+#endif                          /* OS_MSDOS */
 #ifdef OS_WINNT
 
-  return (int) GetCurrentThreadId();
+   return (int) GetCurrentThreadId();
 
-#endif /* OS_WINNT */
+#endif                          /* OS_WINNT */
 #ifdef OS_VMS
 
-  return ss_getpid();
+   return ss_getpid();
 
-#endif /* OS_VMS */
+#endif                          /* OS_VMS */
 #ifdef OS_UNIX
 
-  return ss_getpid();
+   return ss_getpid();
 
-#endif /* OS_UNIX */
+#endif                          /* OS_UNIX */
 #ifdef OS_VXWORKS
 
-  return ss_getpid();
+   return ss_getpid();
 
-#endif /* OS_VXWORKS */
+#endif                          /* OS_VXWORKS */
 }
 
 /*------------------------------------------------------------------*/
@@ -1083,10 +1063,10 @@ INT ss_gettid(void)
 #ifdef OS_UNIX
 void catch_sigchld(int signo)
 {
-int status;
+   int status;
 
-  wait(&status);
-  return;
+   wait(&status);
+   return;
 }
 #endif
 
@@ -1116,112 +1096,101 @@ INT ss_spawnv(INT mode, char *cmdname, char *argv[])
 {
 #ifdef OS_WINNT
 
-  if (spawnvp(mode, cmdname, argv) <0)
-    return SS_INVALID_NAME;
+   if (spawnvp(mode, cmdname, argv) < 0)
+      return SS_INVALID_NAME;
 
-  return SS_SUCCESS;
+   return SS_SUCCESS;
 
-#endif /* OS_WINNT */
+#endif                          /* OS_WINNT */
 
 #ifdef OS_MSDOS
 
-  spawnvp((int) mode, cmdname, argv);
+   spawnvp((int) mode, cmdname, argv);
 
-  return SS_SUCCESS;
+   return SS_SUCCESS;
 
-#endif /* OS_MSDOS */
+#endif                          /* OS_MSDOS */
 
 #ifdef OS_VMS
 
-  {
-  char    cmdstring[500], *pc;
-  INT     i, flags, status;
-  va_list argptr;
+   {
+      char cmdstring[500], *pc;
+      INT i, flags, status;
+      va_list argptr;
 
-  $DESCRIPTOR(cmdstring_dsc, "dummy");
+      $DESCRIPTOR(cmdstring_dsc, "dummy");
 
-  if (mode & P_DETACH)
-    {
-    cmdstring_dsc.dsc$w_length = strlen(cmdstring);
-    cmdstring_dsc.dsc$a_pointer = cmdstring;
+      if (mode & P_DETACH) {
+         cmdstring_dsc.dsc$w_length = strlen(cmdstring);
+         cmdstring_dsc.dsc$a_pointer = cmdstring;
 
-    status = sys$creprc(0, &cmdstring_dsc,
-      0, 0, 0, 0,
-      0, NULL, 4, 0, 0,
-      PRC$M_DETACH );
-    }
-  else
-    {
-    flags = (mode & P_NOWAIT) ? 1 : 0;
+         status = sys$creprc(0, &cmdstring_dsc,
+                             0, 0, 0, 0, 0, NULL, 4, 0, 0, PRC$M_DETACH);
+      } else {
+         flags = (mode & P_NOWAIT) ? 1 : 0;
 
-    for (pc = argv[0]+strlen(argv[0]) ; *pc != ']' && pc != argv[0] ; pc--);
-    if (*pc == ']')
-      pc++;
+         for (pc = argv[0] + strlen(argv[0]); *pc != ']' && pc != argv[0]; pc--);
+         if (*pc == ']')
+            pc++;
 
-    strcpy(cmdstring, pc);
+         strcpy(cmdstring, pc);
 
-    if (strchr(cmdstring, ';'))
-      *strchr(cmdstring, ';') = 0;
+         if (strchr(cmdstring, ';'))
+            *strchr(cmdstring, ';') = 0;
 
-    strcat(cmdstring, " ");
+         strcat(cmdstring, " ");
 
-    for (i=1 ; argv[i] != NULL ; i++)
-      {
-      strcat(cmdstring, argv[i]);
-      strcat(cmdstring, " ");
+         for (i = 1; argv[i] != NULL; i++) {
+            strcat(cmdstring, argv[i]);
+            strcat(cmdstring, " ");
+         }
+
+         cmdstring_dsc.dsc$w_length = strlen(cmdstring);
+         cmdstring_dsc.dsc$a_pointer = cmdstring;
+
+         status = lib$spawn(&cmdstring_dsc, 0, 0, &flags, NULL, 0, 0, 0, 0, 0, 0, 0, 0);
       }
 
-    cmdstring_dsc.dsc$w_length = strlen(cmdstring);
-    cmdstring_dsc.dsc$a_pointer = cmdstring;
+      return BM_SUCCESS;
+   }
 
-    status = lib$spawn(&cmdstring_dsc, 0, 0, &flags, NULL,
-           0, 0, 0, 0, 0, 0, 0, 0);
-    }
-
-  return BM_SUCCESS;
-  }
-
-#endif /* OS_VMS */
+#endif                          /* OS_VMS */
 #ifdef OS_UNIX
-  pid_t      child_pid;
+   pid_t child_pid;
 
 #ifdef OS_ULTRIX
-  union wait *status;
+   union wait *status;
 #else
-  int        status;
+   int status;
 #endif
 
-  if ((child_pid = fork()) < 0)
-    return (-1);
+   if ((child_pid = fork()) < 0)
+      return (-1);
 
-  if (child_pid == 0)
-    {
-    /* now we are in the child process ... */
-    child_pid = execvp(cmdname, argv);
-    return SS_SUCCESS;
-    }
-  else
-    {
-    /* still in parent process */
-    if ( mode == P_WAIT )
+   if (child_pid == 0) {
+      /* now we are in the child process ... */
+      child_pid = execvp(cmdname, argv);
+      return SS_SUCCESS;
+   } else {
+      /* still in parent process */
+      if (mode == P_WAIT)
 #ifdef OS_ULTRIX
-      waitpid(child_pid, status, WNOHANG);
+         waitpid(child_pid, status, WNOHANG);
 #else
-      waitpid(child_pid, &status, WNOHANG);
+         waitpid(child_pid, &status, WNOHANG);
 #endif
 
-    else
-      /* catch SIGCHLD signal to avoid <defunc> processes */
-      signal(SIGCHLD, catch_sigchld);
-    }
+      else
+         /* catch SIGCHLD signal to avoid <defunc> processes */
+         signal(SIGCHLD, catch_sigchld);
+   }
 
-  return SS_SUCCESS;
+   return SS_SUCCESS;
 
-#endif /* OS_UNIX */
+#endif                          /* OS_UNIX */
 }
 
 /*------------------------------------------------------------------*/
-
 INT ss_shell(int sock)
 /********************************************************************\
 
@@ -1242,240 +1211,218 @@ INT ss_shell(int sock)
 {
 #ifdef OS_WINNT
 
-  HANDLE hChildStdinRd, hChildStdinWr, hChildStdinWrDup,
-    hChildStdoutRd, hChildStdoutWr,
-    hChildStderrRd, hChildStderrWr,
-    hSaveStdin, hSaveStdout, hSaveStderr;
+   HANDLE hChildStdinRd, hChildStdinWr, hChildStdinWrDup,
+       hChildStdoutRd, hChildStdoutWr,
+       hChildStderrRd, hChildStderrWr, hSaveStdin, hSaveStdout, hSaveStderr;
 
-  SECURITY_ATTRIBUTES saAttr;
-  PROCESS_INFORMATION piProcInfo;
-  STARTUPINFO         siStartInfo;
-  char                buffer[256], cmd[256];
-  DWORD               dwRead, dwWritten, dwAvail, i, i_cmd;
-  fd_set              readfds;
-  struct timeval      timeout;
+   SECURITY_ATTRIBUTES saAttr;
+   PROCESS_INFORMATION piProcInfo;
+   STARTUPINFO siStartInfo;
+   char buffer[256], cmd[256];
+   DWORD dwRead, dwWritten, dwAvail, i, i_cmd;
+   fd_set readfds;
+   struct timeval timeout;
 
-  /* Set the bInheritHandle flag so pipe handles are inherited. */
-  saAttr.nLength = sizeof(SECURITY_ATTRIBUTES);
-  saAttr.bInheritHandle = TRUE;
-  saAttr.lpSecurityDescriptor = NULL;
+   /* Set the bInheritHandle flag so pipe handles are inherited. */
+   saAttr.nLength = sizeof(SECURITY_ATTRIBUTES);
+   saAttr.bInheritHandle = TRUE;
+   saAttr.lpSecurityDescriptor = NULL;
 
-  /* Save the handle to the current STDOUT. */
-  hSaveStdout = GetStdHandle(STD_OUTPUT_HANDLE);
+   /* Save the handle to the current STDOUT. */
+   hSaveStdout = GetStdHandle(STD_OUTPUT_HANDLE);
 
-  /* Create a pipe for the child's STDOUT. */
-  if (! CreatePipe(&hChildStdoutRd, &hChildStdoutWr, &saAttr, 0))
-    return 0;
+   /* Create a pipe for the child's STDOUT. */
+   if (!CreatePipe(&hChildStdoutRd, &hChildStdoutWr, &saAttr, 0))
+      return 0;
 
-  /* Set a write handle to the pipe to be STDOUT. */
-  if (! SetStdHandle(STD_OUTPUT_HANDLE, hChildStdoutWr))
-    return 0;
-
-
-  /* Save the handle to the current STDERR. */
-  hSaveStderr = GetStdHandle(STD_ERROR_HANDLE);
-
-  /* Create a pipe for the child's STDERR. */
-  if (! CreatePipe(&hChildStderrRd, &hChildStderrWr, &saAttr, 0))
-    return 0;
-
-  /* Set a read handle to the pipe to be STDERR. */
-  if (! SetStdHandle(STD_ERROR_HANDLE, hChildStderrWr))
-    return 0;
+   /* Set a write handle to the pipe to be STDOUT. */
+   if (!SetStdHandle(STD_OUTPUT_HANDLE, hChildStdoutWr))
+      return 0;
 
 
-  /* Save the handle to the current STDIN. */
-  hSaveStdin = GetStdHandle(STD_INPUT_HANDLE);
+   /* Save the handle to the current STDERR. */
+   hSaveStderr = GetStdHandle(STD_ERROR_HANDLE);
 
-  /* Create a pipe for the child's STDIN. */
-  if (! CreatePipe(&hChildStdinRd, &hChildStdinWr, &saAttr, 0))
-    return 0;
+   /* Create a pipe for the child's STDERR. */
+   if (!CreatePipe(&hChildStderrRd, &hChildStderrWr, &saAttr, 0))
+      return 0;
 
-  /* Set a read handle to the pipe to be STDIN. */
-  if (! SetStdHandle(STD_INPUT_HANDLE, hChildStdinRd))
-    return 0;
+   /* Set a read handle to the pipe to be STDERR. */
+   if (!SetStdHandle(STD_ERROR_HANDLE, hChildStderrWr))
+      return 0;
 
-  /* Duplicate the write handle to the pipe so it is not inherited. */
-  if (!DuplicateHandle(GetCurrentProcess(), hChildStdinWr,
-      GetCurrentProcess(), &hChildStdinWrDup, 0,
-      FALSE,                  /* not inherited */
-      DUPLICATE_SAME_ACCESS))
-    return 0;
 
-  CloseHandle(hChildStdinWr);
+   /* Save the handle to the current STDIN. */
+   hSaveStdin = GetStdHandle(STD_INPUT_HANDLE);
 
-  /* Now create the child process. */
-  memset(&siStartInfo, 0, sizeof(siStartInfo));
-  siStartInfo.cb = sizeof(STARTUPINFO);
-  siStartInfo.lpReserved = NULL;
-  siStartInfo.lpReserved2 = NULL;
-  siStartInfo.cbReserved2 = 0;
-  siStartInfo.lpDesktop = NULL;
-  siStartInfo.dwFlags = 0;
+   /* Create a pipe for the child's STDIN. */
+   if (!CreatePipe(&hChildStdinRd, &hChildStdinWr, &saAttr, 0))
+      return 0;
 
-  if (!CreateProcess(NULL,
-      "cmd /Q",      /* command line */
-      NULL,          /* process security attributes */
-      NULL,          /* primary thread security attributes */
-      TRUE,          /* handles are inherited */
-      0,             /* creation flags */
-      NULL,          /* use parent's environment */
-      NULL,          /* use parent's current directory */
-      &siStartInfo,  /* STARTUPINFO pointer */
-      &piProcInfo))  /* receives PROCESS_INFORMATION */
-    return 0;
+   /* Set a read handle to the pipe to be STDIN. */
+   if (!SetStdHandle(STD_INPUT_HANDLE, hChildStdinRd))
+      return 0;
 
-  /* After process creation, restore the saved STDIN and STDOUT. */
-  SetStdHandle(STD_INPUT_HANDLE, hSaveStdin);
-  SetStdHandle(STD_OUTPUT_HANDLE, hSaveStdout);
-  SetStdHandle(STD_ERROR_HANDLE, hSaveStderr);
+   /* Duplicate the write handle to the pipe so it is not inherited. */
+   if (!DuplicateHandle(GetCurrentProcess(), hChildStdinWr, GetCurrentProcess(), &hChildStdinWrDup, 0, FALSE,   /* not inherited */
+                        DUPLICATE_SAME_ACCESS))
+      return 0;
 
-  i_cmd = 0;
+   CloseHandle(hChildStdinWr);
 
-  do
-    {
-    /* query stderr */
-    do
-      {
-      if (!PeekNamedPipe(hChildStderrRd, buffer, 256, &dwRead, &dwAvail, NULL))
-        break;
+   /* Now create the child process. */
+   memset(&siStartInfo, 0, sizeof(siStartInfo));
+   siStartInfo.cb = sizeof(STARTUPINFO);
+   siStartInfo.lpReserved = NULL;
+   siStartInfo.lpReserved2 = NULL;
+   siStartInfo.cbReserved2 = 0;
+   siStartInfo.lpDesktop = NULL;
+   siStartInfo.dwFlags = 0;
 
-      if (dwRead > 0)
-        {
-        ReadFile(hChildStderrRd, buffer, 256, &dwRead, NULL);
-        send(sock, buffer, dwRead, 0);
-        }
+   if (!CreateProcess(NULL, "cmd /Q",   /* command line */
+                      NULL,     /* process security attributes */
+                      NULL,     /* primary thread security attributes */
+                      TRUE,     /* handles are inherited */
+                      0,        /* creation flags */
+                      NULL,     /* use parent's environment */
+                      NULL,     /* use parent's current directory */
+                      &siStartInfo,     /* STARTUPINFO pointer */
+                      &piProcInfo))     /* receives PROCESS_INFORMATION */
+      return 0;
+
+   /* After process creation, restore the saved STDIN and STDOUT. */
+   SetStdHandle(STD_INPUT_HANDLE, hSaveStdin);
+   SetStdHandle(STD_OUTPUT_HANDLE, hSaveStdout);
+   SetStdHandle(STD_ERROR_HANDLE, hSaveStderr);
+
+   i_cmd = 0;
+
+   do {
+      /* query stderr */
+      do {
+         if (!PeekNamedPipe(hChildStderrRd, buffer, 256, &dwRead, &dwAvail, NULL))
+            break;
+
+         if (dwRead > 0) {
+            ReadFile(hChildStderrRd, buffer, 256, &dwRead, NULL);
+            send(sock, buffer, dwRead, 0);
+         }
       } while (dwAvail > 0);
 
-    /* query stdout */
-    do
-      {
-      if (!PeekNamedPipe(hChildStdoutRd, buffer, 256, &dwRead, &dwAvail, NULL))
-        break;
-      if (dwRead > 0)
-        {
-        ReadFile(hChildStdoutRd, buffer, 256, &dwRead, NULL);
-        send(sock, buffer, dwRead, 0);
-        }
+      /* query stdout */
+      do {
+         if (!PeekNamedPipe(hChildStdoutRd, buffer, 256, &dwRead, &dwAvail, NULL))
+            break;
+         if (dwRead > 0) {
+            ReadFile(hChildStdoutRd, buffer, 256, &dwRead, NULL);
+            send(sock, buffer, dwRead, 0);
+         }
       } while (dwAvail > 0);
 
 
-    /* check if subprocess still alive */
-    if (!GetExitCodeProcess(piProcInfo.hProcess, &i))
-      break;
-    if (i != STILL_ACTIVE)
-      break;
+      /* check if subprocess still alive */
+      if (!GetExitCodeProcess(piProcInfo.hProcess, &i))
+         break;
+      if (i != STILL_ACTIVE)
+         break;
 
-    /* query network socket */
-    FD_ZERO(&readfds);
-    FD_SET(sock, &readfds);
-    timeout.tv_sec  = 0;
-    timeout.tv_usec = 100;
-    select(FD_SETSIZE, &readfds, NULL, NULL, &timeout);
+      /* query network socket */
+      FD_ZERO(&readfds);
+      FD_SET(sock, &readfds);
+      timeout.tv_sec = 0;
+      timeout.tv_usec = 100;
+      select(FD_SETSIZE, &readfds, NULL, NULL, &timeout);
 
-    if (FD_ISSET(sock, &readfds))
-      {
-      i = recv(sock, cmd+i_cmd, 1, 0);
-      if (i<=0)
-        break;
+      if (FD_ISSET(sock, &readfds)) {
+         i = recv(sock, cmd + i_cmd, 1, 0);
+         if (i <= 0)
+            break;
 
-      /* backspace */
-      if (cmd[i_cmd] == 8)
-        {
-        if (i_cmd > 0)
-          {
-          send(sock, "\b \b", 3, 0);
-          i_cmd -= 1;
-          }
-        }
-      else if (cmd[i_cmd] >= ' ' || cmd[i_cmd] == 13 || cmd[i_cmd] == 10)
-        {
-        send(sock, cmd+i_cmd, 1, 0);
-        i_cmd += i;
-        }
+         /* backspace */
+         if (cmd[i_cmd] == 8) {
+            if (i_cmd > 0) {
+               send(sock, "\b \b", 3, 0);
+               i_cmd -= 1;
+            }
+         } else if (cmd[i_cmd] >= ' ' || cmd[i_cmd] == 13 || cmd[i_cmd] == 10) {
+            send(sock, cmd + i_cmd, 1, 0);
+            i_cmd += i;
+         }
       }
 
-    /* linefeed triggers new command */
-    if (cmd[i_cmd-1] == 10)
-      {
-      WriteFile(hChildStdinWrDup, cmd, i_cmd, &dwWritten, NULL);
-      i_cmd = 0;
+      /* linefeed triggers new command */
+      if (cmd[i_cmd - 1] == 10) {
+         WriteFile(hChildStdinWrDup, cmd, i_cmd, &dwWritten, NULL);
+         i_cmd = 0;
       }
 
-    } while (TRUE);
+   } while (TRUE);
 
-  CloseHandle(hChildStdinWrDup);
-  CloseHandle(hChildStdinRd);
-  CloseHandle(hChildStderrRd);
-  CloseHandle(hChildStdoutRd);
+   CloseHandle(hChildStdinWrDup);
+   CloseHandle(hChildStdinRd);
+   CloseHandle(hChildStderrRd);
+   CloseHandle(hChildStdoutRd);
 
-  return SS_SUCCESS;
+   return SS_SUCCESS;
 
-#endif /* OS_WINNT */
+#endif                          /* OS_WINNT */
 
 #ifdef OS_UNIX
 #ifndef NO_PTY
-pid_t  pid;
-int    i, pipe;
-char   line[32], buffer[1024], shell[32];
-fd_set readfds;
+   pid_t pid;
+   int i, pipe;
+   char line[32], buffer[1024], shell[32];
+   fd_set readfds;
 
-  if ((pid = forkpty(&pipe, line, NULL, NULL)) < 0)
-    return 0;
-  else if (pid > 0)
-    {
-    /* parent process */
+   if ((pid = forkpty(&pipe, line, NULL, NULL)) < 0)
+      return 0;
+   else if (pid > 0) {
+      /* parent process */
 
-    do
-      {
-      FD_ZERO(&readfds);
-      FD_SET(sock, &readfds);
-      FD_SET(pipe, &readfds);
+      do {
+         FD_ZERO(&readfds);
+         FD_SET(sock, &readfds);
+         FD_SET(pipe, &readfds);
 
-      select(FD_SETSIZE, (void *) &readfds, NULL, NULL, NULL);
+         select(FD_SETSIZE, (void *) &readfds, NULL, NULL, NULL);
 
-      if (FD_ISSET(sock, &readfds))
-        {
-        memset(buffer, 0, sizeof(buffer));
-        i = recv(sock, buffer, sizeof(buffer), 0);
-        if (i <= 0)
-          break;
-        if (write(pipe, buffer, i) != i)
-          break;
-        }
+         if (FD_ISSET(sock, &readfds)) {
+            memset(buffer, 0, sizeof(buffer));
+            i = recv(sock, buffer, sizeof(buffer), 0);
+            if (i <= 0)
+               break;
+            if (write(pipe, buffer, i) != i)
+               break;
+         }
 
-      if (FD_ISSET(pipe, &readfds))
-        {
-        memset(buffer, 0, sizeof(buffer));
-        i = read(pipe, buffer, sizeof(buffer));
-        if (i <= 0)
-          break;
-        send(sock, buffer, i, 0);
-        }
+         if (FD_ISSET(pipe, &readfds)) {
+            memset(buffer, 0, sizeof(buffer));
+            i = read(pipe, buffer, sizeof(buffer));
+            if (i <= 0)
+               break;
+            send(sock, buffer, i, 0);
+         }
 
       } while (1);
-    }
-  else
-    {
-    /* child process */
+   } else {
+      /* child process */
 
-    if (getenv("SHELL"))
-      strlcpy(shell, getenv("SHELL"), sizeof(shell));
-    else
-      strcpy(shell, "/bin/sh");
-    execl(shell, shell, 0);
-    }
+      if (getenv("SHELL"))
+         strlcpy(shell, getenv("SHELL"), sizeof(shell));
+      else
+         strcpy(shell, "/bin/sh");
+      execl(shell, shell, 0);
+   }
 #else
-  send(sock, "not implemented\n", 17, 0);
-#endif /* NO_PTY */
+   send(sock, "not implemented\n", 17, 0);
+#endif                          /* NO_PTY */
 
-  return SS_SUCCESS;
+   return SS_SUCCESS;
 
-#endif /* OS_UNIX */
+#endif                          /* OS_UNIX */
 }
 
 /*------------------------------------------------------------------*/
-
 static BOOL _daemon_flag;
 
 INT ss_daemon_init(BOOL keep_stdout)
@@ -1499,48 +1446,45 @@ INT ss_daemon_init(BOOL keep_stdout)
 {
 #ifdef OS_UNIX
 
-  /* only implemented for UNIX */
-  int i, fd, pid;
+   /* only implemented for UNIX */
+   int i, fd, pid;
 
-  if ( (pid = fork()) < 0)
-    return SS_ABORT;
-  else if (pid != 0)
-    exit(0); /* parent finished */
-
-  /* child continues here */
-
-  _daemon_flag = TRUE;
-
-  /* try and use up stdin, stdout and stderr, so other
-     routines writing to stdout etc won't cause havoc. Copied from smbd */
-  for (i=0 ; i<3 ; i++)
-    {
-    if (keep_stdout && ((i==1)||(i==2)))
-      continue;
-
-    close(i);
-    fd = open("/dev/null", O_RDWR, 0);
-    if (fd < 0)
-      fd = open("/dev/null", O_WRONLY, 0);
-    if (fd < 0)
-      {
-      cm_msg(MERROR, "ss_system", "Can't open /dev/null");
+   if ((pid = fork()) < 0)
       return SS_ABORT;
-      }
-    if (fd != i)
-      {
-      cm_msg(MERROR, "ss_system", "Did not get file descriptor");
-      return SS_ABORT;
-      }
-    }
+   else if (pid != 0)
+      exit(0);                  /* parent finished */
 
-  setsid();               /* become session leader */
-  chdir("/");             /* change working direcotry (not on NFS!) */
-  umask(0);               /* clear our file mode createion mask */
+   /* child continues here */
+
+   _daemon_flag = TRUE;
+
+   /* try and use up stdin, stdout and stderr, so other
+      routines writing to stdout etc won't cause havoc. Copied from smbd */
+   for (i = 0; i < 3; i++) {
+      if (keep_stdout && ((i == 1) || (i == 2)))
+         continue;
+
+      close(i);
+      fd = open("/dev/null", O_RDWR, 0);
+      if (fd < 0)
+         fd = open("/dev/null", O_WRONLY, 0);
+      if (fd < 0) {
+         cm_msg(MERROR, "ss_system", "Can't open /dev/null");
+         return SS_ABORT;
+      }
+      if (fd != i) {
+         cm_msg(MERROR, "ss_system", "Did not get file descriptor");
+         return SS_ABORT;
+      }
+   }
+
+   setsid();                    /* become session leader */
+   chdir("/");                  /* change working direcotry (not on NFS!) */
+   umask(0);                    /* clear our file mode createion mask */
 
 #endif
 
-  return SS_SUCCESS;
+   return SS_SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
@@ -1564,21 +1508,23 @@ BOOL ss_existpid(INT pid)
 \********************************************************************/
 {
 #ifdef OS_UNIX
-  /* only implemented for UNIX */
-  return (kill (pid, 0) == 0 ? TRUE : FALSE);
+   /* only implemented for UNIX */
+   return (kill(pid, 0) == 0 ? TRUE : FALSE);
 #else
-  cm_msg(MINFO,"ss_existpid","implemented for UNIX only");
-  return FALSE;
+   cm_msg(MINFO, "ss_existpid", "implemented for UNIX only");
+   return FALSE;
 #endif
 }
 
-/*------------------------------------------------------------------*/
-/** @name ss_system()
-\begin{description}
-\item[Description:] Execute command in a separate process,
- close all open file descriptors invoke ss_exec and ignore pid.
-\item[Remarks:]
-\item[Example:] \begin{verbatim}
+
+/**dox***************************************************************/
+#endif                          /* DOXYGEN_SHOULD_SKIP_THIS */
+
+/********************************************************************/
+/**
+Execute command in a separate process, close all open file descriptors
+invoke ss_exec() and ignore pid.
+\code
 { ...
   char cmd[256];
   sprintf(cmd,"%s %s %i %s/%s %1.3lf %d",lazy.commandAfter,
@@ -1588,29 +1534,30 @@ BOOL ss_existpid(INT pid)
   ss_system(cmd);
 }
 ...
-\end{verbatim}
-\end{description}
-@memo Execute command.
+\encode
 @param command Command to execute.
-@return SS_SUCCESS or ss_exec return code
+@return SS_SUCCESS or ss_exec() return code
 */
 INT ss_system(char *command)
 {
 #ifdef OS_UNIX
-  INT childpid;
+   INT childpid;
 
-  return ss_exec(command, &childpid);
+   return ss_exec(command, &childpid);
 
 #else
 
-  system(command);
-  return SS_SUCCESS;
+   system(command);
+   return SS_SUCCESS;
 
 #endif
 }
 
+/**dox***************************************************************/
+#ifndef DOXYGEN_SHOULD_SKIP_THIS
+
 /*------------------------------------------------------------------*/
-INT ss_exec(char * command, INT *pid)
+INT ss_exec(char *command, INT * pid)
 /********************************************************************\
 
   Routine: ss_exec
@@ -1632,120 +1579,118 @@ INT ss_exec(char * command, INT *pid)
 {
 #ifdef OS_UNIX
 
-  /* only implemented for UNIX */
-  int i, fd;
+   /* only implemented for UNIX */
+   int i, fd;
 
-  if ( (*pid = fork()) < 0)
-    return SS_ABORT;
-  else if (*pid != 0)
-    {
-    /* avoid <defunc> parent processes */
-    signal(SIGCHLD, catch_sigchld);
-    return SS_SUCCESS; /* parent returns */
-    }
-
-  /* child continues here... */
-
-  /* close all open file descriptors */
-  for (i=0 ; i<256 ; i++)
-    close(i);
-
-  /* try and use up stdin, stdout and stderr, so other
-     routines writing to stdout etc won't cause havoc */
-  for (i=0 ; i<3 ; i++)
-    {
-    fd = open("/dev/null", O_RDWR, 0);
-    if (fd < 0)
-      fd = open("/dev/null", O_WRONLY, 0);
-    if (fd < 0)
-      {
-      cm_msg(MERROR, "ss_exec", "Can't open /dev/null");
+   if ((*pid = fork()) < 0)
       return SS_ABORT;
-      }
-    if (fd != i)
-      {
-      cm_msg(MERROR, "ss_exec", "Did not get file descriptor");
-      return SS_ABORT;
-      }
-    }
+   else if (*pid != 0) {
+      /* avoid <defunc> parent processes */
+      signal(SIGCHLD, catch_sigchld);
+      return SS_SUCCESS;        /* parent returns */
+   }
 
-  setsid();               /* become session leader */
-  /* chdir("/"); */       /* change working directory (not on NFS!) */
-  umask(0);               /* clear our file mode createion mask */
+   /* child continues here... */
 
-  /* execute command */
-  execl("/bin/sh", "sh", "-c", command, NULL);
+   /* close all open file descriptors */
+   for (i = 0; i < 256; i++)
+      close(i);
+
+   /* try and use up stdin, stdout and stderr, so other
+      routines writing to stdout etc won't cause havoc */
+   for (i = 0; i < 3; i++) {
+      fd = open("/dev/null", O_RDWR, 0);
+      if (fd < 0)
+         fd = open("/dev/null", O_WRONLY, 0);
+      if (fd < 0) {
+         cm_msg(MERROR, "ss_exec", "Can't open /dev/null");
+         return SS_ABORT;
+      }
+      if (fd != i) {
+         cm_msg(MERROR, "ss_exec", "Did not get file descriptor");
+         return SS_ABORT;
+      }
+   }
+
+   setsid();                    /* become session leader */
+/* chdir("/"); *//* change working directory (not on NFS!) */
+   umask(0);                    /* clear our file mode createion mask */
+
+   /* execute command */
+   execl("/bin/sh", "sh", "-c", command, NULL);
 
 #else
 
-  system(command);
+   system(command);
 
 #endif
 
-  return SS_SUCCESS;
+   return SS_SUCCESS;
 }
 
-/*------------------------------------------------------------------*/
-/** @name ss_thread_create()
-\begin{description}
-\item[Description:] Creates and returns a new thread of execution. 
-\item[Remarks:] Note the difference when calling from vxWorks versus Linux and Windows.
-		The parameter pointer for a vxWorks call is a VX_TASK_SPAWN structure, whereas
-		for Linux and Windows it is a void pointer.
-		
-		Early versions returned SS_SUCCESS or SS_NO_THREAD instead of thread ID.
-		
-\item[Example: vxWorks] \begin{verbatim}
+/**dox***************************************************************/
+#endif                          /* DOXYGEN_SHOULD_SKIP_THIS */
+
+/********************************************************************/
+/**
+Creates and returns a new thread of execution. 
+
+Note the difference when calling from vxWorks versus Linux and Windows.
+The parameter pointer for a vxWorks call is a VX_TASK_SPAWN structure, whereas
+for Linux and Windows it is a void pointer.
+Early versions returned SS_SUCCESS or SS_NO_THREAD instead of thread ID.
+
+Example for VxWorks
+\code
 ...
 VX_TASK_SPAWN tsWatch = {"Watchdog", 100, 0, 2000,  (int) pDevice, 0, 0, 0, 0, 0, 0, 0, 0 ,0};
 thread_id = ss_thread_spawn((void *) taskWatch, &tsWatch);
 if (thread_id == 0) {
-	printf("cannot spawn taskWatch\n");
+  printf("cannot spawn taskWatch\n");
 }
 ...
-\end{verbatim}
-\item[Example: Linux] \begin{verbatim}
+\endcode
+Example for Linux
+\code
 ...
 thread_id = ss_thread_spawn((void *) taskWatch, pDevice);
 if (thread_id == 0) {
-	printf("cannot spawn taskWatch\n");
+  printf("cannot spawn taskWatch\n");
 }
 ...
-\end{verbatim}
-\end{description}
-
- * @param param a pointer to a VX_TASK_SPAWN structure for vxWorks and a void pointer
-		            for Unix and Windows
- * @return the new thread id or zero on error
+\endcode
+@param (*thread_func) Thread function to create.  
+@param param a pointer to a VX_TASK_SPAWN structure for vxWorks and a void pointer
+                for Unix and Windows
+@return the new thread id or zero on error
 */
-
-INT ss_thread_create(INT (*thread_func)(void *), void *param)
+INT ss_thread_create(INT(*thread_func) (void *), void *param)
 {
 #ifdef OS_WINNT
 
-	HANDLE status;
-  DWORD thread_id;
+   HANDLE status;
+   DWORD thread_id;
 
-  if (thread_func == NULL) {
-    return 0;
-  }
-	
-  status = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE) thread_func,
-                        (LPVOID) param, 0, &thread_id);
+   if (thread_func == NULL) {
+      return 0;
+   }
 
-  return status == NULL ? 0 : thread_id;
+   status = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE) thread_func,
+                         (LPVOID) param, 0, &thread_id);
 
-#endif /* OS_WINNT */
+   return status == NULL ? 0 : thread_id;
+
+#endif                          /* OS_WINNT */
 #ifdef OS_MSDOS
 
-  return 0;
+   return 0;
 
-#endif /* OS_MSDOS */
+#endif                          /* OS_MSDOS */
 #ifdef OS_VMS
 
-  return 0;
+   return 0;
 
-#endif /* OS_VMS */
+#endif                          /* OS_VMS */
 
 #ifdef OS_VXWORKS
 /* taskSpawn which could be considered as a thread under VxWorks
@@ -1755,94 +1700,92 @@ INT ss_thread_create(INT (*thread_func)(void *), void *param)
    all the arg will have to be retrieved from the param list.
    through a structure to be simpler  */
 
-  INT status;
-  VX_TASK_SPAWN *ts;
+   INT status;
+   VX_TASK_SPAWN *ts;
 
-  ts = (VX_TASK_SPAWN *)param;
-  status = taskSpawn(ts->name, ts->priority, ts->options
-         , ts->stackSize, (FUNCPTR) thread_func
-         , ts->arg1, ts->arg2, ts->arg3, ts->arg4, ts->arg5
-         , ts->arg6, ts->arg7, ts->arg8, ts->arg9, ts->arg10);
+   ts = (VX_TASK_SPAWN *) param;
+   status =
+       taskSpawn(ts->name, ts->priority, ts->options, ts->stackSize,
+                 (FUNCPTR) thread_func, ts->arg1, ts->arg2, ts->arg3,
+                 ts->arg4, ts->arg5, ts->arg6, ts->arg7, ts->arg8, ts->arg9, ts->arg10);
 
-  return status == ERROR ? 0 : status;
-#endif /* OS_VXWORKS */
+   return status == ERROR ? 0 : status;
+#endif                          /* OS_VXWORKS */
 
 #ifdef OS_UNIX
-  INT status;
-  pthread_t thread_id;
-  	
-  status = pthread_create(&thread_id, NULL, (void *) thread_func, param);
+   INT status;
+   pthread_t thread_id;
 
-  return status != 0 ? 0 : thread_id;
-#endif /* OS_UNIX */
+   status = pthread_create(&thread_id, NULL, (void *) thread_func, param);
+
+   return status != 0 ? 0 : thread_id;
+#endif                          /* OS_UNIX */
 }
 
-/*------------------------------------------------------------------*/
+/********************************************************************/
 /** 
-\begin{description}
-\item[Description:] Destroys the thread identified by the passed thread id. 
-  The thread id is returned by ss_thread_create() on creation.
+Destroys the thread identified by the passed thread id. 
+The thread id is returned by ss_thread_create() on creation.
 
-\item[Remarks:]
-\item[Example:] \begin{verbatim}
+\code
 ...
 thread_id = ss_thread_create((void *) taskWatch, pDevice);
 if (thread_id == 0) {
-	printf("cannot spawn taskWatch\n");
+  printf("cannot spawn taskWatch\n");
 }
 ...
 ss_thread_kill(thread_id);
 ...
-\end{verbatim}
-\end{description}
-
- * @param thread_id the thread id of the thread to be killed.
- * @return SS_SUCCESS if no error, else SS_NO_THREAD
- */
+\endcode
+@param thread_id the thread id of the thread to be killed.
+@return SS_SUCCESS if no error, else SS_NO_THREAD
+*/
 INT ss_thread_kill(INT thread_id)
 {
 #ifdef OS_WINNT
 
-	DWORD status;
+   DWORD status;
 
-	status = TerminateThread((HANDLE) thread_id, 0);
+   status = TerminateThread((HANDLE) thread_id, 0);
 
-  return status != 0 ? SS_SUCCESS : SS_NO_THREAD;
+   return status != 0 ? SS_SUCCESS : SS_NO_THREAD;
 
-#endif /* OS_WINNT */
+#endif                          /* OS_WINNT */
 #ifdef OS_MSDOS
 
-  return 0;
+   return 0;
 
-#endif /* OS_MSDOS */
+#endif                          /* OS_MSDOS */
 #ifdef OS_VMS
 
-  return 0;
+   return 0;
 
-#endif /* OS_VMS */
+#endif                          /* OS_VMS */
 
 #ifdef OS_VXWORKS
-  INT status;
-  	
-	status = taskDelete(thread_id);
+   INT status;
 
-	return status == OK ? 0 : ERROR;
-#endif /* OS_VXWORKS */
+   status = taskDelete(thread_id);
+
+   return status == OK ? 0 : ERROR;
+#endif                          /* OS_VXWORKS */
 
 #ifdef OS_UNIX
-  INT status;
-  	
-	status = pthread_kill((pthread_t) thread_id, SIGKILL);
+   INT status;
 
-	return status == 0 ? SS_SUCCESS : SS_NO_THREAD;
-#endif /* OS_UNIX */
+   status = pthread_kill((pthread_t) thread_id, SIGKILL);
+
+   return status == 0 ? SS_SUCCESS : SS_NO_THREAD;
+#endif                          /* OS_UNIX */
 }
 
-/*------------------------------------------------------------------*/
+/**dox***************************************************************/
+#ifndef DOXYGEN_SHOULD_SKIP_THIS
 
+/*------------------------------------------------------------------*/
 static INT skip_mutex_handle = -1;
 
-INT ss_mutex_create(char *name, HNDLE *mutex_handle)
+INT ss_mutex_create(char *name, HNDLE * mutex_handle)
 /********************************************************************\
 
   Routine: ss_mutex_create
@@ -1870,147 +1813,140 @@ INT ss_mutex_create(char *name, HNDLE *mutex_handle)
 
 \********************************************************************/
 {
-char mutex_name[256], path[256], file_name[256];
+   char mutex_name[256], path[256], file_name[256];
 
-  /* Add a leading SM_ to the mutex name */
-  sprintf(mutex_name, "MX_%s", name);
+   /* Add a leading SM_ to the mutex name */
+   sprintf(mutex_name, "MX_%s", name);
 
 #ifdef OS_VXWORKS
 
-  /* semBCreate is a Binary semaphore which is under VxWorks a optimized mutex
-     refering to the programmer's Guide 5.3.1 */
-  if ((*((SEM_ID *)mutex_handle) = semBCreate(SEM_Q_FIFO, SEM_EMPTY)) == NULL)
-    return SS_NO_MUTEX;
-  return SS_CREATED;
+   /* semBCreate is a Binary semaphore which is under VxWorks a optimized mutex
+      refering to the programmer's Guide 5.3.1 */
+   if ((*((SEM_ID *) mutex_handle) = semBCreate(SEM_Q_FIFO, SEM_EMPTY)) == NULL)
+      return SS_NO_MUTEX;
+   return SS_CREATED;
 
-#endif /* OS_VXWORKS */
+#endif                          /* OS_VXWORKS */
 
- /* Build the filename out of the path and the name of the mutex */
-  cm_get_path(path);
-  if (path[0] == 0)
-    {
-    getcwd(path, 256);
+   /* Build the filename out of the path and the name of the mutex */
+   cm_get_path(path);
+   if (path[0] == 0) {
+      getcwd(path, 256);
 #if defined(OS_VMS)
 #elif defined(OS_UNIX)
-    strcat(path, "/");
+      strcat(path, "/");
 #elif defined(OS_WINNT)
-    strcat(path, "\\");
+      strcat(path, "\\");
 #endif
-    }
+   }
 
-  strcpy(file_name, path);
+   strcpy(file_name, path);
 #if defined (OS_UNIX)
-  strcat(file_name, "."); /* dot file under UNIX */
+   strcat(file_name, ".");      /* dot file under UNIX */
 #endif
-  strcat(file_name, name);
-  strcat(file_name, ".SHM");
+   strcat(file_name, name);
+   strcat(file_name, ".SHM");
 
 #ifdef OS_WINNT
 
-  *mutex_handle = (HNDLE) CreateMutex(NULL, FALSE, mutex_name);
+   *mutex_handle = (HNDLE) CreateMutex(NULL, FALSE, mutex_name);
 
-  if (*mutex_handle == 0)
-    return SS_NO_MUTEX;
+   if (*mutex_handle == 0)
+      return SS_NO_MUTEX;
 
-  return SS_CREATED;
+   return SS_CREATED;
 
-#endif /* OS_WINNT */
+#endif                          /* OS_WINNT */
 #ifdef OS_VMS
 
-  /* VMS has to use lock manager... */
+   /* VMS has to use lock manager... */
 
-  {
-  INT status;
-  $DESCRIPTOR(mutexname_dsc, "dummy");
-  mutexname_dsc.dsc$w_length = strlen(mutex_name);
-  mutexname_dsc.dsc$a_pointer = mutex_name;
+   {
+      INT status;
+      $DESCRIPTOR(mutexname_dsc, "dummy");
+      mutexname_dsc.dsc$w_length = strlen(mutex_name);
+      mutexname_dsc.dsc$a_pointer = mutex_name;
 
-  *mutex_handle = (HNDLE) malloc(8);
+      *mutex_handle = (HNDLE) malloc(8);
 
-  status = sys$enqw(0, LCK$K_NLMODE, *mutex_handle, 0, &mutexname_dsc,
-      0, 0, 0, 0, 0, 0);
+      status = sys$enqw(0, LCK$K_NLMODE, *mutex_handle, 0, &mutexname_dsc,
+                        0, 0, 0, 0, 0, 0);
 
-  if (status != SS$_NORMAL)
-    {
-    free((void *) *mutex_handle);
-    *mutex_handle = 0;
-    }
+      if (status != SS$_NORMAL) {
+         free((void *) *mutex_handle);
+         *mutex_handle = 0;
+      }
 
-  if (*mutex_handle == 0)
-    return SS_NO_MUTEX;
+      if (*mutex_handle == 0)
+         return SS_NO_MUTEX;
 
-  return SS_CREATED;
-  }
+      return SS_CREATED;
+   }
 
-#endif /* OS_VMS */
+#endif                          /* OS_VMS */
 #ifdef OS_UNIX
 
-  {
-  INT             key, status, fh;
-  struct semid_ds buf;
+   {
+      INT key, status, fh;
+      struct semid_ds buf;
 
 #if (defined(OS_LINUX) && !defined(_SEM_SEMUN_UNDEFINED)) || defined(OS_FREEBSD)
-  union semun arg;
+      union semun arg;
 #else
-  union semun {
-    INT val;
-    struct semid_ds *buf;
-    ushort *array;
-    } arg;
+      union semun {
+         INT val;
+         struct semid_ds *buf;
+         ushort *array;
+      } arg;
 #endif
 
-  status = SS_SUCCESS;
+      status = SS_SUCCESS;
 
-  /* create a unique key from the file name */
-  key = ftok(file_name, 'M');
-  if (key < 0)
-    {
-    fh = open(file_name, O_CREAT, 0644);
-    close(fh);
-    key = ftok(file_name, 'M');
-    status = SS_CREATED;
-    }
+      /* create a unique key from the file name */
+      key = ftok(file_name, 'M');
+      if (key < 0) {
+         fh = open(file_name, O_CREAT, 0644);
+         close(fh);
+         key = ftok(file_name, 'M');
+         status = SS_CREATED;
+      }
 
-  /* create or get semaphore */
-  *mutex_handle = (HNDLE) semget(key, 1, 0);
-  if (*mutex_handle < 0)
-    {
-    *mutex_handle = (HNDLE) semget(key, 1, IPC_CREAT);
-    status = SS_CREATED;
-    }
+      /* create or get semaphore */
+      *mutex_handle = (HNDLE) semget(key, 1, 0);
+      if (*mutex_handle < 0) {
+         *mutex_handle = (HNDLE) semget(key, 1, IPC_CREAT);
+         status = SS_CREATED;
+      }
 
-  if (*mutex_handle < 0)
-    {
-    cm_msg(MERROR, "ss_mutex_mutex", "semget() failed, errno = %d", errno);
-    return SS_NO_MUTEX;
-    }
+      if (*mutex_handle < 0) {
+         cm_msg(MERROR, "ss_mutex_mutex", "semget() failed, errno = %d", errno);
+         return SS_NO_MUTEX;
+      }
 
-  buf.sem_perm.uid  = getuid();
-  buf.sem_perm.gid  = getgid();
-  buf.sem_perm.mode = 0666;
-  arg.buf = &buf;
+      buf.sem_perm.uid = getuid();
+      buf.sem_perm.gid = getgid();
+      buf.sem_perm.mode = 0666;
+      arg.buf = &buf;
 
-  semctl(*mutex_handle, 0, IPC_SET, arg);
+      semctl(*mutex_handle, 0, IPC_SET, arg);
 
-  /* if semaphore was created, set value to one */
-  if (status == SS_CREATED)
-    {
-    arg.val = 1;
-    if (semctl(*mutex_handle, 0, SETVAL, arg) < 0)
-      return SS_NO_MUTEX;
-    }
+      /* if semaphore was created, set value to one */
+      if (status == SS_CREATED) {
+         arg.val = 1;
+         if (semctl(*mutex_handle, 0, SETVAL, arg) < 0)
+            return SS_NO_MUTEX;
+      }
 
-  return SS_SUCCESS;
-  }
-#endif /* OS_UNIX */
+      return SS_SUCCESS;
+   }
+#endif                          /* OS_UNIX */
 
 #ifdef OS_MSDOS
-  return SS_NO_MUTEX;
+   return SS_NO_MUTEX;
 #endif
 }
 
 /*------------------------------------------------------------------*/
-
 INT ss_mutex_wait_for(HNDLE mutex_handle, INT timeout)
 /********************************************************************\
 
@@ -2032,103 +1968,96 @@ INT ss_mutex_wait_for(HNDLE mutex_handle, INT timeout)
 
 \********************************************************************/
 {
-  INT status;
+   INT status;
 
 #ifdef OS_WINNT
 
-  status = WaitForSingleObject((HANDLE) mutex_handle,
-                               timeout == 0 ? INFINITE : timeout);
-  if (status == WAIT_FAILED)
-    return SS_NO_MUTEX;
-  if (status == WAIT_TIMEOUT)
-    return SS_TIMEOUT;
+   status = WaitForSingleObject((HANDLE) mutex_handle, timeout == 0 ? INFINITE : timeout);
+   if (status == WAIT_FAILED)
+      return SS_NO_MUTEX;
+   if (status == WAIT_TIMEOUT)
+      return SS_TIMEOUT;
 
-  return SS_SUCCESS;
-#endif /* OS_WINNT */
+   return SS_SUCCESS;
+#endif                          /* OS_WINNT */
 #ifdef OS_VMS
-  status = sys$enqw(0, LCK$K_EXMODE, mutex_handle, LCK$M_CONVERT,
-        0,0,0,0,0,0,0);
-  if (status != SS$_NORMAL)
-    return SS_NO_MUTEX;
-  return SS_SUCCESS;
+   status = sys$enqw(0, LCK$K_EXMODE, mutex_handle, LCK$M_CONVERT, 0, 0, 0, 0, 0, 0, 0);
+   if (status != SS$_NORMAL)
+      return SS_NO_MUTEX;
+   return SS_SUCCESS;
 
-#endif /* OS_VMS */
+#endif                          /* OS_VMS */
 #ifdef OS_VXWORKS
-  /* convert timeout in ticks (1/60) = 1000/60 ~ 1/16 = >>4 */
-  status = semTake((SEM_ID)mutex_handle, timeout == 0 ? WAIT_FOREVER : timeout>>4);
-  if (status == ERROR)
-    return SS_NO_MUTEX;
-  return SS_SUCCESS;
+   /* convert timeout in ticks (1/60) = 1000/60 ~ 1/16 = >>4 */
+   status = semTake((SEM_ID) mutex_handle, timeout == 0 ? WAIT_FOREVER : timeout >> 4);
+   if (status == ERROR)
+      return SS_NO_MUTEX;
+   return SS_SUCCESS;
 
-#endif /* OS_VXWORKS */
+#endif                          /* OS_VXWORKS */
 #ifdef OS_UNIX
-{
-  DWORD  start_time;
-  struct sembuf sb;
+   {
+      DWORD start_time;
+      struct sembuf sb;
 
 #if (defined(OS_LINUX) && !defined(_SEM_SEMUN_UNDEFINED)) || defined(OS_FREEBSD)
-  union semun arg;
+      union semun arg;
 #else
-  union semun {
-    INT             val;
-    struct semid_ds *buf;
-    ushort          *array;
-  } arg;
+      union semun {
+         INT val;
+         struct semid_ds *buf;
+         ushort *array;
+      } arg;
 #endif
 
-  sb.sem_num = 0;
-  sb.sem_op = -1; /* decrement semaphore */
-  sb.sem_flg = SEM_UNDO;
+      sb.sem_num = 0;
+      sb.sem_op = -1;           /* decrement semaphore */
+      sb.sem_flg = SEM_UNDO;
 
-  memset(&arg, 0, sizeof(arg));
+      memset(&arg, 0, sizeof(arg));
 
-  /* don't request the mutex when in asynchronous state
-     and mutex was locked already by foreground process */
-  if (ss_in_async_routine_flag)
-    if (semctl(mutex_handle, 0, GETPID, arg) == getpid())
-      if (semctl(mutex_handle, 0, GETVAL, arg) == 0)
-        {
-        skip_mutex_handle = mutex_handle;
-        return SS_SUCCESS;
-        }
+      /* don't request the mutex when in asynchronous state
+         and mutex was locked already by foreground process */
+      if (ss_in_async_routine_flag)
+         if (semctl(mutex_handle, 0, GETPID, arg) == getpid())
+            if (semctl(mutex_handle, 0, GETVAL, arg) == 0) {
+               skip_mutex_handle = mutex_handle;
+               return SS_SUCCESS;
+            }
 
-  skip_mutex_handle = -1;
+      skip_mutex_handle = -1;
 
-  start_time = ss_millitime();
+      start_time = ss_millitime();
 
-  do
-    {
-    status = semop(mutex_handle, &sb, 1);
+      do {
+         status = semop(mutex_handle, &sb, 1);
 
-    /* return on success */
-    if (status == 0)
-      break;
+         /* return on success */
+         if (status == 0)
+            break;
 
-    /* retry if interrupted by a ss_wake signal */
-    if (errno == EINTR)
-      {
-      /* return if timeout expired */
-      if (timeout > 0 &&
-          ss_millitime() - start_time > timeout)
-        return SS_TIMEOUT;
+         /* retry if interrupted by a ss_wake signal */
+         if (errno == EINTR) {
+            /* return if timeout expired */
+            if (timeout > 0 && ss_millitime() - start_time > timeout)
+               return SS_TIMEOUT;
 
-      continue;
-      }
+            continue;
+         }
 
-    return SS_NO_MUTEX;
-    } while (1);
+         return SS_NO_MUTEX;
+      } while (1);
 
-  return SS_SUCCESS;
-}
-#endif /* OS_UNIX */
+      return SS_SUCCESS;
+   }
+#endif                          /* OS_UNIX */
 
 #ifdef OS_MSDOS
-  return SS_NO_MUTEX;
+   return SS_NO_MUTEX;
 #endif
 }
 
 /*------------------------------------------------------------------*/
-
 INT ss_mutex_release(HNDLE mutex_handle)
 /********************************************************************\
 
@@ -2148,76 +2077,73 @@ INT ss_mutex_release(HNDLE mutex_handle)
 
 \********************************************************************/
 {
-INT status;
+   INT status;
 
 #ifdef OS_WINNT
 
-  status = ReleaseMutex((HANDLE) mutex_handle);
+   status = ReleaseMutex((HANDLE) mutex_handle);
 
-  if (status == FALSE)
-    return SS_NO_MUTEX;
+   if (status == FALSE)
+      return SS_NO_MUTEX;
 
-  return SS_SUCCESS;
+   return SS_SUCCESS;
 
-#endif /* OS_WINNT */
+#endif                          /* OS_WINNT */
 #ifdef OS_VMS
 
-  status = sys$enqw(0, LCK$K_NLMODE, mutex_handle, LCK$M_CONVERT, 0,0,0,0,0,0,0);
+   status = sys$enqw(0, LCK$K_NLMODE, mutex_handle, LCK$M_CONVERT, 0, 0, 0, 0, 0, 0, 0);
 
-  if (status != SS$_NORMAL)
-    return SS_NO_MUTEX;
+   if (status != SS$_NORMAL)
+      return SS_NO_MUTEX;
 
-  return SS_SUCCESS;
+   return SS_SUCCESS;
 
-#endif /* OS_VMS */
+#endif                          /* OS_VMS */
 
 #ifdef OS_VXWORKS
 
-  if (semGive((SEM_ID)mutex_handle) == ERROR)
-    return SS_NO_MUTEX;
-  return SS_SUCCESS;
-#endif /* OS_VXWORKS */
+   if (semGive((SEM_ID) mutex_handle) == ERROR)
+      return SS_NO_MUTEX;
+   return SS_SUCCESS;
+#endif                          /* OS_VXWORKS */
 
 #ifdef OS_UNIX
-  {
-  struct sembuf sb;
+   {
+      struct sembuf sb;
 
-  sb.sem_num = 0;
-  sb.sem_op  = 1; /* increment semaphore */
-  sb.sem_flg = SEM_UNDO;
+      sb.sem_num = 0;
+      sb.sem_op = 1;            /* increment semaphore */
+      sb.sem_flg = SEM_UNDO;
 
-  if (mutex_handle == skip_mutex_handle)
-    {
-    skip_mutex_handle = -1;
-    return SS_SUCCESS;
-    }
+      if (mutex_handle == skip_mutex_handle) {
+         skip_mutex_handle = -1;
+         return SS_SUCCESS;
+      }
 
-  do
-    {
-    status = semop(mutex_handle, &sb, 1);
+      do {
+         status = semop(mutex_handle, &sb, 1);
 
-    /* return on success */
-    if (status == 0)
-      break;
+         /* return on success */
+         if (status == 0)
+            break;
 
-    /* retry if interrupted by a ss_wake signal */
-    if (errno == EINTR)
-      continue;
+         /* retry if interrupted by a ss_wake signal */
+         if (errno == EINTR)
+            continue;
 
-    return SS_NO_MUTEX;
-    } while (1);
+         return SS_NO_MUTEX;
+      } while (1);
 
-  return SS_SUCCESS;
-  }
-#endif /* OS_UNIX */
+      return SS_SUCCESS;
+   }
+#endif                          /* OS_UNIX */
 
 #ifdef OS_MSDOS
-  return SS_NO_MUTEX;
+   return SS_NO_MUTEX;
 #endif
 }
 
 /*------------------------------------------------------------------*/
-
 INT ss_mutex_delete(HNDLE mutex_handle, INT destroy_flag)
 /********************************************************************\
 
@@ -2239,61 +2165,63 @@ INT ss_mutex_delete(HNDLE mutex_handle, INT destroy_flag)
 {
 #ifdef OS_WINNT
 
-  if (CloseHandle((HANDLE) mutex_handle) == FALSE)
-    return SS_NO_MUTEX;
+   if (CloseHandle((HANDLE) mutex_handle) == FALSE)
+      return SS_NO_MUTEX;
 
-  return SS_SUCCESS;
+   return SS_SUCCESS;
 
-#endif /* OS_WINNT */
+#endif                          /* OS_WINNT */
 #ifdef OS_VMS
 
-  free((void *) mutex_handle);
-  return SS_SUCCESS;
+   free((void *) mutex_handle);
+   return SS_SUCCESS;
 
-#endif /* OS_VMS */
+#endif                          /* OS_VMS */
 
 #ifdef OS_VXWORKS
    /* no code for VxWorks destroy yet */
    if (semDelete((SEM_ID) mutex_handle) == ERROR)
-     return SS_NO_MUTEX;
+      return SS_NO_MUTEX;
    return SS_SUCCESS;
-#endif /* OS_VXWORKS */
+#endif                          /* OS_VXWORKS */
 
 #ifdef OS_UNIX
 #if (defined(OS_LINUX) && !defined(_SEM_SEMUN_UNDEFINED)) || defined(OS_FREEBSD)
-  union semun arg;
+   union semun arg;
 #else
-  union semun {
-    INT val;
-    struct semid_ds *buf;
-    ushort *array;
-    } arg;
+   union semun {
+      INT val;
+      struct semid_ds *buf;
+      ushort *array;
+   } arg;
 #endif
 
-  memset(&arg, 0, sizeof(arg));
+   memset(&arg, 0, sizeof(arg));
 
-  if (destroy_flag)
-    if (semctl(mutex_handle, 0, IPC_RMID, arg) < 0)
-      return SS_NO_MUTEX;
+   if (destroy_flag)
+      if (semctl(mutex_handle, 0, IPC_RMID, arg) < 0)
+         return SS_NO_MUTEX;
 
-  return SS_SUCCESS;
+   return SS_SUCCESS;
 
-#endif /* OS_UNIX */
+#endif                          /* OS_UNIX */
 
 #ifdef OS_MSDOS
-  return SS_NO_MUTEX;
+   return SS_NO_MUTEX;
 #endif
 }
 
-/*------------------------------------------------------------------*/
-/** @name ss_millitime()
-\begin{description}
-\item[Description:] Returns the actual time in milliseconds with an arbitrary
- origin. This time may only be used to calculate relative times.
- Overruns in the 32 bit value don't hurt since in a subtraction calculated
- with 32 bit accuracy this overrun cancels (you may think about!)..
-\item[Remarks:]
-\item[Example:] \begin{verbatim}
+/**dox***************************************************************/
+#endif                          /* DOXYGEN_SHOULD_SKIP_THIS */
+
+/********************************************************************/
+/**
+Returns the actual time in milliseconds with an arbitrary
+origin. This time may only be used to calculate relative times.
+
+Overruns in the 32 bit value don't hurt since in a subtraction calculated
+with 32 bit accuracy this overrun cancels (you may think about!)..
+\code
 ...
 DWORD start, stop:
 start = ss_millitime();
@@ -2301,70 +2229,66 @@ start = ss_millitime();
 stop = ss_millitime();
 printf("Operation took %1.3lf seconds\n",(stop-start)/1000.0);
 ...
-\end{verbatim}
-\end{description}
-@memo Returns current time stamp in millisecond.
+\endcode
 @return millisecond time stamp.
 */
 DWORD ss_millitime()
 {
 #ifdef OS_WINNT
 
-  return (int) GetTickCount();
+   return (int) GetTickCount();
 
-#endif /* OS_WINNT */
+#endif                          /* OS_WINNT */
 #ifdef OS_MSDOS
 
-  return clock() * 55;
+   return clock() * 55;
 
-#endif /* OS_MSDOS */
+#endif                          /* OS_MSDOS */
 #ifdef OS_VMS
 
-  {
-  char  time[8];
-  DWORD lo, hi;
+   {
+      char time[8];
+      DWORD lo, hi;
 
-  sys$gettim(time);
+      sys$gettim(time);
 
-  lo = *((DWORD *) time);
-  hi = *((DWORD *) (time+4));
+      lo = *((DWORD *) time);
+      hi = *((DWORD *) (time + 4));
 
 /*  return *lo / 10000; */
 
-  return lo / 10000 + hi * 429496.7296;
+      return lo / 10000 + hi * 429496.7296;
 
-  }
+   }
 
-#endif /* OS_VMS */
+#endif                          /* OS_VMS */
 #ifdef OS_UNIX
-  {
-  struct timeval tv;
+   {
+      struct timeval tv;
 
-  gettimeofday(&tv, NULL);
+      gettimeofday(&tv, NULL);
 
-  return tv.tv_sec * 1000 + tv.tv_usec / 1000;
-  }
+      return tv.tv_sec * 1000 + tv.tv_usec / 1000;
+   }
 
-#endif /* OS_UNIX */
+#endif                          /* OS_UNIX */
 #ifdef OS_VXWORKS
-  {
-  int count;
-  static int ticks_per_msec = 0;
+   {
+      int count;
+      static int ticks_per_msec = 0;
 
-  if (ticks_per_msec == 0)
-    ticks_per_msec = 1000 / sysClkRateGet();
+      if (ticks_per_msec == 0)
+         ticks_per_msec = 1000 / sysClkRateGet();
 
-  return tickGet() * ticks_per_msec;
-  }
-#endif /* OS_VXWORKS */
+      return tickGet() * ticks_per_msec;
+   }
+#endif                          /* OS_VXWORKS */
 }
 
-/*------------------------------------------------------------------*/
-/** @name ss_time()
-\begin{description}
-\item[Description:] Returns the actual time in seconds since 1.1.1970 UTC.
-\item[Remarks:]
-\item[Example:] \begin{verbatim}
+/********************************************************************/
+/**
+Returns the actual time in seconds since 1.1.1970 UTC.
+\code
 ...
 DWORD start, stop:
 start = ss_time();
@@ -2372,23 +2296,23 @@ start = ss_time();
 stop = ss_time();
 printf("Operation took %1.3lf seconds\n",stop-start);
 ...
-\end{verbatim}
-\end{description}
-@memo Returns current time stamp in seconds.
+\endcode
 @return Time in seconds
 */
 DWORD ss_time()
 {
 #if !defined(OS_VXWORKS)
 #if !defined(OS_VMS)
-  tzset();
+   tzset();
 #endif
 #endif
-  return (DWORD) time(NULL);
+   return (DWORD) time(NULL);
 }
 
-/*------------------------------------------------------------------*/
+/**dox***************************************************************/
+#ifndef DOXYGEN_SHOULD_SKIP_THIS
 
+/*------------------------------------------------------------------*/
 DWORD ss_settime(DWORD seconds)
 /********************************************************************\
 
@@ -2407,42 +2331,41 @@ DWORD ss_settime(DWORD seconds)
 \********************************************************************/
 {
 #ifdef OS_WINNT
-SYSTEMTIME st;
-struct tm *ltm;
+   SYSTEMTIME st;
+   struct tm *ltm;
 
-  tzset();
-  ltm = localtime((time_t *) &seconds);
+   tzset();
+   ltm = localtime((time_t *) & seconds);
 
-  st.wYear   = ltm->tm_year+1900;
-  st.wMonth  = ltm->tm_mon+1;
-  st.wDay    = ltm->tm_mday;
-  st.wHour   = ltm->tm_hour;
-  st.wMinute = ltm->tm_min;
-  st.wSecond = ltm->tm_sec;
-  st.wMilliseconds = 0;
+   st.wYear = ltm->tm_year + 1900;
+   st.wMonth = ltm->tm_mon + 1;
+   st.wDay = ltm->tm_mday;
+   st.wHour = ltm->tm_hour;
+   st.wMinute = ltm->tm_min;
+   st.wSecond = ltm->tm_sec;
+   st.wMilliseconds = 0;
 
-  SetLocalTime(&st);
+   SetLocalTime(&st);
 
 #endif
 #ifdef OS_UNIX
 
-  stime((time_t *) &seconds);
+   stime((time_t *) & seconds);
 
 #endif
 #ifdef OS_VXWORKS
 
-  struct timespec ltm;
+   struct timespec ltm;
 
-  ltm.tv_sec = seconds;
-  ltm.tv_nsec = 0;
-  clock_settime(CLOCK_REALTIME, &ltm);
+   ltm.tv_sec = seconds;
+   ltm.tv_nsec = 0;
+   clock_settime(CLOCK_REALTIME, &ltm);
 
 #endif
-return SS_SUCCESS;
+   return SS_SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
-
 char *ss_asctime()
 /********************************************************************\
 
@@ -2461,22 +2384,22 @@ char *ss_asctime()
 
 \********************************************************************/
 {
-static char str[32];
-time_t seconds;
+   static char str[32];
+   time_t seconds;
 
-  seconds = (time_t) ss_time();
+   seconds = (time_t) ss_time();
 
 #if !defined(OS_VXWORKS)
 #if !defined(OS_VMS)
-  tzset();
+   tzset();
 #endif
 #endif
-  strcpy(str, asctime(localtime(&seconds)));
+   strcpy(str, asctime(localtime(&seconds)));
 
-  /* strip new line */
-  str[24] = 0;
+   /* strip new line */
+   str[24] = 0;
 
-  return str;
+   return str;
 }
 
 /*------------------------------------------------------------------*/
@@ -2484,79 +2407,79 @@ time_t seconds;
 #ifdef OS_UNIX
 /* dummy function for signal() call */
 void ss_cont()
-{ }
+{
+}
 #endif
 
-/*------------------------------------------------------------------*/
-/** @name ss_sleep()
-\begin{description}
-\item[Description:] Suspend the calling process for a certain time.
-\item[Remarks:] The function is similar to the sleep() function,
+/**dox***************************************************************/
+#endif                          /* DOXYGEN_SHOULD_SKIP_THIS */
+
+/********************************************************************/
+/**
+Suspend the calling process for a certain time.
+
+The function is similar to the sleep() function,
 but has a resolution of one milliseconds. Under VxWorks the resolution
 is 1/60 of a second. It uses the socket select() function with a time-out.
-\item[Example:] see \Ref{ss_time()} \begin{verbatim}
-\end{verbatim}
-\end{description}
-@memo Suspend process for a while.
+See examples in ss_time()
 @param millisec Time in milliseconds to sleep. Zero means
                 infinite (until another process calls ss_wake)
 @return SS_SUCCESS
 */
 INT ss_sleep(INT millisec)
 {
-fd_set              readfds;
-struct timeval      timeout;
-int                 status;
-static int          sock = 0;
+   fd_set readfds;
+   struct timeval timeout;
+   int status;
+   static int sock = 0;
 
-  if (millisec == 0)
-    {
+   if (millisec == 0) {
 #ifdef OS_WINNT
-    SuspendThread(GetCurrentThread());
+      SuspendThread(GetCurrentThread());
 #endif
 #ifdef OS_VMS
-    sys$hiber();
+      sys$hiber();
 #endif
 #ifdef OS_UNIX
-    signal(SIGCONT, ss_cont);
-    pause();
+      signal(SIGCONT, ss_cont);
+      pause();
 #endif
-    return SS_SUCCESS;
-    }
-
+      return SS_SUCCESS;
+   }
 #ifdef OS_WINNT
-  {
-  WSADATA WSAData;
+   {
+      WSADATA WSAData;
 
-  /* Start windows sockets */
-  if ( WSAStartup(MAKEWORD(1,1), &WSAData) != 0)
-    return SS_SOCKET_ERROR;
-  }
+      /* Start windows sockets */
+      if (WSAStartup(MAKEWORD(1, 1), &WSAData) != 0)
+         return SS_SOCKET_ERROR;
+   }
 #endif
 
-  timeout.tv_sec  = millisec / 1000;
-  timeout.tv_usec = (millisec % 1000) * 1000;
+   timeout.tv_sec = millisec / 1000;
+   timeout.tv_usec = (millisec % 1000) * 1000;
 
-  if (!sock)
-    sock = socket(AF_INET, SOCK_DGRAM, 0);
+   if (!sock)
+      sock = socket(AF_INET, SOCK_DGRAM, 0);
 
-  FD_ZERO(&readfds);
-  FD_SET(sock, &readfds);
-  do
-    {
-    status = select(FD_SETSIZE, &readfds, NULL, NULL, &timeout);
+   FD_ZERO(&readfds);
+   FD_SET(sock, &readfds);
+   do {
+      status = select(FD_SETSIZE, &readfds, NULL, NULL, &timeout);
 
-    /* if an alarm signal was cought, restart select with reduced timeout */
-    if (status == -1 && timeout.tv_sec >= WATCHDOG_INTERVAL / 1000)
-      timeout.tv_sec -= WATCHDOG_INTERVAL / 1000;
+      /* if an alarm signal was cought, restart select with reduced timeout */
+      if (status == -1 && timeout.tv_sec >= WATCHDOG_INTERVAL / 1000)
+         timeout.tv_sec -= WATCHDOG_INTERVAL / 1000;
 
-    } while (status == -1); /* dont return if an alarm signal was cought */
+   } while (status == -1);      /* dont return if an alarm signal was cought */
 
-  return SS_SUCCESS;
+   return SS_SUCCESS;
 }
 
-/*------------------------------------------------------------------*/
+/**dox***************************************************************/
+#ifndef DOXYGEN_SHOULD_SKIP_THIS
 
+/*------------------------------------------------------------------*/
 BOOL ss_kbhit()
 /********************************************************************\
 
@@ -2578,42 +2501,41 @@ BOOL ss_kbhit()
 {
 #ifdef OS_MSDOS
 
-  return kbhit();
+   return kbhit();
 
-#endif /* OS_MSDOS */
+#endif                          /* OS_MSDOS */
 #ifdef OS_WINNT
 
-  return kbhit();
+   return kbhit();
 
-#endif /* OS_WINNT */
+#endif                          /* OS_WINNT */
 #ifdef OS_VMS
 
-  return FALSE;
+   return FALSE;
 
-#endif /* OS_VMS */
+#endif                          /* OS_VMS */
 #ifdef OS_UNIX
 
-  int n;
+   int n;
 
-  if (_daemon_flag)
-    return 0;
+   if (_daemon_flag)
+      return 0;
 
-  ioctl(0, FIONREAD, &n);
-  return (n > 0);
+   ioctl(0, FIONREAD, &n);
+   return (n > 0);
 
-#endif /* OS_UNIX */
+#endif                          /* OS_UNIX */
 #ifdef OS_VXWORKS
 
-  int n;
-  ioctl(0, FIONREAD, (long) &n);
-  return (n > 0);
+   int n;
+   ioctl(0, FIONREAD, (long) &n);
+   return (n > 0);
 
-#endif /* OS_UNIX */
+#endif                          /* OS_UNIX */
 }
 
 
 /*------------------------------------------------------------------*/
-
 #ifdef LOCAL_ROUTINES
 
 INT ss_wake(INT pid, INT tid, INT thandle)
@@ -2640,84 +2562,83 @@ INT ss_wake(INT pid, INT tid, INT thandle)
 \********************************************************************/
 {
 #ifdef OS_WINNT
-HANDLE process_handle;
-HANDLE dup_thread_handle;
+   HANDLE process_handle;
+   HANDLE dup_thread_handle;
 
-  /*
-  Under Windows NT, it's a little bit tricky to get a thread handle
-  which can be passed to other processes. First the calling process
-  has to duplicate the GetCurrentThread() handle, then the process
-  which gets this handle also has to use DuplicateHandle with the
-  target process as its own. Then this duplicated handle can be used
-  to the SupendThread() and ResumeThread() functions.
-  */
+   /*
+      Under Windows NT, it's a little bit tricky to get a thread handle
+      which can be passed to other processes. First the calling process
+      has to duplicate the GetCurrentThread() handle, then the process
+      which gets this handle also has to use DuplicateHandle with the
+      target process as its own. Then this duplicated handle can be used
+      to the SupendThread() and ResumeThread() functions.
+    */
 
-  process_handle = OpenProcess(PROCESS_ALL_ACCESS, TRUE, pid);
+   process_handle = OpenProcess(PROCESS_ALL_ACCESS, TRUE, pid);
 
-  if (process_handle == 0)
-    return SS_NO_PROCESS;
+   if (process_handle == 0)
+      return SS_NO_PROCESS;
 
-  DuplicateHandle(process_handle, (HANDLE) thandle, GetCurrentProcess(),
-      &dup_thread_handle, THREAD_ALL_ACCESS, TRUE, 0);
+   DuplicateHandle(process_handle, (HANDLE) thandle, GetCurrentProcess(),
+                   &dup_thread_handle, THREAD_ALL_ACCESS, TRUE, 0);
 
-  /* close handles not to waste resources */
-  CloseHandle(process_handle);
+   /* close handles not to waste resources */
+   CloseHandle(process_handle);
 
-  if (dup_thread_handle == 0)
-    return SS_NO_PROCESS;
+   if (dup_thread_handle == 0)
+      return SS_NO_PROCESS;
 
-  ResumeThread(dup_thread_handle);
+   ResumeThread(dup_thread_handle);
 
-  /* close handles not to waste resources */
-  CloseHandle(dup_thread_handle);
+   /* close handles not to waste resources */
+   CloseHandle(dup_thread_handle);
 
-  return SS_SUCCESS;
+   return SS_SUCCESS;
 
-#endif /* OS_WINNT */
+#endif                          /* OS_WINNT */
 #ifdef OS_VMS
 
-  if (sys$wake(&pid, 0) == SS$_NONEXPR)
-    return SS_NO_PROCESS;
+   if (sys$wake(&pid, 0) == SS$_NONEXPR)
+      return SS_NO_PROCESS;
 
-  return SS_SUCCESS;
+   return SS_SUCCESS;
 
-#endif /* OS_VMS */
+#endif                          /* OS_VMS */
 #ifdef OS_UNIX
 
-  if (kill(pid, SIGCONT) < 0)
-    return SS_NO_PROCESS;
+   if (kill(pid, SIGCONT) < 0)
+      return SS_NO_PROCESS;
 
-  return SS_SUCCESS;
+   return SS_SUCCESS;
 
-  /*
-  Bryan: kill has to get the target process out of pause(). Some
-  UNIX documentation say that pause() terminates by receiving any
-  signal which would be ok because the buffer manager is designed
-  in a way where an additional wake doesn't hurt. If this is not
-  true, one has to setup a signal(SIGCONT, dummy) in the ss_sleep
-  routine or so. Please check this.
-  */
-#endif /* OS_UNIX */
+   /*
+      Bryan: kill has to get the target process out of pause(). Some
+      UNIX documentation say that pause() terminates by receiving any
+      signal which would be ok because the buffer manager is designed
+      in a way where an additional wake doesn't hurt. If this is not
+      true, one has to setup a signal(SIGCONT, dummy) in the ss_sleep
+      routine or so. Please check this.
+    */
+#endif                          /* OS_UNIX */
 }
 
 /*------------------------------------------------------------------*/
-
 #ifdef OS_WINNT
 
-static void (*UserCallback)(int);
+static void (*UserCallback) (int);
 static UINT _timer_id = 0;
 
 VOID CALLBACK _timeCallback(UINT idEvent, UINT uReserved, DWORD dwUser,
-          DWORD dwReserved1, DWORD dwReserved2)
+                            DWORD dwReserved1, DWORD dwReserved2)
 {
-  _timer_id = 0;
-  if (UserCallback != NULL)
-    UserCallback(0);
+   _timer_id = 0;
+   if (UserCallback != NULL)
+      UserCallback(0);
 }
 
-#endif /* OS_WINNT */
+#endif                          /* OS_WINNT */
 
-INT ss_alarm(INT millitime, void (*func)(int))
+INT ss_alarm(INT millitime, void (*func) (int))
 /********************************************************************\
 
   Routine: ss_alarm
@@ -2740,57 +2661,56 @@ INT ss_alarm(INT millitime, void (*func)(int))
 {
 #ifdef OS_WINNT
 
-  UserCallback = func;
-  if (millitime > 0)
-    _timer_id = timeSetEvent(millitime, 100, (LPTIMECALLBACK) _timeCallback, 0, TIME_ONESHOT);
-  else
-    {
-    if (_timer_id)
-      timeKillEvent(_timer_id);
-    _timer_id = 0;
-    }
+   UserCallback = func;
+   if (millitime > 0)
+      _timer_id =
+          timeSetEvent(millitime, 100, (LPTIMECALLBACK) _timeCallback, 0, TIME_ONESHOT);
+   else {
+      if (_timer_id)
+         timeKillEvent(_timer_id);
+      _timer_id = 0;
+   }
 
-  return SS_SUCCESS;
+   return SS_SUCCESS;
 
-#endif /* OS_WINNT */
+#endif                          /* OS_WINNT */
 #ifdef OS_VMS
 
-  signal(SIGALRM, func);
-  alarm(millitime/1000);
-  return SS_SUCCESS;
+   signal(SIGALRM, func);
+   alarm(millitime / 1000);
+   return SS_SUCCESS;
 
-#endif /* OS_VMS */
+#endif                          /* OS_VMS */
 #ifdef OS_UNIX
 
-  signal(SIGALRM, func);
-  alarm(millitime/1000);
-  return SS_SUCCESS;
+   signal(SIGALRM, func);
+   alarm(millitime / 1000);
+   return SS_SUCCESS;
 
-#endif /* OS_UNIX */
+#endif                          /* OS_UNIX */
 }
 
 /*------------------------------------------------------------------*/
-
-void (*MidasExceptionHandler)();
+void (*MidasExceptionHandler) ();
 
 #ifdef OS_WINNT
 
 LONG MidasExceptionFilter(LPEXCEPTION_POINTERS pexcep)
 {
-  if (MidasExceptionHandler != NULL)
-    MidasExceptionHandler();
+   if (MidasExceptionHandler != NULL)
+      MidasExceptionHandler();
 
-  return EXCEPTION_CONTINUE_SEARCH;
+   return EXCEPTION_CONTINUE_SEARCH;
 }
 
 INT MidasExceptionSignal(INT sig)
 {
-  if (MidasExceptionHandler != NULL)
-    MidasExceptionHandler();
+   if (MidasExceptionHandler != NULL)
+      MidasExceptionHandler();
 
-  raise(sig);
+   raise(sig);
 
-  return 0;
+   return 0;
 }
 
 /*
@@ -2803,31 +2723,30 @@ INT _matherr(struct _exception *except)
 }
 */
 
-#endif /* OS_WINNT */
+#endif                          /* OS_WINNT */
 
 #ifdef OS_VMS
 
-INT MidasExceptionFilter(INT *sigargs, INT *mechargs)
+INT MidasExceptionFilter(INT * sigargs, INT * mechargs)
 {
-  if (MidasExceptionHandler != NULL)
-    MidasExceptionHandler();
+   if (MidasExceptionHandler != NULL)
+      MidasExceptionHandler();
 
-  return(SS$_RESIGNAL);
+   return (SS$_RESIGNAL);
 }
 
 void MidasExceptionSignal(INT sig)
 {
-  if (MidasExceptionHandler != NULL)
-    MidasExceptionHandler();
+   if (MidasExceptionHandler != NULL)
+      MidasExceptionHandler();
 
-  kill(getpid(), sig);
+   kill(getpid(), sig);
 }
 
-#endif /* OS_VMS */
+#endif                          /* OS_VMS */
 
 /*------------------------------------------------------------------*/
-
-INT ss_exception_handler(void (*func)())
+INT ss_exception_handler(void (*func) ())
 /********************************************************************\
 
   Routine: ss_exception_handler
@@ -2849,7 +2768,7 @@ INT ss_exception_handler(void (*func)())
 {
 #ifdef OS_WINNT
 
-  MidasExceptionHandler = func;
+   MidasExceptionHandler = func;
 /*  SetUnhandledExceptionFilter(
     (LPTOP_LEVEL_EXCEPTION_FILTER) MidasExceptionFilter);
 
@@ -2861,29 +2780,28 @@ INT ss_exception_handler(void (*func)())
   signal(SIGBREAK, MidasExceptionSignal);
   signal(SIGABRT, MidasExceptionSignal); */
 
-#endif /* OS_WINNT */
+#endif                          /* OS_WINNT */
 #ifdef OS_VMS
 
-  MidasExceptionHandler = func;
-  lib$establish(MidasExceptionFilter);
+   MidasExceptionHandler = func;
+   lib$establish(MidasExceptionFilter);
 
-  signal(SIGINT, MidasExceptionSignal);
-  signal(SIGILL, MidasExceptionSignal);
-  signal(SIGQUIT, MidasExceptionSignal);
-  signal(SIGFPE, MidasExceptionSignal);
-  signal(SIGSEGV, MidasExceptionSignal);
-  signal(SIGTERM, MidasExceptionSignal);
+   signal(SIGINT, MidasExceptionSignal);
+   signal(SIGILL, MidasExceptionSignal);
+   signal(SIGQUIT, MidasExceptionSignal);
+   signal(SIGFPE, MidasExceptionSignal);
+   signal(SIGSEGV, MidasExceptionSignal);
+   signal(SIGTERM, MidasExceptionSignal);
 
-#endif /* OS_WINNT */
+#endif                          /* OS_WINNT */
 
-  return SS_SUCCESS;
+   return SS_SUCCESS;
 }
 
-#endif /* LOCAL_ROUTINES */
+#endif                          /* LOCAL_ROUTINES */
 
 /*------------------------------------------------------------------*/
-
-void *ss_ctrlc_handler(void (*func)(int))
+void *ss_ctrlc_handler(void (*func) (int))
 /********************************************************************\
 
   Routine: ss_ctrlc_handler
@@ -2906,43 +2824,36 @@ void *ss_ctrlc_handler(void (*func)(int))
 {
 #ifdef OS_WINNT
 
-  if (func == NULL)
-    {
-    signal(SIGBREAK, SIG_DFL);
-    return signal(SIGINT, SIG_DFL);
-    }
-  else
-    {
-    signal(SIGBREAK, func);
-    return signal(SIGINT, func);
-    }
-  return NULL;
+   if (func == NULL) {
+      signal(SIGBREAK, SIG_DFL);
+      return signal(SIGINT, SIG_DFL);
+   } else {
+      signal(SIGBREAK, func);
+      return signal(SIGINT, func);
+   }
+   return NULL;
 
-#endif /* OS_WINNT */
+#endif                          /* OS_WINNT */
 #ifdef OS_VMS
 
-  return signal(SIGINT, func);
+   return signal(SIGINT, func);
 
-#endif /* OS_WINNT */
+#endif                          /* OS_WINNT */
 
 #ifdef OS_UNIX
 
-  if (func == NULL)
-    {
-    signal(SIGTERM, SIG_DFL);
-    return (void *) signal(SIGINT, SIG_DFL);
-    }
-  else
-    {
-    signal(SIGTERM, func);
-    return (void *) signal(SIGINT, func);
-    }
+   if (func == NULL) {
+      signal(SIGTERM, SIG_DFL);
+      return (void *) signal(SIGINT, SIG_DFL);
+   } else {
+      signal(SIGTERM, func);
+      return (void *) signal(SIGINT, func);
+   }
 
-#endif /* OS_UNIX */
+#endif                          /* OS_UNIX */
 }
 
 /*------------------------------------------------------------------*/
-
 /********************************************************************\
 *                                                                    *
 *                  Suspend/resume functions                          *
@@ -2950,7 +2861,6 @@ void *ss_ctrlc_handler(void (*func)(int))
 \********************************************************************/
 
 /*------------------------------------------------------------------*/
-
 /* globals */
 
 /*
@@ -2962,26 +2872,25 @@ void *ss_ctrlc_handler(void (*func)(int))
 */
 
 typedef struct {
-  BOOL                  in_use;
-  INT                   thread_id;
-  INT                   ipc_port;
-  INT                   ipc_recv_socket;
-  INT                   ipc_send_socket;
-  INT                   (*ipc_dispatch)(char *,INT);
-  INT                   listen_socket;
-  INT                   (*listen_dispatch)(INT);
-  RPC_SERVER_CONNECTION *server_connection;
-  INT                   (*client_dispatch)(INT);
-  RPC_SERVER_ACCEPTION  *server_acception;
-  INT                   (*server_dispatch)(INT, int, BOOL);
-  struct sockaddr_in    bind_addr;
+   BOOL in_use;
+   INT thread_id;
+   INT ipc_port;
+   INT ipc_recv_socket;
+   INT ipc_send_socket;
+    INT(*ipc_dispatch) (char *, INT);
+   INT listen_socket;
+    INT(*listen_dispatch) (INT);
+   RPC_SERVER_CONNECTION *server_connection;
+    INT(*client_dispatch) (INT);
+   RPC_SERVER_ACCEPTION *server_acception;
+    INT(*server_dispatch) (INT, int, BOOL);
+   struct sockaddr_in bind_addr;
 } SUSPEND_STRUCT;
 
-SUSPEND_STRUCT    *_suspend_struct = NULL;
-INT               _suspend_entries;
+SUSPEND_STRUCT *_suspend_struct = NULL;
+INT _suspend_entries;
 
 /*------------------------------------------------------------------*/
-
 INT ss_suspend_init_ipc(INT index)
 /********************************************************************\
 
@@ -3002,94 +2911,92 @@ INT ss_suspend_init_ipc(INT index)
 
 \********************************************************************/
 {
-INT                  status, sock;
-int                  i;
-struct sockaddr_in   bind_addr;
-char                 local_host_name[HOST_NAME_LENGTH];
-struct hostent       *phe;
+   INT status, sock;
+   int i;
+   struct sockaddr_in bind_addr;
+   char local_host_name[HOST_NAME_LENGTH];
+   struct hostent *phe;
 
 #ifdef OS_WINNT
-  {
-  WSADATA WSAData;
+   {
+      WSADATA WSAData;
 
-  /* Start windows sockets */
-  if ( WSAStartup(MAKEWORD(1,1), &WSAData) != 0)
-    return SS_SOCKET_ERROR;
-  }
+      /* Start windows sockets */
+      if (WSAStartup(MAKEWORD(1, 1), &WSAData) != 0)
+         return SS_SOCKET_ERROR;
+   }
 #endif
 
   /*--------------- create UDP receive socket -------------------*/
-  sock = socket(AF_INET, SOCK_DGRAM, 0);
-  if (sock == -1)
-    return SS_SOCKET_ERROR;
+   sock = socket(AF_INET, SOCK_DGRAM, 0);
+   if (sock == -1)
+      return SS_SOCKET_ERROR;
 
-  /* let OS choose port for socket */
-  memset(&bind_addr, 0, sizeof(bind_addr));
-  bind_addr.sin_family      = AF_INET;
-  bind_addr.sin_addr.s_addr = 0;
-  bind_addr.sin_port        = 0;
+   /* let OS choose port for socket */
+   memset(&bind_addr, 0, sizeof(bind_addr));
+   bind_addr.sin_family = AF_INET;
+   bind_addr.sin_addr.s_addr = 0;
+   bind_addr.sin_port = 0;
 
-  gethostname(local_host_name, sizeof(local_host_name));
+   gethostname(local_host_name, sizeof(local_host_name));
 
 #ifdef OS_VXWORKS
-  {
-  INT host_addr;
+   {
+      INT host_addr;
 
-  host_addr = hostGetByName(local_host_name);
-  memcpy((char *)&(bind_addr.sin_addr), &host_addr, 4);
-  }
+      host_addr = hostGetByName(local_host_name);
+      memcpy((char *) &(bind_addr.sin_addr), &host_addr, 4);
+   }
 #else
-  phe = gethostbyname(local_host_name);
-  if (phe == NULL)
-    {
-    cm_msg(MERROR, "ss_suspend_init_ipc", "cannot get host name");
-    return SS_SOCKET_ERROR;
-    }
-  memcpy((char *)&(bind_addr.sin_addr), phe->h_addr, phe->h_length);
+   phe = gethostbyname(local_host_name);
+   if (phe == NULL) {
+      cm_msg(MERROR, "ss_suspend_init_ipc", "cannot get host name");
+      return SS_SOCKET_ERROR;
+   }
+   memcpy((char *) &(bind_addr.sin_addr), phe->h_addr, phe->h_length);
 #endif
 
-  status = bind(sock, (struct sockaddr *)&bind_addr, sizeof(bind_addr));
-  if (status < 0)
-    return SS_SOCKET_ERROR;
+   status = bind(sock, (struct sockaddr *) &bind_addr, sizeof(bind_addr));
+   if (status < 0)
+      return SS_SOCKET_ERROR;
 
-  /* find out which port OS has chosen */
-  i = sizeof(bind_addr);
-  getsockname(sock, (struct sockaddr *)&bind_addr, (int *)&i);
+   /* find out which port OS has chosen */
+   i = sizeof(bind_addr);
+   getsockname(sock, (struct sockaddr *) &bind_addr, (int *) &i);
 
-  _suspend_struct[index].ipc_recv_socket  = sock;
-  _suspend_struct[index].ipc_port    = ntohs(bind_addr.sin_port);
+   _suspend_struct[index].ipc_recv_socket = sock;
+   _suspend_struct[index].ipc_port = ntohs(bind_addr.sin_port);
 
   /*--------------- create UDP send socket ----------------------*/
-  sock = socket(AF_INET, SOCK_DGRAM, 0);
+   sock = socket(AF_INET, SOCK_DGRAM, 0);
 
-  if (sock == -1)
-    return SS_SOCKET_ERROR;
+   if (sock == -1)
+      return SS_SOCKET_ERROR;
 
-  /* fill out bind struct pointing to local host */
-  memset(&bind_addr, 0, sizeof(bind_addr));
-  bind_addr.sin_family      = AF_INET;
-  bind_addr.sin_addr.s_addr = 0;
+   /* fill out bind struct pointing to local host */
+   memset(&bind_addr, 0, sizeof(bind_addr));
+   bind_addr.sin_family = AF_INET;
+   bind_addr.sin_addr.s_addr = 0;
 
 #ifdef OS_VXWORKS
-  {
-  INT host_addr;
+   {
+      INT host_addr;
 
-  host_addr = hostGetByName(local_host_name);
-  memcpy((char *)&(bind_addr.sin_addr), &host_addr, 4);
-  }
+      host_addr = hostGetByName(local_host_name);
+      memcpy((char *) &(bind_addr.sin_addr), &host_addr, 4);
+   }
 #else
-  memcpy((char *)&(bind_addr.sin_addr), phe->h_addr, phe->h_length);
+   memcpy((char *) &(bind_addr.sin_addr), phe->h_addr, phe->h_length);
 #endif
 
-  memcpy(&_suspend_struct[index].bind_addr, &bind_addr, sizeof(bind_addr));
-  _suspend_struct[index].ipc_send_socket = sock;
+   memcpy(&_suspend_struct[index].bind_addr, &bind_addr, sizeof(bind_addr));
+   _suspend_struct[index].ipc_send_socket = sock;
 
-  return SS_SUCCESS;
+   return SS_SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
-
-INT ss_suspend_get_index(INT *pindex)
+INT ss_suspend_get_index(INT * pindex)
 /********************************************************************\
 
   Routine: ss_suspend_init
@@ -3110,62 +3017,57 @@ INT ss_suspend_get_index(INT *pindex)
 
 \********************************************************************/
 {
-INT index;
+   INT index;
 
-  if (_suspend_struct == NULL)
-    {
-    /* create a new entry for this thread */
-    _suspend_struct = (SUSPEND_STRUCT *)malloc(sizeof(SUSPEND_STRUCT));
-    memset(_suspend_struct, 0, sizeof(SUSPEND_STRUCT));
-    if (_suspend_struct == NULL)
-      return SS_NO_MEMORY;
-
-    _suspend_entries = 1;
-    *pindex = 0;
-    _suspend_struct[0].thread_id = ss_gettid();
-    _suspend_struct[0].in_use    = TRUE;
-    }
-  else
-    {
-    /* check for an existing entry for this thread */
-    for (index=0 ; index<_suspend_entries ; index++)
-      if (_suspend_struct[index].thread_id == ss_gettid())
-        {
-        if (pindex != NULL)
-          *pindex = index;
-
-        return SS_SUCCESS;
-        }
-
-    /* check for a deleted entry */
-    for (index=0 ; index<_suspend_entries ; index++)
-      if (!_suspend_struct[index].in_use)
-        break;
-
-    if (index == _suspend_entries)
-      {
-      /* if not found, create new one */
-      _suspend_struct = (SUSPEND_STRUCT *)realloc(_suspend_struct,
-        sizeof(SUSPEND_STRUCT) * (_suspend_entries+1));
-      memset(&_suspend_struct[_suspend_entries], 0, sizeof(SUSPEND_STRUCT));
-
-      _suspend_entries++;
+   if (_suspend_struct == NULL) {
+      /* create a new entry for this thread */
+      _suspend_struct = (SUSPEND_STRUCT *) malloc(sizeof(SUSPEND_STRUCT));
+      memset(_suspend_struct, 0, sizeof(SUSPEND_STRUCT));
       if (_suspend_struct == NULL)
-        {
-        _suspend_entries--;
-        return SS_NO_MEMORY;
-        }
-      }
-    *pindex = index;
-    _suspend_struct[index].thread_id = ss_gettid();
-    _suspend_struct[index].in_use    = TRUE;
-    }
+         return SS_NO_MEMORY;
 
-  return SS_SUCCESS;
+      _suspend_entries = 1;
+      *pindex = 0;
+      _suspend_struct[0].thread_id = ss_gettid();
+      _suspend_struct[0].in_use = TRUE;
+   } else {
+      /* check for an existing entry for this thread */
+      for (index = 0; index < _suspend_entries; index++)
+         if (_suspend_struct[index].thread_id == ss_gettid()) {
+            if (pindex != NULL)
+               *pindex = index;
+
+            return SS_SUCCESS;
+         }
+
+      /* check for a deleted entry */
+      for (index = 0; index < _suspend_entries; index++)
+         if (!_suspend_struct[index].in_use)
+            break;
+
+      if (index == _suspend_entries) {
+         /* if not found, create new one */
+         _suspend_struct = (SUSPEND_STRUCT *) realloc(_suspend_struct,
+                                                      sizeof
+                                                      (SUSPEND_STRUCT) *
+                                                      (_suspend_entries + 1));
+         memset(&_suspend_struct[_suspend_entries], 0, sizeof(SUSPEND_STRUCT));
+
+         _suspend_entries++;
+         if (_suspend_struct == NULL) {
+            _suspend_entries--;
+            return SS_NO_MEMORY;
+         }
+      }
+      *pindex = index;
+      _suspend_struct[index].thread_id = ss_gettid();
+      _suspend_struct[index].in_use = TRUE;
+   }
+
+   return SS_SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
-
 INT ss_suspend_exit()
 /********************************************************************\
 
@@ -3185,40 +3087,37 @@ INT ss_suspend_exit()
 
 \********************************************************************/
 {
-INT i, status;
+   INT i, status;
 
-  status = ss_suspend_get_index(&i);
+   status = ss_suspend_get_index(&i);
 
-  if (status != SS_SUCCESS)
-    return status;
+   if (status != SS_SUCCESS)
+      return status;
 
-  if (_suspend_struct[i].ipc_recv_socket)
-    {
-    closesocket(_suspend_struct[i].ipc_recv_socket);
-    closesocket(_suspend_struct[i].ipc_send_socket);
-    }
+   if (_suspend_struct[i].ipc_recv_socket) {
+      closesocket(_suspend_struct[i].ipc_recv_socket);
+      closesocket(_suspend_struct[i].ipc_send_socket);
+   }
 
-  memset(&_suspend_struct[i], 0, sizeof(SUSPEND_STRUCT));
+   memset(&_suspend_struct[i], 0, sizeof(SUSPEND_STRUCT));
 
-  /* calculate new _suspend_entries value */
-  for (i=_suspend_entries-1 ; i>=0 ; i--)
-    if (_suspend_struct[i].in_use)
-      break;
+   /* calculate new _suspend_entries value */
+   for (i = _suspend_entries - 1; i >= 0; i--)
+      if (_suspend_struct[i].in_use)
+         break;
 
-  _suspend_entries = i+1;
+   _suspend_entries = i + 1;
 
-  if (_suspend_entries == 0)
-    {
-    free(_suspend_struct);
-    _suspend_struct = NULL;
-    }
+   if (_suspend_entries == 0) {
+      free(_suspend_struct);
+      _suspend_struct = NULL;
+   }
 
-  return SS_SUCCESS;
+   return SS_SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
-
-INT ss_suspend_set_dispatch(INT channel, void *connection, INT (*dispatch)())
+INT ss_suspend_set_dispatch(INT channel, void *connection, INT(*dispatch) ())
 /********************************************************************\
 
   Routine: ss_suspend_set_dispatch
@@ -3248,47 +3147,40 @@ INT ss_suspend_set_dispatch(INT channel, void *connection, INT (*dispatch)())
 
 \********************************************************************/
 {
-INT i, status;
+   INT i, status;
 
-  status = ss_suspend_get_index(&i);
+   status = ss_suspend_get_index(&i);
 
-  if (status != SS_SUCCESS)
-    return status;
+   if (status != SS_SUCCESS)
+      return status;
 
-  if (channel == CH_IPC)
-    {
-    _suspend_struct[i].ipc_dispatch      = (INT (*)(char *,INT)) dispatch;
+   if (channel == CH_IPC) {
+      _suspend_struct[i].ipc_dispatch = (INT(*)(char *, INT)) dispatch;
 
-    if (!_suspend_struct[i].ipc_recv_socket)
-      ss_suspend_init_ipc(i);
-    }
+      if (!_suspend_struct[i].ipc_recv_socket)
+         ss_suspend_init_ipc(i);
+   }
 
-  if (channel == CH_LISTEN)
-    {
-    _suspend_struct[i].listen_socket     = *((INT *) connection);
-    _suspend_struct[i].listen_dispatch   = (INT (*)(INT)) dispatch;
-    }
+   if (channel == CH_LISTEN) {
+      _suspend_struct[i].listen_socket = *((INT *) connection);
+      _suspend_struct[i].listen_dispatch = (INT(*)(INT)) dispatch;
+   }
 
-  if (channel == CH_CLIENT)
-    {
-    _suspend_struct[i].server_connection =
-      (RPC_SERVER_CONNECTION *) connection;
-    _suspend_struct[i].client_dispatch   = (INT (*)(INT)) dispatch;
-    }
+   if (channel == CH_CLIENT) {
+      _suspend_struct[i].server_connection = (RPC_SERVER_CONNECTION *) connection;
+      _suspend_struct[i].client_dispatch = (INT(*)(INT)) dispatch;
+   }
 
-  if (channel == CH_SERVER)
-    {
-    _suspend_struct[i].server_acception =
-      (RPC_SERVER_ACCEPTION *) connection;
-    _suspend_struct[i].server_dispatch   = (INT (*)(INT,int,BOOL)) dispatch;
-    }
+   if (channel == CH_SERVER) {
+      _suspend_struct[i].server_acception = (RPC_SERVER_ACCEPTION *) connection;
+      _suspend_struct[i].server_dispatch = (INT(*)(INT, int, BOOL)) dispatch;
+   }
 
-  return SS_SUCCESS;
+   return SS_SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
-
-INT ss_suspend_get_port(INT* port)
+INT ss_suspend_get_port(INT * port)
 /********************************************************************\
 
   Routine: ss_suspend_get_port
@@ -3310,23 +3202,22 @@ INT ss_suspend_get_port(INT* port)
 
 \********************************************************************/
 {
-INT index, status;
+   INT index, status;
 
-  status = ss_suspend_get_index(&index);
+   status = ss_suspend_get_index(&index);
 
-  if (status != SS_SUCCESS)
-    return status;
+   if (status != SS_SUCCESS)
+      return status;
 
-  if (!_suspend_struct[index].ipc_port)
-    ss_suspend_init_ipc(index);
+   if (!_suspend_struct[index].ipc_port)
+      ss_suspend_init_ipc(index);
 
-  *port = _suspend_struct[index].ipc_port;
+   *port = _suspend_struct[index].ipc_port;
 
-  return SS_SUCCESS;
+   return SS_SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
-
 INT ss_suspend(INT millisec, INT msg)
 /********************************************************************\
 
@@ -3359,259 +3250,240 @@ INT ss_suspend(INT millisec, INT msg)
 
 \********************************************************************/
 {
-fd_set              readfds;
-struct timeval      timeout;
-INT                 sock, server_socket;
-INT                 index, status, i, return_status;
-int                 size;
-struct sockaddr     from_addr;
-char                str[100], buffer[80], buffer_tmp[80];
+   fd_set readfds;
+   struct timeval timeout;
+   INT sock, server_socket;
+   INT index, status, i, return_status;
+   int size;
+   struct sockaddr from_addr;
+   char str[100], buffer[80], buffer_tmp[80];
 
-  /* get index to _suspend_struct for this thread */
-  status = ss_suspend_get_index(&index);
+   /* get index to _suspend_struct for this thread */
+   status = ss_suspend_get_index(&index);
 
-  if (status != SS_SUCCESS)
-    return status;
+   if (status != SS_SUCCESS)
+      return status;
 
-  return_status = SS_TIMEOUT;
+   return_status = SS_TIMEOUT;
 
-  do
-    {
-    FD_ZERO(&readfds);
+   do {
+      FD_ZERO(&readfds);
 
-    /* check listen socket */
-    if (_suspend_struct[index].listen_socket)
-      FD_SET(_suspend_struct[index].listen_socket, &readfds);
+      /* check listen socket */
+      if (_suspend_struct[index].listen_socket)
+         FD_SET(_suspend_struct[index].listen_socket, &readfds);
 
-    /* check server channels */
-    if (_suspend_struct[index].server_acception)
-      for (i=0 ; i < MAX_RPC_CONNECTION ; i++)
-        {
-        /* RPC channel */
-        sock = _suspend_struct[index].server_acception[i].recv_sock;
+      /* check server channels */
+      if (_suspend_struct[index].server_acception)
+         for (i = 0; i < MAX_RPC_CONNECTION; i++) {
+            /* RPC channel */
+            sock = _suspend_struct[index].server_acception[i].recv_sock;
 
-        /* only watch the event tcp connection belonging to this thread */
-        if (!sock || _suspend_struct[index].server_acception[i].tid != ss_gettid())
-          continue;
+            /* only watch the event tcp connection belonging to this thread */
+            if (!sock || _suspend_struct[index].server_acception[i].tid != ss_gettid())
+               continue;
 
-        /* watch server socket if no data in cache */
-        if (recv_tcp_check(sock) == 0)
-          FD_SET(sock, &readfds);
-        /* set timeout to zero if data in cache (-> just quick check IPC)
-           and not called from inside bm_send_event (-> wait for IPC) */
-        else
-          if (msg == 0)
-            millisec = 0;
+            /* watch server socket if no data in cache */
+            if (recv_tcp_check(sock) == 0)
+               FD_SET(sock, &readfds);
+            /* set timeout to zero if data in cache (-> just quick check IPC)
+               and not called from inside bm_send_event (-> wait for IPC) */
+            else if (msg == 0)
+               millisec = 0;
 
-        /* event channel */
-        sock = _suspend_struct[index].server_acception[i].event_sock;
+            /* event channel */
+            sock = _suspend_struct[index].server_acception[i].event_sock;
 
-        if (!sock)
-          continue;
+            if (!sock)
+               continue;
 
-        /* watch server socket if no data in cache */
-        if (recv_event_check(sock) == 0)
-          FD_SET(sock, &readfds);
-        /* set timeout to zero if data in cache (-> just quick check IPC)
-           and not called from inside bm_send_event (-> wait for IPC) */
-        else
-          if (msg == 0)
-            millisec = 0;
-        }
+            /* watch server socket if no data in cache */
+            if (recv_event_check(sock) == 0)
+               FD_SET(sock, &readfds);
+            /* set timeout to zero if data in cache (-> just quick check IPC)
+               and not called from inside bm_send_event (-> wait for IPC) */
+            else if (msg == 0)
+               millisec = 0;
+         }
 
-    /* watch client recv connections */
-    if (_suspend_struct[index].server_connection)
-      {
-      sock = _suspend_struct[index].server_connection->recv_sock;
-      if (sock)
-        FD_SET(sock, &readfds);
+      /* watch client recv connections */
+      if (_suspend_struct[index].server_connection) {
+         sock = _suspend_struct[index].server_connection->recv_sock;
+         if (sock)
+            FD_SET(sock, &readfds);
       }
 
-    /* check IPC socket */
-    if (_suspend_struct[index].ipc_recv_socket)
-      FD_SET(_suspend_struct[index].ipc_recv_socket, &readfds);
+      /* check IPC socket */
+      if (_suspend_struct[index].ipc_recv_socket)
+         FD_SET(_suspend_struct[index].ipc_recv_socket, &readfds);
 
-    timeout.tv_sec  = millisec / 1000;
-    timeout.tv_usec = (millisec % 1000) * 1000;
+      timeout.tv_sec = millisec / 1000;
+      timeout.tv_usec = (millisec % 1000) * 1000;
 
-    do
-      {
-      if (millisec < 0)
-        status = select(FD_SETSIZE, &readfds, NULL, NULL, NULL); /* blocking */
-      else
-        status = select(FD_SETSIZE, &readfds, NULL, NULL, &timeout);
+      do {
+         if (millisec < 0)
+            status = select(FD_SETSIZE, &readfds, NULL, NULL, NULL);    /* blocking */
+         else
+            status = select(FD_SETSIZE, &readfds, NULL, NULL, &timeout);
 
-      /* if an alarm signal was cought, restart select with reduced timeout */
-      if (status == -1 && timeout.tv_sec >= WATCHDOG_INTERVAL / 1000)
-        timeout.tv_sec -= WATCHDOG_INTERVAL / 1000;
+         /* if an alarm signal was cought, restart select with reduced timeout */
+         if (status == -1 && timeout.tv_sec >= WATCHDOG_INTERVAL / 1000)
+            timeout.tv_sec -= WATCHDOG_INTERVAL / 1000;
 
-      } while (status == -1); /* dont return if an alarm signal was cought */
+      } while (status == -1);   /* dont return if an alarm signal was cought */
 
-    /* if listen socket got data, call dispatcher with socket */
-    if (_suspend_struct[index].listen_socket &&
-        FD_ISSET(_suspend_struct[index].listen_socket, &readfds))
-      {
-      sock = _suspend_struct[index].listen_socket;
+      /* if listen socket got data, call dispatcher with socket */
+      if (_suspend_struct[index].listen_socket &&
+          FD_ISSET(_suspend_struct[index].listen_socket, &readfds)) {
+         sock = _suspend_struct[index].listen_socket;
 
-      if (_suspend_struct[index].listen_dispatch)
-        {
-        status = _suspend_struct[index].listen_dispatch(sock);
-        if (status == RPC_SHUTDOWN)
-          return status;
-        }
+         if (_suspend_struct[index].listen_dispatch) {
+            status = _suspend_struct[index].listen_dispatch(sock);
+            if (status == RPC_SHUTDOWN)
+               return status;
+         }
       }
 
-    /* check server channels */
-    if (_suspend_struct[index].server_acception)
-      for (i=0 ; i < MAX_RPC_CONNECTION ; i++)
-        {
-        /* rpc channel */
-        sock = _suspend_struct[index].server_acception[i].recv_sock;
+      /* check server channels */
+      if (_suspend_struct[index].server_acception)
+         for (i = 0; i < MAX_RPC_CONNECTION; i++) {
+            /* rpc channel */
+            sock = _suspend_struct[index].server_acception[i].recv_sock;
 
-        /* only watch the event tcp connection belonging to this thread */
-        if (!sock || _suspend_struct[index].server_acception[i].tid != ss_gettid())
-          continue;
+            /* only watch the event tcp connection belonging to this thread */
+            if (!sock || _suspend_struct[index].server_acception[i].tid != ss_gettid())
+               continue;
 
-        if (recv_tcp_check(sock) || FD_ISSET(sock, &readfds))
-          {
-          if (_suspend_struct[index].server_dispatch)
-            {
-            status = _suspend_struct[index].server_dispatch(i, sock, msg != 0);
-            _suspend_struct[index].server_acception[i].last_activity = ss_millitime();
+            if (recv_tcp_check(sock) || FD_ISSET(sock, &readfds)) {
+               if (_suspend_struct[index].server_dispatch) {
+                  status = _suspend_struct[index].server_dispatch(i, sock, msg != 0);
+                  _suspend_struct[index].server_acception[i].
+                      last_activity = ss_millitime();
 
-            if (status == SS_ABORT || status == SS_EXIT || status == RPC_SHUTDOWN)
-              return status;
+                  if (status == SS_ABORT || status == SS_EXIT || status == RPC_SHUTDOWN)
+                     return status;
 
-            return_status = SS_SERVER_RECV;
+                  return_status = SS_SERVER_RECV;
+               }
             }
-          }
 
-        /* event channel */
-        sock = _suspend_struct[index].server_acception[i].event_sock;
-        if (!sock)
-          continue;
+            /* event channel */
+            sock = _suspend_struct[index].server_acception[i].event_sock;
+            if (!sock)
+               continue;
 
-        if (recv_event_check(sock) || FD_ISSET(sock, &readfds))
-          {
-          if (_suspend_struct[index].server_dispatch)
-            {
-            status = _suspend_struct[index].server_dispatch(i, sock, msg != 0);
-            _suspend_struct[index].server_acception[i].last_activity = ss_millitime();
+            if (recv_event_check(sock) || FD_ISSET(sock, &readfds)) {
+               if (_suspend_struct[index].server_dispatch) {
+                  status = _suspend_struct[index].server_dispatch(i, sock, msg != 0);
+                  _suspend_struct[index].server_acception[i].
+                      last_activity = ss_millitime();
 
-            if (status == SS_ABORT || status == SS_EXIT || status == RPC_SHUTDOWN)
-              return status;
+                  if (status == SS_ABORT || status == SS_EXIT || status == RPC_SHUTDOWN)
+                     return status;
 
-            return_status = SS_SERVER_RECV;
+                  return_status = SS_SERVER_RECV;
+               }
             }
-          }
-        }
+         }
 
-    /* check server message channels */
-    if (_suspend_struct[index].server_connection)
-      {
-      sock = _suspend_struct[index].server_connection->recv_sock;
+      /* check server message channels */
+      if (_suspend_struct[index].server_connection) {
+         sock = _suspend_struct[index].server_connection->recv_sock;
 
-      if (sock && FD_ISSET(sock, &readfds))
-        {
-        if (_suspend_struct[index].client_dispatch)
-          status = _suspend_struct[index].client_dispatch(sock);
-        else
-          {
-          status = SS_SUCCESS;
-          size = recv_tcp(sock, buffer, sizeof(buffer), 0);
+         if (sock && FD_ISSET(sock, &readfds)) {
+            if (_suspend_struct[index].client_dispatch)
+               status = _suspend_struct[index].client_dispatch(sock);
+            else {
+               status = SS_SUCCESS;
+               size = recv_tcp(sock, buffer, sizeof(buffer), 0);
 
-          if (size <= 0)
-            status = SS_ABORT;
-          }
+               if (size <= 0)
+                  status = SS_ABORT;
+            }
 
-        if (status == SS_ABORT)
-          {
-          sprintf(str, "Server connection broken to %s",
-            _suspend_struct[index].server_connection->host_name);
-          cm_msg(MINFO, "ss_suspend", str);
+            if (status == SS_ABORT) {
+               sprintf(str, "Server connection broken to %s",
+                       _suspend_struct[index].server_connection->host_name);
+               cm_msg(MINFO, "ss_suspend", str);
 
-          /* close client connection if link broken */
-          closesocket(_suspend_struct[index].server_connection->send_sock);
-          closesocket(_suspend_struct[index].server_connection->recv_sock);
-          closesocket(_suspend_struct[index].server_connection->event_sock);
+               /* close client connection if link broken */
+               closesocket(_suspend_struct[index].server_connection->send_sock);
+               closesocket(_suspend_struct[index].server_connection->recv_sock);
+               closesocket(_suspend_struct[index].server_connection->event_sock);
 
-          memset(_suspend_struct[index].server_connection,
-                 0, sizeof(RPC_CLIENT_CONNECTION));
+               memset(_suspend_struct[index].server_connection,
+                      0, sizeof(RPC_CLIENT_CONNECTION));
 
-          /* exit program after broken connection to MIDAS server */
-          return SS_ABORT;
-          }
+               /* exit program after broken connection to MIDAS server */
+               return SS_ABORT;
+            }
 
-        return_status = SS_CLIENT_RECV;
-        }
+            return_status = SS_CLIENT_RECV;
+         }
       }
 
-    /* check IPC socket */
-    if (_suspend_struct[index].ipc_recv_socket &&
-        FD_ISSET(_suspend_struct[index].ipc_recv_socket, &readfds))
-      {
-      /* receive IPC message */
-      size = sizeof(struct sockaddr);
-      size = recvfrom(_suspend_struct[index].ipc_recv_socket,
-                      buffer, sizeof(buffer), 0, &from_addr, (int *)&size);
+      /* check IPC socket */
+      if (_suspend_struct[index].ipc_recv_socket &&
+          FD_ISSET(_suspend_struct[index].ipc_recv_socket, &readfds)) {
+         /* receive IPC message */
+         size = sizeof(struct sockaddr);
+         size = recvfrom(_suspend_struct[index].ipc_recv_socket,
+                         buffer, sizeof(buffer), 0, &from_addr, (int *) &size);
 
-      /* find out if this thread is connected as a server */
-      server_socket = 0;
-      if (_suspend_struct[index].server_acception &&
-          rpc_get_server_option(RPC_OSERVER_TYPE) != ST_REMOTE)
-        for (i=0 ; i < MAX_RPC_CONNECTION ; i++)
-          {
-          sock = _suspend_struct[index].server_acception[i].send_sock;
-          if (sock && _suspend_struct[index].server_acception[i].tid == ss_gettid())
-            server_socket = sock;
-          }
+         /* find out if this thread is connected as a server */
+         server_socket = 0;
+         if (_suspend_struct[index].server_acception &&
+             rpc_get_server_option(RPC_OSERVER_TYPE) != ST_REMOTE)
+            for (i = 0; i < MAX_RPC_CONNECTION; i++) {
+               sock = _suspend_struct[index].server_acception[i].send_sock;
+               if (sock && _suspend_struct[index].server_acception[i].tid == ss_gettid())
+                  server_socket = sock;
+            }
 
-      /* receive further messages to empty UDP queue */
-      do
-        {
-        FD_ZERO(&readfds);
-        FD_SET(_suspend_struct[index].ipc_recv_socket, &readfds);
+         /* receive further messages to empty UDP queue */
+         do {
+            FD_ZERO(&readfds);
+            FD_SET(_suspend_struct[index].ipc_recv_socket, &readfds);
 
-        timeout.tv_sec  = 0;
-        timeout.tv_usec = 0;
+            timeout.tv_sec = 0;
+            timeout.tv_usec = 0;
 
-        status = select(FD_SETSIZE, &readfds, NULL, NULL, &timeout);
+            status = select(FD_SETSIZE, &readfds, NULL, NULL, &timeout);
 
-        if (status != -1 && FD_ISSET(_suspend_struct[index].ipc_recv_socket, &readfds))
-          {
-          size = sizeof(struct sockaddr);
-          size = recvfrom(_suspend_struct[index].ipc_recv_socket, buffer_tmp,
-                          sizeof(buffer_tmp), 0, &from_addr, &size);
+            if (status != -1
+                && FD_ISSET(_suspend_struct[index].ipc_recv_socket, &readfds)) {
+               size = sizeof(struct sockaddr);
+               size =
+                   recvfrom(_suspend_struct[index].ipc_recv_socket,
+                            buffer_tmp, sizeof(buffer_tmp), 0, &from_addr, &size);
 
-          /* don't forward same MSG_BM as above */
-          if (buffer_tmp[0] != 'B' ||
-              strcmp(buffer_tmp, buffer) != 0)
-            if (_suspend_struct[index].ipc_dispatch)
-              _suspend_struct[index].ipc_dispatch(buffer_tmp, server_socket);
-          }
+               /* don't forward same MSG_BM as above */
+               if (buffer_tmp[0] != 'B' || strcmp(buffer_tmp, buffer) != 0)
+                  if (_suspend_struct[index].ipc_dispatch)
+                     _suspend_struct[index].ipc_dispatch(buffer_tmp, server_socket);
+            }
 
-        } while (FD_ISSET(_suspend_struct[index].ipc_recv_socket, &readfds));
+         } while (FD_ISSET(_suspend_struct[index].ipc_recv_socket, &readfds));
 
-      /* return if received requested message */
-      if (msg == MSG_BM && buffer[0] == 'B')
-        return SS_SUCCESS;
-      if (msg == MSG_ODB && buffer[0] == 'O')
-        return SS_SUCCESS;
+         /* return if received requested message */
+         if (msg == MSG_BM && buffer[0] == 'B')
+            return SS_SUCCESS;
+         if (msg == MSG_ODB && buffer[0] == 'O')
+            return SS_SUCCESS;
 
-      /* call dispatcher */
-      if (_suspend_struct[index].ipc_dispatch)
-        _suspend_struct[index].ipc_dispatch(buffer, server_socket);
+         /* call dispatcher */
+         if (_suspend_struct[index].ipc_dispatch)
+            _suspend_struct[index].ipc_dispatch(buffer, server_socket);
 
-      return_status = SS_SUCCESS;
+         return_status = SS_SUCCESS;
       }
 
-    } while (millisec < 0);
+   } while (millisec < 0);
 
-  return return_status;
+   return return_status;
 }
 
 /*------------------------------------------------------------------*/
-
 INT ss_resume(INT port, char *message)
 /********************************************************************\
 
@@ -3636,36 +3508,32 @@ INT ss_resume(INT port, char *message)
 
 \********************************************************************/
 {
-INT status, index;
+   INT status, index;
 
-  if (ss_in_async_routine_flag)
-    {
-    /* if called from watchdog, tid is different under NT! */
-    index = 0;
-    }
-  else
-    {
-    status = ss_suspend_get_index(&index);
+   if (ss_in_async_routine_flag) {
+      /* if called from watchdog, tid is different under NT! */
+      index = 0;
+   } else {
+      status = ss_suspend_get_index(&index);
 
-    if (status != SS_SUCCESS)
-      return status;
-    }
+      if (status != SS_SUCCESS)
+         return status;
+   }
 
-  _suspend_struct[index].bind_addr.sin_port = htons((short) port);
+   _suspend_struct[index].bind_addr.sin_port = htons((short) port);
 
-  status = sendto(_suspend_struct[index].ipc_send_socket, message,
-                  strlen(message)+1, 0,
-                  (struct sockaddr *)&_suspend_struct[index].bind_addr,
-                  sizeof(struct sockaddr_in));
+   status = sendto(_suspend_struct[index].ipc_send_socket, message,
+                   strlen(message) + 1, 0,
+                   (struct sockaddr *) &_suspend_struct[index].bind_addr,
+                   sizeof(struct sockaddr_in));
 
-  if (status != (INT)strlen(message)+1)
-    return SS_SOCKET_ERROR;
+   if (status != (INT) strlen(message) + 1)
+      return SS_SOCKET_ERROR;
 
-  return SS_SUCCESS;
+   return SS_SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
-
 /********************************************************************\
 *                                                                    *
 *                     Network functions                              *
@@ -3673,7 +3541,6 @@ INT status, index;
 \********************************************************************/
 
 /*------------------------------------------------------------------*/
-
 INT send_tcp(int sock, char *buffer, DWORD buffer_size, INT flags)
 /********************************************************************\
 
@@ -3695,40 +3562,39 @@ INT send_tcp(int sock, char *buffer, DWORD buffer_size, INT flags)
 
 \********************************************************************/
 {
-DWORD count;
-INT   status;
+   DWORD count;
+   INT status;
 
-  /* transfer fragments until complete buffer is transferred */
+   /* transfer fragments until complete buffer is transferred */
 
-  for(count=0 ; (INT)count<(INT)buffer_size-NET_TCP_SIZE ; )
-    {
-    status = send(sock, buffer+count, NET_TCP_SIZE, flags);
-    if (status != -1)
-      count += status;
-    else
-      {
-      cm_msg(MERROR, "send_tcp", "send(socket=%d,size=%d) returned %d, errno: %d (%s)",sock,NET_TCP_SIZE,status,errno,strerror(errno));
-      return status;
+   for (count = 0; (INT) count < (INT) buffer_size - NET_TCP_SIZE;) {
+      status = send(sock, buffer + count, NET_TCP_SIZE, flags);
+      if (status != -1)
+         count += status;
+      else {
+         cm_msg(MERROR, "send_tcp",
+                "send(socket=%d,size=%d) returned %d, errno: %d (%s)",
+                sock, NET_TCP_SIZE, status, errno, strerror(errno));
+         return status;
       }
-    }
+   }
 
-  while(count < buffer_size)
-    {
-    status = send(sock, buffer+count, buffer_size - count, flags);
-    if (status != -1)
-      count += status;
-    else
-      {
-      cm_msg(MERROR, "send_tcp", "send(socket=%d,size=%d) returned %d, errno: %d (%s)",sock,(int)(buffer_size - count),status,errno,strerror(errno));
-      return status;
+   while (count < buffer_size) {
+      status = send(sock, buffer + count, buffer_size - count, flags);
+      if (status != -1)
+         count += status;
+      else {
+         cm_msg(MERROR, "send_tcp",
+                "send(socket=%d,size=%d) returned %d, errno: %d (%s)",
+                sock, (int) (buffer_size - count), status, errno, strerror(errno));
+         return status;
       }
-    }
+   }
 
-  return count;
+   return count;
 }
 
 /*------------------------------------------------------------------*/
-
 INT recv_string(int sock, char *buffer, DWORD buffer_size, INT millisec)
 /********************************************************************\
 
@@ -3755,55 +3621,51 @@ INT recv_string(int sock, char *buffer, DWORD buffer_size, INT millisec)
 
 \********************************************************************/
 {
-INT            i, status;
-DWORD          n;
-fd_set         readfds;
-struct timeval timeout;
+   INT i, status;
+   DWORD n;
+   fd_set readfds;
+   struct timeval timeout;
 
-  n = 0;
-  memset(buffer, 0, buffer_size);
+   n = 0;
+   memset(buffer, 0, buffer_size);
 
-  do
-    {
-    if (millisec > 0)
-      {
-      FD_ZERO(&readfds);
-      FD_SET(sock, &readfds);
+   do {
+      if (millisec > 0) {
+         FD_ZERO(&readfds);
+         FD_SET(sock, &readfds);
 
-      timeout.tv_sec  = millisec / 1000;
-      timeout.tv_usec = (millisec % 1000) * 1000;
+         timeout.tv_sec = millisec / 1000;
+         timeout.tv_usec = (millisec % 1000) * 1000;
 
-      do
-        {
-        status = select(FD_SETSIZE, &readfds, NULL, NULL, &timeout);
+         do {
+            status = select(FD_SETSIZE, &readfds, NULL, NULL, &timeout);
 
-        /* if an alarm signal was cought, restart select with reduced timeout */
-        if (status == -1 && timeout.tv_sec >= WATCHDOG_INTERVAL / 1000)
-          timeout.tv_sec -= WATCHDOG_INTERVAL / 1000;
+            /* if an alarm signal was cought, restart select with reduced timeout */
+            if (status == -1 && timeout.tv_sec >= WATCHDOG_INTERVAL / 1000)
+               timeout.tv_sec -= WATCHDOG_INTERVAL / 1000;
 
-        } while (status == -1); /* dont return if an alarm signal was cought */
+         } while (status == -1);        /* dont return if an alarm signal was cought */
 
-      if (!FD_ISSET(sock, &readfds))
-        break;
+         if (!FD_ISSET(sock, &readfds))
+            break;
       }
 
-    i = recv(sock, buffer+n, 1, 0);
+      i = recv(sock, buffer + n, 1, 0);
 
-    if (i<=0)
-      break;
+      if (i <= 0)
+         break;
 
-    n++;
+      n++;
 
-    if (n >= buffer_size)
-      break;
+      if (n >= buffer_size)
+         break;
 
-    } while (buffer[n-1] && buffer[n-1] != 10);
+   } while (buffer[n - 1] && buffer[n - 1] != 10);
 
-  return n-1;
+   return n - 1;
 }
 
 /*------------------------------------------------------------------*/
-
 INT recv_tcp(int sock, char *net_buffer, DWORD buffer_size, INT flags)
 /********************************************************************\
 
@@ -3835,82 +3697,75 @@ INT recv_tcp(int sock, char *net_buffer, DWORD buffer_size, INT flags)
 
 \********************************************************************/
 {
-INT         param_size, n_received, n;
-NET_COMMAND *nc;
+   INT param_size, n_received, n;
+   NET_COMMAND *nc;
 
-  if (buffer_size < sizeof(NET_COMMAND_HEADER))
-    {
-    cm_msg(MERROR, "recv_tcp", "parameters too large for network buffer");
-    return -1;
-    }
+   if (buffer_size < sizeof(NET_COMMAND_HEADER)) {
+      cm_msg(MERROR, "recv_tcp", "parameters too large for network buffer");
+      return -1;
+   }
 
-  /* first receive header */
-  n_received = 0;
-  do
-    {
+   /* first receive header */
+   n_received = 0;
+   do {
 #ifdef OS_UNIX
-    do
-      {
-      n = recv(sock, net_buffer + n_received,
-         sizeof(NET_COMMAND_HEADER), flags);
+      do {
+         n = recv(sock, net_buffer + n_received, sizeof(NET_COMMAND_HEADER), flags);
 
-      /* don't return if an alarm signal was cought */
+         /* don't return if an alarm signal was cought */
       } while (n == -1 && errno == EINTR);
 #else
-    n = recv(sock, net_buffer + n_received,
-       sizeof(NET_COMMAND_HEADER), flags);
+      n = recv(sock, net_buffer + n_received, sizeof(NET_COMMAND_HEADER), flags);
 #endif
 
-    if (n <= 0)
-      {
-      cm_msg(MERROR, "recv_tcp", "header: recv returned %d, n_received = %d, errno: %d (%s)",
-             n, n_received, errno, strerror(errno));
-      return n;
+      if (n <= 0) {
+         cm_msg(MERROR, "recv_tcp",
+                "header: recv returned %d, n_received = %d, errno: %d (%s)",
+                n, n_received, errno, strerror(errno));
+         return n;
       }
 
-    n_received += n;
+      n_received += n;
 
-    } while (n_received < sizeof(NET_COMMAND_HEADER));
+   } while (n_received < sizeof(NET_COMMAND_HEADER));
 
-  /* now receive parameters */
+   /* now receive parameters */
 
-  nc = (NET_COMMAND *) net_buffer;
-  param_size = nc->header.param_size;
-  n_received = 0;
+   nc = (NET_COMMAND *) net_buffer;
+   param_size = nc->header.param_size;
+   n_received = 0;
 
-  if (param_size == 0)
-    return sizeof(NET_COMMAND_HEADER);
+   if (param_size == 0)
+      return sizeof(NET_COMMAND_HEADER);
 
-  do
-    {
+   do {
 #ifdef OS_UNIX
-    do
-      {
-      n = recv(sock, net_buffer+sizeof(NET_COMMAND_HEADER)+n_received,
-         param_size-n_received, flags);
+      do {
+         n = recv(sock,
+                  net_buffer + sizeof(NET_COMMAND_HEADER) + n_received,
+                  param_size - n_received, flags);
 
-      /* don't return if an alarm signal was cought */
+         /* don't return if an alarm signal was cought */
       } while (n == -1 && errno == EINTR);
 #else
-    n = recv(sock, net_buffer+sizeof(NET_COMMAND_HEADER)+n_received,
-       param_size-n_received, flags);
+      n = recv(sock, net_buffer + sizeof(NET_COMMAND_HEADER) + n_received,
+               param_size - n_received, flags);
 #endif
 
-    if (n <= 0)
-      {
-      cm_msg(MERROR, "recv_tcp", "param: recv returned %d, n_received = %d, errno: %d (%s)",
-             n, n_received, errno, strerror(errno));
-      return n;
+      if (n <= 0) {
+         cm_msg(MERROR, "recv_tcp",
+                "param: recv returned %d, n_received = %d, errno: %d (%s)",
+                n, n_received, errno, strerror(errno));
+         return n;
       }
 
-    n_received += n;
-    } while (n_received < param_size);
+      n_received += n;
+   } while (n_received < param_size);
 
-  return sizeof(NET_COMMAND_HEADER) + param_size;
+   return sizeof(NET_COMMAND_HEADER) + param_size;
 }
 
 /*------------------------------------------------------------------*/
-
 INT send_udp(int sock, char *buffer, DWORD buffer_size, INT flags)
 /********************************************************************\
 
@@ -3935,121 +3790,109 @@ INT send_udp(int sock, char *buffer, DWORD buffer_size, INT flags)
 
 \********************************************************************/
 {
-INT         status;
-UDP_HEADER  *udp_header;
-static char udp_buffer[NET_UDP_SIZE];
-static INT  serial_number=0, n_received=0;
-DWORD       i, data_size;
+   INT status;
+   UDP_HEADER *udp_header;
+   static char udp_buffer[NET_UDP_SIZE];
+   static INT serial_number = 0, n_received = 0;
+   DWORD i, data_size;
 
-  udp_header = (UDP_HEADER *) udp_buffer;
-  data_size = NET_UDP_SIZE-sizeof(UDP_HEADER);
+   udp_header = (UDP_HEADER *) udp_buffer;
+   data_size = NET_UDP_SIZE - sizeof(UDP_HEADER);
 
-  /*
-  If buffer size is between half the UPD size and full UDP size,
-  send immediately a single packet.
-  */
-  if (buffer_size >= NET_UDP_SIZE/2 &&
-      buffer_size <= data_size)
-    {
-    /*
-    If there is any data already in the buffer, send it first.
+   /*
+      If buffer size is between half the UPD size and full UDP size,
+      send immediately a single packet.
     */
-    if (n_received)
-      {
-      udp_header->serial_number   = UDP_FIRST | n_received;
+   if (buffer_size >= NET_UDP_SIZE / 2 && buffer_size <= data_size) {
+      /*
+         If there is any data already in the buffer, send it first.
+       */
+      if (n_received) {
+         udp_header->serial_number = UDP_FIRST | n_received;
+         udp_header->sequence_number = ++serial_number;
+
+         send(sock, udp_buffer, n_received + sizeof(UDP_HEADER), flags);
+         n_received = 0;
+      }
+
+      udp_header->serial_number = UDP_FIRST | buffer_size;
       udp_header->sequence_number = ++serial_number;
 
-      send(sock, udp_buffer, n_received+sizeof(UDP_HEADER), flags);
+      memcpy(udp_header + 1, buffer, buffer_size);
+      status = send(sock, udp_buffer, buffer_size + sizeof(UDP_HEADER), flags);
+      if (status == (INT) buffer_size + (int) sizeof(UDP_HEADER))
+         status -= sizeof(UDP_HEADER);
+
+      return status;
+   }
+
+   /*
+      If buffer size is smaller than half the UDP size, collect events
+      until UDP buffer is optimal filled.
+    */
+   if (buffer_size <= data_size) {
+      /* If udp_buffer has space, just copy it there */
+      if (buffer_size + n_received < data_size) {
+         memcpy(udp_buffer + sizeof(UDP_HEADER) + n_received, buffer, buffer_size);
+
+         n_received += buffer_size;
+         return buffer_size;
+      }
+
+      /* If udp_buffer has not enough space, send it */
+      udp_header->serial_number = UDP_FIRST | n_received;
+      udp_header->sequence_number = ++serial_number;
+
+      status = send(sock, udp_buffer, n_received + sizeof(UDP_HEADER), flags);
+
       n_received = 0;
-      }
 
-    udp_header->serial_number  = UDP_FIRST | buffer_size;
-    udp_header->sequence_number = ++serial_number;
+      memcpy(udp_header + 1, buffer, buffer_size);
+      n_received = buffer_size;
 
-    memcpy(udp_header + 1, buffer, buffer_size);
-    status = send(sock, udp_buffer, buffer_size+sizeof(UDP_HEADER), flags);
-    if (status == (INT) buffer_size + (int) sizeof(UDP_HEADER))
-      status -= sizeof(UDP_HEADER);
-
-    return status;
-    }
-
-  /*
-  If buffer size is smaller than half the UDP size, collect events
-  until UDP buffer is optimal filled.
-  */
-  if (buffer_size <= data_size)
-    {
-    /* If udp_buffer has space, just copy it there */
-    if (buffer_size + n_received < data_size)
-      {
-      memcpy(udp_buffer+sizeof(UDP_HEADER)+n_received, buffer,
-       buffer_size);
-
-      n_received+=buffer_size;
       return buffer_size;
-      }
+   }
 
-    /* If udp_buffer has not enough space, send it */
-    udp_header->serial_number  = UDP_FIRST | n_received;
-    udp_header->sequence_number = ++serial_number;
+   /*
+      If buffer size is larger than UDP size, split event in several
+      buffers.
+    */
 
-    status = send(sock, udp_buffer, n_received+sizeof(UDP_HEADER), flags);
-
-    n_received = 0;
-
-    memcpy(udp_header+1, buffer, buffer_size);
-    n_received=buffer_size;
-
-    return buffer_size;
-    }
-
-  /*
-  If buffer size is larger than UDP size, split event in several
-  buffers.
-  */
-
-  /* If there is any data already in the buffer, send it first */
-  if (n_received)
-    {
-    udp_header->serial_number  = UDP_FIRST | n_received;
-    udp_header->sequence_number = ++serial_number;
-
-    send(sock, udp_buffer, n_received+sizeof(UDP_HEADER), flags);
-    n_received = 0;
-    }
-
-  for (i=0 ; i < ((buffer_size-1)/data_size) ; i++)
-    {
-    if (i==0)
-      {
-      udp_header->serial_number  = UDP_FIRST | buffer_size;
+   /* If there is any data already in the buffer, send it first */
+   if (n_received) {
+      udp_header->serial_number = UDP_FIRST | n_received;
       udp_header->sequence_number = ++serial_number;
+
+      send(sock, udp_buffer, n_received + sizeof(UDP_HEADER), flags);
+      n_received = 0;
+   }
+
+   for (i = 0; i < ((buffer_size - 1) / data_size); i++) {
+      if (i == 0) {
+         udp_header->serial_number = UDP_FIRST | buffer_size;
+         udp_header->sequence_number = ++serial_number;
+      } else {
+         udp_header->serial_number = serial_number;
+         udp_header->sequence_number = i;
       }
-    else
-      {
-      udp_header->serial_number   = serial_number;
-      udp_header->sequence_number = i;
-      }
 
-    memcpy(udp_header+1, buffer+i*data_size, data_size);
-    send(sock, udp_buffer, NET_UDP_SIZE, flags);
-    }
+      memcpy(udp_header + 1, buffer + i * data_size, data_size);
+      send(sock, udp_buffer, NET_UDP_SIZE, flags);
+   }
 
-  /* Send remaining bytes */
-  udp_header->serial_number   = serial_number;
-  udp_header->sequence_number = i;
-  memcpy(udp_header+1, buffer+i*data_size, buffer_size - i*data_size);
-  status = send(sock, udp_buffer,
-    sizeof(UDP_HEADER) + buffer_size - i*data_size, flags);
-  if ((DWORD) status == sizeof(UDP_HEADER) + buffer_size - i*data_size)
-    return buffer_size;
+   /* Send remaining bytes */
+   udp_header->serial_number = serial_number;
+   udp_header->sequence_number = i;
+   memcpy(udp_header + 1, buffer + i * data_size, buffer_size - i * data_size);
+   status =
+       send(sock, udp_buffer, sizeof(UDP_HEADER) + buffer_size - i * data_size, flags);
+   if ((DWORD) status == sizeof(UDP_HEADER) + buffer_size - i * data_size)
+      return buffer_size;
 
-  return status;
+   return status;
 }
 
 /*------------------------------------------------------------------*/
-
 INT recv_udp(int sock, char *buffer, DWORD buffer_size, INT flags)
 /********************************************************************\
 
@@ -4073,144 +3916,132 @@ INT recv_udp(int sock, char *buffer, DWORD buffer_size, INT flags)
 
 \********************************************************************/
 {
-INT             i, status;
-UDP_HEADER      *udp_header;
-char            udp_buffer[NET_UDP_SIZE];
-DWORD           serial_number, sequence_number, total_buffer_size;
-DWORD           data_size, n_received;
-fd_set          readfds;
-struct timeval  timeout;
+   INT i, status;
+   UDP_HEADER *udp_header;
+   char udp_buffer[NET_UDP_SIZE];
+   DWORD serial_number, sequence_number, total_buffer_size;
+   DWORD data_size, n_received;
+   fd_set readfds;
+   struct timeval timeout;
 
-  udp_header = (UDP_HEADER *) udp_buffer;
-  data_size = NET_UDP_SIZE-sizeof(UDP_HEADER);
+   udp_header = (UDP_HEADER *) udp_buffer;
+   data_size = NET_UDP_SIZE - sizeof(UDP_HEADER);
 
-  /* Receive the first buffer */
+   /* Receive the first buffer */
 #ifdef OS_UNIX
-  do
-    {
-    i = recv(sock, udp_buffer, NET_UDP_SIZE, flags);
-
-    /* dont return if an alarm signal was cought */
-    } while (i == -1 && errno == EINTR);
-#else
-  i = recv(sock, udp_buffer, NET_UDP_SIZE, flags);
-#endif
-
-start:
-
-  /* Receive buffers until we get a sequence start */
-  while ( !(udp_header->serial_number & UDP_FIRST) )
-    {
-    /* wait for data with timeout */
-    FD_ZERO(&readfds);
-    FD_SET(sock, &readfds);
-
-    timeout.tv_sec  = 0;
-    timeout.tv_usec = 100000; /* 0.1 s */
-
-    do
-      {
-      status = select(FD_SETSIZE, &readfds, NULL, NULL, &timeout);
-      } while (status == -1);
-
-    /*
-    If we got nothing, return zero so that calling program can do
-    other things like checking TCP port for example.
-    */
-    if (!FD_ISSET(sock, &readfds))
-      return 0;
-
-#ifdef OS_UNIX
-    do
-      {
+   do {
       i = recv(sock, udp_buffer, NET_UDP_SIZE, flags);
 
-      /* dont return if an alarm signal was caught */
+      /* dont return if an alarm signal was cought */
+   } while (i == -1 && errno == EINTR);
+#else
+   i = recv(sock, udp_buffer, NET_UDP_SIZE, flags);
+#endif
+
+ start:
+
+   /* Receive buffers until we get a sequence start */
+   while (!(udp_header->serial_number & UDP_FIRST)) {
+      /* wait for data with timeout */
+      FD_ZERO(&readfds);
+      FD_SET(sock, &readfds);
+
+      timeout.tv_sec = 0;
+      timeout.tv_usec = 100000; /* 0.1 s */
+
+      do {
+         status = select(FD_SETSIZE, &readfds, NULL, NULL, &timeout);
+      } while (status == -1);
+
+      /*
+         If we got nothing, return zero so that calling program can do
+         other things like checking TCP port for example.
+       */
+      if (!FD_ISSET(sock, &readfds))
+         return 0;
+
+#ifdef OS_UNIX
+      do {
+         i = recv(sock, udp_buffer, NET_UDP_SIZE, flags);
+
+         /* dont return if an alarm signal was caught */
       } while (i == -1 && errno == EINTR);
 #else
-    i = recv(sock, udp_buffer, NET_UDP_SIZE, flags);
+      i = recv(sock, udp_buffer, NET_UDP_SIZE, flags);
 #endif
-    }
+   }
 
-  /* if no others are following, return */
-  total_buffer_size = udp_header->serial_number & ~UDP_FIRST;
-  serial_number     = udp_header->sequence_number;
-  sequence_number   = 0;
+   /* if no others are following, return */
+   total_buffer_size = udp_header->serial_number & ~UDP_FIRST;
+   serial_number = udp_header->sequence_number;
+   sequence_number = 0;
 
-  if (total_buffer_size <= data_size)
-    {
-    if (buffer_size < total_buffer_size)
-      {
-      memcpy(buffer, udp_header+1, buffer_size);
+   if (total_buffer_size <= data_size) {
+      if (buffer_size < total_buffer_size) {
+         memcpy(buffer, udp_header + 1, buffer_size);
+         return buffer_size;
+      } else {
+         memcpy(buffer, udp_header + 1, total_buffer_size);
+         return total_buffer_size;
+      }
+   }
+
+   /* if others are following, collect them */
+   n_received = data_size;
+
+   if (buffer_size < data_size) {
+      memcpy(buffer, udp_header + 1, buffer_size);
       return buffer_size;
-      }
-    else
-      {
-      memcpy(buffer, udp_header+1, total_buffer_size);
-      return total_buffer_size;
-      }
-    }
+   }
 
-  /* if others are following, collect them */
-  n_received = data_size;
-
-  if (buffer_size < data_size)
-    {
-    memcpy(buffer, udp_header+1, buffer_size);
-    return buffer_size;
-    }
-
-  memcpy(buffer, udp_header+1, data_size);
+   memcpy(buffer, udp_header + 1, data_size);
 
 
-  do
-    {
-    /* wait for new data with timeout */
-    FD_ZERO(&readfds);
-    FD_SET(sock, &readfds);
+   do {
+      /* wait for new data with timeout */
+      FD_ZERO(&readfds);
+      FD_SET(sock, &readfds);
 
-    timeout.tv_sec  = 0;
-    timeout.tv_usec = 100000; /* 0.1 s */
+      timeout.tv_sec = 0;
+      timeout.tv_usec = 100000; /* 0.1 s */
 
-    do
-      {
-      status = select(FD_SETSIZE, &readfds, NULL, NULL, &timeout);
+      do {
+         status = select(FD_SETSIZE, &readfds, NULL, NULL, &timeout);
       } while (status == -1);
 
-    /*
-    If we got nothing, return zero so that calling program can do
-    other things like checking TCP port for example.
-    */
-    if (!FD_ISSET(sock, &readfds))
-      return 0;
+      /*
+         If we got nothing, return zero so that calling program can do
+         other things like checking TCP port for example.
+       */
+      if (!FD_ISSET(sock, &readfds))
+         return 0;
 
 #ifdef OS_UNIX
-    do
-      {
-      i = recv(sock, udp_buffer, NET_UDP_SIZE, flags);
+      do {
+         i = recv(sock, udp_buffer, NET_UDP_SIZE, flags);
 
-      /* dont return if an alarm signal was caught */
+         /* dont return if an alarm signal was caught */
       } while (i == -1 && errno == EINTR);
 #else
-    i = recv(sock, udp_buffer, NET_UDP_SIZE, flags);
+      i = recv(sock, udp_buffer, NET_UDP_SIZE, flags);
 #endif
 
-    sequence_number++;
+      sequence_number++;
 
-    /* check sequence and serial numbers */
-    if (udp_header->serial_number != serial_number ||
-  udp_header->sequence_number != sequence_number)
-      /* lost one, so start again */
-      goto start;
+      /* check sequence and serial numbers */
+      if (udp_header->serial_number != serial_number ||
+          udp_header->sequence_number != sequence_number)
+         /* lost one, so start again */
+         goto start;
 
-    /* copy what we got */
-    memcpy(buffer+n_received, udp_header+1, i-sizeof(UDP_HEADER));
+      /* copy what we got */
+      memcpy(buffer + n_received, udp_header + 1, i - sizeof(UDP_HEADER));
 
-    n_received += (i-sizeof(UDP_HEADER));
+      n_received += (i - sizeof(UDP_HEADER));
 
-    } while (n_received < total_buffer_size);
+   } while (n_received < total_buffer_size);
 
-  return n_received;
+   return n_received;
 }
 
 /*------------------------------------------------------------------*/
@@ -4227,14 +4058,13 @@ start:
 
 int sopen(const char *path, int access, int shflag, int mode)
 {
-  return open(path, (access)|(shflag), mode);
+   return open(path, (access) | (shflag), mode);
 }
 
 #endif
 #endif
 
 /*------------------------------------------------------------------*/
-
 /********************************************************************\
 *                                                                    *
 *                     Tape functions                                 *
@@ -4242,8 +4072,7 @@ int sopen(const char *path, int access, int shflag, int mode)
 \********************************************************************/
 
 /*------------------------------------------------------------------*/
-
-INT ss_tape_open(char *path, INT oflag, INT *channel)
+INT ss_tape_open(char *path, INT oflag, INT * channel)
 /********************************************************************\
 
   Routine: ss_tape_open
@@ -4267,81 +4096,73 @@ INT ss_tape_open(char *path, INT oflag, INT *channel)
 \********************************************************************/
 {
 #ifdef OS_UNIX
-struct mtop arg;
+   struct mtop arg;
 
-  cm_enable_watchdog(FALSE);
+   cm_enable_watchdog(FALSE);
 
-  *channel = open(path, oflag, 0644);
+   *channel = open(path, oflag, 0644);
 
-  cm_enable_watchdog(TRUE);
+   cm_enable_watchdog(TRUE);
 
-  if (*channel < 0)
-    cm_msg(MERROR, "ss_tape_open", strerror(errno));
+   if (*channel < 0)
+      cm_msg(MERROR, "ss_tape_open", strerror(errno));
 
-  if (*channel < 0)
-    {
-    if (errno == EIO)
-      return SS_NO_TAPE;
-    if (errno == EBUSY)
-      return SS_DEV_BUSY;
-    return errno;
-    }
-
+   if (*channel < 0) {
+      if (errno == EIO)
+         return SS_NO_TAPE;
+      if (errno == EBUSY)
+         return SS_DEV_BUSY;
+      return errno;
+   }
 #ifdef MTSETBLK
-  /* set variable block size */
-  arg.mt_op = MTSETBLK;
-  arg.mt_count = 0;
+   /* set variable block size */
+   arg.mt_op = MTSETBLK;
+   arg.mt_count = 0;
 
-  ioctl(*channel, MTIOCTOP, &arg);
-#endif /* MTSETBLK */
+   ioctl(*channel, MTIOCTOP, &arg);
+#endif                          /* MTSETBLK */
 
-#endif /* OS_UNIX */
+#endif                          /* OS_UNIX */
 
 #ifdef OS_WINNT
-INT status;
-TAPE_GET_MEDIA_PARAMETERS m;
+   INT status;
+   TAPE_GET_MEDIA_PARAMETERS m;
 
-  *channel = (INT) CreateFile(path, GENERIC_READ | GENERIC_WRITE, 0,
-            0, OPEN_EXISTING, 0, NULL);
+   *channel = (INT) CreateFile(path, GENERIC_READ | GENERIC_WRITE, 0,
+                               0, OPEN_EXISTING, 0, NULL);
 
-  if (*channel == (INT) INVALID_HANDLE_VALUE)
-    {
-    status = GetLastError();
-    if (status == ERROR_SHARING_VIOLATION)
-      {
-      cm_msg(MERROR, "ss_tape_open", "tape is used by other process");
-      return SS_DEV_BUSY;
+   if (*channel == (INT) INVALID_HANDLE_VALUE) {
+      status = GetLastError();
+      if (status == ERROR_SHARING_VIOLATION) {
+         cm_msg(MERROR, "ss_tape_open", "tape is used by other process");
+         return SS_DEV_BUSY;
       }
-    if (status == ERROR_FILE_NOT_FOUND)
-      {
-      cm_msg(MERROR, "ss_tape_open", "tape device \"%s\" doesn't exist", path);
+      if (status == ERROR_FILE_NOT_FOUND) {
+         cm_msg(MERROR, "ss_tape_open", "tape device \"%s\" doesn't exist", path);
+         return SS_NO_TAPE;
+      }
+
+      cm_msg(MERROR, "ss_tape_open", "unknown error %d", status);
+      return status;
+   }
+
+   status = GetTapeStatus((HANDLE) (*channel));
+   if (status == ERROR_NO_MEDIA_IN_DRIVE || status == ERROR_BUS_RESET) {
+      cm_msg(MERROR, "ss_tape_open", "no media in drive");
       return SS_NO_TAPE;
-      }
+   }
 
-    cm_msg(MERROR, "ss_tape_open", "unknown error %d", status);
-    return status;
-    }
-
-  status = GetTapeStatus((HANDLE) (*channel));
-  if (status == ERROR_NO_MEDIA_IN_DRIVE ||
-      status == ERROR_BUS_RESET)
-    {
-    cm_msg(MERROR, "ss_tape_open", "no media in drive");
-    return SS_NO_TAPE;
-    }
-
-  /* set block size */
-  memset(&m, 0, sizeof(m));
-  m.BlockSize = TAPE_BUFFER_SIZE;
-  SetTapeParameters((HANDLE) (*channel), SET_TAPE_MEDIA_INFORMATION, &m);
+   /* set block size */
+   memset(&m, 0, sizeof(m));
+   m.BlockSize = TAPE_BUFFER_SIZE;
+   SetTapeParameters((HANDLE) (*channel), SET_TAPE_MEDIA_INFORMATION, &m);
 
 #endif
 
-  return SS_SUCCESS;
+   return SS_SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
-
 INT ss_tape_close(INT channel)
 /********************************************************************\
 
@@ -4361,36 +4182,31 @@ INT ss_tape_close(INT channel)
 
 \********************************************************************/
 {
-INT status;
+   INT status;
 
 #ifdef OS_UNIX
 
-  status = close(channel);
+   status = close(channel);
 
-  if (status < 0)
-    {
-    cm_msg(MERROR, "ss_tape_close", strerror(errno));
-    return errno;
-    }
-
-#endif /* OS_UNIX */
+   if (status < 0) {
+      cm_msg(MERROR, "ss_tape_close", strerror(errno));
+      return errno;
+   }
+#endif                          /* OS_UNIX */
 
 #ifdef OS_WINNT
 
-  if (!CloseHandle((HANDLE) channel))
-    {
-    status = GetLastError();
-    cm_msg(MERROR, "ss_tape_close", "unknown error %d", status);
-    return status;
-    }
+   if (!CloseHandle((HANDLE) channel)) {
+      status = GetLastError();
+      cm_msg(MERROR, "ss_tape_close", "unknown error %d", status);
+      return status;
+   }
+#endif                          /* OS_WINNT */
 
-#endif /* OS_WINNT */
-
-  return SS_SUCCESS;
+   return SS_SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
-
 INT ss_tape_status(char *path)
 /********************************************************************\
 
@@ -4410,78 +4226,70 @@ INT ss_tape_status(char *path)
 \********************************************************************/
 {
 #ifdef OS_UNIX
-char str[256];
-  /* let 'mt' do the job */
-  sprintf(str, "mt -f %s status", path);
-  system(str);
-#endif /* OS_UNIX */
+   char str[256];
+   /* let 'mt' do the job */
+   sprintf(str, "mt -f %s status", path);
+   system(str);
+#endif                          /* OS_UNIX */
 
 #ifdef OS_WINNT
-INT status, channel;
-DWORD size;
-TAPE_GET_MEDIA_PARAMETERS m;
-TAPE_GET_DRIVE_PARAMETERS d;
-double x;
+   INT status, channel;
+   DWORD size;
+   TAPE_GET_MEDIA_PARAMETERS m;
+   TAPE_GET_DRIVE_PARAMETERS d;
+   double x;
 
-  channel = (INT) CreateFile(path, GENERIC_READ | GENERIC_WRITE, 0,
-           0, OPEN_EXISTING, 0, NULL);
+   channel = (INT) CreateFile(path, GENERIC_READ | GENERIC_WRITE, 0,
+                              0, OPEN_EXISTING, 0, NULL);
 
-  if (channel == (INT) INVALID_HANDLE_VALUE)
-    {
-    status = GetLastError();
-    if (status == ERROR_SHARING_VIOLATION)
-      {
-      cm_msg(MINFO, "ss_tape_status", "tape is used by other process");
-      return SS_SUCCESS;
+   if (channel == (INT) INVALID_HANDLE_VALUE) {
+      status = GetLastError();
+      if (status == ERROR_SHARING_VIOLATION) {
+         cm_msg(MINFO, "ss_tape_status", "tape is used by other process");
+         return SS_SUCCESS;
       }
-    if (status == ERROR_FILE_NOT_FOUND)
-      {
-      cm_msg(MINFO, "ss_tape_status", "tape device \"%s\" doesn't exist", path);
-      return SS_SUCCESS;
+      if (status == ERROR_FILE_NOT_FOUND) {
+         cm_msg(MINFO, "ss_tape_status", "tape device \"%s\" doesn't exist", path);
+         return SS_SUCCESS;
       }
 
-    cm_msg(MINFO, "ss_tape_status", "unknown error %d", status);
-    return status;
-    }
+      cm_msg(MINFO, "ss_tape_status", "unknown error %d", status);
+      return status;
+   }
 
-  /* poll media changed messages */
-  GetTapeParameters((HANDLE) channel, GET_TAPE_DRIVE_INFORMATION, &size, &d);
-  GetTapeParameters((HANDLE) channel, GET_TAPE_DRIVE_INFORMATION, &size, &d);
+   /* poll media changed messages */
+   GetTapeParameters((HANDLE) channel, GET_TAPE_DRIVE_INFORMATION, &size, &d);
+   GetTapeParameters((HANDLE) channel, GET_TAPE_DRIVE_INFORMATION, &size, &d);
 
-  status = GetTapeStatus((HANDLE) channel);
-  if (status == ERROR_NO_MEDIA_IN_DRIVE ||
-      status == ERROR_BUS_RESET)
-    {
-    cm_msg(MINFO, "ss_tape_status", "no media in drive");
-    CloseHandle((HANDLE) channel);
-    return SS_SUCCESS;
-    }
+   status = GetTapeStatus((HANDLE) channel);
+   if (status == ERROR_NO_MEDIA_IN_DRIVE || status == ERROR_BUS_RESET) {
+      cm_msg(MINFO, "ss_tape_status", "no media in drive");
+      CloseHandle((HANDLE) channel);
+      return SS_SUCCESS;
+   }
 
-  GetTapeParameters((HANDLE) channel, GET_TAPE_DRIVE_INFORMATION, &size, &d);
-  GetTapeParameters((HANDLE) channel, GET_TAPE_MEDIA_INFORMATION, &size, &m);
+   GetTapeParameters((HANDLE) channel, GET_TAPE_DRIVE_INFORMATION, &size, &d);
+   GetTapeParameters((HANDLE) channel, GET_TAPE_MEDIA_INFORMATION, &size, &m);
 
-  printf("Hardware error correction is %s\n", d.ECC ? "on" : "off");
-  printf("Hardware compression is %s\n", d.Compression ? "on" : "off");
-  printf("Tape %s write protected\n", m.WriteProtected ? "is" : "is not");
+   printf("Hardware error correction is %s\n", d.ECC ? "on" : "off");
+   printf("Hardware compression is %s\n", d.Compression ? "on" : "off");
+   printf("Tape %s write protected\n", m.WriteProtected ? "is" : "is not");
 
-  if (d.FeaturesLow & TAPE_DRIVE_TAPE_REMAINING)
-    {
-    x = ((double) m.Remaining.LowPart + (double) m.Remaining.HighPart * 4.294967295E9)
+   if (d.FeaturesLow & TAPE_DRIVE_TAPE_REMAINING) {
+      x = ((double) m.Remaining.LowPart + (double) m.Remaining.HighPart * 4.294967295E9)
           / 1024.0 / 1000.0;
-    printf("Tape capacity remaining is %d MB\n", (int) x);
-    }
-  else
-    printf("Tape capacity is not reported by tape\n");
+      printf("Tape capacity remaining is %d MB\n", (int) x);
+   } else
+      printf("Tape capacity is not reported by tape\n");
 
-  CloseHandle((HANDLE) channel);
+   CloseHandle((HANDLE) channel);
 
 #endif
 
-  return SS_SUCCESS;
+   return SS_SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
-
 INT ss_tape_write(INT channel, void *pdata, INT count)
 /********************************************************************\
 
@@ -4505,50 +4313,44 @@ INT ss_tape_write(INT channel, void *pdata, INT count)
 \********************************************************************/
 {
 #ifdef OS_UNIX
-INT status;
+   INT status;
 
-  do
-    {
-    status = write(channel, pdata, count);
+   do {
+      status = write(channel, pdata, count);
 /*
     if (status != count)
       printf("count: %d - %d\n", count, status);
 */
-    } while (status == -1 && errno == EINTR);
+   } while (status == -1 && errno == EINTR);
 
-  if (status != count)
-    {
-    cm_msg(MERROR, "ss_tape_write", strerror(errno));
+   if (status != count) {
+      cm_msg(MERROR, "ss_tape_write", strerror(errno));
 
-    if (errno == EIO)
-      return SS_IO_ERROR;
-    else
-      return SS_TAPE_ERROR;
-    }
-
-#endif /* OS_UNIX */
+      if (errno == EIO)
+         return SS_IO_ERROR;
+      else
+         return SS_TAPE_ERROR;
+   }
+#endif                          /* OS_UNIX */
 
 #ifdef OS_WINNT
-INT status;
-DWORD written;
+   INT status;
+   DWORD written;
 
-  WriteFile((HANDLE) channel, pdata, count, &written, NULL);
-  if (written != (DWORD)count)
-    {
-    status = GetLastError();
-    cm_msg(MERROR, "ss_tape_write", "error %d", status);
+   WriteFile((HANDLE) channel, pdata, count, &written, NULL);
+   if (written != (DWORD) count) {
+      status = GetLastError();
+      cm_msg(MERROR, "ss_tape_write", "error %d", status);
 
-    return SS_IO_ERROR;
-    }
+      return SS_IO_ERROR;
+   }
+#endif                          /* OS_WINNT */
 
-#endif /* OS_WINNT */
-
-  return SS_SUCCESS;
+   return SS_SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
-
-INT ss_tape_read(INT channel, void *pdata, INT *count)
+INT ss_tape_read(INT channel, void *pdata, INT * count)
 /********************************************************************\
 
   Routine: ss_tape_write
@@ -4570,66 +4372,60 @@ INT ss_tape_read(INT channel, void *pdata, INT *count)
 \********************************************************************/
 {
 #ifdef OS_UNIX
-INT n, status;
+   INT n, status;
 
-  do
-    {
-    n = read(channel, pdata, *count);
-    } while (n == -1 && errno == EINTR);
+   do {
+      n = read(channel, pdata, *count);
+   } while (n == -1 && errno == EINTR);
 
-  if (n == -1)
-    {
-    if (errno == ENOSPC || errno == EIO)
-      status = SS_END_OF_TAPE;
-    else
-      {
-      if (n == 0 && errno == 0)
-        status = SS_END_OF_FILE;
-      else
-        {
-        cm_msg(MERROR, "ss_tape_read", "unexpected tape error: n=%d, errno=%d\n", n, errno);
-        status = errno;
-        }
+   if (n == -1) {
+      if (errno == ENOSPC || errno == EIO)
+         status = SS_END_OF_TAPE;
+      else {
+         if (n == 0 && errno == 0)
+            status = SS_END_OF_FILE;
+         else {
+            cm_msg(MERROR, "ss_tape_read",
+                   "unexpected tape error: n=%d, errno=%d\n", n, errno);
+            status = errno;
+         }
       }
-    }
-  else
-    status = SS_SUCCESS;
-  *count = n;
-
-  return status;
-
-#elif defined(OS_WINNT) /* OS_UNIX */
-
-INT status;
-DWORD read;
-
-  if (!ReadFile((HANDLE) channel, pdata, *count, &read, NULL))
-    {
-    status = GetLastError();
-    if (status == ERROR_NO_DATA_DETECTED)
-      status = SS_END_OF_TAPE;
-    else if (status == ERROR_FILEMARK_DETECTED)
-      status = SS_END_OF_FILE;
-    else if (status == ERROR_MORE_DATA)
+   } else
       status = SS_SUCCESS;
-    else
-      cm_msg(MERROR, "ss_tape_read", "unexpected tape error: n=%d, errno=%d\n", read, status);
-    }
-  else
-    status = SS_SUCCESS;
+   *count = n;
 
-  *count = read;
-  return status;
+   return status;
 
-#else /* OS_WINNT */
+#elif defined(OS_WINNT)         /* OS_UNIX */
 
-  return SS_SUCCESS;
+   INT status;
+   DWORD read;
+
+   if (!ReadFile((HANDLE) channel, pdata, *count, &read, NULL)) {
+      status = GetLastError();
+      if (status == ERROR_NO_DATA_DETECTED)
+         status = SS_END_OF_TAPE;
+      else if (status == ERROR_FILEMARK_DETECTED)
+         status = SS_END_OF_FILE;
+      else if (status == ERROR_MORE_DATA)
+         status = SS_SUCCESS;
+      else
+         cm_msg(MERROR, "ss_tape_read",
+                "unexpected tape error: n=%d, errno=%d\n", read, status);
+   } else
+      status = SS_SUCCESS;
+
+   *count = read;
+   return status;
+
+#else                           /* OS_WINNT */
+
+   return SS_SUCCESS;
 
 #endif
 }
 
 /*------------------------------------------------------------------*/
-
 INT ss_tape_write_eof(INT channel)
 /********************************************************************\
 
@@ -4649,58 +4445,53 @@ INT ss_tape_write_eof(INT channel)
 
 \********************************************************************/
 {
-INT    status;
+   INT status;
 
 #ifdef OS_UNIX
-struct mtop arg;
+   struct mtop arg;
 
-  arg.mt_op = MTWEOF;
-  arg.mt_count = 1;
+   arg.mt_op = MTWEOF;
+   arg.mt_count = 1;
 
-  cm_enable_watchdog(FALSE);
+   cm_enable_watchdog(FALSE);
 
-  status = ioctl(channel, MTIOCTOP, &arg);
+   status = ioctl(channel, MTIOCTOP, &arg);
 
-  cm_enable_watchdog(TRUE);
+   cm_enable_watchdog(TRUE);
 
-  if (status < 0)
-    {
-    cm_msg(MERROR, "ss_tape_write_eof", strerror(errno));
-    return errno;
-    }
-
-#endif /* OS_UNIX */
+   if (status < 0) {
+      cm_msg(MERROR, "ss_tape_write_eof", strerror(errno));
+      return errno;
+   }
+#endif                          /* OS_UNIX */
 
 #ifdef OS_WINNT
 
-TAPE_GET_DRIVE_PARAMETERS d;
-DWORD size;
+   TAPE_GET_DRIVE_PARAMETERS d;
+   DWORD size;
 
-  size = sizeof(TAPE_GET_DRIVE_PARAMETERS);
-  GetTapeParameters((HANDLE) channel, GET_TAPE_DRIVE_INFORMATION, &size, &d);
+   size = sizeof(TAPE_GET_DRIVE_PARAMETERS);
+   GetTapeParameters((HANDLE) channel, GET_TAPE_DRIVE_INFORMATION, &size, &d);
 
-  if (d.FeaturesHigh & TAPE_DRIVE_WRITE_FILEMARKS)
-    status = WriteTapemark((HANDLE) channel, TAPE_FILEMARKS, 1, FALSE);
-  else if (d.FeaturesHigh & TAPE_DRIVE_WRITE_LONG_FMKS)
-    status = WriteTapemark((HANDLE) channel, TAPE_LONG_FILEMARKS, 1, FALSE);
-  else if (d.FeaturesHigh & TAPE_DRIVE_WRITE_SHORT_FMKS)
-    status = WriteTapemark((HANDLE) channel, TAPE_SHORT_FILEMARKS, 1, FALSE);
-  else
-    cm_msg(MERROR, "ss_tape_write_eof", "tape doesn't support writing of filemarks");
+   if (d.FeaturesHigh & TAPE_DRIVE_WRITE_FILEMARKS)
+      status = WriteTapemark((HANDLE) channel, TAPE_FILEMARKS, 1, FALSE);
+   else if (d.FeaturesHigh & TAPE_DRIVE_WRITE_LONG_FMKS)
+      status = WriteTapemark((HANDLE) channel, TAPE_LONG_FILEMARKS, 1, FALSE);
+   else if (d.FeaturesHigh & TAPE_DRIVE_WRITE_SHORT_FMKS)
+      status = WriteTapemark((HANDLE) channel, TAPE_SHORT_FILEMARKS, 1, FALSE);
+   else
+      cm_msg(MERROR, "ss_tape_write_eof", "tape doesn't support writing of filemarks");
 
-  if (status != NO_ERROR)
-    {
-    cm_msg(MERROR, "ss_tape_write_eof", "unknown error %d", status);
-    return status;
-    }
+   if (status != NO_ERROR) {
+      cm_msg(MERROR, "ss_tape_write_eof", "unknown error %d", status);
+      return status;
+   }
+#endif                          /* OS_WINNT */
 
-#endif /* OS_WINNT */
-
-  return SS_SUCCESS;
+   return SS_SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
-
 INT ss_tape_fskip(INT channel, INT count)
 /********************************************************************\
 
@@ -4721,52 +4512,47 @@ INT ss_tape_fskip(INT channel, INT count)
 
 \********************************************************************/
 {
-INT    status;
+   INT status;
 
 #ifdef OS_UNIX
-struct mtop arg;
+   struct mtop arg;
 
-  if (count > 0)
-    arg.mt_op = MTFSF;
-  else
-    arg.mt_op = MTBSF;
-  arg.mt_count = abs(count);
+   if (count > 0)
+      arg.mt_op = MTFSF;
+   else
+      arg.mt_op = MTBSF;
+   arg.mt_count = abs(count);
 
-  cm_enable_watchdog(FALSE);
+   cm_enable_watchdog(FALSE);
 
-  status = ioctl(channel, MTIOCTOP, &arg);
+   status = ioctl(channel, MTIOCTOP, &arg);
 
-  cm_enable_watchdog(TRUE);
+   cm_enable_watchdog(TRUE);
 
-  if (status < 0)
-    {
-    cm_msg(MERROR, "ss_tape_fskip", strerror(errno));
-    return errno;
-    }
-
-#endif /* OS_UNIX */
+   if (status < 0) {
+      cm_msg(MERROR, "ss_tape_fskip", strerror(errno));
+      return errno;
+   }
+#endif                          /* OS_UNIX */
 
 #ifdef OS_WINNT
 
-  status = SetTapePosition((HANDLE) channel, TAPE_SPACE_FILEMARKS, 0,
-         (DWORD) count, 0, FALSE);
+   status = SetTapePosition((HANDLE) channel, TAPE_SPACE_FILEMARKS, 0,
+                            (DWORD) count, 0, FALSE);
 
-  if (status == ERROR_END_OF_MEDIA)
-    return SS_END_OF_TAPE;
+   if (status == ERROR_END_OF_MEDIA)
+      return SS_END_OF_TAPE;
 
-  if (status != NO_ERROR)
-    {
-    cm_msg(MERROR, "ss_tape_fskip", "error %d", status);
-    return status;
-    }
+   if (status != NO_ERROR) {
+      cm_msg(MERROR, "ss_tape_fskip", "error %d", status);
+      return status;
+   }
+#endif                          /* OS_WINNT */
 
-#endif /* OS_WINNT */
-
-  return SS_SUCCESS;
+   return SS_SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
-
 INT ss_tape_rskip(INT channel, INT count)
 /********************************************************************\
 
@@ -4787,48 +4573,44 @@ INT ss_tape_rskip(INT channel, INT count)
 
 \********************************************************************/
 {
-INT    status;
+   INT status;
 
 #ifdef OS_UNIX
-struct mtop arg;
+   struct mtop arg;
 
-  if (count > 0)
-    arg.mt_op = MTFSR;
-  else
-    arg.mt_op = MTBSR;
-  arg.mt_count = abs(count);
+   if (count > 0)
+      arg.mt_op = MTFSR;
+   else
+      arg.mt_op = MTBSR;
+   arg.mt_count = abs(count);
 
-  cm_enable_watchdog(FALSE);
+   cm_enable_watchdog(FALSE);
 
-  status = ioctl(channel, MTIOCTOP, &arg);
+   status = ioctl(channel, MTIOCTOP, &arg);
 
-  cm_enable_watchdog(TRUE);
+   cm_enable_watchdog(TRUE);
 
-  if (status < 0)
-    {
-    cm_msg(MERROR, "ss_tape_rskip", strerror(errno));
-    return errno;
-    }
-
-#endif /* OS_UNIX */
+   if (status < 0) {
+      cm_msg(MERROR, "ss_tape_rskip", strerror(errno));
+      return errno;
+   }
+#endif                          /* OS_UNIX */
 
 #ifdef OS_WINNT
 
-  status = SetTapePosition((HANDLE) channel, TAPE_SPACE_RELATIVE_BLOCKS, 0,
-                           (DWORD) count, 0, FALSE);
-  if (status != NO_ERROR)
-    {
-    cm_msg(MERROR, "ss_tape_rskip", "error %d", status);
-    return status;
-    }
+   status =
+       SetTapePosition((HANDLE) channel, TAPE_SPACE_RELATIVE_BLOCKS, 0,
+                       (DWORD) count, 0, FALSE);
+   if (status != NO_ERROR) {
+      cm_msg(MERROR, "ss_tape_rskip", "error %d", status);
+      return status;
+   }
+#endif                          /* OS_WINNT */
 
-#endif /* OS_WINNT */
-
-  return CM_SUCCESS;
+   return CM_SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
-
 INT ss_tape_rewind(INT channel)
 /********************************************************************\
 
@@ -4848,44 +4630,39 @@ INT ss_tape_rewind(INT channel)
 
 \********************************************************************/
 {
-INT    status;
+   INT status;
 
 #ifdef OS_UNIX
-struct mtop arg;
+   struct mtop arg;
 
-  arg.mt_op = MTREW;
-  arg.mt_count = 0;
+   arg.mt_op = MTREW;
+   arg.mt_count = 0;
 
-  cm_enable_watchdog(FALSE);
+   cm_enable_watchdog(FALSE);
 
-  status = ioctl(channel, MTIOCTOP, &arg);
+   status = ioctl(channel, MTIOCTOP, &arg);
 
-  cm_enable_watchdog(TRUE);
+   cm_enable_watchdog(TRUE);
 
-  if (status < 0)
-    {
-    cm_msg(MERROR, "ss_tape_rewind", strerror(errno));
-    return errno;
-    }
-
-#endif /* OS_UNIX */
+   if (status < 0) {
+      cm_msg(MERROR, "ss_tape_rewind", strerror(errno));
+      return errno;
+   }
+#endif                          /* OS_UNIX */
 
 #ifdef OS_WINNT
 
-  status = SetTapePosition((HANDLE) channel, TAPE_REWIND, 0, 0, 0, FALSE);
-  if (status != NO_ERROR)
-    {
-    cm_msg(MERROR, "ss_tape_rewind", "error %d", status);
-    return status;
-    }
+   status = SetTapePosition((HANDLE) channel, TAPE_REWIND, 0, 0, 0, FALSE);
+   if (status != NO_ERROR) {
+      cm_msg(MERROR, "ss_tape_rewind", "error %d", status);
+      return status;
+   }
+#endif                          /* OS_WINNT */
 
-#endif /* OS_WINNT */
-
-  return CM_SUCCESS;
+   return CM_SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
-
 INT ss_tape_spool(INT channel)
 /********************************************************************\
 
@@ -4905,48 +4682,43 @@ INT ss_tape_spool(INT channel)
 
 \********************************************************************/
 {
-INT    status;
+   INT status;
 
 #ifdef OS_UNIX
-struct mtop arg;
+   struct mtop arg;
 
 #ifdef MTEOM
-  arg.mt_op = MTEOM;
+   arg.mt_op = MTEOM;
 #else
-  arg.mt_op = MTSEOD;
+   arg.mt_op = MTSEOD;
 #endif
-  arg.mt_count = 0;
+   arg.mt_count = 0;
 
-  cm_enable_watchdog(FALSE);
+   cm_enable_watchdog(FALSE);
 
-  status = ioctl(channel, MTIOCTOP, &arg);
+   status = ioctl(channel, MTIOCTOP, &arg);
 
-  cm_enable_watchdog(TRUE);
+   cm_enable_watchdog(TRUE);
 
-  if (status < 0)
-    {
-    cm_msg(MERROR, "ss_tape_rewind", strerror(errno));
-    return errno;
-    }
-
-#endif /* OS_UNIX */
+   if (status < 0) {
+      cm_msg(MERROR, "ss_tape_rewind", strerror(errno));
+      return errno;
+   }
+#endif                          /* OS_UNIX */
 
 #ifdef OS_WINNT
 
-  status = SetTapePosition((HANDLE) channel, TAPE_SPACE_END_OF_DATA, 0, 0, 0, FALSE);
-  if (status != NO_ERROR)
-    {
-    cm_msg(MERROR, "ss_tape_spool", "error %d", status);
-    return status;
-    }
+   status = SetTapePosition((HANDLE) channel, TAPE_SPACE_END_OF_DATA, 0, 0, 0, FALSE);
+   if (status != NO_ERROR) {
+      cm_msg(MERROR, "ss_tape_spool", "error %d", status);
+      return status;
+   }
+#endif                          /* OS_WINNT */
 
-#endif /* OS_WINNT */
-
-  return CM_SUCCESS;
+   return CM_SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
-
 INT ss_tape_mount(INT channel)
 /********************************************************************\
 
@@ -4966,48 +4738,43 @@ INT ss_tape_mount(INT channel)
 
 \********************************************************************/
 {
-INT    status;
+   INT status;
 
 #ifdef OS_UNIX
-struct mtop arg;
+   struct mtop arg;
 
 #ifdef MTLOAD
-  arg.mt_op = MTLOAD;
+   arg.mt_op = MTLOAD;
 #else
-  arg.mt_op = MTNOP;
+   arg.mt_op = MTNOP;
 #endif
-  arg.mt_count = 0;
+   arg.mt_count = 0;
 
-  cm_enable_watchdog(FALSE);
+   cm_enable_watchdog(FALSE);
 
-  status = ioctl(channel, MTIOCTOP, &arg);
+   status = ioctl(channel, MTIOCTOP, &arg);
 
-  cm_enable_watchdog(TRUE);
+   cm_enable_watchdog(TRUE);
 
-  if (status < 0)
-    {
-    cm_msg(MERROR, "ss_tape_mount", strerror(errno));
-    return errno;
-    }
-
-#endif /* OS_UNIX */
+   if (status < 0) {
+      cm_msg(MERROR, "ss_tape_mount", strerror(errno));
+      return errno;
+   }
+#endif                          /* OS_UNIX */
 
 #ifdef OS_WINNT
 
-  status = PrepareTape((HANDLE) channel, TAPE_LOAD, FALSE);
-  if (status != NO_ERROR)
-    {
-    cm_msg(MERROR, "ss_tape_mount", "error %d", status);
-    return status;
-    }
+   status = PrepareTape((HANDLE) channel, TAPE_LOAD, FALSE);
+   if (status != NO_ERROR) {
+      cm_msg(MERROR, "ss_tape_mount", "error %d", status);
+      return status;
+   }
+#endif                          /* OS_WINNT */
 
-#endif /* OS_WINNT */
-
-  return CM_SUCCESS;
+   return CM_SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
-
 INT ss_tape_unmount(INT channel)
 /********************************************************************\
 
@@ -5027,44 +4794,40 @@ INT ss_tape_unmount(INT channel)
 
 \********************************************************************/
 {
-INT    status;
+   INT status;
 
 #ifdef OS_UNIX
-struct mtop arg;
+   struct mtop arg;
 
 #ifdef MTOFFL
-  arg.mt_op = MTOFFL;
+   arg.mt_op = MTOFFL;
 #else
-  arg.mt_op = MTUNLOAD;
+   arg.mt_op = MTUNLOAD;
 #endif
-  arg.mt_count = 0;
+   arg.mt_count = 0;
 
-  cm_enable_watchdog(FALSE);
+   cm_enable_watchdog(FALSE);
 
-  status = ioctl(channel, MTIOCTOP, &arg);
+   status = ioctl(channel, MTIOCTOP, &arg);
 
-  cm_enable_watchdog(TRUE);
+   cm_enable_watchdog(TRUE);
 
-  if (status < 0)
-    {
-    cm_msg(MERROR, "ss_tape_unmount", strerror(errno));
-    return errno;
-    }
-
-#endif /* OS_UNIX */
+   if (status < 0) {
+      cm_msg(MERROR, "ss_tape_unmount", strerror(errno));
+      return errno;
+   }
+#endif                          /* OS_UNIX */
 
 #ifdef OS_WINNT
 
-  status = PrepareTape((HANDLE) channel, TAPE_UNLOAD, FALSE);
-  if (status != NO_ERROR)
-    {
-    cm_msg(MERROR, "ss_tape_unmount", "error %d", status);
-    return status;
-    }
+   status = PrepareTape((HANDLE) channel, TAPE_UNLOAD, FALSE);
+   if (status != NO_ERROR) {
+      cm_msg(MERROR, "ss_tape_unmount", "error %d", status);
+      return status;
+   }
+#endif                          /* OS_WINNT */
 
-#endif /* OS_WINNT */
-
-  return CM_SUCCESS;
+   return CM_SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
@@ -5078,40 +4841,38 @@ Function value:
 blockn:  >0 = block number, =0 option not available, <0 errno
 \********************************************************************/
 {
-  INT    status;
-  
-#ifdef OS_UNIX
-  struct mtpos arg;
-  
-  cm_enable_watchdog(FALSE);
-  status = ioctl(channel, MTIOCPOS, &arg);
-  cm_enable_watchdog(TRUE);
-  if (status < 0) {
-    if (errno == EIO)
-      return 0;
-    else {
-      cm_msg(MERROR, "ss_tape_get_blockn", strerror(errno));
-      return -errno;
-    }
-  }
-  return (arg.mt_blkno);
+   INT status;
 
-#endif /* OS_UNIX */
-  
+#ifdef OS_UNIX
+   struct mtpos arg;
+
+   cm_enable_watchdog(FALSE);
+   status = ioctl(channel, MTIOCPOS, &arg);
+   cm_enable_watchdog(TRUE);
+   if (status < 0) {
+      if (errno == EIO)
+         return 0;
+      else {
+         cm_msg(MERROR, "ss_tape_get_blockn", strerror(errno));
+         return -errno;
+      }
+   }
+   return (arg.mt_blkno);
+
+#endif                          /* OS_UNIX */
+
 #ifdef OS_WINNT
-  TAPE_GET_MEDIA_PARAMETERS media;
-  unsigned long size;
-  /* I'm not sure the partition count corresponds to the block count */
-  status = GetTapeParameters((HANDLE) channel
-			     , GET_TAPE_MEDIA_INFORMATION 
-			     , &size, &media);
-  return (media.PartitionCount);
-#endif 
+   TAPE_GET_MEDIA_PARAMETERS media;
+   unsigned long size;
+   /* I'm not sure the partition count corresponds to the block count */
+   status =
+       GetTapeParameters((HANDLE) channel, GET_TAPE_MEDIA_INFORMATION, &size, &media);
+   return (media.PartitionCount);
+#endif
 }
 
 
 /*------------------------------------------------------------------*/
-
 /********************************************************************\
 *                                                                    *
 *                     Disk functions                                 *
@@ -5119,7 +4880,6 @@ blockn:  >0 = block number, =0 option not available, <0 errno
 \********************************************************************/
 
 /*------------------------------------------------------------------*/
-
 double ss_disk_free(char *path)
 /********************************************************************\
 
@@ -5139,85 +4899,79 @@ double ss_disk_free(char *path)
 {
 #ifdef OS_UNIX
 #if defined(OS_OSF1)
-  struct statfs st;
-  statfs(path, &st, sizeof(st));
-  return (double) st.f_bavail * st.f_bsize;
+   struct statfs st;
+   statfs(path, &st, sizeof(st));
+   return (double) st.f_bavail * st.f_bsize;
 #elif defined(OS_LINUX)
-  struct statfs st;
-  statfs(path, &st);
-  return (double) st.f_bavail * st.f_bsize;
+   struct statfs st;
+   statfs(path, &st);
+   return (double) st.f_bavail * st.f_bsize;
 #elif defined(OS_SOLARIS)
-  struct statvfs st;
-  statvfs(path, &st);
-  return (double) st.f_bavail * st.f_bsize;
+   struct statvfs st;
+   statvfs(path, &st);
+   return (double) st.f_bavail * st.f_bsize;
 #elif defined(OS_IRIX)
-  struct statfs st;
-  statfs(path, &st, sizeof(struct statfs), 0);
-  return (double) st.f_bfree * st.f_bsize;
+   struct statfs st;
+   statfs(path, &st, sizeof(struct statfs), 0);
+   return (double) st.f_bfree * st.f_bsize;
 #else
-  struct fs_data st;
-  statfs(path, &st);
-  return (double) st.fd_otsize * st.fd_bfree;
+   struct fs_data st;
+   statfs(path, &st);
+   return (double) st.fd_otsize * st.fd_bfree;
 #endif
 
-#elif defined(OS_WINNT) /* OS_UNIX */
-DWORD  SectorsPerCluster;
-DWORD  BytesPerSector;
-DWORD  NumberOfFreeClusters;
-DWORD  TotalNumberOfClusters;
-char   str[80];
+#elif defined(OS_WINNT)         /* OS_UNIX */
+   DWORD SectorsPerCluster;
+   DWORD BytesPerSector;
+   DWORD NumberOfFreeClusters;
+   DWORD TotalNumberOfClusters;
+   char str[80];
 
-  strcpy(str, path);
-  if (strchr(str, ':') != NULL)
-    {
-    *(strchr(str, ':')+1) = 0;
-    strcat(str, DIR_SEPARATOR_STR);
-    GetDiskFreeSpace(str, &SectorsPerCluster, &BytesPerSector,
-                     &NumberOfFreeClusters, &TotalNumberOfClusters);
-    }
-  else
-    GetDiskFreeSpace(NULL, &SectorsPerCluster, &BytesPerSector,
-                     &NumberOfFreeClusters, &TotalNumberOfClusters);
+   strcpy(str, path);
+   if (strchr(str, ':') != NULL) {
+      *(strchr(str, ':') + 1) = 0;
+      strcat(str, DIR_SEPARATOR_STR);
+      GetDiskFreeSpace(str, &SectorsPerCluster, &BytesPerSector,
+                       &NumberOfFreeClusters, &TotalNumberOfClusters);
+   } else
+      GetDiskFreeSpace(NULL, &SectorsPerCluster, &BytesPerSector,
+                       &NumberOfFreeClusters, &TotalNumberOfClusters);
 
-  return (double) NumberOfFreeClusters * SectorsPerCluster * BytesPerSector;
-#else /* OS_WINNT */
+   return (double) NumberOfFreeClusters *SectorsPerCluster * BytesPerSector;
+#else                           /* OS_WINNT */
 
-  return 1e9;
+   return 1e9;
 
 #endif
 }
 
 #if defined(OS_ULTRIX) || defined(OS_WINNT)
-int fnmatch (const char * pat, const char * str, const int flag)
+int fnmatch(const char *pat, const char *str, const int flag)
 {
-  while (*str != '\0')
-    {
-      if (*pat == '*')
-  {
-    pat++;
-    if ((str = strchr(str ,*pat)) == NULL)
+   while (*str != '\0') {
+      if (*pat == '*') {
+         pat++;
+         if ((str = strchr(str, *pat)) == NULL)
+            return -1;
+      }
+      if (*pat == *str) {
+         pat++;
+         str++;
+      } else
+         return -1;
+   }
+   if (*pat == '\0')
+      return 0;
+   else
       return -1;
-  }
-      if (*pat == *str)
-  {
-    pat++;
-    str++;
-  }
-      else
-  return -1;
-    }
-  if (*pat == '\0')
-    return 0;
-  else
-    return -1;
 }
 #endif
 
 #ifdef OS_WINNT
-  HANDLE pffile;
-  LPWIN32_FIND_DATA lpfdata;
+HANDLE pffile;
+LPWIN32_FIND_DATA lpfdata;
 #endif
-INT ss_file_find(char * path, char * pattern, char **plist)
+INT ss_file_find(char *path, char *pattern, char **plist)
 /********************************************************************\
 
   Routine: ss_file_find
@@ -5236,60 +4990,59 @@ INT ss_file_find(char * path, char * pattern, char **plist)
 
 \********************************************************************/
 {
-  int i;
+   int i;
 #ifdef OS_UNIX
-  DIR *dir_pointer;
-  struct dirent *dp;
+   DIR *dir_pointer;
+   struct dirent *dp;
 
-  if ((dir_pointer = opendir(path)) == NULL)
-    return 0;
-  *plist = (char *) malloc(MAX_STRING_LENGTH);
-  i = 0;
-  for (dp = readdir(dir_pointer); dp != NULL; dp = readdir(dir_pointer))
-  {
-    if (fnmatch (pattern, dp->d_name, 0) == 0)
-    {
-      *plist = (char *)realloc(*plist, (i+1)*MAX_STRING_LENGTH);
-      strncpy(*plist+(i*MAX_STRING_LENGTH), dp->d_name, strlen(dp->d_name));
-      *(*plist+(i*MAX_STRING_LENGTH)+strlen(dp->d_name)) = '\0';
-      i++;
-      seekdir(dir_pointer, telldir(dir_pointer));
-    }
-  }
-  closedir(dir_pointer);
+   if ((dir_pointer = opendir(path)) == NULL)
+      return 0;
+   *plist = (char *) malloc(MAX_STRING_LENGTH);
+   i = 0;
+   for (dp = readdir(dir_pointer); dp != NULL; dp = readdir(dir_pointer)) {
+      if (fnmatch(pattern, dp->d_name, 0) == 0) {
+         *plist = (char *) realloc(*plist, (i + 1) * MAX_STRING_LENGTH);
+         strncpy(*plist + (i * MAX_STRING_LENGTH), dp->d_name, strlen(dp->d_name));
+         *(*plist + (i * MAX_STRING_LENGTH) + strlen(dp->d_name)) = '\0';
+         i++;
+         seekdir(dir_pointer, telldir(dir_pointer));
+      }
+   }
+   closedir(dir_pointer);
 #endif
 #ifdef OS_WINNT
-  char str[255];
-  int  first;
+   char str[255];
+   int first;
 
-  strcpy(str,path);
-  strcat(str,"\\");
-  strcat(str,pattern);
-  first = 1;
-  i = 0;
-  lpfdata = (WIN32_FIND_DATA *)malloc(sizeof(WIN32_FIND_DATA));
-  *plist = (char *) malloc(MAX_STRING_LENGTH);
-  pffile = FindFirstFile(str, lpfdata);
-  if (pffile == INVALID_HANDLE_VALUE)
-    return 0;
-  first = 0;
-  *plist = (char *)realloc(*plist, (i+1)*MAX_STRING_LENGTH);
-  strncpy(*plist+(i*MAX_STRING_LENGTH), lpfdata->cFileName, strlen(lpfdata->cFileName));
-  *(*plist+(i*MAX_STRING_LENGTH)+strlen(lpfdata->cFileName)) = '\0';
-  i++;
-  while (FindNextFile(pffile, lpfdata))
-  {
-    *plist = (char *)realloc(*plist, (i+1)*MAX_STRING_LENGTH);
-    strncpy(*plist+(i*MAX_STRING_LENGTH), lpfdata->cFileName, strlen(lpfdata->cFileName));
-    *(*plist+(i*MAX_STRING_LENGTH)+strlen(lpfdata->cFileName)) = '\0';
-    i++;
-  }
-  free(lpfdata);
+   strcpy(str, path);
+   strcat(str, "\\");
+   strcat(str, pattern);
+   first = 1;
+   i = 0;
+   lpfdata = (WIN32_FIND_DATA *) malloc(sizeof(WIN32_FIND_DATA));
+   *plist = (char *) malloc(MAX_STRING_LENGTH);
+   pffile = FindFirstFile(str, lpfdata);
+   if (pffile == INVALID_HANDLE_VALUE)
+      return 0;
+   first = 0;
+   *plist = (char *) realloc(*plist, (i + 1) * MAX_STRING_LENGTH);
+   strncpy(*plist + (i * MAX_STRING_LENGTH), lpfdata->cFileName,
+           strlen(lpfdata->cFileName));
+   *(*plist + (i * MAX_STRING_LENGTH) + strlen(lpfdata->cFileName)) = '\0';
+   i++;
+   while (FindNextFile(pffile, lpfdata)) {
+      *plist = (char *) realloc(*plist, (i + 1) * MAX_STRING_LENGTH);
+      strncpy(*plist + (i * MAX_STRING_LENGTH), lpfdata->cFileName,
+              strlen(lpfdata->cFileName));
+      *(*plist + (i * MAX_STRING_LENGTH) + strlen(lpfdata->cFileName)) = '\0';
+      i++;
+   }
+   free(lpfdata);
 #endif
-  return i;
+   return i;
 }
 
-INT ss_file_remove(char * path)
+INT ss_file_remove(char *path)
 /********************************************************************\
 
   Routine: ss_file_remove
@@ -5306,10 +5059,10 @@ INT ss_file_remove(char * path)
 
 \********************************************************************/
 {
-  return remove(path);
+   return remove(path);
 }
 
-double ss_file_size(char * path)
+double ss_file_size(char *path)
 /********************************************************************\
 
   Routine: ss_file_size
@@ -5326,11 +5079,11 @@ double ss_file_size(char * path)
 
 \********************************************************************/
 {
-  struct stat stat_buf;
+   struct stat stat_buf;
 
-  /* allocate buffer with file size */
-  stat(path, &stat_buf);
-  return (double) stat_buf.st_size;
+   /* allocate buffer with file size */
+   stat(path, &stat_buf);
+   return (double) stat_buf.st_size;
 }
 
 double ss_disk_size(char *path)
@@ -5352,60 +5105,57 @@ double ss_disk_size(char *path)
 {
 #ifdef OS_UNIX
 #if defined(OS_OSF1)
-  struct statfs st;
-  statfs(path, &st, sizeof(st));
-  return (double) st.f_blocks * st.f_fsize;
+   struct statfs st;
+   statfs(path, &st, sizeof(st));
+   return (double) st.f_blocks * st.f_fsize;
 #elif defined(OS_LINUX)
-  struct statfs st;
-  statfs(path, &st);
-  return (double) st.f_blocks * st.f_bsize;
+   struct statfs st;
+   statfs(path, &st);
+   return (double) st.f_blocks * st.f_bsize;
 #elif defined(OS_SOLARIS)
-  struct statvfs st;
-  statvfs(path, &st);
-  if (st.f_frsize > 0)
-    return (double) st.f_blocks * st.f_frsize;
-  else
-    return (double) st.f_blocks * st.f_bsize;
+   struct statvfs st;
+   statvfs(path, &st);
+   if (st.f_frsize > 0)
+      return (double) st.f_blocks * st.f_frsize;
+   else
+      return (double) st.f_blocks * st.f_bsize;
 #elif defined(OS_ULTRIX)
-  struct fs_data st;
-  statfs(path, &st);
-  return (double) st.fd_btot * 1024;
+   struct fs_data st;
+   statfs(path, &st);
+   return (double) st.fd_btot * 1024;
 #elif defined(OS_IRIX)
-  struct statfs st;
-  statfs(path, &st, sizeof(struct statfs), 0);
-  return (double) st.f_blocks * st.f_bsize;
+   struct statfs st;
+   statfs(path, &st, sizeof(struct statfs), 0);
+   return (double) st.f_blocks * st.f_bsize;
 #else
 #error ss_disk_size not defined for this OS
 #endif
-#endif /* OS_UNIX */
+#endif                          /* OS_UNIX */
 
 #ifdef OS_WINNT
-  DWORD  SectorsPerCluster;
-  DWORD  BytesPerSector;
-  DWORD  NumberOfFreeClusters;
-  DWORD  TotalNumberOfClusters;
-  char   str[80];
+   DWORD SectorsPerCluster;
+   DWORD BytesPerSector;
+   DWORD NumberOfFreeClusters;
+   DWORD TotalNumberOfClusters;
+   char str[80];
 
-  strcpy(str, path);
-  if (strchr(str, ':') != NULL)
-    {
-      *(strchr(str, ':')+1) = 0;
+   strcpy(str, path);
+   if (strchr(str, ':') != NULL) {
+      *(strchr(str, ':') + 1) = 0;
       strcat(str, DIR_SEPARATOR_STR);
       GetDiskFreeSpace(str, &SectorsPerCluster, &BytesPerSector,
-           &NumberOfFreeClusters, &TotalNumberOfClusters);
-    }
-  else
-    GetDiskFreeSpace(NULL, &SectorsPerCluster, &BytesPerSector,
-                     &NumberOfFreeClusters, &TotalNumberOfClusters);
+                       &NumberOfFreeClusters, &TotalNumberOfClusters);
+   } else
+      GetDiskFreeSpace(NULL, &SectorsPerCluster, &BytesPerSector,
+                       &NumberOfFreeClusters, &TotalNumberOfClusters);
 
-  return (double) TotalNumberOfClusters * SectorsPerCluster * BytesPerSector;
-#endif /* OS_WINNT */
+   return (double) TotalNumberOfClusters *SectorsPerCluster * BytesPerSector;
+#endif                          /* OS_WINNT */
 
-  return 1e9;
+   return 1e9;
 }
 
 /*------------------------------------------------------------------*/
-
 /********************************************************************\
 *                                                                    *
 *                  Screen  functions                                 *
@@ -5413,7 +5163,6 @@ double ss_disk_size(char *path)
 \********************************************************************/
 
 /*------------------------------------------------------------------*/
-
 void ss_clear_screen()
 /********************************************************************\
 
@@ -5434,38 +5183,37 @@ void ss_clear_screen()
 {
 #ifdef OS_WINNT
 
-  HANDLE hConsole;
-  COORD coordScreen = { 0, 0 }; /* here's where we'll home the cursor */
-  BOOL bSuccess;
-  DWORD cCharsWritten;
-  CONSOLE_SCREEN_BUFFER_INFO csbi; /* to get buffer info */
-  DWORD dwConSize; /* number of character cells in the current buffer */
+   HANDLE hConsole;
+   COORD coordScreen = { 0, 0 };        /* here's where we'll home the cursor */
+   BOOL bSuccess;
+   DWORD cCharsWritten;
+   CONSOLE_SCREEN_BUFFER_INFO csbi;     /* to get buffer info */
+   DWORD dwConSize;             /* number of character cells in the current buffer */
 
-  hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+   hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
 
-  /* get the number of character cells in the current buffer */
-  bSuccess = GetConsoleScreenBufferInfo(hConsole, &csbi);
-  dwConSize = csbi.dwSize.X * csbi.dwSize.Y;
+   /* get the number of character cells in the current buffer */
+   bSuccess = GetConsoleScreenBufferInfo(hConsole, &csbi);
+   dwConSize = csbi.dwSize.X * csbi.dwSize.Y;
 
-  /* fill the entire screen with blanks */
-  bSuccess = FillConsoleOutputCharacter(hConsole, (TCHAR) ' ',
-               dwConSize, coordScreen, &cCharsWritten);
+   /* fill the entire screen with blanks */
+   bSuccess = FillConsoleOutputCharacter(hConsole, (TCHAR) ' ',
+                                         dwConSize, coordScreen, &cCharsWritten);
 
-  /* put the cursor at (0, 0) */
-  bSuccess = SetConsoleCursorPosition(hConsole, coordScreen);
-  return;
+   /* put the cursor at (0, 0) */
+   bSuccess = SetConsoleCursorPosition(hConsole, coordScreen);
+   return;
 
-#endif /* OS_WINNT */
+#endif                          /* OS_WINNT */
 #if defined(OS_UNIX) || defined(OS_VXWORKS) || defined(OS_VMS)
-  printf("\033[2J");
+   printf("\033[2J");
 #endif
 #ifdef OS_MSDOS
-  clrscr();
+   clrscr();
 #endif
 }
 
 /*------------------------------------------------------------------*/
-
 void ss_set_screen_size(int x, int y)
 /********************************************************************\
 
@@ -5486,19 +5234,18 @@ void ss_set_screen_size(int x, int y)
 {
 #ifdef OS_WINNT
 
-  HANDLE hConsole;
-  COORD coordSize;
+   HANDLE hConsole;
+   COORD coordSize;
 
-  coordSize.X = (short) x;
-  coordSize.Y = (short) y;
-  hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-  SetConsoleScreenBufferSize(hConsole, coordSize);
+   coordSize.X = (short) x;
+   coordSize.Y = (short) y;
+   hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+   SetConsoleScreenBufferSize(hConsole, coordSize);
 
-#endif /* OS_WINNT */
+#endif                          /* OS_WINNT */
 }
 
 /*------------------------------------------------------------------*/
-
 void ss_printf(INT x, INT y, const char *format, ...)
 /********************************************************************\
 
@@ -5521,44 +5268,43 @@ void ss_printf(INT x, INT y, const char *format, ...)
 
 \********************************************************************/
 {
-char    str[256];
-va_list argptr;
+   char str[256];
+   va_list argptr;
 
-  va_start(argptr, format);
-  vsprintf(str, (char *) format, argptr);
-  va_end(argptr);
+   va_start(argptr, format);
+   vsprintf(str, (char *) format, argptr);
+   va_end(argptr);
 
 #ifdef OS_WINNT
-{
-  HANDLE hConsole;
-  COORD dwWriteCoord;
-  DWORD cCharsWritten;
+   {
+      HANDLE hConsole;
+      COORD dwWriteCoord;
+      DWORD cCharsWritten;
 
-  hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+      hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
 
-  dwWriteCoord.X = (short) x;
-  dwWriteCoord.Y = (short) y;
+      dwWriteCoord.X = (short) x;
+      dwWriteCoord.Y = (short) y;
 
-  WriteConsoleOutputCharacter(hConsole, str, strlen(str),
-                              dwWriteCoord, &cCharsWritten);
-}
+      WriteConsoleOutputCharacter(hConsole, str, strlen(str),
+                                  dwWriteCoord, &cCharsWritten);
+   }
 
-#endif /* OS_WINNT */
+#endif                          /* OS_WINNT */
 
 #if defined(OS_UNIX) || defined(OS_VXWORKS) || defined(OS_VMS)
-  printf("\033[%1d;%1d;H",y+1,x+1);
-  printf(str);
-  fflush(stdout);
+   printf("\033[%1d;%1d;H", y + 1, x + 1);
+   printf(str);
+   fflush(stdout);
 #endif
 
 #ifdef OS_MSDOS
-  gotoxy(x+1,y+1);
-  cputs(str);
+   gotoxy(x + 1, y + 1);
+   cputs(str);
 #endif
 }
 
 /*------------------------------------------------------------------*/
-
 char *ss_getpass(char *prompt)
 /********************************************************************\
 
@@ -5577,52 +5323,51 @@ char *ss_getpass(char *prompt)
 
 \********************************************************************/
 {
-static char password[32];
+   static char password[32];
 
-  printf(prompt);
-  memset(password, 0, sizeof(password));
+   printf(prompt);
+   memset(password, 0, sizeof(password));
 
 #ifdef OS_UNIX
-  return (char *) getpass("");
+   return (char *) getpass("");
 #elif defined(OS_WINNT)
-{
-HANDLE hConsole;
-DWORD  nCharsRead;
+   {
+      HANDLE hConsole;
+      DWORD nCharsRead;
 
-  hConsole = GetStdHandle(STD_INPUT_HANDLE);
-  SetConsoleMode(hConsole, ENABLE_LINE_INPUT);
-  ReadConsole(hConsole, password, sizeof(password), &nCharsRead, NULL);
-  SetConsoleMode(hConsole, ENABLE_LINE_INPUT | ENABLE_ECHO_INPUT |
-                           ENABLE_PROCESSED_INPUT | ENABLE_MOUSE_INPUT);
-  printf("\n");
+      hConsole = GetStdHandle(STD_INPUT_HANDLE);
+      SetConsoleMode(hConsole, ENABLE_LINE_INPUT);
+      ReadConsole(hConsole, password, sizeof(password), &nCharsRead, NULL);
+      SetConsoleMode(hConsole, ENABLE_LINE_INPUT | ENABLE_ECHO_INPUT |
+                     ENABLE_PROCESSED_INPUT | ENABLE_MOUSE_INPUT);
+      printf("\n");
 
-  if (password[strlen(password)-1] == '\r')
-    password[strlen(password)-1] = 0;
+      if (password[strlen(password) - 1] == '\r')
+         password[strlen(password) - 1] = 0;
 
-  return password;
-}
+      return password;
+   }
 #elif defined(OS_MSDOS)
-{
-char c, *ptr;
+   {
+      char c, *ptr;
 
-  ptr = password;
-  while ((c = getchar()) != EOF && c != '\n')
-    *ptr++ = c;
-  *ptr = 0;
+      ptr = password;
+      while ((c = getchar()) != EOF && c != '\n')
+         *ptr++ = c;
+      *ptr = 0;
 
-  printf("\n");
-  return password;
-}
+      printf("\n");
+      return password;
+   }
 #else
-{
-  ss_gets(password, 32);
-  return password;
-}
+   {
+      ss_gets(password, 32);
+      return password;
+   }
 #endif
 }
 
 /*------------------------------------------------------------------*/
-
 INT ss_getchar(BOOL reset)
 /********************************************************************\
 
@@ -5646,226 +5391,250 @@ INT ss_getchar(BOOL reset)
 {
 #ifdef OS_UNIX
 
-static BOOL           init = FALSE;
-static struct termios save_termios;
-struct termios        buf;
-int  i, fd;
-char c[3];
+   static BOOL init = FALSE;
+   static struct termios save_termios;
+   struct termios buf;
+   int i, fd;
+   char c[3];
 
-  if (_daemon_flag)
-    return 0;
+   if (_daemon_flag)
+      return 0;
 
-  fd = fileno(stdin);
+   fd = fileno(stdin);
 
-  if (reset)
-    {
-    if (init)
-      tcsetattr(fd, TCSAFLUSH, &save_termios);
-    init = FALSE;
-    return 0;
-    }
+   if (reset) {
+      if (init)
+         tcsetattr(fd, TCSAFLUSH, &save_termios);
+      init = FALSE;
+      return 0;
+   }
 
-  if (!init)
-    {
-    tcgetattr(fd, &save_termios);
-    memcpy(&buf, &save_termios, sizeof(buf));
+   if (!init) {
+      tcgetattr(fd, &save_termios);
+      memcpy(&buf, &save_termios, sizeof(buf));
 
-    buf.c_lflag &= ~(ECHO | ICANON | IEXTEN);
+      buf.c_lflag &= ~(ECHO | ICANON | IEXTEN);
 
-    buf.c_iflag &= ~(ICRNL | INPCK | ISTRIP | IXON);
+      buf.c_iflag &= ~(ICRNL | INPCK | ISTRIP | IXON);
 
-    buf.c_cflag &= ~(CSIZE | PARENB);
-    buf.c_cflag |= CS8;
-    /* buf.c_oflag &= ~(OPOST); */
-    buf.c_cc[VMIN] = 0;
-    buf.c_cc[VTIME] = 0;
+      buf.c_cflag &= ~(CSIZE | PARENB);
+      buf.c_cflag |= CS8;
+      /* buf.c_oflag &= ~(OPOST); */
+      buf.c_cc[VMIN] = 0;
+      buf.c_cc[VTIME] = 0;
 
-    tcsetattr(fd, TCSAFLUSH, &buf);
-    init = TRUE;
-    }
+      tcsetattr(fd, TCSAFLUSH, &buf);
+      init = TRUE;
+   }
 
-  memset(c, 0, 3);
-  i = read(fd, c, 1);
+   memset(c, 0, 3);
+   i = read(fd, c, 1);
 
-  if (i==0)
-    return 0;
+   if (i == 0)
+      return 0;
 
-  /* check if ESC */
-  if (c[0] == 27)
-    {
-    i = read(fd, c, 2);
-    if (i==0) /* return if only ESC */
-      return 27;
+   /* check if ESC */
+   if (c[0] == 27) {
+      i = read(fd, c, 2);
+      if (i == 0)               /* return if only ESC */
+         return 27;
 
-    /* cursor keys return 2 chars, others 3 chars */
-    if (c[1] < 65)
-      read(fd, c, 1);
+      /* cursor keys return 2 chars, others 3 chars */
+      if (c[1] < 65)
+         read(fd, c, 1);
 
-    /* convert ESC sequence to CH_xxx */
-    switch (c[1])
-      {
-      case 49: return CH_HOME;
-      case 50: return CH_INSERT;
-      case 51: return CH_DELETE;
-      case 52: return CH_END;
-      case 53: return CH_PUP;
-      case 54: return CH_PDOWN;
-      case 65: return CH_UP;
-      case 66: return CH_DOWN;
-      case 67: return CH_RIGHT;
-      case 68: return CH_LEFT;
+      /* convert ESC sequence to CH_xxx */
+      switch (c[1]) {
+      case 49:
+         return CH_HOME;
+      case 50:
+         return CH_INSERT;
+      case 51:
+         return CH_DELETE;
+      case 52:
+         return CH_END;
+      case 53:
+         return CH_PUP;
+      case 54:
+         return CH_PDOWN;
+      case 65:
+         return CH_UP;
+      case 66:
+         return CH_DOWN;
+      case 67:
+         return CH_RIGHT;
+      case 68:
+         return CH_LEFT;
       }
-    }
+   }
 
-  /* BS/DEL -> BS */
-  if (c[0] == 127)
-    return CH_BS;
+   /* BS/DEL -> BS */
+   if (c[0] == 127)
+      return CH_BS;
 
-  return c[0];
+   return c[0];
 
 #elif defined(OS_WINNT)
 
-static   BOOL init = FALSE;
-static   INT repeat_count = 0;
-static   INT repeat_char;
-HANDLE   hConsole;
-DWORD    nCharsRead;
-INPUT_RECORD ir;
-OSVERSIONINFO vi;
+   static BOOL init = FALSE;
+   static INT repeat_count = 0;
+   static INT repeat_char;
+   HANDLE hConsole;
+   DWORD nCharsRead;
+   INPUT_RECORD ir;
+   OSVERSIONINFO vi;
 
-  /* find out if we are under W95 */
-  vi.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
-  GetVersionEx(&vi);
+   /* find out if we are under W95 */
+   vi.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
+   GetVersionEx(&vi);
 
-  if (vi.dwPlatformId != VER_PLATFORM_WIN32_NT)
-    {
-    /* under W95, console doesn't work properly */
-    int c;
+   if (vi.dwPlatformId != VER_PLATFORM_WIN32_NT) {
+      /* under W95, console doesn't work properly */
+      int c;
 
-    if (!kbhit())
+      if (!kbhit())
+         return 0;
+
+      c = getch();
+      if (c == 224) {
+         c = getch();
+         switch (c) {
+         case 71:
+            return CH_HOME;
+         case 72:
+            return CH_UP;
+         case 73:
+            return CH_PUP;
+         case 75:
+            return CH_LEFT;
+         case 77:
+            return CH_RIGHT;
+         case 79:
+            return CH_END;
+         case 80:
+            return CH_DOWN;
+         case 81:
+            return CH_PDOWN;
+         case 82:
+            return CH_INSERT;
+         case 83:
+            return CH_DELETE;
+         }
+      }
+      return c;
+   }
+
+   hConsole = GetStdHandle(STD_INPUT_HANDLE);
+
+   if (reset) {
+      SetConsoleMode(hConsole, ENABLE_LINE_INPUT | ENABLE_ECHO_INPUT |
+                     ENABLE_PROCESSED_INPUT | ENABLE_MOUSE_INPUT);
+      init = FALSE;
+      return 0;
+   }
+
+   if (!init) {
+      SetConsoleMode(hConsole, ENABLE_PROCESSED_INPUT);
+      init = TRUE;
+   }
+
+   if (repeat_count) {
+      repeat_count--;
+      return repeat_char;
+   }
+
+   PeekConsoleInput(hConsole, &ir, 1, &nCharsRead);
+
+   if (nCharsRead == 0)
       return 0;
 
-    c = getch();
-    if (c == 224)
-      {
-      c = getch();
-      switch(c)
-        {
-        case 71: return CH_HOME;
-        case 72: return CH_UP;
-        case 73: return CH_PUP;
-        case 75: return CH_LEFT;
-        case 77: return CH_RIGHT;
-        case 79: return CH_END;
-        case 80: return CH_DOWN;
-        case 81: return CH_PDOWN;
-        case 82: return CH_INSERT;
-        case 83: return CH_DELETE;
-        }
-      }
-    return c;
-    }
+   ReadConsoleInput(hConsole, &ir, 1, &nCharsRead);
 
-  hConsole = GetStdHandle(STD_INPUT_HANDLE);
+   if (ir.EventType != KEY_EVENT)
+      return ss_getchar(0);
 
-  if (reset)
-    {
-    SetConsoleMode(hConsole, ENABLE_LINE_INPUT | ENABLE_ECHO_INPUT |
-                             ENABLE_PROCESSED_INPUT | ENABLE_MOUSE_INPUT);
-    init = FALSE;
-    return 0;
-    }
+   if (!ir.Event.KeyEvent.bKeyDown)
+      return ss_getchar(0);
 
-  if (!init)
-    {
-    SetConsoleMode(hConsole, ENABLE_PROCESSED_INPUT);
-    init = TRUE;
-    }
+   if (ir.Event.KeyEvent.wRepeatCount > 1) {
+      repeat_count = ir.Event.KeyEvent.wRepeatCount - 1;
+      repeat_char = ir.Event.KeyEvent.uChar.AsciiChar;
+      return repeat_char;
+   }
 
-  if (repeat_count)
-    {
-    repeat_count--;
-    return repeat_char;
-    }
+   if (ir.Event.KeyEvent.uChar.AsciiChar)
+      return ir.Event.KeyEvent.uChar.AsciiChar;
 
-  PeekConsoleInput(hConsole, &ir, 1, &nCharsRead);
-
-  if (nCharsRead == 0)
-    return 0;
-
-  ReadConsoleInput(hConsole, &ir, 1, &nCharsRead);
-
-  if (ir.EventType != KEY_EVENT)
-    return ss_getchar(0);
-
-  if (!ir.Event.KeyEvent.bKeyDown)
-    return ss_getchar(0);
-
-  if (ir.Event.KeyEvent.wRepeatCount > 1)
-    {
-    repeat_count = ir.Event.KeyEvent.wRepeatCount-1;
-    repeat_char = ir.Event.KeyEvent.uChar.AsciiChar;
-    return repeat_char;
-    }
-
-  if (ir.Event.KeyEvent.uChar.AsciiChar)
-    return ir.Event.KeyEvent.uChar.AsciiChar;
-
-  if (ir.Event.KeyEvent.dwControlKeyState & (ENHANCED_KEY))
-    {
-    switch (ir.Event.KeyEvent.wVirtualKeyCode)
-      {
-      case 33: return CH_PUP;
-      case 34: return CH_PDOWN;
-      case 35: return CH_END;
-      case 36: return CH_HOME;
-      case 37: return CH_LEFT;
-      case 38: return CH_UP;
-      case 39: return CH_RIGHT;
-      case 40: return CH_DOWN;
-      case 45: return CH_INSERT;
-      case 46: return CH_DELETE;
+   if (ir.Event.KeyEvent.dwControlKeyState & (ENHANCED_KEY)) {
+      switch (ir.Event.KeyEvent.wVirtualKeyCode) {
+      case 33:
+         return CH_PUP;
+      case 34:
+         return CH_PDOWN;
+      case 35:
+         return CH_END;
+      case 36:
+         return CH_HOME;
+      case 37:
+         return CH_LEFT;
+      case 38:
+         return CH_UP;
+      case 39:
+         return CH_RIGHT;
+      case 40:
+         return CH_DOWN;
+      case 45:
+         return CH_INSERT;
+      case 46:
+         return CH_DELETE;
       }
 
-    return ir.Event.KeyEvent.wVirtualKeyCode;
-    }
+      return ir.Event.KeyEvent.wVirtualKeyCode;
+   }
 
-  return ss_getchar(0);
+   return ss_getchar(0);
 
 #elif defined(OS_MSDOS)
 
-int c;
+   int c;
 
-  if (!kbhit())
-    return 0;
+   if (!kbhit())
+      return 0;
 
-  c = getch();
-  if (!c)
-    {
-    c = getch();
-    switch(c)
-      {
-      case 71: return CH_HOME;
-      case 72: return CH_UP;
-      case 73: return CH_PUP;
-      case 75: return CH_LEFT;
-      case 77: return CH_RIGHT;
-      case 79: return CH_END;
-      case 80: return CH_DOWN;
-      case 81: return CH_PDOWN;
-      case 82: return CH_INSERT;
-      case 83: return CH_DELETE;
+   c = getch();
+   if (!c) {
+      c = getch();
+      switch (c) {
+      case 71:
+         return CH_HOME;
+      case 72:
+         return CH_UP;
+      case 73:
+         return CH_PUP;
+      case 75:
+         return CH_LEFT;
+      case 77:
+         return CH_RIGHT;
+      case 79:
+         return CH_END;
+      case 80:
+         return CH_DOWN;
+      case 81:
+         return CH_PDOWN;
+      case 82:
+         return CH_INSERT;
+      case 83:
+         return CH_DELETE;
       }
-    }
-  return c;
+   }
+   return c;
 
 #else
-  return -1;
+   return -1;
 #endif
 }
 
 /*------------------------------------------------------------------*/
-
 char *ss_gets(char *string, int size)
 /********************************************************************\
 
@@ -5886,22 +5655,20 @@ char *ss_gets(char *string, int size)
 
 \********************************************************************/
 {
-char *p;
+   char *p;
 
-  do
-    {
-    p = fgets(string, size, stdin);
-    } while (p == NULL);
+   do {
+      p = fgets(string, size, stdin);
+   } while (p == NULL);
 
 
-  if (strlen(p) > 0 && p[strlen(p)-1] == '\n')
-    p[strlen(p)-1] = 0;
+   if (strlen(p) > 0 && p[strlen(p) - 1] == '\n')
+      p[strlen(p) - 1] = 0;
 
-  return p;
+   return p;
 }
 
 /*------------------------------------------------------------------*/
-
 /********************************************************************\
 *                                                                    *
 *                  Direct IO functions                               *
@@ -5909,89 +5676,84 @@ char *p;
 \********************************************************************/
 
 /*------------------------------------------------------------------*/
-
 INT ss_directio_give_port(INT start, INT end)
 {
 #ifdef OS_WINNT
 
-  /* under Windows NT, use DirectIO driver to open ports */
+   /* under Windows NT, use DirectIO driver to open ports */
 
-  OSVERSIONINFO vi;
-  HANDLE hdio = 0;
-  DWORD buffer[] = {6, 0, 0, 0};
-  DWORD size;
+   OSVERSIONINFO vi;
+   HANDLE hdio = 0;
+   DWORD buffer[] = { 6, 0, 0, 0 };
+   DWORD size;
 
-  vi.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
-  GetVersionEx(&vi);
+   vi.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
+   GetVersionEx(&vi);
 
-  /* use DirectIO driver under NT to gain port access */
-  if (vi.dwPlatformId == VER_PLATFORM_WIN32_NT)
-    {
-    hdio = CreateFile("\\\\.\\directio", GENERIC_READ, FILE_SHARE_READ, NULL,
-           OPEN_EXISTING, 0, NULL);
-    if (hdio == INVALID_HANDLE_VALUE)
-      {
-      printf("hyt1331.c: Cannot access IO ports (No DirectIO driver installed)\n");
-      return -1;
+   /* use DirectIO driver under NT to gain port access */
+   if (vi.dwPlatformId == VER_PLATFORM_WIN32_NT) {
+      hdio =
+          CreateFile("\\\\.\\directio", GENERIC_READ, FILE_SHARE_READ,
+                     NULL, OPEN_EXISTING, 0, NULL);
+      if (hdio == INVALID_HANDLE_VALUE) {
+         printf("hyt1331.c: Cannot access IO ports (No DirectIO driver installed)\n");
+         return -1;
       }
 
-    /* open ports */
-    buffer[1] = start;
-    buffer[2] = end;
-    if (!DeviceIoControl(hdio, (DWORD) 0x9c406000, &buffer, sizeof(buffer),
-             NULL, 0, &size, NULL))
-      return -1;
-    }
+      /* open ports */
+      buffer[1] = start;
+      buffer[2] = end;
+      if (!DeviceIoControl
+          (hdio, (DWORD) 0x9c406000, &buffer, sizeof(buffer), NULL, 0, &size, NULL))
+         return -1;
+   }
 
-  return SS_SUCCESS;
+   return SS_SUCCESS;
 #else
-  return SS_SUCCESS;
+   return SS_SUCCESS;
 #endif
 }
 
 /*------------------------------------------------------------------*/
-
 INT ss_directio_lock_port(INT start, INT end)
 {
 #ifdef OS_WINNT
 
-  /* under Windows NT, use DirectIO driver to lock ports */
+   /* under Windows NT, use DirectIO driver to lock ports */
 
-  OSVERSIONINFO vi;
-  HANDLE hdio;
-  DWORD buffer[] = {7, 0, 0, 0};
-  DWORD size;
+   OSVERSIONINFO vi;
+   HANDLE hdio;
+   DWORD buffer[] = { 7, 0, 0, 0 };
+   DWORD size;
 
-  vi.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
-  GetVersionEx(&vi);
+   vi.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
+   GetVersionEx(&vi);
 
-  /* use DirectIO driver under NT to gain port access */
-  if (vi.dwPlatformId == VER_PLATFORM_WIN32_NT)
-    {
-    hdio = CreateFile("\\\\.\\directio", GENERIC_READ, FILE_SHARE_READ, NULL,
-           OPEN_EXISTING, 0, NULL);
-    if (hdio == INVALID_HANDLE_VALUE)
-      {
-      printf("hyt1331.c: Cannot access IO ports (No DirectIO driver installed)\n");
-      return -1;
+   /* use DirectIO driver under NT to gain port access */
+   if (vi.dwPlatformId == VER_PLATFORM_WIN32_NT) {
+      hdio =
+          CreateFile("\\\\.\\directio", GENERIC_READ, FILE_SHARE_READ,
+                     NULL, OPEN_EXISTING, 0, NULL);
+      if (hdio == INVALID_HANDLE_VALUE) {
+         printf("hyt1331.c: Cannot access IO ports (No DirectIO driver installed)\n");
+         return -1;
       }
 
-    /* lock ports */
-    buffer[1] = start;
-    buffer[2] = end;
-    if (!DeviceIoControl(hdio, (DWORD) 0x9c406000, &buffer, sizeof(buffer),
-             NULL, 0, &size, NULL))
-      return -1;
-    }
+      /* lock ports */
+      buffer[1] = start;
+      buffer[2] = end;
+      if (!DeviceIoControl
+          (hdio, (DWORD) 0x9c406000, &buffer, sizeof(buffer), NULL, 0, &size, NULL))
+         return -1;
+   }
 
-  return SS_SUCCESS;
+   return SS_SUCCESS;
 #else
-  return SS_SUCCESS;
+   return SS_SUCCESS;
 #endif
 }
 
 /*------------------------------------------------------------------*/
-
 /********************************************************************\
 *                                                                    *
 *                  System logging                                    *
@@ -5999,7 +5761,6 @@ INT ss_directio_lock_port(INT start, INT end)
 \********************************************************************/
 
 /*------------------------------------------------------------------*/
-
 INT ss_syslog(const char *message)
 /********************************************************************\
 
@@ -6019,21 +5780,20 @@ INT ss_syslog(const char *message)
 \********************************************************************/
 {
 #ifdef OS_UNIX
-static   BOOL init = FALSE;
+   static BOOL init = FALSE;
 
-  if (!init)
-    {
+   if (!init) {
 #ifdef OS_ULTRIX
-    openlog("MIDAS", LOG_PID);
+      openlog("MIDAS", LOG_PID);
 #else
-    openlog("MIDAS", LOG_PID, LOG_USER);
+      openlog("MIDAS", LOG_PID, LOG_USER);
 #endif
-    init = TRUE;
-    }
+      init = TRUE;
+   }
 
-  syslog(LOG_DEBUG, message);
-  return SS_SUCCESS;
-#elif defined(OS_WINNT) /* OS_UNIX */
+   syslog(LOG_DEBUG, message);
+   return SS_SUCCESS;
+#elif defined(OS_WINNT)         /* OS_UNIX */
 /*
 HANDLE hlog = 0;
 const char *pstr[2];
@@ -6064,17 +5824,16 @@ const char *pstr[2];
   if (hlog)
     ReportEvent(hlog, EVENTLOG_INFORMATION_TYPE, 0, 0, NULL, 1, 0, pstr, NULL);
 */
-  return SS_SUCCESS;
+   return SS_SUCCESS;
 
-#else /* OS_WINNT */
+#else                           /* OS_WINNT */
 
-  return SS_SUCCESS;
+   return SS_SUCCESS;
 
 #endif
 }
 
 /*------------------------------------------------------------------*/
-
 /********************************************************************\
 *                                                                    *
 *                  Encryption                                        *
@@ -6104,24 +5863,29 @@ char *ss_crypt(char *buf, char *salt)
 
 \********************************************************************/
 {
-int i, seed;
-static char enc_pw[13];
+   int i, seed;
+   static char enc_pw[13];
 
-  memset(enc_pw, 0, sizeof(enc_pw));
-  enc_pw[0] = salt[0];
-  enc_pw[1] = salt[1];
+   memset(enc_pw, 0, sizeof(enc_pw));
+   enc_pw[0] = salt[0];
+   enc_pw[1] = salt[1];
 
-  for (i=0; i<8 && buf[i]; i++)
-    enc_pw[i+2] = buf[i];
-  for (; i<8; i++)
-    enc_pw[i+2] = 0;
+   for (i = 0; i < 8 && buf[i]; i++)
+      enc_pw[i + 2] = buf[i];
+   for (; i < 8; i++)
+      enc_pw[i + 2] = 0;
 
-  seed = 123;
-  for (i=2; i<13; i++)
-    {
-    seed = 5*seed + 27 + enc_pw[i];
-    enc_pw[i] = (char) bin_to_ascii(seed & 0x3F);
-    }
+   seed = 123;
+   for (i = 2; i < 13; i++) {
+      seed = 5 * seed + 27 + enc_pw[i];
+      enc_pw[i] = (char) bin_to_ascii(seed & 0x3F);
+   }
 
-  return enc_pw;
+   return enc_pw;
 }
+
+/**dox***************************************************************/
+#endif                          /* DOXYGEN_SHOULD_SKIP_THIS */
+
+/** @} */// end of msfunctionc
+/** @} */// end of msystemincludecode
