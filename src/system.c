@@ -14,6 +14,9 @@
                 Brown, Prentice Hall
 
   $Log$
+  Revision 1.36  1999/07/15 07:42:48  midas
+  Added SIGTERM to ss_ctrlc_handler
+
   Revision 1.35  1999/07/15 07:35:00  midas
   Added ss_ctrlc_handler
 
@@ -2384,6 +2387,7 @@ void *ss_ctrlc_handler(void (*func)(int))
 
 #ifdef OS_UNIX
 
+  signal(SIGTERM, func);
   return signal(SIGINT, func);
 
 #endif /* OS_UNIX */
