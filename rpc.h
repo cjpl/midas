@@ -6,6 +6,9 @@
   Contents:     Header fiel for MSCB RPC funcions
 
   $Log$
+  Revision 1.3  2002/11/27 16:26:22  midas
+  Fixed errors under linux
+
   Revision 1.2  2002/11/20 12:01:39  midas
   Added host to mscb_init
 
@@ -34,71 +37,35 @@
 #define TID_LINK     16 /* link in online database              */
 #define TID_LAST     17 /* end of TID list indicator            */
 
-#define CBYTE(_i)        (* ((BYTE *)       prpc_param[_i]))
-#define CPBYTE(_i)       (  ((BYTE *)       prpc_param[_i]))
+#define CBYTE(_i)        (* ((unsigned char *)   prpc_param[_i]))
+#define CPBYTE(_i)       (  ((unsigned char *)   prpc_param[_i]))
 
-#define CSHORT(_i)       (* ((short *)      prpc_param[_i]))
-#define CPSHORT(_i)      (  ((short *)      prpc_param[_i]))
+#define CSHORT(_i)       (* ((short *)           prpc_param[_i]))
+#define CPSHORT(_i)      (  ((short *)           prpc_param[_i]))
 
-#define CINT(_i)         (* ((INT *)        prpc_param[_i]))
-#define CPINT(_i)        (  ((INT *)        prpc_param[_i]))
+#define CINT(_i)         (* ((int *)             prpc_param[_i]))
+#define CPINT(_i)        (  ((int *)             prpc_param[_i]))
 
-#define CWORD(_i)        (* ((WORD *)       prpc_param[_i]))
-#define CPWORD(_i)       (  ((WORD *)       prpc_param[_i]))
+#define CWORD(_i)        (* ((unsigned short *)  prpc_param[_i]))
+#define CPWORD(_i)       (  ((unsigned short *)  prpc_param[_i]))
 
-#define CLONG(_i)        (* ((long *)       prpc_param[_i]))
-#define CPLONG(_i)       (  ((long *)       prpc_param[_i]))
+#define CLONG(_i)        (* ((long *)            prpc_param[_i]))
+#define CPLONG(_i)       (  ((long *)            prpc_param[_i]))
 
-#define CDWORD(_i)       (* ((DWORD *)      prpc_param[_i]))
-#define CPDWORD(_i)      (  ((DWORD *)      prpc_param[_i]))
+#define CDWORD(_i)       (* ((unsigned int *)    prpc_param[_i]))
+#define CPDWORD(_i)      (  ((unsigned int *)    prpc_param[_i]))
 
-#define CHNDLE(_i)       (* ((HNDLE *)      prpc_param[_i]))
-#define CPHNDLE(_i)      (  ((HNDLE *)      prpc_param[_i]))
+#define CBOOL(_i)        (* ((int *)             prpc_param[_i]))
+#define CPBOOL(_i)       (  ((int *)             prpc_param[_i]))
 
-#define CBOOL(_i)        (* ((BOOL *)       prpc_param[_i]))
-#define CPBOOL(_i)       (  ((BOOL *)       prpc_param[_i]))
+#define CFLOAT(_i)       (* ((float *)           prpc_param[_i]))
+#define CPFLOAT(_i)      (  ((float *)           prpc_param[_i]))
 
-#define CFLOAT(_i)       (* ((float *)      prpc_param[_i]))
-#define CPFLOAT(_i)      (  ((float *)      prpc_param[_i]))
+#define CDOUBLE(_i)      (* ((double *)          prpc_param[_i]))
+#define CPDOUBLE(_i)     (  ((double *)          prpc_param[_i]))
 
-#define CDOUBLE(_i)      (* ((double *)     prpc_param[_i]))
-#define CPDOUBLE(_i)     (  ((double *)     prpc_param[_i]))
-
-#define CSTRING(_i)      (  ((char *)       prpc_param[_i]))
-#define CARRAY(_i)       (  ((void *)       prpc_param[_i]))
-
-#define CBYTE(_i)        (* ((BYTE *)       prpc_param[_i]))
-#define CPBYTE(_i)       (  ((BYTE *)       prpc_param[_i]))
-
-#define CSHORT(_i)       (* ((short *)      prpc_param[_i]))
-#define CPSHORT(_i)      (  ((short *)      prpc_param[_i]))
-
-#define CINT(_i)         (* ((INT *)        prpc_param[_i]))
-#define CPINT(_i)        (  ((INT *)        prpc_param[_i]))
-
-#define CWORD(_i)        (* ((WORD *)       prpc_param[_i]))
-#define CPWORD(_i)       (  ((WORD *)       prpc_param[_i]))
-
-#define CLONG(_i)        (* ((long *)       prpc_param[_i]))
-#define CPLONG(_i)       (  ((long *)       prpc_param[_i]))
-
-#define CDWORD(_i)       (* ((DWORD *)      prpc_param[_i]))
-#define CPDWORD(_i)      (  ((DWORD *)      prpc_param[_i]))
-
-#define CHNDLE(_i)       (* ((HNDLE *)      prpc_param[_i]))
-#define CPHNDLE(_i)      (  ((HNDLE *)      prpc_param[_i]))
-
-#define CBOOL(_i)        (* ((BOOL *)       prpc_param[_i]))
-#define CPBOOL(_i)       (  ((BOOL *)       prpc_param[_i]))
-
-#define CFLOAT(_i)       (* ((float *)      prpc_param[_i]))
-#define CPFLOAT(_i)      (  ((float *)      prpc_param[_i]))
-
-#define CDOUBLE(_i)      (* ((double *)     prpc_param[_i]))
-#define CPDOUBLE(_i)     (  ((double *)     prpc_param[_i]))
-
-#define CSTRING(_i)      (  ((char *)       prpc_param[_i]))
-#define CARRAY(_i)       (  ((void *)       prpc_param[_i]))
+#define CSTRING(_i)      (  ((char *)            prpc_param[_i]))
+#define CARRAY(_i)       (  ((void *)            prpc_param[_i]))
 
 /* flags */
 #define RPC_IN       (1 << 0)
