@@ -6,6 +6,9 @@
   Contents:     Speaks midas messages
 
   $Log$
+  Revision 1.5  2000/04/05 14:59:24  midas
+  Added time display
+
   Revision 1.4  2000/04/05 08:24:26  midas
   Changed speech font which crashed program
 
@@ -44,7 +47,9 @@ void receive_message(HNDLE hBuf, HNDLE id, EVENT_HEADER *header, void *message)
 char str[256], *pc;
 
   /* print message */
-  printf("%s\n", (char *)(message));
+  cm_asctime(str, 256);
+  str[19] = 0;
+  printf("%s %s\n", str+4, (char *)(message));
 
   /* skip none talking message */
   if (header->trigger_mask == MT_TALK ||
