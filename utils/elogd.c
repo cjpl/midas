@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.24  2001/08/07 07:10:03  midas
+  Fixed problem with emails
+
   Revision 1.23  2001/08/06 12:44:15  midas
   Fixed small bug preventing the selection list for multiple logbooks
 
@@ -2958,7 +2961,7 @@ char   str[256], str1[256], str2[256], author[256], mail_to[256], mail_from[256]
        mail_text[256], mail_list[256], smtp_host[256], tag[80], *p;
 char   *buffer[MAX_ATTACHMENTS], mail_param[1000];
 char   att_file[MAX_ATTACHMENTS][256];
-int    i, n_mail;
+int    i, index, n_mail;
 struct hostent *phe;
 
   /* check for author */
@@ -3025,92 +3028,69 @@ struct hostent *phe;
   mail_param[0] = 0;
   n_mail = 0;
 
-  sprintf(str, "Email %s", getparam("type"));
-  if (getcfg(logbook, str, mail_list) ||
-      getcfg(logbook, "Email All", mail_list))
+  for (index=0 ; index < 3 ; index++)
     {
-    if (!getcfg(logbook, "SMTP host", smtp_host))
-      if (!getcfg(logbook, "SMTP host", smtp_host))
-        {
-        show_error("No SMTP host defined in configuration file");
-        return;
-        }
-    
-    p = strtok(mail_list, ",");
-    for (i=0 ; p ; i++)
+    if (index == 0)
+      sprintf(str, "Email %s", getparam("type"));
+    else if (index == 1)
+      sprintf(str, "Email %s", getparam("category"));
+    else
+      sprintf(str, "Email ALL");
+
+    if (getcfg(logbook, str, mail_list))
       {
-      strcpy(mail_to, p);
-      sprintf(mail_from, "ELog@%s", host_name);
-
-      strcpy(str1, author);
-      if (strchr(str1, '@'))
+      if (verbose)
+        printf("\n%s to %s\n\n", str, mail_list);
+    
+      if (!getcfg(logbook, "SMTP host", smtp_host))
+        if (!getcfg(logbook, "SMTP host", smtp_host))
+          {
+          show_error("No SMTP host defined in configuration file");
+          return;
+          }
+    
+      p = strtok(mail_list, ",");
+      for (i=0 ; p ; i++)
         {
-        strcpy(str2, strchr(str1, '@')+1);
-        *strchr(str1, '@') = 0;
+        strcpy(mail_to, p);
+        sprintf(mail_from, "ELog@%s", host_name);
+
+        strcpy(str1, author);
+        if (strchr(str1, '@'))
+          {
+          strcpy(str2, strchr(str1, '@')+1);
+          *strchr(str1, '@') = 0;
+          }
+
+        if (strchr(author, '@'))
+          sprintf(mail_text, "A new entry has been submitted by %s from %s:\n\n", str1, str2);
+        else
+          sprintf(mail_text, "A new entry has been submitted by %s:\n\n", author);
+
+        sprintf(mail_text+strlen(mail_text), "Logbook  : %s\n", logbook);
+        sprintf(mail_text+strlen(mail_text), "Type     : %s\n", getparam("type"));
+        sprintf(mail_text+strlen(mail_text), "Category : %s\n", getparam("category"));
+        sprintf(mail_text+strlen(mail_text), "Subject  : %s\n", getparam("subject"));
+        sprintf(mail_text+strlen(mail_text), "Link     : %s%s/%s\n", elogd_url, logbook_enc, tag);
+
+        sendmail(smtp_host, mail_from, mail_to, 
+          index == 0 ? getparam("type") : getparam("category"), mail_text);
+
+        if (mail_param[0] == 0)
+          strcpy(mail_param, "?");
+        else
+          strcat(mail_param, "&");
+        sprintf(mail_param+strlen(mail_param), "mail%d=%s", n_mail++, mail_to);
+
+        p = strtok(NULL, ",");
+        if (!p)
+          break;
+        while (*p == ' ')
+          p++;
         }
-
-      if (strchr(author, '@'))
-        sprintf(mail_text, "A new entry has been submitted by %s from %s:\n\n", str1, str2);
-      else
-        sprintf(mail_text, "A new entry has been submitted by %s:\n\n", author);
-
-      sprintf(mail_text+strlen(mail_text), "Logbook  : %s\n", logbook);
-      sprintf(mail_text+strlen(mail_text), "Type     : %s\n", getparam("type"));
-      sprintf(mail_text+strlen(mail_text), "Category : %s\n", getparam("category"));
-      sprintf(mail_text+strlen(mail_text), "Subject  : %s\n", getparam("subject"));
-      sprintf(mail_text+strlen(mail_text), "Link     : %s%s/%s\n", elogd_url, logbook_enc, tag);
-
-      sendmail(smtp_host, mail_from, mail_to, getparam("type"), mail_text);
-
-      if (mail_param[0] == 0)
-        strcpy(mail_param, "?");
-      else
-        strcat(mail_param, "&");
-      sprintf(mail_param+strlen(mail_param), "mail%d=%s", n_mail++, mail_to);
-
-      p = strtok(NULL, ",");
-      if (!p)
-        break;
-      while (*p == ' ')
-        p++;
       }
     }
 
-  sprintf(str, "Email %s", getparam("category"));
-  if (getcfg(logbook, str, mail_list))
-    {
-    if (!getcfg(logbook, "SMTP host", smtp_host))
-      if (!getcfg(logbook, "SMTP host", smtp_host))
-        {
-        show_error("No SMTP host defined in configuration file");
-        return;
-        }
-    
-    p = strtok(mail_list, ",");
-    for (i=0 ; p ; i++)
-      {
-      strcpy(mail_to, p);
-      sprintf(mail_from, "ELog logbook %s", logbook);
-
-      sprintf(mail_text, "A new entry has been submitted by %s:\n\n", author);
-      sprintf(mail_text+strlen(mail_text), "Subject: %s\n", getparam("subject"));
-      sprintf(mail_text+strlen(mail_text), "Link:    %s%s/%s\n", elogd_url, logbook_enc, tag);
-
-      sendmail(smtp_host, mail_from, mail_to, getparam("category"), mail_text);
-
-      if (mail_param[0] == 0)
-        strcpy(mail_param, "?");
-      else
-        strcat(mail_param, "&");
-      sprintf(mail_param+strlen(mail_param), "mail%d=%s", n_mail++, mail_to);
-
-      p = strtok(NULL, ",");
-      if (!p)
-        break;
-      while (*p == ' ')
-        p++;
-      }
-    }
 
   for (i=0 ; i<MAX_ATTACHMENTS ; i++)
     if (buffer[i])
