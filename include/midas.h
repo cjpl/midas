@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.7  1998/10/29 15:58:05  midas
+  Release 1.6.1
+
   Revision 1.6  1998/10/23 14:35:16  midas
   Added version comment
 
@@ -44,7 +47,7 @@
    to the MIDAS library. First digit is major release, second
    digit is minor release, third digit is patch level */
 
-#define MIDAS_VERSION "1.6.0"
+#define MIDAS_VERSION "1.6.1"
 
 /*------------------------------------------------------------------*/
 
