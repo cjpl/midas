@@ -11,6 +11,9 @@
  *
  * Author:  Pierre-Andre Amaudruz Data Acquisition Group
    $Log$
+   Revision 1.2  2004/01/08 07:51:21  midas
+   Changed indentation
+
    Revision 1.1  1999/12/20 10:18:23  midas
    Reorganized driver directory structure
 
@@ -40,11 +43,11 @@
 #define INLINE __inline
 #elif defined(__GNUC__)
 #define INLINE __inline__
-#else 
+#else
 #define INLINE
 #endif
 
-#define EXTERNAL extern 
+#define EXTERNAL extern
 
 #ifndef MIDAS_TYPE_DEFINED
 #define MIDAS_TYPE_DEFINED
@@ -52,17 +55,17 @@
 typedef unsigned short int WORD;
 
 #ifdef __alpha
-typedef unsigned int       DWORD;
+typedef unsigned int DWORD;
 #else
-typedef unsigned long int  DWORD;
+typedef unsigned long int DWORD;
 #endif
 
-#endif /* MIDAS_TYPE_DEFINED */
+#endif                          /* MIDAS_TYPE_DEFINED */
 
 #ifdef PPCxxx
-#define A32D24	       0xfa000000              /* A32D24 camac base address */
+#define A32D24	       0xfa000000       /* A32D24 camac base address */
 #else
-#define A32D24	       0xf0000000              /* A32D24 camac base address */
+#define A32D24	       0xf0000000       /* A32D24 camac base address */
 #endif
 
 #define ENABLE_INT      0x00
@@ -78,19 +81,20 @@ typedef unsigned long int  DWORD;
 #define VMEIO_VECT_BASE 0x7f
 
 void myStub(void);
-void vmeio (void);
-void vmeio_intsync_set (DWORD  base_adr, DWORD pattern);
-void vmeio_pulse_set (const DWORD base_adr, DWORD pattern);
-void vmeio_sync_read (const DWORD base_adr, DWORD * data);
-void vmeio_async_read (const DWORD base_adr, DWORD * data);
-void vmeio_pulse_write (const DWORD base_adr, DWORD data);
-void vmeio_latch_write (const DWORD base_adr, DWORD data);
-void vmeio_clear (const DWORD base_adr);
-void vmeio_status_read (const DWORD base_adr, DWORD * data);
+void vmeio(void);
+void vmeio_intsync_set(DWORD base_adr, DWORD pattern);
+void vmeio_pulse_set(const DWORD base_adr, DWORD pattern);
+void vmeio_sync_read(const DWORD base_adr, DWORD * data);
+void vmeio_async_read(const DWORD base_adr, DWORD * data);
+void vmeio_pulse_write(const DWORD base_adr, DWORD data);
+void vmeio_latch_write(const DWORD base_adr, DWORD data);
+void vmeio_clear(const DWORD base_adr);
+void vmeio_status_read(const DWORD base_adr, DWORD * data);
 void vmeio_int_clear(const DWORD base_adr);
-void vmeio_int_enable (const DWORD base_adr, int intnum);
-void vmeio_int_disable (const DWORD base_adr, int intnum);
-void vmeio_int_attach (const DWORD base_adr, DWORD base_vect, int intnum, void (*isr)(void));
-void vmeio_int_detach (const DWORD base_adr, DWORD base_vect, int intnum);
+void vmeio_int_enable(const DWORD base_adr, int intnum);
+void vmeio_int_disable(const DWORD base_adr, int intnum);
+void vmeio_int_attach(const DWORD base_adr, DWORD base_vect, int intnum,
+                      void (*isr) (void));
+void vmeio_int_detach(const DWORD base_adr, DWORD base_vect, int intnum);
 
 #endif

@@ -6,6 +6,9 @@
   Cotents:      Header file for accessing LeCroy 2372 MLU
 
   $Log$
+  Revision 1.2  2004/01/08 07:51:21  midas
+  Changed indentation
+
   Revision 1.1  1999/12/20 10:18:23  midas
   Reorganized driver directory structure
 
@@ -22,8 +25,8 @@
 #define CAR		1
 #define CCR		2
 
-#define SET_INHIBIT	(1<<4) /* R/W 5 */
-#define SET_2373MODE	(1<<6) /* R/W 7 */
-#define SET_TRANSPARENT	(1<<3) /* R/W 4 */
+#define SET_INHIBIT	(1<<4)  /* R/W 5 */
+#define SET_2373MODE	(1<<6)  /* R/W 7 */
+#define SET_TRANSPARENT	(1<<3)  /* R/W 4 */
 
 int lrs2373_set(int camac_slot, char *filename);
