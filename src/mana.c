@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.40  1999/11/23 15:49:41  midas
+  Allocate local event buffers according to MAX_EVENT_SIZE
+
   Revision 1.39  1999/10/18 14:41:51  midas
   Use /programs/<name>/Watchdog timeout in all programs as timeout value. The
   default value can be submitted by calling cm_connect_experiment1(..., timeout)
@@ -2405,9 +2408,9 @@ INT process_event(ANALYZE_REQUEST *par, EVENT_HEADER *pevent)
 INT          i, status, ch;
 ANA_MODULE   **module;
 DWORD        actual_time;
-static DWORD last_time_kb = 0;
 EVENT_DEF    *event_def;
-char         orig_event[MAX_EVENT_SIZE+sizeof(EVENT_HEADER)];
+static DWORD last_time_kb = 0;
+static char  *orig_event = NULL;
 
   /* verbose output */
   if (clp.verbose)
@@ -2427,7 +2430,11 @@ char         orig_event[MAX_EVENT_SIZE+sizeof(EVENT_HEADER)];
 
   /* keep copy of original event */
   if (clp.filter)
+    {
+    if (orig_event == NULL)
+      orig_event = malloc(MAX_EVENT_SIZE+sizeof(EVENT_HEADER));
     memcpy(orig_event, pevent, pevent->data_size+sizeof(EVENT_HEADER));
+    }
   
   /*---- analyze event ----*/
 
@@ -2534,7 +2541,20 @@ void receive_event(HNDLE buffer_handle, HNDLE request_id, EVENT_HEADER *pheader,
 {
 INT i;
 ANALYZE_REQUEST *par;
-char buffer[60000], *pb;
+static DWORD    buffer_size = 0;
+static char     *buffer = NULL;
+char            *pb;
+
+  if (buffer == NULL)
+    {
+    buffer = malloc(MAX_EVENT_SIZE+sizeof(EVENT_HEADER));
+
+    if (buffer == NULL)
+      {
+      cm_msg(MERROR, "receive_event", "Not enough memory to buffer event of size %d", buffer_size);
+      return;
+      }
+    }
 
   /* align buffer */
   pb = (char *) ALIGN((int) buffer);
