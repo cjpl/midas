@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.23  1999/04/08 15:26:05  midas
+  Worked on rpc_execute_ascii
+
   Revision 1.22  1999/03/23 10:37:39  midas
   Fixed bug in cm_set_watchdog_params which causes mtape report ODB errors
 
@@ -2370,6 +2373,9 @@ INT    old_timeout;
 RUNINFO_STR(runinfo_str);
 
   cm_get_experiment_database(&hDB, &hKey);
+
+  if (perror != NULL)
+    strcpy(perror, "Success");
 
   /* create/correct /runinfo structure */
   db_create_record(hDB, 0, "/Runinfo", strcomb(runinfo_str));
@@ -6488,6 +6494,10 @@ void rpc_calc_convert_flags(INT hw_type, INT remote_hw_type,
   if ( (remote_hw_type & DRF_IEEE) &&
        (       hw_type & DRF_G_FLOAT) )
     *convert_flags |= CF_IEEE2VAX;
+
+  /* ASCII format */
+  if (remote_hw_type & DR_ASCII)
+    *convert_flags |= CF_ASCII;
 }
 
 /*------------------------------------------------------------------*/
@@ -9503,7 +9513,7 @@ INT          tid, flags;
 NET_COMMAND  *nc_in, *nc_out;
 INT          param_size, max_size;
 void         *prpc_param[20];
-char         str[256], debug_line[256];
+char         str[1024], debug_line[1024];
 
 /* return buffer must be auto for multi-thread servers */
 char         return_buffer[NET_BUFFER_SIZE];
@@ -9591,9 +9601,15 @@ char         return_buffer[NET_BUFFER_SIZE];
         db_sprintf(str, in_param_ptr, param_size, 0, rpc_list[index].param[i].tid);
         if (rpc_list[index].param[i].tid == TID_STRING)
           {
-          strcat(debug_line, "\"");
-          strcat(debug_line, str);
-          strcat(debug_line, "\"");
+          /* check for long strings (db_create_record...) */
+          if (strlen(debug_line)+strlen(str)+2 < sizeof(debug_line))
+            {
+            strcat(debug_line, "\"");
+            strcat(debug_line, str);
+            strcat(debug_line, "\"");
+            }
+          else
+            strcat(debug_line, "...");
           }
         else
           strcat(debug_line, str);
@@ -9819,15 +9835,15 @@ INT rpc_execute_ascii(INT sock, char *buffer)
 
 \********************************************************************/
 {
-#define ASCII_BUFFER_SIZE 10000
+#define ASCII_BUFFER_SIZE 11000
 
-INT          i, index, status, index_in;
+INT          i, j, index, status, index_in;
 char         *in_param_ptr, *out_param_ptr, *last_param_ptr;
-INT          routine_id, tid, flags;
-INT          param_size;
+INT          routine_id, tid, flags, array_tid, n_param;
+INT          param_size, item_size;
 void         *prpc_param[20];
-char         *arpc_param[20], *pc;
-char         str[256], debug_line[256];
+char         *arpc_param[1024], *pc;
+char         str[1024], debug_line[1024];
 char         buffer1[ASCII_BUFFER_SIZE];       /* binary in */
 char         buffer2[ASCII_BUFFER_SIZE];       /* binary out */
 char         return_buffer[ASCII_BUFFER_SIZE]; /* ASCII out */
@@ -9836,7 +9852,7 @@ char         return_buffer[ASCII_BUFFER_SIZE]; /* ASCII out */
   arpc_param[0] = buffer;
   for (i=1 ; i<20 ; i++)
     {
-    arpc_param[i] = strchr(arpc_param[i-1], '/');
+    arpc_param[i] = strchr(arpc_param[i-1], '&');
     if (arpc_param[i] == NULL)
       break;
     *arpc_param[i] = 0;
@@ -9890,40 +9906,56 @@ char         return_buffer[ASCII_BUFFER_SIZE]; /* ASCII out */
 
     if (flags & RPC_IN)
       {
-      db_sscanf(arpc_param[index_in++], in_param_ptr, &param_size, 0, tid);
-      param_size  = ALIGN(param_size);
-
-      if (tid == TID_STRING || tid == TID_LINK)
-        param_size = ALIGN(1+strlen((char *) (in_param_ptr)));
-
-/*
       if (flags & RPC_VARARRAY)
         {
-        param_size = *((INT *) in_param_ptr);
-        param_size = ALIGN(param_size);
+        sscanf(arpc_param[index_in++], "%d %d", &n_param, &array_tid);
 
-        in_param_ptr += ALIGN( sizeof(INT) );
-        }
-
-      if (tid == TID_STRUCT)
-        param_size = ALIGN( rpc_list[index].param[i].n );
-*/
-      prpc_param[i] = in_param_ptr;
-
-      if (_debug_print)
-        {
-        db_sprintf(str, in_param_ptr, param_size, 0, rpc_list[index].param[i].tid);
-        if (rpc_list[index].param[i].tid == TID_STRING)
+        prpc_param[i] = in_param_ptr;
+        for (j=0 ; j<n_param ; j++)
           {
-          strcat(debug_line, "\"");
-          strcat(debug_line, str);
-          strcat(debug_line, "\"");
+          db_sscanf(arpc_param[index_in++], in_param_ptr, &param_size, j, array_tid);
+          in_param_ptr += param_size;
           }
-        else
-          strcat(debug_line, str);
-        }
+        in_param_ptr = (char *) ALIGN(((PTYPE)in_param_ptr));
 
-      in_param_ptr += param_size;
+        if (_debug_print)
+          strcat(debug_line, "<array>");
+        }
+      else 
+        {
+        db_sscanf(arpc_param[index_in++], in_param_ptr, &param_size, 0, tid);
+        param_size  = ALIGN(param_size);
+
+        if (tid == TID_STRING || tid == TID_LINK)
+          param_size = ALIGN(1+strlen((char *) (in_param_ptr)));
+
+  /*
+        if (tid == TID_STRUCT)
+          param_size = ALIGN( rpc_list[index].param[i].n );
+  */
+        prpc_param[i] = in_param_ptr;
+
+        if (_debug_print)
+          {
+          db_sprintf(str, in_param_ptr, param_size, 0, rpc_list[index].param[i].tid);
+          if (rpc_list[index].param[i].tid == TID_STRING)
+            {
+            /* check for long strings (db_create_record...) */
+            if (strlen(debug_line)+strlen(str)+2 < sizeof(debug_line))
+              {
+              strcat(debug_line, "\"");
+              strcat(debug_line, str);
+              strcat(debug_line, "\"");
+              }
+            else
+              strcat(debug_line, "...");
+            }
+          else
+            strcat(debug_line, str);
+          }
+
+        in_param_ptr += param_size;
+        }
 
       if ((PTYPE) in_param_ptr - (PTYPE) buffer1 >
           ASCII_BUFFER_SIZE)
@@ -9939,22 +9971,14 @@ char         return_buffer[ASCII_BUFFER_SIZE]; /* ASCII out */
       {
       param_size  = ALIGN(tid_size[tid]);
 
-  /*
-  if (flags & RPC_VARARRAY || tid == TID_STRING)
+      if (flags & RPC_VARARRAY || tid == TID_STRING)
         {
-        // save maximum array length
-        max_size = *((INT *) in_param_ptr);
-        max_size = ALIGN(max_size);
-        
-        *((INT *) out_param_ptr) = max_size;
-
-        // save space for return array length
-        out_param_ptr += ALIGN( sizeof(INT) );
-
-        // use maximum array length from input
-        param_size += max_size;
+        // reserve maximum array length
+        param_size = atoi(arpc_param[index_in]);
+        param_size = ALIGN(param_size);
         }
 
+/*
       if (rpc_list[index].param[i].tid == TID_STRUCT)
         param_size = ALIGN( rpc_list[index].param[i].n );
 */
@@ -10019,7 +10043,7 @@ char         return_buffer[ASCII_BUFFER_SIZE]; /* ASCII out */
   for (i=0 ; rpc_list[index].param[i].tid != 0; i++)
     if (rpc_list[index].param[i].flags & RPC_OUT)
       {
-      *out_param_ptr++ = '/';
+      *out_param_ptr++ = '&';
       
       tid   = rpc_list[index].param[i].tid;
       flags = rpc_list[index].param[i].flags;
@@ -10030,24 +10054,35 @@ char         return_buffer[ASCII_BUFFER_SIZE]; /* ASCII out */
         strcpy(out_param_ptr, prpc_param[i]);
         param_size = strlen(prpc_param[i]);
         }
-/*
+
       else if (flags & RPC_VARARRAY)
         {
-        max_size = *((INT *) out_param_ptr);
         param_size = *((INT *) prpc_param[i+1]);
-        *((INT *) out_param_ptr) = param_size;
+        array_tid  = *((INT *) prpc_param[i+2]);
 
-        out_param_ptr += ALIGN( sizeof(INT) );
+        /* assume fixed length for strings */
+        if (array_tid == TID_STRING)
+          item_size = NAME_LENGTH;
+        else
+          item_size = tid_size[array_tid];
+        
+        if (item_size > 0)
+          param_size /= item_size;
 
-        param_size = ALIGN(param_size);
+        /* write number of elements to output */
+        sprintf(out_param_ptr, "%d", param_size);
+        out_param_ptr += strlen(out_param_ptr);
 
-        // move remaining parameters to end of array 
-        memcpy(out_param_ptr + param_size,
-               out_param_ptr + max_size + ALIGN(sizeof(INT)),
-               (PTYPE) last_param_ptr -
-                 ((PTYPE) out_param_ptr + max_size + ALIGN(sizeof(INT))));
+        /* write array of values to output */
+        for (j=0 ; j<param_size ; j++)
+          {
+          *out_param_ptr++ = '&';
+          db_sprintf(out_param_ptr, prpc_param[i], item_size, j, array_tid);
+          out_param_ptr += strlen(out_param_ptr);
+          }
         }
 
+/*
       else if (tid == TID_STRUCT)
         param_size = ALIGN( rpc_list[index].param[i].n );
 */
