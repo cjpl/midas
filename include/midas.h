@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.140  2004/09/29 16:45:06  midas
+  Added get_frontend_index()
+
   Revision 1.139  2004/09/29 00:58:35  midas
   Increased various constants
 
@@ -1893,7 +1896,7 @@ extern "C" {
 #define EXPRT
 #endif
 
-/*---- common routines ----*/
+   /*---- common routines ----*/
    INT EXPRT cm_get_error(INT code, char *string);
    char EXPRT *cm_get_version(void);
    INT EXPRT cm_get_environment(char *host_name, int host_name_size,
@@ -1958,7 +1961,7 @@ extern "C" {
    INT EXPRT strlcat(char *dst, const char *src, INT size);
 #endif
 
-/*---- buffer manager ----*/
+   /*---- buffer manager ----*/
    INT EXPRT bm_open_buffer(char *buffer_name, INT buffer_size, INT * buffer_handle);
    INT EXPRT bm_close_buffer(INT buffer_handle);
    INT EXPRT bm_close_all_buffers(void);
@@ -1990,7 +1993,7 @@ extern "C" {
    INT EXPRT bm_poll_event(INT flag);
    INT EXPRT bm_empty_buffers(void);
 
-/*---- online database functions -----*/
+   /*---- online database functions -----*/
    INT EXPRT db_open_database(char *database_name, INT database_size,
                               HNDLE * hdb, char *client_name);
    INT EXPRT db_close_database(HNDLE database_handle);
@@ -2073,7 +2076,7 @@ extern "C" {
    INT EXPRT db_sscanf(char *string, void *data, INT * data_size, INT index, DWORD type);
    char EXPRT *strcomb(char **list);
 
-/*---- Bank routines ----*/
+   /*---- Bank routines ----*/
    void EXPRT bk_init(void *pbh);
    void EXPRT bk_init32(void *event);
    BOOL EXPRT bk_is32(void *event);
@@ -2089,7 +2092,7 @@ extern "C" {
    INT EXPRT bk_find(BANK_HEADER * pbkh, const char *name, DWORD * bklen,
                      DWORD * bktype, void **pdata);
 
-/*---- RPC routines ----*/
+   /*---- RPC routines ----*/
    INT EXPRT rpc_register_functions(RPC_LIST * new_list, INT(*func) (INT, void **));
    INT EXPRT rpc_register_function(INT id, INT(*func) (INT, void **));
    INT EXPRT rpc_get_option(HNDLE hConn, INT item);
@@ -2123,7 +2126,7 @@ extern "C" {
    void EXPRT rpc_convert_data(void *data, INT tid, INT flags, INT size,
                                INT convert_flags);
 
-/*---- system services ----*/
+   /*---- system services ----*/
    DWORD EXPRT ss_millitime(void);
    DWORD EXPRT ss_time(void);
    DWORD EXPRT ss_settime(DWORD seconds);
@@ -2142,11 +2145,11 @@ extern "C" {
 
    void EXPRT *ss_ctrlc_handler(void (*func) (int));
 
-/*---- direct io routines ----*/
+   /*---- direct io routines ----*/
    INT EXPRT ss_directio_give_port(INT start, INT end);
    INT EXPRT ss_directio_lock_port(INT start, INT end);
 
-/*---- tape routines ----*/
+   /*---- tape routines ----*/
    INT EXPRT ss_tape_open(char *path, INT oflag, INT * channel);
    INT EXPRT ss_tape_close(INT channel);
    INT EXPRT ss_tape_status(char *path);
@@ -2161,15 +2164,14 @@ extern "C" {
    INT EXPRT ss_tape_unmount(INT channel);
    INT EXPRT ss_tape_get_blockn(INT channel);
 
-/*---- disk routines ----*/
+   /*---- disk routines ----*/
    double EXPRT ss_disk_free(char *path);
-/*-PAA-*/
    double EXPRT ss_file_size(char *path);
    INT EXPRT ss_file_remove(char *path);
    INT EXPRT ss_file_find(char *path, char *pattern, char **plist);
    double EXPRT ss_disk_size(char *path);
 
-/*---- history routines ----*/
+   /*---- history routines ----*/
    INT EXPRT hs_set_path(char *path);
    INT EXPRT hs_define_event(DWORD event_id, char *name, TAG * tag, DWORD size);
    INT EXPRT hs_write_event(DWORD event_id, void *data, DWORD size);
@@ -2190,7 +2192,7 @@ extern "C" {
                      DWORD interval, BOOL binary_time);
    INT EXPRT hs_fdump(char *file_name, DWORD id, BOOL binary_time);
 
-/*---- ELog functions ----*/
+   /*---- ELog functions ----*/
    INT EXPRT el_retrieve(char *tag, char *date, int *run, char *author,
                          char *type, char *system, char *subject,
                          char *text, int *textsize, char *orig_tag,
@@ -2206,7 +2208,7 @@ extern "C" {
    INT EXPRT el_search_run(int run, char *return_tag);
    INT EXPRT el_delete_message(char *tag);
 
-/*---- Alarm functions ----*/
+   /*---- alarm functions ----*/
    INT EXPRT al_check();
    INT EXPRT al_trigger_alarm(char *alarm_name, char *alarm_message,
                               char *default_class, char *cond_str, INT type);
@@ -2214,7 +2216,10 @@ extern "C" {
    INT EXPRT al_reset_alarm(char *alarm_name);
    BOOL EXPRT al_evaluate_condition(char *condition, char *value);
 
-/*---- analyzer functions ----*/
+   /*---- frontend functions ----*/
+   INT get_frontend_index();
+
+   /*---- analyzer functions ----*/
    void EXPRT test_register(ANA_TEST * t);
    void EXPRT add_data_dir(char *result, char *file);
    void EXPRT lock_histo(INT id);
