@@ -6,6 +6,9 @@
 #  Contents:     Makefile for MIDAS example frontend and analyzer
 #
 #  $Log$
+#  Revision 1.19  2003/05/09 22:52:15  pierre
+#  Add ROOTSYS condition on ROOT build
+#
 #  Revision 1.18  2003/04/28 10:22:47  midas
 #  Makefile only compiles ROOT analyzer
 #
@@ -74,11 +77,12 @@ LIBS = -lm -lz -lutil -lnsl
 #-----------------------------------------
 # ROOT flags and libs
 #
-ROOTCFLAGS := $(shell root-config --cflags)
+ifdef ROOTSYS
+ROOTCFLAGS := $(shell  $(ROOTSYS)/bin/root-config --cflags)
 ROOTCFLAGS += -DHAVE_ROOT
-ROOTLIBS   := $(shell root-config --libs)
+ROOTLIBS   := $(shell  $(ROOTSYS)/bin/root-config --libs)
 ROOTLIBS   += -lThread
-
+endif
 #-------------------------------------------------------------------
 # The following lines define direcories. Adjust if necessary
 #                 
