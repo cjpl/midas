@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.103  2003/11/01 23:21:30  olchansk
+  per Stephan Ritt's request, remove #error Please defeine either -DHAVE_HBOOK or -DHAVE_ROOT
+
   Revision 1.102  2003/11/01 01:25:11  olchansk
   abort if cannto read /runinfo/run number
   abort on invalid run numbers
@@ -1943,12 +1946,6 @@ double     dummy;
   db_find_key(hDB, 0, str, &hkey);
   if (hkey)
     db_delete_key(hDB, hkey, FALSE);
-
-#ifndef HAVE_HBOOK
-#ifndef HAVE_ROOT
-#error Please defeine either -DHAVE_HBOOK or -DHAVE_ROOT
-#endif
-#endif
 
 #ifdef HAVE_HBOOK
   /* create global memory */
