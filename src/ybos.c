@@ -6,6 +6,9 @@
  *         amaudruz@triumf.ca                            Local:           6234
  * -----------------------------------------------------------------------------
    $Log$
+   Revision 1.14  1999/06/23 09:43:02  midas
+   Added ftp functionality (for lazylogger)
+
    Revision 1.13  1999/02/11 13:18:58  midas
    Fixed bug in opening disk file under NT
 
@@ -87,6 +90,8 @@
  *                
 /*---------------------------------------------------------------------------*/
 /* include files */
+#define INCLUDE_FTPLIB
+
 #include "midas.h"
 #include "msystem.h"
 
@@ -148,7 +153,7 @@ void ybos_log_dump(LOG_CHN *log_chn, short int event_id, INT run_number);
    */
 
 #ifdef INCLUDE_FTPLIB
-FTP_CON ftp_con;
+FTP_CON *ftp_con;
 #endif
 
 /* magta stuff */
@@ -1635,6 +1640,7 @@ INT   yb_any_file_rclose (INT data_fmt)
 }
 
 #ifdef INCLUDE_FTPLIB
+
 /* @ NOT TESTED @ */
 INT yb_ftp_open(char *destination, FTP_CON **con)
 {
@@ -1781,8 +1787,8 @@ INT   yb_any_file_wclose (INT handle, INT type, INT data_fmt)
       break;
     case LOG_TYPE_FTP:
 #ifdef INCLUDE_FTPLIB
-      ftp_close(&ftp_con);
-      ftp_bye(&ftp_con);
+      ftp_close(ftp_con);
+      ftp_bye(ftp_con);
 #endif
       break;
     }
@@ -1912,7 +1918,7 @@ INT  yb_any_dev_os_write(INT handle, INT type, void * prec, DWORD nbytes, DWORD 
   else if (type == LOG_TYPE_FTP)
 #ifdef INCLUDE_FTPLIB
     {
-      (int)written = (int)status = ftp_send(ftp_con.sock, (char *)prec, (int)nbytes) == (int)nbytes ?
+      (int)written = (int)status = ftp_send(ftp_con->data, (char *)prec, (int)nbytes) == (int)nbytes ?
                         SS_SUCCESS : SS_FILE_ERROR;
       return status;
     }
