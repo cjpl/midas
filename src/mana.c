@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.136  2005/03/24 22:29:27  ritt
+  Get ODB from .mid file also for XML format
+
   Revision 1.135  2005/03/15 23:49:40  amaudruz
   add Reset cmd in root server
 
@@ -4340,7 +4343,10 @@ void odb_load(EVENT_HEADER * pevent)
       /* close open records to parameters */
       init_module_parameters(TRUE);
 
-      db_paste(hDB, 0, (char *) (pevent + 1));
+      if (strncmp((char *) (pevent + 1), "<?xml version=\"1.0\"", 19) == 0)
+         db_paste_xml(hDB, 0, (char *) (pevent + 1));
+      else
+         db_paste(hDB, 0, (char *) (pevent + 1));
 
       if (flag == 1)
          db_set_mode(hDB, 0, MODE_READ | MODE_WRITE | MODE_DELETE, TRUE);
