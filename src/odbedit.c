@@ -6,6 +6,9 @@
   Contents:     Command-line interface to the MIDAS online data base.
 
   $Log$
+  Revision 1.47  2001/06/27 14:40:53  midas
+  Added message type in "msg" command, don't query name if in command line mode
+
   Revision 1.46  2001/06/27 11:56:54  midas
   Fixed missing argument in printf
 
@@ -212,7 +215,7 @@ void print_help(char *command)
     printf("mem                     - show memeory usage\n");
     printf("mkdir <subdir>          - make new <subdir>\n");
     printf("move <key> [top/bottom/[n]] - move key to position in keylist\n");
-    printf("msg [user] <msg>        - compose user message\n");
+    printf("msg [type] [user] <msg> - compose user message\n");
     printf("old [n]                 - display old n messages\n");
     printf("passwd                  - change MIDAS password\n");
     printf("pause                   - pause current run\n");
@@ -1401,7 +1404,7 @@ char            user_name[80] = "";
 FILE            *cmd_file = NULL;
 DWORD           last_msg_time=0;
 char            message[256], client_name[256], *p;
-INT             n1, n2;
+INT             n1, n2, msg_type;
 PRINT_INFO      print_info;
 
   cm_get_experiment_database(&hDB, &hKeyClient);
@@ -2547,11 +2550,25 @@ PRINT_INFO      print_info;
     /* msg */
     else if (param[0][0] == 'm' && param[0][1] == 's')
       {
+      /*
       if (cm_exist("Speaker", FALSE) != CM_SUCCESS)
-        printf("Warning: No speaker application present.\n");
+        printf("Note: No speaker application present.\n");
+      */
 
+      /* user message type by default */
+      msg_type = MT_USER;
       message[0] = 0;
-      if (param[2][0])
+      if (cmd_mode)
+        strcpy(user_name, "script");
+
+      if (param[3][0])
+        {
+        msg_type = atoi(param[1]);
+        last_msg_time = ss_time();
+        strcpy(user_name, param[2]);
+        strcpy(message, param[3]);
+        }
+      else if (param[2][0])
         {
         last_msg_time = ss_time();
         strcpy(user_name, param[1]);
@@ -2560,20 +2577,23 @@ PRINT_INFO      print_info;
       else if (param[1][0])
         strcpy(message, param[1]);
 
-      if (ss_time() - last_msg_time > 300 )
+      if (!cmd_mode)
         {
-        printf("Your name> ");
-        ss_gets(user_name, 80);
-        }
+        if (ss_time() - last_msg_time > 300 )
+          {
+          printf("Your name> ");
+          ss_gets(user_name, 80);
+          }
 
-      if (param[1][0] == 0)
-        {
-        printf("Msg> ");
-        ss_gets(message, 256);
+        if (param[1][0] == 0)
+          {
+          printf("Msg> ");
+          ss_gets(message, 256);
+          }
         }
 
       if (message[0])
-        cm_msg(MUSER, user_name, message);
+        cm_msg(msg_type, __FILE__, __LINE__, user_name, message);
 
       last_msg_time = ss_time();
       }
