@@ -627,7 +627,7 @@ int mxml_add_resultnode(PMXML_NODE node, char *xml_path, PMXML_NODE **nodelist, 
       (*found)++;
    } else {
       /* if not at end of path, branch into subtree */
-      return mxml_find_nodes1(node, xml_path, nodelist, found);
+      return mxml_find_nodes1(node, xml_path+1, nodelist, found);
    }
 
    return 1;
@@ -655,9 +655,28 @@ int mxml_find_nodes1(PMXML_NODE tree, char *xml_path, PMXML_NODE **nodelist, int
    p1 = xml_path;
    pnode = tree;
 
-   /* skip leading '/' */
-   if (*p1 && *p1 == '/')
+   if (*p1 && *p1 == '/') {
+
+      /* if path starts with '/', compare root node */
       p1++;
+
+      p2 = p1;
+      while (*p2 && *p2 != '/')
+         p2++;
+      len = (size_t)p2 - (size_t)p1;
+      if (len >= sizeof(node_name))
+         return 0;
+
+      memcpy(node_name, p1, len);
+      node_name[len] = 0;
+
+      if (strcmp(pnode->name, node_name) != 0)
+         return 0;
+
+      p1 = p2;
+      if (*p1 == '/')
+         p1++;
+   }
 
    do {
       p2 = p1;
