@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.131  2005/01/10 10:14:49  midas
+  root server accepts TCutG's from ROODY, patch from John O'Donnell
+
   Revision 1.130  2004/10/07 00:53:48  midas
   Implemented templates for histo booking from John O'Donnell
 
@@ -5701,6 +5704,34 @@ THREADTYPE root_server_thread(void *arg)
                if (strcmp(type, "TH2F*") == 0 && strcmp(method, "Reset") == 0)
                   ((TH2F *)obj)->Reset();
             }
+
+	 } else if (strncmp(request, "SetCut", 6) == 0) {
+
+            //read new settings for a cut
+            char name[256];
+            sock->Recv(name, sizeof(name));
+            TCutG *cut = (TCutG*)gROOT->FindObject(name);
+
+            message->Reset(kMESS_OBJECT);
+            sock->Recv(message);
+            TCutG *newc = ((TCutG*) message->ReadObject(message->GetClass()));
+
+            if (cut) {
+              cm_msg(MINFO, "root server thread",
+                     "changing cut %s", newc->GetName());
+              newc->TAttMarker::Copy( *cut);
+              newc->TAttFill::Copy( *cut);
+              newc->TAttLine::Copy( *cut);
+              newc->TNamed::Copy( *cut);
+              cut->Set( newc->GetN());
+              for (int i=0; i<cut->GetN(); ++i) {
+                newc->GetPoint(i, cut->GetX()[i], cut->GetY()[i]);
+              }
+            } else {
+              cm_msg(MERROR, "root server thread",
+                     "ignoring receipt of unknown cut %s", newc->GetName());
+            } 
+            delete newc;
 
          } else
             printf("SocketServer: Received unknown command \"%s\"\n", request);
