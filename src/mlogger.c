@@ -6,6 +6,9 @@
   Contents:     MIDAS logger program
 
   $Log$
+  Revision 1.80  2004/09/21 21:50:12  midas
+  Added optional mySQL linking for mlogger
+
   Revision 1.79  2004/09/21 21:12:25  midas
   Added ODB -> mySQL runlog code
 
@@ -264,9 +267,13 @@
 #endif
 
 #ifdef HAVE_MYSQL
+#ifdef OS_UNIX
+#include <mysql/mysql.h>
+#include <mysql/mysqld_error.h>
+#endif
+#ifdef OS_WINNT
 #include <mysql.h>
 #include <mysqld_error.h>
-#ifdef OS_WINNT
 int errno; // under NT, "ignore libcd" is required, so errno has to be defined here
 #endif
 #endif
