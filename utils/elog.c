@@ -6,6 +6,9 @@
   Contents:     Electronic logbook utility   
 
   $Log$
+  Revision 1.23  2001/12/21 12:33:04  midas
+  Fixed bug with single logbook and user authentication, thanks to Glenn Horton-Smith
+
   Revision 1.22  2001/12/05 10:02:50  midas
   Fixed -Wall compiler warning
 
@@ -278,7 +281,7 @@ char                 host_name[256], boundary[80], str[80], *p;
       }
   
   /* compose request */
-  sprintf(request, "POST / HTTP/1.0\r\n");
+  sprintf(request, "POST /%s/ HTTP/1.0\r\n", experiment);
   sprintf(request+strlen(request), "Content-Type: multipart/form-data; boundary=%s\r\n", boundary);
   sprintf(request+strlen(request), "Host: %s\r\n", host_name);
   sprintf(request+strlen(request), "User-Agent: ELOG\r\n");
