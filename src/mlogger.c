@@ -6,6 +6,9 @@
   Contents:     MIDAS logger program
 
   $Log$
+  Revision 1.32  1999/11/15 11:24:37  midas
+  Added run state check in auto restart
+
   Revision 1.31  1999/11/10 10:38:36  midas
   Lock database for db_notify_clients
 
@@ -2382,7 +2385,7 @@ INT i;
 
 main(int argc, char *argv[])
 {
-INT    status, msg, i, size, run_number, ch;
+INT    status, msg, i, size, run_number, ch, state;
 char   host_name[100], exp_name[NAME_LENGTH], dir[256];
 BOOL   debug, daemon, save_mode;
 DWORD  last_time_kb = 0;
@@ -2499,14 +2502,23 @@ usage:
       /* wait until analyzer EOR finished */
       ss_sleep(10000);
 
-      auto_restart = FALSE;
-      size = sizeof(run_number);
-      db_get_value(hDB, 0, "/Runinfo/Run number", &run_number, &size, TID_INT);
+      /* check if really stopped */
+      size = sizeof(state);
+      status = db_get_value(hDB, 0, "Runinfo/State", &state, &size, TID_INT);
+      if (status != DB_SUCCESS)
+        cm_msg(MERROR, "cm_transition", "cannot get Runinfo/State in database");
 
-      cm_msg(MTALK, "main", "starting new run");
-      status = cm_transition(TR_START, run_number+1, NULL, 0, ASYNC);
-      if (status != CM_SUCCESS)
-        cm_msg(MERROR, "main", "cannot restart run");
+      if (state == STATE_STOPPED)
+        {
+        auto_restart = FALSE;
+        size = sizeof(run_number);
+        db_get_value(hDB, 0, "/Runinfo/Run number", &run_number, &size, TID_INT);
+
+        cm_msg(MTALK, "main", "starting new run");
+        status = cm_transition(TR_START, run_number+1, NULL, 0, ASYNC);
+        if (status != CM_SUCCESS)
+          cm_msg(MERROR, "main", "cannot restart run");
+        }
       }
 
     /* check keyboard once every second */
