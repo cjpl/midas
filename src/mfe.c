@@ -7,6 +7,9 @@
                 linked with user code to form a complete frontend
 
   $Log$
+  Revision 1.43  2002/10/15 18:13:59  olchansk
+  always recreate the statistics record.
+
   Revision 1.42  2002/10/15 18:09:59  olchansk
   catch bm_xxx() errors and bail out from schedule(). This fixes infinite looping after rpc timeouts.
 
@@ -494,14 +497,31 @@ BOOL   manual_trig_flag = FALSE;
     
     /*-PAA- Needed in case Statistics exists but size = 0 */
     /*-SR- Not needed since db_create_record does a delete already */
-    /*
+
     status = db_find_key(hDB, 0, str, &hKey);
     if (status == DB_SUCCESS)
-      db_delete_key(hDB, hKey, FALSE);
-    */
+      {
+	status = db_delete_key(hDB, hKey, FALSE);
+	if (status != DB_SUCCESS)
+	  {
+	    printf("Cannot delete statistics record, error %d\n",status);
+	    ss_sleep(3000);
+	  }
+      }
 
-    db_create_record(hDB, 0, str, EQUIPMENT_STATISTICS_STR);
-    db_find_key(hDB, 0, str, &hKey);
+    status = db_create_record(hDB, 0, str, EQUIPMENT_STATISTICS_STR);
+    if (status != DB_SUCCESS)
+      {
+      printf("Cannot create statistics record, error %d\n",status);
+      ss_sleep(3000);
+      }
+
+    status = db_find_key(hDB, 0, str, &hKey);
+    if (status != DB_SUCCESS)
+      {
+      printf("Cannot find statistics record, error %d\n",status);
+      ss_sleep(3000);
+      }
 
     eq_stats->events_sent = 0;
     eq_stats->events_per_sec = 0;
