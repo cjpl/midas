@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol commands
 
   $Log$
+  Revision 1.12  2002/11/06 16:45:42  midas
+  Revised LED blinking scheme
+
   Revision 1.11  2002/10/22 15:05:13  midas
   Added UNIT_FACTOR
 
@@ -72,6 +75,7 @@ sbit RS485_ENABLE =      P3^5;
 #define CPU_CYGNAL
 
 sbit LED =               P3^4;
+sbit LED_SEC =           P3^4;
 sbit RS485_ENABLE =      P3^5;
 #define LED_ON 1
 
@@ -259,8 +263,8 @@ unsigned int  wd_counter;
 
 /*---- function declarations ---------------------------------------*/
 
-void watchdog_refresh(void);
-void blink_led(void);
+void yield(void);
+void led_blink(int led, int n, int interval) reentrant;
 void delay_us(unsigned int us);
 void delay_ms(unsigned int ms);
 
