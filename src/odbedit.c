@@ -6,6 +6,9 @@
   Contents:     Command-line interface to the MIDAS online data base.
 
   $Log$
+  Revision 1.72  2004/07/09 08:44:40  midas
+  Added warning about missing MIDASSYS
+
   Revision 1.71  2004/01/17 05:35:53  olchansk
   replace #define ALIGN() with ALIGN8() to dodge namespace pollution under macosx
   hide strlcpy() & co #ifdef HAVE_STRLCPY (macosx already has strlcpy())
@@ -2835,6 +2838,12 @@ int main(int argc, char *argv[])
 
    /* get default from environment */
    cm_get_environment(host_name, sizeof(host_name), exp_name, sizeof(exp_name));
+
+   /* check for MIDASSYS */
+   if (!getenv("MIDASSYS")) {
+      puts("Please define environment variable 'MIDASSYS'");
+      puts("pointing to the midas installation directory.");
+   }
 
    /* parse command line parameters */
    for (i = 1; i < argc; i++) {
