@@ -8,6 +8,9 @@
                 CAMAC frontend (mfe.c)
 
   $Log$
+  Revision 1.3  2001/08/28 08:43:46  midas
+  Changed dummy interrupt function parameters
+
   Revision 1.2  2000/08/10 07:48:29  midas
   Added client name together with frontend name in cam_init_rpc
 
@@ -600,8 +603,8 @@ void cam_lam_clear(const int c, const int n)
 }
 
 /*------------------------------------------------------------------*/
-void cam_interrupt_enable(void){}
-void cam_interrupt_disable(void){}
-void cam_interrupt_attach(void (*isr)(void)){}
-void cam_interrupt_detach(void){}
+void cam_interrupt_enable(int c){}
+void cam_interrupt_disable(int c){}
+void cam_interrupt_attach(int c, int n, void (*isr)(void)){}
+void cam_interrupt_detach(int c, int n){}
 /*------------------------------------------------------------------*/
