@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.220  2004/10/04 15:35:25  midas
+  Removed error triggered by bm_close_all_buffers()
+
   Revision 1.219  2004/10/01 23:35:53  midas
   Removed PRE/POST transitions and implemented sequence order of transitions
 
@@ -4658,8 +4661,9 @@ INT bm_close_buffer(INT buffer_handle)
          return BM_INVALID_HANDLE;
 
       if (!_buffer[buffer_handle - 1].attached) {
-         cm_msg(MERROR, "bm_close_buffer", "invalid buffer handle %d", buffer_handle);
-         return BM_INVALID_HANDLE;
+         /* don't produce error, since bm_close_all_buffers() might want to close an
+            already closed buffer */
+         return BM_SUCCESS;
       }
 
       /* delete all requests for this buffer */
