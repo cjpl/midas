@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.184  2003/04/15 08:37:04  midas
+  Removed error message in rpc_client_connect on broken connection, since this is normal if the frontend for example is restarted
+
   Revision 1.183  2003/04/14 11:01:04  midas
   Added bk_find(), added htonl(INADDR_ANY) for bind()
 
@@ -9045,11 +9048,8 @@ struct hostent       *phe;
       if (FD_ISSET(sock, &readfds))
         {
         status = recv(sock, (char *) buffer, sizeof(buffer), 0);
-        if (status<=0)
+        if (status <= 0)
           {
-          cm_msg(MERROR, "rpc_client_connect", "recv(%d) returned %d, errno: %d (%s)", 
-            sizeof(buffer), status, errno, strerror(errno));
-         
           /* connection broken -> reset */
           closesocket(sock);
           memset(&_client_connection[i], 0, sizeof(RPC_CLIENT_CONNECTION));
