@@ -6,6 +6,9 @@
   Contents:     System part of Analyzer code for sample experiment
 
   $Log$
+  Revision 1.13  2003/04/21 04:00:15  olchansk
+  replace MANA_LITE with HAVE_HBOOK
+
   Revision 1.12  2003/04/14 13:30:52  midas
   Changed bank descriptions because of conflict in fal.c
 
@@ -59,12 +62,13 @@
 #ifdef __linux__
 #define f2cFortran
 #endif
-#ifndef MANA_LITE
+
+#ifdef HAVE_HBOOK
 #include <cfortran.h>
 #include <hbook.h>
 
 PAWC_DEFINE(1000000);
-#endif
+#endif /* HAVE_HBOOK */
 
 /*-- Globals -------------------------------------------------------*/
 
