@@ -6,6 +6,9 @@
  *         amaudruz@triumf.ca                            Local:           6234
  * -----------------------------------------------------------------------------
    $Log$
+   Revision 1.17  1999/07/24 00:41:54  pierre
+   - Fix midas_physrec_get(void **prec, ...) for lazylogger
+
    Revision 1.16  1999/07/23 07:04:54  midas
    Fixed compiler warnings
 
@@ -126,7 +129,7 @@ INT  midas_event_skip (INT evtn);
 INT  ybos_physrec_skip (INT bl);
 
 INT  ybos_physrec_get (DWORD ** prec, DWORD * readn);
-INT  midas_physrec_get (void * prec, DWORD * readn);
+INT  midas_physrec_get (void ** prec, DWORD * readn);
 
 void yb_any_bank_event_display(void * pevent, INT data_fmt, INT dsp_fmt);
 void yb_any_raw_event_display(void * pevent, INT data_fmt, INT dsp_fmt);
@@ -1644,12 +1647,12 @@ INT   yb_any_file_rclose (INT data_fmt)
 				free (my.pyh);
 		if (my.pylrl != NULL)
 				free (my.pylrl);
-		if (my.pmh != NULL)
+		if (my.pmrd != NULL)
 				free (my.pmh);
 		if (my.pmp != NULL)
 				free (my.pmp);
   (void *)my.pyh = (void *)my.pmagta = (void *)my.pylrl = NULL;
-		(void *)my.pmp = (void *)my.pmh = NULL;
+	(void *)my.pmp = (void *)my.pmrd =(void *)my.pmh = NULL;
   return(YB_SUCCESS);
 }
 
@@ -1959,7 +1962,6 @@ INT  yb_any_physrec_get (INT data_fmt, void ** precord, DWORD * readn)
     status : from lower function
 \********************************************************************/
 {
-  *precord = NULL;
   if (data_fmt == FORMAT_MIDAS)
     return midas_physrec_get(precord, readn);
   else if (data_fmt == FORMAT_YBOS)
@@ -2082,7 +2084,7 @@ INT   ybos_physrec_get (DWORD ** precord, DWORD * readn)
 }
 
 /*------------------------------------------------------------------*/
-INT   midas_physrec_get (void * prec, DWORD *readn)
+INT   midas_physrec_get (void ** prec, DWORD *readn)
 /********************************************************************\
   Routine: midas_physrec_get
   Purpose: read one physical record.from a MIDAS run
@@ -2106,25 +2108,26 @@ INT   midas_physrec_get (void * prec, DWORD *readn)
   /* read one block of data */
   if (!my.zipfile)
   {
-    status = yb_any_dev_os_read(my.handle, my.type, prec, my.size, readn);
+    status = yb_any_dev_os_read(my.handle, my.type, my.pmp, my.size, readn);
   }
   else
   {
 #ifdef INCLUDE_ZLIB
-    *readn = gzread(filegz, (char *)prec, my.size);
+    *readn = gzread(filegz, (char *)my.pmp, my.size);
 #endif
   }
 
+  *prec = my.pmp;
   if (status != SS_SUCCESS)
-    {
-      return(YB_DONE);
-    }
+  {
+    return(YB_DONE);
+  }
   else
-    {  
-      /* count blocks */
-      my.recn++;
-      return(YB_SUCCESS);
-    }
+  {  
+    /* count blocks */
+    my.recn++;
+    return(YB_SUCCESS);
+  }
 }
 
 /*------------------------------------------------------------------*/
@@ -2651,7 +2654,7 @@ INT   midas_event_get (void ** pevent, DWORD * readn)
   /* first time in get physrec once */
   if (my.recn == -1)
   {
-    status = midas_physrec_get((void *)my.pmp, &size);
+    status = midas_physrec_get((void **)my.pmp, &size);
     if (status != YB_SUCCESS)
       return (YB_DONE);
   }
@@ -2663,7 +2666,7 @@ INT   midas_event_get (void ** pevent, DWORD * readn)
     memcpy(my.pmh, my.pme, fpart);
     (char *)my.pmh += fpart;
     leftover = sizeof(EVENT_HEADER) - fpart; 
-    status = midas_physrec_get((void *)my.pmp, &size);
+    status = midas_physrec_get((void **)my.pmp, &size);
     if (status != YB_SUCCESS)
       return (YB_DONE);
     my.pme = (EVENT_HEADER *) my.pmp;
@@ -2696,7 +2699,7 @@ INT   midas_event_get (void ** pevent, DWORD * readn)
     memcpy(my.pmrd, my.pme, fpart);
     my.pmrd += fpart;
     leftover -= fpart; 
-    status = midas_physrec_get((void *)my.pmp, &size);
+    status = midas_physrec_get((void **)my.pmp, &size);
     if (status != YB_SUCCESS)
       return (YB_DONE);
     memset (my.pmp+size, -1, my.size - size); 
