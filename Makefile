@@ -6,6 +6,9 @@
 #  Contents:     Makefile for MIDAS binaries and examples under unix
 #
 #  $Log$
+#  Revision 1.3  1999/01/19 09:11:24  midas
+#  Added -DNO_PTY for Ultrix
+#
 #  Revision 1.2  1998/11/22 20:13:26  midas
 #  Added fal.o to standard installation
 #
@@ -96,7 +99,7 @@ endif
 
 ifeq ($(OSTYPE),ultrix)
 OS_DIR = ultrix
-OSFLAGS = -DOS_ULTRIX -DOS_UNIX
+OSFLAGS = -DOS_ULTRIX -DOS_UNIX -DNO_PTY
 LIBS =
 endif
 
