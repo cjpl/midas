@@ -7,6 +7,9 @@
                 ting to a SYSTEM buffer and receiving some data.
 
   $Log$
+  Revision 1.4  2000/03/03 20:55:56  midas
+  Added serial number check for multiple events (id<10)
+
   Revision 1.3  1999/04/30 13:19:53  midas
   Changed inter-process communication (ss_resume, bm_notify_clients, etc)
   to strings so that server process can receive it's own watchdog produced
@@ -38,15 +41,18 @@ void process_message(HNDLE hBuf, HNDLE id, EVENT_HEADER *pheader, void *message)
 
 void process_event(HNDLE hBuf, HNDLE request_id, EVENT_HEADER *pheader, void *pevent)
 {
-static INT    ser, count, start_time, jam=0;
+static INT    ser[10], count, start_time, jam=0;
 
 INT           stop_time;
-INT           size, *pdata;
+INT           size, *pdata, id;
 BUFFER_HEADER buffer_header;
 double        rate;
 
   /* accumulate received event size */
   size = pheader->data_size;
+  id = pheader->event_id;
+  if (id > 9)
+    id = 9;
   count += size;
 
   /* check if first and last word inside event is equal
@@ -68,11 +74,12 @@ double        rate;
 
   /* if all events are requested, now check the serial number
      if no events are missing */
-  if (all_flag && (INT) pheader->serial_number != ser + 1)
-    cm_msg(MDEBUG, "process_event", "Serial number mismatch: Ser: %ld, OldSer: %ld, ID: %d, size: %ld\n",
-      pheader->serial_number, ser, pheader->event_id, pheader->data_size);
+  if (all_flag && (INT) pheader->serial_number != ser[id] + 1)
+    cm_msg(MDEBUG, "process_event", 
+      "Serial number mismatch: Ser: %ld, OldSer: %ld, ID: %d, size: %ld\n",
+       pheader->serial_number, ser[id], pheader->event_id, pheader->data_size);
 
-  ser = pheader->serial_number;
+  ser[id] = pheader->serial_number;
 
   /* calculate rates each second */
   if (ss_millitime() - start_time > 1000)
