@@ -7,6 +7,9 @@
                 ting to a SYSTEM buffer and receiving some data.
 
   $Log$
+  Revision 1.5  2000/03/03 22:48:31  midas
+  Changed MDEBUG to MERROR (to see it in the log file)
+
   Revision 1.4  2000/03/03 20:55:56  midas
   Added serial number check for multiple events (id<10)
 
@@ -75,7 +78,7 @@ double        rate;
   /* if all events are requested, now check the serial number
      if no events are missing */
   if (all_flag && (INT) pheader->serial_number != ser[id] + 1)
-    cm_msg(MDEBUG, "process_event", 
+    cm_msg(MERROR, "process_event", 
       "Serial number mismatch: Ser: %ld, OldSer: %ld, ID: %d, size: %ld\n",
        pheader->serial_number, ser[id], pheader->event_id, pheader->data_size);
 
