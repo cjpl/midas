@@ -6,6 +6,9 @@
   Contents:     Disk to Tape copier for background job
 
   $Log$
+  Revision 1.18  2000/03/30 06:38:35  pierre
+  - Added field "../settings/Execute after rewind" for "after rewind" execution.
+
   Revision 1.17  1999/12/13 23:23:47  pierre
   - Add rm_time, cp_time in log message
   - Save <channel>_recover.odb with untouched "list label"
@@ -146,6 +149,7 @@ Data dir = STRING : [256] \n\
 Data format = STRING : [8] MIDAS\n\
 Filename format = STRING : [128] run%05d.mid\n\
 Backup type = STRING : [8] Tape\n\
+Execute after rewind = STRING : [64]\n\
 Path = STRING : [128] \n\
 Capacity (Bytes) = FLOAT : 5e9\n\
 List label= STRING : [128] \n\
@@ -172,6 +176,7 @@ typedef struct {
   char  format[8];                /* Data format (YBOS, MIDAS) */
   char  backfmt[MAX_FILE_PATH];   /* format for the run files run%05d.mid */
   char  type[8];                  /* Backup device type  (Disk, Tape, Ftp) */
+  char  command[64];             /* command to run after rewind */
   char  path[MAX_FILE_PATH];      /* backup device name */
   float capacity;                 /* backup device max byte size */
   char  backlabel[MAX_FILE_PATH]; /* label of the array in ~/list. if empty like active = 0 */
@@ -1402,6 +1407,10 @@ INT lazy_main (INT channel, LAZY_INFO * pLall)
     /* check if space on backup device */
     if (lazy.capacity < (lazyst.cur_dev_size + lazyst.file_size))
       {
+	char pre_label[32];
+	/* save the last label for shell script */
+	strcpy(pre_label, lazy.backlabel);
+	
 	/* not enough space => reset list label */
 	lazy.backlabel[0]='\0';
 	size = sizeof(lazy.backlabel);
@@ -1432,6 +1441,14 @@ INT lazy_main (INT channel, LAZY_INFO * pLall)
 	    if (lazy.alarm[0])
 	      al_trigger_alarm("Tape", "Tape full, Please remove current tape and load new one!", lazy.alarm,
 			       "Tape full", AT_INTERNAL);
+	   
+	    /* run shell command if available */
+	    if (lazy.command[0])
+	    { char cmd[256];
+	       sprintf(cmd,"%s %s %s %s",lazy.command, lazy.path,  pLch->name, pre_label);
+	       cm_msg(MINFO,"lazy_main","Exec post-rewind script:%s",cmd);
+	       ss_system(cmd);
+	    }
 	    return NOTHING_TODO;
 	  }
       }
@@ -1546,6 +1563,9 @@ int main(unsigned int argc,char **argv)
     printf(" List label                : Label of destination save_set.\n");
     printf("                             Prevent lazylogger to run if not given.\n");
     printf("                             Will be reset if maximum capacity reached.\n");
+    printf(" Execute after rewind      : Execute the command <cmd> after rewind complete\n");
+    printf("                           : args passed are: 'device path' 'channel name' 'list label'\n");
+    printf("                           : The actual command will look like: <cmd> /dev/nst0 Tape Data_2000\n");
     printf(" Backup type               : Destination device type (Disk, Tape, FTP)\n");
     printf(" Path                      : Destination path (file.ext, /dev/nst0, ftp...)\n");
     printf("                             in case of FTP type, the 'Path' entry should be:\n");
