@@ -6,6 +6,9 @@
   Contents:     Command-line interface for the Midas Slow Control Bus
 
   $Log$
+  Revision 1.55  2004/03/05 19:40:01  midas
+  Better usb error reporting
+
   Revision 1.54  2004/03/05 16:29:41  midas
   Fixed compiler warnings
 
@@ -1243,14 +1246,19 @@ int main(int argc, char *argv[])
          puts("  \"msc -d 0xabc\" with \"0xabc\" the correct address");
       } else if (fd == -3) {
          printf("MSCB system locked by other process\n");
+      } else if (fd == -4) {
+	printf("\nCannot communicate with MSCB submaster at %s\n", device);
+	puts("Please disconnect and reconnect submaster\n");
       } else
          printf("Cannot connect to device \"%s\"\n", device);
 
+#ifdef _MSC_VER
       puts("\n-- hit any key to exit --");
 
       while (!kbhit());
       while (kbhit())
          getch();
+#endif
 
       return 0;
    }
