@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.208  2004/07/12 11:32:13  midas
+  Fixed types in cm_msg()
+
   Revision 1.207  2004/05/07 19:40:11  midas
   Replaced min/max by MIN/MAX macros
 
@@ -14047,7 +14050,7 @@ INT hs_enum_vars(DWORD ltime, DWORD event_id, char *var_name, DWORD * size,
    /* search latest history file */
    status = hs_search_file(&ltime, -1);
    if (status != HS_SUCCESS) {
-      cm_msg(MERROR, "hs_enum_tags", "cannot find recent history file");
+      cm_msg(MERROR, "hs_enum_vars", "cannot find recent history file");
       return HS_FILE_ERROR;
    }
 
@@ -14055,7 +14058,7 @@ INT hs_enum_vars(DWORD ltime, DWORD event_id, char *var_name, DWORD * size,
    hs_open_file(ltime, "hst", O_RDONLY, &fh);
    hs_open_file(ltime, "idf", O_RDONLY, &fhd);
    if (fh < 0 || fhd < 0) {
-      cm_msg(MERROR, "hs_enum_tags", "cannot open index files");
+      cm_msg(MERROR, "hs_enum_vars", "cannot open index files");
       return HS_FILE_ERROR;
    }
 
@@ -14070,7 +14073,7 @@ INT hs_enum_vars(DWORD ltime, DWORD event_id, char *var_name, DWORD * size,
          break;
    }
    if (def_rec.event_id != event_id) {
-      cm_msg(MERROR, "hs_enum_tags", "event %d not found in index file", event_id);
+      cm_msg(MERROR, "hs_enum_vars", "event %d not found in index file", event_id);
       return HS_FILE_ERROR;
    }
 
@@ -14091,7 +14094,7 @@ INT hs_enum_vars(DWORD ltime, DWORD event_id, char *var_name, DWORD * size,
          var_n[i] = tag[i].n_data;
       }
 
-      cm_msg(MERROR, "hs_enum_tags", "tag buffer too small");
+      cm_msg(MERROR, "hs_enum_vars", "tag buffer too small");
       M_FREE(tag);
       close(fh);
       close(fhd);
@@ -14152,7 +14155,7 @@ INT hs_get_var(DWORD ltime, DWORD event_id, char *var_name, DWORD * type, INT * 
    /* search latest history file */
    status = hs_search_file(&ltime, -1);
    if (status != HS_SUCCESS) {
-      cm_msg(MERROR, "hs_enum_tags", "cannot find recent history file");
+      cm_msg(MERROR, "hs_get_var", "cannot find recent history file");
       return HS_FILE_ERROR;
    }
 
@@ -14160,7 +14163,7 @@ INT hs_get_var(DWORD ltime, DWORD event_id, char *var_name, DWORD * type, INT * 
    hs_open_file(ltime, "hst", O_RDONLY, &fh);
    hs_open_file(ltime, "idf", O_RDONLY, &fhd);
    if (fh < 0 || fhd < 0) {
-      cm_msg(MERROR, "hs_enum_tags", "cannot open index files");
+      cm_msg(MERROR, "hs_get_var", "cannot open index files");
       return HS_FILE_ERROR;
    }
 
@@ -14175,7 +14178,7 @@ INT hs_get_var(DWORD ltime, DWORD event_id, char *var_name, DWORD * type, INT * 
          break;
    }
    if (def_rec.event_id != event_id) {
-      cm_msg(MERROR, "hs_enum_tags", "event %d not found in index file", event_id);
+      cm_msg(MERROR, "hs_get_var", "event %d not found in index file", event_id);
       return HS_FILE_ERROR;
    }
 
