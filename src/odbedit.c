@@ -6,6 +6,9 @@
   Contents:     Command-line interface to the MIDAS online data base.
 
   $Log$
+  Revision 1.14  1999/04/16 15:12:13  midas
+  cm_set_msg_print changed so that info messages are not received twice
+
   Revision 1.13  1999/02/18 11:16:40  midas
   Added wildcard matching in "ls" and "set" commands
 
@@ -2251,14 +2254,8 @@ PRINT_INFO      print_info;
         }
 
       if (message[0])
-        {
-        /* don't print message locally */
-        cm_set_msg_print(MT_ALL, MT_ALL & ~MT_USER, print_message);
-
         cm_msg(MUSER, user_name, message);
-        
-        cm_set_msg_print(MT_ALL, MT_ALL, print_message);
-        }
+
       last_msg_time = ss_time();
       }
     
@@ -2282,14 +2279,7 @@ PRINT_INFO      print_info;
         in_cmd_edit = FALSE;
 
         if (message[0])
-          {
-          /* don't print message locally */
-          cm_set_msg_print(MT_ALL, MT_ALL & ~MT_USER, print_message);
-
           cm_msg(MUSER, user_name, message);
-        
-          cm_set_msg_print(MT_ALL, MT_ALL, print_message);
-          }
 
         } while(message[0]);
 
@@ -2530,7 +2520,7 @@ usage:
   cm_msg_register(process_message);
 
   /* route local messages through print_message */
-  cm_set_msg_print(MT_ALL, MT_ALL, print_message);
+  cm_set_msg_print(MT_ALL, MT_ERROR, print_message);
 
   /* turn off watchdog if in debug mode */
   if (debug)
