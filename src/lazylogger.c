@@ -6,6 +6,9 @@
   Contents:     Disk to Tape copier for background job
 
   $Log$
+  Revision 1.23  2001/07/23 22:58:16  pierre
+  - Fix condition line parsing.
+
   Revision 1.22  2000/10/17 21:12:39  pierre
   - Return KB rate to B and correct code (*1000)
   - Fix ss_system for single arg
@@ -274,21 +277,23 @@ INT lazy_log_update(INT action, INT run, char * label, char * file, DWORD perf_t
   char str[MAX_FILE_PATH];
   
   /* log Lazy logger to midas.log only */
-  if (action == NEW_FILE)
-    {
+  if (action == NEW_FILE) {
     /* keep track of number of file on that channel */
     lazyst.nfiles++;
-
+    
     if (equal_ustring(lazy.type, "FTP"))
       sprintf(str, "%s: (cp:%.1fs) %s %1.3lfMB file COPIED",
               label, (float)perf_time/1000., lazyst.backfile, lazyst.file_size/1024.0/1024.0);
-    else
-      sprintf(str,"%s[%i] (cp:%.1fs) %s%c%s %1.3lfMB file NEW",
+    else {
+      if (lazy.path[0] != 0)
+        if (lazy.path[strlen(lazy.path)-1] != DIR_SEPARATOR)
+          strcat(lazy.path, DIR_SEPARATOR_STR);
+      sprintf(str,"%s[%i] (cp:%.1fs) %s%s %1.3lfMB file NEW",
 	      label, lazyst.nfiles, (float)perf_time/1000.,
-	      lazy.path, DIR_SEPARATOR, lazyst.backfile, 
+	      lazy.path, lazyst.backfile, 
               lazyst.file_size/1024.0/1024.0);
     }
-
+  }
   else if (action == REMOVE_FILE)
     sprintf(str,"%i (rm:%dms) %s file REMOVED",
             run, perf_time, file);
@@ -939,67 +944,70 @@ BOOL condition_test(char * string)
   float value;
   double lcond_value;
   INT size, index, status;
-  char str[128];
-  char *p, *pp, *ppl, *pn, *pv, *pc;
-        
-  index = 0;
-  p = strtok(string, " ");          
+  char str[128], left[64], right[64];
+  char *p=NULL, *pp, *ppl, *pn, *pv, *pc, *lp;
   
-  while (p != NULL)
-    {
-      if (isdigit(*p) || (*p=='-') || (*p=='+'))
-        pv = p; 
-      else if ((*p == '<') || (*p == '>') ||(*p == '='))
-        pc = p;
-      else if (isalpha(*p) || (*p == '/'))
-        {
-          pn = p;
-          if ((pp = strpbrk(pn,"[(")) != NULL)
-            {
-              if ((ppl = strpbrk(pn,"])")) != NULL)
-                {
-                  *pp = '\0';
-                  *ppl = '\0';
-                  index = atoi(pp+1);
-                }
-              *pp = '\0';
-            }
-        }
-      else
-        printf(" cannot decode string \n");
-      p = strtok(NULL, " ");
+  index = 0;
+  p = string;
+  if (p) {
+    while (isspace(*p)) p++;
+    
+    pc=strpbrk(p,"<=>");
+    if (pc) {
+      strncpy(left, p, pc-p);
+      lp = left+(pc-p-1);
+      while(isspace(*lp)) lp--;
+      *(lp+1) = '\0';
+      strncpy(right, pc+1, (strlen(p)-strlen(left)));
+      right[strlen(p)-strlen(left)-1] = '\0';
     }
-
-  /* catch empty condition as TRUE */
-  if (pv == NULL)
-    return TRUE;
-
-  /* convert value */
-  value = (float) (atoi(pv));
-
-  db_find_key(hDB, 0, pn, &hKey);
-  status = db_get_key (hDB, hKey, &key);
-  if ((status == DB_SUCCESS) && (key.type <= TID_DOUBLE))
-  { 
- 	  /* get value of the condition */
-	  size = sizeof(lcond_value);
-	  db_get_data_index(hDB, hKey, &lcond_value, &size, index, key.type); 
-	  db_sprintf(str, &lcond_value, key.item_size, 0, key.type);
-	  lcond_value = atof(str);
-
+    
+    if ((pp = strpbrk(left,"[(")) != NULL)
+    {
+      if ((ppl = strpbrk(left,"])")) != NULL)
+      {
+	*pp = '\0';
+	*ppl = '\0';
+	index = atoi(pp+1);
+      }
+      *pp = '\0';
+    }
+    
+    /* convert value */
+    value = (float) (atoi(right));
+    
+    status = db_find_key(hDB, 0, left, &hKey);
+    if (status != DB_SUCCESS) {
+      cm_msg(MINFO,"condition_check","Key %s not found", left);
+      return FALSE;
+    }
+    status = db_get_key (hDB, hKey, &key);
+    if ((status == DB_SUCCESS) && (key.type <= TID_DOUBLE))
+    { 
+      /* get value of the condition */
+      size = sizeof(lcond_value);
+      db_get_data_index(hDB, hKey, &lcond_value, &size, index, key.type); 
+      db_sprintf(str, &lcond_value, key.item_size, 0, key.type);
+      lcond_value = atof(str);
+    }
+    
+/*  printf("string:%s\n condition: %s %f %c %f \n"
+    , string, left, lcond_value, *pc, value);
+*/  
+    if (pv == NULL)
+      return TRUE;
+    
     /* perform condition check */
- 	  if (((*pc == '>') && ((float)lcond_value >  value)) ||
-        ((*pc == '=') && ((float)lcond_value == value)) ||
-        ((*pc == '<') && ((float)lcond_value < value)))
-        return TRUE;
+    if (((*pc == '>') && ((float)lcond_value >  value)) ||
+	((*pc == '=') && ((float)lcond_value == value)) ||
+	((*pc == '<') && ((float)lcond_value < value)))
+      return TRUE;
     else
-        return FALSE;
-
-    } /* TID_DOUBLE */
-
-    /* catch wrong argument in the condition as TRUE */
-    return TRUE;
-  } 
+      return FALSE;
+  }
+  /* catch wrong argument in the condition as TRUE */
+  return TRUE;
+} 
 
 /*------------------------------------------------------------------*/
 BOOL lazy_condition_check(void)
@@ -1498,7 +1506,7 @@ INT lazy_main (INT channel, LAZY_INFO * pLall)
     /* leave "list label" as it is, as long as the _recover.odb is loaded before
        the lazylogger is started with NO -z things should be fine */
     /* save the recover with "List Label" empty */
-    sprintf(str,"%s%s_recover.odb", lazy.dir, pLch->name);
+    sprintf(str,"%s/%s_recover.odb", lazy.dir, pLch->name);
     db_save(hDB, pLch->hKey, str, TRUE);
   }
 
