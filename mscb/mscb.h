@@ -6,6 +6,9 @@
   Contents:     Header fiel for MSCB funcions
 
   $Log$
+  Revision 1.41  2005/02/22 13:21:20  ritt
+  Added 38400 baud
+
   Revision 1.40  2004/12/22 16:02:24  midas
   Implemented verify for upload
 
@@ -181,10 +184,11 @@
 #define BD_9600            3
 #define BD_19200           4
 #define BD_28800           5
-#define BD_57600           6
-#define BD_115200          7
-#define BD_172800          8
-#define BD_345600          9
+#define BD_38400           6
+#define BD_57600           7
+#define BD_115200          8
+#define BD_172800          9
+#define BD_345600         10
 
 /*---- info structures ---------------------------------------------*/
 
