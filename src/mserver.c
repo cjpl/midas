@@ -6,6 +6,9 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
+  Revision 1.10  1999/04/15 09:57:52  midas
+  Added cm_exist, modified db_get_key_info
+
   Revision 1.9  1999/04/13 12:20:44  midas
   Added db_get_data1 (for Java)
 
@@ -383,6 +386,10 @@ INT convert_flags;
       status = cm_execute(CSTRING(0), CSTRING(1), CINT(2));
       break;
 
+    case RPC_CM_EXIST:
+      status = cm_exist(CSTRING(0), CBOOL(1));
+      break;
+
     case RPC_CM_SYNCHRONIZE:
       status = cm_synchronize(CPDWORD(0));
       break;
@@ -659,7 +666,7 @@ INT convert_flags;
       break;
 
     case RPC_DB_GET_KEY_INFO:
-      status = db_get_key_info(CHNDLE(0), CHNDLE(1), CPINT(2), CPINT(3), CPINT(4));
+      status = db_get_key_info(CHNDLE(0), CHNDLE(1), CSTRING(2), CINT(3), CPINT(4), CPINT(5), CPINT(6));
       break;
 
     case RPC_DB_GET_KEY_TIME:
