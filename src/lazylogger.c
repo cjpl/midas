@@ -6,6 +6,13 @@
   Contents:     Disk to Tape copier for background job
 
   $Log$
+  Revision 1.2  1999/10/06 23:36:54  pierre
+  - remove index in msg
+  - change MUSER to MTALK
+  - change xx_remove_xx message
+  - change Lazy_Disk to Lazy_Tape default
+  - change LazyChecker to Lazy_Tape
+
   Revision 1.1  1999/10/06 07:05:10  midas
   Moved lazylogger from utils to src
 
@@ -86,7 +93,7 @@ Running condition = STRING : [128] ALWAYS\n\
 Data dir = STRING : [256] \n\
 Data format = STRING : [8] MIDAS\n\
 Filename format = STRING : [128] run%05d.mid\n\
-Backup type = STRING : [8] Disk\n\
+Backup type = STRING : [8] Tape\n\
 Path = STRING : [128] \n\
 Capacity (Bytes) = FLOAT : 5e9\n\
 List label= STRING : [128] \n\
@@ -140,7 +147,7 @@ typedef struct {
   char name[32];
 } LAZY_INFO;
 
-LAZY_INFO lazyinfo[MAX_LAZY_CHANNEL]={{0,FALSE,FALSE,"Disk"},{0,FALSE,FALSE,""}
+LAZY_INFO lazyinfo[MAX_LAZY_CHANNEL]={{0,FALSE,FALSE,"Tape"},{0,FALSE,FALSE,""}
                       ,{0,FALSE,FALSE,""},{0,FALSE,FALSE,""}};
 INT channel = -1;
 
@@ -167,11 +174,11 @@ INT  lazy_load_params( HNDLE hDB, HNDLE hKey );
 void build_log_list(char * fmt, char * dir, DIRLOG ** plog);
 INT  build_done_list(HNDLE, INT **);
 INT  cmp_log2donelist (DIRLOG * plog, INT * pdo);
-INT  lazy_log_update(INT action, INT index, INT run, char * label, char * file);
+INT  lazy_log_update(INT action, INT run, char * label, char * file);
 int  lazy_remove_entry(INT ch, LAZY_INFO *, int run);
 
 /*------------------------------------------------------------------*/
-INT lazy_log_update(INT action, INT index, INT run, char * label, char * file)
+INT lazy_log_update(INT action, INT run, char * label, char * file)
 {
   char str[MAX_FILE_PATH];
   
@@ -194,12 +201,12 @@ INT lazy_log_update(INT action, INT index, INT run, char * label, char * file)
     }
 
   else if (action == REMOVE_FILE)
-    sprintf(str,"%i  %s file REMOVED",
+    sprintf(str,"Run#%i  %s file REMOVED",
             run, file);
   
   else if (action == REMOVE_ENTRY)
-    sprintf(str,"%s[%i] %i entry REMOVED", 
-            label, index,  run);
+    sprintf(str,"%s run#%i entry REMOVED", 
+            label, run);
   
   cm_msg(MINFO, "lazy_log_update", str);
   
@@ -521,7 +528,7 @@ int lazy_remove_entry(INT channel, LAZY_INFO * pLall, int run)
     -1            run not found
 \********************************************************************/
 {
-  INT    size, i, j, k, saveindex=0;
+  INT    size, i, j, k;
   INT    *potherlist, nother;
   BOOL   found=FALSE;
   HNDLE  hSubkey;
@@ -558,13 +565,10 @@ int lazy_remove_entry(INT channel, LAZY_INFO * pLall, int run)
         for (j=0; j<nother; j++)
         {
           if (*(potherlist+j) == run)
-          {
             found = TRUE;
-      	    saveindex = j;
-          }
 	        if (found)
-	        if (j+1 < nother)
-	          *(potherlist+j) = *(potherlist+j+1);
+	          if (j+1 < nother)
+	            *(potherlist+j) = *(potherlist+j+1);
         }
         /* delete label[] or update label[] */
         if (found)
@@ -574,7 +578,7 @@ int lazy_remove_entry(INT channel, LAZY_INFO * pLall, int run)
             db_set_data(hDB,hSubkey,potherlist,nother*sizeof(INT), nother, TID_INT);
           else
             db_delete_key(hDB,hSubkey,FALSE);
-          lazy_log_update(REMOVE_ENTRY, saveindex, run, (pLall+k)->name, NULL);
+          lazy_log_update(REMOVE_ENTRY, run, (pLall+k)->name, NULL);
         }
       }
     }
@@ -640,9 +644,9 @@ INT lazy_update_list(LAZY_INFO * pLinfo)
       db_set_value(hDB, hKey, lazy.backlabel, &lazyst.cur_run, size, 1, TID_INT);
     }
 
-  lazy_log_update(NEW_FILE, 0, lazyst.cur_run, lazy.backlabel, lazyst.backfile);
+  lazy_log_update(NEW_FILE, lazyst.cur_run, lazy.backlabel, lazyst.backfile);
   
-  if (msg_flag) cm_msg(MUSER,"Lazy","         lazy job %s done!",lazyst.backfile);
+  if (msg_flag) cm_msg(MTALK,"Lazy","         lazy job %s done!",lazyst.backfile);
   
   if (ptape)
     free (ptape);
@@ -893,7 +897,7 @@ INT lazy_copy( char * outfile, char * infile)
   /* force a statistics update on the first loop */
   cpy_loop_time = -2000;
 
-  if (msg_flag) cm_msg(MUSER,"Lazy","Starting lazy job on %s",lazyst.backfile);
+  if (msg_flag) cm_msg(MTALK,"Lazy","Starting lazy job on %s",lazyst.backfile);
   /* infinite loop while copying */
   while (1)
   {  
@@ -1138,15 +1142,15 @@ INT lazy_main (INT channel, LAZY_INFO * pLall)
           /* remove file */
           if ((status = ss_file_remove(pufile)) == 0)
           {
-            status = lazy_log_update(REMOVE_FILE, 0, purun, NULL, pufile);
+            status = lazy_log_update(REMOVE_FILE, purun, NULL, pufile);
             donepurge = TRUE;
 
             /* update donelist (remove run entry as the file has been deleted */
             if ((status=lazy_remove_entry(channel, pLall, purun)) != 0)
-              cm_msg(MERROR, "Lazy","remove_entry not performed %d",status);
+              cm_msg(MERROR, "Lazy","remove_entry on run#%d not performed %d",purun, status);
           }
           else
-            cm_msg(MERROR, "Lazy","ss_file_remove not performed %d",status);
+            cm_msg(MERROR, "Lazy","ss_file_remove on file %s not performed %d",pufile, status);
         }
         freepercent = 100. * ss_disk_free(lazy.dir) / ss_disk_size(lazy.dir);
         if (svfree == freepercent)
@@ -1346,8 +1350,11 @@ int main(unsigned int argc,char **argv)
   signal( SIGPIPE, SIG_IGN );
 #endif
   
+  /* try to connect with an existing name in order to prevent
+  /Program to see a ghost task, use the default "Lazy_Tape" */
+  
   /* connect to experiment */
-  status = cm_connect_experiment(host_name, expt_name, "LazyChecker", 0);
+  status = cm_connect_experiment(host_name, expt_name, "Lazy_Tape", 0);
   if (status != CM_SUCCESS)
     return 1;
 
