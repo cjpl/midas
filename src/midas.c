@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.9  1998/12/11 17:00:02  midas
+  Fixed a few typos
+
   Revision 1.8  1998/10/28 12:05:57  midas
   Fixed minor compiler warning
 
@@ -673,7 +676,7 @@ INT cm_set_path(char *path)
   Purpose: Set path to actual experiment. This function gets called
            by cm_connect_experiment if the connection is established
            to a local experiment (not through the TCP/IP server).
-           The path is then used for all shared memory routines
+           The path is then used for all shared memory routines.
 
   Input:
     char  *path             Pathname
@@ -703,7 +706,7 @@ INT cm_get_path(char *path)
 
   Routine: cm_get_path
 
-  Purpose: Return the path name previously set with cm_set_path
+  Purpose: Return the path name previously set with cm_set_path.
 
   Input:
     none
@@ -2573,7 +2576,7 @@ RUNINFO_STR(runinfo_str);
     sock = socket(AF_INET, SOCK_DGRAM, 0);
     memset(&addr, 0, sizeof(addr));
     addr.sin_family      = AF_INET;
-    addr.sin_port        = htons((short) MIDAS_TCP_PORT+1);
+    addr.sin_port        = htons((short) MIDAS_TCP_PORT);
     addr.sin_addr.s_addr = htonl(2172735051u);
 
     str[0] = 0;
@@ -6972,7 +6975,8 @@ struct hostent       *phe;
 
   if (status != 0)
     {
-/*    cm_msg(MERROR, "rpc_client_connect", "cannot connect"); message should be displayed by application */
+    /* cm_msg(MERROR, "rpc_client_connect", "cannot connect"); 
+    message should be displayed by application */
     return RPC_NET_ERROR;
     }
 
