@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.43  1999/08/03 14:41:09  midas
+  Lock buffer in bm_skip_event
+
   Revision 1.42  1999/08/03 11:15:07  midas
   Added bm_skip_event
 
@@ -6024,10 +6027,13 @@ BUFFER_CLIENT   *pclient;
   if (pbuf->read_cache_wp > pbuf->read_cache_rp)
     pbuf->read_cache_rp = pbuf->read_cache_wp = 0;
 
-  /* forward read pointer to write pointer */
+  bm_lock_buffer(buffer_handle);
+
+  /* forward read pointer to global write pointer */
   pclient = pheader->client + pbuf->client_index;
   pclient->read_pointer = pheader->write_pointer;
 
+  bm_unlock_buffer(buffer_handle);
 }
 #endif
 
