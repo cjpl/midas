@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.229  2002/05/31 06:53:01  midas
+  Added debug info in sendmail()
+
   Revision 1.228  2002/05/31 05:55:26  midas
   Fixed bug in command line parsing, thanks to Gertjan Hofman
 
@@ -1062,6 +1065,9 @@ int                  s;
 char                 str[10000], hostname[256];
 time_t               now;
 
+  if (verbose)
+    printf("\n\nEmail from %s to %s, SMTP host %s:\n", from, to, smtp_host);
+
   /* create a new socket for connecting to remote server */
   s = socket(AF_INET, SOCK_STREAM, 0);
   if (s == -1)
@@ -1085,38 +1091,53 @@ time_t               now;
     }
 
   recv_string(s, str, sizeof(str), 3000);
+  if (verbose) puts(str);
 
   gethostname(hostname, sizeof(hostname));
   sprintf(str, "HELO %s\n", hostname);
   send(s, str, strlen(str), 0);
+  if (verbose) puts(str);
   recv_string(s, str, sizeof(str), 3000);
+  if (verbose) puts(str);
 
   sprintf(str, "MAIL FROM: <%s>\n", from);
   send(s, str, strlen(str), 0);
+  if (verbose) puts(str);
   recv_string(s, str, sizeof(str), 3000);
+  if (verbose) puts(str);
 
   sprintf(str, "RCPT TO: <%s>\n", to);
   send(s, str, strlen(str), 0);
+  if (verbose) puts(str);
   recv_string(s, str, sizeof(str), 3000);
+  if (verbose) puts(str);
 
   sprintf(str, "DATA\n");
   send(s, str, strlen(str), 0);
+  if (verbose) puts(str);
   recv_string(s, str, sizeof(str), 3000);
+  if (verbose) puts(str);
 
   sprintf(str, "To: %s\nFrom: %s\nSubject: %s\n", to, from, subject);
   send(s, str, strlen(str), 0);
+  if (verbose) puts(str);
 
   time(&now);
   sprintf(str, "Date: %s\n", ctime(&now));
   send(s, str, strlen(str), 0);
+  if (verbose) puts(str);
 
   sprintf(str, "%s\n.\n", text);
   send(s, str, strlen(str), 0);
+  if (verbose) puts(str);
   recv_string(s, str, sizeof(str), 3000);
+  if (verbose) puts(str);
 
   sprintf(str, "QUIT\n");
   send(s, str, strlen(str), 0);
+  if (verbose) puts(str);
   recv_string(s, str, sizeof(str), 3000);
+  if (verbose) puts(str);
 
   closesocket(s);
 
