@@ -15,6 +15,9 @@
     email                : andreas.suter@psi.ch
 
   $Log$
+  Revision 1.3  2003/05/13 17:29:44  midas
+  Fixed compiler warnings
+
   Revision 1.2  2003/05/09 10:43:41  midas
   Fixed compiler warning
 
@@ -74,8 +77,8 @@
 //*******************************************************************************************************
 //  Constructor
 //*******************************************************************************************************
-Qt_hvEdit::Qt_hvEdit(hvAdmin *hvA, cmExperiment *cmExp, QWidget *parent = 0, const char *name = 0,
-          WFlags fl = WType_TopLevel) : Qt_hvEdit_Base(parent, name, fl)
+Qt_hvEdit::Qt_hvEdit(hvAdmin *hvA, cmExperiment *cmExp, QWidget *parent, const char *name,
+          WFlags fl) : Qt_hvEdit_Base(parent, name, fl)
 {
   Qt_hvEdit::hvA   = hvA;
   Qt_hvEdit::cmExp = cmExp;
