@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol commands
 
   $Log$
+  Revision 1.5  2002/08/08 06:45:38  midas
+  Added time functions
+
   Revision 1.4  2002/07/10 09:53:00  midas
   Finished EEPROM routines
 
@@ -150,6 +153,9 @@ void eeprom_flash(void);
 void eeprom_retrieve(void);
 
 void uart_init(unsigned char baud);
+
+void sysclock_init(void);
+unsigned long time(void);
 
 unsigned char user_func(unsigned char idata *data_in,
                         unsigned char idata *data_out);
