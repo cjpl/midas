@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus communication functions
 
   $Log$
+  Revision 1.51  2004/03/05 14:00:19  midas
+  Return if no submaster present
+
   Revision 1.50  2004/03/04 15:29:20  midas
   Added USB support
 
@@ -2831,6 +2834,7 @@ int mscb_select_device(char *device)
 
   Function value:
     MSCB_SUCCESS            Successful completion
+    0                       No submaster found
 
 \********************************************************************/
 {
@@ -2838,6 +2842,8 @@ int mscb_select_device(char *device)
    int status, i, n;
 
    n = 0;
+
+   strcpy(device, DEF_DEVICE);
 
    /* check USB devices */
    for (i=0 ; i<127 ; i++) {
@@ -2862,6 +2868,9 @@ int mscb_select_device(char *device)
       else
          break;
    }
+
+   if (n == 0)
+      return 0;
 
    /* if only one device, return it */
    if (n == 1) {
