@@ -6,6 +6,9 @@
   Contents:     MSCB Device Driver.
 
   $Log$
+  Revision 1.3  2003/05/12 14:36:31  midas
+  Fixed compiler warning
+
   Revision 1.2  2003/05/12 12:04:44  midas
   Check for DF_PRIO_DEV
 
@@ -39,10 +42,13 @@ typedef struct {
 
 /*---- device driver routines --------------------------------------*/
 
-INT addr_changed(HNDLE hDB, HNDLE hKey, MSCBDEV_INFO *info)
+void addr_changed(HNDLE hDB, HNDLE hKey, void *arg)
 {
-INT i, status;
+INT           i, status;
 MSCB_INFO_VAR var_info;
+MSCBDEV_INFO  *info;
+
+  info = (MSCBDEV_INFO *)arg;
 
   /* get info about MSCB channels */
   for (i=0 ; i<info->num_channels ; i++)
@@ -59,8 +65,6 @@ MSCB_INFO_VAR var_info;
     else
       info->mscbdev_settings.var_size[i] = 0;
     }
-
-  return SUCCESS;
 }
 
 /* the init function creates a ODB record which contains the
