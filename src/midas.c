@@ -6,8 +6,8 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
-  Revision 1.222  2004/10/06 20:59:46  midas
-  Made deferred transitions work again in new level scheme
+  Revision 1.223  2004/10/06 22:02:25  midas
+  Implemented multiple requests for a transition
 
   Revision 1.221  2004/10/04 17:55:24  midas
   Fixed bug in cm_msg() with incorrect buffer size for 'message file'
@@ -825,23 +825,20 @@ static INT _watchdog_last_called = 0;
 
 typedef struct {
    INT transition;
-    INT(*func) (INT, char *);
+   INT sequence_number;
+   INT(*func) (INT, char *);
 } TRANS_TABLE;
 
-TRANS_TABLE _trans_table[] = {
-   {TR_START, NULL},
-   {TR_STOP, NULL},
-   {TR_PAUSE, NULL},
-   {TR_RESUME, NULL},
-   {0, NULL}
-};
+#define MAX_TRANSITIONS 20
+
+TRANS_TABLE _trans_table[MAX_TRANSITIONS];
 
 TRANS_TABLE _deferred_trans_table[] = {
-   {TR_START, NULL},
-   {TR_STOP, NULL},
-   {TR_PAUSE, NULL},
-   {TR_RESUME, NULL},
-   {0, NULL}
+   {TR_START},
+   {TR_STOP},
+   {TR_PAUSE},
+   {TR_RESUME},
+   {0}
 };
 
 static BOOL _server_registered = FALSE;
@@ -3347,7 +3344,8 @@ main()
 INT cm_register_transition(INT transition, INT(*func) (INT, char *), INT sequence_number)
 {
    INT status, i;
-   HNDLE hDB, hKey;
+   HNDLE hDB, hKey, hKeyTrans;
+   KEY key;
    char str[256];
 
    /* check for valid transition */
@@ -3361,9 +3359,20 @@ INT cm_register_transition(INT transition, INT(*func) (INT, char *), INT sequenc
 
    rpc_register_function(RPC_RC_TRANSITION, rpc_transition_dispatch);
 
-   for (i = 0; _trans_table[i].transition; i++)
-      if (_trans_table[i].transition == transition)
-         _trans_table[i].func = func;
+   /* find empty slot */
+   for (i = 0; i < MAX_TRANSITIONS ; i++)
+      if (!_trans_table[i].transition) 
+         break;
+
+   if (i == MAX_TRANSITIONS) {
+      cm_msg(MERROR, "cm_register_transition", 
+         "To many transition registrations. Please increase MAX_TRANSITIONS and recompile");
+      return CM_TOO_MANY_REQUESTS;
+   }
+
+   _trans_table[i].transition = transition;
+   _trans_table[i].func = func;
+   _trans_table[i].sequence_number = sequence_number;
 
    for (i = 0; i < 13; i++)
       if (trans_name[i].transition == transition)
@@ -3375,10 +3384,19 @@ INT cm_register_transition(INT transition, INT(*func) (INT, char *), INT sequenc
    db_set_mode(hDB, hKey, MODE_READ | MODE_WRITE, TRUE);
 
    /* set value */
-   status =
-       db_set_value(hDB, hKey, str, &sequence_number, sizeof(INT), 1, TID_INT);
-   if (status != DB_SUCCESS)
-      return status;
+   status = db_find_key(hDB, hKey, str, &hKeyTrans);
+   if (!hKeyTrans) {
+      status = db_set_value(hDB, hKey, str, &sequence_number, sizeof(INT), 1, TID_INT);
+      if (status != DB_SUCCESS)
+         return status;
+   } else {
+      status = db_get_key(hDB, hKeyTrans, &key);
+      if (status != DB_SUCCESS)
+         return status;
+      status = db_set_data_index(hDB, hKeyTrans, &sequence_number, sizeof(INT), key.num_values, TID_INT);      
+      if (status != DB_SUCCESS)
+         return status;
+   }
 
    /* re-lock database */
    db_set_mode(hDB, hKey, MODE_READ, TRUE);
@@ -3613,8 +3631,8 @@ tapes.
 INT cm_transition(INT transition, INT run_number, char *perror, INT strsize,
                   INT async_flag, INT debug_flag)
 {
-   INT i, status, index, size, sequence_number, port, state, old_timeout, n_tr_clients;
-   HNDLE hDB, hRootKey, hSubkey, hKey, hKeylocal, hConn;
+   INT i, j, status, index, size, sequence_number, port, state, old_timeout, n_tr_clients;
+   HNDLE hDB, hRootKey, hSubkey, hKey, hKeylocal, hConn, hKeyTrans;
    DWORD seconds;
    char host_name[HOST_NAME_LENGTH], client_name[NAME_LENGTH],
      str[256], error[256], tr_key_name[256];
@@ -3831,38 +3849,45 @@ INT cm_transition(INT transition, INT run_number, char *perror, INT strsize,
          break;
 
       if (status == DB_SUCCESS) {
-         size = sizeof(sequence_number);
-         status = db_get_value(hDB, hSubkey, tr_key_name,
-                               &sequence_number, &size, TID_INT, FALSE);
+         status = db_find_key(hDB, hSubkey, tr_key_name, &hKeyTrans);
+
          if (status == DB_SUCCESS) {
 
-            if (tr_client == NULL)
-               tr_client = (TR_CLIENT *) malloc(sizeof(TR_CLIENT));
-            else
-               tr_client = (TR_CLIENT *) realloc(tr_client, sizeof(TR_CLIENT)*(n_tr_clients+1));
-            assert(tr_client);
+            db_get_key(hDB, hKeyTrans, &key);
 
-            tr_client[n_tr_clients].sequence_number = sequence_number;
+            for (j=0 ; j<key.num_values ; j++) {
+               size = sizeof(sequence_number);
+               status = db_get_data_index(hDB, hKeyTrans, &sequence_number, &size, j, TID_INT);
+               assert(status == DB_SUCCESS);
 
-            if (hSubkey == hKeylocal) {
-               /* remember own client */
-               tr_client[n_tr_clients].port = 0;
-            } else {
-               /* get client info */
-               size = sizeof(client_name);
-               db_get_value(hDB, hSubkey, "Name", client_name, &size, TID_STRING, TRUE);
-               strcpy(tr_client[n_tr_clients].client_name, client_name);
+               if (tr_client == NULL)
+                  tr_client = (TR_CLIENT *) malloc(sizeof(TR_CLIENT));
+               else
+                  tr_client = (TR_CLIENT *) realloc(tr_client, sizeof(TR_CLIENT)*(n_tr_clients+1));
+               assert(tr_client);
 
-               size = sizeof(port);
-               db_get_value(hDB, hSubkey, "Server Port", &port, &size, TID_INT, TRUE);
-               tr_client[n_tr_clients].port = port;
+               tr_client[n_tr_clients].sequence_number = sequence_number;
 
-               size = sizeof(host_name);
-               db_get_value(hDB, hSubkey, "Host", host_name, &size, TID_STRING, TRUE);
-               strcpy(tr_client[n_tr_clients].host_name, host_name);
+               if (hSubkey == hKeylocal) {
+                  /* remember own client */
+                  tr_client[n_tr_clients].port = 0;
+               } else {
+                  /* get client info */
+                  size = sizeof(client_name);
+                  db_get_value(hDB, hSubkey, "Name", client_name, &size, TID_STRING, TRUE);
+                  strcpy(tr_client[n_tr_clients].client_name, client_name);
+
+                  size = sizeof(port);
+                  db_get_value(hDB, hSubkey, "Server Port", &port, &size, TID_INT, TRUE);
+                  tr_client[n_tr_clients].port = port;
+
+                  size = sizeof(host_name);
+                  db_get_value(hDB, hSubkey, "Host", host_name, &size, TID_STRING, TRUE);
+                  strcpy(tr_client[n_tr_clients].host_name, host_name);
+               }
+
+               n_tr_clients++;
             }
-
-            n_tr_clients++;
          }
       }
    }
@@ -3960,7 +3985,7 @@ INT cm_transition(INT transition, INT run_number, char *perror, INT strsize,
                  tr_client[index].client_name, tr_client[index].host_name);
 
          status = rpc_client_call(hConn, RPC_RC_TRANSITION, transition,
-                                  run_number, error, strsize);
+            run_number, error, strsize, tr_client[index].sequence_number);
 
          /* reset timeout */
          rpc_set_option(hConn, RPC_OTIMEOUT, old_timeout);
@@ -10365,6 +10390,7 @@ typedef struct {
    int transition;
    int run_number;
    time_t trans_time;
+   int sequence_number;
 } TR_FIFO;
 
 static TR_FIFO tr_fifo[10];
@@ -10392,16 +10418,17 @@ static INT rpc_transition_dispatch(INT index, void *prpc_param[])
 {
    INT status, i;
 
+   /* erase error string */
+   *(CSTRING(2)) = 0;
+
    if (index == RPC_RC_TRANSITION) {
-      for (i = 0; _trans_table[i].transition; i++)
-         if (_trans_table[i].transition == CINT(0))
+      for (i = 0; i<MAX_TRANSITIONS ; i++)
+         if (_trans_table[i].transition == CINT(0) &&
+             _trans_table[i].sequence_number == CINT(4))
             break;
 
-      /* erase error string */
-      *(CSTRING(2)) = 0;
-
       /* call registerd function */
-      if (_trans_table[i].transition == CINT(0)) {
+      if (i < MAX_TRANSITIONS) {
          if (_trans_table[i].func)
             /* execute callback if defined */
             status = _trans_table[i].func(CINT(1), CSTRING(2));
@@ -10410,6 +10437,7 @@ static INT rpc_transition_dispatch(INT index, void *prpc_param[])
             tr_fifo[trf_wp].transition = CINT(0);
             tr_fifo[trf_wp].run_number = CINT(1);
             tr_fifo[trf_wp].trans_time = time(NULL);
+            tr_fifo[trf_wp].sequence_number = CINT(4);
             trf_wp = (trf_wp + 1) % 10;
             status = RPC_SUCCESS;
          }
