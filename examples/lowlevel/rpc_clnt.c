@@ -6,6 +6,9 @@
   Contents:     Mini RPC client program for test purposes.
 
   $Log$
+  Revision 1.3  2003/05/09 10:03:14  midas
+  Added missing argument in rpc_connect_client()
+
   Revision 1.2  1999/10/26 12:00:57  midas
   Replaced gets by ss_gets
 
@@ -62,7 +65,7 @@ double d;
   rpc_register_client("MYCLIENT", rpc_list);
 
   /* connect to RPC server */
-  status = rpc_client_connect(host_name, 1750, &hConn);
+  status = rpc_client_connect(host_name, 1750, "", &hConn);
   if (status != RPC_SUCCESS)
     {
     printf("Cannot connect to RPC server running on %s at port 1750.\n", host_name);
