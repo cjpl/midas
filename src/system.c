@@ -14,6 +14,9 @@
                 Brown, Prentice Hall
 
   $Log$
+  Revision 1.23  1999/02/06 00:10:35  pierre
+  -Fix timeout unit for ss_mutex_wait_for under VxWorks
+
   Revision 1.22  1999/02/01 11:53:45  midas
   Changed comment
 
@@ -1481,11 +1484,11 @@ INT status;
 #endif /* OS_VMS */
 #ifdef OS_VXWORKS
   {
-  status = semTake((SEM_ID)mutex_handle, timeout == 0 ? WAIT_FOREVER : timeout);
+  /* convert timeout in ticks (1/60) = 1000/60 ~ 1/16 = >>4 */
+  status = semTake((SEM_ID)mutex_handle, timeout == 0 ? WAIT_FOREVER : timeout>>4);
   if (status == ERROR)
     return SS_NO_MUTEX;
   return SS_SUCCESS;
-  }
 #endif /* OS_VXWORKS */
 
 #ifdef OS_UNIX
