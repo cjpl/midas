@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol commands
 
   $Log$
+  Revision 1.2  2002/07/05 15:27:23  midas
+  *** empty log message ***
+
   Revision 1.1  2002/07/05 08:12:46  midas
   Moved files
 
@@ -123,5 +126,8 @@ void lcd_goto(char x, char y);
 void lcd_putc(char c);
 void lcd_puts(char *str);
 char scs_lcd1_read();
+
+void eeprom_read(unsigned char idata *dst, unsigned char len, unsigned char offset);
+void eeprom_write(unsigned char idata *src, unsigned char len, unsigned char offset);
 
 
