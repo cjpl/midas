@@ -6,6 +6,9 @@
   Contents:     Header fiel for MSCB funcions
 
   $Log$
+  Revision 1.43  2005/03/16 14:11:38  ritt
+  Added ethernet protocol
+
   Revision 1.42  2005/03/08 12:41:27  ritt
   Version 1.9.0
 
@@ -292,6 +295,7 @@ typedef struct {
 #define MSCB_TYPE_USB     2
 #define MSCB_TYPE_COM     3
 #define MSCB_TYPE_RPC     4
+#define MSCB_TYPE_ETH     5
 
 typedef struct {
    char device[256];

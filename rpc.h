@@ -6,6 +6,9 @@
   Contents:     Header fiel for MSCB RPC funcions
 
   $Log$
+  Revision 1.20  2005/03/16 14:11:51  ritt
+  Added ethernet protocol
+
   Revision 1.19  2005/03/08 12:41:30  ritt
   Version 1.9.0
 
@@ -181,6 +184,7 @@ typedef struct {
 
 /* default listen port */
 #define MSCB_RPC_PORT           1176
+#define MSCB_NET_PORT           1177
 
 /* rpc timeout in milliseconds */
 #define RPC_TIMEOUT            10000
@@ -203,7 +207,9 @@ typedef struct {
 /* function declarations */
 
 void mrpc_server_loop(void);
-int mrpc_connect(char *host_name);
+int mrpc_connect(char *host_name, int port);
 int mrpc_connected(int fd);
 int mrpc_disconnect(int sock);
 int mrpc_call(int fdi, const int routine_id, ...);
+int msend_tcp(int sock, char *buffer, int buffer_size);
+

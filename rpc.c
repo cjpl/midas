@@ -6,6 +6,9 @@
   Contents:     List of MSCB RPC functions with parameters
 
   $Log$
+  Revision 1.28  2005/03/16 14:11:33  ritt
+  Added ethernet protocol
+
   Revision 1.27  2005/03/08 12:41:28  ritt
   Version 1.9.0
 
@@ -672,7 +675,7 @@ int mrpc_execute(int sock, char *buffer)
 
 /*------------------------------------------------------------------*/
 
-int mrpc_connect(char *host_name)
+int mrpc_connect(char *host_name, int port)
 {
    INT status, sock;
    struct sockaddr_in bind_addr;
@@ -711,7 +714,7 @@ int mrpc_connect(char *host_name)
    memset(&bind_addr, 0, sizeof(bind_addr));
    bind_addr.sin_family = AF_INET;
    bind_addr.sin_addr.s_addr = 0;
-   bind_addr.sin_port = htons((short) MSCB_RPC_PORT);
+   bind_addr.sin_port = htons((short) port);
 
    phe = gethostbyname(host_name);
    if (phe == NULL) {

@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus communication functions
 
   $Log$
+  Revision 1.83  2005/03/16 14:11:11  ritt
+  Added ethernet protocol
+
   Revision 1.82  2005/03/08 12:41:26  ritt
   Version 1.9.0
 
@@ -850,12 +853,13 @@ int mscb_out(int index, unsigned char *buffer, int len, int flags)
 \********************************************************************/
 {
    int i, timeout;
-   unsigned char usb_buf[65];
+   unsigned char usb_buf[65], eth_buf[65];
 
    if (index > MSCB_MAX_FD || index < 1 || !mscb_fd[index - 1].type)
       return MSCB_INVAL_PARAM;
 
    /*---- USB code ----*/
+
    if (mscb_fd[index - 1].type == MSCB_TYPE_USB) {
 
       if (len >= 64 || len < 1)
@@ -879,13 +883,13 @@ int mscb_out(int index, unsigned char *buffer, int len, int flags)
          i = msend_usb(mscb_fd[index - 1].hw, usb_buf, len + 1);
       }
 
-      if (i != len + 1) {
+      if (i != len + 1)
          return MSCB_TIMEOUT;
-      }
+   } 
+   
+   /*---- LPT code ----*/
 
-   } else {
-
-      /*---- LPT code ----*/
+   if (mscb_fd[index - 1].type == MSCB_TYPE_LPT) {
 
       /* remove accidental strobe */
       pp_wcontrol(index, LPT_STROBE, 0);
@@ -962,6 +966,38 @@ int mscb_out(int index, unsigned char *buffer, int len, int flags)
          /* remove strobe */
          pp_wcontrol(index, LPT_STROBE, 0);
       }
+   }
+   
+   /*---- Ethernet code ----*/
+
+   if (mscb_fd[index - 1].type == MSCB_TYPE_ETH) {
+      if (len >= 64 || len < 1)
+         return MSCB_INVAL_PARAM;
+
+      /* write buffer size in first byte */
+      eth_buf[0] = len + 1;
+
+      /* add flags in second byte of Ethernet buffer */
+      eth_buf[1] = flags;
+      memcpy(eth_buf + 2, buffer, len);
+
+      /* send over TCP link */
+      i = msend_tcp(mscb_fd[index - 1].fd, eth_buf, len + 2);
+
+      if (i <= 0) {
+         /* USB submaster might have been dis- and reconnected, so reinit */
+         mrpc_disconnect(mscb_fd[index - 1].fd);
+
+         mscb_fd[index].fd = mrpc_connect(mscb_fd[index - 1].device, MSCB_NET_PORT);
+
+         if (mscb_fd[index].fd < 0)
+            return MSCB_TIMEOUT;
+
+         i = msend_tcp(mscb_fd[index - 1].fd, eth_buf, len + 1);
+      }
+
+      if (i != len + 2)
+         return MSCB_TIMEOUT;
    }
 
    return MSCB_SUCCESS;
@@ -1051,6 +1087,37 @@ int mscb_in1(int fd, unsigned char *c, int timeout)
 
 /*------------------------------------------------------------------*/
 
+int recv_eth(int sock, char *buf, int buffer_size)
+{
+   INT n_received, n;
+   unsigned char buffer[65];
+
+   if (buffer_size > sizeof(buffer))
+      buffer_size = sizeof(buffer);
+
+   /* receive buffer in TCP mode, first byte contains remaining bytes */
+   n_received = 0;
+   do {
+      n = recv(sock, buffer + n_received, sizeof(buffer) - n_received, 0);
+
+      if (n <= 0)
+         return n;
+
+      n_received += n;
+
+   } while (n_received < 1 && n_received < buffer[0]+1);
+
+   if (buffer[0] > buffer_size) {
+      memcpy(buf, buffer+1, buffer_size);
+      return buffer_size;
+   } else
+      memcpy(buf, buffer+1, buffer[0]);
+
+   return buffer[0];
+}
+
+/*------------------------------------------------------------------*/
+
 int mscb_in(int index, char *buffer, int size, int timeout)
 /********************************************************************\
 
@@ -1085,9 +1152,17 @@ int mscb_in(int index, char *buffer, int size, int timeout)
       /* receive result on IN pipe */
       n = mrecv_usb(mscb_fd[index - 1].hr, buffer, size);
 
-   } else {
+   }
+
+   /*---- Ethernet code ----*/
+   if (mscb_fd[index - 1].type == MSCB_TYPE_ETH) {
+
+      /* receive result on IN pipe */
+      n = recv_eth(mscb_fd[index - 1].fd, buffer, size);
+   }
 
    /*---- LPT code ----*/
+   if (mscb_fd[index - 1].type == MSCB_TYPE_LPT) {
 
       /* wait for MCMD_ACK command */
       do {
@@ -1629,6 +1704,7 @@ int mscb_init(char *device, int bufsize, int debug)
                             Under Linux: /dev/parport0 or /dev/parport1
                             "<host>:device" for RPC connection
                             usbx for USB connection
+                            mscbxxx for Ethernet connection
 
                             If device equals "", the function 
                             mscb_select_device is called which selects
@@ -1687,7 +1763,7 @@ int mscb_init(char *device, int bufsize, int debug)
       strcpy(host, device);
       *strchr(host, ':') = 0;
 
-      mscb_fd[index].fd = mrpc_connect(host);
+      mscb_fd[index].fd = mrpc_connect(host, MSCB_RPC_PORT);
 
       if (mscb_fd[index].fd < 0) {
          mscb_fd[index].fd = 0;
@@ -1719,18 +1795,20 @@ int mscb_init(char *device, int bufsize, int debug)
    }
 
    /* LPTx */
-   if (strieq(dev3, "LPT")) {
+   if (strieq(dev3, "LPT"))
       mscb_fd[index].type = MSCB_TYPE_LPT;
-   }
 
    /* /dev/parportx */
-   if (strstr(device, "parport")) {
+   if (strstr(device, "parport"))
       mscb_fd[index].type = MSCB_TYPE_LPT;
-   }
 
    /* USBx */
    if (strieq(dev3, "usb"))
       mscb_fd[index].type = MSCB_TYPE_USB;
+
+   /* MSCBxxx */
+   if (strieq(dev3, "msc"))
+      mscb_fd[index].type = MSCB_TYPE_ETH;
 
    if (mscb_fd[index].type == 0)
       return -1;
@@ -1768,6 +1846,31 @@ int mscb_init(char *device, int bufsize, int debug)
 
       if (n != 2 || buf[0] != MCMD_ACK)
          return -4;
+   }
+
+   if (mscb_fd[index].type == MSCB_TYPE_ETH) {
+
+      mscb_fd[index].fd = mrpc_connect(mscb_fd[index].device, MSCB_NET_PORT);
+
+      if (mscb_fd[index].fd < 0) {
+         mscb_fd[index].fd = 0;
+         return -1;
+      }
+
+      if (!mscb_lock(index + 1))
+         return -6;
+
+      /* check if submaster alive */
+      buf[0] = MCMD_ECHO;
+      mscb_out(index + 1, buf, 1, RS485_FLAG_CMD);
+
+      n = mscb_in(index + 1, buf, 2, 10000);
+      mscb_release(index + 1);
+
+      if (n != 2 || buf[0] != MCMD_ACK)
+         return -4;
+
+      return index + 1;
    }
 
    return index + 1;
@@ -3618,7 +3721,7 @@ int mscb_echo(int fd, int adr, unsigned char d1, unsigned char *d2)
 \********************************************************************/
 {
    int n, status;
-   unsigned char buf[80];
+   unsigned char buf[60];
 
    *d2 = 0xFF;
 

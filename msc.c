@@ -6,6 +6,9 @@
   Contents:     Command-line interface for the Midas Slow Control Bus
 
   $Log$
+  Revision 1.78  2005/03/16 14:11:02  ritt
+  Added ethernet protocol
+
   Revision 1.77  2005/03/08 12:41:26  ritt
   Version 1.9.0
 
@@ -1379,9 +1382,9 @@ int main(int argc, char *argv[])
          } else {
           usage:
             printf("usage: msc [-d host:device] [-a addr] [-c Command] [-c @CommandFile] [-v] [-i]\n\n");
-            printf("       -d     device, usually \"%s\" for parallel port,\n", device);
-            printf("              or 0x378 for direct parallel port address,\n");
-            printf("              or \"<host>:%s\" for RPC connection\n", device);
+            printf("       -d     device, usually usb0 for first USB port,\n");
+            printf("              or \"<host>:usb0\" for RPC connection\n");
+            printf("              or \"mscb<xxx>\" for Ethernet connection to SUBM_260\n");
             printf("       -s     Start RPC server\n");
             printf("       -a     Address node before executing command\n");
             printf("       -c     Execute command immediately\n");
