@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.240  2003/03/26 16:19:32  midas
+  Replaced 50000 by TEXT_SIZE
+
   Revision 1.239  2003/03/14 06:10:36  pierre
   - Fix find_odb_tag() for ctl character (LF)
   - Modify for 50K Custom weeb page
@@ -5170,10 +5173,12 @@ char str[256], *ps;
 
 }
 
+/*------------------------------------------------------------------*/
+
 void show_custom_page(char *path)
 {
 int    size, i_edit, i_set, index, n_var;
-char   str[50000], data[50000], ctext[50000], keypath[256], *p, *ps;
+char   str[TEXT_SIZE], data[TEXT_SIZE], ctext[TEXT_SIZE], keypath[256], *p, *ps;
 HNDLE  hDB, hkey;
 KEY    key;
 BOOL   bedit;
@@ -5725,9 +5730,9 @@ void show_odb_page(char *enc_path, char *dec_path)
 {
 int    i, j, size, status;
 char   str[256], tmp_path[256], url_path[256],
-       data_str[50000], hex_str[256], ref[256], keyname[32], link_name[256];
+       data_str[TEXT_SIZE], hex_str[256], ref[256], keyname[32], link_name[256];
 char   *p, *pd;
-char   data[50000];
+char   data[TEXT_SIZE];
 HNDLE  hDB, hkey, hkeyroot;
 KEY    key;
 
@@ -5987,8 +5992,9 @@ void show_set_page(char *enc_path, char *dec_path, char *group, int index, char 
 int    status, size;
 HNDLE  hDB, hkey;
 KEY    key;
-char   data_str[50000], str[256], *p, eq_name[NAME_LENGTH];
-char   data[50000];
+time_t now;
+char   data_str[TEXT_SIZE], str[256], *p, eq_name[NAME_LENGTH];
+char   data[TEXT_SIZE];
 
   cm_get_experiment_database(&hDB, NULL);
 
@@ -6003,7 +6009,38 @@ char   data[50000];
       }
     db_get_key(hDB, hkey, &key);
 
-    show_header(hDB, "Set value", enc_path, 1, 0);
+    //show_header(hDB, "Set value", enc_path, 1, 0);
+
+
+    /* header */
+    rsprintf("HTTP/1.0 200 Document follows\r\n");
+    rsprintf("Server: MIDAS HTTP %s\r\n", cm_get_version());
+    rsprintf("Content-Type: text/html; charset=iso-8859-1\r\n\r\n");
+
+    rsprintf("<html><head><title>Set value</title></head>\n");
+    rsprintf("<body><form method=\"POST\" action=\"%s\" enctype=\"multipart/form-data\">\n", enc_path);
+
+    /* define hidden field for experiment */
+    if (exp_name[0])
+      rsprintf("<input type=hidden name=exp value=\"%s\">\n", exp_name);
+
+    rsprintf("<table border=3 cellpadding=5>\n");
+
+    /*---- title row ----*/
+
+    size = sizeof(str);
+    str[0] = 0;
+    db_get_value(hDB, 0, "/Experiment/Name", str, &size, TID_STRING, TRUE);
+
+    /* define hidden field for experiment */
+    if (exp_name[0])
+      rsprintf("<input type=hidden name=exp value=\"%s\">\n", exp_name);
+
+    rsprintf("<table border=3 cellpadding=2>\n");
+    rsprintf("<tr><th colspan=1 bgcolor=\"#A0A0FF\">MIDAS experiment \"%s\"", str);
+
+    time(&now);
+    rsprintf("<th colspan=1 bgcolor=\"#A0A0FF\">%s</tr>\n", ctime(&now));
 
     if (index >0)
       rsprintf("<input type=hidden name=index value=\"%d\">\n", index);
@@ -9259,7 +9296,7 @@ HNDLE  hkey, hsubkey, hDB, hconn;
 KEY    key;
 char   str[256], *p;
 char   enc_path[256], dec_path[256], eq_name[NAME_LENGTH], fe_name[NAME_LENGTH];
-char   data[50000];
+char   data[TEXT_SIZE];
 char   *experiment, *password, *wpassword, *command, *value, *group;
 char   exp_list[MAX_EXPERIMENT][NAME_LENGTH];
 time_t now;
