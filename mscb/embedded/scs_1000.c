@@ -9,6 +9,9 @@
                 for SCS-1000 stand alone control unit
 
   $Log$
+  Revision 1.7  2005/02/16 13:14:50  ritt
+  Version 1.8.0
+
   Revision 1.6  2004/12/21 10:47:38  midas
   Subtract ADC offset
 
@@ -33,6 +36,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
+#include <intrins.h>
 #include "mscb.h"
 
 extern bit FREEZE_MODE;
@@ -72,34 +76,32 @@ struct {
    unsigned char din[4];
    float adc[8];
    float dofs[2];
+   float dgain[2];
    float aofs[8];
-
-   float rem_adc, rem_dac;
-
-   unsigned char remrel[4];
+   float again[8];
 } xdata user_data;
 
 MSCB_INFO_VAR code variables[] = {
 
-   { 1, UNIT_BOOLEAN, 0, 0, 0,        "Relais0", &user_data.relais[0], 0, 1, 1 },
+   { 1, UNIT_BOOLEAN, 0, 0, 0,        "Relais0", &user_data.relais[0], 0, 1, 1 }, // 0
    { 1, UNIT_BOOLEAN, 0, 0, 0,        "Relais1", &user_data.relais[1], 0, 1, 1 },
    { 1, UNIT_BOOLEAN, 0, 0, 0,        "Relais2", &user_data.relais[2], 0, 1, 1 },
    { 1, UNIT_BOOLEAN, 0, 0, 0,        "Relais3", &user_data.relais[3], 0, 1, 1 },
 
-   { 1, UNIT_BOOLEAN, 0, 0, 0,        "Dout0",   &user_data.dout[0],   0, 1, 1 },
+   { 1, UNIT_BOOLEAN, 0, 0, 0,        "Dout0",   &user_data.dout[0],   0, 1, 1 }, // 4
    { 1, UNIT_BOOLEAN, 0, 0, 0,        "Dout1",   &user_data.dout[1],   0, 1, 1 },
    { 1, UNIT_BOOLEAN, 0, 0, 0,        "Dout2",   &user_data.dout[2],   0, 1, 1 },
    { 1, UNIT_BOOLEAN, 0, 0, 0,        "Dout3",   &user_data.dout[3],   0, 1, 1 },
 
-   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "DAC0",    &user_data.dac[0],  -10, 10, 0.1 },
+   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "DAC0",    &user_data.dac[0],  -10, 10, 0.1 }, // 8
    { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "DAC1",    &user_data.dac[1],  -10, 10, 0.1 },
 
-   { 1, UNIT_BOOLEAN, 0, 0, 0,        "Din0",    &user_data.din[0] },
+   { 1, UNIT_BOOLEAN, 0, 0, 0,        "Din0",    &user_data.din[0] },  // 10
    { 1, UNIT_BOOLEAN, 0, 0, 0,        "Din1",    &user_data.din[1] },
    { 1, UNIT_BOOLEAN, 0, 0, 0,        "Din2",    &user_data.din[2] },
    { 1, UNIT_BOOLEAN, 0, 0, 0,        "Din3",    &user_data.din[3] },
 
-   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC0",    &user_data.adc[0] },
+   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC0",    &user_data.adc[0] },  // 14
    { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC1",    &user_data.adc[1] },
    { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC2",    &user_data.adc[2] },
    { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC3",    &user_data.adc[3] },
@@ -108,17 +110,28 @@ MSCB_INFO_VAR code variables[] = {
    { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC6",    &user_data.adc[6] },
    { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC7",    &user_data.adc[7] },
 
-   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "DOFS0",   &user_data.dofs[0], -0.1, 0.1, 0.001 },
-   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "DOFS1",   &user_data.dofs[1], -0.1, 0.1, 0.001 },
+   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "DOFS0",  &user_data.dofs[0], -0.1, 0.1, 0.001 }, // 22
+   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "DOFS1",  &user_data.dofs[1], -0.1, 0.1, 0.001 },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "DGAIN0", &user_data.dgain[0], 0.9, 1.1, 0.001 },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "DGAIN1", &user_data.dgain[1], 0.9, 1.1, 0.001 },
 
-   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "AOFS0",   &user_data.aofs[0], -0.1, 0.1, 0.001 },
-   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "AOFS1",   &user_data.aofs[1], -0.1, 0.1, 0.001 },
-   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "AOFS2",   &user_data.aofs[2], -0.1, 0.1, 0.001 },
-   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "AOFS3",   &user_data.aofs[3], -0.1, 0.1, 0.001 },
-   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "AOFS4",   &user_data.aofs[4], -0.1, 0.1, 0.001 },
-   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "AOFS5",   &user_data.aofs[5], -0.1, 0.1, 0.001 },
-   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "AOFS6",   &user_data.aofs[6], -0.1, 0.1, 0.001 },
-   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "AOFS7",   &user_data.aofs[7], -0.1, 0.1, 0.001 },
+   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "AOFS0",  &user_data.aofs[0], -0.1, 0.1, 0.001 }, // 26
+   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "AOFS1",  &user_data.aofs[1], -0.1, 0.1, 0.001 },
+   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "AOFS2",  &user_data.aofs[2], -0.1, 0.1, 0.001 },
+   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "AOFS3",  &user_data.aofs[3], -0.1, 0.1, 0.001 },
+   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "AOFS4",  &user_data.aofs[4], -0.1, 0.1, 0.001 },
+   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "AOFS5",  &user_data.aofs[5], -0.1, 0.1, 0.001 },
+   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "AOFS6",  &user_data.aofs[6], -0.1, 0.1, 0.001 },
+   { 4, UNIT_VOLT,   0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "AOFS7",  &user_data.aofs[7], -0.1, 0.1, 0.001 },
+
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "AGAIN0", &user_data.again[0], 0.9, 1.1, 0.001 }, // 34
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "AGAIN1", &user_data.again[1], 0.9, 1.1, 0.001 },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "AGAIN2", &user_data.again[2], 0.9, 1.1, 0.001 },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "AGAIN3", &user_data.again[3], 0.9, 1.1, 0.001 },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "AGAIN4", &user_data.again[4], 0.9, 1.1, 0.001 },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "AGAIN5", &user_data.again[5], 0.9, 1.1, 0.001 },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "AGAIN6", &user_data.again[6], 0.9, 1.1, 0.001 },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "AGAIN7", &user_data.again[7], 0.9, 1.1, 0.001 },
 
    //## test
 //   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT | MSCBF_REMIN,  "RemAdc",  &user_data.rem_adc, 0, 0, 0, 2, 0 },
@@ -185,11 +198,16 @@ void user_init(unsigned char init)
       for (i=0 ; i<4 ; i++)
          user_data.dout[i] = 0;
 
-      user_data.dac[0] = 0;
-      user_data.dac[1] = 0;
+      for (i=0 ; i<2 ; i++) {
+         user_data.dac[i] = 0;
+         user_data.dofs[i] = 0;
+         user_data.dgain[i] = 1;
+      }
 
-      for (i=0 ; i<8 ; i++)
+      for (i=0 ; i<8 ; i++) {
          user_data.aofs[i] = 0;
+         user_data.again[i] = 1;
+      }
    }
 
    /* write digital outputs */
@@ -238,10 +256,13 @@ void user_write(unsigned char index) reentrant
 
    case 8:                     // DAC0
    case 22:                    // DOFS0
+   case 24:                    // DGAIN0
       /* assume -10V..+10V range */
-      d = ((user_data.dac[0] + user_data.dofs[0] + 10) / 20) * 0x1000;
+      d = (((user_data.dac[0] + user_data.dofs[0]) * user_data.dgain[0] + 10) / 20) * 0x1000;
       if (d >= 0x1000)
          d = 0x0FFF;
+      if (d < 0)
+         d = 0;
 
       SFRPAGE = DAC0_PAGE;
       DAC0L = d & 0xFF;
@@ -250,10 +271,13 @@ void user_write(unsigned char index) reentrant
 
    case 9:                     // DAC1
    case 23:                    // DOFS1
+   case 25:                    // DGAIN1
       /* assume -10V..+10V range */
-      d = ((user_data.dac[1] + user_data.dofs[1] + 10) / 20) * 0x1000;
+      d = (((user_data.dac[1] + user_data.dofs[1]) * user_data.dgain[1] + 10) / 20) * 0x1000;
       if (d >= 0x1000)
          d = 0x0FFF;
+      if (d < 0)
+         d = 0;
 
       SFRPAGE = DAC1_PAGE;
       DAC1L = d & 0xFF;
@@ -318,6 +342,7 @@ void adc_read(channel, float *d)
       gvalue = value / 65536.0 * 10; // 0...10V range
 
    gvalue -= user_data.aofs[channel];
+   gvalue *= user_data.again[channel];
 
    DISABLE_INTERRUPTS;
    *d = gvalue;

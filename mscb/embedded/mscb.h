@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol commands
 
   $Log$
+  Revision 1.49  2005/02/16 13:14:50  ritt
+  Version 1.8.0
+
   Revision 1.48  2005/01/06 14:48:55  midas
   Added scs_220
 
@@ -199,6 +202,9 @@
 #ifdef scs_1000
 #define SCS_1000
 #endif
+#ifdef scs_1001
+#define SCS_1001
+#endif
 #ifdef hvr_200
 #define hvr_200
 #endif
@@ -310,6 +316,22 @@ sbit RS485_SEC_ENABLE = P0 ^ 4;
 #define LCD_SUPPORT
 
 /*--------------------------------*/
+#elif defined(SCS_1001)
+#include <c8051F120.h>
+#define CPU_C8051F120
+#define CPU_CYGNAL
+
+#define LED_0 P2 ^ 0
+#define LED_1 P0 ^ 6
+#define LED_2 P0 ^ 7 // buzzer
+#define LED_ON 1
+sbit RS485_ENABLE = P0 ^ 5;
+sbit RS485_SEC_ENABLE = P0 ^ 4;
+
+#undef USE_WATCHDOG
+#define LCD_SUPPORT
+
+/*--------------------------------*/
 #elif defined(HVR_300)
 #include <aduc812.h>
 #define CPU_ADUC812
@@ -375,9 +397,47 @@ sbit RS485_ENABLE = P0 ^ 7;
 #define N_EEPROM_PAGE      8 // 8 pages @ 512 bytes
 #endif
 
+/*---- Delay macro to be used in interrupt routines etc. -----------*/
+
+#if defined(CPU_C8051F120)
+#define DELAY_US(_us) { \
+   unsigned char idata _i,_j; \
+   for (_i = (unsigned char) _us; _i > 0; _i--) \
+      for (_j=9 ; _j>0 ; _j--) \
+         _nop_(); \
+}
+#elif defined(CPU_C8051F310)
+#define DELAY_US(_us) { \
+   unsigned char idata _i,_j; \
+   for (_i = (unsigned char) _us; _i > 0; _i--) { \
+      _nop_(); \
+      for (_j=3 ; _j>0 ; _j--) \
+         _nop_(); \
+   } \
+}
+#elif defined(CPU_C8051F320)
+#define DELAY_US(_us) { \
+   unsigned char idata _i,_j; \
+   for (_i = (unsigned char) _us; _i > 0; _i--) { \
+      _nop_(); \
+      for (_j=1 ; _j>0 ; _j--) \
+         _nop_(); \
+   } \
+}
+#else
+#define DELAY_US(_us) { \
+   unsigned char idata _i; \
+   for (_i = (unsigned char) _us; _i > 0; _i--) { \
+      _nop_(); \
+      _nop_(); \
+   } \
+}
+#endif
+
 /*---- MSCB commands -----------------------------------------------*/
 
-#define VERSION 0x17            // version 1.7
+#define VERSION 0x18            // version 1.8
+#define INTERCHAR_DELAY 20      // 20us between characters
 
 /* Version history:
 
@@ -389,6 +449,7 @@ sbit RS485_ENABLE = P0 ^ 7;
 1.5 Return 0x0A for protected pages on upload
 1.6 Upload subpages of 60 bytes with ACK
 1.7 Upload with simplified CRC code
+1.8 Add 20us delay betwee characters for repeater
 */
 
 #define CMD_ADDR_NODE8  0x09
@@ -469,7 +530,7 @@ typedef struct {
    char name[8];                // name
    void *ud;                    // point to user data buffer
 
-#ifdef SCS_1000
+#if defined(SCS_1000) || defined(SCS_1001)
    float min, max, delta;       // limits for button control
    unsigned short node_address; // address for remote node on subbus
    unsigned char  channel;      // address for remote channel subbus
