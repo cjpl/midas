@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus communication functions
 
   $Log$
+  Revision 1.32  2003/03/23 11:48:41  midas
+  Added mscb_link()
+
   Revision 1.31  2003/03/19 16:35:03  midas
   Eliminated configuration parameters
 
@@ -2152,6 +2155,145 @@ unsigned char buf[80];
 
   if (buf[n-1] != crc8(buf, n-1))
     return MSCB_CRC_ERROR;
+
+  return MSCB_SUCCESS;
+}
+
+/*------------------------------------------------------------------*/
+
+unsigned long ss_millitime()
+{
+#ifdef _MSC_VER
+  return (int) GetTickCount();
+#else
+  {
+  struct timeval tv;
+
+  gettimeofday(&tv, NULL); 
+
+  return tv.tv_sec * 1000 + tv.tv_usec / 1000;
+  }
+#endif
+}
+
+/*------------------------------------------------------------------*/
+
+typedef struct {
+  unsigned short adr;
+  unsigned char  index;
+  void           *data;
+  unsigned char  size;
+  unsigned long  last;
+} CACHE_ENTRY;
+
+CACHE_ENTRY *cache;
+int n_cache;
+
+#define CACHE_PERIOD 500 // update cache every 500 ms
+
+/*------------------------------------------------------------------*/
+
+int mscb_link(int fd, int adr, unsigned char index, void *data, int size)
+/********************************************************************\
+
+  Routine: mscb_link
+
+  Purpose: Used by LabView to link controls to MSCB variables
+
+  Input:
+    int  fd                 File descriptor for connection
+    int  adr                Node address
+    unsigned char index     Variable index
+    void *data              Pointer to data
+    int size                Size of data
+
+  Output:
+    void *data              Readback data
+
+  Function value:
+    MSCB_SUCCESS            Successful completion
+    MSCB_TIMEOUT            Timeout receiving data
+    MSCB_CRC_ERROR          CRC error
+    MSCB_MUTEX              Cannot obtain mutex for mscb
+    MSCB_FORMAT_ERROR       "size" parameter too large
+    MSCB_NO_MEM             Out of memory
+
+\********************************************************************/
+{
+int i, s, status;
+MSCB_INFO_VAR info;
+
+  /* check if variable in cache */
+  for (i=0 ; i<n_cache ; i++)
+    if (cache[i].adr == adr &&
+        cache[i].index == index)
+      break;
+
+  if (i<n_cache)
+    {
+    if (memcmp(data, cache[i].data, cache[i].size) != 0)
+      {
+      /* data has changed, send update */
+      memcpy(cache[i].data, data, cache[i].size);
+      mscb_write(fd, adr, index, data, cache[i].size);
+      }
+    else
+      {
+      /* retrieve data from node */
+      if (ss_millitime() > cache[i].last + CACHE_PERIOD)
+        {
+        cache[i].last = ss_millitime();
+
+        s = cache[i].size;
+        status = mscb_read(fd, adr, index, cache[i].data, &s);
+        if (status != MSCB_SUCCESS)
+          return status;
+
+        memcpy(data, cache[i].data, size);
+        }
+      }
+    }
+  else
+    {
+    /* add new entry in cache */
+    if (n_cache == 0)
+      cache = malloc(sizeof(CACHE_ENTRY));
+    else
+      cache = realloc(cache, sizeof(CACHE_ENTRY)*(n_cache+1));
+
+    if (cache == NULL)
+      return MSCB_NO_MEM;
+
+    i = n_cache;
+    n_cache++;
+
+    cache[i].adr = adr;
+    cache[i].index = index;
+
+    /* get variable size from node */
+    status = mscb_info_variable(fd, adr, index, &info);
+    if (status != MSCB_SUCCESS)
+      return status;
+
+    cache[i].size = info.width;
+
+    /* allocate at least 4 bytes */
+    s = info.width;
+    if (s < 4)
+      s = 4;
+    cache[i].data = malloc(s);
+    if (cache[i].data == NULL)
+      return MSCB_NO_MEM;
+    memset(cache[i].data, 0, s);
+
+    /* read initial value */
+    s = cache[i].size;
+    status = mscb_read(fd, adr, index, cache[i].data, &s);
+    if (status != MSCB_SUCCESS)
+      return status;
+
+    memcpy(data, cache[i].data, size);
+    }
 
   return MSCB_SUCCESS;
 }
