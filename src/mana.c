@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.69  2000/11/17 08:25:45  midas
+  Added disable_shm_write flag for Linux cluster applications
+
   Revision 1.68  2000/11/15 14:02:08  midas
   Some more work on PVM, but not yet finished
 
@@ -244,15 +247,31 @@
 /* PVM include */
 #ifdef PVM
 
+INT         pvm_start_time=0;
+
+extern BOOL disable_shm_write;
+
 void pvm_debug(char *format, ...)
 {
 va_list  argptr;
-char     str[256];
+char     msg[256], str[256];
 
+  if (pvm_start_time == 0)
+    pvm_start_time = ss_millitime();
+ 
   va_start(argptr, format);
-  vsprintf(str, (char *) format, argptr);
+  vsprintf(msg, (char *) format, argptr);
   va_end(argptr);
+  sprintf(str, "%1.3lf:  %s", (ss_millitime()-pvm_start_time)/1000.0, msg);
   cm_msg(MINFO, "PVM", str);
+#ifdef OS_LINUX
+  {
+  char cmd[256];
+
+  sprintf(cmd, "echo > /dev/console \"%s\"", str);
+  system(cmd);
+  }
+#endif
 }
 
 #undef STRICT
@@ -261,7 +280,8 @@ char     str[256];
 
 /*----- PVM TAGS and data ------------------------------------------*/
 
-#define PVM_BUFFER_SIZE 1024*1024
+/* buffer size must be larger than largest event (ODB dump!) */
+#define PVM_BUFFER_SIZE (1024*1024)
 
 BOOL pvm_master, pvm_slave;
 
@@ -279,6 +299,7 @@ typedef struct {
   char  host[80];
   char  *buffer;
   int   wp;
+  DWORD n_events;
   DWORD time;
   BOOL  eor_sent;
   } PVM_CLIENT;
@@ -289,12 +310,12 @@ int  pvm_eor(int);
 void pvm_debug(char *format, ...);
 int  pvm_distribute(ANALYZE_REQUEST *par, EVENT_HEADER *pevent);
 
-#define PVM_DEBUG pvm_debug
-//#define PVM_DEBUG(s)
+//#define PVM_DEBUG pvm_debug
+#define PVM_DEBUG
 
 #else
 
-#define PVM_DEBUG(s)
+#define PVM_DEBUG
 
 #endif
 
@@ -366,6 +387,7 @@ struct {
   BOOL  no_load;
   BOOL  daemon;
   INT   n_task;
+  INT   pvm_buf_size;
 } clp;
 
 struct {
@@ -460,6 +482,10 @@ struct {
   {'t', 
    "<n>           Parallelize analyzer using <n> tasks with PVM.",
    &clp.n_task, TID_INT, 1 },
+
+  {'b', 
+   "<n>           Buffer size for parallelization in kB.",
+   &clp.pvm_buf_size, TID_INT, 1 },
 #endif
 
   {'v', 
@@ -2824,12 +2850,12 @@ static char  *orig_event = NULL;
   if (pvm_master)
     {
     status = pvm_distribute(par, pevent);
-    return SUCCESS;
+    return status;
     }
 
 #endif
   
-  /* don't analyze BOR events */
+  /* don't analyze special (BOR,MESSAGE,...) events */
   if (par == NULL)
     return SUCCESS;
 
@@ -3596,6 +3622,7 @@ int status, n;
 #ifdef PVM
     int bufid, len, tag, tid;
     EVENT_HEADER *pe;
+    struct timeval timeout;
     
     /* check if anything in buffer */
     if (file->wp > file->rp)
@@ -3612,10 +3639,18 @@ int status, n;
     pvm_send(pvm_myparent, TAG_DATA);
 
     /* receive data */
-    bufid = pvm_recv(-1, -1);
+    timeout.tv_sec  = 10;
+    timeout.tv_usec = 0;
+
+    bufid = pvm_trecv(-1, -1, &timeout);
     if (bufid < 0)
       {
       pvm_perror("pvm_recv");
+      return -1;
+      }
+    if (bufid == 0)
+      {
+      PVM_DEBUG("ma_read_event: timeout receiving data, aborting analyzer.\n");
       return -1;
       }
 
@@ -3626,7 +3661,7 @@ int status, n;
       return -1;
       }
 
-    PVM_DEBUG("ma_read_event: receive tag %d", tag);
+    PVM_DEBUG("ma_read_event: receive tag %d, buflen %d", tag, len);
 
     if (tag == TAG_EOR || tag == TAG_EXIT)
       return -1;
@@ -3639,6 +3674,10 @@ int status, n;
       pvm_perror("pvm_upkbyte");
       return -1;
       }
+
+    /* no new data available, sleep some time to reduce network traffic */
+    if (len == 0)
+      ss_sleep(200);
 
     /* re-call this function */
     return ma_read_event(file, pevent, size);
@@ -3742,30 +3781,33 @@ DWORD           start_time;
     /* check if event is in event limit */
     skip = FALSE;
 
-    if (clp.n[0] > 0 || clp.n[1] > 0)
+    if (!pvm_slave)
       {
-      if (clp.n[1] == 0)
+      if (clp.n[0] > 0 || clp.n[1] > 0)
         {
-        /* treat n[0] as upper limit */
-        if (num_events_in > clp.n[0])
+        if (clp.n[1] == 0)
           {
-          num_events_in--;
-          status = SUCCESS;
-          break;
+          /* treat n[0] as upper limit */
+          if (num_events_in > clp.n[0])
+            {
+            num_events_in--;
+            status = SUCCESS;
+            break;
+            }
           }
-        }
-      else
-        {
-        if (num_events_in > clp.n[1])
+        else
           {
-          status = SUCCESS;
-          break;
-          }
-        if (num_events_in < clp.n[0])
-          skip = TRUE;
-        else if (clp.n[2] > 0 &&
-                 num_events_in % clp.n[2] != 0)
+          if (num_events_in > clp.n[1])
+            {
+            status = SUCCESS;
+            break;
+            }
+          if (num_events_in < clp.n[0])
             skip = TRUE;
+          else if (clp.n[2] > 0 &&
+                   num_events_in % clp.n[2] != 0)
+              skip = TRUE;
+          }
         }
       }
 
@@ -3814,6 +3856,46 @@ DWORD           start_time;
       }
     } while(1);
 
+  PVM_DEBUG("analyze_run: event loop finished, status = %d", status);
+
+  /* signal EOR to slaves */
+#ifdef PVM
+  if (pvm_master)
+    {
+    if (status == RPC_SHUTDOWN)
+      printf("Shutting down distributed analyzers, please wait...\n"); 
+    pvm_eor(status == RPC_SHUTDOWN ? TAG_EXIT : TAG_EOR);
+
+    start_time = ss_millitime() - start_time;
+
+    update_stats();
+    if (!clp.quiet)
+      {
+      if (out_file)
+        printf("%s:%d  %s:%d  events, %1.2lfs\n", input_file_name, num_events_in, 
+               out_info.filename, num_events_out, start_time/1000.0);
+      else
+        printf("%s:%d  events, %1.2lfs\n", input_file_name, num_events_in, start_time/1000.0); 
+      }
+    }
+  else
+    {
+    start_time = ss_millitime() - start_time;
+
+    update_stats();
+    if (!clp.quiet)
+      {
+      if (out_file)
+        printf("%s:%d  %s:%d  events, %1.2lfs\n", input_file_name, num_events_in, 
+               out_info.filename, num_events_out, start_time/1000.0);
+      else
+        printf("%s:%d  events, %1.2lfs\n", input_file_name, num_events_in, start_time/1000.0); 
+      }
+
+    eor(current_run_number, error);
+    }
+#else
+
   start_time = ss_millitime() - start_time;
 
   update_stats();
@@ -3825,14 +3907,6 @@ DWORD           start_time;
     else
       printf("%s:%d  events, %1.2lfs\n", input_file_name, num_events_in, start_time/1000.0); 
     }
-
-  /* signal EOR to slaves */
-#ifdef PVM
-  if (pvm_master)
-    pvm_eor(status == RPC_SHUTDOWN ? TAG_EXIT : TAG_EOR);
-  else
-    eor(current_run_number, error);
-#else
 
   /* call analyzer eor routines */
   eor(current_run_number, error);
@@ -4023,7 +4097,7 @@ char path[256];
 #endif
 
     /* return if no parallelization selected */
-    if (clp.n_task == 0)
+    if (clp.n_task == -1)
       return SUCCESS;
 
     /* Set number of slaves to start */
@@ -4032,6 +4106,9 @@ char path[256];
     pvm_n_task = n_host-1;
     if (clp.n_task != 0)
       pvm_n_task = clp.n_task;
+
+    if (pvm_n_task > n_host-1)
+      pvm_n_task = n_host-1;
 
     if (pvm_n_task == 0)
       return SUCCESS;
@@ -4065,7 +4142,7 @@ char path[256];
       }
 
     /* spawn slaves */
-    printf("Spawning %s %d times\n", path, pvm_n_task);
+    printf("Parallelizing analyzer on %d machines\n", pvm_n_task);
     if (pvm_n_task == 1)
       status = pvm_spawn(path, argv+1, PvmTaskDefault, NULL, pvm_n_task, pvm_tid);
     else
@@ -4083,11 +4160,17 @@ char path[256];
       {
       pvmc[i].tid = pvm_tid[i];
       pvmc[i].wp = 0;
+      pvmc[i].n_events = 0;
+      pvmc[i].time = 0;
       dtid = pvm_tidtohost(pvm_tid[i]);
       for (j=0 ; j<n_host ; j++)
-        if (dtid == hostp[i].hi_tid)
-          strcpy(pvmc[i].host, hostp[i].hi_name);
+        if (dtid == hostp[j].hi_tid)
+          strcpy(pvmc[i].host, hostp[j].hi_name);
       }
+
+    PVM_DEBUG("Spawing on hosts:");
+    for (i=0 ; i<pvm_n_task ; i++)
+      PVM_DEBUG("%s", pvmc[i].host);
 
     if (status < pvm_n_task)
       {
@@ -4119,8 +4202,15 @@ int pvm_send_event(int index, EVENT_HEADER *pevent)
 struct timeval timeout;
 int    bufid, len, tag, tid, status;
 
+  if (pevent->data_size+sizeof(EVENT_HEADER) >= PVM_BUFFER_SIZE)
+    {
+    printf("Event too large (%d) for PVM buffer (%d), analyzer aborted\n",
+            pevent->data_size+sizeof(EVENT_HEADER), PVM_BUFFER_SIZE);
+    return RPC_SHUTDOWN;
+    }
+
   /* wait on event request */
-  timeout.tv_sec  = 5;
+  timeout.tv_sec  = 60;
   timeout.tv_usec = 0;
 
   bufid = pvm_trecv(pvmc[index].tid, -1, &timeout);
@@ -4148,10 +4238,7 @@ int    bufid, len, tag, tid, status;
   /* send event */
   pvm_initsend(PvmDataInPlace);
 
-  if (pevent)
-    pvm_pkbyte((char *) pevent, pevent->data_size+sizeof(EVENT_HEADER), 1);
-  else
-    pvm_pkbyte((char *) pvmc[index].buffer, pvmc[index].wp, 1);
+  pvm_pkbyte((char *) pevent, pevent->data_size+sizeof(EVENT_HEADER), 1);
 
   PVM_DEBUG("pvm_send_event: send events to client %d", index);
 
@@ -4162,10 +4249,89 @@ int    bufid, len, tag, tid, status;
     return RPC_SHUTDOWN;
     }
 
-  if (!pevent)
-    pvmc[index].wp = 0;
-
   pvmc[index].time = ss_millitime();
+
+  return SUCCESS;
+}
+
+/*------------------------------------------------------------------*/
+
+int pvm_send_buffer(int index)
+{
+struct timeval timeout;
+int    i, bufid, len, tag, tid, status;
+
+  PVM_DEBUG("pvm_send_buffer: index %d", index);
+
+  if (index == -2)
+    {
+    bufid = pvm_nrecv(-1, -1);
+    }
+  else
+    {
+    /* wait on event request with timeout */
+    timeout.tv_sec  = 60;
+    timeout.tv_usec = 0;
+
+    bufid = pvm_trecv(-1, -1, &timeout);
+    }
+
+  if (bufid < 0)
+    {
+    pvm_perror("pvm_recv");
+    return RPC_SHUTDOWN;
+    }
+  if (bufid == 0)
+    {
+    if (index == -2)
+      return SUCCESS;
+
+    printf("Timeout receiving data requests, aborting analyzer.\n");
+    return RPC_SHUTDOWN;
+    }
+
+  status = pvm_bufinfo(bufid, &len, &tag, &tid);
+  if (status < 0)
+    {
+    pvm_perror("pvm_bufinfo");
+    return RPC_SHUTDOWN;
+    }
+
+  /* find index of that client */
+  for (i=0 ; i<pvm_n_task ; i++)
+    if (pvmc[i].tid == tid)
+      break;
+
+  if (i == pvm_n_task)
+    {
+    cm_msg(MERROR, "pvm_send_buffer", "received message from unknown client %d", tid);
+    return RPC_SHUTDOWN;
+    }
+
+  PVM_DEBUG("pvm_send_buffer: received request from client %d", i);
+
+  /* send event */
+  pvm_initsend(PvmDataInPlace);
+
+  pvm_pkbyte((char *) pvmc[i].buffer, pvmc[i].wp, 1);
+
+  PVM_DEBUG("pvm_send_buffer: send %d events (%1.1lfkB) to client %d", 
+             pvmc[i].n_events, pvmc[i].wp/1024.0, i);
+
+  status = pvm_send(tid, TAG_DATA);
+  if (status < 0)
+    {
+    pvm_perror("pvm_send");
+    return RPC_SHUTDOWN;
+    }
+
+  pvmc[i].wp = 0;
+  pvmc[i].n_events = 0;
+  pvmc[i].time = ss_millitime();
+
+  /* if specific client is requested and not emptied, try again */
+  if (index >= 0 && index != i)
+    return pvm_send_buffer(index);
 
   return SUCCESS;
 }
@@ -4174,8 +4340,8 @@ int    bufid, len, tag, tid, status;
 
 int pvm_distribute(ANALYZE_REQUEST *par, EVENT_HEADER *pevent)
 {
-int    i, index, size, status, min;
-int    bufid, len, tag, tid;
+char str[256];
+int  i, index, size, status, min, max;
 
   if (par == NULL && pevent->event_id == EVENTID_BOR)
     {
@@ -4192,101 +4358,99 @@ int    bufid, len, tag, tid;
 
   size = sizeof(EVENT_HEADER) + pevent->data_size;
 
-  if ((par->ar_info.sampling_type & GET_FARM) == 0)
+  if (par == NULL || (par->ar_info.sampling_type & GET_FARM) == 0)
     {
     /* if not farmed, copy to all client buffers */
     for (i=0 ; i<pvm_n_task ; i++)
       {
       /* if buffer full, empty it */
-      if (pvmc[i].wp + size >= PVM_BUFFER_SIZE)
+      if (pvmc[i].wp + size >= clp.pvm_buf_size)
         {
-        status = pvm_send_event(i, NULL);
+        status = pvm_send_buffer(i);
         if (status != SUCCESS)
           return status;
         }
 
+      if (size >= PVM_BUFFER_SIZE)
+        {
+        printf("Event too large (%d) for PVM buffer (%d), analyzer aborted\n",
+                size, PVM_BUFFER_SIZE);
+        return RPC_SHUTDOWN;
+        }
+
       memcpy(pvmc[i].buffer + pvmc[i].wp, pevent, size);
       pvmc[i].wp += size;
+      pvmc[i].n_events++;
       }
-
-    return SUCCESS;
     }
+  else
+    {
+    /* farmed: look for buffer with lowest level */
+    min = PVM_BUFFER_SIZE;
+    index = 0;
+    for (i=0 ; i<pvm_n_task ; i++)
+      if (pvmc[i].wp < min)
+        {
+        min = pvmc[i].wp;
+        index = i;
+        }
 
-  /* farmed: look for buffer with lowest level */
-  min = PVM_BUFFER_SIZE;
-  for (i=0 ; i<pvm_n_task ; i++)
-    if (pvmc[i].wp < min)
+    /* if buffer full, empty it */
+    if (pvmc[index].wp + size >= clp.pvm_buf_size)
       {
-      min = pvmc[i].wp;
-      index = i;
+      status = pvm_send_buffer(index);
+      if (status != SUCCESS)
+        return status;
       }
 
-  /* if buffer full, empty it */
-  if (pvmc[index].wp + size >= PVM_BUFFER_SIZE)
-    {
-    status = pvm_send_event(index, NULL);
-    if (status != SUCCESS)
-      return status;
-    }
+    if (pvmc[index].wp + size >= PVM_BUFFER_SIZE)
+      {
+      printf("Event too large (%d) for PVM buffer (%d), analyzer aborted\n",
+              size, PVM_BUFFER_SIZE);
+      return RPC_SHUTDOWN;
+      }
 
-  /* copy to "index" buffer */
-  if (pvmc[index].wp + size < PVM_BUFFER_SIZE)
-    {
+    /* copy to "index" buffer */
     memcpy(pvmc[index].buffer + pvmc[index].wp, pevent, size);
     pvmc[index].wp += size;
+    pvmc[index].n_events++;
     }
 
-  /* don't send events if buffers are more than half empty */
-  if (min < PVM_BUFFER_SIZE/2)
+  //##
+  sprintf(str, "%1.3lf:  ", (ss_millitime()-pvm_start_time)/1000.0);
+  for (i=0 ; i<pvm_n_task ; i++)
+    if (i == index)
+      sprintf(str+strlen(str), "#%d# ", pvmc[i].wp);
+    else
+      sprintf(str+strlen(str), "%d ", pvmc[i].wp);
+  PVM_DEBUG(str);
+
+  /* find min/max buffer level */
+  min = PVM_BUFFER_SIZE;
+  max = 0;
+  for (i=0 ; i<pvm_n_task ; i++)
+    {
+    if (pvmc[i].wp > max)
+      max = pvmc[i].wp;
+    if (pvmc[i].wp < min)
+      min = pvmc[i].wp;
+    }
+
+  /* don't send events if all buffers are less than half full */
+  if (max < clp.pvm_buf_size/2)
     return SUCCESS;
 
-  /* check if any client request a new buffer */
-  bufid = pvm_nrecv(-1, -1);
-  if (bufid < 0)
+  /* if all buffer are more than half full, wait for next request */
+  if (min > clp.pvm_buf_size/2)
     {
-    pvm_perror("pvm_recv");
-    return RPC_SHUTDOWN;
+    status = pvm_send_buffer(-1);
+    return status;
     }
 
-  if (bufid != 0)
-    {
-    status = pvm_bufinfo(bufid, &len, &tag, &tid);
-    if (status < 0)
-      {
-      pvm_perror("pvm_bufinfo");
-      return RPC_SHUTDOWN;
-      }
+  /* probe new requests */
+  status = pvm_send_buffer(-2);
 
-    /* find index of that client */
-    for (i=0 ; i<pvm_n_task ; i++)
-      if (pvmc[i].tid == tid)
-        break;
-
-    if (i == pvm_n_task)
-      {
-      cm_msg(MERROR, "pvm_distribute", "received message from unknown client %d", tid);
-      return RPC_SHUTDOWN;
-      }
-
-    /* send event */
-    pvm_initsend(PvmDataInPlace);
-
-    pvm_pkbyte((char *) pvmc[i].buffer, pvmc[i].wp, 1);
-
-    PVM_DEBUG("pvm_distribute: send events to client %d", i);
-
-    status = pvm_send(tid, TAG_DATA);
-    if (status < 0)
-      {
-      pvm_perror("pvm_send");
-      return RPC_SHUTDOWN;
-      }
-
-    pvmc[i].wp = 0;
-    pvmc[i].time = ss_millitime();
-    }
-
-  return SUCCESS;
+  return status;
 }
 
 /*------------------------------------------------------------------*/
@@ -4302,7 +4466,7 @@ int            bufid, len, tag, tid, i, j, status;
   do
     {
     /* flush remaining buffers */
-    timeout.tv_sec  = 5;
+    timeout.tv_sec  = 60;
     timeout.tv_usec = 0;
 
     bufid = pvm_trecv(-1, -1, &timeout);
@@ -4313,7 +4477,7 @@ int            bufid, len, tag, tid, i, j, status;
       }
     if (bufid == 0)
       {
-      printf("Timeout receiving data requests aborting analyzer.\n");
+      printf("Timeout receiving data request, aborting analyzer.\n");
       return RPC_SHUTDOWN;
       }
 
@@ -4331,20 +4495,21 @@ int            bufid, len, tag, tid, i, j, status;
 
     if (j == pvm_n_task)
       {
-      cm_msg(MERROR, "pvm_distribute", "received message from unknown client %d", tid);
+      cm_msg(MERROR, "pvm_eor", "received message from unknown client %d", tid);
       return RPC_SHUTDOWN;
       }
 
     PVM_DEBUG("pvm_eor: received request from client %d", j);
 
     /* send remaining buffer if data available */
-    if (pvmc[j].wp > 0)
+    if (eor_tag == TAG_EOR && pvmc[j].wp > 0)
       {
       pvm_initsend(PvmDataInPlace);
 
       pvm_pkbyte((char *) pvmc[j].buffer, pvmc[j].wp, 1);
 
-      PVM_DEBUG("pvm_eor: send events to client %d", j);
+      PVM_DEBUG("pvm_eor: send %d events (%1.1lfkB) to client %d", 
+                 pvmc[j].n_events, pvmc[j].wp/1024.0, j);
 
       status = pvm_send(tid, TAG_DATA);
       if (status < 0)
@@ -4354,6 +4519,7 @@ int            bufid, len, tag, tid, i, j, status;
         }
 
       pvmc[j].wp = 0;
+      pvmc[j].n_events = 0;
       pvmc[j].time = ss_millitime();
       }
     else
@@ -4394,6 +4560,19 @@ main(int argc, char *argv[])
 {
 INT status;
 
+#ifdef PVM
+  int i;
+  char str[256];
+
+  str[0] = 0;
+  for (i=0 ; i<argc ; i++)
+    {
+    strcat(str, argv[i]);
+    strcat(str, " ");
+    }
+  PVM_DEBUG("Analyzer started: %s", str);
+#endif
+
   /* get default from environment */
   cm_get_environment(clp.host_name, clp.exp_name);
 
@@ -4411,6 +4590,17 @@ INT status;
     printf("Becoming a daemon...\n");
     clp.quiet = TRUE;
     ss_daemon_init();
+    }
+
+  /* set default buffer size */
+  if (clp.pvm_buf_size == 0)
+    clp.pvm_buf_size = 512*1024;
+  else
+    clp.pvm_buf_size *= 1024;
+  if (clp.pvm_buf_size > PVM_BUFFER_SIZE)
+    {
+    printf("Buffer size cannot be larger than %dkB\n", PVM_BUFFER_SIZE/1024);
+    return 1;
     }
 
   /* set online mode if no input filename is given */
@@ -4540,13 +4730,22 @@ INT status;
   /* call exit function */
   mana_exit();
 
-  /* close network connection to server */
-  cm_disconnect_experiment();
-
 #ifdef PVM
+
+  PVM_DEBUG("Analyzer stopped");
+
   /* exit PVM */
   pvm_exit();
+
+  /* if PVM slave, don't write *SHM file back */
+  if (pvm_slave)
+    disable_shm_write = TRUE;
+
 #endif
+
+  /* disconnect from experiment */
+  cm_disconnect_experiment();
+
 
   return 0;
 }
