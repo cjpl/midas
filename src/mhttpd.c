@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.108  2000/04/03 12:52:24  midas
+  Chaned table colors
+
   Revision 1.107  2000/04/03 12:26:48  midas
   Added ODB attachments
 
@@ -2456,11 +2459,13 @@ time_t now;
           }
 
         if (strcmp(data_str, hex_str) != 0 && hex_str[0])
-          sprintf(b+strlen(b), "<tr><td bgcolor=#FFFF00>%s</td><td>%s (%s)</td></tr>\n", 
+          sprintf(b+strlen(b), 
+                  "<tr><td bgcolor=#FFFF00>%s</td><td bgcolor=#FFFFFF>%s (%s)</td></tr>\n", 
                   key.name, data_str, hex_str);
         else
           {
-          sprintf(b+strlen(b), "<tr><td bgcolor=#FFFF00>%s</td><td>", key.name);
+          sprintf(b+strlen(b), 
+                  "<tr><td bgcolor=#FFFF00>%s</td><td bgcolor=#FFFFFF>", key.name);
           strencode2(b+strlen(b), data_str);
           sprintf(b+strlen(b), "</td></tr>\n");
           }
@@ -2487,9 +2492,9 @@ time_t now;
             sprintf(b+strlen(b), "<tr>");
 
           if (strcmp(data_str, hex_str) != 0 && hex_str[0])
-            sprintf(b+strlen(b), "<td>[%d] %s (%s)<br></td></tr>\n", j, data_str, hex_str);
+            sprintf(b+strlen(b), "<td bgcolor=#FFFFFF>[%d] %s (%s)<br></td></tr>\n", j, data_str, hex_str);
           else
-            sprintf(b+strlen(b), "<td>[%d] %s<br></td></tr>\n", j, data_str);
+            sprintf(b+strlen(b), "<td bgcolor=#FFFFFF>[%d] %s<br></td></tr>\n", j, data_str);
           }
         }
       }
