@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.247  2003/05/09 14:03:22  midas
+  Added 'labels=0/1' flag to history display
+
   Revision 1.246  2003/05/07 10:57:36  midas
   Removed tabs
 
@@ -7417,7 +7420,7 @@ double s;
 #define MAX_VARS 10
 
 void generate_hist_graph(char *path, char *buffer, int *buffer_size,
-                         int width, int height, int scale, int toffset, int index)
+                         int width, int height, int scale, int toffset, int index, int labels)
 {
 HNDLE       hDB, hkey, hkeypanel, hkeyeq, hkeydvar, hkeyvars, hkeyroot, hkeynames;
 KEY         key;
@@ -7450,11 +7453,11 @@ double      yb1, yb2, yf1, yf2, ybase;
   /* generate test image */
   im = gdImageCreate(width, height);
 
-    /* First color allocated is background. */
+  /* First color allocated is background. */
   grey   = gdImageColorAllocate(im, 192, 192, 192);
   ltgrey = gdImageColorAllocate(im, 208, 208, 208);
-    white  = gdImageColorAllocate(im, 255, 255, 255);
-    black  = gdImageColorAllocate(im, 0, 0, 0);
+  white  = gdImageColorAllocate(im, 255, 255, 255);
+  black  = gdImageColorAllocate(im, 0, 0, 0);
   red    = gdImageColorAllocate(im, 255,   0,   0);
   green  = gdImageColorAllocate(im,   0, 255,   0);
   blue   = gdImageColorAllocate(im,   0,   0, 255);
@@ -7475,9 +7478,9 @@ double      yb1, yb2, yf1, yf2, ybase;
   state_col[2] = gdImageColorAllocate(im,   0, 255,   0);
 
   /* Set transparent color. */
-    gdImageColorTransparent(im, grey);
+  gdImageColorTransparent(im, grey);
 
-    /* Title */
+  /* Title */
   strcpy(panel, path);
   if (strstr(panel, ".gif"))
     *strstr(panel, ".gif") = 0;
@@ -8092,45 +8095,48 @@ double      yb1, yb2, yf1, yf2, ybase;
       }
     }
 
-  for (i=0 ; i<n_vars ; i++)
+  if (labels)
     {
-    if (index != -1 && index != i)
-      continue;
-
-    if (factor[i] != 1)
+    for (i=0 ; i<n_vars ; i++)
       {
-      if (offset[i] == 0)
-        sprintf(str, "%s * %1.2lG", strchr(tag_name[i], ':')+1, factor[i]);
+      if (index != -1 && index != i)
+        continue;
+
+      if (factor[i] != 1)
+        {
+        if (offset[i] == 0)
+          sprintf(str, "%s * %1.2lG", strchr(tag_name[i], ':')+1, factor[i]);
+        else
+          sprintf(str, "%s * %1.2lG %c %1.5lG", strchr(tag_name[i], ':')+1,
+            factor[i], offset[i] < 0 ? '-' : '+', fabs(offset[i]));
+        }
       else
-        sprintf(str, "%s * %1.2lG %c %1.5lG", strchr(tag_name[i], ':')+1,
-          factor[i], offset[i] < 0 ? '-' : '+', fabs(offset[i]));
+        {
+        if (offset[i] == 0)
+          sprintf(str, "%s", strchr(tag_name[i], ':')+1);
+        else
+          sprintf(str, "%s %c %1.5lG", strchr(tag_name[i], ':')+1,
+            offset[i] < 0 ? '-' : '+', fabs(offset[i]));
+        }
+
+      row = index == -1 ? i : 0;
+
+      gdImageFilledRectangle(im,
+              x1+10,
+              y2+10+row*(gdFontMediumBold->h+10),
+              x1+10+strlen(str)*gdFontMediumBold->w+10,
+              y2+10+row*(gdFontMediumBold->h+10)+gdFontMediumBold->h+2+2, white);
+      gdImageRectangle(im,
+              x1+10,
+              y2+10+row*(gdFontMediumBold->h+10),
+              x1+10+strlen(str)*gdFontMediumBold->w+10,
+              y2+10+row*(gdFontMediumBold->h+10)+gdFontMediumBold->h+2+2, curve_col[i]);
+
+      gdImageString(im, gdFontMediumBold,
+              x1+10+5,
+              y2+10+2+row*(gdFontMediumBold->h+10),
+              str, curve_col[i]);
       }
-    else
-      {
-      if (offset[i] == 0)
-        sprintf(str, "%s", strchr(tag_name[i], ':')+1);
-      else
-        sprintf(str, "%s %c %1.5lG", strchr(tag_name[i], ':')+1,
-          offset[i] < 0 ? '-' : '+', fabs(offset[i]));
-      }
-
-    row = index == -1 ? i : 0;
-
-    gdImageFilledRectangle(im,
-            x1+10,
-            y2+10+row*(gdFontMediumBold->h+10),
-            x1+10+strlen(str)*gdFontMediumBold->w+10,
-            y2+10+row*(gdFontMediumBold->h+10)+gdFontMediumBold->h+2+2, white);
-    gdImageRectangle(im,
-            x1+10,
-            y2+10+row*(gdFontMediumBold->h+10),
-            x1+10+strlen(str)*gdFontMediumBold->w+10,
-            y2+10+row*(gdFontMediumBold->h+10)+gdFontMediumBold->h+2+2, curve_col[i]);
-
-    gdImageString(im, gdFontMediumBold,
-            x1+10+5,
-            y2+10+2+row*(gdFontMediumBold->h+10),
-            str, curve_col[i]);
     }
 
   gdImageRectangle(im, x1, y2, x2, y1, black);
@@ -8790,7 +8796,7 @@ char   str[256], ref[256], ref2[256], paramstr[256], scalestr[256];
 char   *poffset, *pscale, *pmag, *pindex;
 HNDLE  hDB, hkey, hkeyp, hkeybutton;
 KEY    key;
-int    i, scale, offset, index, width, size, status;
+int    i, scale, offset, index, width, size, status, labels;
 float  factor[2];
 char   def_button[][NAME_LENGTH] = {"10m", "1h", "3h", "12h", "24h", "3d", "7d" };
 
@@ -8916,6 +8922,10 @@ char   def_button[][NAME_LENGTH] = {"10m", "1h", "3h", "12h", "24h", "3d", "7d" 
   if (pindex == NULL || *pindex == 0)
     pindex = getparam("hindex");
 
+  labels = 1;
+  if (*getparam("labels") && atoi(getparam("labels")) == 0)
+    labels = 0;
+
   /* evaluate scale and offset */
 
   if (poffset && *poffset)
@@ -8935,13 +8945,13 @@ char   def_button[][NAME_LENGTH] = {"10m", "1h", "3h", "12h", "24h", "3d", "7d" 
       index = atoi(pindex);
 
     if (equal_ustring(pmag, "Large"))
-      generate_hist_graph(path, buffer, buffer_size, 1024, 768, scale, offset, index);
+      generate_hist_graph(path, buffer, buffer_size, 1024, 768, scale, offset, index, labels);
     else if (equal_ustring(pmag, "Small"))
-      generate_hist_graph(path, buffer, buffer_size, 320, 200, scale, offset, index);
+      generate_hist_graph(path, buffer, buffer_size, 320, 200, scale, offset, index, labels);
     else if (atoi(pmag) > 0)
-      generate_hist_graph(path, buffer, buffer_size, atoi(pmag), (int) (atoi(pmag)*0.625), scale, offset, index);
+      generate_hist_graph(path, buffer, buffer_size, atoi(pmag), (int) (atoi(pmag)*0.625), scale, offset, index, labels);
     else
-      generate_hist_graph(path, buffer, buffer_size, 640, 400, scale, offset, index);
+      generate_hist_graph(path, buffer, buffer_size, 640, 400, scale, offset, index, labels);
 
     return;
     }
