@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol commands
 
   $Log$
+  Revision 1.39  2004/07/09 07:47:26  midas
+  Added limits in variables
+
   Revision 1.38  2004/06/16 11:40:54  midas
   Implemented SUBM_xxx defines
 
@@ -186,7 +189,7 @@ sbit RS485_ENABLE = P3 ^ 5;
 sbit RS485_ENABLE = P3 ^ 5;
 
 /*--------------------------------*/
-#elif defined(SCS_520) || defined(SCS_600) || defined(SCS_700) || defined (SCS_800) || defined (SCS_900)
+#elif defined(SCS_520) || defined(SCS_600) || defined(SCS_700) || defined (SCS_800) || defined (SCS_900) || defined (SCS_950)
 #include <c8051F000.h>
 #define CPU_C8051F000
 #define CPU_CYGNAL
@@ -194,6 +197,17 @@ sbit RS485_ENABLE = P3 ^ 5;
 #define LED_0 P3 ^ 4
 #define LED_ON 0
 sbit RS485_ENABLE = P3 ^ 5;
+
+/*--------------------------------*/
+#elif defined(SCS_1000)
+#include <c8051F020.h>
+#define CPU_C8051F020
+#define CPU_CYGNAL
+
+#define LED_0 P2 ^ 0
+#define LED_1 P0 ^ 6
+#define LED_ON 0
+sbit RS485_ENABLE = P0 ^ 5;
 
 /*--------------------------------*/
 #elif defined(HVR_300)
@@ -351,6 +365,10 @@ typedef struct {
    unsigned char flags;         // flags MSCBF_xxx
    char name[8];                // name
    void *ud;                    // point to user data buffer
+
+#ifdef SCS_1000
+   float min, max, delta;       // limits for button control
+#endif
 } MSCB_INFO_VAR;
 
 #define MSCBF_FLOAT  (1<<0)     // channel in floating point format
