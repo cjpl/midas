@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.94  1999/12/08 16:10:43  midas
+  Fixed another watchdog bug causing remote clients to crash
+
   Revision 1.93  1999/12/08 11:44:25  midas
   Fixed bug with watchdog timeout
 
@@ -1542,6 +1545,8 @@ PROGRAM_INFO_STR(program_info_str);
   /* save watchdog timeout */
   cm_get_watchdog_params(&call_watchdog, NULL);
   cm_set_watchdog_params(call_watchdog, watchdog_timeout);
+  if (call_watchdog)
+    ss_alarm(WATCHDOG_INTERVAL, cm_watchdog);
 
   /* touch notify key to inform others */
   data = 0;
