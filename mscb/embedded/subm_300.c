@@ -7,6 +7,9 @@
                 SUBM300 running on Cygnal C8051F021
 
   $Log$
+  Revision 1.5  2003/01/30 08:39:30  midas
+  Use USE_WATCHDOG flag
+
   Revision 1.4  2002/11/27 15:40:05  midas
   Added version, fixed few bugs
 
@@ -112,8 +115,9 @@ unsigned char i;
   LED_SEC = LED_ON;
 
   /* Enable watchdog 95ms (@11.0592MHz) */
+#ifdef USE_WATCHDOG
   WDTCN=0x07;
-
+#endif
 }
 
 /*------------------------------------------------------------------*/
@@ -179,7 +183,7 @@ bit bit9;
   LED = LED_OFF;
 
   while (LPT_NSTROBE == 0) /* wait for strobe to be removed */
-    watchdog_refresh();
+    watchdog_refresh();    /* can take very long (if PC gets context switch) */
 
   /* remove busy */
   LPT_BUSY = 0;
