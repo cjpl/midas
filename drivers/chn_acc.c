@@ -6,6 +6,9 @@
   Contents:     Epics channel access device driver
 
   $Log$
+  Revision 1.2  1999/09/21 13:48:40  midas
+  Fixed compiler warning
+
   Revision 1.1  1999/08/31 15:16:26  midas
   Added file
 
@@ -17,9 +20,9 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include "cadef.h"
 #include <stdarg.h>
 #include "midas.h"
-#include "cadef.h"
 
 /*---- globals -----------------------------------------------------*/
 
@@ -36,7 +39,7 @@ typedef struct {
 
 INT chn_acc_init(HNDLE hKey, void **pinfo, INT channels)
 {
-int       status, i, size;
+int       status, i;
 HNDLE     hDB;
 CA_INFO   *info;
 
