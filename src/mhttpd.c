@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.116  2000/05/02 14:56:58  midas
+  Fixed bug with '/' and '\' in history attachments
+
   Revision 1.115  2000/05/02 14:15:39  midas
   Fixed bug with number of curves being displayed
 
@@ -1710,8 +1713,8 @@ HNDLE  hDB, hkey;
   if (odb_att)
     {
     str[0] = 0;
-    if (odb_att[0] != '/')
-      strcpy(str, "/");
+    if (odb_att[0] != '\\')
+      strcpy(str, "\\");
     strcat(str, odb_att);
     rsprintf("<tr><td colspan=2>Attachment1: <input type=hidden name=attachment0 value=\"%s\"><b>%s</b></tr>\n", str, str);
     }
@@ -2209,7 +2212,7 @@ FILE   *f;
                 {
                 rsprintf("<tr><td colspan=6>Attachment: <a href=\"%s\"><b>%s</b></a><br>\n", 
                           ref, attachment[index]+14);
-                rsprintf("<img src=%s></tr>", ref);
+                rsprintf("<img src=\"%s\"></tr>", ref);
                 }
               else
                 {
@@ -2631,6 +2634,7 @@ int    i, size;
         _attachment_size[i] = size;
         unsetparam("scale");
         unsetparam("magnify");
+        unsetparam("index");
         }
       else
         {
@@ -2786,6 +2790,10 @@ FILE  *f;
 
   if (equal_ustring(command, "Create ELog from this page"))
     {
+    strcpy(str, path);
+    while (strchr(path, '/'))    
+      *strchr(path, '/') = '\\';
+
     show_elog_new(NULL, FALSE, path);
     return;
     }
@@ -3168,7 +3176,7 @@ FILE  *f;
           {
           rsprintf("<tr><td colspan=2>Attachment: <a href=\"%s\"><b>%s</b></a><br>\n", 
                     ref, attachment[index]+14);
-          rsprintf("<img src=%s></tr>", ref);
+          rsprintf("<img src=\"%s\"></tr>", ref);
           }
         else
           {
@@ -5944,7 +5952,7 @@ float  factor[2];
 
   if (equal_ustring(getparam("cmd"), "Create ELog"))
     {
-    sprintf(str, "HS/%s.gif", path);
+    sprintf(str, "\\HS\\%s.gif", path);
     if (getparam("hscale") && *getparam("hscale"))
       sprintf(str+strlen(str), "?scale=%s", getparam("hscale"));
     if (getparam("hmagnify") && *getparam("hmagnify"))
