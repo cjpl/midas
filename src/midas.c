@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.142  2001/12/12 18:27:03  pierre
+  add doc++, fix comments
+
   Revision 1.141  2001/12/12 17:46:21  pierre
   1.8.3-2 doc++ comments
 
@@ -927,7 +930,7 @@ HNDLE hDB, hKey;
            or an informative message is produced. Different message
            types can be enabled or disabled by setting the type bits
            via \Ref{cm_set_msg_print}.
-\item[Remarks:] Do not add the "<cr>" escape carriage control at the end of the
+\item[Remarks:] Do not add the "\\n" escape carriage control at the end of the
 formated line as it is already added by the client on the receiving side.
 \item[Example:]
 \begin{verbatim}
@@ -1050,7 +1053,7 @@ given through the argument list i.e:{\bf facility}.
 \item[Remarks:] Do not add the "\\n" escape carriage control at the end of the
 formated line as it is already added by the client on the receiving side.
 \item[Example:] The first arg in the following example uses the predefined
-macro MINFO which hadles automatically the first 3 arguments of the function
+macro MINFO which handles automatically the first 3 arguments of the function
 (see \Ref{Message Macros}.
 \begin{verbatim}
    ...
@@ -1071,7 +1074,6 @@ Thu Nov  8 17:59:28 2001 [my_program] My message status:1
 */
 INT cm_msg1(INT message_type, char* filename, INT line,
             const char *facility, const char *routine, const char *format, ...)
-\********************************************************************/
 {
 va_list      argptr;
 char         event[1000], str[256], local_message[256], send_message[256], *pc;
@@ -1170,41 +1172,68 @@ static BOOL  in_routine = FALSE;
 }
 
 /*------------------------------------------------------------------*/
-
-INT cm_msg_register(void (*func)(HNDLE,HNDLE,EVENT_HEADER*,void*))
-/********************************************************************\
-
-  Routine: cm_msg_register
-
-  Purpose: Register a dispatch function for receiving system
-           messages.
-
-  Input:
-    void   *func()          Dispatch function
-
-  Output:
-    none
-
-  Function value:
-    <see bm_open_buffer and bm_request_event>
-
-\********************************************************************/
+/** @name cm_msg_register()
+\begin{description}
+\item[Description:] Register a dispatch function for receiving system messages.
+\item[Remarks:] 
+\item[Example:] Excerpt from mlxspeaker.c
+\begin{verbatim}
+//----- receive_message
+void receive_message(HNDLE hBuf, HNDLE id, EVENT_HEADER *header, void *message)
 {
-INT status, id;
+  char str[256], *pc, *sp;
+  // print message
+  printf("%s\n", (char *)(message));
 
+  printf("evID:%x Mask:%x Serial:%i Size:%d\n"
+                 ,header->event_id
+                 ,header->trigger_mask
+                 ,header->serial_number
+                 ,header->data_size);
+  pc = strchr((char *)(message),']')+2;
+  ...
+  // skip none talking message
+  if (header->trigger_mask == MT_TALK ||
+      header->trigger_mask == MT_USER)
+   ...
+}
+
+int main(int argc, char *argv[])
+{
+  ...
+ 
+  // now connect to server 
+  status = cm_connect_experiment(host_name, exp_name, "Speaker", NULL);
+  if (status != CM_SUCCESS)
+    return 1;
+  
+  // Register callback for messages
+  cm_msg_register(receive_message);
+  ...
+}
+\end{verbatim}
+\end{description}
+@memo Register a message dispatch function.
+@param func Dispatch function.
+@return CM_SUCCESS or bm_open_buffer and bm_request_event return status
+*/
+INT cm_msg_register(void (*func)(HNDLE,HNDLE,EVENT_HEADER*,void*))
+{
+  INT status, id;
+  
   /* if no message buffer already opened, do so now */
   if (_msg_buffer == 0)
-    {
+  {
     status = bm_open_buffer(MESSAGE_BUFFER_NAME, MESSAGE_BUFFER_SIZE, &_msg_buffer);
     if (status != BM_SUCCESS && status != BM_CREATED)
       return status;
-    }
-
+  }
+  
   _msg_dispatch = func;
-
+  
   status = bm_request_event(_msg_buffer, EVENTID_ALL, TRIGGER_ALL,
                             GET_SOME, &id, func);
-
+  
   return status;
 }
 
