@@ -6,6 +6,9 @@
   Contents:     MIDAS logger program
 
   $Log$
+  Revision 1.83  2004/09/22 18:04:51  midas
+  Added BOR/EOR lists for SQL dump
+
   Revision 1.82  2004/09/22 03:28:52  midas
   Use link name for SQL db instead of link target name
 
@@ -441,6 +444,12 @@ void odb_save(char *filename)
 
 /*---- Convert ctime() type date/time to SQL 'datetime' -------------*/
 
+typedef struct {
+   char column_name[NAME_LENGTH];
+   char column_type[NAME_LENGTH];
+   char data[256];
+} SQL_LIST;
+
 char *mname[] = {
    "January",
    "February",
@@ -486,69 +495,120 @@ void ctime_to_datetime(char *date)
       tms.tm_hour, tms.tm_min, tms.tm_sec);
 }
 
-/*---- Create mySQL table from ODB tree ----------------------------*/
+/*---- mySQL debugging output --------------------------------------*/
 
-BOOL sql_create_table(MYSQL *db, char *database, char *table, HNDLE hKeyRoot)
+int mysql_query_debug(MYSQL *db, char *query)
 {
-char  str[256], data[256], query[5000];
-int   status, i, size;
-HNDLE hKey;
-KEY   key;
+   int status;
 
-   sprintf(query, "CREATE TABLE `%s`.`%s` (", database, table);
+   /* comment in these lines if you need debugging output
+   printf("\nSQL query: %s\n", query); 
+   */
+   
+   status = mysql_query(db, query);
+   
+   /*
+   if (status)
+      printf("SQL error: %s\n", mysql_error(db));
+   */
+   return status;
+}
+
+/*---- Retrieve list of columns from ODB tree ----------------------*/
+
+int sql_get_columns(HNDLE hKeyRoot, SQL_LIST **sql_list)
+{
+   HNDLE hKey;
+   int   n, i, size, status;
+   KEY   key;
+   char  str[256], data[256];
 
    for (i=0 ; ; i++) {
       status = db_enum_key(hDB, hKeyRoot, i, &hKey);
       if (status == DB_NO_MORE_SUBKEYS)
          break;
+   }
 
+   if (i == 0)
+      return 0;
+
+   n = i;
+
+   *sql_list = (SQL_LIST *)malloc(sizeof(SQL_LIST)*n);
+
+   for (i=0 ; i<n ; i++) {
+
+      /* get name of link, NOT of link target */
+      db_enum_link(hDB, hKeyRoot, i, &hKey);
       db_get_key(hDB, hKey, &key);
-      sprintf(query+strlen(query), "`%s` ", key.name);
+      strlcpy((*sql_list)[i].column_name, key.name, NAME_LENGTH);
 
-      /* map TID_xxx to mySQL types */
+      /* get key */
+      db_enum_key(hDB, hKeyRoot, i, &hKey);
+      db_get_key(hDB, hKey, &key);
+      
+      /* get key data */
+      size = sizeof(data);
+      db_get_data(hDB, hKey, data, &size, key.type);
+      db_sprintf(str, data, size, 0, key.type);
+      strcpy((*sql_list)[i].data, str);
+
       if (key.type == TID_STRING) {
-         size = sizeof(data);
-         db_get_data(hDB, hKey, data, &size, key.type);
-         db_sprintf(str, data, size, 0, key.type);
-
          /* check if string is date/time */
-         if (strlen(str) == 24 && str[10] == ' ' && str[13] == ':')
-            strcat(query, "DATETIME ");
-         else
-            sprintf(query+strlen(query), "VARCHAR (%d) ", key.item_size);
+         if (strlen(str) == 24 && str[10] == ' ' && str[13] == ':') {
+            strcpy(str, "DATETIME");
+            ctime_to_datetime((*sql_list)[i].data);
+         } else
+            sprintf(str, "VARCHAR (%d)", key.item_size);
 
       } else {
          switch (key.type) {
-            case TID_BYTE: strcat(query, "TINYINT UNSIGNED "); break;
-            case TID_SBYTE: strcat(query, "TINYINT  "); break;
-            case TID_CHAR: strcat(query, "CHAR "); break;
-            case TID_WORD: strcat(query, "SMALLINT UNSIGNED "); break;
-            case TID_SHORT: strcat(query, "SMALLINT "); break;
-            case TID_DWORD: strcat(query, "INT UNSIGNED "); break;
-            case TID_INT: strcat(query, "INT "); break;
-            case TID_BOOL: strcat(query, "BOOLEAN "); break;
-            case TID_FLOAT: strcat(query, "FLOAT "); break;
-            case TID_DOUBLE: strcat(query, "DOUBLE "); break;
+            case TID_BYTE: strcpy(str, "TINYINT UNSIGNED "); break;
+            case TID_SBYTE: strcpy(str, "TINYINT  "); break;
+            case TID_CHAR: strcpy(str, "CHAR "); break;
+            case TID_WORD: strcpy(str, "SMALLINT UNSIGNED "); break;
+            case TID_SHORT: strcpy(str, "SMALLINT "); break;
+            case TID_DWORD: strcpy(str, "INT UNSIGNED "); break;
+            case TID_INT: strcpy(str, "INT "); break;
+            case TID_BOOL: strcpy(str, "BOOLEAN "); break;
+            case TID_FLOAT: strcpy(str, "FLOAT "); break;
+            case TID_DOUBLE: strcpy(str, "DOUBLE "); break;
             default: 
                cm_msg(MERROR, "sql_create_database", "No SQL type mapping for key \"%s\" of type %s", 
                   key.name, rpc_tid_name(key.type));
          }
       }
 
-      strcat(query, ", ");
+      strcpy((*sql_list)[i].column_type, str);
    }
 
-   if (i==0) {
+   return n;
+}
+
+/*---- Create mySQL table from ODB tree ----------------------------*/
+
+BOOL sql_create_table(MYSQL *db, char *database, char *table, HNDLE hKeyRoot)
+{
+char     str[256], query[5000];
+int      i, n_col;
+SQL_LIST *sql_list;
+
+   sprintf(query, "CREATE TABLE `%s`.`%s` (", database, table);
+
+   n_col = sql_get_columns(hKeyRoot, &sql_list);
+   if (n_col==0) {
       db_get_path(hDB, hKeyRoot, str, sizeof(str));
       cm_msg(MERROR, "sql_create_database", "ODB tree \"%s\" contains no variables", str);
       return FALSE;
    }
 
-   status = db_enum_key(hDB, hKeyRoot, 0, &hKey);
-   db_get_key(hDB, hKey, &key);
-   sprintf(query+strlen(query), "PRIMARY KEY (`%s`))", key.name);
+   for (i=0 ; i<n_col ; i++)
+      sprintf(query+strlen(query), "`%s` %s, ", sql_list[i].column_name, sql_list[i].column_type);
+      
+   sprintf(query+strlen(query), "PRIMARY KEY (`%s`))", sql_list[0].column_name);
+   free(sql_list);
 
-   if (mysql_query(db, query)) {
+   if (mysql_query_debug(db, query)) {
       cm_msg(MERROR, "sql_create_table", "Failed to create table: Error: %s",              
             mysql_error(db));
       return FALSE;
@@ -561,84 +621,48 @@ KEY   key;
 
 BOOL sql_modify_table(MYSQL *db, char *database, char *table, HNDLE hKeyRoot)
 {
-char  str[256], data[256], query[5000], type[256], prev_name[NAME_LENGTH],
-         key_name[NAME_LENGTH];
-int   status, i, size;
-HNDLE hKey;
-KEY   key;
+char     str[256], query[5000];
+int      i, n_col;
+SQL_LIST *sql_list;
 
-   for (i=0 ; ; i++) {
-      status = db_enum_link(hDB, hKeyRoot, i, &hKey);
-      if (status == DB_NO_MORE_SUBKEYS)
-         break;
+   n_col = sql_get_columns(hKeyRoot, &sql_list);
+   if (n_col==0) {
+      db_get_path(hDB, hKeyRoot, str, sizeof(str));
+      cm_msg(MERROR, "sql_modify_table", "ODB tree \"%s\" contains no variables", str);
+      return FALSE;
+   }
 
-      db_get_key(hDB, hKey, &key);
-      strcpy(key_name, key.name);
-      db_enum_key(hDB, hKeyRoot, i, &hKey);
-      db_get_key(hDB, hKey, &key);
-
-      /* map TID_xxx to mySQL types */
-      if (key.type == TID_STRING) {
-         size = sizeof(data);
-         db_get_data(hDB, hKey, data, &size, key.type);
-         db_sprintf(str, data, size, 0, key.type);
-
-         /* check if string is date/time */
-         if (strlen(str) == 24 && str[10] == ' ' && str[13] == ':')
-            strcpy(type, "DATETIME ");
-         else
-            sprintf(type, "VARCHAR (%d) ", key.item_size);
-
-      } else {
-         switch (key.type) {
-            case TID_BYTE: strcpy(type, "TINYINT UNSIGNED "); break;
-            case TID_SBYTE: strcpy(type, "TINYINT  "); break;
-            case TID_CHAR: strcpy(type, "CHAR "); break;
-            case TID_WORD: strcpy(type, "SMALLINT UNSIGNED "); break;
-            case TID_SHORT: strcpy(type, "SMALLINT "); break;
-            case TID_DWORD: strcpy(type, "INT UNSIGNED "); break;
-            case TID_INT: strcpy(type, "INT "); break;
-            case TID_BOOL: strcpy(type, "BOOLEAN "); break;
-            case TID_FLOAT: strcpy(type, "FLOAT "); break;
-            case TID_DOUBLE: strcpy(type, "DOUBLE "); break;
-            default: 
-               cm_msg(MERROR, "sql_create_database", "No SQL type mapping for key \"%s\" of type %s", 
-                  key_name, rpc_tid_name(key.type));
-         }
-      }
-
-      if (i==0)
-         strcat(type, "FIRST");
-      else
-         sprintf(type+strlen(type), "AFTER `%s`", prev_name);
-
-      strcpy(prev_name, key_name);
+   for (i=0 ; i<n_col ; i++) {
 
       /* try to add column */
-      sprintf(query, "ALTER TABLE `%s`.`%s` ADD `%s` %s", database, table, key_name, type);
-      if (mysql_query(db, query)) {
+      if (i==0)
+         sprintf(query, "ALTER TABLE `%s`.`%s` ADD `%s` %s", 
+            database, table, sql_list[i].column_name, sql_list[i].column_type);
+      else
+         sprintf(query, "ALTER TABLE `%s`.`%s` ADD `%s` %s AFTER `%s`",
+            database, table, sql_list[i].column_name, sql_list[i].column_type, sql_list[i-1].column_name);
+
+      if (mysql_query_debug(db, query)) {
          if (mysql_errno(db) == ER_DUP_FIELDNAME) {
 
             /* try to modify column */
-            sprintf(query, "ALTER TABLE `%s`.`%s` MODIFY `%s` %s", database, table, key_name, type);
-            if (mysql_query(db, query)) {
+            sprintf(query, "ALTER TABLE `%s`.`%s` MODIFY `%s` %s", 
+               database, table, sql_list[i].column_name, sql_list[i].column_type);
+
+            if (mysql_query_debug(db, query)) {
+               free(sql_list);
                cm_msg(MERROR, "sql_modify_table", "Failed to modify column: Error: %s",              
                      mysql_error(db));
                return FALSE;
             }
 
          } else {
+            free(sql_list);
             cm_msg(MERROR, "sql_modify_table", "Failed to add column: Error: %s",              
                   mysql_error(db));
             return FALSE;
          }
       }
-   }
-
-   if (i==0) {
-      db_get_path(hDB, hKeyRoot, str, sizeof(str));
-      cm_msg(MERROR, "sql_modify_table", "ODB tree \"%s\" contains no variables", str);
-      return FALSE;
    }
 
    return TRUE;
@@ -651,7 +675,7 @@ BOOL sql_create_database(MYSQL *db, char *database)
 char  query[256];
 
    sprintf(query, "CREATE DATABASE `%s`", database);
-   if (mysql_query(db, query)) {
+   if (mysql_query_debug(db, query)) {
       cm_msg(MERROR, "sql_create_database", "Failed to create database: Error: %s",              
             mysql_error(db));
       return FALSE;
@@ -659,7 +683,7 @@ char  query[256];
 
    /* select database */
    sprintf(query, "USE `%s`", database);
-   if (mysql_query(db, query)) {
+   if (mysql_query_debug(db, query)) {
       cm_msg(MERROR, "sql_create_database", "Failed to select database: Error: %s",              
             mysql_error(db));
       return FALSE;
@@ -672,126 +696,119 @@ char  query[256];
 
 int sql_insert(MYSQL *db, char *database, char *table, HNDLE hKeyRoot, BOOL create_flag)
 {
-char  str[256], data[256], query[5000];
-int   status, i, size;
-HNDLE hKey;
-KEY   key;
+char      query[5000];
+int       status, i, n_col;
+SQL_LIST *sql_list;
 
    /* 
      build SQL query in the form 
        "INSERT INTO `<table>` (`<name>`, <name`,..) VALUES (`<value>`, `value`, ...) 
    */ 
    sprintf(query, "INSERT INTO `%s`.`%s` (", database, table);
-   
-   for (i=0 ; ; i++) {
-      status = db_enum_link(hDB, hKeyRoot, i, &hKey);
-      if (status == DB_NO_MORE_SUBKEYS)
-         break;
-
-      db_get_key(hDB, hKey, &key);
-      if (i!=0)
-         strlcat(query, ", ", sizeof(query));
-      sprintf(query+strlen(query), "`%s`", key.name);
-   }
-
-   if (i==0)
+   n_col = sql_get_columns(hKeyRoot, &sql_list);
+   if (n_col == 0)
       return DB_SUCCESS;
+   
+   for (i=0 ; i<n_col ; i++) {
+      sprintf(query+strlen(query), "`%s`", sql_list[i].column_name);
+      if (i<n_col-1)
+         strcat(query, ", ");
+   }
 
    strlcat(query, ") VALUES (", sizeof(query));
 
-   for (i=0 ; ; i++) {
-      status = db_enum_key(hDB, hKeyRoot, i, &hKey);
-      if (status == DB_NO_MORE_SUBKEYS)
-         break;
-
-      db_get_key(hDB, hKey, &key);
-      if (i!=0)
-         strlcat(query, ", ", sizeof(query));
-      
-      size = sizeof(data);
-      db_get_data(hDB, hKey, data, &size, key.type);
-      db_sprintf(str, data, size, 0, key.type);
-
-      /* convert ctime() to SQL datetime */
-      if (strlen(str) == 24 && str[10] == ' ' && str[13] == ':')
-         ctime_to_datetime(str);
-
-      sprintf(query+strlen(query), "'%s'", str);
+   for (i=0 ; i<n_col ; i++) {
+      sprintf(query+strlen(query), "'%s'", sql_list[i].data);
+      if (i<n_col-1)
+         strcat(query, ", ");
    }
 
+   free(sql_list);
    strlcat(query, ")", sizeof(query));
-   if (mysql_query(db, query)) {
+   if (mysql_query_debug(db, query)) {
       
-      /* if entry for this run exists alreay, update it */
+      /* if entry for this run exists alreay return */
       if (mysql_errno(db) == ER_DUP_ENTRY) {
          
-         /* 
-         build SQL query in the form 
-            "UPDATE `<database`.`<table>` SET `<name>`='<value', ... WHERE `<name>`='value' 
-         */ 
-         
-         sprintf(query, "UPDATE `%s`.`%s` SET ", database, table);
+         return ER_DUP_ENTRY;
 
-         for (i=0 ; ; i++) {
-            status = db_enum_link(hDB, hKeyRoot, i, &hKey);
-            if (status == DB_NO_MORE_SUBKEYS)
-               break;
-
-            db_get_key(hDB, hKey, &key);
-            sprintf(query+strlen(query), "`%s`=", key.name);
-
-            db_enum_key(hDB, hKeyRoot, i, &hKey);
-            size = sizeof(data);
-            db_get_data(hDB, hKey, data, &size, key.type);
-            db_sprintf(str, data, size, 0, key.type);
-
-            /* convert ctime() to SQL datetime */
-            if (strlen(str) == 24 && str[10] == ' ' && str[13] == ':')
-               ctime_to_datetime(str);
-
-            sprintf(query+strlen(query), "'%s', ", str);
-         }
-         query[strlen(query)-2] = 0; // strip last ','
-         
-         db_enum_link(hDB, hKeyRoot, 0, &hKey);
-         db_get_key(hDB, hKey, &key);
-         sprintf(query+strlen(query), " where `%s`=", key.name);
-
-         db_enum_key(hDB, hKeyRoot, 0, &hKey);
-         size = sizeof(data);
-         db_get_data(hDB, hKey, data, &size, key.type);
-         db_sprintf(str, data, size, 0, key.type);
-         sprintf(query+strlen(query), "'%s'", str);
-
-         if (mysql_query(db, query)) {
-            cm_msg(MERROR, "sql_insert", "Failed to update database: Error: %s",              
-                  mysql_error(db));
-            return 0;
-         }
       } else if (mysql_errno(db) == ER_NO_SUCH_TABLE && create_flag) {
 
          /* if table does not exist, creat it and try again */
          sql_create_table(db, database, table, hKeyRoot);
-         if (mysql_query(db, query)) {
+         if (mysql_query_debug(db, query)) {
             cm_msg(MERROR, "sql_insert", "Failed to update database: Error: %s",              
                   mysql_error(db));
-            return 0;
+            return mysql_errno(db);
          }
       } else if (mysql_errno(db) == ER_BAD_FIELD_ERROR && create_flag) {
 
          /* if table structure is different, adjust it and try again */
          sql_modify_table(db, database, table, hKeyRoot);
-         if (mysql_query(db, query)) {
+         if (mysql_query_debug(db, query)) {
             cm_msg(MERROR, "sql_insert", "Failed to update database: Error: %s",              
                   mysql_error(db));
-            return 0;
+            return mysql_errno(db);
          }
 
       } else {
          status = mysql_errno(db);
          cm_msg(MERROR, "sql_insert", "Failed to update database: Error: %s",              
                mysql_error(db));
-         return 0;
+         return mysql_errno(db);
+      }
+   }
+
+   return DB_SUCCESS;
+}
+
+/*---- Update table row from ODB tree ------------------------------*/
+
+int sql_update(MYSQL *db, char *database, char *table, HNDLE hKeyRoot, BOOL create_flag, char *where)
+{
+char      query[5000];
+int       i, n_col;
+SQL_LIST *sql_list;
+
+   /* 
+   build SQL query in the form 
+      "UPDATE `<database`.`<table>` SET `<name>`='<value', ... WHERE `<name>`='value' 
+   */ 
+   
+   sprintf(query, "UPDATE `%s`.`%s` SET ", database, table);
+   n_col = sql_get_columns(hKeyRoot, &sql_list);
+   if (n_col == 0)
+      return DB_SUCCESS;
+
+   for (i=0 ; i<n_col ; i++) {
+      sprintf(query+strlen(query), "`%s`='%s'", sql_list[i].column_name, sql_list[i].data);
+      if (i<n_col-1)
+         strcat(query, ", ");
+   }
+   free(sql_list);
+
+   sprintf(query+strlen(query), " %s", where);
+   if (mysql_query_debug(db, query)) {
+      if (mysql_errno(db) == ER_NO_SUCH_TABLE && create_flag) {
+
+         /* if table does not exist, creat it and try again */
+         sql_create_table(db, database, table, hKeyRoot);
+         return sql_insert(db, database, table, hKeyRoot, create_flag);
+         
+      } else if (mysql_errno(db) == ER_BAD_FIELD_ERROR && create_flag) {
+
+         /* if table structure is different, adjust it and try again */
+         sql_modify_table(db, database, table, hKeyRoot);
+         if (mysql_query_debug(db, query)) {
+            cm_msg(MERROR, "sql_update", "Failed to update database: Error: %s",              
+                  mysql_error(db));
+            return mysql_errno(db);
+         }
+
+      } else {
+         cm_msg(MERROR, "sql_update", "Failed to update database: Error: %s",              
+               mysql_error(db));
+         return mysql_errno(db);
       }
    }
 
@@ -835,42 +852,91 @@ HNDLE hKeyRoot, hKey;
    strcpy(table, "Runlog");
    db_get_value(hDB, 0, "/Logger/SQL/Table", table, &size, TID_STRING, TRUE);
 
-   db_find_key(hDB, 0, "/Logger/SQL/Links", &hKeyRoot);
+   db_find_key(hDB, 0, "/Logger/SQL/Links BOR", &hKeyRoot);
    if (!hKeyRoot) {
       /* create some default links */
-      db_create_key(hDB, 0, "/Logger/SQL/Links", TID_KEY);
+      db_create_key(hDB, 0, "/Logger/SQL/Links BOR", TID_KEY);
 
       if (db_find_key(hDB, 0, "/Runinfo/Run number", &hKey) ==
           DB_SUCCESS)
-         db_create_link(hDB, 0, "/Logger/SQL/Links/Run number",
+         db_create_link(hDB, 0, "/Logger/SQL/Links BOR/Run number",
                         "/Runinfo/Run number");
 
       if (db_find_key(hDB, 0, "/Experiment/Run parameters/Comment", &hKey) ==
           DB_SUCCESS)
-         db_create_link(hDB, 0, "/Logger/SQL/Links/Comment",
+         db_create_link(hDB, 0, "/Logger/SQL/Links BOR/Comment",
                         "/Experiment/Run parameters/Comment");
 
       if (db_find_key(hDB, 0, "/Runinfo/Start time", &hKey) ==
           DB_SUCCESS)
-         db_create_link(hDB, 0, "/Logger/SQL/Links/Start time",
+         db_create_link(hDB, 0, "/Logger/SQL/Links BOR/Start time",
                         "/Runinfo/Start time");
+   }
+
+   db_find_key(hDB, 0, "/Logger/SQL/Links EOR", &hKeyRoot);
+   if (!hKeyRoot) {
+      /* create some default links */
+      db_create_key(hDB, 0, "/Logger/SQL/Links EOR", TID_KEY);
 
       if (db_find_key(hDB, 0, "/Runinfo/Stop time", &hKey) ==
           DB_SUCCESS)
-         db_create_link(hDB, 0, "/Logger/SQL/Links/Stop time",
+         db_create_link(hDB, 0, "/Logger/SQL/Links EOR/Stop time",
                         "/Runinfo/Stop time");
+
+      if (db_find_key(hDB, 0, "/Equipment/Trigger/Statistics/Events sent", &hKey) ==
+          DB_SUCCESS)
+         db_create_link(hDB, 0, "/Logger/SQL/Links EOR/Number of events",
+                        "/Equipment/Trigger/Statistics/Events sent");
+
    }
 }
 
 /*---- Write ODB tree to SQL table ----------------------------------*/
                                    
-void write_sql()
+void write_sql(BOOL bor)
 {
 MYSQL db;
 char  hostname[80], username[80], password[80], database[80], table[80],
-      query[5000];
-int   size, write_flag, create_flag;
-HNDLE hKeyRoot;
+      query[5000], where[500];
+int   status, size, write_flag, create_flag;
+BOOL  insert;
+HNDLE hKey, hKeyRoot;
+SQL_LIST *sql_list;
+
+   /* insert SQL on bor, else update */
+   insert = bor;
+
+   /* determine primary key */
+   db_find_key(hDB, 0, "/Logger/SQL/Links BOR", &hKeyRoot);
+   status = db_enum_link(hDB, hKeyRoot, 0, &hKey);
+
+   /* if BOR list empty, take first one from EOR list */
+   if (status == DB_NO_MORE_SUBKEYS) {
+      insert = TRUE;
+      db_find_key(hDB, 0, "/Logger/SQL/Links EOR", &hKeyRoot);
+      status = db_enum_link(hDB, hKeyRoot, 0, &hKey);
+      if (status == DB_NO_MORE_SUBKEYS) 
+         return;
+   }
+
+   sql_get_columns(hKeyRoot, &sql_list);
+   sprintf(where, "WHERE `%s`='%s'", sql_list[0].column_name, sql_list[0].data);
+   free(sql_list);
+
+   /* get BOR or EOR list */
+   if (bor) {
+      db_find_key(hDB, 0, "/Logger/SQL/Links BOR", &hKeyRoot);
+      if (!hKeyRoot) {
+         cm_msg(MERROR, "write_sql", "Cannot find \"/Logger/SQL/Links BOR");
+         return;
+      }
+   } else {
+      db_find_key(hDB, 0, "/Logger/SQL/Links EOR", &hKeyRoot);
+      if (!hKeyRoot) {
+         cm_msg(MERROR, "write_sql", "Cannot find \"/Logger/SQL/Links EOR");
+         return;
+      }
+   }
 
    size = sizeof(create_flag);
    create_flag = 0;
@@ -901,10 +967,6 @@ HNDLE hKeyRoot;
    strcpy(table, "Runlog");
    db_get_value(hDB, 0, "/Logger/SQL/Table", table, &size, TID_STRING, TRUE);
 
-   db_find_key(hDB, 0, "/Logger/SQL/Links", &hKeyRoot);
-   if (!hKeyRoot)
-      return;
-
    /* continue only if data should be written */
    if (!write_flag)
       return;
@@ -921,7 +983,7 @@ HNDLE hKeyRoot;
 
    /* select database */
    sprintf(query, "USE `%s`", database);
-   if (mysql_query(&db, query)) {
+   if (mysql_query_debug(&db, query)) {
 
       /* create database if selected */
       if (create_flag) {
@@ -938,7 +1000,12 @@ HNDLE hKeyRoot;
       }
    }
 
-   sql_insert(&db, database, table, hKeyRoot, create_flag);
+   if (insert) {
+      status = sql_insert(&db, database, table, hKeyRoot, create_flag);
+      if (status == ER_DUP_ENTRY)
+         sql_update(&db, database, table, hKeyRoot, create_flag, where);
+   } else
+      sql_update(&db, database, table, hKeyRoot, create_flag, where);
 
    mysql_close(&db);
 }
@@ -3376,6 +3443,11 @@ INT tr_prestart(INT run_number, char *error)
    eb.run_number = run_number;
    hs_write_event(0, &eb, sizeof(eb));
 
+#ifdef HAVE_MYSQL
+   /* write to SQL database if requested */
+   write_sql(TRUE);
+#endif
+
    return CM_SUCCESS;
 }
 
@@ -3482,7 +3554,7 @@ INT tr_poststop(INT run_number, char *error)
 
 #ifdef HAVE_MYSQL
    /* write to SQL database if requested */
-   write_sql();
+   write_sql(FALSE);
 #endif
 
    in_stop_transition = FALSE;
