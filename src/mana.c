@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.13  1999/02/22 11:55:20  midas
+  Fixed bug with rebooking of N-tuples
+
   Revision 1.12  1999/02/03 16:36:50  midas
   Added -f flag to filter events
 
@@ -519,6 +522,14 @@ INT book_ntuples(void);
 
 void banks_changed(INT hDB, INT hKey, void *info)
 {
+char  str[80];
+HNDLE hkey;
+
+  /* close previously opened hot link */
+  sprintf(str, "/%s/Bank switches", analyzer_name);
+  db_find_key(hDB, 0, str, &hkey);
+  db_close_record(hDB, hkey);
+
   book_ntuples();
   printf("N-tuples rebooked\n");
 }
