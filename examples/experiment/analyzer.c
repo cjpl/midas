@@ -6,6 +6,9 @@
   Contents:     System part of Analyzer code for sample experiment
 
   $Log$
+  Revision 1.14  2003/04/25 14:49:46  midas
+  Removed HBOOK code
+
   Revision 1.13  2003/04/21 04:00:15  olchansk
   replace MANA_LITE with HAVE_HBOOK
 
@@ -162,7 +165,7 @@ ANALYZE_REQUEST analyze_request[] = {
     100,                  /* RWNT buffer size */
   },
 
-  { "" }
+  { "" },
 };
 
 /*-- Analyzer Init -------------------------------------------------*/

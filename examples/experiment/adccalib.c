@@ -12,6 +12,9 @@
                 and transferred to experim.h.
 
   $Log$
+  Revision 1.8  2003/04/25 14:49:46  midas
+  Removed HBOOK code
+
   Revision 1.7  2003/04/23 15:09:47  midas
   Removed user branch
 
@@ -46,25 +49,10 @@
 #include "experim.h"
 #include "analyzer.h"
 
-/* cernlib includes */
-#ifdef OS_WINNT
-#define VISUAL_CPLUSPLUS
-#endif
-
-#ifdef __linux__
-#define f2cFortran
-#endif
-
-#ifdef HAVE_HBOOK
-#include <cfortran.h>
-#include <hbook.h>
-#endif
-
-#ifdef HAVE_ROOT
+/* root includes */
 #include <TH1F.h>
 #include <TTree.h>
 #include <TDirectory.h>
-#endif
 
 /*-- Parameters ----------------------------------------------------*/
 
@@ -96,11 +84,9 @@ ANA_MODULE adc_calib_module = {
 
 /*-- module-local variables ----------------------------------------*/
 
-#ifdef HAVE_ROOT
 extern TDirectory *gManaHistsDir;
 
 static TH1F* gAdcHists[N_ADC];
-#endif
 
 /*-- init routine --------------------------------------------------*/
 
@@ -115,16 +101,6 @@ int  i;
 
   /* book CADC histos */
 
-#ifdef HAVE_HBOOK
-  for (i=0; i<N_ADC; i++)
-    {
-    sprintf(name, "CADC%02d", i);
-    HBOOK1(ADCCALIB_ID_BASE+i, name, ADC_N_BINS, 
-           (float)ADC_X_LOW, (float)ADC_X_HIGH, 0.f); 
-    }
-#endif /* HAVE_HBOOK */
-
-#ifdef HAVE_ROOT
   for (i=0; i<N_ADC; i++)
     {
     char title[256];
@@ -137,7 +113,6 @@ int  i;
     if (gAdcHists[i] == NULL)
       gAdcHists[i] = new TH1F(name, title, ADC_N_BINS, ADC_X_LOW, ADC_X_HIGH);
     }
-#endif /* HAVE_ROOT */
 
   return SUCCESS;
 }
@@ -160,19 +135,13 @@ INT adc_calib_eor(INT run_number)
 
 INT adc_calib(EVENT_HEADER *pheader, void *pevent)
 {
-INT    i, n_adc;
+INT    i;
 WORD   *pdata;
 float  *cadc;
 
   /* look for ADC0 bank, return if not present */
-  n_adc = bk_locate(pevent, "ADC0", &pdata);
-  if (n_adc == 0)
+  if (!bk_locate(pevent, "ADC0", &pdata))
     return 1;
-
-  /* if ADC0 is a structured bank, bk_locate()
-     returns sizeof(structure) rather than
-     the number of ADCs. Hence this kludge */
-  n_adc = n_adc/sizeof(WORD);
 
   /* create calibrated ADC bank */
   bk_create(pevent, "CADC", TID_FLOAT, &cadc);
@@ -182,27 +151,20 @@ float  *cadc;
     cadc[i] = 0.f;
 
   /* subtract pedestal */
-  for (i=0 ; i<n_adc ; i++)
+  for (i=0 ; i<N_ADC ; i++)
     cadc[i] = (float) ((double)pdata[i] - adccalib_param.pedestal[i] + 0.5);
 
   /* apply software gain calibration */
-  for (i=0 ; i<n_adc ; i++)
+  for (i=0 ; i<N_ADC ; i++)
     cadc[i] *= adccalib_param.software_gain[i];
 
   /* fill ADC histos if above threshold */
-#ifdef HAVE_HBOOK
-  for (i=0 ; i<n_adc ; i++)
-    if (cadc[i] > (float) adccalib_param.histo_threshold)
-      HF1(ADCCALIB_ID_BASE+i, cadc[i], 1.f);
-#endif /* HAVE_HBOOK */
-#ifdef HAVE_ROOT
-  for (i=0 ; i<n_adc ; i++)
+  for (i=0 ; i<N_ADC ; i++)
     if (cadc[i] > (float) adccalib_param.histo_threshold)
       gAdcHists[i]->Fill(cadc[i], 1);
-#endif /* HAVE_ROOT */
 
   /* close calculated bank */
-  bk_close(pevent, cadc+n_adc);
+  bk_close(pevent, cadc+N_ADC);
 
   return SUCCESS;
 }
