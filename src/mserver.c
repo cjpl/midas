@@ -6,6 +6,9 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
+  Revision 1.45  2004/01/18 09:56:32  olchansk
+  ss_thread_create() does not return SS_NO_THREAD
+
   Revision 1.44  2004/01/08 08:40:10  midas
   Implemented standard indentation
 
@@ -317,7 +320,7 @@ int main(int argc, char **argv)
 
       /* if command line parameter given, start according server type */
       if (server_type == ST_MTHREAD) {
-         if (ss_thread_create(NULL, NULL) == SS_NO_THREAD) {
+         if (ss_thread_create(NULL, NULL) == 0) {
             printf("MIDAS doesn't support threads on this OS.\n");
             return 0;
          }
