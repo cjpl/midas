@@ -6,6 +6,9 @@
   Contents:     Web server for remote PAW display
 
   $Log$
+  Revision 1.23  2000/08/24 14:04:42  midas
+  Fixed bug with removing '+' in commands like fun/plot 1+x 0 1
+
   Revision 1.22  2000/06/07 10:47:09  midas
   Version 1.0.6
 
@@ -527,7 +530,7 @@ char *pd, *p, str[256];
   p  = ps;
   while (*p) 
     {
-    if (strchr(" %&=#", *p))
+    if (strchr(" %&=#+/\\", *p))
       {
       sprintf(pd, "%%%02X", *p);
       pd += 3;
@@ -979,7 +982,10 @@ int    fh, i, j, length, status, height;
     if (getparam("restart"))
       strcpy(cmd, "restart");
     else if (getparam("cmd"))
+      {
       strcpy(cmd, getparam("cmd"));
+      urlEncode(cmd);
+      }
     else
       strcpy(cmd, path);
 
