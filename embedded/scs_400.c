@@ -9,6 +9,9 @@
                 for SCS-400 thermo couple I/O
 
   $Log$
+  Revision 1.20  2003/03/26 11:50:58  midas
+  Adjusted c_int
+
   Revision 1.19  2003/03/25 11:08:54  midas
   Removed outcommenting
 
@@ -174,9 +177,9 @@ unsigned char i;
        {
        user_data.demand[i] = 0;
        user_data.c_prop[i] = 1;
-       user_data.c_int[i] = 0.01;
-       user_data.p_int[i] = 0;
-       user_data.period = 60;
+       user_data.c_int[i]  = 0.1;
+       user_data.p_int[i]  = 0;
+       user_data.period    = 60;
        }
 #endif
     }
