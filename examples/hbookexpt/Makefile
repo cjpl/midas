@@ -7,6 +7,9 @@
 #                using HBOOK functionality
 #
 #  $Log$
+#  Revision 1.5  2003/08/20 21:00:46  pierre
+#  add phtread lib
+#
 #  Revision 1.4  2003/07/14 14:51:45  midas
 #  Restructured driver directory
 #
@@ -38,7 +41,7 @@ CFLAGS = -O3
 #FF = cc
 # for egcs g77, use this
 FF = g77
-LIBS = -lm -lz -lutil -lnsl
+LIBS = -lm -lz -lutil -lnsl -lpthread
 
 #-------------------------------------------------------------------
 # The following lines define direcories. Adjust if necessary
