@@ -10,6 +10,9 @@
                 Turbomolecular Pump with TC600 Electronics
 
   $Log$
+  Revision 1.5  2003/03/21 08:28:15  midas
+  Fixed bug with LSB bytes
+
   Revision 1.4  2003/02/19 16:05:36  midas
   Added 'init' parameter to user_init
 
@@ -29,16 +32,12 @@
 #include <stdlib.h> // for atof()
 #include "mscb.h"
 
-extern bit FREEZE_MODE;
-extern bit DEBUG_MODE;
-
 char code node_name[] = "TC600";
 bit       terminal_mode;
 
 unsigned char tc600_write(unsigned short param, unsigned char len, unsigned long value);
 
-/*---- Define channels and configuration parameters returned to
-       the CMD_GET_INFO command                                 ----*/
+/*---- Define variable parameters returned to CMD_GET_INFO command ----*/
 
 /* data buffer (mirrored in EEPROM) */
 
@@ -47,26 +46,21 @@ struct {
   unsigned char  vent_on;
   unsigned short rot_speed;
   float          tmp_current;
-} user_data;
 
-struct {
   unsigned char baud;
   unsigned char address;
-} user_conf;
+} idata user_data;
   
 
-MSCB_INFO_CHN code channel[] = {
+MSCB_INFO_VAR code variables[] = {
   1,   UNIT_ASCII, 0, 0,           0, "RS232",   0,
   1, UNIT_BOOLEAN, 0, 0,           0, "Pump on", &user_data.pump_on,
   1, UNIT_BOOLEAN, 0, 0,           0, "Vent on", &user_data.vent_on,
   2,   UNIT_HERTZ, 0, 0,           0, "RotSpd",  &user_data.rot_speed,
   4,  UNIT_AMPERE, 0, 0, MSCBF_FLOAT, "TMPcur",  &user_data.tmp_current,
-  0
-};
 
-MSCB_INFO_CHN code conf_param[] = {
-  1,    UNIT_BAUD, 0, 0,           0, "Baud",    &user_conf.baud,
-  1,    UNIT_BYTE, 0, 0,           0, "Address", &user_conf.address,
+  1,    UNIT_BAUD, 0, 0,           0, "Baud",    &user_data.baud,
+  1,    UNIT_BYTE, 0, 0,           0, "Address", &user_data.address,
   0
 };
 
@@ -76,7 +70,7 @@ MSCB_INFO_CHN code conf_param[] = {
 
 \********************************************************************/
 
-void user_write(unsigned char channel) reentrant;
+void user_write(unsigned char index) reentrant;
 void write_gain(void);
 
 /*---- User init function ------------------------------------------*/
@@ -85,31 +79,34 @@ void user_init(unsigned char init)
 {
   /* initialize UART1 */
   if (init)
-    user_conf.baud = 1; // 9600 by default
+    {
+    user_data.baud = 1; // 9600 by default
+    user_data.address = 0;
+    }
 
-  uart_init(1, user_conf.baud);
+  uart_init(1, user_data.baud);
 
   /* turn on turbo pump motor (not pump station) */
   tc600_write(23, 6, 111111);
 
   /* vent mode */
   tc600_write(30, 3, 0);
+
+  delay_ms(0); // linker bug otherwise!
 }
 
 /*---- User write function -----------------------------------------*/
 
 /* buffers in mscbmain.c */
-extern unsigned char idata in_buf[10], out_buf[8];
+extern unsigned char xdata in_buf[300], out_buf[300];
 
 #pragma NOAREGS
 
-char idata obuf[8];
-
-void user_write(unsigned char channel) reentrant
+void user_write(unsigned char index) reentrant
 {
 unsigned char i, n;
 
-  if (channel == 0)
+  if (index == 0)
     {
     if (in_buf[2] == 27)
       terminal_mode = 0;
@@ -122,15 +119,18 @@ unsigned char i, n;
         putchar(in_buf[i+2]);
       }
     }
+  
+  if (index == 5)
+    uart_init(1, user_data.baud);
 }
 
 /*---- User read function ------------------------------------------*/
 
-unsigned char user_read(unsigned char channel)
+unsigned char user_read(unsigned char index)
 {
 char c;
 
-  if (channel == 0)
+  if (index == 0)
     {
     c = getchar_nowait();
     if (c != -1)
@@ -143,25 +143,10 @@ char c;
   return 0;
 }
 
-/*---- User write config function ----------------------------------*/
-
-void user_write_conf(unsigned char channel) reentrant
-{
-  if (channel == 0)
-    uart_init(1, user_conf.baud);
-}
-
-/*---- User read config function -----------------------------------*/
-
-void user_read_conf(unsigned char channel)
-{
-  if (channel);
-}
-
 /*---- User function called vid CMD_USER command -------------------*/
 
-unsigned char user_func(unsigned char idata *data_in,
-                        unsigned char idata *data_out)
+unsigned char user_func(unsigned char *data_in,
+                        unsigned char *data_out)
 {
   /* echo input data */
   data_out[0] = data_in[0];
@@ -176,7 +161,7 @@ unsigned char tc600_read(unsigned short param, char *result)
 char idata str[32];
 unsigned char i, j, cs, len;
 
-  sprintf(str, "%03Bd00%03d02=?", user_conf.address, param);
+  sprintf(str, "%03Bd00%03d02=?", user_data.address, param);
 
   for (i=cs=0 ; i<12 ; i++)
     cs += str[i];
@@ -207,9 +192,9 @@ char idata str[32];
 unsigned char i, cs;
 
   if (len == 6)
-    sprintf(str, "%03Bd10%03d06%06ld", user_conf.address, param, value);
+    sprintf(str, "%03Bd10%03d06%06ld", user_data.address, param, value);
   else if (len == 3)
-    sprintf(str, "%03Bd10%03d03%03ld", user_conf.address, param, value);
+    sprintf(str, "%03Bd10%03d03%03ld", user_data.address, param, value);
 
   for (i=cs=0 ; i<16 ; i++)
     cs += str[i];
