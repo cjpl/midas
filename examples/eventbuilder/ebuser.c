@@ -6,6 +6,9 @@
   Contents:     User section for the Event builder
 
   $Log$
+  Revision 1.3  2002/06/14 04:59:46  pierre
+  revised for ybos
+
   Revision 1.2  2002/01/17 23:34:29  pierre
   doc++ format
 
@@ -29,7 +32,7 @@ Hook to the event builder task at PreStart transition.
 \begin{verbatim}
 \end{verbatim}
 
-@param rn Run Number
+@param rn run number
 @param error error string to be passed back to the system.
 @return EB_SUCCESS
 */
@@ -46,7 +49,7 @@ receiving the Stop transition.
 \begin{verbatim}
 \end{verbatim}
 
-@param rn Run Number
+@param rn run number
 @param error error string to be passed back to the system.
 @return EB_SUCCESS
 */
@@ -76,7 +79,7 @@ typedef struct {
 } EBUILDER_CHANNEL;
 \end{verbatim}
 
-The correct code for including your own bank is shown below where
+The correct code for including your own MIDAS bank is shown below where
 {\bf TID_xxx} is one of the valid Bank type starting with {\bf TID_} for
 midas format or {\bf xxx_BKTYPE} for Ybos data format.
 {\bf bank_name} is a 4 character descriptor.
@@ -95,7 +98,18 @@ Refers to the ebuser.c source code for further description.
   *pdata++ = ...;
   *dest_size = bk_close(pevent, pdata);
   pheader->data_size = *dest_size + sizeof(EVENT_HEADER);
+\end{verbatim}
 
+For YBOS format, use the following example.
+
+\begin{verbatim}
+  ybk_init(pevent);
+  ybk_create(pevent, "EBBK", I4_BKTYPE, &pdata);
+  *pdata++ = 0x12345678;
+  *pdata++ = 0x87654321;
+  *dest_size = ybk_close(pevent, pdata);
+  *dest_size *= 4;
+  pheader->data_size = *dest_size + sizeof(YBOS_BANK_HEADER);
 \end{verbatim}
 
 @param nfrag Number of fragment.
@@ -104,40 +118,22 @@ Refers to the ebuser.c source code for further description.
 @param pevent Destination pointer to the bank header.
 @param dest_size Destination event size in bytes.
 @memo  event builder user code for private data filtering.
-@return
+@return EB_SUCCESS
 */
 INT eb_user(INT nfrag
 	    , EBUILDER_CHANNEL * ebch, EVENT_HEADER *pheader
 	    , void *pevent, INT * dest_size)
 {
   INT    i, dest_serial, frag_size, serial;
-  DWORD  *pdata;
 
   dest_serial = pheader->serial_number;  
-  printf("Event Serial%d ", dest_serial);
+  printf("DSer#:%d ", dest_serial);
   for (i=0;i<nfrag;i++) {
     frag_size  = ((EVENT_HEADER *) ebch[i].pfragment)->data_size;
     serial =  ((EVENT_HEADER *) ebch[i].pfragment)->serial_number;
-    printf("Fragment#:%d Data size:%d Serial%d ", i+1, frag_size, serial);
+    printf("Frg#:%d Dsz:%d Ser:%d ", i+1, frag_size, serial);
   }
   
-  /* Event is empty, fill it with BANK_HEADER
-     If you need to add your own bank at this stage */
-  bk_init(pevent);
-  
-  bk_create(pevent, "EVTB", TID_DWORD, &pdata);
-  *pdata++ = 0xAA0000AA;
-  *pdata++ = serial;
-  *pdata++ = 0x77000077;
-  *pdata++ = 0xFF0000FF;
-  *dest_size = bk_close(pevent, pdata);
-  
-  /* The destination data_size has to be adjust for:
-     the new data + the header length */
-  pheader->data_size = *dest_size + sizeof(EVENT_HEADER);
-
-  /* To slow it down */
-  cm_yield(20);
   printf("\n");
   return EB_SUCCESS;
 }
