@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.233  2002/07/01 07:57:05  midas
+  Fixed bug with email notification and several experiments
+
   Revision 1.232  2002/06/03 06:07:15  midas
   Added extra parameter to ss_daemon_init to keep stdout
 
@@ -3668,7 +3671,7 @@ char   mail_to[256], mail_from[256], mail_text[256], mail_list[256],
 char   *buffer[3], *p, *pitem;
 HNDLE  hDB, hkey;
 char   att_file[3][256];
-int    i, fh, size, n_mail;
+int    i, fh, size, n_mail, index;
 struct hostent *phe;
 char   mhttpd_full_url[256];
 
@@ -3815,102 +3818,61 @@ char   mhttpd_full_url[256];
   mail_param[0] = 0;
   n_mail = 0;
 
-  sprintf(str, "/Elog/Email %s", getparam("type"));
-  if (db_find_key(hDB, 0, str, &hkey) == DB_SUCCESS)
+  for (index = 0 ; index <= 1 ; index++)
     {
-    size = sizeof(mail_list);
-    db_get_data(hDB, hkey, mail_list, &size, TID_STRING);
+    if (index == 0)
+      sprintf(str, "/Elog/Email %s", getparam("type"));
+    else
+      sprintf(str, "/Elog/Email %s", getparam("system"));
 
-    if (db_find_key(hDB, 0, "/Elog/SMTP host", &hkey) != DB_SUCCESS)
+    if (db_find_key(hDB, 0, str, &hkey) == DB_SUCCESS)
       {
-      show_error("No SMTP host defined under /Elog/SMTP host");
-      return;
-      }
-    size = sizeof(smtp_host);
-    db_get_data(hDB, hkey, smtp_host, &size, TID_STRING);
+      size = sizeof(mail_list);
+      db_get_data(hDB, hkey, mail_list, &size, TID_STRING);
 
-    p = strtok(mail_list, ",");
-    for (i=0 ; p ; i++)
-      {
-      strcpy(mail_to, p);
-      sprintf(mail_from, "MIDAS@%s", host_name);
+      if (db_find_key(hDB, 0, "/Elog/SMTP host", &hkey) != DB_SUCCESS)
+        {
+        show_error("No SMTP host defined under /Elog/SMTP host");
+        return;
+        }
+      size = sizeof(smtp_host);
+      db_get_data(hDB, hkey, smtp_host, &size, TID_STRING);
 
-      size = sizeof(str);
-      str[0] = 0;
-      db_get_value(hDB, 0, "/Experiment/Name", str, &size, TID_STRING, TRUE);
+      p = strtok(mail_list, ",");
+      for (i=0 ; p ; i++)
+        {
+        strcpy(mail_to, p);
+        sprintf(mail_from, "MIDAS@%s", host_name);
 
-      sprintf(mail_text, "A new entry has been submitted by %s:\n\n", author);
-      sprintf(mail_text+strlen(mail_text), "Experiment : %s\n", str);
-      sprintf(mail_text+strlen(mail_text), "Type       : %s\n", getparam("type"));
-      sprintf(mail_text+strlen(mail_text), "System     : %s\n", getparam("system"));
-      sprintf(mail_text+strlen(mail_text), "Subject    : %s\n", getparam("subject"));
+        size = sizeof(str);
+        str[0] = 0;
+        db_get_value(hDB, 0, "/Experiment/Name", str, &size, TID_STRING, TRUE);
 
-      if (exp_name[0])
-        sprintf(mail_text+strlen(mail_text), "Link       : %sEL/%s?exp=%s\n", mhttpd_full_url, tag, exp_name);
-      else
-        sprintf(mail_text+strlen(mail_text), "Link       : %sEL/%s\n", mhttpd_full_url, tag);
+        sprintf(mail_text, "A new entry has been submitted by %s:\n\n", author);
+        sprintf(mail_text+strlen(mail_text), "Experiment : %s\n", str);
+        sprintf(mail_text+strlen(mail_text), "Type       : %s\n", getparam("type"));
+        sprintf(mail_text+strlen(mail_text), "System     : %s\n", getparam("system"));
+        sprintf(mail_text+strlen(mail_text), "Subject    : %s\n", getparam("subject"));
 
-      sendmail(smtp_host, mail_from, mail_to, getparam("type"), mail_text);
+        if (exp_name[0])
+          sprintf(mail_text+strlen(mail_text), "Link       : %sEL/%s?exp=%s\n", mhttpd_full_url, tag, exp_name);
+        else
+          sprintf(mail_text+strlen(mail_text), "Link       : %sEL/%s\n", mhttpd_full_url, tag);
 
-      if (mail_param[0] == 0)
-        strcpy(mail_param, "?");
-      else
-        strcat(mail_param, "&");
-      sprintf(mail_param+strlen(mail_param), "mail%d=%s", n_mail++, mail_to);
+        sendmail(smtp_host, mail_from, mail_to, getparam("type"), mail_text);
 
-      p = strtok(NULL, ",");
-      if (!p)
-        break;
-      while (*p == ' ')
-        p++;
-      }
-    }
+        if (mail_param[0] == 0 && exp_name[0] == 0)
+          strcpy(mail_param, "?");
+        else
+          strcat(mail_param, "&");
+        sprintf(mail_param+strlen(mail_param), "mail%d=%s", n_mail++, mail_to);
 
-  sprintf(str, "/Elog/Email %s", getparam("system"));
-  if (db_find_key(hDB, 0, str, &hkey) == DB_SUCCESS)
-    {
-    size = sizeof(mail_list);
-    db_get_data(hDB, hkey, mail_list, &size, TID_STRING);
-
-    if (db_find_key(hDB, 0, "/Elog/SMTP host", &hkey) != DB_SUCCESS)
-      {
-      show_error("No SMTP host defined under /Elog/SMTP host");
-      return;
-      }
-    size = sizeof(smtp_host);
-    db_get_data(hDB, hkey, smtp_host, &size, TID_STRING);
-
-    p = strtok(mail_list, ",");
-    for (i=0 ; p ; i++)
-      {
-      strcpy(mail_to, p);
-      sprintf(mail_from, "MIDAS@%s", host_name);
-
-      size = sizeof(str);
-      str[0] = 0;
-      db_get_value(hDB, 0, "/Experiment/Name", str, &size, TID_STRING, TRUE);
-
-      sprintf(mail_text, "A new entry has been submitted by %s:\n\n", author);
-      sprintf(mail_text+strlen(mail_text), "Experiment : %s\n", str);
-      sprintf(mail_text+strlen(mail_text), "Type       : %s\n", getparam("type"));
-      sprintf(mail_text+strlen(mail_text), "System     : %s\n", getparam("system"));
-      sprintf(mail_text+strlen(mail_text), "Subject    : %s\n", getparam("subject"));
-
-      if (exp_name[0])
-        sprintf(mail_text+strlen(mail_text), "Link       : %sEL/%s?exp=%s\n", mhttpd_full_url, tag, exp_name);
-      else
-        sprintf(mail_text+strlen(mail_text), "Link       : %sEL/%s\n", mhttpd_full_url, tag);
-      
-      sendmail(smtp_host, mail_from, mail_to, getparam("system"), mail_text);
-
-      strcat(mail_param, "&");
-      sprintf(mail_param+strlen(mail_param), "mail%d=%s", n_mail++, mail_to);
-
-      p = strtok(NULL, ",");
-      if (!p)
-        break;
-      while (*p == ' ')
-        p++;
+        p = strtok(NULL, ",");
+        if (!p)
+          break;
+        while (*p == ' ')
+          p++;
+        }
       }
     }
 
