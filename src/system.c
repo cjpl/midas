@@ -14,6 +14,9 @@
                 Brown, Prentice Hall
 
   $Log$
+  Revision 1.46  1999/10/27 13:37:04  midas
+  Added blank line
+
   Revision 1.45  1999/10/12 13:42:37  midas
   Use execl in ss_system
 
@@ -1773,6 +1776,7 @@ INT ss_mutex_wait_for(HNDLE mutex_handle, INT timeout)
 }
 
 /*------------------------------------------------------------------*/
+
 INT ss_mutex_release(HNDLE mutex_handle)
 /********************************************************************\
 
