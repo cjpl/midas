@@ -6,6 +6,9 @@
   Contents:     MIDAS logger program
 
   $Log$
+  Revision 1.40  2000/11/06 11:41:28  midas
+  Create /history/links if not present
+
   Revision 1.39  2000/06/20 07:06:45  midas
   Added check for history name length
 
@@ -1523,7 +1526,7 @@ BOOL     single_names;
   if (str[0] != 0)
     hs_set_path(str);
 
-  if (db_find_key(hDB, 0, "/History", &hKeyRoot) != DB_SUCCESS)
+  if (db_find_key(hDB, 0, "/History/Links", &hKeyRoot) != DB_SUCCESS)
     {
     /* create default history keys */
     db_create_key(hDB, 0, "/History/Links", TID_KEY);
