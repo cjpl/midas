@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.73  1999/10/11 14:14:03  midas
+  Use ss_system in certain places
+
   Revision 1.72  1999/10/11 13:01:22  midas
   Produce system message when executing an alarm script
 
@@ -2777,7 +2780,7 @@ RUNINFO_STR(runinfo_str);
     size = sizeof(str);
     db_get_value(hDB, 0, "/Programs/Execute on start run", str, &size, TID_STRING);
     if (str[0])
-      cm_execute(str, "", 0);
+      ss_system(str);
 
     db_find_key(hDB, 0, "/Programs", &hRootKey);
     if (hRootKey)
@@ -2804,7 +2807,7 @@ RUNINFO_STR(runinfo_str);
 
         if (program_info.auto_start &&
             program_info.start_command[0])
-          cm_execute(program_info.start_command, "", 0);
+          ss_system(program_info.start_command);
         }
       }
     }
@@ -3015,7 +3018,7 @@ RUNINFO_STR(runinfo_str);
     size = sizeof(str);
     db_get_value(hDB, 0, "/Programs/Execute on stop run", str, &size, TID_STRING);
     if (str[0])
-      cm_execute(str, "", 0);
+      ss_system(str);
 
     db_find_key(hDB, 0, "/Programs", &hRootKey);
     if (hRootKey)
@@ -15196,7 +15199,7 @@ ALARM_CLASS ac;
     sprintf(str, "%s: %s", alarm_class, alarm_message);
     sprintf(command, ac.execute_command, str);
     cm_msg(MINFO, "al_trigger_class", "Execute: %d", command);
-    system(command);
+    ss_system(command);
     ac.execute_last = ss_time();
     }
 
@@ -15502,7 +15505,7 @@ ALARM_STR(alarm_str);
           if (program_info.auto_restart &&
               program_info.start_command[0])
             {
-            system(program_info.start_command);
+            ss_system(program_info.start_command);
             cm_msg(MTALK, "al_check", "Program %s restarted", key.name);
             }
           }
