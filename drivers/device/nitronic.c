@@ -6,6 +6,9 @@
   Contents:     Nitronic HVS 132 High Voltage Device Driver
 
   $Log$
+  Revision 1.4  2001/01/03 16:11:36  midas
+  Fixed compiler warnings
+
   Revision 1.3  2000/12/18 13:43:49  midas
   Implemented new bus driver scheme
 
@@ -16,8 +19,8 @@
 
 #include <stdio.h>
 #include <math.h>
+#include <stdarg.h>
 #include "midas.h"
-#include "bus\rs232.h"
 
 /*---- globals -----------------------------------------------------*/
 
@@ -71,7 +74,7 @@ HNDLE        hDB, hkeydd;
 NITRONIC_INFO *info;
 
   /* allocate info structure */
-  info = calloc(1, sizeof(NITRONIC_INFO));
+  info = (NITRONIC_INFO *) calloc(1, sizeof(NITRONIC_INFO));
   *pinfo = info;
 
   cm_get_experiment_database(&hDB, NULL);
