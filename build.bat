@@ -7,7 +7,9 @@ set archive=\tmp\mscb%version%.zip
 
 rem Compiling new DLL
 cd \midas\nt
+nmake -f mscb.mak CFG="mscb - Win32 Release" clean
 nmake -f mscb.mak CFG="mscb - Win32 Release"
+nmake -f msc.mak CFG="msc - Win32 Release" Clean
 nmake -f msc.mak CFG="msc - Win32 Release"
 cd \midas\mscb
 

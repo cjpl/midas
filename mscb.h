@@ -6,6 +6,9 @@
   Contents:     Header fiel for MSCB funcions
 
   $Log$
+  Revision 1.18  2003/03/06 16:08:50  midas
+  Protocol version 1.3 (change node name)
+
   Revision 1.17  2002/11/28 14:44:09  midas
   Removed SIZE_XBIT
 
@@ -249,6 +252,7 @@ int EXPRT mscb_echo(int fd, int addr, unsigned char d1, unsigned char *d2);
 int EXPRT mscb_info(int fd, int adr, MSCB_INFO *info);
 int EXPRT mscb_info_channel(int fd, int adr, int type, int index, MSCB_INFO_CHN *info);
 int EXPRT mscb_set_addr(int fd, int adr, int node, int group);
+int EXPRT mscb_set_name(int fd, int adr, char *name);
 int EXPRT mscb_write(int fd, int adr, unsigned char channel, void *data, int size);
 int EXPRT mscb_write_group(int fd, int adr, unsigned char channel, void *data, int size);
 int EXPRT mscb_write_conf(int fd, int adr, unsigned char channel, void *data, int size);
