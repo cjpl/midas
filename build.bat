@@ -50,12 +50,8 @@ zip -p mscb%version%.zip labview/*.vi
 zip -p mscb%version%.zip drivers/windows/mscbusb.inf
 zip -p mscb%version%.zip drivers/windows/mscbusb.sys
 
-rem map network drive
-net use n: /d > nul
-net use n: \\pc2075\midas mi_das /user:midas
-
 echo Sending archive to midas.psi.ch
 
-cp mscb%version%.zip n:\html\mscb\software\download
+scp mscb%version%.zip midas@midas:html/mscb/software/download
 
 rm mscb%version%.zip > nul
