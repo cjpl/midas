@@ -6,6 +6,11 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.42  2001/10/12 07:18:47  midas
+  - Fixed CRLF problem with sendmail, thanks to Michael Jones
+  - Fixed problem that first logbook page can be viewed even with read PW
+  - Fixed problem that passwords only worked with -k flag
+
   Revision 1.41  2001/10/09 10:39:55  midas
   Version 1.1.2
 
@@ -148,6 +153,8 @@
 
 #define DIR_SEPARATOR '\\'
 #define DIR_SEPARATOR_STR "\\"
+
+#define snprintf _snprintf
 
 #include <windows.h>
 #include <io.h>
@@ -412,6 +419,7 @@ INT sendmail(char *smtp_host, char *from, char *to, char *subject, char *text)
 struct sockaddr_in   bind_addr;
 struct hostent       *phe;
 int                  s;
+char                 buf[80];
 char                 str[10000];
 time_t               now;
 
@@ -438,30 +446,32 @@ time_t               now;
 
   recv_string(s, str, sizeof(str), 3000);
 
-  sprintf(str, "MAIL FROM: <%s>\n", from);
+  snprintf(str, sizeof(str) - 1, "MAIL FROM: <%s>\r\n", from);
   send(s, str, strlen(str), 0);
   recv_string(s, str, sizeof(str), 3000);
 
-  sprintf(str, "RCPT TO: <%s>\n", to);
+  snprintf(str, sizeof(str) - 1, "RCPT TO: <%s>\r\n", to);
   send(s, str, strlen(str), 0);
   recv_string(s, str, sizeof(str), 3000);
 
-  sprintf(str, "DATA\n");
+  snprintf(str, sizeof(str) - 1, "DATA\r\n");
   send(s, str, strlen(str), 0);
   recv_string(s, str, sizeof(str), 3000);
 
-  sprintf(str, "To: %s\nFrom: %s\nSubject: %s\n", to, from, subject);
+  snprintf(str, sizeof(str) - 1, "To: %s\r\nFrom: %s\r\nSubject: %s\r\n", to, from, subject);
   send(s, str, strlen(str), 0);
 
   time(&now);
-  sprintf(str, "Date: %s\n", ctime(&now));
+  snprintf(buf, sizeof(buf) - 1, "%s", ctime(&now));
+  buf[strlen(buf)-1] = '\0';
+  snprintf(str, sizeof(str) - 1, "Date: %s\r\n\r\n", buf);
   send(s, str, strlen(str), 0);
 
-  sprintf(str, "%s\n.\n", text);
+  snprintf(str, sizeof(str) - 1, "%s\r\n.\r\n", text);
   send(s, str, strlen(str), 0);
   recv_string(s, str, sizeof(str), 3000);
 
-  sprintf(str, "QUIT\n");
+  snprintf(str, sizeof(str) - 1, "QUIT\r\n");
   send(s, str, strlen(str), 0);
   recv_string(s, str, sizeof(str), 3000);
 
@@ -3773,15 +3783,15 @@ struct hostent *phe;
             }
 
           if (strchr(author, '@'))
-            sprintf(mail_text, "A new entry has been submitted by %s from %s:\n\n", str1, str2);
+            sprintf(mail_text, "A new entry has been submitted by %s from %s:\r\n\r\n", str1, str2);
           else
-            sprintf(mail_text, "A new entry has been submitted by %s:\n\n", author);
+            sprintf(mail_text, "A new entry has been submitted by %s:\r\n\r\n", author);
 
-          sprintf(mail_text+strlen(mail_text), "Logbook  : %s\n", logbook);
-          sprintf(mail_text+strlen(mail_text), "Type     : %s\n", getparam("type"));
-          sprintf(mail_text+strlen(mail_text), "Category : %s\n", getparam("category"));
-          sprintf(mail_text+strlen(mail_text), "Subject  : %s\n", getparam("subject"));
-          sprintf(mail_text+strlen(mail_text), "Link     : %s%s/%s\n", elogd_full_url, logbook_enc, tag);
+          sprintf(mail_text+strlen(mail_text), "Logbook  : %s\r\n", logbook);
+          sprintf(mail_text+strlen(mail_text), "Type     : %s\r\n", getparam("type"));
+          sprintf(mail_text+strlen(mail_text), "Category : %s\r\n", getparam("category"));
+          sprintf(mail_text+strlen(mail_text), "Subject  : %s\r\n", getparam("subject"));
+          sprintf(mail_text+strlen(mail_text), "Link     : %s%s/%s\r\n", elogd_full_url, logbook_enc, tag);
 
           sendmail(smtp_host, mail_from, mail_to, 
             index == 0 ? getparam("type") : getparam("category"), mail_text);
@@ -3822,12 +3832,14 @@ struct hostent *phe;
 
 void show_elog_page(char *logbook, char *path)
 {
-int   size, i, run, msg_status, status, fh, length, first_message, last_message, index;
-char  str[256], orig_path[256], command[80], ref[256], file_name[256];
-char  date[80], author[80], type[80], category[80], subject[256], text[TEXT_SIZE],
-      orig_tag[80], reply_tag[80], attachment[MAX_ATTACHMENTS][256], encoding[80], att[256];
-FILE  *f;
-BOOL  allow_delete, allow_edit;
+int    size, i, run, msg_status, status, fh, length, first_message, last_message, index;
+char   str[256], orig_path[256], command[80], ref[256], file_name[256];
+char   date[80], author[80], type[80], category[80], subject[256], text[TEXT_SIZE],
+       orig_tag[80], reply_tag[80], attachment[MAX_ATTACHMENTS][256], encoding[80], att[256];
+FILE   *f;
+BOOL   allow_delete, allow_edit;
+time_t now;
+struct tm *gmt;
 
   allow_delete = FALSE;
   allow_edit = TRUE;
@@ -3972,6 +3984,13 @@ BOOL  allow_delete, allow_edit;
       rsprintf("HTTP/1.1 200 Document follows\r\n");
       rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
       rsprintf("Accept-Ranges: bytes\r\n");
+
+      time(&now);
+      now += (int) (3600*3);
+      gmt = gmtime(&now);
+      strftime(str, sizeof(str), "%A, %d-%b-%y %H:%M:%S GMT", gmt);
+      rsprintf("Expires: %s\r\n", str);
+
       if (use_keepalive)
         {
         rsprintf("Connection: Keep-Alive\r\n");
@@ -4665,6 +4684,7 @@ struct tm *gmt;
       }
 
     strcpy(logbook_enc, logbook);
+    url_encode(logbook_enc);
     }
 
   /* get theme for logbook */
@@ -4960,7 +4980,7 @@ struct in_addr remote_addr[N_MAX_CONNECTION];
 
 void server_loop(int tcp_port, int daemon)
 {
-int                  status, i, n_error, authorized, min, i_min, i_conn, length;
+int                  status, i, n, n_error, authorized, min, i_min, i_conn, length;
 struct sockaddr_in   serv_addr, acc_addr;
 char                 pwd[256], str[256], cl_pwd[256], *p;
 char                 cookie_wpwd[256], cookie_dpwd[256], boundary[256];
@@ -5283,6 +5303,25 @@ INT                  keep_alive;
           }
         }
 
+      /* if no logbook is given and only one logbook defined, use this one */
+      if (!logbook[0])
+        {
+        for (i=n=0 ; ; i++)
+          {
+          if (!enumgrp(i, str))
+            break;
+          if (!equal_ustring(str, "global"))
+            n++;
+          }
+
+        if (n == 1)
+          {
+          strcpy(logbook, str);
+          strcpy(logbook_enc, logbook);
+          url_encode(logbook_enc);
+          }
+        }
+
       /* force re-read configuration file */
       if (cfgbuffer)
         {
@@ -5368,6 +5407,8 @@ INT                  keep_alive;
         rsprintf("browser doesn't understand how to supply\r\n");
         rsprintf("the credentials required.<P>\r\n");
         rsprintf("</BODY></HTML>\r\n");
+
+        keep_alive = FALSE;
         }
       else
         {
