@@ -19,6 +19,9 @@
 		See mchart -h for further info.
 		
   $Log$
+  Revision 1.3  2000/09/29 20:10:30  pierre
+  fix warning messages
+
   Revision 1.2  2000/04/20 18:22:38  pierre
   - added "%" to "_" substitution for variable names (midas group, tcl parsing)
 
@@ -42,6 +45,7 @@ DWORD    delta_time;
 BOOL     keep = FALSE, debug=FALSE, create=FALSE, config_given=FALSE;
 BOOL     config_done = FALSE;
 INT      graph=0, element=0;
+
 FILE    *mchart_open(char * svpath);
 INT      mchart_compose(HNDLE hDB, char * svapth, char * eqpstr);
 INT      conf_compose(INT action, char * svpath, char * field, float maxval);
@@ -310,7 +314,7 @@ INT mchart_compose(HNDLE hDB, char * svpath, char * eqpstr)
   /* check if dir exists */
   if ((status = db_find_key(hDB, 0, eqpstr, &hKey)) == DB_SUCCESS)
   {
-    if ((fHandle = mchart_open(svpath)) > 0)
+    if ((fHandle = mchart_open(svpath)) != NULL)
     {
       db_get_key(hDB, hKey, &key);
       if (key.type != TID_KEY)
