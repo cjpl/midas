@@ -7,6 +7,9 @@
   Contents:     Symbolic constants for internal RPC functions
 
   $Log$
+  Revision 1.8  1999/04/19 07:46:43  midas
+  Added cm_msg_retrieve
+
   Revision 1.7  1999/04/15 09:59:22  midas
   Added RPC_CM_EXIST
 
@@ -43,6 +46,7 @@
 #define RPC_CM_MSG                      11009
 #define RPC_CM_TRANSITION               11010
 #define RPC_CM_EXIST                    11011
+#define RPC_CM_MSG_RETRIEVE             11012
 
 #define RPC_BM_OPEN_BUFFER              11100
 #define RPC_BM_CLOSE_BUFFER             11101
