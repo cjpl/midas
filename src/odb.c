@@ -6,6 +6,9 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.67  2003/09/29 08:53:45  midas
+  Fixed bug with ODB strings of 256 bytes length
+
   Revision 1.66  2003/09/04 11:39:43  midas
   Correct initial total_size of root key
 
@@ -5471,8 +5474,8 @@ INT db_copy(HNDLE hDB, HNDLE hKey, char *buffer, INT *buffer_size, char *path)
   INT    i, j, size, status;
   KEY    key;
   HNDLE  hSubkey;
-  char   full_path[MAX_ODB_PATH], str[MAX_STRING_LENGTH];
-  char   *data, line[MAX_STRING_LENGTH];
+  char   full_path[MAX_ODB_PATH], str[MAX_STRING_LENGTH*2];
+  char   *data, line[MAX_STRING_LENGTH*2];
   BOOL   bWritten;
 
   strcpy(full_path, path);
