@@ -6,6 +6,9 @@
   Contents:     Kernel mode driver for Hytec 1331 CAMAC interface
 
   $Log$
+  Revision 1.3  2001/10/03 14:51:30  midas
+  Return -ENODEV if interface not found
+
   Revision 1.2  2001/10/03 14:45:11  midas
   Separated IOCTL functions code into header file
 
@@ -677,7 +680,10 @@ struct pci_dev *dev;
       }
     }
   else
+    {
     printk(KERN_INFO "khyt1331: No 5331 card found\n");
+    return -ENODEV;
+    }
 
   /* register /proc/khyt1331 interface */
   create_proc_read_entry("khyt1331", 0, NULL, khyt1331_read_procmem, NULL);
