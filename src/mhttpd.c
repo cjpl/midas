@@ -6,6 +6,9 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
+  Revision 1.36  1999/09/16 07:36:10  midas
+  Added automatic host name in author field
+
   Revision 1.35  1999/09/15 13:33:32  midas
   Added remote el_submit functionality
 
@@ -137,6 +140,7 @@ char _value[MAX_PARAM][VALUE_SIZE];
 char _text[TEXT_SIZE];
 char *_attachment_buffer;
 INT  _attachment_size;
+char remote_host_name[256];
 
 char *mname[] = {
   "January",
@@ -1329,7 +1333,7 @@ void show_elog_submit_query()
 int    i, size, run, status, m1, d2, m2, y2;
 char   date[80], author[80], type[80], system[80], subject[256], text[10000], 
        orig_tag[80], reply_tag[80], attachment[256], encoding[80];
-char   str[256], tag[256], ref[80];
+char   str[256], str2[256], tag[256], ref[80];
 HNDLE  hDB;
 DWORD  ltime_end, ltime_current;
 struct tm tms;
@@ -1503,21 +1507,32 @@ struct tm tms;
     if (status == EL_SUCCESS)
       {
       /* do filtering */
-      if (*getparam("author") && !equal_ustring(getparam("author"), author))
-        continue;
       if (*getparam("type") && !equal_ustring(getparam("type"), type))
         continue;
       if (*getparam("system") && !equal_ustring(getparam("system"), system))
         continue;
+
+      if (*getparam("author"))
+        {
+        strcpy(str, getparam("author"));
+        for (i=0 ; i<(int)strlen(str) ; i++)
+          str[i] = toupper(str[i]);
+        for (i=0 ; i<(int)strlen(author) ; i++)
+          str2[i] = toupper(author[i]);
+
+        if (strstr(str2, str) == NULL)
+          continue;
+        }
+      
       if (*getparam("subject"))
         {
         strcpy(str, getparam("subject"));
         for (i=0 ; i<(int)strlen(str) ; i++)
           str[i] = toupper(str[i]);
         for (i=0 ; i<(int)strlen(subject) ; i++)
-          subject[i] = toupper(subject[i]);
+          str2[i] = toupper(subject[i]);
 
-        if (strstr(subject, str) == NULL)
+        if (strstr(str2, str) == NULL)
           continue;
         }
 
@@ -1728,7 +1743,7 @@ KEY    key;
 
 void submit_elog()
 {
-char str[80];
+char str[80], author[256];
 
   /* check for author */
   if (*getparam("author") == 0)
@@ -1744,7 +1759,12 @@ char str[80];
     return;
     }
 
-  el_submit(atoi(getparam("run")), getparam("author"), getparam("type"),
+  /* add remote host name to author */
+  strcpy(author, getparam("author"));
+  strcat(author, "@");
+  strcat(author, remote_host_name);
+
+  el_submit(atoi(getparam("run")), author, getparam("type"),
             getparam("system"), getparam("subject"), getparam("text"), 
             getparam("orig"), *getparam("html") ? "HTML" : "plain", 
             getparam("attachment"), _attachment_buffer, _attachment_size, str, sizeof(str));
@@ -4418,6 +4438,16 @@ INT                  last_time=0;
       ling.l_onoff = 1;
       ling.l_linger = 600;
       setsockopt(sock, SOL_SOCKET, SO_LINGER, (char *) &ling, sizeof(ling));
+
+      /* ret remote host name */
+      phe = gethostbyaddr((char *) &acc_addr.sin_addr, 4, PF_INET);
+      if (phe == NULL)
+        {
+        /* use IP number instead */
+        strcpy(remote_host_name, (char *)inet_ntoa(acc_addr.sin_addr));
+        }
+      else
+        strcpy(remote_host_name, phe->h_name);
 
       memset(net_buffer, 0, sizeof(net_buffer));
       len = 0;

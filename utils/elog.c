@@ -6,6 +6,9 @@
   Contents:     Electronic logbook utility   
 
   $Log$
+  Revision 1.5  1999/09/16 07:36:10  midas
+  Added automatic host name in author field
+
   Revision 1.4  1999/09/15 13:33:36  midas
   Added remote el_submit functionality
 
@@ -139,8 +142,9 @@ void ctrlc_handler(int sig)
 main(int argc, char *argv[])
 {
 char      author[80], type[80], system[80], subject[256], text[10000], attachment[256];
-char      host_name[256], exp_name[NAME_LENGTH], str[256];
+char      host_name[256], exp_name[NAME_LENGTH], str[256], lhost_name[256];
 char      *buffer;
+struct hostent *phe;
 INT       i, size, status, run_number, fh;
 HNDLE     hkey;
 
@@ -289,6 +293,27 @@ usage:
     buffer = malloc(1);
     size = 0;
     }
+
+  /* add local host name to author */
+  gethostname(lhost_name, sizeof(host_name));
+
+  phe = gethostbyname(lhost_name);
+  if (phe == NULL)
+    {
+    printf("Cannot retrieve local host name\n");
+    cm_disconnect_experiment();
+    return 0;
+    }
+  phe = gethostbyaddr(phe->h_addr, sizeof(int), AF_INET);
+  if (phe == NULL)
+    {
+    printf("Cannot retrieve local host name\n");
+    cm_disconnect_experiment();
+    return 0;
+    }
+  strcpy(lhost_name, phe->h_name);
+  strcat(author, "@");
+  strcat(author, lhost_name);
 
   /* now submit message */
   el_submit(run_number, author, type, system, subject, text, "", "plain", 
