@@ -8,6 +8,9 @@
                 and four buttons
 
   $Log$
+  Revision 1.3  2004/12/21 10:47:59  midas
+  Fixed bug in system menu
+
   Revision 1.2  2004/09/25 01:14:54  midas
   Started implementing slave port on SCS-1000
 
@@ -97,8 +100,8 @@ unsigned char n_sysvar = 4;
 
 MSCB_INFO_VAR code sysvar[] = {
 
-   { 2, UNIT_WORD, 0, 0, 0, "Node Adr", &sys_info.node_addr, 1, 0xFFFE, 1 },
-   { 2, UNIT_WORD, 0, 0, 0, "Grp Adr",  &sys_info.group_addr, 1, 0xFFFE, 1 },
+   { 2, UNIT_WORD, 0, 0, 0, "Node Adr", &sys_info.node_addr, 0, 0, 1 },
+   { 2, UNIT_WORD, 0, 0, 0, "Grp Adr",  &sys_info.group_addr, 0, 0, 1 },
 
    { 0, UNIT_BOOLEAN, 0, 0, MSCBF_DATALESS, "Flash" },
    { 0, UNIT_BOOLEAN, 0, 0, MSCBF_DATALESS, "Reboot" },
@@ -191,36 +194,49 @@ void var_inc(MSCB_INFO_VAR *pvar, char sign)
    case 1:
       if (pvar->flags & MSCBF_SIGNED) {
          *((char *) &f_var) += pvar->delta * sign;
-         if (*((char *) &f_var) < pvar->min)
-            *((char *) &f_var) = pvar->min;
-         if (*((char *) &f_var) > pvar->max)
-            *((char *) &f_var) = pvar->max;
+         if (pvar->min != pvar->max) {
+            if (*((char *) &f_var) < pvar->min)
+               *((char *) &f_var) = pvar->min;
+            if (*((char *) &f_var) > pvar->max)
+               *((char *) &f_var) = pvar->max;
+         }
       } else {
-         if (sign == -1 && *((unsigned char *) &f_var) == pvar->min)
+         if (sign == -1 && *((unsigned char *) &f_var) == pvar->min &&
+             pvar->min != pvar->max)
             break;
          *((unsigned char *) &f_var) += pvar->delta * sign;
-         if (*((unsigned char *) &f_var) < pvar->min)
-            *((unsigned char *) &f_var) = pvar->min;
-         if (*((unsigned char *) &f_var) > pvar->max)
-            *((unsigned char *) &f_var) = pvar->max;
+         
+         if (pvar->min != pvar->max) {
+            if (*((unsigned char *) &f_var) < pvar->min)
+               *((unsigned char *) &f_var) = pvar->min;
+            if (*((unsigned char *) &f_var) > pvar->max)
+               *((unsigned char *) &f_var) = pvar->max;
+         }
       }
+
       break;
 
    case 2:
       if (pvar->flags & MSCBF_SIGNED) {
          *((short *) &f_var) += pvar->delta * sign;
-         if (*((short *) &f_var) < pvar->min)
-            *((short *) &f_var) = pvar->min;
-         if (*((short *) &f_var) > pvar->max)
-            *((short *) &f_var) = pvar->max;
+         if (pvar->min != pvar->max) {
+            if (*((short *) &f_var) < pvar->min)
+               *((short *) &f_var) = pvar->min;
+            if (*((short *) &f_var) > pvar->max)
+               *((short *) &f_var) = pvar->max;
+          }
       } else {
-         if (sign == -1 && *((unsigned short *) &f_var) == pvar->min)
+         if (sign == -1 && *((unsigned short *) &f_var) == pvar->min &&
+             pvar->min != pvar->max)
             break;
          *((unsigned short *) &f_var) += pvar->delta * sign;
-         if (*((unsigned short *) &f_var) < pvar->min)
-            *((unsigned short *) &f_var) = pvar->min;
-         if (*((unsigned short *) &f_var) > pvar->max)
-            *((unsigned short *) &f_var) = pvar->max;
+
+         if (pvar->min != pvar->max) {
+            if (*((unsigned short *) &f_var) < pvar->min)
+               *((unsigned short *) &f_var) = pvar->min;
+            if (*((unsigned short *) &f_var) > pvar->max)
+               *((unsigned short *) &f_var) = pvar->max;
+         }
       }
       break;
 
@@ -235,18 +251,24 @@ void var_inc(MSCB_INFO_VAR *pvar, char sign)
       } else {
          if (pvar->flags & MSCBF_SIGNED) {
             *((long *) &f_var) += pvar->delta * sign;
-            if (*((long *) &f_var) < pvar->min)
-               *((long *) &f_var) = pvar->min;
-            if (*((long *) &f_var) > pvar->max)
-               *((long *) &f_var) = pvar->max;
+            if (pvar->min != pvar->max) {
+               if (*((long *) &f_var) < pvar->min)
+                  *((long *) &f_var) = pvar->min;
+               if (*((long *) &f_var) > pvar->max)
+                  *((long *) &f_var) = pvar->max;
+            }
          } else {
-            if (sign == -1 && *((unsigned long *) &f_var) == pvar->min)
+            if (sign == -1 && *((unsigned long *) &f_var) == pvar->min &&
+                pvar->min != pvar->max)
                break;
             *((unsigned long *) &f_var) += pvar->delta * sign;
-            if (*((unsigned long *) &f_var) < pvar->min)
-               *((unsigned long *) &f_var) = pvar->min;
-            if (*((unsigned long *) &f_var) > pvar->max)
-               *((unsigned long *) &f_var) = pvar->max;
+
+            if (pvar->min != pvar->max) {
+               if (*((unsigned long *) &f_var) < pvar->min)
+                  *((unsigned long *) &f_var) = pvar->min;
+               if (*((unsigned long *) &f_var) > pvar->max)
+                  *((unsigned long *) &f_var) = pvar->max;
+            }
          }
       }
       break;
@@ -307,7 +329,7 @@ void lcd_menu()
             /* display variables */
             display_value(pvar, &f_var);
             lcd_goto(0, 1);
-            puts("ESC ENTER   -    + ");
+            puts("ESC ENTER   -    +  ");
 
             /* evaluate ESC button */
             if (b0 && !b0_old)
@@ -400,16 +422,22 @@ void lcd_menu()
 
             /* evaluate prev button */
             if (b2 && !b2_old) {
-               if (var_index == 0)
-                 var_index = n_variables-1;
-               else
+               if (var_index == 0) {
+                 if (!system_menu)
+                    var_index = n_variables-1;
+                 else
+                    var_index = n_sysvar-1;
+               } else
                  var_index--;
                last_b2 = time();
             }
             if (b2 && time() > last_b2 + 70) {
-               if (var_index == 0)
-                 var_index = n_variables-1;
-               else
+               if (var_index == 0) {
+                 if (!system_menu)
+                    var_index = n_variables-1;
+                 else
+                    var_index = n_sysvar-1;
+               } else
                  var_index--;
             }
             if (!b2)
