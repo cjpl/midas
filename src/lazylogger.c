@@ -5,6 +5,9 @@
   Contents:     Disk to Tape copier for background job.
 
   $Log$
+  Revision 1.36  2003/11/11 02:00:25  pierre
+  change FTP filename, fix DIR_SEPARATOR for Recover.odb
+
   Revision 1.35  2003/11/07 05:51:10  pierre
   delete temp /Programs/Lazy, fix rate
 
@@ -190,6 +193,7 @@
 #define REMOVE_FILE   2
 #define REMOVE_ENTRY  3
 #define MAX_LAZY_CHANNEL 4
+#define TRACE 
 
 typedef struct {
   INT run;
@@ -411,7 +415,7 @@ INT lazy_log_update(INT action, INT run, char * label, char * file, DWORD perf_t
   
   cm_msg(MINFO, "lazy_log_update", str);
   /* Now add this info also to a special log file */
-  cm_msg1(MINFO, "lazy_log_update", "lazy",str);
+  cm_msg1(MINFO, "lazy_log_update", "lazy", str);
   
   return 0;
 }
@@ -1047,6 +1051,7 @@ Function value:
   /* update rate [kb/s] statistics */
   if ((ss_millitime() - cploop_time) > 100)
     lazyst.copy_rate = 1000.f * (lazyst.cur_size - lastsz) / (ss_millitime() - cploop_time);
+  if (lazyst.copy_rate<0.0) lazyst.copy_rate=0.0;
   
   /* update % statistics */
   if (lazyst.file_size != 0.0f)
@@ -1224,7 +1229,7 @@ Function value:
     if ((ss_time() - last_error) > 60)
     {
       last_error = ss_time();
-      cm_msg(MTALK,"Lazy_copy","can not open %s, error %d",outfile, status);
+      cm_msg(MTALK,"Lazy_copy","cannot open %s, error %d",outfile, status);
     }      
     return (FORCE_EXIT);
   }
@@ -1409,7 +1414,7 @@ Function value:
   INT *pdonelist=NULL;
   INT size,cur_acq_run, status, tobe_backup, purun;
   double freepercent, svfree;
-  char pufile[MAX_FILE_PATH], inffile[MAX_FILE_PATH], outffile[MAX_FILE_PATH];
+  char str[MAX_FILE_PATH], pufile[MAX_FILE_PATH], inffile[MAX_FILE_PATH], outffile[MAX_FILE_PATH];
   BOOL donepurge, watchdog_flag;
   INT watchdog_timeout;
   LAZY_INFO * pLch;
@@ -1626,17 +1631,29 @@ Function value:
       strcpy(outffile, lazy.path); 
     else if(dev_type == LOG_TYPE_FTP)
     {
-    /*
-    if (lazy.path[0] != 0)
-    if (lazy.path[strlen(lazy.path)-1] != DIR_SEPARATOR)
-    strcat(lazy.path, DIR_SEPARATOR_STR);
-      */
+      /* Format for FTP
+      lazy.path=host,port,user,password,directory,filename[,umask]
+      expect filename in format such as "bck%08d.mid" */
+
+      /*
       if (lazy.path[0] != 0)
-        if (lazy.path[strlen(lazy.path)-1] != '/')
-          strcat(lazy.path, "/");
-        strcpy(outffile, lazy.path); 
-        strcat(outffile, ",");
-        strcat(outffile, lazyst.backfile);
+      if (lazy.path[strlen(lazy.path)-1] != DIR_SEPARATOR)
+      strcat(lazy.path, DIR_SEPARATOR_STR);
+      */
+
+      strcpy(str, lazy.path);
+      /* substitue "%d" for current run number */
+      if (strchr(str, '%'))
+        sprintf(outffile, str, lazyst.cur_run);
+      else
+        strcpy(outffile, str);
+
+      //if (lazy.path[0] != 0)
+      //  if (lazy.path[strlen(lazy.path)-1] != '/')
+      //    strcat(lazy.path, "/");
+      //  strcpy(outffile, lazy.path); 
+      //  strcat(outffile, ",");
+      //  strcat(outffile, lazyst.backfile);
     }
     
     /* check if space on backup device */
@@ -1725,7 +1742,7 @@ Function value:
   {
     cm_msg(MERROR,"Lazy","lazy_file_exists file %s doesn't exists",lazyst.backfile);
     return NOTHING_TODO;
-  }              
+  }             
   
   /* Update the list */
   cp_time = ss_millitime() - cp_time;
@@ -1742,7 +1759,11 @@ Function value:
     /* leave "list label" as it is, as long as the _recover.odb is loaded before
     the lazylogger is started with NO -z things should be fine */
     /* save the recover with "List Label" empty */
-    sprintf(str,"%s/%s_recover.odb", lazy.dir, pLch->name);
+    if (lazy.dir[strlen(lazy.dir)-1] != DIR_SEPARATOR)
+      sprintf(str,"%s%c%s_recover.odb", lazy.dir, DIR_SEPARATOR, pLch->name);
+    else
+      sprintf(str,"%s%s_recover.odb", lazy.dir, pLch->name);
+
     db_save(hDB, pLch->hKey, str, TRUE);
   }
   
