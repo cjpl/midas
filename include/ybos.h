@@ -10,6 +10,9 @@
   date        by    modification
   ---------   ---   ------------------------------------------------
 *  $Log$
+*  Revision 1.16  2001/12/12 17:50:50  pierre
+*  EVID bank handling, 1.8.3-2 doc++
+*
 *  Revision 1.15  2001/07/20 20:36:19  pierre
 *  -Make ybk_close_... return bank size in bytes
 *
@@ -115,13 +118,104 @@
 extern chaos;
 #endif
 
-/*                                          s=TRUE>CHAOS        s=FALSE>NORMAL */
-#define YBOS_EVID_EVENT_ID(e)      *(e-2) == 6 ? *((WORD *)(e)+3)  : *((WORD *)(e)+1)
-#define YBOS_EVID_TRIGGER_MASK(e)  *(e-2) == 6 ? *((WORD *)(e)+2)  : *((WORD *)(e)+0)
-#define YBOS_EVID_SERIAL(e)        *(e-2) == 6 ? *((DWORD *)(e)+2) : *((DWORD *)(e)+1)
-#define YBOS_EVID_TIME(e)          *(e-2) == 6 ? *((DWORD *)(e)+3) : *((DWORD *)(e)+2)
-#define YBOS_EVID_RUN_NUMBER(e)    *(e-2) == 6 ? *((DWORD *)(e)+4) : *((DWORD *)(e)+3)
-#define YBOS_EVID_EVENT_NB(e)      *(e-2) == 6 ? *((DWORD *)(e)+0) : *((DWORD *)(e)+1)
+/** @name EVID bank
+As soon as the Midas header is striped out from the event, the YBOS
+remaining  data has lost the event synchonization unless included by the
+user. It is therefore necessary to have a YBOS bank duplicating
+this information usually done in the FE by creating a
+"EVID" bank filled with the Midas info and other user information.
+
+Unfortunately the format of this EVID is flexible and I couldn't
+force user to use a default structure. For this reason, I'm
+introducing a preprocessor flag for selecting such format.
+
+Omitting the declaration of the pre-processor flag the EVID_TRINAT is taken by
+default see \Ref{appendix F: Midas build options and consideration}.
+
+
+Special macros are avaialbe to retrieve this information
+based on the EVID content and the type of EVID structure.
+
+\begin{enumerate}
+\item[\#define YBOS_EVID_EVENT_ID(e)] Extract the Event ID. 
+\item[\#define YBOS_EVID_TRIGGER_MASK(e)] Extract the Trigger mask.
+\item[\#define YBOS_EVID_SERIAL(e)] Extract the Serial number.
+\item[\#define YBOS_EVID_TIME(e)] Extract the time stamp.
+\item[\#define YBOS_EVID_RUN_NUMBER(e)] Extract the run number.
+\item[\#define YBOS_EVID_EVENT_NB(e)] Extract the event counter.
+\end{enumerate}
+
+The Macro parameter should point to the first data of the EVID bank.
+\begin{verbatim}
+  // check if EVID is present if so display its content 
+  if ((status = ybk_find (pybos, "EVID", &bklen, &bktyp, (void *)&pybk)) == YB_SUCCESS)
+  {
+    pdata = (DWORD *)((YBOS_BANK_HEADER *)pybk + 1);
+    pevent->event_id      = YBOS_EVID_EVENT_ID(pdata);
+    pevent->trigger_mask  = YBOS_EVID_TRIGGER_MASK(pdata);
+    pevent->serial_number = YBOS_EVID_SERIAL(pdata);
+    pevent->time_stamp    = YBOS_EVID_TIME(pdata);
+    pevent->data_size     = pybk->length;
+  }
+\end{verbatim}
+
+The current type of EVID bank are:
+\begin{enumerate}
+\item[EVID_TRINAT] Specific for Trinat experiment.
+\begin{verbatim}
+  ybk_create((DWORD *)pevent, "EVID", I4_BKTYPE, (DWORD *)(&pbkdat));
+  *((WORD *)pbkdat) = EVENT_ID(pevent);     ((WORD *)pbkdat)++;
+  *((WORD *)pbkdat) = TRIGGER_MASK(pevent); ((WORD *)pbkdat)++;
+  *(pbkdat)++ = SERIAL_NUMBER(pevent);
+  *(pbkdat)++ = TIME_STAMP(pevent);
+  *(pbkdat)++ = gbl_run_number;                // run number 
+\end{verbatim}
+\item[EVID_CHAOS] Specific to CHAOS experiment.
+\begin{verbatim}
+ need code here.
+\end{verbatim}
+\item[EVID_TWIST] Specific to Twist Experiment (Triumf).
+\begin{verbatim}
+  ybk_create((DWORD *)pevent, "EVID", I4_BKTYPE, &pbkdat);
+  *((WORD *)pbkdat) = EVENT_ID(pevent);     ((WORD *)pbkdat)++;
+  *((WORD *)pbkdat) = TRIGGER_MASK(pevent); ((WORD *)pbkdat)++;
+  *(pbkdat)++ = SERIAL_NUMBER(pevent);
+  *(pbkdat)++ = TIME_STAMP(pevent);
+  *(pbkdat)++ = gbl_run_number;                // run number 
+  *(pbkdat)++ = *((DWORD *)frontend_name);     // frontend name 
+  ybk_close((DWORD *)pevent, pbkdat);
+\end{verbatim}
+\end{enumerate}
+@memo EVID bank description with available macro's.
+@param e pointer to the first data of the bank.
+*/
+#if (!defined (EVID_TRINAT) && !defined (EVID_CHAOS) && !defined (EVID_TWIST))
+#define EVID_TRINAT
+#endif
+
+#if defined(EVID_TRINAT)
+#define YBOS_EVID_EVENT_ID(e)      *((WORD *)(e)+1)
+#define YBOS_EVID_TRIGGER_MASK(e)  *((WORD *)(e)+0) 
+#define YBOS_EVID_SERIAL(e)        *((DWORD *)(e)+1)
+#define YBOS_EVID_TIME(e)          *((DWORD *)(e)+2)
+#define YBOS_EVID_RUN_NUMBER(e)    *((DWORD *)(e)+3)
+#define YBOS_EVID_EVENT_NB(e)      *((DWORD *)(e)+1)
+#elif defined(EVID_CHAOS)
+#define YBOS_EVID_EVENT_ID(e)      *((WORD *)(e)+3)
+#define YBOS_EVID_TRIGGER_MASK(e)  *((WORD *)(e)+2) 
+#define YBOS_EVID_SERIAL(e)        *((DWORD *)(e)+2)
+#define YBOS_EVID_TIME(e)          *((DWORD *)(e)+3)
+#define YBOS_EVID_RUN_NUMBER(e)    *((DWORD *)(e)+4)
+#define YBOS_EVID_EVENT_NB(e)      *((DWORD *)(e)+0)
+#elif defined(EVID_TWIST)
+#define YBOS_EVID_EVENT_ID(e)      *((WORD *)(e)+1)
+#define YBOS_EVID_TRIGGER_MASK(e)  *((WORD *)(e)+0) 
+#define YBOS_EVID_SERIAL(e)        *((DWORD *)(e)+1)
+#define YBOS_EVID_TIME(e)          *((DWORD *)(e)+2)
+#define YBOS_EVID_RUN_NUMBER(e)    *((DWORD *)(e)+3)
+#define YBOS_EVID_EVENT_NB(e)      *((DWORD *)(e)+1)
+/* frontend name ignored */
+#endif
 
 /*                     pevt Evt# id/msk serial run# */
 #define YBOS_EVID_BANK(__a, __b, __c,   __d,   __e) {\
