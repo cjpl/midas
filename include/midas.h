@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.111  2003/04/15 10:50:00  midas
+  Removed unnecessary elements in KEY structure
+
   Revision 1.110  2003/04/15 08:16:48  midas
   Increased default ODB size to 1M
 
@@ -1056,8 +1059,6 @@ typedef struct {
   INT           total_size;           /* Total size of data block          */
   INT           item_size;            /* Size of single data item          */
   WORD          access_mode;          /* Access mode                       */
-  WORD          lock_mode;            /* Lock mode                         */
-  WORD          exclusive_client;     /* Index of client in excl. mode     */
   WORD          notify_count;         /* Notify counter                    */
   INT           next_key;             /* Address of next key               */
   INT           parent_keylist;       /* keylist to which this key belongs */
