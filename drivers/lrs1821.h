@@ -6,11 +6,10 @@
   Cotents:      Header file for LeCroy 1821 segment manager interface.
                 Includes logical names for 1821 registers and macros.
 
-  Revision history
-  ------------------------------------------------------------------
-  date        by    modification
-  --------    ---   ------------------------------------------------
-  18-MAY-93   SR    created
+  $Log$
+  Revision 1.2  1998/10/12 12:18:57  midas
+  Added Log tag in header
+
 
 \********************************************************************/
 

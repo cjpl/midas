@@ -6,12 +6,9 @@
   Contents:     The system part of the MIDAS analyzer. Has to be
                 linked with analyze.c to form a complete analyzer
 
-
-  Revision history
-  ------------------------------------------------------------------
-  date         by    modification
-  ---------    ---   ------------------------------------------------
-  06-DEC-96    SR    created
+  $Log$
+  Revision 1.2  1998/10/12 12:19:01  midas
+  Added Log tag in header
 
 
 \********************************************************************/

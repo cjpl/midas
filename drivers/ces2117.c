@@ -5,11 +5,10 @@
 
   Cotents:      CAMAC functions for CES VCC 2117 controller
 
-  Revision history
-  ------------------------------------------------------------------
-  date        by    modification
-  ---------   ---   ------------------------------------------------
-  03-MAR-98   SR    created
+  $Log$
+  Revision 1.2  1998/10/12 12:18:56  midas
+  Added Log tag in header
+
 
 \********************************************************************/
 

@@ -5,12 +5,9 @@
 
   Contents:     LeCroy 2415 CAMAC HV Device Driver
 
-
-  Revision history
-  -------------------------------------------------------------------
-  date         by    modification
-  ---------    ---   ------------------------------------------------
-  05-MAR-98    SR    created
+  $Log$
+  Revision 1.2  1998/10/12 12:18:57  midas
+  Added Log tag in header
 
 
 \********************************************************************/

@@ -5,13 +5,10 @@
 
   Contents:     CAEN 170a High Voltage Device Driver
 
+  $Log$
+  Revision 1.2  1998/10/12 12:18:55  midas
+  Added Log tag in header
 
-  Revision history
-  -------------------------------------------------------------------
-  date         by    modification
-  ---------    ---   ------------------------------------------------
-  26-MAR-97    SR    created
-  15-Apr-97    PAA   from caen4032
 
 \********************************************************************/
 

@@ -6,11 +6,10 @@
 #  Contents:     Makefile for MIDAS binaries and examples under 
 #                Windows NT
 #
-#  Revision history
-#  ------------------------------------------------------------------
-#  date         by    modification
-#  ---------    ---   -----------------------------------------------
-#  06-NOV-97    SR    created
+#  $Log$
+#  Revision 1.2  1998/10/12 12:18:55  midas
+#  Added Log tag in header
+#
 #
 #####################################################################
 #

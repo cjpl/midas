@@ -12,12 +12,9 @@
                 This program can be used as a framework for user
                 written analyzers that don't use the CERN library.
 
-
-  Revision history
-  ------------------------------------------------------------------
-  date         by    modification
-  ---------    ---   ------------------------------------------------
-  06-DEC-96    SR    created
+  $Log$
+  Revision 1.2  1998/10/12 12:18:58  midas
+  Added Log tag in header
 
 
 \********************************************************************/

@@ -1,3 +1,17 @@
+/********************************************************************\
+
+  Name:         hwtest.c
+  Created by:   Stefan Ritt
+
+  Contents:     Program which tests the architecture of the HW/OS
+
+  $Log$
+  Revision 1.2  1998/10/12 12:19:01  midas
+  Added Log tag in header
+
+
+\********************************************************************/
+
 #include <stdio.h>
 #include <string.h>
 

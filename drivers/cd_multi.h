@@ -5,12 +5,9 @@
 
   Contents:     Multimeter Class Driver Header File
 
-
-  Revision history
-  ------------------------------------------------------------------
-  date         by    modification
-  ---------    ---   ------------------------------------------------
-  26-MAR-97    SR    created
+  $Log$
+  Revision 1.2  1998/10/12 12:18:56  midas
+  Added Log tag in header
 
 
 \********************************************************************/

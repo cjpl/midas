@@ -6,12 +6,10 @@
   Contents:     Device driver for HYTEC 1331 Turbo CAMAC controller
                 following the MIDAS CAMAC Standard under DIRECTIO
 
-  Revision history
-  ------------------------------------------------------------------
-  date         by    modification
-  ---------    ---   ------------------------------------------------
-  17-APR-98    SR    created
-  17-JUN-98    SR    read status byte before data to fix CAMAC probelms
+  $Log$
+  Revision 1.3  1998/10/12 12:18:56  midas
+  Added Log tag in header
+
 
 \********************************************************************/
 

@@ -11,7 +11,12 @@
  *		  dual port memory buffer.
  *
  * Author:  Pierre-Andre Amaudruz Data Acquisition Group
- * 
+ 
+   $Log$
+   Revision 1.2  1998/10/12 12:18:57  midas
+   Added Log tag in header
+
+
  * Revision 1.0  1996/ Pierre	 Initial revision
  *
  *  VME_RESET_1190 (base);		! Reset 

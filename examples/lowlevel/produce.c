@@ -6,14 +6,9 @@
   Contents:     Buffer manager test program. Simple producer connec-
                 ting to a SYSTEM buffer and sending some data.
 
-
-  Revision history
-  ------------------------------------------------------------------
-  date         by    modification
-  ---------    ---   ------------------------------------------------
-  11-NOV-93    SR    created
-  25-JAN-95    SR    event buffer now dynamically 
-                     (-> MS-DOS limited stack size)
+  $Log$
+  Revision 1.2  1998/10/12 12:18:59  midas
+  Added Log tag in header
 
 
 \********************************************************************/

@@ -5,13 +5,10 @@
 
   Contents:     MIDAS logger program
 
+  $Log$
+  Revision 1.2  1998/10/12 12:19:02  midas
+  Added Log tag in header
 
-  Revision history
-  ------------------------------------------------------------------
-  date        by    modification
-  ---------   ---   ------------------------------------------------
-  08-FEB-96   SR    created
-  10-Jun-96   PAA   added YBOS writing routines
 
 \********************************************************************/
 

@@ -6,14 +6,10 @@
   Cotents:      Routines for accessing Fastbus over LeCroy 1821 SMI
                 under MS-DOS via the 1691A IBM-PC interface.
                 
+  $Log$
+  Revision 1.2  1998/10/12 12:18:57  midas
+  Added Log tag in header
 
-  Revision history
-  ------------------------------------------------------------------
-  date        by    modification
-  --------    ---   ------------------------------------------------
-  18-MAY-93   SR    created
-  09-JUL-96   SR    added ECL in and out routines, simplified patch
-                    table structure
 
 *********************************************************************/
 

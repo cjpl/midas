@@ -14,9 +14,11 @@
                 Brown, Prentice Hall
 
   $Log$
-  Revision 1.2  1998/10/12 11:59:11  midas
-  Added $Log$ tag in header
+  Revision 1.3  1998/10/12 12:19:03  midas
+  Added Log tag in header
 
+  Revision 1.2  1998/10/12 11:59:11  midas
+  Added Log tag in header
 
   Previous Revision history
   ------------------------------------------------------------------

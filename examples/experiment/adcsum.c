@@ -9,12 +9,10 @@
                 ASUM bank is a "structured" bank. It has been defined
                 in the ODB and transferred to experim.h.
 
+  $Log$
+  Revision 1.2  1998/10/12 12:18:58  midas
+  Added Log tag in header
 
-  Revision history
-  ------------------------------------------------------------------
-  date         by    modification
-  ---------    ---   ------------------------------------------------
-  04-JUL-97    SR    created
 
 \********************************************************************/
                                                         

@@ -1,3 +1,17 @@
+/********************************************************************\
+
+  Name:         miniana.c
+  Created by:   Stefan Ritt
+
+  Contents:     Minimum analyzer program to receive an event
+
+  $Log$
+  Revision 1.2  1998/10/12 12:18:58  midas
+  Added Log tag in header
+
+
+\********************************************************************/
+
 #include <stdio.h>
 #include "midas.h"
 

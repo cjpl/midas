@@ -5,12 +5,9 @@
 
   Contents:     C macros for writing a MIDAS frontend
 
-
-  Revision history
-  ------------------------------------------------------------------
-  date         by    modification
-  ---------    ---   ------------------------------------------------
-  04-MAR-98    SR    created
+  $Log$
+  Revision 1.2  1998/10/12 12:19:01  midas
+  Added Log tag in header
 
 
 \********************************************************************/

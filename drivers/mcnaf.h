@@ -11,11 +11,9 @@
                 The proper CAMAC driver has to be included prior to
                 this file.
 
-  Revision history
-  ------------------------------------------------------------------
-  date         by    modification
-  ---------    ---   ------------------------------------------------
-  12-MAR-98    SR    created
+  $Log$
+  Revision 1.2  1998/10/12 12:18:57  midas
+  Added Log tag in header
 
 
 \********************************************************************/

@@ -1,4 +1,3 @@
-
 /********************************************************************\
   
   Name:         mstat.c
@@ -6,13 +5,20 @@
   
   Contents:     Display/log some pertinent information of the ODB
   
-  Revision history
+  $Log$
+  Revision 1.2  1998/10/12 12:19:04  midas
+  Added Log tag in header
+
+
+  Previous revision history
   ------------------------------------------------------------------
   date        by    modification
   --------    ---   ------------------------------------------------
   30-JAN-97   PAA   created
   20-Oct-97   PAA   included malarm functionality
-  \********************************************************************/
+
+\********************************************************************/
+
 #include <fcntl.h>
 #include "midas.h"
 #include "msystem.h"

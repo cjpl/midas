@@ -11,12 +11,10 @@
                 adccalib_param structure which was defined in the ODB
                 and transferred to experim.h.
 
+  $Log$
+  Revision 1.2  1998/10/12 12:18:58  midas
+  Added Log tag in header
 
-  Revision history
-  ------------------------------------------------------------------
-  date         by    modification
-  ---------    ---   ------------------------------------------------
-  21-AUG-97    SR    created
 
 \********************************************************************/
                                                     

@@ -5,12 +5,9 @@
 
   Contents:     Magnetic tape manipulation program for MIDAS tapes
 
-
-  Revision history
-  ------------------------------------------------------------------
-  date         by    modification
-  ---------    ---   ------------------------------------------------
-  17-JAN-97    SR    created
+  $Log$
+  Revision 1.2  1998/10/12 12:19:02  midas
+  Added Log tag in header
 
 
 \********************************************************************/

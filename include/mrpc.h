@@ -6,12 +6,9 @@
   Purpose:      MIDAS RPC function header file
   Contents:     Symbolic constants for internal RPC functions
 
-
-  Revision history
-  ------------------------------------------------------------------
-  date         by    modification
-  ---------    ---   ------------------------------------------------
-  28-NOV-93    SR    created
+  $Log$
+  Revision 1.2  1998/10/12 12:19:01  midas
+  Added Log tag in header
 
 
 \********************************************************************/

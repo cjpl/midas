@@ -6,12 +6,9 @@
   Contents:     Wrapper functions for MIDAS library functions to be
                 called from Fortran programs.
 
-
-  Revision history
-  -------------------------------------------------------------------
-  date         by    modification
-  ---------    ---   ------------------------------------------------
-  01-JAN-98    SR    created
+  $Log$
+  Revision 1.2  1998/10/12 12:19:01  midas
+  Added Log tag in header
 
 
 \********************************************************************/

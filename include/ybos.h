@@ -5,8 +5,12 @@
 
   Contents:     Declarations for ybos data format
 
+  $Log$
+  Revision 1.2  1998/10/12 12:19:01  midas
+  Added Log tag in header
 
-  Revision history
+
+  Previous revision history
   ------------------------------------------------------------------
   date        by    modification
   ---------   ---   ------------------------------------------------

@@ -7,7 +7,12 @@
                 for MIDAS applications
 
 
-  Revision history
+  $Log$
+  Revision 1.2  1998/10/12 12:18:59  midas
+  Added Log tag in header
+
+
+  Previous Revision history
   ------------------------------------------------------------------
   date         by    modification
   ---------    ---   ------------------------------------------------

@@ -5,14 +5,10 @@
 
   Contents:     Declarations for ybos data format
 
+  $Log$
+  Revision 1.2  1998/10/12 12:19:01  midas
+  Added Log tag in header
 
-  Revision history
-  ------------------------------------------------------------------
-  date        by    modification
-  ---------   ---   ------------------------------------------------
-  15-JAN-97   PAA   created
-  12-MAY-97   SR    changed RING_SIZE from NET_BUFFER_SIZE to
-                    MAX_EVENT_SIZE
 
 \********************************************************************/
 

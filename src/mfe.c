@@ -6,12 +6,9 @@
   Contents:     The system part of the MIDAS frontend. Has to be
                 linked with user code to form a complete frontend
 
-
-  Revision history
-  ------------------------------------------------------------------
-  date         by    modification
-  ---------    ---   ------------------------------------------------
-  24-SEP-96    SR    created
+  $Log$
+  Revision 1.2  1998/10/12 12:19:01  midas
+  Added Log tag in header
 
 
 \********************************************************************/

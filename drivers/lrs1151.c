@@ -14,6 +14,10 @@
  *
  * Author:  Pierre-Andre Amaudruz Data Acquisition Group
  * 
+  $Log$
+  Revision 1.2  1998/10/12 12:18:56  midas
+  Added Log tag in header
+
  * Revision 1.0  1996/ Pierre	 Initial revision
  * Revision 1.1  1998/ Pierre	 Split include for specific hardware.
  * ---------------------------------------------------------------------------- */

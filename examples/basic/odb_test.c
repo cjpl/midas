@@ -5,12 +5,10 @@
 
   Contents:     Small demo program to show how to connect to the ODB
 
+  $Log$
+  Revision 1.2  1998/10/12 12:18:58  midas
+  Added Log tag in header
 
-  Revision history
-  ------------------------------------------------------------------
-  date        by    modification
-  --------    ---   ------------------------------------------------
-  30-APR-96   SR    created
 
 \********************************************************************/
 
