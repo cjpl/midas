@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.118  2000/08/10 08:04:56  midas
+  Create default /runinfo structure in cm_connect_experiment
+
   Revision 1.117  2000/05/16 10:38:17  midas
   - Set MIDAS_DIR as the default /logger/data dir on cm_connect_experiment
   - Remove elog file if all messages are deleted
@@ -1922,6 +1925,7 @@ char  client_name1[NAME_LENGTH];
 char  password[NAME_LENGTH], str[256], exp_name1[NAME_LENGTH];
 HNDLE hDB, hKeyClient;
 BOOL  call_watchdog;
+RUNINFO_STR(runinfo_str);
 
   if (_hKeyClient)
     cm_disconnect_experiment();
@@ -2067,6 +2071,9 @@ BOOL  call_watchdog;
   cm_get_path(str);
   size = sizeof(str);
   db_get_value(hDB, 0, "/Logger/Data dir", str, &size, TID_STRING);
+
+  /* create/correct /runinfo structure */
+  db_create_record(hDB, 0, "/Runinfo", strcomb(runinfo_str));
 
   /* register server to be able to be called by other clients*/
   status = cm_register_server();
@@ -3204,9 +3211,6 @@ RUNINFO_STR(runinfo_str);
 
   if (perror != NULL)
     strcpy(perror, "Success");
-
-  /* create/correct /runinfo structure */
-  db_create_record(hDB, 0, "/Runinfo", strcomb(runinfo_str));
 
   /* if no run number is given, get it from DB */
   if (run_number == 0)
