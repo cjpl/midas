@@ -66,7 +66,7 @@ Options 1,0,0  // Target 'Target 1'
  C51FL=21630224
  C51VA=0
  C51MSC ()
- C51DEF (SCS_300)
+ C51DEF (SUBM_300)
  C51UDF ()
  INCC5 ()
  AX51FL=4
