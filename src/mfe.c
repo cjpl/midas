@@ -7,6 +7,9 @@
                 linked with user code to form a complete frontend
 
   $Log$
+  Revision 1.39  2002/05/15 23:43:56  midas
+  Added event fragmentation
+
   Revision 1.38  2002/05/10 01:41:19  midas
   Added optional debug output to cm_transition
 
@@ -150,6 +153,7 @@ extern char *frontend_name;
 extern char *frontend_file_name;
 extern BOOL frontend_call_loop;
 extern INT  max_event_size;
+extern INT  max_event_size_frag;
 extern INT  event_buffer_size;
 extern INT  display_period;
 extern INT  frontend_init(void);
@@ -212,7 +216,7 @@ EQUIPMENT     *interrupt_eq = NULL;
 EVENT_HEADER  *interrupt_odb_buffer;
 BOOL          interrupt_odb_buffer_valid;
 
-void send_event(INT index);
+int  send_event(INT index);
 void send_all_periodic_events(INT transition);
 void interrupt_routine(void);
 void interrupt_enable(BOOL flag);
@@ -747,22 +751,44 @@ WORD              bktype;
 
 /*------------------------------------------------------------------*/
 
-void send_event(INT index)
+int send_event(INT index)
 {
 EQUIPMENT_INFO *eq_info;
-EVENT_HEADER   *pevent;
+EVENT_HEADER   *pevent, *pfragment;
+char           *pdata;
+unsigned char  *pd;
 INT            i;
+DWORD          sent, size;
+static void    *frag_buffer = NULL;
 
   eq_info = &equipment[index].info;
 
-  /* return value should be valid pointer. if NULL BIG error ==> abort  */
-  pevent = dm_pointer_get();
-  if (pevent == NULL)
+  /* check for fragmented event */
+  if (eq_info->eq_type & EQ_FRAGMENTED)
     {
-    cm_msg(MERROR, "send_event", "dm_pointer_get not returning valid pointer");
-    return;
+    if (frag_buffer == NULL)
+      frag_buffer = malloc(max_event_size_frag);
+
+    if (frag_buffer == NULL)
+      {
+      cm_msg(MERROR, "send_event", "Not enough memory to allocate buffer for fragmented events");
+      return SS_NO_MEMORY;
+      }
+
+    pevent = frag_buffer;
+    }
+  else
+    {
+    /* return value should be valid pointer. if NULL BIG error ==> abort  */
+    pevent = dm_pointer_get();
+    if (pevent == NULL)
+      {
+      cm_msg(MERROR, "send_event", "dm_pointer_get not returning valid pointer");
+      return SS_NO_MEMORY;
+      }
     }
 
+  /* compose MIDAS event header */
   pevent->event_id      = eq_info->event_id;
   pevent->trigger_mask  = eq_info->trigger_mask;
   pevent->data_size     = 0;
@@ -778,11 +804,113 @@ INT            i;
   /* send event */
   if (pevent->data_size)
     {
-    if (pevent->data_size+sizeof(EVENT_HEADER) > (DWORD) max_event_size)
+    if (eq_info->eq_type & EQ_FRAGMENTED)
       {
-      cm_msg(MERROR, "send_event", "Event size %d larger than maximum size %d",
-             pevent->data_size+sizeof(EVENT_HEADER), max_event_size);
-      return;
+      /* fragment event */
+      if (pevent->data_size+sizeof(EVENT_HEADER) > (DWORD) max_event_size_frag)
+        {
+        cm_msg(MERROR, "send_event", "Event size %d larger than maximum size %d for frag. ev.",
+               pevent->data_size+sizeof(EVENT_HEADER), max_event_size_frag);
+        return SS_NO_MEMORY;
+        }
+
+      /* compose fragments */
+      pfragment = dm_pointer_get();
+      if (pfragment == NULL)
+        {
+        cm_msg(MERROR, "send_event", "dm_pointer_get not returning valid pointer");
+        return SS_NO_MEMORY;
+        }
+
+      /* compose MIDAS event header */
+      memcpy(pfragment, pevent, sizeof(EVENT_HEADER));
+      pfragment->event_id |= EVENTID_FRAG1;
+
+      /* store total event size */
+      pd = (char *)(pfragment+1);
+      size = pevent->data_size;
+      for (i=0 ; i<4 ; i++)
+        {
+        pd[i] = (unsigned char)(size & 0xFF); /* little endian, please! */
+        size >>= 8;
+        }
+
+      pfragment->data_size = sizeof(DWORD);
+
+      pdata=(char *)(pevent+1);
+
+      for (i=0,sent=0 ; sent<pevent->data_size ; i++)
+        {
+        if (i>0)
+          {
+          pfragment = dm_pointer_get();
+
+          /* compose MIDAS event header */
+          memcpy(pfragment, pevent, sizeof(EVENT_HEADER));
+          pfragment->event_id |= EVENTID_FRAG;
+
+          /* copy portion of event */
+          size = pevent->data_size - sent; 
+          if (size > max_event_size-sizeof(EVENT_HEADER))
+            size = max_event_size-sizeof(EVENT_HEADER);
+            
+          memcpy(pfragment+1, pdata, size);
+          pfragment->data_size = size;
+          sent += size;
+          pdata += size;
+          }
+
+        /* send event to buffer */
+        if (equipment[index].buffer_handle)
+          {
+#ifdef USE_EVENT_CHANNEL
+          dm_pointer_increment(equipment[index].buffer_handle, 
+                               pfragment->data_size + sizeof(EVENT_HEADER));
+#else
+          rpc_flush_event();
+          bm_send_event(equipment[index].buffer_handle, pfragment,
+                        pfragment->data_size + sizeof(EVENT_HEADER), SYNC);
+#endif
+          }
+        }
+
+#ifndef USE_EVENT_CHANNEL
+      bm_flush_cache(equipment[index].buffer_handle, SYNC);
+#endif
+      }
+    else
+      {
+      /* send unfragmented event */
+
+      if (pevent->data_size+sizeof(EVENT_HEADER) > (DWORD) max_event_size)
+        {
+        cm_msg(MERROR, "send_event", "Event size %d larger than maximum size %d",
+               pevent->data_size+sizeof(EVENT_HEADER), max_event_size);
+        return SS_NO_MEMORY;
+        }
+
+      /* send event to buffer */
+      if (equipment[index].buffer_handle)
+        {
+  #ifdef USE_EVENT_CHANNEL
+        dm_pointer_increment(equipment[index].buffer_handle, 
+                             pevent->data_size + sizeof(EVENT_HEADER));
+  #else
+        rpc_flush_event();
+        bm_send_event(equipment[index].buffer_handle, pevent,
+                      pevent->data_size + sizeof(EVENT_HEADER), SYNC);
+        bm_flush_cache(equipment[index].buffer_handle, SYNC);
+  #endif
+        }
+
+      /* send event to ODB if RO_ODB flag is set or history is on. Do not
+         send SLOW events since the class driver does that */
+      if ((eq_info->read_on & RO_ODB) ||
+          (eq_info->history > 0 && (eq_info->eq_type & ~EQ_SLOW)))
+        {
+        update_odb(pevent, equipment[index].hkey_variables, equipment[index].format);
+        equipment[index].odb_out++;
+        }
       }
 
     equipment[index].bytes_sent += pevent->data_size + sizeof(EVENT_HEADER);
@@ -790,29 +918,6 @@ INT            i;
 
     equipment[index].stats.events_sent += equipment[index].events_sent;
     equipment[index].events_sent = 0;
-
-    /* send event to buffer */
-    if (equipment[index].buffer_handle)
-      {
-#ifdef USE_EVENT_CHANNEL
-      dm_pointer_increment(equipment[index].buffer_handle, 
-                           pevent->data_size + sizeof(EVENT_HEADER));
-#else
-      rpc_flush_event();
-      bm_send_event(equipment[index].buffer_handle, pevent,
-                    pevent->data_size + sizeof(EVENT_HEADER), SYNC);
-      bm_flush_cache(equipment[index].buffer_handle, SYNC);
-#endif
-      }
-
-    /* send event to ODB if RO_ODB flag is set or history is on. Do not
-       send SLOW events since the class driver does that */
-    if ((eq_info->read_on & RO_ODB) ||
-        (eq_info->history > 0 && (eq_info->eq_type & ~EQ_SLOW)))
-      {
-      update_odb(pevent, equipment[index].hkey_variables, equipment[index].format);
-      equipment[index].odb_out++;
-      }
     }
   else
     equipment[index].serial_number--;
@@ -829,6 +934,8 @@ INT            i;
   for (i=0 ; equipment[i].name[0] ; i++)
     if (equipment[i].buffer_handle)
       bm_flush_cache(equipment[i].buffer_handle, SYNC);
+
+  return CM_SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
@@ -1093,70 +1200,21 @@ INT opt_max=0, opt_index=0, opt_tcp_size=128, opt_cnt=0;
         if (eq_info->period == 0)
           continue;
 
-        /* if period over, call readout routine */
+        /* check if period over */
         if (actual_millitime - eq->last_called >= (DWORD) eq_info->period)
           {
           /* disable interrupts during readout */
           interrupt_enable(FALSE);
 
-          pevent = dm_pointer_get();
-          if (pevent == NULL)
+          /* readout and send event */
+          status = send_event(index);
+
+          if (status != CM_SUCCESS)
             {
-            cm_msg(MERROR, "scheduler", "periodic, dm_pointer_get not returning valid pointer");
-            status = SS_NO_MEMORY;
+            cm_msg(MERROR, "scheduler", "error reading and sending event");
             goto net_error;
             }
 
-          /* tag current equipment loop time */
-          eq->last_called = actual_millitime;
-
-          /* compose MIDAS event header */
-          pevent->event_id      = eq_info->event_id;
-          pevent->trigger_mask  = eq_info->trigger_mask;
-          pevent->data_size     = 0;
-          pevent->time_stamp    = actual_time;
-          pevent->serial_number = eq->serial_number++;
-
-          /* call user readout routine */
-          *((EQUIPMENT **)(pevent+1)) = eq;
-          pevent->data_size = eq->readout((char *) (pevent+1), 0);
-
-          /* send event */
-          if (pevent->data_size)
-            {
-            if (pevent->data_size+sizeof(EVENT_HEADER) > (DWORD) max_event_size)
-              {
-              cm_msg(MERROR, "send_all_periodic_events", "Event size %d larger than maximum size %d",
-                     pevent->data_size+sizeof(EVENT_HEADER), max_event_size);
-              }
-
-            if (eq->buffer_handle)
-              {
-#ifdef USE_EVENT_CHANNEL
-              dm_pointer_increment(eq->buffer_handle, 
-                                   pevent->data_size + sizeof(EVENT_HEADER));
-#else
-              rpc_flush_event();
-              bm_send_event(eq->buffer_handle, pevent,
-                            pevent->data_size + sizeof(EVENT_HEADER), SYNC);
-#endif
-              }
-
-            eq->bytes_sent += pevent->data_size + sizeof(EVENT_HEADER);
-            eq->events_sent++;
-
-            /* send event to ODB for periodic events */
-            if ((eq_info->eq_type & EQ_PERIODIC) &&
-                (eq_info->read_on & RO_ODB ||
-                 eq_info->history > 0))
-              {
-              update_odb(pevent, eq->hkey_variables, eq->format);
-              eq->odb_out++;
-              }
-            }
-          else
-            eq->serial_number--;
-          
           /* re-enable the interrupt after periodic */
           interrupt_enable(TRUE);
           }
@@ -1347,7 +1405,7 @@ INT opt_max=0, opt_index=0, opt_tcp_size=128, opt_cnt=0;
     /*---- calculate rates and update status page periodically -----*/
     if (force_update ||
         (display_period && actual_millitime - last_time_display > (DWORD) display_period) ||
-        (!display_period && actual_millitime - last_time_display > 5000))
+        (!display_period && actual_millitime - last_time_display > 3000))
       {
       force_update = FALSE;
 
@@ -1724,6 +1782,8 @@ usage:
   printf("Buffer allocation      : 2 x %d\n", dm_size);
   printf("System max event size  :     %d\n", MAX_EVENT_SIZE);
   printf("User max event size    :     %d\n", max_event_size);
+  if (max_event_size_frag > 0)
+    printf("User max frag. size    :     %d\n", max_event_size_frag);
   printf("# of events per buffer :     %d\n\n", dm_size/max_event_size);
 
   if (daemon)
