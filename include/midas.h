@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.67  2000/06/06 13:45:11  midas
+  Added locking of histos
+
   Revision 1.66  2000/05/08 14:29:37  midas
   Added delete option in ELog
 
@@ -1059,7 +1062,7 @@ typedef struct {
 /*---- Tests -------------------------------------------------------*/
 
 typedef struct {
-  char  name[NAME_LENGTH];
+  char  name[80];
   BOOL  registered;
   DWORD count;
   BOOL  value;
@@ -1656,6 +1659,7 @@ BOOL EXPRT al_evaluate_condition(char *condition, char *value);
 /*---- analyzer functions ----*/
 void EXPRT test_register(ANA_TEST *t);
 void EXPRT add_data_dir(char *result, char *file);
+void EXPRT lock_histo(INT id);
                                                   
 #ifdef __cplusplus
 }
