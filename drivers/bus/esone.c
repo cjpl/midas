@@ -7,6 +7,9 @@
                 MCSTD (Midas Camac Standard)
 
   $Log$
+  Revision 1.6  2001/12/17 18:25:05  pierre
+  include cclnk, cculk, ccrgl from khy1331
+
   Revision 1.5  2001/08/14 10:27:40  midas
   Restore signal handler on error
 
@@ -37,7 +40,6 @@ INLINE void came_cn(int *ext, const int b, const int c, const int n, const int a
 }
 
 /*------------------------------------------------------------------*/
-
 INLINE void came_ext(const int ext, int *b, int *c, int *n, int *a)
 {
   *b = (ext >> 24) & 0x7;
@@ -51,7 +53,6 @@ INLINE void came_ext(const int ext, int *b, int *c, int *n, int *a)
 *********************************************************************/
 
 /*-- initialization ------------------------------------------------*/
-
 /** ccinit
     CAMAC initialization
 
@@ -67,7 +68,6 @@ INLINE void ccinit(void)
 }	
 
 /*------------------------------------------------------------------*/
-
 /** fccinit
     CAMAC initialization with return status
 
@@ -86,7 +86,6 @@ INLINE int fccinit(void)
 }	
 
 /*-- external representation ---------------------------------------*/
-
 /** cdreg
     Control Declaration REGister.
 
@@ -108,7 +107,6 @@ INLINE void cdreg(int *ext, const int b, const int c, const int n, const int a)
 }
 
 /*-- 16bit functions -----------------------------------------------*/
-
 /** cssa
     Control Short Operation.
 
@@ -127,7 +125,7 @@ INLINE void cdreg(int *ext, const int b, const int c, const int n, const int a)
 */
 INLINE void cssa(const int f, int ext, unsigned short *d, int *q)
 {
-int b,c,n,a,x;
+  int b,c,n,a,x;
   
   if (f < 8)
     {
@@ -150,7 +148,6 @@ int b,c,n,a,x;
 }
 
 /*-- 24bit functions -----------------------------------------------*/
-
 /** cfsa
     Control Full Operation.
     
@@ -192,7 +189,6 @@ int b,c,n,a,x;
 }
 
 /*-- general functions----------------------------------------------*/
-
 /** cccc
     Control Crate Clear.
 
@@ -211,7 +207,6 @@ int b, c, n, a;
 }	
 
 /*------------------------------------------------------------------*/
-
 /** cccz
     Control Crate Z.
 
@@ -230,7 +225,6 @@ int b, c, n, a;
 }	
 
 /*------------------------------------------------------------------*/
-
 /** ccci
     Control Crate I.
 
@@ -253,7 +247,6 @@ int b, c, n, a;
 }	
 
 /*------------------------------------------------------------------*/
-
 /** ctci
     Test Crate I.
 
@@ -273,7 +266,6 @@ int b, c, n, a;
 }	
 
 /*------------------------------------------------------------------*/
-
 /** cccd
     Control Crate D.
 
@@ -297,7 +289,6 @@ int b, c, n, a;
 }
 
 /*------------------------------------------------------------------*/
-
 /** ctcd
     Control Test Crate D.
 
@@ -317,7 +308,6 @@ int b, c, n, a;
 }
 
 /*------------------------------------------------------------------*/
-
 /** cdlam
     Control Declare LAM.
 
@@ -340,7 +330,6 @@ INLINE void cdlam(int *lam, const int b, const int c, const int n,
 }
 
 /*------------------------------------------------------------------*/
-
 /** ctgl
     Control Test Demand Present.
 
@@ -362,7 +351,6 @@ unsigned long lam;
 }
 
 /*------------------------------------------------------------------*/
-
 /** cclm
     Control Crate LAM.
 
@@ -382,14 +370,75 @@ int b, c, n, a;
   if (l)
     camc (c,n,0,26);
   else
-    camc (c,n,0,24);
+    camc(c,n,0,24);
 }
 
 /*------------------------------------------------------------------*/
+/** cclnk
+    Link LAM to service procedure
 
+    Link a specific service routine to a LAM. Since this routine
+    is executed asynchronously, care must be taken on re-entrancy.
+
+    @memo Link LAM to service procedure
+    @param lam external address
+    @param isr name of service procedure
+    @return void
+*/
+INLINE void cclnk(const int lam, void (*isr)(void))
+{
+int b, c, n, a;
+
+  came_ext(lam, &b, &c, &n, &a);
+
+  cam_interrupt_attach(c, n, isr);
+  cam_lam_enable(c, n);
+  cam_lam_clear(c, n);
+}
+
+/*------------------------------------------------------------------*/
+/** cculk
+    Unlink LAM from service procedure
+
+    Performs complementary operation to cclnk.
+
+    @memo Detach LAM from service procedure
+    @param lam external address
+    @return void
+*/
+INLINE void cculk(const int lam)
+{
+int b, c, n, a;
+
+  came_ext(lam, &b, &c, &n, &a);
+  cam_interrupt_detach(c, n);
+}
+
+/*------------------------------------------------------------------*/
+/** ccrgl
+    Relink LAM
+
+    Re-enable LAM in the controller
+
+    @memo Re-enable LAM
+    @param lam external address
+    @return void
+*/
+INLINE void ccrgl(const int lam)
+{
+int b, c, n, a;
+
+  came_ext(lam, &b, &c, &n, &a);
+
+  cam_lam_enable(c, n);
+  cam_lam_clear(c, n);
+  cam_interrupt_enable(c);
+}
+
+/*------------------------------------------------------------------*/
 /** cclc
     Control Clear LAM.
-    Clear the LAM of th estaion pointer by the lam address.
+    Clear the LAM of the station pointer by the lam address.
 
     @memo Clear LAM.
     @param lam external address
@@ -404,7 +453,6 @@ int b, c, n, a;
 }
 
 /*------------------------------------------------------------------*/
-
 /** ctlm
     Test LAM.
 
@@ -424,7 +472,6 @@ int  b,c,n,a;
 }
 
 /*------------------------------------------------------------------*/
-
 /** cfga
     Control Full (24bit) word General Action.
 
@@ -449,7 +496,6 @@ int i;
 }
 
 /*------------------------------------------------------------------*/
-
 /** csga
     Control (16bit) word General Action.
 
@@ -474,7 +520,6 @@ int i;
 }
 
 /*------------------------------------------------------------------*/
-
 /** cfmad
     Control Full (24bit) Address Q scan.
 
@@ -533,7 +578,6 @@ unsigned long exts, extc, exte;
 }
 
 /*------------------------------------------------------------------*/
-
 /** csmad
     Control (16bit) Address Q scan.
 
@@ -592,7 +636,6 @@ unsigned long exts, extc, exte;
 }
 
 /*------------------------------------------------------------------*/
-
 /** cfubc
     Control Full (24bit) Block Repeat with Q-stop.
 
@@ -627,7 +670,6 @@ int count, q;
 }
 
 /*------------------------------------------------------------------*/
-
 /** csubc
     Control (16bit) Block Repeat with Q-stop.
 
@@ -662,7 +704,6 @@ int count, q;
 }
 
 /*------------------------------------------------------------------*/
-
 /** cfubr
     Repeat Mode Block Transfer (24bit).
 
@@ -697,7 +738,6 @@ int q, count;
 }
 
 /*------------------------------------------------------------------*/
-
 /** csubr
     Repeat Mode Block Transfer (16bit).
 
