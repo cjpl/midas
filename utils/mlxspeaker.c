@@ -6,6 +6,9 @@
   Contents:     Speaks midas messages (UNIX version)
 
   $Log$
+  Revision 1.4  1999/07/15 23:49:29  pierre
+  -Fix last char of the line being ignored
+
   Revision 1.3  1999/05/06 19:09:49  pierre
   - Fix empty trailing char on the message which would hold festival
 
@@ -84,7 +87,7 @@ char str[256], *pc, *sp;
       sp = pc + strlen(pc) - 1;
       while (isblank(*sp))
       	sp--;
-      *sp ='\0';
+      *(++sp) ='\0';
       if (debug) 
 	{
 	  printf("<%s>", pc );
