@@ -6,6 +6,9 @@
  *         amaudruz@triumf.ca                            Local:           6234
  * -----------------------------------------------------------------------------
    $Log$
+   Revision 1.13  1999/02/11 13:18:58  midas
+   Fixed bug in opening disk file under NT
+
    Revision 1.12  1999/01/22 09:29:51  midas
    Fixed typo with braces
 
@@ -1722,6 +1725,7 @@ INT   yb_any_file_wopen (INT type, INT data_fmt, char * filename, INT * hDev)
 #else
          *hDev = open(filename, O_WRONLY | O_CREAT | O_TRUNC | O_BINARY, 0644);
 #endif
+         status = *hDev < 0 ? SS_FILE_ERROR : SS_SUCCESS;
         }
       else if (type == LOG_TYPE_TAPE)
         status = ss_tape_open(filename, O_WRONLY | O_CREAT | O_TRUNC, hDev);
@@ -1743,11 +1747,6 @@ INT   yb_any_file_wopen (INT type, INT data_fmt, char * filename, INT * hDev)
 #endif
        }
     }
-  if (*hDev < 0)
-  {
-    *hDev = 0;
-    return SS_FILE_ERROR;
-  }
   return status;
 }
 
