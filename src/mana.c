@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.120  2004/07/29 09:14:47  midas
+  Added online TTrees, thanks to Ryu Sawada
+
   Revision 1.119  2004/07/09 10:02:01  midas
   Added patch in write_event_midas from Paul Knowles
 
@@ -2035,6 +2038,14 @@ INT bor(INT run_number, char *error)
       test_clear();
    }
 
+#ifdef HAVE_ROOT
+   if (clp.online) {
+      /* clear all trees online to avoid out-of-memory */
+      for (i = 0; i < tree_struct.n_tree; i++)
+         tree_struct.event_tree[i].tree->Reset();
+   }
+#endif
+
    /* open output file if not already open (append mode) and in offline mode */
    if (!clp.online && out_file == NULL && !pvm_master
        && !equal_ustring(clp.output_file_name, "OFLN")) {
@@ -3298,17 +3309,14 @@ INT write_event_ttree(FILE * file, EVENT_HEADER * pevent, ANALYZE_REQUEST * par)
                    "Bank %s booked but not received, tree cannot be filled",
                    et->branch_name + (i * NAME_LENGTH));
 
-      /* fill tree */
-      if (file != NULL && !exclude_all)
+      /* fill tree both online and offline */
+      if (!exclude_all)
          et->tree->Fill();
+   
+   } // if (event_def->format == FORMAT_MIDAS)
 
-
-   }
-
-
-
-   /* if (event_def->format == FORMAT_MIDAS) */
- /*---- FIXED format ----------------------------------------------*/
+   /*---- FIXED format ----------------------------------------------*/
+   
    if (event_def->format == FORMAT_FIXED) {
       /* find event in tree structure */
       for (i = 0; i < tree_struct.n_tree; i++)
@@ -3352,7 +3360,8 @@ INT write_event_odb(EVENT_HEADER * pevent)
    if (event_def == NULL)
       return SS_SUCCESS;
 
-  /*---- MIDAS format ----------------------------------------------*/
+   /*---- MIDAS format ----------------------------------------------*/
+   
    if (event_def->format == FORMAT_MIDAS) {
       pbh = (BANK_HEADER *) (pevent + 1);
       pbk = NULL;
@@ -3426,7 +3435,8 @@ INT write_event_odb(EVENT_HEADER * pevent)
       } while (1);
    }
 
-  /*---- FIXED format ----------------------------------------------*/
+   /*---- FIXED format ----------------------------------------------*/
+   
    if (event_def->format == FORMAT_FIXED && !clp.online) {
       if (db_set_record(hDB, event_def->hDefKey, (char *) (pevent + 1),
                         pevent->data_size, 0) != DB_SUCCESS)
@@ -3617,6 +3627,12 @@ INT process_event(ANALYZE_REQUEST * par, EVENT_HEADER * pevent)
        && par->rwnt_buffer_size > 0)
       write_event_hbook(NULL, pevent, par);
 #endif                          /* HAVE_HBOOK */
+#ifdef HAVE_ROOT
+   /* fill tree, should late be replaces by cyclic filling once it's implemented in ROOT */
+   if (clp.online && par->rwnt_buffer_size > 0)
+      write_event_ttree(NULL, pevent, par);
+#endif
+
 
    /* put event in ODB once every second */
    if (out_info.events_to_odb)
@@ -3753,14 +3769,14 @@ void register_requests(void)
          printf("Cannot open statistics record, probably other analyzer is using it\n");
 
       if (clp.online) {
-      /*---- open event buffer ---------------------------------------*/
+         /*---- open event buffer ---------------------------------------*/
          bm_open_buffer(ar_info->buffer, EVENT_BUFFER_SIZE,
                         &analyze_request[index].buffer_handle);
 
          /* set the default buffer cache size */
          bm_set_cache_size(analyze_request[index].buffer_handle, 100000, 0);
 
-      /*---- request event -------------------------------------------*/
+         /*---- request event -------------------------------------------*/
          if (ar_info->enabled)
             bm_request_event(analyze_request[index].buffer_handle,
                              (short) ar_info->event_id, (short) ar_info->trigger_mask,
@@ -5434,7 +5450,9 @@ void *server_thread(void *arg)
 
             TIter next(gManaHistsDir->GetList());
             while (TObject * obj = next())
-               if (obj->InheritsFrom("TH1"))
+               if (obj->InheritsFrom("TH1") ||
+                   obj->InheritsFrom("TH2") ||
+                   obj->InheritsFrom("TTree"))
                   names->Add(new TObjString(obj->GetName()));
 
             /* send "names" array */
@@ -5461,7 +5479,7 @@ void *server_thread(void *arg)
             if (!obj) {
                s->Send("Error");
             } else {
-               /* send single histo */
+               /* send single histo or tree */
                mess->Reset();
                mess->WriteObject(obj);
                s->Send(*mess);
