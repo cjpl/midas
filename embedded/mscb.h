@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol commands
 
   $Log$
+  Revision 1.34  2004/04/05 08:46:31  midas
+  Fixed LED bug with hvr_300
+
   Revision 1.33  2004/03/19 12:09:06  midas
   Upload with simplified CRC
 
@@ -172,7 +175,7 @@ sbit RS485_ENABLE = P3 ^ 5;
 #include <aduc812.h>
 #define CPU_ADUC812
 
-#define LED_0 = P3 ^ 4;
+#define LED_0 P3 ^ 4
 #define LED_ON 1
 sbit RS485_ENABLE = P3 ^ 5;
 
