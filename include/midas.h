@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.9  1998/12/11 11:23:17  midas
+  Release 1.6.2
+
   Revision 1.8  1998/12/10 10:18:38  midas
   Added SS_END_OF_FILE
 
@@ -50,7 +53,7 @@
    to the MIDAS library. First digit is major release, second
    digit is minor release, third digit is patch level */
 
-#define MIDAS_VERSION "1.6.1"
+#define MIDAS_VERSION "1.6.2"
 
 /*------------------------------------------------------------------*/
 
