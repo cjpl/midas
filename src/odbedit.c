@@ -6,6 +6,9 @@
   Contents:     Command-line interface to the MIDAS online data base.
 
   $Log$
+  Revision 1.24  1999/09/22 15:27:08  midas
+  Check for valid run number when starting a run
+
   Revision 1.23  1999/09/17 15:59:04  midas
   Added internal alarms
 
@@ -2169,7 +2172,7 @@ PRINT_INFO      print_info;
             new_run_number = old_run_number+1;
             printf("Run number [%d]: ", new_run_number);
             ss_gets(line, 256);
-            if (line[0])
+            if (line[0] && atoi(line) > 0)
               new_run_number = atoi(line);
 
             printf("Are the above parameters correct? ([y]/n/q): ");
