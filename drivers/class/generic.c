@@ -6,6 +6,9 @@
   Contents:     Generic Class Driver
 
   $Log$
+  Revision 1.2  2000/03/02 21:54:02  midas
+  Added offset in readout routines, added cmd_set_label
+
   Revision 1.1  1999/12/20 10:18:16  midas
   Reorganized driver directory structure
 
@@ -185,11 +188,28 @@ EQUIPMENT *pequipment;
 
 /*------------------------------------------------------------------*/
 
+void gen_update_label(INT hDB, INT hKey, void *info)
+{
+INT i, status;
+GEN_INFO  *gen_info;
+EQUIPMENT *pequipment;
+
+  pequipment = (EQUIPMENT *) info;
+  gen_info = (GEN_INFO *) pequipment->cd_info;
+
+  /* update channel labels based on the midas channel names */
+  for (i=0 ; i<gen_info->num_channels ; i++)
+    status = DRIVER(i)(CMD_SET_LABEL, gen_info->dd_info[i], 
+                       i-gen_info->channel_offset[i], gen_info->names+NAME_LENGTH*i);
+}
+
+/*------------------------------------------------------------------*/
+
 INT gen_init(EQUIPMENT *pequipment)
 {
 int   status, size, i, j, index, offset;
 char  str[256];
-HNDLE hDB, hKey;
+HNDLE hDB, hKey, hNames;
 GEN_INFO *gen_info;
 
   /* allocate private data */
@@ -278,7 +298,8 @@ GEN_INFO *gen_info;
       }
 
     status = pequipment->driver[i].dd(CMD_INIT, hKey, &pequipment->driver[i].dd_info,
-                                      pequipment->driver[i].channels);
+                                      pequipment->driver[i].channels, 
+                                      pequipment->driver[i].cmd_disabled);
     if (status != FE_SUCCESS)
       {
       free_mem(gen_info);
@@ -311,7 +332,7 @@ GEN_INFO *gen_info;
     size = sizeof(float)*gen_info->num_channels;
     db_get_data(hDB, gen_info->hKeyDemand, gen_info->demand, &size, TID_FLOAT);
     }
-  /* let device driver overwrite demand values */
+  /* let device driver overwrite demand values, if it supports it */
   for (i=0 ; i<gen_info->num_channels ; i++)
     {
     DRIVER(i)(CMD_GET_DEMAND, gen_info->dd_info[i], 
@@ -348,6 +369,19 @@ GEN_INFO *gen_info;
   db_merge_data(hDB, gen_info->hKeyRoot, "Settings/Names", 
                 gen_info->names, NAME_LENGTH*gen_info->num_channels, 
                 gen_info->num_channels, TID_STRING);
+
+  /*---- set labels form midas SC names ----*/
+  for (i=0 ; i<gen_info->num_channels ; i++)
+    {
+    gen_info = (GEN_INFO *) pequipment->cd_info;
+    DRIVER(i)(CMD_SET_LABEL, gen_info->dd_info[i], 
+              i-gen_info->channel_offset[i], gen_info->names+NAME_LENGTH*i);
+    }
+
+  /* open hotlink on channel names */
+  if (db_find_key(hDB,  gen_info->hKeyRoot, "Settings/Names", &hNames) == DB_SUCCESS)
+    db_open_record(hDB, hNames, gen_info->names, NAME_LENGTH*gen_info->num_channels,
+                   MODE_READ, gen_update_label, pequipment);
 
   /*---- get default update threshold from device driver ----*/
   for (i=0 ; i<gen_info->num_channels ; i++)
@@ -422,7 +456,7 @@ GEN_INFO   *gen_info;
 
 /*------------------------------------------------------------------*/
 
-INT cd_gen_read(char *pevent)
+INT cd_gen_read(char *pevent, int offset)
 {
 float     *pdata;
 DWORD     *pdw;
