@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.124  2004/09/23 21:40:27  midas
+  Implemented histo deletion through socket server
+
   Revision 1.123  2004/09/23 20:22:55  midas
   Fixed compiler warnings under linux
 
@@ -3861,7 +3864,6 @@ void update_stats()
 
 #ifdef USE_ROOT
 
-
 void * h1_book(char *name, char *title, int bins, double min, double max)
 {
    TH1F *hist;
@@ -5536,27 +5538,6 @@ int pvm_merge()
 
 /*------------------------------------------------------------------*/
 
-/*
-void *root_server_loop(void *arg)
-{
-   printf("Root server listening on port %d...\n", clp.root_port);
-   TServerSocket *lsock = new TServerSocket(clp.root_port, kTRUE);
-
-   do {
-      TSocket *s = lsock->Accept();
-      s->Send("RMSERV 1.0");
-      printf("New connection from %s\n", s->GetInetAddress().GetHostName());
-
-#ifdef OS_LINUX
-      TThread *th = new TThread("server_thread", server_thread, s);
-      th->Run();
-#endif
-   } while (1);
-}
-*/
-
-/*------------------------------------------------------------------*/
-
 TFolder *ReadFolderPointer(TSocket *fSocket) 
 {
    //read pointer to current folder
@@ -5589,8 +5570,6 @@ THREADTYPE root_server_thread(void *arg)
          return THREADRETURN;
 
       } else {
-
-         printf("Received \"%s\"\n", request);
 
          TMessage *message = new TMessage(kMESS_OBJECT);
 
@@ -5697,7 +5676,25 @@ THREADTYPE root_server_thread(void *arg)
             sock->Send(*message);
 
             delete message;
-         }
+         } else if (strncmp(request, "Command", 7) == 0) {
+
+            char objName[100], type[100], method[100], arg[100];
+
+            sock->Recv(objName, sizeof(objName));
+            sock->Recv(type, sizeof(type));
+            sock->Recv(method, sizeof(method));
+            sock->Recv(arg, sizeof(arg));
+
+            TObject *obj = gROOT->FindObjectAny(objName);
+            if (obj) {
+               if (stricmp(type, "TH1F*") == 0 && stricmp(method, "Reset") == 0)
+                  ((TH1F *)obj)->Reset();
+               if (stricmp(type, "TH2F*") == 0 && stricmp(method, "Reset") == 0)
+                  ((TH2F *)obj)->Reset();
+            }
+
+         } else
+            printf("SocketServer: Received unknown command \"%s\"\n", request);
       }
    } while (1);
 
@@ -6059,6 +6056,7 @@ int main(int argc, char *argv[])
 #ifdef USE_ROOT
    if (clp.start_rint)
       manaApp->Run(true);
+   printf("\r               \n"); /* overwrite superflous ROOT prompt */
 #endif
 
    return 0;
