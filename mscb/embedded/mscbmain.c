@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol main program
 
   $Log$
+  Revision 1.8  2002/08/08 06:46:15  midas
+  Added time functions
+
   Revision 1.7  2002/07/12 15:19:01  midas
   Call user_init before blinking
 
@@ -188,6 +191,9 @@ unsigned char i;
 #ifdef CPU_C8051F000
   WDTCN=0x07;        // 95 msec
 #endif
+
+  /* start system clock */
+  sysclock_init();
 }
 
 /*------------------------------------------------------------------*/

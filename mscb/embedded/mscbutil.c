@@ -6,6 +6,9 @@
   Contents:     Various utility functions for MSCB protocol
 
   $Log$
+  Revision 1.7  2002/08/08 06:46:15  midas
+  Added time functions
+
   Revision 1.6  2002/07/12 08:38:13  midas
   Fixed LCD recognition
 
@@ -149,7 +152,6 @@ unsigned char code baud_table[] =
   SCON = 0xD0;   // Mode 3, 9 bit, receive enable
 // SCON = 0x50;    // Mode 1, 8 bit, receive enable
 
-  TMOD = 0x00;   // timer 0&1 no function
   T2CON = 0x34;  // timer 2 RX+TX mode
   RCAP2H = 0xFF;
   RCAP2L = baud_table[baud-1];
@@ -158,6 +160,68 @@ unsigned char code baud_table[] =
   PS = 0;        // serial interrupt low priority
   EA = 1;        // general interrupt enable
   RB8 = 0;       // clear read bit 9
+}
+
+/*------------------------------------------------------------------*/
+
+void sysclock_init(void)
+/********************************************************************\
+
+  Routine: sysclock_init
+
+  Purpose: Initial sytem clock via timer 1
+
+
+
+\********************************************************************/
+{
+
+  EA = 1;             // general interrupt enable
+  IE |= 0x08;         // Enable Timer1 interrupt
+  IP |= 0x08;         // Interrupt priority hight
+
+  TMOD = TMOD | 0x10; // 16-bit counter
+  CKCON = 0x00;       // user SYSCLK/12
+  TH1 = 0xDB;         // load initial values
+  TL1 = 0x00; 
+  TR1 = 1;            // start timer 1
+
+}
+
+/*------------------------------------------------------------------*/
+
+unsigned long _systime = 0;
+
+void timer1_int(void) interrupt 3 using 2
+/********************************************************************\
+
+  Routine: timer1_int
+
+  Purpose: Timer 1 interrupt routine for 100Hz system clock
+
+           Reload value = 0x10000 - 0.01 / (11059200/12)
+
+\********************************************************************/
+{
+  TH1 = 0xDC;         // reload timer values, let LSB freely run
+  _systime++;         // increment system time
+}
+
+unsigned long time(void)
+/********************************************************************\
+
+  Routine: time
+
+  Purpose: Return system time in units of 10ms 
+
+\********************************************************************/
+{
+unsigned long t;
+
+  DISABLE_INTERRUPTS;
+  t = _systime;
+  ENABLE_INTERRUPTS;
+  return t;
 }
 
 /*------------------------------------------------------------------*/
