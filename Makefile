@@ -7,6 +7,9 @@
 #  Contents:     Makefile for MIDAS binaries and examples under unix
 #
 #  $Log$
+#  Revision 1.61  2004/09/23 20:23:25  midas
+#  Use -DUSE_ROOT instead of -DHAVE_ROOT in mana.c
+#
 #  Revision 1.60  2004/09/21 21:50:12  midas
 #  Added optional mySQL linking for mlogger
 #
@@ -275,6 +278,7 @@ NEED_LIBROOTA=
 #
 # Optional libmysqlclient library for mlogger
 #
+# To add mySQL support to the logger, say "make ... NEED_MYSQL=1"
 NEED_MYSQL=
 MYSQL_LIBS=/usr/lib/mysql/libmysqlclient.a
 
@@ -286,6 +290,7 @@ MYSQL_LIBS=/usr/lib/mysql/libmysqlclient.a
 # Common flags
 #
 CC = cc
+CXX = g++
 CFLAGS = -g -O2 -Wall -Wuninitialized -I$(INC_DIR) -I$(DRV_DIR) -L$(LIB_DIR) -DINCLUDE_FTPLIB $(MIDAS_PREF_FLAGS) $(USERFLAGS)
 
 #-----------------------
@@ -546,7 +551,7 @@ $(LIB_DIR)/hmana.o: $(SRC_DIR)/mana.c msystem.h midas.h midasinc.h mrpc.h
 	$(CC) -Dextname -DHAVE_HBOOK -c $(CFLAGS) $(OSFLAGS) -o $@ $<
 ifdef ROOTSYS
 $(LIB_DIR)/rmana.o: $(SRC_DIR)/mana.c msystem.h midas.h midasinc.h mrpc.h
-	$(CXX) -DHAVE_ROOT -c $(CFLAGS) $(OSFLAGS) $(ROOTCFLAGS) -o $@ $<
+	$(CXX) -DUSE_ROOT -c $(CFLAGS) $(OSFLAGS) $(ROOTCFLAGS) -o $@ $<
 endif
 
 #
@@ -657,13 +662,20 @@ install:
           mkdir -p $(SYSLIB_DIR); \
         fi;
 
-	@for i in libmidas.so libmidas.a mana.o hmana.o rmana.o mfe.o fal.o ; \
+	@for i in libmidas.a mana.o hmana.o rmana.o mfe.o fal.o ; \
 	  do \
 	  echo $$i ; \
 	  rm -f $(SYSLIB_DIR)/$$i ;\
 	  cp $(LIB_DIR)/$$i $(SYSLIB_DIR) ; \
 	  chmod 644 $(SYSLIB_DIR)/$$i ; \
 	  done
+
+ifdef NEED_SHLIB
+	  echo libmidas.so
+	  rm -f $(SYSLIB_DIR)/libmidas.so
+	  cp $(LIB_DIR)/libmidas.so $(SYSLIB_DIR)
+	  chmod 644 $(SYSLIB_DIR)/libmidas.so
+endif
 
 	@if [ -d  $(ZLIB_DIR) ] ; then \
 	  cp $(ZLIB_DIR)/zlib.h $(SYSINC_DIR) ;\
