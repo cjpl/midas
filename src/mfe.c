@@ -7,6 +7,9 @@
                 linked with user code to form a complete frontend
 
   $Log$
+  Revision 1.57  2003/09/30 19:47:57  midas
+  Removed tabs
+
   Revision 1.56  2003/09/30 18:30:07  midas
   Put CNAF functionality under #ifdef HAVE_CAMAC
 
@@ -1738,13 +1741,13 @@ INT err;
             if (!buffer_done)
               {
               rpc_set_option(-1, RPC_OTRANSPORT, RPC_FTCP);
-          rpc_flush_event();
+              rpc_flush_event();
               err = bm_flush_cache(equipment[i].buffer_handle, ASYNC);
-          if (err != BM_SUCCESS)
-        {
-          cm_msg(MERROR,"scheduler","bm_flush_cache(ASYNC) error %d",err);
-          return err;
-        }
+              if (err != BM_SUCCESS)
+                {
+                cm_msg(MERROR,"scheduler","bm_flush_cache(ASYNC) error %d",err);
+                return err;
+                }
               rpc_set_option(-1, RPC_OTRANSPORT, RPC_TCP);
               }
             }
