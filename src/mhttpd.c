@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.125  2000/05/11 14:13:04  midas
+  Fixed two bugs
+
   Revision 1.124  2000/05/08 15:19:36  midas
   Display alarm condition for internal alarms
 
@@ -5761,8 +5764,8 @@ float       upper_limit[MAX_VARS], lower_limit[MAX_VARS];
       var_index[i] = 0;
       if (strchr(var_name[i], '['))
         {
-        var_index[i] = atoi(strchr(var_name[i], '['));
-        *strchr(name, '[') = 0;
+        var_index[i] = atoi(strchr(var_name[i], '[')+1);
+        *strchr(var_name[i], '[') = 0;
         }
       }
     else
@@ -6359,7 +6362,7 @@ float  factor[2];
                 mhttpd_url);
     }
 
-  db_find_key(hDB, 0, "/History/Display/Trigger rate", &hkey);
+  db_find_key(hDB, 0, "/History/Display", &hkey);
   if (!hkey)
     {
     /* create default panel */
