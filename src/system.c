@@ -14,6 +14,10 @@
                 Brown, Prentice Hall
 
   $Log$
+  Revision 1.52  2000/03/08 17:38:14  midas
+  Fixed BIIIIG bug in ss_mutex_wait_for which made the system under Linux
+  totally unstable since mutexed didn't work at all with this bug
+
   Revision 1.51  2000/02/26 00:16:05  midas
   Bypass ss_kbhit and ss_getchar after becoming a daemon
 
@@ -1867,7 +1871,8 @@ INT ss_mutex_wait_for(HNDLE mutex_handle, INT timeout)
     if (errno == EINTR)
       {
       /* return if timeout expired */
-      if (ss_millitime() - start_time > timeout)
+      if (timeout > 0 && 
+          ss_millitime() - start_time > timeout)
         return SS_TIMEOUT;
 
       continue;
