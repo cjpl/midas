@@ -6,6 +6,9 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.37  2000/08/04 14:18:27  midas
+  Print unknown ODB type in error message
+
   Revision 1.36  2000/05/05 08:44:22  midas
   Make data_size check in db_set_value
 
@@ -5055,7 +5058,7 @@ KEY              root_key;
         string_length = 0;
 
         if (tid == TID_LAST)
-          cm_msg(MERROR, "db_paste", "found unknown data type in ODB file");
+          cm_msg(MERROR, "db_paste", "found unknown data type \"%s\" in ODB file", line);
         else
           {
           /* skip type info */
