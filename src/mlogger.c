@@ -6,6 +6,9 @@
   Contents:     MIDAS logger program
 
   $Log$
+  Revision 1.18  1999/08/23 13:28:55  midas
+  Round up system history to 10
+
   Revision 1.17  1999/08/23 12:59:08  midas
   Fixed bug with defining system events
 
@@ -1568,7 +1571,8 @@ BOOL     single_names;
 
   /*---- define linked trees ---------------------------------------*/
 
-  max_event_id++;
+  /* round up event id */
+  max_event_id = ((int) ((max_event_id+1)/ 10)+1) * 10;
 
   status = db_find_key(hDB, 0, "/History/Links", &hKeyRoot);
   if (status != DB_SUCCESS)
