@@ -6,6 +6,9 @@
   Contents:     Command-line interface for the Midas Slow Control Bus
 
   $Log$
+  Revision 1.45  2003/09/23 09:25:05  midas
+  Improved error display
+
   Revision 1.44  2003/09/10 11:11:17  midas
   Better error report on upload failure
 
@@ -233,7 +236,7 @@ void print_help()
   puts("gaddr <addr>               Set group address");
   puts("info                       Retrive node info");
   puts("load <file>                Load node variables");
-  puts("ping <addr>                Ping node and set address");
+  puts("ping <addr> [r]            Ping node and set address [repeat mode]");
   puts("read <index> [r]           Read node variable [repeat mode]");
   puts("reboot                     Reboot addressed node");
   puts("reset                      Reboot whole MSCB system");
@@ -591,24 +594,31 @@ MSCB_INFO_VAR info_var;
         else
           addr = atoi(param[1]);
 
-        status = mscb_addr(fd, MCMD_PING16, addr, 10);
-        if (status != MSCB_SUCCESS)
+        do
           {
-          if (status == MSCB_MUTEX)
-            printf("MSCB used by other process\n");
-          else if (status == MSCB_SUBM_ERROR)
-            printf("Error: Submaster not responding\n");
+          status = mscb_addr(fd, MCMD_PING16, addr, 10);
+          if (status != MSCB_SUCCESS)
+            {
+            if (status == MSCB_MUTEX)
+              printf("MSCB used by other process\n");
+            else if (status == MSCB_SUBM_ERROR)
+              printf("Error: Submaster not responding\n");
+            else
+              printf("Node %d does not respond\n", addr);
+            current_addr = -1;
+            current_group = -1;
+            }
           else
-            printf("Node %d does not respond\n", addr);
-          current_addr = -1;
-          current_group = -1;
-          }
-        else
-          {
-          printf("Node %d addressed\n", addr);
-          current_addr = addr;
-          current_group = -1;
-          }
+            {
+            printf("Node %d addressed\n", addr);
+            current_addr = addr;
+            current_group = -1;
+            }
+
+          if (param[2][0] == 'r' && !kbhit())
+            Sleep(1000);
+
+          } while (param[2][0] == 'r' && !kbhit());
         }
       }
 
