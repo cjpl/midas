@@ -6,6 +6,11 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.202  2004/01/17 05:35:53  olchansk
+  replace #define ALIGN() with ALIGN8() to dodge namespace pollution under macosx
+  hide strlcpy() & co #ifdef HAVE_STRLCPY (macosx already has strlcpy())
+  correct inconsistent prototype of dbg_malloc() and dbg_calloc()
+
   Revision 1.201  2004/01/13 00:52:18  pierre
   fix dox comment for vxworks
 
@@ -814,7 +819,7 @@ typedef struct {
 DBG_MEM_LOC *_mem_loc = NULL;
 INT _n_mem = 0;
 
-void *dbg_malloc(size_t size, char *file, int line)
+void *dbg_malloc(unsigned int size, char *file, int line)
 {
    FILE *f;
    void *adr;
@@ -850,7 +855,7 @@ void *dbg_malloc(size_t size, char *file, int line)
    return adr;
 }
 
-void *dbg_calloc(size_t size, size_t count, char *file, int line)
+void *dbg_calloc(unsigned int size, unsigned int count, char *file, int line)
 {
    void *adr;
 
@@ -884,6 +889,7 @@ void dbg_free(void *adr, char *file, int line)
 
 }
 
+#ifndef HAVE_STRLCPY
 /*---- strlcpy and strlcat to avoid buffer overflow ----------------*/
 
 /*
@@ -948,7 +954,7 @@ INT strlcat(char *dst, const char *src, INT size)
 
    return (dlen + (s - src));   /* count does not include NUL */
 }
-
+#endif
 
 /********************************************************************\
 *                                                                    *
@@ -5943,10 +5949,10 @@ INT bm_send_event(INT buffer_handle, void *source, INT buf_size, INT async_flag)
    EVENT_HEADER *pevent;
 
    /* check if event size defined in header matches buf_size */
-   if (ALIGN(buf_size) != (INT) ALIGN(((EVENT_HEADER *) source)->data_size +
+   if (ALIGN8(buf_size) != (INT) ALIGN8(((EVENT_HEADER *) source)->data_size +
                                       sizeof(EVENT_HEADER))) {
       cm_msg(MERROR, "bm_send_event", "event size (%d) mismatch in header (%d)",
-             ALIGN(buf_size), (INT) ALIGN(((EVENT_HEADER *) source)->data_size +
+             ALIGN8(buf_size), (INT) ALIGN8(((EVENT_HEADER *) source)->data_size +
                                           sizeof(EVENT_HEADER)));
       return BM_INVALID_PARAM;
    }
@@ -5997,7 +6003,7 @@ INT bm_send_event(INT buffer_handle, void *source, INT buf_size, INT async_flag)
       total_size = buf_size;
 
       /* round up total_size to next DWORD boundary */
-      total_size = ALIGN(total_size);
+      total_size = ALIGN8(total_size);
 
       /* look if there is space in the cache */
       if (pbuf->write_cache_size) {
@@ -6082,7 +6088,7 @@ INT bm_send_event(INT buffer_handle, void *source, INT buf_size, INT async_flag)
                             ((EVENT_HEADER *) (pdata + pc->read_pointer))->data_size;
 
                         /* correct increment for DWORD boundary */
-                        increment = ALIGN(increment);
+                        increment = ALIGN8(increment);
 
                         new_read_pointer = (pc->read_pointer + increment) % pheader->size;
 
@@ -6397,7 +6403,7 @@ INT bm_flush_cache(INT buffer_handle, INT async_flag)
                             ((EVENT_HEADER *) (pdata + pc->read_pointer))->data_size;
 
                         /* correct increment for DWORD boundary */
-                        increment = ALIGN(increment);
+                        increment = ALIGN8(increment);
 
                         new_read_pointer = (pc->read_pointer + increment) % pheader->size;
 
@@ -6516,7 +6522,7 @@ INT bm_flush_cache(INT buffer_handle, INT async_flag)
          total_size = pevent->data_size + sizeof(EVENT_HEADER);
 
          /* correct size for DWORD boundary */
-         total_size = ALIGN(total_size);
+         total_size = ALIGN8(total_size);
 
          if (pheader->write_pointer + total_size <= pheader->size) {
             memcpy(pdata + pheader->write_pointer, pevent, total_size);
@@ -6737,7 +6743,7 @@ INT bm_receive_event(INT buffer_handle, void *destination, INT * buf_size, INT a
          }
 
          /* correct size for DWORD boundary */
-         size = ALIGN(size);
+         size = ALIGN8(size);
 
          pbuf->read_cache_rp += size;
 
@@ -6803,7 +6809,7 @@ INT bm_receive_event(INT buffer_handle, void *destination, INT * buf_size, INT a
          pevent = (EVENT_HEADER *) (pdata + pc->read_pointer);
 
          total_size = pevent->data_size + sizeof(EVENT_HEADER);
-         total_size = ALIGN(total_size);
+         total_size = ALIGN8(total_size);
 
          prequest = pc->event_request;
 
@@ -7086,7 +7092,7 @@ INT bm_push_event(char *buffer_name)
          size = pevent->data_size + sizeof(EVENT_HEADER);
 
          /* correct size for DWORD boundary */
-         size = ALIGN(size);
+         size = ALIGN8(size);
 
          /* increment read pointer */
          pbuf->read_cache_rp += size;
@@ -7141,7 +7147,7 @@ INT bm_push_event(char *buffer_name)
          pevent = (EVENT_HEADER *) (pdata + pc->read_pointer);
 
          total_size = pevent->data_size + sizeof(EVENT_HEADER);
-         total_size = ALIGN(total_size);
+         total_size = ALIGN8(total_size);
 
          prequest = pc->event_request;
 
@@ -9499,15 +9505,15 @@ INT rpc_client_call(HNDLE hConn, const INT routine_id, ...)
             else
                arg_size = *((INT *) arg_tmp);
 
-            *((INT *) param_ptr) = ALIGN(arg_size);
-            param_ptr += ALIGN(sizeof(INT));
+            *((INT *) param_ptr) = ALIGN8(arg_size);
+            param_ptr += ALIGN8(sizeof(INT));
          }
 
          if (tid == TID_STRUCT || (flags & RPC_FIXARRAY))
             arg_size = rpc_list[rpc_index].param[i].n;
 
          /* always align parameter size */
-         param_size = ALIGN(arg_size);
+         param_size = ALIGN8(arg_size);
 
          if ((PTYPE) param_ptr - (PTYPE) nc + param_size > NET_BUFFER_SIZE) {
             cm_msg(MERROR, "rpc_client_call",
@@ -9631,7 +9637,7 @@ INT rpc_client_call(HNDLE hConn, const INT routine_id, ...)
 
          if (flags & RPC_VARARRAY) {
             arg_size = *((INT *) param_ptr);
-            param_ptr += ALIGN(sizeof(INT));
+            param_ptr += ALIGN8(sizeof(INT));
          }
 
          if (tid == TID_STRUCT || (flags & RPC_FIXARRAY))
@@ -9642,7 +9648,7 @@ INT rpc_client_call(HNDLE hConn, const INT routine_id, ...)
             memcpy((void *) *((char **) arg), param_ptr, arg_size);
 
          /* parameter size is always aligned */
-         param_size = ALIGN(arg_size);
+         param_size = ALIGN8(arg_size);
 
          param_ptr += param_size;
       }
@@ -9781,15 +9787,15 @@ INT rpc_call(const INT routine_id, ...)
             else
                arg_size = *((INT *) arg_tmp);
 
-            *((INT *) param_ptr) = ALIGN(arg_size);
-            param_ptr += ALIGN(sizeof(INT));
+            *((INT *) param_ptr) = ALIGN8(arg_size);
+            param_ptr += ALIGN8(sizeof(INT));
          }
 
          if (tid == TID_STRUCT || (flags & RPC_FIXARRAY))
             arg_size = rpc_list[index].param[i].n;
 
          /* always align parameter size */
-         param_size = ALIGN(arg_size);
+         param_size = ALIGN8(arg_size);
 
          if ((PTYPE) param_ptr - (PTYPE) nc + param_size > NET_BUFFER_SIZE) {
             cm_msg(MERROR, "rpc_call",
@@ -9908,7 +9914,7 @@ INT rpc_call(const INT routine_id, ...)
 
          if (flags & RPC_VARARRAY) {
             arg_size = *((INT *) param_ptr);
-            param_ptr += ALIGN(sizeof(INT));
+            param_ptr += ALIGN8(sizeof(INT));
          }
 
          if (tid == TID_STRUCT || (flags & RPC_FIXARRAY))
@@ -9919,7 +9925,7 @@ INT rpc_call(const INT routine_id, ...)
             memcpy((void *) *((char **) arg), param_ptr, arg_size);
 
          /* parameter size is always aligned */
-         param_size = ALIGN(arg_size);
+         param_size = ALIGN8(arg_size);
 
          param_ptr += param_size;
       }
@@ -9975,10 +9981,10 @@ INT rpc_send_event(INT buffer_handle, void *source, INT buf_size, INT async_flag
    BOOL would_block = 0;
    DWORD aligned_buf_size;
 
-   aligned_buf_size = ALIGN(buf_size);
+   aligned_buf_size = ALIGN8(buf_size);
 
    if (aligned_buf_size !=
-       (INT) ALIGN(((EVENT_HEADER *) source)->data_size + sizeof(EVENT_HEADER))) {
+       (INT) ALIGN8(((EVENT_HEADER *) source)->data_size + sizeof(EVENT_HEADER))) {
       cm_msg(MERROR, "rpc_send_event", "event size mismatch");
       return BM_INVALID_PARAM;
    }
@@ -10530,7 +10536,7 @@ INT recv_event_server(INT index, char *buffer, DWORD buffer_size, INT flags,
             if (psa->convert_flags)
                rpc_convert_single(&event_size, TID_DWORD, 0, psa->convert_flags);
 
-            aligned_event_size = ALIGN(event_size);
+            aligned_event_size = ALIGN8(event_size);
          }
 
          /* check if data part fits in buffer */
@@ -10844,23 +10850,23 @@ INT rpc_execute(INT sock, char *buffer, INT convert_flags)
       flags = rpc_list[index].param[i].flags;
 
       if (flags & RPC_IN) {
-         param_size = ALIGN(tid_size[tid]);
+         param_size = ALIGN8(tid_size[tid]);
 
          if (tid == TID_STRING || tid == TID_LINK)
-            param_size = ALIGN(1 + strlen((char *) (in_param_ptr)));
+            param_size = ALIGN8(1 + strlen((char *) (in_param_ptr)));
 
          if (flags & RPC_VARARRAY) {
             /* for arrays, the size is stored as a INT in front of the array */
             param_size = *((INT *) in_param_ptr);
             if (convert_flags)
                rpc_convert_single(&param_size, TID_INT, 0, convert_flags);
-            param_size = ALIGN(param_size);
+            param_size = ALIGN8(param_size);
 
-            in_param_ptr += ALIGN(sizeof(INT));
+            in_param_ptr += ALIGN8(sizeof(INT));
          }
 
          if (tid == TID_STRUCT)
-            param_size = ALIGN(rpc_list[index].param[i].n);
+            param_size = ALIGN8(rpc_list[index].param[i].n);
 
          prpc_param[i] = in_param_ptr;
 
@@ -10892,26 +10898,26 @@ INT rpc_execute(INT sock, char *buffer, INT convert_flags)
       }
 
       if (flags & RPC_OUT) {
-         param_size = ALIGN(tid_size[tid]);
+         param_size = ALIGN8(tid_size[tid]);
 
          if (flags & RPC_VARARRAY || tid == TID_STRING) {
             /* save maximum array length */
             max_size = *((INT *) in_param_ptr);
             if (convert_flags)
                rpc_convert_single(&max_size, TID_INT, 0, convert_flags);
-            max_size = ALIGN(max_size);
+            max_size = ALIGN8(max_size);
 
             *((INT *) out_param_ptr) = max_size;
 
             /* save space for return array length */
-            out_param_ptr += ALIGN(sizeof(INT));
+            out_param_ptr += ALIGN8(sizeof(INT));
 
             /* use maximum array length from input */
             param_size += max_size;
          }
 
          if (rpc_list[index].param[i].tid == TID_STRUCT)
-            param_size = ALIGN(rpc_list[index].param[i].n);
+            param_size = ALIGN8(rpc_list[index].param[i].n);
 
          if ((PTYPE) out_param_ptr - (PTYPE) nc_out + param_size > NET_BUFFER_SIZE) {
             cm_msg(MERROR, "rpc_execute",
@@ -10976,21 +10982,21 @@ INT rpc_execute(INT sock, char *buffer, INT convert_flags)
       if (rpc_list[index].param[i].flags & RPC_OUT) {
          tid = rpc_list[index].param[i].tid;
          flags = rpc_list[index].param[i].flags;
-         param_size = ALIGN(tid_size[tid]);
+         param_size = ALIGN8(tid_size[tid]);
 
          if (tid == TID_STRING) {
             max_size = *((INT *) out_param_ptr);
             param_size = strlen((char *) prpc_param[i]) + 1;
-            param_size = ALIGN(param_size);
+            param_size = ALIGN8(param_size);
 
-            /* move string ALIGN(sizeof(INT)) left */
-            memcpy(out_param_ptr, out_param_ptr + ALIGN(sizeof(INT)), param_size);
+            /* move string ALIGN8(sizeof(INT)) left */
+            memcpy(out_param_ptr, out_param_ptr + ALIGN8(sizeof(INT)), param_size);
 
             /* move remaining parameters to end of string */
             memcpy(out_param_ptr + param_size,
-                   out_param_ptr + max_size + ALIGN(sizeof(INT)),
+                   out_param_ptr + max_size + ALIGN8(sizeof(INT)),
                    (PTYPE) last_param_ptr -
-                   ((PTYPE) out_param_ptr + max_size + ALIGN(sizeof(INT))));
+                   ((PTYPE) out_param_ptr + max_size + ALIGN8(sizeof(INT))));
          }
 
          if (flags & RPC_VARARRAY) {
@@ -11001,19 +11007,19 @@ INT rpc_execute(INT sock, char *buffer, INT convert_flags)
             if (convert_flags)
                rpc_convert_single(out_param_ptr, TID_INT, RPC_OUTGOING, convert_flags);
 
-            out_param_ptr += ALIGN(sizeof(INT));
+            out_param_ptr += ALIGN8(sizeof(INT));
 
-            param_size = ALIGN(param_size);
+            param_size = ALIGN8(param_size);
 
             /* move remaining parameters to end of array */
             memcpy(out_param_ptr + param_size,
-                   out_param_ptr + max_size + ALIGN(sizeof(INT)),
+                   out_param_ptr + max_size + ALIGN8(sizeof(INT)),
                    (PTYPE) last_param_ptr -
-                   ((PTYPE) out_param_ptr + max_size + ALIGN(sizeof(INT))));
+                   ((PTYPE) out_param_ptr + max_size + ALIGN8(sizeof(INT))));
          }
 
          if (tid == TID_STRUCT)
-            param_size = ALIGN(rpc_list[index].param[i].n);
+            param_size = ALIGN8(rpc_list[index].param[i].n);
 
          /* convert data format */
          if (convert_flags) {
@@ -11175,20 +11181,20 @@ INT rpc_execute_ascii(INT sock, char *buffer)
                db_sscanf(arpc_param[index_in++], in_param_ptr, &param_size, 0, array_tid);
                in_param_ptr += param_size;
             }
-            in_param_ptr = (char *) ALIGN(((PTYPE) in_param_ptr));
+            in_param_ptr = (char *) ALIGN8(((PTYPE) in_param_ptr));
 
             if (_debug_print)
                strcat(debug_line, "<array>");
          } else {
             db_sscanf(arpc_param[index_in++], in_param_ptr, &param_size, 0, tid);
-            param_size = ALIGN(param_size);
+            param_size = ALIGN8(param_size);
 
             if (tid == TID_STRING || tid == TID_LINK)
-               param_size = ALIGN(1 + strlen((char *) (in_param_ptr)));
+               param_size = ALIGN8(1 + strlen((char *) (in_param_ptr)));
 
             /*
                if (tid == TID_STRUCT)
-               param_size = ALIGN( rpc_list[index].param[i].n );
+               param_size = ALIGN8( rpc_list[index].param[i].n );
              */
             prpc_param[i] = in_param_ptr;
 
@@ -11219,17 +11225,17 @@ INT rpc_execute_ascii(INT sock, char *buffer)
       }
 
       if (flags & RPC_OUT) {
-         param_size = ALIGN(tid_size[tid]);
+         param_size = ALIGN8(tid_size[tid]);
 
          if (flags & RPC_VARARRAY || tid == TID_STRING) {
             /* reserve maximum array length */
             param_size = atoi(arpc_param[index_in]);
-            param_size = ALIGN(param_size);
+            param_size = ALIGN8(param_size);
          }
 
 /*
       if (rpc_list[index].param[i].tid == TID_STRUCT)
-        param_size = ALIGN( rpc_list[index].param[i].n );
+        param_size = ALIGN8( rpc_list[index].param[i].n );
 */
          if ((PTYPE) out_param_ptr - (PTYPE) buffer2 + param_size > ASCII_BUFFER_SIZE) {
             cm_msg(MERROR, "rpc_execute",
@@ -11294,7 +11300,7 @@ INT rpc_execute_ascii(INT sock, char *buffer)
 
          tid = rpc_list[index].param[i].tid;
          flags = rpc_list[index].param[i].flags;
-         param_size = ALIGN(tid_size[tid]);
+         param_size = ALIGN8(tid_size[tid]);
 
          if (tid == TID_STRING && !(flags & RPC_VARARRAY)) {
             strcpy(out_param_ptr, (char *) prpc_param[i]);
@@ -11359,7 +11365,7 @@ INT rpc_execute_ascii(INT sock, char *buffer)
 
 /*
       else if (tid == TID_STRUCT)
-        param_size = ALIGN( rpc_list[index].param[i].n );
+        param_size = ALIGN8( rpc_list[index].param[i].n );
 */
          else
             db_sprintf(out_param_ptr, prpc_param[i], param_size, 0, tid);
@@ -12554,19 +12560,19 @@ int bk_delete(void *event, const char *name)
             remaining =
                 (int) ((char *) event + ((BANK_HEADER *) event)->data_size +
                        sizeof(BANK_HEADER)) - (int) ((char *) (pbk32 + 1) +
-                                                     ALIGN(pbk32->data_size));
+                                                     ALIGN8(pbk32->data_size));
 
             /* reduce total event size */
             ((BANK_HEADER *) event)->data_size -=
-                sizeof(BANK32) + ALIGN(pbk32->data_size);
+                sizeof(BANK32) + ALIGN8(pbk32->data_size);
 
             /* copy remaining bytes */
             if (remaining > 0)
-               memcpy(pbk32, (char *) (pbk32 + 1) + ALIGN(pbk32->data_size), remaining);
+               memcpy(pbk32, (char *) (pbk32 + 1) + ALIGN8(pbk32->data_size), remaining);
             return CM_SUCCESS;
          }
 
-         pbk32 = (BANK32 *) ((char *) (pbk32 + 1) + ALIGN(pbk32->data_size));
+         pbk32 = (BANK32 *) ((char *) (pbk32 + 1) + ALIGN8(pbk32->data_size));
       } while ((DWORD) pbk32 - (DWORD) event <
                ((BANK_HEADER *) event)->data_size + sizeof(BANK_HEADER));
    } else {
@@ -12579,18 +12585,18 @@ int bk_delete(void *event, const char *name)
             remaining =
                 (int) ((char *) event + ((BANK_HEADER *) event)->data_size +
                        sizeof(BANK_HEADER)) - (int) ((char *) (pbk + 1) +
-                                                     ALIGN(pbk->data_size));
+                                                     ALIGN8(pbk->data_size));
 
             /* reduce total event size */
-            ((BANK_HEADER *) event)->data_size -= sizeof(BANK) + ALIGN(pbk->data_size);
+            ((BANK_HEADER *) event)->data_size -= sizeof(BANK) + ALIGN8(pbk->data_size);
 
             /* copy remaining bytes */
             if (remaining > 0)
-               memcpy(pbk, (char *) (pbk + 1) + ALIGN(pbk->data_size), remaining);
+               memcpy(pbk, (char *) (pbk + 1) + ALIGN8(pbk->data_size), remaining);
             return CM_SUCCESS;
          }
 
-         pbk = (BANK *) ((char *) (pbk + 1) + ALIGN(pbk->data_size));
+         pbk = (BANK *) ((char *) (pbk + 1) + ALIGN8(pbk->data_size));
       } while ((DWORD) pbk - (DWORD) event <
                ((BANK_HEADER *) event)->data_size + sizeof(BANK_HEADER));
    }
@@ -12624,7 +12630,7 @@ INT bk_close(void *event, void *pdata)
       if (pbk32->type == TID_STRUCT && pbk32->data_size == 0)
          printf("Warning: bank %c%c%c%c has zero size\n",
                 pbk32->name[0], pbk32->name[1], pbk32->name[2], pbk32->name[3]);
-      ((BANK_HEADER *) event)->data_size += sizeof(BANK32) + ALIGN(pbk32->data_size);
+      ((BANK_HEADER *) event)->data_size += sizeof(BANK32) + ALIGN8(pbk32->data_size);
       return pbk32->data_size;
    } else {
       BANK *pbk;
@@ -12636,7 +12642,7 @@ INT bk_close(void *event, void *pdata)
       if (pbk->type == TID_STRUCT && pbk->data_size == 0)
          printf("Warning: bank %c%c%c%c has zero size\n",
                 pbk->name[0], pbk->name[1], pbk->name[2], pbk->name[3]);
-      ((BANK_HEADER *) event)->data_size += sizeof(BANK) + ALIGN(pbk->data_size);
+      ((BANK_HEADER *) event)->data_size += sizeof(BANK) + ALIGN8(pbk->data_size);
       return pbk->data_size;
    }
 }
@@ -12726,7 +12732,7 @@ INT bk_locate(void *event, const char *name, void *pdata)
                return pbk32->data_size;
             return pbk32->data_size / tid_size[pbk32->type & 0xFF];
          }
-         pbk32 = (BANK32 *) ((char *) (pbk32 + 1) + ALIGN(pbk32->data_size));
+         pbk32 = (BANK32 *) ((char *) (pbk32 + 1) + ALIGN8(pbk32->data_size));
       } while ((DWORD) pbk32 - (DWORD) event <
                ((BANK_HEADER *) event)->data_size + sizeof(BANK_HEADER));
    } else {
@@ -12739,7 +12745,7 @@ INT bk_locate(void *event, const char *name, void *pdata)
                return pbk->data_size;
             return pbk->data_size / tid_size[pbk->type & 0xFF];
          }
-         pbk = (BANK *) ((char *) (pbk + 1) + ALIGN(pbk->data_size));
+         pbk = (BANK *) ((char *) (pbk + 1) + ALIGN8(pbk->data_size));
       } while ((DWORD) pbk - (DWORD) event <
                ((BANK_HEADER *) event)->data_size + sizeof(BANK_HEADER));
    }
@@ -12780,7 +12786,7 @@ INT bk_find(BANK_HEADER * pbkh, const char *name, DWORD * bklen, DWORD * bktype,
             *bktype = pbk32->type;
             return 1;
          }
-         pbk32 = (BANK32 *) ((char *) (pbk32 + 1) + ALIGN(pbk32->data_size));
+         pbk32 = (BANK32 *) ((char *) (pbk32 + 1) + ALIGN8(pbk32->data_size));
       } while ((DWORD) pbk32 - (DWORD) pbkh < pbkh->data_size + sizeof(BANK_HEADER));
    } else {
       pbk = (BANK *) (pbkh + 1);
@@ -12796,7 +12802,7 @@ INT bk_find(BANK_HEADER * pbkh, const char *name, DWORD * bklen, DWORD * bktype,
             *bktype = pbk->type;
             return 1;
          }
-         pbk = (BANK *) ((char *) (pbk + 1) + ALIGN(pbk->data_size));
+         pbk = (BANK *) ((char *) (pbk + 1) + ALIGN8(pbk->data_size));
       } while ((DWORD) pbk - (DWORD) pbkh < pbkh->data_size + sizeof(BANK_HEADER));
    }
 
@@ -12846,7 +12852,7 @@ INT bk_iterate(void *event, BANK ** pbk, void *pdata)
    if (*pbk == NULL)
       *pbk = (BANK *) (((BANK_HEADER *) event) + 1);
    else
-      *pbk = (BANK *) ((char *) (*pbk + 1) + ALIGN((*pbk)->data_size));
+      *pbk = (BANK *) ((char *) (*pbk + 1) + ALIGN8((*pbk)->data_size));
 
    *((void **) pdata) = (*pbk) + 1;
 
@@ -12887,7 +12893,7 @@ INT bk_iterate32(void *event, BANK32 ** pbk, void *pdata)
    if (*pbk == NULL)
       *pbk = (BANK32 *) (((BANK_HEADER *) event) + 1);
    else
-      *pbk = (BANK32 *) ((char *) (*pbk + 1) + ALIGN((*pbk)->data_size));
+      *pbk = (BANK32 *) ((char *) (*pbk + 1) + ALIGN8((*pbk)->data_size));
 
    *((void **) pdata) = (*pbk) + 1;
 
@@ -12960,10 +12966,10 @@ INT bk_swap(void *event, BOOL force)
 
       /* pbk points to next bank */
       if (b32) {
-         pbk32 = (BANK32 *) ((char *) (pbk32 + 1) + ALIGN(pbk32->data_size));
+         pbk32 = (BANK32 *) ((char *) (pbk32 + 1) + ALIGN8(pbk32->data_size));
          pbk = (BANK *) pbk32;
       } else {
-         pbk = (BANK *) ((char *) (pbk + 1) + ALIGN(pbk->data_size));
+         pbk = (BANK *) ((char *) (pbk + 1) + ALIGN8(pbk->data_size));
          pbk32 = (BANK32 *) pbk;
       }
 
@@ -16618,7 +16624,7 @@ INT eb_increment_pointer(INT buffer_handle, INT event_size)
       return bm_send_event(buffer_handle,
                            _eb_write_pointer + sizeof(INT), event_size, SYNC);
 
-   aligned_event_size = ALIGN(event_size);
+   aligned_event_size = ALIGN8(event_size);
 
    /* copy buffer handle */
    *((INT *) _eb_write_pointer) = buffer_handle;
@@ -17144,7 +17150,7 @@ int dm_pointer_increment(INT buffer_handle, INT event_size)
       *((INT *) dm.pa->pw) = buffer_handle;
       return bm_send_event(buffer_handle, dm.pa->pw + sizeof(INT), event_size, SYNC);
    }
-   aligned_event_size = ALIGN(event_size);
+   aligned_event_size = ALIGN8(event_size);
 
    *((INT *) dm.pa->pw) = buffer_handle;
 
