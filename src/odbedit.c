@@ -6,6 +6,9 @@
   Contents:     Command-line interface to the MIDAS online data base.
 
   $Log$
+  Revision 1.39  2000/06/16 09:04:52  midas
+  Added possibility to use index in "ls" command like "ls array[123]"
+
   Revision 1.38  2000/06/09 11:24:09  midas
   Added -p (pause) flag in "ls" command
 
@@ -131,6 +134,7 @@ static char data[50000];
 typedef struct {
   int flags;
   char pattern[32];
+  int index;
 } PRINT_INFO;
 
 #define PI_LONG      (1<<0)
@@ -314,7 +318,7 @@ int c;
         return FALSE;
         }
 
-      ss_sleep(100);
+      cm_yield(100);
 
       } while (!cm_is_ctrlc_pressed());
     }
@@ -363,7 +367,9 @@ PRINT_INFO  *pi;
           else
             db_sprintf(data_str, data, key->item_size, i, key->type);
 
-          printf("%s\n", data_str);
+          if ((pi->index != -1 && i == pi->index) ||
+              pi->index == -1)
+            printf("%s\n", data_str);
           if (check_abort(pi->flags, ls_line++))
             return 0;
           }
@@ -375,6 +381,8 @@ PRINT_INFO  *pi;
     memset(line, ' ', 80);
     line[80] = 0;
     sprintf(line + level*4, "%s", key->name);
+    if (pi->index != -1)
+      sprintf(line + strlen(line), "[%d]", pi->index);
     line[strlen(line)] = ' ';
 
     if (key->type == TID_KEY)
@@ -471,7 +479,10 @@ PRINT_INFO  *pi;
           else
             strcpy(line+32, data_str);
 
-          printf("%s\n", line);
+          if ((pi->index != -1 && i == pi->index) ||
+              pi->index == -1)
+            printf("%s\n", line);
+
           if (check_abort(pi->flags, ls_line++))
             return 0;
           }
@@ -1363,7 +1374,7 @@ KEY             key;
 char            user_name[80] = "";
 FILE            *cmd_file = NULL;
 DWORD           last_msg_time=0;
-char            message[256], client_name[256];
+char            message[256], client_name[256], *p;
 INT             n1, n2;
 PRINT_INFO      print_info;
 
@@ -1504,6 +1515,21 @@ PRINT_INFO      print_info;
           }
 
       for (i=1 ; param[i][0] == '-' ; i++);
+
+      /* check if parameter contains array index */
+      print_info.index = -1;
+      if (strchr(param[i], '[') && strchr(param[i], ']'))
+        {
+        for (p = strchr(param[i], '[')+1 ; *p && *p != ']'; p++)
+          if (!isdigit(*p))
+            break;
+
+        if (*p && *p == ']')
+          {
+          print_info.index = atoi(strchr(param[i], '[')+1);
+          *strchr(param[i], '[') = 0;
+          }
+        }
 
       if (param[i][0])
         {
