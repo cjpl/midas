@@ -7,6 +7,9 @@
                 following the MIDAS CAMAC Standard under DIRECTIO
 
   $Log$
+  Revision 1.7  2000/09/28 10:49:57  midas
+  Added OUTP_P/INP_P for NT and optimized cam16i_sa
+
   Revision 1.6  2000/09/27 12:05:57  midas
   Outcommented info about auto increment switch
 
@@ -94,10 +97,10 @@
 #define OUTPW(_p, _d) _outpw((unsigned short) (_p), (unsigned short) (_d))
 #define INP(_p) _inp((unsigned short) (_p))
 #define INPW(_p) _inpw((unsigned short) (_p))
-#define OUTP_P(_p, _d) _outp((unsigned short) (_p), (int) (_d))
-#define OUTPW_P(_p, _d) _outpw((unsigned short) (_p), (unsigned short) (_d))
-#define INP_P(_p) _inp((unsigned short) (_p))
-#define INPW_P(_p) _inpw((unsigned short) (_p))
+#define OUTP_P(_p, _d) {_outp((unsigned short) (_p), (int) (_d)); _outp((unsigned short)0x80,0);}
+#define OUTPW_P(_p, _d) {_outpw((unsigned short) (_p), (unsigned short) (_d)); _outp((unsigned short)0x80,0);}
+#define INP_P(_p) _inp((unsigned short) (_p)); _outp((unsigned short)0x80,0);
+#define INPW_P(_p) _inpw((unsigned short) (_p));_outp((unsigned short)0x80,0);
 #elif defined( OS_LINUX )
 #if !defined(__OPTIMIZE__)
 #error Please compile hyt1331.c with the -O flag to make port access possible
@@ -320,16 +323,16 @@ INLINE void cam16i_rq(const int c, const int n, const int a, const int f,
   OUTP(adr+1, 0x10);
   OUTP_P(adr+10, f);
   INPW_P(adr+12); /* trigger first cycle */
-  
+
   for (i=0 ; i<r ; i++)
-  {
+    {
     /* read data and trigger next cycle fail = no valid Q within 12usec */
     **d = INPW_P(adr+12); 
-    fail = ((unsigned char) INP_P(adr+6)) & 0x20; // going to test!
+    fail = ((unsigned char) INP(adr+6)) & 0x20; // going to test!
     if (fail)
       break;
     (*d)++;
-  }
+    }
   /* Turn off the Q-mode for repeat until Q=1 in the INPW(adr+12) */
   OUTP(adr+1, 0x0);
 }
@@ -351,16 +354,16 @@ INLINE void cam24i_rq(const int c, const int n, const int a, const int f,
   INPW_P(adr+12); /* trigger first cycle */
   
   for (i=0 ; i<r ; i++)
-  {
+    {
     /* read data and trigger next cycle fail = no valid Q within 12usec */
     *(((unsigned char *) *d)+2) = INP(adr+4);
     *(((unsigned char *) *d)+3) = 0;
 				*((unsigned short *) *d) = INPW_P(adr+12); 
-    fail = ((unsigned char) INP_P(adr+6)) & 0x20; // going to test!
+    fail = ((unsigned char) INP(adr+6)) & 0x20; // going to test!
     if (fail)
       break;
     (*d)++;
-  }
+    }
   /* Turn off the Q-mode for repeat until Q=1 in the INPW(adr+12) */
   OUTP(adr+1, 0x0);
 }
@@ -372,21 +375,21 @@ INLINE void cam16i_sa(const int c, const int n, const int a, const int f,
   WORD adr, i;
   
   if (gbl_sw1d)
-  {
+    {
     adr = CAMAC_BASE+(c<<4);
     /* enable auto increment */
     OUTP(adr+10, 49);
     OUTP(adr+8, n);
     OUTP(adr+6, a-1);
     OUTP_P(adr+10, f);
-    INPW_P(adr+12);
+    INPW(adr+12);
     
     for (i=0 ; i<r ; i++)
-      *((*d)++) = INPW_P(adr+12); /* read data and trigger next cycle */
+      *((*d)++) = INPW(adr+12); /* read data and trigger next cycle */
     
     /* disable auto increment */
-    OUTP_P(adr+10, 48);
-  }
+    OUTP(adr+10, 48);
+    }
   else
     for (i=0;i<r;i++)
       cami(c, n, a+i, f, (*d)++);
@@ -667,7 +670,8 @@ INLINE int cam_init(void)
   
 #ifdef _MSC_VER
   OSVERSIONINFO vi;
-  DWORD buffer[] = {6, CAMAC_BASE, CAMAC_BASE+4*0x10, 0};
+  DWORD buffer1[] = {6, CAMAC_BASE, CAMAC_BASE+4*0x10, 0};
+  DWORD buffer2[] = {6, 0x80, 0x80, 0};
   DWORD size;
   
   vi.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
@@ -685,9 +689,14 @@ INLINE int cam_init(void)
     }
   }
   
-  if (!DeviceIoControl(_hdio, (DWORD) 0x9c406000, &buffer, sizeof(buffer), 
+  if (!DeviceIoControl(_hdio, (DWORD) 0x9c406000, &buffer1, sizeof(buffer1), 
 		       NULL, 0, &size, NULL))
     return -1;
+
+  if (!DeviceIoControl(_hdio, (DWORD) 0x9c406000, &buffer2, sizeof(buffer2), 
+		       NULL, 0, &size, NULL))
+    return -1;
+
 #endif _MSC_VER
 #ifdef OS_LINUX
 
