@@ -9,6 +9,9 @@
                 for Keithley Model 2000 Multimeter
 
   $Log$
+  Revision 1.6  2004/07/30 10:22:03  midas
+  Added MSCBF_DATALESS
+
   Revision 1.5  2004/04/07 11:06:17  midas
   Version 1.7.1
 
@@ -51,9 +54,9 @@ struct {
 } user_data;
 
 MSCB_INFO_VAR code variables[] = {
-   1, UNIT_ASCII, 0, 0, MSCBF_DATALESS, "GPIB", 0,
-   4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "Reading", &user_data.reading,
-   1, UNIT_BYTE, 0, 0, 0, "GPIB Adr", &user_data.gpib_adr,
+   1, UNIT_ASCII, 0, 0, MSCBF_DATALESS, "GPIB",                       0,
+   4, UNIT_VOLT,  0, 0,    MSCBF_FLOAT, "Reading",   &user_data.reading,
+   1, UNIT_BYTE,  0, 0,              0, "GPIB Adr", &user_data.gpib_adr,
    0
 };
 

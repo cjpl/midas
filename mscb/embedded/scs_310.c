@@ -9,6 +9,9 @@
                 for SCS-310 GPIB Adapter
 
   $Log$
+  Revision 1.9  2004/07/30 10:22:03  midas
+  Added MSCBF_DATALESS
+
   Revision 1.8  2004/04/07 11:06:17  midas
   Version 1.7.1
 
@@ -83,12 +86,12 @@ struct {
 } idata user_data;
 
 MSCB_INFO_VAR code variables[] = {
-   1, UNIT_ASCII, 0, 0, MSCBF_DATALESS, "GPIB", 0,              // 0
-   32, UNIT_STRING, 0, 0, 0, "Output", &user_data.output[0],    // 1
-   32, UNIT_STRING, 0, 0, 0, "Input", &user_data.input[0],      // 2
-   1, UNIT_BYTE, 0, 0, 0, "Control", &user_data.control,        // 3
-   1, UNIT_BYTE, 0, 0, 0, "SRQ", &user_data.srq,                // 4
-   1, UNIT_BYTE, 0, 0, 0, "GPIB Adr", &user_data.gpib_adr,      // 5
+   1,  UNIT_ASCII,  0, 0, MSCBF_DATALESS, "GPIB",                       0, // 0
+   32, UNIT_STRING, 0, 0,              0, "Output",  &user_data.output[0], // 1
+   32, UNIT_STRING, 0, 0,              0, "Input",    &user_data.input[0], // 2
+   1,  UNIT_BYTE,   0, 0,              0, "Control",   &user_data.control, // 3
+   1,  UNIT_BYTE,   0, 0,              0, "SRQ",           &user_data.srq, // 4
+   1,  UNIT_BYTE,   0, 0,              0, "GPIB Adr", &user_data.gpib_adr, // 5
    0
 };
 
