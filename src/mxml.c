@@ -516,7 +516,7 @@ PMXML_NODE mxml_create_root_node()
 
 /*------------------------------------------------------------------*/
 
-PMXML_NODE mxml_add_node_at(PMXML_NODE parent, int node_type, char *node_name, char *value, int index)
+PMXML_NODE mxml_add_special_node_at(PMXML_NODE parent, int node_type, char *node_name, char *value, int index)
 /* add a subnode (child) to an existing parent node as a specific position */
 {
    PMXML_NODE pnode, pchild;
@@ -565,10 +565,26 @@ PMXML_NODE mxml_add_node_at(PMXML_NODE parent, int node_type, char *node_name, c
 
 /*------------------------------------------------------------------*/
 
-PMXML_NODE mxml_add_node(PMXML_NODE parent, int node_type, char *node_name, char *value)
+PMXML_NODE mxml_add_special_node(PMXML_NODE parent, int node_type, char *node_name, char *value)
 /* add a subnode (child) to an existing parent node at the end */
 {
-   return mxml_add_node_at(parent, node_type, node_name, value, parent->n_children);
+   return mxml_add_special_node_at(parent, node_type, node_name, value, parent->n_children);
+}
+
+/*------------------------------------------------------------------*/
+
+PMXML_NODE mxml_add_node(PMXML_NODE parent, char *node_name, char *value)
+/* add a subnode (child) to an existing parent node at the end */
+{
+   return mxml_add_special_node_at(parent, ELEMENT_NODE, node_name, value, parent->n_children);
+}
+
+/*------------------------------------------------------------------*/
+
+PMXML_NODE mxml_add_node_at(PMXML_NODE parent, char *node_name, char *value, int index)
+/* add a subnode (child) to an existing parent node at the end */
+{
+   return mxml_add_special_node_at(parent, ELEMENT_NODE, node_name, value, index);
 }
 
 /*------------------------------------------------------------------*/
@@ -1048,7 +1064,7 @@ PMXML_NODE mxml_parse_buffer(char *buf, char *error, int error_size)
             
             /* found comment */
 
-            pnew = mxml_add_node(ptree, COMMENT_NODE, "Comment", NULL);
+            pnew = mxml_add_special_node(ptree, COMMENT_NODE, "Comment", NULL);
             pv = p+3;
             while (*pv == ' ')
                pv++;
@@ -1074,7 +1090,7 @@ PMXML_NODE mxml_parse_buffer(char *buf, char *error, int error_size)
          } else if (*p == '?') {
 
             /* found ?...? element */
-            pnew = mxml_add_node(ptree, PROCESSING_INSTRUCTION_NODE, "PI", NULL);
+            pnew = mxml_add_special_node(ptree, PROCESSING_INSTRUCTION_NODE, "PI", NULL);
             pv = p+1;
 
             p++;
@@ -1141,7 +1157,7 @@ PMXML_NODE mxml_parse_buffer(char *buf, char *error, int error_size)
                   return read_error(HERE, "Unexpected second top level node");
 
                /* allocate new element structure in parent tree */
-               pnew = mxml_add_node(ptree, ELEMENT_NODE, node_name, NULL);
+               pnew = mxml_add_node(ptree, node_name, NULL);
 
                while (*p && isspace(*p)) {
                   if (*p == '\n')
