@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.64  2001/11/19 11:14:45  midas
+  Added "default" options, "use email from" and fixed a few small bugs
+
   Revision 1.63  2001/11/16 15:29:36  midas
   First fine-tuning for GNU software directory
 
@@ -203,7 +206,7 @@
 \********************************************************************/
 
 /* Version of ELOG */
-#define VERSION "1.2.3"
+#define VERSION "1.2.4"
 
 #include <stdio.h>
 #include <sys/types.h>
@@ -580,6 +583,9 @@ char                 buf[80];
 char                 str[10000];
 time_t               now;
 
+  if (verbose)
+    printf("\n\nEmail from %s to %s, SMTP host %s:\n", from, to, smtp_host);
+
   /* create a new socket for connecting to remote server */
   s = socket(AF_INET, SOCK_STREAM, 0);
   if (s == -1)
@@ -602,39 +608,54 @@ time_t               now;
     }
 
   recv_string(s, str, sizeof(str), 10000);
+  if (verbose) puts(str);
 
   snprintf(str, sizeof(str) - 1, "HELO %s\r\n", host_name);
   send(s, str, strlen(str), 0);
+  if (verbose) puts(str);
   recv_string(s, str, sizeof(str), 3000);
+  if (verbose) puts(str);
 
   snprintf(str, sizeof(str) - 1, "MAIL FROM: <%s>\r\n", from);
   send(s, str, strlen(str), 0);
+  if (verbose) puts(str);
   recv_string(s, str, sizeof(str), 3000);
+  if (verbose) puts(str);
 
   snprintf(str, sizeof(str) - 1, "RCPT TO: <%s>\r\n", to);
   send(s, str, strlen(str), 0);
+  if (verbose) puts(str);
   recv_string(s, str, sizeof(str), 3000);
+  if (verbose) puts(str);
 
   snprintf(str, sizeof(str) - 1, "DATA\r\n");
   send(s, str, strlen(str), 0);
+  if (verbose) puts(str);
   recv_string(s, str, sizeof(str), 3000);
+  if (verbose) puts(str);
 
   snprintf(str, sizeof(str) - 1, "To: %s\r\nFrom: %s\r\nSubject: %s\r\n", to, from, subject);
   send(s, str, strlen(str), 0);
+  if (verbose) puts(str);
 
   time(&now);
   snprintf(buf, sizeof(buf) - 1, "%s", ctime(&now));
   buf[strlen(buf)-1] = '\0';
   snprintf(str, sizeof(str) - 1, "Date: %s\r\n\r\n", buf);
   send(s, str, strlen(str), 0);
+  if (verbose) puts(str);
 
   snprintf(str, sizeof(str) - 1, "%s\r\n.\r\n", text);
   send(s, str, strlen(str), 0);
+  if (verbose) puts(str);
   recv_string(s, str, sizeof(str), 3000);
+  if (verbose) puts(str);
 
   snprintf(str, sizeof(str) - 1, "QUIT\r\n");
   send(s, str, strlen(str), 0);
+  if (verbose) puts(str);
   recv_string(s, str, sizeof(str), 3000);
+  if (verbose) puts(str);
 
   closesocket(s);
   
@@ -776,6 +797,10 @@ int  fh;
     if (p)
       p++;
     } while (p);
+
+  /* if parameter not found in logbook, look in [global] section */
+  if (!equal_ustring(group, "global"))
+    return getcfg("global", param, value);
 
   return 0;
 }
@@ -2895,6 +2920,10 @@ struct hostent *phe;
 
   strcpy(value[i++], str);
 
+  /* add local host */
+  strcpy(list[i], "host");
+  strcpy(value[i++], host_name);
+
   /* add user names */
   strcpy(list[i], "short_name");
   strcpy(value[i++], getparam("unm"));
@@ -3108,7 +3137,7 @@ char   str[1000], preset[1000], *p, star[80], comment[10000];
 char   list[MAX_N_ATTR][NAME_LENGTH], file_name[256], *buffer; 
 char   date[80], attrib[MAX_N_ATTR][NAME_LENGTH], text[TEXT_SIZE], 
        orig_tag[80], reply_tag[80], att[MAX_ATTACHMENTS][256], encoding[80],
-       slist[MAX_N_ATTR+5][NAME_LENGTH], svalue[MAX_N_ATTR+5][NAME_LENGTH];
+       slist[MAX_N_ATTR+10][NAME_LENGTH], svalue[MAX_N_ATTR+10][NAME_LENGTH];
 time_t now;
 
   n_attr = scan_attributes(logbook);
@@ -4561,7 +4590,7 @@ char   str[256], mail_to[256], mail_from[256], file_name[256],
        tag[80], subject[256], attrib[MAX_N_ATTR][NAME_LENGTH], subst_str[256];
 char   *buffer[MAX_ATTACHMENTS], mail_param[1000];
 char   att_file[MAX_ATTACHMENTS][256];
-char   slist[MAX_N_ATTR+5][NAME_LENGTH], svalue[MAX_N_ATTR+5][NAME_LENGTH];
+char   slist[MAX_N_ATTR+10][NAME_LENGTH], svalue[MAX_N_ATTR+10][NAME_LENGTH];
 int    i, j, n, index, n_attr, n_mail, suppress, status;
 
   n_attr = scan_attributes(logbook);
@@ -4701,7 +4730,14 @@ int    i, j, n, index, n_attr, n_mail, suppress, status;
         for (i=0 ; i<n ; i++)
           {
           strcpy(mail_to, mail_list[i]);
-          sprintf(mail_from, "ELog@%s", host_name);
+
+          if (getcfg(logbook, "Use Email from", mail_from))
+            {
+            j = build_subst_list(slist, svalue, attrib);
+            strsubst(mail_from, slist, svalue, j);
+            }
+          else
+            sprintf(mail_from, "ELog@%s", host_name);
 
           sprintf(mail_text, "A new entry has been submitted on %s:\r\n\r\n", host_name);
 
@@ -4718,7 +4754,10 @@ int    i, j, n, index, n_attr, n_mail, suppress, status;
 
           /* compose subject from attributes */
           if (getcfg(logbook, "Use Email Subject", subject))
-            strsubst(subject, attr_list, attrib, n_attr);
+            {
+            j = build_subst_list(slist, svalue, attrib);
+            strsubst(subject, slist, svalue, j);
+            }
           else
             strcpy(subject, "New ELOG entry");
 
@@ -4904,7 +4943,7 @@ char   str[256], orig_path[256], command[80], ref[256], file_name[256], attrib[M
 char   date[80], text[TEXT_SIZE], menu_str[1000], cmd[256],
        orig_tag[80], reply_tag[80], attachment[MAX_ATTACHMENTS][256], encoding[80], att[256], lattr[256];
 char   menu_item[MAX_N_LIST][NAME_LENGTH], format[80],
-       slist[MAX_N_ATTR+5][NAME_LENGTH], svalue[MAX_N_ATTR+5][NAME_LENGTH];
+       slist[MAX_N_ATTR+10][NAME_LENGTH], svalue[MAX_N_ATTR+10][NAME_LENGTH];
 FILE   *f;
 
   n_attr = scan_attributes(logbook);
