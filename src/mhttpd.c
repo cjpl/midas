@@ -6,6 +6,9 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
+  Revision 1.24  1999/09/10 06:10:46  midas
+  Reply half finished
+
   Revision 1.23  1999/09/02 15:02:13  midas
   Display attachments
 
@@ -103,7 +106,7 @@ INT el_retrieve(char *tag, char *date, int *run, char *author, char *type,
                 char *attachment, char *encoding);
 int el_submit(int run, char *author, char *type, char *system, char *subject, 
               char *text, char *encoding, char *attachment, char *tag);
-INT el_search_message(char *tag, int *fh);
+INT el_search_message(char *tag, int *fh, BOOL walk);
 
 char *mname[] = {
   "January",
@@ -127,6 +130,7 @@ char type_list[20][NAME_LENGTH] = {
   "Severe error",
   "Fix",
   "Complaints",
+  "Reply",
   "Test",
   "Other"
 };
@@ -1023,14 +1027,26 @@ int i;
     }
 }
 
-void show_elog_new()
+void show_elog_new(char *path)
 {
 int    i, size, run_number;
 char   str[256], ref[256];
+char   date[80], author[80], type[80], system[80], subject[256], text[10000], 
+       attachment[256], encoding[80];
 time_t now;
 HNDLE  hDB, hkey;
 
   cm_get_experiment_database(&hDB, NULL);
+
+  /* get message for reply */
+  type[0] = system[0] = 0;
+  if (path)
+    {
+    strcpy(str, path);
+    size = sizeof(text);
+    el_retrieve(str, date, &run_number, author, type, system, subject, 
+                text, &size, attachment, encoding);
+    }
 
   /* header */
   rsprintf("HTTP/1.0 200 Document follows\r\n");
@@ -1095,20 +1111,40 @@ HNDLE  hDB, hkey;
     sprintf(ref, "%sELog/?exp=%s", mhttpd_url, exp_name);
   else
     sprintf(ref, "%sELog/", mhttpd_url);
+
   rsprintf("<td bgcolor=#FFA0A0><a href=\"%s\" target=\"ELog Type\">Type:</a> <select name=\"type\">\n", ref);
   for (i=0 ; i<20 && type_list[i][0] ; i++)
-    rsprintf("<option value=\"%s\">%s\n", type_list[i], type_list[i]);
+    if (equal_ustring(type_list[i], "reply"))
+      rsprintf("<option selected value=\"%s\">%s\n", type_list[i], type_list[i]);
+    else
+      rsprintf("<option value=\"%s\">%s\n", type_list[i], type_list[i]);
   rsprintf("</select></tr>\n");
 
   rsprintf("<tr><td bgcolor=#A0FFA0><a href=\"%s\" target=\"ELog System\">  System:</a> <select name=\"system\">\n", ref);
   for (i=0 ; i<20 && system_list[i][0] ; i++)
-    rsprintf("<option value=\"%s\">%s\n", system_list[i], system_list[i]);
+    if (equal_ustring(system_list[i], system))
+      rsprintf("<option selected value=\"%s\">%s\n", system_list[i], system_list[i]);
+    else
+      rsprintf("<option value=\"%s\">%s\n", system_list[i], system_list[i]);
   rsprintf("</select>\n");
 
-  rsprintf("<td bgcolor=#A0FFA0>Subject: <input type=text size=20 maxlength=\"80\" name=Subject></tr>\n");
+  str[0] = 0;
+  if (path)
+    sprintf(str, "Re: %s", subject);
+  rsprintf("<td bgcolor=#A0FFA0>Subject: <input type=text size=20 maxlength=\"80\" name=Subject value=\"%s\"></tr>\n", str);
 
+  /* reply text */
+  if (path)
+    {
+    rsprintf("<tr><td colspan=2 bgcolor=#E0E0FF><i>Original entry:</i><br><br>\n");
+    el_format(text, encoding);
+    rsprintf("</tr>\n");
+
+    /* hidden text for original message */
+    rsprintf("<input type=hidden name=orig value=\"%s\">\n", path);
+    }
+  
   rsprintf("<tr><td colspan=2>Text:<br>\n");
-
   rsprintf("<textarea rows=10 cols=80 name=Text></textarea></tr>\n");
 
   /* HTML check box */
@@ -1169,8 +1205,6 @@ HNDLE  hDB, hkey;
   time(&now);
   tms = localtime(&now);
   tms->tm_year += 1900;
-  if (tms->tm_year < 1990)
-    tms->tm_year += 100;
 
   rsprintf("<tr><td bgcolor=#FFFF00>Start date: ");
   rsprintf("<td colspan=3 bgcolor=#FFFF00><select name=\"m1\">\n");
@@ -1434,7 +1468,13 @@ HNDLE hDB;
 
   if (equal_ustring(command, "new"))
     {
-    show_elog_new();
+    show_elog_new(NULL);
+    return;
+    }
+
+  if (equal_ustring(command, "reply"))
+    {
+    show_elog_new(path);
     return;
     }
 
@@ -1442,38 +1482,6 @@ HNDLE hDB;
     {
     submit_elog();
     return;
-    }
-
-  last_message = FALSE;
-  if (equal_ustring(command, "next"))
-    {
-    strcat(path, "+1");
-    status = el_search_message(path, &fh);
-    close(fh);
-    if (status == EL_SUCCESS)
-      {
-      sprintf(str, "EL/%s", path);
-      redirect(str);
-      return;
-      }
-    else
-      last_message = TRUE;
-    }
-
-  first_message = FALSE;
-  if (equal_ustring(command, "previous"))
-    {
-    strcat(path, "-1");
-    status = el_search_message(path, &fh);
-    close(fh);
-    if (status == EL_SUCCESS)
-      {
-      sprintf(str, "EL/%s", path);
-      redirect(str);
-      return;
-      }
-    else
-      first_message = TRUE;
     }
 
   if (equal_ustring(command, "query"))
@@ -1490,7 +1498,7 @@ HNDLE hDB;
 
   /*---- check if file requested -----------------------------------*/
 
-  if (path[6] == '_' && path[13] == '_')
+  if (strlen(path) > 13 && path[6] == '_' && path[13] == '_')
     {
     cm_get_experiment_database(&hDB, NULL);
     file_name[0] = 0;
@@ -1546,6 +1554,53 @@ HNDLE hDB;
       }
 
     return;
+    }
+
+  /*---- check next/previous message -------------------------------*/
+
+/*
+  if ((*getparam("lauthor") == '1' && !equal_ustring(getparam("author"), author)))
+    {
+    if (equal_ustring(command, "next"))
+      strcat(str, "+1");
+    else if (equal_ustring(command, "previous"))
+      strcat(str, "-1");
+
+    show_elog_page(str);
+    return;
+    }
+*/
+
+  last_message = FALSE;
+  if (equal_ustring(command, "next"))
+    {
+    strcat(path, "+1");
+    status = el_search_message(path, &fh, TRUE);
+    close(fh);
+    if (status == EL_SUCCESS)
+      {
+      sprintf(str, "EL/%s", path);
+      redirect(str);
+      return;
+      }
+    else
+      last_message = TRUE;
+    }
+
+  first_message = FALSE;
+  if (equal_ustring(command, "previous"))
+    {
+    strcat(path, "-1");
+    status = el_search_message(path, &fh, TRUE);
+    close(fh);
+    if (status == EL_SUCCESS)
+      {
+      sprintf(str, "EL/%s", path);
+      redirect(str);
+      return;
+      }
+    else
+      first_message = TRUE;
     }
 
   /*---- get current message ---------------------------------------*/
@@ -1609,15 +1664,25 @@ HNDLE hDB;
 
     rsprintf("<tr><td bgcolor=#FFFF00>Entry date: <b>%s</b>", date);
 
-    rsprintf("<td bgcolor=#FFFF00>Run number: <b>%d</b></tr>", run);
+    rsprintf("<td bgcolor=#FFFF00>Run number: <b>%d</b></tr>\n\n", run);
 
-    rsprintf("<tr><td bgcolor=#FFA0A0>Author: <b>%s</b>\n", author);
+    /* define hidded fields */
+    rsprintf("<input type=hidden name=author  value=\"%s\">\n", author); 
+    rsprintf("<input type=hidden name=type    value=\"%s\">\n", type); 
+    rsprintf("<input type=hidden name=system  value=\"%s\">\n", system); 
+    rsprintf("<input type=hidden name=subject value=\"%s\">\n\n", subject); 
 
-    rsprintf("<td bgcolor=#FFA0A0>Type: <b>%s</b></tr>\n", type);
+    rsprintf("<tr><td bgcolor=#FFA0A0><input type=\"checkbox\" name=\"lauthor\" value=\"1\">");
+    rsprintf("  Author: <b>%s</b>\n", author);
 
-    rsprintf("<tr><td bgcolor=#A0FFA0>System: <b>%s</b>\n", system);
+    rsprintf("<td bgcolor=#FFA0A0><input type=\"checkbox\" name=\"ltype\" value=\"1\">");
+    rsprintf("  Type: <b>%s</b></tr>\n", type);
 
-    rsprintf("<td bgcolor=#A0FFA0>Subject: <b>%s</b></tr>\n", subject);
+    rsprintf("<tr><td bgcolor=#A0FFA0><input type=\"checkbox\" name=\"lsystem\" value=\"1\">");
+    rsprintf("  System: <b>%s</b>\n", system);
+
+    rsprintf("<td bgcolor=#A0FFA0><input type=\"checkbox\" name=\"lsubject\" value=\"1\">");
+    rsprintf("  Subject: <b>%s</b></tr>\n", subject);
 
     if (attachment[0])
       {
@@ -1709,7 +1774,7 @@ char    message[10000];
   tms = localtime(&now);
 
   sprintf(file_name, "%s%02d%02d%02d.log", dir, 
-          tms->tm_year, tms->tm_mon+1, tms->tm_mday);
+          tms->tm_year % 100, tms->tm_mon+1, tms->tm_mday);
 
   fh = open(file_name, O_CREAT | O_RDWR | O_BINARY, 0644);
   if (fh < 0)
@@ -1740,7 +1805,7 @@ char    message[10000];
   size = strlen(message)+strlen(start_str)+strlen(end_str);
 
   if (tag != NULL)
-    sprintf(tag, "%02d%02d%02d.%d", tms->tm_year, tms->tm_mon+1, tms->tm_mday, TELL(fh));
+    sprintf(tag, "%02d%02d%02d.%d", tms->tm_year % 100, tms->tm_mon+1, tms->tm_mday, TELL(fh));
 
   sprintf(start_str, "$Start$: %6d\n", size);
   sprintf(end_str,   "$End$:   %6d\n\f", size);
@@ -1769,7 +1834,7 @@ char *pc;
     }
 }
 
-INT el_search_message(char *tag, int *fh)
+INT el_search_message(char *tag, int *fh, BOOL walk)
 {
 int    i, size, offset, direction, last, status;
 struct tm *tms, ltms;
@@ -1810,6 +1875,9 @@ HNDLE  hDB;
     tms->tm_mon  = (tag[2]-'0')*10 + (tag[3]-'0') -1;
     tms->tm_mday = (tag[4]-'0')*10 + (tag[5]-'0');
     tms->tm_hour = 12;
+
+    if (tms->tm_year < 90)
+      tms->tm_year += 100;
     ltime = lt = mktime(tms);
 
     strcpy(str, tag);
@@ -1826,19 +1894,22 @@ HNDLE  hDB;
       tms = localtime(&ltime);
 
       sprintf(file_name, "%s%02d%02d%02d.log", dir, 
-              tms->tm_year, tms->tm_mon+1, tms->tm_mday);
+              tms->tm_year % 100, tms->tm_mon+1, tms->tm_mday);
       *fh = open(file_name, O_RDONLY | O_BINARY, 0644);
-
-      if (direction == -1)
-        ltime -= 3600*24; /* one day back */
-      else
-        ltime += 3600*24; /* go forward one day */
 
       if (*fh < 0)
         {
+        if (!walk)
+          return EL_FILE_ERROR;
+
+        if (direction == -1)
+          ltime -= 3600*24; /* one day back */
+        else
+          ltime += 3600*24; /* go forward one day */
+
         /* set new tag */
         tms = localtime(&ltime);
-        sprintf(tag, "%02d%02d%02d.0", tms->tm_year, tms->tm_mon+1, tms->tm_mday);
+        sprintf(tag, "%02d%02d%02d.0", tms->tm_year % 100, tms->tm_mon+1, tms->tm_mday);
         }
 
       } while (*fh < 0 && abs((INT)lt-(INT)ltime) < 3600*24*365);
@@ -1859,10 +1930,11 @@ HNDLE  hDB;
       tms = localtime(&ltime);
 
       sprintf(file_name, "%s%02d%02d%02d.log", dir, 
-              tms->tm_year, tms->tm_mon+1, tms->tm_mday);
+              tms->tm_year % 100, tms->tm_mon+1, tms->tm_mday);
       *fh = open(file_name, O_RDONLY | O_BINARY, 0644);
 
-      ltime -= 3600*24; /* one day back */
+      if (*fh < 0)
+        ltime -= 3600*24; /* one day back */
 
       } while (*fh < 0 && (INT)lt-(INT)ltime < 3600*24*365);
 
@@ -1870,7 +1942,7 @@ HNDLE  hDB;
       return EL_FILE_ERROR;
 
     /* remember tag */
-    sprintf(tag, "%02d%02d%02d", tms->tm_year, tms->tm_mon+1, tms->tm_mday);
+    sprintf(tag, "%02d%02d%02d", tms->tm_year % 100, tms->tm_mon+1, tms->tm_mday);
 
     lseek(*fh, 0, SEEK_END);
 
@@ -1893,9 +1965,9 @@ HNDLE  hDB;
         lt -= 3600*24;
         tms = localtime(&lt);
         sprintf(str, "%02d%02d%02d.0",  
-                tms->tm_year, tms->tm_mon+1, tms->tm_mday);
+                tms->tm_year % 100, tms->tm_mon+1, tms->tm_mday);
 
-        status = el_search_message(str, fh);
+        status = el_search_message(str, fh, FALSE);
 
         } while (status != EL_SUCCESS && 
                  (INT)ltime-(INT)lt < 3600*24*365);
@@ -1961,9 +2033,9 @@ HNDLE  hDB;
         lt += 3600*24;
         tms = localtime(&lt);
         sprintf(str, "%02d%02d%02d.0",  
-                tms->tm_year, tms->tm_mon+1, tms->tm_mday);
+                tms->tm_year % 100, tms->tm_mon+1, tms->tm_mday);
 
-        status = el_search_message(str, fh);
+        status = el_search_message(str, fh, FALSE);
 
         } while (status != EL_SUCCESS && 
                  (INT)lt-(INT)lact < 3600*24);
@@ -2025,13 +2097,15 @@ char    message[10000];
 
   if (tag[0])
     {
-    search_status = el_search_message(tag, &fh);
+    search_status = el_search_message(tag, &fh, TRUE);
+    if (search_status != EL_SUCCESS)
+      return search_status;
     }
   else
     {
     /* open most recent message */
     strcpy(tag, "-1");
-    search_status = el_search_message(tag, &fh);
+    search_status = el_search_message(tag, &fh, TRUE);
     if (search_status != EL_SUCCESS)
       return search_status;
     }
@@ -4133,11 +4207,11 @@ HNDLE  hDB;
           tms = localtime(&now);
 
           sprintf(file_name, "%02d%02d%02d_%02d%02d%02d_%s",
-                  tms->tm_year, tms->tm_mon+1, tms->tm_mday,
+                  tms->tm_year % 100, tms->tm_mon+1, tms->tm_mday,
                   tms->tm_hour, tms->tm_min, tms->tm_sec, p);
           setparam("attachment", file_name);
           sprintf(file_name, "%s%02d%02d%02d_%02d%02d%02d_%s", dir, 
-                  tms->tm_year, tms->tm_mon+1, tms->tm_mday,
+                  tms->tm_year % 100, tms->tm_mon+1, tms->tm_mday,
                   tms->tm_hour, tms->tm_min, tms->tm_sec, p);
           }
         else
