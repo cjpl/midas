@@ -6,6 +6,9 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
+  Revision 1.14  1999/05/03 10:45:06  midas
+  Fixed compiler warning with rpc_set_debug
+
   Revision 1.13  1999/04/30 10:58:59  midas
   Added -D debug to screen for mserver
 
@@ -205,7 +208,7 @@ BOOL   inetd;
       if (debug == 1)
         rpc_set_debug(debug_print, 1);
       else
-        rpc_set_debug(puts, 2);
+        rpc_set_debug((void (*)(char*))puts, 2);
       }
 
     /* if command line parameter given, start according server type */
@@ -310,7 +313,7 @@ BOOL   inetd;
       if (callback.debug == 1)
         rpc_set_debug(debug_print, 1);
       else
-        rpc_set_debug(puts, 2);
+        rpc_set_debug((void (*)(char*))puts, 2);
       }
 
     rpc_register_server(ST_SUBPROCESS, NULL, NULL, rpc_server_dispatch);
