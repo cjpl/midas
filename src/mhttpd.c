@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.86  1999/11/08 14:31:09  midas
+  Added hotlink to auto restart in status page
+
   Revision 1.85  1999/11/08 13:56:09  midas
   Added different alarm types
 
@@ -884,10 +887,15 @@ CHN_STATISTICS chn_stats;
 
   rsprintf("<td colspan=2 bgcolor=#%s>%s", str, state[runinfo.state]);
 
+  if (exp_name[0])
+    sprintf(ref, "%sLogger?exp=%s", mhttpd_url, exp_name);
+  else
+    sprintf(ref, "%sLogger", mhttpd_url);
+
   size = sizeof(flag);
   db_get_value(hDB, 0, "/Logger/Auto restart", &flag, &size, TID_BOOL);
   strcpy(str, flag ? "00FF00" : "FFFF00");
-  rsprintf("<td bgcolor=#%s>Restart: %s", str, flag ? "Yes" : "No");
+  rsprintf("<td bgcolor=#%s><a href=\"%s\">Restart: %s</a>", str, ref, flag ? "Yes" : "No");
 
   if (cm_exist("Logger", FALSE) != CM_SUCCESS &&
       cm_exist("FAL", FALSE) != CM_SUCCESS)
