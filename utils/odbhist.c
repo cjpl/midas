@@ -6,7 +6,7 @@
   Contents:     MIDAS history display utility
 
   $Log$
-  Revision 1.3  1999/08/26 15:18:50  midas
+  Revision 1.4  1999/08/27 07:59:53  midas
   Fixed bug
 
   Revision 1.2  1999/08/24 14:46:44  midas
@@ -26,8 +26,6 @@ int odb_hist(char *file_name, int run_number, char *var_name, int quiet, double 
 FILE *f;
 char str[256], path[256], key_name[256], line[256];
 int  i, index;
-
-  *value = 0;
 
   /* assemble file name */
   sprintf(str, file_name, run_number);
@@ -192,6 +190,7 @@ usage:
 
   for (run=start_run ; run<=end_run ; run++)
     {
+    value = 0;
     status = odb_hist(file_name, run, var_name, quiet, &value);
     if (status != SUCCESS)
       break;
