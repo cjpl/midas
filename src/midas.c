@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.214  2004/09/28 18:30:24  midas
+  Changed rpc_debug_print arguments
+
   Revision 1.213  2004/09/28 17:13:21  midas
   Added startup debug code for mserver
 
@@ -9389,7 +9392,7 @@ INT rpc_set_debug(void (*func) (char *), INT mode)
 }
 
 /********************************************************************/
-void rpc_debug_print(char *str)
+void rpc_debug_print(char *format, ...)
 /********************************************************************\
 
   Routine: rpc_debug_print
@@ -9404,6 +9407,13 @@ void rpc_debug_print(char *str)
 
 \********************************************************************/
 {
+   va_list argptr;
+   char str[1000];
+
+   va_start(argptr, format);
+   vsprintf(str, (char *) format, argptr);
+   va_end(argptr);
+
    if (_debug_print)
       _debug_print(str);
    else

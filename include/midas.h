@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.136  2004/09/28 18:30:12  midas
+  Changed rpc_debug_print arguments
+
   Revision 1.135  2004/09/28 17:13:32  midas
   Added startup debug code for mserver
 
@@ -2084,7 +2087,7 @@ extern "C" {
    INT EXPRT rpc_get_name(char *name);
    INT EXPRT rpc_is_remote(void);
    INT EXPRT rpc_set_debug(void (*func) (char *), INT mode);
-   void EXPRT rpc_debug_print(char *str);
+   void EXPRT rpc_debug_print(char *format, ...);
 
    INT EXPRT rpc_register_server(INT server_type, char *name, INT * port,
                                  INT(*func) (INT, void **));
