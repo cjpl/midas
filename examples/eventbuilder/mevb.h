@@ -4,8 +4,11 @@ Name:         mevb.h
 
   Contents:     Event builder header file
   $Log$
-  Revision 1.1  2002/01/17 19:55:31  pierre
-  Initial revision
+  Revision 1.2  2002/01/28 20:49:08  pierre
+  correct format string length
+
+  Revision 1.1.1.1  2002/01/17 19:55:31  pierre
+  Initial Version
 
 \********************************************************************/
 
@@ -17,10 +20,10 @@ Name:         mevb.h
 
 #define EBUILDER(_name) char *_name[] = {\
 "[Settings]",\
-"Event ID = WORD : 1",\
+"Event ID = WORD : 0x33",\
 "Trigger mask = WORD : 1",\
 "Buffer = STRING : [32] SYSTEM",\
-"Format = STRING : [32] MIDAS",\
+"Format = STRING : [8] MIDAS",\
 "User build = BOOL : n",\
 "Event mask = DWORD : 3",\
 "Hostname = STRING : [64] ",\
