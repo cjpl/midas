@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.172  2001/10/15 09:24:26  midas
+  Fixed small bug with new comment display on start page
+
   Revision 1.171  2001/10/12 12:08:42  midas
   If custom page /Custom/Status is present, it gets displayed instead of
   the standard status page
@@ -5311,7 +5314,7 @@ char  data_str[256], comment[1000];
         if (j == 0 && hkeycomm)
           {
           /* look for comment */
-          if (db_find_key(hDB, hkeycomm, key.name, &hkeyc))
+          if (db_find_key(hDB, hkeycomm, key.name, &hkeyc) == DB_SUCCESS)
             {
             size = sizeof(comment);
             if (db_get_data(hDB, hkeyc, comment, &size, TID_STRING) == DB_SUCCESS)
