@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.73  1999/10/11 12:13:43  midas
+  Increased socket timeout
+
   Revision 1.72  1999/10/11 11:57:39  midas
   Fixed bug with search in full text
 
@@ -5346,7 +5349,7 @@ INT                  last_time=0;
         FD_ZERO(&readfds);
         FD_SET(_sock, &readfds);
 
-        timeout.tv_sec  = 1;
+        timeout.tv_sec  = 6;
         timeout.tv_usec = 0;
 
 #ifdef OS_UNIX
