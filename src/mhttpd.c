@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.96  2000/03/01 00:53:14  midas
+  Use double events_sent values
+
   Revision 1.95  2000/02/25 23:41:02  midas
   Fixed secondary problem with conversion flags, adjusted mhttpd display of
   event number (M and G)
@@ -759,8 +762,7 @@ char   *yn[] = {"No", "Yes"};
 char   *state[] = {"", "Stopped", "Paused", "Running" };
 char   *trans_name[] = {"Start", "Stop", "Pause", "Resume"};
 time_t now, difftime;
-DWORD  analyzed;
-double analyze_ratio, d;
+double analyzed, analyze_ratio, d;
 float  value;
 HNDLE  hDB, hkey, hLKey, hsubkey, hkeytmp;
 KEY    key;
@@ -1030,11 +1032,11 @@ CHN_STATISTICS chn_stats;
       db_find_key(hDB, 0, ref, &hkeytmp);
       if (hkeytmp)
         {
-        size = sizeof(DWORD);
+        size = sizeof(double);
         if (db_get_value(hDB, hkeytmp, "Statistics/Events received", 
-                         &analyzed, &size, TID_DWORD) == DB_SUCCESS &&
+                         &analyzed, &size, TID_DOUBLE) == DB_SUCCESS &&
             equipment_stats.events_sent > 0)
-          analyze_ratio = (double) analyzed / equipment_stats.events_sent;
+          analyze_ratio = analyzed / equipment_stats.events_sent;
         }
       
       d = equipment_stats.events_sent;
