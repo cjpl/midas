@@ -6,6 +6,9 @@
   Contents:     MIDAS logger program
 
   $Log$
+  Revision 1.48  2002/02/05 01:29:09  midas
+  Re-merged common code of logger and fal
+
   Revision 1.47  2002/02/02 11:34:30  midas
   Added run markes in history
 
@@ -2469,6 +2472,10 @@ char   str[256];
   return CM_SUCCESS;
 }
 
+/*== common code FAL/MLOGGER end ===================================*/
+
+/*----- pause/resume -----------------------------------------------*/
+
 INT tr_pause(INT run_number, char *error)
 {
   /* write transition event into history */
@@ -2488,8 +2495,6 @@ INT tr_resume(INT run_number, char *error)
 
   return CM_SUCCESS;
 }
-
-/*== common code FAL/MLOGGER end ===================================*/
 
 /*----- receive_event ----------------------------------------------*/
 

@@ -7,6 +7,9 @@
                 Most routines are from mfe.c mana.c and mlogger.c.
 
   $Log$
+  Revision 1.26  2002/02/05 01:26:51  midas
+  Re-merged common code of logger and fal
+
   Revision 1.25  2002/01/16 15:21:38  midas
   Use odb_size from analyzer
 
@@ -390,14 +393,19 @@ int  size;
 char dir[256];
 char path[256];
 
-  size = sizeof(dir);
-  dir[0] = 0;
-  db_get_value(hDB, 0, "/Logger/Data Dir", dir, &size, TID_STRING);
-  if (dir[0] != 0)
-    if (dir[strlen(dir)-1] != DIR_SEPARATOR)
-      strcat(dir, DIR_SEPARATOR_STR);
-  strcpy(path, dir);
-  strcat(path, filename);
+  if (strchr(filename, DIR_SEPARATOR) == NULL)
+    {
+    size = sizeof(dir);
+    dir[0] = 0;
+    db_get_value(hDB, 0, "/Logger/Data Dir", dir, &size, TID_STRING);
+    if (dir[0] != 0)
+      if (dir[strlen(dir)-1] != DIR_SEPARATOR)
+        strcat(dir, DIR_SEPARATOR_STR);
+    strcpy(path, dir);
+    strcat(path, filename);
+    }
+  else
+    strcpy(path, filename);
 
   db_save(hDB, 0, path, FALSE);
 }
@@ -648,11 +656,15 @@ INT          status;
       log_chn->handle = open(log_chn->path, O_RDONLY);
       if (log_chn->handle > 0)
         {
-        close(log_chn->handle);
-        free(info->buffer);
-        free(info);
-        log_chn->handle = 0;
-        return SS_FILE_EXISTS;
+        /* check if file length is nonzero */
+        if (lseek(log_chn->handle, 0, SEEK_END) > 0)
+          {
+          close(log_chn->handle);
+          free(info->buffer);
+          free(info);
+          log_chn->handle = 0;
+          return SS_FILE_EXISTS;
+          }
         }
       }
 
@@ -714,30 +726,6 @@ INT midas_log_close(LOG_CHN *log_chn, INT run_number)
   free(log_chn->format_info);
 
   return SS_SUCCESS;
-}
-
-/*-- add </logger/data dir> before filename ------------------------*/
-
-void add_data_dir(char *result, char *file)
-{
-HNDLE hDB, hkey;
-char  str[256];
-int   size;
-
-  cm_get_experiment_database(&hDB, NULL);
-  db_find_key(hDB, 0, "/Logger/Data dir", &hkey);
-  
-  if (hkey)
-    {
-    size = sizeof(str);
-    db_get_data(hDB, hkey, str, &size, TID_STRING);
-    if (str[strlen(str)-1] != DIR_SEPARATOR)
-      strcat(str, DIR_SEPARATOR_STR);
-    strcat(str, file);
-    strcpy(result, str);
-    }
-  else
-    strcpy(result, file);
 }
 
 /*-- db_get_event_definition ---------------------------------------*/
@@ -839,92 +827,6 @@ static EVENT_DEF *event_def=NULL;
       db_find_key(hDB, hKey, "Variables", &event_def[index].hDefKey);
       return &event_def[index];
       }
-    }
-}
-
-/*-- functions for internal tests ----------------------------------*/
-
-ANA_TEST **tl;
-int      n_test = 0;
-
-void test_register(ANA_TEST *t)
-{
-int i;
-
-  /* check if test already registered */
-  for (i=0 ; i<n_test ; i++)
-    if (tl[i] == t)
-      break;
-  if (i<n_test)
-    {
-    t->registered = TRUE;
-    return;
-    }
-
-  /* allocate space for pointer to test */
-  if (n_test == 0)
-    {
-    tl = malloc(2*sizeof(void *));
-
-    /* define "always true" test */
-    tl[0] = malloc(sizeof(ANA_TEST));
-    strcpy(tl[0]->name, "Always true");
-    tl[0]->count = 0;
-    tl[0]->value = TRUE;
-    tl[0]->registered = TRUE;
-    n_test++;
-    }
-  else
-    tl = realloc(tl, (n_test+1)*sizeof(void *));
-
-  tl[n_test] = t;
-  t->count = 0;
-  t->value = FALSE;
-  t->registered = TRUE;
-
-  n_test++;
-}
-
-void test_clear()
-{
-int i;
-
-  /* clear all tests in interal list */
-  for (i=0 ; i<n_test ; i++)
-    {
-    tl[i]->count = 0;
-    tl[i]->value = FALSE;
-    }
-
-  /* set "always true" test */
-  if (n_test > 0)
-    tl[0]->value = TRUE;
-}
-
-void test_increment()
-{
-int i;
-
-  /* increment test counters based on their value and reset them */
-  for (i=0 ; i<n_test ; i++)
-    {
-    if (tl[i]->value)
-      tl[i]->count++;
-    if (i>0)
-      tl[i]->value = FALSE;
-    }
-}
-
-void test_write()
-{
-int  i;
-char str[256];
-
-  /* write all test counts to /analyzer/tests/<name> */
-  for (i=0 ; i<n_test ; i++)
-    {
-    sprintf(str, "/%s/Tests/%s", analyzer_name, tl[i]->name);
-    db_set_value(hDB, 0, str, &tl[i]->count, sizeof(DWORD), 1, TID_DWORD);
     }
 }
 
@@ -1719,24 +1621,29 @@ void log_history(HNDLE hDB, HNDLE hKey, void *info);
 
 INT open_history()
 {
-INT      size, index, i_tag, status, i, j, li, max_event_id;
-INT      n_var, n_tags, n_names;
-HNDLE    hKeyRoot, hKeyVar, hKeyNames, hLinkKey, hVarKey, hKeyEq, hHistKey, hKey;
-DWORD    history;
-TAG      *tag;
-KEY      key, varkey, linkkey, histkey;
-WORD     event_id;
-char     str[256], eq_name[NAME_LENGTH], hist_name[NAME_LENGTH];
-BOOL     single_names;
+  INT      size, index, i_tag, status, i, j, li, max_event_id;
+  INT      n_var, n_tags, n_names;
+  HNDLE    hKeyRoot, hKeyVar, hKeyNames, hLinkKey, hVarKey, hKeyEq, hHistKey, hKey;
+  DWORD    history;
+  TAG      *tag;
+  KEY      key, varkey, linkkey, histkey;
+  WORD     event_id;
+  char     str[256], eq_name[NAME_LENGTH], hist_name[NAME_LENGTH];
+  BOOL     single_names;
 
   /* set direcotry for history files */
   size = sizeof(str);
   str[0] = 0;
-  db_get_value(hDB, 0, "/Logger/Data Dir", str, &size, TID_STRING);
+  status = db_find_key(hDB, 0, "/Logger/History Dir", &hKey);
+  if (status == DB_SUCCESS)
+    db_get_value(hDB, 0, "/Logger/History Dir", str, &size, TID_STRING);
+  else
+    db_get_value(hDB, 0, "/Logger/Data Dir", str, &size, TID_STRING);
+
   if (str[0] != 0)
     hs_set_path(str);
 
-  if (db_find_key(hDB, 0, "/History", &hKeyRoot) != DB_SUCCESS)
+  if (db_find_key(hDB, 0, "/History/Links", &hKeyRoot) != DB_SUCCESS)
     {
     /* create default history keys */
     db_create_key(hDB, 0, "/History/Links", TID_KEY);
@@ -1747,6 +1654,7 @@ BOOL     single_names;
     if (db_find_key(hDB, 0, "/Equipment/Trigger/Statistics/kBytes per sec.", &hKeyEq) == DB_SUCCESS)
       db_create_link(hDB, 0, "/History/Links/System/Trigger kB per sec.", "/Equipment/Trigger/Statistics/kBytes per sec.");
     }
+
 
   /*---- define equipment events as history ------------------------*/
 
@@ -1948,77 +1856,102 @@ BOOL     single_names;
         status = db_enum_key(hDB, hHistKey, i, &hKey);
         if (status == DB_NO_MORE_SUBKEYS)
           break;
-        db_get_key(hDB, hKey, &key);
-        if (key.type != TID_KEY)
-          n_var++;
+        if (db_get_key(hDB, hKey, &key) == DB_SUCCESS)
+          {
+          if (key.type != TID_KEY)
+            n_var++;
+          }
+        else
+          {
+          db_enum_link(hDB, hHistKey, i, &hKey);
+          db_get_key(hDB, hKey, &key);
+          cm_msg(MERROR, "open_history", "History link /History/Links/%s/%s is invalid", hist_name, key.name);
+          }
         }
 
       if (n_var == 0)
         cm_msg(MERROR, "open_history", "History event %s has no variables in ODB", hist_name);
-
-      /* create tag array */
-      tag = malloc(sizeof(TAG)*n_var);
-
-      for (i=0,size=0,n_var=0 ;; i++)
+      else
         {
-        status = db_enum_link(hDB, hHistKey, i, &hLinkKey);
-        if (status == DB_NO_MORE_SUBKEYS)
-          break;
+        /* create tag array */
+        tag = malloc(sizeof(TAG)*n_var);
 
-        /* get link key */
-        db_get_key(hDB, hLinkKey, &linkkey);
+        for (i=0,size=0,n_var=0 ;; i++)
+          {
+          status = db_enum_link(hDB, hHistKey, i, &hLinkKey);
+          if (status == DB_NO_MORE_SUBKEYS)
+            break;
 
-        if (linkkey.type == TID_KEY)
-          continue;
+          /* get link key */
+          db_get_key(hDB, hLinkKey, &linkkey);
 
-        strcpy(tag[n_var].name, linkkey.name);
+          if (linkkey.type == TID_KEY)
+            continue;
 
-        /* get link target */
-        db_enum_key(hDB, hHistKey, i, &hVarKey);
-        db_get_key(hDB, hVarKey, &varkey);
+          /* get link target */
+          db_enum_key(hDB, hHistKey, i, &hVarKey);
+          if (db_get_key(hDB, hVarKey, &varkey) == DB_SUCCESS)
+            {
+            /* hot-link individual values */
+            if (histkey.type == TID_KEY)
+              db_open_record(hDB, hVarKey, NULL, varkey.total_size, MODE_READ, log_system_history, (void *) index);
 
-        /* hot-link individual values */
-        if (histkey.type == TID_KEY)
-          db_open_record(hDB, hVarKey, NULL, varkey.total_size, MODE_READ, log_system_history, (void *) index);
+            strcpy(tag[n_var].name, linkkey.name);
+            tag[n_var].type = varkey.type;
+            tag[n_var].n_data = varkey.num_values;
+            size += varkey.total_size;
+            n_var++;
+            }
+          }
 
-        tag[n_var].type = varkey.type;
-        tag[n_var].n_data = varkey.num_values;
-        size += varkey.total_size;
-        n_var++;
-        }
+        /* hot-link whole subtree */
+        if (histkey.type == TID_LINK)
+          db_open_record(hDB, hHistKey, NULL, size, MODE_READ, log_system_history, (void *) index);
 
-      /* hot-link whole subtree */
-      if (histkey.type == TID_LINK)
-        db_open_record(hDB, hHistKey, NULL, size, MODE_READ, log_system_history, (void *) index);
+        hs_define_event(max_event_id, hist_name, tag, sizeof(TAG)*n_var);
+        free(tag);
 
-      hs_define_event(max_event_id, hist_name, tag, sizeof(TAG)*n_var);
-      free(tag);
+        /* define system history */
 
-      /* define system history */
-  
-      hist_log[index].event_id = max_event_id;
-      hist_log[index].hKeyVar = hHistKey;
-      hist_log[index].buffer_size = size;
-      hist_log[index].buffer = malloc(size);
-      hist_log[index].period = 10; /* 10 sec default period */
-      hist_log[index].last_log = 0;
-      if (hist_log[index].buffer == NULL)
-        {
-        cm_msg(MERROR, "open_history", "cannot allocate history buffer");
-        return 0;
-        }
+        hist_log[index].event_id = max_event_id;
+        hist_log[index].hKeyVar = hHistKey;
+        hist_log[index].buffer_size = size;
+        hist_log[index].buffer = malloc(size);
+        hist_log[index].period = 10; /* 10 sec default period */
+        hist_log[index].last_log = 0;
+        if (hist_log[index].buffer == NULL)
+          {
+          cm_msg(MERROR, "open_history", "cannot allocate history buffer");
+          return 0;
+          }
 
-      index++;
-      max_event_id++;
+        index++;
+        max_event_id++;
 
-      if (index == MAX_HISTORY)
-        {
-        cm_msg(MERROR, "open_history", "too many equipments for history");
-        return 0;
+        if (index == MAX_HISTORY)
+          {
+          cm_msg(MERROR, "open_history", "too many equipments for history");
+          return 0;
+          }
         }
       }
     }
-  
+
+  /*---- define run start/stop event -------------------------------*/
+
+  tag = malloc(sizeof(TAG)*2);
+
+  strcpy(tag[0].name, "State");
+  tag[0].type = TID_DWORD;
+  tag[0].n_data = 1;
+
+  strcpy(tag[1].name, "Run number");
+  tag[1].type = TID_DWORD;
+  tag[1].n_data = 1;
+
+  hs_define_event(0, "Run transitions", tag, sizeof(TAG)*2);
+  free(tag);
+
   return CM_SUCCESS;
 }
 
@@ -2217,6 +2150,11 @@ double dzero;
                          transition callbacks
 
 \********************************************************************/
+
+struct {
+  DWORD transition;
+  DWORD run_number;
+  } eb;
 
 /*------------------------------------------------------------------*/
 
@@ -2483,6 +2421,11 @@ BOOL         write_data, tape_flag = FALSE;
   close_history();
   open_history();
 
+  /* write transition event into history */
+  eb.transition = STATE_RUNNING;
+  eb.run_number = run_number;
+  hs_write_event(0, &eb, sizeof(eb));
+
   return CM_SUCCESS;
 }
 
@@ -2521,18 +2464,25 @@ char   str[256];
       /* wait until buffer is empty */
       if (log_chn[i].buffer_handle)
         {
-        INT n_bytes;
+#ifdef DELAYED_STOP
+        DWORD start_time;
 
+        start_time = ss_millitime();
         do
           {
-
+          cm_yield(100);
+          } while (ss_millitime() - start_time < DELAYED_STOP);
+#else
+        INT n_bytes;
+        do
+          {
           bm_get_buffer_level(log_chn[i].buffer_handle, &n_bytes);
           if (n_bytes > 0)
             cm_yield(100);
-
           } while (n_bytes > 0);
-        }
 #endif
+        }
+#endif /* FAL_MAIN */
 
       /* close logging channel */
       log_close(&log_chn[i], run_number);
@@ -2594,10 +2544,125 @@ char   str[256];
   if (tape_flag & tape_message)
     cm_msg(MTALK, "tr_poststop", "all tape channels closed");
 
+  /* write transition event into history */
+  eb.transition = STATE_STOPPED;
+  eb.run_number = run_number;
+  hs_write_event(0, &eb, sizeof(eb));
+
   return CM_SUCCESS;
 }
 
 /*== common code FAL/MLOGGER end ===================================*/
+
+/*-- add </logger/data dir> before filename ------------------------*/
+
+void add_data_dir(char *result, char *file)
+{
+HNDLE hDB, hkey;
+char  str[256];
+int   size;
+
+  cm_get_experiment_database(&hDB, NULL);
+  db_find_key(hDB, 0, "/Logger/Data dir", &hkey);
+  
+  if (hkey)
+    {
+    size = sizeof(str);
+    db_get_data(hDB, hkey, str, &size, TID_STRING);
+    if (str[strlen(str)-1] != DIR_SEPARATOR)
+      strcat(str, DIR_SEPARATOR_STR);
+    strcat(str, file);
+    strcpy(result, str);
+    }
+  else
+    strcpy(result, file);
+}
+
+/*-- functions for internal tests ----------------------------------*/
+
+ANA_TEST **tl;
+int      n_test = 0;
+
+void test_register(ANA_TEST *t)
+{
+int i;
+
+  /* check if test already registered */
+  for (i=0 ; i<n_test ; i++)
+    if (tl[i] == t)
+      break;
+  if (i<n_test)
+    {
+    t->registered = TRUE;
+    return;
+    }
+
+  /* allocate space for pointer to test */
+  if (n_test == 0)
+    {
+    tl = malloc(2*sizeof(void *));
+
+    /* define "always true" test */
+    tl[0] = malloc(sizeof(ANA_TEST));
+    strcpy(tl[0]->name, "Always true");
+    tl[0]->count = 0;
+    tl[0]->value = TRUE;
+    tl[0]->registered = TRUE;
+    n_test++;
+    }
+  else
+    tl = realloc(tl, (n_test+1)*sizeof(void *));
+
+  tl[n_test] = t;
+  t->count = 0;
+  t->value = FALSE;
+  t->registered = TRUE;
+
+  n_test++;
+}
+
+void test_clear()
+{
+int i;
+
+  /* clear all tests in interal list */
+  for (i=0 ; i<n_test ; i++)
+    {
+    tl[i]->count = 0;
+    tl[i]->value = FALSE;
+    }
+
+  /* set "always true" test */
+  if (n_test > 0)
+    tl[0]->value = TRUE;
+}
+
+void test_increment()
+{
+int i;
+
+  /* increment test counters based on their value and reset them */
+  for (i=0 ; i<n_test ; i++)
+    {
+    if (tl[i]->value)
+      tl[i]->count++;
+    if (i>0)
+      tl[i]->value = FALSE;
+    }
+}
+
+void test_write()
+{
+int  i;
+char str[256];
+
+  /* write all test counts to /analyzer/tests/<name> */
+  for (i=0 ; i<n_test ; i++)
+    {
+    sprintf(str, "/%s/Tests/%s", analyzer_name, tl[i]->name);
+    db_set_value(hDB, 0, str, &tl[i]->count, sizeof(DWORD), 1, TID_DWORD);
+    }
+}
 
 /*-- start ---------------------------------------------------------*/
 
@@ -2780,6 +2845,11 @@ INT status;
 
   ss_printf(14, 2, "Paused");
 
+  /* write transition event into history */
+  eb.transition = STATE_PAUSED;
+  eb.run_number = run_number;
+  hs_write_event(0, &eb, sizeof(eb));
+
   return status;
 }
 
@@ -2803,6 +2873,11 @@ INT status;
   send_all_periodic_events(TR_RESUME);
 
   ss_printf(14, 2, "Running");
+
+  /* write transition event into history */
+  eb.transition = STATE_RUNNING;
+  eb.run_number = run_number;
+  hs_write_event(0, &eb, sizeof(eb));
 
   return status;
 }
