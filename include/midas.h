@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.70  2000/08/21 14:19:11  midas
+  bk_close return bank size
+
   Revision 1.69  2000/08/11 11:43:50  midas
   Added cm_msg1 to produce messages which go to a differnt logging file
 
@@ -1541,8 +1544,8 @@ void EXPRT bk_init32(void *event);
 BOOL EXPRT bk_is32(void *event);
 INT EXPRT bk_size(void *pbh);
 void EXPRT bk_create(void *pbh, char *name, WORD type, void *pdata);
-int EXPRT bk_delete(void *event, char *name);
-void EXPRT bk_close(void *pbh, void *pdata);
+INT EXPRT bk_delete(void *event, char *name);
+INT EXPRT bk_close(void *pbh, void *pdata);
 INT EXPRT bk_locate(void *pbh, char *name, void *pdata);
 INT EXPRT bk_iterate(void *pbh, BANK **pbk, void *pdata);
 INT EXPRT bk_iterate32(void *pbh, BANK32 **pbk, void *pdata);
