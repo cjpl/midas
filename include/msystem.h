@@ -7,6 +7,9 @@
                 routines
 
   $Log$
+  Revision 1.29  2003/04/25 11:47:17  midas
+  Added ss_force_single_thread()
+
   Revision 1.28  2003/04/22 12:00:56  midas
   Added rpc_client_check
 
@@ -620,6 +623,7 @@ INT ss_suspend_set_dispatch(INT channel, void *connection, INT (*dispatch)());
 INT ss_resume(INT port, char *message);
 INT ss_suspend_exit(void);
 INT ss_exception_handler(void (*func)());
+void EXPRT ss_force_single_thread();
 INT EXPRT ss_suspend(INT millisec, INT msg);
 INT EXPRT ss_thread_create(INT (*func)(void *), void *param);
 INT EXPRT ss_get_struct_align(void);
