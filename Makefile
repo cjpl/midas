@@ -6,6 +6,12 @@
 #  Contents:     Makefile for MIDAS binaries and examples under unix
 #
 #  $Log$
+#  Revision 1.23  2000/09/29 21:00:35  pierre
+#  - Add SPECIFIC_OS_PRG in PROGS
+#  - Define SPECIFIC_OS_PRG or each OS
+#  - Add -lc in LIBS for OSF1
+#  - Add $(LIBS) in SHLIB for OSF1
+#
 #  Revision 1.22  2000/07/21 18:30:11  pierre
 #  - Added MIDAS_PREF_FLAGS for custom build
 #
@@ -143,7 +149,8 @@ ifeq ($(OSTYPE),osf1)
 OS_DIR = osf1
 OSFLAGS = -DOS_OSF1 $(MIDAS_PREF_FLAGS) $(USERFLAGS)
 FFLAGS = -nofor_main -D 40000000 -T 20000000
-LIBS = -lbsd
+LIBS = -lc -lbsd
+SPECIFIC_OS_PRG = 
 endif
 
 #-----------------------
@@ -157,6 +164,7 @@ ifeq ($(OSTYPE),ultrix)
 OS_DIR = ultrix
 OSFLAGS = -DOS_ULTRIX -DNO_PTY $(MIDAS_PREF_FLAGS) $(USERFLAGS)
 LIBS =
+SPECIFIC_OS_PRG = 
 endif
 
 #-----------------------
@@ -166,6 +174,7 @@ ifeq ($(OSTYPE), FreeBSD)
 OS_DIR = freeBSD
 OSFLAGS = -DOS_FREEBSD $(MIDAS_PREF_FLAGS) $(USERFLAGS)
 LIBS = -lbsd -lcompat
+SPECIFIC_OS_PRG = 
 endif
 
 #-----------------------
@@ -179,6 +188,7 @@ ifeq ($(OSTYPE),linux)
 OS_DIR = linux
 OSFLAGS = -DOS_LINUX -fPIC $(MIDAS_PREF_FLAGS) $(USERFLAGS)
 LIBS = -lutil
+SPECIFIC_OS_PRG = $(BIN_DIR)/mlxspeaker $(BIN_DIR)/dio
 endif
 
 #-----------------------
@@ -189,6 +199,7 @@ CC = gcc
 OS_DIR = solaris
 OSFLAGS = -DOS_SOLARIS $(MIDAS_PREF_FLAGS) $(USERFLAGS)
 LIBS = -lsocket -lnsl
+SPECIFIC_OS_PRG = 
 endif
 
 #####################################################################
@@ -223,10 +234,10 @@ PROGS = $(BIN_DIR)/mserver $(BIN_DIR)/mhttpd \
 	$(BIN_DIR)/mtape $(BIN_DIR)/mhist \
 	$(BIN_DIR)/mstat $(BIN_DIR)/mcnaf \
 	$(BIN_DIR)/mdump $(BIN_DIR)/lazylogger \
-	$(BIN_DIR)/mlxspeaker $(BIN_DIR)/dio \
+	$(BIN_DIR)/webpaw \
 	$(BIN_DIR)/odbhist $(BIN_DIR)/elog \
 	$(BIN_DIR)/mchart $(BIN_DIR)/stripchart.tcl \
-	$(BIN_DIR)/mchart $(BIN_DIR)/webpaw
+	$(SPECIFIC_OS_PRG)
 
 OBJS =  $(LIB_DIR)/midas.o $(LIB_DIR)/system.o $(LIB_DIR)/mrpc.o \
 	$(LIB_DIR)/odb.o $(LIB_DIR)/ybos.o $(LIB_DIR)/ftplib.o
@@ -304,7 +315,7 @@ $(LIBNAME): $(OBJS)
 
 $(SHLIB): $(OBJS)
 	rm -f $@
-	ld -shared -o $@ $^
+	ld -shared -o $@ $^ $(LIBS)
 
 #
 # library objects
