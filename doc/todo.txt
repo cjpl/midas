@@ -1,11 +1,7 @@
 o avoid item count changes if record or parent is open
 o make "!" inf MFE working under Win95
 o make ss_getchar working under Win95
-o put only different commands to history
-o find history in odbedit
-o run progress in logger
 
-maximum number of connection exceeded in ODBEdit
 switch many channels on/off in SCFE
 switch all HVs off and start run -> scfe busy
 FTP to archive: disconnect when run paused
