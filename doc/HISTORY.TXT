@@ -1,6 +1,23 @@
 Revision History
 ================
 
+Version 1.8.1, released June 7, 2000
+------------------------------------
+
+- Set environment variable MIDAS_DIR as the default data directory in /logger/data dir
+
+- Added MIDAS_EXPTAB environmant variable to point to "exptab" directory
+
+- Added delete option in elog system
+
+- ODB directories can now be attached to elog messages
+
+- Added history graphics display in mhttpd
+
+- Added -E flag to mhttpd to work only as an elog server (w/o any MIDAS experiment)
+
+- Added WebPAW display. See http://midas.psi.ch/webpaw
+
 Version 1.8.0, released March 6, 2000
 -------------------------------------
 
