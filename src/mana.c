@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.37  1999/10/11 14:45:01  midas
+  Added note about becoming a daemon
+
   Revision 1.36  1999/10/11 14:40:04  midas
   Added -D flag (become daemon)
 
@@ -287,8 +290,7 @@ struct {
    &clp.no_load, TID_BOOL, 0 },
 
   {'D', 
-   "              If set, start analyzer as a daemon in the background\n\
-                   (UNIX only).",
+   "              Start analyzer as a daemon in the background (UNIX only).",
    &clp.daemon, TID_BOOL, 0 },
 
   { 0 }
@@ -3402,6 +3404,7 @@ INT status;
   /* now become a daemon */
   if (clp.daemon)
     {
+    printf("Becoming a daemon...\n");
     clp.quiet = TRUE;
     ss_daemon_init();
     }
