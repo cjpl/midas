@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus communication functions
 
   $Log$
+  Revision 1.89  2005/03/21 15:33:54  ritt
+  Added missing #includes
+
   Revision 1.88  2005/03/21 15:31:30  ritt
   Fixed compiler warnings
 
@@ -285,6 +288,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <sys/socket.h>
 #include <sys/types.h>
 #include <sys/ioctl.h>
 #include <sys/time.h>
