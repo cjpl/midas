@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.18  2001/08/02 11:45:47  midas
+  Added mail facility and author list
+
   Revision 1.17  2001/07/26 10:37:32  midas
   Removed "status" button on query result
 
@@ -117,6 +120,7 @@ typedef int INT;
 
 char return_buffer[WEB_BUFFER_SIZE];
 int  return_length;
+char host_name[256];
 char elogd_url[256];
 char loogbook[32];
 char logbook[32];
@@ -165,6 +169,9 @@ char category_list[50][NAME_LENGTH] = {
   "Other",
 };
 
+char author_list[50][NAME_LENGTH] = {
+  ""
+};
 
 struct {
   char ext[32];
@@ -273,6 +280,125 @@ unsigned int t, pad;
   *d = 0;
   while (pad--)
     *(--d) = '=';
+}
+
+/*-------------------------------------------------------------------*/
+
+INT recv_string(int sock, char *buffer, DWORD buffer_size, INT millisec)
+{
+INT            i;
+DWORD          n;
+fd_set         readfds;
+struct timeval timeout;
+
+  n = 0;
+  memset(buffer, 0, buffer_size);
+
+  do
+    {
+    if (millisec > 0)
+      {
+      FD_ZERO(&readfds);
+      FD_SET(sock, &readfds);
+
+      timeout.tv_sec  = millisec / 1000;
+      timeout.tv_usec = (millisec % 1000) * 1000;
+
+      select(FD_SETSIZE, (void *) &readfds, NULL, NULL, (void *) &timeout);
+
+      if (!FD_ISSET(sock, &readfds))
+        break;
+      }
+
+    i = recv(sock, buffer+n, 1, 0);
+
+    if (i<=0)
+      break;
+
+    n++;
+
+    if (n >= buffer_size)
+      break;
+
+    } while (buffer[n-1] && buffer[n-1] != 10);
+
+  return n-1;
+}
+
+
+INT sendmail(char *smtp_host, char *from, char *to, char *subject, char *text)
+{
+struct sockaddr_in   bind_addr;
+struct hostent       *phe;
+int                  s, status;
+char                 str[10000];
+time_t               now;
+
+  /* create a new socket for connecting to remote server */
+  s = socket(AF_INET, SOCK_STREAM, 0);
+  if (s == -1)
+    return -1;
+
+  /* connect to remote node port 25 */
+  memset(&bind_addr, 0, sizeof(bind_addr));
+  bind_addr.sin_family      = AF_INET;
+  bind_addr.sin_addr.s_addr = 0;
+  bind_addr.sin_port        = htons((short) 25);
+
+  phe = gethostbyname(smtp_host);
+  if (phe == NULL)
+    return -1;
+  memcpy((char *)&(bind_addr.sin_addr), phe->h_addr, phe->h_length);
+
+#ifdef OS_UNIX
+  do
+    {
+    status = connect(s, (void *) &bind_addr, sizeof(bind_addr));
+
+    /* don't return if an alarm signal was cought */
+    } while (status == -1 && errno == EINTR); 
+#else
+  status = connect(s, (void *) &bind_addr, sizeof(bind_addr));
+#endif  
+
+  if (status != 0)
+    {
+    closesocket(s);
+    return -1;
+    }
+
+  recv_string(s, str, sizeof(str), 3000);
+
+  sprintf(str, "MAIL FROM: <%s>\n", from);
+  send(s, str, strlen(str), 0);
+  recv_string(s, str, sizeof(str), 3000);
+
+  sprintf(str, "RCPT TO: <%s>\n", to);
+  send(s, str, strlen(str), 0);
+  recv_string(s, str, sizeof(str), 3000);
+
+  sprintf(str, "DATA\n");
+  send(s, str, strlen(str), 0);
+  recv_string(s, str, sizeof(str), 3000);
+
+  sprintf(str, "To: %s\nFrom: %s\nSubject: %s\n", to, from, subject);
+  send(s, str, strlen(str), 0);
+
+  time(&now);
+  sprintf(str, "Date: %s\n", ctime(&now));
+  send(s, str, strlen(str), 0);
+
+  sprintf(str, "%s\n.\n", text);
+  send(s, str, strlen(str), 0);
+  recv_string(s, str, sizeof(str), 3000);
+
+  sprintf(str, "QUIT\n");
+  send(s, str, strlen(str), 0);
+  recv_string(s, str, sizeof(str), 3000);
+
+  closesocket(s);
+  
+  return 1;
 }
 
 /*-------------------------------------------------------------------*/
@@ -1789,6 +1915,7 @@ int i;
       case '>': rsprintf("&gt;"); break;
       case '&': rsprintf("&amp;"); break;
       case '\"': rsprintf("&quot;"); break;
+      case ' ': rsprintf("&nbsp;"); break;
       default: rsprintf("%c", text[i]);
       }
     }
@@ -1817,18 +1944,10 @@ int i;
 
 /*------------------------------------------------------------------*/
 
-void el_format(char *text, char *encoding)
-{
-  if (equal_ustring(encoding, "HTML"))
-    rsputs(text);
-  else
-    strencode(text);
-}
-
 void show_elog_new(char *path, BOOL bedit)
 {
 int    i, size, run_number, wrap;
-char   str[256], ref[256], *p, list[1000];
+char   str[256], *p, list[1000];
 char   date[80], author[80], type[80], category[80], subject[256], text[TEXT_SIZE], 
        orig_tag[80], reply_tag[80], att[MAX_ATTACHMENTS][256], encoding[80];
 time_t now;
@@ -1846,6 +1965,9 @@ BOOL   allow_edit;
   for (i=0 ; i<MAX_ATTACHMENTS ; i++)
     att[i][0] = 0;
   subject[0] = 0;
+  author[0] = 0;
+  type[0] = 0;
+  category[0] = 0;
 
   if (path)
     {
@@ -1854,6 +1976,17 @@ BOOL   allow_edit;
     el_retrieve(str, date, &run_number, author, type, category, subject, 
                 text, &size, orig_tag, reply_tag, att, encoding);
     }
+  else
+    {
+    strcpy(author, getparam("pauthor"));
+    strcpy(type, getparam("ptype"));
+    strcpy(category , getparam("pcategory"));
+    strcpy(subject, getparam("psubject"));
+    }
+
+  /* remove author for replies */
+  if (path && !bedit)
+    author[0] = 0;
 
   /* header */
   rsprintf("HTTP/1.0 200 Document follows\r\n");
@@ -1884,6 +2017,7 @@ BOOL   allow_edit;
   rsprintf("<tr><td colspan=2 bgcolor=#C0C0C0>\n");
 
   rsprintf("<input type=submit name=cmd value=Submit>\n");
+  rsprintf("<input type=submit name=cmd value=Back>\n");
   rsprintf("</tr>\n\n");
 
   /*---- entry form ----*/
@@ -1900,16 +2034,20 @@ BOOL   allow_edit;
     rsprintf("<tr><td colspan=2 bgcolor=#FFFF00>Entry date: %s", ctime(&now));
     }
 
-  if (bedit)
+  /* get optional author list from configuration file */
+  if (getcfg(logbook, "Authors", list))
     {
-    strcpy(str, author);
-    if (strchr(str, '@'))
-      *strchr(str, '@') = 0;
+    p = strtok(list, ",");
+    for (i=0 ; p ; i++)
+      {
+      strcpy(author_list[i], p);
+      p = strtok(NULL, ",");
+      if (!p)
+        break;
+      while (*p == ' ')
+        p++;
+      }
     }
-  else
-    str[0] = 0;
-
-  rsprintf("<tr><td bgcolor=#FFA0A0>Author: <input type=\"text\" size=\"15\" maxlength=\"80\" name=\"Author\" value=\"%s\">\n", str);
 
   /* get type list from configuration file */
   if (getcfg(logbook, "Types", list))
@@ -1941,10 +2079,35 @@ BOOL   allow_edit;
       }
     }
 
-  rsprintf("<td bgcolor=#FFA0A0>Type: <select name=\"type\">\n", ref);
+  if (bedit)
+    {
+    strcpy(str, author);
+    if (strchr(str, '@'))
+      *strchr(str, '@') = 0;
+
+    rsprintf("<tr><td bgcolor=#FFA0A0>Author: <input type=\"text\" size=\"15\" maxlength=\"80\" name=\"Author\" value=\"%s\">\n", str);
+    }
+  else
+    {
+    strcpy(str, author);
+    if (author_list[0][0] == 0)
+      rsprintf("<tr><td bgcolor=#FFA0A0>Author: <input type=\"text\" size=\"15\" maxlength=\"80\" name=\"Author\" value=\"%s\">\n", str);
+    else
+      {
+      rsprintf("<tr><td bgcolor=#FFA0A0>Author: <select name=\"author\">\n");
+      for (i=0 ; i<20 && author_list[i][0] ; i++)
+        if (equal_ustring(author_list[i], author))
+          rsprintf("<option selected value=\"%s\">%s\n", author_list[i], author_list[i]);
+        else
+          rsprintf("<option value=\"%s\">%s\n", author_list[i], author_list[i]);
+      rsprintf("</select></tr>\n");
+      }
+    }
+
+  rsprintf("<td bgcolor=#FFA0A0>Type: <select name=\"type\">\n");
   for (i=0 ; i<20 && type_list[i][0] ; i++)
     if ((path && !bedit && equal_ustring(type_list[i], "reply")) ||
-        (bedit && equal_ustring(type_list[i], type)))
+        (equal_ustring(type_list[i], type)))
       rsprintf("<option selected value=\"%s\">%s\n", type_list[i], type_list[i]);
     else
       rsprintf("<option value=\"%s\">%s\n", type_list[i], type_list[i]);
@@ -1952,7 +2115,7 @@ BOOL   allow_edit;
 
   rsprintf("<tr><td bgcolor=#A0FFA0>Category: <select name=\"category\">\n");
   for (i=0 ; i<20 && category_list[i][0] ; i++)
-    if (path && equal_ustring(category_list[i], category))
+    if (equal_ustring(category_list[i], category))
       rsprintf("<option selected value=\"%s\">%s\n", category_list[i], category_list[i]);
     else
       rsprintf("<option value=\"%s\">%s\n", category_list[i], category_list[i]);
@@ -2075,6 +2238,7 @@ char   *p, list[1000];
 
   rsprintf("<input type=submit name=cmd value=\"Submit Query\">\n");
   rsprintf("<input type=reset value=\"Reset Form\">\n");
+  rsprintf("<input type=submit name=cmd value=Back>\n");
   rsprintf("</tr>\n\n");
 
   /*---- entry form ----*/
@@ -2257,7 +2421,7 @@ BOOL   allow_delete;
 
 void show_elog_submit_query(INT past_n, INT last_n)
 {
-int    i, size, run, status, m1, d2, m2, y2, index, colspan, current_year, fh;
+int    i, size, run, status, m1, d2, m2, y2, index, colspan, current_year, fh, i_line, n_line;
 char   date[80], author[80], type[80], category[80], subject[256], text[TEXT_SIZE], 
        orig_tag[80], reply_tag[80], attachment[MAX_ATTACHMENTS][256], encoding[80];
 char   str[256], str2[10000], tag[256], ref[80], file_name[256];
@@ -2304,7 +2468,7 @@ FILE   *f;
     rsprintf("<tr><td colspan=6 bgcolor=#C0C0C0>\n");
 
     rsprintf("<input type=submit name=cmd value=\"Query\">\n");
-    rsprintf("<input type=submit name=cmd value=\"ELog\">\n");
+    rsprintf("<input type=submit name=cmd value=\"Back\">\n");
     rsprintf("</tr>\n\n");
     }
 
@@ -2583,9 +2747,6 @@ FILE   *f;
         *strchr(str, '+') = 0;
       sprintf(ref, "%s%s/%s", elogd_url, logbook_enc, str);
 
-      strncpy(str, text, 80);
-      str[80] = 0;
-
       if (full)
         {
         rsprintf("<tr><td><a href=\"%s\">%s</a><td>%s<td>%s<td>%s<td>%s</tr>\n", ref, date, author, type, category, subject);
@@ -2678,12 +2839,31 @@ FILE   *f;
         }
       else
         {
-        rsprintf("<tr><td>%s<td>%s<td>%s<td>%s<td>%s\n", date, author, type, category, subject);
-        rsprintf("<td><a href=\"%s\">", ref);
+        rsprintf("<tr><td><a href=\"%s\">%s</a><td>%s<td>%s<td>%s<td>%s</tr>\n", ref, date, author, type, category, subject);
+        rsprintf("<td>");
       
-        el_format(str, encoding);
+        /* get first 100 charactes, cut at end of line */
+        n_line = 3;
+        if (getcfg(logbook, "Summary lines", str))
+          n_line = atoi(str);
+
+        for (i=i_line=0 ; i<sizeof(str)-1 ; i++)
+          {
+          str[i] = text[i];
+          if (str[i] == '\n')
+            i_line++;
+
+          if (i_line == n_line)
+            break;
+          }
+        str[i] = 0;
+
+        if (equal_ustring(encoding, "HTML"))
+          rsputs(str);
+        else
+          strencode(str);
       
-        rsprintf("</a></tr>\n");
+        rsprintf("</tr>\n");
         }
       }
 
@@ -2753,10 +2933,11 @@ char   file_name[256], line[1000];
 
 void submit_elog()
 {
-char   str[80], author[256];
-char   *buffer[MAX_ATTACHMENTS];
+char   str[80], author[256], mail_to[256], mail_from[256],
+       mail_text[256], mail_list[256], smtp_host[256], tag[80], *p;
+char   *buffer[MAX_ATTACHMENTS], mail_param[1000];
 char   att_file[MAX_ATTACHMENTS][256];
-int    i;
+int    i, n_mail;
 struct hostent *phe;
 
   /* check for author */
@@ -2807,9 +2988,9 @@ struct hostent *phe;
   strcat(author, "@");
   strcat(author, str);
 
-  str[0] = 0;
+  tag[0] = 0;
   if (*getparam("edit"))
-    strcpy(str, getparam("orig"));
+    strcpy(tag, getparam("orig"));
 
   el_submit(atoi(getparam("run")), author, getparam("type"),
             getparam("category"), getparam("subject"), getparam("text"), 
@@ -2817,7 +2998,85 @@ struct hostent *phe;
             att_file, 
             _attachment_buffer, 
             _attachment_size, 
-            str, sizeof(str));
+            tag, sizeof(tag));
+
+  /* check for mail submissions */
+  mail_param[0] = 0;
+  n_mail = 0;
+
+  sprintf(str, "Email %s", getparam("type"));
+  if (getcfg(logbook, str, mail_list) ||
+      getcfg(logbook, "Email All", mail_list))
+    {
+    if (!getcfg(logbook, "SMTP host", smtp_host))
+      if (!getcfg(logbook, "SMTP host", smtp_host))
+        {
+        show_error("No SMTP host defined in configuration file");
+        return;
+        }
+    
+    p = strtok(mail_list, ",");
+    for (i=0 ; p ; i++)
+      {
+      strcpy(mail_to, p);
+      sprintf(mail_from, "ELog@%s", host_name);
+
+      sprintf(mail_text, "A new entry has been submitted by %s:\n\n", author);
+      sprintf(mail_text+strlen(mail_text), "Logbook : %s\n", logbook);
+      sprintf(mail_text+strlen(mail_text), "Subject : %s\n", getparam("subject"));
+      sprintf(mail_text+strlen(mail_text), "Link    : %s%s/%s\n", elogd_url, logbook_enc, tag);
+
+      sendmail(smtp_host, mail_from, mail_to, getparam("type"), mail_text);
+
+      if (mail_param[0] == 0)
+        strcpy(mail_param, "?");
+      else
+        strcat(mail_param, "&");
+      sprintf(mail_param+strlen(mail_param), "mail%d=%s", n_mail++, mail_to);
+
+      p = strtok(NULL, ",");
+      if (!p)
+        break;
+      while (*p == ' ')
+        p++;
+      }
+    }
+
+  sprintf(str, "Email %s", getparam("category"));
+  if (getcfg(logbook, str, mail_list))
+    {
+    if (!getcfg(logbook, "SMTP host", smtp_host))
+      if (!getcfg(logbook, "SMTP host", smtp_host))
+        {
+        show_error("No SMTP host defined in configuration file");
+        return;
+        }
+    
+    p = strtok(mail_list, ",");
+    for (i=0 ; p ; i++)
+      {
+      strcpy(mail_to, p);
+      sprintf(mail_from, "ELog logbook %s", logbook);
+
+      sprintf(mail_text, "A new entry has been submitted by %s:\n\n", author);
+      sprintf(mail_text+strlen(mail_text), "Subject: %s\n", getparam("subject"));
+      sprintf(mail_text+strlen(mail_text), "Link:    %s%s/%s\n", elogd_url, logbook_enc, tag);
+
+      sendmail(smtp_host, mail_from, mail_to, getparam("category"), mail_text);
+
+      if (mail_param[0] == 0)
+        strcpy(mail_param, "?");
+      else
+        strcat(mail_param, "&");
+      sprintf(mail_param+strlen(mail_param), "mail%d=%s", n_mail++, mail_to);
+
+      p = strtok(NULL, ",");
+      if (!p)
+        break;
+      while (*p == ' ')
+        p++;
+      }
+    }
 
   for (i=0 ; i<MAX_ATTACHMENTS ; i++)
     if (buffer[i])
@@ -2826,7 +3085,8 @@ struct hostent *phe;
   rsprintf("HTTP/1.0 302 Found\r\n");
   rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
 
-  rsprintf("Location: %s%s/%s\n\n<html>redir</html>\r\n", elogd_url, logbook_enc, str);
+  rsprintf("Location: %s%s/%s%s\n\n<html>redir</html>\r\n", 
+            elogd_url, logbook_enc, tag, mail_param);
 }
 
 /*------------------------------------------------------------------*/
@@ -3138,6 +3398,22 @@ BOOL  allow_delete, allow_edit;
 
     if (first_message)
       rsprintf("<tr><td bgcolor=#FF0000 colspan=2 align=center><b>This is the first message in the ELog</b></tr>\n");
+
+    /* check for mail submissions */
+    for (i=0 ; ; i++)
+      {
+      sprintf(str, "mail%d", i);
+      if (*getparam(str))
+        {
+        if (i==0)
+          rsprintf("<tr><td colspan=2 bgcolor=#FFC020>");
+        rsprintf("Mail sent to <b>%s</b><br>\n", getparam(str));
+        }
+      else
+        break;
+      }
+    if (i>0)
+      rsprintf("</tr>\n");
 
     rsprintf("<tr><td colspan=2 bgcolor=#FFFF00>Entry date: <b>%s</b></tr>\n\n", date);
 
@@ -3648,7 +3924,7 @@ void server_loop(int tcp_port, int daemon)
 {
 int                  status, i, n_error, authorized;
 struct sockaddr_in   bind_addr, acc_addr;
-char                 host_name[256], pwd[256], str[256], cl_pwd[256], *p;
+char                 pwd[256], str[256], cl_pwd[256], *p;
 char                 cookie_wpwd[256], boundary[256];
 int                  lsock, len, flag, content_length, header_length;
 struct hostent       *phe;
