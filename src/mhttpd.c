@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.180  2001/12/13 18:08:41  pierre
+  fix Edit run number var
+
   Revision 1.179  2001/12/13 08:39:02  midas
   Added "/Experiment/Edit on start/Edit run number"
 
@@ -5358,7 +5361,7 @@ char  str[256];
 
 void show_start_page(void)
 {
-int   i, j, n, size, status;
+int   rn, i, j, n, size, status;
 HNDLE hDB, hkey, hsubkey, hkeycomm, hkeyc;
 KEY   key;
 char  data[1000], str[32];
@@ -5372,16 +5375,16 @@ char  data_str[256], comment[1000];
   rsprintf("<tr><td>Run number");
 
   /* run number */
-  size = sizeof(i);
-  db_get_value(hDB, 0, "/Runinfo/Run number", &i, &size, TID_INT);
+  size = sizeof(rn);
+  db_get_value(hDB, 0, "/Runinfo/Run number", &rn, &size, TID_INT);
 
   size = sizeof(i);
   if (db_find_key(hDB, 0, "/Experiment/Edit on start/Edit Run number", &hkey) &&
       db_get_data(hDB, hkey, &i, &size, TID_BOOL) &&
       i == 0)
-    rsprintf("<td><input type=hidden name=value value=%d>%d</tr>\n", i+1, i+1);
+    rsprintf("<td><input type=hidden name=value value=%d>%d</tr>\n", rn+1, rn+1);
   else
-    rsprintf("<td><input type=text size=20 maxlength=80 name=value value=%d></tr>\n", i+1);
+    rsprintf("<td><input type=text size=20 maxlength=80 name=value value=%d></tr>\n", rn+1);
 
   /* run parameters */
   db_find_key(hDB, 0, "/Experiment/Edit on start", &hkey);
