@@ -6,6 +6,9 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.93  2004/09/15 23:54:12  midas
+  Manage quotation marks correctly in db_save_string
+
   Revision 1.92  2004/09/15 23:40:19  midas
   Fixed compiler warning
 
@@ -6188,8 +6191,11 @@ INT db_save_string(HNDLE hDB, HNDLE hKey, char *file_name, char *string_name, BO
    do {
       i = 0;
       line[i++] = '"';
-      while (*pc != '\n' && *pc != 0)
+      while (*pc != '\n' && *pc != 0) {
+         if (*pc == '\"' || *pc == '\'')
+            line[i++] = '\\';
          line[i++] = *pc++;
+      }
       strcpy(&line[i], "\",\\\n");
       if (i > 0)
          write(fh, line, strlen(line));
