@@ -7,6 +7,9 @@
                 linked with user code to form a complete frontend
 
   $Log$
+  Revision 1.48  2003/03/31 08:27:34  midas
+  Fixed alignment bug for strings
+
   Revision 1.47  2003/03/28 09:13:05  midas
   Added warning for uncreated structured banks
 
@@ -757,7 +760,8 @@ KEY               key;
           db_get_key(hDB, hKey, &key);
 
           /* adjust for alignment */
-          pdata = (void *) VALIGN(pdata, min(ss_get_struct_align(),key.item_size));
+          if (key.type != TID_STRING && key.type != TID_LINK)
+            pdata = (void *) VALIGN(pdata, min(ss_get_struct_align(), key.item_size));
 
           status = db_set_data(hDB, hKey, pdata, key.item_size*key.num_values, 
                                key.num_values, key.type);
