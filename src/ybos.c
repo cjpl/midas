@@ -6,6 +6,9 @@
  *         amaudruz@triumf.ca                            Local:           6234
  * ---------------------------------------------------------------------------
    $Log$
+   Revision 1.50  2003/04/16 05:45:21  pierre
+   fix EOD return , add -DLARGEFILE64_SOURCE support
+
    Revision 1.49  2003/04/15 22:24:56  pierre
    fix for compilation with -Wall
 
@@ -1143,7 +1146,11 @@ error, success
       CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_WRITE_THROUGH | 
       FILE_FLAG_SEQUENTIAL_SCAN, 0);
 #else
+#ifdef _LARGEFILE64_SOURCE
+    *handle = open(path, O_WRONLY | O_CREAT | O_TRUNC | O_BINARY | O_LARGEFILE , 0644);
+#else
     *handle = open(path, O_WRONLY | O_CREAT | O_TRUNC | O_BINARY, 0644);
+#endif
 #endif
     if (*handle < 0)
        return SS_FILE_ERROR;
@@ -1428,12 +1435,21 @@ Function value:
 error, success
 \********************************************************************/
 {
-  
+  INT status;
   /* Write EOF if Tape */
   if (type == LOG_TYPE_TAPE)
   {
     /* writing EOF mark on tape only */
-    ss_tape_write_eof(handle);
+    status = ss_tape_write_eof(handle);
+    if (status != SS_SUCCESS)
+      {
+      if (errno == EIO)
+	return SS_IO_ERROR;
+      if (errno ==  ENOSPC)
+	return SS_NO_SPACE; 
+      else
+	return status;
+      }
     
     /*-PAA- Done by odb>rewind if enable with "extra eof before rewind"
     ss_tape_write_eof(handle);
@@ -1587,7 +1603,11 @@ status : from lower function
     {
       status = ss_tape_open(my.name, O_RDONLY | O_BINARY, &my.handle);
     }
+#ifdef _LARGEFILE64_SOURCE
+    else if ((my.handle = open(my.name, O_RDONLY | O_BINARY | O_LARGEFILE, 0644 )) == -1 )
+#else
     else if ((my.handle = open(my.name, O_RDONLY | O_BINARY, 0644 )) == -1 )
+#endif
     {
       printf("dev name :%s Handle:%d \n",my.name, my.handle);
       return(SS_FILE_ERROR);
@@ -1854,11 +1874,13 @@ Function value:
 status : from lower function
 *******************************************************************/
 {
+  INT status;
+  status = SS_SUCCESS;
   switch (type)
   {
   case LOG_TYPE_TAPE:
     /* writing EOF mark on tape Fonly */
-    ss_tape_write_eof(handle);
+    status=ss_tape_write_eof(handle);
     ss_tape_close(handle);
     break;
   case LOG_TYPE_DISK:
@@ -1877,6 +1899,8 @@ status : from lower function
 #endif
     break;
   }
+  if(status != SS_SUCCESS)
+    return status;
   return(YB_SUCCESS);
 }
 
@@ -1984,6 +2008,8 @@ SS_SUCCESS         Ok
       cm_msg(MERROR, "any_dev_os_write", strerror(errno));
       if (errno == EIO)
         return SS_IO_ERROR;
+      if (errno ==  ENOSPC)
+	return SS_NO_SPACE;
       else
         return SS_TAPE_ERROR;
     }
@@ -3531,7 +3557,7 @@ none
       }
       if (dsp_fmt == DSP_DEC || (dsp_fmt == DSP_UNK)) printf("%8.1li ",*((DWORD *)pdata));
       if (dsp_fmt == DSP_HEX) printf("0x%8.8lx ",*((DWORD *)pdata));
-      pdata = (char *)((DWORD *)pdata +1);
+      pdata = (char *)(((DWORD *)pdata) +1);
       j++;
       break;
     case TID_WORD :
