@@ -6,6 +6,9 @@
 #  Contents:     Makefile for MIDAS binaries and examples under unix
 #
 #  $Log$
+#  Revision 1.27  2000/12/01 09:26:44  midas
+#  Added fal.o (again?)
+#
 #  Revision 1.26  2000/11/20 13:42:39  midas
 #  Install mcleanup
 #
@@ -259,7 +262,7 @@ VPATH = $(LIB_DIR):$(INC_DIR)
 all:    $(OS_DIR) $(LIB_DIR) $(BIN_DIR) \
 	$(LIBNAME) $(SHLIB) \
 	$(LIB_DIR)/mana.o $(LIB_DIR)/pmana.o $(LIB_DIR)/mfe.o \
-	$(PROGS)
+	$(LIB_DIR)/fal.o $(PROGS)
 
 examples: $(EXAMPLES)
 
@@ -346,6 +349,7 @@ $(LIB_DIR)/ftplib.o: msystem.h midas.h midasinc.h
 
 $(LIB_DIR)/mfe.o: msystem.h midas.h midasinc.h mrpc.h
 $(LIB_DIR)/mana.o: $(SRC_DIR)/mana.c msystem.h midas.h midasinc.h mrpc.h
+$(LIB_DIR)/fal.o: $(SRC_DIR)/fal.c msystem.h midas.h midasinc.h mrpc.h
 	$(CC) -Dextname -c $(CFLAGS) $(OSFLAGS) -o $@ $<
 
 $(LIB_DIR)/pmana.o: $(SRC_DIR)/mana.c msystem.h midas.h midasinc.h mrpc.h
@@ -441,7 +445,7 @@ install:
           mkdir -p $(SYSLIB_DIR); \
         fi;
 
-	@for i in libmidas.so libmidas.a mana.o pmana.o mfe.o ; \
+	@for i in libmidas.so libmidas.a mana.o pmana.o mfe.o fal.o ; \
 	  do \
 	  echo $$i ; \
 	  rm -f $(SYSLIB_DIR)/$$i ;\
