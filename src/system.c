@@ -14,6 +14,9 @@
                 Brown, Prentice Hall
 
   $Log$
+  Revision 1.84  2004/12/14 08:01:50  olchansk
+  in ss_shm_open(), fail and return SS_NO_MEMORY when mapping a file with size smaller than requested size
+
   Revision 1.83  2004/10/04 07:04:01  olchansk
   improve error reporting while manipulating SysV shared memory
 
@@ -544,8 +547,14 @@ INT ss_shm_open(char *name, INT size, void **adr, HNDLE * handle)
       } else {
          /* if file exists, retrieve its size */
          file_size = (INT) ss_file_size(file_name);
-         if (file_size > 0)
+         if (file_size > 0) {
+            if (file_size < size) {
+               cm_msg(MERROR, "ss_shm_open", "Shared memory segment \'%s\' size %d is smaller than requested size %d. Please remove it and try again",file_name,file_size,size);
+               return SS_NO_MEMORY;
+            }
+            
             size = file_size;
+         }
       }
 
       /* get the shared memory, create if not existing */
