@@ -7,6 +7,9 @@
                 following the MIDAS CAMAC Standard for DirectIO
 
   $Log$
+  Revision 1.4  2001/04/20 21:56:51  pierre
+  - Zeroed upper byte in 24i, sa, rq
+
   Revision 1.3  2000/09/26 07:10:50  midas
   Added DO_IOPERM for debugging as root
 
@@ -241,6 +244,7 @@ INLINE void cam24i_q(const int c, const int n, const int a, const int f,
   while(!(INPW(CSR)&DONE));
   *((unsigned short *)d)  =INPW(DLR);
   *((unsigned char *)d+2) =INP(DHR);
+  *d &= 0x00ffffff;
   *q=(((INPW(CSR)>>1)&1)^1);
   *x=(((INPW(CSR)>>2)&1)^1);
 }
@@ -282,6 +286,7 @@ INLINE void cam24i_r(const int c, const int n, const int a, const int f,
     while(!(INPW(CSR)&DONE));
     *((unsigned short *)(*d))  =INPW(DLR);
     *(((unsigned char *) *d)+2) = INP(DHR);
+    **(d) &= 0x00ffffff;
     (*d)++;
   }
 }
@@ -298,8 +303,8 @@ int i, x, q;
     cam16i_q(c, n, a, f, (*d)++, &x, &q);
     if (!q)
       {
-	      (*d)--;
-	      break;
+	(*d)--;
+        break;
       }
     }
 }
@@ -316,8 +321,8 @@ int i, x, q;
     cam24i_q(c, n, a, f, (*d)++, &x, &q);
     if (!q)
       {
-	      (*d)--;
-	      break;
+	(*d)--;
+	break;
       }
     }
 }
@@ -362,6 +367,7 @@ INLINE void cam24i_sa(const int c, const int n, const int a, const int f,
     while(!(INPW(CSR)&DONE));
     *((unsigned short *)(*d))  =INPW(DLR);
     *(((unsigned char *) *d)+2) = INP(DHR);
+    **(d) &= 0x00ffffff;
     aa++;
     (*d)++;
   }
