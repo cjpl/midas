@@ -7,6 +7,9 @@
                 Most routines are from mfe.c mana.c and mlogger.c.
 
   $Log$
+  Revision 1.32  2003/02/20 13:10:45  midas
+  Fixed wrong channel records
+
   Revision 1.31  2002/09/17 22:12:25  pierre
   add arg to cm_cleanup
 
@@ -191,27 +194,7 @@ extern int QUEST[100];
 
 /*---- ODB records -------------------------------------------------*/
 
-char *channel_str = "\
-[Settings]\n\
-Active = BOOL : 1\n\
-Type = STRING : [8] Disk\n\
-Filename = STRING : [256] run%05d.mid\n\
-Format = STRING : [8] MIDAS\n\
-ODB Dump = BOOL : 1\n\
-Log messages = DWORD : 0\n\
-Buffer = STRING : [32] SYSTEM\n\
-Event ID = INT : -1\n\
-Trigger Mask = INT : -1\n\
-Event limit = DWORD : 0\n\
-Byte limit = DOUBLE : 0\n\
-Tape capacity = DOUBLE : 0\n\
-\n\
-[Statistics]\n\
-Events written = DOUBLE : 0\n\
-Bytes written = DOUBLE : 0\n\
-Bytes written total = DOUBLE : 0\n\
-Files written = INT : 0\n\
-";
+CHN_SETTINGS_STR(chn_settings_str);
 
 #define EQUIPMENT_COMMON_STR "\
 Event ID = WORD : 0\n\
@@ -361,7 +344,7 @@ char  str[256];
   if (status != DB_SUCCESS)
     {
     /* if no channels are defined, define at least one */
-    status = db_create_record(hDB, 0, "/Logger/Channels/0", channel_str);
+    status = db_create_record(hDB, 0, "/Logger/Channels/0", strcomb(chn_settings_str));
     if (status != DB_SUCCESS)
       cm_msg(MERROR, "logger_init", "Cannot create channel entry in database");
     }
@@ -2211,7 +2194,7 @@ BOOL         write_data, tape_flag = FALSE;
   if (status != DB_SUCCESS)
     {
     /* if no channels are defined, define at least one */
-    status = db_create_record(hDB, 0, "/Logger/Channels/0/", channel_str);
+    status = db_create_record(hDB, 0, "/Logger/Channels/0/", strcomb(chn_settings_str));
     if (status != DB_SUCCESS)
       {
       strcpy(error, "Cannot create channel entry in database");
@@ -2236,7 +2219,7 @@ BOOL         write_data, tape_flag = FALSE;
 
     /* correct channel record */
     db_get_key(hDB, hKeyChannel, &key);
-    status = db_create_record(hDB, hKeyRoot, key.name, channel_str);
+    status = db_create_record(hDB, hKeyRoot, key.name, strcomb(chn_settings_str));
     if (status != DB_SUCCESS && status != DB_OPEN_RECORD)
       {
       cm_msg(MERROR, "tr_prestart", "Cannot create channel record");
