@@ -6,8 +6,8 @@
   Contents:     LeCroy WavePro 950 Digital Storage Oscilloscope driver
 
   $Log$
-  Revision 1.2  2004/01/08 08:40:08  midas
-  Implemented standard indentation
+  Revision 1.3  2004/07/16 08:20:18  schneebeli
+  Added timeout to scope_wait()
 
   Revision 1.1  2002/01/14 16:49:53  midas
   Initial revisioin
@@ -19,6 +19,7 @@
 #include <stdio.h>
 #include <windows.h>
 #include <math.h>
+#include <midas.h>
 
 #include "lcwp950.h"
 
@@ -239,13 +240,22 @@ void scope_arm()
 
 /*-------------------------------------------------------------------*/
 
-void scope_wait(int fh)
+int scope_wait(int fh, unsigned int timeout)
 {
    char str[256];
+   unsigned int start;
+
+   start = ss_millitime();
 
    do {
       scope_send(scope_chn[fh].sock, str, "INR?");
+
+      if (ss_millitime() - start > timeout)
+         return FALSE;
+
    } while ((atoi(str) & 1) == 0);
+
+   return TRUE;
 }
 
 /*-------------------------------------------------------------------*/
@@ -263,6 +273,7 @@ int scope_read(int fh, double x[SCOPE_MEM_SIZE], double y[SCOPE_MEM_SIZE])
    if (n > SCOPE_MEM_SIZE)
       n = SCOPE_MEM_SIZE;
 
+   /* try to understand error happening during data taking with wong fh */
    for (i = 0; i < n; i++) {
       x[i] = i * scope_chn[fh].horiz_interval + scope_chn[fh].horiz_offset;
       y[i] = scope_chn[fh].vertical_gain * buffer[i] - scope_chn[fh].vertical_offset;
