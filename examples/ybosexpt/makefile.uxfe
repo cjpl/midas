@@ -80,7 +80,7 @@ OS_DIR = linux
 OSFLAGS = -DOS_LINUX -DOS_UNIX
 CFLAGS  = -O3
 LDFLAGS = -DMODULE -D__KERNEL__
-LIBS = -lbsd
+LIBS = -lbsd -lutil
 endif
 
 #-----------------------
