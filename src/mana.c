@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.93  2003/04/25 13:29:23  midas
+  Added ss_force_single_thread()
+
   Revision 1.92  2003/04/25 11:53:22  midas
   Added ROOT histo server
 
@@ -334,6 +337,8 @@
 
 #ifdef HAVE_ROOT
 
+#undef abs
+
 #include <assert.h>
 #include <TApplication.h>
 #include <TKey.h>
@@ -346,6 +351,7 @@
 #include <TServerSocket.h>
 #include <TMessage.h>
 #include <TObjString.h>
+#include <TSystem.h>
 
 #ifdef OS_LINUX
 #include <TThread.h>
@@ -6034,9 +6040,24 @@ int rargc;
   /* start socket server */
   TThread *th1 = new TThread("root_server_loop", root_server_loop, NULL);
   th1->Run();
+
+  /* workaround for multi-threading with midas system calls */
+  ss_force_single_thread();
+
 #endif
 
 #endif
+#ifdef HAVE_HBOOK
+  /* convert .root names to .rz names */
+  if (strstr(out_info.last_histo_filename, ".root"))
+    strcpy(out_info.last_histo_filename, "last.rz");
+
+  if (strstr(out_info.histo_dump_filename, ".root"))
+    strcpy(out_info.histo_dump_filename, "his%05d.rz");
+
+  db_set_record(hDB, hkey, &out_info, size, 0);
+#endif
+
 
   /* load histos from last.xxx */
   if (clp.online)
