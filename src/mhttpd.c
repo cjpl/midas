@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.127  2000/05/16 12:13:42  midas
+  Use "Logbook" in elog mode everywhere
+
   Revision 1.126  2000/05/16 11:47:37  midas
   Change "experiment" to "logbook" in elog mode
 
@@ -1846,7 +1849,10 @@ BOOL   display_run_number;
   db_get_value(hDB, 0, "/Experiment/Name", str, &size, TID_STRING);
 
   rsprintf("<tr><th colspan=2 bgcolor=#A0A0FF>MIDAS Electronic Logbook");
-  rsprintf("<th colspan=2 bgcolor=#A0A0FF>Experiment \"%s\"</tr>\n", str);
+  if (elog_mode)
+    rsprintf("<th colspan=2 bgcolor=#A0A0FF>Logbook \"%s\"</tr>\n", str);
+  else
+    rsprintf("<th colspan=2 bgcolor=#A0A0FF>Experiment \"%s\"</tr>\n", str);
 
   /*---- menu buttons ----*/
 
@@ -2095,7 +2101,10 @@ FILE   *f;
     colspan--;
 
   rsprintf("<tr><th colspan=3 bgcolor=#A0A0FF>MIDAS Electronic Logbook");
-  rsprintf("<th colspan=%d bgcolor=#A0A0FF>Experiment \"%s\"</tr>\n", colspan, str);
+  if (elog_mode)
+    rsprintf("<th colspan=%d bgcolor=#A0A0FF>Logbook \"%s\"</tr>\n", colspan, str);
+  else
+    rsprintf("<th colspan=%d bgcolor=#A0A0FF>Experiment \"%s\"</tr>\n", colspan, str);
 
   /*---- menu buttons ----*/
 
@@ -2513,7 +2522,10 @@ HNDLE  hDB;
   db_get_value(hDB, 0, "/Experiment/Name", str, &size, TID_STRING);
 
   rsprintf("<tr><th bgcolor=#A0A0FF>MIDAS File Display");
-  rsprintf("<th bgcolor=#A0A0FF>Experiment \"%s\"</tr>\n", str);
+  if (elog_mode)
+    rsprintf("<th bgcolor=#A0A0FF>Logbook \"%s\"</tr>\n", str);
+  else
+    rsprintf("<th bgcolor=#A0A0FF>Experiment \"%s\"</tr>\n", str);
 
   /*---- menu buttons ----*/
 
@@ -3261,7 +3273,10 @@ BOOL  display_run_number, allow_delete;
   db_get_value(hDB, 0, "/Experiment/Name", str, &size, TID_STRING);
 
   rsprintf("<tr><th bgcolor=#A0A0FF>MIDAS Electronic Logbook");
-  rsprintf("<th bgcolor=#A0A0FF>Experiment \"%s\"</tr>\n", str);
+  if (elog_mode)
+    rsprintf("<th bgcolor=#A0A0FF>Logbook \"%s\"</tr>\n", str);
+  else
+    rsprintf("<th bgcolor=#A0A0FF>Experiment \"%s\"</tr>\n", str);
 
   /*---- menu buttons ----*/
 
