@@ -14,6 +14,9 @@
                 Brown, Prentice Hall
 
   $Log$
+  Revision 1.87  2004/12/23 09:38:55  midas
+  Fixed compiler warning
+
   Revision 1.86  2004/12/23 09:36:06  midas
   Implemented NaNs
 
@@ -5974,6 +5977,8 @@ double ss_nan()
 #ifdef OS_WINNT
 #include <float.h>
 #define isnan(x) _isnan(x)
+#elif defined(OS_LINUX)
+#include <math.h>
 #endif
 
 int ss_isnan(double x)
