@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.185  2003/04/16 19:34:42  pierre
+  mv stdio.h, ctype.h into midasinc.h
+
   Revision 1.184  2003/04/15 08:37:04  midas
   Removed error message in rpc_client_connect on broken connection, since this is normal if the frontend for example is restarted
 
@@ -576,8 +579,6 @@
 
 \********************************************************************/
 
-#include <stdio.h>
-#include <ctype.h>
 #include "midas.h"
 #include "msystem.h"
 
