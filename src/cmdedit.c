@@ -6,6 +6,9 @@
   Contents:     Command-line editor for ODBEdit
 
   $Log$
+  Revision 1.5  1998/10/29 14:52:17  midas
+  <tab> completion now also works if not at the end of the line
+
   Revision 1.4  1998/10/12 12:23:51  midas
   Added run state character in ODBEdit prompt
 
@@ -42,7 +45,7 @@ INT cmd_edit(char *prompt, char *cmd, INT (*dir)(char*), INT (*idle)())
 
 INT cmd_edit(char *prompt, char *cmd, INT (*dir)(char*), INT (*idle)())
 {
-char  line[LINE_LENGTH], *pc;
+char  line[LINE_LENGTH], rest[LINE_LENGTH], *pc;
 INT   i, j, k, c, hi;
 INT   status;
 DWORD last_time = 0;
@@ -59,10 +62,14 @@ BOOL  escape_flag = 0;
   printf(prompt);
   fflush(stdout);
 
-  i  = 0;
+  i = 0;
   hi = his_index;
   memset(line, 0, LINE_LENGTH);
   memset(history[hi], 0, LINE_LENGTH);
+  strcpy(line, cmd);
+  printf(line);
+  for (j=0 ; j<(int) strlen(line) ; j++)
+    printf("\b");
 
   do
     {
@@ -189,8 +196,9 @@ BOOL  escape_flag = 0;
         for (j=0 ; j<(INT) strlen(line) ; j++)
           printf("\b \b");
         memcpy(line, history[hi], 256);
-        printf(line);
         i = strlen(line);
+        for (j=0 ; j<i ; j++)
+          printf("%c", line[j]);
         }
       }
 
@@ -203,8 +211,9 @@ BOOL  escape_flag = 0;
         for (j=0 ; j<(INT) strlen(line) ; j++)
           printf("\b \b");
         memcpy(line, history[hi], 256);
-        printf(line);
         i = strlen(line);
+        for (j=0 ; j<i ; j++)
+          printf("%c", line[j]);
         }
       }
 
@@ -235,7 +244,9 @@ BOOL  escape_flag = 0;
           pc = strchr(line, '"');
         else
           {
-          pc = line + strlen(line) - 1;
+          pc = line + i - 1;
+          strcpy(rest, line+i);
+          line[i] = 0;
           while (pc > line && *pc != ' ')
             pc--;
           }
@@ -243,11 +254,10 @@ BOOL  escape_flag = 0;
           pc++;
 
         status = dir(pc);
+        if (status)
+          i = strlen(line);
+        strcat(pc, rest);
         }
-
-      if (status)
-        /* line extended */
-        i = strlen(line);
 
       /* redraw line */
       printf("\r%s%s", prompt, line);
