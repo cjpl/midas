@@ -5,7 +5,7 @@
 
   Contents:     Command-line interface to the MIDAS online data base.
 
-  $LOG$
+  $LOG: odbedit.c,v $
 
 \********************************************************************/
 
