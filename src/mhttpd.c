@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.236  2002/10/19 06:36:56  midas
+  Fixed problem with Mozilla 0.99
+
   Revision 1.235  2002/10/18 07:48:45  midas
   Fixed time consuming display of runlog.txt
 
@@ -10057,20 +10060,24 @@ int  n;
 
         /* evaluate file attachment */
         if (strstr(pitem, "filename="))
-          p = strstr(pitem, "filename=")+9;
-        if (*p == '\"')
-          p++;
-        if (strstr(p, "\r\n\r\n"))
-          string = strstr(p, "\r\n\r\n")+4;
-        else if (strstr(p, "\r\r\n\r\r\n"))
-          string = strstr(p, "\r\r\n\r\r\n")+6;
-        if (strchr(p, '\"'))
-          *strchr(p, '\"') = 0;
+          {
+            p = strstr(pitem, "filename=")+9;
+          if (*p == '\"')
+            p++;
+          if (strstr(p, "\r\n\r\n"))
+            string = strstr(p, "\r\n\r\n")+4;
+          else if (strstr(p, "\r\r\n\r\r\n"))
+            string = strstr(p, "\r\r\n\r\r\n")+6;
+          if (strchr(p, '\"'))
+            *strchr(p, '\"') = 0;
 
-        /* set attachment filename */
-        strcpy(file_name, p);
-        sprintf(str, "attachment%d", n);
-        setparam(str, file_name);
+          /* set attachment filename */
+          strcpy(file_name, p);
+          sprintf(str, "attachment%d", n);
+          setparam(str, file_name);
+          }
+        else
+          file_name[0] = 0;
 
         /* find next boundary */
         ptmp = string;
