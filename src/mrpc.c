@@ -6,6 +6,9 @@
   Contents:     List of MIDAS RPC functions with parameters
 
   $Log$
+  Revision 1.6  1999/02/11 13:16:15  midas
+  Added cm_msg for remote Java
+
   Revision 1.5  1999/02/09 14:38:35  midas
   Added debug logging facility
 
@@ -55,6 +58,14 @@ static RPC_LIST rpc_list_library[] = {
      {TID_STRING,     RPC_IN},
      {TID_INT,        RPC_OUT}, 
      {TID_INT,        RPC_OUT}, 
+     {0} }},
+
+  { RPC_CM_MSG, "cm_msg",
+    {{TID_INT,        RPC_IN},
+     {TID_STRING,     RPC_IN},
+     {TID_INT,        RPC_IN},
+     {TID_STRING,     RPC_IN},
+     {TID_STRING,     RPC_IN},
      {0} }},
 
   { RPC_CM_MSG_LOG, "cm_msg_log",
