@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus communication functions
 
   $Log$
+  Revision 1.79  2004/12/22 16:02:15  midas
+  Implemented verify for upload
+
   Revision 1.78  2004/12/10 11:21:30  midas
   Added block functions
 
@@ -241,7 +244,7 @@
 
 \********************************************************************/
 
-#define MSCB_LIBRARY_VERSION   "1.7.8"
+#define MSCB_LIBRARY_VERSION   "1.7.9"
 #define MSCB_PROTOCOL_VERSION  "1.7"
 
 #ifdef _MSC_VER                 // Windows includes
@@ -824,8 +827,12 @@ int mscb_out(int index, unsigned char *buffer, int len, int flags)
     int  index              index to file descriptor table
     char *buffer            data buffer
     int  len                number of bytes in buffer
-    int  bit9               set bit9 in communication, used for
-                            node addressing
+    int  flags              bit combination of:
+                              RS485_FLAG_BIT9      node arressing
+                              RS485_FLAG_NO_ACK    no acknowledge
+                              RS485_FLAG_SHORT_TO  short/
+                              RS485_FLAG_LONG_TO     long timeout
+                              RS485_FLAG_CMD       direct subm_250 command
 
   Function value:
     MSCB_SUCCESS            Successful completion
@@ -869,7 +876,7 @@ int mscb_out(int index, unsigned char *buffer, int len, int flags)
 
    } else {
 
-   /*---- LPT code ----*/
+      /*---- LPT code ----*/
 
       /* remove accidental strobe */
       pp_wcontrol(index, LPT_STROBE, 0);
@@ -1736,7 +1743,8 @@ int mscb_init(char *device, int bufsize, int debug)
 
       /* linux needs some time to start-up ...??? */
       for (i = 0; i < 10; i++) {
-         mscb_lock(index + 1);
+         if (!mscb_lock(index + 1))
+            return -6;
 
          /* check if submaster alive */
          buf[0] = MCMD_ECHO;
@@ -2673,8 +2681,8 @@ int mscb_flash(int fd, int adr)
 
 \********************************************************************/
 {
-   int i, status;
-   unsigned char buf[10], crc, ack[2];
+   int status;
+   unsigned char buf[10], crc;
 
    if (fd > MSCB_MAX_FD || fd < 1 || !mscb_fd[fd - 1].type)
       return MSCB_INVAL_PARAM;
@@ -2694,24 +2702,16 @@ int mscb_flash(int fd, int adr)
    buf[0] = MCMD_FLASH;
    crc = crc8(buf, 1);
    buf[1] = crc;
-   mscb_out(fd, buf, 2, RS485_FLAG_LONG_TO);
+   mscb_out(fd, buf, 2, RS485_FLAG_NO_ACK);
 
-   /* read acknowledge, 100ms timeout */
-   i = mscb_in(fd, ack, 2, 100000);
    mscb_release(fd);
-
-   if (i < 2)
-      return MSCB_TIMEOUT;
-
-   if (ack[0] != MCMD_ACK || ack[1] != crc)
-      return MSCB_CRC_ERROR;
 
    return MSCB_SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
 
-int mscb_upload(int fd, int adr, char *buffer, int size, int debug)
+int mscb_upload(int fd, int adr, char *buffer, int size, int debug, int verify)
 /********************************************************************\
 
   Routine: mscb_upload
@@ -2722,8 +2722,10 @@ int mscb_upload(int fd, int adr, char *buffer, int size, int debug)
   Input:
     int fd                  File descriptor for connection
     int adr                 Node address
-    char *filename          File name for Intel HEX file
-    int debug               If true, produce detailed debugging output
+    char *buffer            Buffer with Intel HEX file
+    int size                Size of buffer
+    int debug               If TRUE, produce detailed debugging output
+    int verify              If TRUE, only verify remote program
 
   Function value:
     MSCB_SUCCESS            Successful completion
@@ -2820,15 +2822,24 @@ int mscb_upload(int fd, int adr, char *buffer, int size, int debug)
 
    /* program pages up to 64k */
    for (page = 0; page < 128; page++) {
+      
       /* check if page contains data */
       for (i = 0; i < 512; i++)
          if (image[page * 512 + i] != 0xFF)
             break;
+      if (i == 512)
+         continue;
 
       retry = 0;
 
-      if (i < 512) {
-         do {
+      do {
+
+         /* build CRC of page */
+         for (i = crc = 0; i < 512; i++)
+            crc += image[page * 512 + i];
+
+         if (!verify) {
+
             if (debug)
                printf("Erase page   0x%04X - ", page * 512);
             else
@@ -2874,11 +2885,9 @@ int mscb_upload(int fd, int adr, char *buffer, int size, int debug)
             buf[1] = page;
             mscb_out(fd, buf, 2, RS485_FLAG_NO_ACK);
 
-
-            for (i = crc = 0; i < 512; i++) {
+            /* build CRC of page */
+            for (i = 0; i < 512; i++)
                buf[i] = image[page * 512 + i];
-               crc += buf[i];
-            }
 
             /* chop down page in 60 byte segments (->USB) */
             for (i = 0; i < 8; i++) {
@@ -2908,55 +2917,73 @@ int mscb_upload(int fd, int adr, char *buffer, int size, int debug)
             if (debug)
                printf("ok\n");
 
-            /* verify page */
-            if (debug)
-               printf("Verify page  0x%04X - ", page * 512);
-            else
-               printf("\bV");
-            fflush(stdout);
+         } // if (!verify)
 
-            /* verify page */
-            buf[0] = 4;
-            buf[1] = page;
-            mscb_out(fd, buf, 2, RS485_FLAG_LONG_TO);
-
-            if (mscb_in(fd, ack, 2, 100000) != 2) {
-               printf("\nError: timeout from remote node for verify page 0x%04X\n", page * 512);
-               goto prog_error;
-            }
-
-            /* compare CRCs */
-            if (ack[1] == crc) {
-               if (debug)
-                  printf("ok (CRC = 0x%02X)\n", crc);
-               break;
-            }
-
-            if (debug)
-               printf("CRC error (0x%02X != 0x%02X)\n", crc, ack[1]);
-
-            /* reprogram page until verified */
-            retry++;
-            if (retry == 10) {
-               printf("\nToo many retries, aborting\n");
-               goto prog_error;
-               break;
-            }
-
-         } while (1);
-
-         if (!debug)
-            printf("\b=");
+         /* verify page */
+         if (debug | verify)
+            printf("Verify page  0x%04X - ", page * 512);
+         else
+            printf("\bV");
          fflush(stdout);
-      }
+
+         /* verify page */
+         buf[0] = 4;
+         buf[1] = page;
+         mscb_out(fd, buf, 2, RS485_FLAG_LONG_TO);
+
+         ack[1] = 0;
+         if (mscb_in(fd, ack, 2, 100000) != 2) {
+            printf("\nError: timeout from remote node for verify page 0x%04X\n", page * 512);
+            goto prog_error;
+         }
+
+         /* compare CRCs */
+         if (ack[1] == crc) {
+            if (debug | verify)
+               printf("ok (CRC = 0x%02X)\n", crc);
+            break;
+         }
+
+         if (debug)
+            printf("CRC error (0x%02X != 0x%02X)\n", crc, ack[1]);
+
+         if (verify) {
+            printf("Page is different (0x%02X != 0x%02X)\n", crc, ack[1]);
+            break;
+         }
+
+         /* reprogram page until verified */
+         retry++;
+         if (retry == 10) {
+            printf("\nToo many retries, aborting\n");
+            goto prog_error;
+            break;
+         }
+
+      } while (1);
+
+      if (!debug && !verify)
+         printf("\b=");
+      fflush(stdout);
    }
 
  prog_error:
    printf("\n");
 
-   /* reboot node */
-   buf[0] = 5;
-   mscb_out(fd, buf, 1, RS485_FLAG_NO_ACK);
+   if (verify) {
+      /* send exit code */
+      buf[0] = 6;
+      mscb_out(fd, buf, 1, RS485_FLAG_NO_ACK);
+
+      printf("Verify finished\n");
+   } else {
+      /* reboot node */
+      buf[0] = 5;
+      mscb_out(fd, buf, 1, RS485_FLAG_NO_ACK);
+
+      if (debug)
+         printf("Reboot node\n");
+   }
 
    mscb_release(fd);
    return MSCB_SUCCESS;
@@ -3032,9 +3059,9 @@ int mscb_read(int fd, int adr, unsigned char index, void *data, int *size)
 
       if (i == 1 && buf[0] == 0xFF) {
 #ifndef _USRDLL
-         printf("Timeout from RS485 bus.\n");
+         /* show error, but repeat 10 times */
+         //printf("Timeout from RS485 bus.\n");
 #endif
-         return MSCB_TIMEOUT;
       }
 
       if (i < 2)
@@ -3339,8 +3366,10 @@ int mscb_user(int fd, int adr, void *param, int size, void *result, int *rsize)
       return status;
    }
 
-   if (size > 4 || size < 0)
+   if (size > 4 || size < 0) {
+      mscb_release(fd);
       return MSCB_FORMAT_ERROR;
+   }
 
    buf[0] = MCMD_USER + size;
 

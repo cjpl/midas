@@ -6,6 +6,9 @@
   Contents:     Command-line interface for the Midas Slow Control Bus
 
   $Log$
+  Revision 1.75  2004/12/22 16:02:04  midas
+  Implemented verify for upload
+
   Revision 1.74  2004/12/10 11:21:14  midas
   Modified terminal mode
 
@@ -333,7 +336,7 @@ void print_help()
    puts("scan [r] [a]               Scan bus for nodes [repeat mode] [all]");
    puts("sn <name>                  Set node name (up to 16 characters)");
    puts("terminal                   Enter teminal mode for SCS-210");
-   puts("upload <hex-file> [debug]  Upload new firmware to node [with debug info]");
+   puts("upload <hex-file> [debug|verify] Upload new firmware to node [with debug info|verify only]");
    puts("version                    Display version number");
    puts("write <index> <value> [r]  Write node variable");
 
@@ -863,7 +866,7 @@ void cmd_loop(int fd, char *cmd, int adr)
                      if (strlen(str) > 0 && str[strlen(str) - 1] == '\n')
                         str[strlen(str) - 1] = 0;
 
-                     status = mscb_write_block(fd, current_addr, (unsigned char) addr, str, strlen(str));
+                     status = mscb_write_block(fd, current_addr, (unsigned char) addr, str, strlen(str)+1);
                   } else {
                      if (info_var.flags & MSCBF_FLOAT) {
                         value = (float) atof(param[2]);
@@ -930,7 +933,7 @@ void cmd_loop(int fd, char *cmd, int adr)
                         puts(dbuf);
 
                   } else {
-                   
+
                      /* read single value, optionally in repeat mode */
                      do {
                         memset(dbuf, 0, sizeof(dbuf));
@@ -939,7 +942,7 @@ void cmd_loop(int fd, char *cmd, int adr)
                         if (status != MSCB_SUCCESS)
                            printf("Error: %d\n", status);
                         else if (size != info_var.width)
-                           printf("Error: Received %d bytes instead of %d", size, info_var.width);
+                           printf("Error: Received %d bytes instead of %d\n", size, info_var.width);
                         else
                            print_channel(addr, &info_var, dbuf, 0);
 
@@ -1094,7 +1097,7 @@ void cmd_loop(int fd, char *cmd, int adr)
 
       /* terminal ---------- */
       else if (match(param[0], "terminal")) {
-         int d, status;
+         int status;
 
          puts("Exit with <ESC>\n");
          c = 0;
@@ -1120,10 +1123,11 @@ void cmd_loop(int fd, char *cmd, int adr)
 
             }
 
-            size = sizeof(d);
-            mscb_read(fd, current_addr, 0, &d, &size);
-            if (d > 0)
-               putchar(d);
+            memset(line, 0, sizeof(line));
+            size = sizeof(line);
+            mscb_read_block(fd, current_addr, 0, line, &size);
+            if (size > 0)
+               fputs(line, stdout);
 
             Sleep(10);
          } while (TRUE);
@@ -1162,14 +1166,21 @@ void cmd_loop(int fd, char *cmd, int adr)
             fh = open(str, O_RDONLY | O_BINARY);
             if (fh > 0) {
                if (param[2][0])
-                  printf("Found file %s\n", str);
+                  printf("Uploading file %s\n", str);
                size = lseek(fh, 0, SEEK_END) + 1;
                lseek(fh, 0, SEEK_SET);
                buffer = malloc(size);
                memset(buffer, 0, size);
                read(fh, buffer, size - 1);
                close(fh);
-               status = mscb_upload(fd, current_addr, buffer, size, param[2][0]);
+
+               if (param[2][0] == 'd')
+                  status = mscb_upload(fd, current_addr, buffer, size, TRUE, FALSE);
+               else if (param[2][0] == 'v')
+                  status = mscb_upload(fd, current_addr, buffer, size, FALSE, TRUE);
+               else
+                  status = mscb_upload(fd, current_addr, buffer, size, FALSE, FALSE);
+
                if (status == MSCB_FORMAT_ERROR)
                   printf("Syntax error in file \"%s\"\n", str);
                else if (status == MSCB_TIMEOUT)
@@ -1373,6 +1384,9 @@ int main(int argc, char *argv[])
       } else if (fd == -5) {
          printf("\nNo write access to MSCB submaster at %s\n", device);
          puts("Please install hotplug script \"drivers/linux/usb.usermap_scs_250\" to \"/etc/hotplug/\".\n");
+      } else if (fd == -6) {
+         puts("\nMSCB system is locked by other process");
+         puts("Please stop all running MSCB clients\n");
       } else
          if (device[0])
             printf("Cannot connect to device \"%s\"\n", device);\
@@ -1382,7 +1396,7 @@ int main(int argc, char *argv[])
 #ifdef _MSC_VER
       puts("\n-- hit any key to exit --");
 
-      while (!kbhit()) 
+      while (!kbhit())
          Sleep(100);
       while (kbhit())
          getch();

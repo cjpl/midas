@@ -6,6 +6,9 @@
   Contents:     Header fiel for MSCB funcions
 
   $Log$
+  Revision 1.40  2004/12/22 16:02:24  midas
+  Implemented verify for upload
+
   Revision 1.39  2004/12/15 17:04:34  midas
   Added TRUE/FALSE
 
@@ -343,7 +346,7 @@ extern "C" {
    int EXPRT mscb_write_group(int fd, int adr, unsigned char index, void *data, int size);
    int EXPRT mscb_write_block(int fd, int adr, unsigned char index, void *data, int size);
    int EXPRT mscb_flash(int fd, int adr);
-   int EXPRT mscb_upload(int fd, int adr, char *buffer, int size, int debug);
+   int EXPRT mscb_upload(int fd, int adr, char *buffer, int size, int debug, int verify);
    int EXPRT mscb_read(int fd, int adr, unsigned char index, void *data, int *size);
    int EXPRT mscb_read_range(int fd, int adr, unsigned char index1,
                              unsigned char index2, void *data, int *size);
