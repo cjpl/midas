@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.178  2001/12/05 11:31:44  midas
+  Changed creation of "/Logger/History dir"
+
   Revision 1.177  2001/12/04 08:36:37  midas
   Increased ref[80] to ref[256]
 
@@ -6760,7 +6763,7 @@ double base[] = {1,2,5,10,20,50,100,200,500,1000};
 void generate_hist_graph(char *path, char *buffer, int *buffer_size, 
                          int width, int height, int scale, int offset, int index)
 {
-HNDLE       hDB, hkey, hkeypanel, hkeyeq, hkeydvar, hkeyvars, hkeyroot, hkeynames;
+HNDLE       hDB, hkey, hkeypanel, hkeyeq, hkeydvar, hkeyvars, hkeyroot, hkeynames, hktmp;
 KEY         key;
 gdImagePtr  im;
 gdGifBuffer gb;
@@ -6829,10 +6832,13 @@ float       upper_limit[MAX_VARS], lower_limit[MAX_VARS];
     goto error;
     }
 
+  /* check dedicated history path */
   size = sizeof(str);
   memset(str, 0, size);
-  db_get_value(hDB, 0, "/Logger/History dir", str, &size, TID_STRING);
-  if (!str[0])
+  status = db_find_key(hDB, 0, "/Logger/History path", &hktmp);
+  if (status == DB_SUCCESS)
+    db_get_value(hDB, 0, "/Logger/History dir", str, &size, TID_STRING);
+  else
     db_get_value(hDB, 0, "/Logger/Data dir", str, &size, TID_STRING);
   hs_set_path(str);
 
