@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.85  2001/12/10 09:06:57  midas
+  Fixed memeory leak with ss_file_find
+
   Revision 1.84  2001/12/07 13:02:45  midas
   Fixed crash with language file in Unix format
 
@@ -1488,9 +1491,14 @@ char   *file_list;
       {
       /* go through whole directory, find first file */
 
+      file_list = NULL;
       n = ss_file_find(dir, "??????.log", &file_list);
       if (n == 0)
+        {
+        if (file_list)
+          free(file_list);
         return EL_FILE_ERROR;
+        }
 
       for (i=0,min=9999999 ; i<n ; i++)
         {
@@ -1521,9 +1529,14 @@ char   *file_list;
       {
       /* go through whole directory, find last file */
 
+      file_list = NULL;
       n = ss_file_find(dir, "??????.log", &file_list);
       if (n == 0)
+        {
+        if (file_list)
+          free(file_list);
         return EL_FILE_ERROR;
+        }
 
       for (i=0,max=0 ; i<n ; i++)
         {
@@ -3331,7 +3344,7 @@ struct tm *gmt;
   rsprintf("<tr><td align=center bgcolor=%s>%s:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input type=password name=newpwd></td></tr>\n", 
            gt("Cell BGColor"), loc("New Password"));
 
-  rsprintf("<tr><td align=center bgcolor=%s><input type=submit value=%s></td></tr>", 
+  rsprintf("<tr><td align=center bgcolor=%s><input type=submit value=\"%s\"></td></tr>", 
            gt("Cell BGColor"), loc("Submit"));
 
   rsprintf("</table></td></tr></table>\n");
@@ -3444,8 +3457,8 @@ time_t now;
 
   rsprintf("<tr><td align=%s bgcolor=%s>\n", gt("Menu1 Align"), gt("Menu1 BGColor"));
 
-  rsprintf("<input type=submit name=cmd value=%s>\n", loc("Submit"));
-  rsprintf("<input type=submit name=cmd value=%s>\n", loc("Back"));
+  rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Submit"));
+  rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Back"));
   rsprintf("</td></tr></table></td></tr>\n\n");
 
   /*---- entry form ----*/
@@ -3717,8 +3730,8 @@ time_t now;
 
   rsprintf("<tr><td align=%s bgcolor=%s>\n", gt("Menu1 Align"), gt("Menu1 BGColor"));
 
-  rsprintf("<input type=submit name=cmd value=%s>\n", loc("Submit"));
-  rsprintf("<input type=submit name=cmd value=%s>\n", loc("Back"));
+  rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Submit"));
+  rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Back"));
   rsprintf("</td></tr></table></td></tr>\n\n");
 
   rsprintf("</td></tr></table>\n");
@@ -3749,9 +3762,9 @@ char   str[256];
 
   rsprintf("<tr><td align=%s bgcolor=%s>\n", gt("Menu1 Align"), gt("Menu1 BGColor"));
 
-  rsprintf("<input type=submit name=cmd value=%s>\n", loc("Search"));
+  rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Search"));
   rsprintf("<input type=reset value=\"%s\">\n", loc("Reset Form"));
-  rsprintf("<input type=submit name=cmd value=%s>\n", loc("Back"));
+  rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Back"));
   rsprintf("</td></tr></table></td></tr>\n\n");
 
   /*---- entry form ----*/
@@ -3809,7 +3822,7 @@ char   str[256];
     rsprintf("<option value=%d>%d\n", i+1, i+1);
   rsprintf("</select>\n");
 
-  rsprintf("&nbsp;Year: <input type=\"text\" size=5 maxlength=5 name=\"y1\">");
+  rsprintf("&nbsp;%s: <input type=\"text\" size=5 maxlength=5 name=\"y1\">", loc("Year"));
   rsprintf("</td></tr>\n");
 
   rsprintf("<tr><td bgcolor=%s>%s:</td>", gt("Categories bgcolor1"), loc("End date"));
@@ -3826,7 +3839,7 @@ char   str[256];
     rsprintf("<option value=%d>%d\n", i+1, i+1);
   rsprintf("</select>\n");
 
-  rsprintf("&nbsp;Year: <input type=\"text\" size=5 maxlength=5 name=\"y2\">");
+  rsprintf("&nbsp;%s: <input type=\"text\" size=5 maxlength=5 name=\"y2\">", loc("Year"));
   rsprintf("</td></tr>\n");
 
   rsprintf("</td></tr>\n");
@@ -3901,8 +3914,8 @@ char *buffer;
 
   rsprintf("<tr><td align=%s bgcolor=%s>\n", gt("Menu1 Align"), gt("Menu1 BGColor"));
 
-  rsprintf("<input type=submit name=cmd value=%s>\n", loc("Save"));
-  rsprintf("<input type=submit name=cmd value=%s>\n", loc("Cancel"));
+  rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Save"));
+  rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Cancel"));
   rsprintf("</td></tr></table></td></tr>\n\n");
 
   /*---- entry form ----*/
@@ -3952,8 +3965,8 @@ char *buffer;
 
   rsprintf("<tr><td align=%s bgcolor=%s>\n", gt("Menu1 Align"), gt("Menu1 BGColor"));
 
-  rsprintf("<input type=submit name=cmd value=%s>\n", loc("Save"));
-  rsprintf("<input type=submit name=cmd value=%s>\n", loc("Cancel"));
+  rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Save"));
+  rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Cancel"));
   rsprintf("</td></tr></table>\n\n");
 
   rsprintf("</td></tr></table>\n\n");
@@ -4023,7 +4036,7 @@ char   str[256];
       else
         rsprintf("<b>%s = %d</b></tr>\n", loc("Error deleting message: status"), status);
 
-      rsprintf("<input type=hidden name=cmd value=%s>\n", loc("Last"));
+      rsprintf("<input type=hidden name=cmd value=\"%s\">\n", loc("Last"));
       rsprintf("<tr><td bgcolor=%s align=center><input type=submit value=\"%s\"></td></tr>\n",
                 gt("Cell BGColor"), loc("Goto last message"));
       }
@@ -4031,7 +4044,7 @@ char   str[256];
   else
     {
     /* define hidden field for command */
-    rsprintf("<input type=hidden name=cmd value=%s>\n", loc("Delete"));
+    rsprintf("<input type=hidden name=cmd value=\"%s\">\n", loc("Delete"));
 
     rsprintf("<tr><td bgcolor=%s align=center>", gt("Title bgcolor"));
     rsprintf("<font color=%s><b>%s</b></font></td></tr>\n", gt("Title fontcolor"), 
@@ -4039,9 +4052,9 @@ char   str[256];
 
     rsprintf("<tr><td bgcolor=%s align=center>%s</td></tr>\n", gt("Cell BGColor"), path);
 
-    rsprintf("<tr><td bgcolor=%s align=center><input type=submit name=confirm value=%s>\n", 
+    rsprintf("<tr><td bgcolor=%s align=center><input type=submit name=confirm value=\"%s\">\n", 
               gt("Cell BGColor"), loc("Yes"));
-    rsprintf("<input type=submit name=confirm value=%s>\n", loc("No"));
+    rsprintf("<input type=submit name=confirm value=\"%s\">\n", loc("No"));
     rsprintf("</td></tr>\n\n");
     }
 
@@ -4194,20 +4207,45 @@ FILE   *f;
       }
     else
       {
-      if (past_n)
+      if (atoi(gt("Use buttons")) == 1)
         {
-        sprintf(str, loc("Last %d days"), past_n*2);
-        rsprintf("<input type=submit name=past value=\"%s\">\n", str);
+        if (past_n)
+          {
+          sprintf(str, loc("Last %d days"), past_n*2);
+          rsprintf("<input type=submit name=past value=\"%s\">\n", str);
+          }
+
+        if (last_n)
+          {
+          sprintf(str, loc("Last %d entries"), last_n*2);
+          rsprintf("<input type=submit name=last value=\"%s\">\n", str);
+          }
+
+        rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Find"));
+        rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Back"));
+        }
+      else
+        {
+        rsprintf("<small>\n");
+
+        if (past_n)
+          {
+          sprintf(str, loc("Last %d days"), past_n*2);
+          rsprintf("&nbsp;<a href=\"/%s/past%d\">%s</a>&nbsp;|\n", logbook_enc, past_n*2, str);
+          }
+
+        if (last_n)
+          {
+          sprintf(str, loc("Last %d entries"), last_n*2);
+          rsprintf("&nbsp;<a href=\"/%s/last%d\">%s</a>&nbsp;|\n", logbook_enc, last_n*2, str);
+          }
+
+        rsprintf("&nbsp;<a href=\"/%s?cmd=%s\">%s</a>&nbsp;|\n", logbook_enc, loc("Find"), loc("Find"));
+        rsprintf("&nbsp;<a href=\"/%s?cmd=%s\">%s</a>&nbsp;\n", logbook_enc, loc("Back"), loc("Back"));
+
+        rsprintf("</small>\n");
         }
 
-      if (last_n)
-        {
-        sprintf(str, loc("Last %d entries"), last_n*2);
-        rsprintf("<input type=submit name=last value=\"%s\">\n", str);
-        }
-
-      rsprintf("<input type=submit name=cmd value=%s>\n", loc("Find"));
-      rsprintf("<input type=submit name=cmd value=%s>\n", loc("Back"));
       }
 
     rsprintf("</td></tr></table></td></tr>\n\n");
@@ -4780,9 +4818,9 @@ FILE   *f;
             rsprintf("<tr><td bgcolor=#FFFFFF colspan=%d><font size=%d>", colspan, size);
 
             if (attachment[1][0])
-              rsprintf("Attachments: ");
+              rsprintf("%s: ", loc("Attachments"));
             else
-              rsprintf("Attachment: ");
+              rsprintf("%s: ", loc("Attachment"));
             }
 
           for (index = 0 ; index < MAX_ATTACHMENTS ; index++)
@@ -5252,7 +5290,7 @@ char   date[80], text[TEXT_SIZE],  old_data_dir[256], tag[32],
 
   if (status != EL_SUCCESS)
     {
-    sprintf(str, loc("Messags %s cannot be read from logook \"%s\""), src_path, logbook);
+    sprintf(str, loc("Message %s cannot be read from logook \"%s\""), src_path, logbook);
     show_error(str);
     return;
     }
@@ -5950,10 +5988,10 @@ FILE   *f;
       }
     else
       {
-      rsprintf("<input type=submit name=cmd value=%s>\n", loc("First"));
-      rsprintf("<input type=submit name=cmd value=%s>\n", loc("Previous"));
-      rsprintf("<input type=submit name=cmd value=%s>\n", loc("Next"));
-      rsprintf("<input type=submit name=cmd value=%s>\n", loc("Last"));
+      rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("First"));
+      rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Previous"));
+      rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Next"));
+      rsprintf("<input type=submit name=cmd value=\"%s\">\n", loc("Last"));
       }
 
     rsprintf("</td></tr>\n");
@@ -5969,7 +6007,7 @@ FILE   *f;
 
   if (msg_status == EL_FILE_ERROR ||
       (msg_status != EL_SUCCESS && !last_message && !first_message))
-    rsprintf("<tr><td bgcolor=#FF0000 colspan=2 align=center><h1>No message available</h1></tr>\n");
+    rsprintf("<tr><td bgcolor=#FF0000 colspan=2 align=center><h1>%s</h1></tr>\n", loc("No message available"));
   else
     {
     /* check for locked attributes */
@@ -6308,7 +6346,7 @@ char  str[256];
       rsprintf("<tr><td align=center bgcolor=%s><input type=password name=apassword></td></tr>\n", gt("Cell BGColor"));
       }
 
-    rsprintf("<tr><td align=center bgcolor=%s><input type=submit value=%s></td></tr>", gt("Cell BGColor"), loc("Submit"));
+    rsprintf("<tr><td align=center bgcolor=%s><input type=submit value=\"%s\"></td></tr>", gt("Cell BGColor"), loc("Submit"));
 
     rsprintf("</table></td></tr></table>\n");
 
@@ -6399,7 +6437,7 @@ FILE  *f;
     rsprintf("<tr><td align=center bgcolor=%s>%s:&nbsp;&nbsp;&nbsp;<input type=password name=upassword></td></tr>\n", 
              gt("Cell BGColor"), loc("Password"));
 
-    rsprintf("<tr><td align=center bgcolor=%s><input type=submit value=%s></td></tr>", gt("Cell BGColor"), loc("Submit"));
+    rsprintf("<tr><td align=center bgcolor=%s><input type=submit value=\"%s\"></td></tr>", gt("Cell BGColor"), loc("Submit"));
 
     rsprintf("</table></td></tr></table>\n");
 
