@@ -6,6 +6,9 @@
   Contents:     LeCroy LRS1454/1458 Voltage Device Driver
 
   $Log$
+  Revision 1.4  2001/02/26 13:57:34  midas
+  Made ajdustments to work with tcpip bus driver
+
   Revision 1.3  2001/01/04 11:17:23  midas
   Implemented Bus Driver scheme
 
@@ -25,11 +28,15 @@
 
 /*---- globals -----------------------------------------------------*/
 
+#define DEFAULT_TIMEOUT 5000  /* 5 sec. */
+
 typedef struct {
+  char password[NAME_LENGTH];
   int  polarity[16];
 } lrs1454_SETTINGS;
 
 #define LRS1454_SETTINGS_STR "\
+Password = STRING : [32] lrs1450\n\
 Polarity = INT[16] :\n\
 [0] -1\n\
 [1] -1\n\
@@ -60,7 +67,7 @@ typedef struct {
 INT lrs1454_init(HNDLE hkey, void **pinfo, INT channels, INT (*bd)(INT cmd, ...))
 {
 int          status, size, i;
-char         str[256], *p;
+char         str[1000];
 HNDLE        hDB, hkeydd;
 LRS1454_INFO *info;
 
@@ -91,33 +98,51 @@ LRS1454_INFO *info;
   if (status != SUCCESS)
     return status;
 
-  bd(CMD_DEBUG, FALSE);
+  bd(CMD_DEBUG, TRUE);
 
-  /* check if module is living  */
+  /* wait for "NETPASSWORD:"  */
   BD_PUTS("\r");
-  BD_GETS(str, sizeof(str), ">", 2000);
-  BD_PUTS("1450\r");
-  status = BD_GETS(str, sizeof(str), ">", 2000);
+  BD_GETS(str, sizeof(str), ":", DEFAULT_TIMEOUT);
+
+  strcpy(str, info->settings.password);
+  strcat(str, "\r");
+  BD_PUTS(str);
+
+  status = BD_GETS(str, sizeof(str), ">", DEFAULT_TIMEOUT);
   if (!status)
     {
     cm_msg(MERROR, "lrs1454_init", "lrs1454 doesn't respond. Check power and connection.");
     return FE_ERR_HW;
     }
 
+  /* check for override */
+  if (strstr(str, "OVERRIDE") != NULL)
+    {
+    BD_PUTS("OVERRIDE\r");
+    status = BD_GETS(str, sizeof(str), ">", DEFAULT_TIMEOUT);
+    if (!status)
+      {
+      cm_msg(MERROR, "lrs1454_init", "Cannot override other telnet session.");
+      return FE_ERR_HW;
+      }
+    BD_PUTS("\r");
+    BD_GETS(str, sizeof(str), ":", DEFAULT_TIMEOUT);
+    }
+
   /* go into EDIT mode */
   BD_PUTS("EDIT\r");
-  BD_GETS(str, sizeof(str), ">", 2000);
+  BD_GETS(str, sizeof(str), ">", DEFAULT_TIMEOUT);
 
   /* turn on HV main switch */
   BD_PUTS("HVON\r");
-  BD_GETS(str, sizeof(str), ">", 2000);
+  BD_GETS(str, sizeof(str), ">", DEFAULT_TIMEOUT);
 
-  /* enable cheannels */
+  /* enable channels */
   for (i=0 ; i<info->num_channels ; i++)
     {
     sprintf(str, "LD L%d.%d CE 1\r", i/12, i%12);
     BD_PUTS(str);
-    BD_GETS(str, sizeof(str), ">", 2000);
+    BD_GETS(str, sizeof(str), ">", DEFAULT_TIMEOUT);
     }
 
   return FE_SUCCESS;
@@ -145,7 +170,7 @@ char  str[80];
           info->settings.polarity[channel/12]*value);
 
   BD_PUTS(str);
-  BD_GETS(str, sizeof(str), ">", 1000);
+  BD_GETS(str, sizeof(str), ">", DEFAULT_TIMEOUT);
 
   return FE_SUCCESS;
 }
@@ -161,7 +186,7 @@ INT   i;
     {
     sprintf(str, "LD L%d.%d DV %1.1f\r", i/12, i%12, value);
     BD_PUTS(str);
-    BD_GETS(str, sizeof(str), ">", 1000);
+    BD_GETS(str, sizeof(str), ">", DEFAULT_TIMEOUT);
     }
 
   return FE_SUCCESS;
@@ -176,19 +201,19 @@ char  str[256], *p;
 
   sprintf(str, "RC L%d.%d MV\r", channel/12, channel%12);
   BD_PUTS(str);
-  status = BD_GETS(str, sizeof(str), ">", 1000);
+  status = BD_GETS(str, sizeof(str), ">", DEFAULT_TIMEOUT);
 
   /* if connection lost, reconnect */
   if (status == 0)
     {
     BD_PUTS("\r");
-    BD_GETS(str, sizeof(str), ">", 1000);
+    BD_GETS(str, sizeof(str), ">", DEFAULT_TIMEOUT);
     }
 
   if (strstr(str, "to begin"))
     {
     BD_PUTS("1450\r");
-    BD_GETS(str, sizeof(str), ">", 1000);
+    BD_GETS(str, sizeof(str), ">", DEFAULT_TIMEOUT);
     return lrs1454_get(info, channel, pvalue);
     }
   p = str+strlen(str)-1;;
@@ -208,7 +233,7 @@ char  str[256], *p;
 
   sprintf(str, "RC L%d.%d MC\r", channel/12, channel%12);
   BD_PUTS(str);
-  BD_GETS(str, sizeof(str), ">", 1000);
+  BD_GETS(str, sizeof(str), ">", DEFAULT_TIMEOUT);
 
   p = str+strlen(str)-1;;
   while (*p && *p != ' ')
@@ -230,7 +255,7 @@ char  str[256], *p;
     {
     sprintf(str, "RC L%d MV\r", i);
     BD_PUTS(str);
-    BD_GETS(str, sizeof(str), ">", 5000);
+    BD_GETS(str, sizeof(str), ">", DEFAULT_TIMEOUT);
 
     p = strstr(str, "MV")+3;
     p = strstr(p, "MV")+3;
@@ -256,7 +281,7 @@ char  str[256], *p;
     {
     sprintf(str, "RC L%d MC\r", i);
     BD_PUTS(str);
-    BD_GETS(str, sizeof(str), ">", 5000);
+    BD_GETS(str, sizeof(str), ">", DEFAULT_TIMEOUT);
 
     p = strstr(str, "MC")+3;
     p = strstr(p, "MC")+3;
@@ -281,7 +306,7 @@ char  str[80];
           info->settings.polarity[channel/16]*limit);
 
   BD_PUTS(str);
-  BD_GETS(str, sizeof(str), ">", 1000);
+  BD_GETS(str, sizeof(str), ">", DEFAULT_TIMEOUT);
 
   return FE_SUCCESS;
 }
