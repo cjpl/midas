@@ -6,6 +6,9 @@
   Contents:     Command-line interface for the Midas Slow Control Bus
 
   $Log$
+  Revision 1.2  2001/08/31 11:35:20  midas
+  Added "wp" command in msc.c, changed parport to device in mscb.c
+
   Revision 1.1  2001/08/31 11:05:50  midas
   Initial revision
 
@@ -31,6 +34,7 @@ void print_help()
   puts("\nwrite <channel> <value>    Write to node channel");
   puts("read <channel>             Read from node channel");
   puts("wc <index> <value>         Write configuration parameter");
+  puts("wp <index> <value>         Write configuration parameter permanently");
   puts("rc <index>                 Read configuration parameter");
 }
 
@@ -382,8 +386,9 @@ MSCB_INFO_CHN info_chn;
         }
       }
 
-    /* wc */
-    else if ((param[0][0] == 'w' && param[0][1] == 'c'))
+    /* wc/wp */
+    else if ((param[0][0] == 'w' && param[0][1] == 'c') ||
+             (param[0][0] == 'w' && param[0][1] == 'p'))
       {
       if (current_addr < 0)
         printf("You must first address an individual node\n");
@@ -400,7 +405,8 @@ MSCB_INFO_CHN info_chn;
           else
             data = atoi(param[2]);
 
-          status = mscb_write_conf(fd, (unsigned char)addr, data, 4, 0);
+          status = mscb_write_conf(fd, (unsigned char)addr, data, 4, 
+                                   param[0][1] == 'p' ? 1 : 0);
           if (status != MSCB_SUCCESS)
             printf("Error: %d\n", status);
           }
