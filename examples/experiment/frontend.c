@@ -11,6 +11,9 @@
                 with one bank (SCLR).
 
   $Log$
+  Revision 1.9  2000/03/02 22:00:00  midas
+  Added number of subevents as zero
+
   Revision 1.8  1999/02/24 16:27:01  midas
   Added some "real" readout code
 
@@ -108,6 +111,7 @@ EQUIPMENT equipment[] = {
     RO_ODB,               /* and update ODB */ 
     500,                  /* poll for 500ms */
     0,                    /* stop run after this event limit */
+    0,                    /* number of sub events */
     0,                    /* don't log history */
     "", "", "",
     read_trigger_event,   /* readout routine */
@@ -125,6 +129,7 @@ EQUIPMENT equipment[] = {
     RO_ODB,               /* and update ODB */ 
     10000,                /* read every 10 sec */
     0,                    /* stop run after this event limit */
+    0,                    /* number of sub events */
     0,                    /* log history */
     "", "", "",
     read_scaler_event,    /* readout routine */
