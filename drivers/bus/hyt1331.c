@@ -8,6 +8,9 @@
                 following the MIDAS CAMAC Standard under DIRECTIO
 
   $Log$
+  Revision 1.16  2002/01/16 14:40:45  midas
+  Fixed bug with gbl_sw1d
+
   Revision 1.15  2001/09/04 12:53:41  midas
   Fixed small bug
 
@@ -351,7 +354,7 @@ INLINE void cam16i_sa(const int c, const int n, const int a, const int f,
 {
   WORD adr, i;
 
-  if (gbl_sw1d)
+  if (gbl_sw1d[c >> 2])
     {
     adr = io_base[c >> 2]+((c % 3)<<4);
     /* enable auto increment */
@@ -379,8 +382,8 @@ INLINE void cam24i_sa(const int c, const int n, const int a, const int f,
 {
   WORD adr, i;
 
-  if (gbl_sw1d)
-  {
+  if (gbl_sw1d[c >> 2])
+    {
     adr = io_base[c >> 2]+((c % 3)<<4);
 
     /* enable auto increment */
@@ -390,17 +393,17 @@ INLINE void cam24i_sa(const int c, const int n, const int a, const int f,
     OUTP_P(adr+10, f);
     INPW_P(adr+12);
     for (i=0 ; i<r ; i++)
-    {
+      {
       /* read data and trigger next cycle */
       *(((BYTE *) *d)+2) = INP(adr+4);
       *(((BYTE *) *d)+3) = 0;
       *((WORD *) *d) = INPW_P(adr+12);
       (*d)++;
-    }
+      }
 
     /* disable auto increment */
     OUTP_P(adr+10, 48);
-  }
+    }
   else
     for (i=0;i<r;i++)
       cam24i(c, n, a+i, f, (*d)++);
