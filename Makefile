@@ -6,6 +6,9 @@
 #  Contents:     Makefile for MIDAS binaries and examples under unix
 #
 #  $Log$
+#  Revision 1.29  2001/05/23 13:17:19  midas
+#  Added elogd
+#
 #  Revision 1.28  2001/02/19 12:42:25  midas
 #  Fixed bug with missing "-Dextname" under Linux
 #
@@ -249,7 +252,7 @@ PROGS = $(BIN_DIR)/mserver $(BIN_DIR)/mhttpd \
 	$(BIN_DIR)/mtape $(BIN_DIR)/mhist \
 	$(BIN_DIR)/mstat $(BIN_DIR)/mcnaf \
 	$(BIN_DIR)/mdump $(BIN_DIR)/lazylogger \
-	$(BIN_DIR)/webpaw \
+	$(BIN_DIR)/webpaw $(BIN_DIR)/elogd \
 	$(BIN_DIR)/odbhist $(BIN_DIR)/elog \
 	$(BIN_DIR)/mchart $(BIN_DIR)/stripchart.tcl \
 	$(SPECIFIC_OS_PRG)
@@ -410,7 +413,7 @@ install:
 	@echo "... "
 	@echo "... Installing utilities to $(SYSBIN_DIR)"
 	@echo "... "
-	@for i in mhist odbhist elog mtape mstat lazylogger mdump mcnaf mlxspeaker mchart stripchart.tcl webpaw; \
+	@for i in mhist odbhist elog mtape mstat lazylogger mdump mcnaf mlxspeaker mchart stripchart.tcl webpaw elogd; \
 	  do \
 	  echo $$i ; \
 	  rm -f $(SYSBIN_DIR)/$$i ; \
@@ -419,6 +422,7 @@ install:
 	done
 	ln -fs $(SYSBIN_DIR)/stripchart.tcl $(SYSBIN_DIR)/stripchart
 	chmod +s $(SYSBIN_DIR)/webpaw
+	chmod +x $(SYSBIN_DIR)/elogd
 
 # include
 	@echo "... "

@@ -7,6 +7,9 @@
 #                Windows NT
 #
 #  $Log$
+#  Revision 1.7  2001/05/23 13:13:43  midas
+#  Added elogd
+#
 #  Revision 1.6  2000/05/04 14:23:23  midas
 #  Adde mgd into mhttpd
 #
@@ -80,6 +83,7 @@ all:    $(LIB_DIR) $(BIN_DIR) \
   $(BIN_DIR)/mdump.exe \
   $(BIN_DIR)/odbhist.exe \
   $(BIN_DIR)/elog.exe \
+  $(BIN_DIR)/elogd.exe \
   $(BIN_DIR)/lazylogger.exe \
   $(BIN_DIR)/hvedit.exe
 
@@ -164,6 +168,8 @@ $(BIN_DIR)/mcnaf.exe:$(LIBRARY) $(UTL_DIR)/mcnaf.c $(DRV_DIR)/bus/camacrpc.c
 	$(CC) $(CFLAGS) $(OSFLAGS) /Fe$(BIN_DIR)/mcnaf.exe $(UTL_DIR)/mcnaf.c $(DRV_DIR)/bus/camacrpc.c $(LIBRARY) wsock32.lib $(LIBS)
 $(BIN_DIR)/elog.exe:  $(LIBRARY) $(UTL_DIR)/elog.c 
 	$(CC) $(CFLAGS) $(OSFLAGS) /Fe$(BIN_DIR)/elog.exe $(UTL_DIR)/elog.c $(LIBRARY) $(LIBS) wsock32.lib
+$(BIN_DIR)/elogd.exe:  $(LIBRARY) $(UTL_DIR)/elogd.c 
+	$(CC) $(CFLAGS) $(OSFLAGS) /Fe$(BIN_DIR)/elogd.exe $(UTL_DIR)/elogd.c $(LIBRARY) $(LIBS) wsock32.lib
 
 $(BIN_DIR)/hvedit.exe:$(LIBRARY)
 	cd nt\hvedit
