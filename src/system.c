@@ -14,6 +14,9 @@
                 Brown, Prentice Hall
 
   $Log$
+  Revision 1.54  2000/11/17 08:25:46  midas
+  Added disable_shm_write flag for Linux cluster applications
+
   Revision 1.53  2000/10/20 19:05:35  pierre
   - Added ss_exec(...) for pid return.
   - Added ss_existpid(...) for pid check.
@@ -211,6 +214,9 @@ static INT ss_in_async_routine_flag = 0;
 /*------------------------------------------------------------------*/
 
 /* globals */
+
+/* if set, don't write to *SHM file (used for Linux cluster) */
+BOOL disable_shm_write = FALSE;
 
 /*------------------------------------------------------------------*/
 
@@ -596,17 +602,20 @@ char   mem_name[256], file_name[256], path[256];
   /* copy to file and destroy if we are the last one */
   if (buf.shm_nattch == 1)
     {
-    fh = fopen(file_name, "w");
+    if (!disable_shm_write)
+      {
+      fh = fopen(file_name, "w");
 
-    if (fh == NULL)
-      {
-      cm_msg(MERROR, "ss_shm_close", "Cannot write to file %s, please check protection", file_name);
-      }
-    else
-      {
-      /* write shared memory to file */
-      fwrite(adr, 1, buf.shm_segsz, fh);
-      fclose(fh);
+      if (fh == NULL)
+        {
+        cm_msg(MERROR, "ss_shm_close", "Cannot write to file %s, please check protection", file_name);
+        }
+      else
+        {
+        /* write shared memory to file */
+        fwrite(adr, 1, buf.shm_segsz, fh);
+        fclose(fh);
+        }
       }
 
     if (shmdt(adr) < 0)
@@ -791,24 +800,24 @@ char   mem_name[256], file_name[256], path[256];
 #endif /* OS_VMS */
 #ifdef OS_UNIX
 
-  {
-  FILE   *fh;
-
-  fh = fopen(file_name, "w");
-
-  if (fh == NULL)
+  if (!disable_shm_write)
     {
-    cm_msg(MERROR, "ss_shm_flush", "Cannot write to file %s, please check protection", file_name);
-    }
-  else
-    {
-    /* write shared memory to file */
-    fwrite(adr, 1, size, fh);
-    fclose(fh);
-    }
+    FILE   *fh;
 
+    fh = fopen(file_name, "w");
+
+    if (fh == NULL)
+      {
+      cm_msg(MERROR, "ss_shm_flush", "Cannot write to file %s, please check protection", file_name);
+      }
+    else
+      {
+      /* write shared memory to file */
+      fwrite(adr, 1, size, fh);
+      fclose(fh);
+      }
+    }
   return SS_SUCCESS;
-  }
 
 #endif /* OS_UNIX */
 }
