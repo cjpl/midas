@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.152  2002/05/11 01:22:48  midas
+  Improved malloc/free debugging
+
   Revision 1.151  2002/05/10 16:49:37  midas
   Moved 'execute on start' before TR_PRESTART
 
@@ -623,28 +626,60 @@ ERROR_TABLE _error_table[] =
 
 /*------------------------------------------------------------------*/
 
-/* malloc/free routines for debugging */
+typedef struct {
+  void *adr;
+  int  size;
+  char file[80];
+  int  line;
+} DBG_MEM_LOC;
 
-#undef MEM_DBG
+DBG_MEM_LOC *_mem_loc = NULL;
+INT          _n_mem = 0;
 
-#ifdef MEM_DBG
-#define M_MALLOC(x) dbg_malloc((x), __FILE__, __LINE__)
-#define M_FREE(x)   dbg_free  ((x), __FILE__, __LINE__)
-#else
-#define M_MALLOC(x) malloc(x)
-#define M_FREE(x) free(x)
-#endif
-
-void *dbg_malloc(int size, char *file, int line)
+void *dbg_malloc(size_t size, char *file, int line)
 {
 FILE *f;
 void *adr;
+int  i;
 
   adr = malloc(size);
 
-  f = fopen("mem.txt", "a");
-  fprintf(f, "malloc size = %d, adr = %X, %s:%d\n", size, adr, file, line);
+  /* search for deleted entry */
+  for (i=0 ; i<_n_mem ; i++)
+    if (_mem_loc[i].adr == NULL)
+      break;
+
+  if (i == _n_mem)
+    {
+    _n_mem++;
+    if (!_mem_loc)
+      _mem_loc = malloc(sizeof(DBG_MEM_LOC));
+    else
+      _mem_loc = realloc(_mem_loc, sizeof(DBG_MEM_LOC)*_n_mem);
+    }
+
+  _mem_loc[i].adr = adr;
+  _mem_loc[i].size = size;
+  strcpy(_mem_loc[i].file, file);
+  _mem_loc[i].line = line;
+
+  f = fopen("mem.txt", "w");
+  for (i=0 ; i<_n_mem ; i++)
+    if (_mem_loc[i].adr)
+      fprintf(f, "%s:%d size=%d adr=%X\n", _mem_loc[i].file, _mem_loc[i].line, 
+        _mem_loc[i].size, _mem_loc[i].adr);
   fclose(f);
+
+  return adr;
+}
+
+void *dbg_calloc(size_t size, size_t count, char *file, int line)
+{
+void *adr;
+
+  adr = dbg_malloc(size*count, file, line);
+  if (adr)
+    memset(adr, 0, size*count);
 
   return adr;
 }
@@ -652,11 +687,22 @@ void *adr;
 void dbg_free(void *adr, char *file, int line)
 {
 FILE *f;
+int  i;
 
   free(adr);
 
-  f = fopen("mem.txt", "a");
-  fprintf(f, "free adr = %X, %s:%d\n", adr, file, line);
+  for (i=0 ; i<_n_mem ; i++)
+    if (_mem_loc[i].adr == adr)
+      break;
+
+  if (i<_n_mem)
+    _mem_loc[i].adr = NULL;
+
+  f = fopen("mem.txt", "w");
+  for (i=0 ; i<_n_mem ; i++)
+    if (_mem_loc[i].adr)
+      fprintf(f, "%s:%d size=%d adr=%X\n", _mem_loc[i].file, _mem_loc[i].line, 
+        _mem_loc[i].size, _mem_loc[i].adr);
   fclose(f);
 
 }
@@ -4461,7 +4507,7 @@ BUFFER_HEADER        *pheader;
   /* allocate new space for the new buffer descriptor */
   if (_buffer_entries == 0)
     {
-    _buffer = malloc(sizeof(BUFFER));
+    _buffer = M_MALLOC(sizeof(BUFFER));
     memset(_buffer, 0, sizeof(BUFFER));
     if (_buffer == NULL)
       {
@@ -4772,7 +4818,7 @@ INT           i, j, index, destroy_flag;
     _buffer = realloc(_buffer, sizeof(BUFFER) * (_buffer_entries));
   else
     {
-    free(_buffer);
+    M_FREE(_buffer);
     _buffer = NULL;
     }
 }
@@ -5981,7 +6027,7 @@ INT  index, status;
   /* allocate new space for the local request list */
   if (_request_list_entries == 0)
     {
-    _request_list = malloc(sizeof(REQUEST_LIST));
+    _request_list = M_MALLOC(sizeof(REQUEST_LIST));
     memset(_request_list, 0, sizeof(REQUEST_LIST));
     if (_request_list == NULL)
       {
@@ -8435,7 +8481,7 @@ INT i, j, iold, inew;
 
   /* allocate new memory for rpc_list */
   if (rpc_list == NULL)
-    rpc_list = malloc(sizeof(RPC_LIST) * (inew+1));
+    rpc_list = M_MALLOC(sizeof(RPC_LIST) * (inew+1));
   else
     rpc_list = realloc(rpc_list, sizeof(RPC_LIST) * (iold+inew+1));
 
@@ -8488,7 +8534,7 @@ INT rpc_deregister_functions()
 \********************************************************************/
 {
   if (rpc_list)
-    free(rpc_list);
+    M_FREE(rpc_list);
   rpc_list = NULL;
 
   return RPC_SUCCESS;
@@ -13701,9 +13747,10 @@ struct tm *tms;
     if (fh < 0)
       lt += direction*3600*24;
 
-    /* stop if more than a year away from starting point */
-    } while (fh < 0 && abs((INT)lt-(INT)*ltime) < 3600*24*365);
-
+    /* stop if more than a year before starting point or in the future */
+    } while (fh < 0 && (INT)*ltime-(INT)lt < 3600*24*365 &&
+             lt < (DWORD)time(NULL));
+    
   if (fh < 0)
     return HS_FILE_ERROR;
 
@@ -13781,7 +13828,7 @@ struct tm    *tmb;
   /* allocate new space for the new history descriptor */
   if (_history_entries == 0)
     {
-    _history = malloc(sizeof(HISTORY));
+    _history = M_MALLOC(sizeof(HISTORY));
     memset(_history, 0, sizeof(HISTORY));
     if (_history == NULL)
       return HS_NO_MEMORY;
@@ -13868,7 +13915,7 @@ struct tm    *tmb;
     strcpy(_history[index].event_name, event_name);
     _history[index].base_time = mktime(tmb);
     _history[index].n_tag = size/sizeof(TAG);
-    _history[index].tag = malloc(size);
+    _history[index].tag = M_MALLOC(size);
     memcpy(_history[index].tag, tag, size);
 
     /* search previous definition */
@@ -13886,7 +13933,7 @@ struct tm    *tmb;
     /* if definition found, compare it with new one */
     if (def_rec.event_id == event_id)
       {
-      buffer = malloc(size);
+      buffer = M_MALLOC(size);
       memset(buffer, 0, size);
 
       lseek(fh, def_rec.def_offset, SEEK_SET);
@@ -13914,7 +13961,7 @@ struct tm    *tmb;
         /* definition identical, just remember old offset */
         _history[index].def_offset = def_rec.def_offset;
 
-      free(buffer);
+      M_FREE(buffer);
       }
     else
       {
@@ -13936,7 +13983,7 @@ struct tm    *tmb;
     fhd = _history[index].def_fh;
 
     /* compare definition with previous definition */
-    buffer = malloc(size);
+    buffer = M_MALLOC(size);
     memset(buffer, 0, size);
 
     lseek(fh, _history[index].def_offset, SEEK_SET);
@@ -13966,7 +14013,7 @@ struct tm    *tmb;
       write(fhd, (char *)&def_rec, sizeof(def_rec));
       }
 
-    free(buffer);
+    M_FREE(buffer);
     }
 
   }
@@ -14248,7 +14295,7 @@ DEF_RECORD def_rec;
 
   /* allocate event id array */
   lseek(fhd, 0, SEEK_END);
-  id = malloc(TELL(fhd)/sizeof(def_rec)*sizeof(DWORD));
+  id = M_MALLOC(TELL(fhd)/sizeof(def_rec)*sizeof(DWORD));
   lseek(fhd, 0, SEEK_SET);
 
   /* loop over index file */
@@ -14274,7 +14321,7 @@ DEF_RECORD def_rec;
     } while (TRUE);
 
 
-  free(id);
+  M_FREE(id);
   close(fh);
   close(fhd);
   *count = n;
@@ -14503,7 +14550,7 @@ TAG          *tag;
 
   /* read event definition */
   n = rec.data_size/sizeof(TAG);
-  tag = malloc(rec.data_size);
+  tag = M_MALLOC(rec.data_size);
   read(fh, (char *)tag, rec.data_size);
 
   if (n*NAME_LENGTH > (INT)*size)
@@ -14513,7 +14560,7 @@ TAG          *tag;
       strcpy(var_name+i*NAME_LENGTH, tag[i].name);
 
     cm_msg(MERROR, "hs_enum_tags", "tag buffer too small");
-    free(tag);
+    M_FREE(tag);
     close(fh);
     close(fhd);
     return HS_NO_MEMORY;
@@ -14524,7 +14571,7 @@ TAG          *tag;
     strcpy(var_name+i*NAME_LENGTH, tag[i].name);
   *size = n*NAME_LENGTH;
 
-  free(tag);
+  M_FREE(tag);
   close(fh);
   close(fhd);
 
@@ -14608,7 +14655,7 @@ TAG          *tag;
 
   /* read event definition */
   n = rec.data_size/sizeof(TAG);
-  tag = malloc(rec.data_size);
+  tag = M_MALLOC(rec.data_size);
   read(fh, (char *)tag, rec.data_size);
 
   /* search variable */
@@ -14628,11 +14675,11 @@ TAG          *tag;
     {
     *type = *n_data = 0;
     cm_msg(MERROR, "hs_get_var", "variable %s not found", var_name);
-    free(tag);
+    M_FREE(tag);
     return HS_UNDEFINED_VAR;
     }
 
-  free(tag);
+  M_FREE(tag);
   return HS_SUCCESS;
 }
 
@@ -14724,14 +14771,14 @@ char         *cache;
   /* try to read index file into cache */
   lseek(fhi, 0, SEEK_END);
   cache_size = TELL(fhi);
-  cache = malloc(cache_size);
+  cache = M_MALLOC(cache_size);
   if (cache)
     {
     lseek(fhi, 0, SEEK_SET);
     i = read(fhi, cache, cache_size);
     if (i < cache_size)
       {
-      free(cache);
+      M_FREE(cache);
       close(fh);
       close(fhd);
       close(fhi);
@@ -14821,12 +14868,12 @@ char         *cache;
           read(fh, (char *)&drec, sizeof(drec));
           read(fh, str, NAME_LENGTH);
 
-          tag = malloc(drec.data_size);
+          tag = M_MALLOC(drec.data_size);
           if (tag == NULL)
             {
             *n = *tbsize = *dbsize = 0;
             if (cache)
-              free(cache);
+              M_FREE(cache);
             close(fh);
             close(fhd);
             close(fhi);
@@ -14848,7 +14895,7 @@ char         *cache;
             {
             *n = *tbsize = *dbsize = 0;
             if (cache)
-              free(cache);
+              M_FREE(cache);
 
             return HS_UNDEFINED_VAR;
             }
@@ -14858,8 +14905,8 @@ char         *cache;
             {
             *n = *tbsize = *dbsize = 0;
             if (cache)
-              free(cache);
-            free(tag);
+              M_FREE(cache);
+            M_FREE(tag);
             close(fh);
             close(fhd);
             close(fhi);
@@ -14884,7 +14931,7 @@ char         *cache;
             var_offset += var_size*var_index;
             }
 
-          free(tag);
+          M_FREE(tag);
           old_def_offset = rec.def_offset;
           lseek(fh, irec.offset+sizeof(rec), SEEK_SET);
           }
@@ -14898,7 +14945,7 @@ char         *cache;
             *dbsize = (*n) * var_size;
             *tbsize = (*n) * sizeof(DWORD);
             if (cache)
-              free(cache);
+              M_FREE(cache);
             close(fh);
             close(fhd);
             close(fhi);
@@ -14924,7 +14971,7 @@ char         *cache;
       if (cp >= cache_size)
         {
         i = -1;
-        free(cache);
+        M_FREE(cache);
         cache = NULL;
         }
       else
@@ -14952,6 +14999,7 @@ char         *cache;
       last_irec_time = mktime(tms);
 
       last_irec_time += 3600*24;
+
       if (last_irec_time > end_time)
         break;
 
@@ -14974,7 +15022,7 @@ char         *cache;
       lseek(fhi, 0, SEEK_END);
       cache_size = TELL(fhi);
       lseek(fhi, 0, SEEK_SET);
-      cache = malloc(cache_size);
+      cache = M_MALLOC(cache_size);
       if (cache)
         {
         i = read(fhi, cache, cache_size);
@@ -14998,7 +15046,7 @@ char         *cache;
     } while (irec.time < end_time);
 
   if (cache)
-    free(cache);
+    M_FREE(cache);
   close(fh);
   close(fhd);
   close(fhi);
@@ -15118,7 +15166,7 @@ struct tm    *tms;
           read(fh, str, NAME_LENGTH);
 
           if (tag == NULL)
-            tag = malloc(drec.data_size);
+            tag = M_MALLOC(drec.data_size);
           else
             tag = realloc(tag, drec.data_size);
           if (tag == NULL)
@@ -15142,7 +15190,7 @@ struct tm    *tms;
             printf("\n");
 
             if (old_tag == NULL)
-              old_tag = malloc(drec.data_size);
+              old_tag = M_MALLOC(drec.data_size);
             else
               old_tag = realloc(old_tag, drec.data_size);
             memcpy(old_tag, tag, drec.data_size);
@@ -15240,8 +15288,8 @@ struct tm    *tms;
       }
     } while (irec.time < end_time);
 
-  free(tag);
-  free(old_tag);
+  M_FREE(tag);
+  M_FREE(old_tag);
   close(fh);
   close(fhd);
   close(fhi);
@@ -15562,7 +15610,7 @@ BOOL    bedit;
 
     if (tail_size > 0)
       {
-      buffer = malloc(tail_size);
+      buffer = M_MALLOC(tail_size);
       if (buffer == NULL)
         {
         close(fh);
@@ -15651,7 +15699,7 @@ BOOL    bedit;
     if (tail_size > 0)
       {
       n = write(fh, buffer, tail_size);
-      free(buffer);
+      M_FREE(buffer);
       }
 
     /* truncate file here */
@@ -16264,7 +16312,7 @@ char    *buffer;
 
   if (tail_size > 0)
     {
-    buffer = malloc(tail_size);
+    buffer = M_MALLOC(tail_size);
     if (buffer == NULL)
       {
       close(fh);
@@ -16280,7 +16328,7 @@ char    *buffer;
   if (tail_size > 0)
     {
     n = write(fh, buffer, tail_size);
-    free(buffer);
+    M_FREE(buffer);
     }
 
   /* truncate file here */
@@ -17049,7 +17097,7 @@ INT eb_create_buffer(INT size)
 
 \********************************************************************/
 {
-  _event_ring_buffer = malloc(size);
+  _event_ring_buffer = M_MALLOC(size);
   if (_event_ring_buffer == NULL)
     return BM_NO_MEMORY;
 
@@ -17084,7 +17132,7 @@ INT eb_free_buffer()
 \********************************************************************/
 {
   if (_event_ring_buffer)
-    free(_event_ring_buffer);
+    M_FREE(_event_ring_buffer);
 
   _eb_size = 0;
   return CM_SUCCESS;
@@ -17469,10 +17517,10 @@ INT dm_buffer_create(INT size, INT user_max_event_size)
 \********************************************************************/
 {
 
-  dm.area1.pt = malloc(size);
+  dm.area1.pt = M_MALLOC(size);
   if (dm.area1.pt == NULL)
     return (BM_NO_MEMORY);
-  dm.area2.pt = malloc(size);
+  dm.area2.pt = M_MALLOC(size);
   if (dm.area2.pt == NULL)
     return (BM_NO_MEMORY);
 
