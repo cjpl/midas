@@ -6,6 +6,9 @@
   Contents:     System part of Analyzer code for sample experiment
 
   $Log$
+  Revision 1.6  2000/09/12 12:36:15  midas
+  Removed test messages
+
   Revision 1.5  2000/08/11 11:43:50  midas
   Added cm_msg1 to produce messages which go to a differnt logging file
 
@@ -183,9 +186,6 @@ TRIGGER_SETTINGS_STR(trigger_settings_str);
     cm_msg(MERROR, "analyzer_init", "Cannot open \"/Equipment/Trigger/Settings\" tree in ODB");
     return 0;
     }
-
-  cm_msg(MERROR, "analyzer_init", "This is a test");
-  cm_msg1(MERROR, "dsc", "analyzer_init", "This is a test");
 
   return SUCCESS;
 }
