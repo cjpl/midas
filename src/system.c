@@ -14,8 +14,11 @@
                 Brown, Prentice Hall
 
   $Log$
+  Revision 1.32  1999/06/23 13:37:26  midas
+  Fixed compiler warnings
+
   Revision 1.31  1999/06/23 09:42:28  midas
-  - Changed all "//" to "/* */"
+  - Changed all NT comments
   - Added ss_settime for VxWrorks
 
   Revision 1.30  1999/06/02 07:51:08  midas
@@ -1342,7 +1345,7 @@ char mutex_name[256], path[256], file_name[256];
 #ifdef OS_VXWORKS
 
   /* semBCreate is a Binary semaphore which is under VxWorks a optimized mutex
-     refering to the "programmer's Guide 5.3.1 */
+     refering to the programmer's Guide 5.3.1 */
   if ((*((SEM_ID *)mutex_handle) = semBCreate(SEM_Q_FIFO, SEM_EMPTY)) == NULL)
     return SS_NO_MUTEX;
   return SS_CREATED;
@@ -3676,7 +3679,7 @@ struct mtop arg;
   arg.mt_count = 0;
 
   ioctl(*channel, MTIOCTOP, &arg);
-#endif /* linux */
+#endif /* MTSETBLK */
 
 #endif /* OS_UNIX */
 
