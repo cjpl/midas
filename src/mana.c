@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.128  2004/09/30 23:36:09  midas
+  Added rates to tests
+
   Revision 1.127  2004/09/29 02:58:24  midas
   Added Ryu's patch for cyclic trees
 
@@ -979,6 +982,7 @@ void test_register(ANA_TEST * t)
       tl[0] = (ANA_TEST *) malloc(sizeof(ANA_TEST));
       strcpy(tl[0]->name, "Always true");
       tl[0]->count = 0;
+      tl[0]->previous_count = 0;
       tl[0]->value = TRUE;
       tl[0]->registered = TRUE;
       n_test++;
@@ -1021,15 +1025,24 @@ void test_increment()
    }
 }
 
-void test_write()
+void test_write(int delta_time)
 {
    int i;
    char str[256];
+   float rate;
 
    /* write all test counts to /analyzer/tests/<name> */
    for (i = 0; i < n_test; i++) {
-      sprintf(str, "/%s/Tests/%s", analyzer_name, tl[i]->name);
+      sprintf(str, "/%s/Tests/%s/Count", analyzer_name, tl[i]->name);
       db_set_value(hDB, 0, str, &tl[i]->count, sizeof(DWORD), 1, TID_DWORD);
+
+      /* calcluate rate */
+      if (delta_time > 0) {
+         rate = (float)((tl[i]->count - tl[i]->previous_count)/(delta_time/1000.0));
+         tl[i]->previous_count = tl[i]->count;
+         sprintf(str, "/%s/Tests/%s/Rate [Hz]", analyzer_name, tl[i]->name);
+         db_set_value(hDB, 0, str, &rate, sizeof(float), 1, TID_FLOAT);
+      }
    }
 }
 
@@ -3869,7 +3882,7 @@ void update_stats()
    db_send_changed_records();
 
    /* save tests in ODB */
-   test_write();
+   test_write(actual_time - last_time);
 
    last_time = actual_time;
 }
