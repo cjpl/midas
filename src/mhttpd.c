@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.221  2002/05/22 05:46:44  midas
+  Increased disconnect time to 1 day
+
   Revision 1.220  2002/05/22 05:27:37  midas
   Make history display configuration page work with unnamed arrays
 
@@ -674,7 +677,7 @@
 #define DEFAULT_REFRESH 60
 
 /* time until mhttpd disconnects from MIDAS */
-#define CONNECT_TIME  3600
+#define CONNECT_TIME  3600*24
 
 #define WEB_BUFFER_SIZE 1000000
 
