@@ -6,6 +6,9 @@
   Contents:     LeCroy LRS1454/1458 Voltage Device Driver
 
   $Log$
+  Revision 1.5  2001/04/04 04:11:24  midas
+  Various changes at KEK, added CMD_SET_CURRENT_LIMIT_ALL
+
   Revision 1.4  2001/02/26 13:57:34  midas
   Made ajdustments to work with tcpip bus driver
 
@@ -28,7 +31,7 @@
 
 /*---- globals -----------------------------------------------------*/
 
-#define DEFAULT_TIMEOUT 5000  /* 5 sec. */
+#define DEFAULT_TIMEOUT 10000  /* 10 sec. */
 
 typedef struct {
   char password[NAME_LENGTH];
@@ -53,6 +56,7 @@ Polarity = INT[16] :\n\
 [12] -1\n\
 [13] -1\n\
 [14] -1\n\
+[15] -1\n\
 "
 
 typedef struct {
@@ -98,7 +102,7 @@ LRS1454_INFO *info;
   if (status != SUCCESS)
     return status;
 
-  bd(CMD_DEBUG, TRUE);
+  bd(CMD_DEBUG, 1);
 
   /* wait for "NETPASSWORD:"  */
   BD_PUTS("\r");
@@ -109,9 +113,9 @@ LRS1454_INFO *info;
   BD_PUTS(str);
 
   status = BD_GETS(str, sizeof(str), ">", DEFAULT_TIMEOUT);
-  if (!status)
+  if (strchr(str, '>') == NULL)
     {
-    cm_msg(MERROR, "lrs1454_init", "lrs1454 doesn't respond. Check power and connection.");
+    cm_msg(MERROR, "lrs1454_init", "LRS1454 doesn't respond. Check power and connection.");
     return FE_ERR_HW;
     }
 
@@ -120,7 +124,7 @@ LRS1454_INFO *info;
     {
     BD_PUTS("OVERRIDE\r");
     status = BD_GETS(str, sizeof(str), ">", DEFAULT_TIMEOUT);
-    if (!status)
+    if (strchr(str, '>') == NULL)
       {
       cm_msg(MERROR, "lrs1454_init", "Cannot override other telnet session.");
       return FE_ERR_HW;
@@ -133,16 +137,34 @@ LRS1454_INFO *info;
   BD_PUTS("EDIT\r");
   BD_GETS(str, sizeof(str), ">", DEFAULT_TIMEOUT);
 
+  if (strstr(str, "LOCAL") != NULL)
+    {
+    cm_msg(MERROR, "lrs1454_init", "HV Key Switch is set to LOCAL, please set to remote");
+    return FE_ERR_HW;
+    }
+  
   /* turn on HV main switch */
   BD_PUTS("HVON\r");
-  BD_GETS(str, sizeof(str), ">", DEFAULT_TIMEOUT);
+  status = BD_GETS(str, sizeof(str), ">", DEFAULT_TIMEOUT);
+  if (strchr(str, '>') == NULL)
+    {
+    cm_msg(MERROR, "lrs1454_init", "LRS1454 cannot turn on HV. Check HVON command manually.");
+    return FE_ERR_HW;
+    }
 
   /* enable channels */
-  for (i=0 ; i<info->num_channels ; i++)
+  printf("\n");
+  for (i=0 ; i<(info->num_channels-1)/12+1 ; i++)
     {
-    sprintf(str, "LD L%d.%d CE 1\r", i/12, i%12);
+    printf("Enable module %d\r", i);
+    sprintf(str, "LD L%d CE 1 1 1 1 1 1 1 1 1 1 1 1\r", i);
     BD_PUTS(str);
-    BD_GETS(str, sizeof(str), ">", DEFAULT_TIMEOUT);
+    status = BD_GETS(str, sizeof(str), ">", DEFAULT_TIMEOUT);
+    if (strchr(str, '>') == NULL || strstr(str, "ERROR"))
+      {
+      cm_msg(MERROR, "lrs1454_init", "Cannot enable module %d. Please exchange module.", i);
+      return FE_ERR_HW;
+      }
     }
 
   return FE_SUCCESS;
@@ -177,16 +199,33 @@ char  str[80];
 
 /*----------------------------------------------------------------------------*/
 
-INT lrs1454_set_all(LRS1454_INFO *info, INT channels, float value)
+INT lrs1454_set_all(LRS1454_INFO *info, INT channels, float *pvalue)
 {
-char  str[80];
-INT   i;
+char  str[256];
+INT   i, j, status;
 
-  for (i=0 ; i<channels ; i++)
+  for (i=0 ; i<(channels-1)/12+1 ; i++)
     {
-    sprintf(str, "LD L%d.%d DV %1.1f\r", i/12, i%12, value);
+    printf("Setting voltage module %d\r", i);
+
+    sprintf(str, "LD L%d DV", i);
+
+    for (j=0 ; j<channels && j<12; j++)
+      {
+      if (i*12 + j == channels)
+        break;
+
+      sprintf(str+strlen(str), " %1.1f", *pvalue++ * info->settings.polarity[i]);
+      }
+    strcat(str, "\r");
+
     BD_PUTS(str);
-    BD_GETS(str, sizeof(str), ">", DEFAULT_TIMEOUT);
+    status = BD_GETS(str, sizeof(str), ">", DEFAULT_TIMEOUT);
+    if (strchr(str, '>') == NULL)
+      {
+      cm_msg(MERROR, "lrs1454_set_all", "LRS1454 cannot set voltages on module %d. Please check device manually.", i);
+      return FE_ERR_HW;
+      }
     }
 
   return FE_SUCCESS;
@@ -251,14 +290,20 @@ INT lrs1454_get_all(LRS1454_INFO *info, INT channels, float *array)
 int   i, j;
 char  str[256], *p;
 
-  for (i=0 ; i<channels/12 ; i++)
+  for (i=0 ; i<(channels-1)/12+1 ; i++)
     {
+    printf("Reading voltage module %d    \r", i);
+
     sprintf(str, "RC L%d MV\r", i);
     BD_PUTS(str);
     BD_GETS(str, sizeof(str), ">", DEFAULT_TIMEOUT);
 
     p = strstr(str, "MV")+3;
-    p = strstr(p, "MV")+3;
+    if (p == NULL)
+      return lrs1454_get_all(info, channels, array);
+
+    if (strstr(p, "MV"))
+      p = strstr(p, "MV")+3;
 
     for (j=0 ; j<12 && i*12+j < channels ; j++)
       {
@@ -277,14 +322,17 @@ INT lrs1454_get_current_all(LRS1454_INFO *info, INT channels, float *array)
 int   i, j;
 char  str[256], *p;
 
-  for (i=0 ; i<channels/12 ; i++)
+  for (i=0 ; i<(channels-1)/12+1 ; i++)
     {
+    printf("Reading current module %d    \r", i);
+
     sprintf(str, "RC L%d MC\r", i);
     BD_PUTS(str);
     BD_GETS(str, sizeof(str), ">", DEFAULT_TIMEOUT);
 
     p = strstr(str, "MC")+3;
-    p = strstr(p, "MC")+3;
+    if (strstr(p, "MC"))
+      p = strstr(p, "MC")+3;
 
     for (j=0 ; j<12 && i*12+j < channels ; j++)
       {
@@ -300,13 +348,41 @@ char  str[256], *p;
 
 INT lrs1454_set_current_limit(LRS1454_INFO *info, int channel, float limit)
 {
-char  str[80];
+char  str[256];
 
-  sprintf(str, "LD L%d.%d TC %1.1f\r", channel/12, channel%12,
-          info->settings.polarity[channel/16]*limit);
+  sprintf(str, "LD L%d.%d TC %1.1f\r", channel/12, channel%12, limit);
 
   BD_PUTS(str);
   BD_GETS(str, sizeof(str), ">", DEFAULT_TIMEOUT);
+
+  return FE_SUCCESS;
+}
+
+/*----------------------------------------------------------------------------*/
+
+INT lrs1454_set_current_limit_all(LRS1454_INFO *info, int channels, float *limit)
+{
+char  str[256];
+INT   i, j;
+
+  for (i=0 ; i<(channels-1)/12+1 ; i++)
+    {
+    printf("Setting current limit module %d\r", i);
+
+    sprintf(str, "LD L%d TC", i);
+
+    for (j=0 ; j<channels && j<12; j++)
+      {
+      if (i*12 + j == channels)
+        break;
+
+      sprintf(str+strlen(str), " %1.1f", *limit++);
+      }
+    strcat(str, "\r");
+
+    BD_PUTS(str);
+    BD_GETS(str, sizeof(str), ">", DEFAULT_TIMEOUT);
+    }
 
   return FE_SUCCESS;
 }
@@ -349,8 +425,8 @@ void    *info, *bd;
     case CMD_SET_ALL:
       info = va_arg(argptr, void *);
       channel = va_arg(argptr, INT);
-      value   = (float) va_arg(argptr, double);
-      status = lrs1454_set_all(info, channel, value);
+      pvalue   = va_arg(argptr, float*);
+      status = lrs1454_set_all(info, channel, pvalue);
       break;
 
     case CMD_GET:
@@ -386,6 +462,13 @@ void    *info, *bd;
       channel = va_arg(argptr, INT);
       value = (float) va_arg(argptr, double);
       status = lrs1454_set_current_limit(info, channel, value);
+      break;
+
+    case CMD_SET_CURRENT_LIMIT_ALL:
+      info = va_arg(argptr, void *);
+      channel = va_arg(argptr, INT);
+      pvalue = va_arg(argptr, float*);
+      status = lrs1454_set_current_limit_all(info, channel, pvalue);
       break;
 
     default:
