@@ -6,6 +6,9 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
+  Revision 1.27  2001/04/23 08:25:07  midas
+  Only call setuid() when started as root
+
   Revision 1.26  2000/11/14 08:17:05  midas
   Added number of messages for cm_msg_retrieve and in odbedit "old" command
 
@@ -329,17 +332,22 @@ BOOL   inetd;
       chdir(callback.directory);
 
 #ifdef OS_UNIX
-    if (callback.user[0])
+
+    /* under UNIX, change user and group ID if started under root */
+    if (callback.user[0] && geteuid() == 0)
       {
       struct passwd *pw;
 
       pw = getpwnam(callback.user);
 
-	    if( setgid(pw->pw_gid) < 0 || initgroups( pw->pw_name, pw->pw_gid) < 0)
-		    cm_msg(MERROR, "main", "Unable to set group premission");
+      if(setgid(pw->pw_gid) < 0 || initgroups(pw->pw_name, pw->pw_gid) < 0)
+        cm_msg(MERROR, "main", "Unable to set group premission for user %s", callback.user);
+      else
+        cm_msg(MLOG, "main", "Changed UID to user %s", callback.user);
 
-	    if( setreuid( 0, pw->pw_uid) < 0)
-		    cm_msg(MERROR, "main", "Unable to set user ID");
+      if(setreuid(0, pw->pw_uid) < 0)
+        cm_msg(MERROR, "main", "Unable to set user ID for %s", callback.user);
+
       }
 #endif
 
