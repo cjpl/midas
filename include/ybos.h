@@ -10,6 +10,9 @@
   date        by    modification
   ---------   ---   ------------------------------------------------
 *  $Log$
+*  Revision 1.10  1999/12/20 08:38:25  midas
+*  Defined ybos_event_get
+*
 *  Revision 1.9  1999/09/30 22:52:16  pierre
 *  - arg of yb_any_bank_display
 *
@@ -244,4 +247,7 @@ INT   EXPRT ybos_log_open(LOG_CHN * log_chn, INT run_number);
 INT   EXPRT ybos_write(LOG_CHN * log_chn, EVENT_HEADER * pevent, INT evt_size);
 INT   EXPRT ybos_log_close(LOG_CHN * log_chn, INT run_number);
 #endif
+
+INT   EXPRT ybos_event_get (DWORD ** plrl, DWORD * size);
+
 /*------------ END --------------------------------------------------------------*/
