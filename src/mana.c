@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.38  1999/10/11 14:59:24  midas
+  Moved the daemonizing before the cm_connect_experiment
+
   Revision 1.37  1999/10/11 14:45:01  midas
   Added note about becoming a daemon
 
@@ -3320,6 +3323,14 @@ INT status;
   if (status != CM_SUCCESS)
     return 1;
 
+  /* become a daemon */
+  if (clp.daemon)
+    {
+    printf("Becoming a daemon...\n");
+    clp.quiet = TRUE;
+    ss_daemon_init();
+    }
+
   /* set online mode if no input filename is given */
   clp.online = (clp.input_file_name[0][0] == 0);
 
@@ -3400,14 +3411,6 @@ INT status;
 
   /* reqister event requests */
   register_requests();
-
-  /* now become a daemon */
-  if (clp.daemon)
-    {
-    printf("Becoming a daemon...\n");
-    clp.quiet = TRUE;
-    ss_daemon_init();
-    }
 
   /* initialize ss_getchar */
   if (!clp.quiet)
