@@ -86,7 +86,7 @@ Several system files needs to be modified for the full Midas implementation.
             user                    = root
             server                  = /usr/local/bin/mserver
             log_on_success          += USERID HOST PID
-            log_on_failure          += USERID HOST PID
+            log_on_failure          += USERID HOST
             disable                 = no
     }    \endcode
   - <b>/etc/ld.so.conf :</b> Dynamic Linked library list. Add directory pointing to 
