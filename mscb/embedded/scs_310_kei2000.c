@@ -9,6 +9,9 @@
                 for Keithley Model 2000 Multimeter
 
   $Log$
+  Revision 1.5  2004/04/07 11:06:17  midas
+  Version 1.7.1
+
   Revision 1.4  2004/03/19 07:10:33  midas
   Changed pinout for GPIB
 
@@ -30,6 +33,9 @@
 
 char code node_name[] = "Kei2000";
 
+/* declare number of sub-addresses to framework */
+unsigned char idata _n_sub_addr = 1;
+
 bit terminal_mode, term_flag;
 xdata char term_buf[80];
 char tbwp, tbrp;
@@ -45,7 +51,7 @@ struct {
 } user_data;
 
 MSCB_INFO_VAR code variables[] = {
-   1, UNIT_ASCII, 0, 0, 0, "GPIB", 0,
+   1, UNIT_ASCII, 0, 0, MSCBF_DATALESS, "GPIB", 0,
    4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "Reading", &user_data.reading,
    1, UNIT_BYTE, 0, 0, 0, "GPIB Adr", &user_data.gpib_adr,
    0

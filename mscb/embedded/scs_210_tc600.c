@@ -10,6 +10,9 @@
                 Turbomolecular Pump with TC600 Electronics
 
   $Log$
+  Revision 1.9  2004/04/07 11:06:17  midas
+  Version 1.7.1
+
   Revision 1.8  2004/01/07 12:56:15  midas
   Chaned line length
 
@@ -42,6 +45,10 @@
 #include "mscb.h"
 
 char code node_name[] = "TC600";
+
+/* declare number of sub-addresses to framework */
+unsigned char idata _n_sub_addr = 1;
+
 bit terminal_mode;
 
 unsigned char tc600_write(unsigned short param, unsigned char len, unsigned long value);

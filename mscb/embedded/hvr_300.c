@@ -9,6 +9,9 @@
                 for HVR_300 High Voltage Regulator
 
   $Log$
+  Revision 1.8  2004/04/07 11:06:17  midas
+  Version 1.7.1
+
   Revision 1.7  2004/01/07 12:56:15  midas
   Chaned line length
 
@@ -39,6 +42,9 @@ extern bit FREEZE_MODE;
 extern bit DEBUG_MODE;
 
 char code node_name[] = "HVR-300";
+
+/* declare number of sub-addresses to framework */
+unsigned char idata _n_sub_addr = 1;
 
 /* calculate voltage divider */
 #define DIVIDER ((41E6 + 33E3) / 33E3)

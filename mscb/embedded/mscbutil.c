@@ -6,6 +6,9 @@
   Contents:     Various utility functions for MSCB protocol
 
   $Log$
+  Revision 1.31  2004/04/07 11:06:17  midas
+  Version 1.7.1
+
   Revision 1.30  2004/03/19 08:15:29  midas
   Moved upgrade & co to yield()
 
@@ -107,6 +110,8 @@ extern SYS_INFO sys_info;               // for eeprom functions
 extern MSCB_INFO_VAR code variables[];
 
 #endif
+
+extern unsigned char idata _n_sub_addr, _var_size;
 
 #pragma NOAREGS                 // all functions can be called from interrupt routine!
 
@@ -816,7 +821,7 @@ void delay_us(unsigned int us)
 
 #ifdef EEPROM_SUPPORT
 
-void eeprom_read(void * dst, unsigned char len, unsigned char *offset)
+void eeprom_read(void * dst, unsigned char len, unsigned short *offset)
 /********************************************************************\
 
   Routine: eeprom_read
@@ -890,7 +895,7 @@ void eeprom_read(void * dst, unsigned char len, unsigned char *offset)
 
 /*------------------------------------------------------------------*/
 
-void eeprom_write(void * src, unsigned char len, unsigned char *offset)
+void eeprom_write(void * src, unsigned char len, unsigned short *offset)
 /********************************************************************\
 
   Routine: eeprom_write
@@ -1041,8 +1046,8 @@ void eeprom_flash(void)
 
 \********************************************************************/
 {
-   unsigned char offset, i;
-   unsigned short magic;
+   unsigned char i, adr;
+   unsigned short magic, offset;
 
    eeprom_erase();
    watchdog_refresh();
@@ -1053,8 +1058,10 @@ void eeprom_flash(void)
    eeprom_write(&sys_info, sizeof(SYS_INFO), &offset);
 
    // user channel variables
-   for (i = 0; variables[i].width; i++)
-      eeprom_write(variables[i].ud, variables[i].width, &offset);
+   for (adr = 0 ; adr < _n_sub_addr ; adr++)
+      for (i = 0; variables[i].width; i++)
+         eeprom_write((char *)variables[i].ud + _var_size*adr, 
+                      variables[i].width, &offset);
 
    // magic
    magic = 0x1234;
@@ -1072,8 +1079,8 @@ unsigned char eeprom_retrieve(void)
 
 \********************************************************************/
 {
-   unsigned char offset, i;
-   unsigned short magic;
+   unsigned char i, adr;
+   unsigned short magic, offset;
 
    offset = 0;
 
@@ -1081,8 +1088,10 @@ unsigned char eeprom_retrieve(void)
    eeprom_read(&sys_info, sizeof(SYS_INFO), &offset);
 
    // user channel variables
-   for (i = 0; variables[i].width; i++)
-      eeprom_read(variables[i].ud, variables[i].width, &offset);
+   for (adr = 0 ; adr < _n_sub_addr ; adr++)
+      for (i = 0; variables[i].width; i++)
+         eeprom_read((char *)variables[i].ud + _var_size*adr, 
+                     variables[i].width, &offset);
 
    // check for magic
    eeprom_read(&magic, 2, &offset);
