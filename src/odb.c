@@ -6,6 +6,9 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.71  2003/11/01 01:12:38  olchansk
+  abort on unexpected odb failures
+
   Revision 1.70  2003/10/30 20:41:15  midas
   Check for num_values on a couple of db_set_xxx calls
 
@@ -231,6 +234,7 @@
 
 #include "midas.h"
 #include "msystem.h"
+#include <assert.h>
 
 /*------------------------------------------------------------------*/
 
@@ -7357,17 +7361,29 @@ KEY   initkey, key;
   status = db_find_key(hDB, 0, full_name, &hKeyInit);
   if (status == DB_SUCCESS)
     {
-    db_get_key(hDB, hKeyInit, &initkey);
-    db_get_key(hDB, hKey, &key);
+    status = db_get_key(hDB, hKeyInit, &initkey);
+    assert(status == DB_SUCCESS);
+    status = db_get_key(hDB, hKey, &key);
+    assert(status == DB_SUCCESS);
 
     if (initkey.type != TID_KEY && initkey.type == key.type)
       {
       /* copy data from original key to new key */
       size = sizeof(buffer);
-      if (db_get_data(hDB, hKey, buffer, &size, initkey.type) == DB_SUCCESS)
-        db_set_data(hDB, hKeyInit, buffer, initkey.total_size,
-                                            initkey.num_values, initkey.type);
+      status = db_get_data(hDB, hKey, buffer, &size, initkey.type);
+      assert(status == DB_SUCCESS);
+      status = db_set_data(hDB, hKeyInit, buffer, initkey.total_size, initkey.num_values, initkey.type);
+      assert(status == DB_SUCCESS);
       }
+    }
+  else if (status == DB_NO_KEY)
+    {
+    /* do nothing */
+    }
+  else
+    {
+    cm_msg(MERROR, "merge_records", "aborting on unexpected failure of db_find_key(%s), status %d", full_name,status);
+    abort();
     }
 }
 
@@ -7451,9 +7467,10 @@ INT db_create_record(HNDLE hDB, HNDLE hKey, char *key_name, char *init_str)
   db_lock_database(hDB);
 
   /* merge temporay record and original record */
-  db_find_key(hDB, hKey, key_name, &hKeyOrig);
-  if (hKeyOrig)
+  status = db_find_key(hDB, hKey, key_name, &hKeyOrig);
+  if (status == DB_SUCCESS)
     {
+    assert(hKeyOrig!=0);
     /* check if key or subkey is opened */
     open_count = 0;
     db_scan_tree_link(hDB, hKeyOrig, 0, check_open_keys, NULL);
@@ -7576,7 +7593,7 @@ INT db_create_record(HNDLE hDB, HNDLE hKey, char *key_name, char *init_str)
 
     free(buffer);
     }
-  else
+  else if (status == DB_NO_KEY)
     {
     /* create fresh record */
     db_create_key(hDB, hKey, key_name, TID_KEY);
@@ -7593,6 +7610,11 @@ INT db_create_record(HNDLE hDB, HNDLE hKey, char *key_name, char *init_str)
       db_unlock_database(hDB);
       return status;
       }
+    }
+  else
+    {
+    cm_msg(MERROR, "db_create_record", "aborting on unexpected failure of db_find_key(%s), status %d", key_name, status);
+    abort();
     }
 
   db_unlock_database(hDB);
