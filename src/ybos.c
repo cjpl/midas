@@ -6,6 +6,9 @@
  *         amaudruz@triumf.ca                            Local:           6234
  * ---------------------------------------------------------------------------
    $Log$
+   Revision 1.62  2005/02/25 23:21:20  olchanski
+   fix double free in yb_any_file_ropen() causing lazylogger crash
+
    Revision 1.61  2004/11/30 18:37:23  pierre
    restore lost change, add TID_STRING support for mdump
 
@@ -1706,6 +1709,7 @@ status : from lower function
    my.pmp = NULL;
    my.pmh = NULL;
    ptopmrd = NULL;
+   my.pmrd = NULL; /* ptopmrd and my.pmrd point to the same place. K.O. 25-FEB-2005 */
    return (YB_SUCCESS);
 }
 
