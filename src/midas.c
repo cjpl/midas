@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.61  1999/09/29 19:23:33  pierre
+  - Fix bk_iterate,swap,locate for bank32
+
   Revision 1.60  1999/09/27 13:49:04  midas
   Added bUnique parameter to cm_shutdown
 
@@ -10640,7 +10643,7 @@ char         return_buffer[ASCII_BUFFER_SIZE]; /* ASCII out */
           param_size = *((INT *) prpc_param[i+1]);
           /* write number of bytes to output */
           sprintf(out_param_ptr, "%d", param_size);
-          out_param_ptr += strlen(out_param_ptr)+1;  // '0' finishes param
+          out_param_ptr += strlen(out_param_ptr)+1;  /* '0' finishes param */
           memcpy(out_param_ptr, prpc_param[i], param_size);
           out_param_ptr += param_size;
           *out_param_ptr = 0;
@@ -11946,7 +11949,7 @@ int bk_delete(void *event, char *name)
 
   Routine: bk_delete
 
-  Purpose: Delte a MIDAS bank inside an event
+  Purpose: Delete a MIDAS bank inside an event
 
   Input:
     void   *event           pointer to the event
@@ -12089,38 +12092,38 @@ BANK   *pbk;
 BANK32 *pbk32;
 DWORD  dname;
 
-  if (((BANK_HEADER *)event)->flags & BANK_FORMAT_32BIT)
-    {
+  if (bk_is32(event))
+  {
     pbk32 = (BANK32 *) (((BANK_HEADER *) event)+1);
     strncpy((char *) &dname, name, 4);
     do
-      {
+    {
       if (*((DWORD *) pbk32->name) == dname)
-        {
+      {
         *((void **)pdata) = pbk32+1;
         if (tid_size[pbk32->type & 0xFF] == 0)
           return pbk32->data_size;
         return pbk32->data_size / tid_size[pbk32->type & 0xFF];
-        }
-      pbk32 = (BANK32 *) ((char *) (pbk32 + 1) + ALIGN(pbk32->data_size));
-      } while ((DWORD) pbk32 - (DWORD) event < ((BANK_HEADER *) event)->data_size + sizeof(BANK_HEADER));
-    }
+      }
+      pbk32 = (BANK32 *) ((char *) (pbk32 + 1) + ALIGN(pbk32->data_size) - sizeof(DWORD));
+    } while ((DWORD) pbk32 - (DWORD) event < ((BANK_HEADER *) event)->data_size + sizeof(BANK_HEADER));
+  }
   else
-    {
+  {
     pbk = (BANK *) (((BANK_HEADER *) event)+1);
     strncpy((char *) &dname, name, 4);
     do
-      {
+    {
       if (*((DWORD *) pbk->name) == dname)
-        {
+      {
         *((void **)pdata) = pbk+1;
         if (tid_size[pbk->type & 0xFF] == 0)
           return pbk->data_size;
         return pbk->data_size / tid_size[pbk->type & 0xFF];
-        }
+      }
       pbk = (BANK *) ((char *) (pbk + 1) + ALIGN(pbk->data_size));
-      } while ((DWORD) pbk - (DWORD) event < ((BANK_HEADER *) event)->data_size + sizeof(BANK_HEADER));
-    }
+    } while ((DWORD) pbk - (DWORD) event < ((BANK_HEADER *) event)->data_size + sizeof(BANK_HEADER));
+  }
 
   /* bank not found */
   *((void **)pdata) = NULL;
@@ -12190,7 +12193,7 @@ INT bk_iterate32(void *event, BANK32 **pbk, void *pdata)
   if (*pbk == NULL)
     *pbk = (BANK32 *) (((BANK_HEADER *) event)+1);
   else
-    *pbk = (BANK32 *) ((char *) (*pbk + 1) + ALIGN((*pbk)->data_size));
+    *pbk = (BANK32 *) ((char *) (*pbk + 1) + ALIGN((*pbk)->data_size) - sizeof(DWORD));
 
   *((void **)pdata) = (*pbk)+1;
 
@@ -12239,12 +12242,13 @@ BOOL        b32;
   if (pbh->flags < 0x10000 && !force)
     return 0;
 
-  b32 = ((pbh->flags & BANK_FORMAT_32BIT) > 0);
-
   /* swap bank header */
   DWORD_SWAP(&pbh->data_size);
   DWORD_SWAP(&pbh->flags);
 
+  /* check for 32bit banks */
+  b32 = ((pbh->flags & BANK_FORMAT_32BIT) > 0);
+  
   pbk   = (BANK *) (pbh+1);
   pbk32 = (BANK32 *) pbk;
 
@@ -12270,7 +12274,7 @@ BOOL        b32;
     /* pbk points to next bank */
     if (b32)
       {
-      pbk32 = (BANK32 *) ((char *) (pbk32 + 1) + ALIGN(pbk32->data_size));
+      pbk32 = (BANK32 *) ((char *) (pbk32 + 1) + ALIGN(pbk32->data_size) - sizeof(DWORD));
       pbk = (BANK *) pbk32;
       }
     else
