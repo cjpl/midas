@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.85  1999/11/08 13:56:09  midas
+  Added different alarm types
+
   Revision 1.84  1999/10/28 13:26:16  midas
   Added "alarms on/off" button
 
@@ -4256,7 +4259,7 @@ KEY   key;
 
 void show_alarm_page()
 {
-INT   i, size, triggered;
+INT   i, size, triggered, type, index;
 BOOL  active;
 HNDLE hDB, hkeyroot, hkey;
 KEY   key;
@@ -4289,92 +4292,120 @@ char  str[256], ref[256], condition[256], value[256];
     else
       sprintf(ref, "%sAlarms/", 
               mhttpd_url);
-    rsprintf("<tr><td align=center colspan=6 bgcolor=#C0C0FF><a href=\"%s\"><h1>Alarm system disabled</h1></a></tr>", ref);
+    rsprintf("<tr><td align=center colspan=6 bgcolor=#FFC0C0><a href=\"%s\"><h1>Alarm system disabled</h1></a></tr>", ref);
     }
 
   /*---- alarms ----*/
 
-  rsprintf("<tr><th>Alarm<th>State<th>First triggered<th>Class<th>Condition<th>Current value</tr>\n");
-
-  /* go through all alarms */
-  db_find_key(hDB, 0, "/Alarms/Alarms", &hkeyroot);
-  if (hkeyroot)
+  for (index = AT_EVALUATED ; index>=AT_INTERNAL ; index--)
     {
-    for (i=0 ; ; i++)
+    if (index == AT_EVALUATED)
       {
-      db_enum_link(hDB, hkeyroot, i, &hkey);
+      rsprintf("<tr><th align=center colspan=6 bgcolor=#A0FFFF>Evaluated alarms</tr>\n");
+      rsprintf("<tr><th>Alarm<th>State<th>First triggered<th>Class<th>Condition<th>Current value</tr>\n");
+      }
+    else if (index == AT_PROGRAM)
+      {
+      rsprintf("<tr><th align=center colspan=6 bgcolor=#A0FFFF>Program alarms</tr>\n");
+      rsprintf("<tr><th>Alarm<th>State<th>First triggered<th>Class<th colspan=2>Condition</tr>\n");
+      }
+    else if (index == AT_INTERNAL)
+      {
+      rsprintf("<tr><th align=center colspan=6 bgcolor=#A0FFFF>Internal alarms</tr>\n");
+      rsprintf("<tr><th>Alarm<th>State<th>First triggered<th>Class<th colspan=2>Condition</tr>\n");
+      }
 
-      if (!hkey)
-        break;
-
-      db_get_key(hDB, hkey, &key);
-
-      /* alarm */
-      if (exp_name[0])
-        sprintf(ref, "%sAlarms/Alarms/%s?exp=%s", 
-                mhttpd_url, key.name, exp_name);
-      else
-        sprintf(ref, "%sAlarms/Alarms/%s", 
-                mhttpd_url, key.name);
-      rsprintf("<tr><td bgcolor=#C0C0FF><a href=\"%s\"><b>%s</b></a>", ref, key.name);
-
-      /* state */
-      size = sizeof(BOOL);
-      db_get_value(hDB, hkey, "Active", &active, &size, TID_BOOL);
-      size = sizeof(INT);
-      db_get_value(hDB, hkey, "Triggered", &triggered, &size, TID_INT);
-      if (!active)
-        rsprintf("<td bgcolor=#FFFF00 align=center>Disabled");
-      else
+    /* go through all alarms */
+    db_find_key(hDB, 0, "/Alarms/Alarms", &hkeyroot);
+    if (hkeyroot)
+      {
+      for (i=0 ; ; i++)
         {
-        if (!triggered)
-          rsprintf("<td bgcolor=#00FF00 align=center>OK");
+        db_enum_link(hDB, hkeyroot, i, &hkey);
+
+        if (!hkey)
+          break;
+
+        db_get_key(hDB, hkey, &key);
+
+        /* type */
+        size = sizeof(INT);
+        db_get_value(hDB, hkey, "Type", &type, &size, TID_INT);
+        if (type != index)
+          continue;
+
+        /* alarm */
+        if (exp_name[0])
+          sprintf(ref, "%sAlarms/Alarms/%s?exp=%s", 
+                  mhttpd_url, key.name, exp_name);
         else
-          rsprintf("<td bgcolor=#FF0000 align=center>Triggered");
-        }
+          sprintf(ref, "%sAlarms/Alarms/%s", 
+                  mhttpd_url, key.name);
+        rsprintf("<tr><td bgcolor=#C0C0FF><a href=\"%s\"><b>%s</b></a>", ref, key.name);
 
-      /* time */
-      size = sizeof(str);
-      db_get_value(hDB, hkey, "Time triggered first", &str, &size, TID_STRING);
-      if (!triggered)
-        strcpy(str, "-");
-      rsprintf("<td align=center>%s", str);
+        /* state */
+        size = sizeof(BOOL);
+        db_get_value(hDB, hkey, "Active", &active, &size, TID_BOOL);
+        size = sizeof(INT);
+        db_get_value(hDB, hkey, "Triggered", &triggered, &size, TID_INT);
+        if (!active)
+          rsprintf("<td bgcolor=#FFFF00 align=center>Disabled");
+        else
+          {
+          if (!triggered)
+            rsprintf("<td bgcolor=#00FF00 align=center>OK");
+          else
+            rsprintf("<td bgcolor=#FF0000 align=center>Triggered");
+          }
 
-      /* class */
-      size = sizeof(str);
-      db_get_value(hDB, hkey, "Alarm Class", &str, &size, TID_STRING);
-
-      if (exp_name[0])
-        sprintf(ref, "%sAlarms/Classes/%s?exp=%s", 
-                mhttpd_url, str, exp_name);
-      else
-        sprintf(ref, "%sAlarms/Classes/%s", 
-                mhttpd_url, str);
-      rsprintf("<td align=center><a href=\"%s\">%s</a>", ref, str);
-
-      /* condition */
-      size = sizeof(condition);
-      db_get_value(hDB, hkey, "Condition", &condition, &size, TID_STRING);
-      if (equal_ustring(condition, "INTERNAL") && triggered)
-        {
+        /* time */
         size = sizeof(str);
-        db_get_value(hDB, hkey, "Alarm message", &str, &size, TID_STRING);
-        rsprintf("<td>%s", str);
-        }
-      else
-        {
-        rsprintf("<td>");
-        strencode(condition);
-        }
+        db_get_value(hDB, hkey, "Time triggered first", &str, &size, TID_STRING);
+        if (!triggered)
+          strcpy(str, "-");
+        rsprintf("<td align=center>%s", str);
 
-      if (!equal_ustring(condition, "INTERNAL"))
-        {
-        /* retrieve value */
-        al_evaluate_condition(condition, value);
-        rsprintf("<td align=center bgcolor=#C0C0FF>%s", value);
-        }
+        /* class */
+        size = sizeof(str);
+        db_get_value(hDB, hkey, "Alarm Class", &str, &size, TID_STRING);
 
-      rsprintf("</tr>\n");
+        if (exp_name[0])
+          sprintf(ref, "%sAlarms/Classes/%s?exp=%s", 
+                  mhttpd_url, str, exp_name);
+        else
+          sprintf(ref, "%sAlarms/Classes/%s", 
+                  mhttpd_url, str);
+        rsprintf("<td align=center><a href=\"%s\">%s</a>", ref, str);
+
+        /* condition */
+        size = sizeof(condition);
+        db_get_value(hDB, hkey, "Condition", &condition, &size, TID_STRING);
+
+        if (index == AT_EVALUATED)
+          {
+          /* print condition */
+          rsprintf("<td>");
+          strencode(condition);
+
+          /* retrieve value */
+          al_evaluate_condition(condition, value);
+          rsprintf("<td align=center bgcolor=#C0C0FF>%s", value);
+          }
+        else if (index == AT_PROGRAM)
+          {
+          /* print condition */
+          rsprintf("<td colspan=2>");
+          strencode(condition);
+          }
+        else if (index == AT_INTERNAL && triggered)
+          {
+          size = sizeof(str);
+          db_get_value(hDB, hkey, "Alarm message", &str, &size, TID_STRING);
+          rsprintf("<td colspan=2>%s", str);
+          }
+
+        rsprintf("</tr>\n");
+        }
       }
     }
 
