@@ -6,6 +6,9 @@
  *         amaudruz@triumf.ca                            Local:           6234
  * ---------------------------------------------------------------------------
    $Log$
+   Revision 1.61  2004/11/30 18:37:23  pierre
+   restore lost change, add TID_STRING support for mdump
+
    Revision 1.60  2004/09/29 17:57:11  midas
    Added large file (>2GB) support for linux
 
@@ -1693,8 +1696,8 @@ status : from lower function
       free(my.pyh);
    if (my.pylrl != NULL)
       free(my.pylrl);
-   if (my.pmrd != NULL)
-      free(my.pmrd);
+   if (ptopmrd != NULL)
+      free(ptopmrd);
    if (my.pmp != NULL)
       free(my.pmp);
    my.pylrl = NULL;
@@ -1702,7 +1705,7 @@ status : from lower function
    my.pmagta = NULL;
    my.pmp = NULL;
    my.pmh = NULL;
-   my.pmrd = NULL;
+   ptopmrd = NULL;
    return (YB_SUCCESS);
 }
 
@@ -3200,7 +3203,11 @@ none
       length_type = sizeof(char);
       strcpy(strbktype, "STRUCT (not supported->8 bits)");
    }
-
+   if (type == TID_STRING) {
+      length_type = sizeof(char);
+      strcpy(strbktype, "String 8bit ASCI");
+   }
+   
    printf("\nBank:%s Length: %li(I*1)/%li(I*4)/%li(Type) Type:%s",
           bank_name, lrl, lrl >> 2, lrl / length_type, strbktype);
 
@@ -3320,6 +3327,7 @@ none
          j++;
          break;
       case TID_CHAR:
+      case TID_STRING:
          if (j > 15) {
             printf("\n%4i-> ", i);
             j = 0;
@@ -3399,7 +3407,7 @@ none
    }
    if (type == TID_BYTE) {
       length_type = sizeof(BYTE);
-      strcpy(strbktype, "8 bit Bytes");
+      strcpy(strbktype, "Unsigned Bytes");
    }
    if (type == TID_SBYTE) {
       length_type = sizeof(BYTE);
@@ -3417,11 +3425,15 @@ none
       length_type = sizeof(char);
       strcpy(strbktype, "STRUCT (not supported->8 bits)");
    }
+   if (type == TID_STRING) {
+      length_type = sizeof(char);
+      strcpy(strbktype, "String 8bit ASCI");
+   }
+   
    printf("\nBank:%s Length: %li(I*1)/%li(I*4)/%li(Type) Type:%s",
           bank_name, lrl, lrl >> 2, lrl / length_type, strbktype);
 
    pendbk = pdata + lrl;
-
    while (pdata < pendbk) {
       switch (type) {
       case TID_DOUBLE:
@@ -3537,7 +3549,8 @@ none
          j++;
          break;
       case TID_CHAR:
-         if (j > 15) {
+      case TID_STRING:
+	if (j > 15) {
             printf("\n%4i-> ", i);
             j = 0;
             i += 16;
