@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.84  1999/11/10 13:56:12  midas
+  Alarm record only gets created when old one mismatches
+
   Revision 1.83  1999/11/10 10:39:11  midas
   Changed initialization of alarms
 
@@ -15197,14 +15200,20 @@ ALARM_STR(alarm_str);
     db_set_value(hDB, hkeyalarm, "Condition", str, 256, 1, TID_STRING); 
     }
 
-  /* make sure alarm record has right structure */
-  db_create_record(hDB, 0, str, strcomb(alarm_str));
   size = sizeof(alarm);
   status = db_get_record(hDB, hkeyalarm, &alarm, &size, 0);
-  if (status != DB_SUCCESS)
+  if (status != DB_SUCCESS || alarm.type < AT_INTERNAL || alarm.type > AT_EVALUATED)
     {
-    cm_msg(MERROR, "al_trigger_alarm", "Cannot get alarm record");
-    return AL_ERROR_ODB;
+    /* make sure alarm record has right structure */
+    db_create_record(hDB, hkeyalarm, "", strcomb(alarm_str));
+
+    size = sizeof(alarm);
+    status = db_get_record(hDB, hkeyalarm, &alarm, &size, 0);
+    if (status != DB_SUCCESS)
+      {
+      cm_msg(MERROR, "al_trigger_alarm", "Cannot get alarm record");
+      return AL_ERROR_ODB;
+      }
     }
 
   /* if internal alarm, check if active and check interval */
@@ -15553,14 +15562,19 @@ ALARM_STR(alarm_str);
 
     db_get_key(hDB, hkey, &key);
 
-    /* make sure alarm record has right structure */
-    db_create_record(hDB, hkey, "", strcomb(alarm_str));
     size = sizeof(alarm);
     status = db_get_record(hDB, hkey, &alarm, &size, 0);
-    if (status != DB_SUCCESS)
+    if (status != DB_SUCCESS || alarm.type < AT_INTERNAL || alamr.type > AT_EVALUATED)
       {
-      cm_msg(MERROR, "al_check", "Cannot get alarm record");
-      continue;
+      /* make sure alarm record has right structure */
+      db_create_record(hDB, hkey, "", strcomb(alarm_str));
+      size = sizeof(alarm);
+      status = db_get_record(hDB, hkey, &alarm, &size, 0);
+      if (status != DB_SUCCESS || alarm.type < AT_INTERNAL || alamr.type > AT_EVALUATED)
+        {
+        cm_msg(MERROR, "al_check", "Cannot get alarm record");
+        continue;
+        }
       }
 
     /* check alarm only when active and not internal */
