@@ -8,6 +8,9 @@
                 following the MIDAS CAMAC Standard under DIRECTIO
 
   $Log$
+  Revision 1.11  2001/08/14 10:15:43  midas
+  Removed debugging statements
+
   Revision 1.10  2001/08/14 09:42:42  midas
   Added autodetection of ISA and PCI cards
 
@@ -850,7 +853,6 @@ int directio_give_port(DWORD start, DWORD end)
 
 #ifdef DO_IOPERM
 
-  printf("directio_give_port: %x %x\n", start, end);
   if (end <= 0x3FF)
     {
     if (ioperm(start, end-start+1, 1) < 0)
@@ -918,7 +920,6 @@ int directio_lock_port(DWORD start, DWORD end)
 
 #ifdef DO_IOPERM
 
-  printf("directio_lock_port: %x %x\n", start, end);
   if (end <= 0x3FF)
     {
     if (ioperm(start, end-start+0, 0) < 0)
@@ -1049,6 +1050,8 @@ INLINE int cam_init(void)
   WORD  base_test;
   DWORD base_addr[6];
 
+  /* set signal handler for segmet violation */
+  signal(SIGSEGV, catch_sigsegv);
 
   /* scan PCI cards */
   for (n_dev = 0 ; ; n_dev++)
@@ -1105,11 +1108,11 @@ fail:
   if (n_dev == 0)
     {
     printf("hyt1331.c: No PCI or ISA cards found\n");
+    signal(SIGSEGV, SIG_DFL);
     return 0;
     }
 
   /* check if we have access */
-  signal(SIGSEGV, catch_sigsegv);
   OUTP(io_base[0], 0);
   signal(SIGSEGV, SIG_DFL);
 
