@@ -6,6 +6,9 @@
 #  Contents:     Makefile for MIDAS binaries and examples under unix
 #
 #  $Log$
+#  Revision 1.16  2000/02/24 19:39:22  midas
+#  Add esone.h in installation
+#
 #  Revision 1.15  1999/12/20 14:24:17  midas
 #  Adjusted for different driver direcotries
 #
@@ -105,7 +108,7 @@ SYSINC_DIR = $(PREFIX)/include
 # Common flags
 #
 CC = cc
-CFLAGS = -g -I$(INC_DIR) -I$(DRV_DIR) -L$(LIB_DIR)
+CFLAGS = -g -I$(INC_DIR) -I$(DRV_DIR) -L$(LIB_DIR) -DINCLUDE_FTPLIB
 
 #-----------------------
 # OSF/1 (DEC UNIX)
@@ -366,7 +369,7 @@ install:
           mkdir -p $(SYSINC_DIR); \
         fi;
 
-	@for i in midas msystem midasinc mrpc ybos cfortran hbook hardware mcstd mfbstd ; \
+	@for i in midas msystem midasinc mrpc ybos cfortran hbook hardware mcstd esone mfbstd ; \
 	  do \
 	  echo $$i.h ; \
 	  cp $(INC_DIR)/$$i.h $(SYSINC_DIR) ; \
