@@ -7,6 +7,9 @@
                 linked with user code to form a complete frontend
 
   $Log$
+  Revision 1.20  2000/04/03 12:27:43  midas
+  Changed auto restart to 20 seconds in main loop
+
   Revision 1.19  2000/03/22 14:42:48  midas
   Fixed bug with invalid pointer
 
@@ -117,10 +120,10 @@ char  host_name[NAME_LENGTH];
 char  exp_name[NAME_LENGTH];
 
 INT   max_bytes_per_sec;
-INT   optimize = 0;  /* set this to one to opimize TCP buffer size */
-INT   fe_stop = 0;   /* stop switch for VxWorks */
-BOOL  debug;         /* disable watchdog messages from server */
-DWORD auto_restart;  /* restart run after event limit reached stop */
+INT   optimize = 0;      /* set this to one to opimize TCP buffer size */
+INT   fe_stop = 0;       /* stop switch for VxWorks */
+BOOL  debug;             /* disable watchdog messages from server */
+DWORD auto_restart = 0;  /* restart run after event limit reached stop */
 
 HNDLE hDB;
 
@@ -890,11 +893,9 @@ DWORD          last_time_network=0, last_time_display=0,
                last_time_flush=0, readout_start;
 INT            i, j, index, status, ch, source, size, state;
 char           str[80];
-BOOL           buffer_done, force_update = FALSE;
-
+BOOL           buffer_done, flag, force_update = FALSE;
 
 INT opt_max=0, opt_index=0, opt_tcp_size=128, opt_cnt=0;
-
 
 #ifdef OS_VXWORKS
   rpc_set_opt_tcp_size(1024);
@@ -1151,8 +1152,11 @@ INT opt_max=0, opt_index=0, opt_tcp_size=128, opt_cnt=0;
 
         /* check if autorestart, main loop will take care of it */
         size = sizeof(BOOL);
-        auto_restart = FALSE;
-        db_get_value(hDB, 0, "/Logger/Auto restart", &auto_restart, &size, TID_BOOL);
+        flag = FALSE;
+        db_get_value(hDB, 0, "/Logger/Auto restart", &flag, &size, TID_BOOL);
+
+        if (flag)
+          auto_restart = ss_time() + 20; /* restart in 20 sec. */
 
         /* update event display correctly */
         force_update = TRUE;
@@ -1299,7 +1303,7 @@ INT opt_max=0, opt_index=0, opt_tcp_size=128, opt_cnt=0;
       }
 
       /*---- check for auto restart --------------------------------*/
-      if (auto_restart)
+      if (auto_restart > 0 && ss_time() > auto_restart)
         {
         /* check if really stopped */
         size = sizeof(state);
@@ -1309,10 +1313,7 @@ INT opt_max=0, opt_index=0, opt_tcp_size=128, opt_cnt=0;
 
         if (state == STATE_STOPPED)
           {
-          /* wait until system settles quiet */
-          ss_sleep(5000);
-
-          auto_restart = FALSE;
+          auto_restart = 0;
           size = sizeof(run_number);
           db_get_value(hDB, 0, "/Runinfo/Run number", &run_number, &size, TID_INT);
 

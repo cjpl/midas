@@ -6,6 +6,9 @@
   Contents:     MIDAS logger program
 
   $Log$
+  Revision 1.36  2000/04/03 12:27:31  midas
+  Changed auto restart to 20 seconds in main loop
+
   Revision 1.35  2000/03/06 17:40:14  midas
   Create History/Links even if no Trigger Equipment defined
 
@@ -128,9 +131,9 @@
 #define MAX_CHANNELS 10
 #define MAX_HISTORY  20
 
-BOOL in_stop_transition = FALSE;
-BOOL auto_restart = FALSE;
-BOOL tape_message = TRUE;
+BOOL  in_stop_transition = FALSE;
+BOOL  tape_message = TRUE;
+DWORD auto_restart = 0;
 
 LOG_CHN log_chn[MAX_CHANNELS];
 
@@ -1334,7 +1337,7 @@ INT log_write(LOG_CHN *log_chn, EVENT_HEADER *pevent)
 {
 INT    status, size, izero, watchdog_timeout;
 DWORD  actual_time, start_time;
-BOOL   watchdog_flag;
+BOOL   watchdog_flag, flag;
 static BOOL stop_requested = FALSE;
 static DWORD last_checked = 0;
 HNDLE  htape, stats_hkey;
@@ -1390,8 +1393,11 @@ double dzero;
     
     /* check if autorestart, main loop will take care of it */
     size = sizeof(BOOL);
-    auto_restart = FALSE;
-    db_get_value(hDB, 0, "/Logger/Auto restart", &auto_restart, &size, TID_BOOL);
+    flag = FALSE;
+    db_get_value(hDB, 0, "/Logger/Auto restart", &flag, &size, TID_BOOL);
+
+    if (flag)
+      auto_restart = ss_time() + 20; /* start in 20 sec. */
 
     return status;
     }
@@ -1413,8 +1419,11 @@ double dzero;
     
     /* check if autorestart, main loop will take care of it */
     size = sizeof(BOOL);
-    auto_restart = FALSE;
-    db_get_value(hDB, 0, "/Logger/Auto restart", &auto_restart, &size, TID_BOOL);
+    flag = FALSE;
+    db_get_value(hDB, 0, "/Logger/Auto restart", &flag, &size, TID_BOOL);
+
+    if (flag)
+      auto_restart = ss_time() + 20; /* start in 20 sec. */
 
     return status;
     }
@@ -2504,11 +2513,8 @@ usage:
       }
 
     /* check for auto restart */
-    if (auto_restart)
+    if (auto_restart > 0 && ss_time() > auto_restart)
       {
-      /* wait until analyzer EOR finished */
-      ss_sleep(20000);
-
       /* check if really stopped */
       size = sizeof(state);
       status = db_get_value(hDB, 0, "Runinfo/State", &state, &size, TID_INT);
@@ -2517,7 +2523,7 @@ usage:
 
       if (state == STATE_STOPPED)
         {
-        auto_restart = FALSE;
+        auto_restart = 0;
         size = sizeof(run_number);
         db_get_value(hDB, 0, "/Runinfo/Run number", &run_number, &size, TID_INT);
 
