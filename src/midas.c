@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.45  1999/09/13 11:08:24  midas
+  Check NULL as experiment in cm_connect_experiment
+
   Revision 1.44  1999/09/10 06:11:15  midas
   Used %100 for year in tms structure
 
@@ -1565,6 +1568,9 @@ HNDLE hDB, hKeyClient;
 #endif
 
   /* search for experiment name in exptab */
+  if (exp_name == NULL)
+    exp_name = "";
+
   strcpy(exp_name1, exp_name);
   if (exp_name1[0] == 0)
     {
