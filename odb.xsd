@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+	<xs:annotation>
+		<xs:documentation>Description of enumerated types</xs:documentation>
+	</xs:annotation>
+	<xs:simpleType name="typeDesc">
+		<xs:annotation>
+			<xs:documentation>All possible key types</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="BYTE"/>
+			<xs:enumeration value="SBYTE"/>
+			<xs:enumeration value="CHAR"/>
+			<xs:enumeration value="WORD"/>
+			<xs:enumeration value="SHORT"/>
+			<xs:enumeration value="DWORD"/>
+			<xs:enumeration value="INT"/>
+			<xs:enumeration value="BOOL"/>
+			<xs:enumeration value="FLOAT"/>
+			<xs:enumeration value="DOUBLE"/>
+			<xs:enumeration value="BITFIELD"/>
+			<xs:enumeration value="STRING"/>
+			<xs:enumeration value="LINK"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:annotation>
+		<xs:documentation>Description of general types</xs:documentation>
+	</xs:annotation>
+	<xs:complexType name="dirDesc">
+		<xs:annotation>
+			<xs:documentation>Directory description</xs:documentation>
+		</xs:annotation>
+		<xs:choice minOccurs="0" maxOccurs="unbounded">
+			<xs:element name="dir" type="dirDesc" minOccurs="0" maxOccurs="unbounded"/>
+			<xs:element name="key" minOccurs="0" maxOccurs="unbounded">
+				<xs:complexType>
+					<xs:simpleContent>
+						<xs:extension base="xs:string">
+							<xs:attribute name="name" type="xs:string" use="required"/>
+							<xs:attribute name="type" type="typeDesc" use="required"/>
+							<xs:attribute name="size" type="xs:integer" use="optional"/>
+						</xs:extension>
+					</xs:simpleContent>
+				</xs:complexType>
+			</xs:element>
+			<xs:element name="keyarray" type="keyarrayDesc" minOccurs="0" maxOccurs="unbounded"/>
+		</xs:choice>
+		<xs:attribute name="name" type="xs:string" use="required"/>
+	</xs:complexType>
+	<xs:complexType name="keyarrayDesc">
+		<xs:annotation>
+			<xs:documentation>Array of keys</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="value" type="xs:string" minOccurs="0" maxOccurs="unbounded"/>
+		</xs:sequence>
+		<xs:attribute name="name" type="xs:string" use="required"/>
+		<xs:attribute name="type" type="typeDesc" use="required"/>
+		<xs:attribute name="size" type="xs:integer" use="optional"/>
+		<xs:attribute name="num_values" type="xs:integer" use="required"/>
+	</xs:complexType>
+	<xs:annotation>
+		<xs:documentation>Describe overall document</xs:documentation>
+	</xs:annotation>
+	<xs:element name="odb">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element name="dir" minOccurs="0" maxOccurs="unbounded">
+					<xs:complexType>
+						<xs:complexContent>
+							<xs:extension base="dirDesc"/>
+						</xs:complexContent>
+					</xs:complexType>
+				</xs:element>
+			</xs:sequence>
+			<xs:attribute name="filename" type="xs:string" use="required"/>
+		</xs:complexType>
+	</xs:element>
+</xs:schema>
