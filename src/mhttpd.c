@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.146  2000/11/14 12:19:23  midas
+  Fixed bug in cm_msg_retrieve, added improved "more" feature in message display
+
   Revision 1.145  2000/11/06 14:18:54  midas
   Don't draw history polygons if no data points present
 
@@ -1531,12 +1534,13 @@ CHN_STATISTICS chn_stats;
 
 /*------------------------------------------------------------------*/
 
-void show_messages_page(int refresh, int more)
+void show_messages_page(int refresh, int n_message)
 {
-int  size;
-char str[256], buffer[10000], *pline;
+int  size, more;
+char str[256], buffer[100000], *pline;
 time_t now;
 HNDLE hDB;
+BOOL eob;
 
   cm_get_experiment_database(&hDB, NULL);
 
@@ -1585,16 +1589,19 @@ HNDLE hDB;
   rsprintf("<tr><td colspan=2>\n");
 
   /* more button */
-  if (!more)
-    rsprintf("<input type=submit name=cmd value=More><p>\n");
-
-  if (more)
-    size = sizeof(buffer);
+  if (n_message == 20)
+    more = 100;
   else
-    size = 1000;
+    more = n_message + 100;
 
-  cm_msg_retrieve(buffer, &size);
+  rsprintf("<input type=submit name=cmd value=More%d><p>\n", more);
+
+  size = sizeof(buffer);
+
+  cm_msg_retrieve(n_message, buffer, &size);
+
   pline = buffer;
+  eob = FALSE;
 
   do
     {
@@ -1604,7 +1611,7 @@ HNDLE hDB;
       *strchr(pline, '\n') = 0;
       }
     else
-      break;
+      eob = TRUE;
 
     if (strchr(pline, '\r'))
       *strchr(pline, '\r') = 0;
@@ -1613,7 +1620,7 @@ HNDLE hDB;
     pline += strlen(pline);
     while (! *pline) pline++;
 
-    } while (1);
+    } while (!eob);
 
   rsprintf("</tr></table>\n");
   rsprintf("</body></html>\r\n");
@@ -6899,7 +6906,7 @@ int    i, j, n, status, size, run_state, index;
 WORD   event_id;
 HNDLE  hkey, hsubkey, hDB, hconn;
 KEY    key;
-char   str[256], *p, *ps, *pe;
+char   str[256], *p;
 char   enc_path[256], dec_path[256], eq_name[NAME_LENGTH], fe_name[NAME_LENGTH];
 char   data[10000];
 char   *experiment, *password, *wpassword, *command, *value, *group;
@@ -6974,21 +6981,10 @@ struct tm *gmt;
     /* redirect message display, turn on message logging */
     cm_set_msg_print(MT_ALL, MT_ALL, print_message);
 
-    /* retrieve old messages */
+    /* retrieve last message */
     size = 1000;
-    cm_msg_retrieve(data, &size);
-    ps = data;
-    do
-      {
-      if ((pe = strchr(ps, '\n')) != NULL)
-        {
-        *pe = 0;
-        print_message(ps);
-        ps = pe+1;
-        }
-      } while (pe != NULL);
-    if (*ps)
-      print_message(ps);
+    cm_msg_retrieve(1, data, &size);
+    print_message(data);
     }
 
   cm_get_experiment_database(&hDB, NULL);
@@ -7426,13 +7422,16 @@ struct tm *gmt;
   
   if (equal_ustring(command, "messages"))
     {
-    show_messages_page(refresh, FALSE);
+    show_messages_page(refresh, 20);
     return;
     }
 
-  if (equal_ustring(command, "more"))
+  if (strncmp(command, "More", 4) == 0)
     {
-    show_messages_page(0, TRUE);
+    i = atoi(command+4);
+    if (i==0)
+      i = 100;
+    show_messages_page(0, i);
     return;
     }
 
