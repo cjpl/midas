@@ -7,6 +7,9 @@
                 Most routines are from mfe.c mana.c and mlogger.c.
 
   $Log$
+  Revision 1.44  2005/03/24 22:00:27  ritt
+  Fixed compiler warning
+
   Revision 1.43  2004/10/01 23:35:53  midas
   Removed PRE/POST transitions and implemented sequence order of transitions
 
@@ -307,7 +310,7 @@ int print_message(const char *msg);
 void update_stats();
 void interrupt_routine(void);
 void interrupt_enable(BOOL flag);
-INT tr_start2(run_number, error);
+INT tr_start2(int run_number, char *error);
 
 /* items defined in frontend.c */
 
