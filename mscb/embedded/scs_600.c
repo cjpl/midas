@@ -9,6 +9,9 @@
                 for SCS-600 Digital I/O
 
   $Log$
+  Revision 1.16  2004/01/07 13:12:39  midas
+  Added single shot mode
+
   Revision 1.15  2004/01/07 12:56:15  midas
   Chaned line length
 
@@ -264,18 +267,25 @@ void set_power(void)
       if (user_data.power[i] < 100) {
          expired = time() - on_time;
          if (expired >= (unsigned long) (user_data.power[i])) {
-            frac = user_data.power[i] - (unsigned long) (user_data.power[i]);
 
-            if (frac == 0 || expired >= (unsigned long) (user_data.power[i]) + 1) {
+            /* check for single shot */
+            if ((user_data.single & (1 << i)) && (output & (1 << i))) {
                output &= ~(1 << i);
-            } else if (cycle > 0) {
-               if ((float) ca[i] / cycle > frac) {
+               user_data.out[i] = 0;
+            } else {
+
+               frac = user_data.power[i] - (unsigned long) (user_data.power[i]);
+
+               if (frac == 0 || expired >= (unsigned long) (user_data.power[i]) + 1) {
                   output &= ~(1 << i);
+               } else if (cycle > 0) {
+                  if ((float) ca[i] / cycle > frac)
+                     output &= ~(1 << i);
+                  else
+                     ca[i]++;
                } else {
                   ca[i]++;
                }
-            } else {
-               ca[i]++;
             }
          }
       }
