@@ -6,6 +6,9 @@
   Contents:     Various utility functions for MSCB protocol
 
   $Log$
+  Revision 1.38  2004/09/10 12:27:22  midas
+  Version 1.7.5
+
   Revision 1.37  2004/07/21 14:18:55  midas
   Restructured timer usage
 
@@ -225,7 +228,7 @@ unsigned char crc8_add(unsigned char crc, unsigned int c)
 
 /*------------------------------------------------------------------*/
 
-#ifdef SCS_210                  // SCS_210 uses UAR0 & UART1
+#ifdef SCS_210 // SCS_210 uses UAR0 & UART1
 
 bit ti1_shadow = 1;
 
@@ -378,7 +381,78 @@ void uart1_init_buffer()
 
 /*------------------------------------------------------------------*/
 
-#else // SCS_210
+#elif defined(SCS_1000)  // SCS_1000 uses UAR0 & UART1
+
+bit ti1_shadow = 1;
+unsigned char n_recv;
+
+char xdata rbuf[64];
+
+/*---- UART1 handling ----------------------------------------------*/
+
+void serial_int1(void) interrupt 20 using 2
+{
+   if (SCON1 & 0x02) {          // TI1
+      /* character has been transferred */
+      SCON1 &= ~0x02;           // clear TI flag
+      ti1_shadow = 1;
+   }
+
+   if (SCON1 & 0x01) {          // RI1
+      /* check for buffer overflow */
+      if (n_recv + 1 == sizeof(rbuf)) {
+         SCON1 &= ~0x01;        // clear RI flag
+         return;
+      }
+
+      /* character has been received */
+      rbuf[n_recv++] = SBUF1;
+      SCON1 &= ~0x01;           // clear RI flag
+
+      led_blink(1, 1, 100);
+   }
+}
+
+/*------------------------------------------------------------------*/
+
+/* uncomment later when it will be used...
+
+unsigned char uart1_send(char *buffer, int size)
+{
+unsigned char i;
+
+   SFRPAGE = UART1_PAGE;
+
+   for (i=0 ; i<size ; i++) {
+
+      ti1_shadow = 0;
+
+      SBUF1 = *buffer++;
+      while (ti1_shadow == 0);
+   }
+
+   return size;
+}
+
+*/
+
+/*------------------------------------------------------------------*/
+
+void uart1_init_buffer()
+{
+   n_recv = 0;
+   ti1_shadow = 1;
+}
+
+/*------------------------------------------------------------------*/
+
+void rs232_output(void) // dummy
+{
+}
+
+/*------------------------------------------------------------------*/
+
+#else // SCS_210 | SCS_1000
 
 void rs232_output(void) // dummy
 {
@@ -421,7 +495,7 @@ void uart_init(unsigned char port, unsigned char baud)
       0x100 - 35,   // 172800  2% error
       0x100 - 17 }; // 345600  2% error
 #elif defined(CPU_C8051F120)       // 98 MHz
-   unsigned char code baud_table[] =
+   unsigned char code baud_table[] =  // UART0 via timer 2
      {0x100 - 0,    //  N/A
       0x100 - 0,    //  N/A
       0x100 - 208,  //  28800  2% error
@@ -449,18 +523,23 @@ void uart_init(unsigned char port, unsigned char baud)
       SCON0 = 0xD0;                // Mode 3, 9 bit, receive enable
 
 #ifdef CPU_C8051F120
-      SFRPAGE = TIMER01_PAGE;
-#endif
+
+      SFRPAGE = UART0_PAGE;
+      SSTA0 = 0x15;                // User Timer 2 for baud rate, div2 disabled
+      
+      SFRPAGE = TMR2_PAGE;
+      TMR2CF = 0x08;               // use system clock for timer 2
+      RCAP2H = 0xFF;
+      RCAP2L = baud_table[baud - 1];  // load initial values
+      TMR2CN = 0x04;               // start timer 2
+      SFRPAGE = UART0_PAGE;
+
+#else // CPU_C8051F120
 
       TMOD  = (TMOD & 0x0F)| 0x20; // Timer 1 8-bit counter with auto reload
 
 #if defined(CPU_C8051F310) || defined(CPU_C8051F320)
       CKCON |= 0x08;               // use system clock
-#elif defined(CPU_C8051F120)
-      SFRPAGE = UART0_PAGE;
-      SSTA0 = 0x10;                // User Timer 1 for baud rate, div2 disabled
-      SFRPAGE = TIMER01_PAGE;
-      CKCON |= 0x10;               // use system clock
 #else
       T2CON &= ~30;                // User Timer 1 for baud rate
       CKCON |= 0x10;               // use system clock
@@ -469,16 +548,15 @@ void uart_init(unsigned char port, unsigned char baud)
       TH1 = baud_table[baud - 1];  // load initial values
       TR1 = 1;                     // start timer 1
 
+#endif // CPU_C8051F120
+
       ES0 = 1;                     // enable serial interrupt
       PS0 = 0;                     // serial interrupt low priority
    
-#ifdef CPU_C8051F120
-   SFRPAGE = UART0_PAGE;
-#endif
 
    } else { /*---- UART1 ----*/
 
-#ifdef CPU_C8051F020
+#if defined(CPU_C8051F020)
       SCON1 = 0x50;                // Mode 1, 8 bit, receive enable
 
       T4CON = 0x34;                // timer 4 RX+TX mode
@@ -486,7 +564,23 @@ void uart_init(unsigned char port, unsigned char baud)
       RCAP4L = baud_table[baud - 1];
 
       EIE2 |= 0x40;                // enable serial interrupt
-      EIP2 &= ~0x40;               // serial interrupt low priority
+      EIP2 &= ~0x40;               // serial interrupt low priority      
+
+      uart1_init_buffer();
+#elif defined(CPU_C8051F120)       // 98 MHz
+      SFRPAGE = UART1_PAGE;
+      SCON1 = 0xD0;                // Mode 3, 9 bit, receive enable
+
+      SFRPAGE = TIMER01_PAGE;
+      TMOD  = (TMOD & 0x0F)| 0x20; // Timer 1 8-bit counter with auto reload
+      CKCON = 0x02;                // use SYSCLK/48 (needed by timer 0)
+
+      TH1 = 0xF7;                  // gives 113452 baud, neglegt "baud" parameter
+      TR1 = 1;                     // start timer 1
+
+      EIE2 |= 0x40;                // enable serial interrupt
+      EIP2 &= ~0x40;               // serial interrupt low priority      
+      uart1_init_buffer();
 #endif
    }
 
@@ -543,12 +637,12 @@ void sysclock_init(void)
    SFRPAGE = TIMER01_PAGE;
 #endif
 
-   TMOD = (TMOD & 0xF0) | 0x01; // 16-bit counter
+   TMOD = (TMOD & 0x0F) | 0x01; // 16-bit counter
 #ifdef CPU_C8051F120
-   CKCON = 0x02;                // user SYSCLK/48
+   CKCON = 0x02;                // use SYSCLK/48
    TH0 = 0xAF;                  // load initial value
 #else
-   CKCON = 0x00;                // user SYSCLK/12
+   CKCON = 0x00;                // use SYSCLK/12
    TH0 = 0xDB;                  // load initial value
 #endif
 

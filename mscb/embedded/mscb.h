@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol commands
 
   $Log$
+  Revision 1.43  2004/09/10 12:27:22  midas
+  Version 1.7.5
+
   Revision 1.42  2004/07/21 14:27:16  midas
   Added PS0 to F120
 
@@ -201,7 +204,7 @@ sbit RS485_ENABLE = P3 ^ 5;
 sbit RS485_ENABLE = P3 ^ 5;
 
 /*--------------------------------*/
-#elif defined(SCS_520) || defined(SCS_600) || defined(SCS_700) || defined (SCS_800) || defined (SCS_900) || defined (SCS_950)
+#elif defined(SCS_520) || defined(SCS_600) || defined(SCS_700) || defined (SCS_800) || defined (SCS_900) || defined (SCS_910)
 #include <c8051F000.h>
 #define CPU_C8051F000
 #define CPU_CYGNAL
@@ -384,6 +387,8 @@ typedef struct {
 
 #ifdef SCS_1000
    float min, max, delta;       // limits for button control
+   unsigned short node_address; // address for remote node on subbus
+   unsigned char  channel;      // address for remote channel subbus
 #endif
 } MSCB_INFO_VAR;
 

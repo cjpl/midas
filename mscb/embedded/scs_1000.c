@@ -9,6 +9,9 @@
                 for SCS-1000 stand alone control unit
 
   $Log$
+  Revision 1.4  2004/09/10 12:27:22  midas
+  Version 1.7.5
+
   Revision 1.3  2004/07/22 11:52:33  midas
   Fixed bugs with DOFS
 
@@ -378,6 +381,8 @@ static bit b0_old = 0, b1_old = 0, b2_old = 0, b3_old = 0;
 }
 
 /*---- User loop function ------------------------------------------*/
+
+unsigned char uart1_send(char *buffer, int size);
 
 void user_loop(void)
 {

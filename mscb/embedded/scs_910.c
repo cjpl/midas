@@ -1,19 +1,17 @@
 /********************************************************************\
 
-  Name:         scs_950.c
+  Name:         scs_910.c
   Created by:   Stefan Ritt
 
 
   Contents:     Application specific (user) part of
                 Midas Slow Control Bus protocol 
-                for SCS-950 20-chn analog in
+                for SCS-910 20-chn analog in
 
   $Log$
-  Revision 1.2  2004/07/09 14:10:04  midas
-  Added multi-ADC code
+  Revision 1.1  2004/09/10 12:27:24  midas
+  Version 1.7.5
 
-  Revision 1.1  2004/07/09 07:48:10  midas
-  Initial revision
 
 \********************************************************************/
 
@@ -24,9 +22,9 @@
 extern bit FREEZE_MODE;
 extern bit DEBUG_MODE;
 
-char code node_name[] = "SCS-950";
+char code node_name[] = "SCS-910";
 
-#define UNIPOLAR
+#undef UNIPOLAR
 
 /* declare number of sub-addresses to framework */
 unsigned char idata _n_sub_addr = 1;
@@ -41,11 +39,6 @@ sbit AD1_NCS  = P1 ^ 0;         // !Chip select
 sbit AD2_NCS  = P1 ^ 1;         // !Chip select
 sbit AD3_NCS  = P1 ^ 2;         // !Chip select
 sbit AD4_NCS  = P1 ^ 3;         // !Chip select
-
-sbit AD1_NRDY = P1 ^ 5;         // !Ready
-sbit AD2_NRDY = P1 ^ 5;         // !Ready
-sbit AD3_NRDY = P1 ^ 5;         // !Ready
-sbit AD4_NRDY = P1 ^ 5;         // !Ready
 
 sbit AD1_DOUT = P0 ^ 4;         // Data out
 sbit AD2_DOUT = P0 ^ 5;         // Data out
@@ -144,7 +137,7 @@ void user_init(unsigned char init)
    AMX0CF = 0x00;               // select single ended analog inputs
    ADC0CF = 0xE0;               // 16 system clocks, gain 1
    ADC0CN = 0x80;               // enable ADC 
-   REF0CN = 0x03;               // enable internal reference
+   REF0CN = 0x03;               // enable internal reference, BIAS on
 
    DAC0CN = 0x00;               // disable DAC0
    DAC1CN = 0x00;               // disable DAC1
@@ -153,36 +146,36 @@ void user_init(unsigned char init)
       P0.0    TX
       P0.1
       P0.2
-      P0.3    DAC_NCS
+      P0.3    
 
-      P0.4    DAC_SCK
-      P0.5    DAC_DIN
-      P0.6 
-      P0.7    DAC_CLR
+      P0.4    ADC1 in
+      P0.5    ADC2 in
+      P0.6    ADC3 in
+      P0.7    ADC4 in
     */
-   PRT0CF = 0xB9;
+   PRT0CF = 0x01;
    P0 = 0xFF;
 
    /* push-pull:
-      P1.0    
-      P1.1
-      P1.2    ADC_NRES
-      P1.3    ADC_SCLK
+      P1.0    ADC1_NCS
+      P1.1    ADC2_NCS
+      P1.2    ADC3_NCS
+      P1.3    ADC4_NCS
 
-      P1.4    ADC_NCS
+      P1.4    
       P1.5    
-      P1.6 
-      P1.7    ADC_DIN
+      P1.6    ADC_DIN
+      P1.7    ADC_SCLK
     */
-   PRT1CF = 0x9C;
+   PRT1CF = 0xCF;
    P1 = 0xFF;
 
    /* initial EEPROM value */
    if (init) {
    }
 
-   /* set-up DAC & ADC */
-   for (i=0 ; i<3 ; i++) {
+   /* set-up ADC */
+   for (i=0 ; i<4 ; i++) {
       write_adc(i, REG_FILTER, 82);                   // SF value for 50Hz rejection
       write_adc(i, REG_MODE, 0x13);                   // continuous conversion, 10 channels
       write_adc(i, REG_CONTROL, 0x0F);                // start first conversion
@@ -207,9 +200,9 @@ unsigned char get_adc_dout(unsigned char n)
 {
    switch (n) {
       case 0: return AD1_DOUT;
-      case 1: return AD1_DOUT;
-      case 2: return AD1_DOUT;
-      case 3: return AD1_DOUT;
+      case 1: return AD2_DOUT;
+      case 2: return AD3_DOUT;
+      case 3: return AD4_DOUT;
    }
 }
 
@@ -217,7 +210,13 @@ unsigned char get_adc_nrdy(unsigned char n)
 {
    unsigned int value;
 
-   AMX0SL = n;
+   switch (n) {
+      case 0: AMX0SL = 1; break;
+      case 1: AMX0SL = 0; break;
+      case 2: AMX0SL = 3; break;
+      case 3: AMX0SL = 2; break;
+   }
+
    ADCINT = 0;
    ADBUSY = 1;
    while (!ADCINT);
@@ -310,14 +309,22 @@ unsigned char code adc_index[] = {14, 15, 4, 5, 2, 3, 0, 1, 6, 7};
 unsigned char code adc_index[] = {12, 10, 9, 8, 11};
 #endif
 
-void adc_read(unsigned char iadc, unsigned char ichn)
+static unsigned char iadc, ichn;
+static unsigned long last_check;
+
+void adc_read()
 {
-   unsigned char i, ivalue;
+   unsigned char i, next, ivalue;
    unsigned long value;
    float gvalue;
 
-   if (get_adc_nrdy(iadc))
-       return;
+   if (get_adc_nrdy(iadc)) {
+       if (time() - last_check < 30)
+          return;
+      write_adc(iadc, REG_CONTROL, 0x0F); // try to restart ADC
+   }
+
+   last_check = time();
 
    read_adc24(iadc, REG_ADCDATA, &value);
 
@@ -337,9 +344,21 @@ void adc_read(unsigned char iadc, unsigned char ichn)
    user_data.adc[ivalue] = gvalue;
    ENABLE_INTERRUPTS;
 
-   /* start next conversion */
-   i = adc_index[ichn];
-   write_adc(iadc, REG_CONTROL, i << 4 | 0x0F); // adc_chn, +2.56V range
+   /* start next channel on this ADC */
+   next = ichn+1;
+   if (next == 10)
+     next = 0;
+   i = adc_index[next];
+   write_adc(iadc, REG_CONTROL, (i << 4) | 0x0F); // adc_chn, +2.56V range
+
+   /* switch to next ADC */
+   iadc++;
+   if (iadc == 4) {
+     iadc = 0;
+     ichn++;
+     if (ichn == 10)
+        ichn = 0;
+   }
 }
 
 /*---- User write function -----------------------------------------*/
@@ -371,13 +390,5 @@ unsigned char user_func(unsigned char *data_in, unsigned char *data_out)
 
 void user_loop(void)
 {
-   static unsigned char ichn;
-
-#ifdef UNIPOLAR   
-   adc_read(ichn / 10, ichn % 10);
-   ichn = (ichn + 1) % 40;
-#else
-   adc_read(ichn / 5, ichn % 5);
-   ichn = (ichn + 1) % 20;
-#endif
+   adc_read();
 }
