@@ -7,6 +7,9 @@
   Contents:     Symbolic constants for internal RPC functions
 
   $Log$
+  Revision 1.3  1999/01/13 09:40:48  midas
+  Added db_set_data_index2 function
+
   Revision 1.2  1998/10/12 12:19:01  midas
   Added Log tag in header
 
@@ -75,6 +78,7 @@
 #define RPC_DB_GET_OPEN_RECORDS         11233
 #define RPC_DB_SHOW_MEM                 11234
 #define RPC_DB_FLUSH_DATABASE           11235
+#define RPC_DB_SET_DATA_INDEX2          11236
 
 #define RPC_HS_SET_PATH                 11300
 #define RPC_HS_DEFINE_EVENT             11301 

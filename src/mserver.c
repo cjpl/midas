@@ -6,6 +6,9 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
+  Revision 1.3  1999/01/13 09:40:48  midas
+  Added db_set_data_index2 function
+
   Revision 1.2  1998/10/12 12:19:02  midas
   Added Log tag in header
 
@@ -611,6 +614,11 @@ INT convert_flags;
     case RPC_DB_SET_DATA_INDEX:
       rpc_convert_single(CARRAY(2), CDWORD(5), 0, convert_flags);
       status = db_set_data_index(CHNDLE(0), CHNDLE(1), CARRAY(2), CINT(3), CINT(4), CDWORD(5));
+      break;
+
+    case RPC_DB_SET_DATA_INDEX2:
+      rpc_convert_single(CARRAY(2), CDWORD(5), 0, convert_flags);
+      status = db_set_data_index2(CHNDLE(0), CHNDLE(1), CARRAY(2), CINT(3), CINT(4), CDWORD(5), CBOOL(6));
       break;
 
     case RPC_DB_SET_MODE:
