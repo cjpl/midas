@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.95  2003/04/28 11:13:18  midas
+  Moved ss_force_single_thread() befor cm_connect_experiment
+
   Revision 1.94  2003/04/25 14:04:26  midas
   Fixed wrong #ifdef HAVE_ROOT
 
@@ -5927,6 +5930,11 @@ int rargc;
     return 1;
 #endif
 
+#ifdef HAVE_ROOT
+  /* workaround for multi-threading with midas system calls */
+  ss_force_single_thread();
+#endif
+
   /* now connect to server */
   if (clp.online)
     {
@@ -6043,9 +6051,6 @@ int rargc;
   /* start socket server */
   TThread *th1 = new TThread("root_server_loop", root_server_loop, NULL);
   th1->Run();
-
-  /* workaround for multi-threading with midas system calls */
-  ss_force_single_thread();
 #endif
 
 #endif /* HAVE_ROOT */
