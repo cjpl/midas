@@ -6,6 +6,9 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.100  2004/10/07 00:54:50  midas
+  Kill ODB client only under unix
+
   Revision 1.99  2004/10/06 22:51:17  midas
   Restrict destination string length of db_sprintf to MAX_STRING_LENGTH
 
@@ -1244,6 +1247,7 @@ INT db_open_database(char *database_name, INT database_size,
 
       /* remove dead clients */
 
+#ifdef OS_UNIX
 #ifdef ESRCH
       /* Only enable this for systems that define ESRCH and hope that
          they also support kill(pid,0) */
@@ -1274,6 +1278,7 @@ INT db_open_database(char *database_name, INT database_size,
             memset(&(pheader->client[i]), 0, sizeof(DATABASE_CLIENT));
          }
       }
+#endif
 #endif
 
       db_unlock_database(handle + 1);
