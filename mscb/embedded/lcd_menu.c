@@ -8,6 +8,9 @@
                 and four buttons
 
   $Log$
+  Revision 1.2  2004/09/25 01:14:54  midas
+  Started implementing slave port on SCS-1000
+
   Revision 1.1  2004/07/20 16:05:32  midas
   Initial revision
 
@@ -304,7 +307,7 @@ void lcd_menu()
             /* display variables */
             display_value(pvar, &f_var);
             lcd_goto(0, 1);
-            puts("ESC ENTER    -    + ");
+            puts("ESC ENTER   -    + ");
 
             /* evaluate ESC button */
             if (b0 && !b0_old)
@@ -319,8 +322,13 @@ void lcd_menu()
                   /* flash new address */
                   if (var_index == 0 || var_index == 1)
                      flash_param = 1;
-               } else
+               } else {
                   user_write(var_index);
+#ifdef SCS_1000
+                  if (variables[var_index].flags & MSCBF_REMOUT)
+                     send_remote_var(var_index);
+#endif
+               }
             }
 
             /* evaluate "-" button */
