@@ -6,6 +6,9 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.32  2000/02/25 23:09:16  midas
+  Supressed data conversion in db_get_record when called locally in the server
+
   Revision 1.31  2000/02/25 22:19:10  midas
   Improved Ctrl-C handling
 
@@ -6034,13 +6037,17 @@ INT     total_size;
 void    *pdata;
 char    str[256];
 
+  /* only convert data if called remotely, as indicated by align != 0 */
+
   if (!align)
     align = ss_get_struct_align();
-
-  if (rpc_get_server_option(RPC_OSERVER_TYPE) != ST_REMOTE)
-    convert_flags = rpc_get_server_option(RPC_CONVERT_FLAGS);
   else
-    convert_flags = 0;
+    {
+    if (rpc_get_server_option(RPC_OSERVER_TYPE) != ST_REMOTE)
+      convert_flags = rpc_get_server_option(RPC_CONVERT_FLAGS);
+    else
+      convert_flags = 0;
+    }
 
   /* check if key has subkeys */
   status = db_get_key(hDB, hKey, &key);
