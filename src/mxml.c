@@ -73,7 +73,7 @@
 
 /*------------------------------------------------------------------*/
 
-#ifdef STRLCPY_DEFINED
+#ifdef HAVE_STRLCPY
 
 extern size_t strlcpy(char *dst, const char *src, size_t size);
 extern size_t strlcat(char *dst, const char *src, size_t size);
@@ -171,7 +171,7 @@ int mxml_write_line(MXML_WRITER *writer, char *line)
 
 /*------------------------------------------------------------------*/
 
-MXML_WRITER *mxml_open_document(const char *file_name) 
+MXML_WRITER *mxml_open_buffer()
 /* open a file and write XML header */
 {
    char str[256], line[1000];
@@ -181,20 +181,46 @@ MXML_WRITER *mxml_open_document(const char *file_name)
    writer = (MXML_WRITER *)malloc(sizeof(MXML_WRITER));
    memset(writer, 0, sizeof(MXML_WRITER));
 
-   if (file_name) {
-      writer->fh = open(file_name, O_RDWR | O_CREAT | O_TRUNC | O_TEXT, 0644);
+   writer->buffer_size = 10000;
+   writer->buffer = (char *)malloc(10000);
+   writer->buffer[0] = 0;
+   writer->buffer_len = 0;
 
-      if (writer->fh == -1) {
-         sprintf(line, "Unable to open file \"%s\": ", file_name);
-         perror(line);
-         free(writer);
-         return NULL;
-      }
-   } else {
-      writer->buffer_size = 10000;
-      writer->buffer = (char *)malloc(10000);
-      writer->buffer[0] = 0;
-      writer->buffer_len = 0;
+   /* write XML header */
+   strcpy(line, "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n");
+   mxml_write_line(writer, line);
+   time(&now);
+   strcpy(str, ctime(&now));
+   str[24] = 0;
+   sprintf(line, "<!-- created by MXML on %s -->\n", str);
+   mxml_write_line(writer, line);
+
+   /* initialize stack */
+   writer->level = 0;
+   writer->element_is_open = 0;
+
+   return writer;
+}
+
+/*------------------------------------------------------------------*/
+
+MXML_WRITER *mxml_open_file(const char *file_name) 
+/* open a file and write XML header */
+{
+   char str[256], line[1000];
+   time_t now;
+   MXML_WRITER *writer;
+
+   writer = (MXML_WRITER *)malloc(sizeof(MXML_WRITER));
+   memset(writer, 0, sizeof(MXML_WRITER));
+
+   writer->fh = open(file_name, O_RDWR | O_CREAT | O_TRUNC | O_TEXT, 0644);
+
+   if (writer->fh == -1) {
+      sprintf(line, "Unable to open file \"%s\": ", file_name);
+      perror(line);
+      free(writer);
+      return NULL;
    }
 
    /* write XML header */
@@ -429,7 +455,7 @@ int mxml_write_value(MXML_WRITER *writer, const char *data)
 
 /*------------------------------------------------------------------*/
 
-char *mxml_close_document(MXML_WRITER *writer)
+char *mxml_close_buffer(MXML_WRITER *writer)
 /* close a file opened with mxml_open_writer */
 {
    int i;
@@ -445,15 +471,31 @@ char *mxml_close_document(MXML_WRITER *writer)
    for (i = 0 ; i<writer->level ; i++)
       mxml_end_element(writer);
 
-   if (writer->buffer) {
-      p = writer->buffer;
-      free(writer);
-      return p;
-   } 
+   p = writer->buffer;
+   free(writer);
+   return p;
+}
+
+/*------------------------------------------------------------------*/
+
+int mxml_close_file(MXML_WRITER *writer)
+/* close a file opened with mxml_open_writer */
+{
+   int i;
+
+   if (writer->element_is_open) {
+      writer->element_is_open = FALSE;
+      if (mxml_write_line(writer, ">\n") != 2)
+         return 0;
+   }
+
+   /* close remaining open levels */
+   for (i = 0 ; i<writer->level ; i++)
+      mxml_end_element(writer);
 
    close(writer->fh);
    free(writer);
-   return (char *)1;
+   return 1;
 }
 
 /*------------------------------------------------------------------*/
@@ -731,12 +773,12 @@ PMXML_NODE mxml_find_node(PMXML_NODE tree, char *xml_path)
    int n;
 
    n = mxml_find_nodes(tree, xml_path, &node);
-   if (n > 0)
+   if (n > 0) {
       pnode = node[0];
-   else
+      free(node);
+   } else 
       pnode = NULL;
 
-   free(node);
    return pnode;
 }
 
@@ -936,41 +978,17 @@ PMXML_NODE read_error(PMXML_NODE root, char *file_name, int line_number, char *e
 
 /*------------------------------------------------------------------*/
 
-PMXML_NODE mxml_parse_file(char *file_name, char *error, int error_size)
-/* parse a XML file and convert it into a tree of MXML_NODE's. Return NULL
-   in case of an error, return error description */
+PMXML_NODE mxml_parse_buffer(char *buf, char *error, int error_size, char *file_name)
+/* parse a XML buffer and convert it into a tree of MXML_NODE's. Return NULL
+   in case of an error, return error description. Optional file_name is used
+   for error reporting if called from mxml_parse_file() */
 {
-   char line[1000], node_name[256], attrib_name[256], attrib_value[1000];
-   char *buf, *p, *pv;
-   int i, fh, length, line_number;
+   char node_name[256], attrib_name[256], attrib_value[1000];
+   char *p, *pv;
+   int i, line_number;
    PMXML_NODE root, ptree, pnew;
    int end_element;
    size_t len;
-
-   fh = open(file_name, O_RDONLY | O_TEXT, 0644);
-
-   if (fh == -1) {
-      sprintf(line, "Unable to open file \"%s\": ", file_name);
-      strlcat(line, strerror(errno), sizeof(line));
-      strlcpy(error, line, error_size);
-      return NULL;
-   }
-
-   length = lseek(fh, 0, SEEK_END);
-   lseek(fh, 0, SEEK_SET);
-   buf = (char *)malloc(length+1);
-   if (buf == NULL) {
-      close(fh);
-      sprintf(line, "Cannot allocate buffer: ");
-      strlcat(line, strerror(errno), sizeof(line));
-      strlcpy(error, line, error_size);
-      return NULL;
-   }
-
-   /* read complete file at once */
-   length = read(fh, buf, length);
-   buf[length] = 0;
-   close(fh);
 
    p = buf;
    line_number = 1;
@@ -1217,6 +1235,48 @@ PMXML_NODE mxml_parse_file(char *file_name, char *error, int error_size)
 
 /*------------------------------------------------------------------*/
 
+PMXML_NODE mxml_parse_file(char *file_name, char *error, int error_size)
+/* parse a XML file and convert it into a tree of MXML_NODE's. Return NULL
+   in case of an error, return error description */
+{
+   char *buf, line[1000];
+   int fh, length;
+   PMXML_NODE root;
+
+   fh = open(file_name, O_RDONLY | O_TEXT, 0644);
+
+   if (fh == -1) {
+      sprintf(line, "Unable to open file \"%s\": ", file_name);
+      strlcat(line, strerror(errno), sizeof(line));
+      strlcpy(error, line, error_size);
+      return NULL;
+   }
+
+   length = lseek(fh, 0, SEEK_END);
+   lseek(fh, 0, SEEK_SET);
+   buf = (char *)malloc(length+1);
+   if (buf == NULL) {
+      close(fh);
+      sprintf(line, "Cannot allocate buffer: ");
+      strlcat(line, strerror(errno), sizeof(line));
+      strlcpy(error, line, error_size);
+      return NULL;
+   }
+
+   /* read complete file at once */
+   length = read(fh, buf, length);
+   buf[length] = 0;
+   close(fh);
+
+   root = mxml_parse_buffer(buf, error, error_size, file_name);
+
+   free(buf);
+
+   return root;
+}
+
+/*------------------------------------------------------------------*/
+
 int mxml_write_subtree(MXML_WRITER *writer, PMXML_NODE tree)
 /* write complete subtree recursively into file opened with mxml_open_document() */
 {
@@ -1247,7 +1307,7 @@ int mxml_write_tree(char *file_name, PMXML_NODE tree)
    int i;
 
    assert(tree);
-   writer = mxml_open_document(file_name);
+   writer = mxml_open_file(file_name);
    if (!writer)
       return FALSE;
 
@@ -1255,7 +1315,7 @@ int mxml_write_tree(char *file_name, PMXML_NODE tree)
       if (!mxml_write_subtree(writer, &tree->child[i]))
          return FALSE;
 
-   if (!mxml_close_document(writer))
+   if (!mxml_close_file(writer))
       return FALSE;
 
    return TRUE;
