@@ -7,6 +7,9 @@
                 following the MIDAS CAMAC Standard for DirectIO
 
   $Log$
+  Revision 1.4  1999/02/22 19:07:10  pierre
+  - Remove came_xxx
+
   Revision 1.3  1999/01/18 17:22:42  pierre
   - fix cam24i_r for DH access
 
@@ -51,7 +54,6 @@ Switch IRQ2-7
 */
 
 /*------------------------------------------------------------------*/
-
 #if defined( __MSDOS__ )
 #include <dos.h>
 #define OUTP(_p, _d) outportb(_p, _d)
@@ -74,17 +76,11 @@ Switch IRQ2-7
 #define INPW(_p) inw(_p)
 #endif
 /*------------------------------------------------------------------*/
-
 INLINE void cam8i(const int c, const int n, const int a, const int f, 
-                  unsigned char *d)
-{
-}
-
+                  unsigned char *d){}
 /*------------------------------------------------------------------*/
-
 INLINE void cami(const int c, const int n, const int a, const int f, 
-                 WORD *d)
-{
+                 WORD *d){
   WORD loop=1000;
 
   OUTP(CDMA, (((c&0x3)-1)<<4));
@@ -99,20 +95,14 @@ INLINE void cami(const int c, const int n, const int a, const int f,
   *((char *)d)  =(unsigned char)INP(RL);
   *((char *)d+1)=(unsigned char)INP(RM);
 }
-
 /*------------------------------------------------------------------*/
-
 INLINE void cam16i(const int c, const int n, const int a, const int f, 
-                   WORD *d)
-{
+                   WORD *d){
   cami(c, n, a, f, d);
 }
-
 /*------------------------------------------------------------------*/
-
 INLINE void cam24i(const int c, const int n, const int a, const int f, 
-                   DWORD *d)
-{
+                   DWORD *d){
   WORD loop=1000;
 
   OUTP(CDMA, (((c&0x3)-1)<<4));
@@ -128,19 +118,12 @@ INLINE void cam24i(const int c, const int n, const int a, const int f,
   *((char *)d+1)=(unsigned char)INP(RM);
   *((char *)d+2)=(unsigned char)INP(RH);
 }
-
 /*------------------------------------------------------------------*/
-
 INLINE void cam8i_q(const int c, const int n, const int a, const int f, 
-                    unsigned char *d, int *x, int *q)
-{
-}
-
+                    unsigned char *d, int *x, int *q){}
 /*------------------------------------------------------------------*/
-
 INLINE void cam16i_q(const int c, const int n, const int a, const int f, 
-                     WORD *d, int *x, int *q)
-{
+                     WORD *d, int *x, int *q){
   WORD loop=1000;
 
   OUTP(CDMA, (((c&0x3)-1)<<4));
@@ -158,12 +141,9 @@ INLINE void cam16i_q(const int c, const int n, const int a, const int f,
   *x = *q>>1 & 1;
   *q &= 1;
 }
-
 /*------------------------------------------------------------------*/
-
 INLINE void cam24i_q(const int c, const int n, const int a, const int f, 
-                     DWORD *d, int *x, int *q)
-{
+                     DWORD *d, int *x, int *q){
   WORD loop=1000;
 
   OUTP(CDMA, (((c&0x3)-1)<<4));
@@ -182,12 +162,9 @@ INLINE void cam24i_q(const int c, const int n, const int a, const int f,
   *x = *q>>1 & 1;
   *q &= 1;
 }
-
 /*------------------------------------------------------------------*/
-
 INLINE void cam16i_r(const int c, const int n, const int a, const int f, 
-                     WORD **d, const int r)
-{
+                     WORD **d, const int r){
   WORD i;
 
   OUTP(CDMA, (((c&0x3)-1)<<4));
@@ -203,12 +180,9 @@ INLINE void cam16i_r(const int c, const int n, const int a, const int f,
     (*d)++;
   }
 }
-
 /*------------------------------------------------------------------*/
-
 INLINE void cam24i_r(const int c, const int n, const int a, const int f, 
-                     DWORD **d, const int r)
-{
+                     DWORD **d, const int r){
   WORD i;
   
   OUTP(CDMA, (((c&0x3)-1)<<4));
@@ -225,12 +199,9 @@ INLINE void cam24i_r(const int c, const int n, const int a, const int f,
     (*d)++;
   }
 }
-
 /*------------------------------------------------------------------*/
-
 INLINE void cam16i_rq(const int c, const int n, const int a, const int f, 
-                      WORD **d, const int r)
-{
+                      WORD **d, const int r){
 int i, x, q;
 
   for (i=0 ; i<r ; i++)
@@ -240,12 +211,9 @@ int i, x, q;
       break;
     }
 }
-
 /*------------------------------------------------------------------*/
-
 INLINE void cam24i_rq(const int c, const int n, const int a, const int f, 
-                      DWORD **d, const int r)
-{
+                      DWORD **d, const int r){
 int i, x, q;
 
   for (i=0 ; i<r ; i++)
@@ -255,12 +223,9 @@ int i, x, q;
       break;
     }
 }
-
 /*------------------------------------------------------------------*/
-
 INLINE void cam16i_sa(const int c, const int n, const int a, const int f, 
-                      WORD **d, const int r)
-{
+                      WORD **d, const int r){
   int i, aa;
 
   OUTP(CDMA, (((c&0x3)-1)<<4));
@@ -278,12 +243,9 @@ INLINE void cam16i_sa(const int c, const int n, const int a, const int f,
     aa++;
   }
 }
-
 /*------------------------------------------------------------------*/
-
 INLINE void cam24i_sa(const int c, const int n, const int a, const int f, 
-                      DWORD **d, const int r)
-{
+                      DWORD **d, const int r){
   int i, aa;
 
   OUTP(CDMA, (((c&0x3)-1)<<4));
@@ -302,12 +264,9 @@ INLINE void cam24i_sa(const int c, const int n, const int a, const int f,
     aa++;
   }
 }
-
 /*------------------------------------------------------------------*/
-
 INLINE void cam16i_sn(const int c, const int n, const int a, const int f, 
-                      WORD **d, const int r)
-{
+                      WORD **d, const int r){
 int i, x, q;
 
   for (i=0 ; i<r ; i++)
@@ -317,12 +276,9 @@ int i, x, q;
       break;
     }
 }
-
 /*------------------------------------------------------------------*/
-
 INLINE void cam24i_sn(const int c, const int n, const int a, const int f, 
-                      DWORD **d, const int r)
-{
+                      DWORD **d, const int r){
 int i, x, q;
 
   for (i=0 ; i<r ; i++)
@@ -332,19 +288,12 @@ int i, x, q;
       break;
     }
 }
-
 /*------------------------------------------------------------------*/
-
 INLINE void cam8o(const int c, const int n, const int a, const int f, 
-                  unsigned char d)
-{
-}
-
+                  unsigned char d){}
 /*------------------------------------------------------------------*/
-
 INLINE void camo(const int c, const int n, const int a, const int f, 
-                 WORD d)
-{
+                 WORD d){
   WORD loop=1000;
 
   OUTP(CDMA, (((c&0x3)-1)<<4));
@@ -358,21 +307,15 @@ INLINE void camo(const int c, const int n, const int a, const int f,
       loop--;
   if (loop == 0)
     printf("cami: status:0x%x\n",(INT) ((INP(OPST) ) & 0x7));
-  }
-
+}
 /*------------------------------------------------------------------*/
-
 INLINE void cam16o(const int c, const int n, const int a, const int f, 
-                   WORD d)
-{
+                   WORD d){
   camo(c, n, a, f, d);
 }
-
 /*------------------------------------------------------------------*/
-
 INLINE void cam24o(const int c, const int n, const int a, const int f, 
-                   DWORD d)
-{
+                   DWORD d){
   WORD loop=1000;
 
   OUTP(CDMA, (((c&0x3)-1)<<4));
@@ -388,12 +331,9 @@ INLINE void cam24o(const int c, const int n, const int a, const int f,
   if (loop == 0)
     printf("cami: status:0x%x\n",(INT) ((INP(OPST) ) & 0x7));
 }
-
 /*------------------------------------------------------------------*/
-
 INLINE void cam16o_q(const int c, const int n, const int a, const int f, 
-                     WORD d, int *x, int *q)
-{
+                     WORD d, int *x, int *q){
   WORD loop=1000;
 
   OUTP(CDMA, (((c&0x3)-1)<<4));
@@ -408,12 +348,9 @@ INLINE void cam16o_q(const int c, const int n, const int a, const int f,
   if (loop == 0)
     printf("cami: status:0x%x\n",(INT) ((INP(OPST) ) & 0x7));
 }
-
 /*------------------------------------------------------------------*/
-
 INLINE void cam24o_q(const int c, const int n, const int a, const int f, 
-                     DWORD d, int *x, int *q)
-{
+                     DWORD d, int *x, int *q){
   WORD loop=1000;
 
   OUTP(CDMA, (((c&0x3)-1)<<4));
@@ -431,19 +368,12 @@ INLINE void cam24o_q(const int c, const int n, const int a, const int f,
   *x = *q>>1 & 1;
   *q &= 1;
 }
-
 /*------------------------------------------------------------------*/
-
 INLINE void cam8o_r(const int c, const int n, const int a, const int f, 
-                    BYTE *d, const int r)
-{
-}
-
+                    BYTE *d, const int r){}
 /*------------------------------------------------------------------*/
-
 INLINE void cam16o_r(const int c, const int n, const int a, const int f, 
-                     WORD *d, const int r)
-{
+                     WORD *d, const int r){
   WORD i;
 
   OUTP(CDMA, (((c&0x3)-1)<<4));
@@ -458,12 +388,9 @@ INLINE void cam16o_r(const int c, const int n, const int a, const int f,
     d++;
   }
 }
-
 /*------------------------------------------------------------------*/
-
 INLINE void cam24o_r(const int c, const int n, const int a, const int f, 
-                     DWORD *d, const int r)
-{
+                     DWORD *d, const int r){
   WORD i;
 
   OUTP(CDMA, (((c&0x3)-1)<<4));
@@ -479,11 +406,8 @@ INLINE void cam24o_r(const int c, const int n, const int a, const int f,
     d++;
   }
 }
-
 /*------------------------------------------------------------------*/
-
-INLINE int camc_chk(const int c)
-{
+INLINE int camc_chk(const int c){
   unsigned int n, a, f;
 
   /* check if crate controller is online */
@@ -504,20 +428,16 @@ INLINE int camc_chk(const int c)
 
   return 0;
 }
-
-INLINE void camc(const int c, const int n, const int a, const int f)
-{
+/*------------------------------------------------------------------*/
+INLINE void camc(const int c, const int n, const int a, const int f){
   OUTP(CDMA, (((c&0x3)-1)<<4));
   OUTP(STA,n);
   OUTP(ADD,a);
   OUTP(FUN,f);
   OUTP(CACY,1);
 }
-
 /*------------------------------------------------------------------*/
-
-INLINE void camc_q(const int c, const int n, const int a, const int f, int *q)
-{
+INLINE void camc_q(const int c, const int n, const int a, const int f, int *q){
   OUTP(CDMA, (((c&0x3)-1)<<4));
   OUTP(STA,n);
   OUTP(ADD,a);
@@ -526,35 +446,26 @@ INLINE void camc_q(const int c, const int n, const int a, const int f, int *q)
   *q = INP(LXQ);
   *q &= 1;
 }
-
 /*------------------------------------------------------------------*/
-
-INLINE void camc_sa(const int c, const int n, const int a, const int f, const int r)
-{
+INLINE void camc_sa(const int c, const int n, const int a, const int f, const int r){
 int i;
 
   for (i=0 ; i<r ; i++)
     camc(c, n, a+i, f);
 }
-
 /*------------------------------------------------------------------*/
-
-INLINE void camc_sn(const int c, const int n, const int a, const int f, const int r)
-{
+INLINE void camc_sn(const int c, const int n, const int a, const int f, const int r){
 int i;
 
   for (i=0 ; i<r ; i++)
     camc(c, n+i, a, f);
 }
-
 /*------------------------------------------------------------------*/
-
 #ifdef _MSC_VER
 static HANDLE _hdio = 0;
 #endif
 
-INLINE int cam_init(void)
-{
+INLINE int cam_init(void){
 
 #ifdef _MSC_VER
 OSVERSIONINFO vi;
@@ -586,9 +497,7 @@ DWORD size;
   OUTP(CACY,1);
   return SUCCESS;
 }
-
 /*------------------------------------------------------------------*/
-
 INLINE void cam_exit(void)
 {
 #ifdef _MSC_VER
@@ -602,129 +511,64 @@ DWORD size;
 	                NULL, 0, &size, NULL);
 #endif
 }
-
 /*------------------------------------------------------------------*/
-
-INLINE void cam_inhibit_set(const int c)
-{
+INLINE void cam_inhibit_set(const int c){
   OUTP(CDMA, (((c&0x3)-1)<<4));
   OUTP(ZCI, 0x4);
   OUTP(CACY,1);
 }
-
 /*------------------------------------------------------------------*/
-
-INLINE void cam_inhibit_clear(const int c)
-{
+INLINE void cam_inhibit_clear(const int c){
   OUTP(CDMA, (((c&0x3)-1)<<4));
   OUTP(ZCI, 0x0);
   OUTP(CACY,1);
 }
-
 /*------------------------------------------------------------------*/
-
-INLINE void cam_crate_clear(const int c)
-{
+INLINE void cam_crate_clear(const int c){
   OUTP(CDMA, (((c&0x3)-1)<<4));
   OUTP(ZCI, 0x2);
   OUTP(CACY,1);
 }
-
 /*------------------------------------------------------------------*/
-
-INLINE void cam_crate_zinit(const int c)
-{
+INLINE void cam_crate_zinit(const int c){
   OUTP(CDMA, (((c&0x3)-1)<<4));
   OUTP(ZCI, 0x1);
   OUTP(CACY,1);
 }
-
 /*------------------------------------------------------------------*/
-
-INLINE void cam_lam_enable(const int c, const int n)
-{ 
+INLINE void cam_lam_enable(const int c, const int n){ 
   /* enable LAM flip-flop in unit */
   camc(c, n, 0, 26);
 
   /* clear LAM flip-flop in unit */
   camc(c, n, 0, 10);
 }
-
 /*------------------------------------------------------------------*/
-
-INLINE void cam_lam_disable(const int c, const int n)
-{ 
+INLINE void cam_lam_disable(const int c, const int n){ 
 
 /* enable LAM flip-flop in unit */
   camc(c, n, 0, 24);
 }
-
 /*------------------------------------------------------------------*/
-
-INLINE void cam_lam_read(const int c, DWORD *lam)
-{
+INLINE void cam_lam_read(const int c, DWORD *lam){
   OUTP(CDMA, (((c&0x3)-1)<<4));
   *lam = INP(LXQ);
   *lam = (*lam>>2) & 0x1f;
 }
-
 /*------------------------------------------------------------------*/
-
-INLINE void cam_lam_clear(const int c, const int n)
-{ 
+INLINE void cam_lam_clear(const int c, const int n){ 
   camc(c,n,0,9);
 }
-
 /*------------------------------------------------------------------*/
-
-INLINE void cam_interrupt_enable(void)
-{
+INLINE void cam_interrupt_enable(void){
 }
-
 /*------------------------------------------------------------------*/
-
-INLINE void cam_interrupt_disable(void)
-{
-}
-
+INLINE void cam_interrupt_disable(void){}
 /*------------------------------------------------------------------*/
-
 static void (*old_handler)(void) = NULL;
-
-INLINE void cam_interrupt_attach(void (*isr)(void))
-{ 
-}
-
+INLINE void cam_interrupt_attach(void (*isr)(void)){}
 /*------------------------------------------------------------------*/
-
-INLINE void cam_interrupt_detach(void)
-{
-}
-
+INLINE void cam_interrupt_detach(void){}
 /*------------------------------------------------------------------*/
-
 INLINE int cam_init_rpc(char *host_name, char *exp_name, char *client_name, char *rpc_server){return 1;}
-INLINE void came_cn(int *ext, const int b, const int c, const int n, const int a) {}
-INLINE void came_ext(const int ext, int *b, int *c, int *n, int *a) {}
-INLINE void cam16ei(const int ext, const int f, WORD *d) {}
-INLINE void cam24ei(const int ext, const int f, DWORD *d) {}
-INLINE void cam16ei_q(const int ext, const int f, WORD *d, int *x, int *q) {}
-INLINE void cam24ei_q(const int ext, const int f, DWORD *d, int *x, int *q) {}
-INLINE void cam16ei_r(const int ext, const int f, WORD **d, const int r) {}
-INLINE void cam24ei_r(const int ext, const int f, DWORD **d, const int r) {}
-INLINE void cam16ei_rq(const int ext, const int f, WORD **d, const int r) {}
-INLINE void cam24ei_rq(const int ext, const int f, DWORD **d, const int r) {}
-INLINE void cam16ei_saq(const int ext, const int f, WORD **d, const int r) {}
-INLINE void cam24ei_saq(const int ext, const int f, DWORD **d, const int r) {}
-INLINE void cam16ei_snq(const int ext, const int f, WORD **d, const int r) {}
-INLINE void cam24ei_snq(const int ext, const int f, DWORD **d, const int r) {}
-INLINE void cam16eo(const int ext, const int f, WORD d) {}
-INLINE void cam24eo(const int ext, const int f, DWORD d) {}
-INLINE void cam16eo_q(const int ext, const int f, WORD d, int *x, int *q) {}
-INLINE void cam24eo_q(const int ext, const int f, DWORD d, int *x, int *q) {}
-INLINE void camec(const int ext, const int f) {}
-INLINE void camec_q(const int ext, const int f, int *x, int *q) {}
-INLINE void camec_sa(const int ext, const int f, const int r) {}
-INLINE void camec_sn(const int ext, const int f, const int r) {}
-
 /*------------------------------------------------------------------*/

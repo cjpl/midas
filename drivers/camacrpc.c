@@ -8,6 +8,9 @@
                 CAMAC frontend (mfe.c)
 
   $Log$
+  Revision 1.6  1999/02/22 19:04:50  pierre
+  - Remove came_xxx
+
   Revision 1.5  1998/11/22 18:27:58  midas
   Fixed &x and &q pointer bugs in various functions
 
@@ -484,7 +487,7 @@ int i;
 
 int cam_init(void)
 {
-  return 0;
+  return 1;
 }
 
 /*------------------------------------------------------------------*/
@@ -580,12 +583,7 @@ void cam_lam_disable(const int c, const int n)
 
 /*------------------------------------------------------------------*/
 
-void cam_lam_read(const int c, DWORD *lam)
-{
-}
-
-/*------------------------------------------------------------------*/
-
+void cam_lam_read(const int c, DWORD *lam){}
 void cam_lam_clear(const int c, const int n)
 { 
   /* clear LAM flip-flop in unit */
@@ -593,54 +591,8 @@ void cam_lam_clear(const int c, const int n)
 }
 
 /*------------------------------------------------------------------*/
-
-void cam_interrupt_enable(void)
-{
-}
-
-/*------------------------------------------------------------------*/
-
-void cam_interrupt_disable(void)
-{
-}
-
-/*------------------------------------------------------------------*/
-
-void cam_interrupt_attach(void (*isr)(void))
-{ 
-}
-
-/*------------------------------------------------------------------*/
-
-void cam_interrupt_detach(void)
-{
-}
-
-/*------------------------------------------------------------------*/
-
-/* following functions are not yet implemented */
-
-void came_cn(int *ext, const int b, const int c, const int n, const int a) {}
-void came_ext(const int ext, int *b, int *c, int *n, int *a) {}
-void cam16ei(const int ext, const int f, WORD *d) {}
-void cam24ei(const int ext, const int f, DWORD *d) {}
-void cam16ei_q(const int ext, const int f, WORD *d, int *x, int *q) {}
-void cam24ei_q(const int ext, const int f, DWORD *d, int *x, int *q) {}
-void cam16ei_r(const int ext, const int f, WORD **d, const int r) {}
-void cam24ei_r(const int ext, const int f, DWORD **d, const int r) {}
-void cam16ei_rq(const int ext, const int f, WORD **d, const int r) {}
-void cam24ei_rq(const int ext, const int f, DWORD **d, const int r) {}
-void cam16ei_saq(const int ext, const int f, WORD **d, const int r) {}
-void cam24ei_saq(const int ext, const int f, DWORD **d, const int r) {}
-void cam16ei_snq(const int ext, const int f, WORD **d, const int r) {}
-void cam24ei_snq(const int ext, const int f, DWORD **d, const int r) {}
-void cam16eo(const int ext, const int f, WORD d) {}
-void cam24eo(const int ext, const int f, DWORD d) {}
-void cam16eo_q(const int ext, const int f, WORD d, int *x, int *q) {}
-void cam24eo_q(const int ext, const int f, DWORD d, int *x, int *q) {}
-void camec(const int ext, const int f) {}
-void camec_q(const int ext, const int f, int *x, int *q) {}
-void camec_sa(const int ext, const int f, const int r) {}
-void camec_sn(const int ext, const int f, const int r) {}
-
+void cam_interrupt_enable(void){}
+void cam_interrupt_disable(void){}
+void cam_interrupt_attach(void (*isr)(void)){}
+void cam_interrupt_detach(void){}
 /*------------------------------------------------------------------*/
