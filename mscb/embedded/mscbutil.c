@@ -6,6 +6,9 @@
   Contents:     Various utility functions for MSCB protocol
 
   $Log$
+  Revision 1.42  2004/10/29 12:46:06  midas
+  Increased EEPROM page to 4kB
+
   Revision 1.41  2004/10/12 11:02:41  midas
   Version 1.7.6
 
@@ -1168,6 +1171,8 @@ void eeprom_erase(void)
 
 \********************************************************************/
 {
+   int i;
+
 #ifdef CPU_ADUC812
    ECON = 0x06;
 #endif
@@ -1192,20 +1197,25 @@ void eeprom_erase(void)
    PSCTL = 0x03;                        // allow write and erase
 
 #if defined(CPU_C8051F310) || defined(CPU_C8051F320)
-   p = EEPROM_OFFSET;                   // erase first page
-   FLKEY = 0xA5;                        // write flash key code
-   FLKEY = _flkey;
-   *p = 0;
 
-// Following code crashed the uC !
+// Erasing more than one page crashed the uC ???
+#define N_EEPROM_PAGE 1
 
-//   p = EEPROM_OFFSET+512;               // erase second page
-//   FLKEY = 0xA5;                        // write flash key code
-//   FLKEY = 0xF1;
-//   *p = 0;
+   p = EEPROM_OFFSET; 
+   for (i=0 ; i<N_EEPROM_PAGE ; i++) {
+      FLKEY = 0xA5;                        // write flash key code
+      FLKEY = _flkey;
+      *p = 0;                              // erase page
+      watchdog_refresh();
+      p += 512;
+   }
 #else
-   p = EEPROM_OFFSET;                   // erase page
-   *p = 0;
+   p = EEPROM_OFFSET;                   
+   for (i=0 ; i<N_EEPROM_PAGE ; i++) {
+      *p = 0; // erase page
+      watchdog_refresh();
+      p += 512;
+   }
 #endif
 
    PSCTL = 0x00;                        // don't allow write
