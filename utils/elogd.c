@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.67  2001/11/20 12:24:36  midas
+  Add more spaces between attachments in find result page
+
   Revision 1.66  2001/11/20 09:16:33  midas
   Added "Last x" in "find menu commands"
 
@@ -4488,7 +4491,7 @@ FILE   *f;
     
               if (!show_attachments)
                 {
-                rsprintf("<a href=\"%s\"><b>%s</b></a>&nbsp;", 
+                rsprintf("<a href=\"%s\"><b>%s</b></a>&nbsp;&nbsp;&nbsp;&nbsp; ", 
                           ref, attachment[index]+14);
                 }
               else
