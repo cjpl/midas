@@ -6,6 +6,9 @@
   Contents:     Header fiel for MSCB funcions
 
   $Log$
+  Revision 1.5  2001/10/31 11:16:54  midas
+  Added IO check function
+
   Revision 1.4  2001/08/31 12:23:51  midas
   Added mutex protection
 
@@ -130,6 +133,7 @@ extern "C" {
 #endif
 
 int EXPRT mscb_init(char *device);
+void EXPRT mscb_check(char *device);
 int EXPRT mscb_exit(int fd);
 int EXPRT mscb_reset(int fd);
 int EXPRT mscb_set_baud(int fd, int baud);
