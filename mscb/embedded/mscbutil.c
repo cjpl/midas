@@ -6,6 +6,9 @@
   Contents:     Various utility functions for MSCB protocol
 
   $Log$
+  Revision 1.39  2004/09/10 12:32:50  midas
+  *** empty log message ***
+
   Revision 1.38  2004/09/10 12:27:22  midas
   Version 1.7.5
 
@@ -239,7 +242,7 @@ unsigned char xdata *data rbuf_rp = rbuf;
 unsigned char xdata *data rbuf_wp = rbuf;
 unsigned char xdata *data sbuf_rp = sbuf;
 unsigned char xdata *data sbuf_wp = sbuf;
-
+                         
 /*---- UART1 handling ----------------------------------------------*/
 
 void serial_int1(void) interrupt 20 using 2
@@ -566,7 +569,10 @@ void uart_init(unsigned char port, unsigned char baud)
       EIE2 |= 0x40;                // enable serial interrupt
       EIP2 &= ~0x40;               // serial interrupt low priority      
 
+#ifdef SCS_210
       uart1_init_buffer();
+#endif
+
 #elif defined(CPU_C8051F120)       // 98 MHz
       SFRPAGE = UART1_PAGE;
       SCON1 = 0xD0;                // Mode 3, 9 bit, receive enable
