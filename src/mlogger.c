@@ -6,6 +6,9 @@
   Contents:     MIDAS logger program
 
   $Log$
+  Revision 1.56  2002/05/16 19:15:01  pierre
+  small typo
+
   Revision 1.55  2002/05/16 18:01:14  midas
   Added subdir creation in logger and improved program restart scheme
 
@@ -173,11 +176,11 @@
 
 \********************************************************************/
 
-#include <errno.h> /* for mkdir() */
 #include "midas.h"
 #include "msystem.h"
 #include "hardware.h"
 #include "ftplib.h"
+#include <errno.h> /* for mkdir() */
 
 #define INCLUDE_LOGGING
 #include "ybos.h"
@@ -2294,7 +2297,7 @@ struct tm    *tms;
           }
 
         /* create directory if needed */
-        status = mkdir(str);
+        status = mkdir(str, 0755);
         if (status == -1 && errno != EEXIST)
           {
           cm_msg(MERROR, "tr_prestart", "Cannot create subdirectory %s", str);
