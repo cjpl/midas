@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.68  2000/11/15 14:02:08  midas
+  Some more work on PVM, but not yet finished
+
   Revision 1.67  2000/11/08 15:03:00  midas
   Fixed bug that elapsed time was zero after EOR event
 
@@ -240,6 +243,18 @@
 
 /* PVM include */
 #ifdef PVM
+
+void pvm_debug(char *format, ...)
+{
+va_list  argptr;
+char     str[256];
+
+  va_start(argptr, format);
+  vsprintf(str, (char *) format, argptr);
+  va_end(argptr);
+  cm_msg(MINFO, "PVM", str);
+}
+
 #undef STRICT
 #include <pvm3.h>
 #endif
@@ -265,12 +280,21 @@ typedef struct {
   char  *buffer;
   int   wp;
   DWORD time;
+  BOOL  eor_sent;
   } PVM_CLIENT;
 
 PVM_CLIENT *pvmc;
 
-int pvm_eor();
-int pvm_distribute(ANALYZE_REQUEST *par, EVENT_HEADER *pevent);
+int  pvm_eor(int);
+void pvm_debug(char *format, ...);
+int  pvm_distribute(ANALYZE_REQUEST *par, EVENT_HEADER *pevent);
+
+#define PVM_DEBUG pvm_debug
+//#define PVM_DEBUG(s)
+
+#else
+
+#define PVM_DEBUG(s)
 
 #endif
 
@@ -2787,7 +2811,7 @@ static char  *orig_event = NULL;
       /* load ODB from event */
       odb_load(pevent);
 
-      /* cm_msg(MERROR, "process_event", "ODB load"); */
+      PVM_DEBUG("process_event: ODB load");
       }
     }
   else
@@ -2798,7 +2822,10 @@ static char  *orig_event = NULL;
 
   /* if master, distribute events to clients */
   if (pvm_master)
+    {
     status = pvm_distribute(par, pevent);
+    return SUCCESS;
+    }
 
 #endif
   
@@ -3413,7 +3440,9 @@ typedef struct {
   int     device;
   int     fd;
   gzFile  gzfile;
-/*FTP_CON ftp_con;*/
+  char    *buffer;
+  int     wp, rp;
+  /*FTP_CON ftp_con;*/
 } MA_FILE;
 
 /*------------------------------------------------------------------*/
@@ -3440,7 +3469,11 @@ MA_FILE *file;
 
   /* or from PVM */
   if (pvm_slave)
+    {
     file->device = MA_DEVICE_PVM;
+    file->buffer = malloc(PVM_BUFFER_SIZE);
+    file->wp = file->rp = 0;
+    }
 
   /* check input file extension */
   if (strchr(file_name, '.'))
@@ -3562,6 +3595,17 @@ int status, n;
     {
 #ifdef PVM
     int bufid, len, tag, tid;
+    EVENT_HEADER *pe;
+    
+    /* check if anything in buffer */
+    if (file->wp > file->rp)
+      {
+      pe = (EVENT_HEADER *) (file->buffer+file->rp);
+      size = sizeof(EVENT_HEADER)+pe->data_size;
+      memcpy(pevent, pe, size);
+      file->rp += size;
+      return size;
+      }
     
     /* send data request */
     pvm_initsend(PvmDataInPlace);
@@ -3582,20 +3626,22 @@ int status, n;
       return -1;
       }
 
-    if (tag == TAG_EOR || tag == TAG_EXIT)
-      {
-      cm_msg(MERROR, "ma_read_event", "Receive tag %d", tag);
-      return -1;
-      }
+    PVM_DEBUG("ma_read_event: receive tag %d", tag);
 
-    status = pvm_upkbyte((char *)pevent, len, 1);
+    if (tag == TAG_EOR || tag == TAG_EXIT)
+      return -1;
+
+    file->wp = len;
+    file->rp = 0;
+    status = pvm_upkbyte((char *)file->buffer, len, 1);
     if (status < 0)
       {
       pvm_perror("pvm_upkbyte");
       return -1;
       }
 
-    return len;
+    /* re-call this function */
+    return ma_read_event(file, pevent, size);
 #endif
     }
 
@@ -3782,11 +3828,16 @@ DWORD           start_time;
 
   /* signal EOR to slaves */
 #ifdef PVM
-  pvm_eor();
-#endif
+  if (pvm_master)
+    pvm_eor(status == RPC_SHUTDOWN ? TAG_EXIT : TAG_EOR);
+  else
+    eor(current_run_number, error);
+#else
 
   /* call analyzer eor routines */
   eor(current_run_number, error);
+
+#endif
 
   ma_close(file);
 
@@ -3998,6 +4049,8 @@ char path[256];
       return 0;
       }
 
+    memset(pvmc, 0, sizeof(PVM_CLIENT)*pvm_n_task);
+
     for (i=0 ; i<pvm_n_task ; i++)
       {
       pvmc[i].buffer = malloc(PVM_BUFFER_SIZE);
@@ -4010,8 +4063,6 @@ char path[256];
         return 0;
         }
       }
-
-    memset(pvmc, 0, sizeof(PVM_CLIENT)*pvm_n_task);
 
     /* spawn slaves */
     printf("Spawning %s %d times\n", path, pvm_n_task);
@@ -4063,22 +4114,198 @@ char path[256];
 
 /*------------------------------------------------------------------*/
 
-int pvm_send_event(int cl_tid, EVENT_HEADER *pevent)
+int pvm_send_event(int index, EVENT_HEADER *pevent)
 {
 struct timeval timeout;
-int i, bufid, len, tag, tid, status;
+int    bufid, len, tag, tid, status;
+
+  /* wait on event request */
+  timeout.tv_sec  = 5;
+  timeout.tv_usec = 0;
+
+  bufid = pvm_trecv(pvmc[index].tid, -1, &timeout);
+  if (bufid < 0)
+    {
+    pvm_perror("pvm_recv");
+    return RPC_SHUTDOWN;
+    }
+  if (bufid == 0)
+    {
+    printf("Timeout receiving data requests from %s, aborting analyzer.\n",
+            pvmc[index].host);
+    return RPC_SHUTDOWN;
+    }
+
+  status = pvm_bufinfo(bufid, &len, &tag, &tid);
+  if (status < 0)
+    {
+    pvm_perror("pvm_bufinfo");
+    return RPC_SHUTDOWN;
+    }
+
+  PVM_DEBUG("pvm_send_event: received request from client %d", index);
+
+  /* send event */
+  pvm_initsend(PvmDataInPlace);
+
+  if (pevent)
+    pvm_pkbyte((char *) pevent, pevent->data_size+sizeof(EVENT_HEADER), 1);
+  else
+    pvm_pkbyte((char *) pvmc[index].buffer, pvmc[index].wp, 1);
+
+  PVM_DEBUG("pvm_send_event: send events to client %d", index);
+
+  status = pvm_send(tid, TAG_DATA);
+  if (status < 0)
+    {
+    pvm_perror("pvm_send");
+    return RPC_SHUTDOWN;
+    }
+
+  if (!pevent)
+    pvmc[index].wp = 0;
+
+  pvmc[index].time = ss_millitime();
+
+  return SUCCESS;
+}
+
+/*------------------------------------------------------------------*/
+
+int pvm_distribute(ANALYZE_REQUEST *par, EVENT_HEADER *pevent)
+{
+int    i, index, size, status, min;
+int    bufid, len, tag, tid;
+
+  if (par == NULL && pevent->event_id == EVENTID_BOR)
+    {
+    /* distribute ODB dump */
+    for (i=0 ; i<pvm_n_task ; i++)
+      {
+      status = pvm_send_event(i, pevent);
+      if (status != SUCCESS)
+        return status;
+      }
+
+    return SUCCESS;
+    }
+
+  size = sizeof(EVENT_HEADER) + pevent->data_size;
+
+  if ((par->ar_info.sampling_type & GET_FARM) == 0)
+    {
+    /* if not farmed, copy to all client buffers */
+    for (i=0 ; i<pvm_n_task ; i++)
+      {
+      /* if buffer full, empty it */
+      if (pvmc[i].wp + size >= PVM_BUFFER_SIZE)
+        {
+        status = pvm_send_event(i, NULL);
+        if (status != SUCCESS)
+          return status;
+        }
+
+      memcpy(pvmc[i].buffer + pvmc[i].wp, pevent, size);
+      pvmc[i].wp += size;
+      }
+
+    return SUCCESS;
+    }
+
+  /* farmed: look for buffer with lowest level */
+  min = PVM_BUFFER_SIZE;
+  for (i=0 ; i<pvm_n_task ; i++)
+    if (pvmc[i].wp < min)
+      {
+      min = pvmc[i].wp;
+      index = i;
+      }
+
+  /* if buffer full, empty it */
+  if (pvmc[index].wp + size >= PVM_BUFFER_SIZE)
+    {
+    status = pvm_send_event(index, NULL);
+    if (status != SUCCESS)
+      return status;
+    }
+
+  /* copy to "index" buffer */
+  if (pvmc[index].wp + size < PVM_BUFFER_SIZE)
+    {
+    memcpy(pvmc[index].buffer + pvmc[index].wp, pevent, size);
+    pvmc[index].wp += size;
+    }
+
+  /* don't send events if buffers are more than half empty */
+  if (min < PVM_BUFFER_SIZE/2)
+    return SUCCESS;
+
+  /* check if any client request a new buffer */
+  bufid = pvm_nrecv(-1, -1);
+  if (bufid < 0)
+    {
+    pvm_perror("pvm_recv");
+    return RPC_SHUTDOWN;
+    }
+
+  if (bufid != 0)
+    {
+    status = pvm_bufinfo(bufid, &len, &tag, &tid);
+    if (status < 0)
+      {
+      pvm_perror("pvm_bufinfo");
+      return RPC_SHUTDOWN;
+      }
+
+    /* find index of that client */
+    for (i=0 ; i<pvm_n_task ; i++)
+      if (pvmc[i].tid == tid)
+        break;
+
+    if (i == pvm_n_task)
+      {
+      cm_msg(MERROR, "pvm_distribute", "received message from unknown client %d", tid);
+      return RPC_SHUTDOWN;
+      }
+
+    /* send event */
+    pvm_initsend(PvmDataInPlace);
+
+    pvm_pkbyte((char *) pvmc[i].buffer, pvmc[i].wp, 1);
+
+    PVM_DEBUG("pvm_distribute: send events to client %d", i);
+
+    status = pvm_send(tid, TAG_DATA);
+    if (status < 0)
+      {
+      pvm_perror("pvm_send");
+      return RPC_SHUTDOWN;
+      }
+
+    pvmc[i].wp = 0;
+    pvmc[i].time = ss_millitime();
+    }
+
+  return SUCCESS;
+}
+
+/*------------------------------------------------------------------*/
+
+int pvm_eor(int eor_tag)
+{
+struct timeval timeout;
+int            bufid, len, tag, tid, i, j, status;
 
   for (i=0 ; i<pvm_n_task ; i++)
-    {
-    /* cl_tid == 0 means send to all clients */
-    if (cl_tid && pvmc[i].tid != cl_tid)
-      continue;
+    pvmc[i].eor_sent = FALSE;
 
-    /* wait on event request */
+  do
+    {
+    /* flush remaining buffers */
     timeout.tv_sec  = 5;
     timeout.tv_usec = 0;
 
-    bufid = pvm_trecv(pvmc[i].tid, -1, &timeout);
+    bufid = pvm_trecv(-1, -1, &timeout);
     if (bufid < 0)
       {
       pvm_perror("pvm_recv");
@@ -4086,8 +4313,7 @@ int i, bufid, len, tag, tid, status;
       }
     if (bufid == 0)
       {
-      printf("Timeout receiving data requests from %s, aborting analyzer.\n",
-              pvmc[i].host);
+      printf("Timeout receiving data requests aborting analyzer.\n");
       return RPC_SHUTDOWN;
       }
 
@@ -4098,94 +4324,64 @@ int i, bufid, len, tag, tid, status;
       return RPC_SHUTDOWN;
       }
 
-    /* send event */
-    pvm_initsend(PvmDataInPlace);
-    pvm_pkbyte((char *) pevent, pevent->data_size+sizeof(EVENT_HEADER), 1);
-    status = pvm_send(tid, TAG_DATA);
-    if (status < 0)
+    /* find index of that client */
+    for (j=0 ; j<pvm_n_task ; j++)
+      if (pvmc[j].tid == tid)
+        break;
+
+    if (j == pvm_n_task)
       {
-      pvm_perror("pvm_send");
+      cm_msg(MERROR, "pvm_distribute", "received message from unknown client %d", tid);
       return RPC_SHUTDOWN;
       }
 
-    pvmc[i].time = ss_millitime();
-    }
+    PVM_DEBUG("pvm_eor: received request from client %d", j);
 
-  return SUCCESS;
-}
-
-/*------------------------------------------------------------------*/
-
-int pvm_distribute(ANALYZE_REQUEST *par, EVENT_HEADER *pevent)
-{
-int        i, size, status;
-static int index, mode;
-
-  if (par == NULL && pevent->event_id == EVENTID_BOR)
-    {
-    /* stagger client buffers */
-    mode  = 2;
-    index = 0;
-
-    /* distribute ODB dump */
-    status = pvm_send_event(0, pevent);
-    return status;
-    }
-
-  /* copy to "index" buffer */
-  size = sizeof(EVENT_HEADER) + pevent->data_size;
-  if (pvmc[i].wp + size< PVM_BUFFER_SIZE)
-    {
-    memcpy(pvmc[i].buffer + pvmc[i].wp, pevent, size);
-    pvmc[i].wp += size;
-    }
-  
-  if (par && (par->ar_info.sampling_type & GET_FARM))
-    return SUCCESS;
-
-  return SUCCESS;
-}
-
-/*------------------------------------------------------------------*/
-
-int pvm_eor()
-{
-struct timeval timeout;
-int bufid, len, tag, tid, i, status;
-
-  /* if master, distribute events to clients */
-  if (pvm_master)
-    {
-    for (i=0 ; i<pvm_n_task ; i++)
+    /* send remaining buffer if data available */
+    if (pvmc[j].wp > 0)
       {
-      /* wait on event request */
-      timeout.tv_sec  = 5;
-      timeout.tv_usec = 0;
-
-      bufid = pvm_trecv(-1, -1, &timeout);
-      if (bufid < 0)
-        {
-        pvm_perror("pvm_recv");
-        return 0;
-        }
-      if (bufid == 0)
-        {
-        printf("Timeout receiving data requests from slaves, aborting analyzer.\n");
-        return 0;
-        }
-
-      pvm_bufinfo(bufid, &len, &tag, &tid);
-
-      /* send zero event */
       pvm_initsend(PvmDataInPlace);
+
+      pvm_pkbyte((char *) pvmc[j].buffer, pvmc[j].wp, 1);
+
+      PVM_DEBUG("pvm_eor: send events to client %d", j);
+
       status = pvm_send(tid, TAG_DATA);
       if (status < 0)
         {
         pvm_perror("pvm_send");
-        return 0;
+        return RPC_SHUTDOWN;
         }
+
+      pvmc[j].wp = 0;
+      pvmc[j].time = ss_millitime();
       }
-    }
+    else
+      {
+      /* send EOR */
+      pvm_initsend(PvmDataDefault);
+
+      if (eor_tag == TAG_EOR)
+        PVM_DEBUG("pvm_eor: send EOR to client %d", j);
+      else
+        PVM_DEBUG("pvm_eor: send EXIT to client %d", j);
+
+      status = pvm_send(tid, eor_tag);
+      if (status < 0)
+        {
+        pvm_perror("pvm_send");
+        return RPC_SHUTDOWN;
+        }
+
+      pvmc[j].eor_sent = TRUE;
+      }
+
+    /* check if EOR sent to all clients */
+    for (j=0 ; j<pvm_n_task ; j++)
+      if (!pvmc[j].eor_sent)
+        break;
+
+    } while (j<pvm_n_task);
 
   return SUCCESS;
 }
