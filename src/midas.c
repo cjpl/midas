@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.4  1998/10/13 07:34:42  midas
+  Reopened database in case of wrong password
+
   Revision 1.3  1998/10/12 12:19:02  midas
   Added Log tag in header
 
@@ -1403,6 +1406,14 @@ HNDLE hDB, hKeyClient;
       strcpy(str, ss_getpass("Password: "));
     else
       func(str);
+
+    /* re-open database */
+    status = db_open_database("ODB", odb_size, &hDB, client_name);
+    if (status != DB_SUCCESS && status != DB_CREATED)
+      {
+      cm_msg(MERROR, "cm_connect_experiment1", "cannot open database");
+      return status;
+      }
 
     strcpy(password, ss_crypt(str, "mi"));
     status = cm_set_client_info(hDB, &hKeyClient, local_host_name, 
