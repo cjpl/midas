@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.27  2001/08/07 13:26:27  midas
+  Increase size of author, type and cat. list to 100
+
   Revision 1.26  2001/08/07 11:01:44  midas
   Fixed bugs with strtok
 
@@ -155,6 +158,7 @@ char cfg_file[256];
 #define MAX_GROUPS      32
 #define MAX_PARAM      100
 #define MAX_ATTACHMENTS  5
+#define MAX_N_LIST     100
 #define VALUE_SIZE     256
 #define PARAM_LENGTH   256
 #define TEXT_SIZE    50000
@@ -183,17 +187,17 @@ char *mname[] = {
   "December"
 };
 
-char type_list[50][NAME_LENGTH] = {
+char type_list[MAX_N_LIST][NAME_LENGTH] = {
   "Routine",
   "Other"
 };
 
-char category_list[50][NAME_LENGTH] = {
+char category_list[MAX_N_LIST][NAME_LENGTH] = {
   "General",
   "Other",
 };
 
-char author_list[50][NAME_LENGTH] = {
+char author_list[MAX_N_LIST][NAME_LENGTH] = {
   ""
 };
 
@@ -467,7 +471,7 @@ char *cfgbuffer;
 
 int getcfg(char *group, char *param, char *value)
 {
-char str[256], *p, *pstr;
+char str[10000], *p, *pstr;
 int  length;
 int  fh;
 
@@ -560,7 +564,7 @@ int  fh;
 
 int enumcfg(char *group, char *param, char *value, int index)
 {
-char str[256], *p, *pstr;
+char str[10000], *p, *pstr;
 int  i;
 
   /* open configuration file */
@@ -638,7 +642,7 @@ int  i;
 
 int enumgrp(int index, char *group)
 {
-char str[256], *p, *pstr;
+char str[10000], *p, *pstr;
 int  i;
 
   /* open configuration file */
@@ -1969,7 +1973,7 @@ int i;
 void show_elog_new(char *path, BOOL bedit)
 {
 int    i, size, run_number, wrap;
-char   str[256], *p, list[1000];
+char   str[256], *p, list[10000];
 char   date[80], author[80], type[80], category[80], subject[256], text[TEXT_SIZE], 
        orig_tag[80], reply_tag[80], att[MAX_ATTACHMENTS][256], encoding[80];
 time_t now;
@@ -2061,7 +2065,7 @@ BOOL   allow_edit;
     {
     memset(author_list, 0, sizeof(author_list));
     p = strtok(list, ",");
-    for (i=0 ; p ; i++)
+    for (i=0 ; p && i<MAX_N_LIST ; i++)
       {
       strcpy(author_list[i], p);
       p = strtok(NULL, ",");
@@ -2077,7 +2081,7 @@ BOOL   allow_edit;
     {
     memset(type_list, 0, sizeof(type_list));
     p = strtok(list, ",");
-    for (i=0 ; p ; i++)
+    for (i=0 ; p && i<MAX_N_LIST ; i++)
       {
       strcpy(type_list[i], p);
       p = strtok(NULL, ",");
@@ -2093,7 +2097,7 @@ BOOL   allow_edit;
     {
     memset(category_list, 0, sizeof(category_list));
     p = strtok(list, ",");
-    for (i=0 ; p ; i++)
+    for (i=0 ; p && i<MAX_N_LIST ; i++)
       {
       strcpy(category_list[i], p);
       p = strtok(NULL, ",");
@@ -2120,7 +2124,7 @@ BOOL   allow_edit;
     else
       {
       rsprintf("<tr><td bgcolor=#FFA0A0>Author: <select name=\"author\">\n");
-      for (i=0 ; i<20 && author_list[i][0] ; i++)
+      for (i=0 ; i<MAX_N_LIST && author_list[i][0] ; i++)
         if (equal_ustring(author_list[i], author))
           rsprintf("<option selected value=\"%s\">%s\n", author_list[i], author_list[i]);
         else
@@ -2130,7 +2134,7 @@ BOOL   allow_edit;
     }
 
   rsprintf("<td bgcolor=#FFA0A0>Type: <select name=\"type\">\n");
-  for (i=0 ; i<20 && type_list[i][0] ; i++)
+  for (i=0 ; i<MAX_N_LIST && type_list[i][0] ; i++)
     if ((path && !bedit && equal_ustring(type_list[i], "reply")) ||
         (equal_ustring(type_list[i], type)))
       rsprintf("<option selected value=\"%s\">%s\n", type_list[i], type_list[i]);
@@ -2139,7 +2143,7 @@ BOOL   allow_edit;
   rsprintf("</select></tr>\n");
 
   rsprintf("<tr><td bgcolor=#A0FFA0>Category: <select name=\"category\">\n");
-  for (i=0 ; i<20 && category_list[i][0] ; i++)
+  for (i=0 ; i<MAX_N_LIST && category_list[i][0] ; i++)
     if (equal_ustring(category_list[i], category))
       rsprintf("<option selected value=\"%s\">%s\n", category_list[i], category_list[i]);
     else
@@ -2246,7 +2250,7 @@ void show_elog_query()
 int    i;
 time_t now;
 struct tm *tms;
-char   *p, list[1000];
+char   *p, list[10000];
 
   /* header */
   show_standard_header("ELOG query", NULL);
@@ -2321,7 +2325,7 @@ char   *p, list[1000];
     {
     memset(type_list, 0, sizeof(type_list));
     p = strtok(list, ",");
-    for (i=0 ; p ; i++)
+    for (i=0 ; p && i<MAX_N_LIST ; i++)
       {
       strcpy(type_list[i], p);
       p = strtok(NULL, ",");
@@ -2337,7 +2341,7 @@ char   *p, list[1000];
     {
     memset(category_list, 0, sizeof(category_list));
     p = strtok(list, ",");
-    for (i=0 ; p ; i++)
+    for (i=0 ; p && i<MAX_N_LIST ; i++)
       {
       strcpy(category_list[i], p);
       p = strtok(NULL, ",");
@@ -2354,7 +2358,7 @@ char   *p, list[1000];
   rsprintf("<td colspan=2 bgcolor=#FFA0A0>Type: ");
   rsprintf("<select name=\"type\">\n");
   rsprintf("<option value=\"\">\n");
-  for (i=0 ; i<20 && type_list[i][0] ; i++)
+  for (i=0 ; i<MAX_N_LIST && type_list[i][0] ; i++)
     rsprintf("<option value=\"%s\">%s\n", type_list[i], type_list[i]);
   
   rsprintf("</select></tr>\n");
@@ -2362,7 +2366,7 @@ char   *p, list[1000];
   rsprintf("<tr><td colspan=2 bgcolor=#A0FFA0>Category: ");
   rsprintf("<select name=\"category\">\n");
   rsprintf("<option value=\"\">\n");
-  for (i=0 ; i<20 && category_list[i][0] ; i++)
+  for (i=0 ; i<MAX_N_LIST && category_list[i][0] ; i++)
     rsprintf("<option value=\"%s\">%s\n", category_list[i], category_list[i]);
   rsprintf("</select>\n");
 
