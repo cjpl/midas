@@ -42,6 +42,9 @@ zip -p mscb%version%.zip embedded/*.hex
 zip -p mscb%version%.zip labview/*.dll
 zip -p mscb%version%.zip labview/*.vi
 
+zip -p mscb%version%.zip drivers/windows/mscbusb.inf
+zip -p mscb%version%.zip drivers/windows/mscbusb.sys
+
 rem map network drive
 net use n: /d > nul
 net use n: \\pc2075\midas mi_das /user:midas
