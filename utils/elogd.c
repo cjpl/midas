@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.8  2001/05/23 13:15:34  midas
+  Fixed bug with category
+
   Revision 1.7  2001/05/23 13:06:03  midas
   Added "allow edit" functionality
 
@@ -780,7 +783,7 @@ char   str[256], file_name[256], dir[256];
 
 /*------------------------------------------------------------------*/
 
-INT el_submit(int run, char *author, char *type, char *system, char *subject,
+INT el_submit(int run, char *author, char *type, char *category, char *subject,
               char *text, char *reply_to, char *encoding,
               char *afilename1, char *buffer1, INT buffer_size1,
               char *afilename2, char *buffer2, INT buffer_size2,
@@ -796,7 +799,7 @@ INT el_submit(int run, char *author, char *type, char *system, char *subject,
     int    run              Run number
     char   *author          Message author
     char   *type            Message type
-    char   *system          Message system
+    char   *category        Message category
     char   *subject         Subject
     char   *text            Message text
     char   *reply_to        In reply to this message
@@ -985,7 +988,7 @@ BOOL    bedit;
   sprintf(message+strlen(message), "Run: %d\n", run_number);
   sprintf(message+strlen(message), "Author: %s\n", author);
   sprintf(message+strlen(message), "Type: %s\n", type);
-  sprintf(message+strlen(message), "Category: %s\n", system);
+  sprintf(message+strlen(message), "Category: %s\n", category);
   sprintf(message+strlen(message), "Subject: %s\n", subject);
 
   /* keep original attachment if edit and no new attachment */
@@ -1083,7 +1086,7 @@ BOOL    bedit;
 /*------------------------------------------------------------------*/
 
 INT el_retrieve(char *tag, char *date, int *run, char *author, char *type,
-                char *system, char *subject, char *text, int *textsize,
+                char *category, char *subject, char *text, int *textsize,
                 char *orig_tag, char *reply_tag,
                 char *attachment1, char *attachment2, char *attachment3,
                 char *encoding)
@@ -1103,7 +1106,7 @@ INT el_retrieve(char *tag, char *date, int *run, char *author, char *type,
     int    *run             Run number
     char   *author          Message author
     char   *type            Message type
-    char   *system          Message system
+    char   *category        Message category
     char   *subject         Subject
     char   *text            Message text
     char   *orig_tag        Original message if this one is a reply
@@ -1153,7 +1156,7 @@ char    message[10000], thread[256], attachment_all[256];
   el_decode(message, "Thread: ", thread);
   el_decode(message, "Author: ", author);
   el_decode(message, "Type: ", type);
-  el_decode(message, "Category: ", system);
+  el_decode(message, "Category: ", category);
   el_decode(message, "Subject: ", subject);
   el_decode(message, "Attachment: ", attachment_all);
   el_decode(message, "Encoding: ", encoding);
@@ -1704,7 +1707,7 @@ void show_elog_new(char *path, BOOL bedit, char *attachment)
 {
 int    i, size, run_number, wrap;
 char   str[256], ref[256], *p, list[1000];
-char   date[80], author[80], type[80], system[80], subject[256], text[10000], 
+char   date[80], author[80], type[80], category[80], subject[256], text[10000], 
        orig_tag[80], reply_tag[80], att1[256], att2[256], att3[256], encoding[80];
 time_t now;
 BOOL   allow_edit;
@@ -1716,7 +1719,7 @@ BOOL   allow_edit;
     allow_edit= atoi(str);
 
   /* get message for reply */
-  type[0] = system[0] = 0;
+  type[0] = category[0] = 0;
   att1[0] = att2[0] = att3[0] = 0;
   subject[0] = 0;
 
@@ -1724,7 +1727,7 @@ BOOL   allow_edit;
     {
     strcpy(str, path);
     size = sizeof(text);
-    el_retrieve(str, date, &run_number, author, type, system, subject, 
+    el_retrieve(str, date, &run_number, author, type, category, subject, 
                 text, &size, orig_tag, reply_tag, att1, att2, att3, encoding);
     }
 
@@ -1823,9 +1826,9 @@ BOOL   allow_edit;
       rsprintf("<option value=\"%s\">%s\n", type_list[i], type_list[i]);
   rsprintf("</select></tr>\n");
 
-  rsprintf("<tr><td bgcolor=#A0FFA0>Category: <select name=\"system\">\n");
+  rsprintf("<tr><td bgcolor=#A0FFA0>Category: <select name=\"category\">\n");
   for (i=0 ; i<20 && category_list[i][0] ; i++)
-    if (path && equal_ustring(category_list[i], system))
+    if (path && equal_ustring(category_list[i], category))
       rsprintf("<option selected value=\"%s\">%s\n", category_list[i], category_list[i]);
     else
       rsprintf("<option value=\"%s\">%s\n", category_list[i], category_list[i]);
@@ -2038,7 +2041,7 @@ char   *p, list[1000];
   rsprintf("</select></tr>\n");
 
   rsprintf("<tr><td colspan=2 bgcolor=#A0FFA0>Category: ");
-  rsprintf("<select name=\"system\">\n");
+  rsprintf("<select name=\"category\">\n");
   rsprintf("<option value=\"\">\n");
   for (i=0 ; i<20 && category_list[i][0] ; i++)
     rsprintf("<option value=\"%s\">%s\n", category_list[i], category_list[i]);
@@ -2127,7 +2130,7 @@ BOOL   allow_delete;
 void show_elog_submit_query(INT past_n, INT last_n)
 {
 int    i, size, run, status, m1, d2, m2, y2, index, colspan, current_year, fh;
-char   date[80], author[80], type[80], system[80], subject[256], text[10000], 
+char   date[80], author[80], type[80], category[80], subject[256], text[10000], 
        orig_tag[80], reply_tag[80], attachment[3][256], encoding[80];
 char   str[256], str2[10000], tag[256], ref[80], file_name[256];
 BOOL   full, show_attachments;
@@ -2299,8 +2302,8 @@ FILE   *f;
   if (*getparam("type"))
     rsprintf("Type: <b>%s</b>   ", getparam("type"));
 
-  if (*getparam("system"))
-    rsprintf("Category: <b>%s</b>   ", getparam("system"));
+  if (*getparam("category"))
+    rsprintf("Category: <b>%s</b>   ", getparam("category"));
 
   if (*getparam("subject"))
     rsprintf("Subject: <b>%s</b>   ", getparam("subject"));
@@ -2363,7 +2366,7 @@ FILE   *f;
   do
     {
     size = sizeof(text);
-    status = el_retrieve(tag, date, &run, author, type, system, subject, 
+    status = el_retrieve(tag, date, &run, author, type, category, subject, 
                          text, &size, orig_tag, reply_tag, 
                          attachment[0], attachment[1], attachment[2],
                          encoding);
@@ -2403,7 +2406,7 @@ FILE   *f;
       /* do filtering */
       if (*getparam("type") && !equal_ustring(getparam("type"), type))
         continue;
-      if (*getparam("system") && !equal_ustring(getparam("system"), system))
+      if (*getparam("category") && !equal_ustring(getparam("category"), category))
         continue;
 
       if (*getparam("author"))
@@ -2460,7 +2463,7 @@ FILE   *f;
 
       if (full)
         {
-        rsprintf("<tr><td><a href=%s>%s</a><td>%s<td>%s<td>%s<td>%s</tr>\n", ref, date, author, type, system, subject);
+        rsprintf("<tr><td><a href=%s>%s</a><td>%s<td>%s<td>%s<td>%s</tr>\n", ref, date, author, type, category, subject);
         rsprintf("<tr><td colspan=5>");
         
         if (equal_ustring(encoding, "plain"))
@@ -2550,7 +2553,7 @@ FILE   *f;
         }
       else
         {
-        rsprintf("<tr><td>%s<td>%s<td>%s<td>%s<td>%s\n", date, author, type, system, subject);
+        rsprintf("<tr><td>%s<td>%s<td>%s<td>%s<td>%s\n", date, author, type, category, subject);
         rsprintf("<td><a href=%s>", ref);
       
         el_format(str, encoding);
@@ -2714,7 +2717,7 @@ struct hostent *phe;
     strcpy(str, getparam("orig"));
 
   el_submit(atoi(getparam("run")), author, getparam("type"),
-            getparam("system"), getparam("subject"), getparam("text"), 
+            getparam("category"), getparam("subject"), getparam("text"), 
             getparam("orig"), *getparam("html") ? "HTML" : "plain", 
             att_file[0], _attachment_buffer[0], _attachment_size[0], 
             att_file[1], _attachment_buffer[1], _attachment_size[1], 
@@ -2737,7 +2740,7 @@ void show_elog_page(char *logbook, char *path)
 {
 int   size, i, run, msg_status, status, fh, length, first_message, last_message, index;
 char  str[256], orig_path[256], command[80], ref[256], file_name[256];
-char  date[80], author[80], type[80], system[80], subject[256], text[10000], 
+char  date[80], author[80], type[80], category[80], subject[256], text[10000], 
       orig_tag[80], reply_tag[80], attachment[3][256], encoding[80], att[256];
 FILE  *f;
 BOOL  allow_delete, allow_edit;
@@ -2918,7 +2921,7 @@ BOOL  allow_delete, allow_edit;
         }
 
       size = sizeof(text);
-      el_retrieve(path, date, &run, author, type, system, subject, 
+      el_retrieve(path, date, &run, author, type, category, subject, 
                   text, &size, orig_tag, reply_tag, 
                   attachment[0], attachment[1], attachment[2], 
                   encoding);
@@ -2929,7 +2932,7 @@ BOOL  allow_delete, allow_edit;
         continue;
       if (*getparam("ltype")    == '1' && !equal_ustring(getparam("type"),    type   ))
         continue;
-      if (*getparam("lsystem")  == '1' && !equal_ustring(getparam("system"),  system ))
+      if (*getparam("lcategory")  == '1' && !equal_ustring(getparam("category"),  category ))
         continue;
       if (*getparam("lsubject") == '1')
         {
@@ -2957,11 +2960,11 @@ BOOL  allow_delete, allow_edit;
         else
           strcat(str, "&ltype=1");
 
-      if (*getparam("lsystem") == '1')
+      if (*getparam("lcategory") == '1')
         if (strchr(str, '?') == NULL)
-          strcat(str, "?lsystem=1");
+          strcat(str, "?lcategory=1");
         else
-          strcat(str, "&lsystem=1");
+          strcat(str, "&lcategory=1");
 
       if (*getparam("lsubject") == '1')
         if (strchr(str, '?') == NULL)
@@ -2979,7 +2982,7 @@ BOOL  allow_delete, allow_edit;
 
   size = sizeof(text);
   strcpy(str, path);
-  msg_status = el_retrieve(str, date, &run, author, type, system, subject, 
+  msg_status = el_retrieve(str, date, &run, author, type, category, subject, 
                            text, &size, orig_tag, reply_tag, 
                            attachment[0], attachment[1], attachment[2],
                            encoding);
@@ -3060,7 +3063,7 @@ BOOL  allow_delete, allow_edit;
       *strchr(str, '@') = 0;
     rsprintf("<input type=hidden name=author  value=\"%s\">\n", str); 
     rsprintf("<input type=hidden name=type    value=\"%s\">\n", type); 
-    rsprintf("<input type=hidden name=system  value=\"%s\">\n", system); 
+    rsprintf("<input type=hidden name=category  value=\"%s\">\n", category); 
     rsprintf("<input type=hidden name=subject value=\"%s\">\n\n", subject); 
 
     if (*getparam("lauthor") == '1')
@@ -3075,12 +3078,12 @@ BOOL  allow_delete, allow_edit;
       rsprintf("<td bgcolor=#FFA0A0><input type=\"checkbox\" name=\"ltype\" value=\"1\">");
     rsprintf("  Type: <b>%s</b></tr>\n", type);
 
-    if (*getparam("lsystem") == '1')
-      rsprintf("<tr><td bgcolor=#A0FFA0><input type=\"checkbox\" checked name=\"lsystem\" value=\"1\">");
+    if (*getparam("lcategory") == '1')
+      rsprintf("<tr><td bgcolor=#A0FFA0><input type=\"checkbox\" checked name=\"lcategory\" value=\"1\">");
     else
-      rsprintf("<tr><td bgcolor=#A0FFA0><input type=\"checkbox\" name=\"lsystem\" value=\"1\">");
+      rsprintf("<tr><td bgcolor=#A0FFA0><input type=\"checkbox\" name=\"lcategory\" value=\"1\">");
 
-    rsprintf("  Category: <b>%s</b>\n", system);
+    rsprintf("  Category: <b>%s</b>\n", category);
 
     if (*getparam("lsubject") == '1')
       rsprintf("<td bgcolor=#A0FFA0><input type=\"checkbox\" checked name=\"lsubject\" value=\"1\">");
