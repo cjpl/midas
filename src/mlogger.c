@@ -6,6 +6,9 @@
   Contents:     MIDAS logger program
 
   $Log$
+  Revision 1.52  2002/05/10 00:17:06  midas
+  Run start abort causes logger to delete old data file on next run start
+
   Revision 1.51  2002/05/09 02:30:56  midas
   Removed temporary outcommenting
 
@@ -2091,14 +2094,14 @@ struct {
 INT tr_prestart(INT run_number, char *error)
 /********************************************************************\
 
-   Prestart:
+  Prestart:
 
-     Loop through channels defined in /logger/channels.
-     Neglect channels with are not active.
-     If "filename" contains a "%", substitute it by the
-     current run number. Open logging channel and
-     corresponding buffer. Place a event request
-     into the buffer.
+    Loop through channels defined in /logger/channels.
+    Neglect channels with are not active.
+    If "filename" contains a "%", substitute it by the
+    current run number. Open logging channel and
+    corresponding buffer. Place a event request
+    into the buffer.
 
 \********************************************************************/
 {
@@ -2160,8 +2163,20 @@ BOOL         write_data, tape_flag = FALSE;
 
     if (status == DB_SUCCESS || status == DB_OPEN_RECORD)
       {
-      /* check if channel is already open */
-      if (log_chn[index].handle || log_chn[index].ftp_con)
+      /* if file already open, we had an abort on the previous start. So
+         close and delete file in order to create a new one */
+      if (log_chn[index].handle)
+        {
+        log_close(&log_chn[index], run_number);
+        if (log_chn[index].type == LOG_TYPE_DISK)
+          {
+          cm_msg(MINFO, "tr_prestart", "Deleting previous file \"%s\"", log_chn[index].path);
+          unlink(log_chn[index].path);
+          }
+        }
+
+      /* if FTP channel alreay open, don't re-open it again */
+      if (log_chn[index].ftp_con)
         continue;
 
       /* save settings key */
@@ -2273,11 +2288,17 @@ BOOL         write_data, tape_flag = FALSE;
         if (status == SS_DEV_BUSY)
           sprintf(error, "device %s used by someone else", path);
         if (status == FTP_NET_ERROR || status == FTP_RESPONSE_ERROR)
-          sprintf(error, "cannot open FTP channel to [%s]", path);
+          sprintf(error,  "cannot open FTP channel to [%s]", path);
 
         cm_msg(MERROR, "tr_prestart", error);
         return 0;
         }
+
+      /* close records if open from previous run start with abort */
+      if (log_chn[index].stats_hkey)
+        db_close_record(hDB, log_chn[index].stats_hkey);
+      if (log_chn[index].settings_hkey)
+        db_close_record(hDB, log_chn[index].settings_hkey);
 
       /* open hot link to statistics tree */
       status = db_open_record(hDB, log_chn[index].stats_hkey, &log_chn[index].statistics,
@@ -2428,6 +2449,7 @@ char   str[256];
                     sizeof(CHN_STATISTICS), 0);
       db_close_record(hDB, log_chn[i].stats_hkey);
       db_close_record(hDB, log_chn[i].settings_hkey);
+      log_chn[i].stats_hkey = log_chn[i].settings_hkey = 0;
       }
     }
 
