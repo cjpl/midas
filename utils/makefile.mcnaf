@@ -1,3 +1,4 @@
+#!/bin/csh
 #-----------------------------------------------------------------------------
 #  Copyright (c) 1993      TRIUMF Data Acquistion Group
 #  Please leave this header in any reproduction of that distribution
@@ -23,6 +24,9 @@
 # 
 #  Revision History:
 #    $Log$
+#    Revision 1.5  1999/12/21 21:05:40  pierre
+#    - default hyt1331, build all 3 applications, cosmetic
+#
 #    Revision 1.4  1999/12/08 00:13:35  pierre
 #    - remove OS_UNIX
 #
@@ -44,23 +48,31 @@
 #
 
 BIN_DIR = $(HOME)/bin
-MIDAS_INC_DIR= /midas/include
-MIDAS_DRV_DIR= /midas/drivers
-MIDAS_LIB_DIR= /midas/linux/lib
-LIBS = $(MIDAS_LIB_DIR)/libmidas.a -lutil
+INC_DIR= /midas/include
+DRV_DIR= /midas/drivers
+LIB_DIR= /midas/linux/lib
+LIBS = $(LIB_DIR)/libmidas.a -lutil
 SYSBIN_DIR = /usr/local/bin
 #
 CC   = gcc
-INCLUDES = -I$(MIDAS_INC_DIR)
+INCLUDES = -I$(INC_DIR)
 OSFLAGS = -DOS_LINUX
 CFLAGS  = -O3
-DIO_LDFLAGS = -DMODULE -D__KERNEL__ 
+DIO_LDFLAGS = 
+# -DMODULE -D__KERNEL__ 
 DRV_LDFLAGS =
 
-all: mdrvcnaf miocnaf mcnaf rmobj
+
+ifndef ($(DRIVER))
+DRIVER = hyt1331
+endif
+
+## DRIVER = camacnul
+
+all: miocnaf mcnaf mdrvcnaf rmobj
 
 miocnaf: mcnaf.o $(DRIVER).o
-	$(CC) $(CFLAGS) $(INCLUDES) $(OSFLAGS) -o miocnaf mcnaf.o $(DRIVER).o $(DIO_LDFLAGS) $(LIBS) 
+	$(CC) $(CFLAGS) $(INCLUDES) $(OSFLAGS) -o miocnaf mcnaf.o $(DRIVER).o $(DIO_LDFLAGS) $(LIBS)
 
 mdrvcnaf: mcnaf.o camaclx.o
 	$(CC) $(CFLAGS) $(INCLUDES) $(OSFLAGS) -o mdrvcnaf mcnaf.o camaclx.o $(DRV_LDFLAGS) $(LIBS) 
@@ -69,28 +81,16 @@ mcnaf: mcnaf.o camacrpc.o
 	$(CC) $(CFLAGS) $(INCLUDES) $(OSFLAGS) -o mcnaf mcnaf.o camacrpc.o  $(LIBS) 
 
 mcnaf.o: mcnaf.c
-	$(CC) $(CFLAGS) $(INCLUDES) $(OSFLAGS) -c -o mcnaf.o mcnaf.c 
+	$(CC) $(CFLAGS) $(INCLUDES) $(OSFLAGS) -c -o $@ $<
 
-camacrpc.o: $(MIDAS_DRV_DIR)/camacrpc.c
-	$(CC) $(CFLAGS) $(INCLUDES) $(OSFLAGS) -c -o camacrpc.o $(MIDAS_DRV_DIR)/camacrpc.c
+$(DRIVER).o: $(DRV_DIR)/bus/$(DRIVER).c
+	$(CC) $(CFLAGS) $(INCLUDES) $(OSFLAGS) -c -o $@ $<
 
-camacnul.o: $(MIDAS_DRV_DIR)/camacnul.c
-	$(CC) $(CFLAGS) $(INCLUDES) $(OSFLAGS) -c -o camacnul.o $(MIDAS_DRV_DIR)/camacnul.c
+camacrpc.o: $(DRV_DIR)/bus/camacrpc.c
+	$(CC) $(CFLAGS) $(INCLUDES) $(OSFLAGS) -c -o $@ $<
 
-hyt1331.o: $(MIDAS_DRV_DIR)/hyt1331.c
-	$(CC) $(CFLAGS) $(INCLUDES) $(OSFLAGS) -c -o hyt1331.o $(MIDAS_DRV_DIR)/hyt1331.c
-
-dsp004.o: $(MIDAS_DRV_DIR)/dsp004.c
-	$(CC) $(CFLAGS) $(INCLUDES) $(OSFLAGS) -c -o dsp004.o $(MIDAS_DRV_DIR)/dsp004.c
-
-kcs2926.o: $(MIDAS_DRV_DIR)/kcs2926.c
-	$(CC) $(CFLAGS) $(INCLUDES) $(OSFLAGS) -c -o kcs2926.o $(MIDAS_DRV_DIR)/kcs2926.c
-
-kcs2927.o: $(MIDAS_DRV_DIR)/kcs2927.c
-	$(CC) $(CFLAGS) $(INCLUDES) $(OSFLAGS) -c -o kcs2927.o $(MIDAS_DRV_DIR)/kcs2927.c
-
-camaclx.o: $(MIDAS_DRV_DIR)/camaclx.c
-	$(CC) $(CFLAGS) $(INCLUDES) $(OSFLAGS) -c -o camaclx.o $(MIDAS_DRV_DIR)/camaclx.c
+camaclx.o: $(DRV_DIR)/bus/camaclx.c
+	$(CC) $(CFLAGS) $(INCLUDES) $(OSFLAGS) -c -o $@ $<
 
 install: all
 	@echo "... "
