@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.34  1999/08/31 15:12:34  midas
+  Added EL_LAST_MSG
+
   Revision 1.33  1999/08/26 15:18:22  midas
   Added EL_xxx codes
 
@@ -583,6 +586,7 @@ typedef          INT       HNDLE;
 #define EL_FILE_ERROR               902
 #define EL_NO_MESSAGE               903
 #define EL_TRUNCATED                904
+#define EL_LAST_MSG                 905
 
 /* Slow control commands */
 #define CMD_INIT                      1
