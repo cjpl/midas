@@ -6,6 +6,9 @@
   Contents:     Command-line interface to the MIDAS online data base.
 
   $Log$
+  Revision 1.73  2004/09/15 23:36:02  midas
+  Added ODB save in XML format
+
   Revision 1.72  2004/07/09 08:44:40  midas
   Added warning about missing MIDASSYS
 
@@ -311,10 +314,11 @@ void print_help(char *command)
       printf("rewind [channel]        - rewind tapes in logger\n");
       printf("-- hit return for more --\r");
       getchar();
-      printf("save [-c -s] <file>     - save database at current position\n");
+      printf("save [-c -s -x] <file>  - save database at current position\n");
       printf("                          in ASCII format\n");
       printf("  -c                      as a C structure\n");
       printf("  -s                      as a #define'd string\n");
+      printf("  -x                      as a XML file\n");
       printf("set <key> <value>       - set the value of a key\n");
       printf("set <key>[i] <value>    - set the value of index i\n");
       printf("set <key>[*] <value>    - set the value of all indices of a key\n");
@@ -1950,11 +1954,15 @@ void command_loop(char *host_name, char *exp_name, char *cmd, char *start_dir)
       else if (param[0][0] == 's' && param[0][1] == 'a') {
          db_find_key(hDB, 0, pwd, &hKey);
 
-         if (param[1][0] == '-') {
+         if (strstr(param[1], ".xml") || strstr(param[1], ".XML"))
+            db_save_xml(hDB, hKey, param[1]);
+         else if (param[1][0] == '-') {
             if (param[1][1] == 'c')
                db_save_struct(hDB, hKey, param[2], NULL, FALSE);
             if (param[1][1] == 's')
                db_save_string(hDB, hKey, param[2], NULL, FALSE);
+            if (param[1][1] == 'x')
+               db_save_xml(hDB, hKey, param[2]);
          } else
             db_save(hDB, hKey, param[1], FALSE);
       }
