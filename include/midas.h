@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.12  1999/01/20 09:03:38  midas
+  Added LAM_SOURCE_CRATE and LAM_SOURCE_STATION macros
+
   Revision 1.11  1999/01/19 10:26:39  midas
   Changed CRATE and STATION macros to LAM_SOURCE and LAM_STATION
 
@@ -334,8 +337,10 @@ typedef          INT       HNDLE;
 #define CH_LEFT   (CH_EXT+9)
 
 /* event sources in equipment */
-#define LAM_SOURCE(c, s)  (c<<24 | (s))
-#define LAM_STATION(s)    (1<<(s-1))
+#define LAM_SOURCE(c, s)         (c<<24 | ((s) & 0xFFFFFF))
+#define LAM_STATION(s)           (1<<(s-1))
+#define LAM_SOURCE_CRATE(c)      (c>>24)
+#define LAM_SOURCE_STATION(s)    ((s) & 0xFFFFFF)
 
 /* CNAF commands */
 

@@ -11,6 +11,9 @@
                 with one bank (SCLR).
 
   $Log$
+  Revision 1.7  1999/01/20 09:03:38  midas
+  Added LAM_SOURCE_CRATE and LAM_SOURCE_STATION macros
+
   Revision 1.6  1999/01/19 10:27:30  midas
   Use new LAM_SOURCE and LAM_STATION macros
 
@@ -227,9 +230,9 @@ DWORD lam;
 
   for (i=0 ; i<count ; i++)
     {
-    cam_lam_read(source >> 24, &lam);
+    cam_lam_read(LAM_SOURCE_CRATE(source), &lam);
 
-    if (lam & (source & 0xFFFFFF))
+    if (lam & LAM_SOURCE_STATION(source))
       if (!test)
         return lam;
     }
