@@ -6,6 +6,9 @@
   Contents:     Web server for remote PAW display
 
   $Log$
+  Revision 1.3  2000/05/12 12:59:48  midas
+  Adjusted WebPAW home directory
+
   Revision 1.2  2000/05/12 09:00:39  midas
   Added execute button
 
@@ -434,7 +437,7 @@ int    fh, length, status;
     rsprintf("<html><body>\r\n");
 
     /* title row */
-    rsprintf("<b><a target=_top href=\"http://midas.psi.ch/webpaw.html\">WebPAW</a> on %s</b>\r\n", 
+    rsprintf("<b><a target=_top href=\"http://midas.psi.ch/webpaw/\">WebPAW</a> on %s</b>\r\n", 
               host_name);
     
     rsprintf("</body></html>\r\n");
