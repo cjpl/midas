@@ -7,6 +7,9 @@
 #  Contents:     Makefile for MIDAS binaries and examples under unix
 #
 #  $Log$
+#  Revision 1.52  2004/01/22 06:33:10  pierre
+#  fix location of midas.so
+#
 #  Revision 1.51  2004/01/18 10:15:08  olchansk
 #  add support for macosx aka darwin
 #  make building shared library dependant on NEED_SHLIB, enabled by default
@@ -367,7 +370,7 @@ LIBNAME=$(LIB_DIR)/libmidas.a
 LIB    =$(LIBNAME)
 ifdef NEED_SHLIB
 SHLIB = $(LIB_DIR)/libmidas.so
-LIB   = $(SHLIB)
+LIB   = -lmidas
 endif
 VPATH = $(LIB_DIR):$(INC_DIR)
 
