@@ -18,7 +18,7 @@
 #           you need to :
 #           1) compile the driver with CAMAC_BASE = 0x280
 #	    2) spawn this task using the Dio to gain IO permission.
-#           		ex : Dio mdcnaf
+#           		ex : dio mdcnaf
 #
 #	For the wecc32, you need to have the module installed prior its uses.
 #       wecc32 doesn't require dio.
@@ -27,6 +27,9 @@
 # 
 #  Revision History:
 #    $Log$
+#    Revision 1.7  2002/05/08 22:17:17  pierre
+#    improve comments, add MIDAS_BASE
+#
 #    Revision 1.6  2000/04/18 19:12:55  pierre
 #    - Added mwecnaf from /drivers/bus/wecc32.c (PCI/CAMAC CC32 Wiener interface)
 #
@@ -54,9 +57,10 @@
 #
 
 BIN_DIR = $(HOME)/bin
-INC_DIR= /midas/include
-DRV_DIR= /midas/drivers
-LIB_DIR= /midas/linux/lib
+MIDAS_BASE= ..
+INC_DIR= $(MIDAS_BASE)/include
+DRV_DIR= $(MIDAS_BASE)/drivers
+LIB_DIR= $(MIDAS_BASE)/linux/lib
 LIBS = $(LIB_DIR)/libmidas.a -lutil
 SYSBIN_DIR = /usr/local/bin
 #
@@ -68,20 +72,27 @@ DIO_LDFLAGS =
 # -DMODULE -D__KERNEL__ 
 DRV_LDFLAGS =
 
-
+##
+## Possible DRIVER declaration:
+## <option> : camacnul, hyt1331, kcs2926, kcs2927, dsp004
+##            jorway73a
+## make -f makefile.mcnaf DRIVER=<option>
+##
 ifndef ($(DRIVER))
 DRIVER = hyt1331
 endif
 
 ## DRIVER = camacnul
-
-all: miocnaf mwecnaf mcnaf mdrvcnaf rmobj
+## miocnaf : with DRIVER (definition above).
+## mcnaf   : with camacrpc (using FE code).
+## mdrvcnaf: with Linux driver for KCS2926/2927, DSP004.
+##
+## make -f makefile.mcnaf mjcnaf
+##
+all: mcnaf miocnaf rmobj
 
 miocnaf: mcnaf.o $(DRIVER).o
 	$(CC) $(CFLAGS) $(INCLUDES) $(OSFLAGS) -o miocnaf mcnaf.o $(DRIVER).o $(DIO_LDFLAGS) $(LIBS)
-
-mwecnaf: mcnaf.o wecc32.o
-	$(CC) $(CFLAGS) $(INCLUDES) $(OSFLAGS) -o mwecnaf mcnaf.o wecc32.o $(DRV_LDFLAGS) $(LIBS) 
 
 mdrvcnaf: mcnaf.o camaclx.o
 	$(CC) $(CFLAGS) $(INCLUDES) $(OSFLAGS) -o mdrvcnaf mcnaf.o camaclx.o $(DRV_LDFLAGS) $(LIBS) 
@@ -101,9 +112,6 @@ camacrpc.o: $(DRV_DIR)/bus/camacrpc.c
 camaclx.o: $(DRV_DIR)/bus/camaclx.c
 	$(CC) $(CFLAGS) $(INCLUDES) $(OSFLAGS) -c -o $@ $<
 
-wecc32.o: $(DRV_DIR)/bus/wecc32.c
-	$(CC) $(CFLAGS) $(INCLUDES) $(OSFLAGS) -c -o $@ $<
-
 install: all
 	@echo "... "
 	@echo "... Installing CNAF programs to $(SYSBIN_DIR)"
@@ -120,4 +128,4 @@ rmobj:
 	rm *.o
 
 clean cleanup:
-	rm -f *.o mcnaf miocnaf mdrvcnaf mwecnaf
+	rm -f *.o miocnaf mcnaf mdrvcnaf  
