@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus communication functions
 
   $Log$
+  Revision 1.34  2003/03/25 11:24:17  midas
+  Fixed size bug
+
   Revision 1.33  2003/03/25 09:42:57  midas
   Added debugging facility
 
@@ -1919,7 +1922,7 @@ unsigned char buf[256], crc;
 
     if (buf[0] == CMD_ACK+7)
       {
-      if (i-3 < *size)
+      if (i-3 > *size)
         {
         mscb_release(fd);
         *size = 0;
@@ -1931,7 +1934,7 @@ unsigned char buf[256], crc;
       }
     else
       {
-      if (i-2 < *size)
+      if (i-2 > *size)
         {
         mscb_release(fd);
         *size = 0;
