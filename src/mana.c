@@ -7,6 +7,10 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.11  1999/02/01 15:47:47  midas
+  - removed ASCII read function (only historical for pibeta)
+  - analyze_file puts current offline run number into ODB
+
   Revision 1.10  1999/01/15 12:50:04  midas
   - Set /Analyzer/Bank switches/... to FALSE by default to avoid N-tuple
     overflow when an analyzer is started the first time
@@ -2500,195 +2504,6 @@ INT    i, j;
   return strlen(str);
 }
 
-DWORD ascii_serial;
-
-typedef struct {
-  float     input[11];
-  float     output[2];
-} TEMPERATURE_EVENT;
-
-INT read_ascii(gzFile file, EVENT_HEADER *pevent)
-{
-char         str[80];
-INT          i, j, id, n_tdc, channel, edge;
-WORD         *pbk;
-DWORD        *pbkd;
-double       data;
-DWORD        adc[12];
-LRS1882_DATA *lrs1882;
-LRS1877_DATA *lrs1877;
-TEMPERATURE_EVENT *temp_event;
-
-  i = iogets(file, str, 80);
-  if ( i<=0 )
-    return -1;
-
-  /* compose event header */
-  if (str[0] == 'E')
-    id = str[1] - '0';
-  else
-    {
-    printf("\nGot event %d that doesn't start with \"Ex\"\n", ascii_serial);
-    return -1;
-    }
-
-  pevent->event_id      = id;
-  pevent->trigger_mask  = 0;
-  pevent->serial_number = ascii_serial++;
-  pevent->time_stamp    = ss_time();
-
-  /* trigger event */
-  if (id == 1)
-    {
-    bk_init(pevent+1);
-    bk_create(pevent+1, "PCOS", TID_WORD, &pbk);
-
-    /* read chamber line */
-    j = iogets(file, str, 80);
-    if ( j<=0 )
-      return -1;
-
-    sscanf(str, "%hd %hd %hd %hd", pbk, pbk+1, pbk+2, pbk+3);
-    pbk += 4;
-    bk_close(pevent+1, pbk);
-
-    /* read ADC array */
-    bk_create(pevent+1, "FADC", TID_DWORD | TID_LRS1882, &pbkd);
-    lrs1882 = (void *) pbkd;
-    for (i=0 ; i<6 ; i++)
-      {
-      j = iogets(file, str, 80);
-      if ( j<=0 )
-        return -1;
-
-      sscanf(str, "%d %d %d %d %d %d %d %d %d %d %d %d ", 
-        adc, adc+1, adc+2, adc+3, adc+4, adc+5,
-        adc+6, adc+7, adc+8, adc+9, adc+10, adc+11);
-      for (j=0 ; j<12 ; j++)
-        {
-        lrs1882->geo_addr = lrs1882->event = lrs1882->range = 0;
-        lrs1882->channel = i*12+j;
-        lrs1882->data = (WORD) adc[j];
-        lrs1882++;
-        }
-      }
-    j = iogets(file, str, 80);
-    if ( j<=0 )
-      return -1;
-    sscanf(str, "%d %d", adc, adc+1);
-    for (j=0 ; j<2 ; j++)
-      {
-      lrs1882->geo_addr = lrs1882->event = lrs1882->range = 0;
-      lrs1882->channel = i*12+j;
-      lrs1882->data = (WORD) adc[j];
-      lrs1882++;
-      }
-    bk_close(pevent+1, lrs1882);
-
-    /* read TDC array */
-    bk_create(pevent+1, "LTDC", TID_DWORD | TID_LRS1877, &pbkd);
-    lrs1877 = (void *) pbkd;
-    j = iogets(file, str, 80);
-    if ( j<=0 )
-      return -1;
-    sscanf(str, "%d", &n_tdc);
-    if (n_tdc > 100)
-      {
-      printf("\nGot event %d with wrong number of TDC channels: %d\n", 
-              pevent->serial_number, n_tdc); 
-      return -1;
-      }
-
-    for (i=0 ; i<n_tdc ; i++)
-      {
-      j = iogets(file, str, 80);
-      if ( j<=0 )
-        return -1;
-      sscanf(str, "%d %d %lf", &channel, &edge, &data);
-      lrs1877->geo_addr = lrs1877->parity = lrs1877->buffer = 0;
-      lrs1877->channel = channel;
-      lrs1877->edge = edge;
-      lrs1877->data = (WORD) (data*2);
-      lrs1877++;
-      }
-    bk_close(pevent+1, lrs1877);
-    pevent->data_size = (PTYPE) lrs1877 - (PTYPE) (pevent+1);
-    }
-
-  /* scaler event */
-  if (id == 2)
-    {
-    bk_init(pevent+1);
-    bk_create(pevent+1, "SCLR", TID_DWORD, &pbkd);
-
-    /* read scaler array */
-    for (i=0 ; i<6 ; i++)
-      {
-      j = iogets(file, str, 80);
-      if ( j<=0 )
-        return -1;
-      sscanf(str, "%d %d %d %d %d %d %d %d %d %d %d %d ", 
-        pbkd, pbkd+1, pbkd+2, pbkd+3, pbkd+4, pbkd+5, 
-        pbkd+6, pbkd+7, pbkd+8, pbkd+9, pbkd+10, pbkd+11);
-      pbkd += 12;
-      }
-    j = iogets(file, str, 80);
-    if ( j<=0 )
-      return -1;
-    sscanf(str, "%d %d", pbkd, pbkd+1);
-    pbkd += 2;
-    bk_close(pevent+1, pbkd);
-    pevent->data_size = (PTYPE) pbkd - (PTYPE) (pevent+1);
-    }
-
-  /* temperature/HV event */
-  if (id == 3)
-    {
-    temp_event = (TEMPERATURE_EVENT *) (pevent+1);
-
-    j = iogets(file, str, 80);
-    if ( j<=0 )
-      return -1;
-    sscanf(str, "%f %f %f %f", &temp_event->input[8], &temp_event->input[10], 
-                               &temp_event->input[7], &temp_event->input[9]); 
-
-    iogets(file, str, 80);
-    sscanf(str, "%f %f %f %f %f %f %f", &temp_event->input[0], &temp_event->input[1], 
-                                        &temp_event->input[2], &temp_event->input[3], 
-                                        &temp_event->input[4], &temp_event->input[5], 
-                                        &temp_event->input[6]);
-    temp_event->output[0] = temp_event->output[1] = 0.f;
-
-    /* read HV array */
-    for (i=0 ; i<3 ; i++)
-      {
-      j = iogets(file, str, 80);
-      if ( j<=0 )
-        return -1;
-
-/*    forget HV values for now..
-
-      sscanf(str, "%f %f %f %f %f %f %f %f %f %f %f %f", 
-        pbkf, pbkf+1, pbkf+2, pbkf+3, pbkf+4, pbkf+5, 
-        pbkf+6, pbkf+7, pbkf+8, pbkf+9, pbkf+10, pbkf+11);
-*/
-      }
-    j = iogets(file, str, 80);
-    if ( j<=0 )
-      return -1;
-/*
-    sscanf(str, "%f %f %f %f %f %f %f %f", 
-      pbkf, pbkf+1, pbkf+2, pbkf+3, pbkf+4, pbkf+5, pbkf+6, pbkf+7);
-*/
-
-    /* relabel temperature event */
-    pevent->data_size = sizeof(TEMPERATURE_EVENT);
-    pevent->event_id  = 4;
-    }
-
-  return pevent->data_size;
-}
-
 /*------------------------------------------------------------------*/
 
 INT init_module_parameters(BOOL bclose)
@@ -2753,8 +2568,14 @@ HNDLE           hKey, hKeyEq, hKeyRoot;
   sprintf(str, "/%s/Output/RWNT", analyzer_name);
   db_set_value(hDB, 0, str, &clp.rwnt, sizeof(BOOL), 1, TID_BOOL);
 
+  /* set run number in ODB */
+  db_set_value(hDB, 0, "/Runinfo/Run number", &run_number, sizeof(run_number), 1, TID_INT);
+
   /* set file name in out_info */
   strcpy(out_info.filename, output_file_name);
+
+  /* let changes propagate to modules */
+  cm_yield(0);
 
   /* check input file extension */
   if (strchr(input_file_name, '.'))
@@ -2773,17 +2594,13 @@ HNDLE           hKey, hKeyEq, hKeyRoot;
       ext_str--;
     }
 
-  if (strncmp(input_file_name, "/dev/", 4) == 0) /* asume MIDAS tape */
+  if (strncmp(input_file_name, "/dev/", 4) == 0) /* assume MIDAS tape */
     format = FORMAT_MIDAS;
-  else if (strncmp(ext_str, ".asc", 4) == 0)
-    format = FORMAT_ASCII;
   else if (strncmp(ext_str, ".mid", 4) == 0)
     format = FORMAT_MIDAS;
-  else if (strncmp(ext_str, ".rz", 3) == 0)
-    format = FORMAT_HBOOK;
   else
     {
-    printf("Unknown input data format \"%s\". Please use file extension .asc, .mid or .rz.\n", ext_str);
+    printf("Unknown input data format \"%s\". Please use file extension .mid or mid.gz.\n", ext_str);
     return -1;
     }
 
@@ -2806,7 +2623,6 @@ HNDLE           hKey, hKeyEq, hKeyRoot;
   /* call analyzer bor routines */
   bor(run_number, error);
 
-  ascii_serial = 1;
   num_events_in = num_events_out = 0;
 
   /* event loop */
@@ -2834,17 +2650,6 @@ HNDLE           hKey, hKeyEq, hKeyRoot;
           break;
           }
         }
-      }
-
-    else if (format == FORMAT_ASCII)
-      {
-      n = read_ascii(file, pevent);
-      if (n < 0)
-        break;
-      }
-
-    else if (format == FORMAT_HBOOK)
-      {
       }
 
     num_events_in++;
@@ -3169,7 +2974,7 @@ INT status;
     printf("OK\n");
 
   /* set online/offline mode */
-  cm_get_experiment_database(&hDB, &status);
+  cm_get_experiment_database(&hDB, NULL);
   db_set_value(hDB, 0, "/Runinfo/Online Mode", &clp.online, sizeof(clp.online), 1, TID_INT);
 
   if (clp.online)
