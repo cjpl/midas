@@ -8,6 +8,9 @@
                 (http://www1.psi.ch/~rohrer/secblctl.htm)
 
   $Log$
+  Revision 1.4  1999/11/12 09:24:52  midas
+  Added reconnect
+
   Revision 1.3  1999/11/11 11:50:52  midas
   Added default name and update threshold
 
@@ -66,6 +69,92 @@ typedef struct {
 
 INT bb_psi_get(BB_PSI_INFO *info, INT channel, float *pvalue);
 
+static DWORD last_reconnect;
+
+/*---- network TCP connection --------------------------------------*/
+
+static INT tcp_connect(char *host, int port, int *sock)
+{
+struct sockaddr_in   bind_addr;
+struct hostent       *phe;
+int                  status;
+
+#ifdef OS_WINNT
+  {
+  WSADATA WSAData;
+
+  /* Start windows sockets */
+  if ( WSAStartup(MAKEWORD(1,1), &WSAData) != 0)
+    return RPC_NET_ERROR;
+  }
+#endif
+
+  /* create a new socket for connecting to remote server */
+  *sock = socket(AF_INET, SOCK_STREAM, 0);
+  if (*sock == -1)
+    {
+    cm_msg(MERROR, "tcp_connect", "cannot create socket");
+    return FE_ERR_HW;
+    }
+
+  /* let OS choose any port number */
+  memset(&bind_addr, 0, sizeof(bind_addr));
+  bind_addr.sin_family      = AF_INET;
+  bind_addr.sin_addr.s_addr = 0;
+  bind_addr.sin_port        = 0;
+
+  status = bind(*sock, (void *)&bind_addr, sizeof(bind_addr));
+  if (status < 0)
+    {
+    cm_msg(MERROR, "tcp_connect", "cannot bind");
+    return RPC_NET_ERROR;
+    }
+
+  /* connect to remote node */
+  memset(&bind_addr, 0, sizeof(bind_addr));
+  bind_addr.sin_family      = AF_INET;
+  bind_addr.sin_addr.s_addr = 0;
+  bind_addr.sin_port        = htons((short) port);
+
+#ifdef OS_VXWORKS
+  {
+  INT host_addr;
+
+  host_addr = hostGetByName(host);
+  memcpy((char *)&(bind_addr.sin_addr), &host_addr, 4);
+  }
+#else
+  phe = gethostbyname(host);
+  if (phe == NULL)
+    {
+    cm_msg(MERROR, "tcp_connect", "cannot get host name");
+    return RPC_NET_ERROR;
+    }
+  memcpy((char *)&(bind_addr.sin_addr), phe->h_addr, phe->h_length);
+#endif
+
+#ifdef OS_UNIX
+  do
+    {
+    status = connect(*sock, (void *) &bind_addr, sizeof(bind_addr));
+
+    /* don't return if an alarm signal was cought */
+    } while (status == -1 && errno == EINTR); 
+#else
+  status = connect(*sock, (void *) &bind_addr, sizeof(bind_addr));
+#endif  
+
+  if (status != 0)
+    {
+    closesocket(*sock);
+    *sock = -1;
+    cm_msg(MERROR, "tcp_connect", "cannot connect to %s", host);
+    return FE_ERR_HW;
+    }
+
+  return FE_SUCCESS;
+}
+
 /*---- device driver routines --------------------------------------*/
 
 INT bb_psi_init(HNDLE hKey, void **pinfo, INT channels)
@@ -74,8 +163,6 @@ int         status, size;
 HNDLE       hDB;
 BB_PSI_INFO *info;
 float       value;
-struct sockaddr_in   bind_addr;
-struct hostent       *phe;
 
   /* only allow single channel */
   if (channels != 1)
@@ -99,76 +186,10 @@ struct hostent       *phe;
   db_get_record(hDB, hKey, &info->bb_psi_settings, &size, 0);
 
   /* contact frontend pc */
-#ifdef OS_WINNT
-  {
-  WSADATA WSAData;
-
-  /* Start windows sockets */
-  if ( WSAStartup(MAKEWORD(1,1), &WSAData) != 0)
-    return RPC_NET_ERROR;
-  }
-#endif
-
-  /* create a new socket for connecting to remote server */
-  info->sock = socket(AF_INET, SOCK_STREAM, 0);
-  if (info->sock == -1)
-    {
-    cm_msg(MERROR, "bb_psi", "cannot create socket");
-    return FE_ERR_HW;
-    }
-
-  /* let OS choose any port number */
-  memset(&bind_addr, 0, sizeof(bind_addr));
-  bind_addr.sin_family      = AF_INET;
-  bind_addr.sin_addr.s_addr = 0;
-  bind_addr.sin_port        = 0;
-
-  status = bind(info->sock, (void *)&bind_addr, sizeof(bind_addr));
-  if (status < 0)
-    {
-    cm_msg(MERROR, "bb_psi", "cannot bind");
-    return RPC_NET_ERROR;
-    }
-
-  /* connect to remote node */
-  memset(&bind_addr, 0, sizeof(bind_addr));
-  bind_addr.sin_family      = AF_INET;
-  bind_addr.sin_addr.s_addr = 0;
-  bind_addr.sin_port        = htons((short) info->bb_psi_settings.port);
-
-#ifdef OS_VXWORKS
-  {
-  INT host_addr;
-
-  host_addr = hostGetByName(info->bb_psi_settings.frontend_pc);
-  memcpy((char *)&(bind_addr.sin_addr), &host_addr, 4);
-  }
-#else
-  phe = gethostbyname(info->bb_psi_settings.frontend_pc);
-  if (phe == NULL)
-    {
-    cm_msg(MERROR, "bb_psi", "cannot get host name");
-    return RPC_NET_ERROR;
-    }
-  memcpy((char *)&(bind_addr.sin_addr), phe->h_addr, phe->h_length);
-#endif
-
-#ifdef OS_UNIX
-  do
-    {
-    status = connect(info->sock, (void *) &bind_addr, sizeof(bind_addr));
-
-    /* don't return if an alarm signal was cought */
-    } while (status == -1 && errno == EINTR); 
-#else
-  status = connect(info->sock, (void *) &bind_addr, sizeof(bind_addr));
-#endif  
-
-  if (status != 0)
-    {
-    cm_msg(MERROR, "bb_psi", "cannot connect to %s", info->bb_psi_settings.frontend_pc);
-    return FE_ERR_HW;
-    }
+  status = tcp_connect(info->bb_psi_settings.frontend_pc,
+                       info->bb_psi_settings.port, &info->sock);
+  if (status != FE_SUCCESS)
+    return status;
 
   /* get initial state */
   bb_psi_get(info, 0, &value);
@@ -233,9 +254,22 @@ static DWORD last_update;
     status = send(info->sock, str, strlen(str)+1, 0);
     if (status <= 0)
       {
-      cm_msg(MERROR, "bb_psi_rall", "cannot retrieve data from %s",
-             info->bb_psi_settings.frontend_pc);
-      return FE_ERR_HW;
+      if (info->sock > 0)
+        {
+        closesocket(info->sock);
+        info->sock = -1;
+        }
+
+      /* try to reconnect every 10 minutes */
+      if (ss_time() - last_reconnect > 600)
+        {
+        last_reconnect = ss_time();
+        status = tcp_connect(info->bb_psi_settings.frontend_pc,
+                             info->bb_psi_settings.port, &info->sock);
+
+        if (status != FE_SUCCESS)
+          return FE_ERR_HW;
+        }
       }
 
     status = recv_string(info->sock, str, sizeof(str), 3000);
