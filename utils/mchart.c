@@ -1,24 +1,27 @@
 /********************************************************************\
-  
+
   Name:         mchart.c
   Created by:   Pierre-Andre Amaudruz
-  
+
   Contents:     Periodic Midas chart graph data generator.
                 Generate the proper configuration and data files for
-		the gstripchart application or the GH (Gertjan Hofman)
-		stripchart.tcl
-		standard running description is:
-		mchart -f <file> -q <ODB tree> -c
-	   ex:  mchart -f trigger -q /equipment/trigger/statistics -c
-	        produce trigger.conf and trigger (data)
+    the gstripchart application or the GH (Gertjan Hofman)
+    stripchart.tcl
+    standard running description is:
+    mchart -f <file> -q <ODB tree> -c
+     ex:  mchart -f trigger -q /equipment/trigger/statistics -c
+          produce trigger.conf and trigger (data)
 
-		mchart -f <file>[.conf] -g
-	   ex:  mchart -f trigger[.conf] -gg
-	        produce periodically trigger and spawn gstripchart for
-		display of the data.
-		See mchart -h for further info.
-		
+    mchart -f <file>[.conf] -g
+     ex:  mchart -f trigger[.conf] -gg
+          produce periodically trigger and spawn gstripchart for
+    display of the data.
+    See mchart -h for further info.
+
   $Log$
+  Revision 1.7  2002/05/10 23:57:37  pierre
+  pass arg to stripchart + cosmetics
+
   Revision 1.6  2001/12/08 01:04:13  pierre
   fix float min, max values
 
@@ -52,8 +55,8 @@
 #define  CONF_APPEND  2
 
 char color[][16] = {"blue","red","brown","black"
-		    ,"orange","cyan","yellow","beige"
-		    ,"DarkCyan","DarkOliveGreen","goldenrod","DeepPink"};
+        ,"orange","cyan","yellow","beige"
+        ,"DarkCyan","DarkOliveGreen","goldenrod","DeepPink"};
 INT      max_element = 8;
 DWORD    delta_time;
 BOOL     keep = FALSE, debug=FALSE, create_only=FALSE;
@@ -71,7 +74,7 @@ INT conf_compose(INT action, char * confpath, char * datapath, char * field, flo
   float minval, maxval;
 
   if (config_done) return 0;
-  
+
   switch (action)
   {
   case CONF_CREATE :
@@ -88,17 +91,17 @@ INT conf_compose(INT action, char * confpath, char * datapath, char * field, flo
     fprintf(f, "menu:                   on\n");
     fprintf(f, "slider:                 on\n");
     fprintf(f, "type:                   gtk\n");
-    
+
     fprintf(f, "minor_ticks:            12\n");
     fprintf(f, "major_ticks:            6\n");
-    
+
     fprintf(f, "chart-interval:         1.000\n");
     fprintf(f, "chart-filter:           0.500\n");
     fprintf(f, "slider-interval:        0.200\n");
     fprintf(f, "slider-filter:          0.200\n");
     fclose(f);
     break;
-    
+
   case CONF_APPEND :
     if (keep) return 1;
 
@@ -115,11 +118,11 @@ INT conf_compose(INT action, char * confpath, char * datapath, char * field, flo
     if (toplimit == 0.)
     { /* use current value */
       if (val == 0.)
-	maxval = 5.;
+  maxval = 5.;
       else if (val > 0.)
-	maxval *= 2.;
+  maxval *= 2.;
       else
-	maxval /=2.;
+  maxval /=2.;
     }
     else /* use arg value */
       maxval = toplimit;
@@ -128,11 +131,11 @@ INT conf_compose(INT action, char * confpath, char * datapath, char * field, flo
     if (botlimit == 0.)
     { /* use current value */
       if (val == 0.)
-	minval = -5.;
+  minval = -5.;
       else if (val > 0.)
-	minval /= 2.;
+  minval /= 2.;
       else
-	minval *=2.;
+  minval *=2.;
     }
     else /* use arg value */
       minval = botlimit;
@@ -157,7 +160,7 @@ INT conf_compose(INT action, char * confpath, char * datapath, char * field, flo
 
 /*------------------------------------------------------------------*/
 INT mchart_get_names(HNDLE hDB, char * eqpstr, char * element,
-		     char ** pname, INT * esize)
+         char ** pname, INT * esize)
 {
   char  *pslash, *p;
   char   strtmp[128];
@@ -165,7 +168,7 @@ INT mchart_get_names(HNDLE hDB, char * eqpstr, char * element,
   KEY    key;
   INT    i, size, status;
   BOOL   bslash=FALSE;
-  
+
   /* convert to upper */
   p = eqpstr;
   for (i=0;i<128;i++) strtmp[i]=0;
@@ -186,45 +189,45 @@ INT mchart_get_names(HNDLE hDB, char * eqpstr, char * element,
     {
       strncpy(strtmp, eqpstr, pslash-eqpstr);
       strcat(strtmp,"/settings");
-      
+
       if (db_find_key(hDB, 0, strtmp, &hKeyS) == DB_SUCCESS)
       {
-	db_get_key(hDB, hKeyS, &key);
-	for (i=0 ; ; i++)
-	{ /* search first for "Names element" */
-	  db_enum_key(hDB, hKeyS, i, &hSubKey);
-	  if (!hSubKey)
-	    break;
-	  db_get_key(hDB, hSubKey, &key);
-	  if (key.name[5] && key.type == TID_STRING)
-	  { /* fmt Names xxxx */
-	    p = &(key.name[6]);
-	    if (strstr(p, element) == NULL)
-	      continue;
-	    *esize = key.item_size;
-	    size   = *esize * key.num_values;
-	    *pname = malloc(size);   
-	    status = db_get_data(hDB, hSubKey, *pname, &size, key.type);
-	    return key.num_values;
-	  }
-	}
-	/* rescan dir for "Names" only now */
-	db_get_key(hDB, hKeyS, &key);
-	for (i=0 ; ; i++)
-	{
-	  db_enum_key(hDB, hKeyS, i, &hSubKey);
-	  if (!hSubKey)
-	    break;
-	  db_get_key(hDB, hSubKey, &key);
-	  if (strncmp(key.name, "Names", 5) == 0)
-	  { /* fmt Names (only) */
-	    *esize = key.item_size;
-	    size   = *esize * key.num_values;
-	    *pname = malloc(size);   
-	    status = db_get_data(hDB, hSubKey, *pname, &size, key.type);
-	    return key.num_values;
-	  }
-	}
+  db_get_key(hDB, hKeyS, &key);
+  for (i=0 ; ; i++)
+  { /* search first for "Names element" */
+    db_enum_key(hDB, hKeyS, i, &hSubKey);
+    if (!hSubKey)
+      break;
+    db_get_key(hDB, hSubKey, &key);
+    if (key.name[5] && key.type == TID_STRING)
+    { /* fmt Names xxxx */
+      p = &(key.name[6]);
+      if (strstr(p, element) == NULL)
+        continue;
+      *esize = key.item_size;
+      size   = *esize * key.num_values;
+      *pname = malloc(size);
+      status = db_get_data(hDB, hSubKey, *pname, &size, key.type);
+      return key.num_values;
+    }
+  }
+  /* rescan dir for "Names" only now */
+  db_get_key(hDB, hKeyS, &key);
+  for (i=0 ; ; i++)
+  {
+    db_enum_key(hDB, hKeyS, i, &hSubKey);
+    if (!hSubKey)
+      break;
+    db_get_key(hDB, hSubKey, &key);
+    if (strncmp(key.name, "Names", 5) == 0)
+    { /* fmt Names (only) */
+      *esize = key.item_size;
+      size   = *esize * key.num_values;
+      *pname = malloc(size);
+      status = db_get_data(hDB, hSubKey, *pname, &size, key.type);
+      return key.num_values;
+    }
+  }
       }
     }
   }
@@ -233,7 +236,7 @@ INT mchart_get_names(HNDLE hDB, char * eqpstr, char * element,
 
 /*------------------------------------------------------------------*/
 INT mchart_get_array(FILE * f, char * eqpstr, HNDLE hDB
-		     , HNDLE hSubkey, KEY key, char * confpath, char *datapath)
+         , HNDLE hSubkey, KEY key, char * confpath, char *datapath)
 {
   char field[128];
   INT  nfound, status, i, size, esize;
@@ -252,7 +255,7 @@ INT mchart_get_array(FILE * f, char * eqpstr, HNDLE hDB
   if (debug) printf("%s : size:%d\n", key.name, size);
 
   nfound = mchart_get_names(hDB, eqpstr, key.name, &pname, &esize);
-  
+
   if (debug) printf("#name:%d #Values:%d\n",nfound, key.num_values);
   /* if names found but no array then use variable names */
   if (key.num_values == 1) nfound = FALSE;
@@ -263,9 +266,9 @@ INT mchart_get_array(FILE * f, char * eqpstr, HNDLE hDB
     else
     {
       if (key.num_values == 1)
-	sprintf(field,"%s", key.name);
+  sprintf(field,"%s", key.name);
       else /* if no settings/Names ... found then compose names here */
-	sprintf(field,"%s[%i]", key.name, i);
+  sprintf(field,"%s[%i]", key.name, i);
     }
 
     /* substitution for tcl */
@@ -300,10 +303,10 @@ INT mchart_get_array(FILE * f, char * eqpstr, HNDLE hDB
     }
     else
       continue;
-    
+
     if (!config_done) {
         if (debug) printf("Field:%s Values:%f\n",field, value);
-	conf_compose(CONF_APPEND, confpath, datapath, field, value);
+  conf_compose(CONF_APPEND, confpath, datapath, field, value);
     }
   }
   if (pdata) free (pdata);
@@ -315,16 +318,11 @@ INT mchart_get_array(FILE * f, char * eqpstr, HNDLE hDB
 INT mchart_compose(HNDLE hDB, char * confpath, char * datapath, char * eqpstr)
 {
   FILE     *fHandle;
-  INT      j, i ,size, status;
-  char     str[256], path[256];
+  INT      i ,status;
   KEY      key;
   HNDLE    hKey, hSubkey;
-  char     strtmp[256], stmp[16], field[256];
-  char    *pspace;
-  
-  size = sizeof(str);
 
-  /* check if dir exists */
+   /* check if dir exists */
   if ((status = db_find_key(hDB, 0, eqpstr, &hKey)) == DB_SUCCESS)
   {
     fHandle = fopen(datapath, "w+");
@@ -333,30 +331,30 @@ INT mchart_compose(HNDLE hDB, char * confpath, char * datapath, char * eqpstr)
       printf("Cannot open config %s file.\n", confpath);
       return -1;
     }
-    
+
     db_get_key(hDB, hKey, &key);
     if (key.type != TID_KEY)
     {
       status = mchart_get_array(fHandle, eqpstr, hDB, hKey, key, confpath, datapath);
       if (status < 1)
       {
-	printf("Error: cannot get array for %s\n", eqpstr);
-	return -2;
+  printf("Error: cannot get array for %s\n", eqpstr);
+  return -2;
       }
     }
     else
       for (i=0 ; ; i++)
       {
-	db_enum_key(hDB, hKey, i, &hSubkey);
-	if (!hSubkey)
-	  break;
-	db_get_key(hDB, hSubkey, &key);
-	status = mchart_get_array(fHandle, eqpstr, hDB, hSubkey, key, confpath, datapath);
-	if (status < 1)
-	{
-	  printf("Error: cannot get array for %s\n", eqpstr);
-	  return -3;
-	}
+  db_enum_key(hDB, hKey, i, &hSubkey);
+  if (!hSubkey)
+    break;
+  db_get_key(hDB, hSubkey, &key);
+  status = mchart_get_array(fHandle, eqpstr, hDB, hSubkey, key, confpath, datapath);
+  if (status < 1)
+  {
+    printf("Error: cannot get array for %s\n", eqpstr);
+    return -3;
+  }
       } /* get value */
   } /* equ found */
   else
@@ -367,7 +365,7 @@ INT mchart_compose(HNDLE hDB, char * confpath, char * datapath, char * eqpstr)
   fclose (fHandle);
   config_done = TRUE;
   return 1;
-} 
+}
 
 /*------------------------------------------------------------------*/
 int main(unsigned int argc,char **argv)
@@ -375,20 +373,19 @@ int main(unsigned int argc,char **argv)
   char command[128];
   BOOL   daemon, keep_strip=FALSE;
   INT    status, last_time;
-  DWORD  j, i, last_max_line=0;
+  DWORD  i, last_max_line=0;
   HNDLE  hDB, hKey;
   char   host_name[HOST_NAME_LENGTH], expt_name[HOST_NAME_LENGTH];
   char   eqpstr[128]={'\0'};
   char   ch, cmdline[256];
   char   mchart_dir[128]={'\0'}, mchart_data[128], mchart_conf[128];
-  INT    fHandle;
   INT    msg, childpid;
-  
+  int  sys_err;
   /* set default */
   cm_get_environment (host_name, expt_name);
   delta_time = 5000;
   daemon = FALSE;
-  
+
   /* retrieve environment */
   if (getenv("MCHART_DIR"))
   {
@@ -419,32 +416,32 @@ int main(unsigned int argc,char **argv)
     else if (argv[i][0] == '-')
     {
       if (i+1 >= argc || (argv[i+1][0] == '-' && !isdigit(argv[i+1][1])))
-	goto usage;
+  goto usage;
       if (strncmp(argv[i],"-u",2) == 0)
-	delta_time = 1000 * (atoi (argv[++i]));
+  delta_time = 1000 * (atoi (argv[++i]));
       else if (strncmp(argv[i],"-f",2) == 0)
       {
-	char *pt;
-	pt = strstr(argv[++i], ".conf");
-	if (pt) *pt = '\0';
-	strcpy(mchart_data, mchart_dir);
-	strcat(mchart_data, argv[i]);
-	sprintf(mchart_conf, "%s.conf", mchart_data);
+  char *pt;
+  pt = strstr(argv[++i], ".conf");
+  if (pt) *pt = '\0';
+  strcpy(mchart_data, mchart_dir);
+  strcat(mchart_data, argv[i]);
+  sprintf(mchart_conf, "%s.conf", mchart_data);
       }
       else if (strncmp(argv[i],"-e",2) == 0)
-	strcpy(expt_name, argv[++i]);
+  strcpy(expt_name, argv[++i]);
       else if (strncmp(argv[i],"-h",2)==0)
-	strcpy(host_name, argv[++i]);
+  strcpy(host_name, argv[++i]);
       else if (strncmp(argv[i],"-q",2) == 0)
       {
-	if (argv[++i][0] != '/')  strcpy(eqpstr, "/");
-	strcat(eqpstr, argv[i]);
-	create = TRUE;
+  if (argv[++i][0] != '/')  strcpy(eqpstr, "/");
+  strcat(eqpstr, argv[i]);
+  create = TRUE;
       }
       else if (strncmp(argv[i],"-b",2) == 0)
-	botlimit = atof (argv[++i]);
+  botlimit = (float) atof (argv[++i]);
       else if (strncmp(argv[i],"-t",2) == 0)
-	toplimit = atof (argv[++i]);
+  toplimit = (float) atof (argv[++i]);
     }
     else
     {
@@ -469,7 +466,7 @@ int main(unsigned int argc,char **argv)
       return 0;
     }
   }
-  
+
 /* Daemon start */
   if (daemon && !(create || create_only))
   {
@@ -479,24 +476,24 @@ int main(unsigned int argc,char **argv)
 
   if (daemon)
     printf("arg -D ignored due to creation request! \n");
-  
+
 /* connect to experiment */
   status = cm_connect_experiment(host_name, expt_name, "MChart", 0);
   if (status != CM_SUCCESS)
     return 1;
-  
+
   if (debug)
     cm_set_watchdog_params(TRUE, 0);
-  
+
   /* turn off message display, turn on message logging */
   cm_set_msg_print(MT_ALL, 0, NULL);
-  
+
   /* connect to the database */
   cm_get_experiment_database(&hDB, &hKey);
-  
+
   /* initialize ss_getchar() */
   ss_getchar(0);
-  
+
   /* recompose command line */
   sprintf(cmdline, "%s ", argv[1]);
   for (i=2 ; i<argc ; i++)
@@ -541,24 +538,24 @@ int main(unsigned int argc,char **argv)
       size = sizeof(eqpstr);
       if (db_find_key(hDB, 0, eqpstr, &hKey) != DB_SUCCESS)
       {
-	printf("unknown odb path under -q arg. (%s)\n",eqpstr);
-	goto error;
+  printf("unknown odb path under -q arg. (%s)\n",eqpstr);
+  goto error;
       }
-    status = conf_compose(CONF_CREATE, mchart_conf, mchart_data, eqpstr, argc);
+    status = conf_compose(CONF_CREATE, mchart_conf, mchart_data, eqpstr, (float) argc);
     if (status != 1) goto error;
   }
-  
-  do 
+
+  do
   {
     if ((ss_millitime() - last_time) > delta_time)
     {
       last_time = ss_millitime();
       status = mchart_compose(hDB, mchart_conf, mchart_data, eqpstr);
-      if (status != 1) 
-	goto error;
+      if (status != 1)
+  goto error;
       if (create_only) {
-	printf("mchart file %s created\n", mchart_conf);
-	goto out;
+  printf("mchart file %s created\n", mchart_conf);
+  goto out;
       }
     }
 
@@ -568,69 +565,83 @@ int main(unsigned int argc,char **argv)
       char command[128];
       char * list=NULL;
       INT  i, nfile;
+
       char strip[][32]={"/usr/local/bin" ,"stripchart",
-			"/usr/bin"       ,"gstripchart",
-			"/home/midas/bin","stripchart",
-			"/usr/sbin"      ,"gstripchart",
-			"/home/chaos/bin","stripchart",
-			"/sbin"          ,"gstripchart",
-			""};
-      
+      "/usr/bin"       ,"gstripchart",
+      "/home/midas/bin","stripchart",
+      "/usr/sbin"      ,"gstripchart",
+      "/home/chaos/bin","stripchart",
+      "/sbin"          ,"gstripchart",
+      ""};
+
       i=0;
       while(strip[i][0])
       {
-	nfile=ss_file_find(strip[i],strip[i+1], &list);
-	free(list);
-	if (nfile==1)
-	  break;
-	i += 2;
+  nfile=ss_file_find(strip[i],strip[i+1], &list);
+  free(list);
+  if (nfile==1)
+    break;
+  i += 2;
       }
       if (strip[i][0] == 0)
       {
-	printf("No graphic package found in following dir:\n");
-	i=0;
-	while(strip[i][0])
-	{
-	  printf("Package : %s/%s \n",strip[i],strip[i+1]); 
-	  i += 2;
-	}
-	break;
+  printf("No graphic package found in following dir:\n");
+  i=0;
+  while(strip[i][0])
+  {
+    printf("Package : %s/%s \n",strip[i],strip[i+1]);
+    i += 2;
+  }
+  break;
       }
       if (i%2)
-	sprintf(command,"gstripchart -g 500x200-200-800 -f %s", mchart_conf);
+  sprintf(command,"gstripchart -g 500x200-200-800 -f %s", mchart_conf);
       else
-      	sprintf(command,"stripchart %s", mchart_conf);
+        sprintf(command,"stripchart %s", mchart_conf);
 
       if (!daemon) printf("Spawning graph with %s ...\nUse '!' to exit\n"
-			  ,command);
+        ,command);
       ss_exec(command, &childpid);
     }
     else if (graph == 2)
     { /* Gnu graph */
       sprintf(command,"gstripchart -g 500x200-200-800 -f %s", mchart_conf);
       if (!daemon)  printf("Spawning graph with %s ...\nUse '!' to exit\n"
-			  ,command);
+        ,command);
       ss_exec(command, &childpid);
     }
     else if (graph == 3)
     { /* Hofman graph */
-      sprintf(command,"stripchart %s", mchart_conf);
-      if (!daemon)  printf("Spawning graph with %s ...\nUse '!' to exit\n"
-			  ,command);
-      ss_exec(command, &childpid);
+      if (debug) {
+  sprintf(command,"stripchart -debug %s", mchart_conf);
+  if (!daemon)
+    printf("Spawning graph with %s ...in DEBUG mode \nUse '!' to exit\n"
+           ,command);
+  sys_err = system(command);
+  printf ("system error return %d \n",sys_err);
+  cm_disconnect_experiment();
+  return 1;
+
+      } else {
+  sprintf(command,"stripchart %s", mchart_conf);
+  if (!daemon)  printf("Spawning graph with %s .... \nUse '!' to exit\n"
+           ,command);
+  ss_exec(command, &childpid);
+      }
+
     }
-    
+
     graph = 0;
     ch = 0;
     while (ss_kbhit())
     {
       ch = ss_getchar(0);
       if (ch == -1)
-	ch = getchar();
+  ch = getchar();
       if (ch == 'R')
-	ss_clear_screen();
+  ss_clear_screen();
       if ((char) ch == '!')
-	break;
+  break;
     }
     msg = cm_yield(200);
 
@@ -638,14 +649,14 @@ int main(unsigned int argc,char **argv)
     if (!keep_strip && !ss_existpid(childpid)) break;
 
   } while (msg != RPC_SHUTDOWN && msg != SS_ABORT && ch != '!');
-  
+
 out:
  error:
   printf("\n");
-  
+
   /* reset terminal */
   ss_getchar(TRUE);
-  
+
   cm_disconnect_experiment();
   return 1;
 }
