@@ -14,6 +14,13 @@
                 Brown, Prentice Hall
 
   $Log$
+  Revision 1.79  2004/01/19 17:00:24  olchansk
+  change ss_thread_create() and ss_thread_kill() to use midas_thread_t
+  include sys/mount.h (moved from midasinc.h to avoid namespace pollution on macosx)
+  update docs for ss_thread_create()
+  on darwin/macosx, abort in ss_settime()
+  add ss_timezone()
+
   Revision 1.78  2004/01/13 00:52:05  pierre
   fix dox comment for vxworks
 
@@ -303,6 +310,10 @@ The Midas System file
 
 #include "midas.h"
 #include "msystem.h"
+
+#ifdef OS_UNIX
+#include <sys/mount.h>
+#endif
 
 static INT ss_in_async_routine_flag = 0;
 #ifdef LOCAL_ROUTINES
@@ -892,7 +903,7 @@ INT ss_getthandle(void)
     none
 
   Function value:
-    INT              thread handle
+    INT thread handle
 
 \********************************************************************/
 {
@@ -911,7 +922,7 @@ INT ss_getthandle(void)
    DuplicateHandle(GetCurrentProcess(), GetCurrentThread(),
                    GetCurrentProcess(), &hThread, THREAD_ALL_ACCESS, TRUE, 0);
 
-   return (int) hThread;
+   return hThread;
 
 #endif                          /* OS_WINNT */
 #ifdef OS_VMS
@@ -1650,7 +1661,7 @@ Example for VxWorks
 \code
 ...
 VX_TASK_SPAWN tsWatch = {"Watchdog", 100, 0, 2000,  (int) pDevice, 0, 0, 0, 0, 0, 0, 0, 0 ,0};
-thread_id = ss_thread_spawn((void *) taskWatch, &tsWatch);
+midas_thread_t thread_id = ss_thread_create((void *) taskWatch, &tsWatch);
 if (thread_id == 0) {
   printf("cannot spawn taskWatch\n");
 }
@@ -1659,7 +1670,7 @@ if (thread_id == 0) {
 Example for Linux
 \code
 ...
-thread_id = ss_thread_spawn((void *) taskWatch, pDevice);
+midas_thread_t thread_id = ss_thread_create((void *) taskWatch, pDevice);
 if (thread_id == 0) {
   printf("cannot spawn taskWatch\n");
 }
@@ -1670,9 +1681,9 @@ if (thread_id == 0) {
                 for Unix and Windows
 @return the new thread id or zero on error
 */
-INT ss_thread_create(INT(*thread_func) (void *), void *param)
+midas_thread_t ss_thread_create(INT(*thread_func) (void *), void *param)
 {
-#ifdef OS_WINNT
+#if defined(OS_WINNT)
 
    HANDLE status;
    DWORD thread_id;
@@ -1686,19 +1697,16 @@ INT ss_thread_create(INT(*thread_func) (void *), void *param)
 
    return status == NULL ? 0 : thread_id;
 
-#endif                          /* OS_WINNT */
-#ifdef OS_MSDOS
+#elif defined(OS_MSDOS)
 
    return 0;
 
-#endif                          /* OS_MSDOS */
-#ifdef OS_VMS
+#elif defined(OS_VMS)
 
    return 0;
 
-#endif                          /* OS_VMS */
+#elif defined(OS_VXWORKS)
 
-#ifdef OS_VXWORKS
 /* taskSpawn which could be considered as a thread under VxWorks
    requires several argument beside the thread args
    taskSpawn (taskname, priority, option, stacksize, entry_point
@@ -1716,16 +1724,17 @@ INT ss_thread_create(INT(*thread_func) (void *), void *param)
                  ts->arg4, ts->arg5, ts->arg6, ts->arg7, ts->arg8, ts->arg9, ts->arg10);
 
    return status == ERROR ? 0 : status;
-#endif                          /* OS_VXWORKS */
 
-#ifdef OS_UNIX
+#elif defined(OS_UNIX)
+
    INT status;
    pthread_t thread_id;
 
    status = pthread_create(&thread_id, NULL, (void *) thread_func, param);
 
    return status != 0 ? 0 : thread_id;
-#endif                          /* OS_UNIX */
+
+#endif
 }
 
 /********************************************************************/
@@ -1735,7 +1744,7 @@ The thread id is returned by ss_thread_create() on creation.
 
 \code
 ...
-thread_id = ss_thread_create((void *) taskWatch, pDevice);
+midas_thread_t thread_id = ss_thread_create((void *) taskWatch, pDevice);
 if (thread_id == 0) {
   printf("cannot spawn taskWatch\n");
 }
@@ -1746,43 +1755,37 @@ ss_thread_kill(thread_id);
 @param thread_id the thread id of the thread to be killed.
 @return SS_SUCCESS if no error, else SS_NO_THREAD
 */
-INT ss_thread_kill(INT thread_id)
+INT ss_thread_kill(midas_thread_t thread_id)
 {
-#ifdef OS_WINNT
+#if defined(OS_WINNT)
 
    DWORD status;
 
-   status = TerminateThread((HANDLE) thread_id, 0);
+   status = TerminateThread(thread_id, 0);
 
    return status != 0 ? SS_SUCCESS : SS_NO_THREAD;
 
-#endif                          /* OS_WINNT */
-#ifdef OS_MSDOS
+#elif defined(OS_MSDOS)
 
    return 0;
 
-#endif                          /* OS_MSDOS */
-#ifdef OS_VMS
+#elif defined(OS_VMS)
 
    return 0;
 
-#endif                          /* OS_VMS */
+#elif defined(OS_VXWORKS)
 
-#ifdef OS_VXWORKS
    INT status;
-
    status = taskDelete(thread_id);
-
    return status == OK ? 0 : ERROR;
-#endif                          /* OS_VXWORKS */
 
-#ifdef OS_UNIX
+#elif defined(OS_UNIX)
+
    INT status;
-
-   status = pthread_kill((pthread_t) thread_id, SIGKILL);
-
+   status = pthread_kill(thread_id, SIGKILL);
    return status == 0 ? SS_SUCCESS : SS_NO_THREAD;
-#endif                          /* OS_UNIX */
+
+#endif
 }
 
 /**dox***************************************************************/
@@ -2336,7 +2339,7 @@ DWORD ss_settime(DWORD seconds)
 
 \********************************************************************/
 {
-#ifdef OS_WINNT
+#if defined(OS_WINNT)
    SYSTEMTIME st;
    struct tm *ltm;
 
@@ -2353,13 +2356,17 @@ DWORD ss_settime(DWORD seconds)
 
    SetLocalTime(&st);
 
-#endif
-#ifdef OS_UNIX
+#elif defined(OS_DARWIN)
+
+   assert(!"ss_settime() is not supported");
+   /* not reached */
+   return SS_NO_DRIVER;
+
+#elif defined(OS_UNIX)
 
    stime((time_t *) & seconds);
 
-#endif
-#ifdef OS_VXWORKS
+#elif defined(OS_VXWORKS)
 
    struct timespec ltm;
 
@@ -2407,6 +2414,33 @@ char *ss_asctime()
 
    return str;
 }
+
+/*------------------------------------------------------------------*/
+INT ss_timezone()
+/********************************************************************\
+
+  Routine: ss_timezone
+
+  Purpose: Returns what?!?
+
+  Input:
+    none
+
+  Output:
+    what the heck does it return?!?
+
+  Function value:
+    INT what is it?!?
+
+\********************************************************************/
+{
+#ifdef OS_DARWIN
+  return 0;
+#else
+  return timezone; /* on Linux, comes from "#include <time.h>". What is it ?!? */
+#endif
+}
+
 
 /*------------------------------------------------------------------*/
 
@@ -4847,9 +4881,13 @@ Function value:
 blockn:  >0 = block number, =0 option not available, <0 errno
 \********************************************************************/
 {
-   INT status;
+#if defined(OS_DARWIN)
 
-#ifdef OS_UNIX
+   return 0;
+
+#elif defined(OS_UNIX)
+
+   INT status;
    struct mtpos arg;
 
    cm_enable_watchdog(FALSE);
@@ -4865,15 +4903,16 @@ blockn:  >0 = block number, =0 option not available, <0 errno
    }
    return (arg.mt_blkno);
 
-#endif                          /* OS_UNIX */
+#elif defined(OS_WINNT)
 
-#ifdef OS_WINNT
+   INT status;
    TAPE_GET_MEDIA_PARAMETERS media;
    unsigned long size;
    /* I'm not sure the partition count corresponds to the block count */
    status =
        GetTapeParameters((HANDLE) channel, GET_TAPE_MEDIA_INFORMATION, &size, &media);
    return (media.PartitionCount);
+
 #endif
 }
 
