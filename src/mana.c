@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.48  2000/01/20 12:04:31  midas
+  Fixed bug when opening offline files
+
   Revision 1.47  1999/12/21 09:40:27  midas
   Ajdusted spaces
 
@@ -3206,16 +3209,24 @@ DWORD           start_time;
     }
 
   if (format == FORMAT_YBOS)
+    {
     status = yb_any_file_ropen(input_file_name, FORMAT_YBOS);
-  else
-    file = gzopen(input_file_name, "rb");
-  
-  if (file == NULL || status != SS_SUCCESS)
-  {
-    printf("File %s not found\n", input_file_name);
-    return -1;
+    if (status != SS_SUCCESS)
+      {
+      printf("File %s not found\n", input_file_name);
+      return -1;
+      }
     }
-
+  else
+    {
+    file = gzopen(input_file_name, "rb");
+    if (file == NULL)
+      {
+      printf("File %s not found\n", input_file_name);
+      return -1;
+      }
+    }
+  
   pevent_unaligned = malloc(MAX_EVENT_SIZE+sizeof(EVENT_HEADER));
   if (pevent_unaligned == NULL)
     {
