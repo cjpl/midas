@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.255  2003/10/29 13:09:50  midas
+  Fixed crash when current_filename is not set for ftp
+
   Revision 1.254  2003/10/13 00:07:40  olchansk
   refuse run number zero and abort on corrupted run numbers
 
@@ -2087,16 +2090,22 @@ CHN_STATISTICS chn_stats;
 
         strcpy(str, "ftp://");
         token = strtok(orig, ", ");
-        strcat(str, token);
-        token = strtok(NULL, ", ");
-        token = strtok(NULL, ", ");
-        token = strtok(NULL, ", ");
-        token = strtok(NULL, ", ");
-        strcat(str, "/");
-        strcat(str, token);
-        strcat(str, "/");
-        token = strtok(NULL, ", ");
-        strcat(str, token);
+        if (token)
+          {
+          strcat(str, token);
+          token = strtok(NULL, ", ");
+          token = strtok(NULL, ", ");
+          token = strtok(NULL, ", ");
+          token = strtok(NULL, ", ");
+          if (token)
+            {
+            strcat(str, "/");
+            strcat(str, token);
+            strcat(str, "/");
+            token = strtok(NULL, ", ");
+            strcat(str, token);
+            }
+          }
         }
 
       if (exp_name[0])
