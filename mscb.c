@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus communication functions
 
   $Log$
+  Revision 1.24  2002/11/28 14:44:09  midas
+  Removed SIZE_XBIT
+
   Revision 1.23  2002/11/28 13:04:36  midas
   Implemented protocol version 1.2 (echo, read_channels)
 
@@ -1140,7 +1143,7 @@ unsigned char buf[80];
   i = mscb_in(fd, buf, sizeof(buf), 5000);
   mscb_release(fd);
 
-  if (i<sizeof(MSCB_INFO)+2)
+  if (i<(int)sizeof(MSCB_INFO)+2)
     return MSCB_TIMEOUT;
 
   memcpy(info, buf+2, sizeof(MSCB_INFO));
@@ -1214,7 +1217,7 @@ unsigned char buf[80];
   i = mscb_in(fd, buf, sizeof(buf), 5000);
   mscb_release(fd);
 
-  if (i<sizeof(MSCB_INFO_CHN)+3)
+  if (i<(int)sizeof(MSCB_INFO_CHN)+3)
     return MSCB_TIMEOUT;
 
   memcpy(info, buf+2, sizeof(MSCB_INFO_CHN));

@@ -10,6 +10,9 @@
                 Turbomolecular Pump with TC600 Electronics
 
   $Log$
+  Revision 1.3  2002/11/28 14:44:02  midas
+  Removed SIZE_XBIT
+
   Revision 1.2  2002/11/28 13:03:41  midas
   Protocol version 1.2
 
@@ -50,17 +53,17 @@ struct {
   
 
 MSCB_INFO_CHN code channel[] = {
-  SIZE_0BIT,   UNIT_ASCII, 0, 0,           0, "RS232",   0,
-  SIZE_8BIT, UNIT_BOOLEAN, 0, 0,           0, "Pump on", &user_data.pump_on,
-  SIZE_8BIT, UNIT_BOOLEAN, 0, 0,           0, "Vent on", &user_data.vent_on,
-  SIZE_16BIT,  UNIT_HERTZ, 0, 0,           0, "RotSpd",  &user_data.rot_speed,
-  SIZE_32BIT, UNIT_AMPERE, 0, 0, MSCBF_FLOAT, "TMPcur",  &user_data.tmp_current,
+  1,   UNIT_ASCII, 0, 0,           0, "RS232",   0,
+  1, UNIT_BOOLEAN, 0, 0,           0, "Pump on", &user_data.pump_on,
+  1, UNIT_BOOLEAN, 0, 0,           0, "Vent on", &user_data.vent_on,
+  2,   UNIT_HERTZ, 0, 0,           0, "RotSpd",  &user_data.rot_speed,
+  4,  UNIT_AMPERE, 0, 0, MSCBF_FLOAT, "TMPcur",  &user_data.tmp_current,
   0
 };
 
 MSCB_INFO_CHN code conf_param[] = {
-  SIZE_8BIT,    UNIT_BAUD, 0, 0,           0, "Baud",    &user_conf.baud,
-  SIZE_8BIT,    UNIT_BYTE, 0, 0,           0, "Address", &user_conf.address,
+  1,    UNIT_BAUD, 0, 0,           0, "Baud",    &user_conf.baud,
+  1,    UNIT_BYTE, 0, 0,           0, "Address", &user_conf.address,
   0
 };
 

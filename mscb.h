@@ -6,6 +6,9 @@
   Contents:     Header fiel for MSCB funcions
 
   $Log$
+  Revision 1.17  2002/11/28 14:44:09  midas
+  Removed SIZE_XBIT
+
   Revision 1.16  2002/11/28 13:04:36  midas
   Implemented protocol version 1.2 (echo, read_channels)
 
@@ -100,12 +103,6 @@
 #define GET_INFO_GENERAL   0
 #define GET_INFO_CHANNEL   1
 #define GET_INFO_CONF      2
-
-#define SIZE_0BIT          0
-#define SIZE_8BIT          1
-#define SIZE_16BIT         2
-#define SIZE_24BIT         3
-#define SIZE_32BIT         4
 
 /*---- flags from the configuration and status register (CSR) ------*/
 
