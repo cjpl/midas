@@ -5,6 +5,9 @@
   Contents:     Disk to Tape copier for background job.
 
   $Log$
+  Revision 1.30  2003/04/15 22:29:45  pierre
+  fix for compilation with -Wall
+
   Revision 1.29  2002/10/22 03:45:09  pierre
   add SS_NO_TAPE
 
@@ -424,7 +427,7 @@ INT lazy_log_update(INT action, INT run, char * label, char * file, DWORD perf_t
     }
   }
   else if (action == REMOVE_FILE)
-    sprintf(str,"%i (rm:%dms) %s file REMOVED",
+    sprintf(str,"%i (rm:%ldms) %s file REMOVED",
     run, perf_time, file);
   
   else if (action == REMOVE_ENTRY)
@@ -630,7 +633,7 @@ Run number
 -1       : run not found
 \********************************************************************/
 {
-  INT j, i, ndo, nlog, notfound=0;
+  INT j, i, ndo, nlog;
   
   ndo = tot_do_size / sizeof(INT);
   nlog = tot_dirlog_size / sizeof(DIRLOG);
@@ -1770,7 +1773,7 @@ Function value:
 }
 
 /*------------------------------------------------------------------*/
-int main(unsigned int argc,char **argv)
+int main(int argc,char **argv)
 {
   char      channel_name[32];
   char      host_name[HOST_NAME_LENGTH];
@@ -1820,7 +1823,7 @@ usage:
     printf("                  [-c channel name (Disk) -D to start as a daemon\n\n");
     printf("Quick man :\n");
     printf("The Lazy/Settings tree is composed of the following parameters:\n");
-    printf("Maintain free space [%](0): purge source device to maintain free space on the source directory\n");
+    printf("Maintain free space [%%](0): purge source device to maintain free space on the source directory\n");
     printf("                      (0) : no purge      \n");
     printf("Stay behind  (-3)         : If negative number : lazylog runs starting from the OLDEST\n");
     printf("                             run file sitting in the 'Dir data' to the current acquisition\n");
@@ -1837,7 +1840,7 @@ usage:
     printf("                           '/equipment/trigger/statistics/events per sec. < 400'\n");
     printf("Data dir                  : Directory of the run to be lazylogged \n");
     printf("Data format               : Data format (YBOS/MIDAS)\n");
-    printf("Filename format           : Run format i.e. run%05d.mid \n");
+    printf("Filename format           : Run format i.e. run%%05d.mid \n");
     printf("List label                : Label of destination save_set.\n");
     printf("                            Prevent lazylogger to run if not given.\n");
     printf("                            Will be reset if maximum capacity reached.\n");
@@ -1847,7 +1850,7 @@ usage:
     printf("Backup type               : Destination device type (Disk, Tape, FTP)\n");
     printf("Path                      : Destination path (file.ext, /dev/nst0, ftp...)\n");
     printf("                            in case of FTP type, the 'Path' entry should be:\n");
-    printf("                            host, port, user, password, directory, run%05d.mid\n");
+    printf("                            host, port, user, password, directory, run%%05d.mid\n");
     printf("Capacity (Bytes)          : Maximum capacity of the destination device.\n");
     printf("modulo                    : Enable multiple lazy on same source. Ex: 3ch : 3.0, 3.1, 3.2\n");
     printf("tapeAppend                : Enable positioning of the TAPE to EOD before each lazy copy\n");

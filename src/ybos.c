@@ -6,6 +6,9 @@
  *         amaudruz@triumf.ca                            Local:           6234
  * ---------------------------------------------------------------------------
    $Log$
+   Revision 1.49  2003/04/15 22:24:56  pierre
+   fix for compilation with -Wall
+
    Revision 1.48  2003/04/11 18:56:47  pierre
    Made file compile under VC++ 5.0
 
@@ -492,7 +495,7 @@ Function value: Number of bytes in the bank.
     *__pchaosi4 = (DWORD) ( (BYTE *)pbkdat - (BYTE *)__pchaosi4 - 4);
     break;
   default:
-    printf(" unknown YBOS bank type (%d)\n", bktype);
+    printf(" unknown YBOS bank type (%ld)\n", bktype);
     break;
   }
   
@@ -1663,7 +1666,7 @@ status : from lower function
 
 /*------------------------------------------------------------------*/
 INT   yb_any_file_rclose (INT data_fmt)
-/********************************************************************\
+/********************************************************************
 Routine: external yb_any_file_rclose
 Purpose: Close a data file used for replay for the given data format
 Input:
@@ -1672,7 +1675,7 @@ Output:
 none
 Function value:
 status : from lower function
-/*******************************************************************/
+*******************************************************************/
 {
   switch (my.type)
   {
@@ -1773,7 +1776,7 @@ INT yb_ftp_open(char *destination, FTP_CON **con)
 
 /*------------------------------------------------------------------*/
 INT   yb_any_file_wopen (INT type, INT data_fmt, char * filename, INT * hDev)
-/********************************************************************\
+/********************************************************************
 Routine: external yb_any_file_wopen
 Purpose: Open a data file for the given data format
 Input:
@@ -1784,7 +1787,7 @@ Output:
 INT * hDev      : file handle
 Function value:
 status : from lower function
-/*******************************************************************/
+*******************************************************************/
 {
   INT status;
   
@@ -1840,7 +1843,7 @@ status : from lower function
 
 /*------------------------------------------------------------------*/
 INT   yb_any_file_wclose (INT handle, INT type, INT data_fmt)
-/********************************************************************\
+/********************************************************************
 Routine: external yb_any_file_wclose
 Purpose: Close a data file used for replay for the given data format
 Input:
@@ -1849,7 +1852,7 @@ Output:
 none
 Function value:
 status : from lower function
-/*******************************************************************/
+*******************************************************************/
 {
   switch (type)
   {
@@ -2297,7 +2300,7 @@ YB_SUCCESS        Ok
     if((INT) (my.pyh)->rec_num != bl)
     {
       printf("Skipping physical record_# ... ");
-      printf("%d \r",(my.pyh)->rec_num);
+      printf("%ld \r",(my.pyh)->rec_num);
       fflush (stdout);
     }
     else
@@ -2337,7 +2340,7 @@ YB_SUCCESS        Ok
     if((INT) my.evtn < evtn)
     {
       printf("Skipping event_# ... ");
-      printf("%d \r",my.evtn);
+      printf("%ld \r",my.evtn);
       fflush (stdout);
     }
     else
@@ -2386,7 +2389,7 @@ status          Lower function
       {
         if (i+j < bz)
         {
-          printf ("%8.8x ",*prec);
+          printf ("%8.8lx ",*prec);
           prec++;
         }
       }
@@ -2424,13 +2427,13 @@ YB_DONE
     {
     case D_RECORD:
     case D_HEADER:
-      printf ("rec#%d- ",my.recn);
-      printf ("%5dbz %5dhyl %5dybn %5dof\n",bz,hyl,ybn,of);
+      printf ("rec#%ld- ",my.recn);
+      printf ("%5ldbz %5ldhyl %5ldybn %5ldof\n",bz,hyl,ybn,of);
       break;
     case D_EVTLEN:
-      printf ("rec#%d- ",my.recn);
-      printf ("%5dbz %5dhyl %5dybn %5dof ",bz,hyl,ybn,of);
-      printf ("%5del/x%x %5dev\n",my.evtlen,my.evtlen,my.evtn);
+      printf ("rec#%ld- ",my.recn);
+      printf ("%5ldbz %5ldhyl %5ldybn %5ldof ",bz,hyl,ybn,of);
+      printf ("%5ldel/x%lx %5ldev\n",my.evtlen,my.evtlen,my.evtn);
       break;
     }
   }
@@ -2451,9 +2454,9 @@ YB_DONE
       return YB_DONE;
       break;
     case D_EVTLEN:
-      printf("Evt#%d- ",my.evtn);
-      printf("%irun 0x%4.4xid 0x%4.4xmsk %5dmevt#",run, id, msk,mbn);
-      printf("%5del/x%x %5dserial\n",my.evtlen,my.evtlen,ser);
+      printf("Evt#%ld- ",my.evtn);
+      printf("%lirun 0x%4.4uxid 0x%4.4uxmsk %5ldmevt#",run, id, msk,mbn);
+      printf("%5ldel/x%lx %5ldserial\n",my.evtlen,my.evtlen,ser);
       break;
     }
   }
@@ -2580,7 +2583,7 @@ YB_SWAP_ERROR          swapping error
       pevt = pnextb;
       break;
     default :
-      printf("ybos_swap_event-E- Unknown bank type %i\n",bank_type);
+      printf("ybos_swap_event-E- Unknown bank type %li\n",bank_type);
       return (YB_SWAP_ERROR);
       break;
     }
@@ -2684,9 +2687,9 @@ YB_SUCCESS        Ok
     }
     if ( my.pyrd !=  (DWORD *)my.pyh + my.pyh->offset)
     {
-      printf(" event misalignment !! %d  %d \n",
+      printf(" event misalignment !! %p  %p \n",
          my.pyrd,(DWORD *)my.pyh + my.pyh->offset);
-      printf("Event crossed boundary: length %d\n",evt_length);    
+      printf("Event crossed boundary: length %ld\n",evt_length);    
       my.pyrd =  (DWORD *)my.pyh + my.pyh->offset;
     }
     
@@ -2859,15 +2862,15 @@ none
   
   for (i=0; i<lrl; i+=NLINE)
   {
-    printf ("%6.0d->: ",total);
+    printf ("%6.0ld->: ",total);
     for (j=0;j<NLINE;j++)
     {
       if ((i+j) < lrl)
       {
         if (dsp_fmt == DSP_DEC)
-          printf ("%8.i ",*pevt);
+          printf ("%8.li ",*pevt);
         else
-          printf ("%8.8x ",*pevt);
+          printf ("%8.8lx ",*pevt);
         pevt++;
       }
     }
@@ -2915,9 +2918,9 @@ none
     if ((status = ybk_find ((DWORD *)pevent, "EVID", &bklen, &bktyp, (void **)&pybk)) == YB_SUCCESS)
     {
       pdata = (DWORD *)((YBOS_BANK_HEADER *)pybk + 1);
-      printf("--------- EVID --------- Event# %i ------Run#:%i--------\n"
+      printf("--------- EVID --------- Event# %li ------Run#:%li--------\n"
         ,YBOS_EVID_EVENT_NB(pdata), YBOS_EVID_RUN_NUMBER(pdata));
-      printf("Evid:%4.4x- Mask:%4.4x- Serial:%i- Time:0x%x- Dsize:%i/0x%x"
+      printf("Evid:%4.4x- Mask:%4.4x- Serial:%li- Time:0x%lx- Dsize:%li/0x%lx"
         ,(WORD) YBOS_EVID_EVENT_ID(pdata), (WORD) YBOS_EVID_TRIGGER_MASK(pdata)
         ,YBOS_EVID_SERIAL(pdata), YBOS_EVID_TIME(pdata)
         ,((YBOS_BANK_HEADER *)pybk)->length
@@ -2939,7 +2942,7 @@ none
       return;
     
     /* event header */
-    printf("Evid:%4.4x- Mask:%4.4x- Serial:%i- Time:0x%x- Dsize:%i/0x%x"
+    printf("Evid:%4.4x- Mask:%4.4x- Serial:%li- Time:0x%lx- Dsize:%li/0x%lx"
       , (WORD) pheader->event_id, (WORD) pheader->trigger_mask
       , pheader->serial_number, pheader->time_stamp
       , pheader->data_size, pheader->data_size);
@@ -3045,14 +3048,14 @@ none
   for (i=0;i<lrl;i +=NLINE)
   {
     j = 0;
-    printf("\n%4i-> ",i+j+1);
+    printf("\n%4li-> ",i+j+1);
     for (j=0;j<NLINE;j++)
     {
       if ((i+j) < lrl)
       { 
-        if (dsp_fmt == DSP_DEC) printf ("%8.i ",*((DWORD *)pdata));
-        if (dsp_fmt == DSP_ASC) printf ("%8.8x ",*((DWORD *)pdata));
-        if (dsp_fmt == DSP_HEX) printf ("%8.8x ",*((DWORD *)pdata));
+        if (dsp_fmt == DSP_DEC) printf ("%8.li ",*((DWORD *)pdata));
+        if (dsp_fmt == DSP_ASC) printf ("%8.8lx ",*((DWORD *)pdata));
+        if (dsp_fmt == DSP_HEX) printf ("%8.8lx ",*((DWORD *)pdata));
         pdata++;
       }
     } 
@@ -3115,7 +3118,7 @@ none
     length_type = ((pybk->length-1) << 2);
     strcpy (strbktype,"8 bit ASCII");
   }
-  printf("\nBank:%s Length: %i(I*1)/%i(I*4)/%i(Type) Type:%s",
+  printf("\nBank:%s Length: %li(I*1)/%li(I*4)/%li(Type) Type:%s",
     bank_name,((pybk->length-1) << 2), pybk->length-1, length_type, strbktype);
   j = 16;
   
@@ -3143,7 +3146,7 @@ none
         i += 8;
       }
       if ((dsp_fmt == DSP_DEC) || (dsp_fmt == DSP_UNK)) printf("%8.3e ",*((float *)pdata));
-      if (dsp_fmt == DSP_HEX) printf("0x%8.8x ",*((DWORD *)pdata));
+      if (dsp_fmt == DSP_HEX) printf("0x%8.8lx ",*((DWORD *)pdata));
       pdata++;
       j++;
       break;
@@ -3154,8 +3157,8 @@ none
         j = 0;
         i += 8;
       }
-      if (dsp_fmt == DSP_DEC) printf("%8.1i ",*((DWORD *)pdata));
-      if ((dsp_fmt == DSP_HEX) || (dsp_fmt == DSP_UNK)) printf("0x%8.8x ",*((DWORD *)pdata));
+      if (dsp_fmt == DSP_DEC) printf("%8.1li ",*((DWORD *)pdata));
+      if ((dsp_fmt == DSP_HEX) || (dsp_fmt == DSP_UNK)) printf("0x%8.8lx ",*((DWORD *)pdata));
       pdata++;
       j++;
       break;
@@ -3197,7 +3200,7 @@ none
       j++;
       break;
     default :
-      printf("ybos_bak_display-E- Unknown bank type %i\n",pybk->type);
+      printf("ybos_bak_display-E- Unknown bank type %li\n",pybk->type);
       break;
       
     } /* switch */
@@ -3284,7 +3287,7 @@ none
     length_type = sizeof(char);
     strcpy (strbktype,"8 bit ASCII");
   }
-  printf("\nBank:%s Length: %i(I*1)/%i(I*4)/%i(Type) Type:%s",
+  printf("\nBank:%s Length: %li(I*1)/%li(I*4)/%li(Type) Type:%s",
     bank_name,lrl, lrl>>2, lrl/length_type, strbktype);
   
   pendbk = pdata + lrl;
@@ -3311,7 +3314,7 @@ none
         i += 8;
       }
       if ((dsp_fmt == DSP_DEC) || (dsp_fmt == DSP_UNK)) printf("%8.3e ",*((float *)pdata));
-      if (dsp_fmt == DSP_HEX) printf("0x%8.8x ",*((DWORD *)pdata));
+      if (dsp_fmt == DSP_HEX) printf("0x%8.8lx ",*((DWORD *)pdata));
       pdata = (char *)(((DWORD *)pdata)+1);
       j++;
       break;
@@ -3322,8 +3325,8 @@ none
         j = 0;
         i += 8;
       }
-      if (dsp_fmt == DSP_DEC) printf("%8.1i ",*((DWORD *)pdata));
-      if ((dsp_fmt == DSP_HEX) || (dsp_fmt == DSP_UNK)) printf("0x%8.8x ",*((DWORD *)pdata));
+      if (dsp_fmt == DSP_DEC) printf("%8.1li ",*((DWORD *)pdata));
+      if ((dsp_fmt == DSP_HEX) || (dsp_fmt == DSP_UNK)) printf("0x%8.8lx ",*((DWORD *)pdata));
       pdata = (char *)(((DWORD *)pdata)+1);
       j++;
       break;
@@ -3334,8 +3337,8 @@ none
         j = 0;
         i += 8;
       }
-      if ((dsp_fmt == DSP_DEC) || (dsp_fmt == DSP_UNK)) printf("%8.1i ",*((DWORD *)pdata));
-      if (dsp_fmt == DSP_HEX) printf("0x%8.8x ",*((DWORD *)pdata));
+      if ((dsp_fmt == DSP_DEC) || (dsp_fmt == DSP_UNK)) printf("%8.1li ",*((DWORD *)pdata));
+      if (dsp_fmt == DSP_HEX) printf("0x%8.8lx ",*((DWORD *)pdata));
       pdata = (char *)(((DWORD *)pdata)+1);
       j++;
       break;
@@ -3485,7 +3488,7 @@ none
     length_type = sizeof(char);
     strcpy (strbktype,"8 bit ASCII");
   }
-  printf("\nBank:%s Length: %i(I*1)/%i(I*4)/%i(Type) Type:%s",
+  printf("\nBank:%s Length: %li(I*1)/%li(I*4)/%li(Type) Type:%s",
     bank_name,lrl, lrl>>2, lrl/length_type, strbktype);
   
   pendbk = pdata + lrl;
@@ -3502,7 +3505,7 @@ none
         i += 8;
       }
       if (dsp_fmt == DSP_DEC || (dsp_fmt == DSP_UNK)) printf("%8.3e ",*((double *)pdata));
-      if (dsp_fmt == DSP_HEX) printf("0x%16.16x ",*((double *)pdata));
+      if (dsp_fmt == DSP_HEX) printf("0x%16.16lux ",*((DWORD *)pdata));
       pdata = (char *)(((double *)pdata)+1);
       j++;
       break;
@@ -3514,7 +3517,7 @@ none
         i += 8;
       }
       if (dsp_fmt == DSP_DEC || (dsp_fmt == DSP_UNK)) printf("%8.3e ",*((float *)pdata));
-      if (dsp_fmt == DSP_HEX) printf("0x%8.8x ",*((DWORD *)pdata));
+      if (dsp_fmt == DSP_HEX) printf("0x%8.8lx ",*((DWORD *)pdata));
       pdata = (char *)(((DWORD *)pdata)+1);
       j++;
       break;
@@ -3526,10 +3529,9 @@ none
         j = 0;
         i += 8;
       }
-      if (dsp_fmt == DSP_DEC || (dsp_fmt == DSP_UNK)) printf("%8.1i ",*((DWORD *)pdata));
-      if (dsp_fmt == DSP_HEX) printf("0x%8.8x ",*((DWORD *)pdata));
+      if (dsp_fmt == DSP_DEC || (dsp_fmt == DSP_UNK)) printf("%8.1li ",*((DWORD *)pdata));
+      if (dsp_fmt == DSP_HEX) printf("0x%8.8lx ",*((DWORD *)pdata));
       pdata = (char *)((DWORD *)pdata +1);
-//      ((DWORD *)pdata)++;
       j++;
       break;
     case TID_WORD :
