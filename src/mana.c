@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.127  2004/09/29 02:58:24  midas
+  Added Ryu's patch for cyclic trees
+
   Revision 1.126  2004/09/24 22:59:10  midas
   Outcommented GetInetAddress() which crashes under Windows
 
@@ -1596,6 +1599,9 @@ INT book_ttree()
       sprintf(str, "Event \"%s\", ID %d", analyze_request[index].event_name,
               et->event_id);
       et->tree = new TTree(analyze_request[index].event_name, str);
+#if (ROOT_VERSION_CODE >= 262401)
+      et->tree->SetCircular(analyze_request[index].rwnt_buffer_size);
+#endif
 
       /* book run number/event number/time */
       et->branch = (TBranch **) malloc(sizeof(TBranch *));
@@ -2075,7 +2081,7 @@ INT bor(INT run_number, char *error)
 
 #ifdef USE_ROOT
    if (clp.online) {
-      /* clear all trees online to avoid out-of-memory */
+      /* clear all trees when online*/
       for (i = 0; i < tree_struct.n_tree; i++)
          tree_struct.event_tree[i].tree->Reset();
    }
@@ -3347,8 +3353,10 @@ INT write_event_ttree(FILE * file, EVENT_HEADER * pevent, ANALYZE_REQUEST * par)
                    et->branch_name + (i * NAME_LENGTH));
 
       /* delete tree if too many entries, will be obsolete with cyglic trees later */
+#if (ROOT_VERSION_CODE < 262401)
       if (clp.online && et->tree->GetEntries() > par->rwnt_buffer_size)
          et->tree->Reset();
+#endif
 
       /* fill tree both online and offline */
       if (!exclude_all)
