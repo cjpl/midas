@@ -4,6 +4,9 @@ Created by:   Pierre-Andre Amaudruz
 
 Contents:     Main Event builder task.
 $Log$
+Revision 1.14  2004/09/29 17:55:34  pierre
+fix speed problem
+
 Revision 1.13  2004/09/29 16:20:31  pierre
 change Ebuilder structure
 
@@ -990,34 +993,35 @@ usage:
       rpc_flush_event();
       /* Force event ot appear at the destination if Ebuilder is local */
       bm_flush_cache(hBuf, ASYNC);
+
+      /* Compute destination statistics */
+      if ((actual_millitime > start_time) && ebstat.events_sent) {
+        ebstat.events_per_sec_ = gbl_events_sent
+          / ((actual_millitime - last_time) / 1000.0);
+
+        ebstat.kbytes_per_sec_ = gbl_bytes_sent
+          / 1024.0 / ((actual_millitime - last_time) / 1000.0);
+
+        /* update destination statistics */
+        db_set_record(hDB, hStatKey, &ebstat, sizeof(EBUILDER_STATISTICS), 0);
+      }
+
+
+      /* Keep track of last ODB update */
+      last_time = ss_millitime();
+
+      /* Reset local rate counters */
+      gbl_events_sent = 0;
+      gbl_bytes_sent = 0;
     }
-
-    /* Compute destination statistics */
-    if ((actual_millitime > start_time) && ebstat.events_sent) {
-      ebstat.events_per_sec_ = gbl_events_sent
-        / ((actual_millitime - last_time) / 1000.0);
-
-      ebstat.kbytes_per_sec_ = gbl_bytes_sent
-        / 1024.0 / ((actual_millitime - last_time) / 1000.0);
-
-      /* update destination statistics */
-      db_set_record(hDB, hStatKey, &ebstat, sizeof(EBUILDER_STATISTICS), 0);
-    }
-
-    /* Keep track of last ODB update */
-    last_time = ss_millitime();
-
-    /* Reset local rate counters */
-    gbl_events_sent = 0;
-    gbl_bytes_sent = 0;
 
     /* Yield for system messages */
-    status = cm_yield(50);
+    status = cm_yield(0);
     if (wheel && (run_state != STATE_RUNNING)) {
       printf("...%c Idleing on %1.0lf\r", bars[i_bar++ % 4], ebstat.events_sent);
       fflush(stdout);
     }
-} while (status != RPC_SHUTDOWN && status != SS_ABORT);
+  } while (status != RPC_SHUTDOWN && status != SS_ABORT);
 if (status == SS_ABORT)
 goto error;
 else
