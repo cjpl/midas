@@ -7,6 +7,9 @@
                 through EPICS channel access.
 
   $Log$
+  Revision 1.3  1999/10/08 14:04:45  midas
+  Set initial channel number to 10
+
   Revision 1.2  1999/09/22 12:01:09  midas
   Fixed compiler warning
 
@@ -47,7 +50,7 @@ INT event_buffer_size = DEFAULT_EVENT_BUFFER_SIZE;
 
 /* device driver list */
 DEVICE_DRIVER epics_driver[] = {
-  { "Beamline",  chn_acc, 1 },
+  { "Beamline",  chn_acc, 10 },
   { "" }
 };
 
