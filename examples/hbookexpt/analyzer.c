@@ -6,6 +6,9 @@
   Contents:     System part of Analyzer code for sample experiment
 
   $Log$
+  Revision 1.2  2003/04/25 13:24:28  midas
+  Removed HAVE_HBOOK
+
   Revision 1.1  2003/04/25 13:20:07  midas
   Initial revision
 
@@ -30,12 +33,10 @@
 #define f2cFortran
 #endif
 
-#ifdef HAVE_HBOOK
 #include <cfortran.h>
 #include <hbook.h>
 
 PAWC_DEFINE(1000000);
-#endif /* HAVE_HBOOK */
 
 /*-- Globals -------------------------------------------------------*/
 
