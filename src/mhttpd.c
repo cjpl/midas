@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.74  1999/10/11 14:15:29  midas
+  Use ss_system to launch programs
+
   Revision 1.73  1999/10/11 12:13:43  midas
   Increased socket timeout
 
@@ -4347,6 +4350,7 @@ char  str[256], ref[256], command[256], name[80];
   /* start command */
   if (*getparam("Start"))
     {
+    /* for NT: close reply socket before starting subprocess */
     redirect2("?cmd=programs");
 
     strcpy(name, getparam("Start")+6);
@@ -4356,7 +4360,7 @@ char  str[256], ref[256], command[256], name[80];
     db_get_value(hDB, 0, str, command, &size, TID_STRING);
     if (command[0])
       {
-      system(command);
+      ss_system(command);
       for (i=0 ; i<50 ; i++)
         {
         if (cm_exist(name, FALSE) == CM_SUCCESS)
@@ -4364,6 +4368,7 @@ char  str[256], ref[256], command[256], name[80];
         ss_sleep(100);
         }
       }
+
     return;
     }
 
