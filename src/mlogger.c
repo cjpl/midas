@@ -6,6 +6,9 @@
   Contents:     MIDAS logger program
 
   $Log$
+  Revision 1.8  1999/04/29 12:14:34  midas
+  Allow for open statistics record when starting run
+
   Revision 1.7  1999/04/27 15:15:49  midas
   Added system event in history
 
@@ -1802,7 +1805,7 @@ BOOL         write_data, tape_flag = FALSE;
     /* correct channel record */
     db_get_key(hDB, hKeyChannel, &key);
     status = db_create_record(hDB, hKeyRoot, key.name, channel_str);
-    if (status != DB_SUCCESS)
+    if (status != DB_SUCCESS && status != DB_OPEN_RECORD)
       {
       cm_msg(MERROR, "tr_prestart", "Cannot create channel record");
       break;
