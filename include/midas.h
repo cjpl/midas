@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.29  1999/07/13 08:24:27  midas
+  Added ANA_TEST
+
   Revision 1.28  1999/06/28 12:01:33  midas
   Added hs_fdump
 
@@ -855,6 +858,24 @@ typedef struct {
 
 } ANALYZE_REQUEST;
 
+/*---- Tests -------------------------------------------------------*/
+
+typedef struct {
+  char  name[NAME_LENGTH];
+  BOOL  registered;
+  DWORD count;
+  BOOL  value;
+} ANA_TEST;
+
+#define SET_TEST(t, v) { if (!t.registered) test_register(&t); t.value = (v); }
+#define TEST(t) (t.value)
+
+#ifdef DEFINE_TESTS
+#define DEF_TEST(t) ANA_TEST t = { #t, 0, 0, FALSE };
+#else
+#define DEF_TEST(t) extern ANA_TEST t;
+#endif
+
 /*---- History structures ------------------------------------------*/
 
 #define RT_DATA (*((DWORD *) "HSDA"))
@@ -1294,8 +1315,6 @@ INT    EXPRT ss_file_remove(char * path);
 INT    EXPRT ss_file_find(char * path, char * pattern, char **plist);
 double EXPRT ss_disk_size(char *path);
 
-
-
 /*---- history routines ----*/
 INT EXPRT hs_set_path(char *path);
 INT EXPRT hs_define_event(DWORD event_id, char *name, TAG *tag, DWORD size);
@@ -1312,6 +1331,10 @@ INT EXPRT hs_read(DWORD event_id, DWORD start_time, DWORD end_time, DWORD interv
 INT EXPRT hs_dump(DWORD event_id, DWORD start_time, DWORD end_time,
             DWORD interval);
 INT EXPRT hs_fdump(char *file_name, DWORD id);
+
+/*---- analyzer functions ----*/
+void EXPRT test_register(ANA_TEST *t);
+
 
 #ifdef __cplusplus
 }
