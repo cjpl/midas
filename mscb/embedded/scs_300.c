@@ -9,6 +9,9 @@
                 for SCS-300 Parallel Port Interface
 
   $Log$
+  Revision 1.6  2003/03/19 16:35:03  midas
+  Eliminated configuration parameters
+
   Revision 1.5  2003/02/19 16:05:36  midas
   Added 'init' parameter to user_init
 
@@ -38,8 +41,7 @@
 
 char code node_name[] = "SCS-300";
 
-/*---- Define channels and configuration parameters returned to
-       the CMD_GET_INFO command                                 ----*/
+/*---- Define variable parameters returned to CMD_GET_INFO command ----*/
 
 /* data buffer (mirrored in EEPROM) */
 
@@ -47,15 +49,11 @@ struct {
   float value[4];
 } user_data;
 
-MSCB_INFO_CHN code channel[] = {
+MSCB_INFO_VAR code variables[] = {
   4, UNIT_UNDEFINED, 0, 0, MSCBF_FLOAT, "Data0", &user_data.value[0],
   4, UNIT_UNDEFINED, 0, 0, MSCBF_FLOAT, "Data1", &user_data.value[1],
   4, UNIT_UNDEFINED, 0, 0, MSCBF_FLOAT, "Data2", &user_data.value[2],
   4, UNIT_UNDEFINED, 0, 0, MSCBF_FLOAT, "Data3", &user_data.value[3],
-  0
-};
-
-MSCB_INFO_CHN code conf_param[] = {
   0
 };
 
@@ -90,41 +88,29 @@ void user_init(unsigned char init)
   LPT_SELECT = 1;
   LPT_ACK    = 1;
   LPT_BUSY   = 1;
+
+  if (init);
 }
 
 /*---- User write function -----------------------------------------*/
 
-void user_write(unsigned char channel) reentrant
+void user_write(unsigned char index) reentrant
 {
-  if (channel == 0);
+  if (index);
 }
 
 /*---- User read function ------------------------------------------*/
 
-unsigned char user_read(unsigned char channel)
+unsigned char user_read(unsigned char index)
 {
-  if (channel);
+  if (index);
   return 0;
-}
-
-/*---- User write config function ----------------------------------*/
-
-void user_write_conf(unsigned char channel) reentrant
-{
-  if (channel);
-}
-
-/*---- User read config function -----------------------------------*/
-
-void user_read_conf(unsigned char channel)
-{
-  if (channel);
 }
 
 /*---- User function called vid CMD_USER command -------------------*/
 
-unsigned char user_func(unsigned char idata *data_in,
-                        unsigned char idata *data_out)
+unsigned char user_func(unsigned char *data_in,
+                        unsigned char *data_out)
 {
   /* echo input data */
   data_out[0] = data_in[0];

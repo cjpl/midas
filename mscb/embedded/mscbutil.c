@@ -6,6 +6,9 @@
   Contents:     Various utility functions for MSCB protocol
 
   $Log$
+  Revision 1.21  2003/03/19 16:35:03  midas
+  Eliminated configuration parameters
+
   Revision 1.20  2003/03/14 13:47:54  midas
   Added SCS_310 code
 
@@ -72,8 +75,7 @@
 #include <intrins.h>
 
 extern SYS_INFO sys_info;               // for eeprom functions
-extern MSCB_INFO_CHN code channel[];
-extern MSCB_INFO_CHN code conf_param[];
+extern MSCB_INFO_VAR code variables[];
 extern bit adr_led_on, adr_led_off;     // used for addressed LED flashing
 
 /*------------------------------------------------------------------*/
@@ -115,7 +117,7 @@ unsigned char code crc8_data[] = {
 
 #pragma NOAREGS  // all functions can be called from interrupt routine!
 
-unsigned char crc8(unsigned char idata *buffer, int len)
+unsigned char crc8(unsigned char *buffer, int len)
 /********************************************************************\
 
   Routine: crc8
@@ -898,12 +900,8 @@ unsigned char offset, i;
   eeprom_write(&sys_info, sizeof(SYS_INFO), &offset);
 
   // user channel variables
-  for (i=0 ; channel[i].width ; i++)
-    eeprom_write(channel[i].ud, channel[i].width, &offset);
-
-  // user configuration parameters 
-  for (i=0 ; conf_param[i].width ; i++)
-    eeprom_write(conf_param[i].ud, conf_param[i].width, &offset);
+  for (i=0 ; variables[i].width ; i++)
+    eeprom_write(variables[i].ud, variables[i].width, &offset);
 }
 
 /*------------------------------------------------------------------*/
@@ -925,19 +923,15 @@ unsigned char offset, i;
   eeprom_read(&sys_info, sizeof(SYS_INFO), &offset);
 
   // user channel variables
-  for (i=0 ; channel[i].width ; i++)
-    eeprom_read(channel[i].ud, channel[i].width, &offset);
-
-  // user configuration parameters 
-  for (i=0 ; conf_param[i].width ; i++)
-    eeprom_read(conf_param[i].ud, conf_param[i].width, &offset);
+  for (i=0 ; variables[i].width ; i++)
+    eeprom_read(variables[i].ud, variables[i].width, &offset);
 }
 
 /*------------------------------------------------------------------*/
 
 bit lcd_present;
 
-#if !defined(CPU_ADUC812) // save code space
+#if !defined(CPU_ADUC812) && !defined(SCS_210) && !defined(SCS_310) // save code space
 
 /********************************************************************\
 

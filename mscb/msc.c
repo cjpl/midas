@@ -6,6 +6,9 @@
   Contents:     Command-line interface for the Midas Slow Control Bus
 
   $Log$
+  Revision 1.33  2003/03/19 16:35:03  midas
+  Eliminated configuration parameters
+
   Revision 1.32  2003/03/06 16:08:50  midas
   Protocol version 1.3 (change node name)
 
@@ -197,11 +200,9 @@ void print_help()
   puts("sa <addr> <gaddr>          Set node and group address of addressed node");
   puts("sn <name>                  Set node name (up to 16 characters)");
   puts("debug 0/1                  Turn debuggin off/on on node (LCD output)");
-  puts("\nwrite <channel> <value>  Write to node channel");
-  puts("read <channel> [r]         Read from node channel [repeat mode]");
-  puts("wc <index> <value>         Write configuration parameter");
+  puts("\nwrite <index> <value>    Write node variable");
+  puts("read <index> [r]           Read node variable [repeat mode]");
   puts("flash                      Flash parameters into EEPROM");
-  puts("rc <index>                 Read configuration parameter");
   puts("reboot                     Reboot addressed node");
   puts("reset                      Reboot whole MSCB system");
   puts("terminal                   Enter teminal mode for SCS-210");
@@ -212,10 +213,10 @@ void print_help()
 
 /*------------------------------------------------------------------*/
 
-void print_channel(int index, MSCB_INFO_CHN *info_chn, int data, int verbose)
+void print_channel(int index, MSCB_INFO_VAR *info_chn, void *pdata, int verbose)
 {
 char str[80];
-int  i;
+int  i, data;
 
   if (verbose)
     {
@@ -226,50 +227,60 @@ int  i;
     printf("%2d: %s ", index, str);
     }
 
-  switch(info_chn->width)
+  if (info_chn->unit == UNIT_STRING)
     {
-    case 0:  
-      printf(" 0bit"); 
-      break;
+    memset(str, 0, sizeof(str));
+    strncpy(str, pdata, info_chn->width);
+    printf("string  \"%s\"", str);
+    }
+  else
+    {
+    data = *((int *)pdata);
+    switch(info_chn->width)
+      {
+      case 0:  
+        printf(" 0bit"); 
+        break;
 
-    case 1:  
-      if (info_chn->flags & MSCBF_SIGNED)
-        printf(" 8bit %8d (0x%02X/", data, data); 
-      else
-        printf(" 8bit %8u (0x%02X/", data, data); 
-      for (i=0 ; i<8 ; i++)
-        if (data & (0x80 >> i))
-          printf("1");
-        else
-          printf("0");
-      printf(")");
-      break;
-
-    case 2: 
-      if (info_chn->flags & MSCBF_SIGNED)
-        printf("16bit %8d (0x%04X)", data, data); 
-      else
-        printf("16bit %8u (0x%04X)", data, data); 
-      break;
-
-    case 3: 
-      if (info_chn->flags & MSCBF_SIGNED)
-        printf("24bit %8d (0x%06X)", data, data); 
-      else
-        printf("24bit %8u (0x%06X)", data, data); 
-      break;
-      
-    case 4: 
-      if (info_chn->flags & MSCBF_FLOAT)
-        printf("32bit %8.6lg", *((float *)&data));
-      else
-        {
+      case 1:  
         if (info_chn->flags & MSCBF_SIGNED)
-          printf("32bit %8d (0x%08X)", data, data);
+          printf(" 8bit %8d (0x%02X/", data, data); 
         else
-          printf("32bit %8u (0x%08X)", data, data);
-        }
-      break;
+          printf(" 8bit %8u (0x%02X/", data, data); 
+        for (i=0 ; i<8 ; i++)
+          if (data & (0x80 >> i))
+            printf("1");
+          else
+            printf("0");
+        printf(")");
+        break;
+
+      case 2: 
+        if (info_chn->flags & MSCBF_SIGNED)
+          printf("16bit %8d (0x%04X)", data, data); 
+        else
+          printf("16bit %8u (0x%04X)", data, data); 
+        break;
+
+      case 3: 
+        if (info_chn->flags & MSCBF_SIGNED)
+          printf("24bit %8d (0x%06X)", data, data); 
+        else
+          printf("24bit %8u (0x%06X)", data, data); 
+        break;
+      
+      case 4: 
+        if (info_chn->flags & MSCBF_FLOAT)
+          printf("32bit %8.6lg", *((float *)&data));
+        else
+          {
+          if (info_chn->flags & MSCBF_SIGNED)
+            printf("32bit %8d (0x%08X)", data, data);
+          else
+            printf("32bit %8u (0x%08X)", data, data);
+          }
+        break;
+      }
     }
 
   printf(" ");
@@ -285,7 +296,7 @@ int  i;
     }
 
   /* evaluate unit */
-  if (info_chn->unit)
+  if (info_chn->unit && info_chn->unit != UNIT_STRING)
     {
     for (i=0 ; unit_table[i].id ; i++)
       if (unit_table[i].id == info_chn->unit)
@@ -308,12 +319,12 @@ int           i, fh, status, size, nparam, addr, gaddr, current_addr, current_gr
 unsigned int  data;
 unsigned char c;
 float         value;
-char          str[256], line[256];
+char          str[256], line[256], dbuf[256];
 char          param[10][100];
 char          *pc, *buffer;
 FILE          *cmd_file = NULL;
 MSCB_INFO     info;
-MSCB_INFO_CHN info_chn;
+MSCB_INFO_VAR info_var;
 
 
   /* open command file */
@@ -479,45 +490,19 @@ MSCB_INFO_CHN info_chn;
           strncpy(str, info.node_name, sizeof(info.node_name));
           str[16] = 0;
           printf("Node name:        %s\n", str);
-          printf("Node status:      0x%02X", info.node_status);
-          if (info.node_status > 0)
-            {
-            printf(" (");
-            if ((info.node_status & CSR_DEBUG) > 0)
-              printf("DEBUG ");
-            if ((info.node_status & CSR_LCD_PRESENT) > 0)
-              printf("LCD ");
-            if ((info.node_status & CSR_SYNC_MODE) > 0)
-              printf("SYNC ");
-            if ((info.node_status & CSR_FREEZE_MODE) > 0)
-              printf("FREEZE ");
-            printf("\b)\n");
-            }
-          else
-            printf("\n");
           printf("Node address:     %d (0x%X)\n", info.node_address, info.node_address);
           printf("Group address:    %d (0x%X)\n", info.group_address, info.group_address);
           printf("Protocol version: %d.%d\n", info.protocol_version/16, info.protocol_version % 16);
           printf("Watchdog resets:  %d\n", info.watchdog_resets);
 
-          printf("\nChannels:\n");
-          for (i=0 ; i<info.n_channel ; i++)
+          printf("\nVariables:\n");
+          for (i=0 ; i<info.n_variables ; i++)
             {
-            mscb_info_channel(fd, current_addr, GET_INFO_CHANNEL, i, &info_chn);
+            mscb_info_variable(fd, current_addr, i, &info_var);
             size = sizeof(data);
-            mscb_read(fd, current_addr, (unsigned char)i, &data, &size);
+            mscb_read(fd, current_addr, (unsigned char)i, dbuf, &size);
 
-            print_channel(i, &info_chn, data, 1);
-            }
-
-          printf("\nConfiguration Parameters:\n");
-          for (i=0 ; i<info.n_conf ; i++)
-            {
-            mscb_info_channel(fd, current_addr, GET_INFO_CONF, i, &info_chn);
-            size = sizeof(data);
-            mscb_read_conf(fd, current_addr, (unsigned char)i, &data, &size);
-
-            print_channel(i, &info_chn, data, 1);
+            print_channel(i, &info_var, dbuf, 1);
             }
           }
         }
@@ -663,7 +648,7 @@ MSCB_INFO_CHN info_chn;
 
           /* write CSR register */
           c = i ? CSR_DEBUG : 0;
-          mscb_write_conf(fd, current_addr, 0xFF, &c, 1);
+          mscb_write(fd, current_addr, 0xFF, &c, 1);
           }
         }
       }
@@ -683,21 +668,34 @@ MSCB_INFO_CHN info_chn;
 
           if (current_addr >= 0)
             {
-            mscb_info_channel(fd, current_addr, GET_INFO_CHANNEL, addr, &info_chn);
-            if (info_chn.flags & MSCBF_FLOAT)
+            mscb_info_variable(fd, current_addr, addr, &info_var);
+
+            if (info_var.unit == UNIT_STRING)
               {
-              value = (float)atof(param[2]);
-              memcpy(&data, &value, sizeof(float));
+              memset(str, 0, sizeof(str));
+              strncpy(str, param[2], info_var.width);
+              if (strlen(str) > 0 && str[strlen(str)-1] == '\n')
+                str[strlen(str)-1] = 0;
+
+              status = mscb_write(fd, current_addr, (unsigned char)addr, str, info_var.width);
               }
             else
               {
-              if (param[2][1] == 'x')
-                sscanf(param[2]+2, "%x", &data);
+              if (info_var.flags & MSCBF_FLOAT)
+                {
+                value = (float)atof(param[2]);
+                memcpy(&data, &value, sizeof(float));
+                }
               else
-                data = atoi(param[2]);
-              }
+                {
+                if (param[2][1] == 'x')
+                  sscanf(param[2]+2, "%x", &data);
+                else
+                  data = atoi(param[2]);
+                }
 
-            status = mscb_write(fd, current_addr, (unsigned char)addr, &data, info_chn.width);
+              status = mscb_write(fd, current_addr, (unsigned char)addr, &data, info_var.width);
+              }
             }
           else if (current_group >= 0)
             {
@@ -728,7 +726,7 @@ MSCB_INFO_CHN info_chn;
           {
           addr = atoi(param[1]);
 
-          status = mscb_info_channel(fd, current_addr, GET_INFO_CHANNEL, addr, &info_chn);
+          status = mscb_info_variable(fd, current_addr, addr, &info_var);
 
           if (status == MSCB_CRC_ERROR)
             puts("CRC Error");
@@ -739,93 +737,13 @@ MSCB_INFO_CHN info_chn;
             do
               {
               size = sizeof(data);
-              status = mscb_read(fd, current_addr, (unsigned char)addr, &data, &size);
+              status = mscb_read(fd, current_addr, (unsigned char)addr, dbuf, &size);
               if (status != MSCB_SUCCESS)
                 printf("Error: %d\n", status);
               else
-                print_channel(addr, &info_chn, data, 0);
+                print_channel(addr, &info_var, dbuf, 0);
 
               Sleep(10);
-              } while (param[2][0] && !kbhit());
-
-            while (kbhit())
-              getch();
-
-            printf("\n");
-            }
-          }
-        }
-      }
-
-    /* wc */
-    else if (param[0][0] == 'w' && param[0][1] == 'c')
-      {
-      if (current_addr < 0)
-        printf("You must first address an individual node\n");
-      else
-        {
-        if (!param[1][0] || !param[2][0])
-          puts("Please specify parameter index and data");
-        else
-          {
-          addr = atoi(param[1]);
-
-          if (current_addr >= 0)
-            {
-            mscb_info_channel(fd, current_addr, GET_INFO_CONF, addr, &info_chn);
-            if (info_chn.flags & MSCBF_FLOAT)
-              {
-              value = (float)atof(param[2]);
-              memcpy(&data, &value, sizeof(float));
-              }
-            else
-              {
-              if (param[2][1] == 'x')
-                sscanf(param[2]+2, "%x", &data);
-              else
-                data = atoi(param[2]);
-              }
-
-            status = mscb_write_conf(fd, current_addr, (unsigned char)addr, &data, info_chn.width);
-
-            if (status != MSCB_SUCCESS)
-              printf("Error: %d\n", status);
-            }
-          else
-            printf("Please address individual node first.\n");
-          }
-        }
-      }
-
-    /* rc */
-    else if ((param[0][0] == 'r' && param[0][1] == 'c'))
-      {
-      if (current_addr < 0)
-        printf("You must first address an individual node\n");
-      else
-        {
-        if (!param[1][0])
-          puts("Please specify parameter index");
-        else
-          {
-          addr = atoi(param[1]);
-
-          status = mscb_info_channel(fd, current_addr, GET_INFO_CONF, addr, &info_chn);
-
-          if (status == MSCB_CRC_ERROR)
-            puts("CRC Error");
-          else if (status != MSCB_SUCCESS)
-            puts("Timeout or invalid parameter index");
-          else
-            {
-            do
-              {
-              size = sizeof(data);
-              status = mscb_read_conf(fd, current_addr, (unsigned char)addr, &data, &size);
-              if (status != MSCB_SUCCESS)
-                printf("Error: %d\n", status);
-              else
-                print_channel(addr, &info_chn, data, 0);
               } while (param[2][0] && !kbhit());
 
             while (kbhit())
@@ -875,6 +793,7 @@ MSCB_INFO_CHN info_chn;
         if (d > 0)
           putchar(d);
 
+        Sleep(10);
         } while (c != 27);
 
       puts("\n");

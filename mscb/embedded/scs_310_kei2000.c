@@ -9,6 +9,9 @@
                 for Keithley Model 2000 Multimeter
 
   $Log$
+  Revision 1.2  2003/03/19 16:35:03  midas
+  Eliminated configuration parameters
+
   Revision 1.1  2003/03/14 13:47:54  midas
   Added SCS_310 code
 
@@ -32,20 +35,13 @@ char       tbwp, tbrp;
 
 struct {
   float reading;
-} idata user_data;
-
-struct {
   char  gpib_adr;
-} user_conf;
+} user_data;
 
-MSCB_INFO_CHN code channel[] = {
+MSCB_INFO_VAR code variables[] = {
   1, UNIT_ASCII,     0, 0,           0, "GPIB",     0,
   4, UNIT_VOLT,      0, 0, MSCBF_FLOAT, "Reading",  &user_data.reading,
-  0
-};
-
-MSCB_INFO_CHN code conf_param[] = {
-  1, UNIT_BYTE,      0, 0,           0, "GPIB Adr", &user_conf.gpib_adr,
+  1, UNIT_BYTE,      0, 0,           0, "GPIB Adr", &user_data.gpib_adr,
   0
 };
 
@@ -70,7 +66,7 @@ sbit GPIB_REM    =       P2^3;    // Pin 17
 
 #pragma NOAREGS
 
-void user_write(unsigned char channel) reentrant;
+void user_write(unsigned char index) reentrant;
 char send(unsigned char adr, char *str);
 char send_byte(unsigned char b);
 
@@ -104,18 +100,18 @@ void user_init(unsigned char init)
 
   if (init)
     {
-    user_conf.gpib_adr = 16;
+    user_data.gpib_adr = 16;
     }
 }
 
 /*---- User write function -----------------------------------------*/
 
 /* buffers in mscbmain.c */
-extern unsigned char idata in_buf[10], out_buf[8];
+extern unsigned char xdata in_buf[300], out_buf[300];
 
-void user_write(unsigned char channel) reentrant
+void user_write(unsigned char index) reentrant
 {
-  if (channel == 0)
+  if (index == 0)
     {
     if (in_buf[2] == 27)
       terminal_mode = 0;
@@ -140,9 +136,9 @@ void user_write(unsigned char channel) reentrant
 
 /*---- User read function ------------------------------------------*/
 
-unsigned char user_read(unsigned char channel)
+unsigned char user_read(unsigned char index)
 {
-  if (channel == 0)
+  if (index == 0)
     {
     if (terminal_mode && term_flag == 2)
       {
@@ -159,24 +155,10 @@ unsigned char user_read(unsigned char channel)
   return 0;
 }
 
-/*---- User write config function ----------------------------------*/
-
-void user_write_conf(unsigned char channel) reentrant
-{
-  if (channel);
-}
-
-/*---- User read config function -----------------------------------*/
-
-void user_read_conf(unsigned char channel)
-{
-  if (channel);
-}
-
 /*---- User function called vid CMD_USER command -------------------*/
 
-unsigned char user_func(unsigned char idata *data_in,
-                        unsigned char idata *data_out)
+unsigned char user_func(unsigned char *data_in,
+                        unsigned char *data_out)
 {
   /* echo input data */
   data_out[0] = data_in[0];
@@ -350,8 +332,8 @@ static unsigned long t;
     {
     t = time();
 
-    send(user_conf.gpib_adr, ":FETCH?");
-    if (enter(user_conf.gpib_adr, str, sizeof(str)))
+    send(user_data.gpib_adr, ":FETCH?");
+    if (enter(user_data.gpib_adr, str, sizeof(str)))
       user_data.reading = atof(str);
     else
       user_data.reading = 0;
@@ -369,12 +351,12 @@ static unsigned long t;
       term_buf[tbwp] = 0;
 
       /* send buffer */
-      send(user_conf.gpib_adr, term_buf);
+      send(user_data.gpib_adr, term_buf);
       
       led_blink(2, 1, 100);
 
       /* receive buffer */
-      tbwp = enter(user_conf.gpib_adr, term_buf, sizeof(term_buf));
+      tbwp = enter(user_data.gpib_adr, term_buf, sizeof(term_buf));
 
       if (tbwp > 0)
         {

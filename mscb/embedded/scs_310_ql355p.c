@@ -9,6 +9,9 @@
                 for TTI QL335P Power supply
 
   $Log$
+  Revision 1.2  2003/03/19 16:35:03  midas
+  Eliminated configuration parameters
+
   Revision 1.1  2003/03/14 13:47:54  midas
   Added SCS_310 code
 
@@ -25,8 +28,7 @@ bit        terminal_mode, term_flag;
 xdata char term_buf[80];
 char       tbwp, tbrp;
 
-/*---- Define channels and configuration parameters returned to
-       the CMD_GET_INFO command                                 ----*/
+/*---- Define variable parameters returned to CMD_GET_INFO command ----*/
 
 /* data buffer (mirrored in EEPROM) */
 
@@ -37,24 +39,17 @@ struct {
   float measured_voltage;
   float measured_current;
   char  string[16];
+  char  gpib_adr;
 } idata user_data;
 
-struct {
-  char  gpib_adr;
-} user_conf;
-
-MSCB_INFO_CHN code channel[] = {
+MSCB_INFO_VAR code variables[] = {
   1, UNIT_ASCII,     0, 0,           0, "GPIB",     0,
   1, UNIT_BOOLEAN,   0, 0,           0, "Switch",   &user_data.flag,
   4, UNIT_VOLT,      0, 0, MSCBF_FLOAT, "Voltage",  &user_data.demand_voltage,
   4, UNIT_AMPERE,    0, 0, MSCBF_FLOAT, "Current",  &user_data.current_limit,
   4, UNIT_VOLT,      0, 0, MSCBF_FLOAT, "Vmeas",    &user_data.measured_voltage,
   4, UNIT_AMPERE,    0, 0, MSCBF_FLOAT, "Imeas",    &user_data.measured_current,
-  0
-};
-
-MSCB_INFO_CHN code conf_param[] = {
-  1, UNIT_BYTE,      0, 0,           0, "GPIB Adr", &user_conf.gpib_adr,
+  1, UNIT_BYTE,      0, 0,           0, "GPIB Adr", &user_data.gpib_adr,
   0
 };
 
@@ -79,7 +74,7 @@ sbit GPIB_REM    =       P2^3;    // Pin 17
 
 #pragma NOAREGS
 
-void user_write(unsigned char channel) reentrant;
+void user_write(unsigned char index) reentrant;
 char send(unsigned char adr, char *str);
 char send_byte(unsigned char b);
 
@@ -117,18 +112,18 @@ void user_init(unsigned char init)
     user_data.demand_voltage = 0;
     user_data.current_limit  = 0;
 
-    user_conf.gpib_adr = 11;
+    user_data.gpib_adr = 11;
     }
 }
 
 /*---- User write function -----------------------------------------*/
 
 /* buffers in mscbmain.c */
-extern unsigned char idata in_buf[10], out_buf[8];
+extern unsigned char xdata in_buf[300], out_buf[300];
 
-void user_write(unsigned char channel) reentrant
+void user_write(unsigned char index) reentrant
 {
-  if (channel == 0)
+  if (index == 0)
     {
     if (in_buf[2] == 27)
       terminal_mode = 0;
@@ -153,9 +148,9 @@ void user_write(unsigned char channel) reentrant
 
 /*---- User read function ------------------------------------------*/
 
-unsigned char user_read(unsigned char channel)
+unsigned char user_read(unsigned char index)
 {
-  if (channel == 0)
+  if (index == 0)
     {
     if (terminal_mode && term_flag == 2)
       {
@@ -172,24 +167,10 @@ unsigned char user_read(unsigned char channel)
   return 0;
 }
 
-/*---- User write config function ----------------------------------*/
-
-void user_write_conf(unsigned char channel) reentrant
-{
-  if (channel);
-}
-
-/*---- User read config function -----------------------------------*/
-
-void user_read_conf(unsigned char channel)
-{
-  if (channel);
-}
-
 /*---- User function called vid CMD_USER command -------------------*/
 
-unsigned char user_func(unsigned char idata *data_in,
-                        unsigned char idata *data_out)
+unsigned char user_func(unsigned char *data_in,
+                        unsigned char *data_out)
 {
   /* echo input data */
   data_out[0] = data_in[0];
@@ -363,25 +344,25 @@ static unsigned long t;
     {
     demand_changed = 0;
 
-    send(user_conf.gpib_adr, user_data.flag ? "OP1 1" : "OP1 0");
+    send(user_data.gpib_adr, user_data.flag ? "OP1 1" : "OP1 0");
 
     sprintf(str, "V1 %1.3f", user_data.demand_voltage);
-    send(user_conf.gpib_adr, str);
+    send(user_data.gpib_adr, str);
 
     sprintf(str, "I1 %1.3f", user_data.current_limit);
-    send(user_conf.gpib_adr, str);
+    send(user_data.gpib_adr, str);
     }
 
   if (!terminal_mode && time() > t + 100)
     {
     t = time();
 
-    send(user_conf.gpib_adr, "V1O?");
-    enter(user_conf.gpib_adr, str, sizeof(str));
+    send(user_data.gpib_adr, "V1O?");
+    enter(user_data.gpib_adr, str, sizeof(str));
     user_data.measured_voltage = atof(str);
 
-    send(user_conf.gpib_adr, "I1O?");
-    enter(user_conf.gpib_adr, str, sizeof(str));
+    send(user_data.gpib_adr, "I1O?");
+    enter(user_data.gpib_adr, str, sizeof(str));
     user_data.measured_current = atof(str);
     }
 
@@ -397,12 +378,12 @@ static unsigned long t;
       term_buf[tbwp] = 0;
 
       /* send buffer */
-      send(user_conf.gpib_adr, term_buf);
+      send(user_data.gpib_adr, term_buf);
       
       led_blink(2, 1, 100);
 
       /* receive buffer */
-      tbwp = enter(user_conf.gpib_adr, term_buf, sizeof(term_buf));
+      tbwp = enter(user_data.gpib_adr, term_buf, sizeof(term_buf));
 
       if (tbwp > 0)
         {

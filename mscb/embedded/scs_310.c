@@ -9,6 +9,9 @@
                 for SCS-310 GPIB Adapter
 
   $Log$
+  Revision 1.2  2003/03/19 16:35:03  midas
+  Eliminated configuration parameters
+
   Revision 1.1  2003/03/14 13:47:54  midas
   Added SCS_310 code
 
@@ -40,33 +43,31 @@
 #include <string.h>
 #include "mscb.h"
 
-char code node_name[] = "Keithley2000";
+char code node_name[] = "GPIB";
 
-bit        terminal_mode, term_flag;
+bit        terminal_mode, term_flag, output_flag, control_flag;
 xdata char term_buf[80];
 char       tbwp, tbrp;
 
-/*---- Define channels and configuration parameters returned to
-       the CMD_GET_INFO command                                 ----*/
+/*---- Define variable parameters returned to the CMD_GET_INFO command ----*/
 
 /* data buffer (mirrored in EEPROM) */
 
 struct {
-  float reading;
+  char output[32];
+  char input[32];
+  char control;
+  char srq;
+  char gpib_adr;
 } idata user_data;
 
-struct {
-  char  gpib_adr;
-} user_conf;
-
-MSCB_INFO_CHN code channel[] = {
-  1, UNIT_ASCII,     0, 0,           0, "GPIB",     0,
-  4, UNIT_VOLT,      0, 0, MSCBF_FLOAT, "Reading",  &user_data.reading,
-  0
-};
-
-MSCB_INFO_CHN code conf_param[] = {
-  1, UNIT_BYTE,      0, 0,           0, "GPIB Adr", &user_conf.gpib_adr,
+MSCB_INFO_VAR code variables[] = {
+  1, UNIT_ASCII,     0, 0, 0, "GPIB",     0,                      // 0
+ 32, UNIT_STRING,    0, 0, 0, "Output",   &user_data.output[0],   // 1
+ 32, UNIT_STRING,    0, 0, 0, "Input",    &user_data.input[0],    // 2
+  1, UNIT_BYTE,      0, 0, 0, "Control",  &user_data.control,     // 3
+  1, UNIT_BYTE,      0, 0, 0, "SRQ",      &user_data.srq,         // 4
+  1, UNIT_BYTE,      0, 0, 0, "GPIB Adr", &user_data.gpib_adr,    // 5
   0
 };
 
@@ -91,11 +92,9 @@ sbit GPIB_REM    =       P2^3;    // Pin 17
 
 #pragma NOAREGS
 
-void user_write(unsigned char channel) reentrant;
+void user_write(unsigned char index) reentrant;
 char send(unsigned char adr, char *str);
 char send_byte(unsigned char b);
-
-bit demand_changed;
 
 /*---- User init function ------------------------------------------*/
 
@@ -122,21 +121,24 @@ void user_init(unsigned char init)
   GPIB_ATN = 1;
 
   terminal_mode = 0;
+  output_flag = 0;
 
   if (init)
     {
-    user_conf.gpib_adr = 16;
+    user_data.gpib_adr = 16;
+    user_data.control = 0;
+    user_data.srq = 0;
     }
 }
 
 /*---- User write function -----------------------------------------*/
 
 /* buffers in mscbmain.c */
-extern unsigned char idata in_buf[10], out_buf[8];
+extern unsigned char xdata in_buf[300], out_buf[300];
 
-void user_write(unsigned char channel) reentrant
+void user_write(unsigned char index) reentrant
 {
-  if (channel == 0)
+  if (index == 0)
     {
     if (in_buf[2] == 27)
       terminal_mode = 0;
@@ -155,17 +157,21 @@ void user_write(unsigned char channel) reentrant
         tbwp++;
       }
     }
-  else
-    demand_changed = 1;
+
+  if (index == 1)
+    output_flag = 1;
+
+  if (index == 3)
+    control_flag = 1;
 }
 
 /*---- User read function ------------------------------------------*/
 
-unsigned char user_read(unsigned char channel)
+unsigned char user_read(unsigned char index)
 {
-  if (channel == 0)
+  if (index == 0)
     {
-    if (terminal_mode && term_flag == 2)
+    if (terminal_mode && term_flag == 1)
       {
       out_buf[1] = term_buf[tbrp++];
       if (tbrp == tbwp)
@@ -180,24 +186,10 @@ unsigned char user_read(unsigned char channel)
   return 0;
 }
 
-/*---- User write config function ----------------------------------*/
-
-void user_write_conf(unsigned char channel) reentrant
-{
-  if (channel);
-}
-
-/*---- User read config function -----------------------------------*/
-
-void user_read_conf(unsigned char channel)
-{
-  if (channel);
-}
-
 /*---- User function called vid CMD_USER command -------------------*/
 
-unsigned char user_func(unsigned char idata *data_in,
-                        unsigned char idata *data_out)
+unsigned char user_func(unsigned char *data_in,
+                        unsigned char *data_out)
 {
   /* echo input data */
   data_out[0] = data_in[0];
@@ -365,19 +357,6 @@ idata char str[32];
 
 void user_loop(void)
 {
-static unsigned long t;
-
-  if (!terminal_mode && time() > t + 100)
-    {
-    t = time();
-
-    send(user_conf.gpib_adr, ":FETCH?");
-    if (enter(user_conf.gpib_adr, str, sizeof(str)))
-      user_data.reading = atof(str);
-    else
-      user_data.reading = 0;
-    }
-
   if (terminal_mode)
     {
     /* check terminal buffer */
@@ -390,12 +369,12 @@ static unsigned long t;
       term_buf[tbwp] = 0;
 
       /* send buffer */
-      send(user_conf.gpib_adr, term_buf);
+      send(user_data.gpib_adr, term_buf);
       
       led_blink(2, 1, 100);
 
       /* receive buffer */
-      tbwp = enter(user_conf.gpib_adr, term_buf, sizeof(term_buf));
+      tbwp = enter(user_data.gpib_adr, term_buf, sizeof(term_buf));
 
       if (tbwp > 0)
         {
@@ -409,5 +388,36 @@ static unsigned long t;
     ENABLE_INTERRUPTS;
     }
 
+  if (output_flag)
+    {
+    output_flag = 0;
+
+    /* send buffer */
+    send(user_data.gpib_adr, user_data.output);
+    
+    /* receive buffer */
+    if (enter(user_data.gpib_adr, user_data.input, sizeof(user_data.input)))
+      led_blink(2, 1, 100);
+
+    /* stip NL */
+    if (strlen(user_data.input) > 0 &&
+        user_data.input[strlen(user_data.input)-1] == 10)
+      user_data.input[strlen(user_data.input)-1] = 0;
+    }
+
+  if (control_flag)
+    {
+    control_flag = 0;
+
+    GPIB_ATN = 0;                         // assert attention
+    send_byte(0x3F);                      // unlisten
+    send_byte(0x5F);                      // untalk
+    send_byte(0x20 | user_data.gpib_adr); // listen device
+    send_byte(0x40 | 21);                 // talk 21
+    send_byte(user_data.control);         // send control
+    send_byte(0x3F);                      // unlisten
+    send_byte(0x5F);                      // untalk
+    GPIB_ATN = 1;                         // remove attention
+    }
 }
 
