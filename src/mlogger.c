@@ -6,6 +6,9 @@
   Contents:     MIDAS logger program
 
   $Log$
+  Revision 1.57  2002/05/16 22:15:07  midas
+  Added conditional code for mkdir()
+
   Revision 1.56  2002/05/16 19:15:01  pierre
   small typo
 
@@ -2297,7 +2300,11 @@ struct tm    *tms;
           }
 
         /* create directory if needed */
+#ifdef OS_WINNT
+        status = mkdir(str);
+#else
         status = mkdir(str, 0755);
+#endif
         if (status == -1 && errno != EEXIST)
           {
           cm_msg(MERROR, "tr_prestart", "Cannot create subdirectory %s", str);
