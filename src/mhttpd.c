@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.185  2002/02/04 00:34:12  midas
+  Added zoom buttons in history display
+
   Revision 1.184  2002/02/02 11:34:29  midas
   Added run markes in history
 
@@ -1153,7 +1156,7 @@ int    size;
   rsprintf("<html><head>\n");
 
   /* auto refresh */
-  if (refresh)
+  if (refresh > 0)
     rsprintf("<meta http-equiv=\"Refresh\" content=\"%02d\">\n", refresh);
 
   rsprintf("<title>%s</title></head>\n", title);
@@ -1172,7 +1175,11 @@ int    size;
 
   rsprintf("<table border=3 cellpadding=1>\n");
   rsprintf("<tr><th colspan=%d bgcolor=#A0A0FF>MIDAS experiment \"%s\"", colspan, str);
-  rsprintf("<th colspan=%d bgcolor=#A0A0FF>%s</tr>\n", colspan, ctime(&now));
+
+  if (refresh > 0)
+    rsprintf("<th colspan=%d bgcolor=#A0A0FF>%s &nbsp&nbspRefr:%d</tr>\n", colspan, ctime(&now), refresh);
+  else
+    rsprintf("<th colspan=%d bgcolor=#A0A0FF>%s</tr>\n", colspan, ctime(&now));
 }
 
 /*------------------------------------------------------------------*/
@@ -1318,7 +1325,8 @@ CHN_STATISTICS chn_stats;
   rsprintf("\r\n<html>\n");
 
   /* auto refresh */
-  rsprintf("<head><meta http-equiv=\"Refresh\" content=\"%02d\">\n", refresh);
+  if (refresh > 0)
+    rsprintf("<head><meta http-equiv=\"Refresh\" content=\"%02d\">\n", refresh);
 
   rsprintf("<title>MIDAS status</title></head>\n");
   rsprintf("<body><form method=\"GET\" action=\"/\">\n");
@@ -1337,7 +1345,7 @@ CHN_STATISTICS chn_stats;
   time(&now);
 
   rsprintf("<tr><th colspan=3 bgcolor=#A0A0FF>MIDAS experiment \"%s\"", str);
-  rsprintf("<th colspan=3 bgcolor=#A0A0FF>%s</tr>\n", ctime(&now));
+  rsprintf("<th colspan=3 bgcolor=#A0A0FF>%s &nbsp;&nbsp;Refr:%d</tr>\n", ctime(&now), refresh);
 
   /*---- menu buttons ----*/
 
@@ -6437,11 +6445,12 @@ HNDLE hDB;
   rsprintf("<td><input type=text size=5 maxlength=5 name=refr value=%d>\n", refresh);
   rsprintf("</tr>\n");
 
-  rsprintf("<tr><td align=center colspan=2>");
-  rsprintf("<input type=submit name=cmd value=Accept>");
-  rsprintf("<input type=submit name=cmd value=Cancel>");
-  rsprintf("</tr>");
-  rsprintf("</table>");
+  rsprintf("<tr><td align=center colspan=2>\n");
+  rsprintf("<input type=submit name=cmd value=Accept>\n");
+  rsprintf("<input type=submit name=cmd value=Cancel>\n");
+  rsprintf("<input type=hidden name=cmd value=Accept>\n");
+  rsprintf("</tr>\n");
+  rsprintf("</table>\n");
 
   rsprintf("</body></html>\r\n");
 }
@@ -6784,6 +6793,23 @@ double base[] = {1,2,5,10,20,50,100,200,500,1000};
 
 /*------------------------------------------------------------------*/
 
+int time_to_sec(char *str)
+{
+double s;
+
+  s = atof(str);
+  switch (str[strlen(str)-1])
+    {
+    case 'm': case 'M': s *= 60; break;
+    case 'h': case 'H': s *= 3600; break;
+    case 'd': case 'D': s *= 3600*24; break;
+    }
+
+  return (int) s;
+}
+
+/*------------------------------------------------------------------*/
+
 #define MAX_VARS 10
 
 void generate_hist_graph(char *path, char *buffer, int *buffer_size,
@@ -6795,8 +6821,8 @@ gdImagePtr  im;
 gdGifBuffer gb;
 int         i, j, k, l, n_vars, size, status, n_event, row, x_marker;
 DWORD       bsize, tsize, n_marker, *state, run_number;
-int         length, aoffset, toffset;
-int         flag, x1, y1, x2, y2, xs, ys, xold, yold;
+int         length, aoffset;
+int         flag, x1, y1, x2, y2, xs, xs_old, ys, xold, yold;
 int         white, black, grey, ltgrey, red, green, blue, curve_col[MAX_VARS], state_col[3];
 char        str[256], panel[NAME_LENGTH], *p, odbpath[256];
 INT         var_index[MAX_VARS], *event_id_list, event_id;
@@ -6970,9 +6996,22 @@ float       upper_limit[MAX_VARS], lower_limit[MAX_VARS];
     /* get timescale */
     if (scale == 0)
       {
-      scale = 3600;
-      size = sizeof(scale);
-      db_get_value(hDB, hkeypanel, "Timescale", &scale, &size, TID_INT);
+      strcpy(str, "1h");
+      size = NAME_LENGTH;
+      status = db_get_value(hDB, hkeypanel, "Timescale", str, &size, TID_STRING);
+      if (status != DB_SUCCESS)
+        {
+        /* delete old integer key */
+        db_find_key(hDB, hkeypanel, "Timescale", &hkey);
+        if (hkey)
+          db_delete_key(hDB, hkey, FALSE);
+
+        strcpy(str, "1h");
+        size = NAME_LENGTH;
+        status = db_get_value(hDB, hkeypanel, "Timescale", str, &size, TID_STRING);
+        }
+
+      scale = time_to_sec(str);
       }
 
     /* get factors */
@@ -7147,14 +7186,9 @@ float       upper_limit[MAX_VARS], lower_limit[MAX_VARS];
         }
       }
 
-    if (offset > 0)
-      toffset = offset*scale;
-    else
-      toffset = -offset;
-
     bsize = sizeof(ybuffer);
     tsize = sizeof(tbuffer);
-    status = hs_read(event_id, ss_time()-scale-toffset, ss_time()-toffset, scale/1000,
+    status = hs_read(event_id, ss_time()-scale+offset, ss_time()+offset, scale/1000,
                      var_name[i], var_index[i], tbuffer, &tsize, ybuffer, &bsize,
                      &type, &n_point[i]);
 
@@ -7258,8 +7292,8 @@ float       upper_limit[MAX_VARS], lower_limit[MAX_VARS];
     }
 
   /* calculate X limits */
-  xmin = (float) (-scale/3600.0-toffset/3600.0);
-  xmax = (float) (-toffset/3600.0);
+  xmin = (float) (-scale/3600.0+offset/3600.0);
+  xmax = (float) (offset/3600.0);
 
   /* caluclate required space for Y-axis */
   aoffset = vaxis(im, gdFontSmall, black, ltgrey, 0, 0, height, -3, -5, -7, -8, 0, ymin, ymax, logaxis);
@@ -7281,17 +7315,12 @@ float       upper_limit[MAX_VARS], lower_limit[MAX_VARS];
   /* write run markes if selected */
   if (runmarker)
     {
-    if (offset > 0)
-      toffset = offset*scale;
-    else
-      toffset = -offset;
-
     bsize = sizeof(ybuffer);
     tsize = sizeof(tbuffer);
 
     /* read run state */
 
-    status = hs_read(0, ss_time()-scale-toffset, ss_time()-toffset, 0,
+    status = hs_read(0, ss_time()-scale+offset, ss_time()+offset, 0,
                      "State", 0, tbuffer, &tsize, ybuffer, &bsize,
                      &type, &n_marker);
 
@@ -7308,12 +7337,13 @@ float       upper_limit[MAX_VARS], lower_limit[MAX_VARS];
 
     /* read run number */
 
-    status = hs_read(0, ss_time()-scale-toffset, ss_time()-toffset, 0,
+    status = hs_read(0, ss_time()-scale+offset, ss_time()+offset, 0,
                      "Run number", 0, tbuffer, &tsize, ybuffer, &bsize,
                      &type, &n_marker);
 
     if (status != HS_UNDEFINED_VAR)
       {
+      xs_old = -1;
       for (j=0 ; j<(int)n_marker ; j++)
         {
         x_marker = tbuffer[j] - ss_time();
@@ -7321,14 +7351,18 @@ float       upper_limit[MAX_VARS], lower_limit[MAX_VARS];
 
         run_number = *((DWORD *) ybuffer+j);
 
+        if (xs <= xs_old)
+          xs = xs_old + 1;
+        xs_old = xs;
+
         gdImageDashedLine(im, xs, y1, xs, y2, state_col[state[j]-1]);
 
         sprintf(str, "%d", run_number);
 
         if (state[j] == STATE_RUNNING)
-          gdImageString(im, gdFontSmall, xs+2, y2+2, str, black);
+          gdImageString(im, gdFontSmall, xs+2, y2+1, str, black);
         else if (state[j] == STATE_STOPPED)
-          gdImageString(im, gdFontSmall, xs-2-gdFontSmall->w*strlen(str), y2+2, str, black);
+          gdImageString(im, gdFontSmall, xs-2-gdFontSmall->w*strlen(str), y2+1, str, black);
         }
       }
 
@@ -7502,12 +7536,13 @@ error:
 
 void show_hist_page(char *path, char *buffer, int *buffer_size, int refresh)
 {
-char   str[256], ref[256], ref2[256], paramstr[256];
+char   str[256], ref[256], ref2[256], paramstr[256], scalestr[256];
 char   *poffset, *pscale, *pmag, *pindex;
-HNDLE  hDB, hkey, hkeyp;
+HNDLE  hDB, hkey, hkeyp, hkeybutton;
 KEY    key;
-int    i, scale, offset, index, width;
+int    i, scale, offset, index, width, size, status;
 float  factor[2];
+char   def_button[][NAME_LENGTH] = {"10m", "1h", "3h", "12h", "24h", "3d", "7d" };
 
   if (equal_ustring(getparam("cmd"), "Config"))
     {
@@ -7566,28 +7601,12 @@ float  factor[2];
   /* evaluate scale and offset */
 
   if (poffset && *poffset)
-    {
-    offset = atoi(poffset);
-    if (poffset[strlen(poffset)-1] == 'm')
-      offset *= 60;
-    else if (poffset[strlen(poffset)-1] == 'h')
-      offset *= 3600;
-    else if (poffset[strlen(poffset)-1] == 'd')
-      offset *= 3600*24;
-    }
+    offset = time_to_sec(poffset);
   else
     offset = 0;
 
   if (pscale && *pscale)
-    {
-    scale = atoi(pscale);
-    if (pscale[strlen(pscale)-1] == 'm')
-      scale *= 60;
-    else if (pscale[strlen(pscale)-1] == 'h')
-      scale *= 3600;
-    else if (pscale[strlen(pscale)-1] == 'd')
-      scale *= 3600*24;
-    }
+    scale = time_to_sec(pscale);
   else
     scale = 0;
 
@@ -7622,33 +7641,61 @@ float  factor[2];
 
   /* evaluate offset shift */
   if (equal_ustring(getparam("shift"), "<"))
-    {
-    if (scale == 0)
-      offset += 1;
-    else
-      offset -= scale;
-    }
+    offset -= scale/2;
+
   if (equal_ustring(getparam("shift"), ">"))
     {
-    if (scale == 0)
-      {
-      offset -= 1;
-      if (offset < 0)
-        offset = 0;
-      }
-    else
-      {
-      offset += scale;
-      if (offset > 0)
-        offset = 0;
-      }
+    offset += scale/2;
+    if (offset > 0)
+      offset = 0;
     }
   if (equal_ustring(getparam("shift"), ">>"))
     offset = 0;
 
+  if (equal_ustring(getparam("shift"), " + "))
+    {
+    offset -= scale/4;
+    scale /= 2;
+    }
+
+  if (equal_ustring(getparam("shift"), " - "))
+    {
+    offset += scale/2;
+    if (offset > 0)
+      offset = 0;
+    scale *= 2;
+    }
+
   /* define hidden field for parameters */
   if (pscale && *pscale)
-    rsprintf("<input type=hidden name=hscale value=%s></tr>\n", pscale);
+    rsprintf("<input type=hidden name=hscale value=%d></tr>\n", scale);
+  else
+    {
+    /* if no scale and offset given, get it from default */
+    if (path[0] && !equal_ustring(path, "All"))
+      {
+      sprintf(str, "/History/Display/%s/Timescale", path);
+
+      strcpy(scalestr, "1h");
+      size = NAME_LENGTH;
+      status = db_get_value(hDB, 0, str, scalestr, &size, TID_STRING);
+      if (status != DB_SUCCESS)
+        {
+        /* delete old integer key */
+        db_find_key(hDB, 0, str, &hkey);
+        if (hkey)
+          db_delete_key(hDB, hkey, FALSE);
+
+        strcpy(scalestr, "1h");
+        size = NAME_LENGTH;
+        db_get_value(hDB, 0, str, scalestr, &size, TID_STRING);
+        }
+
+      rsprintf("<input type=hidden name=hscale value=%s></tr>\n", scalestr);
+      scale = time_to_sec(scalestr);
+      }
+    }
+
   if (offset != 0)
     rsprintf("<input type=hidden name=hoffset value=%d></tr>\n", offset);
   if (pmag && *pmag)
@@ -7687,9 +7734,9 @@ float  factor[2];
     db_set_value(hDB, 0, "/History/Display/Trigger rate/Factor",
                  factor, 2*sizeof(float), 2, TID_FLOAT);
 
-    i = 3600;
+    strcpy(str, "1h");
     db_set_value(hDB, 0, "/History/Display/Trigger rate/Timescale",
-                 &i, sizeof(INT), 1, TID_INT);
+                 str, NAME_LENGTH, 1, TID_STRING);
     i = 1;
     db_set_value(hDB, 0, "/History/Display/Trigger rate/Zero ylow",
                  &i, sizeof(BOOL), 1, TID_BOOL);
@@ -7726,15 +7773,29 @@ float  factor[2];
     {
     /* navigation links */
     rsprintf("<tr><td bgcolor=#A0FFA0>\n");
-    rsprintf("<input type=submit name=scale value=10m>\n");
-    rsprintf("<input type=submit name=scale value=1h>\n");
-    rsprintf("<input type=submit name=scale value=3h>\n");
-    rsprintf("<input type=submit name=scale value=12h>\n");
-    rsprintf("<input type=submit name=scale value=24h>\n");
-    rsprintf("<input type=submit name=scale value=3d>\n");
-    rsprintf("<input type=submit name=scale value=7d>\n");
+
+    sprintf(str, "/History/Display/%s/Buttons", path);
+    db_find_key(hDB, 0, str, &hkeybutton);
+    if (hkeybutton == 0)
+      {
+      /* create default buttons */
+      db_create_key(hDB, 0, str, TID_STRING);
+      db_find_key(hDB, 0, str, &hkeybutton);
+      db_set_data(hDB, hkeybutton, def_button, sizeof(def_button), 7, TID_STRING);
+      }
+
+    db_get_key(hDB, hkeybutton, &key);
+
+    for (i=0 ; i<key.num_values ; i++)
+      {
+      size = sizeof(str);
+      db_get_data_index(hDB, hkeybutton, str, &size, i, TID_STRING);
+      rsprintf("<input type=submit name=scale value=%s>\n", str);
+      }
 
     rsprintf("<input type=submit name=shift value=\"<\">\n");
+    rsprintf("<input type=submit name=shift value=\" + \">\n");
+    rsprintf("<input type=submit name=shift value=\" - \">\n");
     if (offset != 0)
       {
       rsprintf("<input type=submit name=shift value=\">\">\n");
@@ -7750,8 +7811,7 @@ float  factor[2];
     rsprintf("</tr>\n");
 
     paramstr[0] = 0;
-    if (pscale && *pscale)
-      sprintf(paramstr+strlen(paramstr), "&scale=%s", pscale);
+    sprintf(paramstr+strlen(paramstr), "&scale=%d", scale);
     if (offset != 0)
       sprintf(paramstr+strlen(paramstr), "&offset=%d", offset);
     if (pmag && *pmag)
@@ -9009,7 +9069,7 @@ INT                  last_time=0;
       refresh = 0;
       if (strstr(net_buffer, "midas_refr=") != NULL)
         refresh = atoi(strstr(net_buffer, "midas_refr=")+11);
-      if (refresh == 0)
+      else
         refresh = DEFAULT_REFRESH;
 
       memset(return_buffer, 0, sizeof(return_buffer));
@@ -9020,6 +9080,9 @@ INT                  last_time=0;
         goto error;
 
       return_length = 0;
+
+      //##
+      //printf("\n%s\n", net_buffer);
 
       if (strncmp(net_buffer, "GET", 3) == 0)
         {
@@ -9043,6 +9106,9 @@ INT                  last_time=0;
         {
         if (return_length == 0)
           return_length = strlen(return_buffer)+1;
+
+        //##
+        //printf("=======================\n%s\n\n", return_buffer);
 
         send_tcp(_sock, return_buffer, return_length, 0);
 
