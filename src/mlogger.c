@@ -6,6 +6,9 @@
   Contents:     MIDAS logger program
 
   $Log$
+  Revision 1.43  2001/11/21 08:36:03  midas
+  If a history link is invalid, the logger does not crash any more
+
   Revision 1.42  2001/11/20 14:42:16  midas
   Added "/logger/history dir" and "/logger/elog dir"
 
@@ -1752,73 +1755,83 @@ BOOL     single_names;
         status = db_enum_key(hDB, hHistKey, i, &hKey);
         if (status == DB_NO_MORE_SUBKEYS)
           break;
-        db_get_key(hDB, hKey, &key);
-        if (key.type != TID_KEY)
-          n_var++;
-        }
+        if (db_get_key(hDB, hKey, &key) == DB_SUCCESS)
+          {
+          if (key.type != TID_KEY)
+            n_var++;
+          }
+        else
+          {
+          db_enum_link(hDB, hHistKey, i, &hKey);
+          db_get_key(hDB, hKey, &key);
+          cm_msg(MERROR, "open_history", "History link /History/Links/%s/%s is invalid", hist_name, key.name);
+          }
+        } 
 
       if (n_var == 0)
         cm_msg(MERROR, "open_history", "History event %s has no variables in ODB", hist_name);
-
-      /* create tag array */
-      tag = malloc(sizeof(TAG)*n_var);
-
-      for (i=0,size=0,n_var=0 ;; i++)
+      else
         {
-        status = db_enum_link(hDB, hHistKey, i, &hLinkKey);
-        if (status == DB_NO_MORE_SUBKEYS)
-          break;
+        /* create tag array */
+        tag = malloc(sizeof(TAG)*n_var);
 
-        /* get link key */
-        db_get_key(hDB, hLinkKey, &linkkey);
+        for (i=0,size=0,n_var=0 ;; i++)
+          {
+          status = db_enum_link(hDB, hHistKey, i, &hLinkKey);
+          if (status == DB_NO_MORE_SUBKEYS)
+            break;
 
-        if (linkkey.type == TID_KEY)
-          continue;
+          /* get link key */
+          db_get_key(hDB, hLinkKey, &linkkey);
 
-        strcpy(tag[n_var].name, linkkey.name);
+          if (linkkey.type == TID_KEY)
+            continue;
 
-        /* get link target */
-        db_enum_key(hDB, hHistKey, i, &hVarKey);
-        db_get_key(hDB, hVarKey, &varkey);
+          /* get link target */
+          db_enum_key(hDB, hHistKey, i, &hVarKey);
+          if (db_get_key(hDB, hVarKey, &varkey) == DB_SUCCESS)
+            {
+            /* hot-link individual values */
+            if (histkey.type == TID_KEY)
+              db_open_record(hDB, hVarKey, NULL, varkey.total_size, MODE_READ, log_system_history, (void *) index);
 
-        /* hot-link individual values */
-        if (histkey.type == TID_KEY)
-          db_open_record(hDB, hVarKey, NULL, varkey.total_size, MODE_READ, log_system_history, (void *) index);
+            strcpy(tag[n_var].name, linkkey.name);
+            tag[n_var].type = varkey.type;
+            tag[n_var].n_data = varkey.num_values;
+            size += varkey.total_size;
+            n_var++;
+            }
+          }
 
-        tag[n_var].type = varkey.type;
-        tag[n_var].n_data = varkey.num_values;
-        size += varkey.total_size;
-        n_var++;
-        }
+        /* hot-link whole subtree */
+        if (histkey.type == TID_LINK)
+          db_open_record(hDB, hHistKey, NULL, size, MODE_READ, log_system_history, (void *) index);
 
-      /* hot-link whole subtree */
-      if (histkey.type == TID_LINK)
-        db_open_record(hDB, hHistKey, NULL, size, MODE_READ, log_system_history, (void *) index);
+        hs_define_event(max_event_id, hist_name, tag, sizeof(TAG)*n_var);
+        free(tag);
 
-      hs_define_event(max_event_id, hist_name, tag, sizeof(TAG)*n_var);
-      free(tag);
-
-      /* define system history */
+        /* define system history */
   
-      hist_log[index].event_id = max_event_id;
-      hist_log[index].hKeyVar = hHistKey;
-      hist_log[index].buffer_size = size;
-      hist_log[index].buffer = malloc(size);
-      hist_log[index].period = 10; /* 10 sec default period */
-      hist_log[index].last_log = 0;
-      if (hist_log[index].buffer == NULL)
-        {
-        cm_msg(MERROR, "open_history", "cannot allocate history buffer");
-        return 0;
-        }
+        hist_log[index].event_id = max_event_id;
+        hist_log[index].hKeyVar = hHistKey;
+        hist_log[index].buffer_size = size;
+        hist_log[index].buffer = malloc(size);
+        hist_log[index].period = 10; /* 10 sec default period */
+        hist_log[index].last_log = 0;
+        if (hist_log[index].buffer == NULL)
+          {
+          cm_msg(MERROR, "open_history", "cannot allocate history buffer");
+          return 0;
+          }
 
-      index++;
-      max_event_id++;
+        index++;
+        max_event_id++;
 
-      if (index == MAX_HISTORY)
-        {
-        cm_msg(MERROR, "open_history", "too many equipments for history");
-        return 0;
+        if (index == MAX_HISTORY)
+          {
+          cm_msg(MERROR, "open_history", "too many equipments for history");
+          return 0;
+          }
         }
       }
     }
