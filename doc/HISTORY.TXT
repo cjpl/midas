@@ -1,6 +1,39 @@
 Revision History
 ================
 
+Version 1.7.1, released Feb 9, 2000
+-----------------------------------
+
+- Skipped versions 1.6.5 to 1.6.9 because we switched to a new protocol, which is
+  not compatible with 1.6.x. Version 1.7.0 was only for internal usage.
+
+- Fixed Y2K problem (:-)
+
+- Added alarm system, still lacking documentation (:-(
+
+- Added automatic program start/stop on run transitions (/programs/excute on start run)
+
+- Added auto start/stop under /programs. So programs can be automatically started
+  at the beginning of a run or stopped at the end of a run
+
+- Added 32-bit MIDAS banks. Use bk_init32 to create 32-bit banks.
+
+- Added electronic log book. Use "elog" program to submit an electronic logbook 
+  entry or the Elog page in mhttpd.
+
+- Use /programs/<name>/Watchdog timeout in all programs as timeout value. The
+  default value can be submitted by calling cm_connect_experiment1(..., timeout)
+
+- Fixed certain mutex bugs when accessing the ODB which caused MIDAS to crash 
+  once in a while.
+
+- Events bigger than the buffer cache automatically bypass the cache.
+
+- midas.log is now placed in the same directory as the .SHM files in case
+  there is no data dir in the ODB
+
+- Fixed lots of bugs, please refer to individual source files.
+
 Version 1.6.4, released Aug 6, 1999
 -----------------------------------
 
