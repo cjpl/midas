@@ -6,6 +6,9 @@
   Contents:     Various utility functions for MSCB protocol
 
   $Log$
+  Revision 1.36  2004/07/20 16:04:40  midas
+  Implemented scs-1000 code
+
   Revision 1.35  2004/07/08 11:15:50  midas
   Implemented flash protection
 
@@ -283,16 +286,13 @@ void uart_init(unsigned char port, unsigned char baud)
 
 void serial_int1(void) interrupt 20 using 2
 {
-   if (SCON1 & 0x02)            // TI1
-   {
+   if (SCON1 & 0x02) {          // TI1
       /* character has been transferred */
-
       SCON1 &= ~0x02;           // clear TI flag
       ti1_shadow = 1;
    }
 
-   if (SCON1 & 0x01)            // RI1
-   {
+   if (SCON1 & 0x01) {          // RI1
       /* check for buffer overflow */
       if (rbuf_wp + 1 == rbuf_rp) {
          SCON1 &= ~0x01;        // clear RI flag
@@ -420,7 +420,8 @@ void uart_init(unsigned char port, unsigned char baud)
 
   Routine: uart_init
 
-  Purpose: Initial serial interface
+  Purpose: Initialize serial interface, user Timer 2 for UART0 and
+           Timer 1 for UART1
 
   Input:
     unsigned char baud      1:9600,2:19200,3:28800,4:57600,
@@ -446,6 +447,15 @@ void uart_init(unsigned char port, unsigned char baud)
       0x100 - 52,   // 115200
       0x100 - 35,   // 172800  2% error
       0x100 - 17 }; // 345600  2% error
+#elif defined(CPU_C8051F120)
+   unsigned char code baud_table[] =
+     {0x100 - 0,    //  N/A
+      0x100 - 0,    //  N/A
+      0x100 - 208,  //  28800  2% error
+      0x100 - 104,  //  57600  2% error
+      0x100 - 53,   // 115200  2% error
+      0x100 - 35,   // 172800  2% error
+      0x100 - 18 }; // 345600  2% error
 #else
    unsigned char code baud_table[] =
      {0x100 - 36, 
@@ -459,8 +469,11 @@ void uart_init(unsigned char port, unsigned char baud)
 
    if (port);
 
+#ifdef CPU_C8051F120
+   SFRPAGE = UART0_PAGE;
+#endif
+
    SCON0 = 0xD0;                // Mode 3, 9 bit, receive enable
-// SCON0 = 0x50;                // Mode 1, 8 bit, receive enable
 
 #if defined(CPU_C8051F310) || defined(CPU_C8051F320)
    TMOD  |= 0x20;               // 8-bit counter with auto reload
@@ -469,6 +482,14 @@ void uart_init(unsigned char port, unsigned char baud)
    TL1 = 0xFF;
    TH1 = baud_table[baud - 1];  // load initial values
    TR1 = 1;                     // start timer 1
+#elif defined(CPU_C8051F120)
+   SFRPAGE = UART0_PAGE;
+   SSTA0 = 0x05;                // timer 2 RX+TX mode
+   SFRPAGE = TMR2_PAGE;
+   TMR2CF = 0x08;               // SYSCLK source
+   RCAP2H = 0xFF;
+   RCAP2L = baud_table[baud - 1];
+   TR2 = 1;                     // start timer 2
 #else
    T2CON = 0x34;                // timer 2 RX+TX mode
    RCAP2H = 0xFF;
@@ -477,15 +498,18 @@ void uart_init(unsigned char port, unsigned char baud)
 
    ES0 = 1;                     // enable serial interrupt
 
-#if defined(CPU_ADUC812)
-   PS = 1;                      // serial interrupt high priority for slow ADuC
-#elif defined(CPU_C8051F310) || defined(CPU_C8051F320)
+#if defined(CPU_C8051F310) || defined(CPU_C8051F320)
    IP = 0;                      // serial interrupt low priority
 #else
    PS = 0;                      // serial interrupt low priority
 #endif
 
    EA = 1;                      // general interrupt enable
+
+#ifdef CPU_C8051F120
+   SFRPAGE = UART0_PAGE;
+#endif
+   
    RB80 = 0;                    // clear read bit 9
 }
 
@@ -533,43 +557,31 @@ void sysclock_init(void)
 
   Routine: sysclock_init
 
-  Purpose: Initial sytem clock via timer 1
+  Purpose: Initial sytem clock via timer 0
 
 *********************************************************************/
 {
    unsigned char i;
 
-#if defined(CPU_C8051F310) || defined(CPU_C8051F320) // --- use timer 2 for those devices
-
    EA = 1;                      // general interrupt enable
-   IE |= 0x20;                  // Enable Timer 2 interrupt
-   IP |= 0x20;                  // Interrupt priority high Timer 2
-
-   TMR2CN = 0x04;               // enable timer 2, SYSCKL/12
-   CKCON = 0x00;                // user SYSCLK/12 for Timer 2
-
-   TMR2RLH = 0xDB;              // load initial values
-   TMR2RLL = 0x00;
-
-#else                           // --- use timer 1 for all other devices
-
-   EA = 1;                      // general interrupt enable
-   IE |= 0x08;                  // Enable Timer 1 interrupt
-#ifdef CPU_ADUC812
-   PT1 = 0;                     // Interrupt priority low for slow ADuC
-#else
+   ET0 = 1;                     // Enable Timer 1 interrupt
    PT1 = 1;                     // Interrupt priority high
+
+#ifdef CPU_C8051F120
+   SFRPAGE = TIMER01_PAGE;
 #endif
 
-   TMOD = TMOD | 0x10;          // 16-bit counter
-#ifdef CPU_CYGNAL
+   TMOD = TMOD | 0x01;          // 16-bit counter
+#ifdef CPU_C8051F120
+   CKCON = 0x02;                // user SYSCLK/48
+   TH0 = 0xAF;                  // load initial value
+#else
    CKCON = 0x00;                // user SYSCLK/12
+   TH0 = 0xDB;                  // load initial value
 #endif
-   TH1 = 0xDB;                  // load initial values
-   TL1 = 0x00;
-   TR1 = 1;                     // start timer 1
 
-#endif
+   TL0 = 0x00;
+   TR0 = 1;                     // start timer 1
 
    _systime = 0;
 
@@ -579,6 +591,56 @@ void sysclock_init(void)
      leds[i].interval = 0;
      leds[i].n = 0;
    }
+}
+
+/*------------------------------------------------------------------*/
+
+void led_int() reentrant using 2
+{
+   unsigned char i;
+
+   /* manage blinking LEDs */
+   for (i=0 ; i<N_LED ; i++) {
+      if (leds[i].n > 0 && leds[i].timer == 0) {
+         if ((leds[i].n & 1) && leds[i].n > 1)
+            led_set(i, LED_ON);
+         else
+            led_set(i, LED_OFF);
+
+         leds[i].n--;
+         if (leds[i].n)
+            leds[i].timer = leds[i].interval;
+      }
+
+      if (leds[i].timer)
+         leds[i].timer--;
+
+      if (leds[i].n == 0)
+         led_set(i, LED_OFF);
+   }
+}
+
+/*------------------------------------------------------------------*/
+
+void timer0_int(void) interrupt 1 using 2
+/********************************************************************\
+
+  Routine: timer0_int
+
+  Purpose: Timer 0 interrupt routine for 100Hz system clock
+
+           Reload value = 0x10000 - 0.01 / (11059200/12)
+
+\********************************************************************/
+{
+#ifdef CPU_C8051F120
+   TH0 = 0xAF;                  // for 98 MHz clock
+#else
+   TH0 = 0xDC;                  // reload timer values, let LSB freely run
+#endif
+   _systime++;                  // increment system time
+
+   led_int();
 }
 
 /*------------------------------------------------------------------*/
@@ -654,76 +716,6 @@ void led_set(unsigned char led, unsigned char flag) reentrant using 2
       led_4 = flag;
 #endif
 }
-
-/*------------------------------------------------------------------*/
-
-void led_int() reentrant using 2
-{
-   unsigned char i;
-
-   /* manage blinking LEDs */
-   for (i=0 ; i<N_LED ; i++) {
-      if (leds[i].n > 0 && leds[i].timer == 0) {
-         if ((leds[i].n & 1) && leds[i].n > 1)
-            led_set(i, LED_ON);
-         else
-            led_set(i, LED_OFF);
-
-         leds[i].n--;
-         if (leds[i].n)
-            leds[i].timer = leds[i].interval;
-      }
-
-      if (leds[i].timer)
-         leds[i].timer--;
-
-      if (leds[i].n == 0)
-         led_set(i, LED_OFF);
-   }
-}
-
-/*------------------------------------------------------------------*/
-
-#if defined(CPU_C8051F310) || defined(CPU_C8051F320)
-
-void timer2_int(void) interrupt 5 using 2
-/********************************************************************\
-
-  Routine: timer2_int
-
-  Purpose: Timer 2 interrupt routine for 100Hz system clock
-
-           Reload value = 0x10000 - 0.01 / (11059200/12)
-
-\********************************************************************/
-{
-   TMR2RLH = 0xDC;              // reload timer values, let LSB freely run
-   TMR2CN &= ~0x80;             // clear interrupt flag
-   _systime++;                  // increment system time
-
-   led_int();
-}
-
-#else
-
-void timer1_int(void) interrupt 3 using 2
-/********************************************************************\
-
-  Routine: timer1_int
-
-  Purpose: Timer 1 interrupt routine for 100Hz system clock
-
-           Reload value = 0x10000 - 0.01 / (11059200/12)
-
-\********************************************************************/
-{
-   TH1 = 0xDC;                  // reload timer values, let LSB freely run
-   _systime++;                  // increment system time
-
-   led_int();
-}
-
-#endif /* other CPU */
 
 /*------------------------------------------------------------------*/
 
@@ -823,12 +815,21 @@ void delay_us(unsigned int us)
 
 void delay_us(unsigned int us)
 {
+#ifdef CPU_C8051F120
+   unsigned char j;
+#endif
+
    unsigned char i;
    unsigned int remaining_us;
 
    if (us <= 250) {
       for (i = (unsigned char) us; i > 0; i--) {
+#ifdef CPU_C8051F120
+         for (j=22 ; j>0 ; j--)
+            _nop_();
+#else
          _nop_();
+#endif
       }
    } else {
       remaining_us = us;
@@ -991,9 +992,13 @@ void eeprom_write(void * src, unsigned char len, unsigned short *offset)
 
    DISABLE_INTERRUPTS;
 
+#ifdef CPU_C8051F120
+   SFRPAGE = LEGACY_PAGE;
+#endif
+
 #if defined(CPU_C8051F000)
    FLSCL = (FLSCL & 0xF0) | 0x08;  // set timer for 11.052 MHz clock
-#elif defined (CPU_C8051F020)
+#elif defined(CPU_C8051F020) || defined(CPU_C8051F120)
    FLSCL = FLSCL | 1;           // enable flash writes
 #endif
    PSCTL = 0x01;                // allow write
@@ -1046,9 +1051,13 @@ void eeprom_erase(void)
 
    DISABLE_INTERRUPTS;
 
+#ifdef CPU_C8051F120
+   SFRPAGE = LEGACY_PAGE;
+#endif
+
 #if defined(CPU_C8051F000)
    FLSCL = (FLSCL & 0xF0) | 0x08;       // set timer for 11.052 MHz clock
-#elif defined (CPU_C8051F020)
+#elif defined(CPU_C8051F020) || defined(CPU_C8051F120)
    FLSCL = FLSCL | 1;                   // enable flash writes
 #endif
    PSCTL = 0x03;                        // allow write and erase
@@ -1165,9 +1174,15 @@ bit lcd_present;
 
 #define LCD P2                  // LCD display connected to port2
 
-sbit LCD_RS = LCD ^ 1;
+#ifdef SCS_1000
+sbit LCD_RS  = LCD ^ 3;
 sbit LCD_R_W = LCD ^ 2;
-sbit LCD_E = LCD ^ 3;
+sbit LCD_E   = LCD ^ 1;
+#else
+sbit LCD_RS  = LCD ^ 1;
+sbit LCD_R_W = LCD ^ 2;
+sbit LCD_E   = LCD ^ 3;
+#endif
 
 sbit LCD_DB4 = LCD ^ 4;
 sbit LCD_DB5 = LCD ^ 5;
@@ -1176,7 +1191,7 @@ sbit LCD_DB7 = LCD ^ 7;
 
 sbit LCD_CLK = LCD ^ 7;         // pins for 4021 shift register
 sbit LCD_P_W = LCD ^ 6;
-sbit LCD_SD = LCD ^ 0;
+sbit LCD_SD  = LCD ^ 0;
 
 /*------------------------------------------------------------------*/
 
@@ -1185,17 +1200,26 @@ lcd_out(unsigned char d, bit df)
    if (!lcd_present)
       return;
 
-   LCD = 0xFC;                  // data input R/W=High, P2 must be on open drain
+   LCD = LCD | 0xF0;            // data input
+   SFRPAGE = CONFIG_PAGE;
+   P2MDOUT = 0x0F;
+   LCD_RS = 0;                  // select BF        
+   LCD_R_W = 1;
    delay_us(1);
+   LCD_E = 1;
+
+   delay_us(10);                // let signals settle
    while (LCD_DB7);             // loop if busy
 
-   LCD = 0;
+   LCD_E = 0;
+   delay_us(1);
+   LCD_R_W = 0;
+   P2MDOUT = 0xFF;              // data output
    delay_us(1);
 
-   if (df)
-      LCD = (d & 0xF0) | 0x02;
-   else
-      LCD = (d & 0xF0);
+   /* high nibble, preserve P0.0 */
+   LCD = (LCD & 0x01) | (d & 0xF0);
+   LCD_RS = df;
    delay_us(1);
 
    LCD_E = 1;
@@ -1203,10 +1227,9 @@ lcd_out(unsigned char d, bit df)
    LCD_E = 0;
    delay_us(1);
 
-   if (df)
-      LCD = (d << 4) | 0x02;
-   else
-      LCD = (d << 4);
+   /* now nibble */
+   LCD = (LCD & 0x01) | ((d << 4) & 0xF0);
+   LCD_RS = df;
    delay_us(1);
 
    LCD_E = 1;
@@ -1219,6 +1242,11 @@ lcd_out(unsigned char d, bit df)
 
 void lcd_setup()
 {
+   unsigned i=0;
+
+   SFRPAGE = CONFIG_PAGE;
+   P2MDOUT = 0xFF;
+
    LCD = 0;
    delay_ms(15);
    LCD = 0x30;
@@ -1243,8 +1271,14 @@ void lcd_setup()
    LCD_E = 0;
 
    /* test if LCD present */
-   LCD = 0xFC;                  // data input R/W=High
-   delay_us(100);
+
+   LCD = LCD | 0xF0;            // data input
+   P2MDOUT = 0x0F;              
+   LCD_RS = 0;                  // select BF        
+   LCD_R_W = 1;
+   delay_us(1);
+   LCD_E = 1;
+   delay_us(100);               // let signal settle
    if (LCD_DB7) {
       lcd_present = 0;
       return;
@@ -1279,7 +1313,8 @@ void lcd_goto(char x, char y)
 
 char putchar(char c)
 {
-   lcd_out(c, 1);
+   if (c >= ' ')
+      lcd_out(c, 1);
    return c;
 }
 

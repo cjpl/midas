@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol commands
 
   $Log$
+  Revision 1.40  2004/07/20 16:04:40  midas
+  Implemented scs-1000 code
+
   Revision 1.39  2004/07/09 07:47:26  midas
   Added limits in variables
 
@@ -127,7 +130,10 @@
 
 /*---- CPU specific items ------------------------------------------*/
 
-#undef LCD_DEBUG                // debug output on LCD
+/* default flags */
+#define USE_WATCHDOG
+#undef  LCD_SUPPORT
+#undef  LCD_DEBUG      // debug output on LCD
 #define EEPROM_SUPPORT
 
 /*--------------------------------*/
@@ -200,14 +206,19 @@ sbit RS485_ENABLE = P3 ^ 5;
 
 /*--------------------------------*/
 #elif defined(SCS_1000)
-#include <c8051F020.h>
-#define CPU_C8051F020
+#include <c8051F120.h>
+#define CPU_C8051F120
 #define CPU_CYGNAL
 
 #define LED_0 P2 ^ 0
 #define LED_1 P0 ^ 6
-#define LED_ON 0
+#define LED_2 P0 ^ 7 // buzzer
+#define LED_ON 1     // will be zero when 2981 will be used instead of 2982
 sbit RS485_ENABLE = P0 ^ 5;
+sbit RS485_SEC_ENABLE = P0 ^ 4;
+
+#undef USE_WATCHDOG
+#define LCD_SUPPORT
 
 /*--------------------------------*/
 #elif defined(HVR_300)
@@ -251,15 +262,9 @@ sbit RS485_ENABLE = P0 ^ 7;
 #else
 #define N_LED 0
 #endif
-
-/* use hardware watchdog of CPU */
-#define USE_WATCHDOG
-
-/* LCD support */
-#undef LCD_SUPPORT
-
+       
 /* map SBUF0 & Co. to SBUF */
-#if !defined(CPU_C8051F020) && !defined(CPU_C8051F310) && !defined(CPU_C8051F320)
+#if !defined(CPU_C8051F020) && !defined(CPU_C8051F120) && !defined(CPU_C8051F310) && !defined(CPU_C8051F320)
 #define SCON0    SCON
 #define SBUF0    SBUF
 #define TI0      TI
