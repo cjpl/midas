@@ -6,6 +6,9 @@
   Contents:     Broadcast program for COBRA magnet
 
   $Log$
+  Revision 1.4  2005/03/21 10:54:40  ritt
+  Added ADC code
+
   Revision 1.3  2005/03/17 14:20:09  ritt
   Changed host_name
 
@@ -30,7 +33,10 @@
 char host_name[] = "MSCB001";    // used for DHCP
 
 /* set MAC address for first PSI address by default */
-unsigned char eth_src_hw_addr[ETH_ADDR_LEN] = { 0x00, 0x50, 0xC2, 0x46, 0xD0, 0x00 };
+unsigned char eth_src_hw_addr[ETH_ADDR_LEN] = { 0x00, 0x50, 0xC2, 0x46, 0xD0, 0x01 };
+
+/* multicast group */
+unsigned char multicast_addr[IP_ADDR_LEN] = {239, 208, 0, 0};
 
 /*------------------------------------------------------------------*/
 
@@ -110,6 +116,16 @@ void setup(void)
    // timing requirements for the CS8900A
    // For example, EMI0TC should be >= 0xB7
    // for a 100 MHz SYSCLK.
+
+
+   SFRPAGE = ADC0_PAGE;
+   AMX0CF = 0x00;               // select single ended analog inputs
+   ADC0CF = 0xE0;               // 16 system clocks, gain 1
+   ADC0CN = 0x80;               // enable ADC 
+
+   REF0CN = 0x03;               // enable internal reference
+   DAC0CN = 0x80;               // enable DAC0
+   DAC1CN = 0x80;               // enable DAC1
 
    /* init memory */
    RS485_ENABLE = 0;
@@ -257,11 +273,43 @@ int udp_send(unsigned char socket_no, unsigned char *buffer, int size)
 
 /*------------------------------------------------------------------*/
 
+float adc_read(channel)
+{
+   unsigned long value;
+   unsigned int i, n;
+
+   SFRPAGE = ADC0_PAGE;
+   AMX0SL = channel & 0x0F;
+   ADC0CF = 0xE0;               // 16 system clocks, gain 1
+
+   n = (1 << 10);
+
+   value = 0;
+   for (i = 0; i < n; i++) {
+      DISABLE_INTERRUPTS;
+
+      AD0INT = 0;
+      AD0BUSY = 1;
+      while (!AD0INT);          // wait until conversion ready, does NOT work with ADBUSY!
+
+      ENABLE_INTERRUPTS;
+
+      value += (ADC0L | (ADC0H << 8));
+      yield();
+   }
+
+   /* convert to volts */
+   return (float) value / n / 4096.0 * 2.5;
+}
+
+/*------------------------------------------------------------------*/
+
 void main(void)
 {
    unsigned long last_time;
-   unsigned char i, j;
+   unsigned char i;
    char str[80], bc_sock;
+   float i1, i2;
 
    // initialize the C8051F12x
    setup();
@@ -273,7 +321,7 @@ void main(void)
    mn_dhcp_start(NULL, DHCP_DEFAULT_LEASE_TIME);
 
    // open UDP socket for broadcasts
-   bc_sock = mn_open(broadcast_addr, 1178, 1178, NO_OPEN, PROTO_UDP, STD_TYPE, udp_buf, DATA_BUFF_LEN);
+   bc_sock = mn_open(multicast_addr, 1178, 1178, NO_OPEN, PROTO_UDP, STD_TYPE, udp_buf, DATA_BUFF_LEN);
 
    do {
       tcp_server();
@@ -282,11 +330,16 @@ void main(void)
 
          last_time = time();
 
+         /* turn on LED */
+         DAC0H = 0x0F;
+         DAC0L = 0xFF;
+
+         /* read ADC, convert to Ampere */
+         i1 = adc_read(7) / 2.5 * 500;
+         i2 = adc_read(6) / 2.5 * 500;
+
          /* send time and socket states */
-         sprintf(str, "Time: %1.3f:", (float) time() / 100.0);
-         for (j = 0; j < NUM_SOCKETS; j++)
-            sprintf(str + strlen(str), " %bd", sock_info[j].tcp_state);
-         strcat(str, "\r\n");
+         sprintf(str, "COBRA: %6.2f A   CCOIL: %6.2f A\r\n", i1, i2);
 
          /* broadcast data */
          udp_send(bc_sock, str, strlen(str));
@@ -297,6 +350,12 @@ void main(void)
                tcp_send(i, str, strlen(str));
             }
          }
+      }
+
+      if (time() - last_time > 10) {
+         /* turn off LED */
+         DAC0H = 0x00;
+         DAC0L = 0x00;
       }
 
 
