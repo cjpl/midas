@@ -6,6 +6,9 @@
   Contents:     User section for the Event builder
 
   $Log$
+  Revision 1.5  2002/09/25 18:38:03  pierre
+  correct: header passing, user field, abort run
+
   Revision 1.4  2002/07/13 05:46:10  pierre
   added ybos comments
 
@@ -25,7 +28,7 @@
 #include "mevb.h"
 #include "ybos.h"
 
-INT eb_begin_of_run(INT, char *);
+INT eb_begin_of_run(INT, char *, char *);
 INT eb_end_of_run(INT, char *);
 INT ebuser(INT, EBUILDER_CHANNEL *, EVENT_HEADER *, void *, INT *);
 
@@ -36,12 +39,13 @@ Hook to the event builder task at PreStart transition.
 \end{verbatim}
 
 @param rn run number
+@param UserField argument from /Ebuilder/Settings
 @param error error string to be passed back to the system.
 @return EB_SUCCESS
 */
-INT eb_begin_of_run(INT rn, char * error)
+INT eb_begin_of_run(INT rn, char * UserField, char * error)
 {
-  printf("In eb_begin_of_run\n");
+  printf("In eb_begin_of_run User_field:%s \n", UserField);
   return EB_SUCCESS;
 }
 
@@ -124,8 +128,8 @@ For YBOS format, use the following example.
 @return EB_SUCCESS
 */
 INT eb_user(INT nfrag
-	    , EBUILDER_CHANNEL * ebch, EVENT_HEADER *pheader
-	    , void *pevent, INT * dest_size)
+    , EBUILDER_CHANNEL * ebch, EVENT_HEADER *pheader
+    , void *pevent, INT * dest_size)
 {
   INT    i, dest_serial, frag_size, serial;
   DWORD *plrl;
@@ -142,7 +146,12 @@ INT eb_user(INT nfrag
     // For YBOS fragment Access.
     plrl = (DWORD *) (((EVENT_HEADER *) ebch[i].pfragment) + 1);
   }
-  
+
+  if(!((pheader->serial_number+1)%100)){
+    pheader->trigger_mask =(WORD) 0x8000;
+//  or  TRIGGER_MASK(pevent) = 0x0505;
+    printf("This event needs a special mask: 0x%x\n",pheader->trigger_mask);
+  }
   printf("\n");
   return EB_SUCCESS;
 }
