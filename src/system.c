@@ -14,6 +14,9 @@
                 Brown, Prentice Hall
 
   $Log$
+  Revision 1.83  2004/10/04 07:04:01  olchansk
+  improve error reporting while manipulating SysV shared memory
+
   Revision 1.82  2004/01/28 01:22:39  pierre
   simple ss_timezone fix
 
@@ -517,7 +520,6 @@ INT ss_shm_open(char *name, INT size, void **adr, HNDLE * handle)
    {
       int key, shmid, fh, file_size;
       struct shmid_ds buf;
-      char str[256];
 
       /* create a unique key from the file name */
       key = ftok(file_name, 'M');
@@ -549,17 +551,18 @@ INT ss_shm_open(char *name, INT size, void **adr, HNDLE * handle)
       /* get the shared memory, create if not existing */
       shmid = shmget(key, size, 0);
       if (shmid == -1) {
-         shmid = shmget(key, size, IPC_CREAT);
+         //cm_msg(MINFO, "ss_shm_open", "Creating shared memory segment, key: 0x%x, size: %d",key,size);
+         shmid = shmget(key, size, IPC_CREAT|IPC_EXCL);
+         if (shmid == -1 && errno == EEXIST)
+           {
+             cm_msg(MERROR, "ss_shm_open", "Shared memory segment with key 0x%x already exists, please remove it manually: ipcrm -M 0x%x",key,key);
+             return SS_NO_MEMORY;
+           }
          status = SS_CREATED;
       }
 
       if (shmid == -1) {
-         if (errno == EINVAL)
-            cm_msg(MERROR, "ss_shm_open",
-                   "shmget() failed, shared memory size %d exceeds system limit", size);
-         else
-            cm_msg(MERROR, "ss_shm_open", "shmget() failed, errno = %d", errno);
-
+         cm_msg(MERROR, "ss_shm_open", "shmget(key=0x%x,size=%d) failed, errno %d (%s)", key, size, errno, strerror(errno));
          return SS_NO_MEMORY;
       }
 
@@ -572,8 +575,7 @@ INT ss_shm_open(char *name, INT size, void **adr, HNDLE * handle)
       *handle = (HNDLE) shmid;
 
       if ((*adr) == (void *) (-1)) {
-         sprintf(str, "shmat() failed, errno = %d", errno);
-         cm_msg(MERROR, "ss_shm_open", str);
+         cm_msg(MERROR, "ss_shm_open","shmat(shmid=%d) failed, errno %d (%s)", shmid, errno, strerror(errno));
          return SS_NO_MEMORY;
       }
 
@@ -691,7 +693,7 @@ INT ss_shm_close(char *name, void *adr, HNDLE handle, INT destroy_flag)
 
       /* get info about shared memory */
       if (shmctl(handle, IPC_STAT, &buf) < 0) {
-         cm_msg(MERROR, "ss_shm_close", "shmctl() failed");
+         cm_msg(MERROR, "ss_shm_close", "shmctl(shmid=%d,IPC_STAT) failed, errno %d (%s)",handle,errno,strerror(errno));
          return SS_INVALID_HANDLE;
       }
 
@@ -711,18 +713,18 @@ INT ss_shm_close(char *name, void *adr, HNDLE handle, INT destroy_flag)
          }
 
          if (shmdt(adr) < 0) {
-            cm_msg(MERROR, "ss_shm_close", "shmdt() failed");
+            cm_msg(MERROR, "ss_shm_close", "shmdt(shmid=%d) failed, errno %d (%s)",handle,errno,strerror(errno));
             return SS_INVALID_ADDRESS;
          }
 
          if (shmctl(handle, IPC_RMID, &buf) < 0) {
-            cm_msg(MERROR, "ss_shm_close", "shmctl(RMID) failed");
+            cm_msg(MERROR, "ss_shm_close", "shmctl(shmid=%d,IPC_RMID) failed, errno %d (%s)",handle,errno,strerror(errno));
             return SS_INVALID_ADDRESS;
          }
       } else
          /* only detach if we are not the last */
       if (shmdt(adr) < 0) {
-         cm_msg(MERROR, "ss_shm_close", "shmdt() failed");
+         cm_msg(MERROR, "ss_shm_close", "shmdt(shmid=%d) failed, errno %d (%s)",handle,errno,strerror(errno));
          return SS_INVALID_ADDRESS;
       }
 
