@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.209  2002/05/14 04:24:04  midas
+  Fixed small bug on history config page
+
   Revision 1.208  2002/05/13 21:53:18  midas
   Removed bars in run marker display
 
@@ -967,7 +970,7 @@ char *pd, *p, str[256];
 
 /*------------------------------------------------------------------*/
 
-char message_buffer[256];
+char message_buffer[256] = "";
 
 INT print_message(const char *message)
 {
@@ -2089,7 +2092,7 @@ CHN_STATISTICS chn_stats;
 void show_messages_page(int refresh, int n_message)
 {
 int  size, more;
-char str[256], buffer[100000], *pline;
+char str[256], buffer[100000], line[256], *pline;
 time_t now;
 HNDLE hDB;
 BOOL eob;
@@ -2157,22 +2160,22 @@ BOOL eob;
 
   do
     {
+    strncpy(line, pline, sizeof(line));
+
     /* extract single line */
-    if (strchr(pline, '\n'))
-      {
-      *strchr(pline, '\n') = 0;
-      }
-    else
-      eob = TRUE;
+    if (strchr(line, '\n'))
+      *strchr(line, '\n') = 0;
+    if (strchr(line, '\r'))
+      *strchr(line, '\r') = 0;
 
-    if (strchr(pline, '\r'))
-      *strchr(pline, '\r') = 0;
+    pline += strlen(line);
 
-    rsprintf("%s<br>\n", pline);
-    pline += strlen(pline);
-    while (! *pline) pline++;
+    while (*pline == '\r' ||
+           *pline == '\n')
+      pline++;
 
-    } while (!eob);
+    rsprintf("%s<br>\n", line);
+    } while (!eob && *pline);
 
   rsprintf("</tr></table>\n");
   rsprintf("</body></html>\r\n");
@@ -7248,7 +7251,7 @@ double s;
 void generate_hist_graph(char *path, char *buffer, int *buffer_size,
                          int width, int height, int scale, int toffset, int index)
 {
-HNDLE       hDB, hkey, hkeypanel, hkeyeq, hkeydvar, hkeyvars, hkeyroot, hkeynames, hktmp;
+HNDLE       hDB, hkey, hkeypanel, hkeyeq, hkeydvar, hkeyvars, hkeyroot, hkeynames;
 KEY         key;
 gdImagePtr  im;
 gdGifBuffer gb;
@@ -7326,10 +7329,9 @@ double      yb1, yb2, yf1, yf2, ybase;
   /* check dedicated history path */
   size = sizeof(str);
   memset(str, 0, size);
-  status = db_find_key(hDB, 0, "/Logger/History path", &hktmp);
-  if (status == DB_SUCCESS)
-    db_get_value(hDB, 0, "/Logger/History dir", str, &size, TID_STRING, TRUE);
-  else
+
+  status = db_get_value(hDB, 0, "/Logger/History dir", str, &size, TID_STRING, FALSE);
+  if (status != DB_SUCCESS)
     db_get_value(hDB, 0, "/Logger/Data dir", str, &size, TID_STRING, TRUE);
   hs_set_path(str);
 
@@ -8370,11 +8372,17 @@ char   *hist_col[] =
       sprintf(str, "/History/Display/%s/Variables", path);
       db_find_key(hDB, 0, str, &hKey);
 
-      memset(display_name, 0, size);
-      for (i=0 ; i< 10 ; i++)
+      memset(display_name, 0, sizeof(display_name));
+      if (hKey)
         {
-        size = 2*NAME_LENGTH;
-        db_get_data_index(hDB, hKey, display_name[i], &size, i, TID_STRING);
+        db_get_key(hDB, hKey, &key);
+
+        memset(display_name, 0, size);
+        for (i=0 ; i< key.num_values ; i++)
+          {
+          size = 2*NAME_LENGTH;
+          db_get_data_index(hDB, hKey, display_name[i], &size, i, TID_STRING);
+          }
         }
       }
       
