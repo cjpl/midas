@@ -9,6 +9,9 @@
                 for SCS-600 Digital I/O
 
   $Log$
+  Revision 1.18  2004/03/04 14:33:22  midas
+  *** empty log message ***
+
   Revision 1.17  2004/01/08 09:41:42  midas
   Made single shot capability conditional
 
@@ -69,14 +72,14 @@ extern bit DEBUG_MODE;
 
 char code node_name[] = "SCS-600";
 
-#undef SINGLE_SHOT              /* #define/#undef for single shot capability */
+#undef SINGLE_SHOT               /* #define/#undef for single shot capability */
 
-sbit SR_CLOCK = P0 ^ 4;         // Shift register clock
-sbit SR_STROBE = P0 ^ 5;        // Storage register clock
-sbit SR_DATAO = P0 ^ 6;         // Serial data out
-sbit SR_DATAI = P0 ^ 7;         // Serial data in
-sbit SR_OE = P0 ^ 3;            // Output enable
-sbit SR_READB = P0 ^ 2;         // Serial data readback
+sbit SR_CLOCK  = P0 ^ 4;         // Shift register clock
+sbit SR_STROBE = P0 ^ 5;         // Storage register clock
+sbit SR_DATAO  = P0 ^ 6;         // Serial data out
+sbit SR_DATAI  = P0 ^ 7;         // Serial data in
+sbit SR_OE     = P0 ^ 3;         // Output enable
+sbit SR_READB  = P0 ^ 2;         // Serial data readback
 
 /*---- Define variable parameters returned to CMD_GET_INFO command ----*/
 
