@@ -7,6 +7,9 @@
                 linked with user code to form a complete frontend
 
   $Log$
+  Revision 1.18  2000/03/17 13:00:05  midas
+  Frontends use default timeout fo 60 sec.
+
   Revision 1.17  2000/03/01 23:29:20  midas
   Fixed bug with wrong event header data size in super eventsvents mfe.c
 
@@ -98,7 +101,9 @@ extern INT  interrupt_configure(INT cmd, INT source, PTYPE adr);
 #define USER_MAX_EVENT_SIZE 10000 /* max event size for the FE in bytes */ 
 #define SERVER_CACHE_SIZE  100000 /* event cache before buffer */
 
-#define ODB_UPDATE_TIME    10000  /* 10 seconds for ODB update */
+#define ODB_UPDATE_TIME     10000 /* 10 seconds for ODB update */
+
+#define DEFAULT_FE_TIMEOUT  60000 /* 60 seconds for watchdog timeout */
 
 INT   run_state;       /* STATE_RUNNING, STATE_STOPPED, STATE_PAUSED */
 INT   run_number;
@@ -1549,7 +1554,8 @@ reconnect:
   /* remove dead connections */
   cm_cleanup();
 
-  status = cm_connect_experiment(host_name, exp_name, frontend_name, NULL);
+  status = cm_connect_experiment1(host_name, exp_name, frontend_name, 
+                                  NULL, DEFAULT_ODB_SIZE, DEFAULT_FE_TIMEOUT);
   if (status != CM_SUCCESS)
     {
     /* let user read message before window might close */

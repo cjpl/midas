@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.109  2000/03/17 13:00:06  midas
+  Frontends use default timeout fo 60 sec.
+
   Revision 1.108  2000/03/17 10:55:15  midas
   Don't trigger internal alarms if alarm system is off
 
@@ -1444,6 +1447,8 @@ INT cm_set_client_info(HNDLE hDB, HNDLE *hKeyClient, char *host_name,
 
   Output:
     HNDLE *hKeyClient       Handle to client key
+    INT   watchdog_timeout  Contains value from ODB 
+                            /Programs/<name>/Watchdog timeout
 
   Function value:
     CM_SUCCESS              Successful completion
@@ -1452,7 +1457,7 @@ INT cm_set_client_info(HNDLE hDB, HNDLE *hKeyClient, char *host_name,
 {
   if (rpc_is_remote())
     return rpc_call(RPC_CM_SET_CLIENT_INFO, hDB, hKeyClient, 
-                    host_name, client_name, hw_type, password);
+                    host_name, client_name, hw_type, password, watchdog_timeout);
 
 #ifdef LOCAL_ROUTINES
 {
@@ -1804,7 +1809,7 @@ INT cm_connect_experiment1(char *host_name, char *exp_name,
 
 \********************************************************************/
 {
-INT   status, i, mutex_elog, mutex_alarm;
+INT   status, i, mutex_elog, mutex_alarm, size;
 char  local_host_name[HOST_NAME_LENGTH];
 char  client_name1[NAME_LENGTH];
 char  password[NAME_LENGTH], str[NAME_LENGTH], exp_name1[NAME_LENGTH];
@@ -1958,6 +1963,9 @@ BOOL  call_watchdog;
 
   /* set watchdog timeout */
   cm_get_watchdog_params(&call_watchdog, &watchdog_timeout);
+  size = sizeof(watchdog_timeout);
+  sprintf(str, "/Programs/%s/Watchdog Timeout", client_name);
+  db_get_value(hDB, 0, str, &watchdog_timeout, &size, TID_INT);
   cm_set_watchdog_params(call_watchdog, watchdog_timeout);
 
   /* send startup notification */
