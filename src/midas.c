@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.192  2003/09/04 11:47:48  midas
+  Fixed problem with hKey in cm_transition
+
   Revision 1.191  2003/05/09 07:40:05  midas
   Added extra parameter to cm_get_environment
 
@@ -3858,7 +3861,7 @@ INT cm_transition(INT transition, INT run_number, char *perror, INT strsize,
                   INT async_flag, INT debug_flag)
 {
 INT    i, j, status, size;
-HNDLE  hDB, hRootKey, hSubkey, hKey;
+HNDLE  hDB, hRootKey, hSubkey, hKey, hKeylocal;
 HNDLE  hConn;
 DWORD  mask, seconds;
 INT    port;
@@ -3883,7 +3886,8 @@ PROGRAM_INFO program_info;
   deferred = (transition & TR_DEFERRED) > 0;
   transition &= ~TR_DEFERRED;
 
-  cm_get_experiment_database(&hDB, &hKey);
+  /* get key of local client */
+  cm_get_experiment_database(&hDB, &hKeylocal);
 
   if (perror != NULL)
     strcpy(perror, "Success");
@@ -4097,7 +4101,7 @@ PROGRAM_INFO program_info;
       if (status == DB_SUCCESS && (mask & transition))
         {
         /* if own client call transition callback directly */
-        if (hSubkey == hKey)
+        if (hSubkey == hKeylocal)
           {
           for (j=0 ; _trans_table[j].transition ; j++)
             if (_trans_table[j].transition == transition)
