@@ -6,6 +6,9 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.90  2004/07/29 12:42:13  midas
+  Added more hDB validity checks
+
   Revision 1.89  2004/03/26 10:10:01  midas
   Moved dead client check code to end of db_open_database
 
@@ -6688,6 +6691,11 @@ INT db_add_open_record(HNDLE hDB, HNDLE hKey, WORD access_mode)
       KEY *pkey;
       INT i;
 
+      if (hDB > _database_entries || hDB <= 0) {
+         cm_msg(MERROR, "db_add_open_record", "invalid database handle");
+         return DB_INVALID_HANDLE;
+      }
+
       /* lock database */
       db_lock_database(hDB);
 
@@ -6765,6 +6773,11 @@ INT db_remove_open_record(HNDLE hDB, HNDLE hKey, BOOL lock)
       KEY *pkey;
       INT i, index;
 
+      if (hDB > _database_entries || hDB <= 0) {
+         cm_msg(MERROR, "db_remove_open_record", "invalid database handle");
+         return DB_INVALID_HANDLE;
+      }
+
       if (lock)
          db_lock_database(hDB);
 
@@ -6830,6 +6843,11 @@ INT db_notify_clients(HNDLE hDB, HNDLE hKey, BOOL bWalk)
    KEYLIST *pkeylist;
    INT i, j;
    char str[80];
+
+   if (hDB > _database_entries || hDB <= 0) {
+      cm_msg(MERROR, "db_notify_clients", "invalid database handle");
+      return DB_INVALID_HANDLE;
+   }
 
    pheader = _database[hDB - 1].database_header;
 
