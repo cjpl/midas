@@ -6,6 +6,9 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.42  2001/10/25 22:18:26  pierre
+  added doc++ comments
+
   Revision 1.41  2001/10/03 08:36:23  midas
   Return "invalid link" in odbedit
 
@@ -1796,30 +1799,34 @@ INT db_delete_key(HNDLE hDB, HNDLE hKey, BOOL follow_links)
 }
 
 /*------------------------------------------------------------------*/
-
+/** @name db_find_key()
+    \begin{description}
+    \item[Description:] Returns key handle for a key with a specific name.
+    \item[Remarks:] Keys can be accessed by their name including the directory
+    or by a handle. A key handle is an internal offset to the shared memory
+    where the ODB lives and allows a much faster access to a key than via its
+    name.
+    The function db_find_key() must be used to convert a key name to a handle.
+    Most other database functions use this key handle in various operations.
+    \item[Example:]
+    \begin{verbatim}
+    HNDLE hkey, hsubkey;
+    // use full name, start from root
+    db_find_key(hDB, 0, "/Runinfo/Run number", &hkey);
+    // start from subdirectory
+    db_find_key(hDB, 0, "/Runinfo", &hkey);
+    db_find_key(hdb, hkey, "Run number", &hsubkey);
+    \end{verbatim}
+    \end{description}
+    @memo Retrieve key handle from key name.
+    @param hDB ODB handle obtained via \Ref{cm_get_experiment_database()}.
+    @param hKey Handle for key where search starts, zero for root.
+    @param key_name Name of key to search, can contain directories.
+    @param subhKey Returned handle of key, zero if key cannot be found.
+    @return DB_SUCCESS, DB_INVALID_HANDLE, DB_NO_ACCESS, DB_NO_KEY
+*/
 INT db_find_key(HNDLE hDB, HNDLE hKey, char *key_name, 
                 HNDLE *subhKey)
-/********************************************************************\
-
-  Routine: db_find_key
-
-  Purpose: Find a key by name and return its handle (internal address)
-
-  Input:
-    HNDLE  bufer_handle     Handle to the database
-    HNDLE  hKey             Key handle to start the search
-    char   *key_name        Name of key in the form "/key/key/key"
-
-  Output:
-    INT    *handle          Key handle
-
-  Function value:
-    DB_SUCCESS              Successful completion
-    DB_INVALID_HANDLE       Database handle is invalid
-    DB_NO_KEY               Key doesn't exist
-    DB_NO_ACCESS            No access to read key
-
-\********************************************************************/
 {
   if (rpc_is_remote())
     return rpc_call(RPC_DB_FIND_KEY, hDB, hKey, key_name,
@@ -2753,34 +2760,35 @@ INT db_get_open_records(HNDLE hDB, HNDLE hKey, char *str, INT buf_size,
 }
 
 /*------------------------------------------------------------------*/
-
+/** @name db_set_value()
+\begin{description}
+\item[Description:] Set value of a single key.
+\item[Remarks:] The function sets a single value or a whole array to a ODB key.
+Since the data buffer is of type void, no type checking can be performed by the
+compiler. Therefore the type has to be explicitly supplied, which is checked
+against the type stored in the ODB. key_name can contain the full path of a key
+(like: "/Equipment/Trigger/Settings/Level1") while hkey is zero which refers
+to the root, or hkey can refer to a sub-directory (like /Equipment/Trigger)
+and key_name is interpreted relative to that directory like "Settings/Level1".
+\item[Example:]
+ \begin{verbatim}
+  INT level1;
+  db_get_value(hDB, 0, "/Equipment/Trigger/Settings/Level1",
+                          &level1, sizeof(level1), TID_INT);
+ \end{verbatim}
+\end{description}
+@memo Sets key data in ODB.
+@param hDB ODB handle obtained via \Ref{cm_get_experiment_database()}.
+@param hKeyRoot Handle for key where search starts, zero for root.
+@param key_name Name of key to search, can contain directories.
+@param data Address of data.
+@param data_size Size of data (in bytes).
+@param num_values Number of data elements.
+@param type Type of key, one of TID_xxx (see \Ref{Midas Data Types})
+@return DB_SUCCESS, DB_INVALID_HANDLE, DB_NO_ACCESS, DB_TYPE_MISMATCH
+*/
 INT db_set_value(HNDLE hDB, HNDLE hKeyRoot, char *key_name, void *data, 
                  INT data_size, INT num_values, DWORD type)
-/********************************************************************\
-
-  Routine: db_set_value
-
-  Purpose: Set value of a single key
-
-  Input:
-    HNDLE  hDB              Handle to the database
-    HNDLE  hKeyRoot         Key to start search from, 0 for root
-    char   *key_name        Name of key in the form "/key/key/key"
-    void   *data            Address of data
-    INT    data_size        Size of data
-    INT    num_values       Number of data elements
-    DWORD  type             Type of key, one of TID_xxx
-
-  Output:
-    none
-
-  Function value:
-    DB_SUCCESS              Successful completion
-    DB_INVALID_HANDLE       Database handle is invalid
-    DB_TYPE_MISMATCH        Key was created with different type
-    DB_NO_ACCESS            Key is locked for writing
-
-\********************************************************************/
 {
   if (rpc_is_remote())
     return rpc_call(RPC_DB_SET_VALUE, hDB, hKeyRoot, key_name, 
@@ -2891,35 +2899,37 @@ INT              status;
 }
 
 /*------------------------------------------------------------------*/
-
+/** @name db_get_value()
+\begin{description}
+\item[Description:] Get value of a single key.
+\item[Remarks:] The function returns single values or whole arrays which are contained
+in an ODB key. Since the data buffer is of type void, no type checking can be
+performed by the compiler. Therefore the type has to be explicitly supplied,
+which is checked against the type stored in the ODB. key_name can contain the
+full path of a key (like: "/Equipment/Trigger/Settings/Level1") while hkey is
+zero which refers to the root, or hkey can refer to a sub-directory
+(like: /Equipment/Trigger) and key_name is interpreted relative to that directory
+like "Settings/Level1".
+\item[Example:]
+ \begin{verbatim}
+  INT level1, size;
+  size = sizeof(level1);
+  db_get_value(hDB, 0, "/Equipment/Trigger/Settings/Level1",
+                                   &level1, &size, TID_INT);
+ \end{verbatim}
+\end{description}
+@memo Returns key data from the ODB.
+@param hDB ODB handle obtained via \Ref{cm_get_experiment_database()}.
+@param hKeyRoot Handle for key where search starts, zero for root.
+@param key_name Name of key to search, can contain directories.
+@param data Address of data.
+@param buf_size Maximum buffer size on input, number of written bytes on return.
+@param type Type of key, one of TID_xxx (see \Ref{Midas Data Types})
+@return DB_SUCCESS, DB_INVALID_HANDLE, DB_NO_ACCESS, DB_TYPE_MISMATCH,
+DB_TRUNCATED, DB_NO_KEY
+*/
 INT db_get_value(HNDLE hDB, HNDLE hKeyRoot, char *key_name, void *data, 
                  INT *buf_size, DWORD type)
-/********************************************************************\
-
-  Routine: db_get_value
-
-  Purpose: Get value of a single key
-
-  Input:
-    HNDLE  hDB              Handle to the database
-    HNDLE  hKeyRoot         Key to start search from, 0 for root
-    char   *key_name        Name of key in the form "/key/key/key"
-    void   *data            Address of default data
-    INT    *buf_size        Size of data buffer
-    DWORD  type             Type of key, one of TID_xxx
-
-  Output:
-    void   *data            Key data
-    INT    *buf_size        Size of copied data
-
-  Function value:
-    DB_SUCCESS              Successful completion
-    DB_INVALID_HANDLE       Database handle is invalid
-    DB_NO_KEY               Key doesn't exist
-    DB_TRUNCATED            Return buffer is smaller than key data
-    DB_TYPE_MISMATCH        Key was created with different type
-
-\********************************************************************/
 {
   if (rpc_is_remote())
     return rpc_call(RPC_DB_GET_VALUE, hDB, hKeyRoot, key_name, 
@@ -3013,36 +3023,45 @@ INT              status, size;
 
   return DB_SUCCESS;
 }
-
 /*------------------------------------------------------------------*/
-
-INT db_enum_key(HNDLE hDB, HNDLE hKey, 
-                INT index, HNDLE *subkey_handle)
-/********************************************************************\
-
-  Routine: db_enum_key
-
-  Purpose: Enumerate subkeys from a key, follow links
-
-  Input:
-    HNDLE hDB               Handle to the database
-    HNDLE hKey              Handle of key to enumerate, zero for the
-                            root key
-    INT   index             Subkey index, sould be initially 0, then
+/** @name db_enum_key()
+\begin{description}
+\item[Description:] Enumerate subkeys from a key, follow links.
+\item[Remarks:] hkey must correspond to a valid ODB directory. The index is
+usually incremented in a loop until the last key is reached. Information about the
+sub-keys can be obtained with \Ref{db_get_key()}. If a returned key is of type
+TID_KEY, it contains itself sub-keys. To scan a whole ODB sub-tree, the
+function db_scan_tree() can be used. 
+\item[Example:]
+ \begin{verbatim}
+  INT   i;
+  HNDLE hkey, hsubkey;
+  KEY   key;
+  db_find_key(hdb, 0, "/Runinfo", &hkey);
+  for (i=0 ; ; i++) 
+  {
+   db_enum_key(hdb, hkey, i, &hsubkey);
+   if (!hSubkey)
+    break; // end of list reached
+   // print key name
+   db_get_key(hdb, hkey, &key);
+   printf("%s\n", key.name);
+  }
+\end{verbatim}
+\end{description}
+@memo Enumerates keys in a ODB directory.
+@param hDB ODB handle obtained via \Ref{cm_get_experiment_database()}.
+@param hKey Handle for key where search starts, zero for root.
+@param index Subkey index, sould be initially 0, then
                             incremented in each call until 
                             *subhKey becomes zero and the function
                             returns DB_NO_MORE_SUBKEYS
-
-  Output:
-    HNDLE *subkey_handle    Handle of subkey which can be used in
+@param subkey_handle Handle of subkey which can be used in
                             db_get_key and db_get_data
-
-  Function value:
-    DB_SUCCESS              Successful completion
-    DB_INVALID_HANDLE       Database handle is invalid
-    DB_NO_MORE_SUBKEYS      Last subkey reached
-
-\********************************************************************/
+@return DB_SUCCESS, DB_INVALID_HANDLE, DB_NO_MORE_SUBKEYS
+*/
+INT db_enum_key(HNDLE hDB, HNDLE hKey, 
+                INT index, HNDLE *subkey_handle)
 {
   if (rpc_is_remote())
     return rpc_call(RPC_DB_ENUM_KEY, hDB, hKey, index, subkey_handle);
@@ -3218,26 +3237,47 @@ INT              i;
 }
 
 /*------------------------------------------------------------------*/
-
+/** @name db_get_key()
+\begin{description}
+\item[Description:] Get key structure from a handle.
+\item[Remarks:] The KEY structure has following format: 
+\begin{verbatim}
+typedef struct {
+  DWORD         type;                 // TID_xxx type                      
+  INT           num_values;           // number of values                  
+  char          name[NAME_LENGTH];    // name of variable                  
+  INT           data;                 // Address of variable (offset)      
+  INT           total_size;           // Total size of data block          
+  INT           item_size;            // Size of single data item          
+  WORD          access_mode;          // Access mode                       
+  WORD          lock_mode;            // Lock mode                         
+  WORD          exclusive_client;     // Index of client in excl. mode     
+  WORD          notify_count;         // Notify counter                    
+  INT           next_key;             // Address of next key               
+  INT           parent_keylist;       // keylist to which this key belongs 
+  INT           last_written;         // Time of last write action  
+} KEY;
+\end{verbatim}
+Most of these values are used for internal purposes, the values which are of
+public interest are type, num_values, and name. For keys which contain a
+single value, num_values equals to one and total_size equals to
+item_size. For keys which contain an array of strings (TID_STRING),
+item_size equals to the length of one string.
+\item[Example:] \begin{verbatim}
+  KEY   key;
+  HNDLE hkey;
+  db_find_key(hDB, 0, "/Runinfo/Run number", &hkey);
+  db_get_key(hDB, hkey, &key);
+  printf("The run number is of type %s\n", rpc_tid_name(key.type));
+ \end{verbatim}
+\end{description}
+@memo Returns information about an ODB key.
+@param hDB ODB handle obtained via \Ref{cm_get_experiment_database()}.
+@param hKey Handle for key where search starts, zero for root.
+@param key Pointer to KEY stucture.
+@return DB_SUCCESS, DB_INVALID_HANDLE
+*/
 INT db_get_key(HNDLE hDB, HNDLE hKey, KEY *key)
-/********************************************************************\
-
-  Routine: db_get_key
-
-  Purpose: Get key structure from a handle
-
-  Input:
-    HNDLE hDB               Handle to the database
-    HNDLE hKey              Handle of key to enumerate
-
-  Output:
-    KEY    *key             Pointer to KEY stucture
-
-  Function value:
-    DB_SUCCESS              Successful completion
-    DB_INVALID_HANDLE       Database or key handle is invalid
-
-\********************************************************************/
 {
   if (rpc_is_remote())
     return rpc_call(RPC_DB_GET_KEY, hDB, hKey, key); 
@@ -3664,32 +3704,33 @@ INT              i;
 }
 
 /*------------------------------------------------------------------*/
-
+/** @name db_get_data()
+\begin{description}
+\item[Description:] Get key data from a handle
+\item[Remarks:] The function returns single values or whole arrays which are contained
+in an ODB key. Since the data buffer is of type void, no type checking can be
+performed by the compiler. Therefore the type has to be explicitly supplied,
+which is checked against the type stored in the ODB.
+\item[Example:]
+ \begin{verbatim}
+  HNLDE hkey;
+  INT   run_number, size;
+  // get key handle for run number 
+  db_find_key(hDB, 0, "/Runinfo/Run number", &hkey);
+  // return run number
+  size = sizeof(run_number);
+  db_get_data(hDB, hkey, &run_number, &size,TID_INT);
+\end{verbatim}
+\end{description}
+@memo Returns data from a key.
+@param hDB ODB handle obtained via \Ref{cm_get_experiment_database()}.
+@param hKey Handle for key where search starts, zero for root.
+@param buf_size Size of data buffer.
+@param type Type of key, one of TID_xxx (see \Ref{Midas Data Types}).
+@return DB_SUCCESS, DB_INVALID_HANDLE, DB_TRUNCATED, DB_TYPE_MISMATCH
+*/
 INT db_get_data(HNDLE hDB, HNDLE hKey, void *data, INT *buf_size, 
                 DWORD type)
-/********************************************************************\
-
-  Routine: db_get_data
-
-  Purpose: Get key data from a handle
-
-  Input:
-    HNDLE  hDB              Handle to the database
-    HNDLE  hKey             Handle of key
-    INT    *buf_size        Size of data buffer
-    DWORD  type             Type of data
-
-  Output:
-    void   *data            Key data
-    INT    *buf_size        Size of key data
-
-  Function value:
-    DB_SUCCESS              Successful completion
-    DB_INVALID_HANDLE       Database handle is invalid
-    DB_TRUNCATED            Return buffer is smaller than key data
-    DB_TYPE_MISMATCH        Type mismatch
-
-\********************************************************************/
 {
   if (rpc_is_remote())
     return rpc_call(RPC_DB_GET_DATA, hDB, hKey, data, buf_size, type); 
@@ -3904,33 +3945,24 @@ KEY              *pkey;
 }
 
 /*------------------------------------------------------------------*/
-
+/** @name db_get_data_index()
+\begin{description}
+\item[Description:] returns a single value of keys containing arrays of values.
+\item[Remarks:] The function returns a single value of keys containing arrays of values. 
+\item[Example:]
+ \begin{verbatim}
+ \end{verbatim}
+\end{description}
+@memo Get single element of data from an array handle.
+@param hDB ODB handle obtained via \Ref{cm_get_experiment_database()}.
+@param hKey Handle for key where search starts, zero for root.
+@param data Size of data buffer.
+@param index Index of array [0..n-1].
+@param type Type of key, one of TID_xxx (see \Ref{Midas Data Types}).
+@return DB_SUCCESS, DB_INVALID_HANDLE, DB_TRUNCATED, DB_OUT_OF_RANGE
+*/
 INT db_get_data_index(HNDLE hDB, HNDLE hKey, 
                       void *data, INT *buf_size, INT index, DWORD type)
-/********************************************************************\
-
-  Routine: db_get_data_index
-
-  Purpose: Get key data from a handle
-
-  Input:
-    HNDLE  hDB              Handle to the database
-    HNDLE  hKey             Handle of key
-    INT    *buf_size        Size of data buffer
-    INT    index            Index of array [0..n-1]
-    DWORD  type             Type of data
-
-  Output:
-    void   *data            Key data
-    INT    *buf_size        Size of key data
-
-  Function value:
-    DB_SUCCESS              Successful completion
-    DB_INVALID_HANDLE       Database handle is invalid
-    DB_TRUNCATED            Return buffer is smaller than key data
-    DB_OUT_OF_RANGE         Index out of range
-
-\********************************************************************/
 {
   if (rpc_is_remote())
     return rpc_call(RPC_DB_GET_DATA_INDEX, hDB, hKey, data, buf_size, index, type); 
@@ -4035,32 +4067,31 @@ KEY              *pkey;
 }
 
 /*------------------------------------------------------------------*/
-
+/** @name db_set_data()
+\begin{description}
+\item[Description:]Set key data from a handle. Adjust number of values if
+previous data has different size. 
+\item[Remarks:]
+\item[Example:] \begin{verbatim}
+ HNLDE hkey;
+ INT   run_number;
+ // get key handle for run number 
+ db_find_key(hDB, 0, "/Runinfo/Run number", &hkey);
+ // set run number 
+ db_set_data(hDB, hkey, &run_number, sizeof(run_number),TID_INT);
+\end{verbatim}
+\end{description}
+@memo Sets data of a key.
+@param hDB ODB handle obtained via \Ref{cm_get_experiment_database()}.
+@param hKey Handle for key where search starts, zero for root.
+@param data Buffer from which data gets copied to.
+@param buf_size Size of data buffer.
+@param num_values Number of data values (for arrays).
+@param type Type of key, one of TID_xxx (see \Ref{Midas Data Types}).
+@return DB_SUCCESS, DB_INVALID_HANDLE, DB_TRUNCATED
+*/
 INT db_set_data(HNDLE hDB, HNDLE hKey, 
                 void *data, INT buf_size, INT num_values, DWORD type)
-/********************************************************************\
-
-  Routine: db_set_data
-
-  Purpose: Set key data from a handle. Adjust number of values if
-           previous data has different size.
-
-  Input:
-    HNDLE  hDB              Handle to the database
-    HNDLE  hKey             Handle of key to enumerate
-    INT    buf_size         Size of data buffer
-    INT    num_values       Number of data values (for arrays)
-    DWORD  type             Type of data
-
-  Output:
-    none
-
-  Function value:
-    DB_SUCCESS              Successful completion
-    DB_INVALID_HANDLE       Database handle is invalid
-    DB_TRUNCATED            Return buffer is smaller than key data
-
-\********************************************************************/
 {
   if (rpc_is_remote())
     return rpc_call(RPC_DB_SET_DATA, hDB, hKey, 
@@ -4262,33 +4293,26 @@ INT              new_size;
 }
 
 /*------------------------------------------------------------------*/
-
+/** @name db_set_data_index()
+\begin{description}
+\item[Description:] Set key data for a key which contains an array of values.
+\item[Remarks:] This function sets individual values of a key containing an array.
+If the index is larger than the array size, the array is extended and the intermediate
+values are set to zero.
+\item[Example:] \begin{verbatim}
+\end{verbatim}
+\end{description}
+@memo Set individual values of a key array.
+@param hDB ODB handle obtained via \Ref{cm_get_experiment_database()}.
+@param hKey Handle for key where search starts, zero for root.
+@param data Pointer to single value of data.
+@param data_size
+@param index Size of single data element.
+@param type Type of key, one of TID_xxx (see \Ref{Midas Data Types}).
+@return DB_SUCCESS, DB_INVALID_HANDLE, DB_NO_ACCESS, DB_TYPE_MISMATCH
+*/
 INT db_set_data_index(HNDLE hDB, HNDLE hKey, 
                       void *data, INT data_size, INT index, DWORD type)
-/********************************************************************\
-
-  Routine: db_set_data_index
-
-  Purpose: Set key data for a key which contains an array of values
-
-  Input:
-    HNDLE  hDB              Handle to the database
-    HNDLE  hKey             Handle of key to enumerate
-    void   *data            Pointer to single value of data
-    INT    data_size        Size of single data element
-    INT    index            Index of array to change [0..n-1]
-    DWORD  type             Type of data
-
-  Output:
-    none
-
-  Function value:
-    DB_SUCCESS              Successful completion
-    DB_INVALID_HANDLE       Database handle is invalid
-    DB_TYPE_MISMATCH        Key was created with different type
-    DB_NO_ACCESS            No write access
-
-\********************************************************************/
 {
   if (rpc_is_remote())
     return rpc_call(RPC_DB_SET_DATA_INDEX, hDB, hKey, 
@@ -4687,34 +4711,29 @@ HNDLE            hKeyLink;
 }
 
 /*------------------------------------------------------------------*/
-
+/** @name db_load()
+\begin{description}
+\item[Description:] Load a branch of a database from an .ODB file.
+\item[Remarks:] This function is used by the ODBEdit command load. For a
+description of the ASCII format, see \Ref{db_copy()}. Data can be loaded relative to
+the root of the ODB (hkey equal zero) or relative to a certain key.
+\item[Example:] \begin{verbatim}
+ \end{verbatim}
+\end{description}
+@memo Loads ODB entries from an ASCII file.
+@param hDB ODB handle obtained via \Ref{cm_get_experiment_database()}.
+@param hKeyRoot Handle for key where search starts, zero for root.
+@param filename Filename of .ODB file.
+@param bRemote If TRUE, the file is loaded by the server process on the
+back-end, if FALSE, it is loaded from the current process 
+@return DB_SUCCESS, DB_INVALID_HANDLE, DB_FILE_ERROR
+*/
 INT db_load(HNDLE hDB, HNDLE hKeyRoot, char *filename, BOOL bRemote)
-/********************************************************************\
-
-  Routine: db_load
-
-  Purpose: Load a branch of a database from an .ODB file
-
-  Input:
-    HNDLE hDB               Handle to the database
-    HNDLE hKeyRoot          Handle of key to start
-    char  *filename         Filename of .ODB file
-    BOOL  bRemote           Save file on remote server
-
-  Output:
-    implicit                Append file to database
-
-  Function value:
-    DB_SUCCESS              Successful completion
-    DB_INVALID_HANDLE       Database handle is invalid
-    DB_FILE_ERROR           File not found
-
-\********************************************************************/
 {
-struct stat stat_buf;
-INT    hfile, size, n, i, status;
-char   *buffer;
-
+  struct stat stat_buf;
+  INT    hfile, size, n, i, status;
+  char   *buffer;
+  
   if (rpc_is_remote() && bRemote)
     return rpc_call(RPC_DB_LOAD, hDB, hKeyRoot, filename);
 
@@ -4759,37 +4778,55 @@ char   *buffer;
 }
 
 /*------------------------------------------------------------------*/
+/** @name db_copy()
+\begin{description}
+\item[Description:] Copy an ODB subtree in ASCII format to a buffer
+\item[Remarks:] This function converts the binary ODB contents to an ASCII.
+The function db_paste() can be used to convert the ASCII representation back
+to binary ODB contents. The functions \Ref{db_load()} and \Ref{db_save()} internally
+use db_copy() and \Ref{db_paste()}. This function converts the binary ODB
+contents to an ASCII representation of the form:
+\begin{itemize}
+\item for single value:
+ \begin{verbatim}
+ [ODB path]
+ key name = type : value
+ \end{verbatim}
 
+\item for strings:
+ \begin{verbatim}
+ key name = STRING : [size] string contents
+ \end{verbatim}
+
+\item for arrayes (type can be BYTE, SBYTE, CHAR, WORD, SHORT, DWORD,
+INT, BOOL, FLOAT, DOUBLE, STRING or LINK):
+ \begin{verbatim}
+ key name = type[size] :
+ [0] value0
+ [1] value1
+ [2] value2
+ ...
+ \end{verbatim}
+\end{itemize}
+\item[Example:] \begin{verbatim}
+\end{verbatim}
+\end{description}
+@memo Copies part of the ODB into an ASCII string. 
+@param hDB ODB handle obtained via \Ref{cm_get_experiment_database()}.
+@param hKey Handle for key where search starts, zero for root.
+@param buffer ASCII buffer which receives ODB contents.
+@param buffer_size Size of buffer, returns remaining space in buffer.
+@param path Internal use only, must be empty ("").
+@return DB_SUCCESS, DB_TRUNCATED, DB_NO_MEMORY
+*/
 INT db_copy(HNDLE hDB, HNDLE hKey, char *buffer, INT *buffer_size, char *path)
-/********************************************************************\
-
-  Routine: db_copy
-
-  Purpose: Copy an ODB subtree in ASCII format to a buffer
-
-  Input:
-    HNDLE hDB               Handle to the database
-    HNDLE hKey              Handle of key to start, 0 for root
-    char  *buffer           Buffer
-    INT   *buffer_size      Size of buffer
-    char  *path             Starting path
-
-  Output:
-    INT   *buffer_size      Remaining space in buffer
-
-  Function value:
-    DB_SUCCESS              Successful completion
-    DB_TRUNCATED            Buffer size too small, data truncated
-    DB_NO_MEMORY            Not enough memory to allocate data buffer
-
-\********************************************************************/
 {
-INT    i, j, size, status;
-KEY    key;
-HNDLE  hSubkey;
-char   full_path[MAX_ODB_PATH], str[MAX_STRING_LENGTH];
-char   *data, line[MAX_STRING_LENGTH];
-BOOL   bWritten;
+  INT    i, j, size, status;
+  KEY    key;
+  HNDLE  hSubkey;
+  char   full_path[MAX_ODB_PATH], str[MAX_STRING_LENGTH];
+  char   *data, line[MAX_STRING_LENGTH];
+  BOOL   bWritten;
 
   strcpy(full_path, path);
 
@@ -5065,41 +5102,33 @@ BOOL   bWritten;
 }
 
 /*------------------------------------------------------------------*/
-
+/** @name db_paste()
+\begin{description}
+\item[Description:] Copy an ODB subtree in ASCII format from a buffer
+\item[Remarks:]
+\item[Example:] \begin{verbatim}
+ \end{verbatim}
+\end{description}
+@memo Pastes values into the ODB from an ASCII string.
+@param hDB ODB handle obtained via \Ref{cm_get_experiment_database()}.
+@param hKeyRoot Handle for key where search starts, zero for root.
+@param buffer NULL-terminated buffer
+@return DB_SUCCESS, DB_TRUNCATED, DB_NO_MEMORY
+*/
 INT db_paste(HNDLE hDB, HNDLE hKeyRoot, char *buffer)
-/********************************************************************\
-
-  Routine: db_paste
-
-  Purpose: Copy an ODB subtree in ASCII format from a buffer
-
-  Input:
-    HNDLE hDB               Handle to the database
-    HNDLE hKeyRoot          Handle of key to start, 0 for root
-    char  *buffer           NULL-terminated buffer
-
-  Output:
-    none
-
-  Function value:
-    DB_SUCCESS              Successful completion
-    DB_TRUNCATED            Line inside buffer too long
-    DB_NO_MEMORY            Not enough memory to allocate data buffer
-
-\********************************************************************/
 {
-char             line[MAX_STRING_LENGTH];
-char             title[MAX_STRING_LENGTH];
-char             key_name[MAX_STRING_LENGTH];
-char             data_str[MAX_STRING_LENGTH + 50];
-char             test_str[MAX_STRING_LENGTH];
-char             *pc, *pold, *data;
-INT              data_size;
-INT              tid, i, j, n_data, string_length, status, size;
-HNDLE            hKey;
-KEY              root_key;
-BOOL             multi_line;
-
+  char             line[MAX_STRING_LENGTH];
+  char             title[MAX_STRING_LENGTH];
+  char             key_name[MAX_STRING_LENGTH];
+  char             data_str[MAX_STRING_LENGTH + 50];
+  char             test_str[MAX_STRING_LENGTH];
+  char             *pc, *pold, *data;
+  INT              data_size;
+  INT              tid, i, j, n_data, string_length, status, size;
+  HNDLE            hKey;
+  KEY              root_key;
+  BOOL             multi_line;
+  
   title[0] = 0;
   multi_line = FALSE;
 
@@ -5498,7 +5527,22 @@ char   line[MAX_ODB_PATH], str[MAX_STRING_LENGTH];
 }
 
 /*------------------------------------------------------------------*/
-
+/** @name db_save()
+\begin{description}
+\item[Description:] Save a branch of a database to an .ODB file
+\item[Remarks:] This function is used by the ODBEdit command save. For a
+description of the ASCII format, see \Ref{db_copy()}. Data of the whole ODB can
+be saved (hkey equal zero) or only a sub-tree.
+\item[Example:] \begin{verbatim}
+ \end{verbatim}
+\end{description}
+@memo Save ODB entries to an ASCII file.
+@param hDB ODB handle obtained via \Ref{cm_get_experiment_database()}.
+@param hKey Handle for key where search starts, zero for root.
+@param filename Filename of .ODB file.
+@param bRemote Flag for saving database on remote server.
+@return DB_SUCCESS, DB_FILE_ERROR
+*/
 INT db_save(HNDLE hDB, HNDLE hKey, char *filename, BOOL bRemote)
 /********************************************************************\
 
@@ -5754,27 +5798,32 @@ char             *buffer, *pc;
 }
 
 /*------------------------------------------------------------------*/
+/** @name db_sprintf()
+\begin{description}
+\item[Description:] Convert a database value to a string according to its type.
+\item[Remarks:] This function is a convenient way to convert a binary ODB value into a
+string depending on its type if is not known at compile time. If it is known, the
+normal sprintf() function can be used.
+\item[Example:] \begin{verbatim}
+  ...
+  for (j=0 ; j<key.num_values ; j++)
+  {
+    db_sprintf(pbuf, pdata, key.item_size, j, key.type);
+    strcat(pbuf, "\n");
+  }
+  ...
+ \end{verbatim}
+\end{description}
+@memo Convert an ODB entry to a string.
+@param string output ASCII string of data.
+@param data Value data.
+@param data_size Size of single data element.
+@param index Index for array data.
+@param type Type of key, one of TID_xxx (see \Ref{Midas Data Types}).
 
+@return DB_SUCCESS
+*/
 INT db_sprintf(char* string, void *data, INT data_size, INT index, DWORD type)
-/********************************************************************\
-
-  Routine: db_sprintf
-
-  Purpose: Convert a database value to a string according to its type
-
-  Input:
-    void  *data             Value data
-    INT   index             Index for array data
-    INT   data_size         Size of single data element
-    DWORD type              Valye type, one of TID_xxx
-
-  Output:
-    char  *string           ASCII string of data
-     
-  Function value:
-    DB_SUCCESS              Successful completion
-
-\********************************************************************/
 {
   if (data_size == 0)
     sprintf(string, "<NULL>");
@@ -6123,34 +6172,25 @@ INT             size, align, corr, total_size_tmp;
 #endif /* LOCAL_ROUTINES */
 
 /*------------------------------------------------------------------*/
-
-INT db_get_record_size(HNDLE hDB, HNDLE hKey, INT align, INT *buf_size)
-/********************************************************************\
-
-  Routine: db_get_record_size
-
-  Purpose: Calculates the size of a record
-
-  Input:
-    HNDLE  hDB              Handle to the database
-    HNDLE  hKey             Key handle, must have subkeys
-    INT    align            Byte alignment calculated by the stub and
+/** @name db_get_record_size()
+\begin{description}
+\item[Description:] Calculates the size of a record.
+\item[Remarks:]
+\item[Example:] \begin{verbatim}
+ \end{verbatim}
+\end{description}
+@memo Get record size.
+@param hDB ODB handle obtained via \Ref{cm_get_experiment_database()}.
+@param hKey Handle for key where search starts, zero for root.
+@param align Byte alignment calculated by the stub and
                             passed to the rpc side to align data 
                             according to local machine. Must be zero
                             when called from user level
-
-  Output:
-    INT    *buf_size        Size of record structure
-
-  Function value:
-    DB_SUCCESS              Successful completion
-    DB_INVALID_HANDLE       Database handle is invalid
-    DB_TYPE_MISMATCH        Key has no subkeys
-    DB_STRUCT_SIZE_MISMATCH *buf_size is different from calculated
-                            structure size
-    DB_NO_KEY               Key doesn't exist
-
-\********************************************************************/
+@param buf_size Size of record structure
+@return DB_SUCCESS, DB_INVALID_HANDLE, DB_TYPE_MISMATCH,
+DB_STRUCT_SIZE_MISMATCH, DB_NO_KEY
+*/
+INT db_get_record_size(HNDLE hDB, HNDLE hKey, INT align, INT *buf_size)
 {
   if (rpc_is_remote())
     {
@@ -6195,35 +6235,53 @@ INT  status, max_align;
 }
 
 /*------------------------------------------------------------------*/
-
-INT db_get_record(HNDLE hDB, HNDLE hKey, void *data, INT *buf_size, 
-                  INT align)
-/********************************************************************\
-
-  Routine: db_get_record
-
-  Purpose: Copy a set of keys to local memory
-
-  Input:
-    HNDLE  hDB              Handle to the database
-    HNDLE  hKey             Key handle, must have subkeys
-    INT    *buf_size        Size of data structure, must be obtained
-                            via sizeof(RECORD-NAME)
-    INT    align            Byte alignment calculated by the stub and
+/** @name db_get_record()
+\begin{description}
+\item[Description:] Copy a set of keys to local memory.
+\item[Remarks:] An ODB sub-tree can be mapped to a C structure automatically via a
+hot-link using the function db_open_record() or manually with this function.
+Problems might occur if the ODB sub-tree contains values which don't match the
+C structure. Although the structure size is checked against the sub-tree size, no
+checking can be done if the type and order of the values in the structure are the
+same than those in the ODB sub-tree. Therefore it is recommended to use the
+function \Ref{db_create_record()} before db_get_record() is used which
+ensures that both are equivalent.
+\item[Example:] \begin{verbatim}
+struct {
+  INT level1;
+  INT level2;
+} trigger_settings;
+char *trigger_settings_str =
+"[Settings]\n\
+level1 = INT : 0\n\
+level2 = INT : 0";
+ 
+main()
+{
+  HNDLE hDB, hkey;
+  INT   size;
+  ...
+  cm_get_experiment_database(&hDB, NULL);
+  db_create_record(hDB, 0, "/Equipment/Trigger", trigger_settings_str);
+  db_find_key(hDB, 0, "/Equipment/Trigger/Settings", &hkey);
+  size = sizeof(trigger_settings);
+  db_get_record(hDB, hkey, &trigger_settings, &size, 0);
+  ...
+}
+\end{verbatim}
+\end{description}
+@memo Copies an ODB sub-tree to a local C structure.
+@param hDB ODB handle obtained via \Ref{cm_get_experiment_database()}.
+@param hKey Handle for key where search starts, zero for root.
+@param buf_size Size of data structure, must be obtained via sizeof(RECORD-NAME).
+@param align  Byte alignment calculated by the stub and
                             passed to the rpc side to align data 
                             according to local machine. Must be zero
-                            when called from user level
-
-  Output:
-    void   *data            Pointer where data is stored
-
-  Function value:
-    DB_SUCCESS              Successful completion
-    DB_INVALID_HANDLE       Database handle is invalid
-    DB_STRUCT_SIZE_MISMATCH *buf_size is different from calculated
-                            structure size
-
-\********************************************************************/
+                            when called from user level.
+@return DB_SUCCESS, DB_INVALID_HANDLE, DB_STRUCT_SIZE_MISMATCH
+*/
+INT db_get_record(HNDLE hDB, HNDLE hKey, void *data, INT *buf_size, 
+                  INT align)
 {
   if (rpc_is_remote())
     {
@@ -6303,37 +6361,39 @@ char    str[256];
 }
 
 /*------------------------------------------------------------------*/
-
-INT db_set_record(HNDLE hDB, HNDLE hKey, void *data, INT buf_size, 
-                  INT align)
-/********************************************************************\
-
-  Routine: db_set_record
-
-  Purpose: Copy a set of keys from local memory to the database
-
-  Input:
-    HNDLE  hDB              Handle to the database
-    HNDLE  hKey             Key handle, must have subkeys
-    void   *data            Pointer where data is stored
-    INT    buf_size         Size of data structure, must be obtained
-                            via sizeof(RECORD-NAME)
-    INT    align            Byte alignment calculated by the stub and
+/** @name db_set_record()
+\begin{description}
+\item[Description:] Copy a set of keys from local memory to the database.
+\item[Remarks:] An ODB sub-tree can be mapped to a C structure automatically via a
+hot-link using the function \Ref{db_open_record()} or manually with this function.
+Problems might occur if the ODB sub-tree contains values which don't match the
+C structure. Although the structure size is checked against the sub-tree size, no
+checking can be done if the type and order of the values in the structure are the
+same than those in the ODB sub-tree. Therefore it is recommended to use the
+function db_create_record() before using this function.
+\item[Example:] \begin{verbatim}
+...
+  memset(&lazyst,0,size);
+  if (db_find_key(hDB, pLch->hKey, "Statistics",&hKeyst) == DB_SUCCESS)
+    status = db_set_record(hDB, hKeyst, &lazyst, size, 0);
+  else
+    cm_msg(MERROR,"task","record %s/statistics not found", pLch->name)
+...
+ \end{verbatim}
+\end{description}
+@memo Copies a local C structure to a ODB sub-tree.
+@param hDB ODB handle obtained via \Ref{cm_get_experiment_database()}.
+@param hKey Handle for key where search starts, zero for root.
+@param data Pointer where data is stored.
+@param buf_size Size of data structure, must be obtained via sizeof(RECORD-NAME).
+@param align  Byte alignment calculated by the stub and
                             passed to the rpc side to align data 
                             according to local machine. Must be zero
-                            when called from user level
-
-  Output:
-    <none>
-
-  Function value:
-    DB_SUCCESS              Successful completion
-    DB_INVALID_HANDLE       Database handle is invalid
-    DB_TYPE_MISMATCH        Key has no subkeys
-    DB_STRUCT_SIZE_MISMATCH *buf_size is different from calculated
-                            structure size
-
-\********************************************************************/
+                            when called from user level.
+@return DB_SUCCESS, DB_INVALID_HANDLE, DB_TYPE_MISMATCH, DB_STRUCT_SIZE_MISMATCH
+*/
+INT db_set_record(HNDLE hDB, HNDLE hKey, void *data, INT buf_size, 
+                  INT align)
 {
   if (rpc_is_remote())
     {
@@ -6629,36 +6689,70 @@ void check_open_keys(HNDLE hDB, HNDLE hKey, KEY* pkey, INT level, void *info)
     open_count++;
 }
 
-INT db_create_record(HNDLE hDB, HNDLE hKey, char *key_name, char *init_str)
-/********************************************************************\
+/*------------------------------------------------------------------*/
+/** @name db_create_record()
+\begin{description}
+\item[Description:] Create a record. If a part of the record exists alreay,
+merge it with the init_str (use values from the init_str only when they are
+not in the existing record).
+\item[Remarks:] This functions creates a ODB sub-tree according to an ASCII
+representation of that tree. See \Ref{db_copy()} for a description. It can be used to
+create a sub-tree which exactly matches a C structure. The sub-tree can then
+later mapped to the C structure ("hot-link") via the function \Ref{db_open_record()}.
 
-  Routine: db_create_record
+If a sub-tree exists already which exactly matches the ASCII representation, it is
+not modified. If part of the tree exists, it is merged with the ASCII representation
+where the ODB values have priority, only values not present in the ODB are
+created with the default values of the ASCII representation. It is therefore
+recommended that before creating an ODB hot-link the function
+db_create_record() is called to insure that the ODB tree and the C structure
+contain exactly the same values in the same order.
 
-  Purpose: Create a record. If a part of the record exists alreay,
-           merge it with the init_str (use values from the init_str
-           only when they are not in the existing record).
-
-  Input:                
-    HNDLE hDB               Handle to the database
-    HNDLE hKey              Key handle to start with, 0 for root
-    char  *key_name         Name of record
-    char  *init_str         Initialization string in the format of
-                            the db_copy/db_save functions.
-  Output:
-    none
-
-  Function value:
-    DB_SUCCESS              Successful completion
-    DB_INVALID_HANDLE       Database handle is invalid
-    DB_FULL                 ODB is full
-    DB_NO_ACCESS            No read/write access to key
-    DB_OPEN_RECORD          Key or subkey is open via hot-link
-
-\********************************************************************/
+Following example creates a record under /Equipment/Trigger/Settings,
+opens a hot-link between that record and a local C structure
+trigger_settings and registers a callback function trigger_update()
+which gets called each time the record is changed.
+\item[Example:] \begin{verbatim}
+struct {
+  INT level1;
+  INT level2;
+} trigger_settings;
+char *trigger_settings_str =
+"[Settings]\n\
+level1 = INT : 0\n\
+level2 = INT : 0";
+void trigger_update(INT hDB, INT hkey, void *info)
 {
-char  str[256], *buffer;
-INT   status, size, i, buffer_size;
-HNDLE hKeyTmp, hKeyTmpO, hKeyOrig, hSubkey;
+  printf("New levels: %d %d\n",
+    trigger_settings.level1,
+    trigger_settings.level2);
+}
+main()
+{
+  HNDLE hDB, hkey;
+  char[128] info;
+  ...
+  cm_get_experiment_database(&hDB, NULL);
+  db_create_record(hDB, 0, "/Equipment/Trigger", trigger_settings_str);
+  db_find_key(hDB, 0,"/Equipment/Trigger/Settings", &hkey);
+  db_open_record(hDB, hkey, &trigger_settings,
+    sizeof(trigger_settings), MODE_READ, trigger_update, info);
+  ...
+}
+ \end{verbatim}
+\end{description}
+@memo Creates an ODB sub-tree from an ASCII representation.
+@param hDB ODB handle obtained via \Ref{cm_get_experiment_database()}.
+@param hKey Handle for key where search starts, zero for root.
+@param key_name Name of key to search, can contain directories.
+@param init_str Initialization string in the format of the db_copy/db_save functions.
+@return DB_SUCCESS, DB_INVALID_HANDLE, DB_FULL, DB_NO_ACCESS, DB_OPEN_RECORD
+*/
+INT db_create_record(HNDLE hDB, HNDLE hKey, char *key_name, char *init_str)
+{
+  char  str[256], *buffer;
+  INT   status, size, i, buffer_size;
+  HNDLE hKeyTmp, hKeyTmpO, hKeyOrig, hSubkey;
 
   if (rpc_is_remote())
     return rpc_call(RPC_DB_CREATE_RECORD, hDB, hKey, key_name, init_str);
@@ -6785,45 +6879,83 @@ HNDLE hKeyTmp, hKeyTmpO, hKeyOrig, hSubkey;
 }
 
 /*------------------------------------------------------------------*/
+/** @name db_open_record()
+\begin{description}
+\item[Description:] Open a record. Create a local copy and maintain an 
+automatic update.
+\item[Remarks:] This function opens a hot-link between an ODB sub-tree and a local
+structure. The sub-tree is copied to the structure automatically every time it is
+modified by someone else. Additionally, a callback function can be declared
+which is called after the structure has been updated. The callback function
+receives the database handle and the key handle as parameters.
 
-INT db_open_record(HNDLE hDB, HNDLE hKey, void *ptr, INT rec_size, 
-                   WORD access_mode, void (*dispatcher)(INT,INT,void*), void *info)
-/********************************************************************\
+Problems might occur if the ODB sub-tree contains values which don't match the
+C structure. Although the structure size is checked against the sub-tree size, no
+checking can be done if the type and order of the values in the structure are the
+same than those in the ODB sub-tree. Therefore it is recommended to use the
+function \Ref{db_create_record()} before db_open_record() is used which
+ensures that both are equivalent.
 
-  Routine: db_open_record
+The access mode might either be MODE_READ or MODE_WRITE. In read mode,
+the ODB sub-tree is automatically copied to the local structure when modified by
+other clients. In write mode, the local structure is copied to the ODB sub-tree if it
+has been modified locally. This update has to be manually scheduled by calling
+\Ref{db_send_changed_records()} periodically in the main loop. The system
+keeps a copy of the local structure to determine if its contents has been changed.
 
-  Purpose: Open a record. Create a local copy and maintain an 
-           automatic update.
-
-  Input:                
-    HNDLE hDB               Handle to the database
-    HNDLE hKey              Key handle
-    void  *ptr              If access_mode includes MODE_ALLOC:
+If MODE_ALLOC is or'ed with the access mode, the memory for the structure is
+allocated internally. The structure pointer must contain a pointer to a pointer to
+the structure. The internal memory is released when db_close_record() is
+called.
+\item[Example:] To open a record in write mode.
+\begin{verbatim}
+struct {
+  INT level1;
+  INT level2;
+} trigger_settings;
+char *trigger_settings_str =
+"[Settings]\n\
+level1 = INT : 0\n\
+level2 = INT : 0";
+main()
+{
+  HNDLE hDB, hkey, i=0;
+  ...
+  cm_get_experiment_database(&hDB, NULL);
+  db_create_record(hDB, 0, "/Equipment/Trigger", trigger_settings_str);
+  db_find_key(hDB, 0,"/Equipment/Trigger/Settings", &hkey);
+  db_open_record(hDB, hkey, &trigger_settings, sizeof(trigger_settings)
+                  , MODE_WRITE, NULL);
+  do 
+  {
+    trigger_settings.level1 = i++;
+    db_send_changed_records()
+    status = cm_yield(1000);
+  } while (status != RPC_SHUTDOWN && status != SS_ABORT);
+  ...
+}
+\end{verbatim}
+\end{description}
+@memo Creates a hot-link between an ODB sub-tree and a C structure.
+@param hDB ODB handle obtained via cm_get_experiment_database().
+@param hKey Handle for key where search starts, zero for root.
+@param ptr If access_mode includes MODE_ALLOC:
                               Address of pointer which points to the
                               record data after the call
                             if access_mode includes not MODE_ALLOC:
                               Address of record
-                            if ptr==NULL, only the dispatcher is called
-    INT   rec_size          Size of record if allocated by application
-    WORD  access_mode       Mode for opening record, either MODE_READ or
+                            if ptr==NULL, only the dispatcher is called.
+@param access_mode Mode for opening record, either MODE_READ or
                             MODE_WRITE. May be or'ed with MODE_ALLOC to
                             let db_open_record allocate the memory for
                             the record.
-    void  *dispatcher()     Function which gets called when record
-                            is updated.
-    void  *info             Additional info passed to the dispatcher
-
-  Output:
-    void  *ptr              **ptr points to new record data
-
-  Function value:
-    DB_SUCCESS              Successful completion
-    DB_INVALID_HANDLE       Database handle is invalid
-    DB_NO_MEMORY            Not enough memeory
-    DB_NO_ACCESS            No read/write access to key
-    DB_STRUCT_SIZE_MISMATCH Structure size mismatch
-
-\********************************************************************/
+@param dispatcher Function which gets called when record is updated.The
+argument list composed of: HNDLE hDB, HNDLE hKey, void *info
+@param info Additional info passed to the dispatcher.
+@return DB_SUCCESS, DB_INVALID_HANDLE, DB_NO_MEMORY, DB_NO_ACCESS, DB_STRUCT_SIZE_MISMATCH
+*/
+INT db_open_record(HNDLE hDB, HNDLE hKey, void *ptr, INT rec_size, 
+                   WORD access_mode, void (*dispatcher)(INT,INT,void*), void *info)
 {
 INT  index, status, size;
 KEY  key;
@@ -6962,26 +7094,19 @@ char str[256];
 }  
 
 /*------------------------------------------------------------------*/
-
+/** @name db_close_record()
+\begin{description}
+\item[Description:] Close a record previously opend with db_open_record.
+\item[Remarks:]
+\item[Example:] \begin{verbatim}
+ \end{verbatim}
+\end{description}
+@memo Close open record.
+@param hDB ODB handle obtained via \Ref{cm_get_experiment_database()}.
+@param hKey Handle for key where search starts, zero for root.
+@return DB_SUCCESS, DB_INVALID_HANDLE
+*/
 INT db_close_record(HNDLE hDB, HNDLE hKey)
-/********************************************************************\
-
-  Routine: db_close_record
-
-  Purpose: Close a record previously opend with db_open_record
-
-  Input:
-    HNDLE hDB               Handle to the database
-    HNDLE hKey              Key handle
-
-  Output:
-    none
-
-  Function value:
-    DB_SUCCESS              Successful completion
-    DB_INVALID_HANDLE       Database handle is invalid
-
-\********************************************************************/
 {
 #ifdef LOCAL_ROUTINES
 {
@@ -7153,25 +7278,18 @@ NET_COMMAND *nc;
 }
 
 /*------------------------------------------------------------------*/
-
-INT db_send_changed_records()
-/********************************************************************\
-
-  Routine: db_send_changed_record
-
-  Purpose: Send all records to the ODB which were changed locally
+/** @name db_send_changed_records()
+\begin{description}
+\item[Description:] Send all records to the ODB which were changed locally
            since the last call to this function.
-
-  Input:
-    none
-
-  Output:
-    none
-
-  Function value:
-    DB_SUCCESS              Successful completion
-
-\********************************************************************/
+\item[Remarks:]
+\item[Example:] \begin{verbatim}
+ \end{verbatim}
+\end{description}
+@memo update ODB from local open records.
+@return DB_SUCCESS
+*/
+INT db_send_changed_records()
 {
 INT         i;
 
