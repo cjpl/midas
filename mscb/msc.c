@@ -6,6 +6,9 @@
   Contents:     Command-line interface for the Midas Slow Control Bus
 
   $Log$
+  Revision 1.28  2003/01/30 08:34:06  midas
+  Added [cf] flags to echo
+
   Revision 1.27  2003/01/24 13:45:12  midas
   Fixed bug in argument analysis
 
@@ -189,7 +192,7 @@ void print_help()
   puts("terminal                   Enter teminal mode for SCS-210");
   puts("upload <hex-file>          Upload new firmware to node");
   puts("version                    Display version number");
-  puts("echo                       Perform echo test");
+  puts("echo [fc]                  Perform echo test [fast,continuous]");
 }
 
 /*------------------------------------------------------------------*/
@@ -859,7 +862,7 @@ MSCB_INFO_CHN info_chn;
       }
 
     /* echo test */
-    else if (param[0][0] == 'e')
+    else if (param[0][0] == 'e' && param[0][1] == 'c')
       {
       unsigned char d1, d2;
       int i, status;
@@ -878,7 +881,9 @@ MSCB_INFO_CHN info_chn;
           if (d2 != d1)
             {
             printf("%d\nReceived: %02X, should be %02X, status = %d\n", i, d2, d1, status);
-            break; //##
+
+            if (param[1][0] != 'c' && param[1][1] != 'c')
+              break;
             }
 
           i++;
@@ -888,7 +893,8 @@ MSCB_INFO_CHN info_chn;
             fflush(stdout);
             }
 
-          Sleep(10);
+          if (param[1][0] != 'f' && param[1][1] != 'c')
+            Sleep(10);
           }
         }
       }
