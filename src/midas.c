@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.46  1999/09/14 15:15:45  midas
+  Moved el_xxx funtions into midas.c
+
   Revision 1.45  1999/09/13 11:08:24  midas
   Check NULL as experiment in cm_connect_experiment
 
@@ -13626,6 +13629,621 @@ char         str[80];
 
 /********************************************************************\
 *                                                                    *
+*               Electronic logbook functions                         *
+*                                                                    *
+\********************************************************************/
+
+INT el_submit(int run, char *author, char *type, char *system, char *subject, 
+              char *text, char *reply_to, char *encoding, char *attachment, char *tag)
+/********************************************************************\
+
+  Routine: el_submit
+
+  Purpose: Submit an ELog entry
+
+  Input:
+    int    run              Run number
+    char   *author          Message author
+    char   *type            Message type
+    char   *system          Message system
+    char   *subject         Subject
+    char   *text            Message text
+    char   *reply_to        In reply to this message
+    char   *encoding        Text encoding, either HTML or plain
+    char   *attachment      File attachment
+
+  Output:
+    char   *tag             Message tag in the form YYMMDD.offset
+
+  Function value:
+    EL_SUCCESS              Successful completion
+
+\********************************************************************/
+{
+int     size, fh, status;
+struct  tm *tms;
+char    file_name[256], dir[256], str[256], start_str[80], end_str[80], last[80];
+HNDLE   hDB;
+time_t  now;
+char    message[10000];
+
+  /* generate new file name YYMMDD.log in data directory */
+  cm_get_experiment_database(&hDB, NULL);
+  size = sizeof(dir);
+  memset(dir, 0, size);
+  db_get_value(hDB, 0, "/Logger/Data dir", dir, &size, TID_STRING);
+  if (dir[0] != 0)
+    if (dir[strlen(dir)-1] != DIR_SEPARATOR)
+      strcat(dir, DIR_SEPARATOR_STR);
+
+#if !defined(OS_VXWORKS) 
+#if !defined(OS_VMS)
+  tzset();
+#endif
+#endif
+
+  time(&now);
+  tms = localtime(&now);
+
+  sprintf(file_name, "%s%02d%02d%02d.log", dir, 
+          tms->tm_year % 100, tms->tm_mon+1, tms->tm_mday);
+
+  fh = open(file_name, O_CREAT | O_RDWR | O_BINARY, 0644);
+  if (fh < 0)
+    return EL_FILE_ERROR;
+
+  strcpy(str, ctime(&now)+4);
+  str[15] = 0;
+
+  sprintf(message, "Date: %s\n", str);
+  if (reply_to[0])
+    sprintf(message+strlen(message), "Thread: %16s %16s\n", reply_to, "0");
+  else
+    sprintf(message+strlen(message), "Thread: %16s %16s\n", "0", "0");
+  sprintf(message+strlen(message), "Run: %d\n", run);
+  sprintf(message+strlen(message), "Author: %s\n", author);
+  sprintf(message+strlen(message), "Type: %s\n", type);
+  sprintf(message+strlen(message), "System: %s\n", system);
+  sprintf(message+strlen(message), "Subject: %s\n", subject);
+  sprintf(message+strlen(message), "Attachment: %s\n", attachment);
+  sprintf(message+strlen(message), "Encoding: %s\n", encoding);
+  sprintf(message+strlen(message), "========================================\n");
+  strcat(message, text);
+  strcat(message, "\n");
+
+  /* go to EOF and record position */
+  lseek(fh, 0, SEEK_END);
+  size = 0;
+  sprintf(start_str, "$Start$: %6d\n", size);
+  sprintf(end_str,   "$End$:   %6d\n\f", size);
+
+  size = strlen(message)+strlen(start_str)+strlen(end_str);
+
+  if (tag != NULL)
+    sprintf(tag, "%02d%02d%02d.%d", tms->tm_year % 100, tms->tm_mon+1, tms->tm_mday, TELL(fh));
+
+  sprintf(start_str, "$Start$: %6d\n", size);
+  sprintf(end_str,   "$End$:   %6d\n\f", size);
+
+  write(fh, start_str, strlen(start_str));
+  write(fh, message, strlen(message));
+  write(fh, end_str, strlen(end_str));
+  close(fh);
+
+  /* if reply, mark original message */
+  if (reply_to[0])
+    {
+    strcpy(last, reply_to);
+    do
+      {
+      status = el_search_message(last, &fh, FALSE);
+      if (status == EL_SUCCESS)
+        {
+        /* position to next thread location */
+        lseek(fh, 63, SEEK_CUR);
+        memset(str, 0, sizeof(str));
+        read(fh, str, 16);
+        lseek(fh, -16, SEEK_CUR);
+
+        /* if no reply yet, set it */
+        if (atoi(str) == 0)
+          {
+          sprintf(str, "%16s", tag);
+          write(fh, str, 16);
+          close(fh);
+          break;
+          }
+        else
+          {
+          /* if reply set, find last one in chain */
+          strcpy(last, strtok(str, " "));
+          close(fh);
+          }
+        }
+      else
+        /* stop on error */
+        break;
+
+      } while (TRUE);
+    }
+
+  return EL_SUCCESS;
+}
+
+/*------------------------------------------------------------------*/
+
+void el_decode(char *message, char *key, char *result)
+{
+char *pc;
+
+  if (result == NULL)
+    return;
+
+  *result = 0;
+
+  if (strstr(message, key))
+    {
+    for (pc=strstr(message, key)+strlen(key) ; *pc != '\n' ; )
+      *result++ = *pc++;
+    *result = 0;
+    }
+}
+
+INT el_search_message(char *tag, int *fh, BOOL walk)
+{
+int    i, size, offset, direction, last, status;
+struct tm *tms, ltms;
+DWORD  lt, ltime, lact;
+char   str[256], file_name[256], dir[256];
+HNDLE  hDB;
+
+#if !defined(OS_VXWORKS) 
+#if !defined(OS_VMS)
+  tzset();
+#endif
+#endif
+
+  /* open file */
+  cm_get_experiment_database(&hDB, NULL);
+  size = sizeof(dir);
+  memset(dir, 0, size);
+  db_get_value(hDB, 0, "/Logger/Data dir", dir, &size, TID_STRING);
+  if (dir[0] != 0)
+    if (dir[strlen(dir)-1] != DIR_SEPARATOR)
+      strcat(dir, DIR_SEPARATOR_STR);
+
+  /* check tag for direction */
+  direction = 0;
+  if (strpbrk(tag, "+-"))
+    {
+    direction = atoi(strpbrk(tag, "+-"));
+    *strpbrk(tag, "+-") = 0;
+    }
+
+  /* if tag is given, open file directly */
+  if (tag[0])
+    {
+    /* extract time structure from tag */
+    tms = &ltms;
+    memset(tms, 0, sizeof(struct tm));
+    tms->tm_year = (tag[0]-'0')*10 + (tag[1]-'0');
+    tms->tm_mon  = (tag[2]-'0')*10 + (tag[3]-'0') -1;
+    tms->tm_mday = (tag[4]-'0')*10 + (tag[5]-'0');
+    tms->tm_hour = 12;
+
+    if (tms->tm_year < 90)
+      tms->tm_year += 100;
+    ltime = lt = mktime(tms);
+
+    strcpy(str, tag);
+    if (strchr(str, '.'))
+      {
+      offset = atoi(strchr(str, '.')+1);
+      *strchr(str, '.') = 0;
+      }
+    else
+      return EL_FILE_ERROR;
+
+    do
+      {
+      tms = localtime(&ltime);
+
+      sprintf(file_name, "%s%02d%02d%02d.log", dir, 
+              tms->tm_year % 100, tms->tm_mon+1, tms->tm_mday);
+      *fh = open(file_name, O_RDWR | O_BINARY, 0644);
+
+      if (*fh < 0)
+        {
+        if (!walk)
+          return EL_FILE_ERROR;
+
+        if (direction == -1)
+          ltime -= 3600*24; /* one day back */
+        else
+          ltime += 3600*24; /* go forward one day */
+
+        /* set new tag */
+        tms = localtime(&ltime);
+        sprintf(tag, "%02d%02d%02d.0", tms->tm_year % 100, tms->tm_mon+1, tms->tm_mday);
+        }
+
+      } while (*fh < 0 && abs((INT)lt-(INT)ltime) < 3600*24*365);
+
+    if (*fh < 0)
+      return EL_FILE_ERROR;
+
+    lseek(*fh, offset, SEEK_SET);
+
+    /* check if start of message */
+    i = read(*fh, str, 15);
+    if (i <= 0)
+      {
+      close(*fh);
+      return EL_FILE_ERROR;
+      }
+
+    if (strncmp(str, "$Start$: ", 9) != 0)
+      {
+      close(*fh);
+      return EL_FILE_ERROR;
+      }
+
+    lseek(*fh, offset, SEEK_SET);
+    }
+
+  /* open most recent file if no tag given */
+  if (tag[0] == 0)
+    {
+    time(&lt);
+    ltime = lt;
+    do
+      {
+      tms = localtime(&ltime);
+
+      sprintf(file_name, "%s%02d%02d%02d.log", dir, 
+              tms->tm_year % 100, tms->tm_mon+1, tms->tm_mday);
+      *fh = open(file_name, O_RDWR | O_BINARY, 0644);
+
+      if (*fh < 0)
+        ltime -= 3600*24; /* one day back */
+
+      } while (*fh < 0 && (INT)lt-(INT)ltime < 3600*24*365);
+
+    if (*fh < 0)
+      return EL_FILE_ERROR;
+
+    /* remember tag */
+    sprintf(tag, "%02d%02d%02d", tms->tm_year % 100, tms->tm_mon+1, tms->tm_mday);
+
+    lseek(*fh, 0, SEEK_END);
+
+    sprintf(tag+strlen(tag), ".%d", TELL(*fh));
+    }
+
+
+  if (direction == -1)
+    {
+    /* seek previous message */
+
+    if (TELL(*fh) == 0)
+      {
+      /* go back one day */
+      close(*fh);
+
+      lt = ltime;
+      do
+        {
+        lt -= 3600*24;
+        tms = localtime(&lt);
+        sprintf(str, "%02d%02d%02d.0",  
+                tms->tm_year % 100, tms->tm_mon+1, tms->tm_mday);
+
+        status = el_search_message(str, fh, FALSE);
+
+        } while (status != EL_SUCCESS && 
+                 (INT)ltime-(INT)lt < 3600*24*365);
+
+      if (status != EL_SUCCESS)
+        return EL_FIRST_MSG;
+
+      /* adjust tag */
+      strcpy(tag, str);
+
+      /* go to end of current file */
+      lseek(*fh, 0, SEEK_END);
+      }
+
+    /* read previous message size */
+    lseek(*fh, -17, SEEK_CUR);
+    i = read(*fh, str, 17);
+    if (i <= 0)
+      {
+      close(*fh);
+      return EL_FILE_ERROR;
+      }
+
+    if (strncmp(str, "$End$: ", 7) == 0)
+      {
+      size = atoi(str+7);
+      lseek(*fh, -size, SEEK_CUR);
+      }
+    else
+      {
+      close(*fh);
+      return EL_FILE_ERROR;
+      }
+
+    /* adjust tag */
+    sprintf(strchr(tag, '.')+1, "%d", TELL(*fh));
+    }
+
+  if (direction == 1)
+    {
+    /* seek next message */
+
+    /* read current message size */
+    last = TELL(*fh);
+
+    i = read(*fh, str, 15);
+    if (i <= 0)
+      {
+      close(*fh);
+      return EL_FILE_ERROR;
+      }
+    lseek(*fh, -15, SEEK_CUR);
+
+    if (strncmp(str, "$Start$: ", 9) == 0)
+      {
+      size = atoi(str+9);
+      lseek(*fh, size, SEEK_CUR);
+      }
+    else
+      {
+      close(*fh);
+      return EL_FILE_ERROR;
+      }
+
+    /* if EOF, goto next day */
+    i = read(*fh, str, 15);
+    if (i < 15)
+      {
+      close(*fh);
+      time(&lact);
+
+      lt = ltime;
+      do
+        {
+        lt += 3600*24;
+        tms = localtime(&lt);
+        sprintf(str, "%02d%02d%02d.0",  
+                tms->tm_year % 100, tms->tm_mon+1, tms->tm_mday);
+
+        status = el_search_message(str, fh, FALSE);
+
+        } while (status != EL_SUCCESS && 
+                 (INT)lt-(INT)lact < 3600*24);
+
+      if (status != EL_SUCCESS)
+        return EL_LAST_MSG;
+
+      /* adjust tag */
+      strcpy(tag, str);
+
+      /* go to beginning of current file */
+      lseek(*fh, 0, SEEK_SET);
+      }
+    else
+      lseek(*fh, -15, SEEK_CUR);
+
+    /* adjust tag */
+    sprintf(strchr(tag, '.')+1, "%d", TELL(*fh));
+    }
+
+  return EL_SUCCESS;
+}
+
+INT el_retrieve(char *tag, char *date, int *run, char *author, char *type, 
+                char *system, char *subject, char *text, int *textsize, 
+                char *orig_tag, char *reply_tag, char *attachment, char *encoding)
+/********************************************************************\
+
+  Routine: el_retrieve
+
+  Purpose: Retrieve an ELog entry by its message tab
+
+  Input:
+    char   *tag             tag in the form YYMMDD.offset
+    int    *size            Size of text buffer
+
+  Output:
+    char   *tag             tag of retrieved message
+    char   *date            Date/time of message recording
+    int    *run             Run number
+    char   *author          Message author
+    char   *type            Message type
+    char   *system          Message system
+    char   *subject         Subject
+    char   *text            Message text
+    char   *orig_tag        Original message if this one is a reply
+    char   *reply_tag       Reply for current message
+    char   *attachment      File attachment
+    char   *encoding        Encoding of message
+    int    *size            Actual message text size
+
+  Function value:
+    EL_SUCCESS              Successful completion
+    EL_LAST_MSG             Last message in log
+
+\********************************************************************/
+{
+int     size, fh, offset, search_status;
+char    str[256], *p;
+char    message[10000], thread[256];
+
+  if (tag[0])
+    {
+    search_status = el_search_message(tag, &fh, TRUE);
+    if (search_status != EL_SUCCESS)
+      return search_status;
+    }
+  else
+    {
+    /* open most recent message */
+    strcpy(tag, "-1");
+    search_status = el_search_message(tag, &fh, TRUE);
+    if (search_status != EL_SUCCESS)
+      return search_status;
+    }
+
+  /* extract message size */
+  offset = TELL(fh);
+  read(fh, str, 16);
+  size = atoi(str+9);
+  read(fh, message, size);
+
+  close(fh);
+
+  /* decode message */
+  if (strstr(message, "Run: ") && run)
+    *run = atoi(strstr(message, "Run: ")+5);
+    
+  el_decode(message, "Date: ", date);
+  el_decode(message, "Thread: ", thread);
+  el_decode(message, "Author: ", author);
+  el_decode(message, "Type: ", type);
+  el_decode(message, "System: ", system);
+  el_decode(message, "Subject: ", subject);
+  el_decode(message, "Attachment: ", attachment);
+  el_decode(message, "Encoding: ", encoding);
+
+  /* conver thread in reply-to and reply-from */
+  if (orig_tag != NULL && reply_tag != NULL)
+    {
+    p = strtok(thread, " \r");
+    if (p != NULL)
+      strcpy(orig_tag, p);
+    else
+      strcpy(orig_tag, "");
+    p = strtok(NULL, " \r");
+    if (p != NULL)
+      strcpy(reply_tag, p);
+    else
+      strcpy(reply_tag, "");
+    if (atoi(orig_tag) == 0)
+      orig_tag[0] = 0;
+    if (atoi(reply_tag) == 0)
+      reply_tag[0] = 0;
+    }
+
+  p = strstr(message, "========================================\n");
+
+  if (text != NULL)
+    {
+    if (p != NULL)
+      {
+      p += 41;
+      if ((int) strlen(p) >= *textsize)
+        {
+        strncpy(text, p, *textsize-1);
+        text[*textsize-1] = 0;
+        return EL_TRUNCATED;
+        }
+      else
+        {
+        strcpy(text, p);
+    
+        /* strip end tag */
+        if (strstr(text, "$End$"))
+          *strstr(text, "$End$") = 0;
+      
+        *textsize = strlen(text);
+        }
+      }
+    else
+      {
+      text[0] = 0;
+      *textsize = 0;
+      }
+    }
+
+  if (search_status == EL_LAST_MSG)
+    return EL_LAST_MSG;
+
+  return EL_SUCCESS;
+}
+
+/*------------------------------------------------------------------*/
+
+INT el_search_run(int run, char *return_tag)
+/********************************************************************\
+
+  Routine: el_search_run
+
+  Purpose: Find first message belonging to a specific run
+
+  Input:
+    int    run              Run number
+
+  Output:
+    char   *tag             tag of retrieved message
+
+  Function value:
+    EL_SUCCESS              Successful completion
+    EL_LAST_MSG             Last message in log
+
+\********************************************************************/
+{
+int     actual_run, fh, status;
+char    tag[256];
+
+  tag[0] = return_tag[0] = 0;
+
+  do
+    {
+    /* open first message in file */
+    strcat(tag, "-1");
+    status = el_search_message(tag, &fh, TRUE);
+    if (status == EL_FIRST_MSG)
+      break;
+    if (status != EL_SUCCESS)
+      return status;
+    close(fh);
+
+    if (strchr(tag, '.') != NULL)
+      strcpy(strchr(tag, '.'), ".0");
+
+    el_retrieve(tag, NULL, &actual_run, NULL, NULL, 
+                NULL, NULL, NULL, NULL, 
+                NULL, NULL, NULL, NULL);
+    } while (actual_run >= run);
+
+  while (actual_run < run)
+    {
+    strcat(tag, "+1");
+    status = el_search_message(tag, &fh, TRUE);
+    if (status == EL_LAST_MSG)
+      break;
+    if (status != EL_SUCCESS)
+      return status;
+    close(fh);
+
+    el_retrieve(tag, NULL, &actual_run, NULL, NULL, 
+                NULL, NULL, NULL, NULL, 
+                NULL, NULL, NULL, NULL);
+    }
+
+  strcpy(return_tag, tag);
+
+  if (status == EL_LAST_MSG || status == EL_FIRST_MSG)
+    return status;
+  
+  return EL_SUCCESS;
+}
+
+/*------------------------------------------------------------------*/
+
+/********************************************************************\
+*                                                                    *
 *                 Event buffer functions                             *
 *                                                                    *
 \********************************************************************/
@@ -14714,4 +15332,5 @@ INT dm_area_flush(void)
   return CM_SUCCESS;
 #endif
 }
+
 /*------------------------------------------------------------------*/
