@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.108  2003/04/09 13:48:18  midas
+  Added ROOT format
+
   Revision 1.107  2003/03/26 21:09:46  midas
   Corrected version string
 
@@ -526,6 +529,7 @@ typedef          INT       HNDLE;
 #define FORMAT_FIXED  4       /* Fixed length binary records        */
 #define FORMAT_DUMP   5       /* Dump (detailed ASCII) format       */
 #define FORMAT_HBOOK  6       /* CERN hbook (rz) format             */
+#define FORMAT_ROOT   7       /* CERN ROOT format                   */
 
 /* Sampling type */
 #define GET_ALL   (1<<0)      /* get all events (consume)           */
@@ -809,6 +813,8 @@ Convert the coded LAM station to Station number.
 #define SS_END_OF_FILE              423
 #define SS_FILE_EXISTS              424
 #define SS_NO_SPACE                 425
+#define SS_INVALID_FORMAT           426
+#define SS_NO_ROOT                  427
 
 /* Remote Procedure Calls */
 #define RPC_SUCCESS                   1
