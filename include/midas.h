@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.103  2002/09/19 17:50:22  pierre
+  remove ^m
+
   Revision 1.102  2002/09/18 16:36:24  pierre
   add bk_list()
 
@@ -1849,3 +1852,4 @@ void EXPRT lock_histo(INT id);
 #endif
 
 #endif /* _MIDAS_H */
+
