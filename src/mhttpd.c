@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.110  2000/04/28 09:10:46  midas
+  Added history picture display
+
   Revision 1.109  2000/04/20 13:41:39  midas
   Display alarm class instead "Alarm!"
 
@@ -324,8 +327,10 @@
 
 \********************************************************************/
 
+#include <math.h>
 #include "midas.h"
 #include "msystem.h"
+#include "mgd.h"
 
 /* refresh times in seconds */
 #define DEFAULT_REFRESH 60
@@ -883,6 +888,7 @@ CHN_STATISTICS chn_stats;
   rsprintf("<input type=submit name=cmd value=ELog>\n");
   rsprintf("<input type=submit name=cmd value=Alarms>\n");
   rsprintf("<input type=submit name=cmd value=Programs>\n");
+  rsprintf("<input type=submit name=cmd value=History>\n");
   rsprintf("<input type=submit name=cmd value=Config>\n");
   rsprintf("<input type=submit name=cmd value=Help>\n");
 
@@ -5018,6 +5024,742 @@ HNDLE hDB;
 
 /*------------------------------------------------------------------*/
 
+#define LN10 2.302585094
+#define LOG2 0.301029996
+#define LOG5 0.698970005
+
+void haxis(gdImagePtr im, gdFont *font, int col, int gcol,
+           int x1, int y1, int width,
+           int minor, int major, int text, int label,
+           int grid, double xmin, double xmax)
+{
+double dx, int_dx, frac_dx, x_act, label_dx, major_dx, x_screen, maxwidth;
+int    tick_base, major_base, label_base, n_sig1, n_sig2, max_tick, xs;
+char   str[80];
+double base[] = {1,2,5,10,20,50,100,200,500,1000};
+
+  if (xmax <= xmin || width <= 0)
+    return;
+
+  /* use 5 as min tick distance */
+  max_tick = (int) ((double) (width/5) + 1);
+
+  dx = (xmax - xmin)/ (double) (width/5);
+
+  frac_dx = modf(log(dx)/LN10, &int_dx);
+  if (frac_dx <0) { frac_dx+=1; int_dx -=1; }
+
+  tick_base = frac_dx < LOG2 ? 1 :
+              frac_dx < LOG5 ? 2 : 3;
+  major_base = label_base = tick_base + 1;
+
+  /* rounding up of dx, label_dx */
+  dx = pow(10, int_dx) * base[tick_base];
+  major_dx = pow(10, int_dx) * base[major_base];
+  label_dx = major_dx;
+
+  /* number of significant digits */
+  if (xmin == 0)
+    n_sig1 = 0;
+  else
+    n_sig1 = (int) floor(log(fabs(xmin))/LN10) -
+             (int) floor(log(fabs(label_dx))/LN10) + 1;
+
+  if (xmax == 0)
+    n_sig2 = 0;
+  else
+    n_sig2 = (int) floor(log(fabs(xmax))/LN10) -
+             (int) floor(log(fabs(label_dx))/LN10) + 1;
+
+  n_sig1 = max(n_sig1, n_sig2);
+  n_sig1 = max(n_sig1, 4);
+
+  /* determination of maximal width of labels */
+  sprintf(str,"%1.*lG", n_sig1, floor(xmin/dx)*dx);
+  maxwidth = font->h/2 * strlen(str);
+  sprintf(str,"%1.*lG", n_sig1, floor(xmax/dx)*dx);
+  maxwidth = max( maxwidth, font->h/2 * strlen(str));
+  sprintf(str,"%1.*lG", n_sig1, floor(xmax/dx)*dx+label_dx);
+  maxwidth = max( maxwidth, font->h/2 * strlen(str));
+
+  /* increasing label_dx, if labels would overlap */
+  while (maxwidth > 0.7 * label_dx/(xmax-xmin)*width)
+    {
+    label_base++;
+    label_dx = pow(10, int_dx) * base[label_base];
+    if (label_base % 3 == 2 && major_base % 3 == 1)
+      {
+      major_base++;
+      major_dx = pow(10, int_dx) * base[major_base];
+      }
+    }
+
+  x_act = floor(xmin/dx)*dx;
+
+  gdImageLine(im, x1, y1, x1+width, y1, col); 
+
+  do
+    {
+    x_screen = (x_act-xmin)/(xmax-xmin)*width + x1;
+    xs = (int) (x_screen+0.5);
+
+    if (x_screen > x1 + width + 0.001) break;
+
+    if (x_screen >= x1)
+      {
+      if ( fabs(floor(x_act/major_dx+0.5) - x_act/major_dx) <
+           dx / major_dx / 10.0 )
+        {
+
+        if ( fabs(floor(x_act/label_dx+0.5) - x_act/label_dx) <
+           dx / label_dx / 10.0 )
+          {
+          /**** label tick mark ****/
+          gdImageLine(im, xs, y1, xs, y1+text, col); 
+
+          /**** grid line ***/
+          if (grid != 0 && xs > x1 && xs < x1 + width)
+            gdImageLine(im, xs, y1, xs, y1+grid, col); 
+
+          /**** label ****/
+          if (label != 0)
+            {
+            sprintf(str, "%1.*lG", n_sig1, x_act);
+            gdImageString(im, font, (int)xs-font->w*strlen(str)/2, 
+                                    y1+label, str, col);
+            }
+          }
+        else
+          {
+          /**** major tick mark ****/
+          gdImageLine(im, xs, y1, xs, y1+major, col); 
+
+          /**** grid line ****/
+          if (grid != 0 && xs > x1 && xs < x1 + width)
+            gdImageLine(im, xs, y1-1, xs, y1+grid, gcol); 
+          }
+
+        }
+      else
+        /**** minor tick mark ****/
+        gdImageLine(im, xs, y1, xs, y1+minor, col); 
+
+      }
+
+    x_act+=dx;
+
+    /* supress 1.23E-17 ... */
+    if (fabs(x_act) < dx/100) x_act=0;
+
+    } while(1);
+}
+
+/*------------------------------------------------------------------*/
+
+int vaxis(gdImagePtr im, gdFont *font, int col, int gcol,
+           int x1, int y1, int width,
+           int minor, int major, int text, int label,
+           int grid, double ymin, double ymax)
+{
+double dy, int_dy, frac_dy, y_act, label_dy, major_dy, y_screen;
+int    tick_base, major_base, label_base, n_sig1, n_sig2, max_tick, ys, max_width;
+char   str[80];
+double base[] = {1,2,5,10,20,50,100,200,500,1000};
+
+  if (ymax <= ymin || width <=0)
+    return 0;
+
+  /* use 5 as min tick distance */
+  max_tick = (int) ((double) (width/5) + 1);
+
+  dy = (ymax - ymin)/ (double) (width/5);
+
+  frac_dy = modf(log(dy)/LN10, &int_dy);
+  if (frac_dy <0) { frac_dy+=1; int_dy -=1; }
+
+  tick_base = frac_dy < LOG2 ? 1 :
+              frac_dy < LOG5 ? 2 : 3;
+  major_base = label_base = tick_base + 1;
+
+  /* rounding up of dy, label_dy */
+  dy = pow(10, int_dy) * base[tick_base];
+  major_dy = pow(10, int_dy) * base[major_base];
+  label_dy = major_dy;
+
+  /* number of significant digits */
+  if (ymin == 0)
+    n_sig1 = 0;
+  else
+    n_sig1 = (int) floor(log(fabs(ymin))/LN10) -
+             (int) floor(log(fabs(label_dy))/LN10) + 1;
+
+  if (ymax == 0)
+    n_sig2 = 0;
+  else
+    n_sig2 = (int) floor(log(fabs(ymax))/LN10) -
+             (int) floor(log(fabs(label_dy))/LN10) + 1;
+
+  n_sig1 = max(n_sig1, n_sig2);
+  n_sig1 = max(n_sig1, 4);
+
+  /* increasing label_dy, if labels would overlap */
+  while (label_dy/(ymax-ymin)*width < 1.5*font->h)
+    {
+    label_base++;
+    label_dy = pow(10, int_dy) * base[label_base];
+    if (label_base % 3 == 2 && major_base % 3 == 1)
+      {
+      major_base++;
+      major_dy = pow(10, int_dy) * base[major_base];
+      }
+    }
+
+  /* determination of maximal width of labels */
+  if (x1 == 0 && y1 == 0) 
+    {
+    sprintf(str, "%1.*lG", n_sig1, floor(ymin/dy)*dy);
+    max_width = font->w*strlen(str);
+
+    sprintf(str, "%1.*lG", n_sig1, floor(ymax/dy)*dy);
+    max_width = max(max_width, (int)(font->w*strlen(str)));
+
+    sprintf(str, "%1.*lG", n_sig1, floor(ymin/dy)*dy+label_dy);
+    max_width = max(max_width, (int)(font->w*strlen(str)));
+    
+    return max_width + abs(label);
+    }
+
+  y_act = floor(ymin/dy)*dy;
+
+  gdImageLine(im, x1, y1, x1, y1 - width, col);
+
+  do
+    {
+    y_screen = y1 - (y_act-ymin)/(ymax-ymin)*width;
+    ys = (int) (y_screen+0.5);
+
+    if (y_screen < y1 - width - 0.001) break;
+
+    if (y_screen <= y1)
+      {
+      if ( fabs(floor(y_act/major_dy+0.5) - y_act/major_dy) <
+           dy / major_dy / 10.0 )
+        {
+        if ( fabs(floor(y_act/label_dy+0.5) - y_act/label_dy) <
+           dy / label_dy / 10.0 )
+          {
+          /**** label tick mark ****/
+          gdImageLine(im, x1, ys, x1 + text, ys, col);
+
+          /**** grid line ***/
+          if (grid != 0 && y_screen < y1 && y_screen > y1 - width)
+            if (grid > 0)
+              gdImageLine(im, x1+1, ys, x1+grid, ys, gcol);
+            else
+              gdImageLine(im, x1-1, ys, x1+grid, ys, gcol);
+
+          /**** label ****/
+          if (label != 0)
+            {
+            sprintf(str, "%1.*lG", n_sig1, y_act);
+            if (label < 0)
+              gdImageString(im, font, x1+label-font->w*strlen(str), ys-font->h/2, str, col);
+            else
+              gdImageString(im, font, x1+label, ys-font->h/3, str, col);
+            }
+          }
+        else
+          {
+          /**** major tick mark ****/
+          gdImageLine(im, x1, ys, x1 + major, ys, col);
+
+          /**** grid line ***/
+          if (grid != 0 && y_screen < y1 && y_screen > y1 - width)
+            gdImageLine(im, x1, ys, x1 + grid, ys, col);
+          }
+
+        }
+      else
+        /**** minor tick mark ****/
+        gdImageLine(im, x1, ys, x1 + minor, ys, col);
+      }
+
+    y_act+=dy;
+
+    /* supress 1.23E-17 ... */
+    if (fabs(y_act) < dy/100) y_act=0;
+
+    } while(1);
+
+  return 0;
+}
+
+/*------------------------------------------------------------------*/
+
+#define MAX_VARS 10
+
+void generate_hist_graph(char *path, int width, int height, int scale)
+{
+HNDLE       hDB, hkey, hkeypanel;
+KEY         key;
+gdImagePtr  im;
+gdGifBuffer gb;
+int         i, j, n_vars, size, status, n_event;
+DWORD       bsize, tsize;
+int         length, offset;
+int         flag, x1, y1, x2, y2, xs, ys, xold, yold;
+int         white, black, grey, ltgrey, red, green, blue, curve_col[MAX_VARS];
+char        str[256], panel[NAME_LENGTH], name[256];
+INT         var_index, *event_id_list, event_id;
+DWORD       name_size, id_size, type;
+char        event_name[NAME_LENGTH], *event_name_list;
+char        tag_name[MAX_VARS][64], var_name[NAME_LENGTH];
+DWORD       n_point[MAX_VARS];
+int         x[MAX_VARS][1000];
+float       y[MAX_VARS][1000];
+float       xmin, xmax, ymin, ymax;
+char        buffer[8000];
+DWORD       tbuffer[1000];
+gdPoint     poly[3];
+
+  cm_get_experiment_database(&hDB, NULL);
+  event_name_list = NULL;
+  event_id_list = NULL;
+
+  /* generate test image */
+  im = gdImageCreate(width, height);
+
+	/* First color allocated is background. */
+  grey   = gdImageColorAllocate(im, 192, 192, 192);
+  ltgrey = gdImageColorAllocate(im, 208, 208, 208);
+	white  = gdImageColorAllocate(im, 255, 255, 255);
+	black  = gdImageColorAllocate(im, 0, 0, 0);
+  red    = gdImageColorAllocate(im, 255,   0,   0);
+  green  = gdImageColorAllocate(im,   0, 255,   0);
+  blue   = gdImageColorAllocate(im,   0,   0, 255);
+
+  curve_col[0] = gdImageColorAllocate(im,   0,   0, 255);
+  curve_col[1] = gdImageColorAllocate(im,   0, 192,   0);
+  curve_col[2] = gdImageColorAllocate(im, 255,   0,   0);
+  curve_col[3] = gdImageColorAllocate(im,   0, 255, 255);
+  curve_col[4] = gdImageColorAllocate(im, 255,   0, 255);
+  curve_col[5] = gdImageColorAllocate(im, 255, 255,   0);
+  curve_col[6] = gdImageColorAllocate(im, 128, 128, 255);
+  curve_col[7] = gdImageColorAllocate(im, 128, 255, 128);
+  curve_col[8] = gdImageColorAllocate(im, 255, 128, 128);
+  curve_col[9] = gdImageColorAllocate(im, 128, 128, 128);
+
+  /* Set transparent color. */
+	gdImageColorTransparent(im, grey);
+
+	/* Title */
+  strcpy(panel, path);
+  if (strstr(panel, ".gif"))
+    *strstr(panel, ".gif") = 0;
+	gdImageString(im, gdFontGiant, width/2-(strlen(panel)*gdFontGiant->w)/2, 2, panel, black);
+	
+  /* set history path */
+  status = db_find_key(hDB, 0, "/Logger/Data dir", &hkey);
+  if (status != DB_SUCCESS)
+    {
+    sprintf(str, "No data directory defined in ODB");
+    gdImageString(im, gdFontGiant, width/2-(strlen(str)*gdFontGiant->w)/2, height/2, str, red);
+    goto error;
+    }
+
+  size = sizeof(str);
+  memset(str, 0, size);
+  db_get_value(hDB, 0, "/Logger/Data dir", str, &size, TID_STRING);
+  hs_set_path(str);
+
+  /* get list of events */
+  status = hs_count_events(0, (DWORD *) &n_event);
+  if (status != HS_SUCCESS)
+    {
+    sprintf(str, "Internal history error %d", status);
+    gdImageString(im, gdFontGiant, width/2-(strlen(str)*gdFontGiant->w)/2, height/2, str, red);
+    goto error;
+    }
+
+  name_size = n_event*NAME_LENGTH;
+  id_size = n_event*sizeof(INT);
+  event_name_list = malloc(name_size);
+  event_id_list = malloc(id_size);
+  status = hs_enum_events(0, event_name_list, (DWORD*)&name_size, event_id_list, (DWORD*)&id_size);
+  if (status != HS_SUCCESS)
+    {
+    sprintf(str, "Internal history error %d", status);
+    gdImageString(im, gdFontGiant, width/2-(strlen(str)*gdFontGiant->w)/2, height/2, str, red);
+    goto error;
+    }
+
+  /* check panel name in ODB */
+  sprintf(str, "/History/Display/%s", panel);
+  db_find_key(hDB, 0, str, &hkeypanel);
+  if (!hkey)
+    {
+    sprintf(str, "Cannot find /History/Display/%s in ODB", panel);
+    gdImageString(im, gdFontGiant, width/2-(strlen(str)*gdFontGiant->w)/2, height/2, str, red);
+    goto error;
+    }
+
+  db_find_key(hDB, hkeypanel, "Variables", &hkey);
+  if (!hkey)
+    {
+    sprintf(str, "Cannot find /History/Display/%s/Variables in ODB", panel);
+    gdImageString(im, gdFontGiant, width/2-(strlen(str)*gdFontGiant->w)/2, height/2, str, red);
+    goto error;
+    }
+
+  db_get_key(hDB, hkey, &key);
+  n_vars = key.num_values;
+
+  if (n_vars > MAX_VARS)
+    {
+    sprintf(str, "Too many variables in panel %s", panel);
+    gdImageString(im, gdFontGiant, width/2-(strlen(str)*gdFontGiant->w)/2, height/2, str, red);
+    goto error;
+    }
+
+  for (i=0 ; i<n_vars ; i++)
+    {
+    size = sizeof(str);
+    db_get_data_index(hDB, hkey, str, &size, i, TID_STRING);
+    strcpy(tag_name[i], str);
+    
+    /* split varname in event, variable and index */
+    if (strchr(tag_name[i], ':'))
+      {
+      strcpy(event_name, tag_name[i]);
+      *strchr(event_name, ':') = 0;
+      strcpy(var_name, strchr(tag_name[i], ':')+1);
+      var_index = 0;
+      if (strchr(var_name, '['))
+        {
+        var_index = atoi(strchr(var_name, '['));
+        *strchr(name, '[') = 0;
+        }
+      }
+    else
+      {
+      sprintf(str, "Tag %s has wrong format in panel %s", var_name[i], panel);
+      gdImageString(im, gdFontGiant, width/2-(strlen(str)*gdFontGiant->w)/2, height/2, str, red);
+      goto error;
+      }
+
+    /* search event_id */
+    for (j=0 ; j<n_event ; j++)
+      if (equal_ustring(event_name, event_name_list+NAME_LENGTH*j))
+        break;
+
+    if (j == n_event)
+      {
+      sprintf(str, "Event %s from panel %s not found in history", event_name, panel);
+      gdImageString(im, gdFontGiant, width/2-(strlen(str)*gdFontGiant->w)/2, height/2, str, red);
+      goto error;
+      }
+
+    event_id = event_id_list[j];
+
+    /* get timescale */
+    if (scale == 0)
+      {
+      scale = 3600;
+      size = sizeof(scale);
+      db_get_value(hDB, hkeypanel, "Timescale", &scale, &size, TID_INT);
+      }
+    xmin = (float) (-scale/3600.0);
+    xmax = 0;
+
+    bsize = sizeof(buffer);
+    tsize = sizeof(tbuffer);
+    status = hs_read(event_id, ss_time()-scale, ss_time(), scale/1000, 
+                     var_name, var_index, tbuffer, &tsize, buffer, &bsize, &type, &n_point[i]);
+
+    for (j=0 ; j<(int)n_point[i] ; j++)
+      {
+      x[i][j] = tbuffer[j] - ss_time();
+      switch (type)
+        {
+        case TID_BYTE:
+          y[i][j] = (float) *(((BYTE *) buffer)+j); break;
+        case TID_SBYTE:
+          y[i][j] = (float) *(((char *) buffer)+j); break;
+        case TID_CHAR:
+          y[i][j] = (float) *(((char *) buffer)+j); break;
+        case TID_WORD:
+          y[i][j] = (float) *(((WORD *) buffer)+j); break;
+        case TID_SHORT:
+          y[i][j] = (float) *(((short *) buffer)+j); break;
+        case TID_DWORD:
+          y[i][j] = (float) *(((DWORD *) buffer)+j); break;
+        case TID_INT:
+          y[i][j] = (float) *(((INT *) buffer)+j); break;
+        case TID_BOOL:
+          y[i][j] = (float) *(((BOOL *) buffer)+j); break;
+        case TID_FLOAT:
+          y[i][j] = (float) *(((float *) buffer)+j); break;
+        case TID_DOUBLE:
+          y[i][j] = (float) *(((double *) buffer)+j); break;
+        }
+
+      if (i == 0 && j == 0)
+        ymin = ymax = y[0][0];
+      else
+        {
+        if (y[i][j] > ymax)
+          ymax = y[i][j];
+        if (y[i][j] < ymin)
+          ymin = y[i][j];
+        }
+      }
+    }
+
+  flag = 0;
+  size = sizeof(flag);
+  db_get_value(hDB, hkeypanel, "Zero ylow", &flag, &size, TID_BOOL);
+  if (flag && ymin > 0)
+    ymin = 0;
+
+  if (ymin == 0 && ymax == 0)
+    ymax = 1;
+  else
+    {
+    ymax += (ymax-ymin)/20.f;
+    if (ymin != 0)
+      ymin -= (ymax-ymin)/20.f;
+    }
+
+  offset = vaxis(im, gdFontSmall, black, ltgrey, 0, 0, height, -3, -5, -7, -8, 0, ymin, ymax);
+
+  x1 = offset;
+  y1 = height-20;
+  x2 = width-20;
+  y2 = 20;
+
+  gdImageFilledRectangle(im, x1, y2, x2, y1, white);
+
+  haxis(im, gdFontSmall, black, ltgrey, x1, y1, x2-x1, 3, 5, 9, 10, 0, xmin,  xmax);
+  vaxis(im, gdFontSmall, black, ltgrey, x1, y1, y1-y2, -3, -5, -7, -8, x2-x1, ymin, ymax);
+  gdImageLine(im, x1, y2, x2, y2, black);
+  gdImageLine(im, x2, y2, x2, y1, black);
+
+  for (i=0 ; i<n_vars ; i++)
+    {
+    for (j=0 ; j<(int)n_point[i] ; j++)
+      {
+      xs = (int) ((x[i][j]/3600.0-xmin)/(xmax-xmin)*(x2-x1)+x1+0.5);
+      ys = (int) (y1-(y[i][j]-ymin)/(ymax-ymin)*(y1-y2)+0.5);
+      if (j>0)
+        gdImageLine(im, xold, yold, xs, ys, curve_col[i]);
+      xold = xs;
+      yold = ys;
+      }
+
+    poly[0].x = xs;
+    poly[0].y = ys;
+    poly[1].x = xs+12;
+    poly[1].y = ys-6;
+    poly[2].x = xs+12;
+    poly[2].y = ys+6;
+
+    gdImageFilledPolygon(im, poly, 3, curve_col[i]);
+    }
+
+  for (i=0 ; i<n_vars ; i++)
+    {
+    gdImageFilledRectangle(im, 
+            x1+10, 
+            y2+10+i*(gdFontMediumBold->h+10),
+            x1+10+strlen(tag_name[i])*gdFontMediumBold->w+10, 
+            y2+10+i*(gdFontMediumBold->h+10)+gdFontMediumBold->h+2+2, white);
+    gdImageRectangle(im, 
+            x1+10, 
+            y2+10+i*(gdFontMediumBold->h+10),
+            x1+10+strlen(tag_name[i])*gdFontMediumBold->w+10, 
+            y2+10+i*(gdFontMediumBold->h+10)+gdFontMediumBold->h+2+2, curve_col[i]);
+
+    gdImageString(im, gdFontMediumBold, 
+            x1+10+5, 
+            y2+10+2+i*(gdFontMediumBold->h+10),
+            tag_name[i], curve_col[i]);
+    }
+
+  gdImageRectangle(im, x1, y2, x2, y1, black);
+
+error:
+
+  if (event_name_list)
+    free(event_name_list);
+  if (event_id_list)
+    free(event_id_list);
+
+  /* generate GIF */
+	gdImageInterlace(im, 1);
+	gdImageGif(im, &gb);
+  gdImageDestroy(im);
+  length = gb.size;
+
+  rsprintf("HTTP/1.0 200 Document follows\r\n");
+  rsprintf("Server: MIDAS HTTP %s\r\n", cm_get_version());
+
+  rsprintf("Content-Type: image/gif\r\n");
+  rsprintf("Content-Length: %d\r\n", length);
+  rsprintf("Pragma: no-cache\r\n");
+  rsprintf("Expires: Fri, 01 Jan 1983 00:00:00 GMT\r\n\r\n");
+
+  if (length > (int) (sizeof(return_buffer) - strlen(return_buffer)))
+    {
+    printf("return buffer too small\n");
+    return;
+    }
+
+  return_length = strlen(return_buffer)+length;
+  memcpy(return_buffer+strlen(return_buffer), gb.data, length);
+}
+
+/*------------------------------------------------------------------*/
+
+void show_hist_page(char *path)
+{
+char   str[80], ref[80], *pscale;
+HNDLE  hDB, hkey, hkeyp;
+KEY    key;
+int    i, scale;
+
+  if (strstr(path, ".gif"))
+    {
+    pscale = getparam("scale");
+    if (pscale)
+      {
+      if (equal_ustring(pscale, "10m"))
+        scale = 600;
+      else if (equal_ustring(pscale, "1h"))
+        scale = 3600;
+      else if (equal_ustring(pscale, "3h"))
+        scale = 3*3600;
+      else if (equal_ustring(pscale, "12h"))
+        scale = 12*3600;
+      else if (equal_ustring(pscale, "24h"))
+        scale = 24*3600;
+      else if (equal_ustring(pscale, "3d"))
+        scale = 3*24*3600;
+      else if (equal_ustring(pscale, "7d"))
+        scale = 7*24*3600;
+      else
+        scale = 0;
+      }
+    else
+      scale = 0;
+
+    generate_hist_graph(path, 640, 400, scale);
+    return;
+    }
+
+  cm_get_experiment_database(&hDB, NULL);
+
+  sprintf(str, "HS/%s", path);
+  show_header(hDB, "History", str, 1);
+
+  /* menu buttons */
+  rsprintf("<tr><td colspan=2 bgcolor=#C0C0C0>\n");
+  rsprintf("<input type=submit name=cmd value=ODB>\n");
+  rsprintf("<input type=submit name=cmd value=Alarms>\n");
+  rsprintf("<input type=submit name=cmd value=Status></tr>\n");
+
+  /* links for history panels */
+  rsprintf("<tr><td colspan=2 bgcolor=#C0C0C0>\n");
+  if (path[0])
+    rsprintf("<tr><td colspan=6 bgcolor=#FFFF00><i>Panel:</i> \n");
+  else
+    rsprintf("<tr><td colspan=6 bgcolor=#FFFF00><b>Please select panel:</b> \n");
+
+  db_find_key(hDB, 0, "/History/Display/Trigger rate", &hkey);
+  if (!hkey)
+    {
+    /* create default panel */
+    strcpy(str, "System:Trigger per sec.");
+    strcpy(str+NAME_LENGTH, "System:Trigger kB per sec.");
+    db_set_value(hDB, 0, "/History/Display/Trigger rate/Variables", 
+                 str, NAME_LENGTH*2, 2, TID_STRING);
+    i = 3600;
+    db_set_value(hDB, 0, "/History/Display/Trigger rate/Timescale", 
+                 &i, sizeof(INT), 1, TID_INT);
+    i = 1;
+    db_set_value(hDB, 0, "/History/Display/Trigger rate/Zero ylow", 
+                 &i, sizeof(BOOL), 1, TID_BOOL);
+    }
+
+  db_find_key(hDB, 0, "/History/Display", &hkey);
+  if (hkey)
+    for (i=0 ; ; i++)
+      {
+      db_enum_link(hDB, hkey, i, &hkeyp);
+
+      if (!hkeyp)
+        break;
+
+      db_get_key(hDB, hkeyp, &key);
+
+      if (equal_ustring(path, key.name))
+        rsprintf("<b>%s</b> ", key.name);
+      else
+        {
+        if (exp_name[0])
+          rsprintf("<a href=\"%sHS/%s?exp=%s\">%s</a> ", 
+                    mhttpd_url, key.name, exp_name, key.name);
+        else
+          rsprintf("<a href=\"%sHS/%s\">%s</a> ", 
+                    mhttpd_url, key.name, key.name);
+        }
+      }
+
+  rsprintf("</tr>\n");
+
+  /* image panel */
+  if (path[0])
+    {
+    /* navigation links */
+    rsprintf("<tr><td colspan=2 bgcolor=#A0FFA0>\n");
+    rsprintf("<input type=submit name=scale value=10m>\n");
+    rsprintf("<input type=submit name=scale value=1h>\n");
+    rsprintf("<input type=submit name=scale value=3h>\n");
+    rsprintf("<input type=submit name=scale value=12h>\n");
+    rsprintf("<input type=submit name=scale value=24h>\n");
+    rsprintf("<input type=submit name=scale value=3d>\n");
+    rsprintf("<input type=submit name=scale value=7d>\n");
+    rsprintf("</tr>\n");
+
+    pscale = getparam("scale");
+    sprintf(str, "%s.gif", path);
+
+    if (pscale)
+      {
+      if (exp_name[0])
+        sprintf(ref, "%sHS/%s?exp=%s?scale=%s", 
+                mhttpd_url, str, exp_name, pscale);
+      else
+        sprintf(ref, "%sHS/%s?scale=%s", 
+                mhttpd_url, str, pscale);
+      }
+    else
+      {
+      if (exp_name[0])
+        sprintf(ref, "%sHS/%s?exp=%s", 
+                mhttpd_url, str, exp_name);
+      else
+        sprintf(ref, "%sHS/%s", 
+                mhttpd_url, str);
+      }
+
+    rsprintf("<tr><td colspan=2><img src=\"%s\" alt=\"%s.gif\"></tr>\n", ref, path);
+    }
+
+  rsprintf("</table></body></html>\r\n");
+}
+
+/*------------------------------------------------------------------*/
+
 void get_password(char *password)
 {
 static char last_password[32];
@@ -5548,6 +6290,27 @@ struct tm *gmt;
   if (equal_ustring(command, "Create ELog from this page"))
     {
     show_elog_page(dec_path);
+    return;
+    }
+
+  /*---- History command -------------------------------------------*/
+
+  if (equal_ustring(command, "history"))
+    {
+    redirect("HS/");
+    return;
+    }
+
+  if (strncmp(path, "HS/", 3) == 0)
+    {
+    if (equal_ustring(command, "config"))
+      {
+      sprintf(str, "%s?cmd=%s", path, command);
+      if (!check_web_password(cookie_wpwd, str, experiment))
+        return;
+      }
+
+    show_hist_page(dec_path+3);
     return;
     }
 
