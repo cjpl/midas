@@ -6,8 +6,8 @@
   Contents:     MIDAS logger program
 
   $Log$
-  Revision 1.15  1999/08/12 11:24:41  midas
-  Fixed message bug
+  Revision 1.16  1999/08/17 13:02:58  midas
+  Revised history system
 
   Revision 1.14  1999/07/23 07:00:56  midas
   Added automatic tape rewind when tape gets full
@@ -1332,8 +1332,7 @@ double dzero;
 
     /* rewind tape */
     ss_tape_open(tape_name, O_RDONLY, &htape);
-    cm_msg(MTALK, "log_write", "rewinding tape %s, please wait", tape_name);
-    ss_sleep(3000);
+    cm_msg(MTALK, "log_write", "rewinding tape %s, please wait", log_chn->path);
 
     cm_set_watchdog_params(TRUE, 300000);  /* 5 min for tape rewind */
     ss_tape_unmount(htape);
@@ -1380,14 +1379,14 @@ void log_history(HNDLE hDB, HNDLE hKey, void *info);
 
 INT open_history()
 {
-INT      size, index, i_tag, status, i, j;
+INT      size, index, i_tag, status, i, j, li;
 INT      n_var, n_tags, n_names;
-HNDLE    hKeyRoot, hKeyVar, hKeyNames, hKeyEq, hKey;
+HNDLE    hKeyRoot, hKeyVar, hKeyNames, hLinkKey, hVarKey, hKeyEq, hHistKey, hKey;
 DWORD    history;
 TAG      *tag;
-KEY      key, varkey;
+KEY      key, varkey, linkkey, histkey;
 WORD     event_id;
-char     str[256], eq_name[NAME_LENGTH];
+char     str[256], eq_name[NAME_LENGTH], hist_name[NAME_LENGTH];
 BOOL     single_names;
 
   /* set direcotry for history files */
@@ -1402,75 +1401,13 @@ BOOL     single_names;
     /* create default history keys */
 
     if (db_find_key(hDB, 0, "/Equipment/Trigger/Statistics/Events per sec.", &hKeyEq) == DB_SUCCESS)
-      db_create_link(hDB, 0, "/History/Links/Trigger per sec.", "/Equipment/Trigger/Statistics/Events per sec.");
+      db_create_link(hDB, 0, "/History/Links/System/Trigger per sec.", "/Equipment/Trigger/Statistics/Events per sec.");
 
     if (db_find_key(hDB, 0, "/Equipment/Trigger/Statistics/kBytes per sec.", &hKeyEq) == DB_SUCCESS)
-      db_create_link(hDB, 0, "/History/Links/Trigger kB per sec.", "/Equipment/Trigger/Statistics/kBytes per sec.");
+      db_create_link(hDB, 0, "/History/Links/System/Trigger kB per sec.", "/Equipment/Trigger/Statistics/kBytes per sec.");
     }
 
-  /* define system history */
-
-  status = db_find_key(hDB, 0, "/History/Links", &hKeyRoot);
-  if (status != DB_SUCCESS)
-    {
-    cm_msg(MERROR, "open_history", "Cannot find /History/Links entry in database");
-    return 0;
-    }
-
-  /* count keys in link list */
-  for (n_var=0 ;; n_var++)
-    {
-    status = db_enum_key(hDB, hKeyRoot, n_var, &hKey);
-    if (status == DB_NO_MORE_SUBKEYS)
-      break;
-    }
-
-  if (n_var == 0)
-    cm_msg(MERROR, "open_history", "system event has no variables in ODB");
-
-  /* create tag array */
-  tag = malloc(sizeof(TAG)*n_var);
-
-  for (i=0,size=0 ; i<n_var ; i++)
-    {
-    status = db_enum_link(hDB, hKeyRoot, i, &hKey);
-    if (status == DB_NO_MORE_SUBKEYS)
-      break;
-
-    /* get link key */
-    db_get_key(hDB, hKey, &varkey);
-    strcpy(tag[i].name, varkey.name);
-
-    /* get link target */
-    db_enum_key(hDB, hKeyRoot, i, &hKey);
-    db_get_key(hDB, hKey, &varkey);
-
-    /* hot-link */
-    db_open_record(hDB, hKey, NULL, varkey.total_size, MODE_READ, log_system_history, NULL);
-
-    tag[i].type = varkey.type;
-    tag[i].n_data = varkey.num_values;
-    size += varkey.total_size;
-    }
-
-  hs_define_event(0, "System", tag, sizeof(TAG)*n_var);
-  free(tag);
-
-  /* define system history */
-  
-  hist_log[0].event_id = 0;
-  hist_log[0].hKeyVar = hKeyRoot;
-  hist_log[0].buffer_size = size;
-  hist_log[0].buffer = malloc(size);
-  hist_log[0].period = 10; /* 10 sec default period */
-  hist_log[0].last_log = 0;
-  if (hist_log[0].buffer == NULL)
-    {
-    cm_msg(MERROR, "open_history", "cannot allocate history buffer");
-    return 0;
-    }
-  
-  /* define equipment events */
+  /*---- define equipment events as history ------------------------*/
 
   status = db_find_key(hDB, 0, "/Equipment", &hKeyRoot);
   if (status != DB_SUCCESS)
@@ -1591,35 +1528,130 @@ BOOL     single_names;
       free(tag);
 
       /* setup hist_log structure for this event */
-      hist_log[index+1].event_id = event_id;
-      hist_log[index+1].hKeyVar = hKeyVar;
+      hist_log[index].event_id = event_id;
+      hist_log[index].hKeyVar = hKeyVar;
       db_get_record_size(hDB, hKeyVar, 0, &size); 
-      hist_log[index+1].buffer_size = size;
-      hist_log[index+1].buffer = malloc(size);
-      hist_log[index+1].period = history;
-      hist_log[index+1].last_log = 0;
-      if (hist_log[index+1].buffer == NULL)
+      hist_log[index].buffer_size = size;
+      hist_log[index].buffer = malloc(size);
+      hist_log[index].period = history;
+      hist_log[index].last_log = 0;
+      if (hist_log[index].buffer == NULL)
         {
         cm_msg(MERROR, "open_history", "cannot allocate history buffer");
         return 0;
         }
 
       /* open hot link to variables */
-      status = db_open_record(hDB, hKeyVar, hist_log[index+1].buffer, 
+      status = db_open_record(hDB, hKeyVar, hist_log[index].buffer, 
                               size, MODE_READ, log_history, NULL);
       if (status != DB_SUCCESS)
         cm_msg(MERROR, "open_history", "cannot open variable record for history logging");
       }
     else
       {
-      hist_log[index+1].event_id = 0;
-      hist_log[index+1].hKeyVar = 0;
-      hist_log[index+1].buffer = NULL;
-      hist_log[index+1].buffer_size = 0;
-      hist_log[index+1].period = 0;
+      hist_log[index].event_id = 0;
+      hist_log[index].hKeyVar = 0;
+      hist_log[index].buffer = NULL;
+      hist_log[index].buffer_size = 0;
+      hist_log[index].period = 0;
       }
     }
 
+  /*---- define linked trees ---------------------------------------*/
+
+  status = db_find_key(hDB, 0, "/History/Links", &hKeyRoot);
+  if (status != DB_SUCCESS)
+    {
+    cm_msg(MERROR, "open_history", "Cannot find /History/Links entry in database");
+    return 0;
+    }
+
+  for (li = 0 ; ; li++)
+    {
+    status = db_enum_link(hDB, hKeyRoot, li, &hHistKey);
+    if (status == DB_NO_MORE_SUBKEYS)
+      break;
+
+    db_get_key(hDB, hHistKey, &histkey);
+    strcpy(hist_name, histkey.name);
+    db_enum_key(hDB, hKeyRoot, li, &hHistKey);
+
+    db_get_key(hDB, hHistKey, &key);
+    if (key.type != TID_KEY)
+      {
+      cm_msg(MERROR, "open_history", "Only subkeys allows in /history/links");
+      continue;
+      }
+
+    /* count subkeys in link */
+    for (i=n_var=0 ;; i++)
+      {
+      status = db_enum_key(hDB, hHistKey, i, &hKey);
+      if (status == DB_NO_MORE_SUBKEYS)
+        break;
+      db_get_key(hDB, hKey, &key);
+      if (key.type != TID_KEY)
+        n_var++;
+      }
+
+    if (n_var == 0)
+      cm_msg(MERROR, "open_history", "History event %s has no variables in ODB", hist_name);
+
+    /* create tag array */
+    tag = malloc(sizeof(TAG)*n_var);
+
+    for (i=0,size=0,n_var=0 ;; i++)
+      {
+      status = db_enum_link(hDB, hHistKey, i, &hLinkKey);
+      if (status == DB_NO_MORE_SUBKEYS)
+        break;
+
+      /* get link key */
+      db_get_key(hDB, hLinkKey, &linkkey);
+
+      if (linkkey.type == TID_KEY)
+        continue;
+
+      strcpy(tag[n_var].name, linkkey.name);
+
+      /* get link target */
+      db_enum_key(hDB, hHistKey, i, &hVarKey);
+      db_get_key(hDB, hVarKey, &varkey);
+
+      /* hot-link individual values */
+      if (histkey.type == TID_KEY)
+        db_open_record(hDB, hVarKey, NULL, varkey.total_size, MODE_READ, log_system_history, (void *) index);
+
+      tag[n_var].type = varkey.type;
+      tag[n_var].n_data = varkey.num_values;
+      size += varkey.total_size;
+      n_var++;
+      }
+
+    /* hot-link whole subtree */
+    if (histkey.type == TID_LINK)
+      db_open_record(hDB, hHistKey, NULL, size, MODE_READ, log_system_history, (void *) index);
+
+    hs_define_event(index, hist_name, tag, sizeof(TAG)*n_var);
+    free(tag);
+
+    /* define system history */
+  
+    hist_log[index].event_id = 0;
+    hist_log[index].hKeyVar = hHistKey;
+    hist_log[index].buffer_size = size;
+    hist_log[index].buffer = malloc(size);
+    hist_log[index].period = 10; /* 10 sec default period */
+    hist_log[index].last_log = 0;
+    if (hist_log[index].buffer == NULL)
+      {
+      cm_msg(MERROR, "open_history", "cannot allocate history buffer");
+      return 0;
+      }
+
+    index++;
+    }
+  
   return CM_SUCCESS;
 }
 
@@ -1685,37 +1717,39 @@ INT i, size;
 
 void log_system_history(HNDLE hDB, HNDLE hKey, void *info)
 {
-INT   i, size, total_size, status;
+INT   i, size, total_size, status, index;
 KEY   key;
 
+  index = (int) info;
+  
   /* check if over period */
-  if (ss_time() - hist_log[0].last_log < hist_log[0].period)
+  if (ss_time() - hist_log[index].last_log < hist_log[index].period)
     return;
 
   for (i=0,total_size=0 ; ; i++)
     {
-    status = db_enum_key(hDB, hist_log[0].hKeyVar, i, &hKey);
+    status = db_enum_key(hDB, hist_log[index].hKeyVar, i, &hKey);
     if (status == DB_NO_MORE_SUBKEYS)
       break;
 
     db_get_key(hDB, hKey, &key);
     size = key.total_size;
-    db_get_data(hDB, hKey, (char *)hist_log[0].buffer+total_size, &size, key.type);
+    db_get_data(hDB, hKey, (char *)hist_log[index].buffer+total_size, &size, key.type);
     total_size += size;
     }
   
-  if (total_size != hist_log[0].buffer_size)
+  if (total_size != hist_log[index].buffer_size)
     {
     close_history();
     open_history();
     }
   else
-    hs_write_event(0, hist_log[0].buffer, hist_log[0].buffer_size);
+    hs_write_event(index, hist_log[index].buffer, hist_log[index].buffer_size);
 
-  hist_log[0].last_log = ss_time();
+  hist_log[index].last_log = ss_time();
 
   /* simulate odb key update for hot links connected to system history */
-  db_notify_clients(hDB, hist_log[0].hKeyVar, FALSE);
+  db_notify_clients(hDB, hist_log[index].hKeyVar, FALSE);
 
 }
 
