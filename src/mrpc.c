@@ -6,6 +6,9 @@
   Contents:     List of MIDAS RPC functions with parameters
 
   $Log$
+  Revision 1.15  1999/09/27 13:02:32  midas
+  Added new el_submit in mserver
+
   Revision 1.14  1999/09/17 11:48:07  midas
   Alarm system half finished
 
@@ -560,6 +563,12 @@ static RPC_LIST rpc_list_library[] = {
      {TID_STRING,     RPC_IN}, 
      {TID_STRING,     RPC_IN}, 
      {TID_STRING,     RPC_IN}, 
+     {TID_STRING,     RPC_IN}, 
+     {TID_ARRAY,      RPC_IN | RPC_VARARRAY}, 
+     {TID_INT,        RPC_IN},
+     {TID_STRING,     RPC_IN}, 
+     {TID_ARRAY,      RPC_IN | RPC_VARARRAY}, 
+     {TID_INT,        RPC_IN},
      {TID_STRING,     RPC_IN}, 
      {TID_ARRAY,      RPC_IN | RPC_VARARRAY}, 
      {TID_INT,        RPC_IN},

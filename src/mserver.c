@@ -6,6 +6,9 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
+  Revision 1.19  1999/09/27 13:02:32  midas
+  Added new el_submit in mserver
+
   Revision 1.18  1999/09/17 11:48:07  midas
   Alarm system half finished
 
@@ -867,8 +870,11 @@ INT convert_flags;
 
     case RPC_EL_SUBMIT:
       status = el_submit(CINT(0), CSTRING(1), CSTRING(2), CSTRING(3), CSTRING(4),
-                         CSTRING(5), CSTRING(6), CSTRING(7), CSTRING(8), 
-                         CARRAY(9), CINT(10), CSTRING(11), CINT(12));
+                         CSTRING(5), CSTRING(6), CSTRING(7), 
+                         CSTRING(8), CARRAY(9), CINT(10), 
+                         CSTRING(11), CARRAY(12), CINT(13), 
+                         CSTRING(14), CARRAY(15), CINT(16), 
+                         CSTRING(17), CINT(18));
       break;
     
     case RPC_AL_CHECK:
