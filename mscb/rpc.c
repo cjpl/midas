@@ -6,6 +6,9 @@
   Contents:     List of MSCB RPC functions with parameters
 
   $Log$
+  Revision 1.7  2003/03/19 16:35:03  midas
+  Eliminated configuration parameters
+
   Revision 1.6  2003/03/06 16:08:50  midas
   Protocol version 1.3 (change node name)
 
@@ -85,12 +88,12 @@ static RPC_LIST rpc_list[] = {
      {TID_STRUCT,     RPC_OUT, sizeof(MSCB_INFO)}, 
      {0} }},
 
-  { RPC_MSCB_INFO_CHANNEL, "mscb_info_channel",
+  { RPC_MSCB_INFO_VARIABLE, "mscb_info_variable",
     {{TID_INT,        RPC_IN}, 
      {TID_INT,        RPC_IN}, 
      {TID_INT,        RPC_IN}, 
      {TID_INT,        RPC_IN}, 
-     {TID_STRUCT,     RPC_OUT, sizeof(MSCB_INFO_CHN)}, 
+     {TID_STRUCT,     RPC_OUT, sizeof(MSCB_INFO_VAR)}, 
      {0} }},
 
   { RPC_MSCB_SET_ADDR, "mscb_set_addr",
@@ -122,15 +125,6 @@ static RPC_LIST rpc_list[] = {
      {TID_INT,        RPC_IN}, 
      {0} }},
      
-  { RPC_MSCB_WRITE_CONF, "mscb_write_conf",
-    {{TID_INT,        RPC_IN}, 
-     {TID_INT,        RPC_IN}, 
-     {TID_BYTE,       RPC_IN},
-     {TID_ARRAY,      RPC_IN | RPC_VARARRAY}, 
-     {TID_INT,        RPC_IN}, 
-     {0} }},
-
-
   { RPC_MSCB_FLASH, "mscb_flash",
     {{TID_INT,        RPC_IN}, 
      {TID_INT,        RPC_IN}, 
@@ -152,18 +146,10 @@ static RPC_LIST rpc_list[] = {
      {TID_INT,        RPC_IN | RPC_OUT}, 
      {0} }},
 
-  { RPC_MSCB_READ, "mscb_read_channels",
+  { RPC_MSCB_READ_RANGE, "mscb_read_range",
     {{TID_INT,        RPC_IN}, 
      {TID_INT,        RPC_IN}, 
      {TID_BYTE,       RPC_IN},
-     {TID_BYTE,       RPC_IN},
-     {TID_ARRAY,      RPC_OUT | RPC_VARARRAY}, 
-     {TID_INT,        RPC_IN | RPC_OUT}, 
-     {0} }},
-
-  { RPC_MSCB_READ_CONF, "mscb_read_conf",
-    {{TID_INT,        RPC_IN}, 
-     {TID_INT,        RPC_IN}, 
      {TID_BYTE,       RPC_IN},
      {TID_ARRAY,      RPC_OUT | RPC_VARARRAY}, 
      {TID_INT,        RPC_IN | RPC_OUT}, 
@@ -332,8 +318,8 @@ int status;
       status = mscb_info(CINT(0), CINT(1), CARRAY(2));
       break;
 
-    case RPC_MSCB_INFO_CHANNEL:
-      status = mscb_info_channel(CINT(0), CINT(1), CINT(2), CINT(3), CARRAY(4));
+    case RPC_MSCB_INFO_VARIABLE:
+      status = mscb_info_variable(CINT(0), CINT(1), CINT(2), CARRAY(3));
       break;
 
     case RPC_MSCB_SET_ADDR:
@@ -352,10 +338,6 @@ int status;
       status = mscb_write(CINT(0), CINT(1), CBYTE(2), CARRAY(3), CINT(4));
       break;
 
-    case RPC_MSCB_WRITE_CONF:
-      status = mscb_write_conf(CINT(0), CINT(1), CBYTE(2), CARRAY(3), CINT(4));
-      break;
-
     case RPC_MSCB_FLASH:
       status = mscb_flash(CINT(0), CINT(1));
       break;
@@ -368,12 +350,8 @@ int status;
       status = mscb_read(CINT(0), CINT(1), CBYTE(2), CARRAY(3), CPINT(4));
       break;
 
-    case RPC_MSCB_READ_CHANNELS:
-      status = mscb_read_channels(CINT(0), CINT(1), CBYTE(2), CBYTE(3), CARRAY(4), CPINT(5));
-      break;
-
-    case RPC_MSCB_READ_CONF:
-      status = mscb_read_conf(CINT(0), CINT(1), CBYTE(2), CARRAY(3), CPINT(4));
+    case RPC_MSCB_READ_RANGE:
+      status = mscb_read_range(CINT(0), CINT(1), CBYTE(2), CBYTE(3), CARRAY(4), CPINT(5));
       break;
 
     case RPC_MSCB_ECHO:

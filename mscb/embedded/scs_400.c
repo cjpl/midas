@@ -9,6 +9,9 @@
                 for SCS-400 thermo couple I/O
 
   $Log$
+  Revision 1.11  2003/03/19 16:35:03  midas
+  Eliminated configuration parameters
+
   Revision 1.10  2003/03/14 13:47:22  midas
   Switched P1 to push-pull
 
@@ -49,8 +52,7 @@ char code node_name[] = "SCS-400";
 #define GAIN      0   // gain for internal PGA
 #define AVERAGE  12   // average 2^12 times
 
-/*---- Define channels and configuration parameters returned to
-       the CMD_GET_INFO command                                 ----*/
+/*---- Define variable parameters returned to the CMD_GET_INFO command ----*/
 
 /* data buffer (mirrored in EEPROM) */
 
@@ -59,7 +61,7 @@ struct {
   float temp[8];
 } idata user_data;
 
-MSCB_INFO_CHN code channel[] = {
+MSCB_INFO_VAR code variables[] = {
   4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "Power0", &user_data.power[0],
   4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "Power1", &user_data.power[1],
   4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "Power2", &user_data.power[2],
@@ -79,17 +81,13 @@ MSCB_INFO_CHN code channel[] = {
   0
 };
 
-MSCB_INFO_CHN code conf_param[] = {
-  0
-};
-
 /********************************************************************\
 
   Application specific init and inout/output routines
 
 \********************************************************************/
 
-void user_write(unsigned char channel) reentrant;
+void user_write(unsigned char index) reentrant;
 
 /*---- User init function ------------------------------------------*/
 
@@ -116,38 +114,24 @@ unsigned char i;
 
 #pragma NOAREGS
 
-void user_write(unsigned char channel) reentrant
+void user_write(unsigned char index) reentrant
 {
-  if (channel);
+  if (index);
 }
 
 /*---- User read function ------------------------------------------*/
 
-unsigned char user_read(unsigned char channel)
+unsigned char user_read(unsigned char index)
 {
-  if (channel)
+  if (index)
 
   return 0;
 }
 
-/*---- User write config function ----------------------------------*/
-
-void user_write_conf(unsigned char channel) reentrant
-{
-  if (channel);
-}
-
-/*---- User read config function -----------------------------------*/
-
-void user_read_conf(unsigned char channel)
-{
-  if (channel);
-}
-
 /*---- User function called vid CMD_USER command -------------------*/
 
-unsigned char user_func(unsigned char idata *data_in,
-                        unsigned char idata *data_out)
+unsigned char user_func(unsigned char *data_in,
+                        unsigned char *data_out)
 {
   /* echo input data */
   data_out[0] = data_in[0];

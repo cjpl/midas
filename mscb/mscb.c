@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus communication functions
 
   $Log$
+  Revision 1.31  2003/03/19 16:35:03  midas
+  Eliminated configuration parameters
+
   Revision 1.30  2003/03/06 16:08:50  midas
   Protocol version 1.3 (change node name)
 
@@ -96,8 +99,8 @@
 
 \********************************************************************/
 
-#define MSCB_LIBRARY_VERSION   "1.3.0"
-#define MSCB_PROTOCOL_VERSION  "1.3"
+#define MSCB_LIBRARY_VERSION   "1.4.0"
+#define MSCB_PROTOCOL_VERSION  "1.4"
 
 #ifdef _MSC_VER           // Windows includes
 
@@ -1118,7 +1121,7 @@ int mscb_reset(int fd)
 int mscb_ping(int fd, int adr)
 /********************************************************************\
 
-  Routine: mscb_info
+  Routine: mscb_ping
 
   Purpose: Ping node to see if it's alive
 
@@ -1178,7 +1181,7 @@ int mscb_info(int fd, int adr, MSCB_INFO *info)
 \********************************************************************/
 {
 int i, status;
-unsigned char buf[80];
+unsigned char buf[256];
 
   if (rpc_connected())
     return rpc_call(RPC_MSCB_INFO, fd, adr, info);
@@ -1221,24 +1224,20 @@ unsigned char buf[80];
 
 /*------------------------------------------------------------------*/
 
-int mscb_info_channel(int fd, int adr, int type, int index, MSCB_INFO_CHN *info)
+int mscb_info_variable(int fd, int adr, int index, MSCB_INFO_VAR *info)
 /********************************************************************\
 
-  Routine: mscb_info_channel
+  Routine: mscb_info_variable
 
-  Purpose: Retrieve info on a specific channel
+  Purpose: Retrieve info on a specific node variable
 
   Input:
     int fd                  File descriptor for connection
     int adr                 Node address
-    int type                Channel type, one of
-                              GET_INFO_WRITE
-                              GET_INFO_READ
-                              GET_INFO_CONF
-    int index               Channel index 0..255
+    int index               Variable index 0..255
 
   Output:
-    MSCB_INFO_CHN *info     Info structure defined in mscb.h
+    MSCB_INFO_VAR *info     Info structure defined in mscb.h
 
   Function value:
     MSCB_SUCCESS            Successful completion
@@ -1253,7 +1252,7 @@ int i, status;
 unsigned char buf[80];
 
   if (rpc_connected())
-    return rpc_call(RPC_MSCB_INFO_CHANNEL, fd, adr, type, index, info);
+    return rpc_call(RPC_MSCB_INFO_VARIABLE, fd, adr, index, info);
 
   if (fd < 1 || mscb_fd[fd-1].fd == 0)
     return MSCB_INVAL_PARAM;
@@ -1268,22 +1267,21 @@ unsigned char buf[80];
     return status;
     }
 
-  buf[0] = CMD_GET_INFO+2;
-  buf[1] = type;
-  buf[2] = index;
-  buf[3] = crc8(buf, 3);
-  mscb_out(fd, buf, 4, 0);
+  buf[0] = CMD_GET_INFO+1;
+  buf[1] = index;
+  buf[2] = crc8(buf, 2);
+  mscb_out(fd, buf, 3, 0);
 
   i = mscb_in(fd, buf, sizeof(buf), 5000);
   mscb_release(fd);
 
-  if (i<(int)sizeof(MSCB_INFO_CHN)+3)
+  if (i<(int)sizeof(MSCB_INFO_VAR)+3)
     return MSCB_TIMEOUT;
 
-  memcpy(info, buf+2, sizeof(MSCB_INFO_CHN));
+  memcpy(info, buf+2, sizeof(MSCB_INFO_VAR));
 
   /* do CRC check */
-  if (crc8(buf, sizeof(MSCB_INFO_CHN)+2) != buf[sizeof(MSCB_INFO_CHN)+2])
+  if (crc8(buf, sizeof(MSCB_INFO_VAR)+2) != buf[sizeof(MSCB_INFO_VAR)+2])
     return MSCB_CRC_ERROR;
 
   return MSCB_SUCCESS;
@@ -1363,7 +1361,7 @@ int mscb_set_name(int fd, int adr, char *name)
 
 \********************************************************************/
 {
-unsigned char buf[20];
+unsigned char buf[256];
 int status, i;
 
   if (rpc_connected())
@@ -1402,7 +1400,7 @@ int status, i;
 
 /*------------------------------------------------------------------*/
 
-int mscb_write_group(int fd, int adr, unsigned char channel, void *data, int size)
+int mscb_write_group(int fd, int adr, unsigned char index, void *data, int size)
 /********************************************************************\
 
   Routine: mscb_write_na
@@ -1412,7 +1410,7 @@ int mscb_write_group(int fd, int adr, unsigned char channel, void *data, int siz
   Input:
     int fd                  File descriptor for connection
     int adr                 Group address
-    unsigned char channel   Channel index 0..255
+    unsigned char index     Variable index 0..255
     unsigned int  data      Data to send
     int size                Data size in bytes 1..4 for byte, word,
                             and dword
@@ -1425,10 +1423,10 @@ int mscb_write_group(int fd, int adr, unsigned char channel, void *data, int siz
 {
 int i, status;
 unsigned char *d;
-unsigned char buf[10];
+unsigned char buf[256];
 
   if (rpc_connected())
-    return rpc_call(RPC_MSCB_WRITE_GROUP, fd, adr, channel, data, size);
+    return rpc_call(RPC_MSCB_WRITE_GROUP, fd, adr, index, data, size);
 
   if (size > 4 || size < 1)
     return MSCB_INVAL_PARAM;
@@ -1447,7 +1445,7 @@ unsigned char buf[10];
     }
 
   buf[0] = CMD_WRITE_NA+size+1;
-  buf[1] = channel;
+  buf[1] = index;
 
   for (i=0,d=data ; i<size ; i++)
     buf[2+size-1-i] = *d++;
@@ -1462,17 +1460,17 @@ unsigned char buf[10];
 
 /*------------------------------------------------------------------*/
 
-int mscb_write(int fd, int adr, unsigned char channel, void *data, int size)
+int mscb_write(int fd, int adr, unsigned char index, void *data, int size)
 /********************************************************************\
 
   Routine: mscb_write
 
-  Purpose: Write data to channel on single node
+  Purpose: Write data to variable on single node
 
   Input:
     int fd                  File descriptor for connection
     int adr                 Node address
-    unsigned char channel   Channel index 0..255
+    unsigned char index     Variable index 0..255
     void *data              Data to send
     int size                Data size in bytes 1..4 for byte, word,
                             and dword
@@ -1487,13 +1485,13 @@ int mscb_write(int fd, int adr, unsigned char channel, void *data, int size)
 \********************************************************************/
 {
 int           i, status;
-unsigned char buf[10], crc, ack[2];
+unsigned char buf[256], crc, ack[2];
 unsigned char *d;
 
   if (rpc_connected())
-    return rpc_call(RPC_MSCB_WRITE, fd, adr, channel, data, size);
+    return rpc_call(RPC_MSCB_WRITE, fd, adr, index, data, size);
 
-  if (size > 4 || size < 1)
+  if (size < 1)
     return MSCB_INVAL_PARAM;
 
   if (fd < 1 || mscb_fd[fd-1].fd == 0)
@@ -1509,91 +1507,35 @@ unsigned char *d;
     return status;
     }
 
-  buf[0] = CMD_WRITE_ACK+size+1;
-  buf[1] = channel;
+  if (size < 7)
+    {
+    buf[0] = CMD_WRITE_ACK+size+1;
+    buf[1] = index;
 
-  for (i=0,d=data ; i<size ; i++)
-    buf[2+size-1-i] = *d++;
+    for (i=0,d=data ; i<size ; i++)
+      buf[2+size-1-i] = *d++;
 
-  crc = crc8(buf, 2+i);
-  buf[2+i] = crc;
-  mscb_out(fd, buf, 3+i, 0);
+    crc = crc8(buf, 2+i);
+    buf[2+i] = crc;
+    mscb_out(fd, buf, 3+i, 0);
+    }
+  else
+    {
+    buf[0] = CMD_WRITE_ACK+7;
+    buf[1] = size + 1;
+    buf[2] = index;
+
+    for (i=0,d=data ; i<size ; i++)
+      buf[3+i] = *d++;
+
+    crc = crc8(buf, 3+i);
+    buf[3+i] = crc;
+    mscb_out(fd, buf, 4+i, 0);
+    }
 
   /* read acknowledge */
   i = mscb_in(fd, ack, 2, 5000);
   mscb_release(fd);
-  if (i<2)
-    return MSCB_TIMEOUT;
-
-  if (ack[0] != CMD_ACK || ack[1] != crc)
-    return MSCB_CRC_ERROR;
-
-  return MSCB_SUCCESS;
-}
-
-/*------------------------------------------------------------------*/
-
-int mscb_write_conf(int fd, int adr, unsigned char channel, void *data, int size)
-/********************************************************************\
-
-  Routine: mscb_write_conf
-
-  Purpose: Write configuration parameter to node with acknowledge
-
-  Input:
-    int fd                  File descriptor for connection
-    int adr                 Node address
-    unsigned char channel   Channel index 0..254, 255 for node CSR
-    unsigned int  data      Data to send
-    int size                Data size in bytes 1..4 for byte, word,
-                            and dword
-
-  Function value:
-    MSCB_SUCCESS            Successful completion
-    MSCB_TIMEOUT            Timeout receiving acknowledge
-    MSCB_CRC_ERROR          CRC error
-    MSCB_INVAL_PARAM        Parameter "size" has invalid value
-    MSCB_MUTEX              Cannot obtain mutex for mscb
-
-\********************************************************************/
-{
-int           i, status;
-unsigned char *d;
-unsigned char buf[10], crc, ack[2];
-
-  if (rpc_connected())
-    return rpc_call(RPC_MSCB_WRITE_CONF, fd, adr, channel, data, size);
-
-  if (size > 4 || size < 1)
-    return MSCB_INVAL_PARAM;
-
-  if (fd < 1 || mscb_fd[fd-1].fd == 0)
-    return MSCB_INVAL_PARAM;
-
-  if (mscb_lock(fd) != MSCB_SUCCESS)
-    return MSCB_MUTEX;
-
-  status = mscb_addr(fd, CMD_PING16, adr, 10);
-  if (status != MSCB_SUCCESS)
-    {
-    mscb_release(fd);
-    return status;
-    }
-
-  buf[0] = CMD_WRITE_CONF+size+1;
-  buf[1] = channel;
-
-  for (i=0,d=data ; i<size ; i++)
-    buf[2+size-1-i] = *d++;
-
-  crc = crc8(buf, 2+i);
-  buf[2+i] = crc;
-  mscb_out(fd, buf, 3+i, 0);
-
-  /* read acknowledge, 100ms timeout */
-  i = mscb_in(fd, ack, 2, 100000);
-  mscb_release(fd);
-
   if (i<2)
     return MSCB_TIMEOUT;
 
@@ -1610,8 +1552,7 @@ int mscb_flash(int fd, int adr)
 
   Routine: mscb_flash
 
-  Purpose: Flash configuration parameter and channels values to
-           EEPROM
+  Purpose: Flash node variables to EEPROM
 
 
   Input:
@@ -1873,105 +1814,17 @@ unsigned short ofs;
 
 /*------------------------------------------------------------------*/
 
-int mscb_read(int fd, int adr, unsigned char channel, void *data, int *size)
+int mscb_read(int fd, int adr, unsigned char index, void *data, int *size)
 /********************************************************************\
 
   Routine: mscb_read
 
-  Purpose: Read data from channel on node
+  Purpose: Read data from variable on node
 
   Input:
     int fd                  File descriptor for connection
     int adr                 Node address
-    unsigned char channel   Channel index 0..255
-    int size                Buffer size for data
-
-  Output:
-    void *data              Received data
-    int  *size              Number of received bytes
-
-  Function value:
-    MSCB_SUCCESS            Successful completion
-    MSCB_TIMEOUT            Timeout receiving acknowledge
-    MSCB_CRC_ERROR          CRC error
-    MSCB_INVAL_PARAM        Parameter "size" has invalid value
-    MSCB_MUTEX              Cannot obtain mutex for mscb
-
-\********************************************************************/
-{
-int           i, n, status;
-unsigned char buf[10], crc;
-
-  memset(data, 0, *size);
-  if (rpc_connected())
-    return rpc_call(RPC_MSCB_READ, fd, adr, channel, data, size);
-
-  if (fd < 1 || mscb_fd[fd-1].fd == 0)
-    return MSCB_INVAL_PARAM;
-
-  if (mscb_lock(fd) != MSCB_SUCCESS)
-    return MSCB_MUTEX;
-
-  status = mscb_addr(fd, CMD_PING16, adr, 10);
-  if (status != MSCB_SUCCESS)
-    {
-    mscb_release(fd);
-    return status;
-    }
-
-  /* try ten times */
-  for (n=0 ; n<10 ; n++)
-    {
-    buf[0] = CMD_READ+1;
-    buf[1] = channel;
-    buf[2] = crc8(buf, 2);
-    mscb_out(fd, buf, 3, 0);
-
-    /* read data */
-    i = mscb_in(fd, buf, 10, 5000);
-
-    if (i<2)
-      continue;
-
-    crc = crc8(buf, i-1);
-
-    if (buf[0] != CMD_ACK+i-2 || buf[i-1] != crc)
-      continue;
-
-    memcpy(data, buf+1, i-2);
-    if (i-2 == 2)
-      WORD_SWAP(data);
-    if (i-2 == 4)
-      DWORD_SWAP(data);
-
-    *size = i-2;
-
-    mscb_release(fd);
-    return MSCB_SUCCESS;
-    }
-
-  mscb_release(fd);
-
-  if (i<2)
-    return MSCB_TIMEOUT;
-
-  return MSCB_CRC_ERROR;
-}
-
-/*------------------------------------------------------------------*/
-
-int mscb_read_channels(int fd, int adr, unsigned char channel1, unsigned char channel2, void *data, int *size)
-/********************************************************************\
-
-  Routine: mscb_read
-
-  Purpose: Read data from channel on node
-
-  Input:
-    int fd                  File descriptor for connection
-    int adr                 Node address
-    unsigned char channel1  First channel to read
-    unsigned char channel2  Last channel to read
+    unsigned char index     Variable index 0..255
     int size                Buffer size for data
 
   Output:
@@ -1992,7 +1845,103 @@ unsigned char buf[256], crc;
 
   memset(data, 0, *size);
   if (rpc_connected())
-    return rpc_call(RPC_MSCB_READ_CHANNELS, fd, adr, channel1, channel2, data, size);
+    return rpc_call(RPC_MSCB_READ, fd, adr, index, data, size);
+
+  if (fd < 1 || mscb_fd[fd-1].fd == 0)
+    return MSCB_INVAL_PARAM;
+
+  if (mscb_lock(fd) != MSCB_SUCCESS)
+    return MSCB_MUTEX;
+
+  status = mscb_addr(fd, CMD_PING16, adr, 10);
+  if (status != MSCB_SUCCESS)
+    {
+    mscb_release(fd);
+    return status;
+    }
+
+  /* try ten times */
+  for (n=0 ; n<10 ; n++)
+    {
+    buf[0] = CMD_READ+1;
+    buf[1] = index;
+    buf[2] = crc8(buf, 2);
+    mscb_out(fd, buf, 3, 0);
+
+    /* read data */
+    i = mscb_in(fd, buf, sizeof(buf), 5000);
+
+    if (i<2)
+      continue;
+
+    crc = crc8(buf, i-1);
+
+    if ((buf[0] != CMD_ACK+i-2 && buf[0] != CMD_ACK+7) || buf[i-1] != crc)
+      continue;
+
+    if (buf[0] == CMD_ACK+7)
+      {
+      memcpy(data, buf+2, i-3);  // variable length
+      *size = i-3;
+      }
+    else
+      {
+      memcpy(data, buf+1, i-2);
+      *size = i-2;
+      }
+
+    if (i-2 == 2)
+      WORD_SWAP(data);
+    if (i-2 == 4)
+      DWORD_SWAP(data);
+
+    mscb_release(fd);
+    return MSCB_SUCCESS;
+    }
+
+  mscb_release(fd);
+
+  if (i<2)
+    return MSCB_TIMEOUT;
+
+  return MSCB_CRC_ERROR;
+}
+
+/*------------------------------------------------------------------*/
+
+int mscb_read_range(int fd, int adr, unsigned char index1, unsigned char index2, void *data, int *size)
+/********************************************************************\
+
+  Routine: mscb_read
+
+  Purpose: Read data from channel on node
+
+  Input:
+    int fd                  File descriptor for connection
+    int adr                 Node address
+    unsigned char index1    First index to read
+    unsigned char index2    Last index to read
+    int size                Buffer size for data
+
+  Output:
+    void *data              Received data
+    int  *size              Number of received bytes
+
+  Function value:
+    MSCB_SUCCESS            Successful completion
+    MSCB_TIMEOUT            Timeout receiving acknowledge
+    MSCB_CRC_ERROR          CRC error
+    MSCB_INVAL_PARAM        Parameter "size" has invalid value
+    MSCB_MUTEX              Cannot obtain mutex for mscb
+
+\********************************************************************/
+{
+int           i, n, status;
+unsigned char buf[256], crc;
+
+  memset(data, 0, *size);
+  if (rpc_connected())
+    return rpc_call(RPC_MSCB_READ_RANGE, fd, adr, index1, index2, data, size);
 
   if (fd < 1 || mscb_fd[fd-1].fd == 0)
     return MSCB_INVAL_PARAM;
@@ -2011,8 +1960,8 @@ unsigned char buf[256], crc;
   for (n=0 ; n<10 ; n++)
     {
     buf[0] = CMD_READ+2;
-    buf[1] = channel1;
-    buf[2] = channel2;
+    buf[1] = index1;
+    buf[2] = index2;
     buf[3] = crc8(buf, 3);
     mscb_out(fd, buf, 4, 0);
 
@@ -2029,93 +1978,6 @@ unsigned char buf[256], crc;
 
     memcpy(data, buf+2, i-3);
     *size = i-3;
-
-    mscb_release(fd);
-    return MSCB_SUCCESS;
-    }
-
-  mscb_release(fd);
-
-  if (i<2)
-    return MSCB_TIMEOUT;
-
-  return MSCB_CRC_ERROR;
-}
-
-/*------------------------------------------------------------------*/
-
-int mscb_read_conf(int fd, int adr, unsigned char index, void *data, int *size)
-/********************************************************************\
-
-  Routine: mscb_read_conf
-
-  Purpose: Read configuration parameter on node
-
-  Input:
-    int fd                  File descriptor for connection
-    int adr                 Node address
-    unsigned char index     Parameter index 0..255
-    int size                Buffer size for data
-
-  Output:
-    void *data              Received data
-    int  *size              Number of received bytes
-
-  Function value:
-    MSCB_SUCCESS            Successful completion
-    MSCB_TIMEOUT            Timeout receiving acknowledge
-    MSCB_CRC_ERROR          CRC error
-    MSCB_INVAL_PARAM        Parameter "size" has invalid value
-    MSCB_MUTEX              Cannot obtain mutex for mscb
-
-\********************************************************************/
-{
-int           i, n, status;
-unsigned char buf[10], crc;
-
-  memset(data, 0, *size);
-  if (rpc_connected())
-    return rpc_call(RPC_MSCB_READ_CONF, fd, adr, index, data, size);
-
-  if (fd < 1 || mscb_fd[fd-1].fd == 0)
-    return MSCB_INVAL_PARAM;
-
-  if (mscb_lock(fd) != MSCB_SUCCESS)
-    return MSCB_MUTEX;
-
-  status = mscb_addr(fd, CMD_PING16, adr, 10);
-  if (status != MSCB_SUCCESS)
-    {
-    mscb_release(fd);
-    return status;
-    }
-
-  /* try ten times */
-  for (n=0 ; n<10 ; n++)
-    {
-    buf[0] = CMD_READ_CONF+1;
-    buf[1] = index;
-    buf[2] = crc8(buf, 2);
-    mscb_out(fd, buf, 3, 0);
-
-    /* read data */
-    i = mscb_in(fd, buf, 10, 5000);
-
-    if (i<2)
-      continue;
-
-    crc = crc8(buf, i-1);
-
-    if (buf[0] != CMD_ACK+i-2 || buf[i-1] != crc)
-      continue;
-
-    memcpy(data, buf+1, i-2);
-    if (i-2 == 2)
-      WORD_SWAP(data);
-    if (i-2 == 4)
-      DWORD_SWAP(data);
-
-    *size = i-2;
 
     mscb_release(fd);
     return MSCB_SUCCESS;

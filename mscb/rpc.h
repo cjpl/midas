@@ -6,6 +6,9 @@
   Contents:     Header fiel for MSCB RPC funcions
 
   $Log$
+  Revision 1.6  2003/03/19 16:35:03  midas
+  Eliminated configuration parameters
+
   Revision 1.5  2003/03/06 16:08:50  midas
   Protocol version 1.3 (change node name)
 
@@ -104,19 +107,17 @@ typedef struct {
 #define RPC_MSCB_REBOOT            4
 #define RPC_MSCB_PING              5
 #define RPC_MSCB_INFO              6
-#define RPC_MSCB_INFO_CHANNEL      7
+#define RPC_MSCB_INFO_VARIABLE     7
 #define RPC_MSCB_SET_ADDR          8
 #define RPC_MSCB_WRITE             9
 #define RPC_MSCB_WRITE_GROUP      10
-#define RPC_MSCB_WRITE_CONF       11
-#define RPC_MSCB_FLASH            12
-#define RPC_MSCB_UPLOAD           13
-#define RPC_MSCB_READ             14
-#define RPC_MSCB_READ_CHANNELS    15
-#define RPC_MSCB_READ_CONF        16
-#define RPC_MSCB_USER             17
-#define RPC_MSCB_ECHO             18
-#define RPC_MSCB_SET_NAME         19
+#define RPC_MSCB_FLASH            11
+#define RPC_MSCB_UPLOAD           12
+#define RPC_MSCB_READ             13
+#define RPC_MSCB_READ_RANGE       14
+#define RPC_MSCB_USER             15
+#define RPC_MSCB_ECHO             16
+#define RPC_MSCB_SET_NAME         17
 
 /*------------------------------------------------------------------*/
 

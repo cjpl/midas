@@ -6,6 +6,9 @@
   Contents:     Header fiel for MSCB funcions
 
   $Log$
+  Revision 1.19  2003/03/19 16:35:03  midas
+  Eliminated configuration parameters
+
   Revision 1.18  2003/03/06 16:08:50  midas
   Protocol version 1.3 (change node name)
 
@@ -94,18 +97,15 @@
 #define CMD_WRITE_NA    0x80
 #define CMD_WRITE_ACK   0x88
 
-#define CMD_WRITE_CONF  0x90
 #define CMD_FLASH       0x98
 
 #define CMD_READ        0xA0
-#define CMD_READ_CONF   0xA8
 
 #define CMD_WRITE_BLOCK 0xB5
 #define CMD_READ_BLOCK  0xB9
 
 #define GET_INFO_GENERAL   0
-#define GET_INFO_CHANNEL   1
-#define GET_INFO_CONF      2
+#define GET_INFO_VARIABLE  1
 
 /*---- flags from the configuration and status register (CSR) ------*/
 
@@ -129,9 +129,7 @@
 
 typedef struct {
   unsigned char  protocol_version;
-  unsigned char  node_status;
-  unsigned char  n_channel;
-  unsigned char  n_conf;
+  unsigned char  n_variables;
   unsigned short node_address;
   unsigned short group_address;
   unsigned short watchdog_resets;
@@ -145,10 +143,10 @@ typedef struct {
   unsigned char status;   // status (not yet used)
   unsigned char flags;    // flags MSCBF_xxx
   char          name[8];  // name
-} MSCB_INFO_CHN;
+} MSCB_INFO_VAR;
 
-#define MSCBF_FLOAT  (1<<0) // channel in floating point format
-#define MSCBF_SIGNED (1<<1) // channel is signed integer
+#define MSCBF_FLOAT  (1<<0) // variable in floating point format
+#define MSCBF_SIGNED (1<<1) // variable is signed integer
 
 /* physical units */
 
@@ -250,17 +248,15 @@ int EXPRT mscb_reboot(int fd, int adr);
 int EXPRT mscb_ping(int fd, int adr);
 int EXPRT mscb_echo(int fd, int addr, unsigned char d1, unsigned char *d2);
 int EXPRT mscb_info(int fd, int adr, MSCB_INFO *info);
-int EXPRT mscb_info_channel(int fd, int adr, int type, int index, MSCB_INFO_CHN *info);
+int EXPRT mscb_info_variable(int fd, int adr, int index, MSCB_INFO_VAR *info);
 int EXPRT mscb_set_addr(int fd, int adr, int node, int group);
 int EXPRT mscb_set_name(int fd, int adr, char *name);
-int EXPRT mscb_write(int fd, int adr, unsigned char channel, void *data, int size);
-int EXPRT mscb_write_group(int fd, int adr, unsigned char channel, void *data, int size);
-int EXPRT mscb_write_conf(int fd, int adr, unsigned char channel, void *data, int size);
+int EXPRT mscb_write(int fd, int adr, unsigned char index, void *data, int size);
+int EXPRT mscb_write_group(int fd, int adr, unsigned char index, void *data, int size);
 int EXPRT mscb_flash(int fd, int adr);
 int EXPRT mscb_upload(int fd, int adr, char *buffer, int size);
-int EXPRT mscb_read(int fd, int adr, unsigned char channel, void *data, int *size);
-int EXPRT mscb_read_channels(int fd, int adr, unsigned char channel1, unsigned char channel2, void *data, int *size);
-int EXPRT mscb_read_conf(int fd, int adr, unsigned char channel, void *data, int *size);
+int EXPRT mscb_read(int fd, int adr, unsigned char index, void *data, int *size);
+int EXPRT mscb_read_range(int fd, int adr, unsigned char index1, unsigned char index2, void *data, int *size);
 int EXPRT mscb_user(int fd, int adr, void *param, int size, void *result, int *rsize);
 
 #ifdef __cplusplus
