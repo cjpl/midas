@@ -6,6 +6,9 @@
 #  Contents:     Makefile for MIDAS binaries and examples under unix
 #
 #  $Log$
+#  Revision 1.31  2001/08/07 10:40:46  midas
+#  Added -w flag for HBOOK files to supress warnings cause by cfortran.h
+#
 #  Revision 1.30  2001/08/06 12:02:56  midas
 #  Fixed typo
 #
@@ -346,8 +349,12 @@ $(LIB_DIR)/mfe.o: msystem.h midas.h midasinc.h mrpc.h
 $(LIB_DIR)/mana.o: $(SRC_DIR)/mana.c msystem.h midas.h midasinc.h mrpc.h
 $(LIB_DIR)/fal.o: $(SRC_DIR)/fal.c msystem.h midas.h midasinc.h mrpc.h
 
+$(LIB_DIR)/fal.o: $(SRC_DIR)/fal.c msystem.h midas.h midasinc.h mrpc.h
+	$(CC) -Dextname -c $(CFLAGS) $(OSFLAGS) -w -o $@ $<
+$(LIB_DIR)/mana.o: $(SRC_DIR)/mana.c msystem.h midas.h midasinc.h mrpc.h
+	$(CC) -Dextname -c $(CFLAGS) $(OSFLAGS) -w -o $@ $<
 $(LIB_DIR)/pmana.o: $(SRC_DIR)/mana.c msystem.h midas.h midasinc.h mrpc.h
-	$(CC) -Dextname -DPVM -c $(CFLAGS) $(OSFLAGS) -o $@ $<
+	$(CC) -Dextname -DPVM -c $(CFLAGS) $(OSFLAGS) -w -o $@ $<
 
 #
 # library objects
@@ -381,6 +388,9 @@ $(BIN_DIR)/dio: $(UTL_DIR)/dio.c
 
 $(BIN_DIR)/stripchart.tcl: $(UTL_DIR)/stripchart.tcl
 	cp -f $(UTL_DIR)/stripchart.tcl $(BIN_DIR)/. 
+
+$(BIN_DIR)/elogd: $(UTL_DIR)/elogd.c
+	$(CC) $(CFLAGS) -o $@ $(UTL_DIR)/elogd.c
 
 #####################################################################
 
