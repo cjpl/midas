@@ -7,6 +7,9 @@
                 routines
 
   $Log$
+  Revision 1.23  2002/05/16 18:01:13  midas
+  Added subdir creation in logger and improved program restart scheme
+
   Revision 1.22  2002/05/15 23:45:46  midas
   Increased number of RPC connections
 
@@ -427,6 +430,31 @@ typedef struct {
 
 /*---- Logging channel information ---------------------------------*/
 
+#define CHN_SETTINGS_STR(_name) char *_name[] = {\
+"[Settings]",\
+"Active = BOOL : 1",\
+"Type = STRING : [8] Disk",\
+"Filename = STRING : [256] run%05d.mid",\
+"Format = STRING : [8] MIDAS",\
+"ODB dump = BOOL : 1",\
+"Log messages = DWORD : 0",\
+"Buffer = STRING : [32] SYSTEM",\
+"Event ID = INT : -1",\
+"Trigger mask = INT : -1",\
+"Event limit = DWORD : 0",\
+"Byte limit = DOUBLE : 0",\
+"Tape capacity = DOUBLE : 0",\
+"Subdir format = STRING : [32]",\
+"Current filename = STRING : [256]",\
+"",\
+"[Statistics]",\
+"Events written = DOUBLE : 0",\
+"Bytes written = DOUBLE : 0",\
+"Bytes written total = DOUBLE : 0",\
+"Files written = INT : 0",\
+"",\
+NULL}
+
 typedef struct {
   BOOL      active;
   char      type[8];
@@ -440,6 +468,8 @@ typedef struct {
   DWORD     event_limit;
   double    byte_limit;
   double    tape_capacity;
+  char      subdir_format[32];
+  char      current_filename[256];
 } CHN_SETTINGS;
 
 typedef struct {
@@ -470,8 +500,8 @@ typedef struct {
 #define LOG_TYPE_TAPE 2
 #define LOG_TYPE_FTP  3
 
-
 /*---- VxWorks specific taskSpawn arguments ----------------------*/
+
 typedef struct {
 char    name[32];
 int     priority;
@@ -479,10 +509,9 @@ int     options;
 int     stackSize;
 int     arg1,arg2,arg3,arg4,arg5,arg6,arg7,arg8,arg9,arg10;
 } VX_TASK_SPAWN;
- 
-
 
 /*---- Channels for ss_suspend_set_dispatch() ----------------------*/
+
 #define CH_IPC        1
 #define CH_CLIENT     2
 #define CH_SERVER     3
@@ -601,6 +630,7 @@ INT  EXPRT dm_area_flush(void);
 INT  EXPRT dm_task(void *pointer);
 DWORD EXPRT dm_buffer_time_get (void);
 INT  EXPRT dm_async_area_send(void *pointer);
+
 /*---- Include RPC identifiers -------------------------------------*/
 
 #include "mrpc.h"

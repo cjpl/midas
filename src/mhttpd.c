@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.215  2002/05/16 18:01:13  midas
+  Added subdir creation in logger and improved program restart scheme
+
   Revision 1.214  2002/05/15 04:20:19  midas
   Fixed wrong <br> in history panel list
 
@@ -968,7 +971,7 @@ char *pd, *p, str[256];
   p  = ps;
   while (*p)
     {
-    if (strchr(" %&=+", *p))
+    if (strchr(" %&=+#\"'", *p))
       {
       sprintf(pd, "%%%02X", *p);
       pd += 3;
@@ -1902,18 +1905,17 @@ CHN_STATISTICS chn_stats;
 
       db_find_key(hDB, hsubkey, "Settings", &hkeytmp);
       size = sizeof(chn_settings);
-      db_get_record(hDB, hkeytmp, &chn_settings, &size, 0);
+      if (db_get_record(hDB, hkeytmp, &chn_settings, &size, 0) != DB_SUCCESS)
+        continue;
 
       db_find_key(hDB, hsubkey, "Statistics", &hkeytmp);
       size = sizeof(chn_stats);
-      db_get_record(hDB, hkeytmp, &chn_stats, &size, 0);
+      if (db_get_record(hDB, hkeytmp, &chn_stats, &size, 0) != DB_SUCCESS)
+        continue;
 
       /* filename */
 
-      if (strchr(chn_settings.filename, '%'))
-        sprintf(str, chn_settings.filename, runinfo.run_number);
-      else
-        strcpy(str, chn_settings.filename);
+      strcpy(str, chn_settings.current_filename);
 
       if (equal_ustring(chn_settings.type, "FTP"))
         {
@@ -6626,9 +6628,6 @@ char  str[256], ref[256], command[256], name[80];
       if (key.type != TID_KEY)
         continue;
 
-      if (strncmp(key.name, "mhttpd", 6) == 0)
-        continue;
-
       if (exp_name[0])
         sprintf(ref, "/Programs/%s?exp=%s", key.name, exp_name);
       else
@@ -6717,7 +6716,7 @@ char  str[256], ref[256], command[256], name[80];
         rsprintf("<td align=center><input type=submit name=\"Start\" value=\"%s\">\n", str);
         }
 
-      if (count > 0)
+      if (count > 0 && strncmp(key.name, "mhttpd", 6) != 0)
         {
         sprintf(str, "Stop %s", key.name);
         rsprintf("<td align=center><input type=submit name=\"Stop\" value=\"%s\">\n", str);

@@ -6,6 +6,9 @@
   Contents:     MIDAS logger program
 
   $Log$
+  Revision 1.55  2002/05/16 18:01:14  midas
+  Added subdir creation in logger and improved program restart scheme
+
   Revision 1.54  2002/05/14 06:02:51  midas
   Added -v flag for verbose output on history booking
 
@@ -170,6 +173,7 @@
 
 \********************************************************************/
 
+#include <errno.h> /* for mkdir() */
 #include "midas.h"
 #include "msystem.h"
 #include "hardware.h"
@@ -205,27 +209,7 @@ HNDLE hDB;
 
 /*---- ODB records -------------------------------------------------*/
 
-char *channel_str = "\
-[Settings]\n\
-Active = BOOL : 1\n\
-Type = STRING : [8] Disk\n\
-Filename = STRING : [256] run%05d.mid\n\
-Format = STRING : [8] MIDAS\n\
-ODB Dump = BOOL : 1\n\
-Log messages = DWORD : 0\n\
-Buffer = STRING : [32] SYSTEM\n\
-Event ID = INT : -1\n\
-Trigger Mask = INT : -1\n\
-Event limit = DWORD : 0\n\
-Byte limit = DOUBLE : 0\n\
-Tape capacity = DOUBLE : 0\n\
-\n\
-[Statistics]\n\
-Events written = DOUBLE : 0\n\
-Bytes written = DOUBLE : 0\n\
-Bytes written total = DOUBLE : 0\n\
-Files written = INT : 0\n\
-";
+CHN_SETTINGS_STR(chn_settings_str);
 
 /*---- data structures for MIDAS format ----------------------------*/
 
@@ -284,7 +268,7 @@ char  str[256];
   if (status != DB_SUCCESS)
     {
     /* if no channels are defined, define at least one */
-    status = db_create_record(hDB, 0, "/Logger/Channels/0", channel_str);
+    status = db_create_record(hDB, 0, "/Logger/Channels/0", strcomb(chn_settings_str));
     if (status != DB_SUCCESS)
       cm_msg(MERROR, "logger_init", "Cannot create channel entry in database");
     }
@@ -2149,10 +2133,12 @@ INT tr_prestart(INT run_number, char *error)
 {
 INT          size, index, status;
 HNDLE        hKeyRoot, hKeyChannel;
-char         str[256], path[256], dir[256];
+char         str[256], path[256], dir[256], data_dir[256];
 CHN_SETTINGS *chn_settings;
 KEY          key;
 BOOL         write_data, tape_flag = FALSE;
+time_t       now;
+struct tm    *tms;
 
   /* save current ODB */
   odb_save("last.odb");
@@ -2171,7 +2157,7 @@ BOOL         write_data, tape_flag = FALSE;
   if (status != DB_SUCCESS)
     {
     /* if no channels are defined, define at least one */
-    status = db_create_record(hDB, 0, "/Logger/Channels/0/", channel_str);
+    status = db_create_record(hDB, 0, "/Logger/Channels/0/", strcomb(chn_settings_str));
     if (status != DB_SUCCESS)
       {
       strcpy(error, "Cannot create channel entry in database");
@@ -2196,7 +2182,7 @@ BOOL         write_data, tape_flag = FALSE;
 
     /* correct channel record */
     db_get_key(hDB, hKeyChannel, &key);
-    status = db_create_record(hDB, hKeyRoot, key.name, channel_str);
+    status = db_create_record(hDB, hKeyRoot, key.name, strcomb(chn_settings_str));
     if (status != DB_SUCCESS && status != DB_OPEN_RECORD)
       {
       cm_msg(MERROR, "tr_prestart", "Cannot create channel record");
@@ -2281,21 +2267,43 @@ BOOL         write_data, tape_flag = FALSE;
       else
         log_chn[index].type = LOG_TYPE_DISK;
 
+      data_dir[0] = 0;
+
       /* if disk, precede filename with directory if not already there */
       if (log_chn[index].type == LOG_TYPE_DISK &&
-          strchr(chn_settings->filename, DIR_SEPARATOR) == NULL)
+          chn_settings->filename[0] != DIR_SEPARATOR)
         {
-        size = sizeof(dir);
+        size = sizeof(data_dir);
         dir[0] = 0;
-        db_get_value(hDB, 0, "/Logger/Data Dir", dir, &size, TID_STRING, TRUE);
-        if (dir[0] != 0)
-          if (dir[strlen(dir)-1] != DIR_SEPARATOR)
-            strcat(dir, DIR_SEPARATOR_STR);
-        strcpy(str, dir);
+        db_get_value(hDB, 0, "/Logger/Data Dir", data_dir, &size, TID_STRING, TRUE);
+        if (data_dir[0] != 0)
+          if (data_dir[strlen(data_dir)-1] != DIR_SEPARATOR)
+            strcat(data_dir, DIR_SEPARATOR_STR);
+        strcpy(str, data_dir);
+
+        /* append subdirectory if requested */
+        if (chn_settings->subdir_format[0])
+          {
+          tzset();
+          time(&now);
+          tms = localtime(&now);
+
+          strftime(dir, sizeof(dir), chn_settings->subdir_format, tms);
+          strcat(str, dir);
+          strcat(str, DIR_SEPARATOR_STR);
+          }
+
+        /* create directory if needed */
+        status = mkdir(str);
+        if (status == -1 && errno != EEXIST)
+          {
+          cm_msg(MERROR, "tr_prestart", "Cannot create subdirectory %s", str);
+          }
+
+        strcat(str, chn_settings->filename);
         }
       else
-        str[0] = 0;
-      strcat(str, chn_settings->filename);
+        strcpy(str, chn_settings->filename);
 
       /* substitue "%d" by current run number */
       if (strchr(str, '%'))
@@ -2305,6 +2313,13 @@ BOOL         write_data, tape_flag = FALSE;
 
       strcpy(log_chn[index].path, path);
 
+      /* wirte back current file name to ODB */
+      if (strncmp(path, data_dir, strlen(data_dir)) == 0)
+        strcpy(str, path+strlen(data_dir));
+      else
+        strcpy(str, path);
+      db_set_value(hDB, hKeyChannel, "Settings/Current filename", str, 256, 1, TID_STRING);
+      
       if (log_chn[index].type == LOG_TYPE_TAPE &&
           log_chn[index].statistics.bytes_written_total == 0 &&
           tape_message)

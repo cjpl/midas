@@ -1,6 +1,12 @@
 Revision History
 ================
 
+Version 1.9.1, released May 13, 2002
+------------------------------------
+
+- Added event fragmentation via EQ_FRAGMENTED
+- Added "/logger/channels/x/settings/Create subdir every" and "Subdir Format"
+
 Version 1.9.0, released May 13, 2002
 ------------------------------------
 

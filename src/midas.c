@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.155  2002/05/16 18:01:13  midas
+  Added subdir creation in logger and improved program restart scheme
+
   Revision 1.154  2002/05/15 23:43:39  midas
   Added bm_defragment_event()
 
@@ -4267,8 +4270,8 @@ static DWORD last_checked = 0;
     return status;
     }
 
-  /* check alarms once every 60 seconds */
-  if (!rpc_is_remote() && ss_time() - last_checked > 60)
+  /* check alarms once every 10 seconds */
+  if (!rpc_is_remote() && ss_time() - last_checked > 10)
     {
     al_check();
     last_checked = ss_time();
@@ -17184,43 +17187,42 @@ ALARM_PERIODIC_STR(alarm_periodic_str);
         }
 
       now = ss_time();
-      /* check once every minute */
-      if (now - program_info.checked_last > 60)
+
+//      program_info.checked_last = now;
+
+      rpc_get_name(str);
+      str[strlen(key.name)] = 0;
+      if (!equal_ustring(str, key.name) &&
+          cm_exist(key.name, FALSE) == CM_NO_CLIENT)
         {
-        program_info.checked_last = now;
+        if (program_info.first_failed == 0)
+          program_info.first_failed = now;
 
-        rpc_get_name(str);
-        str[strlen(key.name)] = 0;
-        if (!equal_ustring(str, key.name) &&
-            cm_exist(key.name, FALSE) == CM_NO_CLIENT)
+        /* fire alarm when not running for more than what specified in check interval */
+        if (now - program_info.first_failed >= program_info.check_interval/1000)
           {
-          program_info.alarm_count++;
-
-          /* fire alarm when not running for 5 minutes */
-          if (program_info.alarm_count >= 5)
+          /* if not running and alarm calss defined, trigger alarm */
+          if (program_info.alarm_class[0])
             {
-            /* if not running and alarm calss defined, trigger alarm */
-            if (program_info.alarm_class[0])
-              {
-              sprintf(str, "Program %s is not running", key.name);
-              al_trigger_alarm(key.name, str, program_info.alarm_class,
-                               "Program not running", AT_PROGRAM);
-              }
+            sprintf(str, "Program %s is not running", key.name);
+            al_trigger_alarm(key.name, str, program_info.alarm_class,
+                             "Program not running", AT_PROGRAM);
+            }
 
-            /* auto restart program */
-            if (program_info.auto_restart &&
-                program_info.start_command[0])
-              {
-              ss_system(program_info.start_command);
-              cm_msg(MTALK, "al_check", "Program %s restarted", key.name);
-              }
+          /* auto restart program */
+          if (program_info.auto_restart &&
+              program_info.start_command[0])
+            {
+            ss_system(program_info.start_command);
+            program_info.first_failed = 0;
+            cm_msg(MTALK, "al_check", "Program %s restarted", key.name);
             }
           }
-        else
-          program_info.alarm_count = 0;
-
-        db_set_record(hDB, hkey, &program_info, sizeof(program_info), 0);
         }
+      else
+        program_info.first_failed = 0;
+
+      db_set_record(hDB, hkey, &program_info, sizeof(program_info), 0);
       }
     }
 
