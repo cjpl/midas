@@ -6,6 +6,9 @@
   Contents:     User section for the Event builder
 
   $Log$
+  Revision 1.7  2003/12/03 00:57:20  pierre
+  ctlM fix
+
   Revision 1.6  2002/09/28 00:49:08  pierre
   Add EB_USER_ERROR example
 
