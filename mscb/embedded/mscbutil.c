@@ -6,6 +6,9 @@
   Contents:     Various utility functions for MSCB protocol
 
   $Log$
+  Revision 1.12  2002/10/09 15:48:13  midas
+  Fixed bug with download
+
   Revision 1.11  2002/10/09 11:06:46  midas
   Protocol version 1.1
 
@@ -294,6 +297,39 @@ char c;
     return c;
     }
   return -1;
+}
+
+/*------------------------------------------------------------------*/
+
+unsigned char gets_wait(char *str, unsigned char size, unsigned char timeout)
+{
+unsigned long start;
+unsigned char i;
+char          c;
+
+  start = time();
+  i = 0;
+  do
+    {
+    c = getchar_nowait();
+    if (c != -1 && c != '\n')
+      {
+      if (c == '\r')
+        {
+        str[i] = 0;
+        return i;
+        }
+      str[i++] = c;
+      if (i == size)
+        return i;
+      }
+
+    watchdog_refresh();
+    blink_led();
+
+    } while (time() < start+timeout);
+
+  return 0;
 }
 
 /*------------------------------------------------------------------*/

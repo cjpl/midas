@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus communication functions
 
   $Log$
+  Revision 1.15  2002/10/09 15:48:13  midas
+  Fixed bug with download
+
   Revision 1.14  2002/10/09 11:06:46  midas
   Protocol version 1.1
 
@@ -1394,7 +1397,10 @@ FILE           *f;
 
   f = fopen(filename, "rt");
   if (f == NULL)
+    {
+    printf("Error: Cannot find file \"%s\"\n", filename);
     return MSCB_FILE_ERROR;
+    }
 
   /* read HEX file */
   memset(image, 0xFF, sizeof(image));
@@ -1423,6 +1429,7 @@ FILE           *f;
 
   if (mscb_lock() != MSCB_SUCCESS)
     {
+    printf("Error: other program is using MSCB system\n");
     fclose(f);
     return MSCB_MUTEX;
     }
@@ -1435,18 +1442,19 @@ FILE           *f;
 
   /* read acknowledge, 100ms timeout */
   i = mscb_in(fd, ack, 2, 100000);
-  mscb_release();
-
   if (i<2)
     {
     printf("Error: Upload not implemented in remote node\n");
     fclose(f);
+    mscb_release();
     return MSCB_TIMEOUT;
     }
 
   if (ack[0] != CMD_ACK || ack[1] != crc)
     {
+    printf("Error: Cannot set remote node into upload mode\n");
     fclose(f);
+    mscb_release();
     return MSCB_CRC_ERROR;
     }
 
@@ -1488,6 +1496,7 @@ FILE           *f;
 
         if (mscb_in1(fd, ack, 100000) != MSCB_SUCCESS)
           {
+          printf("Error: timeout from remote node for erase page\n");
           fclose(f);
           mscb_release();
           return MSCB_TIMEOUT;
@@ -1508,6 +1517,7 @@ FILE           *f;
 
         if (mscb_in1(fd, ack, 100000) != MSCB_SUCCESS)
           {
+          printf("Error: timeout from remote node for program page\n");
           fclose(f);
           mscb_release();
           return MSCB_TIMEOUT;
@@ -1537,6 +1547,7 @@ FILE           *f;
 
         if (j == 10)
           {
+          printf("Error: error on page verification (tried 10 times)\n");
           fclose(f);
           mscb_release();
           return MSCB_TIMEOUT;
