@@ -7,6 +7,9 @@
 #                using HBOOK functionality
 #
 #  $Log$
+#  Revision 1.6  2003/12/12 17:40:29  midas
+#  Added experim.h dependency
+#
 #  Revision 1.5  2003/08/20 21:00:46  pierre
 #  add phtread lib
 #
@@ -103,7 +106,7 @@ fal: $(LIB) $(LIB_DIR)/fal.o $(DRIVER).o $(UFE).c $(MODULES) $(UFE).o analyzer.o
 	analyzer.o $(MODULES) $(CERNLIB_PACK) \
 	$(LIB) $(LDFEFLAGS) $(LIBS)
 
-.c.o:
+.c.o: experim.h
 	$(CC) $(USERFLAGS) $(CFLAGS) $(OSFLAGS) -o $@ -c $<
 
 clean:

@@ -6,6 +6,9 @@
 #  Contents:     Makefile for MIDAS example frontend and analyzer
 #
 #  $Log$
+#  Revision 1.22  2003/12/12 17:40:29  midas
+#  Added experim.h dependency
+#
 #  Revision 1.21  2003/08/19 23:39:48  pierre
 #  add pthread lib
 #
@@ -139,7 +142,7 @@ analyzer: $(LIB) $(LIB_DIR)/rmana.o analyzer.o $(MODULES)
 	$(CXX) $(FFLAGS) -o $@ $(LIB_DIR)/rmana.o analyzer.o $(MODULES) \
 	$(LIB) $(LDFLAGS) $(ROOTLIBS) $(LIBS)
 
-%.o: %.c
+%.o: %.c experim.h
 	$(CXX) $(USERFLAGS) $(ROOTCFLAGS) $(CFLAGS) $(OSFLAGS) -o $@ -c $<
 
 clean::
