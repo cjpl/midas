@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.125  2004/09/23 21:43:38  midas
+  Changed stricmp to strcmp
+
   Revision 1.124  2004/09/23 21:40:27  midas
   Implemented histo deletion through socket server
 
@@ -5687,9 +5690,9 @@ THREADTYPE root_server_thread(void *arg)
 
             TObject *obj = gROOT->FindObjectAny(objName);
             if (obj) {
-               if (stricmp(type, "TH1F*") == 0 && stricmp(method, "Reset") == 0)
+               if (strcmp(type, "TH1F*") == 0 && strcmp(method, "Reset") == 0)
                   ((TH1F *)obj)->Reset();
-               if (stricmp(type, "TH2F*") == 0 && stricmp(method, "Reset") == 0)
+               if (strcmp(type, "TH2F*") == 0 && strcmp(method, "Reset") == 0)
                   ((TH2F *)obj)->Reset();
             }
 
