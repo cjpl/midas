@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.207  2004/05/07 19:40:11  midas
+  Replaced min/max by MIN/MAX macros
+
   Revision 1.206  2004/05/03 11:30:37  midas
   Implemented cm_query_transition()
 
@@ -4144,7 +4147,7 @@ INT cm_execute(char *command, char *result, INT bufsize)
       result[0] = 0;
       if (fh) {
          n = read(fh, result, bufsize - 1);
-         result[max(0, n)] = 0;
+         result[MAX(0, n)] = 0;
          close(fh);
       }
       remove(str);
@@ -9185,7 +9188,7 @@ PTYPE rpc_get_server_option(INT item)
          if (_server_acception[i].tid == ss_gettid())
             break;
    } else if (_server_type == ST_SINGLE || _server_type == ST_REMOTE)
-      i = max(0, _server_acception_index - 1);
+      i = MAX(0, _server_acception_index - 1);
    else
       i = 0;
 
@@ -9243,7 +9246,7 @@ INT rpc_set_server_option(INT item, PTYPE value)
          if (_server_acception[i].tid == ss_gettid())
             break;
    } else if (_server_type == ST_SINGLE || _server_type == ST_REMOTE)
-      i = max(0, _server_acception_index - 1);
+      i = MAX(0, _server_acception_index - 1);
    else
       i = 0;
 

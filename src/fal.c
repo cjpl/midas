@@ -7,6 +7,9 @@
                 Most routines are from mfe.c mana.c and mlogger.c.
 
   $Log$
+  Revision 1.42  2004/05/07 19:40:11  midas
+  Replaced min/max by MIN/MAX macros
+
   Revision 1.41  2004/01/18 10:10:58  olchansk
   define "f2cFortran" the same way as in mana.c
 
@@ -976,7 +979,7 @@ INT dump_write(LOG_CHN * log_chn, EVENT_HEADER * pevent, INT evt_size)
             STR_INC(pbuf, buffer);
 
             /* adjust for alignment */
-            pdata = (void *) VALIGN(pdata, min(ss_get_struct_align(), key.item_size));
+            pdata = (void *) VALIGN(pdata, MIN(ss_get_struct_align(), key.item_size));
 
             for (j = 0; j < key.num_values; j++) {
                db_sprintf(pbuf, pdata, key.item_size, j, key.type);
@@ -1239,7 +1242,7 @@ INT ascii_write(LOG_CHN * log_chn, EVENT_HEADER * pevent, INT evt_size)
             db_get_key(hDB, hKey, &key);
 
             /* adjust for alignment */
-            pdata = (void *) VALIGN(pdata, min(ss_get_struct_align(), key.item_size));
+            pdata = (void *) VALIGN(pdata, MIN(ss_get_struct_align(), key.item_size));
 
             for (j = 0; j < key.num_values; j++) {
                if (pevent->event_id != last_event_id) {
@@ -2827,7 +2830,7 @@ INT write_event_odb(EVENT_HEADER * pevent, ANALYZE_REQUEST * par)
                db_get_key(hDB, hKey, &key);
 
                /* adjust for alignment */
-               pdata = (void *) VALIGN(pdata, min(ss_get_struct_align(), key.item_size));
+               pdata = (void *) VALIGN(pdata, MIN(ss_get_struct_align(), key.item_size));
 
                status = db_set_data(hDB, hKey, pdata, key.item_size * key.num_values,
                                     key.num_values, key.type);
@@ -3187,7 +3190,7 @@ INT write_event_hbook(EVENT_HEADER * pevent, ANALYZE_REQUEST * par)
 
                   /* align data pointer */
                   pdata =
-                      (void *) VALIGN(pdata, min(ss_get_struct_align(), key.item_size));
+                      (void *) VALIGN(pdata, MIN(ss_get_struct_align(), key.item_size));
 
                   for (j = 0; j < key.num_values; j++) {
                      switch (key.type & 0xFF) {
@@ -3247,7 +3250,7 @@ INT write_event_hbook(EVENT_HEADER * pevent, ANALYZE_REQUEST * par)
          db_get_key(hDB, hkey, &key);
 
          /* align data pointer */
-         pdata = (void *) VALIGN(pdata, min(ss_get_struct_align(), key.item_size));
+         pdata = (void *) VALIGN(pdata, MIN(ss_get_struct_align(), key.item_size));
 
          for (j = 0; j < key.num_values; j++) {
             switch (key.type & 0xFF) {

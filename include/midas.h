@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.129  2004/05/07 19:40:11  midas
+  Replaced min/max by MIN/MAX macros
+
   Revision 1.128  2004/05/03 11:30:37  midas
   Implemented cm_query_transition()
 
@@ -811,15 +814,15 @@ CNAF commands */
  */
 
 /**
-max */
-#ifndef max
-#define max(a,b)            (((a) > (b)) ? (a) : (b))
+MAX */
+#ifndef MAX
+#define MAX(a,b)            (((a) > (b)) ? (a) : (b))
 #endif
 
 /**
-min */
-#ifndef min
-#define min(a,b)            (((a) < (b)) ? (a) : (b))
+MIN */
+#ifndef MIN
+#define MIN(a,b)            (((a) < (b)) ? (a) : (b))
 #endif
 
 /*------------------------------------------------------------------*/

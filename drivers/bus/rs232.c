@@ -6,6 +6,9 @@
   Contents:     RS232 communication routines for MS-DOS and NT
 
   $Log$
+  Revision 1.13  2004/05/07 19:40:10  midas
+  Replaced min/max by MIN/MAX macros
+
   Revision 1.12  2004/01/08 08:40:08  midas
   Implemented standard indentation
 
@@ -814,7 +817,7 @@ int rs232_read(RS232_INFO * info, char *str, int size, int timeout)
          break;
 
       if (i == 0)
-         usleep(min(100000, timeout * 1000));
+         usleep(MIN(100000, timeout * 1000));
    }
 
    if (debug_flag && l > 0) {
@@ -887,7 +890,7 @@ int rs232_gets(RS232_INFO * info, char *str, int size, char *pattern, int timeou
       }
 
       if (i == 0)
-         usleep(min(100000, timeout * 1000));
+         usleep(MIN(100000, timeout * 1000));
 
    };
 

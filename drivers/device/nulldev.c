@@ -7,6 +7,9 @@
                 template to write a read device driver
 
   $Log$
+  Revision 1.6  2004/05/07 19:40:11  midas
+  Replaced min/max by MIN/MAX macros
+
   Revision 1.5  2004/01/08 08:40:08  midas
   Implemented standard indentation
 
@@ -153,13 +156,13 @@ INT nulldev_set_all(NULLDEV_INFO * info, INT channels, float *value)
 
    /* put here some optimized form of setting all channels simultaneously like ... */
    strcpy(str, "SETALL ");
-   for (i = 0; i < min(info->num_channels, channels); i++)
+   for (i = 0; i < MIN(info->num_channels, channels); i++)
       sprintf(str + strlen(str), "%lf ", value[i]);
    BD_PUTS(str);
    BD_GETS(str, sizeof(str), ">", DEFAULT_TIMEOUT);
 
    /* simulate writing by storing values in local array */
-   for (i = 0; i < min(info->num_channels, channels); i++)
+   for (i = 0; i < MIN(info->num_channels, channels); i++)
       info->array[i] = value[i];
 
    return FE_SUCCESS;
@@ -201,12 +204,12 @@ INT nulldev_get_all(NULLDEV_INFO * info, INT channels, float *pvalue)
       BD_PUTS(str);
       BD_GETS(str, sizeof(str), ">", DEFAULT_TIMEOUT);
 
-      for (i=0 ; i<min(info->num_channels, channels) ; i++)
+      for (i=0 ; i<MIN(info->num_channels, channels) ; i++)
       pvalue[i] = atof(str+i*5); // extract individual values from reply
     */
 
    /* simulate reading by copying set data from local array */
-   for (i = 0; i < min(info->num_channels, channels); i++)
+   for (i = 0; i < MIN(info->num_channels, channels); i++)
       pvalue[i] = info->array[i];
 
    return FE_SUCCESS;

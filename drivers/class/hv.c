@@ -6,6 +6,9 @@
   Contents:     High Voltage Class Driver
 
   $Log$
+  Revision 1.18  2004/05/07 19:40:10  midas
+  Replaced min/max by MIN/MAX macros
+
   Revision 1.17  2004/01/08 08:40:08  midas
   Implemented standard indentation
 
@@ -296,10 +299,10 @@ INT hv_ramp(HV_INFO * hv_info)
                               hv_info->last_change[i]) / 1000.0 * ramp_speed);
             if (hv_info->demand[i] > hv_info->demand_mirror[i])
                hv_info->demand_mirror[i] =
-                   min(hv_info->demand[i], hv_info->demand_mirror[i] + delta);
+                   MIN(hv_info->demand[i], hv_info->demand_mirror[i] + delta);
             else
                hv_info->demand_mirror[i] =
-                   max(hv_info->demand[i], hv_info->demand_mirror[i] - delta);
+                   MAX(hv_info->demand[i], hv_info->demand_mirror[i] - delta);
          }
          status = DRIVER(i) (CMD_SET, hv_info->dd_info[i],
                              i - hv_info->channel_offset[i], hv_info->demand_mirror[i]);
@@ -640,7 +643,7 @@ INT hv_init(EQUIPMENT * pequipment)
    for (i = 0, offset = 0; pequipment->driver[i].name[0]; i++) {
       for (j = 0; j < pequipment->driver[i].channels; j++)
          hv_info->demand_mirror[offset + j] =
-             min(hv_info->demand[offset + j], hv_info->voltage_limit[offset + j]);
+             MIN(hv_info->demand[offset + j], hv_info->voltage_limit[offset + j]);
 
       DRIVER(i + offset) (CMD_SET_CURRENT_LIMIT_ALL, pequipment->driver[i].dd_info,
                           pequipment->driver[i].channels,

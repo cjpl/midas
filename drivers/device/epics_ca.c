@@ -6,6 +6,9 @@
   Contents:     Epics channel access device driver
 
   $Log$
+  Revision 1.5  2004/05/07 19:40:11  midas
+  Replaced min/max by MIN/MAX macros
+
   Revision 1.4  2004/01/08 08:40:08  midas
   Implemented standard indentation
 
@@ -203,7 +206,7 @@ INT epics_ca_set_all(CA_INFO * info, INT channels, float value)
 {
    INT i;
 
-   for (i = 0; i < min(info->num_channels, channels); i++)
+   for (i = 0; i < MIN(info->num_channels, channels); i++)
       ca_put(DBR_FLOAT, info->pv_handles[i], &value);
 
    return FE_SUCCESS;
@@ -246,7 +249,7 @@ INT epics_ca_get_all(CA_INFO * info, INT channels, float *pvalue)
 {
    int i;
 
-   for (i = 0; i < min(info->num_channels, channels); i++)
+   for (i = 0; i < MIN(info->num_channels, channels); i++)
       epics_ca_get(info, i, pvalue + i);
 
    return FE_SUCCESS;

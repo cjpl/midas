@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.118  2004/05/07 19:40:11  midas
+  Replaced min/max by MIN/MAX macros
+
   Revision 1.117  2004/02/12 08:21:22  midas
   Print ROOT server port on startup
 
@@ -1250,7 +1253,7 @@ INT book_ntuples(void)
                   }
 
                   bank_list->addr =
-                      calloc(bank_list->size, max(4, rpc_tid_size(bank_list->type)));
+                      calloc(bank_list->size, MAX(4, rpc_tid_size(bank_list->type)));
 
                   HBNAME(analyze_request[index].ar_info.event_id,
                          bank_list->name, bank_list->addr, str);
@@ -2491,7 +2494,7 @@ INT write_event_ascii(FILE * file, EVENT_HEADER * pevent, ANALYZE_REQUEST * par)
                      /* adjust for alignment */
                      pdata =
                          (void *) VALIGN(pdata,
-                                         min(ss_get_struct_align(), key.item_size));
+                                         MIN(ss_get_struct_align(), key.item_size));
 
                      for (j = 0; j < key.num_values; j++) {
                         db_sprintf(pbuf, pdata, key.item_size, j, key.type);
@@ -2568,7 +2571,7 @@ INT write_event_ascii(FILE * file, EVENT_HEADER * pevent, ANALYZE_REQUEST * par)
             STR_INC(pbuf, buffer);
 
             /* adjust for alignment */
-            pdata = (void *) VALIGN(pdata, min(ss_get_struct_align(), key.item_size));
+            pdata = (void *) VALIGN(pdata, MIN(ss_get_struct_align(), key.item_size));
 
             for (j = 0; j < key.num_values; j++) {
                db_sprintf(pbuf, pdata, key.item_size, j, key.type);
@@ -2826,7 +2829,7 @@ INT write_event_hbook(FILE * file, EVENT_HEADER * pevent, ANALYZE_REQUEST * par)
 
                /* copy bank to buffer in bank list, DWORD aligned */
                if (item_size >= 4) {
-                  size = min((INT) pbl->size * item_size, size);
+                  size = MIN((INT) pbl->size * item_size, size);
                   memcpy(pbl->addr, pdata, size);
                } else if (item_size == 2)
                   for (i = 0; i < (INT) pbl->n_data; i++)
@@ -2897,7 +2900,7 @@ INT write_event_hbook(FILE * file, EVENT_HEADER * pevent, ANALYZE_REQUEST * par)
 
                   /* align data pointer */
                   pdata =
-                      (void *) VALIGN(pdata, min(ss_get_struct_align(), key.item_size));
+                      (void *) VALIGN(pdata, MIN(ss_get_struct_align(), key.item_size));
 
                   for (j = 0; j < key.num_values; j++) {
                      switch (key.type & 0xFF) {
@@ -3009,7 +3012,7 @@ INT write_event_hbook(FILE * file, EVENT_HEADER * pevent, ANALYZE_REQUEST * par)
 
                /* copy bank to buffer in bank list, DWORD aligned */
                if (item_size >= 4) {
-                  size = min((INT) pbl->size * item_size, size);
+                  size = MIN((INT) pbl->size * item_size, size);
                   memcpy(pbl->addr, pdata, size);
                } else if (item_size == 2)
                   for (i = 0; i < (INT) pbl->n_data; i++)
@@ -3101,7 +3104,7 @@ INT write_event_hbook(FILE * file, EVENT_HEADER * pevent, ANALYZE_REQUEST * par)
             db_get_key(hDB, hkey, &key);
 
             /* align data pointer */
-            pdata = (void *) VALIGN(pdata, min(ss_get_struct_align(), key.item_size));
+            pdata = (void *) VALIGN(pdata, MIN(ss_get_struct_align(), key.item_size));
 
             for (j = 0; j < key.num_values; j++) {
                switch (key.type & 0xFF) {
@@ -3399,7 +3402,7 @@ INT write_event_odb(EVENT_HEADER * pevent)
                /* adjust for alignment */
                if (key.type != TID_STRING && key.type != TID_LINK)
                   pdata =
-                      (void *) VALIGN(pdata, min(ss_get_struct_align(), key.item_size));
+                      (void *) VALIGN(pdata, MIN(ss_get_struct_align(), key.item_size));
 
                status = db_set_data(hDB, hKey, pdata, key.item_size * key.num_values,
                                     key.num_values, key.type);
