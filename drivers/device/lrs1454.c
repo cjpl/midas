@@ -6,6 +6,9 @@
   Contents:     LeCroy LRS1454/1458 Voltage Device Driver
 
   $Log$
+  Revision 1.14  2003/09/30 16:12:11  midas
+  Show error about panic switch
+
   Revision 1.13  2003/09/29 11:56:44  midas
   Initial revision
 
@@ -144,6 +147,12 @@ char         str[1000];
     return FE_ERR_HW;
     }
   
+  if (strstr(str, "Panic") != NULL)
+    {
+    cm_msg(MERROR, "lrs1454_init", "HV Panic Off Switch is activated, please reset");
+    return FE_ERR_HW;
+    }
+
   /* zero channels initially */
   if (zero_channels)
     {
