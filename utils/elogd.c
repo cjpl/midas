@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.13  2001/07/06 12:34:13  midas
+  Incresed cookie expiration from 1h to 1d
+
   Revision 1.12  2001/06/20 08:33:14  midas
   Added "summary on last"
 
@@ -3411,7 +3414,7 @@ struct tm *gmt;
     rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
 
     time(&now);
-    now += 3600;
+    now += 3600*24;
     gmt = gmtime(&now);
     strftime(str, sizeof(str), "%A, %d-%b-%y %H:%M:%S GMT", gmt);
 
