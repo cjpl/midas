@@ -6,6 +6,9 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
+  Revision 1.22  1999/09/02 10:17:16  midas
+  Implemented POST method
+
   Revision 1.21  1999/08/31 15:12:02  midas
   Finished query
 
@@ -92,9 +95,10 @@ char _value[MAX_PARAM][VALUE_SIZE];
 char _text[TEXT_SIZE];
 
 INT el_retrieve(char *tag, char *date, int *run, char *author, char *type, 
-                char *system, char *subject, char *text, int *textsize, char *encoding);
+                char *system, char *subject, char *text, int *textsize, 
+                char *attachment, char *encoding);
 int el_submit(int run, char *author, char *type, char *system, char *subject, 
-              char *text, char *encoding, char *tag);
+              char *text, char *encoding, char *attachment, char *tag);
 INT el_search_message(char *tag, int *fh);
 
 char *mname[] = {
@@ -1241,7 +1245,8 @@ HNDLE  hDB, hkey;
 void show_elog_submit_query()
 {
 int    i, size, run, status;
-char   date[80], author[80], type[80], system[80], subject[256], text[10000], encoding[80];
+char   date[80], author[80], type[80], system[80], subject[256], text[10000], 
+       attachment[256], encoding[80];
 char   str[256], tag[256], ref[80];
 HNDLE  hDB;
 
@@ -1333,7 +1338,7 @@ HNDLE  hDB;
       {
       size = sizeof(text);
       status = el_retrieve(tag, date, &run, author, type, system, subject, 
-                           text, &size, encoding);
+                           text, &size, attachment, encoding);
       strcat(tag, "+1");
 
       if (status == EL_SUCCESS)
@@ -1395,7 +1400,7 @@ char str[80];
 
   el_submit(atoi(getparam("run")), getparam("author"), getparam("type"),
             getparam("system"), getparam("subject"), getparam("text"), 
-            *getparam("html") ? "HTML" : "plain", str);
+            *getparam("html") ? "HTML" : "plain", getparam("attachment"), str);
 
   rsprintf("HTTP/1.0 302 Found\r\n");
   rsprintf("Server: MIDAS HTTP %s\r\n", cm_get_version());
@@ -1413,7 +1418,8 @@ void show_elog_page(char *path)
 {
 int   size, run, msg_status, status, fh, first_message, last_message;
 char  str[256], command[80];
-char  date[80], author[80], type[80], system[80], subject[256], text[10000], encoding[80];
+char  date[80], author[80], type[80], system[80], subject[256], text[10000], 
+      attachment[256], encoding[80];
 HNDLE hDB;
 
   cm_get_experiment_database(&hDB, NULL);
@@ -1483,7 +1489,7 @@ HNDLE hDB;
   size = sizeof(text);
   strcpy(str, path);
   msg_status = el_retrieve(str, date, &run, author, type, system, subject, 
-                           text, &size, encoding);
+                           text, &size, attachment, encoding);
 
   /*---- header ----*/
 
@@ -1550,6 +1556,9 @@ HNDLE hDB;
 
     rsprintf("<td bgcolor=#A0FFA0>Subject: <b>%s</b></tr>\n", subject);
 
+    if (attachment[0])
+      rsprintf("<tr><td colspan=2 bgcolor=#8080FF>Attachment: <b>%s</b></tr>\n", attachment);
+
     rsprintf("<tr><td colspan=2>\n");
 
     el_format(text, encoding);
@@ -1564,7 +1573,7 @@ HNDLE hDB;
 /*------------------------------------------------------------------*/
 
 int el_submit(int run, char *author, char *type, char *system, char *subject, 
-              char *text, char *encoding, char *tag)
+              char *text, char *encoding, char *attachment, char *tag)
 /********************************************************************\
 
   Routine: el_submit
@@ -1630,6 +1639,7 @@ char    message[10000];
   sprintf(message+strlen(message), "Type: %s\n", type);
   sprintf(message+strlen(message), "System: %s\n", system);
   sprintf(message+strlen(message), "Subject: %s\n", subject);
+  sprintf(message+strlen(message), "Attachment: %s\n", attachment);
   sprintf(message+strlen(message), "Encoding: %s\n", encoding);
   sprintf(message+strlen(message), "========================================\n");
   strcat(message, text);
@@ -1875,7 +1885,8 @@ HNDLE  hDB;
 }
 
 INT el_retrieve(char *tag, char *date, int *run, char *author, char *type, 
-                char *system, char *subject, char *text, int *textsize, char *encoding)
+                char *system, char *subject, char *text, int *textsize, 
+                char *attachment, char *encoding)
 /********************************************************************\
 
   Routine: el_retrieve
@@ -1895,6 +1906,7 @@ INT el_retrieve(char *tag, char *date, int *run, char *author, char *type,
     char   *system          Message system
     char   *subject         Subject
     char   *text            Message text
+    char   *attachment      File attachment
     char   *encoding        Encoding of message
     int    *size            Actual message text size
 
@@ -1938,6 +1950,7 @@ char    message[10000];
   el_decode(message, "Type: ", type);
   el_decode(message, "System: ", system);
   el_decode(message, "Subject: ", subject);
+  el_decode(message, "Attachment: ", attachment);
   el_decode(message, "Encoding: ", encoding);
 
   p = strstr(message, "========================================\n");
@@ -3948,8 +3961,11 @@ char *p, *pitem;
 
 void decode_post(char *string, char *boundary, int length, char *cookie_pwd, int refresh)
 {
-char path[256];
-char *pinit, *p, *pitem, *ptmp;
+char   *pinit, *p, *pitem, *ptmp, dir[256], file_name[256];
+int    fh, size;
+DWORD  now;
+struct tm *tms;
+HNDLE  hDB;
 
   initparam();
 
@@ -3960,9 +3976,6 @@ char *pinit, *p, *pitem, *ptmp;
 
   do
     {
-    while (*string == '\n' || *string == '\r')
-      string++;
-
     if (strstr(string, "name="))
       {
       pitem = strstr(string, "name=")+5;
@@ -3977,21 +3990,88 @@ char *pinit, *p, *pitem, *ptmp;
         if (*p == '\"')
           p++;
         if (strstr(p, "\r\n\r\n"))
-          ptmp = strstr(p, "\r\n\r\n")+4;
+          string = strstr(p, "\r\n\r\n")+4;
         else if (strstr(p, "\r\r\n\r\r\n"))
-          ptmp = strstr(p, "\r\r\n\r\r\n")+6;
+          string = strstr(p, "\r\r\n\r\r\n")+6;
         if (strchr(p, '\"'))
           *strchr(p, '\"') = 0;
 
-        setparam("filename", p);
+        /* strip path from filename */
+        while (strchr(p, DIR_SEPARATOR))
+          p = strchr(p, DIR_SEPARATOR)+1;
 
-        if (strstr(ptmp, boundary))
+        /* assemble ELog filename */
+        if (p[0])
           {
-          p = ptmp;
-          string = strstr(p, boundary) + strlen(boundary);
-          while (*string == '-' || *string == '\n' || *string == '\r')
-            string++;
+          cm_get_experiment_database(&hDB, NULL);
+          dir[0] = 0;
+          if (hDB > 0)
+            {
+            size = sizeof(dir);
+            memset(dir, 0, size);
+            db_get_value(hDB, 0, "/Logger/Data dir", dir, &size, TID_STRING);
+            if (dir[0] != 0)
+              if (dir[strlen(dir)-1] != DIR_SEPARATOR)
+                strcat(dir, DIR_SEPARATOR_STR);
+            }
+
+
+#if !defined(OS_VXWORKS) 
+#if !defined(OS_VMS)
+          tzset();
+#endif
+#endif
+        
+          time(&now);
+          tms = localtime(&now);
+
+          sprintf(file_name, "%02d%02d%02d_%02d%02d%02d_%s",
+                  tms->tm_year, tms->tm_mon+1, tms->tm_mday,
+                  tms->tm_hour, tms->tm_min, tms->tm_sec, p);
+          setparam("attachment", file_name);
+          sprintf(file_name, "%s%02d%02d%02d_%02d%02d%02d_%s", dir, 
+                  tms->tm_year, tms->tm_mon+1, tms->tm_mday,
+                  tms->tm_hour, tms->tm_min, tms->tm_sec, p);
           }
+        else
+          file_name[0] = 0;
+
+        /* find next boundary */
+        ptmp = string;
+        do
+          {
+          while (*ptmp != '-')
+            ptmp++;
+
+          if ((p = strstr(ptmp, boundary)) != NULL)
+            {
+            while (*p == '-')
+              p--;
+            if (*p == 10)
+              p--;
+            if (*p == 13)
+              p--;
+            p++;
+            break;
+            }
+          } while (TRUE);
+
+        /* save file */
+        if (file_name[0])
+          {
+          fh = open(file_name, O_CREAT | O_RDWR | O_BINARY, 0644);
+          if (fh < 0)
+            {
+            /* print error message */
+            }
+          else
+            {
+            write(fh, string, (INT)p - (INT) string); 
+            close(fh);
+            }
+          }
+
+        string = strstr(p, boundary) + strlen(boundary);
         }
       else
         {
@@ -4014,11 +4094,14 @@ char *pinit, *p, *pitem, *ptmp;
           }
         setparam(pitem, p);
         }
+
+      while (*string == '-' || *string == '\n' || *string == '\r')
+        string++;
       }
 
     } while ((INT)string - (INT)pinit < length);
   
-  interprete(cookie_pwd, path, refresh);
+  interprete(cookie_pwd, "EL/", refresh);
 }
 
 /*------------------------------------------------------------------*/
@@ -4159,7 +4242,7 @@ INT                  last_time=0;
           len += i;
 
         /* finish when empty line received */
-        if (strstr(net_buffer, "GET") != NULL)
+        if (strstr(net_buffer, "GET") != NULL && strstr(net_buffer, "POST") == NULL)
           {
           if (len>4 && strcmp(&net_buffer[len-4], "\r\n\r\n") == 0)
             break;
@@ -4182,6 +4265,8 @@ INT                  last_time=0;
 
           if (strstr(net_buffer, "\r\r\n\r\r\n"))
             header_length = (INT)strstr(net_buffer, "\r\r\n\r\r\n") - (INT)net_buffer + 6;
+
+          net_buffer[header_length-1] = 0;
 
           if (header_length > 0 && len >= header_length+content_length)
             break;
