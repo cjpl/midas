@@ -7,6 +7,9 @@
                 linked with user code to form a complete frontend
 
   $Log$
+  Revision 1.56  2003/09/30 18:30:07  midas
+  Put CNAF functionality under #ifdef HAVE_CAMAC
+
   Revision 1.55  2003/05/09 07:40:04  midas
   Added extra parameter to cm_get_environment
 
@@ -1802,6 +1805,8 @@ net_error:
 
 /*------------------------------------------------------------------*/
 
+#ifdef HAVE_CAMAC
+
 INT cnaf_callback(INT index, void *prpc_param[])
 {
 DWORD cmd, b, c, n, a, f, *pdword, *size, *x, *q, dtemp;
@@ -1904,6 +1909,8 @@ INT   i, count;
 
   return RPC_SUCCESS;
 }
+
+#endif /* HAVE_CAMAC */
 
 /*------------------------------------------------------------------*/
 
@@ -2079,9 +2086,13 @@ usage:
     return 1;
     }
 
+#ifdef HAVE_CAMAC
+
   /* register CNAF callback */
   cm_register_function(RPC_CNAF16, cnaf_callback); 
   cm_register_function(RPC_CNAF24, cnaf_callback); 
+
+#endif
 
   cm_get_experiment_database(&hDB, &status);
 
