@@ -9,6 +9,9 @@
                 for SCS-600 Digital I/O
 
   $Log$
+  Revision 1.9  2003/02/19 16:05:36  midas
+  Added 'init' parameter to user_init
+
   Revision 1.8  2002/11/28 13:03:41  midas
   Protocol version 1.2
 
@@ -103,7 +106,7 @@ void user_write(unsigned char channel) reentrant;
 
 /*---- User init function ------------------------------------------*/
 
-void user_init(void)
+void user_init(unsigned char init)
 {
 unsigned char i;
 
@@ -116,14 +119,13 @@ unsigned char i;
   SR_DATAI = 1; // prepare for input
 
   /* initialize configuration data */
-  if (user_conf.power[0] <= 0 || user_conf.power[0] > 100)
+  if (init)
     {
     for (i=0 ; i<8 ; i++)
       {
       user_data.out[i] = 0;
       user_conf.power[i] = 100;
       }
-    eeprom_flash();
     }
 }
 

@@ -9,6 +9,9 @@
                 for SCS-400 thermo couple I/O
 
   $Log$
+  Revision 1.7  2003/02/19 16:05:36  midas
+  Added 'init' parameter to user_init
+
   Revision 1.6  2003/01/14 08:19:13  midas
   Increased to 8 channels
 
@@ -81,7 +84,7 @@ void user_write(unsigned char channel) reentrant;
 
 /*---- User init function ------------------------------------------*/
 
-void user_init(void)
+void user_init(unsigned char init)
 {
 #ifdef CPU_ADUC812
   ADCCON1 = 0x7C; // power up ADC, 14.5us conv+acq time

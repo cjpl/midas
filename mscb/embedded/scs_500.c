@@ -9,6 +9,9 @@
                 for SCS-500 analog I/O
 
   $Log$
+  Revision 1.13  2003/02/19 16:05:36  midas
+  Added 'init' parameter to user_init
+
   Revision 1.12  2002/11/22 15:43:03  midas
   Made user_write reentrant
 
@@ -147,7 +150,7 @@ void write_gain(void) reentrant;
 
 extern SYS_INFO sys_info;
 
-void user_init(void)
+void user_init(unsigned char init)
 {
 unsigned char i;
 
@@ -159,8 +162,8 @@ unsigned char i;
   DAC0CN = 0x80;  // enable DAC0
   DAC1CN = 0x80;  // enable DAC1
 
-  /* correct initial EEPROM value */
-  if (user_conf.adc_average <= 0 || user_conf.adc_average > 8)
+  /* initial EEPROM value */
+  if (init)
     {
     user_conf.adc_average = 8;
     for (i=0 ; i<8 ; i++)
@@ -171,8 +174,6 @@ unsigned char i;
     user_data.dac0 = 0;
     user_data.dac1 = 0;
     user_data.p1 = 0xff;
-
-    eeprom_flash();
     }
 
   if (user_conf.gain_cal < 0.1 || user_conf.gain_cal > 10)
