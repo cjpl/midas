@@ -12,6 +12,9 @@
 		this driver. For info contact midas@triumf.ca
 		
   $Log$
+  Revision 1.4  2002/02/19 21:56:31  pierre
+  comments+verified for Kernel 2.4
+
   Revision 1.3  2001/10/16 20:47:51  pierre
   Update cam_interrupt_() args
 
@@ -51,9 +54,10 @@
 #include <sys/ioctl.h>
 #include <asm/ioctl.h>
 
+/*--PAA--- inclusion of pcicc32.h for simplicity----------------------*/
 #ifndef __PCICC32_H__
 #define __PCICC32_H__
-/*--PAA--- inclusion of pciccc32.h for simplicity----------------------*\
+/*
    pcicc32.h -- the common header for driver and applications for the
    PCICC32 PCI to CAMAC Interface from ARW Elektronik
 
@@ -70,7 +74,6 @@
 
    first steps                                       AR   25.02.2000
 */
-
 
 #define PCICC32_MAGIC ' '
 typedef struct
@@ -96,15 +99,14 @@ typedef struct
     int  fileNo;		/* equals fileno(f)          */
     char *base;		/* base of range, got with mmap */
 } CC32_DEVICE;
+/*--PAA--- END of inclusion of pcicc32.h for simplicity----------------------*/
 
-/*--PAA--- inclusion of cc32lib.h for simplicity-------------------*/
 typedef void* CC32_HANDLE;  /* type of the device handle */
 
 #define MAX_PCI_ADD 4
 
 CC32_HANDLE handle[MAX_PCI_ADD] = {NULL, NULL, NULL, NULL};
-
-/*------------------------------------------------------------------*/
+/*--PAA--- inclusion of libcc32.h for simplicity-------------------*/
 int cc32_open(char *cszPath, CC32_HANDLE *handle)
 {
   CC32_DEVICE *dev;
@@ -117,33 +119,31 @@ int cc32_open(char *cszPath, CC32_HANDLE *handle)
   dev->fileNo = 0;
   dev->base   = (char *)0;
   
-  if (!(dev->f = fopen(cszPath,"r"))) 
+  if (!(dev->f = fopen(cszPath,"r")))
   {
     int error = errno;
     
     free(dev);
-    
     return error;
   }
   
   dev->fileNo = fileno(dev->f);
   
-  dev->base = (char *)mmap(0, WINDOW_SIZE, PROT_READ, MAP_FILE | MAP_PRIVATE
-			   , dev->fileNo, 0);
+  dev->base = (char *)mmap(0, WINDOW_SIZE, PROT_READ, MAP_FILE | MAP_PRIVATE, dev->fileNo, 0);
   if (dev->base == (char *)-1)
   {
     int error = errno;
     
     fclose(dev->f);
     free(dev);
-    return error;	
-  } 
+    return error;
+  }
   
   *handle = (CC32_HANDLE)dev;
   
   return 0;
 }
-/*------------------------------------------------------------------*/
+
 int cc32_close(CC32_HANDLE handle)
 {
   CC32_DEVICE *dev = (CC32_DEVICE *)handle;
@@ -165,6 +165,8 @@ int cc32_close(CC32_HANDLE handle)
   
   return error;
 }
+/*--PAA--- END of inclusion of libcc32.h for simplicity-------------------*/
+
 
 /*------------------------------------------------------------------*/
 INLINE void cami(const int c, const int n, const int a, const int f, 
@@ -196,12 +198,12 @@ INLINE void cam16i_q(const int c, const int n, const int a, const int f,
 {
   DWORD erg;
   if (handle[c])
-   {
-     erg = *plCC32_ADR(((CC32_DEVICE *)handle[c])->base, n, a, f);
-     *q = (erg & 0x80000000) ? 1 : 0;
-     *x = (erg & 0x40000000)  ? 1 : 0;
-     *d = (WORD) (erg & 0x0000ffff);
-   }
+  {
+    erg = *plCC32_ADR(((CC32_DEVICE *)handle[c])->base, n, a, f);
+    *q = (erg & 0x80000000) ? 1 : 0;
+    *x = (erg & 0x40000000)  ? 1 : 0;
+    *d = (WORD) (erg & 0x0000ffff);
+  }
 }
 
 /*------------------------------------------------------------------*/
@@ -209,12 +211,12 @@ INLINE void cam24i_q(const int c, const int n, const int a, const int f,
                      DWORD *d, int *x, int *q)
 {
   if (handle[c])
-   {
-     *d = *plCC32_ADR(((CC32_DEVICE *)handle[c])->base, n, a, f);
-     *q = (*d & 0x80000000) ? 1 : 0;
-     *x = (*d & 0x40000000) ? 1 : 0;
-     *d &= 0x00ffffff;
-   }
+  {
+    *d = *plCC32_ADR(((CC32_DEVICE *)handle[c])->base, n, a, f);
+    *q = (*d & 0x80000000) ? 1 : 0;
+    *x = (*d & 0x40000000) ? 1 : 0;
+    *d &= 0x00ffffff;
+  }
 }
 
 /*------------------------------------------------------------------*/
@@ -435,7 +437,7 @@ INLINE int cam_init(void)
    
 #ifdef _MSC_VER
    printf(" Board not supported under this OS\n")
-#endif _MSC_VER
+#endif // _MSC_VER
 #ifdef OS_LINUX
      for (i=0;i<MAX_PCI_ADD;i++)
        {
