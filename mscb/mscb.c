@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus communication functions
 
   $Log$
+  Revision 1.5  2001/09/04 07:33:42  midas
+  Rewrote write16/read16 functions
+
   Revision 1.4  2001/08/31 12:23:50  midas
   Added mutex protection
 
@@ -253,7 +256,7 @@ unsigned char busy, bit9_mask;
     /* wait for SM ready */
     for (timeout=0 ; timeout<TIMEOUT_OUT ; timeout++)
       {
-      busy = (INP(mscb_fd[fd].fd + LPT_NBUSY_OFS) & LPT_NBUSY) == 0;
+      busy = (INP(mscb_fd[fd-1].fd + LPT_NBUSY_OFS) & LPT_NBUSY) == 0;
       if (!busy)
         break;
       }
@@ -261,15 +264,15 @@ unsigned char busy, bit9_mask;
       return MSCB_TIMEOUT;
 
     /* output data byte */
-    OUTP(mscb_fd[fd].fd, buffer[i]);
+    OUTP(mscb_fd[fd-1].fd, buffer[i]);
 
     /* set strobe */
-    OUTP(mscb_fd[fd].fd + LPT_NSTROBE_OFS, LPT_NSTROBE | bit9_mask);
+    OUTP(mscb_fd[fd-1].fd + LPT_NSTROBE_OFS, LPT_NSTROBE | bit9_mask);
 
     /* wait for busy to become active */
     for (timeout=0 ; timeout<TIMEOUT_OUT ; timeout++)
       {
-      busy = (INP(mscb_fd[fd].fd + LPT_NBUSY_OFS) & LPT_NBUSY) == 0;
+      busy = (INP(mscb_fd[fd-1].fd + LPT_NBUSY_OFS) & LPT_NBUSY) == 0;
       if (busy)
         break;
       }
@@ -277,10 +280,10 @@ unsigned char busy, bit9_mask;
       return MSCB_TIMEOUT;
 
     /* remove data, make port available for input */
-    OUTP(mscb_fd[fd].fd, 0xFF);
+    OUTP(mscb_fd[fd-1].fd, 0xFF);
     
     /* remove strobe */
-    OUTP(mscb_fd[fd].fd + LPT_NSTROBE_OFS, 0);
+    OUTP(mscb_fd[fd-1].fd + LPT_NSTROBE_OFS, 0);
     }
 
   return MSCB_SUCCESS;
@@ -314,7 +317,7 @@ unsigned char dataready;
   /* wait for DATAREADY, each port access takes roughly 1us */
   for (i=0 ; i<timeout ; i++)
     {
-    dataready = (INP(mscb_fd[fd].fd + LPT_NDATAREADY_OFS) & LPT_NDATAREADY) == 0;
+    dataready = (INP(mscb_fd[fd-1].fd + LPT_NDATAREADY_OFS) & LPT_NDATAREADY) == 0;
     if (dataready)
       break;
     }
@@ -322,24 +325,24 @@ unsigned char dataready;
     return MSCB_TIMEOUT;
 
   /* prepare port for input */
-  OUTP(mscb_fd[fd].fd+LPT_DIRECTION_OFS, LPT_DIRECTION);
+  OUTP(mscb_fd[fd-1].fd+LPT_DIRECTION_OFS, LPT_DIRECTION);
 
   /* get data */
-  *c = INP(mscb_fd[fd].fd);
+  *c = INP(mscb_fd[fd-1].fd);
 
   /* set acknowlege, switch port to output */
-  OUTP(mscb_fd[fd].fd + LPT_NACK_OFS, LPT_NACK);
+  OUTP(mscb_fd[fd-1].fd + LPT_NACK_OFS, LPT_NACK);
 
   /* wait for DATAREADY to be removed */
   for (i=0 ; i<1000 ; i++)
     {
-    dataready = (INP(mscb_fd[fd].fd + LPT_NDATAREADY_OFS) & LPT_NDATAREADY) == 0;
+    dataready = (INP(mscb_fd[fd-1].fd + LPT_NDATAREADY_OFS) & LPT_NDATAREADY) == 0;
     if (!dataready)
       break;
     }
  
   /* remove acknowlege */
-  OUTP(mscb_fd[fd].fd + LPT_NACK_OFS, 0);
+  OUTP(mscb_fd[fd-1].fd + LPT_NACK_OFS, 0);
 
   if (i == 1000)
     return MSCB_TIMEOUT;
@@ -435,14 +438,14 @@ int mscb_init(char *device)
 
 \********************************************************************/
 {
-int i;
+int index, i;
 
   /* search for new file descriptor */
-  for (i=0 ; i<MSCB_MAX_FD ; i++)
-    if (mscb_fd[i].fd == 0)
+  for (index=0 ; index<MSCB_MAX_FD ; index++)
+    if (mscb_fd[index].fd == 0)
       break;
 
-  if (i == MSCB_MAX_FD)
+  if (index == MSCB_MAX_FD)
     return -1;
 
 #ifdef _MSC_VER
@@ -454,9 +457,9 @@ int i;
   
   /* derive base address from device name */
   if (i == 1)
-    mscb_fd[i].fd = 0x378;
+    mscb_fd[index].fd = 0x378;
   else if (i == 2)
-    mscb_fd[i].fd = 0x278;
+    mscb_fd[index].fd = 0x278;
   else
     return -1;
   
@@ -471,7 +474,7 @@ int i;
   unsigned char c;
 
   buffer[0] = 6; /* give IO */
-  buffer[1] = mscb_fd[i].fd;
+  buffer[1] = mscb_fd[index].fd;
   buffer[2] = buffer[1]+4;
   buffer[3] = 0;
 
@@ -494,29 +497,35 @@ int i;
 		  NULL, 0, &size, NULL))
     return -1;
 
+#endif _MSC_VER
+
+  mscb_lock();
+
   /* check if SM alive */
-  d = INP(mscb_fd[i].fd + LPT_STATUS_OFS);
+  d = INP(mscb_fd[index].fd + LPT_STATUS_OFS);
   if ((d & (LPT_STATUS)) > 0)
     {
     //printf("mscb.c: No SM present on parallel port\n");
+    mscb_release();
     return -1;
     }
 
   /* set initial state of handshake lines */
-  OUTP(mscb_fd[i].fd + LPT_NSTROBE_OFS, 0);
+  OUTP(mscb_fd[index].fd + LPT_NSTROBE_OFS, 0);
 
   /* empty RBuffer of SM */
   do
     {
-    status = mscb_in1(i, &c, 1000);
+    status = mscb_in1(index+1, &c, 1000);
     if (status == MSCB_SUCCESS)
       printf("%02X ", c);
     } while (status == MSCB_SUCCESS);
 
   }
-#endif _MSC_VER
 
-  return i;
+  mscb_release();
+
+  return index+1;
 }
 
 /*------------------------------------------------------------------*/
@@ -539,40 +548,7 @@ int mscb_exit(int fd)
   if (fd > MSCB_MAX_FD)
     return MSCB_INVAL_PARAM;
 
-#ifdef _MSC_VER
-  {
-  OSVERSIONINFO vi;
-  DWORD buffer[4];
-  DWORD size;
-  HANDLE hdio;
-
-  buffer[0] = 7; /* lock IO */
-  buffer[1] = mscb_fd[fd].fd;
-  buffer[2] = buffer[1]+4;
-  buffer[3] = 0;
-
-  vi.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
-  GetVersionEx(&vi);
-
-  /* use DirectIO driver under NT to gain port access */
-  if (vi.dwPlatformId == VER_PLATFORM_WIN32_NT)
-    {
-    hdio = CreateFile("\\\\.\\directio", GENERIC_READ, FILE_SHARE_READ, NULL,
-		       OPEN_EXISTING, 0, NULL);
-    if (hdio == INVALID_HANDLE_VALUE)
-      {
-      //printf("mscb.c: Cannot access parallel port (No DirectIO driver installed)\n");
-      return -1;
-      }
-    }
-
-  if (!DeviceIoControl(hdio, (DWORD) 0x9c406000, &buffer, sizeof(buffer), 
-		  NULL, 0, &size, NULL))
-    return -1;
-  }
-#endif
-
-  memset(&mscb_fd[fd], 0, sizeof(MSCB_FD));
+  memset(&mscb_fd[fd-1], 0, sizeof(MSCB_FD));
 
   return MSCB_SUCCESS;
 }
@@ -1233,6 +1209,8 @@ unsigned char buf[80];
 
 /*------------------------------------------------------------------*/
 
+static int _fd = 0;
+
 int mscb_write16(char *device, unsigned short addr, unsigned char channel, unsigned short data)
 /********************************************************************\
 
@@ -1255,44 +1233,49 @@ int mscb_write16(char *device, unsigned short addr, unsigned char channel, unsig
 
 \********************************************************************/
 {
-int fd, status;
+unsigned char buf[10], ack[10], crc;
+int           i;
 
-  if (mscb_lock() != MSCB_SUCCESS)
-    return MSCB_MUTEX;
-
-  fd = mscb_init(device);
-  if (fd < 0)
+  if (_fd == 0)
     {
-    mscb_release();
-    return MSCB_INVAL_PARAM;
+    _fd = mscb_init(device);
+    if (_fd < 0)
+      return MSCB_INVAL_PARAM;
     }
 
-  status = mscb_addr(fd, CMD_PING16, addr);
-  if (status != MSCB_SUCCESS)
-    {
-    mscb_exit(fd);
-    mscb_release();
-    return status;
-    }
+  mscb_lock();
 
-  status = mscb_write(fd, channel, data, 2);
-  if (status != MSCB_SUCCESS)
-    {
-    mscb_exit(fd);
-    mscb_release();
-    return status;
-    }
+  /* send address command */
+  buf[0] = CMD_ADDR_NODE16;
+  buf[1] = (unsigned char) (addr & 0xFF);
+  buf[2] = (unsigned char) (addr >> 8);
+  buf[3] = crc8(buf, 3);
+  mscb_out(_fd, buf, 4, TRUE);
 
-  mscb_exit(fd);
+  /* send write command */
+  buf[0] = CMD_WRITE_ACK+3;
+  buf[1] = channel;
+  buf[2] = data & 0xFF;
+  buf[3] = (data >> 8);
+  crc = crc8(buf, 4);
+  buf[4] = crc;
+  mscb_out(_fd, buf, 5, FALSE);
 
+  /* read acknowledge */
+  i = mscb_in(_fd, ack, 2, 5000);
   mscb_release();
+  if (i<2)
+    return MSCB_TIMEOUT;
+
+  if (ack[0] != CMD_ACK || ack[1] != crc)
+    return MSCB_CRC_ERROR;
 
   return MSCB_SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
 
-int mscb_write_conf16(char *device, unsigned short addr, unsigned char channel, 
+int mscb_write_conf16(char *device, unsigned short addr, unsigned char index,
                       unsigned short data, int perm)
 /********************************************************************\
 
@@ -1303,7 +1286,7 @@ int mscb_write_conf16(char *device, unsigned short addr, unsigned char channel,
   Input:
     int  parport            Either 1 (lpt1) or 2 (lpt2)
     unsigned int  addr      Node address
-    unsigned char channel   Channel index 0..254, 255 for node CSR
+    unsigned char index     Parameter index 0..254, 255 for node CSR
     unsigned int  data      Data to send
     int perm                If 1, write permanently to EEPROM
 
@@ -1316,37 +1299,45 @@ int mscb_write_conf16(char *device, unsigned short addr, unsigned char channel,
 
 \********************************************************************/
 {
-int fd, status;
-  
-  if (mscb_lock() != MSCB_SUCCESS)
-    return MSCB_MUTEX;
+unsigned char buf[10], ack[10], crc;
+int           i;
 
-  fd = mscb_init(device);
-  if (fd < 0)
+  if (_fd == 0)
     {
-    mscb_release();
-    return MSCB_INVAL_PARAM;
+    _fd = mscb_init(device);
+    if (_fd < 0)
+      return MSCB_INVAL_PARAM;
     }
 
-  status = mscb_addr(fd, CMD_PING16, addr);
-  if (status != MSCB_SUCCESS)
-    {
-    mscb_exit(fd);
-    mscb_release();
-    return status;
-    }
+  mscb_lock();
 
-  status = mscb_write_conf(fd, channel, data, 2, perm);
-  if (status != MSCB_SUCCESS)
-    {
-    mscb_exit(fd);
-    mscb_release();
-    return status;
-    }
+  /* send address command */
+  buf[0] = CMD_ADDR_NODE16;
+  buf[1] = (unsigned char) (addr & 0xFF);
+  buf[2] = (unsigned char) (addr >> 8);
+  buf[3] = crc8(buf, 3);
+  mscb_out(_fd, buf, 4, TRUE);
 
-  mscb_exit(fd);
+  /* send write command */
+  if (perm)
+    buf[0] = CMD_WRITE_CONF_PERM+3;
+  else
+    buf[0] = CMD_WRITE_CONF+3;
+  buf[1] = index;
+  buf[2] = data & 0xFF;
+  buf[3] = (data >> 8);
+  crc = crc8(buf, 4);
+  buf[4] = crc;
+  mscb_out(_fd, buf, 5, FALSE);
 
+  /* read acknowledge */
+  i = mscb_in(_fd, ack, 2, 5000);
   mscb_release();
+  if (i<2)
+    return MSCB_TIMEOUT;
+
+  if (ack[0] != CMD_ACK || ack[1] != crc)
+    return MSCB_CRC_ERROR;
 
   return MSCB_SUCCESS;
 }
@@ -1377,58 +1368,62 @@ int mscb_read16(char *device, unsigned short addr, unsigned char channel, unsign
 
 \********************************************************************/
 {
-int fd, status;
-unsigned long d;
+unsigned char buf[10], crc;
+int           i;
 
-  if (mscb_lock() != MSCB_SUCCESS)
-    return MSCB_MUTEX;
-
-  fd = mscb_init(device);
-  if (fd < 0)
+  if (_fd == 0)
     {
-    mscb_release();
-    return MSCB_INVAL_PARAM;
+    _fd = mscb_init(device);
+    if (_fd < 0)
+      return MSCB_INVAL_PARAM;
     }
 
-  status = mscb_addr(fd, CMD_PING16, addr);
-  if (status != MSCB_SUCCESS)
-    {
-    mscb_exit(fd);
-    mscb_release();
-    return status;
-    }
+  mscb_lock();
 
-  status = mscb_read(fd, channel, &d);
-  if (status != MSCB_SUCCESS)
-    {
-    mscb_exit(fd);
-    mscb_release();
-    return status;
-    }
+  /* send address command */
+  buf[0] = CMD_ADDR_NODE16;
+  buf[1] = (unsigned char) (addr & 0xFF);
+  buf[2] = (unsigned char) (addr >> 8);
+  buf[3] = crc8(buf, 3);
+  mscb_out(_fd, buf, 4, TRUE);
 
-  mscb_exit(fd);
+  /* send read command */
+  buf[0] = CMD_READ;
+  buf[1] = channel;
+  buf[2] = crc8(buf, 2);
+  mscb_out(_fd, buf, 3, FALSE);
 
+  /* read data */
+  i = mscb_in(_fd, buf, 10, 5000);
   mscb_release();
 
-  *data = (unsigned short) d;
+  if (i<3)
+    return MSCB_TIMEOUT;
+
+  crc = crc8(buf, i-1);
+
+  if (buf[0] != CMD_ACK+i-2 || buf[i-1] != crc)
+    return MSCB_CRC_ERROR;
+
+  *data = *((unsigned short *)(buf+1));
 
   return MSCB_SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
 
-int mscb_read_conf16(char *device, unsigned short addr, unsigned char channel, 
+int mscb_read_conf16(char *device, unsigned short addr, unsigned char index, 
                      unsigned short *data)
 /********************************************************************\
 
-  Routine: mscb_write_conf16
+  Routine: mscb_read_conf16
 
   Purpose: Read configuration parameter from node
 
   Input:
     char *device            Device name passed to mscb_init
     unsigned int  addr      Node address
-    unsigned char channel   Channel index 0..254, 255 for node CSR
+    unsigned char index     Parameter index 0..254, 255 for node CSR
 
   Output:
     unsigned int  *data     Received data
@@ -1442,40 +1437,44 @@ int mscb_read_conf16(char *device, unsigned short addr, unsigned char channel,
 
 \********************************************************************/
 {
-int fd, status;
-unsigned long d;
-  
-  if (mscb_lock() != MSCB_SUCCESS)
-    return MSCB_MUTEX;
+unsigned char buf[10], crc;
+int           i;
 
-  fd = mscb_init(device);
-  if (fd < 0)
+  if (_fd == 0)
     {
-    mscb_release();
-    return MSCB_INVAL_PARAM;
+    _fd = mscb_init(device);
+    if (_fd < 0)
+      return MSCB_INVAL_PARAM;
     }
 
-  status = mscb_addr(fd, CMD_PING16, addr);
-  if (status != MSCB_SUCCESS)
-    {
-    mscb_exit(fd);
-    mscb_release();
-    return status;
-    }
+  mscb_lock();
 
-  status = mscb_read_conf(fd, channel, &d);
-  if (status != MSCB_SUCCESS)
-    {
-    mscb_exit(fd);
-    mscb_release();
-    return status;
-    }
+  /* send address command */
+  buf[0] = CMD_ADDR_NODE16;
+  buf[1] = (unsigned char) (addr & 0xFF);
+  buf[2] = (unsigned char) (addr >> 8);
+  buf[3] = crc8(buf, 3);
+  mscb_out(_fd, buf, 4, TRUE);
 
-  mscb_exit(fd);
+  /* send read command */
+  buf[0] = CMD_READ_CONF;
+  buf[1] = index;
+  buf[2] = crc8(buf, 2);
+  mscb_out(_fd, buf, 3, FALSE);
 
+  /* read data */
+  i = mscb_in(_fd, buf, 10, 5000);
   mscb_release();
- 
-  *data = (unsigned short) d;
+
+  if (i<3)
+    return MSCB_TIMEOUT;
+
+  crc = crc8(buf, i-1);
+
+  if (buf[0] != CMD_ACK+i-2 || buf[i-1] != crc)
+    return MSCB_CRC_ERROR;
+
+  *data = *((unsigned short *)(buf+1));
 
   return MSCB_SUCCESS;
 }
