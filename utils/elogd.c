@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.46  2001/10/19 10:33:02  midas
+  Added "boolean" attributes, "filtered browsing" and "display search"
+
   Revision 1.45  2001/10/18 13:06:32  midas
   Added attributes, IP checking, reverse search, copy/move, highlight in search
 
@@ -227,7 +230,7 @@ char cfg_dir[256];
 #define MAX_PARAM       100
 #define MAX_ATTACHMENTS   5
 #define MAX_N_LIST      100
-#define MAX_N_ATTR       10
+#define MAX_N_ATTR       20
 #define VALUE_SIZE      256
 #define PARAM_LENGTH    256
 #define TEXT_SIZE     50000
@@ -490,6 +493,10 @@ time_t               now;
     return -1;
     }
 
+  recv_string(s, str, sizeof(str), 10000);
+
+  snprintf(str, sizeof(str) - 1, "HELO %s\r\n", host_name);
+  send(s, str, strlen(str), 0);
   recv_string(s, str, sizeof(str), 3000);
 
   snprintf(str, sizeof(str) - 1, "MAIL FROM: <%s>\r\n", from);
@@ -2213,6 +2220,9 @@ char *p;
       p++;
     }
 
+  if (i == size)
+    return size;
+
   return i+1;
 }
 
@@ -2499,7 +2509,7 @@ int  i;
 
   /* left cell */
   rsprintf("<tr><td bgcolor=%s align=left>", gt("Title BGColor"));
-  rsprintf("<font size=3 face=verdana,arial,helvetica,sans-serif color=%s><b>&nbsp;&nbsp;Logbook \"%s\"%s<b></font>\n", 
+  rsprintf("<font size=3 face=verdana,arial,helvetica,sans-serif color=%s><b>&nbsp;&nbsp;%s%s<b></font>\n", 
             gt("Title fontcolor"), logbook, text);
   rsprintf("&nbsp;</td>\n");
   
@@ -2683,14 +2693,14 @@ BOOL   allow_edit;
   time(&now);
   if (bedit)
     {
-    rsprintf("<tr><td nowrap bgcolor=%s width=1%%><b>Entry date:</b></td><td bgcolor=%s>%s</td></tr>\n\n", 
+    rsprintf("<tr><td nowrap bgcolor=%s width=10%%><b>Entry date:</b></td><td bgcolor=%s>%s</td></tr>\n\n", 
              gt("Categories bgcolor1"), gt("Categories bgcolor2"), date);
-    rsprintf("<tr><td nowrap bgcolor=%s width=1%%><b>Revision date:</b></td><td bgcolor=%s>%s</td></tr>\n\n", 
+    rsprintf("<tr><td nowrap bgcolor=%s width=10%%><b>Revision date:</b></td><td bgcolor=%s>%s</td></tr>\n\n", 
              gt("Categories bgcolor1"), gt("Categories bgcolor2"), ctime(&now));
     }
   else
     {
-    rsprintf("<tr><td nowrap bgcolor=%s width=1%%><b>Entry date:</b></td><td bgcolor=%s>%s</td></tr>\n\n", 
+    rsprintf("<tr><td nowrap bgcolor=%s width=10%%><b>Entry date:</b></td><td bgcolor=%s>%s</td></tr>\n\n", 
              gt("Categories bgcolor1"), gt("Categories bgcolor2"), ctime(&now));
     }
 
@@ -2716,25 +2726,34 @@ BOOL   allow_edit;
     if (attr_options[index][0][0] == 0)
       {
       /* display text box */
-      rsprintf("<tr><td bgcolor=%s><b>%s%s:</b></td>", gt("Categories bgcolor1"), attr_list[index], star);
+      rsprintf("<tr><td nowrap bgcolor=%s><b>%s%s:</b></td>", gt("Categories bgcolor1"), attr_list[index], star);
       rsprintf("<td bgcolor=%s><input type=\"text\" size=80 maxlength=%d name=\"%s\" value=\"%s\"></td></tr>\n", 
                 gt("Categories bgcolor2"), NAME_LENGTH, attr_list[index], def_value);
       }
     else
       {
-      /* display drop-down box */
-      rsprintf("<tr><td bgcolor=%s><b>%s%s:</b></td><td bgcolor=%s><select name=\"%s\">\n",
-               gt("Categories bgcolor1"), attr_list[index], star, gt("Categories bgcolor2"), attr_list[index]);
-      
-      for (i=0 ; i<MAX_N_LIST && attr_options[index][i][0] ; i++)
+      if (equal_ustring(attr_options[index][0], "boolean"))
         {
-        if (equal_ustring(attr_options[index][i], def_value))
-          rsprintf("<option selected value=\"%s\">%s\n", attr_options[index][i], attr_options[index][i]);
-        else
-          rsprintf("<option value=\"%s\">%s\n", attr_options[index][i], attr_options[index][i]);
+        /* display checkbox */
+        rsprintf("<tr><td nowrap bgcolor=%s><b>%s%s:</b></td><td bgcolor=%s><input type=checkbox name=\"%s\" value=1>\n",
+                 gt("Categories bgcolor1"), attr_list[index], star, gt("Categories bgcolor2"), attr_list[index]);
         }
+      else
+        {
+        /* display drop-down box */
+        rsprintf("<tr><td nowrap bgcolor=%s><b>%s%s:</b></td><td bgcolor=%s><select name=\"%s\">\n",
+                 gt("Categories bgcolor1"), attr_list[index], star, gt("Categories bgcolor2"), attr_list[index]);
+      
+        for (i=0 ; i<MAX_N_LIST && attr_options[index][i][0] ; i++)
+          {
+          if (equal_ustring(attr_options[index][i], def_value))
+            rsprintf("<option selected value=\"%s\">%s\n", attr_options[index][i], attr_options[index][i]);
+          else
+            rsprintf("<option value=\"%s\">%s\n", attr_options[index][i], attr_options[index][i]);
+          }
 
-      rsprintf("</select></td></tr>\n");
+        rsprintf("</select></td></tr>\n");
+        }
       }
     }
 
@@ -2907,7 +2926,7 @@ char   str[256];
     rsprintf("<input type=checkbox name=all value=1>Search all logbooks</td></tr>\n");
     }
 
-  rsprintf("<tr><td nowrap width=1%% bgcolor=%s>Start date:</td>", gt("Categories bgcolor1"));
+  rsprintf("<tr><td nowrap width=10%% bgcolor=%s>Start date:</td>", gt("Categories bgcolor1"));
   rsprintf("<td bgcolor=%s><select name=\"m1\">\n", gt("Categories bgcolor2"));
 
   rsprintf("<option value=\"\">\n");
@@ -2941,23 +2960,11 @@ char   str[256];
   rsprintf("&nbsp;Year: <input type=\"text\" size=5 maxlength=5 name=\"y2\">");
   rsprintf("</td></tr>\n");
 
-  /*
-  if (getcfg(logbook, "Authors", list))
-    strbreak(list, author_list, MAX_N_LIST);
-
-  if (getcfg(logbook, "Types", list))
-    strbreak(list, type_list, MAX_N_LIST);
-
-  if (getcfg(logbook, "Categories", list))
-    strbreak(list, category_list, MAX_N_LIST);
-
-  */
-
   rsprintf("</td></tr>\n");
 
   for (i=0 ; i<n_attr ; i++)
     {
-    rsprintf("<tr><td bgcolor=%s>%s:</td>", gt("Categories bgcolor1"), attr_list[i]);
+    rsprintf("<tr><td nowrap bgcolor=%s>%s:</td>", gt("Categories bgcolor1"), attr_list[i]);
     rsprintf("<td bgcolor=%s>", gt("Categories bgcolor2"));
     if (attr_options[i][0][0] == 0)
       {
@@ -2966,11 +2973,16 @@ char   str[256];
       }
     else
       {
-      rsprintf("<select name=\"%s\">\n", attr_list[i]);
-      rsprintf("<option value=\"\">\n");
-      for (j=0 ; j<MAX_N_LIST && attr_options[i][j][0] ; j++)
-        rsprintf("<option value=\"%s\">%s\n", attr_options[i][j], attr_options[i][j]);
-      rsprintf("</select>\n");
+      if (equal_ustring(attr_options[i][0], "boolean"))
+        rsprintf("<input type=checkbox name=\"%s\" value=1>\n", attr_list[i]);
+      else
+        {
+        rsprintf("<select name=\"%s\">\n", attr_list[i]);
+        rsprintf("<option value=\"\">\n");
+        for (j=0 ; j<MAX_N_LIST && attr_options[i][j][0] ; j++)
+          rsprintf("<option value=\"%s\">%s\n", attr_options[i][j], attr_options[i][j]);
+        rsprintf("</select>\n");
+        }
       }
     rsprintf("</td></tr>\n");
     }
@@ -3065,9 +3077,9 @@ void show_elog_submit_find(INT past_n, INT last_n)
 {
 int    i, j, size, status, d1, m1, y1, d2, m2, y2, index, colspan, i_line, n_line, i_col;
 int    current_year, current_month, current_day, printable, n_logbook, lindex, n_attr,
-       reverse, number;
-char   date[80], attrib[MAX_N_ATTR][NAME_LENGTH], 
-       text[TEXT_SIZE], text1[TEXT_SIZE], text2[TEXT_SIZE],
+       reverse, number, n_attr_disp;
+char   date[80], attrib[MAX_N_ATTR][NAME_LENGTH], disp_attr[MAX_N_ATTR][NAME_LENGTH], 
+       list[10000], text[TEXT_SIZE], text1[TEXT_SIZE], text2[TEXT_SIZE],
        orig_tag[80], reply_tag[80], attachment[MAX_ATTACHMENTS][256], encoding[80];
 char   str[256], tag[256], ref[256], file_name[256], col[80], old_data_dir[256];
 char   logbook_list[100][32], lb_enc[32], *nowrap;
@@ -3280,7 +3292,7 @@ FILE   *f;
             printable ? "1" : gt("Border width"), gt("Categories cellpadding"));
 
   if (*getparam("m1") || *getparam("y1") || *getparam("d1"))
-    rsprintf("<tr><td nowrap width=1%% bgcolor=%s><b>Start date:</b></td><td bgcolor=%s>%s %d, %d</td></tr>", 
+    rsprintf("<tr><td nowrap width=10%% bgcolor=%s><b>Start date:</b></td><td bgcolor=%s>%s %d, %d</td></tr>", 
               gt("Categories bgcolor1"), gt("Categories bgcolor2"), mname[m1-1], d1, y1);
 
   if (*getparam("m2") || *getparam("y2") || *getparam("d2"))
@@ -3298,7 +3310,7 @@ FILE   *f;
     ltime -= 3600*24;
     memcpy(&tms, localtime(&ltime), sizeof(struct tm));
 
-    rsprintf("<tr><td nowrap width=1%% bgcolor=%s><b>End date:</b></td><td bgcolor=%s>%s %d, %d</td></tr>", 
+    rsprintf("<tr><td nowrap width=10%% bgcolor=%s><b>End date:</b></td><td bgcolor=%s>%s %d, %d</td></tr>", 
               gt("Categories bgcolor1"), gt("Categories bgcolor2"), 
               mname[tms.tm_mon], tms.tm_mday, tms.tm_year + 1900);
     }
@@ -3306,13 +3318,13 @@ FILE   *f;
   for (i=0 ; i<n_attr ; i++)
     {
     if (*getparam(attr_list[i]))
-      rsprintf("<tr><td nowrap width=1%% bgcolor=%s><b>%s:</b></td><td bgcolor=%s>%s</td></tr>", 
+      rsprintf("<tr><td nowrap width=10%% bgcolor=%s><b>%s:</b></td><td bgcolor=%s>%s</td></tr>", 
                 gt("Categories bgcolor1"), attr_list[i], gt("Categories bgcolor2"), getparam(attr_list[i]));
     }
   
   if (*getparam("subtext"))
     {
-    rsprintf("<tr><td nowrap width=1%% bgcolor=%s><b>Text:</b></td>", gt("Categories bgcolor1"));
+    rsprintf("<tr><td nowrap width=10%% bgcolor=%s><b>Text:</b></td>", gt("Categories bgcolor1"));
     rsprintf("<td bgcolor=%s><B style=\"color:black;background-color:#ffff66\">%s</B></td></tr>", 
               gt("Categories bgcolor2"), getparam("subtext"));
     }
@@ -3334,18 +3346,37 @@ FILE   *f;
 
   size = printable ? 2 : 3;
 
-  rsprintf("<td width=1%% align=center bgcolor=%s><font size=%d face=verdana,arial,helvetica,sans-serif><b>#</b></td>", col, size);
+  rsprintf("<td width=10%% align=center bgcolor=%s><font size=%d face=verdana,arial,helvetica,sans-serif><b>#</b></td>", col, size);
 
   if (atoi(getparam("all")) == 1)
     rsprintf("<td align=center bgcolor=%s><font size=%d face=verdana,arial,helvetica,sans-serif><b>Logbook</b></td>", col, size);
   
   rsprintf("<td align=center bgcolor=%s><font size=%d face=verdana,arial,helvetica,sans-serif><b>Date</b></td>", col, size);
 
+  if (getcfg(logbook, "Display search", list))
+    n_attr_disp = strbreak(list, disp_attr, MAX_N_ATTR);
+  else
+    {
+    n_attr_disp = n_attr;
+    memcpy(disp_attr, attr_list, sizeof(attr_list));
+    }
+
   for (i=0 ; i<n_attr ; i++)
-    rsprintf("<td align=center bgcolor=%s><font size=%d face=verdana,arial,helvetica,sans-serif><b>%s</b></td>", col, size, attr_list[i]);
+    {
+    for (j=0 ; j<n_attr_disp ; j++)
+      if (equal_ustring(disp_attr[j], attr_list[i]))
+        break;
+
+    if (j == n_attr_disp)
+      continue;
+      
+    rsprintf("<td align=center bgcolor=%s><font size=%d face=verdana,arial,helvetica,sans-serif><b>%s</b></td>", 
+              col, size, attr_list[i]);
+    }
 
   if (!full && n_line > 0)
-    rsprintf("<td align=center bgcolor=%s><font size=%d face=verdana,arial,helvetica,sans-serif><b>Text</b></td>", col, size);
+    rsprintf("<td align=center bgcolor=%s><font size=%d face=verdana,arial,helvetica,sans-serif><b>Text</b></td>", 
+             col, size);
 
   rsprintf("</tr>\n\n");
   
@@ -3599,20 +3630,37 @@ FILE   *f;
           size = printable ? 2 : 3;
           nowrap = printable ? "" : "nowrap";
 
-          rsprintf("<td bgcolor=%s><font size=%d>%d</font></td>", col, size, number++);
+          rsprintf("<td align=center bgcolor=%s><font size=%d>%d</font></td>", col, size, number++);
 
           if (atoi(getparam("all")) == 1)
-            rsprintf("<td %s bgcolor=%s><font size=%d>%s</font></td>", nowrap, col, size, logbook_list[lindex]);
+            rsprintf("<td align=center %s bgcolor=%s><font size=%d>%s</font></td>", nowrap, col, size, logbook_list[lindex]);
 
-          rsprintf("<td %s bgcolor=%s><font size=%d><a href=\"%s\">%s</a></font></td>", nowrap, col, size, ref, date);
+          rsprintf("<td align=center %s bgcolor=%s><font size=%d><a href=\"%s\">%s</a></font></td>", nowrap, col, size, ref, date);
 
           for (i=0 ; i<n_attr ; i++)
-            rsprintf("<td bgcolor=%s><font size=%d>%s&nbsp</font></td>", col, size, attrib[i]);
+            {
+            for (j=0 ; j<n_attr_disp ; j++)
+              if (equal_ustring(disp_attr[j], attr_list[i]))
+                break;
+
+            if (j == n_attr_disp)
+              continue;
+
+            if (equal_ustring(attr_options[i][0], "boolean"))
+              {
+              if (atoi(attrib[i]) == 1)
+                rsprintf("<td align=center bgcolor=%s><input type=checkbox checked readonly></td>\n", col);
+              else
+                rsprintf("<td align=center bgcolor=%s><input type=checkbox readonly></td>\n", col);
+              }
+            else
+              rsprintf("<td align=center bgcolor=%s><font size=%d>%s&nbsp</font></td>", col, size, attrib[i]);
+            }
 
           if (atoi(getparam("all")) == 1)
-            colspan = 3+n_attr;
+            colspan = 3+n_attr_disp;
           else
-            colspan = 2+n_attr;
+            colspan = 2+n_attr_disp;
 
           rsprintf("</tr><tr><td bgcolor=#FFFFFF colspan=%d><font size=%d>", colspan, size);
         
@@ -3716,16 +3764,32 @@ FILE   *f;
           size = printable ? 2 : 3;
           nowrap = printable ? "" : "nowrap";
 
-          rsprintf("<td bgcolor=%s><font size=%d>%d</font></td>", col, size, number++);
+          rsprintf("<td align=center bgcolor=%s><font size=%d>%d</font></td>", col, size, number++);
 
           if (atoi(getparam("all")) == 1)
-            rsprintf("<td %s bgcolor=%s>%s</td>", nowrap, col, logbook_list[lindex]);
+            rsprintf("<td align=center %s bgcolor=%s>%s</td>", nowrap, col, logbook_list[lindex]);
 
-          rsprintf("<td %s bgcolor=%s><font size=%d><a href=\"%s\">%s</a></font></td>", nowrap, col, size, ref, date);
+          rsprintf("<td align=center %s bgcolor=%s><font size=%d><a href=\"%s\">%s</a></font></td>", nowrap, col, size, ref, date);
           
-
           for (i=0 ; i<n_attr ; i++)
-            rsprintf("<td bgcolor=%s><font size=%d>%s&nbsp</font></td>", col, size, attrib[i]);
+            {
+            for (j=0 ; j<n_attr_disp ; j++)
+              if (equal_ustring(disp_attr[j], attr_list[i]))
+                break;
+
+            if (j == n_attr_disp)
+              continue;
+
+            if (equal_ustring(attr_options[i][0], "boolean"))
+              {
+              if (atoi(attrib[i]) == 1)
+                rsprintf("<td align=center bgcolor=%s><input type=checkbox checked readonly></td>\n", col);
+              else
+                rsprintf("<td align=center bgcolor=%s><input type=checkbox readonly></td>\n", col);
+              }
+            else
+              rsprintf("<td align=center bgcolor=%s><font size=%d>%s&nbsp</font></td>", col, size, attrib[i]);
+            }
 
           if (n_line > 0)
             {
@@ -4137,7 +4201,7 @@ void show_elog_page(char *logbook, char *path)
 {
 int    size, i, msg_status, status, fh, length, first_message, last_message, index, n_attr;
 char   str[256], orig_path[256], command[80], ref[256], file_name[256], attrib[MAX_N_ATTR][NAME_LENGTH];
-char   date[80], text[TEXT_SIZE],
+char   date[80], text[TEXT_SIZE], *buf,
        orig_tag[80], reply_tag[80], attachment[MAX_ATTACHMENTS][256], encoding[80], att[256], lattr[256];
 FILE   *f;
 BOOL   allow_delete, allow_edit;
@@ -4451,6 +4515,35 @@ struct tm *gmt;
       } while (TRUE);
     }
 
+  /*---- check for welcome page ------------------------------------*/
+
+  if (!path[0] && getcfg(logbook, "Welcome page", str))
+    {
+    show_standard_header("", "");
+
+    strcpy(file_name, data_dir);
+    strcat(file_name, str);
+    fh = open(file_name, O_RDONLY | O_BINARY);
+    if (fh > 0)
+      {
+      lseek(fh, 0, SEEK_END);
+      size = TELL(fh);
+      lseek(fh, 0, SEEK_SET);
+
+      buf = malloc(size+1);
+
+      if (buf)
+        read(fh, buf, size);
+      buf[size] = 0;
+
+      rsputs(buf);
+      free(buf);
+
+      close(fh);
+      }
+    return;
+    }
+  
   /*---- get current message ---------------------------------------*/
 
   size = sizeof(text);
@@ -4731,18 +4824,39 @@ struct tm *gmt;
       rsprintf("</tr>\n");
       }
 
-    /*---- display author, categories, subject ----*/
+    /*---- display attributes ----*/
 
     for (i=0 ; i<n_attr ; i++)
       {
       sprintf(lattr, "l%s", attr_list[i]);
       rsprintf("<tr><td nowrap width=10%% bgcolor=%s>", gt("Categories bgcolor1"));
-      if (*getparam(lattr) == '1')
-        rsprintf("<input type=\"checkbox\" checked name=\"%s\" value=\"1\">", lattr);
-      else
-        rsprintf("<input alt=\"text\" type=\"checkbox\" name=\"%s\" value=\"1\">", lattr);
-      rsprintf("&nbsp;<b>%s:</b></td><td bgcolor=%s>%s&nbsp</td></tr>\n", 
-               attr_list[i], gt("Categories bgcolor2"), attrib[i]);
+
+      if (!getcfg(logbook, "Filtered browsing", str) ||
+          atoi(str) == 1)
+        {
+        if (*getparam(lattr) == '1')
+          rsprintf("<input type=\"checkbox\" checked name=\"%s\" value=\"1\">&nbsp;", lattr);
+        else
+          rsprintf("<input alt=\"text\" type=\"checkbox\" name=\"%s\" value=\"1\">&nbsp;", lattr);
+        }
+
+      /* display checkbox for boolean attributes */
+      if (equal_ustring(attr_options[i][0], "boolean"))
+        {
+        if (atoi(attrib[i]) == 1)
+          rsprintf("<b>%s:</b></td><td bgcolor=%s><input type=checkbox checked readonly></td></tr>\n", 
+                   attr_list[i], gt("Categories bgcolor2"));
+        else
+          rsprintf("<b>%s:</b></td><td bgcolor=%s><input type=checkbox eadonly></td></tr>\n", 
+                   attr_list[i], gt("Categories bgcolor2"));
+        }
+      else 
+        {
+        rsprintf("<b>%s:</b></td><td bgcolor=%s>\n", 
+                 attr_list[i], gt("Categories bgcolor2"));
+        rsputs2(attrib[i]);
+        rsprintf("&nbsp</td></tr>\n");
+        }
       }
 
     rsprintf("</td></tr>\n");
