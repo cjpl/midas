@@ -6,6 +6,9 @@
   Cotents:      Routines for LeCroy 2365 Octal Logic Matrix
                 
   $Log$
+  Revision 1.3  1999/06/04 09:17:32  midas
+  Check all coefficients before return
+
   Revision 1.2  1998/10/12 12:18:57  midas
   Added Log tag in header
 
@@ -34,7 +37,7 @@ int lrs2365_set(int crate, int slot, WORD coeff[18])
 
 \**********************************************************************/
 {
-int  i;
+int  i, status;
 WORD data;
 
   /* Initialize 2365 */
@@ -48,15 +51,16 @@ WORD data;
     camo(crate, slot, 0, 16, coeff[i]);
 
   /* validate coefficients */
+  status = SUCCESS;
   for (i=0 ; i<18 ; i++)
     {
     cami(crate, slot, 0, 0, &data);
     if (data != coeff[i])
       {
       cm_msg(MERROR, "lrs2365_set", "Error verifying coefficients: should be %d, read %d", coeff[i], data);
-      return 0;
+      status = 0;
       }
     }
 
-  return SUCCESS;
+  return status;
 }
