@@ -1,7 +1,7 @@
 #!/bin/sh
 #-*-tcl-*-
 # the next line restarts using wish  \
-exec bltwish "$0" -- ${1+"$@"}
+exec /bin/nice bltwish "$0" -- ${1+"$@"}
 
 #=========================================================================
 # Gertjan Hofman, U. of Colorado, Boulder, March-00.
@@ -40,7 +40,8 @@ exec bltwish "$0" -- ${1+"$@"}
 # v  1.1  -added mouse select of graph items
 # v. 2.0  -added support for mhist (odb history)
 # v. 2.1  -added postscript support + zooming of single graph windows
-# 
+# v  3.0  -added scroll bars for variable selections
+#         -corrected dd.mm.yy to yy.mm.dd for Stefan.
 # things to do:
 # - improve help/info menu's
 # - trap errors ! 
@@ -48,8 +49,22 @@ exec bltwish "$0" -- ${1+"$@"}
 # - what about simple arithmetic ? (a la gchart).
 # - think of some cool back grounds (chaos.../midas etc)
 #
+# 12.10.2000
+# updates:
+# 1. Search for most recent mhist executable and use that
+# 2. Change history file menu's slightly
+# 3. option -mhist is no longer necessary - default
+
+# 17.10.2000
+# fixed bug in online mode - string comparison was wrong
+# re-ordered some code (no functional change)
 #  Revision History:
 #    $Log$
+#    Revision 1.7  2000/10/20 19:07:50  pierre
+#    - improve online/mhist toggle. (GH)
+#    - added mhist path search. (GH)
+#    - cleanup code. (GH)
+#
 #    Revision 1.6  2000/10/05 17:43:17  pierre
 #    - add scroll bar instead of radio button.
 #    - cosmetics
@@ -99,8 +114,37 @@ proc nice_exit {} {
     exit
 return
 }
+#=============================================================
+# FIND LATEST MHIST VERSION -by checking modificationd dates
+#=============================================================
+proc find_newest_mhist {} {
+    
+    global mhist_path
+
+    # search for the latest copy of mhist and store that path
+    set mhistlist "/usr/local/bin /usr/bin . /midas/linux/bin/"
+    set minmod 0
+    foreach file  $mhistlist {
+	# get the modification time
+	if [file exist $file/mhist] { 
+	    if {[file mtime $file/mhist] > $minmod } {
+		set minmod [file mtime $file/mhist]
+		set mhist_path $file
+	    }
+	}
+    }
+    
+    if {$mhist_path==""} {
+	tk_messageBox -message "Error: Can not find ANY mhist in \n
+	$mhist_list \n"
+	return 0
+    } else {
+	wm title  . "using mhist from path:  $mhist_path/mhist"
+	return 1
+    }
 
 
+}
 #==============================================================
 # READ THE MCHART CONFIGURATION FILE
 #==============================================================  
@@ -126,7 +170,7 @@ proc read_conf_file {conf_fname} {
 	    continue
 	}
 	set string [string tolower $string]           ;# convert to lower case
-	
+
 	#disect string to obtain info. Look for begin line.
 	# note: string first return location of first occurance -1 if not found
 	if { [string first "begin:" $string] != -1} {
@@ -415,9 +459,9 @@ proc calc_best_scale { item } {
 #====================================================================
 
 proc wait_ms {mill_sec} {
-    set mill_sec [expr $mill_sec/100]
+    set mill_sec [expr $mill_sec/200.0]
     for {set count 0 } { $count < $mill_sec} { incr count} {
-	after 100
+	after 200
 	update
     }
     return
@@ -538,7 +582,7 @@ proc mouse_find_item {window x y } {
 #========================================================================
 # READ THE OUTPUT OF MHIST, ALLOW SELECTION OF DATA AND GRAPH ** MHIST **
 #========================================================================
-proc read_mhist { } {
+proc read_mhist_file {open_file } {
     global event_choice
     global pick_event_var
     global event_var
@@ -553,7 +597,253 @@ proc read_mhist { } {
 
     global exit_now
     global select_men
-    global open_file
+    global event_ids_info ;#mhist event ID and name
+    global event_var      ;#varialbe name
+
+    global debug
+    global button_toggle  ; #use to toggle lots of variables on/off simul.
+
+    global mhist_path     ; # place to find mhist
+    global selected_items ; # list of history items from listbox selection
+    
+    global hist_file;       # name of history file to open
+    set error_var ""
+    set exit_now  0
+
+
+    
+    if {![find_newest_mhist]} return     ; # locate mhist executable
+ 
+# this is the FILE read version - 
+#i.e. implicitly gets user to select a file.
+# Then select the EVENT ID
+# Then select items to be displayed
+    if { [llength $item_list] >0} {
+	clean_list_and_vectors_and_widgets          ;# remove all things associate
+                                                    ;# with previous data
+    }
+    
+
+    # get a new file or use the old ?
+    if {$open_file} {
+	# here we go..a *new* widget
+	set types {{"History files .hst" {.hst}}}
+	set hist_file [tk_getOpenFile -filetypes $types]
+	# bug ! Mhist doesnt work with full path names. So for now: 
+	set hist_file [lindex [split $hist_file /] end]
+    } else {
+	if {$hist_file==""} { 
+	    tk_messageBox -message "You need to open a file first \n"
+	    return
+	}
+    }
+
+    
+    if ![string compare $hist_file ""] return
+    # ok, so we have the file name. Now repeat the previous excercicse
+    # of getting the event ID.
+    catch "exec rm -f /tmp/mhist" error_var
+    set exec_string "$mhist_path/mhist -f $hist_file -l"
+    catch "exec $exec_string > /tmp/mhist" error_var
+    if {$error_var !="" } {
+	tk_messageBox -message "Could not start mhist (*path problem ?) \n \
+		$error_var \n. Command line was \n $exec_string"
+	return
+    }
+
+    # assume the mhist out put is there and get event selection
+    if {![get_mhist_list]} return
+    if {[select_event_id]=="do_exit"} return
+
+    # now do all the item selection stuff.
+    if {[select_event_items old_file]=="do_exit"} return
+
+    # now set the pick_event_var variables, just like before but using the results
+    # from the list box retrieved from routine select_event_items
+    foreach i $selected_items {
+	set var [ lindex $event_var($event_choice) $i]
+	set pick_event_var($var) 1
+    }
+    
+    # now calculate history time (needed only for plotting here
+    switch -glob -- $history_unit {
+	"days"   {set history_time [expr $history_amount *1  ] }
+	"weeks"  {set history_time [expr $history_amount *7  ] }
+	"months" {set history_time [expr $history_amount *30 ] } 
+    }
+
+    # when opening old file, assume start date (-s) = name of file
+    #                               end   date (-p) = calculated from user input above
+
+    
+    # calc start date from file name: (hist_file)
+    # unfortunately, Stephan uses  yymmdd.hst. Oh well.
+    # split list at the '.'
+    # ah, but stephan has fixed the file names now
+    # Here analyze the file name to get starting date.
+    set date_part [lindex [split $hist_file .] 0]
+    if { [string range $date_part 0 1]=="00" ||  [string range $date_part 0 1]=="99"} {
+	set day_part  [string range $date_part 4 5]
+	set mon_part  [string range $date_part 2 3]
+	set yre_part  [string range $date_part 0 1]
+	#	    set start_time $day_part$mon_part$yre_part
+	set start_time $yre_part$mon_part$day_part
+	
+    } else {
+	set start_time $date_part
+    }
+    
+    # ok, do the end part.
+    if {$history_unit =="until_now"} {
+	set stop_time [clock format [clock seconds] -format "%d%m%y"]
+    } else {
+	# gets tough. Must calculate a new day from old date and interval
+	set stop_time [calc_history_stop_time $day_part $mon_part $yre_part]
+    } 
+    set exec_string \
+	    "$mhist_path/mhist -b -s $start_time \
+	    -p $stop_time -t $history_interval -e $event_choice"
+    
+    
+
+    # now, now filter out which events we dont want and repeatedly call mhist
+    # to get what we want.
+    #  -b = time in seconds. 
+
+    
+    foreach  var $event_var($event_choice) {
+	
+	# was this guy enabled ?
+	if { !$pick_event_var($var)} { continue }
+
+	append exec_string " -v \"$var\" "              ;# surround by quotes
+	# if we are not debugging....go for it.
+	if { [string compare $debug "mhist"]  } {
+	    catch {exec rm -f /tmp/mhist_data} error_var
+	    catch "exec $exec_string > /tmp/mhist_data"  error_var
+	}
+
+	if {$error_var !=""} {
+	    tk_messageBox -message "problem: error from mhist \n  $exec_string \n $error_var"
+	    return
+	}
+
+
+	# get ready to create the vector names
+	set item $var
+	set item [filter_bad_chars $item]           ;# remove spaces, slashes, etc etc
+
+	# create the new vectors
+	
+	vector create V_x_$item
+	vector create V_y_$item
+	vector create V_y_plot_$item
+
+	# get the data and read into BLT vectors as usual.
+	set file_hndl [open "/tmp/mhist_data" r ]
+	
+	while {![eof $file_hndl]} {
+	    gets $file_hndl string
+	    if { [llength $string] == 2} {
+		set V_x_${item}(++end) [lindex $string 0]
+		set V_y_${item}(++end) [lindex $string 1]
+	    } elseif {[llength $string] >=2 } { 
+		tk_messageBox -message "problem: looking for data.\n Send $exec_string \n \
+			, but found \n $string "
+		return
+	    }
+	}
+
+	close $file_hndl
+
+	# fill in the same info we might have gotten from a .conf file:
+	# add to the list of items plotted
+	lappend item_list $item
+	# set the color
+	set item_color($item)  [get_new_color]
+
+# now for these data calculate appropiate max/min values, as we were
+# given them from the .conf file:
+	if { [vector expr length(V_y_$item)] <= 1} {
+	    tk_messageBox  -default ok -message "Not enough data read for plotting" -type ok 
+	    return
+	}
+
+	if { [vector expr length(V_y_$item)] > 10 } {
+	    set stand_dev [ vector expr sdev(V_y_$item) ]  ;# get standard deviation
+	    set mean      [ vector expr mean(V_y_$item) ]  ;# get the mean
+	    
+	    set item_min($item)  [expr $mean - 8.* $stand_dev]  
+	    set item_max($item)  [expr $mean + 8.* $stand_dev]  
+	    
+	    #robustness check:
+	    if { $item_min($item) >= $item_max($item) } {
+		set item_min($item) [expr $mean - 1.]
+		set item_max($item) [expr $mean + 1.]
+	    }
+	} else {
+	    set mean      [ vector expr mean(V_y_$item) ] 
+	    set item_min($item) [expr $mean - 100.]
+	    set item_max($item) [expr $mean + 100.]
+	}
+
+	# from this max/min value, calculate the plotted normalized histo values:
+	# do a vector calculation on this new guy.
+
+	V_y_plot_$item \
+		expr "(V_y_$item -  $item_min($item)) / ($item_max($item)-$item_min($item))"  
+
+	# finally associate/create a graph item for this guy
+	if {! [$strip_chart element exists line_$item]} {
+	    $strip_chart element create line_$item
+	}
+	$strip_chart element configure line_$item -label "" -color $item_color($item) -symbol ""
+	# now hot-link it to the new graph line 
+	$strip_chart element configure line_$item  -xdata V_x_$item  -ydata V_y_plot_$item
+	# change the labelling format on the x-axis if plotting more then one day
+	if {$history_time >= 1} {
+	    $strip_chart xaxis configure -command {my_clock_format "%d.%m %H:%M"}
+	} else {
+	    $strip_chart xaxis configure -command {my_clock_format "%H:%M"}
+	}
+
+	# create the pull down item menu. Also align the text string
+	set blank_string "                            "
+	set item_length [string length $item]
+	if {$item_length > 13} {set item_length 13}
+	set menu_string "$item [string range $blank_string 1 [expr 13 - $item_length] ]"
+	append menu_string $item_color($item)
+	$select_men add command -command "select_graph $item" -label  $menu_string
+	
+
+	# next item:
+	update
+
+    }
+
+
+    return
+}
+
+#=========================================================================
+# READ PRESENT MHIST DATA - this routine is very simular to the above
+# but subtle difference with respect to picking the start/stop time
+#=========================================================================
+proc read_present_mhist { } {
+    global event_choice
+    global pick_event_var
+    global event_var
+    global history_time history_interval history_unit history_amount
+
+
+    global item_fname item_fields item_pattern item_equation
+    global item_color item_max item_min item_list
+    global equip_name
+    
+    global strip_chart
+
+    global exit_now
+    global select_men
     
     global event_ids_info ;#mhist event ID and name
     global event_var      ;#varialbe name
@@ -563,6 +853,8 @@ proc read_mhist { } {
 
     global mhist_path     ; # place to find mhist
     global selected_items ; # list of history items from listbox selection
+
+    if {![find_newest_mhist]} return     ; # locate mhist executable
     
     set error_var ""
     set exit_now  0
@@ -588,238 +880,9 @@ proc read_mhist { } {
     if {![get_mhist_list] } return
  
     # do selection of the event_id:
-    if {[select_event_id first_time]=="do_exit"} return
+    if {[select_event_id]   =="do_exit"} return
 
-    # There is also the option to open a .hst file directly to look 
-    # at the event ID's (today's event ID's may not be the right ones.
-    # for this purpose, Stephan added the -f option to mhist. So if
-    # want to open a specific file
-    if {$open_file} {
-	# here we go..a *new* widget
-	set types {{"History files .hst" {.hst}}}
-	set hist_file [tk_getOpenFile -filetypes $types]
-	# bug ! Mhist doesnt work with full path names. So for now: 
-	set hist_file [lindex [split $hist_file /] end]
-
-	if ![string compare $hist_file ""] return
-	# ok, so we have the file name. Now repeat the previous excercicse
-	# of getting the event ID.
-	catch "exec rm -f /tmp/mhist" error_var
-	set exec_string "$mhist_path/mhist -f $hist_file -l"
-	catch "exec $exec_string > /tmp/mhist" error_var
-	if {$error_var !="" } {
-	    tk_messageBox -message "Could not start mhist (*path problem ?) \n \
-		    $error_var \n. Command line was \n $exec_string"
-	    return
-	}
-	# ok, repeat ID event selection from new list
-	# assume the mhist out put is there
-	if {![get_mhist_list]} return
-	if {[select_event_id second_time]=="do_exit"} return
-	set open_file 1     ;# have to reset open file - last selection reset it to 0
-    }
-
-    # ok, now display and pick list of events_names. Use checkbutton
-    toplevel .select_vars
-    wm title .select_vars "mhist variable select"
-    wm geometry .select_vars +[winfo rootx .]+[winfo rooty .]
-
-    frame .select_vars.col1row1  -relief ridge  -bd 3 
-    frame .select_vars.col2row1  -relief ridge  -bd 3 
-    frame .select_vars.col1row2  -relief ridge  -bd 3 
-    frame .select_vars.col2row2  -relief ridge  -bd 3 
-    frame .select_vars.col1row3  -relief ridge  -bd 3 
-    frame .select_vars.col2row3  -relief ridge  -bd 3 
-    frame .select_vars.col1row4  -relief ridge  -bd 3
-    frame .select_vars.col2row4  -relief ridge  -bd 3
-    frame .select_vars.col1row5  -relief ridge  -bd 3
-    grid .select_vars.col1row1 -row 1 -column 1
-    grid .select_vars.col2row1 -row 1 -column 2
-    grid .select_vars.col1row2 -row 2 -column 1
-    grid .select_vars.col2row2 -row 2 -column 2
-    grid .select_vars.col1row3 -row 3 -column 1  -columnspan 2
-    grid .select_vars.col2row3 -row 3 -column 2
-    grid .select_vars.col1row4 -row 4 -column 1
-    grid .select_vars.col2row4 -row 4 -column 2
-    grid .select_vars.col1row5 -row 5 -column 1  -columnspan 2
-# ok now try to put half the variables in one column, half in the other
-#    set i 0
-#    foreach var $event_var($event_choice) {
-#       set win_name [filter_bad_chars $var]
-#       incr i
-#       set pick_event_var($var) 1
-#       if {$i <= [expr [ llength $event_var($event_choice)]/2] } {
-#           checkbutton .select_vars.col1row2.$win_name  -text $var \
-#                   -variable pick_event_var($var) -state active   -relief flat -anchor w
-#           pack .select_vars.col1row2.$win_name -fill x -expand 1
-#       } else {
-#           checkbutton .select_vars.col2row2.$win_name  -text $var \
-#                   -variable pick_event_var($var) -state active   -relief flat -anchor w
-#           pack .select_vars.col2row2.$win_name -fill x -expand 1
-#       }
-#    }
-
-
-
-		
-    # trial code for the list box with scroll bar, to replaces the radiobuttons:
-    # create scroll bar:
-    scrollbar .select_vars.col1row3.scroll -command ".select_vars.col1row3.listb yview"
-    # create the list box:
-    listbox .select_vars.col1row3.listb \
-	    -yscrollcommand ".select_vars.col1row3.scroll set" \
-	    -selectmode extended -height 15
-    pack  .select_vars.col1row3.listb -side left
-    pack  .select_vars.col1row3.scroll -fill y -side right
-
-    # fill the list box
-    set i 0
-    foreach var $event_var($event_choice) {
-	set pick_event_var($var) 0
-	.select_vars.col1row3.listb insert end $var
-        .select_vars.col1row3.listb selection set $i
-        incr i
-    }
-
-    label .select_vars.col1row5.lab -text "Use <ctrl/shift> for multiple select"
-    pack  .select_vars.col1row5.lab -side bottom -fill x
-
-
-    set button_toggle 1
-    checkbutton .select_vars.col1row4.all -text "select all/none" -relief ridge \
-	    -variable button_toggle -command { 
-         
-	for {set i 0} {$i< [llength $event_var($event_choice) ]} {incr i} {
-            if {$button_toggle} {
-               .select_vars.col1row3.listb selection set  $i 
-            } else {
-               .select_vars.col1row3.listb selection clear $i  
-            }
-        }
-    }
-
-    pack  .select_vars.col1row4.all -fill x -expand 1
-
-    button .select_vars.col2row4.ok  -text "ok" -command {
-	# for the list box (no more radiobuttons), get the chosen events
-	set selected_items [.select_vars.col1row3.listb curselection]
-	destroy .select_vars
-    }
-    
-    button .select_vars.col2row4.cancel \
-	    -text "cancel" -command "set exit_now 1; destroy .select_vars; return"
-
-    pack .select_vars.col2row4.ok     -side left
-    pack .select_vars.col2row4.cancel -side right
-
-
-    # add radio buttons for the time duration and interval
-
-    # if using old file, add some text and an 'until now' choice
-    if {$open_file} {
-	frame .select_vars.col1row0
-	grid  .select_vars.col1row0 -row 0 -column 1 -columnspan 2
-	label .select_vars.col1row0.text -text "Old history file selected. Displayed \
-		interval is \n\ from date of file to date of file plus chosen time below" \
-		-relief ridge  -bd 3 
-	pack  .select_vars.col1row0.text
-#	radiobutton .select_vars.col1row0.filetype -text "using a yymmdd.hst file" \
-#		-variable old_hst_file_type -value 1
-#	pack .select_vars.col1row0.filetype -side bottom -fill x
-    }
-
-    frame .select_vars.col1row1.left           ;# subdivide even further: day/weeks etc
-    frame .select_vars.col1row1.right          ;# multiplier
-    grid  .select_vars.col1row1.right -column 2 -row 1
-    grid  .select_vars.col1row1.left  -column 1 -row 1
-
-    set radio .select_vars.col1row1.left
-    set history_time 1
-
-    label .select_vars.col1row1.lab1 -text "History Time:" -anchor center -justify center
-    grid  .select_vars.col1row1.lab1 -row 0 -columnspan 2
-
-    label .select_vars.col1row1.left.lab -text "Units"
-    pack  .select_vars.col1row1.left.lab
-    
-    set radio .select_vars.col1row1.left
-
-    # set defualt variable values
-    set history_time 1
-    set history_unit days
-
-    
-    radiobutton $radio.day  -text "days"   -relief flat -anchor w  \
-            -variable history_unit   -value days
-    pack $radio.day -fill x -expand 1
-    radiobutton $radio.week  -text "weeks"   -relief flat -anchor w  \
-            -variable history_unit   -value weeks
-    pack $radio.week -fill x -expand 1
-    radiobutton $radio.month  -text "months"   -relief flat -anchor w  \
-            -variable history_unit   -value months
-    pack $radio.month -fill x -expand 1
-
-    if {$open_file} {
-	radiobutton $radio.until_now  -text "until now"   -relief flat -anchor w  \
-		-variable history_unit   -value until_now
-	pack $radio.until_now -fill x -expand 1
-    }
-    
-    # now the day/week/month multiplier
-    set history_amount 1
-    label .select_vars.col1row1.right.lab -text "Multiplier"
-    pack  .select_vars.col1row1.right.lab
-
-    set radio .select_vars.col1row1.right
-    
-
-    radiobutton $radio.1  -text "1"   -relief flat -anchor w  \
-            -variable history_amount   -value 1
-    pack $radio.1 -fill x -expand 1
-    radiobutton $radio.2  -text "2"   -relief flat -anchor w  \
-	    -variable history_amount   -value 2
-    pack $radio.2 -fill x -expand 1
-    radiobutton $radio.3  -text "3"   -relief flat -anchor w  \
-            -variable history_amount   -value 3
-    pack $radio.3 -fill x -expand 1
-    radiobutton $radio.4  -text "4"   -relief flat -anchor w  \
-            -variable history_amount   -value 4
-    pack $radio.4 -fill x -expand 1
-    radiobutton $radio.5  -text "5"   -relief flat -anchor w  \
-	    -variable history_amount   -value 5
-    pack $radio.5 -fill x -expand 1
-    
-
-    # for the interval:
-    set history_interval 300                  ;# default values
-
-    label .select_vars.col2row1.lab -text "History Interval"
-    pack  .select_vars.col2row1.lab
-
-    set radio .select_vars.col2row1
-    
-    radiobutton $radio.1day  -text "100 s"   -relief flat -anchor w  \
-            -variable history_interval   -value 100
-    pack $radio.1day -fill x -expand 1
-    radiobutton $radio.2day  -text "5 mins"   -relief flat -anchor w  \
-            -variable history_interval   -value 300
-    pack $radio.2day -fill x -expand 1
-    radiobutton $radio.3day  -text "30 mins"   -relief flat -anchor w  \
-            -variable history_interval   -value [expr 30*60]
-    pack $radio.3day -fill x -expand 1
-    radiobutton $radio.4day  -text "1 hours"   -relief flat -anchor w  \
-            -variable history_interval   -value [expr 60*60]
-    pack $radio.4day -fill x -expand 1
-    radiobutton $radio.5day  -text "5 hours"   -relief flat -anchor w  \
-            -variable history_interval   -value [expr 5*60*60]
-    pack $radio.5day -fill x -expand 1
-   
-     update
-
-    # now wait until the window with the variables/times is gone before going on:
-
-    tkwait window .select_vars
-    if {$exit_now} return
+    if {[select_event_items today]=="do_exit"} return
 
     # now set the pick_event_var variables, just like before but using the results
     # from the list box.
@@ -840,45 +903,14 @@ proc read_mhist { } {
     # when opening old file, assume start date (-s) = name of file
     #                               end   date (-p) = calculated from user input above
 
-    if {$open_file} {
-	# calc start date from file name: (hist_file)
-	# unfortunately, Stephan uses  yymmdd.hst  ? or ? We need ddmmyy.
-	# split list at the '.'
-	# ah, but stephan has fixed the file names - but for compatability:
-	
-	set date_part [lindex [split $hist_file .] 0]
-	if { [string range $date_part 0 1]=="00" ||  [string range $date_part 0 1]=="99"} {
-	    set day_part  [string range $date_part 4 5]
-	    set mon_part  [string range $date_part 2 3]
-	    set yre_part  [string range $date_part 0 1]
-	    set start_time $day_part$mon_part$yre_part
-	} else {
-	    set start_time $date_part
-	}
-	
-	# ok, do the end part.
-	if {$history_unit =="until_now"} {
-	    set stop_time [clock format [clock seconds] -format "%d%m%y"]
-	} else {
-	    # gets tough. Must calculate a new day from old date and interval
-	    set stop_time [calc_history_stop_time $day_part $mon_part $yre_part]
-	} 
-	set exec_string \
-		"$mhist_path/mhist -b -s $start_time \
-		-p $stop_time -t $history_interval -e $event_choice"
-
-	# do normal case - present day file
-    } else {            
-
-	set exec_string \
-          "$mhist_path/mhist -b -d $history_time -t $history_interval -e $event_choice"
-    }
+    # do normal case - present day file
+    set exec_string \
+	    "$mhist_path/mhist -b -d $history_time -t $history_interval -e $event_choice"
 
 
     # now, now filter out which events we dont want and repeatedly call mhist
     # to get what we want.
     #  -b = time in seconds. 
-
 
     foreach  var $event_var($event_choice) {
 
@@ -994,6 +1026,202 @@ proc read_mhist { } {
     return
 }
 
+
+#===================================================================
+#   PICK THE ITEMS TO BE PLOTTED 
+#===================================================================
+proc select_event_items { today_or_file} {
+    
+    global event_choice
+    global pick_event_var
+    global event_var
+    global history_time history_interval history_unit history_amount
+
+    global exit_now
+    # ok, now display and pick list of events_names. Use checkbutton
+    toplevel .select_vars
+    wm title .select_vars "mhist variable select"
+    wm geometry .select_vars +[winfo rootx .]+[winfo rooty .]
+    
+    frame .select_vars.col1row1  -relief ridge  -bd 3 
+    frame .select_vars.col2row1  -relief ridge  -bd 3 
+    frame .select_vars.col1row2  -relief ridge  -bd 3 
+    frame .select_vars.col2row2  -relief ridge  -bd 3 
+    frame .select_vars.col1row3  -relief ridge  -bd 3 
+    frame .select_vars.col2row3  -relief ridge  -bd 3 
+    frame .select_vars.col1row4  -relief ridge  -bd 3
+    frame .select_vars.col2row4  -relief ridge  -bd 3
+    frame .select_vars.col1row5  -relief ridge  -bd 3
+    grid .select_vars.col1row1 -row 1 -column 1
+    grid .select_vars.col2row1 -row 1 -column 2
+    grid .select_vars.col1row2 -row 2 -column 1
+    grid .select_vars.col2row2 -row 2 -column 2
+    grid .select_vars.col1row3 -row 3 -column 1  -columnspan 2
+    grid .select_vars.col2row3 -row 3 -column 2
+    grid .select_vars.col1row4 -row 4 -column 1
+    grid .select_vars.col2row4 -row 4 -column 2
+    grid .select_vars.col1row5 -row 5 -column 1  -columnspan 2
+
+    # trial code for the list box with scroll bar, to replaces the radiobuttons:
+    # create scroll bar:
+    scrollbar .select_vars.col1row3.scroll -command ".select_vars.col1row3.listb yview"
+    # create the list box:
+    listbox .select_vars.col1row3.listb \
+	    -yscrollcommand ".select_vars.col1row3.scroll set" \
+	    -selectmode extended -height 15
+    pack  .select_vars.col1row3.listb -side left
+    pack  .select_vars.col1row3.scroll -fill y -side right
+
+    # fill the list box
+    set i 0
+    foreach var $event_var($event_choice) {
+	set pick_event_var($var) 0
+	.select_vars.col1row3.listb insert end $var
+        .select_vars.col1row3.listb selection set $i
+        incr i
+    }
+    
+    label .select_vars.col1row5.lab -text "Use <ctrl/shift> for multiple select"
+    pack  .select_vars.col1row5.lab -side bottom -fill x
+    
+    
+    set button_toggle 1
+    checkbutton .select_vars.col1row4.all -text "select all/none" -relief ridge \
+	    -variable button_toggle -command { 
+	
+	for {set i 0} {$i< [llength $event_var($event_choice) ]} {incr i} {
+            if {$button_toggle} {
+		.select_vars.col1row3.listb selection set  $i 
+            } else {
+               .select_vars.col1row3.listb selection clear $i  
+            }
+        }
+    }
+
+    pack  .select_vars.col1row4.all -fill x -expand 1
+
+    button .select_vars.col2row4.ok  -text "ok" -command {
+	# for the list box (no more radiobuttons), get the chosen events
+	set selected_items [.select_vars.col1row3.listb curselection]
+	destroy .select_vars
+    }
+    
+    button .select_vars.col2row4.cancel \
+	    -text "cancel" -command "set exit_now 1; destroy .select_vars; return"
+    
+    pack .select_vars.col2row4.ok     -side left
+    pack .select_vars.col2row4.cancel -side right
+    
+    
+    # add radio buttons for the time duration and interval
+    
+    # if using old file, add some text and an 'until now' choice
+    if {$today_or_file=="old_file"} {
+	frame .select_vars.col1row0
+	grid  .select_vars.col1row0 -row 0 -column 1 -columnspan 2
+	label .select_vars.col1row0.text -text "Old history file selected. Displayed \
+		interval is \n\ from date of file to date of file plus chosen time below" \
+		-relief ridge  -bd 3 
+	pack  .select_vars.col1row0.text
+    }
+
+    frame .select_vars.col1row1.left           ;# subdivide even further: day/weeks etc
+    frame .select_vars.col1row1.right          ;# multiplier
+    grid  .select_vars.col1row1.right -column 2 -row 1
+    grid  .select_vars.col1row1.left  -column 1 -row 1
+
+    set radio .select_vars.col1row1.left
+    set history_time 1
+
+    label .select_vars.col1row1.lab1 -text "History Time:" -anchor center -justify center
+    grid  .select_vars.col1row1.lab1 -row 0 -columnspan 2
+
+    label .select_vars.col1row1.left.lab -text "Units"
+    pack  .select_vars.col1row1.left.lab
+    
+    set radio .select_vars.col1row1.left
+
+    # set defualt variable values
+    set history_time 1
+    set history_unit days
+
+    
+    radiobutton $radio.day  -text "days"   -relief flat -anchor w  \
+            -variable history_unit   -value days
+    pack $radio.day -fill x -expand 1
+    radiobutton $radio.week  -text "weeks"   -relief flat -anchor w  \
+            -variable history_unit   -value weeks
+    pack $radio.week -fill x -expand 1
+    radiobutton $radio.month  -text "months"   -relief flat -anchor w  \
+            -variable history_unit   -value months
+    pack $radio.month -fill x -expand 1
+
+    if {$today_or_file=="old_file"} {
+	radiobutton $radio.until_now  -text "until now"   -relief flat -anchor w  \
+		-variable history_unit   -value until_now
+	pack $radio.until_now -fill x -expand 1
+    }
+    
+    # now the day/week/month multiplier
+    set history_amount 1
+    label .select_vars.col1row1.right.lab -text "Multiplier"
+    pack  .select_vars.col1row1.right.lab
+
+    set radio .select_vars.col1row1.right
+    
+
+    radiobutton $radio.1  -text "1"   -relief flat -anchor w  \
+            -variable history_amount   -value 1
+    pack $radio.1 -fill x -expand 1
+    radiobutton $radio.2  -text "2"   -relief flat -anchor w  \
+	    -variable history_amount   -value 2
+    pack $radio.2 -fill x -expand 1
+    radiobutton $radio.3  -text "3"   -relief flat -anchor w  \
+            -variable history_amount   -value 3
+    pack $radio.3 -fill x -expand 1
+    radiobutton $radio.4  -text "4"   -relief flat -anchor w  \
+            -variable history_amount   -value 4
+    pack $radio.4 -fill x -expand 1
+    radiobutton $radio.5  -text "5"   -relief flat -anchor w  \
+	    -variable history_amount   -value 5
+    pack $radio.5 -fill x -expand 1
+    
+
+    # for the interval:
+    set history_interval 300                  ;# default values
+
+    label .select_vars.col2row1.lab -text "History Interval"
+    pack  .select_vars.col2row1.lab
+
+    set radio .select_vars.col2row1
+    
+    radiobutton $radio.1day  -text "100 s"   -relief flat -anchor w  \
+            -variable history_interval   -value 100
+    pack $radio.1day -fill x -expand 1
+    radiobutton $radio.2day  -text "5 mins"   -relief flat -anchor w  \
+            -variable history_interval   -value 300
+    pack $radio.2day -fill x -expand 1
+    radiobutton $radio.3day  -text "30 mins"   -relief flat -anchor w  \
+            -variable history_interval   -value [expr 30*60]
+    pack $radio.3day -fill x -expand 1
+    radiobutton $radio.4day  -text "1 hours"   -relief flat -anchor w  \
+            -variable history_interval   -value [expr 60*60]
+    pack $radio.4day -fill x -expand 1
+    radiobutton $radio.5day  -text "5 hours"   -relief flat -anchor w  \
+            -variable history_interval   -value [expr 5*60*60]
+    pack $radio.5day -fill x -expand 1
+   
+     update
+    
+    # now wait until the window with the variables/times is gone before going on:
+    
+    tkwait window .select_vars
+    if {$exit_now} return
+    
+}
+
+
+
 #===================================================================
 #   CALCULATE HISTORTY STOP TIME FROM START DATE AND INTERVAL
 #===================================================================
@@ -1055,7 +1283,9 @@ proc calc_history_stop_time {day_part mon_part yre_part} {
     }
 
     # ok now put the string back together
-    return $lday_part$lmon_part$lyre_part
+    #return $lday_part$lmon_part$lyre_part
+    return $lyre_part$lmon_part$lday_part
+           
 }
 
 #=========================================================================
@@ -1063,7 +1293,7 @@ proc calc_history_stop_time {day_part mon_part yre_part} {
 #=========================================================================
 
 
-proc select_event_id { which_time } {
+proc select_event_id { } {
     global event_choice
     global pick_event_var
     global event_var
@@ -1078,7 +1308,6 @@ proc select_event_id { which_time } {
 
     global exit_now
     global select_men
-    global open_file
     
     global event_ids_info ;#mhist event ID and name
     global event_var      ;#varialbe name
@@ -1086,7 +1315,6 @@ proc select_event_id { which_time } {
     global debug
     global button_toggle  ; #use to toggle lots of variables on/off simul.
 
-    set open_file 0
     set exit_now  0
 
 
@@ -1105,15 +1333,6 @@ proc select_event_id { which_time } {
 	frame     .select_event.row2
     }
 
-    if {$which_time=="first_time"} {
-	label .select_event.label -text "Please Choose Event Number \n (or \
-		hit `open file' to select an old  history file):"
-    } else {
-	label .select_event.label -text "Please Choose Event Number \n "
-    }
-    
-    pack .select_event.label -side top
-    
     set radio .select_event.radio 
     # set default choice
     set event_choice [lindex [lindex $event_ids_info 0] 0]
@@ -1128,12 +1347,11 @@ proc select_event_id { which_time } {
     
     button .select_event.row2.ok      -text "ok"     -command "destroy .select_event "
     button .select_event.row2.cancel  -text "cancel" -command "set exit_now 1 ; destroy .select_event"
-    if {$which_time=="first_time"} {
-	button .select_event.row2.openfile \
-		-text "open file" -command "set open_file 1;destroy .select_event"
-	pack .select_event.row2.openfile -side right
-	
-    }
+#    if {$which_time=="first_time"} {
+#	button .select_event.row2.openfile \
+#		-text "open file" -command "set open_file 1;destroy .select_event"
+#	pack .select_event.row2.openfile -side right	
+#    }
         
     pack $radio
     pack .select_event.row2 -side bottom
@@ -1150,9 +1368,6 @@ proc select_event_id { which_time } {
     
     if {$exit_now}  {
 	return "do_exit"
-    }
-    if {$open_file} {
-	return "open_file"
     }
 
     return "continue"
@@ -1279,10 +1494,10 @@ proc get_new_color { } {
     global color_pointer
     global max_color_number
 
-    set color {navy blue cyan DarkGreen green yellow goldenrod sienna brown \
-	    orange red maroon purple blue4}
+    set color {SpringGreen1 navy yellow blue red cyan DarkGreen blue3  brown green goldenrod \
+	    sienna orange maroon DarkSlateGrey purple blue4 LimeGreen}
 
-    set max_color_number 13
+    set max_color_number 17
 
     incr color_pointer
 
@@ -1401,11 +1616,16 @@ set item_list  ""
 
 set doing_mhist 0                       ;# data from mhist OR mchart conf file
 set debug ""
+set hist_file ""
 
-set mhist_path "/usr/local/bin"
+#new:search for latest mhist
+set mhist_path ""
 
 # get the file name of the .conf files. Command line parsing
 set arguse 0               ;# no arguments used up by options
+
+# no option = doing mhistory
+# last option parameter = .conf file name
 
 if {$argc!=0} {
     for {set i 0} {$i < $argc } {incr i} {
@@ -1416,10 +1636,11 @@ if {$argc!=0} {
     }
     if {$arguse < $argc} { set conf_fname [lindex $argv [expr $argc -1] ]}
 } else {
-    puts "usae:  stripchart <-mhist> <confilename.conf> "
-    puts "    Use -mhist to look at MIDAS history files (.hst). Click on mhist"
-    puts "    Use  <confilename.conf> to monitor experiment using the rates program"
-    exit
+    set doing_mhist 1
+#    puts "usae:  stripchart <-mhist> <confilename.conf> "
+#    puts "    Use -mhist to look at MIDAS history files (.hst). Click on mhist"
+#    puts "    Use  <confilename.conf> to monitor experiment using the rates program"
+#    exit
 }
 
 
@@ -1477,22 +1698,11 @@ pack .main.toprow.help -side left
 
 
 # menu for selecting of individual items = make a 'menubutton'
-
 set  select_but [menubutton  .main.toprow.select -text "detail-graph" \
         -menu .main.toprow.select.mnu  -relief flat -underline 0 -bd 0 ]
 set  select_men [menu $select_but.mnu]
 
 pack $select_but -side left -fill x
-
-# create the pull down item menu. Also align the text string
-set blank_string "                            "
-foreach item $item_list {
-    set item_length [string length $item]
-    if {$item_length > 13} {set item_length 13}
-    set menu_string "$item [string range $blank_string 1 [expr 13 - $item_length] ]"
-    append menu_string $item_color($item)
-    $select_men add command -command "select_graph $item" -label  $menu_string
-}
 
 # create an *new* scroll time selection. 
 
@@ -1513,14 +1723,19 @@ menu .main.toprow.scrollt.mnu
 	-value [expr 24*60*60]
 pack  .main.toprow.scrollt  -side left -fill x
 
-# old button with callback to old routine.
-#button  .main.toprow.scroll2 -text "scroll time" -command {new_scroll_time} \
+# old mhist button, now replaced by a pull down meni
+#button .main.toprow.hist -text "mhist" -command {read_mhist}  \
 #	-relief flat -underline 0 -bd 0
-#pack .main.toprow.scroll2 -side left 
+#pack .main.toprow.hist -side left
 
-button .main.toprow.hist -text "mhist" -command {read_mhist}  \
-	-relief flat -underline 0 -bd 0
-pack .main.toprow.hist -side left
+set mhist_but [menubutton .main.toprow.mhist -text "mhist" \
+	-menu .main.toprow.mhist.mnu -relief flat -underline 0 -bd 0]
+set mhist_men [menu $mhist_but.mnu]
+pack $mhist_but -side left -fill x
+$mhist_men add command -command "read_present_mhist" -label "Todays MHIST"
+$mhist_men add command -command "read_mhist_file 1" -label "Open old hist file"
+$mhist_men add command -command "read_mhist_file 0" -label "Same file, new event"
+
 
 
 # create a warning label to show whether we have new  data coming in
@@ -1554,31 +1769,16 @@ update
 #	-command "set_main_y_scale"
 #pack .main.middle.slide -side right -fill y -expand 1
 
-# ok, finally, create vectors associated with the data.
-# create also the graph elements:
 
-foreach item $item_list {
-    if {! [$strip_chart element exists line_$item]} {
-	$strip_chart element create line_$item
-    } else {
-	tk_messageBox -message "Error(online): line $item already exist - skipped "
-    }
-    $strip_chart element configure line_$item -label ""  -color $item_color($item)  -symbol ""
-    vector create V_y_$item                ;# for storing raw data
-    vector create V_y_plot_$item           ;# 'scaled' vector for plotting
-    vector create V_x_$item                ;# time vector.
-    # now hot-link it to the new graph line 
-    $strip_chart element configure line_$item  -xdata V_x_$item  -ydata V_y_plot_$item
-}
-
-update
-
+#============================================================================
+# CODE HERE IS INFINITE LOOP FOR MHIST USAGE
+#============================================================================
 
 # ok, done all the things we can do for both mhist AND normal stripcharting
 # if we didn't open a .conf file, just sit here and wait:
 if {$doing_mhist} {
     .main.toprow.warning configure -text "mhist " -background  cyan 
-    wm title  . "mhist"  
+
     while {1} {
 	wait_ms 200
     }
@@ -1589,6 +1789,38 @@ if {$doing_mhist} {
 # ===============================================================================
 # CODE BELOW FOR ONLINE STRIPCHARTING ONLY
 # ===============================================================================
+
+# create the pull down item menu. Also align the text string
+set blank_string "                            "
+foreach item $item_list {
+    set item_length [string length $item]
+    if {$item_length > 13} {set item_length 13}
+    set menu_string "$item [string range $blank_string 1 [expr 13 - $item_length
+    ] ]"
+    append menu_string $item_color($item)
+    $select_men add command -command "select_graph $item" -label  $menu_string
+}
+
+
+# ok, finally, create vectors associated with the data.
+# create also the graph elements:
+
+foreach item $item_list {
+    if {! [$strip_chart element exists line_$item]} {
+        $strip_chart element create line_$item
+    } else {
+        tk_messageBox -message "Error(online): line $item already exist - skipped "
+    }
+    $strip_chart element configure line_$item -label ""  -color $item_color($item)  -symbol ""
+    vector create V_y_$item                ;# for storing raw data
+    vector create V_y_plot_$item           ;# 'scaled' vector for plotting
+    vector create V_x_$item                ;# time vector.
+    # now hot-link it to the new graph line 
+    $strip_chart element configure line_$item  -xdata V_x_$item  -ydata V_y_plot_$item
+}
+
+
+
 # for now I am assuming all data values are read from the SAME file.
 
 set data_fname  $item_fname([lindex $item_list 0])   ;# just grab the first filename
@@ -1634,8 +1866,15 @@ while {1} {
     
     # loop over all lines in the file
     while   {! [eof $file_hndl]} {
-	
+
 	gets $file_hndl string
+
+	# for some reason, the last line is an empty string. Not sure why
+	# skip empty strings
+	if {[string length $string]==0} {
+	    break
+	}
+
 	set item_string [lindex $string 0]
 	
 	set item_string [string tolower $item_string]     
@@ -1645,8 +1884,7 @@ while {1} {
 	# loop over all known keyword and compare to file.
 
 	foreach item $item_list {
-	    if { [string first $item $item_string] != -1} {
-
+	    if { $item==$item_string} {
 		set new_data  [expr 1.0 *[lindex $string 1]]
 		set vec_name  V_x_$item
 		set ${vec_name}(++end)  $prev_update_time
@@ -1660,6 +1898,7 @@ while {1} {
 		set ${plot_vec_name}(++end) $norm_data
 	    }
 	} 
+	update
     }
 
     close $file_hndl
@@ -1700,7 +1939,7 @@ while {1} {
 
     update
 
-    wait_ms 2000
+    wait_ms 10000
 
 
 
