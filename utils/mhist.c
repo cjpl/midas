@@ -6,6 +6,9 @@
   Contents:     MIDAS history display utility
 
   $Log$
+  Revision 1.11  2000/06/20 06:52:27  midas
+  Changed date format from DDMMYY to YYMMDD
+
   Revision 1.10  2000/04/25 11:56:09  midas
   Added -s and -p flags to specify start/stop time explicitly
 
@@ -305,7 +308,7 @@ INT        status;
 /*------------------------------------------------------------------*/
 
 DWORD convert_time(char *t)
-/* convert date in format DDMMYY[.HHMM[SS]] into decimal time */
+/* convert date in format YYMMDD[.HHMM[SS]] into decimal time */
 {
 struct tm tms;
 DWORD     ltime;
@@ -319,9 +322,9 @@ INT       isdst;
 
   memset(&tms, 0, sizeof(tms));
 
-  tms.tm_mday = 10*(t[0]-'0')+(t[1]-'0');
+  tms.tm_year = 10*(t[0]-'0')+(t[1]-'0');
   tms.tm_mon  = 10*(t[2]-'0')+(t[3]-'0')-1;
-  tms.tm_year = 10*(t[4]-'0')+(t[5]-'0');
+  tms.tm_mday = 10*(t[4]-'0')+(t[5]-'0');
   if (tms.tm_year < 90)
     tms.tm_year += 100;
   if (t[6] == '.')
@@ -341,9 +344,9 @@ INT       isdst;
   memset(&tms, 0, sizeof(tms));
   tms.tm_isdst = isdst;
 
-  tms.tm_mday = 10*(t[0]-'0')+(t[1]-'0');
+  tms.tm_year = 10*(t[0]-'0')+(t[1]-'0');
   tms.tm_mon  = 10*(t[2]-'0')+(t[3]-'0')-1;
-  tms.tm_year = 10*(t[4]-'0')+(t[5]-'0');
+  tms.tm_mday = 10*(t[4]-'0')+(t[5]-'0');
   if (tms.tm_year < 90)
     tms.tm_year += 100;
   if (t[6] == '.')
@@ -432,8 +435,8 @@ usage:
 	      printf("         [-h Hours] display between some hours ago and now\n");
 	      printf("         [-d Days] display between some days ago and now\n");
 	      printf("         [-f File] specify history file explicitly\n");
-	      printf("         [-s Start date] specify start date DDMMYY[.HHMM[SS]]\n");
-	      printf("         [-p End date] specify end date DDMMYY[.HHMM[SS]]\n");
+	      printf("         [-s Start date] specify start date YYMMDD[.HHMM[SS]]\n");
+	      printf("         [-p End date] specify end date YYMMDD[.HHMM[SS]]\n");
 	      printf("         [-l] list available events and variables\n");
 	      printf("         [-b] display time stamp in decimal format\n");
 	      return 1;
