@@ -6,6 +6,9 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.29  1999/12/20 13:07:55  midas
+  Fixed bug in db_copy
+
   Revision 1.28  1999/11/09 13:36:24  midas
   Changed db_lock_database slightly
 
@@ -4694,6 +4697,7 @@ BOOL   bWritten;
         cm_msg(MERROR, "db_copy", "cannot allocate data buffer");
         return DB_NO_MEMORY;
         }
+      line[0] = 0;
       
       if (key.type != TID_KEY)
         {
