@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.11  1999/01/19 19:58:56  pierre
+  - Fix compiler warning in dm_buffer_send
+
   Revision 1.10  1999/01/18 17:50:35  pierre
   - Added dm_...() functions for Dual Memory buffer handling.
 
@@ -13287,7 +13290,7 @@ INLINE INT dm_buffer_send(DMEM_AREA * larea)
     RPC_NET_ERROR    send error
 \********************************************************************/
 {
-  INT  tot_size, j, i, nfrag, nwrite;
+  INT  tot_size, j, nfrag, nwrite;
   char * lpt;
 
   if (larea == NULL)
@@ -13313,7 +13316,7 @@ INLINE INT dm_buffer_send(DMEM_AREA * larea)
     {
       /* send buffer */
       nwrite = send_tcp(_send_sock, lpt, (tot_size > _opt_tcp_size) ? _opt_tcp_size : tot_size, 0);
-      if (i < 0)
+      if (nwrite < 0)
         {
           cm_msg(MERROR, "dm_buffer_send", "send_tcp() failed");
           return RPC_NET_ERROR;
