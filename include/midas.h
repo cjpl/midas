@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.93  2002/05/13 20:36:43  midas
+  Changed type_t to unsigned int for malloc/free
+
   Revision 1.92  2002/05/13 17:56:36  midas
   Added improved malloc/free functions
 
@@ -1364,8 +1367,8 @@ NULL }
 #define M_FREE(x) free(x)
 #endif
 
-void *dbg_malloc(size_t size, char *file, int line);
-void *dbg_calloc(size_t size, size_t count, char *file, int line);
+void *dbg_malloc(unsigned int size, char *file, int line);
+void *dbg_calloc(unsigned int size, unsigned int count, char *file, int line);
 void dbg_free(void *adr, char *file, int line);
 
 /*---- CERN libray -------------------------------------------------*/
