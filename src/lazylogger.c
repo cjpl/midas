@@ -6,6 +6,14 @@
   Contents:     Disk to Tape copier for background job
 
   $Log$
+  Revision 1.4  1999/10/08 07:58:18  midas
+  Fixed following bugs (hopefully):
+  - Error message ss_remove_file was produced in a loop filling up log file,
+    now it's only produced once and the file is nevertheless removed from
+    the lazy list.
+  - debug variable was not initialized properly
+  - "abort postponed.." message used wrong format (%d instead %lf)
+
   Revision 1.3  1999/10/07 09:32:54  midas
   Fixed bug that '/' was added to the tape name which caused the lazylogger
   to crash since a device /dev/nst0/ does not exist (OS complains that the
@@ -928,7 +936,7 @@ INT lazy_copy( char * outfile, char * infile)
 	        /* yield quickly */
 	        status = cm_yield(1);
 	        if (status == RPC_SHUTDOWN || status == SS_ABORT)
-	          cm_msg(MINFO,"Lazy","Abort postponed until end of copy %d[%]",lazyst.progress);
+	          cm_msg(MINFO,"Lazy","Abort postponed until end of copy %lf[%%]",(double)lazyst.progress);
    	    }
       } /* get physrec */
       else
@@ -1139,17 +1147,16 @@ INT lazy_main (INT channel, LAZY_INFO * pLall)
         if (purun < (cur_acq_run - abs(lazy.staybehind) - 1 ))
         {
           /* remove file */
-          if ((status = ss_file_remove(pufile)) == 0)
-          {
-            status = lazy_log_update(REMOVE_FILE, 0, purun, NULL, pufile);
-            donepurge = TRUE;
-
-            /* update donelist (remove run entry as the file has been deleted */
-            if ((status=lazy_remove_entry(channel, pLall, purun)) != 0)
-              cm_msg(MERROR, "Lazy","remove_entry not performed %d",status);
-          }
-          else
+          status = ss_file_remove(pufile);
+          if (status != 0)
             cm_msg(MERROR, "Lazy","ss_file_remove not performed %d",status);
+         
+          status = lazy_log_update(REMOVE_FILE, 0, purun, NULL, pufile);
+          donepurge = TRUE;
+
+          /* update donelist (remove run entry as the file has been deleted */
+          if ((status=lazy_remove_entry(channel, pLall, purun)) != 0)
+            cm_msg(MERROR, "Lazy","remove_entry not performed %d",status);
         }
         freepercent = 100. * ss_disk_free(lazy.dir) / ss_disk_size(lazy.dir);
         if (svfree == freepercent)
@@ -1282,6 +1289,7 @@ int main(unsigned int argc,char **argv)
   channel_name[0] = 0;
   zap_flag = FALSE;
   msg_flag = FALSE;
+  debug = FALSE;
   
   /* set default */
   cm_get_environment (host_name, expt_name);
