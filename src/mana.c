@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.115  2004/01/18 08:25:10  olchansk
+  replace PVM with HAVE_PVM to dodge namespace pollution on macosx
+
   Revision 1.114  2004/01/17 05:35:53  olchansk
   replace #define ALIGN() with ALIGN8() to dodge namespace pollution under macosx
   hide strlcpy() & co #ifdef HAVE_STRLCPY (macosx already has strlcpy())
@@ -457,7 +460,7 @@ TREE_STRUCT tree_struct;
 
 /* PVM include */
 
-#ifdef PVM
+#ifdef HAVE_PVM
 
 INT pvm_start_time = 0;
 
@@ -495,7 +498,7 @@ void pvm_debug(char *format, ...)
 /* buffer size must be larger than largest event (ODB dump!) */
 #define PVM_BUFFER_SIZE (1024*1024)
 
-#ifdef PVM
+#ifdef HAVE_PVM
 #define TAG_DATA  1
 #define TAG_BOR   2
 #define TAG_EOR   3
@@ -651,7 +654,7 @@ struct {
    'r', "<range>       Range of run numbers to analyzer like \"-r 120 125\"\n\
                    to analyze runs 120 to 125 (inclusive). The \"-r\"\n\
                    flag must be used with a '%05d' in the input file name.", clp.run_number, TID_INT, 2},
-#ifdef PVM
+#ifdef HAVE_PVM
    {
    't', "<n>           Parallelize analyzer using <n> tasks with PVM.",
           &clp.n_task, TID_INT, 1}, {
@@ -2059,7 +2062,7 @@ INT bor(INT run_number, char *error)
          } else
             out_format = FORMAT_ASCII;
 
-#ifdef PVM
+#ifdef HAVE_PVM
          /* use node name as filename if PVM slave */
          if (pvm_slave) {
             /* extract extension */
@@ -3485,7 +3488,7 @@ INT process_event(ANALYZE_REQUEST * par, EVENT_HEADER * pevent)
          /* load ODB from event */
          odb_load(pevent);
 
-#ifdef PVM
+#ifdef HAVE_PVM
          PVM_DEBUG("process_event: ODB load");
 #endif
       }
@@ -3493,7 +3496,7 @@ INT process_event(ANALYZE_REQUEST * par, EVENT_HEADER * pevent)
       /* increment event counter */
       par->events_received++;
 
-#ifdef PVM
+#ifdef HAVE_PVM
 
    /* if master, distribute events to clients */
    if (pvm_master) {
@@ -4308,7 +4311,7 @@ int ma_read_event(MA_FILE * file, EVENT_HEADER * pevent, int size)
          return readn;
       }
    } else if (file->device == MA_DEVICE_PVM) {
-#ifdef PVM
+#ifdef HAVE_PVM
       int bufid, len, tag, tid;
       EVENT_HEADER *pe;
       struct timeval timeout;
@@ -4532,12 +4535,12 @@ INT analyze_run(INT run_number, char *input_file_name, char *output_file_name)
       }
    } while (1);
 
-#ifdef PVM
+#ifdef HAVE_PVM
    PVM_DEBUG("analyze_run: event loop finished, status = %d", status);
 #endif
 
    /* signal EOR to slaves */
-#ifdef PVM
+#ifdef HAVE_PVM
    if (pvm_master) {
       if (status == RPC_SHUTDOWN)
          printf("\nShutting down distributed analyzers, please wait...\n");
@@ -4735,7 +4738,7 @@ INT loop_runs_offline()
             }
       }
    }
-#ifdef PVM
+#ifdef HAVE_PVM
    /* merge slave output files */
    if (pvm_master && out_info.filename[0] && out_append)
       pvm_merge();
@@ -4746,7 +4749,7 @@ INT loop_runs_offline()
 
 /*------------------------------------------------------------------*/
 
-#ifdef PVM
+#ifdef HAVE_PVM
 
 int pvm_main(char *argv[])
 {
@@ -5534,9 +5537,8 @@ int main(int argc, char *argv[])
    char str[256];
    HNDLE hkey;
 
-#ifdef PVM
+#ifdef HAVE_PVM
    int i;
-   char str[256];
 
    str[0] = 0;
    for (i = 0; i < argc; i++) {
@@ -5610,7 +5612,7 @@ int main(int argc, char *argv[])
       clp.rwnt = TRUE;
 #endif                          /* HAVE_HBOOK */
 
-#ifdef PVM
+#ifdef HAVE_PVM
    status = pvm_main(argv);
    if (status != CM_SUCCESS)
       return 1;
@@ -5826,7 +5828,7 @@ int main(int argc, char *argv[])
    if (clp.online)
       save_last_histos();
 
-#ifdef PVM
+#ifdef HAVE_PVM
 
    PVM_DEBUG("Analyzer stopped");
 
