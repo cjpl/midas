@@ -7,6 +7,9 @@
                 linked with user code to form a complete frontend
 
   $Log$
+  Revision 1.27  2000/09/28 13:02:03  midas
+  Added manual triggered events
+
   Revision 1.26  2000/08/21 11:01:11  midas
   Changed comments
 
@@ -132,7 +135,7 @@ extern INT  interrupt_configure(INT cmd, INT source, PTYPE adr);
 
 #define SERVER_CACHE_SIZE  100000 /* event cache before buffer */
 
-#define ODB_UPDATE_TIME     10000 /* 10 seconds for ODB update */
+#define ODB_UPDATE_TIME      1000 /* 1 seconds for ODB update */
 
 #define DEFAULT_FE_TIMEOUT  60000 /* 60 seconds for watchdog timeout */
 
@@ -174,9 +177,11 @@ EQUIPMENT     *interrupt_eq = NULL;
 EVENT_HEADER  *interrupt_odb_buffer;
 BOOL          interrupt_odb_buffer_valid;
 
+void send_event(WORD event_id);
 void send_all_periodic_events(INT transition);
 void interrupt_routine(void);
 void interrupt_enable(BOOL flag);
+void display(BOOL bInit);
 
 /*---- ODB records -------------------------------------------------*/
 
@@ -326,6 +331,21 @@ INT status;
 
 /*------------------------------------------------------------------*/
 
+INT manual_trigger(INT index, void *prpc_param[])
+{
+WORD event_id;
+
+  event_id = CWORD(0);
+  send_event(event_id);
+
+  if (display_period)
+    display(FALSE);
+
+  return SUCCESS;
+}
+
+/*------------------------------------------------------------------*/
+
 INT register_equipment(void)
 {
 INT    index, count, size, status, i, j, k, n;
@@ -334,6 +354,7 @@ EQUIPMENT_INFO *eq_info;
 EQUIPMENT_STATS *eq_stats;
 DWORD  start_time, delta_time;
 HNDLE  hKey;
+BOOL   manual_trig_flag = FALSE;
 
   /* get current ODB run state */
   size = sizeof(run_state);
@@ -437,7 +458,7 @@ and rebuild the system.");
       equipment[index].buffer_handle = 0;
 
     /*---- evaluate polling count ----------------------------------*/
-    if (eq_info->eq_type == EQ_POLLED)
+    if (eq_info->eq_type & EQ_POLLED)
       {
       if (display_period)
         printf("\nCalibrating");
@@ -467,12 +488,12 @@ and rebuild the system.");
       }
 
     /*---- initialize interrupt events -----------------------------*/
-    if (eq_info->eq_type == EQ_INTERRUPT)
+    if (eq_info->eq_type & EQ_INTERRUPT)
       {
       /* install interrupt for interrupt events */
 
       for (i=0 ; equipment[i].name[0] ; i++)
-        if (equipment[i].info.eq_type == EQ_POLLED)
+        if (equipment[i].info.eq_type & EQ_POLLED)
           {
           equipment[index].status = FE_ERR_DISABLED;
           cm_msg(MINFO, "register_equipment", 
@@ -506,7 +527,7 @@ and rebuild the system.");
       }
     
     /*---- initialize slow control equipment -----------------------*/
-    if (eq_info->eq_type == EQ_SLOW)
+    if (eq_info->eq_type & EQ_SLOW)
       {
       /* resolve duplicate device names */
       for (i=0 ; equipment[index].driver[i].name[0] ; i++)
@@ -535,6 +556,15 @@ and rebuild the system.");
       /* let user read error messages */
       if (equipment[index].status != FE_SUCCESS)
         ss_sleep(3000);
+      }
+
+    /*---- register callback for manual triggered events -----------*/
+    if (eq_info->eq_type & EQ_MANUAL_TRIG)
+      {
+      if (!manual_trig_flag)
+        cm_register_function(RPC_MANUAL_TRIG, manual_trigger); 
+
+      manual_trig_flag = TRUE;
       }
     }
 
@@ -661,7 +691,7 @@ WORD              bktype;
 
 /*------------------------------------------------------------------*/
 
-void send_all_periodic_events(INT transition)
+void send_event(WORD event_id)
 {
 EQUIPMENT_INFO *eq_info;
 EVENT_HEADER   *pevent;
@@ -671,24 +701,14 @@ INT            i;
     {
     eq_info = &equipment[i].info;
 
-    if ((eq_info->eq_type != EQ_PERIODIC && eq_info->eq_type != EQ_SLOW) || 
-        !eq_info->enabled || equipment[i].status != FE_SUCCESS)
-      continue;
-
-    if (transition == TR_START  && (eq_info->read_on & RO_BOR)    == 0)
-      continue;
-    if (transition == TR_STOP   && (eq_info->read_on & RO_EOR)    == 0)
-      continue;
-    if (transition == TR_PAUSE  && (eq_info->read_on & RO_PAUSE)  == 0)
-      continue;
-    if (transition == TR_RESUME && (eq_info->read_on & RO_RESUME) == 0)
+    if (eq_info->event_id != event_id)
       continue;
 
     /* return value should be valid pointer. if NULL BIG error ==> abort  */
     pevent = dm_pointer_get();
     if (pevent == NULL)
       {
-      cm_msg(MERROR, "send_all_periodic_events", "dm_pointer_get not returning valid pointer");
+      cm_msg(MERROR, "send_event", "dm_pointer_get not returning valid pointer");
       return;
       }
 
@@ -716,6 +736,9 @@ INT            i;
 
       equipment[i].bytes_sent += pevent->data_size + sizeof(EVENT_HEADER);
       equipment[i].events_sent++;
+
+      equipment[i].stats.events_sent += equipment[i].events_sent;
+      equipment[i].events_sent = 0;
 
       /* send event to buffer */
       if (equipment[i].buffer_handle)
@@ -755,6 +778,34 @@ INT            i;
   for (i=0 ; equipment[i].name[0] ; i++)
     if (equipment[i].buffer_handle)
       bm_flush_cache(equipment[i].buffer_handle, SYNC);
+}
+
+/*------------------------------------------------------------------*/
+
+void send_all_periodic_events(INT transition)
+{
+EQUIPMENT_INFO *eq_info;
+INT            i;
+
+  for (i=0 ; equipment[i].name[0] ; i++)
+    {
+    eq_info = &equipment[i].info;
+
+    if ((!(eq_info->eq_type & EQ_PERIODIC) && !(eq_info->eq_type & EQ_SLOW)) || 
+        !eq_info->enabled || equipment[i].status != FE_SUCCESS)
+      continue;
+
+    if (transition == TR_START  && (eq_info->read_on & RO_BOR)    == 0)
+      continue;
+    if (transition == TR_STOP   && (eq_info->read_on & RO_EOR)    == 0)
+      continue;
+    if (transition == TR_PAUSE  && (eq_info->read_on & RO_PAUSE)  == 0)
+      continue;
+    if (transition == TR_RESUME && (eq_info->read_on & RO_RESUME) == 0)
+      continue;
+
+    send_event(eq_info->event_id);
+    }
 }
 
 /*------------------------------------------------------------------*/
@@ -964,7 +1015,7 @@ INT opt_max=0, opt_index=0, opt_tcp_size=128, opt_cnt=0;
         continue;
 
       /*---- call idle routine for slow control equipment ----*/
-      if (eq_info->eq_type == EQ_SLOW &&
+      if ((eq_info->eq_type & EQ_SLOW) &&
           equipment[index].status == FE_SUCCESS)
         equipment[index].cd(CMD_IDLE, &equipment[index]);
 
@@ -976,7 +1027,7 @@ INT opt_max=0, opt_index=0, opt_tcp_size=128, opt_cnt=0;
         continue;
 
       /*---- check periodic events ----*/
-      if (eq_info->eq_type == EQ_PERIODIC || eq_info->eq_type == EQ_SLOW)
+      if ((eq_info->eq_type & EQ_PERIODIC) || (eq_info->eq_type & EQ_SLOW))
         {
         if (eq_info->period == 0)
           continue;
@@ -1034,7 +1085,7 @@ INT opt_max=0, opt_index=0, opt_tcp_size=128, opt_cnt=0;
             eq->events_sent++;
 
             /* send event to ODB for periodic events */
-            if (eq_info->eq_type == EQ_PERIODIC &&
+            if ((eq_info->eq_type & EQ_PERIODIC) &&
                 (eq_info->read_on & RO_ODB ||
                  eq_info->history > 0))
               {
@@ -1051,7 +1102,7 @@ INT opt_max=0, opt_index=0, opt_tcp_size=128, opt_cnt=0;
         } /* end of periodic equipments */
 
       /*---- check polled events ----*/
-      if (eq_info->eq_type == EQ_POLLED)
+      if (eq_info->eq_type & EQ_POLLED)
         {
         readout_start = actual_millitime;
         pevent = NULL;
@@ -1184,7 +1235,7 @@ INT opt_max=0, opt_index=0, opt_tcp_size=128, opt_cnt=0;
         }
 
       /*---- send interrupt events ----*/
-      if (eq_info->eq_type == EQ_INTERRUPT)
+      if (eq_info->eq_type & EQ_INTERRUPT)
         {
         /* not much to do as work being done independently in interrupt_routine() */
 
@@ -1755,7 +1806,7 @@ usage:
 
   /* close slow control drivers */
   for (i=0 ; equipment[i].name[0] ; i++)
-    if (equipment[i].info.eq_type == EQ_SLOW &&
+    if ((equipment[i].info.eq_type & EQ_SLOW) &&
         equipment[i].status == FE_SUCCESS)
       equipment[i].cd(CMD_EXIT, &equipment[i]);
 

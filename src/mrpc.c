@@ -6,6 +6,9 @@
   Contents:     List of MIDAS RPC functions with parameters
 
   $Log$
+  Revision 1.22  2000/09/28 13:02:06  midas
+  Added manual triggered events
+
   Revision 1.21  2000/08/21 07:05:48  midas
   Added cm_msg_log1(...,facility) to be compatible with older programs
 
@@ -682,7 +685,13 @@ static RPC_LIST rpc_list_library[] = {
      {TID_DWORD,      RPC_OUT},           /* q */
      {0} }},
 
-  { 0 }
+  /* manual triggered equipment */
+
+  { RPC_MANUAL_TRIG, "manual_trig",
+    {{TID_WORD,       RPC_IN},            /* event id */
+     {0} }},
+
+   { 0 }
 
 };
 

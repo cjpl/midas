@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.141  2000/09/28 13:02:05  midas
+  Added manual triggered events
+
   Revision 1.140  2000/09/26 06:54:17  midas
   Updated http link to Midas manual
 
@@ -936,8 +939,8 @@ void show_error(char *error)
 
 void show_status_page(int refresh, char *cookie_wpwd)
 {
-int    i, j, k, status, size;
-BOOL   flag;
+int    i, j, k, status, size, type;
+BOOL   flag, first;
 char   str[256], name[32], ref[256];
 char   *yn[] = {"No", "Yes"};
 char   *state[] = {"", "Stopped", "Paused", "Running" };
@@ -1067,6 +1070,41 @@ CHN_STATISTICS chn_stats;
           }
         }
       }
+    }
+
+  /*---- manual triggered equipment ----*/
+
+  if (db_find_key(hDB, 0, "/equipment", &hkey) == DB_SUCCESS)
+    {
+    first = TRUE;
+    for (i=0 ; ; i++)
+      {
+      db_enum_key(hDB, hkey, i, &hsubkey);
+      if (!hsubkey)
+        break;
+
+      db_get_key(hDB, hsubkey, &key);
+
+      db_find_key(hDB, hsubkey, "Common", &hkeytmp);
+
+      if (hkeytmp)
+        {
+        size = sizeof(type);
+        db_get_value(hDB, hkeytmp, "Type", &type, &size, TID_INT);
+        if (type & EQ_MANUAL_TRIG)
+          {
+          if (first)
+            rsprintf("<tr><td colspan=6 bgcolor=#C0C0C0>\n");
+
+          first = FALSE;
+
+          sprintf(str, "Trigger %s event", key.name);
+          rsprintf("<input type=submit name=cmd value=\"%s\">\n", str);
+          }
+        }
+      }
+    if (!first)
+      rsprintf("</tr>\n\n");
     }
 
   /*---- aliases ----*/
@@ -1247,7 +1285,8 @@ CHN_STATISTICS chn_stats;
         sprintf(str, "%1.0lf", d);
 
       /* check if analyze is running */
-      if (cm_exist("Analyzer", FALSE) == CM_SUCCESS)
+      if (cm_exist("Analyzer", FALSE) == CM_SUCCESS ||
+          cm_exist("FAL", FALSE) == CM_SUCCESS)
         rsprintf("<td align=center>%s<td align=center>%1.1lf<td align=center>%1.1lf<td align=center bgcolor=#00FF00>%3.1lf%%</tr>\n",
                  str,
                  equipment_stats.events_per_sec, 
@@ -6840,10 +6879,11 @@ void interprete(char *cookie_pwd, char *cookie_wpwd, char *path, int refresh)
 \********************************************************************/
 {
 int    i, j, n, status, size, run_state, index;
-HNDLE  hkey, hsubkey, hDB;
+WORD   event_id;
+HNDLE  hkey, hsubkey, hDB, hconn;
 KEY    key;
 char   str[256], *p, *ps, *pe;
-char   enc_path[256], dec_path[256], eq_name[NAME_LENGTH];
+char   enc_path[256], dec_path[256], eq_name[NAME_LENGTH], fe_name[NAME_LENGTH];
 char   data[10000];
 char   *experiment, *password, *wpassword, *command, *value, *group;
 char   exp_list[MAX_EXPERIMENT][NAME_LENGTH];
@@ -7181,6 +7221,57 @@ struct tm *gmt;
       show_error(str);
     else
       redirect("");
+
+    return;
+    }
+
+  /*---- trigger equipment readout ---------------------------*/
+
+  if (strncmp(command, "Trigger", 7) == 0)    
+    {
+    sprintf(str, "?cmd=%s", command);
+    if (!check_web_password(cookie_wpwd, str, experiment))
+      return;
+
+    /* extract equipment name */
+    strcpy(eq_name, command+8);
+    if (strchr(eq_name, ' '))
+      *strchr(eq_name, ' ') = 0;
+
+    /* get frontend name */
+    sprintf(str, "/Equipment/%s/Common/Frontend name", eq_name);
+    size = NAME_LENGTH;
+    db_get_value(hDB, 0, str, fe_name, &size, TID_STRING);
+
+    /* and ID */
+    sprintf(str, "/Equipment/%s/Common/Event ID", eq_name);
+    size = sizeof(event_id);
+    db_get_value(hDB, 0, str, &event_id, &size, TID_WORD);
+
+    if (cm_exist(fe_name, FALSE) != CM_SUCCESS)
+      {
+      sprintf(str, "Frontend \"%s\" not running!", fe_name);
+      show_error(str);
+      }
+    else
+      {
+      status = cm_connect_client(fe_name, &hconn);
+      if (status != RPC_SUCCESS)
+        {
+        sprintf(str, "Cannot connect to frontend \"%s\" !", fe_name);
+        show_error(str);
+        }
+      else
+        {
+        status = rpc_client_call(hconn, RPC_MANUAL_TRIG, event_id);
+        if (status != CM_SUCCESS)
+          show_error("Error triggering event");
+        else
+          redirect("");
+
+        cm_disconnect_client(hconn, FALSE);
+        }
+      }
 
     return;
     }
