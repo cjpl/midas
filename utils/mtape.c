@@ -6,6 +6,9 @@
   Contents:     Magnetic tape manipulation program for MIDAS tapes
 
   $Log$
+  Revision 1.13  2003/06/09 19:14:52  pierre
+  fix buffer size for dir
+
   Revision 1.12  2003/04/25 14:37:35  midas
   Fixed compiler warnings
 
@@ -55,7 +58,7 @@ BOOL verbose = FALSE;
 INT tape_dir(INT channel, INT count)
 {
 EVENT_HEADER *event;
-char         buffer[1024];
+char         buffer[TAPE_BUFFER_SIZE];
 INT          status, size, index;
 
   event = (EVENT_HEADER *) buffer;
