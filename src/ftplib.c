@@ -8,6 +8,9 @@
   Contents:     File Transfer Protocol library
 
   $Log$
+  Revision 1.3  1999/02/12 11:52:13  midas
+  Fixed bug that i was not initialized in ftp_get
+
   Revision 1.2  1998/10/12 12:19:01  midas
   Added Log tag in header
 
@@ -505,6 +508,7 @@ DWORD start, stop;
   while ((count = ftp_receive(con->data, buff, sizeof(buff))) > 0)
     {
     total += write(fh, buff, count);
+    i = 0;
     if (ftp_debug_func != NULL)
       {
       printf("%c\r", bars[(i++) % 4]);
@@ -535,7 +539,7 @@ int  fh;
 int  status;
 char buff[8193];  
 char str[256];
-int  count, i;
+int  count, i = 0;
 long total = 0;
 DWORD start, stop;
 
