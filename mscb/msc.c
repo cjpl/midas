@@ -6,6 +6,9 @@
   Contents:     Command-line interface for the Midas Slow Control Bus
 
   $Log$
+  Revision 1.57  2004/03/09 14:19:32  midas
+  Fixed problems with write/read of strings
+
   Revision 1.56  2004/03/09 11:56:04  midas
   Mention hotplug script
 
@@ -620,7 +623,7 @@ void cmd_loop(int fd, char *cmd, int adr)
                printf("\nVariables:\n");
                for (i = 0; i < info.n_variables; i++) {
                   mscb_info_variable(fd, current_addr, i, &info_var);
-                  size = sizeof(dbuf);
+                  size = info_var.width;
                   mscb_read(fd, current_addr, (unsigned char) i, dbuf, &size);
 
                   print_channel(i, &info_var, dbuf, 1);
@@ -833,13 +836,14 @@ void cmd_loop(int fd, char *cmd, int adr)
                   puts("Timeout or invalid channel number");
                else {
                   do {
-                     size = sizeof(dbuf);
+                     size = info_var.width;
                      status =
                          mscb_read(fd, current_addr, (unsigned char) addr, dbuf, &size);
                      if (status != MSCB_SUCCESS)
                         printf("Error: %d\n", status);
                      else if (size != info_var.width)
-                        printf("Error: Received %d bytes instead of %d", size, info_var.width);
+                        printf("Error: Received %d bytes instead of %d", size,
+                               info_var.width);
                      else
                         print_channel(addr, &info_var, dbuf, 0);
 
@@ -1250,11 +1254,11 @@ int main(int argc, char *argv[])
       } else if (fd == -3) {
          printf("MSCB system locked by other process\n");
       } else if (fd == -4) {
-	printf("\nCannot communicate with MSCB submaster at %s\n", device);
-	puts("Please disconnect and reconnect submaster\n");
+         printf("\nCannot communicate with MSCB submaster at %s\n", device);
+         puts("Please disconnect and reconnect submaster\n");
       } else if (fd == -5) {
-	printf("\nNo write access to MSCB submaster at %s\n", device);
-	puts("Please install hotplug script \"/etc/hotplug/usb/scs_250\".\n");
+         printf("\nNo write access to MSCB submaster at %s\n", device);
+         puts("Please install hotplug script \"/etc/hotplug/usb/scs_250\".\n");
       } else
          printf("Cannot connect to device \"%s\"\n", device);
 
