@@ -6,6 +6,11 @@
   Contents:     Magnetic tape manipulation program for MIDAS tapes
 
   $Log$
+  Revision 1.5  1998/10/22 12:41:08  midas
+  - Added "oflag" to ss_tape_open()
+  - Open tape in read only mode for all read operations
+    (necessary if tape is write locked)
+
   Revision 1.4  1998/10/22 12:05:54  midas
   Added backup/restore commands
 
@@ -272,7 +277,7 @@ char cmd[100], tape_name[256], file_name[256];
     }
 
   /* open tape device */
-  if (ss_tape_open(tape_name, &channel) != SS_SUCCESS)
+  if (ss_tape_open(tape_name, O_RDONLY, &channel) != SS_SUCCESS)
     {
     printf("Cannot open tape %s.\n", tape_name);
     return 0;
@@ -288,8 +293,18 @@ char cmd[100], tape_name[256], file_name[256];
     status = ss_tape_unmount(channel);
 
   else if (strcmp(cmd, "eof") == 0 || strcmp(cmd, "weof") == 0)
+    {
+    /* reopen tape in write mode */
+    ss_tape_close(channel);
+    if (ss_tape_open(tape_name, O_RDWR | O_CREAT | O_TRUNC, &channel) != SS_SUCCESS)
+      {
+      printf("Cannot open tape %s.\n", tape_name);
+      return 0;
+      }
+
     for (i=0 ; i<count ; i++)
       status = ss_tape_write_eof(channel);
+    }
 
   else if (strcmp(cmd, "fsf") == 0 || strcmp(cmd, "ff") == 0)
     status = ss_tape_fskip(channel, count);
@@ -310,7 +325,16 @@ char cmd[100], tape_name[256], file_name[256];
     status = tape_dir(channel, count);
 
   else if (strcmp(cmd, "backup") == 0)
+    {
+    /* reopen tape in write mode */
+    ss_tape_close(channel);
+    if (ss_tape_open(tape_name, O_RDWR | O_CREAT | O_TRUNC, &channel) != SS_SUCCESS)
+      {
+      printf("Cannot open tape %s.\n", tape_name);
+      return 0;
+      }
     status = tape_backup(channel, count, file_name);
+    }
 
   else if (strcmp(cmd, "restore") == 0)
     status = tape_restore(channel, count, file_name);
