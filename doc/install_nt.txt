@@ -34,6 +34,18 @@ the MIDAS programs under c:\midas\nt\bin and the include files
 under c:\midas\include. Edit the file install.bat if you want 
 to change these directories.
 
+Next define the environment variable MIDASSYS, pointing to the installation
+directory, like
+
+set MIDASSYS=c:\midas\nt
+
+or similar. This variable is necessary so that other packages find the
+midas library and include files under $MIDASSYS/lib and $MIDASSYS/include.
+To make this variable permanent, use the system properties panel
+(usually Control Panel/System/Advanced/Environment Variables/
+System Variables/New). You need to re-open all command windows to see
+this change.
+
 3) Set the path environment variable to the MIDAS executables at
 c:\midas\nt\bin. To do so, right-click on the "My Computer"
 icon on the desktop. Select "Properties" from the menue. On the

@@ -1,6 +1,12 @@
 Revision History
 ================
 
+Version 1.9.4, released July 9th, 2004
+--------------------------------------
+
+This version is mainly a maintencance update, fixing many little
+things here and there, but not adding much functionality. 
+
 Version 1.9.3, released May 17th, 2003
 --------------------------------------
 

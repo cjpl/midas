@@ -73,6 +73,24 @@ and /usr/local/include) don't suit you. Then enter as a super-user:
 
   make install
 
+Next define the environment variable MIDASSYS, pointing to the installation
+directory, like
+
+setenv MIDASSYS /usr/local
+
+or
+
+export MIDASSYS=/usr/local
+
+If you installed midas under your home directory, this could then be
+
+setenv MIDASSYS /home/john/midas-1.9.4
+
+or similar. This variable is necessary so that other packages find the
+midas library and include files under $MIDASSYS/lib and $MIDASSYS/include.
+To make this variable permanent, put above statement into your startup
+script (.tcshrc or .bashrc or similar).
+
 6) Under Linux, the MIDAS library is installed as a shared library. On
 the other systems, step 6) can be skipped. 
 
