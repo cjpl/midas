@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.41  2001/10/09 10:39:55  midas
+  Version 1.1.2
+
   Revision 1.40  2001/10/05 13:35:50  midas
   Implemented keep-alive
 
@@ -131,7 +134,7 @@
 \********************************************************************/
 
 /* Version of ELOG */
-#define VERSION "1.1.1"
+#define VERSION "1.1.2"
 
 #include <stdio.h>
 #include <sys/types.h>
