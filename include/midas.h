@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.133  2004/09/17 16:10:11  midas
+  Added new timeout errors
+
   Revision 1.132  2004/07/21 06:54:03  pierre
   fix dox doc
 
@@ -902,6 +905,7 @@ System message types */
 #define CM_UNDEF_ENVIRON            109 /**< - */
 #define CM_DEFERRED_TRANSITION      110 /**< - */
 #define CM_TRANSITION_IN_PROGRESS   111 /**< - */
+#define CM_TIMEOUT                  112 /**< - */
 /**dox***************************************************************/
 /** @} */ /* end of err21 */
 
@@ -957,6 +961,7 @@ System message types */
 #define DB_INVALID_LINK             322   /**< - */
 #define DB_CORRUPTED                323   /**< - */
 #define DB_STRUCT_MISMATCH          324   /**< - */
+#define DB_TIMEOUT                  325   /**< - */
 /**dox***************************************************************/
 /** @} */ /* end of group 23 */
 
@@ -2040,6 +2045,7 @@ extern "C" {
                             char *struct_name, BOOL append);
    INT EXPRT db_save_string(HNDLE hDB, HNDLE hKey, char *file_name,
                             char *string_name, BOOL append);
+   INT EXPRT db_save_xml(HNDLE hDB, HNDLE hKey, char *file_name);
 
    INT EXPRT db_sprintf(char *string, void *data, INT data_size, INT index, DWORD type);
    INT EXPRT db_sprintfh(char *string, void *data, INT data_size, INT index, DWORD type);
