@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.213  2002/05/15 00:24:41  midas
+  Inactive logging channels displayed in yellow instead of red on status page
+
   Revision 1.212  2002/05/14 19:54:20  pierre
   small bug
 
@@ -1946,7 +1949,7 @@ CHN_STATISTICS chn_stats;
       else if (chn_settings.active)
         rsprintf("<td align=center bgcolor=\"00FF00\">Yes");
       else
-        rsprintf("<td align=center bgcolor=\"FF0000\">No");
+        rsprintf("<td align=center bgcolor=\"FFFF00\">No");
 
       /* statistics */
 
