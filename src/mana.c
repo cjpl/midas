@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.32  1999/08/20 14:26:24  midas
+  Do last.rz existence checking before loading
+
   Revision 1.31  1999/08/20 13:31:18  midas
   Analyzer saves and reloads online histos
 
@@ -2610,11 +2613,18 @@ INT      status;
 DWORD    last_time_loop, last_time_update, actual_time;
 int      ch;
 char     str[80];
+FILE     *f;
 
   /* load previous online histos */
   add_data_dir(str, "last.rz");
-  printf("Loading previous online histos from %s\n", str);
-  HRGET(0, str, "A");
+
+  f = fopen(str, "r");
+  if (f != NULL)
+    {
+    fclose(f);
+    printf("Loading previous online histos from %s\n", str);
+    HRGET(0, str, "A");
+    }
   
   printf("Running analyzer online. Stop with \"!\"\n");
 
