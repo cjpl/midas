@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.160  2002/05/28 12:47:46  midas
+  Shut down client connection in FTCP mode
+
   Revision 1.159  2002/05/27 14:29:10  midas
   Improved rpc timeout error reports
 
@@ -9406,6 +9409,9 @@ INT i;
   else
     {
     /* notify server about exit */
+
+    /* set FTCP mode (helps for rebooted VxWorks nodes) */
+    rpc_set_option(hConn, RPC_OTRANSPORT, RPC_FTCP);
     rpc_client_call(hConn, bShutdown ? RPC_ID_SHUTDOWN : RPC_ID_EXIT);
 
     /* close socket */
@@ -11650,9 +11656,13 @@ char         return_buffer[NET_BUFFER_SIZE];
   else
     status = RPC_INVALID_ID;
 
-  if (routine_id == RPC_ID_EXIT || routine_id == RPC_ID_SHUTDOWN ||
+  if (routine_id == RPC_ID_EXIT || routine_id == RPC_ID_SHUTDOWN || 
       routine_id == RPC_ID_WATCHDOG)
     status = RPC_SUCCESS;
+
+  /* return immediately for closed down client connections */
+  if (!sock && routine_id == RPC_ID_EXIT)
+    return SS_EXIT;
 
   /* Return if TCP connection broken */
   if (status == SS_ABORT)
