@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.94  2002/05/15 23:44:47  midas
+  Added EVENTID_FRAG for fragmented events
+
   Revision 1.93  2002/05/13 20:36:43  midas
   Changed type_t to unsigned int for malloc/free
 
@@ -559,6 +562,7 @@ typedef          INT       HNDLE;
 #define EQ_INTERRUPT  (1<<2)
 #define EQ_SLOW       (1<<3)
 #define EQ_MANUAL_TRIG (1<<4)
+#define EQ_FRAGMENTED (1<<5)
 
 /* Read - On flags */
 #define RO_RUNNING    (1<<0)
@@ -900,6 +904,10 @@ Extract or set/reset the time stamp field pointed by the argument.
 #define EVENTID_BOR      ((short int) 0x8000)  /* Begin-of-run      */
 #define EVENTID_EOR      ((short int) 0x8001)  /* End-of-run        */
 #define EVENTID_MESSAGE  ((short int) 0x8002)  /* Message events    */
+
+/* fragmented events */
+#define EVENTID_FRAG1    ((unsigned short) 0xC000)  /* first fragment */
+#define EVENTID_FRAG     ((unsigned short) 0xD000)  /* added to real event-id */
 
 /* magic number used in trigger_mask for BOR event */
 #define MIDAS_MAGIC      0x494d            /* 'MI' */
