@@ -6,6 +6,9 @@
  *         amaudruz@triumf.ca                            Local:           6234
  * ---------------------------------------------------------------------------
    $Log$
+   Revision 1.41  2002/07/12 19:31:41  pierre
+   deallocation error in yb_any_file_rclose
+
    Revision 1.40  2002/06/10 22:51:27  pierre
    fix undefined types
 
@@ -1770,7 +1773,7 @@ INT   yb_any_file_rclose (INT data_fmt)
   if (my.pylrl != NULL)
     free (my.pylrl);
   if (my.pmrd != NULL)
-    free (my.pmh);
+    free (my.pmrd);
   if (my.pmp != NULL)
     free (my.pmp);
   (void *)my.pyh = (void *)my.pmagta = (void *)my.pylrl = NULL;
