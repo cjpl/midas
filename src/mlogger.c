@@ -6,6 +6,9 @@
   Contents:     MIDAS logger program
 
   $Log$
+  Revision 1.85  2004/09/30 19:58:11  midas
+  Added more debugging info to cm_transition
+
   Revision 1.84  2004/09/29 17:57:11  midas
   Added large file (>2GB) support for linux
 
@@ -292,6 +295,10 @@ void create_sql_tree();
 #endif
 
 /*---- globals -----------------------------------------------------*/
+
+#ifndef DEBUG_TRANS
+#define DEBUG_TRANS 0
+#endif
 
 #define LOGGER_TIMEOUT 60000
 
@@ -2438,7 +2445,7 @@ INT log_write(LOG_CHN * log_chn, EVENT_HEADER * pevent)
          cm_msg(MTALK, "log_write", "Error writing to %s, stopping run", log_chn->path);
 
       stop_requested = TRUE;
-      cm_transition(TR_STOP, 0, NULL, 0, ASYNC, FALSE);
+      cm_transition(TR_STOP, 0, NULL, 0, ASYNC, DEBUG_TRANS);
       stop_requested = FALSE;
 
       return status;
@@ -2453,7 +2460,7 @@ INT log_write(LOG_CHN * log_chn, EVENT_HEADER * pevent)
       cm_msg(MTALK, "log_write", "stopping run after having received %d events",
              log_chn->settings.event_limit);
 
-      status = cm_transition(TR_STOP, 0, NULL, 0, ASYNC, FALSE);
+      status = cm_transition(TR_STOP, 0, NULL, 0, ASYNC, DEBUG_TRANS);
       if (status != CM_SUCCESS)
          cm_msg(MERROR, "log_write", "cannot stop run after reaching event limit");
       stop_requested = FALSE;
@@ -2478,7 +2485,7 @@ INT log_write(LOG_CHN * log_chn, EVENT_HEADER * pevent)
       cm_msg(MTALK, "log_write", "stopping run after having received %1.0lf mega bytes",
              log_chn->statistics.bytes_written / 1E6);
 
-      status = cm_transition(TR_STOP, 0, NULL, 0, ASYNC, FALSE);
+      status = cm_transition(TR_STOP, 0, NULL, 0, ASYNC, DEBUG_TRANS);
       if (status != CM_SUCCESS)
          cm_msg(MERROR, "log_write", "cannot stop run after reaching bytes limit");
       stop_requested = FALSE;
@@ -2506,7 +2513,7 @@ INT log_write(LOG_CHN * log_chn, EVENT_HEADER * pevent)
       strcpy(tape_name, log_chn->path);
       stats_hkey = log_chn->stats_hkey;
 
-      status = cm_transition(TR_STOP, 0, NULL, 0, ASYNC, FALSE);
+      status = cm_transition(TR_STOP, 0, NULL, 0, ASYNC, DEBUG_TRANS);
       if (status != CM_SUCCESS)
          cm_msg(MERROR, "log_write", "cannot stop run after reaching tape capacity");
       stop_requested = FALSE;
@@ -2541,7 +2548,7 @@ INT log_write(LOG_CHN * log_chn, EVENT_HEADER * pevent)
          stop_requested = TRUE;
          cm_msg(MTALK, "log_write", "disk nearly full, stopping run");
 
-         status = cm_transition(TR_STOP, 0, NULL, 0, ASYNC, FALSE);
+         status = cm_transition(TR_STOP, 0, NULL, 0, ASYNC, DEBUG_TRANS);
          if (status != CM_SUCCESS)
             cm_msg(MERROR, "log_write", "cannot stop run after reaching byte limit");
          stop_requested = FALSE;
@@ -3786,7 +3793,7 @@ int main(int argc, char *argv[])
          size = sizeof(state);
          status = db_get_value(hDB, 0, "Runinfo/State", &state, &size, TID_INT, TRUE);
          if (status != DB_SUCCESS)
-            cm_msg(MERROR, "cm_transition", "cannot get Runinfo/State in database");
+            cm_msg(MERROR, "main", "cannot get Runinfo/State in database");
 
          if (state == STATE_STOPPED) {
             auto_restart = 0;
@@ -3803,7 +3810,7 @@ int main(int argc, char *argv[])
             }
 
             cm_msg(MTALK, "main", "starting new run");
-            status = cm_transition(TR_START, run_number + 1, NULL, 0, ASYNC, FALSE);
+            status = cm_transition(TR_START, run_number + 1, NULL, 0, ASYNC, DEBUG_TRANS);
             if (status != CM_SUCCESS)
                cm_msg(MERROR, "main", "cannot restart run");
          }

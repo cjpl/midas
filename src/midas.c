@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.218  2004/09/30 19:58:11  midas
+  Added more debugging info to cm_transition
+
   Revision 1.217  2004/09/30 18:21:28  midas
   Changed debug printout for transitions
 
@@ -3569,7 +3572,7 @@ tapes.
 @param perror returned error string.
 @param strsize Size of error string.
 @param async_flag SYNC: synchronization flag (SYNC:wait completion, ASYNC: retun immediately)
-@param debug_flag If true output debugginf information.
+@param debug_flag If 1 output debugging information, if 2 output via cm_msg().
 @return CM_SUCCESS, \<error\> error code from remote client
 */
 INT cm_transition(INT transition, INT run_number, char *perror, INT strsize,
@@ -3614,8 +3617,10 @@ INT cm_transition(INT transition, INT run_number, char *perror, INT strsize,
 
    /* Set new run number in ODB */
    if (transition == TR_START) {
-      if (debug_flag)
+      if (debug_flag == 1)
          printf("Setting run number %d in ODB\n", run_number);
+      if (debug_flag == 2)
+         cm_msg(MDEBUG, "cm_transition", "cm_transition: Setting run number %d in ODB", run_number);
 
       status = db_set_value(hDB, 0, "Runinfo/Run number",
                             &run_number, sizeof(run_number), 1, TID_INT);
@@ -3781,13 +3786,14 @@ INT cm_transition(INT transition, INT run_number, char *perror, INT strsize,
       return status;
    }
 
-   if (debug_flag) {
-      for (i = 0; i < 13; i++)
-         if (trans_name[i].transition == transition)
-            break;
+   for (i = 0; i < 13; i++)
+      if (trans_name[i].transition == transition)
+         break;
 
-      printf("\ncm_transition: transition %s\n", trans_name[i].name);
-   }
+   if (debug_flag == 1)
+      printf("Transition %s started\n", trans_name[i].name);
+   if (debug_flag == 2)
+      cm_msg(MDEBUG, "cm_transition", "cm_transition: Transition %s started", trans_name[i].name);
 
    /* search database for clients with transition mask set */
    for (i = 0, status = 0;; i++) {
@@ -3812,15 +3818,17 @@ INT cm_transition(INT transition, INT run_number, char *perror, INT strsize,
 
                /* call registerd function */
                if (_trans_table[j].transition == transition && _trans_table[j].func) {
-                  if (debug_flag) {
-                     printf("Calling local transition callback...");
-                     fflush(stdout);
-                  }
-
+                  if (debug_flag == 1)
+                     printf("Calling local transition callback\n");
+                  if (debug_flag == 2)
+                     cm_msg(MDEBUG, "cm_transition", "cm_transition: Calling local transition callback");
+ 
                   status = _trans_table[j].func(run_number, error);
 
-                  if (debug_flag)
-                     printf("OK\n");
+                  if (debug_flag == 1)
+                     printf("Local transition callback finished\n");
+                  if (debug_flag == 2)
+                     cm_msg(MDEBUG, "cm_transition", "cm_transition: Local transition callback finished");
                } else
                   status = CM_SUCCESS;
 
@@ -3841,22 +3849,25 @@ INT cm_transition(INT transition, INT run_number, char *perror, INT strsize,
                size = sizeof(host_name);
                db_get_value(hDB, hSubkey, "Host", host_name, &size, TID_STRING, TRUE);
 
-               if (debug_flag) {
-                  printf("Connecting to client %s on host %s...", client_name, host_name);
-                  fflush(stdout);
-               }
+               if (debug_flag == 1)
+                  printf("Connecting to client \"%s\" on host %s...\n", client_name, host_name);
+               if (debug_flag == 2)
+                  cm_msg(MDEBUG, "cm_transition", 
+                     "cm_transition: Connecting to client \"%s\" on host %s...", client_name, host_name);
 
                /* client found -> connect to its server port */
                status = rpc_client_connect(host_name, port, client_name, &hConn);
                if (status != RPC_SUCCESS) {
-                  sprintf(str, "cannot connect to client %s on host %s, port %d",
-                          client_name, host_name, port);
-                  cm_msg(MERROR, "cm_transition", str);
+                  cm_msg(MERROR, "cm_transition", "cannot connect to client \"%s\" on host %s, port %d",
+                         client_name, host_name, port);
                   continue;
                }
 
-               if (debug_flag)
-                  printf("OK\n");
+               if (debug_flag == 1)
+                  printf("Connection established to client \"%s\" on host %s\n", client_name, host_name);
+               if (debug_flag == 2)
+                  cm_msg(MDEBUG, "cm_transition", 
+                     "cm_transition: Connection established to client \"%s\" on host %s", client_name, host_name);
 
                /* call RC_TRANSITION on remote client with increased timeout */
                old_timeout = rpc_get_option(hConn, RPC_OTIMEOUT);
@@ -3866,11 +3877,11 @@ INT cm_transition(INT transition, INT run_number, char *perror, INT strsize,
                if (async_flag == ASYNC)
                   rpc_set_option(hConn, RPC_OTRANSPORT, RPC_FTCP);
 
-               if (debug_flag) {
-                  printf("Executing RPC transition client %s on host %s...", client_name,
-                         host_name);
-                  fflush(stdout);
-               }
+               if (debug_flag== 1)
+                  printf("Executing RPC transition client \"%s\" on host %s...\n", client_name, host_name);
+               if (debug_flag == 2)
+                  cm_msg(MDEBUG, "cm_transition", 
+                     "cm_transition: Executing RPC transition client \"%s\" on host %s...", client_name, host_name);
 
                status = rpc_client_call(hConn, RPC_RC_TRANSITION, transition,
                                         run_number, error, strsize);
@@ -3882,8 +3893,11 @@ INT cm_transition(INT transition, INT run_number, char *perror, INT strsize,
                if (async_flag == ASYNC)
                   rpc_set_option(hConn, RPC_OTRANSPORT, RPC_TCP);
 
-               if (debug_flag)
-                  printf("OK\n");
+               if (debug_flag == 1)
+                  printf("RPC transition finished client \"%s\" on host %s\n", client_name, host_name);
+               if (debug_flag == 2)
+                  cm_msg(MDEBUG, "cm_transition", 
+                     "cm_transition: RPC transition finished client \"%s\" on host %s", client_name, host_name);
 
                if (perror != NULL)
                   memcpy(perror, error, (INT) strlen(error) + 1 < strsize ?
@@ -3896,13 +3910,15 @@ INT cm_transition(INT transition, INT run_number, char *perror, INT strsize,
       }
    }
 
-   if (debug_flag) {
-      for (i = 0; i < 13; i++)
-         if (trans_name[i].transition == transition)
-            break;
+   for (i = 0; i < 13; i++)
+      if (trans_name[i].transition == transition)
+         break;
 
-      printf("\ncm_transition: transition %s finished\n", trans_name[i].name);
-   }
+   if (debug_flag == 1)
+      printf("Transition %s finished\n", trans_name[i].name);
+   if (debug_flag == 2)
+      cm_msg(MDEBUG, "cm_transition", 
+         "cm_transition: Transition %s finished", trans_name[i].name);
 
    /* call post- transitions */
    if (transition == TR_START) {
