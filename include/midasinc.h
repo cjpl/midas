@@ -7,6 +7,9 @@
   Contents:     Includes all necessary include files
 
   $Log$
+  Revision 1.7  2003/04/15 21:47:35  pierre
+  include ctype.h in all OS
+
   Revision 1.6  2001/06/27 12:18:16  midas
   Added code for OS_IRIX
 
@@ -32,6 +35,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <ctype.h>
 
 /* OS dependent files */
 
