@@ -6,6 +6,9 @@
   Contents:     Header fiel for MSCB funcions
 
   $Log$
+  Revision 1.45  2005/03/21 13:15:35  ritt
+  Added submaster software version
+
   Revision 1.44  2005/03/21 10:57:25  ritt
   Version 2.0.0
 
@@ -338,6 +341,7 @@ extern MSCB_FD mscb_fd[MSCB_MAX_FD];
 #define EMSCB_NOT_FOUND         -11
 #define EMSCB_NO_WRITE_ACCESS   -12
 #define EMSCB_LPT_ERROR         -13
+#define EMSCB_SUBM_VERSION      -14
 
 /*---- Byte and Word swapping big endian <-> little endian ---------*/
 #define WORD_SWAP(x) { unsigned char _tmp;                               \
