@@ -10,6 +10,9 @@
                 Turbomolecular Pump with TC600 Electronics
 
   $Log$
+  Revision 1.2  2002/11/28 13:03:41  midas
+  Protocol version 1.2
+
   Revision 1.1  2002/11/20 12:05:14  midas
   Initila revision
 
@@ -67,7 +70,7 @@ MSCB_INFO_CHN code conf_param[] = {
 
 \********************************************************************/
 
-void user_write(unsigned char channel);
+void user_write(unsigned char channel) reentrant;
 void write_gain(void);
 
 /*---- User init function ------------------------------------------*/
@@ -99,7 +102,7 @@ extern unsigned char idata in_buf[10], out_buf[8];
 
 char idata obuf[8];
 
-void user_write(unsigned char channel)
+void user_write(unsigned char channel) reentrant
 {
 unsigned char i, n;
 
@@ -139,7 +142,7 @@ char c;
 
 /*---- User write config function ----------------------------------*/
 
-void user_write_conf(unsigned char channel)
+void user_write_conf(unsigned char channel) reentrant
 {
   if (channel == 0)
     uart_init(1, user_conf.baud);
