@@ -31,7 +31,7 @@ typedef struct {
   } CAMAC;
 
 /* Default CAMAC definition */
-CAMAC Prompt[2] ={ {24,0,1,2,3,0,0,0,1,0,0,0},
+CAMAC Prompt[2] ={ {24,0,0,1,2,0,0,0,1,0,0,0},
                    {0}
                  };
 
@@ -48,7 +48,45 @@ void cnafsub();
 void help_page();
 INT  decode_line (CAMAC *p, char * str);
 INT  read_job_file(FILE * pF, INT action, void ** job, char * name);
+void make_display_string(CAMAC *p);
+void cc_services(CAMAC *p);
 
+/*--------------------------------------------------------------------*/
+void cc_services (CAMAC *p)
+{
+  if (p->n == 30)
+    {
+      if (p->a==9 && p->f==24)
+        cam_inhibit_clear(p->c);
+      else if (p->a==9 && p->f==26)
+        cam_inhibit_set(p->c);
+      else if (p->a>=0 && p->a<8 && p->f==1)
+        cam_lam_read(p->c, &p->d24);
+      else if (p->a>=13 && p->f==17)
+        cam_lam_enable(p->c, p->d24);
+      else if (p->a>=12 && p->f==17)
+        cam_lam_disable(p->c, p->d24);
+/*      else if (p->a>=13 && p->f==1)
+         we don't support that function "read lam mask" */
+    }
+  else if (p->n == 28)
+    {
+      if (p->a==8 && p->f==26)
+        cam_crate_zinit(p->c);
+      else if (p->a==9 && p->f==26)
+        cam_crate_clear(p->c);
+    }
+}
+/*--------------------------------------------------------------------*/
+void make_display_string(CAMAC *p)
+{
+  if (p->m == D24)
+    sprintf(addr,"B%01dC%01dN%02dA%02dF%02d [%d/0x%06x Q%01dX%01d] R%dW%dM%2d"
+	    ,p->b,p->c,p->n,p->a,p->f,p->d24,p->d24,p->q,p->x,p->r,p->w,p->m);
+  else
+    sprintf(addr,"B%01dC%01dN%02dA%02dF%02d [%d/0x%04x Q%01dX%01d] R%dW%dM%2d"
+	    ,p->b,p->c,p->n,p->a,p->f,p->d16,p->d16,p->q,p->x,p->r,p->w,p->m);
+}
 /*--------------------------------------------------------------------*/
 INT  read_job_file(FILE * pF, INT action, void ** job, char * name)
   {
@@ -87,12 +125,12 @@ INT  read_job_file(FILE * pF, INT action, void ** job, char * name)
             memcpy((char *) pjob, (char *)Prompt, sizeof(CAMAC));
             rewind (pF);
             while (fgets(line, 128, pF))
-			{
-				if (pjob->m == 0)
-					/* load previous command before overwriting */
-					memcpy((char *)pjob, (char *) (pjob-1), sizeof(CAMAC));
-				decode_line(pjob++, line);
-			}
+	      {
+		if (pjob->m == 0)
+		  /* load previous command before overwriting */
+		  memcpy((char *)pjob, (char *) (pjob-1), sizeof(CAMAC));
+		decode_line(pjob++, line);
+	      }
             fclose (pF);
             return JOB;
           }
@@ -104,112 +142,105 @@ INT  read_job_file(FILE * pF, INT action, void ** job, char * name)
 
 void cnafsub()
 {
-	char str[128], line[128];
-	INT  status, j;
+  char str[128], line[128];
+  INT  status, j;
   CAMAC *P, *p, *job;
-
-	/* Loop return label */
-	if (jobflag)
-	{
-	jobflag = FALSE;
- }
-
-/* Load default CAMAC */
+  
+  /* Loop return label */
+  if (jobflag)
+    {
+      jobflag = FALSE;
+    }
+  
+  /* Load default CAMAC */
   P = Prompt;
   while(1)
+    {
+      make_display_string(P);
+      /* prompt */
+      printf("CNAF> [%s] :",addr);
+      ss_gets(str,128);
+      
+      /* decode line */    
+      status = decode_line(P, str);
+      if (status == QUIT)
+	return;
+      else if (status == HELP)
+	help_page();
+      else if (status == JOB)
 	{
-        if (P->m == D24)
-          sprintf(addr,"B%01dC%01dN%02dA%02dF%02d [%d/0x%06x Q%01dX%01d] R%dW%dM%2d"
-                 ,P->b,P->c,P->n,P->a,P->f,P->d24,P->d24,P->q,P->x,P->r,P->w,P->m);
-	      else
-          sprintf(addr,"B%01dC%01dN%02dA%02dF%02d [%d/0x%04x Q%01dX%01d] R%dW%dM%2d"
-                 ,P->b,P->c,P->n,P->a,P->f,P->d16,P->d16,P->q,P->x,P->r,P->w,P->m);
-
-    /* prompt */
-    printf("CNAF> [%s] :",addr);
-		ss_gets(str,128);
-
-    /* decode line */    
-		status = decode_line(P, str);
-		if (status == QUIT)
-			return;
-    else if (status == HELP)
-      help_page();
-    else if (status == JOB)
-      {
-        printf("\nCNAF> Job file name [%s]:",job_name);
-        ss_gets (line,128);
-        status = read_job_file(pF, CHECK, (void **) &job, line);
-        if (status == JOB)
-          {
-
-            sprintf(job_name,"%s",line);
-            status=read_job_file(pF, READ, (void **) &job, job_name);
-          }
-      }
-    if (status == LOOP || status == JOB)
-      {
-        if (status == LOOP)
-          p = P;
-        if (status == JOB)
-          p = job;
-        while (p->m)
-          {
-            for (j=0;j<p->r;j++)
-              {
-                    if (p->m == D24)
-                      { /* Actual 24 bits CAMAC operation */
-                          if (p->f<16)
-                            cam24i_q(p->c, p->n, p->a, p->f, &p->d24, &p->x, &p->q);
-                          else
-                            cam24o_q(p->c, p->n, p->a, p->f, p->d24, &p->x, &p->q);
-                      }
-	                  else
-                      { /* Actual 16 bits CAMAC operation */
-                          if (p->f<16)
-                            cam16i_q(p->c, p->n, p->a, p->f, &p->d16, &p->x, &p->q);
-                          else
-                            cam16o_q(p->c, p->n, p->a, p->f, p->d16, &p->x, &p->q);
-                      }
-					/* Result display */
-					if (p->r > 1)
-					{
-					 /* repeat mode */
-						if (status == JOB)
-						{
-							printf("\nCNAF> [%s]",addr);
-							if (p->w != 0)
-								ss_sleep(p->w);
-						}  
-						else
-						{
-							printf("CNAF> [%s]\n",addr);
-							if (p->w != 0)
-								ss_sleep(p->w);
-							if (j > p->r-1)
-								break;
-						}
-					}
-					else
-					{
-						/* single command */
-						if (status == JOB)
-						{
-							printf("CNAF> [%s]\n",addr);
-					        if (p->w != 0)
-							  ss_sleep(p->w);
-						}
-					}
-              }
-            p++; 
-          };
-        if (status == JOB)
+	  printf("\nCNAF> Job file name [%s]:",job_name);
+	  ss_gets (line,128);
+	  status = read_job_file(pF, CHECK, (void **) &job, line);
+	  if (status == JOB)
+	    {
+	      sprintf(job_name,"%s",line);
+	      status=read_job_file(pF, READ, (void **) &job, job_name);
+	    }
+	}
+      if (status == LOOP || status == JOB)
+	{
+	  if (status == LOOP)
+	    p = P;
+	  if (status == JOB)
+	    p = job;
+	  while (p->m)
+	    {
+	      for (j=0;j<p->r;j++)
 		{
-          free (job);
-	      printf("\n");
+		  if (p->n == 28 || p->n == 30)
+		    cc_services(p);
+		  else
+		    if (p->m == 24) /* Actual 24 bits CAMAC operation */
+		      if (p->f<16)
+			cam24i_q(p->c, p->n, p->a, p->f, &p->d24, &p->x, &p->q);
+		      else
+			cam24o_q(p->c, p->n, p->a, p->f, p->d24, &p->x, &p->q);
+		    else /* Actual 16 bits CAMAC operation */
+		      if (p->f<16)
+			cam16i_q(p->c, p->n, p->a, p->f, &p->d16, &p->x, &p->q);
+		      else
+			cam16o_q(p->c, p->n, p->a, p->f, p->d16, &p->x, &p->q);
+		  make_display_string(p);
+		  /* Result display */
+		  if (p->r > 1)
+		    {
+		      /* repeat mode */
+		      if (status == JOB)
+			{
+			  printf("\nCNAF> [%s]",addr);
+			  if (p->w != 0)
+			    ss_sleep(p->w);
+			}  
+		      else
+			{
+			  printf("CNAF> [%s] <-%03i\n",addr,j+1);
+			  if (p->w != 0)
+			    ss_sleep(p->w);
+			  if (j > p->r-1)
+			    break;
+			}
+		    }
+		  else
+		    {
+		      /* single command */
+		      if (status == JOB)
+			{
+			  printf("CNAF> [%s]\n",addr);
+			  if (p->w != 0)
+			    ss_sleep(p->w);
+			}
+		    }
 		}
-      }
-   }
+	      p++; 
+	    };
+	  if (status == JOB)
+	    {
+	      free (job);
+	      printf("\n");
+	    }
+	}
+    }
 }
 
 /*--------------------------------------------------------------------*/
@@ -461,49 +492,37 @@ INT decode_line (CAMAC *P, char * ss)
 
 /*--------------------------------------------------------------------*/
 void help_page()
-  {
-        printf("\n*-v%1.2lf----------- H E L P   C N A F -------------------*\n"
-          ,cm_get_version()/100.0);
-        printf("          Interactive Midas CAMAC command\n");
-        printf("          ===============================\n");
-        printf("\n");
-        printf(" Outputs: Data [dec/hex X=0/1 - Q=0/1 ]\n");
-        printf(" Inputs : Bx :  Branch   [0 -  7]    Cx :  Crate    [0 -  7]\n");
-        printf("          Nx :  Slot     [1 - 31]    Ax :  SubAdd.  [0 - 15]\n");
-        printf("          Fx :  Function [0 - 31]\n");
-        printf("           H :  HELP on   CNAF      Q/E :  Quit/Exit from CNAF\n");
-        printf("          Rx :  Repetition counter               [1 -  1000]\n");
-        printf("          Wx :  Delay between command (ms)       [0 - 10000]\n");
-        printf("           J :  Perform JOB (command list from file )\n");
-        printf("                Same syntax as in inteactive session\n");
-        printf("           G :  PERFORM ACTION of predefine set-up\n");
-        printf("           D :  Decimal     Data     [0 - max data_size]\n");
-        printf("           O :  Octal       Data     [0 - max data_size]\n");
-        printf("           X :  Hexadecimal Data     [0 - max data_size]\n");
-        printf("\n");
-        printf(">>>>>>>>>> Data has to be given LAST if needed in the command string <<<<<\n");
-        printf("\n");
-        printf(" examples: ");
-        printf(">mcnaf -cl \"triggerFE\" -ho local\n");
-        printf("      CNAF> [B0C1N30A00F00 [0/0x000000 Q0X0] R1W0] :n30a9f24\n");
-        printf("      CNAF> [B0C1N06A00F24 [0/0x000000 Q1X1] R1W0] :n6f9a0\n");
-        printf("      CNAF> [B0C1N06A00F09 [0/0x000000 Q1X1] R1W0] :f25\n");
-        printf("      CNAF> [B0C1N06A00F25 [0/0x000000 Q1X1] R1W0] :f0\n");
-        printf("      CNAF> [B0C1N06A00F00 [345/0x000159 Q1X1] R1W0] :a1\n");
-        printf("      CNAF> [B0C1N06A01F00 [365/0x00016D Q1X1] R1W0] :a2\n");
-        printf("      CNAF> [B0C1N06A02F00 [374/0x000176 Q1X1] R1W0] :\n");
-        printf("      CNAF> [B0C1N06A02F00 [0/0x000176 Q1X1] R1W0] :r3\n");
-        printf("      CNAF> [B0C1N06A02F00 [0/0x000176 Q1X1] R3W0] :g\n");
-        printf("\n");
-        printf("      CNAF> [B0C1N06A02F00 [0/0x000176 Q1X1] R3W0]\n");
-        printf("      CNAF> [B0C1N06A02F00 [0/0x000176 Q1X1] R3W0]\n");
-        printf("      CNAF> [B0C1N06A02F00 [0/0x000176 Q1X1] R3W0]\n");
-        printf("      CNAF> [B0C1N06A02F00 [0/0x000176 Q1X1] R3W0] :r\n");
-        printf("      CNAF> [B0C1N06A02F00 [0/0x000176 Q1X1] R1W0] :n3f16x77\n");
-        printf("      CNAF> [B0C1N03A00F16 [0/0x000077 Q1X1] R1W0] :a0f16d63\n");
-        printf("      CNAF> [B0C1N02A00F16 [63/0x00003F Q1X1] R1W0] :n2f16o63\n");
-        printf("      CNAF> [B0C1N02A00F16 [51/0x000033 Q1X1] R1W0] :\n");
- }
+{
+  printf("\n*-v%1.2lf----------- H E L P   C N A F -------------------*\n"
+	 ,cm_get_version()/100.0);
+  printf("          Interactive Midas CAMAC command\n");
+  printf("          ===============================\n");
+  printf(" Output : Data [dec/hex X=0/1 - Q=0/1 ]\n");
+  printf(" Inputs : Bx :  Branch   [0 -  7]    Cx :  Crate    [0 -  7]\n");
+  printf("          Nx :  Slot     [1 - 31]    Ax :  SubAdd.  [0 - 15]\n");
+  printf("          Fx :  Function [0 - 31]    Mx :  Access mode [16,24]\n");
+  printf("           H :  HELP on   CNAF      Q/E :  Quit/Exit from CNAF\n");
+  printf("          Rx :  Repetition counter               [1 -   999]\n");
+  printf("          Wx :  Delay between command (ms)       [0 - 10000]\n");
+  printf("           J :  Perform JOB (command list from file )\n");
+  printf("                Same syntax as in interactive session\n");
+  printf("           G :  PERFORM ACTION of predefine set-up\n");
+  printf("           D :  Decimal     Data     [0 - max data_size]\n");
+  printf("           O :  Octal       Data     [0 - max data_size]\n");
+  printf("           X :  Hexadecimal Data     [0 - max data_size]\n");
+  printf("\n");
+  printf(">>>>>>>>>> Data has to be given LAST if needed in the command string <<<<<\n");
+  printf("\n");
+  printf(" N30A9F24 : Crate clear inhibit    N30A9F26 : Crate set inhibit\n");
+  printf(" N28A8F26 : Z crate                N28A9F26 : C crate\n");
+  printf(" N30A13F17: CC Lam enable          N30A12F17: CC Lam disable\n");
+  printf(" N30A0-7F1: CC read Lam\n");
+  printf("\n");
+  printf(" examples: ");
+  printf(">mcnaf -cl\"triggerFE\" -h local -e myexpt\n");
+  printf("      CNAF> [B0C1N30A00F00 [0/0x000000 Q0X0] R1W0M24] :n30a9f24\n");
+  printf("      CNAF> [B0C1N06A00F24 [0/0x000000 Q1X1] R1W0M24] :n6f9a0\n");
+}
 
 /*--------------------------------------------------------------------*/
 
@@ -547,15 +566,15 @@ usage:
       }
     }
 
-  cam_init();
-
   if (rpc_server[0])
     status = cam_init_rpc("", "", "", rpc_server);
   else
     status = cam_init_rpc(host_name, exp_name, client_name, "");
-
   if (status == SUCCESS)
-    cnafsub();
-
+    {
+      status = cam_init();
+      if (status == SUCCESS)
+        cnafsub();
+    }
   cam_exit();
 }
