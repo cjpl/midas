@@ -6,6 +6,9 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
+  Revision 1.25  1999/09/13 09:50:16  midas
+  Finished filtered browsing
+
   Revision 1.24  1999/09/10 06:10:46  midas
   Reply half finished
 
@@ -532,10 +535,10 @@ CHN_STATISTICS chn_stats;
   rsprintf("<html>\n");
 
   /* auto refresh */
-  rsprintf("<meta http-equiv=\"Refresh\" content=\"%02d\">\n", refresh);
+  rsprintf("<head><meta http-equiv=\"Refresh\" content=\"%02d\">\n", refresh);
 
-  rsprintf("<head><title>MIDAS status</title></head>\n<body>\n");
-  rsprintf("<form method=\"GET\" action=\"%s\">\n", mhttpd_url);
+  rsprintf("<title>MIDAS status</title></head>\n");
+  rsprintf("<body><form method=\"GET\" action=\"%s\">\n", mhttpd_url);
 
   /* define hidden field for experiment */
   if (exp_name[0])
@@ -928,11 +931,13 @@ HNDLE hDB;
   rsprintf("Server: MIDAS HTTP %s\r\n", cm_get_version());
   rsprintf("Content-Type: text/html\r\n\r\n");
 
+  rsprintf("<html><head>\n");
+
   /* auto refresh */
   if (refresh > 0)
-    rsprintf("<html>\n<meta http-equiv=\"Refresh\" content=\"%d\">\n\n", refresh);
+    rsprintf("<meta http-equiv=\"Refresh\" content=\"%d\">\n\n", refresh);
 
-  rsprintf("<head><title>MIDAS messages</title></head>\n");
+  rsprintf("<title>MIDAS messages</title></head>\n");
   rsprintf("<body><form method=\"GET\" action=\"%s\">\n", mhttpd_url);
 
   /* define hidden field for experiment */
@@ -1455,7 +1460,7 @@ char str[80];
 void show_elog_page(char *path)
 {
 int   size, i, run, msg_status, status, fh, length, first_message, last_message;
-char  str[256], command[80], ref[256], dir[256], file_name[256];
+char  str[256], orig_path[256], command[80], ref[256], dir[256], file_name[256];
 char  date[80], author[80], type[80], system[80], subject[256], text[10000], 
       attachment[256], encoding[80];
 HNDLE hDB;
@@ -1558,49 +1563,76 @@ HNDLE hDB;
 
   /*---- check next/previous message -------------------------------*/
 
-/*
-  if ((*getparam("lauthor") == '1' && !equal_ustring(getparam("author"), author)))
+  last_message = first_message = FALSE;
+  if (equal_ustring(command, "next") || equal_ustring(command, "previous"))
     {
-    if (equal_ustring(command, "next"))
-      strcat(str, "+1");
-    else if (equal_ustring(command, "previous"))
-      strcat(str, "-1");
-
-    show_elog_page(str);
-    return;
-    }
-*/
-
-  last_message = FALSE;
-  if (equal_ustring(command, "next"))
-    {
-    strcat(path, "+1");
-    status = el_search_message(path, &fh, TRUE);
-    close(fh);
-    if (status == EL_SUCCESS)
+    strcpy(orig_path, path);
+    do
       {
+      strcat(path, equal_ustring(command, "next") ? "+1" : "-1");
+      status = el_search_message(path, &fh, TRUE);
+      close(fh);
+      if (status != EL_SUCCESS)
+        {
+        if (equal_ustring(command, "next"))
+          last_message = TRUE;
+        else
+          first_message = TRUE;
+        strcpy(path, orig_path);
+        break;
+        }
+
+      el_retrieve(path, date, &run, author, type, system, subject, 
+                  text, &size, attachment, encoding);
+      
+      if (*getparam("lauthor")  == '1' && !equal_ustring(getparam("author"),  author ))
+        continue;
+      if (*getparam("ltype")    == '1' && !equal_ustring(getparam("type"),    type   ))
+        continue;
+      if (*getparam("lsystem")  == '1' && !equal_ustring(getparam("system"),  system ))
+        continue;
+      if (*getparam("lsubject") == '1')
+        {
+        strcpy(str, getparam("subject"));
+        for (i=0 ; i<(int)strlen(str) ; i++)
+          str[i] = toupper(str[i]);
+        for (i=0 ; i<(int)strlen(subject) ; i++)
+          subject[i] = toupper(subject[i]);
+
+        if (strstr(subject, str) == NULL)
+          continue;
+        }
+      
       sprintf(str, "EL/%s", path);
+
+      if (*getparam("lauthor") == '1')
+        if (strchr(str, '?') == NULL)
+          strcat(str, "?lauthor=1");
+        else
+          strcat(str, "&lauthor=1");
+
+      if (*getparam("ltype") == '1')
+        if (strchr(str, '?') == NULL)
+          strcat(str, "?ltype=1");
+        else
+          strcat(str, "&ltype=1");
+
+      if (*getparam("lsystem") == '1')
+        if (strchr(str, '?') == NULL)
+          strcat(str, "?lsystem=1");
+        else
+          strcat(str, "&lsystem=1");
+
+      if (*getparam("lsubject") == '1')
+        if (strchr(str, '?') == NULL)
+          strcat(str, "?lsubject=1");
+        else
+          strcat(str, "&lsubject=1");
+
       redirect(str);
       return;
-      }
-    else
-      last_message = TRUE;
-    }
 
-  first_message = FALSE;
-  if (equal_ustring(command, "previous"))
-    {
-    strcat(path, "-1");
-    status = el_search_message(path, &fh, TRUE);
-    close(fh);
-    if (status == EL_SUCCESS)
-      {
-      sprintf(str, "EL/%s", path);
-      redirect(str);
-      return;
-      }
-    else
-      first_message = TRUE;
+      } while (TRUE);
     }
 
   /*---- get current message ---------------------------------------*/
@@ -1672,16 +1704,29 @@ HNDLE hDB;
     rsprintf("<input type=hidden name=system  value=\"%s\">\n", system); 
     rsprintf("<input type=hidden name=subject value=\"%s\">\n\n", subject); 
 
-    rsprintf("<tr><td bgcolor=#FFA0A0><input type=\"checkbox\" name=\"lauthor\" value=\"1\">");
+    if (*getparam("lauthor") == '1')
+      rsprintf("<tr><td bgcolor=#FFA0A0><input type=\"checkbox\" checked name=\"lauthor\" value=\"1\">");
+    else
+      rsprintf("<tr><td bgcolor=#FFA0A0><input type=\"checkbox\" name=\"lauthor\" value=\"1\">");
     rsprintf("  Author: <b>%s</b>\n", author);
 
-    rsprintf("<td bgcolor=#FFA0A0><input type=\"checkbox\" name=\"ltype\" value=\"1\">");
+    if (*getparam("ltype") == '1')
+      rsprintf("<td bgcolor=#FFA0A0><input type=\"checkbox\" checked name=\"ltype\" value=\"1\">");
+    else
+      rsprintf("<td bgcolor=#FFA0A0><input type=\"checkbox\" name=\"ltype\" value=\"1\">");
     rsprintf("  Type: <b>%s</b></tr>\n", type);
 
-    rsprintf("<tr><td bgcolor=#A0FFA0><input type=\"checkbox\" name=\"lsystem\" value=\"1\">");
+    if (*getparam("lsystem") == '1')
+      rsprintf("<tr><td bgcolor=#A0FFA0><input type=\"checkbox\" checked name=\"lsystem\" value=\"1\">");
+    else
+      rsprintf("<tr><td bgcolor=#A0FFA0><input type=\"checkbox\" name=\"lsystem\" value=\"1\">");
+
     rsprintf("  System: <b>%s</b>\n", system);
 
-    rsprintf("<td bgcolor=#A0FFA0><input type=\"checkbox\" name=\"lsubject\" value=\"1\">");
+    if (*getparam("lsubject") == '1')
+      rsprintf("<td bgcolor=#A0FFA0><input type=\"checkbox\" checked name=\"lsubject\" value=\"1\">");
+    else
+      rsprintf("<td bgcolor=#A0FFA0><input type=\"checkbox\" name=\"lsubject\" value=\"1\">");
     rsprintf("  Subject: <b>%s</b></tr>\n", subject);
 
     if (attachment[0])
