@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.18  1999/06/24 11:59:17  midas
+  Fixed filling of N-tuples if RWNT_SIZE equals zero
+
   Revision 1.17  1999/06/23 09:37:26  midas
   Print time for offline analysis
 
@@ -2202,7 +2205,7 @@ EVENT_DEF    *event_def;
     }
 
   /* fill shared memory */
-  if (clp.online)
+  if (clp.online && par->rwnt_buffer_size > 0)
     write_event_hbook(NULL, pevent, par);
 
   /* put event in ODB once every second */
