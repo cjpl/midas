@@ -6,6 +6,9 @@
   Contents:     LeCroy LRS1454/1458 Voltage Device Driver
 
   $Log$
+  Revision 1.11  2002/06/06 08:06:32  midas
+  Implemented DF_xx scheme
+
   Revision 1.10  2001/04/11 02:11:24  midas
   First zero all channels (for the case of trip problems)
 
@@ -466,6 +469,7 @@ INT lrs1454(INT cmd, ...)
 va_list argptr;
 HNDLE   hKey;
 INT     channel, status;
+DWORD   flags;
 float   value, *pvalue;
 void    *info, *bd;
 
@@ -478,6 +482,7 @@ void    *info, *bd;
       hKey = va_arg(argptr, HNDLE);
       info = va_arg(argptr, void *);
       channel = va_arg(argptr, INT);
+      flags = va_arg(argptr, DWORD);
       bd = va_arg(argptr, void *);
       status = lrs1454_init(hKey, info, channel, bd);
       break;
