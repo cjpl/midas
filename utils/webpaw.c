@@ -6,6 +6,9 @@
   Contents:     Web server for remote PAW display
 
   $Log$
+  Revision 1.10  2000/05/17 07:08:54  midas
+  Disable shell command via "visibility"
+
   Revision 1.9  2000/05/16 15:18:12  midas
   Disable "shell" command
 
@@ -572,6 +575,13 @@ int    status;
       status = read_paw(pipe, "PAW > ", str);
       if (status != SUCCESS)
         return status;
+
+      /* disable shell command */
+      sprintf(str, "vis shell off; vis vis off;\n");
+      write(pipe, str, strlen(str));
+      status = read_paw(pipe, "PAW > ", str);
+      if (status != SUCCESS)
+        return status;
       }
     }
 
@@ -895,11 +905,11 @@ int    fh, i, j, length, status, height;
     if (equal_ustring(path, "contents.gif"))
       str[0] = 0;
 
-    /* disable shell command */
+    /* disable $shell command */
     for (i=0 ; i<(int)strlen(str) ; i++)
       tmp[i] = toupper(str[i]);
     tmp[i] = 0;
-    if (strstr(tmp, "SHELL"))
+    if (strstr(tmp, "$SHELL"))
       str[0] = 0;
 
 #ifndef _MSC_VER
