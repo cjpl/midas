@@ -6,6 +6,9 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
+  Revision 1.14  1999/08/12 15:44:50  midas
+  Fixed bug when subkey was in variables list, added domainname for unit
+
   Revision 1.13  1999/07/01 11:12:32  midas
   Changed lazy display if in FTP mode
 
@@ -56,7 +59,7 @@
 /* time until mhttpd disconnects from MIDAS */
 #define CONNECT_TIME   600
 
-char return_buffer[500000];
+char return_buffer[1000000];
 char mhttpd_url[256];
 char exp_name[32];
 BOOL connected;
@@ -873,11 +876,12 @@ time_t now;
 
 void show_sc_page(HNDLE hDB, char *path)
 {
-int    i, j, colspan, size;
+int    i, j, k, colspan, size;
 char   str[256], eq_name[32], group[32], name[32], ref[256];
-char   group_name[MAX_GROUPS][32], data[32];
-HNDLE  hkey, hkeyeq, hkeyset, hkeynames, hkeyvar;
+char   group_name[MAX_GROUPS][32], data[256];
+HNDLE  hkey, hkeyeq, hkeyset, hkeynames, hkeyvar, hkeyroot;
 KEY    eqkey, key, varkey;
+char   data_str[256], hex_str[256];
 
   /* split path into equipment and group */
   strcpy(eq_name, path);
@@ -1203,44 +1207,118 @@ KEY    eqkey, key, varkey;
       /* title row */
       rsprintf("<tr><th colspan=5>Names<th>%s</tr>\n", varkey.name);
 
-      /* data for current group */
-      sprintf(str, "/Equipment/%s/Settings/Names %s", eq_name, varkey.name);
-      db_find_key(hDB, 0, str, &hkeyset);
 
-      for (j=0 ; j<varkey.num_values ; j++)
+      if (varkey.type == TID_KEY)
         {
-        if (hkeyset)
+        hkeyroot = hkey;
+
+        /* enumerate subkeys */
+        for (j=0 ; ; j++)
           {
-          size = sizeof(name);
-          db_get_data_index(hDB, hkeyset, name, &size, j, TID_STRING);
-          }
-        else
-          sprintf(name, "%s[%d]", varkey.name, j);
-
-        rsprintf("<tr><td colspan=5>%s", name);
-
-        size = sizeof(data);
-        db_get_data_index(hDB, hkey, data, &size, j, varkey.type);
-        db_sprintf(str, data, varkey.item_size, 0, varkey.type);
-
-        if (equal_ustring(varkey.name, "Demand") ||
-            equal_ustring(varkey.name, "Output"))
-          {
-          if (exp_name[0])
-            sprintf(ref, "%sEquipment/%s/Variables/%s?cmd=Set&index=%d&group=%s&exp=%s", 
-                    mhttpd_url, eq_name, varkey.name, j, group, exp_name);
+          db_enum_key(hDB, hkeyroot, j, &hkey);
+          if (!hkey)
+            break;
+          db_get_key(hDB, hkey, &key);
+    
+          if (key.type == TID_KEY)
+            {
+            /* for keys, don't display data value */
+            rsprintf("<tr><td colspan=5>%s<br></tr>\n", key.name);
+            }
           else
-            sprintf(ref, "%sEquipment/%s/Variables/%s?cmd=Set&index=%d&group=%s", 
-                    mhttpd_url, eq_name, varkey.name, j, group);
+            {
+            /* display single value */
+            if (key.num_values == 1)
+              {
+              size = sizeof(data);
+              db_get_data(hDB, hkey, data, &size, key.type);
+              db_sprintf(data_str, data, key.item_size, 0, key.type);
+              db_sprintfh(hex_str, data, key.item_size, 0, key.type);
 
-          rsprintf("<td align=center><a href=\"%s\">%s</a>", 
-                    ref, str);
+              if (data_str[0] == 0 || equal_ustring(data_str, "<NULL>"))
+                {
+                strcpy(data_str, "(empty)");
+                hex_str[0] = 0;
+                }
+
+              if (strcmp(data_str, hex_str) != 0 && hex_str[0])
+                rsprintf("<tr><td colspan=5>%s<td align=center>%s (%s)<br></tr>\n", 
+                          key.name, data_str, hex_str);
+              else
+                rsprintf("<tr><td colspan=5>%s<td align=center>%s<br></tr>\n", 
+                          key.name, data_str);
+              }
+            else
+              {
+              /* display first value */
+              rsprintf("<tr><td colspan=5 rowspan=%d>%s\n", key.num_values, key.name);
+
+              for (k=0 ; k<key.num_values ; k++)
+                {
+                size = sizeof(data);
+                db_get_data_index(hDB, hkey, data, &size, k, key.type);
+                db_sprintf(data_str, data, key.item_size, 0, key.type);
+                db_sprintfh(hex_str, data, key.item_size, 0, key.type);
+
+                if (data_str[0] == 0 || equal_ustring(data_str, "<NULL>"))
+                  {
+                  strcpy(data_str, "(empty)");
+                  hex_str[0] = 0;
+                  }
+
+                if (k>0)
+                  rsprintf("<tr>");
+
+                if (strcmp(data_str, hex_str) != 0 && hex_str[0])
+                  rsprintf("<td>[%d] %s (%s)<br></tr>\n", k, data_str, hex_str);
+                else
+                  rsprintf("<td>[%d] %s<br></tr>\n", k, data_str);
+                }
+              }
+            }
           }
-        else
-          rsprintf("<td align=center>%s", str);
         }
+      else
+        {
+        /* data for current group */
+        sprintf(str, "/Equipment/%s/Settings/Names %s", eq_name, varkey.name);
+        db_find_key(hDB, 0, str, &hkeyset);
 
-      rsprintf("</tr>\n");
+        for (j=0 ; j<varkey.num_values ; j++)
+          {
+          if (hkeyset)
+            {
+            size = sizeof(name);
+            db_get_data_index(hDB, hkeyset, name, &size, j, TID_STRING);
+            }
+          else
+            sprintf(name, "%s[%d]", varkey.name, j);
+
+          rsprintf("<tr><td colspan=5>%s", name);
+
+          size = sizeof(data);
+          db_get_data_index(hDB, hkey, data, &size, j, varkey.type);
+          db_sprintf(str, data, varkey.item_size, 0, varkey.type);
+
+          if (equal_ustring(varkey.name, "Demand") ||
+              equal_ustring(varkey.name, "Output"))
+            {
+            if (exp_name[0])
+              sprintf(ref, "%sEquipment/%s/Variables/%s?cmd=Set&index=%d&group=%s&exp=%s", 
+                      mhttpd_url, eq_name, varkey.name, j, group, exp_name);
+            else
+              sprintf(ref, "%sEquipment/%s/Variables/%s?cmd=Set&index=%d&group=%s", 
+                      mhttpd_url, eq_name, varkey.name, j, group);
+
+            rsprintf("<td align=center><a href=\"%s\">%s</a>", 
+                      ref, str);
+            }
+          else
+            rsprintf("<td align=center>%s", str);
+          }
+
+        rsprintf("</tr>\n");
+        }
       }
     }
 
@@ -1775,9 +1853,9 @@ KEY    key;
         for (j=0 ; j<key.num_values ; j++)
           {
           size = sizeof(data);
-          db_get_data(hDB, hkey, data, &size, key.type);
-          db_sprintf(data_str, data, key.item_size, j, key.type);
-          db_sprintfh(hex_str, data, key.item_size, j, key.type);
+          db_get_data_index(hDB, hkey, data, &size, j, key.type);
+          db_sprintf(data_str, data, key.item_size, 0, key.type);
+          db_sprintfh(hex_str, data, key.item_size, 0, key.type);
 
           if (data_str[0] == 0 || equal_ustring(data_str, "<NULL>"))
             {
@@ -2718,7 +2796,7 @@ char *p, *pitem;
 
 /*------------------------------------------------------------------*/
 
-int server_loop(int tcp_port)
+void server_loop(int tcp_port)
 {
 int                  status, i, refresh;
 struct sockaddr_in   bind_addr, acc_addr;
@@ -2738,7 +2816,7 @@ INT                  last_time=0;
 
   /* Start windows sockets */
   if ( WSAStartup(MAKEWORD(1,1), &WSAData) != 0)
-    return RPC_NET_ERROR;
+    return;
   }
 #endif
 
@@ -2748,7 +2826,7 @@ INT                  last_time=0;
   if (lsock == -1)
     {
     printf("Cannot create socket\n");
-    return 0;
+    return;
     }
 
   /* bind local node name and port to socket */
@@ -2763,9 +2841,19 @@ INT                  last_time=0;
   if (phe == NULL)
     {
     printf("Cannot retrieve host name\n");
-    return 0;
+    return;
     }
   strcpy(host_name, phe->h_name);
+
+#ifdef OS_LINUX
+{
+char domain_name[256];
+
+  getdomainname(domain_name, sizeof(domain));
+  if (strchr(host_name, ".") == NULL)
+    strcat(host_name, domain_name);
+}
+#endif
 
   /* ...better without
   flag = 1;
@@ -2779,7 +2867,7 @@ INT                  last_time=0;
   if (status < 0)
     {
     printf("Cannot bind to port %d. Please use the \"-p\" flag to specify a different port.\n", tcp_port);
-    return 0;
+    return;
     }
 
   /* listen for connection */
@@ -2787,7 +2875,7 @@ INT                  last_time=0;
   if (status < 0)
     {
     printf("Cannot listen\n");
-    return 0;
+    return;
     }
 
   /* set my own URL */
@@ -2895,7 +2983,7 @@ INT                  last_time=0;
       if (status == RPC_SHUTDOWN)
         {
         cm_disconnect_experiment();
-        connected = FALSE;
+        return;
         }
       }
 
