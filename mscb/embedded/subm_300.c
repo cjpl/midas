@@ -7,6 +7,9 @@
                 SUBM300 running on Cygnal C8051F021
 
   $Log$
+  Revision 1.13  2004/03/04 14:33:54  midas
+  Fixed wrong LED index
+
   Revision 1.12  2004/01/07 12:52:23  midas
   Changed indentation
 
@@ -134,8 +137,8 @@ void setup(void)
    LED = LED_OFF;
    LED_SEC = LED_OFF;
 
+   led_blink(0, 5, 150);
    led_blink(1, 5, 150);
-   led_blink(2, 5, 150);
 
    /* invert second LED */
    led_mode(2, 1);
@@ -180,7 +183,7 @@ void check_lpt()
    if (LPT_NSTROBE == 1)
       return;
 
-   led_blink(1, 1, 50);
+   led_blink(0, 1, 50);
 
    /* receive new data */
    byte = LPT_DATA;
@@ -227,7 +230,7 @@ void check_rs485()
    if (LPT_NSTROBE == 0)
       return;
 
-   led_blink(2, 1, 50);
+   led_blink(1, 1, 50);
 
    /* get received byte */
    byte = *rbuf_rp;
