@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.290  2005/01/05 12:43:43  midas
+  Fixed bug with weired history plots
+
   Revision 1.289  2005/01/04 16:58:46  midas
   Implemented bars and fills for custom GIF images
 
@@ -8112,7 +8115,7 @@ void generate_hist_graph(char *path, char *buffer, int *buffer_size,
          memset(ybuffer, 0, bsize);
          status =
              hs_read(event_id, ss_time() - scale + toffset, ss_time() + toffset,
-                     scale / 1000, var_name[i], var_index[i], tbuffer, &tsize, ybuffer,
+                     scale / 1000 + 1, var_name[i], var_index[i], tbuffer, &tsize, ybuffer,
                      &bsize, &type, &n_point[i]);
 
          if (status == HS_TRUNCATED) {
@@ -8280,9 +8283,9 @@ void generate_hist_graph(char *path, char *buffer, int *buffer_size,
    /* draw axis frame */
    taxis(im, gdFontSmall, fgcol, gridcol, x1, y1, x2 - x1, width, 3, 5, 9, 10, 0,
          ss_time() - scale + toffset, ss_time() + toffset);
-
-   /* use following line for a X-axis in seconds instead of a time axis */
+   /* use following line for a X-axis in "hours since now" instead of a time axis */
    //haxis(im, gdFontSmall, fgcol, ltgrey, x1, y1, x2-x1, 3, 5, 9, 10, 0, xmin,  xmax);
+
    vaxis(im, gdFontSmall, fgcol, gridcol, x1, y1, y1 - y2, -3, -5, -7, -8, x2 - x1, ymin, ymax, logaxis);
    gdImageLine(im, x1, y2, x2, y2, fgcol);
    gdImageLine(im, x2, y2, x2, y1, fgcol);
