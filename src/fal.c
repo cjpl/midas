@@ -7,6 +7,9 @@
                 Most routines are from mfe.c mana.c and mlogger.c.
 
   $Log$
+  Revision 1.41  2004/01/18 10:10:58  olchansk
+  define "f2cFortran" the same way as in mana.c
+
   Revision 1.40  2004/01/08 08:40:09  midas
   Implemented standard indentation
 
@@ -144,7 +147,7 @@
 #define VISUAL_CPLUSPLUS
 #endif
 
-#ifdef __linux__
+#ifdef OS_LINUX
 #define f2cFortran
 #endif
 
