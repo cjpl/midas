@@ -6,6 +6,9 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
+  Revision 1.47  2004/09/28 17:13:21  midas
+  Added startup debug code for mserver
+
   Revision 1.46  2004/09/28 16:51:14  midas
   Put mserver.log into /tmp under Linux
 
@@ -241,7 +244,7 @@ int main(int argc, char **argv)
 {
    struct callback_addr callback;
    int i, flag, size, server_type, debug;
-   char name[256];
+   char name[256], str[1000];
    BOOL inetd;
 
 #ifdef OS_WINNT
@@ -323,11 +326,19 @@ int main(int argc, char **argv)
 
       /* turn on debugging */
       if (debug) {
-         printf("Debugging mode is on.\n");
          if (debug == 1)
             rpc_set_debug(debug_print, 1);
          else
             rpc_set_debug((void (*)(char *)) puts, 2);
+
+         if (inetd) {
+            sprintf(str, "Started: ");
+            for (i=0 ; i<argc ; i++)
+               sprintf(str+strlen(str), " %s", argv[i]);
+            rpc_debug_print(str);
+         }
+
+         rpc_debug_print("Debugging mode is on");
       }
 
       /* if command line parameter given, start according server type */

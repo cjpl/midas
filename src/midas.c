@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.213  2004/09/28 17:13:21  midas
+  Added startup debug code for mserver
+
   Revision 1.212  2004/09/17 01:00:55  midas
   Lock ODB during startup of programs
 
@@ -9385,6 +9388,27 @@ INT rpc_set_debug(void (*func) (char *), INT mode)
    return RPC_SUCCESS;
 }
 
+/********************************************************************/
+void rpc_debug_print(char *str)
+/********************************************************************\
+
+  Routine: rpc_debug_print
+
+  Purpose: Calls function set via rpc_set_debug to output a string.
+
+  Input:
+   char *str                Debug string
+
+  Output:
+    none
+
+\********************************************************************/
+{
+   if (_debug_print)
+      _debug_print(str);
+   else
+      puts(str);
+}
 
 /********************************************************************/
 void rpc_va_arg(va_list * arg_ptr, INT arg_type, void *arg)
