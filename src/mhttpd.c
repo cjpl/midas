@@ -6,11 +6,8 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
-  Revision 1.16  1999/08/12 15:49:36  midas
-  dito
-
-  Revision 1.15  1999/08/12 15:48:01  midas
-  Fixed compiler warnings
+  Revision 1.17  1999/08/13 09:41:07  midas
+  Replaced getdomainname by gethostbyaddr
 
   Revision 1.14  1999/08/12 15:44:50  midas
   Fixed bug when subkey was in variables list, added domainname for unit
@@ -2849,17 +2846,13 @@ INT                  last_time=0;
     printf("Cannot retrieve host name\n");
     return;
     }
+  phe = gethostbyaddr(phe->h_addr, sizeof(int), AF_INET);
+  if (phe == NULL)
+    {
+    printf("Cannot retrieve host name\n");
+    return;
+    }
   strcpy(host_name, phe->h_name);
-
-#ifdef OS_LINUX
-{
-char domain_name[256];
-
-  getdomainname(domain_name, sizeof(domain_name));
-  if (strchr(host_name, '.') == NULL)
-    strcat(host_name, domain_name);
-}
-#endif
 
   /* ...better without
   flag = 1;
