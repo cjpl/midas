@@ -10,6 +10,9 @@
                 Pfeiffer Dual Gauge TPG262 vacuum sensor
 
   $Log$
+  Revision 1.9  2004/01/07 12:52:23  midas
+  Changed indentation
+
   Revision 1.8  2003/03/21 08:28:15  midas
   Fixed bug with LSB bytes
 
@@ -37,33 +40,33 @@
 \********************************************************************/
 
 #include <stdio.h>
-#include <stdlib.h> // for atof()
+#include <stdlib.h>             // for atof()
 #include "mscb.h"
 
 extern bit FREEZE_MODE;
 extern bit DEBUG_MODE;
 
 char code node_name[] = "TPG262";
-bit       terminal_mode;
+bit terminal_mode;
 
 /*---- Define variable parameters returned to CMD_GET_INFO command ----*/
 
 /* data buffer (mirrored in EEPROM) */
 
 struct {
-  float p1;
-  float p2;
-  unsigned char baud;
+   float p1;
+   float p2;
+   unsigned char baud;
 } idata user_data;
-  
+
 
 MSCB_INFO_VAR code variables[] = {
-  1,  UNIT_ASCII, 0, 0,           0, "RS232", 0,
-  4, UNIT_PASCAL, 0, 0, MSCBF_FLOAT, "P1", &user_data.p1,
-  4, UNIT_PASCAL, 0, 0, MSCBF_FLOAT, "P2", &user_data.p2,
+   1, UNIT_ASCII, 0, 0, 0, "RS232", 0,
+   4, UNIT_PASCAL, 0, 0, MSCBF_FLOAT, "P1", &user_data.p1,
+   4, UNIT_PASCAL, 0, 0, MSCBF_FLOAT, "P2", &user_data.p2,
 
-  1,   UNIT_BAUD, 0, 0,           0, "Baud",  &user_data.baud,
-  0
+   1, UNIT_BAUD, 0, 0, 0, "Baud", &user_data.baud,
+   0
 };
 
 /********************************************************************\
@@ -79,11 +82,11 @@ void write_gain(void);
 
 void user_init(unsigned char init)
 {
-  /* initialize UART1 */
-  if (init)
-    user_data.baud = 1; // 9600 by default
+   /* initialize UART1 */
+   if (init)
+      user_data.baud = 1;       // 9600 by default
 
-  uart_init(1, user_data.baud);
+   uart_init(1, user_data.baud);
 }
 
 /*---- User write function -----------------------------------------*/
@@ -95,79 +98,69 @@ extern unsigned char xdata in_buf[300], out_buf[300];
 
 void user_write(unsigned char index) reentrant
 {
-unsigned char i, n;
+   unsigned char i, n;
 
-  if (index == 0)
-    {
-    if (in_buf[2] == 27)
-      terminal_mode = 0;
-    else if (in_buf[2] == 0)
-      terminal_mode = 1;
-    else
-      {
-      n = (in_buf[0] & 0x07) - 1;
-      for (i=0 ; i< n ; i++)
-        putchar(in_buf[i+2]);
+   if (index == 0) {
+      if (in_buf[2] == 27)
+         terminal_mode = 0;
+      else if (in_buf[2] == 0)
+         terminal_mode = 1;
+      else {
+         n = (in_buf[0] & 0x07) - 1;
+         for (i = 0; i < n; i++)
+            putchar(in_buf[i + 2]);
       }
-    }
+   }
 
-  if (index == 3)
-    uart_init(1, user_data.baud);
+   if (index == 3)
+      uart_init(1, user_data.baud);
 }
 
 /*---- User read function ------------------------------------------*/
 
 unsigned char user_read(unsigned char index)
 {
-char c;
+   char c;
 
-  if (index == 0)
-    {
-    c = getchar_nowait();
-    if (c != -1)
-      {
-      out_buf[1] = c;
-      return 1;
+   if (index == 0) {
+      c = getchar_nowait();
+      if (c != -1) {
+         out_buf[1] = c;
+         return 1;
       }
-    }
+   }
 
-  return 0;
+   return 0;
 }
 
 /*---- User function called vid CMD_USER command -------------------*/
 
-unsigned char user_func(unsigned char *data_in,
-                        unsigned char *data_out)
+unsigned char user_func(unsigned char *data_in, unsigned char *data_out)
 {
-  /* echo input data */
-  data_out[0] = data_in[0];
-  data_out[1] = data_in[1];
-  
-  return 2;
+   /* echo input data */
+   data_out[0] = data_in[0];
+   data_out[1] = data_in[1];
+
+   return 2;
 }
 
 /*---- User loop function ------------------------------------------*/
 
 void user_loop(void)
 {
-char idata str[32];
-unsigned char i;
+   char idata str[32];
+   unsigned char i;
 
-  if (!terminal_mode)
-    {
-    i = gets_wait(str, sizeof(str), 200);
-  
-    if (i == 0)
-      {
-      // start continuous mode, 1s update
-      printf("COM,1\r\n");
-      flush();
+   if (!terminal_mode) {
+      i = gets_wait(str, sizeof(str), 200);
+
+      if (i == 0) {
+         // start continuous mode, 1s update
+         printf("COM,1\r\n");
+         flush();
+      } else if (i == 27) {
+         user_data.p1 = atof(str + 2);
+         user_data.p2 = atof(str + 16);
       }
-    else if (i == 27)
-      {
-      user_data.p1 = atof(str+2);
-      user_data.p2 = atof(str+16);
-      }
-    }
+   }
 }
-

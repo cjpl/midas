@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol commands
 
   $Log$
+  Revision 1.27  2004/01/07 12:52:23  midas
+  Changed indentation
+
   Revision 1.26  2003/09/09 14:43:22  midas
   Added unit farad
 
@@ -88,7 +91,7 @@
 
 /*---- CPU specific items ------------------------------------------*/
 
-#undef LCD_DEBUG  // debug output on LCD
+#undef LCD_DEBUG                // debug output on LCD
 
 /*--------------------------------*/
 #if defined(SCS_210)
@@ -96,9 +99,9 @@
 #define CPU_C8051F020
 #define CPU_CYGNAL
 
-sbit LED =               P3^4;
-sbit LED_SEC =           P3^3;
-sbit RS485_ENABLE =      P3^5;
+sbit LED = P3 ^ 4;
+sbit LED_SEC = P3 ^ 3;
+sbit RS485_ENABLE = P3 ^ 5;
 #define LED_2
 #define LED_ON 0
 
@@ -108,9 +111,9 @@ sbit RS485_ENABLE =      P3^5;
 #define CPU_C8051F020
 #define CPU_CYGNAL
 
-sbit LED =               P3^3;
-sbit LED_SEC =           P3^4;
-sbit RS485_ENABLE =      P3^5;
+sbit LED = P3 ^ 3;
+sbit LED_SEC = P3 ^ 4;
+sbit RS485_ENABLE = P3 ^ 5;
 #define LED_2
 #define LED_ON 0
 
@@ -120,8 +123,8 @@ sbit RS485_ENABLE =      P3^5;
 #define CPU_C8051F000
 #define CPU_CYGNAL
 
-sbit LED =               P3^4;
-sbit RS485_ENABLE =      P3^5;
+sbit LED = P3 ^ 4;
+sbit RS485_ENABLE = P3 ^ 5;
 #define LED_ON 1
 
 /*--------------------------------*/
@@ -130,8 +133,8 @@ sbit RS485_ENABLE =      P3^5;
 #define CPU_C8051F000
 #define CPU_CYGNAL
 
-sbit LED =               P3^4;
-sbit RS485_ENABLE =      P3^5;
+sbit LED = P3 ^ 4;
+sbit RS485_ENABLE = P3 ^ 5;
 #define LED_ON 0
 
 /*--------------------------------*/
@@ -139,8 +142,8 @@ sbit RS485_ENABLE =      P3^5;
 #include <aduc812.h>
 #define CPU_ADUC812
 
-sbit LED =               P3^4;
-sbit RS485_ENABLE =      P3^5;
+sbit LED = P3 ^ 4;
+sbit RS485_ENABLE = P3 ^ 5;
 #define LED_ON 1
 
 /*--------------------------------*/
@@ -168,7 +171,7 @@ sbit RS485_ENABLE =      P3^5;
 
 /*---- MSCB commands -----------------------------------------------*/
 
-#define VERSION 0x14    // version 1.4
+#define VERSION 0x14            // version 1.4
 
 /* Version history:
 
@@ -230,7 +233,7 @@ sbit RS485_ENABLE =      P3^5;
 #define BD_9600            1
 #define BD_19200           2
 #define BD_28800           3
-#define BD_57600           4 
+#define BD_57600           4
 #define BD_115200          5
 #define BD_172800          6
 #define BD_345600          7
@@ -238,27 +241,27 @@ sbit RS485_ENABLE =      P3^5;
 /*---- info structures ---------------------------------------------*/
 
 typedef struct {
-  unsigned char  protocol_version;
-  unsigned char  node_status;
-  unsigned char  n_variables;
-  unsigned short node_address;
-  unsigned short group_address;
-  unsigned short watchdog_resets;
-  char           node_name[16];
+   unsigned char protocol_version;
+   unsigned char node_status;
+   unsigned char n_variables;
+   unsigned short node_address;
+   unsigned short group_address;
+   unsigned short watchdog_resets;
+   char node_name[16];
 } MSCB_INFO;
 
 typedef struct {
-  unsigned char width;    // width in bytes
-  unsigned char unit;     // physical units UNIT_xxxx
-  unsigned char prefix;   // unit prefix PRFX_xxx
-  unsigned char status;   // status (not yet used)
-  unsigned char flags;    // flags MSCBF_xxx
-  char          name[8];  // name
-  void data     *ud;      // point to user data buffer
+   unsigned char width;         // width in bytes
+   unsigned char unit;          // physical units UNIT_xxxx
+   unsigned char prefix;        // unit prefix PRFX_xxx
+   unsigned char status;        // status (not yet used)
+   unsigned char flags;         // flags MSCBF_xxx
+   char name[8];                // name
+   void data *ud;               // point to user data buffer
 } MSCB_INFO_VAR;
 
-#define MSCBF_FLOAT  (1<<0) // channel in floating point format
-#define MSCBF_SIGNED (1<<1) // channel is signed integer
+#define MSCBF_FLOAT  (1<<0)     // channel in floating point format
+#define MSCBF_SIGNED (1<<1)     // channel is signed integer
 
 /* physical units */
 
@@ -272,29 +275,29 @@ typedef struct {
 #define PRFX_GIGA         9
 #define PRFX_TERA        12
 
-#define UNIT_UNDEFINED    0      
+#define UNIT_UNDEFINED    0
 
 // SI base units
-#define UNIT_METER        1      
-#define UNIT_GRAM         2      
-#define UNIT_SECOND       3      
+#define UNIT_METER        1
+#define UNIT_GRAM         2
+#define UNIT_SECOND       3
 #define UNIT_MINUTE       4
 #define UNIT_HOUR         5
-#define UNIT_AMPERE       6      
-#define UNIT_KELVIN       7      
-#define UNIT_CELSIUS      8      
-#define UNIT_FARENHEIT    9      
+#define UNIT_AMPERE       6
+#define UNIT_KELVIN       7
+#define UNIT_CELSIUS      8
+#define UNIT_FARENHEIT    9
 
 // SI derived units
 
-#define UNIT_HERTZ       20       
-#define UNIT_PASCAL      21       
+#define UNIT_HERTZ       20
+#define UNIT_PASCAL      21
 #define UNIT_BAR         22
-#define UNIT_WATT        23       
-#define UNIT_VOLT        24       
+#define UNIT_WATT        23
+#define UNIT_VOLT        24
 #define UNIT_OHM         25
 #define UNIT_TESLA       26
-#define UNIT_LITERPERSEC 27       
+#define UNIT_LITERPERSEC 27
 #define UNIT_RPM         28
 #define UNIT_FARAD       29
 
@@ -317,11 +320,11 @@ typedef struct {
 
 /*------------------------------------------------------------------*/
 
-typedef struct {          // system info stored in EEPROM
-unsigned int  node_addr;
-unsigned int  group_addr;
-unsigned int  wd_counter;
-char          node_name[16];
+typedef struct {                // system info stored in EEPROM
+   unsigned int node_addr;
+   unsigned int group_addr;
+   unsigned int wd_counter;
+   char node_name[16];
 } SYS_INFO;
 
 #define ENABLE_INTERRUPTS { EA = 1; }
@@ -346,10 +349,11 @@ void lcd_puts(char *str);
 char scs_lcd1_read();
 
 char getchar_nowait(void);
-unsigned char gets_wait(char *str, unsigned char size, unsigned char timeout);
+unsigned char gets_wait(char *str, unsigned char size,
+                        unsigned char timeout);
 void flush(void);
 
-void eeprom_flash(void); 
+void eeprom_flash(void);
 unsigned char eeprom_retrieve(void);
 
 void uart_init(unsigned char port, unsigned char baud);
@@ -357,6 +361,4 @@ void uart_init(unsigned char port, unsigned char baud);
 void sysclock_init(void);
 unsigned long time(void);
 
-unsigned char user_func(unsigned char *data_in,
-                        unsigned char *data_out);
-
+unsigned char user_func(unsigned char *data_in, unsigned char *data_out);
