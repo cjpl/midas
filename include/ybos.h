@@ -10,6 +10,10 @@
   date        by    modification
   ---------   ---   ------------------------------------------------
 *  $Log$
+*  Revision 1.7  1999/01/19 19:56:59  pierre
+*  - Fix prototype
+*  - Added YB_UNKNOWN_FORMAT
+*
 *  Revision 1.6  1999/01/18 17:34:36  pierre
 *  - cleanup definitions and structures for ybos
 *  - Correct prototype for ybos
@@ -48,6 +52,7 @@
 #define YB_BANK_NOT_FOUND     -101
 #define YB_SWAP_ERROR         -102
 #define YB_NOMORE_SLOT        -103
+#define YB_UNKNOWN_FORMAT     -104
 
 /* record header content */
 #define H_BLOCK_SIZE   0     /* YBOS */
@@ -200,7 +205,7 @@ INT   EXPRT feodb_file_dump (EQUIPMENT * eqp, char * eqpname,char * pevent, INT 
 void  EXPRT yb_any_bank_display(void * pbk, INT fmt, INT dsp_mode, INT dsp_fmt);
 void  EXPRT yb_any_event_display(void * pevt, INT data_fmt, INT dsp_mode, INT dsp_fmt);
 INT   EXPRT yb_any_all_info_display (INT what);
-INT   EXPRT yb_any_physrec_display(INT data_fmt, INT dsp_fmt);
+INT   EXPRT yb_any_physrec_display(INT data_fmt);
 
 INT   EXPRT yb_any_physrec_skip(INT data_fmt, INT bl);
 INT   EXPRT yb_any_physrec_get (INT data_fmt, void ** prec, DWORD * psize);
@@ -210,7 +215,7 @@ INT   EXPRT yb_any_file_wopen (INT type, INT data_fmt, char * filename, INT * hD
 INT   EXPRT yb_any_file_wclose (INT handle, INT type, INT data_fmt);
 INT   EXPRT yb_any_log_write (INT handle, INT data_fmt, INT type, void * prec, DWORD nbytes);
 INT   EXPRT yb_any_event_swap (INT data_fmt, void * pevent);
-INT   EXPRT yb_any_event_get (INT data_fmt, INT bl, void ** pevent, DWORD * psize);
+INT   EXPRT yb_any_event_get (INT data_fmt, void ** pevent, DWORD * psize);
 
 /* Bank manipulation */
 INT   EXPRT bk_list (BANK_HEADER * pmbh, char * bklist);
