@@ -6,6 +6,9 @@
   Contents:     MIDAS logger program
 
   $Log$
+  Revision 1.22  1999/10/11 15:02:23  midas
+  Added -D (daemon) flag
+
   Revision 1.21  1999/10/06 08:43:38  midas
   Fixed bug with system history (event_id instead of index)
 
@@ -2330,7 +2333,7 @@ main(int argc, char *argv[])
 {
 INT    status, msg, i, size, run_number, ch;
 char   host_name[100], exp_name[NAME_LENGTH], dir[256];
-BOOL   debug;
+BOOL   debug, daemon;
 DWORD  last_time_kb = 0;
 DWORD  last_time_hist = 0;
 DWORD  last_time_stat = 0;
@@ -2345,6 +2348,8 @@ DWORD  last_time_stat = 0;
     {
     if (argv[i][0] == '-' && argv[i][1] == 'd')
       debug = TRUE;
+    else if (argv[i][0] == '-' && argv[i][1] == 'D')
+      daemon = TRUE;
     else if (argv[i][0] == '-')
       {
       if (i+1 >= argc || argv[i+1][0] == '-')
@@ -2356,10 +2361,16 @@ DWORD  last_time_stat = 0;
       else
         {
 usage:
-        printf("usage: mlogger [-h Hostname] [-e Experiment] [-d]\n\n");
+        printf("usage: mlogger [-h Hostname] [-e Experiment] [-d] [-D]\n\n");
         return 1;
         }
       }
+    }
+
+  if (daemon)
+    {
+    printf("Becoming a daemon...\n");
+    ss_daemon_init();
     }
 
   status = cm_connect_experiment(host_name, exp_name, "Logger", NULL);
