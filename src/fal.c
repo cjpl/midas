@@ -7,6 +7,9 @@
                 Most routines are from mfe.c mana.c and mlogger.c.
 
   $Log$
+  Revision 1.27  2002/02/05 09:46:29  midas
+  Set /runinfo/online mode flag
+
   Revision 1.26  2002/02/05 01:26:51  midas
   Re-merged common code of logger and fal
 
@@ -4687,6 +4690,10 @@ usage:
     }
 
   cm_get_experiment_database(&hDB, NULL);
+
+  /* set online mode */
+  i = 1;
+  db_set_value(hDB, 0, "/Runinfo/Online Mode", &i, sizeof(int), 1, TID_INT);
 
   /* turn off watchdog if in debug mode */
   if (debug)
