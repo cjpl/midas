@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus communication functions
 
   $Log$
+  Revision 1.57  2004/03/09 15:37:09  midas
+  Fixed problems with small strings
+
   Revision 1.56  2004/03/09 15:02:13  midas
   Reverse byte order only if size<5
 
@@ -2135,7 +2138,7 @@ int mscb_write(int fd, int adr, unsigned char index, void *data, int size)
       return status;
    }
 
-   if (size < 7) {
+   if (size < 6) {
       buf[0] = MCMD_WRITE_ACK + size + 1;
       buf[1] = index;
 
