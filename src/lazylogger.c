@@ -6,6 +6,9 @@
   Contents:     Disk to Tape copier for background job
 
   $Log$
+  Revision 1.8  1999/10/15 12:44:19  midas
+  Increase timeout
+
   Revision 1.7  1999/10/13 19:31:28  pierre
   - Restore mod from version 1.2 and merge by hand! mod 'til 1.6
   - Implement single "Maintain free space" check.
@@ -1621,7 +1624,7 @@ int main(unsigned int argc,char **argv)
   if (debug)
     cm_set_watchdog_params(TRUE, 0);
   else
-    cm_set_watchdog_params(TRUE, 60000);
+    cm_set_watchdog_params(TRUE, 120000);
   
   
   printf("Lazy_%s starting... ""!"" to exit \n", lazyinfo[channel].name);
