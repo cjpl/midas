@@ -6,6 +6,9 @@
 #  Contents:     Makefile for mevb MIDAS example 
 #
 #  $Log$
+#  Revision 1.4  2004/10/07 20:08:34  pierre
+#  1.9.5
+#
 #  Revision 1.3  2004/09/28 16:16:39  pierre
 #  Add MIDASSYS
 #
@@ -66,22 +69,10 @@ CC = cc
 CFLAGS += -g -I$(INC_DIR) -I$(DRV_DIR)
 LDFLAGS +=
 
-all: mevb fe1 fe2
+all: mevb ebfe
 
-fe1: $(LIB) $(LIB_DIR)/mfe.o $(DRV_DIR)/bus/$(DRIVER).o fe1.c
-	$(CC) $(CFLAGS) $(OSFLAGS) -o fe1 fe1.c $(DRIVER).o \
-	$(LIB_DIR)/mfe.o $(LIB) $(LDFEFLAGS) $(LIBS)
-
-fe2: $(LIB) $(LIB_DIR)/mfe.o $(DRV_DIR)/bus/$(DRIVER).o fe2.c
-	$(CC) $(CFLAGS) $(OSFLAGS) -o fe2 fe2.c $(DRIVER).o \
-	$(LIB_DIR)/mfe.o $(LIB) $(LDFEFLAGS) $(LIBS)
-
-yfe1: $(LIB) $(LIB_DIR)/mfe.o $(DRV_DIR)/bus/$(DRIVER).o yfe1.c
-	$(CC) $(CFLAGS) $(OSFLAGS) -o yfe1 yfe1.c $(DRIVER).o \
-	$(LIB_DIR)/mfe.o $(LIB) $(LDFEFLAGS) $(LIBS)
-
-yfe2: $(LIB) $(LIB_DIR)/mfe.o $(DRV_DIR)/bus/$(DRIVER).o yfe2.c
-	$(CC) $(CFLAGS) $(OSFLAGS) -o yfe2 yfe2.c $(DRIVER).o \
+ebfe: $(LIB) $(LIB_DIR)/mfe.o $(DRV_DIR)/bus/$(DRIVER).o ebfe.c
+	$(CC) $(CFLAGS) $(OSFLAGS) -o ebfe ebfe.c $(DRIVER).o \
 	$(LIB_DIR)/mfe.o $(LIB) $(LDFEFLAGS) $(LIBS)
 
 $(DRIVER).o: $(DRV_DIR)/bus/$(DRIVER).c
