@@ -17,6 +17,9 @@
 
 
   $Log$
+  Revision 1.5  2000/03/02 22:00:47  midas
+  Added number of subevents in equipment list
+
   Revision 1.4  1999/12/21 09:38:23  midas
   Use new driver names
 
@@ -79,6 +82,7 @@ EQUIPMENT equipment[] = {
     RO_TRANSITIONS,       /* read when running and on transitions */
     60000,                /* read every 60 sec */
     0,                    /* stop run after this event limit */
+    0,                    /* number of sub events */
     1,                    /* log history every event */
     "", "", "",
     cd_hv_read,           /* readout routine */
@@ -98,6 +102,7 @@ EQUIPMENT equipment[] = {
     RO_TRANSITIONS,       /* read when running and on transitions */
     60000,                /* read every 60 sec */
     0,                    /* stop run after this event limit */
+    0,                    /* number of sub events */
     1,                    /* log history every event */
     "", "", "",
     cd_multi_read,        /* readout routine */
