@@ -14,6 +14,10 @@
                 Brown, Prentice Hall
 
   $Log$
+  Revision 1.31  1999/06/23 09:42:28  midas
+  - Changed all "//" to "/* */"
+  - Added ss_settime for VxWrorks
+
   Revision 1.30  1999/06/02 07:51:08  midas
   Fixed compiler error under RH6.0 with semun structure
 
@@ -1004,56 +1008,56 @@ INT ss_shell(int sock)
   fd_set              readfds;
   struct timeval      timeout;
   
-  // Set the bInheritHandle flag so pipe handles are inherited. 
+  /* Set the bInheritHandle flag so pipe handles are inherited. */
   saAttr.nLength = sizeof(SECURITY_ATTRIBUTES); 
   saAttr.bInheritHandle = TRUE; 
   saAttr.lpSecurityDescriptor = NULL; 
   
-  // Save the handle to the current STDOUT. 
+  /* Save the handle to the current STDOUT. */
   hSaveStdout = GetStdHandle(STD_OUTPUT_HANDLE); 
   
-  // Create a pipe for the child's STDOUT.
+  /* Create a pipe for the child's STDOUT. */
   if (! CreatePipe(&hChildStdoutRd, &hChildStdoutWr, &saAttr, 0)) 
     return 0; 
   
-  // Set a write handle to the pipe to be STDOUT. 
+  /* Set a write handle to the pipe to be STDOUT. */
   if (! SetStdHandle(STD_OUTPUT_HANDLE, hChildStdoutWr)) 
     return 0; 
   
   
-  // Save the handle to the current STDERR. 
+  /* Save the handle to the current STDERR. */
   hSaveStderr = GetStdHandle(STD_ERROR_HANDLE); 
   
-  // Create a pipe for the child's STDERR.
+  /* Create a pipe for the child's STDERR. */
   if (! CreatePipe(&hChildStderrRd, &hChildStderrWr, &saAttr, 0)) 
     return 0; 
   
-  // Set a read handle to the pipe to be STDERR. 
+  /* Set a read handle to the pipe to be STDERR. */
   if (! SetStdHandle(STD_ERROR_HANDLE, hChildStderrWr)) 
     return 0; 
   
   
-  // Save the handle to the current STDIN. 
+  /* Save the handle to the current STDIN. */
   hSaveStdin = GetStdHandle(STD_INPUT_HANDLE); 
   
-  // Create a pipe for the child's STDIN.
+  /* Create a pipe for the child's STDIN. */
   if (! CreatePipe(&hChildStdinRd, &hChildStdinWr, &saAttr, 0)) 
     return 0; 
   
-  // Set a read handle to the pipe to be STDIN. 
+  /* Set a read handle to the pipe to be STDIN. */
   if (! SetStdHandle(STD_INPUT_HANDLE, hChildStdinRd)) 
     return 0; 
  
-  // Duplicate the write handle to the pipe so it is not inherited. 
+  /* Duplicate the write handle to the pipe so it is not inherited. */
   if (!DuplicateHandle(GetCurrentProcess(), hChildStdinWr, 
       GetCurrentProcess(), &hChildStdinWrDup, 0, 
-      FALSE,                  // not inherited 
+      FALSE,                  /* not inherited */
       DUPLICATE_SAME_ACCESS))
     return 0; 
  
   CloseHandle(hChildStdinWr); 
  
-  // Now create the child process. 
+  /* Now create the child process. */
   memset(&siStartInfo, 0, sizeof(siStartInfo));
   siStartInfo.cb = sizeof(STARTUPINFO); 
   siStartInfo.lpReserved = NULL; 
@@ -1063,18 +1067,18 @@ INT ss_shell(int sock)
   siStartInfo.dwFlags = 0; 
  
   if (!CreateProcess(NULL, 
-      "cmd /Q",         // command line 
-      NULL,          // process security attributes 
-      NULL,          // primary thread security attributes 
-      TRUE,          // handles are inherited 
-      0,             // creation flags 
-	    NULL,          // use parent's environment
-	    NULL,          // use parent's current directory
-      &siStartInfo,  // STARTUPINFO pointer 
-      &piProcInfo))  // receives PROCESS_INFORMATION 
+      "cmd /Q",      /* command line */
+      NULL,          /* process security attributes */
+      NULL,          /* primary thread security attributes */
+      TRUE,          /* handles are inherited */
+      0,             /* creation flags */
+	    NULL,          /* use parent's environment */
+	    NULL,          /* use parent's current directory */
+      &siStartInfo,  /* STARTUPINFO pointer */
+      &piProcInfo))  /* receives PROCESS_INFORMATION */
     return 0;
  
-  // After process creation, restore the saved STDIN and STDOUT. 
+  /* After process creation, restore the saved STDIN and STDOUT. */
   SetStdHandle(STD_INPUT_HANDLE, hSaveStdin);
   SetStdHandle(STD_OUTPUT_HANDLE, hSaveStdout);
   SetStdHandle(STD_ERROR_HANDLE, hSaveStderr);
@@ -1083,7 +1087,7 @@ INT ss_shell(int sock)
 
   do
     {
-    // query stderr
+    /* query stderr */
     do
       {
       if (!PeekNamedPipe(hChildStderrRd, buffer, 256, &dwRead, &dwAvail, NULL))
@@ -1096,7 +1100,7 @@ INT ss_shell(int sock)
         }
       } while (dwAvail > 0);
 
-    // query stdout
+    /* query stdout */
     do
       {
       if (!PeekNamedPipe(hChildStdoutRd, buffer, 256, &dwRead, &dwAvail, NULL))
@@ -1109,13 +1113,13 @@ INT ss_shell(int sock)
       } while (dwAvail > 0);
 
 
-    // check if subprocess still alive
+    /* check if subprocess still alive */
     if (!GetExitCodeProcess(piProcInfo.hProcess, &i))
       break;
     if (i != STILL_ACTIVE)
       break;
 
-    // query network socket
+    /* query network socket */
     FD_ZERO(&readfds);
     FD_SET(sock, &readfds);
     timeout.tv_sec  = 0;
@@ -1128,7 +1132,7 @@ INT ss_shell(int sock)
       if (i<=0)
         break;
 
-      // backspace
+      /* backspace */
       if (cmd[i_cmd] == 8)
         {
         if (i_cmd > 0)
@@ -1144,7 +1148,7 @@ INT ss_shell(int sock)
         }
       }
 
-    // linefeed triggers new command
+    /* linefeed triggers new command */
     if (cmd[i_cmd-1] == 10)
       {
       WriteFile(hChildStdinWrDup, cmd, i_cmd, &dwWritten, NULL);
@@ -1513,16 +1517,19 @@ INT status;
     return SS_NO_MUTEX;
 
   return SS_SUCCESS;
+
 #endif /* OS_VMS */
 #ifdef OS_VXWORKS
+
   /* convert timeout in ticks (1/60) = 1000/60 ~ 1/16 = >>4 */
   status = semTake((SEM_ID)mutex_handle, timeout == 0 ? WAIT_FOREVER : timeout>>4);
   if (status == ERROR)
     return SS_NO_MUTEX;
   return SS_SUCCESS;
-#endif /* OS_VXWORKS */
 
+#endif /* OS_VXWORKS */
 #ifdef OS_UNIX
+
   {
   struct sembuf sb;
   INT           status;
@@ -1860,10 +1867,20 @@ struct tm *ltm;
   st.wMilliseconds = 0;
 
   SetLocalTime(&st);
+
 #endif
 #ifdef OS_UNIX
 
   stime((time_t *) &seconds);
+
+#endif
+#ifdef OS_VXWORKS
+  
+  struct timespec ltm;
+  
+  ltm.tv_sec = seconds;
+  ltm.tv_nsec = 0;
+  clock_settime(CLOCK_REALTIME, &ltm);
 
 #endif
 
@@ -2275,11 +2292,11 @@ INT ss_exception_handler(void (*func)())
 #ifdef OS_WINNT
 
   MidasExceptionHandler = func;
-//  SetUnhandledExceptionFilter(
-//    (LPTOP_LEVEL_EXCEPTION_FILTER) MidasExceptionFilter);
+/*  SetUnhandledExceptionFilter(
+    (LPTOP_LEVEL_EXCEPTION_FILTER) MidasExceptionFilter);
 
   signal(SIGINT, MidasExceptionSignal);
-/*  signal(SIGILL, MidasExceptionSignal);
+  signal(SIGILL, MidasExceptionSignal);
   signal(SIGFPE, MidasExceptionSignal);
   signal(SIGSEGV, MidasExceptionSignal);
   signal(SIGTERM, MidasExceptionSignal);
