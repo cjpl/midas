@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.19  2001/08/02 12:26:43  midas
+  Fine-tunes mail facility, fixed a few bugs
+
   Revision 1.18  2001/08/02 11:45:47  midas
   Added mail facility and author list
 
@@ -63,7 +66,7 @@
 \********************************************************************/
 
 /* Version of ELOG */
-#define VERSION "1.0.0"
+#define VERSION "1.0.3"
 
 #include <stdio.h>
 #include <sys/types.h>
@@ -2602,12 +2605,23 @@ FILE   *f;
 
   rsprintf("</tr>\n");
 
+  /* get number of summary lines */
+  n_line = 3;
+  if (getcfg(logbook, "Summary lines", str))
+    n_line = atoi(str);
+
+
   /*---- table titles ----*/
 
   if (full)
     rsprintf("<tr><th>Date<th>Author<th>Type<th>Category<th>Subject</tr>\n");
   else
-    rsprintf("<tr><th>Date<th>Author<th>Type<th>Category<th>Subject<th>Text</tr>\n");
+    {
+    if (n_line > 0)
+      rsprintf("<tr><th>Date<th>Author<th>Type<th>Category<th>Subject<th>Text</tr>\n");
+    else
+      rsprintf("<tr><th>Date<th>Author<th>Type<th>Category<th colspan=2>Subject</tr>\n");
+    }
 
   /*---- do query ----*/
 
@@ -2839,29 +2853,30 @@ FILE   *f;
         }
       else
         {
-        rsprintf("<tr><td><a href=\"%s\">%s</a><td>%s<td>%s<td>%s<td>%s</tr>\n", ref, date, author, type, category, subject);
-        rsprintf("<td>");
-      
-        /* get first 100 charactes, cut at end of line */
-        n_line = 3;
-        if (getcfg(logbook, "Summary lines", str))
-          n_line = atoi(str);
-
-        for (i=i_line=0 ; i<sizeof(str)-1 ; i++)
+        if (n_line > 0)
           {
-          str[i] = text[i];
-          if (str[i] == '\n')
-            i_line++;
+          rsprintf("<tr><td><a href=\"%s\">%s</a><td>%s<td>%s<td>%s<td>%s\n", ref, date, author, type, category, subject);
+          rsprintf("<td>");
 
-          if (i_line == n_line)
-            break;
+          for (i=i_line=0 ; i<sizeof(str)-1 ; i++)
+            {
+            str[i] = text[i];
+            if (str[i] == '\n')
+              i_line++;
+
+            if (i_line == n_line)
+              break;
+            }
+          str[i] = 0;
+
+          if (equal_ustring(encoding, "HTML"))
+            rsputs(str);
+          else
+            strencode(str);
           }
-        str[i] = 0;
-
-        if (equal_ustring(encoding, "HTML"))
-          rsputs(str);
         else
-          strencode(str);
+          rsprintf("<tr><td><a href=\"%s\">%s</a><td>%s<td>%s<td>%s<td colspan=2>%s\n", ref, date, author, type, category, subject);
+
       
         rsprintf("</tr>\n");
         }
@@ -3022,9 +3037,11 @@ struct hostent *phe;
       sprintf(mail_from, "ELog@%s", host_name);
 
       sprintf(mail_text, "A new entry has been submitted by %s:\n\n", author);
-      sprintf(mail_text+strlen(mail_text), "Logbook : %s\n", logbook);
-      sprintf(mail_text+strlen(mail_text), "Subject : %s\n", getparam("subject"));
-      sprintf(mail_text+strlen(mail_text), "Link    : %s%s/%s\n", elogd_url, logbook_enc, tag);
+      sprintf(mail_text+strlen(mail_text), "Logbook  : %s\n", logbook);
+      sprintf(mail_text+strlen(mail_text), "Type     : %s\n", getparam("type"));
+      sprintf(mail_text+strlen(mail_text), "Category : %s\n", getparam("category"));
+      sprintf(mail_text+strlen(mail_text), "Subject  : %s\n", getparam("subject"));
+      sprintf(mail_text+strlen(mail_text), "Link     : %s%s/%s\n", elogd_url, logbook_enc, tag);
 
       sendmail(smtp_host, mail_from, mail_to, getparam("type"), mail_text);
 
