@@ -6,6 +6,9 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.36  2000/05/05 08:44:22  midas
+  Make data_size check in db_set_value
+
   Revision 1.35  2000/03/04 00:42:29  midas
   Delete elog & alarm mutexes correctly
 
@@ -2769,6 +2772,15 @@ INT              status;
     {
     db_unlock_database(hDB);
     cm_msg(MERROR, "db_set_value", "zero data size not allowed");
+    return DB_TYPE_MISMATCH;
+    }
+
+  if (type != TID_STRING && type != TID_LINK &&
+      data_size != rpc_tid_size(type)*num_values)
+    {
+    db_unlock_database(hDB);
+    cm_msg(MERROR, "db_set_value", "data_size (%d) does not match num_values (%d)", 
+                   data_size, num_values);
     return DB_TYPE_MISMATCH;
     }
 
