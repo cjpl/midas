@@ -6,6 +6,9 @@
   Contents:     Disk to Tape copier for background job
 
   $Log$
+  Revision 1.14  1999/10/22 10:58:56  midas
+  Fixed compiler warnings
+
   Revision 1.13  1999/10/22 00:30:45  pierre
   - add hot link on settings for maintain space.
 
@@ -216,7 +219,7 @@ INT  build_done_list(HNDLE, INT **);
 INT  cmp_log2donelist (DIRLOG * plog, INT * pdo);
 INT  lazy_log_update(INT action, INT run, char * label, char * file);
 int  lazy_remove_entry(INT ch, LAZY_INFO *, int run);
-INT lazy_settings_hotlink(HNDLE hDB, HNDLE hKey, void * info);
+void lazy_settings_hotlink(HNDLE hDB, HNDLE hKey, void * info);
 void lazy_maintain_check(HNDLE hKey, LAZY_INFO * pLall);
 /*------------------------------------------------------------------*/
 INT lazy_file_remove(char * pufile)
@@ -224,28 +227,11 @@ INT lazy_file_remove(char * pufile)
   INT  fHandle, status;
 
   /* open device */
-#ifdef OS_UNIX
-  if( (fHandle = open(pufile ,_O_RDONLY, 0644)) == -1 )
-#endif
-#ifdef OS_OSF1
-    if( (fHandle = open(pufile ,_O_RDONLY, 0644)) == -1 )
-#endif
-#ifdef OS_VXWORKS
-      if( (fHandle = open(pufile ,_O_RDONLY, 0644)) == -1 )
-#endif
-#ifdef OS_WINNT
-	if( (fHandle = _open(pufile ,_O_RDONLY)) == -1 )
-	  
-#endif
-	  {
-      return SS_INVALID_NAME;
-	  }
+  fHandle = open(pufile, O_RDONLY, 0644);
+  if (fHandle == -1)
+    return SS_INVALID_NAME;
 
-#ifdef OS_WINNT
-    _close(fHandle);
-#else
-    close(fHandle);
-#endif
+  close(fHandle);
 
   status = ss_file_remove(pufile);
   if (status != 0)
@@ -607,7 +593,7 @@ INT lazy_select_purge(HNDLE hKey, INT channel, LAZY_INFO * pLall, char * fmt, ch
 }
 
 /*------------------------------------------------------------------*/
-INT lazy_settings_hotlink(HNDLE hDB, HNDLE hKey, void * info)
+void lazy_settings_hotlink(HNDLE hDB, HNDLE hKey, void * info)
 {
   INT  size, maintain;
 
@@ -618,7 +604,6 @@ INT lazy_settings_hotlink(HNDLE hDB, HNDLE hKey, void * info)
     maintain_touched = TRUE;
   else
     maintain_touched = FALSE;
-  return SUCCESS;
 }
 /*------------------------------------------------------------------*/
 void lazy_maintain_check(HNDLE hKey, LAZY_INFO * pLall)
