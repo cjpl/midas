@@ -6,6 +6,9 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
+  Revision 1.53  2004/09/28 21:02:12  midas
+  Become a daemon before registering the socket server
+
   Revision 1.52  2004/09/28 20:46:44  midas
   Fixed bug in debug_print
 
@@ -372,17 +375,17 @@ int main(int argc, char **argv)
          printf("Multi thread server started\n");
       }
 
+      /* become a daemon */
+      if (daemon) {
+         printf("Becoming a daemon...\n");
+         ss_daemon_init(FALSE);
+      }
+
       /* register server */
       if (rpc_register_server(server_type, argv[0],
                               NULL, rpc_server_dispatch) != RPC_SUCCESS) {
          printf("Cannot start server\n");
          return 0;
-      }
-
-      /* become a daemon */
-      if (daemon) {
-         printf("Becoming a daemon...\n");
-         ss_daemon_init(FALSE);
       }
 
       /* register MIDAS library functions */
