@@ -6,6 +6,9 @@
  *         amaudruz@triumf.ca                            Local:           6234
  * ---------------------------------------------------------------------------
    $Log$
+   Revision 1.56  2003/10/30 14:17:07  midas
+   Added 'umask' for FTP connections
+
    Revision 1.55  2003/10/03 19:00:45  pierre
    fix event display format
 
@@ -1764,7 +1767,7 @@ INT yb_ftp_open(char *destination, FTP_CON **con)
   INT   status;
   short port=0;
   char  *token, host_name[HOST_NAME_LENGTH], 
-    user[32], pass[32], directory[256], file_name[256];
+    user[32], pass[32], directory[256], file_name[256], file_mode[256];
   
     /* 
     destination should have the form:
@@ -1796,6 +1799,11 @@ INT yb_ftp_open(char *destination, FTP_CON **con)
   if (token)
     strcpy(file_name, token);
   
+  token = strtok(NULL, ", ");
+  file_mode[0] = 0;
+  if (token)
+    strcpy(file_mode, token);
+
   status = ftp_login(con, host_name, port, user, pass, "");
   if (status >= 0)
     return status;
@@ -1808,6 +1816,13 @@ INT yb_ftp_open(char *destination, FTP_CON **con)
   if (status >= 0)
     return status;
   
+  if (file_mode[0])
+    {
+    status = ftp_command(*con, "umask %s", file_mode, 200, 250, EOF);
+    if (status >= 0)
+      return status;
+    }
+
   if (ftp_open_write(*con, file_name) >= 0)
     return (*con)->err_no;
   
