@@ -6,6 +6,10 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.88  1999/11/23 15:52:40  midas
+  If an event is larger than the buffer read or write cache, it bypasses the
+  cache.
+
   Revision 1.87  1999/11/19 09:49:58  midas
   Fixed bug with wrong default watchdog timeout in cm_connect_experiment1
 
@@ -5255,26 +5259,16 @@ EVENT_HEADER    *pevent;
     }
 
   /* check for maximal event size */
-  if (ALIGN(buf_size) > MAX_EVENT_SIZE)
+  if (((EVENT_HEADER *) source)->data_size > MAX_EVENT_SIZE)
     {
     cm_msg(MERROR, "bm_send_event", "event size (%d) larger than maximum event size (%d)", 
-           ALIGN(buf_size), MAX_EVENT_SIZE);
-    return BM_INVALID_PARAM;
+      ((EVENT_HEADER *) source)->data_size, MAX_EVENT_SIZE);
+    return BM_NO_MEMORY;
     }
-  
-  if (rpc_is_remote())
-    {
-    /* check if event fits in network buffer */
-    if (((EVENT_HEADER *) source)->data_size > MAX_EVENT_SIZE)
-      {
-      cm_msg(MERROR, "bm_send_event", "event size (%d) larger than maximum event size (%d)", 
-        ((EVENT_HEADER *) source)->data_size, MAX_EVENT_SIZE);
-      return BM_NO_MEMORY;
-      }
 
+  if (rpc_is_remote())
     return rpc_call(RPC_BM_SEND_EVENT, buffer_handle,
                     source, buf_size, async_flag);
-    }
 
 #ifdef LOCAL_ROUTINES
 {
@@ -6184,7 +6178,8 @@ LOOP:
         {
         /* we found one, so copy it */
 
-        if (pbuf->read_cache_size > 0)
+        if (pbuf->read_cache_size > 0 && 
+            !(total_size > pbuf->read_cache_size && pbuf->read_cache_wp == 0))
           {
           if (pbuf->read_cache_size - pbuf->read_cache_wp < total_size)
             goto CACHE_FULL;
@@ -6249,7 +6244,8 @@ LOOP:
             }
           }
 
-        if (pbuf->read_cache_size > 0)
+        if (pbuf->read_cache_size > 0 &&
+            !(total_size > pbuf->read_cache_size && pbuf->read_cache_wp == 0))
           {
           pbuf->read_cache_wp += total_size;
           }
@@ -6291,6 +6287,11 @@ LOOP:
     */
 
     if (pbuf->read_cache_size == 0 && found)
+      break;
+
+    /* break if event has bypassed read cache */
+    if (pbuf->read_cache_size > 0 &&
+        total_size > pbuf->read_cache_size && pbuf->read_cache_wp == 0)
       break;
 
     } while (pheader->write_pointer != pc->read_pointer);
@@ -6346,7 +6347,8 @@ CACHE_FULL:
 
   bm_unlock_buffer(buffer_handle);
 
-  if (pbuf->read_cache_size > 0)
+  if (pbuf->read_cache_size > 0 &&
+      !(total_size > pbuf->read_cache_size && pbuf->read_cache_wp == 0))
     goto CACHE_READ;
 
   return status;
@@ -6561,7 +6563,8 @@ LOOP:
         {
         /* we found one, so copy it */
 
-        if (pbuf->read_cache_size > 0 && total_size < pbuf->read_cache_size)
+        if (pbuf->read_cache_size > 0 && 
+            !(total_size > pbuf->read_cache_size && pbuf->read_cache_wp == 0))
           {
           /* copy dispatch function and event to cache */
 
@@ -6639,7 +6642,9 @@ LOOP:
     if (pbuf->read_cache_size == 0 && found)
       break;
 
-    if (pbuf->read_cache_size > 0 && total_size >= pbuf->read_cache_size)
+    /* break if event has bypassed read cache */
+    if (pbuf->read_cache_size > 0 &&
+        total_size > pbuf->read_cache_size && pbuf->read_cache_wp == 0)
       break;
 
     } while (pheader->write_pointer != pc->read_pointer);
@@ -6695,7 +6700,8 @@ CACHE_FULL:
 
   bm_unlock_buffer(buffer_handle);
 
-  if (pbuf->read_cache_size > 0 && total_size < pbuf->read_cache_size)
+  if (pbuf->read_cache_size > 0 && 
+      !(total_size > pbuf->read_cache_size && pbuf->read_cache_wp == 0)) 
     goto CACHE_READ;
 
   /* call dispatcher */
