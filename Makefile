@@ -7,6 +7,10 @@
 #  Contents:     Makefile for MIDAS binaries and examples under unix
 #
 #  $Log$
+#  Revision 1.57  2004/09/18 04:06:00  olchansk
+#  Add -Wuninitialized to CFLAGS
+#  Add removal of library files to "make clean"
+#
 #  Revision 1.56  2004/08/08 23:28:08  pierre
 #  test commit
 #
@@ -238,6 +242,8 @@ MIDAS_PREF_FLAGS  =
 
 #
 # Option to build the midas shared library
+# To link midas with the static libmidas.a, say "make ... NEED_SHLIB="
+# To link midas with the shared libmidas.so, say "make ... NEED_SHLIB=1"
 #
 NEED_SHLIB=1
 
@@ -254,7 +260,7 @@ NEED_RPATH=1
 # Common flags
 #
 CC = cc
-CFLAGS = -g -O2 -Wall -I$(INC_DIR) -I$(DRV_DIR) -L$(LIB_DIR) -DINCLUDE_FTPLIB $(MIDAS_PREF_FLAGS) $(USERFLAGS)
+CFLAGS = -g -O2 -Wall -Wuninitialized -I$(INC_DIR) -I$(DRV_DIR) -L$(LIB_DIR) -DINCLUDE_FTPLIB $(MIDAS_PREF_FLAGS) $(USERFLAGS)
 
 #-----------------------
 # OSF/1 (DEC UNIX)
@@ -640,7 +646,7 @@ indent:
 	find . -name "*.[hc]" -exec indent -kr -nut -i3 -l90 {} \;
 
 clean:
-	rm -f $(LIB_DIR)/*.o *~ \#*
+	rm -f $(LIB_DIR)/*.o $(LIB_DIR)/*.a $(LIB_DIR)/*.so *~ \#*
 
 mrproper : clean
 	rm -rf $(OS_DIR)
