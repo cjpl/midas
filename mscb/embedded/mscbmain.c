@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol main program
 
   $Log$
+  Revision 1.44  2004/04/30 08:00:53  midas
+  LED only blinks on writing
+
   Revision 1.43  2004/04/07 11:06:17  midas
   Version 1.7.1
 
@@ -313,8 +316,12 @@ void setup(void)
 
    /* init memory */
    CSR = 0;
-   for (i=0 ; i<N_LED ; i++)
-      led_set(i, LED_OFF);
+
+   /* LED on by default */
+   for (i=0 ; i<N_LED ; i++) {
+      led_set(i, LED_ON);
+      led_mode(i, 1);
+   }
    
    RS485_ENABLE = 0;
    i_in = i_out = n_out = 0;
@@ -342,7 +349,7 @@ void setup(void)
       for (i = 0; variables[i].width; i++)
          if (!(variables[i].flags & MSCBF_DATALESS))
             // do it for each sub-address
-            for (adr = 0 ; adr < n_sub_addr ; adr++)
+            for (adr = 0 ; adr < _n_sub_addr ; adr++)
                memset((char*)variables[i].ud + _var_size*adr, 0, variables[i].width);
 
       /* call user initialization routine with initialization */
@@ -379,7 +386,7 @@ void setup(void)
 
    /* Blink LEDs */
    for (i=0 ; i<N_LED ; i++)
-      led_blink(i, 5, 150);
+      led_blink(i, 3, 150);
 }
 
 /*------------------------------------------------------------------*/
@@ -516,11 +523,10 @@ static void send_byte(unsigned char d, unsigned char data * crc)
 void addr_node8(unsigned char mode, unsigned char adr, unsigned char node_addr)
 {
    if (adr >= node_addr &&
-       adr <  node_addr + n_sub_addr) {
+       adr <  node_addr + _n_sub_addr) {
 
       addressed = 1;
       _cur_sub_addr = adr - node_addr;
-      led_blink(_cur_sub_addr, 1, 50);
       addr_mode = mode;
    } else {
       addressed = 0;
@@ -534,7 +540,6 @@ void addr_node16(unsigned char mode, unsigned int adr, unsigned int node_addr)
       if (adr == node_addr) {
          addressed = 1;
          _cur_sub_addr = 0;
-         led_blink(0, 1, 50);
          addr_mode = mode;
       } else {
          addressed = 0;
@@ -542,11 +547,10 @@ void addr_node16(unsigned char mode, unsigned int adr, unsigned int node_addr)
       }
    } else {
       if (adr >= node_addr &&
-          adr <  node_addr + n_sub_addr) {
+          adr <  node_addr + _n_sub_addr) {
 
          addressed = 1;
          _cur_sub_addr = adr - node_addr;
-         led_blink(_cur_sub_addr, 1, 50);
          addr_mode = mode;
       } else {
          addressed = 0;
@@ -667,6 +671,8 @@ void interprete(void)
       break;
 
    case CMD_SET_ADDR:
+      led_blink(_cur_sub_addr, 1, 50);
+
       /* set address in RAM */
       sys_info.node_addr = *((unsigned int *) (in_buf + 1));
       sys_info.group_addr = *((unsigned int *) (in_buf + 3));
@@ -679,6 +685,8 @@ void interprete(void)
       break;
 
    case (CMD_SET_ADDR | 0x07):
+      led_blink(_cur_sub_addr, 1, 50);
+
       /* set node name in RAM */
       for (i = 0; i < 16 && i < in_buf[1]; i++)
          sys_info.node_name[i] = in_buf[2 + i];
@@ -691,6 +699,7 @@ void interprete(void)
       break;
 
    case CMD_SET_BAUD:
+      led_blink(_cur_sub_addr, 1, 50);
       // uart_init(0, in_buf[1]);
       break;
 
@@ -708,6 +717,7 @@ void interprete(void)
       break;
 
    case CMD_FLASH:
+      led_blink(_cur_sub_addr, 1, 50);
 
       flash_param = 1;
 
@@ -796,6 +806,7 @@ void interprete(void)
    }
 
    if (cmd == CMD_USER) {
+      led_blink(_cur_sub_addr, 1, 50);
       n = user_func(in_buf + 1, out_buf + 1);
       out_buf[0] = CMD_ACK + n;
       out_buf[n + 1] = crc8(out_buf, n + 1);
@@ -805,6 +816,9 @@ void interprete(void)
    }
 
    if (cmd == CMD_WRITE_NA || cmd == CMD_WRITE_ACK) {
+
+      /* blink LED once when writing data */
+      led_blink(_cur_sub_addr, 1, 50);
 
       n = in_buf[0] & 0x07;
 
