@@ -9,6 +9,9 @@
                 for HVR_300 High Voltage Regulator
 
   $Log$
+  Revision 1.2  2003/02/25 09:42:08  midas
+  Fixed problem with current trip during ramping
+
   Revision 1.1  2003/02/21 13:42:28  midas
   Initial revision
 
@@ -313,6 +316,14 @@ unsigned char check_current_trip(unsigned int adc)
     DAC0H = 0;
     DAC0L = 0;
 
+    /* stop possible ramping */
+    demand_changed = 0;
+    v_actual = 0;
+    user_conf.v_dac = 0;
+    ramp_up = 0;
+    ramp_down = 0;
+    user_data.csr &= ~(CSR_RAMP_UP | CSR_RAMP_DOWN);
+
     /* raise trip flag */
     user_data.csr |= CSR_ILIMIT;
     user_data.trip_cnt++;
@@ -428,8 +439,9 @@ void ramp_hv(void)
 static unsigned long t;
 unsigned char delta;
 
-  /* only process ramping when HV is on */
-  if (user_data.csr & CSR_HV_ON) 
+  /* only process ramping when HV is on and not tripped */
+  if ((user_data.csr & CSR_HV_ON) &&
+     !(user_data.csr & CSR_ILIMIT))
     {
 
     if (demand_changed)
@@ -521,7 +533,8 @@ unsigned char delta;
 void regulation(void)
 {
   /* only if HV on and not ramping */
-  if ((user_data.csr & CSR_HV_ON) && !ramp_up && !ramp_down)
+  if ((user_data.csr & CSR_HV_ON) && !ramp_up && !ramp_down &&
+     !(user_data.csr & CSR_ILIMIT))
     {
     if (user_data.csr & CSR_REGULATION)
       {
