@@ -6,6 +6,9 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.49  2002/05/22 00:18:43  midas
+  Don't write to ODB in db_open_rec() if in MODE_ALLOC)
+
   Revision 1.48  2002/05/15 22:50:30  midas
   Improved error message
 
@@ -7078,6 +7081,7 @@ char str[256];
   if (access_mode & MODE_ALLOC)
     {
     data = malloc(size);
+    memset(data, 0, size);
 
     if (data == NULL)
       {
@@ -7106,12 +7110,16 @@ char str[256];
   /* copy local record to ODB */
   if (access_mode & MODE_WRITE)
     {
-    status = db_set_record(hDB, hKey, data, size, 0);
-    if (status != DB_SUCCESS)
+    /* only write to ODB if not in MODE_ALLOC */
+    if ((access_mode & MODE_ALLOC) == 0)
       {
-      _record_list_entries--;
-      cm_msg(MERROR, "db_open_record", "cannot set record");
-      return DB_NO_MEMORY;
+      status = db_set_record(hDB, hKey, data, size, 0);
+      if (status != DB_SUCCESS)
+        {
+        _record_list_entries--;
+        cm_msg(MERROR, "db_open_record", "cannot set record");
+        return DB_NO_MEMORY;
+        }
       }
 
     /* init a local copy of the record */
