@@ -6,6 +6,9 @@
   Contents:     Broadcast program for COBRA magnet
 
   $Log$
+  Revision 1.5  2005/03/24 23:52:07  ritt
+  Applied calibration
+
   Revision 1.4  2005/03/21 10:54:40  ritt
   Added ADC code
 
@@ -36,7 +39,7 @@ char host_name[] = "MSCB001";    // used for DHCP
 unsigned char eth_src_hw_addr[ETH_ADDR_LEN] = { 0x00, 0x50, 0xC2, 0x46, 0xD0, 0x01 };
 
 /* multicast group */
-unsigned char multicast_addr[IP_ADDR_LEN] = {239, 208, 0, 0};
+unsigned char multicast_addr[IP_ADDR_LEN] = {239, 208, 0, 1};
 
 /*------------------------------------------------------------------*/
 
@@ -318,7 +321,7 @@ void main(void)
    mn_init();
 
    // obtain IP address
-   mn_dhcp_start(NULL, DHCP_DEFAULT_LEASE_TIME);
+   while (mn_dhcp_start(NULL, DHCP_DEFAULT_LEASE_TIME) != 1);
 
    // open UDP socket for broadcasts
    bc_sock = mn_open(multicast_addr, 1178, 1178, NO_OPEN, PROTO_UDP, STD_TYPE, udp_buf, DATA_BUFF_LEN);
@@ -338,8 +341,12 @@ void main(void)
          i1 = adc_read(7) / 2.5 * 500;
          i2 = adc_read(6) / 2.5 * 500;
 
+         /* apply calibration, measured 21.3.05 by WO */
+         i1 = 0.9661*i1 + 0.63;
+         i2 = 0.9692*i2 + 0.53;
+
          /* send time and socket states */
-         sprintf(str, "COBRA: %6.2f A   CCOIL: %6.2f A\r\n", i1, i2);
+         sprintf(str, "COBRA SC: %6.2f A   COBRA NC: %6.2f A\r\n", i1, i2);
 
          /* broadcast data */
          udp_send(bc_sock, str, strlen(str));
