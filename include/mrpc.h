@@ -7,6 +7,9 @@
   Contents:     Symbolic constants for internal RPC functions
 
   $Log$
+  Revision 1.5  1999/04/08 15:24:13  midas
+  Added RPC_CM_TRANSITION and RPC_DB_GET_KEY_INFO
+
   Revision 1.4  1999/02/11 13:20:06  midas
   Added RPC_CM_CSG
 
@@ -32,6 +35,7 @@
 #define RPC_CM_ASCTIME                  11007
 #define RPC_CM_TIME                     11008
 #define RPC_CM_MSG                      11009
+#define RPC_CM_TRANSITION               11010
 
 #define RPC_BM_OPEN_BUFFER              11100
 #define RPC_BM_CLOSE_BUFFER             11101
@@ -83,6 +87,7 @@
 #define RPC_DB_SHOW_MEM                 11234
 #define RPC_DB_FLUSH_DATABASE           11235
 #define RPC_DB_SET_DATA_INDEX2          11236
+#define RPC_DB_GET_KEY_INFO             11237
 
 #define RPC_HS_SET_PATH                 11300
 #define RPC_HS_DEFINE_EVENT             11301 
