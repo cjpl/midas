@@ -11,6 +11,9 @@
                 with one bank (SCLR).
 
   $Log$
+  Revision 1.11  2000/08/21 10:32:51  midas
+  Added max_event_size, set event_buffer_size = 10*max_event_size
+
   Revision 1.10  2000/03/13 18:53:29  pierre
   - Added 2nd arg in readout functions (offset for Super event)
 
@@ -65,8 +68,11 @@ BOOL frontend_call_loop = FALSE;
 /* a frontend status page is displayed with this frequency in ms */
 INT display_period = 3000;
 
+/* maximum event size produced by this frontend */
+INT max_event_size = 10000;
+
 /* buffer size to hold events */
-INT event_buffer_size = DEFAULT_EVENT_BUFFER_SIZE;
+INT event_buffer_size = 10*10000;
 
 /* number of channels */
 #define N_ADC  8  
