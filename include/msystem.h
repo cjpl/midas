@@ -7,6 +7,9 @@
                 routines
 
   $Log$
+  Revision 1.39  2004/01/19 20:20:42  midas
+  Made ss_timezone() EXPRTable
+
   Revision 1.38  2004/01/19 16:56:15  olchansk
   add ss_timezone()
   change ss_thread_create() and ss_thread_kill() to use midas_thread_t
@@ -723,7 +726,7 @@ extern "C" {
    midas_thread_t EXPRT ss_thread_create(INT(*func) (void *), void *param);
    INT EXPRT ss_thread_kill(midas_thread_t thread_id);
    INT EXPRT ss_get_struct_align(void);
-   INT ss_timezone(void);
+   INT EXPRT ss_timezone(void);
 
 /*---- socket routines ----*/
    INT EXPRT send_tcp(int sock, char *buffer, DWORD buffer_size, INT flags);
