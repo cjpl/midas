@@ -14,6 +14,9 @@
                 Brown, Prentice Hall
 
   $Log$
+  Revision 1.78  2004/01/13 00:52:05  pierre
+  fix dox comment for vxworks
+
   Revision 1.77  2004/01/08 08:40:10  midas
   Implemented standard indentation
 
@@ -5890,5 +5893,6 @@ char *ss_crypt(char *buf, char *salt)
 /**dox***************************************************************/
 #endif                          /* DOXYGEN_SHOULD_SKIP_THIS */
 
-                                                      /** @} */// end of msfunctionc
-                                                      /** @} */// end of msystemincludecode
+/** @} */ /* end of msfunctionc */
+/** @} */ /* end of msystemincludecode */
+

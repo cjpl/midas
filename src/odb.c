@@ -6,6 +6,9 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.83  2004/01/13 00:51:47  pierre
+  fix dox comment for vxworks
+
   Revision 1.82  2004/01/08 08:40:10  midas
   Implemented standard indentation
 
@@ -7880,7 +7883,7 @@ INT db_send_changed_records()
 /*------------------------------------------------------------------*/
 
 /**dox***************************************************************/
-                                                      /** @} */// end of odbfunctionc
+/** @} */ /* end of odbfunctionc */
 
 /**dox***************************************************************/
-                                                      /** @} */// end of odbcode
+/** @} */ /* end of odbcode */
