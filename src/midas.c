@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.124  2000/10/21 12:26:12  midas
+  Fixed bug with cache pointer in hs_read
+
   Revision 1.123  2000/09/29 13:31:12  midas
   ODBEdit cleanup now deletes open record with no client attached to
 
@@ -14564,6 +14567,8 @@ char         *cache;
 
     if (cp >= cache_size)
       cp = cache_size - sizeof(irec);
+    if (cp < 0)
+      cp = 0;
 
     memcpy(&irec, (INDEX_RECORD *) (cache+cp), sizeof(irec));
     cp += sizeof(irec);
