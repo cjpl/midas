@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus communication functions
 
   $Log$
+  Revision 1.20  2002/11/20 12:01:26  midas
+  Added host to mscb_init
+
   Revision 1.19  2002/11/06 16:46:11  midas
   Check parameter size
 
@@ -80,6 +83,7 @@
 
 #include <stdio.h>
 #include "mscb.h"
+#include "rpc.h"
 
 /*------------------------------------------------------------------*/
 
@@ -594,6 +598,7 @@ int mscb_init(char *device)
   Input:
     char *device            Under NT: lpt1 or lpt2
                             Under Linux: /dev/parport0 or /dev/parport1
+                            "<host>:device" for RPC connection
 
   Function value:
     int fd                  device descriptor for connection, -1 if
@@ -604,11 +609,21 @@ int mscb_init(char *device)
 int           index, i;
 int           status;
 unsigned char c;
+char          host[256], port[256];
 
-  /* search if old file descriptor */
-  for (index=0 ; index<MSCB_MAX_FD ; index++)
-    if (strcmp(mscb_fd[index].device, device) == 0)
-      return index+1;
+  if (strchr(device, ':'))
+    {
+    strcpy(port, strchr(device, ':')+1);
+    strcpy(host, device);
+    *strchr(host, ':') = 0;
+    if (rpc_connect(host) != RPC_SUCCESS)
+      return -1;
+    }
+  else
+    strcpy(port, device);
+
+  if (rpc_connected())
+    return rpc_call(RPC_MSCB_INIT, port);
 
   /* search for new file descriptor */
   for (index=0 ; index<MSCB_MAX_FD ; index++)
@@ -618,12 +633,12 @@ unsigned char c;
   if (index == MSCB_MAX_FD)
     return -1;
 
-  strcpy(mscb_fd[index].device, device);
+  strcpy(mscb_fd[index].device, port);
 
 #ifdef _MSC_VER
 
-  if (strlen(device) == 4)
-    i = atoi(device+3);
+  if (strlen(port) == 4)
+    i = atoi(port+3);
   else
     return -1;
 
@@ -667,11 +682,11 @@ unsigned char c;
     }
   }
 #elif defined(__linux__)
-  mscb_fd[index].fd = open(device, O_RDWR);
+  mscb_fd[index].fd = open(port, O_RDWR);
   if (mscb_fd[index].fd < 0)
     {
     perror("open");
-    printf("Please make sure that device \"%s\" is world readable/writable\n", device);
+    printf("Please make sure that device \"%s\" is world readable/writable\n", port);
     return -1;
     }
 
@@ -733,6 +748,9 @@ int mscb_exit(int fd)
 
 \********************************************************************/
 {
+  if (rpc_connected())
+    return rpc_call(RPC_MSCB_EXIT, fd);
+
   if (fd > MSCB_MAX_FD)
     return MSCB_INVAL_PARAM;
 
@@ -930,6 +948,12 @@ int mscb_reboot(int fd, int adr)
 unsigned char buf[10];
 int status;
 
+  if (rpc_connected())
+    return rpc_call(RPC_MSCB_REBOOT, fd, adr);
+
+  if (fd < 1 || mscb_fd[fd-1].fd == 0)
+    return MSCB_INVAL_PARAM;
+
   if (mscb_lock() != MSCB_SUCCESS)
     return MSCB_MUTEX;
 
@@ -968,6 +992,12 @@ int mscb_reset(int fd)
 \********************************************************************/
 {
 unsigned int timeout;
+
+  if (rpc_connected())
+    return rpc_call(RPC_MSCB_RESET, fd);
+
+  if (fd < 1 || mscb_fd[fd-1].fd == 0)
+    return MSCB_INVAL_PARAM;
 
   if (mscb_lock() != MSCB_SUCCESS)
     return MSCB_MUTEX;
@@ -1013,6 +1043,12 @@ int mscb_ping(int fd, int adr)
 {
 int status;
 
+  if (rpc_connected())
+    return rpc_call(RPC_MSCB_PING, fd, adr);
+
+  if (fd < 1 || mscb_fd[fd-1].fd == 0)
+    return MSCB_INVAL_PARAM;
+
   if (mscb_lock() != MSCB_SUCCESS)
     return MSCB_MUTEX;
 
@@ -1048,6 +1084,12 @@ int mscb_info(int fd, int adr, MSCB_INFO *info)
 {
 int i, status;
 unsigned char buf[80];
+
+  if (rpc_connected())
+    return rpc_call(RPC_MSCB_INFO, fd, adr, info);
+
+  if (fd < 1 || mscb_fd[fd-1].fd == 0)
+    return MSCB_INVAL_PARAM;
 
   if (mscb_lock() != MSCB_SUCCESS)
     return MSCB_MUTEX;
@@ -1114,6 +1156,12 @@ int mscb_info_channel(int fd, int adr, int type, int index, MSCB_INFO_CHN *info)
 int i, status;
 unsigned char buf[80];
 
+  if (rpc_connected())
+    return rpc_call(RPC_MSCB_INFO_CHANNEL, fd, adr, type, index, info);
+
+  if (fd < 1 || mscb_fd[fd-1].fd == 0)
+    return MSCB_INVAL_PARAM;
+
   if (mscb_lock() != MSCB_SUCCESS)
     return MSCB_MUTEX;
 
@@ -1169,6 +1217,12 @@ int mscb_set_addr(int fd, int adr, int node, int group)
 unsigned char buf[8];
 int status;
 
+  if (rpc_connected())
+    return rpc_call(RPC_MSCB_SET_ADDR, fd, adr, node, group);
+
+  if (fd < 1 || mscb_fd[fd-1].fd == 0)
+    return MSCB_INVAL_PARAM;
+
   if (mscb_lock() != MSCB_SUCCESS)
     return MSCB_MUTEX;
 
@@ -1219,7 +1273,13 @@ int i, status;
 unsigned char *d;
 unsigned char buf[10];
 
+  if (rpc_connected())
+    return rpc_call(RPC_MSCB_WRITE_GROUP, fd, adr, channel, data, size);
+
   if (size > 4 || size < 1)
+    return MSCB_INVAL_PARAM;
+
+  if (fd < 1 || mscb_fd[fd-1].fd == 0)
     return MSCB_INVAL_PARAM;
 
   if (mscb_lock() != MSCB_SUCCESS)
@@ -1276,7 +1336,13 @@ int           i, status;
 unsigned char buf[10], crc, ack[2];
 unsigned char *d;
 
+  if (rpc_connected())
+    return rpc_call(RPC_MSCB_WRITE, fd, adr, channel, data, size);
+
   if (size > 4 || size < 1)
+    return MSCB_INVAL_PARAM;
+
+  if (fd < 1 || mscb_fd[fd-1].fd == 0)
     return MSCB_INVAL_PARAM;
 
   if (mscb_lock() != MSCB_SUCCESS)
@@ -1341,7 +1407,13 @@ int           i, status;
 unsigned char *d;
 unsigned char buf[10], crc, ack[2];
 
+  if (rpc_connected())
+    return rpc_call(RPC_MSCB_WRITE_CONF, fd, adr, channel, data, size);
+
   if (size > 4 || size < 1)
+    return MSCB_INVAL_PARAM;
+
+  if (fd < 1 || mscb_fd[fd-1].fd == 0)
     return MSCB_INVAL_PARAM;
 
   if (mscb_lock() != MSCB_SUCCESS)
@@ -1405,6 +1477,12 @@ int mscb_flash(int fd, int adr)
 int           i, status;
 unsigned char buf[10], crc, ack[2];
 
+  if (rpc_connected())
+    return rpc_call(RPC_MSCB_FLASH, fd, adr);
+
+  if (fd < 1 || mscb_fd[fd-1].fd == 0)
+    return MSCB_INVAL_PARAM;
+
   if (mscb_lock() != MSCB_SUCCESS)
     return MSCB_MUTEX;
 
@@ -1461,6 +1539,12 @@ int mscb_upload(int fd, int adr, char *buffer, int size)
 unsigned char  buf[512], crc, ack[2], image[0x8000], *line, len, type, ofh, ofl, d;
 int            i, j, status, page;
 unsigned short ofs;
+
+  if (rpc_connected())
+    return rpc_call(RPC_MSCB_UPLOAD, fd, adr, buffer, size);
+
+  if (fd < 1 || mscb_fd[fd-1].fd == 0)
+    return MSCB_INVAL_PARAM;
 
   /* interprete HEX file */
   memset(image, 0xFF, sizeof(image));
@@ -1633,7 +1717,7 @@ unsigned short ofs;
 
 /*------------------------------------------------------------------*/
 
-int mscb_read(int fd, int adr, unsigned char channel, unsigned int *data)
+int mscb_read(int fd, int adr, unsigned char channel, void *data, int *size)
 /********************************************************************\
 
   Routine: mscb_read
@@ -1644,11 +1728,11 @@ int mscb_read(int fd, int adr, unsigned char channel, unsigned int *data)
     int fd                  File descriptor for connection
     int adr                 Node address
     unsigned char channel   Channel index 0..255
-    int size                Data size in bytes 1..4 for byte, word,
-                            and dword for data to receive
+    int size                Buffer size for data
 
   Output:
-    unsigned int data       Read data
+    void *data              Received data
+    int  *size              Number of received bytes
 
   Function value:
     MSCB_SUCCESS            Successful completion
@@ -1661,6 +1745,13 @@ int mscb_read(int fd, int adr, unsigned char channel, unsigned int *data)
 {
 int           i, status;
 unsigned char buf[10], crc;
+
+  memset(data, 0, *size);
+  if (rpc_connected())
+    return rpc_call(RPC_MSCB_READ, fd, adr, channel, data, size);
+
+  if (fd < 1 || mscb_fd[fd-1].fd == 0)
+    return MSCB_INVAL_PARAM;
 
   if (mscb_lock() != MSCB_SUCCESS)
     return MSCB_MUTEX;
@@ -1689,19 +1780,20 @@ unsigned char buf[10], crc;
   if (buf[0] != CMD_ACK+i-2 || buf[i-1] != crc)
     return MSCB_CRC_ERROR;
 
-  *data = 0;
   memcpy(data, buf+1, i-2);
   if (i-2 == 2)
     WORD_SWAP(data);
   if (i-2 == 4)
     DWORD_SWAP(data);
 
+  *size = i-2;
+
   return MSCB_SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
 
-int mscb_read_conf(int fd, int adr, unsigned char index, unsigned int *data)
+int mscb_read_conf(int fd, int adr, unsigned char index, void *data, int *size)
 /********************************************************************\
 
   Routine: mscb_read_conf
@@ -1712,10 +1804,11 @@ int mscb_read_conf(int fd, int adr, unsigned char index, unsigned int *data)
     int fd                  File descriptor for connection
     int adr                 Node address
     unsigned char index     Parameter index 0..255
-    int size                Size of data buffer
+    int size                Buffer size for data
 
   Output:
-    unsigned int data       Read data
+    void *data              Received data
+    int  *size              Number of received bytes
 
   Function value:
     MSCB_SUCCESS            Successful completion
@@ -1728,6 +1821,13 @@ int mscb_read_conf(int fd, int adr, unsigned char index, unsigned int *data)
 {
 int           i, status;
 unsigned char buf[10], crc;
+
+  memset(data, 0, *size);
+  if (rpc_connected())
+    return rpc_call(RPC_MSCB_READ_CONF, fd, adr, index, data, size);
+
+  if (fd < 1 || mscb_fd[fd-1].fd == 0)
+    return MSCB_INVAL_PARAM;
 
   if (mscb_lock() != MSCB_SUCCESS)
     return MSCB_MUTEX;
@@ -1756,12 +1856,13 @@ unsigned char buf[10], crc;
   if (buf[0] != CMD_ACK+i-2 || buf[i-1] != crc)
     return MSCB_CRC_ERROR;
 
-  *data = 0;
   memcpy(data, buf+1, i-2);
   if (i-2 == 2)
     WORD_SWAP(data);
   if (i-2 == 4)
     DWORD_SWAP(data);
+
+  *size = i-2;
 
   return MSCB_SUCCESS;
 }
@@ -1797,6 +1898,14 @@ int mscb_user(int fd, int adr, void *param, int size, void *result, int *rsize)
 {
 int i, n, status;
 unsigned char buf[80];
+
+  memset(result, 0, *rsize);
+
+  if (rpc_connected())
+    return rpc_call(RPC_MSCB_USER, fd, adr, param, size, result, rsize);
+
+  if (fd < 1 || mscb_fd[fd-1].fd == 0)
+    return MSCB_INVAL_PARAM;
 
   if (mscb_lock() != MSCB_SUCCESS)
     return MSCB_MUTEX;

@@ -6,6 +6,9 @@
   Contents:     Header fiel for MSCB RPC funcions
 
   $Log$
+  Revision 1.2  2002/11/20 12:01:39  midas
+  Added host to mscb_init
+
   Revision 1.1  2002/10/28 14:26:30  midas
   Changes from Japan
 
@@ -31,21 +34,71 @@
 #define TID_LINK     16 /* link in online database              */
 #define TID_LAST     17 /* end of TID list indicator            */
 
-/* RPC options */
-#define RPC_OTIMEOUT       1
-#define RPC_OTRANSPORT     2
-#define RPC_OCONVERT_FLAG  3
-#define RPC_OHW_TYPE       4
-#define RPC_OSERVER_TYPE   5
-#define RPC_OSERVER_NAME   6
-#define RPC_CONVERT_FLAGS  7
-#define RPC_ODB_HANDLE     8
-#define RPC_CLIENT_HANDLE  9
-#define RPC_SEND_SOCK      10
-#define RPC_WATCHDOG_TIMEOUT 11
+#define CBYTE(_i)        (* ((BYTE *)       prpc_param[_i]))
+#define CPBYTE(_i)       (  ((BYTE *)       prpc_param[_i]))
 
-#define RPC_TCP            0
-#define RPC_FTCP           1
+#define CSHORT(_i)       (* ((short *)      prpc_param[_i]))
+#define CPSHORT(_i)      (  ((short *)      prpc_param[_i]))
+
+#define CINT(_i)         (* ((INT *)        prpc_param[_i]))
+#define CPINT(_i)        (  ((INT *)        prpc_param[_i]))
+
+#define CWORD(_i)        (* ((WORD *)       prpc_param[_i]))
+#define CPWORD(_i)       (  ((WORD *)       prpc_param[_i]))
+
+#define CLONG(_i)        (* ((long *)       prpc_param[_i]))
+#define CPLONG(_i)       (  ((long *)       prpc_param[_i]))
+
+#define CDWORD(_i)       (* ((DWORD *)      prpc_param[_i]))
+#define CPDWORD(_i)      (  ((DWORD *)      prpc_param[_i]))
+
+#define CHNDLE(_i)       (* ((HNDLE *)      prpc_param[_i]))
+#define CPHNDLE(_i)      (  ((HNDLE *)      prpc_param[_i]))
+
+#define CBOOL(_i)        (* ((BOOL *)       prpc_param[_i]))
+#define CPBOOL(_i)       (  ((BOOL *)       prpc_param[_i]))
+
+#define CFLOAT(_i)       (* ((float *)      prpc_param[_i]))
+#define CPFLOAT(_i)      (  ((float *)      prpc_param[_i]))
+
+#define CDOUBLE(_i)      (* ((double *)     prpc_param[_i]))
+#define CPDOUBLE(_i)     (  ((double *)     prpc_param[_i]))
+
+#define CSTRING(_i)      (  ((char *)       prpc_param[_i]))
+#define CARRAY(_i)       (  ((void *)       prpc_param[_i]))
+
+#define CBYTE(_i)        (* ((BYTE *)       prpc_param[_i]))
+#define CPBYTE(_i)       (  ((BYTE *)       prpc_param[_i]))
+
+#define CSHORT(_i)       (* ((short *)      prpc_param[_i]))
+#define CPSHORT(_i)      (  ((short *)      prpc_param[_i]))
+
+#define CINT(_i)         (* ((INT *)        prpc_param[_i]))
+#define CPINT(_i)        (  ((INT *)        prpc_param[_i]))
+
+#define CWORD(_i)        (* ((WORD *)       prpc_param[_i]))
+#define CPWORD(_i)       (  ((WORD *)       prpc_param[_i]))
+
+#define CLONG(_i)        (* ((long *)       prpc_param[_i]))
+#define CPLONG(_i)       (  ((long *)       prpc_param[_i]))
+
+#define CDWORD(_i)       (* ((DWORD *)      prpc_param[_i]))
+#define CPDWORD(_i)      (  ((DWORD *)      prpc_param[_i]))
+
+#define CHNDLE(_i)       (* ((HNDLE *)      prpc_param[_i]))
+#define CPHNDLE(_i)      (  ((HNDLE *)      prpc_param[_i]))
+
+#define CBOOL(_i)        (* ((BOOL *)       prpc_param[_i]))
+#define CPBOOL(_i)       (  ((BOOL *)       prpc_param[_i]))
+
+#define CFLOAT(_i)       (* ((float *)      prpc_param[_i]))
+#define CPFLOAT(_i)      (  ((float *)      prpc_param[_i]))
+
+#define CDOUBLE(_i)      (* ((double *)     prpc_param[_i]))
+#define CPDOUBLE(_i)     (  ((double *)     prpc_param[_i]))
+
+#define CSTRING(_i)      (  ((char *)       prpc_param[_i]))
+#define CARRAY(_i)       (  ((void *)       prpc_param[_i]))
 
 /* flags */
 #define RPC_IN       (1 << 0)
@@ -68,7 +121,6 @@ typedef struct {
   int           id;
   char          *name;
   RPC_PARAM     param[20];
-  int           (*dispatch)(int,void**);
 } RPC_LIST;
 
 /* function list */
@@ -89,3 +141,45 @@ typedef struct {
 #define RPC_MSCB_READ             14
 #define RPC_MSCB_READ_CONF        15
 #define RPC_MSCB_USER             16
+
+/*------------------------------------------------------------------*/
+
+/* Network structures */
+
+typedef struct {
+  int                routine_id;    /* routine ID like ID_BM_xxx    */
+  int                param_size;    /* size in Bytes of parameter   */
+} NET_COMMAND_HEADER;
+
+typedef struct {
+  NET_COMMAND_HEADER header;
+  char               param[32];     /* parameter array              */
+} NET_COMMAND;
+
+/* default listen port */
+#define MSCB_RPC_PORT           1176
+
+/* rpc timeout in milliseconds */
+#define RPC_TIMEOUT            10000
+
+/* RPC error codes */
+#define RPC_SUCCESS                1
+#define RPC_NET_ERROR              2
+#define RPC_INVALID_ID             3
+#define RPC_EXCEED_BUFFER          4
+#define RPC_ERR_TIMEOUT            5
+
+/* Align macro for data alignment on 8-byte boundary */
+#define ALIGN(x)  (((x)+7) & ~7)
+
+/* maximal network packed size */
+#define NET_TCP_SIZE           65535
+
+/*------------------------------------------------------------------*/
+
+/* function declarations */
+
+void rpc_server_loop(void);
+int  rpc_connect(char *host_name);
+int  rpc_connected();
+int  rpc_call(const int routine_id, ...);
