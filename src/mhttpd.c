@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.272  2004/08/26 20:21:00  pierre
+  remove ; in History all
+
   Revision 1.271  2004/08/11 00:06:08  olchansk
   fix mhttpd crashes from "broken pipe" signals (SIGPIPE) when the user's web browser prematurely closes the connection (i.e. when the user hits the "stop" button while mhttpd is generating the data).
 
@@ -8853,7 +8856,7 @@ void show_hist_page(char *path, char *buffer, int *buffer_size, int refresh)
       rsprintf("<b>All</b> &nbsp;&nbsp;");
    else {
       if (exp_name[0])
-         rsprintf("<a href=\"/HS/All?exp=%s\">ALL</a>;\n", exp_name);
+         rsprintf("<a href=\"/HS/All?exp=%s\">ALL</a> &nbsp;&nbsp;\n", exp_name);
       else
          rsprintf("<a href=\"/HS/All\">ALL</a>\n");
    }
