@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.101  2003/10/29 14:37:14  midas
+  Don't book NTUPLES for unknown events
+
   Revision 1.100  2003/10/29 14:33:46  midas
   Test for either HAVE_HBOOK or HAVE_ROOT
 
@@ -1333,6 +1336,10 @@ EVENT_DEF  *event_def;
       {
       /* get pointer to event definition */
       event_def = db_get_event_definition((short int) analyze_request[index].ar_info.event_id);
+
+      /* skip if not found */
+      if (!event_def)
+        continue;
 
       /* don't book NT if not requested */
       if (analyze_request[index].rwnt_buffer_size == 0)
