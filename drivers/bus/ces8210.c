@@ -15,6 +15,9 @@
  *  Application :
  *  Author      : Pierre-Andre Amaudruz Data Acquisition Group
  *  $Log$
+ *  Revision 1.7  2002/05/08 22:30:07  pierre
+ *  24bit access arithmetic bug
+ *
  *  Revision 1.6  2002/03/02 01:16:26  pierre
  *  fix _sx  loop
  *
@@ -117,7 +120,7 @@ INLINE void cam24i(const int c, const int n, const int a, const int f,
                    DWORD *d)
 {
 int ext;
-short int dh, dl;
+WORD dh, dl;
 
   ext = (cbd[c].baseCrate + CBDWL_D24 + (n<<11) + (a<<7) + (f<<2));
   dh = *((unsigned short *)ext);
@@ -132,7 +135,7 @@ short int dh, dl;
 INLINE void cam16i_q(const int c, const int n, const int a, const int f,
                      WORD *d, int *x, int *q)
 {
-short int csr;
+WORD csr;
 
   cam16i(c,n,a,f, d);
   cami(0,29,0,0,&csr);
@@ -145,7 +148,7 @@ short int csr;
 INLINE void cam24i_q(const int c, const int n, const int a, const int f,
                      DWORD *d, int *x, int *q)
 {
-short int csr;
+WORD csr;
 
   cam24i(c,n,a,f, d);
   cami(0,29,0,0,&csr);
@@ -180,8 +183,8 @@ INLINE void cam24i_r(const int c, const int n, const int a, const int f,
 INLINE void cam16i_rq(const int c, const int n, const int a, const int f,
                       WORD **d, const int r)
 {
-short int dtemp;
-short int csr, i;
+WORD dtemp;
+WORD csr, i;
 
   for (i=0 ; i<r ; i++)
     {
@@ -200,7 +203,7 @@ INLINE void cam24i_rq(const int c, const int n, const int a, const int f,
                       DWORD **d, const int r)
 {
 DWORD i, dtemp;
-short int csr;
+WORD csr;
 
   for (i=0 ; i<(DWORD)r ; i++)
     {
@@ -301,7 +304,7 @@ unsigned short dtmp;
 INLINE void cam16o_q(const int c, const int n, const int a, const int f,
                      WORD d, int *x, int *q)
 {
-short int csr;
+WORD csr;
   
   cam16o (c,n,a,f,d);
   cami(0,29,0,0,&csr);
@@ -314,7 +317,7 @@ short int csr;
 INLINE void cam24o_q(const int c, const int n, const int a, const int f, 
                      DWORD d, int *x, int *q)
 {
-short int csr;
+WORD csr;
 
   cam24o (c,n,a,f,d);
   cami(0,29,0,0,&csr);
@@ -338,7 +341,7 @@ INLINE void camo(const int c, const int n, const int a, const int f
 
 INLINE int camc_chk(const int c)
 {
-  static int crate_status;
+  int crate_status;
 
   CAM_BTBCHK (&crate_status);
   if ( ((crate_status >> c) & 0x1) != 1)
@@ -350,7 +353,7 @@ INLINE int camc_chk(const int c)
 
 INLINE void camc(const int c, const int n, const int a, const int f)
 {
-short int dtmp;
+WORD dtmp;
 
   cami(c,n,a,f,&dtmp);
 }
@@ -359,7 +362,7 @@ short int dtmp;
 
 INLINE void camc_q(const int c, const int n, const int a, const int f, int *q)
 {
-short int csr;
+WORD csr;
   
   camc (c,n,a,f);
   cami(0,29,0,0,&csr);
