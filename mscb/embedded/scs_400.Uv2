@@ -43,6 +43,7 @@ Options 1,0,0  // Target 'Simulator'
  LstDir (.\)
  HexSel=0
  MG32K=0
+ TGMORE=0
  RunUsr 0 0 <>
  RunUsr 1 0 <>
  BrunUsr 0 0 <>
@@ -63,6 +64,7 @@ Options 1,0,0  // Target 'Simulator'
  IRO51 { 1,0,0,0,0,0,128,0,0 }
  IRA51 { 0,0,0,0,0,0,1,0,0 }
  XRA51 { 0,0,0,0,0,0,0,0,0 }
+ XRA512 { 0,0,0,0,0,0,0,0,0 }
  C51FL=21630224
  C51VA=0
  C51MSC ()
@@ -74,6 +76,7 @@ Options 1,0,0  // Target 'Simulator'
  AX51SET ()
  AX51RST ()
  INCA5 ()
+ PropFld { 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }
  IncBld=1
  AlwaysBuild=0
  GenAsm=0
@@ -144,6 +147,7 @@ Options 2,0,0  // Target 'Emulator'
  LstDir (.\)
  HexSel=0
  MG32K=0
+ TGMORE=0
  RunUsr 0 0 <>
  RunUsr 1 0 <>
  BrunUsr 0 0 <>
@@ -164,6 +168,7 @@ Options 2,0,0  // Target 'Emulator'
  IRO51 { 1,0,0,0,0,0,128,0,0 }
  IRA51 { 0,0,0,0,0,0,1,0,0 }
  XRA51 { 0,0,0,0,0,0,0,0,0 }
+ XRA512 { 0,0,0,0,0,0,0,0,0 }
  C51FL=21630224
  C51VA=0
  C51MSC ()
@@ -175,6 +180,7 @@ Options 2,0,0  // Target 'Emulator'
  AX51SET ()
  AX51RST ()
  INCA5 ()
+ PropFld { 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }
  IncBld=1
  AlwaysBuild=0
  GenAsm=0
@@ -216,6 +222,7 @@ Options 2,0,0  // Target 'Emulator'
 EndOpt
 
 Options 1,2,4  // File 'mscb.h'
+ PropFld { 2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }
  IncBld=0
  AlwaysBuild=2
  GenAsm=2
@@ -228,6 +235,7 @@ Options 1,2,4  // File 'mscb.h'
 EndOpt
 
 Options 2,2,4  // File 'mscb.h'
+ PropFld { 2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }
  IncBld=0
  AlwaysBuild=2
  GenAsm=2

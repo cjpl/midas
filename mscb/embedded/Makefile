@@ -22,15 +22,15 @@ $(EXECS): $(SRCS) mscbmain.c mscbutil.c mscb.h
 	oh51 $@
 
 subm_250.hex: usb.c mscbutil.c subm_250.c usb.h mscb.h
-	$(CC) subm_250.c "DEFINE(SCS_250)" $(CFLAGS) 
-	$(CC) usb.c "DEFINE(SCS_250)" $(CFLAGS) 
-	$(CC) mscbutil.c "DEFINE(SCS_250)" $(CFLAGS) 
+	$(CC) subm_250.c "DEFINE(SUBM_250)" $(CFLAGS) 
+	$(CC) usb.c "DEFINE(SUBM_250)" $(CFLAGS) 
+	$(CC) mscbutil.c "DEFINE(SUBM_250)" $(CFLAGS) 
 	$(LL) usb.obj, mscbutil.obj, subm_250.obj TO subm_250 "RAMSIZE (256)" "DISABLEWARNING (16)" 
 	oh51 subm_250
 
 subm_300.hex: subm_300.c mscbutil.c mscb.h
-	$(CC) subm_300.c "DEFINE(SCS_300)" $(CFLAGS) 
-	$(CC) mscbutil.c "DEFINE(SCS_300)" $(CFLAGS) 
+	$(CC) subm_300.c "DEFINE(SUBM_300)" $(CFLAGS) 
+	$(CC) mscbutil.c "DEFINE(SUBM_300)" $(CFLAGS) 
 	$(LL) subm_300.obj, mscbutil.obj TO subm_300 "RAMSIZE (256)" "DISABLEWARNING (16)" 
 	oh51 subm_300
 
