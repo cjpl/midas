@@ -6,6 +6,9 @@
  *         amaudruz@triumf.ca                            Local:           6234
  * -----------------------------------------------------------------------------
    $Log$
+   Revision 1.22  1999/12/17 19:49:01  pierre
+   - fix return event length in ybos_event_get
+
    Revision 1.21  1999/12/13 23:26:40  pierre
    - Active FTP for YBOS format (yb_any_file_wopen)
    - Remove printf dbg in ybos_write()
@@ -2658,8 +2661,8 @@ INT   ybos_event_get (DWORD ** plrl, DWORD * readn)
   /* count event */
    my.evtn++;
 
-  /* adjust event size in I*4 */
-   my.evtlen = evt_length-4;
+  /*-PAA- Dec99 Danny adjust event size in I*4 */
+  /* my.evtlen = evt_length-4; */
    /* in bytes for the world */
    *readn = my.evtlen<<2;
    *plrl = (DWORD *)my.pylrl;
