@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.256  2003/10/29 13:25:38  midas
+  Removed snprintf (not available under Windows)
+
   Revision 1.255  2003/10/29 13:09:50  midas
   Fixed crash when current_filename is not set for ftp
 
@@ -9723,8 +9726,7 @@ struct tm *gmt;
       if (i <= 0)
         {
         cm_msg(MERROR, "interprete", "Start run: invalid run number %d",i);
-        memset(str,0,sizeof(str));
-        snprintf(str,sizeof(str)-1,"Invalid run number %d",i);
+        sprintf(str, "Invalid run number %d",i);
         show_error(str);
         return;
         }
