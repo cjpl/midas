@@ -6,6 +6,9 @@
   Contents:     High Voltage Class Driver
 
   $Log$
+  Revision 1.3  2001/01/03 16:20:07  midas
+  Added Bus Driver scheme
+
   Revision 1.2  2000/03/02 21:54:02  midas
   Added offset in readout routines, added cmd_set_label
 
@@ -499,7 +502,7 @@ HV_INFO *hv_info;
       }
 
     status = pequipment->driver[i].dd(CMD_INIT, hKey, &pequipment->driver[i].dd_info,
-                                      pequipment->driver[i].channels);
+                                      pequipment->driver[i].channels, pequipment->driver[i].bd);
     if (status != FE_SUCCESS)
       {
       free_mem(hv_info);
