@@ -8,6 +8,9 @@
                 ACUM bank.
 
   $Log$
+  Revision 1.3  1998/11/09 09:14:16  midas
+  Removed printf("EOR scaler\n");
+
   Revision 1.2  1998/10/12 12:18:58  midas
   Added Log tag in header
 
@@ -60,7 +63,6 @@ INT scaler_clear(INT run_number)
 
 INT scaler_eor(INT run_number)
 {
-  printf("EOR scaler\n");
   return SUCCESS;
 }
 
