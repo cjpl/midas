@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol commands
 
   $Log$
+  Revision 1.30  2004/03/04 14:34:22  midas
+  Added SCS_250
+
   Revision 1.29  2004/02/24 13:30:21  midas
   Implemented C8051F310 code
 
@@ -98,6 +101,7 @@
 /*---- CPU specific items ------------------------------------------*/
 
 #undef LCD_DEBUG                // debug output on LCD
+#define EEPROM_SUPPORT
 
 /*--------------------------------*/
 #if defined(SCS_210)
@@ -109,6 +113,19 @@
 #define LED_1 P3 ^ 3;
 #define LED_ON 0
 sbit RS485_ENABLE = P3 ^ 5;
+
+/*--------------------------------*/
+#elif defined(SCS_250)
+#include "c8051F320.h" // don't use the one from Keil !!
+#define CPU_C8051F320
+#define CPU_CYGNAL
+
+#define LED_0 P1 ^ 2
+#define LED_1 P1 ^ 3
+#define LED_ON 0
+sbit RS485_ENABLE = P1 ^ 0;
+
+#undef EEPROM_SUPPORT
 
 /*--------------------------------*/
 #elif defined(SCS_300) || defined(SCS_310)
@@ -185,13 +202,13 @@ sbit RS485_ENABLE = P0 ^ 7;
 #endif
 
 /* use hardware watchdog of CPU */
-#undef USE_WATCHDOG
+#define USE_WATCHDOG
 
 /* LCD support */
 #undef LCD_SUPPORT
 
 /* map SBUF0 & Co. to SBUF */
-#if !defined(CPU_C8051F020) && !defined(CPU_C8051F310)
+#if !defined(CPU_C8051F020) && !defined(CPU_C8051F310) && !defined(CPU_C8051F320)
 #define SCON0    SCON
 #define SBUF0    SBUF
 #define TI0      TI
@@ -200,7 +217,7 @@ sbit RS485_ENABLE = P0 ^ 7;
 #define ES0      ES
 #endif
 
-#if defined(CPU_C8051F310)
+#if defined(CPU_C8051F310) || defined(CPU_C8051F320)
 #define EEPROM_OFFSET 0x3A00 // 0x3A00-0x3DFF = 1024 bytes
 #else
 #define EEPROM_OFFSET 0x8000
@@ -208,7 +225,7 @@ sbit RS485_ENABLE = P0 ^ 7;
 
 /*---- MSCB commands -----------------------------------------------*/
 
-#define VERSION 0x14            // version 1.4
+#define VERSION 0x16            // version 1.6
 
 /* Version history:
 
@@ -217,7 +234,8 @@ sbit RS485_ENABLE = P0 ^ 7;
 1.2 Add CMD_ECHO, CMD_READ with multiple channels
 1.3 Add "set node name"
 1.4 Remove CMD_xxxs_CONF
-
+1.5 Return 0x0A for protected pages on upload
+1.6 Upload subpages of 60 bytes with ACK
 */
 
 #define CMD_ADDR_NODE8  0x09
