@@ -5,6 +5,10 @@
  *  Email: online@triumf.ca         Tel: (604) 222-1047    Fax: (604) 222-1074
  *         amaudruz@triumf.ca                            Local:           6234
  * -----------------------------------------------------------------------------
+   $Log$
+   Revision 1.9  1999/01/18 17:42:59  pierre
+   - Added lost cvs log flag
+
  *
  *  Description	: ybos.c : contains support for the YBOS structure.
  *              : YBOS is a 4bytes aligned structure. The FIRST element
