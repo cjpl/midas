@@ -14,6 +14,9 @@
                 Brown, Prentice Hall
 
   $Log$
+  Revision 1.86  2004/12/23 09:36:06  midas
+  Implemented NaNs
+
   Revision 1.85  2004/12/14 23:00:30  olchansk
   Remove chdir("/") from ss_daemon_init()- this prevented us from
   ever getting core dumps from midas daemons.
@@ -5951,6 +5954,31 @@ char *ss_crypt(char *buf, char *salt)
    }
 
    return enc_pw;
+}
+
+/*------------------------------------------------------------------*/
+/********************************************************************\
+*                                                                    *
+*                  NaN's                                             *
+*                                                                    *
+\********************************************************************/
+
+double ss_nan()
+{
+   double nan;
+   
+   nan = 0;
+   nan = 0/nan;
+   return nan;
+}
+#ifdef OS_WINNT
+#include <float.h>
+#define isnan(x) _isnan(x)
+#endif
+
+int ss_isnan(double x)
+{
+   return isnan(x);
 }
 
 /**dox***************************************************************/
