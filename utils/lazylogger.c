@@ -6,6 +6,10 @@
   Contents:     Disk to Tape copier for background job
 
   $Log$
+  Revision 1.12  1999/09/24 00:05:50  pierre
+  - Modified for multiple lazy channel.
+  - Remove lazy.log and log to midas.log
+
   Revision 1.11  1999/07/01 11:31:19  midas
   Change lazy_log_update for FTP mode
 
@@ -55,6 +59,7 @@
 #define NEW_FILE      1
 #define REMOVE_FILE   2
 #define REMOVE_ENTRY  3
+#define MAX_LAZY_CHANNEL 4
 
 typedef struct {
   INT run;
@@ -67,6 +72,7 @@ INT    *pdonelist;
 #define LAZY_SETTINGS_STRING "\
 Maintain free space(%) = INT : 0\n\
 Stay behind = INT : -3\n\
+Alarm Class = STRING : [32]\n\
 Running condition = STRING : [128] ALWAYS\n\
 Data dir = STRING : [256] \n\
 Data format = STRING : [8] MIDAS\n\
@@ -92,6 +98,7 @@ typedef struct {
   INT   pupercent;                /* 0:100 % of disk space to keep free */
   INT   staybehind;               /* keep x run file between current Acq and backup 
                                         -x same as x but starting from oldest */
+  char  alarm[32];                /* Alarm Class */
   char  condition[128];           /* key condition */
   char  dir[256];       /* path to the data dir */
   char  format[8];                /* Data format (YBOS, MIDAS) */
@@ -116,9 +123,20 @@ INT cur_run;                   /* current or last lazy run number done (for info
 } LAZY_STATISTICS;
 LAZY_STATISTICS lazyst;
 
+
+typedef struct {
+  HNDLE hKey;
+  BOOL  active;
+  BOOL  match;
+  char name[32];
+} LAZY_INFO;
+
+LAZY_INFO lazyinfo[MAX_LAZY_CHANNEL]={{0,FALSE,FALSE,"Disk"},{0,FALSE,FALSE,""}
+                      ,{0,FALSE,FALSE,""},{0,FALSE,FALSE,""}};
+INT channel = -1;
+
 /* Globals */
-void      *plazy;
-DWORD     szlazy;
+INT       lazy_mutex;
 HNDLE     hDB, hKey;
 float     lastsz;
 HNDLE     hKeyst;
@@ -131,18 +149,17 @@ BOOL      full_bck_flag = FALSE;
 
 /* prototypes */
 BOOL lazy_file_exists(char * dir, char * file);
-INT  lazy_main (HNDLE hDB, HNDLE hKey);
+INT  lazy_main (INT, LAZY_INFO *);
 INT  lazy_copy( char * dev, char * file);
 INT  lazy_file_compose(char * fmt , char * dir, INT num, char * ffile, char * file);
-INT  lazy_update_list(void);
-INT  lazy_select_purge(DIRLOG * plog, INT * pdo, char * pufile, INT * run);
+INT  lazy_update_list(LAZY_INFO *);
+INT  lazy_select_purge(HNDLE,  LAZY_INFO *, DIRLOG * plog, char * pufile, INT * run);
 INT  lazy_load_params( HNDLE hDB, HNDLE hKey );
 void build_log_list(char * fmt, char * dir, DIRLOG ** plog);
-void sort_log_list(DIRLOG * plog);
-void build_donelist(INT **pdo);
-void sort_donelist(INT * pdo);
+INT  build_done_list(HNDLE, INT **);
 INT  cmp_log2donelist (DIRLOG * plog, INT * pdo);
-INT lazy_log_update(INT action, INT index, INT run, char * label, char * file);
+INT  lazy_log_update(INT action, INT index, INT run, char * label, char * file);
+int  lazy_remove_entry(INT ch, LAZY_INFO *, int run);
 
 /*------------------------------------------------------------------*/
 INT lazy_log_update(INT action, INT index, INT run, char * label, char * file)
@@ -227,9 +244,11 @@ void build_log_list(char * fmt, char * dir, DIRLOG ** plog)
   Function value:
 \********************************************************************/
 {
-  INT nfile, j;
+  INT nfile, i, j;
   char * list = NULL;
   char str[MAX_FILE_PATH];
+  DIRLOG temp;
+  
   
   /* substitue %xx by * */
   strcpy (str, fmt);
@@ -262,108 +281,77 @@ void build_log_list(char * fmt, char * dir, DIRLOG ** plog)
 		  INT strl;
       (*plog+j)->run  = ss_run_extract(list+j*MAX_STRING_LENGTH);
       strcpy(str,dir);
-						strl = strlen(list+j*MAX_STRING_LENGTH);
+			strl = strlen(list+j*MAX_STRING_LENGTH);
       strncat(str,list+j*MAX_STRING_LENGTH, strl);
       (*plog+j)->size = ss_file_size(str)/1024;
     }
   free(list);
-}
 
-/*------------------------------------------------------------------*/
-void sort_log_list(DIRLOG * plog)
-/********************************************************************\
-  Routine: sort_log_list
-  Purpose: sort plog struct by run number
-  Input:
-    INT     *pdo     /lazy/list run listing
-  Output:
-  Function value: void
-\********************************************************************/
-{
-  DIRLOG temp;
-  INT j, i, nelement;
-  
-  nelement = tot_dirlog_size / sizeof(DIRLOG);
-  for (j=0;j<nelement;j++)
+  for (j=0;j<nfile;j++)
   {
-    for (i=j; i<nelement ; i++)
+    for (i=j; i<nfile ; i++)
     {
-      if ((plog+j)->run > (plog+i)->run)
+      if ((*plog+j)->run > (*plog+i)->run)
       {
-        memcpy (&temp, (plog+i), sizeof(DIRLOG));
-        memcpy ((plog+i), (plog+j), sizeof(DIRLOG));
-        memcpy ((plog+j), &temp, sizeof(DIRLOG));
+        memcpy (&temp, (*plog+i), sizeof(DIRLOG));
+        memcpy ((*plog+i), (*plog+j), sizeof(DIRLOG));
+        memcpy ((*plog+j), &temp, sizeof(DIRLOG));
       }
     }
   }
 }
 
 /*------------------------------------------------------------------*/
-void build_donelist(INT **pdo)
+INT build_done_list(HNDLE hLch, INT **pdo)
 /********************************************************************\
-  Routine: build_donelist
+  Routine: build_done_list
   Purpose: build an internal /lazy/list list (pdo) tree
   Input:
-    INT     **pdo     /lazy/list run listing
+    HNDLE             Key of the Lazy channel
+    INT     **pdo     /lazy_xxx/list run listing
   Output:
-    INT     **pdo     /lazy/list run listing
-  Function value:      void
+    INT     **pdo     /lazy_xxx/list run listing
+  Function value:      number of elements
 \********************************************************************/
 {
   HNDLE hKey, hSubkey;
   KEY    key;
-  INT i, size, nelement, tot_nelement;
+  INT i, j, size, tot_nelement, nelement, temp;
   
-  if (db_find_key(hDB, 0, "/Lazy/List", &hKey) != DB_SUCCESS)
-    {
-      *pdo[0] = 0;
-      return;
-    }
+  if (db_find_key(hDB, hLch, "List", &hKey) != DB_SUCCESS)
+  {
+    *pdo[0] = 0;
+    return 0;
+  }
+
   tot_nelement = tot_do_size = 0;
   for (i=0 ; ; i++)
-    {
-      db_enum_key(hDB, hKey, i, &hSubkey);
-      if (!hSubkey)
-        break;
-      db_get_key(hDB, hSubkey, &key);
-      nelement = key.num_values;
-      tot_do_size += nelement*sizeof(INT);
-      *pdo = realloc (*pdo,tot_do_size);
-      size = nelement * sizeof(INT);
-      db_get_data(hDB, hSubkey, (char *)(*pdo+tot_nelement), &size, TID_INT);
-      tot_nelement += nelement;
-    }
-  return;
-}
-
-/*------------------------------------------------------------------*/
-void sort_donelist(INT * pdo)
-/********************************************************************\
-  Routine: sort_donelist
-  Purpose: sort the full /lazy/list run number in increasing order
-  Input:
-    INT     *pdo     /lazy/list run listing
-  Output:
-  Function value:
-    void
-\********************************************************************/
-{
-  INT temp;
-  INT j, i, nelement;
-  
-  nelement = tot_do_size / sizeof(INT);
-  for (j=0;j<nelement-1;j++)
   {
-    for (i=j+1; i<nelement ; i++)
+    db_enum_key(hDB, hKey, i, &hSubkey);
+    if (!hSubkey)
+      break;
+    db_get_key(hDB, hSubkey, &key);
+    nelement = key.num_values;
+    tot_do_size += nelement*sizeof(INT);
+    *pdo = realloc (*pdo,tot_do_size);
+    size = nelement * sizeof(INT);
+    db_get_data(hDB, hSubkey, (char *)(*pdo+tot_nelement), &size, TID_INT);
+    tot_nelement += nelement;
+  }
+
+  for (j=0;j<tot_nelement-1;j++)
+  {
+    for (i=j+1; i<tot_nelement ; i++)
     {
-      if (*(pdo+j) > *(pdo+i))
+      if (*(*pdo+j) > *(*pdo+i))
       {
-        memcpy (&temp, (pdo+i), sizeof(INT));
-        memcpy ((pdo+i), (pdo+j), sizeof(INT));
-        memcpy ((pdo+j), &temp, sizeof(INT));
+        memcpy (&temp, (*pdo+i), sizeof(INT));
+        memcpy ((*pdo+i), (*pdo+j), sizeof(INT));
+        memcpy ((*pdo+j), &temp, sizeof(INT));
       }
     }
   }
+  return tot_nelement;
 }
 
 /*------------------------------------------------------------------*/
@@ -389,30 +377,34 @@ INT cmp_log2donelist (DIRLOG * plog, INT * pdo)
   nlog = tot_dirlog_size / sizeof(DIRLOG);
   
   for (j=0;j<nlog;j++)
+  {
+    for (i=0;i<ndo;i++)
     {
-      for (i=0;i<ndo;i++)
-        {
-          if ((plog+j)->run == pdo[i])
-            (plog+j)->run *= -1;
-        }
+      if ((plog+j)->run == pdo[i])
+        (plog+j)->run *= -1;
     }
+  }
   for (j=0;j<nlog;j++)
-    {
-      if ((plog+j)->run > 0)
-        return (plog+j)->run;
-    }
-  return -1;
+  {
+    if ((plog+j)->run > 0)
+      return (plog+j)->run;
+  }
+return -1;
 }
 
 /*------------------------------------------------------------------*/
-INT lazy_select_purge(DIRLOG * plog, INT * pdo, char * fpufile, INT * run)
+INT lazy_select_purge(HNDLE hKey, LAZY_INFO * pLall, DIRLOG * plog, char * fpufile, INT * run)
 /********************************************************************\
   Routine: lazy_select_purge
   Purpose: Search oldest run number which can be purged
            condition : oldest run# in (pdo AND present in plog)
+           AND scan all the other channels based on the following 
+           conditions:
+           "data dir" && "filename format" are the same &&
+           the /list/run_number exists in all the above condition.
   Input:
+   HNDLE          current lazy channel
    DIRLOG * plog  internal dir file listing
-   INT * pdo      internal /lazy/list/ run listing
   Output:
    char * pufile  file to be purged
    INT * run      corresponding run# to be purged
@@ -421,37 +413,92 @@ INT lazy_select_purge(DIRLOG * plog, INT * pdo, char * fpufile, INT * run)
    -1          run not found
 \********************************************************************/
 {
-  INT j, i, ndo, nlog, status;
+  INT *pdonelist, *potherlist, size;
+  INT  i, j, k, status, ndone, nother;
+  BOOL mark;
   char pufile[MAX_FILE_PATH];
+  char dir[256], ff[128];
+  char cdir[256], cff[128];
 
   /* Scan donelist from first element (oldest)
      check if run exists in dirlog
      if yes return file and run number */
-  
-  ndo = tot_do_size / sizeof(INT);
-  nlog = tot_dirlog_size / sizeof(DIRLOG);
-  for (i=0;i<ndo;i++)
+
+  /* get current specification */
+  size = sizeof(cdir);
+  db_get_value(hDB, hKey, "Settings/Data dir", &cdir, &size, TID_STRING);
+  size = sizeof(cff);
+  db_get_value(hDB, hKey, "Settings/filename format", &cff, &size, TID_STRING);
+  /* build current done list */
+  pdonelist = malloc(sizeof(INT));
+  potherlist = malloc(sizeof(INT));
+  ndone = build_done_list(hKey, &pdonelist);
+  /* try to find the oldest matching run number in the 
+
+  /* build matching dir and ff */
+  for (i=0; i < MAX_LAZY_CHANNEL ; i++)
+  {
+    (pLall+i)->match = FALSE;
+    if (((pLall+i)->hKey) && (hKey != (pLall+i)->hKey))
+    { /* valid channel */
+      size = sizeof(dir);
+      db_get_value(hDB, (pLall+i)->hKey, "Settings/Data dir", &dir, &size, TID_STRING);
+      size = sizeof(ff);
+      db_get_value(hDB, (pLall+i)->hKey, "Settings/filename format", &ff, &size, TID_STRING);
+
+      if ((strcmp(dir, cdir) == 0) && (strcmp(ff, cff) == 0))
+        (pLall+i)->match = TRUE;
+    }  
+  }
+
+  /* scan matching run number */
+  for (i=0; i < MAX_LAZY_CHANNEL ; i++)
+  {
+    if ((pLall+i)->match)
     {
-      for (j=0;j<nlog;j++)
+      /* build done list for that channel */
+      nother = build_done_list((pLall+i)->hKey, &potherlist);
+
+      /* search for run match */
+      for (k=0; k < ndone; k++)
+      {
+        mark = FALSE;
+        for (j=0 ; j < nother ;j++)
         {
-          if (pdo[i] == abs((plog+j)->run))
-            {
-              status = lazy_file_compose(lazy.backfmt, lazy.dir, abs((plog+j)->run), fpufile, pufile);
-              *run = abs((plog+j)->run);
-              return 0;
-            }     
+          if ((potherlist[j] == pdonelist[k]) && (pdonelist[k] != 0))
+             mark = TRUE; 
         }
+        if (!mark) pdonelist[k] = 0;
+      }      
     }
-  return -1;
+  }
+
+  /* Take the first run from pdonelist to purge */
+  for (i=0 ; i < ndone ; i++)
+  {
+    if (pdonelist[i] != 0)
+      break;
+  }
+  /* return -1 if no run found */
+  if (i == ndone)
+    return -1;
+  /* pdonelist[i] is the oldest run common to all the valid channels */    
+  *run = pdonelist[i];
+  if (pdonelist != NULL) free (pdonelist);
+  status = lazy_file_compose(lazy.backfmt, lazy.dir, *run, fpufile, pufile);
+  return 0;
 }
 
 /*------------------------------------------------------------------*/
-int lazy_remove_entry(int run)
+int lazy_remove_entry(INT channel, LAZY_INFO * pLall, int run)
 /********************************************************************\
   Routine: lazy_remove_entry
-  Purpose: remove run entry in the /lazy/list/<label>
+  Purpose: remove run entry in all the /Lazy_.../list being marked by 
+           lazy_select_purge
+  
   Input:
-  char * label     : device label under which the run should be present
+  HNDLE            : Key to the current Lazy_xxx
+  LAZY_INFO        : Full channel info
   int    run       : run number to be removed
   Output:
 
@@ -460,66 +507,76 @@ int lazy_remove_entry(int run)
     -1            run not found
 \********************************************************************/
 {
+  INT    size, i, j, k, saveindex=0;
+  INT    *potherlist, nother;
+  BOOL   found=FALSE;
+  HNDLE  hSubkey;
   KEY    key;
-  HNDLE  hKey, hSubkey;
-  INT    i, j, size, nelement, saveindex=0;
-  INT    *prec;
-  BOOL   found;
-  
-  
-  /* check list */
-  if (db_find_key(hDB, 0, "/Lazy/list", &hKey) != DB_SUCCESS)
-      return 0;
-  
-  /* book tmp space */
-  prec = (INT *)malloc(sizeof(INT));
 
-  /* loop over all list entries */
-  found = FALSE;
-  for (i=0 ; ; i++)
-  {
-    db_enum_key(hDB, hKey, i, &hSubkey);
-    if (!hSubkey)
-      break;
-    db_get_key(hDB, hSubkey, &key);
-    size = key.total_size;
-    nelement = key.num_values;
-    prec = (INT *)realloc(prec, size);
-    db_get_record(hDB, hSubkey, (char *) prec, &size, 0);
-    /* match run number */
-    for (j=0; j<nelement; j++)
+  /* mark current channel for removing entry too */
+  (pLall+channel)->match = TRUE;
+  potherlist = malloc(sizeof(INT));
+
+  /* scan matching run number */
+  for (k=0; k < MAX_LAZY_CHANNEL ; k++)
+  { /* skip if no dir and no ff match */
+    if ((pLall+k)->match)
+    {
+      /* search for the proper array to remove the entry */
+      found = FALSE;
+      for (i=0 ; ; i++)
       {
-        if (*(prec+j) == run)
+        if (db_find_key(hDB, (pLall+k)->hKey, "List", &hKey) != DB_SUCCESS)
+        {
+          cm_msg(MERROR,"lazy_entry_remove","Did not found %s/list", (pLall+k)->name);
+          return -1;
+        }
+
+        db_enum_key(hDB, hKey, i, &hSubkey);
+        if (!hSubkey)
+          break;
+        db_get_key(hDB, hSubkey, &key);
+        size = key.total_size;
+        nother = key.num_values;
+        potherlist = (INT *)realloc(potherlist, size);
+        db_get_record(hDB, hSubkey, (char *) potherlist, &size, 0);
+        /* match run number */
+        for (j=0; j<nother; j++)
+        {
+          if (*(potherlist+j) == run)
           {
             found = TRUE;
-	    saveindex = j;
+      	    saveindex = j;
           }
-	if (found)
-	  if (j+1 < nelement)
-	    *(prec+j) = *(prec+j+1);
+	        if (found)
+	        if (j+1 < nother)
+	          *(potherlist+j) = *(potherlist+j+1);
+        }
+        /* delete label[] or update label[] */
+        if (found)
+        {
+      	  nother--;
+          if (nother > 0)
+            db_set_data(hDB,hSubkey,potherlist,nother*sizeof(INT), nother, TID_INT);
+          else
+            db_delete_key(hDB,hSubkey,FALSE);
+          lazy_log_update(REMOVE_ENTRY, saveindex, run, (pLall+k)->name, NULL);
+        }
       }
-    /* delete label[] or update label[] */
-    if (found)
-      {
-	nelement--;
-        if (nelement > 0)
-          db_set_data(hDB,hSubkey,prec,nelement*sizeof(INT), nelement, TID_INT);
-        else
-          db_delete_key(hDB,hSubkey,FALSE);
-        free (prec);
-        lazy_log_update(REMOVE_ENTRY, saveindex, run, key.name, NULL);
-        return 0;
-      }
+    }
   }
-  free (prec);
-  return -1;
+  if (potherlist != NULL)
+    free ((void *)potherlist);
+  return 0;
 }
+
 /*------------------------------------------------------------------*/
-INT lazy_update_list(void)
+INT lazy_update_list(LAZY_INFO * pLinfo)
 /********************************************************************\
   Routine: lazy_update_list
   Purpose: update the /lazy/list tree with the info from lazy{}
   Input:
+  HNDLE         : key to Lazy_xxx
   Output:
   Function value:
    DB_SUCCESS   : update ok
@@ -533,11 +590,11 @@ INT lazy_update_list(void)
   HNDLE hKeylabel;
   
   /* check if dir exists */
-  if (db_find_key(hDB, 0, "/Lazy/List", &hKey) != DB_SUCCESS)
+  if (db_find_key(hDB, pLinfo->hKey, "List", &hKey) != DB_SUCCESS)
     { /* list doesn't exists */
-      sprintf(str,"/Lazy/List/%s",lazy.backlabel);
-      db_set_value(hDB, 0, str, &mone, sizeof(INT), 1, TID_INT);
-      db_find_key(hDB, 0, "/Lazy/List", &hKey);
+      sprintf(str,"List/%s", lazy.backlabel);
+      db_set_value(hDB, pLinfo->hKey, str, &mone, sizeof(INT), 1, TID_INT);
+      db_find_key(hDB, pLinfo->hKey, "List", &hKey);
     } 
 
   /*  record the saved run */
@@ -780,6 +837,9 @@ INT lazy_copy( char * outfile, char * infile)
   0           success
 \********************************************************************/
 {
+
+  void      *plazy = NULL;
+  DWORD     szlazy;
   INT status, no_cpy_last_time=0;
   INT last_time, cpy_loop_time;
   static INT last_error = 0;
@@ -804,8 +864,8 @@ INT lazy_copy( char * outfile, char * infile)
     {
       if ((ss_time() - last_error) > 15*60)
       {
-	last_error = ss_time();
-	cm_msg(MERROR,"lazy_copy","cannot open %s [%d]",outfile, status);
+	      last_error = ss_time();
+	      cm_msg(MERROR,"copy","cannot open %s [%d]",outfile, status);
       }      
       return FORCE_EXIT;
     }
@@ -827,47 +887,45 @@ INT lazy_copy( char * outfile, char * infile)
     {
       if (yb_any_physrec_get(data_fmt, &plazy, &szlazy ) == YB_SUCCESS)
       {
-	status = yb_any_log_write(hDev, data_fmt, dev_type, plazy, szlazy);
-	if (status != SS_SUCCESS)
-	{
-	  /* close source file */
-	  yb_any_file_rclose(dev_type);
-	  
-	  cm_msg(MERROR,"lazy_copy","Write error %i",szlazy);
-	  return FORCE_EXIT; 
-	}
-	lazyst.cur_size += (float) szlazy / 1024;
-	lazyst.cur_dev_size += (float) szlazy / 1024;
-	if ((ss_millitime() - cpy_loop_time) > 2000)
-	{
-	  /* update statistics */
-	  lazy_statistics_update(cpy_loop_time);
-	  
-	  /* check conditions */
-	  copy_continue = lazy_condition_check();
-	  
-	  /* update check loop */
-	  cpy_loop_time = ss_millitime();
-	  
-	  /* yield quickly */
-	  status = cm_yield(1);
-	  if (status == RPC_SHUTDOWN || status == SS_ABORT)
-	    cm_msg(MINFO,"Lazy","Abort postponed until end of copy %d[%]"
-		   ,lazyst.progress);
-	}
+	      status = yb_any_log_write(hDev, data_fmt, dev_type, plazy, szlazy);
+	      if (status != SS_SUCCESS)
+	      {
+	        /* close source file */
+	        yb_any_file_rclose(dev_type);
+	        cm_msg(MERROR,"lazy_copy","Write error %i",szlazy);
+	        return FORCE_EXIT; 
+	      }
+	      lazyst.cur_size += (float) szlazy / 1024;
+	      lazyst.cur_dev_size += (float) szlazy / 1024;
+	      if ((ss_millitime() - cpy_loop_time) > 2000)
+	      {
+	        /* update statistics */
+	        lazy_statistics_update(cpy_loop_time);
+	        
+	        /* check conditions */
+	        copy_continue = lazy_condition_check();
+	        
+	        /* update check loop */
+	        cpy_loop_time = ss_millitime();
+	        
+	        /* yield quickly */
+	        status = cm_yield(1);
+	        if (status == RPC_SHUTDOWN || status == SS_ABORT)
+	          cm_msg(MINFO,"Lazy","Abort postponed until end of copy %d[%]",lazyst.progress);
+   	    }
       } /* get physrec */
       else
-	break;
+	      break;
     } /* copy_continue */
     else
     { /* !copy_continue */
       status = cm_yield(1000);
       if (status == RPC_SHUTDOWN || status == SS_ABORT)
-	return FORCE_EXIT;
+      	return FORCE_EXIT;
       if ((ss_millitime() - no_cpy_last_time) > 5000)
       {
-	copy_continue = lazy_condition_check();
-	no_cpy_last_time = ss_millitime();
+	      copy_continue = lazy_condition_check();
+	      no_cpy_last_time = ss_millitime();
       }
     } /* !copy_continue */
   } /* while forever */
@@ -880,7 +938,7 @@ INT lazy_copy( char * outfile, char * infile)
   
   /* close input data file */   
   yb_any_file_wclose(hDev, dev_type, data_fmt);
-  
+
   /* request exit */
   return 0;
 }
@@ -917,13 +975,13 @@ BOOL lazy_file_exists(char * dir, char * file)
 }
 
 /*------------------------------------------------------------------*/
-INT lazy_main (HNDLE hDB, HNDLE hKey)
+INT lazy_main (INT channel, LAZY_INFO * pLall)
 /********************************************************************\
   Routine: lazy_main
   Purpose: check if backup is necessary...
   Input:
    HNDLE hDB   Database handle (not used here but could be hot linked)
-   HNDLE hKey  Key handle (not used here but could be hot linked)
+   HNDLE hKey  Key handle of the current Lazy_xxx
   Output:
   Function value:
 \********************************************************************/
@@ -932,7 +990,10 @@ INT lazy_main (HNDLE hDB, HNDLE hKey)
   double freepercent, svfree;
   char pufile[MAX_FILE_PATH], inffile[MAX_FILE_PATH], outffile[MAX_FILE_PATH];
   BOOL donepurge;
+  LAZY_INFO * pLch;
 
+  /* current channel */
+  pLch = &pLall[channel];
   
   /* extract Data format from the struct */
   if (equal_ustring(lazy.format, "YBOS"))
@@ -981,42 +1042,41 @@ INT lazy_main (HNDLE hDB, HNDLE hKey)
       full_bck_flag = FALSE;
       size = sizeof(lazyst);
       memset(&lazyst,0,size);
-      if (db_find_key(hDB, 0, "/Lazy/Statistics",&hKeyst) == DB_SUCCESS)
-	status = db_set_record(hDB, hKeyst, &lazyst, size, 0);
+      if (db_find_key(hDB, pLch->hKey, "Statistics",&hKeyst) == DB_SUCCESS)
+      	status = db_set_record(hDB, hKeyst, &lazyst, size, 0);
       else
-	cm_msg(MERROR,"Lazy","did not find /Lazy/Statistics for zapping");
+	      cm_msg(MERROR,"lazy_main","did not find /Lazy/Lazy_%s/Statistics for zapping", pLch->name);
     }
   }
   /* check if data dir is none empty */
   if (lazy.dir[0] == '\0')
-    {
-      cm_msg(MINFO,"Lazy","Please setup Dir data for input source path!");
-      return NOTHING_TODO;
-    }
+  {
+    cm_msg(MINFO,"Lazy","Please setup Dir data for input source path!");
+    return NOTHING_TODO;
+  }
 
   /* check if device path is set */
   if (lazy.path[0] == '\0')
-    {
-      cm_msg(MINFO,"Lazy","Please setup backup device path too!");
-      return NOTHING_TODO;
-    }
+  {
+    cm_msg(MINFO,"Lazy","Please setup backup device path too!");
+    return NOTHING_TODO;
+  }
   
    /* build logger dir listing */
   pdirlog = malloc(sizeof(DIRLOG));
   build_log_list(lazy.backfmt, lazy.dir, &pdirlog);
   
-  /* sort logger list following the run number criteria */
-  sort_log_list(pdirlog);
-  
   /* build donelist comparing pdirlog and /Lazy/List */
   pdonelist = malloc(sizeof(INT));
-  build_donelist(&pdonelist);
-
-  /* sort /lazy/list run # criteria*/
-  sort_donelist(pdonelist);
+  build_done_list(pLch->hKey, &pdonelist);
   
   /* compare list : run NOT in donelist AND run in dirlog */
   tobe_backup = cmp_log2donelist (pdirlog, pdonelist);
+  /* cleanup memory */
+  if (pdirlog != NULL)   free (pdirlog);
+  if (pdonelist != NULL) free (pdonelist);
+  (void *)pdonelist = (void *)pdirlog = NULL;
+
   if (tobe_backup < 0)
     return NOTHING_TODO;
   
@@ -1033,53 +1093,67 @@ INT lazy_main (HNDLE hDB, HNDLE hKey)
   
   /* check SPACE and purge if necessary = % (1:99) */
   if (lazy.pupercent > 0)
-    {
-      /* cleanup memory */
-      donepurge = FALSE;
-      svfree = freepercent = 100. * ss_disk_free(lazy.dir) / ss_disk_size(lazy.dir);
-      while (freepercent <= (double)lazy.pupercent)
-        {
-          /* rebuild dir listing */
-          build_log_list(lazy.backfmt, lazy.dir, &pdirlog);
-          
-          /* rebuild donelist */
-          build_donelist(&pdonelist);
-          
-          /* search file to purge : run in donelist AND run in dirlog */
-          if (lazy_select_purge(pdirlog, pdonelist, pufile, &purun) == 0)
-            {
-                /* check if beyond keep file + 1 */
-                if (purun < (cur_acq_run - abs(lazy.staybehind) - 1 ))
-                  {
-                    /* remove file */
-                    if ((status = ss_file_remove(pufile)) == 0)
-                      {
-                        status = lazy_log_update(REMOVE_FILE, 0, purun, NULL, pufile);
-                        donepurge = TRUE;
+  {
+    pdirlog = malloc(sizeof(DIRLOG));
+    /* cleanup memory */
+    donepurge = FALSE;
+    svfree = freepercent = 100. * ss_disk_free(lazy.dir) / ss_disk_size(lazy.dir);
 
-                        /* update donelist (remove run entry as the file has been deleted */
-                        if ((status=lazy_remove_entry(purun)) != 0)
-                          cm_msg(MERROR, "Lazy","remove_entry not performed %d",status);
-                      }
-                    else
-                        cm_msg(MERROR, "Lazy","ss_file_remove not performed %d",status);
-                  }
-                freepercent = 100. * ss_disk_free(lazy.dir) / ss_disk_size(lazy.dir);
-                if (svfree == freepercent)
-                  break;
-            }
-            else
-            {
-              if (donepurge)
-                cm_msg(MINFO,"Lazy","Can't purge more for now!");
-              break;
-            }
-        }
+    /***** Lock other clients out of this following code as
+           it may access the other client info tree   *****/
+    status = ss_mutex_wait_for(lazy_mutex, 5000);
+    if (status != SS_SUCCESS)
+    {
+      /* exit for now and come back later */
+      if (pdirlog != NULL)   free (pdirlog);
+      if (pdonelist != NULL) free (pdonelist);
+      return NOTHING_TODO;
     }
+      
+    while (freepercent <= (double)lazy.pupercent)
+    {
+      /* rebuild dir listing */
+      build_log_list(lazy.backfmt, lazy.dir, &pdirlog);
+
+      /* search file to purge : run in donelist AND run in dirlog */
+      if (lazy_select_purge(pLch->hKey, pLall, pdirlog, pufile, &purun) == 0)
+      {
+        /* check if beyond keep file + 1 */
+        if (purun < (cur_acq_run - abs(lazy.staybehind) - 1 ))
+        {
+          /* remove file */
+          if ((status = ss_file_remove(pufile)) == 0)
+          {
+            status = lazy_log_update(REMOVE_FILE, 0, purun, NULL, pufile);
+            donepurge = TRUE;
+
+            /* update donelist (remove run entry as the file has been deleted */
+            if ((status=lazy_remove_entry(channel, pLall, purun)) != 0)
+              cm_msg(MERROR, "Lazy","remove_entry not performed %d",status);
+          }
+          else
+            cm_msg(MERROR, "Lazy","ss_file_remove not performed %d",status);
+        }
+        freepercent = 100. * ss_disk_free(lazy.dir) / ss_disk_size(lazy.dir);
+        if (svfree == freepercent)
+          break;
+      }
+      else
+      {
+        if (donepurge)
+          cm_msg(MINFO,"Lazy","Can't purge more for now!");
+        break;
+      }
+    }
+
+    /***** Release the mutex  *****/
+    status = ss_mutex_release(lazy_mutex);
+  }
   
   /* cleanup memory */
-  free (pdirlog);
-  free (pdonelist);
+  if (pdirlog != NULL)   free (pdirlog);
+  if (pdonelist != NULL) free (pdonelist);
+  (void *)pdonelist = (void *)pdirlog = NULL;
   
   /* check if backup run is beyond keep */
   if (lazyst.cur_run >= (cur_acq_run - abs(lazy.staybehind)))
@@ -1096,64 +1170,67 @@ INT lazy_main (HNDLE hDB, HNDLE hKey)
 
   /* Check again if the backup file is present in the logger dir */
   if (lazy_file_exists(lazy.dir, lazyst.backfile))
+  {
+    /* check if space on backup device */
+    if (lazy.capacity < (lazyst.cur_dev_size + lazyst.file_size))
     {
-      /* check if space on backup device */
-      if (lazy.capacity < (lazyst.cur_dev_size + lazyst.file_size))
-        {
-          /* not enough space => reset list label */
-          lazy.backlabel[0]='\0';
-          size = sizeof(lazy.backlabel);
-          db_set_value (hDB, 0, "/Lazy/Settings/List label"
-                        , lazy.backlabel, size, 1, TID_STRING);
-
-	  full_bck_flag = TRUE;
-          cm_msg(MINFO,"Lazy","Not enough space for next copy on backup device!");
-          return NOTHING_TODO;
-        }
-      
-     
-      /* compose the destination file name */
-      if (dev_type == LOG_TYPE_DISK)
-        {
-          if (lazy.path[0] != 0)
-            if (lazy.path[strlen(lazy.path)-1] != DIR_SEPARATOR)
-              strcat(lazy.path, DIR_SEPARATOR_STR);
-          strcpy(outffile, lazy.path); 
-          strcat(outffile, lazyst.backfile);
-        }
-      else if(dev_type == LOG_TYPE_TAPE)
-          strcpy(outffile, lazy.path); 
-      else if(dev_type == LOG_TYPE_FTP)
-        {
-          if (lazy.path[0] != 0)
-            if (lazy.path[strlen(lazy.path)-1] != DIR_SEPARATOR)
-              strcat(lazy.path, DIR_SEPARATOR_STR);
-          strcpy(outffile, lazy.path); 
-          strcat(outffile, ",");
-	  strcat(outffile, lazyst.backfile);
-        }
-            
-      /* Finally do the copy */
-      if ((status = lazy_copy(outffile, inffile)) != 0)
-        {
-          if (status == FORCE_EXIT)
-            return status;
-          cm_msg(MERROR,"Lazy","copy failed -%s-%s-%i",lazy.path, lazyst.backfile, status);
-          return NOTHING_TODO;
-        }
-    } /* file exists */
-  else
-    {
-      cm_msg(MERROR,"Lazy","lazy_file_exists file %s doesn't exists",lazyst.backfile);
-      return NOTHING_TODO;
-    }              
-  
-  /* Update the list */
-  if ((status = lazy_update_list()) != DB_SUCCESS)
-    {
-      cm_msg(MERROR,"Lazy","lazy_update failed");
+      /* not enough space => reset list label */
+      lazy.backlabel[0]='\0';
+      size = sizeof(lazy.backlabel);
+      db_set_value (hDB, pLch->hKey, "Settings/List label"
+                    , lazy.backlabel, size, 1, TID_STRING);
+      full_bck_flag = TRUE;
+      cm_msg(MINFO,"Lazy","Not enough space for next copy on backup device!");
+      lazy.alarm[0] = 0;
+      size = sizeof(lazy.alarm);
+      db_get_value(hDB, pLch->hKey,  "Settings/Alarm Class", lazy.alarm, &size, TID_STRING);
+      if (lazy.alarm[0])
+        al_trigger_class(lazy.alarm, "Tape full, Please rewind current tape and load new one!", TRUE);
       return NOTHING_TODO;
     }
+    
+    /* compose the destination file name */
+    if (dev_type == LOG_TYPE_DISK)
+    {
+      if (lazy.path[0] != 0)
+        if (lazy.path[strlen(lazy.path)-1] != DIR_SEPARATOR)
+          strcat(lazy.path, DIR_SEPARATOR_STR);
+      strcpy(outffile, lazy.path); 
+      strcat(outffile, lazyst.backfile);
+    }
+    else if(dev_type == LOG_TYPE_TAPE)
+      strcpy(outffile, lazy.path); 
+    else if(dev_type == LOG_TYPE_FTP)
+    {
+      if (lazy.path[0] != 0)
+        if (lazy.path[strlen(lazy.path)-1] != DIR_SEPARATOR)
+          strcat(lazy.path, DIR_SEPARATOR_STR);
+      strcpy(outffile, lazy.path); 
+      strcat(outffile, ",");
+      strcat(outffile, lazyst.backfile);
+    }
+          
+    /* Finally do the copy */
+    if ((status = lazy_copy(outffile, inffile)) != 0)
+    {
+      if (status == FORCE_EXIT)
+        return status;
+      cm_msg(MERROR,"Lazy","copy failed -%s-%s-%i",lazy.path, lazyst.backfile, status);
+      return NOTHING_TODO;
+    }
+  } /* file exists */
+  else
+  {
+    cm_msg(MERROR,"Lazy","lazy_file_exists file %s doesn't exists",lazyst.backfile);
+    return NOTHING_TODO;
+  }              
+
+  /* Update the list */
+  if ((status = lazy_update_list(pLch)) != DB_SUCCESS)
+  {
+    cm_msg(MERROR,"Lazy","lazy_update failed");
+    return NOTHING_TODO;
+  }
   return NOTHING_TODO;
 }
 
@@ -1177,57 +1254,58 @@ int main(unsigned int argc,char **argv)
   
   /* get parameters */
   for (i=1 ; i<argc ; i++)
+  {
+    if (argv[i][0] == '-' && argv[i][1] == 'd')
+      debug = TRUE;
+    else if (strncmp(argv[i],"-z",2) == 0)
+      zap_flag = TRUE;
+    else if (strncmp(argv[i],"-t",2) == 0)
+      msg_flag = TRUE;
+    else if (argv[i][0] == '-')
     {
-      if (argv[i][0] == '-' && argv[i][1] == 'd')
-        debug = TRUE;
-      else if (strncmp(argv[i],"-z",2) == 0)
-        zap_flag = TRUE;
-      else if (strncmp(argv[i],"-t",2) == 0)
-        msg_flag = TRUE;
-      else if (argv[i][0] == '-')
-        {
-          if (i+1 >= argc || argv[i+1][0] == '-')
-            goto usage;
-          if (strncmp(argv[i],"-e",2) == 0)
-            strcpy(expt_name, argv[++i]);
-          else if (strncmp(argv[i],"-h",2)==0)
-            strcpy(host_name, argv[++i]);
-        }
-      else
-        {
-        usage:
-        printf("usage: lazylogger [-h <Hostname>] [-e <Experiment>]\n");
-        printf("                  [-z zap statistics] [-t (talk msg)\n\n");
-        printf(" Quick man :\n");
-        printf(" The Lazy/Settings tree is composed of the following parameters:\n");
-        printf(" Maintain free space [%](0): purge source device to maintain free space on the source directory\n");
-        printf("                       (0) : no purge      \n");
-        printf(" Stay behind  (-3)         : If negative number : lazylog runs starting from the OLDEST\n");
-        printf("                              run file sitting in the 'Dir data' to the current acquisition\n");
-        printf("                              run minus the 'Stay behind number'\n");
-        printf("                             If positive number : lazylog starts from the current\n");
-        printf("                              acquisition run minus 'Stay behind number' \n");
-        printf(" Running condition          : active/deactive lazylogger under given condition i.e:\n");
-        printf("                            'ALWAYS' (default)     : Independent of the ACQ state ...\n");
-        printf("                            'NEVER'                : ...\n");
-        printf("                            'WHILE_ACQ_NOT_RUNNING': ...\n");
-        printf("                            '/alias/max_rate < 200'    (max_rate is a link)\n");
-        printf("                            '/equipment/scaler/variables/scal[4] < 23.45'\n");
-        printf("                            '/equipment/trigger/statistics/events per sec. < 400'\n");
-        printf(" Data dir                  : Directory of the run to be lazylogged \n");
-        printf(" Data format               : Data format (YBOS/MIDAS)\n");
-        printf(" Filename format           : Run format i.e. run%05d.mid \n");
-        printf(" List label                : Label of destination save_set.\n");
-        printf("                             Prevent lazylogger to run if not given.\n");
-        printf("                             Will be reset if maximum capacity reached.\n");
-        printf(" Backup type               : Destination device type (Disk, Tape, FTP)\n");
-        printf(" Path                      : Destination path (file.ext, /dev/nst0, ftp...)\n");
-        printf("                             in case of FTP type, the 'Path' entry should be:\n");
-        printf("                             host, port, user, password, directory, run%05d.mid\n");
-        printf(" Capacity (KBytes)         : Maximum capacity of the destination device.\n");
-         return 0;
-        }
+      if (i+1 >= argc || argv[i+1][0] == '-')
+        goto usage;
+      if (strncmp(argv[i],"-e",2) == 0)
+        strcpy(expt_name, argv[++i]);
+      else if (strncmp(argv[i],"-h",2)==0)
+        strcpy(host_name, argv[++i]);
     }
+    else
+    {
+    usage:
+    printf("usage: lazylogger [-h <Hostname>] [-e <Experiment>]\n");
+    printf("                  [-z zap statistics] [-t (talk msg)\n\n");
+    printf(" Quick man :\n");
+    printf(" The Lazy/Settings tree is composed of the following parameters:\n");
+    printf(" Maintain free space [%](0): purge source device to maintain free space on the source directory\n");
+    printf("                       (0) : no purge      \n");
+    printf(" Stay behind  (-3)         : If negative number : lazylog runs starting from the OLDEST\n");
+    printf("                              run file sitting in the 'Dir data' to the current acquisition\n");
+    printf("                              run minus the 'Stay behind number'\n");
+    printf("                             If positive number : lazylog starts from the current\n");
+    printf("                              acquisition run minus 'Stay behind number' \n");
+    printf(" Alarm Class               : Specify the Class to be used in case of Tape Full condition\n");
+    printf(" Running condition         : active/deactive lazylogger under given condition i.e:\n");
+    printf("                            'ALWAYS' (default)     : Independent of the ACQ state ...\n");
+    printf("                            'NEVER'                : ...\n");
+    printf("                            'WHILE_ACQ_NOT_RUNNING': ...\n");
+    printf("                            '/alias/max_rate < 200'    (max_rate is a link)\n");
+    printf("                            '/equipment/scaler/variables/scal[4] < 23.45'\n");
+    printf("                            '/equipment/trigger/statistics/events per sec. < 400'\n");
+    printf(" Data dir                  : Directory of the run to be lazylogged \n");
+    printf(" Data format               : Data format (YBOS/MIDAS)\n");
+    printf(" Filename format           : Run format i.e. run%05d.mid \n");
+    printf(" List label                : Label of destination save_set.\n");
+    printf("                             Prevent lazylogger to run if not given.\n");
+    printf("                             Will be reset if maximum capacity reached.\n");
+    printf(" Backup type               : Destination device type (Disk, Tape, FTP)\n");
+    printf(" Path                      : Destination path (file.ext, /dev/nst0, ftp...)\n");
+    printf("                             in case of FTP type, the 'Path' entry should be:\n");
+    printf("                             host, port, user, password, directory, run%05d.mid\n");
+    printf(" Capacity (KBytes)         : Maximum capacity of the destination device.\n");
+     return 0;
+    }
+  }
 
   /* Handle SIGPIPE signals generated from errors on the pipe */
 #ifdef SIGPIPE  
@@ -1235,54 +1313,149 @@ int main(unsigned int argc,char **argv)
 #endif
   
   /* connect to experiment */
-  status = cm_connect_experiment(host_name, expt_name, "LazyLogger", 0);
+  status = cm_connect_experiment(host_name, expt_name, "LazyChecker", 0);
   if (status != CM_SUCCESS)
     return 1;
+
+  /* create a common mutex for the independent lazylogger */
+  status = ss_mutex_create("LAZY", &lazy_mutex);
+
+  /* check lazy status for multiple clients */
+  cm_get_experiment_database(&hDB, &hKey);
+  if (db_find_key(hDB, 0, "/Lazy", &hKey) == DB_SUCCESS)
+  {
+    HNDLE hSubkey;
+    KEY key;
+    char strclient[32];
+    INT  j=0;
+    for (i=0 ; ; i++)
+    {
+	    db_enum_key(hDB, hKey, i, &hSubkey);
+	    if (!hSubkey)
+	      break;
+	    db_get_key(hDB, hSubkey, &key);
+	    if (key.type == TID_KEY)
+	    {
+        /* compose client name */
+        sprintf(strclient, "Lazy_%s", key.name);
+        if (cm_exist(strclient,TRUE) == CM_SUCCESS)
+          lazyinfo[j].active = TRUE;
+        else
+          lazyinfo[j].active = FALSE;
+        strcpy(lazyinfo[j].name, key.name);
+        lazyinfo[j].hKey = hSubkey;
+        j++;
+      }
+    }
+  }  
+else
+  {
+    char str[32];
+    /* create/update settings */	
+    channel = 0;
+    sprintf(str, "/Lazy/%s/Settings", lazyinfo[channel].name);
+    db_create_record(hDB, 0, str, LAZY_SETTINGS_STRING);
+  }
+  /* Selection of client */
+  {
+    INT i, j;
+    char str[32];
+
+    if (lazyinfo[0].hKey)
+    {
+      printf(" Available lazy to connect to\n");
+      i=0;
+      j=1;
+      while (lazyinfo[i].hKey)
+        {
+          if (!lazyinfo[i].active)
+            printf("%d) Lazy %s \n", j, lazyinfo[i].name);
+          else 
+            printf(".) Lazy %s already active\n", lazyinfo[i].name);
+          j++; i++;
+        }
+      printf("Enter client number or new lazy client name: ");
+      i = atoi(ss_gets(str, 32));
+      if (i == 0)
+        { /* new entry */
+          char strclient[32];
+          for (j=0 ; j < MAX_LAZY_CHANNEL; j++)
+            {
+              if (lazyinfo[j].hKey == 0)
+                {
+                  /* compose client name */
+                  sprintf(strclient, "Lazy_%s", str);
+                  if (cm_exist(strclient,TRUE) == CM_SUCCESS)
+                    lazyinfo[j].active = TRUE;
+                  else
+                    lazyinfo[j].active = FALSE;
+                  strcpy(lazyinfo[j].name, str);
+                  lazyinfo[j].hKey = 0;
+                  channel = j;
+                  break;
+                }
+            }
+        }
+      else if (!lazyinfo[i-1].active)
+        channel = i-1;
+      else
+        channel = -1;
+    }
+
+  if ((channel < 0) && (lazyinfo[channel].hKey != 0))
+    goto error;
+  if (channel < 0)
+    channel = 0;
+
+  {
+    char str[128];
+
+    if (lazyinfo[channel].hKey == 0)
+      printf(" Creating Lazy channel %s\n", lazyinfo[channel].name);
+    
+    /* create/update settings */	
+    sprintf(str, "/Lazy/%s/Settings", lazyinfo[channel].name);
+    db_create_record(hDB, 0, str, LAZY_SETTINGS_STRING);
+    /* create/update statistics */
+    sprintf(str, "/Lazy/%s/Statistics", lazyinfo[channel].name);
+    db_create_record(hDB, 0, str, LAZY_STATISTICS_STRING);
+    sprintf(str, "/Lazy/%s", lazyinfo[channel].name);
+    db_find_key(hDB, 0, str, &lazyinfo[channel].hKey);
+  }
+}
+  /* disconnect  from expriment */
+  cm_disconnect_experiment();
   
+  /* reconnect to experiment with proper name */
+  {
+    char str[32];
+    sprintf(str, "Lazy_%s", lazyinfo[channel].name);
+    status = cm_connect_experiment(host_name, expt_name, str, 0);
+  }
+  if (status != CM_SUCCESS)
+    goto error;
+
+  cm_get_experiment_database(&hDB, &hKey);
+
   /* turn on keepalive messages with increased timeout */
   if (debug)
     cm_set_watchdog_params(TRUE, 0);
   else
     cm_set_watchdog_params(TRUE, 60000);
   
-  cm_get_experiment_database(&hDB, &hKey);
   
-  /* need to cleanup previous lazy in order to make sure the open record
-  is attached correctly */
-  if (cm_exist("lazylogger",FALSE))
-    {
-      HNDLE hBuf;
-      bm_open_buffer(EVENT_BUFFER_NAME, EVENT_BUFFER_SIZE, &hBuf);
-      cm_cleanup();
-      bm_close_buffer(hBuf);
-    }
+  printf("Lazy_%s starting... ""!"" to exit \n", lazyinfo[channel].name);
 
-  printf("Lazylogger starting... ""!"" to exit \n");
-
-  if (db_find_key(hDB,0,"/Lazy", &hKey) == DB_SUCCESS)
-    {
-      /* create/update settings */	
-      db_create_record(hDB, hKey, "Settings", LAZY_SETTINGS_STRING);
-      /* create/update statistics */
-      db_create_record(hDB, hKey, "Statistics", LAZY_STATISTICS_STRING);
-    }
-  else
-    {
-      /* create/update settings */	
-      db_create_record(hDB, 0, "/Lazy/Settings", LAZY_SETTINGS_STRING);
-      /* create/update statistics */
-      db_create_record(hDB, 0, "/Lazy/Statistics", LAZY_STATISTICS_STRING);
-    }
   if (zap_flag)
     {
       /* reset the statistics */
-      cm_msg(MINFO,"lazy","zapping /lazy/statistics content");
+      cm_msg(MINFO,"lazy","zapping %s/statistics content", lazyinfo[channel].name);
       size = sizeof(lazyst);
       memset(&lazyst,0,size);
-      if (db_find_key(hDB, 0, "/Lazy/Statistics",&hKeyst) == DB_SUCCESS)
+      if (db_find_key(hDB, lazyinfo[channel].hKey, "Statistics",&hKeyst) == DB_SUCCESS)
         status = db_set_record(hDB, hKeyst, &lazyst, size, 0);
       else
-        cm_msg(MERROR,"Lazy","did not find /Lazy/Statistics for zapping");
+        cm_msg(MERROR,"Lazy","did not find %s/Statistics for zapping", lazyinfo[channel].name);
     }
   
   /* get value once & hot links the run state */
@@ -1295,18 +1468,18 @@ int main(unsigned int argc,char **argv)
   }
   /* hot link for statistics in write mode */
   size = sizeof(lazyst);
-  if (db_find_key(hDB,0,"/Lazy/Statistics",&hKey) == DB_SUCCESS)
+  if (db_find_key(hDB,lazyinfo[channel].hKey,"Statistics",&hKey) == DB_SUCCESS)
     db_get_record(hDB, hKey, &lazyst, &size, 0);
   status = db_open_record(hDB, hKey, &lazyst, sizeof(lazyst), MODE_WRITE, NULL, NULL);
   if (status != DB_SUCCESS){
-    cm_msg(MERROR, "lazy/statistics", "cannot open variable record");
+    cm_msg(MERROR, "%s/Statistics", "cannot open variable record", lazyinfo[channel].name);
   }
   /* get /settings once & hot link settings in read mode */
-  db_find_key(hDB,0,"/Lazy/Settings",&hKey);
+  db_find_key(hDB,lazyinfo[channel].hKey,"Settings",&hKey);
   size = sizeof(lazy);
   status = db_open_record(hDB, hKey, &lazy, sizeof(lazy), MODE_READ, NULL, NULL);
   if (status != DB_SUCCESS){
-    cm_msg(MERROR, "lazy/settings", "cannot open variable record");
+    cm_msg(MERROR, "%s/Settings", "cannot open variable record", lazyinfo[channel].name);
   }
 
   /* set Data dir from /logger if local is empty & /logger exists */
@@ -1315,7 +1488,7 @@ int main(unsigned int argc,char **argv)
   {
     size = sizeof(lazy.dir);
     db_get_data(hDB, hKey, lazy.dir, &size, TID_STRING);
-    db_set_value(hDB, 0, "/Lazy/Settings/Data dir", lazy.dir, size, 1, TID_STRING);
+    db_set_value(hDB, lazyinfo[channel].hKey, "Settings/Data dir", lazy.dir, size, 1, TID_STRING);
   }
 
   mainlast_time = 0;
@@ -1327,7 +1500,7 @@ int main(unsigned int argc,char **argv)
       msg = cm_yield(2000);
       if ((ss_millitime() - mainlast_time) > 10000)
         {
-          status = lazy_main( hDB, hKey );
+          status = lazy_main(channel, &lazyinfo[0]);
           mainlast_time = ss_millitime();
         }      
       ch = 0;
@@ -1340,7 +1513,8 @@ int main(unsigned int argc,char **argv)
           break;
         }
      } while (msg != RPC_SHUTDOWN && msg != SS_ABORT && ch != '!');
-  cm_disconnect_experiment();
+error:
+    cm_disconnect_experiment();
   return 1;
 }
 
