@@ -6,6 +6,9 @@
  *         amaudruz@triumf.ca                            Local:           6234
  * ---------------------------------------------------------------------------
    $Log$
+   Revision 1.51  2003/04/17 16:53:35  pierre
+   fix tape return code for WINNT
+
    Revision 1.50  2003/04/16 05:45:21  pierre
    fix EOD return , add -DLARGEFILE64_SOURCE support
 
@@ -1441,21 +1444,28 @@ error, success
   {
     /* writing EOF mark on tape only */
     status = ss_tape_write_eof(handle);
-    if (status != SS_SUCCESS)
+#ifdef OS_UNIX
+      if (status != SS_SUCCESS)
       {
-      if (errno == EIO)
-	return SS_IO_ERROR;
-      if (errno ==  ENOSPC)
-	return SS_NO_SPACE; 
-      else
-	return status;
+        if (errno == EIO)
+          return SS_IO_ERROR;
+        if (errno ==  ENOSPC)
+          return SS_NO_SPACE; 
+        else
+          return status;
       }
-    
-    /*-PAA- Done by odb>rewind if enable with "extra eof before rewind"
-    ss_tape_write_eof(handle);
-    ss_tape_fskip(handle, -1);
-    */
-    ss_tape_close(handle);
+#endif
+#ifdef OS_WINNT
+      if (status != SS_SUCCESS)
+      {
+        if (errno ==  ERROR_END_OF_MEDIA)
+          return SS_NO_SPACE; 
+        else
+          return status;
+      }
+#endif
+
+      ss_tape_close(handle);
   }
   else if (type == LOG_TYPE_DISK)
   {
@@ -2009,7 +2019,7 @@ SS_SUCCESS         Ok
       if (errno == EIO)
         return SS_IO_ERROR;
       if (errno ==  ENOSPC)
-	return SS_NO_SPACE;
+    return SS_NO_SPACE;
       else
         return SS_TAPE_ERROR;
     }
