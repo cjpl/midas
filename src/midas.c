@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.138  2001/10/25 22:18:48  pierre
+  added doc++ comments
+
   Revision 1.137  2001/10/05 22:35:46  pierre
   - change doc \_ to _
   - Change MALLOC to M_MALLOC, FREE to M_FREE macros.
@@ -2049,7 +2052,7 @@ HNDLE hDB, hKey;
 }
 
 /*------------------------------------------------------------------*/
-/** cm_get_environment()
+/** @name cm_get_environment()
     \begin{description}
     \item[Description:] Returns MIDAS environment variables.
     \item[Remarks:] This function can be used to evaluate the standard MIDAS
@@ -2125,7 +2128,7 @@ void cm_check_connect(void)
 
 /*------------------------------------------------------------------*/
 
-/** cm_connect_experiment()
+/** @name cm_connect_experiment()
     \begin{description}
     \item[Description:] This function connects to an existing MIDAS experiment.
     This must be the first call in a MIDAS application.
@@ -2740,7 +2743,7 @@ INT cm_disconnect_client(HNDLE hConn, BOOL bShutdown)
 }
 
 /*------------------------------------------------------------------*/
-/** cm_disconnect_experiment()
+/** @name cm_disconnect_experiment()
     \begin{description}
     \item[Description:] Disconnect from a MIDAS experiment.
     \item[Remarks:] Should be the last call to a MIDAS library function in an
@@ -2889,26 +2892,31 @@ INT cm_set_experiment_mutex(INT mutex_alarm, INT mutex_elog)
 }
 
 /*------------------------------------------------------------------*/
-
+/** @name cm_get_experiment_database()
+\begin{description}
+\item[Description:] Get the handle to the ODB from the currently connected
+experiment.
+\item[Remarks:] This function returns the handle of the online database (ODB) which
+can be used in future db_xxx() calls. The hkeyclient key handle can be used
+to access the client information in the ODB. If the client key handle is not needed,
+the parameter can be NULL.
+\item[Example:] \begin{verbatim}
+ HNDLE hDB, hkeyclient;
+ char  name[32];
+ int   size;
+ db_get_experiment_database(&hdb, &hkeyclient);
+ size = sizeof(name);
+ db_get_value(hdb, hkeyclient, "Name", name, &size, TID_STRING);
+ printf("My name is %s\n", name);
+\end{verbatim}
+\end{description}
+@memo  Get the handle to the ODB
+@param hDB Database handle.
+@param hKeyClient Handle for key where search starts, zero for root.
+@param key_name Name of key to search, can contain directories.
+@return CM_SUCCESS
+*/
 INT cm_get_experiment_database(HNDLE *hDB, HNDLE *hKeyClient)
-/********************************************************************\
-
-  Routine: cm_get_experiment_database
-
-  Purpose: Get the handle to the ODB from the currently connected
-           experiment
-
-  Input:
-    none
-
-  Output:
-    HNDLE  *hDB             Database handle
-    HNDLE  *hKeyClient      Key handle of client structure
-
-  Function value:
-    CM_SUCCESS              Successful completion
-
-\********************************************************************/
 {
   if (_hDB)
     {
@@ -3275,7 +3283,7 @@ HNDLE hDB, hKey;
 }
 
 /*------------------------------------------------------------------*/
-/** cm_register_transition
+/** @name cm_register_transition
     \begin{description}
     \item[Description:] Registers a callback function for run transitions.
     \item[Remarks:] This function internally registers the transition callback
@@ -4253,7 +4261,7 @@ INT bm_match_event(short int event_id, short int trigger_mask,
 }
 
 /*------------------------------------------------------------------*/
-/** bm_open_buffer()
+/** @name bm_open_buffer()
     \begin{description}
     \item[Description:] Open an event buffer.
     \item[Remarks:] Two default buffers are created by the system.
@@ -4541,7 +4549,7 @@ BUFFER_HEADER        *pheader;
 }
 
 /*------------------------------------------------------------------*/
-/** bm_close_buffer()
+/** @name bm_close_buffer()
     \begin{description}
     \item[Description:] Closes an event buffer previously opened with
     \Ref{bm_open_buffer()}.
@@ -5547,11 +5555,13 @@ INT bm_init_buffer_counters(INT buffer_handle)
 
 /*------------------------------------------------------------------*/
 
-/** bm_set_cache_size()
+/** @name bm_set_cache_size()
     \begin{description}
     \item[Description:] Modifies buffer cache size.
-    \item[Remarks:] Without a buffer cache, events are copied to/from the shared memory event
-    by event. To protect processed from accessing the shared memory simultaneously,
+    \item[Remarks:] Without a buffer cache, events are copied to/from the shared
+    memory event by event.
+
+    To protect processed from accessing the shared memory simultaneously,
     semaphores are used. Since semaphore operations are CPU consuming (typically
     50-100us) this can slow down the data transfer especially for small events.
     By using a cache the number of semaphore operations is reduced dramatically.
@@ -5648,7 +5658,7 @@ BUFFER        *pbuf;
 }
 
 /*------------------------------------------------------------------*/
-/** bm_compose_event()
+/** @name bm_compose_event()
     \begin{description}
     \item[Description:] Compose a Midas event header.
     \item[Remarks:] An event header can usually be set-up manually or
@@ -5813,7 +5823,7 @@ BUFFER_CLIENT *pclient;
 }
 
 /*------------------------------------------------------------------*/
-/** bm_request_event()
+/** @name bm_request_event()
     \begin{description}
     \item[Description:] Place an event request based on certain characteristics.
     \item[Remarks:] Multiple event requests can be placed for each buffer, which
@@ -6001,7 +6011,7 @@ BUFFER_CLIENT *pclient;
 }
 
 /*------------------------------------------------------------------*/
-/** bm_delete_request()
+/** @name bm_delete_request()
     \begin{description}
     \item[Description:] Deletes an event request previously done with
     \Ref{bm_request_event()}.
@@ -6030,7 +6040,7 @@ INT bm_delete_request(INT request_id)
 }
 
 /*------------------------------------------------------------------*/
-/** bm_send_event()
+/** @name bm_send_event()
     \begin{description}
     \item[Description:] Sends an event to a buffer.
     \item[Remarks:] This function check if the buffer has enough space for the
@@ -6455,7 +6465,7 @@ char            str[80];
 }
 
 /*------------------------------------------------------------------*/
-/** bm_flush_cache()
+/** @name bm_flush_cache()
     \begin{description}
     \item[Description:] Empty write cache.
     \item[Remarks:] This function should be used if events in the write cache
@@ -6808,7 +6818,7 @@ char            str[80];
 }
 
 /*------------------------------------------------------------------*/
-/** bm_receive_event()
+/** @name bm_receive_event()
     \begin{description}
     \item[Description:] Receives events directly.
     \item[Remarks:] This function is an alternative way to receive events without
@@ -7900,7 +7910,7 @@ static BOOL          bMoreLast = FALSE;
 }
 
 /*------------------------------------------------------------------*/
-/** bm_empty_buffers()
+/** @name bm_empty_buffers()
     \begin{description}
     \item[Description:] Clears event buffer and cache.
     \item[Remarks:]If an event buffer is large and a consumer is slow in analyzing
@@ -12836,7 +12846,7 @@ exit:
 \********************************************************************/
 
 /*------------------------------------------------------------------*/
-/** bk_init()
+/** @name bk_init()
     \begin{description}
     \item[Description:] Initializes an event for Midas banks structure.
     \item[Remarks:] Before banks can be created in an event, bk_init()
@@ -12876,7 +12886,7 @@ BOOL bk_is32(void *event)
 }
 
 /*------------------------------------------------------------------*/
-/** bk_init32()
+/** @name bk_init32()
     \begin{description}
     \item[Description:] Initializes an event for Midas banks structure for large.
     bank size (> 32KBytes)
@@ -12894,7 +12904,7 @@ void bk_init32(void *event)
 }
 
 /*------------------------------------------------------------------*/
-/** bk_size()
+/** @name bk_size()
     \begin{description}
     \item[Description:] Returns the size of an event containing banks.
     \item[Remarks:] The total size of an event is the value returned by
@@ -12910,7 +12920,7 @@ INT bk_size(void *event)
 }
 
 /*------------------------------------------------------------------*/
-/** bk_create()
+/** @name bk_create()
     \begin{description}
     \item[Description:] Create a Midas bank.
     \item[Remarks:] The data pointer pdata must be used as an address to fill a
@@ -13037,7 +13047,7 @@ int    remaining;
 }
 
 /*------------------------------------------------------------------*/
-/** bk_close()
+/** @name bk_close()
     \begin{description}
     \item[Description:] Close the Midas bank priviously created by \Ref{bk_create}.
     \item[Remarks:] The data pointer pdata must be obtained by \Ref{bk_create()} and
@@ -13079,7 +13089,7 @@ INT bk_close(void *event, void *pdata)
 }
 
 /*------------------------------------------------------------------*/
-/** bk_locate()
+/** @name bk_locate()
     \begin{description}
     \item[Description:] Locates a MIDAS bank of given name inside an event.
     \item[Remarks:]
@@ -13138,7 +13148,7 @@ INT bk_locate(void *event, char *name, void *pdata)
 }
 
 /*------------------------------------------------------------------*/
-/** bk_iterate()
+/** @name bk_iterate()
     \begin{description}
     \item[Description:] Iterates through banks inside an event.
     \item[Remarks:] The function can be used to enumerate all banks of an event.
@@ -13233,7 +13243,7 @@ INT bk_iterate32(void *event, BANK32 **pbk, void *pdata)
 }
 
 /*------------------------------------------------------------------*/
-/** bk_swap()
+/** @name bk_swap()
     \begin{description}
     \item[Description:] Swaps bytes from little endian to big endian or vice
     versa for a whole event.
