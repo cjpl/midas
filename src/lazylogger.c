@@ -6,6 +6,9 @@
   Contents:     Disk to Tape copier for background job
 
   $Log$
+  Revision 1.15  1999/11/08 15:08:04  midas
+  Added new parameters to al_trigger_alarm
+
   Revision 1.14  1999/10/22 10:58:56  midas
   Fixed compiler warnings
 
@@ -1410,7 +1413,8 @@ INT lazy_main (INT channel, LAZY_INFO * pLall)
       
         /* trigger alarm if defined */
         if (lazy.alarm[0])
-          al_trigger_alarm("Tape full", "Tape full, Please remove current tape and load new one!", lazy.alarm);
+          al_trigger_alarm("Tape", "Tape full, Please remove current tape and load new one!", lazy.alarm,
+                           "Tape full", AT_INTERNAL);
         return NOTHING_TODO;
       }
     }

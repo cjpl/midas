@@ -6,6 +6,9 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
+  Revision 1.21  1999/11/08 15:06:26  midas
+  Added new parameters to al_trigger_alarm
+
   Revision 1.20  1999/10/08 22:15:04  midas
   Added ftruncate for LINUX
 
@@ -885,7 +888,7 @@ INT convert_flags;
       break;
 
     case RPC_AL_TRIGGER_ALARM:
-      status = al_trigger_alarm(CSTRING(0), CSTRING(1), CSTRING(2));
+      status = al_trigger_alarm(CSTRING(0), CSTRING(1), CSTRING(2), CSTRING(3), CINT(4));
       break;
 
     /* exit functions */
