@@ -7,6 +7,9 @@
                 with bt617.c
                 
   $Log$
+  Revision 1.2  2000/09/26 07:45:19  midas
+  Added vme_write
+
   Revision 1.1  2000/09/26 07:26:56  midas
   Added file
 
@@ -58,6 +61,7 @@ extern "C" {
 int EXPRT vme_open(int device, int mode);
 int EXPRT vme_close(int vh);
 int EXPRT vme_read(int vh, void *dst, int vme_addr, int size);
+int EXPRT vme_write(int vh, void *src, int vme_addr, int size);
 int EXPRT vme_mmap(int vh, void **ptr, int vme_addr, int size);
 int EXPRT vme_unmap(int vh, void *ptr, int size);
 
