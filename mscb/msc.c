@@ -6,6 +6,9 @@
   Contents:     Command-line interface for the Midas Slow Control Bus
 
   $Log$
+  Revision 1.43  2003/09/09 14:43:22  midas
+  Added unit farad
+
   Revision 1.42  2003/07/17 13:56:04  midas
   Fixed bug when outputting signed 16-bit data
 
@@ -198,6 +201,7 @@ NAME_TABLE unit_table[] = {
   { UNIT_TESLA,      "tesls",           },
   { UNIT_LITERPERSEC,"liter/sec",       },
   { UNIT_RPM,        "RPM",             },
+  { UNIT_FARAD,      "farad",           },
 
   { UNIT_BOOLEAN,    "boolean",         },
   { UNIT_BYTE,       "byte",            },

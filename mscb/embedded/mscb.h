@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol commands
 
   $Log$
+  Revision 1.26  2003/09/09 14:43:22  midas
+  Added unit farad
+
   Revision 1.25  2003/06/27 13:52:17  midas
   Added led_mode()
 
@@ -122,7 +125,7 @@ sbit RS485_ENABLE =      P3^5;
 #define LED_ON 1
 
 /*--------------------------------*/
-#elif defined(SCS_520) || defined(SCS_600) || defined(SCS_700)
+#elif defined(SCS_520) || defined(SCS_600) || defined(SCS_700) || defined (SCS_800)
 #include <c8051F000.h>
 #define CPU_C8051F000
 #define CPU_CYGNAL
@@ -293,6 +296,7 @@ typedef struct {
 #define UNIT_TESLA       26
 #define UNIT_LITERPERSEC 27       
 #define UNIT_RPM         28
+#define UNIT_FARAD       29
 
 // computer units
 

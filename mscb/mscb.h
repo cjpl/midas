@@ -6,6 +6,9 @@
   Contents:     Header fiel for MSCB funcions
 
   $Log$
+  Revision 1.25  2003/09/09 14:43:22  midas
+  Added unit farad
+
   Revision 1.24  2003/05/12 13:49:17  midas
   Added address check for SET_ADDR command
 
@@ -199,6 +202,7 @@ typedef struct {
 #define UNIT_TESLA       26
 #define UNIT_LITERPERSEC 27       
 #define UNIT_RPM         28
+#define UNIT_FARAD       29
 
 // computer units
 
