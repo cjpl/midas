@@ -9,6 +9,9 @@
                 for SCS-500 analog I/O
 
   $Log$
+  Revision 1.21  2005/03/30 14:33:02  ritt
+  Added n_sub_addr
+
   Revision 1.20  2004/01/07 12:52:23  midas
   Changed indentation
 
@@ -84,6 +87,9 @@ extern bit FREEZE_MODE;
 extern bit DEBUG_MODE;
 
 char code node_name[] = "SCS-500";
+
+/* declare number of sub-addresses to framework */
+unsigned char idata _n_sub_addr = 1;
 
 sbit SR_CLOCK = P0 ^ 4;         // Shift register clock
 sbit SR_STROBE = P0 ^ 5;        // Storage register clock
