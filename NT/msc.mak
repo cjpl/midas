@@ -29,11 +29,8 @@ NULL=nul
 
 OUTDIR=.\Release
 INTDIR=.\Release
-# Begin Custom Macros
-OutDir=.\Release
-# End Custom Macros
 
-ALL : "$(OUTDIR)\msc.exe"
+ALL : ".\bin\msc.exe"
 
 
 CLEAN :
@@ -41,7 +38,7 @@ CLEAN :
 	-@erase "$(INTDIR)\mscb.obj"
 	-@erase "$(INTDIR)\rpc.obj"
 	-@erase "$(INTDIR)\vc60.idb"
-	-@erase "$(OUTDIR)\msc.exe"
+	-@erase ".\bin\msc.exe"
 
 "$(OUTDIR)" :
     if not exist "$(OUTDIR)/$(NULL)" mkdir "$(OUTDIR)"
@@ -85,13 +82,13 @@ BSC32_FLAGS=/nologo /o"$(OUTDIR)\msc.bsc"
 BSC32_SBRS= \
 	
 LINK32=link.exe
-LINK32_FLAGS=kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:console /incremental:no /pdb:"$(OUTDIR)\msc.pdb" /machine:I386 /out:"$(OUTDIR)\msc.exe" 
+LINK32_FLAGS=wsock32.lib /nologo /subsystem:console /incremental:no /pdb:"$(OUTDIR)\msc.pdb" /machine:I386 /out:"c:\midas\nt\bin\msc.exe" 
 LINK32_OBJS= \
 	"$(INTDIR)\msc.obj" \
 	"$(INTDIR)\mscb.obj" \
 	"$(INTDIR)\rpc.obj"
 
-"$(OUTDIR)\msc.exe" : "$(OUTDIR)" $(DEF_FILE) $(LINK32_OBJS)
+".\bin\msc.exe" : "$(OUTDIR)" $(DEF_FILE) $(LINK32_OBJS)
     $(LINK32) @<<
   $(LINK32_FLAGS) $(LINK32_OBJS)
 <<
