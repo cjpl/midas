@@ -6,6 +6,9 @@
 #  Contents:     Makefile for MIDAS binaries and examples under unix
 #
 #  $Log$
+#  Revision 1.64  2004/10/04 04:52:27  olchansk
+#  fix missing dependance: $(PROGS): $(SHLIB)
+#
 #  Revision 1.63  2004/09/29 17:57:33  midas
 #  Added large file (>2GB) support for linux
 #
@@ -517,7 +520,7 @@ $(BIN_DIR)/odbedit: $(SRC_DIR)/odbedit.c $(SRC_DIR)/cmdedit.c
 $(BIN_DIR)/mhttpd: $(SRC_DIR)/mhttpd.c $(SRC_DIR)/mgd.c
 	$(CC) $(CFLAGS) $(OSFLAGS) -o $@ $(SRC_DIR)/mhttpd.c $(SRC_DIR)/mgd.c $(LIB) $(LIBS) -lm
 
-$(PROGS): $(LIBNAME)
+$(PROGS): $(LIBNAME) $(SHLIB)
 
 #
 # examples
