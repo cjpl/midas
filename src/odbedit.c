@@ -6,6 +6,10 @@
   Contents:     Command-line interface to the MIDAS online data base.
 
   $Log$
+  Revision 1.42  2000/11/10 08:38:22  midas
+  "make" now also puts other trees in /Equipment except "Statistics" and
+  "Variables" into experim.h
+
   Revision 1.41  2000/10/23 14:34:38  midas
   Fixed output of '%' when editing
 
@@ -1035,9 +1039,9 @@ HNDLE      hSubkey;
 
 void create_experim_h(HNDLE hDB, char *analyzer_name)
 {
-INT    i, index, hfile, status, size;
+INT    i, index, subindex, hfile, status, size;
 HNDLE  hKey, hKeyRoot, hKeyEq, hDefKey, hKeyBank, hKeyPar;
-char   str[80], eq_name[80];
+char   str[80], eq_name[80], subeq_name[80];
 KEY    key;
 time_t now;
 
@@ -1208,30 +1212,33 @@ char *file_name = "experim.h";
           }
         }
 
-      /* wite common tree */
-      db_find_key(hDB, hKeyEq, "Common", &hDefKey);
-      if (hDefKey)
+      /* Scan sub tree for that equipment */
+      for (subindex=0 ; ; subindex++)
         {
-        lseek(hfile, 0, SEEK_END);
-        sprintf(str, "#define %s_COMMON_DEFINED\n\n", eq_name); 
-        write(hfile, str, strlen(str));
+	      status = db_enum_key(hDB, hKeyEq, subindex, &hDefKey);
+	      if (status == DB_NO_MORE_SUBKEYS)
+	        break;
+	      
+	      db_get_key(hDB, hDefKey, &key);
+	      strcpy(subeq_name, key.name);
+	      name2c(subeq_name);
 
-        sprintf(str, "%s_COMMON_STR", eq_name);
-        db_save_string(hDB, hDefKey, file_name, str, TRUE);
-        }
-
-      /* if settings present, write them */
-      db_find_key(hDB, hKeyEq, "Settings", &hDefKey);
-      if (hDefKey)
-        {
-        lseek(hfile, 0, SEEK_END);
-        sprintf(str, "#define %s_SETTINGS_DEFINED\n\n", eq_name); 
-        write(hfile, str, strlen(str));
-
-        sprintf(str, "%s_SETTINGS", eq_name);
-        db_save_struct(hDB, hDefKey, file_name, str, TRUE);
-        sprintf(str, "%s_SETTINGS_STR", eq_name);
-        db_save_string(hDB, hDefKey, file_name, str, TRUE);
+	      for (i=0 ; i<(int) strlen(subeq_name) ; i++)
+	        subeq_name[i] = toupper(subeq_name[i]);
+	      
+	      /* Skip only the statistics */
+	      if (!equal_ustring(subeq_name, "statistics") &&
+            !equal_ustring(subeq_name, "variables")) 
+          {
+	        lseek(hfile, 0, SEEK_END);
+	        sprintf(str, "#define %s_%s_DEFINED\n\n", eq_name, subeq_name); 
+	        write(hfile, str, strlen(str));
+	        
+	        sprintf(str, "%s_%s", eq_name, subeq_name);
+	        db_save_struct(hDB, hDefKey, file_name, str, TRUE);
+	        sprintf(str, "%s_%s_STR", eq_name, subeq_name);
+	        db_save_string(hDB, hDefKey, file_name, str, TRUE);
+          }  
         }
 
       lseek(hfile, 0, SEEK_END);
