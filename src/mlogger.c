@@ -6,6 +6,9 @@
   Contents:     MIDAS logger program
 
   $Log$
+  Revision 1.19  1999/09/22 15:39:36  midas
+  Logger won't start run if disk file already exists
+
   Revision 1.18  1999/08/23 13:28:55  midas
   Round up system history to 10
 
@@ -251,7 +254,7 @@ char buffer[16];
 
   if (count == sizeof(buffer))
     {
-    /* tape contains data -> spool to end-of-data */
+    /* tape contains data -> don't start */
     ss_tape_rskip(*handle, -1);
     cm_msg(MINFO, "tape_open", "Tape contains data, please spool tape with 'mtape seod'");
     cm_msg(MINFO, "tape_open", "or erase it with 'mtape weof', 'mtape rewind', then try again.");
@@ -474,6 +477,16 @@ INT          status;
     }
   else
     {
+    /* check if file exists */
+    log_chn->handle = open(log_chn->path, O_RDONLY);
+    if (log_chn->handle > 0)
+      {
+      close(log_chn->handle);
+      free(info->buffer);
+      free(info);
+      log_chn->handle = 0;
+      return SS_FILE_EXISTS;
+      }
 #ifdef OS_WINNT       
     log_chn->handle = (int) CreateFile(log_chn->path, GENERIC_WRITE, FILE_SHARE_READ, NULL, 
                       CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_WRITE_THROUGH | 
@@ -2040,6 +2053,8 @@ BOOL         write_data, tape_flag = FALSE;
         {
         if (status == SS_FILE_ERROR)
           sprintf(error, "cannot open file %s (Disk full?)", path);
+        if (status == SS_FILE_EXISTS)
+          sprintf(error, "file %s exists already, run start aborted", path);
         if (status == SS_NO_TAPE)
           sprintf(error, "no tape in device %s", path);
         if (status == SS_TAPE_ERROR)
