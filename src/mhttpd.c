@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.84  1999/10/28 13:26:16  midas
+  Added "alarms on/off" button
+
   Revision 1.83  1999/10/28 09:01:25  midas
   Added show_error to display proper HTTP header in error messages
 
@@ -700,10 +703,6 @@ int    size;
 
 void show_error(char *error)
 {
-time_t now;
-char   str[256];
-int    size;
-
   /* header */
   rsprintf("HTTP/1.0 200 Document follows\r\n");
   rsprintf("Server: MIDAS HTTP %s\r\n", cm_get_version());
@@ -4272,6 +4271,7 @@ char  str[256], ref[256], condition[256], value[256];
   rsprintf("<tr><td colspan=6 bgcolor=#C0C0C0>\n");
 
   rsprintf("<input type=submit name=cmd value=\"Reset all alarms\">\n");
+  rsprintf("<input type=submit name=cmd value=\"Alarms on/off\">\n");
   rsprintf("<input type=submit name=cmd value=Status>\n");
 
   rsprintf("</tr>\n\n");
@@ -4988,6 +4988,12 @@ struct tm *gmt;
     {
     al_reset_alarm(NULL);
     redirect("?cmd=alarms");
+    return;
+    }
+
+  if (equal_ustring(command, "Alarms on/off"))
+    {
+    redirect("Alarms/");
     return;
     }
 
