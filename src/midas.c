@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.174  2002/10/21 00:14:38  olchansk
+  add missing error reporting
+
   Revision 1.173  2002/10/15 19:14:06  olchansk
   disallow recursive rpc_server_disconnect() (->rpc_call->rpc_server_disconnect)
 
@@ -543,6 +546,8 @@
 
 \********************************************************************/
 
+#include <stdio.h>
+#include <ctype.h>
 #include "midas.h"
 #include "msystem.h"
 
@@ -9027,6 +9032,7 @@ struct hostent       *phe;
         status = recv(sock, (char *) buffer, sizeof(buffer), 0);
         if (status<=0)
           {
+	  cm_msg(MERROR, "rpc_client_connect", "recv(%d) returned %d, errno: %d (%s)", sizeof(buffer), status, errno, strerror(errno));
           /* connection broken -> reset */
           closesocket(sock);
           memset(&_client_connection[i], 0, sizeof(RPC_CLIENT_CONNECTION));
@@ -11020,6 +11026,8 @@ INT         sock;
   if (flags & MSG_PEEK)
     {
     status = recv(sock, buffer, buffer_size, flags);
+    if (status == -1)
+      cm_msg(MERROR, "recv_tcp_server", "recv(%d,MSG_PEEK) returned %d, errno: %d (%s)", buffer_size, status, errno, strerror(errno));
     return status;
     }
 
@@ -11117,6 +11125,8 @@ INT         sock;
     /* abort if connection broken */
     if (write_ptr <= 0)
       {
+      cm_msg(MERROR, "recv_tcp_server", "recv() returned %d, errno: %d (%s)", write_ptr, errno, strerror(errno));
+
       if (remaining)
         *remaining = 0;
 
@@ -11229,6 +11239,8 @@ RPC_SERVER_ACCEPTION *psa;
   if (flags & MSG_PEEK)
     {
     status = recv(sock, buffer, buffer_size, flags);
+    if (status == -1)
+      cm_msg(MERROR, "recv_event_server", "recv(%d,MSG_PEEK) returned %d, errno: %d (%s)", buffer_size, status, errno, strerror(errno));
     return status;
     }
 
@@ -11246,7 +11258,7 @@ RPC_SERVER_ACCEPTION *psa;
     }
   if (!psa->ev_net_buffer)
     {
-    cm_msg(MERROR, "recv_tcp_server", "not enough memory to allocate network buffer");
+    cm_msg(MERROR, "recv_event_server", "not enough memory to allocate network buffer");
     return -1;
     }
 
@@ -11254,7 +11266,7 @@ RPC_SERVER_ACCEPTION *psa;
 
   if ((INT) buffer_size < header_size)
     {
-    cm_msg(MERROR, "recv_tcp_server", "parameters too large for network buffer");
+    cm_msg(MERROR, "recv_event_server", "parameters too large for network buffer");
     return -1;
     }
 
@@ -11293,7 +11305,7 @@ RPC_SERVER_ACCEPTION *psa;
       /* check if data part fits in buffer */
       if ((INT) buffer_size < aligned_event_size + header_size)
         {
-        cm_msg(MERROR, "receive_event", "parameters too large for network buffer");
+        cm_msg(MERROR, "recv_event_server", "parameters too large for network buffer");
         psa->ev_read_ptr = psa->ev_write_ptr = 0;
         return -1;
         }
@@ -11327,6 +11339,8 @@ RPC_SERVER_ACCEPTION *psa;
     /* abort if connection broken */
     if (write_ptr <= 0)
       {
+      cm_msg(MERROR, "recv_event_server", "recv() returned %d, errno: %d (%s)", write_ptr, errno, strerror(errno));
+
       if (remaining)
         *remaining = 0;
 
@@ -12976,6 +12990,9 @@ EVENT_HEADER *pevent;
     {
     n_received = recv(sock, test_buffer, sizeof(test_buffer), MSG_PEEK);
 
+    if (n_received == -1)
+      cm_msg(MERROR, "rpc_server_receive", "recv(%d,MSG_PEEK) returned %d, errno: %d (%s)", sizeof(test_buffer), n_received, errno, strerror(errno));
+
     if (n_received <= 0)
       return SS_ABORT;
 
@@ -12998,6 +13015,7 @@ EVENT_HEADER *pevent;
       if (n_received <= 0)
         {
         status = SS_ABORT;
+	cm_msg(MERROR,"rpc_server_receive","recv_tcp_server() returned %d, abort",n_received);
         goto error;
         }
 
@@ -13012,7 +13030,10 @@ EVENT_HEADER *pevent;
                            _server_acception[index].convert_flags);
 
       if (status == SS_ABORT)
-        goto error;
+	{
+	  cm_msg(MERROR,"rpc_server_receive","rpc_execute() returned %d, abort",status);
+	  goto error;
+	}
 
       if (status == SS_EXIT || status == RPC_SHUTDOWN)
         {
@@ -13039,6 +13060,7 @@ EVENT_HEADER *pevent;
         if (n_received <= 0)
           {
           status = SS_ABORT;
+	  cm_msg(MERROR,"rpc_server_receive","recv_event_server() returned %d, abort",n_received);
           goto error;
           }
 
@@ -13046,7 +13068,9 @@ EVENT_HEADER *pevent;
         pbh = (INT *) _net_recv_buffer;
         pevent = (EVENT_HEADER *) (pbh+1);
 
-        bm_send_event(*pbh, pevent, pevent->data_size + sizeof(EVENT_HEADER), SYNC);
+        status = bm_send_event(*pbh, pevent, pevent->data_size + sizeof(EVENT_HEADER), SYNC);
+	if (status != BM_SUCCESS)
+	  cm_msg(MERROR,"rpc_server_receive","bm_send_event() returned %d",status);
 
         /* repeat for maximum 0.5 sec */
         } while (ss_millitime() - start_time < 500 && remaining);
