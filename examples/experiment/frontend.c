@@ -6,11 +6,14 @@
   Contents:     Experiment specific readout code (user part) of
                 Midas frontend. This example simulates a "trigger
                 event" and a "scaler event" which are filled with
-                random data. The trigger event is filled with
-                two banks (ADC0 and TDC0), the scaler event with 
-                one bank (SCLR).
+                CAMAC or random data. The trigger event is filled 
+                with two banks (ADC0 and TDC0), the scaler event 
+                with one bank (SCLR).
 
   $Log$
+  Revision 1.5  1998/11/09 09:14:41  midas
+  Added code to simulate random data
+
   Revision 1.4  1998/10/29 14:27:46  midas
   Added note about FE_ERR_HW in frontend_init()
 
@@ -24,6 +27,7 @@
 \********************************************************************/
 
 #include <stdio.h>
+#include <stdlib.h>
 #include "midas.h"
 #include "mcstd.h"
 #include "experim.h"
@@ -263,6 +267,8 @@ WORD *pdata, a;
   /* read ADC bank */
   for (a=0 ; a<N_ADC ; a++)
     cami(1, 1, a, 0, pdata++);
+    /* instead of using cami(), use following line to "simulate" data */
+    /* *pdata++ = rand() % 1024; */
 
   bk_close(pevent, pdata);
 
