@@ -6,6 +6,9 @@
   Contents:     Various utility functions for MSCB protocol
 
   $Log$
+  Revision 1.33  2004/05/18 14:16:39  midas
+  Do watchdog disable first in setup()
+
   Revision 1.32  2004/04/30 08:01:41  midas
   led_mode starts now with led0
 
@@ -858,6 +861,8 @@ void eeprom_read(void * dst, unsigned char len, unsigned short *offset)
    unsigned char i, ofs;
    unsigned char *d;
 
+   watchdog_refresh();
+
    d = dst;
 
    ofs = *offset;
@@ -1023,6 +1028,8 @@ void eeprom_erase(void)
 #ifdef CPU_CYGNAL
    unsigned char xdata *p;
 
+   watchdog_refresh();
+
 #if defined(CPU_C8051F000)
    FLSCL = (FLSCL & 0xF0) | 0x08;       // set timer for 11.052 MHz clock
 #elif defined (CPU_C8051F020)
@@ -1067,7 +1074,6 @@ void eeprom_flash(void)
    unsigned short magic, offset;
 
    eeprom_erase();
-   watchdog_refresh();
 
    offset = 0;
 
