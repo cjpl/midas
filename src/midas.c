@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.50  1999/09/17 15:06:48  midas
+  Moved al_check into cm_yield() and rpc_server_thread
+
   Revision 1.49  1999/09/17 11:50:53  midas
   Added al_xxx functions
 
@@ -3005,6 +3008,7 @@ INT cm_yield(INT millisec)
 {
 INT   status;
 BOOL  bMore;
+static DWORD last_checked = 0;
 
   /* check for ctrl-c */
   if (_ctrlc_pressed)
@@ -3020,6 +3024,13 @@ BOOL  bMore;
       status = ss_suspend(millisec, 0);
 
     return status;
+    }
+
+  /* check alarms once every 10 seconds */
+  if (!rpc_is_remote() && ss_time() - last_checked > 10)
+    {
+    al_check();
+    last_checked = ss_time();
     }
 
   bMore = bm_check_buffers();
@@ -11240,7 +11251,8 @@ INT rpc_server_thread(void *pointer)
 \********************************************************************/
 {
 struct callback_addr callback;
-int                  status;
+int                  status, mutex_alarm, mutex_elog;
+static DWORD         last_checked = 0;
 
   memcpy(&callback, pointer, sizeof(callback));
 
@@ -11249,12 +11261,24 @@ int                  status;
   if (status != RPC_SUCCESS)
     return status;
 
+  /* create alarm and elog mutexes */
+  ss_mutex_create("alarm", &mutex_alarm);
+  ss_mutex_create("elog", &mutex_elog);
+  cm_set_experiment_mutex(mutex_alarm, mutex_elog);
+
   do
     {
     status = ss_suspend(5000, 0);
 
     if (rpc_check_channels() == RPC_NET_ERROR)
       break;
+
+    /* check alarms every 10 seconds */
+    if (!rpc_is_remote() && ss_time() - last_checked > 10)
+      {
+      al_check();
+      last_checked = ss_time();
+      }
 
     } while (status != SS_ABORT && status != SS_EXIT);
 
@@ -14430,11 +14454,8 @@ char    tag[256];
 /*---- ODB records -------------------------------------------------*/
 
 typedef struct {
-  BOOL      triggered;
-  char      time_triggered_first[32];
-  char      time_triggered_last[32];
-  char      elog_message[80];
-  char      system_message[80];
+  BOOL      write_system_message;
+  BOOL      write_elog_message;
   INT       system_message_interval;
   DWORD     system_message_last;
   char      execute_command[256];
@@ -14444,11 +14465,8 @@ typedef struct {
 
 char *alarm_class_str = "\
 [.]\n\
-Triggered = BOOL : 0\n\
-Time triggered first = STRING : [32] \n\
-Time triggered last = STRING : [32] \n\
-Elog message = STRING : [80] \n\
-System message = STRING : [80] Warning: \n\
+Write system message = BOOL : y\n\
+Write Elog message = BOOL : n\n\
 System message interval = INT : 60\n\
 System message last = DWORD : 0\n\
 Execute command = STRING : [256] \n\
@@ -14457,20 +14475,28 @@ Execute last = DWORD : 0\n\
 ";
 
 typedef struct {
+  BOOL      active;
+  INT       triggered;
   INT       check_interval;
+  DWORD     checked_last;
+  char      time_triggered_first[32];
+  char      time_triggered_last[32];
   char      condition[256];
   char      alarm_class[32];
   char      alarm_message[80];
-  DWORD     checked_last;
-} ODB_ALARM;
+} ALARM;
 
-char *odb_alarm_str = "\
+char *alarm_str = "\
 [.]\n\
-Check interval = INT : 0\n\
+Active = BOOL : n\n\
+Triggered = INT : 0\n\
+Check interval = INT : 60\n\
+Checked last = DWORD : 0\n\
+Time triggered first = STRING : [32] \n\
+Time triggered last = STRING : [32] \n\
 Condition = STRING : [256] /Runinfo/Run number > 100\n\
 Alarm Class = STRING : [32] Warning\n\
 Alarm Message = STRING : [80] Run number became too large\n\
-Checked last = DWORD : 0\n\
 ";
 
 /*------------------------------------------------------------------*/
@@ -14555,7 +14581,7 @@ char   data[10000];
 
 /*------------------------------------------------------------------*/
 
-INT al_trigger_alarm(char *alarm_class, char *alarm_message)
+INT al_trigger_alarm(char *alarm_name, char *alarm_message)
 /********************************************************************\
 
   Routine: al_trigger_alarm
@@ -14563,8 +14589,8 @@ INT al_trigger_alarm(char *alarm_class, char *alarm_message)
   Purpose: Trigger a certain alarm
 
   Input:
-    char   *alarm_class     Alarm calss, must be defined in 
-                            /alarms/classes
+    char   *alarm_name      Alarm class, must be defined in 
+                            /alarms/alarms
     char   *alarm_message   Optional message which goes with alarm
 
   Output:
@@ -14576,28 +14602,47 @@ INT al_trigger_alarm(char *alarm_class, char *alarm_message)
 \********************************************************************/
 {
   if (rpc_is_remote())
-    return rpc_call(RPC_AL_TRIGGER_ALARM, alarm_class, alarm_message);
+    return rpc_call(RPC_AL_TRIGGER_ALARM, alarm_name, alarm_message);
 
 #ifdef LOCAL_ROUTINES
 {
 int         status, size;
-HNDLE       hDB, hkey;
+HNDLE       hDB, hkeyalarm, hkeyclass;
 char        str[256], tag[32];
 ALARM_CLASS ac;
+ALARM       alarm;
 
   cm_get_experiment_database(&hDB, NULL);
 
-  /* find alarm class */
-  sprintf(str, "/Alarms/Classes/%s", alarm_class);
-  db_find_key(hDB, 0, str, &hkey);
-  if (!hkey)
+  /* find alarm */
+  sprintf(str, "/Alarms/Alarms/%s", alarm_name);
+  db_find_key(hDB, 0, str, &hkeyalarm);
+  if (!hkeyalarm)
     {
-    cm_msg(MERROR, "al_trigger_alarm", "Alarm class %s not found in ODB", alarm_class);
-    return AL_INVALID_CLASS;
+    cm_msg(MERROR, "al_trigger_alarm", "Alarm %s not found in ODB", alarm_name);
+    return AL_INVALID_NAME;
+    }
+
+  size = sizeof(alarm);
+  status = db_get_record(hDB, hkeyalarm, &alarm, &size, 0);
+  if (status != DB_SUCCESS)
+    {
+    cm_msg(MERROR, "al_trigger_alarm", "Cannot get alarm record");
+    return AL_ERROR_ODB;
+    }
+
+  /* get alarm class */
+  sprintf(str, "/Alarms/Classes/%s", alarm.alarm_class);
+  db_find_key(hDB, 0, str, &hkeyclass);
+  if (!hkeyclass)
+    {
+    cm_msg(MERROR, "al_trigger_alarm", "Alarm class %s not found in ODB", 
+                   alarm.alarm_class);
+    return AL_INVALID_NAME;
     }
 
   size = sizeof(ac);
-  status = db_get_record(hDB, hkey, &ac, &size, 0);
+  status = db_get_record(hDB, hkeyclass, &ac, &size, 0);
   if (status != DB_SUCCESS)
     {
     cm_msg(MERROR, "al_trigger_alarm", "Cannot get alarm class record");
@@ -14605,24 +14650,18 @@ ALARM_CLASS ac;
     }
 
   /* write system message */
-  if (ac.system_message[0] && 
+  if (ac.write_system_message && 
       (INT)ss_time() - (INT)ac.system_message_last > ac.system_message_interval)
     {
-    strcpy(str, ac.system_message);
-    strcat(str, alarm_message);
+    sprintf(str, "%s: %s", alarm.alarm_class, alarm_message);
     cm_msg(MTALK, "al_trigger_alarm", str);
     ac.system_message_last = ss_time();
     }
 
   /* write elog message when first triggered */
-  if (ac.elog_message[0] && !ac.triggered)
-    {
-    strcpy(str, ac.elog_message);
-    strcat(str, alarm_message);
-  
-    el_submit(0, "Alarm system", "Alarm", "General", alarm_class, str, 
+  if (ac.write_elog_message && !alarm.triggered)
+    el_submit(0, "Alarm system", "Alarm", "General", alarm.alarm_class, str, 
               "", "plain", "", "", 0, tag, 32); 
-    }
 
   /* execute command */
   if (ac.execute_command[0] &&
@@ -14636,16 +14675,18 @@ ALARM_CLASS ac;
   /* signal alarm being triggered */
   cm_asctime(str, sizeof(str));
 
-  if (!ac.triggered)
-    strcpy(ac.time_triggered_first, str);
+  if (!alarm.triggered)
+    strcpy(alarm.time_triggered_first, str);
 
-  ac.triggered++;
-  strcpy(ac.time_triggered_last, str);
+  alarm.triggered++;
+  strcpy(alarm.time_triggered_last, str);
 
-  status = db_set_record(hDB, hkey, &ac, sizeof(ac), 0);
+  alarm.checked_last = ss_time();
+
+  status = db_set_record(hDB, hkeyalarm, &alarm, sizeof(alarm), 0);
   if (status != DB_SUCCESS)
     {
-    cm_msg(MERROR, "al_trigger_alarm", "Cannot update alarm class record");
+    cm_msg(MERROR, "al_trigger_alarm", "Cannot update alarm record");
     return AL_ERROR_ODB;
     }
 }
@@ -14656,7 +14697,7 @@ ALARM_CLASS ac;
 
 /*------------------------------------------------------------------*/
 
-INT al_reset_alarm(char *alarm_class)
+INT al_reset_alarm(char *alarm_name)
 /********************************************************************\
 
   Routine: al_reset_alarm
@@ -14664,52 +14705,98 @@ INT al_reset_alarm(char *alarm_class)
   Purpose: Reset (acknowledge) alarm
 
   Input:
-    char   *alarm_class     Alarm calss, must be defined in 
-                            /alarms/classes
+    char   *alarm_name      Alarm name, must be defined in /Alarms/Alarms
+                            If NULL reset all alarms
 
   Output:
     <none>
 
   Function value:
-    AL_INVALID_CLASS        Alarm class not defined
+    AL_INVALID_NAME         Alarm name not defined
     AL_RESET                Alarm was triggered and reset
     AL_SUCCESS              Successful completion
 
 \********************************************************************/
 {
-int         status, size;
-HNDLE       hDB, hkey;
+int         status, size, i;
+HNDLE       hDB, hkeyalarm, hkeyclass, hsubkey;
+KEY         key;
 char        str[256];
+ALARM       alarm;
 ALARM_CLASS ac;
 
   cm_get_experiment_database(&hDB, NULL);
 
-  /* find alarm class */
-  sprintf(str, "/Alarms/Classes/%s", alarm_class);
-  db_find_key(hDB, 0, str, &hkey);
-  if (!hkey)
+  if (alarm_name == NULL)
     {
-    cm_msg(MERROR, "al_reset_alarm", "Alarm class %s not found in ODB", alarm_class);
-    return AL_INVALID_CLASS;
+    /* reset all alarms */
+    db_find_key(hDB, 0, "/Alarms/Alarms", &hkeyalarm);
+    if (hkeyalarm)
+      {
+      for (i=0 ; ; i++)
+        {
+        db_enum_link(hDB, hkeyalarm, i, &hsubkey);
+
+        if (!hsubkey)
+          break;
+
+        db_get_key(hDB, hsubkey, &key);
+        al_reset_alarm(key.name);
+        }
+      }
+    return AL_SUCCESS;
+    }
+
+  /* find alarm and alarm class */
+  sprintf(str, "/Alarms/Alarms/%s", alarm_name);
+  db_find_key(hDB, 0, str, &hkeyalarm);
+  if (!hkeyalarm)
+    {
+    cm_msg(MERROR, "al_reset_alarm", "Alarm %s not found in ODB", alarm_name);
+    return AL_INVALID_NAME;
+    }
+
+  size = sizeof(alarm);
+  status = db_get_record(hDB, hkeyalarm, &alarm, &size, 0);
+  if (status != DB_SUCCESS)
+    {
+    cm_msg(MERROR, "al_check", "Cannot get alarm record");
+    return AL_ERROR_ODB;
+    }
+
+  sprintf(str, "/Alarms/Classes/%s", alarm.alarm_class);
+  db_find_key(hDB, 0, str, &hkeyclass);
+  if (!hkeyclass)
+    {
+    cm_msg(MERROR, "al_reset_alarm", "Alarm class %s not found in ODB", alarm.alarm_class);
+    return AL_INVALID_NAME;
     }
 
   size = sizeof(ac);
-  status = db_get_record(hDB, hkey, &ac, &size, 0);
+  status = db_get_record(hDB, hkeyclass, &ac, &size, 0);
   if (status != DB_SUCCESS)
     {
     cm_msg(MERROR, "al_check", "Cannot get alarm class record");
     return AL_ERROR_ODB;
     }
 
-  if (ac.triggered)
+  if (alarm.triggered)
     {
-    ac.triggered = 0;
-    ac.time_triggered_first[0] = 0;
-    ac.time_triggered_last[0] = 0;
+    alarm.triggered = 0;
+    alarm.time_triggered_first[0] = 0;
+    alarm.time_triggered_last[0] = 0;
+    alarm.checked_last = 0;
+
     ac.system_message_last = 0;
     ac.execute_last = 0;
 
-    status = db_set_record(hDB, hkey, &ac, sizeof(ac), 0);
+    status = db_set_record(hDB, hkeyalarm, &alarm, sizeof(alarm), 0);
+    if (status != DB_SUCCESS)
+      {
+      cm_msg(MERROR, "al_reset_alarm", "Cannot update alarm record");
+      return AL_ERROR_ODB;
+      }
+    status = db_set_record(hDB, hkeyclass, &ac, sizeof(ac), 0);
     if (status != DB_SUCCESS)
       {
       cm_msg(MERROR, "al_reset_alarm", "Cannot update alarm class record");
@@ -14735,7 +14822,7 @@ INT al_check()
   Output:
 
   Function value:
-    AK_SUCCESS              Successful completion
+    AL_SUCCESS              Successful completion
 
 \********************************************************************/
 {
@@ -14747,9 +14834,12 @@ INT al_check()
 INT       i, status, size, mutex;
 HNDLE     hDB, hkeyroot, hkey;
 KEY       key;
-ODB_ALARM odb_alarm;
+ALARM     alarm;
 
   cm_get_experiment_database(&hDB, NULL);
+
+  if (hDB == 0)
+    return AL_SUCCESS; /* called from servern not yet connected */
 
   /* request semaphore */
   cm_get_experiment_mutex(&mutex, NULL);
@@ -14758,12 +14848,12 @@ ODB_ALARM odb_alarm;
     return SUCCESS; /* someone else is doing alarm business */
 
   /* check ODB alarms */
-  db_find_key(hDB, 0, "/Alarms/ODB Alarms", &hkeyroot);
+  db_find_key(hDB, 0, "/Alarms/Alarms", &hkeyroot);
   if (!hkeyroot)
     {
     /* create default ODB alarm */
-    status = db_create_record(hDB, 0, "/Alarms/ODB Alarms/Test", odb_alarm_str);
-    db_find_key(hDB, 0, "/Alarms/ODB Alarms", &hkeyroot);
+    status = db_create_record(hDB, 0, "/Alarms/Alarms/Test", alarm_str);
+    db_find_key(hDB, 0, "/Alarms/Alarms", &hkeyroot);
     if (!hkeyroot)
       {
       ss_mutex_release(mutex);
@@ -14787,28 +14877,31 @@ ODB_ALARM odb_alarm;
 
     db_get_key(hDB, hkey, &key);
 
-    size = sizeof(odb_alarm);
-    status = db_get_record(hDB, hkey, &odb_alarm, &size, 0);
+    size = sizeof(alarm);
+    status = db_get_record(hDB, hkey, &alarm, &size, 0);
     if (status != DB_SUCCESS)
       {
-      cm_msg(MERROR, "al_check", "Cannot get ODB alarm record");
+      cm_msg(MERROR, "al_check", "Cannot get alarm record");
       continue;
       }
 
     /* if condition is true, trigger alarm */
-    if (odb_alarm.check_interval > 0 &&
-        (INT)ss_time() - (INT)odb_alarm.checked_last > odb_alarm.check_interval)
+    if (alarm.active &&
+        alarm.check_interval > 0 &&
+        (INT)ss_time() - (INT)alarm.checked_last > alarm.check_interval)
       {
-      if (al_evaluate_condition(odb_alarm.condition))
-        al_trigger_alarm(odb_alarm.alarm_class, odb_alarm.alarm_message);
-      odb_alarm.checked_last = ss_time();
-      status = db_set_record(hDB, hkey, &odb_alarm, sizeof(odb_alarm), 0);
-      if (status != DB_SUCCESS)
+      if (al_evaluate_condition(alarm.condition))
+        al_trigger_alarm(key.name, alarm.alarm_message);
+      else
         {
-        cm_msg(MERROR, "al_check", "Cannot write back ODB alarm record");
-        continue;
+        alarm.checked_last = ss_time();
+        status = db_set_record(hDB, hkey, &alarm, sizeof(alarm), 0);
+        if (status != DB_SUCCESS)
+          {
+          cm_msg(MERROR, "al_check", "Cannot write back alarm record");
+          continue;
+          }
         }
-      
       }
     }
 

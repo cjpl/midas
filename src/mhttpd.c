@@ -6,6 +6,9 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
+  Revision 1.39  1999/09/17 15:06:46  midas
+  Moved al_check into cm_yield() and rpc_server_thread
+
   Revision 1.38  1999/09/17 11:47:52  midas
   Added setgid()
 
@@ -606,10 +609,40 @@ CHN_STATISTICS chn_stats;
   rsprintf("<input type=submit name=cmd value=CNAF>\n");
   rsprintf("<input type=submit name=cmd value=Messages>\n");
   rsprintf("<input type=submit name=cmd value=ELog>\n");
+  rsprintf("<input type=submit name=cmd value=Alarms>\n");
   rsprintf("<input type=submit name=cmd value=Config>\n");
   rsprintf("<input type=submit name=cmd value=Help>\n");
 
   rsprintf("</tr>\n\n");
+
+  /*---- alarms ----*/
+
+  /* go through all triggered alarms */
+  db_find_key(hDB, 0, "/Alarms/Alarms", &hkey);
+  if (hkey)
+    {
+    for (i=0 ; ; i++)
+      {
+      db_enum_link(hDB, hkey, i, &hsubkey);
+
+      if (!hsubkey)
+        break;
+
+      flag = 0;
+      size = sizeof(flag);
+      db_get_value(hDB, hsubkey, "Triggered", &flag, &size, TID_BOOL);
+      if (flag)
+        {
+        if (exp_name[0])
+          sprintf(ref, "%s?exp=%s&cmd=alarms", mhttpd_url, exp_name);
+        else
+          sprintf(ref, "%s?cmd=alarms", mhttpd_url);
+
+        rsprintf("<tr><td colspan=6 bgcolor=#FF0000 align=center><h1><a href=\"%s\">Alarm!</a></h1></tr>\n", ref);
+        break;
+        }
+      }
+    }
 
   /*---- aliases ----*/
 
@@ -3104,6 +3137,7 @@ KEY    key;
   rsprintf("<input type=submit name=cmd value=Find>\n");
   rsprintf("<input type=submit name=cmd value=Create>\n");
   rsprintf("<input type=submit name=cmd value=Delete>\n");
+  rsprintf("<input type=submit name=cmd value=Alarms>\n");
   rsprintf("<input type=submit name=cmd value=Status>\n");
   rsprintf("<input type=submit name=cmd value=Help>\n");
   rsprintf("</tr>\n\n");
@@ -3659,6 +3693,94 @@ KEY   key;
 
 /*------------------------------------------------------------------*/
 
+void show_alarm_page()
+{
+INT   i, size, triggered;
+BOOL  active;
+HNDLE hDB, hkeyroot, hkey;
+KEY   key;
+char  str[256], ref[256];
+
+  cm_get_experiment_database(&hDB, NULL);
+
+  show_header(hDB, "Alarms", "", 3);
+
+  /*---- menu buttons ----*/
+
+  rsprintf("<tr><td colspan=6 bgcolor=#C0C0C0>\n");
+
+  rsprintf("<input type=submit name=cmd value=\"Reset all alarms\">\n");
+  rsprintf("<input type=submit name=cmd value=Status>\n");
+
+  rsprintf("</tr>\n\n");
+
+  /*---- alarms ----*/
+
+  rsprintf("<tr><th>Alarm<th>State<th>First triggered<th>Class<th>Condition</tr>\n");
+
+  /* go through all alarms */
+  db_find_key(hDB, 0, "/Alarms/Alarms", &hkeyroot);
+  if (hkeyroot)
+    {
+    for (i=0 ; ; i++)
+      {
+      db_enum_link(hDB, hkeyroot, i, &hkey);
+
+      if (!hkey)
+        break;
+
+      db_get_key(hDB, hkey, &key);
+
+      /* alarm */
+      if (exp_name[0])
+        sprintf(ref, "%sAlarms/Alarms/%s?exp=%s", 
+                mhttpd_url, key.name, exp_name);
+      else
+        sprintf(ref, "%sAlarms/Alarms/%s", 
+                mhttpd_url, key.name);
+      rsprintf("<tr><td><a href=\"%s\"><b>%s</b></a>", ref, key.name);
+
+      /* state */
+      size = sizeof(BOOL);
+      db_get_value(hDB, hkey, "Active", &active, &size, TID_BOOL);
+      size = sizeof(INT);
+      db_get_value(hDB, hkey, "Triggered", &triggered, &size, TID_INT);
+      if (!active)
+        rsprintf("<td bgcolor=#FFFF00 align=center>Disabled");
+      else
+        {
+        if (!triggered)
+          rsprintf("<td bgcolor=#00FF00 align=center>OK");
+        else
+          rsprintf("<td bgcolor=#FF0000 align=center>Triggered");
+        }
+
+      /* time */
+      size = sizeof(str);
+      db_get_value(hDB, hkey, "Time triggered first", &str, &size, TID_STRING);
+      if (!triggered)
+        strcpy(str, "-");
+      rsprintf("<td align=center>%s", str);
+
+      /* class */
+      size = sizeof(str);
+      db_get_value(hDB, hkey, "Alarm Class", &str, &size, TID_STRING);
+      rsprintf("<td align=center>%s", str);
+
+      /* condition */
+      size = sizeof(str);
+      db_get_value(hDB, hkey, "Condition", &str, &size, TID_STRING);
+      rsprintf("<td>%s", str);
+      }
+    }
+
+
+  rsprintf("</table>\n");
+  rsprintf("</body></html>\r\n");
+}
+
+/*------------------------------------------------------------------*/
+
 void show_config_page(int refresh)
 {
 char str[80];
@@ -4066,6 +4188,21 @@ struct tm *gmt;
   if (equal_ustring(command, "CNAF") || strncmp(path, "/CNAF", 5) == 0)
     {
     show_cnaf_page();
+    return;
+    }
+
+  /*---- alarms command --------------------------------------------*/
+  
+  if (equal_ustring(command, "reset all alarms"))
+    {
+    al_reset_alarm(NULL);
+    show_alarm_page();
+    return;
+    }
+
+  if (equal_ustring(command, "alarms"))
+    {
+    show_alarm_page();
     return;
     }
 
