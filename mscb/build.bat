@@ -56,6 +56,6 @@ zip -p mscb%version%.zip drivers/windows/mscbusb.sys
 
 echo Sending archive to midas.psi.ch
 
-scp mscb%version%.zip midas@midas:html/mscb/software/download
+scp mscb%version%.zip ritt@midas:html/midas/mscb/software/download
 
 rm mscb%version%.zip > nul
