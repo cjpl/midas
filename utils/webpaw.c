@@ -6,6 +6,9 @@
   Contents:     Web server for remote PAW display
 
   $Log$
+  Revision 1.13  2000/05/18 12:44:01  midas
+  Changed realm
+
   Revision 1.12  2000/05/18 12:41:18  midas
   Added password protection
 
@@ -1389,7 +1392,7 @@ char                 pwd[256], cl_pwd[256], str[256], *p;
         /* return request for authorization */
         rsprintf("HTTP/1.1 401 Authorization Required\r\n");
         rsprintf("Server: WebPAW\r\n");
-        rsprintf("WWW-Authenticate: Basic realm=\"restricted\"\r\n");
+        rsprintf("WWW-Authenticate: Basic realm=\"WebPAW\"\r\n");
         rsprintf("Connection: close\r\n");
         rsprintf("Content-Type: text/html\r\n\r\n");
 
