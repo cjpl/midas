@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.59  2000/05/09 08:00:58  midas
+  Fixed bug with file not found in ma_open
+
   Revision 1.58  2000/05/05 08:44:09  midas
   Added ybos_get_tid_size
 
@@ -3445,7 +3448,7 @@ MA_FILE *file;
     else
       {
       file->gzfile = gzopen(file_name, "rb");
-      if (file == NULL)
+      if (file->gzfile == NULL)
         {
         printf("File %s not found\n", file_name);
         return NULL;
