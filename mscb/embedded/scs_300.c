@@ -9,6 +9,9 @@
                 for SCS-300 Parallel Port Interface
 
   $Log$
+  Revision 1.7  2003/03/31 08:15:54  midas
+  Added data to idata
+
   Revision 1.6  2003/03/19 16:35:03  midas
   Eliminated configuration parameters
 
@@ -47,7 +50,7 @@ char code node_name[] = "SCS-300";
 
 struct {
   float value[4];
-} user_data;
+} idata user_data;
 
 MSCB_INFO_VAR code variables[] = {
   4, UNIT_UNDEFINED, 0, 0, MSCBF_FLOAT, "Data0", &user_data.value[0],
@@ -166,7 +169,7 @@ char c;
 
 unsigned char gets_wait(char *str, unsigned char size, unsigned char timeout)
 {
-unsigned long start;
+unsigned long idata start;
 unsigned char i;
 char          c;
 
