@@ -18,6 +18,8 @@ Version 1.2.0, released October 19th, 2001
 - Added "boolean" attributes which are represented by a checkbox
 - Added "Filtered browsing = 0/1" flag
 - Added "Display search" list
+- Added "HELO" statement in SMTP communication, thanks to David Monk.
+- Added "Welcome title" for logbook selection page
 
 Version 1.1.3, released October 12th, 2001
 ==========================================
