@@ -6,6 +6,9 @@
   Contents:     Command-line interface for the Midas Slow Control Bus
 
   $Log$
+  Revision 1.56  2004/03/09 11:56:04  midas
+  Mention hotplug script
+
   Revision 1.55  2004/03/05 19:40:01  midas
   Better usb error reporting
 
@@ -446,7 +449,7 @@ void cmd_loop(int fd, char *cmd, int adr)
             printf("group%d> ", current_group);
          else
             printf("> ");
-         line[0] = 0;
+         memset(line, 0, sizeof(line));
          fgets(line, sizeof(line), stdin);
       } else if (cmd[0] != '@')
          strcpy(line, cmd);
@@ -1249,6 +1252,9 @@ int main(int argc, char *argv[])
       } else if (fd == -4) {
 	printf("\nCannot communicate with MSCB submaster at %s\n", device);
 	puts("Please disconnect and reconnect submaster\n");
+      } else if (fd == -5) {
+	printf("\nNo write access to MSCB submaster at %s\n", device);
+	puts("Please install hotplug script \"/etc/hotplug/usb/scs_250\".\n");
       } else
          printf("Cannot connect to device \"%s\"\n", device);
 
