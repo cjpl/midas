@@ -63,8 +63,10 @@ char *mxml_get_value(PMXML_NODE pnode);
 char *mxml_get_attribute(PMXML_NODE pnode, char *name);
 
 int mxml_add_attribute(PMXML_NODE pnode, char *attrib_name, char *attrib_value);
-PMXML_NODE mxml_add_node(PMXML_NODE parent, int node_type, char *node_name, char *value);
-PMXML_NODE mxml_add_node_at(PMXML_NODE parent, int node_type, char *node_name, char *value, int index);
+PMXML_NODE mxml_add_special_node(PMXML_NODE parent, int node_type, char *node_name, char *value);
+PMXML_NODE mxml_add_special_node_at(PMXML_NODE parent, int node_type, char *node_name, char *value, int index);
+PMXML_NODE mxml_add_node(PMXML_NODE parent, char *node_name, char *value);
+PMXML_NODE mxml_add_node_at(PMXML_NODE parent, char *node_name, char *value, int index);
 
 int mxml_replace_node_name(PMXML_NODE pnode, char *new_name);
 int mxml_replace_node_value(PMXML_NODE pnode, char *value);
