@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.103  2000/02/29 21:59:05  midas
+  Fixec bug with order of actions in cm_transition
+
   Revision 1.102  2000/02/29 02:10:26  midas
   Added cm_is_ctrlc_pressed and cm_ack_ctrlc_pressed
 
@@ -3122,6 +3125,24 @@ RUNINFO_STR(runinfo_str);
       }
     }
 
+  /* set new start time in database */
+  if (transition == TR_START)
+    {
+    /* ASCII format */
+    cm_asctime(str, sizeof(str));
+    db_set_value(hDB, 0, "Runinfo/Start Time", str, 32, 1, TID_STRING);
+
+    /* reset stop time */
+    seconds = 0;
+    db_set_value(hDB, 0, "Runinfo/Stop Time binary", 
+                 &seconds, sizeof(seconds), 1, TID_DWORD);
+
+    /* Seconds since 1.1.1970 */
+    cm_time(&seconds);
+    db_set_value(hDB, 0, "Runinfo/Start Time binary", 
+                 &seconds, sizeof(seconds), 1, TID_DWORD);
+    }
+
   /* call pre- transitions */
   if (transition == TR_START)
     {
@@ -3281,24 +3302,6 @@ RUNINFO_STR(runinfo_str);
       transition == TR_POSTSTART || transition == TR_POSTSTOP  ||
       transition == TR_POSTPAUSE || transition == TR_POSTRESUME)
     return CM_SUCCESS;
-
-  /* set new start time in database */
-  if (transition == TR_START)
-    {
-    /* ASCII format */
-    cm_asctime(str, sizeof(str));
-    db_set_value(hDB, 0, "Runinfo/Start Time", str, 32, 1, TID_STRING);
-
-    /* reset stop time */
-    seconds = 0;
-    db_set_value(hDB, 0, "Runinfo/Stop Time binary", 
-                 &seconds, sizeof(seconds), 1, TID_DWORD);
-
-    /* Seconds since 1.1.1970 */
-    cm_time(&seconds);
-    db_set_value(hDB, 0, "Runinfo/Start Time binary", 
-                 &seconds, sizeof(seconds), 1, TID_DWORD);
-    }
 
   /* set stop time in database */
   if (transition == TR_STOP)
