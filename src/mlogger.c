@@ -6,6 +6,9 @@
   Contents:     MIDAS logger program
 
   $Log$
+  Revision 1.60  2003/04/15 14:10:43  midas
+  Fixed compiler warning
+
   Revision 1.59  2003/04/14 12:52:03  midas
   Added ROOT output format
 
@@ -1525,7 +1528,7 @@ TBranch     *branch;
 
   ts = (TREE_STRUCT *) log_chn->format_info;
 
-  size = ts->f->GetBytesWritten();
+  size = (INT)ts->f->GetBytesWritten();
 
   /*---- MIDAS format ----------------------------------------------*/
 
@@ -1619,7 +1622,7 @@ TBranch     *branch;
     et->tree->Fill();
     }
 
-  size = ts->f->GetBytesWritten() - size;
+  size = (INT)ts->f->GetBytesWritten() - size;
   
   /* update statistics */
   log_chn->statistics.events_written++;
