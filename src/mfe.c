@@ -7,6 +7,9 @@
                 linked with user code to form a complete frontend
 
   $Log$
+  Revision 1.70  2004/09/29 19:38:20  midas
+  Decreased run stop polling time from 500ms to 100ms
+
   Revision 1.69  2004/09/29 00:16:21  midas
   Fixed shutdown problem with EB frontends
 
@@ -1759,8 +1762,8 @@ INT scheduler(void)
 
       /*---- check network messages ----------------------------------*/
       if (run_state == STATE_RUNNING && interrupt_eq == NULL) {
-         /* only call yield once every 500ms when running */
-         if (actual_millitime - last_time_network > 500) {
+         /* only call yield once every 100ms when running */
+         if (actual_millitime - last_time_network > 100) {
             status = cm_yield(0);
             last_time_network = actual_millitime;
          } else
