@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.224  2004/10/07 22:04:17  pierre
+  Doxygen correction
+
   Revision 1.223  2004/10/06 22:02:25  midas
   Implemented multiple requests for a transition
 
@@ -3337,8 +3340,9 @@ main()
   ...
 }
 \endcode
-@param transition Transition to register for (see )
+@param transition Transition to register for (see @ref state_transition)
 @param func Callback function.
+@param sequence_number Sequence number for that transition (1..1000)
 @return CM_SUCCESS
 */
 INT cm_register_transition(INT transition, INT(*func) (INT, char *), INT sequence_number)
