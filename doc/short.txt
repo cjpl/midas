@@ -1,6 +1,5 @@
                     MIDAS Usage with the PCOS setup
                     ===============================
-
                            S. Ritt, Feb 97
 
 
