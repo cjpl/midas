@@ -13,15 +13,25 @@
  *  Application : VME
  *  Author      :  Pierre-Andre Amaudruz Data Acquisition Group
  *  Revision 1.0:  1998/Mar/20 Pierre	   Inline function
+    $Log$
+    Revision 1.2  1999/05/06 18:36:20  pierre
+    - PPCxxx support
+
  *
  *---------------------------------------------------------------------------*/
 #include "stdio.h"
+#include "string.h"
+
 #ifdef OS_VXWORKS
 #include "vme.h"
 #include "vxWorks.h"
 #include "intLib.h"
 #include "sys/fcntlcom.h"
+#ifdef PPCxxx
+#include "arch/ppc/ivPpc.h"
+#else
 #include "arch/mc68k/ivMc68k.h"
+#endif
 #include "taskLib.h"
 #endif
 
@@ -48,8 +58,11 @@ typedef unsigned long int  DWORD;
 
 #endif /* MIDAS_TYPE_DEFINED */
 
-#define IVEC_TO_INUM(intVec)    ((int) (intVec) >> 2)
-#define INUM_TO_IVEC(intNum)    ((VOIDFUNCPTR *) ((intNum) << 2))
+#ifdef PPCxxx
+#define A32D24	       0xfa000000              /* A32D24 camac base address */
+#else
+#define A32D24	       0xf0000000              /* A32D24 camac base address */
+#endif
 
 #define ENABLE_INT      0x00
 #define SET_INT_SYNC    0x01
@@ -63,7 +76,12 @@ typedef unsigned long int  DWORD;
 
 #define VMEIO_VECT_BASE 0x7f
 
-extern excStubl;
+void myStub(void)
+{
+#ifdef OS_VXWORKS
+  logMsg ("myStub\n",0,0,0,0,0,0);
+#endif
+}
 
 /************ INLINE function for General command ***********/
 INLINE void vmeio_intsync_set (DWORD  base_adr, DWORD pattern)
@@ -82,7 +100,7 @@ INLINE void vmeio_intsync_set (DWORD  base_adr, DWORD pattern)
 {
   volatile DWORD * spec_adr;
 
-  spec_adr = (DWORD *)base_adr+(SET_INT_SYNC);
+  spec_adr = (DWORD *)(A32D24 + base_adr) + (SET_INT_SYNC);
   *spec_adr = (pattern & 0xf);
 }
 
@@ -103,7 +121,7 @@ INLINE void vmeio_pulse_set (const DWORD base_adr, DWORD pattern)
 {
   volatile DWORD * spec_adr;
 
-  spec_adr = (DWORD *)base_adr+(SET_PULSE);
+  spec_adr = (DWORD *)(A32D24 + base_adr) + (SET_PULSE);
   *spec_adr = (pattern & 0xffffff);
 }
 
@@ -124,12 +142,12 @@ INLINE void vmeio_sync_read (const DWORD base_adr, DWORD * data)
   DWORD status;
   
   /* status : Check first if trigger has been received */
-  spec_adr = (DWORD *)base_adr+(READ_STATUS);
+  spec_adr = (DWORD *)(A32D24 + base_adr) + (READ_STATUS);
   status   = *spec_adr;
-  status &= 0xf;
+  status  &= 0xf;
   if (status != 0)
     {
-      spec_adr = (DWORD *)base_adr+(READ_SYNC);
+      spec_adr = (DWORD *)(A32D24 + base_adr) + (READ_SYNC);
       *data = (*spec_adr & 0xffffff);
     }
   else
@@ -151,7 +169,7 @@ INLINE void vmeio_async_read (const DWORD base_adr, DWORD * data)
 {
   volatile DWORD * spec_adr;
   
-  spec_adr = (DWORD *)base_adr+(READ_ASYNC);
+  spec_adr = (DWORD *)(A32D24 + base_adr) + (READ_ASYNC);
   *data = (*spec_adr & 0xffffff);
 }
 
@@ -173,7 +191,7 @@ INLINE void vmeio_pulse_write (const DWORD base_adr, DWORD data)
   DWORD * spec_adr;
   
   /* status : Check first if trigger has been received*/
-  spec_adr = (DWORD *)base_adr+(WRITE_PULSE);
+  spec_adr = (DWORD *)(A32D24 | base_adr) + (WRITE_PULSE);
   *spec_adr = (data & 0xffffff);
 }
 
@@ -195,7 +213,7 @@ INLINE void vmeio_latch_write (const DWORD base_adr, DWORD data)
   volatile DWORD * spec_adr;
   
   /* status : Check first if trigger has been received*/
-  spec_adr = (DWORD *)base_adr+(WRITE_LATCH);
+  spec_adr = (DWORD *)(A32D24 + base_adr) + (WRITE_LATCH);
   *spec_adr = (data & 0xffffff);
 }
 
@@ -214,7 +232,7 @@ INLINE void vmeio_clear (const DWORD base_adr)
   volatile DWORD * spec_adr;
   
   /* status : Check first if trigger has been received*/
-  spec_adr = (DWORD *)base_adr+(CLEAR_VMEIO);
+  spec_adr = (DWORD *)(A32D24 + base_adr) + (CLEAR_VMEIO);
   *spec_adr = 0x0;
 }
 
@@ -234,7 +252,7 @@ INLINE void vmeio_status_read (const DWORD base_adr, DWORD * data)
 {
   volatile DWORD * spec_adr;
   
-  spec_adr = (DWORD *)base_adr+READ_STATUS;
+  spec_adr = (DWORD *)(A32D24 + base_adr) + (READ_STATUS);
   *data = (*spec_adr & 0xff);
 }
 
@@ -244,7 +262,7 @@ INLINE void vmeio_int_clear(const DWORD base_adr)
   volatile DWORD * spec_adr;
   
   /* status : Check first if trigger has been received*/
-  spec_adr = (DWORD *)base_adr+(CLEAR_VMEIO);
+  spec_adr = (DWORD *)(A32D24 + base_adr) + (CLEAR_VMEIO);
   *spec_adr = 0x0;
 }
 
@@ -263,7 +281,7 @@ INLINE void vmeio_int_enable (const DWORD base_adr, int intnum)
 {
   volatile DWORD * spec_adr;
   
-  spec_adr = (DWORD *)base_adr+(ENABLE_INT);
+  spec_adr = (DWORD *)(A32D24 + base_adr) + (ENABLE_INT);
   *spec_adr = (intnum & 0xff);
 #ifdef OS_VXWORKS
   sysIntEnable(7);	        /* interrupt level 7 */
@@ -288,7 +306,7 @@ INLINE void vmeio_int_disable (const DWORD base_adr, int intnum)
 #ifdef OS_VXWORKS
   sysIntDisable(7);	        /* interrupt level 7 */
 #endif
-  spec_adr = (DWORD *)base_adr+(ENABLE_INT);
+  spec_adr = (DWORD *)(A32D24 + base_adr) + (ENABLE_INT);
   *spec_adr = ~(intnum & 0xff);
 }
 
@@ -307,17 +325,15 @@ INLINE void vmeio_int_attach (const DWORD base_adr, DWORD base_vect, int intnum,
     none
 \**************************************************************/
 {
-  int i;
-
   vmeio_int_clear(base_adr);		/* clear any pending front panel interrupts */
   vmeio_int_disable(base_adr, intnum);	/* bitwise input */
 #ifdef OS_VXWORKS
-  sysIntDisable(7);	                /* disable bus interrupt level  */
     if (intnum < 8)
       intConnect(INUM_TO_IVEC (base_vect+intnum),(VOIDFUNCPTR) isr, intnum); 
 #else
   printf("vector : 0x%x\n",base_vect+intnum);
 #endif
+  vmeio_int_enable(base_adr, intnum);	/* bitwise input */
 }
 
 INLINE void vmeio_int_detach (const DWORD base_adr, DWORD base_vect, int intnum)
@@ -334,13 +350,11 @@ INLINE void vmeio_int_detach (const DWORD base_adr, DWORD base_vect, int intnum)
     none
 \**************************************************************/
 {
-  int i;
   vmeio_int_clear(base_adr);	        /* clear any pending front panel interrupts */
   vmeio_int_disable(base_adr, intnum);	/* mask off external interrupt x */
 #ifdef OS_VXWORKS
-  sysIntDisable(7);	                /* disable bus interrupt level x */
   if (intnum < 8)
-    intConnect(INUM_TO_IVEC (base_vect+intnum),(VOIDFUNCPTR) excStub, intnum); 
+    intConnect(INUM_TO_IVEC (base_vect+intnum),(VOIDFUNCPTR) myStub, intnum); 
 #else
   printf("vector : 0x%x\n",base_vect+intnum);
 #endif
@@ -370,6 +384,16 @@ void vmeio (void)
   printf("Test  : vmeio_Pulse_write (0x780000,       : write pulse\n");
   printf("Test  : vmeio_Latch_write (0x780000,       : write latch\n");
   printf("Test  : vmeio_Clear       (0x780000)       : clear VMEIO\n");
+  printf("Test  : Interrupt : VMEIO_BASE: 0x780000, VMEIO_VECT_BASE: 0x7F\n");
+  printf("Test  : The interrupt test is based on the following configuration:\n");
+  printf("        Output 0 -> strobe\n");
+  printf("        Output 1 -> Input 0\n");
+  printf("        Output 2 -> Input 1\n");
+  printf("        Output 3 -> Input 2\n");
+  printf("        vmeio_attach_async_interrupt(1)  will enable I1\n");
+  printf("        vmeio_gen_async(1)               will generate int in I1\n");
+  printf("  or    vmeio_attach_sync_interrupt(1)   will enable I1\n");
+  printf("        vmeio_gen_sync(1)                will generate int in I1\n");
   printf("Test  : vmeio_attach_async_interrupt( x...): attach, enable Int#\n");
   printf("Test  : vmeio_attach_sync_interrupt( x...) : attach, enable Int#\n");
   printf("Test  : vmeio_detach_interrupt( x...)      : detach, enable Int#\n");
@@ -418,7 +442,6 @@ void vmeio_Latch_write(DWORD base, DWORD pat)
 
 void vmeio_Clear(DWORD base)
 {
-  DWORD status;
   vmeio_clear(base);
 }
 
@@ -443,7 +466,9 @@ void vmeio_Clear(DWORD base)
 void vmeiotint (void)
 {
   static int vmeio_private_counter=0;
+#ifdef OS_VXWORKS
   logMsg ("%vmeiotint external interrupt #%i received and served\n",vmeio_private_counter++,0,0,0,0,0);
+#endif
 }
 
 void vmeio_attach_async_interrupt( DWORD vmeioint)

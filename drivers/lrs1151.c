@@ -15,6 +15,9 @@
  * Author:  Pierre-Andre Amaudruz Data Acquisition Group
  * 
   $Log$
+  Revision 1.3  1999/05/06 18:39:01  pierre
+  - PPCxxx support
+
   Revision 1.2  1998/10/12 12:18:56  midas
   Added Log tag in header
 
@@ -26,7 +29,11 @@
 #include "vme.h"
 #endif
 
+#ifdef PPCxxx
+#define A32D24_1151	       0xfa000000              /* A32D24_1151 access */
+#else
 #define A32D24_1151	       0xf0000000              /* A32D24_1151 access */
+#endif
 
 #if defined( _MSC_VER )
 #define INLINE __inline

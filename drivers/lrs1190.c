@@ -17,6 +17,9 @@
  * 
 
    $Log$
+   Revision 1.3  1999/05/06 18:39:34  pierre
+   - PPCxxx support
+
    Revision 1.2  1998/10/12 12:18:56  midas
    Added Log tag in header
 
@@ -51,7 +54,11 @@ typedef unsigned long int  DWORD;
 
 #endif /* MIDAS_TYPE_DEFINED */
 
-#define A32D24_1190	       0xf0000000
+#ifdef PPCxxx
+#define A32D24_1190	       0xfa000000              /* A32D24_1151 access */
+#else
+#define A32D24_1190	       0xf0000000              /* A32D24_1151 access */
+#endif
 
 /*-Macros--------------------------------------------------------*/
 /*-command-------------------------------------------------------*/
