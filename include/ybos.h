@@ -218,7 +218,7 @@ INT   EXPRT close_any_datafile (INT data_fmt);
 
 INT   EXPRT open_any_logfile (INT log_type, INT data_fmt, char * device_name, HNDLE * hDev);
 INT   EXPRT close_any_logfile (INT log_type, HNDLE hDev);
-INT   EXPRT ybos_magta_write( HANDLE logH, char *pwt, INT nbytes);
+INT   EXPRT ybos_magta_write(INT logH, char *pwt, INT nbytes);
 INT   EXPRT ybos_odb_file_dump(INT hBuf, INT ev_ID, INT run_number, char * path);
 INT   EXPRT ybos_feodb_file_dump(EQUIPMENT * eqp, DWORD* pevent, INT run_number, char * path);
 INT   EXPRT ybos_file_compose(char * pevent, char * path, INT file_mode);
