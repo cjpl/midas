@@ -8,6 +8,9 @@
                 following the MIDAS CAMAC Standard under DIRECTIO
 
   $Log$
+  Revision 1.20  2003/10/06 15:01:33  midas
+  Removed tabs
+
   Revision 1.19  2002/03/12 22:28:50  pierre
   fix gbl_sw1d, cam16i_sa for sw1d
 
@@ -842,14 +845,14 @@ int directio_give_port(DWORD start, DWORD end)
   
   /* use DirectIO driver under NT to gain port access */
   if (vi.dwPlatformId == VER_PLATFORM_WIN32_NT)
-  {
+    {
     hdio = CreateFile("\\\\.\\directio", GENERIC_READ, FILE_SHARE_READ, NULL,
 		      OPEN_EXISTING, 0, NULL);
     if (hdio == INVALID_HANDLE_VALUE)
-    {
+      {
       printf("hyt1331.c: Cannot access IO ports (No DirectIO driver installed)\n");
       return -1;
-    }
+      }
     
     /* open ports */
     buffer[1] = start;
@@ -857,7 +860,7 @@ int directio_give_port(DWORD start, DWORD end)
     if (!DeviceIoControl(hdio, (DWORD) 0x9c406000, &buffer, sizeof(buffer),
 			 NULL, 0, &size, NULL))
       return -1;
-  }
+    }
   
   return 0;
   
@@ -878,21 +881,21 @@ int directio_give_port(DWORD start, DWORD end)
 #ifdef DO_IOPERM
   
   if (end <= 0x3FF)
-  {
-    if (ioperm(start, end-start+1, 1) < 0)
     {
+    if (ioperm(start, end-start+1, 1) < 0)
+      {
       printf("hyt1331.c: Cannot call ioperm() (no root privileges)\n");
       return -1;
+      }
     }
-  }
   else
-  {
-    if (iopl(3) < 0)
     {
+    if (iopl(3) < 0)
+      {
       printf("hyt1331.c: Cannot call iopl() (no root privileges)\n");
       return -1;
+      }
     }
-  }
   
 #endif
   
@@ -921,14 +924,14 @@ int directio_lock_port(DWORD start, DWORD end)
 
   /* use DirectIO driver under NT to gain port access */
   if (vi.dwPlatformId == VER_PLATFORM_WIN32_NT)
-  {
+    {
     hdio = CreateFile("\\\\.\\directio", GENERIC_READ, FILE_SHARE_READ, NULL,
 		      OPEN_EXISTING, 0, NULL);
     if (hdio == INVALID_HANDLE_VALUE)
-    {
+      {
       printf("hyt1331.c: Cannot access IO ports (No DirectIO driver installed)\n");
       return -1;
-    }
+      }
     
     /* lock ports */
     buffer[1] = start;
@@ -936,7 +939,7 @@ int directio_lock_port(DWORD start, DWORD end)
     if (!DeviceIoControl(hdio, (DWORD) 0x9c406000, &buffer, sizeof(buffer),
 			 NULL, 0, &size, NULL))
       return -1;
-  }
+    }
   
   return 0;
   
@@ -945,21 +948,21 @@ int directio_lock_port(DWORD start, DWORD end)
 #ifdef DO_IOPERM
   
   if (end <= 0x3FF)
-  {
-    if (ioperm(start, end-start+0, 0) < 0)
     {
+    if (ioperm(start, end-start+0, 0) < 0)
+      {
       printf("hyt1331.c: Cannot call ioperm() (no root privileges)\n");
       return -1;
+      }
     }
-  }
   else
-  {
-    if (iopl(0) < 0)
     {
+    if (iopl(0) < 0)
+      {
       printf("hyt1331.c: Cannot call iopl() (no root privileges)\n");
       return -1;
+      }
     }
-  }
   
 #endif
   
@@ -987,7 +990,7 @@ int pci_scan(int vendor_id, int device_id, int n_dev, BYTE *pirq, DWORD *ba)
   
   n = 0;
   while (fgets(line, sizeof(line), f))
-  {
+    {
     sscanf(line, "%x %x %x %lx %lx %lx %lx %lx %lx",
 	   &dfn,
 	   &vend,
@@ -1012,16 +1015,16 @@ int pci_scan(int vendor_id, int device_id, int n_dev, BYTE *pirq, DWORD *ba)
     
     if (n == n_dev)
       break;
-  }
+    }
   
   fclose(f);
   
   if (n == n_dev)
-  {
+    {
     *pirq = irq;
     memcpy(ba, base_addr, sizeof(base_addr));
     return 1;
-  }
+    }
   
   return 0;
   
@@ -1035,10 +1038,10 @@ int pci_scan(int vendor_id, int device_id, int n_dev, BYTE *pirq, DWORD *ba)
   hdio = CreateFile("\\\\.\\directio", GENERIC_READ, FILE_SHARE_READ, NULL,
 		    OPEN_EXISTING, 0, NULL);
   if (hdio == INVALID_HANDLE_VALUE)
-  {
+    {
     printf("hyt1331.c: Cannot access DirectIO driver\n");
     return -1;
-  }
+    }
   
   buffer[1] = vendor_id;
   buffer[2] = device_id;
@@ -1079,7 +1082,7 @@ INLINE int cam_init(void)
   
   /* scan PCI cards */
   for (n_dev = 0 ; ; n_dev++)
-  {
+    {
     if (!pci_scan(0x1196, 0x5331, n_dev+1, irq+n_dev, base_addr))
       break;
     
@@ -1088,31 +1091,31 @@ INLINE int cam_init(void)
     printf("hyt1331.c: Found PCI card at 0x%X, IRQ %d\n", io_base[n_dev], irq[n_dev]);
     
     if (directio_give_port(io_base[n_dev], io_base[n_dev]+4*0x10) < 0)
-    {
+      {
       signal(SIGSEGV, SIG_DFL);
       return 0;
+      }
     }
-  }
   
   /* scan ISA cards */
   for (i = 0 ; i<4 ; i++)
-  {
+    {
     base_test = isa_io_base[i];
     
     if (directio_give_port(base_test, base_test+4*0x10) < 0)
-    {
+      {
       signal(SIGSEGV, SIG_DFL);
       return 0;
-    }
+      }
     
     /* Test if address is writable */
     OUTP(base_test, 0);
     status = INP(base_test);
     if (status != 0)
-    {
+      {
       directio_lock_port(base_test, base_test+4*0x10);
       continue;
-    }
+      }
     
     /* Test A,N,F readback of ISA card */
     OUTP(base_test+8, 1);
@@ -1124,23 +1127,23 @@ INLINE int cam_init(void)
     f = (BYTE) INP(base_test+10);
     
     if (n != 1 || a != 2 || f != 32)
-    {
+      {
       directio_lock_port(base_test, base_test+4*0x10);
       continue;
-    }
+      }
     
     /* ISA card found */
     printf("hyt1331.c: Found ISA card at 0x%X\n", base_test);
     
     io_base[n_dev++] = base_test;
-  }
+    }
   
   if (n_dev == 0)
-  {
+    {
     printf("hyt1331.c: No PCI or ISA cards found\n");
     signal(SIGSEGV, SIG_DFL);
     return 0;
-  }
+    }
   
   /* open port 80 for delayed write */
   directio_give_port(0x80, 0x80);
@@ -1151,17 +1154,17 @@ INLINE int cam_init(void)
   
   /* test auto increment switch SW1D */
   for (i=0 ; i<n_dev ; i++)
-  {
+    {
     status = INP(io_base[i]+6);
     if (!(status & (1<<6)))
-    {
+      {
       gbl_sw1d[i] = 0;
-    }
+      }
     else
-    {
+      {
       gbl_sw1d[i] = 1;
+      }
     }
-  }
   
   return SUCCESS;
 }
@@ -1177,4 +1180,5 @@ INLINE void cam_exit(void)
     if (io_base[i])
       directio_lock_port(io_base[i], io_base[i]+4*0x10);
 }
+
 /*------------------------------------------------------------------*/
