@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.106  2000/03/29 09:14:02  midas
+  Increased parameter name length to 256
+
   Revision 1.105  2000/03/21 13:48:06  midas
   Web password expires after one day instead of one hour
 
@@ -327,12 +330,13 @@ char mhttpd_url[256];
 char exp_name[32];
 BOOL connected, no_disconnect;
 
-#define MAX_GROUPS 32
-#define MAX_PARAM  100
-#define VALUE_SIZE 256
-#define TEXT_SIZE  4096
+#define MAX_GROUPS    32
+#define MAX_PARAM    100
+#define VALUE_SIZE   256
+#define PARAM_LENGTH 256
+#define TEXT_SIZE   4096
 
-char _param[MAX_PARAM][NAME_LENGTH];
+char _param[MAX_PARAM][PARAM_LENGTH];
 char _value[MAX_PARAM][VALUE_SIZE];
 char _text[TEXT_SIZE];
 char *_attachment_buffer[3];
@@ -361,9 +365,9 @@ char type_list[20][NAME_LENGTH] = {
   "Minor error",
   "Severe error",
   "Fix",
+  "Question",
   "Info",
   "Modification",
-  "Complaints",
   "Reply",
   "Alarm",
   "Test",
