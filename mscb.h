@@ -6,6 +6,9 @@
   Contents:     Header fiel for MSCB funcions
 
   $Log$
+  Revision 1.30  2004/03/04 15:29:31  midas
+  Added USB support
+
   Revision 1.29  2004/01/07 12:56:15  midas
   Chaned line length
 
@@ -92,11 +95,6 @@
 
 
 \********************************************************************/
-
-/*---- Device types ------------------------------------------------*/
-
-#define MSCB_RS232         1
-#define MSCB_PARPORT       2
 
 /*---- MSCB commands -----------------------------------------------*/
 
@@ -233,6 +231,26 @@ typedef struct {
 #define UNIT_COUNT       92
 #define UNIT_FACTOR      93
 
+
+/*---- file descriptor ---------------------------------------------*/
+
+#define MSCB_MAX_FD      10
+
+#define MSCB_TYPE_LPT     1
+#define MSCB_TYPE_USB     2
+#define MSCB_TYPE_COM     3
+#define MSCB_TYPE_RPC     4
+
+typedef struct {
+   char device[256];
+   int type;
+   int fd;
+   int remote_fd;
+   int hr, hw;
+} MSCB_FD;
+
+extern MSCB_FD mscb_fd[MSCB_MAX_FD];
+
 /*---- status codes ------------------------------------------------*/
 
 #define MSCB_SUCCESS       1
@@ -274,6 +292,7 @@ extern "C" {
 #endif
 
    int EXPRT mscb_init(char *device, int debug);
+   int EXPRT mscb_select_device(char *data);
    void EXPRT mscb_get_version(char *lib_version, char *prot_version);
    void EXPRT mscb_check(char *device);
    int EXPRT mscb_exit(int fd);
@@ -309,7 +328,7 @@ int kbhit();
 
 /* default device */
 #ifdef _MSC_VER
-#define DEF_DEVICE "lpt1"
+#define DEF_DEVICE "usb0"
 #elif defined(__linux__)
 #define DEF_DEVICE "/dev/parport0"
 #else
