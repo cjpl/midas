@@ -6,6 +6,9 @@
   Contents:     User section for the Event builder
 
   $Log$
+  Revision 1.4  2002/07/13 05:46:10  pierre
+  added ybos comments
+
   Revision 1.3  2002/06/14 04:59:46  pierre
   revised for ybos
 
@@ -125,13 +128,19 @@ INT eb_user(INT nfrag
 	    , void *pevent, INT * dest_size)
 {
   INT    i, dest_serial, frag_size, serial;
+  DWORD *plrl;
 
   dest_serial = pheader->serial_number;  
   printf("DSer#:%d ", dest_serial);
+
+  // Loop over fragments.
   for (i=0;i<nfrag;i++) {
     frag_size  = ((EVENT_HEADER *) ebch[i].pfragment)->data_size;
     serial =  ((EVENT_HEADER *) ebch[i].pfragment)->serial_number;
     printf("Frg#:%d Dsz:%d Ser:%d ", i+1, frag_size, serial);
+
+    // For YBOS fragment Access.
+    plrl = (DWORD *) (((EVENT_HEADER *) ebch[i].pfragment) + 1);
   }
   
   printf("\n");
