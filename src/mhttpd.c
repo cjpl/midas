@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.169  2001/09/14 18:48:39  pierre
+  corrected help link
+
   Revision 1.168  2001/08/30 09:05:58  midas
   Increased text box size to 80 in start run page
 
@@ -1074,7 +1077,8 @@ void show_help_page()
   rsprintf("the contents of the experiment database can be displayed and modified.<P>\n\n");
 
   rsprintf("For more information, refer to the\n"); 
-  rsprintf("<A HREF=\"http://midas.psi.ch/manual/Manual.html\">MIDAS manual</A>.<P>\n\n");
+  rsprintf("<A HREF=\"http://midas.psi.ch/doc/manual/Manual.html\">PSI MIDAS manual</A>,\n");
+  rsprintf("<A HREF=\"http://midas.triumf.ca/docmidas/index.html\">Triumf MIDAS manual</A>.<P>\n\n");
 
   rsprintf("<hr>\n");
   rsprintf("<address>\n");
