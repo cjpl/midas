@@ -6,9 +6,9 @@ Target (Target 1), 0x0000 // Tools: 'MCS-51'
 Group (Soure Files)
 Group (Include Files)
 
-File 1,1,<.\mscbmain.c><mscbmain.c> 0x0 
-File 1,1,<.\mscbutil.c><mscbutil.c> 0x0 
 File 1,1,<.\scs_310_kei2000.c><scs_310_kei2000.c> 0x0 
+File 1,1,<..\mscbmain.c><mscbmain.c> 0x0 
+File 1,1,<..\mscbutil.c><mscbutil.c> 0x0 
 File 2,7,<.\mscb.h><mscb.h> 0x0 
 
 
@@ -69,7 +69,7 @@ Options 1,0,0  // Target 'Target 1'
  C51MSC ()
  C51DEF (SCS_310)
  C51UDF ()
- INCC5 ()
+ INCC5 (..\)
  AX51FL=4
  AX51MSC ()
  AX51SET ()
