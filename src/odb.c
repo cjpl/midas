@@ -6,6 +6,9 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.85  2004/01/18 09:57:30  olchansk
+  fix compiler warnings about format mismatch between %d, %X and sizeof(foo)
+
   Revision 1.84  2004/01/17 05:35:53  olchansk
   replace #define ALIGN() with ALIGN8() to dodge namespace pollution under macosx
   hide strlcpy() & co #ifdef HAVE_STRLCPY (macosx already has strlcpy())
@@ -612,8 +615,8 @@ INT print_key_info(HNDLE hDB, HNDLE hKey, KEY * pkey, INT level, void *info)
    p = (char *) info;
 
    sprintf(p + strlen(p), "%08X  %08X  %04X    ",
-           hKey - sizeof(DATABASE_HEADER),
-           pkey->data - sizeof(DATABASE_HEADER), pkey->total_size);
+           (int)(hKey - sizeof(DATABASE_HEADER)),
+           (int)(pkey->data - sizeof(DATABASE_HEADER)), (int)pkey->total_size);
 
    for (i = 0; i < level; i++)
       sprintf(p + strlen(p), "  ");
@@ -635,7 +638,7 @@ INT db_show_mem(HNDLE hDB, char *result, INT buf_size, BOOL verbose)
 
    sprintf(result,
            "Database header size is 0x%04X, all following values are offset by this!\nKey area  0x00000000 - 0x%08X\nData area 0x%08X - 0x%08X\n\n",
-           sizeof(DATABASE_HEADER), pheader->key_size - 1,
+           (int)sizeof(DATABASE_HEADER), pheader->key_size - 1,
            pheader->key_size, pheader->key_size + pheader->data_size);
 
    strcat(result, "Keylist:\n");
@@ -647,9 +650,9 @@ INT db_show_mem(HNDLE hDB, char *result, INT buf_size, BOOL verbose)
       total_size_key += pfree->size;
       sprintf(result + strlen(result),
               "Free block at 0x%08X, size 0x%08X, next 0x%08X\n",
-              (PTYPE) pfree - (PTYPE) pheader - sizeof(DATABASE_HEADER),
+              (int)((PTYPE) pfree - (PTYPE) pheader - sizeof(DATABASE_HEADER)),
               pfree->size,
-              pfree->next_free ? pfree->next_free - sizeof(DATABASE_HEADER) : 0);
+              pfree->next_free ? (int)(pfree->next_free - sizeof(DATABASE_HEADER)) : 0);
       pfree = (FREE_DESCRIP *) ((char *) pheader + pfree->next_free);
    }
 
@@ -662,9 +665,9 @@ INT db_show_mem(HNDLE hDB, char *result, INT buf_size, BOOL verbose)
       total_size_data += pfree->size;
       sprintf(result + strlen(result),
               "Free block at 0x%08X, size 0x%08X, next 0x%08X\n",
-              (PTYPE) pfree - (PTYPE) pheader - sizeof(DATABASE_HEADER),
+              (int)((PTYPE) pfree - (PTYPE) pheader - sizeof(DATABASE_HEADER)),
               pfree->size,
-              pfree->next_free ? pfree->next_free - sizeof(DATABASE_HEADER) : 0);
+              pfree->next_free ? (int)(pfree->next_free - sizeof(DATABASE_HEADER)) : 0);
       pfree = (FREE_DESCRIP *) ((char *) pheader + pfree->next_free);
    }
    sprintf(result + strlen(result),
