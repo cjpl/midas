@@ -6,6 +6,9 @@
   Contents:     Various utility functions for MSCB protocol
 
   $Log$
+  Revision 1.49  2005/02/22 13:19:37  ritt
+  Added 5th LED
+
   Revision 1.48  2005/02/16 13:14:50  ritt
   Version 1.8.0
 
@@ -270,7 +273,7 @@ unsigned char xdata *data rbuf_rp = rbuf;
 unsigned char xdata *data rbuf_wp = rbuf;
 unsigned char xdata *data sbuf_rp = sbuf;
 unsigned char xdata *data sbuf_wp = sbuf;
-                         
+
 /*---- UART1 handling ----------------------------------------------*/
 
 void serial_int1(void) interrupt 20 using 2
@@ -415,7 +418,7 @@ void uart1_init_buffer()
 {
    rbuf_rp = rbuf_wp = rbuf;
    sbuf_rp = sbuf_wp = sbuf;
-   
+
    ti1_shadow = 1;
 }
 
@@ -493,7 +496,7 @@ long start_time;
    do {
 
       if (time() - start_time > 1) // timeout after 20ms
-         return 0;  
+         return 0;
 
       if (n_recv > 0) {
 
@@ -560,16 +563,17 @@ void uart_init(unsigned char port, unsigned char baud)
            (optionally) Timer 2 (4 for F020) for UART1
 
   Input:
-    unsigned char baud      
+    unsigned char baud
       1:    2400
       2:    4800
       3:    9600
       4:   19200
       5:   28800
-      6:   57600
-      7:  115200
-      8:  172800
-      9:  345600 
+      6:   38400
+      7:   57600
+      8:  115200
+      9:  172800
+     10:  345600
 
 \********************************************************************/
 {
@@ -580,6 +584,7 @@ void uart_init(unsigned char port, unsigned char baud)
       0x100 - 0,    //  N/A
       0x100 - 0,    //  N/A
       0x100 - 0,    //  N/A
+	  0x100 - 0,    //  N/A
       0x100 - 213,  //  57600
       0x100 - 106,  // 115200
       0x100 - 71,   // 172800
@@ -591,6 +596,7 @@ void uart_init(unsigned char port, unsigned char baud)
       0x100 - 0,    //  N/A
       0x100 - 0,    //  N/A
       0x100 - 208,  //  28800
+      0x100 - 156,  //  38400
       0x100 - 104,  //  57600
       0x100 - 52,   // 115200
       0x100 - 35,   // 172800  2% error
@@ -602,17 +608,19 @@ void uart_init(unsigned char port, unsigned char baud)
       0x100 - 0,    //  N/A
       0x100 - 0,    //  N/A
       0x100 - 213,  //  28800  0.2% error
+      0x100 - 160,  //  38400  0.3% error
       0x100 - 106,  //  57600  0.3% error
       0x100 - 53,   // 115200  0.3% error
       0x100 - 35,   // 172800  1.3% error
       0x100 - 18 }; // 345600  1.6% error
 #else                              // 11.0592 MHz
    unsigned char code baud_table[] =
-     {0x100 - 144,  //   2400  
-      0x100 - 72,   //   4800  
-      0x100 - 36,   //   9600  
-      0x100 - 18,   //  14400 
+     {0x100 - 144,  //   2400
+      0x100 - 72,   //   4800
+      0x100 - 36,   //   9600
+      0x100 - 18,   //  19200
       0x100 - 12,   //  28800
+      0x100 - 9,    //  38400
       0x100 - 6,    //  57600
       0x100 - 3,    // 115200
       0x100 - 2,    // 172800
@@ -631,7 +639,7 @@ void uart_init(unsigned char port, unsigned char baud)
 
       SFRPAGE = UART0_PAGE;
       SSTA0 = 0x15;                // User Timer 2 for baud rate, div2 disabled
-      
+
       SFRPAGE = TMR2_PAGE;
       TMR2CF = 0x08;               // use system clock for timer 2
       RCAP2H = 0xFF;
@@ -657,7 +665,7 @@ void uart_init(unsigned char port, unsigned char baud)
 
       ES0 = 1;                     // enable serial interrupt
       PS0 = 0;                     // serial interrupt low priority
-   
+
 
    } else { /*---- UART1 ----*/
 
@@ -669,7 +677,7 @@ void uart_init(unsigned char port, unsigned char baud)
       RCAP4L = baud_table[baud - 1];
 
       EIE2 |= 0x40;                // enable serial interrupt
-      EIP2 &= ~0x40;               // serial interrupt low priority      
+      EIP2 &= ~0x40;               // serial interrupt low priority
 
 #if defined(SCS_210) | defined(SCS_220)
       uart1_init_buffer();
@@ -687,7 +695,7 @@ void uart_init(unsigned char port, unsigned char baud)
       TR1 = 1;                     // start timer 1
 
       EIE2 |= 0x40;                // enable serial interrupt
-      EIP2 &= ~0x40;               // serial interrupt low priority      
+      EIP2 &= ~0x40;               // serial interrupt low priority
       uart1_init_buffer();
 #endif
    }
@@ -722,6 +730,9 @@ sbit led_3 = LED_3;
 #endif
 #ifdef LED_4
 sbit led_4 = LED_4;
+#endif
+#ifdef LED_5
+sbit led_5 = LED_5;
 #endif
 
 /*------------------------------------------------------------------*/
@@ -881,18 +892,22 @@ void led_set(unsigned char led, unsigned char flag) reentrant using 2
 #ifdef LED_1
    if (led == 1)
       led_1 = flag;
-#endif 
+#endif
 #ifdef LED_2
    if (led == 2)
       led_2 = flag;
-#endif 
+#endif
 #ifdef LED_3
    if (led == 3)
       led_3 = flag;
-#endif 
+#endif
 #ifdef LED_4
    if (led == 4)
       led_4 = flag;
+#endif
+#ifdef LED_5
+   if (led == 5)
+      led_5 = flag;
 #endif
 }
 
@@ -903,7 +918,7 @@ unsigned long time(void)
 
   Routine: time
 
-  Purpose: Return system time in units of 10ms 
+  Purpose: Return system time in units of 10ms
 
 \********************************************************************/
 {
@@ -1256,7 +1271,7 @@ void eeprom_erase(void)
 #undef N_EEPROM_PAGE
 #define N_EEPROM_PAGE 1
 
-   p = EEPROM_OFFSET; 
+   p = EEPROM_OFFSET;
    for (i=0 ; i<N_EEPROM_PAGE ; i++) {
       FLKEY = 0xA5;                        // write flash key code
       FLKEY = _flkey;
@@ -1265,7 +1280,7 @@ void eeprom_erase(void)
       p += 512;
    }
 #else
-   p = EEPROM_OFFSET;                   
+   p = EEPROM_OFFSET;
    for (i=0 ; i<N_EEPROM_PAGE ; i++) {
       *p = 0; // erase page
       watchdog_refresh();
@@ -1306,7 +1321,7 @@ void eeprom_flash(void)
    // user channel variables
    for (adr = 0 ; adr < _n_sub_addr ; adr++)
       for (i = 0; variables[i].width; i++)
-         eeprom_write((char *)variables[i].ud + _var_size*adr, 
+         eeprom_write((char *)variables[i].ud + _var_size*adr,
                       variables[i].width, &offset);
 
    // magic
@@ -1338,7 +1353,7 @@ unsigned char eeprom_retrieve(void)
    // user channel variables
    for (adr = 0 ; adr < _n_sub_addr ; adr++)
       for (i = 0; variables[i].width; i++)
-         eeprom_read((char *)variables[i].ud + _var_size*adr, 
+         eeprom_read((char *)variables[i].ud + _var_size*adr,
                      variables[i].width, &offset);
 
    // check for magic
@@ -1401,7 +1416,7 @@ lcd_out(unsigned char d, bit df)
    LCD = LCD | 0xF0;            // data input
    SFRPAGE = CONFIG_PAGE;
    P2MDOUT = 0x0F;
-   LCD_RS = 0;                  // select BF        
+   LCD_RS = 0;                  // select BF
    LCD_R_W = 1;
    delay_us(1);
    LCD_E = 1;
@@ -1477,8 +1492,8 @@ void lcd_setup()
    // test if LCD present
 
    LCD = LCD | 0xF0;            // data input
-   P2MDOUT = 0x0F;              
-   LCD_RS = 0;                  // select BF        
+   P2MDOUT = 0x0F;
+   LCD_RS = 0;                  // select BF
    LCD_R_W = 1;
    delay_us(1);
    LCD_E = 1;
@@ -1497,7 +1512,7 @@ void lcd_setup()
    lcd_out(0x01, 0); // clear display
    lcd_out(0x06, 0); // entry mode: incrementing
 
-#else // 2-line LCD display with KS0066 controller 
+#else // 2-line LCD display with KS0066 controller
 
    LCD &= ~(0xFE);
    delay_ms(15);
@@ -1521,12 +1536,12 @@ void lcd_setup()
    LCD_E = 1;
    delay_us(1);
    LCD_E = 0;
-   
+
    // test if LCD present
 
    LCD = LCD | 0xF0;            // data input
-   P2MDOUT = 0x0F;              
-   LCD_RS = 0;                  // select BF        
+   P2MDOUT = 0x0F;
+   LCD_RS = 0;                  // select BF
    LCD_R_W = 1;
    delay_us(1);
    LCD_E = 1;
