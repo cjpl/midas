@@ -9,6 +9,9 @@
                 for SCS-500 analog I/O
 
   $Log$
+  Revision 1.7  2002/10/16 15:24:38  midas
+  Added units in descriptor
+
   Revision 1.6  2002/10/09 11:06:46  midas
   Protocol version 1.1
 
@@ -65,19 +68,20 @@ struct {
 } idata user_conf;
   
 float idata gain[8];     // gain resulting from PGA bits
+float idata ofs[8];      // offset for bipolar operation
 
 MSCB_INFO_CHN code channel[] = {
-  1, UNIT_BYTE,  0, 0, 0, "P1",   &user_data.p1,
-  2, UNIT_WORD,  0, 0, 0, "DAC0", &user_data.dac0,
-  2, UNIT_WORD,  0, 0, 0, "DAC1", &user_data.dac1,
-  2, UNIT_WORD,  0, 0, 0, "ADC0", &user_data.adc[0],
-  2, UNIT_WORD,  0, 0, 0, "ADC1", &user_data.adc[1],
-  2, UNIT_WORD,  0, 0, 0, "ADC2", &user_data.adc[2],
-  2, UNIT_WORD,  0, 0, 0, "ADC3", &user_data.adc[3],
-  2, UNIT_WORD,  0, 0, 0, "ADC4", &user_data.adc[4],
-  2, UNIT_WORD,  0, 0, 0, "ADC5", &user_data.adc[5],
-  2, UNIT_WORD,  0, 0, 0, "ADC6", &user_data.adc[6],
-  2, UNIT_WORD,  0, 0, 0, "ADC7", &user_data.adc[7],
+  1, UNIT_BYTE, 0, 0,           0, "P1",   &user_data.p1,
+  2, UNIT_WORD, 0, 0,           0, "DAC0", &user_data.dac0,
+  2, UNIT_WORD, 0, 0,           0, "DAC1", &user_data.dac1,
+  4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC0", &user_data.adc[0],
+  4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC1", &user_data.adc[1],
+  4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC2", &user_data.adc[2],
+  4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC3", &user_data.adc[3],
+  4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC4", &user_data.adc[4],
+  4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC5", &user_data.adc[5],
+  4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC6", &user_data.adc[6],
+  4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC7", &user_data.adc[7],
   0
 };
 
@@ -124,15 +128,12 @@ void write_gain(void) reentrant;
 
 /*---- User init function ------------------------------------------*/
 
+extern SYS_INFO sys_info;
+
 void user_init(void)
 {
-#ifdef CPU_ADUC812
-  ADCCON1 = 0x7C; // power up ADC, 14.5us conv+acq time
-  ADCCON2 = 0;    // select channel to convert
-  DACCON  = 0x1f; // power on DACs
-#endif
+unsigned char i;
 
-#ifdef CPU_C8051F000
   AMX0CF = 0x00;  // select single ended analog inputs
   ADC0CF = 0xE0;  // 16 system clocks, gain 1
   ADC0CN = 0x80;  // enable ADC 
@@ -140,11 +141,14 @@ void user_init(void)
   REF0CN = 0x03;  // enable internal reference
   DAC0CN = 0x80;  // enable DAC0
   DAC1CN = 0x80;  // enable DAC1
-#endif
 
   /* correct initial EEPROM value */
   if (user_conf.adc_average == 0xFF)
-    user_conf.adc_average = 0;
+    {
+    user_conf.adc_average = 8;
+    for (i=0 ; i<8 ; i++)
+      user_conf.gain[i] = 0;
+    }
 
   /* write P1 and DACs */
   user_write(0);
@@ -161,6 +165,8 @@ void user_init(void)
 
 #pragma NOAREGS
 
+sbit TMP = P0 ^ 2;
+
 void user_write(unsigned char channel)
 {
 unsigned char data *d;
@@ -169,6 +175,7 @@ unsigned char data *d;
     {
     case 0:  // p1 
       P1 = user_data.p1; 
+      TMP = !(user_data.p1 & 0x01);
       break;
 
     case 1:  // DAC0
@@ -246,30 +253,36 @@ float g;
   /* calculate gains */
   for (i=0 ; i<8 ; i++)
     {
-    /* convert to volts */
-    g = 1 / 65536.0 * 2.5;
-    
-    /* external voltage divider */
-    g /= 20;
-  
-    /* internal PGA */
-    switch (user_conf.gain[i] & 0x07)
-      {
-      case 0: g *= 1; break;
-      case 1: g *= 2; break;
-      case 2: g *= 4; break;
-      case 3: g *= 8; break;
-      case 4: g *= 16; break;
-      case 6: g *= 0.5; break;
-      }
-  
     /* external PGA */
     switch (user_conf.gain[i] & 0x18)
       {
-      case 0x08: g *= 10; break;
-      case 0x10: g *= 100; break;
-      case 0x18: g *= 1000; break;
+      case 0x00: g = 1.0/1; break;
+      case 0x08: g = 1.0/10; break;
+      case 0x10: g = 1.0/100; break;
+      case 0x18: g = 1.0/1000; break;
       }
+
+    if (user_conf.gain[i] & 0x20)
+      ofs[i] = - 10.0/g;
+    else
+      ofs[i] = 0;
+
+    /* external voltage divider */
+    g *= 10;
+
+    /* internal PGA */
+    switch (user_conf.gain[i] & 0x07)
+      {
+      case 0: g /= 1; break;
+      case 1: g /= 2; break;
+      case 2: g /= 4; break;
+      case 3: g /= 8; break;
+      case 4: g /= 16; break;
+      case 6: g /= 0.5; break;
+      }
+
+    /* convert to volts */
+    g = g / 65536.0 * 2.5;
 
     gain[i] = g;
     }
@@ -330,10 +343,7 @@ float gvalue;
   if (user_conf.adc_average)
     value >>= (user_conf.adc_average);
 
-  gvalue = value;
-
-
-
+  gvalue = value * gain[channel] + ofs[channel];
 
   DISABLE_INTERRUPTS;
   *d = gvalue;
@@ -342,22 +352,28 @@ float gvalue;
 
 void user_loop(void)
 {
-unsigned char i;
+static unsigned char i = 0;
+static unsigned long last = 300;
+static bit first = 1;
 
-  /* don't take data in freeze mode */
-  if (!FREEZE_MODE);
+  adc_read(i, &user_data.adc[i]);
+  i = (i+1) % 8;
+
+  if (!DEBUG_MODE && time() > last+30)
     {
-    for (i=0 ; i<8 ; i++)
-      adc_read(i, &user_data.adc[i]);
-
-    if (!DEBUG_MODE)
+    if (first)
       {
-      lcd_goto(0, 0);
-      printf("CH1: %6.4f V", user_data.adc[0]);
-  
-      lcd_goto(0, 1);
-      printf("CH2: %6.4f V", user_data.adc[1]);
+      lcd_clear();
+      first = 0;
       }
+
+    last = time();
+
+    lcd_goto(0, 0);
+    printf("CH1: %6.4f V   ", user_data.adc[0]);
+
+    lcd_goto(0, 1);
+    printf("CH2: %6.4f V   ", user_data.adc[1]);
     }
 }
 
