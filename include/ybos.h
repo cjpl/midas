@@ -10,6 +10,9 @@
   date        by    modification
   ---------   ---   ------------------------------------------------
 *  $Log$
+*  Revision 1.12  2000/04/26 19:11:45  pierre
+*  - Moved doc++ comments to ybos.c
+*
 *  Revision 1.11  2000/04/17 17:22:24  pierre
 *  - First round of doc++ comments
 *
@@ -233,124 +236,14 @@ INT   EXPRT yb_any_event_get (INT data_fmt, void ** pevent, DWORD * psize);
 /* Bank manipulation */
 INT   EXPRT bk_list (BANK_HEADER * pmbh, char * bklist);
 INT   EXPRT bk_find (BANK_HEADER * pmbh, char * bkname, DWORD * bklen, DWORD * bktype, void **pbk);
-
-/** ybk\_init()
-    \begin{description}
-    \item[Description:] Initializes an event for YBOS banks structure.
-    \item[Remarks:] Before banks can be created in an event, ybk\_init()
-    has to be called first.  See \Ref{YBOS bank examples}.
-    \end{description}
-    @memo Initialize an event.
-    @param pevent pointer to the first DWORD of the event area of event 
-    @return void
-*/
 void  EXPRT ybk_init        (DWORD *pevent);
-
-/** ybk\_create()
-    \begin{description}
-    \item[Description:] Define the following memory area to be a YBOS bank with the
-    given attribute.  See \Ref{YBOS bank examples}.
-    \item[Remarks:] Before banks can be created in an event, ybk\_init(). 
-    has to be called first. YBOS does not support mixed bank type. i.e: all the
-    data are expected to be of the same type. YBOS is a 4 bytes bank aligned structure.
-    Padding is performed at the closing of the bank (see \Ref{ybk\_close}) with values of
-    0x0f or/and 0x0ffb. See \Ref{YBOS bank examples}.
-    \end{description}
-    @memo Create a YBOS bank.
-    @param pevent pointer to the first DWORD of the event area.
-    @param bkname name to be assigned to the breated bank (max 4 char)
-    @param btype \Ref{YBOS Bank Types} of the values for the entire created bank.
-    @param pbkdat return pointer to the first empty data location.
-    @return void
-*/
 void  EXPRT ybk_create      (DWORD *pevent, char *bkname, DWORD btype, void *pbkdat);
-
-/** ybk\_close()
-    \begin{description}
-    \item[Description:] Close the YBOS bank previously created by \Ref{ybk_create}.
-    \item[Remarks:] The data pointer pdata must be obtained by \Ref{ybk_create()} and
-    used as an address to fill a bank. It is incremented with every value written
-    to the bank and finally points to a location just after the last byte of the
-    bank. It is then passed to ybk\_close() to finish the bank creation. YBOS is a
-    4 bytes bank aligned structure. Padding is performed at the closing of the bank
-    with values of 0x0f or/and 0x0ffb. See \Ref{YBOS bank examples}.
-    \end{description}
-    @memo Close YBOS bank.
-    @param pevent pointer to current composed event.
-    @param pbkdata  pointer to the current data.
-    @return void
- */
 void  EXPRT ybk_close       (DWORD *pevent, void *pbkdat);
-
-/** ybk\_size()
-    \begin{description}
-    \item[Description:] Returns the size in bytes of the event composed of YBOS bank(s).
-    \item[Remarks:]
-    \end{description}
-    @memo compute event size in bytes.
-    @param pevent pointer to the area of event
-    @return number of bytes contained in data area of event 
-*/
 INT   EXPRT ybk_size        (DWORD *pevent);
-
-/** ybk\_list()
-    \begin{description}
-    \item[Description:] Returns the size in bytes of the event composed of YBOS bank(s).
-    \item[Remarks:] The bklist has to be a predefined string of max size of
-    YB\_STRING\_BANKLIST\_MAX.
-    \end{description}
-    @memo Extract the bank list of an event composed of YBOs banks.
-    @param pevent pointer to the area of event
-    @param bklist Filled character string of the YBOS bank names found in the event.
-    @return number of banks found in this event.
-*/
 INT   EXPRT ybk_list        (DWORD *pevent, char *bklist);
-
-/** ybk\_locate()
-    \begin{description}
-    \item[Description:] Locate the requested bank and return the pointer to the
-    top of the data section.
-    \item[Remarks:]
-    \end{description}
-    @memo Locate bank in event.
-    @param pevent pointer to the area of event
-    @param bkname name of the bank to be located.
-    @param pdata pointer to the first data of the located bank.
-    @return  YB\_SUCCESS, YB\_BANK\_NOT\_FOUND, YB\_WRONG\_BANK\_TYPE
-*/
 INT   EXPRT ybk_locate      (DWORD *pevent, char * bkname, void *pdata);
-
-/** ybk\_find()
-    \begin{description}
-    \item[Description:] Find the requested bank and return the infirmation if the bank as well
-    as the pointer to the top of the data section.
-    \item[Remarks:]
-    \end{description}
-    @memo Find bank in event.
-    @param pevent pointer to the area of event.
-    @param bkname name of the bank to be located.
-    @param bklength returned length in 4bytes unit of the bank.
-    @param bktype returned bank type.
-    @param pbkdata pointer to the first data of the found bank.
-    @return  YB\_SUCCESS, YB\_BANK\_NOT\_FOUND, YB\_WRONG\_BANK\_TYPE
-*/
-INT   EXPRT ybk_find        (DWORD *pevent, char *bkname, DWORD *bklength, DWORD *bktype
-                           , void **pbkdata);
+INT   EXPRT ybk_find        (DWORD *pevent, char *bkname, DWORD *bklength, DWORD *bktype, void **pbkdata);
 void  EXPRT ybk_create_chaos(DWORD *pevent, char *bname, DWORD btype, void *pbkdat);
-
-/** ybk\_iterate()
-    \begin{description}
-    \item[Description:] Returns the bank header pointer and data pointer of the given
-    bank name.
-    \item[Remarks:]
-    \end{description}
-    @memo Find bank in event.
-    @param pevent pointer to the area of event.
-    @param bkname name of the bank to be located.
-    @param pybkh pointer to the YBOS bank header.
-    @param pdata pointer to the first data of the current bank.
-    @return  data length in 4 bytes unit. return 0 (zero) if no more bank found.
-*/
 INT   EXPRT ybk_iterate     (DWORD *pevent, YBOS_BANK_HEADER ** pybkh, void ** pdata);
 void  EXPRT ybk_close_chaos (DWORD *pevent, DWORD btype, void *pbkdat);
 
