@@ -6,6 +6,9 @@
   Contents:     Electronic logbook utility   
 
   $Log$
+  Revision 1.8  1999/09/28 11:05:50  midas
+  Use external editor for composing text
+
   Revision 1.7  1999/09/27 12:54:28  midas
   Added -m flag
 
@@ -59,10 +62,10 @@ HNDLE hDB;
 
 /*------------------------------------------------------------------*/
 
-INT query_params(char *author, char *type, char *system, char *subject, 
-                 char *text, char *textfile, char *attachment)
+INT query_params(char *author, char *type, char *syst, char *subject, 
+                 char *text, char *textfile, char attachment[3][256])
 {
-char str[1000];
+char str[1000], tmpfile[256];
 FILE *f;
 int  i;
 
@@ -76,26 +79,60 @@ int  i;
 
   if (!type[0])
     {
-    printf("Select a message type from following list:\n");
-    for (i=0 ; i<20 && type_list[i][0] ; i++)
-      if (type_list[i+1][0])
-        printf("%s,", type_list[i]);
-      else
-        printf("%s\n", type_list[i]);
+    do
+      {
+      printf("Select a message type from following list:\n<");
+      for (i=0 ; i<20 && type_list[i][0] ; i++)
+        {
+        if (i % 8 == 7)
+          printf("\n");
+        if (type_list[i+1][0])
+          printf("%s,", type_list[i]);
+        else
+          printf("%s>\n", type_list[i]);
+        }
 
-    ss_gets(type, 80);
+      ss_gets(type, 80);
+
+      /* check if valid type */
+      for (i=0 ; i<20 && type_list[i][0] ; i++)
+        if (equal_ustring(type_list[i], type))
+          break;
+      if (!type_list[i][0])
+        printf("Not a valid message type!\n");
+      else
+        break;
+
+      } while (1);
     }
 
-  if (!system[0])
+  if (!syst[0])
     {
-    printf("Select a system from following list:\n");
-    for (i=0 ; i<20 && system_list[i][0] ; i++)
-      if (system_list[i+1][0])
-        printf("%s,", system_list[i]);
-      else
-        printf("%s\n", system_list[i]);
+    do
+      {
+      printf("Select a system from following list:\n<");
+      for (i=0 ; i<20 && system_list[i][0] ; i++)
+        {
+        if (i % 8 == 7)
+          printf("\n");
+        if (system_list[i+1][0])
+          printf("%s,", system_list[i]);
+        else
+          printf("%s>\n", system_list[i]);
+        }
 
-    ss_gets(system, 80);
+      ss_gets(syst, 80);
+
+      /* check if valid system */
+      for (i=0 ; i<20 && system_list[i][0] ; i++)
+        if (equal_ustring(system_list[i], syst))
+          break;
+      if (!system_list[i][0])
+        printf("Not a valid system!\n");
+      else
+        break;
+
+      } while (1);
     }
 
   if (!subject[0])
@@ -106,32 +143,106 @@ int  i;
 
   if (!text[0] && !textfile[0])
     {
-    printf("Finish message text with empty line!\nMessage text: ");
-    do
+    if (getenv("EDITOR"))
       {
-      ss_gets(str, 1000);
-      if (str[0])
+      sprintf(tmpfile, "tmp%d.txt", ss_getpid());
+      f = fopen(tmpfile, "wt");
+      if (f == NULL)
         {
-        strcat(text, str);
-        strcat(text, "\n");
+        printf("Cannot open temporary file for editor.\n");
+        exit(1);
         }
-      } while (str[0]);
+
+      fprintf(f, "Author: %s\n", author);
+      fprintf(f, "Type: %s\n", type);
+      fprintf(f, "System: %s\n", syst);
+      fprintf(f, "Subject: %s\n", subject);
+      fprintf(f, "--------------------------------\n");
+      fclose(f);
+
+      sprintf(str, "%s %s", getenv("EDITOR"), tmpfile);
+      system(str);
+
+      f = fopen(tmpfile, "rt");
+      if (f == NULL)
+        {
+        printf("Cannot open temporary file for editor.\n");
+        exit(1);
+        }
+
+      text[0] = 0;
+      while (!feof(f))
+        {
+        str[0] = 0;
+        fgets(str, sizeof(str), f);
+        if (strncmp(str, "Author: ", 8) == 0)
+          {
+          strcpy(author, str+8);
+          if (strchr(author, '\n'))
+            *strchr(author, '\n') = 0;
+          }
+        else if (strncmp(str, "Type: ", 6) == 0)
+          {
+          strcpy(type, str+6);
+          if (strchr(type, '\n'))
+            *strchr(type, '\n') = 0;
+          }
+        else if (strncmp(str, "System: ", 8) == 0)
+          {
+          strcpy(syst, str+8);
+          if (strchr(syst, '\n'))
+            *strchr(syst, '\n') = 0;
+          }
+        else if (strncmp(str, "Subject: ", 9) == 0)
+          {
+          strcpy(subject, str+9);
+          if (strchr(subject, '\n'))
+            *strchr(subject, '\n') = 0;
+          }
+        else if (strcmp(str, "--------------------------------\n") == 0)
+          {
+          }
+        else
+          strcat(text, str);
+        }
+      fclose(f);
+      remove(tmpfile);
+      }
+    else
+      {
+      printf("Finish message text with empty line!\nMessage text: ");
+      do
+        {
+        ss_gets(str, 1000);
+        if (str[0])
+          {
+          strcat(text, str);
+          strcat(text, "\n");
+          }
+        } while (str[0]);
+      }
     }
 
-  if (!attachment[0])
+  if (!attachment[0][0])
     {
-    do
+    for (i=0 ; i<3 ; i++)
       {
-      printf("Optional file attachment: ");
-      ss_gets(attachment, 256);
-      if (!attachment[0])
+      do
+        {
+        printf("Optional file attachment %d: ", i+1);
+        ss_gets(attachment[i], 256);
+        if (!attachment[i][0])
+          break;
+        f = fopen(attachment[i], "r");
+        if (f == NULL)
+          printf("File does not exist!\n");
+        else
+          fclose(f);
+        } while (f == NULL);
+
+      if (!attachment[i][0])
         break;
-      f = fopen(attachment, "r");
-      if (f == NULL)
-        printf("File does not exist!\n");
-      else
-        fclose(f);
-      } while (f == NULL);
+      }
     }
 
   return SUCCESS;
@@ -150,18 +261,25 @@ void ctrlc_handler(int sig)
 
 main(int argc, char *argv[])
 {
-char      author[80], type[80], system[80], subject[256], text[10000], attachment[256];
+char      author[80], type[80], system[80], subject[256], text[10000];
 char      host_name[256], exp_name[NAME_LENGTH], str[256], lhost_name[256], textfile[256];
-char      *buffer;
+char      *buffer[3], attachment[3][256];
+INT       att_size[3];
 struct hostent *phe;
-INT       i, size, status, fh;
+INT       i, n, status, fh, n_att, size;
 HNDLE     hkey;
 
   /* turn off system message */
   cm_set_msg_print(0, MT_ALL, puts);
 
-  author[0] = type[0] = system[0] = subject[0] = text[0] = attachment[0] = textfile[0] = 0;
-  host_name[0] = exp_name[0] = 0;
+  author[0] = type[0] = system[0] = subject[0] = text[0] = textfile[0] = 0;
+  host_name[0] = exp_name[0] = n_att = 0;
+  for (i=0 ; i<3 ; i++)
+    {
+    attachment[i][0] = 0;
+    buffer[i] = NULL;
+    att_size[i] = 0;
+    }
 
   /* parse command line parameters */
   for (i=1 ; i<argc ; i++)
@@ -183,7 +301,7 @@ HNDLE     hkey;
       else if (argv[i][1] == 'b')
         strcpy(subject, argv[++i]);
       else if (argv[i][1] == 'f')
-        strcpy(attachment, argv[++i]);
+        strcpy(attachment[n_att++], argv[++i]);
       else if (argv[i][1] == 'm')
         strcpy(textfile, argv[++i]);
       else
@@ -295,41 +413,39 @@ usage:
 
   /*---- open attachment file ----*/
 
-  if (attachment[0])
+  for (i = 0 ; i<3 ; i++)
     {
-    fh = open(attachment, O_RDONLY | O_BINARY);
+    if (!attachment[i][0])
+      break;
+
+    fh = open(attachment[i], O_RDONLY | O_BINARY);
     if (fh < 0)
       {
-      printf("Attachment file \"%s\" does not exist.\n", attachment);
+      printf("Attachment file \"%s\" does not exist.\n", attachment[i]);
       cm_disconnect_experiment();
       return 0;
       }
 
-    size = lseek(fh, 0, SEEK_END);
+    att_size[i] = lseek(fh, 0, SEEK_END);
     lseek(fh, 0, SEEK_SET);
 
-    buffer = malloc(size);
-    if (buffer == NULL || size > 500*1024)
+    buffer[i] = malloc(att_size[i]);
+    if (buffer[i] == NULL || att_size[i] > 500*1024)
       {
-      printf("Attachment file \"%s\" is too long (500k max).\n", attachment);
+      printf("Attachment file \"%s\" is too long (500k max).\n", attachment[i]);
       cm_disconnect_experiment();
       return 0;
       }
 
-    i = read(fh, buffer, size);
-    if (i < size)
+    n = read(fh, buffer[i], att_size[i]);
+    if (n < att_size[i])
       {
-      printf("Cannot fully read attachment file \"%s\".\n", attachment);
+      printf("Cannot fully read attachment file \"%s\".\n", attachment[i]);
       cm_disconnect_experiment();
       return 0;
       }
 
     close(fh);
-    }
-  else
-    {
-    buffer = malloc(1);
-    size = 0;
     }
 
   /* add local host name to author */
@@ -355,11 +471,14 @@ usage:
 
   /* now submit message */
   el_submit(0, author, type, system, subject, text, "", "plain", 
-            attachment, buffer, size, 
-            "", "", 0, "", "", 0,
+            attachment[0], buffer[0], att_size[0], 
+            attachment[1], buffer[1], att_size[1], 
+            attachment[2], buffer[2], att_size[2], 
             str, sizeof(str));
 
-  free(buffer);
+  for (i=0 ; i<3 ; i++)
+    if (buffer[i])
+      free(buffer[i]);
 
   cm_disconnect_experiment();
 
