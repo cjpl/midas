@@ -6,6 +6,9 @@
   Contents:     Multimeter Class Driver
 
   $Log$
+  Revision 1.7  2003/05/12 12:05:49  midas
+  Implemented DF_PRIO_DEVICE
+
   Revision 1.6  2003/03/06 11:43:11  midas
   Added CMD_SET_LABEL routines
 
@@ -476,13 +479,26 @@ MULTI_INFO *m_info;
   /* set initial demand values */
   for (i=0 ; i<m_info->num_channels_output ; i++)
     {
-    m_info->output_mirror[i] = m_info->var_output[i] * m_info->factor_output[i] -
-                               m_info->offset_output[i];
+    if (pequipment->driver[index].flags & DF_PRIO_DEVICE)
+      {
+      /* read default value from device */
+      DRIVER_OUTPUT(i)(CMD_GET, m_info->dd_info_output[i],
+                       i-m_info->channel_offset_output[i],
+                       &m_info->output_mirror[i]);
+      }
+    else
+      {
+      /* use default value from ODB */
+      m_info->output_mirror[i] = m_info->var_output[i] * m_info->factor_output[i] -
+                                 m_info->offset_output[i];
 
-    DRIVER_OUTPUT(i)(CMD_SET, m_info->dd_info_output[i], 
-                     i-m_info->channel_offset_output[i], 
-                     m_info->output_mirror[i]);
+      DRIVER_OUTPUT(i)(CMD_SET, m_info->dd_info_output[i], 
+                       i-m_info->channel_offset_output[i], 
+                       m_info->output_mirror[i]);
+      }
     }
+  db_set_record(hDB, m_info->hKeyOutput, m_info->output_mirror,
+                m_info->num_channels_output*sizeof(float), 0);
 
   /* initially read all channels */
   multi_read(pequipment, -1);
