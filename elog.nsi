@@ -30,8 +30,6 @@ Section "ELOG system (required)"
   File nt\bin\elog*.exe
   File /oname=elogd.cfg c:\elog\elogd_sample.cfg 
   File m:\html\elog\eloghelp.html
-  File m:\html\elog\eloghelp.german
-  File m:\html\elog\eloglang.german
   
   File /oname=readme.html m:\html\elog\index.html
   File m:\html\elog\config.html
@@ -53,6 +51,13 @@ Section "ELOG system (required)"
   ; Write the uninstall keys for Windows
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\ELOG" "DisplayName" "ELOG electronic logbook (remove only)"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\ELOG" "UninstallString" '"$INSTDIR\uninst_elog.exe"'
+SectionEnd
+
+; optional section
+Section "Multi-language support"
+  SetOutPath $INSTDIR
+  File m:\html\elog\eloghelp.german
+  File m:\html\elog\eloglang.german
 SectionEnd
 
 ; optional section
