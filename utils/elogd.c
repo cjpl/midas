@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.29  2001/08/08 14:26:44  midas
+  Fixed bug which crashes server on long (>80 chars) attachments
+
   Revision 1.28  2001/08/08 11:02:11  midas
   Added separate password for message deletion
   Authors are displayed in a drop-down box on the query page
@@ -2228,12 +2231,12 @@ BOOL   allow_edit;
         {
         rsprintf("<tr><td colspan=2><table width=100%% border=0>\n");
         rsprintf("<tr><td>Original attachment:<td>%s</tr>", att[i]+14);
-        rsprintf("<tr><td>New attachment%d:<td><input type=\"file\" size=\"60\" maxlength=\"256\" name=\"attfile%d\" accept=\"filetype/*\"></tr>\n", 
+        rsprintf("<tr><td>New attachment%d:<td><input type=\"file\" size=\"60\" maxlength=\"200\" name=\"attfile%d\" accept=\"filetype/*\"></tr>\n", 
                   i+1, i+1);
         rsprintf("</table>\n");
         }
       else
-        rsprintf("<tr><td>Attachment%d:<td><input type=\"file\" size=\"60\" maxlength=\"256\" name=\"attfile%d\" accept=\"filetype/*\"></tr>\n", 
+        rsprintf("<tr><td>Attachment%d:<td><input type=\"file\" size=\"60\" maxlength=\"200\" name=\"attfile%d\" accept=\"filetype/*\"></tr>\n", 
                   i+1, i+1);
       }
 
@@ -2244,7 +2247,7 @@ BOOL   allow_edit;
     rsprintf("<tr><td colspan=2 align=center>Enter attachment filename(s):</tr>");
 
     for (i=0 ; i<MAX_ATTACHMENTS ; i++)
-      rsprintf("<tr><td colspan=2>Attachment%d: <input type=\"file\" size=\"60\" maxlength=\"256\" name=\"attfile%d\" accept=\"filetype/*\"></tr>\n", i+1, i+1);
+      rsprintf("<tr><td colspan=2>Attachment%d: <input type=\"file\" size=\"60\" maxlength=\"200\" name=\"attfile%d\" accept=\"filetype/*\"></tr>\n", i+1, i+1);
     }
 
   rsprintf("</table>\n");
@@ -2489,7 +2492,7 @@ void show_elog_submit_query(INT past_n, INT last_n)
 int    i, size, run, status, m1, d2, m2, y2, index, colspan, current_year, fh, i_line, n_line;
 char   date[80], author[80], type[80], category[80], subject[256], text[TEXT_SIZE], 
        orig_tag[80], reply_tag[80], attachment[MAX_ATTACHMENTS][256], encoding[80];
-char   str[256], str2[10000], tag[256], ref[80], file_name[256];
+char   str[256], str2[10000], tag[256], ref[256], file_name[256];
 BOOL   full, show_attachments;
 DWORD  ltime_start, ltime_end, ltime_current, now;
 struct tm tms, *ptms;
