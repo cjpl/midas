@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.215  2004/09/28 20:05:59  midas
+  Revised debug logging for mserver
+
   Revision 1.214  2004/09/28 18:30:24  midas
   Changed rpc_debug_print arguments
 
@@ -9392,7 +9395,7 @@ INT rpc_set_debug(void (*func) (char *), INT mode)
 }
 
 /********************************************************************/
-void rpc_debug_print(char *format, ...)
+void rpc_debug_printf(char *format, ...)
 /********************************************************************\
 
   Routine: rpc_debug_print
@@ -9410,14 +9413,16 @@ void rpc_debug_print(char *format, ...)
    va_list argptr;
    char str[1000];
 
-   va_start(argptr, format);
-   vsprintf(str, (char *) format, argptr);
-   va_end(argptr);
+   if (_debug_mode) {
+      va_start(argptr, format);
+      vsprintf(str, (char *) format, argptr);
+      va_end(argptr);
 
-   if (_debug_print)
-      _debug_print(str);
-   else
-      puts(str);
+      if (_debug_print)
+         _debug_print(str);
+      else
+         puts(str);
+   }
 }
 
 /********************************************************************/
@@ -10998,8 +11003,7 @@ INT rpc_execute(INT sock, char *buffer, INT convert_flags)
    in_param_ptr = nc_in->param;
    out_param_ptr = nc_out->param;
 
-   if (_debug_print)
-      sprintf(debug_line, "%s(", rpc_list[index].name);
+   sprintf(debug_line, "%s(", rpc_list[index].name);
 
    for (i = 0; rpc_list[index].param[i].tid != 0; i++) {
       tid = rpc_list[index].param[i].tid;
@@ -11036,19 +11040,17 @@ INT rpc_execute(INT sock, char *buffer, INT convert_flags)
                                 convert_flags);
          }
 
-         if (_debug_print) {
-            db_sprintf(str, in_param_ptr, param_size, 0, rpc_list[index].param[i].tid);
-            if (rpc_list[index].param[i].tid == TID_STRING) {
-               /* check for long strings (db_create_record...) */
-               if (strlen(debug_line) + strlen(str) + 2 < sizeof(debug_line)) {
-                  strcat(debug_line, "\"");
-                  strcat(debug_line, str);
-                  strcat(debug_line, "\"");
-               } else
-                  strcat(debug_line, "...");
-            } else
+         db_sprintf(str, in_param_ptr, param_size, 0, rpc_list[index].param[i].tid);
+         if (rpc_list[index].param[i].tid == TID_STRING) {
+            /* check for long strings (db_create_record...) */
+            if (strlen(debug_line) + strlen(str) + 2 < sizeof(debug_line)) {
+               strcat(debug_line, "\"");
                strcat(debug_line, str);
-         }
+               strcat(debug_line, "\"");
+            } else
+               strcat(debug_line, "...");
+         } else
+            strcat(debug_line, str);
 
          in_param_ptr += param_size;
       }
@@ -11093,15 +11095,12 @@ INT rpc_execute(INT sock, char *buffer, INT convert_flags)
          out_param_ptr += param_size;
       }
 
-      if (_debug_print)
-         if (rpc_list[index].param[i + 1].tid)
-            strcat(debug_line, ", ");
+      if (rpc_list[index].param[i + 1].tid)
+         strcat(debug_line, ", ");
    }
 
-   if (_debug_print) {
-      strcat(debug_line, ")");
-      _debug_print(debug_line);
-   }
+   strcat(debug_line, ")");
+   rpc_debug_printf(debug_line);
 
    last_param_ptr = out_param_ptr;
 
@@ -11321,8 +11320,7 @@ INT rpc_execute_ascii(INT sock, char *buffer)
    out_param_ptr = buffer2;
    index_in = 1;
 
-   if (_debug_print)
-      sprintf(debug_line, "%s(", rpc_list[index].name);
+   sprintf(debug_line, "%s(", rpc_list[index].name);
 
    for (i = 0; rpc_list[index].param[i].tid != 0; i++) {
       tid = rpc_list[index].param[i].tid;
@@ -11339,8 +11337,7 @@ INT rpc_execute_ascii(INT sock, char *buffer)
             }
             in_param_ptr = (char *) ALIGN8(((PTYPE) in_param_ptr));
 
-            if (_debug_print)
-               strcat(debug_line, "<array>");
+            strcat(debug_line, "<array>");
          } else {
             db_sscanf(arpc_param[index_in++], in_param_ptr, &param_size, 0, tid);
             param_size = ALIGN8(param_size);
@@ -11354,19 +11351,17 @@ INT rpc_execute_ascii(INT sock, char *buffer)
              */
             prpc_param[i] = in_param_ptr;
 
-            if (_debug_print) {
-               db_sprintf(str, in_param_ptr, param_size, 0, rpc_list[index].param[i].tid);
-               if (rpc_list[index].param[i].tid == TID_STRING) {
-                  /* check for long strings (db_create_record...) */
-                  if (strlen(debug_line) + strlen(str) + 2 < sizeof(debug_line)) {
-                     strcat(debug_line, "\"");
-                     strcat(debug_line, str);
-                     strcat(debug_line, "\"");
-                  } else
-                     strcat(debug_line, "...");
-               } else
+            db_sprintf(str, in_param_ptr, param_size, 0, rpc_list[index].param[i].tid);
+            if (rpc_list[index].param[i].tid == TID_STRING) {
+               /* check for long strings (db_create_record...) */
+               if (strlen(debug_line) + strlen(str) + 2 < sizeof(debug_line)) {
+                  strcat(debug_line, "\"");
                   strcat(debug_line, str);
-            }
+                  strcat(debug_line, "\"");
+               } else
+                  strcat(debug_line, "...");
+            } else
+               strcat(debug_line, str);
 
             in_param_ptr += param_size;
          }
@@ -11405,28 +11400,26 @@ INT rpc_execute_ascii(INT sock, char *buffer)
          if (rpc_list[index].param[i].flags & RPC_IN)
             memcpy(out_param_ptr, prpc_param[i], param_size);
 
-         if (_debug_print && !(flags & RPC_IN))
+         if (!(flags & RPC_IN))
             strcat(debug_line, "-");
 
          prpc_param[i] = out_param_ptr;
          out_param_ptr += param_size;
       }
 
-      if (_debug_print)
-         if (rpc_list[index].param[i + 1].tid)
-            strcat(debug_line, ", ");
+      if (rpc_list[index].param[i + 1].tid)
+         strcat(debug_line, ", ");
    }
 
-   if (_debug_print) {
-      strcat(debug_line, ")");
-      _debug_print(debug_line);
-   }
+   strcat(debug_line, ")");
+   rpc_debug_printf(debug_line);
 
    last_param_ptr = out_param_ptr;
 
-  /*********************************\
-  *   call dispatch function        *
-  \*********************************/
+   /*********************************\
+   *   call dispatch function        *
+   \*********************************/
+  
    if (rpc_list[index].dispatch)
       status = rpc_list[index].dispatch(routine_id, prpc_param);
    else
@@ -11547,14 +11540,12 @@ INT rpc_execute_ascii(INT sock, char *buffer)
    }
 
    /* print return buffer */
-   if (_debug_print) {
-      if (strlen(return_buffer) > sizeof(debug_line)) {
-         memcpy(debug_line, return_buffer, sizeof(debug_line) - 10);
-         strcat(debug_line, "...");
-      } else
-         sprintf(debug_line, "-> %s", return_buffer);
-      _debug_print(debug_line);
-   }
+   if (strlen(return_buffer) > sizeof(debug_line)) {
+      memcpy(debug_line, return_buffer, sizeof(debug_line) - 10);
+      strcat(debug_line, "...");
+   } else
+      sprintf(debug_line, "-> %s", return_buffer);
+   rpc_debug_printf(debug_line);
 
    /* return SS_EXIT if RPC_EXIT is called */
    if (routine_id == RPC_ID_EXIT)
@@ -11622,12 +11613,15 @@ INT rpc_server_accept(int lsock)
 
    /* receive string with timeout */
    i = recv_string(sock, net_buffer, 256, 10000);
+   rpc_debug_printf("Received command: %s", net_buffer);
+ 
    if (i > 0) {
       command = (char) toupper(net_buffer[0]);
 
       switch (command) {
       case 'S':
-               /*----------- shutdown listener ----------------------*/
+               
+         /*----------- shutdown listener ----------------------*/
          closesocket(sock);
          return RPC_SHUTDOWN;
 
@@ -11637,7 +11631,8 @@ INT rpc_server_accept(int lsock)
          break;
 
       case 'I':
-               /*----------- return available experiments -----------*/
+               
+         /*----------- return available experiments -----------*/
          cm_scan_experiments();
          for (i = 0; i < MAX_EXPERIMENT && exptab[i].name[0]; i++) {
             sprintf(str, "%s", exptab[i].name);
@@ -11648,7 +11643,8 @@ INT rpc_server_accept(int lsock)
          break;
 
       case 'C':
-               /*----------- connect to experiment -----------*/
+               
+         /*----------- connect to experiment -----------*/
 
          /* get callback information */
          callback.experiment[0] = 0;
@@ -11743,16 +11739,16 @@ INT rpc_server_accept(int lsock)
             argv[8] = callback.user;
             argv[9] = NULL;
 
-/*
-          cm_msg(MINFO, "", "%s %s %s %s %s %s %s %s %s %s",
-            argv[0], argv[1], argv[2], argv[3], argv[4],
-            argv[5], argv[6], argv[7], argv[8], argv[9]);
-*/
-            status =
-                ss_spawnv(P_NOWAIT, (char *) rpc_get_server_option(RPC_OSERVER_NAME),
+            rpc_debug_printf("Spawn: %s %s %s %s %s %s %s %s %s %s",
+               argv[0], argv[1], argv[2], argv[3], argv[4],
+               argv[5], argv[6], argv[7], argv[8], argv[9]);
+
+            status = ss_spawnv(P_NOWAIT, 
+                          (char *) rpc_get_server_option(RPC_OSERVER_NAME),
                           argv);
+
             if (status != SS_SUCCESS) {
-               cm_msg(MERROR, "rpc_server_accept", "cannot spawn subprocess");
+               rpc_debug_printf("Cannot spawn subprocess: %s\n", strerror(errno));
 
                sprintf(str, "3");       /* 3 means cannot spawn subprocess */
                send(sock, str, strlen(str) + 1, 0);
@@ -12098,7 +12094,7 @@ INT rpc_server_callback(struct callback_addr * pcallback)
                            (int (*)(void)) rpc_server_receive);
 
    if (rpc_get_server_option(RPC_OSERVER_TYPE) != ST_REMOTE)
-      printf("Connection to %s:%s established\n",
+      rpc_debug_printf("Connection to %s:%s established\n",
              _server_acception[index].host_name, _server_acception[index].prog_name);
 
    return RPC_SUCCESS;
@@ -12266,7 +12262,7 @@ INT rpc_server_receive(INT index, int sock, BOOL check)
 
          if (status == SS_EXIT || status == RPC_SHUTDOWN) {
             if (rpc_get_server_option(RPC_OSERVER_TYPE) != ST_REMOTE)
-               printf("Connection to %s:%s closed\n",
+               rpc_debug_printf("Connection to %s:%s closed\n",
                       _server_acception[index].host_name,
                       _server_acception[index].prog_name);
             goto exit;
