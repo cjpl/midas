@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol main program
 
   $Log$
+  Revision 1.32  2003/03/28 07:43:57  midas
+  Removed delay_ms(0)
+
   Revision 1.31  2003/03/24 15:00:31  midas
   Implemented 16-bit magic at end of EEPROM data
 
@@ -223,9 +226,6 @@ unsigned char i;
 
   /* start system clock */
   sysclock_init();
-
-  /* avoid compiler warning */
-  delay_ms(0);
 
   /* init memory */
   CSR = 0;
