@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.96  2002/05/22 05:43:32  midas
+  Added extra variables to hs_enum_vars for mhist to display array size
+
   Revision 1.95  2002/05/16 18:01:13  midas
   Added subdir creation in logger and improved program restart scheme
 
@@ -1779,7 +1782,7 @@ INT EXPRT hs_write_event(DWORD event_id, void *data, DWORD size);
 INT EXPRT hs_count_events(DWORD ltime, DWORD *count);
 INT EXPRT hs_enum_events(DWORD ltime, char *event_name, DWORD *name_size, INT  event_id[], DWORD *id_size);
 INT EXPRT hs_count_vars(DWORD ltime, DWORD event_id, DWORD *count);
-INT EXPRT hs_enum_vars(DWORD ltime, DWORD event_id, char *var_name, DWORD *size);
+INT EXPRT hs_enum_vars(DWORD ltime, DWORD event_id, char *var_name, DWORD *size, DWORD *var_n, DWORD *n_size);
 INT EXPRT hs_get_var(DWORD ltime, DWORD event_id, char *var_name, DWORD *type, INT *n_data);
 INT EXPRT hs_get_event_id(DWORD ltime, char *name, DWORD *id);
 INT EXPRT hs_read(DWORD event_id, DWORD start_time, DWORD end_time, DWORD interval, 

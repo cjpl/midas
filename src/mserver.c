@@ -6,6 +6,9 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
+  Revision 1.32  2002/05/22 05:43:33  midas
+  Added extra variables to hs_enum_vars for mhist to display array size
+
   Revision 1.31  2002/05/10 01:41:19  midas
   Added optional debug output to cm_transition
 
@@ -901,7 +904,7 @@ INT convert_flags;
       break;
 
     case RPC_HS_ENUM_VARS:
-      status = hs_enum_vars(CDWORD(0), CDWORD(1), CSTRING(2), CPDWORD(3));
+      status = hs_enum_vars(CDWORD(0), CDWORD(1), CSTRING(2), CPDWORD(3), CPDWORD(4), CPDWORD(5));
       break;
 
     case RPC_HS_GET_VAR:

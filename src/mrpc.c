@@ -6,6 +6,9 @@
   Contents:     List of MIDAS RPC functions with parameters
 
   $Log$
+  Revision 1.27  2002/05/22 05:43:32  midas
+  Added extra variables to hs_enum_vars for mhist to display array size
+
   Revision 1.26  2002/05/10 01:41:19  midas
   Added optional debug output to cm_transition
 
@@ -556,6 +559,8 @@ static RPC_LIST rpc_list_library[] = {
      {TID_DWORD,      RPC_IN}, 
      {TID_STRING,     RPC_OUT | RPC_VARARRAY}, 
      {TID_INT,        RPC_IN | RPC_OUT},
+     {TID_DWORD,      RPC_OUT | RPC_VARARRAY}, 
+     {TID_DWORD,      RPC_IN | RPC_OUT}, 
      {0} }},
 
   { RPC_HS_GET_VAR, "hs_get_var",
