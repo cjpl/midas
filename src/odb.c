@@ -6,6 +6,9 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.104  2005/01/05 12:43:30  midas
+  Changed XML format
+
   Revision 1.103  2005/01/04 13:33:46  midas
   Make db_get_value work widh indices ala 'value[2]'
 
@@ -6085,7 +6088,11 @@ INT db_save_xml_key(HNDLE hDB, HNDLE hKey, INT level, INT fh)
       line[0] = 0;
       for (i=0 ; i<level ; i++)
          strcat(line, "  ");
-      sprintf(line+strlen(line), "<key name=\"%s\" type=\"%s\"", key.name, rpc_tid_name(key.type));
+      if (key.num_values > 1)
+         sprintf(line+strlen(line), "<keyarray");
+      else
+         sprintf(line+strlen(line), "<key");
+      sprintf(line+strlen(line), " name=\"%s\" type=\"%s\"", key.name, rpc_tid_name(key.type));
 
       if (key.type == TID_STRING || key.type == TID_LINK)
          sprintf(line+strlen(line), " size=\"%d\"", key.item_size);
@@ -6131,7 +6138,7 @@ INT db_save_xml_key(HNDLE hDB, HNDLE hKey, INT level, INT fh)
          line[0] = 0;
          for (i=0 ; i<level ; i++)
             strcat(line, "  ");
-         strlcat(line, "</key>\n", sizeof(line));
+         strlcat(line, "</keyarray>\n", sizeof(line));
       }
 
       free(data);
@@ -6175,8 +6182,23 @@ INT db_save_xml(HNDLE hDB, HNDLE hKey, char *filename)
    cm_asctime(str, sizeof(str));
    sprintf(line, "<!-- created by ODBEdit on %s -->\n", str);
    write(fh, line, strlen(line));
+   sprintf(line, "<odb filename=\"%s\" ", filename);
+   write(fh, line, strlen(line));
+   strcpy(line, "xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" ");
+   write(fh, line, strlen(line));
+   if (getenv("MIDASSYS"))
+      strcpy(str, getenv("MIDASSYS"));
+   else
+      strcpy(str, "");
+   strcat(str, DIR_SEPARATOR_STR);
+   strcat(str, "odb.xsd");
+   sprintf(line, "xsi:noNamespaceSchemaLocation=\"%s\">\n", str);
+   write(fh, line, strlen(line));
 
    status = db_save_xml_key(hDB, hKey, 0, fh);
+   
+   strcpy(line, "</odb>\n");
+   write(fh, line, strlen(line));
    close(fh);
    }
 #endif                          /* LOCAL_ROUTINES */
