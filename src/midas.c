@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.59  1999/09/27 12:54:08  midas
+  Finished alarm system
+
   Revision 1.58  1999/09/27 08:56:53  midas
   Fixed bug with missing run number in elog
 
@@ -14035,8 +14038,11 @@ char         str[80];
 \********************************************************************/
 
 INT el_submit(int run, char *author, char *type, char *system, char *subject, 
-              char *text, char *reply_to, char *encoding, char *afilename, 
-              char *buffer, INT buffer_size, char *tag, INT tag_size)
+              char *text, char *reply_to, char *encoding, 
+              char *afilename1, char *buffer1, INT buffer_size1, 
+              char *afilename2, char *buffer2, INT buffer_size2, 
+              char *afilename3, char *buffer3, INT buffer_size3, 
+              char *tag, INT tag_size)
 /********************************************************************\
 
   Routine: el_submit
@@ -14052,9 +14058,11 @@ INT el_submit(int run, char *author, char *type, char *system, char *subject,
     char   *text            Message text
     char   *reply_to        In reply to this message
     char   *encoding        Text encoding, either HTML or plain
-    char   *afilename       File name of attachment
-    char   *buffer          File contents
-    INT    *buffer_size     Size of buffer in bytes
+
+    char   *afilename1/2/3  File name of attachment
+    char   *buffer1/2/3     File contents
+    INT    *buffer_size1/2/3 Size of buffer in bytes
+
     INT    *tag_size        Maximum size of tag
 
   Output:
@@ -14068,18 +14076,21 @@ INT el_submit(int run, char *author, char *type, char *system, char *subject,
 {
   if (rpc_is_remote())
     return rpc_call(RPC_EL_SUBMIT, run, author, type, system, subject,
-                    text, reply_to, encoding, afilename, buffer, buffer_size,
+                    text, reply_to, encoding, 
+                    afilename1, buffer1, buffer_size1,
+                    afilename2, buffer2, buffer_size2,
+                    afilename3, buffer3, buffer_size3,
                     tag, tag_size);
 
 #ifdef LOCAL_ROUTINES
 {
-INT     size, fh, status, run_number, mutex;
+INT     size, fh, status, run_number, mutex, buffer_size, index;
 struct  tm *tms;
-char    file_name[256], afile_name[256], dir[256], str[256], 
+char    afilename[256], file_name[256], afile_name[3][256], dir[256], str[256], 
         start_str[80], end_str[80], last[80];
 HNDLE   hDB;
 time_t  now;
-char    message[10000], *p;
+char    message[10000], *p, *buffer;
 
   cm_get_experiment_database(&hDB, NULL);
 
@@ -14097,62 +14108,85 @@ char    message[10000], *p;
     db_get_value(hDB, 0, "/Runinfo/Run number", &run_number, &size, TID_INT);
     }
 
-  /* generate filename for attachment */
-  afile_name[0] = file_name[0] = 0;
-  if (afilename[0])
+  for (index = 0 ; index < 3 ; index++)
     {
-    strcpy(file_name, afilename);
-    p = file_name;
-    while (strchr(p, ':'))
-      p = strchr(p, ':')+1;
-    while (strchr(p, '\\'))
-      p = strchr(p, '\\')+1; /* NT */
-    while (strchr(p, '/'))
-      p = strchr(p, '/')+1;  /* Unix */
-    while (strchr(p, ']'))
-      p = strchr(p, ']')+1;  /* VMS */
+    /* generate filename for attachment */
+    afile_name[index][0] = file_name[0] = 0;
 
-    /* assemble ELog filename */
-    if (p[0])
+    if (index == 0)
       {
-      dir[0] = 0;
-      if (hDB > 0)
-        {
-        size = sizeof(dir);
-        memset(dir, 0, size);
-        db_get_value(hDB, 0, "/Logger/Data dir", dir, &size, TID_STRING);
-        if (dir[0] != 0)
-          if (dir[strlen(dir)-1] != DIR_SEPARATOR)
-            strcat(dir, DIR_SEPARATOR_STR);
-        }
+      strcpy(afilename, afilename1);
+      buffer = buffer1;
+      buffer_size = buffer_size1;
+      }
+    else if (index == 1)
+      {
+      strcpy(afilename, afilename2);
+      buffer = buffer2;
+      buffer_size = buffer_size2;
+      }
+    else if (index == 2)
+      {
+      strcpy(afilename, afilename3);
+      buffer = buffer3;
+      buffer_size = buffer_size3;
+      }
 
-  #if !defined(OS_VXWORKS) 
-  #if !defined(OS_VMS)
-      tzset();
-  #endif
-  #endif
-  
-      time(&now);
-      tms = localtime(&now);
+    if (afilename[0])
+      {
+      strcpy(file_name, afilename);
+      p = file_name;
+      while (strchr(p, ':'))
+        p = strchr(p, ':')+1;
+      while (strchr(p, '\\'))
+        p = strchr(p, '\\')+1; /* NT */
+      while (strchr(p, '/'))
+        p = strchr(p, '/')+1;  /* Unix */
+      while (strchr(p, ']'))
+        p = strchr(p, ']')+1;  /* VMS */
 
-      strcpy(str, p);
-      sprintf(afile_name, "%02d%02d%02d_%02d%02d%02d_%s",
-              tms->tm_year % 100, tms->tm_mon+1, tms->tm_mday,
-              tms->tm_hour, tms->tm_min, tms->tm_sec, str);
-      sprintf(file_name, "%s%02d%02d%02d_%02d%02d%02d_%s", dir, 
-              tms->tm_year % 100, tms->tm_mon+1, tms->tm_mday,
-              tms->tm_hour, tms->tm_min, tms->tm_sec, str);
+      /* assemble ELog filename */
+      if (p[0])
+        {
+        dir[0] = 0;
+        if (hDB > 0)
+          {
+          size = sizeof(dir);
+          memset(dir, 0, size);
+          db_get_value(hDB, 0, "/Logger/Data dir", dir, &size, TID_STRING);
+          if (dir[0] != 0)
+            if (dir[strlen(dir)-1] != DIR_SEPARATOR)
+              strcat(dir, DIR_SEPARATOR_STR);
+          }
+
+    #if !defined(OS_VXWORKS) 
+    #if !defined(OS_VMS)
+        tzset();
+    #endif
+    #endif
   
-      /* save attachment */
-      fh = open(file_name, O_CREAT | O_RDWR | O_BINARY, 0644);
-      if (fh < 0)
-        {
-        cm_msg(MERROR, "el_submit", "Cannot write attachment file \"%s\"", file_name);
-        }
-      else
-        {
-        write(fh, buffer, buffer_size); 
-        close(fh);
+        time(&now);
+        tms = localtime(&now);
+
+        strcpy(str, p);
+        sprintf(afile_name[index], "%02d%02d%02d_%02d%02d%02d_%s",
+                tms->tm_year % 100, tms->tm_mon+1, tms->tm_mday,
+                tms->tm_hour, tms->tm_min, tms->tm_sec, str);
+        sprintf(file_name, "%s%02d%02d%02d_%02d%02d%02d_%s", dir, 
+                tms->tm_year % 100, tms->tm_mon+1, tms->tm_mday,
+                tms->tm_hour, tms->tm_min, tms->tm_sec, str);
+  
+        /* save attachment */
+        fh = open(file_name, O_CREAT | O_RDWR | O_BINARY, 0644);
+        if (fh < 0)
+          {
+          cm_msg(MERROR, "el_submit", "Cannot write attachment file \"%s\"", file_name);
+          }
+        else
+          {
+          write(fh, buffer, buffer_size); 
+          close(fh);
+          }
         }
       }
     }
@@ -14198,7 +14232,14 @@ char    message[10000], *p;
   sprintf(message+strlen(message), "Type: %s\n", type);
   sprintf(message+strlen(message), "System: %s\n", system);
   sprintf(message+strlen(message), "Subject: %s\n", subject);
-  sprintf(message+strlen(message), "Attachment: %s\n", afile_name);
+
+  sprintf(message+strlen(message), "Attachment: %s", afile_name[0]);
+  if (afile_name[1][0])
+    sprintf(message+strlen(message), ",%s", afile_name[1]);
+  if (afile_name[2][0])
+    sprintf(message+strlen(message), ",%s", afile_name[2]);
+  sprintf(message+strlen(message), "\n");
+  
   sprintf(message+strlen(message), "Encoding: %s\n", encoding);
   sprintf(message+strlen(message), "========================================\n");
   strcat(message, text);
@@ -14541,7 +14582,9 @@ HNDLE  hDB;
 
 INT el_retrieve(char *tag, char *date, int *run, char *author, char *type, 
                 char *system, char *subject, char *text, int *textsize, 
-                char *orig_tag, char *reply_tag, char *attachment, char *encoding)
+                char *orig_tag, char *reply_tag, 
+                char *attachment1, char *attachment2, char *attachment3, 
+                char *encoding)
 /********************************************************************\
 
   Routine: el_retrieve
@@ -14563,7 +14606,7 @@ INT el_retrieve(char *tag, char *date, int *run, char *author, char *type,
     char   *text            Message text
     char   *orig_tag        Original message if this one is a reply
     char   *reply_tag       Reply for current message
-    char   *attachment      File attachment
+    char   *attachment1/2/3 File attachment
     char   *encoding        Encoding of message
     int    *size            Actual message text size
 
@@ -14575,7 +14618,7 @@ INT el_retrieve(char *tag, char *date, int *run, char *author, char *type,
 {
 int     size, fh, offset, search_status;
 char    str[256], *p;
-char    message[10000], thread[256];
+char    message[10000], thread[256], attachment_all[256];
 
   if (tag[0])
     {
@@ -14610,8 +14653,23 @@ char    message[10000], thread[256];
   el_decode(message, "Type: ", type);
   el_decode(message, "System: ", system);
   el_decode(message, "Subject: ", subject);
-  el_decode(message, "Attachment: ", attachment);
+  el_decode(message, "Attachment: ", attachment_all);
   el_decode(message, "Encoding: ", encoding);
+
+  /* break apart attachements */
+  if (attachment1 && attachment2 && attachment3)
+    {
+    attachment1[0] = attachment2[0] = attachment3[0] = 0;
+    p = strtok(attachment_all, ",");
+    if (p != NULL)
+      strcpy(attachment1, p);
+    p = strtok(NULL, ",");
+    if (p != NULL)
+      strcpy(attachment2, p);
+    p = strtok(NULL, ",");
+    if (p != NULL)
+      strcpy(attachment3, p);
+    }
 
   /* conver thread in reply-to and reply-from */
   if (orig_tag != NULL && reply_tag != NULL)
@@ -14710,7 +14768,7 @@ char    tag[256];
       strcpy(strchr(tag, '.'), ".0");
 
     el_retrieve(tag, NULL, &actual_run, NULL, NULL, 
-                NULL, NULL, NULL, NULL, 
+                NULL, NULL, NULL, NULL, NULL, NULL, 
                 NULL, NULL, NULL, NULL);
     } while (actual_run >= run);
 
@@ -14725,7 +14783,7 @@ char    tag[256];
     close(fh);
 
     el_retrieve(tag, NULL, &actual_run, NULL, NULL, 
-                NULL, NULL, NULL, NULL, 
+                NULL, NULL, NULL, NULL, NULL, NULL,
                 NULL, NULL, NULL, NULL);
     }
 
@@ -14747,7 +14805,7 @@ char    tag[256];
 
 /*------------------------------------------------------------------*/
 
-BOOL al_evaluate_condition(char *condition)
+BOOL al_evaluate_condition(char *condition, char *value)
 {
 HNDLE  hDB, hkey;
 int    i, index, size;
@@ -14796,6 +14854,8 @@ char   data[10000];
   if (!hkey)
     {
     cm_msg(MERROR, "al_evaluate_condition", "Cannot find key %s to evaluate alarm condition", str);
+    if (value)
+      strcpy(value, "unknown");
     return FALSE;
     }
 
@@ -14805,6 +14865,10 @@ char   data[10000];
   db_get_data(hDB, hkey, data, &size, key.type);
   db_sprintf(str, data, size, index, key.type);
   value1 = atof(str);
+  
+  /* return value */
+  if (value)
+    strcpy(value, str);
 
   /* now do logical operation */
   if (strcmp(op, "=") == 0)
@@ -14908,7 +14972,7 @@ ALARM_STR(alarm_str);
 
   /* now trigger alarm class defined in this alarm */
   if (alarm.alarm_class[0])
-    al_trigger_class(alarm.alarm_class, alarm.alarm_message, alarm.triggered > 0);
+    al_trigger_class(alarm.alarm_class, alarm_message, alarm.triggered > 0);
 
   /* signal alarm being triggered */
   cm_asctime(str, sizeof(str));
@@ -14995,14 +15059,15 @@ ALARM_CLASS ac;
   /* write elog message on first trigger */
   if (ac.write_elog_message && first)
     el_submit(0, "Alarm system", "Alarm", "General", alarm_class, str, 
-              "", "plain", "", "", 0, tag, 32); 
+              "", "plain", "", "", 0, "", "", 0, "", "", 0, tag, 32); 
 
   /* execute command */
   if (ac.execute_command[0] &&
       ac.execute_interval > 0 &&
       (INT)ss_time() - (INT)ac.execute_last > ac.execute_interval)
     {
-    system(ac.execute_command);
+    sprintf(str, ac.execute_command, alarm_message);
+    system(str);
     ac.execute_last = ss_time();
     }
 
@@ -15166,7 +15231,7 @@ INT          i, status, size, mutex;
 HNDLE        hDB, hkeyroot, hkey;
 KEY          key;
 ALARM        alarm;
-char         str[256];
+char         str[256], value[256];
 DWORD        now;
 PROGRAM_INFO program_info;
 
@@ -15229,8 +15294,11 @@ ALARM_STR(alarm_str);
         (INT)ss_time() - (INT)alarm.checked_last > alarm.check_interval)
       {
       /* if condition is true, trigger alarm */
-      if (al_evaluate_condition(alarm.condition))
-        al_trigger_alarm(key.name, alarm.alarm_message);
+      if (al_evaluate_condition(alarm.condition, value))
+        {
+        sprintf(str, alarm.alarm_message, value);
+        al_trigger_alarm(key.name, str);
+        }
       else
         {
         alarm.checked_last = ss_time();

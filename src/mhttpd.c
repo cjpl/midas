@@ -6,6 +6,9 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
+  Revision 1.52  1999/09/27 12:53:50  midas
+  Finished alarm system
+
   Revision 1.51  1999/09/27 09:18:05  midas
   Fixed bug
 
@@ -177,8 +180,8 @@ BOOL connected;
 char _param[MAX_PARAM][NAME_LENGTH];
 char _value[MAX_PARAM][VALUE_SIZE];
 char _text[TEXT_SIZE];
-char *_attachment_buffer;
-INT  _attachment_size;
+char *_attachment_buffer[3];
+INT  _attachment_size[3];
 char remote_host_name[256];
 INT  _sock;
 
@@ -203,6 +206,7 @@ char type_list[20][NAME_LENGTH] = {
   "Minor error",
   "Severe error",
   "Fix",
+  "Info",
   "Complaints",
   "Reply",
   "Alarm",
@@ -216,7 +220,10 @@ char system_list[20][NAME_LENGTH] = {
   "Detector",
   "Electronics",
   "Target",
+  "Beamline"
 };
+
+BOOL al_evaluate_condition(char *condition, char *value);
 
 /*------------------------------------------------------------------*/
 
@@ -1166,7 +1173,7 @@ void show_elog_new(char *path)
 int    i, size, run_number;
 char   str[256], ref[256];
 char   date[80], author[80], type[80], system[80], subject[256], text[10000], 
-       orig_tag[80], reply_tag[80], attachment[256], encoding[80];
+       orig_tag[80], reply_tag[80], att1[256], att2[256], att3[256], encoding[80];
 time_t now;
 HNDLE  hDB, hkey;
 
@@ -1179,7 +1186,7 @@ HNDLE  hDB, hkey;
     strcpy(str, path);
     size = sizeof(text);
     el_retrieve(str, date, &run_number, author, type, system, subject, 
-                text, &size, orig_tag, reply_tag, attachment, encoding);
+                text, &size, orig_tag, reply_tag, att1, att2, att3, encoding);
     }
 
   /* header */
@@ -1279,15 +1286,17 @@ HNDLE  hDB, hkey;
     }
   
   rsprintf("<tr><td colspan=2>Text:<br>\n");
-  rsprintf("<textarea rows=10 cols=80 name=Text></textarea></tr>\n");
+  rsprintf("<textarea rows=10 cols=80 wrap=hard name=Text></textarea><br>\n");
 
   /* HTML check box */
-  rsprintf("<tr><td><input type=\"checkbox\" name=\"html\" value=\"1\">Submit as HTML text\n");
+  rsprintf("<input type=\"checkbox\" name=\"html\" value=\"1\">Submit as HTML text</tr>\n");
   
   /* attachment */
-  rsprintf("<td>Attachment: <input type=\"file\" size=\"30\" maxlength=\"256\" name=\"attfile\" accept=\"filetype/*\" value=\"\">\n");
+  rsprintf("<tr><td colspan=2>Attachment1: <input type=\"file\" size=\"60\" maxlength=\"256\" name=\"attfile1\" accept=\"filetype/*\" value=\"\"></tr>\n");
+  rsprintf("<tr><td colspan=2>Attachment2: <input type=\"file\" size=\"60\" maxlength=\"256\" name=\"attfile2\" accept=\"filetype/*\" value=\"\"></tr>\n");
+  rsprintf("<tr><td colspan=2>Attachment3: <input type=\"file\" size=\"60\" maxlength=\"256\" name=\"attfile3\" accept=\"filetype/*\" value=\"\"></tr>\n");
 
-  rsprintf("</tr></table>\n");
+  rsprintf("</table>\n");
   rsprintf("</body></html>\r\n");
 }
 
@@ -1430,7 +1439,7 @@ void show_elog_submit_query()
 {
 int    i, size, run, status, m1, d2, m2, y2;
 char   date[80], author[80], type[80], system[80], subject[256], text[10000], 
-       orig_tag[80], reply_tag[80], attachment[256], encoding[80];
+       orig_tag[80], reply_tag[80], attachment[3][256], encoding[80];
 char   str[256], str2[256], tag[256], ref[80];
 HNDLE  hDB;
 DWORD  ltime_end, ltime_current;
@@ -1577,7 +1586,9 @@ struct tm tms;
     {
     size = sizeof(text);
     status = el_retrieve(tag, date, &run, author, type, system, subject, 
-                         text, &size, orig_tag, reply_tag, attachment, encoding);
+                         text, &size, orig_tag, reply_tag, 
+                         attachment[0], attachment[1], attachment[2],
+                         encoding);
     strcat(tag, "+1");
 
     /* check for end run */
@@ -1865,7 +1876,10 @@ char str[80], author[256];
   el_submit(atoi(getparam("run")), author, getparam("type"),
             getparam("system"), getparam("subject"), getparam("text"), 
             getparam("orig"), *getparam("html") ? "HTML" : "plain", 
-            getparam("attachment"), _attachment_buffer, _attachment_size, str, sizeof(str));
+            getparam("attachment0"), _attachment_buffer[0], _attachment_size[0], 
+            getparam("attachment1"), _attachment_buffer[1], _attachment_size[1], 
+            getparam("attachment2"), _attachment_buffer[2], _attachment_size[2], 
+            str, sizeof(str));
 
   rsprintf("HTTP/1.0 302 Found\r\n");
   rsprintf("Server: MIDAS HTTP %s\r\n", cm_get_version());
@@ -1923,7 +1937,7 @@ KEY   key;
   strcpy(text+strlen(text)-1, "</code>");
   
   el_submit(atoi(getparam("run")), getparam("author"), getparam("form"),
-            "General", "", text, "", "HTML", "", NULL, 0, str, sizeof(str));
+            "General", "", text, "", "HTML", "", NULL, 0, "", NULL, 0, "", NULL, 0, str, sizeof(str));
 
   rsprintf("HTTP/1.0 302 Found\r\n");
   rsprintf("Server: MIDAS HTTP %s\r\n", cm_get_version());
@@ -1938,10 +1952,10 @@ KEY   key;
 
 void show_elog_page(char *path)
 {
-int   size, i, run, msg_status, status, fh, length, first_message, last_message;
+int   size, i, run, msg_status, status, fh, length, first_message, last_message, index;
 char  str[256], orig_path[256], command[80], ref[256], file_name[256];
 char  date[80], author[80], type[80], system[80], subject[256], text[10000], 
-      orig_tag[80], reply_tag[80], attachment[256], encoding[80];
+      orig_tag[80], reply_tag[80], attachment[3][256], encoding[80];
 HNDLE hDB, hkey, hkeyroot;
 KEY   key;
 
@@ -2098,7 +2112,9 @@ KEY   key;
         }
 
       el_retrieve(path, date, &run, author, type, system, subject, 
-                  text, &size, orig_tag, reply_tag, attachment, encoding);
+                  text, &size, orig_tag, reply_tag, 
+                  attachment[0], attachment[1], attachment[2], 
+                  encoding);
       
       if (*getparam("lauthor")  == '1' && !equal_ustring(getparam("author"),  author ))
         continue;
@@ -2155,7 +2171,9 @@ KEY   key;
   size = sizeof(text);
   strcpy(str, path);
   msg_status = el_retrieve(str, date, &run, author, type, system, subject, 
-                           text, &size, orig_tag, reply_tag, attachment, encoding);
+                           text, &size, orig_tag, reply_tag, 
+                           attachment[0], attachment[1], attachment[2],
+                           encoding);
 
   /*---- header ----*/
 
@@ -2299,35 +2317,36 @@ KEY   key;
       }
     else
       rsprintf(text);
-    // el_format(text, encoding);
     rsprintf("</tr>\n", text);
 
-    if (attachment[0])
+    for (index = 0 ; index < 3 ; index++)
       {
-      for (i=0 ; i<(int)strlen(attachment) ; i++)
-        str[i] = toupper(attachment[i]);
+      if (attachment[index][0])
+        {
+        for (i=0 ; i<(int)strlen(attachment[index]) ; i++)
+          str[i] = toupper(attachment[index][i]);
       
-      if (exp_name[0])
-        sprintf(ref, "%sEL/%s?exp=%s", 
-                mhttpd_url, attachment, exp_name);
-      else
-        sprintf(ref, "%sEL/%s", 
-                mhttpd_url, attachment);
+        if (exp_name[0])
+          sprintf(ref, "%sEL/%s?exp=%s", 
+                  mhttpd_url, attachment[index], exp_name);
+        else
+          sprintf(ref, "%sEL/%s", 
+                  mhttpd_url, attachment[index]);
 
-      if (strstr(str, ".GIF") ||
-          strstr(str, ".JPG"))
-        {
-        rsprintf("<tr><td colspan=2>Attachment: <a href=\"%s\"><b>%s</b></a><br>\n", 
-                  ref, attachment+14);
-        rsprintf("<img src=%s></tr>", ref);
-        }
-      else
-        {
-        rsprintf("<tr><td colspan=2 bgcolor=#8080FF>Attachment: <a href=\"%s\"><b>%s</b></a></tr>\n", 
-                  ref, attachment+14);
+        if (strstr(str, ".GIF") ||
+            strstr(str, ".JPG"))
+          {
+          rsprintf("<tr><td colspan=2>Attachment: <a href=\"%s\"><b>%s</b></a><br>\n", 
+                    ref, attachment[index]+14);
+          rsprintf("<img src=%s></tr>", ref);
+          }
+        else
+          {
+          rsprintf("<tr><td colspan=2 bgcolor=#8080FF>Attachment: <a href=\"%s\"><b>%s</b></a></tr>\n", 
+                    ref, attachment[index]+14);
+          }
         }
       }
-
     }
 
   rsprintf("</table>\n");
@@ -3770,7 +3789,7 @@ INT   i, size, triggered;
 BOOL  active;
 HNDLE hDB, hkeyroot, hkey;
 KEY   key;
-char  str[256], ref[256];
+char  str[256], ref[256], condition[256], value[256];
 
   cm_get_experiment_database(&hDB, NULL);
 
@@ -3787,7 +3806,7 @@ char  str[256], ref[256];
 
   /*---- alarms ----*/
 
-  rsprintf("<tr><th>Alarm<th>State<th>First triggered<th>Class<th>Condition</tr>\n");
+  rsprintf("<tr><th>Alarm<th>State<th>First triggered<th>Class<th>Condition<th>Current value</tr>\n");
 
   /* go through all alarms */
   db_find_key(hDB, 0, "/Alarms/Alarms", &hkeyroot);
@@ -3809,7 +3828,7 @@ char  str[256], ref[256];
       else
         sprintf(ref, "%sAlarms/Alarms/%s", 
                 mhttpd_url, key.name);
-      rsprintf("<tr><td><a href=\"%s\"><b>%s</b></a>", ref, key.name);
+      rsprintf("<tr><td bgcolor=#C0C0FF><a href=\"%s\"><b>%s</b></a>", ref, key.name);
 
       /* state */
       size = sizeof(BOOL);
@@ -3836,19 +3855,35 @@ char  str[256], ref[256];
       /* class */
       size = sizeof(str);
       db_get_value(hDB, hkey, "Alarm Class", &str, &size, TID_STRING);
-      rsprintf("<td align=center>%s", str);
+
+      if (exp_name[0])
+        sprintf(ref, "%sAlarms/Classes/%s?exp=%s", 
+                mhttpd_url, str, exp_name);
+      else
+        sprintf(ref, "%sAlarms/Classes/%s", 
+                mhttpd_url, str);
+      rsprintf("<td align=center><a href=\"%s\">%s</a>", ref, str);
 
       /* condition */
-      size = sizeof(str);
-      db_get_value(hDB, hkey, "Condition", &str, &size, TID_STRING);
-      if (equal_ustring(str, "INTERNAL") && triggered)
+      size = sizeof(condition);
+      db_get_value(hDB, hkey, "Condition", &condition, &size, TID_STRING);
+      if (equal_ustring(condition, "INTERNAL") && triggered)
         {
         size = sizeof(str);
         db_get_value(hDB, hkey, "Alarm message", &str, &size, TID_STRING);
         rsprintf("<td>%s", str);
         }
       else
-        rsprintf("<td>%s", str);
+        rsprintf("<td>%s", condition);
+
+      if (!equal_ustring(condition, "INTERNAL"))
+        {
+        /* retrieve value */
+        al_evaluate_condition(condition, value);
+        rsprintf("<td align=center bgcolor=#C0C0FF>%s", value);
+        }
+
+      rsprintf("</tr>\n");
       }
     }
 
@@ -3942,11 +3977,10 @@ char  str[256], ref[256], command[256], name[80];
       else
         sprintf(ref, "%sPrograms/%s", 
                 mhttpd_url, key.name);
-      rsprintf("<tr><td><a href=\"%s\"><b>%s</b></a>", ref, key.name);
+      rsprintf("<tr><td bgcolor=#C0C0FF><a href=\"%s\"><b>%s</b></a>", ref, key.name);
 
       /* running */
       count = 0;
-      rsprintf("<td align=center>");
       if (db_find_key(hDB, 0, "/System/Clients", &hkey_rc) == DB_SUCCESS)
         {
         first = TRUE;
@@ -3967,6 +4001,8 @@ char  str[256], ref[256], command[256], name[80];
             size = sizeof(str);
             db_get_value(hDB, hkeycl, "Host", str, &size, TID_STRING);
 
+            if (first)
+              rsprintf("<td align=center bgcolor=#00FF00>");
             if (!first)
               rsprintf("<br>");
             rsprintf(str);
@@ -3976,12 +4012,23 @@ char  str[256], ref[256], command[256], name[80];
             }
           }
         }
+      if (count == 0)
+        rsprintf("<td align=center bgcolor=#FF0000>Not running");
+
 
       /* Alarm */
       size = sizeof(str);
       db_get_value(hDB, hkey, "Alarm Class", &str, &size, TID_STRING);
       if (str[0])
-        rsprintf("<td bgcolor=#FFFF00 align=center>%s", str);
+        {
+        if (exp_name[0])
+          sprintf(ref, "%sAlarms/Classes/%s?exp=%s", 
+                  mhttpd_url, str, exp_name);
+        else
+          sprintf(ref, "%sAlarms/Classes/%s", 
+                  mhttpd_url, str);
+        rsprintf("<td bgcolor=#FFFF00 align=center><a href=\"%s\">%s</a>", ref, str);
+        }
       else
         rsprintf("<td align=center>-");
 
@@ -4000,13 +4047,13 @@ char  str[256], ref[256], command[256], name[80];
       if (str[0] && count == 0)
         {
         sprintf(str, "Start %s", key.name);
-        rsprintf("<td bgcolor=#00FF00 align=center><input type=submit name=\"Start\" value=\"%s\">\n", str);
+        rsprintf("<td align=center><input type=submit name=\"Start\" value=\"%s\">\n", str);
         }
 
       if (count > 0)
         {
         sprintf(str, "Stop %s", key.name);
-        rsprintf("<td bgcolor=#FF0000 align=center><input type=submit name=\"Stop\" value=\"%s\">\n", str);
+        rsprintf("<td align=center><input type=submit name=\"Stop\" value=\"%s\">\n", str);
         }
 
       rsprintf("</tr>\n");
@@ -4596,7 +4643,8 @@ char *p, *pitem;
 
 void decode_post(char *string, char *boundary, int length, char *cookie_pwd, int refresh)
 {
-char   *pinit, *p, *pitem, *ptmp, file_name[256];
+char *pinit, *p, *pitem, *ptmp, file_name[256], str[256];
+int  n;
 
   initparam();
 
@@ -4619,6 +4667,8 @@ char   *pinit, *p, *pitem, *ptmp, file_name[256];
 
       if (strncmp(pitem, "attfile", 7) == 0)
         {
+        n = pitem[7] - '1';
+
         /* evaluate file attachment */
         if (strstr(pitem, "filename="))
           p = strstr(pitem, "filename=")+9;
@@ -4633,7 +4683,8 @@ char   *pinit, *p, *pitem, *ptmp, file_name[256];
 
         /* set attachment filename */
         strcpy(file_name, p);
-        setparam("attachment", file_name);
+        sprintf(str, "attachment%d", n);
+        setparam(str, file_name);
 
         /* find next boundary */
         ptmp = string;
@@ -4661,8 +4712,8 @@ char   *pinit, *p, *pitem, *ptmp, file_name[256];
         /* save pointer to file */
         if (file_name[0])
           {
-          _attachment_buffer = string;
-          _attachment_size = (INT)p - (INT) string; 
+          _attachment_buffer[n] = string;
+          _attachment_size[n] = (INT)p - (INT) string; 
           }
 
         string = strstr(p, boundary) + strlen(boundary);
