@@ -6,6 +6,9 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.41  2001/10/03 08:36:23  midas
+  Return "invalid link" in odbedit
+
   Revision 1.40  2001/07/24 10:44:13  midas
   Added multi-line strings
 
@@ -1828,7 +1831,7 @@ DATABASE_HEADER  *pheader;
 KEYLIST          *pkeylist;
 KEY              *pkey;
 char             *pkey_name, str[MAX_STRING_LENGTH];
-INT              i;
+INT              i, status;
 
   *subhKey = 0;
 
@@ -1931,7 +1934,10 @@ INT              i;
         {
         /* if last key in chain is a link, return its destination */
         db_unlock_database(hDB);
-        return db_find_link(hDB, 0, str, subhKey);
+        status = db_find_link(hDB, 0, str, subhKey);
+        if (status == DB_NO_KEY)
+          return DB_INVALID_LINK;
+        return status;
         }
       }
 
