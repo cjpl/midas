@@ -15,6 +15,9 @@
  *  Application :
  *  Author      : Pierre-Andre Amaudruz Data Acquisition Group
  *  $Log$
+ *  Revision 1.9  2003/12/01 18:31:51  pierre
+ *  adapted for new mvmestd
+ *
  *  Revision 1.8  2002/06/17 23:46:01  pierre
  *  fix camc R/W mode
  *
@@ -418,8 +421,8 @@ INLINE int cam_init(void)
   if (vh >= 0) 
   {
     am = VME_AMOD_A24_ND;
-    vme_ioctl(vh, IOCTL_AMOD_SET, &am);
-    vme_ioctl(vh, IOCTL_AMOD_GET, &am);
+    vme_ioctl(vh, VME_IOCTL_AMOD_SET, &am);
+    vme_ioctl(vh, VME_IOCTL_AMOD_GET, &am);
     
     /* mapping all crates */
     for (crate=0; crate<8; crate++) 
@@ -434,8 +437,7 @@ INLINE int cam_init(void)
   }
   else 
   {
-    vme_ioctl(vh, IOCTL_MAX_DEV_GET, &err);
-    printf("cam_init: No more device space (>%d)\n", err);
+    printf("cam_init: No more device space\n");
     return 0;
   }
   
