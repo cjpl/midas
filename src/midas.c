@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.156  2002/05/22 05:26:38  midas
+  Fixed problem with empty history files
+
   Revision 1.155  2002/05/16 18:01:13  midas
   Added subdir creation in logger and improved program restart scheme
 
@@ -14945,76 +14948,85 @@ char         *cache;
   /* try to read index file into cache */
   lseek(fhi, 0, SEEK_END);
   cache_size = TELL(fhi);
-  cache = M_MALLOC(cache_size);
-  if (cache)
-    {
-    lseek(fhi, 0, SEEK_SET);
-    i = read(fhi, cache, cache_size);
-    if (i < cache_size)
-      {
-      M_FREE(cache);
-      close(fh);
-      close(fhd);
-      close(fhi);
-      return HS_FILE_ERROR;
-      }
-    }
 
-  /* search record closest to start time */
-  if (cache == NULL)
+  if (cache_size > 0)
     {
-    lseek(fhi, 0, SEEK_END);
-    delta = (TELL(fhi) / sizeof(irec)) / 2;
-    lseek(fhi, delta*sizeof(irec), SEEK_SET);
-    do
+    cache = M_MALLOC(cache_size);
+    if (cache)
       {
-      delta = (int) (abs(delta)/2.0+0.5);
+      lseek(fhi, 0, SEEK_SET);
+      i = read(fhi, cache, cache_size);
+      if (i < cache_size)
+        {
+        M_FREE(cache);
+        close(fh);
+        close(fhd);
+        close(fhi);
+        return HS_FILE_ERROR;
+        }
+      }
+
+    /* search record closest to start time */
+    if (cache == NULL)
+      {
+      lseek(fhi, 0, SEEK_END);
+      delta = (TELL(fhi) / sizeof(irec)) / 2;
+      lseek(fhi, delta*sizeof(irec), SEEK_SET);
+      do
+        {
+        delta = (int) (abs(delta)/2.0+0.5);
+        read(fhi, (char *)&irec, sizeof(irec));
+        if (irec.time > start_time)
+          delta = -delta;
+
+        lseek(fhi, (delta-1)*sizeof(irec), SEEK_CUR);
+        } while (abs(delta) > 1 && irec.time != start_time);
       read(fhi, (char *)&irec, sizeof(irec));
       if (irec.time > start_time)
-        delta = -delta;
+        delta = -abs(delta);
 
-      lseek(fhi, (delta-1)*sizeof(irec), SEEK_CUR);
-      } while (abs(delta) > 1 && irec.time != start_time);
-    read(fhi, (char *)&irec, sizeof(irec));
-    if (irec.time > start_time)
-      delta = -abs(delta);
-
-    i = TELL(fhi) + (delta-1)*sizeof(irec);
-    if (i <= 0)
-      lseek(fhi, 0, SEEK_SET);
+      i = TELL(fhi) + (delta-1)*sizeof(irec);
+      if (i <= 0)
+        lseek(fhi, 0, SEEK_SET);
+      else
+        lseek(fhi, (delta-1)*sizeof(irec), SEEK_CUR);
+      read(fhi, (char *)&irec, sizeof(irec));
+      }
     else
-      lseek(fhi, (delta-1)*sizeof(irec), SEEK_CUR);
-    read(fhi, (char *)&irec, sizeof(irec));
-    }
-  else
-    {
-    delta = (cache_size / sizeof(irec)) / 2;
-    cp = delta*sizeof(irec);
-    do
       {
-      delta = (int) (abs(delta)/2.0+0.5);
+      delta = (cache_size / sizeof(irec)) / 2;
+      cp = delta*sizeof(irec);
+      do
+        {
+        delta = (int) (abs(delta)/2.0+0.5);
+        pirec = (INDEX_RECORD *) (cache+cp);
+        if (pirec->time > start_time)
+          delta = -delta;
+
+        cp = cp + delta*sizeof(irec);
+        } while (abs(delta) > 1 && pirec->time != start_time);
       pirec = (INDEX_RECORD *) (cache+cp);
       if (pirec->time > start_time)
-        delta = -delta;
-
-      cp = cp + delta*sizeof(irec);
-      } while (abs(delta) > 1 && pirec->time != start_time);
-    pirec = (INDEX_RECORD *) (cache+cp);
-    if (pirec->time > start_time)
-      delta = -abs(delta);
+        delta = -abs(delta);
     
-    if (cp <= delta*(int)sizeof(irec))
-      cp = 0;
-    else
-      cp = cp + delta*sizeof(irec);
+      if (cp <= delta*(int)sizeof(irec))
+        cp = 0;
+      else
+        cp = cp + delta*sizeof(irec);
 
-    if (cp >= cache_size)
-      cp = cache_size - sizeof(irec);
-    if (cp < 0)
-      cp = 0;
+      if (cp >= cache_size)
+        cp = cache_size - sizeof(irec);
+      if (cp < 0)
+        cp = 0;
 
-    memcpy(&irec, (INDEX_RECORD *) (cache+cp), sizeof(irec));
-    cp += sizeof(irec);
+      memcpy(&irec, (INDEX_RECORD *) (cache+cp), sizeof(irec));
+      cp += sizeof(irec);
+      }
+    }
+  else /* file size > 0 */
+    {
+    cache = NULL;
+    irec.time = start_time;
     }
 
   /* read records, skip wrong IDs */
