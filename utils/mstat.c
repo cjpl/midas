@@ -6,6 +6,9 @@
   Contents:     Display/log some pertinent information of the ODB
   
   $Log$
+  Revision 1.12  2001/02/16 19:08:52  pierre
+  - fix FAL test
+
   Revision 1.11  2001/02/16 18:51:30  pierre
   - Added logger status section for FAL
 
@@ -173,63 +176,63 @@ void compose_status(HNDLE hDB, HNDLE hKey)
 
   sprintf(&(ststr[j][0]),"Experiment:%s",ex);
   sprintf(&(ststr[j][23]), "Run#:%d",rn);
-
+  
   /* PAA revisit the /Runinfo for run time display */
   /* state */
   if (rs == STATE_RUNNING)
+  {
+    if (rt == TR_STOP)
+      sprintf(&(ststr[j][35]), "Deferred_Stop");
+    else
     {
-      if (rt == TR_STOP)
-	sprintf(&(ststr[j][35]), "Deferred_Stop");
-      else
-	{
-	  if (esc_flag)
-	    sprintf(&(ststr[j][35]), "State:\033[1m%s\033[m",cs);
-	  else
-	    sprintf(&(ststr[j][36]), "State:%s",cs);
-	}
-    }
-  else
-    {
-      if (rt == TR_START)
-	sprintf(&(ststr[j][36]), "Deferred_Start");
+      if (esc_flag)
+	sprintf(&(ststr[j][35]), "State:\033[1m%s\033[m",cs);
       else
 	sprintf(&(ststr[j][36]), "State:%s",cs);
     }
-
+  }
+  else
+  {
+    if (rt == TR_START)
+      sprintf(&(ststr[j][36]), "Deferred_Start");
+    else
+      sprintf(&(ststr[j][36]), "State:%s",cs);
+  }
+  
   /* time */  
   if (rs != STATE_STOPPED)  
-    {
-      cm_time((DWORD *)(&full_time));
-      difftime = full_time - tb;
-      if (esc_flag)
-        sprintf(&(ststr[j++][66]),"Run time :%02d:%02d:%02d",
-		difftime/3600,difftime%3600/60,difftime%60);
-      else
-        sprintf(&(ststr[j++][54]),"     Run time :%02d:%02d:%02d",
-		difftime/3600,difftime%3600/60,difftime%60);
-    }         
+  {
+    cm_time((DWORD *)(&full_time));
+    difftime = full_time - tb;
+    if (esc_flag)
+      sprintf(&(ststr[j++][66]),"Run time :%02d:%02d:%02d",
+	      difftime/3600,difftime%3600/60,difftime%60);
+    else
+      sprintf(&(ststr[j++][54]),"     Run time :%02d:%02d:%02d",
+	      difftime/3600,difftime%3600/60,difftime%60);
+  }         
   else if (rs == STATE_STOPPED)
-    {
-      if (tsb < tb)
-	difftime = 0;
-      else
-	difftime = tsb - tb;
-      if (esc_flag)
-	sprintf(&(ststr[j++][54]),"Full Run time :%02d:%02d:%02d",
-		difftime/3600,difftime%3600/60,difftime%60);
-      else
-	sprintf(&(ststr[j++][54]),"Full Run time :%02d:%02d:%02d",
-		difftime/3600,difftime%3600/60,difftime%60);
+  {
+    if (tsb < tb)
+      difftime = 0;
+    else
+      difftime = tsb - tb;
+    if (esc_flag)
+      sprintf(&(ststr[j++][54]),"Full Run time :%02d:%02d:%02d",
+	      difftime/3600,difftime%3600/60,difftime%60);
+    else
+      sprintf(&(ststr[j++][54]),"Full Run time :%02d:%02d:%02d",
+	      difftime/3600,difftime%3600/60,difftime%60);
     
-      sprintf(&(ststr[j][42])," Stop time:%s",spt);
-    }
-
+    sprintf(&(ststr[j][42])," Stop time:%s",spt);
+  }
+  
   /* Start Stop time */
   sprintf(&(ststr[j][0]),"Start time:%s",stt);
   sprintf(&(ststr[++j][0]),"");
   sprintf(&(ststr[j++][0]),"");
 } /* --- run info --- */
-
+ 
 /* --------------------- Equipment tree -------------------------- */
 {
   double    equevtsend;
@@ -238,7 +241,7 @@ void compose_status(HNDLE hDB, HNDLE hKey)
   char     equnode[256];
   double   equkbpsec;
   BOOL     equenabled;
-
+  
   size = sizeof(str);
   savej = j;
   atleastone_active = FALSE;
@@ -251,210 +254,211 @@ void compose_status(HNDLE hDB, HNDLE hKey)
     sprintf(&(ststr[j][45]),"Event Rate[/s]");
     sprintf(&(ststr[j++][60]),"Data Rate[Kb/s]");
     for (i=0 ; ; i++)
+    {
+      db_enum_key(hDB, hKey, i, &hSubkey);
+      if (!hSubkey)
+	break;
+      db_get_key(hDB, hSubkey, &key);
+      if ((key.type == TID_KEY) && 
+	  ((strstr(key.name,"ODB")) == NULL) &&
+	  ((strstr(key.name,"BOR")) == NULL) &&
+	  ((strstr(key.name,"EOR")) == NULL))
       {
-	db_enum_key(hDB, hKey, i, &hSubkey);
-	if (!hSubkey)
-	  break;
-	db_get_key(hDB, hSubkey, &key);
-	if ((key.type == TID_KEY) && 
-	    ((strstr(key.name,"ODB")) == NULL) &&
-	    ((strstr(key.name,"BOR")) == NULL) &&
-	    ((strstr(key.name,"EOR")) == NULL))
+	/* check if client running this equipment is present */
+	/* extract client name from equipment */
+	size = sizeof(equclient);
+	sprintf(strtmp,"/equipment/%s/common/Frontend name",key.name);
+	db_get_value(hDB, 0, strtmp, equclient, &size, TID_STRING);
+	/* search client name under /system/clients/xxx/name */
+	if (cm_exist(equclient,TRUE) == CM_SUCCESS)
+	{
+	  atleastone_active = TRUE;
+	  size = sizeof(equenabled);
+	  sprintf(strtmp,"/equipment/%s/common/enabled",key.name);
+	  db_get_value(hDB, 0, strtmp, &equenabled, &size, TID_BOOL);
+	  
+	  size = sizeof(equevtsend);
+	  sprintf(strtmp,"/equipment/%s/statistics/events sent",key.name);
+	  db_get_value(hDB, 0, strtmp, &equevtsend, &size, TID_DOUBLE);
+	  
+	  size = sizeof(equevtpsec);
+	  sprintf(strtmp,"/equipment/%s/statistics/events per sec.",key.name);
+	  db_get_value(hDB, 0, strtmp, &equevtpsec, &size, TID_DOUBLE);
+	  
+	  size = sizeof(equkbpsec);
+	  sprintf(strtmp,"/equipment/%s/statistics/kBytes per sec.",key.name);
+	  db_get_value(hDB, 0, strtmp, &equkbpsec, &size, TID_DOUBLE);
+	  
+	  size = sizeof(equnode);
+	  sprintf(strtmp,"/equipment/%s/common/Frontend host",key.name);
+	  db_get_value(hDB, 0, strtmp, equnode, &size, TID_STRING);
 	  {
-	    /* check if client running this equipment is present */
-	    /* extract client name from equipment */
-	    size = sizeof(equclient);
-	    sprintf(strtmp,"/equipment/%s/common/Frontend name",key.name);
-	    db_get_value(hDB, 0, strtmp, equclient, &size, TID_STRING);
-	    /* search client name under /system/clients/xxx/name */
-	    if (cm_exist(equclient,TRUE) == CM_SUCCESS)
+	    char *pp, sdummy[64];
+	    memset (sdummy,0,64);
+	    sprintf(&(ststr[j][0]),"%s ",key.name);
+	    pp = strchr(equnode,'.');
+	    if (pp != NULL) 
+	      sprintf(&(ststr[j][12]),"%s",strncpy(sdummy,equnode,pp-equnode));
+	    else
+	      sprintf(&(ststr[j][12]),"%s",strncpy(sdummy,equnode,strlen(equnode)));
+	    
+	    if (equevtsend > 1E9)
+	      sprintf(&(ststr[j][30]),"%1.3lfG",equevtsend/1E9);
+	    else if (equevtsend > 1E6)
+	      sprintf(&(ststr[j][30]),"%1.3lfM",equevtsend/1E6);
+	    else
+	      sprintf(&(ststr[j][30]),"%1.0lf",equevtsend);
+	    
+	    if (equenabled)
+	    {
+	      if (esc_flag)
 	      {
-		atleastone_active = TRUE;
-		size = sizeof(equenabled);
-		sprintf(strtmp,"/equipment/%s/common/enabled",key.name);
-		db_get_value(hDB, 0, strtmp, &equenabled, &size, TID_BOOL);
-		
-		size = sizeof(equevtsend);
-		sprintf(strtmp,"/equipment/%s/statistics/events sent",key.name);
-		db_get_value(hDB, 0, strtmp, &equevtsend, &size, TID_DOUBLE);
-		
-		size = sizeof(equevtpsec);
-		sprintf(strtmp,"/equipment/%s/statistics/events per sec.",key.name);
-		db_get_value(hDB, 0, strtmp, &equevtpsec, &size, TID_DOUBLE);
-		
-		size = sizeof(equkbpsec);
-		sprintf(strtmp,"/equipment/%s/statistics/kBytes per sec.",key.name);
-		db_get_value(hDB, 0, strtmp, &equkbpsec, &size, TID_DOUBLE);
-		
-		size = sizeof(equnode);
-		sprintf(strtmp,"/equipment/%s/common/Frontend host",key.name);
-		db_get_value(hDB, 0, strtmp, equnode, &size, TID_STRING);
-		{
-		  char *pp, sdummy[64];
-		  memset (sdummy,0,64);
-		  sprintf(&(ststr[j][0]),"%s ",key.name);
-		  pp = strchr(equnode,'.');
-		  if (pp != NULL) 
-		    sprintf(&(ststr[j][12]),"%s",strncpy(sdummy,equnode,pp-equnode));
-		  else
-		    sprintf(&(ststr[j][12]),"%s",strncpy(sdummy,equnode,strlen(equnode)));
-
-		  if (equevtsend > 1E9)
-		    sprintf(&(ststr[j][30]),"%1.3lfG",equevtsend/1E9);
-		  else if (equevtsend > 1E6)
-		    sprintf(&(ststr[j][30]),"%1.3lfM",equevtsend/1E6);
-		  else
-		    sprintf(&(ststr[j][30]),"%1.0lf",equevtsend);
-
-		  if (equenabled)
-		    {
-		      if (esc_flag)
-			{
-			  sprintf(&(ststr[j][45]),"\033[7m%1.1lf\033[m",equevtpsec);
-			  sprintf(&(ststr[j++][67]),"%1.1lf",equkbpsec);
-			}
-		      else
-			{
-			  sprintf(&(ststr[j][45]),"%1.1lf",equevtpsec);
-			  sprintf(&(ststr[j++][60]),"%1.1lf",equkbpsec);
-			}
-		    }
-		  else
-		    {
-		      sprintf(&(ststr[j][45]),"%1.1lf",equevtpsec);
-		      sprintf(&(ststr[j++][60]),"%1.1lf",equkbpsec);
-		    }
-		} /* get value */
-	      } /* active */
-	  } /* eor==NULL */
-      } /* for equipment */
+		sprintf(&(ststr[j][45]),"\033[7m%1.1lf\033[m",equevtpsec);
+		sprintf(&(ststr[j++][67]),"%1.1lf",equkbpsec);
+	      }
+	      else
+	      {
+		sprintf(&(ststr[j][45]),"%1.1lf",equevtpsec);
+		sprintf(&(ststr[j++][60]),"%1.1lf",equkbpsec);
+	      }
+	    }
+	    else
+	    {
+	      sprintf(&(ststr[j][45]),"%1.1lf",equevtpsec);
+	      sprintf(&(ststr[j++][60]),"%1.1lf",equkbpsec);
+	    }
+	  } /* get value */
+	} /* active */
+      } /* eor==NULL */
+    } /* for equipment */
   }  
   /* Front-End message */
   if (!atleastone_active)
-    {
-      memset(&(ststr[savej][0]),0,LINE_LENGTH);
-      sprintf(&(ststr[savej][0]),"... No Front-End currently running...");
-    }
+  {
+    memset(&(ststr[savej][0]),0,LINE_LENGTH);
+    sprintf(&(ststr[savej][0]),"... No Front-End currently running...");
+  }
 } /* --- Equipment tree --- */
 
 /* --------------------- Logger tree ----------------------------- */
 /* search client name "Logger" under /system/clients/xxx/name */
-  if (cm_exist("logger",FALSE) || cm_exist("fal",FALSE)  == CM_SUCCESS)
+if (   (cm_exist("logger",FALSE) == CM_SUCCESS)
+    || (cm_exist("fal",FALSE)    == CM_SUCCESS))
+{
+  char     datadir[256];
+  char     mesfil[256];
+  BOOL     wd, lactive;
+  char     lpath[256];
+  char     ltype[64];
+  char     lstate[64];
+  double   levt;
+  double   lbyt;
+  
+  /* logger */
+  sprintf(ststr[j++],"");
+  size = sizeof(datadir);
+  db_get_value(hDB, 0, "/logger/data dir", datadir, &size, TID_STRING);
+  size = sizeof(mesfil);
+  db_get_value(hDB, 0, "/logger/message file", mesfil, &size, TID_STRING);
+  size = sizeof(wd);
+  db_get_value(hDB, 0, "/logger/write data", &wd, &size, TID_BOOL);
+  sprintf(&ststr[j][0], "Logger Data dir: %s",datadir);
+  sprintf(&ststr[j++][45], "Message File: %s",mesfil);
+  
+  /* check if dir exists */
+  if (db_find_key(hDB, 0, "/logger/channels", &hKey) == DB_SUCCESS)
+  { 
+    sprintf(&(ststr[j][0]),"Chan.");
+    sprintf(&(ststr[j][8]),"Active");
+    sprintf(&(ststr[j][15]),"Type");
+    sprintf(&(ststr[j][25]),"Filename");
+    sprintf(&(ststr[j][45]),"Events Taken");
+    sprintf(&(ststr[j++][60]),"KBytes Taken");
+    for (i=0 ; ; i++)
     {
-      char     datadir[256];
-      char     mesfil[256];
-      BOOL     wd, lactive;
-      char     lpath[256];
-      char     ltype[64];
-      char     lstate[64];
-      double   levt;
-      double   lbyt;
-
-      /* logger */
-      sprintf(ststr[j++],"");
-      size = sizeof(datadir);
-      db_get_value(hDB, 0, "/logger/data dir", datadir, &size, TID_STRING);
-      size = sizeof(mesfil);
-      db_get_value(hDB, 0, "/logger/message file", mesfil, &size, TID_STRING);
-      size = sizeof(wd);
-      db_get_value(hDB, 0, "/logger/write data", &wd, &size, TID_BOOL);
-      sprintf(&ststr[j][0], "Logger Data dir: %s",datadir);
-      sprintf(&ststr[j++][45], "Message File: %s",mesfil);
-      
-      /* check if dir exists */
-      if (db_find_key(hDB, 0, "/logger/channels", &hKey) == DB_SUCCESS)
-	    { 
-	      sprintf(&(ststr[j][0]),"Chan.");
-	      sprintf(&(ststr[j][8]),"Active");
-	      sprintf(&(ststr[j][15]),"Type");
-	      sprintf(&(ststr[j][25]),"Filename");
-	      sprintf(&(ststr[j][45]),"Events Taken");
-	      sprintf(&(ststr[j++][60]),"KBytes Taken");
-	      for (i=0 ; ; i++)
-	        {
-	          db_enum_key(hDB, hKey, i, &hSubkey);
-	          if (!hSubkey)
-    		    break;
-	          db_get_key(hDB, hSubkey, &key);
-	          if (key.type == TID_KEY)
-		        {
-		    size = sizeof(lactive);
-		    sprintf(strtmp,"/logger/channels/%s/settings/active",key.name);
-		    db_get_value(hDB, 0, strtmp, &lactive, &size, TID_BOOL);
-		    sprintf(lstate,"No"); if (lactive) sprintf(lstate,"Yes");
-		    size = sizeof(lpath);
-		    sprintf(strtmp,"/logger/channels/%s/settings/Filename",key.name);
-		    db_get_value(hDB, 0, strtmp, lpath, &size, TID_STRING);
-		    
-		    /* substitue "%d" by current run number */
-		    str[0] = 0;
-		    strcat(str,lpath);
-		    if (strchr(str, '%'))
-		      sprintf(path, str, rn);
-		    else
-		      strcpy(path, str);
-		    strcpy(lpath, path);
-		    
-		    size = sizeof(ltype);
-		    sprintf(strtmp,"/logger/channels/%s/settings/type",key.name);
-		    db_get_value(hDB, 0, strtmp, ltype, &size, TID_STRING);
-		    
-		    size = sizeof(levt);
-		    sprintf(strtmp,"/logger/channels/%s/statistics/Events written",key.name);
-		    db_get_value(hDB, 0, strtmp, &levt, &size, TID_DOUBLE);
-		    
-		    size = sizeof(lbyt);
-		    sprintf(strtmp,"/logger/channels/%s/statistics/Bytes written",key.name);
-		    db_get_value(hDB, 0, strtmp, &lbyt, &size, TID_DOUBLE);
-		    lbyt /= 1024;
-		    if (lactive)
-		      {
-		        if (esc_flag)
-			      {	
-			        sprintf(&(ststr[j][0]),"  \033[7m%s\033[m",key.name);
-			        if (wd == 1)
-			          sprintf(&(ststr[j][15]),"%s",lstate);
-			        else
-			          sprintf(&(ststr[j][15]),"(%s)",lstate);
-			        sprintf(&(ststr[j][22]),"%s",ltype);
-			        sprintf(&(ststr[j][32]), "%s",lpath);
-			        sprintf(&(ststr[j][52]), "%.0f",levt);
-			        sprintf(&(ststr[j++][67]), "%9.2e",lbyt);
-			      }
-		        else	/* no esc */
-			      {
-			        sprintf(&(ststr[j][0]),"  %s",key.name);
-			        if (wd == 1)
-			          sprintf(&(ststr[j][8]),"%s",lstate);
-			        else
-			          sprintf(&(ststr[j][8]),"(%s)",lstate);
-			        sprintf(&(ststr[j][15]),"%s",ltype);
-			        sprintf(&(ststr[j][25]), "%s",lpath);
-			        sprintf(&(ststr[j][45]), "%.0f",levt);
-			        sprintf(&(ststr[j++][60]), "%9.2e",lbyt);
-			      }
-		      }
-		      else /* not active */
-		      {		
-		        sprintf(&(ststr[j][0]),"  %s",key.name);
-		        if (wd == 1)
-      			  sprintf(&(ststr[j][8]),"%s",lstate);
-		        else
-			        sprintf(&(ststr[j][8]),"(%s)",lstate);
-		        sprintf(&(ststr[j][15]),"%s",ltype);
-		        sprintf(&(ststr[j][25]), "%s",lpath);
-		        sprintf(&(ststr[j][45]), "%.0f",levt);
-		        sprintf(&(ststr[j++][60]), "%9.2e",lbyt);
-		      }
-  		  }	 /* key */
-      }	/* for */
-	  } /* exists */
-  }
-  else
-  {
-    sprintf(&(ststr[j++][0]),"");
-    sprintf(&(ststr[j++][0]),"... Logger currently not running...");
-  }
+      db_enum_key(hDB, hKey, i, &hSubkey);
+      if (!hSubkey)
+	break;
+      db_get_key(hDB, hSubkey, &key);
+      if (key.type == TID_KEY)
+      {
+	size = sizeof(lactive);
+	sprintf(strtmp,"/logger/channels/%s/settings/active",key.name);
+	db_get_value(hDB, 0, strtmp, &lactive, &size, TID_BOOL);
+	sprintf(lstate,"No"); if (lactive) sprintf(lstate,"Yes");
+	size = sizeof(lpath);
+	sprintf(strtmp,"/logger/channels/%s/settings/Filename",key.name);
+	db_get_value(hDB, 0, strtmp, lpath, &size, TID_STRING);
+	
+	/* substitue "%d" by current run number */
+	str[0] = 0;
+	strcat(str,lpath);
+	if (strchr(str, '%'))
+	  sprintf(path, str, rn);
+	else
+	  strcpy(path, str);
+	strcpy(lpath, path);
+	
+	size = sizeof(ltype);
+	sprintf(strtmp,"/logger/channels/%s/settings/type",key.name);
+	db_get_value(hDB, 0, strtmp, ltype, &size, TID_STRING);
+	
+	size = sizeof(levt);
+	sprintf(strtmp,"/logger/channels/%s/statistics/Events written",key.name);
+	db_get_value(hDB, 0, strtmp, &levt, &size, TID_DOUBLE);
+	
+	size = sizeof(lbyt);
+	sprintf(strtmp,"/logger/channels/%s/statistics/Bytes written",key.name);
+	db_get_value(hDB, 0, strtmp, &lbyt, &size, TID_DOUBLE);
+	lbyt /= 1024;
+	if (lactive)
+	{
+	  if (esc_flag)
+	  {	
+	    sprintf(&(ststr[j][0]),"  \033[7m%s\033[m",key.name);
+	    if (wd == 1)
+	      sprintf(&(ststr[j][15]),"%s",lstate);
+	    else
+	      sprintf(&(ststr[j][15]),"(%s)",lstate);
+	    sprintf(&(ststr[j][22]),"%s",ltype);
+	    sprintf(&(ststr[j][32]), "%s",lpath);
+	    sprintf(&(ststr[j][52]), "%.0f",levt);
+	    sprintf(&(ststr[j++][67]), "%9.2e",lbyt);
+	  }
+	  else	/* no esc */
+	  {
+	    sprintf(&(ststr[j][0]),"  %s",key.name);
+	    if (wd == 1)
+	      sprintf(&(ststr[j][8]),"%s",lstate);
+	    else
+	      sprintf(&(ststr[j][8]),"(%s)",lstate);
+	    sprintf(&(ststr[j][15]),"%s",ltype);
+	    sprintf(&(ststr[j][25]), "%s",lpath);
+	    sprintf(&(ststr[j][45]), "%.0f",levt);
+	    sprintf(&(ststr[j++][60]), "%9.2e",lbyt);
+	  }
+	}
+	else /* not active */
+	{		
+	  sprintf(&(ststr[j][0]),"  %s",key.name);
+	  if (wd == 1)
+	    sprintf(&(ststr[j][8]),"%s",lstate);
+	  else
+	    sprintf(&(ststr[j][8]),"(%s)",lstate);
+	  sprintf(&(ststr[j][15]),"%s",ltype);
+	  sprintf(&(ststr[j][25]), "%s",lpath);
+	  sprintf(&(ststr[j][45]), "%.0f",levt);
+	  sprintf(&(ststr[j++][60]), "%9.2e",lbyt);
+	}
+      }	 /* key */
+    }	/* for */
+  } /* exists */
+}
+else
+{
+  sprintf(&(ststr[j++][0]),"");
+  sprintf(&(ststr[j++][0]),"... Logger currently not running...");
+}
 
 /* --------------------- Lazy logger tree ------------------------ */
 /* include lazy if running */
