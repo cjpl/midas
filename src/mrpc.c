@@ -6,6 +6,9 @@
   Contents:     List of MIDAS RPC functions with parameters
 
   $Log$
+  Revision 1.5  1999/02/09 14:38:35  midas
+  Added debug logging facility
+
   Revision 1.4  1999/01/13 09:40:48  midas
   Added db_set_data_index2 function
 
@@ -30,7 +33,7 @@
 static RPC_LIST rpc_list_library[] = {
 
   /* common functions */
-  { RPC_CM_SET_CLIENT_INFO,
+  { RPC_CM_SET_CLIENT_INFO, "cm_set_client_info",
     {{TID_INT,        RPC_IN}, 
      {TID_INT,        RPC_OUT}, 
      {TID_STRING,     RPC_IN}, 
@@ -39,81 +42,81 @@ static RPC_LIST rpc_list_library[] = {
      {TID_STRING,     RPC_IN}, 
      {0} }},
 
-  { RPC_CM_SET_WATCHDOG_PARAMS,
+  { RPC_CM_SET_WATCHDOG_PARAMS, "cm_set_watchdog_params",
     {{TID_BOOL,       RPC_IN}, 
      {TID_INT,        RPC_IN}, 
      {0} }},
 
-  { RPC_CM_CLEANUP,
+  { RPC_CM_CLEANUP, "cm_cleanup",
     {{0} }},
 
-  { RPC_CM_GET_WATCHDOG_INFO,
+  { RPC_CM_GET_WATCHDOG_INFO, "cm_get_watchdog_info",
     {{TID_INT,        RPC_IN},
      {TID_STRING,     RPC_IN},
      {TID_INT,        RPC_OUT}, 
      {TID_INT,        RPC_OUT}, 
      {0} }},
 
-  { RPC_CM_MSG_LOG,
+  { RPC_CM_MSG_LOG, "cm_msg_log",
     {{TID_INT,        RPC_IN},
      {TID_STRING,     RPC_IN},
      {0} }},
 
-  { RPC_CM_EXECUTE,
+  { RPC_CM_EXECUTE, "cm_execute",
     {{TID_STRING,     RPC_IN},
      {TID_STRING,     RPC_OUT},
      {TID_INT,        RPC_IN},
      {0} }},
 
-  { RPC_CM_SYNCHRONIZE,
+  { RPC_CM_SYNCHRONIZE, "cm_synchronize",
     {{TID_DWORD,      RPC_OUT},
      {0} }},
 
-  { RPC_CM_ASCTIME,
+  { RPC_CM_ASCTIME, "cm_asctime", 
     {{TID_STRING,     RPC_OUT},
      {TID_INT,        RPC_IN},
      {0} }},
 
-  { RPC_CM_TIME,
+  { RPC_CM_TIME, "cm_time", 
     {{TID_DWORD,      RPC_OUT},
      {0} }},
 
   /* buffer manager functions */
 
-  { RPC_BM_OPEN_BUFFER,
+  { RPC_BM_OPEN_BUFFER, "bm_open_buffer",
     {{TID_STRING,     RPC_IN}, 
      {TID_INT,        RPC_IN}, 
      {TID_INT,        RPC_OUT},
      {0} }},
 
-  { RPC_BM_CLOSE_BUFFER,
+  { RPC_BM_CLOSE_BUFFER, "bm_close_buffer",
     {{TID_INT,        RPC_IN}, 
      {0} }},
 
-  { RPC_BM_CLOSE_ALL_BUFFERS,
+  { RPC_BM_CLOSE_ALL_BUFFERS, "bm_close_all_buffers",
     { {0} }},
 
-  { RPC_BM_GET_BUFFER_INFO,
+  { RPC_BM_GET_BUFFER_INFO, "bm_get_buffer_info",
     {{TID_INT,        RPC_IN}, 
      {TID_STRUCT,     RPC_OUT, sizeof(BUFFER_HEADER) }, 
      {0} }},
 
-  { RPC_BM_GET_BUFFER_LEVEL,
+  { RPC_BM_GET_BUFFER_LEVEL, "bm_get_buffer_level",
     {{TID_INT,        RPC_IN}, 
      {TID_INT,        RPC_OUT}, 
      {0} }},
 
-  { RPC_BM_INIT_BUFFER_COUNTERS,
+  { RPC_BM_INIT_BUFFER_COUNTERS, "bm_init_buffer_counters",
     {{TID_INT,        RPC_IN}, 
      {0} }},
 
-  { RPC_BM_SET_CACHE_SIZE,
+  { RPC_BM_SET_CACHE_SIZE, "bm_set_cache_size",
     {{TID_INT,        RPC_IN},
      {TID_INT,        RPC_IN},
      {TID_INT,        RPC_IN},
      {0} }},
 
-  { RPC_BM_ADD_EVENT_REQUEST,
+  { RPC_BM_ADD_EVENT_REQUEST, "bm_add_event_request",
     {{TID_INT,        RPC_IN}, 
      {TID_SHORT,      RPC_IN}, 
      {TID_SHORT,      RPC_IN}, 
@@ -122,72 +125,72 @@ static RPC_LIST rpc_list_library[] = {
      {TID_INT,        RPC_IN},
      {0} }},
 
-  { RPC_BM_REMOVE_EVENT_REQUEST,
+  { RPC_BM_REMOVE_EVENT_REQUEST, "bm_remove_event_request",
     {{TID_INT,        RPC_IN}, 
      {TID_INT,        RPC_IN}, 
      {0} }},
 
-  { RPC_BM_SEND_EVENT,
+  { RPC_BM_SEND_EVENT, "bm_send_event",
     {{TID_INT,        RPC_IN}, 
      {TID_ARRAY,      RPC_IN | RPC_VARARRAY}, 
      {TID_INT,        RPC_IN}, 
      {TID_INT,        RPC_IN}, 
      {0} }},
 
-  { RPC_BM_FLUSH_CACHE,
+  { RPC_BM_FLUSH_CACHE, "bm_flush_cache",
     {{TID_INT,        RPC_IN}, 
      {TID_INT,        RPC_IN}, 
      {0} }},
 
-  { RPC_BM_RECEIVE_EVENT,
+  { RPC_BM_RECEIVE_EVENT, "bm_receive_event",
     {{TID_INT,        RPC_IN}, 
      {TID_ARRAY,      RPC_OUT | RPC_VARARRAY}, 
      {TID_INT,        RPC_IN | RPC_OUT}, 
      {TID_INT,        RPC_IN}, 
      {0} }},
 
-  { RPC_BM_MARK_READ_WAITING,
+  { RPC_BM_MARK_READ_WAITING, "bm_mark_read_waiting",
     {{TID_BOOL,       RPC_IN}, 
      {0} }},
 
-  { RPC_BM_EMPTY_BUFFERS,
+  { RPC_BM_EMPTY_BUFFERS, "bm_empty_buffers",
     {{0} }},
 
   /* online database functions */
 
-  { RPC_DB_OPEN_DATABASE,
+  { RPC_DB_OPEN_DATABASE, "db_open_database",
     {{TID_STRING,     RPC_IN}, 
      {TID_INT,        RPC_IN}, 
      {TID_INT,        RPC_OUT},
      {TID_STRING,     RPC_IN},
      {0} }},
 
-  { RPC_DB_CLOSE_DATABASE,
+  { RPC_DB_CLOSE_DATABASE, "db_close_database",
     {{TID_INT,        RPC_IN}, 
      {0} }},
 
-  { RPC_DB_FLUSH_DATABASE,
+  { RPC_DB_FLUSH_DATABASE, "db_flush_database",
     {{TID_INT,        RPC_IN}, 
      {0} }},
 
-  { RPC_DB_CLOSE_ALL_DATABASES,
+  { RPC_DB_CLOSE_ALL_DATABASES, "db_close_all_databases",
     { {0} }},
 
-  { RPC_DB_CREATE_KEY,
+  { RPC_DB_CREATE_KEY, "db_create_key",
     {{TID_INT,        RPC_IN}, 
      {TID_INT,        RPC_IN}, 
      {TID_STRING,     RPC_IN}, 
      {TID_DWORD,      RPC_IN},
      {0} }},
 
-  { RPC_DB_CREATE_LINK,
+  { RPC_DB_CREATE_LINK, "db_create_link",
     {{TID_INT,        RPC_IN}, 
      {TID_INT,        RPC_IN}, 
      {TID_STRING,     RPC_IN}, 
      {TID_STRING,     RPC_IN},
      {0} }},
 
-  { RPC_DB_SET_VALUE,
+  { RPC_DB_SET_VALUE, "db_set_value",
     {{TID_INT,        RPC_IN}, 
      {TID_INT,        RPC_IN}, 
      {TID_STRING,     RPC_IN}, 
@@ -197,7 +200,7 @@ static RPC_LIST rpc_list_library[] = {
      {TID_DWORD,      RPC_IN},
      {0} }},
 
-  { RPC_DB_GET_VALUE,
+  { RPC_DB_GET_VALUE, "db_get_value",
     {{TID_INT,        RPC_IN}, 
      {TID_INT,        RPC_IN}, 
      {TID_STRING,     RPC_IN}, 
@@ -206,72 +209,72 @@ static RPC_LIST rpc_list_library[] = {
      {TID_DWORD,      RPC_IN},
      {0} }},
 
-  { RPC_DB_FIND_KEY,
+  { RPC_DB_FIND_KEY, "db_find_key",
     {{TID_INT,        RPC_IN},
      {TID_INT,        RPC_IN},
      {TID_STRING,     RPC_IN}, 
      {TID_INT,        RPC_OUT}, 
      {0} }},
 
-  { RPC_DB_FIND_LINK,
+  { RPC_DB_FIND_LINK, "db_fink_link",
     {{TID_INT,        RPC_IN},
      {TID_INT,        RPC_IN},
      {TID_STRING,     RPC_IN}, 
      {TID_INT,        RPC_OUT}, 
      {0} }},
 
-  { RPC_DB_GET_PATH,
+  { RPC_DB_GET_PATH, "db_get_path",
     {{TID_INT,        RPC_IN},
      {TID_INT,        RPC_IN},
      {TID_STRING,     RPC_OUT}, 
      {TID_INT,        RPC_IN},
      {0} }},
 
-  { RPC_DB_DELETE_KEY,
+  { RPC_DB_DELETE_KEY, "db_delete_key",
     {{TID_INT,        RPC_IN},
      {TID_INT,        RPC_IN},
      {TID_BOOL,       RPC_IN},
      {0} }},
 
-  { RPC_DB_ENUM_KEY,
+  { RPC_DB_ENUM_KEY, "db_enum_key",
     {{TID_INT,        RPC_IN},
      {TID_INT,        RPC_IN},
      {TID_INT,        RPC_IN},
      {TID_INT,        RPC_OUT}, 
      {0} }},
 
-  { RPC_DB_ENUM_LINK,
+  { RPC_DB_ENUM_LINK, "db_enum_link",
     {{TID_INT,        RPC_IN},
      {TID_INT,        RPC_IN},
      {TID_INT,        RPC_IN},
      {TID_INT,        RPC_OUT}, 
      {0} }},
 
-  { RPC_DB_GET_KEY,
+  { RPC_DB_GET_KEY, "db_get_key",
     {{TID_INT,        RPC_IN},
      {TID_INT,        RPC_IN},
      {TID_STRUCT,     RPC_OUT, sizeof(KEY)}, 
      {0} }},
 
-  { RPC_DB_GET_KEY_TIME,
+  { RPC_DB_GET_KEY_TIME, "db_get_key_time",
     {{TID_INT,        RPC_IN},
      {TID_INT,        RPC_IN},
      {TID_DWORD,      RPC_OUT}, 
      {0} }},
 
-  { RPC_DB_RENAME_KEY,
+  { RPC_DB_RENAME_KEY, "db_rename_key",
     {{TID_INT,        RPC_IN},
      {TID_INT,        RPC_IN},
      {TID_STRING,     RPC_IN}, 
      {0} }},
 
-  { RPC_DB_REORDER_KEY,
+  { RPC_DB_REORDER_KEY, "db_reorder_key",
     {{TID_INT,        RPC_IN},
      {TID_INT,        RPC_IN},
      {TID_INT,        RPC_IN}, 
      {0} }},
 
-  { RPC_DB_GET_DATA,
+  { RPC_DB_GET_DATA, "db_get_data",
     {{TID_INT,        RPC_IN}, 
      {TID_INT,        RPC_IN},
      {TID_ARRAY,      RPC_OUT | RPC_VARARRAY}, 
@@ -279,7 +282,7 @@ static RPC_LIST rpc_list_library[] = {
      {TID_DWORD,      RPC_IN}, 
      {0} }},
 
-  { RPC_DB_GET_DATA_INDEX,
+  { RPC_DB_GET_DATA_INDEX, "db_get_data_index",
     {{TID_INT,        RPC_IN}, 
      {TID_INT,        RPC_IN},
      {TID_ARRAY,      RPC_OUT | RPC_VARARRAY}, 
@@ -288,7 +291,7 @@ static RPC_LIST rpc_list_library[] = {
      {TID_DWORD,      RPC_IN}, 
      {0} }},
 
-  { RPC_DB_SET_DATA,
+  { RPC_DB_SET_DATA, "db_set_data",
     {{TID_INT,        RPC_IN}, 
      {TID_INT,        RPC_IN},
      {TID_ARRAY,      RPC_IN | RPC_VARARRAY}, 
@@ -297,7 +300,7 @@ static RPC_LIST rpc_list_library[] = {
      {TID_DWORD,      RPC_IN}, 
      {0} }},
 
-  { RPC_DB_SET_DATA_INDEX,
+  { RPC_DB_SET_DATA_INDEX, "db_set_data_index",
     {{TID_INT,        RPC_IN}, 
      {TID_INT,        RPC_IN},
      {TID_ARRAY,      RPC_IN | RPC_VARARRAY}, 
@@ -306,7 +309,7 @@ static RPC_LIST rpc_list_library[] = {
      {TID_DWORD,      RPC_IN}, 
      {0} }},
 
-  { RPC_DB_SET_DATA_INDEX2,
+  { RPC_DB_SET_DATA_INDEX2, "db_set_data_index2",
     {{TID_INT,        RPC_IN}, 
      {TID_INT,        RPC_IN},
      {TID_ARRAY,      RPC_IN | RPC_VARARRAY}, 
@@ -316,21 +319,21 @@ static RPC_LIST rpc_list_library[] = {
      {TID_BOOL,       RPC_IN}, 
      {0} }},
 
-  { RPC_DB_SET_MODE,
+  { RPC_DB_SET_MODE, "db_set_mode",
     {{TID_INT,        RPC_IN}, 
      {TID_INT,        RPC_IN},
      {TID_WORD,       RPC_IN}, 
      {TID_BOOL,       RPC_IN}, 
      {0} }},
 
-  { RPC_DB_CREATE_RECORD,
+  { RPC_DB_CREATE_RECORD, "db_create_record",
     {{TID_INT,        RPC_IN},
      {TID_INT,        RPC_IN},
      {TID_STRING,     RPC_IN},
      {TID_STRING,     RPC_IN},
      {0} }},
 
-  { RPC_DB_GET_RECORD,
+  { RPC_DB_GET_RECORD, "db_get_record",
     {{TID_INT,        RPC_IN}, 
      {TID_INT,        RPC_IN},
      {TID_ARRAY,      RPC_OUT | RPC_VARARRAY}, 
@@ -338,14 +341,14 @@ static RPC_LIST rpc_list_library[] = {
      {TID_INT,        RPC_IN}, 
      {0} }},
 
-  { RPC_DB_GET_RECORD_SIZE,
+  { RPC_DB_GET_RECORD_SIZE, "db_get_record_size",
     {{TID_INT,        RPC_IN}, 
      {TID_INT,        RPC_IN},
      {TID_INT,        RPC_IN}, 
      {TID_INT,        RPC_OUT}, 
      {0} }},
 
-  { RPC_DB_SET_RECORD,
+  { RPC_DB_SET_RECORD, "db_set_record",
     {{TID_INT,        RPC_IN}, 
      {TID_INT,        RPC_IN},
      {TID_ARRAY,      RPC_IN | RPC_VARARRAY}, 
@@ -353,37 +356,37 @@ static RPC_LIST rpc_list_library[] = {
      {TID_INT,        RPC_IN}, 
      {0} }},
 
-  { RPC_DB_ADD_OPEN_RECORD,
+  { RPC_DB_ADD_OPEN_RECORD, "db_add_open_record",
     {{TID_INT,        RPC_IN}, 
      {TID_INT,        RPC_IN},
      {TID_WORD,       RPC_IN}, 
      {0} }},
 
-  { RPC_DB_REMOVE_OPEN_RECORD,
+  { RPC_DB_REMOVE_OPEN_RECORD, "db_remove_open_record",
     {{TID_INT,        RPC_IN}, 
      {TID_INT,        RPC_IN},
      {0} }},
 
-  { RPC_DB_LOAD,
-    {{TID_INT,        RPC_IN}, 
-     {TID_INT,        RPC_IN},
-     {TID_STRING,     RPC_IN}, 
-     {TID_BOOL  ,     RPC_IN}, 
-     {0} }},
-
-  { RPC_DB_SAVE,
+  { RPC_DB_LOAD, "db_load",
     {{TID_INT,        RPC_IN}, 
      {TID_INT,        RPC_IN},
      {TID_STRING,     RPC_IN}, 
      {TID_BOOL  ,     RPC_IN}, 
      {0} }},
 
-  { RPC_DB_SET_CLIENT_NAME,
+  { RPC_DB_SAVE, "db_save",
+    {{TID_INT,        RPC_IN}, 
+     {TID_INT,        RPC_IN},
+     {TID_STRING,     RPC_IN}, 
+     {TID_BOOL  ,     RPC_IN}, 
+     {0} }},
+
+  { RPC_DB_SET_CLIENT_NAME, "db_set_client_name",
     {{TID_INT,        RPC_IN}, 
      {TID_STRING,     RPC_IN}, 
      {0} }},
 
-  { RPC_DB_GET_OPEN_RECORDS,
+  { RPC_DB_GET_OPEN_RECORDS, "db_get_open_records",
     {{TID_INT,        RPC_IN},
      {TID_INT,        RPC_IN},
      {TID_STRING,     RPC_OUT}, 
@@ -392,48 +395,48 @@ static RPC_LIST rpc_list_library[] = {
 
   /* history functions */
 
-  { RPC_HS_SET_PATH,
+  { RPC_HS_SET_PATH, "hs_set_path",
     {{TID_STRING,     RPC_IN}, 
      {0} }},
 
-  { RPC_HS_DEFINE_EVENT,
+  { RPC_HS_DEFINE_EVENT, "hs_define_event",
     {{TID_DWORD,      RPC_IN}, 
      {TID_STRING,     RPC_IN},
      {TID_ARRAY,      RPC_IN | RPC_VARARRAY}, 
      {TID_INT,        RPC_IN},
      {0} }},
 
-  { RPC_HS_WRITE_EVENT,
+  { RPC_HS_WRITE_EVENT, "hs_write_event",
     {{TID_DWORD,      RPC_IN}, 
      {TID_ARRAY,      RPC_IN | RPC_VARARRAY}, 
      {TID_INT,        RPC_IN},
      {0} }},
 
-  { RPC_HS_COUNT_EVENTS,
+  { RPC_HS_COUNT_EVENTS, "hs_count_events",
     {{TID_DWORD,      RPC_IN}, 
      {TID_DWORD,      RPC_OUT}, 
      {0} }},
 
-  { RPC_HS_ENUM_EVENTS,
+  { RPC_HS_ENUM_EVENTS, "hs_enum_events",
     {{TID_DWORD,      RPC_IN}, 
      {TID_ARRAY,      RPC_OUT | RPC_VARARRAY}, 
      {TID_INT,        RPC_IN | RPC_OUT},
      {0} }},
 
-  { RPC_HS_COUNT_TAGS,
+  { RPC_HS_COUNT_TAGS, "hs_count_tags",
     {{TID_DWORD,      RPC_IN}, 
      {TID_DWORD,      RPC_IN}, 
      {TID_DWORD,      RPC_OUT}, 
      {0} }},
 
-  { RPC_HS_ENUM_TAGS,
+  { RPC_HS_ENUM_TAGS, "hs_enum_tags",
     {{TID_DWORD,      RPC_IN}, 
      {TID_DWORD,      RPC_IN}, 
      {TID_ARRAY,      RPC_OUT | RPC_VARARRAY}, 
      {TID_INT,        RPC_IN | RPC_OUT},
      {0} }},
 
-  { RPC_HS_READ,
+  { RPC_HS_READ, "hs_read",
     {{TID_DWORD,      RPC_IN}, 
      {TID_DWORD,      RPC_IN}, 
      {TID_DWORD,      RPC_IN}, 
@@ -450,7 +453,7 @@ static RPC_LIST rpc_list_library[] = {
 
   /* run control */
 
-  { RPC_RC_TRANSITION,
+  { RPC_RC_TRANSITION, "rc_transition",
     {{TID_INT,        RPC_IN}, 
      {TID_INT,        RPC_IN}, 
      {TID_STRING,     RPC_OUT}, 
@@ -460,7 +463,7 @@ static RPC_LIST rpc_list_library[] = {
 
   /* analyzer control */
 
-  { RPC_ANA_CLEAR_HISTOS,
+  { RPC_ANA_CLEAR_HISTOS, "ana_clear_histos",
     {{TID_INT,        RPC_IN}, 
      {TID_INT,        RPC_IN}, 
      {0} }},
@@ -468,14 +471,14 @@ static RPC_LIST rpc_list_library[] = {
 
   /* logger control */
 
-  { RPC_LOG_REWIND,
+  { RPC_LOG_REWIND, "log_rewind",
     {{TID_INT,        RPC_IN}, 
      {0} }},
 
 
   /* test functions */
 
-  { RPC_TEST,
+  { RPC_TEST, "test",
     {{TID_BYTE,       RPC_IN}, 
      {TID_WORD,       RPC_IN}, 
      {TID_INT,        RPC_IN}, 
@@ -490,7 +493,7 @@ static RPC_LIST rpc_list_library[] = {
 
   /* CAMAC server */
   
-  { RPC_CNAF16,
+  { RPC_CNAF16, "cnaf16",
     {{TID_DWORD,      RPC_IN},            /* command */
      {TID_DWORD,      RPC_IN},            /* branch */
      {TID_DWORD,      RPC_IN},            /* crate */
@@ -503,7 +506,7 @@ static RPC_LIST rpc_list_library[] = {
      {TID_DWORD,      RPC_OUT},           /* q */
      {0} }},
 
-  { RPC_CNAF24,
+  { RPC_CNAF24, "cnaf24",
     {{TID_DWORD,      RPC_IN},            /* command */
      {TID_DWORD,      RPC_IN},            /* branch */
      {TID_DWORD,      RPC_IN},            /* crate */
@@ -528,13 +531,13 @@ static RPC_LIST rpc_list_library[] = {
 static RPC_LIST rpc_list_system[] = {
 
   /* system  functions */
-  { RPC_ID_WATCHDOG,
+  { RPC_ID_WATCHDOG, "id_watchdog",
     {{0}}},
 
-  { RPC_ID_SHUTDOWN,
+  { RPC_ID_SHUTDOWN, "id_shutdown",
     {{0}}},
 
-  { RPC_ID_EXIT,
+  { RPC_ID_EXIT, "id_exit",
     {{0}}},
 
   { 0 }

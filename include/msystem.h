@@ -7,6 +7,9 @@
                 routines
 
   $Log$
+  Revision 1.7  1999/02/09 14:38:54  midas
+  Added debug logging facility
+
   Revision 1.6  1999/01/21 23:01:13  pierre
   - Change ss_create_thread to ss_thread_create.
   - Include VX_TASK_SPAWN struct for ss_thread_create.
@@ -239,6 +242,7 @@ struct callback_addr {
   short host_port1;
   short host_port2;
   short host_port3;
+  BOOL  debug;
   char  experiment[NAME_LENGTH];
   char  directory[MAX_STRING_LENGTH];
   char  user[NAME_LENGTH];
