@@ -6,6 +6,10 @@
   Contents:     Command-line interface to the MIDAS online data base.
 
   $Log$
+  Revision 1.18  1999/06/23 09:41:05  midas
+  - Cleaned up idle loop
+  - Fixed bug when stopping run twice and y/n is not asked correctly
+
   Revision 1.17  1999/05/05 12:02:34  midas
   Added and modified history functions, added db_set_num_values
 
@@ -1086,18 +1090,19 @@ char *file_name = "experim.h";
 
 INT cmd_idle()
 {
-INT i, status;
+INT status;
 
   need_redraw = FALSE;
 
   status = cm_yield(100);
 
-  /* check if client connections are broken */
+  /* abort if server connection is broken */
   if (status == SS_ABORT || status == RPC_SHUTDOWN)
     {
-    /* check if client connections are broken */
-    for (i=0 ; i < MAX_RPC_CONNECTION ; i++)
-      cm_yield(0);
+    if (status == SS_ABORT)
+      printf("Server connection broken.\n");
+    else 
+      printf("\nODBEdit shut down by remote request.\n");
 
     cm_disconnect_experiment();
     exit(0);
@@ -2167,12 +2172,13 @@ PRINT_INFO      print_info;
         state = STATE_STOPPED;
         size = sizeof(i);
         db_get_value(hDB, 0, "/Runinfo/State", &state, &size, TID_INT);
+        str[0] = 0;
         if (state == STATE_STOPPED)
           {
           printf("Run is already stopped. Stop again? (y/[n]) ");
-          i = getchar();
+          ss_gets(str, 256);
           }
-        if (i == 'y' || state != STATE_STOPPED)
+        if (str[0] == 'y' || state != STATE_STOPPED)
           {
           i = 1;
           db_set_value(hDB, 0, "/Runinfo/Transition in progress", &i, sizeof(INT), 1, TID_INT);
