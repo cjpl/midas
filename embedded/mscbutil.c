@@ -6,6 +6,9 @@
   Contents:     Various utility functions for MSCB protocol
 
   $Log$
+  Revision 1.50  2005/03/08 14:52:32  ritt
+  Adapted SCS_210 to F121 CPU
+
   Revision 1.49  2005/02/22 13:19:37  ritt
   Added 5th LED
 
@@ -318,6 +321,11 @@ void rs232_output(void)
 #ifdef SCS_220
       RS485_SEC_ENABLE = 1;
 #endif
+
+#ifdef SCS_210
+      SFRPAGE = UART1_PAGE;
+#endif
+
       SBUF1 = *sbuf_rp++;
       if (sbuf_rp == sbuf + sizeof(sbuf))
          sbuf_rp = sbuf;
@@ -456,8 +464,6 @@ void serial_int1(void) interrupt 20 using 2
 
 /*------------------------------------------------------------------*/
 
-#if defined(SCS_1000) || defined (SCS_1001)
-
 unsigned char uart1_send(char *buffer, int size, unsigned char bit9)
 {
 unsigned char i;
@@ -525,8 +531,6 @@ long start_time;
 
    return len;
 }
-
-#endif
 
 /*------------------------------------------------------------------*/
 
@@ -613,6 +617,17 @@ void uart_init(unsigned char port, unsigned char baud)
       0x100 - 53,   // 115200  0.3% error
       0x100 - 35,   // 172800  1.3% error
       0x100 - 18 }; // 345600  1.6% error
+   unsigned char code baud_table1[] =  // UART1 via timer 1
+     {0x100 - 0,    //  N/A
+      0x100 - 212,  //   4800  0.3% error
+      0x100 - 106,  //   9600  0.3% error
+      0x100 - 53,   //  19200  0.3% error
+      0x100 - 35,   //  28800  1.3% error
+      0x100 - 27,   //  38400  1.6% error
+      0x100 - 18,   //  57600  1.6% error
+      0x100 - 9,    // 115200  1.6% error
+      0x100 - 6,    // 172800  1.6% error
+      0x100 - 3 };  // 345600  1.6% error
 #else                              // 11.0592 MHz
    unsigned char code baud_table[] =
      {0x100 - 144,  //   2400
@@ -691,7 +706,7 @@ void uart_init(unsigned char port, unsigned char baud)
       TMOD  = (TMOD & 0x0F)| 0x20; // Timer 1 8-bit counter with auto reload
       CKCON = 0x02;                // use SYSCLK/48 (needed by timer 0)
 
-      TH1 = 0xF7;                  // gives 113452 baud, neglegt "baud" parameter
+      TH1 = baud_table1[baud - 1];
       TR1 = 1;                     // start timer 1
 
       EIE2 |= 0x40;                // enable serial interrupt
