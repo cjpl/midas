@@ -6,6 +6,9 @@
   Contents:     Command-line interface to the MIDAS online data base.
 
   $Log$
+  Revision 1.44  2001/02/19 11:41:55  midas
+  Avoid interactive questions if started with "-c" flag
+
   Revision 1.43  2000/11/14 08:17:05  midas
   Added number of messages for cm_msg_retrieve and in odbedit "old" command
 
@@ -136,6 +139,7 @@ extern INT cmd_edit(char *prompt, char *cmd, INT (*dir)(char*,INT*), INT (*idle)
 BOOL  need_redraw;
 BOOL  in_cmd_edit;
 char  pwd[256];
+BOOL  cmd_mode;
 
 /* Data record global to save memory for MS-DOS */
 #ifdef OS_MSDOS
@@ -1423,7 +1427,7 @@ PRINT_INFO      print_info;
   do
     {
     /* print prompt */
-    if (cmd[0] == 0)
+    if (!cmd_mode)
       {
       assemble_prompt(prompt, host_name, exp_name, pwd);
 
@@ -1670,12 +1674,17 @@ PRINT_INFO      print_info;
 
         if (i == TID_STRING)
           {
-          memset(data, 0, sizeof(data));
+          if (!cmd_mode)
+            {
+            memset(data, 0, sizeof(data));
 
-          printf("String length [%d]: ", NAME_LENGTH);
-          ss_gets(str, 256);
-          if (str[0])
-            key.item_size = atoi(str);
+            printf("String length [%d]: ", NAME_LENGTH);
+            ss_gets(str, 256);
+            if (str[0])
+              key.item_size = atoi(str);
+            else
+              key.item_size = NAME_LENGTH;
+            }
           else
             key.item_size = NAME_LENGTH;
 
@@ -1715,8 +1724,13 @@ PRINT_INFO      print_info;
       status = db_find_link(hDB, 0, str, &hKey);
       if (status == DB_SUCCESS)
         {
-        printf("Overwrite existing key\n\"%s\"\n(y/[n]) ", str);
-        ss_gets(str, 256);
+        if (cmd_mode)
+          str[0] = 'y';
+        else
+          {
+          printf("Overwrite existing key\n\"%s\"\n(y/[n]) ", str);
+          ss_gets(str, 256);
+          }
         if (str[0] == 'y')
           db_delete_key(hDB, hKey, FALSE);
         }
@@ -1772,7 +1786,7 @@ PRINT_INFO      print_info;
 
       if (status == DB_SUCCESS)
         {
-        if (flags & (1<<0))
+        if (flags & (1<<0) || cmd_mode)
           str[0] = 'y';
         else
           {
@@ -1868,12 +1882,17 @@ PRINT_INFO      print_info;
 
       if (status == DB_SUCCESS || !hKey)
         {
-        printf("Are you sure to change the mode of key\n  %s\nand all its subkeys\n", str);
-        printf("to mode [%c%c%c%c]? (y/[n]) ", mode & MODE_READ      ? 'R' : 0,
-                                               mode & MODE_WRITE     ? 'W' : 0,
-                                               mode & MODE_DELETE    ? 'D' : 0,
-                                               mode & MODE_EXCLUSIVE ? 'E' : 0);
-        ss_gets(str, 256);
+        if (cmd_mode)
+          str[0] = 'y';
+        else
+          {
+          printf("Are you sure to change the mode of key\n  %s\nand all its subkeys\n", str);
+          printf("to mode [%c%c%c%c]? (y/[n]) ", mode & MODE_READ      ? 'R' : 0,
+                                                 mode & MODE_WRITE     ? 'W' : 0,
+                                                 mode & MODE_DELETE    ? 'D' : 0,
+                                                 mode & MODE_EXCLUSIVE ? 'E' : 0);
+          ss_gets(str, 256);
+          }
         if (str[0] == 'y')
           db_set_mode(hDB, hKey, mode, TRUE);
         }
@@ -2339,7 +2358,8 @@ PRINT_INFO      print_info;
           db_get_value(hDB, 0, "/Runinfo/Run number", &old_run_number, &size, TID_INT);
 
           /* edit run parameter if command is not "start now" */
-          if (param[1][0] == 'n' && param[1][1] == 'o' && param[1][2] == 'w')
+          if ((param[1][0] == 'n' && param[1][1] == 'o' && param[1][2] == 'w') ||
+              cmd_mode)
             {
             new_run_number = old_run_number + 1;
             line[0] = 'y';
@@ -2399,7 +2419,7 @@ PRINT_INFO      print_info;
               ss_gets(line, 256);
 
               } while (line[0] == 'n' || line[0] == 'N');
-	    }
+	          }
 
           if (line[0] != 'q' && line[0] != 'Q')
             {
@@ -2444,12 +2464,12 @@ PRINT_INFO      print_info;
         size = sizeof(i);
         db_get_value(hDB, 0, "/Runinfo/State", &state, &size, TID_INT);
         str[0] = 0;
-        if (state == STATE_STOPPED)
+        if (state == STATE_STOPPED && !cmd_mode)
           {
           printf("Run is already stopped. Stop again? (y/[n]) ");
           ss_gets(str, 256);
           }
-        if (str[0] == 'y' || state != STATE_STOPPED)
+        if (str[0] == 'y' || state != STATE_STOPPED || cmd_mode)
           {
           i = 1;
           db_set_value(hDB, 0, "/Runinfo/Transition in progress", &i, sizeof(INT), 1, TID_INT);
@@ -2766,7 +2786,7 @@ PRINT_INFO      print_info;
       printf("Unknown command %s %s %s\n", param[0], param[1], param[2]);
 
     /* exit after single command */
-    if (cmd[0] && cmd[0] != '@')
+    if (cmd_mode && cmd[0] != '@')
       break;
 
     /* check if client connections are broken */
@@ -2799,7 +2819,7 @@ HNDLE         hDB;
 
   cmd[0] = dir[0] = 0;
   odb_size = DEFAULT_ODB_SIZE;
-  debug = FALSE;
+  debug = cmd_mode = FALSE;
 
 #ifdef OS_VXWORKS
   strcpy(host_name, ahost_name);
@@ -2823,7 +2843,10 @@ HNDLE         hDB;
       else if (argv[i][1] == 'h')
         strcpy(host_name, argv[++i]);
       else if (argv[i][1] == 'c')
+        {
         strcpy(cmd, argv[++i]);
+        cmd_mode = TRUE;
+        }
       else if (argv[i][1] == 'd')
         strcpy(dir, argv[++i]);
       else if (argv[i][1] == 's')
@@ -2880,7 +2903,7 @@ usage:
   command_loop(host_name, exp_name, cmd, dir);
 
   /* no shutdown message if called with command */
-  if (cmd[0])
+  if (cmd_mode)
     cm_set_msg_print(MT_ERROR, 0, NULL);
 
   cm_disconnect_experiment();
