@@ -6,6 +6,9 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.39  2001/04/03 12:46:23  midas
+  Removed "killed client" comment from SOR command
+
   Revision 1.38  2000/09/29 13:31:14  midas
   ODBEdit cleanup now deletes open record with no client attached to
 
@@ -2655,8 +2658,6 @@ char            line[256], str[80];
         if (pclient->open_record[j].handle == hKey)
           sprintf(line+strlen(line), "%s ",pclient->name);
       }
-    if (i == pheader->max_client_index)
-      strcat(line, "killed client");
     strcat(line, "\n");
     strcat((char *) result, line);
 
