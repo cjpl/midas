@@ -6,6 +6,9 @@
   Contents:     Command-line interface for the Midas Slow Control Bus
 
   $Log$
+  Revision 1.21  2002/11/27 15:40:05  midas
+  Added version, fixed few bugs
+
   Revision 1.20  2002/11/22 15:43:30  midas
   Ouput cycle number in test mode
 
@@ -159,6 +162,7 @@ void print_help()
   puts("reset                      Reboot whole MSCB system");
   puts("terminal                   Enter teminal mode for SCS-210");
   puts("upload <hex-file>          Upload new firmware to node");
+  puts("version                    Display version number");
 }
 
 /*------------------------------------------------------------------*/
@@ -361,6 +365,16 @@ MSCB_INFO_CHN info_chn;
          param[0][0] == '?')
       print_help();
 
+    /* version */
+    else if (param[0][0] == 'v')
+      {
+      char lib[32], prot[32];
+
+      mscb_get_version(lib, prot);
+      printf("MSCB library version  : %s\n", lib);
+      printf("MSCB protocol version : %s\n", prot);
+      }
+
     /* scan */
     else if ((param[0][0] == 's' && param[0][1] == 'c'))
       {
@@ -368,11 +382,17 @@ MSCB_INFO_CHN info_chn;
         {
         printf("Test address %d\r", i);
         fflush(stdout);
-        status = mscb_info(fd, i, &info);
+        
+        status = mscb_ping(fd, i);
+
         if (status == MSCB_SUCCESS)
           {
-          printf("Found node \"%s\", node addr. %d (0x%04X), group addr. %d (0x%04X)      \n", 
-            info.node_name, i, i, info.group_address, info.group_address);
+          status = mscb_info(fd, i, &info);
+          if (status == MSCB_SUCCESS)
+            {
+            printf("Found node \"%s\", node addr. %d (0x%04X), group addr. %d (0x%04X)      \n", 
+              info.node_name, i, i, info.group_address, info.group_address);
+            }
           }
 
         if (i == 1000)
@@ -817,59 +837,6 @@ MSCB_INFO_CHN info_chn;
       }
     else if (param[0][0] == 't' && param[0][1] == '1')
       {
-      int  d, s, status;
-
-      puts("Exit with empty line\n");
-
-      /* switch SCS-210 into terminal mode */
-      c = 0;
-      status = mscb_write(fd, current_addr, 0, &c, 1);
-
-      do
-        {
-        if (kbhit())
-          {
-          gets(str);
-
-          if (str[0])
-            {
-            for (i=s=0 ; i<(int)strlen(str) ; i++)
-              {
-              c = str[i];
-              status = mscb_write(fd, current_addr, 0, &c, 1);
-              if (status != MSCB_SUCCESS)
-                {
-                printf("\nError: %d\n", status);
-                break;
-                }
-              s += c;
-              }
-
-            sprintf(str, "%03d", s & 0xFF);
-            printf("%s\n", str);
-            for (i=0 ; i<3 ; i++)
-              mscb_write(fd, current_addr, 0, &str[i], 1);
-
-            c = '\r';
-            mscb_write(fd, current_addr, 0, &c, 1);
-            }
-          else
-            {
-            c = 27;
-            mscb_write(fd, current_addr, 0, &c, 1);
-            }
-          }
-
-        size = sizeof(d);
-        mscb_read(fd, current_addr, 0, &d, &size);
-        if (d > 0)
-          putchar(d);
-
-        } while (c != 27);
-
-      puts("\n");
-      while (kbhit())
-        getch();
       }
 
     /* exit/quit */
@@ -941,7 +908,9 @@ int   debug, check_io;
         {
 usage:
         printf("usage: msc [-d host:device] [-a addr] [-c Command] [-c @CommandFile] [-v] [-i]\n\n");
-        printf("       -d     device, usually \"%s\" or \"<host>:%s\" for RPC connection\n", device, device);
+        printf("       -d     device, usually \"%s\" for parallel port,\n", device);
+        printf("              or 0x378 for direct parallel port address,\n");
+        printf("              or \"<host>:%s\" for RPC connection\n", device, device);
         printf("       -s     Start RPC server\n");
         printf("       -a     Address node before executing command\n");
         printf("       -c     Execute command immediately\n");
