@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.101  2000/02/25 22:49:29  midas
+  Increased timeouts
+
   Revision 1.100  2000/02/25 22:19:09  midas
   Improved Ctrl-C handling
 
@@ -8093,7 +8096,7 @@ struct hostent       *phe;
   send(sock, str, strlen(str)+1, 0);
 
   /* receive remote computer info */
-  i = recv_string(sock, str, sizeof(str), 3000);
+  i = recv_string(sock, str, sizeof(str), 10000);
   if (i<=0)
     {
       cm_msg(MERROR, "rpc_client_connect", "timeout on receive remote computer info: %s", str);
@@ -8424,7 +8427,7 @@ struct hostent       *phe;
 
   /* receive remote computer info */
   i = recv_string(_server_connection.send_sock,
-                  str, sizeof(str), 3000);
+                  str, sizeof(str), 10000);
   if (i<=0)
     {
     cm_msg(MERROR, "rpc_server_connect", "timeout on receive remote computer info");
@@ -11267,7 +11270,7 @@ static struct callback_addr callback;
     }
 
   /* receive string with timeout */
-  i = recv_string(sock, net_buffer, 256, 3000);
+  i = recv_string(sock, net_buffer, 256, 10000);
   if (i > 0)
     {
     command = (char) toupper(net_buffer[0]);
@@ -11521,7 +11524,7 @@ char                 net_buffer[256], *p;
     }
 
   /* receive string with timeout */
-  i = recv_string(sock, net_buffer, sizeof(net_buffer), 2000);
+  i = recv_string(sock, net_buffer, sizeof(net_buffer), 10000);
   if (i <= 0)
     {
     closesocket(sock);
@@ -11745,7 +11748,7 @@ int                  flag;
   setsockopt(event_sock, SOL_SOCKET, SO_RCVBUF, (char *) &flag, sizeof(INT));
 #endif
 
-  if (recv_string(recv_sock, net_buffer, 256, 3000) <= 0)
+  if (recv_string(recv_sock, net_buffer, 256, 10000) <= 0)
     {
     cm_msg(MERROR, "rpc_server_callback", "timeout on receive remote computer info");
     goto error;
