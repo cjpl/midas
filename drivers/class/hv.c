@@ -6,6 +6,9 @@
   Contents:     High Voltage Class Driver
 
   $Log$
+  Revision 1.14  2003/09/29 11:57:30  midas
+  Fixed bug with driver entry point offset
+
   Revision 1.13  2003/09/23 09:16:37  midas
   Added <math.h>
 
@@ -248,54 +251,62 @@ INT hv_ramp(HV_INFO *hv_info)
 INT i, status, switch_tag;
 float delta, ramp_speed;
 
-  for (i=0; i<hv_info->num_channels; i++) {
-    if (hv_info->demand[i] != hv_info->demand_mirror[i]) {
+  for (i=0; i<hv_info->num_channels; i++) 
+    {
+    if (hv_info->demand[i] != hv_info->demand_mirror[i]) 
+      {
       /* check if to ramp up or down */
-      if ((hv_info->demand[i] >= 0.f) && (hv_info->demand_mirror[i] > 0.f)) {
+      if ((hv_info->demand[i] >= 0.f) && (hv_info->demand_mirror[i] > 0.f)) 
+        {
         switch_tag = FALSE;
         if (hv_info->demand[i] > hv_info->demand_mirror[i])
           ramp_speed = hv_info->rampup_speed[i];
         else
           ramp_speed = hv_info->rampdown_speed[i];
-      }
-      if ((hv_info->demand[i] >= 0.f) && (hv_info->demand_mirror[i] < 0.f)) {
+        } 
+      if ((hv_info->demand[i] >= 0.f) && (hv_info->demand_mirror[i] < 0.f)) 
+        {
         switch_tag = TRUE;
         ramp_speed = hv_info->rampdown_speed[i];
-      }
-      if ((hv_info->demand[i] < 0.f) && (hv_info->demand_mirror[i] > 0.f)) {
+        }
+      if ((hv_info->demand[i] < 0.f) && (hv_info->demand_mirror[i] > 0.f)) 
+        {
         switch_tag = TRUE;
         ramp_speed = hv_info->rampdown_speed[i];
-      }
-      if ((hv_info->demand[i] < 0.f) && (hv_info->demand_mirror[i] < 0.f)) {
+        }
+      if ((hv_info->demand[i] < 0.f) && (hv_info->demand_mirror[i] < 0.f)) 
+        {
         switch_tag = FALSE;
         if (hv_info->demand[i] > hv_info->demand_mirror[i])
           ramp_speed = hv_info->rampdown_speed[i];
         else
           ramp_speed = hv_info->rampup_speed[i];
-      }
-      if (hv_info->demand_mirror[i] == 0.f) {
+        }
+      if (hv_info->demand_mirror[i] == 0.f) 
+        {
         switch_tag = FALSE;
         ramp_speed = hv_info->rampup_speed[i];
-      }
+        }
 
       if (ramp_speed == 0.f)
         if (switch_tag)
           hv_info->demand_mirror[i] = 0.f; /* go to zero */
         else
           hv_info->demand_mirror[i] = hv_info->demand[i]; /* step directly to the new high voltage */
-      else {
+      else 
+        {
         delta = (float) ((ss_millitime() -
                           hv_info->last_change[i])/1000.0 * ramp_speed);
         if (hv_info->demand[i] > hv_info->demand_mirror[i])
           hv_info->demand_mirror[i] = min(hv_info->demand[i], hv_info->demand_mirror[i] + delta);
         else
           hv_info->demand_mirror[i] = max(hv_info->demand[i], hv_info->demand_mirror[i] - delta);
-      }
+        }
       status = DRIVER(i)(CMD_SET, hv_info->dd_info[i],
                            i-hv_info->channel_offset[i], hv_info->demand_mirror[i]);
       hv_info->last_change[i] = ss_millitime();
+      }
     }
-  }
 
   return status;
 }
@@ -649,13 +660,13 @@ HV_INFO *hv_info;
       hv_info->demand_mirror[offset+j] = 
         min(hv_info->demand[offset+j], hv_info->voltage_limit[offset+j]);
 
-    DRIVER(i)(CMD_SET_CURRENT_LIMIT_ALL, pequipment->driver[i].dd_info, 
+    DRIVER(i+offset)(CMD_SET_CURRENT_LIMIT_ALL, pequipment->driver[i].dd_info, 
               pequipment->driver[i].channels, hv_info->current_limit+offset);
 
     printf("\n");
 
     if ((hv_info->flags[i] & DF_PRIO_DEVICE) == 0)
-      status = DRIVER(i)(CMD_SET_ALL, pequipment->driver[i].dd_info, 
+      status = DRIVER(i+offset)(CMD_SET_ALL, pequipment->driver[i].dd_info, 
                          pequipment->driver[i].channels, hv_info->demand_mirror+offset);
     if (status != FE_SUCCESS)
       return status;
