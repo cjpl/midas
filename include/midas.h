@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.27  1999/06/25 12:02:12  midas
+  Added bk_delete function
+
   Revision 1.26  1999/06/23 09:58:28  midas
   Fixed typo
 
@@ -1208,6 +1211,7 @@ char EXPRT *strcomb(char **list);
 void EXPRT bk_init(void *pbh);
 INT EXPRT bk_size(void *pbh);
 void EXPRT bk_create(void *pbh, char *name, WORD type, void *pdata);
+int EXPRT bk_delete(void *event, char *name);
 void EXPRT bk_close(void *pbh, void *pdata);
 INT EXPRT bk_locate(void *pbh, char *name, void *pdata);
 INT EXPRT bk_iterate(void *pbh, BANK **pbk, void *pdata);
