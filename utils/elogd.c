@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.93  2001/12/13 13:05:18  midas
+  Added missing "reply" etc. translations
+
   Revision 1.92  2001/12/12 16:22:25  midas
   Added "HTML default" option, fixed "reply" link display
 
@@ -6248,14 +6251,14 @@ FILE   *f;
         {
         rsprintf("<tr><td nowrap width=10%% bgcolor=%s>", gt("Categories bgcolor1"));
         sprintf(ref, "/%s/%s", logbook_enc, orig_tag);
-        rsprintf("<b>In reply to:</b></td><td bgcolor=%s>", gt("Menu2 bgcolor"));
+        rsprintf("<b>%s:</b></td><td bgcolor=%s>", loc("In reply to"), gt("Menu2 bgcolor"));
         rsprintf("<a href=\"%s\">%s</a></td></tr>\n", ref, orig_tag);
         }
       if (reply_tag[0])
         {
         rsprintf("<tr><td nowrap width=10%% bgcolor=%s>", gt("Categories bgcolor1"));
         sprintf(ref, "/%s/%s", logbook_enc, reply_tag);
-        rsprintf("<b>Reply:</b></td><td bgcolor=%s>", gt("Menu2 bgcolor"));
+        rsprintf("<b>%s:</b></td><td bgcolor=%s>", loc("Reply to this"), gt("Menu2 bgcolor"));
         rsprintf("<a href=\"%s\">%s</a></td></tr>\n", ref, reply_tag);
         }
       }
