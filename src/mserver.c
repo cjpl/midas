@@ -6,6 +6,9 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
+  Revision 1.48  2004/09/28 18:11:35  midas
+  Added -D daemon mode
+
   Revision 1.47  2004/09/28 17:13:21  midas
   Added startup debug code for mserver
 
@@ -243,9 +246,9 @@ int main(int argc, char **argv)
 \********************************************************************/
 {
    struct callback_addr callback;
-   int i, flag, size, server_type, debug;
+   int i, flag, size, server_type;
    char name[256], str[1000];
-   BOOL inetd;
+   BOOL inetd, daemon, debug;
 
 #ifdef OS_WINNT
    /* init critical section object for open/close buffer */
@@ -289,15 +292,15 @@ int main(int argc, char **argv)
       cm_msg(MLOG, "main", "%s started interactively", argv[0]);
 
    if (argc < 7) {
-      debug = 0;
+      debug = daemon = FALSE;
       server_type = ST_MPROCESS;
 
       /* parse command line parameters */
       for (i = 1; i < argc; i++) {
          if (argv[i][0] == '-' && argv[i][1] == 'd')
-            debug = 1;
+            debug = TRUE;
          else if (argv[i][0] == '-' && argv[i][1] == 'D')
-            debug = 2;
+            daemon = TRUE;
          else if (argv[i][0] == '-' && argv[i][1] == 's')
             server_type = ST_SINGLE;
          else if (argv[i][0] == '-' && argv[i][1] == 't')
@@ -314,11 +317,11 @@ int main(int argc, char **argv)
                printf("               -t    Multi threaded server\n");
                printf("               -m    Multi process server (default)\n");
 #ifdef OS_LINUX
-               printf("               -d    Write debug info to \"/tmp/mserver.log\"\n\n");
+               printf("               -D    Become a daemon\n");
+               printf("               -d    Write debug info to stdout or to \"/tmp/mserver.log\"\n\n");
 #else
-               printf("               -d    Write debug info to \"mserver.log\"\n\n");
+               printf("               -d    Write debug info\"\n\n");
 #endif
-               printf("               -D    Write debug info to stdout\n\n");
                return 0;
             }
          }
@@ -326,17 +329,15 @@ int main(int argc, char **argv)
 
       /* turn on debugging */
       if (debug) {
-         if (debug == 1)
+         if (daemon || inetd)
             rpc_set_debug(debug_print, 1);
          else
             rpc_set_debug((void (*)(char *)) puts, 2);
 
-         if (inetd) {
-            sprintf(str, "Started: ");
-            for (i=0 ; i<argc ; i++)
-               sprintf(str+strlen(str), " %s", argv[i]);
-            rpc_debug_print(str);
-         }
+         sprintf(str, "Arguments: ");
+         for (i=0 ; i<argc ; i++)
+            sprintf(str+strlen(str), " %s", argv[i]);
+         rpc_debug_print(str);
 
          rpc_debug_print("Debugging mode is on");
       }
@@ -361,6 +362,12 @@ int main(int argc, char **argv)
                               NULL, rpc_server_dispatch) != RPC_SUCCESS) {
          printf("Cannot start server\n");
          return 0;
+      }
+
+      /* become a daemon */
+      if (daemon) {
+         printf("Becoming a daemon...\n");
+         ss_daemon_init(FALSE);
       }
 
       /* register MIDAS library functions */
