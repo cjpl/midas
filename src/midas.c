@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.106  2000/03/03 22:46:07  midas
+  Remove elog and alarm mutex on exit
+
   Revision 1.105  2000/03/03 01:45:13  midas
   Added web password for mhttpd, added webpasswd command in odbedit
 
@@ -2326,6 +2329,11 @@ char local_host_name[HOST_NAME_LENGTH], client_name[80];
 
     bm_close_all_buffers();
     db_close_all_databases();
+
+    if (_mutex_elog)
+      ss_mutex_delete(_mutex_elog, TRUE);
+    if (_mutex_alarm)
+      ss_mutex_delete(_mutex_alarm, TRUE);
     }
 
   if (rpc_get_server_option(RPC_OSERVER_TYPE) == ST_REMOTE)
@@ -11868,8 +11876,8 @@ static DWORD         last_checked = 0;
     return status;
 
   /* create alarm and elog mutexes */
-  ss_mutex_create("alarm", &mutex_alarm);
-  ss_mutex_create("elog", &mutex_elog);
+  ss_mutex_create("ALARM", &mutex_alarm);
+  ss_mutex_create("ELOG", &mutex_elog);
   cm_set_experiment_mutex(mutex_alarm, mutex_elog);
 
   do
@@ -12055,6 +12063,11 @@ exit:
       db_close_all_databases();
 
       rpc_deregister_functions();
+
+      if (_mutex_elog)
+        ss_mutex_delete(_mutex_elog, TRUE);
+      if (_mutex_alarm)
+        ss_mutex_delete(_mutex_alarm, TRUE);
 
       cm_set_experiment_database(0, 0);
 
