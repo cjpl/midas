@@ -6,6 +6,9 @@
   Contents:     List of MSCB RPC functions with parameters
 
   $Log$
+  Revision 1.20  2004/03/10 13:28:25  midas
+  mscb_init returns device name
+
   Revision 1.19  2004/03/10 10:28:48  midas
   Implemented test block write for speed tests
 
@@ -104,12 +107,19 @@ static RPC_LIST rpc_list[] = {
 
    /* common functions */
    {RPC_MSCB_INIT, "mscb_init",
-    {{TID_STRING, RPC_IN},
+    {{TID_STRING, RPC_IN | RPC_OUT},
+     {TID_INT, RPC_IN},
      {TID_INT, RPC_IN},
      {0}}},
 
    {RPC_MSCB_EXIT, "mscb_exit",
     {{TID_INT, RPC_IN},
+     {0}}},
+
+   {RPC_MSCB_GET_DEVICE, "mscb_get_device",
+    {{TID_INT, RPC_IN},
+     {TID_STRING, RPC_OUT},
+     {TID_INT, RPC_IN},
      {0}}},
 
    {RPC_MSCB_REBOOT, "mscb_reboot",
@@ -129,207 +139,106 @@ static RPC_LIST rpc_list[] = {
    {RPC_MSCB_INFO, "mscb_info",
     {{TID_INT, RPC_IN},
      {TID_INT, RPC_IN},
-     {TID_STRUCT, RPC_OUT, sizeof(MSCB_INFO)}
-     ,
-     {0}
-     }
-    }
-   ,
+     {TID_STRUCT, RPC_OUT, sizeof(MSCB_INFO)},
+     {0}}},
 
    {RPC_MSCB_INFO_VARIABLE, "mscb_info_variable",
-    {{TID_INT, RPC_IN}
-     ,
-     {TID_INT, RPC_IN}
-     ,
-     {TID_INT, RPC_IN}
-     ,
-     {TID_STRUCT, RPC_OUT, sizeof(MSCB_INFO_VAR)}
-     ,
-     {0}
-     }
-    }
-   ,
+    {{TID_INT, RPC_IN},
+     {TID_INT, RPC_IN},
+     {TID_INT, RPC_IN},
+     {TID_STRUCT, RPC_OUT, sizeof(MSCB_INFO_VAR)},
+     {0}}},
 
    {RPC_MSCB_SET_ADDR, "mscb_set_addr",
-    {{TID_INT, RPC_IN}
-     ,
-     {TID_INT, RPC_IN}
-     ,
-     {TID_INT, RPC_IN}
-     ,
-     {TID_INT, RPC_IN}
-     ,
-     {0}
-     }
-    }
-   ,
+    {{TID_INT, RPC_IN},
+     {TID_INT, RPC_IN},
+     {TID_INT, RPC_IN},
+     {TID_INT, RPC_IN},
+     {0}}},
 
    {RPC_MSCB_SET_NAME, "mscb_set_name",
-    {{TID_INT, RPC_IN}
-     ,
-     {TID_INT, RPC_IN}
-     ,
-     {TID_STRING, RPC_IN}
-     ,
-     {0}
-     }
-    }
-   ,
+    {{TID_INT, RPC_IN},
+     {TID_INT, RPC_IN},
+     {TID_STRING, RPC_IN},
+     {0}}},
 
    {RPC_MSCB_WRITE_GROUP, "mscb_write_group",
-    {{TID_INT, RPC_IN}
-     ,
-     {TID_INT, RPC_IN}
-     ,
-     {TID_BYTE, RPC_IN}
-     ,
-     {TID_ARRAY, RPC_IN | RPC_VARARRAY}
-     ,
-     {TID_INT, RPC_IN}
-     ,
-     {0}
-     }
-    }
-   ,
+    {{TID_INT, RPC_IN},
+     {TID_INT, RPC_IN},
+     {TID_BYTE, RPC_IN},
+     {TID_ARRAY, RPC_IN | RPC_VARARRAY},
+     {TID_INT, RPC_IN},
+     {0}}},
 
    {RPC_MSCB_WRITE, "mscb_write",
-    {{TID_INT, RPC_IN}
-     ,
-     {TID_INT, RPC_IN}
-     ,
-     {TID_BYTE, RPC_IN}
-     ,
-     {TID_ARRAY, RPC_IN | RPC_VARARRAY}
-     ,
-     {TID_INT, RPC_IN}
-     ,
-     {0}
-     }
-    }
-   ,
+    {{TID_INT, RPC_IN},
+     {TID_INT, RPC_IN},
+     {TID_BYTE, RPC_IN},
+     {TID_ARRAY, RPC_IN | RPC_VARARRAY},
+     {TID_INT, RPC_IN},
+     {0}}},
 
    {RPC_MSCB_WRITE, "mscb_write_block",
-    {{TID_INT, RPC_IN}
-     ,
-     {TID_INT, RPC_IN}
-     ,
-     {TID_BYTE, RPC_IN}
-     ,
-     {TID_ARRAY, RPC_IN | RPC_VARARRAY}
-     ,
-     {TID_INT, RPC_IN}
-     ,
-     {0}
-     }
-    }
-   ,
+    {{TID_INT, RPC_IN},
+     {TID_INT, RPC_IN},
+     {TID_BYTE, RPC_IN},
+     {TID_ARRAY, RPC_IN | RPC_VARARRAY},
+     {TID_INT, RPC_IN},
+     {0}}},
 
    {RPC_MSCB_FLASH, "mscb_flash",
-    {{TID_INT, RPC_IN}
-     ,
-     {TID_INT, RPC_IN}
-     ,
-     {0}
-     }
-    }
-   ,
+    {{TID_INT, RPC_IN},
+     {TID_INT, RPC_IN},
+     {0}}},
 
 
    {RPC_MSCB_UPLOAD, "mscb_upload",
-    {{TID_INT, RPC_IN}
-     ,
-     {TID_INT, RPC_IN}
-     ,
-     {TID_ARRAY, RPC_IN | RPC_VARARRAY}
-     ,
-     {TID_INT, RPC_IN}
-     ,
-     {0}
-     }
-    }
-   ,
+    {{TID_INT, RPC_IN},
+     {TID_INT, RPC_IN},
+     {TID_ARRAY, RPC_IN | RPC_VARARRAY},
+     {TID_INT, RPC_IN},
+     {0}}},
 
    {RPC_MSCB_READ, "mscb_read",
-    {{TID_INT, RPC_IN}
-     ,
-     {TID_INT, RPC_IN}
-     ,
-     {TID_BYTE, RPC_IN}
-     ,
-     {TID_ARRAY, RPC_OUT | RPC_VARARRAY}
-     ,
-     {TID_INT, RPC_IN | RPC_OUT}
-     ,
-     {0}
-     }
-    }
-   ,
+    {{TID_INT, RPC_IN},
+     {TID_INT, RPC_IN},
+     {TID_BYTE, RPC_IN},
+     {TID_ARRAY, RPC_OUT | RPC_VARARRAY},
+     {TID_INT, RPC_IN | RPC_OUT},
+     {0}}},
 
    {RPC_MSCB_READ_RANGE, "mscb_read_range",
-    {{TID_INT, RPC_IN}
-     ,
-     {TID_INT, RPC_IN}
-     ,
-     {TID_BYTE, RPC_IN}
-     ,
-     {TID_BYTE, RPC_IN}
-     ,
-     {TID_ARRAY, RPC_OUT | RPC_VARARRAY}
-     ,
-     {TID_INT, RPC_IN | RPC_OUT}
-     ,
-     {0}
-     }
-    }
-   ,
+    {{TID_INT, RPC_IN},
+     {TID_INT, RPC_IN},
+     {TID_BYTE, RPC_IN},
+     {TID_BYTE, RPC_IN},
+     {TID_ARRAY, RPC_OUT | RPC_VARARRAY},
+     {TID_INT, RPC_IN | RPC_OUT},
+     {0}}},
 
    {RPC_MSCB_USER, "mscb_user",
-    {{TID_INT, RPC_IN}
-     ,
-     {TID_INT, RPC_IN}
-     ,
-     {TID_ARRAY, RPC_IN | RPC_VARARRAY}
-     ,
-     {TID_INT, RPC_IN}
-     ,
-     {TID_ARRAY, RPC_OUT | RPC_VARARRAY}
-     ,
-     {TID_INT, RPC_IN | RPC_OUT}
-     ,
-     {0}
-     }
-    }
-   ,
+    {{TID_INT, RPC_IN},
+     {TID_INT, RPC_IN},
+     {TID_ARRAY, RPC_IN | RPC_VARARRAY},
+     {TID_INT, RPC_IN},
+     {TID_ARRAY, RPC_OUT | RPC_VARARRAY},
+     {TID_INT, RPC_IN | RPC_OUT},
+     {0}}},
 
    {RPC_MSCB_ECHO, "mscb_echo",
-    {{TID_INT, RPC_IN}
-     ,
-     {TID_INT, RPC_IN}
-     ,
-     {TID_BYTE, RPC_IN}
-     ,
-     {TID_BYTE, RPC_OUT}
-     ,
-     {0}
-     }
-    }
-   ,
+    {{TID_INT, RPC_IN},
+     {TID_INT, RPC_IN},
+     {TID_BYTE, RPC_IN},
+     {TID_BYTE, RPC_OUT},
+     {0}}},
 
    {RPC_MSCB_ADDR, "mscb_addr",
-    {{TID_INT, RPC_IN}
-     ,
-     {TID_INT, RPC_IN}
-     ,
-     {TID_INT, RPC_IN}
-     ,
-     {TID_INT, RPC_IN}
-     ,
-     {TID_INT, RPC_IN}
-     ,
-     {0}
-     }
-    }
-   ,
+    {{TID_INT, RPC_IN},
+     {TID_INT, RPC_IN},
+     {TID_INT, RPC_IN},
+     {TID_INT, RPC_IN},
+     {TID_INT, RPC_IN},
+     {0}}},
 
    {0}
 
@@ -477,7 +386,7 @@ int server_execute(int index, void *prpc_param[])
 
    switch (index) {
    case RPC_MSCB_INIT:
-      status = mscb_init(CSTRING(0), CINT(1));
+      status = mscb_init(CSTRING(0), CINT(1), CINT(2));
       break;
 
    case RPC_MSCB_EXIT:

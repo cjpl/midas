@@ -6,6 +6,9 @@
   Contents:     Header fiel for MSCB RPC funcions
 
   $Log$
+  Revision 1.16  2004/03/10 13:28:25  midas
+  mscb_init returns device name
+
   Revision 1.15  2004/03/10 10:28:48  midas
   Implemented test block write for speed tests
 
@@ -148,6 +151,7 @@ typedef struct {
 #define RPC_MSCB_SET_NAME         17
 #define RPC_MSCB_ADDR             18
 #define RPC_MSCB_WRITE_BLOCK      19
+#define RPC_MSCB_GET_DEVICE       20
 
 /*------------------------------------------------------------------*/
 

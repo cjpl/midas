@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus communication functions
 
   $Log$
+  Revision 1.60  2004/03/10 13:28:25  midas
+  mscb_init returns device name
+
   Revision 1.59  2004/03/10 12:41:07  midas
   Dedicated USB timeout
 
@@ -325,6 +328,71 @@ int kbhit()
 }
 
 #endif
+
+/*---- strlcpy and strlcat to avoid buffer overflow ----------------*/
+
+/*
+* Copy src to string dst of size siz.  At most siz-1 characters
+* will be copied.  Always NUL terminates (unless size == 0).
+* Returns strlen(src); if retval >= siz, truncation occurred.
+*/
+size_t strlcpy(char *dst, const char *src, size_t size)
+{
+   char *d = dst;
+   const char *s = src;
+   size_t n = size;
+
+   /* Copy as many bytes as will fit */
+   if (n != 0 && --n != 0) {
+      do {
+         if ((*d++ = *s++) == 0)
+            break;
+      } while (--n != 0);
+   }
+
+   /* Not enough room in dst, add NUL and traverse rest of src */
+   if (n == 0) {
+      if (size != 0)
+         *d = '\0';             /* NUL-terminate dst */
+      while (*s++);
+   }
+
+   return (s - src - 1);        /* count does not include NUL */
+}
+
+/*
+* Appends src to string dst of size siz (unlike strncat, siz is the
+* full size of dst, not space left).  At most siz-1 characters
+* will be copied.  Always NUL terminates (unless size <= strlen(dst)).
+* Returns strlen(src) + MIN(size, strlen(initial dst)).
+* If retval >= size, truncation occurred.
+*/
+size_t strlcat(char *dst, const char *src, size_t size)
+{
+   char *d = dst;
+   const char *s = src;
+   size_t n = size;
+   size_t dlen;
+
+   /* Find the end of dst and adjust bytes left but don't go past end */
+   while (n-- != 0 && *d != '\0')
+      d++;
+   dlen = d - dst;
+   n = size - dlen;
+
+   if (n == 0)
+      return (dlen + strlen(s));
+   while (*s != '\0') {
+      if (n != 1) {
+         *d++ = *s;
+         n--;
+      }
+      s++;
+   }
+   *d = '\0';
+
+   return (dlen + (s - src));   /* count does not include NUL */
+}
 
 /*------------------------------------------------------------------*/
 
@@ -1286,7 +1354,7 @@ int mrpc_connected(int fd)
 
 /*------------------------------------------------------------------*/
 
-int mscb_init(char *d, int debug)
+int mscb_init(char *device, int bufsize, int debug)
 /********************************************************************\
 
   Routine: mscb_init
@@ -1299,6 +1367,14 @@ int mscb_init(char *d, int debug)
                             "<host>:device" for RPC connection
                             usbx for USB connection
 
+                            If device equals "", the function 
+                            mscb_select_device is called which selects
+                            the first available device or asks the user
+                            which one to use.
+    int bufsize             Size of "device" string, in case no device
+                            is specified from the caller and this functino
+                            returns the chosen device
+
   Function value:
     int fd                  device descriptor for connection, -1 if
                             error
@@ -1307,7 +1383,7 @@ int mscb_init(char *d, int debug)
 {
    int index, i, n;
    int status;
-   char device[256], host[256], port[256], dev3[256], buf[10];
+   char host[256], port[256], dev3[256], buf[10], remote_device[256];
 
    /* search for new file descriptor */
    for (index = 0; index < MSCB_MAX_FD; index++)
@@ -1326,18 +1402,15 @@ int mscb_init(char *d, int debug)
    free(cache);
    n_cache = 0;
 
-   strcpy(device, d);
    if (!device[0])
      mscb_select_device(device);
 
    /* check for RPC connection */
    if (strchr(device, ':')) {
-      strncpy(mscb_fd[index].device, device, sizeof(mscb_fd[index].device));
+      strlcpy(mscb_fd[index].device, device, sizeof(mscb_fd[index].device));
       mscb_fd[index].type = MSCB_TYPE_RPC;
 
-      strcpy(port, strchr(device, ':') + 1);
-      if (port[0] == 0)
-         strcpy(port, DEF_DEVICE);
+      strcpy(remote_device, strchr(device, ':') + 1);
       strcpy(host, device);
       *strchr(host, ':') = 0;
 
@@ -1348,12 +1421,14 @@ int mscb_init(char *d, int debug)
          return -1;
       }
 
-      mscb_fd[index].remote_fd = mrpc_call(mscb_fd[index].fd, RPC_MSCB_INIT, port, debug);
+      mscb_fd[index].remote_fd = mrpc_call(mscb_fd[index].fd, RPC_MSCB_INIT, remote_device, bufsize, debug);
       if (mscb_fd[index].remote_fd < 0) {
          mrpc_disconnect(mscb_fd[index].fd);
          mscb_fd[index].fd = 0;
          return -1;
       }
+
+      sprintf(device, "%s:%s", host, remote_device);
 
       return index + 1;
    }
@@ -1362,6 +1437,7 @@ int mscb_init(char *d, int debug)
    strcpy(dev3, device);
    dev3[3] = 0;
    strcpy(mscb_fd[index].device, device);
+   mscb_fd[index].type = 0;
 
    /* LPT port with direct address */
    if (device[1] == 'x') {
@@ -1382,6 +1458,9 @@ int mscb_init(char *d, int debug)
    /* USBx */
    if (strieq(dev3, "usb"))
       mscb_fd[index].type = MSCB_TYPE_USB;
+
+   if (mscb_fd[index].type == 0)
+      return -1;
 
    /*---- initialize submaster ----*/
 
@@ -1468,10 +1547,42 @@ void mscb_cleanup(int sock)
          memset(&mscb_fd[i], 0, sizeof(MSCB_FD));
 }
 
+/*------------------------------------------------------------------*/
+
+void mscb_get_device(int fd, char *device, int bufsize)
+/********************************************************************\
+
+  Routine: mscb_get_device
+
+  Purpose: Return device name for fd
+
+  Input:
+    int fd                  File descriptor obtained wiv mscb_init()
+    int bufsize             Size of device string
+    char *device            device name, "" if invalid fd
+                            
+\********************************************************************/
+{
+   char str[256];
+
+   if (!device)
+      return;
+
+   *device = 0;
+   if (fd > MSCB_MAX_FD || fd < 1 || !mscb_fd[fd - 1].type)
+      return;
+
+   if (mrpc_connected(fd)) {
+      mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_GET_DEVICE, 
+                mscb_fd[fd - 1].remote_fd, str, sizeof(str));
+   }
+
+   strcpy(device, mscb_fd[fd-1].device);
+}
 
 /*------------------------------------------------------------------*/
 
-void mscb_check(char *device)
+void mscb_check(char *device, int size)
 /********************************************************************\
 
   Routine: mscb_check
@@ -1490,7 +1601,7 @@ void mscb_check(char *device)
 {
    int i, fd, d;
 
-   mscb_init(device, 0);
+   mscb_init(device, size, 0);
    fd = 1;
 
    mscb_lock(fd);
@@ -3028,8 +3139,7 @@ int mscb_select_device(char *device)
    int status, i, n, index;
 
    n = 0;
-
-   strcpy(device, DEF_DEVICE);
+   *device = 0;
 
    /* search for temporary file descriptor */
    for (index = 0; index < MSCB_MAX_FD; index++)

@@ -6,6 +6,9 @@
   Contents:     Calibration program for SCS-700
 
   $Log$
+  Revision 1.3  2004/03/10 13:28:25  midas
+  mscb_init returns device name
+
   Revision 1.2  2004/01/07 12:52:23  midas
   Changed indentation
 
@@ -35,12 +38,13 @@ int main(int argc, char *argv[])
    MSCB_INFO_VAR info;
 
    /* open port */
-   fd = mscb_init(DEF_DEVICE, 0);
+   *str = 0;
+   fd = mscb_init(str, sizeof(str), 0);
    if (fd < 0) {
-      if (fd == -2)
-         printf("No MSCB submaster present at port \"%s\".\n", DEF_DEVICE);
+      if (str[0])
+         printf("Cannot connect to device \"%s\".\n", str);
       else
-         printf("Cannot connect to device \"%s\".\n", DEF_DEVICE);
+         printf("No MSCB submaster found.\n");
 
       return 0;
    }

@@ -6,6 +6,9 @@
   Contents:     Header fiel for MSCB funcions
 
   $Log$
+  Revision 1.32  2004/03/10 13:28:25  midas
+  mscb_init returns device name
+
   Revision 1.31  2004/03/10 10:28:48  midas
   Implemented test block write for speed tests
 
@@ -294,10 +297,11 @@ extern "C" {
 #define EXPRT
 #endif
 
-   int EXPRT mscb_init(char *device, int debug);
+   int EXPRT mscb_init(char *device, int size, int debug);
    int EXPRT mscb_select_device(char *data);
+   void EXPRT mscb_get_device(int fd, char *device, int bufsize);
    void EXPRT mscb_get_version(char *lib_version, char *prot_version);
-   void EXPRT mscb_check(char *device);
+   void EXPRT mscb_check(char *device, int size);
    int EXPRT mscb_exit(int fd);
    int EXPRT mscb_reset(int fd);
    int EXPRT mscb_reboot(int fd, int adr);
@@ -328,13 +332,4 @@ int kbhit();
 #define getch() getchar()
 #define Sleep(x) usleep(x*1000)
 
-#endif
-
-/* default device */
-#ifdef _MSC_VER
-#define DEF_DEVICE "usb0"
-#elif defined(__linux__)
-#define DEF_DEVICE "/dev/parport0"
-#else
-#define DEF_DEVICE ""
 #endif
