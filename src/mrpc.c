@@ -6,6 +6,9 @@
   Contents:     List of MIDAS RPC functions with parameters
 
   $Log$
+  Revision 1.28  2002/09/13 07:32:48  midas
+  Added client name to cm_cleanup()
+
   Revision 1.27  2002/05/22 05:43:32  midas
   Added extra variables to hs_enum_vars for mhist to display array size
 
@@ -115,7 +118,8 @@ static RPC_LIST rpc_list_library[] = {
      {0} }},
 
   { RPC_CM_CLEANUP, "cm_cleanup",
-    {{0} }},
+    {{TID_STRING,     RPC_IN},
+     {0} }},
 
   { RPC_CM_GET_WATCHDOG_INFO, "cm_get_watchdog_info",
     {{TID_INT,        RPC_IN},

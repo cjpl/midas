@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.101  2002/09/13 07:32:36  midas
+  Added client name to cm_cleanup()
+
   Revision 1.100  2002/06/10 07:06:55  midas
   Added 'lock' parameter to db_remove_open_record() to work also remotely
 
@@ -1597,7 +1600,7 @@ INT EXPRT cm_enable_watchdog(BOOL flag);
 void EXPRT cm_watchdog(int);
 INT EXPRT cm_shutdown(char *name, BOOL bUnique);
 INT EXPRT cm_exist(char *name, BOOL bUnique);
-INT EXPRT cm_cleanup(void);
+INT EXPRT cm_cleanup(char *client_name);
 INT EXPRT cm_yield(INT millisec);
 INT EXPRT cm_execute(char *command, char *result, INT buf_size);
 INT EXPRT cm_synchronize(DWORD *sec);

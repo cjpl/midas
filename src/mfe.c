@@ -7,6 +7,9 @@
                 linked with user code to form a complete frontend
 
   $Log$
+  Revision 1.41  2002/09/13 07:32:47  midas
+  Added client name to cm_cleanup()
+
   Revision 1.40  2002/06/03 06:07:15  midas
   Added extra parameter to ss_daemon_init to keep stdout
 
@@ -1809,9 +1812,6 @@ usage:
       printf("Connect to experiment %s...", exp_name);
     }
 
-  /* remove dead connections */
-  cm_cleanup();
-
   status = cm_connect_experiment1(host_name, exp_name, frontend_name, 
                                   NULL, DEFAULT_ODB_SIZE, DEFAULT_FE_TIMEOUT);
   if (status != CM_SUCCESS)
@@ -1832,6 +1832,9 @@ usage:
     return 1;
     }
 
+  /* remomve any dead frontend */
+  cm_cleanup(frontend_name);
+
   /* shutdown previous frontend */
   status = cm_shutdown(frontend_name, FALSE);
   if (status == CM_SHUTDOWN && display_period)
@@ -1839,9 +1842,6 @@ usage:
     printf("Previous frontend stopped\n");
     ss_sleep(1000);
     }
-
-  /* remomve any dead frontend */
-  cm_cleanup();
 
   /* register transition callbacks */
   if (cm_register_transition(TR_START, tr_start) != CM_SUCCESS ||

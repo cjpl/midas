@@ -6,6 +6,9 @@
   Contents:     Command-line interface to the MIDAS online data base.
 
   $Log$
+  Revision 1.59  2002/09/13 07:32:48  midas
+  Added client name to cm_cleanup()
+
   Revision 1.58  2002/05/31 06:43:55  midas
   Set /logger/data dir only if it exists locally
 
@@ -2816,7 +2819,7 @@ PRINT_INFO      print_info;
       {
       HNDLE hBuf;
       bm_open_buffer(EVENT_BUFFER_NAME, EVENT_BUFFER_SIZE, &hBuf);
-      cm_cleanup();
+      cm_cleanup("");
       bm_close_buffer(hBuf);
 
       db_find_key(hDB, 0, "/", &hKey);
