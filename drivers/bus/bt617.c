@@ -97,10 +97,22 @@ bt_error_t status;
 
 /*------------------------------------------------------------------*/
 
-int vme_read(int vh, void *dst, int vme_addr, int size)
+static int last_dma = -1;
+
+int vme_read(int vh, void *dst, int vme_addr, int size, int dma)
 {
 bt_error_t status;
-int        read;
+int        read, flag;
+
+  if (dma != last_dma)
+    {
+    last_dma = dma;
+
+    flag = dma ? 256 : 100000000;
+
+    bt_set_info((bt_desc_t) vh, BT_INFO_DMA_POLL_CEILING, flag);
+    bt_set_info((bt_desc_t) vh, BT_INFO_DMA_THRESHOLD, flag);
+    }
 
   status = bt_read((bt_desc_t) vh, dst, vme_addr, size, &read);
   if (status != BT_SUCCESS)
@@ -111,10 +123,20 @@ int        read;
 
 /*------------------------------------------------------------------*/
 
-int vme_write(int vh, void *src, int vme_addr, int size)
+int vme_write(int vh, void *src, int vme_addr, int size, int dma)
 {
 bt_error_t status;
-int        read;
+int        read, flag;
+
+  if (dma != last_dma)
+    {
+    last_dma = dma;
+
+    flag = dma ? 256 : 100000000;
+
+    bt_set_info((bt_desc_t) vh, BT_INFO_DMA_POLL_CEILING, flag);
+    bt_set_info((bt_desc_t) vh, BT_INFO_DMA_THRESHOLD, flag);
+    }
 
   status = bt_write((bt_desc_t) vh, src, vme_addr, size, &read);
   if (status != BT_SUCCESS)
