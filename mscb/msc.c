@@ -6,6 +6,9 @@
   Contents:     Command-line interface for the Midas Slow Control Bus
 
   $Log$
+  Revision 1.70  2004/10/12 11:02:41  midas
+  Version 1.7.6
+
   Revision 1.69  2004/10/03 18:02:33  olchansk
   Do automatic system dependance (copied from midas/Makefile)
   add support for MacOSX aka darwin
@@ -307,7 +310,7 @@ void print_help()
    puts("echo [fc]                  Perform echo test [fast,continuous]");
    puts("flash                      Flash parameters into EEPROM");
    puts("gaddr <addr>               Set group address");
-   puts("info                       Retrive node info");
+   puts("info [-a]                  Retrive node info [all variables]");
    puts("load <file>                Load node variables");
    puts("ping <addr> [r]            Ping node and set address [repeat mode]");
    puts("read <index> [r]           Read node variable [repeat mode]");
@@ -672,7 +675,8 @@ void cmd_loop(int fd, char *cmd, int adr)
                   memset(dbuf, 0, sizeof(dbuf));
                   mscb_read(fd, current_addr, (unsigned char) i, dbuf, &size);
 
-                  print_channel(i, &info_var, dbuf, 1);
+                  if ((info_var.flags & MSCBF_HIDDEN) == 0 || param[1][0])
+                     print_channel(i, &info_var, dbuf, 1);
                }
 
                mscb_get_version(lib, prot);

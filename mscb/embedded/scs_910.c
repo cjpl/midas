@@ -9,6 +9,9 @@
                 for SCS-910 20-chn analog in
 
   $Log$
+  Revision 1.4  2004/10/12 11:02:41  midas
+  Version 1.7.6
+
   Revision 1.3  2004/09/10 14:40:47  midas
   Fixed problem in bipolar 910 mode
 
@@ -30,7 +33,7 @@ extern bit DEBUG_MODE;
 
 char code node_name[] = "SCS-910";
 
-#undef UNIPOLAR
+#define UNIPOLAR
 
 /* declare number of sub-addresses to framework */
 unsigned char idata _n_sub_addr = 1;
@@ -69,55 +72,101 @@ sbit AD4_DOUT = P0 ^ 7;         // Data out
 struct {
 #ifdef UNIPOLAR
    float adc[40];
+   float gain[40];
 #else
    float adc[20];
+   float gain[20];
 #endif
 } xdata user_data;
 
 MSCB_INFO_VAR code variables[] = {
 
-   4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC00", &user_data.adc[0],
-   4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC01", &user_data.adc[1],
-   4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC02", &user_data.adc[2],
-   4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC03", &user_data.adc[3],
-   4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC04", &user_data.adc[4],
-   4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC05", &user_data.adc[5],
-   4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC06", &user_data.adc[6],
-   4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC07", &user_data.adc[7],
-   4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC08", &user_data.adc[8],
-   4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC09", &user_data.adc[9],
-   4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC10", &user_data.adc[10],
-   4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC11", &user_data.adc[11],
-   4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC12", &user_data.adc[12],
-   4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC13", &user_data.adc[13],
-   4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC14", &user_data.adc[14],
-   4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC15", &user_data.adc[15],
-   4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC16", &user_data.adc[16],
-   4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC17", &user_data.adc[17],
-   4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC18", &user_data.adc[18],
-   4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC19", &user_data.adc[19],
+   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC00", &user_data.adc[0] },
+   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC01", &user_data.adc[1] },
+   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC02", &user_data.adc[2] },
+   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC03", &user_data.adc[3] },
+   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC04", &user_data.adc[4] },
+   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC05", &user_data.adc[5] },
+   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC06", &user_data.adc[6] },
+   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC07", &user_data.adc[7] },
+   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC08", &user_data.adc[8] },
+   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC09", &user_data.adc[9] },
+   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC10", &user_data.adc[10] },
+   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC11", &user_data.adc[11] },
+   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC12", &user_data.adc[12] },
+   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC13", &user_data.adc[13] },
+   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC14", &user_data.adc[14] },
+   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC15", &user_data.adc[15] },
+   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC16", &user_data.adc[16] },
+   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC17", &user_data.adc[17] },
+   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC18", &user_data.adc[18] },
+   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC19", &user_data.adc[19] },
 
 #ifdef UNIPOLAR
-   4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC20", &user_data.adc[20],
-   4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC21", &user_data.adc[21],
-   4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC22", &user_data.adc[22],
-   4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC23", &user_data.adc[23],
-   4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC24", &user_data.adc[24],
-   4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC25", &user_data.adc[25],
-   4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC26", &user_data.adc[26],
-   4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC27", &user_data.adc[27],
-   4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC28", &user_data.adc[28],
-   4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC29", &user_data.adc[29],
-   4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC30", &user_data.adc[30],
-   4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC31", &user_data.adc[31],
-   4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC32", &user_data.adc[32],
-   4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC33", &user_data.adc[33],
-   4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC34", &user_data.adc[34],
-   4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC35", &user_data.adc[35],
-   4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC36", &user_data.adc[36],
-   4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC37", &user_data.adc[37],
-   4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC38", &user_data.adc[38],
-   4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC39", &user_data.adc[39],
+   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC20", &user_data.adc[20] },
+   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC21", &user_data.adc[21] },
+   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC22", &user_data.adc[22] },
+   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC23", &user_data.adc[23] },
+   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC24", &user_data.adc[24] },
+   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC25", &user_data.adc[25] },
+   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC26", &user_data.adc[26] },
+   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC27", &user_data.adc[27] },
+   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC28", &user_data.adc[28] },
+   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC29", &user_data.adc[29] },
+   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC30", &user_data.adc[30] },
+   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC31", &user_data.adc[31] },
+   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC32", &user_data.adc[32] },
+   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC33", &user_data.adc[33] },
+   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC34", &user_data.adc[34] },
+   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC35", &user_data.adc[35] },
+   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC36", &user_data.adc[36] },
+   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC37", &user_data.adc[37] },
+   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC38", &user_data.adc[38] },
+   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC39", &user_data.adc[39] },
+#endif
+
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "GAIN00", &user_data.gain[0] },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "GAIN01", &user_data.gain[1] },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "GAIN02", &user_data.gain[2] },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "GAIN03", &user_data.gain[3] },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "GAIN04", &user_data.gain[4] },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "GAIN05", &user_data.gain[5] },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "GAIN06", &user_data.gain[6] },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "GAIN07", &user_data.gain[7] },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "GAIN08", &user_data.gain[8] },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "GAIN09", &user_data.gain[9] },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "GAIN10", &user_data.gain[10] },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "GAIN11", &user_data.gain[11] },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "GAIN12", &user_data.gain[12] },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "GAIN13", &user_data.gain[13] },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "GAIN14", &user_data.gain[14] },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "GAIN15", &user_data.gain[15] },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "GAIN16", &user_data.gain[16] },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "GAIN17", &user_data.gain[17] },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "GAIN18", &user_data.gain[18] },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "GAIN19", &user_data.gain[19] },
+
+#ifdef UNIPOLAR
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "GAIN20", &user_data.gain[20] },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "GAIN21", &user_data.gain[21] },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "GAIN22", &user_data.gain[22] },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "GAIN23", &user_data.gain[23] },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "GAIN24", &user_data.gain[24] },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "GAIN25", &user_data.gain[25] },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "GAIN26", &user_data.gain[26] },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "GAIN27", &user_data.gain[27] },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "GAIN28", &user_data.gain[28] },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "GAIN29", &user_data.gain[29] },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "GAIN30", &user_data.gain[30] },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "GAIN31", &user_data.gain[31] },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "GAIN32", &user_data.gain[32] },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "GAIN33", &user_data.gain[33] },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "GAIN34", &user_data.gain[34] },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "GAIN35", &user_data.gain[35] },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "GAIN36", &user_data.gain[36] },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "GAIN37", &user_data.gain[37] },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "GAIN38", &user_data.gain[38] },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "GAIN39", &user_data.gain[39] },
 #endif
 
    0
@@ -178,6 +227,12 @@ void user_init(unsigned char init)
 
    /* initial EEPROM value */
    if (init) {
+#ifdef UNIPOLAR
+      for (i=0 ; i<40 ; i++)
+#else
+      for (i=0 ; i<20 ; i++)
+#endif
+         user_data.gain[i] = 1;
    }
 
    /* set-up ADC */
@@ -341,7 +396,7 @@ void adc_read()
 #endif
 
    /* convert to volts */
-   gvalue = ((float)value / (1l<<24)) * 2.56;
+   gvalue = ((float)value / (1l<<24)) * 2.56 * user_data.gain[ivalue];
 
    /* round result to 5 digits */
    gvalue = floor(gvalue*1E5+0.5)/1E5;
