@@ -6,6 +6,9 @@
   Contents:     Disk to Tape copier for background job
 
   $Log$
+  Revision 1.25  2001/07/25 07:54:01  midas
+  Fixed compiler warnings
+
   Revision 1.24  2001/07/25 06:53:18  midas
   Fixed bug with appended "/" for tape logging
 
@@ -949,7 +952,7 @@ BOOL condition_test(char * string)
   double lcond_value;
   INT size, index, status;
   char str[128], left[64], right[64];
-  char *p=NULL, *pp, *ppl, *pv, *pc, *lp;
+  char *p=NULL, *pp, *ppl, *pc, *lp;
   
   index = 0;
   p = string;
@@ -998,9 +1001,10 @@ BOOL condition_test(char * string)
 /*  printf("string:%s\n condition: %s %f %c %f \n"
     , string, left, lcond_value, *pc, value);
 */  
+/*
     if (pv == NULL)
       return TRUE;
-    
+*/    
     /* perform condition check */
     if (((*pc == '>') && ((float)lcond_value >  value)) ||
 	((*pc == '=') && ((float)lcond_value == value)) ||
