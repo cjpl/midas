@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.183  2002/02/01 13:15:23  midas
+  Improved log axis labeling
+
   Revision 1.182  2002/01/31 13:25:43  midas
   Added log axis in history display and relative path names
 
@@ -6579,8 +6582,9 @@ int vaxis(gdImagePtr im, gdFont *font, int col, int gcol,
            int minor, int major, int text, int label,
            int grid, double ymin, double ymax, BOOL logaxis)
 {
-double dy, int_dy, frac_dy, y_act, label_dy, major_dy, y_screen;
+double dy, int_dy, frac_dy, y_act, label_dy, major_dy, y_screen, y_next, ybase;
 int    tick_base, major_base, label_base, n_sig1, n_sig2, max_tick, ys, max_width;
+int    last_label_y;
 char   str[80];
 double base[] = {1,2,5,10,20,50,100,200,500,1000};
 
@@ -6590,9 +6594,16 @@ double base[] = {1,2,5,10,20,50,100,200,500,1000};
   /* use 5 as min tick distance */
   if (logaxis)
     {
+    /* round down and up ymin and ymax */
+    ybase = pow(10, floor(log(ymin)/LN10));
+    ymin = floor(ymin/ybase)*ybase;
+    ybase = pow(10, floor(log(ymax)/LN10));
+    ymax = (floor(ymax/ybase)+1)*ybase;
+
     max_tick = (int) ((log(ymax)/LN10 - log(ymin)/LN10) * 10 + 1);
-    dy = pow(10, floor(log(ymin)/LN10-0.00001));
-    label_dy = major_dy = dy * 10;
+    dy = pow(10, floor(log(ymin)/LN10));
+    label_dy = dy;
+    major_dy = dy * 10;
     n_sig1 = 4;
     }
   else
@@ -6647,6 +6658,8 @@ double base[] = {1,2,5,10,20,50,100,200,500,1000};
   if (x1 != 0 || y1 != 0)
     gdImageLine(im, x1, y1, x1, y1 - width, col);
 
+  last_label_y = y1 + 2*font->h;
+
   do
     {
     if (logaxis)
@@ -6657,7 +6670,7 @@ double base[] = {1,2,5,10,20,50,100,200,500,1000};
 
     if (y_screen < y1 - width - 0.001) break;
 
-    if (y_screen <= y1)
+    if (y_screen <= y1 + 0.001)
       {
       if ( fabs(floor(y_act/major_dy+0.5) - y_act/major_dy) <
            dy / major_dy / 10.0 )
@@ -6684,7 +6697,9 @@ double base[] = {1,2,5,10,20,50,100,200,500,1000};
               if (label < 0)
                 gdImageString(im, font, x1+label-font->w*strlen(str), ys-font->h/2, str, col);
               else
-                gdImageString(im, font, x1+label, ys-font->h/3, str, col);
+                gdImageString(im, font, x1+label, ys-font->h/2, str, col);
+
+              last_label_y = ys-font->h/2;
               }
             }
           else
@@ -6714,11 +6729,44 @@ double base[] = {1,2,5,10,20,50,100,200,500,1000};
 
         }
       else
+        {
         if (x1 != 0 || y1 != 0)
           {
           /**** minor tick mark ****/
           gdImageLine(im, x1, ys, x1 + minor, ys, col);
           }
+
+        /* for logaxis, also put labes on minor tick marks */
+        if (logaxis)
+          {
+          if (label != 0)
+            {
+            if (x1 != 0 || y1 != 0)
+              {
+              /* calculate position of next major label */
+              y_next = pow(10, floor(log(y_act)/LN10)+1);
+              y_screen = (int) (y1 - (log(y_next)-log(ymin))/(log(ymax)-log(ymin))*width + 0.5);
+
+              if (ys + font->h/2 < last_label_y &&
+                  ys - font->h/2 > y_screen + font->h/2)
+                {
+                sprintf(str, "%1.*lG", n_sig1, y_act);
+                if (label < 0)
+                  gdImageString(im, font, x1+label-font->w*strlen(str), ys-font->h/2, str, col);
+                else
+                  gdImageString(im, font, x1+label, ys-font->h/2, str, col);
+                }
+
+              last_label_y = ys-font->h/2;
+              }
+            else
+              {
+              sprintf(str, "%1.*lG", n_sig1, y_act);
+              max_width = max(max_width, (int)(font->w*strlen(str)));
+              }
+            }
+          }
+        }
       }
 
     y_act+=dy;
@@ -7165,12 +7213,7 @@ float       upper_limit[MAX_VARS], lower_limit[MAX_VARS];
     ymax = 1;
   else
     {
-    if (logaxis)
-      {
-      ymax *= 1.5;
-      ymin /= 1.5;
-      }
-    else
+    if (!logaxis)
       {
       ymax += (ymax-ymin)/20.f;
 
