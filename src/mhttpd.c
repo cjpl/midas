@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.275  2004/09/29 17:00:05  midas
+  mhttpd does not exit on rpc_shutdown, only disconnect
+
   Revision 1.274  2004/09/17 23:43:19  midas
   Correct email header to pass SpamAssassin
 
@@ -1179,7 +1182,8 @@ void receive_message(HNDLE hBuf, HNDLE id, EVENT_HEADER * pheader, void *message
    str[19] = 0;
 
    /* print message text which comes after event header */
-   sprintf(line, "%s %s", str + 11, (char *) message);
+   strcpy(line, str + 11);
+   strlcat(line, (char *) message, sizeof(line));
    print_message(line);
 }
 
@@ -10323,13 +10327,16 @@ struct linger        ling;
       /* check for shutdown message */
       if (connected) {
          status = cm_yield(0);
-         if (status == RPC_SHUTDOWN || _abort) {
+         if (status == RPC_SHUTDOWN) {
             cm_disconnect_experiment();
-            return;
+            connected = FALSE;
          }
       }
 
    } while (!_abort);
+
+   if (connected)
+      cm_disconnect_experiment();
 }
 
 /*------------------------------------------------------------------*/
