@@ -6,6 +6,9 @@
   Contents:     Header fiel for MSCB funcions
 
   $Log$
+  Revision 1.8  2002/10/03 15:30:40  midas
+  Added linux support
+
   Revision 1.7  2002/08/12 12:11:20  midas
   Added mscb_reset1
 
@@ -73,6 +76,7 @@
 #define GET_INFO_CHANNEL   1
 #define GET_INFO_CONF      2
 
+#define SIZE_0BIT          0
 #define SIZE_8BIT          1
 #define SIZE_16BIT         2
 #define SIZE_24BIT         3
@@ -116,6 +120,8 @@ typedef struct {
   unsigned char  flags;
   char           channel_name[8];
   } MSCB_INFO_CHN;
+
+#define MSCBF_FLOAT  (1<<0) // channel in floating point format
 
 /* status codes */
 #define MSCB_SUCCESS       1
@@ -166,4 +172,14 @@ int EXPRT mscb_reset1(char *device);
 
 #ifdef __cplusplus
 }
+#endif
+
+
+/* define missing linux functions */
+#ifdef __linux__
+
+int kbhit();
+#define getch() getchar()
+#define Sleep(x) usleep(x*1000)
+
 #endif

@@ -6,6 +6,9 @@
   Contents:     Command-line interface for the Midas Slow Control Bus
 
   $Log$
+  Revision 1.10  2002/10/03 15:30:40  midas
+  Added linux support
+
   Revision 1.9  2002/09/27 11:09:08  midas
   Modified test mode
 
@@ -37,9 +40,9 @@
 
 #ifdef _MSC_VER
 #include <windows.h>
+#include <conio.h>
 #endif
 
-#include <conio.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -50,20 +53,21 @@
 void print_help()
 {
   puts("Available commands:\n");
-  puts("scan                       Scan bus for nodes");   
-  puts("ping <addr>                Ping and address node");    
-  puts("addr <addr>                Address node for further commands");    
-  puts("gaddr <addr>               Address group of nodes");    
-  puts("info                       Retrive node info");    
-  puts("sa <addr> <gaddr>          Set node and group address of addressed node");    
-  puts("debug 0/1                  Turn debuggin off/on on node (LCD output)");    
+  puts("scan                       Scan bus for nodes");
+  puts("ping <addr>                Ping and address node");
+  puts("addr <addr>                Address node for further commands");
+  puts("gaddr <addr>               Address group of nodes");
+  puts("info                       Retrive node info");
+  puts("sa <addr> <gaddr>          Set node and group address of addressed node");
+  puts("debug 0/1                  Turn debuggin off/on on node (LCD output)");
   puts("\nwrite <channel> <value>    Write to node channel");
   puts("read <channel>             Read from node channel");
   puts("wc <index> <value>         Write configuration parameter");
   puts("flash                      Flash parameters into EEPROM");
   puts("rc <index>                 Read configuration parameter");
-  puts("reboot                     Reboot addressed node");    
+  puts("reboot                     Reboot addressed node");
   puts("reset                      Reboot whole MSCB system");
+  puts("terminal                   Enter teminal mode for SCS-210");
 }
 
 /*------------------------------------------------------------------*/
@@ -183,6 +187,7 @@ MSCB_INFO_CHN info_chn;
       for (i=0 ; i<1000 ; i++)
         {
         printf("Test address %d\r", i);
+        fflush(stdout);
         status = mscb_addr(fd, CMD_PING16, i);
         if (status == MSCB_SUCCESS)
           printf("Found node %d       \n", i);
@@ -195,7 +200,7 @@ MSCB_INFO_CHN info_chn;
 
       current_addr = -1;
       }
-    
+
     /* info */
     else if ((param[0][0] == 'i' && param[0][1] == 'n') && param[0][2] == 'f')
       {
@@ -231,7 +236,7 @@ MSCB_INFO_CHN info_chn;
           printf("Group address:    %d (0x%X)\n", info.group_address, info.group_address);
           printf("Protocol version: %02X\n", info.protocol_version);
           printf("Watchdog resets:  %d\n", info.watchdog_resets);
-      
+
           printf("\nChannels:\n");
           for (i=0 ; i<info.n_channel ; i++)
             {
@@ -244,10 +249,15 @@ MSCB_INFO_CHN info_chn;
             printf("%2d: %s ", i, str);
             switch(info_chn.channel_width)
               {
+              case SIZE_0BIT:  printf(" 0bit"); break;
               case SIZE_8BIT:  printf(" 8bit %8d (0x%02X)", data, data); break;
               case SIZE_16BIT: printf("16bit %8d (0x%04X)", data, data); break;
               case SIZE_24BIT: printf("24bit %8d (0x%06X)", data, data); break;
-              case SIZE_32BIT: printf("32bit %8d (0x%08X)", data, data); break;
+              case SIZE_32BIT: if (info_chn.flags & MSCBF_FLOAT)
+                                 printf("32bit %8.6lg", *((float *)&data));
+                               else
+                                 printf("32bit %8d (0x%08X)", data, data);
+                               break;
               }
             printf("\n");
             }
@@ -263,10 +273,15 @@ MSCB_INFO_CHN info_chn;
             printf("%2d: %s ", i, str);
             switch(info_chn.channel_width)
               {
+              case SIZE_0BIT:  printf(" 0bit"); break;
               case SIZE_8BIT:  printf(" 8bit %8d (0x%02X)", data, data); break;
               case SIZE_16BIT: printf("16bit %8d (0x%04X)", data, data); break;
               case SIZE_24BIT: printf("24bit %8d (0x%06X)", data, data); break;
-              case SIZE_32BIT: printf("32bit %8d (0x%08X)", data, data); break;
+              case SIZE_32BIT: if (info_chn.flags & MSCBF_FLOAT)
+                                 printf("32bit %8.6lg", *((float *)&data));
+                               else
+                                 printf("32bit %8d (0x%08X)", data, data);
+                               break;
               }
             printf("\n");
             }
@@ -292,9 +307,9 @@ MSCB_INFO_CHN info_chn;
 
     /* ping */
     else if ((param[0][0] == 'p' && param[0][1] == 'i') ||
-             (param[0][0] == 'a' && param[0][1] == 'd')) 
+             (param[0][0] == 'a' && param[0][1] == 'd'))
       {
-      if (!param[1][0]) 
+      if (!param[1][0])
         puts("Please specify node address");
       else
         {
@@ -325,7 +340,7 @@ MSCB_INFO_CHN info_chn;
     /* gaddr */
     else if ((param[0][0] == 'g' && param[0][1] == 'a'))
       {
-      if (!param[1][0]) 
+      if (!param[1][0])
         puts("Please specify group address");
       else
         {
@@ -356,7 +371,7 @@ MSCB_INFO_CHN info_chn;
         printf("You must first address an individual node\n");
       else
         {
-        if (!param[1][0] || !param[2][0]) 
+        if (!param[1][0] || !param[2][0])
           puts("Please specify node and group address");
         else
           {
@@ -382,7 +397,7 @@ MSCB_INFO_CHN info_chn;
         printf("You must first address an individual node\n");
       else
         {
-        if (!param[1][0]) 
+        if (!param[1][0])
           puts("Please specify 0/1");
         else
           {
@@ -401,7 +416,7 @@ MSCB_INFO_CHN info_chn;
         printf("You must first address a node or a group\n");
       else
         {
-        if (!param[1][0] || !param[2][0]) 
+        if (!param[1][0] || !param[2][0])
           puts("Please specify channel number and data");
         else
           {
@@ -430,7 +445,7 @@ MSCB_INFO_CHN info_chn;
         printf("You must first address an individual node\n");
       else
         {
-        if (!param[1][0]) 
+        if (!param[1][0])
           puts("Please specify channel number");
         else
           {
@@ -452,7 +467,7 @@ MSCB_INFO_CHN info_chn;
         printf("You must first address an individual node\n");
       else
         {
-        if (!param[1][0] || !param[2][0]) 
+        if (!param[1][0] || !param[2][0])
           puts("Please specify parameter index and data");
         else
           {
@@ -464,7 +479,7 @@ MSCB_INFO_CHN info_chn;
             data = atoi(param[2]);
 
           status = mscb_write_conf(fd, (unsigned char)addr, data, 4);
-          
+
           if (status != MSCB_SUCCESS)
             printf("Error: %d\n", status);
           }
@@ -478,7 +493,7 @@ MSCB_INFO_CHN info_chn;
         printf("You must first address an individual node\n");
       else
         {
-        if (!param[1][0]) 
+        if (!param[1][0])
           puts("Please specify channel number");
         else
           {
@@ -493,6 +508,50 @@ MSCB_INFO_CHN info_chn;
         }
       }
 
+    /* terminal */
+    else if ((param[0][0] == 't' && param[0][1] == 'e' && param[0][2] == 'r'))
+      {
+      char c;
+      int  d, status;
+
+      puts("Exit with <ESC>\n");
+
+      /* switch SCS-210 into terminal mode */
+      c = 0;
+      status = mscb_write(fd, 0, (unsigned int) c, 1);
+
+      do
+        {
+        if (kbhit())
+          {
+          c = getch();
+          putchar(c);
+          status = mscb_write(fd, 0, (unsigned int) c, 1);
+          if (status != MSCB_SUCCESS)
+            {
+            printf("\nError: %d\n", status);
+            break;
+            }
+
+          if (c == '\r')
+            {
+            putchar('\n');
+            mscb_write(fd, 0, (unsigned int) '\n', 1);
+            }
+
+          }
+
+        mscb_read(fd, 0, &d);
+        if (d > 0)
+          putchar(d);
+
+        } while (c != 27);
+
+      puts("\n");
+      while (kbhit())
+        getch();
+      }
+
     /* flash */
     else if (param[0][0] == 'f' && param[0][1] == 'l')
       {
@@ -501,33 +560,36 @@ MSCB_INFO_CHN info_chn;
       else
         {
         status = mscb_flash(fd);
-        
+
         if (status != MSCB_SUCCESS)
           printf("Error: %d\n", status);
         }
       }
 
     /* test */
-    else if ((param[0][0] == 't' && param[0][1] == 'e'))
+    else if ((param[0][0] == 't' && param[0][1] == 'e' && param[0][2] == 's'))
       {
       unsigned short d1, d2;
-      int size, i;
+      int size, i, status;
 
       i = 0;
       while (!kbhit())
         {
         d1 = rand();
 
-        mscb_user(fd, &d1, sizeof(short), &d2, &size);
-        
-        if (d2 != (unsigned short) (~d1))
-          printf("Received: %04X, should be %04X\n", d2, (unsigned short) (~d1));
+        status = mscb_user(fd, &d1, sizeof(d1), &d2, &size);
+
+        if (d2 != d1)
+          printf("Received: %04X, should be %04X, status = %d\n", d2, d1, status);
 
         i++;
         if (i % 100 == 0)
+          {
           printf("%d\r", i);
+          fflush(stdout);
+          }
 
-        // Sleep(10);
+        //Sleep(10);
         }
 
       }
@@ -538,6 +600,8 @@ MSCB_INFO_CHN info_chn;
       break;
 
     else if (param[0][0] == 0);
+
+    else if (param[0][0] == '\n');
 
     else
       printf("Unknown command %s %s %s\n", param[0], param[1], param[2]);
@@ -615,12 +679,13 @@ usage:
   fd = mscb_init(port);
   if (fd < 0)
     {
-    printf("No MSCB submaster present at port \"%s\"\n", port);
+    if (fd == -2)
+      printf("No MSCB submaster present at port \"%s\"\n", port);
     return 0;
     }
 
   cmd_loop(fd, cmd);
-  
+
   mscb_exit(fd);
 
   return 0;
