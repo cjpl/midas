@@ -6,6 +6,9 @@
   Contents:     Multimeter Class Driver
 
   $Log$
+  Revision 1.10  2003/09/30 19:48:45  midas
+  Output channels with DF_PRIO_DEVICE are now bidirectionally linked
+
   Revision 1.9  2003/09/30 16:11:41  midas
   Fixed another bug with zero output channels
 
@@ -71,6 +74,7 @@ typedef struct {
   void   **driver_input, **driver_output;
   INT    *channel_offset_input, *channel_offset_output;
   void   **dd_info_input, **dd_info_output;
+  DWORD  *flags_input, *flags_output;
 
 } MULTI_INFO;
 
@@ -107,6 +111,9 @@ static void free_mem(MULTI_INFO *m_info)
 
   free(m_info->driver_input);
   free(m_info->driver_output);
+
+  free(m_info->flags_input);
+  free(m_info->flags_output);
 
   free(m_info);
 }
@@ -165,6 +172,36 @@ HNDLE        hDB;
 
 /*----------------------------------------------------------------------------*/
 
+void multi_read_output(EQUIPMENT *pequipment, int channel)
+{
+float        value;
+MULTI_INFO   *m_info;
+HNDLE        hDB;
+
+  m_info = (MULTI_INFO *) pequipment->cd_info;
+  cm_get_experiment_database(&hDB, NULL);
+
+  DRIVER_OUTPUT(channel)(CMD_GET, m_info->dd_info_output[channel], 
+                         channel-m_info->channel_offset_output[channel], 
+                         &value);
+
+  value = (value + m_info->offset_output[channel])/m_info->factor_output[channel];
+
+  if (value != m_info->output_mirror[channel])
+    {
+    m_info->output_mirror[channel] = value;
+    m_info->var_input[channel] = value;
+
+    db_set_record(hDB, m_info->hKeyOutput, m_info->output_mirror,
+                  m_info->num_channels_output*sizeof(float), 0);
+    
+    pequipment->odb_out++;
+    }
+
+}
+
+/*----------------------------------------------------------------------------*/
+
 void multi_output(INT hDB, INT hKey, void *info)
 {
 INT   i;
@@ -180,7 +217,7 @@ EQUIPMENT  *pequipment;
   for (i=0 ; i<m_info->num_channels_output ; i++)
     {
     /* only set channel if demand value differs */
-      if (m_info->var_output[i] != m_info->output_mirror[i])
+    if (m_info->var_output[i] != m_info->output_mirror[i])
       {
       m_info->output_mirror[i] = m_info->var_output[i] * m_info->factor_output[i] - m_info->offset_output[i];
 
@@ -289,6 +326,9 @@ MULTI_INFO *m_info;
 
   m_info->driver_input     = (void *)  calloc(m_info->num_channels_input, sizeof(void*));
   m_info->driver_output    = (void *)  calloc(m_info->num_channels_output, sizeof(void*));
+
+  m_info->flags_input      = (DWORD *) calloc(m_info->num_channels_input, sizeof(DWORD));
+  m_info->flags_output     = (DWORD *) calloc(m_info->num_channels_output, sizeof(DWORD));
 
   if (!m_info->driver_output)
     {
@@ -432,10 +472,12 @@ MULTI_INFO *m_info;
       j = 0;
       }
 
+    m_info->flags_input[i] = pequipment->driver[index].flags;
     m_info->driver_input[i] = pequipment->driver[index].dd;
     m_info->dd_info_input[i] = pequipment->driver[index].dd_info;
     m_info->channel_offset_input[i] = ch_offset;
     }
+
   for (i=0,j=0,index=0,ch_offset=0 ; i<m_info->num_channels_output ; i++,j++)
     {
     while (pequipment->driver[index].name[0] &&
@@ -447,6 +489,7 @@ MULTI_INFO *m_info;
       j = 0;
       }
 
+    m_info->flags_output[i] = pequipment->driver[index].flags;
     m_info->driver_output[i] = pequipment->driver[index].dd;
     m_info->dd_info_output[i] = pequipment->driver[index].dd_info;
     m_info->channel_offset_output[i] = ch_offset;
@@ -553,12 +596,47 @@ INT i;
 
 INT multi_idle(EQUIPMENT *pequipment)
 {
+int           i;
 MULTI_INFO    *m_info;
 
   m_info = (MULTI_INFO *) pequipment->cd_info;
 
-  m_info->last_channel = (m_info->last_channel + 1) % m_info->num_channels_input;
-  multi_read(pequipment, m_info->last_channel);
+  if (m_info->last_channel < m_info->num_channels_input)
+    {
+    /* read input channel */
+    multi_read(pequipment, m_info->last_channel);
+    m_info->last_channel++;
+    }
+  else
+    {
+    if (!m_info->num_channels_output)
+      {
+      m_info->last_channel = 0;
+      }
+    else
+      {
+      /* search output channel with DF_PRIO_DEV */
+      for (i = m_info->last_channel - m_info->num_channels_input ; 
+           i < m_info->num_channels_output ; i++)
+        if (m_info->flags_output[i] & DF_PRIO_DEVICE)
+          break;
+
+      if (i < m_info->num_channels_output)
+        {
+        /* read output channel */
+        multi_read_output(pequipment, i);
+
+        m_info->last_channel = i + m_info->num_channels_input;
+        if (m_info->last_channel < m_info->num_channels_input+m_info->num_channels_output-1)
+          m_info->last_channel++;
+        else
+          m_info->last_channel=0;
+        }
+      else
+        m_info->last_channel = 0;
+      }
+    }
+
 
   return FE_SUCCESS;
 }
