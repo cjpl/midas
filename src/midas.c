@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.115  2000/05/08 14:29:38  midas
+  Added delete option in ELog
+
   Revision 1.114  2000/05/05 14:20:05  midas
   Do online mode check in al_trigger_alarm
 
@@ -14178,14 +14181,15 @@ INT hs_read(DWORD event_id, DWORD start_time, DWORD end_time,
 \********************************************************************/
 {
 DWORD        prev_time, last_irec_time;
-int          fh, fhd, fhi;
-INT          i, delta, index, status;
-INDEX_RECORD irec;
+int          fh, fhd, fhi, cp;
+INT          i, delta, index, status, cache_size;
+INDEX_RECORD irec, *pirec;
 HIST_RECORD  rec, drec;
 INT          old_def_offset, var_size, var_offset;
 TAG          *tag;
 char         str[NAME_LENGTH];
 struct tm    *tms;
+char         *cache;
 
   if (rpc_is_remote())
     return rpc_call(RPC_HS_READ, event_id, start_time, end_time, interval, 
@@ -14218,24 +14222,66 @@ struct tm    *tms;
     return HS_FILE_ERROR;
     }
 
-  /* search record closest to start time */
+  /* try to read index file into cache */
   lseek(fhi, 0, SEEK_END);
-  delta = (TELL(fhi) / sizeof(irec)) / 2;
-  lseek(fhi, delta*sizeof(irec), SEEK_SET);
-  do
+  cache_size = TELL(fhi);
+  cache = malloc(cache_size);
+  if (cache)
     {
-    delta = (int) (abs(delta)/2.0+0.5);
+    lseek(fhi, 0, SEEK_SET);
+    i = read(fhi, cache, cache_size);
+    if (i < cache_size)
+      {
+      free(cache);
+      return HS_FILE_ERROR;
+      }
+    }
+
+  /* search record closest to start time */
+  if (cache == NULL)
+    {
+    lseek(fhi, 0, SEEK_END);
+    delta = (TELL(fhi) / sizeof(irec)) / 2;
+    lseek(fhi, delta*sizeof(irec), SEEK_SET);
+    do
+      {
+      delta = (int) (abs(delta)/2.0+0.5);
+      read(fhi, (char *)&irec, sizeof(irec));
+      if (irec.time > start_time)
+        delta = -delta;
+
+      lseek(fhi, (delta-1)*sizeof(irec), SEEK_CUR);
+      } while (abs(delta) > 1 && irec.time != start_time);
     read(fhi, (char *)&irec, sizeof(irec));
     if (irec.time > start_time)
-      delta = -delta;
-
+      delta = -abs(delta);
     lseek(fhi, (delta-1)*sizeof(irec), SEEK_CUR);
-    } while (abs(delta) > 1 && irec.time != start_time);
-  read(fhi, (char *)&irec, sizeof(irec));
-  if (irec.time > start_time)
-    delta = -abs(delta);
-  lseek(fhi, (delta-1)*sizeof(irec), SEEK_CUR);
-  read(fhi, (char *)&irec, sizeof(irec));
+    read(fhi, (char *)&irec, sizeof(irec));
+    }
+  else
+    {
+    delta = (cache_size / sizeof(irec)) / 2;
+    cp = delta*sizeof(irec);
+    do
+      {
+      delta = (int) (abs(delta)/2.0+0.5);
+      pirec = (INDEX_RECORD *) (cache+cp);
+      if (pirec->time > start_time)
+        delta = -delta;
+
+      cp = cp + delta*sizeof(irec);
+      } while (abs(delta) > 1 && pirec->time != start_time);
+    pirec = (INDEX_RECORD *) (cache+cp);
+    if (pirec->time > start_time)
+      delta = -abs(delta);
+    cp = cp + delta*sizeof(irec);
+
+    if (cp >= cache_size)
+      cp = cache_size - sizeof(irec);
+
+    memcpy(&irec, (INDEX_RECORD *) (cache+cp), sizeof(irec));
+    cp += sizeof(irec);
+    }
 
   /* read records, skip wrong IDs */
   old_def_offset = -1;
@@ -14266,6 +14312,8 @@ struct tm    *tms;
           if (tag == NULL)
             {
             *n = *tbsize = *dbsize = 0;
+            if (cache)
+              free(cache);
             return HS_NO_MEMORY;
             }
           read(fh, (char *)tag, drec.data_size);
@@ -14282,12 +14330,16 @@ struct tm    *tms;
           if ((DWORD) i == drec.data_size/sizeof(TAG))
             {
             *n = *tbsize = *dbsize = 0;
+            if (cache)
+              free(cache);
             return HS_UNDEFINED_VAR;
             }
           
           if (var_index >= tag[i].n_data)
             {
             *n = *tbsize = *dbsize = 0;
+            if (cache)
+              free(cache);
             return HS_WRONG_INDEX;
             }
 
@@ -14322,6 +14374,8 @@ struct tm    *tms;
             {
             *dbsize = (*n) * var_size;
             *tbsize = (*n) * sizeof(DWORD);
+            if (cache)
+              free(cache);
             return HS_TRUNCATED;
             }
 
@@ -14339,7 +14393,24 @@ struct tm    *tms;
       }
 
     /* read next index record */
-    i = read(fhi, (char *)&irec, sizeof(irec));
+    if (cache)
+      {
+      if (cp < cache_size)
+        {
+        memcpy(&irec, cache+cp, sizeof(irec));
+        cp += sizeof(irec);
+        }
+      if (cp >= cache_size)
+        {
+        i = -1;
+        free(cache);
+        cache = NULL;
+        }
+      else
+        i = sizeof(irec);
+      }
+    else
+      i = read(fhi, (char *)&irec, sizeof(irec));
 
     /* end of file: search next history file */
     if (i <= 0)
@@ -14372,15 +14443,35 @@ struct tm    *tms;
         break;
         }
 
-      /* read first record */
-      i = read(fhi, (char *)&irec, sizeof(irec));
-      if (i <= 0)
-        break;
+      /* try to read index file into cache */
+      lseek(fhi, 0, SEEK_END);
+      cache_size = TELL(fhi);
+      lseek(fhi, 0, SEEK_SET);
+      cache = malloc(cache_size);
+      if (cache)
+        {
+        i = read(fhi, cache, cache_size);
+        if (i < cache_size)
+          break;
+        /* read first record */
+        cp = 0;
+        memcpy(&irec, cache, sizeof(irec));
+        }
+      else
+        {
+        /* read first record */
+        i = read(fhi, (char *)&irec, sizeof(irec));
+        if (i <= 0)
+          break;
+        }
 
       /* old definition becomes invalid */
       old_def_offset = -1;
       }
     } while (irec.time < end_time);
+
+  if (cache)
+    free(cache);
 
   *dbsize = *n * var_size;
   *tbsize = *n * sizeof(DWORD);
@@ -15329,6 +15420,8 @@ HNDLE  hDB;
   return EL_SUCCESS;
 }
 
+/*------------------------------------------------------------------*/
+
 INT el_retrieve(char *tag, char *date, int *run, char *author, char *type, 
                 char *system, char *subject, char *text, int *textsize, 
                 char *orig_tag, char *reply_tag, 
@@ -15541,6 +15634,105 @@ char    tag[256];
   if (status == EL_LAST_MSG || status == EL_FIRST_MSG)
     return status;
   
+  return EL_SUCCESS;
+}
+
+/*------------------------------------------------------------------*/
+
+INT el_delete_message(char *tag)
+/********************************************************************\
+
+  Routine: el_submit
+
+  Purpose: Submit an ELog entry
+
+  Input:
+    char   *tag             Message tage
+
+  Output:
+    <none>
+
+  Function value:
+    EL_SUCCESS              Successful completion
+
+\********************************************************************/
+{
+#ifdef LOCAL_ROUTINES
+INT     n, size, fh, mutex, offset, tail_size;
+char    dir[256], str[256], file_name[256];
+HNDLE   hDB;
+char    *buffer;
+
+  cm_get_experiment_database(&hDB, NULL);
+
+  /* request semaphore */
+  cm_get_experiment_mutex(NULL, &mutex);
+  ss_mutex_wait_for(mutex, 0);
+
+  /* generate file name YYMMDD.log in data directory */
+  cm_get_experiment_database(&hDB, NULL);
+  size = sizeof(dir);
+  memset(dir, 0, size);
+  db_get_value(hDB, 0, "/Logger/Data dir", dir, &size, TID_STRING);
+  if (dir[0] != 0)
+    if (dir[strlen(dir)-1] != DIR_SEPARATOR)
+      strcat(dir, DIR_SEPARATOR_STR);
+
+  strcpy(str, tag);
+  if (strchr(str, '.'))
+    {
+    offset = atoi(strchr(str, '.')+1);
+    *strchr(str, '.') = 0;
+    }
+  sprintf(file_name, "%s%s.log", dir, str);
+  fh = open(file_name, O_CREAT | O_RDWR | O_BINARY, 0644);
+  if (fh < 0)
+    {
+    ss_mutex_release(mutex);
+    return EL_FILE_ERROR;
+    }
+  lseek(fh, offset, SEEK_SET);
+  read(fh, str, 16);
+  size = atoi(str+9);
+
+  /* buffer tail of logfile */
+  lseek(fh, 0, SEEK_END);
+  tail_size = TELL(fh) - (offset+size);
+
+  if (tail_size > 0)
+    {
+    buffer = malloc(tail_size);
+    if (buffer == NULL)
+      {
+      close(fh);
+      ss_mutex_release(mutex);
+      return EL_FILE_ERROR;
+      }
+
+    lseek(fh, offset+size, SEEK_SET);
+    n = read(fh, buffer, tail_size);
+    }
+  lseek(fh, offset, SEEK_SET);
+
+  if (tail_size > 0)
+    {
+    n = write(fh, buffer, tail_size);
+    free(buffer);
+    }
+  
+  /* truncate file here */
+#ifdef OS_WINNT
+  chsize(fh, TELL(fh));
+#else
+  ftruncate(fh, TELL(fh));
+#endif
+
+  close(fh);
+
+  /* release elog mutex */
+  ss_mutex_release(mutex);
+#endif /* LOCAL_ROUTINES */
+
   return EL_SUCCESS;
 }
 

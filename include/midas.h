@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.66  2000/05/08 14:29:37  midas
+  Added delete option in ELog
+
   Revision 1.65  2000/04/26 20:23:47  pierre
   - Moved doc++ comments for functions to midas.c (macros still in there)
 
@@ -1641,6 +1644,7 @@ INT EXPRT el_submit(int run, char *author, char *type, char *system, char *subje
               char *tag, INT tag_size);
 INT EXPRT el_search_message(char *tag, int *fh, BOOL walk);
 INT EXPRT el_search_run(int run, char *return_tag);
+INT EXPRT el_delete_message(char *tag);
 
 /*---- Alarm functions ----*/
 INT EXPRT al_check();

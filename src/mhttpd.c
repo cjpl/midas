@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.123  2000/05/08 14:29:38  midas
+  Added delete option in ELog
+
   Revision 1.122  2000/05/08 08:38:28  midas
   Run number display can be switched off via /Elog/Display run number
 
@@ -374,7 +377,9 @@
 /* time until mhttpd disconnects from MIDAS */
 #define CONNECT_TIME  3600
 
-char return_buffer[1000000];
+#define WEB_BUFFER_SIZE 1000000
+
+char return_buffer[WEB_BUFFER_SIZE];
 int  return_length;
 char mhttpd_url[256];
 char exp_name[32];
@@ -432,6 +437,27 @@ char system_list[20][NAME_LENGTH] = {
   "Electronics",
   "Target",
   "Beamline"
+};
+
+
+struct {
+  char ext[32];
+  char type[32];
+  } filetype[] = {
+
+  ".JPG",   "image/jpeg",     
+  ".GIF",   "image/gif",
+  ".PS",    "application/postscript",
+  ".EPS",   "application/postscript",
+  ".HTML",  "text/html",
+  ".HTM",   "text/html",
+  ".XLS",   "application/x-msexcel",
+  ".DOC",   "application/msword",
+  ".PDF",   "application/pdf",
+  ".TXT",   "text/plain",
+  ".ASC",   "text/plain",
+  ".ZIP",   "application/x-zip-compressed",
+  ""
 };
 
 void show_hist_page(char *path, char *buffer, int *buffer_size);
@@ -1934,6 +1960,74 @@ BOOL   display_run_number;
 
 /*------------------------------------------------------------------*/
 
+void show_elog_delete(char *path)
+{
+HNDLE  hDB;
+int    size, status;
+char   str[256];
+BOOL   allow_delete;
+
+  /* get flag for allowing delete */
+  cm_get_experiment_database(&hDB, NULL);
+  allow_delete = FALSE;
+  size = sizeof(BOOL);
+  db_get_value(hDB, 0, "/Elog/Allow delete", &allow_delete, &size, TID_BOOL);
+
+  /* redirect if confirm = NO */
+  if (getparam("confirm") && *getparam("confirm") && 
+      strcmp(getparam("confirm"), "No") == 0)
+    {
+    sprintf(str, "EL/%s", path);
+    redirect(str);
+    return;
+    }
+
+  /* header */
+  sprintf(str, "EL/%s", path);
+  show_header(hDB, "Delete ELog entry", str, 1);
+
+  if (!allow_delete)
+    {
+    rsprintf("<tr><td colspan=2 bgcolor=#FF8080 align=center><h1>Message deletion disabled in ODB</h1>\n");
+    }
+  else
+    {
+    if (getparam("confirm") && *getparam("confirm"))
+      {
+      if (strcmp(getparam("confirm"), "Yes") == 0)
+        {
+        /* delete message */
+        status = el_delete_message(path);
+        rsprintf("<tr><td colspan=2 bgcolor=#80FF80 align=center>");
+        if (status == EL_SUCCESS)
+          rsprintf("<b>Message successfully deleted</b></tr>\n");
+        else
+          rsprintf("<b>Error deleting message: status = %d</b></tr>\n", status);
+
+        rsprintf("<input type=hidden name=cmd value=last>\n");
+        rsprintf("<tr><td colspan=2 align=center><input type=submit value=\"Goto last message\"></tr>\n");
+        }
+      }
+    else
+      {
+      /* define hidden field for command */
+      rsprintf("<input type=hidden name=cmd value=delete>\n");
+
+      rsprintf("<tr><td colspan=2 bgcolor=#FF8080 align=center>");
+      rsprintf("<b>Are you sure to delete this message?</b></tr>\n");
+
+      rsprintf("<tr><td align=center><input type=submit name=confirm value=Yes>\n");
+      rsprintf("<td align=center><input type=submit name=confirm value=No>\n");
+      rsprintf("</tr>\n\n");
+      }
+    }
+
+  rsprintf("</table>\n");
+  rsprintf("</body></html>\r\n");
+}
+
+/*------------------------------------------------------------------*/
+
 void show_elog_submit_query(INT last_n)
 {
 int    i, size, run, status, m1, d2, m2, y2, index, fh, colspan;
@@ -2315,6 +2409,7 @@ FILE   *f;
                           colspan, ref, attachment[index]+14);
 
                 if ((strstr(str, ".TXT") ||
+                     strstr(str, ".ASC") ||
                      strchr(str, '.') == NULL) && show_attachments)
                   {
                   /* display attachment */
@@ -2866,13 +2961,15 @@ char  date[80], author[80], type[80], system[80], subject[256], text[10000],
 HNDLE hDB, hkey, hkeyroot;
 KEY   key;
 FILE  *f;
-BOOL  display_run_number;
+BOOL  display_run_number, allow_delete;
 
-  /* get flag for displaying run number */
+  /* get flag for displaying run number and allow delete */
   cm_get_experiment_database(&hDB, NULL);
   display_run_number = TRUE;
+  allow_delete = FALSE;
   size = sizeof(BOOL);
   db_get_value(hDB, 0, "/Elog/Display run number", &display_run_number , &size, TID_BOOL);
+  db_get_value(hDB, 0, "/Elog/Allow delete", &allow_delete, &size, TID_BOOL);
   
   /*---- interprete commands ---------------------------------------*/
 
@@ -2945,6 +3042,12 @@ BOOL  display_run_number;
     return;
     }
 
+  if (equal_ustring(command, "delete"))
+    {
+    show_elog_delete(path);
+    return;
+    }
+
   if (strncmp(path, "last", 4) == 0)
     {
     show_elog_submit_query(atoi(path+4));
@@ -2989,24 +3092,14 @@ BOOL  display_run_number;
       /* return proper header for file type */
       for (i=0 ; i<(int)strlen(path) ; i++)
         str[i] = toupper(path[i]);
-      if (strstr(str, ".JPG"))
-        rsprintf("Content-Type: image/jpeg\r\n");
-      else if (strstr(str, ".GIF"))
-        rsprintf("Content-Type: image/gif\r\n");
-      else if (strstr(str, ".PS"))
-        rsprintf("Content-Type: application/postscript\r\n");
-      else if (strstr(str, ".EPS"))
-        rsprintf("Content-Type: application/postscript\r\n");
-      else if (strstr(str, ".HTML"))
-        rsprintf("Content-Type: text/html\r\n");
-      else if (strstr(str, ".XLS"))
-        rsprintf("Content-Type: application/x-msexcel\r\n");
-      else if (strstr(str, ".DOC"))
-        rsprintf("Content-Type: application/msword\r\n");
-      else if (strstr(str, ".PDF"))
-        rsprintf("Content-Type: application/pdf\r\n");
-      else if (strstr(str, ".TXT"))
-        rsprintf("Content-Type: text/plain\r\n");
+      str[i] = 0;
+
+      for (i=0 ; filetype[i].ext[0] ; i++)
+        if (strstr(str, filetype[i].ext))
+          break;
+
+      if (filetype[i].ext[0])
+        rsprintf("Content-Type: %s\r\n", filetype[i].type);
       else if (strchr(str, '.') == NULL)
         rsprintf("Content-Type: text/plain\r\n");
       else
@@ -3162,6 +3255,8 @@ BOOL  display_run_number;
   rsprintf("<tr><td colspan=2 bgcolor=#C0C0C0>\n");
   rsprintf("<input type=submit name=cmd value=New>\n");
   rsprintf("<input type=submit name=cmd value=Edit>\n");
+  if (allow_delete)
+    rsprintf("<input type=submit name=cmd value=Delete>\n");
   rsprintf("<input type=submit name=cmd value=Reply>\n");
   rsprintf("<input type=submit name=cmd value=Query>\n");
   rsprintf("<input type=submit name=cmd value=\"Last 10 entries\">\n");
@@ -3316,6 +3411,7 @@ BOOL  display_run_number;
           rsprintf("<tr><td colspan=2 bgcolor=#C0C0FF>Attachment: <a href=\"%s\"><b>%s</b></a>\n", 
                     ref, attachment[index]+14);
           if (strstr(att, ".TXT") ||
+              strstr(att, ".ASC") ||
               strchr(att, '.') == NULL)
             {
             /* display attachment */
@@ -6930,18 +7026,6 @@ struct tm *gmt;
     return;
     }
 
-  /*---- delete command --------------------------------------------*/
-  
-  if (equal_ustring(command, "delete"))
-    {
-    sprintf(str, "%s?cmd=delete", enc_path);
-    if (!check_web_password(cookie_wpwd, str, experiment))
-      return;
-
-    show_delete_page(enc_path, dec_path, value, index);
-    return;
-    }
-
   /*---- CAMAC CNAF command ----------------------------------------*/
   
   if (equal_ustring(command, "CNAF") || strncmp(path, "/CNAF", 5) == 0)
@@ -7063,6 +7147,18 @@ struct tm *gmt;
     else
       rsprintf("Location: %s\r\n\r\n<html>redir</html>\r\n", mhttpd_url);
 
+    return;
+    }
+
+  /*---- delete command --------------------------------------------*/
+  
+  if (equal_ustring(command, "delete"))
+    {
+    sprintf(str, "%s?cmd=delete", enc_path);
+    if (!check_web_password(cookie_wpwd, str, experiment))
+      return;
+
+    show_delete_page(enc_path, dec_path, value, index);
     return;
     }
 
@@ -7264,7 +7360,7 @@ void ctrlc_handler(int sig)
 
 /*------------------------------------------------------------------*/
 
-char net_buffer[1000000];
+char net_buffer[WEB_BUFFER_SIZE];
 
 void server_loop(int tcp_port, int daemon)
 {
