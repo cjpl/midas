@@ -6,6 +6,9 @@
 #  Contents:     Makefile for MIDAS example frontend and analyzer
 #
 #  $Log$
+#  Revision 1.7  1999/12/22 08:53:56  midas
+#  Changed /midas/drivers to ../../drivers
+#
 #  Revision 1.6  1999/12/22 00:05:00  pierre
 #  - Set default driver to camacnul
 #
@@ -60,9 +63,8 @@ MODULES 	= adccalib.o adcsum.o scaler.o
 #-------------------------------------------------------------------
 # Hardware driver can be (camacnul, kcs2926, kcs2927, hyt1331)
 #
-ifndef ($(DRIVER))
-  DRIVER = camacnul
-endif
+DRIVER = camacnul
+
 #-------------------------------------------------------------------
 # Frontend code name defaulted to frontend in this example.
 # comment out the line and run your own frontend as follow:
