@@ -6,6 +6,9 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
+  Revision 1.33  2002/06/10 22:58:07  pierre
+  add lock flag in remove_record
+
   Revision 1.32  2002/05/22 05:43:33  midas
   Added extra variables to hs_enum_vars for mhist to display array size
 
@@ -844,7 +847,7 @@ INT convert_flags;
       break;
 
     case RPC_DB_REMOVE_OPEN_RECORD:
-      status = db_remove_open_record(CHNDLE(0), CHNDLE(1));
+      status = db_remove_open_record(CHNDLE(0), CHNDLE(1), CBOOL(3));
       break;
 
     case RPC_DB_LOAD:
