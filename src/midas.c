@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.116  2000/05/09 09:06:12  midas
+  Added MIDAS_EXPTAB environment variable and hashmark comments in exptab
+
   Revision 1.115  2000/05/08 14:29:38  midas
   Added delete option in ELog
 
@@ -1261,6 +1264,13 @@ char str[MAX_STRING_LENGTH], alt_str[MAX_STRING_LENGTH], *pdir;
   strcpy(alt_str, "exptab");
 #endif
 
+  /* MIDAS_EXPTAB overrides default directory */
+  if (getenv("MIDAS_EXPTAB"))
+    {
+    strcpy(str, getenv("MIDAS_EXPTAB"));
+    strcpy(alt_str, getenv("MIDAS_EXPTAB"));
+    }
+
   /* read list of available experiments */
   f = fopen(str, "r");
   if (f == NULL)
@@ -1277,7 +1287,7 @@ char str[MAX_STRING_LENGTH], alt_str[MAX_STRING_LENGTH], *pdir;
       {
       str[0] = 0;
       fgets(str, 100, f);
-      if (str[0])
+      if (str[0] && str[0] != '#')
         {
         sscanf(str, "%s %s %s", exptab[i].name, exptab[i].directory,
                     exptab[i].user);
