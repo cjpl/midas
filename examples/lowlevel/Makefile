@@ -6,6 +6,9 @@
 #  Contents:     UNIX Makefile for MIDAS slow control frontend
 #
 #  $Log$
+#  Revision 1.2  1999/10/26 12:08:31  midas
+#  Switched to shared midas library
+#
 #  Revision 1.1  1999/10/26 12:03:07  midas
 #  Added file
 #
@@ -18,8 +21,8 @@
 # lines below.
 
 # This is for Linux ----------------
-LIBS = -lbsd -lm -lutil
-OSFLAGS = -DOS_LINUX
+LIBS = -lutil
+OSFLAGS = -DOS_LINUX -fPIC
 
 # This is for OSF1 -----------------
 #LIBS = -lbsd
@@ -47,15 +50,14 @@ LIB = $(LIB_DIR)/libmidas.a
 
 # compiler
 CC = cc
-CFLAGS = -g -I$(INC_DIR)
-LDFLAGS = -lutil
+CFLAGS = -g -I$(INC_DIR) -L$(LIB_DIR)
 
 PROGS = produce consume rpc_test rpc_clnt rpc_srvr
 all: $(PROGS)
 
 $(PROGS): %: %.c $(LIB)
-	$(CC) $(CFLAGS) $(OSFLAGS) -o $@ $< $(LIB) $(LDFLAGS)
+	$(CC) $(CFLAGS) $(OSFLAGS) -o $@ $< -lmidas $(LIBS)
 
 clean:
-	rm -f *.o *~ \#*
+	rm -f $(PROGS) *~ \#*
 
