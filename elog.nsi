@@ -29,6 +29,7 @@ Section "ELOG system (required)"
   File utils\elog*.c
   File nt\bin\elog*.exe
   File /oname=elogd.cfg c:\elog\elogd_sample.cfg 
+  File c:\elog\eloghelp.html
   
   File /oname=readme.html m:\html\elog\index.html
   File m:\html\elog\config.html
