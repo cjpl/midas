@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.31  1999/08/03 11:15:07  midas
+  Added bm_skip_event
+
   Revision 1.30  1999/07/15 07:35:12  midas
   Added ss_ctrlc_handler
 
@@ -1175,6 +1178,7 @@ INT EXPRT bm_send_event(INT buffer_handle, void *event, INT buf_size,
                   INT async_flag);
 INT EXPRT bm_receive_event(INT buffer_handle, void *destination,
                           INT *buf_size, INT async_flag);
+INT EXPRT bm_skip_event(INT buffer_handle);
 INT EXPRT bm_flush_cache(INT buffer_handle, INT async_flag);
 INT EXPRT bm_poll_event(INT flag);
 INT EXPRT bm_empty_buffers(void);

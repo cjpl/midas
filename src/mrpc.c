@@ -6,6 +6,9 @@
   Contents:     List of MIDAS RPC functions with parameters
 
   $Log$
+  Revision 1.12  1999/08/03 11:15:07  midas
+  Added bm_skip_event
+
   Revision 1.11  1999/05/05 12:02:34  midas
   Added and modified history functions, added db_set_num_values
 
@@ -191,6 +194,10 @@ static RPC_LIST rpc_list_library[] = {
      {TID_ARRAY,      RPC_OUT | RPC_VARARRAY}, 
      {TID_INT,        RPC_IN | RPC_OUT}, 
      {TID_INT,        RPC_IN}, 
+     {0} }},
+
+  { RPC_BM_SKIP_EVENT, "bm_skip_event",
+    {{TID_INT,        RPC_IN}, 
      {0} }},
 
   { RPC_BM_MARK_READ_WAITING, "bm_mark_read_waiting",
