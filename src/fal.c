@@ -7,6 +7,9 @@
                 Most routines are from mfe.c mana.c and mlogger.c.
 
   $Log$
+  Revision 1.37  2003/11/14 13:39:08  midas
+  Added auto restart to FAL
+
   Revision 1.36  2003/05/09 07:40:04  midas
   Added extra parameter to cm_get_environment
 
@@ -4421,7 +4424,7 @@ EVENT_HEADER    *pevent;
 DWORD           actual_time, actual_millitime,
                 last_time_network=0, last_time_display=0,
                 readout_start, source;
-INT             i, j, index, status, ch, size;
+INT             i, j, index, status, ch, size, flag;
 char            str[80];
 
   pevent = (EVENT_HEADER *) event_buffer;
@@ -4582,6 +4585,14 @@ char            str[80];
           {
           cm_msg(MERROR, "Cannot stop run: %s", str);
           }
+
+        /* check if autorestart, main loop will take care of it */
+        size = sizeof(BOOL);
+        flag = FALSE;
+        db_get_value(hDB, 0, "/Logger/Auto restart", &flag, &size, TID_BOOL, TRUE);
+
+        if (flag)
+          auto_restart = ss_time() + 5; /* start in 5 sec. */
         }
       }
 
@@ -4672,7 +4683,7 @@ char            str[80];
       status = cm_yield(100);
 
     /*---- check auto restart --------------------------------------*/
-    if (auto_restart)
+    if (auto_restart > 0 && (int)ss_time() > auto_restart)
       {
       auto_restart = FALSE;
       size = sizeof(run_number);
