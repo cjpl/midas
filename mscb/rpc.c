@@ -6,6 +6,9 @@
   Contents:     List of MSCB RPC functions with parameters
 
   $Log$
+  Revision 1.13  2003/09/30 08:03:41  midas
+  Implemented multiple RPC connections
+
   Revision 1.12  2003/09/23 09:25:26  midas
   Added RPC call for mscb_addr
 
@@ -604,11 +607,9 @@ char         return_buffer[NET_BUFFER_SIZE];
 
 /*------------------------------------------------------------------*/
 
-int _sock = 0;
-
 int mrpc_connect(char *host_name)
 { 
-INT                  status;
+INT                  status, sock;
 struct sockaddr_in   bind_addr;
 struct hostent       *phe;
 
@@ -618,16 +619,16 @@ struct hostent       *phe;
 
   /* Start windows sockets */
   if ( WSAStartup(MAKEWORD(1,1), &WSAData) != 0)
-    return RPC_NET_ERROR;
+    return -1;
   }
 #endif
 
   /* create a new socket for connecting to remote server */
-  _sock = socket(AF_INET, SOCK_STREAM, 0);
-  if (_sock == -1)
+  sock = socket(AF_INET, SOCK_STREAM, 0);
+  if (sock == -1)
     {
     perror("mrpc_connect");
-    return RPC_NET_ERROR;
+    return -1;
     }
 
   /* let OS choose any port number */
@@ -636,11 +637,11 @@ struct hostent       *phe;
   bind_addr.sin_addr.s_addr = 0;
   bind_addr.sin_port        = 0;
 
-  status = bind(_sock, (void *)&bind_addr, sizeof(bind_addr));
+  status = bind(sock, (void *)&bind_addr, sizeof(bind_addr));
   if (status < 0)
     {
     perror("mrpc_connect");
-    return RPC_NET_ERROR;
+    return -1;
     }
 
   /* connect to remote node */
@@ -653,32 +654,25 @@ struct hostent       *phe;
   if (phe == NULL)
     {
     perror("mrpc_connect");
-    return RPC_NET_ERROR;
+    return -1;
     }
   memcpy((char *)&(bind_addr.sin_addr), phe->h_addr, phe->h_length);
 
-  status = connect(_sock, (void *) &bind_addr, sizeof(bind_addr));
+  status = connect(sock, (void *) &bind_addr, sizeof(bind_addr));
   if (status != 0)
     {
     perror("mrpc_connect");
-    return RPC_NET_ERROR;
+    return -1;
     }
 
-  return RPC_SUCCESS; 
+  return sock; 
 }
 
 /*------------------------------------------------------------------*/
 
-int mrpc_connected()
+int mrpc_disconnect(int sock)
 {
-  return _sock > 0;
-}
-
-/*------------------------------------------------------------------*/
-
-int mrpc_disconnect()
-{
-  closesocket(_sock);
+  closesocket(sock);
   return RPC_SUCCESS; 
 }
 
@@ -713,7 +707,7 @@ void mrpc_va_arg(va_list* arg_ptr, int arg_type, void *arg)
 
 /*------------------------------------------------------------------*/
 
-int mrpc_call(const int routine_id, ...)
+int mrpc_call(const int sock, const int routine_id, ...)
 {
 va_list         ap, aptmp;
 char            str[256], arg[8], arg_tmp[8];
@@ -855,7 +849,7 @@ time_t          now;
   send_size = nc->header.param_size + sizeof(NET_COMMAND_HEADER);
 
   /* send and wait for reply on send socket */
-  i = msend_tcp(_sock, (char *) nc, send_size);
+  i = msend_tcp(sock, (char *) nc, send_size);
   if (i != send_size)
     {
     printf("mrpc_call: msend_tcp() failed\n");
@@ -864,26 +858,26 @@ time_t          now;
 
   /* make some timeout checking */
   FD_ZERO(&readfds);
-  FD_SET(_sock, &readfds);
+  FD_SET(sock, &readfds);
 
   timeout.tv_sec  = RPC_TIMEOUT / 1000;
   timeout.tv_usec = (RPC_TIMEOUT % 1000) * 1000;
 
   select(FD_SETSIZE, (void *) &readfds, NULL, NULL, (void *) &timeout);
 
-  if (!FD_ISSET(_sock, &readfds))
+  if (!FD_ISSET(sock, &readfds))
     {
     printf("mrpc_call: rpc timeout, routine = \"%s\"", rpc_list[index].name);
 
     /* disconnect to avoid that the reply to this mrpc_call comes at
        the next mrpc_call */
-    mrpc_disconnect();
+    closesocket(sock);
 
     return RPC_ERR_TIMEOUT;
     }
 
   /* receive result on send socket */
-  i = mrecv_tcp(_sock, net_buffer, NET_BUFFER_SIZE);
+  i = mrecv_tcp(sock, net_buffer, NET_BUFFER_SIZE);
 
   if (i<=0)
     {
@@ -970,6 +964,9 @@ time_t          now;
 
 /*------------------------------------------------------------------*/
 
+extern void mscb_cleanup(int sock);
+int _server_sock = 0;
+
 void mrpc_server_loop(void)
 {
 int                  i, status, sock, lsock, len, flag;
@@ -1049,7 +1046,6 @@ struct timeval       timeout;
         if (rpc_sock[i] == 0)
           break;
 
-      /* recycle last connection */
       if (i == N_MAX_CONNECTION)
         {
         printf("Maximum number of connections exceeded\n");
@@ -1077,13 +1073,19 @@ struct timeval       timeout;
           len = mrecv_tcp(rpc_sock[i], net_buffer, NET_BUFFER_SIZE);
           if (len < 0)
             {
+            /* remove stale fd */
+            mscb_cleanup(rpc_sock[i]);
+
             /* close broken connection */
             printf("Close connection\n");
             closesocket(rpc_sock[i]);
             rpc_sock[i] = 0;
             }
           else
+            {
+            _server_sock = rpc_sock[i];
             mrpc_execute(rpc_sock[i], net_buffer);
+            }
           }
       }
 

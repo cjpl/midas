@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus communication functions
 
   $Log$
+  Revision 1.46  2003/09/30 08:03:41  midas
+  Implemented multiple RPC connections
+
   Revision 1.45  2003/09/23 09:25:26  midas
   Added RPC call for mscb_addr
 
@@ -141,7 +144,7 @@
 
 \********************************************************************/
 
-#define MSCB_LIBRARY_VERSION   "1.5.0"
+#define MSCB_LIBRARY_VERSION   "1.5.1"
 #define MSCB_PROTOCOL_VERSION  "1.4"
 
 #ifdef _MSC_VER           // Windows includes
@@ -173,9 +176,16 @@
 
 #define MSCB_MAX_FD 10
 
+#define MSCB_TYPE_LPT 1
+#define MSCB_TYPE_USB 2
+#define MSCB_TYPE_COM 3
+#define MSCB_TYPE_RPC 4
+
 typedef struct {
   char device[256];
+  int  type;
   int  fd;
+  int  remote_fd;
 } MSCB_FD;
 
 MSCB_FD mscb_fd[MSCB_MAX_FD];
@@ -770,6 +780,15 @@ void mscb_get_version(char *lib_version, char *prot_version)
                                         
 /*------------------------------------------------------------------*/
 
+int mrpc_connected(int fd)
+{
+  return mscb_fd[fd-1].type == MSCB_TYPE_RPC;
+}
+
+/*------------------------------------------------------------------*/
+
+extern int _server_sock;
+
 int mscb_init(char *device, int debug)
 /********************************************************************\
 
@@ -793,6 +812,14 @@ int           status;
 unsigned char c;
 char          host[256], port[256];
 
+  /* search for new file descriptor */
+  for (index=0 ; index<MSCB_MAX_FD ; index++)
+    if (mscb_fd[index].fd == 0)
+      break;
+
+  if (index == MSCB_MAX_FD)
+    return -1;
+
   /* set global debug flag */
   _debug_flag = debug;
 
@@ -804,27 +831,41 @@ char          host[256], port[256];
 
   if (strchr(device, ':'))
     {
+    strncpy(mscb_fd[index].device, device, sizeof(mscb_fd[index].device));
+    mscb_fd[index].type = MSCB_TYPE_RPC;
+
     strcpy(port, strchr(device, ':')+1);
     if (port[0] == 0)
       strcpy(port, DEF_DEVICE);
     strcpy(host, device);
     *strchr(host, ':') = 0;
-    if (mrpc_connect(host) != RPC_SUCCESS)
+
+    mscb_fd[index].fd = mrpc_connect(host);
+    
+    if (mscb_fd[index].fd < 0)
+      {
+      mscb_fd[index].fd = 0;
       return -1;
+      }
+
+    mscb_fd[index].remote_fd = mrpc_call(mscb_fd[index].fd, RPC_MSCB_INIT, port, debug);
+    if (mscb_fd[index].remote_fd < 0)
+      {
+      mrpc_disconnect(mscb_fd[index].fd);
+      mscb_fd[index].fd = 0;
+      return -1;
+      }
+
+    return index+1;
     }
   else
+    {
     strcpy(port, device);
+    mscb_fd[index].type = MSCB_TYPE_LPT;
 
-  if (mrpc_connected())
-    return mrpc_call(RPC_MSCB_INIT, port, debug);
-
-  /* search for new file descriptor */
-  for (index=0 ; index<MSCB_MAX_FD ; index++)
-    if (mscb_fd[index].fd == 0)
-      break;
-
-  if (index == MSCB_MAX_FD)
-    return -1;
+    if (_server_sock)
+      mscb_fd[index].remote_fd = _server_sock;
+    }
 
   strcpy(mscb_fd[index].device, port);
 
@@ -963,21 +1004,33 @@ int mscb_exit(int fd)
 
 \********************************************************************/
 {
-  if (mrpc_connected())
-    return mrpc_call(RPC_MSCB_EXIT, fd);
-
-  if (fd > MSCB_MAX_FD)
+  if (fd > MSCB_MAX_FD || fd < 1)
     return MSCB_INVAL_PARAM;
 
-#ifdef __linux__
-  close(mscb_fd[fd-1].fd);
-#endif
+  if (mrpc_connected(fd))
+    {
+    mrpc_call(mscb_fd[fd-1].fd, RPC_MSCB_EXIT, mscb_fd[fd-1].remote_fd);
+    mrpc_disconnect(mscb_fd[fd-1].fd);
+    }
 
   memset(&mscb_fd[fd-1], 0, sizeof(MSCB_FD));
 
   return MSCB_SUCCESS;
 }
 
+/*------------------------------------------------------------------*/
+
+void mscb_cleanup(int sock)
+/* Called by mrpc_server_loop to remove stale fd's on broken connection */
+{
+int i;
+
+  for (i=0 ; i<MSCB_MAX_FD ; i++)
+    if (mscb_fd[i].fd && mscb_fd[i].remote_fd == sock)
+      memset(&mscb_fd[i], 0, sizeof(MSCB_FD));
+}
+
+  
 /*------------------------------------------------------------------*/
 
 void mscb_check(char *device)
@@ -1092,11 +1145,11 @@ int mscb_addr(int fd, int cmd, int adr, int retry)
 unsigned char buf[10];
 int i, n, status;
 
-  if (mrpc_connected())
-    return mrpc_call(RPC_MSCB_ADDR, fd, cmd, adr, retry);
-
-  if (fd < 1 || mscb_fd[fd-1].fd == 0)
+  if (fd > MSCB_MAX_FD || fd < 1 || mscb_fd[fd-1].fd == 0)
     return MSCB_INVAL_PARAM;
+
+  if (mrpc_connected(fd))
+    return mrpc_call(mscb_fd[fd-1].fd, RPC_MSCB_ADDR, mscb_fd[fd-1].remote_fd, cmd, adr, retry);
 
   for (n = 0 ; n < retry ; n++)
     {
@@ -1178,11 +1231,11 @@ int mscb_reboot(int fd, int adr)
 unsigned char buf[10];
 int status;
 
-  if (mrpc_connected())
-    return mrpc_call(RPC_MSCB_REBOOT, fd, adr);
-
-  if (fd < 1 || mscb_fd[fd-1].fd == 0)
+  if (fd > MSCB_MAX_FD || fd < 1 || mscb_fd[fd-1].fd == 0)
     return MSCB_INVAL_PARAM;
+
+  if (mrpc_connected(fd))
+    return mrpc_call(mscb_fd[fd-1].fd, RPC_MSCB_REBOOT, mscb_fd[fd-1].remote_fd, adr);
 
   if (mscb_lock(fd) != MSCB_SUCCESS)
     return MSCB_MUTEX;
@@ -1221,11 +1274,11 @@ int mscb_reset(int fd)
 
 \********************************************************************/
 {
-  if (mrpc_connected())
-    return mrpc_call(RPC_MSCB_RESET, fd);
-
-  if (fd < 1 || mscb_fd[fd-1].fd == 0)
+  if (fd > MSCB_MAX_FD || fd < 1 || mscb_fd[fd-1].fd == 0)
     return MSCB_INVAL_PARAM;
+
+  if (mrpc_connected(fd))
+    return mrpc_call(mscb_fd[fd-1].fd, RPC_MSCB_RESET, mscb_fd[fd-1].remote_fd);
 
   if (mscb_lock(fd) != MSCB_SUCCESS)
     return MSCB_MUTEX;
@@ -1265,11 +1318,11 @@ int mscb_ping(int fd, int adr)
 {
 int status;
 
-  if (mrpc_connected())
-    return mrpc_call(RPC_MSCB_PING, fd, adr);
-
-  if (fd < 1 || mscb_fd[fd-1].fd == 0)
+  if (fd > MSCB_MAX_FD || fd < 1 || mscb_fd[fd-1].fd == 0)
     return MSCB_INVAL_PARAM;
+
+  if (mrpc_connected(fd))
+    return mrpc_call(mscb_fd[fd-1].fd, RPC_MSCB_PING, mscb_fd[fd-1].remote_fd, adr);
 
   if (mscb_lock(fd) != MSCB_SUCCESS)
     return MSCB_MUTEX;
@@ -1307,11 +1360,11 @@ int mscb_info(int fd, int adr, MSCB_INFO *info)
 int i, status;
 unsigned char buf[256];
 
-  if (mrpc_connected())
-    return mrpc_call(RPC_MSCB_INFO, fd, adr, info);
-
-  if (fd < 1 || mscb_fd[fd-1].fd == 0)
+  if (fd > MSCB_MAX_FD || fd < 1 || mscb_fd[fd-1].fd == 0)
     return MSCB_INVAL_PARAM;
+
+  if (mrpc_connected(fd))
+    return mrpc_call(mscb_fd[fd-1].fd, RPC_MSCB_INFO, mscb_fd[fd-1].remote_fd, adr, info);
 
   if (mscb_lock(fd) != MSCB_SUCCESS)
     return MSCB_MUTEX;
@@ -1375,11 +1428,11 @@ int mscb_info_variable(int fd, int adr, int index, MSCB_INFO_VAR *info)
 int i, status;
 unsigned char buf[80];
 
-  if (mrpc_connected())
-    return mrpc_call(RPC_MSCB_INFO_VARIABLE, fd, adr, index, info);
-
-  if (fd < 1 || mscb_fd[fd-1].fd == 0)
+  if (fd > MSCB_MAX_FD || fd < 1 || mscb_fd[fd-1].fd == 0)
     return MSCB_INVAL_PARAM;
+
+  if (mrpc_connected(fd))
+    return mrpc_call(mscb_fd[fd-1].fd, RPC_MSCB_INFO_VARIABLE, mscb_fd[fd-1].remote_fd, adr, index, info);
 
   if (mscb_lock(fd) != MSCB_SUCCESS)
     return MSCB_MUTEX;
@@ -1435,11 +1488,11 @@ int mscb_set_addr(int fd, int adr, int node, int group)
 unsigned char buf[8];
 int status;
 
-  if (mrpc_connected())
-    return mrpc_call(RPC_MSCB_SET_ADDR, fd, adr, node, group);
-
-  if (fd < 1 || mscb_fd[fd-1].fd == 0)
+  if (fd > MSCB_MAX_FD || fd < 1 || mscb_fd[fd-1].fd == 0)
     return MSCB_INVAL_PARAM;
+
+  if (mrpc_connected(fd))
+    return mrpc_call(mscb_fd[fd-1].fd, RPC_MSCB_SET_ADDR, mscb_fd[fd-1].remote_fd, adr, node, group);
 
   if (mscb_lock(fd) != MSCB_SUCCESS)
     return MSCB_MUTEX;
@@ -1495,11 +1548,11 @@ int mscb_set_name(int fd, int adr, char *name)
 unsigned char buf[256];
 int status, i;
 
-  if (mrpc_connected())
-    return mrpc_call(RPC_MSCB_SET_NAME, fd, adr, name);
-
-  if (fd < 1 || mscb_fd[fd-1].fd == 0)
+  if (fd > MSCB_MAX_FD || fd < 1 || mscb_fd[fd-1].fd == 0)
     return MSCB_INVAL_PARAM;
+
+  if (mrpc_connected(fd))
+    return mrpc_call(mscb_fd[fd-1].fd, RPC_MSCB_SET_NAME, mscb_fd[fd-1].remote_fd, adr, name);
 
   if (mscb_lock(fd) != MSCB_SUCCESS)
     return MSCB_MUTEX;
@@ -1556,13 +1609,13 @@ int i, status;
 unsigned char *d;
 unsigned char buf[256];
 
-  if (mrpc_connected())
-    return mrpc_call(RPC_MSCB_WRITE_GROUP, fd, adr, index, data, size);
-
-  if (size > 4 || size < 1)
+  if (fd > MSCB_MAX_FD || fd < 1 || mscb_fd[fd-1].fd == 0)
     return MSCB_INVAL_PARAM;
 
-  if (fd < 1 || mscb_fd[fd-1].fd == 0)
+  if (mrpc_connected(fd))
+    return mrpc_call(mscb_fd[fd-1].fd, RPC_MSCB_WRITE_GROUP, mscb_fd[fd-1].remote_fd, adr, index, data, size);
+
+  if (size > 4 || size < 1)
     return MSCB_INVAL_PARAM;
 
   if (mscb_lock(fd) != MSCB_SUCCESS)
@@ -1619,13 +1672,13 @@ int           i, status;
 unsigned char buf[256], crc, ack[2];
 unsigned char *d;
 
-  if (mrpc_connected())
-    return mrpc_call(RPC_MSCB_WRITE, fd, adr, index, data, size);
-
-  if (size < 1)
+  if (fd > MSCB_MAX_FD || fd < 1 || mscb_fd[fd-1].fd == 0)
     return MSCB_INVAL_PARAM;
 
-  if (fd < 1 || mscb_fd[fd-1].fd == 0)
+  if (mrpc_connected(fd))
+    return mrpc_call(mscb_fd[fd-1].fd, RPC_MSCB_WRITE, mscb_fd[fd-1].remote_fd, adr, index, data, size);
+
+  if (size < 1)
     return MSCB_INVAL_PARAM;
 
   if (mscb_lock(fd) != MSCB_SUCCESS)
@@ -1703,11 +1756,11 @@ int mscb_flash(int fd, int adr)
 int           i, status;
 unsigned char buf[10], crc, ack[2];
 
-  if (mrpc_connected())
-    return mrpc_call(RPC_MSCB_FLASH, fd, adr);
-
-  if (fd < 1 || mscb_fd[fd-1].fd == 0)
+  if (fd > MSCB_MAX_FD || fd < 1 || mscb_fd[fd-1].fd == 0)
     return MSCB_INVAL_PARAM;
+
+  if (mrpc_connected(fd))
+    return mrpc_call(mscb_fd[fd-1].fd, RPC_MSCB_FLASH, mscb_fd[fd-1].remote_fd, adr);
 
   if (mscb_lock(fd) != MSCB_SUCCESS)
     return MSCB_MUTEX;
@@ -1767,11 +1820,11 @@ unsigned int   len, ofh, ofl, type, d;
 int            i, j, status, page;
 unsigned short ofs;
 
-  if (mrpc_connected())
-    return mrpc_call(RPC_MSCB_UPLOAD, fd, adr, buffer, size);
-
-  if (fd < 1 || mscb_fd[fd-1].fd == 0)
+  if (fd > MSCB_MAX_FD || fd < 1 || mscb_fd[fd-1].fd == 0)
     return MSCB_INVAL_PARAM;
+
+  if (mrpc_connected(fd))
+    return mrpc_call(mscb_fd[fd-1].fd, RPC_MSCB_UPLOAD, mscb_fd[fd-1].remote_fd, adr, buffer, size);
 
   /* interprete HEX file */
   memset(image, 0xFF, sizeof(image));
@@ -1975,12 +2028,13 @@ int           i, n, status;
 unsigned char buf[256], crc;
 
   memset(data, 0, *size);
-  if (mrpc_connected())
-    return mrpc_call(RPC_MSCB_READ, fd, adr, index, data, size);
 
-  if (fd < 1 || mscb_fd[fd-1].fd == 0)
+  if (fd > MSCB_MAX_FD || fd < 1 || mscb_fd[fd-1].fd == 0)
     return MSCB_INVAL_PARAM;
 
+  if (mrpc_connected(fd))
+    return mrpc_call(mscb_fd[fd-1].fd, RPC_MSCB_READ, mscb_fd[fd-1].remote_fd, adr, index, data, size);
+  
   if (mscb_lock(fd) != MSCB_SUCCESS)
     return MSCB_MUTEX;
 
@@ -2094,11 +2148,12 @@ int           i, n, status;
 unsigned char buf[256], crc;
 
   memset(data, 0, *size);
-  if (mrpc_connected())
-    return mrpc_call(RPC_MSCB_READ_RANGE, fd, adr, index1, index2, data, size);
 
-  if (fd < 1 || mscb_fd[fd-1].fd == 0)
+  if (fd > MSCB_MAX_FD || fd < 1 || mscb_fd[fd-1].fd == 0)
     return MSCB_INVAL_PARAM;
+
+  if (mrpc_connected(fd))
+    return mrpc_call(mscb_fd[fd-1].fd, RPC_MSCB_READ_RANGE, mscb_fd[fd-1].remote_fd, adr, index1, index2, data, size);
 
   if (mscb_lock(fd) != MSCB_SUCCESS)
     return MSCB_MUTEX;
@@ -2188,11 +2243,11 @@ unsigned char buf[80];
 
   memset(result, 0, *rsize);
 
-  if (mrpc_connected())
-    return mrpc_call(RPC_MSCB_USER, fd, adr, param, size, result, rsize);
-
-  if (fd < 1 || mscb_fd[fd-1].fd == 0)
+  if (fd > MSCB_MAX_FD || fd < 1 || mscb_fd[fd-1].fd == 0)
     return MSCB_INVAL_PARAM;
+
+  if (mrpc_connected(fd))
+    return mrpc_call(mscb_fd[fd-1].fd, RPC_MSCB_USER, mscb_fd[fd-1].remote_fd, adr, param, size, result, rsize);
 
   if (mscb_lock(fd) != MSCB_SUCCESS)
     return MSCB_MUTEX;
@@ -2276,11 +2331,11 @@ unsigned char buf[80];
  
   *d2 = 0xFF;
 
-  if (mrpc_connected())
-    return mrpc_call(RPC_MSCB_ECHO, fd, adr, d1, d2);
-
-  if (fd < 1 || mscb_fd[fd-1].fd == 0)
+  if (fd > MSCB_MAX_FD || fd < 1 || mscb_fd[fd-1].fd == 0)
     return MSCB_INVAL_PARAM;
+
+  if (mrpc_connected(fd))
+    return mrpc_call(mscb_fd[fd-1].fd, RPC_MSCB_ECHO, mscb_fd[fd-1].remote_fd, adr, d1, d2);
 
   if (mscb_lock(fd) != MSCB_SUCCESS)
     return MSCB_MUTEX;
