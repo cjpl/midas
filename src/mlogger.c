@@ -6,6 +6,9 @@
   Contents:     MIDAS logger program
 
   $Log$
+  Revision 1.63  2003/04/25 14:37:43  midas
+  Fixed compiler warnings
+
   Revision 1.62  2003/04/23 15:07:52  midas
   Fixed a few memory leaks
 
@@ -402,7 +405,7 @@ INT ftp_error(char *message)
 INT ftp_open(char *destination, FTP_CON **con)
 {
 INT   status;
-short port;
+short port=0;
 char  *token, host_name[HOST_NAME_LENGTH],
       user[32], pass[32], directory[256], file_name[256];
 
@@ -1443,7 +1446,7 @@ KEY   varkey, subvarkey;
 
     switch (varkey.type)
       {
-      case TID_BYTE:   
+      case TID_BYTE:
       case TID_CHAR:   strcat(str, "b"); break;
       case TID_SBYTE:  strcat(str, "B"); break;
       case TID_WORD:   strcat(str, "s"); break;
@@ -1480,7 +1483,7 @@ KEY   varkey, subvarkey;
       strcat(str, "/");
       switch (subvarkey.type)
         {
-        case TID_BYTE:   
+        case TID_BYTE:
         case TID_CHAR:   strcat(str, "b"); break;
         case TID_SBYTE:  strcat(str, "B"); break;
         case TID_WORD:   strcat(str, "s"); break;
@@ -1615,7 +1618,7 @@ TBranch     *branch;
         /* structured bank */
         branch->SetAddress(pdata);
         }
-      
+
       } while(1);
 
     /* check if all branches have been filled */
@@ -1628,7 +1631,7 @@ TBranch     *branch;
     }
 
   size = (INT)ts->f->GetBytesWritten() - size;
-  
+
   /* update statistics */
   log_chn->statistics.events_written++;
   log_chn->statistics.bytes_written += size;
@@ -1824,7 +1827,7 @@ INT log_close(LOG_CHN *log_chn, INT run_number)
 
 INT log_write(LOG_CHN *log_chn, EVENT_HEADER *pevent)
 {
-INT    status, size, izero, watchdog_timeout;
+INT    status=0, size, izero, watchdog_timeout;
 DWORD  actual_time, start_time;
 BOOL   watchdog_flag, flag;
 static BOOL stop_requested = FALSE;
@@ -1991,7 +1994,7 @@ void log_history(HNDLE hDB, HNDLE hKey, void *info);
 INT open_history()
 {
 INT      size, index, i_tag, status, i, j, li, max_event_id;
-INT      n_var, n_tags, n_names;
+INT      n_var, n_tags, n_names=0;
 HNDLE    hKeyRoot, hKeyVar, hKeyNames, hLinkKey, hVarKey, hKeyEq, hHistKey, hKey;
 DWORD    history;
 TAG      *tag;
@@ -2063,7 +2066,7 @@ BOOL     single_names;
       db_get_value(hDB, hKeyEq, "Common/Event ID", &event_id, &size, TID_WORD, TRUE);
 
       if (verbose)
-        printf("\n==================== Equipment \"%s\", ID %d  =======================\n", 
+        printf("\n==================== Equipment \"%s\", ID %d  =======================\n",
                   eq_name, event_id);
 
       /* count keys in variables tree */
@@ -2097,9 +2100,9 @@ BOOL     single_names;
         if (hKeyNames)
           {
           if (verbose)
-            printf("Using \"/Equipment/%s/Settings/Names\" for variable \"%s\"\n", 
+            printf("Using \"/Equipment/%s/Settings/Names\" for variable \"%s\"\n",
               eq_name, varkey.name);
-          
+
           /* define tags from names list */
           db_get_key(hDB, hKeyNames, &key);
           n_names = key.num_values;
@@ -2111,7 +2114,7 @@ BOOL     single_names;
           if (hKeyNames)
             {
             if (verbose)
-              printf("Using \"/Equipment/%s/Settings/Names %s\" for variable \"%s\"\n", 
+              printf("Using \"/Equipment/%s/Settings/Names %s\" for variable \"%s\"\n",
                 eq_name, varkey.name, varkey.name);
 
             /* define tags from names list */
@@ -2241,7 +2244,7 @@ BOOL     single_names;
         }
 
       if (verbose)
-        printf("\n==================== History link \"%s\", ID %d  =======================\n", 
+        printf("\n==================== History link \"%s\", ID %d  =======================\n",
                   hist_name, max_event_id);
 
       /* count subkeys in link */
@@ -2296,10 +2299,10 @@ BOOL     single_names;
             strcpy(tag[n_var].name, linkkey.name);
             tag[n_var].type = varkey.type;
             tag[n_var].n_data = varkey.num_values;
-            
+
             if (verbose)
               printf("Defined tag \"%s\", size %d\n", tag[n_var].name, varkey.num_values);
-            
+
             size += varkey.total_size;
             n_var++;
             }
@@ -2714,8 +2717,8 @@ struct tm    *tms;
       else
         {
         sprintf(error,
-	"Invalid channel type \"%s\", pease use \"Tape\", \"FTP\" or \"Disk\"",
-	   chn_settings->type);
+  "Invalid channel type \"%s\", pease use \"Tape\", \"FTP\" or \"Disk\"",
+     chn_settings->type);
         cm_msg(MERROR, "tr_prestart", error);
         return 0;
         }
@@ -2776,7 +2779,7 @@ struct tm    *tms;
       else
         strcpy(str, path);
       db_set_value(hDB, hKeyChannel, "Settings/Current filename", str, 256, 1, TID_STRING);
-      
+
       if (log_chn[index].type == LOG_TYPE_TAPE &&
           log_chn[index].statistics.bytes_written_total == 0 &&
           tape_message)
@@ -3085,7 +3088,7 @@ INT i;
 
 int main(int argc, char *argv[])
 {
-INT    status, msg, i, size, run_number, ch, state;
+INT    status, msg, i, size, run_number, ch=0, state;
 char   host_name[100], exp_name[NAME_LENGTH], dir[256];
 BOOL   debug, daemon, save_mode;
 DWORD  last_time_kb = 0;

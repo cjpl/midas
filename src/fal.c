@@ -7,6 +7,9 @@
                 Most routines are from mfe.c mana.c and mlogger.c.
 
   $Log$
+  Revision 1.35  2003/04/25 14:37:43  midas
+  Fixed compiler warnings
+
   Revision 1.34  2003/04/14 13:32:02  midas
   Updated register_equipment from mfe.c
 
@@ -137,7 +140,7 @@
 
 /* missing in hbook.h */
 #ifndef HFNOV
-#define HFNOV(A1,A2)  CCALLSFSUB2(HFNOV,hfnov,INT,FLOATV,A1,A2) 
+#define HFNOV(A1,A2)  CCALLSFSUB2(HFNOV,hfnov,INT,FLOATV,A1,A2)
 #endif
 #endif  // MANA_LITE
 /*---- globals -----------------------------------------------------*/
@@ -390,7 +393,7 @@ EVENT_HEADER *pevent;
     status = db_copy(hDB, 0, (char *) (pevent+1), &size, "");
     if (status != DB_TRUNCATED)
       {
-      bm_compose_event(pevent, event_id, MIDAS_MAGIC, buffer_size-sizeof(EVENT_HEADER)-size+1, 
+      bm_compose_event(pevent, event_id, MIDAS_MAGIC, buffer_size-sizeof(EVENT_HEADER)-size+1,
                        run_number);
       log_write(log_chn, pevent);
       free(pevent);
@@ -467,11 +470,11 @@ INT ftp_error(char *message)
 INT ftp_open(char *destination, FTP_CON **con)
 {
 INT   status;
-short port;
-char  *token, host_name[HOST_NAME_LENGTH], 
+short port=0;
+char  *token, host_name[HOST_NAME_LENGTH],
       user[32], pass[32], directory[256], file_name[256];
 
-  /* 
+  /*
   destination should have the form:
   host, port, user, password, directory, run%05d.mid
   */
@@ -528,7 +531,7 @@ char  *token, host_name[HOST_NAME_LENGTH],
 /*---- MIDAS format routines ---------------------------------------*/
 
 INT midas_flush_buffer(LOG_CHN *log_chn)
-{     
+{
 INT         status, size, written;
 MIDAS_INFO  *info;
 
@@ -566,7 +569,7 @@ INT midas_write(LOG_CHN *log_chn, EVENT_HEADER *pevent, INT evt_size)
 {
 INT         status, size_left;
 MIDAS_INFO  *info;
-  
+
   info = (MIDAS_INFO *) log_chn->format_info;
 
   /* check if event fits into buffer */
@@ -605,7 +608,7 @@ MIDAS_INFO  *info;
     memcpy(info->write_pointer, pevent, evt_size);
     info->write_pointer += evt_size;
     }
-  
+
   /* update statistics */
   log_chn->statistics.events_written++;
   log_chn->statistics.bytes_written += pevent->data_size+sizeof(EVENT_HEADER);
@@ -638,7 +641,7 @@ INT          status;
     log_chn->handle = 0;
     return SS_NO_MEMORY;
     }
-  
+
   info->write_pointer = info->buffer;
 
   /* Create device channel */
@@ -686,9 +689,9 @@ INT          status;
         }
       }
 
-#ifdef OS_WINNT       
-    log_chn->handle = (int) CreateFile(log_chn->path, GENERIC_WRITE, FILE_SHARE_READ, NULL, 
-                      CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_WRITE_THROUGH | 
+#ifdef OS_WINNT
+    log_chn->handle = (int) CreateFile(log_chn->path, GENERIC_WRITE, FILE_SHARE_READ, NULL,
+                      CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_WRITE_THROUGH |
                       FILE_FLAG_SEQUENTIAL_SCAN, 0);
 
 #else
@@ -858,7 +861,7 @@ static EVENT_DEF *event_def=NULL;
 INT dump_write(LOG_CHN *log_chn, EVENT_HEADER *pevent, INT evt_size)
 {
 INT         status, size, i, j;
-EVENT_DEF   *event_def;  
+EVENT_DEF   *event_def;
 BANK_HEADER *pbh;
 BANK        *pbk;
 BANK32      *pbk32;
@@ -878,11 +881,11 @@ WORD        bktype;
   name[4] = 0;
 
   if (pevent->event_id == EVENTID_BOR)
-    sprintf(pbuf, "%%ID BOR NR %d\n", pevent->serial_number);
+    sprintf(pbuf, "%%ID BOR NR %ld\n", pevent->serial_number);
   else if (pevent->event_id == EVENTID_EOR)
-    sprintf(pbuf, "%%ID EOR NR %d\n", pevent->serial_number);
+    sprintf(pbuf, "%%ID EOR NR %ld\n", pevent->serial_number);
   else
-    sprintf(pbuf, "%%ID %d TR %d NR %d\n", pevent->event_id, pevent->trigger_mask, 
+    sprintf(pbuf, "%%ID %d TR %d NR %ld\n", pevent->event_id, pevent->trigger_mask,
                                            pevent->serial_number);
   STR_INC(pbuf,buffer);
 
@@ -920,7 +923,7 @@ WORD        bktype;
 
       if (rpc_tid_size(bktype & 0xFF))
         size /= rpc_tid_size(bktype & 0xFF);
-      
+
       lrs1882        = (LRS1882_DATA *)   pdata;
       lrs1877        = (LRS1877_DATA *)   pdata;
       lrs1877_header = (LRS1877_HEADER *) pdata;
@@ -949,21 +952,21 @@ WORD        bktype;
           db_sprintf(pbuf, pdata, size, i, bktype & 0xFF);
 
         else if ((bktype & 0xFF00) == TID_LRS1882)
-          sprintf(pbuf, "GA %d CH %02d DA %d", 
+          sprintf(pbuf, "GA %d CH %02d DA %d",
             lrs1882[i].geo_addr, lrs1882[i].channel, lrs1882[i].data);
-        
+
         else if ((bktype & 0xFF00) == TID_LRS1877)
           {
           if (i==0) /* header */
-            sprintf(pbuf, "GA %d BF %d CN %d", 
+            sprintf(pbuf, "GA %d BF %d CN %d",
               lrs1877_header[i].geo_addr, lrs1877_header[i].buffer, lrs1877_header[i].count);
           else      /* data */
-            sprintf(pbuf, "GA %d CH %02d ED %d DA %1.1lf", 
+            sprintf(pbuf, "GA %d CH %02d ED %d DA %1.1lf",
               lrs1877[i].geo_addr, lrs1877[i].channel, lrs1877[i].edge, lrs1877[i].data*0.5);
           }
 
         else if ((bktype & 0xFF00) == TID_PCOS3)
-          sprintf(pbuf, "");
+          sprintf(pbuf, " ");
         else
           db_sprintf(pbuf, pdata, size, i, bktype & 0xFF);
 
@@ -1016,7 +1019,7 @@ WORD        bktype;
     if (log_chn->type == LOG_TYPE_TAPE)
       status = ss_tape_write(log_chn->handle, buffer, size);
     else
-      status = write(log_chn->handle, buffer, size) == 
+      status = write(log_chn->handle, buffer, size) ==
                      size ? SS_SUCCESS : SS_FILE_ERROR;
 
     /* write event directly to device */
@@ -1027,7 +1030,7 @@ WORD        bktype;
       status = ftp_send(((FTP_CON *) log_chn->ftp_con)->data, buffer, size) == size ?
                SS_SUCCESS : SS_FILE_ERROR;
     else
-      status = write(log_chn->handle, (char *) (pevent+1), size) == 
+      status = write(log_chn->handle, (char *) (pevent+1), size) ==
                      size ? SS_SUCCESS : SS_FILE_ERROR;
     }
   else
@@ -1045,7 +1048,7 @@ WORD        bktype;
       status = ftp_send(((FTP_CON *) log_chn->ftp_con)->data, buffer, size) == size ?
                SS_SUCCESS : SS_FILE_ERROR;
     else
-      status = write(log_chn->handle, buffer, size) == 
+      status = write(log_chn->handle, buffer, size) ==
                      size ? SS_SUCCESS : SS_FILE_ERROR;
     }
 
@@ -1133,7 +1136,7 @@ INT dump_log_close(LOG_CHN *log_chn, INT run_number)
 INT ascii_write(LOG_CHN *log_chn, EVENT_HEADER *pevent, INT evt_size)
 {
 INT         status, size, i, j;
-EVENT_DEF   *event_def;  
+EVENT_DEF   *event_def;
 BANK_HEADER *pbh;
 BANK        *pbk;
 BANK32      *pbk32;
@@ -1165,7 +1168,7 @@ WORD        bktype;
   if (pevent->event_id == EVENTID_BOR)
     {
     sprintf(header_line, "%%Run\t");
-    sprintf(data_line, "%d\t", pevent->serial_number);    
+    sprintf(data_line, "%ld\t", pevent->serial_number);
     STR_INC(ph, header_line);
     STR_INC(pd, data_line);
 
@@ -1200,7 +1203,7 @@ WORD        bktype;
     }
   else
     {
-    sprintf(ph, "%%", pevent->event_id);
+    sprintf(ph, "%d", pevent->event_id);
     STR_INC(ph, header_line);
     }
 
@@ -1238,7 +1241,7 @@ WORD        bktype;
 
       if (rpc_tid_size(bktype & 0xFF))
         size /= rpc_tid_size(bktype & 0xFF);
-      
+
       lrs1882        = (LRS1882_DATA *)   pdata;
       lrs1877        = (LRS1877_DATA *)   pdata;
       lrs1877_header = (LRS1877_HEADER *) pdata;
@@ -1336,7 +1339,7 @@ WORD        bktype;
     status = ftp_send(((FTP_CON *) log_chn->ftp_con)->data, buffer, size) == size ?
              SS_SUCCESS : SS_FILE_ERROR;
   else
-    status = write(log_chn->handle, buffer, size) == 
+    status = write(log_chn->handle, buffer, size) ==
                    size ? SS_SUCCESS : SS_FILE_ERROR;
 
   /* update statistics */
@@ -1430,17 +1433,17 @@ INT status;
   if (equal_ustring(log_chn->settings.format, "YBOS"))
     {
     log_chn->format = FORMAT_YBOS;
-	  status = ybos_log_open(log_chn, run_number);
+    status = ybos_log_open(log_chn, run_number);
     }
   else if (equal_ustring(log_chn->settings.format, "ASCII"))
     {
     log_chn->format = FORMAT_ASCII;
-	  status = ascii_log_open(log_chn, run_number);
+    status = ascii_log_open(log_chn, run_number);
     }
   else if (equal_ustring(log_chn->settings.format, "DUMP"))
     {
     log_chn->format = FORMAT_DUMP;
-	  status = dump_log_open(log_chn, run_number);
+    status = dump_log_open(log_chn, run_number);
     }
   else /* default format is MIDAS */
     {
@@ -1478,7 +1481,7 @@ INT log_close(LOG_CHN *log_chn, INT run_number)
 
 INT log_write(LOG_CHN *log_chn, EVENT_HEADER *pevent)
 {
-INT    status, size, izero, watchdog_timeout;
+INT    status=0, size, izero, watchdog_timeout;
 DWORD  actual_time, start_time;
 BOOL   watchdog_flag, flag;
 static BOOL stop_requested = FALSE;
@@ -1525,15 +1528,15 @@ double dzero;
       log_chn->statistics.events_written >= log_chn->settings.event_limit)
     {
     stop_requested = TRUE;
-    
-    cm_msg(MTALK, "log_write", "stopping run after having received %d events", 
+
+    cm_msg(MTALK, "log_write", "stopping run after having received %d events",
                                 log_chn->settings.event_limit);
 
     status = cm_transition(TR_STOP, 0, NULL, 0, ASYNC, FALSE);
     if (status != CM_SUCCESS)
       cm_msg(MERROR, "log_write", "cannot stop run after reaching event limit");
     stop_requested = FALSE;
-    
+
     /* check if autorestart, main loop will take care of it */
     size = sizeof(BOOL);
     flag = FALSE;
@@ -1551,15 +1554,15 @@ double dzero;
       log_chn->statistics.bytes_written >= log_chn->settings.byte_limit)
     {
     stop_requested = TRUE;
-    
-    cm_msg(MTALK, "log_write", "stopping run after having received %1.0lf mega bytes", 
+
+    cm_msg(MTALK, "log_write", "stopping run after having received %1.0lf mega bytes",
                                 log_chn->statistics.bytes_written/1E6);
 
     status = cm_transition(TR_STOP, 0, NULL, 0, ASYNC, FALSE);
     if (status != CM_SUCCESS)
       cm_msg(MERROR, "log_write", "cannot stop run after reaching bytes limit");
     stop_requested = FALSE;
-    
+
     /* check if autorestart, main loop will take care of it */
     size = sizeof(BOOL);
     flag = FALSE;
@@ -1583,7 +1586,7 @@ double dzero;
     /* remember tape name */
     strcpy(tape_name, log_chn->path);
     stats_hkey = log_chn->stats_hkey;
-    
+
     status = cm_transition(TR_STOP, 0, NULL, 0, ASYNC, FALSE);
     if (status != CM_SUCCESS)
       cm_msg(MERROR, "log_write", "cannot stop run after reaching tape capacity");
@@ -1601,11 +1604,11 @@ double dzero;
 
     /* zero statistics */
     dzero = izero = 0;
-    db_set_value(hDB, stats_hkey, "Bytes written total", &dzero, 
+    db_set_value(hDB, stats_hkey, "Bytes written total", &dzero,
                  sizeof(dzero), 1, TID_DOUBLE);
-    db_set_value(hDB, stats_hkey, "Files written", &izero, 
+    db_set_value(hDB, stats_hkey, "Files written", &izero,
                  sizeof(izero), 1, TID_INT);
-    
+
     cm_msg(MTALK, "log_write", "Please insert new tape and start new run.");
 
     return status;
@@ -1617,7 +1620,7 @@ double dzero;
     {
     last_checked = actual_time;
 
-    if (ss_disk_free(log_chn->path) < 1E7 && 
+    if (ss_disk_free(log_chn->path) < 1E7 &&
         !stop_requested && !in_stop_transition)
       {
       stop_requested = TRUE;
@@ -1640,7 +1643,7 @@ void log_history(HNDLE hDB, HNDLE hKey, void *info);
 INT open_history()
 {
   INT      size, index, i_tag, status, i, j, li, max_event_id;
-  INT      n_var, n_tags, n_names;
+  INT      n_var, n_tags, n_names=0;
   HNDLE    hKeyRoot, hKeyVar, hKeyNames, hLinkKey, hVarKey, hKeyEq, hHistKey, hKey;
   DWORD    history;
   TAG      *tag;
@@ -1758,7 +1761,7 @@ INT open_history()
           }
 
         if (hKeyNames && varkey.num_values > n_names)
-          cm_msg(MERROR, "open_history", "/Equipment/%s/Settings/%s contains only %d entries", 
+          cm_msg(MERROR, "open_history", "/Equipment/%s/Settings/%s contains only %d entries",
                  eq_name, key.name, n_names);
 
         if (hKeyNames)
@@ -1804,7 +1807,7 @@ INT open_history()
       /* setup hist_log structure for this event */
       hist_log[index].event_id = event_id;
       hist_log[index].hKeyVar = hKeyVar;
-      db_get_record_size(hDB, hKeyVar, 0, &size); 
+      db_get_record_size(hDB, hKeyVar, 0, &size);
       hist_log[index].buffer_size = size;
       hist_log[index].buffer = malloc(size);
       hist_log[index].period = history;
@@ -1816,7 +1819,7 @@ INT open_history()
         }
 
       /* open hot link to variables */
-      status = db_open_record(hDB, hKeyVar, hist_log[index].buffer, 
+      status = db_open_record(hDB, hKeyVar, hist_log[index].buffer,
                               size, MODE_READ, log_history, NULL);
       if (status != DB_SUCCESS)
         cm_msg(MERROR, "open_history", "cannot open variable record for history logging");
@@ -2018,7 +2021,7 @@ INT i, size;
     return;
 
   /* check if event size has changed */
-  db_get_record_size(hDB, hKey, 0, &size); 
+  db_get_record_size(hDB, hKey, 0, &size);
   if (size != hist_log[i].buffer_size)
     {
     close_history();
@@ -2037,7 +2040,7 @@ INT   i, size, total_size, status, index;
 KEY   key;
 
   index = (int) info;
-  
+
   /* check if over period */
   if (ss_time() - hist_log[index].last_log < hist_log[index].period)
     return;
@@ -2053,7 +2056,7 @@ KEY   key;
     db_get_data(hDB, hKey, (char *)hist_log[index].buffer+total_size, &size, key.type);
     total_size += size;
     }
-  
+
   if (total_size != hist_log[index].buffer_size)
     {
     close_history();
@@ -2145,9 +2148,9 @@ double dzero;
           dzero = izero = 0;
           log_chn[i].statistics.bytes_written_total = 0;
           log_chn[i].statistics.files_written = 0;
-          db_set_value(hDB, hKeyChannel, "Statistics/Bytes written total", &dzero, 
+          db_set_value(hDB, hKeyChannel, "Statistics/Bytes written total", &dzero,
                        sizeof(dzero), 1, TID_DOUBLE);
-          db_set_value(hDB, hKeyChannel, "Statistics/Files written", &izero, 
+          db_set_value(hDB, hKeyChannel, "Statistics/Files written", &izero,
                        sizeof(izero), 1, TID_INT);
           }
         }
@@ -2177,8 +2180,8 @@ struct {
 INT tr_prestart(INT run_number, char *error)
 /********************************************************************\
 
-   Prestart: 
-   
+   Prestart:
+
      Loop through channels defined in /logger/channels.
      Neglect channels with are not active.
      If "filename" contains a "%", substitute it by the
@@ -2219,7 +2222,7 @@ BOOL         write_data, tape_flag = FALSE;
       cm_msg(MERROR, "tr_prestart", error);
       return 0;
       }
-    
+
     status = db_find_key(hDB, 0, "/Logger/Channels", &hKeyRoot);
     if (status != DB_SUCCESS)
       {
@@ -2325,7 +2328,7 @@ BOOL         write_data, tape_flag = FALSE;
       else
         str[0] = 0;
       strcat(str, chn_settings->filename);
-      
+
       /* substitue "%d" by current run number */
       if (strchr(str, '%'))
         sprintf(path, str, run_number);
@@ -2334,7 +2337,7 @@ BOOL         write_data, tape_flag = FALSE;
 
       strcpy(log_chn[index].path, path);
 
-      if (log_chn[index].type == LOG_TYPE_TAPE && 
+      if (log_chn[index].type == LOG_TYPE_TAPE &&
           log_chn[index].statistics.bytes_written_total == 0 &&
           tape_message)
         {
@@ -2366,13 +2369,13 @@ BOOL         write_data, tape_flag = FALSE;
         }
 
       /* open hot link to statistics tree */
-      status = db_open_record(hDB, log_chn[index].stats_hkey, &log_chn[index].statistics, 
+      status = db_open_record(hDB, log_chn[index].stats_hkey, &log_chn[index].statistics,
                               sizeof(CHN_STATISTICS), MODE_WRITE, NULL, NULL);
       if (status != DB_SUCCESS)
         cm_msg(MERROR, "tr_prestart", "cannot open statistics record, probably other logger is using it");
 
       /* open hot link to settings tree */
-      status = db_open_record(hDB, log_chn[index].settings_hkey, &log_chn[index].settings, 
+      status = db_open_record(hDB, log_chn[index].settings_hkey, &log_chn[index].settings,
                               sizeof(CHN_SETTINGS), MODE_READ, NULL, NULL);
       if (status != DB_SUCCESS)
         cm_msg(MERROR, "tr_prestart", "cannot open channel settings record, probably other logger is using it");
@@ -2389,9 +2392,9 @@ BOOL         write_data, tape_flag = FALSE;
       bm_set_cache_size(log_chn[index].buffer_handle, 100000, 0);
 
       /* place event request */
-      status = bm_request_event(log_chn[index].buffer_handle, 
-                                (short) chn_settings->event_id, 
-                                (short) chn_settings->trigger_mask, 
+      status = bm_request_event(log_chn[index].buffer_handle,
+                                (short) chn_settings->event_id,
+                                (short) chn_settings->trigger_mask,
                                 GET_ALL, &log_chn[index].request_id, receive_event);
 
       if (status != BM_SUCCESS)
@@ -2413,9 +2416,9 @@ BOOL         write_data, tape_flag = FALSE;
           }
 
         /* place event request */
-        status = bm_request_event(log_chn[index].msg_buffer_handle, 
-                                  (short) EVENTID_MESSAGE, 
-                                  (short) chn_settings->log_messages, 
+        status = bm_request_event(log_chn[index].msg_buffer_handle,
+                                  (short) EVENTID_MESSAGE,
+                                  (short) chn_settings->log_messages,
                                   GET_ALL, &log_chn[index].msg_request_id, receive_event);
 
         if (status != BM_SUCCESS)
@@ -2450,8 +2453,8 @@ BOOL         write_data, tape_flag = FALSE;
 INT tr_poststop(INT run_number, char *error)
 /********************************************************************\
 
-   Poststop: 
-   
+   Poststop:
+
      Wait until buffers are empty, then close logging channels
 
 \********************************************************************/
@@ -2580,7 +2583,7 @@ int   size;
 
   cm_get_experiment_database(&hDB, NULL);
   db_find_key(hDB, 0, "/Logger/Data dir", &hkey);
-  
+
   if (hkey)
     {
     size = sizeof(str);
@@ -2907,7 +2910,7 @@ INT write_event_odb(EVENT_HEADER *pevent, ANALYZE_REQUEST *par)
 {
 INT            status, size, n_data, i;
 BANK_HEADER    *pbh;
-EVENT_DEF      *event_def;  
+EVENT_DEF      *event_def;
 BANK           *pbk;
 BANK32         *pbk32;
 void           *pdata;
@@ -2950,7 +2953,7 @@ WORD           bktype;
       n_data = size;
       if (rpc_tid_size(pbk->type & 0xFF))
         n_data /= rpc_tid_size(pbk->type & 0xFF);
-  
+
       /* get bank key */
       *((DWORD *) name) = bkname;
       name[4] = 0;
@@ -2976,7 +2979,7 @@ WORD           bktype;
           /* adjust for alignment */
           pdata = (void *) VALIGN(pdata, min(ss_get_struct_align(),key.item_size));
 
-          status = db_set_data(hDB, hKey, pdata, key.item_size*key.num_values, 
+          status = db_set_data(hDB, hKey, pdata, key.item_size*key.num_values,
                                key.num_values, key.type);
           if (status != DB_SUCCESS)
             {
@@ -3022,22 +3025,22 @@ WORD           bktype;
 char hbook_types[][8] = {
   "",
   ":U:8",  /* TID_BYTE      */
-  ":I:8",  /* TID_SBYTE     */          
-  ":I:8",  /* TID_CHAR      */          
-  ":U:16", /* TID_WORD      */          
-  ":I:16", /* TID_SHORT     */          
-  ":U*4",  /* TID_DWORD     */          
-  ":I*4",  /* TID_INT       */          
-  ":I*4",  /* TID_BOOL      */          
-  ":R*4",  /* TID_FLOAT     */          
-  ":R*8",  /* TID_DOUBLE    */          
-  ":U:8",  /* TID_BITFIELD  */          
-  ":C:32", /* TID_STRING    */          
-  "",      /* TID_ARRAY     */     
-  "",      /* TID_STRUCT    */     
-  "",      /* TID_KEY       */     
-  "",      /* TID_LINK      */     
-  "",      /* TID_LAST      */     
+  ":I:8",  /* TID_SBYTE     */
+  ":I:8",  /* TID_CHAR      */
+  ":U:16", /* TID_WORD      */
+  ":I:16", /* TID_SHORT     */
+  ":U*4",  /* TID_DWORD     */
+  ":I*4",  /* TID_INT       */
+  ":I*4",  /* TID_BOOL      */
+  ":R*4",  /* TID_FLOAT     */
+  ":R*8",  /* TID_DOUBLE    */
+  ":U:8",  /* TID_BITFIELD  */
+  ":C:32", /* TID_STRING    */
+  "",      /* TID_ARRAY     */
+  "",      /* TID_STRUCT    */
+  "",      /* TID_KEY       */
+  "",      /* TID_LINK      */
+  "",      /* TID_LAST      */
 
 };
 
@@ -3098,7 +3101,7 @@ EVENT_DEF  *event_def;
       continue;
 
     n_tag = 0;
-  
+
     strcpy(rw_tag[n_tag++], "Run");
     strcpy(rw_tag[n_tag++], "Number");
     strcpy(rw_tag[n_tag++], "Time");
@@ -3218,7 +3221,7 @@ EVENT_DEF  *event_def;
     if (HEXIST(id))
       HDELET(id);
 
-    HBOOKN(id, block_name,n_tag, " ", 
+    HBOOKN(id, block_name,n_tag, " ",
            n_tag*analyze_request[index].rwnt_buffer_size, rw_tag);
 
     if (!HEXIST(id))
@@ -3237,14 +3240,14 @@ EVENT_DEF  *event_def;
 INT write_event_hbook(EVENT_HEADER *pevent, ANALYZE_REQUEST *par)
 {
 INT         i, j, k, n, size, item_size, status;
-BANK        *pbk;                      
-BANK32      *pbk32;BANK_LIST   *pbl;      
+BANK        *pbk;
+BANK32      *pbk32;BANK_LIST   *pbl;
 BANK_HEADER *pbh;
-void        *pdata;                    
+void        *pdata;
 BOOL        exclude, exclude_all;
-char        block_name[5];             
-float       rwnt[512];                 
-EVENT_DEF   *event_def;                
+char        block_name[5];
+float       rwnt[512];
+EVENT_DEF   *event_def;
 HNDLE       hkey;
 KEY         key;
 DWORD       bkname;
@@ -3261,7 +3264,7 @@ WORD        bktype;
   rwnt[2] = (float) pevent->time_stamp;
 
   /*---- MIDAS format ----------------------------------------------*/
-  
+
   if (event_def->format == FORMAT_MIDAS)
     {
     /* first fill number block */
@@ -3322,7 +3325,7 @@ WORD        bktype;
           /* check bank size */
           if (n > (INT)pbl->size)
             {
-            cm_msg(MERROR, "write_event_hbook", 
+            cm_msg(MERROR, "write_event_hbook",
               "Bank %s has more (%d) entries than maximum value (%d)", block_name, n,
               pbl->size);
             continue;
@@ -3333,19 +3336,19 @@ WORD        bktype;
             {
             switch (bktype & 0xFF)
               {
-              case TID_BYTE : 
+              case TID_BYTE :
                 rwnt[pbl->n_data + i] = (float) (*((BYTE *) pdata+i));
                 break;
-              case TID_WORD : 
+              case TID_WORD :
                 rwnt[pbl->n_data + i] = (float) (*((WORD *) pdata+i));
                 break;
-              case TID_DWORD : 
+              case TID_DWORD :
                 rwnt[pbl->n_data + i] = (float) (*((DWORD *) pdata+i));
                 break;
-              case TID_FLOAT : 
+              case TID_FLOAT :
                 rwnt[pbl->n_data + i] = (float) (*((float *) pdata+i));
                 break;
-              case TID_DOUBLE : 
+              case TID_DOUBLE :
                 rwnt[pbl->n_data + i] = (float) (*((double *) pdata+i));
                 break;
               }
@@ -3375,28 +3378,28 @@ WORD        bktype;
               {
               switch (key.type & 0xFF)
                 {
-                case TID_BYTE : 
+                case TID_BYTE :
                   rwnt[k++] = (float) (*((BYTE *) pdata+j));
                   break;
-                case TID_WORD : 
+                case TID_WORD :
                   rwnt[k++] = (float) (*((WORD *) pdata+j));
                   break;
-                case TID_SHORT : 
+                case TID_SHORT :
                   rwnt[k++] = (float) (*((short int *) pdata+j));
                   break;
-                case TID_INT : 
+                case TID_INT :
                   rwnt[k++] = (float) (*((INT *) pdata+j));
                   break;
-                case TID_DWORD : 
+                case TID_DWORD :
                   rwnt[k++] = (float) (*((DWORD *) pdata+j));
                   break;
-                case TID_BOOL : 
+                case TID_BOOL :
                   rwnt[k++] = (float) (*((BOOL *) pdata+j));
                   break;
-                case TID_FLOAT : 
+                case TID_FLOAT :
                   rwnt[k++] = (float) (*((float *) pdata+j));
                   break;
-                case TID_DOUBLE : 
+                case TID_DOUBLE :
                   rwnt[k++] = (float) (*((double *) pdata+j));
                   break;
                 }
@@ -3412,11 +3415,11 @@ WORD        bktype;
 
     /* fill shared memory */
     HFNOV(pevent->event_id, rwnt);
-    
+
     } /* if (event_def->format == FORMAT_MIDAS) */
 
   /*---- FIXED format ----------------------------------------------*/
-  
+
   if (event_def->format == FORMAT_FIXED)
     {
     /* fill N-tuple from structured bank */
@@ -3438,28 +3441,28 @@ WORD        bktype;
         {
         switch (key.type & 0xFF)
           {
-          case TID_BYTE : 
+          case TID_BYTE :
             rwnt[k++] = (float) (*((BYTE *) pdata+j));
             break;
-          case TID_WORD : 
+          case TID_WORD :
             rwnt[k++] = (float) (*((WORD *) pdata+j));
             break;
-          case TID_SHORT : 
+          case TID_SHORT :
             rwnt[k++] = (float) (*((short int *) pdata+j));
             break;
-          case TID_INT : 
+          case TID_INT :
             rwnt[k++] = (float) (*((INT *) pdata+j));
             break;
-          case TID_DWORD : 
+          case TID_DWORD :
             rwnt[k++] = (float) (*((DWORD *) pdata+j));
             break;
-          case TID_BOOL : 
+          case TID_BOOL :
             rwnt[k++] = (float) (*((BOOL *) pdata+j));
             break;
-          case TID_FLOAT : 
+          case TID_FLOAT :
             rwnt[k++] = (float) (*((float *) pdata+j));
             break;
-          case TID_DOUBLE : 
+          case TID_DOUBLE :
             rwnt[k++] = (float) (*((double *) pdata+j));
             break;
           }
@@ -3498,7 +3501,7 @@ double     dummy;
     cm_msg(MERROR, "bor", "Cannot read output info record");
     return 0;
     }
-  
+
   /* create ODB structures for banks */
   for (i=0 ; analyze_request[i].event_name[0] ; i++)
     {
@@ -3565,7 +3568,7 @@ double     dummy;
       module[j]->enabled = TRUE;
       size = sizeof(BOOL);
       db_get_value(hDB, 0, str, &module[j]->enabled, &size, TID_BOOL, TRUE);
-  
+
       if (module[j]->init != NULL && module[j]->enabled)
         module[j]->init();
       }
@@ -3596,7 +3599,7 @@ HNDLE      hkey;
           db_create_record(hDB, 0, str, strcomb(module[j]->init_str));
 
         db_find_key(hDB, 0, str, &hkey);
-        if (db_open_record(hDB, hkey, module[j]->parameters, module[j]->param_size, 
+        if (db_open_record(hDB, hkey, module[j]->parameters, module[j]->param_size,
                            MODE_READ, NULL, NULL) != DB_SUCCESS)
           {
           cm_msg(MERROR, "init_module_parameters", "Cannot open \"%s\" parameters in ODB", str);
@@ -3605,8 +3608,8 @@ HNDLE      hkey;
         }
       }
     }
- 
-  return SUCCESS;  
+
+  return SUCCESS;
 }
 
 /*-- exit routine --------------------------------------------------*/
@@ -3642,14 +3645,14 @@ INT             i, status;
 ANA_MODULE      **module;
 ANALYZE_REQUEST *par;
 DWORD           actual_time;
-EVENT_DEF       *event_def;                
+EVENT_DEF       *event_def;
 
   /* log event to all channels  */
   for (i=0 ; i<MAX_CHANNELS ; i++)
     {
     if (log_chn[i].handle == 0)
-	    continue;
-      
+      continue;
+
     log_write(&log_chn[i], pevent);
     }
 
@@ -3669,7 +3672,7 @@ EVENT_DEF       *event_def;
       status = CM_SUCCESS;
       if (par->analyzer)
         status = par->analyzer(pevent, (void *) (pevent+1));
-  
+
       /* don't continue if event was rejected */
       if (status == 0)
         return;
@@ -3793,7 +3796,7 @@ DWORD  dummy;
     equipment[index].status = FE_SUCCESS;
 
     sprintf(str, "/Equipment/%s/Common", equipment[index].name);
-    
+
     /* get last event limit from ODB */
     if (eq_info->eq_type != EQ_SLOW)
       {
@@ -3802,7 +3805,7 @@ DWORD  dummy;
       if (hKey)
         db_get_value(hDB, hKey, "Event limit", &eq_info->event_limit, &size, TID_DOUBLE, TRUE);
       }
-    
+
     /* Create common subtree */
     status = db_create_record(hDB, 0, str, EQUIPMENT_COMMON_STR);
     if (status != DB_SUCCESS)
@@ -3870,7 +3873,7 @@ DWORD  dummy;
 
     /*---- Create and initialize statistics tree -------------------*/
     sprintf(str, "/Equipment/%s/Statistics", equipment[index].name);
-    
+
     /*-PAA- Needed in case Statistics exists but size = 0 */
     /*-SR- Not needed since db_create_record does a delete already */
 
@@ -3917,10 +3920,10 @@ DWORD  dummy;
       status = bm_open_buffer(eq_info->buffer, EVENT_BUFFER_SIZE, &equipment[index].buffer_handle);
       if (status != BM_SUCCESS && status != BM_CREATED)
         {
-        cm_msg(MERROR, "register_equipment", 
+        cm_msg(MERROR, "register_equipment",
                "Cannot open event buffer. Try to reduce EVENT_BUFFER_SIZE in midas.h \
 and rebuild the system.");
-        return 0;         
+        return 0;
         }
 
       /* set the default buffer cache size */
@@ -3968,7 +3971,7 @@ and rebuild the system.");
         if (equipment[i].info.eq_type & EQ_POLLED)
           {
           equipment[index].status = FE_ERR_DISABLED;
-          cm_msg(MINFO, "register_equipment", 
+          cm_msg(MINFO, "register_equipment",
             "Interrupt readout cannot be combined with polled readout");
           }
 
@@ -3979,7 +3982,7 @@ and rebuild the system.");
           if (interrupt_eq)
             {
             equipment[index].status = FE_ERR_DISABLED;
-            cm_msg(MINFO, "register_equipment", 
+            cm_msg(MINFO, "register_equipment",
               "Defined more than one equipment with interrupt readout");
             }
           else
@@ -3997,7 +4000,7 @@ and rebuild the system.");
           }
         }
       }
-    
+
     /*---- initialize slow control equipment -----------------------*/
     if (eq_info->eq_type & EQ_SLOW)
       {
@@ -4011,10 +4014,10 @@ and rebuild the system.");
             for (k=0,n=0 ; equipment[index].driver[k].name[0] ; k++)
               if (equal_ustring(str, equipment[index].driver[k].name))
                 sprintf(equipment[index].driver[k].name, "%s_%d", str, n++);
-            
+
             break;
             }
-  
+
       /* loop over equipment list and call class driver's init method */
       if (eq_info->enabled)
         equipment[index].status = equipment[index].cd(CMD_INIT, &equipment[index]);
@@ -4034,7 +4037,7 @@ and rebuild the system.");
     if (eq_info->eq_type & EQ_MANUAL_TRIG)
       {
       if (!manual_trig_flag)
-        cm_register_function(RPC_MANUAL_TRIG, manual_trigger); 
+        cm_register_function(RPC_MANUAL_TRIG, manual_trigger);
 
       manual_trig_flag = TRUE;
       }
@@ -4086,7 +4089,7 @@ HNDLE    hKey;
 }
 
 /*------------------------------------------------------------------*/
-      
+
 void update_stats()
 {
 int i;
@@ -4100,7 +4103,7 @@ DWORD    actual_time;
     last_time = actual_time;
 
   if (actual_time - last_time == 0)
-    return; 
+    return;
 
   for (i=0 ; analyze_request[i].event_name[0] ; i++)
     {
@@ -4195,7 +4198,7 @@ INT            i;
       {
       bm_send_event(equipment[index].buffer_handle, pevent,
                     pevent->data_size + sizeof(EVENT_HEADER), SYNC);
-      
+
       /* flush buffer cache */
       bm_flush_cache(equipment[index].buffer_handle, SYNC);
       }
@@ -4282,7 +4285,7 @@ void interrupt_routine(void)
     if (interrupt_eq->buffer_handle)
     {
 #ifdef USE_EVENT_CHANNEL
-      dm_pointer_increment(interrupt_eq->buffer_handle, 
+      dm_pointer_increment(interrupt_eq->buffer_handle,
         pevent->data_size + sizeof(EVENT_HEADER));
 #else
       rpc_send_event(interrupt_eq->buffer_handle, pevent,
@@ -4412,7 +4415,7 @@ EQUIPMENT_INFO  *eq_info;
 EQUIPMENT       *eq;
 ANALYZE_REQUEST *ar;
 EVENT_HEADER    *pevent;
-DWORD           actual_time, actual_millitime, 
+DWORD           actual_time, actual_millitime,
                 last_time_network=0, last_time_display=0,
                 readout_start, source;
 INT             i, j, index, status, ch, size;
@@ -4524,7 +4527,7 @@ char            str[80];
         pevent->data_size     = 0;
         readout_start = actual_time;
 
-        while (source = poll_event(eq_info->source, eq->poll_count, FALSE))
+        while ((source = poll_event(eq_info->source, eq->poll_count, FALSE)))
           {
           pevent->time_stamp = actual_time;
           pevent->serial_number = eq->serial_number++;
@@ -4608,7 +4611,7 @@ char            str[80];
           eq->bytes_sent = 0;
           eq->events_sent = 0;
           }
-      
+
         for (i=0 ; analyze_request[i].event_name[0] ; i++)
           {
           ar = &analyze_request[i];
@@ -4617,7 +4620,7 @@ char            str[80];
             (DWORD) (ar->events_received / ((actual_time - last_time_display)/1000.0));
           ar->events_received = 0;
           }
-        
+
         }
 
       /* propagate changes in equipment to ODB */
@@ -4625,7 +4628,7 @@ char            str[80];
 
       /* update statistics */
       update_stats();
-      
+
       display(FALSE);
 
       /* check keyboard */
@@ -4714,8 +4717,8 @@ INT   i, count;
   switch (cmd)
     {
     /*---- special commands ----*/
-    
-    case CNAF_INHIBIT_SET: 
+
+    case CNAF_INHIBIT_SET:
       cam_inhibit_set(c);
       break;
     case CNAF_INHIBIT_CLEAR:
@@ -4768,10 +4771,10 @@ INT   i, count;
       break;
 
     default:
-      printf("cnaf: Unknown command 0x%X\n", cmd);
+      printf("cnaf: Unknown command 0x%lX\n", cmd);
     }
 
-  printf("cmd=%d c=%d n=%d a=%d f=%d d=%X\n", cmd, c, n, a, f, pdword[0]);
+  printf("cmd=%ld c=%ld n=%ld a=%ld f=%ld d=%lX\n", cmd, c, n, a, f, pdword[0]);
 
   return RPC_SUCCESS;
 }
@@ -4779,9 +4782,9 @@ INT   i, count;
 /*------------------------------------------------------------------*/
 
 #ifdef OS_VXWORKS
-mfe(char *ahost_name, char *aexp_name, BOOL adebug)
+int mfe(char *ahost_name, char *aexp_name, BOOL adebug)
 #else
-main(int argc, char *argv[])
+int main(int argc, char *argv[])
 #endif
 {
 INT   status, i;
@@ -4801,7 +4804,7 @@ BOOL  debug;
 
   /* get default from environment */
   cm_get_environment(host_name, exp_name);
-  
+
   /* parse command line parameters */
   for (i=1 ; i<argc ; i++)
     {
@@ -4904,8 +4907,8 @@ usage:
   cm_msg_register(receive_message);
 
   /* register CNAF callback */
-  cm_register_function(RPC_CNAF16, cnaf_callback); 
-  cm_register_function(RPC_CNAF24, cnaf_callback); 
+  cm_register_function(RPC_CNAF16, cnaf_callback);
+  cm_register_function(RPC_CNAF24, cnaf_callback);
 
   /* register callback for clearing histos */
   cm_register_function(RPC_ANA_CLEAR_HISTOS, ana_callback);
@@ -4937,7 +4940,7 @@ usage:
 
   /* init logger */
   logger_init();
-  
+
   /* call analyzer init function */
   printf("Init analyzer...");
   if (mana_init() != CM_SUCCESS)

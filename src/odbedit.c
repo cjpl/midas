@@ -6,6 +6,9 @@
   Contents:     Command-line interface to the MIDAS online data base.
 
   $Log$
+  Revision 1.63  2003/04/25 14:37:43  midas
+  Fixed compiler warnings
+
   Revision 1.62  2003/04/22 12:01:37  midas
   Added graceful shutdown of odbedit->frontend connection
 
@@ -327,9 +330,9 @@ char   str[80];
 
   /* print message text which comes after event header */
   if (in_cmd_edit)
-    printf("\r%s %s\n", str+11, message);
+    printf("\r%s %s\n", str+11, (char *)message);
   else
-    printf("\n%s %s\n", str+11, message);
+    printf("\n%s %s\n", str+11, (char *)message);
 
   need_redraw = TRUE;
 }
@@ -349,20 +352,20 @@ int print_message(const char *msg)
 
 BOOL match(char *pat, char *str)
 /* process a wildcard match */
-{    
+{
   if (!*str)
-    return *pat == '*' ? match (pat+1, str) : !*pat;    
+    return *pat == '*' ? match (pat+1, str) : !*pat;
 
-  switch (*pat)    
+  switch (*pat)
     {
-    case '\0': 
+    case '\0':
       return 0;
-    case '*' : 
+    case '*' :
       return match(pat+1, str) || match(pat, str+1);
-    case '?' : 
+    case '?' :
       return match(pat+1, str+1);
-    default  : 
-      return (toupper(*pat) == toupper(*str)) && match(pat+1, str+1);    
+    default  :
+      return (toupper(*pat) == toupper(*str)) && match(pat+1, str+1);
     }
 }
 
@@ -373,7 +376,7 @@ int ls_line, ls_abort;
 BOOL check_abort(int flags, int l)
 {
 int c;
- 
+
   if ((flags & PI_PAUSE) && (l % 24) == 23)
     {
     printf("Press any key to continue or q to quit ");
@@ -424,7 +427,7 @@ PRINT_INFO  *pi;
   if (pi->pattern[0] &&
       !match(pi->pattern, key->name))
     return SUCCESS;
-  
+
   size = sizeof(data);
   if (pi->flags & PI_VALUE)
     {
@@ -463,7 +466,7 @@ PRINT_INFO  *pi;
     if (key->type == TID_KEY)
       {
       if (pi->flags & PI_LONG)
-        sprintf(line+32, "DIR"); 
+        sprintf(line+32, "DIR");
       else
         line[32] = 0;
       printf("%s\n", line);
@@ -487,14 +490,14 @@ PRINT_INFO  *pi;
         {
         sprintf(line+32, "%s", rpc_tid_name(key->type));
         line[strlen(line)] = ' ';
-        sprintf(line+40, "%ld", key->num_values);
+        sprintf(line+40, "%d", key->num_values);
         line[strlen(line)] = ' ';
-        sprintf(line+46, "%ld", key->item_size);
+        sprintf(line+46, "%d", key->item_size);
         line[strlen(line)] = ' ';
 
         db_get_key_time(hDB, hKey, &delta);
         if (delta < 60)
-          sprintf(line+52, "%ds", delta);
+          sprintf(line+52, "%lds", delta);
         else if (delta < 3600)
           sprintf(line+52, "%1.0lfm", delta/60.0);
         else if (delta < 86400)
@@ -540,7 +543,7 @@ PRINT_INFO  *pi;
 
       if (check_abort(pi->flags, ls_line++))
         return 0;
-    
+
       if (key->num_values > 1)
         {
         for (i=0 ; i<key->num_values ; i++)
@@ -555,7 +558,7 @@ PRINT_INFO  *pi;
 
           if (pi->flags & PI_LONG)
             {
-            sprintf(line+40, "[%ld]", i);
+            sprintf(line+40, "[%d]", i);
             line[strlen(line)] = ' ';
 
             strcpy(line+56, data_str);
@@ -583,7 +586,7 @@ void set_key(HNDLE hDB, HNDLE hKey, int index1, int index2, char *value)
 {
 KEY  key;
 char data[1000];
-int  i, size, status;
+int  i, size, status=0;
 
   db_get_key(hDB, hKey, &key);
 
@@ -591,7 +594,7 @@ int  i, size, status;
   db_sscanf(value, data, &size, 0, key.type);
 
   /* extend data size for single string if necessary */
-  if ((key.type == TID_STRING || key.type == TID_LINK) 
+  if ((key.type == TID_STRING || key.type == TID_LINK)
         && (int) strlen(data)+1 > key.item_size &&
       key.num_values == 1)
     key.item_size = strlen(data)+1;
@@ -693,14 +696,14 @@ DWORD       delta;
         {
         sprintf(line+32, "%s", rpc_tid_name(key.type));
         line[strlen(line)] = ' ';
-        sprintf(line+40, "%ld", key.num_values);
+        sprintf(line+40, "%d", key.num_values);
         line[strlen(line)] = ' ';
-        sprintf(line+46, "%ld", key.item_size);
+        sprintf(line+46, "%d", key.item_size);
         line[strlen(line)] = ' ';
 
         db_get_key_time(hDB, hKey, &delta);
         if (delta < 60)
-          sprintf(line+52, "%ds", delta);
+          sprintf(line+52, "%lds", delta);
         else if (delta < 3600)
           sprintf(line+52, "%1.0lfm", delta/60.0);
         else if (delta < 86400)
@@ -735,7 +738,7 @@ DWORD       delta;
           line[32] = 0;
 
       printf("%s\n", line);
-    
+
       if (key.num_values > 1)
         {
         for (j=0 ; j<key.num_values ; j++)
@@ -750,7 +753,7 @@ DWORD       delta;
 
           if (flags & 0x1)
             {
-            sprintf(line+40, "[%ld]", j);
+            sprintf(line+40, "[%d]", j);
             line[strlen(line)] = ' ';
 
             strcpy(line+56, data_str);
@@ -803,7 +806,7 @@ BOOL  blanks, mismatch;
   /* remember tail for later */
   strcpy(head, line);
   strcpy(tail, line+*cursor);
-  line[*cursor] = 0; 
+  line[*cursor] = 0;
 
   /* search beginning of key */
   pc = head;
@@ -822,7 +825,7 @@ BOOL  blanks, mismatch;
     }
   else
     key_name[0] = 0;
-  
+
   /* check if key exists (for "set <key>" completion) */
   if (strncmp(head, "set", 3) == 0 && strlen(key_name)>0)
     {
@@ -859,7 +862,7 @@ BOOL  blanks, mismatch;
       return TRUE;
       }
     }
-  
+
   /* combine pwd and key_name */
   pc = key_name;
   if (*pc == '"')
@@ -1072,7 +1075,7 @@ char        path[MAX_ODB_PATH];
 
       if (key->num_values == 1)
         strcat(line, data_str);
-  
+
       printf("%s\n", line);
 
       if (key->num_values > 1)
@@ -1080,7 +1083,7 @@ char        path[MAX_ODB_PATH];
           {
           db_sprintf(data_str, data, key->item_size, i, key->type);
 
-          printf("  [%ld] : %s\n", i, data_str);
+          printf("  [%d] : %s\n", i, data_str);
           }
       }
     else
@@ -1124,7 +1127,7 @@ char   str[80], eq_name[80], subeq_name[80];
 KEY    key;
 time_t now;
 
-char experim_h_comment1[] = 
+char experim_h_comment1[] =
 "/********************************************************************\\\n\
 \n\
   Name:         experim.h\n\
@@ -1144,7 +1147,7 @@ char experim_h_comment1[] =
                 tation which can be used in the db_create_record function\n\
                 to setup an ODB structure which matches the C structure.\n\
 \n";
-char experim_h_comment2[] = 
+char experim_h_comment2[] =
 "\\********************************************************************/\n\n";
 
 char *file_name = "experim.h";
@@ -1165,7 +1168,7 @@ char *file_name = "experim.h";
   db_find_key(hDB, 0, "/Experiment/Run Parameters", &hKey);
   if (hKey)
     {
-    sprintf(str, "#define EXP_PARAM_DEFINED\n\n"); 
+    sprintf(str, "#define EXP_PARAM_DEFINED\n\n");
     write(hfile, str, strlen(str));
     db_save_struct(hDB, hKey, file_name, "EXP_PARAM", TRUE);
     db_save_string(hDB, hKey, file_name, "EXP_PARAM_STR", TRUE);
@@ -1176,7 +1179,7 @@ char *file_name = "experim.h";
   db_find_key(hDB, 0, "/Experiment/Edit on start", &hKey);
   if (hKey)
     {
-    sprintf(str, "#define EXP_EDIT_DEFINED\n\n"); 
+    sprintf(str, "#define EXP_EDIT_DEFINED\n\n");
     write(hfile, str, strlen(str));
     db_save_struct(hDB, hKey, file_name, "EXP_EDIT", TRUE);
     db_save_string(hDB, hKey, file_name, "EXP_EDIT_STR", TRUE);
@@ -1188,7 +1191,7 @@ char *file_name = "experim.h";
   status = db_find_key(hDB, 0, str, &hKeyRoot);
   if (status != DB_SUCCESS)
     {
-    printf("Analyzer \"%s\" not found in ODB, skipping analyzer parameters.\n", 
+    printf("Analyzer \"%s\" not found in ODB, skipping analyzer parameters.\n",
            analyzer_name);
     }
   else
@@ -1208,14 +1211,14 @@ char *file_name = "experim.h";
       lseek(hfile, 0, SEEK_END);
       sprintf(str, "#ifndef EXCL_%s\n\n", eq_name);
       write(hfile, str, strlen(str));
-      
-      sprintf(str, "#define %s_PARAM_DEFINED\n\n", eq_name); 
+
+      sprintf(str, "#define %s_PARAM_DEFINED\n\n", eq_name);
       write(hfile, str, strlen(str));
       sprintf(str, "%s_PARAM", eq_name);
       db_save_struct(hDB, hKeyPar, file_name, str, TRUE);
       sprintf(str, "%s_PARAM_STR", eq_name);
       db_save_string(hDB, hKeyPar, file_name, str, TRUE);
-      
+
       lseek(hfile, 0, SEEK_END);
       sprintf(str, "#endif\n\n");
       write(hfile, str, strlen(str));
@@ -1244,7 +1247,7 @@ char *file_name = "experim.h";
       size = sizeof(str);
       str[0] = 0;
       db_get_value(hDB, hKeyEq, "Common/Format", str, &size, TID_STRING, TRUE);
-      
+
       /* if event is in fixed format, extract header file */
       if (equal_ustring(str, "Fixed"))
         {
@@ -1252,7 +1255,7 @@ char *file_name = "experim.h";
         if (hDefKey)
           {
           lseek(hfile, 0, SEEK_END);
-          sprintf(str, "#define %s_EVENT_DEFINED\n\n", eq_name); 
+          sprintf(str, "#define %s_EVENT_DEFINED\n\n", eq_name);
           write(hfile, str, strlen(str));
 
           sprintf(str, "%s_EVENT", eq_name);
@@ -1279,7 +1282,7 @@ char *file_name = "experim.h";
             if (key.type == TID_KEY)
               {
               lseek(hfile, 0, SEEK_END);
-              sprintf(str, "#define %s_BANK_DEFINED\n\n", key.name); 
+              sprintf(str, "#define %s_BANK_DEFINED\n\n", key.name);
               write(hfile, str, strlen(str));
 
               sprintf(str, "%s_BANK", key.name);
@@ -1294,30 +1297,30 @@ char *file_name = "experim.h";
       /* Scan sub tree for that equipment */
       for (subindex=0 ; ; subindex++)
         {
-	      status = db_enum_key(hDB, hKeyEq, subindex, &hDefKey);
-	      if (status == DB_NO_MORE_SUBKEYS)
-	        break;
-	      
-	      db_get_key(hDB, hDefKey, &key);
-	      strcpy(subeq_name, key.name);
-	      name2c(subeq_name);
+        status = db_enum_key(hDB, hKeyEq, subindex, &hDefKey);
+        if (status == DB_NO_MORE_SUBKEYS)
+          break;
 
-	      for (i=0 ; i<(int) strlen(subeq_name) ; i++)
-	        subeq_name[i] = toupper(subeq_name[i]);
-	      
-	      /* Skip only the statistics */
-	      if (!equal_ustring(subeq_name, "statistics") &&
-            !equal_ustring(subeq_name, "variables")) 
+        db_get_key(hDB, hDefKey, &key);
+        strcpy(subeq_name, key.name);
+        name2c(subeq_name);
+
+        for (i=0 ; i<(int) strlen(subeq_name) ; i++)
+          subeq_name[i] = toupper(subeq_name[i]);
+
+        /* Skip only the statistics */
+        if (!equal_ustring(subeq_name, "statistics") &&
+            !equal_ustring(subeq_name, "variables"))
           {
-	        lseek(hfile, 0, SEEK_END);
-	        sprintf(str, "#define %s_%s_DEFINED\n\n", eq_name, subeq_name); 
-	        write(hfile, str, strlen(str));
-	        
-	        sprintf(str, "%s_%s", eq_name, subeq_name);
-	        db_save_struct(hDB, hDefKey, file_name, str, TRUE);
-	        sprintf(str, "%s_%s_STR", eq_name, subeq_name);
-	        db_save_string(hDB, hDefKey, file_name, str, TRUE);
-          }  
+          lseek(hfile, 0, SEEK_END);
+          sprintf(str, "#define %s_%s_DEFINED\n\n", eq_name, subeq_name);
+          write(hfile, str, strlen(str));
+
+          sprintf(str, "%s_%s", eq_name, subeq_name);
+          db_save_struct(hDB, hDefKey, file_name, str, TRUE);
+          sprintf(str, "%s_%s_STR", eq_name, subeq_name);
+          db_save_string(hDB, hDefKey, file_name, str, TRUE);
+          }
         }
 
       lseek(hfile, 0, SEEK_END);
@@ -1457,7 +1460,7 @@ char  *state_str[]  = { "Unknown", "Stopped", "Paused", "Running" };
 
 void command_loop(char *host_name, char *exp_name, char *cmd, char *start_dir)
 {
-INT             status, i, j, state, size, old_run_number, new_run_number, channel;
+INT             status=0, i, j, state, size, old_run_number, new_run_number, channel;
 char            line[256], prompt[256];
 char            param[10][100];
 char            str[256], old_dir[256], cwd[256], name[256], *pc, data_str[256];
@@ -1474,7 +1477,7 @@ INT             n1, n2, msg_type;
 PRINT_INFO      print_info;
 
   cm_get_experiment_database(&hDB, &hKeyClient);
-  
+
   /* command loop */
   if (start_dir[0])
     strcpy(pwd, start_dir);
@@ -1704,7 +1707,7 @@ PRINT_INFO      print_info;
         db_get_key(hDB, hKey, &key);
         if (key.type != TID_KEY)
           printf("key has no subkeys\n");
-        else 
+        else
           db_get_path(hDB, hKey, pwd, 256);
         }
       else
@@ -1772,14 +1775,14 @@ PRINT_INFO      print_info;
         if (j > 1)
           {
           memset(data, 0, sizeof(data));
-          
+
           if (key.type == TID_LINK)
             key.item_size = NAME_LENGTH;
           db_set_data_index(hDB, hKey, data, key.item_size, j-1, key.type);
           }
         }
       }
-    
+
     /* mkdir */
     else if (param[0][0] == 'm' && param[0][1] == 'k')
       {
@@ -1824,11 +1827,11 @@ PRINT_INFO      print_info;
 
           db_get_key(hDB, hKey, &key);
           db_create_key(hDB, 0, str, key.type);
-          
+
           if (key.type != TID_KEY)
             {
             size = sizeof(data);
-            db_get_data(hDB, hKey, data, &size, key.type); 
+            db_get_data(hDB, hKey, data, &size, key.type);
             db_find_key(hDB, 0, str, &hKey);
             db_set_data(hDB, hKey, data, size, key.num_values, key.type);
             }
@@ -1850,10 +1853,10 @@ PRINT_INFO      print_info;
              (param[0][0] == 'r' && param[0][1] == 'm'))
       {
       flags = 0;
-      if ((param[1][0] == '-' && param[1][1] == 'f') || 
+      if ((param[1][0] == '-' && param[1][1] == 'f') ||
           (param[2][0] == '-' && param[2][1] == 'f'))
         flags |= (1<<0);
-      if ((param[1][0] == '-' && param[1][1] == 'l') || 
+      if ((param[1][0] == '-' && param[1][1] == 'l') ||
           (param[2][0] == '-' && param[2][1] == 'l'))
         flags |= (1<<1);
 
@@ -2075,7 +2078,7 @@ PRINT_INFO      print_info;
         {
         printf("\"/Logger/Data dir = %s\" in file \"%s\" does not exist locally,\nset anyhow? (y/[n]): ", str, param[1]);
         ss_gets(line, 256);
- 
+
         /* restor old one */
         if (line[0] != 'y' && line[0] != 'Y')
           db_set_value(hDB, 0, "/Logger/Data dir", old_dir, sizeof(old_dir), 1, TID_STRING);
@@ -2088,7 +2091,7 @@ PRINT_INFO      print_info;
     else if (param[0][0] == 's' && param[0][1] == 'a')
       {
       db_find_key(hDB, 0, pwd, &hKey);
-      
+
       if (param[1][0] == '-')
         {
         if (param[1][1] == 'c')
@@ -2158,9 +2161,9 @@ PRINT_INFO      print_info;
           db_create_key(hDB, 0, "/Experiment/Security/Allowed programs/mstat", TID_INT);
           }
         }
-        
+
       }
-    
+
     /* webpasswd */
     else if (param[0][0] == 'w' && param[0][1] == 'e' && param[0][2] == 'b')
       {
@@ -2223,7 +2226,7 @@ PRINT_INFO      print_info;
               }
 
             sprintf(str, "RPC/%d", RPC_ANA_CLEAR_HISTOS);
-            status = db_find_key(hDB, hSubkey, str, &hKey); 
+            status = db_find_key(hDB, hSubkey, str, &hKey);
             if (status == DB_SUCCESS)
               {
               size = sizeof(client_name);
@@ -2269,7 +2272,7 @@ PRINT_INFO      print_info;
           printf("Cannot connect to client %s\n", client_name);
         }
       }
-    
+
     /* import */
     else if (param[0][0] == 'i' && param[0][1] == 'm')
       {
@@ -2280,7 +2283,7 @@ PRINT_INFO      print_info;
         printf("File %s not found\n", param[1]);
       else
         {
-        size = lseek(fh, 0, SEEK_END); 
+        size = lseek(fh, 0, SEEK_END);
         lseek(fh, 0, SEEK_SET);
         size = read(fh, data, size);
         data[size++] = 0;
@@ -2340,7 +2343,7 @@ PRINT_INFO      print_info;
               size = sizeof(data);
               memset(data, 0, size);
               db_get_data(hDB, hKey, data, &size, key.type);
-            
+
               fprintf(f, data);
               fclose(f);
               }
@@ -2383,7 +2386,7 @@ PRINT_INFO      print_info;
               }
 
             sprintf(str, "RPC/%d", RPC_LOG_REWIND);
-            status = db_find_key(hDB, hSubkey, str, &hKey); 
+            status = db_find_key(hDB, hSubkey, str, &hKey);
             if (status == DB_SUCCESS)
               {
               size = sizeof(client_name);
@@ -2509,13 +2512,13 @@ PRINT_INFO      print_info;
           }
         }
       }
- 
+
     /* start */
     else if (param[0][0] == 's' && param[0][1] == 't' && param[0][2] == 'a')
       {
       debug_flag = ((param[1][0] == '-' && param[1][1] == 'v') ||
                     (param[2][0] == '-' && param[2][1] == 'v'));
-      
+
       /* check if run is already started */
       size = sizeof(i);
       i = STATE_STOPPED;
@@ -2592,7 +2595,7 @@ PRINT_INFO      print_info;
                     if (line[0])
                       {
                       db_sscanf(line, data, &size, j, key.type);
-                      db_set_data_index(hDB, hSubkey, data, size+1, j, key.type); 
+                      db_set_data_index(hDB, hSubkey, data, size+1, j, key.type);
                       }
                     }
                   }
@@ -2609,7 +2612,7 @@ PRINT_INFO      print_info;
               ss_gets(line, 256);
 
               } while (line[0] == 'n' || line[0] == 'N');
-	          }
+            }
 
           if (line[0] != 'q' && line[0] != 'Q')
             {
@@ -2618,7 +2621,7 @@ PRINT_INFO      print_info;
 
             i = 1;
             db_set_value(hDB, 0, "/Runinfo/Transition in progress", &i, sizeof(INT), 1, TID_INT);
-         
+
             status = cm_transition(TR_START, new_run_number, str, sizeof(str), SYNC, debug_flag);
             if (status != CM_SUCCESS)
               {
@@ -2678,13 +2681,13 @@ PRINT_INFO      print_info;
             printf("Deferred stop already in progress, enter \"stop now\" to force stop\n");
           else if (status != CM_SUCCESS)
             printf("Error: %s\n", str);
-          
+
           i = 0;
           db_set_value(hDB, 0, "/Runinfo/Transition in progress", &i, sizeof(INT), 1, TID_INT);
           }
         }
       }
-    
+
     /* pause */
     else if (param[0][0] == 'p' && param[0][1] == 'a' && param[0][2] == 'u')
       {
@@ -2714,7 +2717,7 @@ PRINT_INFO      print_info;
           printf("Error: %s\n", str);
         }
       }
-    
+
     /* resume */
     else if (param[0][0] == 'r' && param[0][1] == 'e' && param[0][2] == 's')
       {
@@ -2787,7 +2790,7 @@ PRINT_INFO      print_info;
 
       last_msg_time = ss_time();
       }
-    
+
     /* chat */
     else if (param[0][0] == 'c' && param[0][1] == 'h' && param[0][2] == 'a')
       {
@@ -2994,7 +2997,7 @@ PRINT_INFO      print_info;
 
       pevent = (EVENT_HEADER *) data;
       bm_compose_event(pevent, 1, 2, 0, 123);
-      
+
       bk_init(pevent+1);
       bk_create(pevent+1, "TEST", TID_WORD, &pdata);
       *pdata++ = 1;
@@ -3002,7 +3005,7 @@ PRINT_INFO      print_info;
       *pdata++ = 3;
       *pdata++ = 4;
       bk_close(pevent+1, pdata);
-      pevent->data_size = bk_size(pevent+1); 
+      pevent->data_size = bk_size(pevent+1);
 
       fh = open("test.mid", O_WRONLY | O_CREAT | O_TRUNC, 0644);
       write(fh, data, pevent->data_size + sizeof(EVENT_HEADER));
@@ -3034,16 +3037,16 @@ PRINT_INFO      print_info;
   /* check if client connections are broken */
   for (i=0 ; i < MAX_RPC_CONNECTION ; i++)
     cm_yield(0);
-  
+
   return;
 }
 
 /*------------------------------------------------------------------*/
 
 #ifdef OS_VXWORKS
-odbedit(char *ahost_name, char *aexp_name)
+int odbedit(char *ahost_name, char *aexp_name)
 #else
-main(int argc, char *argv[])
+int main(int argc, char *argv[])
 #endif
 {
 INT           status, i, odb_size, size;
@@ -3110,7 +3113,7 @@ usage:
   if (cmd[0])
     cm_set_msg_print(MT_ERROR, 0, NULL);
 
-  status = cm_connect_experiment1(host_name, exp_name, "ODBEdit", NULL, 
+  status = cm_connect_experiment1(host_name, exp_name, "ODBEdit", NULL,
                                   odb_size, DEFAULT_WATCHDOG_TIMEOUT);
   if (status == CM_WRONG_PASSWORD)
     return 1;

@@ -7,6 +7,9 @@
   Contents:     Includes all necessary include files
 
   $Log$
+  Revision 1.9  2003/04/25 14:38:02  midas
+  Fixed compiler warnings
+
   Revision 1.8  2003/04/25 13:54:19  midas
   Added include file for inet_ntoa
 
@@ -147,12 +150,14 @@
 #include <sys/mtio.h>
 #include <sys/mount.h>
 #include <dirent.h>
-#include <arpa/inet.h>
 
 /* special code for Linux and FreeBSD */
 #if defined(OS_LINUX) || defined(OS_FREEBSD)
 #include <sys/time.h>
 #include <sys/vfs.h>
+#include <arpa/inet.h>
+#include <fnmatch.h>
+#include <pty.h>
 #undef LITTLE_ENDIAN
 #endif
 
