@@ -14,7 +14,7 @@ DefaultDestDir=10,System32\Drivers
 mscbusb.sys=1
 
 [SourceDisksNames]
-1=%INSTDISK%,,,objchk\i386
+1=%INSTDISK%
 
 [DeviceList]
 %DESCRIPTION%=DriverInstall,USB\VID_10C4&PID_1175
