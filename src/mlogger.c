@@ -6,6 +6,9 @@
   Contents:     MIDAS logger program
 
   $Log$
+  Revision 1.46  2002/02/02 09:27:19  midas
+  Added run transition in history with event_id -1
+
   Revision 1.45  2001/12/05 13:14:17  midas
   Logger does not refuse to start run, if data file is present but empty
 
@@ -1848,6 +1851,21 @@ INT open_history()
       }
     }
 
+  /*---- define run start/stop event -------------------------------*/
+
+  tag = malloc(sizeof(TAG)*2);
+
+  strcpy(tag[0].name, "Transition");
+  tag[0].type = TID_DWORD;
+  tag[0].n_data = 1;
+
+  strcpy(tag[1].name, "Run number");
+  tag[1].type = TID_DWORD;
+  tag[1].n_data = 1;
+
+  hs_define_event(-1, "Run transitions", tag, sizeof(TAG)*2);
+  free(tag);
+
   return CM_SUCCESS;
 }
 
@@ -2046,6 +2064,11 @@ double dzero;
                          transition callbacks
 
 \********************************************************************/
+
+struct {
+  DWORD transition;
+  DWORD run_number;
+  } eb;
 
 /*------------------------------------------------------------------*/
 
@@ -2312,6 +2335,11 @@ BOOL         write_data, tape_flag = FALSE;
   close_history();
   open_history();
 
+  /* write transition event into history */
+  eb.transition = STATE_RUNNING;
+  eb.run_number = run_number;
+  hs_write_event(-1, &eb, sizeof(eb));
+
   return CM_SUCCESS;
 }
 
@@ -2429,6 +2457,31 @@ char   str[256];
 
   if (tape_flag & tape_message)
     cm_msg(MTALK, "tr_poststop", "all tape channels closed");
+
+  /* write transition event into history */
+  eb.transition = STATE_STOPPED;
+  eb.run_number = run_number;
+  hs_write_event(-1, &eb, sizeof(eb));
+
+  return CM_SUCCESS;
+}
+
+INT tr_pause(INT run_number, char *error)
+{
+  /* write transition event into history */
+  eb.transition = STATE_PAUSED;
+  eb.run_number = run_number;
+  hs_write_event(-1, &eb, sizeof(eb));
+
+  return CM_SUCCESS;
+}
+
+INT tr_resume(INT run_number, char *error)
+{
+  /* write transition event into history */
+  eb.transition = STATE_RUNNING;
+  eb.run_number = run_number;
+  hs_write_event(-1, &eb, sizeof(eb));
 
   return CM_SUCCESS;
 }
@@ -2549,6 +2602,8 @@ usage:
     }
 
   cm_register_transition(TR_POSTSTOP, tr_poststop);
+  cm_register_transition(TR_PAUSE, tr_pause);
+  cm_register_transition(TR_RESUME, tr_resume);
 
   /* register callback for rewinding tapes */
   cm_register_function(RPC_LOG_REWIND, log_callback);
