@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol main program
 
   $Log$
+  Revision 1.2  2002/07/05 15:27:28  midas
+  *** empty log message ***
+
   Revision 1.1  2002/07/05 08:12:46  midas
   Moved files
 
@@ -115,11 +118,15 @@ unsigned char i;
   lcd_setup();
   lcd_clear();
 
+  /*
   do
     {
     lcd_goto(0, 0);
-    printf("%02bX  ", scs_lcd1_read());
+    printf("Switch: %02bX  ", scs_lcd1_read());
     } while (1);
+  */
+
+
 }
 /*
 ; retrieve node address from flash eeprom
