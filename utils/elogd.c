@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.40  2001/10/05 13:35:50  midas
+  Implemented keep-alive
+
   Revision 1.39  2001/08/30 10:58:02  midas
   Fixed bugs with Opera browser
 
@@ -128,7 +131,7 @@
 \********************************************************************/
 
 /* Version of ELOG */
-#define VERSION "1.1.0"
+#define VERSION "1.1.1"
 
 #include <stdio.h>
 #include <sys/types.h>
@@ -188,6 +191,7 @@ typedef int INT;
 #define WEB_BUFFER_SIZE 1000000
 
 char return_buffer[WEB_BUFFER_SIZE];
+char header_buffer[1000];
 int  return_length;
 char host_name[256];
 char elogd_url[256];
@@ -213,9 +217,9 @@ char _value[MAX_PARAM][VALUE_SIZE];
 char _text[TEXT_SIZE];
 char *_attachment_buffer[MAX_ATTACHMENTS];
 INT  _attachment_size[MAX_ATTACHMENTS];
-struct in_addr remote_addr;
+struct in_addr rem_addr;
 INT  _sock;
-BOOL verbose;
+BOOL verbose, use_keepalive;
 
 char *mname[] = {
   "January",
@@ -2145,10 +2149,15 @@ char *pd, *p, str[256];
 void redirect(char *path)
 {
   /* redirect */
-  rsprintf("HTTP/1.0 302 Found\r\n");
+  rsprintf("HTTP/1.1 302 Found\r\n");
   rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
+  if (use_keepalive)
+    {
+    rsprintf("Connection: Keep-Alive\r\n");
+    rsprintf("Keep-Alive: timeout=60, max=10\r\n");
+    }
 
-  rsprintf("Location: %s%s/%s\n\n<html>redir</html>\r\n", elogd_url, logbook_enc, path);
+  rsprintf("Location: %s%s/%s\r\n\r\n<html>redir</html>\r\n", elogd_url, logbook_enc, path);
 }
 
 void redirect2(char *path)
@@ -2163,6 +2172,17 @@ void redirect2(char *path)
 
 void show_help_page()
 {
+  rsprintf("HTTP/1.1 200 Document follows\r\n");
+  rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
+  rsprintf("Content-Type: text/html\r\n");
+  rsprintf("Pragma: no-cache\r\n");
+  if (use_keepalive)
+    {
+    rsprintf("Connection: Keep-Alive\r\n");
+    rsprintf("Keep-Alive: timeout=60, max=10\r\n");
+    }
+  rsprintf("Expires: Fri, 01 Jan 1983 00:00:00 GMT\r\n\r\n");
+
   rsprintf("<html><head>\n");
   rsprintf("<title>ELOG Electronic Logbook Help</title>\n");
   rsprintf("</head>\n\n");
@@ -2218,10 +2238,15 @@ void show_help_page()
 
 void show_standard_header(char *title, char *path)
 {
-  rsprintf("HTTP/1.0 200 Document follows\r\n");
+  rsprintf("HTTP/1.1 200 Document follows\r\n");
   rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
   rsprintf("Content-Type: text/html\r\n");
   rsprintf("Pragma: no-cache\r\n");
+  if (use_keepalive)
+    {
+    rsprintf("Connection: Keep-Alive\r\n");
+    rsprintf("Keep-Alive: timeout=60, max=10\r\n");
+    }
   rsprintf("Expires: Fri, 01 Jan 1983 00:00:00 GMT\r\n\r\n");
 
   rsprintf("<html><head><title>%s</title></head>\n", title);
@@ -2303,8 +2328,13 @@ int  i;
 void show_error(char *error)
 {
   /* header */
-  rsprintf("HTTP/1.0 200 Document follows\r\n");
+  rsprintf("HTTP/1.1 200 Document follows\r\n");
   rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
+  if (use_keepalive)
+    {
+    rsprintf("Connection: Keep-Alive\r\n");
+    rsprintf("Keep-Alive: timeout=60, max=10\r\n");
+    }
   rsprintf("Content-Type: text/html\r\n\r\n");
 
   rsprintf("<html><head><title>ELOG error</title></head>\n");
@@ -2400,8 +2430,13 @@ BOOL   allow_edit;
     author[0] = 0;
 
   /* header */
-  rsprintf("HTTP/1.0 200 Document follows\r\n");
+  rsprintf("HTTP/1.1 200 Document follows\r\n");
   rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
+  if (use_keepalive)
+    {
+    rsprintf("Connection: Keep-Alive\r\n");
+    rsprintf("Keep-Alive: timeout=60, max=10\r\n");
+    }
   rsprintf("Content-Type: text/html\r\n\r\n");
 
   rsprintf("<html><head><title>ELOG</title></head>\n");
@@ -3613,8 +3648,13 @@ struct hostent *phe;
   /* check for author */
   if (*getparam("author") == 0)
     {
-    rsprintf("HTTP/1.0 200 Document follows\r\n");
+    rsprintf("HTTP/1.1 200 Document follows\r\n");
     rsprintf("Server: ELOG HTTP %s\r\n");
+    if (use_keepalive)
+      {
+      rsprintf("Connection: Keep-Alive\r\n");
+      rsprintf("Keep-Alive: timeout=60, max=10\r\n");
+      }
     rsprintf("Content-Type: text/html\r\n\r\n");
 
     rsprintf("<html><head><title>ELog Error</title></head>\n");
@@ -3632,8 +3672,13 @@ struct hostent *phe;
     strcpy(att_file[i], getparam(str));
     if (att_file[i][0] && _attachment_size[i] == 0 && !equal_ustring(att_file[i], "<delete>"))
       {
-      rsprintf("HTTP/1.0 200 Document follows\r\n");
+      rsprintf("HTTP/1.1 200 Document follows\r\n");
       rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
+      if (use_keepalive)
+        {
+        rsprintf("Connection: Keep-Alive\r\n");
+        rsprintf("Keep-Alive: timeout=60, max=10\r\n");
+        }
       rsprintf("Content-Type: text/html\r\n\r\n");
 
       rsprintf("<html><head><title>ELog Error</title></head>\n");
@@ -3645,11 +3690,11 @@ struct hostent *phe;
     }
 
   /* add remote host name to author */
-  phe = gethostbyaddr((char *) &remote_addr, 4, PF_INET);
+  phe = gethostbyaddr((char *) &rem_addr, 4, PF_INET);
   if (phe == NULL)
     {
     /* use IP number instead */
-    strcpy(str, (char *)inet_ntoa(remote_addr));
+    strcpy(str, (char *)inet_ntoa(rem_addr));
     }
   else
     strcpy(str, phe->h_name);
@@ -3758,10 +3803,15 @@ struct hostent *phe;
     if (buffer[i])
       free(buffer[i]);
 
-  rsprintf("HTTP/1.0 302 Found\r\n");
+  rsprintf("HTTP/1.1 302 Found\r\n");
   rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
+  if (use_keepalive)
+    {
+    rsprintf("Connection: Keep-Alive\r\n");
+    rsprintf("Keep-Alive: timeout=60, max=10\r\n");
+    }
 
-  rsprintf("Location: %s%s/%s%s\n\n<html>redir</html>\r\n", 
+  rsprintf("Location: %s%s/%s%s\r\n\r\n<html>redir</html>\r\n", 
             elogd_url, logbook_enc, tag, mail_param);
 }
 
@@ -3916,9 +3966,14 @@ BOOL  allow_delete, allow_edit;
       length = TELL(fh);
       lseek(fh, 0, SEEK_SET);
 
-      rsprintf("HTTP/1.0 200 Document follows\r\n");
+      rsprintf("HTTP/1.1 200 Document follows\r\n");
       rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
       rsprintf("Accept-Ranges: bytes\r\n");
+      if (use_keepalive)
+        {
+        rsprintf("Connection: Keep-Alive\r\n");
+        rsprintf("Keep-Alive: timeout=60, max=10\r\n");
+        }
 
       /* return proper header for file type */
       for (i=0 ; i<(int)strlen(path) ; i++)
@@ -3950,6 +4005,18 @@ BOOL  allow_delete, allow_edit;
       read(fh, return_buffer+strlen(return_buffer), length);
 
       close(fh);
+      }
+    else
+      {
+      /* return empty buffer */
+      rsprintf("HTTP/1.1 404 Not Found\r\n");
+      rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
+      rsprintf("Connection: close\r\n");
+      rsprintf("Content-Type: text/html\r\n\r\n");
+      rsprintf("<html><head><title>404 Not Found</title></head>\r\n");
+      rsprintf("<body><h1>Not Found</h1>\r\n");
+      rsprintf("The requested file <b>%s</b> was not found on this server<p>\r\n", file_name);
+      rsprintf("<hr><address>ELOG version %s</address></body></html>\r\n\r\n", VERSION);
       }
 
     return;
@@ -4468,8 +4535,13 @@ void show_selection_page()
 int  i;
 char str[80], logbook[80];
 
-  rsprintf("HTTP/1.0 200 Document follows\r\n");
+  rsprintf("HTTP/1.1 200 Document follows\r\n");
   rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
+  if (use_keepalive)
+    {
+    rsprintf("Connection: Keep-Alive\r\n");
+    rsprintf("Keep-Alive: timeout=60, max=10\r\n");
+    }
   rsprintf("Content-Type: text/html\r\n\r\n");
 
   rsprintf("<html>\n");
@@ -4504,7 +4576,7 @@ char str[80], logbook[80];
     }
 
   rsprintf("</table></td></tr></table></body>\n");
-  rsprintf("</html>\r\n");
+  rsprintf("</html>\r\n\r\n");
   
 }
 
@@ -4614,8 +4686,13 @@ struct tm *gmt;
     if (!check_write_password(logbook, enc_pwd, getparam("redir")))
       return;
     
-    rsprintf("HTTP/1.0 302 Found\r\n");
+    rsprintf("HTTP/1.1 302 Found\r\n");
     rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
+    if (use_keepalive)
+      {
+      rsprintf("Connection: Keep-Alive\r\n");
+      rsprintf("Keep-Alive: timeout=60, max=10\r\n");
+      }
 
     /* get optional expriation from configuration file */
     exp = 24;
@@ -4631,7 +4708,7 @@ struct tm *gmt;
     rsprintf("Set-Cookie: elog_wpwd=%s; path=/%s; expires=%s\r\n", enc_pwd, logbook_enc, str);
 
     sprintf(str, "%s%s/%s", elogd_url, logbook_enc, getparam("redir"));
-    rsprintf("Location: %s\n\n<html>redir</html>\r\n", str);
+    rsprintf("Location: %s\r\n\r\n<html>redir</html>\r\n", str);
     return;
     }
 
@@ -4643,8 +4720,13 @@ struct tm *gmt;
     if (!check_delete_password(logbook, enc_pwd, getparam("redir")))
       return;
     
-    rsprintf("HTTP/1.0 302 Found\r\n");
+    rsprintf("HTTP/1.1 302 Found\r\n");
     rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
+    if (use_keepalive)
+      {
+      rsprintf("Connection: Keep-Alive\r\n");
+      rsprintf("Keep-Alive: timeout=60, max=10\r\n");
+      }
 
     /* get optional expriation from configuration file */
     exp = 24;
@@ -4659,7 +4741,7 @@ struct tm *gmt;
     rsprintf("Set-Cookie: elog_dpwd=%s; path=/%s; expires=%s\r\n", enc_pwd, logbook_enc, str);
 
     sprintf(str, "%s%s/%s", elogd_url, logbook_enc, getparam("redir"));
-    rsprintf("Location: %s\n\n<html>redir</html>\r\n", str);
+    rsprintf("Location: %s\r\n\r\n<html>redir</html>\r\n", str);
     return;
     }
 
@@ -4866,9 +4948,16 @@ void ctrlc_handler(int sig)
 
 char net_buffer[WEB_BUFFER_SIZE];
 
+#define N_MAX_CONNECTION 10
+#define KEEP_ALIVE_TIME  60
+
+int ka_sock[N_MAX_CONNECTION];
+int ka_time[N_MAX_CONNECTION];
+struct in_addr remote_addr[N_MAX_CONNECTION];
+
 void server_loop(int tcp_port, int daemon)
 {
-int                  status, i, n_error, authorized;
+int                  status, i, n_error, authorized, min, i_min, i_conn, length;
 struct sockaddr_in   serv_addr, acc_addr;
 char                 pwd[256], str[256], cl_pwd[256], *p;
 char                 cookie_wpwd[256], cookie_dpwd[256], boundary[256];
@@ -4877,7 +4966,7 @@ struct hostent       *phe;
 struct linger        ling;
 fd_set               readfds;
 struct timeval       timeout;
-INT                  last_time=0;
+INT                  keep_alive;
 
 #ifdef OS_WINNT
   {
@@ -4962,6 +5051,10 @@ INT                  last_time=0;
     FD_ZERO(&readfds);
     FD_SET(lsock, &readfds);
 
+    for (i=0 ; i<N_MAX_CONNECTION ; i++)
+      if (ka_sock[i] > 0)
+        FD_SET(ka_sock[i], &readfds);
+
     timeout.tv_sec  = 0;
     timeout.tv_usec = 100000;
 
@@ -4972,16 +5065,77 @@ INT                  last_time=0;
       len = sizeof(acc_addr);
       _sock = accept( lsock,(struct sockaddr *) &acc_addr, &len);
 
-      last_time = (INT) time(NULL);
-
       /* turn on lingering (borrowed from NCSA httpd code) */
       ling.l_onoff = 1;
       ling.l_linger = 600;
       setsockopt(_sock, SOL_SOCKET, SO_LINGER, (char *) &ling, sizeof(ling));
 
-      /* save remote host address */
-      memcpy(&remote_addr, &(acc_addr.sin_addr), sizeof(remote_addr));
+      /* find new entry in socket table */
+      for (i=0 ; i<N_MAX_CONNECTION ; i++)
+        if (ka_sock[i] == 0)
+          break;
 
+      /* recycle last connection */
+      if (i == N_MAX_CONNECTION)
+        {
+        for (i=i_min=0,min=ka_time[0] ; i<N_MAX_CONNECTION ; i++)
+          if (ka_time[i] < min)
+            {
+            min = ka_time[i];
+            i_min = i;
+            }
+
+        closesocket(ka_sock[i_min]);
+        ka_sock[i_min] = 0;
+        i = i_min;
+
+#ifdef DEBUG_CONN        
+        printf("## close connection %d\n", i_min);
+#endif
+        }
+
+      i_conn = i;
+      ka_sock[i_conn] = _sock;
+      ka_time[i_conn] = (int) time(NULL);
+
+      /* save remote host address */
+      memcpy(&remote_addr[i_conn], &(acc_addr.sin_addr), sizeof(remote_addr));
+      memcpy(&rem_addr, &(acc_addr.sin_addr), sizeof(remote_addr));
+
+#ifdef DEBUG_CONN        
+      printf("## open new connection %d\n", i_conn);
+#endif
+      }
+
+    else
+      {
+      /* check if open connection received data */
+      for (i= 0 ; i<N_MAX_CONNECTION ; i++)
+        if (ka_sock[i] > 0 && FD_ISSET(ka_sock[i], &readfds))
+          break;
+
+      if (i == N_MAX_CONNECTION)
+        {
+        _sock = 0;
+        }
+      else
+        {
+        i_conn = i;
+        _sock = ka_sock[i_conn];
+        ka_time[i_conn] = (int) time(NULL);
+        memcpy(&rem_addr, &remote_addr[i_conn], sizeof(remote_addr));
+
+#ifdef DEBUG_CONN        
+        printf("## received request on connection %d\n", i_conn);
+#endif
+        }
+      }
+
+    /* turn off keep_alive by default */
+    keep_alive = FALSE;
+    
+    if (_sock > 0)
+      {
       memset(net_buffer, 0, sizeof(net_buffer));
       len = 0;
       header_length = 0;
@@ -5187,6 +5341,10 @@ INT                  last_time=0;
           }
         }
 
+      /* check for Keep-alive */
+      if (strstr(net_buffer, "Keep-Alive") != NULL && use_keepalive)
+        keep_alive = TRUE;
+
       if (!authorized)
         {
         /* return request for authorization */
@@ -5250,11 +5408,57 @@ INT                  last_time=0;
         if (return_length == 0)
           return_length = strlen(return_buffer)+1;
 
-        send(_sock, return_buffer, return_length, 0);
+        if (keep_alive && strstr(return_buffer, "Content-Length") == NULL)
+          {
+          /*---- add content-length ----*/
 
+          p = strstr(return_buffer, "\r\n\r\n");
+
+          if (p != NULL)
+            {
+            length = strlen(p+4);
+
+            header_length = (int) (p) - (int) return_buffer;
+            memcpy(header_buffer, return_buffer, header_length);
+            
+            sprintf(header_buffer+header_length, "\r\nContent-Length: %d\r\n\r\n", length);
+
+            send(_sock, header_buffer, strlen(header_buffer), 0);
+            send(_sock, p+2, length, 0);
+
+            if (verbose)
+              {
+              printf("==== Return ================================\n");
+              puts(header_buffer);
+              puts(p+2);
+              printf("\n");
+              }
+            }
+          else
+            printf("Internal error, no valid header!\n");
+          }
+        else
+          {
+          send(_sock, return_buffer, return_length, 0);
+
+          if (verbose)
+            {
+            printf("==== Return ================================\n");
+            puts(return_buffer);
+            printf("\n\n");
+            }
+          }
   error:
 
-        closesocket(_sock);
+        if (!keep_alive)
+          {
+          closesocket(_sock);
+          ka_sock[i_conn] = 0;
+
+#ifdef DEBUG_CONN        
+          printf("## close connection %d\n", i_conn);
+#endif
+          }
         }
       }
 
@@ -5391,6 +5595,8 @@ struct tm *tms;
 
   strcpy(cfg_file, "elogd.cfg");
 
+  use_keepalive = TRUE;
+  
   /* parse command line parameters */
   for (i=1 ; i<argc ; i++)
     {
@@ -5398,6 +5604,8 @@ struct tm *tms;
       daemon = TRUE;
     else if (argv[i][0] == '-' && argv[i][1] == 'v')
       verbose = TRUE;
+    else if (argv[i][0] == '-' && argv[i][1] == 'k')
+      use_keepalive = FALSE;
     else if (argv[i][1] == 't')
       {
       tzset();
@@ -5436,6 +5644,7 @@ usage:
         printf("       -w create/overwrite write password in config file\n");
         printf("       -d create/overwrite delete password in config file\n");
         printf("       -l <loogbook> specify logbook for -r and -w commands\n\n");
+        printf("       -k do not use keep-alive\n\n");
         return 0;
         }
       }
