@@ -36,3 +36,10 @@ rpc_test:
 
 A simple program to test the RPC layer in MIDAS. It connects to a
 MIDAS server and executes a test routine on the server.
+
+rpc_srvr, rpc_clnt:
+-------------------
+
+This is a standalone RPC server and client which do not use any midas
+functionality. This can be used to implement simple RPC client/server
+programs which have nothing to do with midas
