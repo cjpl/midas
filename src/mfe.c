@@ -7,6 +7,9 @@
                 linked with user code to form a complete frontend
 
   $Log$
+  Revision 1.36  2001/11/21 08:37:32  midas
+  Took out db_delete_key for statistics again (not needed)
+
   Revision 1.35  2001/11/20 19:22:07  pierre
   - Add rpc_flush_event in case no periodic eqp
   - Force rpc_flush_event for low trigger rate
@@ -462,11 +465,15 @@ BOOL   manual_trig_flag = FALSE;
 
     /*---- Create and initialize statistics tree -------------------*/
     sprintf(str, "/Equipment/%s/Statistics", equipment[index].name);
+    
     /*-PAA- Needed in case Statistics exists but size = 0 */
+    /*-SR- Not needed since db_create_record does a delete already */
+    /*
     status = db_find_key(hDB, 0, str, &hKey);
-    if (status == DB_SUCCESS) {
+    if (status == DB_SUCCESS)
       db_delete_key(hDB, hKey, FALSE);
-    }
+    */
+
     db_create_record(hDB, 0, str, EQUIPMENT_STATISTICS_STR);
     db_find_key(hDB, 0, str, &hKey);
 
