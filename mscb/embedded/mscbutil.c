@@ -6,6 +6,9 @@
   Contents:     Various utility functions for MSCB protocol
 
   $Log$
+  Revision 1.34  2004/05/19 15:11:04  midas
+  Avoid flashing directly after watchdog reset
+
   Revision 1.33  2004/05/18 14:16:39  midas
   Do watchdog disable first in setup()
 
@@ -1061,6 +1064,8 @@ void eeprom_erase(void)
 
 /*------------------------------------------------------------------*/
 
+sbit button = P3 ^ 3;
+
 void eeprom_flash(void)
 /********************************************************************\
 
@@ -1072,6 +1077,9 @@ void eeprom_flash(void)
 {
    unsigned char i, adr;
    unsigned short magic, offset;
+
+   led_blink(3, 5, 50);
+   watchdog_refresh();
 
    eeprom_erase();
 

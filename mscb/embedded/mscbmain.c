@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol main program
 
   $Log$
+  Revision 1.46  2004/05/19 15:10:59  midas
+  Avoid flashing directly after watchdog reset
+
   Revision 1.45  2004/05/18 14:16:39  midas
   Do watchdog disable first in setup()
 
@@ -328,19 +331,28 @@ void setup(void)
    /* start system clock */
    sysclock_init();
 
-   /* init memory */
-   CSR = 0;
-
    /* LED on by default */
    for (i=0 ; i<N_LED ; i++) {
       led_set(i, LED_ON);
       led_mode(i, 1);
+      watchdog_refresh();
    }
    
+   /* initialize all memory */
+   CSR = 0;
+   addressed = 0;
+   flash_param = 0;
+   flash_program = 0;
+   reboot = 0;
+   configured = 0;
+
    RS485_ENABLE = 0;
    i_in = i_out = n_out = 0;
    _cur_sub_addr = 0;
-   configured = 0;
+   for (i=0 ; i<sizeof(in_buf) ; i++)
+      in_buf[i] = 0;
+   for (i=0 ; i<sizeof(out_buf) ; i++)
+      out_buf[i] = 0;
 
    uart_init(0, BD_115200);
 
@@ -364,16 +376,18 @@ void setup(void)
       for (i = 0; variables[i].width; i++)
          if (!(variables[i].flags & MSCBF_DATALESS))
             // do it for each sub-address
-            for (adr = 0 ; adr < _n_sub_addr ; adr++)
+            for (adr = 0 ; adr < _n_sub_addr ; adr++) {
                memset((char*)variables[i].ud + _var_size*adr, 0, variables[i].width);
+               watchdog_refresh();
+            }
 
       /* call user initialization routine with initialization */
       user_init(1);
 
-	  /* outcommented, keep unconfigured state until explicit flash through command
-      eeprom_flash();
-	  */
-   } else
+  	   /* do flash programming later (>3sec after reboot) */
+      //flash_param = 1;
+
+   } else {
       /* remember configured flag */
       configured = 1;
 
@@ -382,15 +396,18 @@ void setup(void)
 
    /* check if reset by watchdog */
 #ifdef CPU_ADUC812
-   if (WDS)
+      if (WDS)
 #endif
 #ifdef CPU_CYGNAL
-   if (RSTSRC & 0x08)
+       if (RSTSRC & 0x08)
 #endif
-      {
-      WD_RESET = 1;
-      sys_info.wd_counter++;
-      eeprom_flash();
+         {
+         WD_RESET = 1;
+         sys_info.wd_counter++;
+
+     	   /* do flash programming later (>3sec after reboot) */
+         //flash_param = 1;
+      }
    }
 
 #ifdef LCD_SUPPORT
@@ -1128,18 +1145,19 @@ void yield(void)
    if (!configured)
       led_blink(0, 1, 150);
 
-   /* flash EEPROM if asked by interrupt routine */
-   if (flash_param) {
+   /* flash EEPROM if asked by interrupt routine, wait 3 sec
+      after reboot (power might not be stable) */
+   if (flash_param && time() > 300) {
       flash_param = 0;
 
       /* reset watchdog counts */
       sys_info.wd_counter = 0;
 
       eeprom_flash();
-	  configured = 1;
+	   configured = 1;
    }
 
-   if (flash_program) {
+   if (flash_program && time() > 300) {
       flash_program = 0;
 
       /* go to "bootloader" program */
