@@ -60,11 +60,8 @@ exec /bin/nice bltwish "$0" -- ${1+"$@"}
 # re-ordered some code (no functional change)
 #  Revision History:
 #    $Log$
-#    Revision 1.10  2002/03/22 23:31:49  pierre
-#    add exclusion of '%'
-#
-#    Revision 1.9  2001/12/13 20:31:59  pierre
-#    add cursor, page display, reduce timeout
+#    Revision 1.11  2002/05/10 23:24:05  pierre
+#    cosmetic changes. Allow manual y-scale
 #
 #    Revision 1.8  2001/12/08 01:05:43  pierre
 #    correct path, new display
@@ -97,6 +94,9 @@ exec /bin/nice bltwish "$0" -- ${1+"$@"}
 # Added cross hairs
 # Added buttons to scan through the expanded/single graphs
 # Allow resizing of expanded/single graphs
+
+# May-2002. Cosmetic changes. 
+#           Allow Manual entry of y-scale settings
 
 #========================================================================
 
@@ -297,7 +297,7 @@ proc select_graph {item} {
 
     # add day of the week if using the history command
     if {$doing_mhist} {
-	$fgraph xaxis configure -loose 1 -title "" -command {my_clock_format "%d.%m %H:%M"}
+	$fgraph xaxis configure -loose 1 -title "" -command {my_clock_format "%d/%m %H:%M"}
     } else {
 	$fgraph xaxis configure -loose 1 -title "" -command {my_clock_format %H:%M}
     }
@@ -309,27 +309,41 @@ proc select_graph {item} {
 
     # puts "data are now [set V_y_[set item](:)]"
     # create  exit button  
-    button   .fullscale$item.col1.ok  -text  "close"  -width 6 -font 6x12 \
-	    -command "destroy .fullscale$item  ;  return"
+    button   .fullscale$item.col1.ok  -text  "close"  -relief flat -underline 0 -bd 0 \
+	    -width 6 -command "destroy .fullscale$item  ;  return"
     pack     .fullscale$item.col1.ok  -side bottom
 
     # create re-scaling button
     
-    button   .fullscale$item.col1.scale1  -text  "AutoScale"  -width 6 -font 6x12 \
-	    -command "scale_single_window Auto $item" 
-    pack     .fullscale$item.col1.scale1  -side top
-    button   .fullscale$item.col1.scale2  -text  "ReScale" -font 6x12 -width 6 \
-	    -command "scale_single_window Rescale $item"
-    pack     .fullscale$item.col1.scale2  -side top   
+#    button   .fullscale$item.col1.scale1  -text  "AutoScale"   -relief flat -underline 0 -bd 0 \
+#	    -width 6 -font 6x12 -command "scale_single_window Auto $item" 
+#    pack     .fullscale$item.col1.scale1  -side top
+#    button   .fullscale$item.col1.scale2  -text  "ReScale" -relief flat -underline 0 -bd 0 \
+#	    -font 6x12 -width 6 -command "scale_single_window Rescale $item"
+#    pack     .fullscale$item.col1.scale2  -side top   
+
+
+    # trial code - scale menu:
+    menubutton   .fullscale$item.col1.scale_gen -text "Scaling" -menu .fullscale$item.col1.scale_gen.mnu \
+	    -width 6 
+    menu  .fullscale$item.col1.scale_gen.mnu
+    .fullscale$item.col1.scale_gen.mnu add command -command "scale_single_window Manual $item 1" \
+	    -label "Manual Scale"
+    .fullscale$item.col1.scale_gen.mnu add command -command "scale_single_window Rescale $item 1" \
+	    -label "AutoScale 1"
+    .fullscale$item.col1.scale_gen.mnu add command -command "scale_single_window Auto $item 1" \
+	    -label "AutoScale 2"
+    pack   .fullscale$item.col1.scale_gen -side top
+    # end of trial code
 
     # create information button
-    button   .fullscale$item.col1.info  -text  "Info/Help"  -width 6 -font 6x12 \
-	    -command "show_item_info $item" 
+    button   .fullscale$item.col1.info  -text  "Info/Help"   -relief flat -underline 0 -bd 0 \
+	    -width 6  -command "show_item_info $item" 
     pack     .fullscale$item.col1.info  -side top
 
     # create hard copy pull down menu:
-    menubutton .fullscale$item.col1.hard -text "HardCopy" \
-	    -menu .fullscale$item.col1.hard.mnu -relief raised -font 6x12 
+    menubutton .fullscale$item.col1.hard -text "HardCopy"  -relief flat -underline 0 -bd 0 \
+	    -menu .fullscale$item.col1.hard.mnu -relief raised  
 
     set hardcopy_menu [ menu  .fullscale$item.col1.hard.mnu]
 
@@ -405,7 +419,7 @@ proc show_all_full_scale { } {
 	    button .fullscale_main.row1.quit -text "exit" -command {destroy .fullscale_main}
 	    label  .fullscale_main.row1.number -textvariable item_counter_text
 	    
-	    button   .fullscale_main.row1.fixy    -text  "Fix Y scale" \
+	    button   .fullscale_main.row1.fixy    -text  "Freeze Y scale" \
 		    -command {
 		set fix_y_scale [expr !$fix_y_scale]  ; # invert toggle
 		if {$fix_y_scale} {
@@ -489,7 +503,7 @@ proc show_all_full_scale { } {
 	
 	# add day of the week if using the history command
 	if {$doing_mhist} {
-	    $fgraph xaxis configure -loose 1 -title "" -command {my_clock_format "%d.%m %H:%M"}
+	    $fgraph xaxis configure -loose 1 -title "" -command {my_clock_format "%d/%m %H:%M"}
 	} else {
 	    $fgraph xaxis configure -loose 1 -title "" -command {my_clock_format %H:%M}
 	}
@@ -501,28 +515,43 @@ proc show_all_full_scale { } {
 	
 
 	# create  exit button  
-	button   $full_name.col1.ok  -text  "close"  -width 6 -font 6x12 \
+	button   $full_name.col1.ok  -text  "close"  -width 6   -relief flat -underline 0 -bd 0 \
 		-command "destroy $full_name  ;  return"
 	pack     $full_name.col1.ok  -side bottom
 	
 	# create re-scaling button
-	button   $full_name.col1.scale1  -text  "AutoScale"  -width 6 -font 6x12 \
-		-command "scale_single_window2 Auto $item" 
-	pack     $full_name.col1.scale1  -side top
-	button   $full_name.col1.scale2  -text  "ReScale" -font 6x12 -width 6 \
-		-command "scale_single_window2 Rescale $item"
-	pack     $full_name.col1.scale2  -side top   
-
-	pack     $full_name.col1.scale2  -side top   
+#	button   $full_name.col1.scale1  -text  "AutoScale"  -width 6 -font 6x12 \
+#		-command "scale_single_window2 Auto $item" 
+#	pack     $full_name.col1.scale1  -side top
+#	button   $full_name.col1.scale2  -text  "ReScale" -font 6x12 -width 6 \
+#		-command "scale_single_window2 Rescale $item"
+#	pack     $full_name.col1.scale2  -side top   
+#	pack     $full_name.col1.scale2  -side top   
 	
+
+	# trial code - scale menu:
+	menubutton   $full_name.col1.scale_gen -text "Scaling" -menu $full_name.col1.scale_gen.mnu \
+		-width 6 
+	menu  $full_name.col1.scale_gen.mnu
+	$full_name.col1.scale_gen.mnu add command -command "scale_single_window Manual $item 2" \
+		-label "Manual Scale"
+	$full_name.col1.scale_gen.mnu add command -command "scale_single_window Rescale $item 2" \
+		-label "AutoScale 1"
+	$full_name.col1.scale_gen.mnu add command -command "scale_single_window Auto $item 2" \
+		-label "AutoScale 2"
+	pack   $full_name.col1.scale_gen -side top
+	# end of trial code
+
+
+
 	# create information button
-	button   $full_name.col1.info  -text  "Info/Help"  -width 6 -font 6x12 \
+	button   $full_name.col1.info  -text  "Info/Help"  -width 6  -relief flat -underline 0 -bd 0 \
 		-command "show_item_info $item" 
 	pack     $full_name.col1.info  -side top
 	
 	# create hard copy pull down menu:
-	menubutton $full_name.col1.hard -text "HardCopy" \
-		-menu $full_name.col1.hard.mnu -relief raised -font 6x12 
+	menubutton $full_name.col1.hard -text "HardCopy"   -relief flat -underline 0 -bd 0 \
+		-menu $full_name.col1.hard.mnu 
 	
 	set hardcopy_menu [ menu  $full_name.col1.hard.mnu]
 	
@@ -665,13 +694,58 @@ proc hardcopy {type window} {
 # RESET SCALE ON EXANDED WINDOW
 #================================================================
 
-proc scale_single_window {scale_mode item} {
+proc scale_single_window {scale_mode item window} {
+
     global scale_ymax scale_ymin   ;# returned and calculated values
 
-    set fgraph .fullscale$item.col2.graph
+# window =1 for the individual guys =2 for the stacked guys
+
+    if {$window==1} { set fgraph .fullscale$item.col2.graph }
+    if {$window==2} { set fgraph .fullscale_main.fullscale$item.col2.graph }
+
     switch -glob -- $scale_mode {
 	"Auto"    { set scale_ymax "" ; set scale_ymin "" } 
 	"Rescale" { calc_best_scale $item}    ;# this returns new best values
+	"Manual"  {
+	    toplevel .inputbox                 ;# make a seperate window for this
+	    # put new window at (x,y) of root window:
+	    wm geometry .inputbox  +[winfo rootx .]+[winfo rooty .]
+	    
+	    frame .inputbox.row1
+	    frame .inputbox.row2
+	    frame .inputbox.row3
+	    
+	    grid .inputbox.row1 -row 1
+	    grid .inputbox.row2 -row 2
+	    grid .inputbox.row3 -row 3
+	    
+	    label .inputbox.row1.startlab -text "Ymin = " -height 2
+	    entry .inputbox.row1.start  -textvariable scale_ymin -width 40 
+	    pack  .inputbox.row1.start -side right    
+	    pack  .inputbox.row1.startlab -side left
+ 
+	    label .inputbox.row2.startlab -text "Ymax = " -height 2
+	    entry .inputbox.row2.start  -textvariable scale_ymax -width 40 
+	    pack  .inputbox.row2.start -side right
+	    pack  .inputbox.row2.startlab -side left
+
+
+	    # create a button which, when clicked, will read the box, then destroy the box
+	    button .inputbox.row3.ok -text "ok" -command {
+		.inputbox.row1.start  get    ;# gets read into var.
+		destroy .inputbox      
+	    }
+	    button .inputbox.row3.cancel -text "cancel" -command {
+		destroy .inputbox
+	    }
+	    
+	    pack .inputbox.row3.ok -side left
+	    pack .inputbox.row3.cancel -side left
+	    tkwait window .inputbox              ;# wait until its been destroyed
+	    update
+	}
+
+	    
     }
 
     $fgraph yaxis configure -min $scale_ymin -max $scale_ymax
@@ -688,6 +762,10 @@ proc scale_single_window2 {scale_mode item} {
     switch -glob -- $scale_mode {
 	"Auto"    { set scale_ymax "" ; set scale_ymin "" } 
 	"Rescale" { calc_best_scale $item}    ;# this returns new best values
+
+
+
+
     }
 
     $fgraph yaxis configure -min $scale_ymin -max $scale_ymax
@@ -919,7 +997,6 @@ proc read_mhist_file {open_file } {
 	# here we go..a *new* widget
 	set types {{"History files .hst" {.hst}}}
 	set hist_file [tk_getOpenFile -filetypes $types -initialdir $file_path]
-
 	# bug ! Mhist doesnt work with full path names. So for now: (resolved Nov-01)
 	# new option in mhist -z gives the path OR path is taken from file name
 	# set hist_file [lindex [split $hist_file /] end]
@@ -1084,11 +1161,13 @@ proc read_mhist_file {open_file } {
 	
 	while {![eof $file_hndl]} {
 	    gets $file_hndl string
-	    
+
+	    if { $debug_code } { puts "From file got string $string " }
 	    if { [llength $string] == 2} {
 		set x_val [string toupper [lindex $string 0]]
 		set y_val [string toupper [lindex $string 1]]
 		if { [string first "NAN" $x_val]==-1 && [string first "NAN" $y_val]==-1} {
+		    if {$debug_code} {puts "Adding to item $item value (x,y) $x_val $y_val " }
 		    V_x_${item} append $x_val
 		    V_y_${item} append $y_val
 		} else {
@@ -1166,7 +1245,7 @@ proc read_mhist_file {open_file } {
 	    $strip_chart element configure line_$item  -xdata V_x_$item  -ydata V_y_plot_$item
 	    # change the labelling format on the x-axis if plotting more then one day
 	    if {$history_time >= 1} {
-		$strip_chart xaxis configure -command {my_clock_format "%d.%m %H:%M"}
+		$strip_chart xaxis configure -command {my_clock_format "%d/%m %H:%M"}
 	    } else {
 		$strip_chart xaxis configure -command {my_clock_format "%H:%M"}
 	    }
@@ -1420,7 +1499,7 @@ proc read_present_mhist { } {
 	$strip_chart element configure line_$item  -xdata V_x_$item  -ydata V_y_plot_$item
 	# change the labelling format on the x-axis if plotting more then one day
 	if {$history_time >= 1} {
-	    $strip_chart xaxis configure -command {my_clock_format "%d.%m %H:%M"}
+	    $strip_chart xaxis configure -command {my_clock_format "%d/%m %H:%M"}
 	} else {
 	    $strip_chart xaxis configure -command {my_clock_format "%H:%M"}
 	}
