@@ -63,13 +63,9 @@ move \tmp\midas.zip midas%version%.zip > nul
 move \tmp\midas.exe midas%version%.exe > nul
 rmdir /S /Q %dir% > nul
 
-rem map network drive
-net use n: /d > nul
-net use n: \\pc2075\midas mi_das /user:midas
-
 echo Sending archive to midas.psi.ch
 
-cp midas%version%.exe n:\html\download\windows\
-cp midas%version%.zip n:\html\download\windows\
+scp midas%version%.exe midas@midas:html/download/windows/
+scp midas%version%.zip midas@midas:html/download/windows/
 
 rm midas%version%.exe > nul
