@@ -7,14 +7,17 @@
  *         amaudruz@triumf.ca
  * -----------------------------------------------------------------------------
  *  
- *  Description	: CAMAC interface for CES8210 CAMAC controller using
- *		  Midas Camac Standard calls.
- *  Requires 	: a VME driver:
+ *  Description : CAMAC interface for CES8210 CAMAC controller using
+ *      Midas Camac Standard calls.
+ *  Requires  : a VME driver:
  *                              VxVME.c-> VxWorks/PPC
  *                              btxxx  -> Linux,NT/bit3
  *  Application :
  *  Author      : Pierre-Andre Amaudruz Data Acquisition Group
  *  $Log$
+ *  Revision 1.8  2002/06/17 23:46:01  pierre
+ *  fix camc R/W mode
+ *
  *  Revision 1.7  2002/05/08 22:30:07  pierre
  *  24bit access arithmetic bug
  *
@@ -70,31 +73,31 @@ CBD_DESC_T cbd[8];             /* crate 0 ==>system CC mapping */
 #define BTB            CBD8210_BASE | BTB_OFFSET | CBDWL_D16
 
 #define CAM_CSRCHK(_w){\
-			 DWORD cbd_csr = cbd[0].baseCrate | CSR;\
-			 *_w = *(WORD *) cbd_csr;}
+       DWORD cbd_csr = cbd[0].baseCrate | CSR;\
+       *_w = *(WORD *) cbd_csr;}
 
 #define CAM_CARCHK(_w){\
-			 DWORD cbd_car = cbd[0].baseCrate | CAR;\
-			 *_w = *(WORD *) cbd_car;}
+       DWORD cbd_car = cbd[0].baseCrate | CAR;\
+       *_w = *(WORD *) cbd_car;}
 
 #define CAM_BTBCHK(_w){\
-			 DWORD cbd_btb = cbd[0].baseCrate | BTB;\
+       DWORD cbd_btb = cbd[0].baseCrate | BTB;\
                          *_w = *(WORD *) cbd_btb;}
 
 #define CAM_QXCHK(_q,_x){\
-			 DWORD cbd_csr = cbd[0].baseCrate | CSR;\
-			 WORD csr = *((WORD *) cbd_csr);\
-			 *_q = ((csr & 0x8000)>>15);\
-			 *_x = ((csr & 0x4000)>>14);}
-			 
+       DWORD cbd_csr = cbd[0].baseCrate | CSR;\
+       WORD csr = *((WORD *) cbd_csr);\
+       *_q = ((csr & 0x8000)>>15);\
+       *_x = ((csr & 0x4000)>>14);}
+       
 #define CAM_QCHK(_q){\
-			 DWORD cbd_csr = cbd[0].baseCrate | CSR;\
-			 WORD csr = *((WORD *) cbd_csr);\
-			 *_q = ((csr & 0x8000)>>15);}
+       DWORD cbd_csr = cbd[0].baseCrate | CSR;\
+       WORD csr = *((WORD *) cbd_csr);\
+       *_q = ((csr & 0x8000)>>15);}
 #define CAM_XCHK(_x){\
-			 DWORD cbd_csr = cbd[0].baseCrate | CSR;\
-			 WORD csr = *((WORD *) cbd_csr);\
-			 *_x = ((csr & 0x4000)>>14);}
+       DWORD cbd_csr = cbd[0].baseCrate | CSR;\
+       WORD csr = *((WORD *) cbd_csr);\
+       *_x = ((csr & 0x4000)>>14);}
 
 /* VME handle */
 int vh;
@@ -112,6 +115,7 @@ INLINE void cam16i(const int c, const int n, const int a, const int f,
   
   ext = (cbd[c].baseCrate + CBDWL_D16 + (n<<11) + (a<<7) + (f<<2));
   *d = *((unsigned short *)ext);
+/*  printf("cam16i: c%dn%da%df%d = ext[0x%x] -> 0x%x \n", c,n,a,f,ext, *d); */
 }
 
 /*---------------------------------------------------------------*/
@@ -119,15 +123,17 @@ INLINE void cam16i(const int c, const int n, const int a, const int f,
 INLINE void cam24i(const int c, const int n, const int a, const int f, 
                    DWORD *d)
 {
-int ext;
-WORD dh, dl;
+  int ext;
+  WORD dh, dl;
 
   ext = (cbd[c].baseCrate + CBDWL_D24 + (n<<11) + (a<<7) + (f<<2));
   dh = *((unsigned short *)ext);
+/*  printf("cam24i: c%dn%da%df%d = ext[0x%x - ", c,n,a,f,ext); */
   ext += 2;
   dl = *((unsigned short *)ext);
 
   *d = ((dh<<16) | dl) & 0xffffff;
+/*  printf("0x%x] -> (0x%x) - (0x%x) -> 0x%x \n", ext,dh,dl,*d); */
 }
 
 /*---------------------------------------------------------------*/
@@ -135,7 +141,7 @@ WORD dh, dl;
 INLINE void cam16i_q(const int c, const int n, const int a, const int f,
                      WORD *d, int *x, int *q)
 {
-WORD csr;
+  WORD csr;
 
   cam16i(c,n,a,f, d);
   cami(0,29,0,0,&csr);
@@ -148,7 +154,7 @@ WORD csr;
 INLINE void cam24i_q(const int c, const int n, const int a, const int f,
                      DWORD *d, int *x, int *q)
 {
-WORD csr;
+   WORD csr;
 
   cam24i(c,n,a,f, d);
   cami(0,29,0,0,&csr);
@@ -161,7 +167,7 @@ WORD csr;
 INLINE void cam16i_r(const int c, const int n, const int a, const int f,
                      WORD **d, const int r)
 {
-int i;
+  int i;
 
   for (i=0 ; i<r ; i++)
     cam16i(c,n,a,f, (*d)++);
@@ -183,18 +189,18 @@ INLINE void cam24i_r(const int c, const int n, const int a, const int f,
 INLINE void cam16i_rq(const int c, const int n, const int a, const int f,
                       WORD **d, const int r)
 {
-WORD dtemp;
-WORD csr, i;
-
+  WORD dtemp;
+  WORD csr, i;
+  
   for (i=0 ; i<r ; i++)
-    {
+  {
     cam16i(c,n,a,f,&dtemp);
     cami(0,29,0,0,&csr);
     if ((csr & 0x8000) != 0)
       *((*d)++) = dtemp;
     else
       break;
-    }
+  }
 }
 
 /*---------------------------------------------------------------*/
@@ -202,18 +208,18 @@ WORD csr, i;
 INLINE void cam24i_rq(const int c, const int n, const int a, const int f,
                       DWORD **d, const int r)
 {
-DWORD i, dtemp;
-WORD csr;
-
+  DWORD i, dtemp;
+  WORD csr;
+  
   for (i=0 ; i<(DWORD)r ; i++)
-    {
+  {
     cam24i(c,n,a,f,&dtemp);
     cami(0,29,0,0,&csr);
     if ((csr & 0x8000) != 0)
       *((*d)++) = dtemp;
     else
       break;
-    }
+  }
 }
 
 /*---------------------------------------------------------------*/
@@ -221,8 +227,8 @@ WORD csr;
 INLINE void cam16i_sa(const int c, const int n, const int a, const int f,
                       WORD **d, const int r)
 {
-int aa;
-
+  int aa;
+  
   for (aa=a ; aa<a+r ; aa++)
     cam16i(c,n,aa,f,(*d)++);
 }
@@ -232,8 +238,8 @@ int aa;
 INLINE void cam24i_sa(const int c, const int n, const int a, const int f,
                       unsigned long **d, const int r)
 {
-int aa;
-
+  int aa;
+  
   for (aa=a ; aa<a+r ; aa++)
     cam24i(c,n,aa,f,(*d)++);
 }
@@ -243,8 +249,8 @@ int aa;
 INLINE void cam16i_sn(const int c, const int n, const int a, const int f,
                       WORD **d, const int r)
 {
-int nn;
-
+  int nn;
+  
   for (nn=n ; nn<n+r ; nn++)
     cam16i(c,nn,a,f,(*d)++);
 }
@@ -254,8 +260,8 @@ int nn;
 INLINE void cam24i_sn(const int c, const int n, const int a, const int f,
                       DWORD **d, const int r)
 {
-int nn;
-
+  int nn;
+  
   for (nn=n ; nn<n+r ; nn++)
     cam24i(c,nn,a,f,(*d)++);
 }
@@ -288,9 +294,9 @@ INLINE void cam16o(const int c, const int n, const int a, const int f
 INLINE void cam24o(const int c, const int n, const int a, const int f, 
                    DWORD d)
 {
-int ext;
-unsigned short dtmp;
-
+  int ext;
+  unsigned short dtmp;
+  
   ext = (cbd[c].baseCrate + CBDWL_D24 + (n<<11) + (a<<7) + (f<<2));
   dtmp = (unsigned short) ((d>>16) & 0xff);
   *((unsigned short *)ext) = dtmp;
@@ -304,7 +310,7 @@ unsigned short dtmp;
 INLINE void cam16o_q(const int c, const int n, const int a, const int f,
                      WORD d, int *x, int *q)
 {
-WORD csr;
+  WORD csr;
   
   cam16o (c,n,a,f,d);
   cami(0,29,0,0,&csr);
@@ -317,8 +323,8 @@ WORD csr;
 INLINE void cam24o_q(const int c, const int n, const int a, const int f, 
                      DWORD d, int *x, int *q)
 {
-WORD csr;
-
+  WORD csr;
+  
   cam24o (c,n,a,f,d);
   cami(0,29,0,0,&csr);
   *x = ((csr & 0x4000) != 0) ? 1 : 0;
@@ -342,10 +348,10 @@ INLINE void camo(const int c, const int n, const int a, const int f
 INLINE int camc_chk(const int c)
 {
   int crate_status;
-
+  
   CAM_BTBCHK (&crate_status);
   if ( ((crate_status >> c) & 0x1) != 1)
-     return -1;
+    return -1;
   return 0;
 }
 
@@ -353,16 +359,22 @@ INLINE int camc_chk(const int c)
 
 INLINE void camc(const int c, const int n, const int a, const int f)
 {
-WORD dtmp;
-
-  cami(c,n,a,f,&dtmp);
+  /* Following the CBD8210 manual */
+  WORD dtmp;
+  
+  if (f<16)
+    cam16i(c,n,a,f,&dtmp);
+  else if (f<24)
+    cam16o(c,n,a,f,0);
+  else
+    cam16i(c,n,a,f,&dtmp);
 }
 
 /*---------------------------------------------------------------*/
 
 INLINE void camc_q(const int c, const int n, const int a, const int f, int *q)
 {
-WORD csr;
+  WORD csr;
   
   camc (c,n,a,f);
   cami(0,29,0,0,&csr);
@@ -374,8 +386,8 @@ WORD csr;
 INLINE void camc_sa(const int c, const int n, const int a, const int f,
                     const int r)
 {
-int aa;
-
+  int aa;
+  
   for (aa=a ; aa<a+r ; aa++)
     camc(c,n,aa,f);
 }
@@ -385,8 +397,8 @@ int aa;
 INLINE void camc_sn(const int c, const int n, const int a, const int f,
                     const int r)
 {
-int nn;
-
+  int nn;
+  
   for (nn=n ; nn<n+r ; nn++)
     camc(c,nn,a,f);
 }
@@ -399,34 +411,34 @@ int nn;
 
 INLINE int cam_init(void)
 {
-int branch=0, crate, vmecrate, err, am;
-
+  int branch=0, crate, vmecrate, err, am;
+  
   /* Open in A24D16 */
   vh = vme_open(0, VME_A24D16);
   if (vh >= 0) 
-    {
+  {
     am = VME_AMOD_A24_ND;
     vme_ioctl(vh, IOCTL_AMOD_SET, &am);
     vme_ioctl(vh, IOCTL_AMOD_GET, &am);
     
     /* mapping all crates */
     for (crate=0; crate<8; crate++) 
-      {
+    {
       vmecrate = (CBD8210_BASE | branch << 19 | crate << 16);
       vme_mmap(vh, (void **) &(cbd[crate].baseCrate), vmecrate, 0x10000);
       /*
       printf("am 0x%x - baseCrate[%i] = 0x%x <- 0x%x\n", am, crate, 
-              cbd[crate].baseCrate, vmecrate);
+      cbd[crate].baseCrate, vmecrate);
       */
-      }
     }
+  }
   else 
-    {
+  {
     vme_ioctl(vh, IOCTL_MAX_DEV_GET, &err);
     printf("cam_init: No more device space (>%d)\n", err);
     return 0;
-    }
-
+  }
+  
   return SUCCESS;
 }
 
@@ -434,8 +446,8 @@ int branch=0, crate, vmecrate, err, am;
 
 INLINE void cam_exit(void)
 {
-int crate;
-
+  int crate;
+  
   for (crate=0 ; crate<8 ; crate++)
     vme_unmap(vh, &cbd[crate].baseCrate, 0x10000);
   vme_close(vh);
@@ -501,10 +513,10 @@ INLINE void cam_lam_read(const int c, DWORD *lam)
 
 INLINE void cam_lam_clear(const int c, const int n)
 {
-  /* Depend on the hardware LAM implementation
-     as this cmd should talk to the controller
-     but can include the LAM source module LAM clear
-     camc (c,n,0,10); */
+/* Depend on the hardware LAM implementation
+as this cmd should talk to the controller
+but can include the LAM source module LAM clear
+  camc (c,n,0,10); */
 }
 
 /*****************************************************************\
@@ -571,7 +583,7 @@ INLINE void cam_glint_attach(int lam, void (*isr)(void))
 void csr(void)
 {
   WORD online;
-
+  
   CAM_CSRCHK(&online);
   printf("CSR Camac  status 0x%4.4x\n",online);
 }
@@ -579,7 +591,7 @@ void csr(void)
 void car(void)
 {
   WORD online;
-
+  
   CAM_CARCHK(&online);
   printf("CAR Online status 0x%4.4x\n",online);
 }
@@ -587,7 +599,7 @@ void car(void)
 void btb(void)
 {
   WORD online;
-
+  
   CAM_BTBCHK(&online);
   printf("BTB Online status 0x%4.4x\n",online);
 }
