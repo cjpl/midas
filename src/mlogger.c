@@ -6,6 +6,13 @@
   Contents:     MIDAS logger program
 
   $Log$
+  Revision 1.6  1998/12/10 12:50:11  midas
+  - removed spinning bars "|\-/" which caused terminal hangup if started in bg
+  - changed behaviour if logger finds tape with data. Previously the tape was
+    spooled automatically, now a error message is printed which asks the user
+    to either spool the tape manually or erase it manually.
+  - logger abort with "!" now works without a return under UNIX
+
   Revision 1.5  1998/11/25 23:43:42  midas
   Addef fflush() after printf(".. bars ..")
 
@@ -209,13 +216,11 @@ char buffer[16];
   if (count == sizeof(buffer))
     {
     /* tape contains data -> spool to end-of-data */
-    cm_msg(MTALK, "tape_open", "spooling tape, please wait");
-    status = ss_tape_spool(*handle);
-    if (status != SS_SUCCESS)
-      {
-      cm_msg(MERROR, "tape_open", "cannot spool tape");
-      return status;
-      }
+    ss_tape_rskip(*handle, -1);
+    cm_msg(MINFO, "tape_open", "Tape contains data, please spool tape with 'mtape seod'");
+    cm_msg(MINFO, "tape_open", "or erase it with 'mtape weof', 'mtape rewind', then try again.");
+    ss_tape_close(*handle);
+    return SS_TAPE_ERROR;
     }
 
   return SS_SUCCESS;
@@ -292,9 +297,6 @@ char  *token, host_name[HOST_NAME_LENGTH],
 
 /*---- MIDAS format routines ---------------------------------------*/
 
-static char bars[] = "|/-\\";
-static int  i_bar;
-
 INT midas_flush_buffer(LOG_CHN *log_chn)
 {     
 INT         status, size, written;
@@ -305,11 +307,6 @@ MIDAS_INFO  *info;
 
   if (size == 0)
     return SS_SUCCESS;
-
-#ifndef FAL_MAIN
-  printf("%c\r", bars[i_bar++ % 4]);
-  fflush(stdout);
-#endif
 
   /* write record to device */
   if (log_chn->type == LOG_TYPE_TAPE)
@@ -1803,6 +1800,8 @@ BOOL         write_data, tape_flag = FALSE;
           sprintf(error, "cannot open file %s (Disk full?)", path);
         if (status == SS_NO_TAPE)
           sprintf(error, "no tape in device %s", path);
+        if (status == SS_TAPE_ERROR)
+          sprintf(error, "tape error, cannot start run");
         if (status == SS_DEV_BUSY)
           sprintf(error, "device %s used by someone else", path);
         if (status == FTP_NET_ERROR || status == FTP_RESPONSE_ERROR)
@@ -2113,6 +2112,9 @@ usage:
   printf("MIDAS logger started. Stop with \"!\"\n");
   printf("Data directory is %s\n", dir);
 
+  /* initialize ss_getchar() */
+  ss_getchar(0);
+
   do
     {
     msg = cm_yield(1000);
@@ -2155,6 +2157,9 @@ usage:
 
     } while (msg != RPC_SHUTDOWN && msg != SS_ABORT && ch != '!');
   
+  /* reset terminal */
+  ss_getchar(TRUE);
+
   /* close history logging */
   close_history();
 
