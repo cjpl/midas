@@ -6,6 +6,9 @@
    Contents:     Dump event on screen with MIDAS or YBOS data format
  
    $Log$
+   Revision 1.7  1999/02/05 23:49:20  pierre
+   - Fix blank lines for compiler.
+
    Revision 1.6  1999/01/19 20:58:32  pierre
    - Fix minor display and ybos call for argument list.
 
@@ -36,31 +39,31 @@
  
  \********************************************************************/
  
- #include "midas.h"
- #include "msystem.h"
- #include "ybos.h"
+#include "midas.h"
+#include "msystem.h"
+#include "ybos.h"
  
- #define  REP_HEADER    1
- #define  REP_RECORD    2
- #define  REP_LENGTH    3
- #define  REP_EVENT     4
+#define  REP_HEADER    1
+#define  REP_RECORD    2
+#define  REP_LENGTH    3
+#define  REP_EVENT     4
  
- char   bank_name[4], sbank_name[4], svpath[128];
- INT    hBufEvent;
- INT    save_dsp, evt_display=0;
- INT    speed=0, dsp_time=0, dsp_fmt=0, dsp_mode=0, file_mode, bl=-1;
- INT    consistency = 0;
+char   bank_name[4], sbank_name[4], svpath[128];
+INT    hBufEvent;
+INT    save_dsp, evt_display=0;
+INT    speed=0, dsp_time=0, dsp_fmt=0, dsp_mode=0, file_mode, bl=-1;
+INT    consistency = 0;
 BOOL   via_callback;
- char   strtmp[128];
- INT    i, data_fmt, count;
- KEY    key;
- HNDLE  hSubkey;
- INT    event_id, event_msk;
- typedef struct {
+char   strtmp[128];
+INT    i, data_fmt, count;
+KEY    key;
+HNDLE  hSubkey;
+INT    event_id, event_msk;
+typedef struct {
    WORD id;
    WORD fmt;
    char Fmt[8];
- } FMT_ID;
+} FMT_ID;
 
 FMT_ID  eq[32];
 
