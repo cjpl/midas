@@ -7,6 +7,9 @@
                 Most routines are from mfe.c mana.c and mlogger.c.
 
   $Log$
+  Revision 1.11  1999/02/22 11:55:20  midas
+  Fixed bug with rebooking of N-tuples
+
   Revision 1.10  1999/02/22 11:04:00  midas
   Fixed second bug with ss_getchar()
 
@@ -2476,6 +2479,14 @@ INT book_ntuples(void);
 
 void banks_changed(INT hDB, INT hKey, void *info)
 {
+char  str[80];
+HNDLE hkey;
+
+  /* close previously opened hot link */
+  sprintf(str, "/%s/Bank switches", analyzer_name);
+  db_find_key(hDB, 0, str, &hkey);
+  db_close_record(hDB, hkey);
+
   book_ntuples();
   print_message("N-tuples rebooked");
 }
@@ -3126,7 +3137,7 @@ BOOL            bFirst = TRUE;
 
   /* get current ODB run state */
   size = sizeof(run_state);
-  run_state = 0;
+  run_state = 1;
   db_get_value(hDB, 0, "/Runinfo/State", &run_state, &size, TID_INT);
   size = sizeof(run_number);
   run_number = 1;
@@ -3720,6 +3731,7 @@ char            str[80];
 
       /* check keyboard */
       ch = 0;
+      status = 0;
       while (ss_kbhit())
         {
         ch = ss_getchar(0);
