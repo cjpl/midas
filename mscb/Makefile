@@ -22,12 +22,12 @@ CC            = gcc -g -O2
 FLAGS         = -Wall -Wuninitialized
 
 ifeq ($(OSTYPE),linux)
-CC   += -DOS_UNIX -DOS_LINUX -DUSE_LIBUSB
+CC   += -DOS_UNIX -DOS_LINUX -DHAVE_LIBUSB
 LIBS  = -lusb
 endif
 
 ifeq ($(OSTYPE),darwin)
-CC   += -DOS_UNIX -DOS_DARWIN
+CC   += -DOS_UNIX -DOS_DARWIN -DHAVE_STRLCPY
 LIBS  = -lIOKit /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation
 endif
 
