@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus communication functions
 
   $Log$
+  Revision 1.10  2002/09/10 13:13:21  midas
+  Remove strobe on timeout
+
   Revision 1.9  2002/08/12 12:10:55  midas
   Added error handling (zero padding)
 
@@ -301,7 +304,12 @@ unsigned char busy, bit9_mask;
         break;
       }
     if (timeout == TIMEOUT_OUT)
+      {
+      /* remove strobe */
+      OUTP(mscb_fd[fd-1].fd + LPT_NSTROBE_OFS, 0);
+
       return MSCB_TIMEOUT;
+      }
 
     /* remove data, make port available for input */
     OUTP(mscb_fd[fd-1].fd, 0xFF);
