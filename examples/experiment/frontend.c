@@ -10,12 +10,9 @@
                 two banks (ADC0 and TDC0), the scaler event with 
                 one bank (SCLR).
 
-
-  Revision history
-  ------------------------------------------------------------------
-  date         by    modification
-  ---------    ---   ------------------------------------------------
-  25-JAN-95    SR    created
+  $Log$
+  Revision 1.2  1998/10/12 12:18:58  midas
+  Added Log tag in header
 
 
 \********************************************************************/

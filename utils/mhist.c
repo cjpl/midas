@@ -1,16 +1,14 @@
  /********************************************************************\
 
-  Name:         MHIST.C
+  Name:         mhist.c
   Created by:   Stefan Ritt
 
   Contents:     MIDAS history display utility
 
+  $Log$
+  Revision 1.2  1998/10/12 12:19:03  midas
+  Added Log tag in header
 
-  Revision history
-  ------------------------------------------------------------------
-  date         by    modification
-  ---------    ---   ------------------------------------------------
-  05-FRB-97    SR    created
 
 \********************************************************************/
 

@@ -6,9 +6,11 @@
   Contents:     Command-line editor for ODBEdit
 
   $Log$
-  Revision 1.2  1998/10/12 11:59:10  midas
-  Added $Log$ tag in header
+  Revision 1.3  1998/10/12 12:19:01  midas
+  Added Log tag in header
 
+  Revision 1.2  1998/10/12 11:59:10  midas
+  Added Log tag in header
 
 \********************************************************************/
 

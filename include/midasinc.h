@@ -6,12 +6,9 @@
   Purpose:      Centralized file with all #includes
   Contents:     Includes all necessary include files
 
-
-  Revision history
-  ------------------------------------------------------------------
-  date        by    reason for change
-  --------    ---   ------------------------------------------------
-  28-10-93    SR    created
+  $Log$
+  Revision 1.2  1998/10/12 12:19:01  midas
+  Added Log tag in header
 
 
 \********************************************************************/

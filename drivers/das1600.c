@@ -5,12 +5,9 @@
 
   Contents:     DAS-1600 (Keithley) Device Driver
 
-
-  Revision history
-  ------------------------------------------------------------------
-  date         by    modification
-  ---------    ---   ------------------------------------------------
-  02-APR-97    SR    created
+  $Log$
+  Revision 1.2  1998/10/12 12:18:56  midas
+  Added Log tag in header
 
 
 \********************************************************************/

@@ -5,12 +5,10 @@
 
   Cotents:      Header file for LeCroy 2365 Octal Logic Matrix
 
+  $Log$
+  Revision 1.2  1998/10/12 12:18:57  midas
+  Added Log tag in header
 
-  Revision history
-  ------------------------------------------------------------------
-  date        by    modification
-  ---------   ---   ------------------------------------------------
-  15-MAY-97   SR    created
 
 \********************************************************************/
 

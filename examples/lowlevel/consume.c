@@ -6,14 +6,10 @@
   Contents:     Buffer manager test program. Simple consumer connec-
                 ting to a SYSTEM buffer and receiving some data.
 
+  $Log$
+  Revision 1.2  1998/10/12 12:18:59  midas
+  Added Log tag in header
 
-  Revision history
-  ------------------------------------------------------------------
-  date        by    modification
-  --------    ---   ------------------------------------------------
-  11-NOV-93   SR    created
-  25-JAN-95   SR    event buffer now dynamically 
-                    (-> MS-DOS limited stack size)
 
 \********************************************************************/
 

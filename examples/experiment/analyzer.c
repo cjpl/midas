@@ -5,12 +5,9 @@
 
   Contents:     System part of Analyzer code for sample experiment
 
-
-  Revision history
-  ------------------------------------------------------------------
-  date         by    modification
-  ---------    ---   ------------------------------------------------
-  16-DEC-96    SR    created
+  $Log$
+  Revision 1.2  1998/10/12 12:18:58  midas
+  Added Log tag in header
 
 
 \********************************************************************/

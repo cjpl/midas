@@ -11,12 +11,9 @@
                 receiving the proper results, one can check that the
                 parameter passing via MIDAS RPCs works correctly.
 
-
-  Revision history
-  ------------------------------------------------------------------
-  date        by    modification
-  ---------   ---   ------------------------------------------------
-  13-JUN-94   SR    created
+  $Log$
+  Revision 1.2  1998/10/12 12:18:59  midas
+  Added Log tag in header
 
 
 \********************************************************************/

@@ -5,12 +5,9 @@
 
   Contents:     LRS2415 device driver function declarations
 
-
-  Revision history
-  ------------------------------------------------------------------
-  date         by    modification
-  ---------    ---   ------------------------------------------------
-  24-AUG-98    SR    created
+  $Log$
+  Revision 1.2  1998/10/12 12:18:57  midas
+  Added Log tag in header
 
 
 \********************************************************************/

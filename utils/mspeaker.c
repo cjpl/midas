@@ -5,12 +5,10 @@
 
   Contents:     Speaks midas messages
 
+  $Log$
+  Revision 1.2  1998/10/12 12:19:04  midas
+  Added Log tag in header
 
-  Revision history
-  ------------------------------------------------------------------
-  date        by    modification
-  --------    ---   ------------------------------------------------
-  30-JAN-97   PAA   created
 
 \********************************************************************/
 

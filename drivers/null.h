@@ -5,12 +5,9 @@
 
   Contents:     Channel Access device driver function declarations
 
-
-  Revision history
-  ------------------------------------------------------------------
-  date         by    modification
-  ---------    ---   ------------------------------------------------
-  27-AUG-98    SR    created
+  $Log$
+  Revision 1.2  1998/10/12 12:18:58  midas
+  Added Log tag in header
 
 
 \********************************************************************/

@@ -5,12 +5,10 @@
 
   Cotents:      Routines for accessing LeCroy 2372 MLU
                 
+  $Log$
+  Revision 1.2  1998/10/12 12:18:57  midas
+  Added Log tag in header
 
-  Revision history
-  ------------------------------------------------------------------
-  date        by    modification
-  ---------   ---   ------------------------------------------------
-  13-NOV-96   SR    created
 
 *********************************************************************/
 

@@ -6,11 +6,10 @@
   Contents:     Device driver for DSP6002 and PC004 8bit CAMAC controller
                 following the MIDAS CAMAC Standard for DirectIO
 
-  Revision history
-  ------------------------------------------------------------------
-  date         by    modification
-  ---------    ---   ------------------------------------------------
-  02-SEP-98    PAA   created
+  $Log$
+  Revision 1.2  1998/10/12 12:18:56  midas
+  Added Log tag in header
+
 
 \********************************************************************/
 

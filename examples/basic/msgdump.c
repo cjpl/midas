@@ -6,12 +6,9 @@
   Contents:     MIDAS message dump program. Attaches to the system
                 message buffer and extracts messages.
 
-
-  Revision history
-  ------------------------------------------------------------------
-  date        by    modification
-  --------    ---   ------------------------------------------------
-  11-NOV-93   SR    created
+  $Log$
+  Revision 1.2  1998/10/12 12:18:58  midas
+  Added Log tag in header
 
 
 \********************************************************************/

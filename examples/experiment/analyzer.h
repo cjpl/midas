@@ -3,13 +3,12 @@
   Name:         analyzer.h
   Created by:   Stefan Ritt
 
-  Contents:     PiBeta Analyzer global include file
+  Contents:     Analyzer global include file
 
-  Revision history
-  ------------------------------------------------------------------
-  date         by    modification
-  ---------    ---   ------------------------------------------------
-  04-JUL-97    SR    created
+  $Log$
+  Revision 1.2  1998/10/12 12:18:58  midas
+  Added Log tag in header
+
 
 \********************************************************************/
                                                         

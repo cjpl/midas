@@ -6,12 +6,10 @@
   Cotents:      MIDAS FASTBUS standard routines. Have to be combined
                 with either LRS1882.C or STR340.C
                 
+  $Log$
+  Revision 1.2  1998/10/12 12:18:57  midas
+  Added Log tag in header
 
-  Revision history
-  ------------------------------------------------------------------
-  date        by    modification
-  --------    ---   ------------------------------------------------
-  26-MAY-98   SR    created
 
 *********************************************************************/
 

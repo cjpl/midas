@@ -5,12 +5,9 @@
 
   Contents:     Server program for midas RPC calls
 
-
-  Revision history
-  ------------------------------------------------------------------
-  date        by    modification
-  ---------   ---   ------------------------------------------------
-  02-DEC-94   SR    created
+  $Log$
+  Revision 1.2  1998/10/12 12:19:02  midas
+  Added Log tag in header
 
 
 \********************************************************************/

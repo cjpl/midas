@@ -6,12 +6,10 @@
   Contents:     Combined Frontend/Analyzer/Logger for Windows NT.
                 Most routines are from mfe.c mana.c and mlogger.c.
 
+  $Log$
+  Revision 1.3  1998/10/12 12:19:01  midas
+  Added Log tag in header
 
-  Revision history
-  ------------------------------------------------------------------
-  date         by    modification
-  ---------    ---   ------------------------------------------------
-  29-JAN-97    SR    created
 
 \********************************************************************/
 

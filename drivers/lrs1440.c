@@ -5,12 +5,9 @@
 
   Contents:     LeCroy LRS 1440 High Voltage Device Driver
 
-
-  Revision history
-  -------------------------------------------------------------------
-  date         by    modification
-  ---------    ---   ------------------------------------------------
-  26-MAR-97    SR    created
+  $Log$
+  Revision 1.2  1998/10/12 12:18:57  midas
+  Added Log tag in header
 
 
 \********************************************************************/

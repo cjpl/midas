@@ -5,7 +5,12 @@
 #
 #  Contents:     Makefile for MIDAS binaries and examples under unix
 #
-#  Revision history
+#  $Log$
+#  Revision 1.2  1998/10/12 12:18:55  midas
+#  Added Log tag in header
+#
+#
+#  Previous revision history
 #  ------------------------------------------------------------------
 #  date         by    modification
 #  ---------    ---   -----------------------------------------------

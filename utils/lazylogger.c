@@ -5,12 +5,13 @@
 
   Contents:     Disk to Tape copier for background job
 
-  Revision history
-  ------------------------------------------------------------------
-  date        by    modification
-  --------    ---   ------------------------------------------------
-  17-JUN-98   PAA   created
+  $Log$
+  Revision 1.2  1998/10/12 12:19:03  midas
+  Added Log tag in header
+
+
 \********************************************************************/
+
 #include "midas.h"
 #include "msystem.h"
 #include "ybos.h"

@@ -5,8 +5,12 @@
 
   Contents:     LeCroy LRS 4032 High Voltage Device Driver
 
+  $Log$
+  Revision 1.2  1998/10/12 12:18:57  midas
+  Added Log tag in header
 
-  Revision history
+
+  Previous revision history
   -------------------------------------------------------------------
   date         by    modification
   ---------    ---   ------------------------------------------------

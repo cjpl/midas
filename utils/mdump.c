@@ -5,14 +5,20 @@
 
   Contents:     Dump event on screen with MIDAS or YBOS data format
 
+  $Log$
+  Revision 1.2  1998/10/12 12:19:03  midas
+  Added Log tag in header
 
-  Revision history
+
+  Previous revision history
   ------------------------------------------------------------------
   date        by    modification
   --------    ---   ------------------------------------------------
   11-OCT-96   PAA   created
   20-NoV-97   PAA   add the Midas format
+
 \********************************************************************/
+
 #include "midas.h"
 #include "msystem.h"
 #include "ybos.h"
