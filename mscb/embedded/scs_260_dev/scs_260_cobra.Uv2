@@ -12,7 +12,7 @@ File 1,1,<.\scs_260_cobra.c><scs_260_cobra.c> 0x0
 File 1,1,<..\mscbutil.c><mscbutil.c> 0x0 
 File 2,5,<..\mscb.h><mscb.h> 0x0 
 File 2,5,<..\net.h><net.h> 0x0 
-File 3,4,<..\netlib.LIB><netlib.LIB> 0x4238222D 
+File 3,4,<..\netlib.LIB><netlib.LIB> 0x42398B54 
 
 
 Options 1,0,0  // Target 'Download'
