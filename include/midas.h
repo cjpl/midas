@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.87  2002/03/13 08:39:01  midas
+  Added periodic alarms
+
   Revision 1.86  2001/10/03 08:36:02  midas
   Added DB_INVALID_LINK
 
@@ -1246,6 +1249,8 @@ typedef struct {
 #define AT_INTERNAL   1
 #define AT_PROGRAM    2
 #define AT_EVALUATED  3
+#define AT_PERIODIC   4
+#define AT_LAST       4
 
 #define PROGRAM_INFO_STR(_name) char *_name[] = {\
 "[.]",\
@@ -1270,6 +1275,8 @@ typedef struct {
   INT       execute_interval;
   DWORD     execute_last;
   BOOL      stop_run;
+  char      display_bgcolor[32];
+  char      display_fgcolor[32];
 } ALARM_CLASS;
 
 #define ALARM_CLASS_STR(_name) char *_name[] = {\
@@ -1282,6 +1289,8 @@ typedef struct {
 "Execute interval = INT : 0",\
 "Execute last = DWORD : 0",\
 "Stop run = BOOL : n",\
+"Display BGColor = STRING : [32] red",\
+"Display FGColor = STRING : [32] black",\
 "",\
 NULL }
 
@@ -1298,7 +1307,7 @@ typedef struct {
   char      alarm_message[80];
 } ALARM;
 
-#define ALARM_STR(_name) char *_name[] = {\
+#define ALARM_ODB_STR(_name) char *_name[] = {\
 "[.]",\
 "Active = BOOL : n",\
 "Triggered = INT : 0",\
@@ -1310,6 +1319,21 @@ typedef struct {
 "Condition = STRING : [256] /Runinfo/Run number > 100",\
 "Alarm Class = STRING : [32] Alarm",\
 "Alarm Message = STRING : [80] Run number became too large",\
+"",\
+NULL }
+
+#define ALARM_PERIODIC_STR(_name) char *_name[] = {\
+"[.]",\
+"Active = BOOL : n",\
+"Triggered = INT : 0",\
+"Type = INT : 4",\
+"Check interval = INT : 28800",\
+"Checked last = DWORD : 0",\
+"Time triggered first = STRING : [32] ",\
+"Time triggered last = STRING : [32] ",\
+"Condition = STRING : [256] ",\
+"Alarm Class = STRING : [32] Warning",\
+"Alarm Message = STRING : [80] Please do your shift checks",\
 "",\
 NULL }
 
