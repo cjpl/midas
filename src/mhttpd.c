@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.152  2001/06/01 11:41:40  midas
+  Fixed bug with expired password
+
   Revision 1.151  2001/05/23 08:16:40  midas
   Fixed bug when POST request comes in two blocks
 
@@ -7186,7 +7189,7 @@ struct tm *gmt;
     rsprintf("Server: MIDAS HTTP %s\r\n", cm_get_version());
 
     time(&now);
-    now += 3600;
+    now += 3600*24;
     gmt = gmtime(&now);
     strftime(str, sizeof(str), "%A, %d-%b-%y %H:%M:%S GMT", gmt);
 
