@@ -6,6 +6,9 @@
   Contents:     Header fiel for MSCB funcions
 
   $Log$
+  Revision 1.7  2002/08/12 12:11:20  midas
+  Added mscb_reset1
+
   Revision 1.6  2002/07/10 09:51:13  midas
   Introduced mscb_flash()
 
@@ -139,6 +142,7 @@ int EXPRT mscb_init(char *device);
 void EXPRT mscb_check(char *device);
 int EXPRT mscb_exit(int fd);
 int EXPRT mscb_reset(int fd);
+int EXPRT mscb_reboot(int fd);
 int EXPRT mscb_set_baud(int fd, int baud);
 int EXPRT mscb_addr(int fd, int cmd, int adr);
 int EXPRT mscb_info(int fd, MSCB_INFO *info);
@@ -157,6 +161,8 @@ int EXPRT mscb_write_conf16(char *device, unsigned short addr, unsigned char cha
 
 int EXPRT mscb_read16(char *device, unsigned short addr, unsigned char channel, unsigned short *data);
 int EXPRT mscb_read_conf16(char *device, unsigned short addr, unsigned char channel, unsigned short *data);
+
+int EXPRT mscb_reset1(char *device);
 
 #ifdef __cplusplus
 }
