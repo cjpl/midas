@@ -7,6 +7,9 @@
                 routines
 
   $Log$
+  Revision 1.26  2003/04/14 12:59:51  midas
+  Added 'compression' in channel settings
+
   Revision 1.25  2003/04/07 23:55:55  olchansk
   add c++ wrappers
 
@@ -442,6 +445,7 @@ typedef struct {
 "Type = STRING : [8] Disk",\
 "Filename = STRING : [256] run%05d.mid",\
 "Format = STRING : [8] MIDAS",\
+"Compression = INT : 0",\
 "ODB dump = BOOL : 1",\
 "Log messages = DWORD : 0",\
 "Buffer = STRING : [32] SYSTEM",\
@@ -466,6 +470,7 @@ typedef struct {
   char      type[8];
   char      filename[256];
   char      format[8];
+  INT       compression;
   BOOL      odb_dump;
   DWORD     log_messages;
   char      buffer[32];
