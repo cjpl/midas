@@ -6,6 +6,9 @@
   Contents:     MIDAS logger program
 
   $Log$
+  Revision 1.62  2003/04/23 15:07:52  midas
+  Fixed a few memory leaks
+
   Revision 1.61  2003/04/15 21:46:53  pierre
   Fix for compilation -Wall
 
@@ -1393,7 +1396,6 @@ EVENT_TREE *et;
     /* create tree */
     sprintf(str, "Event \"%s\", ID %d", eqkey.name, id);
     et->tree = new TTree(eqkey.name, str);
-    et->n_branch = 0;
     }
 
   return 1;
@@ -1731,7 +1733,12 @@ TREE_STRUCT *ts;
   /* go through all events */
   for (i=0 ; i<ts->n_tree ; i++)
     if (ts->event_tree[i].branch)
+      {
       free(ts->event_tree[i].branch);
+      free(ts->event_tree[i].branch_name);
+      free(ts->event_tree[i].branch_filled);
+      free(ts->event_tree[i].branch_len);
+      }
 
   /* delete event tree */
   free(ts->event_tree);
