@@ -9,12 +9,16 @@
  *  
  *  Description	: CAMAC interface for CES8210 CAMAC controller using
  *		  Midas Camac Standard calls. includes the interrupt handling.
- *		  No reference to Midas.
+ *		  Version include PPCxxx processor 
  *                interrupt level 2 INT2 at vector  85  <---- not implemented
  *                interrupt level 4 INT4 at vector 170  <---- current setting
  *  Requires 	: vxWorks lib calls for the interrupts
  *  Application : VME + VxWorks
  *  Author      : Pierre-Andre Amaudruz Data Acquisition Group
+ *  $Log$
+ *  Revision 1.5  1999/05/06 18:46:14  pierre
+ *  - PPCxxx support
+ *
  *  Revision    : 1.0  1998        Pierre	 Initial revision
  *
  *---------------------------------------------------------------------------*/
@@ -29,6 +33,8 @@
 #endif
 #endif
 
+#include <stdio.h>
+#include <string.h>
 #include "mcstd.h"
 
 #ifdef OS_VXWORKS
@@ -36,7 +42,11 @@
 #include "vxWorks.h"
 #include "intLib.h"
 #include "sys/fcntlcom.h"
+#ifdef PPCxxx
+#include "arch/ppc/ivPpc.h"
+#else
 #include "arch/mc68k/ivMc68k.h"
+#endif
 #include "taskLib.h"
 #endif
 
@@ -49,14 +59,18 @@
 
 /* Hardware setting dependent */
 #define INT_SOURCE_FRONT           2             /*  level  4 */
-#define INT_SOURCE_VECTOR         85             /*    170 */
+#define INT_SOURCE_VECTOR         84             /*    170 */
 #define INT_SOURCE_MASK         MIT2             /*   MIT4 */
-#define BASE	       0x00800000	       /* camac base address */
 
 /* VME CAMAC CBD8210 base address */
 #define BASE	       0x00800000	       /* camac base address */
+#ifdef PPCxxx
+#define A32D24	       0xfa000000              /* A32D24 camac base address */
+#define A32D16	       0xfa000002              /* A32D16 camac base address */
+#else
 #define A32D24	       0xf0000000              /* A32D24 camac base address */
 #define A32D16	       0xf0000002              /* A32D16 camac base address */
+#endif
 #define CSR_OFFSET     0x0000e800              /* camac control and status reg */
 #define CAR_OFFSET     0x0000e820              /* Crate Address Register */
 #define BTB_OFFSET     0x0000e824              /* on-line status (R) */
@@ -100,6 +114,28 @@
 /* extern excStub; */
 
 /*--Macros---------------------------------------------------------*/
+#ifdef PPCxxx
+#define P_READ24_EXT(_ext, _d){\
+    static WORD  _dh, _dl;\
+    _dh = *(WORD *) _ext;\
+    _ext += 2;\
+    _dl = *(WORD *) _ext;\
+    _ext -= 2;\
+    *(_d) = (_dh<<16) | _dl;}
+
+#define WRITE24_EXT(_ext, _d){\
+    *((WORD *) _ext) = (_d >> 16) & 0xff;\
+    _ext+= 2;\
+    *((WORD *) _ext) = _d & 0xFFFF;}
+#else
+#define P_READ24_EXT(_ext, _d){\
+    *(_d) = *((DWORD *) _ext);}
+
+#define WRITE24_EXT(_ext, _d){\
+    *((DWORD *) _ext) = _d;}
+#endif
+
+/*-----------------------------------------------------------------*/
 #define CAM_CSRCHK(_w){\
 			 DWORD cbd_csr = CSR;\
 			 *_w = *(WORD *) cbd_csr;}
@@ -120,7 +156,7 @@
 			 
 #define CAM_GLCHK(_w){\
 			 DWORD cbd_gl = GLR;\
-			 *_w = *(DWORD *) cbd_gl;}
+			 P_READ24_EXT(cbd_gl,_w);}
 
 #define CAM_QCHK(_q){\
 			 DWORD cbd_csr = CSR;\
@@ -130,12 +166,11 @@
 			 DWORD cbd_csr = CSR;\
 			 WORD csr = *((WORD *) cbd_csr);\
 			 *_x = ((csr & 0x4000)>>14);}
-/*-----------------------------------------------------------------*/
 
 /*-input---------------------------------------------------------*/
 INLINE void cam16i(const int c, const int n, const int a, const int f, WORD *d)
 {
-  volatile WORD * ext;
+  static WORD * ext;
   
   ext = (WORD *)(A32D16 | BASE | c<<16 | n<<11 | a<<7 | f<<2);
   *d = *ext;
@@ -144,28 +179,30 @@ INLINE void cam16i(const int c, const int n, const int a, const int f, WORD *d)
 /*--input--------------------------------------------------------*/
 INLINE void cam24i(const int c, const int n, const int a, const int f, DWORD *d)
 {
-  volatile DWORD ext;
-  
+  static DWORD ext;
   ext = A32D24 | BASE | c<<16 | n<<11 | a<<7 | f<<2;
-  *d = *((DWORD *) ext);
+  P_READ24_EXT(ext,d);
 }
 
 /*--input--------------------------------------------------------*/
-INLINE void cam16i_q(const int c, const int n, const int a, const int f, WORD *d, int *x, int *q)
+INLINE void cam16i_q(const int c, const int n, const int a, const int f
+                     , WORD *d, int *x, int *q)
 {
   cam16i(c,n,a,f, d);
   CAM_QXCHK(q, x);
 }
 
 /*--input--------------------------------------------------------*/
-INLINE void cam24i_q(const int c, const int n, const int a, const int f, DWORD *d, int *x, int *q)
+INLINE void cam24i_q(const int c, const int n, const int a, const int f
+                     , DWORD *d, int *x, int *q)
 {
   cam24i(c,n,a,f, d);
   CAM_QXCHK(q, x);
 }
 
 /*--input--------------------------------------------------------*/
-INLINE void cam16i_r(const int c, const int n, const int a, const int f, WORD **d, const int r)
+INLINE void cam16i_r(const int c, const int n, const int a, const int f
+                     , WORD **d, const int r)
 {
   static DWORD ext;
   static int i;
@@ -175,18 +212,20 @@ INLINE void cam16i_r(const int c, const int n, const int a, const int f, WORD **
     *((*d)++) = *((WORD *) ext);
 }
 /*--input--------------------------------------------------------*/
-INLINE void cam24i_r(const int c, const int n, const int a, const int f, DWORD **d, const int r)
+INLINE void cam24i_r(const int c, const int n, const int a, const int f
+                     , DWORD **d, const int r)
 {
   static DWORD ext;
   static int i;
   
   ext = A32D24 | BASE | (c<<16) | (n<<11) | (a<<7) | (f<<2);
   for (i=0;i<r;i++)
-    *((*d)++) = *((DWORD *) ext);
+      P_READ24_EXT(ext,(*d)++);
 }
 
 /*--input--------------------------------------------------------*/
-INLINE void cam16i_rq(const int c, const int n, const int a, const int f, WORD **d, const int r)
+INLINE void cam16i_rq(const int c, const int n, const int a, const int f
+                      , WORD **d, const int r)
 {
   static int   i, q;
   static DWORD ext;
@@ -205,7 +244,8 @@ INLINE void cam16i_rq(const int c, const int n, const int a, const int f, WORD *
 }
 
 /*--input--------------------------------------------------------*/
-INLINE void cam24i_rq(const int c, const int n, const int a, const int f, DWORD **d, const int r)
+INLINE void cam24i_rq(const int c, const int n, const int a, const int f
+                      , DWORD **d, const int r)
 {
   static int   i, q;
   static DWORD ext;
@@ -214,7 +254,7 @@ INLINE void cam24i_rq(const int c, const int n, const int a, const int f, DWORD 
   ext = A32D24 | BASE | (c<<16) | (n<<11) | (a<<7) |(f<<2);
   for (i=0;i<r;i++)
   {
-    dtemp = *((DWORD *) ext);
+    P_READ24_EXT(ext,&dtemp);
     CAM_QCHK (&q);
     if (q)
       *((*d)++) = dtemp;
@@ -224,12 +264,11 @@ INLINE void cam24i_rq(const int c, const int n, const int a, const int f, DWORD 
 }
 
 /*--input--------------------------------------------------------*/
-INLINE void cam16i_sa(const int c, const int n, const int a, const int f, WORD **d, const int r)
+INLINE void cam16i_sa(const int c, const int n, const int a, const int f
+                      , WORD **d, const int r)
 {
   static DWORD ext;
-  static int i, aa;
-  
-  
+  static int i, aa;  
   ext = A32D16 | BASE | (c<<16) | (n<<11) | (f<<2);
   for (aa=a, i=0; i<r; i++, aa++) {
     ext = ((ext & ~(0xf << 7)) | (aa<<7));
@@ -238,19 +277,21 @@ INLINE void cam16i_sa(const int c, const int n, const int a, const int f, WORD *
 }
 
 /*--input--------------------------------------------------------*/
-INLINE void cam24i_sa(const int c, const int n, const int a, const int f, unsigned long **d, const int r)
+INLINE void cam24i_sa(const int c, const int n, const int a, const int f
+                      , unsigned long **d, const int r)
 {
-  static unsigned long ext;
+  static DWORD ext;
   static i, aa;  
   ext = A32D24 | BASE | (c<<16) | (n<<11) |(f<<2);
   for (aa=a, i=0; i<r; i++, aa++) {
     ext = ((ext & ~(0xf << 7)) | (aa<<7));
-    *((*d)++) = *((DWORD *) ext);
+    P_READ24_EXT(ext,(*d)++);
   }
 }
 
 /*--input--------------------------------------------------------*/
-INLINE void cam16i_sn(const int c, const int n, const int a, const int f, WORD **d, const int r)
+INLINE void cam16i_sn(const int c, const int n, const int a, const int f
+                      , WORD **d, const int r)
 {
   static DWORD ext;
   static nn,i;
@@ -263,7 +304,8 @@ INLINE void cam16i_sn(const int c, const int n, const int a, const int f, WORD *
 }
 
 /*--input--------------------------------------------------------*/
-INLINE void cam24i_sn(const int c, const int n, const int a, const int f, DWORD **d, const int r)
+INLINE void cam24i_sn(const int c, const int n, const int a, const int f
+                      , DWORD **d, const int r)
 {
   static DWORD ext;
   static int i, nn;
@@ -271,18 +313,20 @@ INLINE void cam24i_sn(const int c, const int n, const int a, const int f, DWORD 
   ext = A32D24 | BASE | (c<<16) | (a<<7) |(f<<2);
   for (nn=n,i=0; i<r; i++, nn++) {
     ext = ((ext & ~(0x1f << 11)) | (nn<11));
-    *((*d)++) = *((DWORD *) ext);
+    P_READ24_EXT(ext,(*d)++);
   }
 }
 
 /*--input--------------------------------------------------------*/
-INLINE void cami(const int c, const int n, const int a, const int f, WORD *d)
+INLINE void cami(const int c, const int n, const int a, const int f
+                 , WORD *d)
 {
   cam16i(c,n,a,f, d);
 }
 
 /*--output-------------------------------------------------------*/
-INLINE void cam16o(const int c, const int n, const int a, const int f, WORD d)
+INLINE void cam16o(const int c, const int n, const int a, const int f
+                   , WORD d)
 {
   static DWORD ext;
   
@@ -291,28 +335,32 @@ INLINE void cam16o(const int c, const int n, const int a, const int f, WORD d)
 }
 
 /*--output-------------------------------------------------------*/
-INLINE void cam24o(const int c, const int n, const int a, const int f, DWORD d)
+INLINE void cam24o(const int c, const int n, const int a, const int f
+                   , DWORD d)
 {
   static DWORD ext;
   
   ext = A32D24 | BASE | (c<<16) | (n<<11) | (a<<7) |(f<<2);
-  *((DWORD *) ext) = d;
+  WRITE24_EXT(ext,d);
 }
 
 /*--output-------------------------------------------------------*/
-INLINE void cam16o_q(const int c, const int n, const int a, const int f, WORD d, int *x, int *q)
+INLINE void cam16o_q(const int c, const int n, const int a, const int f
+                     , WORD d, int *x, int *q)
 {
   cam16o (c,n,a,f,d);
   CAM_QXCHK (q,x);
 }
 /*--output-------------------------------------------------------*/
-INLINE void cam24o_q(const int c, const int n, const int a, const int f, DWORD d, int *x, int *q)
+INLINE void cam24o_q(const int c, const int n, const int a, const int f
+                     , DWORD d, int *x, int *q)
 {
   cam24o (c,n,a,f,d);
   CAM_QXCHK (q,x);
 }
 /*--output-------------------------------------------------------*/
-INLINE void camo(const int c, const int n, const int a, const int f, WORD d)
+INLINE void camo(const int c, const int n, const int a, const int f
+                 , WORD d)
 {
   cam16o (c,n,a,f,d);
 }
@@ -320,7 +368,7 @@ INLINE void camo(const int c, const int n, const int a, const int f, WORD d)
 /*--command------------------------------------------------------*/
 INLINE int camc_chk(const int c)
 {
-  volatile int crate_status;
+  static int crate_status;
   
   CAM_BTBCHK (&crate_status);
   if ( ((crate_status >> c) & 0x1) != 1)
@@ -331,8 +379,8 @@ INLINE int camc_chk(const int c)
 /*--command------------------------------------------------------*/
 INLINE void camc(const int c, const int n, const int a, const int f)
 {
-  volatile DWORD ext;
-  volatile WORD dtemp;
+  static DWORD ext;
+  static WORD dtemp;
   
   ext = A32D16 | BASE | (c<<16) | (n<<11) | (a<<7) |(f<<2);
   dtemp = *((WORD *) ext);
@@ -345,7 +393,8 @@ INLINE void camc_q(const int c, const int n, const int a, const int f, int *q)
   CAM_QCHK (q);
 }
 /*--command------------------------------------------------------*/
-INLINE void camc_sa(const int c, const int n, const int a, const int f, const int r)
+INLINE void camc_sa(const int c, const int n, const int a, const int f
+                    , const int r)
 {
   static DWORD ext;
   static WORD dtemp;
@@ -358,7 +407,8 @@ INLINE void camc_sa(const int c, const int n, const int a, const int f, const in
   }
 }
 /*--command------------------------------------------------------*/
-INLINE void camc_sn(const int c, const int n, const int a, const int f, const int r)
+INLINE void camc_sn(const int c, const int n, const int a, const int f
+                    , const int r)
 {
   static DWORD ext;
   static WORD dtemp;
@@ -430,229 +480,12 @@ INLINE void cam_lam_clear(const int c, const int n)
   camc (c,n,0,10);
 }
 
-/*--external-----------------------------------------------------*/
-INLINE void came_cn(int *ext, const int b, const int c, const int n, const int a)
+/*--Interrupt functions------------------------------------------*/
+void my8210Stub(void)
 {
-  *ext = A32D24 | BASE | (b<<19) | (c<<16) | (n<<11) | (a<<7);
-}
-
-/*--external-----------------------------------------------------*/
-INLINE void came_ext(const int ext, int *b, int *c, int *n, int *a)
-{
-  *b = (ext >> 19) & 0x7;
-  *c = (ext >> 16) & 0xf;
-  *n = (ext >> 11) & 0x1f;
-  *a = (ext >>  7) & 0xf;
-}
-
-/*--external-----------------------------------------------------*/
-INLINE void cam16ei(int ext, const int f, WORD *d)
-{
-  static int b,c,n,a;
-  came_ext(ext, &b, &c, &n, &a);
-  cam16i(c,n,a,f,d);
-/*
-  ext &=  ~(0x3f);                  
-  ext |= ((f << 2) | 0x2);
-  *d = *((WORD *) ext);
-  */
-}
-
-/*--external-----------------------------------------------------*/
-INLINE void cam24ei(int ext, const int f, DWORD *d)
-{
-  static int b,c,n,a;
-
-  came_ext(ext, &b, &c, &n, &a);
-  cam24i(c,n,a,f,d);
-}
-
-/*--external-----------------------------------------------------*/
-INLINE void cam16ei_q(const int ext, const int f, WORD *d, int *x, int *q)
-{
-  cam16ei (ext,f,d);
-  CAM_QXCHK (q,x);
-}
-
-/*--external-----------------------------------------------------*/
-INLINE void cam24ei_q(const int ext, const int f, DWORD *d, int *x, int *q)
-{
-  cam24ei (ext,f,d);
-  CAM_QXCHK (q,x);
-}
-
-/*--external-----------------------------------------------------*/
-INLINE void cam16ei_r(int ext, const int f, WORD **d, const int r)
-{
-  static int i,b,c,n,a;
-
-  came_ext(ext, &b, &c, &n, &a);
-  for (i=0; i<r; i++)
-    cam16i(c,n,a,f,(*d)++);
-}
-
-/*--external-----------------------------------------------------*/
-INLINE void cam24ei_r(int ext, const int f, DWORD **d, const int r)
-{
-  static int i,b,c,n,a;
-
-  came_ext(ext, &b, &c, &n, &a);
-  for (i=0; i<r; i++)
-    cam24i(c,n,a,f,(*d)++);
-}
-
-/*--external-----------------------------------------------------*/
-INLINE void cam16ei_rq(int ext, const int f, WORD **d, const int r)
-{
-  static WORD dtemp;
-  static int i,b,c,n,a,q,x;
-
-  came_ext(ext, &b, &c, &n, &a);
-  for (i=0; i<r; i++){
-    cam16i_q(c,n,a,f,&dtemp,&x,&q);
-    if (q)
-		  *((*d)++) = dtemp;
-    else
-		  break;
-  }
-}
-/*--external-----------------------------------------------------*/
-INLINE void cam24ei_rq(int ext, const int f, DWORD **d, const int r)
-{
-  static DWORD dtemp;
-  static int i,b,c,n,a,q,x;
-
-  came_ext(ext, &b, &c, &n, &a);
-  for (i=0; i<r; i++){
-    cam24i_q(c,n,a,f,&dtemp,&x,&q);
-    if (q)
-		  *((*d)++) = dtemp;
-    else
-		  break;
-  } 
-}
-
-/*--external-----------------------------------------------------*/
-INLINE void cam16ei_sa(int ext, const int f, WORD **d, const int r)
-{
-  static WORD dtemp;
-  static int i,b,c,n,a;
-
-  came_ext(ext, &b, &c, &n, &a);
-  for (i=0; i<r; i++){
-    cam16i(c,n,a++,f,(*d)++);
-  }
-}
-
-/*--external-----------------------------------------------------*/
-INLINE void cam24ei_sa(int ext, const int f, DWORD **d, const int r)
-{
-  static int i,b,c,n,a;
-
-  came_ext(ext, &b, &c, &n, &a);
-  for (i=0; i<r; i++){
-    cam24i(c,n,a++,f,(*d)++);
-  }
-}
-
-/*--external-----------------------------------------------------*/
-INLINE void cam16ei_sn(int ext, const int f, WORD **d, const int r)
-{
-  static int i,b,c,n,a;
-
-  came_ext(ext, &b, &c, &n, &a);
-  for (i=0; i<r; i++){
-    cam16i(c,n++,a,f,(*d)++);
-  }
-}
-
-/*--external-----------------------------------------------------*/
-INLINE void cam24ei_sn(int ext, const int f, DWORD **d, const int r)
-{
-  static int i,b,c,n,a;
-
-  came_ext(ext, &b, &c, &n, &a);
-  for (i=0; i<r; i++){
-    cam24i(c,n++,a,f,(*d)++);
-  }
-}
-
-/*--external-----------------------------------------------------*/
-INLINE void cam16eo(int ext, const int f, WORD d)
-{
-  static int b,c,n,a;
-
-  came_ext(ext, &b, &c, &n, &a);
-  cam16o(c,n,a,f,d);
-}
-
-/*--external-----------------------------------------------------*/
-INLINE void cam24eo(int ext, const int f, DWORD d)
-{
-  static int b,c,n,a;
-
-  came_ext(ext, &b, &c, &n, &a);
-  cam24o(c,n,a,f,d);
-}
-
-/*--external-----------------------------------------------------*/
-INLINE void cam16eo_q(const int ext, const int f, WORD d, int *x, int *q)
-{
-  static int b,c,n,a;
-
-  came_ext(ext, &b, &c, &n, &a);
-  cam16o_q(c,n,a,f,d,x,q);
-}
-
-/*--external-----------------------------------------------------*/
-INLINE void cam24eo_q(const int ext, const int f, DWORD d, int *x, int *q)
-{
-  static int b,c,n,a;
-
-  came_ext(ext, &b, &c, &n, &a);
-  cam24o_q(c,n,a,f,d,x,q);
-}
-
-/*--external-----------------------------------------------------*/
-INLINE void camec(int ext, const int f)
-{
-  static int b,c,n,a;
-  static WORD dtemp;
-
-  came_ext(ext, &b, &c, &n, &a);
-  cam16i(c,n,a,f,&dtemp);
-}
-
-/*--external-----------------------------------------------------*/
-INLINE void camec_q(int ext, const int f, int *x, int *q)
-{
-  static int b,c,n,a;
-  static WORD dtemp;
-
-  came_ext(ext, &b, &c, &n, &a);
-  cam16i_q(c,n,a,f,&dtemp,x,q);
-}
-
-/*--external-----------------------------------------------------*/
-INLINE void camec_sa(int ext, const int f, const int r)
-{
-  static WORD dtemp;
-  static int i,b,c,n,a;
-
-  came_ext(ext, &b, &c, &n, &a);
-  for (i=0; i<r; i++)
-    cam16i(c,n,a++,f,&dtemp);
-}
-
-/*--external-----------------------------------------------------*/
-INLINE void camec_sn(int ext, const int f, const int r)
-{
-  static WORD dtemp;
-  static int i,b,c,n,a;
-
-  came_ext(ext, &b, &c, &n, &a);
-  for (i=0; i<r; i++)
-    cam16i(c,n++,a,f,&dtemp);
+#ifdef OS_VXWORKS
+  logMsg ("in myStub interrupt received\n",0,0,0,0,0,0);
+#endif
 }
 
 /*--Interrupt functions------------------------------------------*/
@@ -660,58 +493,56 @@ INLINE void cam_interrupt_enable(void)
 {
   /* For now interrupt source can only be coming from INTx */
 
-  static DWORD cbd_csr_r, cbd_ifr;
-  static WORD csr;
+  volatile DWORD cbd_csr_r;
+  volatile WORD csr;
   
-  cbd_csr_r= CSR;	       	/* address: camac control/status reg */
-  csr = *((WORD *) cbd_csr_r);  /* read csr */
-  csr &= ~INT_SOURCE_MASK;                 /* mask off intx */
-  *(volatile WORD *)cbd_csr_r = csr;     /* */
+  cbd_csr_r= CSR;	       	     /* address: camac control/status reg */
+  csr = *((WORD *) cbd_csr_r);       /* read csr */
+  csr &= ~INT_SOURCE_MASK;           /* mask off intx */
+  *(WORD *)cbd_csr_r = csr; /* */
 #ifdef OS_VXWORKS
-  sysIntEnable(INT_SOURCE_FRONT);	        /* interrupt level x */
+  sysIntEnable(INT_SOURCE_FRONT);    /* interrupt level x */
 #endif
 }
 
 /*--Interrupt functions------------------------------------------*/
 INLINE void cam_interrupt_disable(void)
 {
-  static DWORD cbd_csr_r;
-  static WORD csr;
+  volatile DWORD cbd_csr_r;
+  volatile WORD csr;
 
-  cbd_csr_r= CSR;		/* address: camac control/status reg */
-  csr = *(WORD *)cbd_csr_r;	/* read csr */
-  csr = csr | INT_SOURCE_MASK;             /* mask off intx */
-  *(volatile WORD *)cbd_csr_r = csr;     /* */
+  cbd_csr_r= CSR;		      /* address: camac control/status reg */
+  csr = *(WORD *)cbd_csr_r;           /* read csr */
+  csr = csr | INT_SOURCE_MASK;        /* mask off intx */
+  *(WORD *)cbd_csr_r = csr;  /* */
 #ifdef OS_VXWORKS
-  sysIntDisable(INT_SOURCE_FRONT);	        /* interrupt level x */
+  sysIntDisable(INT_SOURCE_FRONT);    /* interrupt level x */
 #endif
 }
 
 /*--Interrupt functions------------------------------------------*/
 INLINE void cam_interrupt_attach(void (*isr)(void))
 {
-  static DWORD cbd_ifr;
+  volatile DWORD cbd_ifr;
   
-  cbd_ifr = IFR;		/* address: interrupt flag register */
-  *(volatile WORD *)cbd_ifr = 0;         /* clear Interrupt register */
-  cam_interrupt_disable();	/* mask 8210 external interrupt x */
+  cbd_ifr = IFR;                     /* address: interrupt flag register */
+  *(WORD *)cbd_ifr = 0;              /* clear Interrupt register */
+  cam_interrupt_disable();           /* mask 8210 external interrupt x */
 #ifdef OS_VXWORKS
-  sysIntDisable(INT_SOURCE_FRONT);          	/* disable bus interrupt level x */
-  intConnect((VOIDFUNCPTR *) (INT_SOURCE_VECTOR<<2),(VOIDFUNCPTR)isr,INT_SOURCE_VECTOR);
+  intConnect(INUM_TO_IVEC(INT_SOURCE_VECTOR),(VOIDFUNCPTR)isr,INT_SOURCE_VECTOR);
 #endif
 }
 
 /*--Interrupt functions------------------------------------------*/
 INLINE void cam_interrupt_detach(void)
 {
-  static DWORD cbd_ifr;
+  volatile DWORD cbd_ifr;
   
-  cbd_ifr = IFR;		/* address: interrupt flag register */
-  *(volatile WORD *)cbd_ifr = 0;         /* clear Interrupt register */
-  cam_interrupt_disable();	/* mask 8210 external interrupt x */
+  cbd_ifr = IFR;                     /* address: interrupt flag register */
+  *(WORD *)cbd_ifr = 0;              /* clear Interrupt register */
+  cam_interrupt_disable();           /* mask 8210 external interrupt x */
 #ifdef OS_VXWORKS
-  sysIntDisable(INT_SOURCE_FRONT);	        /* disable bus interrupt level x */
-  intConnect((VOIDFUNCPTR *) (INT_SOURCE_VECTOR<2),(VOIDFUNCPTR) excStub,INT_SOURCE_VECTOR);
+  intConnect(INUM_TO_IVEC(INT_SOURCE_VECTOR),(VOIDFUNCPTR)my8210Stub,INT_SOURCE_VECTOR);
 #endif
 }
 /*---------------------------------------------------------------*/
@@ -722,8 +553,8 @@ INLINE void cam_glint_enable(void)
   /* !!!!!!!!!!!! not yet working !!!!!!!!!!!!!!!!! */
   /* For now interrupt source can only be coming from INT2 */
 
-  static DWORD cbd_csr_r, cbd_ifr;
-  static WORD csr;
+  volatile DWORD cbd_csr_r;
+  volatile WORD csr;
   
   cbd_csr_r= CSR;	       	/* address: camac control/status reg */
   csr = *((WORD *) cbd_csr_r);  /* read csr */
@@ -739,8 +570,8 @@ INLINE void cam_glint_disable(void)
 {
   /* !!!!!!!!!!!! not yet working !!!!!!!!!!!!!!!!! */
 
-  static DWORD cbd_csr_r;
-  static WORD csr;
+  volatile DWORD cbd_csr_r;
+  volatile WORD csr;
 
   cbd_csr_r= CSR;		/* address: camac control/status reg */
   csr = *(WORD *)cbd_csr_r;	/* read csr */
@@ -752,7 +583,7 @@ INLINE void cam_glint_disable(void)
 }
 
 /*--Interrupt functions------------------------------------------*/
-INLINE void cam_glint_attach(int lam, void (*isr)())
+INLINE void cam_glint_attach(int lam, void (*isr)(void))
 {
   /* !!!!!!!!!!!! not yet working !!!!!!!!!!!!!!!!! */
 
@@ -788,7 +619,7 @@ INLINE void cam_glint_attach(int lam, void (*isr)())
   } 
 #ifdef OS_VXWORKS
   sysIntDisable(3);          	/* disable bus interrupt level 3 */
-  intConnect((VOIDFUNCPTR *) (xvect<<2), (VOIDFUNCPTR) isr,0);
+  intConnect(INUM_TO_IVEC(xvect), (VOIDFUNCPTR) isr,0);
 #endif
 }
 
@@ -808,13 +639,16 @@ void ces8210(void)
   printf("Test   : camO24(c,n,a,f,d)      <--- d -> c,n,a,f\n");
   printf("Test   : camI24r(c,n,a,f,r)     <--- c,n,a,f,r -> d\n");
   printf("Test   : camI24sa(c,n,a,f,r)    <--- c,n,a++,f,r -> d\n");
+  printf("Test   : camI16sa(c,n,a,f,r)    <--- c,n,a++,f,r -> d\n");
   printf("Test   : attach_interrupt()     <--- attach, enable Int2\n");
 }
 
 void tint (void)
 {
   static int private_counter=0;
+#ifdef OS_VXWORKS
   logMsg ("%tint external interrupt #%i received and served\n",private_counter++,0,0,0,0,0);
+#endif
 }
 
 void attach_interrupt(void)
@@ -866,9 +700,13 @@ void camop(void)
 
 void camE_ext(int ext)
 {
-  int b,c,n,a;
-  came_ext(ext,&b,&c,&n,&a);
-  printf("ext:0x%x -> b:%2i c:%2i n:%2i a:%2i\n",ext,b,c,n,a);
+  printf("Base:0x%x -  access:%2i - f:%2i\n", ext&0xfff00000
+         , ext&0x2 ? 16 :24, (ext >> 2) & 0x1f);
+  printf("ext :0x%x -> b:%2i c:%2i n:%2i a:%2i\n",ext
+    ,(ext >> 19) & 0x7
+    ,(ext >> 16) & 0x7
+    ,(ext >>  7) & 0x1f
+    ,(ext >>  2) & 0xf);
 }
 
 void camI(int c, int n, int a, int f)
@@ -892,12 +730,12 @@ void camI24(int c, int n, int a, int f)
 {
   DWORD d;
   cam24i(c,n,a,f,&d);
-  printf("c%1i n%2.2i a%2.2i f%2.2i -> d:0x%6x (%i)\n",c,n,a,f,d,d);
+  printf("c%1i n%2.2i a%2.2i f%2.2i -> d:0x%6.6x (%i)\n",c,n,a,f,d,d);
 }
 
 void camO24(int c, int n, int a, int f, int d)
 {
-  camo(c,n,a,f,(DWORD)d);
+  cam24o(c,n,a,f,(DWORD)d);
 }
 
 void camI24r(int c, int n, int a,int f, int r)
@@ -930,4 +768,29 @@ void camI24sa(int c, int n, int a,int f, int r)
       pdata++;
     }
 free (pd);   
+}
+
+void camI16sa(int c, int n, int a,int f, int r)
+{
+  WORD  *pd, *pdata;
+  int i;
+
+  pdata = pd = (WORD *)malloc(sizeof(DWORD)*r);
+  cam16i_sa(c,n,a,f, (WORD **)&pdata, r);
+  pdata = pd;
+  for (i=0;i<r;i++)
+    {
+      printf("[%i] c%1i n%2.2i a%2.2i f%2.2i -> d:0x%4.4x (%i)\n",i,c,n,a++,f,*pdata,*pdata);
+      pdata++;
+    }
+free (pd);   
+}
+
+void tt(void)
+{
+  int i ;
+  for (i=0;i<0xffffff;i++)
+    {
+      cam24o(2,8,0,16,i);
+    }
 }
