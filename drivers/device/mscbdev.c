@@ -6,6 +6,9 @@
   Contents:     MSCB Device Driver.
 
   $Log$
+  Revision 1.5  2003/09/30 16:12:32  midas
+  Show error if cannot connect
+
   Revision 1.4  2003/05/12 14:45:58  midas
   Corrected error status
 
@@ -115,7 +118,10 @@ MSCBDEV_INFO  *info;
 
   info->fd = mscb_init(info->mscbdev_settings.device, FALSE);
   if (info->fd < 0)
+    {
+    cm_msg(MERROR, "mscbdev_init", "Cannot connect to MSCB device \"%s\"", info->mscbdev_settings.device);
     return FE_ERR_HW;
+    }
 
   /* read initial variable sizes */
   addr_changed(0, 0, info);
