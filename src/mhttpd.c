@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.120  2000/05/05 08:32:05  midas
+  Fixe bug with wrong state when running mhttpd on a new ODB
+
   Revision 1.119  2000/05/04 12:53:31  midas
   Fixed bug with locking author (strip @host)
 
@@ -1600,6 +1603,7 @@ HNDLE  hDB, hkey;
 
   if (!bedit)
     {
+    run_number = 0;
     size = sizeof(run_number);
     db_get_value(hDB, 0, "/Runinfo/Run number", &run_number, &size, TID_INT);
     }
@@ -2417,6 +2421,7 @@ KEY    key;
   time(&now);
   rsprintf("<tr><td colspan=2 bgcolor=#FFFF00>Entry date: %s", ctime(&now));
 
+  run_number = 0;
   size = sizeof(run_number);
   db_get_value(hDB, 0, "/Runinfo/Run number", &run_number, &size, TID_INT);
   rsprintf("<td bgcolor=#FFFF00>Run number: ");
@@ -6447,6 +6452,7 @@ struct tm *gmt;
     }
 
   /* get run state */
+  run_state = STATE_STOPPED;
   size = sizeof(run_state);
   db_get_value(hDB, 0, "/Runinfo/State", &run_state, &size, TID_INT);
   
