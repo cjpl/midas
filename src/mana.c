@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.54  2000/03/06 22:39:06  midas
+  Moved last.rz to /analyzer/output so that it can be changed, including a path
+
   Revision 1.53  2000/03/01 23:04:18  midas
   Added correct_num_events
 
@@ -327,7 +330,8 @@ struct {
    clp.input_file_name, TID_STRING, 10 },
 
   {'l', 
-   "              If set, don't load histos from last.rz when running online.",
+   "              If set, don't load histos from last histo file when\n\
+                   running online.",
    &clp.no_load, TID_BOOL, 0 },
 
   {'L', 
@@ -394,6 +398,7 @@ struct {
   BOOL      histo_dump;
   char      histo_dump_filename[256];
   BOOL      clear_histos;
+  char      last_histo_filename[256];
 } out_info;
 
 FILE *out_file;
@@ -428,6 +433,7 @@ RWNT = BOOL : 0\n\
 Histo Dump = BOOL : 0\n\
 Histo Dump Filename = STRING : [256] his%05d.rz\n\
 Clear histos = BOOL : 1\n\
+Last Histo Filename = STRING : [256] last.rz\n\
 "
 
 /*-- interprete command line parameters ----------------------------*/
@@ -2295,10 +2301,10 @@ WORD        bktype;
     
     } /* if (event_def->format == FORMAT_MIDAS) */
 
-   /*---- YBOS format ----------------------------------------------*/
+  /*---- YBOS format ----------------------------------------------*/
   
   else if (event_def->format == FORMAT_YBOS)
-  {
+    {
     YBOS_BANK_HEADER *pybk;
     
     /* first fill number block */
@@ -2308,7 +2314,7 @@ WORD        bktype;
     pbk = NULL;
     exclude_all = TRUE;
     do
-    {
+      {
       /* scan all banks */
       size = ybk_iterate((DWORD *) (pevent+1), &pybk, &pdata);
       if (pybk == NULL)
@@ -2324,30 +2330,30 @@ WORD        bktype;
       exclude = FALSE;
       pbl = NULL;
       if (par->bank_list != NULL)
-      {
+        {
         for (i=0 ; par->bank_list[i].name[0] ; i++)
           if ( *((DWORD *) par->bank_list[i].name) == pybk->name)
-	  {
+            {
             pbl = &par->bank_list[i];
             exclude = (pbl->output_flag == 0);
             break;
-	  }
+            }
         if (par->bank_list[i].name[0] == 0)
           cm_msg(MERROR, "write_event_hbook", "Received unknown bank %s", block_name);
-      }
+        }
       
       /* fill CW N-tuple */
       if (!exclude && pbl != NULL && !clp.rwnt)
       {
         /* set array size in bank list */
         if ((pybk->type & 0xFF) < MAX_BKTYPE)
-	{
+          {
           item_size = yb_tid_size[pybk->type & 0xFF];
           if (item_size == 0)
-	  {
+            {
             cm_msg(MERROR, "write_event_hbook", "Received bank %s with unknown item size", block_name);
             continue;
-	  }
+            }
 	  
           pbl->n_data = size / item_size;
 
@@ -2391,52 +2397,52 @@ WORD        bktype;
         item_size = yb_tid_size[pybk->type & 0xFF];
         /* set array size in bank list */
         if ((pybk->type & 0xFF) < MAX_BKTYPE)
-	{
+          {
           n = size / item_size;
 	  
           /* check bank size */
           if (n > (INT)pbl->size)
-	  {
+            {
             cm_msg(MERROR, "write_event_hbook", 
-		   "Bank %s has more (%d) entries than maximum value (%d)", block_name, n,
-		   pbl->size);
+	                 "Bank %s has more (%d) entries than maximum value (%d)", block_name, n,
+		               pbl->size);
             continue;
-	  }
+            }
 	  
           /* convert bank to float values */
           for (i=0 ; i<n ; i++)
-	  {
+            {
             switch (pybk->type & 0xFF)
-	    {
-	    case I1_BKTYPE : 
-	      rwnt[pbl->n_data + i] = (float) (*((BYTE *) pdata+i));
-	      break;
-	    case I2_BKTYPE : 
-	      rwnt[pbl->n_data + i] = (float) (*((WORD *) pdata+i));
-	      break;
-	    case I4_BKTYPE : 
-	      rwnt[pbl->n_data + i] = (float) (*((DWORD *) pdata+i));
-	      break;
-	    case F4_BKTYPE : 
-	      rwnt[pbl->n_data + i] = (float) (*((float *) pdata+i));
-	      break;
-	    case D8_BKTYPE : 
-	      rwnt[pbl->n_data + i] = (float) (*((double *) pdata+i));
-	      break;
-	    }
-	  }
+	            {
+	            case I1_BKTYPE : 
+	              rwnt[pbl->n_data + i] = (float) (*((BYTE *) pdata+i));
+	              break;
+	            case I2_BKTYPE : 
+	              rwnt[pbl->n_data + i] = (float) (*((WORD *) pdata+i));
+	              break;
+	            case I4_BKTYPE : 
+	              rwnt[pbl->n_data + i] = (float) (*((DWORD *) pdata+i));
+	              break;
+	            case F4_BKTYPE : 
+	              rwnt[pbl->n_data + i] = (float) (*((float *) pdata+i));
+	              break;
+	            case D8_BKTYPE : 
+	              rwnt[pbl->n_data + i] = (float) (*((double *) pdata+i));
+	              break;
+	            }
+	          }
 	  
-	  /* zero padding */
-	  for ( ; i<(INT)pbl->size ; i++)
-	    rwnt[pbl->n_data + i] = 0.f;
-	}
+	        /* zero padding */
+	        for ( ; i<(INT)pbl->size ; i++)
+	          rwnt[pbl->n_data + i] = 0.f;
+          }
         else
-	{
-	  printf("YBOS is not supporting STRUCTURE banks \n");
-	}
-      }
+          {
+	        printf("YBOS is not supporting STRUCTURE banks \n");
+          }
+        }
       
-    } while(TRUE);
+      } while(TRUE);
     
     /* fill RW N-tuple */
     if (clp.rwnt && file != NULL && !exclude_all)
@@ -3079,20 +3085,17 @@ INT loop_online()
 INT      status;
 DWORD    last_time_loop, last_time_update, actual_time;
 int      ch;
-char     str[80];
 FILE     *f;
 
   /* load previous online histos */
   if (!clp.no_load)
     {
-    add_data_dir(str, "last.rz");
-
-    f = fopen(str, "r");
+    f = fopen(out_info.last_histo_filename, "r");
     if (f != NULL)
       {
       fclose(f);
-      printf("Loading previous online histos from %s\n", str);
-      HRGET(0, str, "A");
+      printf("Loading previous online histos from %s\n", out_info.last_histo_filename);
+      HRGET(0, out_info.last_histo_filename, "A");
 
       /* fix wrongly booked N-tuples at ID 100000 */
       if (HEXIST(100000))
@@ -3152,9 +3155,8 @@ FILE     *f;
   update_stats();
 
   /* save actual online histos */
-  add_data_dir(str, "last.rz");
-  printf("Saving current online histos to %s\n", str);
-  HRPUT(0, str, "NT");
+  printf("Saving current online histos to %s\n", out_info.last_histo_filename);
+  HRPUT(0, out_info.last_histo_filename, "NT");
 
   return status;
 }
