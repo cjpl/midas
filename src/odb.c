@@ -6,6 +6,9 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.56  2003/04/09 13:43:01  midas
+  Made file compile under C++
+
   Revision 1.55  2003/03/27 19:38:04  olchansk
   Changes:
   - wrong test for "ODB is 100% full"
@@ -298,7 +301,7 @@ FREE_DESCRIP   *pfree, *pprev, *pnext;
   /* quadword alignment for alpha CPU */
   size = ALIGN(size);
 
-  pfree = address;
+  pfree = (FREE_DESCRIP *)address;
   pprev = NULL;
 
   /* clear current block */
@@ -497,7 +500,7 @@ FREE_DESCRIP   *pfree, *pprev, *pnext;
 void *realloc_data(DATABASE_HEADER *pheader, void *address, 
                    INT old_size, INT new_size)
 {
-void *tmp, *new;
+void *tmp, *pnew;
 
   if (old_size)
     {
@@ -509,15 +512,15 @@ void *tmp, *new;
     free_data(pheader, address, old_size);
     }
   
-  new = malloc_data(pheader, new_size);
+  pnew = malloc_data(pheader, new_size);
 
-  if (new && old_size)
-    memcpy(new, tmp, old_size < new_size ? old_size : new_size);
+  if (pnew && old_size)
+    memcpy(pnew, tmp, old_size < new_size ? old_size : new_size);
 
   if (old_size)
     free(tmp);
 
-  return new;
+  return pnew;
 }
 
 /*------------------------------------------------------------------*/
@@ -534,9 +537,9 @@ static char *str = NULL;
   j += 1;
 
   if (str == NULL)
-    str = malloc(j);
+    str = (char *)malloc(j);
   else
-    str = realloc(str, j);
+    str = (char *)realloc(str, j);
 
   str[0] = 0;
   for (i=0 ; list[i] ; i++)
@@ -814,7 +817,7 @@ INT                  timeout;
   /* allocate new space for the new database descriptor */
   if (_database_entries == 0)
     {
-    _database = malloc(sizeof(DATABASE));
+    _database = (DATABASE *)malloc(sizeof(DATABASE));
     memset(_database, 0, sizeof(DATABASE));
     if (_database == NULL)
       {
@@ -856,7 +859,7 @@ INT                  timeout;
     /* if not found, create new one */
     if (i == _database_entries)
       {
-      _database = realloc(_database, sizeof(DATABASE) * (_database_entries+1));
+      _database = (DATABASE *)realloc(_database, sizeof(DATABASE) * (_database_entries+1));
       memset(&_database[_database_entries], 0, sizeof(DATABASE));
 
       _database_entries++;
@@ -874,7 +877,7 @@ INT                  timeout;
   /* open shared memory region */
   status = ss_shm_open(database_name, 
                        sizeof(DATABASE_HEADER) + 2*ALIGN(database_size/2),
-                       (void *) &(_database[(INT) handle].database_header),
+                       (void **) &(_database[(INT) handle].database_header),
                        &shm_handle);
 
   if (status == SS_NO_MEMORY || status == SS_FILE_ERROR)
@@ -916,7 +919,7 @@ INT                  timeout;
     pfree->next_free = 0;
 
     /* create root key */
-    pkey = malloc_key(pheader, sizeof(KEY));
+    pkey = (KEY *)malloc_key(pheader, sizeof(KEY));
     
     /* set key properties */
     pkey->type = TID_KEY;
@@ -926,7 +929,7 @@ INT                  timeout;
     pkey->parent_keylist = 0;
 
     /* create keylist */
-    pkeylist = malloc_key(pheader, sizeof(KEYLIST));
+    pkeylist = (KEYLIST *)malloc_key(pheader, sizeof(KEYLIST));
 
     /* store keylist in data field */
     pkey->data = (PTYPE) pkeylist - (PTYPE) pheader;
@@ -1098,7 +1101,7 @@ INT                  timeout;
   *hDB = (handle+1);
 
   /* setup dispatcher for updated records */
-  ss_suspend_set_dispatch(CH_IPC, 0, cm_dispatch_ipc);
+  ss_suspend_set_dispatch(CH_IPC, 0, (int (*)(void))cm_dispatch_ipc);
 
   if (shm_created) return DB_CREATED;
 }
@@ -1223,7 +1226,7 @@ INT              index, destroy_flag, i, j;
     _database_entries--;
 
   if (_database_entries > 0)
-    _database = realloc(_database, sizeof(DATABASE) * (_database_entries));
+    _database = (DATABASE *)realloc(_database, sizeof(DATABASE) * (_database_entries));
   else
     {
     free(_database);
@@ -1691,7 +1694,7 @@ INT              i;
       if (*pkey_name == '/' || type == TID_KEY)
         {
         /* create new key with keylist */
-        pkey = malloc_key(pheader, sizeof(KEY));
+        pkey = (KEY *)malloc_key(pheader, sizeof(KEY));
         
         if (pkey == NULL)
           {
@@ -1714,7 +1717,7 @@ INT              i;
         pkey->parent_keylist = (PTYPE) pkeylist - (PTYPE) pheader;
 
         /* find space for new keylist */
-        pkeylist = malloc_key(pheader, sizeof(KEYLIST));
+        pkeylist = (KEYLIST *)malloc_key(pheader, sizeof(KEYLIST));
 
         if (pkeylist == NULL)
           {
@@ -1735,7 +1738,7 @@ INT              i;
       else
         {
         /* create new key with data */
-        pkey = malloc_key(pheader, sizeof(KEY));
+        pkey = (KEY *)malloc_key(pheader, sizeof(KEY));
 
         if (pkey == NULL)
           {
@@ -4731,7 +4734,7 @@ KEY              *pkey;
 
   /* cut strings which are too long */
   if ((type == TID_STRING || type == TID_LINK) && 
-       (int) strlen(data)+1 > pkey->item_size)
+       (int) strlen((char *)data)+1 > pkey->item_size)
     *((char *) data + pkey->item_size-1) = 0;
 
   /* copy data */
@@ -4867,7 +4870,7 @@ KEY              *pkey;
 
   /* cut strings which are too long */
   if ((type == TID_STRING || type == TID_LINK) && 
-       (int) strlen(data)+1 > pkey->item_size)
+       (int) strlen((char *)data)+1 > pkey->item_size)
     *((char *) data + pkey->item_size-1) = 0;
 
   /* copy data */
@@ -5079,7 +5082,7 @@ INT db_load(HNDLE hDB, HNDLE hKeyRoot, char *filename, BOOL bRemote)
   /* allocate buffer with file size */
   fstat(hfile, &stat_buf);
   size = stat_buf.st_size;
-  buffer = malloc(size+1);
+  buffer = (char *)malloc(size+1);
 
   if (buffer == NULL)
     {
@@ -5173,7 +5176,7 @@ INT db_copy(HNDLE hDB, HNDLE hKey, char *buffer, INT *buffer_size, char *path)
       /* If key has no subkeys, just write this key */
       db_get_key(hDB, hKey, &key);
       size = key.total_size;
-      data = malloc(size);
+      data = (char *)malloc(size);
       if (data == NULL)
         {
         cm_msg(MERROR, "db_copy", "cannot allocate data buffer");
@@ -5276,7 +5279,7 @@ INT db_copy(HNDLE hDB, HNDLE hKey, char *buffer, INT *buffer_size, char *path)
 
     db_get_key(hDB, hSubkey, &key);
     size = key.total_size;
-    data = malloc(size);
+    data = (char *)malloc(size);
     if (data == NULL)
       {
       cm_msg(MERROR, "db_copy", "cannot allocate data buffer");
@@ -5470,7 +5473,7 @@ INT db_paste(HNDLE hDB, HNDLE hKeyRoot, char *buffer)
 
   /* initial data size */
   data_size = 1000;
-  data = malloc(data_size);
+  data = (char *)malloc(data_size);
   if (data == NULL)
     {
     cm_msg(MERROR, "db_paste", "cannot allocate data buffer");
@@ -5605,7 +5608,7 @@ INT db_paste(HNDLE hDB, HNDLE hKeyRoot, char *buffer)
                   if (string_length >= data_size)
                     {
                     data_size += string_length + 100;
-                    data = realloc(data, data_size);
+                    data = (char *)realloc(data, data_size);
                     if (data == NULL)
                       {
                       cm_msg(MERROR, "db_paste", "cannot allocate data buffer");
@@ -5636,7 +5639,7 @@ INT db_paste(HNDLE hDB, HNDLE hKeyRoot, char *buffer)
                 if (string_length*(i+1) >= data_size)
                   {
                   data_size += 1000;
-                  data = realloc(data, data_size);
+                  data = (char *)realloc(data, data_size);
                   if (data == NULL)
                     {
                     cm_msg(MERROR, "db_paste", "cannot allocate data buffer");
@@ -5664,7 +5667,7 @@ INT db_paste(HNDLE hDB, HNDLE hKeyRoot, char *buffer)
               if (size*(i+1) >= data_size)
                 {
                 data_size += 1000;
-                data = realloc(data, data_size);
+                data = (char *)realloc(data, data_size);
                 if (data == NULL)
                   {
                   cm_msg(MERROR, "db_paste", "cannot allocate data buffer");
@@ -5917,7 +5920,7 @@ char  *buffer, path[256];
   buffer_size = 10000;
   do
     {
-    buffer = malloc(buffer_size);
+    buffer = (char *)malloc(buffer_size);
     if (buffer == NULL)
       {
       cm_msg(MERROR, "db_save", "cannot allocate ODB dump buffer");
@@ -6084,7 +6087,7 @@ char             *buffer, *pc;
   buffer_size = 10000;
   do
     {
-    buffer = malloc(buffer_size);
+    buffer = (char *)malloc(buffer_size);
     if (buffer == NULL)
       {
       cm_msg(MERROR, "db_save", "cannot allocate ODB dump buffer");
@@ -7132,7 +7135,7 @@ INT db_create_record(HNDLE hDB, HNDLE hKey, char *key_name, char *init_str)
       return status;
 
     buffer_size = 10000;
-    buffer = malloc(buffer_size);
+    buffer = (char *)malloc(buffer_size);
     do
       {
       size = buffer_size;
@@ -7140,7 +7143,7 @@ INT db_create_record(HNDLE hDB, HNDLE hKey, char *key_name, char *init_str)
       if (status == DB_TRUNCATED)
         {
         buffer_size += 10000;
-        buffer = realloc(buffer, buffer_size);
+        buffer = (char *)realloc(buffer, buffer_size);
         continue;
         }
       if (status != DB_SUCCESS)
@@ -7180,7 +7183,7 @@ INT db_create_record(HNDLE hDB, HNDLE hKey, char *key_name, char *init_str)
       if (status == DB_TRUNCATED)
         {
         buffer_size += 10000;
-        buffer = realloc(buffer, buffer_size);
+        buffer = (char *)realloc(buffer, buffer_size);
         continue;
         }
       if (status != DB_SUCCESS)
@@ -7306,7 +7309,7 @@ char str[256];
   /* allocate new space for the local record list */
   if (_record_list_entries == 0)
     {
-    _record_list = malloc(sizeof(RECORD_LIST));
+    _record_list = (RECORD_LIST *)malloc(sizeof(RECORD_LIST));
     memset(_record_list, 0, sizeof(RECORD_LIST));
     if (_record_list == NULL)
       {
@@ -7327,8 +7330,8 @@ char str[256];
     /* if not found, create new one */
     if (index == _record_list_entries)
       {
-      _record_list = realloc(_record_list, 
-                             sizeof(RECORD_LIST)*(_record_list_entries+1));
+      _record_list = (RECORD_LIST *)realloc(_record_list, 
+                                            sizeof(RECORD_LIST)*(_record_list_entries+1));
       if (_record_list == NULL)
         {
         cm_msg(MERROR, "db_open_record", "not enough memory");
