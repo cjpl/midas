@@ -6,6 +6,9 @@
   Contents:     User section for the Event builder
 
   $Log$
+  Revision 1.11  2004/10/07 20:08:34  pierre
+  1.9.5
+
   Revision 1.10  2004/10/04 23:55:57  pierre
   move ebuilder into equipment list
 
@@ -38,7 +41,7 @@
 
 \********************************************************************/
 /** @file ebuser.c
-The Event builder user file 
+The Event builder user file
 */
 
 #include <stdio.h>
@@ -122,7 +125,7 @@ INT ebuilder_loop()
 }
 
 /********************************************************************/
-/** 
+/**
 Hook to the event builder task at PreStart transition.
 @param rn run number
 @param UserField argument from /Ebuilder/Settings
@@ -137,7 +140,7 @@ INT eb_begin_of_run(INT rn, char *UserField, char *error)
 }
 
 /********************************************************************/
-/** 
+/**
 Hook to the event builder task at completion of event collection after
 receiving the Stop transition.
 @param rn run number
@@ -151,7 +154,7 @@ INT eb_end_of_run(INT rn, char *error)
 }
 
 /********************************************************************/
-/** 
+/**
 Hook to the event builder task after the reception of
 all fragments of the same serial number. The destination
 event has already the final EVENT_HEADER setup with
@@ -183,8 +186,8 @@ It is not possible to mix within the same destination event different event form
 
 \code
   // Event is empty, fill it with BANK_HEADER
-  // If you need to add your own bank at this stage 
-  
+  // If you need to add your own bank at this stage
+
   bk_init(pevent);
   bk_create(pevent, bank_name, TID_xxxx, &pdata);
   *pdata++ = ...;
@@ -204,6 +207,7 @@ For YBOS format, use the following example.
   pheader->data_size = *dest_size + sizeof(YBOS_BANK_HEADER);
 \endcode
 @param nfrag Number of fragment.
+@param mismatch Midas Serial number mismatch flag.
 @param ebch  Structure to all the fragments.
 @param pheader Destination pointer to the header.
 @param pevent Destination pointer to the bank header.
@@ -226,11 +230,11 @@ INT eb_user(INT nfrag, BOOL mismatch, EBUILDER_CHANNEL * ebch
     return EB_USER_ERROR;
   }
 
-  // Destination access 
+  // Destination access
   dest_serial = pheader->serial_number;
   printf("DSer#:%d ", dest_serial);
 
-  if (dest_serial == 505) return EB_USER_ERROR;
+  // if (dest_serial == 505) return EB_USER_ERROR;
   // Loop over fragments.
   for (i = 0; i < nfrag; i++) {
     frag_size = ((EVENT_HEADER *) ebch[i].pfragment)->data_size;

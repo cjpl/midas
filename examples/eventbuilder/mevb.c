@@ -4,6 +4,9 @@ Created by:   Pierre-Andre Amaudruz
 
 Contents:     Main Event builder task.
 $Log$
+Revision 1.16  2004/10/07 20:08:34  pierre
+1.9.5
+
 Revision 1.15  2004/10/04 23:55:28  pierre
 move ebuilder into equipment list
 
@@ -580,7 +583,7 @@ INT tr_start(INT rn, char *error)
   INT status, size, i;
   char   str[128];
   KEY    key;
-  HNDLE  hKey, hEqkey;
+  HNDLE  hKey, hEqkey, hEqFRkey;
   EQUIPMENT_INFO *eq_info;
   
 
@@ -627,7 +630,8 @@ INT tr_start(INT rn, char *error)
   status = db_set_value(hDB, hEqkey, "Number of Fragment", &ebset.nfragment, size, 1, TID_INT);  
 
     /* Create or update the fragment request list */
-  status = db_get_key (hDB, hEqkey, &key);
+  status = db_find_key(hDB, hEqkey, "Fragment Required", &hEqFRkey);
+  status = db_get_key (hDB, hEqFRkey, &key);
   if (key.num_values != ebset.nfragment) {
     cm_msg(MINFO, "mevb", "Number of Fragment mismatch ODB:%d - CUR:%d", key.num_values, ebset.nfragment);
     free (ebset.preqfrag);
@@ -881,9 +885,8 @@ and will abort the event builder but not stop the run for now.
 where the destination event is going to be composed.
 
 @param fmt Fragment format type 
-@param nfragment number of fragment to collect
+@param eq_info Equipement pointer
 @param dest_hBuf  Destination buffer handle
-@param dest_event destination point for built event 
 @return   EB_NO_MORE_EVENT, EB_COMPOSE_TIMEOUT
 if different then SUCCESS (bm_compose, rpc_sent error)
 */
@@ -1082,7 +1085,7 @@ usage:
     }
   }
 
-  printf("Program mevb version 4 started\n\n");
+  printf("Program mevb version 5 started\n\n");
   if (daemon) {
     printf("Becoming a daemon...\n");
     ss_daemon_init(FALSE);
@@ -1128,7 +1131,6 @@ usage:
     ss_sleep(5000);
     goto exit;
   }
-
 
   /* Register single equipment */
   status = register_equipment();

@@ -4,6 +4,9 @@ Name:         mevb.h
 
   Contents:     Event builder header file
   $Log$
+  Revision 1.10  2004/10/07 20:08:34  pierre
+  1.9.5
+
   Revision 1.9  2004/09/29 16:20:43  pierre
   change Ebuilder structure
 
@@ -28,20 +31,13 @@ Name:         mevb.h
 \********************************************************************/
 
 #define EBUILDER(_name) char *_name[] = {\
-"[Settings]",\
-"Event ID = WORD : 1",\
-"Trigger mask = WORD : 1",\
+"[.]",\
 "Number of Fragment = INT : 0",\
-"Buffer = STRING : [32] SYSTEM",\
-"Format = STRING : [32] MIDAS",\
 "User build = BOOL : n",\
-"User Field = STRING : [64] ",\
-"Hostname = STRING : [64] ",\
-"",\
-"[Statistics]",\
-"Events sent = DOUBLE : 0",\
-"Events per sec. = DOUBLE : 0",\
-"kBytes per sec. = DOUBLE : 0",\
+"User Field = STRING : [64] 100",\
+"Fragment Required = BOOL[2] :",\
+"[0] 0",\
+"[0] 0",\
 "",\
 NULL }
 
@@ -85,5 +81,5 @@ typedef struct {
 #define   EB_USER_ERROR         1002
 #define   EB_ABORTED            1003
 #define   EB_SKIP               1004
-#define   TIMEOUT                 10
+#define   TIMEOUT              10000
 #define   MAX_CHANNELS           128
