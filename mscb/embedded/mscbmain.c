@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol main program
 
   $Log$
+  Revision 1.25  2003/03/06 11:01:13  midas
+  Priority inversion for slow ADuC
+
   Revision 1.24  2003/02/19 16:21:35  midas
   Fixed bug with conf_param
 
@@ -329,7 +332,7 @@ void serial_int(void) interrupt 4 using 1
     {
     /* character has been transferred */
     
-    TI0 = 0;               // clear TI flag
+    TI0 = 0;              // clear TI flag
 
     i_out++;              // increment output counter
     if (i_out == n_out)
