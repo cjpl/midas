@@ -6,6 +6,9 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.52  2002/08/29 17:19:15  olchansk
+  Fix arguments mismatch in RPC_DB_GET_KEY_INFO rpc call.
+
   Revision 1.51  2002/06/24 23:52:28  pierre
   doc++ in db_set_value
 
@@ -3471,7 +3474,7 @@ INT db_get_key_info(HNDLE hDB, HNDLE hKey, char *name, INT name_size,
 \********************************************************************/
 {
   if (rpc_is_remote())
-    return rpc_call(RPC_DB_GET_KEY_INFO, hDB, hKey, type, 
+    return rpc_call(RPC_DB_GET_KEY_INFO, hDB, hKey, name, name_size, type, 
                     num_values, item_size); 
 
 #ifdef LOCAL_ROUTINES
