@@ -8,12 +8,7 @@
                 Model 983 and under Linux using the vmehb device
                 driver.
 
-  Revision history
-  ------------------------------------------------------------------
-  date        by    modification
-  --------    ---   ------------------------------------------------
-  28-APR-98   SR    created
-
+  $LOG$
 *********************************************************************/
 
 #include    <stdio.h>
