@@ -6,6 +6,9 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
+  Revision 1.35  2002/09/26 09:34:37  midas
+  Log startup messages only in debugging mode
+
   Revision 1.34  2002/09/13 07:32:48  midas
   Added client name to cm_cleanup()
 
@@ -349,17 +352,20 @@ BOOL   inetd;
 #endif
     callback.index = 0;
 
-    if (callback.directory[0])
+    if (callback.debug)
       {
-      if (callback.user[0])
-        cm_msg(MLOG, "main", "Start subprocess in %s under user %s", 
-                callback.directory, callback.user);
-      else
-        cm_msg(MLOG, "main", "Start subprocess in %s", callback.directory);
+      if (callback.directory[0])
+        {
+        if (callback.user[0])
+          cm_msg(MLOG, "main", "Start subprocess in %s under user %s", 
+                  callback.directory, callback.user);
+        else
+          cm_msg(MLOG, "main", "Start subprocess in %s", callback.directory);
 
+        }
+      else
+        cm_msg(MLOG, "main", "Start subprocess in current directory");
       }
-    else
-      cm_msg(MLOG, "main", "Start subprocess in current directory");
 
     /* change the directory and uid */
     if (callback.directory[0])
