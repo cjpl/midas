@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus communication functions
 
   $Log$
+  Revision 1.56  2004/03/09 15:02:13  midas
+  Reverse byte order only if size<5
+
   Revision 1.55  2004/03/09 14:19:32  midas
   Fixed problems with write/read of strings
 
@@ -171,7 +174,7 @@
 
 \********************************************************************/
 
-#define MSCB_LIBRARY_VERSION   "1.6.0"
+#define MSCB_LIBRARY_VERSION   "1.6.1"
 #define MSCB_PROTOCOL_VERSION  "1.6"
 
 #ifdef _MSC_VER                 // Windows includes
@@ -967,16 +970,13 @@ int lpt_init(char *device, int index)
 
    /* use DirectIO driver under NT to gain port access */
    if (vi.dwPlatformId == VER_PLATFORM_WIN32_NT) {
-      hdio =
-          CreateFile("\\\\.\\directio", GENERIC_READ, FILE_SHARE_READ,
-                     NULL, OPEN_EXISTING, 0, NULL);
+      hdio = CreateFile("\\\\.\\directio", GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
       if (hdio == INVALID_HANDLE_VALUE) {
          printf("mscb.c: Cannot access parallel port (No DirectIO driver installed)\n");
          return -1;
       }
 
-      if (!DeviceIoControl
-          (hdio, (DWORD) 0x9c406000, &buffer, sizeof(buffer), NULL, 0, &size, NULL))
+      if (!DeviceIoControl(hdio, (DWORD) 0x9c406000, &buffer, sizeof(buffer), NULL, 0, &size, NULL))
          return -1;
    }
 #elif defined(__linux__)
@@ -1077,16 +1077,13 @@ int lpt_close(int fd)
 
    /* use DirectIO driver under NT to gain port access */
    if (vi.dwPlatformId == VER_PLATFORM_WIN32_NT) {
-      hdio =
-          CreateFile("\\\\.\\directio", GENERIC_READ, FILE_SHARE_READ,
-                     NULL, OPEN_EXISTING, 0, NULL);
+      hdio = CreateFile("\\\\.\\directio", GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
       if (hdio == INVALID_HANDLE_VALUE) {
          printf("mscb.c: Cannot access parallel port (No DirectIO driver installed)\n");
          return -1;
       }
 
-      if (!DeviceIoControl
-          (hdio, (DWORD) 0x9c406000, &buffer, sizeof(buffer), NULL, 0, &size, NULL))
+      if (!DeviceIoControl(hdio, (DWORD) 0x9c406000, &buffer, sizeof(buffer), NULL, 0, &size, NULL))
          return -1;
    }
 #elif defined(__linux__)
@@ -1109,8 +1106,7 @@ int lpt_close(int fd)
 #pragma comment (lib, "setupapi.lib")
 
 // {CBEB3FB1-AE9F-471c-9016-9B6AC6DCD323}
-DEFINE_GUID(GUID_CLASS_MSCB_BULK,
-            0xcbeb3fb1, 0xae9f, 0x471c, 0x90, 0x16, 0x9b, 0x6a, 0xc6, 0xdc, 0xd3, 0x23);
+DEFINE_GUID(GUID_CLASS_MSCB_BULK, 0xcbeb3fb1, 0xae9f, 0x471c, 0x90, 0x16, 0x9b, 0x6a, 0xc6, 0xdc, 0xd3, 0x23);
 
 int musb_init(int index, int *hUSBRead, int *hUSBWrite)
 {
@@ -1130,8 +1126,7 @@ int musb_init(int index, int *hUSBRead, int *hUSBWrite)
    guid = GUID_CLASS_MSCB_BULK;
 
    // Retrieve device list for GUID that has been specified.
-   hDevInfoList =
-       SetupDiGetClassDevs(&guid, NULL, NULL, (DIGCF_PRESENT | DIGCF_DEVICEINTERFACE));
+   hDevInfoList = SetupDiGetClassDevs(&guid, NULL, NULL, (DIGCF_PRESENT | DIGCF_DEVICEINTERFACE));
 
    status = FALSE;
    if (hDevInfoList != NULL) {
@@ -1155,8 +1150,7 @@ int musb_init(int index, int *hUSBRead, int *hUSBWrite)
                                          NULL);
 
          predictedLength = requiredLength;
-         functionClassDeviceData =
-             (PSP_DEVICE_INTERFACE_DETAIL_DATA) malloc(predictedLength);
+         functionClassDeviceData = (PSP_DEVICE_INTERFACE_DETAIL_DATA) malloc(predictedLength);
          functionClassDeviceData->cbSize = sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA);
 
          // Second, get the detailed information
@@ -1197,8 +1191,7 @@ int musb_init(int index, int *hUSBRead, int *hUSBWrite)
          sprintf(str, "%s\\PIPE01", device_name);
          *hUSBWrite = (int) CreateFile(str,
                                        GENERIC_WRITE | GENERIC_READ,
-                                       FILE_SHARE_WRITE | FILE_SHARE_READ, NULL,
-                                       OPEN_EXISTING, 0, NULL);
+                                       FILE_SHARE_WRITE | FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
 
          if (*hUSBWrite == (int) INVALID_HANDLE_VALUE)
             return -1;
@@ -1582,8 +1575,7 @@ int mscb_addr(int fd, int cmd, int adr, int retry, int lock)
       return MSCB_INVAL_PARAM;
 
    if (mrpc_connected(fd))
-      return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_ADDR,
-                       mscb_fd[fd - 1].remote_fd, cmd, adr, retry, lock);
+      return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_ADDR, mscb_fd[fd - 1].remote_fd, cmd, adr, retry, lock);
 
    if (lock) {
       if (mscb_lock(fd) != MSCB_SUCCESS)
@@ -1596,9 +1588,7 @@ int mscb_addr(int fd, int cmd, int adr, int retry, int lock)
       if (cmd == MCMD_ADDR_NODE8 || cmd == MCMD_ADDR_GRP8) {
          buf[1] = (unsigned char) adr;
          buf[2] = crc8(buf, 2);
-         status =
-             mscb_out(fd, buf, 3,
-                      RS485_FLAG_BIT9 | RS485_FLAG_SHORT_TO | RS485_FLAG_NO_ACK);
+         status = mscb_out(fd, buf, 3, RS485_FLAG_BIT9 | RS485_FLAG_SHORT_TO | RS485_FLAG_NO_ACK);
       } else if (cmd == MCMD_PING8) {
          buf[1] = (unsigned char) adr;
          buf[2] = crc8(buf, 2);
@@ -1607,9 +1597,7 @@ int mscb_addr(int fd, int cmd, int adr, int retry, int lock)
          buf[1] = (unsigned char) (adr >> 8);
          buf[2] = (unsigned char) (adr & 0xFF);
          buf[3] = crc8(buf, 3);
-         status =
-             mscb_out(fd, buf, 4,
-                      RS485_FLAG_BIT9 | RS485_FLAG_SHORT_TO | RS485_FLAG_NO_ACK);
+         status = mscb_out(fd, buf, 4, RS485_FLAG_BIT9 | RS485_FLAG_SHORT_TO | RS485_FLAG_NO_ACK);
       } else if (cmd == MCMD_PING16) {
          buf[1] = (unsigned char) (adr >> 8);
          buf[2] = (unsigned char) (adr & 0xFF);
@@ -1617,9 +1605,7 @@ int mscb_addr(int fd, int cmd, int adr, int retry, int lock)
          status = mscb_out(fd, buf, 4, RS485_FLAG_BIT9 | RS485_FLAG_SHORT_TO);
       } else {
          buf[1] = crc8(buf, 1);
-         status =
-             mscb_out(fd, buf, 2,
-                      RS485_FLAG_BIT9 | RS485_FLAG_SHORT_TO | RS485_FLAG_NO_ACK);
+         status = mscb_out(fd, buf, 2, RS485_FLAG_BIT9 | RS485_FLAG_SHORT_TO | RS485_FLAG_NO_ACK);
       }
 
       if (status != MSCB_SUCCESS) {
@@ -1688,8 +1674,7 @@ int mscb_reboot(int fd, int adr)
       return MSCB_INVAL_PARAM;
 
    if (mrpc_connected(fd))
-      return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_REBOOT,
-                       mscb_fd[fd - 1].remote_fd, adr);
+      return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_REBOOT, mscb_fd[fd - 1].remote_fd, adr);
 
    if (mscb_lock(fd) != MSCB_SUCCESS)
       return MSCB_MUTEX;
@@ -1749,8 +1734,7 @@ int mscb_reset(int fd)
       mscb_out(fd, buf, 1, RS485_FLAG_CMD);
       musb_close(mscb_fd[fd - 1].hr, mscb_fd[fd - 1].hw);
       Sleep(1000);
-      musb_init(atoi(mscb_fd[fd - 1].device + 3),
-                &mscb_fd[fd - 1].hr, &mscb_fd[fd - 1].hw);
+      musb_init(atoi(mscb_fd[fd - 1].device + 3), &mscb_fd[fd - 1].hr, &mscb_fd[fd - 1].hw);
    }
 
    mscb_release(fd);
@@ -1829,8 +1813,7 @@ int mscb_info(int fd, int adr, MSCB_INFO * info)
       return MSCB_INVAL_PARAM;
 
    if (mrpc_connected(fd))
-      return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_INFO,
-                       mscb_fd[fd - 1].remote_fd, adr, info);
+      return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_INFO, mscb_fd[fd - 1].remote_fd, adr, info);
 
    if (mscb_lock(fd) != MSCB_SUCCESS)
       return MSCB_MUTEX;
@@ -1957,8 +1940,7 @@ int mscb_set_addr(int fd, int adr, int node, int group)
       return MSCB_INVAL_PARAM;
 
    if (mrpc_connected(fd))
-      return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_SET_ADDR,
-                       mscb_fd[fd - 1].remote_fd, adr, node, group);
+      return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_SET_ADDR, mscb_fd[fd - 1].remote_fd, adr, node, group);
 
    if (mscb_lock(fd) != MSCB_SUCCESS)
       return MSCB_MUTEX;
@@ -2016,8 +1998,7 @@ int mscb_set_name(int fd, int adr, char *name)
       return MSCB_INVAL_PARAM;
 
    if (mrpc_connected(fd))
-      return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_SET_NAME,
-                       mscb_fd[fd - 1].remote_fd, adr, name);
+      return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_SET_NAME, mscb_fd[fd - 1].remote_fd, adr, name);
 
    if (mscb_lock(fd) != MSCB_SUCCESS)
       return MSCB_MUTEX;
@@ -2140,8 +2121,7 @@ int mscb_write(int fd, int adr, unsigned char index, void *data, int size)
       return MSCB_INVAL_PARAM;
 
    if (mrpc_connected(fd))
-      return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_WRITE,
-                       mscb_fd[fd - 1].remote_fd, adr, index, data, size);
+      return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_WRITE, mscb_fd[fd - 1].remote_fd, adr, index, data, size);
 
    if (size < 1)
       return MSCB_INVAL_PARAM;
@@ -2159,8 +2139,13 @@ int mscb_write(int fd, int adr, unsigned char index, void *data, int size)
       buf[0] = MCMD_WRITE_ACK + size + 1;
       buf[1] = index;
 
-      for (i = 0, d = data; i < size; i++)
-         buf[2 + size - 1 - i] = *d++;
+      /* reverse order for WORD & DWORD */
+      if (size < 5)
+         for (i = 0, d = data; i < size; i++)
+            buf[2 + size - 1 - i] = *d++;
+      else
+         for (i = 0, d = data; i < size; i++)
+            buf[2 + i] = *d++;
 
       crc = crc8(buf, 2 + i);
       buf[2 + i] = crc;
@@ -2221,8 +2206,7 @@ int mscb_flash(int fd, int adr)
       return MSCB_INVAL_PARAM;
 
    if (mrpc_connected(fd))
-      return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_FLASH,
-                       mscb_fd[fd - 1].remote_fd, adr);
+      return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_FLASH, mscb_fd[fd - 1].remote_fd, adr);
 
    if (mscb_lock(fd) != MSCB_SUCCESS)
       return MSCB_MUTEX;
@@ -2285,8 +2269,7 @@ int mscb_upload(int fd, int adr, char *buffer, int size)
       return MSCB_INVAL_PARAM;
 
    if (mrpc_connected(fd))
-      return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_UPLOAD,
-                       mscb_fd[fd - 1].remote_fd, adr, buffer, size);
+      return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_UPLOAD, mscb_fd[fd - 1].remote_fd, adr, buffer, size);
 
    /* interprete HEX file */
    memset(image, 0xFF, sizeof(image));
@@ -2349,8 +2332,7 @@ int mscb_upload(int fd, int adr, char *buffer, int size)
             mscb_out(fd, buf, 2, RS485_FLAG_LONG_TO);
 
             if (mscb_in(fd, ack, 2, 100000) != 2) {
-               printf("\nError: timeout from remote node for erase page 0x%04X\n",
-                      page * 512);
+               printf("\nError: timeout from remote node for erase page 0x%04X\n", page * 512);
                goto prog_error;
             }
 
@@ -2362,8 +2344,7 @@ int mscb_upload(int fd, int adr, char *buffer, int size)
             }
 
             if (ack[0] != MCMD_ACK) {
-               printf("\nError: received wrong acknowledge for erase page 0x%04X\n",
-                      page * 512);
+               printf("\nError: received wrong acknowledge for erase page 0x%04X\n", page * 512);
                goto prog_error;
             }
 
@@ -2385,8 +2366,7 @@ int mscb_upload(int fd, int adr, char *buffer, int size)
 
                /* read acknowledge */
                if (mscb_in(fd, ack, 2, 100000) != 2) {
-                  printf("\nError: timeout from remote node for program page 0x%04X\n",
-                         page * 512);
+                  printf("\nError: timeout from remote node for program page 0x%04X\n", page * 512);
                   goto prog_error;
                }
             }
@@ -2396,14 +2376,12 @@ int mscb_upload(int fd, int adr, char *buffer, int size)
 
             /* read acknowledge */
             if (mscb_in(fd, ack, 2, 100000) != 2) {
-               printf("\nError: timeout from remote node for program page 0x%04X\n",
-                      page * 512);
+               printf("\nError: timeout from remote node for program page 0x%04X\n", page * 512);
                goto prog_error;
             }
 
             if (ack[0] != MCMD_ACK) {
-               printf("\nError: received wrong acknowledge for program page 0x%04X\n",
-                      page * 512);
+               printf("\nError: received wrong acknowledge for program page 0x%04X\n", page * 512);
                goto prog_error;
             }
 
@@ -2417,8 +2395,7 @@ int mscb_upload(int fd, int adr, char *buffer, int size)
             mscb_out(fd, buf, 2, RS485_FLAG_LONG_TO);
 
             if (mscb_in(fd, ack, 2, 100000) != 2) {
-               printf("\nError: timeout from remote node for verify page 0x%04X\n",
-                      page * 512);
+               printf("\nError: timeout from remote node for verify page 0x%04X\n", page * 512);
                goto prog_error;
             }
 
@@ -2482,8 +2459,7 @@ int mscb_read(int fd, int adr, unsigned char index, void *data, int *size)
       return MSCB_INVAL_PARAM;
 
    if (mrpc_connected(fd))
-      return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_READ,
-                       mscb_fd[fd - 1].remote_fd, adr, index, data, size);
+      return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_READ, mscb_fd[fd - 1].remote_fd, adr, index, data, size);
 
    if (mscb_lock(fd) != MSCB_SUCCESS)
       return MSCB_MUTEX;
@@ -2565,8 +2541,7 @@ int mscb_read(int fd, int adr, unsigned char index, void *data, int *size)
 
 /*------------------------------------------------------------------*/
 
-int mscb_read_range(int fd, int adr, unsigned char index1,
-                    unsigned char index2, void *data, int *size)
+int mscb_read_range(int fd, int adr, unsigned char index1, unsigned char index2, void *data, int *size)
 /********************************************************************\
 
   Routine: mscb_read
@@ -2780,8 +2755,7 @@ int mscb_echo(int fd, int adr, unsigned char d1, unsigned char *d2)
       return MSCB_INVAL_PARAM;
 
    if (mrpc_connected(fd))
-      return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_ECHO,
-                       mscb_fd[fd - 1].remote_fd, adr, d1, d2);
+      return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_ECHO, mscb_fd[fd - 1].remote_fd, adr, d1, d2);
 
    if (mscb_lock(fd) != MSCB_SUCCESS)
       return MSCB_MUTEX;
