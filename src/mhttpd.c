@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.199  2002/05/08 19:54:40  midas
+  Added extra parameter to function db_get_value()
+
   Revision 1.198  2002/05/08 18:34:43  midas
   Added 'last x' buttons in Elog display
 
@@ -1205,7 +1208,7 @@ int    size;
 
   size = sizeof(str);
   str[0] = 0;
-  db_get_value(hDB, 0, "/Experiment/Name", str, &size, TID_STRING);
+  db_get_value(hDB, 0, "/Experiment/Name", str, &size, TID_STRING, TRUE);
   time(&now);
 
   /* define hidden field for experiment */
@@ -1380,7 +1383,7 @@ CHN_STATISTICS chn_stats;
 
   size = sizeof(str);
   str[0] = 0;
-  db_get_value(hDB, 0, "/Experiment/Name", str, &size, TID_STRING);
+  db_get_value(hDB, 0, "/Experiment/Name", str, &size, TID_STRING, TRUE);
   time(&now);
 
   rsprintf("<tr><th colspan=3 bgcolor=#A0A0FF>MIDAS experiment \"%s\"", str);
@@ -1435,7 +1438,7 @@ CHN_STATISTICS chn_stats;
     /* check global alarm flag */
     flag = TRUE;
     size = sizeof(flag);
-    db_get_value(hDB, 0, "/Alarms/Alarm System active", &flag, &size, TID_BOOL);
+    db_get_value(hDB, 0, "/Alarms/Alarm System active", &flag, &size, TID_BOOL, TRUE);
     if (flag)
       {
       for (i=0 ; ; i++)
@@ -1446,7 +1449,7 @@ CHN_STATISTICS chn_stats;
           break;
 
         size = sizeof(flag);
-        db_get_value(hDB, hsubkey, "Triggered", &flag, &size, TID_INT);
+        db_get_value(hDB, hsubkey, "Triggered", &flag, &size, TID_INT, TRUE);
         if (flag)
           {
           /*
@@ -1457,20 +1460,20 @@ CHN_STATISTICS chn_stats;
           */
 
           size = sizeof(alarm_class);
-          db_get_value(hDB, hsubkey, "Alarm Class", alarm_class, &size, TID_STRING);
+          db_get_value(hDB, hsubkey, "Alarm Class", alarm_class, &size, TID_STRING, TRUE);
 
           strcpy(bgcol, "red");
           sprintf(str, "/Alarms/Classes/%s/Display BGColor", alarm_class);
           size = sizeof(bgcol);
-          db_get_value(hDB, 0, str, bgcol, &size, TID_STRING);
+          db_get_value(hDB, 0, str, bgcol, &size, TID_STRING, TRUE);
 
           strcpy(fgcol, "black");
           sprintf(str, "/Alarms/Classes/%s/Display FGColor", alarm_class);
           size = sizeof(fgcol);
-          db_get_value(hDB, 0, str, fgcol, &size, TID_STRING);
+          db_get_value(hDB, 0, str, fgcol, &size, TID_STRING, TRUE);
 
           size = sizeof(str);
-          db_get_value(hDB, hsubkey, "Alarm Message", str, &size, TID_STRING);
+          db_get_value(hDB, hsubkey, "Alarm Message", str, &size, TID_STRING, TRUE);
 
           rsprintf("<tr><td colspan=6 bgcolor=\"%s\" align=center>", bgcol);
 
@@ -1499,7 +1502,7 @@ CHN_STATISTICS chn_stats;
       if (hkeytmp)
         {
         size = sizeof(type);
-        db_get_value(hDB, hkeytmp, "Type", &type, &size, TID_INT);
+        db_get_value(hDB, hkeytmp, "Type", &type, &size, TID_INT, TRUE);
         if (type & EQ_MANUAL_TRIG)
           {
           if (first)
@@ -1630,7 +1633,7 @@ CHN_STATISTICS chn_stats;
     sprintf(ref, "/Alarms/Alarm system active?cmd=set");
 
   size = sizeof(flag);
-  db_get_value(hDB, 0, "/Alarms/Alarm system active", &flag, &size, TID_BOOL);
+  db_get_value(hDB, 0, "/Alarms/Alarm system active", &flag, &size, TID_BOOL, TRUE);
   strcpy(str, flag ? "00FF00" : "FFC0C0");
   rsprintf("<td bgcolor=#%s><a href=\"%s\">Alarms: %s</a>", str, ref, flag ? "On" : "Off");
 
@@ -1640,7 +1643,7 @@ CHN_STATISTICS chn_stats;
     sprintf(ref, "/Logger/Auto restart?cmd=set");
 
   size = sizeof(flag);
-  db_get_value(hDB, 0, "/Logger/Auto restart", &flag, &size, TID_BOOL);
+  db_get_value(hDB, 0, "/Logger/Auto restart", &flag, &size, TID_BOOL, TRUE);
   strcpy(str, flag ? "00FF00" : "FFFF00");
   rsprintf("<td bgcolor=#%s><a href=\"%s\">Restart: %s</a>", str, ref, flag ? "Yes" : "No");
 
@@ -1651,14 +1654,14 @@ CHN_STATISTICS chn_stats;
     {
     /* write data flag */
     size = sizeof(flag);
-    db_get_value(hDB, 0, "/Logger/Write data", &flag, &size, TID_BOOL);
+    db_get_value(hDB, 0, "/Logger/Write data", &flag, &size, TID_BOOL, TRUE);
 
     if (!flag)
       rsprintf("<td colspan=2 bgcolor=#FFFF00>Logging disabled</tr>\n");
     else
       {
       size = sizeof(str);
-      db_get_value(hDB, 0, "/Logger/Data dir", str, &size, TID_STRING);
+      db_get_value(hDB, 0, "/Logger/Data dir", str, &size, TID_STRING, TRUE);
 
       rsprintf("<td colspan=3>Data dir: %s</tr>\n", str);
       }
@@ -1738,7 +1741,7 @@ CHN_STATISTICS chn_stats;
         {
         size = sizeof(double);
         if (db_get_value(hDB, hkeytmp, "Statistics/Events received",
-                         &analyzed, &size, TID_DOUBLE) == DB_SUCCESS &&
+                         &analyzed, &size, TID_DOUBLE, TRUE) == DB_SUCCESS &&
             equipment_stats.events_sent > 0)
           analyze_ratio = analyzed / equipment_stats.events_sent;
         if (analyze_ratio > 1)
@@ -1789,7 +1792,7 @@ CHN_STATISTICS chn_stats;
 
     /* Extract general setting */
     size = sizeof(str);
-    db_get_value(hDB, hkey, "Settings/Hostname", str, &size, TID_STRING);
+    db_get_value(hDB, hkey, "Settings/Hostname", str, &size, TID_STRING, TRUE);
     if(cm_exist("EBuilder",FALSE) == CM_SUCCESS)
       rsprintf("<td align=center bgcolor=\"00FF00\">%s", str);
     else
@@ -1822,7 +1825,7 @@ CHN_STATISTICS chn_stats;
       {
       size = sizeof(double);
       if (db_get_value(hDB, hkeytmp, "Statistics/Events received",
-                       &analyzed, &size, TID_DOUBLE) == DB_SUCCESS &&
+                       &analyzed, &size, TID_DOUBLE, TRUE) == DB_SUCCESS &&
           equipment_stats.events_sent > 0)
         analyze_ratio = analyzed / equipment_stats.events_sent;
 
@@ -1935,7 +1938,7 @@ CHN_STATISTICS chn_stats;
         {
         /* get client name */
         size = sizeof(client_name);
-        db_get_value(hDB, hsubkey, "Name", client_name, &size, TID_STRING);
+        db_get_value(hDB, hsubkey, "Name", client_name, &size, TID_STRING, TRUE);
         client_name[4] = 0; /* search only for the 4 first char */
         if (equal_ustring(client_name, "Lazy"))
           {
@@ -1944,7 +1947,7 @@ CHN_STATISTICS chn_stats;
           if (status == DB_SUCCESS)
             {
             size = sizeof(str);
-            db_get_value(hDB, hLKey, "Settings/Backup Type", str, &size, TID_STRING);
+            db_get_value(hDB, hLKey, "Settings/Backup Type", str, &size, TID_STRING, TRUE);
             ftp_mode = equal_ustring(str, "FTP");
 
             if (previous_mode != ftp_mode)
@@ -1960,14 +1963,14 @@ CHN_STATISTICS chn_stats;
             if (ftp_mode)
               {
               size = sizeof(str);
-              db_get_value(hDB, hLKey, "Settings/Path", str, &size, TID_STRING);
+              db_get_value(hDB, hLKey, "Settings/Path", str, &size, TID_STRING, TRUE);
               if (strchr(str, ','))
                 *strchr(str, ',') = 0;
               }
             else
               {
               size = sizeof(str);
-              db_get_value(hDB, hLKey, "Settings/List Label", str, &size, TID_STRING);
+              db_get_value(hDB, hLKey, "Settings/List Label", str, &size, TID_STRING, TRUE);
               if (str[0] == 0)
                 strcpy(str, "(empty)");
               }
@@ -1980,28 +1983,28 @@ CHN_STATISTICS chn_stats;
             rsprintf("<tr><td colspan=2><B><a href=\"%s\">%s</a></B>", ref, str);
 
             size = sizeof(value);
-            db_get_value(hDB, hLKey, "Statistics/Copy progress [%]", &value, &size, TID_FLOAT);
+            db_get_value(hDB, hLKey, "Statistics/Copy progress [%]", &value, &size, TID_FLOAT, TRUE);
             rsprintf("<td align=center>%1.0f %%", value);
 
             size = sizeof(str);
-            db_get_value(hDB, hLKey, "Statistics/Backup File", str, &size, TID_STRING);
+            db_get_value(hDB, hLKey, "Statistics/Backup File", str, &size, TID_STRING, TRUE);
             rsprintf("<td align=center>%s", str);
 
             if (ftp_mode)
               {
               size = sizeof(value);
-              db_get_value(hDB, hLKey, "Statistics/Copy Rate [bytes per s]", &value, &size, TID_FLOAT);
+              db_get_value(hDB, hLKey, "Statistics/Copy Rate [bytes per s]", &value, &size, TID_FLOAT, TRUE);
               rsprintf("<td align=center>%1.1f", value/1024.0f);
               }
             else
               {
               size = sizeof(i);
-              db_get_value(hDB, hLKey, "/Statistics/Number of files", &i, &size, TID_INT);
+              db_get_value(hDB, hLKey, "/Statistics/Number of files", &i, &size, TID_INT, TRUE);
               rsprintf("<td align=center>%d", i);
               }
 
             size = sizeof(value);
-            db_get_value(hDB, hLKey, "Statistics/Backup status [%]", &value, &size, TID_FLOAT);
+            db_get_value(hDB, hLKey, "Statistics/Backup status [%]", &value, &size, TID_FLOAT, TRUE);
             rsprintf("<td align=center>%1.1f %%", value);
             k++;
             }
@@ -2035,9 +2038,9 @@ CHN_STATISTICS chn_stats;
         rsprintf("<tr bgcolor=#E0E0FF>");
 
       size = sizeof(name);
-      db_get_value(hDB, hsubkey, "Name", name, &size, TID_STRING);
+      db_get_value(hDB, hsubkey, "Name", name, &size, TID_STRING, TRUE);
       size = sizeof(str);
-      db_get_value(hDB, hsubkey, "Host", str, &size, TID_STRING);
+      db_get_value(hDB, hsubkey, "Host", str, &size, TID_STRING, TRUE);
 
       rsprintf("<td colspan=2 align=center>%s [%s]", name, str);
 
@@ -2089,7 +2092,7 @@ BOOL eob;
 
   size = sizeof(str);
   str[0] = 0;
-  db_get_value(hDB, 0, "/Experiment/Name", str, &size, TID_STRING);
+  db_get_value(hDB, 0, "/Experiment/Name", str, &size, TID_STRING, TRUE);
   time(&now);
 
   rsprintf("<tr><th bgcolor=#A0A0FF>MIDAS experiment \"%s\"", str);
@@ -2223,7 +2226,7 @@ KEY    key;
   cm_get_experiment_database(&hDB, NULL);
   display_run_number = TRUE;
   size = sizeof(BOOL);
-  db_get_value(hDB, 0, "/Elog/Display run number", &display_run_number , &size, TID_BOOL);
+  db_get_value(hDB, 0, "/Elog/Display run number", &display_run_number , &size, TID_BOOL, TRUE);
 
   /* get message for reply */
   type[0] = system[0] = 0;
@@ -2256,7 +2259,7 @@ KEY    key;
 
   size = sizeof(str);
   str[0] = 0;
-  db_get_value(hDB, 0, "/Experiment/Name", str, &size, TID_STRING);
+  db_get_value(hDB, 0, "/Experiment/Name", str, &size, TID_STRING, TRUE);
 
   rsprintf("<tr><th bgcolor=#A0A0FF>MIDAS Electronic Logbook");
   if (elog_mode)
@@ -2291,7 +2294,7 @@ KEY    key;
       {
       run_number = 0;
       size = sizeof(run_number);
-      db_get_value(hDB, 0, "/Runinfo/Run number", &run_number, &size, TID_INT);
+      db_get_value(hDB, 0, "/Runinfo/Run number", &run_number, &size, TID_INT, TRUE);
       }
     rsprintf("<td bgcolor=#FFFF00>Run number: ");
     rsprintf("<input type=\"text\" size=10 maxlength=10 name=\"run\" value=\"%d\"</tr>", run_number);
@@ -2473,7 +2476,7 @@ BOOL   display_run_number;
   cm_get_experiment_database(&hDB, NULL);
   display_run_number = TRUE;
   size = sizeof(BOOL);
-  db_get_value(hDB, 0, "/Elog/Display run number", &display_run_number , &size, TID_BOOL);
+  db_get_value(hDB, 0, "/Elog/Display run number", &display_run_number , &size, TID_BOOL, TRUE);
 
   /* header */
   rsprintf("HTTP/1.0 200 Document follows\r\n");
@@ -2493,7 +2496,7 @@ BOOL   display_run_number;
 
   size = sizeof(str);
   str[0] = 0;
-  db_get_value(hDB, 0, "/Experiment/Name", str, &size, TID_STRING);
+  db_get_value(hDB, 0, "/Experiment/Name", str, &size, TID_STRING, TRUE);
 
   rsprintf("<tr><th colspan=2 bgcolor=#A0A0FF>MIDAS Electronic Logbook");
   if (elog_mode)
@@ -2636,7 +2639,7 @@ BOOL   allow_delete;
   cm_get_experiment_database(&hDB, NULL);
   allow_delete = FALSE;
   size = sizeof(BOOL);
-  db_get_value(hDB, 0, "/Elog/Allow delete", &allow_delete, &size, TID_BOOL);
+  db_get_value(hDB, 0, "/Elog/Allow delete", &allow_delete, &size, TID_BOOL, TRUE);
 
   /* redirect if confirm = NO */
   if (getparam("confirm") && *getparam("confirm") &&
@@ -2709,7 +2712,7 @@ FILE   *f;
   cm_get_experiment_database(&hDB, NULL);
   display_run_number = TRUE;
   size = sizeof(BOOL);
-  db_get_value(hDB, 0, "/Elog/Display run number", &display_run_number , &size, TID_BOOL);
+  db_get_value(hDB, 0, "/Elog/Display run number", &display_run_number , &size, TID_BOOL, TRUE);
 
   /* header */
   rsprintf("HTTP/1.0 200 Document follows\r\n");
@@ -2741,7 +2744,7 @@ FILE   *f;
 
   size = sizeof(str);
   str[0] = 0;
-  db_get_value(hDB, 0, "/Experiment/Name", str, &size, TID_STRING);
+  db_get_value(hDB, 0, "/Experiment/Name", str, &size, TID_STRING, TRUE);
 
   colspan = full ? 3 : 4;
   if (!display_run_number)
@@ -3118,7 +3121,7 @@ FILE   *f;
                   file_name[0] = 0;
                   size = sizeof(file_name);
                   memset(file_name, 0, size);
-                  db_get_value(hDB, 0, "/Logger/Data dir", file_name, &size, TID_STRING);
+                  db_get_value(hDB, 0, "/Logger/Data dir", file_name, &size, TID_STRING, TRUE);
                   if (file_name[0] != 0)
                     if (file_name[strlen(file_name)-1] != DIR_SEPARATOR)
                       strcat(file_name, DIR_SEPARATOR_STR);
@@ -3199,7 +3202,7 @@ HNDLE  hDB;
 
   size = sizeof(str);
   str[0] = 0;
-  db_get_value(hDB, 0, "/Experiment/Name", str, &size, TID_STRING);
+  db_get_value(hDB, 0, "/Experiment/Name", str, &size, TID_STRING, TRUE);
 
   rsprintf("<tr><th bgcolor=#A0A0FF>MIDAS File Display");
   if (elog_mode)
@@ -3224,7 +3227,7 @@ HNDLE  hDB;
     {
     size = sizeof(file_name);
     memset(file_name, 0, size);
-    db_get_value(hDB, 0, "/Logger/Data dir", file_name, &size, TID_STRING);
+    db_get_value(hDB, 0, "/Logger/Data dir", file_name, &size, TID_STRING, TRUE);
     if (file_name[0] != 0)
       if (file_name[strlen(file_name)-1] != DIR_SEPARATOR)
         strcat(file_name, DIR_SEPARATOR_STR);
@@ -3311,7 +3314,7 @@ KEY    key;
 
   run_number = 0;
   size = sizeof(run_number);
-  db_get_value(hDB, 0, "/Runinfo/Run number", &run_number, &size, TID_INT);
+  db_get_value(hDB, 0, "/Runinfo/Run number", &run_number, &size, TID_INT, TRUE);
   rsprintf("<td bgcolor=#FFFF00>Run number: ");
   rsprintf("<input type=\"text\" size=10 maxlength=10 name=\"run\" value=\"%d\"</tr>", run_number);
 
@@ -3380,7 +3383,7 @@ time_t now;
   /* title row */
   size = sizeof(str);
   str[0] = 0;
-  db_get_value(hDB, 0, "/Experiment/Name", str, &size, TID_STRING);
+  db_get_value(hDB, 0, "/Experiment/Name", str, &size, TID_STRING, TRUE);
   time(&now);
 
   sprintf(b, "<table border=3 cellpadding=1>\n");
@@ -3637,7 +3640,7 @@ struct hostent *phe;
 
       size = sizeof(str);
       str[0] = 0;
-      db_get_value(hDB, 0, "/Experiment/Name", str, &size, TID_STRING);
+      db_get_value(hDB, 0, "/Experiment/Name", str, &size, TID_STRING, TRUE);
 
       sprintf(mail_text, "A new entry has been submitted by %s:\n\n", author);
       sprintf(mail_text+strlen(mail_text), "Experiment : %s\n", str);
@@ -3684,7 +3687,7 @@ struct hostent *phe;
 
       size = sizeof(str);
       str[0] = 0;
-      db_get_value(hDB, 0, "/Experiment/Name", str, &size, TID_STRING);
+      db_get_value(hDB, 0, "/Experiment/Name", str, &size, TID_STRING, TRUE);
 
       sprintf(mail_text, "A new entry has been submitted by %s:\n\n", author);
       sprintf(mail_text+strlen(mail_text), "Experiment : %s\n", str);
@@ -3805,7 +3808,7 @@ int   size, i, run, msg_status, status, fh, length, first_message, last_message,
 char  str[256], orig_path[256], command[80], ref[256], file_name[256];
 char  date[80], author[80], type[80], system[80], subject[256], text[10000],
       orig_tag[80], reply_tag[80], attachment[3][256], encoding[80], att[256];
-HNDLE hDB, hkey, hkeyroot, hkeybutton, hktmp;
+HNDLE hDB, hkey, hkeyroot, hkeybutton;
 KEY   key;
 FILE  *f;
 BOOL  display_run_number, allow_delete;
@@ -3816,8 +3819,8 @@ char  def_button[][NAME_LENGTH] = {"8h", "24h", "7d" };
   display_run_number = TRUE;
   allow_delete = FALSE;
   size = sizeof(BOOL);
-  db_get_value(hDB, 0, "/Elog/Display run number", &display_run_number , &size, TID_BOOL);
-  db_get_value(hDB, 0, "/Elog/Allow delete", &allow_delete, &size, TID_BOOL);
+  db_get_value(hDB, 0, "/Elog/Display run number", &display_run_number , &size, TID_BOOL, TRUE);
+  db_get_value(hDB, 0, "/Elog/Allow delete", &allow_delete, &size, TID_BOOL, TRUE);
 
   /*---- interprete commands ---------------------------------------*/
 
@@ -3928,11 +3931,9 @@ char  def_button[][NAME_LENGTH] = {"8h", "24h", "7d" };
       size = sizeof(file_name);
       memset(file_name, 0, size);
       
-      status = db_find_key(hDB, 0, "/Logger/Elog dir", &hktmp);
-      if ( status == DB_SUCCESS)
-	      db_get_value(hDB, 0, "/Logger/Elog dir", file_name, &size, TID_STRING);
-      else
-	      db_get_value(hDB, 0, "/Logger/Data dir", file_name, &size, TID_STRING);
+	    status = db_get_value(hDB, 0, "/Logger/Elog dir", file_name, &size, TID_STRING, FALSE);
+      if (status != DB_SUCCESS)
+	      db_get_value(hDB, 0, "/Logger/Data dir", file_name, &size, TID_STRING, TRUE);
       
       if (file_name[0] != 0)
         if (file_name[strlen(file_name)-1] != DIR_SEPARATOR)
@@ -4107,7 +4108,7 @@ char  def_button[][NAME_LENGTH] = {"8h", "24h", "7d" };
 
   size = sizeof(str);
   str[0] = 0;
-  db_get_value(hDB, 0, "/Experiment/Name", str, &size, TID_STRING);
+  db_get_value(hDB, 0, "/Experiment/Name", str, &size, TID_STRING, TRUE);
 
   rsprintf("<tr><th bgcolor=#A0A0FF>MIDAS Electronic Logbook");
   if (elog_mode)
@@ -4319,7 +4320,7 @@ char  def_button[][NAME_LENGTH] = {"8h", "24h", "7d" };
             file_name[0] = 0;
             size = sizeof(file_name);
             memset(file_name, 0, size);
-            db_get_value(hDB, 0, "/Logger/Data dir", file_name, &size, TID_STRING);
+            db_get_value(hDB, 0, "/Logger/Data dir", file_name, &size, TID_STRING, TRUE);
             if (file_name[0] != 0)
               if (file_name[strlen(file_name)-1] != DIR_SEPARATOR)
                 strcat(file_name, DIR_SEPARATOR_STR);
@@ -5128,7 +5129,7 @@ static HNDLE hconn = 0;
         if (status == DB_SUCCESS)
           {
           size = sizeof(client_name);
-          db_get_value(hDB, hsubkey, "Name", client_name, &size, TID_STRING);
+          db_get_value(hDB, hsubkey, "Name", client_name, &size, TID_STRING, TRUE);
           break;
           }
         }
@@ -5154,7 +5155,7 @@ static HNDLE hconn = 0;
 
   size = sizeof(str);
   str[0] = 0;
-  db_get_value(hDB, 0, "/Experiment/Name", str, &size, TID_STRING);
+  db_get_value(hDB, 0, "/Experiment/Name", str, &size, TID_STRING, TRUE);
 
   /* define hidden field for experiment */
   if (exp_name[0])
@@ -5455,7 +5456,7 @@ char  data_str[256], comment[1000];
 
   /* run number */
   size = sizeof(rn);
-  db_get_value(hDB, 0, "/Runinfo/Run number", &rn, &size, TID_INT);
+  db_get_value(hDB, 0, "/Runinfo/Run number", &rn, &size, TID_INT, TRUE);
 
   size = sizeof(i);
   if (db_find_key(hDB, 0, "/Experiment/Edit on start/Edit Run number", &hkey) == DB_SUCCESS &&
@@ -6218,7 +6219,7 @@ INT    al_list[] = { AT_EVALUATED, AT_PROGRAM, AT_INTERNAL, AT_PERIODIC };
   /* title row */
   size = sizeof(str);
   str[0] = 0;
-  db_get_value(hDB, 0, "/Experiment/Name", str, &size, TID_STRING);
+  db_get_value(hDB, 0, "/Experiment/Name", str, &size, TID_STRING, TRUE);
   time(&now);
 
   rsprintf("<form method=\"GET\" action=\"/\">\n");
@@ -6246,7 +6247,7 @@ INT    al_list[] = { AT_EVALUATED, AT_PROGRAM, AT_INTERNAL, AT_PERIODIC };
 
   active = TRUE;
   size = sizeof(active);
-  db_get_value(hDB, 0, "/Alarms/Alarm System active", &active, &size, TID_BOOL);
+  db_get_value(hDB, 0, "/Alarms/Alarm System active", &active, &size, TID_BOOL, TRUE);
   if (!active)
     {
     if (exp_name[0])
@@ -6298,7 +6299,7 @@ INT    al_list[] = { AT_EVALUATED, AT_PROGRAM, AT_INTERNAL, AT_PERIODIC };
 
         /* type */
         size = sizeof(INT);
-        db_get_value(hDB, hkey, "Type", &type, &size, TID_INT);
+        db_get_value(hDB, hkey, "Type", &type, &size, TID_INT, TRUE);
         if (type != index)
           continue;
 
@@ -6320,9 +6321,9 @@ INT    al_list[] = { AT_EVALUATED, AT_PROGRAM, AT_INTERNAL, AT_PERIODIC };
 
         /* state */
         size = sizeof(BOOL);
-        db_get_value(hDB, hkey, "Active", &active, &size, TID_BOOL);
+        db_get_value(hDB, hkey, "Active", &active, &size, TID_BOOL, TRUE);
         size = sizeof(INT);
-        db_get_value(hDB, hkey, "Triggered", &triggered, &size, TID_INT);
+        db_get_value(hDB, hkey, "Triggered", &triggered, &size, TID_INT, TRUE);
         if (!active)
           rsprintf("<td bgcolor=#FFFF00 align=center>Disabled");
         else
@@ -6335,14 +6336,14 @@ INT    al_list[] = { AT_EVALUATED, AT_PROGRAM, AT_INTERNAL, AT_PERIODIC };
 
         /* time */
         size = sizeof(str);
-        db_get_value(hDB, hkey, "Time triggered first", str, &size, TID_STRING);
+        db_get_value(hDB, hkey, "Time triggered first", str, &size, TID_STRING, TRUE);
         if (!triggered)
           strcpy(str, "-");
         rsprintf("<td align=center>%s", str);
 
         /* class */
         size = sizeof(str);
-        db_get_value(hDB, hkey, "Alarm Class", str, &size, TID_STRING);
+        db_get_value(hDB, hkey, "Alarm Class", str, &size, TID_STRING, TRUE);
 
         if (exp_name[0])
           sprintf(ref, "/Alarms/Classes/%s?exp=%s", str, exp_name);
@@ -6352,7 +6353,7 @@ INT    al_list[] = { AT_EVALUATED, AT_PROGRAM, AT_INTERNAL, AT_PERIODIC };
 
         /* condition */
         size = sizeof(condition);
-        db_get_value(hDB, hkey, "Condition", condition, &size, TID_STRING);
+        db_get_value(hDB, hkey, "Condition", condition, &size, TID_STRING, TRUE);
 
         if (index == AT_EVALUATED)
           {
@@ -6374,9 +6375,9 @@ INT    al_list[] = { AT_EVALUATED, AT_PROGRAM, AT_INTERNAL, AT_PERIODIC };
           {
           size = sizeof(str);
           if (triggered)
-            db_get_value(hDB, hkey, "Alarm message", str, &size, TID_STRING);
+            db_get_value(hDB, hkey, "Alarm message", str, &size, TID_STRING, TRUE);
           else
-            db_get_value(hDB, hkey, "Condition", str, &size, TID_STRING);
+            db_get_value(hDB, hkey, "Condition", str, &size, TID_STRING, TRUE);
 
           rsprintf("<td colspan=2>%s", str);
           }
@@ -6384,11 +6385,11 @@ INT    al_list[] = { AT_EVALUATED, AT_PROGRAM, AT_INTERNAL, AT_PERIODIC };
           {
           size = sizeof(str);
           if (triggered)
-            db_get_value(hDB, hkey, "Alarm message", str, &size, TID_STRING);
+            db_get_value(hDB, hkey, "Alarm message", str, &size, TID_STRING, TRUE);
           else
             {
             size = sizeof(last);
-            db_get_value(hDB, hkey, "Checked last", &last, &size, TID_DWORD);
+            db_get_value(hDB, hkey, "Checked last", &last, &size, TID_DWORD, TRUE);
             if (last == 0)
               {
               last = ss_time();
@@ -6396,7 +6397,7 @@ INT    al_list[] = { AT_EVALUATED, AT_PROGRAM, AT_INTERNAL, AT_PERIODIC };
               }
 
             size = sizeof(interval);
-            db_get_value(hDB, hkey, "Check interval", &interval, &size, TID_INT);
+            db_get_value(hDB, hkey, "Check interval", &interval, &size, TID_INT, TRUE);
             last += interval;
             strcpy(value, ctime(&last));
             value[16] = 0;
@@ -6457,7 +6458,7 @@ char  str[256], ref[256], command[256], name[80];
     sprintf(str, "/Programs/%s/Start command", name);
     command[0] = 0;
     size = sizeof(command);
-    db_get_value(hDB, 0, str, command, &size, TID_STRING);
+    db_get_value(hDB, 0, str, command, &size, TID_STRING, TRUE);
     if (command[0])
       {
       ss_system(command);
@@ -6515,7 +6516,7 @@ char  str[256], ref[256], command[256], name[80];
 
       /* required? */
       size = sizeof(required);
-      db_get_value(hDB, hkey, "Required", &required, &size, TID_BOOL);
+      db_get_value(hDB, hkey, "Required", &required, &size, TID_BOOL, TRUE);
 
       /* running */
       count = 0;
@@ -6529,7 +6530,7 @@ char  str[256], ref[256], command[256], name[80];
             break;
 
           size = sizeof(name);
-          db_get_value(hDB, hkeycl, "Name", name, &size, TID_STRING);
+          db_get_value(hDB, hkeycl, "Name", name, &size, TID_STRING, TRUE);
 
           db_get_key(hDB, hkeycl, &keycl);
           name[strlen(key.name)] = 0;
@@ -6537,7 +6538,7 @@ char  str[256], ref[256], command[256], name[80];
           if (equal_ustring(name, key.name))
             {
             size = sizeof(str);
-            db_get_value(hDB, hkeycl, "Host", str, &size, TID_STRING);
+            db_get_value(hDB, hkeycl, "Host", str, &size, TID_STRING, TRUE);
 
             if (first)
               {
@@ -6566,7 +6567,7 @@ char  str[256], ref[256], command[256], name[80];
 
       /* Alarm */
       size = sizeof(str);
-      db_get_value(hDB, hkey, "Alarm Class", str, &size, TID_STRING);
+      db_get_value(hDB, hkey, "Alarm Class", str, &size, TID_STRING, TRUE);
       if (str[0])
         {
         if (exp_name[0])
@@ -6580,7 +6581,7 @@ char  str[256], ref[256], command[256], name[80];
 
       /* auto restart */
       size = sizeof(restart);
-      db_get_value(hDB, hkey, "Auto restart", &restart, &size, TID_BOOL);
+      db_get_value(hDB, hkey, "Auto restart", &restart, &size, TID_BOOL, TRUE);
 
       if (restart)
         rsprintf("<td align=center>Yes\n");
@@ -6589,7 +6590,7 @@ char  str[256], ref[256], command[256], name[80];
 
       /* start/stop button */
       size = sizeof(str);
-      db_get_value(hDB, hkey, "Start Command", str, &size, TID_STRING);
+      db_get_value(hDB, hkey, "Start Command", str, &size, TID_STRING, TRUE);
       if (str[0] && count == 0)
         {
         sprintf(str, "Start %s", key.name);
@@ -7237,9 +7238,9 @@ double      yb1, yb2, yf1, yf2, ybase;
   memset(str, 0, size);
   status = db_find_key(hDB, 0, "/Logger/History path", &hktmp);
   if (status == DB_SUCCESS)
-    db_get_value(hDB, 0, "/Logger/History dir", str, &size, TID_STRING);
+    db_get_value(hDB, 0, "/Logger/History dir", str, &size, TID_STRING, TRUE);
   else
-    db_get_value(hDB, 0, "/Logger/Data dir", str, &size, TID_STRING);
+    db_get_value(hDB, 0, "/Logger/Data dir", str, &size, TID_STRING, TRUE);
   hs_set_path(str);
 
   /* get list of events */
@@ -7341,7 +7342,7 @@ double      yb1, yb2, yf1, yf2, ybase;
       {
       strcpy(str, "1h");
       size = NAME_LENGTH;
-      status = db_get_value(hDB, hkeypanel, "Timescale", str, &size, TID_STRING);
+      status = db_get_value(hDB, hkeypanel, "Timescale", str, &size, TID_STRING, TRUE);
       if (status != DB_SUCCESS)
         {
         /* delete old integer key */
@@ -7351,7 +7352,7 @@ double      yb1, yb2, yf1, yf2, ybase;
 
         strcpy(str, "1h");
         size = NAME_LENGTH;
-        status = db_get_value(hDB, hkeypanel, "Timescale", str, &size, TID_STRING);
+        status = db_get_value(hDB, hkeypanel, "Timescale", str, &size, TID_STRING, TRUE);
         }
 
       scale = time_to_sec(str);
@@ -7365,21 +7366,21 @@ double      yb1, yb2, yf1, yf2, ybase;
 
     /* get factors */
     size = sizeof(float) * n_vars;
-    db_get_value(hDB, hkeypanel, "Factor", factor, &size, TID_FLOAT);
+    db_get_value(hDB, hkeypanel, "Factor", factor, &size, TID_FLOAT, TRUE);
 
     /* get offsets */
     size = sizeof(float) * n_vars;
-    db_get_value(hDB, hkeypanel, "Offset", offset, &size, TID_FLOAT);
+    db_get_value(hDB, hkeypanel, "Offset", offset, &size, TID_FLOAT, TRUE);
 
     /* get axis type */
     size = sizeof(logaxis);
     logaxis = 0;
-    db_get_value(hDB, hkeypanel, "Log axis", &logaxis, &size, TID_BOOL);
+    db_get_value(hDB, hkeypanel, "Log axis", &logaxis, &size, TID_BOOL, TRUE);
 
     /* get runmarker flag */
     size = sizeof(runmarker);
     runmarker = 1;
-    db_get_value(hDB, hkeypanel, "Show run markers", &runmarker, &size, TID_BOOL);
+    db_get_value(hDB, hkeypanel, "Show run markers", &runmarker, &size, TID_BOOL, TRUE);
 
     /* make ODB path from tag name */
     odbpath[0] = 0;
@@ -7519,7 +7520,7 @@ double      yb1, yb2, yf1, yf2, ybase;
           break;
 
         size = sizeof(str);
-        db_get_value(hDB, hkey, "Condition", str, &size, TID_STRING);
+        db_get_value(hDB, hkey, "Condition", str, &size, TID_STRING, TRUE);
 
         if (strstr(str, odbpath))
           {
@@ -7607,7 +7608,7 @@ double      yb1, yb2, yf1, yf2, ybase;
     {
     flag = 0;
     size = sizeof(flag);
-    db_get_value(hDB, hkeypanel, "Zero ylow", &flag, &size, TID_BOOL);
+    db_get_value(hDB, hkeypanel, "Zero ylow", &flag, &size, TID_BOOL, TRUE);
     if (flag && ymin > 0)
       ymin = 0;
     }
@@ -8206,7 +8207,7 @@ char   def_button[][NAME_LENGTH] = {"10m", "1h", "3h", "12h", "24h", "3d", "7d" 
 
       strcpy(scalestr, "1h");
       size = NAME_LENGTH;
-      status = db_get_value(hDB, 0, str, scalestr, &size, TID_STRING);
+      status = db_get_value(hDB, 0, str, scalestr, &size, TID_STRING, TRUE);
       if (status != DB_SUCCESS)
         {
         /* delete old integer key */
@@ -8216,7 +8217,7 @@ char   def_button[][NAME_LENGTH] = {"10m", "1h", "3h", "12h", "24h", "3d", "7d" 
 
         strcpy(scalestr, "1h");
         size = NAME_LENGTH;
-        db_get_value(hDB, 0, str, scalestr, &size, TID_STRING);
+        db_get_value(hDB, 0, str, scalestr, &size, TID_STRING, TRUE);
         }
 
       rsprintf("<input type=hidden name=hscale value=%s></tr>\n", scalestr);
@@ -8610,7 +8611,7 @@ struct tm *gmt;
   /* get run state */
   run_state = STATE_STOPPED;
   size = sizeof(run_state);
-  db_get_value(hDB, 0, "/Runinfo/State", &run_state, &size, TID_INT);
+  db_get_value(hDB, 0, "/Runinfo/State", &run_state, &size, TID_INT, TRUE);
 
   /*---- redirect with cookie if password given --------------------*/
 
@@ -8880,12 +8881,12 @@ struct tm *gmt;
     /* get frontend name */
     sprintf(str, "/Equipment/%s/Common/Frontend name", eq_name);
     size = NAME_LENGTH;
-    db_get_value(hDB, 0, str, fe_name, &size, TID_STRING);
+    db_get_value(hDB, 0, str, fe_name, &size, TID_STRING, TRUE);
 
     /* and ID */
     sprintf(str, "/Equipment/%s/Common/Event ID", eq_name);
     size = sizeof(event_id);
-    db_get_value(hDB, 0, str, &event_id, &size, TID_WORD);
+    db_get_value(hDB, 0, str, &event_id, &size, TID_WORD, TRUE);
 
     if (cm_exist(fe_name, FALSE) != CM_SUCCESS)
       {

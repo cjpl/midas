@@ -6,6 +6,9 @@
   Contents:     High Voltage Class Driver
 
   $Log$
+  Revision 1.6  2002/05/08 19:54:40  midas
+  Added extra parameter to function db_get_value()
+
   Revision 1.5  2002/03/14 13:02:48  midas
   Added ramping speed for both up/down
 
@@ -372,7 +375,7 @@ HV_INFO *hv_info;
 
   /* save event format */
   size = sizeof(str);
-  db_get_value(hDB, hv_info->hKeyRoot, "Common/Format", str, &size, TID_STRING);
+  db_get_value(hDB, hv_info->hKeyRoot, "Common/Format", str, &size, TID_STRING, TRUE);
 
   if (equal_ustring(str, "Fixed"))
     hv_info->format = FORMAT_FIXED;
@@ -390,7 +393,7 @@ HV_INFO *hv_info;
     /* ODB value has priority over driver list in channel number */
     size = sizeof(INT);
     db_get_value(hDB, hKey, pequipment->driver[i].name, 
-                 &pequipment->driver[i].channels, &size, TID_INT);
+                 &pequipment->driver[i].channels, &size, TID_INT, TRUE);
     
     if (pequipment->driver[i].channels == 0)
       pequipment->driver[i].channels = 1;

@@ -6,6 +6,9 @@
   Contents:     Generic Class Driver
 
   $Log$
+  Revision 1.3  2002/05/08 19:54:40  midas
+  Added extra parameter to function db_get_value()
+
   Revision 1.2  2000/03/02 21:54:02  midas
   Added offset in readout routines, added cmd_set_label
 
@@ -224,7 +227,7 @@ GEN_INFO *gen_info;
 
   /* save event format */
   size = sizeof(str);
-  db_get_value(hDB, gen_info->hKeyRoot, "Common/Format", str, &size, TID_STRING);
+  db_get_value(hDB, gen_info->hKeyRoot, "Common/Format", str, &size, TID_STRING, TRUE);
 
   if (equal_ustring(str, "Fixed"))
     gen_info->format = FORMAT_FIXED;
@@ -242,7 +245,7 @@ GEN_INFO *gen_info;
     /* ODB value has priority over driver list in channel number */
     size = sizeof(INT);
     db_get_value(hDB, hKey, pequipment->driver[i].name, 
-                 &pequipment->driver[i].channels, &size, TID_INT);
+                 &pequipment->driver[i].channels, &size, TID_INT, TRUE);
     
     if (pequipment->driver[i].channels == 0)
       pequipment->driver[i].channels = 1;

@@ -6,6 +6,9 @@
   Contents:     List of MIDAS RPC functions with parameters
 
   $Log$
+  Revision 1.25  2002/05/08 19:54:41  midas
+  Added extra parameter to function db_get_value()
+
   Revision 1.24  2000/11/14 08:17:05  midas
   Added number of messages for cm_msg_retrieve and in odbedit "old" command
 
@@ -302,6 +305,7 @@ static RPC_LIST rpc_list_library[] = {
      {TID_ARRAY,      RPC_IN | RPC_OUT | RPC_VARARRAY}, 
      {TID_INT,        RPC_IN | RPC_OUT}, 
      {TID_DWORD,      RPC_IN},
+     {TID_BOOL,       RPC_IN},
      {0} }},
 
   { RPC_DB_FIND_KEY, "db_find_key",

@@ -6,6 +6,9 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.44  2002/05/08 19:54:41  midas
+  Added extra parameter to function db_get_value()
+
   Revision 1.43  2001/12/12 17:42:11  pierre
   1.8.3-2 doc comments
 
@@ -2924,7 +2927,7 @@ like "Settings/Level1".
   INT level1, size;
   size = sizeof(level1);
   db_get_value(hDB, 0, "/Equipment/Trigger/Settings/Level1",
-                                   &level1, &size, TID_INT);
+                                   &level1, &size, TID_INT, 0);
  \end{verbatim}
 \end{description}
 @memo Returns key data from the ODB.
@@ -2934,15 +2937,16 @@ like "Settings/Level1".
 @param data Address of data.
 @param buf_size Maximum buffer size on input, number of written bytes on return.
 @param type Type of key, one of TID_xxx (see \Ref{Midas Data Types})
+@param create If TRUE, create key if not existing
 @return DB_SUCCESS, DB_INVALID_HANDLE, DB_NO_ACCESS, DB_TYPE_MISMATCH,
 DB_TRUNCATED, DB_NO_KEY
 */
 INT db_get_value(HNDLE hDB, HNDLE hKeyRoot, char *key_name, void *data, 
-                 INT *buf_size, DWORD type)
+                 INT *buf_size, DWORD type, BOOL create)
 {
   if (rpc_is_remote())
     return rpc_call(RPC_DB_GET_VALUE, hDB, hKeyRoot, key_name, 
-                    data, buf_size, type);
+                    data, buf_size, type, create);
 
 #ifdef LOCAL_ROUTINES
 {
@@ -2966,24 +2970,29 @@ INT              status, size;
   status = db_find_key(hDB, hKeyRoot, key_name, &hkey);
   if (status == DB_NO_KEY)
     {
-    db_create_key(hDB, hKeyRoot, key_name, type);
-    status = db_find_key(hDB, hKeyRoot, key_name, &hkey);
-    if (status != DB_SUCCESS)
-      return status;
+    if (create)
+      {
+      db_create_key(hDB, hKeyRoot, key_name, type);
+      status = db_find_key(hDB, hKeyRoot, key_name, &hkey);
+      if (status != DB_SUCCESS)
+        return status;
 
-    /* get string size from data size */
-    if (type == TID_STRING || 
-        type == TID_LINK)
-      size = *buf_size;
+      /* get string size from data size */
+      if (type == TID_STRING || 
+          type == TID_LINK)
+        size = *buf_size;
+      else
+        size = rpc_tid_size(type);
+
+      if (size == 0)
+        return DB_TYPE_MISMATCH;
+
+      /* set default value if key was created */
+      status = db_set_value(hDB, hKeyRoot, key_name, data, 
+                            *buf_size, *buf_size/size, type);
+      }
     else
-      size = rpc_tid_size(type);
-
-    if (size == 0)
-      return DB_TYPE_MISMATCH;
-
-    /* set default value if key was created */
-    status = db_set_value(hDB, hKeyRoot, key_name, data, 
-                          *buf_size, *buf_size/size, type);
+      return DB_NO_KEY;
     }
 
   if (status != DB_SUCCESS)

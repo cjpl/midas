@@ -6,6 +6,9 @@
  *         amaudruz@triumf.ca                            Local:           6234
  * ---------------------------------------------------------------------------
    $Log$
+   Revision 1.37  2002/05/08 19:54:41  midas
+   Added extra parameter to function db_get_value()
+
    Revision 1.36  2002/03/05 01:17:24  pierre
    Add default case, TID_SBYTE
 
@@ -886,7 +889,7 @@ INT feodb_file_dump (EQUIPMENT * eqp, char * eqpname,
 	    {
 	      size = sizeof(strpath);
 	      db_get_path(hDB, hKeydump, strpath, size);
-	      db_get_value(hDB, 0, strpath, Dumpfile, &size, TID_STRING);
+	      db_get_value(hDB, 0, strpath, Dumpfile, &size, TID_STRING, TRUE);
         yb_file_fragment(peqp, (EVENT_HEADER *)pevent, run_number, Dumpfile);
 	    }
       index++;

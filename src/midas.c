@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.147  2002/05/08 19:54:40  midas
+  Added extra parameter to function db_get_value()
+
   Revision 1.146  2002/05/07 22:27:56  midas
   Fixed bug that history files did not get closed on hs_read
 
@@ -782,13 +785,13 @@ HNDLE hDB, hKey;
         {
         size = sizeof(dir);
         memset(dir, 0, size);
-        db_get_value(hDB, 0, "/Logger/Data dir", dir, &size, TID_STRING);
+        db_get_value(hDB, 0, "/Logger/Data dir", dir, &size, TID_STRING, TRUE);
         if (dir[0] != 0)
           if (dir[strlen(dir)-1] != DIR_SEPARATOR)
             strcat(dir, DIR_SEPARATOR_STR);
 
         strcpy(filename, "midas.log");
-        db_get_value(hDB, 0, "/Logger/Message file", filename, &size, TID_STRING);
+        db_get_value(hDB, 0, "/Logger/Message file", filename, &size, TID_STRING, TRUE);
 
         strcpy(path, dir);
         strcat(path, filename);
@@ -871,7 +874,7 @@ HNDLE hDB, hKey;
         {
         size = sizeof(dir);
         memset(dir, 0, size);
-        db_get_value(hDB, 0, "/Logger/Data dir", dir, &size, TID_STRING);
+        db_get_value(hDB, 0, "/Logger/Data dir", dir, &size, TID_STRING, TRUE);
         if (dir[0] != 0)
           if (dir[strlen(dir)-1] != DIR_SEPARATOR)
             strcat(dir, DIR_SEPARATOR_STR);
@@ -884,7 +887,7 @@ HNDLE hDB, hKey;
         else
           {
           strcpy(filename, "midas.log");
-          db_get_value(hDB, 0, "/Logger/Message file", filename, &size, TID_STRING);
+          db_get_value(hDB, 0, "/Logger/Message file", filename, &size, TID_STRING, TRUE);
           }
 
         strcpy(path, dir);
@@ -1294,13 +1297,13 @@ HNDLE hDB, hKey;
       {
       size = sizeof(dir);
       memset(dir, 0, size);
-      db_get_value(hDB, 0, "/Logger/Data dir", dir, &size, TID_STRING);
+      db_get_value(hDB, 0, "/Logger/Data dir", dir, &size, TID_STRING, TRUE);
       if (dir[0] != 0)
         if (dir[strlen(dir)-1] != DIR_SEPARATOR)
           strcat(dir, DIR_SEPARATOR_STR);
 
       strcpy(filename, "midas.log");
-      db_get_value(hDB, 0, "/Logger/Message file", filename, &size, TID_STRING);
+      db_get_value(hDB, 0, "/Logger/Message file", filename, &size, TID_STRING, TRUE);
 
       strcpy(path, dir);
       strcat(path, filename);
@@ -1805,7 +1808,7 @@ char            name[NAME_LENGTH];
   client_pid = atoi(key.name);
 
   i = sizeof(name);
-  db_get_value(hDB, hKeyClient, "Name", name, &i, TID_STRING);
+  db_get_value(hDB, hKeyClient, "Name", name, &i, TID_STRING, TRUE);
 
   db_lock_database(hDB);
   if (_database[hDB-1].attached)
@@ -1949,7 +1952,7 @@ PROGRAM_INFO_STR(program_info_str);
       if (status == DB_SUCCESS)
         {
         size = sizeof(str);
-        status = db_get_value(hDB, hSubkey, "Name", str, &size, TID_STRING);
+        status = db_get_value(hDB, hSubkey, "Name", str, &size, TID_STRING, TRUE);
         }
 
       /* check if client is living */
@@ -2022,7 +2025,7 @@ PROGRAM_INFO_STR(program_info_str);
   /* get (set) default watchdog timeout */
   size = sizeof(watchdog_timeout);
   sprintf(str, "/Programs/%s/Watchdog Timeout", orig_name);
-  db_get_value(hDB, 0, str, &watchdog_timeout, &size, TID_INT);
+  db_get_value(hDB, 0, str, &watchdog_timeout, &size, TID_INT, TRUE);
 
   /* define /programs entry */
   sprintf(str, "/Programs/%s", orig_name);
@@ -2453,7 +2456,7 @@ RUNINFO_STR(runinfo_str);
   /* set data dir in ODB */
   cm_get_path(str);
   size = sizeof(str);
-  db_get_value(hDB, 0, "/Logger/Data dir", str, &size, TID_STRING);
+  db_get_value(hDB, 0, "/Logger/Data dir", str, &size, TID_STRING, TRUE);
 
   /* create/correct /runinfo structure */
   db_create_record(hDB, 0, "/Runinfo", strcomb(runinfo_str));
@@ -2467,7 +2470,7 @@ RUNINFO_STR(runinfo_str);
   cm_get_watchdog_params(&call_watchdog, &watchdog_timeout);
   size = sizeof(watchdog_timeout);
   sprintf(str, "/Programs/%s/Watchdog Timeout", client_name);
-  db_get_value(hDB, 0, str, &watchdog_timeout, &size, TID_INT);
+  db_get_value(hDB, 0, str, &watchdog_timeout, &size, TID_INT, TRUE);
   cm_set_watchdog_params(call_watchdog, watchdog_timeout);
 
   /* send startup notification */
@@ -3386,7 +3389,7 @@ INT cm_register_transition(INT transition, INT (*func)(INT,char*))
   cm_get_experiment_database(&hDB, &hKey);
 
   size = sizeof(DWORD);
-  status = db_get_value(hDB, hKey, "Transition Mask", &mask, &size, TID_DWORD);
+  status = db_get_value(hDB, hKey, "Transition Mask", &mask, &size, TID_DWORD, TRUE);
   if (status != DB_SUCCESS)
     return status;
 
@@ -3451,7 +3454,7 @@ HNDLE hDB, hKey;
   cm_get_experiment_database(&hDB, &hKey);
 
   size = sizeof(DWORD);
-  status = db_get_value(hDB, hKey, "Deferred Transition Mask", &mask, &size, TID_DWORD);
+  status = db_get_value(hDB, hKey, "Deferred Transition Mask", &mask, &size, TID_DWORD, TRUE);
   if (status != DB_SUCCESS)
     return status;
 
@@ -3476,7 +3479,7 @@ HNDLE hDB, hKey;
 
   /* hot link requested transition */
   size = sizeof(_requested_transition);
-  db_get_value(hDB, 0, "/Runinfo/Requested Transition", &_requested_transition, &size, TID_INT);
+  db_get_value(hDB, 0, "/Runinfo/Requested Transition", &_requested_transition, &size, TID_INT, TRUE);
   db_find_key(hDB, 0, "/Runinfo/Requested Transition", &hKey);
   status = db_open_record(hDB, hKey, &_requested_transition, sizeof(INT), MODE_READ, NULL, NULL);
   if (status != DB_SUCCESS)
@@ -3604,7 +3607,7 @@ RUNINFO_STR(runinfo_str);
   if (run_number == 0)
     {
     size = sizeof(run_number);
-    db_get_value(hDB, 0, "Runinfo/Run number", &run_number, &size, TID_INT);
+    db_get_value(hDB, 0, "Runinfo/Run number", &run_number, &size, TID_INT, TRUE);
     }
 
   /* Set new run number in ODB */
@@ -3634,7 +3637,7 @@ RUNINFO_STR(runinfo_str);
 
     /* check if deferred transition already in progress */
     size = sizeof(INT);
-    db_get_value(hDB, 0, "/Runinfo/Requested transition", &i, &size, TID_INT);
+    db_get_value(hDB, 0, "/Runinfo/Requested transition", &i, &size, TID_INT, TRUE);
     if (i)
       {
       if (perror)
@@ -3654,13 +3657,13 @@ RUNINFO_STR(runinfo_str);
         {
         size = sizeof(mask);
         status = db_get_value(hDB, hSubkey, "Deferred Transition Mask",
-                              &mask, &size, TID_DWORD);
+                              &mask, &size, TID_DWORD, TRUE);
 
         /* if registered for deferred transition, set flag in ODB and return */
         if (status == DB_SUCCESS && (mask & transition))
           {
           size = NAME_LENGTH;
-          db_get_value(hDB, hSubkey, "Name", str, &size, TID_STRING);
+          db_get_value(hDB, hSubkey, "Name", str, &size, TID_STRING, TRUE);
           db_set_value(hDB, 0, "/Runinfo/Requested transition", &transition,
                        sizeof(int), 1, TID_INT);
           if (perror)
@@ -3694,7 +3697,7 @@ RUNINFO_STR(runinfo_str);
   if (transition == TR_STOP)
     {
     size = sizeof(state);
-    status = db_get_value(hDB, 0, "Runinfo/State", &state, &size, TID_INT);
+    status = db_get_value(hDB, 0, "Runinfo/State", &state, &size, TID_INT, TRUE);
     if (status != DB_SUCCESS)
       cm_msg(MERROR, "cm_transition", "cannot get Runinfo/State in database");
 
@@ -3762,7 +3765,7 @@ RUNINFO_STR(runinfo_str);
       {
       size = sizeof(mask);
       status = db_get_value(hDB, hSubkey, "Transition Mask",
-                            &mask, &size, TID_DWORD);
+                            &mask, &size, TID_DWORD, TRUE);
 
       if (status == DB_SUCCESS && (mask & transition))
         {
@@ -3791,13 +3794,13 @@ RUNINFO_STR(runinfo_str);
           {
           /* contact client if transition mask set */
           size = sizeof(client_name);
-          db_get_value(hDB, hSubkey, "Name", client_name, &size, TID_STRING);
+          db_get_value(hDB, hSubkey, "Name", client_name, &size, TID_STRING, TRUE);
 
           size = sizeof(port);
-          db_get_value(hDB, hSubkey, "Server Port", &port, &size, TID_INT);
+          db_get_value(hDB, hSubkey, "Server Port", &port, &size, TID_INT, TRUE);
 
           size = sizeof(host_name);
-          db_get_value(hDB, hSubkey, "Host", host_name, &size, TID_STRING);
+          db_get_value(hDB, hSubkey, "Host", host_name, &size, TID_STRING, TRUE);
 
           /* cm_msg(MINFO, "Connect to %s [%d] - ", client_name, port); */
 
@@ -3920,7 +3923,7 @@ RUNINFO_STR(runinfo_str);
     {
     str[0] = 0;
     size = sizeof(str);
-    db_get_value(hDB, 0, "/Programs/Execute on start run", str, &size, TID_STRING);
+    db_get_value(hDB, 0, "/Programs/Execute on start run", str, &size, TID_STRING, TRUE);
     if (str[0])
       ss_system(str);
 
@@ -3959,7 +3962,7 @@ RUNINFO_STR(runinfo_str);
     {
     str[0] = 0;
     size = sizeof(str);
-    db_get_value(hDB, 0, "/Programs/Execute on stop run", str, &size, TID_STRING);
+    db_get_value(hDB, 0, "/Programs/Execute on stop run", str, &size, TID_STRING, TRUE);
     if (str[0])
       ss_system(str);
 
@@ -4007,7 +4010,7 @@ RUNINFO_STR(runinfo_str);
 
     str[0] = 0;
     size = sizeof(str);
-    db_get_value(hDB, 0, "/Experiment/Name", str, &size, TID_STRING);
+    db_get_value(hDB, 0, "/Experiment/Name", str, &size, TID_STRING, TRUE);
     sprintf(buffer, "%s %s %d", str, cm_get_version(), run_number);
     sendto(sock, buffer, strlen(buffer), 0, (void *) &addr, sizeof(addr));
     closesocket(sock);
@@ -5055,7 +5058,7 @@ DWORD  start_time;
 
       /* contact client */
       size = sizeof(client_name);
-      db_get_value(hDB, hSubkey, "Name", client_name, &size, TID_STRING);
+      db_get_value(hDB, hSubkey, "Name", client_name, &size, TID_STRING, TRUE);
 
       if (!bUnique)
   client_name[strlen(name)] = 0; /* strip number */
@@ -5069,10 +5072,10 @@ DWORD  start_time;
         }
 
       size = sizeof(port);
-      db_get_value(hDB, hSubkey, "Server Port", &port, &size, TID_INT);
+      db_get_value(hDB, hSubkey, "Server Port", &port, &size, TID_INT, TRUE);
 
       size = sizeof(remote_host);
-      db_get_value(hDB, hSubkey, "Host", remote_host, &size, TID_STRING);
+      db_get_value(hDB, hSubkey, "Host", remote_host, &size, TID_STRING, TRUE);
 
       /* client found -> connect to its server port */
       status = rpc_client_connect(remote_host, port, &hConn);
@@ -5155,7 +5158,7 @@ char   client_name[NAME_LENGTH];
       {
       /* get client name */
       size = sizeof(client_name);
-      db_get_value(hDB, hSubkey, "Name", client_name, &size, TID_STRING);
+      db_get_value(hDB, hSubkey, "Name", client_name, &size, TID_STRING, TRUE);
 
       if (equal_ustring(client_name, name))
         return CM_SUCCESS;
@@ -14786,6 +14789,7 @@ char         *cache;
             *n = *tbsize = *dbsize = 0;
             if (cache)
               free(cache);
+            free(tag);
             close(fh);
             close(fhd);
             close(fhi);
@@ -15335,7 +15339,6 @@ HNDLE   hDB;
 time_t  now;
 char    message[10000], *p, *buffer;
 BOOL    bedit;
-HNDLE   hktmp;
 
   cm_get_experiment_database(&hDB, NULL);
 
@@ -15352,7 +15355,7 @@ HNDLE   hktmp;
     {
     /* get run number */
     size = sizeof(run_number);
-    db_get_value(hDB, 0, "/Runinfo/Run number", &run_number, &size, TID_INT);
+    db_get_value(hDB, 0, "/Runinfo/Run number", &run_number, &size, TID_INT, TRUE);
     }
 
   for (index = 0 ; index < 3 ; index++)
@@ -15400,11 +15403,9 @@ HNDLE   hktmp;
           {
           size = sizeof(dir);
           memset(dir, 0, size);
-          status = db_find_key(hDB, 0, "/Logger/Elog dir", &hktmp);
-          if (status == DB_SUCCESS)
-            db_get_value(hDB, 0, "/Logger/Elog dir", dir, &size, TID_STRING);
-          else
-            db_get_value(hDB, 0, "/Logger/Data dir", dir, &size, TID_STRING);
+          status = db_get_value(hDB, 0, "/Logger/Elog dir", dir, &size, TID_STRING, FALSE);
+          if (status != DB_SUCCESS)
+            db_get_value(hDB, 0, "/Logger/Data dir", dir, &size, TID_STRING, TRUE);
 
           if (dir[0] != 0 && dir[strlen(dir)-1] != DIR_SEPARATOR)
             strcat(dir, DIR_SEPARATOR_STR);
@@ -15447,11 +15448,9 @@ HNDLE   hktmp;
 
   size = sizeof(dir);
   memset(dir, 0, size);
-  status = db_find_key(hDB, 0, "/Logger/Elog dir", &hktmp);
-  if (status == DB_SUCCESS)
-    db_get_value(hDB, 0, "/Logger/Elog dir", dir, &size, TID_STRING);
-  else
-    db_get_value(hDB, 0, "/Logger/Data dir", dir, &size, TID_STRING);
+  status = db_get_value(hDB, 0, "/Logger/Elog dir", dir, &size, TID_STRING, FALSE);
+  if (status != DB_SUCCESS)
+    db_get_value(hDB, 0, "/Logger/Data dir", dir, &size, TID_STRING, TRUE);
 
   if (dir[0] != 0 && dir[strlen(dir)-1] != DIR_SEPARATOR)
     strcat(dir, DIR_SEPARATOR_STR);
@@ -15648,7 +15647,7 @@ int    i, size, offset, direction, last, status;
 struct tm *tms, ltms;
 DWORD  lt, ltime, lact;
 char   str[256], file_name[256], dir[256];
-HNDLE  hDB, hktmp;
+HNDLE  hDB;
 
 #if !defined(OS_VXWORKS)
 #if !defined(OS_VMS)
@@ -15661,11 +15660,9 @@ HNDLE  hDB, hktmp;
   
   size = sizeof(dir);
   memset(dir, 0, size);
-  status = db_find_key(hDB, 0, "/Logger/Elog dir", &hktmp);
-  if (status == DB_SUCCESS)
-    db_get_value(hDB, 0, "/Logger/Elog dir", dir, &size, TID_STRING);
-  else
-    db_get_value(hDB, 0, "/Logger/Data dir", dir, &size, TID_STRING);
+  status = db_get_value(hDB, 0, "/Logger/Elog dir", dir, &size, TID_STRING, FALSE);
+  if (status != DB_SUCCESS)
+    db_get_value(hDB, 0, "/Logger/Data dir", dir, &size, TID_STRING, TRUE);
 
   if (dir[0] != 0 && dir[strlen(dir)-1] != DIR_SEPARATOR)
     strcat(dir, DIR_SEPARATOR_STR);
@@ -16153,7 +16150,7 @@ INT el_delete_message(char *tag)
 #ifdef LOCAL_ROUTINES
 INT     n, size, fh, mutex, offset, tail_size, status;
 char    dir[256], str[256], file_name[256];
-HNDLE   hDB, hktmp;
+HNDLE   hDB;
 char    *buffer;
 
   cm_get_experiment_database(&hDB, NULL);
@@ -16167,11 +16164,10 @@ char    *buffer;
 
   size = sizeof(dir);
   memset(dir, 0, size);
-  status = db_find_key(hDB, 0, "/Logger/Elog dir", &hktmp);
-  if (status == DB_SUCCESS)
-    db_get_value(hDB, 0, "/Logger/Elog dir", dir, &size, TID_STRING);
-  else
-    db_get_value(hDB, 0, "/Logger/Data dir", dir, &size, TID_STRING);
+  status = db_get_value(hDB, 0, "/Logger/Elog dir", dir, &size, TID_STRING, FALSE);
+  if (status != DB_SUCCESS)
+    db_get_value(hDB, 0, "/Logger/Data dir", dir, &size, TID_STRING, TRUE);
+
   if (dir[0] != 0 && dir[strlen(dir)-1] != DIR_SEPARATOR)
     strcat(dir, DIR_SEPARATOR_STR);
 
@@ -16404,7 +16400,7 @@ ALARM_ODB_STR(alarm_odb_str);
   /* check online mode */
   flag = TRUE;
   size = sizeof(flag);
-  db_get_value(hDB, 0, "/Runinfo/Online Mode", &flag, &size, TID_INT);
+  db_get_value(hDB, 0, "/Runinfo/Online Mode", &flag, &size, TID_INT, TRUE);
   if (!flag)
     return AL_SUCCESS;
 
@@ -16458,7 +16454,7 @@ ALARM_ODB_STR(alarm_odb_str);
     /* check global alarm flag */
     flag = TRUE;
     size = sizeof(flag);
-    db_get_value(hDB, 0, "/Alarms/Alarm system active", &flag, &size, TID_BOOL);
+    db_get_value(hDB, 0, "/Alarms/Alarm system active", &flag, &size, TID_BOOL, TRUE);
     if (!flag)
       return AL_SUCCESS;
 
@@ -16587,7 +16583,7 @@ ALARM_CLASS ac;
     {
     state = STATE_STOPPED;
     size = sizeof(state);
-    db_get_value(hDB, 0, "/Runinfo/State", &state, &size, TID_INT);
+    db_get_value(hDB, 0, "/Runinfo/State", &state, &size, TID_INT, TRUE);
     if (state != STATE_STOPPED)
       cm_transition(TR_STOP, 0, NULL, 0, ASYNC);
     }
@@ -16759,14 +16755,14 @@ ALARM_PERIODIC_STR(alarm_periodic_str);
   /* check online mode */
   flag = TRUE;
   size = sizeof(flag);
-  db_get_value(hDB, 0, "/Runinfo/Online Mode", &flag, &size, TID_INT);
+  db_get_value(hDB, 0, "/Runinfo/Online Mode", &flag, &size, TID_INT, TRUE);
   if (!flag)
     return AL_SUCCESS;
 
   /* check global alarm flag */
   flag = TRUE;
   size = sizeof(flag);
-  db_get_value(hDB, 0, "/Alarms/Alarm system active", &flag, &size, TID_BOOL);
+  db_get_value(hDB, 0, "/Alarms/Alarm system active", &flag, &size, TID_BOOL, TRUE);
   if (!flag)
     return AL_SUCCESS;
 

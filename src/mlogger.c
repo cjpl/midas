@@ -6,6 +6,9 @@
   Contents:     MIDAS logger program
 
   $Log$
+  Revision 1.49  2002/05/08 19:54:41  midas
+  Added extra parameter to function db_get_value()
+
   Revision 1.48  2002/02/05 01:29:09  midas
   Re-merged common code of logger and fal
 
@@ -236,29 +239,29 @@ char  str[256];
 
   cm_get_path(str);
   size = sizeof(str);
-  db_get_value(hDB, 0, "/Logger/Data dir", str, &size, TID_STRING);
+  db_get_value(hDB, 0, "/Logger/Data dir", str, &size, TID_STRING, TRUE);
 
   strcpy(str, "midas.log");
   size = sizeof(str);
-  db_get_value(hDB, 0, "/Logger/Message file", str, &size, TID_STRING);
+  db_get_value(hDB, 0, "/Logger/Message file", str, &size, TID_STRING, TRUE);
 
   size = sizeof(BOOL);
   flag = TRUE;
-  db_get_value(hDB, 0, "/Logger/Write data", &flag, &size, TID_BOOL);
+  db_get_value(hDB, 0, "/Logger/Write data", &flag, &size, TID_BOOL, TRUE);
 
   flag = FALSE;
-  db_get_value(hDB, 0, "/Logger/ODB Dump", &flag, &size, TID_BOOL);
+  db_get_value(hDB, 0, "/Logger/ODB Dump", &flag, &size, TID_BOOL, TRUE);
 
   strcpy(str, "run%05d.odb");
   size = sizeof(str);
-  db_get_value(hDB, 0, "/Logger/ODB Dump File", str, &size, TID_STRING);
+  db_get_value(hDB, 0, "/Logger/ODB Dump File", str, &size, TID_STRING, TRUE);
 
   flag = FALSE;
   size = sizeof(BOOL);
-  db_get_value(hDB, 0, "/Logger/Auto restart", &flag, &size, TID_BOOL);
+  db_get_value(hDB, 0, "/Logger/Auto restart", &flag, &size, TID_BOOL, TRUE);
 
   flag = TRUE;
-  db_get_value(hDB, 0, "/Logger/Tape message", &flag, &size, TID_BOOL);
+  db_get_value(hDB, 0, "/Logger/Tape message", &flag, &size, TID_BOOL, TRUE);
 
   /* create at least one logging channel */
   status = db_find_key(hDB, 0, "/Logger/Channels/0", &hKey);
@@ -318,7 +321,7 @@ char path[256];
     {
     size = sizeof(dir);
     dir[0] = 0;
-    db_get_value(hDB, 0, "/Logger/Data Dir", dir, &size, TID_STRING);
+    db_get_value(hDB, 0, "/Logger/Data Dir", dir, &size, TID_STRING, TRUE);
     if (dir[0] != 0)
       if (dir[strlen(dir)-1] != DIR_SEPARATOR)
         strcat(dir, DIR_SEPARATOR_STR);
@@ -715,7 +718,7 @@ static EVENT_DEF *event_def=NULL;
       }
 
     size = sizeof(id);
-    status = db_get_value(hDB, hKey, "Common/Event ID", &id, &size, TID_WORD);
+    status = db_get_value(hDB, hKey, "Common/Event ID", &id, &size, TID_WORD, TRUE);
     if (status != DB_SUCCESS)
       continue;
 
@@ -726,7 +729,7 @@ static EVENT_DEF *event_def=NULL;
 
       size = sizeof(str);
       str[0] = 0;
-      db_get_value(hDB, hKey, "Common/Format", str, &size, TID_STRING);
+      db_get_value(hDB, hKey, "Common/Format", str, &size, TID_STRING, TRUE);
 
       if (equal_ustring(str, "Fixed"))
         event_def[index].format = FORMAT_FIXED;
@@ -1440,7 +1443,7 @@ double dzero;
     /* check if autorestart, main loop will take care of it */
     size = sizeof(BOOL);
     flag = FALSE;
-    db_get_value(hDB, 0, "/Logger/Auto restart", &flag, &size, TID_BOOL);
+    db_get_value(hDB, 0, "/Logger/Auto restart", &flag, &size, TID_BOOL, TRUE);
 
     if (flag)
       auto_restart = ss_time() + 20; /* start in 20 sec. */
@@ -1466,7 +1469,7 @@ double dzero;
     /* check if autorestart, main loop will take care of it */
     size = sizeof(BOOL);
     flag = FALSE;
-    db_get_value(hDB, 0, "/Logger/Auto restart", &flag, &size, TID_BOOL);
+    db_get_value(hDB, 0, "/Logger/Auto restart", &flag, &size, TID_BOOL, TRUE);
 
     if (flag)
       auto_restart = ss_time() + 20; /* start in 20 sec. */
@@ -1555,11 +1558,9 @@ INT open_history()
   /* set direcotry for history files */
   size = sizeof(str);
   str[0] = 0;
-  status = db_find_key(hDB, 0, "/Logger/History Dir", &hKey);
-  if (status == DB_SUCCESS)
-    db_get_value(hDB, 0, "/Logger/History Dir", str, &size, TID_STRING);
-  else
-    db_get_value(hDB, 0, "/Logger/Data Dir", str, &size, TID_STRING);
+  status = db_get_value(hDB, 0, "/Logger/History Dir", str, &size, TID_STRING, FALSE);
+  if (status != DB_SUCCESS)
+    db_get_value(hDB, 0, "/Logger/Data Dir", str, &size, TID_STRING, TRUE);
 
   if (str[0] != 0)
     hs_set_path(str);
@@ -1596,7 +1597,7 @@ INT open_history()
 
     /* check history flag */
     size = sizeof(history);
-    db_get_value(hDB, hKeyEq, "Common/Log history", &history, &size, TID_INT);
+    db_get_value(hDB, hKeyEq, "Common/Log history", &history, &size, TID_INT, TRUE);
 
     /* define history tags only if log history flag is on */
     if (history > 0)
@@ -1613,7 +1614,7 @@ INT open_history()
         }
 
       size = sizeof(event_id);
-      db_get_value(hDB, hKeyEq, "Common/Event ID", &event_id, &size, TID_WORD);
+      db_get_value(hDB, hKeyEq, "Common/Event ID", &event_id, &size, TID_WORD, TRUE);
 
       /* count keys in variables tree */
       for (n_var=0,n_tags=0 ;; n_var++)
@@ -2001,7 +2002,7 @@ double dzero;
     /* check online mode */
     online_mode = 0;
     size = sizeof(online_mode);
-    db_get_value(hDB, 0, "/Runinfo/online mode", &online_mode, &size, TID_INT);
+    db_get_value(hDB, 0, "/Runinfo/online mode", &online_mode, &size, TID_INT, TRUE);
 
     for (i=0; i<MAX_CHANNELS ; i++)
       {
@@ -2016,14 +2017,14 @@ double dzero;
       if (status == DB_SUCCESS)
         {
         size = sizeof(str);
-        status = db_get_value(hDB, hKeyChannel, "Settings/Type", str, &size, TID_STRING);
+        status = db_get_value(hDB, hKeyChannel, "Settings/Type", str, &size, TID_STRING, TRUE);
         if (status != DB_SUCCESS)
           continue;
 
         if (equal_ustring(str, "Tape"))
           {
           size = sizeof(str);
-          status = db_get_value(hDB, hKeyChannel, "Settings/Filename", str, &size, TID_STRING);
+          status = db_get_value(hDB, hKeyChannel, "Settings/Filename", str, &size, TID_STRING, TRUE);
           if (status != DB_SUCCESS)
             continue;
 
@@ -2105,11 +2106,11 @@ BOOL         write_data, tape_flag = FALSE;
   /* read global logging flag */
   size = sizeof(BOOL);
   write_data = TRUE;
-  db_get_value(hDB, 0, "/Logger/Write data", &write_data, &size, TID_BOOL);
+  db_get_value(hDB, 0, "/Logger/Write data", &write_data, &size, TID_BOOL, TRUE);
 
   /* read tape message flag */
   size = sizeof(tape_message);
-  db_get_value(hDB, 0, "/Logger/Tape message", &tape_message, &size, TID_BOOL);
+  db_get_value(hDB, 0, "/Logger/Tape message", &tape_message, &size, TID_BOOL, TRUE);
 
   /* loop over all channels */
   status = db_find_key(hDB, 0, "/Logger/Channels", &hKeyRoot);
@@ -2220,7 +2221,7 @@ BOOL         write_data, tape_flag = FALSE;
         {
         size = sizeof(dir);
         dir[0] = 0;
-        db_get_value(hDB, 0, "/Logger/Data Dir", dir, &size, TID_STRING);
+        db_get_value(hDB, 0, "/Logger/Data Dir", dir, &size, TID_STRING, TRUE);
         if (dir[0] != 0)
           if (dir[strlen(dir)-1] != DIR_SEPARATOR)
             strcat(dir, DIR_SEPARATOR_STR);
@@ -2440,13 +2441,13 @@ char   str[256];
   /* ODB dump if requested */
   size = sizeof(flag);
   flag = 0;
-  db_get_value(hDB, 0, "/Logger/ODB Dump", &flag, &size, TID_BOOL);
+  db_get_value(hDB, 0, "/Logger/ODB Dump", &flag, &size, TID_BOOL, TRUE);
   if (flag)
     {
     strcpy(str, "run%d.odb");
     size = sizeof(str);
     str[0] = 0;
-    db_get_value(hDB, 0, "/Logger/ODB Dump File", str, &size, TID_STRING);
+    db_get_value(hDB, 0, "/Logger/ODB Dump File", str, &size, TID_STRING, TRUE);
     if (str[0] == 0)
       strcpy(str, "run%d.odb");
 
@@ -2624,7 +2625,7 @@ usage:
 
   /* print startup message */
   size = sizeof(dir);
-  db_get_value(hDB, 0, "/Logger/Data dir", dir, &size, TID_STRING);
+  db_get_value(hDB, 0, "/Logger/Data dir", dir, &size, TID_STRING, TRUE);
   printf("Log     directory is %s\n", dir);
   printf("Data    directory is same as Log unless specified in channels/\n");
 
@@ -2633,7 +2634,7 @@ usage:
   dir[0] = 0;
   status = db_find_key(hDB, 0, "/Logger/History dir", &hktemp);
   if (status == DB_SUCCESS)
-    db_get_value(hDB, 0, "/Logger/History dir", dir, &size, TID_STRING);
+    db_get_value(hDB, 0, "/Logger/History dir", dir, &size, TID_STRING, TRUE);
   else
     sprintf(dir, "same as Log");
   printf("History directory is %s\n", dir);
@@ -2642,7 +2643,7 @@ usage:
   dir[0] = 0;
   status = db_find_key(hDB, 0, "/Logger/Elog dir", &hktemp);
   if (status == DB_SUCCESS)
-    db_get_value(hDB, 0, "/Logger/Elog dir", dir, &size, TID_STRING);
+    db_get_value(hDB, 0, "/Logger/Elog dir", dir, &size, TID_STRING, TRUE);
   else
     sprintf(dir, "same as Log");
   printf("ELog    directory is %s\n", dir);
@@ -2668,7 +2669,7 @@ usage:
       {
       /* check if really stopped */
       size = sizeof(state);
-      status = db_get_value(hDB, 0, "Runinfo/State", &state, &size, TID_INT);
+      status = db_get_value(hDB, 0, "Runinfo/State", &state, &size, TID_INT, TRUE);
       if (status != DB_SUCCESS)
         cm_msg(MERROR, "cm_transition", "cannot get Runinfo/State in database");
 
@@ -2676,7 +2677,7 @@ usage:
         {
         auto_restart = 0;
         size = sizeof(run_number);
-        db_get_value(hDB, 0, "/Runinfo/Run number", &run_number, &size, TID_INT);
+        db_get_value(hDB, 0, "/Runinfo/Run number", &run_number, &size, TID_INT, TRUE);
 
         cm_msg(MTALK, "main", "starting new run");
         status = cm_transition(TR_START, run_number+1, NULL, 0, ASYNC);

@@ -6,6 +6,9 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
+  Revision 1.30  2002/05/08 19:54:41  midas
+  Added extra parameter to function db_get_value()
+
   Revision 1.29  2002/03/14 14:15:44  midas
   Fixed bug with setuid
 
@@ -714,7 +717,7 @@ INT convert_flags;
 
     case RPC_DB_GET_VALUE:
       rpc_convert_data(CARRAY(3), CDWORD(5), RPC_FIXARRAY, CINT(4), convert_flags);
-      status = db_get_value(CHNDLE(0), CHNDLE(1), CSTRING(2), CARRAY(3), CPINT(4), CDWORD(5));
+      status = db_get_value(CHNDLE(0), CHNDLE(1), CSTRING(2), CARRAY(3), CPINT(4), CDWORD(5), CBOOL(6));
       rpc_convert_data(CARRAY(3), CDWORD(5), RPC_FIXARRAY | RPC_OUTGOING, CINT(4), convert_flags);
       break;
 
