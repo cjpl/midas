@@ -9,6 +9,9 @@
                 for SCS-300 Parallel Port Interface
 
   $Log$
+  Revision 1.3  2002/11/28 13:03:41  midas
+  Protocol version 1.2
+
   Revision 1.2  2002/10/09 11:06:46  midas
   Protocol version 1.1
 
@@ -68,7 +71,7 @@ sbit LPT_BUSY   =       P2^7;    // Pin 11
 
 #pragma NOAREGS
 
-void user_write(unsigned char channel);
+void user_write(unsigned char channel) reentrant;
 
 /*---- User init function ------------------------------------------*/
 
@@ -85,7 +88,7 @@ void user_init(void)
 
 /*---- User write function -----------------------------------------*/
 
-void user_write(unsigned char channel)
+void user_write(unsigned char channel) reentrant
 {
   if (channel == 0);
 }
@@ -100,7 +103,7 @@ unsigned char user_read(unsigned char channel)
 
 /*---- User write config function ----------------------------------*/
 
-void user_write_conf(unsigned char channel)
+void user_write_conf(unsigned char channel) reentrant
 {
   if (channel);
 }
@@ -192,7 +195,7 @@ char          c;
         return i;
       }
 
-    watchdog_refresh();
+    yield();
 
     } while (time() < start+timeout);
 
@@ -220,7 +223,7 @@ unsigned char i, n;
     if (n == 10)
       user_data.value[i] = atof(str);
 
-    watchdog_refresh();
+    yield();
     }
 
 }

@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol commands
 
   $Log$
+  Revision 1.14  2002/11/28 13:03:41  midas
+  Protocol version 1.2
+
   Revision 1.13  2002/11/20 12:02:09  midas
   Fixed bug with secondary LED
 
@@ -102,7 +105,7 @@ sbit RS485_ENABLE =      P3^5;
 
 /*---- MSCB commands -----------------------------------------------*/
 
-#define VERSION 0x11    // version 1.1
+#define VERSION 0x12    // version 1.2
 
 /* Version history:
 
@@ -129,7 +132,8 @@ sbit RS485_ENABLE =      P3^5;
 #define CMD_UPGRADE     0x50
 #define CMD_USER        0x58
 
-#define CMD_TOKEN       0x60
+#define CMD_ECHO        0x61
+#define CMD_TOKEN       0x68
 #define CMD_SET_FLAGS   0x69
 
 #define CMD_ACK         0x78
@@ -140,8 +144,8 @@ sbit RS485_ENABLE =      P3^5;
 #define CMD_WRITE_CONF  0x90
 #define CMD_FLASH       0x98
 
-#define CMD_READ        0xA1
-#define CMD_READ_CONF   0xA9
+#define CMD_READ        0xA0
+#define CMD_READ_CONF   0xA8
 
 #define CMD_WRITE_BLOCK 0xB5
 #define CMD_READ_BLOCK  0xB9

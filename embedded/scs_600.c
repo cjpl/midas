@@ -9,6 +9,9 @@
                 for SCS-600 Digital I/O
 
   $Log$
+  Revision 1.8  2002/11/28 13:03:41  midas
+  Protocol version 1.2
+
   Revision 1.7  2002/11/22 15:43:03  midas
   Made user_write reentrant
 
@@ -96,7 +99,7 @@ unsigned char output;
 
 #pragma NOAREGS
 
-void user_write(unsigned char channel);
+void user_write(unsigned char channel) reentrant;
 
 /*---- User init function ------------------------------------------*/
 
@@ -127,7 +130,7 @@ unsigned char i;
 
 /*---- User write function -----------------------------------------*/
 
-void user_write(unsigned char channel)
+void user_write(unsigned char channel) reentrant
 {
   if (channel);
 }
@@ -142,7 +145,7 @@ unsigned char user_read(unsigned char channel)
 
 /*---- User write config function ----------------------------------*/
 
-void user_write_conf(unsigned char channel)
+void user_write_conf(unsigned char channel) reentrant
 {
   if (channel);
 }
