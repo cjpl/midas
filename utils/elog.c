@@ -6,6 +6,9 @@
   Contents:     Electronic logbook utility   
 
   $Log$
+  Revision 1.21  2001/12/05 09:58:57  midas
+  Fixed small bug
+
   Revision 1.20  2001/11/15 11:49:46  midas
   Added -u flag for user name/password
 
@@ -455,9 +458,9 @@ char      attr_name[MAX_N_ATTR][NAME_LENGTH], attrib[MAX_N_ATTR][NAME_LENGTH];
     size = lseek(fh, 0, SEEK_END);
     lseek(fh, 0, SEEK_SET);
 
-    if (size > sizeof(text))
+    if (size > sizeof(text)-1)
       {
-      printf("Message file \"%s\" is too long (%d bytes max).\n", sizeof(text));
+      printf("Message file \"%s\" is too long (%d bytes max).\n", textfile, sizeof(text));
       return 0;
       }
 
