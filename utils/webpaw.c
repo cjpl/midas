@@ -6,6 +6,9 @@
   Contents:     Web server for remote PAW display
 
   $Log$
+  Revision 1.24  2000/08/24 14:08:05  midas
+  Version 1.0.7
+
   Revision 1.23  2000/08/24 14:04:42  midas
   Fixed bug with removing '+' in commands like fun/plot 1+x 0 1
 
@@ -102,7 +105,7 @@
 #endif
 
 /* Version of WebPAW */
-#define VERSION "1.0.6"
+#define VERSION "1.0.7"
 
 #define WEB_BUFFER_SIZE 100000
 #define MAX_PARAM           10
