@@ -6,6 +6,9 @@
   Contents:     Various utility functions for MSCB protocol
 
   $Log$
+  Revision 1.23  2003/03/24 15:00:31  midas
+  Implemented 16-bit magic at end of EEPROM data
+
   Revision 1.22  2003/03/23 10:20:43  midas
   Added LCD_SUPPORT flag
 
@@ -892,7 +895,8 @@ void eeprom_flash(void)
 
 \********************************************************************/
 {
-unsigned char offset, i;
+unsigned char  offset, i;
+unsigned short magic;
 
   eeprom_erase();
   yield();
@@ -905,11 +909,15 @@ unsigned char offset, i;
   // user channel variables
   for (i=0 ; variables[i].width ; i++)
     eeprom_write(variables[i].ud, variables[i].width, &offset);
+
+  // magic
+  magic = 0x1234;
+  eeprom_write(&magic, 2, &offset);
 }
 
 /*------------------------------------------------------------------*/
 
-void eeprom_retrieve(void)
+unsigned char eeprom_retrieve(void)
 /********************************************************************\
 
   Routine: eeprom_retrieve
@@ -918,7 +926,8 @@ void eeprom_retrieve(void)
 
 \********************************************************************/
 {
-unsigned char offset, i;
+unsigned char  offset, i;
+unsigned short magic;
 
   offset = 0;
 
@@ -928,6 +937,11 @@ unsigned char offset, i;
   // user channel variables
   for (i=0 ; variables[i].width ; i++)
     eeprom_read(variables[i].ud, variables[i].width, &offset);
+
+  // check for magic
+  eeprom_read(&magic, 2, &offset);
+
+  return (magic == 0x1234);
 }
 
 /*------------------------------------------------------------------*/

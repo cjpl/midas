@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol commands
 
   $Log$
+  Revision 1.23  2003/03/24 15:00:31  midas
+  Implemented 16-bit magic at end of EEPROM data
+
   Revision 1.22  2003/03/23 10:20:43  midas
   Added LCD_SUPPORT flag
 
@@ -309,7 +312,6 @@ unsigned int  node_addr;
 unsigned int  group_addr;
 unsigned int  wd_counter;
 char          node_name[16];
-unsigned char magic;
 } SYS_INFO;
 
 #define ENABLE_INTERRUPTS { EA = 1; }
@@ -337,7 +339,7 @@ unsigned char gets_wait(char *str, unsigned char size, unsigned char timeout);
 void flush(void);
 
 void eeprom_flash(void); 
-void eeprom_retrieve(void);
+unsigned char eeprom_retrieve(void);
 
 void uart_init(unsigned char port, unsigned char baud);
 
