@@ -9,6 +9,9 @@
                 for SCS-520 analog I/O with current option
 
   $Log$
+  Revision 1.3  2003/06/06 15:19:32  midas
+  Set gains asynchronously
+
   Revision 1.2  2003/06/05 14:47:50  midas
   Added channel gain/offset/bip offset
 
@@ -31,6 +34,8 @@ sbit SR_STROBE  = P0 ^ 5;    // Storage register clock
 sbit SR_DATA    = P0 ^ 6;    // Serial data
 sbit SR_DATAIN  = P0 ^ 7;    // Serial data input
 
+bit  gain_flag;              // set when new gains need to be set
+
 /*---- Define variable parameters returned to CMD_GET_INFO command ----*/
 
 /* data buffer (mirrored in EEPROM) */
@@ -39,12 +44,13 @@ struct {
   float         adc[8];
   float         dac0, dac1;
   unsigned char p1;
-  unsigned char adc_average;
-  unsigned char range[8]; // PGA bits
-  char          ofs[8];
-  char          gain[8];
-  char          bip_ofs[8];
-  float         glbl_gain; // gain calibration
+  unsigned char adc_average; // average 2^(adc_average+4)
+  unsigned char range[8];    // see below
+  char          ofs[8];      // channel offset in mV
+  char          gain[8];     // channel gain
+  char          bip_ofs[8];  // bipolar offset in 10mV
+  float         glbl_gain;   // global gain calibration
+  unsigned char cur_mode;    // current bit for each channel
 } idata user_data;
   
 /* Usage of range:
@@ -116,6 +122,8 @@ MSCB_INFO_VAR code variables[] = {
   1, UNIT_VOLT, PRFX_MILLI, 0, MSCBF_SIGNED, "BipOfs7", &user_data.bip_ofs[7],
 
   4, UNIT_FACTOR,        0, 0,  MSCBF_FLOAT, "GlblGain",&user_data.glbl_gain,
+  1, UNIT_BYTE,          0, 0,            0, "CurMode", &user_data.cur_mode,
+
   0
 };
 
@@ -144,14 +152,22 @@ unsigned char i;
   DAC0CN = 0x80;  // enable DAC0
   DAC1CN = 0x80;  // enable DAC1
 
-  /* 
-  push-pull:
-    P0.0    TX
-    P0.4    SR_CLOCK
-    P0.5    SR_STROBE
-    P0.6    SR_DATA 
+  /* push-pull:
+       P0.0    TX
+       P0.1
+       P0.2
+       P0.3
+
+       P0.4    SR_CLOCK
+       P0.5    SR_STROBE
+       P0.6    SR_DATA 
+       P0.7
   */
-  PRT0CF = 0x71;
+  //PRT0CF = 0x71;
+  PRT0CF = 0x41;
+
+  /* P1 push-pull if UDN2981 driver installed, open drain if input */
+  PRT1CF = 0xFF;
 
   /* initial EEPROM value */
   if (init)
@@ -179,10 +195,8 @@ unsigned char i;
   user_write(10);
   user_write(12);
 
-  /* write gains */
+  /* write gains and read current mode */
   write_gain();
-
-  // DEBUG_MODE = 1;
 }
 
 /*---- User write function -----------------------------------------*/
@@ -191,36 +205,57 @@ unsigned char i;
 
 void write_gain(void) reentrant
 {
-unsigned char i;
+unsigned char i, d;
 
   SR_STROBE = 0;
   SR_CLOCK  = 0;
+  SR_DATAIN = 1;
+  d = 0;
 
   for (i=0 ; i<4 ; i++)
     {
+    if (!SR_DATAIN)
+      d |= (1 << (i*2));
+
     SR_DATA = ((user_data.range[3-i] & 0x02) > 0); // first bit ext. PGA
     SR_CLOCK = 1;
+    delay_us(10);
     SR_CLOCK = 0;
+    delay_us(10);
+
+    if (!SR_DATAIN)
+      d |= (1 << (i*2+1));
 
     SR_DATA = ((user_data.range[3-i] & 0x01) > 0); // second bit ext. PGA
     SR_CLOCK = 1;
+    delay_us(10);
     SR_CLOCK = 0;
+    delay_us(10);
     }
   
+  user_data.cur_mode = d;
+
   for (i=0 ; i<4 ; i++)
     {
     SR_DATA = ((user_data.range[7-i] & 0x02) > 0); // first bit ext. PGA
     SR_CLOCK = 1;
+    delay_us(10);
     SR_CLOCK = 0;
+    delay_us(10);
 
     SR_DATA = ((user_data.range[7-i] & 0x01) > 0); // second bit ext. PGA
     SR_CLOCK = 1;
+    delay_us(10);
     SR_CLOCK = 0;
+    delay_us(10);
     }
 
+  /* strobe for output and next input */
   SR_DATA   = 0;
   SR_STROBE = 1;
+  delay_us(10);
   SR_STROBE = 0;
+  delay_us(10);
 }
 
 void user_write(unsigned char index) reentrant
@@ -285,8 +320,8 @@ unsigned short d;
       break;
     }
 
-  if (index > 10)
-    write_gain();
+  if (index >= 12)
+    gain_flag = 1;
 }
 
 /*---- User read function ------------------------------------------*/
@@ -356,7 +391,7 @@ float gvalue;
 
   /* correct for bipolar offset */
   if (user_data.range[channel] & 0x04)
-    gvalue += user_data.bip_ofs[channel]/100.0;
+    gvalue += user_data.bip_ofs[channel]/1000.0;
 
   /* external voltage divider */
   gvalue *= 10 * user_data.glbl_gain;
@@ -381,5 +416,11 @@ static unsigned char i = 0;
 
   adc_read(i, &user_data.adc[i]);
   i = (i+1) % 8;
+
+  if (gain_flag)
+    {
+    gain_flag = 0;
+    write_gain();
+    }
 }
 
