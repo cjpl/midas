@@ -7,6 +7,9 @@
                 SUBM300 running on Cygnal C8051F021
 
   $Log$
+  Revision 1.2  2002/10/04 09:03:20  midas
+  Small mods for scs_300
+
   Revision 1.1  2002/10/03 15:35:15  midas
   Initial revision
 
@@ -21,7 +24,7 @@
 
 #define LPT_DATA         P1      // 8 data bits to LPT
 
-sbit LPT_NSTROBE =       P2^3;   // control/status its to LPT
+sbit LPT_NSTROBE =       P2^3;   // control/status bits to LPT
 sbit LPT_BUSY =          P2^7;
 sbit LPT_NDATAREADY =    P2^6;
 sbit LPT_NACK =          P2^5;
