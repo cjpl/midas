@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.187  2003/04/22 12:01:29  midas
+  Added graceful shutdown of odbedit->frontend connection
+
   Revision 1.186  2003/04/22 10:09:06  midas
   Added RPC_NODELAY option
 
@@ -2904,7 +2907,7 @@ char  name[NAME_LENGTH], host_name[HOST_NAME_LENGTH];
         return status;
 
       /* client found -> connect to its server port */
-      return rpc_client_connect(host_name, port, hConn);
+      return rpc_client_connect(host_name, port, client_name, hConn);
       }
 
 
@@ -4066,7 +4069,7 @@ RUNINFO_STR(runinfo_str);
             }
 
           /* client found -> connect to its server port */
-          status = rpc_client_connect(host_name, port, &hConn);
+          status = rpc_client_connect(host_name, port, client_name, &hConn);
           if (status != RPC_SUCCESS)
             {
             sprintf(str, "cannot connect to client %s on host %s, port %d",
@@ -5312,7 +5315,7 @@ DWORD  start_time;
       db_get_value(hDB, hSubkey, "Host", remote_host, &size, TID_STRING, TRUE);
 
       /* client found -> connect to its server port */
-      status = rpc_client_connect(remote_host, port, &hConn);
+      status = rpc_client_connect(remote_host, port, client_name, &hConn);
       if (status != RPC_SUCCESS)
         {
         return_status = CM_NO_CLIENT;
@@ -8977,7 +8980,7 @@ char        net_buffer[256];
 
 /*------------------------------------------------------------------*/
 
-INT rpc_client_connect(char *host_name, INT port, HNDLE *hConnection)
+INT rpc_client_connect(char *host_name, INT port, char *client_name, HNDLE *hConnection)
 /********************************************************************\
 
   Routine: rpc_client_connect
@@ -8986,8 +8989,8 @@ INT rpc_client_connect(char *host_name, INT port, HNDLE *hConnection)
 
   Input:
     char *host_name          IP address of host to connect to.
-
     INT  port                TPC port to connect to.
+    char *clinet_name        Client program name
 
   Output:
     HNDLE *hConnection       Handle for new connection which can be used
@@ -9029,37 +9032,7 @@ struct hostent       *phe;
     }
 
   /* check for broken connections */
-  for (i=0 ; i<MAX_RPC_CONNECTION ; i++)
-    if (_client_connection[i].send_sock != 0)
-      {
-      int             sock;
-      fd_set          readfds;
-      struct timeval  timeout;
-      char            buffer[64];
-
-      sock = _client_connection[i].send_sock;
-      FD_ZERO(&readfds);
-      FD_SET(sock, &readfds);
-
-      timeout.tv_sec  = 0;
-      timeout.tv_usec = 0;
-
-      do
-        {
-        status = select(FD_SETSIZE, &readfds, NULL, NULL, &timeout);
-        } while (status == -1); /* dont return if an alarm signal was cought */
-
-      if (FD_ISSET(sock, &readfds))
-        {
-        status = recv(sock, (char *) buffer, sizeof(buffer), 0);
-        if (status <= 0)
-          {
-          /* connection broken -> reset */
-          closesocket(sock);
-          memset(&_client_connection[i], 0, sizeof(RPC_CLIENT_CONNECTION));
-          }
-        }
-      }
+  rpc_client_check();
 
   /* check if connection already exists */
   for (i=0 ; i<MAX_RPC_CONNECTION ; i++)
@@ -9093,6 +9066,7 @@ struct hostent       *phe;
 
   index = i;
   strcpy(_client_connection[index].host_name, host_name);
+  strcpy(_client_connection[index].client_name, client_name);
   _client_connection[index].port = port;
   _client_connection[index].exp_name[0] = 0;
   _client_connection[index].transport = RPC_TCP;
@@ -9189,6 +9163,70 @@ struct hostent       *phe;
   *hConnection = index+1;
 
   return RPC_SUCCESS;
+}
+
+/*------------------------------------------------------------------*/
+
+void rpc_client_check()
+/********************************************************************\
+
+  Routine: rpc_client_check
+
+  Purpose: Check all client connections if remote client closed link
+
+  Function value:
+    RPC_SUCCESS              Successful completion
+    RPC_NET_ERROR            Error in socket call
+    RPC_NO_CONNECTION        Maximum number of connections reached
+    RPC_NOT_REGISTERED       cm_connect_experiment was not called properly
+
+\********************************************************************/
+{
+INT i, status;
+
+  /* check for broken connections */
+  for (i=0 ; i<MAX_RPC_CONNECTION ; i++)
+    if (_client_connection[i].send_sock != 0)
+      {
+      int             sock;
+      fd_set          readfds;
+      struct timeval  timeout;
+      char            buffer[64];
+
+      sock = _client_connection[i].send_sock;
+      FD_ZERO(&readfds);
+      FD_SET(sock, &readfds);
+
+      timeout.tv_sec  = 0;
+      timeout.tv_usec = 0;
+
+      do
+        {
+        status = select(FD_SETSIZE, &readfds, NULL, NULL, &timeout);
+        } while (status == -1); /* dont return if an alarm signal was cought */
+
+      if (FD_ISSET(sock, &readfds))
+        {
+        status = recv(sock, (char *) buffer, sizeof(buffer), 0);
+        
+        if (equal_ustring(buffer, "EXIT"))
+          {
+          /* normal exit */
+          closesocket(sock);
+          memset(&_client_connection[i], 0, sizeof(RPC_CLIENT_CONNECTION));
+          }
+
+        if (status <= 0)
+          {
+          cm_msg(MERROR, "rpc_client_check", "Connection broken to \"%s\" on host %s", 
+            _client_connection[i].client_name, _client_connection[i].host_name);
+
+          /* connection broken -> reset */
+          closesocket(sock);
+          memset(&_client_connection[i], 0, sizeof(RPC_CLIENT_CONNECTION));
+          }
+        }
+      }
 }
 
 /*------------------------------------------------------------------*/
@@ -9502,6 +9540,14 @@ INT i;
     for (i=MAX_RPC_CONNECTION-1 ; i >= 0; i--)
       if (_client_connection[i].send_sock != 0)
         rpc_client_disconnect(i+1, FALSE);
+
+    /* close server connection from other clients */
+    for (i=0 ; i<MAX_RPC_CONNECTION ; i++)
+      if (_server_acception[i].recv_sock)
+        {
+        send(_server_acception[i].recv_sock, "EXIT", 5, 0);
+        closesocket(_server_acception[i].recv_sock);
+        }
     }
   else
     {
@@ -9528,7 +9574,8 @@ INT rpc_server_disconnect()
 
   Routine: rpc_server_disconnect
 
-  Purpose: Close a rpc connection to a MIDAS server
+  Purpose: Close a rpc connection to a MIDAS server and close all
+           server connections from other clients
 
   Input:
     none
@@ -9543,7 +9590,7 @@ INT rpc_server_disconnect()
 
 \********************************************************************/
 {
-  static int rpc_server_disconnect_recursion_level = 0;
+static int rpc_server_disconnect_recursion_level = 0;
 
   if (rpc_server_disconnect_recursion_level)
     return RPC_SUCCESS;
