@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.120  2000/08/11 12:16:44  midas
+  Fixed bug with "facility" being NULL
+
   Revision 1.119  2000/08/11 11:43:51  midas
   Added cm_msg1 to produce messages which go to a differnt logging file
 
@@ -700,7 +703,7 @@ HNDLE hDB, hKey;
           if (dir[strlen(dir)-1] != DIR_SEPARATOR)
             strcat(dir, DIR_SEPARATOR_STR);
         
-        if (facility)
+        if (facility[0])
           {
           strcpy(filename, facility);
           strcat(filename, ".log");
@@ -722,7 +725,7 @@ HNDLE hDB, hKey;
             strcat(dir, DIR_SEPARATOR_STR);
 
         strcpy(path, dir);
-        if (facility)
+        if (facility[0])
           {
           strcat(path, facility);
           strcat(path, ".log");
@@ -733,7 +736,7 @@ HNDLE hDB, hKey;
       }
     else
       {
-      if (facility)
+      if (facility[0])
         {
         strcpy(path, facility);
         strcat(path, ".log");
@@ -881,7 +884,7 @@ static BOOL  in_routine = FALSE;
     }
 
   /* log message */
-  cm_msg_log(message_type, send_message, NULL);
+  cm_msg_log(message_type, send_message, "");
 
   in_routine = FALSE;
 
