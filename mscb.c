@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus communication functions
 
   $Log$
+  Revision 1.41  2003/06/26 11:55:55  midas
+  Made reset pulse longer
+
   Revision 1.40  2003/06/11 14:13:33  midas
   Version 1.4.5
 
@@ -126,7 +129,7 @@
 
 \********************************************************************/
 
-#define MSCB_LIBRARY_VERSION   "1.4.5"
+#define MSCB_LIBRARY_VERSION   "1.4.6"
 #define MSCB_PROTOCOL_VERSION  "1.4"
 
 #ifdef _MSC_VER           // Windows includes
@@ -400,7 +403,7 @@ static unsigned int mask=0;
        mask = flag ? mask | (1<<0) : mask & ~(1<<0);
        break;
     case LPT_RESET:  // negative
-       mask = flag ? mask | (1<<1) : mask & ~(1<<1);
+       mask = !flag ? mask | (1<<1) : mask & ~(1<<1);
        break;
     case LPT_BIT9:   // positive
        mask = flag ? mask | (1<<2) : mask & ~(1<<2);
@@ -865,6 +868,7 @@ char          host[256], port[256];
   mscb_lock(index+1);
 
   /* set initial state of handshake lines */
+  pp_wcontrol(index+1, LPT_RESET, 0);
   pp_wcontrol(index+1, LPT_STROBE, 0);
 
   /* switch to output mode */
@@ -1171,10 +1175,11 @@ int mscb_reset(int fd)
 
   /* toggle reset */
   pp_wcontrol(fd, LPT_RESET, 1);
+  Sleep(100); /* for elko */
   pp_wcontrol(fd, LPT_RESET, 0);
 
   /* wait for node to reboot */
-  Sleep(5000);
+  Sleep(3000);
 
   mscb_release(fd);
 
