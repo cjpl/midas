@@ -6,6 +6,9 @@
 #  Contents:     Makefile for MIDAS binaries and examples under unix
 #
 #  $Log$
+#  Revision 1.37  2002/06/04 07:32:00  midas
+#  Added 'melog'
+#
 #  Revision 1.36  2002/05/10 05:20:54  pierre
 #  add MANA_LITE option on mana & fal
 #
@@ -279,6 +282,7 @@ PROGS = $(BIN_DIR)/mserver $(BIN_DIR)/mhttpd \
 	$(BIN_DIR)/mdump $(BIN_DIR)/lazylogger \
 	$(BIN_DIR)/mchart $(BIN_DIR)/stripchart.tcl \
 	$(BIN_DIR)/webpaw $(BIN_DIR)/odbhist \
+	$(BIN_DIR)/melog \
 	$(SPECIFIC_OS_PRG)
 
 OBJS =  $(LIB_DIR)/midas.o $(LIB_DIR)/system.o $(LIB_DIR)/mrpc.o \
@@ -445,7 +449,7 @@ install:
 	@echo "... "
 	@echo "... Installing utilities to $(SYSBIN_DIR)"
 	@echo "... "
-	@for i in mhist odbhist mtape mstat lazylogger mdump mcnaf mlxspeaker mchart stripchart.tcl webpaw; \
+	@for i in mhist melog odbhist mtape mstat lazylogger mdump mcnaf mlxspeaker mchart stripchart.tcl webpaw; \
 	  do \
 	  echo $$i ; \
 	  rm -f $(SYSBIN_DIR)/$$i ; \
