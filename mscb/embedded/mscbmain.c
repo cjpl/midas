@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol main program
 
   $Log$
+  Revision 1.31  2003/03/24 15:00:31  midas
+  Implemented 16-bit magic at end of EEPROM data
+
   Revision 1.30  2003/03/23 10:20:43  midas
   Added LCD_SUPPORT flag
 
@@ -241,17 +244,14 @@ unsigned char i;
       break;
 
   /* retrieve EEPROM data */
-  eeprom_retrieve();
-
-  /* correct initial value */
-  if (sys_info.magic != 0x12)
+  if (!eeprom_retrieve())
     {
+    /* correct initial value */
     sys_info.node_addr  = 0xFFFF;
     sys_info.group_addr = 0xFFFF;
     sys_info.wd_counter = 0;
     memset(sys_info.node_name, 0, sizeof(sys_info.node_name));
     strncpy(sys_info.node_name, node_name, sizeof(sys_info.node_name));
-    sys_info.magic      = 0x12;
 
     // init variables
     for (i=0 ; variables[i].width ; i++)
