@@ -7,6 +7,15 @@
                 linked with user code to form a complete frontend
 
   $Log$
+  Revision 1.24  2000/08/21 10:36:41  midas
+  Reworked event and event buffer sizes:
+  - Both max_event_size and event_buffer_size must be defined in user code
+  - While max_event_size is used for frontend buffers, MAX_EVENT_SIZE is the
+    system limit which must be larger than max_event_size
+  - Event size returned from user readout routine is now checked against event
+    size limits
+  - Buffer settings are now always displayed, not only under VxWorks
+
   Revision 1.23  2000/08/09 12:02:43  midas
   Evaluate return status in tr_xxx functions properly
 
@@ -95,6 +104,7 @@
 extern char *frontend_name;
 extern char *frontend_file_name;
 extern BOOL frontend_call_loop;
+extern INT  max_event_size;
 extern INT  event_buffer_size;
 extern INT  display_period;
 extern INT  frontend_init(void);
@@ -113,7 +123,6 @@ extern INT  interrupt_configure(INT cmd, INT source, PTYPE adr);
 
 /* #define USE_EVENT_CHANNEL */
 
-#define USER_MAX_EVENT_SIZE 10000 /* max event size for the FE in bytes */ 
 #define SERVER_CACHE_SIZE  100000 /* event cache before buffer */
 
 #define ODB_UPDATE_TIME     10000 /* 10 seconds for ODB update */
@@ -691,6 +700,13 @@ INT            i;
     /* send event */
     if (pevent->data_size)
       {
+      if (pevent->data_size+sizeof(EVENT_HEADER) > (DWORD) max_event_size)
+        {
+        cm_msg(MERROR, "send_all_periodic_events", "Event size %d larger than maximum size %d",
+               pevent->data_size+sizeof(EVENT_HEADER), max_event_size);
+        return;
+        }
+
       equipment[i].bytes_sent += pevent->data_size + sizeof(EVENT_HEADER);
       equipment[i].events_sent++;
 
@@ -989,6 +1005,12 @@ INT opt_max=0, opt_index=0, opt_tcp_size=128, opt_cnt=0;
           /* send event */
           if (pevent->data_size)
             {
+            if (pevent->data_size+sizeof(EVENT_HEADER) > (DWORD) max_event_size)
+              {
+              cm_msg(MERROR, "send_all_periodic_events", "Event size %d larger than maximum size %d",
+                     pevent->data_size+sizeof(EVENT_HEADER), max_event_size);
+              }
+
             if (eq->buffer_handle)
               {
 #ifdef USE_EVENT_CHANNEL
@@ -1061,6 +1083,12 @@ INT opt_max=0, opt_index=0, opt_tcp_size=128, opt_cnt=0;
               pevent->data_size += size;
               if (size > 0)
                 {
+                if (pevent->data_size+sizeof(EVENT_HEADER) > (DWORD) max_event_size)
+                  {
+                  cm_msg(MERROR, "scheduler", "Event size %d larger than maximum size %d",
+                         pevent->data_size+sizeof(EVENT_HEADER), max_event_size);
+                  }
+
                 eq->subevent_number++;
                 eq->serial_number++;
                 }
@@ -1089,6 +1117,13 @@ INT opt_max=0, opt_index=0, opt_tcp_size=128, opt_cnt=0;
             {
             /* call user readout routine indicating event source */
             pevent->data_size = eq->readout((char *) (pevent+1), 0);
+
+            /* check event size */
+            if (pevent->data_size+sizeof(EVENT_HEADER) > (DWORD) max_event_size)
+              {
+              cm_msg(MERROR, "scheduler", "Event size %d larger than maximum size %d",
+                     pevent->data_size+sizeof(EVENT_HEADER), max_event_size);
+              }
 
             /* increment serial number if event read out sucessfully */
             if (pevent->data_size)
@@ -1520,38 +1555,38 @@ usage:
     }
 #endif
 
-  /* allocate event ring buffer to hold at least 10 events */
-  dm_size = 10*(USER_MAX_EVENT_SIZE + sizeof(EVENT_HEADER) + sizeof(INT));
-  dm_size = max(dm_size , 0x4000); /* minimum 16kb */
-  if (dm_size > event_buffer_size)
+  /* check event and buffer sizes */
+  if (event_buffer_size < 2*max_event_size)
     {
-      printf("event_buffer_size too small for max. event size\n");
-      ss_sleep(1000);
+    printf("event_buffer_size too small for max. event size\n");
+    ss_sleep(5000);
+    return 1;
     }
-  else
-    dm_size = event_buffer_size;
+
+  if (max_event_size > MAX_EVENT_SIZE)
+    {
+    printf("Requested max_event_size (%d) exceeds max. system event size (%d)", 
+            max_event_size, MAX_EVENT_SIZE);
+    ss_sleep(5000);
+    return 1;
+    }
+  
+  dm_size = event_buffer_size;
 
 #ifdef OS_VXWORKS
   /* override dm_size in case of VxWorks
      take remaining free memory and use 20% of it for dm_ */
-  dm_size = 2*10*(USER_MAX_EVENT_SIZE + sizeof(EVENT_HEADER) + sizeof(INT));
+  dm_size = 2*10*(max_event_size + sizeof(EVENT_HEADER) + sizeof(INT));
   if (dm_size > memFindMax())
     {
-      cm_msg(MERROR,"mainFE","Not enough mem space for event size");
-      return 0;
+    cm_msg(MERROR,"mainFE","Not enough mem space for event size");
+    return 0;
     }
   /* takes overall 20% of the available memory resource for dm_() */
   dm_size = 0.2 * memFindMax(); 
   
   /* there are two buffers */
   dm_size /= 2;
-  
-  /* inform user of settings */
-  printf("Event buffer size      :     %i\n",event_buffer_size);
-  printf("buffer allocation      : 2 x %i\n",dm_size);
-  printf("system max event size  :     %i\n",MAX_EVENT_SIZE);
-  printf("user max event size    :     %i\n",USER_MAX_EVENT_SIZE);
-  printf("# of events per buffer :     %i\n",dm_size/USER_MAX_EVENT_SIZE);
 #endif
 
   /* reduce memory size for MS-DOS */
@@ -1559,6 +1594,13 @@ usage:
   if (dm_size > 0x4000)
     dm_size = 0x4000; /* 16k */
 #endif
+
+  /* inform user of settings */
+  printf("Event buffer size      :     %d\n", event_buffer_size);
+  printf("buffer allocation      : 2 x %d\n", dm_size);
+  printf("system max event size  :     %d\n", MAX_EVENT_SIZE);
+  printf("user max event size    :     %d\n", max_event_size);
+  printf("# of events per buffer :     %d\n\n", dm_size/max_event_size);
 
   /* now connect to server */
   if (display_period)
@@ -1587,7 +1629,7 @@ reconnect:
     printf("OK\n");
 
   /* book buffer space */
-  status = dm_buffer_create(dm_size, USER_MAX_EVENT_SIZE);
+  status = dm_buffer_create(dm_size, max_event_size);
   if (status != CM_SUCCESS)
     {
     printf("dm_buffer_create: Not enough memory or event too big\n");
