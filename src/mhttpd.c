@@ -6,6 +6,9 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
+  Revision 1.26  1999/09/13 15:45:50  midas
+  Added forms
+
   Revision 1.25  1999/09/13 09:50:16  midas
   Finished filtered browsing
 
@@ -96,7 +99,7 @@ char exp_name[32];
 BOOL connected;
 
 #define MAX_GROUPS 32
-#define MAX_PARAM  32
+#define MAX_PARAM  100
 #define VALUE_SIZE 256
 #define TEXT_SIZE  4096
 
@@ -106,9 +109,9 @@ char _text[TEXT_SIZE];
 
 INT el_retrieve(char *tag, char *date, int *run, char *author, char *type, 
                 char *system, char *subject, char *text, int *textsize, 
-                char *attachment, char *encoding);
+                char *orig_tag, char *reply_tag, char *attachment, char *encoding);
 int el_submit(int run, char *author, char *type, char *system, char *subject, 
-              char *text, char *encoding, char *attachment, char *tag);
+              char *text, char *reply_to, char *encoding, char *attachment, char *tag);
 INT el_search_message(char *tag, int *fh, BOOL walk);
 
 char *mname[] = {
@@ -1037,7 +1040,7 @@ void show_elog_new(char *path)
 int    i, size, run_number;
 char   str[256], ref[256];
 char   date[80], author[80], type[80], system[80], subject[256], text[10000], 
-       attachment[256], encoding[80];
+       orig_tag[80], reply_tag[80], attachment[256], encoding[80];
 time_t now;
 HNDLE  hDB, hkey;
 
@@ -1050,7 +1053,7 @@ HNDLE  hDB, hkey;
     strcpy(str, path);
     size = sizeof(text);
     el_retrieve(str, date, &run_number, author, type, system, subject, 
-                text, &size, attachment, encoding);
+                text, &size, orig_tag, reply_tag, attachment, encoding);
     }
 
   /* header */
@@ -1289,7 +1292,7 @@ void show_elog_submit_query()
 {
 int    i, size, run, status;
 char   date[80], author[80], type[80], system[80], subject[256], text[10000], 
-       attachment[256], encoding[80];
+       orig_tag[80], reply_tag[80], attachment[256], encoding[80];
 char   str[256], tag[256], ref[80];
 HNDLE  hDB;
 
@@ -1381,7 +1384,7 @@ HNDLE  hDB;
       {
       size = sizeof(text);
       status = el_retrieve(tag, date, &run, author, type, system, subject, 
-                           text, &size, attachment, encoding);
+                           text, &size, orig_tag, reply_tag, attachment, encoding);
       strcat(tag, "+1");
 
       if (status == EL_SUCCESS)
@@ -1437,13 +1440,118 @@ HNDLE  hDB;
 
 /*------------------------------------------------------------------*/
 
+void show_form_query()
+{
+int    i, size, run_number;
+char   str[256];
+time_t now;
+HNDLE  hDB, hkey, hkeyroot;
+KEY    key;
+
+  cm_get_experiment_database(&hDB, NULL);
+
+  /* header */
+  rsprintf("HTTP/1.0 200 Document follows\r\n");
+  rsprintf("Server: MIDAS HTTP %s\r\n", cm_get_version());
+  rsprintf("Content-Type: text/html\r\n\r\n");
+
+  rsprintf("<html><head><title>MIDAS ELog</title></head>\n");
+  rsprintf("<body><form method=\"GET\" action=\"%sEL/\">\n", mhttpd_url);
+
+  if (*getparam("form") == 0)
+    return;
+
+  /* define hidden field for experiment */
+  if (exp_name[0])
+    rsprintf("<input type=hidden name=exp value=\"%s\">\n", exp_name);
+
+  /* hidden field for form */
+  rsprintf("<input type=hidden name=form value=\"%s\">\n", getparam("form"));
+
+  rsprintf("<table border=3 cellpadding=5>\n");
+
+  /*---- title row ----*/
+
+  rsprintf("<tr><th colspan=2 bgcolor=#A0A0FF>MIDAS Electronic Logbook");
+  rsprintf("<th colspan=2 bgcolor=#A0A0FF>Form \"%s\"</tr>\n", getparam("form"));
+
+  /*---- menu buttons ----*/
+
+  rsprintf("<tr><td colspan=4 bgcolor=#C0C0C0>\n");
+
+  rsprintf("<input type=submit name=cmd value=\"Submit\">\n");
+  rsprintf("<input type=reset value=\"Reset Form\">\n");
+  rsprintf("</tr>\n\n");
+
+  /*---- entry form ----*/
+
+  time(&now);
+  rsprintf("<tr><td colspan=2 bgcolor=#FFFF00>Entry date: %s", ctime(&now));
+
+  size = sizeof(run_number);
+  db_get_value(hDB, 0, "/Runinfo/Run number", &run_number, &size, TID_INT);
+  rsprintf("<td bgcolor=#FFFF00>Run number: ");
+  rsprintf("<input type=\"text\" size=10 maxlength=10 name=\"run\" value=\"%d\"</tr>", run_number);
+
+  rsprintf("<tr><td colspan=2 bgcolor=#FFA0A0>Author: <input type=\"text\" size=\"15\" maxlength=\"80\" name=\"Author\">\n");
+
+  rsprintf("<tr><th bgcolor=#A0FFA0>Item<th bgcolor=#FFFF00>Checked<th bgcolor=#A0A0FF colspan=2>Comment</tr>\n");
+
+  sprintf(str, "/Elog/Forms/%s", getparam("form"));
+  db_find_key(hDB, 0, str, &hkeyroot);
+  if (hkeyroot)
+    for (i=0 ; ; i++)
+      {
+      db_enum_link(hDB, hkeyroot, i, &hkey);
+      if (!hkey)
+        break;
+
+      db_get_key(hDB, hkey, &key);
+
+      rsprintf("<tr><td bgcolor=#A0FFA0>%d <b>%s</b>", i+1, key.name);
+      rsprintf("<td bgcolor=#FFFF00 align=center><input type=checkbox name=x%d value=1>", i);
+      rsprintf("<td bgcolor=#A0A0FF colspan=2><input type=text size=30 maxlength=255 name=c%d></tr>\n", i);
+      }
+
+
+  /*---- menu buttons at bottom ----*/
+
+  if (i>10)
+    {
+    rsprintf("<tr><td colspan=4 bgcolor=#C0C0C0>\n");
+
+    rsprintf("<input type=submit name=cmd value=\"Submit\">\n");
+    rsprintf("</tr>\n\n");
+    }
+    
+  rsprintf("</tr></table>\n");
+  rsprintf("</body></html>\r\n");
+}
+
+/*------------------------------------------------------------------*/
+
 void submit_elog()
 {
 char str[80];
 
+  /* check for author */
+  if (*getparam("author") == 0)
+    {
+    rsprintf("HTTP/1.0 200 Document follows\r\n");
+    rsprintf("Server: MIDAS HTTP %s\r\n", cm_get_version());
+    rsprintf("Content-Type: text/html\r\n\r\n");
+
+    rsprintf("<html><head><title>ELog Error</title></head>\n");
+    rsprintf("<i>Error: No author supplied.</i><p>\n");
+    rsprintf("Please go back and enter your name in the <i>author</i> field.\n");
+    rsprintf("<body></body></html>\n");
+    return;
+    }
+
   el_submit(atoi(getparam("run")), getparam("author"), getparam("type"),
             getparam("system"), getparam("subject"), getparam("text"), 
-            *getparam("html") ? "HTML" : "plain", getparam("attachment"), str);
+            getparam("orig"), *getparam("html") ? "HTML" : "plain", 
+            getparam("attachment"), str);
 
   rsprintf("HTTP/1.0 302 Found\r\n");
   rsprintf("Server: MIDAS HTTP %s\r\n", cm_get_version());
@@ -1457,19 +1565,92 @@ char str[80];
 
 /*------------------------------------------------------------------*/
 
+void submit_form()
+{
+char  str[256];
+char  text[10000];
+int   i;
+HNDLE hDB, hkey, hkeyroot;
+KEY   key;
+
+  /* check for author */
+  if (*getparam("author") == 0)
+    {
+    rsprintf("HTTP/1.0 200 Document follows\r\n");
+    rsprintf("Server: MIDAS HTTP %s\r\n", cm_get_version());
+    rsprintf("Content-Type: text/html\r\n\r\n");
+
+    rsprintf("<html><head><title>ELog Error</title></head>\n");
+    rsprintf("<i>Error: No author supplied.</i><p>\n");
+    rsprintf("Please go back and enter your name in the <i>author</i> field.\n");
+    rsprintf("<body></body></html>\n");
+    return;
+    }
+
+  /* assemble text from form */
+  cm_get_experiment_database(&hDB, NULL);
+  sprintf(str, "/Elog/Forms/%s", getparam("form"));
+  db_find_key(hDB, 0, str, &hkeyroot);
+  strcpy(text, "<code>");
+  if (hkeyroot)
+    for (i=0 ; ; i++)
+      {
+      db_enum_link(hDB, hkeyroot, i, &hkey);
+      if (!hkey)
+        break;
+
+      db_get_key(hDB, hkey, &key);
+
+      sprintf(str, "x%d", i);
+      sprintf(text+strlen(text), "%d %s : [%c]  ", i+1, key.name, *getparam(str) == '1' ? 'X':' ');
+      sprintf(str, "c%d", i);
+      sprintf(text+strlen(text), "%s\n", getparam(str));
+      }
+  strcpy(text+strlen(text)-1, "</code>");
+  
+  el_submit(atoi(getparam("run")), getparam("author"), getparam("form"),
+            "General", "", text, "", "HTML", "", str);
+
+  rsprintf("HTTP/1.0 302 Found\r\n");
+  rsprintf("Server: MIDAS HTTP %s\r\n", cm_get_version());
+
+  if (exp_name[0])
+    rsprintf("Location: %sEL/?exp=%s&msg=%s\n\n<html>redir</html>\r\n", mhttpd_url, exp_name, str);
+  else
+    rsprintf("Location: %sEL/?msg=%s\n\n<html>redir</html>\r\n", mhttpd_url, str);
+}
+
+/*------------------------------------------------------------------*/
+
 void show_elog_page(char *path)
 {
 int   size, i, run, msg_status, status, fh, length, first_message, last_message;
 char  str[256], orig_path[256], command[80], ref[256], dir[256], file_name[256];
 char  date[80], author[80], type[80], system[80], subject[256], text[10000], 
-      attachment[256], encoding[80];
-HNDLE hDB;
+      orig_tag[80], reply_tag[80], attachment[256], encoding[80];
+HNDLE hDB, hkey, hkeyroot;
+KEY   key;
 
   cm_get_experiment_database(&hDB, NULL);
 
   /*---- interprete commands ---------------------------------------*/
 
   strcpy(command, getparam("cmd"));
+
+  if (*getparam("form"))
+    {
+    if (*getparam("type"))
+      {
+      sprintf(str, "EL/?form=%s", getparam("form"));
+      redirect(str);
+      return;
+      }
+    if (equal_ustring(command, "submit"))
+      submit_form();
+    else
+      show_form_query();
+    return;
+    }
 
   if (equal_ustring(command, "new"))
     {
@@ -1583,7 +1764,7 @@ HNDLE hDB;
         }
 
       el_retrieve(path, date, &run, author, type, system, subject, 
-                  text, &size, attachment, encoding);
+                  text, &size, orig_tag, reply_tag, attachment, encoding);
       
       if (*getparam("lauthor")  == '1' && !equal_ustring(getparam("author"),  author ))
         continue;
@@ -1640,7 +1821,7 @@ HNDLE hDB;
   size = sizeof(text);
   strcpy(str, path);
   msg_status = el_retrieve(str, date, &run, author, type, system, subject, 
-                           text, &size, attachment, encoding);
+                           text, &size, orig_tag, reply_tag, attachment, encoding);
 
   /*---- header ----*/
 
@@ -1673,13 +1854,55 @@ HNDLE hDB;
   rsprintf("<input type=submit name=cmd value=New>\n");
   rsprintf("<input type=submit name=cmd value=Reply>\n");
   rsprintf("<input type=submit name=cmd value=Query>\n");
+
+  /* check forms from ODB */
+  db_find_key(hDB, 0, "/Elog/Forms", &hkeyroot);
+  if (hkeyroot)
+    for (i=0 ; ; i++)
+      {
+      db_enum_link(hDB, hkeyroot, i, &hkey);
+      if (!hkey)
+        break;
+
+      db_get_key(hDB, hkey, &key);
+
+      rsprintf("<input type=submit name=form value=\"%s\">\n", key.name);
+      }
+
   rsprintf("<input type=submit name=cmd value=Status>\n");
   rsprintf("</tr>\n");
 
   rsprintf("<tr><td colspan=2 bgcolor=#E0E0E0>");
   rsprintf("<input type=submit name=cmd value=Next>\n");
   rsprintf("<input type=submit name=cmd value=Previous>\n");
+  rsprintf("<i>Check a category to browse only entries from that category</i>\n");
   rsprintf("</tr>\n\n");
+
+  if (reply_tag[0] || orig_tag[0])
+    {
+    rsprintf("<tr><td colspan=2 bgcolor=#F0F0F0>");
+    if (orig_tag[0])
+      {
+      if (exp_name[0])
+        sprintf(ref, "%sEL/%s?exp=%s", 
+                mhttpd_url, orig_tag, exp_name);
+      else
+        sprintf(ref, "%sEL/%s", 
+                mhttpd_url, orig_tag);
+      rsprintf("  <a href=\"%s\">Original message</a>  ", ref);
+      }
+    if (reply_tag[0])
+      {
+      if (exp_name[0])
+        sprintf(ref, "%sEL/%s?exp=%s", 
+                mhttpd_url, reply_tag, exp_name);
+      else
+        sprintf(ref, "%sEL/%s", 
+                mhttpd_url, reply_tag);
+      rsprintf("  <a href=\"%s\">Reply to this message</a>  ", ref);
+      }
+    rsprintf("</tr>\n");
+    }
 
   /*---- message ----*/
 
@@ -1769,7 +1992,7 @@ HNDLE hDB;
 /*------------------------------------------------------------------*/
 
 int el_submit(int run, char *author, char *type, char *system, char *subject, 
-              char *text, char *encoding, char *attachment, char *tag)
+              char *text, char *reply_to, char *encoding, char *attachment, char *tag)
 /********************************************************************\
 
   Routine: el_submit
@@ -1783,6 +2006,7 @@ int el_submit(int run, char *author, char *type, char *system, char *subject,
     char   *system          Message system
     char   *subject         Subject
     char   *text            Message text
+    char   *reply_to        In reply to this message
     char   *encoding        Text encoding, either HTML or plain
 
   Output:
@@ -1793,7 +2017,7 @@ int el_submit(int run, char *author, char *type, char *system, char *subject,
 
 \********************************************************************/
 {
-int     size, fh;
+int     size, fh, status;
 struct  tm *tms;
 char    file_name[256], dir[256], str[256], start_str[80], end_str[80];
 HNDLE   hDB;
@@ -1829,7 +2053,10 @@ char    message[10000];
   str[15] = 0;
 
   sprintf(message, "Date: %s\n", str);
-  sprintf(message+strlen(message), "Thread: %8d %8d\n", 0, 0);
+  if (reply_to[0])
+    sprintf(message+strlen(message), "Thread: %16s %16s\n", reply_to, "0");
+  else
+    sprintf(message+strlen(message), "Thread: %16s %16s\n", "0", "0");
   sprintf(message+strlen(message), "Run: %d\n", run);
   sprintf(message+strlen(message), "Author: %s\n", author);
   sprintf(message+strlen(message), "Type: %s\n", type);
@@ -1859,6 +2086,29 @@ char    message[10000];
   write(fh, message, strlen(message));
   write(fh, end_str, strlen(end_str));
   close(fh);
+
+  /* if reply, mark original message */
+  if (reply_to[0])
+    {
+    status = el_search_message(reply_to, &fh, FALSE);
+    if (status == EL_SUCCESS)
+      {
+      /* position to next thread location */
+      lseek(fh, 63, SEEK_CUR);
+      memset(str, 0, sizeof(str));
+      read(fh, str, 16);
+      lseek(fh, -16, SEEK_CUR);
+
+      /* if no reply yet, set it */
+      if (atoi(str) == 0)
+        {
+        sprintf(str, "%16s", tag);
+        write(fh, str, 16);
+        }
+
+      close(fh);
+      }
+    }
 
   return EL_SUCCESS;
 }
@@ -1940,7 +2190,7 @@ HNDLE  hDB;
 
       sprintf(file_name, "%s%02d%02d%02d.log", dir, 
               tms->tm_year % 100, tms->tm_mon+1, tms->tm_mday);
-      *fh = open(file_name, O_RDONLY | O_BINARY, 0644);
+      *fh = open(file_name, O_RDWR | O_BINARY, 0644);
 
       if (*fh < 0)
         {
@@ -1976,7 +2226,7 @@ HNDLE  hDB;
 
       sprintf(file_name, "%s%02d%02d%02d.log", dir, 
               tms->tm_year % 100, tms->tm_mon+1, tms->tm_mday);
-      *fh = open(file_name, O_RDONLY | O_BINARY, 0644);
+      *fh = open(file_name, O_RDWR | O_BINARY, 0644);
 
       if (*fh < 0)
         ltime -= 3600*24; /* one day back */
@@ -2106,7 +2356,7 @@ HNDLE  hDB;
 
 INT el_retrieve(char *tag, char *date, int *run, char *author, char *type, 
                 char *system, char *subject, char *text, int *textsize, 
-                char *attachment, char *encoding)
+                char *orig_tag, char *reply_tag, char *attachment, char *encoding)
 /********************************************************************\
 
   Routine: el_retrieve
@@ -2126,6 +2376,8 @@ INT el_retrieve(char *tag, char *date, int *run, char *author, char *type,
     char   *system          Message system
     char   *subject         Subject
     char   *text            Message text
+    char   *orig_tag        Original message if this one is a reply
+    char   *reply_tag       Reply for current message
     char   *attachment      File attachment
     char   *encoding        Encoding of message
     int    *size            Actual message text size
@@ -2138,7 +2390,7 @@ INT el_retrieve(char *tag, char *date, int *run, char *author, char *type,
 {
 int     size, fh, offset, search_status;
 char    str[256], *p;
-char    message[10000];
+char    message[10000], thread[256];
 
   if (tag[0])
     {
@@ -2168,12 +2420,29 @@ char    message[10000];
     *run = atoi(strstr(message, "Run: ")+5);
     
   el_decode(message, "Date: ", date);
+  el_decode(message, "Thread: ", thread);
   el_decode(message, "Author: ", author);
   el_decode(message, "Type: ", type);
   el_decode(message, "System: ", system);
   el_decode(message, "Subject: ", subject);
   el_decode(message, "Attachment: ", attachment);
   el_decode(message, "Encoding: ", encoding);
+
+  /* conver thread in reply-to and reply-from */
+  p = strtok(thread, " \r");
+  if (p != NULL)
+    strcpy(orig_tag, p);
+  else
+    strcpy(orig_tag, "");
+  p = strtok(NULL, " \r");
+  if (p != NULL)
+    strcpy(reply_tag, p);
+  else
+    strcpy(reply_tag, "");
+  if (atoi(orig_tag) == 0)
+    orig_tag[0] = 0;
+  if (atoi(reply_tag) == 0)
+    reply_tag[0] = 0;
 
   p = strstr(message, "========================================\n");
 
@@ -2956,13 +3225,15 @@ void show_password_page(char *password, char *experiment)
 
 /*------------------------------------------------------------------*/
 
-void show_start_page(hDB)
+void show_start_page(void)
 {
 int   i, j, n, size, status;
-HNDLE hkey, hsubkey;
+HNDLE hDB, hkey, hsubkey;
 KEY   key;
 char  data[1000], str[32];
 char  data_str[256];
+
+  cm_get_experiment_database(&hDB, NULL);
 
   show_header(hDB, "Start run", "", 1);
 
