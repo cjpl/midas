@@ -6,8 +6,12 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.74  2001/12/04 08:53:03  midas
+  Fixed bugs with resubmit, display locked attributes as text only, added
+  -h flag for multi-homes hosts thanks to Scott Erickson
+
   Revision 1.73  2001/11/21 16:26:29  midas
-  Removed "Revision date:" from edit form (should bette be done via an
+  Removed "Revision date:" from edit form (should better be done via an
   attribute, preset to $date)
 
   Revision 1.72  2001/11/21 15:23:48  midas
@@ -234,7 +238,7 @@
 \********************************************************************/
 
 /* Version of ELOG */
-#define VERSION "1.2.5"
+#define VERSION "1.2.6"
 
 #include <stdio.h>
 #include <sys/types.h>
@@ -311,6 +315,7 @@ char logbook_enc[256];
 char data_dir[256];
 char cfg_file[256];
 char cfg_dir[256];
+char tcp_hostname[256];
 
 #define MAX_GROUPS       32
 #define MAX_PARAM       100
@@ -1576,7 +1581,7 @@ INT el_submit(char attr_name[MAX_N_ATTR][NAME_LENGTH],
 
 \********************************************************************/
 {
-INT     n, i, size, fh, status, run_number, index, offset, tail_size;
+INT     n, i, size, fh, status, index, offset, tail_size;
 struct  tm *tms;
 char    file_name[256], afile_name[MAX_ATTACHMENTS][256], dir[256], str[256],
         start_str[80], end_str[80], last[80], date[80], thread[80], attachment_all[64*MAX_ATTACHMENTS];
@@ -1586,9 +1591,6 @@ BOOL    bedit;
 
   bedit = (tag[0] != 0);
 
-  /* ignore run number */
-  run_number = 0;
-
   for (index = 0 ; index < MAX_ATTACHMENTS ; index++)
     {
     /* generate filename for attachment */
@@ -1597,6 +1599,11 @@ BOOL    bedit;
     if (equal_ustring(afilename[index], "<delete>"))
       {
       strcpy(afile_name[index], "<delete>");
+      }
+    else if (afilename[index][0] && buffer_size[index] == 0)
+      {
+      /* resubmission of existing attachment */
+      strcpy(afile_name[index], afilename[index]);
       }
     else
       {
@@ -2039,7 +2046,7 @@ INT el_delete_message(char *tag)
 
   Routine: el_delete_message
 
-  Purpose: Submit an ELog entry
+  Purpose: Delete an ELog entry including attachments
 
   Input:
     char   *tag             Message tage
@@ -2076,6 +2083,116 @@ char date[80], text[TEXT_SIZE], orig_tag[80], reply_tag[80],
       strcat(str, attachment[i]);
       remove(str);
       }
+
+  /* generate file name YYMMDD.log in data directory */
+  strcpy(dir, data_dir);
+
+  strcpy(str, tag);
+  if (strchr(str, '.'))
+    {
+    offset = atoi(strchr(str, '.')+1);
+    *strchr(str, '.') = 0;
+    }
+  sprintf(file_name, "%s%s.log", dir, str);
+  fh = open(file_name, O_RDWR | O_BINARY, 0644);
+  if (fh < 0)
+    return EL_FILE_ERROR;
+  lseek(fh, offset, SEEK_SET);
+  read(fh, str, 16);
+  size = atoi(str+9);
+
+  /* buffer tail of logfile */
+  lseek(fh, 0, SEEK_END);
+  tail_size = TELL(fh) - (offset+size);
+
+  if (tail_size > 0)
+    {
+    buffer = malloc(tail_size);
+    if (buffer == NULL)
+      {
+      close(fh);
+      return EL_FILE_ERROR;
+      }
+
+    lseek(fh, offset+size, SEEK_SET);
+    n = read(fh, buffer, tail_size);
+    }
+  lseek(fh, offset, SEEK_SET);
+
+  if (tail_size > 0)
+    {
+    n = write(fh, buffer, tail_size);
+    free(buffer);
+    }
+
+  /* truncate file here */
+#ifdef OS_WINNT
+  chsize(fh, TELL(fh));
+#else
+  ftruncate(fh, TELL(fh));
+#endif
+
+  /* if file length gets zero, delete file */
+  tail_size = lseek(fh, 0, SEEK_END);
+  close(fh);
+
+  if (tail_size == 0)
+    remove(file_name);
+
+  return EL_SUCCESS;
+}
+
+/*------------------------------------------------------------------*/
+
+INT el_delete_message_only(char *tag, char afilename[MAX_ATTACHMENTS][256])
+/********************************************************************\
+
+  Routine: el_delete_message_only
+
+  Purpose: Delete an ELog entry, but keeping (and returning) attachments
+
+  Input:
+    char   *tag             Message tage
+
+  Output:
+    <none>
+
+  Function value:
+    EL_SUCCESS              Successful completion
+
+\********************************************************************/
+{
+INT  i, n, size, fh, offset, tail_size, status, n_attr;
+char dir[256], str[256], file_name[256];
+char *buffer, attrib[MAX_N_ATTR][NAME_LENGTH];
+char date[80], text[TEXT_SIZE], orig_tag[80], reply_tag[80], 
+     attachment[MAX_ATTACHMENTS][256], encoding[80];
+
+  n_attr = scan_attributes(logbook);
+
+  /* get attachments */
+  size = sizeof(text);
+  status = el_retrieve(tag, date, attr_list, attrib, n_attr, 
+                       text, &size, orig_tag, reply_tag, 
+                       attachment,
+                       encoding);
+  if (status != SUCCESS)
+    return EL_FILE_ERROR;
+
+  for (i=0 ; i<MAX_ATTACHMENTS ; i++)
+    {
+    if (attachment[i][0] && afilename[i][0])
+      {
+      /* delete old attachment if new one exists */
+      strcpy(str, data_dir);
+      strcat(str, attachment[i]);
+      remove(str);
+      }
+
+    /* return old attachment if no new one */
+    if (attachment[i][0] && !afilename[i][0])
+      strcpy(afilename[i], attachment[i]);
+    }
 
   /* generate file name YYMMDD.log in data directory */
   strcpy(dir, data_dir);
@@ -2330,8 +2447,13 @@ int i;
 
   if (i<MAX_PARAM)
     {
-    _param[i][0] = 0;
-    _value[i][0] = 0;
+    for ( ; i<MAX_PARAM-1 ; i++)
+      {
+      strcpy(_param[i], _param[i+1]);
+      strcpy(_value[i], _value[i+1]);
+      }
+    _param[MAX_PARAM-1][0] = 0;
+    _value[MAX_PARAM-1][0] = 0;
     }
 }
 
@@ -3286,8 +3408,11 @@ time_t now;
       rsprintf("<tr><td nowrap bgcolor=%s><b>%s%s:</b></td>", gt("Categories bgcolor1"), attr_list[index], star);
 
       if (attr_flags[index] & AF_LOCKED)
-        rsprintf("<td bgcolor=%s><input type=\"text\" size=80 maxlength=%d name=\"%s\" value=\"%s\" readonly></td></tr>\n", 
-                  gt("Categories bgcolor2"), NAME_LENGTH, attr_list[index], attrib[index]);
+        {
+        rsprintf("<td bgcolor=%s>%s\n", gt("Categories bgcolor2"), attrib[index]);
+        rsprintf("<input type=\"hidden\" name=\"%s\" value=\"%s\"></td></tr>\n", 
+                  attr_list[index], attrib[index]);
+        }
       else
         rsprintf("<td bgcolor=%s><input type=\"text\" size=80 maxlength=%d name=\"%s\" value=\"%s\"></td></tr>\n", 
                   gt("Categories bgcolor2"), NAME_LENGTH, attr_list[index], attrib[index]);
@@ -4826,7 +4951,7 @@ int    i, j, n, index, n_attr, n_mail, suppress, status;
       atoi(getparam("resubmit")) == 1)
     {
     /* delete old message */
-    el_delete_message(getparam("orig"));
+    el_delete_message_only(getparam("orig"), att_file);
     unsetparam("orig");
     
     tag[0] = 0;
@@ -6605,7 +6730,28 @@ struct timeval       timeout;
   /* bind local node name and port to socket */
   memset(&serv_addr, 0, sizeof(serv_addr));
   serv_addr.sin_family      = AF_INET;
-  serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+  
+  /* if no hostname given with the -h flag, listen on any interface */
+  if (tcp_hostname[0] == 0)
+    serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+  else
+    {
+    /* look up the given hostname. gethostbyname() will take a hostname 
+       or an IP address */
+    phe = gethostbyname(tcp_hostname);
+    if (!phe)
+      {
+      printf("Cannot find address for -h %s\n", tcp_hostname);
+      return;
+      }
+    if (phe->h_addrtype != AF_INET)
+      {
+      printf("Non Internet address for -h %s\n", tcp_hostname);
+      return;
+      }
+    memcpy(&serv_addr.sin_addr.s_addr, phe->h_addr_list[0], phe->h_length);
+    }
+
   serv_addr.sin_port        = htons((short) tcp_port);
 
   status = bind(lsock, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
@@ -7475,11 +7621,14 @@ struct tm *tms;
         strcpy(admin_pwd, argv[++i]);
       else if (argv[i][1] == 'l')
         strcpy(logbook, argv[++i]);
+      else if (argv[i][1] == 'h')
+        strncpy(tcp_hostname, argv[++i], sizeof(tcp_hostname));
       else
         {
 usage:
-        printf("usage: %s [-p port] [-D] [-c file] [-r pwd] [-w pwd] [-a pwd] [-l loggbook]\n\n", argv[0]);
+        printf("usage: %s [-p port] [-h hostname] [-D] [-c file] [-r pwd] [-w pwd] [-a pwd] [-l loggbook]\n\n", argv[0]);
         printf("       -p <port> TCP/IP port\n");
+        printf("       -h <hostname> TCP/IP hostname\n");
         printf("       -D become a daemon\n");
         printf("       -c <file> specify configuration file\n");
         printf("       -v debugging output\n");
