@@ -6,6 +6,9 @@
   Contents:     Nitronic HVS 132 High Voltage Device Driver
 
   $Log$
+  Revision 1.5  2001/01/04 10:20:57  midas
+  Increased timeouts from 1s to 3s
+
   Revision 1.4  2001/01/03 16:11:36  midas
   Fixed compiler warnings
 
@@ -142,7 +145,7 @@ char  str[80];
 
   sprintf(str, "UCH%02d%04.0fL", channel+1, value);
   BD_PUTS(str);
-  BD_GETS(str, sizeof(str), "+", 1000);
+  BD_GETS(str, sizeof(str), "+", 3000);
 
   return FE_SUCCESS;
 }
@@ -177,7 +180,7 @@ char  str[256];
 
   sprintf(str, "CH%02dL", channel+1);
   BD_PUTS(str);
-  BD_GETS(str, sizeof(str), "+", 1000);
+  BD_GETS(str, sizeof(str), "+", 3000);
   sscanf(str+14, "%d", &value);
 
   *pvalue = (float) value;
@@ -196,7 +199,7 @@ char  str[256];
 
   sprintf(str, "CH%02dL", channel+1);
   BD_PUTS(str);
-  BD_GETS(str, sizeof(str), "+", 1000);
+  BD_GETS(str, sizeof(str), "+", 3000);
   sscanf(str+19, "%d", &value);
 
   *pvalue = (float) value;
