@@ -6,6 +6,9 @@
 #  Contents:     Makefile for MIDAS binaries and examples under unix
 #
 #  $Log$
+#  Revision 1.38  2003/04/08 00:05:16  olchansk
+#  add rmana.o (the ROOT MIDAS analyzer)
+#
 #  Revision 1.37  2002/06/04 07:32:00  midas
 #  Added 'melog'
 #
@@ -295,7 +298,8 @@ VPATH = $(LIB_DIR):$(INC_DIR)
 
 all:    $(OS_DIR) $(LIB_DIR) $(BIN_DIR) \
 	$(LIBNAME) $(SHLIB) \
-	$(LIB_DIR)/mana.o $(LIB_DIR)/pmana.o $(LIB_DIR)/mfe.o \
+	$(LIB_DIR)/mana.o $(LIB_DIR)/pmana.o $(LIB_DIR)/rmana.o \
+	$(LIB_DIR)/mfe.o \
 	$(LIB_DIR)/fal.o $(PROGS)
 
 examples: $(EXAMPLES)
@@ -377,6 +381,8 @@ $(LIB_DIR)/mana.o: $(SRC_DIR)/mana.c msystem.h midas.h midasinc.h mrpc.h
 	$(CC) -Dextname -c $(CFLAGS) $(OSFLAGS) $(MANA_OPTION) -w -o $@ $<
 $(LIB_DIR)/pmana.o: $(SRC_DIR)/mana.c msystem.h midas.h midasinc.h mrpc.h
 	$(CC) -Dextname -DPVM -c $(CFLAGS) $(OSFLAGS) -w -o $@ $<
+$(LIB_DIR)/rmana.o: $(SRC_DIR)/mana.c msystem.h midas.h midasinc.h mrpc.h
+	$(CXX) -Dextname -DMANA_ROOT -DMANA_LITE -c $(CFLAGS) $(OSFLAGS) -w -o $@ $<
 
 #
 # library objects
@@ -486,7 +492,7 @@ install:
           mkdir -p $(SYSLIB_DIR); \
         fi;
 
-	@for i in libmidas.so libmidas.a mana.o pmana.o mfe.o fal.o ; \
+	@for i in libmidas.so libmidas.a mana.o pmana.o rmana.o mfe.o fal.o ; \
 	  do \
 	  echo $$i ; \
 	  rm -f $(SYSLIB_DIR)/$$i ;\
