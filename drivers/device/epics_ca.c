@@ -6,6 +6,9 @@
   Contents:     Epics channel access device driver
 
   $Log$
+  Revision 1.2  2000/03/02 21:50:53  midas
+  Added set_label command and possibility to disable individual functions
+
   Revision 1.1  1999/12/20 10:18:19  midas
   Reorganized driver directory structure
 
@@ -57,6 +60,7 @@ typedef struct {
   chid          *pv_handles;
   float         *array;
   INT           num_channels;
+  DWORD         cmd_disabled;
 } CA_INFO;
 
 
@@ -152,6 +156,9 @@ CA_INFO   *info;
                info->channel_names+CHN_NAME_LENGTH*i);
     }
 
+  /* enable all commands by default */
+  info->cmd_disabled = 0;
+
   return FE_SUCCESS;
 }
 
@@ -203,6 +210,27 @@ INT i;
 
 /*----------------------------------------------------------------------------*/
 
+INT epics_ca_set_label(CA_INFO *info, INT channels, char *label)
+{
+int  status;
+char str[256];
+chid chan_id;
+
+  sprintf(str,"%s.DESC", info->channel_names+CHN_NAME_LENGTH*channels);
+  status = ca_search(str, &chan_id);
+
+  status = ca_pend_io(2.0);
+  if (status != ECA_NORMAL)
+    printf("%s not found\n", str);
+
+  status = ca_put(ca_field_type(chan_id), chan_id, label);
+ 	ca_pend_event(0.01);
+
+  return FE_SUCCESS;
+}
+
+/*----------------------------------------------------------------------------*/
+
 INT epics_ca_get(CA_INFO *info, INT channel, float *pvalue)
 {
   ca_pend_event(0.0001);
@@ -230,58 +258,88 @@ INT epics_ca(INT cmd, ...)
 va_list argptr;
 HNDLE   hKey;
 INT     channel, status;
+DWORD   mask;
 float   value, *pvalue;
-void    *info;
+CA_INFO *info;
+char    *label;
 
   va_start(argptr, cmd);
   status = FE_SUCCESS;
 
-  switch (cmd)
+  if (cmd == CMD_INIT)
     {
-    case CMD_INIT:
-      hKey = va_arg(argptr, HNDLE);
-      info = va_arg(argptr, void *);
-      channel = va_arg(argptr, INT);
-      status = epics_ca_init(hKey, info, channel);
-      break;
+    void *pinfo;
 
-    case CMD_EXIT:
-      info = va_arg(argptr, void *);
-      status = epics_ca_exit(info);
-      break;
-
-    case CMD_SET:
-      info = va_arg(argptr, void *);
-      channel = va_arg(argptr, INT);
-      value   = (float) va_arg(argptr, double);
-      status = epics_ca_set(info, channel, value);
-      break;
-
-    case CMD_SET_ALL:
-      info = va_arg(argptr, void *);
-      channel = va_arg(argptr, INT);
-      value   = (float) va_arg(argptr, double);
-      status = epics_ca_set_all(info, channel, value);
-      break;
-
-    case CMD_GET:
-      info = va_arg(argptr, void *);
-      channel = va_arg(argptr, INT);
-      pvalue  = va_arg(argptr, float*);
-      status = epics_ca_get(info, channel, pvalue);
-      break;
-    
-    case CMD_GET_ALL:
-      info = va_arg(argptr, void *);
-      channel = va_arg(argptr, INT);
-      pvalue  = va_arg(argptr, float*);
-      status = epics_ca_get_all(info, channel, pvalue);
-      break;
-    
-    default:
-      break;
+    hKey = va_arg(argptr, HNDLE);
+    pinfo = va_arg(argptr, void *);
+    channel = va_arg(argptr, INT);
+    mask = va_arg(argptr, DWORD);
+    status = epics_ca_init(hKey, pinfo, channel);
+    info = *(CA_INFO**)pinfo;
+    info->cmd_disabled = mask;
     }
+  else
+    {
+    info = va_arg(argptr, void *);
 
+    /* only execute command if enabled */
+    if (cmd & info->cmd_disabled)
+      status = FE_ERR_DISABLED;
+    else
+      switch (cmd)
+        {
+        case CMD_INIT:
+          break;
+
+        case CMD_EXIT:
+          status = epics_ca_exit(info);
+          break;
+
+        case CMD_SET:
+          channel = va_arg(argptr, INT);
+          value   = (float) va_arg(argptr, double);
+          status = epics_ca_set(info, channel, value);
+          break;
+
+        case CMD_SET_ALL:
+          channel = va_arg(argptr, INT);
+          value   = (float) va_arg(argptr, double);
+          status = epics_ca_set_all(info, channel, value);
+          break;
+
+        case CMD_SET_LABEL:
+          channel = va_arg(argptr, INT);
+          label  = va_arg(argptr, char *);
+          status = epics_ca_set_label(info, channel, label);
+          break;
+    
+        case CMD_GET:
+          channel = va_arg(argptr, INT);
+          pvalue  = va_arg(argptr, float*);
+          status = epics_ca_get(info, channel, pvalue);
+          break;
+    
+        case CMD_GET_ALL:
+          channel = va_arg(argptr, INT);
+          pvalue  = va_arg(argptr, float*);
+          status = epics_ca_get_all(info, channel, pvalue);
+          break;
+    
+        case CMD_DISABLE_COMMAND:
+          mask = va_arg(argptr, DWORD);
+          info->cmd_disabled |= mask;
+          break;
+
+        case CMD_ENABLE_COMMAND:
+          mask = va_arg(argptr, DWORD);
+          info->cmd_disabled &= ~mask;
+          break;
+
+        default:
+          break;
+        }
+      }
+  
   va_end(argptr);
 
   return status;
