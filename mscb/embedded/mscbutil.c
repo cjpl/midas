@@ -6,6 +6,9 @@
   Contents:     Various utility functions for MSCB protocol
 
   $Log$
+  Revision 1.14  2002/11/06 16:45:42  midas
+  Revised LED blinking scheme
+
   Revision 1.13  2002/10/16 15:28:25  midas
   Fixed typo
 
@@ -50,9 +53,10 @@
 #include "mscb.h"
 #include <intrins.h>
 
-extern SYS_INFO sys_info;        // for eeprom functions
+extern SYS_INFO sys_info;               // for eeprom functions
 extern MSCB_INFO_CHN code channel[];
 extern MSCB_INFO_CHN code conf_param[];
+extern bit adr_led_on, adr_led_off;     // used for addressed LED flashing
 
 /*------------------------------------------------------------------*/
 
@@ -238,7 +242,7 @@ void serial_int1(void) interrupt 20 using 2
 
     SCON1 &= ~0x01;       // clear RI flag
 
-    LED_SEC = LED_ON;
+    led_blink(2, 1, 100);
     }
 }
 
@@ -270,15 +274,12 @@ char c;
       if (rbuf_rp == rbuf+sizeof(rbuf))
         rbuf_rp = rbuf;
 
-      if (rbuf_wp == rbuf_rp)
-        LED_SEC = LED_OFF;
-
       if (c == '\r') /* make gets() happy */
         return '\n';
 
       return c;
       }
-    watchdog_refresh();
+    yield();
     } while (1);
 }
 
@@ -293,9 +294,6 @@ char c;
     c = *rbuf_rp++;
     if (rbuf_rp == rbuf+sizeof(rbuf))
       rbuf_rp = rbuf;
-
-    if (rbuf_wp == rbuf_rp)
-      LED_SEC = LED_OFF;
 
     return c;
     }
@@ -327,9 +325,7 @@ char          c;
         return i;
       }
 
-    watchdog_refresh();
-    blink_led();
-
+    yield();
     } while (time() < start+timeout);
 
   return 0;
@@ -430,7 +426,53 @@ void sysclock_init(void)
 
 /*------------------------------------------------------------------*/
 
-unsigned long _systime = 0;
+static unsigned long _systime  = 0;
+
+static unsigned char led_pri_n     = 0;
+static unsigned char led_pri_int   = 0;
+static unsigned char led_pri_timer = 0;
+static unsigned char led_sec_n     = 0;
+static unsigned char led_sec_int   = 0;
+static unsigned char led_sec_timer = 0;
+
+/*------------------------------------------------------------------*/
+
+void led_blink(int led, int n, int interval) reentrant
+/********************************************************************\
+
+  Routine: blink led
+
+  Purpose: Blink primary or secondary LED for a couple of times
+
+  Input:
+    int led               1 for primary, 2 for secondary
+    int interval          Blink interval in ms
+    int n                 Number of blinks
+
+\********************************************************************/
+{
+  if (led == 1)
+    {
+    if (led_pri_n == 0 && led_pri_timer == 0)
+      {
+      led_pri_n = n*2;
+      led_pri_int = interval/10;
+      led_pri_timer = 0;
+      }
+    }
+
+  if (led == 2)
+    {
+    if (led_sec_n == 0 && led_sec_timer == 0)
+      {
+      led_sec_n = n*2;
+      led_sec_int = interval/10;
+      led_sec_timer = 0;
+      }
+    }
+}
+
+/*------------------------------------------------------------------*/
 
 void timer1_int(void) interrupt 3 using 2
 /********************************************************************\
@@ -445,7 +487,41 @@ void timer1_int(void) interrupt 3 using 2
 {
   TH1 = 0xDC;         // reload timer values, let LSB freely run
   _systime++;         // increment system time
+
+  /* manage address LED blinking */
+
+  if (led_pri_n)
+    {
+    if (led_pri_timer == 0)
+      {
+      LED = !LED;
+      led_pri_timer = led_pri_int;
+      led_pri_n--;
+      if (led_pri_n == 0)
+        LED = LED_OFF;
+      }
+    }
+
+  if (led_pri_timer)
+    led_pri_timer--;
+
+  if (led_sec_n)
+    {
+    if (led_sec_timer == 0)
+      {
+      LED_SEC = !LED_SEC;
+      led_sec_timer = led_sec_int;
+      led_sec_n--;
+      if (led_sec_n == 0)
+        LED_SEC = LED_OFF;
+      }
+    }
+
+  if (led_sec_timer)
+    led_sec_timer--;
 }
+
+/*------------------------------------------------------------------*/
 
 unsigned long time(void)
 /********************************************************************\
@@ -508,7 +584,7 @@ unsigned int i;
   for (i=0 ; i<ms ; i++)
     {
     delay_us(1000);
-    watchdog_refresh();
+    yield();
     }
 }
 
@@ -657,6 +733,8 @@ EEPROM_WRITE:
   FLSCL = FLSCL & 0xF0;
 
   *offset += len;
+
+  yield();
 #endif
 }
 
@@ -706,6 +784,7 @@ void eeprom_flash(void)
 unsigned char offset, i;
 
   eeprom_erase();
+  yield();
 
   offset = 0;
 

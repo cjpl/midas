@@ -10,6 +10,9 @@
                 Pfeiffer Dual Gauge TPG262 vacuum sensor
 
   $Log$
+  Revision 1.4  2002/11/06 16:45:42  midas
+  Revised LED blinking scheme
+
   Revision 1.3  2002/10/09 15:48:13  midas
   Fixed bug with download
 
@@ -152,7 +155,7 @@ unsigned char user_func(unsigned char idata *data_in,
   /* echo input data */
   data_out[0] = data_in[0];
   data_out[1] = data_in[1];
-  while(1);
+  
   return 2;
 }
 
