@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol commands
 
   $Log$
+  Revision 1.32  2004/03/19 07:10:33  midas
+  Changed pinout for GPIB
+
   Revision 1.31  2004/03/05 12:29:00  midas
   Fixed bugs with F020
 
@@ -137,7 +140,7 @@ sbit RS485_ENABLE = P1 ^ 0;
 #define CPU_CYGNAL
 
 #define LED_0 P3 ^ 3
-#define LED_1 P3 ^ 4;
+#define LED_1 P3 ^ 4
 #define LED_ON 0
 sbit RS485_ENABLE = P3 ^ 5;
 
