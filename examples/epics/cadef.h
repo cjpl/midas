@@ -81,16 +81,15 @@ extern "C" {
 
 #include <shareLib.h>
 
-#ifdef __STDC__
+#ifdef __STDC__ 
 #define CAC_FUNC_PROTO
 #endif
-#define CA_DONT_INCLUDE_STDARGH
 
 #ifndef HDRVERSIONID
 #	define HDRVERSIONID(NAME,VERS)
 #endif /*HDRVERSIONID*/
 
-HDRVERSIONID(cadefh, "@(#) cadef.h,v 1.1.1.1 1995/12/06 02:04:49 lewis Exp")
+HDRVERSIONID(cadefh, "@(#) $Id$")
 
 /* auto include of all stuff that cadef.h uses */
 #if defined(CAC_FUNC_PROTO) && !defined(CA_DONT_INCLUDE_STDARGH)
@@ -146,6 +145,7 @@ typedef struct ca_access_rights{
 
 
 /* Format for the arguments to user connection handlers 		*/
+struct channel_in_use;
 struct	connection_handler_args{
 	struct channel_in_use	*chid;	/* Channel id	 		*/
 	long			op;	/* External codes for CA op	*/
@@ -258,6 +258,8 @@ struct	exception_handler_args{
 	long			stat;	/* Channel access std status code 		*/
 	long			op;	/* External codes for channel access operations	*/
 	char			*ctx;	/* A character string containing context info	*/
+	char			*pFile; /* source file name (may be NULL) */
+	unsigned		lineNo; /* source file line number */
 };
 
 
@@ -282,7 +284,7 @@ struct	exception_handler_args{
 /*									*/
 /*	Must be called once before calling any of the other routines	*/
 /************************************************************************/
-int  __stdcall epicsShareAPI ca_task_initialize
+int epicsShareAPI ca_task_initialize
 	(
 #ifdef CAC_FUNC_PROTO	
 	void
@@ -294,7 +296,7 @@ int  __stdcall epicsShareAPI ca_task_initialize
 /*									*/
 /*	Normally called automatically at task exit			*/
 /************************************************************************/
-int  __stdcall epicsShareAPI ca_task_exit
+int epicsShareAPI ca_task_exit
 	(
 #ifdef CAC_FUNC_PROTO	
 	void
@@ -335,7 +337,7 @@ ca_build_and_connect(NAME, XXXXX, ZZZZZZ, CHIDPTR, YYYYY, 0, 0)
 /*
  * preferred search mechanism
  */
-int __stdcall epicsShareAPI ca_search_and_connect
+int epicsShareAPI ca_search_and_connect
 	(
 #ifdef CAC_FUNC_PROTO
 	/*	Name	IO	Value					*/
@@ -439,7 +441,7 @@ void *		PVALUE	R	pointer to new channel value of type specified
 				i.e. status = ca_put(DBF_INT,chid,&value)	
 */
 
-int __stdcall epicsShareAPI ca_array_put
+int epicsShareAPI ca_array_put
 	(
 #ifdef CAC_FUNC_PROTO 
 	/*	Name	IO	Value					*/
@@ -510,7 +512,7 @@ chid,	 	CHID	R	channel index
 void *		PVALUE	W	ptr to where channel value written	
 */
 
-int __stdcall epicsShareAPI ca_array_get
+int epicsShareAPI ca_array_get
 	(
 #ifdef CAC_FUNC_PROTO 
 	/*	Name	IO	Value					*/
@@ -709,10 +711,11 @@ evid	/* 	EVID	R	Event id returned by add event		*/
 /*	early is TRUE then ca_pend() will return immediately without	*/
 /* 	processing outstanding CA labor if no queries are outstanding	*/
 /************************************************************************/
+#define ca_poll() ca_pend((1e-12), 0/*FALSE*/)
 #define ca_pend_event(TIMEOUT) ca_pend((TIMEOUT), 0/*FALSE*/)
 #define ca_pend_io(TIMEOUT) ca_pend((TIMEOUT), 1/*TRUE*/)
 
-int __stdcall epicsShareAPI ca_pend
+int epicsShareAPI ca_pend
 	(
 #ifdef CAC_FUNC_PROTO
 	/*	Name	IO	Value					*/
@@ -755,7 +758,7 @@ char *	/*	MSG	R	null term string printed on error		*/
 #endif /*CAC_FUNC_PROTO*/
 	);
 
-void __stdcall  ca_signal_with_file_and_lineno
+void epicsShareAPI ca_signal_with_file_and_lineno
 	(
 #ifdef CAC_FUNC_PROTO
         /*      Name    IO      Value                                           */
@@ -797,6 +800,9 @@ chid	/*	CHID	R	Channel ID				*/
  *      call their function with their argument whenever 
  *	a new fd is added or removed
  *      (for use with a manager of the select system call under UNIX)
+ *
+ *	if (opened) then fd was created
+ *	if (!opened) then fd was deleted
  *
  */
 #ifdef CAC_FUNC_PROTO
@@ -936,6 +942,15 @@ void *  /*      PVALUE  R       pointer to new channel value of type    */
 	);
 
 /*
+ * print status of a sync group
+ */
+#ifdef CAC_FUNC_PROTO
+int epicsShareAPI ca_sg_stat(CA_SYNC_GID gid);
+#else /*CAC_FUNC_PROTO*/
+int epicsShareAPI ca_sg_stat();
+#endif /*CAC_FUNC_PROTO*/
+
+/*
  * CA_MODIFY_USER_NAME()
  *
  * Modify or override the default
@@ -970,6 +985,11 @@ int epicsShareAPI ca_v42_ok(chid chan);
 #else /*CAC_FUNC_PROTO*/
 int epicsShareAPI ca_v42_ok();
 #endif /*CAC_FUNC_PROTO*/
+
+/*
+ * function that returns the CA version string
+ */
+READONLY char * epicsShareAPI ca_version();
 
 /*
  * ca_replace_printf_handler ()
