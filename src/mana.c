@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.133  2005/02/22 09:22:26  ritt
+  Changed __linux__ to OS_UNIX
+
   Revision 1.132  2005/01/14 08:09:33  midas
   Applied patch from John O'Donnell to load cuts from 'last.root'
 
@@ -1822,7 +1825,7 @@ void copy_from_last(TFolder *lastFolder, TFolder *onlineFolder) {
 
       TFolder *onlineSubfolder = (TFolder *)onlineFolder->FindObject( name);
       if (onlineSubfolder) copy_from_last( (TFolder *)obj, onlineSubfolder);
-    
+
     } else if (obj->InheritsFrom( "TH1")) {
 
       // still don't know how to do TH1s
@@ -3941,7 +3944,7 @@ void update_stats()
 /* h1_book and h2_book are now templates in midas.h */
 
 //==============================================================================
-  
+
 TCutG *cut_book (const char *name) {
 
 //------------------------------------------------------------------------------
@@ -5597,11 +5600,11 @@ int pvm_merge()
 
 /*==== ROOT socket histo server ====================================*/
 
-#if defined ( __linux__ )
+#if defined ( OS_UNIX )
 #define THREADRETURN
 #define THREADTYPE void
 #endif
-#if defined( _MSC_VER )
+#if defined( OS_WINNT )
 #define THREADRETURN 0
 #define THREADTYPE DWORD WINAPI
 #endif
@@ -5788,7 +5791,7 @@ THREADTYPE root_server_thread(void *arg)
             } else {
               cm_msg(MERROR, "root server thread",
                      "ignoring receipt of unknown cut %s", newc->GetName());
-            } 
+            }
             delete newc;
 
          } else
