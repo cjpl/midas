@@ -6,6 +6,10 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.13  1999/04/15 09:57:01  midas
+  - Added key name to db_get_key_info
+  - Added db_notify_clients to db_set_record
+
   Revision 1.12  1999/04/13 12:20:45  midas
   Added db_get_data1 (for Java)
 
@@ -2789,8 +2793,8 @@ KEY              *pkey;
 
 /*------------------------------------------------------------------*/
 
-INT db_get_key_info(HNDLE hDB, HNDLE hKey, INT *type, INT *num_values, 
-                    INT *item_size)
+INT db_get_key_info(HNDLE hDB, HNDLE hKey, char *name, INT name_size,
+                    INT *type, INT *num_values, INT *item_size)
 /********************************************************************\
 
   Routine: db_get_key_info
@@ -2802,6 +2806,7 @@ INT db_get_key_info(HNDLE hDB, HNDLE hKey, INT *type, INT *num_values,
     HNDLE hKey              Handle of key to retrieve info
 
   Output:
+    char  *name             Key name
     INT   *type             TID value
     INT   *num_values       Number of values in key
     INT   *item_size        Size of individual key value (used for 
@@ -2827,6 +2832,14 @@ INT status;
   if (status != DB_SUCCESS)
     return status;
 
+  if ((INT) strlen(key.name)+1 > name_size)
+    {
+    /* truncate name */
+    memcpy(name, key.name, name_size-1);
+    name[name_size] = 0;
+    }
+  else
+    strcpy(name, key.name);
   *type       = key.type;
   *num_values = key.num_values;
   *item_size  = key.item_size;
@@ -5241,6 +5254,10 @@ INT             size, align, corr, total_size_tmp;
 
             /* update time */
             pkey->last_written = ss_time();
+
+            /* notify clients which have key open */
+            if (pkey->notify_count)
+              db_notify_clients(hDB, (PTYPE) pkey - (PTYPE) pheader, FALSE);
             }
           }
         else
