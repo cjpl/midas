@@ -6,6 +6,9 @@
   Contents:     MIDAS logger program
 
   $Log$
+  Revision 1.14  1999/07/23 07:00:56  midas
+  Added automatic tape rewind when tape gets full
+
   Revision 1.13  1999/06/28 12:36:00  midas
   Added period limit for writing histories
 
@@ -1220,10 +1223,13 @@ INT log_close(LOG_CHN *log_chn, INT run_number)
 
 INT log_write(LOG_CHN *log_chn, EVENT_HEADER *pevent)
 {
-int    status, size;
+int    status, size, izero;
 DWORD  actual_time, start_time;
 static BOOL stop_requested = FALSE;
 static DWORD last_checked = 0;
+HNDLE  htape, stats_hkey;
+char   tape_name[256];
+double dzero;
 
   start_time = ss_millitime();
 
@@ -1311,11 +1317,33 @@ static DWORD last_checked = 0;
     {
     stop_requested = TRUE;
     cm_msg(MTALK, "log_write", "tape capacity reached, stopping run");
+
+    /* remember tape name */
+    strcpy(tape_name, log_chn->path);
+    stats_hkey = log_chn->stats_hkey;
     
     status = cm_transition(TR_STOP, 0, NULL, 0, ASYNC);
     if (status != CM_SUCCESS)
       cm_msg(MERROR, "log_write", "cannot stop run after reaching tape capacity");
     stop_requested = FALSE;
+
+    /* rewind tape */
+    ss_tape_open(tape_name, O_RDONLY, &htape);
+    cm_msg(MTALK, "log_write", "rewinding tape %s, please wait", log_chn->path);
+
+    cm_set_watchdog_params(TRUE, 300000);  /* 5 min for tape rewind */
+    ss_tape_unmount(htape);
+    ss_tape_close(htape);
+    cm_set_watchdog_params(TRUE, LOGGER_TIMEOUT);
+
+    /* zero statistics */
+    dzero = izero = 0;
+    db_set_value(hDB, stats_hkey, "Bytes written total", &dzero, 
+                 sizeof(dzero), 1, TID_DOUBLE);
+    db_set_value(hDB, stats_hkey, "Files written", &izero, 
+                 sizeof(izero), 1, TID_INT);
+    
+    cm_msg(MTALK, "log_write", "Please insert new tape and start new run.");
 
     return status;
     }
