@@ -6,6 +6,9 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.30  1999/12/21 14:34:27  midas
+  Added a few #ifdef LOCAL_ROUTINES to make VxWorks happy
+
   Revision 1.29  1999/12/20 13:07:55  midas
   Fixed bug in db_copy
 
@@ -1906,10 +1909,11 @@ INT              i;
     } while (*pkey_name == '/' && *(pkey_name+1));
 
   *subhKey = (PTYPE) pkey - (PTYPE) pheader;
+
+  db_unlock_database(hDB);
 }
 #endif /* LOCAL_ROUTINES */
 
-  db_unlock_database(hDB);
   return DB_SUCCESS;
 }
 
@@ -2225,10 +2229,11 @@ INT              i;
     } while (*pkey_name == '/' && *(pkey_name+1));
 
   *subhKey = (PTYPE) pkey - (PTYPE) pheader;
+
+  db_unlock_database(hDB);
 }
 #endif /* LOCAL_ROUTINES */
 
-  db_unlock_database(hDB);
   return DB_SUCCESS;
 }
 
@@ -2589,6 +2594,7 @@ char             str[MAX_ODB_PATH];
 
 void db_find_open_records(HNDLE hDB, HNDLE hKey, KEY *key, INT level, void *result)
 {
+#ifdef LOCAL_ROUTINES
 DATABASE_HEADER *pheader;
 DATABASE_CLIENT *pclient;
 INT             i, j;
@@ -2615,6 +2621,7 @@ char            line[256], str[80];
 
     db_unlock_database(hDB);
     }
+#endif /* LOCAL_ROUTINES */
 }
 
 INT db_get_open_records(HNDLE hDB, HNDLE hKey, char *str, INT buf_size)
@@ -6764,6 +6771,8 @@ INT db_close_record(HNDLE hDB, HNDLE hKey)
 
 \********************************************************************/
 {
+#ifdef LOCAL_ROUTINES
+{
 INT i;
 
   for (i=0 ; i<_record_list_entries ; i++)
@@ -6787,6 +6796,8 @@ INT i;
     free(_record_list[i].copy);
 
   memset(&_record_list[i], 0, sizeof(RECORD_LIST));
+}
+#endif /* LOCAL_ROUTINES */
 
   return DB_SUCCESS;
 }
