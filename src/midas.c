@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.178  2003/01/14 12:19:23  midas
+  Removed unnecessary code
+
   Revision 1.177  2003/01/14 08:14:32  midas
   Removed unnecessary bind()
 
@@ -17340,10 +17343,7 @@ ALARM_PERIODIC_STR(alarm_periodic_str);
         db_set_record(hDB, hkey, &alarm, size, 0);
         }
       else
-        {
-        sprintf(str, alarm.alarm_message, value);
-        al_trigger_alarm(key.name, str, alarm.alarm_class, "", AT_PERIODIC);
-        }
+        al_trigger_alarm(key.name, alarm.alarm_message, alarm.alarm_class, "", AT_PERIODIC);
       }
 
     /* check alarm only when active and not internal */
