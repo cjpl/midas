@@ -14,6 +14,9 @@
                 Brown, Prentice Hall
 
   $Log$
+  Revision 1.11  1998/10/29 15:53:52  midas
+  Added end-of-tape detection under UNIX
+
   Revision 1.10  1998/10/29 09:37:37  midas
   Reordered IPC and server checks in ss_suspend() to avoid timeouts when
   analyze is running under full load
@@ -3790,7 +3793,12 @@ INT n, status;
     } while (n == -1 && errno == EINTR);
 
   if (n != *count)
-    status = errno;
+    {
+    if (errno == 0)
+      status = SS_END_OF_TAPE;
+    else
+      status = errno;
+    }
   else
     status = SS_SUCCESS;
   *count = n;
