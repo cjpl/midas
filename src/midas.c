@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.83  1999/11/10 10:39:11  midas
+  Changed initialization of alarms
+
   Revision 1.82  1999/11/10 08:30:44  midas
   Fixed bug when editing the last elog message
 
@@ -15153,7 +15156,8 @@ INT al_trigger_alarm(char *alarm_name, char *alarm_message, char *default_class,
 \********************************************************************/
 {
   if (rpc_is_remote())
-    return rpc_call(RPC_AL_TRIGGER_ALARM, alarm_name, alarm_message);
+    return rpc_call(RPC_AL_TRIGGER_ALARM, alarm_name, alarm_message,
+                    default_class, cond_str, type);
 
 #ifdef LOCAL_ROUTINES
 {
@@ -15178,16 +15182,23 @@ ALARM_STR(alarm_str);
       cm_msg(MERROR, "al_trigger_alarm", "Cannot create alarm record");
       return AL_ERROR_ODB;
       }
-    db_set_value(hDB, hkeyalarm, "Type", &type, sizeof(INT), 1, TID_INT);
-    strcpy(str, cond_str);
-    db_set_value(hDB, hkeyalarm, "Condition", str, 256, 1, TID_STRING); 
-    status = TRUE;
-    db_set_value(hDB, hkeyalarm, "Active", &status, sizeof(status), 1, TID_BOOL); 
 
     if (default_class && default_class[0])
       db_set_value(hDB, hkeyalarm, "Alarm Class", default_class, 32, 1, TID_STRING);
+    status = TRUE;
+    db_set_value(hDB, hkeyalarm, "Active", &status, sizeof(status), 1, TID_BOOL); 
     }
 
+  /* set parameters for internal alarms */
+  if (type != AT_EVALUATED)
+    {
+    db_set_value(hDB, hkeyalarm, "Type", &type, sizeof(INT), 1, TID_INT);
+    strcpy(str, cond_str);
+    db_set_value(hDB, hkeyalarm, "Condition", str, 256, 1, TID_STRING); 
+    }
+
+  /* make sure alarm record has right structure */
+  db_create_record(hDB, 0, str, strcomb(alarm_str));
   size = sizeof(alarm);
   status = db_get_record(hDB, hkeyalarm, &alarm, &size, 0);
   if (status != DB_SUCCESS)
@@ -15542,6 +15553,8 @@ ALARM_STR(alarm_str);
 
     db_get_key(hDB, hkey, &key);
 
+    /* make sure alarm record has right structure */
+    db_create_record(hDB, hkey, "", strcomb(alarm_str));
     size = sizeof(alarm);
     status = db_get_record(hDB, hkey, &alarm, &size, 0);
     if (status != DB_SUCCESS)
