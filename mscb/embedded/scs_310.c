@@ -9,6 +9,9 @@
                 for SCS-310 GPIB Adapter
 
   $Log$
+  Revision 1.5  2004/03/05 12:28:00  midas
+  *** empty log message ***
+
   Revision 1.4  2004/01/07 12:56:15  midas
   Chaned line length
 
@@ -68,11 +71,11 @@ struct {
 } idata user_data;
 
 MSCB_INFO_VAR code variables[] = {
-   1, UNIT_ASCII, 0, 0, 0, "GPIB", 0,   // 0
+   1, UNIT_ASCII, 0, 0, 0, "GPIB", 0,                           // 0
    32, UNIT_STRING, 0, 0, 0, "Output", &user_data.output[0],    // 1
    32, UNIT_STRING, 0, 0, 0, "Input", &user_data.input[0],      // 2
    1, UNIT_BYTE, 0, 0, 0, "Control", &user_data.control,        // 3
-   1, UNIT_BYTE, 0, 0, 0, "SRQ", &user_data.srq,        // 4
+   1, UNIT_BYTE, 0, 0, 0, "SRQ", &user_data.srq,                // 4
    1, UNIT_BYTE, 0, 0, 0, "GPIB Adr", &user_data.gpib_adr,      // 5
    0
 };
