@@ -9,6 +9,9 @@
                 for SCS-210 RS232 node
 
   $Log$
+  Revision 1.7  2003/04/11 08:59:10  midas
+  Merged channels/config into variables
+
   Revision 1.6  2003/02/19 16:05:36  midas
   Added 'init' parameter to user_init
 
@@ -46,21 +49,13 @@ bit       terminal_mode;
 
 struct {
   float value;
+  unsigned char baud;
 } user_data;
 
-struct {
-  unsigned char baud;
-} user_conf;
-  
-
-MSCB_INFO_CHN code channel[] = {
+MSCB_INFO_VAR code variables[] = {
   1,      UNIT_ASCII, 0, 0,           0, "RS232", 0,
   4,  UNIT_UNDEFINED, 0, 0, MSCBF_FLOAT, "Value", &user_data.value,
-  0
-};
-
-MSCB_INFO_CHN code conf_param[] = {
-  1,  UNIT_BAUD,      0, 0,           0, "Baud",  &user_conf.baud,
+  1,  UNIT_BAUD,      0, 0,           0, "Baud",  &user_data.baud,
   0
 };
 
@@ -79,9 +74,9 @@ void user_init(unsigned char init)
 {
   /* initialize UART1 */
   if (init)
-    user_conf.baud = 1; // 9600 by default
+    user_data.baud = 1; // 9600 by default
 
-  uart_init(1, user_conf.baud);
+  uart_init(1, user_data.baud);
 
   // DEBUG_MODE = 1;
 }
@@ -89,7 +84,7 @@ void user_init(unsigned char init)
 /*---- User write function -----------------------------------------*/
 
 /* buffers in mscbmain.c */
-extern unsigned char idata in_buf[10], out_buf[8];
+extern unsigned char xdata in_buf[300], out_buf[300];
 
 #pragma NOAREGS
 
@@ -138,7 +133,7 @@ char c;
 void user_write_conf(unsigned char channel) reentrant
 {
   if (channel == 0)
-    uart_init(1, user_conf.baud);
+    uart_init(1, user_data.baud);
 }
 
 /*---- User read config function -----------------------------------*/
@@ -150,8 +145,8 @@ void user_read_conf(unsigned char channel)
 
 /*---- User function called vid CMD_USER command -------------------*/
 
-unsigned char user_func(unsigned char idata *data_in,
-                        unsigned char idata *data_out)
+unsigned char user_func(unsigned char *data_in,
+                        unsigned char *data_out)
 {
   /* echo input data */
   data_out[0] = data_in[0];
