@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.32  1999/08/20 13:31:18  midas
+  Analyzer saves and reloads online histos
+
   Revision 1.31  1999/08/03 11:15:07  midas
   Added bm_skip_event
 
@@ -1343,8 +1346,8 @@ INT EXPRT hs_fdump(char *file_name, DWORD id);
 
 /*---- analyzer functions ----*/
 void EXPRT test_register(ANA_TEST *t);
-
-
+void EXPRT add_data_dir(char *result, char *file);
+                                                  
 #ifdef __cplusplus
 }
 #endif

@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.31  1999/08/20 13:31:18  midas
+  Analyzer saves and reloads online histos
+
   Revision 1.30  1999/08/16 08:28:42  midas
   Fixed bug with wrong run number extraction from tape1/run123456.mid
 
@@ -371,6 +374,30 @@ usage:
     printf("  -%c %s\n", clp_descrip[i].flag_char, clp_descrip[i].description);
 
   return 0;
+}
+
+/*-- add </logger/data dir> before filename ------------------------*/
+
+void add_data_dir(char *result, char *file)
+{
+HNDLE hDB, hkey;
+char  str[256];
+int   size;
+
+  cm_get_experiment_database(&hDB, NULL);
+  db_find_key(hDB, 0, "/Logger/Data dir", &hkey);
+  
+  if (hkey)
+    {
+    size = sizeof(str);
+    db_get_data(hDB, hkey, str, &size, TID_STRING);
+    if (str[strlen(str)-1] != DIR_SEPARATOR)
+      strcat(str, DIR_SEPARATOR_STR);
+    strcat(str, file);
+    strcpy(result, str);
+    }
+  else
+    strcpy(result, file);
 }
 
 /*-- db_get_event_definition ---------------------------------------*/
@@ -1368,7 +1395,7 @@ INT eor(INT run_number, char *error)
 {
 ANA_MODULE **module;
 BANK_LIST  *bank_list;
-INT        i, j, size, status;
+INT        i, j, status;
 char       str[256], file_name[256];
 
   /* call EOR routines modules */
@@ -1386,20 +1413,14 @@ char       str[256], file_name[256];
   /* save histos if requested */
   if (out_info.histo_dump && clp.online)
     {
-    size = sizeof(str);
-    str[0] = 0;
-    db_get_value(hDB, 0, "/Logger/Data Dir", str, &size, TID_STRING);
-    if (str[0] != 0)
-      if (str[strlen(str)-1] != DIR_SEPARATOR)
-        strcat(str, DIR_SEPARATOR_STR);
-
-    strcat(str, out_info.histo_dump_filename);
+    strcpy(str, out_info.histo_dump_filename);
     if (strchr(str, '%') != NULL)
       sprintf(file_name, str, run_number);
     else
       strcpy(file_name, str);
 
-    HRPUT(0, file_name, "NT");
+    add_data_dir(str, file_name);
+    HRPUT(0, str, "NT");
     }
 
   /* close output file */
@@ -2588,7 +2609,13 @@ INT loop_online()
 INT      status;
 DWORD    last_time_loop, last_time_update, actual_time;
 int      ch;
+char     str[80];
 
+  /* load previous online histos */
+  add_data_dir(str, "last.rz");
+  printf("Loading previous online histos from %s\n", str);
+  HRGET(0, str, "A");
+  
   printf("Running analyzer online. Stop with \"!\"\n");
 
   /* main loop */
@@ -2639,6 +2666,11 @@ int      ch;
 
   /* update statistics */
   update_stats();
+
+  /* save actual online histos */
+  add_data_dir(str, "last.rz");
+  printf("Saving current online histos to %s\n", str);
+  HRPUT(0, str, "NT");
 
   return status;
 }
