@@ -7,6 +7,9 @@
                 routines
 
   $Log$
+  Revision 1.35  2004/01/12 23:03:42  pierre
+  fix dox
+
   Revision 1.34  2004/01/08 08:40:09  midas
   Implemented standard indentation
 
@@ -123,7 +126,7 @@
    digit is minor release, third digit is patch level */
 
 /**dox***************************************************************/
-/** @file system.h
+/** @file msystem.h
 The Midas System include file
 */
 
