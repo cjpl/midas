@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.214  2002/05/15 04:20:19  midas
+  Fixed wrong <br> in history panel list
+
   Revision 1.213  2002/05/15 00:24:41  midas
   Inactive logging channels displayed in yellow instead of red on status page
 
@@ -4562,7 +4565,7 @@ char   data_str[256], hex_str[256];
 
   /*---- enumerate SC equipment ----*/
 
-  rsprintf("<tr><td colspan=15 bgcolor=#FFFF00><i>Equipment:</i> \n");
+  rsprintf("<tr><td colspan=15 bgcolor=#FFFF00><i>Equipment:</i> &nbsp;&nbsp;\n");
 
   db_find_key(hDB, 0, "/Equipment", &hkey);
   if (hkey)
@@ -4590,13 +4593,13 @@ char   data_str[256], hex_str[256];
           if (strncmp(key.name, "Names", 5) == 0)
             {
             if (equal_ustring(eq_name, eqkey.name))
-              rsprintf("<b>%s</b>&nbsp;&nbsp;&nbsp;", eqkey.name);
+              rsprintf("<b>%s</b> &nbsp;&nbsp;", eqkey.name);
             else
               {
               if (exp_name[0])
-                rsprintf("<a href=\"/SC/%s?exp=%s\">%s</a>&nbsp;&nbsp;&nbsp;", eqkey.name, exp_name, eqkey.name);
+                rsprintf("<a href=\"/SC/%s?exp=%s\">%s</a> &nbsp;&nbsp;", eqkey.name, exp_name, eqkey.name);
               else
-                rsprintf("<a href=\"/SC/%s?\">%s</a>&nbsp;&nbsp;&nbsp;", eqkey.name, eqkey.name);
+                rsprintf("<a href=\"/SC/%s?\">%s</a> &nbsp;&nbsp;", eqkey.name, eqkey.name);
               }
             break;
             }
@@ -4620,17 +4623,17 @@ char   data_str[256], hex_str[256];
   if (hkey)
     {
     /*---- single name array ----*/
-    rsprintf("<tr><td colspan=15 bgcolor=#FFFFA0><i>Groups:</i> ");
+    rsprintf("<tr><td colspan=15 bgcolor=#FFFFA0><i>Groups:</i> &nbsp;&nbsp;");
 
     /* "all" group */
     if (equal_ustring(group, "All"))
-      rsprintf("<b>All</b>&nbsp;&nbsp;&nbsp;");
+      rsprintf("<b>All</b> &nbsp;&nbsp;");
     else
       {
       if (exp_name[0])
-        rsprintf("<a href=\"/SC/%s/All?exp=%s\">All</a>&nbsp;&nbsp;&nbsp;", eq_name, exp_name);
+        rsprintf("<a href=\"/SC/%s/All?exp=%s\">All</a> &nbsp;&nbsp;", eq_name, exp_name);
       else
-        rsprintf("<a href=\"/SC/%s/All?\">All</a>&nbsp;&nbsp;&nbsp;", eq_name);
+        rsprintf("<a href=\"/SC/%s/All?\">All</a> &nbsp;&nbsp;", eq_name);
       }
 
     /* collect groups */
@@ -4660,14 +4663,14 @@ char   data_str[256], hex_str[256];
     for (i=0 ; i<MAX_GROUPS && group_name[i][0]; i++)
       {
       if (equal_ustring(group_name[i], group))
-        rsprintf("<b>%s</b>&nbsp;&nbsp;&nbsp;", group_name[i]);
+        rsprintf("<b>%s</b> &nbsp;&nbsp;", group_name[i]);
       else
         {
         if (exp_name[0])
-          rsprintf("<a href=\"/SC/%s/%s?exp=%s\">%s</a>&nbsp;&nbsp;&nbsp;",
+          rsprintf("<a href=\"/SC/%s/%s?exp=%s\">%s</a> &nbsp;&nbsp;",
                     eq_name, group_name[i], exp_name, group_name[i]);
         else
-          rsprintf("<a href=\"/SC/%s/%s?\">%s</a>&nbsp;&nbsp;&nbsp;",
+          rsprintf("<a href=\"/SC/%s/%s?\">%s</a> &nbsp;&nbsp;",
                     eq_name, group_name[i], group_name[i]);
         }
       }
@@ -4797,13 +4800,13 @@ char   data_str[256], hex_str[256];
 
     /* "all" group */
     if (equal_ustring(group, "All"))
-      rsprintf("<b>All</b>&nbsp;&nbsp;&nbsp;");
+      rsprintf("<b>All</b> &nbsp;&nbsp;");
     else
       {
       if (exp_name[0])
-        rsprintf("<a href=\"/SC/%s?exp=%s\">All</a>&nbsp;&nbsp;&nbsp;", eq_name, exp_name);
+        rsprintf("<a href=\"/SC/%s?exp=%s\">All</a> &nbsp;&nbsp;", eq_name, exp_name);
       else
-        rsprintf("<a href=\"/SC/%s?\">All</a>&nbsp;&nbsp;&nbsp;", eq_name);
+        rsprintf("<a href=\"/SC/%s?\">All</a> &nbsp;&nbsp;", eq_name);
       }
 
     /* groups from Variables tree */
@@ -4821,14 +4824,14 @@ char   data_str[256], hex_str[256];
       db_get_key(hDB, hkey, &key);
 
       if (equal_ustring(key.name, group))
-        rsprintf("<b>%s</b>&nbsp;&nbsp;&nbsp;", key.name);
+        rsprintf("<b>%s</b> &nbsp;&nbsp;", key.name);
       else
         {
         if (exp_name[0])
-          rsprintf("<a href=\"/SC/%s/%s?exp=%s\">%s</a>&nbsp;&nbsp;&nbsp;",
+          rsprintf("<a href=\"/SC/%s/%s?exp=%s\">%s</a> &nbsp;&nbsp;",
                     eq_name, key.name, exp_name, key.name);
         else
-          rsprintf("<a href=\"/SC/%s/%s?\">%s</a>&nbsp;&nbsp;&nbsp;",
+          rsprintf("<a href=\"/SC/%s/%s?\">%s</a> &nbsp;&nbsp;",
                     eq_name, key.name, key.name);
         }
       }
@@ -6533,7 +6536,7 @@ INT    al_list[] = { AT_EVALUATED, AT_PROGRAM, AT_INTERNAL, AT_PERIODIC };
           rsprintf("<input type=submit name=cmd value=\"Reset\">\n");
           }
         else
-          rsprintf("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;");
+          rsprintf(" &nbsp;&nbsp;&nbsp;&nbsp;");
 
         rsprintf("</tr>\n");
         rsprintf("</form>\n");
@@ -8669,7 +8672,7 @@ char   def_button[][NAME_LENGTH] = {"10m", "1h", "3h", "12h", "24h", "3d", "7d" 
     {
     sprintf(str, "HS/%s", path);
     show_header(hDB, "History", str, 1, 0);
-    rsprintf("<tr><td align=center bgcolor=\"#FFFF00\" colspan=2>Panel name:&nbsp;&nbsp;&nbsp;");
+    rsprintf("<tr><td align=center bgcolor=\"#FFFF00\" colspan=2>Panel name: &nbsp;&nbsp;");
     rsprintf("<input type=text size=15 maxlength=31 name=panel>\n");
     rsprintf("</td></tr>\n");
 
@@ -8874,18 +8877,18 @@ char   def_button[][NAME_LENGTH] = {"10m", "1h", "3h", "12h", "24h", "3d", "7d" 
   /* links for history panels */
   rsprintf("<tr><td colspan=2 bgcolor=\"#FFFF00\">\n");
   if (path[0])
-    rsprintf("<i>Panel:</i>&nbsp;&nbsp;&nbsp;\n");
+    rsprintf("<i>Panels:</i> &nbsp;&nbsp;\n");
   else
-    rsprintf("<b>Please select panel:</b>&nbsp;&nbsp;&nbsp;\n");
+    rsprintf("<b>Please select panel:</b> &nbsp;&nbsp;\n");
 
   if (equal_ustring(path, "All"))
-    rsprintf("<b>All</b>&nbsp;&nbsp;&nbsp;");
+    rsprintf("<b>All</b> &nbsp;&nbsp;");
   else
     {
     if (exp_name[0])
-      rsprintf("<a href=\"/HS/All?exp=%s\">ALL</a>&nbsp;&nbsp;&nbsp;", exp_name);
+      rsprintf("<a href=\"/HS/All?exp=%s\">ALL</a> &nbsp;&nbsp;\n", exp_name);
     else
-      rsprintf("<a href=\"/HS/All\">ALL</a>&nbsp;&nbsp;&nbsp;");
+      rsprintf("<a href=\"/HS/All\">ALL</a> &nbsp;&nbsp;\n");
     }
 
   db_find_key(hDB, 0, "/History/Display", &hkey);
@@ -8931,16 +8934,14 @@ char   def_button[][NAME_LENGTH] = {"10m", "1h", "3h", "12h", "24h", "3d", "7d" 
       db_get_key(hDB, hkeyp, &key);
 
       if (equal_ustring(path, key.name))
-        rsprintf("<b>%s</b>&nbsp;&nbsp;&nbsp;", key.name);
+        rsprintf("<b>%s</b> &nbsp;&nbsp;", key.name);
       else
         {
         if (exp_name[0])
-          rsprintf("<a href=\"/HS/%s?exp=%s\">%s</a>&nbsp;&nbsp;&nbsp;", key.name, exp_name, key.name);
+          rsprintf("<a href=\"/HS/%s?exp=%s\">%s</a> &nbsp;&nbsp;\n", key.name, exp_name, key.name);
         else
-          rsprintf("<a href=\"/HS/%s\">%s</a>&nbsp;&nbsp;&nbsp;", key.name, key.name);
+          rsprintf("<a href=\"/HS/%s\">%s</a> &nbsp;&nbsp;\n", key.name, key.name);
         }
-      if (i % 10 == 9)
-        rsprintf("<br>\n");
       }
 
   /* "New" button */
