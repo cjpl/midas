@@ -5,6 +5,9 @@ for installation instructions read INSTALL. If you want to
 compile a sample experiment, follow the instructions under
 examples/experiment/readme.txt.
 
+The primary web side is located at http://midas.psi.ch,
+where also a online version of the manual can be found.
+
 Please send questions and comments to
 
 /=========================================================\
