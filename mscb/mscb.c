@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus communication functions
 
   $Log$
+  Revision 1.38  2003/05/12 13:49:17  midas
+  Added address check for SET_ADDR command
+
   Revision 1.37  2003/05/12 10:41:38  midas
   Fixed compiler warnings
 
@@ -117,7 +120,7 @@
 
 \********************************************************************/
 
-#define MSCB_LIBRARY_VERSION   "1.4.3"
+#define MSCB_LIBRARY_VERSION   "1.4.4"
 #define MSCB_PROTOCOL_VERSION  "1.4"
 
 #ifdef _MSC_VER           // Windows includes
@@ -1374,10 +1377,17 @@ int status;
   if (mscb_lock(fd) != MSCB_SUCCESS)
     return MSCB_MUTEX;
 
+  /* check if destination address is alive */
+  status = mscb_addr(fd, MCMD_PING16, node, 10);
+  if (status == MSCB_SUCCESS)
+    {
+    mscb_release(fd);
+    return MSCB_ADDR_EXISTS;
+    }
+
   status = mscb_addr(fd, MCMD_PING16, adr, 10);
   if (status != MSCB_SUCCESS)
     {
-
     mscb_release(fd);
     return status;
     }
