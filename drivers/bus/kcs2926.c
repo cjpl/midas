@@ -7,6 +7,9 @@
                 following the MIDAS CAMAC Standard for DirectIO
 
   $Log$
+  Revision 1.2  2000/09/07 17:17:03  pierre
+  -Add fe_name
+
   Revision 1.1  1999/12/20 10:18:11  midas
   Reorganized driver directory structure
 
@@ -676,6 +679,6 @@ INLINE void cam_interrupt_detach(void)
 
 /*------------------------------------------------------------------*/
 
-INLINE int cam_init_rpc(char *host_name, char *exp_name, char *client_name, char *rpc_server){return 1;}
+INLINE int cam_init_rpc(char *host_name, char *exp_name, char *fe_name, char *client_name, char *rpc_server){return 1;}
 
 /*------------------------------------------------------------------*/

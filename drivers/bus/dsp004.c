@@ -7,6 +7,9 @@
                 following the MIDAS CAMAC Standard for DirectIO
 
   $Log$
+  Revision 1.3  2000/09/07 17:15:47  pierre
+  -Add fe_name
+
   Revision 1.2  2000/07/11 16:39:38  pierre
   - Fix bug for i_sa, i_r functions
 
@@ -610,5 +613,5 @@ INLINE void cam_interrupt_attach(void (*isr)(void)){}
 /*------------------------------------------------------------------*/
 INLINE void cam_interrupt_detach(void){}
 /*------------------------------------------------------------------*/
-INLINE int cam_init_rpc(char *host_name, char *exp_name, char *client_name, char *rpc_server){return 1;}
+INLINE int cam_init_rpc(char *host_name, char *exp_name, char *fe_name, char *client_name, char *rpc_server){return 1;}
 /*------------------------------------------------------------------*/
