@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus communication functions
 
   $Log$
+  Revision 1.12  2002/10/03 15:30:40  midas
+  Added linux support
+
   Revision 1.11  2002/09/27 11:10:51  midas
   Changed buffer type
 
@@ -39,9 +42,19 @@
 
 \********************************************************************/
 
-#ifdef _MSC_VER
+#ifdef _MSC_VER           // Windows includes
+
 #include <windows.h>
 #include <conio.h>
+
+#elif defined(__linux__)  // Linux includes
+
+#include <sys/types.h>
+#include <sys/ioctl.h>
+#include <fcntl.h>
+#include <linux/parport.h>
+#include <linux/ppdev.h>
+
 #endif
 
 #include <stdio.h>
@@ -49,30 +62,19 @@
 
 /*------------------------------------------------------------------*/
 
-#if defined( _MSC_VER )
-#define OUTP(_p, _d) _outp((unsigned short) (_p), (int) (_d))
-#define OUTPW(_p, _d) _outpw((unsigned short) (_p), (unsigned short) (_d))
-#define INP(_p) _inp((unsigned short) (_p))
-#define INPW(_p) _inpw((unsigned short) (_p))
-#define OUTP_P(_p, _d) {_outp((unsigned short) (_p), (int) (_d)); _outp((unsigned short)0x80,0);}
-#define OUTPW_P(_p, _d) {_outpw((unsigned short) (_p), (unsigned short) (_d)); _outp((unsigned short)0x80,0);}
-#define INP_P(_p) _inp((unsigned short) (_p)); _outp((unsigned short)0x80,0);
-#define INPW_P(_p) _inpw((unsigned short) (_p));_outp((unsigned short)0x80,0);
-#endif
-
 /* Byte and Word swapping big endian <-> little endian */
-#define WORD_SWAP(x) { BYTE _tmp;                               \
-                       _tmp= *((BYTE *)(x));                    \
-                       *((BYTE *)(x)) = *(((BYTE *)(x))+1);     \
-                       *(((BYTE *)(x))+1) = _tmp; }
+#define WORD_SWAP(x) { unsigned char _tmp;                               \
+                       _tmp= *((unsigned char *)(x));                    \
+                       *((unsigned char *)(x)) = *(((unsigned char *)(x))+1);     \
+                       *(((unsigned char *)(x))+1) = _tmp; }
 
-#define DWORD_SWAP(x) { BYTE _tmp;                              \
-                       _tmp= *((BYTE *)(x));                    \
-                       *((BYTE *)(x)) = *(((BYTE *)(x))+3);     \
-                       *(((BYTE *)(x))+3) = _tmp;               \
-                       _tmp= *(((BYTE *)(x))+1);                \
-                       *(((BYTE *)(x))+1) = *(((BYTE *)(x))+2); \
-                       *(((BYTE *)(x))+2) = _tmp; }
+#define DWORD_SWAP(x) { unsigned char _tmp;                              \
+                       _tmp= *((unsigned char *)(x));                    \
+                       *((unsigned char *)(x)) = *(((unsigned char *)(x))+3);     \
+                       *(((unsigned char *)(x))+3) = _tmp;               \
+                       _tmp= *(((unsigned char *)(x))+1);                \
+                       *(((unsigned char *)(x))+1) = *(((unsigned char *)(x))+2); \
+                       *(((unsigned char *)(x))+2) = _tmp; }
 
 /* file descriptor */
 
@@ -89,7 +91,7 @@ MSCB_FD mscb_fd[MSCB_MAX_FD];
 /*
 
   Ofs Inv   PC     DB25       SM    DIR   MSCB Name
-                              
+
    0  No    D0 ----- 2 ----- P1.0   <->    |
    0  No    D1 ----- 3 ----- P1.1   <->    |
    0  No    D2 ----- 4 ----- P1.2   <->    |  D
@@ -98,7 +100,7 @@ MSCB_FD mscb_fd[MSCB_MAX_FD];
    0  No    D5 ----- 7 ----- P1.5   <->    |  a
    0  No    D6 ----- 8 ----- P1.6   <->    |
    0  No    D7 ----- 9 ----- P1.7   <->    |
-                              
+
    2  Yes   !STR --- 1  ---- P0.7    ->    /STROBE
    1  Yes   !BSY --- 11 ---- P3.2   <-     BUSY
 
@@ -113,36 +115,58 @@ MSCB_FD mscb_fd[MSCB_MAX_FD];
 */
 
 
-/* stobe, busy: write to SM */
+/* enumeration of control lines */
 
-#define LPT_NSTROBE     (1<<0)   /* pin 1 on DB25 */
+#define LPT_STROBE     1
+#define LPT_ACK        2
+#define LPT_RESET      3
+#define LPT_BIT9       4
+
+#define LPT_BUSY       5
+#define LPT_DATAREADY  6
+
+/*
+#define LPT_NSTROBE     (1<<0)
 #define LPT_NSTROBE_OFS     2
 
-#define LPT_NBUSY       (1<<7)   /* pin 11 on DB25 */
+#define LPT_NBUSY       (1<<7)
 #define LPT_NBUSY_OFS       1
 
-/* data ready (!ACK) and acknowledge (!DSL): read from SM */
-
-#define LPT_NDATAREADY  (1<<6)   /* pin 10 on DB25 */
+#define LPT_NDATAREADY  (1<<6)
 #define LPT_NDATAREADY_OFS  1
 
-#define LPT_NACK        (1<<3)   /* pin 17 on DB25 */
+#define LPT_NACK        (1<<3)
 #define LPT_NACK_OFS        2
-
-/* /reset (!PAP), bit9 (INI) and direction switch */
 
 #define LPT_NRESET      (1<<1)
 #define LPT_NRESET_OFS      2
 
-#define LPT_BIT9        (1<<2)   /* pin 16 on DB25 */
+#define LPT_BIT9        (1<<2)
 #define LPT_BIT9_OFS        2
 
-#define LPT_DIRECTION   (1<<5)   /* no pin */
+#define LPT_DIRECTION   (1<<5)
 #define LPT_DIRECTION_OFS   2
+*/
 
 /* other constants */
 
 #define TIMEOUT_OUT      1000    /* ~1ms */
+
+/*------------------------------------------------------------------*/
+
+/* missing linux functions */
+
+#ifdef __linux__
+
+int kbhit()
+{
+int n;
+
+  ioctl(0, FIONREAD, &n);
+  return (n > 0);
+}
+
+#endif
 
 /*------------------------------------------------------------------*/
 
@@ -227,7 +251,7 @@ int status;
 
   if (mutex_handle == 0)
     return 0;
-  
+
   status = WaitForSingleObject(mutex_handle, 1000);
 
   if (status == WAIT_FAILED)
@@ -249,6 +273,93 @@ int status;
 
 #endif
   return MSCB_SUCCESS;
+}
+
+/*---- low level functions for direct port access ------------------*/
+
+void pp_wdata(int fd, unsigned int data)
+/* output data byte */
+{
+#ifdef _MSC_VER
+  _outp((unsigned short)mscb_fd[fd-1].fd, data);
+#else
+  ioctl(mscb_fd[fd-1].fd, PPWDATA, &data);
+#endif
+}
+
+/*------------------------------------------------------------------*/
+
+unsigned char pp_rdata(int fd)
+/* intput data byte */
+{
+#ifdef _MSC_VER
+  /* switch port to input */
+  _outp((unsigned short)(mscb_fd[fd-1].fd+2), (1 << 5));
+
+  return _inp((unsigned short)mscb_fd[fd-1].fd);
+#else
+  unsigned int mode = 1, data;
+  if (ioctl(mscb_fd[fd-1].fd, PPDATADIR, &mode))
+    perror("PPDATADIR");
+  if (ioctl(mscb_fd[fd-1].fd, PPRDATA, &data))
+    perror("PPRDATA");
+  mode = 0;
+  if (ioctl(mscb_fd[fd-1].fd, PPDATADIR, &mode))
+    perror("PPDATADIR");
+  return data;
+#endif
+}
+
+/*------------------------------------------------------------------*/
+
+void pp_wcontrol(int fd, int signal, int flag)
+/* write control signal */
+{
+static unsigned int mask=0;
+
+  switch (signal)
+    {
+    case LPT_STROBE: // negative
+       mask = flag ? mask | (1<<0) : mask & ~(1<<0);
+       break;
+    case LPT_RESET:  // negative
+       mask = flag ? mask | (1<<1) : mask & ~(1<<1);
+       break;
+    case LPT_BIT9:   // positive
+       mask = flag ? mask | (1<<2) : mask & ~(1<<2);
+       break;
+    case LPT_ACK:    // negative
+       mask = flag ? mask | (1<<3) : mask & ~(1<<3);
+       break;
+    }
+
+#ifdef _MSC_VER
+  _outp((unsigned short)(mscb_fd[fd-1].fd+2), mask);
+#else
+  ioctl(mscb_fd[fd-1].fd, PPWCONTROL, &mask);
+#endif
+}
+
+/*------------------------------------------------------------------*/
+
+int pp_rstatus(int fd, int signal)
+{
+/* read status signal */
+unsigned int mask = 0;
+
+#ifdef _MSC_VER
+  mask = _inp((unsigned short) (mscb_fd[fd-1].fd+1));
+#else
+  ioctl(mscb_fd[fd-1].fd, PPRSTATUS, &mask);
+#endif
+
+  switch (signal)
+    {
+    case LPT_BUSY:       return (mask & (1<<7)) == 0;
+    case LPT_DATAREADY:  return (mask & (1<<6)) == 0;
+    }
+
+  return 0;
 }
 
 /*------------------------------------------------------------------*/
@@ -274,51 +385,52 @@ int mscb_out(int fd, unsigned char *buffer, int len, int bit9)
 \********************************************************************/
 {
 int i, timeout;
-unsigned char busy, bit9_mask;
-
-  bit9_mask = bit9 ? LPT_BIT9 : 0;
 
   /* remove accidental strobe */
-  OUTP(mscb_fd[fd-1].fd + LPT_NSTROBE_OFS, 0);
+  pp_wcontrol(fd, LPT_STROBE, 0);
 
   for (i=0 ; i<len ; i++)
     {
     /* wait for SM ready */
     for (timeout=0 ; timeout<TIMEOUT_OUT ; timeout++)
       {
-      busy = (INP(mscb_fd[fd-1].fd + LPT_NBUSY_OFS) & LPT_NBUSY) == 0;
-      if (!busy)
+      if (!pp_rstatus(fd, LPT_BUSY))
         break;
       }
     if (timeout == TIMEOUT_OUT)
       return MSCB_TIMEOUT;
 
     /* output data byte */
-    OUTP(mscb_fd[fd-1].fd, buffer[i]);
+    pp_wdata(fd, buffer[i]);
+
+    /* set bit 9 */
+    if (bit9)
+      pp_wcontrol(fd, LPT_BIT9, 1);
+    else
+      pp_wcontrol(fd, LPT_BIT9, 0);
 
     /* set strobe */
-    OUTP(mscb_fd[fd-1].fd + LPT_NSTROBE_OFS, LPT_NSTROBE | bit9_mask);
+    pp_wcontrol(fd, LPT_STROBE, 1);
 
     /* wait for busy to become active */
     for (timeout=0 ; timeout<TIMEOUT_OUT ; timeout++)
       {
-      busy = (INP(mscb_fd[fd-1].fd + LPT_NBUSY_OFS) & LPT_NBUSY) == 0;
-      if (busy)
+      if (pp_rstatus(fd, LPT_BUSY))
         break;
       }
     if (timeout == TIMEOUT_OUT)
       {
       /* remove strobe */
-      OUTP(mscb_fd[fd-1].fd + LPT_NSTROBE_OFS, 0);
+      pp_wcontrol(fd, LPT_STROBE, 0);
 
       return MSCB_TIMEOUT;
       }
 
     /* remove data, make port available for input */
-    OUTP(mscb_fd[fd-1].fd, 0xFF);
-    
+    pp_wdata(fd, 0xFF);
+
     /* remove strobe */
-    OUTP(mscb_fd[fd-1].fd + LPT_NSTROBE_OFS, 0);
+    pp_wcontrol(fd, LPT_STROBE, 0);
     }
 
   return MSCB_SUCCESS;
@@ -347,37 +459,31 @@ int mscb_in1(int fd, unsigned char *c, int timeout)
 \********************************************************************/
 {
 int i;
-unsigned char dataready;
 
   /* wait for DATAREADY, each port access takes roughly 1us */
   for (i=0 ; i<timeout ; i++)
     {
-    dataready = (INP(mscb_fd[fd-1].fd + LPT_NDATAREADY_OFS) & LPT_NDATAREADY) == 0;
-    if (dataready)
+    if (pp_rstatus(fd, LPT_DATAREADY))
       break;
     }
   if (i == timeout)
     return MSCB_TIMEOUT;
 
-  /* prepare port for input */
-  OUTP(mscb_fd[fd-1].fd+LPT_DIRECTION_OFS, LPT_DIRECTION);
-
-  /* get data */
-  *c = INP(mscb_fd[fd-1].fd);
+  /* read data */
+  *c = pp_rdata(fd);
 
   /* set acknowlege, switch port to output */
-  OUTP(mscb_fd[fd-1].fd + LPT_NACK_OFS, LPT_NACK);
+  pp_wcontrol(fd, LPT_ACK, 1);
 
   /* wait for DATAREADY to be removed */
   for (i=0 ; i<1000 ; i++)
     {
-    dataready = (INP(mscb_fd[fd-1].fd + LPT_NDATAREADY_OFS) & LPT_NDATAREADY) == 0;
-    if (!dataready)
+    if (!pp_rstatus(fd, LPT_DATAREADY))
       break;
     }
- 
+
   /* remove acknowlege */
-  OUTP(mscb_fd[fd-1].fd + LPT_NACK_OFS, 0);
+  pp_wcontrol(fd, LPT_ACK, 0);
 
   if (i == 1000)
     return MSCB_TIMEOUT;
@@ -461,7 +567,7 @@ int mscb_init(char *device)
 
   Routine: mscb_init
 
-  Purpose: Initialize and open MSCB 
+  Purpose: Initialize and open MSCB
 
   Input:
     char *device            Under NT: lpt1 or lpt2
@@ -474,7 +580,6 @@ int mscb_init(char *device)
 \********************************************************************/
 {
 int           index, i;
-BYTE          d;
 int           status;
 unsigned char c;
 
@@ -492,7 +597,7 @@ unsigned char c;
     i = atoi(device+3);
   else
     return -1;
-  
+
   /* derive base address from device name */
   if (i == 1)
     mscb_fd[index].fd = 0x378;
@@ -500,7 +605,7 @@ unsigned char c;
     mscb_fd[index].fd = 0x278;
   else
     return -1;
-  
+
   /* under NT, user directio driver */
   {
   OSVERSIONINFO vi;
@@ -520,32 +625,53 @@ unsigned char c;
   if (vi.dwPlatformId == VER_PLATFORM_WIN32_NT)
     {
     hdio = CreateFile("\\\\.\\directio", GENERIC_READ, FILE_SHARE_READ, NULL,
-		       OPEN_EXISTING, 0, NULL);
+           OPEN_EXISTING, 0, NULL);
     if (hdio == INVALID_HANDLE_VALUE)
       {
       //printf("mscb.c: Cannot access parallel port (No DirectIO driver installed)\n");
       return -1;
       }
 
-    if (!DeviceIoControl(hdio, (DWORD) 0x9c406000, &buffer, sizeof(buffer), 
-		    NULL, 0, &size, NULL))
+    if (!DeviceIoControl(hdio, (DWORD) 0x9c406000, &buffer, sizeof(buffer),
+        NULL, 0, &size, NULL))
       return -1;
     }
   }
-#endif _MSC_VER
+#elif defined(__linux__)
+  mscb_fd[index].fd = open(device, O_RDWR);
+  if (mscb_fd[index].fd < 0)
+    {
+    perror("open");
+    printf("Please make sure that device \"%s\" is world readable/writable\n", device);
+    return -1;
+    }
+
+  if (ioctl(mscb_fd[index].fd, PPCLAIM))
+    {
+    perror("PPCLAIM");
+    printf("Please load driver via \"modprobe parport_pc\" as root\n");
+    return -1;
+    }
+
+  i = IEEE1284_MODE_BYTE;
+  if (ioctl(mscb_fd[index].fd, PPSETMODE, &i))
+    {
+    perror("PPSETMODE");
+    return -1;
+    }
+#endif
 
   mscb_lock();
 
   /* set initial state of handshake lines */
-  OUTP(mscb_fd[index].fd + LPT_NSTROBE_OFS, 0);
+  pp_wcontrol(index+1, LPT_STROBE, 0);
 
   /* check if SM alive */
-  d = INP(mscb_fd[index].fd + LPT_NBUSY_OFS);
-  if ((d & LPT_NBUSY) == 0)
+  if (pp_rstatus(index+1, LPT_BUSY))
     {
     //printf("mscb.c: No SM present on parallel port\n");
     mscb_release();
-    return -1;
+    return -2;
     }
 
   /* empty RBuffer of SM */
@@ -581,6 +707,13 @@ int mscb_exit(int fd)
   if (fd > MSCB_MAX_FD)
     return MSCB_INVAL_PARAM;
 
+#ifdef __linux__
+  if (ioctl(mscb_fd[fd-1].fd, PPRELEASE))
+    perror("PPRELEASE");
+
+  close(mscb_fd[fd-1].fd);
+#endif
+
   memset(&mscb_fd[fd-1], 0, sizeof(MSCB_FD));
 
   return MSCB_SUCCESS;
@@ -607,71 +740,30 @@ void mscb_check(char *device)
 {
 int i, fd, d;
 
-#ifdef _MSC_VER
-
-  if (strlen(device) == 4)
-    i = atoi(device+3);
-  else
-    {
-    printf("Wrong device, either LPT1 or LPT2.\n");
-    return;
-    }
-  
-  /* derive base address from device name */
-  if (i == 1)
-    fd = 0x378;
-  else if (i == 2)
-    fd = 0x278;
-  else
-    {
-    printf("Wrong device, either LPT1 or LPT2.\n");
-    return;
-    }
-  
-  /* under NT, user directio driver */
-  {
-  OSVERSIONINFO vi;
-  DWORD buffer[4];
-  DWORD size;
-  HANDLE hdio;
-
-  buffer[0] = 6; /* give IO */
-  buffer[1] = fd;
-  buffer[2] = buffer[1]+4;
-  buffer[3] = 0;
-
-  vi.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
-  GetVersionEx(&vi);
-
-  /* use DirectIO driver under NT to gain port access */
-  if (vi.dwPlatformId == VER_PLATFORM_WIN32_NT)
-    {
-    hdio = CreateFile("\\\\.\\directio", GENERIC_READ, FILE_SHARE_READ, NULL,
-		       OPEN_EXISTING, 0, NULL);
-    if (hdio == INVALID_HANDLE_VALUE)
-      {
-      printf("mscb.c: Cannot access parallel port (No DirectIO driver installed)\n");
-      return;
-      }
-
-    if (!DeviceIoControl(hdio, (DWORD) 0x9c406000, &buffer, sizeof(buffer), 
-		    NULL, 0, &size, NULL))
-      return;
-    }
+  mscb_init(device);
+  fd = 1;
 
   printf("Toggling %s output pins, hit ENTER to stop.\n", device);
   printf("GND = 19-25, toggling 2-9, 1, 14, 16 and 17\n\n");
   do
     {
-    printf("\r00000000 0000");
-    OUTP(fd, 0);
-    OUTP(fd + LPT_NSTROBE_OFS, LPT_NSTROBE | LPT_NACK | LPT_NRESET);
-    
-    Sleep(300);
-
     printf("\r11111111 1111");
-    OUTP(fd, 0xFF);
-    OUTP(fd + LPT_NSTROBE_OFS, LPT_BIT9);
+    fflush(stdout);
+    pp_wdata(fd, 0xFF);
+    pp_wcontrol(fd, LPT_STROBE, 1);
+    pp_wcontrol(fd, LPT_ACK, 1);
+    pp_wcontrol(fd, LPT_RESET, 1);
+    pp_wcontrol(fd, LPT_BIT9, 1);
+
+    Sleep(1000);
+
+    printf("\r00000000 0000");
+    fflush(stdout);
+    pp_wdata(fd, 0);
+    pp_wcontrol(fd, LPT_STROBE, 0);
+    pp_wcontrol(fd, LPT_ACK, 0);
+    pp_wcontrol(fd, LPT_RESET, 0);
+    pp_wcontrol(fd, LPT_BIT9, 0);
 
     Sleep(1000);
 
@@ -680,33 +772,26 @@ int i, fd, d;
   while (kbhit())
     getch();
 
-  /* switch port to input */
-  OUTP(fd+LPT_DIRECTION_OFS, LPT_DIRECTION);
-
   printf("\n\n\nInput display, hit ENTER to stop.\n");
-  printf("Pins 2-9, 10, 11, and 12\n\n");
+  printf("Pins 2-9, 10 and 11\n\n");
 
   do
     {
-    d = INP(fd);
+    d = pp_rdata(fd);
     for (i=0 ; i<8 ; i++)
       {
       printf("%d", (d & 1) > 0);
       d >>= 1;
       }
 
-    d = INP(fd + LPT_NBUSY_OFS);
-    printf(" %d%d\r", (d & LPT_NDATAREADY) > 0, (d & LPT_NBUSY) == 0);
+    printf(" %d%d\r", !pp_rstatus(fd, LPT_DATAREADY), pp_rstatus(fd, LPT_BUSY));
+    fflush(stdout);
 
     Sleep(100);
     } while (!kbhit());
 
   while (kbhit())
     getch();
-
-  }
-#endif _MSC_VER
-
 }
 
 /*------------------------------------------------------------------*/
@@ -745,14 +830,14 @@ int i;
 
   if (mscb_lock() != MSCB_SUCCESS)
     return MSCB_MUTEX;
-  
+
   if (cmd == CMD_ADDR_NODE8 ||
       cmd == CMD_ADDR_GRP8 ||
       cmd == CMD_PING8)
     {
     buf[1] = (unsigned char) adr;
     buf[2] = crc8(buf, 2);
-    mscb_out(fd, buf, 3, TRUE);
+    mscb_out(fd, buf, 3, 1);
     }
   else if (cmd == CMD_ADDR_NODE16 ||
            cmd == CMD_ADDR_GRP16 ||
@@ -761,18 +846,18 @@ int i;
     buf[1] = (unsigned char) (adr >> 8);
     buf[2] = (unsigned char) (adr & 0xFF);
     buf[3] = crc8(buf, 3);
-    mscb_out(fd, buf, 4, TRUE);
+    mscb_out(fd, buf, 4, 1);
     }
   else
     {
     buf[1] = crc8(buf, 1);
-    mscb_out(fd, buf, 2, TRUE);
+    mscb_out(fd, buf, 2, 1);
     }
 
   if (cmd == CMD_PING8 || cmd == CMD_PING16)
     {
     /* read back ping reply, 1ms timeout */
-    i = mscb_in1(fd, buf, 1000);
+    i = mscb_in1(fd, buf, 300);
 
     if (i == MSCB_SUCCESS && buf[0] == CMD_ACK)
       {
@@ -782,7 +867,7 @@ int i;
 
     /* send 0's to overflow partially filled node receive buffer */
     memset(buf, 0, sizeof(buf));
-    mscb_out(fd, buf, 10, TRUE);
+    mscb_out(fd, buf, 10, 1);
 
     mscb_release();
     return  MSCB_TIMEOUT;
@@ -817,7 +902,7 @@ unsigned char buf[10];
 
   buf[0] = CMD_INIT;
   buf[1] = crc8(buf, 1);
-  mscb_out(fd, buf, 2, FALSE);
+  mscb_out(fd, buf, 2, 0);
 
   mscb_release();
 
@@ -842,21 +927,19 @@ int mscb_reset(int fd)
 
 \********************************************************************/
 {
-unsigned char d;
 unsigned int timeout;
 
   if (mscb_lock() != MSCB_SUCCESS)
     return MSCB_MUTEX;
 
   /* toggle reset */
-  OUTP(mscb_fd[fd-1].fd + LPT_NRESET_OFS, LPT_NRESET);
-  OUTP(mscb_fd[fd-1].fd + LPT_NRESET_OFS, 0);
+  pp_wcontrol(fd, LPT_RESET, 1);
+  pp_wcontrol(fd, LPT_RESET, 0);
 
   /* wait for node to reboot */
   for (timeout=0 ; timeout<5*1000*1000 ; timeout++)
     {
-    d = INP(mscb_fd[fd-1].fd + LPT_NBUSY_OFS);
-    if ((d & LPT_NBUSY) != 0)
+    if (pp_rstatus(fd, LPT_BUSY))
       break;
     }
 
@@ -904,7 +987,7 @@ unsigned char buf[10];
   buf[1] = baud;
   buf[2] = crc8(buf, 2);
 
-  status = mscb_out(fd, buf, 3, FALSE);
+  status = mscb_out(fd, buf, 3, 0);
 
   mscb_release();
 
@@ -942,11 +1025,11 @@ unsigned char buf[80];
 
   buf[0] = CMD_GET_INFO;
   buf[1] = crc8(buf, 1);
-  mscb_out(fd, buf, 2, FALSE);
+  mscb_out(fd, buf, 2, 0);
 
   i = mscb_in(fd, buf, sizeof(buf), 5000);
   mscb_release();
-  
+
   if (i<sizeof(MSCB_INFO)+2)
     return MSCB_TIMEOUT;
 
@@ -974,12 +1057,12 @@ int mscb_info_channel(int fd, int type, int index, MSCB_INFO_CHN *info)
 
   Input:
     int fd                  File descriptor for connection
-    int type                Channel type, one of 
+    int type                Channel type, one of
                               GET_INFO_WRITE
-                              GET_INFO_READ 
-                              GET_INFO_CONF 
+                              GET_INFO_READ
+                              GET_INFO_CONF
     int index               Channel index 0..255
-                              
+
   Output:
     MSCB_INFO_CHN *info     Info structure defined in mscb.h
 
@@ -1001,14 +1084,14 @@ unsigned char buf[80];
   buf[1] = type;
   buf[2] = index;
   buf[3] = crc8(buf, 3);
-  mscb_out(fd, buf, 4, FALSE);
+  mscb_out(fd, buf, 4, 0);
 
   i = mscb_in(fd, buf, sizeof(buf), 5000);
   mscb_release();
 
   if (i<sizeof(MSCB_INFO_CHN)+2)
     return MSCB_TIMEOUT;
-  
+
   memcpy(info, buf+2, sizeof(MSCB_INFO_CHN));
 
   /* do CRC check */
@@ -1031,7 +1114,7 @@ int mscb_set_addr(int fd, int node, int group)
     int fd                  File descriptor for connection
     int node                16-bit node address
     int group               16-bit group address
-                              
+
   Function value:
     MSCB_SUCCESS            Successful completion
     MSCB_MUTEX              Cannot obtain mutex for mscb
@@ -1046,10 +1129,10 @@ unsigned char buf[8];
   buf[0] = CMD_SET_ADDR;
   buf[1] = (unsigned char ) (node >> 8);
   buf[2] = (unsigned char ) (node & 0xFF);
-  buf[3] = (unsigned char ) (group >> 8);  
+  buf[3] = (unsigned char ) (group >> 8);
   buf[4] = (unsigned char ) (group & 0xFF);
   buf[5] = crc8(buf, 5);
-  mscb_out(fd, buf, 6, FALSE);
+  mscb_out(fd, buf, 6, 0);
 
   mscb_release();
 
@@ -1069,7 +1152,7 @@ int mscb_write_na(int fd, unsigned char channel, unsigned int data, int size)
     int fd                  File descriptor for connection
     unsigned char channel   Channel index 0..255
     unsigned int  data      Data to send
-    int size                Data size in bytes 1..4 for byte, word, 
+    int size                Data size in bytes 1..4 for byte, word,
                             and dword
 
   Function value:
@@ -1098,7 +1181,7 @@ unsigned char buf[10];
     }
 
   buf[2+i] = crc8(buf, 2+i);
-  mscb_out(fd, buf, 3+i, FALSE);
+  mscb_out(fd, buf, 3+i, 0);
 
   mscb_release();
 
@@ -1118,7 +1201,7 @@ int mscb_write(int fd, unsigned char channel, unsigned int data, int size)
     int fd                  File descriptor for connection
     unsigned char channel   Channel index 0..255
     unsigned int  data      Data to send
-    int size                Data size in bytes 1..4 for byte, word, 
+    int size                Data size in bytes 1..4 for byte, word,
                             and dword
 
   Function value:
@@ -1151,7 +1234,7 @@ unsigned char buf[10], crc, ack[2];
 
   crc = crc8(buf, 2+i);
   buf[2+i] = crc;
-  mscb_out(fd, buf, 3+i, FALSE);
+  mscb_out(fd, buf, 3+i, 0);
 
   /* read acknowledge */
   i = mscb_in(fd, ack, 2, 5000);
@@ -1178,7 +1261,7 @@ int mscb_write_conf(int fd, unsigned char channel, unsigned int data, int size)
     int fd                  File descriptor for connection
     unsigned char channel   Channel index 0..254, 255 for node CSR
     unsigned int  data      Data to send
-    int size                Data size in bytes 1..4 for byte, word, 
+    int size                Data size in bytes 1..4 for byte, word,
                             and dword
 
   Function value:
@@ -1211,7 +1294,7 @@ unsigned char buf[10], crc, ack[2];
 
   crc = crc8(buf, 2+i);
   buf[2+i] = crc;
-  mscb_out(fd, buf, 3+i, FALSE);
+  mscb_out(fd, buf, 3+i, 0);
 
   /* read acknowledge, 100ms timeout */
   i = mscb_in(fd, ack, 2, 100000);
@@ -1235,7 +1318,7 @@ int mscb_flash(int fd)
 
   Purpose: Flash configuration parameter and channels values to
            EEPROM
-           
+
 
   Input:
     int fd                  File descriptor for connection
@@ -1259,7 +1342,7 @@ unsigned char buf[10], crc, ack[2];
   buf[0] = CMD_FLASH;
   crc = crc8(buf, 1);
   buf[1] = crc;
-  mscb_out(fd, buf, 2, FALSE);
+  mscb_out(fd, buf, 2, 0);
 
   /* read acknowledge, 100ms timeout */
   i = mscb_in(fd, ack, 2, 100000);
@@ -1286,7 +1369,7 @@ int mscb_read(int fd, unsigned char channel, unsigned int *data)
   Input:
     int fd                  File descriptor for connection
     unsigned char channel   Channel index 0..255
-    int size                Data size in bytes 1..4 for byte, word, 
+    int size                Data size in bytes 1..4 for byte, word,
                             and dword for data to receive
 
   Output:
@@ -1310,13 +1393,13 @@ unsigned char buf[10], crc;
   buf[0] = CMD_READ;
   buf[1] = channel;
   buf[2] = crc8(buf, 2);
-  mscb_out(fd, buf, 3, FALSE);
+  mscb_out(fd, buf, 3, 0);
 
   /* read data */
   i = mscb_in(fd, buf, 10, 5000);
   mscb_release();
 
-  if (i<3)
+  if (i<2)
     return MSCB_TIMEOUT;
 
   crc = crc8(buf, i-1);
@@ -1369,7 +1452,7 @@ unsigned char buf[10], crc;
   buf[0] = CMD_READ_CONF;
   buf[1] = index;
   buf[2] = crc8(buf, 2);
-  mscb_out(fd, buf, 3, FALSE);
+  mscb_out(fd, buf, 3, 0);
 
   /* read data */
   i = mscb_in(fd, buf, 10, 5000);
@@ -1433,7 +1516,7 @@ unsigned char buf[80];
 
   /* add CRC code and send data */
   buf[1+i] = crc8(buf, 1+i);
-  status = mscb_out(fd, buf, 2+i, FALSE);
+  status = mscb_out(fd, buf, 2+i, 0);
   if (status != MSCB_SUCCESS)
     {
     mscb_release();
@@ -1510,7 +1593,7 @@ int           i, r;
     buf[1] = (unsigned char) (addr >> 8);
     buf[2] = (unsigned char) (addr & 0xFF);
     buf[3] = crc8(buf, 3);
-    mscb_out(_fd, buf, 4, TRUE);
+    mscb_out(_fd, buf, 4, 1);
 
     /* send write command */
     buf[0] = CMD_WRITE_ACK+3;
@@ -1519,7 +1602,7 @@ int           i, r;
     buf[3] = data & 0xFF;
     crc = crc8(buf, 4);
     buf[4] = crc;
-    mscb_out(_fd, buf, 5, FALSE);
+    mscb_out(_fd, buf, 5, 0);
 
     /* read acknowledge */
     r = mscb_in(_fd, ack, 2, 5000);
@@ -1539,7 +1622,7 @@ int           i, r;
 
     /* send 0's to overflow partially filled node receive buffer */
     memset(buf, 0, sizeof(buf));
-    mscb_out(_fd, buf, 10, TRUE);
+    mscb_out(_fd, buf, 10, 1);
     Sleep(100);
     }
 
@@ -1591,7 +1674,7 @@ int           i, r;
     buf[1] = (unsigned char) (addr >> 8);
     buf[2] = (unsigned char) (addr & 0xFF);
     buf[3] = crc8(buf, 3);
-    mscb_out(_fd, buf, 4, TRUE);
+    mscb_out(_fd, buf, 4, 1);
 
     /* send write command */
     buf[0] = CMD_WRITE_CONF+3;
@@ -1600,7 +1683,7 @@ int           i, r;
     buf[3] = data & 0xFF;
     crc = crc8(buf, 4);
     buf[4] = crc;
-    mscb_out(_fd, buf, 5, FALSE);
+    mscb_out(_fd, buf, 5, 0);
 
     /* read acknowledge */
     r = mscb_in(_fd, ack, 2, 5000);
@@ -1620,7 +1703,7 @@ int           i, r;
 
     /* send 0's to overflow partially filled node receive buffer */
     memset(buf, 0, sizeof(buf));
-    mscb_out(_fd, buf, 10, TRUE);
+    mscb_out(_fd, buf, 10, 1);
     Sleep(100);
     }
 
@@ -1673,13 +1756,13 @@ int           i, r;
     buf[1] = (unsigned char) (addr >> 8);
     buf[2] = (unsigned char) (addr & 0xFF);
     buf[3] = crc8(buf, 3);
-    mscb_out(_fd, buf, 4, TRUE);
+    mscb_out(_fd, buf, 4, 1);
 
     /* send read command */
     buf[0] = CMD_READ;
     buf[1] = channel;
     buf[2] = crc8(buf, 2);
-    mscb_out(_fd, buf, 3, FALSE);
+    mscb_out(_fd, buf, 3, 0);
 
     /* read data */
     r = mscb_in(_fd, buf, 10, 5000);
@@ -1711,7 +1794,7 @@ int           i, r;
 
     /* send 0's to overflow partially filled node receive buffer */
     memset(buf, 0, sizeof(buf));
-    mscb_out(_fd, buf, 10, TRUE);
+    mscb_out(_fd, buf, 10, 1);
     Sleep(100);
     }
 
@@ -1721,7 +1804,7 @@ int           i, r;
 
 /*------------------------------------------------------------------*/
 
-int mscb_read_conf16(char *device, unsigned short addr, unsigned char index, 
+int mscb_read_conf16(char *device, unsigned short addr, unsigned char index,
                      unsigned short *data)
 /********************************************************************\
 
@@ -1765,13 +1848,13 @@ int           i, r;
     buf[1] = (unsigned char) (addr >> 8);
     buf[2] = (unsigned char) (addr & 0xFF);
     buf[3] = crc8(buf, 3);
-    mscb_out(_fd, buf, 4, TRUE);
+    mscb_out(_fd, buf, 4, 1);
 
     /* send read command */
     buf[0] = CMD_READ_CONF;
     buf[1] = index;
     buf[2] = crc8(buf, 2);
-    mscb_out(_fd, buf, 3, FALSE);
+    mscb_out(_fd, buf, 3, 0);
 
     /* read data */
     r = mscb_in(_fd, buf, 10, 5000);
@@ -1803,7 +1886,7 @@ int           i, r;
 
     /* send 0's to overflow partially filled node receive buffer */
     memset(buf, 0, sizeof(buf));
-    mscb_out(_fd, buf, 10, TRUE);
+    mscb_out(_fd, buf, 10, 1);
     Sleep(100);
     }
 
