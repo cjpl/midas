@@ -6,6 +6,9 @@
 #  Contents:     Makefile for MIDAS binaries and examples under unix
 #
 #  $Log$
+#  Revision 1.32  2001/08/07 11:04:03  midas
+#  Added -lc flag for libmidas.so because of missing stat()
+#
 #  Revision 1.31  2001/08/07 10:40:46  midas
 #  Added -w flag for HBOOK files to supress warnings cause by cfortran.h
 #
@@ -339,7 +342,7 @@ $(LIBNAME): $(OBJS)
 
 $(SHLIB): $(OBJS)
 	rm -f $@
-	ld -shared -o $@ $^ $(LIBS)
+	ld -shared -o $@ $^ $(LIBS) -lc
 
 #
 # frontend and backend framework
