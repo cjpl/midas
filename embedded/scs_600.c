@@ -9,6 +9,9 @@
                 for SCS-600 Digital I/O
 
   $Log$
+  Revision 1.10  2003/03/06 10:59:54  midas
+  Adde P1 output and 16-bit input
+
   Revision 1.9  2003/02/19 16:05:36  midas
   Added 'init' parameter to user_init
 
@@ -46,12 +49,12 @@ extern bit DEBUG_MODE;
 char code node_name[] = "SCS-600";
 
 
-sbit SR_CLOCK   = P0 ^ 2;    // Shift register clock
+sbit SR_CLOCK   = P0 ^ 4;    // Shift register clock
 sbit SR_STROBE  = P0 ^ 5;    // Storage register clock
 sbit SR_DATAO   = P0 ^ 6;    // Serial data out
 sbit SR_DATAI   = P0 ^ 7;    // Serial data in
 sbit SR_OE      = P0 ^ 3;    // Output enable
-sbit SR_READB   = P0 ^ 4;    // Serial data readback
+sbit SR_READB   = P0 ^ 2;    // Serial data readback
 
 /*---- Define channels and configuration parameters returned to
        the CMD_GET_INFO command                                 ----*/
@@ -60,7 +63,9 @@ sbit SR_READB   = P0 ^ 4;    // Serial data readback
 
 struct {
   unsigned char out[8];
-  unsigned char in;
+  unsigned char button;
+  unsigned char p1;
+  unsigned char input[2];
 } idata user_data;
 
 struct {
@@ -76,7 +81,10 @@ MSCB_INFO_CHN code channel[] = {
   1, UNIT_BOOLEAN, 0, 0, 0, "Out5",   &user_data.out[5],
   1, UNIT_BOOLEAN, 0, 0, 0, "Out6",   &user_data.out[6],
   1, UNIT_BOOLEAN, 0, 0, 0, "Out7",   &user_data.out[7],
-  1, UNIT_BYTE,    0, 0, 0,   "In",   &user_data.in,
+  1, UNIT_BYTE,    0, 0, 0, "Button", &user_data.button,
+  1, UNIT_BYTE,    0, 0, 0, "P1",     &user_data.p1,
+  1, UNIT_BYTE,    0, 0, 0, "Input1", &user_data.input[0],
+  1, UNIT_BYTE,    0, 0, 0, "Input2", &user_data.input[1],
   0
 };
 
@@ -103,6 +111,7 @@ unsigned char output;
 #pragma NOAREGS
 
 void user_write(unsigned char channel) reentrant;
+void ser_clock(void);
 
 /*---- User init function ------------------------------------------*/
 
@@ -110,7 +119,8 @@ void user_init(unsigned char init)
 {
 unsigned char i;
 
-  PRT0CF = 0x7F;  // push-pull for P0.0-6
+  PRT0CF = 0x7B;  // push-pull for P0.0,1,3,4,5,6
+  PRT1CF = 0xFF;  // push-pull for P1
 
   /* init shift register lines */
   SR_OE = 1;
@@ -124,9 +134,25 @@ unsigned char i;
     for (i=0 ; i<8 ; i++)
       {
       user_data.out[i] = 0;
+      user_data.p1 = 0;
       user_conf.power[i] = 100;
       }
     }
+
+  /* set outputs according to main switch */
+  for (i=0 ; i<8 ; i++)
+    {
+    if (user_data.out[i])
+      output |= (1<<i);
+    else
+      output &= ~(1<<i);
+    }
+
+  /* output P1 value from EEPROM */
+  user_write(9);
+
+  /* output initial values */
+  ser_clock();
 }
 
 
@@ -134,7 +160,8 @@ unsigned char i;
 
 void user_write(unsigned char channel) reentrant
 {
-  if (channel);
+  if (channel == 9)
+    P1 = user_data.p1;
 }
 
 /*---- User read function ------------------------------------------*/
@@ -176,12 +203,43 @@ void ser_clock()
 {
 unsigned char d, i;
 
-  /* first shift register */
+  /* first shift register (buttons) */
   for (i=d=0 ; i<8 ; i++)
     {
     if (SR_DATAI)
       d |= (0x80 >> i);
 
+    delay_us(10);
+    SR_CLOCK = 1;
+    delay_us(10);
+    SR_CLOCK = 0;
+    delay_us(10);
+    }
+
+  user_data.button = d;
+
+  /* second shift register (LED & input2) */
+  for (i=d=0 ; i<8 ; i++)
+    {
+    if (SR_DATAI)
+      d |= (0x01 << i);
+
+    SR_DATAO = ((output & (0x01 << i)) == 0);
+    delay_us(10);
+    SR_CLOCK = 1;
+    delay_us(10);
+    SR_CLOCK = 0;
+    delay_us(10);
+    }
+
+  user_data.input[1] = d;
+
+  /* third shift register (VR & input1) */
+  for (i=d=0 ; i<8 ; i++)
+    {
+    if (SR_DATAI)
+      d |= (0x01 << i);
+
     SR_DATAO = ((output & (0x80 >> i)) == 0);
     delay_us(10);
     SR_CLOCK = 1;
@@ -190,16 +248,7 @@ unsigned char d, i;
     delay_us(10);
     }
 
-  /* second shift register */
-  for (i=0 ; i<8 ; i++)
-    {
-    SR_DATAO = ((output & (0x80 >> i)) == 0);
-    delay_us(10);
-    SR_CLOCK = 1;
-    delay_us(10);
-    SR_CLOCK = 0;
-    delay_us(10);
-    }
+  user_data.input[0] = d;
 
   /* strobe for output and next input */
   SR_STROBE = 1;
@@ -208,8 +257,6 @@ unsigned char d, i;
 
   /* after first cycle, enable outputs */
   SR_OE = 0;
-
-  user_data.in = d;  
 }
 
 /*---- Apply power settings as a fraction of a second --------------*/
@@ -285,17 +332,17 @@ unsigned long        expired;
 
 void user_loop(void)
 {
-unsigned char i, old_in;
+unsigned char i, old_button;
 static unsigned long last = 300;
 static bit first = 1;
 
   /* read inputs */
-  old_in = user_data.in;
+  old_button = user_data.button;
   ser_clock();
   for (i=0 ; i<8 ; i++)
     {
-    if ((user_data.in & (1<<i)) > 0 &&
-        (old_in & (1<<i)) == 0)
+    if ((user_data.button & (1<<i)) > 0 &&
+        (old_button & (1<<i)) == 0)
       user_data.out[i] = !user_data.out[i];
     }
 
@@ -320,7 +367,7 @@ static bit first = 1;
     lcd_goto(0, 1);
     printf("IN:  ");
     for (i=0 ; i<8 ; i++)
-      printf("%c", user_data.in & (1<<i) ? '1' : '0');
+      printf("%c", user_data.button & (1<<i) ? '1' : '0');
     }
 }
 
