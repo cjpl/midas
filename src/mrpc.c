@@ -6,6 +6,9 @@
   Contents:     List of MIDAS RPC functions with parameters
 
   $Log$
+  Revision 1.11  1999/05/05 12:02:34  midas
+  Added and modified history functions, added db_set_num_values
+
   Revision 1.10  1999/04/19 07:47:54  midas
   Added cm_msg_retrieve
 
@@ -379,6 +382,12 @@ static RPC_LIST rpc_list_library[] = {
      {TID_BOOL,       RPC_IN}, 
      {0} }},
 
+  { RPC_DB_SET_NUM_VALUES, "db_set_num_values",
+    {{TID_INT,        RPC_IN}, 
+     {TID_INT,        RPC_IN},
+     {TID_INT,        RPC_IN}, 
+     {0} }},
+
   { RPC_DB_SET_MODE, "db_set_mode",
     {{TID_INT,        RPC_IN}, 
      {TID_INT,        RPC_IN},
@@ -479,21 +488,37 @@ static RPC_LIST rpc_list_library[] = {
 
   { RPC_HS_ENUM_EVENTS, "hs_enum_events",
     {{TID_DWORD,      RPC_IN}, 
-     {TID_ARRAY,      RPC_OUT | RPC_VARARRAY}, 
+     {TID_STRING,     RPC_OUT | RPC_VARARRAY}, 
+     {TID_INT,        RPC_IN | RPC_OUT},
+     {TID_INT,        RPC_OUT | RPC_VARARRAY}, 
      {TID_INT,        RPC_IN | RPC_OUT},
      {0} }},
 
-  { RPC_HS_COUNT_TAGS, "hs_count_tags",
+  { RPC_HS_COUNT_VARS, "hs_count_vars",
     {{TID_DWORD,      RPC_IN}, 
      {TID_DWORD,      RPC_IN}, 
      {TID_DWORD,      RPC_OUT}, 
      {0} }},
 
-  { RPC_HS_ENUM_TAGS, "hs_enum_tags",
+  { RPC_HS_ENUM_VARS, "hs_enum_vars",
     {{TID_DWORD,      RPC_IN}, 
      {TID_DWORD,      RPC_IN}, 
-     {TID_ARRAY,      RPC_OUT | RPC_VARARRAY}, 
+     {TID_STRING,     RPC_OUT | RPC_VARARRAY}, 
      {TID_INT,        RPC_IN | RPC_OUT},
+     {0} }},
+
+  { RPC_HS_GET_VAR, "hs_get_var",
+    {{TID_DWORD,      RPC_IN}, 
+     {TID_DWORD,      RPC_IN}, 
+     {TID_STRING,     RPC_IN}, 
+     {TID_DWORD,      RPC_OUT},
+     {TID_INT,        RPC_OUT},
+     {0} }},
+
+  { RPC_HS_GET_EVENT_ID, "hs_get_event_id",
+    {{TID_DWORD,      RPC_IN}, 
+     {TID_STRING,     RPC_IN}, 
+     {TID_DWORD,      RPC_OUT},
      {0} }},
 
   { RPC_HS_READ, "hs_read",

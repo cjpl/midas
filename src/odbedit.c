@@ -6,6 +6,9 @@
   Contents:     Command-line interface to the MIDAS online data base.
 
   $Log$
+  Revision 1.17  1999/05/05 12:02:34  midas
+  Added and modified history functions, added db_set_num_values
+
   Revision 1.16  1999/04/29 10:48:03  midas
   Implemented "/System/Client Notify" key
 
@@ -1678,27 +1681,14 @@ PRINT_INFO      print_info;
       {
       compose_name(pwd, param[1], str);
 
-      if (strcmp(str, "/") != 0)
-        status = db_find_key(hDB, 0, str, &hKey);
-      else
-        hKey = 0;
+      status = db_find_key(hDB, 0, str, &hKey);
 
       i = atoi(param[2]);
       if (i==0)
         i = 1;
 
-      if (status == DB_SUCCESS || !hKey)
-        {
-        db_get_key(hDB, hKey, &key);
-        if (i > key.num_values)
-          printf("Key has already less than %d values\n");
-        else
-          {
-          size = sizeof(data);
-          db_get_data(hDB, hKey, data, &size, key.type);
-          db_set_data(hDB, hKey, data, i*key.item_size, i, key.type);
-          }
-        }
+      if (status == DB_SUCCESS )
+        db_set_num_values(hDB, hKey, i);
       else
         printf("key not found\n");
       }

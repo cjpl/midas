@@ -6,6 +6,9 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.18  1999/05/05 12:02:34  midas
+  Added and modified history functions, added db_set_num_values
+
   Revision 1.17  1999/05/03 10:41:35  midas
   Show open record function now scans all links, not keys
 
@@ -3617,6 +3620,109 @@ KEY              *pkey;
 
 /*------------------------------------------------------------------*/
 
+INT db_set_num_values(HNDLE hDB, HNDLE hKey, INT num_values)
+/********************************************************************\
+
+  Routine: db_set_num_values
+
+  Purpose: Set numbe of values in a key. Extend with zeros or truncate.
+
+  Input:
+    HNDLE  hDB              Handle to the database
+    HNDLE  hKey             Handle of key
+    INT    num_values       Number of data values
+
+  Output:
+    none
+
+  Function value:
+    DB_SUCCESS              Successful completion
+    DB_INVALID_HANDLE       Database handle is invalid
+
+\********************************************************************/
+{
+  if (rpc_is_remote())
+    return rpc_call(RPC_DB_SET_NUM_VALUES, hDB, hKey, num_values); 
+
+#ifdef LOCAL_ROUTINES
+{
+DATABASE_HEADER  *pheader;
+KEY              *pkey;
+INT              new_size;
+
+  if (hDB > _database_entries || hDB <= 0)
+    {
+    cm_msg(MERROR, "db_set_data", "invalid database handle");
+    return DB_INVALID_HANDLE;
+    }
+
+  if (!_database[hDB-1].attached)
+    {
+    cm_msg(MERROR, "db_set_data", "invalid database handle");
+    return DB_INVALID_HANDLE;
+    }
+
+  if (hKey < sizeof(DATABASE_HEADER))
+    {
+    cm_msg(MERROR, "db_set_data", "invalid key handle");
+    return DB_INVALID_HANDLE;
+    }
+
+  db_lock_database(hDB);
+
+  pheader  = _database[hDB-1].database_header;
+  pkey = (KEY *) ((char *) pheader + hKey);
+
+  /* check for write access */
+  if (!(pkey->access_mode & MODE_WRITE) ||
+       (pkey->access_mode & MODE_EXCLUSIVE))
+    {
+    db_unlock_database(hDB);
+    return DB_NO_ACCESS;
+    }
+
+  /* keys cannot contain data */
+  if (pkey->type == TID_KEY)
+    {
+    db_unlock_database(hDB);
+    cm_msg(MERROR, "db_set_data", "Key cannot contain data");
+    return DB_TYPE_MISMATCH;
+    }
+
+  /* resize data size if necessary */
+  if (pkey->num_values != num_values)
+    {
+    new_size = pkey->item_size*num_values;
+    pkey->data = (PTYPE) realloc_data(pheader, (char *) pheader + pkey->data,
+                                      pkey->total_size, new_size);
+                 
+    if (pkey->data == 0)
+      {
+      db_unlock_database(hDB);
+      cm_msg(MERROR, "db_set_data", "online database full");
+      return DB_FULL;
+      }
+
+    pkey->data -= (PTYPE) pheader;
+    pkey->total_size = new_size;
+    pkey->num_values = num_values;
+    }
+
+  /* update time */
+  pkey->last_written = ss_time();
+
+  db_unlock_database(hDB);
+
+  db_notify_clients(hDB, hKey, TRUE);
+
+}
+#endif /* LOCAL_ROUTINES */
+
+  return DB_SUCCESS;
+}
+
+/*------------------------------------------------------------------*/
+
 INT db_set_data_index(HNDLE hDB, HNDLE hKey, 
                       void *data, INT data_size, INT index, DWORD type)
 /********************************************************************\
@@ -3708,8 +3814,8 @@ KEY              *pkey;
     return DB_FULL;
     }
 
-  /* increase key size if necessary */
-  if (index >= pkey->num_values)
+  /* increase data size if necessary */
+  if (index >= pkey->num_values || pkey->item_size == 0)
     {
     pkey->data = (PTYPE) realloc_data(pheader, (char *) pheader + pkey->data,
                                       pkey->total_size, data_size*(index+1));
