@@ -4,26 +4,17 @@ Name:         mevb.h
 
   Contents:     Event builder header file
   $Log$
-  Revision 1.2  2002/01/28 20:49:08  pierre
-  correct format string length
-
-  Revision 1.1.1.1  2002/01/17 19:55:31  pierre
-  Initial Version
+  Revision 1.3  2002/06/14 04:57:09  pierre
+  revised for 1.9.x
 
 \********************************************************************/
 
-#define   EB_SUCCESS               1
-#define   EB_COMPOSE_TIMEOUT      -1
-#define   EB_ERROR              1001
-#define   TIMEOUT                 10
-#define   MAX_CHANNELS             8
-
 #define EBUILDER(_name) char *_name[] = {\
 "[Settings]",\
-"Event ID = WORD : 0x33",\
+"Event ID = WORD : 1",\
 "Trigger mask = WORD : 1",\
 "Buffer = STRING : [32] SYSTEM",\
-"Format = STRING : [8] MIDAS",\
+"Format = STRING : [32] MIDAS",\
 "User build = BOOL : n",\
 "Event mask = DWORD : 3",\
 "Hostname = STRING : [64] ",\
@@ -42,6 +33,7 @@ NULL }
 "Buffer = STRING : [32] BUF1",\
 "Format = STRING : [32] MIDAS",\
 "Event mask = DWORD : 1",\
+"User Field = STRING : [64] ",\
 "",\
 "[Frag1/Statistics]",\
 "Events sent = DOUBLE : 0",\
@@ -54,6 +46,7 @@ NULL }
 "Buffer = STRING : [32] BUF2",\
 "Format = STRING : [32] MIDAS",\
 "Event mask = DWORD : 2",\
+"User Field = STRING : [64] ",\
 "",\
 "[Frag2/Statistics]",\
 "Events sent = DOUBLE : 0",\
@@ -78,6 +71,7 @@ typedef struct {
     char      buffer[32];
     char      format[32];
     DWORD     emask;
+    char      user_field[64];
   } EBUILDER_SETTINGS_CH;
 
 typedef struct {
@@ -98,3 +92,8 @@ typedef struct {
     EBUILDER_STATISTICS   stat;
 } EBUILDER_CHANNEL;
 
+#define   EB_SUCCESS               1
+#define   EB_COMPOSE_TIMEOUT      -1
+#define   EB_ERROR              1001
+#define   TIMEOUT                 10
+#define   MAX_CHANNELS             8
