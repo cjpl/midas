@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.3  1998/10/19 16:40:44  midas
+  ASCII output of multi-module LRS1877 now possible
+
   Revision 1.2  1998/10/12 12:19:01  midas
   Added Log tag in header
 
@@ -1294,7 +1297,7 @@ INT status;
 
 INT write_event_ascii(FILE *file, EVENT_HEADER *pevent, ANALYZE_REQUEST *par)
 {
-INT            status, size, i, j;
+INT            status, size, i, j, count;
 BOOL           exclude;
 BANK_HEADER    *pbh;
 BANK_LIST      *pbl;
@@ -1357,7 +1360,6 @@ char           buffer[100000];
     
         lrs1882        = (LRS1882_DATA *)   pdata;
         lrs1877        = (LRS1877_DATA *)   pdata;
-        lrs1877_header = (LRS1877_HEADER *) pdata;
 
         /* write bank header */
         *((DWORD *) name) = *((DWORD *) (pbk)->name);
@@ -1409,7 +1411,34 @@ char           buffer[100000];
         else
           {
           /* write variable length bank  */
-          for (i=0 ; i<size ; i++)
+          if ((pbk->type & 0xFF00) == TID_LRS1877)
+            {
+            for (i=0 ; i<size ;)
+              {
+              lrs1877_header = (LRS1877_HEADER *) &lrs1877[i];
+
+              /* print header */
+              sprintf(pbuf, "GA %d BF %d CN %d", 
+                  lrs1877_header->geo_addr, lrs1877_header->buffer, lrs1877_header->count);
+              strcat(pbuf, "\n");
+              STR_INC(pbuf,buffer);
+
+              count = lrs1877_header->count;
+              if (count == 0)
+                break;
+              for (j=1 ; j<count ; j++)
+                {
+                /* print data */
+                sprintf(pbuf, "GA %d CH %02d ED %d DA %1.1lf", 
+                  lrs1877[i].geo_addr, lrs1877[i+j].channel, lrs1877[i+j].edge, lrs1877[i+j].data*0.5);
+                strcat(pbuf, "\n");
+                STR_INC(pbuf,buffer);
+                }
+
+              i += count;
+              }
+            }
+          else for (i=0 ; i<size ; i++)
             {
             if ((pbk->type & 0xFF00) == 0)
               db_sprintf(pbuf, pdata, size, i, pbk->type & 0xFF);
@@ -1418,16 +1447,6 @@ char           buffer[100000];
               sprintf(pbuf, "GA %d CH %02d DA %d", 
                 lrs1882[i].geo_addr, lrs1882[i].channel, lrs1882[i].data);
       
-            else if ((pbk->type & 0xFF00) == TID_LRS1877)
-              {
-              if (i==0) /* header */
-                sprintf(pbuf, "GA %d BF %d CN %d", 
-                  lrs1877_header[i].geo_addr, lrs1877_header[i].buffer, lrs1877_header[i].count);
-              else      /* data */
-                sprintf(pbuf, "GA %d CH %02d ED %d DA %1.1lf", 
-                  lrs1877[i].geo_addr, lrs1877[i].channel, lrs1877[i].edge, lrs1877[i].data*0.5);
-              }
-
             else if ((pbk->type & 0xFF00) == TID_PCOS3)
               sprintf(pbuf, ""); /* TBD */
             else
