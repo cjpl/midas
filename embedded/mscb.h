@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol commands
 
   $Log$
+  Revision 1.4  2002/07/10 09:53:00  midas
+  Finished EEPROM routines
+
   Revision 1.3  2002/07/08 08:50:42  midas
   Added mscbutil functions
 
@@ -32,7 +35,7 @@
 
 /*---- MSCB commands -----------------------------------------------*/
 
-#define VERSION 0x10;   // version 1.0
+#define VERSION 0x10    // version 1.0
 
 #define CMD_ADDR_NODE8  0x09
 #define CMD_ADDR_NODE16 0x0A
@@ -61,7 +64,7 @@
 #define CMD_WRITE_ACK   0x88
 
 #define CMD_WRITE_CONF  0x90
-#define CMD_WRITE_CONF_PERM 0x98
+#define CMD_FLASH       0x98
 
 #define CMD_READ        0xA1
 #define CMD_READ_CONF   0xA9
@@ -107,21 +110,34 @@ typedef struct {
   unsigned short group_address;
   unsigned short watchdog_resets;
   char           node_name[16];
-  } MSCB_INFO;
+} MSCB_INFO;
 
 typedef struct {
-  unsigned char  channel_width;
-  unsigned char  phys_units;
-  unsigned char  status;
-  unsigned char  flags;
-  char           channel_name[8];
-  } MSCB_INFO_CHN;
+  unsigned char width;    // width in bytes
+  unsigned char units;    // physical units (not yet used)
+  unsigned char status;   // status (not yet used)
+  unsigned char flags;    // flags (not yet used)
+  char          name[8];  // name
+  void data     *ud;      // point to user data buffer
+} MSCB_INFO_CHN;
+
+typedef struct {          // system info stored in EEPROM
+unsigned int  node_addr;
+unsigned int  group_addr;
+unsigned int  wd_counter;
+} SYS_INFO;
+
+#define ENABLE_INTERRUPTS { EA = 1; }
+#define DISABLE_INTERRUPTS { EA = 0; }
 
 /*---- function declarations ---------------------------------------*/
 
 void watchdog_refresh(void);
 void delay_us(unsigned int us);
 void delay_ms(unsigned int ms);
+
+unsigned char crc8(unsigned char idata *buffer, int len);
+unsigned char crc8_add(unsigned char crc, unsigned int c);
 
 void lcd_setup();
 void lcd_clear();
@@ -130,8 +146,11 @@ void lcd_putc(char c);
 void lcd_puts(char *str);
 char scs_lcd1_read();
 
-void eeprom_read(void idata *dst, unsigned char len, unsigned char offset);
-void eeprom_write(void idata *src, unsigned char len, unsigned char offset);
+void eeprom_flash(void); 
+void eeprom_retrieve(void);
 
 void uart_init(unsigned char baud);
+
+unsigned char user_func(unsigned char idata *data_in,
+                        unsigned char idata *data_out);
 

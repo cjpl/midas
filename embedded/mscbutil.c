@@ -6,6 +6,9 @@
   Contents:     Various utility functions for MSCB protocol
 
   $Log$
+  Revision 1.5  2002/07/10 09:52:55  midas
+  Finished EEPROM routines
+
   Revision 1.4  2002/07/09 15:31:32  midas
   Initial Revision
 
@@ -22,6 +25,10 @@
 
 #include "mscb.h"
 #include <intrins.h>
+
+extern SYS_INFO sys_info;        // for eeprom functions
+extern MSCB_INFO_CHN code channel[];
+extern MSCB_INFO_CHN code conf_param[];
 
 /*------------------------------------------------------------------*/
 
@@ -225,7 +232,7 @@ unsigned int  remaining_us;
 /*------------------------------------------------------------------*/
 
 void eeprom_read(void idata *dst, unsigned char len, 
-                 unsigned char offset)
+                 unsigned char idata *offset)
 /********************************************************************\
 
   Routine: eeprom_read
@@ -235,7 +242,8 @@ void eeprom_read(void idata *dst, unsigned char len,
   Input:
     unsigned char idata *dst    Destination in IDATA memory
     unsigned char len           Number of bytes to copy
-    unsigend char offset        Offset in EEPROM in bytes
+    unsigend char *offset       Offset in EEPROM in bytes, gets
+                                adjusted after read
 
 \********************************************************************/
 {
@@ -270,20 +278,20 @@ EEPROM_RET:
   unsigned char code *p;
   unsigned char idata *d;
 
-  p = 0x8000; // read from 128-byte EEPROM page
-  p += offset;
+  p = 0x8000 + *offset; // read from 128-byte EEPROM page
   d = dst;
 
   for (i=0 ; i<len ; i++)
     d[i] = p[i];
 
+  *offset += len;
 #endif
 }
 
 /*------------------------------------------------------------------*/
 
 void eeprom_write(void idata *src, unsigned char len, 
-                  unsigned char offset)
+                  unsigned char idata *offset)
 /********************************************************************\
 
   Routine: eeprom_read
@@ -293,7 +301,8 @@ void eeprom_write(void idata *src, unsigned char len,
   Input:
     unsigned char idata *src    Source in IDATA memory
     unsigned char len           Number of bytes to copy
-    unsigend char offset        Offset in EEPROM in bytes
+    unsigend char offset        Offset in EEPROM in bytes, gets
+                                adjusted after write
 
 \********************************************************************/
 {
@@ -322,21 +331,99 @@ EEPROM_WRITE:
   unsigned char idata *s;
 
   FLSCL = (FLSCL & 0xF0) | 0x08; // set timer for 11.052 MHz clock
-  PSCTL = 0x03;                  // allow write and erase
-
-  p = 0x8000;                    // erase page
-  *p = 0;
-
   PSCTL = 0x01;                  // allow write
 
-  p = 0x8000 + offset;
+  p = 0x8000 + *offset;
   s = src;
 
   for (i=0 ; i<len ; i++)        // write data
     p[i] = s[i];
 
   PSCTL = 0x00;                  // don't allow write
+
+  *offset += len;
 #endif
+}
+
+/*------------------------------------------------------------------*/
+
+void eeprom_erase(void)
+/********************************************************************\
+
+  Routine: eeprom_erase
+
+  Purpose: Erase parameter EEPROM page
+
+\********************************************************************/
+{
+#ifdef CPU_ADUC812
+#endif
+
+#ifdef CPU_C8051F000
+  unsigned char xdata *p;
+
+  FLSCL = (FLSCL & 0xF0) | 0x08; // set timer for 11.052 MHz clock
+  PSCTL = 0x03;                  // allow write and erase
+
+  p = 0x8000;                    // erase page
+  *p = 0;
+#endif
+}
+
+/*------------------------------------------------------------------*/
+
+void eeprom_flash(void)
+/********************************************************************\
+
+  Routine: eeprom_flash
+
+  Purpose: Write system and user parameters to EEPROM
+
+\********************************************************************/
+{
+unsigned char offset, i;
+
+  eeprom_erase();
+
+  offset = 0;
+
+  // system info (node address etc...)
+  eeprom_write(&sys_info, sizeof(SYS_INFO), &offset);
+
+  // user channel variables
+  for (i=0 ; channel[i].width ; i++)
+    eeprom_write(channel[i].ud, channel[i].width, &offset);
+
+  // user configuration parameters 
+  for (i=0 ; conf_param[i].width ; i++)
+    eeprom_write(conf_param[i].ud, conf_param[i].width, &offset);
+}
+
+/*------------------------------------------------------------------*/
+
+void eeprom_retrieve(void)
+/********************************************************************\
+
+  Routine: eeprom_retrieve
+
+  Purpose: Retrieve system and user parameters from EEPROM
+
+\********************************************************************/
+{
+unsigned char offset, i;
+
+  offset = 0;
+
+  // system info (node address etc...)
+  eeprom_read(&sys_info, sizeof(SYS_INFO), &offset);
+
+  // user channel variables
+  for (i=0 ; channel[i].width ; i++)
+    eeprom_read(channel[i].ud, channel[i].width, &offset);
+
+  // user configuration parameters 
+  for (i=0 ; conf_param[i].width ; i++)
+    eeprom_read(conf_param[i].ud, conf_param[i].width, &offset);
 }
 
 /*------------------------------------------------------------------*\

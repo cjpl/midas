@@ -8,6 +8,9 @@
                 Midas Slow Control Bus protocol
 
   $Log$
+  Revision 1.2  2002/07/10 09:52:55  midas
+  Finished EEPROM routines
+
   Revision 1.1  2002/07/09 15:31:32  midas
   Initial Revision
 
@@ -85,10 +88,7 @@ void user_init(void)
   DAC1CN = 0x80;  // enable DAC1
 #endif
 
-  /* get data from EEPROM */
-  eeprom_read(&user_data, sizeof(user_data), EEPROM_USER_OFFSET);
-  eeprom_read(&user_conf, sizeof(user_conf), EEPROM_USER_OFFSET+sizeof(user_data));
-
+  /* correct initial EEPROM value */
   if (user_conf.adc_average == 0xFF)
     user_conf.adc_average = 0;
 
@@ -184,21 +184,25 @@ unsigned int  i, n;
 
   AMX0SL = channel & 0x0F;
 
-  n = 1 << (user_conf.adc_average);
+  n = 1 << (user_conf.adc_average+4);
 
   value = 0;
   for (i=0 ; i<n ; i++)
     {
+    DISABLE_INTERRUPTS;
+
     ADCINT = 0;
     ADBUSY = 1;
     while (!ADCINT);  // wait until conversion ready, does NOT work with ADBUSY!
+
+    ENABLE_INTERRUPTS;
 
     value += (ADC0L | (ADC0H << 8));
     watchdog_refresh();
     }
 
-  if (user_conf.adc_average > 4)
-    value >>= (user_conf.adc_average-1);
+  if (user_conf.adc_average)
+    value >>= (user_conf.adc_average);
 
   DISABLE_INTERRUPTS;
   *d = value;
