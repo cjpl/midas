@@ -1,0 +1,247 @@
+/********************************************************************\
+
+  Name:         das1600.c
+  Created by:   Stefan Ritt
+
+  Contents:     DAS-1600 (Keithley) Device Driver
+
+
+  Revision history
+  ------------------------------------------------------------------
+  date         by    modification
+  ---------    ---   ------------------------------------------------
+  02-APR-97    SR    created
+
+
+\********************************************************************/
+
+#include <stdio.h>
+#include <conio.h>
+#include <math.h>
+#include "midas.h"
+
+/*---- globals -----------------------------------------------------*/
+
+#define MAX_DEVICES 2
+
+typedef struct {
+  unsigned short io_base;
+  unsigned short gain[16];
+} DAS1600_SETTINGS;
+
+DAS1600_SETTINGS das1600_settings[MAX_DEVICES];
+
+#define DAS1600_SETTINGS_STR "\
+IO Base = WORD : 0x240\n\
+Gain = WORD[16] :\n\
+1\n\
+1\n\
+1\n\
+1\n\
+1\n\
+1\n\
+1\n\
+1\n\
+1\n\
+1\n\
+1\n\
+1\n\
+1\n\
+1\n\
+1\n\
+1\n\
+"
+
+/*---- device driver routines --------------------------------------*/
+
+INT das1600_init(HNDLE hKey, INT index, INT channels, DWORD type)
+{
+int   status, size;
+HNDLE hDB;
+
+  cm_get_experiment_database(&hDB, NULL);
+
+  /* create settings record */
+  status = db_create_record(hDB, hKey, "", DAS1600_SETTINGS_STR);
+  if (status != DB_SUCCESS)
+    return FE_ERR_ODB;
+
+  size = sizeof(das1600_settings[index]);
+  db_get_record(hDB, hKey, &das1600_settings[index], &size, 0);
+
+#ifdef OS_WINNT
+  /* open IO address space */
+  status = ss_directio_init(); 
+  if (status != SS_SUCCESS)
+    {
+    cm_msg(MERROR, "das1600_init", "DirectIO device driver not installed");
+    return FE_ERR_HW;
+    }
+  ss_directio_give_port(das1600_settings[index].io_base, das1600_settings[index].io_base+0x0F);
+  ss_directio_exit();
+#endif
+
+  return FE_SUCCESS;
+}
+
+/*----------------------------------------------------------------------------*/
+
+#define AD0     (unsigned short) (das1600_settings[index].io_base+0x00)
+#define AD1     (unsigned short) (das1600_settings[index].io_base+0x01)
+#define MUX     (unsigned short) (das1600_settings[index].io_base+0x02)
+#define DIO     (unsigned short) (das1600_settings[index].io_base+0x03)
+#define DA0LB   (unsigned short) (das1600_settings[index].io_base+0x04)
+#define DA0HB   (unsigned short) (das1600_settings[index].io_base+0x05)
+#define DA1LB   (unsigned short) (das1600_settings[index].io_base+0x06)
+#define DA1HB   (unsigned short) (das1600_settings[index].io_base+0x07)
+#define STATUS  (unsigned short) (das1600_settings[index].io_base+0x08)
+#define CTRL    (unsigned short) (das1600_settings[index].io_base+0x09)
+#define GAIN    (unsigned short) (das1600_settings[index].io_base+0x0b)
+
+/*------------------------------------------------------------------*/
+
+INT das1600_get_analog(INT index, INT channel, float *pvalue)
+{
+unsigned short int data;
+double             volts;
+
+//###
+//*pvalue = (float) (channel/10.0);
+//return FE_SUCCESS;
+
+  /* set MUX channel */
+  _outp(MUX, channel | (channel << 4));
+
+  /* diable interrupts and DMA */
+  _outp(CTRL, 0);
+
+  /* set gain */
+  _outp(GAIN, das1600_settings[index].gain[channel] == 1   ? 0 :
+              das1600_settings[index].gain[channel] == 10  ? 1 :
+              das1600_settings[index].gain[channel] == 100 ? 2 :
+              das1600_settings[index].gain[channel] == 500 ? 3 : 0);
+
+  /* start conversion */
+  _outp(AD0, 0);
+
+  /* wait for conversion */
+  do
+    {
+    data = _inp(STATUS);
+    } while (data & 0x80);
+
+  data = _inpw(AD0);
+  
+  /* convert to volts assuming bipolar operation */
+  volts = ((data >> 4) - 2048.0) / 4096.0;
+  
+  
+  volts = volts * (10 - (-10)) / das1600_settings[index].gain[channel];
+
+  /* return volts */
+  *pvalue = (float) volts;
+
+  return FE_SUCCESS ;
+}
+
+/*------------------------------------------------------------------*/
+
+INT das1600_set_analog(INT index, INT channel, float voltage)
+{
+signed short int data;
+
+  /* assume +-10 V bipolar range */
+//  data = (unsigned short int) (voltage / 10.0 * 2048 + 2048.5);
+
+  /* assume +10 V unipolar range */
+  data = (unsigned short int) (voltage / 10.0 * 4096);
+
+  /* check if in range */
+  if (data > 4095)
+    data = 4095;
+  if (data < 0)
+    data = 0;
+
+  if (channel == 0)
+    _outpw(DA0LB, (unsigned short) (data << 4));
+  else
+    _outpw(DA1LB, (unsigned short) (data << 4));
+
+  return FE_SUCCESS;
+}
+
+/*---- device driver entry points ----------------------------------*/
+
+INT das1600_ai(INT cmd, ...)
+{
+va_list argptr;
+HNDLE   hKey;
+INT     channel, status, index;
+float   *pvalue;
+
+  va_start(argptr, cmd);
+  status = FE_SUCCESS;
+
+  switch (cmd)
+    {
+    case CMD_INIT:
+      hKey = va_arg(argptr, HNDLE);
+      index = va_arg(argptr, INT);
+      channel = va_arg(argptr, INT);
+      status = das1600_init(hKey, index, channel, CH_INPUT);
+      break;
+
+    case CMD_GET:
+      index = va_arg(argptr, INT);
+      channel = va_arg(argptr, INT);
+      pvalue  = va_arg(argptr, float*);
+      status = das1600_get_analog(index, channel, pvalue);
+      break;
+
+    default:
+      break;
+    }
+
+  va_end(argptr);
+
+  return status;
+}
+
+/*------------------------------------------------------------------*/
+
+INT das1600_ao(INT cmd, ...)
+{
+va_list argptr;
+HNDLE   hKey;
+INT     channel, status, index;
+float   value;
+
+  va_start(argptr, cmd);
+  status = FE_SUCCESS;
+
+  switch (cmd)
+    {
+    case CMD_INIT:
+      hKey = va_arg(argptr, HNDLE);
+      index = va_arg(argptr, INT);
+      channel = va_arg(argptr, INT);
+      status = das1600_init(hKey, index, channel, CH_OUTPUT);
+      break;
+
+    case CMD_SET:
+      index = va_arg(argptr, INT);
+      channel = va_arg(argptr, INT);
+      value  = (float) va_arg(argptr, double);
+      status = das1600_set_analog(index, channel, value);
+      break;
+    
+    default:
+      break;
+    }
+
+  va_end(argptr);
+
+  return status;
+}
+
+/*------------------------------------------------------------------*/

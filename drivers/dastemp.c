@@ -1,0 +1,185 @@
+/********************************************************************\
+
+  Name:         dastemp.c
+  Created by:   Stefan Ritt
+
+  Contents:     DAS-TEMP (Keithley) Device Driver
+
+
+  Revision history
+  ------------------------------------------------------------------
+  date         by    modification
+  ---------    ---   ------------------------------------------------
+  02-APR-97    SR    created
+
+
+\********************************************************************/
+
+#include <stdio.h>
+#include <conio.h>
+#include <math.h>
+#include "midas.h"
+
+/*---- globals -----------------------------------------------------*/
+
+#define MAX_DEVICES 2
+
+typedef struct {
+  unsigned short io_base;
+} DASTEMP_SETTINGS;
+
+DASTEMP_SETTINGS dastemp_settings[MAX_DEVICES];
+
+#define DASTEMP_SETTINGS_STR "\
+IO Base = WORD : 0x220\n\
+"
+
+/*---- device driver routines --------------------------------------*/
+
+INT dastemp_init(HNDLE hKey, INT index, INT channels)
+{
+int   status, size;
+HNDLE hDB;
+
+  cm_get_experiment_database(&hDB, NULL);
+
+  /* create settings record */
+  status = db_create_record(hDB, hKey, "", DASTEMP_SETTINGS_STR);
+  if (status != DB_SUCCESS)
+    return FE_ERR_ODB;
+
+  size = sizeof(dastemp_settings[index]);
+  db_get_record(hDB, hKey, &dastemp_settings[index], &size, 0);
+
+#ifdef OS_WINNT
+  /* open IO address space */
+  status = ss_directio_init(); 
+  if (status != SS_SUCCESS)
+    {
+    cm_msg(MERROR, "dastemp_init", "DirectIO driver not installed");
+    return FE_ERR_HW;
+    }
+
+  ss_directio_give_port(dastemp_settings[index].io_base, dastemp_settings[index].io_base+0x0F);
+  ss_directio_exit();
+#endif
+
+  return FE_SUCCESS;
+}
+
+/*------------------------------------------------------------------*/
+
+#define CT0     (unsigned short) (dastemp_settings[index].io_base+0x00)
+#define CT1     (unsigned short) (dastemp_settings[index].io_base+0x01)
+#define CT2     (unsigned short) (dastemp_settings[index].io_base+0x02)
+#define CTC     (unsigned short) (dastemp_settings[index].io_base+0x03)
+#define STATUS  (unsigned short) (dastemp_settings[index].io_base+0x04)
+#define INTR    (unsigned short) (dastemp_settings[index].io_base+0x05)
+#define LCZS    (unsigned short) (dastemp_settings[index].io_base+0x06)
+
+/*------------------------------------------------------------------*/
+
+INT dastemp_get(INT index, INT channel, float *pvalue)
+{
+unsigned short int data;
+double             temp;
+
+//###
+//*pvalue = (float) (channel/10.0);
+//return FE_SUCCESS;
+
+  /* set up counter 1 for gating */
+  _outp(CTC, 0x72); // HW one shot
+  _outp(CT1, 0x40); // 0x9C40 for 50 Hz rej.
+  _outp(CT1, 0x9C);
+
+  /* set up counter 0 for V-F counting */
+  _outp(CTC, 0x30); // event counting mode for cntr0
+  _outp(CT0, 0xFF); // 0xFFFF
+  _outp(CT0, 0xFF);
+  _outp(LCZS, 0);   // load cntr0
+
+  /* select channel */
+  _outp(STATUS, (channel & 31) | 0x80);
+
+  /* trigger a conversion */
+  data = _inp(CTC);
+
+  /* wait until "dummy" conversion is ready */
+  do
+    {
+    data = _inp(STATUS);
+    } while (data & (1<<5));
+
+  /* set up counter 0 for V-F counting */
+  _outp(CTC, 0x30); // event counting mode for cntr0
+  _outp(CT0, 0xFF); // 0xFFFF
+  _outp(CT0, 0xFF);
+  _outp(LCZS, 0);   // load cntr0
+
+  /* trigger a conversion */
+  data = _inp(CTC);
+
+  /* wait until "real" conversion is ready */
+  do
+    {
+    data = _inp(STATUS);
+    } while (data & (1<<5));
+
+  /* latch counter command */
+  _outp(CTC, 0x00);
+
+  /* read data */
+  data = _inp(CT0);
+  data |= (_inp(CT0) << 8);
+  data = 65535 - data;
+
+  temp = data * 0.0125 - 273.15;
+
+  /* round temperature to 0.01 deg */
+  temp = ((int) (temp*100 +0.5))/100.0;
+
+  /* return temperature */
+  *pvalue = (float) temp;
+
+  return FE_SUCCESS ;
+}
+
+/*---- device driver entry point -----------------------------------*/
+
+INT dastemp(INT cmd, ...)
+{
+va_list argptr;
+HNDLE   hKey;
+INT     channel, status, index;
+float   *pvalue;
+
+  va_start(argptr, cmd);
+  status = FE_SUCCESS;
+
+  switch (cmd)
+    {
+    case CMD_INIT:
+      hKey = va_arg(argptr, HNDLE);
+      index = va_arg(argptr, INT);
+      channel = va_arg(argptr, INT);
+      status = dastemp_init(hKey, index, channel);
+      break;
+
+    case CMD_GET:
+      index = va_arg(argptr, INT);
+      channel = va_arg(argptr, INT);
+      pvalue  = va_arg(argptr, float*);
+      status = dastemp_get(index, channel, pvalue);
+      break;
+    
+    default:
+      break;
+    }
+
+  va_end(argptr);
+
+  return status;
+}
+
+/*------------------------------------------------------------------*/

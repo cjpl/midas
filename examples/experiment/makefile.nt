@@ -1,0 +1,55 @@
+#####################################################################
+#
+#  Name:         Makefile
+#  Created by:   Stefan Ritt
+#
+#  Contents:     Makefile for MIDAS example frontend and analyzer
+#                under Windows NT 
+#
+#  Revision history
+#  ------------------------------------------------------------------
+#  date         by    modification
+#  ---------    ---   -----------------------------------------------
+#  13-NOV-97    SR    created
+#
+#####################################################################
+
+
+#-------------------------------------------------------------------
+# The following lines define direcories. Adjust if necessary
+#                 
+INC_DIR 	= \midas\include
+LIB_DIR 	= \midas\nt\lib
+ZLIB_DIR        = \midas\nt\lib
+CERNLIB_DIR	= \cern\lib
+
+#-------------------------------------------------------------------
+# List of analyzer modules
+#                 
+MODULES 	= adccalib.obj adcsum.obj scaler.obj
+
+####################################################################
+# Lines below here should not be edited
+####################################################################
+
+LIBRARY = $(LIB_DIR)\midas.lib
+
+# compiler
+CC = cl
+CFLAGS = /I$(INC_DIR) /nologo /D WIN32
+
+all: frontend.exe analyzer.exe
+
+frontend.exe:  $(LIBRARY) $(LIB_DIR)\mfe.obj frontend.c camacnul.c
+	$(CC) $(CFLAGS) /Fefrontend.exe $(LIB_DIR)\mfe.obj frontend.c camacnul.c $(LIBRARY) $(LIBS) wsock32.lib
+
+analyzer.exe: $(LIBRARY) $(LIB_DIR)\mana.obj analyzer.obj $(MODULES)
+	$(CC) /Feanalyzer.exe $(LIB_DIR)\mana.obj analyzer.obj \
+	$(MODULES) $(CERNLIB_DIR)\packlib.lib $(ZLIB_DIR)\zlib.lib \
+	$(LIBRARY) $(LIBS) wsock32.lib /link "/nodefaultlib:libc.lib"
+
+.c.obj:
+	$(CC) $(CFLAGS) /c $<
+
+clean:
+	del *.obj

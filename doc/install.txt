@@ -1,0 +1,156 @@
+How to install MIDAS under Unix
+-------------------------------
+
+Currently, following Unix systems are directly supported:
+
+DEC Unix (OSF/1)
+DEC Ultrix
+Linux
+FreeBSD
+
+The system can probably compiled under other versions with minor
+modifications.
+
+Follow these steps to do an installation:
+
+1) Untar midas-x.xx.tar.gz (where x.xx is the current version) to a
+directory of your choice (assuming <home> is your home directory like 
+/usr/users/john):
+
+  mkdir <home>/midas
+  <copy midas-x.xx.tar.gz to that directory>
+  tar -xzvf midas-x.xx.tar.gz
+
+In case GNU-tar is not available, one can first unzip the file and
+then detar it:
+
+  gunzip midas-x.xx.tar.gz
+  tar -xvf midas-x.xx.tar
+
+Following directory structure is created:
+
+<home>/midas/midas-x.xx   MIDAS root for version x.xx
+./doc                     Documentation
+./src                     Source files
+./include                 Include files
+./drivers                 Device drivers
+./examples                Example programs
+./examples/experiment     Sample experiment
+./unix                    Unix makefile
+
+2) Untar zlib-1.0.4.tar.gz in the same directory:
+
+  tar -xzvf zlib-1.0.4.tar.gz
+
+A directory <home>/midas/zlib-1.0.4 is created.
+
+3) Build the Z library:
+
+  cd zlib-1.0.4
+  make
+
+After the build completes sucessfully, a library called zlib.a should
+have been created in the zlib directory.
+
+4) Build the MIDAS binaries and library. Edit the first section of the
+makefile to select the correct operating system if necessary.
+
+  cd <home>/midas/midas-x.xx
+  make
+
+5) Install the MIDAS binaries and library. Edit the target directories
+in the makefile if the default values (/usr/local/bin, /usr/local/lib
+and /usr/local/include) don't suit you. Then enter as a super-user:
+
+  make install
+
+6) Make sure the CERN library is installed properly. The MIDAS
+analyzer needs libpacklib.a which is usually installed under
+/cern/pro/lib.
+
+6) Create a working directory which hosts the frontend and analyzer
+program of your experiment (in the following example called "online"). 
+Copy the example experiment as a starting point: 
+
+  mkdir <home>/online
+  cd <home>/online
+  cp <home>/midas/midas-x.xx/examples/experiment/* .
+
+7) Edit the makefile in the working directory to select the correct
+operating system and the proper directories. Then build the example
+frontend and analyzer:
+
+  make
+
+8) Set the environment variable MIDAS_DIR to point to your directory:
+
+  setenv MIDAS_DIR <home>/online
+
+This command can be added to your .login file.
+
+9) Test the system by running a sample experiment with a frontend which
+produces random data:
+
+  cd <home>/online
+  frontend
+
+  <open another window>
+  cd <home>/online
+  analyzer
+
+  <open another window>
+  odbedit
+  [local]/> start
+  ...
+  [local]/> stop
+
+The frontend should produce trigger and scaler events. The analyzer
+gets those events and histogramms them. Now you can run PAW and look
+at the N-tuples and histos:
+
+  paw
+  PAW> hi/hio/gl onln
+  PAW> hi/list
+  PAW> hi/pl 1000
+
+10) If everything workes sucesfully, you can edit the frontend and
+analyzer to suit your experiment.
+
+11) If the frontend runs on another computer, the MIDAS server program
+has to be installed. You can either start mserver manually or via
+inetd. To configure inetd, add following line to your /etc/services
+file:
+
+  midas   1175/tcp
+
+Then add this line to your /etc/inetd.conf file:
+
+  midas   stream tcp nowait root /usr/local/bin/mserver
+/usr/local/bin/mserver
+
+Send a hangup signal to inetd:
+
+  ps -A | grep inetd
+  <note the process id>
+
+  kill -HUP <id>
+
+To connect to different experiments, the server has to know in 
+which directories and under which user names the experiments are 
+running. For this purpose a list of all experiments running on a 
+machine has to be defined in a file called exptab. This file is 
+located under /etc and contains one line for each experiment 
+describing the experiment name, the directory and the user name. 
+Create this file with an editor and write following line to define 
+an experiment called "Sample":
+
+Sample <home>/online <your name>
+
+where <home> stands for your home directory (like /usr/users/john) 
+and <your name> is your login name.
+
+To test the server, start odbedit with the host flag
+
+  odbedit -h <your-host>
+
+
