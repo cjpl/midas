@@ -7,6 +7,9 @@
   Contents:     Symbolic constants for internal RPC functions
 
   $Log$
+  Revision 1.17  2003/11/20 11:28:56  midas
+  Added db_check_record
+
   Revision 1.16  2003/04/15 12:52:23  midas
   Removed db_show_mem
 
@@ -125,6 +128,8 @@
 #define RPC_DB_GET_KEY_INFO             11237
 #define RPC_DB_GET_DATA1                11238
 #define RPC_DB_SET_NUM_VALUES           11239
+#define RPC_DB_CHECK_RECORD             11240
+#define RPC_DB_GET_NEXT_LINK            11241
 
 #define RPC_HS_SET_PATH                 11300
 #define RPC_HS_DEFINE_EVENT             11301 

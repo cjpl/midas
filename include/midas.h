@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.121  2003/11/20 11:28:47  midas
+  Added db_check_record
+
   Revision 1.120  2003/06/12 18:34:37  pierre
   add ss_tape_get_blockn
 
@@ -828,6 +831,7 @@ Convert the coded LAM station to Station number.
 #define DB_OUT_OF_RANGE             321
 #define DB_INVALID_LINK             322
 #define DB_CORRUPTED                323
+#define DB_STRUCT_MISMATCH          324
 
 /* System Services */
 #define SS_SUCCESS                    1
@@ -1742,6 +1746,7 @@ INT EXPRT db_get_path(HNDLE hDB, HNDLE hKey, char *path, INT buf_size);
 INT EXPRT db_delete_key(HNDLE database_handle, HNDLE key_handle, BOOL follow_links);
 INT EXPRT db_enum_key(HNDLE hdb, HNDLE key_handle, INT index, HNDLE *subkey_handle);
 INT EXPRT db_enum_link(HNDLE hdb, HNDLE key_handle, INT index, HNDLE *subkey_handle);
+INT EXPRT db_get_next_link(HNDLE hdb, HNDLE key_handle, HNDLE *subkey_handle);
 INT EXPRT db_get_key(HNDLE hdb, HNDLE key_handle, KEY *key);
 INT EXPRT db_get_key_info(HNDLE hDB, HNDLE hKey, char *name, INT name_size, INT *type, INT *num_values, INT *item_size);
 INT EXPRT db_get_key_time(HNDLE hdb, HNDLE key_handle, DWORD *delta);
@@ -1757,6 +1762,7 @@ INT EXPRT db_set_num_values(HNDLE hDB, HNDLE hKey, INT num_values);
 INT EXPRT db_merge_data(HNDLE hDB, HNDLE hKeyRoot, char *name, void *data, INT data_size, INT num_values, INT type);
 INT EXPRT db_set_mode(HNDLE hdb, HNDLE key_handle, WORD mode, BOOL recurse);
 INT EXPRT db_create_record(HNDLE hdb, HNDLE hkey, char *name, char *init_str);
+INT EXPRT db_check_record(HNDLE hDB, HNDLE hKey, char *key_name, char *rec_str, BOOL correct);
 INT EXPRT db_open_record(HNDLE hdb, HNDLE hkey, void *ptr, INT rec_size, WORD access, void (*dispatcher)(INT,INT,void*), void *info);
 INT EXPRT db_close_record(HNDLE hdb, HNDLE hkey);
 INT EXPRT db_get_record(HNDLE hdb, HNDLE hKey, void *data, INT *buf_size, INT align);
