@@ -11,9 +11,12 @@ nmake -f mscb.mak CFG="mscb - Win32 Release" clean
 nmake -f mscb.mak CFG="mscb - Win32 Release"
 nmake -f msc.mak CFG="msc - Win32 Release" Clean
 nmake -f msc.mak CFG="msc - Win32 Release"
+nmake -f calib_520.mak CFG="calib_520 - Win32 Release" Clean
+nmake -f calib_520.mak CFG="calib_520 - Win32 Release"
 cd \midas\mscb
 
 copy \midas\nt\bin\msc.exe \midas\mscb\
+copy \midas\nt\bin\calib_520.exe \midas\mscb\
 copy \midas\nt\lib\mscb.dll \midas\mscb\labview\
 
 echo Creating archive...
@@ -21,6 +24,7 @@ echo Creating archive...
 zip mscb%version%.zip *.c
 zip mscb%version%.zip *.h
 zip mscb%version%.zip msc.exe
+zip mscb%version%.zip calib_520.exe
 
 zip -p mscb%version%.zip embedded/*.h
 zip -p mscb%version%.zip embedded/*.c
