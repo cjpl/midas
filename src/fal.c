@@ -7,6 +7,9 @@
                 Most routines are from mfe.c mana.c and mlogger.c.
 
   $Log$
+  Revision 1.31  2002/09/17 22:12:25  pierre
+  add arg to cm_cleanup
+
   Revision 1.30  2002/05/10 05:55:06  pierre
   Added optional debug output to cm_transition
 
@@ -4671,7 +4674,7 @@ usage:
   if (status == CM_SUCCESS)
     {
     /* try to cleanup hanging FAL */
-    cm_cleanup();
+    cm_cleanup(fal_name);
 
     /* let user read message */
     ss_sleep(2000);
