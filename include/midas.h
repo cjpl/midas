@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.131  2004/07/21 05:43:32  pierre
+  fix dox doc
+
   Revision 1.130  2004/07/09 11:27:57  midas
   Version 1.9.4
 
@@ -427,7 +430,7 @@ The main include file
 
 /** @defgroup midasincludecode The midas.h & midas.c
  */
-/** @defgroup mdefineh Midas #define 
+/** @defgroup mdefineh Midas Define 
  */
 /** @defgroup mmacroh Midas Macros
  */
@@ -617,11 +620,12 @@ typedef INT midas_thread_t;
 
 #define MIDAS_TCP_PORT 1175     /* port under which server is listening */
 
-/* Timeouts [ms] */
+/**
+Timeouts [ms] */
 #define DEFAULT_RPC_TIMEOUT    10000
 #define WATCHDOG_INTERVAL      1000
 
-#define DEFAULT_WATCHDOG_TIMEOUT 10000
+#define DEFAULT_WATCHDOG_TIMEOUT 10000    /**< Watchdog */
 
 /*------------------------------------------------------------------*/
 
