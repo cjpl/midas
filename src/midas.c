@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.30  1999/04/27 11:11:26  midas
+  Added rpc_register_client
+
   Revision 1.29  1999/04/23 11:42:52  midas
   Made db_get_data_index working for Java
 
@@ -6819,6 +6822,38 @@ char *rpc_tid_name(INT id)
 
 /*------------------------------------------------------------------*/
 
+INT rpc_register_client(char *name, RPC_LIST *list)
+/********************************************************************\
+
+  Routine: rpc_register_client
+
+  Purpose: Register RPC client for standalone mode (without standard
+           midas server)
+
+  Input:
+    RPC_LIST list           Array of RPC_LIST structures containing
+                            function IDs and parameter definitions.
+                            The end of the list must be indicated by
+                            a function ID of zero.
+    char     *name          Name of this client
+
+  Output:
+   <implicit: new_list gets appended to rpc_list>
+
+  Function value:
+   RPC_SUCCESS              Successful completion
+
+\********************************************************************/
+{
+  rpc_set_name(name);
+  rpc_register_functions(rpc_get_internal_list(0), NULL);
+  rpc_register_functions(list, NULL);
+
+  return RPC_SUCCESS;
+}
+
+/*------------------------------------------------------------------*/
+
 INT rpc_register_functions(RPC_LIST *new_list, INT (*func)(INT,void**))
 /********************************************************************\
 
@@ -7084,6 +7119,16 @@ char                 version[32], v1[32];
 char                 local_prog_name[NAME_LENGTH];
 char                 local_host_name[HOST_NAME_LENGTH];
 struct hostent       *phe;
+
+#ifdef OS_WINNT
+  {
+  WSADATA WSAData;
+
+  /* Start windows sockets */
+  if ( WSAStartup(MAKEWORD(1,1), &WSAData) != 0)
+    return RPC_NET_ERROR;
+  }
+#endif
 
   /* check if cm_connect_experiment was called */
   if (_client_name[0] == 0)
