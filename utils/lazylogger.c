@@ -6,10 +6,14 @@
   Contents:     Disk to Tape copier for background job
 
   $Log$
+  Revision 1.3  1998/10/19 17:48:48  pierre
+  - restructure of setting and statistics
+  - add disk to disk support
+  - add lazy.log log file and cleanup of List tree
+  - NO support for MIDAS format yet
+
   Revision 1.2  1998/10/12 12:19:03  midas
   Added Log tag in header
-
-
 \********************************************************************/
 
 #include "midas.h"
@@ -17,7 +21,10 @@
 #include "ybos.h"
 
 #define NOTHING_TODO  0
-#define FORCE_EXIT    5
+#define FORCE_EXIT    1
+#define NEW_FILE      1
+#define REMOVE_FILE   2
+#define REMOVE_ENTRY  3
 
 typedef struct {
   INT run;
@@ -32,12 +39,11 @@ Enable = INT : 1\n\
 Backup device label = STRING : [128]\n\
 Purge until percent free = INT : 50\n\
 Copy while running = INT : 1\n\
-Type = STRING : [8] Tape\n\
-Format = STRING : [8] YBOS\n\
-Keep file = INT : -3\n\
-Max Run per Tape = INT : 0\n\
+Stay behind = INT : -3\n\
+Data format = STRING : [8] YBOS\n\
 Data dir = STRING : [128] \n\
-Backup fmt = STRING : [128] run*.ybs\n\
+Backup type = STRING : [8] Tape\n\
+Backup fmt = STRING : [128] run%05d.ybs\n\
 Backup device = STRING : [128] /dev/nst0\n\
 Backup device size in bytes = DOUBLE : 5e9\n\
 "
@@ -45,10 +51,10 @@ Backup device size in bytes = DOUBLE : 5e9\n\
 File size [KB] = DOUBLE : 0.0\n\
 KBytes copied = DOUBLE : 0.0\n\
 Total KBytes copied = DOUBLE : 0.0\n\
-Copy status [%] = INT : 0\n\
+Copy progress [%] = FLOAT : 0\n\
 Copy Rate [KB per sec] = FLOAT : 0\n\
 Number of Files = INT : 0\n\
-Backup status [%] = INT : 0\n\
+Backup status [%] = FLOAT : 0\n\
 Current acq run = INT : 0\n\
 Current State = INT : 0\n\
 Current Lazy run = INT : 0\n\
@@ -60,24 +66,22 @@ typedef struct {
   char backlabel[MAX_FILE_PATH]; /* label of the array in ~/list. if empty like enable = 0 */
   INT pupercent;                 /* 0:100 % of disk space to keep free */
   INT cpwhilerun;                /* 0: prevent copy while acq is running */
-  char type[8];                  /* Backup device type  (Disk, Tape, Ftp) */
+  INT staybehind;                  /* keep x run file between current Acq and backup 
+                                        -x same as x but starting from oldest */
   char format[8];                /* Data format (YBOS, MIDAS) */
-  INT keepfile;                  /* keep x run file between current Acq and backup 
-				                            -x same as x but starting from oldest */
-  INT max_run_tape;              /* limit of run per tape 0 : disable */
   char dir[MAX_FILE_PATH];       /* path to the data dir */
+  char type[8];                  /* Backup device type  (Disk, Tape, Ftp) */
   char backfmt[MAX_FILE_PATH];   /* format for the run files */
   char backdev[MAX_FILE_PATH];   /* backup device name */
-  double bck_dev_size;           /* backup device max byte size active only if max_run_tape<0 */
+  double bck_dev_size;           /* backup device max byte size */
 } LAZY_SETTING;
-
 LAZY_SETTING  lazy;
 
 typedef struct {
 double file_size;              /* file bytes size */
 double tot_cp_size;            /* current bytes copied */
 double dev_tot_cp_size;        /* Total bytes backup on device */
-INT progress;                  /* copy % */
+float progress;                /* copy % */
 float cprate;                  /* copy rate */
 INT nfiles;                    /* # of backuped files */
 float bckfill;                 /* backup fill % */
@@ -91,53 +95,118 @@ LAZY_STATISTICS lazyst;
 /* Globals */
 extern    plazy, szlazy;
 HNDLE     hDB, hKey;
-double lastsz;
-HNDLE hKeyst;
-INT tot_do_size, tot_dirlog_size;
-INT hDev, zap_flag=0; 
-BOOL copy_continue = TRUE;
-INT data_fmt, dev_type;
-char lazylog[MAX_STRING_LENGTH];
+double    lastsz;
+HNDLE     hKeyst;
+INT       tot_do_size, tot_dirlog_size;
+INT       hDev, zap_flag=0; 
+BOOL      copy_continue = TRUE;
+INT       data_fmt, dev_type;
+char      lazylog[MAX_STRING_LENGTH];
 
 /* prototypes */
 BOOL lazy_file_exists(char * dir, char * file);
-INT lazy_main (HNDLE hDB, HNDLE hKey);
-INT lazy_copy( char * dev, char * file);
-INT lazy_file_compose(char * fmt , char * dir, INT num, char * file);
-INT lazy_update_list(void);
-INT lazy_remove_file (char * pufile);
-INT lazy_select_purge(DIRLOG * plog, INT * pdo, char * pufile, INT * run);
-INT lazy_load_params( HNDLE hDB, HNDLE hKey );
+INT  lazy_main (HNDLE hDB, HNDLE hKey);
+INT  lazy_copy( char * dev, char * file);
+INT  lazy_file_compose(char * fmt , char * dir, INT num, char * ffile, char * file);
+INT  lazy_update_list(void);
+INT  lazy_select_purge(DIRLOG * plog, INT * pdo, char * pufile, INT * run);
+INT  lazy_load_params( HNDLE hDB, HNDLE hKey );
 void build_log_list(char * fmt, char * dir, DIRLOG ** plog);
 void sort_log_list(DIRLOG * plog);
 void build_donelist(INT **pdo);
 void sort_donelist(INT * pdo);
-INT cmp_log2donelist (DIRLOG * plog, INT * pdo);
-/*------------------------------------------------------------------*/
+INT  cmp_log2donelist (DIRLOG * plog, INT * pdo);
+INT lazy_log_update(INT action, INT index, INT run, char * label, char * file);
 
 /*------------------------------------------------------------------*/
+INT lazy_log_update(INT action, INT index, INT run, char * label, char * file)
+{
+  time_t   full_time;
+  FILE *pF;
+  char str[MAX_FILE_PATH];
+  char strtime[25];
+  BOOL addtitle=FALSE;
+
+  /* update lazy.log */
+    sprintf(lazylog, "%s/lazy.log", lazy.dir);
+    if ((pF=fopen(lazylog, "r")) == NULL)
+      addtitle = TRUE;
+    if (pF != NULL) fclose (pF);        
+      pF = fopen(lazylog, "a");
+    if (pF)
+    {
+      if (addtitle)
+        {         
+        sprintf(str,"Date , List label[file#] , Device name , Run# , file name , file size[KB]\n");
+          fputs (str,pF);
+          sprintf(str,"------------------------------------------------------------------\n");
+          fputs (str,pF);
+        }
+      time(&full_time);
+      strcpy(strtime, ctime(&full_time));
+      strtime[24] = 0;
+      if (action == NEW_FILE)
+        {
+          sprintf(str,"%s , %s[%i] , %s , %i , %s , %9.2e , file  NEW\n"
+            , strtime, label, lazyst.nfiles
+            ,lazy.backdev, run, lazyst.backfile, lazyst.file_size/1024.);
+          fputs (str,pF);
+        }
+      else if (action == REMOVE_FILE)
+        {
+          sprintf(str,"%s ,       ,     , %i , %s ,  , file  REMOVED\n"
+            , strtime, run, file);
+          fputs (str,pF);
+        }
+      else if (action == REMOVE_ENTRY)
+        {
+          sprintf(str,"%s , %s[%i],     ,  %i ,   ,  , entry REMOVED\n"
+            , strtime, label, index,  run);
+          fputs (str,pF);
+        }
+        fclose (pF);
+      return 0;
+    }
+    else
+    {
+      cm_msg(MERROR,"Lazy","cannot open %s",lazylog);
+      return -1;  
+    }
+  }
+/*------------------------------------------------------------------*/
 INT ss_run_extract(char * name)
+/********************************************************************\
+  Routine: ss_run_extract
+  Purpose: extract the contigious digit from the string to make up a
+            run number.
+  Input:
+   char * name    string to search
+  Output:
+  Function value:
+   INT        run number 
+              0 if no extraction
+\********************************************************************/
 {
   char run_str[32], *pb, *pe;
   int j=0, found=0;
-
+  
   pb = pe = NULL;
   memset(run_str, 0, sizeof(run_str));
   for (j=0;j<(int)strlen(name);j++)
     {
       if (!found)
-	{
-	  if (isdigit(name[j]))
-	    {
-	      found = 1;
-	      pb = name+j;
-	    }
-	}
+        {
+          if (isdigit(name[j]))
+            {
+              found = 1;
+              pb = name+j;
+            }
+        }
       else if (isdigit(name[j]) == 0)
-	{
-	  pe = name+j;
-	  break;
-	}
+        {
+          pe = name+j;
+          break;
+        }
     }
   strncpy(run_str, pb, pe-pb); 
   return(atoi(run_str));
@@ -154,7 +223,7 @@ INT lazy_load_params( HNDLE hDB, HNDLE hKey )
   Output:
   Function value:
    INT        DB_SUCCESS
-      -1      in case of error
+              DB_NO_ACCESS
 \********************************************************************/
 {
   INT status, size;
@@ -208,74 +277,90 @@ INT lazy_load_params( HNDLE hDB, HNDLE hKey )
   }
 
   /* make sure that we don't operate on the current DAQ file if so set to oldest */
-  if (lazy.keepfile == 0)
-    lazy.keepfile = -1;
+  if (lazy.staybehind == 0)
+    lazy.staybehind = -1;
   return DB_SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
-INT cmp_log2donelist (DIRLOG * plog, INT * pdo)
+void build_log_list(char * fmt, char * dir, DIRLOG ** plog)
 /********************************************************************\
-  Routine: cmp_log2donelist
-  Purpose: return the run number to be backed up comparing the
-           plog struct to the pdo struct
-           the condition being : run# in (plog AND !pdo)
-	   marks the run present in both list by tagging them with *= -1
+  Routine: build_log_list
+  Purpose: build an internal directory file list from the disk directory
   Input:
-    DIRLOG  *plog    disk file listing
-    INT     *pdo     /lazy/list run listing
+    char     * fmt     format of the file to search for (ie:run%05d.ybs) 
+    char     * dir     path to the directory for the search
   Output:
+    INT     **plog     internal file list struct
   Function value:
-    INT              Run number
-          -1       : run not found
 \********************************************************************/
 {
-  INT j, i, ndo, nlog, notfound=0;
+  INT nfile, j;
+  char * list;
+  char str[MAX_FILE_PATH];
   
-  ndo = tot_do_size / sizeof(INT);
-  nlog = tot_dirlog_size / sizeof(DIRLOG);
   
-  for (j=0;j<nlog;j++)
+  /* substitue %xx by * */
+  strcpy (str, fmt);
+  if (strchr(str,'%'))
     {
-      for (i=0;i<ndo;i++)
-	{
-	  if ((plog+j)->run == pdo[i])
-	    (plog+j)->run *= -1;
-	}
+      *strchr(str,'%') = '*';
+      if (strchr(str, '.'))
+        strcpy( (strchr(str,'*')+1), strchr(str,'.'));
     }
-  for (j=0;j<nlog;j++)
+  
+  /* create dir listing with given criteria */
+  if (dir[0] != 0)
+    if (dir[strlen(dir)-1] != DIR_SEPARATOR)
+      strcat(dir, DIR_SEPARATOR_STR);
+  nfile = ss_file_find(dir, str, &list);
+
+  /* check */
+  /*
+    for (j=0;j<nfile;j++)
+    printf ("list[%i]:%s\n",j, list+j*MAX_STRING_LENGTH);
+  */
+  
+  /* allocate memory */
+  tot_dirlog_size = (nfile*sizeof(DIRLOG));
+  *plog = realloc(*plog, tot_dirlog_size);
+  
+  /* fill structure */
+  for (j=0;j<nfile;j++)
     {
-      if ((plog+j)->run > 0)
-	return (plog+j)->run;
+      (*plog+j)->run  = ss_run_extract(list+j*MAX_STRING_LENGTH);
+      strcpy(str,dir);
+      strcat(str,"\\");
+      strcat(str,list+j*MAX_STRING_LENGTH);
+      (*plog+j)->size = ss_file_size(str);
     }
-  return -1;
+  free(list);
 }
 
 /*------------------------------------------------------------------*/
-void sort_donelist(INT * pdo)
+void sort_log_list(DIRLOG * plog)
 /********************************************************************\
-  Routine: sort_donelist
-  Purpose: sort the full /lazy/list run number in increasing order
+  Routine: sort_log_list
+  Purpose: sort plog struct by run number
   Input:
     INT     *pdo     /lazy/list run listing
   Output:
-  Function value:
-    INT              none
+  Function value: void
 \********************************************************************/
 {
-  INT temp;
+  DIRLOG temp;
   INT j, i, nelement;
   
-  nelement = tot_do_size / sizeof(INT);
-  for (j=0;j<nelement-1;j++)
+  nelement = tot_dirlog_size / sizeof(DIRLOG);
+  for (j=0;j<nelement;j++)
   {
-    for (i=j+1; i<nelement ; i++)
+    for (i=j; i<nelement ; i++)
     {
-      if (*(pdo+j) > *(pdo+i))
+      if ((plog+j)->run > (plog+i)->run)
       {
-        memcpy (&temp, (pdo+i), sizeof(INT));
-        memcpy ((pdo+i), (pdo+j), sizeof(INT));
-        memcpy ((pdo+j), &temp, sizeof(INT));
+        memcpy (&temp, (plog+i), sizeof(DIRLOG));
+        memcpy ((plog+i), (plog+j), sizeof(DIRLOG));
+        memcpy ((plog+j), &temp, sizeof(DIRLOG));
       }
     }
   }
@@ -290,7 +375,7 @@ void build_donelist(INT **pdo)
     INT     **pdo     /lazy/list run listing
   Output:
     INT     **pdo     /lazy/list run listing
-  Function value:
+  Function value:      void
 \********************************************************************/
 {
   HNDLE hKey, hSubkey;
@@ -320,73 +405,75 @@ void build_donelist(INT **pdo)
 }
 
 /*------------------------------------------------------------------*/
-void sort_log_list(DIRLOG * plog)
+void sort_donelist(INT * pdo)
 /********************************************************************\
-  Routine: sort_log_list
-  Purpose: sort plog struct by run number
+  Routine: sort_donelist
+  Purpose: sort the full /lazy/list run number in increasing order
   Input:
     INT     *pdo     /lazy/list run listing
   Output:
   Function value:
+    void
 \********************************************************************/
 {
-  DIRLOG temp;
+  INT temp;
   INT j, i, nelement;
   
-  nelement = tot_dirlog_size / sizeof(DIRLOG);
-  for (j=0;j<nelement;j++)
+  nelement = tot_do_size / sizeof(INT);
+  for (j=0;j<nelement-1;j++)
   {
-    for (i=j; i<nelement ; i++)
+    for (i=j+1; i<nelement ; i++)
     {
-      if ((plog+j)->run > (plog+i)->run)
+      if (*(pdo+j) > *(pdo+i))
       {
-        memcpy (&temp, (plog+i), sizeof(DIRLOG));
-        memcpy ((plog+i), (plog+j), sizeof(DIRLOG));
-        memcpy ((plog+j), &temp, sizeof(DIRLOG));
+        memcpy (&temp, (pdo+i), sizeof(INT));
+        memcpy ((pdo+i), (pdo+j), sizeof(INT));
+        memcpy ((pdo+j), &temp, sizeof(INT));
       }
     }
   }
 }
 
 /*------------------------------------------------------------------*/
-void build_log_list(char * fmt, char * dir, DIRLOG ** plog)
+INT cmp_log2donelist (DIRLOG * plog, INT * pdo)
 /********************************************************************\
-  Routine: build_log_list
-  Purpose: build an internal directory file list (plog)
+  Routine: cmp_log2donelist
+  Purpose: return the run number to be backed up comparing the
+           plog struct to the pdo struct
+           the condition being : run# in (plog AND !pdo)
+           marks the run present in both list by tagging them with *= -1
   Input:
-    char     * fmt     format of the file to search for (ie:run%05d.ybs) 
-    char     * dir     path to the directory for the search
+    DIRLOG  *plog    disk file listing
+    INT     *pdo     /lazy/list run listing
   Output:
-    INT     **plog     internal file list struct
   Function value:
+    INT              Run number
+          -1       : run not found
 \********************************************************************/
 {
-  INT nfile, j;
-  char * list;
-  char str[256];
+  INT j, i, ndo, nlog, notfound=0;
   
-  /* creat dir listing with given criteria */
-  nfile = ss_file_find(dir, fmt, &list);
-  /* check */
-  for (j=0;j<nfile;j++)
-    printf ("list[%i]:%s\n",j, list+j*MAX_STRING_LENGTH);
-  /* allocate memory */
-  tot_dirlog_size = (nfile*sizeof(DIRLOG));
-  *plog = realloc(*plog, tot_dirlog_size);
-  /* fill structure */
-  for (j=0;j<nfile;j++)
+  ndo = tot_do_size / sizeof(INT);
+  nlog = tot_dirlog_size / sizeof(DIRLOG);
+  
+  for (j=0;j<nlog;j++)
     {
-      (*plog+j)->run  = ss_run_extract(list+j*MAX_STRING_LENGTH);
-      strcpy(str,dir);
-      strcat(str,"\\");
-      strcat(str,list+j*MAX_STRING_LENGTH);
-      (*plog+j)->size = ss_file_size(str);
+      for (i=0;i<ndo;i++)
+        {
+          if ((plog+j)->run == pdo[i])
+            (plog+j)->run *= -1;
+        }
     }
-  free(list);
+  for (j=0;j<nlog;j++)
+    {
+      if ((plog+j)->run > 0)
+        return (plog+j)->run;
+    }
+  return -1;
 }
 
 /*------------------------------------------------------------------*/
-INT lazy_select_purge(DIRLOG * plog, INT * pdo, char * pufile, INT * run)
+INT lazy_select_purge(DIRLOG * plog, INT * pdo, char * fpufile, INT * run)
 /********************************************************************\
   Routine: lazy_select_purge
   Purpose: Search oldest run number which can be purged
@@ -403,8 +490,8 @@ INT lazy_select_purge(DIRLOG * plog, INT * pdo, char * pufile, INT * run)
 \********************************************************************/
 {
   INT j, i, ndo, nlog, status;
-  /* search file to purge : run in donelist AND run in dirlog */
-  
+  char pufile[MAX_FILE_PATH];
+
   /* Scan donelist from first element (oldest)
      check if run exists in dirlog
      if yes return file and run number */
@@ -414,20 +501,20 @@ INT lazy_select_purge(DIRLOG * plog, INT * pdo, char * pufile, INT * run)
   for (i=0;i<ndo;i++)
     {
       for (j=0;j<nlog;j++)
-    	{
-	    if (pdo[i] == abs((plog+j)->run))
-	      {
-	        status = lazy_file_compose(lazy.backfmt, lazy.dir, abs((plog+j)->run), pufile);
-	        *run = abs((plog+j)->run);
-	        return 0;
-	      }	  
-   	}
-  }
+        {
+          if (pdo[i] == abs((plog+j)->run))
+            {
+              status = lazy_file_compose(lazy.backfmt, lazy.dir, abs((plog+j)->run), fpufile, pufile);
+              *run = abs((plog+j)->run);
+              return 0;
+            }     
+        }
+    }
   return -1;
 }
 
 /*------------------------------------------------------------------*/
-int lazy_remove_entry(char * label, int run)
+int lazy_remove_entry(int run)
 /********************************************************************\
   Routine: lazy_remove_entry
   Purpose: remove run entry in the /lazy/list/<label>
@@ -441,61 +528,60 @@ int lazy_remove_entry(char * label, int run)
     -1            run not found
 \********************************************************************/
 {
-  HNDLE  hKey;
-  INT    i, size, nelement;
-  char   keystr[256];
-  INT    *prec, found = 0;;
-
-  /* compose key entry name */
-  sprintf(keystr,"/Lazy/List/%s",label);
-  if (db_find_key(hDB, 0, keystr, &hKey) != DB_SUCCESS)
+  KEY    key;
+  HNDLE  hKey, hSubkey;
+  INT    i, j, size, nelement, saveindex=0;
+  INT    *prec;
+  BOOL   found;
+  
+  
+  /* check list */
+  if (db_find_key(hDB, 0, "/Lazy/list", &hKey) != DB_SUCCESS)
       return 0;
+  
+  /* book tmp space */
+  prec = (INT *)malloc(sizeof(INT));
 
-  /* extract in prec the label[] */
-  db_get_record_size(hDB, hKey, 0, &size);
-  prec = (INT *)malloc(size);
-  nelement = size / sizeof(INT);
-  db_get_record(hDB, hKey, (char *) &prec, &size, 0);
-
-  /* match run number */
-  for (i=0 ;i<nelement; i++)
-    {
-      if (*(prec+i) == run)
-	{
-	  found = 1;
-	  *(prec+i) = *(prec+i+1);
-	  nelement -= 1;
-	}
-    }
-  /* delete label[] and recreate label[] */
-  if (found)
-    {
-      db_delete_key(hDB,hKey,FALSE);
-      db_set_value(hDB,0,keystr,prec,nelement*sizeof(INT), nelement, TID_INT);
-      return 0;
-    }
-  else
-    return -1;
+  /* loop over all list entries */
+  found = FALSE;
+  for (i=0 ; ; i++)
+  {
+    db_enum_key(hDB, hKey, i, &hSubkey);
+    if (!hSubkey)
+      break;
+    db_get_key(hDB, hSubkey, &key);
+    size = key.total_size;
+    nelement = key.num_values;
+    prec = (INT *)realloc(prec, size);
+    db_get_record(hDB, hSubkey, (char *) prec, &size, 0);
+    /* match run number */
+    for (j=0; j<nelement; j++)
+      {
+        if (*(prec+j) == run)
+          {
+            found = TRUE;
+	    saveindex = j;
+          }
+	if (found)
+	  if (j+1 < nelement)
+	    *(prec+j) = *(prec+j+1);
+      }
+    /* delete label[] or update label[] */
+    if (found)
+      {
+	nelement--;
+        if (nelement > 0)
+          db_set_data(hDB,hSubkey,prec,nelement*sizeof(INT), nelement, TID_INT);
+        else
+          db_delete_key(hDB,hSubkey,FALSE);
+        free (prec);
+        lazy_log_update(REMOVE_ENTRY, saveindex, run, key.name, NULL);
+        return 0;
+      }
+  }
+  free (prec);
+  return -1;
 }
-
-/*------------------------------------------------------------------*/
-INT lazy_remove_file (char * pufile)
-/********************************************************************\
-  Routine: lazy_remove_file
-  Purpose: remove (delete) file
-  Input:
-   char * pufile   file to be purged (removed)
-  Output:
-  Function value:
-    0             success
-    FORCE_EXIT    quit request 
-\********************************************************************/
-{
-  /* remove file */
-  ss_file_remove(pufile);
-  return 0;
-}
-
 /*------------------------------------------------------------------*/
 INT lazy_update_list(void)
 /********************************************************************\
@@ -507,107 +593,92 @@ INT lazy_update_list(void)
    DB_SUCCESS   : update ok
 \********************************************************************/
 {
-  time_t   full_time;
-  FILE *pF;
   INT  size;
-  char * ptape, str[128];
-  KEY Keylabel;  
+  char * ptape = NULL, str[MAX_FILE_PATH];
+  KEY Keylabel;
+  INT  mone=-1;
+
   HNDLE hKeylabel;
   
   /* check if dir exists */
-  if (db_find_key(hDB, 0, "/Lazy/List", &hKey) == DB_SUCCESS)
-    {
-      /*  record the saved run */
-      if (db_find_key(hDB, hKey, lazy.backlabel, &hKeylabel) == DB_SUCCESS)
-	{
-	  db_get_key(hDB, hKeylabel, &Keylabel);
-	  lazyst.nfiles = Keylabel.num_values; 
-	  ptape = malloc(Keylabel.total_size);
-	  size = Keylabel.total_size;
-	  db_get_data(hDB, hKeylabel, ptape, &size, TID_INT);
-	  ptape = realloc((char *)ptape, size+sizeof(INT));
-	  memcpy((char *)ptape+size, (char *)&lazyst.cur_run, sizeof(INT));
-	  lazyst.nfiles += 1;
-	  size += sizeof(INT);
-	  db_set_data (hDB, hKeylabel, (char *)ptape, size, lazyst.nfiles, TID_INT);
-	  size = sizeof(lazyst.nfiles);
-	  db_set_value(hDB, 0,"/Lazy/Statistics/Number of Files", &lazyst.nfiles, size, 1, TID_INT);
-	  /* update lazy.log */
-	  sprintf(lazylog, "%s/lazy.log", lazy.dir);
-	  pF = fopen(lazylog, "a");
-	  if (pF)
-	    {
-	      time(&full_time);
-	      strcpy(str, ctime(&full_time));
-	      str[24] = 0;
-	      strcat(str,"- Backup done");
-	      fputs (str,pF);
-	      fclose (pF);
-	    }
-	  else
-	    cm_msg(MERROR,"Lazy","cannot open %s",lazylog);
-	  cm_msg(MUSER,"Lazy","         lazy job %s done!",lazyst.backfile);
-	}
-      else
-	{
-	  size = sizeof(lazyst.cur_run);
-	  db_set_value(hDB, hKey, lazy.backlabel, &lazyst.cur_run, size, 1, TID_INT);
-	}
-    }
-  else
+  if (db_find_key(hDB, 0, "/Lazy/List", &hKey) != DB_SUCCESS)
     { /* list doesn't exists */
-      lazyst.nfiles = 1;
-      size = sizeof(lazyst.cur_run);
       sprintf(str,"/Lazy/List/%s",lazy.backlabel);
-      db_set_value(hDB, 0, str, &lazyst.cur_run, size, 1, TID_INT);
-      /* upcate statistics */
-      size = sizeof(lazyst);
-      if (db_find_key(hDB, 0, "/Lazy/Statistics",&hKeyst) == DB_SUCCESS)
-      	db_set_record(hDB, hKeyst, &lazyst, size, 0);
-      cm_msg(MUSER,"Lazy","         lazy job %s done!",lazyst.backfile);
+      db_set_value(hDB, 0, str, &mone, sizeof(INT), 1, TID_INT);
+      db_find_key(hDB, 0, "/Lazy/List", &hKey);
     } 
-  
-  /* reset the tape label as max run is reached */
-  if (lazyst.nfiles >= lazy.max_run_tape && (lazy.max_run_tape > 0) )
-    {
-      lazy.backlabel[0]='\0';
-      size = sizeof(lazy.backlabel);
-      db_set_value (hDB, 0, "/Lazy/Settings/Backup device label", lazy.backlabel, size, 1, TID_STRING);
-      lazyst.nfiles = 0;
+
+  /*  record the saved run */
+  if (db_find_key(hDB, hKey, lazy.backlabel, &hKeylabel) == DB_SUCCESS)
+    { /* run array already present ==> append run */
+      db_get_key(hDB, hKeylabel, &Keylabel);
+      lazyst.nfiles = Keylabel.num_values; 
+      ptape = malloc(Keylabel.total_size);
+      size = Keylabel.total_size;
+      db_get_data(hDB, hKeylabel, ptape, &size, TID_INT);
+      if ((size == sizeof(INT)) && (*ptape == -1))
+        {
+          lazyst.nfiles = 1;
+          size = sizeof(INT);
+          memcpy((char *)ptape, (char *)&lazyst.cur_run, sizeof(INT));
+        }
+      else
+        {
+          ptape = realloc((char *)ptape, size+sizeof(INT));
+          memcpy((char *)ptape+size, (char *)&lazyst.cur_run, sizeof(INT));
+          lazyst.nfiles += 1;
+          size += sizeof(INT);
+        }
+      db_set_data (hDB, hKeylabel, (char *)ptape, size, lazyst.nfiles, TID_INT);
       size = sizeof(lazyst.nfiles);
       db_set_value(hDB, 0,"/Lazy/Statistics/Number of Files", &lazyst.nfiles, size, 1, TID_INT);
-      /*      ss_tape_unmount(hDev); can't do it as device closed */
-      cm_msg(MINFO,"Lazy","Lazy job complete. Please remove tape!");
     }
-  return DB_SUCCESS;;
+  else
+    { /* new run array ==> */
+      size = sizeof(lazyst.cur_run);
+      db_set_value(hDB, hKey, lazy.backlabel, &lazyst.cur_run, size, 1, TID_INT);
+    }
+  lazy_log_update(NEW_FILE, 0, lazyst.cur_run, lazy.backlabel, lazyst.backfile);
+    cm_msg(MUSER,"Lazy","         lazy job %s done!",lazyst.backfile);
+  if (ptape)
+    free (ptape);
+  return DB_SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
-INT lazy_file_compose(char * fmt , char * dir, INT num, char * file)
+INT lazy_file_compose(char * fmt , char * dir, INT num, char * ffile, char * file)
 /********************************************************************\
   Routine: lazy_file_compose
-  Purpose: compose "file" wit the args
+  Purpose: compose "file" with the args
   Input:
    char * fmt       file format 
    char * dir       data directory
    INT num          run number
   Output:
-   char * file      composed file name
+   char * ffile     composed full file name (include path)
+   char * file      composed file name (translated with fmt only)
   Function value:
         0           success
 \********************************************************************/
 {
-  char str[128];
+  char str[MAX_FILE_PATH];
   INT size;
   
   size = sizeof(dir);
   if (dir[0] != 0)
     if (dir[strlen(dir)-1] != DIR_SEPARATOR)
       strcat(dir, DIR_SEPARATOR_STR);
-  strcpy(str, dir);
+  strcpy(str, dir); 
   strcat(str, fmt);
-  
+
+  /* substitue "%d" by current run number [Full file name] */
+  if (strchr(str, '%'))
+    sprintf(ffile, str, num);
+  else
+    strcpy(ffile, str);
+
   /* substitue "%d" by current run number */
+  strcpy(str, fmt);
   if (strchr(str, '%'))
     sprintf(file, str, num);
   else
@@ -616,152 +687,184 @@ INT lazy_file_compose(char * fmt , char * dir, INT num, char * file)
 }
 
 /*------------------------------------------------------------------*/
-INT lazy_copy( char * dev, char * file)
+INT lazy_copy( char * outfile, char * infile)
 /********************************************************************\
   Routine: lazy_copy
   Purpose: backup file to backup device
   Input:
-   char * dev       backup device 
-   char * file      file to be backuped
+   char * outfile   backup destination file 
+   char * infile    source file to be backed up
   Output:
   Function value:
   0           success
 \********************************************************************/
 {
-  INT status, written, private_last_time=0;
+  INT status, private_last_time=0;
   INT size, last_time, cploop_time;
   double dtemp;
   char * pext;
 
-  pext = malloc(strlen(file));
-  strcpy(pext, file);
+  pext = malloc(strlen(infile));
+  strcpy(pext, infile);
 
   /* find out what format it is from the extension. */
   if (strncmp(pext+strlen(pext)-3,".gz",3) == 0)
-  {
-    /* extension .gz terminator on .*/
-   *(pext+strlen(pext)-3) = '\0';
-  }
-
+    {
+      /* extension .gz terminator on .*/
+      *(pext+strlen(pext)-3) = '\0';
+    }
   lazyst.tot_cp_size = 0;
   last_time = 0;
   size = sizeof(double);
   dtemp = lazyst.tot_cp_size / 1024.;
   db_set_value (hDB, 0, "/Lazy/Statistics/KBytes copied", &dtemp, size, 1, TID_DOUBLE);
   if (lazyst.file_size != 0)
-  {
-    lazyst.progress = (INT) (100 * (lazyst.tot_cp_size / lazyst.file_size));
-    db_set_value (hDB, 0, "/Lazy/Statistics/Copy status [%]"
-      , &lazyst.progress, size, 1, TID_INT);
-  }
- 
+    {
+      size = sizeof(float);
+      lazyst.progress = (float) (100 * (lazyst.tot_cp_size / lazyst.file_size));
+      db_set_value (hDB, 0, "/Lazy/Statistics/Copy progress [%]"
+                    , &lazyst.progress, size, 1, TID_FLOAT);
+    }
+  
   /* open any logging file */
-  if ((status = open_any_logfile(dev_type, data_fmt, dev, &hDev)) != 1) 
-  {
-    cm_msg(MERROR,"Lazy","cannot open %s [%d]",dev, status);
-    return FORCE_EXIT;
-  }      
+  if ((status = open_any_logfile(dev_type, data_fmt, outfile, &hDev)) != 1) 
+    {
+      cm_msg(MERROR,"Lazy","cannot open %s [%d]",outfile, status);
+      return FORCE_EXIT;
+    }      
   
   /* open input data file */
-  if (open_any_datafile (data_fmt, file) != RDLOG_SUCCESS)
+  if (open_any_datafile (data_fmt, infile) != RDLOG_SUCCESS)
     return (-3);
   
-  cm_msg(MINFO,"Lazy","Starting lazy job on %s",lazyst.backfile);
-  cploop_time = 0;
+  cm_msg(MUSER,"Lazy","Starting lazy job on %s",lazyst.backfile);
+  cploop_time = -2000;
   /* infinite loop while copying */
   while (1)
     {  
       if (copy_continue)
-	{
-	  if (get_any_physrec(data_fmt) == RDLOG_SUCCESS)
-	    {
-#ifdef OS_WINNT
-	      WriteFile((HANDLE) hDev, (char *)plazy, szlazy, &written, NULL);
-	      status = written == (INT) szlazy ? SS_SUCCESS : SS_FILE_ERROR;
-#else
-	      status = write(hDev, (char *)plazy, szlazy) == (INT) szlazy ? SS_SUCCESS : SS_FILE_ERROR;
-#endif
-	      lazyst.tot_cp_size += szlazy;
-	      lazyst.dev_tot_cp_size += szlazy;
-	      if (status != SS_SUCCESS)
-		{
-		  cm_msg(MERROR,"Lazy","lazy_copy Write error %i != %i",szlazy, written);
-		  return -4; 
-		}
-	      if ((ss_millitime() - cploop_time) > 2000)
-		{
-		  /* update rate statistics */
-		  size = sizeof(float);
-		  lazyst.cprate = (float)(lazyst.tot_cp_size - lastsz);
-		  lazyst.cprate /= (ss_millitime() - cploop_time);
-		  db_set_value (hDB, 0, "/Lazy/Statistics/Copy Rate [KB per sec]"
-				, &lazyst.cprate, size, 1, TID_FLOAT);
-		  lastsz = lazyst.tot_cp_size;
-		  /* update KB copied statistics */
-		  size = sizeof(double);
-		  dtemp = lazyst.tot_cp_size / 1024.;
-		  db_set_value (hDB, 0, "/Lazy/Statistics/KBytes copied"
-				, &dtemp, size, 1, TID_DOUBLE);
-		  /* update Total KB copied statistics */
-		  size = sizeof(double);
-		  dtemp = lazyst.dev_tot_cp_size / 1024.;
-		  db_set_value (hDB, 0, "/Lazy/Statistics/Total KBytes copied"
-				, &dtemp, size, 1, TID_DOUBLE);
-		  /* update % statistics */
-		  if (lazyst.file_size != 0)
-		    {
-		      lazyst.progress = (DWORD) (100 * (lazyst.tot_cp_size / lazyst.file_size));
-		      db_set_value (hDB, 0, "/Lazy/Statistics/Copy status [%]"
-				    , &lazyst.progress, size, 1, TID_INT);
-		    }
-		  /* Get current running state */
-		  size = sizeof(lazyst.cur_state);
-		  db_get_value (hDB, 0, "Runinfo/State", &lazyst.cur_state, &size, TID_INT);
+        {
+          if (get_any_physrec(data_fmt) == RDLOG_SUCCESS)
+            {
+              status = ybos_magta_write(hDev, (char *)plazy, szlazy);
+              if (status != SS_SUCCESS)
+                {
+                  cm_msg(MERROR,"Lazy","lazy_copy Write error %i",szlazy);
+                  return -4; 
+                }
+              lazyst.tot_cp_size += szlazy;
+              lazyst.dev_tot_cp_size += szlazy;
+              if ((ss_millitime() - cploop_time) > 2000)
+                {
+                  /* update rate statistics */
+                  size = sizeof(float);
+                  lazyst.cprate = (float)(lazyst.tot_cp_size - lastsz);
+                  lazyst.cprate /= (ss_millitime() - cploop_time);
+                  db_set_value (hDB, 0, "/Lazy/Statistics/Copy Rate [KB per sec]"
+                                , &lazyst.cprate, size, 1, TID_FLOAT);
+                  lastsz = lazyst.tot_cp_size;
+                  /* update KB copied statistics */
+                  size = sizeof(double);
+                  dtemp = lazyst.tot_cp_size / 1024.;
+                  db_set_value (hDB, 0, "/Lazy/Statistics/KBytes copied"
+                                , &dtemp, size, 1, TID_DOUBLE);
+                  /* update Total KB copied statistics */
+                  size = sizeof(double);
+                  dtemp = lazyst.dev_tot_cp_size / 1024.;
+                  db_set_value (hDB, 0, "/Lazy/Statistics/Total KBytes copied"
+                                , &dtemp, size, 1, TID_DOUBLE);
 		  
-		  /* Get updated "copy while running" */
-		  size = sizeof(lazy.cpwhilerun);
-		  db_get_value (hDB, 0, "/Lazy/Settings/Copy while running", &lazy.cpwhilerun, &size, TID_INT);
+                  /* update % statistics */
+                  if (lazyst.file_size != 0)
+                    {
+                      size = sizeof(float);
+                      lazyst.progress = (float) (100. * (lazyst.tot_cp_size / lazyst.file_size));
+                      db_set_value (hDB, 0, "/Lazy/Statistics/Copy progress [%]"
+                                    , &lazyst.progress, size, 1, TID_FLOAT);
+                    }
 		  
-		  /* check if copy should be continuing */
-		  if ((lazy.cpwhilerun == 0) && (lazyst.cur_state == STATE_RUNNING))
-		    copy_continue = FALSE;
-		  else
-		    copy_continue = TRUE;
-		  /* update check loop */
-		  cploop_time = ss_millitime();
-		  /* yield quickly */
-		  status = cm_yield(1);
-		  if (status == RPC_SHUTDOWN || status == SS_ABORT)
-		    cm_msg(MINFO,"Lazy","Abort postponed until end of copy %d[%]"
-			   ,lazyst.progress);
-		}
-	    } /* get physrec */
-	  else
-	    break;
-	} /* copy_continue */
+                  /* Get current running state */
+                  size = sizeof(lazyst.cur_state);
+                  db_get_value (hDB, 0, "Runinfo/State", &lazyst.cur_state, &size, TID_INT);
+                  
+                  /* Get updated "copy while running" */
+                  size = sizeof(lazy.cpwhilerun);
+                  db_get_value (hDB, 0, "/Lazy/Settings/Copy while running", &lazy.cpwhilerun, &size, TID_INT);
+                  
+                  /* check if copy should be continuing */
+                  if ((lazy.cpwhilerun == 0) && (lazyst.cur_state == STATE_RUNNING))
+                    copy_continue = FALSE;
+                  else
+                    copy_continue = TRUE;
+                  /* update check loop */
+                  cploop_time = ss_millitime();
+                  /* yield quickly */
+                  status = cm_yield(1);
+                  if (status == RPC_SHUTDOWN || status == SS_ABORT)
+                    cm_msg(MINFO,"Lazy","Abort postponed until end of copy %d[%]"
+                           ,lazyst.progress);
+                }
+            } /* get physrec */
+          else
+            break;
+        } /* copy_continue */
       else
-	{
-	  status = cm_yield(1000);
-	  if (status == RPC_SHUTDOWN || status == SS_ABORT)
-	    return FORCE_EXIT;
-	  if ((ss_millitime() - private_last_time) > 5000)
-	    {
-	      /* Get current running state */
-	      size = sizeof(lazyst.cur_state);
-	      db_get_value (hDB, 0, "Runinfo/State", &lazyst.cur_state, &size, TID_INT);
-	      /* Get updated "copy while running" */
-	      size = sizeof(lazy.cpwhilerun);
-	      db_get_value (hDB, 0, "/Lazy/Settings/Copy while running", &lazy.cpwhilerun, &size, TID_INT);
-	      private_last_time = ss_millitime();
-	      /* check if copy should be continuing */
-	      if ((lazy.cpwhilerun == 0) && (lazyst.cur_state == STATE_RUNNING))
-		copy_continue = FALSE;
-	      else
-		copy_continue = TRUE;
-	    }
-	}
+        {
+          status = cm_yield(1000);
+          if (status == RPC_SHUTDOWN || status == SS_ABORT)
+            return FORCE_EXIT;
+          if ((ss_millitime() - private_last_time) > 5000)
+            {
+              /* Get current running state */
+              size = sizeof(lazyst.cur_state);
+              db_get_value (hDB, 0, "Runinfo/State", &lazyst.cur_state, &size, TID_INT);
+              /* Get updated "copy while running" */
+              size = sizeof(lazy.cpwhilerun);
+              db_get_value (hDB, 0, "/Lazy/Settings/Copy while running", &lazy.cpwhilerun, &size, TID_INT);
+              private_last_time = ss_millitime();
+              /* check if copy should be continuing */
+              if ((lazy.cpwhilerun == 0) && (lazyst.cur_state == STATE_RUNNING))
+                copy_continue = FALSE;
+              else
+                copy_continue = TRUE;
+            }
+        }
     } /* while forever */
   
+    /* update rate statistics */
+    size = sizeof(float);
+    lazyst.cprate = (float)(lazyst.tot_cp_size - lastsz);
+    lazyst.cprate /= (ss_millitime() - cploop_time);
+    db_set_value (hDB, 0, "/Lazy/Statistics/Copy Rate [KB per sec]"
+                  , &lazyst.cprate, size, 1, TID_FLOAT);
+    lastsz = lazyst.tot_cp_size;
+    /* update KB copied statistics */
+    size = sizeof(double);
+    dtemp = lazyst.tot_cp_size / 1024.;
+    db_set_value (hDB, 0, "/Lazy/Statistics/KBytes copied"
+                  , &dtemp, size, 1, TID_DOUBLE);
+    /* update Total KB copied statistics */
+    size = sizeof(double);
+    dtemp = lazyst.dev_tot_cp_size / 1024.;
+    db_set_value (hDB, 0, "/Lazy/Statistics/Total KBytes copied"
+                  , &dtemp, size, 1, TID_DOUBLE);
+    /* update % statistics */
+    if (lazyst.file_size != 0)
+      {
+        size = sizeof(float);
+        lazyst.progress = (float) (100. * (lazyst.tot_cp_size / lazyst.file_size));
+        db_set_value (hDB, 0, "/Lazy/Statistics/Copy progress [%]"
+                      , &lazyst.progress, size, 1, TID_FLOAT);
+      }
+
+    /* update backup % statistics */
+    if (lazy.bck_dev_size > 0)
+      {
+        lazyst.bckfill = (float) ( 100. * (lazyst.dev_tot_cp_size / lazy.bck_dev_size));
+        db_set_value (hDB, 0, "/Lazy/Statistics/Backup status [%]"
+                      , &lazyst.bckfill, size, 1, TID_FLOAT);
+      }
+
   /* close log device */
   close_any_logfile(dev_type, hDev);
   
@@ -789,16 +892,23 @@ BOOL lazy_file_exists(char * dir, char * file)
   char * list;
   double dtemp;
   int size;
+  char fullfile[MAX_FILE_PATH] = "\0";
   
   if (ss_file_find(dir, file, &list) == 1)
     {
-      lazyst.file_size = ss_file_size(list);
-      dtemp = lazyst.file_size / 1024;
-      size = sizeof(double);
-      db_set_value (hDB, 0, "/Lazy/Statistics/File size [KB]"
-		    , &dtemp, size, 1, TID_DOUBLE);
-      return TRUE;
+      strcat(fullfile, dir);
+      strcat(fullfile, file);
+      if ((lazyst.file_size = ss_file_size(fullfile)) > 0)
+      {
+        size = sizeof(double);
+        dtemp = lazyst.file_size / 1024;
+        db_set_value (hDB, 0, "/Lazy/Statistics/File size [KB]"
+                    , &dtemp, size, 1, TID_DOUBLE);
+        free (list);
+        return TRUE;
+      }
     }
+  free(list);
   return FALSE;
 }
 
@@ -816,15 +926,16 @@ INT lazy_main (HNDLE hDB, HNDLE hKey)
 {
   INT size, status, tobe_backup, purun;
   double freepercent, svfree;
-  char pufile[MAX_FILE_PATH];
-  
+  char pufile[MAX_FILE_PATH], inffile[MAX_FILE_PATH], outffile[MAX_FILE_PATH];
+  BOOL donepurge;
+
   /* load ODB parameters from /Lazy/Settings */
   if ((status = lazy_load_params(hDB, hKey)) != DB_SUCCESS)
     return status;
   
   /* skip if not enable */
   if (!lazy.enable)
-    return NOTHING_TODO;;
+    return NOTHING_TODO;
   
   /* Check if Tape is OK */
   /* ... */
@@ -854,14 +965,14 @@ INT lazy_main (HNDLE hDB, HNDLE hKey)
   pdirlog = malloc(sizeof(DIRLOG));
   build_log_list(lazy.backfmt, lazy.dir, &pdirlog);
   
-  /* sort logger list following the criteria */
+  /* sort logger list following the run number criteria */
   sort_log_list(pdirlog);
   
-  /* build donelist compare pdirlog and /Lazy/List */
+  /* build donelist comparing pdirlog and /Lazy/List */
   pdonelist = malloc(sizeof(INT));
   build_donelist(&pdonelist);
 
-  /* sort /lazy/list */
+  /* sort /lazy/list run # criteria*/
   sort_donelist(pdonelist);
   
   /* compare list : run NOT in donelist AND run in dirlog */
@@ -871,38 +982,55 @@ INT lazy_main (HNDLE hDB, HNDLE hKey)
   
   /* ckeck if mode is on oldest (keep = -x)
      else take current run - keep file */
-  if (lazy.keepfile < 0)
+  if (lazy.staybehind < 0)
     lazyst.cur_run = tobe_backup;
   else
-    lazyst.cur_run = lazyst.cur_run - lazy.keepfile;
+    lazyst.cur_run = lazyst.cur_run - lazy.staybehind;
   
   /* check SPACE and purge if necessary = % (1:99) */
   if (lazy.pupercent > 0)
     {
+      /* cleanup memory */
+      donepurge = FALSE;
       svfree = freepercent = 100. * ss_disk_free(lazy.dir) / ss_disk_size(lazy.dir);
       while (freepercent <= (double)lazy.pupercent)
-	    {
-	      /* rebuild dir listing */
-	      build_log_list(lazy.backfmt, lazy.dir, &pdirlog);
-	      
-	      /* rebuild donelist */
-	      build_donelist(&pdonelist);
+        {
+          /* rebuild dir listing */
+          build_log_list(lazy.backfmt, lazy.dir, &pdirlog);
+          
+          /* rebuild donelist */
+          build_donelist(&pdonelist);
+          
+          /* search file to purge : run in donelist AND run in dirlog */
+          if (lazy_select_purge(pdirlog, pdonelist, pufile, &purun) == 0)
+            {
+                /* check if beyond keep file + 1 */
+                if (purun < (lazyst.cur_acq_run - abs(lazy.staybehind) - 1 ))
+                  {
+                    /* remove file */
+                    if ((status = ss_file_remove(pufile)) == 0)
+                      {
+                        status = lazy_log_update(REMOVE_FILE, 0, purun, NULL, pufile);
+                        donepurge = TRUE;
 
-	      /* search file to purge : run in donelist AND run in dirlog */
-	      lazy_select_purge(pdirlog, pdonelist, pufile, &purun);
-	      /* check if beyond keep file + 1 */
-	      if (purun < (lazyst.cur_acq_run - abs(lazy.keepfile) - 1 ))
-	      {
-		/* remove file */
-	        ss_file_remove(pufile);
-
-		/* update donelist (remove run entry as the file has been deleted */
-		lazy_remove_entry(lazy.backlabel, purun);
-	      }
-	      freepercent = 100. * ss_disk_free(lazy.dir) / ss_disk_size(lazy.dir);
-	      if (svfree == freepercent)
-	        break;
-	    }
+                        /* update donelist (remove run entry as the file has been deleted */
+                        if ((status=lazy_remove_entry(purun)) != 0)
+                          cm_msg(MERROR, "Lazy","remove_entry not performed %d",status);
+                      }
+                    else
+                        cm_msg(MERROR, "Lazy","ss_file_remove not performed %d",status);
+                  }
+                freepercent = 100. * ss_disk_free(lazy.dir) / ss_disk_size(lazy.dir);
+                if (svfree == freepercent)
+                  break;
+            }
+            else
+            {
+              if (donepurge)
+                cm_msg(MINFO,"Lazy","Can't purge more for now!");
+              break;
+            }
+        }
     }
   
   /* cleanup memory */
@@ -910,17 +1038,18 @@ INT lazy_main (HNDLE hDB, HNDLE hKey)
   free (pdonelist);
   
   /* check if backup run is beyond keep */
-  if (lazyst.cur_run >= (lazyst.cur_acq_run - abs(lazy.keepfile)))
+  if (lazyst.cur_run >= (lazyst.cur_acq_run - abs(lazy.staybehind)))
     return NOTHING_TODO;
+  
   /* Compose the proper file name */
-  status = lazy_file_compose(lazy.backfmt , lazy.dir , lazyst.cur_run , lazyst.backfile);
+  status = lazy_file_compose(lazy.backfmt , lazy.dir , lazyst.cur_run , inffile, lazyst.backfile);
   if (status != 0)
     {
       cm_msg(MERROR,"Lazy","composition of file failed -%s-%s-%d-"
-	     ,lazy.backfmt, lazy.dir, lazyst.cur_run); 
+             ,lazy.backfmt, lazy.dir, lazyst.cur_run); 
       return status;
     }
-  
+
   /* Check again if the backup file is present in the logger dir */
   if (lazy_file_exists(lazy.dir, lazyst.backfile))
     {
@@ -929,42 +1058,53 @@ INT lazy_main (HNDLE hDB, HNDLE hKey)
       db_set_value (hDB, 0, "/Lazy/Statistics/Backup file", lazyst.backfile, size, 1, TID_STRING);
       
       /* check if space on backup device */
-      if (lazy.max_run_tape <= 0)
-	{
-	  if (lazy.bck_dev_size < (lazyst.dev_tot_cp_size + lazyst.file_size))
-	    {
-	      lazy.backlabel[0]='\0';
-	      size = sizeof(lazy.backlabel);
-	      db_set_value (hDB, 0, "/Lazy/Settings/Backup device label"
-			    , lazy.backlabel, size, 1, TID_STRING);
-	      /* reset the statistics */
-	      size = sizeof(lazyst);
-	      memset(&lazyst,0,size);
-	      if (db_find_key(hDB, 0, "/Lazy/Statistics",&hKeyst) == DB_SUCCESS)
-      		status = db_set_record(hDB, hKeyst, &lazyst, size, 0);
-	      else
-		cm_msg(MERROR,"Lazy","did not find /Lazy/Statistics for zapping");
-	      cm_msg(MINFO,"Lazy","Not enough space for next copy on backup device!");
-	      return NOTHING_TODO;
-	    }
-	}
+      if (lazy.bck_dev_size < (lazyst.dev_tot_cp_size + lazyst.file_size))
+        {
+          lazy.backlabel[0]='\0';
+          size = sizeof(lazy.backlabel);
+          db_set_value (hDB, 0, "/Lazy/Settings/Backup device label"
+                        , lazy.backlabel, size, 1, TID_STRING);
+          /* reset the statistics */
+          size = sizeof(lazyst);
+          memset(&lazyst,0,size);
+          if (db_find_key(hDB, 0, "/Lazy/Statistics",&hKeyst) == DB_SUCCESS)
+            status = db_set_record(hDB, hKeyst, &lazyst, size, 0);
+          else
+            cm_msg(MERROR,"Lazy","did not find /Lazy/Statistics for zapping");
+          cm_msg(MINFO,"Lazy","Not enough space for next copy on backup device!");
+          return NOTHING_TODO;
+        }
       
       /* Update the /Lazy for current file processing */
       size = sizeof(lazyst.cur_run);
       db_set_value (hDB, 0, "/Lazy/Statistics/Current Lazy run", &lazyst.cur_run, size, 1, TID_INT);
       
+      /* compose the destination file name in case of lazy DISK to DISK */
+      if (dev_type == LOG_TYPE_DISK)
+        {
+          if (lazy.backdev[0] != 0)
+            if (lazy.backdev[strlen(lazy.backdev)-1] != DIR_SEPARATOR)
+              strcat(lazy.backdev, DIR_SEPARATOR_STR);
+          strcpy(outffile, lazy.backdev); 
+          strcat(outffile, lazyst.backfile);
+        }
+      else if(dev_type == LOG_TYPE_TAPE)
+          strcpy(outffile, lazy.backdev); 
+      else 
+          cm_msg(MINFO,"Lazy"," FTP not yet implemented");
+            
       /* Do the copy */
-      if ((status = lazy_copy(lazy.backdev, lazyst.backfile)) != 0)
-	{
-	  if (status == FORCE_EXIT)
-	    return status;
-	  cm_msg(MERROR,"Lazy","copy failed -%s-%s-%i",lazy.backdev, lazyst.backfile, status);
-	  return NOTHING_TODO;
-	}
+      if ((status = lazy_copy(outffile, inffile)) != 0)
+        {
+          if (status == FORCE_EXIT)
+            return status;
+          cm_msg(MERROR,"Lazy","copy failed -%s-%s-%i",lazy.backdev, lazyst.backfile, status);
+          return NOTHING_TODO;
+        }
     }
   else
     {
-      cm_msg(MERROR,"Lazy","lazy_file_exists file doesn't exists -%s-",lazyst.backfile);
+      cm_msg(MERROR,"Lazy","lazy_file_exists file %s doesn't exists",lazyst.backfile);
       return NOTHING_TODO;
     }              
   
@@ -995,28 +1135,28 @@ int main(unsigned int argc,char **argv)
   
   /* get parameters */
   for (i=1 ; i<argc ; i++)
-  {
-    if (argv[i][0] == '-' && argv[i][1] == 'd')
-      debug = TRUE;
-    else if (strncmp(argv[i],"-z",2) == 0)
-	    zap_flag = 1;
-    else if (argv[i][0] == '-')
-	  {
-	    if (i+1 >= argc || argv[i+1][0] == '-')
-	      goto usage;
-	    if (strncmp(argv[i],"-e",2) == 0)
-	      strcpy(expt_name, argv[++i]);
-	    else if (strncmp(argv[i],"-h",2)==0)
-	      strcpy(host_name, argv[++i]);
-	  }
-    else
     {
-	  usage:
-	    printf("usage: lazylogger [-h <Hostname>] [-e <Experiment>]\n");
-	    printf("                  [-z zap statistics]\n\n");
-	    return 0;
+      if (argv[i][0] == '-' && argv[i][1] == 'd')
+        debug = TRUE;
+      else if (strncmp(argv[i],"-z",2) == 0)
+        zap_flag = 1;
+      else if (argv[i][0] == '-')
+        {
+          if (i+1 >= argc || argv[i+1][0] == '-')
+            goto usage;
+          if (strncmp(argv[i],"-e",2) == 0)
+            strcpy(expt_name, argv[++i]);
+          else if (strncmp(argv[i],"-h",2)==0)
+            strcpy(host_name, argv[++i]);
+        }
+      else
+        {
+        usage:
+          printf("usage: lazylogger [-h <Hostname>] [-e <Experiment>]\n");
+          printf("                  [-z zap statistics] [-t (talk msg)\n\n");
+          return 0;
+        }
     }
-  }
   
   /* connect to experiment */
   status = cm_connect_experiment(host_name, expt_name, "LazyLogger", 0);
@@ -1031,58 +1171,58 @@ int main(unsigned int argc,char **argv)
   cm_get_experiment_database(&hDB, &hKey);
   
   if (zap_flag == 1)
-  {
-    /* reset the statistics */
-    cm_msg(MINFO,"lazy","zapping /lazy/statistics content");
-    size = sizeof(lazyst);
-    memset(&lazyst,0,size);
-    if (db_find_key(hDB, 0, "/Lazy/Statistics",&hKeyst) == DB_SUCCESS)
-      status = db_set_record(hDB, hKeyst, &lazyst, size, 0);
-    else
-      cm_msg(MERROR,"Lazy","did not find /Lazy/Statistics for zapping");
-  }
-  else
-  {
-    /* restore globals from odb */
-    if (db_find_key(hDB, 0, "/Lazy", &hKey) == DB_SUCCESS)
     {
-      if (db_find_key(hDB, 0, "/Lazy/Statistics", &hKeyst) == DB_SUCCESS)
-      {
-	      cm_msg(MINFO,"lazy","restoring /lazy/statistics content");
-	      size = sizeof(lazyst);
-	      status = db_get_record(hDB, hKeyst, &lazyst, &size, 0);
-      }
+      /* reset the statistics */
+      cm_msg(MINFO,"lazy","zapping /lazy/statistics content");
+      size = sizeof(lazyst);
+      memset(&lazyst,0,size);
+      if (db_find_key(hDB, 0, "/Lazy/Statistics",&hKeyst) == DB_SUCCESS)
+        status = db_set_record(hDB, hKeyst, &lazyst, size, 0);
       else
-        db_create_record(hDB, hKey, "Statistics", LAZY_STATISTICS_STRING);
+        cm_msg(MERROR,"Lazy","did not find /Lazy/Statistics for zapping");
     }
-    else
-	  {
-	    cm_msg(MINFO,"lazy","creating /lazy/statistics content");
-	    db_create_record(hDB, 0, "Lazy/Statistics", LAZY_STATISTICS_STRING);
-	  }
-  }
+  else
+    {
+      /* restore globals from odb */
+      if (db_find_key(hDB, 0, "/Lazy", &hKey) == DB_SUCCESS)
+        {
+          if (db_find_key(hDB, 0, "/Lazy/Statistics", &hKeyst) == DB_SUCCESS)
+            {
+              cm_msg(MINFO,"lazy","restoring /lazy/statistics content");
+              size = sizeof(lazyst);
+              status = db_get_record(hDB, hKeyst, &lazyst, &size, 0);
+            }
+          else
+            db_create_record(hDB, hKey, "Statistics", LAZY_STATISTICS_STRING);
+        }
+      else
+        {
+          cm_msg(MINFO,"lazy","creating /lazy/statistics content");
+          db_create_record(hDB, 0, "Lazy/Statistics", LAZY_STATISTICS_STRING);
+        }
+    }
   mainlast_time = 0;
   do
-  {
-    status = cm_yield(2000);
-    if ((ss_millitime() - mainlast_time) > 10000)
     {
-	    status = lazy_main( hDB, hKey );
-	    if (status == FORCE_EXIT)
-	      break;
-	    mainlast_time = ss_millitime();
-    }      
-    if (ss_kbhit())
-    {
-    #if defined(OS_MSDOS) || defined(OS_WINNT)
-	    ch = getch();
-    #else
-	    ch = getchar();
-    #endif
-	    if (ch == '!')
-	      break;
-    }
-  } while (status != RPC_SHUTDOWN && status != SS_ABORT);
+      status = cm_yield(2000);
+      if ((ss_millitime() - mainlast_time) > 10000)
+        {
+          status = lazy_main( hDB, hKey );
+          if (status == FORCE_EXIT)
+            break;
+          mainlast_time = ss_millitime();
+        }      
+      if (ss_kbhit())
+        {
+#if defined(OS_MSDOS) || defined(OS_WINNT)
+          ch = getch();
+#else
+          ch = getchar();
+#endif
+          if (ch == '!')
+            break;
+        }
+    } while (status != RPC_SHUTDOWN && status != SS_ABORT);
   cm_disconnect_experiment();
   return 1;
 }
