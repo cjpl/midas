@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.98  2002/06/06 07:15:03  midas
+  Added demand_priority for SC FE
+
   Revision 1.97  2002/05/22 22:10:03  midas
   Version 1.9.1
 
@@ -1021,6 +1024,9 @@ typedef struct {
 #define CH_INPUT    1
 #define CH_OUTPUT   2
 
+#define PRIO_ODB    0
+#define PRIO_DEVICE 1
+
 typedef struct {
   char   name[NAME_LENGTH];           /* Driver name                       */
   INT    (*bd)(INT cmd, ...);         /* Device driver entry point         */
@@ -1034,25 +1040,26 @@ typedef struct {
   INT    (*bd)(INT cmd, ...);         /* Bus driver entry point            */
   DWORD  type;                        /* channel type, combination of CH_xxx*/
   DWORD  cmd_disabled;                /* Mask of disabled commands         */
+  INT    demand_priority;             /* PRIO_ODB, PRIO_DEVICE             */
   void   *dd_info;                    /* Private info for device driver    */
 } DEVICE_DRIVER;
 
 typedef struct {
-  WORD    event_id;                    /* Event ID associated with equipm.  */
-  WORD    trigger_mask;                /* Trigger mask                      */
-  char    buffer[NAME_LENGTH];         /* Event buffer to send events into  */
-  INT     eq_type;                     /* One of EQ_xxx                     */
-  INT     source;                      /* Event source (LAM/IRQ)            */
-  char    format[8];                   /* Data format to produce            */
-  BOOL    enabled;                     /* Enable flag                       */
-  INT     read_on;                     /* Combination of Read-On flags RO_xxx */
-  INT     period;                      /* Readout interval/Polling time in ms */
-  double  event_limit;                 /* Stop run when limit is reached    */
-  DWORD   num_subevents;               /* Number of events in super event */
-  INT     history;                     /* Log history                       */
-  char    frontend_host[NAME_LENGTH];  /* Host on which FE is running       */
-  char    frontend_name[NAME_LENGTH];  /* Frontend name                     */
-  char    frontend_file_name[256];     /* Source file used for user FE      */
+  WORD    event_id;                   /* Event ID associated with equipm.  */
+  WORD    trigger_mask;               /* Trigger mask                      */
+  char    buffer[NAME_LENGTH];        /* Event buffer to send events into  */
+  INT     eq_type;                    /* One of EQ_xxx                     */
+  INT     source;                     /* Event source (LAM/IRQ)            */
+  char    format[8];                  /* Data format to produce            */
+  BOOL    enabled;                    /* Enable flag                       */
+  INT     read_on;                    /* Combination of Read-On flags RO_xxx */
+  INT     period;                     /* Readout interval/Polling time in ms */
+  double  event_limit;                /* Stop run when limit is reached    */
+  DWORD   num_subevents;              /* Number of events in super event */
+  INT     history;                    /* Log history                       */
+  char    frontend_host[NAME_LENGTH]; /* Host on which FE is running       */
+  char    frontend_name[NAME_LENGTH]; /* Frontend name                     */
+  char    frontend_file_name[256];    /* Source file used for user FE      */
 } EQUIPMENT_INFO;
 
 typedef struct {
