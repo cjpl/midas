@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.59  2001/11/14 08:58:56  midas
+  Version 1.2.2
+
   Revision 1.58  2001/11/13 14:17:09  midas
   More new features
 
@@ -268,7 +271,7 @@ char cfg_dir[256];
 
 #define MAX_GROUPS       32
 #define MAX_PARAM       100
-#define MAX_ATTACHMENTS   5
+#define MAX_ATTACHMENTS  10
 #define MAX_N_LIST      100
 #define MAX_N_ATTR       20
 #define VALUE_SIZE      256
@@ -1038,7 +1041,7 @@ char *pc;
 
   if (strstr(message, key))
     {
-    for (pc=strstr(message, key)+strlen(key) ; *pc != '\n' ; )
+    for (pc=strstr(message, key)+strlen(key) ; *pc != '\n' && *pc != '\r' ; )
       *result++ = *pc++;
     *result = 0;
     }
@@ -1823,7 +1826,7 @@ INT el_retrieve(char *tag, char *date, char attr_list[MAX_N_ATTR][NAME_LENGTH],
 {
 int     i, size, fh, offset, search_status;
 char    str[256], *p;
-char    message[TEXT_SIZE+100], thread[256], attachment_all[256];
+char    message[TEXT_SIZE+100], thread[256], attachment_all[64*MAX_ATTACHMENTS];
 
   if (tag[0])
     {
@@ -1920,6 +1923,10 @@ char    message[TEXT_SIZE+100], thread[256], attachment_all[256];
     }
 
   p = strstr(message, "========================================\n");
+
+  /* check for \n -> \r conversion (e.g. zipping/unzipping) */
+  if (p == NULL)
+    p = strstr(message, "========================================\r");
 
   if (text != NULL)
     {
@@ -2591,6 +2598,12 @@ int  i;
       strcpy(str, "5");
     rsprintf("<tr><td><table width=100%% border=0 cellpadding=%s cellspacing=0 bgcolor=#FFFFFF><tr>\n", str);
 
+    if (getcfg("global", "main tab", str))
+      {
+      rsprintf("<td nowrap bgcolor=#E0E0E0><a href=\"/\">%s</a></td>\n", str);
+      rsprintf("<td width=10 bgcolor=#FFFFFF>&nbsp;</td>\n"); 
+      }
+
     for (i=0 ;  ; i++)
       {
       if (!enumgrp(i, str))
@@ -2605,7 +2618,7 @@ int  i;
       if (equal_ustring(str, logbook))
         rsprintf("<td nowrap bgcolor=%s><font color=%s>%s</font></td>\n", gt("Title BGColor"), gt("Title fontcolor"), str);
       else
-        rsprintf("<td nowrap bgcolor=#E0E0E0><a href=\"%s%s\">%s</a></td>\n", elogd_url, ref, str);
+        rsprintf("<td nowrap bgcolor=#E0E0E0><a href=\"/%s\">%s</a></td>\n", ref, str);
       rsprintf("<td width=10 bgcolor=#FFFFFF>&nbsp;</td>\n"); 
       }
     rsprintf("<td width=100%% bgcolor=#FFFFFF>&nbsp;</td>\n"); 
@@ -2648,17 +2661,20 @@ int  i;
 void show_error(char *error)
 {
   /* header */
-  rsprintf("HTTP/1.1 200 Document follows\r\n");
-  rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
-  if (use_keepalive)
-    {
-    rsprintf("Connection: Keep-Alive\r\n");
-    rsprintf("Keep-Alive: timeout=60, max=10\r\n");
-    }
-  rsprintf("Content-Type: text/html\r\n\r\n");
+  show_standard_header("ELOG error", "");
 
-  rsprintf("<html><head><title>ELOG error</title></head>\n");
-  rsprintf("<body><i>%s</i></body></html>\n", error);
+  rsprintf("<p><p><p><table border=%s width=50%% bgcolor=%s cellpadding=1 cellspacing=0 align=center>", 
+            gt("Border width"), gt("Frame color"));
+  rsprintf("<tr><td><table cellpadding=5 cellspacing=0 border=0 width=100%% bgcolor=%s>\n", gt("Frame color"));
+  rsprintf("<tr><td bgcolor=#FFB0B0 align=center>");
+
+  rsprintf("<b>%s</b></tr>\n", error);
+
+  rsprintf("<tr><td bgcolor=%s align=center><input type=submit value=\"Back\"></td></tr>\n", 
+            gt("Cell BGColor"));
+
+  rsprintf("</table></td></tr></table>\n");
+  rsprintf("</body></html>\n");
 }
 
 /*------------------------------------------------------------------*/
@@ -2783,7 +2799,8 @@ int i;
 
 /*------------------------------------------------------------------*/
 
-int build_subst_list(char list[][NAME_LENGTH], char value[][NAME_LENGTH])
+int build_subst_list(char list[][NAME_LENGTH], char value[][NAME_LENGTH],
+                     char attrib[][NAME_LENGTH])
 {
 int  i;
 char str[256];
@@ -2793,7 +2810,10 @@ struct hostent *phe;
   for (i=0 ; i<scan_attributes(logbook) ; i++)
     {
     strcpy(list[i], attr_list[i]);
-    strcpy(value[i], getparam(attr_list[i]));
+    if (attrib)
+      strcpy(value[i], attrib[i]);
+    else
+      strcpy(value[i], getparam(attr_list[i]));
     }
 
   /* add remote host */
@@ -2812,6 +2832,10 @@ struct hostent *phe;
   strcpy(value[i++], getparam("unm"));
   strcpy(list[i], "long_name");
   strcpy(value[i++], getparam("full_name"));
+
+  /* add logbook */
+  strcpy(list[i], "logbook");
+  strcpy(value[i++], logbook);
 
   return i;
 }
@@ -2956,8 +2980,9 @@ struct tm *gmt;
   
   rsprintf("<font color=%s>Change password for user \"%s\"</font></td></tr>\n", 
            gt("Title fontcolor"), getparam("full_name"));
-  rsprintf("<tr><td align=center bgcolor=%s>Old Password:&nbsp;&nbsp;&nbsp;<input type=password name=oldpwd></td></tr>\n", gt("Cell BGColor"));
-  rsprintf("<tr><td align=center bgcolor=%s>New Password:&nbsp;&nbsp;&nbsp;<input type=password name=newpwd></td></tr>\n", gt("Cell BGColor"));
+
+  rsprintf("<tr><td align=center bgcolor=%s>Old Password:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input type=password name=oldpwd></td></tr>\n", gt("Cell BGColor"));
+  rsprintf("<tr><td align=center bgcolor=%s>New Password:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input type=password name=newpwd></td></tr>\n", gt("Cell BGColor"));
 
   rsprintf("<tr><td align=center bgcolor=%s><input type=submit value=Submit></td></tr>", gt("Cell BGColor"));
 
@@ -3000,7 +3025,7 @@ int  i, n;
 
 void show_elog_new(char *path, BOOL bedit)
 {
-int    i, n_attr, index, size, wrap;
+int    i, n, n_attr, index, size, wrap;
 char   str[1000], *p, star[80], comment[10000];
 char   list[MAX_N_ATTR][NAME_LENGTH]; 
 char   date[80], attrib[MAX_N_ATTR][NAME_LENGTH], text[TEXT_SIZE], 
@@ -3129,7 +3154,7 @@ time_t now;
       else if (strchr(attr_options[index][0], '$'))
         {
         /* substitute attribute */
-        i = build_subst_list(slist, svalue);
+        i = build_subst_list(slist, svalue, NULL);
         strcpy(str, attr_options[index][0]);
         strsubst(str, slist, svalue, i);
 
@@ -3237,35 +3262,47 @@ time_t now;
   else
     rsprintf("<input type=checkbox name=suppress value=1>Suppress Email notification</tr>\n");
 
-  if (bedit)
-    {
-    rsprintf("<tr><td colspan=2 align=center bgcolor=%s>If no attachments are resubmitted, the original ones are kept.<br>\n",
-              gt("Categories bgcolor1"));
-    rsprintf("To delete an old attachment, enter <code>&lt;delete&gt;</code> in the new attachment field.</td></tr>\n");
 
-    for (i=0 ; i<MAX_ATTACHMENTS ; i++)
-      {
-      if (att[i][0])
-        {
-        rsprintf("<tr><td align=right nowrap bgcolor=%s>Original attachment %d:<br>New attachment %d:</td>", 
-                  gt("Categories bgcolor1"), i+1, i+1);
-
-        rsprintf("<td bgcolor=%s>%s<br>", gt("Categories bgcolor2"), att[i]+14);
-        rsprintf("<input type=\"file\" size=\"60\" maxlength=\"200\" name=\"attfile%d\" accept=\"filetype/*\"></td></tr>\n", 
-                  i+1);
-        }
-      else
-        rsprintf("<tr><td bgcolor=%s>Attachment %d:</td><td bgcolor=%s><input type=\"file\" size=\"60\" maxlength=\"200\" name=\"attfile%d\" accept=\"filetype/*\"></td></tr>\n", 
-                  gt("Categories bgcolor1"), i+1, gt("Categories bgcolor2"), i+1);
-      }
-
-    }
+  if (getcfg(logbook, "Number attachments", str))
+    n = atoi(str);
   else
+    n = 5;
+
+  if (n > MAX_ATTACHMENTS)
+    n = MAX_ATTACHMENTS;
+
+  if (n > 0)
     {
-    /* attachment */
-    for (i=0 ; i<MAX_ATTACHMENTS ; i++)
-      rsprintf("<tr><td nowrap bgcolor=%s><b>Attachment %d:</b></td><td bgcolor=%s><input type=\"file\" size=\"60\" maxlength=\"200\" name=\"attfile%d\" accept=\"filetype/*\"></td></tr>\n", 
-               gt("Categories bgcolor1"), i+1, gt("Categories bgcolor2"), i+1);
+    if (bedit)
+      {
+      rsprintf("<tr><td colspan=2 align=center bgcolor=%s>If no attachments are resubmitted, the original ones are kept.<br>\n",
+                gt("Categories bgcolor1"));
+      rsprintf("To delete an old attachment, enter <code>&lt;delete&gt;</code> in the new attachment field.</td></tr>\n");
+
+      for (i=0 ; i<n ; i++)
+        {
+        if (att[i][0])
+          {
+          rsprintf("<tr><td align=right nowrap bgcolor=%s>Original attachment %d:<br>New attachment %d:</td>", 
+                    gt("Categories bgcolor1"), i+1, i+1);
+
+          rsprintf("<td bgcolor=%s>%s<br>", gt("Categories bgcolor2"), att[i]+14);
+          rsprintf("<input type=\"file\" size=\"60\" maxlength=\"200\" name=\"attfile%d\" accept=\"filetype/*\"></td></tr>\n", 
+                    i+1);
+          }
+        else
+          rsprintf("<tr><td bgcolor=%s>Attachment %d:</td><td bgcolor=%s><input type=\"file\" size=\"60\" maxlength=\"200\" name=\"attfile%d\" accept=\"filetype/*\"></td></tr>\n", 
+                    gt("Categories bgcolor1"), i+1, gt("Categories bgcolor2"), i+1);
+        }
+
+      }
+    else
+      {
+      /* attachment */
+      for (i=0 ; i<n ; i++)
+        rsprintf("<tr><td nowrap bgcolor=%s><b>Attachment %d:</b></td><td bgcolor=%s><input type=\"file\" size=\"60\" maxlength=\"200\" name=\"attfile%d\" accept=\"filetype/*\"></td></tr>\n", 
+                 gt("Categories bgcolor1"), i+1, gt("Categories bgcolor2"), i+1);
+      }
     }
 
   rsprintf("</td></tr></table></td></tr></table>\n");
@@ -3571,7 +3608,7 @@ char   str[256];
       else
         rsprintf("<b>Error deleting message: status = %d</b></tr>\n", status);
 
-      rsprintf("<input type=hidden name=cmd value=last>\n");
+      rsprintf("<input type=hidden name=cmd value=Last>\n");
       rsprintf("<tr><td bgcolor=%s align=center><input type=submit value=\"Goto last message\"></td></tr>\n", 
                 gt("Cell BGColor"));
       }
@@ -3579,7 +3616,7 @@ char   str[256];
   else
     {
     /* define hidden field for command */
-    rsprintf("<input type=hidden name=cmd value=delete>\n");
+    rsprintf("<input type=hidden name=cmd value=Delete>\n");
 
     rsprintf("<tr><td bgcolor=%s align=center>", gt("Title bgcolor"));
     rsprintf("<font color=%s><b>Are you sure to delete this message?</b></font></td></tr>\n", gt("Title fontcolor"));
@@ -4414,18 +4451,21 @@ int    i, j, n, index, n_attr, n_mail, suppress, status;
   for (i=0 ; i<n_attr ; i++)
     if ((attr_flags[i] & AF_REQUIRED) && *getparam(attr_list[i]) == 0)
       {
-      rsprintf("HTTP/1.1 200 Document follows\r\n");
-      rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
-      if (use_keepalive)
-        {
-        rsprintf("Connection: Keep-Alive\r\n");
-        rsprintf("Keep-Alive: timeout=60, max=10\r\n");
-        }
-      rsprintf("Content-Type: text/html\r\n\r\n");
+      show_standard_header("ELOG error", "");
 
-      rsprintf("<html><head><title>ELog Error</title></head>\n");
-      rsprintf("<body><i>Error: Attribute <b>%s</b> not supplied.</i><p>\n", attr_list[i]);
-      rsprintf("Please go back and enter the <b>%s</b> field.\n", attr_list[i]);
+      rsprintf("<p><p><p><table border=%s width=50%% bgcolor=%s cellpadding=1 cellspacing=0 align=center>", 
+                gt("Border width"), gt("Frame color"));
+      rsprintf("<tr><td><table cellpadding=5 cellspacing=0 border=0 width=100%% bgcolor=%s>\n", gt("Frame color"));
+      rsprintf("<tr><td bgcolor=#FFB0B0 align=center>");
+
+      rsprintf("<i>Error: Attribute <b>%s</b> not supplied.</i><p>\n", attr_list[i]);
+      rsprintf("Please go back and enter the <b>%s</b> field.</tr>\n", attr_list[i]);
+
+      rsprintf("<tr><td bgcolor=%s align=center>", gt("Cell BGColor"));
+      rsprintf("<button type=button onClick=history.back()>Back</button></td></tr>\n");
+                
+
+      rsprintf("</table></td></tr></table>\n");
       rsprintf("</body></html>\n");
       return;
       }
@@ -4456,12 +4496,13 @@ int    i, j, n, index, n_attr, n_mail, suppress, status;
     }
 
   /* compile substitution list */
-  n = build_subst_list(slist, svalue);
+  n = build_subst_list(slist, svalue, NULL);
 
   /* retrieve attributes */
   for (i=0 ; i<n_attr ; i++)
     {
-    strcpy(attrib[i], getparam(attr_list[i]));
+    strncpy(attrib[i], getparam(attr_list[i]), NAME_LENGTH);
+    attrib[i][NAME_LENGTH-1] = 0;
 
     if (!*getparam("edit"))
       {
@@ -4731,7 +4772,8 @@ int    size, i, j, n, msg_status, status, fh, length, first_message, last_messag
 char   str[256], orig_path[256], command[80], ref[256], file_name[256], attrib[MAX_N_ATTR][NAME_LENGTH];
 char   date[80], text[TEXT_SIZE], menu_str[1000],
        orig_tag[80], reply_tag[80], attachment[MAX_ATTACHMENTS][256], encoding[80], att[256], lattr[256];
-char   menu_item[MAX_N_LIST][NAME_LENGTH];
+char   menu_item[MAX_N_LIST][NAME_LENGTH], 
+       slist[MAX_N_ATTR+5][NAME_LENGTH], svalue[MAX_N_ATTR+5][NAME_LENGTH];
 FILE   *f;
 
   n_attr = scan_attributes(logbook);
@@ -5043,7 +5085,10 @@ FILE   *f;
     str[0] = 0;
 
     if (getcfg(logbook, "Page Title", str))
-      strsubst(str, attr_list, attrib, n_attr);
+      {
+      i = build_subst_list(slist, svalue, attrib);
+      strsubst(str, slist, svalue, i);
+      }
     else
       strcpy(str, "ELOG");
 
@@ -5417,8 +5462,32 @@ FILE   *f;
   /* overall table */
   rsprintf("</td></tr></table></td></tr>\n");
 
-  /* add little logo */
-  rsprintf("<center><font size=1 color=#A0A0A0><a href=\"http://midas.psi.ch/elog/\">ELOG V%s</a></font></center>", VERSION);
+  if (getcfg(logbook, "bottom text", str))
+    {
+    FILE *f;
+    char file_name[256], *buf;
+
+    strcpy(file_name, cfg_dir);
+    strcat(file_name, str);
+
+    f = fopen(file_name, "r");
+    if (f != NULL)
+      {
+      fseek(f, 0, SEEK_END);
+      size = TELL(fileno(f));
+      fseek(f, 0, SEEK_SET);
+
+      buf = malloc(size+1);
+      fread(buf, 1, size, f);
+      buf[size] = 0;
+      fclose(f);
+
+      rsputs(buf);
+      }
+    }
+  else
+    /* add little logo */
+    rsprintf("<center><font size=1 color=#A0A0A0><a href=\"http://midas.psi.ch/elog/\">ELOG V%s</a></font></center>", VERSION);
 
   rsprintf("</body></html>\r\n");
 }

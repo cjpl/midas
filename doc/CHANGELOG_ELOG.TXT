@@ -1,3 +1,28 @@
+Version 1.2.2, released November xth, 2001
+==========================================
+
+- Added User level access control with login/logout and password file
+- Added "Remove on reply"
+- Added "options <attribute> = $short_name etc."
+- Fixed wrong numbering when searching in several logbooks
+- Display "no entries found" in search page
+- Added "subst <attribute>" option
+- Cookies are now stored in parameter list
+- Email notification for logbooks with blanks now use %20 for blanks to
+  make link working in email
+- Search result page puts links on number instead of dates
+- Commands wich are not in the menu list cannot be executed now
+- Added "Reverse sort" flag
+- Added "Page title" in [global]
+- Added "Show text" flag for attribute-only logbooks
+- Made elogd.c compile under Cygwin
+- Fixed bug that "p<attribute>" was not working any more
+- Changed "Email <value> =" to "Email <attribute> <value> ="
+- Added "main tab" in [global]
+- Added "bottom text" option
+- Added $logbook variable
+- Added "number attachments" option
+
 Version 1.2.1, released November 6th, 2001
 ==========================================
 
