@@ -12,11 +12,16 @@ of the latest documentation on past and current features. It will also
 mention the wish list documentation on current developments.
 
 
-- <b> Current doc revision: 1.9.3 </b>
+- <b> Current doc revision: 1.9.3-1 </b>
 - <b> Software version: 1.9.3 </b>
 - <b> Latest tarball : <a href=http://midas.triumf.ca/download> 1.9.3-1 </a> </b>
 - <b> Latest RPM : <a href=http://midas.triumf.ca/download> 1.9.2-1  </a> </b>
 
+- <b> Restructured Midas distribution </b>
+  - In the same effort as the documentation, the midas tree and CVS have been  
+  modified. The <a href=http://midas.triumf.ca/download> download area </a> now
+  contains separate directories for doc, addon, publications etc.
+  
 - <b> [DOCUMENTATION in progress] </b>
   - A large effort has been put on the documentation for switching from the
   \b DOC++ to <a href=http://www.stack.nl/~dimitri/doxygen/features.html> Doxygen</a>
@@ -31,8 +36,8 @@ mention the wish list documentation on current developments.
   part of the Midas distribution and can be found under the doc/course/ directory
   as 2 files (part1, part2). The Part 1 describes the basic of the system and its
   implementation, while part 2 lists specific features.
-  <a href=http://midas.triumf.ca/download/part1.pdf> Part1.pdf </a>,
-  <a href=http://midas.triumf.ca/download/part2.pdf> Part2.pdf </a>.
+  <a href=http://midas.triumf.ca/download/course/course_rt03.zip>
+   Part1.pdf, Part2.pdf </a>.
 
 - <b> [1.9.3] </b>
   - Support for ROOT files.
