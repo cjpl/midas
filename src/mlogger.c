@@ -6,6 +6,9 @@
   Contents:     MIDAS logger program
 
   $Log$
+  Revision 1.44  2001/12/05 11:24:57  midas
+  Changed directory display upon startup and ODB directory key generation
+
   Revision 1.43  2001/11/21 08:36:03  midas
   If a history link is invalid, the logger does not crash any more
 
@@ -278,7 +281,7 @@ EVENT_HEADER *pevent;
     status = db_copy(hDB, 0, (char *) (pevent+1), &size, "");
     if (status != DB_TRUNCATED)
       {
-      bm_compose_event(pevent, event_id, MIDAS_MAGIC, buffer_size-sizeof(EVENT_HEADER)-size+1, 
+      bm_compose_event(pevent, event_id, MIDAS_MAGIC, buffer_size-sizeof(EVENT_HEADER)-size+1,
                        run_number);
       log_write(log_chn, pevent);
       free(pevent);
@@ -356,10 +359,10 @@ INT ftp_open(char *destination, FTP_CON **con)
 {
 INT   status;
 short port;
-char  *token, host_name[HOST_NAME_LENGTH], 
+char  *token, host_name[HOST_NAME_LENGTH],
       user[32], pass[32], directory[256], file_name[256];
 
-  /* 
+  /*
   destination should have the form:
   host, port, user, password, directory, run%05d.mid
   */
@@ -416,7 +419,7 @@ char  *token, host_name[HOST_NAME_LENGTH],
 /*---- MIDAS format routines ---------------------------------------*/
 
 INT midas_flush_buffer(LOG_CHN *log_chn)
-{     
+{
 INT         status, size, written;
 MIDAS_INFO  *info;
 
@@ -454,7 +457,7 @@ INT midas_write(LOG_CHN *log_chn, EVENT_HEADER *pevent, INT evt_size)
 {
 INT         status, size_left;
 MIDAS_INFO  *info;
-  
+
   info = (MIDAS_INFO *) log_chn->format_info;
 
   /* check if event fits into buffer */
@@ -493,7 +496,7 @@ MIDAS_INFO  *info;
     memcpy(info->write_pointer, pevent, evt_size);
     info->write_pointer += evt_size;
     }
-  
+
   /* update statistics */
   log_chn->statistics.events_written++;
   log_chn->statistics.bytes_written += pevent->data_size+sizeof(EVENT_HEADER);
@@ -526,7 +529,7 @@ INT          status;
     log_chn->handle = 0;
     return SS_NO_MEMORY;
     }
-  
+
   info->write_pointer = info->buffer;
 
   /* Create device channel */
@@ -570,9 +573,9 @@ INT          status;
         }
       }
 
-#ifdef OS_WINNT       
-    log_chn->handle = (int) CreateFile(log_chn->path, GENERIC_WRITE, FILE_SHARE_READ, NULL, 
-                      CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_WRITE_THROUGH | 
+#ifdef OS_WINNT
+    log_chn->handle = (int) CreateFile(log_chn->path, GENERIC_WRITE, FILE_SHARE_READ, NULL,
+                      CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_WRITE_THROUGH |
                       FILE_FLAG_SEQUENTIAL_SCAN, 0);
 
 #else
@@ -742,7 +745,7 @@ static EVENT_DEF *event_def=NULL;
 INT dump_write(LOG_CHN *log_chn, EVENT_HEADER *pevent, INT evt_size)
 {
 INT         status, size, i, j;
-EVENT_DEF   *event_def;  
+EVENT_DEF   *event_def;
 BANK_HEADER *pbh;
 BANK        *pbk;
 BANK32      *pbk32;
@@ -766,7 +769,7 @@ WORD        bktype;
   else if (pevent->event_id == EVENTID_EOR)
     sprintf(pbuf, "%%ID EOR NR %d\n", pevent->serial_number);
   else
-    sprintf(pbuf, "%%ID %d TR %d NR %d\n", pevent->event_id, pevent->trigger_mask, 
+    sprintf(pbuf, "%%ID %d TR %d NR %d\n", pevent->event_id, pevent->trigger_mask,
                                            pevent->serial_number);
   STR_INC(pbuf,buffer);
 
@@ -804,7 +807,7 @@ WORD        bktype;
 
       if (rpc_tid_size(bktype & 0xFF))
         size /= rpc_tid_size(bktype & 0xFF);
-      
+
       lrs1882        = (LRS1882_DATA *)   pdata;
       lrs1877        = (LRS1877_DATA *)   pdata;
       lrs1877_header = (LRS1877_HEADER *) pdata;
@@ -833,16 +836,16 @@ WORD        bktype;
           db_sprintf(pbuf, pdata, size, i, bktype & 0xFF);
 
         else if ((bktype & 0xFF00) == TID_LRS1882)
-          sprintf(pbuf, "GA %d CH %02d DA %d", 
+          sprintf(pbuf, "GA %d CH %02d DA %d",
             lrs1882[i].geo_addr, lrs1882[i].channel, lrs1882[i].data);
-        
+
         else if ((bktype & 0xFF00) == TID_LRS1877)
           {
           if (i==0) /* header */
-            sprintf(pbuf, "GA %d BF %d CN %d", 
+            sprintf(pbuf, "GA %d BF %d CN %d",
               lrs1877_header[i].geo_addr, lrs1877_header[i].buffer, lrs1877_header[i].count);
           else      /* data */
-            sprintf(pbuf, "GA %d CH %02d ED %d DA %1.1lf", 
+            sprintf(pbuf, "GA %d CH %02d ED %d DA %1.1lf",
               lrs1877[i].geo_addr, lrs1877[i].channel, lrs1877[i].edge, lrs1877[i].data*0.5);
           }
 
@@ -900,7 +903,7 @@ WORD        bktype;
     if (log_chn->type == LOG_TYPE_TAPE)
       status = ss_tape_write(log_chn->handle, buffer, size);
     else
-      status = write(log_chn->handle, buffer, size) == 
+      status = write(log_chn->handle, buffer, size) ==
                      size ? SS_SUCCESS : SS_FILE_ERROR;
 
     /* write event directly to device */
@@ -911,7 +914,7 @@ WORD        bktype;
       status = ftp_send(((FTP_CON *) log_chn->ftp_con)->data, buffer, size) == size ?
                SS_SUCCESS : SS_FILE_ERROR;
     else
-      status = write(log_chn->handle, (char *) (pevent+1), size) == 
+      status = write(log_chn->handle, (char *) (pevent+1), size) ==
                      size ? SS_SUCCESS : SS_FILE_ERROR;
     }
   else
@@ -929,7 +932,7 @@ WORD        bktype;
       status = ftp_send(((FTP_CON *) log_chn->ftp_con)->data, buffer, size) == size ?
                SS_SUCCESS : SS_FILE_ERROR;
     else
-      status = write(log_chn->handle, buffer, size) == 
+      status = write(log_chn->handle, buffer, size) ==
                      size ? SS_SUCCESS : SS_FILE_ERROR;
     }
 
@@ -1017,7 +1020,7 @@ INT dump_log_close(LOG_CHN *log_chn, INT run_number)
 INT ascii_write(LOG_CHN *log_chn, EVENT_HEADER *pevent, INT evt_size)
 {
 INT         status, size, i, j;
-EVENT_DEF   *event_def;  
+EVENT_DEF   *event_def;
 BANK_HEADER *pbh;
 BANK        *pbk;
 BANK32      *pbk32;
@@ -1049,7 +1052,7 @@ WORD        bktype;
   if (pevent->event_id == EVENTID_BOR)
     {
     sprintf(header_line, "%%Run\t");
-    sprintf(data_line, "%d\t", pevent->serial_number);    
+    sprintf(data_line, "%d\t", pevent->serial_number);
     STR_INC(ph, header_line);
     STR_INC(pd, data_line);
 
@@ -1122,7 +1125,7 @@ WORD        bktype;
 
       if (rpc_tid_size(bktype & 0xFF))
         size /= rpc_tid_size(bktype & 0xFF);
-      
+
       lrs1882        = (LRS1882_DATA *)   pdata;
       lrs1877        = (LRS1877_DATA *)   pdata;
       lrs1877_header = (LRS1877_HEADER *) pdata;
@@ -1220,7 +1223,7 @@ WORD        bktype;
     status = ftp_send(((FTP_CON *) log_chn->ftp_con)->data, buffer, size) == size ?
              SS_SUCCESS : SS_FILE_ERROR;
   else
-    status = write(log_chn->handle, buffer, size) == 
+    status = write(log_chn->handle, buffer, size) ==
                    size ? SS_SUCCESS : SS_FILE_ERROR;
 
   /* update statistics */
@@ -1314,17 +1317,17 @@ INT status;
   if (equal_ustring(log_chn->settings.format, "YBOS"))
     {
     log_chn->format = FORMAT_YBOS;
-	  status = ybos_log_open(log_chn, run_number);
+    status = ybos_log_open(log_chn, run_number);
     }
   else if (equal_ustring(log_chn->settings.format, "ASCII"))
     {
     log_chn->format = FORMAT_ASCII;
-	  status = ascii_log_open(log_chn, run_number);
+    status = ascii_log_open(log_chn, run_number);
     }
   else if (equal_ustring(log_chn->settings.format, "DUMP"))
     {
     log_chn->format = FORMAT_DUMP;
-	  status = dump_log_open(log_chn, run_number);
+    status = dump_log_open(log_chn, run_number);
     }
   else /* default format is MIDAS */
     {
@@ -1409,15 +1412,15 @@ double dzero;
       log_chn->statistics.events_written >= log_chn->settings.event_limit)
     {
     stop_requested = TRUE;
-    
-    cm_msg(MTALK, "log_write", "stopping run after having received %d events", 
+
+    cm_msg(MTALK, "log_write", "stopping run after having received %d events",
                                 log_chn->settings.event_limit);
 
     status = cm_transition(TR_STOP, 0, NULL, 0, ASYNC);
     if (status != CM_SUCCESS)
       cm_msg(MERROR, "log_write", "cannot stop run after reaching event limit");
     stop_requested = FALSE;
-    
+
     /* check if autorestart, main loop will take care of it */
     size = sizeof(BOOL);
     flag = FALSE;
@@ -1435,15 +1438,15 @@ double dzero;
       log_chn->statistics.bytes_written >= log_chn->settings.byte_limit)
     {
     stop_requested = TRUE;
-    
-    cm_msg(MTALK, "log_write", "stopping run after having received %1.0lf mega bytes", 
+
+    cm_msg(MTALK, "log_write", "stopping run after having received %1.0lf mega bytes",
                                 log_chn->statistics.bytes_written/1E6);
 
     status = cm_transition(TR_STOP, 0, NULL, 0, ASYNC);
     if (status != CM_SUCCESS)
       cm_msg(MERROR, "log_write", "cannot stop run after reaching bytes limit");
     stop_requested = FALSE;
-    
+
     /* check if autorestart, main loop will take care of it */
     size = sizeof(BOOL);
     flag = FALSE;
@@ -1467,7 +1470,7 @@ double dzero;
     /* remember tape name */
     strcpy(tape_name, log_chn->path);
     stats_hkey = log_chn->stats_hkey;
-    
+
     status = cm_transition(TR_STOP, 0, NULL, 0, ASYNC);
     if (status != CM_SUCCESS)
       cm_msg(MERROR, "log_write", "cannot stop run after reaching tape capacity");
@@ -1485,11 +1488,11 @@ double dzero;
 
     /* zero statistics */
     dzero = izero = 0;
-    db_set_value(hDB, stats_hkey, "Bytes written total", &dzero, 
+    db_set_value(hDB, stats_hkey, "Bytes written total", &dzero,
                  sizeof(dzero), 1, TID_DOUBLE);
-    db_set_value(hDB, stats_hkey, "Files written", &izero, 
+    db_set_value(hDB, stats_hkey, "Files written", &izero,
                  sizeof(izero), 1, TID_INT);
-    
+
     cm_msg(MTALK, "log_write", "Please insert new tape and start new run.");
 
     return status;
@@ -1501,7 +1504,7 @@ double dzero;
     {
     last_checked = actual_time;
 
-    if (ss_disk_free(log_chn->path) < 1E7 && 
+    if (ss_disk_free(log_chn->path) < 1E7 &&
         !stop_requested && !in_stop_transition)
       {
       stop_requested = TRUE;
@@ -1523,21 +1526,23 @@ void log_history(HNDLE hDB, HNDLE hKey, void *info);
 
 INT open_history()
 {
-INT      size, index, i_tag, status, i, j, li, max_event_id;
-INT      n_var, n_tags, n_names;
-HNDLE    hKeyRoot, hKeyVar, hKeyNames, hLinkKey, hVarKey, hKeyEq, hHistKey, hKey;
-DWORD    history;
-TAG      *tag;
-KEY      key, varkey, linkkey, histkey;
-WORD     event_id;
-char     str[256], eq_name[NAME_LENGTH], hist_name[NAME_LENGTH];
-BOOL     single_names;
+  INT      size, index, i_tag, status, i, j, li, max_event_id;
+  INT      n_var, n_tags, n_names;
+  HNDLE    hKeyRoot, hKeyVar, hKeyNames, hLinkKey, hVarKey, hKeyEq, hHistKey, hKey;
+  DWORD    history;
+  TAG      *tag;
+  KEY      key, varkey, linkkey, histkey;
+  WORD     event_id;
+  char     str[256], eq_name[NAME_LENGTH], hist_name[NAME_LENGTH];
+  BOOL     single_names;
 
   /* set direcotry for history files */
   size = sizeof(str);
   str[0] = 0;
-  db_get_value(hDB, 0, "/Logger/History Dir", str, &size, TID_STRING);
-  if (!str[0])
+  status = db_find_key(hDB, 0, "/Logger/History Dir", &hKey);
+  if (status == DB_SUCCESS)
+    db_get_value(hDB, 0, "/Logger/History Dir", str, &size, TID_STRING);
+  else
     db_get_value(hDB, 0, "/Logger/Data Dir", str, &size, TID_STRING);
 
   if (str[0] != 0)
@@ -1555,7 +1560,7 @@ BOOL     single_names;
       db_create_link(hDB, 0, "/History/Links/System/Trigger kB per sec.", "/Equipment/Trigger/Statistics/kBytes per sec.");
     }
 
-  /*---- define equipment events as history ------------------------*/
+ /*---- define equipment events as history ------------------------*/
 
   max_event_id = 0;
 
@@ -1641,7 +1646,7 @@ BOOL     single_names;
           }
 
         if (hKeyNames && varkey.num_values > n_names)
-          cm_msg(MERROR, "open_history", "/Equipment/%s/Settings/%s contains only %d entries", 
+          cm_msg(MERROR, "open_history", "/Equipment/%s/Settings/%s contains only %d entries",
                  eq_name, key.name, n_names);
 
         if (hKeyNames)
@@ -1687,7 +1692,7 @@ BOOL     single_names;
       /* setup hist_log structure for this event */
       hist_log[index].event_id = event_id;
       hist_log[index].hKeyVar = hKeyVar;
-      db_get_record_size(hDB, hKeyVar, 0, &size); 
+      db_get_record_size(hDB, hKeyVar, 0, &size);
       hist_log[index].buffer_size = size;
       hist_log[index].buffer = malloc(size);
       hist_log[index].period = history;
@@ -1699,7 +1704,7 @@ BOOL     single_names;
         }
 
       /* open hot link to variables */
-      status = db_open_record(hDB, hKeyVar, hist_log[index].buffer, 
+      status = db_open_record(hDB, hKeyVar, hist_log[index].buffer,
                               size, MODE_READ, log_history, NULL);
       if (status != DB_SUCCESS)
         cm_msg(MERROR, "open_history", "cannot open variable record for history logging");
@@ -1766,7 +1771,7 @@ BOOL     single_names;
           db_get_key(hDB, hKey, &key);
           cm_msg(MERROR, "open_history", "History link /History/Links/%s/%s is invalid", hist_name, key.name);
           }
-        } 
+        }
 
       if (n_var == 0)
         cm_msg(MERROR, "open_history", "History event %s has no variables in ODB", hist_name);
@@ -1811,7 +1816,7 @@ BOOL     single_names;
         free(tag);
 
         /* define system history */
-  
+
         hist_log[index].event_id = max_event_id;
         hist_log[index].hKeyVar = hHistKey;
         hist_log[index].buffer_size = size;
@@ -1835,7 +1840,7 @@ BOOL     single_names;
         }
       }
     }
-  
+
   return CM_SUCCESS;
 }
 
@@ -1886,7 +1891,7 @@ INT i, size;
     return;
 
   /* check if event size has changed */
-  db_get_record_size(hDB, hKey, 0, &size); 
+  db_get_record_size(hDB, hKey, 0, &size);
   if (size != hist_log[i].buffer_size)
     {
     close_history();
@@ -1905,7 +1910,7 @@ INT   i, size, total_size, status, index;
 KEY   key;
 
   index = (int) info;
-  
+
   /* check if over period */
   if (ss_time() - hist_log[index].last_log < hist_log[index].period)
     return;
@@ -1921,7 +1926,7 @@ KEY   key;
     db_get_data(hDB, hKey, (char *)hist_log[index].buffer+total_size, &size, key.type);
     total_size += size;
     }
-  
+
   if (total_size != hist_log[index].buffer_size)
     {
     close_history();
@@ -1965,7 +1970,7 @@ double dzero;
     /* check online mode */
     online_mode = 0;
     size = sizeof(online_mode);
-    db_get_value(hDB, 0, "/Runinfo/online mode", &online_mode, &size, TID_INT); 
+    db_get_value(hDB, 0, "/Runinfo/online mode", &online_mode, &size, TID_INT);
 
     for (i=0; i<MAX_CHANNELS ; i++)
       {
@@ -2013,9 +2018,9 @@ double dzero;
           dzero = izero = 0;
           log_chn[i].statistics.bytes_written_total = 0;
           log_chn[i].statistics.files_written = 0;
-          db_set_value(hDB, hKeyChannel, "Statistics/Bytes written total", &dzero, 
+          db_set_value(hDB, hKeyChannel, "Statistics/Bytes written total", &dzero,
                        sizeof(dzero), 1, TID_DOUBLE);
-          db_set_value(hDB, hKeyChannel, "Statistics/Files written", &izero, 
+          db_set_value(hDB, hKeyChannel, "Statistics/Files written", &izero,
                        sizeof(izero), 1, TID_INT);
           }
         }
@@ -2040,8 +2045,8 @@ double dzero;
 INT tr_prestart(INT run_number, char *error)
 /********************************************************************\
 
-   Prestart: 
-   
+   Prestart:
+
      Loop through channels defined in /logger/channels.
      Neglect channels with are not active.
      If "filename" contains a "%", substitute it by the
@@ -2082,7 +2087,7 @@ BOOL         write_data, tape_flag = FALSE;
       cm_msg(MERROR, "tr_prestart", error);
       return 0;
       }
-    
+
     status = db_find_key(hDB, 0, "/Logger/Channels", &hKeyRoot);
     if (status != DB_SUCCESS)
       {
@@ -2188,7 +2193,7 @@ BOOL         write_data, tape_flag = FALSE;
       else
         str[0] = 0;
       strcat(str, chn_settings->filename);
-      
+
       /* substitue "%d" by current run number */
       if (strchr(str, '%'))
         sprintf(path, str, run_number);
@@ -2197,7 +2202,7 @@ BOOL         write_data, tape_flag = FALSE;
 
       strcpy(log_chn[index].path, path);
 
-      if (log_chn[index].type == LOG_TYPE_TAPE && 
+      if (log_chn[index].type == LOG_TYPE_TAPE &&
           log_chn[index].statistics.bytes_written_total == 0 &&
           tape_message)
         {
@@ -2229,13 +2234,13 @@ BOOL         write_data, tape_flag = FALSE;
         }
 
       /* open hot link to statistics tree */
-      status = db_open_record(hDB, log_chn[index].stats_hkey, &log_chn[index].statistics, 
+      status = db_open_record(hDB, log_chn[index].stats_hkey, &log_chn[index].statistics,
                               sizeof(CHN_STATISTICS), MODE_WRITE, NULL, NULL);
       if (status != DB_SUCCESS)
         cm_msg(MERROR, "tr_prestart", "cannot open statistics record, probably other logger is using it");
 
       /* open hot link to settings tree */
-      status = db_open_record(hDB, log_chn[index].settings_hkey, &log_chn[index].settings, 
+      status = db_open_record(hDB, log_chn[index].settings_hkey, &log_chn[index].settings,
                               sizeof(CHN_SETTINGS), MODE_READ, NULL, NULL);
       if (status != DB_SUCCESS)
         cm_msg(MERROR, "tr_prestart", "cannot open channel settings record, probably other logger is using it");
@@ -2252,9 +2257,9 @@ BOOL         write_data, tape_flag = FALSE;
       bm_set_cache_size(log_chn[index].buffer_handle, 100000, 0);
 
       /* place event request */
-      status = bm_request_event(log_chn[index].buffer_handle, 
-                                (short) chn_settings->event_id, 
-                                (short) chn_settings->trigger_mask, 
+      status = bm_request_event(log_chn[index].buffer_handle,
+                                (short) chn_settings->event_id,
+                                (short) chn_settings->trigger_mask,
                                 GET_ALL, &log_chn[index].request_id, receive_event);
 
       if (status != BM_SUCCESS)
@@ -2276,9 +2281,9 @@ BOOL         write_data, tape_flag = FALSE;
           }
 
         /* place event request */
-        status = bm_request_event(log_chn[index].msg_buffer_handle, 
-                                  (short) EVENTID_MESSAGE, 
-                                  (short) chn_settings->log_messages, 
+        status = bm_request_event(log_chn[index].msg_buffer_handle,
+                                  (short) EVENTID_MESSAGE,
+                                  (short) chn_settings->log_messages,
                                   GET_ALL, &log_chn[index].msg_request_id, receive_event);
 
         if (status != BM_SUCCESS)
@@ -2308,8 +2313,8 @@ BOOL         write_data, tape_flag = FALSE;
 INT tr_poststop(INT run_number, char *error)
 /********************************************************************\
 
-   Poststop: 
-   
+   Poststop:
+
      Wait until buffers are empty, then close logging channels
 
 \********************************************************************/
@@ -2428,26 +2433,26 @@ char   str[256];
 void receive_event(HNDLE hBuf, HNDLE request_id, EVENT_HEADER *pheader, void *pevent)
 {
 INT i;
-  
+
   /* find logging channel for this request id */
   for (i=0 ; i<MAX_CHANNELS ; i++)
     {
     if (log_chn[i].handle == 0 && log_chn[i].ftp_con == NULL)
-	    continue;
-      
+      continue;
+
     /* write normal events */
     if (log_chn[i].request_id == request_id)
-	    {
+      {
       log_write(&log_chn[i], pheader);
-	    break;
-	    }
+      break;
+      }
 
     /* write messages */
     if (log_chn[i].msg_request_id == request_id)
-	    {
+      {
       log_write(&log_chn[i], pheader);
-	    break;
-	    }
+      break;
+      }
     }
 }
 
@@ -2461,12 +2466,13 @@ BOOL   debug, daemon, save_mode;
 DWORD  last_time_kb = 0;
 DWORD  last_time_hist = 0;
 DWORD  last_time_stat = 0;
+HNDLE  hktemp;
 
   /* get default from environment */
   cm_get_environment(host_name, exp_name);
 
   debug = daemon = save_mode = FALSE;
-  
+
   /* parse command line parameters */
   for (i=1 ; i<argc ; i++)
     {
@@ -2527,16 +2533,16 @@ usage:
 
   /* turn off message display, turn on message logging */
   cm_set_msg_print(MT_ALL, 0, NULL);
-  
+
   /* register transition callbacks */
   if (cm_register_transition(TR_PRESTART, tr_prestart) != CM_SUCCESS)
     {
     cm_msg(MERROR, "main", "cannot register callbacks");
     return 1;
     }
-  
-  cm_register_transition(TR_POSTSTOP, tr_poststop);  
-  
+
+  cm_register_transition(TR_POSTSTOP, tr_poststop);
+
   /* register callback for rewinding tapes */
   cm_register_function(RPC_LOG_REWIND, log_callback);
 
@@ -2549,20 +2555,29 @@ usage:
   /* print startup message */
   size = sizeof(dir);
   db_get_value(hDB, 0, "/Logger/Data dir", dir, &size, TID_STRING);
-  printf("MIDAS logger started. Stop with \"!\"\n");
-  printf("Data directory is %s\n", dir);
+  printf("Log     directory is %s\n", dir);
+  printf("Data    directory is same as Log unless specified in channels/\n");
+
+  /* Alternate History and Elog path */
+  size = sizeof(dir);
+  dir[0] = 0;
+  status = db_find_key(hDB, 0, "/Logger/History dir", &hktemp);
+  if (status == DB_SUCCESS)
+    db_get_value(hDB, 0, "/Logger/History dir", dir, &size, TID_STRING);
+  else
+    sprintf(dir, "same as Log");
+  printf("History directory is %s\n", dir);
 
   size = sizeof(dir);
   dir[0] = 0;
-  db_get_value(hDB, 0, "/Logger/History dir", dir, &size, TID_STRING);
-  if (dir[0])
-    printf("History directory is %s\n", dir);
+  status = db_find_key(hDB, 0, "/Logger/Elog dir", &hktemp);
+  if (status == DB_SUCCESS)
+    db_get_value(hDB, 0, "/Logger/Elog dir", dir, &size, TID_STRING);
+  else
+    sprintf(dir, "same as Log");
+  printf("ELog    directory is %s\n", dir);
 
-  size = sizeof(dir);
-  dir[0] = 0;
-  db_get_value(hDB, 0, "/Logger/Elog dir", dir, &size, TID_STRING);
-  if (dir[0])
-    printf("ELog directory is %s\n", dir);
+  printf("\nMIDAS logger started. Stop with \"!\"\n");
 
   /* initialize ss_getchar() */
   ss_getchar(0);
@@ -2618,7 +2633,7 @@ usage:
       }
 
     } while (msg != RPC_SHUTDOWN && msg != SS_ABORT && ch != '!');
-  
+
   /* reset terminal */
   ss_getchar(TRUE);
 
