@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus communication functions
 
   $Log$
+  Revision 1.11  2002/09/27 11:10:51  midas
+  Changed buffer type
+
   Revision 1.10  2002/09/10 13:13:21  midas
   Remove strobe on timeout
 
@@ -250,7 +253,7 @@ int status;
 
 /*------------------------------------------------------------------*/
 
-int mscb_out(int fd, char *buffer, int len, int bit9)
+int mscb_out(int fd, unsigned char *buffer, int len, int bit9)
 /********************************************************************\
 
   Routine: mscb_out
