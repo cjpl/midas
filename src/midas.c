@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.71  1999/10/08 22:15:03  midas
+  Added ftruncate for LINUX
+
   Revision 1.70  1999/10/08 22:00:30  midas
   Finished editing of elog messages
 
@@ -14387,7 +14390,11 @@ BOOL    bedit;
     free(buffer);
     
     /* truncate file here */
+#ifdef OS_WINNT
     chsize(fh, TELL(fh));
+#else
+    ftruncate(fh, TELL(fh));
+#endif
     }
 
   close(fh);
