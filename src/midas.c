@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.131  2001/04/10 01:17:44  midas
+  Fixed bug in cm_msg_retrieve which screwed up message display in mhttpd
+
   Revision 1.130  2001/02/19 11:29:05  midas
   Set run stop time in ODB before run is stopped in order to have the proper
   value in the runxxx.odb file
@@ -1270,12 +1273,18 @@ HNDLE hDB, hKey;
       *buf_size -= offset;
       }
 
+    memset(message, 0, *buf_size);
     fread(message, 1, *buf_size-1, f);
     message[*buf_size-1] = 0;
     fclose(f);
 
-    /* strip line break */
     p = message+(*buf_size-2);
+
+    /* goto end of buffer */
+    while (p != message && *p == 0)
+      p--;
+
+    /* strip line break */
     while(p != message && (*p == '\n' || *p == '\r'))
       *(p--) = 0;
 
