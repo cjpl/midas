@@ -6,6 +6,9 @@
   Contents:     Web server for remote PAW display
 
   $Log$
+  Revision 1.9  2000/05/16 15:18:12  midas
+  Disable "shell" command
+
   Revision 1.8  2000/05/16 11:27:23  midas
   - Added -d [file] option
   - Check DISPLAY variable
@@ -657,7 +660,7 @@ void interprete(char *path)
 \********************************************************************/
 {
 char   str[10000], str2[256], group_name[256], display_name[256], kumac_name[256];
-char   cur_group[256];
+char   cur_group[256], tmp[256];
 int    fh, i, j, length, status, height;
 
   if (!path[0] && !getparam("submit") && !getparam("cmd"))
@@ -843,11 +846,6 @@ int    fh, i, j, length, status, height;
     return;
     }
 
-  /* restart PAW */
-  if (getparam("restart"))
-    {
-    }
-  
   /* display contents */
   if (strstr(path, ".html") ||
       getparam("submit") || getparam("cmd"))
@@ -895,6 +893,13 @@ int    fh, i, j, length, status, height;
       *strstr(str, ".gif") = 0;
 
     if (equal_ustring(path, "contents.gif"))
+      str[0] = 0;
+
+    /* disable shell command */
+    for (i=0 ; i<(int)strlen(str) ; i++)
+      tmp[i] = toupper(str[i]);
+    tmp[i] = 0;
+    if (strstr(tmp, "SHELL"))
       str[0] = 0;
 
 #ifndef _MSC_VER
@@ -1298,7 +1303,7 @@ int tcp_port = 80, daemon = 0;
     else if (argv[i][0] == '-' && argv[i][1] == 'd')
       {
       _debug = 1;
-      if (argv[i+1][0] && argv[i+1][0] != '-')
+      if (argv[i+1] && argv[i+1][0] != '-')
         strcpy(debug_file, argv[++i]);
       }
     else if (argv[i][0] == '-')
