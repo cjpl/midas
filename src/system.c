@@ -14,6 +14,9 @@
                 Brown, Prentice Hall
 
   $Log$
+  Revision 1.80  2004/01/19 20:19:14  midas
+  Fixed compiler warnings under Windows
+
   Revision 1.79  2004/01/19 17:00:24  olchansk
   change ss_thread_create() and ss_thread_kill() to use midas_thread_t
   include sys/mount.h (moved from midasinc.h to avoid namespace pollution on macosx)
@@ -922,7 +925,7 @@ INT ss_getthandle(void)
    DuplicateHandle(GetCurrentProcess(), GetCurrentThread(),
                    GetCurrentProcess(), &hThread, THREAD_ALL_ACCESS, TRUE, 0);
 
-   return hThread;
+   return (INT)hThread;
 
 #endif                          /* OS_WINNT */
 #ifdef OS_VMS
@@ -1695,7 +1698,7 @@ midas_thread_t ss_thread_create(INT(*thread_func) (void *), void *param)
    status = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE) thread_func,
                          (LPVOID) param, 0, &thread_id);
 
-   return status == NULL ? 0 : thread_id;
+   return status == NULL ?  0 : (midas_thread_t)thread_id;
 
 #elif defined(OS_MSDOS)
 
@@ -2421,23 +2424,24 @@ INT ss_timezone()
 
   Routine: ss_timezone
 
-  Purpose: Returns what?!?
+  Purpose: Returns difference in seconds between coordinated universal
+           time and local time.
 
   Input:
     none
 
   Output:
-    what the heck does it return?!?
+    none
 
   Function value:
-    INT what is it?!?
+    INT    Time difference in seconds
 
 \********************************************************************/
 {
 #ifdef OS_DARWIN
   return 0;
 #else
-  return timezone; /* on Linux, comes from "#include <time.h>". What is it ?!? */
+  return timezone; /* on Linux, comes from "#include <time.h>". */
 #endif
 }
 
