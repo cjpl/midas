@@ -7,6 +7,9 @@
 #  Contents:     Makefile for MIDAS binaries and examples under unix
 #
 #  $Log$
+#  Revision 1.56  2004/08/08 23:28:08  pierre
+#  test commit
+#
 #  Revision 1.55  2004/06/28 15:44:25  olchansk
 #  Do not try to specify "-rpath" on Darwin
 #
@@ -234,7 +237,7 @@ SYSINC_DIR = $(PREFIX)/include
 MIDAS_PREF_FLAGS  =
 
 #
-# Uncomment the next line to build the midas shared library
+# Option to build the midas shared library
 #
 NEED_SHLIB=1
 
