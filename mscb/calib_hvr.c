@@ -6,6 +6,9 @@
   Contents:     Calibration program for HVR-500
 
   $Log$
+  Revision 1.2  2003/09/23 09:24:07  midas
+  Added current calibration
+
   Revision 1.1  2003/09/12 10:07:00  midas
   Initial revision
 
@@ -17,6 +20,27 @@
 #include <stdlib.h>
 #include <math.h>
 #include "mscb.h"
+
+/*------------------------------------------------------------------*/
+
+#define CH_CONTROL      0
+#define CH_VDEMAND      1
+#define CH_VMEAS        2
+#define CH_IMEAS        3
+#define CH_STATUS       4
+#define CH_TRIPCNT      5
+#define CH_RAMPUP       6
+#define CH_RAMPDOWN     7
+#define CH_VLIMIT       8
+#define CH_ILIMIT       9
+#define CH_TRIPMAX     10
+#define CH_ADCGAIN     11
+#define CH_ADCOFS      12
+#define CH_DACGAIN     13
+#define CH_DACOFS      14
+#define CH_CURGAIN     15
+#define CH_CUROFS      16
+#define CH_TEMPC       17
 
 /*------------------------------------------------------------------*/
 
@@ -51,12 +75,21 @@ MSCB_INFO_VAR info;
     return 0;
     }
 
-  mscb_info_variable(fd, adr, 17, &info);
+  mscb_info_variable(fd, adr, CH_TEMPC, &info);
   memset(str, 0, sizeof(str));
   memcpy(str, info.name, 8);
-  if (strcmp(str, "VDAC") != 0)
+  if (strcmp(str, "TempC") != 0)
     {
-    printf("Incorrect software versionon SCS-520. Expect \"VDAC\" on var #17.\n");
+    printf("Incorrect software versionon SCS-520. Expect \"TempC\" on var #17.\n");
+    return 0;
+    }
+
+  /* check temperature */
+  size = sizeof(float);
+  mscb_read(fd, adr, CH_TEMPC, &f, &size);
+  if (f < 10 || f > 50)
+    {
+    printf("Incorrect temperature reading %1.1lf. Check reference voltage and AGND.\n");
     return 0;
     }
 
@@ -66,27 +99,27 @@ MSCB_INFO_VAR info;
 
   /* init variables */
   f = 0;
-  mscb_write(fd, adr,  0, &f, sizeof(float)); /* Vdemand */
-  mscb_write(fd, adr, 11, &f, sizeof(float)); /* ADCofs  */
-  mscb_write(fd, adr, 13, &f, sizeof(float)); /* DACofs  */
-  mscb_write(fd, adr, 15, &f, sizeof(float)); /* CURofs  */
+  mscb_write(fd, adr, CH_VDEMAND, &f, sizeof(float));
+  mscb_write(fd, adr, CH_ADCOFS,  &f, sizeof(float));
+  mscb_write(fd, adr, CH_DACOFS,  &f, sizeof(float));
+  mscb_write(fd, adr, CH_CUROFS,  &f, sizeof(float));
 
   f = 1;
-  mscb_write(fd, adr, 10, &f, sizeof(float)); /* ADCgain */
-  mscb_write(fd, adr, 12, &f, sizeof(float)); /* DACgain */
-  mscb_write(fd, adr, 14, &f, sizeof(float)); /* CURgain */
+  mscb_write(fd, adr, CH_ADCGAIN, &f, sizeof(float));
+  mscb_write(fd, adr, CH_DACGAIN, &f, sizeof(float));
+  mscb_write(fd, adr, CH_CURGAIN, &f, sizeof(float));
 
   /* set current limit to 3mA */
   f = 3000;
-  mscb_write(fd, adr,  8, &f, sizeof(float)); /* Vdemand */
+  mscb_write(fd, adr, CH_ILIMIT, &f, sizeof(float));
 
   /* set demand to 100V */
   f = 100;
-  mscb_write(fd, adr, 1, &f, sizeof(float));
+  mscb_write(fd, adr, CH_VDEMAND, &f, sizeof(float));
   
   /* set CSR to HV on, no regulation */
   d = 1;
-  mscb_write(fd, adr, 0, &d, 1);
+  mscb_write(fd, adr, CH_CONTROL, &d, 1);
 
   printf("Please enter voltage from multimeter: ");
   fgets(str, sizeof(str), stdin);
@@ -94,19 +127,19 @@ MSCB_INFO_VAR info;
 
   /* read ADC */
   size = sizeof(float);
-  mscb_read(fd, adr, 2, &v_adc1, &size);
+  mscb_read(fd, adr, CH_VMEAS, &v_adc1, &size);
 
   printf("HVR-500 ADC reads %1.1lf Volt\n", v_adc1);
 
   if (v_adc1 < 50)
     {
     printf("HVR-500 ADC voltage too low, aborting.\n");
-    exit(0);
+    return 0;
     }
 
   /* set demand to 900V */
   f = 900;
-  mscb_write(fd, adr, 1, &f, sizeof(float));
+  mscb_write(fd, adr, CH_VDEMAND, &f, sizeof(float));
   
   printf("Please enter voltage from multimeter: ");
   fgets(str, sizeof(str), stdin);
@@ -114,14 +147,14 @@ MSCB_INFO_VAR info;
 
   /* read ADC */
   size = sizeof(float);
-  mscb_read(fd, adr, 2, &v_adc2, &size);
+  mscb_read(fd, adr, CH_VMEAS, &v_adc2, &size);
 
   printf("HVR-500 ADC reads %1.1lf\n", v_adc2);
 
   if (v_adc2 < 500)
     {
     printf("HVR-500 ADC voltage too low, aborting.\n");
-    exit(0);
+    return 0;
     }
 
   /* calculate corrections */
@@ -142,19 +175,19 @@ MSCB_INFO_VAR info;
   if (str[0] == 'n')
     {
     printf("Calibration aborted.\n");
-    exit(0);
+    return 0;
     }
 
-  mscb_write(fd, adr, 10, &adc_gain, sizeof(float)); /* ADCgain */
-  mscb_write(fd, adr, 11, &adc_ofs, sizeof(float));  /* ADCofs  */
-  mscb_write(fd, adr, 12, &dac_gain, sizeof(float)); /* DACgain */
-  mscb_write(fd, adr, 13, &dac_ofs, sizeof(float)); /* DACofs  */
+  mscb_write(fd, adr, CH_ADCGAIN, &adc_gain, sizeof(float));
+  mscb_write(fd, adr, CH_ADCOFS,  &adc_ofs, sizeof(float)); 
+  mscb_write(fd, adr, CH_DACGAIN, &dac_gain, sizeof(float));
+  mscb_write(fd, adr, CH_DACOFS,  &dac_ofs, sizeof(float));
 
   /* init variables */
   f = 0;
-  mscb_write(fd, adr, 15, &f, sizeof(float)); /* CURofs  */
+  mscb_write(fd, adr, CH_CUROFS, &f, sizeof(float)); /* CURofs  */
   f = 1;
-  mscb_write(fd, adr, 14, &f, sizeof(float)); /* CURgain */
+  mscb_write(fd, adr, CH_CURGAIN, &f, sizeof(float)); /* CURgain */
 
   printf("\nPlease connect 1MOhm resistor to output,\n");
   printf("connect 1300V to input and press ENTER\n");
@@ -162,19 +195,19 @@ MSCB_INFO_VAR info;
 
   /* set demand to 100V */
   f = 100;
-  mscb_write(fd, adr, 1, &f, sizeof(float));
+  mscb_write(fd, adr, CH_VDEMAND, &f, sizeof(float));
 
   /* wait voltage to settle */
   Sleep(3000);
 
   /* read current */
   size = sizeof(float);
-  mscb_read(fd, adr, 3, &i1, &size);
+  mscb_read(fd, adr, CH_IMEAS, &i1, &size);
   printf("Current at 100V: %1.1lf uA\n", i1);
 
   /* set demand to 900V */
   f = 900;
-  mscb_write(fd, adr, 1, &f, sizeof(float));
+  mscb_write(fd, adr, CH_VDEMAND, &f, sizeof(float));
 
   /* wait voltage to settle */
   Sleep(3000);
@@ -183,7 +216,7 @@ MSCB_INFO_VAR info;
     {
     /* read voltage */
     size = sizeof(float);
-    mscb_read(fd, adr, 2, &v_adc1, &size);
+    mscb_read(fd, adr, CH_VMEAS, &v_adc1, &size);
 
     if (v_adc1 < 890)
       {
@@ -199,7 +232,7 @@ MSCB_INFO_VAR info;
 
   /* read current */
   size = sizeof(float);
-  mscb_read(fd, adr, 3, &i2, &size);
+  mscb_read(fd, adr, CH_IMEAS, &i2, &size);
   printf("Current at 900V: %1.1lf uA\n", i2);
 
   /* calculate corrections */
@@ -215,17 +248,17 @@ MSCB_INFO_VAR info;
   if (str[0] == 'n')
     {
     printf("Calibration aborted.\n");
-    exit(0);
+    return 0;
     }
 
-  mscb_write(fd, adr, 14, &i_gain, sizeof(float));
-  mscb_write(fd, adr, 15, &i_ofs, sizeof(float));
+  mscb_write(fd, adr, CH_CURGAIN, &i_gain, sizeof(float));
+  mscb_write(fd, adr, CH_CUROFS,  &i_ofs, sizeof(float));
 
   /* remove voltage */
   f = 0;
-  mscb_write(fd, adr, 1, &f, sizeof(float));
+  mscb_write(fd, adr, CH_VDEMAND, &f, sizeof(float));
   d = 2;
-  mscb_write(fd, adr, 0, &d, 1);
+  mscb_write(fd, adr, CH_CONTROL, &d, 1);
 
   /* write constants to EEPROM */
   mscb_flash(fd, adr);
