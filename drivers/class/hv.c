@@ -6,6 +6,9 @@
   Contents:     High Voltage Class Driver
 
   $Log$
+  Revision 1.4  2001/04/04 04:14:04  midas
+  Use CMD_SET_CURRENT_LIMIT_ALL, use CMD_SET_ALL when more than 10% of channel have changed
+
   Revision 1.3  2001/01/03 16:20:07  midas
   Added Bus Driver scheme
 
@@ -246,7 +249,7 @@ float delta;
 
 void hv_demand(INT hDB, INT hKey, void *info)
 {
-INT       i, status;
+INT       i, status, n, offset;
 HV_INFO   *hv_info;
 EQUIPMENT *pequipment;
 
@@ -258,18 +261,23 @@ EQUIPMENT *pequipment;
     if (hv_info->demand[i] > hv_info->voltage_limit[i])
       hv_info->demand[i] = hv_info->voltage_limit[i];
 
-  /* check if all channels have same value and no ramping */
-  for (i=1 ; i<hv_info->num_channels ; i++)
-    if (hv_info->demand[i] != hv_info->demand[0] || hv_info->ramp_speed[i] != 0)
-      break;
+  /* check how many channels differ */
+  for (i=1,n=0 ; i<hv_info->num_channels ; i++)
+    if (hv_info->demand[i] != hv_info->demand_mirror[i] && hv_info->ramp_speed[i] == 0)
+      n++;
 
-  if (hv_info->num_channels > 1 && i == hv_info->num_channels)
+  /* if more than 10% differ, use SET_ALL command which is faster in that case */
+  if (n > hv_info->num_channels / 10)
     {
-    /* set all channels to the same value */
-    for (i=0 ; pequipment->driver[i].name[0] ; i++)
-      status = pequipment->driver[i].dd(CMD_SET_ALL, hv_info->dd_info[i], 
+    for (i=0,offset=0 ; pequipment->driver[i].name[0] ; i++)
+      {
+      status = pequipment->driver[i].dd(CMD_SET_ALL, pequipment->driver[i].dd_info, 
                                         pequipment->driver[i].channels, 
-                                        hv_info->demand[0]);
+                                        hv_info->demand+offset);
+
+      offset += pequipment->driver[i].channels;
+      }
+    
     for (i=0 ; i<hv_info->num_channels ; i++)
       {
       if (hv_info->demand[i] != hv_info->demand_mirror[i])
@@ -526,21 +534,25 @@ HV_INFO *hv_info;
     hv_info->channel_offset[i] = offset;
     }
 
-  /* set limits and initial demand values */
+  /* set current limits and initial demand values */
   printf("\n");
-  for (i=0 ; i<hv_info->num_channels ; i++)
+  for (i=0,offset=0 ; pequipment->driver[i].name[0] ; i++)
     {
-    /* print message if many channels */
-    if (hv_info->num_channels > 255) 
-      {
-      printf("Setting channel %d\r", i);
-      cm_yield(0);
-      }
-    DRIVER(i)(CMD_SET_CURRENT_LIMIT, hv_info->dd_info[i], 
-              i-hv_info->channel_offset[i], hv_info->current_limit[i]);
-    DRIVER(i)(CMD_SET, hv_info->dd_info[i], 
-              i-hv_info->channel_offset[i], min(hv_info->demand[i], hv_info->voltage_limit[i]));
-    hv_info->demand_mirror[i] = hv_info->demand[i];
+    for (j=0 ; j<pequipment->driver[i].channels ; j++)
+      hv_info->demand_mirror[offset+j] = 
+        min(hv_info->demand[offset+j], hv_info->voltage_limit[offset+j]);
+
+    DRIVER(i)(CMD_SET_CURRENT_LIMIT_ALL, pequipment->driver[i].dd_info, 
+              pequipment->driver[i].channels, hv_info->current_limit+offset);
+
+    printf("\n");
+
+    status = DRIVER(i)(CMD_SET_ALL, pequipment->driver[i].dd_info, 
+                       pequipment->driver[i].channels, hv_info->demand_mirror+offset);
+    if (status != FE_SUCCESS)
+      return status;
+
+    offset += pequipment->driver[i].channels;
     }
   printf("\n");
 
