@@ -15,6 +15,9 @@
  *  Application :
  *  Author      : Pierre-Andre Amaudruz Data Acquisition Group
  *  $Log$
+ *  Revision 1.6  2002/03/02 01:16:26  pierre
+ *  fix _sx  loop
+ *
  *  Revision 1.5  2002/02/08 06:52:10  pierre
  *  add inhibit_test, interrupt_test
  *
@@ -218,7 +221,7 @@ INLINE void cam16i_sa(const int c, const int n, const int a, const int f,
 int aa;
 
   for (aa=a ; aa<a+r ; aa++)
-    cam16i(c,n,aa,f,*d++);
+    cam16i(c,n,aa,f,(*d)++);
 }
 
 /*--input--------------------------------------------------------*/
@@ -229,7 +232,7 @@ INLINE void cam24i_sa(const int c, const int n, const int a, const int f,
 int aa;
 
   for (aa=a ; aa<a+r ; aa++)
-    cam24i(c,n,aa,f,*d++);
+    cam24i(c,n,aa,f,(*d)++);
 }
 
 /*---------------------------------------------------------------*/
@@ -240,7 +243,7 @@ INLINE void cam16i_sn(const int c, const int n, const int a, const int f,
 int nn;
 
   for (nn=n ; nn<n+r ; nn++)
-    cam16i(c,nn,a,f,*d++);
+    cam16i(c,nn,a,f,(*d)++);
 }
 
 /*---------------------------------------------------------------*/
@@ -251,7 +254,7 @@ INLINE void cam24i_sn(const int c, const int n, const int a, const int f,
 int nn;
 
   for (nn=n ; nn<n+r ; nn++)
-    cam24i(c,nn,a,f,*d++);
+    cam24i(c,nn,a,f,(*d)++);
 }
 
 /*---------------------------------------------------------------*/
