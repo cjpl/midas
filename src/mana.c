@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.116  2004/02/12 08:06:35  midas
+  Added -s parameter for ROOT server
+
   Revision 1.115  2004/01/18 08:25:10  olchansk
   replace PVM with HAVE_PVM to dodge namespace pollution on macosx
 
@@ -604,6 +607,7 @@ struct {
    BOOL daemon;
    INT n_task;
    INT pvm_buf_size;
+   INT root_port;
 } clp;
 
 struct {
@@ -661,6 +665,13 @@ struct {
    'b', "<n>           Buffer size for parallelization in kB.",
           &clp.pvm_buf_size, TID_INT, 1},
 #endif
+
+#ifdef HAVE_ROOT
+   {
+   's', "<port>        Start ROOT histo server under <port>. If port==0, don't start server.",
+          &clp.root_port, TID_INT, 1},
+#endif
+   
    {
    'v', "              Verbose output.", &clp.verbose, TID_BOOL, 0}, {
    'w', "              Produce row-wise N-tuples in outpur .rz file. By\n\
@@ -5490,11 +5501,12 @@ void *server_thread(void *arg)
 void *root_server_loop(void *arg)
 /*
    Server loop listening for incoming network connections on port
-   9090. Starts a searver_thread for each connection.
+   specified by command line option -s. Starts a searver_thread for 
+   each connection.
 */
 {
    printf("Root server listening...\n");
-   TServerSocket *lsock = new TServerSocket(9090, kTRUE);
+   TServerSocket *lsock = new TServerSocket(clp.root_port, kTRUE);
 
    do {
       TSocket *s = lsock->Accept();
@@ -5507,7 +5519,6 @@ void *root_server_loop(void *arg)
       th->Run();
 #endif
    } while (1);
-
 }
 
 /*------------------------------------------------------------------*/
@@ -5570,6 +5581,8 @@ int main(int argc, char *argv[])
    free(rargv[1]);
    free(rargv);
 
+   /* default server port */
+   clp.root_port = 9090;
 #endif
 
    /* get default from environment */
@@ -5745,8 +5758,10 @@ int main(int argc, char *argv[])
 
 #ifdef OS_LINUX
    /* start socket server */
-   TThread *th1 = new TThread("root_server_loop", root_server_loop, NULL);
-   th1->Run();
+   if (clp.root_port) {
+      TThread *th1 = new TThread("root_server_loop", root_server_loop, NULL);
+      th1->Run();
+   }
 #endif
 
 #endif                          /* HAVE_ROOT */
