@@ -6,6 +6,9 @@
   Contents:     Header fiel for MSCB funcions
 
   $Log$
+  Revision 1.24  2003/05/12 13:49:17  midas
+  Added address check for SET_ADDR command
+
   Revision 1.23  2003/05/12 10:30:45  midas
   Fixed name collisions with midas library
 
@@ -224,6 +227,7 @@ typedef struct {
 #define MSCB_FORMAT_ERROR  6
 #define MSCB_NO_MEM        7
 #define MSCB_SUBM_ERROR    8
+#define MSCB_ADDR_EXISTS   9
 
 /*---- Byte and Word swapping big endian <-> little endian ---------*/
 #define WORD_SWAP(x) { unsigned char _tmp;                               \
