@@ -10,6 +10,9 @@
   date        by    modification
   ---------   ---   ------------------------------------------------
 *  $Log$
+*  Revision 1.21  2003/04/14 12:59:51  midas
+*  Added 'compression' in channel settings
+*
 *  Revision 1.20  2003/04/07 23:55:55  olchansk
 *  add c++ wrappers
 *
@@ -361,7 +364,6 @@ INT   EXPRT yb_any_event_swap (INT data_fmt, void * pevent);
 INT   EXPRT yb_any_event_get (INT data_fmt, void ** pevent, DWORD * psize);
 
 /* Bank manipulation */
-INT   EXPRT bk_find (BANK_HEADER * pmbh, char * bkname, DWORD * bklen, DWORD * bktype, void **pbk);
 void  EXPRT ybk_init        (DWORD *pevent);
 void  EXPRT ybk_create      (DWORD *pevent, char *bkname, DWORD btype, void *pbkdat);
 INT   EXPRT ybk_close       (DWORD *pevent, void *pbkdat);
