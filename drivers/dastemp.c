@@ -6,6 +6,9 @@
   Contents:     DAS-TEMP (Keithley) Device Driver
 
   $Log$
+  Revision 1.3  1999/01/14 15:57:53  midas
+  Adapted to new "info" structure
+
   Revision 1.2  1998/10/12 12:18:56  midas
   Added Log tag in header
 
@@ -19,13 +22,9 @@
 
 /*---- globals -----------------------------------------------------*/
 
-#define MAX_DEVICES 2
-
 typedef struct {
   unsigned short io_base;
 } DASTEMP_SETTINGS;
-
-DASTEMP_SETTINGS dastemp_settings[MAX_DEVICES];
 
 #define DASTEMP_SETTINGS_STR "\
 IO Base = WORD : 0x220\n\
@@ -33,10 +32,15 @@ IO Base = WORD : 0x220\n\
 
 /*---- device driver routines --------------------------------------*/
 
-INT dastemp_init(HNDLE hKey, INT index, INT channels)
+INT dastemp_init(HNDLE hKey, void **psettings, INT channels)
 {
 int   status, size;
 HNDLE hDB;
+DASTEMP_SETTINGS *settings;
+
+  /* allocate info structure */
+  settings = calloc(1, sizeof(DASTEMP_SETTINGS));
+  *psettings = settings;
 
   cm_get_experiment_database(&hDB, NULL);
 
@@ -45,8 +49,8 @@ HNDLE hDB;
   if (status != DB_SUCCESS)
     return FE_ERR_ODB;
 
-  size = sizeof(dastemp_settings[index]);
-  db_get_record(hDB, hKey, &dastemp_settings[index], &size, 0);
+  size = sizeof(DASTEMP_SETTINGS);
+  db_get_record(hDB, hKey, settings, &size, 0);
 
 #ifdef OS_WINNT
   /* open IO address space */
@@ -57,7 +61,7 @@ HNDLE hDB;
     return FE_ERR_HW;
     }
 
-  ss_directio_give_port(dastemp_settings[index].io_base, dastemp_settings[index].io_base+0x0F);
+  ss_directio_give_port(settings->io_base, settings->io_base+0x0F);
   ss_directio_exit();
 #endif
 
@@ -66,17 +70,17 @@ HNDLE hDB;
 
 /*------------------------------------------------------------------*/
 
-#define CT0     (unsigned short) (dastemp_settings[index].io_base+0x00)
-#define CT1     (unsigned short) (dastemp_settings[index].io_base+0x01)
-#define CT2     (unsigned short) (dastemp_settings[index].io_base+0x02)
-#define CTC     (unsigned short) (dastemp_settings[index].io_base+0x03)
-#define STATUS  (unsigned short) (dastemp_settings[index].io_base+0x04)
-#define INTR    (unsigned short) (dastemp_settings[index].io_base+0x05)
-#define LCZS    (unsigned short) (dastemp_settings[index].io_base+0x06)
+#define CT0     (unsigned short) (settings->io_base+0x00)
+#define CT1     (unsigned short) (settings->io_base+0x01)
+#define CT2     (unsigned short) (settings->io_base+0x02)
+#define CTC     (unsigned short) (settings->io_base+0x03)
+#define STATUS  (unsigned short) (settings->io_base+0x04)
+#define INTR    (unsigned short) (settings->io_base+0x05)
+#define LCZS    (unsigned short) (settings->io_base+0x06)
 
 /*------------------------------------------------------------------*/
 
-INT dastemp_get(INT index, INT channel, float *pvalue)
+INT dastemp_get(DASTEMP_SETTINGS *settings, INT channel, float *pvalue)
 {
 unsigned short int data;
 double             temp;
@@ -148,8 +152,9 @@ INT dastemp(INT cmd, ...)
 {
 va_list argptr;
 HNDLE   hKey;
-INT     channel, status, index;
+INT     channel, status;
 float   *pvalue;
+void    *info;
 
   va_start(argptr, cmd);
   status = FE_SUCCESS;
@@ -158,16 +163,16 @@ float   *pvalue;
     {
     case CMD_INIT:
       hKey = va_arg(argptr, HNDLE);
-      index = va_arg(argptr, INT);
+      info = va_arg(argptr, void *);
       channel = va_arg(argptr, INT);
-      status = dastemp_init(hKey, index, channel);
+      status = dastemp_init(hKey, info, channel);
       break;
 
     case CMD_GET:
-      index = va_arg(argptr, INT);
+      info = va_arg(argptr, void *);
       channel = va_arg(argptr, INT);
       pvalue  = va_arg(argptr, float*);
-      status = dastemp_get(index, channel, pvalue);
+      status = dastemp_get(info, channel, pvalue);
       break;
     
     default:
