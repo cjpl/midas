@@ -5,6 +5,9 @@
   Contents:     Disk to Tape copier for background job.
 
   $Log$
+  Revision 1.33  2003/06/12 18:35:51  pierre
+  remove ss_tape_get_blockn
+
   Revision 1.32  2003/05/09 07:40:04  midas
   Added extra parameter to cm_get_environment
 
@@ -293,47 +296,6 @@ INT  lazy_log_update(INT action, INT run, char * label, char * file, DWORD rm);
 int  lazy_remove_entry(INT ch, LAZY_INFO *, int run);
 void lazy_settings_hotlink(HNDLE hDB, HNDLE hKey, void * info);
 void lazy_maintain_check(HNDLE hKey, LAZY_INFO * pLall);
-
-INT ss_tape_get_blockn(INT channel)
-/********************************************************************\
-Routine: ss_tape_get_blockn
-Purpose: Ask the tape channel for the present block number
-Input:
-INT   *channel          Channel identifier
-Output:
-INT  blockn             Present block number
-Function value:
-SS_SUCCESS              Successful completion
-errno                   Error number
-\********************************************************************/
-{
-  INT    status;
-  
-#ifdef OS_UNIX
-  struct mtpos arg;
-  
-  cm_enable_watchdog(FALSE);
-  status = ioctl(channel, MTIOCPOS, &arg);
-  cm_enable_watchdog(TRUE);
-  if (status < 0)
-  {
-    cm_msg(MERROR, "ss_tape_get_blockn", strerror(errno));
-    return errno;
-  }
-  
-  //  printf("Tape is at block number %d\n",arg.mt_blkno);
-  return (arg.mt_blkno);
-#endif /* OS_UNIX */
-  
-#ifdef OS_WINNT
-  TAPE_GET_MEDIA_PARAMETERS media;
-  INT size;
-  /* I'm not sure the partition count corresponds to the block count */
-  status = GetTapeParameters((HANDLE) channel, GET_TAPE_MEDIA_INFORMATION 
-    , &size, &media);
-  return (media.PartitionCount);
-#endif 
-}
 
 /*------------------------------------------------------------------*/
 INT ss_run_extract(char * name)
