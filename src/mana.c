@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.99  2003/10/03 18:57:40  pierre
+  fix error msg
+
   Revision 1.98  2003/05/09 07:40:04  midas
   Added extra parameter to cm_get_environment
 
@@ -3433,7 +3436,7 @@ TBranch     *branch;
     /* check if all branches have been filled */
     for (i=0 ; i<et->n_branch ; i++)
       if (!et->branch_filled[i])
-        cm_msg(MERROR, "root_write", "Bank %s booked but not received, tree cannot be filled", et->branch_name[i*NAME_LENGTH]);
+        cm_msg(MERROR, "root_write", "Bank %s booked but not received, tree cannot be filled", et->branch_name+(i*NAME_LENGTH));
 
     /* fill tree */
     if (file != NULL && !exclude_all)
