@@ -7,6 +7,9 @@
                 linked with user code to form a complete frontend
 
   $Log$
+  Revision 1.31  2000/11/14 08:30:03  midas
+  SLOW events are not any more sent to the ODB when the history is on
+
   Revision 1.30  2000/11/06 10:10:23  midas
   Flush events for set-ups with only non-periodic events
 
@@ -771,9 +774,10 @@ INT            i;
 #endif
         }
 
-      /* send event to ODB */
-      if (eq_info->read_on & RO_ODB ||
-          eq_info->history > 0)
+      /* send event to ODB if RO_ODB flag is set or history is on. Do not
+         send SLOW events since the class driver does that */
+      if ((eq_info->read_on & RO_ODB) ||
+          (eq_info->history > 0 && (eq_info->eq_type & ~EQ_SLOW)))
         {
         update_odb(pevent, equipment[i].hkey_variables, equipment[i].format);
         equipment[i].odb_out++;
