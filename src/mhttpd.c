@@ -6,6 +6,11 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
+  Revision 1.32  1999/09/15 08:05:09  midas
+  - Added "last" button
+  - Fixed bug that only partial file attachments were returned
+  - Corrected query title, since dates are sorted beginning with oldest
+
   Revision 1.31  1999/09/14 15:15:44  midas
   Moved el_xxx funtions into midas.c
 
@@ -1440,7 +1445,7 @@ struct tm tms;
 
   /*---- table titles ----*/
 
-  rsprintf("<tr><th>Date<br>beginning with newest<th>Run<th>Author<th>Type<th>System<th>Subject<th>Text</tr>\n");
+  rsprintf("<tr><th>Date<th>Run<th>Author<th>Type<th>System<th>Subject<th>Text</tr>\n");
 
   /*---- do query ----*/
 
@@ -1940,9 +1945,14 @@ KEY   key;
   /*---- check next/previous message -------------------------------*/
 
   last_message = first_message = FALSE;
-  if (equal_ustring(command, "next") || equal_ustring(command, "previous"))
+  if (equal_ustring(command, "next") || equal_ustring(command, "previous") ||
+      equal_ustring(command, "last"))
     {
     strcpy(orig_path, path);
+
+    if (equal_ustring(command, "last"))
+      path[0] = 0;
+
     do
       {
       strcat(path, equal_ustring(command, "next") ? "+1" : "-1");
@@ -2071,6 +2081,7 @@ KEY   key;
   rsprintf("<tr><td colspan=2 bgcolor=#E0E0E0>");
   rsprintf("<input type=submit name=cmd value=Next>\n");
   rsprintf("<input type=submit name=cmd value=Previous>\n");
+  rsprintf("<input type=submit name=cmd value=Last>\n");
   rsprintf("<i>Check a category to browse only entries from that category</i>\n");
   rsprintf("</tr>\n\n");
 
@@ -4531,7 +4542,7 @@ INT                  last_time=0;
       if (return_length == 0)
         return_length = strlen(return_buffer)+1;
 
-      send(sock, return_buffer, return_length, 0);
+      send_tcp(sock, return_buffer, return_length, 0);
 
   error:
 
