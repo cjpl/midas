@@ -170,3 +170,21 @@ bt_error_t status;
 
   return status == BT_SUCCESS ? 1 : (int) status;
 }
+
+/*------------------------------------------------------------------*/
+
+int vme_ioctl(int vh, int request, int *param)
+{
+  switch (request)
+    {
+    case IOCTL_AMOD_SET:
+      bt_set_info((bt_desc_t)vh, BT_INFO_DMA_AMOD, *param);
+      bt_set_info((bt_desc_t)vh, BT_INFO_PIO_AMOD, *param);
+      bt_set_info((bt_desc_t)vh, BT_INFO_MMAP_AMOD, *param);
+	    break;
+    case IOCTL_AMOD_GET:
+      bt_get_info((bt_desc_t)vh, BT_INFO_DMA_AMOD, param);
+	    break;
+    }
+  return SUCCESS;
+}
