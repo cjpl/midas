@@ -7,6 +7,9 @@
                 with bt617.c
                 
   $Log$
+  Revision 1.4  2001/04/05 05:51:36  midas
+  Added VME_LM
+
   Revision 1.3  2000/09/28 11:12:15  midas
   Added DMA flag to vme_read/vme_write
 
@@ -51,8 +54,9 @@ typedef unsigned long int  DWORD;
 #define VME_A24D32    4
 #define VME_A32D16    5
 #define VME_A32D32    6
-#define VME_RAMD16    7
+#define VME_RAMD16    7 /* RAM memory of adapter */
 #define VME_RAND32    8
+#define VME_LM        9 /* local memory mapped to VME */
 
 /*---- function declarations ---------------------------------------*/
 
