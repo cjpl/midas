@@ -6,6 +6,9 @@
   Contents:     Kernel mode driver for Hytec 1331 CAMAC interface
 
   $Log$
+  Revision 1.4  2001/10/03 14:57:22  midas
+  Check IO address region before allocation
+
   Revision 1.3  2001/10/03 14:51:30  midas
   Return -ENODEV if interface not found
 
@@ -651,6 +654,7 @@ static struct file_operations khyt1331_fops = {
 int init_module(void)
 {
 struct pci_dev *dev;
+int err;
 
   printk(KERN_INFO "khyt1331: start initialization\n");
 
@@ -670,6 +674,13 @@ struct pci_dev *dev;
     printk(KERN_INFO "khyt1331: Found 5331 card at %X, irq %d\n", io_base, irq);
 
     /* request IO ports */
+
+    if ((err = check_region(io_base, 0x40)) < 0)
+      {
+      printk(KERN_INFO "khyt1331: Cannot request IO address %X\n", io_base);
+      return err;
+      }
+
     request_region(io_base, 0x40, "khyt1331");
 
     /* request interrupt */
