@@ -9,6 +9,9 @@
                 for SCS-210 RS232 node
 
   $Log$
+  Revision 1.10  2004/03/05 12:27:46  midas
+  Added input/output strings
+
   Revision 1.9  2004/01/07 12:52:23  midas
   Changed indentation
 
@@ -46,7 +49,8 @@ extern bit FREEZE_MODE;
 extern bit DEBUG_MODE;
 
 char code node_name[] = "SCS-210";
-bit terminal_mode;
+bit terminal_mode, output_flag;
+unsigned char n_in;
 
 /*---- Define channels and configuration parameters returned to
        the CMD_GET_INFO command                                 ----*/
@@ -54,14 +58,16 @@ bit terminal_mode;
 /* data buffer (mirrored in EEPROM) */
 
 struct {
-   float value;
+   char output[32];
+   char input[32];
    unsigned char baud;
-} user_data;
+} idata user_data;
 
 MSCB_INFO_VAR code variables[] = {
-   1, UNIT_ASCII, 0, 0, 0, "RS232", 0,
-   4, UNIT_UNDEFINED, 0, 0, MSCBF_FLOAT, "Value", &user_data.value,
-   1, UNIT_BAUD, 0, 0, 0, "Baud", &user_data.baud,
+   1,  UNIT_ASCII,  0, 0, 0, "RS232", 0,
+   32, UNIT_STRING, 0, 0, 0, "Output", &user_data.output[0],
+   32, UNIT_STRING, 0, 0, 0, "Input", &user_data.input[0],
+   1,  UNIT_BAUD,   0, 0, 0, "Baud", &user_data.baud,
    0
 };
 
@@ -83,8 +89,6 @@ void user_init(unsigned char init)
       user_data.baud = 1;       // 9600 by default
 
    uart_init(1, user_data.baud);
-
-   // DEBUG_MODE = 1;
 }
 
 /*---- User write function -----------------------------------------*/
@@ -96,11 +100,12 @@ extern unsigned char xdata in_buf[300], out_buf[300];
 
 char idata obuf[8];
 
-void user_write(unsigned char channel) reentrant
+void user_write(unsigned char index) reentrant
 {
    unsigned char i, n;
 
-   if (channel == 0) {
+   /* manage terminal functions */
+   if (index == 0) {
       if (in_buf[2] == 27)
          terminal_mode = 0;
       else if (in_buf[2] == 0)
@@ -111,6 +116,12 @@ void user_write(unsigned char channel) reentrant
             putchar(in_buf[i + 2]);
       }
    }
+
+   if (index == 1) 
+      output_flag = 1;
+
+   if (index == 3)
+      uart_init(1, user_data.baud);
 }
 
 /*---- User read function ------------------------------------------*/
@@ -159,13 +170,36 @@ unsigned char user_func(unsigned char *data_in, unsigned char *data_out)
 
 void user_loop(void)
 {
-   char idata str[32];
+   char c;
    unsigned char i;
 
-   if (!terminal_mode) {
-      i = gets_wait(str, sizeof(str), 200);
+   if (output_flag)
+      {
+      output_flag = 0;
+      
+      /* delete input string */
+      n_in = 0;
+      for (i=0 ; i<32 ; i++)
+         user_data.input[i] = 0;
 
-      if (i > 2)
-         user_data.value = atof(str);
+      /* send output string */
+      for (i=0 ; i<32 ; i++) {
+         if (!user_data.output[i])
+            break;
+         putchar(user_data.output[i]);
+         flush();
+
+         /* delay for slow modules */
+         delay_ms(10);
+      }
    }
+
+   if (!terminal_mode) {
+      c = getchar_nowait();
+      if (c != -1 && n_in < 32) {
+         user_data.input[n_in++] = c;
+         led_blink(1, 1, 50);
+      }
+   }
+
 }
