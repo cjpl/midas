@@ -58,7 +58,7 @@ INLINE void cam_crate_clear(const int c){}
 INLINE void cam_crate_zinit(const int c){}
 INLINE void cam_lam_enable(const int c, const int n){}
 INLINE void cam_lam_disable(const int c, const int n){}
-INLINE void cam_lam_read(const int c, int *lam){*lam=1;}
+INLINE void cam_lam_read(const int c, DWORD *lam){*lam=1;}
 INLINE void cam_lam_clear(const int c, const int n){}
 INLINE void came_cn(int *ext, const int b, const int c, const int n, const int a){}
 INLINE void came_ext(const int ext, int *b, int *c, int *n, int *a){}
