@@ -14,6 +14,9 @@
                 Brown, Prentice Hall
 
   $Log$
+  Revision 1.49  1999/11/09 13:19:25  midas
+  Fixed bug
+
   Revision 1.48  1999/11/09 13:17:27  midas
   Added secure ODB feature
 
@@ -698,8 +701,7 @@ INT ss_shm_unprotect(HNDLE handle, void **adr)
 
   if ( (*adr) == (void *) (-1) )
     {
-    sprintf(str, "shmat() failed, errno = %d", errno);
-    cm_msg(MERROR, "ss_shm_unprotect", str);
+    cm_msg(MERROR, "ss_shm_unprotect", "shmat() failed, errno = %d", errno);
     return SS_NO_MEMORY;
     }
 
