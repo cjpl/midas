@@ -9,6 +9,9 @@
                 for HVR_300 High Voltage Regulator
 
   $Log$
+  Revision 1.12  2005/02/16 13:14:50  ritt
+  Version 1.8.0
+
   Revision 1.11  2004/12/21 15:12:33  midas
   Implemented voltage divider unbalance calibration
 
@@ -260,9 +263,9 @@ void user_init(unsigned char init)
    for (i=0 ; i<N_HV_CHN ; i++)
       chn_bits[i] = DEMAND_CHANGED | CUR_LIMIT_CHANGED;
 
-   /* LED normally off (non-inverted) */
+   /* LED normally off (inverted) */
    for (i=0 ; i<N_HV_CHN ; i++)
-      led_mode(i, 0);
+      led_mode(i, 1);
 }
 
 /*---- User write function -----------------------------------------*/
@@ -580,7 +583,7 @@ void set_hv(unsigned char channel, float value) reentrant
    } else
       user_data[channel].status &= ~STATUS_VLIMIT;
 
-   led_mode(channel, value > 10);
+   led_mode(channel, !(value > 10));
 
    /* apply correction */
    value = value * user_data[channel].dac_gain + user_data[channel].dac_offset;

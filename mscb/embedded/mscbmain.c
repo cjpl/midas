@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol main program
 
   $Log$
+  Revision 1.59  2005/02/16 13:14:50  ritt
+  Version 1.8.0
+
   Revision 1.58  2005/01/07 09:29:05  midas
   Version 1.7.a
 
@@ -184,6 +187,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <intrins.h>
 #include "mscb.h"
 
 /* GET_INFO attributes */
@@ -240,7 +244,7 @@ unsigned char idata crc_code, addr_mode, n_variables, _flkey=0;
 
 unsigned char idata _cur_sub_addr, _var_size;
 
-#ifdef SCS_1000
+#if defined(SCS_1000) || defined(SCS_1001)
 unsigned char var_to_send = 0xFF;
 #endif
 
@@ -443,7 +447,7 @@ void setup(void)
    /* initialize UART(s) */
    uart_init(0, BD_115200);
 
-#ifdef SCS_1000
+#if defined(SCS_1000) || defined(scs_1001)
    uart_init(1, BD_115200);
 #endif
 
@@ -553,6 +557,7 @@ void serial_int(void) interrupt 4 using 1
          out_buf_empty = 1;     // and set flag
          RS485_ENABLE = 0;      // disable RS485 driver
       } else {
+         DELAY_US(INTERCHAR_DELAY);
          SBUF0 = out_buf[i_out];        // send character
       }
    }
@@ -600,6 +605,8 @@ void serial_int(void) interrupt 4 using 1
          return;                // return if CRC code does not match
       }
 
+      DELAY_US(INTERCHAR_DELAY);
+
       interprete();             // interprete command
       i_in = 0;
    }
@@ -623,6 +630,7 @@ static void send_byte(unsigned char d, unsigned char data * crc)
 
    if (crc)
       *crc = crc8_add(*crc, d);
+   DELAY_US(INTERCHAR_DELAY);
    SBUF0 = d;
    while (!TI0);
    TI0 = 0;
@@ -637,6 +645,7 @@ static void send_obuf(unsigned char n)
    n_out = n;
    out_buf_empty = 0;
    RS485_ENABLE = 1;
+   DELAY_US(INTERCHAR_DELAY);
    SBUF0 = out_buf[0];
 }
 
@@ -973,9 +982,10 @@ void interprete(void)
 
          user_write(ch);
 
-#ifdef SCS_1000
+#if defined(SCS_1000) || defined(SCS_1001)
          /* mark variable to be send in main loop */
-         var_to_send = ch;
+         if (variables[ch].flags & MSCBF_REMOUT)
+            var_to_send = ch;
 #endif
 
          if (cmd == CMD_WRITE_ACK) {
@@ -997,7 +1007,7 @@ void interprete(void)
 
 /*------------------------------------------------------------------*/
 
-#ifdef SCS_1000
+#if defined(SCS_1000) || defined(SCS_1001)
 
 static unsigned short xdata last_addr = -1;
 static unsigned char xdata uart1_buf[10];
@@ -1112,7 +1122,7 @@ unsigned char size;
    led_blink(1, 1, 50);
 }
 
-#endif // SCS_1000
+#endif // SCS_1000/1
 
 /*------------------------------------------------------------------*/
 
@@ -1148,9 +1158,11 @@ void upgrade()
 
    RS485_ENABLE = 1;
    TI0 = 0;
+   DELAY_US(INTERCHAR_DELAY);
    SBUF0 = CMD_ACK;
    while (TI0 == 0);
    TI0 = 0;
+   DELAY_US(INTERCHAR_DELAY);
    SBUF0 = 0; // dummy CRC
    while (TI0 == 0);
    RS485_ENABLE = 0;
@@ -1255,9 +1267,11 @@ void upgrade()
             /* send ACK after each 60 bytes */
             RS485_ENABLE = 1;
             TI0 = 0;
+            DELAY_US(INTERCHAR_DELAY);
             SBUF0 = CMD_ACK;
             while (TI0 == 0);
             TI0 = 0;
+            DELAY_US(INTERCHAR_DELAY);
             SBUF0 = 0;
             while (TI0 == 0);
             RS485_ENABLE = 0;
@@ -1323,9 +1337,11 @@ void upgrade()
       /* return acknowledge */
       RS485_ENABLE = 1;
       TI0 = 0;
+      DELAY_US(INTERCHAR_DELAY);
       SBUF0 = CMD_ACK;
       while (TI0 == 0);
       TI0 = 0;
+      DELAY_US(INTERCHAR_DELAY);
       SBUF0 = crc;
       while (TI0 == 0);
       RS485_ENABLE = 0;
@@ -1353,7 +1369,7 @@ void yield(void)
    rs232_output();
 
    /* manage remote variables on SCS-1000 */
-#ifdef SCS_1000
+#if defined(SCS_1000) || defined(SCS_1001)
    poll_remote_vars();
 
    if (var_to_send != 0xFF) {

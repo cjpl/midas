@@ -6,6 +6,9 @@
   Contents:     Various utility functions for MSCB protocol
 
   $Log$
+  Revision 1.48  2005/02/16 13:14:50  ritt
+  Version 1.8.0
+
   Revision 1.47  2005/01/07 09:29:05  midas
   Version 1.7.a
 
@@ -274,7 +277,7 @@ void serial_int1(void) interrupt 20 using 2
 {
    if (SCON1 & 0x02) {          // TI1
 
-   #ifdef SCS_220
+#ifdef SCS_220
       if (sbuf_wp == sbuf_rp)
          RS485_SEC_ENABLE = 0;
 #endif
@@ -418,7 +421,7 @@ void uart1_init_buffer()
 
 /*------------------------------------------------------------------*/
 
-#elif defined(SCS_1000)  // SCS_1000 uses UAR0 & UART1
+#elif defined(SCS_1000) || defined(SCS_1001) // SCS_1000/1 uses UAR0 & UART1
 
 bit ti1_shadow = 1;
 unsigned char n_recv;
@@ -450,7 +453,7 @@ void serial_int1(void) interrupt 20 using 2
 
 /*------------------------------------------------------------------*/
 
-#ifdef SCS_1000
+#if defined(SCS_1000) || defined (SCS_1001)
 
 unsigned char uart1_send(char *buffer, int size, unsigned char bit9)
 {
@@ -1365,7 +1368,11 @@ bit lcd_present;
 
 #define LCD P2                  // LCD display connected to port2
 
-#ifdef SCS_1000
+#if defined(SCS_1000)
+sbit LCD_RS  = LCD ^ 3;
+sbit LCD_R_W = LCD ^ 2;
+sbit LCD_E   = LCD ^ 1;
+#elif defined (SCS_1001)
 sbit LCD_RS  = LCD ^ 3;
 sbit LCD_R_W = LCD ^ 2;
 sbit LCD_E   = LCD ^ 1;
@@ -1431,12 +1438,66 @@ lcd_out(unsigned char d, bit df)
 
 /*------------------------------------------------------------------*/
 
+void lcd_nibble(unsigned char d)
+{
+   LCD &= ~(0xF0);
+   LCD |= (d & 0xF0);        // high nibble
+   LCD_E = 1;
+   delay_us(1);
+   LCD_E = 0;
+   delay_us(1);
+
+   LCD &= ~(0xF0);
+   LCD |= ((d << 4) & 0xF0); // low nibble
+   LCD_E = 1;
+   delay_us(1);
+   LCD_E = 0;
+   delay_us(1);
+
+   delay_us(100);
+}
+
 void lcd_setup()
 {
    unsigned i=0;
 
    SFRPAGE = CONFIG_PAGE;
-   P2MDOUT = 0xFF;
+   P2MDOUT = 0xFF;             // all push-pull
+
+#ifdef SCS_1001  // 4-line LCD display with KS0078 controller
+
+   LCD &= ~(0xFE);
+   LCD |= 0x20;  // set 4-bit interface
+   LCD_E = 1;
+   delay_us(1);
+   LCD_E = 0;
+   delay_ms(1);
+   lcd_nibble(0x20); // function set: 4-bit, RE=0
+
+   // test if LCD present
+
+   LCD = LCD | 0xF0;            // data input
+   P2MDOUT = 0x0F;              
+   LCD_RS = 0;                  // select BF        
+   LCD_R_W = 1;
+   delay_us(1);
+   LCD_E = 1;
+   delay_us(100);               // let signal settle
+   if (LCD_DB7) {
+      lcd_present = 0;
+      return;
+   }
+
+   lcd_present = 1;
+
+   lcd_out(0x24, 0); // function set: 4-bit, RE=1
+   lcd_out(0x09, 0); // ext function set: 4-line display
+   lcd_out(0x20, 0); // function set: 4-bit, RE=0
+   lcd_out(0x0C, 0); // display on
+   lcd_out(0x01, 0); // clear display
+   lcd_out(0x06, 0); // entry mode: incrementing
+
+#else // 2-line LCD display with KS0066 controller 
 
    LCD &= ~(0xFE);
    delay_ms(15);
@@ -1460,8 +1521,8 @@ void lcd_setup()
    LCD_E = 1;
    delay_us(1);
    LCD_E = 0;
-
-   /* test if LCD present */
+   
+   // test if LCD present
 
    LCD = LCD | 0xF0;            // data input
    P2MDOUT = 0x0F;              
@@ -1481,6 +1542,7 @@ void lcd_setup()
    lcd_out(0x0C, 0);            // display on
    lcd_out(0x01, 0);            // clear display
    lcd_out(0x06, 0);            // entry mode
+#endif
 }
 
 /*------------------------------------------------------------------*/
@@ -1495,9 +1557,14 @@ void lcd_clear()
 
 void lcd_goto(char x, char y)
 {
-   /* goto position x(0..19), y(0..1) */
 
-   lcd_out((x & 0x0F) | (0x80) | ((y & 0x01) << 6), 0);
+#ifdef SCS_1001
+   /* goto position x(0..19), y(0..3) */
+   lcd_out((x & 0x1F) | (0x80) | ((y & 0x03) << 5), 0);
+#else
+   /* goto position x(0..19), y(0..1) */
+   lcd_out((x & 0x1F) | (0x80) | ((y & 0x01) << 6), 0);
+#endif
 }
 
 /*------------------------------------------------------------------*/

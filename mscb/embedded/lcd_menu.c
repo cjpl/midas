@@ -8,6 +8,9 @@
                 and four buttons
 
   $Log$
+  Revision 1.4  2005/02/16 13:14:50  ritt
+  Version 1.8.0
+
   Revision 1.3  2004/12/21 10:47:59  midas
   Fixed bug in system menu
 
@@ -42,7 +45,7 @@ bit system_menu = 0;           // true if in system menu
 bit enter_mode = 0;            // true if editing vars
 unsigned char var_index = 0;   // variable to display
 
-idata float f_var;
+xdata float f_var;
 
 /*------------------------------------------------------------------*/
 
@@ -110,13 +113,12 @@ MSCB_INFO_VAR code sysvar[] = {
 
 /*------------------------------------------------------------------*/
 
+static char xdata str[10];
+
 void display_value(MSCB_INFO_VAR *pvar, void *pd)
 {
    unsigned char i, unit_len;
-   char idata str[10];
    
-   lcd_goto(10, 0);
-
    if (pvar->unit == UNIT_STRING) {
       strncpy(str, (char *)pd, 8);
       puts(str);
@@ -279,10 +281,7 @@ void var_inc(MSCB_INFO_VAR *pvar, char sign)
 
 void display_name(unsigned char index, MSCB_INFO_VAR *pvar)
 {
-   char idata str[10];
-
    /* display variable name */
-   lcd_goto(0, 0);
    memcpy(str, pvar->name, 8);
    str[8] = 0;
    printf("%2bd:%s", index, str);
@@ -291,10 +290,234 @@ void display_name(unsigned char index, MSCB_INFO_VAR *pvar)
 
 /*------------------------------------------------------------------*/
 
+#ifdef SCS_1001
+
+static xdata unsigned long last_disp = 0, last_b2 = 0, last_b3 = 0;
+static bit b0_old = 0, b1_old = 0, b2_old = 0, b3_old = 0;
+
 void lcd_menu()
 {
-   static idata unsigned long last_disp = 0, last_b2 = 0, last_b3 = 0;
-   static bit b0_old = 0, b1_old = 0, b2_old = 0, b3_old = 0;
+   MSCB_INFO_VAR *pvar;
+   unsigned char idata i, max_index, start_index;
+
+   /* clear startup screen after 3 sec. */
+   if (startup) {
+      if(time() > 300) {
+         startup = 0;
+         lcd_clear();
+      } else
+        return;
+   }
+
+   /* do menu business only every 100ms */
+   if (time() > last_disp+10) {
+      last_disp = time();
+
+      if (!in_menu) {
+
+         /* if not in menu, call application display */
+         if (application_display(0)) {
+            in_menu = 1;
+         }
+      
+      } else {
+
+         /* display variables */
+
+         if (system_menu) {
+            pvar = sysvar;
+            max_index = n_sysvar-1;
+         } else {
+            pvar = variables;
+            max_index = n_variables-1;
+         }
+   
+         if (max_index < 3)
+            start_index = 0;
+         else {
+            if (var_index == 0)
+               start_index = 0;
+            else if (var_index == max_index)
+               start_index = var_index-2;
+            else 
+               start_index = var_index-1;
+         }
+
+         for (i=0 ; i<3 ; i++) {
+
+            lcd_goto(0, i);
+            if (start_index+i == var_index) 
+               putchar('>');
+            else
+               putchar(' ');
+
+            lcd_goto(1, i);
+            if (start_index+i > max_index)
+               printf("                   ");
+            else {
+               display_name(start_index+i, &pvar[start_index+i]);
+               lcd_goto(10, i);
+
+               if (enter_mode && start_index+i == var_index)
+                  display_value(&pvar[start_index+i], &f_var);
+               else
+                  display_value(&pvar[start_index+i], pvar[start_index+i].ud);
+            }
+         }
+
+         if (system_menu)
+            pvar = &sysvar[var_index];
+         else
+            pvar = &variables[var_index];
+            
+         if (enter_mode) {
+
+            lcd_goto(0, 3);
+            puts("ESC ENTER   -    +  ");
+
+            /* evaluate ESC button */
+            if (!b0 && b0_old)
+               enter_mode = 0;
+
+            /* evaluate ENTER button */
+            if (b1 && !b1_old) {
+               enter_mode = 0;
+               memcpy(pvar->ud, &f_var, pvar->width);
+               
+               if (system_menu) {
+                  /* flash new address */
+                  if (var_index == 0 || var_index == 1)
+                     flash_param = 1;
+               } else {
+                  user_write(var_index);
+                  if (pvar->flags & MSCBF_REMOUT)
+                     send_remote_var(var_index);
+               }
+            }
+
+            /* evaluate "-" button */
+            if (b2 && !b2_old) {
+               var_inc(pvar, -1);
+               last_b2 = time();
+            }
+            if (b2 && time() > last_b2 + 70)
+               var_inc(pvar, -1);
+            if (!b2)
+               last_b2 = 0;
+
+            /* evaluate "+" button */
+            if (b3 && !b3_old) {
+               var_inc(pvar, 1);
+               last_b3 = time();
+            }
+            if (b3 && time() > last_b3 + 70)
+               var_inc(pvar, 1);
+            if (!b3)
+               last_b3 = 0;
+
+         } else {
+            
+            lcd_goto(0, 3);
+            if (pvar->delta > 0 || (pvar->flags & MSCBF_DATALESS))
+               puts("ESC ENTER  PREV NEXT");
+            else
+               puts("ESC        PREV NEXT");
+   
+            /* enter application display on release of ESC button */
+            if (!b0 && b0_old) {
+               if (system_menu) {
+                  system_menu = 0;
+                  var_index = 0;
+               } else {
+                  in_menu = 0;
+                  application_display(1);
+               }
+            }
+   
+            /* evaluate ENTER button */
+            if (b1 && !b1_old) {
+
+               if (pvar->width <= 4 && pvar->width > 0) {
+                  enter_mode = 1;
+                  memcpy(&f_var, pvar->ud, pvar->width);
+               }
+
+               /* check for flash command */
+               if (system_menu && var_index == 2) {
+                  flash_param = 1;
+                  lcd_clear();
+                  lcd_goto(0, 0);
+                  puts("Parameters written");
+                  lcd_goto(0, 1);
+                  puts("to flash memory.");
+                  delay_ms(3000);
+               }
+ 
+               /* check for reboot command */
+               if (system_menu && var_index == 3)
+                  reboot = 1;
+            }
+
+            /* evaluate prev button */
+            if (b2 && !b2_old) {
+               if (var_index == 0) {
+                 if (!system_menu)
+                    var_index = n_variables-1;
+                 else
+                    var_index = n_sysvar-1;
+               } else
+                 var_index--;
+               last_b2 = time();
+            }
+            if (b2 && time() > last_b2 + 70) {
+               if (var_index == 0) {
+                 if (!system_menu)
+                    var_index = n_variables-1;
+                 else
+                    var_index = n_sysvar-1;
+               } else
+                 var_index--;
+            }
+            if (!b2)
+               last_b2 = 0;
+
+            if (system_menu)
+               i = n_sysvar;
+            else
+               i = n_variables;
+
+            /* evaluate next button */
+            if (b3 && !b3_old) {
+               var_index = (var_index + 1) % i;
+               last_b3 = time();
+            }
+            if (b3 && time() > last_b3 + 70)
+               var_index = (var_index + 1) % i;
+            if (!b3)
+               last_b3 = 0;
+
+            /* check for system menu */
+            if (b2 && b3 && !system_menu) {
+               var_index = 0;
+               system_menu = 1;
+            }
+         }
+      }
+
+      b0_old = b0;
+      b1_old = b1;
+      b2_old = b2;
+      b3_old = b3;
+   }
+}
+
+#else // SCS_1001
+
+static xdata unsigned long last_disp = 0, last_b2 = 0, last_b3 = 0;
+static bit b0_old = 0, b1_old = 0, b2_old = 0, b3_old = 0;
+
+void lcd_menu()
+{
    MSCB_INFO_VAR *pvar;
    unsigned char i;
 
@@ -327,6 +550,7 @@ void lcd_menu()
          if (enter_mode) {
 
             /* display variables */
+            lcd_goto(10, 0);
             display_value(pvar, &f_var);
             lcd_goto(0, 1);
             puts("ESC ENTER   -    +  ");
@@ -346,7 +570,7 @@ void lcd_menu()
                      flash_param = 1;
                } else {
                   user_write(var_index);
-#ifdef SCS_1000
+#if defined(SCS_1000) || defined(SCS_1001)
                   if (variables[var_index].flags & MSCBF_REMOUT)
                      send_remote_var(var_index);
 #endif
@@ -376,7 +600,9 @@ void lcd_menu()
          } else {
             
             /* display variables */
+            lcd_goto(0, 0);
             display_name(var_index, pvar);
+            lcd_goto(10, 0);
             display_value(pvar, pvar->ud);
             lcd_goto(0, 1);
 
@@ -473,3 +699,4 @@ void lcd_menu()
    }
 }
 
+#endif

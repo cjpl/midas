@@ -9,6 +9,9 @@
                 for SCS-900 analog high precision I/O 
 
   $Log$
+  Revision 1.7  2005/02/16 13:14:50  ritt
+  Version 1.8.0
+
   Revision 1.6  2004/12/08 10:38:05  midas
   Implemented calibration
 
@@ -31,6 +34,7 @@
 
 #include <stdio.h>
 #include <math.h>
+#include <intrins.h>
 #include "mscb.h"
 
 extern bit FREEZE_MODE;
@@ -555,7 +559,23 @@ unsigned char user_func(unsigned char *data_in, unsigned char *data_out)
 
 /*---- User loop function ------------------------------------------*/
 
+sbit led_0 = P3 ^ 4;
+
 void user_loop(void)
 {
    adc_read();
+
+   led_0 = 1;
+   DELAY_US(20);
+   led_0 = 0;
+   DELAY_US(20);
+   led_0 = 1;
+   DELAY_US(20);
+   led_0 = 0;
+   DELAY_US(20);
+   led_0 = 1;
+   DELAY_US(20);
+   led_0 = 0;
+   DELAY_US(20);
+
 }
