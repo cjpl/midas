@@ -6,6 +6,9 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.106  2005/03/24 09:24:05  ritt
+  Implemented XML buffer functions
+
   Revision 1.105  2005/03/24 08:40:09  ritt
   Use mxml functions
 
@@ -5839,7 +5842,7 @@ INT db_copy_xml(HNDLE hDB, HNDLE hKey, char *buffer, INT * buffer_size)
    MXML_WRITER *writer;
 
    /* open file */
-   writer = mxml_open_document(NULL);
+   writer = mxml_open_buffer();
    if (writer == NULL) {
       cm_msg(MERROR, "db_copy_xml", "Cannot allocate buffer");
       return DB_NO_MEMORY;
@@ -5853,7 +5856,7 @@ INT db_copy_xml(HNDLE hDB, HNDLE hKey, char *buffer, INT * buffer_size)
    db_save_xml_key(hDB, hKey, 0, writer);
    
    mxml_end_element(writer); // "odb"
-   p = mxml_close_document(writer);
+   p = mxml_close_buffer(writer);
 
    strlcpy(buffer, p, *buffer_size);
    len = strlen(p);
@@ -6208,7 +6211,7 @@ INT db_save_xml(HNDLE hDB, HNDLE hKey, char *filename)
    MXML_WRITER *writer;
 
    /* open file */
-   writer = mxml_open_document(filename);
+   writer = mxml_open_file(filename);
    if (writer == NULL) {
       cm_msg(MERROR, "db_save_xml", "Cannot open file \"%s\"", filename);
       return DB_FILE_ERROR;
@@ -6230,7 +6233,7 @@ INT db_save_xml(HNDLE hDB, HNDLE hKey, char *filename)
    status = db_save_xml_key(hDB, hKey, 0, writer);
    
    mxml_end_element(writer); // "odb"
-   mxml_close_document(writer);
+   mxml_close_file(writer);
    }
 #endif                          /* LOCAL_ROUTINES */
 
