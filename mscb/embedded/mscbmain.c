@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol main program
 
   $Log$
+  Revision 1.18  2002/11/22 15:43:03  midas
+  Made user_write reentrant
+
   Revision 1.17  2002/11/20 12:02:25  midas
   Fixed bug with secondary LED
 
@@ -83,9 +86,9 @@
 /*---- functions and data in user part -----------------------------*/
 
 void user_init(void);
-void user_write(unsigned char channel);
+void user_write(unsigned char channel) reentrant;
 unsigned char user_read(unsigned char channel);
-void user_write_conf(unsigned char channel);
+void user_write_conf(unsigned char channel) reentrant;
 void user_read_conf(unsigned char channel);
 void user_loop(void);
 
@@ -238,9 +241,6 @@ unsigned char i;
   /* Blink LEDs */
   led_blink(1, 5, 150);
   led_blink(2, 5, 150);
-
-  /* start system clock */
-  sysclock_init();
 }
 
 /*------------------------------------------------------------------*/

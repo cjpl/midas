@@ -9,6 +9,9 @@
                 for SCS-600 Digital I/O
 
   $Log$
+  Revision 1.7  2002/11/22 15:43:03  midas
+  Made user_write reentrant
+
   Revision 1.6  2002/10/28 14:26:30  midas
   Changes from Japan
 
@@ -99,6 +102,8 @@ void user_write(unsigned char channel);
 
 void user_init(void)
 {
+unsigned char i;
+
   PRT0CF = 0x7F;  // push-pull for P0.0-6
 
   /* init shift register lines */
@@ -106,6 +111,17 @@ void user_init(void)
   SR_CLOCK = 0;
   SR_DATAO = 0;
   SR_DATAI = 1; // prepare for input
+
+  /* initialize configuration data */
+  if (user_conf.power[0] <= 0 || user_conf.power[0] > 100)
+    {
+    for (i=0 ; i<8 ; i++)
+      {
+      user_data.out[i] = 0;
+      user_conf.power[i] = 100;
+      }
+    eeprom_flash();
+    }
 }
 
 

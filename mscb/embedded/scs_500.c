@@ -9,6 +9,9 @@
                 for SCS-500 analog I/O
 
   $Log$
+  Revision 1.12  2002/11/22 15:43:03  midas
+  Made user_write reentrant
+
   Revision 1.11  2002/11/20 12:02:59  midas
   Added yield()
 
@@ -69,8 +72,7 @@ sbit SR_DATA    = P0 ^ 6;    // Serial data
 
 struct {
   float         adc[8];
-  unsigned int  dac0;
-  unsigned int  dac1;
+  float         dac0, dac1;
   unsigned char p1;
 } idata user_data;
 
@@ -92,8 +94,8 @@ MSCB_INFO_CHN code channel[] = {
   4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC5", &user_data.adc[5],
   4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC6", &user_data.adc[6],
   4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC7", &user_data.adc[7],
-  2, UNIT_WORD, 0, 0,           0, "DAC0", &user_data.dac0,
-  2, UNIT_WORD, 0, 0,           0, "DAC1", &user_data.dac1,
+  4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "DAC0", &user_data.dac0,
+  4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "DAC1", &user_data.dac1,
   1, UNIT_BYTE, 0, 0,           0, "P1",   &user_data.p1,
   0
 };
@@ -138,7 +140,7 @@ MSCB_INFO_CHN code conf_param[] = {
 
 \********************************************************************/
 
-void user_write(unsigned char channel);
+void user_write(unsigned char channel) reentrant;
 void write_gain(void) reentrant;
 
 /*---- User init function ------------------------------------------*/
@@ -158,13 +160,19 @@ unsigned char i;
   DAC1CN = 0x80;  // enable DAC1
 
   /* correct initial EEPROM value */
-  if (user_conf.adc_average == 0xFF)
+  if (user_conf.adc_average <= 0 || user_conf.adc_average > 8)
     {
     user_conf.adc_average = 8;
     for (i=0 ; i<8 ; i++)
       user_conf.gain[i] = 0;
     user_conf.gain_cal = 1;
 	  user_conf.bip_cal = 0;
+
+    user_data.dac0 = 0;
+    user_data.dac1 = 0;
+    user_data.p1 = 0xff;
+
+    eeprom_flash();
     }
 
   if (user_conf.gain_cal < 0.1 || user_conf.gain_cal > 10)
@@ -174,9 +182,9 @@ unsigned char i;
 	  user_conf.bip_cal = 0;
 
   /* write P1 and DACs */
-  user_write(0);
-  user_write(1);
-  user_write(2);
+  user_write(8);
+  user_write(9);
+  user_write(10);
 
   /* write gains */
   write_gain();
@@ -188,39 +196,48 @@ unsigned char i;
 
 #pragma NOAREGS
 
-void user_write(unsigned char channel)
+void user_write(unsigned char channel) reentrant
 {
-unsigned char data *d;
+unsigned short d;
 
   switch (channel)
     {
-    case 0:  // p1 
+    case 8:  // DAC0
+      /* assume -10V..+10V range */
+      d = ((user_data.dac0+10) / 20) * 0x1000;
+      if (d >= 0x1000)
+        d = 0x0FFF;
+
+#ifdef CPU_ADUC812
+      DAC0H = d >> 8;
+      DAC0L = d & 0xFF;
+#endif
+#ifdef CPU_C8051F000
+      DAC0L = d & 0xFF;
+      DAC0H = d >> 8;
+#endif
+      break;
+
+    case 9:  // DAC1
+      /* assume -10V..+10V range */
+      d = ((user_data.dac1+10) / 20) * 0x1000;
+      if (d >= 0x1000)
+        d = 0x0FFF;
+
+#ifdef CPU_ADUC812
+      DAC1H = d >> 8;
+      DAC1L = d & 0xFF;
+#endif
+#ifdef CPU_C8051F000
+      DAC1L = d & 0xFF;
+      DAC1H = d >> 8;
+#endif
+      break;
+
+    case 10:  // p1 
       P1 = user_data.p1; 
       break;
 
-    case 1:  // DAC0
-      d = (void *)&user_data.dac0;
-#ifdef CPU_ADUC812
-      DAC0H = d[1];
-      DAC0L = d[0];
-#endif
-#ifdef CPU_C8051F000
-      DAC0L = d[0];
-      DAC0H = d[1];
-#endif
-      break;
-
-    case 2:  // DAC1
-      d = (void *)&user_data.dac1;
-#ifdef CPU_ADUC812
-      DAC1H = d[1];
-      DAC1L = d[0];
-#endif
-#ifdef CPU_C8051F000
-      DAC1L = d[0];
-      DAC1H = d[1];
-#endif
-      break;
     }
 }
 
@@ -270,7 +287,7 @@ unsigned char i;
   SR_STROBE = 0;
 }
 
-void user_write_conf(unsigned char channel)
+void user_write_conf(unsigned char channel) reentrant
 {
   if (channel > 0)
     write_gain();
