@@ -6,6 +6,9 @@
   Contents:     Magnetic tape manipulation program for MIDAS tapes
 
   $Log$
+  Revision 1.3  1998/10/13 07:31:28  midas
+  Fixed minor bugs causing compiler warnings
+
   Revision 1.2  1998/10/12 12:19:04  midas
   Added Log tag in header
 
@@ -64,6 +67,8 @@ INT          status, size, index;
       /* skip back record */
       ss_tape_rskip(channel, -1);
     }
+
+  return SS_SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
@@ -121,6 +126,8 @@ char         buffer[TAPE_BUFFER_SIZE], str[80];
     /* skip to next file */
     ss_tape_fskip(channel, 1);
     }
+
+  return SS_SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
@@ -196,20 +203,20 @@ char cmd[100], tape_name[100];
   else if (strcmp(cmd, "offline") == 0)
     status = ss_tape_unmount(channel);
 
-  else if (strcmp(cmd, "eof") == 0 | strcmp(cmd, "weof") == 0)
+  else if (strcmp(cmd, "eof") == 0 || strcmp(cmd, "weof") == 0)
     for (i=0 ; i<count ; i++)
       status = ss_tape_write_eof(channel);
 
-  else if (strcmp(cmd, "fsf") == 0 | strcmp(cmd, "ff") == 0)
+  else if (strcmp(cmd, "fsf") == 0 || strcmp(cmd, "ff") == 0)
     status = ss_tape_fskip(channel, count);
 
-  else if (strcmp(cmd, "fsr") == 0 | strcmp(cmd, "fr") == 0)
+  else if (strcmp(cmd, "fsr") == 0 || strcmp(cmd, "fr") == 0)
     status = ss_tape_rskip(channel, count);
   
-  else if (strcmp(cmd, "bsf") == 0 | strcmp(cmd, "bf") == 0)
+  else if (strcmp(cmd, "bsf") == 0 || strcmp(cmd, "bf") == 0)
     status = ss_tape_fskip(channel, -count);
 
-  else if (strcmp(cmd, "bsr") == 0 | strcmp(cmd, "br") == 0)
+  else if (strcmp(cmd, "bsr") == 0 || strcmp(cmd, "br") == 0)
     status = ss_tape_rskip(channel, -count);
 
   else if (strcmp(cmd, "seod") == 0)
