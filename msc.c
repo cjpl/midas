@@ -6,6 +6,9 @@
   Contents:     Command-line interface for the Midas Slow Control Bus
 
   $Log$
+  Revision 1.8  2002/08/12 12:10:30  midas
+  Added reset command
+
   Revision 1.7  2002/07/10 09:51:25  midas
   Introduced mscb_flash()
 
@@ -49,7 +52,6 @@ void print_help()
   puts("addr <addr>                Address node for further commands");    
   puts("gaddr <addr>               Address group of nodes");    
   puts("info                       Retrive node info");    
-  puts("reboot                     Reboot addressed node");    
   puts("sa <addr> <gaddr>          Set node and group address of addressed node");    
   puts("debug 0/1                  Turn debuggin off/on on node (LCD output)");    
   puts("\nwrite <channel> <value>    Write to node channel");
@@ -57,6 +59,8 @@ void print_help()
   puts("wc <index> <value>         Write configuration parameter");
   puts("flash                      Flash parameters into EEPROM");
   puts("rc <index>                 Read configuration parameter");
+  puts("reboot                     Reboot addressed node");    
+  puts("reset                      Reboot whole MSCB system");
 }
 
 /*------------------------------------------------------------------*/
@@ -190,7 +194,7 @@ MSCB_INFO_CHN info_chn;
       }
     
     /* info */
-    else if ((param[0][0] == 'i' && param[0][1] == 'n'))
+    else if ((param[0][0] == 'i' && param[0][1] == 'n') && param[0][2] == 'f')
       {
       if (current_addr < 0)
         printf("You must first address an individual node\n");
@@ -269,6 +273,14 @@ MSCB_INFO_CHN info_chn;
 
     /* reboot */
     else if ((param[0][0] == 'r' && param[0][1] == 'e') && param[0][2] == 'b')
+      {
+      mscb_reboot(fd);
+      current_addr = -1;
+      current_group = -1;
+      }
+
+    /* reset */
+    else if ((param[0][0] == 'r' && param[0][1] == 'e') && param[0][2] == 's')
       {
       mscb_reset(fd);
       current_addr = -1;
@@ -495,21 +507,22 @@ MSCB_INFO_CHN info_chn;
     /* test */
     else if ((param[0][0] == 't' && param[0][1] == 'e'))
       {
-      /*
-      unsigned int size;
-      unsigned short d, r;
-
-      d = 0x1234;
-      size = sizeof(r);
-      mscb_user(fd, &d, 2, &r, &size);
-      printf("%X\n", r);
-      */
+      unsigned short d;
 
       while (!kbhit())
         {
-        status = mscb_addr(fd, CMD_PING16, current_addr);
+        status = mscb_read16("lpt1", 2, 3, &d);
         if (status != MSCB_SUCCESS)
           printf("Error: %d\n", status);
+        else
+          printf("%1.2lf\r", d/65536.0*250);
+
+        status = mscb_write16("lpt1", 1, 0, 50);
+
+        if (status != MSCB_SUCCESS)
+          printf("Error: %d\n", status);
+
+        Sleep(10);
         }
 
       }
