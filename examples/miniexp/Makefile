@@ -6,6 +6,9 @@
 #  Contents:     Makefile for MIDAS example frontend and analyzer
 #
 #  $Log$
+#  Revision 1.3  2001/12/17 18:39:34  pierre
+#  remove analyzer modules
+#
 #  Revision 1.2  2001/12/17 18:35:16  pierre
 #  update for newer version
 #
@@ -76,7 +79,7 @@ CERNLIB_DIR	= /cern/pro/lib
 #-------------------------------------------------------------------
 # List of analyzer modules
 #                 
-MODULES 	= adccalib.o adcsum.o scaler.o
+MODULES 	= 
 
 #-------------------------------------------------------------------
 # Hardware driver can be (camacnul, kcs2926, kcs2927, hyt1331)
