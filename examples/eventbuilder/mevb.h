@@ -4,6 +4,9 @@ Name:         mevb.h
 
   Contents:     Event builder header file
   $Log$
+  Revision 1.6  2002/10/07 17:04:10  pierre
+  fix tr_stop request
+
   Revision 1.5  2002/09/28 00:48:48  pierre
   Add EB_USER_ERROR handling
 
@@ -102,5 +105,7 @@ typedef struct {
 #define   EB_COMPOSE_TIMEOUT      -1
 #define   EB_ERROR              1001
 #define   EB_USER_ERROR         1002
+#define   EB_ABORTED            1003
+#define   EB_SKIP               1004
 #define   TIMEOUT                 10
 #define   MAX_CHANNELS             8
