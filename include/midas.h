@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.46  1999/10/06 08:56:33  midas
+  Added /programs/xxx/required flag
+
   Revision 1.45  1999/09/27 13:49:03  midas
   Added bUnique parameter to cm_shutdown
 
@@ -1019,6 +1022,7 @@ typedef struct {
   BOOL      auto_start;
   BOOL      auto_stop;
   BOOL      auto_restart;
+  BOOL      required;
   char      start_command[256];
   char      alarm_class[32];
   DWORD     checked_last;
@@ -1029,6 +1033,7 @@ typedef struct {
 "Auto start = BOOL : n",\
 "Auto stop = BOOL : n",\
 "Auto restart = BOOL : n",\
+"Required = BOOL : n",\
 "Start command = STRING : [256] ",\
 "Alarm Class = STRING : [32] ",\
 "Checked last = DWORD : 0",\
