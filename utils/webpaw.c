@@ -6,6 +6,9 @@
   Contents:     Web server for remote PAW display
 
   $Log$
+  Revision 1.2  2000/05/12 09:00:39  midas
+  Added execute button
+
   Revision 1.1  2000/05/11 14:11:45  midas
   Added file
 
@@ -157,7 +160,7 @@ int i;
     if (equal_ustring(param, _param[i]))
       break;
 
-  if (i<MAX_PARAM)
+  if (i<MAX_PARAM && _param[i][0])
     return _value[i];
 
   return NULL;
@@ -249,33 +252,6 @@ char *pd, *p, str[256];
 
 /*------------------------------------------------------------------*/
 
-void show_help_page()
-{
-  rsprintf("<html><head>\n");
-  rsprintf("<title>MIDAS WWW Gateway Help</title>\n");
-  rsprintf("</head>\n\n");
-
-  rsprintf("<body>\n");
-  rsprintf("<h1>Using the MIDAS WWW Gateway</h1>\n");
-  rsprintf("With the MIDAS WWW Gateway basic experiment control can be achieved.\n");
-  rsprintf("The status page displays the current run status including front-end\n");
-  rsprintf("and logger statistics. The Start and Stop buttons can start and stop\n");
-  rsprintf("a run. The ODB button switches into the Online Database mode, where\n");
-  rsprintf("the contents of the experiment database can be displayed and modified.<P>\n\n");
-
-  rsprintf("For more information, refer to the\n"); 
-  rsprintf("<A HREF=\"http://pibeta.psi.ch/midas/manual/Manual.html\">MIDAS manual</A>.<P>\n\n");
-
-  rsprintf("<hr>\n");
-  rsprintf("<address>\n");
-  rsprintf("<a href=\"http://pibeta.psi.ch/~stefan\">S. Ritt</a>, 12 Feb 1998");
-  rsprintf("</address>");
-
-  rsprintf("</body></html>\r\n");
-}
-
-/*------------------------------------------------------------------*/
-
 int read_paw(int pipe, char *delim, char *result)
 {
 fd_set readfds;
@@ -307,9 +283,6 @@ int    i;
 
   strcpy(result, str);
 
-  printf(str);
-  fflush(stdout);
-
   if (i <= 0)
     return 0;
   return 1;
@@ -324,7 +297,7 @@ static int pid=0, pipe;
 char   str[10000];
 int    status;
 
-  if (equal_ustring(kumac, "restart_paw") && pid)
+  if (equal_ustring(kumac, "restart") && pid)
     {
     kill(pid, SIGKILL);
     close(pipe);
@@ -424,7 +397,7 @@ char   cur_group[256], last_group_name[256];
 FILE   *f;
 int    fh, length, status;
 
-  if (!path[0])
+  if (!path[0] && !getparam("submit") && !getparam("cmd"))
     {
     rsprintf("HTTP/1.0 200 Document follows\r\n");
     rsprintf("Server: WebPAW\r\n");
@@ -461,11 +434,9 @@ int    fh, length, status;
     rsprintf("<html><body>\r\n");
 
     /* title row */
-    rsprintf("<b>WebPAW on %s</b>\r\n", host_name);
-    rsprintf("<font size=1>by <a href=\"http://midas.psi.ch/webpaw.html\" target=_top>S. Ritt</a></font>\r\n");
+    rsprintf("<b><a target=_top href=\"http://midas.psi.ch/webpaw.html\">WebPAW</a> on %s</b>\r\n", 
+              host_name);
     
-    rsprintf("<a href=/restart_paw target=contents>Restart PAW</a>\r\n");
-
     rsprintf("</body></html>\r\n");
     return;
     }
@@ -478,10 +449,18 @@ int    fh, length, status;
     rsprintf("Content-Type: text/html\r\n\r\n");
     rsprintf("<html><body>\r\n");
 
+    rsprintf("<form method=GET action=\"%s\" target=contents>\r\n", webpaw_url);
+
+    /* display input field */
+    rsprintf("<table border=0 cellpadding=1>\r\n");
+    rsprintf("<tr><td colspan=2 align=center><input type=text name=cmd size=30 maxlength=256></tr>\r\n");
+    rsprintf("<tr><td align=center><input type=submit name=submit value=\" Execute! \">\r\n");
+    rsprintf("<td align=center><input type=submit name=restart value=\"Restart PAW!\">\r\n");
+    rsprintf("</tr></table><hr>\r\n");
+
     f = fopen("webpaw.cfg", "rt");
     if (f == NULL)
       {
-      rsprintf("Error: cannot open <i>webpaw.cfg</i> file\r\n");
       rsprintf("</body></html>\r\n");
       return;
       }
@@ -558,15 +537,20 @@ int    fh, length, status;
     }
 
   /* forward command to paw and display result */
-  if (equal_ustring(path, "restart_paw") || 
-      equal_ustring(path, "contents.html") || 
-      strstr(path, ".gif"))
+  if (equal_ustring(path, "contents.html") || 
+      strstr(path, ".gif") ||
+      getparam("submit") || getparam("cmd"))
     {
-    strcpy(str, path);
+    if (getparam("restart"))
+      strcpy(str, "restart");
+    else if (getparam("cmd"))
+      strcpy(str, getparam("cmd"));
+    else
+      strcpy(str, path);
+
     urlDecode(str);
     if (strstr(path, ".gif"))
       *strstr(str, ".gif") = 0;
-    printf("%s\n", str);
 
     if (equal_ustring(path, "contents.html"))
       str[0] = 0;
