@@ -6,6 +6,10 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.95  2000/02/25 23:41:02  midas
+  Fixed secondary problem with conversion flags, adjusted mhttpd display of
+  event number (M and G)
+
   Revision 1.94  2000/02/25 22:19:09  midas
   Improved Ctrl-C handling
 
@@ -756,7 +760,7 @@ char   *state[] = {"", "Stopped", "Paused", "Running" };
 char   *trans_name[] = {"Start", "Stop", "Pause", "Resume"};
 time_t now, difftime;
 DWORD  analyzed;
-double analyze_ratio;
+double analyze_ratio, d;
 float  value;
 HNDLE  hDB, hkey, hLKey, hsubkey, hkeytmp;
 KEY    key;
@@ -1033,16 +1037,24 @@ CHN_STATISTICS chn_stats;
           analyze_ratio = (double) analyzed / equipment_stats.events_sent;
         }
       
+      d = equipment_stats.events_sent;
+      if (d > 1E9)
+        sprintf(str, "%1.3lfG", d/1E9);
+      else if (d > 1E6)
+        sprintf(str, "%1.3lfM", d/1E6);
+      else
+        sprintf(str, "%1.0lf", d);
+
       /* check if analyze is running */
       if (cm_exist("Analyzer", FALSE) == CM_SUCCESS)
-        rsprintf("<td align=center>%d<td align=center>%d<td align=center>%1.1lf<td align=center bgcolor=#00FF00>%3.1lf%%</tr>\n",
-                 equipment_stats.events_sent,
+        rsprintf("<td align=center>%s<td align=center>%1.1lf<td align=center>%1.1lf<td align=center bgcolor=#00FF00>%3.1lf%%</tr>\n",
+                 str,
                  equipment_stats.events_per_sec, 
                  equipment_stats.kbytes_per_sec,
                  analyze_ratio*100.0); 
       else
-        rsprintf("<td align=center>%d<td align=center>%d<td align=center>%1.1lf<td align=center bgcolor=#FF0000>%3.1lf%%</tr>\n",
-                 equipment_stats.events_sent,
+        rsprintf("<td align=center>%s<td align=center>%1.1lf<td align=center>%1.1lf<td align=center bgcolor=#FF0000>%3.1lf%%</tr>\n",
+                 str,
                  equipment_stats.events_per_sec, 
                  equipment_stats.kbytes_per_sec,
                  analyze_ratio*100.0); 
