@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.203  2002/05/10 19:22:03  midas
+  Added history panel editor
+
   Revision 1.202  2002/05/10 01:41:19  midas
   Added optional debug output to cm_transition
 
@@ -1211,7 +1214,7 @@ int    size;
     rsprintf("<meta http-equiv=\"Refresh\" content=\"%02d\">\n", refresh);
 
   rsprintf("<title>%s</title></head>\n", title);
-  rsprintf("<body><form method=\"GET\" action=\"/%s\">\n\n", path);
+  rsprintf("<body><form name=\"form1\" method=\"GET\" action=\"/%s\">\n\n", path);
 
   /* title row */
 
@@ -4562,13 +4565,13 @@ char   data_str[256], hex_str[256];
           if (strncmp(key.name, "Names", 5) == 0)
             {
             if (equal_ustring(eq_name, eqkey.name))
-              rsprintf("<b>%s</b> ", eqkey.name);
+              rsprintf("<b>%s</b>&nbsp;&nbsp;&nbsp;", eqkey.name);
             else
               {
               if (exp_name[0])
-                rsprintf("<a href=\"/SC/%s?exp=%s\">%s</a> ", eqkey.name, exp_name, eqkey.name);
+                rsprintf("<a href=\"/SC/%s?exp=%s\">%s</a>&nbsp;&nbsp;&nbsp;", eqkey.name, exp_name, eqkey.name);
               else
-                rsprintf("<a href=\"/SC/%s?\">%s</a> ", eqkey.name, eqkey.name);
+                rsprintf("<a href=\"/SC/%s?\">%s</a>&nbsp;&nbsp;&nbsp;", eqkey.name, eqkey.name);
               }
             break;
             }
@@ -4596,13 +4599,13 @@ char   data_str[256], hex_str[256];
 
     /* "all" group */
     if (equal_ustring(group, "All"))
-      rsprintf("<b>All</b> ");
+      rsprintf("<b>All</b>&nbsp;&nbsp;&nbsp;");
     else
       {
       if (exp_name[0])
-        rsprintf("<a href=\"/SC/%s/All?exp=%s\">All</a> ", eq_name, exp_name);
+        rsprintf("<a href=\"/SC/%s/All?exp=%s\">All</a>&nbsp;&nbsp;&nbsp;", eq_name, exp_name);
       else
-        rsprintf("<a href=\"/SC/%s/All?\">All</a> ", eq_name);
+        rsprintf("<a href=\"/SC/%s/All?\">All</a>&nbsp;&nbsp;&nbsp;", eq_name);
       }
 
     /* collect groups */
@@ -4632,14 +4635,14 @@ char   data_str[256], hex_str[256];
     for (i=0 ; i<MAX_GROUPS && group_name[i][0]; i++)
       {
       if (equal_ustring(group_name[i], group))
-        rsprintf("<b>%s</b> ", group_name[i]);
+        rsprintf("<b>%s</b>&nbsp;&nbsp;&nbsp;", group_name[i]);
       else
         {
         if (exp_name[0])
-          rsprintf("<a href=\"/SC/%s/%s?exp=%s\">%s</a> ",
+          rsprintf("<a href=\"/SC/%s/%s?exp=%s\">%s</a>&nbsp;&nbsp;&nbsp;",
                     eq_name, group_name[i], exp_name, group_name[i]);
         else
-          rsprintf("<a href=\"/SC/%s/%s?\">%s</a> ",
+          rsprintf("<a href=\"/SC/%s/%s?\">%s</a>&nbsp;&nbsp;&nbsp;",
                     eq_name, group_name[i], group_name[i]);
         }
       }
@@ -4769,13 +4772,13 @@ char   data_str[256], hex_str[256];
 
     /* "all" group */
     if (equal_ustring(group, "All"))
-      rsprintf("<b>All</b> ");
+      rsprintf("<b>All</b>&nbsp;&nbsp;&nbsp;");
     else
       {
       if (exp_name[0])
-        rsprintf("<a href=\"/SC/%s?exp=%s\">All</a> ", eq_name, exp_name);
+        rsprintf("<a href=\"/SC/%s?exp=%s\">All</a>&nbsp;&nbsp;&nbsp;", eq_name, exp_name);
       else
-        rsprintf("<a href=\"/SC/%s?\">All</a> ", eq_name);
+        rsprintf("<a href=\"/SC/%s?\">All</a>&nbsp;&nbsp;&nbsp;", eq_name);
       }
 
     /* groups from Variables tree */
@@ -4793,14 +4796,14 @@ char   data_str[256], hex_str[256];
       db_get_key(hDB, hkey, &key);
 
       if (equal_ustring(key.name, group))
-        rsprintf("<b>%s</b> ", key.name);
+        rsprintf("<b>%s</b>&nbsp;&nbsp;&nbsp;", key.name);
       else
         {
         if (exp_name[0])
-          rsprintf("<a href=\"/SC/%s/%s?exp=%s\">%s</a> ",
+          rsprintf("<a href=\"/SC/%s/%s?exp=%s\">%s</a>&nbsp;&nbsp;&nbsp;",
                     eq_name, key.name, exp_name, key.name);
         else
-          rsprintf("<a href=\"/SC/%s/%s?\">%s</a> ",
+          rsprintf("<a href=\"/SC/%s/%s?\">%s</a>&nbsp;&nbsp;&nbsp;",
                     eq_name, key.name, key.name);
         }
       }
@@ -7280,7 +7283,7 @@ double      yb1, yb2, yf1, yf2, ybase;
   curve_col[6] = gdImageColorAllocate(im, 128, 128, 128);
   curve_col[7] = gdImageColorAllocate(im, 128, 255, 128);
   curve_col[8] = gdImageColorAllocate(im, 255, 128, 128);
-  curve_col[9] = gdImageColorAllocate(im, 128, 128, 128);
+  curve_col[9] = gdImageColorAllocate(im, 128, 128, 255);
 
   state_col[0] = gdImageColorAllocate(im, 255,   0,   0);
   state_col[1] = gdImageColorAllocate(im, 255, 255,   0);
@@ -8128,6 +8131,428 @@ struct tm *ptms, tms;
 
 /*------------------------------------------------------------------*/
 
+void show_hist_config_page(char *path)
+{
+int    i, j, max_event_id, status, size, index, history, n_names;
+BOOL   single_names, flag, is_link;
+HNDLE  hDB, hKeyRoot, hKeyEq, hKeyVar, hKey, hKeyNames;
+KEY    key, varkey;
+char   str[256], eq_name[256], var_name[256], cmd[256], ref[256];
+char   display_name[10][2*NAME_LENGTH], sel_name[256];
+float  value;
+char   *hist_col[] = 
+  { "#0000FF", "#00C000", "#FF0000", "#00C0C0", "#FF00FF", 
+    "#C0C000", "#808080", "#80FF80", "#FF8080", "#8080FF" };
+
+  cm_get_experiment_database(&hDB, NULL);
+  strcpy(cmd, getparam("cmd"));
+
+  if (cmd[0] && equal_ustring(cmd, "save"))
+    {
+    /* copy parameters to their ODB location */
+    for (index=0 ; index<10 ; index++)
+      {
+      sprintf(str, "event%d", index);
+      if (*getparam(str))
+        {
+        strcpy(var_name, getparam(str));
+        strcat(var_name, ":");
+        sprintf(str, "var%d", index);
+        strcat(var_name, getparam(str));
+
+        sprintf(str, "/History/Display/%s/Variables", path);
+        db_find_key(hDB, 0, str, &hKeyVar);
+        if (hKeyVar)
+          db_set_data_index(hDB, hKeyVar, var_name, 2*NAME_LENGTH, index, TID_STRING);
+
+        sprintf(str, "/History/Display/%s/Factor", path);
+        db_find_key(hDB, 0, str, &hKey);
+        sprintf(str, "fac%d", index);
+        value = (float) atof(getparam(str));
+        if (hKey)
+          db_set_data_index(hDB, hKey, &value, sizeof(float), index, TID_FLOAT);
+        
+        sprintf(str, "/History/Display/%s/Offset", path);
+        db_find_key(hDB, 0, str, &hKey);
+        sprintf(str, "ofs%d", index);
+        value = (float) atof(getparam(str));
+        if (hKey)
+          db_set_data_index(hDB, hKey, &value, sizeof(float), index, TID_FLOAT);
+        }
+      else
+        {
+        sprintf(str, "/History/Display/%s/Variables", path);
+        db_find_key(hDB, 0, str, &hKey);
+        db_set_num_values(hDB, hKey, index);
+        sprintf(str, "/History/Display/%s/Factor", path);
+        db_find_key(hDB, 0, str, &hKey);
+        db_set_num_values(hDB, hKey, index);
+        sprintf(str, "/History/Display/%s/Offset", path);
+        db_find_key(hDB, 0, str, &hKey);
+        db_set_num_values(hDB, hKey, index);
+        break;
+        }
+      }
+
+    if (*getparam("timescale"))
+      {
+      sprintf(ref, "/History/Display/%s/Timescale", path);
+      strcpy(str, getparam("timescale"));
+      db_set_value(hDB, 0, ref, str, NAME_LENGTH, 1, TID_STRING); 
+      }
+
+    sprintf(ref, "/History/Display/%s/Zero ylow", path);
+    flag = *getparam("zero_ylow");
+    db_set_value(hDB, 0, ref, &flag, sizeof(flag), 1, TID_BOOL); 
+
+    sprintf(ref, "/History/Display/%s/Log Axis", path);
+    flag = *getparam("log_axis");
+    db_set_value(hDB, 0, ref, &flag, sizeof(flag), 1, TID_BOOL); 
+  
+    sprintf(ref, "/History/Display/%s/Show run markers", path);
+    flag = *getparam("run_markers");
+    db_set_value(hDB, 0, ref, &flag, sizeof(flag), 1, TID_BOOL); 
+ 
+    sprintf(str, "HS/%s", path);
+    redirect(str);
+    return;
+    }
+
+  sprintf(str, "HS/%s", path);
+  show_header(hDB, "History Config", str, 3, 0);
+
+  /* menu buttons */
+  rsprintf("<tr><td colspan=6 bgcolor=#C0C0C0>\n");
+  rsprintf("<input type=submit name=cmd value=Save>\n");
+  rsprintf("<input type=submit name=cmd value=Cancel>\n");
+  rsprintf("<input type=submit name=cmd value=Refresh>\n");
+  rsprintf("<input type=submit name=cmd value=\"Delete Panel\">\n");
+  rsprintf("</td></tr>\n");
+
+  rsprintf("<tr><td colspan=6 bgcolor=#FFFF00 align=center><b>Panel \"%s\"</b></td></tr>", path);
+
+  /* hidden command for refresh */
+  rsprintf("<input type=hidden name=cmd value=Refresh>\n");
+
+  /* time scale */
+  if (equal_ustring(cmd, "refresh"))
+    strcpy(str, getparam("timescale"));
+  else
+    {
+    sprintf(ref, "/History/Display/%s/Timescale", path);
+    size = NAME_LENGTH;
+    db_get_value(hDB, 0, ref, str, &size, TID_STRING, TRUE);
+    }
+  rsprintf("<tr><td bgcolor=#E0E0E0 colspan=6>Time scale: &nbsp;&nbsp;<input type=text name=timescale value=%s>", str);
+
+  /* ylow_zero */
+  if (equal_ustring(cmd, "refresh"))
+    flag = *getparam("zero_ylow");
+  else
+    {
+    sprintf(ref, "/History/Display/%s/Zero ylow", path);
+    size = sizeof(flag);
+    db_get_value(hDB, 0, ref, &flag, &size, TID_BOOL, TRUE);
+    }
+  if (flag)
+    rsprintf("<tr><td bgcolor=#E0E0E0 colspan=6><input type=checkbox checked name=zero_ylow value=1>", str);
+  else
+    rsprintf("<tr><td bgcolor=#E0E0E0 colspan=6><input type=checkbox name=zero_ylow value=1>", str);
+  rsprintf("&nbsp;&nbsp;Zero Ylow</td></tr>\n");
+
+  /* log_axis */
+  if (equal_ustring(cmd, "refresh"))
+    flag = *getparam("log_axis");
+  else
+    {
+    sprintf(ref, "/History/Display/%s/Log axis", path);
+    size = sizeof(flag);
+    db_get_value(hDB, 0, ref, &flag, &size, TID_BOOL, TRUE);
+    }
+  if (flag)
+    rsprintf("<tr><td bgcolor=#E0E0E0 colspan=6><input type=checkbox checked name=log_axis value=1>", str);
+  else
+    rsprintf("<tr><td bgcolor=#E0E0E0 colspan=6><input type=checkbox name=log_axis value=1>", str);
+  rsprintf("&nbsp;&nbsp;Logarighmic Y axis</td></tr>\n");
+
+  /* run_markers */
+  if (equal_ustring(cmd, "refresh"))
+    flag = *getparam("run_markers");
+  else
+    {
+    sprintf(ref, "/History/Display/%s/Show run markers", path);
+    size = sizeof(flag);
+    db_get_value(hDB, 0, ref, &flag, &size, TID_BOOL, TRUE);
+    }
+  if (flag)
+    rsprintf("<tr><td bgcolor=#E0E0E0 colspan=6><input type=checkbox checked name=run_markers value=1>", str);
+  else
+    rsprintf("<tr><td bgcolor=#E0E0E0 colspan=6><input type=checkbox name=run_markers value=1>", str);
+  rsprintf("&nbsp;&nbsp;Show run markers</td></tr>\n");
+
+  /*---- events and variables ----*/
+
+  rsprintf("<tr><th>Col<th>Event<th colspan=2>Variable<th>Factor<th>Offset</tr>\n");
+
+  for (index=0 ; index<10 ; index++)
+    {
+    rsprintf("<tr><td bgcolor=%s>&nbsp;<td>\n", hist_col[index]);
+
+    rsprintf("<select name=\"event%d\" size=1 onChange=\"document.form1.submit()\">\n", index);
+
+    /* enumerate events */
+    max_event_id = 0;
+
+    status = db_find_key(hDB, 0, "/Equipment", &hKeyRoot);
+    if (status != DB_SUCCESS)
+      {
+      show_error("Cannot find /Equipment entry in database");
+      return;
+      }
+
+    /* empty option */
+    rsprintf("<option value=\"\">\n");
+
+    /* get display event name */
+
+    if (equal_ustring(cmd, "refresh"))
+      {
+      /* from parameters in a refresh */
+      for (i=0 ; i<10 ; i++)
+        {
+        sprintf(str, "event%d", index);
+        strcpy(display_name[i], getparam(str));
+        }
+      }
+    else
+      {
+      /* from ODB else */
+      sprintf(str, "/History/Display/%s/Variables", path);
+      size = sizeof(display_name);
+      memset(display_name, 0, size);
+      db_get_value(hDB, 0, str, display_name, &size, TID_STRING, FALSE);
+      }
+      
+    /* loop over equipment */
+    for (i=0;  ; i++)
+      {
+      status = db_enum_key(hDB, hKeyRoot, i, &hKeyEq);
+      if (status != DB_SUCCESS)
+        break;
+
+      /* check history flag */
+      size = sizeof(history);
+      db_get_value(hDB, hKeyEq, "Common/Log history", &history, &size, TID_INT, TRUE);
+
+      /* show event only if log history flag is on */
+      if (history > 0)
+        {
+        /* get equipment name */
+        db_get_key(hDB, hKeyEq, &key);
+
+        if (strncmp(display_name[index], key.name, strlen(key.name)) == 0)
+          rsprintf("<option selected value=\"%s\">%s\n", key.name, key.name);
+        else
+          rsprintf("<option value=\"%s\">%s\n", key.name, key.name);
+        }    
+      }
+
+    /* loop over history links */
+    status = db_find_key(hDB, 0, "/History/Links", &hKeyRoot);
+    if (status == DB_SUCCESS)
+      {
+      for (i = 0 ; ; i++)
+        {
+        status = db_enum_link(hDB, hKeyRoot, i, &hKey);
+        if (status == DB_NO_MORE_SUBKEYS)
+          break;
+
+        db_get_key(hDB, hKey, &key);
+        
+        if (strncmp(display_name[index], key.name, strlen(key.name)) == 0)
+          rsprintf("<option selected value=\"%s\">%s\n", key.name, key.name);
+        else
+          rsprintf("<option value=\"%s\">%s\n", key.name, key.name);
+        }
+      }
+
+    rsprintf("</select></td>\n");
+    
+    status = db_find_key(hDB, 0, "/Equipment", &hKeyRoot);
+    if (status == DB_SUCCESS && display_name[index][0])
+      {
+      strcpy(eq_name, display_name[index]);
+      if (strchr(eq_name, ':'))
+        *strchr(eq_name, ':') = 0;
+      
+      is_link = FALSE;
+      db_find_key(hDB, hKeyRoot, eq_name, &hKeyEq);
+      if (!hKeyEq)
+        {
+        sprintf(str, "/History/Links/%s", eq_name);
+        status = db_find_key(hDB, 0, str, &hKeyVar);
+        if (status != DB_SUCCESS)
+          {
+          sprintf(str, "Cannot find /Equipment/%s or /History/Links/%s in ODB", 
+                  eq_name, eq_name);
+          show_error(str);
+          return;
+          }
+        else
+          is_link = TRUE;
+        }
+
+      rsprintf("<td colspan=2><select name=\"var%d\">\n", index);
+
+      /* go through variables for selected event */
+      if (!is_link)
+        {
+        sprintf(str, "/Equipment/%s/Variables", eq_name);
+        status = db_find_key(hDB, 0, str, &hKeyVar);
+        if (status != DB_SUCCESS)
+          {
+          sprintf(str, "Cannot find /Equipment/%s/Variables in ODB", 
+                  eq_name, eq_name);
+          show_error(str);
+          return;
+          }
+        }
+
+      for (i=0 ;; i++)
+        {
+        status = db_enum_key(hDB, hKeyVar, i, &hKey);
+        if (status == DB_NO_MORE_SUBKEYS)
+          break;
+
+        if (is_link)
+          {
+          db_get_key(hDB, hKey, &varkey);
+          
+          if (strchr(display_name[index], ':'))
+            strcpy(str, strchr(display_name[index], ':')+1);
+          else
+            str[0] = 0;
+
+          if (equal_ustring(str, varkey.name))
+            rsprintf("<option selected value=\"%s\">%s\n", varkey.name, varkey.name);
+          else
+            rsprintf("<option value=\"%s\">%s\n", varkey.name, varkey.name);
+          }
+        else
+          {
+          /* get variable key */
+          db_get_key(hDB, hKey, &varkey);
+
+          /* look for names */
+          db_find_key(hDB, hKeyEq, "Settings/Names", &hKeyNames);
+          single_names = (hKeyNames > 0);
+          if (hKeyNames)
+            {
+            /* get variables from names list */
+            db_get_key(hDB, hKeyNames, &key);
+            n_names = key.num_values;
+            }
+          else
+            {
+            sprintf(str, "Settings/Names %s", varkey.name);
+            db_find_key(hDB, hKeyEq, str, &hKeyNames);
+            if (hKeyNames)
+              {
+              /* get variables from names list */
+              db_get_key(hDB, hKeyNames, &key);
+              n_names = key.num_values;
+              }
+            }
+
+          if (hKeyNames)
+            {
+            /* loop over array elements */
+            for (j=0 ; j<n_names ; j++)
+              {
+              /* get name #j */
+              size = NAME_LENGTH;
+              db_get_data_index(hDB, hKeyNames, var_name, &size, j, TID_STRING);
+
+              /* append variable key name for single name array */
+              if (single_names)
+                {
+                strcat(var_name, " ");
+                strcat(var_name, varkey.name);
+                }
+
+
+              if (equal_ustring(cmd, "refresh"))
+                {
+                /* get name from parameters in a refresh */
+                sprintf(str, "var%d", index);
+                strcpy(sel_name, getparam(str));
+                }
+              else
+                {
+                /* get name from ODB */
+                if (strchr(display_name[index], ':'))
+                  strcpy(sel_name, strchr(display_name[index], ':')+1);
+                else
+                  sel_name[0] = 0;
+                }
+
+              if (equal_ustring(sel_name, var_name))
+                rsprintf("<option selected value=\"%s\">%s\n", var_name, var_name);
+              else
+                rsprintf("<option value=\"%s\">%s\n", var_name, var_name);
+              }
+            }
+          else
+            {
+            if (strchr(display_name[index], ':'))
+              strcpy(str, strchr(display_name[index], ':')+1);
+            else
+              str[0] = 0;
+
+            if (equal_ustring(str, var_name))
+              rsprintf("<option selected value=\"%s\">%s\n", varkey.name, varkey.name);
+            else
+              rsprintf("<option value=\"%s\">%s\n", varkey.name, varkey.name);
+            }
+          }
+        }
+
+      rsprintf("</select></td>\n");
+      }
+    else
+      rsprintf("<td colspan=2></td>\n");
+    
+    value = 1;
+    sprintf(str, "/History/Display/%s/Factor", path);
+    db_find_key(hDB, 0, str, &hKey);
+    size = sizeof(float);
+    if (hKey)
+      {
+      db_get_key(hDB, hKey, &key);
+      if (index < key.num_values)
+        db_get_data_index(hDB, hKey, &value, &size, index, TID_FLOAT);
+      }
+    rsprintf("<td><input type=text size=10 maxlength=10 name=\"fac%d\" value=%g></td>\n", index, value);
+
+    value = 0;
+    sprintf(str, "/History/Display/%s/Offset", path);
+    db_find_key(hDB, 0, str, &hKey);
+    size = sizeof(float);
+    if (hKey)
+      {
+      db_get_key(hDB, hKey, &key);
+      if (index < key.num_values)
+        db_get_data_index(hDB, hKey, &value, &size, index, TID_FLOAT);
+      }
+    rsprintf("<td><input type=text size=10 maxlength=10 name=\"ofs%d\" value=%g></td>\n", index, value);
+
+    rsprintf("</tr>\n");
+    }
+
+}
+
+/*------------------------------------------------------------------*/
+
 void show_hist_page(char *path, char *buffer, int *buffer_size, int refresh)
 {
 char   str[256], ref[256], ref2[256], paramstr[256], scalestr[256];
@@ -8138,16 +8563,78 @@ int    i, scale, offset, index, width, size, status;
 float  factor[2];
 char   def_button[][NAME_LENGTH] = {"10m", "1h", "3h", "12h", "24h", "3d", "7d" };
 
+  cm_get_experiment_database(&hDB, NULL);
+
   if (equal_ustring(getparam("cmd"), "Query"))
     {
     show_query_page(path);
     return;
     }
 
-  if (equal_ustring(getparam("cmd"), "Config"))
+  if (equal_ustring(getparam("cmd"), "Config") ||
+      equal_ustring(getparam("cmd"), "Save")   ||
+      equal_ustring(getparam("cmd"), "Refresh"))
     {
+    show_hist_config_page(path);
+    /*
     sprintf(str, "History/Display/%s", path);
     redirect(str);
+    */
+
+    return;
+    }
+
+  if (equal_ustring(getparam("cmd"), "New"))
+    {
+    sprintf(str, "HS/%s", path);
+    show_header(hDB, "History", str, 1, 0);
+    rsprintf("<tr><td align=center bgcolor=#FFFF00 colspan=2>Panel name:&nbsp;&nbsp;&nbsp;");
+    rsprintf("<input type=text size=15 maxlength=31 name=panel>\n");
+    rsprintf("</td></tr>\n");
+
+    rsprintf("<tr><td align=center colspan=2>");
+    rsprintf("<input type=submit value=Submit>\n");
+    rsprintf("</td></tr>\n");
+
+    rsprintf("</table>\r\n");
+    rsprintf("</body></html>\r\n");
+    return;
+    }
+
+  if (equal_ustring(getparam("cmd"), "Delete Panel"))
+    {
+    sprintf(str, "/History/Display/%s", path);
+    if (db_find_key(hDB, 0, str, &hkey))
+      db_delete_key(hDB, hkey, FALSE);
+
+    redirect("HS/");
+    return;
+    }
+
+  if (*getparam("panel"))
+    {
+    strcpy(path, getparam("panel"));
+
+    /* create new panel */
+    sprintf(str, "/History/Display/%s", path);
+    db_create_key(hDB, 0, str, TID_KEY);
+    db_find_key(hDB, 0, str, &hkey);
+    db_set_value(hDB, hkey, "Variables",
+                 "", NAME_LENGTH*2, 1, TID_STRING);
+
+    factor[0] = 1;
+    db_set_value(hDB, hkey, "Factor", factor, 1*sizeof(float), 1, TID_FLOAT);
+    factor[0] = 0;
+    db_set_value(hDB, hkey, "Offset", factor, 1*sizeof(float), 1, TID_FLOAT);
+    db_set_value(hDB, hkey, "Timescale", "1h", NAME_LENGTH, 1, TID_STRING);
+    i = 1;
+    db_set_value(hDB, hkey, "Zero ylow", &i, sizeof(BOOL), 1, TID_BOOL);
+    db_set_value(hDB, hkey, "Show run markers", &i, sizeof(BOOL), 1, TID_BOOL);
+    i = 0;
+    db_set_value(hDB, hkey, "Log axis", &i, sizeof(BOOL), 1, TID_BOOL);
+
+    /* configure that panel */
+    show_hist_config_page(path);
     return;
     }
 
@@ -8255,8 +8742,6 @@ char   def_button[][NAME_LENGTH] = {"10m", "1h", "3h", "12h", "24h", "3d", "7d" 
     scale *= 2;
     }
 
-  cm_get_experiment_database(&hDB, NULL);
-
   sprintf(str, "HS/%s", path);
   show_header(hDB, "History", str, 1, offset == 0 ? refresh : 0);
 
@@ -8304,14 +8789,14 @@ char   def_button[][NAME_LENGTH] = {"10m", "1h", "3h", "12h", "24h", "3d", "7d" 
     rsprintf("<input type=hidden name=hindex value=%s></tr>\n", pindex);
 
   /* links for history panels */
-  rsprintf("<tr><td colspan=2 bgcolor=#C0C0C0>\n");
+  rsprintf("<tr><td colspan=6 bgcolor=#FFFF00>\n");
   if (path[0])
-    rsprintf("<tr><td colspan=6 bgcolor=#FFFF00><i>Panel:</i> \n");
+    rsprintf("<i>Panel:</i>&nbsp;&nbsp;&nbsp;\n");
   else
-    rsprintf("<tr><td colspan=6 bgcolor=#FFFF00><b>Please select panel:</b> \n");
+    rsprintf("<b>Please select panel:</b>&nbsp;&nbsp;&nbsp;\n");
 
   if (equal_ustring(path, "All"))
-    rsprintf("<b>All</b> ");
+    rsprintf("<b>All</b>&nbsp;&nbsp;&nbsp;");
   else
     {
     if (exp_name[0])
@@ -8328,17 +8813,26 @@ char   def_button[][NAME_LENGTH] = {"10m", "1h", "3h", "12h", "24h", "3d", "7d" 
     strcpy(str+2*NAME_LENGTH, "System:Trigger kB per sec.");
     db_set_value(hDB, 0, "/History/Display/Trigger rate/Variables",
                  str, NAME_LENGTH*4, 2, TID_STRING);
+    strcpy(str, "1h");
+    db_set_value(hDB, 0, "/History/Display/Trigger rate/Time Scale",
+                 str, NAME_LENGTH, 1, TID_STRING);
 
     factor[0] = 1;
     factor[1] = 1;
     db_set_value(hDB, 0, "/History/Display/Trigger rate/Factor",
                  factor, 2*sizeof(float), 2, TID_FLOAT);
-
+    factor[0] = 0;
+    factor[1] = 0;
+    db_set_value(hDB, 0, "/History/Display/Trigger rate/Offset",
+                 factor, 2*sizeof(float), 2, TID_FLOAT);
     strcpy(str, "1h");
     db_set_value(hDB, 0, "/History/Display/Trigger rate/Timescale",
                  str, NAME_LENGTH, 1, TID_STRING);
     i = 1;
     db_set_value(hDB, 0, "/History/Display/Trigger rate/Zero ylow",
+                 &i, sizeof(BOOL), 1, TID_BOOL);
+    i = 1;
+    db_set_value(hDB, 0, "/History/Display/Trigger rate/Show run markers",
                  &i, sizeof(BOOL), 1, TID_BOOL);
     }
 
@@ -8365,6 +8859,9 @@ char   def_button[][NAME_LENGTH] = {"10m", "1h", "3h", "12h", "24h", "3d", "7d" 
       if (i % 10 == 9)
         rsprintf("<br>\n");
       }
+
+  /* "New" button */
+  rsprintf("<input type=submit name=cmd value=New>");
 
   rsprintf("</tr>\n");
 
@@ -8540,9 +9037,7 @@ char   def_button[][NAME_LENGTH] = {"10m", "1h", "3h", "12h", "24h", "3d", "7d" 
         }
     }
 
-
   rsprintf("</table>\r\n");
-
   rsprintf("</body></html>\r\n");
 }
 
