@@ -8,6 +8,10 @@
 
 
   $Log$
+  Revision 1.5  1998/10/23 14:21:35  midas
+  - Modified version scheme from 1.06 to 1.6.0
+  - cm_get_version() now returns versino as string
+
   Revision 1.4  1998/10/23 13:11:13  midas
   Modified release number to 1.6
 
@@ -36,7 +40,7 @@
    cm_get_version and will be incremented whenever changes are done
    to the MIDAS library */
 
-#define MIDAS_VERSION 1.6
+#define MIDAS_VERSION "1.6.0"
 
 /*------------------------------------------------------------------*/
 
@@ -1007,7 +1011,7 @@ extern "C" {
 
 /*---- common routines ----*/
 INT EXPRT cm_get_error(INT code, char *string);
-INT EXPRT cm_get_version(void);
+char EXPRT *cm_get_version(void);
 INT EXPRT cm_get_environment(char *host_name, char *exp_name);
 INT EXPRT cm_list_experiments(char *host_name, char exp_name[MAX_EXPERIMENT][NAME_LENGTH]);
 INT EXPRT cm_select_experiment(char *host_name, char *exp_name);

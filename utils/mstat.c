@@ -6,6 +6,10 @@
   Contents:     Display/log some pertinent information of the ODB
   
   $Log$
+  Revision 1.3  1998/10/23 14:21:52  midas
+  - Modified version scheme from 1.06 to 1.6.0
+  - cm_get_version() now returns versino as string
+
   Revision 1.2  1998/10/12 12:19:04  midas
   Added Log tag in header
 
@@ -233,11 +237,11 @@ void compose_status(HNDLE hDB, HNDLE hKey)
   strcpy(str, ctime(&full_time));
   str[24] = 0;
   if (active_flag)
-    sprintf(&(ststr[j++][0]),"*-v%1.2lf- MIDAS status -- Alarm Checker active-----%s--*"
-	    ,cm_get_version()/100.0,str);
+    sprintf(&(ststr[j++][0]),"*-v%s- MIDAS status -- Alarm Checker active-----%s--*"
+	    ,cm_get_version(),str);
   else
-    sprintf(&(ststr[j++][0]),"*-v%1.2lf- MIDAS status page ------------------------%s--*"
-	    ,cm_get_version()/100.0,str);
+    sprintf(&(ststr[j++][0]),"*-v%s- MIDAS status page ------------------------%s--*"
+	    ,cm_get_version(),str);
   
   sprintf(&(ststr[j][0]),"Experiment:%s",midstat.expt);
   sprintf(&(ststr[j][23]), "Run#:%d",midstat.runnumber);

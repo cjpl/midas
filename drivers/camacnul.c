@@ -17,6 +17,10 @@
  *  Author:  Pierre-Andre Amaudruz Data Acquisition Group
  * 
  *  $Log$
+ *  Revision 1.5  1998/10/23 14:21:49  midas
+ *  - Modified version scheme from 1.06 to 1.6.0
+ *  - cm_get_version() now returns versino as string
+ *
  *  Revision 1.4  1998/10/12 09:43:11  midas
  *  -SR- Changed header comment
  *
@@ -94,9 +98,9 @@ INLINE void camec_sa(const int ext, const int f, const int r){}
 INLINE void camec_sn(const int ext, const int f, const int r){}
 INLINE void cam_interrupt_enable(void){}
 INLINE void cam_interrupt_disable(void){}
-INLINE void cam_interrupt_attach(void (*isr)()){}
+INLINE void cam_interrupt_attach(void (*isr)(void)){}
 INLINE void cam_interrupt_detach(void){}
 INLINE void cam_glint_enable(void){}
 INLINE void cam_glint_disable(void){}
-INLINE void cam_glint_attach(int lam, void (*isr)()){}
+INLINE void cam_glint_attach(int lam, void (*isr)(void)){}
 INLINE void cam_glint_detach(){}
