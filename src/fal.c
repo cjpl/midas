@@ -7,6 +7,9 @@
                 Most routines are from mfe.c mana.c and mlogger.c.
 
   $Log$
+  Revision 1.29  2002/05/10 05:22:05  pierre
+  add MANA_LITE #ifdef
+
   Revision 1.28  2002/05/08 19:54:40  midas
   Added extra parameter to function db_get_value()
 
@@ -112,6 +115,8 @@
 #define f2cFortran
 #endif
 
+
+#ifndef MANA_LITE
 #include <cfortran.h>
 #include <hbook.h>
 
@@ -119,7 +124,7 @@
 #ifndef HFNOV
 #define HFNOV(A1,A2)  CCALLSFSUB2(HFNOV,hfnov,INT,FLOATV,A1,A2) 
 #endif
-
+#endif  // MANA_LITE
 /*---- globals -----------------------------------------------------*/
 
 #define FAL_MAIN
@@ -2720,7 +2725,7 @@ BANK_LIST  *bank_list;
       db_get_value(hDB, 0, str, &module[j]->enabled, &size, TID_BOOL, TRUE);
       }
     }
-
+#ifndef MANA_LITE
   /* clear histos and N-tuples */
   if (out_info.clear_histos)
     {
@@ -2732,7 +2737,7 @@ BANK_LIST  *bank_list;
 
     test_clear();
     }
-
+#endif
   /* call bor for modules */
   for (i=0 ; analyze_request[i].event_name[0] ; i++)
     {
@@ -2801,6 +2806,7 @@ char       str[256], file_name[256];
   /* write tests to ODB */
   update_stats();
 
+#ifndef MANA_LITE
   /* save histos if requested */
   if (out_info.histo_dump)
     {
@@ -2819,7 +2825,7 @@ char       str[256], file_name[256];
 
     HRPUT(0, file_name, "NT");
     }
-
+#endif
   run_state = STATE_STOPPED;
   run_number = rn;
 
@@ -3028,6 +3034,7 @@ char hbook_types[][8] = {
 
 };
 
+#ifndef MANA_LITE
 INT book_ntuples(void);
 
 void banks_changed(INT hDB, INT hKey, void *info)
@@ -3199,7 +3206,7 @@ EVENT_DEF  *event_def;
     /* book N-tuple with evend ID */
     strcpy(block_name, analyze_request[index].event_name);
     block_name[8] = 0;
-
+#ifndef MANA_LITE
     id = analyze_request[index].ar_info.event_id;
     if (HEXIST(id))
       HDELET(id);
@@ -3212,6 +3219,7 @@ EVENT_DEF  *event_def;
       printf("\n");
       cm_msg(MINFO, "book_ntuples", "Cannot book N-tuple #%d. Increase PAWC size via the -s flag or switch off banks", id);
       }
+#endif
     }
 
   return SUCCESS;
@@ -3223,8 +3231,7 @@ INT write_event_hbook(EVENT_HEADER *pevent, ANALYZE_REQUEST *par)
 {
 INT         i, j, k, n, size, item_size, status;
 BANK        *pbk;                      
-BANK32      *pbk32;
-BANK_LIST   *pbl;      
+BANK32      *pbk32;BANK_LIST   *pbl;      
 BANK_HEADER *pbh;
 void        *pdata;                    
 BOOL        exclude, exclude_all;
@@ -3291,7 +3298,7 @@ WORD        bktype;
             break;
             }
         if (par->bank_list[i].name[0] == 0)
-          cm_msg(MERROR, "write_hbook_event", "Received unknown bank %s", block_name);
+          cm_msg(MERROR, "write_event_hbook", "Received unknown bank %s", block_name);
         }
 
       /* fill RW N-tuple */
@@ -3461,6 +3468,7 @@ WORD        bktype;
 
   return SUCCESS;
 }
+#endif
 
 /*-- analyzer init routine -----------------------------------------*/
 
@@ -3524,7 +3532,7 @@ double     dummy;
       db_create_record(hDB, 0, str, strcomb(analyze_request[i].init_string));
       }
     }
-
+#ifndef MANA_LITE
   /* create global section */
   HLIMAP(pawc_size/4, out_info.global_memory_name);
   printf("\nGLOBAL MEMORY NAME = %s\n", out_info.global_memory_name);
@@ -3533,7 +3541,7 @@ double     dummy;
   status = book_ntuples();
   if (status != SUCCESS)
     return status;
-
+#endif
   /* call main analyzer init routine */
   status = analyzer_init();
   if (status != SUCCESS)
@@ -3685,9 +3693,9 @@ EVENT_DEF       *event_def;
 
       /* increment tests */
       test_increment();
-
+#ifndef MANA_LITE
       write_event_hbook(pevent, par);
-
+#endif
       /* put event in ODB once every second */
       actual_time = ss_millitime();
       for (i=0 ; i<50 ; i++)
@@ -4005,7 +4013,7 @@ DWORD    actual_time;
 INT clear_histos(INT id1, INT id2)
 {
 INT i;
-
+#ifndef MANA_LITE
   if (id1 != id2)
     {
     printf("Clear ID %d to ID %d\n", id1, id2);
@@ -4018,7 +4026,7 @@ INT i;
     printf("Clear ID %d\n", id1);
     HRESET(id1, " ");
     }
-
+#endif
   return SUCCESS;
 }
 
@@ -4620,8 +4628,10 @@ BOOL  debug;
         strcpy(exp_name, argv[++i]);
       else if (argv[i][1] == 'h')
         strcpy(host_name, argv[++i]);
+#ifndef MANA_LITE
       else if (argv[i][1] == 's')
         pawc_size = atoi(argv[++i]);
+#endif
       else
         {
 usage:

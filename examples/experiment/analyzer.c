@@ -6,6 +6,9 @@
   Contents:     System part of Analyzer code for sample experiment
 
   $Log$
+  Revision 1.10  2002/05/10 05:22:34  pierre
+  add MANA_LITE #ifdef
+
   Revision 1.9  2002/05/09 02:50:28  midas
   Removed initialization of 'Edit on start' by analyzer
 
@@ -49,10 +52,12 @@
 #ifdef __linux__
 #define f2cFortran
 #endif
+#ifndef MANA_LITE
 #include <cfortran.h>
 #include <hbook.h>
 
 PAWC_DEFINE(1000000);
+#endif
 
 /*-- Globals -------------------------------------------------------*/
 
