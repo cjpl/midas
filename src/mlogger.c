@@ -6,6 +6,9 @@
   Contents:     MIDAS logger program
 
   $Log$
+  Revision 1.54  2002/05/14 06:02:51  midas
+  Added -v flag for verbose output on history booking
+
   Revision 1.53  2002/05/10 01:41:19  midas
   Added optional debug output to cm_transition
 
@@ -180,11 +183,12 @@
 #define LOGGER_TIMEOUT 60000
 
 #define MAX_CHANNELS 10
-#define MAX_HISTORY  20
+#define MAX_HISTORY  50
 
 BOOL  in_stop_transition = FALSE;
 BOOL  tape_message = TRUE;
 DWORD auto_restart = 0;
+BOOL  verbose = FALSE;
 
 LOG_CHN log_chn[MAX_CHANNELS];
 
@@ -1618,6 +1622,7 @@ BOOL     single_names;
       db_get_key(hDB, hKeyEq, &key);
       strcpy(eq_name, key.name);
 
+
       status = db_find_key(hDB, hKeyEq, "Variables", &hKeyVar);
       if (status != DB_SUCCESS)
         {
@@ -1627,6 +1632,10 @@ BOOL     single_names;
 
       size = sizeof(event_id);
       db_get_value(hDB, hKeyEq, "Common/Event ID", &event_id, &size, TID_WORD, TRUE);
+
+      if (verbose)
+        printf("\n==================== Equipment \"%s\", ID %d  =======================\n", 
+                  eq_name, event_id);
 
       /* count keys in variables tree */
       for (n_var=0,n_tags=0 ;; n_var++)
@@ -1658,6 +1667,10 @@ BOOL     single_names;
         single_names = (hKeyNames > 0);
         if (hKeyNames)
           {
+          if (verbose)
+            printf("Using \"/Equipment/%s/Settings/Names\" for variable \"%s\"\n", 
+              eq_name, varkey.name);
+          
           /* define tags from names list */
           db_get_key(hDB, hKeyNames, &key);
           n_names = key.num_values;
@@ -1668,6 +1681,10 @@ BOOL     single_names;
           db_find_key(hDB, hKeyEq, str, &hKeyNames);
           if (hKeyNames)
             {
+            if (verbose)
+              printf("Using \"/Equipment/%s/Settings/Names %s\" for variable \"%s\"\n", 
+                eq_name, varkey.name, varkey.name);
+
             /* define tags from names list */
             db_get_key(hDB, hKeyNames, &key);
             n_names = key.num_values;
@@ -1703,6 +1720,10 @@ BOOL     single_names;
 
             tag[i_tag].type = varkey.type;
             tag[i_tag].n_data = 1;
+
+            if (verbose)
+              printf("Defined tag \"%s\", size 1\n", tag[i_tag].name);
+
             i_tag++;
             }
           }
@@ -1711,12 +1732,19 @@ BOOL     single_names;
           strcpy(tag[i_tag].name, varkey.name);
           tag[i_tag].type = varkey.type;
           tag[i_tag].n_data = varkey.num_values;
+
+          if (verbose)
+            printf("Defined tag \"%s\", size %d\n", tag[i_tag].name, varkey.num_values);
+
           i_tag++;
           }
         }
 
       hs_define_event(event_id, eq_name, tag, sizeof(TAG)*i_tag);
       free(tag);
+
+      if (verbose)
+        printf("\n");
 
       /* setup hist_log structure for this event */
       hist_log[index].event_id = event_id;
@@ -1783,6 +1811,10 @@ BOOL     single_names;
         continue;
         }
 
+      if (verbose)
+        printf("\n==================== History link \"%s\", ID %d  =======================\n", 
+                  hist_name, max_event_id);
+
       /* count subkeys in link */
       for (i=n_var=0 ;; i++)
         {
@@ -1835,6 +1867,10 @@ BOOL     single_names;
             strcpy(tag[n_var].name, linkkey.name);
             tag[n_var].type = varkey.type;
             tag[n_var].n_data = varkey.num_values;
+            
+            if (verbose)
+              printf("Defined tag \"%s\", size %d\n", tag[n_var].name, varkey.num_values);
+            
             size += varkey.total_size;
             n_var++;
             }
@@ -1846,6 +1882,9 @@ BOOL     single_names;
 
         hs_define_event(max_event_id, hist_name, tag, sizeof(TAG)*n_var);
         free(tag);
+
+        if (verbose)
+          printf("\n");
 
         /* define system history */
 
@@ -2591,6 +2630,8 @@ HNDLE  hktemp;
       daemon = TRUE;
     else if (argv[i][0] == '-' && argv[i][1] == 's')
       save_mode = TRUE;
+    else if (argv[i][0] == '-' && argv[i][1] == 'v')
+      verbose = TRUE;
     else if (argv[i][0] == '-')
       {
       if (i+1 >= argc || argv[i+1][0] == '-')
@@ -2602,7 +2643,7 @@ HNDLE  hktemp;
       else
         {
 usage:
-        printf("usage: mlogger [-h Hostname] [-e Experiment] [-d] [-D] [-s]\n\n");
+        printf("usage: mlogger [-h Hostname] [-e Experiment] [-d] [-D] [-s] [-v]\n\n");
         return 1;
         }
       }
