@@ -6,6 +6,9 @@
   Contents:     Command-line interface to the MIDAS online data base.
 
   $Log$
+  Revision 1.38  2000/06/09 11:24:09  midas
+  Added -p (pause) flag in "ls" command
+
   Revision 1.37  2000/05/02 14:58:27  midas
   Added 'cp' as alias to 'copy'
 
@@ -134,6 +137,7 @@ typedef struct {
 #define PI_RECURSIVE (1<<1)
 #define PI_VALUE     (1<<2)
 #define PI_HEX       (1<<3)
+#define PI_PAUSE     (1<<4)
 
 /*------------------------------------------------------------------*/
 
@@ -171,11 +175,12 @@ void print_help(char *command)
     printf("ln <source> <linkname>  - create a link to <source> key\n");
     printf("load <file>             - load database from .ODB file at current position\n");
     printf("-- hit return for more --\r"); getchar();
-    printf("ls/dir [-lhvr] [<pat>]  - show database entries which match pattern\n");
+    printf("ls/dir [-lhvrp] [<pat>] - show database entries which match pattern\n");
     printf("  -l                      detailed info\n");
     printf("  -h                      hex format\n");
     printf("  -v                      only value\n");
     printf("  -r                      show database entries recursively\n");
+    printf("  -p                      pause between screens\n");
     printf("make [analyzer name]    - create experim.h\n");
     printf("mem                     - show memeory usage\n");
     printf("mkdir <subdir>          - make new <subdir>\n");
@@ -284,6 +289,46 @@ BOOL match(char *pat, char *str)
 
 /*------------------------------------------------------------------*/
 
+int ls_line, ls_abort;
+
+BOOL check_abort(int flags, int l)
+{
+int c;
+ 
+  if ((flags & PI_PAUSE) && (l % 24) == 23)
+    {
+    printf("Press any key to continue or q to quit ");
+    fflush(stdout);
+    do
+      {
+      c = ss_getchar(0);
+      if (c == 'q')
+        {
+        printf("\n");
+        ls_abort = TRUE;
+        return TRUE;
+        }
+      else if (c > 0)
+        {
+        printf("\r                                        \r");
+        return FALSE;
+        }
+
+      ss_sleep(100);
+
+      } while (!cm_is_ctrlc_pressed());
+    }
+
+  if (cm_is_ctrlc_pressed())
+    {
+    ls_abort = TRUE;
+    return TRUE;
+    }
+
+  return FALSE;
+}
+
+
 INT print_key(HNDLE hDB, HNDLE hKey, KEY *key, INT level, void *info)
 {
 INT         i, size, status;
@@ -291,7 +336,7 @@ static char data_str[256], line[256];
 DWORD       delta;
 PRINT_INFO  *pi;
 
-  if (cm_is_ctrlc_pressed())
+  if (ls_abort)
     return 0;
 
   pi = (PRINT_INFO *) info;
@@ -313,14 +358,14 @@ PRINT_INFO  *pi;
       else
         for (i=0 ; i<key->num_values ; i++)
           {
-          if (cm_is_ctrlc_pressed())
-            return 0;
-
           if (pi->flags & PI_HEX)
             db_sprintfh(data_str, data, key->item_size, i, key->type);
           else
             db_sprintf(data_str, data, key->item_size, i, key->type);
+
           printf("%s\n", data_str);
+          if (check_abort(pi->flags, ls_line++))
+            return 0;
           }
       }
     }
@@ -339,6 +384,8 @@ PRINT_INFO  *pi;
       else
         line[32] = 0;
       printf("%s\n", line);
+      if (check_abort(pi->flags, ls_line++))
+        return 0;
       }
     else
       {
@@ -399,14 +446,13 @@ PRINT_INFO  *pi;
           line[32] = 0;
 
       printf("%s\n", line);
+      if (check_abort(pi->flags, ls_line++))
+        return 0;
     
       if (key->num_values > 1)
         {
         for (i=0 ; i<key->num_values ; i++)
           {
-          if (cm_is_ctrlc_pressed())
-            return 0;
-
           if (pi->flags & PI_HEX)
             db_sprintfh(data_str, data, key->item_size, i, key->type);
           else
@@ -426,6 +472,8 @@ PRINT_INFO  *pi;
             strcpy(line+32, data_str);
 
           printf("%s\n", line);
+          if (check_abort(pi->flags, ls_line++))
+            return 0;
           }
         }
       }
@@ -1433,6 +1481,8 @@ PRINT_INFO      print_info;
       db_find_key(hDB, 0, pwd, &hKey);
       print_info.flags = 0;
       print_info.pattern[0] = 0;
+      ls_line = 0;
+      ls_abort = FALSE;
 
       /* parse options */
       for (i=1 ; i<4 ; i++)
@@ -1448,6 +1498,8 @@ PRINT_INFO      print_info;
               print_info.flags |= PI_VALUE;
             if (param[i][j] == 'h')
               print_info.flags |= PI_HEX;
+            if (param[i][j] == 'p')
+              print_info.flags |= PI_PAUSE;
             }
           }
 
@@ -1506,7 +1558,9 @@ PRINT_INFO      print_info;
                 break;
 
               db_get_key(hDB, hSubkey, &key);
-              print_key(hDB, hSubkey, &key, 0, &print_info);
+              status = print_key(hDB, hSubkey, &key, 0, &print_info);
+              if (status == 0)
+                break;
               }
           }
         }
