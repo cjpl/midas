@@ -6,6 +6,9 @@
   Contents:     Display/log some pertinent information of the ODB
   
   $Log$
+  Revision 1.8  1999/10/07 13:17:36  midas
+  Put a few EXPRT im msystem.h to make NT happy, updated NT makefile
+
   Revision 1.7  1999/09/24 00:04:12  pierre
   - Modified Lazy status for multiple lazy channel
 
@@ -429,7 +432,7 @@ void compose_status(HNDLE hDB, HNDLE hKey)
     float cr, bs;
     INT status, nf, size, i, k;
     char bn[128], tl[128];
-    HNDLE  hKeyClient, hlKey, hKey, hSubkey;
+    HNDLE  hlKey, hKey, hSubkey;
     char   client_name[NAME_LENGTH];
 
     status = db_find_key(hDB, 0, "System/Clients", &hKey);
@@ -443,9 +446,6 @@ void compose_status(HNDLE hDB, HNDLE hKey)
       status = db_enum_key(hDB, hKey, i, &hSubkey);
       if (status == DB_NO_MORE_SUBKEYS)
         break;
-
-      if (hSubkey == hKeyClient)
-        continue;
 
       if (status == DB_SUCCESS)
       {
