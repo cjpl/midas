@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus communication functions
 
   $Log$
+  Revision 1.9  2002/08/12 12:10:55  midas
+  Added error handling (zero padding)
+
   Revision 1.8  2002/07/10 09:51:18  midas
   Introduced mscb_flash()
 
@@ -268,6 +271,9 @@ int i, timeout;
 unsigned char busy, bit9_mask;
 
   bit9_mask = bit9 ? LPT_BIT9 : 0;
+
+  /* remove accidental strobe */
+  OUTP(mscb_fd[fd-1].fd + LPT_NSTROBE_OFS, 0);
 
   for (i=0 ; i<len ; i++)
     {
@@ -757,27 +763,32 @@ int i;
     /* read back ping reply, 1ms timeout */
     i = mscb_in1(fd, buf, 1000);
 
-    mscb_release();
-    
     if (i == MSCB_SUCCESS && buf[0] == CMD_ACK)
+      {
+      mscb_release();
       return MSCB_SUCCESS;
+      }
 
+    /* send 0's to overflow partially filled node receive buffer */
+    memset(buf, 0, sizeof(buf));
+    mscb_out(fd, buf, 10, TRUE);
+
+    mscb_release();
     return  MSCB_TIMEOUT;
     }
 
   mscb_release();
-
   return MSCB_SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
 
-int mscb_reset(int fd)
+int mscb_reboot(int fd)
 /********************************************************************\
 
-  Routine: mscb_reset
+  Routine: mscb_reboot
 
-  Purpose: Reset addressed node(s) by sending CMD_INIT
+  Purpose: Reboot addressed node(s) by sending CMD_INIT
 
   Input:
     int fd                  File descriptor for connection
@@ -796,6 +807,47 @@ unsigned char buf[10];
   buf[0] = CMD_INIT;
   buf[1] = crc8(buf, 1);
   mscb_out(fd, buf, 2, FALSE);
+
+  mscb_release();
+
+  return MSCB_SUCCESS;
+}
+
+/*------------------------------------------------------------------*/
+
+int mscb_reset(int fd)
+/********************************************************************\
+
+  Routine: mscb_reset
+
+  Purpose: Reset submaster via hardware reset
+
+  Input:
+    int fd                  File descriptor for connection
+
+  Function value:
+    MSCB_SUCCESS            Successful completion
+    MSCB_MUTEX              Cannot obtain mutex for mscb
+
+\********************************************************************/
+{
+unsigned char d;
+unsigned int timeout;
+
+  if (mscb_lock() != MSCB_SUCCESS)
+    return MSCB_MUTEX;
+
+  /* toggle reset */
+  OUTP(mscb_fd[fd-1].fd + LPT_NRESET_OFS, LPT_NRESET);
+  OUTP(mscb_fd[fd-1].fd + LPT_NRESET_OFS, 0);
+
+  /* wait for node to reboot */
+  for (timeout=0 ; timeout<5*1000*1000 ; timeout++)
+    {
+    d = INP(mscb_fd[fd-1].fd + LPT_NBUSY_OFS);
+    if ((d & LPT_NBUSY) != 0)
+      break;
+    }
 
   mscb_release();
 
@@ -1429,7 +1481,7 @@ int mscb_write16(char *device, unsigned short addr, unsigned char channel, unsig
 \********************************************************************/
 {
 unsigned char buf[10], ack[10], crc;
-int           i;
+int           i, r;
 
   if (_fd == 0)
     {
@@ -1440,31 +1492,47 @@ int           i;
 
   mscb_lock();
 
-  /* send address command */
-  buf[0] = CMD_ADDR_NODE16;
-  buf[1] = (unsigned char) (addr >> 8);
-  buf[2] = (unsigned char) (addr & 0xFF);
-  buf[3] = crc8(buf, 3);
-  mscb_out(_fd, buf, 4, TRUE);
+  for (i=0 ; i<10 ; i++)
+    {
+    /* send address command */
+    buf[0] = CMD_ADDR_NODE16;
+    buf[1] = (unsigned char) (addr >> 8);
+    buf[2] = (unsigned char) (addr & 0xFF);
+    buf[3] = crc8(buf, 3);
+    mscb_out(_fd, buf, 4, TRUE);
 
-  /* send write command */
-  buf[0] = CMD_WRITE_ACK+3;
-  buf[1] = channel;
-  buf[2] = (data >> 8);
-  buf[3] = data & 0xFF;
-  crc = crc8(buf, 4);
-  buf[4] = crc;
-  mscb_out(_fd, buf, 5, FALSE);
+    /* send write command */
+    buf[0] = CMD_WRITE_ACK+3;
+    buf[1] = channel;
+    buf[2] = (data >> 8);
+    buf[3] = data & 0xFF;
+    crc = crc8(buf, 4);
+    buf[4] = crc;
+    mscb_out(_fd, buf, 5, FALSE);
 
-  /* read acknowledge */
-  i = mscb_in(_fd, ack, 2, 5000);
+    /* read acknowledge */
+    r = mscb_in(_fd, ack, 2, 5000);
+
+    if (r == 2 && ack[0] == CMD_ACK && ack[1] == crc)
+      break;
+
+    if (i == 9)
+      {
+      mscb_release();
+
+      if (r<2)
+        return MSCB_TIMEOUT;
+
+      return MSCB_CRC_ERROR;
+      }
+
+    /* send 0's to overflow partially filled node receive buffer */
+    memset(buf, 0, sizeof(buf));
+    mscb_out(_fd, buf, 10, TRUE);
+    Sleep(100);
+    }
+
   mscb_release();
-  if (i<2)
-    return MSCB_TIMEOUT;
-
-  if (ack[0] != CMD_ACK || ack[1] != crc)
-    return MSCB_CRC_ERROR;
-
   return MSCB_SUCCESS;
 }
 
@@ -1494,7 +1562,7 @@ int mscb_write_conf16(char *device, unsigned short addr, unsigned char index,
 \********************************************************************/
 {
 unsigned char buf[10], ack[10], crc;
-int           i;
+int           i, r;
 
   if (_fd == 0)
     {
@@ -1505,31 +1573,47 @@ int           i;
 
   mscb_lock();
 
-  /* send address command */
-  buf[0] = CMD_ADDR_NODE16;
-  buf[1] = (unsigned char) (addr >> 8);
-  buf[2] = (unsigned char) (addr & 0xFF);
-  buf[3] = crc8(buf, 3);
-  mscb_out(_fd, buf, 4, TRUE);
+  for (i=0 ; i<10 ; i++)
+    {
+    /* send address command */
+    buf[0] = CMD_ADDR_NODE16;
+    buf[1] = (unsigned char) (addr >> 8);
+    buf[2] = (unsigned char) (addr & 0xFF);
+    buf[3] = crc8(buf, 3);
+    mscb_out(_fd, buf, 4, TRUE);
 
-  /* send write command */
-  buf[0] = CMD_WRITE_CONF+3;
-  buf[1] = index;
-  buf[2] = (data >> 8);
-  buf[3] = data & 0xFF;
-  crc = crc8(buf, 4);
-  buf[4] = crc;
-  mscb_out(_fd, buf, 5, FALSE);
+    /* send write command */
+    buf[0] = CMD_WRITE_CONF+3;
+    buf[1] = index;
+    buf[2] = (data >> 8);
+    buf[3] = data & 0xFF;
+    crc = crc8(buf, 4);
+    buf[4] = crc;
+    mscb_out(_fd, buf, 5, FALSE);
 
-  /* read acknowledge */
-  i = mscb_in(_fd, ack, 2, 5000);
+    /* read acknowledge */
+    r = mscb_in(_fd, ack, 2, 5000);
+
+    if (r == 2 && ack[0] == CMD_ACK && ack[1] == crc)
+      break;
+
+    if (i == 9)
+      {
+      mscb_release();
+
+      if (r<2)
+        return MSCB_TIMEOUT;
+
+      return MSCB_CRC_ERROR;
+      }
+
+    /* send 0's to overflow partially filled node receive buffer */
+    memset(buf, 0, sizeof(buf));
+    mscb_out(_fd, buf, 10, TRUE);
+    Sleep(100);
+    }
+
   mscb_release();
-  if (i<2)
-    return MSCB_TIMEOUT;
-
-  if (ack[0] != CMD_ACK || ack[1] != crc)
-    return MSCB_CRC_ERROR;
-
   return MSCB_SUCCESS;
 }
 
@@ -1560,7 +1644,7 @@ int mscb_read16(char *device, unsigned short addr, unsigned char channel, unsign
 \********************************************************************/
 {
 unsigned char buf[10], crc;
-int           i;
+int           i, r;
 
   if (_fd == 0)
     {
@@ -1571,34 +1655,56 @@ int           i;
 
   mscb_lock();
 
-  /* send address command */
-  buf[0] = CMD_ADDR_NODE16;
-  buf[1] = (unsigned char) (addr >> 8);
-  buf[2] = (unsigned char) (addr & 0xFF);
-  buf[3] = crc8(buf, 3);
-  mscb_out(_fd, buf, 4, TRUE);
+  for (i=0 ; i<10 ; i++)
+    {
+    /* send address command */
+    buf[0] = CMD_ADDR_NODE16;
+    buf[1] = (unsigned char) (addr >> 8);
+    buf[2] = (unsigned char) (addr & 0xFF);
+    buf[3] = crc8(buf, 3);
+    mscb_out(_fd, buf, 4, TRUE);
 
-  /* send read command */
-  buf[0] = CMD_READ;
-  buf[1] = channel;
-  buf[2] = crc8(buf, 2);
-  mscb_out(_fd, buf, 3, FALSE);
+    /* send read command */
+    buf[0] = CMD_READ;
+    buf[1] = channel;
+    buf[2] = crc8(buf, 2);
+    mscb_out(_fd, buf, 3, FALSE);
 
-  /* read data */
-  i = mscb_in(_fd, buf, 10, 5000);
+    /* read data */
+    r = mscb_in(_fd, buf, 10, 5000);
+    mscb_release();
+
+    if (r >= 3)
+      {
+      crc = crc8(buf, r-1);
+
+      *data = *((unsigned short *)(buf+1));
+      WORD_SWAP(data);
+
+      if (buf[0] == CMD_ACK+r-2 && buf[r-1] == crc)
+        {
+        mscb_release();
+        return MSCB_SUCCESS;
+        }
+      }
+
+    if (i == 9)
+      {
+      mscb_release();
+
+      if (r<3)
+        return MSCB_TIMEOUT;
+
+      return MSCB_CRC_ERROR;
+      }
+
+    /* send 0's to overflow partially filled node receive buffer */
+    memset(buf, 0, sizeof(buf));
+    mscb_out(_fd, buf, 10, TRUE);
+    Sleep(100);
+    }
+
   mscb_release();
-
-  if (i<3)
-    return MSCB_TIMEOUT;
-
-  crc = crc8(buf, i-1);
-
-  if (buf[0] != CMD_ACK+i-2 || buf[i-1] != crc)
-    return MSCB_CRC_ERROR;
-
-  *data = *((unsigned short *)(buf+1));
-  WORD_SWAP(data);
-
   return MSCB_SUCCESS;
 }
 
@@ -1630,7 +1736,7 @@ int mscb_read_conf16(char *device, unsigned short addr, unsigned char index,
 \********************************************************************/
 {
 unsigned char buf[10], crc;
-int           i;
+int           i, r;
 
   if (_fd == 0)
     {
@@ -1641,33 +1747,83 @@ int           i;
 
   mscb_lock();
 
-  /* send address command */
-  buf[0] = CMD_ADDR_NODE16;
-  buf[1] = (unsigned char) (addr >> 8);
-  buf[2] = (unsigned char) (addr & 0xFF);
-  buf[3] = crc8(buf, 3);
-  mscb_out(_fd, buf, 4, TRUE);
+  for (i=0 ; i<10 ; i++)
+    {
+    /* send address command */
+    buf[0] = CMD_ADDR_NODE16;
+    buf[1] = (unsigned char) (addr >> 8);
+    buf[2] = (unsigned char) (addr & 0xFF);
+    buf[3] = crc8(buf, 3);
+    mscb_out(_fd, buf, 4, TRUE);
 
-  /* send read command */
-  buf[0] = CMD_READ_CONF;
-  buf[1] = index;
-  buf[2] = crc8(buf, 2);
-  mscb_out(_fd, buf, 3, FALSE);
+    /* send read command */
+    buf[0] = CMD_READ_CONF;
+    buf[1] = index;
+    buf[2] = crc8(buf, 2);
+    mscb_out(_fd, buf, 3, FALSE);
 
-  /* read data */
-  i = mscb_in(_fd, buf, 10, 5000);
+    /* read data */
+    r = mscb_in(_fd, buf, 10, 5000);
+    mscb_release();
+
+    if (r >= 3)
+      {
+      crc = crc8(buf, r-1);
+
+      *data = *((unsigned short *)(buf+1));
+      WORD_SWAP(data);
+
+      if (buf[0] == CMD_ACK+r-2 && buf[r-1] == crc)
+        {
+        mscb_release();
+        return MSCB_SUCCESS;
+        }
+      }
+
+    if (i == 9)
+      {
+      mscb_release();
+
+      if (r<3)
+        return MSCB_TIMEOUT;
+
+      return MSCB_CRC_ERROR;
+      }
+
+    /* send 0's to overflow partially filled node receive buffer */
+    memset(buf, 0, sizeof(buf));
+    mscb_out(_fd, buf, 10, TRUE);
+    Sleep(100);
+    }
+
   mscb_release();
-
-  if (i<3)
-    return MSCB_TIMEOUT;
-
-  crc = crc8(buf, i-1);
-
-  if (buf[0] != CMD_ACK+i-2 || buf[i-1] != crc)
-    return MSCB_CRC_ERROR;
-
-  *data = *((unsigned short *)(buf+1));
-  WORD_SWAP(data);
-
   return MSCB_SUCCESS;
+}
+
+/*------------------------------------------------------------------*/
+
+int mscb_reset1(char *device)
+/********************************************************************\
+
+  Routine: mscb_reset1
+
+  Purpose: Reset submaster via hardware reset
+
+  Input:
+    char *device            Device name passed to mscb_init
+
+  Function value:
+    MSCB_SUCCESS            Successful completion
+    MSCB_MUTEX              Cannot obtain mutex for mscb
+
+\********************************************************************/
+{
+  if (_fd == 0)
+    {
+    _fd = mscb_init(device);
+    if (_fd < 0)
+      return MSCB_INVAL_PARAM;
+    }
+
+  return mscb_reset(_fd);
 }
