@@ -11,6 +11,9 @@
                 with one bank (SCLR).
 
   $Log$
+  Revision 1.15  2003/04/14 13:17:01  midas
+  Added bank description
+
   Revision 1.14  2002/05/16 21:09:53  midas
   Added max_event_size_frag
 
@@ -81,9 +84,9 @@ INT max_event_size_frag = 5*1024*1024;
 INT event_buffer_size = 10*10000;
 
 /* number of channels */
-#define N_ADC  8  
+#define N_ADC  4
 #define N_TDC  8  
-#define N_SCLR 8
+#define N_SCLR 4
 
 /* CAMAC crate and slots */
 #define CRATE      0
@@ -104,6 +107,22 @@ INT frontend_loop();
 
 INT read_trigger_event(char *pevent, INT off);
 INT read_scaler_event(char *pevent, INT off);
+
+/*-- Bank definitions ----------------------------------------------*/
+
+ADC0_BANK_STR(adc0_bank_str);
+
+BANK_LIST trigger_bank_list[] = {
+  { "ADC0", TID_STRUCT, sizeof(ADC0_BANK), adc0_bank_str },
+  { "TDC0", TID_WORD, N_TDC, NULL },
+
+  { "" },
+};
+
+BANK_LIST scaler_bank_list[] = {
+  { "SCLR", TID_DWORD,  N_ADC, NULL },
+  { "" },
+};
 
 /*-- Equipment list ------------------------------------------------*/
 
@@ -130,6 +149,8 @@ EQUIPMENT equipment[] = {
     0,                    /* don't log history */
     "", "", "",
     read_trigger_event,   /* readout routine */
+    NULL, NULL, 
+    NULL,    /* bank list */
   },
 
   { "Scaler",             /* equipment name */
@@ -149,6 +170,8 @@ EQUIPMENT equipment[] = {
     0,                    /* log history */
     "", "", "",
     read_scaler_event,    /* readout routine */
+    NULL, NULL, 
+    scaler_bank_list,     /* bank list */
   },
 
   { "" }
@@ -307,14 +330,19 @@ INT interrupt_configure(INT cmd, INT source, PTYPE adr)
 
 INT read_trigger_event(char *pevent, INT off)
 {
+ADC0_BANK *adc0_bank;
 WORD *pdata, a;
 INT  q, timeout;
 
   /* init bank structure */
   bk_init(pevent);
 
-  /* create ADC bank */
-  bk_create(pevent, "ADC0", TID_WORD, &pdata);
+  /* create structured ADC0 bank */
+  bk_create(pevent, "ADC0", TID_STRUCT, &adc0_bank);
+
+  /* ADC0 variables can be accessed directly via adc0_bank->adc0 or
+     as an array using pdata */
+  pdata = (WORD *)adc0_bank;
 
   /* wait for ADC conversion */
   for (timeout = 100 ; timeout > 0 ; timeout--)
@@ -326,24 +354,33 @@ INT  q, timeout;
   if (timeout == 0)
     ss_printf(0, 10, "No ADC gate!");
 
-  /* read ADC bank */
+  /* use following code to read out real CAMAC ADC */
+  /*
   for (a=0 ; a<N_ADC ; a++)
     cami(CRATE, SLOT_ADC, a, 0, pdata++);
+  */
 
-  /* instead of using cami(), use following line to "simulate" data */
-  /* *pdata++ = rand() % 1024; */
+  /* Use following code to "simulate" data */
+  for (a=0 ; a<N_ADC ; a++)
+    *pdata++ = rand() % 1024;
 
   /* clear ADC */
   camc(CRATE, SLOT_ADC, 0, 9);
 
   bk_close(pevent, pdata);
 
-  /* create TDC bank */
+  /* create variable length TDC bank */
   bk_create(pevent, "TDC0", TID_WORD, &pdata);
 
-  /* read TDC bank */
+  /* use following code to read out real CAMAC TDC */
+  /*
   for (a=0 ; a<N_TDC ; a++)
     cami(CRATE, SLOT_TDC, a, 0, pdata++);
+  */
+
+  /* Use following code to "simulate" data */
+  for (a=0 ; a<N_TDC ; a++)
+    *pdata++ = rand() % 1024;
 
   /* clear TDC */
   camc(CRATE, SLOT_TDC, 0, 9);

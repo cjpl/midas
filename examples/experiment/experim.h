@@ -3,7 +3,7 @@
   Name:         experim.h
   Created by:   ODBedit program
 
-  Contents:     This file contains C structures for the "Runinfo"
+  Contents:     This file contains C structures for the "Experiment"
                 tree in the ODB and the "/Analyzer/Parameters" tree.
 
                 Additionally, it contains the "Settings" subtree for
@@ -17,117 +17,129 @@
                 tation which can be used in the db_create_record function
                 to setup an ODB structure which matches the C structure.
 
-  Created on:   Tue Sep 09 15:06:28 1997
+  Created on:   Fri Apr 11 12:58:35 2003
 
 \********************************************************************/
 
-typedef struct {
-  char      comment[80];
-} EXP_PARAM;
-
-#define EXP_PARAM_STR(_name) char *_name[] = {\
-"[.]",\
-"Comment = STRING : [80] Test",\
-"",\
-NULL }
-
-typedef struct {
-  char      comment[80];
-} EXP_EDIT;
-
-#define EXP_EDIT_STR(_name) char *_name[] = {\
-"[.]",\
-"Comment = LINK : [35] /Experiment/Run Parameters/Comment",\
-"",\
-NULL }
-
-#ifndef EXCL_ADC_CALIBRATION
-
-typedef struct {
-  INT       pedestal[8];
-  float     software_gain[8];
-  double    histo_threshold;
-} ADC_CALIBRATION_PARAM;
-
-#define ADC_CALIBRATION_PARAM_STR(_name) char *_name[] = {\
-"[.]",\
-"Pedestal = INT[8] :",\
-"[0] 174",\
-"[1] 194",\
-"[2] 176",\
-"[3] 182",\
-"[4] 185",\
-"[5] 215",\
-"[6] 202",\
-"[7] 202",\
-"Software Gain = FLOAT[8] :",\
-"[0] 1",\
-"[1] 1",\
-"[2] 1",\
-"[3] 1",\
-"[4] 1",\
-"[5] 1",\
-"[6] 1",\
-"[7] 1",\
-"Histo threshold = DOUBLE : 20",\
-"",\
-NULL }
-
-#endif
-
-#ifndef EXCL_ADC_SUMMING
-
-typedef struct {
-  float     adc_threshold;
-} ADC_SUMMING_PARAM;
-
-#define ADC_SUMMING_PARAM_STR(_name) char *_name[] = {\
-"[.]",\
-"ADC threshold = FLOAT : 5",\
-"",\
-NULL }
-
-#endif
-
-#ifndef EXCL_GLOBAL
-
-typedef struct {
-  float     adc_threshold;
-} GLOBAL_PARAM;
-
-#define GLOBAL_PARAM_STR(_name) char *_name[] = {\
-"[.]",\
-"ADC Threshold = FLOAT : 5",\
-"",\
-NULL }
-
-#endif
-
 #ifndef EXCL_TRIGGER
 
-typedef struct {
-  float     sum;
-} ASUM_BANK;
+#define TEST_BANK_DEFINED
 
-#define ASUM_BANK_STR(_name) char *_name[] = {\
+typedef struct {
+  float     a;
+  float     b;
+  char      str[32];
+} TEST_BANK;
+
+#define TEST_BANK_STR(_name) char *_name[] = {\
 "[.]",\
-"Sum = FLOAT : 0",\
+"a = FLOAT : 1.234",\
+"b = FLOAT : 2.24923e+006",\
+"str = STRING : [32] Hello",\
 "",\
 NULL }
 
-typedef struct {
-  BYTE      io506;
-} TRIGGER_SETTINGS;
+#define ADC0_BANK_DEFINED
 
-#define TRIGGER_SETTINGS_STR(_name) char *_name[] = {\
+typedef struct {
+  WORD      adc0;
+  WORD      adc1;
+  WORD      adc2;
+  WORD      adc3;
+} ADC0_BANK;
+
+#define ADC0_BANK_STR(_name) char *_name[] = {\
 "[.]",\
-"IO506 = BYTE : 7",\
+"adc0 = WORD : 0",\
+"adc1 = WORD : 0",\
+"adc2 = WORD : 0",\
+"adc3 = WORD : 0",\
+"",\
+NULL }
+
+#define TRIGGER_COMMON_DEFINED
+
+typedef struct {
+  WORD      event_id;
+  WORD      trigger_mask;
+  char      buffer[32];
+  INT       type;
+  INT       source;
+  char      format[8];
+  BOOL      enabled;
+  INT       read_on;
+  INT       period;
+  double    event_limit;
+  DWORD     num_subevents;
+  INT       log_history;
+  char      frontend_host[32];
+  char      frontend_name[32];
+  char      frontend_file_name[256];
+} TRIGGER_COMMON;
+
+#define TRIGGER_COMMON_STR(_name) char *_name[] = {\
+"[.]",\
+"Event ID = WORD : 1",\
+"Trigger mask = WORD : 0",\
+"Buffer = STRING : [32] SYSTEM",\
+"Type = INT : 2",\
+"Source = INT : 16777215",\
+"Format = STRING : [8] MIDAS",\
+"Enabled = BOOL : y",\
+"Read on = INT : 257",\
+"Period = INT : 500",\
+"Event limit = DOUBLE : 0",\
+"Num subevents = DWORD : 0",\
+"Log history = INT : 0",\
+"Frontend host = STRING : [32] pc810",\
+"Frontend name = STRING : [32] Sample Frontend",\
+"Frontend file name = STRING : [256] c:\online\frontend.c",\
 "",\
 NULL }
 
 #endif
 
 #ifndef EXCL_SCALER
+
+#define SCALER_COMMON_DEFINED
+
+typedef struct {
+  WORD      event_id;
+  WORD      trigger_mask;
+  char      buffer[32];
+  INT       type;
+  INT       source;
+  char      format[8];
+  BOOL      enabled;
+  INT       read_on;
+  INT       period;
+  double    event_limit;
+  DWORD     num_subevents;
+  INT       log_history;
+  char      frontend_host[32];
+  char      frontend_name[32];
+  char      frontend_file_name[256];
+} SCALER_COMMON;
+
+#define SCALER_COMMON_STR(_name) char *_name[] = {\
+"[.]",\
+"Event ID = WORD : 2",\
+"Trigger mask = WORD : 0",\
+"Buffer = STRING : [32] SYSTEM",\
+"Type = INT : 17",\
+"Source = INT : 0",\
+"Format = STRING : [8] MIDAS",\
+"Enabled = BOOL : y",\
+"Read on = INT : 377",\
+"Period = INT : 10000",\
+"Event limit = DOUBLE : 0",\
+"Num subevents = DWORD : 0",\
+"Log history = INT : 0",\
+"Frontend host = STRING : [32] pc810",\
+"Frontend name = STRING : [32] Sample Frontend",\
+"Frontend file name = STRING : [256] c:\online\frontend.c",\
+"",\
+NULL }
 
 #endif
 
