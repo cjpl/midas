@@ -6,6 +6,9 @@
   Contents:     System part of Analyzer code for sample experiment
 
   $Log$
+  Revision 1.17  2004/06/18 11:50:38  midas
+  Changed ADC0 bank from structured to DWORD
+
   Revision 1.16  2004/01/08 08:40:08  midas
   Implemented standard indentation
 
@@ -117,36 +120,26 @@ ANA_MODULE *trigger_module[] = {
 
 ASUM_BANK_STR(asum_bank_str);
 
-ADC0_BANK_STR(ana_adc0_bank_str);
-
 BANK_LIST ana_trigger_bank_list[] = {
 
    /* online banks */
-   {"ADC0", TID_STRUCT, sizeof(ADC0_BANK), ana_adc0_bank_str}
-   ,
-   {"TDC0", TID_WORD, N_TDC, NULL}
-   ,
+   {"ADC0", TID_WORD, N_ADC, NULL},
+   {"TDC0", TID_WORD, N_TDC, NULL},
 
    /* calculated banks */
-   {"CADC", TID_FLOAT, N_ADC, NULL}
-   ,
-   {"ASUM", TID_STRUCT, sizeof(ASUM_BANK), asum_bank_str}
-   ,
+   {"CADC", TID_FLOAT, N_ADC, NULL},
+   {"ASUM", TID_STRUCT, sizeof(ASUM_BANK), asum_bank_str},
 
-   {""}
-   ,
+   {""},
 };
 
 BANK_LIST ana_scaler_bank_list[] = {
    /* online banks */
-   {"SCLR", TID_DWORD, N_ADC, NULL}
-   ,
+   {"SCLR", TID_DWORD, N_ADC, NULL},
 
    /* calculated banks */
-   {"ACUM", TID_DOUBLE, N_ADC, NULL}
-   ,
-   {""}
-   ,
+   {"ACUM", TID_DOUBLE, N_ADC, NULL},
+   {""},
 };
 
 /*-- Event request list --------------------------------------------*/

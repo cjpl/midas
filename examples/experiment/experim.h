@@ -103,24 +103,6 @@ NULL }
 
 #ifndef EXCL_TRIGGER
 
-#define ADC0_BANK_DEFINED
-
-typedef struct {
-   WORD adc0;
-   WORD adc1;
-   WORD adc2;
-   WORD adc3;
-} ADC0_BANK;
-
-#define ADC0_BANK_STR(_name) char *_name[] = {\
-"[.]",\
-"adc0 = WORD : 0",\
-"adc1 = WORD : 0",\
-"adc2 = WORD : 0",\
-"adc3 = WORD : 0",\
-"",\
-NULL }
-
 #define ASUM_BANK_DEFINED
 
 typedef struct {

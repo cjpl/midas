@@ -11,6 +11,9 @@
                 with one bank (SCLR).
 
   $Log$
+  Revision 1.24  2004/06/18 11:50:38  midas
+  Changed ADC0 bank from structured to DWORD
+
   Revision 1.23  2004/06/08 14:58:18  midas
   Fixed strange formatting
 
@@ -132,27 +135,6 @@ INT frontend_loop();
 INT read_trigger_event(char *pevent, INT off);
 INT read_scaler_event(char *pevent, INT off);
 
-/*-- Bank definitions ----------------------------------------------*/
-
-ADC0_BANK_STR(adc0_bank_str);
-
-BANK_LIST trigger_bank_list[] = {
-   {"ADC0", TID_STRUCT, sizeof(ADC0_BANK), adc0_bank_str}
-   ,
-   {"TDC0", TID_WORD, N_TDC, NULL}
-   ,
-
-   {""}
-   ,
-};
-
-BANK_LIST scaler_bank_list[] = {
-   {"SCLR", TID_DWORD, N_ADC, NULL}
-   ,
-   {""}
-   ,
-};
-
 /*-- Equipment list ------------------------------------------------*/
 
 #undef USE_INT
@@ -178,8 +160,6 @@ EQUIPMENT equipment[] = {
      0,                      /* don't log history */
      "", "", "",},
     read_trigger_event,      /* readout routine */
-    NULL, NULL,
-    trigger_bank_list,       /* bank list */
     },
 
    {"Scaler",                /* equipment name */
@@ -197,8 +177,6 @@ EQUIPMENT equipment[] = {
      0,                      /* log history */
      "", "", "",},
     read_scaler_event,       /* readout routine */
-    NULL, NULL,
-    scaler_bank_list,        /* bank list */
     },
 
    {""}
@@ -354,7 +332,6 @@ INT interrupt_configure(INT cmd, INT source, PTYPE adr)
 
 INT read_trigger_event(char *pevent, INT off)
 {
-   ADC0_BANK *adc0_bank;
    WORD *pdata, a;
    INT q, timeout;
 
@@ -362,11 +339,7 @@ INT read_trigger_event(char *pevent, INT off)
    bk_init(pevent);
 
    /* create structured ADC0 bank */
-   bk_create(pevent, "ADC0", TID_STRUCT, &adc0_bank);
-
-   /* ADC0 variables can be accessed directly via adc0_bank->adc0 or
-      as an array using pdata */
-   pdata = (WORD *) adc0_bank;
+   bk_create(pevent, "ADC0", TID_WORD, &pdata);
 
    /* wait for ADC conversion */
    for (timeout = 100; timeout > 0; timeout--) {
