@@ -6,6 +6,9 @@
 #  Contents:     Makefile for MIDAS binaries and examples under unix
 #
 #  $Log$
+#  Revision 1.4  1999/02/22 12:03:38  midas
+#  Added dio to unix makefile
+#
 #  Revision 1.3  1999/01/19 09:11:24  midas
 #  Added -DNO_PTY for Ultrix
 #
@@ -168,7 +171,8 @@ OBJS =  $(LIB_DIR)/midas.o $(LIB_DIR)/system.o $(LIB_DIR)/mrpc.o \
 LIB =   $(LIB_DIR)/libmidas.a
 
 all:    $(OS_DIR) $(LIB_DIR) $(BIN_DIR) \
-	$(LIB_DIR)/mana.o $(LIB_DIR)/mfe.o $(LIB_DIR)/fal.o \
+	$(LIB_DIR)/mana.o $(LIB_DIR)/mfe.o \
+	$(LIB_DIR)/fal.o $(BIN_DIR)/dio.o \
 	$(BIN_DIR)/mserver $(BIN_DIR)/mhttpd \
 	$(BIN_DIR)/mlogger $(BIN_DIR)/odbedit \
 	$(BIN_DIR)/mtape $(BIN_DIR)/mhist \
@@ -271,6 +275,9 @@ $(LIB_DIR)/mana.o: $(SRC_DIR)/mana.c $(INC_DIR)/msystem.h $(INC_DIR)/midas.h $(I
 $(LIB_DIR)/fal.o: $(SRC_DIR)/fal.c $(INC_DIR)/msystem.h $(INC_DIR)/midas.h $(INC_DIR)/midasinc.h $(INC_DIR)/mrpc.h
 	$(CC) -c $(CFLAGS) $(OSFLAGS) -o $(LIB_DIR)/fal.o $(SRC_DIR)/fal.c
 
+$(BIN_DIR)/dio.o: $(DRV_DIR)/dio.c
+	$(CC) $(CFLAGS) $(OSFLAGS) -o $(BIN_DIR)/dio $(DRV_DIR)/dio.c
+
 #
 # utilities
 #
@@ -313,12 +320,13 @@ install:
 	@echo "... Installing utilities to $(SYSBIN_DIR)"
 	@echo "... "
 
-	@for i in mhist mtape mstat lazylogger mdump mcnaf ; \
+	@for i in mhist mtape mstat lazylogger mdump mcnaf dio ; \
 	  do \
 	  echo $$i ; \
 	  cp $(BIN_DIR)/$$i $(SYSBIN_DIR) ; \
 	  chmod 755 $(SYSBIN_DIR)/$$i ; \
-	  done
+	  done ; \
+        chmod +s $(SYSBIN_DIR)/dio
 
 # include
 	@echo "... "
