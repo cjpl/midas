@@ -47,15 +47,15 @@ exec bltwish "$0" -- ${1+"$@"}
 # - check compatibility with gchart, esp. reading of fields
 # - what about simple arithmetic ? (a la gchart).
 # - think of some cool back grounds (chaos.../midas etc)
-# - in calc_best_scale, the puts statement doesnt work. Why ? Do we 
-# reall need the global statement ? CHeck.
-
 #
 #  Revision History:
 #    $Log$
+#    Revision 1.4  2000/05/01 16:34:41  pierre
+#    - Added File .hst selection
+#    - Improve X-axis labels
+#
 #    Revision 1.3  2000/04/20 17:06:50  pierre
 #    # ODB or history stripchart in tcl. Requires bltwhish. (New application)
-#
 #
 #
 #=========================================================================
@@ -196,8 +196,8 @@ proc select_graph {item} {
 
 # check if window exist already - dont replot the same item twice
     if [winfo exists .fullscale$item ] {
-	wm deiconify .fullscale$item 
-	raise        .fullscale$item 
+	wm deiconify .fullscale$item          ;# de-iconize it it
+	raise        .fullscale$item          ;# raise to foreground
 	return
     }
 
@@ -213,7 +213,7 @@ proc select_graph {item} {
 
     set fgraph .fullscale$item.col2.graph
 
-    graph $fgraph -title "" -relief ridge -bd 3  ;# make a new graph
+    graph $fgraph -title "" -relief ridge -bd 3     ;# make a new graph
     $fgraph configure -width 5.0i -height 2.0i      ;# configure it a little 
     $fgraph legend configure -position @31,8  -anchor nw  -relief raised 
 
@@ -227,7 +227,7 @@ proc select_graph {item} {
 
     # add day of the week if using the history command
     if {$doing_mhist} {
-	$fgraph xaxis configure -loose 0 -title "" -command {my_clock_format "%a %H:%M"}
+	$fgraph xaxis configure -loose 0 -title "" -command {my_clock_format "%d.%m %H:%M"}
     } else {
 	$fgraph xaxis configure -loose 0 -title "" -command {my_clock_format %H:%M}
     }
@@ -239,7 +239,7 @@ proc select_graph {item} {
 
     # puts "data are now [set V_y_[set item](:)]"
     # create  exit button  
-    button   .fullscale$item.col1.ok  -text  "exit"  -width 6 -font 6x12 \
+    button   .fullscale$item.col1.ok  -text  "close"  -width 6 -font 6x12 \
 	    -command "destroy .fullscale$item  ;  return"
     pack     .fullscale$item.col1.ok  -side bottom
 
@@ -253,7 +253,7 @@ proc select_graph {item} {
     pack     .fullscale$item.col1.scale2  -side top   
 
     # create information button
-    button   .fullscale$item.col1.info  -text  "Info"  -width 6 -font 6x12 \
+    button   .fullscale$item.col1.info  -text  "Info/Help"  -width 6 -font 6x12 \
 	    -command "show_item_info $item" 
     pack     .fullscale$item.col1.info  -side top
 
@@ -300,9 +300,6 @@ proc zoom_select {window x  y point} {
     if { [lindex $zoom_coor(corner1) 0] <  [lindex $zoom_coor(corner2) 0] } {
 	$window xaxis configure -min [lindex $zoom_coor(corner1) 0] -max  [lindex $zoom_coor(corner2) 0]
     }
-
-#    tk_messageBox -message "zoom in progress"
-#    $window xaxis configure -min "" -max  ""
 
     return
 }
@@ -397,9 +394,9 @@ proc calc_best_scale { item } {
 	
 	#robustness check:
 	if { $scale_ymin >= $scale_ymax } {
-	    tk_messageBox -message "warning: data is constant - no y-scaling \
-		    possible for $item. \n\n  ymax/min = $scale_ymin $scale_ymax \n\
-		    Standard deviation = $stand_dev"
+#	    tk_messageBox -message "warning: data is constant - no y-scaling \
+#		    possible for $item. \n\n  ymax/min = $scale_ymin $scale_ymax \n\
+#		    Standard deviation = $stand_dev"
 #	    puts "data are now [set V_y_[set item](:)]"
 	    set scale_ymin ""
 	    set scale_ymax ""
@@ -480,14 +477,21 @@ proc show_item_info {item} {
     button .item_info.ok -text "OK" -command {destroy .item_info ; return}
     pack   .item_info.ok -side bottom
     
-    #   now create the text widget
-    text .item_info.text -height 10 -width 65 
-    pack .item_info.text -side top
-    
     #  put the text in the window:
-    .item_info.text insert end   "note: <spaces> are substituted by _ as are \\+- \n"
-    .item_info.text insert end   "item name   :  $equip_name / $item \n"
-    .item_info.text insert end   "More to come ! \n"
+    message .item_info.mess -width 6i -text \
+	    "note: <spaces> are substituted by _ as are \\+- and % signs \n\n \
+	    item name :  $equip_name/ $item \n\n \
+	    Available functions: \n\n \
+	    Click-and-drag  Left button to zoom time axis.\
+	    Click Rescale to return to normal mode\n \
+	    Autoscale = optimun scale for graph size \n \
+	    ReScale   = scale calculate using data standard deviation\n \
+	    HardCopy  = output to JPEG/PS/PNG etc\n \
+	    Close     = close this window\n"
+	    
+
+
+    pack .item_info.mess
 
     return
 }
@@ -549,8 +553,8 @@ proc read_mhist { } {
 
     global exit_now
     global select_men
-
-   
+    global open_file
+    
     global event_ids_info ;#mhist event ID and name
     global event_var      ;#varialbe name
 
@@ -565,66 +569,50 @@ proc read_mhist { } {
     }
 
 # note: string compare is like 'c' - 0 == string match !!!
+# so if NOT debugging, execute mhist:
     if { [string compare $debug "mhist"] } {
 	catch "exec rm -f /tmp/mhist" error_var
 	catch "exec /usr/local/bin/mhist -l > /tmp/mhist" error_var
     }
 
     if {$error_var !="" } {
-	puts "Could not start mhist (path problem ?) - $error_var "
-#	return
+	tk_messageBox -message "Could not start mhist (path problem ?) \n $error_var"
+	return
     }
 
-    # assume the mhist out put is there
+    # assume the mhist out put is there. Retrieve the ID list
     if {![get_mhist_list]} return
  
+    # do selection of the event_id:
+    if {[select_event_id]=="do_exit"} return
 
-# ok, first throw up a selection window for the event id. I guess
-# this should be a radio button ?
-    
-    if [winfo exists .select_event ] {
-	wm deiconify .select_event 
-	raise        .select_event 
-    } else {
-	toplevel  .select_event
-	wm title  .select_event "mhist event select"
-	# the next puts the new window at the same position as the root window
-	wm geometry .select_event +[winfo rootx .]+[winfo rooty .]
-	frame     .select_event.radio
-	frame     .select_event.row2
+    # There is also the option to open a .hst file directly to look 
+    # at the event ID's (today's event ID's may not be the right ones.
+    # for this purpose, Stephan added the -f option to mhist. So if
+    # want to open a specific file
+    if {$open_file} {
+	# here we go..a *new* widget
+	set types {{"History files .hst" {.hst}}}
+	set hist_file [tk_getOpenFile -filetypes $types]
+	# bug ! Mhist doesnt work with full path names. So for now: 
+	set hist_file [lindex [split $hist_file /] end]
+
+	if ![string compare $hist_file ""] return
+	# ok, so we have the file name. Now repeat the previous excercicse
+	# of getting the event ID.
+	catch "exec rm -f /tmp/mhist" error_var
+	set exec_string "/usr/local/bin/mhist -f $hist_file -l"
+	catch "exec $exec_string > /tmp/mhist" error_var
+	if {$error_var !="" } {
+	    tk_messageBox -message "Could not start mhist (path problem ?) \n $error_var"
+	    return
+	}
+	# ok, repeat ID event selection from new list
+	# assume the mhist out put is there
+	if {![get_mhist_list]} return
+	if {[select_event_id]=="do_exit"} return
+	set open_file 1     ;# have to reset open file - last selection reset it to 0
     }
-
-    label .select_event.label -text "Please Choose Event Number :"
-    pack .select_event.label -side top
-
-    set radio .select_event.radio 
-    # set default choice
-    set event_choice [lindex [lindex $event_ids_info 0] 0]
-
-    # note: the variables in a -variable statement MUST be global
-    foreach event_id $event_ids_info {
-	set win_name [filter_bad_chars [lindex $event_id 0]]
-	radiobutton $radio.radio$win_name -text $event_id  -relief flat -anchor w  \
-		-variable event_choice   -value [lindex $event_id 0]
-	pack $radio.radio$win_name -fill x -expand 1
-    }
-	
-    button .select_event.row2.ok      -text "ok"     -command "destroy .select_event "
-    button .select_event.row2.cancel  -text "cancel" -command "set exit_now 1 ; destroy .select_event"
-
-    pack $radio
-    pack .select_event.row2 -side bottom
-    pack .select_event.row2.ok -side left
-    pack .select_event.row2.cancel -side right
-    update
-
-    # !! The next command forces the script to halt until the .select_event
-    # dialog box has been destroyed. This is the only way to get a 'top down'
-    # order of events.
-
-    tkwait window .select_event
-
-    if {$exit_now} return
 
     # ok, now display and pick list of events_names. Use checkbutton
     toplevel .select_vars
@@ -675,7 +663,7 @@ proc read_mhist { } {
 
     button .select_vars.col2row3.ok  -text "ok" -command "destroy .select_vars "
     button .select_vars.col2row3.cancel \
-	    -text "cancel" -command "set exit_now 1 ; destroy .select_vars"
+	    -text "cancel" -command "set exit_now 1 ; destroy .select_vars ; return"
 
     pack .select_vars.col2row3.ok     -side left
     pack .select_vars.col2row3.cancel -side right
@@ -683,8 +671,18 @@ proc read_mhist { } {
 
     # add radio buttons for the time duration and interval
 
-    frame .select_vars.col1row1.left           ;# subdivide even further
-    frame .select_vars.col1row1.right
+    # if using old file, add some text and an 'until now' choice
+    if {$open_file} {
+	frame .select_vars.col1row0
+	grid  .select_vars.col1row0 -row 0 -column 1 -columnspan 2
+	label .select_vars.col1row0.text -text "Old history file selected. Displayed \
+		interval is \n\ from date of file to date of file plus chosen time below" \
+		-relief ridge  -bd 3 
+	pack  .select_vars.col1row0.text
+    }
+
+    frame .select_vars.col1row1.left           ;# subdivide even further: day/weeks etc
+    frame .select_vars.col1row1.right          ;# multiplier
     grid  .select_vars.col1row1.right -column 2 -row 1
     grid  .select_vars.col1row1.left  -column 1 -row 1
 
@@ -698,6 +696,8 @@ proc read_mhist { } {
     pack  .select_vars.col1row1.left.lab
     
     set radio .select_vars.col1row1.left
+
+    # set defualt variable values
     set history_time 1
     set history_unit days
 
@@ -711,7 +711,14 @@ proc read_mhist { } {
     radiobutton $radio.month  -text "months"   -relief flat -anchor w  \
             -variable history_unit   -value months
     pack $radio.month -fill x -expand 1
-       
+
+    if {$open_file} {
+	radiobutton $radio.until_now  -text "until now"   -relief flat -anchor w  \
+		-variable history_unit   -value until_now
+	pack $radio.until_now -fill x -expand 1
+    }
+    
+    # now the day/week/month multiplier
     set history_amount 1
     label .select_vars.col1row1.right.lab -text "Multiplier"
     pack  .select_vars.col1row1.right.lab
@@ -737,8 +744,6 @@ proc read_mhist { } {
     
 
     # for the interval:
-
-
     set history_interval 300                  ;# default values
 
     label .select_vars.col2row1.lab -text "History Interval"
@@ -762,19 +767,50 @@ proc read_mhist { } {
             -variable history_interval   -value [expr 5*60*60]
     pack $radio.5day -fill x -expand 1
    
- 
-    update
+     update
 
     # now wait until the window with the variables/times is gone before going on:
 
     tkwait window .select_vars
     if {$exit_now} return
 
-    # calculate history time
+    # calculate history time (assume todays history
     switch -glob -- $history_unit {
 	"days"   {set history_time [expr $history_amount *1  ] }
 	"weeks"  {set history_time [expr $history_amount *7  ] }
 	"months" {set history_time [expr $history_amount *30 ] } 
+    }
+
+    # deal with the open file possibility
+    # when opening old file, assume start date (-s) = name of file
+    #                               end   date (-p) = calculated from user input above
+
+    if {$open_file} {
+	# calc start date from file name: (hist_file)
+	# unfortunately, Stephan uses  yymmdd.hst  ? or ? We need ddmmyy.
+	# split list at the '.'
+	set date_part [lindex [split $hist_file .] 0]
+	set day_part  [string range $date_part 4 5]
+	set mon_part  [string range $date_part 2 3]
+	set yre_part  [string range $date_part 0 1]
+	set start_time $day_part$mon_part$yre_part
+
+	# ok, do the end part.
+	if {$history_unit =="until_now"} {
+	    set stop_time [clock format [clock seconds] -format "%d%m%y"]
+	} else {
+	    # gets tough. Must calculate a new day from old date and interval
+	    set stop_time [calc_history_stop_time $day_part $mon_part $yre_part]
+	} 
+	set exec_string \
+		"/usr/local/bin/mhist -b -s $start_time \
+		-p $stop_time -t $history_interval -e $event_choice"
+
+	# do normal case - present day file
+    } else {            
+
+	set exec_string \
+		"/usr/local/bin/mhist -b -d $history_time -t $history_interval -e $event_choice"
     }
 
 
@@ -788,8 +824,6 @@ proc read_mhist { } {
 	# was this guy enabled ?
 	if { !$pick_event_var($var)} { continue}
 
-	set exec_string \
-		"/usr/local/bin/mhist -b -d $history_time -t $history_interval -e $event_choice"
 	append exec_string " -v \"$var\" "              ;# surround by quotes
 	if { [string compare $debug "mhist"]  } {
 	    catch {exec rm -f /tmp/mhist_data} error_var
@@ -797,8 +831,8 @@ proc read_mhist { } {
 	}
 
 	if {$error_var !=""} {
-	    puts "error from mhist $exec_string $error_var"
-#	    return
+	    tk_messageBox -message "problem: error from mhist \n  $exec_string \n $error_var"
+	    return
 	}
 
 
@@ -862,18 +896,19 @@ proc read_mhist { } {
 	# from this max/min value, calculate the plotted normalized histo values:
 	# do a vector calculation on this new guy.
 
-	V_y_plot_$item expr "(V_y_$item -  $item_min($item)) / ($item_max($item)-$item_min($item))"  
+	V_y_plot_$item \
+		expr "(V_y_$item -  $item_min($item)) / ($item_max($item)-$item_min($item))"  
 
 	# finally associate/create a graph item for this guy
 	if {! [$strip_chart element exists line_$item]} {
 	    $strip_chart element create line_$item
 	}
-	$strip_chart element configure line_$item -label ""  -color $item_color($item)  -symbol ""
+	$strip_chart element configure line_$item -label "" -color $item_color($item) -symbol ""
 	# now hot-link it to the new graph line 
 	$strip_chart element configure line_$item  -xdata V_x_$item  -ydata V_y_plot_$item
 	# change the labelling format on the x-axis if plotting more then one day
 	if {$history_time >= 1} {
-	    $strip_chart xaxis configure -command {my_clock_format "%a %H:%M"}
+	    $strip_chart xaxis configure -command {my_clock_format "%d.%m %H:%M"}
 	} else {
 	    $strip_chart xaxis configure -command {my_clock_format "%H:%M"}
 	}
@@ -895,6 +930,154 @@ proc read_mhist { } {
 
     return
 }
+
+#===================================================================
+#   CALCULATE HISTORTY STOP TIME FROM START DATE AND INTERVAL
+#===================================================================
+
+proc calc_history_stop_time {day_part mon_part yre_part} {
+    global history_unit history_amount
+    
+    switch -glob -- $history_unit {
+	"days"   {
+	    set lday_part  [expr $day_part + $history_amount ]
+	    set lmon_part  $mon_part
+	    set lyre_part  $yre_part
+	    if {$lday_part > 28} {
+		set lmon_part [incr lmon_part]
+		set lday_part [expr $lday_part - 28]
+	    }
+	   
+	}
+	"weeks"  {
+	    set lday_part  [expr $day_part + $history_amount*7 ]
+	    set lmon_part  $mon_part
+	    set lyre_part  $yre_part
+	    if {$lday_part > 28} {
+		set lmon_part [incr lmon_part]
+		set lday_part [expr $lday_part - 28]
+	    }
+	}
+	"months" {
+	    set lday_part  $day_part
+	    set lmon_part   [expr $mon_part + $history_amount  ]
+	    set lyre_part  $yre_part
+	    if {$lmon_part > 12} {
+		set lyre_part [incr lyre_part]
+		set lmon_part [expr $lmon_part - 12]
+	    }    
+	}
+    }
+
+    # make sure they are all 2 digits
+    if {[string length $lday_part] == 1} {
+	set lday_part "0$lday_part"
+    }
+    if {[string length $lmon_part] == 1} {
+	set lmon_part "0$lmon_part"
+    }
+    if {[string length $lyre_part] == 1} {
+	set lyre_part "0$lyre_part"
+    }
+
+    # ok now put the string back together
+    return $lday_part$lmon_part$lyre_part
+}
+
+#=========================================================================
+#  SELECT THE EVENT ID TO DISPLAY IN MHIST
+#=========================================================================
+
+
+proc select_event_id { } {
+    global event_choice
+    global pick_event_var
+    global event_var
+    global history_time history_interval history_unit history_amount
+
+
+    global item_fname item_fields item_pattern item_equation
+    global item_color item_max item_min item_list
+    global equip_name
+    
+    global strip_chart
+
+    global exit_now
+    global select_men
+    global open_file
+    
+    global event_ids_info ;#mhist event ID and name
+    global event_var      ;#varialbe name
+
+    global debug
+    global button_toggle  ; #use to toggle lots of variables on/off simul.
+
+    set open_file 0
+    set exit_now  0
+
+
+    # ok, first throw up a selection window for the event id. I guess
+    # this should be a radio button ?
+    
+    if [winfo exists .select_event ] {
+	wm deiconify .select_event 
+	raise        .select_event 
+    } else {
+	toplevel  .select_event
+	wm title  .select_event "mhist event select"
+	# the next puts the new window at the same position as the root window
+	wm geometry .select_event +[winfo rootx .]+[winfo rooty .]
+	frame     .select_event.radio
+	frame     .select_event.row2
+    }
+    
+    label .select_event.label -text "Please Choose Event Number \n (or \
+	    hit `open file' to select an old  history file):"
+    pack .select_event.label -side top
+    
+    set radio .select_event.radio 
+    # set default choice
+    set event_choice [lindex [lindex $event_ids_info 0] 0]
+    
+    # note: the variables in a -variable statement MUST be global
+    foreach event_id $event_ids_info {
+	set win_name [filter_bad_chars [lindex $event_id 0]]
+	radiobutton $radio.radio$win_name -text $event_id  -relief flat -anchor w  \
+		-variable event_choice   -value [lindex $event_id 0]
+	pack $radio.radio$win_name -fill x -expand 1
+    }
+    
+    button .select_event.row2.ok      -text "ok"     -command "destroy .select_event "
+    button .select_event.row2.cancel  -text "cancel" -command "set exit_now 1 ; destroy .select_event"
+    button .select_event.row2.openfile -text "open file" -command "set open_file 1;destroy .select_event"
+    
+    pack $radio
+    pack .select_event.row2 -side bottom
+    pack .select_event.row2.ok -side left
+    pack .select_event.row2.cancel -side right
+    pack .select_event.row2.openfile -side right
+    update
+    
+    # !! The next command forces the script to halt until the .select_event
+    # dialog box has been destroyed. This is the only way to get a 'top down'
+    # order of events.
+    
+    tkwait window .select_event
+    
+    
+    if {$exit_now}  {
+	return "do_exit"
+    }
+    if {$open_file} {
+	return "open_file"
+    }
+
+    return "continue"
+    
+}
+
+
+
 
 
 #===================================================================
@@ -1022,6 +1205,26 @@ proc get_new_color { } {
 
 }
 
+proc set_main_y_scale {new_ratio} {
+    # this routine changes the effective y-scale from a the
+    # standard value of 0-1 to a bigger range using the
+    # value extracted rom the RHS slider
+    global slider_scale
+    global strip_chart
+
+    if { $new_ratio<= 2 } {
+	set mmax 1
+	set mmin 0
+    } else {
+	set mmax $new_ratio
+	set mmin [expr -1.* $new_ratio]
+    }
+    
+    $strip_chart yaxis configure  -min $mmin -max $mmax
+    update
+    return
+}
+   
 
 #===========================================================================
 # DISPLAY HELP TEXT
@@ -1041,31 +1244,38 @@ proc help_menu { } {
     #  .info.text insert end   " \ 
     
     # use a message window instead of a text window - simpler
-    message .info.mess -width 6i -text \
-	    "This is stripchart.tcl, a program to plot the data \
-	    generated by PAA's mchart program (a midas utility) or \
-	    to view the data from mhist, the MIDAS history program.\n \
+    message .info.mess -width 6.5i -text \
+	    "Introduction: Stripchart can:\n\n\
+	    1. plot any data in the\
+	    midas database. It uses mchart, (a midas utility) to actually\
+	    extract the data from odb\n\
+	    2. view the data from mhist, the MIDAS history program.\n\n \
             This program should live in the ~/bin directory. To start it  \
-	    type stripchart <name_of_conf_file> or stripchart -mhist. \n \
-	    The configuration file \
-	    is generated by mchart (eg. target.conf, chvi.conf) and \
-	    is in the same format as that understood by gnome \
+	    type\n stripchart <name_of_conf_file> or\n stripchart -mhist\nto see\
+	    data from the midas history\n\n \
+	    The configuration files \
+	    are generated by mchart (eg. target.conf, chvi.conf) and \
+	    are in the same format as that understood by gnome \
             gstripchart.  \n\n \
-            Note that all graphs are scaled using the max/min values \
-            defined in the .conf file to fit between 0 and 1. Hence the \
-            unlabelled y-scale. To see a particular data set in its normal, unscaled \
-            units, use 'view full graph' and select the line or just click \
-	    with the mouse on a point close to the line. \n\n \
-	     Example: to see the target info type: \n \
-            mchart  -q /equipment/target/variables -f target.conf \
-	    and then start stripchart target.conf or just type \n \
+	     Example: to see the CHAOS target info type: \n \
+            mchart  -q /equipment/target/variables -f target.conf\n\
+	    and then start\n stripchart target.conf\n or just type \n \
 	    mchart  -q /equipment/target/variables -g -f target.conf \n \
-	    \n Note that the single graphs can be zoomed by clicking the mouse, \
+	    \n\
+	    Note that all graphs are scaled using the max/min values \
+            defined in the .conf file to fit between 0 and 1. Hence the \
+            unlabelled y-scale on the main window.\
+	    To see a particular data set in its normal, unscaled \
+            units, use 'view full graph' and select the line or just click \
+	    with the mouse on a point close to the line of interest. \n\n \
+	    Note that the single graphs can be zoomed by clicking the mouse, \
 	    auto-scaled, or 'best' scaled. Hardcopy is available in ps, jpg, gif \
-	    or png format and goes to a file. \n \
+	    or png format and goes to a file.\n\
 	    To use the history function, click on the mhist button. You must be \
-	    in the directory containing the .hst (not the dra .hst) files. \
-	    \n\n\n \
+	    in the directory containing the .hst (not the dra .hst) files. You will\
+	    then be asked to select the event number and data works, as well as the\
+	    history duration and interval\
+	    \n\n \
 	    G. Hofman    gertjan.hofman@colorado.edu \n \
 	    March-00. \n \
 	    CU - Boulder"
@@ -1143,7 +1353,7 @@ wm iconname . "StripC"
 
 set strip_chart .main.middle.strip_chart
 
-graph $strip_chart  -title ""                 ;# no title on the graph.
+graph $strip_chart -background goldenrod  -title ""                 ;# no title on the graph.
 
 $strip_chart configure -width 5.5i -height 2.0i -font $tit_font
 
@@ -1233,7 +1443,7 @@ pack .main.toprow.warning -side right -fill x
 # note: its the 'fill both' and 'expand 1' that does the resizing
 # of the graph when the window size changes.
 
-pack $strip_chart -side bottom -fill both -expand 1  ;# put it in its parent.
+pack $strip_chart -side left  -fill both -expand 1  ;# put it in its parent.
 
 # then pack middlerow in the .main:
 pack .main.middle -side top -fill both -expand 1 
@@ -1244,6 +1454,13 @@ pack .main.toprow -side top -fill x    -expand 1
 pack .main -fill both -expand 1                   ;# put it all on the screen
 update
 
+# try the slider to change the scale of the main graph
+# note: the -command automatically appends the value of the slide
+#set scale_slider 1
+#scale .main.middle.slide -orient vertical  -label ""  -variable scale_slider \
+#	-borderwidth 0  -showvalue 0 -width 10 -from 10 -to .1 \
+#	-command "set_main_y_scale"
+#pack .main.middle.slide -side right -fill y -expand 1
 
 # ok, finally, create vectors associated with the data.
 # create also the graph elements:
