@@ -6,6 +6,9 @@
   Contents:     User section for the Event builder
 
   $Log$
+  Revision 1.6  2002/09/28 00:49:08  pierre
+  Add EB_USER_ERROR example
+
   Revision 1.5  2002/09/25 18:38:03  pierre
   correct: header passing, user field, abort run
 
@@ -32,6 +35,9 @@ INT eb_begin_of_run(INT, char *, char *);
 INT eb_end_of_run(INT, char *);
 INT ebuser(INT, EBUILDER_CHANNEL *, EVENT_HEADER *, void *, INT *);
 
+/* Globals */
+INT  lModulo = 100;
+
 /*--------------------------------------------------------------------*/
 /** eb_begin_of_run()
 Hook to the event builder task at PreStart transition.
@@ -46,6 +52,7 @@ Hook to the event builder task at PreStart transition.
 INT eb_begin_of_run(INT rn, char * UserField, char * error)
 {
   printf("In eb_begin_of_run User_field:%s \n", UserField);
+  lModulo = atoi(UserField);
   return EB_SUCCESS;
 }
 
@@ -147,8 +154,9 @@ INT eb_user(INT nfrag
     plrl = (DWORD *) (((EVENT_HEADER *) ebch[i].pfragment) + 1);
   }
 
-  if(!((pheader->serial_number+1)%100)){
+  if(!((pheader->serial_number+1)%lModulo)){
     pheader->trigger_mask =(WORD) 0x8000;
+    return EB_USER_ERROR;
 //  or  TRIGGER_MASK(pevent) = 0x0505;
     printf("This event needs a special mask: 0x%x\n",pheader->trigger_mask);
   }
