@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus communication functions
 
   $Log$
+  Revision 1.42  2003/06/27 13:51:01  midas
+  Added automatic submaster reset
+
   Revision 1.41  2003/06/26 11:55:55  midas
   Made reset pulse longer
 
@@ -129,7 +132,7 @@
 
 \********************************************************************/
 
-#define MSCB_LIBRARY_VERSION   "1.4.6"
+#define MSCB_LIBRARY_VERSION   "1.4.7"
 #define MSCB_PROTOCOL_VERSION  "1.4"
 
 #ifdef _MSC_VER           // Windows includes
@@ -521,7 +524,24 @@ int i, timeout;
         break;
       }
     if (timeout == TIMEOUT_OUT)
-      return MSCB_TIMEOUT;
+      {
+      printf("Automatic submaster reset.\n");
+
+      mscb_release(fd);
+      mscb_reset(fd);
+      mscb_lock(fd);
+      Sleep(100);
+
+      /* wait for SM ready */
+      for (timeout=0 ; timeout<TIMEOUT_OUT ; timeout++)
+        {
+        if (!pp_rstatus(fd, LPT_BUSY))
+          break;
+        }
+      
+      if (timeout == TIMEOUT_OUT)
+        return MSCB_TIMEOUT;
+      }
 
     /* output data byte */
     pp_wdata(fd, buffer[i]);
@@ -540,6 +560,19 @@ int i, timeout;
       {
       if (pp_rstatus(fd, LPT_BUSY))
         break;
+      }
+
+    if (timeout == TIMEOUT_OUT)
+      {
+      printf("Automatic submaster reset.\n");
+
+      mscb_release(fd);
+      mscb_reset(fd);
+      mscb_lock(fd);
+      Sleep(100);
+
+      /* try again */
+      return mscb_out(fd, buffer, len, bit9);
       }
 
     if (timeout == TIMEOUT_OUT)
@@ -1177,9 +1210,6 @@ int mscb_reset(int fd)
   pp_wcontrol(fd, LPT_RESET, 1);
   Sleep(100); /* for elko */
   pp_wcontrol(fd, LPT_RESET, 0);
-
-  /* wait for node to reboot */
-  Sleep(3000);
 
   mscb_release(fd);
 
@@ -1940,6 +1970,15 @@ unsigned char buf[256], crc;
   /* try ten times */
   for (n=0 ; n<10 ; n++)
     {
+    /* after five times, reset submaster */
+    if (n == 5)
+      {
+      printf("Automatic submaster reset.\n");
+
+      mscb_reset(fd);
+      Sleep(100);
+      }
+    
     buf[0] = MCMD_READ+1;
     buf[1] = index;
     buf[2] = crc8(buf, 2);
@@ -2050,6 +2089,15 @@ unsigned char buf[256], crc;
   /* try ten times */
   for (n=0 ; n<10 ; n++)
     {
+    /* after five times, reset submaster */
+    if (n == 5)
+      {
+      printf("Automatic submaster reset.\n");
+
+      mscb_reset(fd);
+      Sleep(100);
+      }
+
     buf[0] = MCMD_READ+2;
     buf[1] = index1;
     buf[2] = index2;
