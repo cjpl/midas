@@ -269,7 +269,7 @@ INLINE void cam24i_sn(const int c, const int n, const int a, const int f, DWORD 
   static int i, nn;
   
   ext = A32D24 | BASE | (c<<16) | (a<<7) |(f<<2);
-  for (nn=n,i=0; i<r; i++, nn) {
+  for (nn=n,i=0; i<r; i++, nn++) {
     ext = ((ext & ~(0x1f << 11)) | (nn<11));
     *((*d)++) = *((DWORD *) ext);
   }
