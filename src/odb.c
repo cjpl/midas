@@ -6,6 +6,9 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.91  2004/09/15 23:36:02  midas
+  Added ODB save in XML format
+
   Revision 1.90  2004/07/29 12:42:13  midas
   Added more hDB validity checks
 
@@ -5849,6 +5852,197 @@ INT db_save(HNDLE hDB, HNDLE hKey, char *filename, BOOL bRemote)
 
       close(hfile);
 
+   }
+#endif                          /* LOCAL_ROUTINES */
+
+   return DB_SUCCESS;
+}
+/*------------------------------------------------------------------*/
+
+void xml_encode(char *src, int size)
+{
+   int i;
+   char *dst, *p;
+
+   dst = malloc(size);
+   if (dst == NULL)
+      return;
+
+   *dst = 0;
+   for (i = 0; i < (int) strlen(src); i++) {
+      switch (src[i]) {
+      case '<':
+         strlcat(dst, "&lt;", size);
+         break;
+      case '>':
+         strlcat(dst, "&gt;", size);
+         break;
+      case '&':
+         strlcat(dst, "&amp;", size);
+         break;
+      case '\"':
+         strlcat(dst, "&quot;",size);
+         break;
+      case '\'':
+         strlcat(dst, "&apos;",size);
+         break;
+      default:
+         if ((int)strlen(dst) >= size) {
+            free(dst);
+            return;
+         }
+         p = dst+strlen(dst);
+         *p = src[i];
+         *(p+1) = 0;
+      }
+   }
+
+   strlcpy(src, dst, size);
+}
+
+/*------------------------------------------------------------------*/
+
+INT db_save_xml_key(HNDLE hDB, HNDLE hKey, INT level, INT fh)
+{
+   INT i, j, index, size, status;
+   char str[MAX_STRING_LENGTH * 2], line[1000], *data;
+   HNDLE hSubkey;
+   KEY key;
+
+   status = db_get_key(hDB, hKey, &key);
+   if (status != DB_SUCCESS)
+      return status;
+
+   if (key.type == TID_KEY) {
+
+      /* save opening tag for subtree */
+      line[0] = 0;
+      for (i=0 ; i<level ; i++)
+         strcat(line, "  ");
+      sprintf(line+strlen(line), "<dir name=\"%s\">\n", key.name);
+      if (write(fh, line, strlen(line)) != strlen(line))
+         return 0;
+
+      for (index = 0;; index++) {
+         db_enum_key(hDB, hKey, index, &hSubkey);
+
+         if (!hSubkey)
+            break;
+
+         /* save subtree */
+         status = db_save_xml_key(hDB, hSubkey, level + 1, fh);
+         if (status != DB_SUCCESS)
+            return status;
+      }
+
+      /* save closing tag for subtree */
+      line[0] = 0;
+      for (i=0 ; i<level ; i++)
+         strcat(line, "  ");
+      sprintf(line+strlen(line), "</dir>\n");
+      if (write(fh, line, strlen(line)) != strlen(line))
+         return DB_FILE_ERROR;
+
+   } else {
+
+      /* save key value */
+
+      line[0] = 0;
+      for (i=0 ; i<level ; i++)
+         strcat(line, "  ");
+      sprintf(line+strlen(line), "<key name=\"%s\" type=\"%s\"", key.name, rpc_tid_name(key.type));
+
+      if (key.type == TID_STRING || key.type == TID_LINK)
+         sprintf(line+strlen(line), " size=\"%d\"", key.item_size);
+
+      if (key.num_values > 1)
+         sprintf(line+strlen(line), " num_values=\"%d\"", key.num_values);
+      sprintf(line+strlen(line), ">");
+
+      size = key.total_size;
+      data = (char *) malloc(size);
+      if (data == NULL) {
+         cm_msg(MERROR, "db_save_xml_key", "cannot allocate data buffer");
+         return DB_NO_MEMORY;
+      }
+
+      db_get_data(hDB, hKey, data, &size, key.type);
+
+      if (key.num_values == 1) {
+      
+         db_sprintf(str, data, key.item_size, 0, key.type);
+         xml_encode(str, sizeof(str));
+
+         strlcat(line, str, sizeof(line));
+         strlcat(line, "</key>\n", sizeof(line));
+      
+      } else { // array of values
+        
+         strlcat(line, "\n", sizeof(line));
+         write(fh, line, strlen(line));
+
+         for (i=0 ; i<key.num_values ; i++) {
+            line[0] = 0;
+            for (j=0 ; j<level+1 ; j++)
+               strcat(line, "  ");
+            strlcat(line, "<value>", sizeof(line));
+            db_sprintf(str, data, key.item_size, i, key.type);
+            xml_encode(str, sizeof(str));
+            strlcat(line, str, sizeof(line));
+            strlcat(line, "</value>\n", sizeof(line));
+            write(fh, line, strlen(line));
+         }
+
+         line[0] = 0;
+         for (i=0 ; i<level ; i++)
+            strcat(line, "  ");
+         strlcat(line, "</key>\n", sizeof(line));
+      }
+
+      free(data);
+
+      if (write(fh, line, strlen(line)) != strlen(line))
+         return DB_FILE_ERROR;
+   }
+
+   return DB_SUCCESS;
+}
+
+/********************************************************************/
+/**
+Save a branch of a database to an .xml file
+
+This function is used by the ODBEdit command save to write the contents
+of the ODB into a XML file. Data of the whole ODB can
+be saved (hkey equal zero) or only a sub-tree.
+@param hDB          ODB handle obtained via cm_get_experiment_database().
+@param hKey Handle for key where search starts, zero for root.
+@param filename Filename of .XML file.
+@return DB_SUCCESS, DB_FILE_ERROR
+*/
+INT db_save_xml(HNDLE hDB, HNDLE hKey, char *filename)
+{
+#ifdef LOCAL_ROUTINES
+   {
+   INT fh, status;
+   char line[1000], str[256];
+
+   /* open file */
+   fh = open(filename, O_WRONLY | O_CREAT | O_TRUNC | O_TEXT, 0644);
+   if (fh == -1) {
+      cm_msg(MERROR, "db_save_xml", "Cannot open file \"%s\"", filename);
+      return DB_FILE_ERROR;
+   }
+
+   /* write XML header */
+   strcpy(line, "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n");
+   write(fh, line, strlen(line));
+   cm_asctime(str, sizeof(str));
+   sprintf(line, "<!-- created by ODBEdit on %s -->\n", str);
+   write(fh, line, strlen(line));
+
+   status = db_save_xml_key(hDB, hKey, 0, fh);
+   close(fh);
    }
 #endif                          /* LOCAL_ROUTINES */
 
