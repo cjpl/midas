@@ -6,6 +6,9 @@
 #  Contents:     Makefile for MIDAS binaries and examples under unix
 #
 #  $Log$
+#  Revision 1.17  2000/02/29 20:19:53  midas
+#  Removed -lbsd for Linux
+#
 #  Revision 1.16  2000/02/24 19:39:22  midas
 #  Add esone.h in installation
 #
@@ -156,7 +159,7 @@ endif
 ifeq ($(OSTYPE),linux)
 OS_DIR = linux
 OSFLAGS = -DOS_LINUX -fPIC $(USERFLAGS)
-LIBS = -lbsd -lutil
+LIBS = -lutil
 endif
 
 #-----------------------
