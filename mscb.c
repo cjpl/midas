@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus communication functions
 
   $Log$
+  Revision 1.55  2004/03/09 14:19:32  midas
+  Fixed problems with write/read of strings
+
   Revision 1.54  2004/03/09 11:55:50  midas
   Fixed linux usb code
 
@@ -427,10 +430,9 @@ int mscb_lock(int fd)
       if (ioctl(mscb_fd[fd - 1].fd, PPCLAIM))
          return 0;
    } else if (mscb_fd[fd - 1].type == MSCB_TYPE_USB) {
-      if (usb_claim_interface((usb_dev_handle *)mscb_fd[fd - 1].hr, 0) <0)
+      if (usb_claim_interface((usb_dev_handle *) mscb_fd[fd - 1].hr, 0) < 0)
          return 0;
    }
-
 #endif
    return MSCB_SUCCESS;
 }
@@ -450,10 +452,9 @@ int mscb_release(int fd)
       if (ioctl(mscb_fd[fd - 1].fd, PPRELEASE))
          return 0;
    } else if (mscb_fd[fd - 1].type == MSCB_TYPE_USB) {
-      if (usb_release_interface((usb_dev_handle *)mscb_fd[fd - 1].hr, 0) <0)
+      if (usb_release_interface((usb_dev_handle *) mscb_fd[fd - 1].hr, 0) < 0)
          return 0;
    }
-
 #endif
    return MSCB_SUCCESS;
 }
@@ -560,9 +561,9 @@ int msend_usb(int fd, void *buf, int size)
    int n_written;
 
 #ifdef _MSC_VER
-   WriteFile((HANDLE)fd, buf, size, &n_written, NULL);
+   WriteFile((HANDLE) fd, buf, size, &n_written, NULL);
 #else
-   n_written = usb_bulk_write((usb_dev_handle*)fd, 2, buf, size, 100);
+   n_written = usb_bulk_write((usb_dev_handle *) fd, 2, buf, size, 100);
    usleep(0);
 #endif
    return n_written;
@@ -582,7 +583,7 @@ int mrecv_usb(int fd, void *buf, int size, int timeout)
    overlapped.hEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
    n_read = 0;
 
-   status = ReadFile((HANDLE)fd, buf, size, &n_read, &overlapped);
+   status = ReadFile((HANDLE) fd, buf, size, &n_read, &overlapped);
    if (!status) {
 
       status = GetLastError();
@@ -591,12 +592,12 @@ int mrecv_usb(int fd, void *buf, int size, int timeout)
 
       /* wait for completion */
       if (timeout < 1000)
-         timeout = 1000; // at least 1ms
-      status = WaitForSingleObject(overlapped.hEvent, timeout/1000);
+         timeout = 1000;        // at least 1ms
+      status = WaitForSingleObject(overlapped.hEvent, timeout / 1000);
       if (status == WAIT_TIMEOUT)
-         CancelIo((HANDLE)fd);
+         CancelIo((HANDLE) fd);
       else
-         GetOverlappedResult((HANDLE)fd, &overlapped, &n_read, FALSE);
+         GetOverlappedResult((HANDLE) fd, &overlapped, &n_read, FALSE);
    }
 
    CloseHandle(overlapped.hEvent);
@@ -604,20 +605,19 @@ int mrecv_usb(int fd, void *buf, int size, int timeout)
    usb_dev_handle *dev;
    int i;
 
-   dev = (usb_dev_handle *)fd;
+   dev = (usb_dev_handle *) fd;
 
    if (timeout < 1000)
-      timeout = 1000; // at least 1ms
-   for (i=0 ; i<10 ; i++)
-     {
-     n_read = usb_bulk_read(dev, 1, buf, size, timeout/1000);
-     //printf("##mrecv_usb(%X): %d\n", dev, n_read);
+      timeout = 1000;           // at least 1ms
+   for (i = 0; i < 10; i++) {
+      n_read = usb_bulk_read(dev, 1, buf, size, timeout / 1000);
+      //printf("##mrecv_usb(%X): %d\n", dev, n_read);
 
-     if (n_read < 0)
-       usleep(10000);
-     else
-       break;
-     }
+      if (n_read < 0)
+         usleep(10000);
+      else
+         break;
+   }
 
 #endif
    return n_read;
@@ -652,18 +652,18 @@ int mscb_out(int index, unsigned char *buffer, int len, int flags)
       return MSCB_INVAL_PARAM;
 
    /*---- USB code ----*/
-   if (mscb_fd[index-1].type == MSCB_TYPE_USB) {
+   if (mscb_fd[index - 1].type == MSCB_TYPE_USB) {
 
       if (len >= 64 || len < 1)
          return MSCB_INVAL_PARAM;
 
       /* add flags in first byte of USB buffer */
       usb_buf[0] = flags;
-      memcpy(usb_buf+1, buffer, len);
+      memcpy(usb_buf + 1, buffer, len);
 
       /* send on OUT pipe */
-      i = msend_usb(mscb_fd[index-1].hw, usb_buf, len+1);
-      if (i != len+1) {
+      i = msend_usb(mscb_fd[index - 1].hw, usb_buf, len + 1);
+      if (i != len + 1) {
          return MSCB_TIMEOUT;
       }
 
@@ -772,7 +772,7 @@ int mscb_in1(int fd, unsigned char *c, int timeout)
    int i;
 
    /* wait for DATAREADY, each port access takes roughly 1us */
-   timeout = (int) (timeout/1.3);
+   timeout = (int) (timeout / 1.3);
 
    for (i = 0; i < timeout; i++) {
       if (pp_rstatus(fd, LPT_DATAREADY))
@@ -860,10 +860,10 @@ int mscb_in(int index, char *buffer, int size, int timeout)
       return MSCB_INVAL_PARAM;
 
    /*---- USB code ----*/
-   if (mscb_fd[index-1].type == MSCB_TYPE_USB) {
+   if (mscb_fd[index - 1].type == MSCB_TYPE_USB) {
 
       /* receive result on IN pipe */
-      n = mrecv_usb(mscb_fd[index-1].hr, buffer, size, timeout);
+      n = mrecv_usb(mscb_fd[index - 1].hr, buffer, size, timeout);
 
    } else {
 
@@ -950,14 +950,14 @@ int lpt_init(char *device, int index)
 
 
    /* derive base address from device name */
-   if (atoi(device+3) == 1)
+   if (atoi(device + 3) == 1)
       mscb_fd[index].fd = 0x378;
-   else if (atoi(device+3) == 2)
+   else if (atoi(device + 3) == 2)
       mscb_fd[index].fd = 0x278;
    else
       return -1;
 
-   buffer[0] = 6;            /* give IO */
+   buffer[0] = 6;               /* give IO */
    buffer[1] = mscb_fd[index].fd;
    buffer[2] = buffer[1] + 4;
    buffer[3] = 0;
@@ -971,8 +971,7 @@ int lpt_init(char *device, int index)
           CreateFile("\\\\.\\directio", GENERIC_READ, FILE_SHARE_READ,
                      NULL, OPEN_EXISTING, 0, NULL);
       if (hdio == INVALID_HANDLE_VALUE) {
-         printf
-             ("mscb.c: Cannot access parallel port (No DirectIO driver installed)\n");
+         printf("mscb.c: Cannot access parallel port (No DirectIO driver installed)\n");
          return -1;
       }
 
@@ -980,7 +979,6 @@ int lpt_init(char *device, int index)
           (hdio, (DWORD) 0x9c406000, &buffer, sizeof(buffer), NULL, 0, &size, NULL))
          return -1;
    }
-
 #elif defined(__linux__)
 
    int i;
@@ -1008,7 +1006,6 @@ int lpt_init(char *device, int index)
       perror("PPSETMODE");
       return -1;
    }
-
 #endif
 
    status = mscb_lock(index + 1);
@@ -1070,7 +1067,7 @@ int lpt_close(int fd)
    DWORD size;
    HANDLE hdio;
 
-   buffer[0] = 7;            /* lock port */
+   buffer[0] = 7;               /* lock port */
    buffer[1] = fd;
    buffer[2] = buffer[1] + 4;
    buffer[3] = 0;
@@ -1084,8 +1081,7 @@ int lpt_close(int fd)
           CreateFile("\\\\.\\directio", GENERIC_READ, FILE_SHARE_READ,
                      NULL, OPEN_EXISTING, 0, NULL);
       if (hdio == INVALID_HANDLE_VALUE) {
-         printf
-             ("mscb.c: Cannot access parallel port (No DirectIO driver installed)\n");
+         printf("mscb.c: Cannot access parallel port (No DirectIO driver installed)\n");
          return -1;
       }
 
@@ -1093,7 +1089,6 @@ int lpt_close(int fd)
           (hdio, (DWORD) 0x9c406000, &buffer, sizeof(buffer), NULL, 0, &size, NULL))
          return -1;
    }
-
 #elif defined(__linux__)
 
    close(fd);
@@ -1108,16 +1103,16 @@ int lpt_close(int fd)
 #ifdef _MSC_VER
 
 #include <setupapi.h>
-#include <initguid.h>  /* Required for GUID definition */
+#include <initguid.h>           /* Required for GUID definition */
 
 // link with SetupAPI.Lib.
 #pragma comment (lib, "setupapi.lib")
 
 // {CBEB3FB1-AE9F-471c-9016-9B6AC6DCD323}
 DEFINE_GUID(GUID_CLASS_MSCB_BULK,
-0xcbeb3fb1, 0xae9f, 0x471c, 0x90, 0x16, 0x9b, 0x6a, 0xc6, 0xdc, 0xd3, 0x23);
+            0xcbeb3fb1, 0xae9f, 0x471c, 0x90, 0x16, 0x9b, 0x6a, 0xc6, 0xdc, 0xd3, 0x23);
 
-int usb_init(int index, int *hUSBRead, int *hUSBWrite)
+int musb_init(int index, int *hUSBRead, int *hUSBWrite)
 {
    GUID guid;
    HDEVINFO hDevInfoList;
@@ -1129,13 +1124,14 @@ int usb_init(int index, int *hUSBRead, int *hUSBWrite)
 
    // Establish USB connection
    if (hUSBRead && hUSBWrite) {
-      *hUSBRead = NULL;
-      *hUSBWrite = NULL;
+      *hUSBRead = 0;
+      *hUSBWrite = 0;
    }
    guid = GUID_CLASS_MSCB_BULK;
 
    // Retrieve device list for GUID that has been specified.
-   hDevInfoList = SetupDiGetClassDevs(&guid, NULL, NULL, (DIGCF_PRESENT | DIGCF_DEVICEINTERFACE));
+   hDevInfoList =
+       SetupDiGetClassDevs(&guid, NULL, NULL, (DIGCF_PRESENT | DIGCF_DEVICEINTERFACE));
 
    status = FALSE;
    if (hDevInfoList != NULL) {
@@ -1153,13 +1149,14 @@ int usb_init(int index, int *hUSBRead, int *hUSBWrite)
 
          predictedLength = requiredLength = 0;
 
-         SetupDiGetDeviceInterfaceDetail(hDevInfoList, &deviceInfoData, NULL, // Not yet allocated
-                                         0,  // Set output buffer length to zero
-                                         &requiredLength,    // Find out memory requirement
+         SetupDiGetDeviceInterfaceDetail(hDevInfoList, &deviceInfoData, NULL,   // Not yet allocated
+                                         0,     // Set output buffer length to zero
+                                         &requiredLength,       // Find out memory requirement
                                          NULL);
 
          predictedLength = requiredLength;
-         functionClassDeviceData = (PSP_DEVICE_INTERFACE_DETAIL_DATA) malloc(predictedLength);
+         functionClassDeviceData =
+             (PSP_DEVICE_INTERFACE_DETAIL_DATA) malloc(predictedLength);
          functionClassDeviceData->cbSize = sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA);
 
          // Second, get the detailed information
@@ -1187,10 +1184,11 @@ int usb_init(int index, int *hUSBRead, int *hUSBWrite)
          // Get the read handle
          sprintf(str, "%s\\PIPE00", device_name);
          *hUSBRead = (int) CreateFile(str,
-                                GENERIC_WRITE | GENERIC_READ, FILE_SHARE_WRITE | FILE_SHARE_READ,
-                                NULL, OPEN_EXISTING, FILE_FLAG_OVERLAPPED, NULL);
+                                      GENERIC_WRITE | GENERIC_READ,
+                                      FILE_SHARE_WRITE | FILE_SHARE_READ, NULL,
+                                      OPEN_EXISTING, FILE_FLAG_OVERLAPPED, NULL);
 
-         if (*hUSBRead == INVALID_HANDLE_VALUE)
+         if (*hUSBRead == (int) INVALID_HANDLE_VALUE)
             return -1;
       }
 
@@ -1198,10 +1196,11 @@ int usb_init(int index, int *hUSBRead, int *hUSBWrite)
          // Get the write handle
          sprintf(str, "%s\\PIPE01", device_name);
          *hUSBWrite = (int) CreateFile(str,
-                                 GENERIC_WRITE | GENERIC_READ, FILE_SHARE_WRITE | FILE_SHARE_READ,
-                                 NULL, OPEN_EXISTING, 0, NULL);
+                                       GENERIC_WRITE | GENERIC_READ,
+                                       FILE_SHARE_WRITE | FILE_SHARE_READ, NULL,
+                                       OPEN_EXISTING, 0, NULL);
 
-         if (*hUSBWrite == INVALID_HANDLE_VALUE)
+         if (*hUSBWrite == (int) INVALID_HANDLE_VALUE)
             return -1;
       }
 
@@ -1224,14 +1223,13 @@ int musb_init(int index, int *fdr, int *fdw)
    usb_find_busses();
    usb_find_devices();
 
-   for (bus = usb_busses ; bus ; bus = bus->next) {
+   for (bus = usb_busses; bus; bus = bus->next) {
       for (dev = bus->devices; dev; dev = dev->next) {
 
-         if (dev->descriptor.idVendor == 0x10C4 &&
-             dev->descriptor.idProduct == 0x1175) {
+         if (dev->descriptor.idVendor == 0x10C4 && dev->descriptor.idProduct == 0x1175) {
 
             found++;
-            if (found == index+1) {
+            if (found == index + 1) {
 
                if (fdr && fdw) {
                   udev = usb_open(dev);
@@ -1241,13 +1239,13 @@ int musb_init(int index, int *fdr, int *fdw)
                   if (usb_set_configuration(udev, 1) < 0)
                      return -5;
 
-		  /* see if we have write access */
+                  /* see if we have write access */
                   if (usb_claim_interface(udev, 0) < 0)
-		     return -5;
-		  usb_release_interface(udev, 0);
+                     return -5;
+                  usb_release_interface(udev, 0);
 
-                  *fdr = (int)udev;
-                  *fdw = (int)udev;
+                  *fdr = (int) udev;
+                  *fdw = (int) udev;
                }
 
                return 0;
@@ -1266,10 +1264,10 @@ int musb_init(int index, int *fdr, int *fdw)
 void musb_close(int fdr, int fdw)
 {
 #ifdef _MSC_VER
-   CloseHandle((HANDLE)fdr);
-   CloseHandle((HANDLE)fdw);
+   CloseHandle((HANDLE) fdr);
+   CloseHandle((HANDLE) fdw);
 #else
-   usb_close((usb_dev_handle *)fdr);
+   usb_close((usb_dev_handle *) fdr);
 #endif
 }
 
@@ -1393,27 +1391,27 @@ int mscb_init(char *device, int debug)
 
    if (mscb_fd[index].type == MSCB_TYPE_USB) {
 
-      status = musb_init(atoi(device+3), &mscb_fd[index].hr, &mscb_fd[index].hw);
+      status = musb_init(atoi(device + 3), &mscb_fd[index].hr, &mscb_fd[index].hw);
       if (status < 0)
          return status;
 
       /* linux needs some time to start-up ...??? */
-      for (i=0 ; i<10 ; i++) {
-         mscb_lock(index+1);
+      for (i = 0; i < 10; i++) {
+         mscb_lock(index + 1);
 
          /* check if submaster alive */
          buf[0] = MCMD_ECHO;
-         mscb_out(index+1, buf, 1, RS485_FLAG_CMD);
+         mscb_out(index + 1, buf, 1, RS485_FLAG_CMD);
 
-         n = mscb_in(index+1, buf, 2, 5000);
-         mscb_release(index+1);
+         n = mscb_in(index + 1, buf, 2, 5000);
+         mscb_release(index + 1);
 
          if (n == 2 && buf[0] == MCMD_ACK)
-	    break;
+            break;
       }
-      
+
       if (n != 2 || buf[0] != MCMD_ACK)
-        return -4;
+         return -4;
    }
 
    return index + 1;
@@ -1441,14 +1439,14 @@ int mscb_exit(int fd)
 
    if (mrpc_connected(fd)) {
       mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_EXIT, mscb_fd[fd - 1].remote_fd);
-      mrpc_disconnect(mscb_fd[fd-1].fd);
+      mrpc_disconnect(mscb_fd[fd - 1].fd);
    }
 
-   if (mscb_fd[fd-1].type == MSCB_TYPE_USB)
-      musb_close(mscb_fd[fd-1].hr, mscb_fd[fd-1].hw);
+   if (mscb_fd[fd - 1].type == MSCB_TYPE_USB)
+      musb_close(mscb_fd[fd - 1].hr, mscb_fd[fd - 1].hw);
 
-   if (mscb_fd[fd-1].type == MSCB_TYPE_LPT)
-      lpt_close(mscb_fd[fd-1].fd);
+   if (mscb_fd[fd - 1].type == MSCB_TYPE_LPT)
+      lpt_close(mscb_fd[fd - 1].fd);
 
    memset(&mscb_fd[fd - 1], 0, sizeof(MSCB_FD));
 
@@ -1598,7 +1596,9 @@ int mscb_addr(int fd, int cmd, int adr, int retry, int lock)
       if (cmd == MCMD_ADDR_NODE8 || cmd == MCMD_ADDR_GRP8) {
          buf[1] = (unsigned char) adr;
          buf[2] = crc8(buf, 2);
-         status = mscb_out(fd, buf, 3, RS485_FLAG_BIT9 | RS485_FLAG_SHORT_TO | RS485_FLAG_NO_ACK);
+         status =
+             mscb_out(fd, buf, 3,
+                      RS485_FLAG_BIT9 | RS485_FLAG_SHORT_TO | RS485_FLAG_NO_ACK);
       } else if (cmd == MCMD_PING8) {
          buf[1] = (unsigned char) adr;
          buf[2] = crc8(buf, 2);
@@ -1607,7 +1607,9 @@ int mscb_addr(int fd, int cmd, int adr, int retry, int lock)
          buf[1] = (unsigned char) (adr >> 8);
          buf[2] = (unsigned char) (adr & 0xFF);
          buf[3] = crc8(buf, 3);
-         status = mscb_out(fd, buf, 4, RS485_FLAG_BIT9 | RS485_FLAG_SHORT_TO | RS485_FLAG_NO_ACK);
+         status =
+             mscb_out(fd, buf, 4,
+                      RS485_FLAG_BIT9 | RS485_FLAG_SHORT_TO | RS485_FLAG_NO_ACK);
       } else if (cmd == MCMD_PING16) {
          buf[1] = (unsigned char) (adr >> 8);
          buf[2] = (unsigned char) (adr & 0xFF);
@@ -1615,7 +1617,9 @@ int mscb_addr(int fd, int cmd, int adr, int retry, int lock)
          status = mscb_out(fd, buf, 4, RS485_FLAG_BIT9 | RS485_FLAG_SHORT_TO);
       } else {
          buf[1] = crc8(buf, 1);
-         status = mscb_out(fd, buf, 2, RS485_FLAG_BIT9 | RS485_FLAG_SHORT_TO | RS485_FLAG_NO_ACK);
+         status =
+             mscb_out(fd, buf, 2,
+                      RS485_FLAG_BIT9 | RS485_FLAG_SHORT_TO | RS485_FLAG_NO_ACK);
       }
 
       if (status != MSCB_SUCCESS) {
@@ -1735,7 +1739,7 @@ int mscb_reset(int fd)
    if (mscb_fd[fd - 1].type == MSCB_TYPE_LPT) {
       /* toggle reset */
       pp_wcontrol(fd, LPT_RESET, 1);
-      Sleep(100);                  // for elko
+      Sleep(100);               // for elko
       pp_wcontrol(fd, LPT_RESET, 0);
    } else if (mscb_fd[fd - 1].type == MSCB_TYPE_USB) {
 
@@ -1743,10 +1747,10 @@ int mscb_reset(int fd)
 
       buf[0] = MCMD_INIT;
       mscb_out(fd, buf, 1, RS485_FLAG_CMD);
-      musb_close(mscb_fd[fd -1].hr, mscb_fd[fd -1].hw);
+      musb_close(mscb_fd[fd - 1].hr, mscb_fd[fd - 1].hw);
       Sleep(1000);
-      musb_init(atoi(mscb_fd[fd-1].device+3),
-               &mscb_fd[fd -1].hr, &mscb_fd[fd -1].hw);
+      musb_init(atoi(mscb_fd[fd - 1].device + 3),
+                &mscb_fd[fd - 1].hr, &mscb_fd[fd - 1].hw);
    }
 
    mscb_release(fd);
@@ -2345,7 +2349,8 @@ int mscb_upload(int fd, int adr, char *buffer, int size)
             mscb_out(fd, buf, 2, RS485_FLAG_LONG_TO);
 
             if (mscb_in(fd, ack, 2, 100000) != 2) {
-               printf("\nError: timeout from remote node for erase page 0x%04X\n", page * 512);
+               printf("\nError: timeout from remote node for erase page 0x%04X\n",
+                      page * 512);
                goto prog_error;
             }
 
@@ -2357,7 +2362,8 @@ int mscb_upload(int fd, int adr, char *buffer, int size)
             }
 
             if (ack[0] != MCMD_ACK) {
-               printf("\nError: received wrong acknowledge for erase page 0x%04X\n", page * 512);
+               printf("\nError: received wrong acknowledge for erase page 0x%04X\n",
+                      page * 512);
                goto prog_error;
             }
 
@@ -2374,27 +2380,30 @@ int mscb_upload(int fd, int adr, char *buffer, int size)
             crc = crc8(buf, 512);
 
             /* chop down page in 60 byte segments (->USB) */
-            for (i= 0 ; i < 8 ; i++) {
-               mscb_out(fd, buf+i*60, 60, RS485_FLAG_LONG_TO);
+            for (i = 0; i < 8; i++) {
+               mscb_out(fd, buf + i * 60, 60, RS485_FLAG_LONG_TO);
 
                /* read acknowledge */
                if (mscb_in(fd, ack, 2, 100000) != 2) {
-                  printf("\nError: timeout from remote node for program page 0x%04X\n", page * 512);
+                  printf("\nError: timeout from remote node for program page 0x%04X\n",
+                         page * 512);
                   goto prog_error;
                }
             }
 
             /* send remaining 32 bytes */
-            mscb_out(fd, buf+i*60, 32, RS485_FLAG_LONG_TO);
+            mscb_out(fd, buf + i * 60, 32, RS485_FLAG_LONG_TO);
 
             /* read acknowledge */
             if (mscb_in(fd, ack, 2, 100000) != 2) {
-               printf("\nError: timeout from remote node for program page 0x%04X\n", page * 512);
+               printf("\nError: timeout from remote node for program page 0x%04X\n",
+                      page * 512);
                goto prog_error;
             }
 
             if (ack[0] != MCMD_ACK) {
-               printf("\nError: received wrong acknowledge for program page 0x%04X\n", page * 512);
+               printf("\nError: received wrong acknowledge for program page 0x%04X\n",
+                      page * 512);
                goto prog_error;
             }
 
@@ -2408,7 +2417,8 @@ int mscb_upload(int fd, int adr, char *buffer, int size)
             mscb_out(fd, buf, 2, RS485_FLAG_LONG_TO);
 
             if (mscb_in(fd, ack, 2, 100000) != 2) {
-               printf("\nError: timeout from remote node for verify page 0x%04X\n", page * 512);
+               printf("\nError: timeout from remote node for verify page 0x%04X\n",
+                      page * 512);
                goto prog_error;
             }
 
@@ -2424,7 +2434,7 @@ int mscb_upload(int fd, int adr, char *buffer, int size)
       }
    }
 
-prog_error:
+ prog_error:
    printf("\n");
 
    /* reboot node */
@@ -2501,6 +2511,11 @@ int mscb_read(int fd, int adr, unsigned char index, void *data, int *size)
 
       /* read data */
       i = mscb_in(fd, buf, sizeof(buf), 5000);
+
+      if (i == 1 && buf[0] == 0xFF) {
+         printf("Timeout from RS485 bus.\n");
+         return MSCB_TIMEOUT;
+      }
 
       if (i < 2)
          continue;
@@ -2964,7 +2979,7 @@ int mscb_select_device(char *device)
       return -1;
 
    /* check USB devices */
-   for (i=0 ; i<127 ; i++) {
+   for (i = 0; i < 127; i++) {
       status = musb_init(i, NULL, NULL);
       if (status != -1)
          sprintf(list[n++], "usb%d", i);
@@ -2973,9 +2988,9 @@ int mscb_select_device(char *device)
    }
 
    /* check LPT devices */
-   for (i=0 ; i<1 ; i++) {
+   for (i = 0; i < 1; i++) {
 #ifdef _MSC_VER
-      sprintf(str, "lpt%d", i+1);
+      sprintf(str, "lpt%d", i + 1);
 #else
       sprintf(str, "/dev/parport%d", i);
 #endif
@@ -3002,14 +3017,14 @@ int mscb_select_device(char *device)
 
    do {
       printf("Found several submasters, please select one:\n\n");
-      for (i=0 ; i<n ; i++)
-         printf("%d: %s\n", i+1, list[i]);
+      for (i = 0; i < n; i++)
+         printf("%d: %s\n", i + 1, list[i]);
 
       printf("\n");
       fgets(str, sizeof(str), stdin);
       i = atoi(str);
-      if (i > 0 && i<= n) {
-         strcpy(device, list[i-1]);
+      if (i > 0 && i <= n) {
+         strcpy(device, list[i - 1]);
          return MSCB_SUCCESS;
       }
 
