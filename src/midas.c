@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.203  2004/03/19 09:58:22  midas
+  Changed client inactivity time check in cm_watchdog
+
   Revision 1.202  2004/01/17 05:35:53  olchansk
   replace #define ALIGN() with ALIGN8() to dodge namespace pollution under macosx
   hide strlcpy() & co #ifdef HAVE_STRLCPY (macosx already has strlcpy())
@@ -4705,7 +4708,9 @@ void cm_watchdog(int dummy)
                str[0] = 0;
 
                /* now make again the check with the buffer locked */
+               actual_time = ss_millitime();
                if (pbclient->pid && pbclient->watchdog_timeout > 0 &&
+                   actual_time > pbclient->last_activity &&
                    actual_time - pbclient->last_activity > pbclient->watchdog_timeout) {
                   sprintf(str, "Client %s on %s removed (idle %1.1lfs,TO %1.0lfs)",
                           pbclient->name, pheader->name,
@@ -4767,7 +4772,9 @@ void cm_watchdog(int dummy)
                str[0] = 0;
 
                /* now make again the check with the buffer locked */
+               actual_time = ss_millitime();
                if (pdbclient->pid && pdbclient->watchdog_timeout &&
+                   actual_time > pdbclient->last_activity &&
                    actual_time - pdbclient->last_activity > pdbclient->watchdog_timeout) {
                   sprintf(str,
                           "Client %s (PID %d) on %s removed (idle %1.1lfs,TO %1.0lfs)",
