@@ -6,6 +6,9 @@
   Contents:     Web server for remote PAW display
 
   $Log$
+  Revision 1.12  2000/05/18 12:41:18  midas
+  Added password protection
+
   Revision 1.11  2000/05/17 07:17:57  midas
   Added version number
 
@@ -64,7 +67,7 @@
 #endif
 
 /* Version of WebPAW */
-#define VERSION "1.0.1"
+#define VERSION "1.0.2"
 
 #define WEB_BUFFER_SIZE 100000
 #define MAX_PARAM           10
@@ -1025,17 +1028,87 @@ void sighup(int sig)
 
 /*------------------------------------------------------------------*/
 
+char *map= "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+
+int cind(char c)
+{
+int i;
+
+  if (c == '=')
+    return 0;
+
+  for (i=0 ; i<64 ; i++)
+    if (map[i] == c)
+      return i;
+
+  return -1;
+}
+
+void base64_decode(char *s, char *d)
+{
+unsigned int t;
+
+  while (*s)
+    {
+    t = (cind(*s++) << 18) |
+        (cind(*s++) << 12) |
+        (cind(*s++) << 6)  |
+        (cind(*s++) << 0);
+    
+    *(d+2) = (char) (t & 0xFF);
+    t >>= 8;
+    *(d+1) = (char) (t & 0xFF);
+    t >>= 8;
+    *d = (char) (t & 0xFF);
+
+    d += 3;
+    }
+  *d = 0;
+}
+
+void base64_encode(char *s, char *d)
+{
+unsigned int t, pad;
+
+  pad = 3 - strlen(s) % 3;
+  while (*s)
+    {
+    t =   (*s++) << 16;
+    if (*s)
+      t |=  (*s++) << 8;
+    if (*s)
+      t |=  (*s++) << 0;
+    
+    *(d+3) = map[t & 63];
+    t >>= 6;
+    *(d+2) = map[t & 63];
+    t >>= 6;
+    *(d+1) = map[t & 63];
+    t >>= 6;
+    *(d+0) = map[t & 63];
+
+    d += 4;
+    }
+  *d = 0;
+  while (pad--)
+    *(--d) = '=';
+}
+
+/*------------------------------------------------------------------*/
+
+
 char net_buffer[WEB_BUFFER_SIZE];
 
 void server_loop(int tcp_port, int daemon)
 {
 int                  status, i, n_error;
 struct sockaddr_in   bind_addr, acc_addr;
-int                  lsock, len, flag, header_length;
+int                  lsock, len, flag, header_length, authorized;
 struct hostent       *phe;
 struct linger        ling;
 fd_set               readfds;
 struct timeval       timeout;
+char                 pwd[256], cl_pwd[256], str[256], *p;
 
   _quit = 0;
 
@@ -1277,15 +1350,73 @@ struct timeval       timeout;
       memset(return_buffer, 0, sizeof(return_buffer));
       return_length = 0;
 
-      /* extract path and commands */
-      *strchr(net_buffer, '\r') = 0;
+      /* ask for password if configured */
+      authorized = 1;
+      if (getcfg("General", "Password", pwd))
+        {
+        authorized = 0;
 
-      if (!strstr(net_buffer, "HTTP"))
-        goto error;
-      *(strstr(net_buffer, "HTTP")-1)=0;
+        /* decode authorization */
+        if (strstr(net_buffer, "Authorization:"))
+          {
+          p = strstr(net_buffer, "Authorization:")+14;
+          if (strstr(p, "Basic"))
+            {
+            p = strstr(p, "Basic")+6;
+            while (*p == ' ')
+              p++;
+            i = 0;
+            while (*p && *p != ' ' && *p != '\r')
+              str[i++] = *p++;
+            str[i] = 0;
+            }
+          base64_decode(str, cl_pwd);
+          if (strchr(cl_pwd, ':'))
+            {
+            p = strchr(cl_pwd, ':')+1;
+            base64_encode(p, str);
+            strcpy(cl_pwd, str);
 
-      /* decode command and return answer */
-      decode(net_buffer+4);
+            /* check authorization */
+            if (strcmp(str, pwd) == 0)
+              authorized = 1;
+            }
+          }
+        }
+
+      if (!authorized)
+        {
+        /* return request for authorization */
+        rsprintf("HTTP/1.1 401 Authorization Required\r\n");
+        rsprintf("Server: WebPAW\r\n");
+        rsprintf("WWW-Authenticate: Basic realm=\"restricted\"\r\n");
+        rsprintf("Connection: close\r\n");
+        rsprintf("Content-Type: text/html\r\n\r\n");
+
+        rsprintf("<HTML><HEAD>\r\n");
+        rsprintf("<TITLE>401 Authorization Required</TITLE>\r\n");
+        rsprintf("</HEAD><BODY>\r\n");
+        rsprintf("<H1>Authorization Required</H1>\r\n");
+        rsprintf("This server could not verify that you\r\n");
+        rsprintf("are authorized to access the document\r\n");
+        rsprintf("requested.  Either you supplied the wrong\r\n");
+        rsprintf("credentials (e.g., bad password), or your\r\n");
+        rsprintf("browser doesn't understand how to supply\r\n");
+        rsprintf("the credentials required.<P>\r\n");
+        rsprintf("</BODY></HTML>\r\n");
+        }
+      else
+        {
+        /* extract path and commands */
+        *strchr(net_buffer, '\r') = 0;
+
+        if (!strstr(net_buffer, "HTTP"))
+          goto error;
+        *(strstr(net_buffer, "HTTP")-1)=0;
+
+        /* decode command and return answer */
+        decode(net_buffer+4);
+        }
 
       if (return_length != -1)
         {
@@ -1305,13 +1436,95 @@ struct timeval       timeout;
 
 /*------------------------------------------------------------------*/
 
+void create_password(char *pwd)
+{
+int  fh, length, i;
+char *cfgbuffer, str[256], *p;
+
+  fh = open("webpaw.cfg", O_RDONLY);
+  if (fh < 0)
+    {
+    /* create new file */
+    fh = open("webpaw.cfg", O_CREAT | O_WRONLY, 0640);
+    if (fh < 0)
+      {
+      printf("Cannot create \"webpaw.cfg\".\n");
+      return;
+      }
+    sprintf(str, "[General]\nPassword=%s\n", pwd);
+    write(fh, str, strlen(str));
+    close(fh);
+    printf("File \"webpaw.cfg\" created with password.\n");
+    return;
+    }
+
+  /* read existing file and add password */
+  length = lseek(fh, 0, SEEK_END);
+  lseek(fh, 0, SEEK_SET);
+  cfgbuffer = malloc(length+1);
+  if (cfgbuffer == NULL)
+    {
+    close(fh);
+    return;
+    }
+  length = read(fh, cfgbuffer, length);
+  cfgbuffer[length] = 0;
+  close(fh);
+
+  fh = open("webpaw.cfg", O_TRUNC | O_WRONLY, 0640);
+
+  if (strstr(cfgbuffer, "Password"))
+    {
+    /* replace existing password */
+    p = strstr(cfgbuffer, "Password");
+    i = (int) p - (int) cfgbuffer;
+    write(fh, cfgbuffer, i);
+    sprintf(str, "Password=%s\n", pwd);
+    write(fh, str, strlen(str));
+    
+    /* write remainder of file */
+    while (*p && *p != '\n')
+      p++;
+    if (*p && *p == '\n')
+      p++;
+    write(fh, p, strlen(p));
+    }
+  else if (strstr(cfgbuffer, "[General]"))
+    {
+    /* add password to [General] section */
+    p = strstr(cfgbuffer, "[General]")+9;
+    while (*p && (*p == '\r' || *p == '\n'))
+      p++;
+    i = (int) p - (int) cfgbuffer;
+    write(fh, cfgbuffer, i);
+    sprintf(str, "Password=%s\n", pwd);
+    write(fh, str, strlen(str));
+    
+    /* write remainder of file */
+    write(fh, p, strlen(p));
+    }
+  else
+    {
+    sprintf(str, "[General]\nPassword=%s\n\n", pwd);
+    write(fh, str, strlen(str));
+    write(fh, cfgbuffer, length);
+    }
+
+  free(cfgbuffer);
+  close(fh);
+}
+
+/*------------------------------------------------------------------*/
+
 main(int argc, char *argv[])
 {
-int i;
-int tcp_port = 80, daemon = 0;
+int  i;
+int  tcp_port = 80, daemon = 0;
+char pwd[256], str[256];
 
   /* parse command line parameters */
   _debug = 0;
+  pwd[0] = 0;
   for (i=1 ; i<argc ; i++)
     {
     if (argv[i][0] == '-' && argv[i][1] == 'D')
@@ -1328,17 +1541,27 @@ int tcp_port = 80, daemon = 0;
         goto usage;
       if (argv[i][1] == 'p')
         tcp_port = atoi(argv[++i]);
+      else if (argv[i][1] == 'P')
+        strcpy(pwd, argv[++i]);
       else
         {
 usage:
-        printf("usage: %s [-p port] [-d [file]] [-D]\n\n", argv[0]);
+        printf("usage: %s [-p port] [-d [file]] [-D] [-P password]\n\n", argv[0]);
         printf("       -d [file] display debug message, optionally put them into file\n");
         printf("       -D become a daemon\n");
+        printf("       -P create/overwrite password in webpaw.cfg\n\n");
         return 1;
         }
       }
     }
   
+  if (pwd[0])
+    {
+    base64_encode(pwd, str);
+    create_password(str);
+    return 0;
+    }
+
   if (_debug && daemon && !debug_file[0])
     {
     printf("Error: when -D flag is given, -d must contain a filename.\n");
