@@ -6,6 +6,9 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.75  2003/12/01 09:55:27  midas
+  Remove trailing '/' in db_create_record()
+
   Revision 1.74  2003/12/01 07:56:10  midas
   Fixed bug in db_check_record()
 
@@ -7597,17 +7600,22 @@ main()
 @param init_str Initialization string in the format of the db_copy/db_save functions.
 @return DB_SUCCESS, DB_INVALID_HANDLE, DB_FULL, DB_NO_ACCESS, DB_OPEN_RECORD
 */
-INT db_create_record(HNDLE hDB, HNDLE hKey, char *key_name, char *init_str)
+INT db_create_record(HNDLE hDB, HNDLE hKey, char *orig_key_name, char *init_str)
 {
-  char  str[256], *buffer;
+  char  str[256], key_name[256], *buffer;
   INT   status, size, i, buffer_size;
   HNDLE hKeyTmp, hKeyTmpO, hKeyOrig, hSubkey;
 
   if (rpc_is_remote())
-    return rpc_call(RPC_DB_CREATE_RECORD, hDB, hKey, key_name, init_str);
+    return rpc_call(RPC_DB_CREATE_RECORD, hDB, hKey, orig_key_name, init_str);
 
   /* make this function atomic */
   db_lock_database(hDB);
+
+  /* strip trailing '/' */
+  strlcpy(key_name, orig_key_name, sizeof(key_name));
+  if (strlen(key_name) > 1 && key_name[strlen(key_name)-1] == '/')
+    key_name[strlen(key_name)-1] = 0;
 
   /* merge temporay record and original record */
   status = db_find_key(hDB, hKey, key_name, &hKeyOrig);
