@@ -7,6 +7,9 @@
                 linked with user code to form a complete frontend
 
   $Log$
+  Revision 1.69  2004/09/29 00:16:21  midas
+  Fixed shutdown problem with EB frontends
+
   Revision 1.68  2004/09/28 23:56:53  midas
   Added -i flag and EQ_EB flag for event building
 
@@ -2037,10 +2040,10 @@ int main(int argc, char *argv[])
    }
 
    /* remomve any dead frontend */
-   cm_cleanup(frontend_name, FALSE);
+   cm_cleanup(full_frontend_name, FALSE);
 
    /* shutdown previous frontend */
-   status = cm_shutdown(frontend_name, FALSE);
+   status = cm_shutdown(full_frontend_name, FALSE);
    if (status == CM_SUCCESS && display_period) {
       printf("Previous frontend stopped\n");
 
