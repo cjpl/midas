@@ -46,6 +46,10 @@ int vme_open(int device, int mode)
       bt_gen_name(device, BT_DEV_A32, devname, BT_MAX_DEV_NAME);
       break;
 
+   case VME_LM:
+      bt_gen_name(device, BT_DEV_LM, devname, BT_MAX_DEV_NAME);
+      break;
+
    default:
       printf("Unknown VME mode %d\n", mode);
       return -1;
@@ -61,23 +65,25 @@ int vme_open(int device, int mode)
    bt_clrerr(btd);
 
    /* select swapping mode */
-   flag = BT_SWAP_NONE;
-   bt_set_info(btd, BT_INFO_SWAP, flag);
+   if (mode != VME_LM) {
+      flag = BT_SWAP_NONE;
+      bt_set_info(btd, BT_INFO_SWAP, flag);
 
-   /* set data mode */
-   flag = (mode == VME_A16D16 || mode == VME_A24D16 || mode == VME_A32D16) ?
-       BT_WIDTH_D16 : BT_WIDTH_D32;
-   bt_set_info(btd, BT_INFO_DATAWIDTH, flag);
+      /* set data mode */
+      flag = (mode == VME_A16D16 || mode == VME_A24D16 || mode == VME_A32D16) ?
+        BT_WIDTH_D16 : BT_WIDTH_D32;
+      bt_set_info(btd, BT_INFO_DATAWIDTH, flag);
 
-   /* switch on block transfer */
-   flag = TRUE;
-   bt_set_info(btd, BT_INFO_BLOCK, flag);
+      /* switch on block transfer */
+      flag = TRUE;
+      bt_set_info(btd, BT_INFO_BLOCK, flag);
 
-   flag = 256;
-   bt_set_info(btd, BT_INFO_DMA_POLL_CEILING, flag);
+      flag = 256;
+      bt_set_info(btd, BT_INFO_DMA_POLL_CEILING, flag);
 
-   flag = 256;
-   bt_set_info(btd, BT_INFO_DMA_THRESHOLD, flag);
+      flag = 256;
+      bt_set_info(btd, BT_INFO_DMA_THRESHOLD, flag);
+   }
 
    return (int) btd;
 }
