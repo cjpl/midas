@@ -7,6 +7,9 @@
                 routines
 
   $Log$
+  Revision 1.22  2002/05/15 23:45:46  midas
+  Increased number of RPC connections
+
   Revision 1.21  2001/06/15 09:50:29  midas
   Made recv_string EXPRT (for bl_psi.ch)
 
@@ -127,7 +130,7 @@
 
 #define MESSAGE_BUFFER_SIZE    100000   /* buffer used for messages */
 #define MESSAGE_BUFFER_NAME    "SYSMSG" /* buffer name for messages */
-#define MAX_RPC_CONNECTION     10    /* server/client connections   */
+#define MAX_RPC_CONNECTION     25    /* server/client connections   */
 #define MAX_STRING_LENGTH      256     /* max string length for odb */
 #define NET_BUFFER_SIZE        (ALIGN(MAX_EVENT_SIZE)+sizeof(EVENT_HEADER)+\
 4*8 + sizeof(NET_COMMAND_HEADER))
@@ -503,6 +506,8 @@ INT EXPRT bm_mark_read_waiting(BOOL flag);
 INT bm_push_event(char *buffer_name);
 INT bm_check_buffers(void);
 INT EXPRT bm_remove_event_request(INT buffer_handle, INT request_id);
+void EXPRT bm_defragment_event(HNDLE buffer_handle, HNDLE request_id, 
+  EVENT_HEADER *pevent, void *pdata, void (*dispatcher)(HNDLE,HNDLE,EVENT_HEADER*,void*));
 
 /*---- online database ----*/
 INT EXPRT db_lock_database(HNDLE database_handle);
