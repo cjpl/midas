@@ -6,6 +6,9 @@
   Contents:     Command-line interface to the MIDAS online data base.
 
   $Log$
+  Revision 1.30  1999/11/03 16:19:39  midas
+  Added "start now" command for batch programs
+
   Revision 1.29  1999/10/18 14:41:52  midas
   Use /programs/<name>/Watchdog timeout in all programs as timeout value. The
   default value can be submitted by calling cm_connect_experiment1(..., timeout)
@@ -2142,61 +2145,68 @@ PRINT_INFO      print_info;
           old_run_number = 0;
           db_get_value(hDB, 0, "/Runinfo/Run number", &old_run_number, &size, TID_INT);
 
-          /* edit run parameter */
-          db_find_key(hDB, 0, "/Experiment/Edit on start", &hKey);
-          do
+          /* edit run parameter if command is not "start now" */
+          if (param[1][0] == 'n' && param[1][1] == 'o' && param[1][2] == 'w')
             {
-            if (hKey)
+            new_run_number = old_run_number + 1;
+            line[0] = 'y';
+            }
+          else
+	    {
+            db_find_key(hDB, 0, "/Experiment/Edit on start", &hKey);
+            do
               {
-              for (i=0 ; ; i++)
+              if (hKey)
                 {
-                db_enum_link(hDB, hKey, i, &hSubkey);
-
-                if (!hSubkey)
-                  break;
-
-                db_get_key(hDB, hSubkey, &key);
-                strcpy(str, key.name);
-
-                db_enum_key(hDB, hKey, i, &hSubkey);
-                db_get_key(hDB, hSubkey, &key);
-
-                size = sizeof(data);
-                status = db_get_data(hDB, hSubkey, data, &size, key.type);
-                if (status != DB_SUCCESS)
-                  continue;
-
-                for (j=0 ; j<key.num_values ; j++)
+                for (i=0 ; ; i++)
                   {
-                  db_sprintf(data_str, data, key.item_size, j, key.type);
-                  sprintf(prompt, "%s : ", str);
+                  db_enum_link(hDB, hKey, i, &hSubkey);
 
-                  strcpy(line, data_str);
-                  in_cmd_edit = TRUE;
-                  cmd_edit(prompt, line, NULL, cmd_idle);
-                  in_cmd_edit = FALSE;
+                  if (!hSubkey)
+                    break;
 
-                  if (line[0])
+                  db_get_key(hDB, hSubkey, &key);
+                  strcpy(str, key.name);
+
+                  db_enum_key(hDB, hKey, i, &hSubkey);
+                  db_get_key(hDB, hSubkey, &key);
+
+                  size = sizeof(data);
+                  status = db_get_data(hDB, hSubkey, data, &size, key.type);
+                  if (status != DB_SUCCESS)
+                    continue;
+
+                  for (j=0 ; j<key.num_values ; j++)
                     {
-                    db_sscanf(line, data, &size, j, key.type);
-                    db_set_data_index(hDB, hSubkey, data, size+1, j, key.type); 
+                    db_sprintf(data_str, data, key.item_size, j, key.type);
+                    sprintf(prompt, "%s : ", str);
+
+                    strcpy(line, data_str);
+                    in_cmd_edit = TRUE;
+                    cmd_edit(prompt, line, NULL, cmd_idle);
+                    in_cmd_edit = FALSE;
+
+                    if (line[0])
+                      {
+                      db_sscanf(line, data, &size, j, key.type);
+                      db_set_data_index(hDB, hSubkey, data, size+1, j, key.type); 
+                      }
                     }
                   }
                 }
-              }
 
-            /* increment run number */
-            new_run_number = old_run_number+1;
-            printf("Run number [%d]: ", new_run_number);
-            ss_gets(line, 256);
-            if (line[0] && atoi(line) > 0)
-              new_run_number = atoi(line);
+              /* increment run number */
+              new_run_number = old_run_number+1;
+              printf("Run number [%d]: ", new_run_number);
+              ss_gets(line, 256);
+              if (line[0] && atoi(line) > 0)
+                new_run_number = atoi(line);
 
-            printf("Are the above parameters correct? ([y]/n/q): ");
-            ss_gets(line, 256);
+              printf("Are the above parameters correct? ([y]/n/q): ");
+              ss_gets(line, 256);
 
-            } while (line[0] == 'n' || line[0] == 'N');
-
+              } while (line[0] == 'n' || line[0] == 'N');
+	    }
 
           if (line[0] != 'q' && line[0] != 'Q')
             {
