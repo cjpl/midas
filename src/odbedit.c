@@ -6,6 +6,9 @@
   Contents:     Command-line interface to the MIDAS online data base.
 
   $Log$
+  Revision 1.45  2001/02/26 09:09:18  midas
+  Increased command length to 256
+
   Revision 1.44  2001/02/19 11:41:55  midas
   Avoid interactive questions if started with "-c" flag
 
@@ -2813,7 +2816,7 @@ main(int argc, char *argv[])
 {
 INT           status, i, odb_size, size;
 char          host_name[100], exp_name[NAME_LENGTH];
-char          cmd[100], dir[100], str[256];
+char          cmd[256], dir[100], str[256];
 BOOL          debug;
 HNDLE         hDB;
 
@@ -2844,6 +2847,11 @@ HNDLE         hDB;
         strcpy(host_name, argv[++i]);
       else if (argv[i][1] == 'c')
         {
+        if (strlen(argv[i]) >= 256)
+          {
+          printf("error: command line too long (>256).\n");
+          return 0;
+          }
         strcpy(cmd, argv[++i]);
         cmd_mode = TRUE;
         }
