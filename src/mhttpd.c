@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.250  2003/05/17 15:59:05  midas
+  Frontend displayed correctly when running FAL
+
   Revision 1.249  2003/05/14 09:20:27  midas
   Fixed bug with /CNAF
 
@@ -1915,7 +1918,8 @@ CHN_STATISTICS chn_stats;
         sprintf(ref, "/SC/%s", key.name);
 
       /* check if client running this equipment is present */
-      if (cm_exist(equipment.frontend_name, TRUE) != CM_SUCCESS)
+      if (cm_exist(equipment.frontend_name, TRUE) != CM_SUCCESS &&
+          cm_exist("FAL", TRUE) != CM_SUCCESS)
         rsprintf("<tr><td><a href=\"%s\">%s</a><td align=center bgcolor=#FF0000>(inactive)",
                   ref, key.name);
         else 
