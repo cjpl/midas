@@ -7,6 +7,9 @@
                 midas/drivers/bus/rs232.c
 
   $Log$
+  Revision 1.2  2001/01/05 15:25:43  midas
+  Added variable port name
+
   Revision 1.1  2001/01/05 15:08:50  midas
   Initial revision
 
@@ -20,9 +23,15 @@ int main()
 RS232_INFO info;
 char str[10000];
 
-  /* turn on debugging, will go to rs232.log */
-  rs232(CMD_DEBUG, TRUE);
-  info.fd = rs232_open("/dev/ttyS0", 9600, 'N', 8, 1);
+  printf("Enter port [/dev/ttyS0]: ");
+  fgets(str, sizeof(str), stdin);
+  if (strchr(str, '\n'))
+    *strchr(str, '\n') = 0;
+
+  if (!str[0])
+    strcpy(str, "/dev/ttyS0");
+
+  info.fd = rs232_open(str, 9600, 'N', 8, 1, 0);
 
   if (info.fd < 0)
     {
@@ -30,6 +39,9 @@ char str[10000];
     return 0;
     }
   
+  /* turn on debugging, will go to rs232.log */
+  rs232(CMD_DEBUG, TRUE);
+
   printf("Connected to ttyS0, exit with <ESC>\n");
   
   do
