@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.64  1999/10/05 13:16:10  midas
+  Added global alarm flag "/alarms/alarm system active"
+
   Revision 1.63  1999/10/04 11:54:14  midas
   Submit full alarm string to execute command
 
@@ -15254,6 +15257,7 @@ ALARM        alarm;
 char         str[256], value[256];
 DWORD        now;
 PROGRAM_INFO program_info;
+BOOL         flag;
 
 ALARM_CLASS_STR(alarm_class_str);
 ALARM_STR(alarm_str);
@@ -15261,7 +15265,14 @@ ALARM_STR(alarm_str);
   cm_get_experiment_database(&hDB, NULL);
 
   if (hDB == 0)
-    return AL_SUCCESS; /* called from servern not yet connected */
+    return AL_SUCCESS; /* called from server not yet connected */
+
+  /* check global alarm flag */
+  flag = TRUE;
+  size = sizeof(flag);
+  db_get_value(hDB, 0, "/Alarms/Alarm system active", &flag, &size, TID_BOOL);
+  if (!flag)
+    return AL_SUCCESS;
 
   /* request semaphore */
   cm_get_experiment_mutex(&mutex, NULL);
