@@ -26,7 +26,7 @@ c:\midas-x.xx             MIDAS root for version x.xx
 
 2) Install to MIDAS binaries and libraries. Enter:
 
-  cl \midas-x.xx
+  cd \midas-x.xx
   install
 
 This will install the MIDAS library under c:\midas\nt\lib, 
