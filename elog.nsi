@@ -30,6 +30,7 @@ Section "ELOG system (required)"
   File nt\bin\elog*.exe
   File /oname=elogd.cfg c:\elog\elogd_sample.cfg 
   File c:\elog\eloghelp.html
+  File c:\elog\eloglang.german
   
   File /oname=readme.html m:\html\elog\index.html
   File m:\html\elog\config.html
