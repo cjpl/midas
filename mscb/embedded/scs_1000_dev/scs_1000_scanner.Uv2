@@ -7,11 +7,11 @@ Target (Simulator), 0x0000 // Tools: 'MCS-51'
 Group (Source Files)
 Group (Include Files)
 
-File 1,1,<.\mscbmain.c><mscbmain.c> 0x0 
-File 1,1,<.\mscbutil.c><mscbutil.c> 0x0 
-File 1,1,<.\lcd_menu.c><lcd_menu.c> 0x0 
 File 1,1,<.\scs_1000_scanner.c><scs_1000_scanner.c> 0x0 
-File 2,7,<.\mscb.h><mscb.h> 0x0 
+File 1,1,<..\mscbmain.c><mscbmain.c> 0x0 
+File 1,1,<..\mscbutil.c><mscbutil.c> 0x0 
+File 1,1,<..\lcd_menu.c><lcd_menu.c> 0x0 
+File 2,5,<..\mscb.h><mscb.h> 0x0 
 
 
 Options 1,0,0  // Target 'ICE'
@@ -71,7 +71,7 @@ Options 1,0,0  // Target 'ICE'
  C51MSC ()
  C51DEF (SCS_1000)
  C51UDF ()
- INCC5 ()
+ INCC5 (..\)
  AX51FL=4
  AX51MSC ()
  AX51SET ()
@@ -220,31 +220,5 @@ Options 2,0,0  // Target 'Simulator'
  FLASH1 { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }
  FLASH2 ()
  FLASH3 ()
-EndOpt
-
-Options 1,2,5  // File 'mscb.h'
- PropFld { 2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }
- IncBld=0
- AlwaysBuild=2
- GenAsm=2
- AsmAsm=2
- PublicsOnly=2
- StopCode=11
- CustArgs ()
- LibMods ()
- BankNo=65535
-EndOpt
-
-Options 2,2,5  // File 'mscb.h'
- PropFld { 2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }
- IncBld=0
- AlwaysBuild=2
- GenAsm=2
- AsmAsm=2
- PublicsOnly=2
- StopCode=11
- CustArgs ()
- LibMods ()
- BankNo=65535
 EndOpt
 
