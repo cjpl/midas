@@ -14,6 +14,9 @@
                 Brown, Prentice Hall
 
   $Log$
+  Revision 1.17  1998/12/10 12:47:51  midas
+  Changed unexpexted tape error printf to cm_msg
+
   Revision 1.16  1998/12/10 10:54:52  midas
   Forwarded ss_tape_status to 'mt' under UNIX
 
@@ -3809,7 +3812,7 @@ INT n, status;
   do
     {
     n = read(channel, pdata, *count);
-    } while (n == -1 && errno == EINTR);
+    } while (n <= 0 && errno == EINTR);
 
   if (n <= 0)
     {
@@ -3821,7 +3824,7 @@ INT n, status;
         status = SS_END_OF_FILE;
       else
         {
-        printf("enexpected tape error: n=%d, errno=%d\n", n, errno);
+        cm_msg(MERROR, "ss_tape_read", "unexpected tape error: n=%d, errno=%d\n", n, errno);
         status = errno;
         }
       }
@@ -3846,7 +3849,7 @@ INT read, status;
     else if (status == ERROR_MORE_DATA)
       status = SS_SUCCESS;
     else
-      printf("unexpected tape error: n=%d, errno=%d\n", read, status);
+      cm_msg(MERROR, "ss_tape_read", "unexpected tape error: n=%d, errno=%d\n", read, status);
     }
   else
     status = SS_SUCCESS;
@@ -4803,7 +4806,7 @@ char c, *ptr;
 INT ss_getchar(BOOL reset)
 /********************************************************************\
 
-  Routine: ss_getc
+  Routine: ss_getchar
 
   Purpose: Read a single character
 
