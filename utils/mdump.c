@@ -6,6 +6,9 @@
    Contents:     Dump event on screen with MIDAS or YBOS data format
  
    $Log$
+   Revision 1.9  1999/07/23 07:04:54  midas
+   Fixed compiler warnings
+
    Revision 1.8  1999/07/22 19:25:00  pierre
    - Fix duplicate EVID complain
    - Added support for FIXED event in raw format
@@ -625,7 +628,7 @@ int main(unsigned int argc,char **argv)
     }
   }
   
-  if (rep_flag & data_fmt==0)
+  if (rep_flag && data_fmt==0)
   {
     char * pext;
     if ((pext = strrchr(rep_file,'.')) != 0)
