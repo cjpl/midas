@@ -6,6 +6,9 @@
 #  Contents:     Makefile for MIDAS binaries and examples under unix
 #
 #  $Log$
+#  Revision 1.7  1999/05/20 07:38:16  midas
+#  Removed debug output
+#
 #  Revision 1.6  1999/05/19 14:17:07  midas
 #  Prefix for installation can now be defined by environment variable PREFIX
 #
@@ -189,7 +192,6 @@ all:    $(OS_DIR) $(LIB_DIR) $(BIN_DIR) \
 	$(BIN_DIR)/mtape $(BIN_DIR)/mhist \
 	$(BIN_DIR)/mstat $(BIN_DIR)/mcnaf \
 	$(BIN_DIR)/mdump $(BIN_DIR)/lazylogger
-	echo $(PREFIX)
 
 examples: $(EXAMPLES)
 
