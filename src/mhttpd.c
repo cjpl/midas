@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.244  2003/04/25 14:37:43  midas
+  Fixed compiler warnings
+
   Revision 1.243  2003/04/16 20:14:43  midas
   Fixed compiler warnings coming up with -Wuninitialized
 
@@ -821,20 +824,20 @@ struct {
   char type[32];
   } filetype[] = {
 
-  ".JPG",   "image/jpeg",
-  ".GIF",   "image/gif",
-  ".PNG",   "image/png",
-  ".PS",    "application/postscript",
-  ".EPS",   "application/postscript",
-  ".HTML",  "text/html",
-  ".HTM",   "text/html",
-  ".XLS",   "application/x-msexcel",
-  ".DOC",   "application/msword",
-  ".PDF",   "application/pdf",
-  ".TXT",   "text/plain",
-  ".ASC",   "text/plain",
-  ".ZIP",   "application/x-zip-compressed",
-  ""
+  { ".JPG",   "image/jpeg",                   },
+  { ".GIF",   "image/gif",                    },
+  { ".PNG",   "image/png",                    },
+  { ".PS",    "application/postscript",       },
+  { ".EPS",   "application/postscript",       },
+  { ".HTML",  "text/html",                    },
+  { ".HTM",   "text/html",                    },
+  { ".XLS",   "application/x-msexcel",        },
+  { ".DOC",   "application/msword",           },
+  { ".PDF",   "application/pdf",              },
+  { ".TXT",   "text/plain",                   },
+  { ".ASC",   "text/plain",                   },
+  { ".ZIP",   "application/x-zip-compressed", },
+  { "" },
 };
 
 void show_hist_page(char *path, char *buffer, int *buffer_size, int refresh);
@@ -1098,7 +1101,7 @@ char   str[80], line[256];
   str[19] = 0;
 
   /* print message text which comes after event header */
-  sprintf(line, "%s %s", str+11, message);
+  sprintf(line, "%s %s", str+11, (char *)message);
   print_message(line);
 }
 
@@ -3487,7 +3490,7 @@ HNDLE  hDB;
   buffer[buf_size] = 0;
 
   rsputs(buffer);
-  
+
   rsprintf("</pre>\n");
 
   rsprintf("</td></tr></table></body></html>\r\n");
@@ -4105,7 +4108,7 @@ char  def_button[][NAME_LENGTH] = {"8h", "24h", "7d" };
       sprintf(str, "EL/last%d", atoi(command+5));
     else if (command[strlen(command)-1] == 'd')
       sprintf(str, "EL/last%d", atoi(command+5)*24);
-                                             
+
     redirect(str);
     return;
     }
@@ -4139,11 +4142,11 @@ char  def_button[][NAME_LENGTH] = {"8h", "24h", "7d" };
       {
       size = sizeof(file_name);
       memset(file_name, 0, size);
-      
+
         status = db_get_value(hDB, 0, "/Logger/Elog dir", file_name, &size, TID_STRING, FALSE);
       if (status != DB_SUCCESS)
           db_get_value(hDB, 0, "/Logger/Data dir", file_name, &size, TID_STRING, TRUE);
-      
+
       if (file_name[0] != 0)
         if (file_name[strlen(file_name)-1] != DIR_SEPARATOR)
           strcat(file_name, DIR_SEPARATOR_STR);
@@ -6300,7 +6303,7 @@ KEY   key;
       strcpy(str, value);
       p = str+strlen(str)-1;
       while (*p && *p != '/')
-        *p--;
+        p--;
       p++;
 
       /* use it as link name */
@@ -6559,7 +6562,7 @@ INT    al_list[] = { AT_EVALUATED, AT_PROGRAM, AT_INTERNAL, AT_PERIODIC };
           sprintf(ref, "/Alarms/Alarms/%s?exp=%s", key.name, exp_name);
         else
           sprintf(ref, "/Alarms/Alarms/%s", key.name);
-        
+
         rsprintf("<tr><td bgcolor=#C0C0FF><a href=\"%s\"><b>%s</b></a>", ref, key.name);
 
         /* state */
@@ -6692,7 +6695,7 @@ char  str[256], ref[256], command[256], name[80];
       redirect("?cmd=programs");
     else
       {
-      sprintf(str, "Cannot shut down client \"%s\", please kill manually and do an ODB cleanup", 
+      sprintf(str, "Cannot shut down client \"%s\", please kill manually and do an ODB cleanup",
                    getparam("Stop")+5);
       show_error(str);
       }
@@ -7030,15 +7033,15 @@ struct tm *tms;
   tms = localtime((time_t *)&sec);
   strcpy(mon, mname[tms->tm_mon]);
   mon[3] = 0;
-  
+
   if (force_date)
     {
     if (base < 600)
-      sprintf(result, "%02d %s %02d %02d:%02d:%02d", 
+      sprintf(result, "%02d %s %02d %02d:%02d:%02d",
         tms->tm_mday, mon, tms->tm_year % 100,
         tms->tm_hour, tms->tm_min, tms->tm_sec);
     else if (base < 3600*24)
-      sprintf(result, "%02d %s %02d %02d:%02d", 
+      sprintf(result, "%02d %s %02d %02d:%02d",
         tms->tm_mday, mon, tms->tm_year % 100,
         tms->tm_hour, tms->tm_min);
     else
@@ -7051,7 +7054,7 @@ struct tm *tms;
     else if (base < 3600*3)
       sprintf(result, "%02d:%02d", tms->tm_hour, tms->tm_min);
     else if (base < 3600*24)
-      sprintf(result, "%02d %s %02d %02d:%02d", 
+      sprintf(result, "%02d %s %02d %02d:%02d",
         tms->tm_mday, mon, tms->tm_year % 100,
         tms->tm_hour, tms->tm_min);
     else
@@ -7060,7 +7063,7 @@ struct tm *tms;
 }
 
 void taxis(gdImagePtr im, gdFont *font, int col, int gcol,
-           int x1, int y1, int width, int xr, 
+           int x1, int y1, int width, int xr,
            int minor, int major, int text, int label,
            int grid, double xmin, double xmax)
 {
@@ -7289,10 +7292,12 @@ double base[] = {1,2,5,10,20,50,100,200,500,1000};
 
             /**** grid line ***/
             if (grid != 0 && y_screen < y1 && y_screen > y1 - width)
+              {
               if (grid > 0)
                 gdImageLine(im, x1+1, ys, x1+grid, ys, gcol);
               else
                 gdImageLine(im, x1-1, ys, x1+grid, ys, gcol);
+              }
 
             /**** label ****/
             if (label != 0)
@@ -7808,7 +7813,7 @@ double      yb1, yb2, yf1, yf2, ybase;
       /* avoid overflow */
       if (y[i][j] > 1E30)
         y[i][j] = 1E30f;
-      
+
       /* apply factor and offset */
       y[i][j] = y[i][j]*factor[i] + offset[i];
 
@@ -7842,7 +7847,7 @@ double      yb1, yb2, yf1, yf2, ybase;
     yf1 = floor(ymin/yb1);
     yb2 = pow(10, floor(log(ymax)/LN10));
     yf2 = floor(ymax/yb2);
-    
+
     if (yb1 == yb2 && yf1 == yf2)
       logaxis = 0;
     else
@@ -7912,9 +7917,9 @@ double      yb1, yb2, yf1, yf2, ybase;
   gdImageFilledRectangle(im, x1, y2, x2, y1, white);
 
   /* draw axis frame */
-  taxis(im, gdFontSmall, black, ltgrey, x1, y1, x2-x1, width, 3, 5, 9, 10, 0, 
+  taxis(im, gdFontSmall, black, ltgrey, x1, y1, x2-x1, width, 3, 5, 9, 10, 0,
         ss_time()-scale+toffset,  ss_time()+toffset);
-  
+
   /* use following line for a X-axis in seconds instead of a time axis */
   //haxis(im, gdFontSmall, black, ltgrey, x1, y1, x2-x1, 3, 5, 9, 10, 0, xmin,  xmax);
   vaxis(im, gdFontSmall, black, ltgrey, x1, y1, y1-y2, -3, -5, -7, -8, x2-x1, ymin, ymax, logaxis);
@@ -7969,7 +7974,7 @@ double      yb1, yb2, yf1, yf2, ybase;
 
         gdImageDashedLine(im, xs, y1, xs, y2, state_col[state[j]-1]);
 
-        sprintf(str, "%d", run_number);
+        sprintf(str, "%ld", run_number);
 
         if (state[j] == STATE_RUNNING)
           {
@@ -7993,7 +7998,7 @@ double      yb1, yb2, yf1, yf2, ybase;
     if (state)
       M_FREE(state);
     }
-  
+
   for (i=0 ; i<n_vars ; i++)
     {
     if (index != -1 && index != i)
@@ -8090,7 +8095,7 @@ double      yb1, yb2, yf1, yf2, ybase;
       if (offset[i] == 0)
         sprintf(str, "%s * %1.2lG", strchr(tag_name[i], ':')+1, factor[i]);
       else
-        sprintf(str, "%s * %1.2lG %c %1.5lG", strchr(tag_name[i], ':')+1, 
+        sprintf(str, "%s * %1.2lG %c %1.5lG", strchr(tag_name[i], ':')+1,
           factor[i], offset[i] < 0 ? '-' : '+', fabs(offset[i]));
       }
     else
@@ -8098,7 +8103,7 @@ double      yb1, yb2, yf1, yf2, ybase;
       if (offset[i] == 0)
         sprintf(str, "%s", strchr(tag_name[i], ':')+1);
       else
-        sprintf(str, "%s %c %1.5lG", strchr(tag_name[i], ':')+1, 
+        sprintf(str, "%s %c %1.5lG", strchr(tag_name[i], ':')+1,
           offset[i] < 0 ? '-' : '+', fabs(offset[i]));
       }
 
@@ -8185,7 +8190,7 @@ struct tm *ptms, tms;
         break;
     if (i == 12)
       i = 0;
-    
+
     tms.tm_mon  = i;
     tms.tm_mday = atoi(getparam("d1"));
     tms.tm_hour = 0;
@@ -8203,7 +8208,7 @@ struct tm *ptms, tms;
         break;
     if (i == 12)
       i = 0;
-    
+
     tms.tm_mon  = i;
     tms.tm_mday = atoi(getparam("d2"));
     tms.tm_hour = 0;
@@ -8213,7 +8218,7 @@ struct tm *ptms, tms;
     ltime_end = mktime(&tms);
     ltime_end += 3600*24;
 
-    sprintf(str, "HS/%s?scale=%d&offset=%d", path, (int)(ltime_end-ltime_start), 
+    sprintf(str, "HS/%s?scale=%d&offset=%d", path, (int)(ltime_end-ltime_start),
             min((int)(ltime_end - ss_time()), 0));
     redirect(str);
     return;
@@ -8237,7 +8242,7 @@ struct tm *ptms, tms;
   ptms->tm_year += 1900;
 
   rsprintf("<tr><td nowrap bgcolor=#CCCCFF>Start date:</td>", "Start date");
-  
+
   rsprintf("<td bgcolor=#DDEEBB>Month: <select name=\"m1\">\n");
   rsprintf("<option value=\"\">\n");
   for (i=0 ; i<12 ; i++)
@@ -8263,7 +8268,7 @@ struct tm *ptms, tms;
   time(&now);
   ptms = localtime(&now);
   ptms->tm_year += 1900;
-  
+
   rsprintf("<td bgcolor=#DDEEBB>Month: <select name=\"m2\">\n");
   rsprintf("<option value=\"\">\n");
   for (i=0 ; i<12 ; i++)
@@ -8300,8 +8305,8 @@ KEY    key, varkey;
 char   str[256], eq_name[256], var_name[256], cmd[256], ref[256];
 char   display_name[10][2*NAME_LENGTH];
 float  value;
-char   *hist_col[] = 
-  { "#0000FF", "#00C000", "#FF0000", "#00C0C0", "#FF00FF", 
+char   *hist_col[] =
+  { "#0000FF", "#00C000", "#FF0000", "#00C0C0", "#FF00FF",
     "#C0C000", "#808080", "#80FF80", "#FF8080", "#8080FF" };
 
   cm_get_experiment_database(&hDB, NULL);
@@ -8341,7 +8346,7 @@ char   *hist_col[] =
         value = (float) atof(getparam(str));
         if (hKey)
           db_set_data_index(hDB, hKey, &value, sizeof(float), index, TID_FLOAT);
-        
+
         sprintf(str, "/History/Display/%s/Offset", path);
         db_find_key(hDB, 0, str, &hKey);
         sprintf(str, "ofs%d", index);
@@ -8368,21 +8373,21 @@ char   *hist_col[] =
       {
       sprintf(ref, "/History/Display/%s/Timescale", path);
       strcpy(str, getparam("timescale"));
-      db_set_value(hDB, 0, ref, str, NAME_LENGTH, 1, TID_STRING); 
+      db_set_value(hDB, 0, ref, str, NAME_LENGTH, 1, TID_STRING);
       }
 
     sprintf(ref, "/History/Display/%s/Zero ylow", path);
     flag = *getparam("zero_ylow");
-    db_set_value(hDB, 0, ref, &flag, sizeof(flag), 1, TID_BOOL); 
+    db_set_value(hDB, 0, ref, &flag, sizeof(flag), 1, TID_BOOL);
 
     sprintf(ref, "/History/Display/%s/Log Axis", path);
     flag = *getparam("log_axis");
-    db_set_value(hDB, 0, ref, &flag, sizeof(flag), 1, TID_BOOL); 
-  
+    db_set_value(hDB, 0, ref, &flag, sizeof(flag), 1, TID_BOOL);
+
     sprintf(ref, "/History/Display/%s/Show run markers", path);
     flag = *getparam("run_markers");
-    db_set_value(hDB, 0, ref, &flag, sizeof(flag), 1, TID_BOOL); 
- 
+    db_set_value(hDB, 0, ref, &flag, sizeof(flag), 1, TID_BOOL);
+
     sprintf(str, "HS/%s", path);
     redirect(str);
     return;
@@ -8471,7 +8476,7 @@ char   *hist_col[] =
       {
       sprintf(str, "event%d", i);
       strcpy(display_name[i], getparam(str));
-      
+
       if (display_name[i][0])
         {
         sprintf(str, "var%d", i);
@@ -8543,7 +8548,7 @@ char   *hist_col[] =
           rsprintf("<option selected value=\"%s\">%s\n", key.name, key.name);
         else
           rsprintf("<option value=\"%s\">%s\n", key.name, key.name);
-        }    
+        }
       }
 
     /* loop over history links to displayh event name */
@@ -8557,7 +8562,7 @@ char   *hist_col[] =
           break;
 
         db_get_key(hDB, hKey, &key);
-        
+
         if (strncmp(display_name[index], key.name, strlen(key.name)) == 0)
           rsprintf("<option selected value=\"%s\">%s\n", key.name, key.name);
         else
@@ -8566,7 +8571,7 @@ char   *hist_col[] =
       }
 
     rsprintf("</select></td>\n");
-    
+
     /* display variables for selected event */
 
     status = db_find_key(hDB, 0, "/Equipment", &hKeyRoot);
@@ -8575,7 +8580,7 @@ char   *hist_col[] =
       strcpy(eq_name, display_name[index]);
       if (strchr(eq_name, ':'))
         *strchr(eq_name, ':') = 0;
-      
+
       is_link = FALSE;
       db_find_key(hDB, hKeyRoot, eq_name, &hKeyEq);
       if (!hKeyEq)
@@ -8584,7 +8589,7 @@ char   *hist_col[] =
         status = db_find_link(hDB, 0, str, &hKeyVar);
         if (status != DB_SUCCESS)
           {
-          sprintf(str, "Cannot find /Equipment/%s or /History/Links/%s in ODB", 
+          sprintf(str, "Cannot find /Equipment/%s or /History/Links/%s in ODB",
                   eq_name, eq_name);
           show_error(str);
           return;
@@ -8602,7 +8607,7 @@ char   *hist_col[] =
         status = db_find_key(hDB, 0, str, &hKeyVar);
         if (status != DB_SUCCESS)
           {
-          sprintf(str, "Cannot find /Equipment/%s/Variables in ODB", 
+          sprintf(str, "Cannot find /Equipment/%s/Variables in ODB",
                   eq_name);
           show_error(str);
           return;
@@ -8618,7 +8623,7 @@ char   *hist_col[] =
         if (is_link)
           {
           db_get_key(hDB, hKey, &varkey);
-          
+
           if (strchr(display_name[index], ':'))
             strcpy(str, strchr(display_name[index], ':')+1);
           else
@@ -10058,7 +10063,7 @@ int  n;
   if (strchr(path, ' '))
     *strchr(path, ' ') = 0;
   setparam("path", path);
-  
+
   _attachment_size[0] = _attachment_size[1] = _attachment_size[2] = 0;
   pinit = string;
 
@@ -10291,7 +10296,7 @@ struct linger        ling;
 
       /* turn on lingering (borrowed from NCSA httpd code) */
 
-      /* outcommented, gave occasional hangups on Linux 
+      /* outcommented, gave occasional hangups on Linux
       ling.l_onoff = 1;
       ling.l_linger = 6;
       setsockopt(_sock, SOL_SOCKET, SO_LINGER, (char *) &ling, sizeof(ling));

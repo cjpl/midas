@@ -6,6 +6,9 @@
   Contents:     Magnetic tape manipulation program for MIDAS tapes
 
   $Log$
+  Revision 1.12  2003/04/25 14:37:35  midas
+  Fixed compiler warnings
+
   Revision 1.11  1998/12/10 10:45:43  midas
   Improved tape error codes under NT (now same as UNIX)
 
@@ -94,7 +97,7 @@ try_again:
         {
         memset(buffer, 0, sizeof(buffer));
         fread(buffer, sizeof(buffer), 1, f);
-        
+
         /* cut off new line */
         if (strchr(buffer, '\n'))
           *strchr(buffer, '\n') = 0;
@@ -118,7 +121,7 @@ try_again:
 #endif
       }
     else
-      printf("Found run #%d recorded on %s", event->serial_number, 
+      printf("Found run #%ld recorded on %s", event->serial_number,
               ctime(&event->time_stamp));
 
     if (index < count-1)
@@ -200,7 +203,7 @@ try_again:
       printf("Cannot open file %s\n", str);
       return -1;
       }
-    
+
     size = mb = 0;
     do
       {
@@ -225,7 +228,7 @@ try_again:
 
     write(fh, buffer, n);
     close(fh);
-    
+
     /* skip to next file */
     ss_tape_fskip(channel, 1);
     }
@@ -266,7 +269,7 @@ char         buffer[TAPE_BUFFER_SIZE], str[256];
       {
       /* read buffer */
       n = read(fh, buffer, TAPE_BUFFER_SIZE);
-    
+
       size += n;
       if (verbose && size > mb+1024*1024)
         {
@@ -284,7 +287,7 @@ char         buffer[TAPE_BUFFER_SIZE], str[256];
       printf("%d MB\n", size/1024/1024);
 
     close(fh);
-    
+
     /* write EOF */
     ss_tape_write_eof(channel);
     }
@@ -294,13 +297,13 @@ char         buffer[TAPE_BUFFER_SIZE], str[256];
 
 /*------------------------------------------------------------------*/
 
-main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
-INT  status, i, count1, count2, channel;
+INT  status=0, i, count1, count2, channel;
 char cmd[100], tape_name[256], file_name[256];
 
   /* set default tape name */
-  
+
 #ifdef OS_WINNT
   strcpy(tape_name, "\\\\.\\tape0");
 #elif defined(OS_UNIX)
@@ -320,7 +323,7 @@ char cmd[100], tape_name[256], file_name[256];
   /* if "TAPE" environment variable present, use it */
   if (getenv("TAPE") != NULL)
     strcpy(tape_name, getenv("TAPE"));
-  
+
   /* parse command line parameters */
   for (i=1 ; i<argc ; i++)
     {
@@ -334,7 +337,7 @@ char cmd[100], tape_name[256], file_name[256];
         strcpy(tape_name, argv[++i]);
       else if (argv[i][1] == 'd')
         strcpy(file_name, argv[++i]);
-      else 
+      else
         goto usage;
       }
     else if (cmd[0] == 0)
@@ -350,7 +353,7 @@ char cmd[100], tape_name[256], file_name[256];
 
   /* don't produce system messages */
   cm_set_msg_print(0, MT_ALL, puts);
-  
+
   if (strcmp(cmd, "status") == 0)
     {
     status = ss_tape_status(tape_name);
@@ -392,7 +395,7 @@ char cmd[100], tape_name[256], file_name[256];
 
   else if (strcmp(cmd, "fsr") == 0 || strcmp(cmd, "fr") == 0)
     status = ss_tape_rskip(channel, count1);
-  
+
   else if (strcmp(cmd, "bsf") == 0 || strcmp(cmd, "bf") == 0)
     status = ss_tape_fskip(channel, -count1);
 

@@ -6,6 +6,9 @@
   Contents:     Web server for remote PAW display
 
   $Log$
+  Revision 1.37  2003/04/25 14:37:35  midas
+  Fixed compiler warnings
+
   Revision 1.36  2002/04/22 07:40:37  midas
   Added "[Links]" into webpaw.cfg for optional URL display
 
@@ -135,8 +138,13 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <sys/time.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <unistd.h>
 #include <signal.h>
+#include <ctype.h>
+#include <pty.h>
+#include <arpa/inet.h>
 #define closesocket(s) close(s)
 #endif
 
@@ -519,7 +527,7 @@ int i;
 
 /*------------------------------------------------------------------*/
 
-void urlDecode(char *p) 
+void urlDecode(char *p)
 /********************************************************************\
    Decode the given string in-place by expanding %XX escapes
 \********************************************************************/
@@ -528,25 +536,25 @@ char *pD, str[3];
 int  i;
 
   pD = p;
-  while (*p) 
+  while (*p)
     {
-    if (*p=='%') 
+    if (*p=='%')
       {
       /* Escape: next 2 chars are hex representation of the actual character */
       p++;
-      if (isxdigit(p[0]) && isxdigit(p[1])) 
+      if (isxdigit(p[0]) && isxdigit(p[1]))
         {
         str[0] = p[0];
         str[1] = p[1];
         str[2] = 0;
         sscanf(p, "%02X", &i);
-        
+
         *pD++ = (char) i;
         p += 2;
         }
       else
         *pD++ = '%';
-      } 
+      }
     else if (*p == '+')
       {
       /* convert '+' to ' ' */
@@ -561,7 +569,7 @@ int  i;
    *pD = '\0';
 }
 
-void urlEncode(char *ps) 
+void urlEncode(char *ps)
 /********************************************************************\
    Encode the given string in-place by adding %XX escapes
 \********************************************************************/
@@ -570,15 +578,15 @@ char *pd, *p, str[256];
 
   pd = str;
   p  = ps;
-  while (*p) 
+  while (*p)
     {
     if (strchr(" %&=#+/\\", *p))
       {
       sprintf(pd, "%%%02X", *p);
       pd += 3;
       p++;
-      } 
-    else 
+      }
+    else
       {
       *pd++ = *p++;
       }
@@ -620,7 +628,7 @@ int    i;
       debug_message(tmp);
 
       if (strlen(tmp) + strlen(str) < sizeof(str))
-        strcat(str, tmp);      
+        strcat(str, tmp);
       }
     else
       {
@@ -629,7 +637,7 @@ int    i;
 
       return ERR_TIMEOUT;
       }
-  
+
     /*
     if (strlen(str) >= strlen(delim))
       printf("compare1:%s\ncompare2:%s\ncompare3:%s\n", delim, str, str+strlen(str)-strlen(delim));
@@ -678,7 +686,7 @@ int    status;
       status = read_paw(pipe, "<CR>=1 : ", str);
       if (status != SUCCESS)
         return status;
-      
+
       /* select default workstation */
       sprintf(str, "1\n");
       write(pipe, str, 2);
@@ -812,17 +820,17 @@ char str[256], comment_name[256], param_name[256], *p;
   if (param_name[0])
     {
     if (comment_name[0])
-      rsprintf("<li><a href=\"/%s.html?comment=%s&param=%s\" target=_blank>%s</a></li>\r\n", 
+      rsprintf("<li><a href=\"/%s.html?comment=%s&param=%s\" target=_blank>%s</a></li>\r\n",
                 kumac_name, comment_name, param_name, str);
     else
-      rsprintf("<li><a href=\"/%s.html?param=%s\" target=_blank>%s</a></li>\r\n", 
+      rsprintf("<li><a href=\"/%s.html?param=%s\" target=_blank>%s</a></li>\r\n",
                 kumac_name, param_name, str);
     }
   else if (comment_name[0])
-    rsprintf("<li><a href=\"/%s.html?comment=%s\" target=contents>%s</a></li>\r\n", 
+    rsprintf("<li><a href=\"/%s.html?comment=%s\" target=contents>%s</a></li>\r\n",
               kumac_name, comment_name, str);
   else
-    rsprintf("<li><a href=\"/%s.html\" target=contents>%s</a></li>\r\n", 
+    rsprintf("<li><a href=\"/%s.html\" target=contents>%s</a></li>\r\n",
               kumac_name, str);
 }
 
@@ -901,10 +909,10 @@ int    fh, i, j, length, status, height;
     else
       {
       /* title row */
-      rsprintf("<b><a target=_top href=\"http://midas.psi.ch/webpaw/\">WebPAW</a> V%s on %s</b>\r\n", 
+      rsprintf("<b><a target=_top href=\"http://midas.psi.ch/webpaw/\">WebPAW</a> V%s on %s</b>\r\n",
                 VERSION, host_name);
       }
-    
+
     rsprintf("</body></html>\r\n");
     return;
     }
@@ -970,7 +978,7 @@ int    fh, i, j, length, status, height;
     if (enumcfg("Links", display_name, kumac_name, 0))
       {
       rsprintf("<h3>Links</h3></center>\r\n");
-      
+
       rsprintf("<ul>\r\n");
 
       for (i=0 ; ; i++)
@@ -984,7 +992,7 @@ int    fh, i, j, length, status, height;
       rsprintf("</ul>\r\n");
       }
 
-      
+
     if (!enumcfg("Kumacs", display_name, kumac_name, 0))
       {
       rsprintf("<center>No macros defined in <i>webpaw.cfg</i></center></body></html>\r\n");
@@ -1019,7 +1027,7 @@ int    fh, i, j, length, status, height;
         urlEncode(str2);
 
         /* display group */
-        rsprintf("<li><b><a href=\"/%s/kumacs.html\" target=kumacs>%s</a></b></li>\r\n", 
+        rsprintf("<li><b><a href=\"/%s/kumacs.html\" target=kumacs>%s</a></b></li>\r\n",
                   str2, str);
 
         if (equal_ustring(group_name, cur_group))
@@ -1030,7 +1038,7 @@ int    fh, i, j, length, status, height;
             {
             if (!enumcfg(group_name, display_name, kumac_name, j))
               break;
-    
+
             display_kumac(display_name, kumac_name);
             }
 
@@ -1071,7 +1079,7 @@ int    fh, i, j, length, status, height;
     strcpy(cmd, path);
     *strstr(cmd, ".html") = 0;
     urlDecode(cmd);
-    
+
     rsprintf("<code>%s</code><p>\r\n\r\n", cmd);
     rsprintf("<input type=\"hidden\" name=\"cmd\" value=\"%s\">\r\n", cmd);
 
@@ -1080,7 +1088,7 @@ int    fh, i, j, length, status, height;
       {
       if (!enumcfg(getparam("param"), param_name, param_opt, i))
         break;
-    
+
       rsprintf("<tr><td align=right>%s</td><td>", param_name);
 
       if (strchr(param_opt, ';') == NULL)
@@ -1155,7 +1163,7 @@ int    fh, i, j, length, status, height;
         }
       else
         break;
-      } 
+      }
     if (param_opt[0])
       {
       urlEncode(param_opt);
@@ -1219,7 +1227,7 @@ int    fh, i, j, length, status, height;
           rsprintf("</pre>\r\n");
           }
       }
-    
+
     rsprintf("</body></html>\r\n");
     return;
     }
@@ -1315,7 +1323,7 @@ char *p, *pitem;
       p[strlen(p)-1] = 0;
 
     p = strtok(p,"&");
-    while (p != NULL) 
+    while (p != NULL)
       {
       pitem = p;
       p = strchr(p,'=');
@@ -1331,7 +1339,7 @@ char *p, *pitem;
         }
       }
     }
-  
+
   interprete(path);
 }
 
@@ -1376,7 +1384,7 @@ unsigned int t;
         (cind(*s++) << 12) |
         (cind(*s++) << 6)  |
         (cind(*s++) << 0);
-    
+
     *(d+2) = (char) (t & 0xFF);
     t >>= 8;
     *(d+1) = (char) (t & 0xFF);
@@ -1400,7 +1408,7 @@ unsigned int t, pad;
       t |=  (*s++) << 8;
     if (*s)
       t |=  (*s++) << 0;
-    
+
     *(d+3) = map[t & 63];
     t >>= 6;
     *(d+2) = map[t & 63];
@@ -1454,7 +1462,7 @@ char                 pwd[256], cl_pwd[256], str[256], *p;
     return;
     }
 #endif
-  
+
   /* create a new socket */
   lsock = socket(AF_INET, SOCK_STREAM, 0);
 
@@ -1538,18 +1546,18 @@ char                 pwd[256], cl_pwd[256], str[256], *p;
 
     /* try and use up stdin, stdout and stderr, so other
        routines writing to stdout etc won't cause havoc. Copied from smbd */
-    for (i=0 ; i<3 ; i++) 
+    for (i=0 ; i<3 ; i++)
       {
       close(i);
       fd = open("/dev/null", O_RDWR, 0);
-      if (fd < 0) 
+      if (fd < 0)
         fd = open("/dev/null", O_WRONLY, 0);
-      if (fd < 0) 
+      if (fd < 0)
         return;
       if (fd != i)
         return;
       }
-  
+
     setsid();               /* become session leader */
     umask(0);               /* clear our file mode createion mask */
     }
@@ -1636,7 +1644,7 @@ char                 pwd[256], cl_pwd[256], str[256], *p;
           i = recv(_sock, net_buffer+len, sizeof(net_buffer)-len, 0);
         else
           goto error;
-      
+
         /* abort if connection got broken */
         if (i<0)
           goto error;
@@ -1804,7 +1812,7 @@ char *cfgbuffer, str[256], *p;
     write(fh, cfgbuffer, i);
     sprintf(str, "Password=%s\n", pwd);
     write(fh, str, strlen(str));
-    
+
     /* write remainder of file */
     while (*p && *p != '\n')
       p++;
@@ -1822,7 +1830,7 @@ char *cfgbuffer, str[256], *p;
     write(fh, cfgbuffer, i);
     sprintf(str, "Password=%s\n", pwd);
     write(fh, str, strlen(str));
-    
+
     /* write remainder of file */
     write(fh, p, strlen(p));
     }
@@ -1839,7 +1847,7 @@ char *cfgbuffer, str[256], *p;
 
 /*------------------------------------------------------------------*/
 
-main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
 int  i;
 int  tcp_port = 80, daemon = 0;
@@ -1882,7 +1890,7 @@ usage:
         }
       }
     }
-  
+
   if (pwd[0])
     {
     base64_encode(pwd, str);
