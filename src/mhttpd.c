@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.89  1999/11/11 12:46:36  midas
+  Changed alias bar color
+
   Revision 1.88  1999/11/11 11:53:10  midas
   Link to auto restart and alarms on/off directly goes to "set" page
 
@@ -850,7 +853,7 @@ CHN_STATISTICS chn_stats;
   db_find_key(hDB, 0, "/Alias", &hkey);
   if (hkey)
     {
-    rsprintf("<tr><td colspan=6 bgcolor=#80FF80>\n");
+    rsprintf("<tr><td colspan=6 bgcolor=#C0C0C0>\n");
     for (i=0 ; ; i++)
       {
       db_enum_link(hDB, hkey, i, &hsubkey);
