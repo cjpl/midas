@@ -14,6 +14,9 @@
                 Brown, Prentice Hall
 
   $Log$
+  Revision 1.30  1999/06/02 07:51:08  midas
+  Fixed compiler error under RH6.0 with semun structure
+
   Revision 1.29  1999/05/03 10:40:41  midas
   Fixed segmentation violation on program close under Unix, when .ODB.SHM
   has been created under root, and accessed under normal user
@@ -1406,7 +1409,7 @@ char mutex_name[256], path[256], file_name[256];
   INT             key, status, fh;
   struct semid_ds buf;
 
-#if defined(OS_LINUX) || defined(OS_FREEBSD)
+#if (defined(OS_LINUX) && !defined(_SEM_SEMUN_UNDEFINED)) || defined(OS_FREEBSD)
   union semun arg;
 #else
   union semun {
@@ -1524,7 +1527,7 @@ INT status;
   struct sembuf sb;
   INT           status;
 
-#if defined(OS_LINUX) || defined(OS_FREEBSD)
+#if (defined(OS_LINUX) && !defined(_SEM_SEMUN_UNDEFINED)) || defined(OS_FREEBSD)
   union semun arg;
 #else
   union semun {
@@ -1696,7 +1699,7 @@ INT ss_mutex_delete(HNDLE mutex_handle, INT destroy_flag)
 #endif /* OS_VXWORKS */
 
 #ifdef OS_UNIX
-#if defined(OS_LINUX) || defined(OS_FREEBSD)
+#if (defined(OS_LINUX) && !defined(_SEM_SEMUN_UNDEFINED)) || defined(OS_FREEBSD)
   union semun arg;
 #else
   union semun {
