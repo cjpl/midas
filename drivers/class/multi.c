@@ -6,6 +6,9 @@
   Contents:     Multimeter Class Driver
 
   $Log$
+  Revision 1.13  2004/12/23 09:35:23  midas
+  Implemented NaNs for invalid channel readings
+
   Revision 1.12  2004/01/08 08:40:08  midas
   Implemented standard indentation
 
@@ -141,21 +144,29 @@ void multi_read(EQUIPMENT * pequipment, int channel)
          status = DRIVER_INPUT(i) (CMD_GET, m_info->dd_info_input[i],
                                    i - m_info->channel_offset_input[i],
                                    &m_info->var_input[i]);
-         m_info->var_input[i] = m_info->var_input[i] * m_info->factor_input[i] -
-             m_info->offset_input[i];
+         if (status != FE_SUCCESS)
+            m_info->var_input[i] = (float)ss_nan();
+         else
+            m_info->var_input[i] = m_info->var_input[i] * m_info->factor_input[i] -
+               m_info->offset_input[i];
    } else {
       status = DRIVER_INPUT(channel) (CMD_GET, m_info->dd_info_input[channel],
                                       channel - m_info->channel_offset_input[channel],
                                       &m_info->var_input[channel]);
-      m_info->var_input[channel] =
-          m_info->var_input[channel] * m_info->factor_input[channel] -
-          m_info->offset_input[channel];
+      if (status != FE_SUCCESS)
+         m_info->var_input[channel] = (float)ss_nan();
+      else
+         m_info->var_input[channel] =
+            m_info->var_input[channel] * m_info->factor_input[channel] -
+            m_info->offset_input[channel];
    }
 
    /* check if significant change since last ODB update */
    for (i = 0; i < m_info->num_channels_input; i++)
-      if (abs(m_info->var_input[i] - m_info->input_mirror[i]) >
-          m_info->update_threshold[i])
+      if ((abs(m_info->var_input[i] - m_info->input_mirror[i]) >
+           m_info->update_threshold[i]) || 
+          (ss_isnan(m_info->var_input[i]) && !ss_isnan(m_info->input_mirror[i])) ||
+          (!ss_isnan(m_info->var_input[i]) && ss_isnan(m_info->input_mirror[i])))
          break;
 
    /* update if change is more than update_sensitivity or last update more

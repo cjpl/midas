@@ -6,6 +6,9 @@
   Contents:     MSCB Device Driver.
 
   $Log$
+  Revision 1.9  2004/12/23 09:35:23  midas
+  Implemented NaNs for invalid channel readings
+
   Revision 1.8  2004/12/22 14:31:12  midas
   Produce error message
 
@@ -78,6 +81,8 @@ void addr_changed(HNDLE hDB, HNDLE hKey, void *arg)
          info->mscbdev_settings.var_size[i] = 0;
    }
 }
+
+/*----------------------------------------------------------------------------*/
 
 /* the init function creates a ODB record which contains the
    settings and initialized it variables as well as the bus driver */
