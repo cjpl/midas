@@ -7,6 +7,9 @@
                 control
 
   $Log$
+  Revision 1.2  2003/04/17 15:12:02  midas
+  Added tab panels
+
   Revision 1.1  2003/04/17 14:18:03  midas
   Initial revision
 
@@ -26,13 +29,14 @@
 #include "TObjArray.h"
 #include "TObjString.h"
 #include "TGMenu.h"
+#include "TGTab.h"
+#include "TGLabel.h"
 
 /*------------------------------------------------------------------*/
 
 enum RMidasCommandIdentifiers {
   M_FILE_EXIT,
   M_FILE_CONNECT,
-  B_CONNECT,
   B_UPDATE,
 };
 
@@ -44,8 +48,13 @@ private:
    TGMenuBar           *fMenuBar;
    TGPopupMenu         *fMenuFile;
 
+   TGTab               *fTab;
+   TGCompositeFrame    *fTabHisto;
+   TGCompositeFrame    *fTabStatus;
+
    TGHorizontalFrame   *fHorz1;
    TGHorizontalFrame   *fHorz2;
+   TGHorizontalFrame   *fHorz3;
 
    TGListBox           *fListBox;
    TRootEmbeddedCanvas *fCanvas;
@@ -203,9 +212,17 @@ RMidasFrame::RMidasFrame(const TGWindow *p, UInt_t w, UInt_t h, char *host) :
 
   AddFrame(fMenuBar, new TGLayoutHints(kLHintsTop | kLHintsLeft | kLHintsExpandX, 0, 0, 1, 1));
 
+  /* Create tab widget */
+  fTab = new TGTab(this, 600, 400);
+
+  /*---- histo tab ----*/
+
+  TGCompositeFrame *tf = fTab->AddTab("Histo");
+  fTabHisto = new TGCompositeFrame(tf, 60, 20, kVerticalFrame);
+  
   /* Create a horizonal frame containing histo selection tree and canvas */
-  fHorz1 = new TGHorizontalFrame(this, 600, 400);
-  AddFrame(fHorz1, new TGLayoutHints(kLHintsExpandX|kLHintsExpandY, 3, 0, 3, 3));
+  fHorz1 = new TGHorizontalFrame(fTabHisto, 600, 400);
+  fTabHisto->AddFrame(fHorz1, new TGLayoutHints(kLHintsExpandX|kLHintsExpandY, 3, 3, 3, 0));
 
   /* Create ListBox widget */
   fListBox = new TGListBox(fHorz1, 1);
@@ -218,13 +235,32 @@ RMidasFrame::RMidasFrame(const TGWindow *p, UInt_t w, UInt_t h, char *host) :
   fHorz1->AddFrame(fCanvas, new TGLayoutHints(kLHintsExpandX|kLHintsExpandY, 0, 0, 0, 0));
 
   /* Create a horizonal frame containing text buttons */
-  fHorz2 = new TGHorizontalFrame(this, 600, 30);
-  AddFrame(fHorz2, new TGLayoutHints(kLHintsExpandX, 0, 0, 0, 0));
+  fHorz2 = new TGHorizontalFrame(fTabHisto, 600, 30);
+  fTabHisto->AddFrame(fHorz2, new TGLayoutHints(kLHintsExpandX, 0, 0, 0, 0));
 
   /* Create "Update" button */
   fBUpdate = new TGTextButton(fHorz2, "Update", B_UPDATE);
   fBUpdate->Associate(this);
-  fHorz2->AddFrame(fBUpdate, new TGLayoutHints(kLHintsCenterX, 10, 10, 0, 0));
+  fHorz2->AddFrame(fBUpdate, new TGLayoutHints(kLHintsCenterX, 10, 10, 4, 4));
+
+  tf->AddFrame(fTabHisto, new TGLayoutHints(kLHintsTop | kLHintsLeft, 0, 0, 0, 0)); 
+
+  /*---- status tab ----*/
+
+  tf = fTab->AddTab("Status");
+  fTabStatus = new TGCompositeFrame(tf, 60, 20, kVerticalFrame);
+  /*
+  fHorz3 = new TGHorizontalFrame(fTabStatus, 600, 400);
+  fTabStatus->AddFrame(fHorz3, new TGLayoutHints(kLHintsExpandX|kLHintsExpandY, 0, 0, 0, 0));
+  fHorz3->AddFrame(new TGLabel(fTabStatus, "Test"), new TGLayoutHints(kLHintsExpandX|kLHintsExpandY, 0, 0, 0, 0));
+  */
+  fTabStatus->AddFrame(new TGLabel(fTabStatus, "Here will come the experiment status display"), 
+                       new TGLayoutHints(kLHintsTop, 100, 100, 100, 0));
+  tf->AddFrame(fTabStatus, new TGLayoutHints(kLHintsTop | kLHintsLeft, 0, 0, 0, 0)); 
+
+  /*--------------------*/
+
+  AddFrame(fTab, new TGLayoutHints(kLHintsExpandX | kLHintsExpandY, 0, 0, 0, 0));
 
   SetWindowName("RMidas");
 
@@ -287,7 +323,7 @@ Bool_t RMidasFrame::ProcessMessage(Long_t msg, Long_t param1, Long_t param2)
 
 
          case kCM_TAB:
-           printf("Tab item %ld activated\n", param1);
+           //printf("Tab item %ld activated\n", param1);
            break;
          }
        break;
