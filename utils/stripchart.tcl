@@ -60,6 +60,9 @@ exec /bin/nice bltwish "$0" -- ${1+"$@"}
 # re-ordered some code (no functional change)
 #  Revision History:
 #    $Log$
+#    Revision 1.9  2001/12/13 20:31:59  pierre
+#    add cursor, page display, reduce timeout
+#
 #    Revision 1.8  2001/12/08 01:05:43  pierre
 #    correct path, new display
 #
@@ -88,7 +91,11 @@ exec /bin/nice bltwish "$0" -- ${1+"$@"}
 # Added file path input box.
 # Added busy signal - changing colour of the screen
 
-#=========================================================================
+# Added cross hairs
+# Added buttons to scan through the expanded/single graphs
+# Allow resizing of expanded/single graphs
+
+#========================================================================
 
 
 namespace import blt::*     ;# get BLT commands imported
@@ -272,6 +279,8 @@ proc select_graph {item} {
     set fgraph .fullscale$item.col2.graph
 
     graph $fgraph -title "" -relief ridge -bd 3 -background "#c8f8ce"  ;# make a new graph
+    #cross hairs - why doesnt $fgraph crosshair on work ?
+    Blt_Crosshairs  $fgraph
     $fgraph configure -width 5.0i -height 2.0i      ;# configure it a little 
     $fgraph legend configure -position @80,8  -anchor nw  -relief raised 
 
@@ -336,6 +345,8 @@ proc select_graph {item} {
 }
 
 
+
+
 #======================================================================
 # GRAPH ALL ON FULL SCALE (AS ABOVE), BUT PACKED TOGETHER
 #======================================================================
@@ -348,49 +359,119 @@ proc show_all_full_scale { } {
     global winsize_x winsize_y      ;# size of toplevel and graph windows
     global doing_mhist
 
+    global display_item_cnt         ;# pointer to start of 5 items to display
+    global debug_code
+    global item_counter_text        ;# copy of display_item but for label 
+    global fix_y_scale              ;# whether or not mouse zoom changes y-scale
+    
+    
+    # check if window exist already - if so, destroy the graphs on it.
+    if { [winfo exists .fullscale_main ] } {
+	foreach item  $item_list {
+	    set full_name  .fullscale_main.fullscale$item
+	    if {[winfo exists $full_name]} { destroy $full_name}
+	}
+    } else {
+	toplevel .fullscale_main
+	wm title .fullscale_main "zoom using left-mouse-drag"
+	wm geometry .fullscale_main +[winfo rootx .]+[winfo rooty .]
+    }
+
+    #if we have more than 4 items provide  skip buttons
+    if { [llength $item_list] > 4} {
+	if {![winfo exist .fullscale_main.row1]} {
+	    if {$debug_code} { puts "Creating top row << >> "}
+	    frame .fullscale_main.row1 -relief ridge -bd 3 -height 0.3i
+	    
+	    button .fullscale_main.row1.prev1 -text "< " -command {
+		incr display_item_cnt -4
+		show_all_full_scale 
+	    } 
+	    button .fullscale_main.row1.next1 -text "> " -command {
+		incr display_item_cnt 4
+		show_all_full_scale 
+	    }
+	    button .fullscale_main.row1.prev2 -text "<<" -command {
+		incr display_item_cnt -8
+		show_all_full_scale 
+	    } 
+	    button .fullscale_main.row1.next2 -text ">>" -command {
+		incr display_item_cnt 8
+		show_all_full_scale 
+	    }
+	    button .fullscale_main.row1.quit -text "exit" -command {destroy .fullscale_main}
+	    label  .fullscale_main.row1.number -textvariable item_counter_text
+	    
+	    button   .fullscale_main.row1.fixy    -text  "Fix Y scale" \
+		    -command {
+		set fix_y_scale [expr !$fix_y_scale]  ; # invert toggle
+		if {$fix_y_scale} {
+		    .fullscale_main.row1.fixy  configure -bg red -activebackground red2 
+		} else {
+		    .fullscale_main.row1.fixy  configure -bg grey -activebackground "#d6d8d6"
+		}
+	    }
+	    
+	    pack    .fullscale_main.row1.fixy  -side right  
 
 
-    #if we have more than 5 items, this doesnt make much sense.
-    if {[llength $item_list]> 5} {
-	tk_messageBox -message "Too many graphs - plotting only first 5 \n\
-		For the others choose single item under 'Detail Graphs' instead "
+
+	    pack .fullscale_main.row1.prev2 -side left
+	    pack .fullscale_main.row1.prev1 -side left
+	    pack .fullscale_main.row1.quit -side left
+	    pack .fullscale_main.row1.number -side right -fill x -padx 20
+	    pack .fullscale_main.row1.next2 -side right
+	    pack .fullscale_main.row1.next1 -side right
+
+	    pack .fullscale_main.row1 -side top -expand 1
+	    
+	}
+    }
+  
+    # make sure we dont over run the list
+    if { $display_item_cnt < 0 } { set display_item_cnt 0}
+    if { $display_item_cnt > [expr [llength $item_list]-4] } { 
+	set display_item_cnt [expr [llength $item_list] -4 ]  
     }
 
 
     
-    # check if window exist already - dont replot the same item twice
-    if [winfo exists .fullscale_main ] {
-	wm deiconify .fullscale_main          ;# de-iconize it it
-	raise        .fullscale_main          ;# raise to foreground
-	return
+    if { $debug_code } {
+	puts "Debug: item to display list counter is $display_item_cnt"
+	puts "Debug: item list length is [llength $item_list] "
     }
-
-    toplevel .fullscale_main
-
-
-    wm title .fullscale_main "zoom using left-mouse-drag"
-
+    
+    set last_item  [expr $display_item_cnt + 3]
     set n_items 0
 
-    foreach item  $item_list {
+    # for display only:
+    set item_counter_text "[expr $display_item_cnt+1] to [expr $last_item+1] out of [llength $item_list]"
 
-	# only plot first 5.
+    foreach item  [lrange $item_list $display_item_cnt $last_item] {
+    
+	# only plot first 4.
 	incr n_items
-	if {$n_items>5}  { break }
+	if {$n_items>4}  { break }
 
 	set full_name  .fullscale_main.fullscale$item
-
+	
 	frame $full_name 
-
+	
 	# split screen in two parts -
-	frame $full_name.col1 ;# create to columes - rhs for graph
-	frame $full_name.col2 ;# left hand side for buttons.
-	pack  $full_name.col1 -side left
+	frame $full_name.col1       ;# create two columes - rhs for graph
+	frame $full_name.col2       ;# left hand side for buttons.
+	pack  $full_name.col1 -side left 
 	pack  $full_name.col2 -side right -fill both -expand 1
 	
 	set fgraph $full_name.col2.graph
 	
-	graph $fgraph -title "" -relief ridge -bd 3 -background "#c8f8ce"  ;# make a new graph
+	graph $fgraph -title "" -relief ridge -bd 3 -background "#c8f8ce" 
+	#-plotbackground black 
+	# switch cross hairs on. For some reason $fgraph crosshairs on doesnt work?
+
+	Blt_Crosshairs  $fgraph
+
+	
 	$fgraph configure -width 5.0i -height 2.0i      ;# configure it a little 
 	$fgraph legend configure -position @80,8  -anchor nw  -relief raised 
 	
@@ -401,7 +482,7 @@ proc show_all_full_scale { } {
 
 	calc_best_scale $item   ;# returns calc values, or "" if not enough data
 	
-	$fgraph yaxis configure -max $scale_ymax -min $scale_ymin
+	$fgraph yaxis configure -max $scale_ymax -min $scale_ymin 
 	
 	# add day of the week if using the history command
 	if {$doing_mhist} {
@@ -428,6 +509,8 @@ proc show_all_full_scale { } {
 	button   $full_name.col1.scale2  -text  "ReScale" -font 6x12 -width 6 \
 		-command "scale_single_window2 Rescale $item"
 	pack     $full_name.col1.scale2  -side top   
+
+	pack     $full_name.col1.scale2  -side top   
 	
 	# create information button
 	button   $full_name.col1.info  -text  "Info/Help"  -width 6 -font 6x12 \
@@ -450,7 +533,7 @@ proc show_all_full_scale { } {
 	# bindings for the zooming function.
 	bind $fgraph <ButtonPress-1> "zoom_select %W %x %y start"
 	bind $fgraph <ButtonRelease-1> "zoom_select %W %x %y stop"
-	pack $full_name -side top
+	pack $full_name -side top -expand 1 -fill both
 
     }
 
@@ -458,11 +541,43 @@ proc show_all_full_scale { } {
     return
 }
 
+
+#proc popup_next_prev_window { } {
+#    
+#    global  display_item_cnt
+#    
+#    toplevel .disp_next -background green
+#
+#    wm geometry .disp_next  \
+#	    +[winfo rootx .fullscale_main]+[winfo rooty .fullscale_main]
+#    label .disp_next.title -text "Prev 5  or Next 5 "  -background green
+#    button .disp_next.prev -text "<<" -command {
+#	incr display_item_cnt -5
+#	show_all_full_scale 
+#    }
+#    button .disp_next.next -text ">>" -command {
+#	incr display_item_cnt 5
+#	show_all_full_scale 
+#    }
+#    button .disp_next.quit -text "exit" -command {destroy .disp_next}
+#    pack .disp_next.title -side top
+#    pack .disp_next.prev -side left
+#    pack .disp_next.quit -side left
+#    pack .disp_next.next -side right
+#    update
+
+#return
+#}
+
+
+
+ 
 #======================================================================
 # ZOOM ON SELECTED GRAPHS USING MOUSE
 #======================================================================
 proc zoom_select {window x  y point} {
     global zoom_coor
+    global fix_y_scale
 
 
     if {$point=="start"} {
@@ -482,6 +597,14 @@ proc zoom_select {window x  y point} {
 	$window xaxis configure -min [lindex $zoom_coor(corner1) 0] -max  [lindex $zoom_coor(corner2) 0]
     }
 
+    if {!$fix_y_scale} {
+	if { [lindex $zoom_coor(corner1) 1] <  [lindex $zoom_coor(corner2) 1] } {
+	    $window yaxis configure -min [lindex $zoom_coor(corner1) 1] -max  [lindex $zoom_coor(corner2) 1]
+	} else {
+	    $window yaxis configure -max [lindex $zoom_coor(corner1) 1] -min  [lindex $zoom_coor(corner2) 1]
+	} 
+    }
+    
     return
 }
 
@@ -612,9 +735,9 @@ proc calc_best_scale { item } {
 #====================================================================
 
 proc wait_ms {mill_sec} {
-    set mill_sec [expr $mill_sec/200.0]
+    set mill_sec [expr $mill_sec/100.0]
     for {set count 0 } { $count < $mill_sec} { incr count} {
-	after 200
+	after 100
 	update
     }
     return
@@ -1986,6 +2109,10 @@ set file_path ""
 # get the file name of the .conf files. Command line parsing
 set arguse 0               ;# no arguments used up by options
 
+set display_item_cnt 0     ;# when showing 5 detailed at same time, the pointer.
+
+set fix_y_scale 0             ;# whether or not mouse zoom changes y-scale
+
 # no option = doing mhistory
 # last option parameter = .conf file name
 # assume doing mhist
@@ -2037,7 +2164,7 @@ frame .main.toprow   -relief ridge -bd 3      ;# for the buttons
 frame .main.middle   -relief ridge -bd 3      ;# for the graph
 frame .main.botrow                            ;# unused for now
 
-wm title  . "midas stripchart: $equip_name  (GJH v.2.0)"              ;# configure the FVWM window
+wm title  . "midas stripchart: $equip_name  (GJH v.2.2)"              ;# configure the FVWM window
 wm iconname . "StripC"
 
 set strip_chart .main.middle.strip_chart
@@ -2217,6 +2344,7 @@ foreach item $item_list {
         $strip_chart element create line_$item
     } else {
         tk_messageBox -message "Error(online): line $item already exist - skipped "
+	continue
     }
     $strip_chart element configure line_$item -label ""  -color $item_color($item)  -symbol ""
     vector create V_y_$item                ;# for storing raw data
@@ -2253,13 +2381,14 @@ while {1} {
 	
 	# check the last modification time of the file:
 	while { [file mtime $data_fname]== $prev_update_time} {
-	    after 100
+	    after 50
 	    update
 	    set time_passed [expr ( [clock seconds] - [file mtime $data_fname])]
 	    if { $time_passed > 200 } { 
 		.main.toprow.warning configure -text "No Data" -background  red 
 	    }   
 	}
+	wait_ms 1000
     }
 
 # ok, we have a new file:
@@ -2344,6 +2473,9 @@ while {1} {
 	foreach item $item_list {
 	    if  [winfo exists .fullscale$item ] {
 		scale_single_window Rescale $item
+	    }
+	    if [winfo exist .fullscale_main.fullscale$item] {
+		scale_single_window2 Rescale $item
 	    }
 	}
 	set last_rescale_time $time_now
