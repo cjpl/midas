@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.161  2001/07/25 09:08:03  midas
+  Added attachments in Elog forms
+
   Revision 1.160  2001/07/25 08:15:08  midas
   Custom pages now work with multiple experiments. Do do that, one has to
   define the following field in the custom page:
@@ -3042,9 +3045,22 @@ KEY    key;
 
       db_get_key(hDB, hkey, &key);
 
-      rsprintf("<tr><td bgcolor=#A0FFA0>%d <b>%s</b>", i+1, key.name);
-      rsprintf("<td bgcolor=#FFFF00 align=center><input type=checkbox name=x%d value=1>", i);
-      rsprintf("<td bgcolor=#A0A0FF colspan=2><input type=text size=30 maxlength=255 name=c%d></tr>\n", i);
+      strcpy(str, key.name);
+      if (str[0])
+        str[strlen(str)-1] = 0;
+      if (equal_ustring(str, "attachment"))
+        {
+        size = sizeof(str);
+        db_get_data(hDB, hkey, str, &size, TID_STRING);
+        rsprintf("<tr><td colspan=2 align=center bgcolor=#FFFFFF><b>%s:</b>", key.name);
+        rsprintf("<td bgcolor=#A0A0FF colspan=2><input type=text size=30 maxlength=255 name=c%d value=\"%s\"></tr>\n", i, str);
+        }
+      else
+        {
+        rsprintf("<tr><td bgcolor=#A0FFA0>%d <b>%s</b>", i+1, key.name);
+        rsprintf("<td bgcolor=#FFFF00 align=center><input type=checkbox name=x%d value=1>", i);
+        rsprintf("<td bgcolor=#A0A0FF colspan=2><input type=text size=30 maxlength=255 name=c%d></tr>\n", i);
+        }
       }
 
 
@@ -3292,7 +3308,6 @@ struct hostent *phe;
   else
     strcpy(str, phe->h_name);
       
-
   strcpy(author, getparam("author"));
   strcat(author, "@");
   strcat(author, str);
@@ -3337,9 +3352,9 @@ struct hostent *phe;
 
 void submit_form()
 {
-char  str[256];
+char  str[256], att_name[256];
 char  text[10000];
-int   i;
+int   i, n_att, size;
 HNDLE hDB, hkey, hkeyroot;
 KEY   key;
 
@@ -3362,6 +3377,7 @@ KEY   key;
   sprintf(str, "/Elog/Forms/%s", getparam("form"));
   db_find_key(hDB, 0, str, &hkeyroot);
   text[0] = 0;
+  n_att = 0;
   if (hkeyroot)
     for (i=0 ; ; i++)
       {
@@ -3371,12 +3387,37 @@ KEY   key;
 
       db_get_key(hDB, hkey, &key);
 
-      sprintf(str, "x%d", i);
-      sprintf(text+strlen(text), "%d %s : [%c]  ", i+1, key.name, *getparam(str) == '1' ? 'X':' ');
-      sprintf(str, "c%d", i);
-      sprintf(text+strlen(text), "%s\n", getparam(str));
+      strcpy(str, key.name);
+      if (str[0])
+        str[strlen(str)-1] = 0;
+      if (equal_ustring(str, "attachment"))
+        {
+        /* generate attachments */
+        size = sizeof(str);
+        db_get_data(hDB, hkey, str, &size, TID_STRING);
+        sprintf(att_name, "attachment%d", n_att++);
+        setparam(att_name, str);
+        }
+      else
+        {
+        sprintf(str, "x%d", i);
+        sprintf(text+strlen(text), "%d %s : [%c]  ", i+1, key.name, *getparam(str) == '1' ? 'X':' ');
+        sprintf(str, "c%d", i);
+        sprintf(text+strlen(text), "%s\n", getparam(str));
+        }
       }
   
+  /* set parameters for submit_elog() */
+  setparam("type", getparam("form"));
+  setparam("system", "General");
+  setparam("subject", getparam("form"));
+  setparam("text", text);
+  setparam("orig", "");
+  setparam("html", "");
+
+  submit_elog();
+
+  /*
   str[0] = 0;
   el_submit(atoi(getparam("run")), getparam("author"), getparam("form"),
             "General", getparam("form"), text, "", "plain", "", NULL, 0, "", NULL, 0, "", NULL, 0, str, sizeof(str));
@@ -3388,6 +3429,7 @@ KEY   key;
     rsprintf("Location: %sEL/?exp=%s\n\n<html>redir</html>\r\n", mhttpd_url, exp_name);
   else
     rsprintf("Location: %sEL/\n\n<html>redir</html>\r\n", mhttpd_url);
+  */
 }
 
 /*------------------------------------------------------------------*/
