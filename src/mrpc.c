@@ -5,12 +5,9 @@
 
   Contents:     List of MIDAS RPC functions with parameters
 
-
-  Revision history
-  ------------------------------------------------------------------
-  date         by    modification
-  ---------    ---   ------------------------------------------------
-  22-MAR-94    SR    created
+  $Log$
+  Revision 1.2  1998/10/12 11:59:11  midas
+  Added $Log$ tag in header
 
 
 \********************************************************************/

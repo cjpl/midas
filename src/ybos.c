@@ -11,12 +11,13 @@
  *  Requires 	: ybos.h
  *  Author:  Pierre-Andre Amaudruz Data Acquisition Group
  *
- *  Revision 1.0  1994/Oct Pierre	 Initial revision
- *  Revision History: Oct/96  :
- *    1 April 97: S. Ritt, minor modification to supress compiler warnings
+ *  $Log$
+ *  Revision 1.2  1998/10/12 11:59:11  midas
+ *  Added $Log$ tag in header
+ *
  *
  *---------------------------------------------------------------------------*/
-/*---------------------------------------------------------------------------*/
+
 /* include files */
 #include "midas.h"
 #include "msystem.h"
