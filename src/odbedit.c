@@ -6,6 +6,9 @@
   Contents:     Command-line interface to the MIDAS online data base.
 
   $Log$
+  Revision 1.57  2002/05/14 06:31:47  midas
+  Make <tab> completion also work with flags
+
   Revision 1.56  2002/05/14 03:50:37  midas
   Protect /Logger/Data dir on load command
 
@@ -788,10 +791,13 @@ BOOL  blanks, mismatch;
 
   /* search beginning of key */
   pc = head;
-  while (*pc && *pc != ' ')
-    pc++;
-  while (*pc && *pc == ' ')
-    pc++;
+  do
+    {
+    while (*pc && *pc != ' ')
+      pc++;
+    while (*pc && *pc == ' ')
+      pc++;
+    } while (*pc == '-'); /* skip flags */
 
   if (*pc)
     {
