@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.15  1999/02/01 13:03:49  midas
+  Added /system/clients/xxx/link timeout to show current TCP timeout value
+
   Revision 1.14  1999/01/22 09:31:16  midas
   Fixed again status return from ss_mutex_create in bm_open_buffer
 
@@ -2011,7 +2014,16 @@ INT i;
 
   if (rpc_get_server_option(RPC_OSERVER_TYPE) != ST_REMOTE)
     {
+    HNDLE hDB, hKey;
+
     rpc_set_server_option(RPC_WATCHDOG_TIMEOUT, timeout);
+
+    /* write timeout value to client enty in ODB */
+    cm_get_experiment_database(&hDB, &hKey);
+
+    db_set_mode(hDB, hKey, MODE_READ | MODE_WRITE, TRUE);
+    db_set_value(hDB, hKey, "Link timeout", &timeout, sizeof(timeout), 1, TID_INT);
+    db_set_mode(hDB, hKey, MODE_READ, TRUE);
     }
   else
     {
