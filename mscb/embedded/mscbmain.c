@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol main program
 
   $Log$
+  Revision 1.9  2002/08/12 12:12:28  midas
+  Added zero padding
+
   Revision 1.8  2002/08/08 06:46:15  midas
   Added time functions
 
@@ -130,7 +133,7 @@ unsigned char i;
   LED = 0;
   RS485_ENABLE = 0;
 
-  uart_init(BD_345600);
+  uart_init(BD_115200);
 
   /* retrieve EEPROM data */
   eeprom_retrieve();
@@ -204,7 +207,7 @@ unsigned char i, n;
 
   if (!DEBUG_MODE)
     return;
-
+                             
   if (debug_new_i)
     {
     debug_new_i = 0;
@@ -269,6 +272,13 @@ void serial_int(void) interrupt 4 using 1
 
     if (i_in == 1)
       {
+      /* check for padding character */
+      if (in_buf[0] == 0)
+        {
+        i_in = 0;
+        return;
+        }
+
       /* initialize command length if first byte */
       cmd_len = (in_buf[0] & 0x07) + 2; // + cmd + crc
       }
