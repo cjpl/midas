@@ -4,9 +4,32 @@
 
   Administration class to encapsulate midas online data base (ODB) settings.
 
-  The constructor tries to read the file '.hvEdit' in which all the relevant
-  ODB pathes can be given. If '.hvEdit' does not exist, some default settings
+  The constructor tries to read the file '$HOME/.qt/hveditrc' in which all the relevant
+  ODB pathes can be given. If '$HOME/.qt/hveditrc' does not exist, some default settings
   will be tried.
+  
+  Sample 'hveditrc' file:
+    # hveditrc
+    # Adminstration file for hvEdit
+    #
+    # this file should be placed in $HOME/.qt,
+    #
+    # Andreas Suter, 2003/10/27
+    #
+
+    [General]
+    DEFAULT_SETTING_DIR=.
+    DEFAULT_DOC_DIR=gui/hvedit/qt/doc
+
+    [ODB Keys]
+    MIDAS_KEY_HV_ROOT=/Equipment/HV
+    MIDAS_KEY_HV_NAMES=Settings/Names
+    MIDAS_KEY_HV_DEMAND=Variables/Demand
+    MIDAS_KEY_HV_MEASURED=Variables/Measured
+    MIDAS_KEY_HV_CURRENT=Variables/Current
+    MIDAS_KEY_HV_CURRENT_LIMIT=Settings/Current Limit
+    
+    # end of hveditrc
 
 *********************************************************************************************
 
@@ -16,6 +39,9 @@
     email                : andreas.suter@psi.ch
 
   $Log$
+  Revision 1.3  2003/10/27 11:22:59  suter_a
+  use new QSettings for default settings. Changed the routines accordingly.
+
   Revision 1.2  2003/05/12 16:19:09  suter_a
   fixed problem with white spaces in '.hvEdit'
 
@@ -40,25 +66,30 @@
  *                                                                         *
  ***************************************************************************/
 
+/*
 #include <stdio.h>
 #include <string.h>
+*/
+
+#include <stdlib.h>
 
 #include <qstring.h>
+#include <qsettings.h>
+
+#include "midas.h"
 
 #include "hvAdmin.h"
 
 //**********************************************************************
 // hvAdmin constructor
 //
-// Tries to read '.hvEdit' file in order to get the correct ODB pathes.
-// If '.hvEdit' doesn't exist, default pathes are tried.
+// Tries to read '$HOME/.qt/hvEdit' file in order to get the correct ODB pathes.
+// If '$HOME/.qt/hvEdit' doesn't exist, default pathes are tried.
 //**********************************************************************
 hvAdmin::hvAdmin()
 {
-  FILE *fp;
-  char str[80], info[80];
-
-  strcpy(info, ""); // initialize string
+  QSettings settings;
+  QString   midas_root;
 
   // initialize flags for ODB pathes
   b_hvA_default_dir_hv_settings = FALSE;
@@ -70,110 +101,42 @@ hvAdmin::hvAdmin()
   b_hvA_midas_odb_hv_current = FALSE;
   b_hvA_midas_odb_hv_current_limit = FALSE;
 
-  // read .hvEdit file
-  if ((fp = fopen(".hvEdit", "r")) != NULL) {  // '.hvEdit' exists
-    while (!feof(fp)) {
-      if (fgets(str, 80, fp) == NULL) break;
-      // default directory were the hv settings files should be found.
-      if (strstr(str, "DEFAULT_SETTING_DIR=") != NULL) {
-        hvA_default_dir_hv_settings = str+strlen("DEFAULT_SETTING_DIR=");
-	//hvA_default_dir_hv_settings.remove("\n"); // Qt3.1
-	hvA_default_dir_hv_settings.truncate(hvA_default_dir_hv_settings.length()-1); // Qt3.0.3
-	hvA_default_dir_hv_settings=hvA_default_dir_hv_settings.stripWhiteSpace();
-	b_hvA_default_dir_hv_settings = TRUE;
-      }
-      // default directory were to find documentation.
-      if (strstr(str, "DEFAULT_DOC_DIR=") != NULL) {
-        hvA_default_dir_docu = str+strlen("DEFAULT_DOC_DIR=");
-	//hvA_default_dir_docu.remove("\n"); // Qt3.1
-	hvA_default_dir_docu.truncate(hvA_default_dir_docu.length()-1); // Qt3.0.3
-	hvA_default_dir_docu=hvA_default_dir_docu.stripWhiteSpace();
-	b_hvA_default_dir_docu = TRUE;
-      }
-      // midas root key for the hv equipment.
-      if (strstr(str, "MIDAS_KEY_HV_ROOT=") != NULL) {
-        hvA_midas_odb_hv_root = str+strlen("MIDAS_KEY_HV_ROOT=");
-        //hvA_midas_odb_hv_root.remove("\n"); // Qt3.1
-	hvA_midas_odb_hv_root.truncate(hvA_midas_odb_hv_root.length()-1); // Qt3.0.3
-	hvA_midas_odb_hv_root=hvA_midas_odb_hv_root.stripWhiteSpace();
-	b_hvA_midas_odb_hv_root = TRUE;
-      }
-      // midas names key for the hv equipment.
-      if (strstr(str, "MIDAS_KEY_HV_NAMES=") != NULL) {
-        hvA_midas_odb_hv_names = str+strlen("MIDAS_KEY_HV_NAMES=");
-	//hvA_midas_odb_hv_names.remove("\n"); // Qt3.1
-	hvA_midas_odb_hv_names.truncate(hvA_midas_odb_hv_names.length()-1); // Qt3.0.3
-	hvA_midas_odb_hv_names=hvA_midas_odb_hv_names.stripWhiteSpace();
-	b_hvA_midas_odb_hv_names = TRUE;
-      }
-      // midas demand hv key for the hv equipment.
-      if (strstr(str, "MIDAS_KEY_HV_DEMAND=") != NULL) {
-        hvA_midas_odb_hv_demand = str+strlen("MIDAS_KEY_HV_DEMAND=");
-	//hvA_midas_odb_hv_demand.remove("\n"); // Qt3.1
-	hvA_midas_odb_hv_demand.truncate(hvA_midas_odb_hv_demand.length()-1); // Qt3.0.3
-	hvA_midas_odb_hv_demand=hvA_midas_odb_hv_demand.stripWhiteSpace();
-	b_hvA_midas_odb_hv_demand = TRUE;
-      }
-      // midas measured hv key for the hv equipment.
-      if (strstr(str, "MIDAS_KEY_HV_MEASURED=") != NULL) {
-        hvA_midas_odb_hv_measured = str+strlen("MIDAS_KEY_HV_MEASURED=");
-	//hvA_midas_odb_hv_measured.remove("\n"); // Qt3.1
-	hvA_midas_odb_hv_measured.truncate(hvA_midas_odb_hv_measured.length()-1); // Qt3.0.3
-	hvA_midas_odb_hv_measured=hvA_midas_odb_hv_measured.stripWhiteSpace();
-	b_hvA_midas_odb_hv_measured = TRUE;
-      }
-      // midas current key for the hv equipment.
-      if (strstr(str, "MIDAS_KEY_HV_CURRENT=") != NULL) {
-        hvA_midas_odb_hv_current = str+strlen("MIDAS_KEY_HV_CURRENT=");
-	//hvA_midas_odb_hv_current.remove("\n"); // Qt3.1
-	hvA_midas_odb_hv_current.truncate(hvA_midas_odb_hv_current.length()-1); // Qt3.0.3
-	hvA_midas_odb_hv_current=hvA_midas_odb_hv_current.stripWhiteSpace();
-	b_hvA_midas_odb_hv_current = TRUE;
-      }
-      // midas current limit key for the hv equipment.
-      if (strstr(str, "MIDAS_KEY_HV_CURRENT_LIMIT=") != NULL) {
-        hvA_midas_odb_hv_current_limit = str+strlen("MIDAS_KEY_HV_CURRENT_LIMIT=");
-	//hvA_midas_odb_hv_current_limit.remove("\n"); // Qt3.1
-	hvA_midas_odb_hv_current_limit.truncate(hvA_midas_odb_hv_current_limit.length()-1); // Qt3.0.3
-	hvA_midas_odb_hv_current_limit=hvA_midas_odb_hv_current_limit.stripWhiteSpace();
-	b_hvA_midas_odb_hv_current_limit = TRUE;
-      }
-    }
-    fclose(fp);
-  } else { // '.hvEdit' doesn't exist
-    strcpy(info," '.hvEdit' does not exist.");
-  }
+  // read all the setting keys
+  hvA_default_dir_hv_settings = settings.readEntry("/hvEdit/General/DEFAULT_SETTING_DIR", ".", &b_hvA_default_dir_hv_settings);
+  hvA_default_dir_docu = settings.readEntry("/hvEdit/General/DEFAULT_DOC_DIR", "gui/hvedit/qt/doc", &b_hvA_default_dir_docu);
+  hvA_midas_odb_hv_root = settings.readEntry("/hvEdit/ODB Keys/MIDAS_KEY_HV_ROOT", "/Equipment/HV", &b_hvA_midas_odb_hv_root);
+  hvA_midas_odb_hv_names = settings.readEntry("/hvEdit/ODB Keys/MIDAS_KEY_HV_NAMES", "Settings/Names", &b_hvA_midas_odb_hv_names);
+  hvA_midas_odb_hv_demand = settings.readEntry("/hvEdit/ODB Keys/MIDAS_KEY_HV_DEMAND", "Variables/Demand", &b_hvA_midas_odb_hv_demand);
+  hvA_midas_odb_hv_measured = settings.readEntry("/hvEdit/ODB Keys/MIDAS_KEY_HV_MEASURED", "Variables/Measured", &b_hvA_midas_odb_hv_measured);
+  hvA_midas_odb_hv_current = settings.readEntry("/hvEdit/ODB Keys/MIDAS_KEY_HV_CURRENT", "Variables/Current", &b_hvA_midas_odb_hv_current);
+  hvA_midas_odb_hv_current_limit = settings.readEntry("/hvEdit/ODB Keys/MIDAS_KEY_HV_CURRENT_LIMIT", "Settings/Current Limit", &b_hvA_midas_odb_hv_current_limit);
 
-  // check if all key could been read
-  if (!b_hvA_default_dir_hv_settings) { // default path not defined
-    hvA_default_dir_hv_settings = "./";
+  // add $MIDAS_ROOT to hvA_default_dir_docu
+  midas_root = getenv("MIDAS_ROOT");
+  if (midas_root.isNull()) { // haven't found $MIDAS_ROOT use current directory
+    cm_msg(MINFO, "hvAdmin", "hvEdit: Warning: Haven't found $MIDAS_ROOT use current directory.");
+    midas_root = ".";
   }
-  if (!b_hvA_default_dir_docu) { // default docu path not defined
-    hvA_default_dir_docu = "~/";
+  hvA_default_dir_docu = midas_root+"/"+hvA_default_dir_docu;
+
+  // check if '$HOME/.qt/hvEdit' could be read
+  if (!b_hvA_midas_odb_hv_root) {
+    cm_msg(MINFO, "hvAdmin", "hvEdit: Warning: Couldn't read ODB HV root path settings, will try '/Equipment/HV' instead.");
   }
-  if (!b_hvA_midas_odb_hv_root) { // root key
-    hvA_midas_odb_hv_root = "/Equipment/HV";
-    printf("WARNING: HVEdit - Couldn't read MIDAS_KEY_HV_ROOT, will try default. %s", info);
+  if (!b_hvA_midas_odb_hv_names) {
+    cm_msg(MINFO, "hvAdmin", "hvEdit: Warning: Couldn't read ODB HV names path settings, will try 'Settings/Names' instead.");
   }
-  if (!b_hvA_midas_odb_hv_names) { // hv names key
-    hvA_midas_odb_hv_names = "Settings/Names";
-    printf("WARNING: HVEdit - Couldn't read MIDAS_KEY_HV_NAMES, will try default. %s", info);
+  if (!b_hvA_midas_odb_hv_demand) {
+    cm_msg(MINFO, "hvAdmin", "hvEdit: Warning: Couldn't read ODB HV demand path settings, will try 'Variables/Demand' instead.");
   }
-  if (!b_hvA_midas_odb_hv_demand) { // demand hv key
-    hvA_midas_odb_hv_demand = "Variables/Demand";
-    printf("WARNING: HVEdit - Couldn't read MIDAS_KEY_HV_DEMAND, will try default. %s", info);
+  if (!b_hvA_midas_odb_hv_measured) {
+    cm_msg(MINFO, "hvAdmin", "hvEdit: Warning: Couldn't read ODB HV measured path settings, will try 'Variables/Measured' instead.");
   }
-  if (!b_hvA_midas_odb_hv_measured) { // measured hv key
-    hvA_midas_odb_hv_measured = "Variables/Measured";
-    printf("WARNING: HVEdit - Couldn't read MIDAS_KEY_HV_MEASURED, will try default. %s", info);
+  if (!b_hvA_midas_odb_hv_current) {
+    cm_msg(MINFO, "hvAdmin", "hvEdit: Warning: Couldn't read ODB HV current path settings, will try 'Variables/Current' instead.");
   }
-  if (!b_hvA_midas_odb_hv_current) { // current hv key
-    hvA_midas_odb_hv_current = "Variables/Current";
-    printf("WARNING: HVEdit - Couldn't read MIDAS_KEY_HV_CURRENT, will try default. %s", info);
-  }
-  if (!b_hvA_midas_odb_hv_current_limit) { // current limit hv key
-    hvA_midas_odb_hv_current_limit = "Settings/Current Limit";
-    printf("WARNING: HVEdit - Couldn't read MIDAS_KEY_HV_CURRENT_LIMIT, will try default. %s", info);
+  if (!b_hvA_midas_odb_hv_current_limit) {
+    cm_msg(MINFO, "hvAdmin", "hvEdit: Warning: Couldn't read ODB HV demand path settings, will try 'Settings/Current Limit' instead.");
   }
 }
 
