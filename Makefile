@@ -6,6 +6,9 @@
 #  Contents:     Makefile for MIDAS binaries and examples under unix
 #
 #  $Log$
+#  Revision 1.28  2001/02/19 12:42:25  midas
+#  Fixed bug with missing "-Dextname" under Linux
+#
 #  Revision 1.27  2000/12/01 09:26:44  midas
 #  Added fal.o (again?)
 #
@@ -330,11 +333,22 @@ $(SHLIB): $(OBJS)
 	ld -shared -o $@ $^ $(LIBS)
 
 #
+# frontend and backend framework
+#
+
+$(LIB_DIR)/mfe.o: msystem.h midas.h midasinc.h mrpc.h
+$(LIB_DIR)/mana.o: $(SRC_DIR)/mana.c msystem.h midas.h midasinc.h mrpc.h
+$(LIB_DIR)/fal.o: $(SRC_DIR)/fal.c msystem.h midas.h midasinc.h mrpc.h
+
+$(LIB_DIR)/pmana.o: $(SRC_DIR)/mana.c msystem.h midas.h midasinc.h mrpc.h
+	$(CC) -Dextname -DPVM -c $(CFLAGS) $(OSFLAGS) -o $@ $<
+
+#
 # library objects
 #
 
 $(LIB_DIR)/%.o:$(SRC_DIR)/%.c
-	$(CC) -c $(CFLAGS) $(OSFLAGS) -o $@ $<
+	$(CC) -Dextname -c $(CFLAGS) $(OSFLAGS) -o $@ $<
 
 $(LIB_DIR)/midas.o: msystem.h midas.h midasinc.h mrpc.h
 $(LIB_DIR)/system.o: msystem.h midas.h midasinc.h mrpc.h
@@ -342,18 +356,6 @@ $(LIB_DIR)/mrpc.o: msystem.h midas.h mrpc.h
 $(LIB_DIR)/odb.o: msystem.h midas.h midasinc.h mrpc.h
 $(LIB_DIR)/ybos.o: msystem.h midas.h midasinc.h mrpc.h
 $(LIB_DIR)/ftplib.o: msystem.h midas.h midasinc.h
-
-#
-# frontend and backend framework
-#
-
-$(LIB_DIR)/mfe.o: msystem.h midas.h midasinc.h mrpc.h
-$(LIB_DIR)/mana.o: $(SRC_DIR)/mana.c msystem.h midas.h midasinc.h mrpc.h
-$(LIB_DIR)/fal.o: $(SRC_DIR)/fal.c msystem.h midas.h midasinc.h mrpc.h
-	$(CC) -Dextname -c $(CFLAGS) $(OSFLAGS) -o $@ $<
-
-$(LIB_DIR)/pmana.o: $(SRC_DIR)/mana.c msystem.h midas.h midasinc.h mrpc.h
-	$(CC) -Dextname -DPVM -c $(CFLAGS) $(OSFLAGS) -o $@ $<
 
 #
 # utilities
