@@ -1,13 +1,17 @@
 /********************************************************************\
 
-  Name:         mscuser.c
+  Name:         scs_600.c
   Created by:   Stefan Ritt
 
 
   Contents:     Application specific (user) part of
-                Midas Slow Control Bus protocol
+                Midas Slow Control Bus protocol 
+                for SCS-600 analog I/O
 
   $Log$
+  Revision 1.2  2002/07/12 15:19:53  midas
+  Added NOAREGS
+
   Revision 1.1  2002/07/12 08:38:13  midas
   Fixed LCD recognition
 
@@ -24,7 +28,7 @@
 
 extern bit FREEZE_MODE;
 
-char code node_name[] = "SCS500";
+char code node_name[] = "SCS-500";
 
 sbit SR_CLOCK   = P0 ^ 4;    // Shift register clock
 sbit SR_STROBE  = P0 ^ 5;    // Storage register clock
@@ -119,6 +123,8 @@ void user_init(void)
 }
 
 /*---- User write function -----------------------------------------*/
+
+#pragma NOAREGS
 
 void user_write(unsigned char channel)
 {
@@ -217,8 +223,6 @@ void user_read_conf(unsigned char channel)
 
 /*---- User function called vid CMD_USER command -------------------*/
 
-#pragma NOAREGS
-
 unsigned char user_func(unsigned char idata *data_in,
                         unsigned char idata *data_out)
 {
@@ -227,8 +231,6 @@ unsigned char user_func(unsigned char idata *data_in,
   data_out[1] = data_in[1]+1;
   return 2;
 }
-
-#pragma AREGS
 
 /*---- User loop function ------------------------------------------*/
 
