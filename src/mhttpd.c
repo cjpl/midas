@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.80  1999/10/19 11:04:13  midas
+  Changed expiration date of midas_ref cookie to one year
+
   Revision 1.79  1999/10/18 11:47:33  midas
   Corrected link to lazy settings
 
@@ -5025,7 +5028,12 @@ struct tm *gmt;
     rsprintf("Server: MIDAS HTTP %s\r\n", cm_get_version());
     rsprintf("Content-Type: text/html\r\n");
 
-    rsprintf("Set-Cookie: midas_refr=%d; path=/; expires=Mon, 01 Jan 2040 00:00:00 GMT\r\n", refresh);
+    time(&now);
+    now += 3600*24*365;
+    gmt = gmtime(&now);
+    strftime(str, sizeof(str), "%A, %d-%b-%y %H:00:00 GMT", gmt);
+
+    rsprintf("Set-Cookie: midas_refr=%d; path=/; expires=%s\r\n", refresh, str);
 
     if (exp_name[0])
       rsprintf("Location: %s?exp=%s\r\n\r\n<html>redir</html>\r\n", mhttpd_url, exp_name);
