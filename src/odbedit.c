@@ -6,6 +6,9 @@
   Contents:     Command-line interface to the MIDAS online data base.
 
   $Log$
+  Revision 1.12  1999/01/13 09:40:49  midas
+  Added db_set_data_index2 function
+
   Revision 1.11  1998/12/10 16:32:14  midas
   Command line completion now also adds values if <tab> is pressed after full key
 
@@ -47,7 +50,7 @@ static char data[50000];
 
 /*------------------------------------------------------------------*/
 
-float test_array[1];
+float test_array[1024];
 
 void update_test(HNDLE hDB, HNDLE hkey, void *info)
 {
@@ -2191,8 +2194,25 @@ INT             n1, n2;
     /* test 3 */
     else if (param[0][0] == 't' && param[0][1] == '3')
       {
-      db_find_key(hDB, 0, "/Equipment/HV/Variables/Measured", &hKey);
-      db_open_record(hDB, hKey, test_array, sizeof(test_array), MODE_READ, update_test, NULL);
+      db_find_key(hDB, 0, "/Equipment/HV/Variables/Demand", &hKey);
+      if (hKey)
+        {
+        db_get_key(hDB, hKey, &key);
+        db_open_record(hDB, hKey, test_array, key.total_size, MODE_READ, update_test, NULL);
+        }
+      else
+        printf("No /Equipment/HV/Variables/Demand found\n");
+      }
+
+    /* test 4 */
+    else if (param[0][0] == 't' && param[0][1] == '4')
+      {
+      db_find_key(hDB, 0, "/Equipment/HV/Variables/Demand", &hKey);
+      if (hKey)
+        {
+        for (i=0 ; i<10 ; i++)
+          db_set_data_index2(hDB, hKey, &test_array[i], sizeof(float), i, TID_FLOAT, i==9);
+        }
       }
 
     /* exit/quit */

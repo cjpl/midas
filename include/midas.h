@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.10  1999/01/13 09:40:48  midas
+  Added db_set_data_index2 function
+
   Revision 1.9  1998/12/11 11:23:17  midas
   Release 1.6.2
 
@@ -1115,6 +1118,7 @@ INT EXPRT db_get_data(HNDLE hdb, HNDLE key_handle, void *data, INT *buf_size, DW
 INT EXPRT db_get_data_index(HNDLE hDB, HNDLE hKey, void *data, INT *buf_size, INT index, DWORD type);
 INT EXPRT db_set_data(HNDLE hdb, HNDLE hKey, void *data, INT buf_size, INT num_values, DWORD type);
 INT EXPRT db_set_data_index(HNDLE hDB, HNDLE hKey, void *data, INT size, INT index, DWORD type);
+INT EXPRT db_set_data_index2(HNDLE hDB, HNDLE hKey, void *data, INT size, INT index, DWORD type, BOOL bNotify);
 INT EXPRT db_merge_data(HNDLE hDB, HNDLE hKeyRoot, char *name, void *data, INT data_size, INT num_values, INT type);
 INT EXPRT db_set_mode(HNDLE hdb, HNDLE key_handle, WORD mode, BOOL recurse);
 INT EXPRT db_create_record(HNDLE hdb, HNDLE hkey, char *name, char *init_str);

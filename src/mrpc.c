@@ -6,6 +6,9 @@
   Contents:     List of MIDAS RPC functions with parameters
 
   $Log$
+  Revision 1.4  1999/01/13 09:40:48  midas
+  Added db_set_data_index2 function
+
   Revision 1.3  1998/10/12 12:19:02  midas
   Added Log tag in header
 
@@ -301,6 +304,16 @@ static RPC_LIST rpc_list_library[] = {
      {TID_INT,        RPC_IN}, 
      {TID_INT,        RPC_IN}, 
      {TID_DWORD,      RPC_IN}, 
+     {0} }},
+
+  { RPC_DB_SET_DATA_INDEX2,
+    {{TID_INT,        RPC_IN}, 
+     {TID_INT,        RPC_IN},
+     {TID_ARRAY,      RPC_IN | RPC_VARARRAY}, 
+     {TID_INT,        RPC_IN}, 
+     {TID_INT,        RPC_IN}, 
+     {TID_DWORD,      RPC_IN}, 
+     {TID_BOOL,       RPC_IN}, 
      {0} }},
 
   { RPC_DB_SET_MODE,

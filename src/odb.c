@@ -6,6 +6,9 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.5  1999/01/13 09:40:49  midas
+  Added db_set_data_index2 function
+
   Revision 1.4  1998/10/29 14:53:17  midas
   BOOL values are displayed and read as 'y' and 'n'
 
@@ -3480,6 +3483,144 @@ KEY              *pkey;
   db_unlock_database(hDB);
 
   db_notify_clients(hDB, hKey, TRUE);
+
+}
+#endif /* LOCAL_ROUTINES */
+
+  return DB_SUCCESS;
+}
+
+/*------------------------------------------------------------------*/
+
+INT db_set_data_index2(HNDLE hDB, HNDLE hKey, void *data, 
+                       INT data_size, INT index, DWORD type, BOOL bNotify)
+/********************************************************************\
+
+  Routine: db_set_data_index2
+
+  Purpose: Set key data for a key which contains an array of values.
+           Optionally notify clients which have key open.
+
+  Input:
+    HNDLE  hDB              Handle to the database
+    HNDLE  hKey             Handle of key to enumerate
+    void   *data            Pointer to single value of data
+    INT    data_size        Size of single data element
+    INT    index            Index of array to change [0..n-1]
+    DWORD  type             Type of data
+    BOOL   bNotify          If TRUE, notify clients
+
+  Output:
+    none
+
+  Function value:
+    DB_SUCCESS              Successful completion
+    DB_INVALID_HANDLE       Database handle is invalid
+    DB_TYPE_MISMATCH        Key was created with different type
+    DB_NO_ACCESS            No write access
+
+\********************************************************************/
+{
+  if (rpc_is_remote())
+    return rpc_call(RPC_DB_SET_DATA_INDEX2, hDB, hKey, 
+                    data, data_size, index, type, bNotify); 
+
+#ifdef LOCAL_ROUTINES
+{
+DATABASE_HEADER  *pheader;
+KEY              *pkey;
+
+  if (hDB > _database_entries || hDB <= 0)
+    {
+    cm_msg(MERROR, "db_set_data_index2", "invalid database handle");
+    return DB_INVALID_HANDLE;
+    }
+
+  if (!_database[hDB-1].attached)
+    {
+    cm_msg(MERROR, "db_set_data_index2", "invalid database handle");
+    return DB_INVALID_HANDLE;
+    }
+
+  if (hKey < sizeof(DATABASE_HEADER))
+    {
+    cm_msg(MERROR, "db_set_data_index2", "invalid key handle");
+    return DB_INVALID_HANDLE;
+    }
+
+  db_lock_database(hDB);
+
+  pheader  = _database[hDB-1].database_header;
+  pkey = (KEY *) ((char *) pheader + hKey);
+
+  /* check for write access */
+  if (!(pkey->access_mode & MODE_WRITE) ||
+       (pkey->access_mode & MODE_EXCLUSIVE))
+    {
+    db_unlock_database(hDB);
+    return DB_NO_ACCESS;
+    }
+
+  if (pkey->type != type)
+    {
+    db_unlock_database(hDB);
+    cm_msg(MERROR, "db_set_data_index2", "\"%s\" is of type %s, not %s", pkey->name, 
+           rpc_tid_name(pkey->type), rpc_tid_name(type));
+    return DB_TYPE_MISMATCH;
+    }
+
+  /* keys cannot contain data */
+  if (pkey->type == TID_KEY)
+    {
+    db_unlock_database(hDB);
+    cm_msg(MERROR, "db_set_data_index2", "key cannot contain data");
+    return DB_TYPE_MISMATCH;
+    }
+
+  /* check for valid index */
+  if (index < 0)
+    {
+    db_unlock_database(hDB);
+    cm_msg(MERROR, "db_set_data_index2", "invalid index");
+    return DB_FULL;
+    }
+
+  /* increase key size if necessary */
+  if (index >= pkey->num_values)
+    {
+    pkey->data = (PTYPE) realloc_data(pheader, (char *) pheader + pkey->data,
+                                      pkey->total_size, data_size*(index+1));
+                 
+    if (pkey->data == 0)
+      {
+      db_unlock_database(hDB);
+      cm_msg(MERROR, "db_set_data_index2", "online database full");
+      return DB_FULL;
+      }
+
+    pkey->data -= (PTYPE) pheader;
+    if (!pkey->item_size)
+      pkey->item_size = data_size;
+    pkey->total_size = data_size*(index+1);
+    pkey->num_values = index + 1;
+    }
+
+  /* cut strings which are too long */
+  if ((type == TID_STRING || type == TID_LINK) && 
+       (int) strlen(data)+1 > pkey->item_size)
+    *((char *) data + pkey->item_size-1) = 0;
+
+  /* copy data */
+  memcpy((char *) pheader + pkey->data + index * pkey->item_size, 
+         data, pkey->item_size);
+
+  /* update time */
+  pkey->last_written = ss_time();
+
+  db_unlock_database(hDB);
+
+  if (bNotify)
+    db_notify_clients(hDB, hKey, TRUE);
 
 }
 #endif /* LOCAL_ROUTINES */
