@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.72  1999/10/11 11:57:39  midas
+  Fixed bug with search in full text
+
   Revision 1.71  1999/10/11 10:52:43  midas
   Added full text search feature
 
@@ -1613,7 +1616,7 @@ KEY    key;
   rsprintf("<input type=\"text\" size=\"15\" maxlength=\"80\" name=\"subject\"></tr>\n");
 
   rsprintf("<tr><td colspan=4 bgcolor=#FFA0FF>Text: ");
-  rsprintf("<input type=\"text\" size=\"15\" maxlength=\"80\" name=\"text\">\n");
+  rsprintf("<input type=\"text\" size=\"15\" maxlength=\"80\" name=\"subtext\">\n");
   rsprintf("<i>(case insensitive substring)</i><tr>\n");
 
   rsprintf("</tr></table>\n");
@@ -1780,6 +1783,9 @@ FILE   *f;
   if (*getparam("subject"))
     rsprintf("Subject: <b>%s</b>   ", getparam("subject"));
 
+  if (*getparam("subtext"))
+    rsprintf("Text: <b>%s</b>   ", getparam("subtext"));
+
   rsprintf("</tr>\n");
 
   /*---- table titles ----*/
@@ -1872,20 +1878,24 @@ FILE   *f;
         strcpy(str, getparam("subject"));
         for (i=0 ; i<(int)strlen(str) ; i++)
           str[i] = toupper(str[i]);
+        str[i] = 0;
         for (i=0 ; i<(int)strlen(subject) ; i++)
           str2[i] = toupper(subject[i]);
+        str2[i] = 0;
 
         if (strstr(str2, str) == NULL)
           continue;
         }
 
-      if (*getparam("text"))
+      if (*getparam("subtext"))
         {
-        strcpy(str, getparam("text"));
+        strcpy(str, getparam("subtext"));
         for (i=0 ; i<(int)strlen(str) ; i++)
           str[i] = toupper(str[i]);
+        str[i] = 0;
         for (i=0 ; i<(int)strlen(text) ; i++)
           str2[i] = toupper(text[i]);
+        str2[i] = 0;
 
         if (strstr(str2, str) == NULL)
           continue;
