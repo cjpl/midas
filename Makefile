@@ -6,6 +6,9 @@
 #  Contents:     Makefile for MIDAS binaries and examples under unix
 #
 #  $Log$
+#  Revision 1.49  2004/01/16 00:27:42  pierre
+#  change mcleanup path
+#
 #  Revision 1.48  2004/01/07 08:20:27  midas
 #  Added -l90 to indent
 #
@@ -509,7 +512,7 @@ install:
 	  cp $(BIN_DIR)/$$i $(SYSBIN_DIR) ; \
 	  chmod 755 $(SYSBIN_DIR)/$$i ; \
 	  done
-	cp mcleanup $(SYSBIN_DIR)
+	cp $(UTL_DIR)mcleanup $(SYSBIN_DIR)
 	chmod +s $(SYSBIN_DIR)/dio
 	chmod +s $(SYSBIN_DIR)/mhttpd
 
