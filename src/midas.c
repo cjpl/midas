@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.81  1999/11/09 14:44:08  midas
+  Changed ODB locking in cm_cleanup
+
   Revision 1.80  1999/11/09 13:17:25  midas
   Added secure ODB feature
 
@@ -4422,23 +4425,28 @@ char            str[256];
               bDeleted = TRUE;
               }
 
-            /* display info message after unlocking buffer */
-            if (str[0])
-              cm_msg(MINFO, "cm_cleanup", str);
 
             /* delete client entry after unlocking db */
             if (bDeleted)
               {
               db_unlock_database(i+1);
+
+              /* display info message after unlocking buffer */
+              cm_msg(MINFO, "cm_cleanup", str);
+              
               status = cm_delete_client_info(i+1, client_pid);
               if (status != CM_SUCCESS)
                 cm_msg(MERROR, "cm_cleanup", "cannot delete client info");
+
+              /* re-lock database */
               db_lock_database(i+1);
               pdbheader = _database[i].database_header;
               pdbclient = pdbheader->client;
               }
             }
           }
+
+      db_unlock_database(i+1);
     }
 }
 #endif /* LOCAL_ROUTINES */
