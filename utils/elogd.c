@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.31  2001/08/09 13:51:42  midas
+  Added "suppress default" flag
+
   Revision 1.30  2001/08/09 07:44:31  midas
   Changed from absolute pathnames to relative pathnames
 
@@ -2220,7 +2223,11 @@ BOOL   allow_edit;
     rsprintf("<input type=checkbox name=html value=1>Submit as HTML text\n");
 
   rsprintf("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\n");
-  rsprintf("<input type=checkbox name=suppress value=1>Suppress Email notification</tr>\n");
+
+  if (getcfg(logbook, "Suppress default", str) && atoi(str) == 1)
+    rsprintf("<input type=checkbox checked name=suppress value=1>Suppress Email notification</tr>\n");
+  else
+    rsprintf("<input type=checkbox name=suppress value=1>Suppress Email notification</tr>\n");
 
   if (bedit)
     {
@@ -3486,7 +3493,10 @@ BOOL  allow_delete, allow_edit;
     /* check for mail submissions */
     if (*getparam("suppress"))
       {
-      rsprintf("<tr><td colspan=2 bgcolor=#FF0000><b>Email notification suppressed</b>");
+      if (getcfg(logbook, "Suppress default", str) && atoi(str) == 1)
+        rsprintf("<tr><td colspan=2 bgcolor=#FFFFFF>Email notification suppressed</tr>\n");
+      else
+        rsprintf("<tr><td colspan=2 bgcolor=#FF0000><b>Email notification suppressed</b></tr>\n");
       i = 1;
       }
     else
