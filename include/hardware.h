@@ -7,6 +7,9 @@
                 hardware.
 
   $Log$
+  Revision 1.4  2003/11/19 11:22:18  midas
+  Added CAEN775 TDC
+
   Revision 1.3  2003/09/29 07:59:46  midas
   *** empty log message ***
 
@@ -61,3 +64,23 @@ typedef struct {
   WORD event    : 3;
   WORD geo_addr : 5;
 } LRS1875_DATA;
+
+typedef struct {
+  WORD          : 8;
+  WORD count    : 6; 
+  WORD          : 2; 
+  WORD crate    : 8; 
+  WORD tag      : 3;
+  WORD geo_addr : 5; 
+} CAEN775_HEADER;
+
+typedef struct {
+  WORD data     : 12;
+  WORD overflow : 1;
+  WORD underflow: 1;
+  WORD valid    : 1;
+  WORD          : 1;
+  WORD channel  : 6;
+  WORD          : 5;
+  WORD geo_addr : 5;
+} CAEN775_DATA;
