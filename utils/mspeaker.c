@@ -6,6 +6,9 @@
   Contents:     Speaks midas messages
 
   $Log$
+  Revision 1.6  2000/04/10 13:16:14  midas
+  Added reconnect
+
   Revision 1.5  2000/04/05 14:59:24  midas
   Added time display
 
@@ -127,16 +130,6 @@ usage:
       }
     }
 
-  /* now connect to server */
-  status = cm_connect_experiment(host_name, exp_name, "Speaker", NULL);
-  if (status != CM_SUCCESS)
-    return 1;
-
-  cm_msg_register(receive_message);
-
-  printf("Midas Message Talker connected to %s. Press \"!\" to exit\n", 
-          host_name[0] ? host_name : "local host");
-
   //  register to SB
   // lpSCB = OpenSpeech(0, 0, "Esnb1k8"); 
   lpSCB = OpenSpeech(0, 0, NULL); 
@@ -157,6 +150,18 @@ usage:
    
   lpPhonetics = NULL;
 
+reconnect:
+
+  /* now connect to server */
+  status = cm_connect_experiment(host_name, exp_name, "Speaker", NULL);
+  if (status != CM_SUCCESS)
+    return 1;
+
+  cm_msg_register(receive_message);
+
+  printf("Midas Message Talker connected to %s. Press \"!\" to exit\n", 
+          host_name[0] ? host_name : "local host");
+
   do
     {
     status = cm_yield(1000);
@@ -168,7 +173,16 @@ usage:
 	    if (ch == '!')
 	      break;
 	    }
-    } while (status != RPC_SHUTDOWN && status != SS_ABORT);
+
+    if (status == SS_ABORT)
+      {
+      cm_disconnect_experiment();
+      printf("Trying to reconnect...\n");
+      ss_sleep(3000);
+      goto reconnect;
+      }
+
+    } while (status != RPC_SHUTDOWN);
   
 out:
   
