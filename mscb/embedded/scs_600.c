@@ -9,6 +9,9 @@
                 for SCS-600 Digital I/O
 
   $Log$
+  Revision 1.4  2002/10/16 15:24:38  midas
+  Added units in descriptor
+
   Revision 1.3  2002/10/09 11:06:46  midas
   Protocol version 1.1
 
@@ -23,9 +26,17 @@
 #include <stdio.h>
 #include "mscb.h"
 
-extern bit FREEZE_MODE;
+extern bit DEBUG_MODE;
 
 char code node_name[] = "SCS-600";
+
+
+sbit SR_CLOCK   = P0 ^ 2;    // Shift register clock
+sbit SR_STROBE  = P0 ^ 5;    // Storage register clock
+sbit SR_DATAO   = P0 ^ 6;    // Serial data out
+sbit SR_DATAI   = P0 ^ 7;    // Serial data in
+sbit SR_OE      = P0 ^ 3;    // Output enable
+sbit SR_READB   = P0 ^ 4;    // Serial data readback
 
 /*---- Define channels and configuration parameters returned to
        the CMD_GET_INFO command                                 ----*/
@@ -61,44 +72,20 @@ void user_write(unsigned char channel);
 
 void user_init(void)
 {
-#ifdef CPU_ADUC812
-  ADCCON1 = 0x7C; // power up ADC, 14.5us conv+acq time
-  ADCCON2 = 0;    // select channel to convert
-  DACCON  = 0x1f; // power on DACs
-#endif
+  PRT0CF = 0x7F;  // push-pull for P0.0-6
 
-#ifdef CPU_C8051F000
-  PRT1CF = 0xFF;  // push-pull for P1
-
-  AMX0CF = 0x00;  // select single ended analog inputs
-  ADC0CF = 0xE0;  // 16 system clocks, gain 1
-  ADC0CN = 0x80;  // enable ADC 
-
-  REF0CN = 0x03;  // enable internal reference
-  DAC0CN = 0x80;  // enable DAC0
-  DAC1CN = 0x80;  // enable DAC1
-#endif
-
-  /* write output */
-  user_write(0);
+  /* init shift register lines */
+  SR_OE = 1;
+  SR_CLOCK = 0;
+  SR_DATAO = 0;
+  SR_DATAI = 1; // prepare for input
 }
 
 /*---- User write function -----------------------------------------*/
 
 void user_write(unsigned char channel)
 {
-unsigned char i;
-
-  if (channel == 0)
-    {
-    for (i=0 ; i<8 ; i++)
-      {
-      if (user_data.out & (1<<(7-i)))
-        P1 |= (1<<i);
-      else
-        P1 &= ~(1<<i);
-      }
-    }
+  if (channel);
 }
 
 /*---- User read function ------------------------------------------*/
@@ -136,64 +123,81 @@ unsigned char user_func(unsigned char idata *data_in,
 
 /*---- User loop function ------------------------------------------*/
 
-unsigned int adc_read(channel)
+void ser_clock()
 {
-unsigned long value;
+unsigned char d, i;
 
-  AMX0SL = channel & 0x0F;
+  /* first shift register */
+  for (i=d=0 ; i<8 ; i++)
+    {
+    if (SR_DATAI)
+      d |= (0x80 >> i);
 
-  value = 0;
-  DISABLE_INTERRUPTS;
+    SR_DATAO = (user_data.out & (0x80>>i)) == 0;
+    delay_us(10);
+    SR_CLOCK = 1;
+    delay_us(10);
+    SR_CLOCK = 0;
+    }
 
-  ADCINT = 0;
-  ADBUSY = 1;
-  while (!ADCINT);  // wait until conversion ready, does NOT work with ADBUSY!
+  /* second shift register */
+  for (i=0 ; i<8 ; i++)
+    {
+    SR_DATAO = (user_data.out & (0x80>>i)) == 0;
+    delay_us(10);
+    SR_CLOCK = 1;
+    delay_us(10);
+    SR_CLOCK = 0;
+    }
 
-  ENABLE_INTERRUPTS;
+  /* strobe for output and next input */
+  SR_STROBE = 1;
+  delay_us(10);
+  SR_STROBE = 0;
 
-  value += (ADC0L | (ADC0H << 8));
-  watchdog_refresh();
+  /* after first cycle, enable outputs */
+  delay_ms(1);
+  SR_OE = 0;
 
-  return value;
+  user_data.in = d;  
 }
 
 void user_loop(void)
 {
-unsigned char i;
+unsigned char i, old_in;
 static unsigned long last = 300;
 static bit first = 1;
 
-  /* don't take data in freeze mode */
-  if (!FREEZE_MODE);
+  /* read inputs */
+  old_in = user_data.in;
+  ser_clock();
+  for (i=0 ; i<8 ; i++)
     {
+    if ((user_data.in & (1<<i)) > 0 &&
+        (old_in & (1<<i)) == 0)
+      user_data.out ^= (1<<i);
+    }
+  SR_OE = (user_data.out & 1) > 0;
+
+  if (!DEBUG_MODE && time() > last+30)
+    {
+    if (first)
+      {
+      lcd_clear();
+      first = 0;
+      }
+
+    last = time();
+
+    lcd_goto(0, 0);
+    printf("OUT: ");
     for (i=0 ; i<8 ; i++)
-      {
-      if (adc_read(i) > 0x800)
-        user_data.in |= (1<<i);
-      else
-        user_data.in &= ~(1<<i);
-      }
+      printf("%c", user_data.out & (1<<i) ? '1' : '0');
 
-    if (time() > last+30)
-      {
-      if (first)
-        {
-        lcd_clear();
-        first = 0;
-        }
-
-      last = time();
-
-      lcd_goto(0, 0);
-      printf("OUT: ");
-      for (i=0 ; i<8 ; i++)
-        printf("%c", user_data.out & (1<<i) ? '1' : '0');
-  
-      lcd_goto(0, 1);
-      printf("IN:  ");
-      for (i=0 ; i<8 ; i++)
-        printf("%c", user_data.in & (1<<i) ? '1' : '0');
-      }
+    lcd_goto(0, 1);
+    printf("IN:  ");
+    for (i=0 ; i<8 ; i++)
+      printf("%c", user_data.in & (1<<i) ? '1' : '0');
     }
 }
 
