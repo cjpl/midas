@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.252  2003/10/10 22:47:40  olchansk
+  fix crash in mhttpd when runinfo.state is corrupted
+
   Revision 1.251  2003/05/19 11:52:22  midas
   Fixed bug with content_length
 
@@ -1520,7 +1523,6 @@ void show_status_page(int refresh, char *cookie_wpwd)
 int    i, j, k, status, size, type;
 BOOL   flag, first;
 char   str[256], name[32], ref[256], bgcol[32], fgcol[32], alarm_class[32];
-char   *state[] = {"", "Stopped", "Paused", "Running" };
 char   *trans_name[] = {"Start", "Stop", "Pause", "Resume"};
 time_t now, difftime;
 double analyzed, analyze_ratio, d;
@@ -1813,14 +1815,13 @@ CHN_STATISTICS chn_stats;
   rsprintf("<tr align=center><td>Run #%d", runinfo.run_number);
 
   if (runinfo.state == STATE_STOPPED)
-    strcpy(str, "FF0000");
+    rsprintf("<td colspan=1 bgcolor=#FF0000>Stopped");
   else if (runinfo.state == STATE_PAUSED)
-    strcpy(str, "FFFF00");
+    rsprintf("<td colspan=1 bgcolor=#FFFF00>Paused");
   else if (runinfo.state == STATE_RUNNING)
-    strcpy(str, "00FF00");
-  else strcpy(str, "FFFFFF");
-
-  rsprintf("<td colspan=1 bgcolor=#%s>%s", str, state[runinfo.state]);
+    rsprintf("<td colspan=1 bgcolor=#00FF00>Running");
+  else
+    rsprintf("<td colspan=1 bgcolor=#FFFFFF>Unknown");
 
   if (runinfo.requested_transition)
     for (i=0 ; i<4 ; i++)
