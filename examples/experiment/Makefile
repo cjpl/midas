@@ -18,28 +18,28 @@
 # systems. Find the one which matches your OS and outcomment the 
 # lines below.
 
-# This is for OSF1
+# This is for OSF1 -----------------------
 #LIBS = -lbsd
-#OSFLAGS = -DOS_OSF1 -DOS_UNIX -Dextname
+#OSFLAGS = -DOS_OSF1 -Dextname
 #FF = f77
 #FFLAGS = -nofor_main -D 40000000 -T 20000000
 
-# This is for Ultrix
+# This is for Ultrix ---------------------
 #LIBS =
-#OSFLAGS = -DOS_ULTRIX -DOS_UNIX -Dextname
+#OSFLAGS = -DOS_ULTRIX -Dextname
 
-# This is for FreeBSD
+# This is for FreeBSD --------------------
 #LIBS = -lbsd -lcompat
-#OSFLAGS = -DOS_FREEBSD -DOS_UNIX
-
-# This is for Linux
-OSFLAGS = -DOS_LINUX -DOS_UNIX -Dextname
+#OSFLAGS = -DOS_FREEBSD 
+ 
+# This is for Linux ----------------------
+OSFLAGS = -DOS_LINUX -Dextname
 # for f2c, uncomment following:
 #LIBS = -lbsd -lm -lutil /usr/lib/libf2c.a
 #FF = cc
 # for egcs g77, use this
 FF = g77
-LIBS = -lbsd -lm -lz -lutil -static
+LIBS = -lm -lz -lutil
 
 #-------------------------------------------------------------------
 # The following lines define direcories. Adjust if necessary
