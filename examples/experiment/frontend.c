@@ -11,6 +11,9 @@
                 with one bank (SCLR).
 
   $Log$
+  Revision 1.10  2000/03/13 18:53:29  pierre
+  - Added 2nd arg in readout functions (offset for Super event)
+
   Revision 1.9  2000/03/02 22:00:00  midas
   Added number of subevents as zero
 
@@ -87,8 +90,8 @@ INT pause_run(INT run_number, char *error);
 INT resume_run(INT run_number, char *error);
 INT frontend_loop();
 
-INT read_trigger_event(char *pevent);
-INT read_scaler_event(char *pevent);
+INT read_trigger_event(char *pevent, INT off);
+INT read_scaler_event(char *pevent, INT off);
 
 /*-- Equipment list ------------------------------------------------*/
 
@@ -289,7 +292,7 @@ INT interrupt_configure(INT cmd, INT source, PTYPE adr)
 
 /*-- Event readout -------------------------------------------------*/
 
-INT read_trigger_event(char *pevent)
+INT read_trigger_event(char *pevent, INT off)
 {
 WORD *pdata, a;
 INT  q, timeout;
@@ -349,7 +352,7 @@ INT  q, timeout;
 
 /*-- Scaler event --------------------------------------------------*/
 
-INT read_scaler_event(char *pevent)
+INT read_scaler_event(char *pevent, INT off)
 {
 DWORD *pdata, a;
 
