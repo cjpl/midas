@@ -7,6 +7,9 @@
 #  Contents:     Makefile for MIDAS binaries and examples under unix
 #
 #  $Log$
+#  Revision 1.55  2004/06/28 15:44:25  olchansk
+#  Do not try to specify "-rpath" on Darwin
+#
 #  Revision 1.54  2004/06/07 02:41:59  olchansk
 #  set ROOT and libmidas.a RPATH on executables
 #
@@ -235,6 +238,11 @@ MIDAS_PREF_FLAGS  =
 #
 NEED_SHLIB=1
 
+#
+# Option to set the shared library path on MIDAS executables
+#
+NEED_RPATH=1
+
 #####################################################################
 # Nothing needs to be modified after this line 
 #####################################################################
@@ -298,6 +306,7 @@ LIBS = -lpthread
 SPECIFIC_OS_PRG = $(BIN_DIR)/mlxspeaker
 NEED_RANLIB=1
 NEED_SHLIB=
+NEED_RPATH=
 endif
 
 #-----------------------
@@ -420,7 +429,12 @@ $(BIN_DIR):
 ifdef ROOTSYS
 ROOTLIBS    := $(shell $(ROOTSYS)/bin/root-config --libs)
 ROOTGLIBS   := $(shell $(ROOTSYS)/bin/root-config --glibs)
-ROOTCFLAGS  := $(shell $(ROOTSYS)/bin/root-config --cflags) -Wl,-rpath,$(ROOTSYS)/lib
+ROOTCFLAGS  := $(shell $(ROOTSYS)/bin/root-config --cflags)
+
+ifdef NEED_RPATH
+ROOTLIBS   += -Wl,-rpath,$(ROOTSYS)/lib
+ROOTGLIBS  += -Wl,-rpath,$(ROOTSYS)/lib
+endif
 
 $(BIN_DIR)/mlogger: $(BIN_DIR)/%: $(SRC_DIR)/%.c
 	$(CXX) $(CFLAGS) $(OSFLAGS) -DHAVE_ROOT $(ROOTCFLAGS) -o $@ $< $(LIB) $(ROOTLIBS) $(LIBS)
