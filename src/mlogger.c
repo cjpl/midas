@@ -6,6 +6,9 @@
   Contents:     MIDAS logger program
 
   $Log$
+  Revision 1.23  1999/10/11 15:03:52  midas
+  Fixed bug with daemon flag
+
   Revision 1.22  1999/10/11 15:02:23  midas
   Added -D (daemon) flag
 
@@ -2341,7 +2344,7 @@ DWORD  last_time_stat = 0;
   /* get default from environment */
   cm_get_environment(host_name, exp_name);
 
-  debug = FALSE;
+  debug = daemon = FALSE;
   
   /* parse command line parameters */
   for (i=1 ; i<argc ; i++)
