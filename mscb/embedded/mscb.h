@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol commands
 
   $Log$
+  Revision 1.18  2003/03/06 11:00:17  midas
+  Added section for SCS-600
+
   Revision 1.17  2003/02/19 16:05:13  midas
   Added code for ADuC812
 
@@ -86,7 +89,7 @@ sbit RS485_ENABLE =      P3^5;
 #define LED_ON 0
 
 /*--------------------------------*/
-#elif defined(SCS_400) || defined(SCS_500) || defined(SCS_600)
+#elif defined(SCS_400) || defined(SCS_500) || defined(SCS_700)
 #include <c8051F000.h>
 #define CPU_C8051F000
 #define CPU_CYGNAL
@@ -94,6 +97,16 @@ sbit RS485_ENABLE =      P3^5;
 sbit LED =               P3^4;
 sbit RS485_ENABLE =      P3^5;
 #define LED_ON 1
+
+/*--------------------------------*/
+#elif defined(SCS_600)
+#include <c8051F000.h>
+#define CPU_C8051F000
+#define CPU_CYGNAL
+
+sbit LED =               P3^4;
+sbit RS485_ENABLE =      P3^5;
+#define LED_ON 0
 
 /*--------------------------------*/
 #elif defined(HVR_300)
