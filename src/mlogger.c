@@ -6,6 +6,9 @@
   Contents:     MIDAS logger program
 
   $Log$
+  Revision 1.47  2002/02/02 11:34:30  midas
+  Added run markes in history
+
   Revision 1.46  2002/02/02 09:27:19  midas
   Added run transition in history with event_id -1
 
@@ -1855,7 +1858,7 @@ INT open_history()
 
   tag = malloc(sizeof(TAG)*2);
 
-  strcpy(tag[0].name, "Transition");
+  strcpy(tag[0].name, "State");
   tag[0].type = TID_DWORD;
   tag[0].n_data = 1;
 
@@ -1863,7 +1866,7 @@ INT open_history()
   tag[1].type = TID_DWORD;
   tag[1].n_data = 1;
 
-  hs_define_event(-1, "Run transitions", tag, sizeof(TAG)*2);
+  hs_define_event(0, "Run transitions", tag, sizeof(TAG)*2);
   free(tag);
 
   return CM_SUCCESS;
@@ -2338,7 +2341,7 @@ BOOL         write_data, tape_flag = FALSE;
   /* write transition event into history */
   eb.transition = STATE_RUNNING;
   eb.run_number = run_number;
-  hs_write_event(-1, &eb, sizeof(eb));
+  hs_write_event(0, &eb, sizeof(eb));
 
   return CM_SUCCESS;
 }
@@ -2461,7 +2464,7 @@ char   str[256];
   /* write transition event into history */
   eb.transition = STATE_STOPPED;
   eb.run_number = run_number;
-  hs_write_event(-1, &eb, sizeof(eb));
+  hs_write_event(0, &eb, sizeof(eb));
 
   return CM_SUCCESS;
 }
@@ -2471,7 +2474,7 @@ INT tr_pause(INT run_number, char *error)
   /* write transition event into history */
   eb.transition = STATE_PAUSED;
   eb.run_number = run_number;
-  hs_write_event(-1, &eb, sizeof(eb));
+  hs_write_event(0, &eb, sizeof(eb));
 
   return CM_SUCCESS;
 }
@@ -2481,7 +2484,7 @@ INT tr_resume(INT run_number, char *error)
   /* write transition event into history */
   eb.transition = STATE_RUNNING;
   eb.run_number = run_number;
-  hs_write_event(-1, &eb, sizeof(eb));
+  hs_write_event(0, &eb, sizeof(eb));
 
   return CM_SUCCESS;
 }
