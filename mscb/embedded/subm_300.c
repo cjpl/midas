@@ -7,6 +7,9 @@
                 SUBM300 running on Cygnal C8051F021
 
   $Log$
+  Revision 1.6  2003/02/27 10:45:04  midas
+  Two-cycle communication to avoid data collision
+
   Revision 1.5  2003/01/30 08:39:30  midas
   Use USE_WATCHDOG flag
 
@@ -68,6 +71,10 @@ unsigned char i;
 
   XBR0 = 0x04; // Enable RX/TX
   XBR1 = 0x00;
+  P2MDOUT = 0x00;  // P2: LPT
+  P2MDOUT = 0x00;  // P2: LPT
+  P2MDOUT = 0x00;  // P2: LPT
+  P2MDOUT = 0x00;  // P2: LPT
   XBR2 = 0x40; // Enable crossbar
 
   /* Port configuration (1 = Push Pull Output) */
@@ -213,20 +220,42 @@ unsigned char byte;
     rbuf_rp = 0;
 
   /* signal new data to PC */
-  LPT_DATA = byte;
   LPT_NDATAREADY = 0;
 
-  /* wait for PC acknowledge */
+  /* wait for PC switched to input */
   while (LPT_NACK == 1)
     watchdog_refresh();
 
-  /* remove data ready signal */
+  /* switch port to push-pull */
+  P1MDOUT = 0xFF;
+
+  /* output data to PC */
+  LPT_DATA = byte;
+
+  /* remove data ready */
   LPT_NDATAREADY = 1;
+
+  /* wait until PC has data read */
+  while (LPT_NACK == 0)
+    watchdog_refresh();
+
+  /* switch port to open-drain */
+  P1MDOUT = 0x00;
 
   /* prepare port for input */
   LPT_DATA = 0xFF;
 
-  /* wait for PC acknowlege to be removed */
+  /* cause PC switch port to output */
+  LPT_NDATAREADY = 0;
+
+  /* wait for PC switched to output */
+  while (LPT_NACK == 1)
+    watchdog_refresh();
+
+  /* reset data ready */
+  LPT_NDATAREADY = 1;
+
+  /* wait for end of cycle */
   while (LPT_NACK == 0)
     watchdog_refresh();
 }
