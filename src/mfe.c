@@ -7,6 +7,9 @@
                 linked with user code to form a complete frontend
 
   $Log$
+  Revision 1.33  2001/04/06 04:13:40  midas
+  Put cm_cleanup() in init code
+
   Revision 1.32  2001/01/29 09:50:53  midas
   Changed send_event() parameter from event_id to equipment index
 
@@ -1731,6 +1734,9 @@ usage:
     printf("Previous frontend stopped\n");
     ss_sleep(1000);
     }
+
+  /* remomve any dead frontend */
+  cm_cleanup();
 
   /* register transition callbacks */
   if (cm_register_transition(TR_START, tr_start) != CM_SUCCESS ||
