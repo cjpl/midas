@@ -115,7 +115,6 @@
 #define MAX_DLOG_NAME_SIZE     128    /* max data logger name size */
 #define MAX_DLOG_LABEL_SIZE     32    /* max data logger label size */
 #define MAX_FILE_PATH          128
-#define YBOS_FMT                 0    /* known data logger data format */
 #define DLOG_DISK                1    /* type of device (disk file) */
 #define DLOG_TAPE                2    /* type of device (tape file) */
 #define VT                       1    /* type of device for error log */
@@ -134,7 +133,7 @@
 
 /* YBOS FILE parameters */
 #define  MAX_FRAG_SIZE   2000          /* max event size for fragmented file (bytes) */
-#define  MAX_YBOS_FILE      8          /* max concurrent file handling */
+#define  MAX_YM_FILE        8          /* max concurrent file handling */
 
 /* YBOS control file header (private structure) */
 typedef struct{
@@ -146,12 +145,12 @@ typedef struct{
   INT current_read_byte;
   INT run_number;
   INT spare;
-} YBOS_CFILE;
+} YM_CFILE;
 
 /* YBOS path file header (private structure) */
 typedef struct{
   char path[128];
-} YBOS_PFILE;
+} YM_PFILE;
 
 /* YBOS file replay handler (for multiple file entries) */
 typedef struct {
@@ -160,7 +159,7 @@ typedef struct {
   INT current_fragment;
   INT current_read_byte;
   char path[MAX_FILE_PATH];
-} R_YBOS_FILE;
+} R_YM_FILE;
 
 /*---- data structures for YBOS format -----------------------------*/
 
@@ -208,6 +207,7 @@ void  EXPRT display_any_physrec(INT data_fmt, INT dsp_fmt);
 void  EXPRT display_any_physhead(INT data_fmt, INT dsp_fmt);
 void  EXPRT display_any_evtlen(INT data_fmt, INT dsp_fmt);
 
+INT   EXPRT any_magta_write( INT logH, INT fmt, char *pwt, INT nbytes);
 INT   EXPRT get_any_physrec(INT data_fmt);
 INT   EXPRT get_any_event(INT data_fmt, INT bl, void *prevent);
 INT   EXPRT skip_any_physrec(INT data_fmt, INT bl);
@@ -220,8 +220,8 @@ INT   EXPRT open_any_logfile (INT log_type, INT data_fmt, char * device_name, HN
 INT   EXPRT close_any_logfile (INT log_type, HNDLE hDev);
 INT   EXPRT ybos_magta_write(INT logH, char *pwt, INT nbytes);
 INT   EXPRT ybos_odb_file_dump(INT hBuf, INT ev_ID, INT run_number, char * path);
-INT   EXPRT ybos_feodb_file_dump(EQUIPMENT * eqp, DWORD* pevent, INT run_number, char * path);
-INT   EXPRT ybos_file_compose(char * pevent, char * path, INT file_mode);
+INT   EXPRT feodb_file_dump(EQUIPMENT * eqp, char * name, char *pevent, INT run_number, char * path);
+INT   EXPRT file_recompose(char * pevent, INT fmt, char * path, INT file_mode);
 
 void  EXPRT ybk_init(DWORD *pevent);
 void  EXPRT ybk_create(DWORD *pevent, char *bname, DWORD bt, DWORD *pbkdat);
