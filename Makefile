@@ -7,6 +7,10 @@
 #  Contents:     Makefile for MIDAS binaries and examples under unix
 #
 #  $Log$
+#  Revision 1.58  2004/09/18 04:10:12  olchansk
+#  Per discussion with Stefan, make the default to build and use static libmidas.a.
+#  To build midas with the dynamic libmidas.so, use "make NEED_SHLIB=1"
+#
 #  Revision 1.57  2004/09/18 04:06:00  olchansk
 #  Add -Wuninitialized to CFLAGS
 #  Add removal of library files to "make clean"
@@ -245,7 +249,7 @@ MIDAS_PREF_FLAGS  =
 # To link midas with the static libmidas.a, say "make ... NEED_SHLIB="
 # To link midas with the shared libmidas.so, say "make ... NEED_SHLIB=1"
 #
-NEED_SHLIB=1
+NEED_SHLIB=
 
 #
 # Option to set the shared library path on MIDAS executables
