@@ -6,6 +6,9 @@
   Contents:     Speaks midas messages (UNIX version)
 
   $Log$
+  Revision 1.5  1999/11/29 17:51:29  pierre
+  - add daemon startup (-D)
+
   Revision 1.4  1999/07/15 23:49:29  pierre
   -Fix last char of the line being ignored
 
@@ -103,6 +106,7 @@ char str[256], *pc, *sp;
 /*------------------------------------------------------------------*/
 int main(int argc, char *argv[])
 {
+  BOOL   daemon=FALSE;
   INT    status, i, ch;
   char   host_name[NAME_LENGTH];
   char   exp_name[NAME_LENGTH];
@@ -116,6 +120,8 @@ int main(int argc, char *argv[])
     {
       if (argv[i][0] == '-' && argv[i][1] == 'd')
 	debug = TRUE;
+      else if (argv[i][0] == '-' && argv[i][1] == 'D')
+	daemon = TRUE;
       else if (argv[i][0] == '-')
 	{
 	  if (i+1 >= argc || argv[i+1][0] == '-')
@@ -129,13 +135,19 @@ int main(int argc, char *argv[])
 	  else
         {
 usage:
-        printf("usage: mlxspeaker [-h Hostname] [-e Experiment] [-c command]\n");
+        printf("usage: mlxspeaker [-h Hostname] [-e Experiment] [-c command] [-D] daemon\n");
 	printf("  where `command' is used to start the speech synthesizer,\n" );
 	printf("  which should read text from it's standard input.\n" );
 	printf("   eg: mlxspeaker -c 'festival --tts -'\n\n" );
         return 0;
         }
       }
+    }
+
+  if (daemon)
+    {
+      printf("Becoming a daemon...\n");
+      ss_daemon_init();
     }
 
   /* now connect to server */
