@@ -40,6 +40,7 @@ zip -p mscb%version%.zip embedded/*.Uv2
 zip -p mscb%version%.zip embedded/*.hex
 
 zip -p mscb%version%.zip labview/*.dll
+zip -p mscb%version%.zip labview/*.llb
 zip -p mscb%version%.zip labview/*.vi
 
 zip -p mscb%version%.zip drivers/windows/mscbusb.inf
