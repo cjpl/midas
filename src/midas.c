@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.158  2002/05/22 06:07:01  midas
+  Call bm_defragment_event for both EVENTID_FRAG1 and EVENTID_FRAG
+
   Revision 1.157  2002/05/22 05:43:32  midas
   Added extra variables to hs_enum_vars for mhist to display array size
 
@@ -7771,7 +7774,8 @@ CACHE_FULL:
           bm_match_event(_request_list[i].event_id,
                          _request_list[i].trigger_mask, _event_buffer))
     {
-    if ((_event_buffer->event_id & 0xF000) == 0xC000)
+    if ((_event_buffer->event_id & 0xF000) == EVENTID_FRAG1 ||
+        (_event_buffer->event_id & 0xF000) == EVENTID_FRAG)
       bm_defragment_event(buffer_handle, i, _event_buffer,
                           (void *)(((EVENT_HEADER *) _event_buffer)+1),
                           _request_list[i].dispatcher);
@@ -8076,7 +8080,8 @@ static BOOL          bMoreLast = FALSE;
                bm_match_event(_request_list[i].event_id,
                               _request_list[i].trigger_mask, _event_buffer))
           {
-          if ((_event_buffer->event_id & 0xF000) == 0xC000)
+          if ((_event_buffer->event_id & 0xF000) == EVENTID_FRAG1 ||
+              (_event_buffer->event_id & 0xF000) == EVENTID_FRAG)
             bm_defragment_event(_request_list[i].buffer_handle, i, _event_buffer,
                                 (void *)(((EVENT_HEADER *) _event_buffer)+1),
                                 _request_list[i].dispatcher);
