@@ -6,6 +6,9 @@
   Contents:     Speaks midas messages
 
   $Log$
+  Revision 1.4  2000/04/05 08:24:26  midas
+  Changed speech font which crashed program
+
   Revision 1.3  1999/07/06 09:03:16  midas
   Changed include directory for provoice to c:
 
@@ -130,7 +133,8 @@ usage:
           host_name[0] ? host_name : "local host");
 
   //  register to SB
-  lpSCB = OpenSpeech(0, 0, "Esnb1k8"); 
+  // lpSCB = OpenSpeech(0, 0, "Esnb1k8"); 
+  lpSCB = OpenSpeech(0, 0, NULL); 
 	if (lpSCB == NULL)
 	  {
 		printf("Cannot allocate Speech Control Block\n");
