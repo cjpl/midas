@@ -6,6 +6,9 @@
   Contents:     MIDAS logger program
 
   $Log$
+  Revision 1.13  1999/06/28 12:36:00  midas
+  Added period limit for writing histories
+
   Revision 1.12  1999/06/25 08:29:01  midas
   Fixed bug which prevented logge to write data when JMidas is open
 
@@ -72,6 +75,8 @@ struct {
   void  *buffer;
   INT   buffer_size;
   HNDLE hKeyVar;
+  DWORD period;
+  DWORD last_log;
 } hist_log[MAX_EVENTS];
 
 HNDLE hDB;
@@ -1425,6 +1430,8 @@ BOOL     single_names;
   hist_log[0].hKeyVar = hKeyRoot;
   hist_log[0].buffer_size = size;
   hist_log[0].buffer = malloc(size);
+  hist_log[0].period = 10; /* 10 sec default period */
+  hist_log[0].last_log = 0;
   if (hist_log[0].buffer == NULL)
     {
     cm_msg(MERROR, "open_history", "cannot allocate history buffer");
@@ -1452,7 +1459,7 @@ BOOL     single_names;
     db_get_value(hDB, hKeyEq, "Common/Log history", &history, &size, TID_INT);
 
     /* define history tags only if log history flag is on */
-    if (history)
+    if (history > 0)
       {
       /* get equipment name */
       db_get_key(hDB, hKeyEq, &key);
@@ -1557,6 +1564,8 @@ BOOL     single_names;
       db_get_record_size(hDB, hKeyVar, 0, &size); 
       hist_log[index+1].buffer_size = size;
       hist_log[index+1].buffer = malloc(size);
+      hist_log[index+1].period = history;
+      hist_log[index+1].last_log = 0;
       if (hist_log[index+1].buffer == NULL)
         {
         cm_msg(MERROR, "open_history", "cannot allocate history buffer");
@@ -1575,6 +1584,7 @@ BOOL     single_names;
       hist_log[index+1].hKeyVar = 0;
       hist_log[index+1].buffer = NULL;
       hist_log[index+1].buffer_size = 0;
+      hist_log[index+1].period = 0;
       }
     }
 
@@ -1623,6 +1633,10 @@ INT i, size;
   if (i == MAX_EVENTS)
     return;
 
+  /* check if over period */
+  if (ss_time() - hist_log[i].last_log < hist_log[i].period)
+    return;
+
   /* check if event size has changed */
   db_get_record_size(hDB, hKey, 0, &size); 
   if (size != hist_log[i].buffer_size)
@@ -1632,6 +1646,7 @@ INT i, size;
     }
 
   hs_write_event(hist_log[i].event_id, hist_log[i].buffer, hist_log[i].buffer_size);
+  hist_log[i].last_log = ss_time();
 }
 
 /*------------------------------------------------------------------*/
@@ -1640,6 +1655,10 @@ void log_system_history(HNDLE hDB, HNDLE hKey, void *info)
 {
 INT   i, size, total_size, status;
 KEY   key;
+
+  /* check if over period */
+  if (ss_time() - hist_log[0].last_log < hist_log[0].period)
+    return;
 
   for (i=0,total_size=0 ; ; i++)
     {
@@ -1660,6 +1679,8 @@ KEY   key;
     }
   else
     hs_write_event(0, hist_log[0].buffer, hist_log[0].buffer_size);
+
+  hist_log[0].last_log = ss_time();
 
   /* simulate odb key update for hot links connected to system history */
   db_notify_clients(hDB, hist_log[0].hKeyVar, FALSE);
