@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.81  2001/04/04 04:12:08  midas
+  changed slow control commands
+
   Revision 1.80  2001/02/26 11:57:46  midas
   Added CMD_READ and CMD_WRITE
 
@@ -784,12 +787,13 @@ Convert the coded LAM station to Station number.
 #define CMD_GET_CURRENT             (1<<7)
 #define CMD_GET_CURRENT_ALL         (1<<8)
 #define CMD_SET_CURRENT_LIMIT       (1<<9)
-#define CMD_GET_DEMAND             (1<<10)
-#define CMD_GET_DEFAULT_NAME       (1<<11)
-#define CMD_GET_DEFAULT_THRESHOLD  (1<<12)
-#define CMD_SET_LABEL              (1<<13)
-#define CMD_ENABLE_COMMAND         (1<<14)
-#define CMD_DISABLE_COMMAND        (1<<15)
+#define CMD_SET_CURRENT_LIMIT_ALL  (1<<10)
+#define CMD_GET_DEMAND             (1<<11)
+#define CMD_GET_DEFAULT_NAME       (1<<12)
+#define CMD_GET_DEFAULT_THRESHOLD  (1<<13)
+#define CMD_SET_LABEL              (1<<14)
+#define CMD_ENABLE_COMMAND         (1<<15)
+#define CMD_DISABLE_COMMAND        (1<<16)
 
 /* Bus driver commands */
 #define CMD_WRITE                   100
