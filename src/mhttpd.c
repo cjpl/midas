@@ -6,6 +6,9 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
+  Revision 1.4  1998/10/28 12:25:13  midas
+  Fixed bug causing comments in start page being truncated
+
   Revision 1.3  1998/10/23 14:21:49  midas
   - Modified version scheme from 1.06 to 1.6.0
   - cm_get_version() now returns versino as string
@@ -1345,7 +1348,7 @@ char  data_str[256];
 
         db_sprintf(data_str, data, key.item_size, j, key.type);
         
-        rsprintf("<td><input type=text size=20 maxlenth=80 name=x%d value=%s></tr>\n",
+        rsprintf("<td><input type=text size=20 maxlenth=80 name=x%d value=\"%s\"></tr>\n",
                  n++, data_str);
         }
       }
