@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.34  2001/08/28 10:20:59  midas
+  Changed default colors
+
   Revision 1.33  2001/08/28 08:32:00  midas
   Major changes for revision 1.1.0
 
@@ -143,9 +146,11 @@ typedef unsigned long int DWORD;
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <sys/time.h>
+#include <sys/types.h>
 #include <unistd.h>
 #include <signal.h>
 #include <time.h>
+#include <dirent.h>
 
 #define closesocket(s) close(s)
 #define O_BINARY 0
@@ -712,36 +717,36 @@ typedef struct {
 THEME default_theme [] = {
 
   "Table width",            "100%",      
-  "Frame color",            "#FFFFFF",   
-  "Cell BGColor",           "#FFFFFF",   
-  "Border width",           "3",         
+  "Frame color",            "#486090",   
+  "Cell BGColor",           "#E6E6E6",   
+  "Border width",           "0",         
                                          
-  "Title BGColor",          "#A0A0FF",   
-  "Title Fontcolor",        "#000000",   
-  "Title Cellpadding",      "5",         
-  "Title Image",            "",          
+  "Title BGColor",          "#486090",   
+  "Title Fontcolor",        "#FFFFFF",   
+  "Title Cellpadding",      "0",         
+  "Title Image",            "elog.gif",          
                                          
-  "Merge menus",            "0",
-  "Use buttons",            "1",
+  "Merge menus",            "1",
+  "Use buttons",            "0",
 
-  "Menu1 BGColor",          "#C0C0C0",   
+  "Menu1 BGColor",          "#E0E0E0",   
   "Menu1 Align",            "left",      
-  "Menu1 Cellpadding",      "3",         
+  "Menu1 Cellpadding",      "0",         
                                          
-  "Menu2 BGColor",          "#E0E0E0",   
-  "Menu2 Align",            "left",      
-  "Menu2 Cellpadding",      "3",         
+  "Menu2 BGColor",          "#FFFFB0",   
+  "Menu2 Align",            "center",      
+  "Menu2 Cellpadding",      "0",         
   "Menu2 use images",       "0",
   
   "Categories cellpadding", "3",
   "Categories border",      "0",
   "Categories BGColor1",    "#CCCCFF",
-  "Categories BGColor2",    "#A0FFA0",
+  "Categories BGColor2",    "#DDEEBB",
 
   "Text BGColor",           "#FFFFFF",
 
-  "List bgcolor1",          "#FFFFFF",
-  "List bgcolor2",          "#FFFFFF",
+  "List bgcolor1",          "#DDEEBB",
+  "List bgcolor2",          "#FFFFB0",
 
   ""
 
@@ -2234,9 +2239,9 @@ int  i;
       url_encode(ref);
 
       if (equal_ustring(str, logbook))
-        rsprintf("<td bgcolor=%s><font color=%s>%s</font></td>\n", gt("Title BGColor"), gt("Title fontcolor"), str);
+        rsprintf("<td nowrap bgcolor=%s><font color=%s>%s</font></td>\n", gt("Title BGColor"), gt("Title fontcolor"), str);
       else
-        rsprintf("<td bgcolor=#E0E0E0><a href=\"%s%s\">%s</a></td>\n", elogd_url, ref, str);
+        rsprintf("<td nowrap bgcolor=#E0E0E0><a href=\"%s%s\">%s</a></td>\n", elogd_url, ref, str);
       rsprintf("<td width=10 bgcolor=#FFFFFF>&nbsp;</td>\n"); 
       }
     rsprintf("<td width=100%% bgcolor=#FFFFFF>&nbsp;</td>\n"); 
@@ -3341,7 +3346,12 @@ FILE   *f;
           rsprintf("<td bgcolor=%s>%s&nbsp</td>", col, category);
           rsprintf("<td bgcolor=%s>%s&nbsp;</td>", col, subject);
 
-          rsprintf("</tr><tr><td bgcolor=#FFFFFF colspan=5>");
+          if (atoi(getparam("all")) == 1)
+            colspan = 6;
+          else
+            colspan = 5;
+
+          rsprintf("</tr><tr><td bgcolor=#FFFFFF colspan=%d>", colspan);
         
           if (equal_ustring(encoding, "plain"))
             {
@@ -3379,7 +3389,6 @@ FILE   *f;
                 }
               else
                 {
-                colspan = 5;
                 if (strstr(str, ".GIF") ||
                     strstr(str, ".JPG"))
                   {
@@ -4182,7 +4191,7 @@ BOOL  allow_delete, allow_edit;
     
     /*---- message text ----*/
 
-    rsprintf("<tr><td><table width=100%% border=0 cellpadding=0 cellspacing=1 bgcolor=#FFFFFF>\n");
+    rsprintf("<tr><td><table width=100%% border=0 cellpadding=1 cellspacing=1 bgcolor=%s>\n", gt("Frame color"));
     rsprintf("<tr><td bgcolor=%s><br>\n", gt("Text BGColor"));
     
     if (equal_ustring(encoding, "plain"))
@@ -4220,7 +4229,7 @@ BOOL  allow_delete, allow_edit;
 
         sprintf(ref, "%s%s/%s", elogd_url, logbook_enc, attachment[index]);
 
-        rsprintf("<tr><td><table width=100%% border=0 cellpadding=0 cellspacing=1 bgcolor=#FFFFFF>\n");
+        rsprintf("<tr><td><table width=100%% border=0 cellpadding=0 cellspacing=1 bgcolor=%s>\n", gt("Frame color"));
 
         rsprintf("<tr><td nowrap width=10%% bgcolor=%s><b>Attachment %d:</b></td>", 
                  gt("Categories bgcolor1"), index+1);
@@ -4239,7 +4248,7 @@ BOOL  allow_delete, allow_edit;
         if (strstr(att, ".GIF") ||
             strstr(att, ".JPG"))
           {
-          rsprintf("<tr><td><table width=100%% border=0 cellpadding=0 cellspacing=1 bgcolor=#FFFFFF>\n");
+          rsprintf("<tr><td><table width=100%% border=0 cellpadding=0 cellspacing=1 bgcolor=%s>\n", gt("Frame color"));
           rsprintf("<tr><td bgcolor=%s>", gt("Text bgcolor"));
           rsprintf("<img src=\"%s\"></td></tr>", ref);
           rsprintf("</table></td></tr>\n\n");
@@ -4251,7 +4260,7 @@ BOOL  allow_delete, allow_edit;
               strchr(att, '.') == NULL)
             {
             /* display attachment */
-            rsprintf("<tr><td><table width=100%% border=0 cellpadding=0 cellspacing=1 bgcolor=#FFFFFF>\n");
+            rsprintf("<tr><td><table width=100%% border=0 cellpadding=0 cellspacing=1 bgcolor=%s>\n", gt("Frame color"));
             rsprintf("<tr><td bgcolor=%s>", gt("Text bgcolor"));
             if (!strstr(att, ".HTML"))
               rsprintf("<br><pre>");
@@ -4398,9 +4407,12 @@ char str[80], logbook[80];
 
   rsprintf("<body>\n\n");
 
-  rsprintf("<table border=3 cellpadding=5><tr><td colspan=2 bgcolor=#80FF80>\n");
+  rsprintf("<p><p><p><table border=0 width=50%% bgcolor=#486090 cellpadding=0 cellspacing=0 align=center>");
+  rsprintf("<tr><td><table cellpadding=5 cellspacing=1 border=0 width=100%% bgcolor=#486090>\n");
+  
+  rsprintf("<tr><td align=center colspan=2 bgcolor=#486090><font size=5 color=#FFFFFF>\n");
   rsprintf("Several logbooks are defined on this host.<BR>\n");
-  rsprintf("Please select the one to connect to:</td><tr>\n");
+  rsprintf("Please select the one to connect to:</font></td></tr>\n");
 
   for (i=0 ;  ; i++)
     {
@@ -4412,14 +4424,14 @@ char str[80], logbook[80];
 
     strcpy(str, logbook);
     url_encode(str);
-    rsprintf("<tr><td bgcolor=#FFFF00><a href=\"%s%s\">%s</a>", elogd_url, str, logbook);
+    rsprintf("<tr><td bgcolor=#CCCCFF><a href=\"%s%s\">%s</a></td>", elogd_url, str, logbook);
 
     str[0] = 0;
     getcfg(logbook, "Comment", str);
-    rsprintf("<td>%s</td></tr>\n", str);
+    rsprintf("<td bgcolor=#DDEEBB>%s&nbsp;</td></tr>\n", str);
     }
 
-  rsprintf("</table></body>\n");
+  rsprintf("</table></td></tr></table></body>\n");
   rsprintf("</html>\r\n");
   
 }
