@@ -6,6 +6,9 @@
   Contents:     Header fiel for MSCB funcions
 
   $Log$
+  Revision 1.39  2004/12/15 17:04:34  midas
+  Added TRUE/FALSE
+
   Revision 1.38  2004/12/10 11:21:51  midas
   Changed baud rates
 
@@ -353,7 +356,11 @@ extern "C" {
 }
 #endif
 /* define missing linux functions */
-#if defined(OS_UNIX)
+#if defined(__linux__)
+#ifndef TRUE
+#define TRUE 1
+#define FALSE 0
+#endif
 int kbhit();
 #define getch() getchar()
 #define Sleep(x) usleep(x*1000)
