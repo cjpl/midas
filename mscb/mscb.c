@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus communication functions
 
   $Log$
+  Revision 1.45  2003/09/23 09:25:26  midas
+  Added RPC call for mscb_addr
+
   Revision 1.44  2003/07/18 07:40:07  midas
   Version 1.4.9
 
@@ -138,7 +141,7 @@
 
 \********************************************************************/
 
-#define MSCB_LIBRARY_VERSION   "1.4.9"
+#define MSCB_LIBRARY_VERSION   "1.5.0"
 #define MSCB_PROTOCOL_VERSION  "1.4"
 
 #ifdef _MSC_VER           // Windows includes
@@ -1088,6 +1091,12 @@ int mscb_addr(int fd, int cmd, int adr, int retry)
 {
 unsigned char buf[10];
 int i, n, status;
+
+  if (mrpc_connected())
+    return mrpc_call(RPC_MSCB_ADDR, fd, cmd, adr, retry);
+
+  if (fd < 1 || mscb_fd[fd-1].fd == 0)
+    return MSCB_INVAL_PARAM;
 
   for (n = 0 ; n < retry ; n++)
     {

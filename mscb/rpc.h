@@ -6,6 +6,9 @@
   Contents:     Header fiel for MSCB RPC funcions
 
   $Log$
+  Revision 1.8  2003/09/23 09:25:27  midas
+  Added RPC call for mscb_addr
+
   Revision 1.7  2003/05/12 10:30:45  midas
   Fixed name collisions with midas library
 
@@ -121,6 +124,7 @@ typedef struct {
 #define RPC_MSCB_USER             15
 #define RPC_MSCB_ECHO             16
 #define RPC_MSCB_SET_NAME         17
+#define RPC_MSCB_ADDR             18
 
 /*------------------------------------------------------------------*/
 

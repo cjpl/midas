@@ -6,6 +6,9 @@
   Contents:     List of MSCB RPC functions with parameters
 
   $Log$
+  Revision 1.12  2003/09/23 09:25:26  midas
+  Added RPC call for mscb_addr
+
   Revision 1.11  2003/05/12 10:41:38  midas
   Fixed compiler warnings
 
@@ -188,6 +191,13 @@ static RPC_LIST rpc_list[] = {
      {TID_INT,        RPC_IN}, 
      {TID_BYTE,       RPC_IN},
      {TID_BYTE,       RPC_OUT},
+     {0} }},
+
+  { RPC_MSCB_ADDR, "mscb_addr",
+    {{TID_INT,        RPC_IN}, 
+     {TID_INT,        RPC_IN}, 
+     {TID_INT,        RPC_IN},
+     {TID_INT,        RPC_IN},
      {0} }},
 
   { 0 }
@@ -407,6 +417,10 @@ int status;
 
     case RPC_MSCB_USER:
       status = mscb_user(CINT(0), CINT(1), CARRAY(2), CINT(3), CARRAY(4), CPINT(5));
+      break;
+
+    case RPC_MSCB_ADDR:
+      status = mscb_addr(CINT(0), CINT(1), CINT(2), CINT(3));
       break;
     }
 
