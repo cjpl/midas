@@ -6,6 +6,9 @@
 #  Contents:     Makefile for MIDAS binaries and examples under unix
 #
 #  $Log$
+#  Revision 1.13  1999/09/14 15:32:09  midas
+#  Added elog
+#
 #  Revision 1.12  1999/08/24 13:44:25  midas
 #  Added odbhist
 #
@@ -190,7 +193,7 @@ PROGS = $(BIN_DIR)/mserver $(BIN_DIR)/mhttpd \
 	$(BIN_DIR)/mstat $(BIN_DIR)/mcnaf \
 	$(BIN_DIR)/mdump $(BIN_DIR)/lazylogger \
 	$(BIN_DIR)/mlxspeaker $(BIN_DIR)/dio \
-	$(BIN_DIR)/odbhist
+	$(BIN_DIR)/odbhist $(BIN_DIR)/elog
 
 OBJS =  $(LIB_DIR)/midas.o $(LIB_DIR)/system.o $(LIB_DIR)/mrpc.o \
 	$(LIB_DIR)/odb.o $(LIB_DIR)/ybos.o $(LIB_DIR)/ftplib.o
@@ -333,7 +336,7 @@ install:
 	@echo "... Installing utilities to $(SYSBIN_DIR)"
 	@echo "... "
 
-	@for i in mhist odbhist mtape mstat lazylogger mdump mcnaf mlxspeaker ; \
+	@for i in mhist odbhist elog mtape mstat lazylogger mdump mcnaf mlxspeaker ; \
 	  do \
 	  echo $$i ; \
 	  rm -f $(SYSBIN_DIR)/$$i ; \
