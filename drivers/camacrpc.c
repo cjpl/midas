@@ -8,6 +8,9 @@
                 CAMAC frontend (mfe.c)
 
   $Log$
+  Revision 1.4  1998/10/13 07:23:21  midas
+  Added void to cam_interrupt_attach(void (*isr)(void))
+
   Revision 1.3  1998/10/12 09:34:08  midas
   -SR- added back CNAF_TEST instead of CNAF. This way, no CAMAC cycle is executed
        during the test.
@@ -600,7 +603,7 @@ void cam_interrupt_disable(void)
 
 /*------------------------------------------------------------------*/
 
-void cam_interrupt_attach(void (*isr)())
+void cam_interrupt_attach(void (*isr)(void))
 { 
 }
 
