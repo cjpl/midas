@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.241  2003/03/26 21:05:15  midas
+  Switched to POST method for changing ODB values (for large multi-line entries)
+
   Revision 1.240  2003/03/26 16:19:32  midas
   Replaced 50000 by TEXT_SIZE
 
@@ -1193,6 +1196,7 @@ void redirect(char *path)
   /* redirect */
   rsprintf("HTTP/1.0 302 Found\r\n");
   rsprintf("Server: MIDAS HTTP %s\r\n", cm_get_version());
+  rsprintf("Content-Type: text/html; charset=iso-8859-1\r\n");
 
   if (exp_name[0])
     {
@@ -1202,7 +1206,7 @@ void redirect(char *path)
       rsprintf("Location: /%s?exp=%s\n\n<html>redir</html>\r\n", path, exp_name);
     }
   else
-    rsprintf("Location: /%s\n\n<html>redir</html>\r\n", path);
+    rsprintf("Location: /%s\r\n\r\n<html>redir</html>\r\n", path);
 }
 
 void redirect2(char *path)
@@ -1341,7 +1345,7 @@ void show_help_page()
 
 /*------------------------------------------------------------------*/
 
-void show_header(HNDLE hDB, char *title, char *path, int colspan, int refresh)
+void show_header(HNDLE hDB, char *title, char *method, char *path, int colspan, int refresh)
 {
 time_t now;
 char   str[256];
@@ -1360,7 +1364,11 @@ int    size;
     rsprintf("<meta http-equiv=\"Refresh\" content=\"%02d\">\n", refresh);
 
   rsprintf("<title>%s</title></head>\n", title);
-  rsprintf("<body><form name=\"form1\" method=\"GET\" action=\"/%s\">\n\n", path);
+
+  if (equal_ustring(method, "POST"))
+    rsprintf("<body><form name=\"form1\" method=\"POST\" action=\"/%s\" enctype=\"multipart/form-data\">\n\n", path);
+  else
+    rsprintf("<body><form name=\"form1\" method=\"%s\" action=\"/%s\">\n\n", method, path);
 
   /* title row */
 
@@ -2404,7 +2412,7 @@ KEY    key;
   rsprintf("Content-Type: text/html; charset=iso-8859-1\r\n\r\n");
 
   rsprintf("<html><head><title>MIDAS ELog</title></head>\n");
-  rsprintf("<body><form method=\"POST\" action=\"/\" enctype=\"multipart/form-data\">\n");
+  rsprintf("<body><form method=\"POST\" action=\"/EL/\" enctype=\"multipart/form-data\">\n");
 
   /* define hidden field for experiment */
   if (exp_name[0])
@@ -2809,7 +2817,7 @@ BOOL   allow_delete;
 
   /* header */
   sprintf(str, "EL/%s", path);
-  show_header(hDB, "Delete ELog entry", str, 1, 0);
+  show_header(hDB, "Delete ELog entry", "GET", str, 1, 0);
 
   if (!allow_delete)
     {
@@ -4641,7 +4649,7 @@ char   data_str[256], hex_str[256];
     }
 
   sprintf(str, "SC/%s/%s", eq_name, group);
-  show_header(hDB, "MIDAS slow control", str, 8, 0);
+  show_header(hDB, "MIDAS slow control", "GET", str, 8, 0);
 
   /*---- menu buttons ----*/
 
@@ -5642,7 +5650,7 @@ char  data_str[256], comment[1000];
 
   cm_get_experiment_database(&hDB, NULL);
 
-  show_header(hDB, "Start run", "", 1, 0);
+  show_header(hDB, "Start run", "GET", "", 1, 0);
 
   rsprintf("<tr><th bgcolor=#A0A0FF colspan=2>Start new run</tr>\n");
   rsprintf("<tr><td>Run number");
@@ -5744,7 +5752,7 @@ KEY    key;
     strcpy(dec_path, "");
     }
 
-  show_header(hDB, "MIDAS online database", enc_path, 1, 0);
+  show_header(hDB, "MIDAS online database", "GET", enc_path, 1, 0);
 
   /* find key via path */
   status = db_find_key(hDB, 0, dec_path, &hkeyroot);
@@ -5992,7 +6000,6 @@ void show_set_page(char *enc_path, char *dec_path, char *group, int index, char 
 int    status, size;
 HNDLE  hDB, hkey;
 KEY    key;
-time_t now;
 char   data_str[TEXT_SIZE], str[256], *p, eq_name[NAME_LENGTH];
 char   data[TEXT_SIZE];
 
@@ -6009,38 +6016,7 @@ char   data[TEXT_SIZE];
       }
     db_get_key(hDB, hkey, &key);
 
-    //show_header(hDB, "Set value", enc_path, 1, 0);
-
-
-    /* header */
-    rsprintf("HTTP/1.0 200 Document follows\r\n");
-    rsprintf("Server: MIDAS HTTP %s\r\n", cm_get_version());
-    rsprintf("Content-Type: text/html; charset=iso-8859-1\r\n\r\n");
-
-    rsprintf("<html><head><title>Set value</title></head>\n");
-    rsprintf("<body><form method=\"POST\" action=\"%s\" enctype=\"multipart/form-data\">\n", enc_path);
-
-    /* define hidden field for experiment */
-    if (exp_name[0])
-      rsprintf("<input type=hidden name=exp value=\"%s\">\n", exp_name);
-
-    rsprintf("<table border=3 cellpadding=5>\n");
-
-    /*---- title row ----*/
-
-    size = sizeof(str);
-    str[0] = 0;
-    db_get_value(hDB, 0, "/Experiment/Name", str, &size, TID_STRING, TRUE);
-
-    /* define hidden field for experiment */
-    if (exp_name[0])
-      rsprintf("<input type=hidden name=exp value=\"%s\">\n", exp_name);
-
-    rsprintf("<table border=3 cellpadding=2>\n");
-    rsprintf("<tr><th colspan=1 bgcolor=\"#A0A0FF\">MIDAS experiment \"%s\"", str);
-
-    time(&now);
-    rsprintf("<th colspan=1 bgcolor=\"#A0A0FF\">%s</tr>\n", ctime(&now));
+    show_header(hDB, "Set value", "POST", enc_path, 1, 0);
 
     if (index >0)
       rsprintf("<input type=hidden name=index value=\"%d\">\n", index);
@@ -6188,7 +6164,7 @@ HNDLE hDB, hkey;
     {
     /* without value, show find dialog */
 
-    show_header(hDB, "Find value", enc_path, 1, 0);
+    show_header(hDB, "Find value", "GET", enc_path, 1, 0);
 
     rsprintf("<tr><th bgcolor=#A0A0FF colspan=2>Find string in Online Database</tr>\n");
     rsprintf("<tr><td>Enter substring (case insensitive)\n");
@@ -6208,7 +6184,7 @@ HNDLE hDB, hkey;
     }
   else
     {
-    show_header(hDB, "Search results", enc_path, 1, 0);
+    show_header(hDB, "Search results", "GET", enc_path, 1, 0);
 
     rsprintf("<tr><td colspan=2 bgcolor=#A0A0A0>\n");
     rsprintf("<input type=submit name=cmd value=Find>\n");
@@ -6248,7 +6224,7 @@ KEY   key;
     {
     /* without value, show create dialog */
 
-    show_header(hDB, "Create ODB entry", enc_path, 1, 0);
+    show_header(hDB, "Create ODB entry", "GET", enc_path, 1, 0);
 
     rsprintf("<tr><th bgcolor=#A0A0FF colspan=2>Create ODB entry</tr>\n");
 
@@ -6370,7 +6346,7 @@ KEY   key;
     {
     /* without value, show delete dialog */
 
-    show_header(hDB, "Delete ODB entry", enc_path, 1, 0);
+    show_header(hDB, "Delete ODB entry", "GET", enc_path, 1, 0);
 
     rsprintf("<tr><th bgcolor=#A0A0FF colspan=2>Delete ODB entry</tr>\n");
 
@@ -6729,7 +6705,7 @@ char  str[256], ref[256], command[256], name[80];
     return;
     }
 
-  show_header(hDB, "Programs", "", 3, 0);
+  show_header(hDB, "Programs", "GET", "", 3, 0);
 
   /*---- menu buttons ----*/
 
@@ -6874,7 +6850,7 @@ HNDLE hDB;
 
   cm_get_experiment_database(&hDB, NULL);
 
-  show_header(hDB, "Configure", "", 1, 0);
+  show_header(hDB, "Configure", "GET", "", 1, 0);
 
   rsprintf("<tr><th bgcolor=#A0A0FF colspan=2>Configure</tr>\n");
 
@@ -8223,7 +8199,7 @@ struct tm *ptms, tms;
   cm_get_experiment_database(&hDB, NULL);
 
   sprintf(str, "HS/%s", path);
-  show_header(hDB, "History", str, 1, 0);
+  show_header(hDB, "History", "GET", str, 1, 0);
 
   /* menu buttons */
   rsprintf("<tr><td colspan=2 bgcolor=#C0C0C0>\n");
@@ -8389,7 +8365,7 @@ char   *hist_col[] =
     }
 
   sprintf(str, "HS/%s", path);
-  show_header(hDB, "History Config", str, 3, 0);
+  show_header(hDB, "History Config", "GET", str, 3, 0);
 
   /* menu buttons */
   rsprintf("<tr><td colspan=6 bgcolor=\"#C0C0C0\">\n");
@@ -8806,7 +8782,7 @@ char   def_button[][NAME_LENGTH] = {"10m", "1h", "3h", "12h", "24h", "3d", "7d" 
   if (equal_ustring(getparam("cmd"), "New"))
     {
     sprintf(str, "HS/%s", path);
-    show_header(hDB, "History", str, 1, 0);
+    show_header(hDB, "History", "GET", str, 1, 0);
     rsprintf("<tr><td align=center bgcolor=\"#FFFF00\" colspan=2>Panel name: &nbsp;&nbsp;");
     rsprintf("<input type=text size=15 maxlength=31 name=panel>\n");
     rsprintf("</td></tr>\n");
@@ -8962,7 +8938,7 @@ char   def_button[][NAME_LENGTH] = {"10m", "1h", "3h", "12h", "24h", "3d", "7d" 
     }
 
   sprintf(str, "HS/%s", path);
-  show_header(hDB, "History", str, 1, offset == 0 ? refresh : 0);
+  show_header(hDB, "History", "GET", str, 1, offset == 0 ? refresh : 0);
 
   /* menu buttons */
   rsprintf("<tr><td colspan=2 bgcolor=\"#C0C0C0\">\n");
@@ -10043,15 +10019,23 @@ char *p, *pitem;
 
 /*------------------------------------------------------------------*/
 
-void decode_post(char *string, char *boundary, int length,
+void decode_post(char *header, char *string, char *boundary, int length,
                  char *cookie_pwd, char *cookie_wpwd, int refresh)
 {
-char *pinit, *p, *pitem, *ptmp, file_name[256], str[256];
+char *pinit, *p, *pitem, *ptmp, file_name[256], str[256], path[256];
 int  n;
 
   initparam();
-  _attachment_size[0] = _attachment_size[1] = _attachment_size[2] = 0;
 
+  strncpy(path, header+1, sizeof(path)); /* strip leading '/' */
+  path[255] = 0;
+  if (strchr(path, '?'))
+    *strchr(path, '?') = 0;
+  if (strchr(path, ' '))
+    *strchr(path, ' ') = 0;
+  setparam("path", path);
+  
+  _attachment_size[0] = _attachment_size[1] = _attachment_size[2] = 0;
   pinit = string;
 
   /* return if no boundary defined */
@@ -10154,7 +10138,7 @@ int  n;
 
     } while ((INT)string - (INT)pinit < length);
 
-  interprete(cookie_pwd, cookie_wpwd, "EL/", refresh);
+  interprete(cookie_pwd, cookie_wpwd, path, refresh);
 }
 
 /*------------------------------------------------------------------*/
@@ -10284,8 +10268,8 @@ struct linger        ling;
       /* turn on lingering (borrowed from NCSA httpd code) */
 
       /* outcommented, gave occasional hangups on Linux 
-      ling.l_onoff = 0;
-      ling.l_linger = 0;
+      ling.l_onoff = 1;
+      ling.l_linger = 6;
       setsockopt(_sock, SOL_SOCKET, SO_LINGER, (char *) &ling, sizeof(ling));
       */
 
@@ -10465,7 +10449,7 @@ struct linger        ling;
         }
       else
         {
-        decode_post(net_buffer+header_length, boundary, content_length,
+        decode_post(net_buffer+5, net_buffer+header_length, boundary, content_length,
                     cookie_pwd, cookie_wpwd, refresh);
         }
 
