@@ -6,6 +6,11 @@
   Contents:     Disk to Tape copier for background job
 
   $Log$
+  Revision 1.7  1999/10/13 19:31:28  pierre
+  - Restore mod from version 1.2 and merge by hand! mod 'til 1.6
+  - Implement single "Maintain free space" check.
+  - change purge free space test to INT (+/- 1%)
+
   Revision 1.6  1999/10/13 00:29:26  pierre
   - Added -D for daemon
   - fix return code for ss_file_remove in lazy_main
@@ -106,7 +111,7 @@ Running condition = STRING : [128] ALWAYS\n\
 Data dir = STRING : [256] \n\
 Data format = STRING : [8] MIDAS\n\
 Filename format = STRING : [128] run%05d.mid\n\
-Backup type = STRING : [8] Disk\n\
+Backup type = STRING : [8] Tape\n\
 Path = STRING : [128] \n\
 Capacity (Bytes) = FLOAT : 5e9\n\
 List label= STRING : [128] \n\
@@ -160,7 +165,7 @@ typedef struct {
   char name[32];
 } LAZY_INFO;
 
-LAZY_INFO lazyinfo[MAX_LAZY_CHANNEL]={{0,FALSE,FALSE,"Disk"},{0,FALSE,FALSE,""}
+LAZY_INFO lazyinfo[MAX_LAZY_CHANNEL]={{0,FALSE,FALSE,"Tape"},{0,FALSE,FALSE,""}
                       ,{0,FALSE,FALSE,""},{0,FALSE,FALSE,""}};
 INT channel = -1;
 
@@ -187,11 +192,12 @@ INT  lazy_load_params( HNDLE hDB, HNDLE hKey );
 void build_log_list(char * fmt, char * dir, DIRLOG ** plog);
 INT  build_done_list(HNDLE, INT **);
 INT  cmp_log2donelist (DIRLOG * plog, INT * pdo);
-INT  lazy_log_update(INT action, INT index, INT run, char * label, char * file);
+INT  lazy_log_update(INT action, INT run, char * label, char * file);
 int  lazy_remove_entry(INT ch, LAZY_INFO *, int run);
+void lazy_maintain_check(HNDLE hKey, LAZY_INFO * pLall);
 
 /*------------------------------------------------------------------*/
-INT lazy_log_update(INT action, INT index, INT run, char * label, char * file)
+INT lazy_log_update(INT action, INT run, char * label, char * file)
 {
   char str[MAX_FILE_PATH];
   
@@ -216,9 +222,9 @@ INT lazy_log_update(INT action, INT index, INT run, char * label, char * file)
             run, file);
   
   else if (action == REMOVE_ENTRY)
-    sprintf(str,"%s[%i] %i entry REMOVED", 
-            label, index,  run);
-  
+    sprintf(str,"%s run#%i entry REMOVED", 
+            label, run);
+    
   cm_msg(MINFO, "lazy_log_update", str);
   
   return 0;
@@ -522,6 +528,69 @@ INT lazy_select_purge(HNDLE hKey, LAZY_INFO * pLall, DIRLOG * plog, char * fpufi
 }
 
 /*------------------------------------------------------------------*/
+void lazy_maintain_check(HNDLE hKey, LAZY_INFO * pLall)
+/********************************************************************\
+  Routine: lazy_maintain_check
+  Purpose: Check if the "maintain free space" of any of the other matching
+           channels is != 0. matching correspond to the condition:
+           "data dir" && "filename format"
+           if found != 0 then set to 0 and inform
+  Input:
+   HNDLE          current lazy channel
+   LAZY_INFO      
+  Output:
+  Function value:
+\********************************************************************/
+{
+  INT  size;
+  INT  i, maintain;
+  char dir[256], ff[128];
+  char cdir[256], cff[128];
+
+  /* check is Maintain free is enabled */
+  size = sizeof(maintain);
+  db_get_value(hDB, hKey, "Settings/Maintain free space(%)", &maintain, &size, TID_INT);
+  if (maintain != 0)
+  {
+    /* scan other channels */
+
+    /* get current specification */
+    size = sizeof(cdir);
+    db_get_value(hDB, hKey, "Settings/Data dir", &cdir, &size, TID_STRING);
+    size = sizeof(cff);
+    db_get_value(hDB, hKey, "Settings/filename format", &cff, &size, TID_STRING);
+
+
+    /* build matching dir and ff */
+    for (i=0; i < MAX_LAZY_CHANNEL ; i++)
+    {
+      if (((pLall+i)->hKey) && (hKey != (pLall+i)->hKey))
+      { /* valid channel */
+        size = sizeof(dir);
+        db_get_value(hDB, (pLall+i)->hKey, "Settings/Data dir", &dir, &size, TID_STRING);
+        size = sizeof(ff);
+        db_get_value(hDB, (pLall+i)->hKey, "Settings/filename format", &ff, &size, TID_STRING);
+
+        if ((strcmp(dir, cdir) == 0) && (strcmp(ff, cff) == 0))
+        {
+          /* check "maintain free space" */
+          size = sizeof(maintain);
+          db_get_value(hDB, (pLall+i)->hKey, "Settings/Maintain free space(%)", &maintain, &size, TID_INT);
+          if (maintain)
+          {
+            /* disable and inform */
+            size = sizeof(maintain);
+            maintain= 0;
+            db_set_value(hDB, (pLall+i)->hKey, "Settings/Maintain free space(%)", &maintain, size, 1, TID_INT);
+            cm_msg(MINFO,"lazy_maintain_check","Maintain free space on channel %s has been disable",(pLall+i)->name);
+          }
+        }
+      }  
+    }
+  }
+}
+
+/*------------------------------------------------------------------*/
 int lazy_remove_entry(INT channel, LAZY_INFO * pLall, int run)
 /********************************************************************\
   Routine: lazy_remove_entry
@@ -539,7 +608,7 @@ int lazy_remove_entry(INT channel, LAZY_INFO * pLall, int run)
     -1            run not found
 \********************************************************************/
 {
-  INT    size, i, j, k, saveindex=0;
+  INT    size, i, j, k;
   INT    *potherlist, nother;
   BOOL   found=FALSE;
   HNDLE  hSubkey;
@@ -576,13 +645,10 @@ int lazy_remove_entry(INT channel, LAZY_INFO * pLall, int run)
         for (j=0; j<nother; j++)
         {
           if (*(potherlist+j) == run)
-          {
             found = TRUE;
-      	    saveindex = j;
-          }
 	        if (found)
-	        if (j+1 < nother)
-	          *(potherlist+j) = *(potherlist+j+1);
+	          if (j+1 < nother)
+	            *(potherlist+j) = *(potherlist+j+1);
         }
         /* delete label[] or update label[] */
         if (found)
@@ -592,7 +658,7 @@ int lazy_remove_entry(INT channel, LAZY_INFO * pLall, int run)
             db_set_data(hDB,hSubkey,potherlist,nother*sizeof(INT), nother, TID_INT);
           else
             db_delete_key(hDB,hSubkey,FALSE);
-          lazy_log_update(REMOVE_ENTRY, saveindex, run, (pLall+k)->name, NULL);
+          lazy_log_update(REMOVE_ENTRY, run, (pLall+k)->name, NULL);
         }
       }
     }
@@ -658,9 +724,9 @@ INT lazy_update_list(LAZY_INFO * pLinfo)
       db_set_value(hDB, hKey, lazy.backlabel, &lazyst.cur_run, size, 1, TID_INT);
     }
 
-  lazy_log_update(NEW_FILE, 0, lazyst.cur_run, lazy.backlabel, lazyst.backfile);
+  lazy_log_update(NEW_FILE, lazyst.cur_run, lazy.backlabel, lazyst.backfile);
   
-  if (msg_flag) cm_msg(MUSER,"Lazy","         lazy job %s done!",lazyst.backfile);
+  if (msg_flag) cm_msg(MTALK,"Lazy","         lazy job %s done!",lazyst.backfile);
   
   if (ptape)
     free (ptape);
@@ -911,7 +977,7 @@ INT lazy_copy( char * outfile, char * infile)
   /* force a statistics update on the first loop */
   cpy_loop_time = -2000;
 
-  if (msg_flag) cm_msg(MUSER,"Lazy","Starting lazy job on %s",lazyst.backfile);
+  if (msg_flag) cm_msg(MTALK,"Lazy","Starting lazy job on %s",lazyst.backfile);
   /* infinite loop while copying */
   while (1)
   {  
@@ -1123,6 +1189,9 @@ INT lazy_main (INT channel, LAZY_INFO * pLall)
   size = sizeof(cur_acq_run);
   db_get_value (hDB, 0, "Runinfo/Run number", &cur_acq_run, &size, TID_INT);
   
+  /* update "maintain free space */
+  lazy_maintain_check(pLch->hKey, pLall);
+
   /* check SPACE and purge if necessary = % (1:99) */
   if (lazy.pupercent > 0)
   {
@@ -1156,10 +1225,13 @@ INT lazy_main (INT channel, LAZY_INFO * pLall)
           /* remove file */
           status = ss_file_remove(pufile);
           if (status != 0)
-            cm_msg(MERROR, "Lazy","ss_file_remove not performed %d",status);
+          {
+            cm_msg(MERROR, "Lazy","ss_file_remove not performed (file locked?)%d",status);
+            break;
+          }
           else
           {
-            status = lazy_log_update(REMOVE_FILE, 0, purun, NULL, pufile);
+            status = lazy_log_update(REMOVE_FILE, purun, NULL, pufile);
             donepurge = TRUE;
 
             /* update donelist (remove run entry as the file has been deleted */
@@ -1168,7 +1240,7 @@ INT lazy_main (INT channel, LAZY_INFO * pLall)
           }
         }
         freepercent = 100. * ss_disk_free(lazy.dir) / ss_disk_size(lazy.dir);
-        if (svfree == freepercent)
+        if ((INT)svfree == (INT)freepercent)
           break;
       }
       else
@@ -1330,7 +1402,7 @@ int main(unsigned int argc,char **argv)
     usage:
     printf("usage: lazylogger [-h <Hostname>] [-e <Experiment>]\n");
     printf("                  [-z zap statistics] [-t (talk msg)\n");
-    printf("                  [-c channel name (Disk)\n\n");
+    printf("                  [-c channel name (Disk) -D to start as a daemon\n\n");
     printf(" Quick man :\n");
     printf(" The Lazy/Settings tree is composed of the following parameters:\n");
     printf(" Maintain free space [%](0): purge source device to maintain free space on the source directory\n");
@@ -1374,7 +1446,7 @@ int main(unsigned int argc,char **argv)
   }
 
   /* connect to experiment */
-  status = cm_connect_experiment(host_name, expt_name, "LazyChecker", 0);
+  status = cm_connect_experiment(host_name, expt_name, "Lazy_Tape", 0);
   if (status != CM_SUCCESS)
     return 1;
 
