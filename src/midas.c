@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.34  1999/04/30 10:58:58  midas
+  Added -D debug to screen for mserver
+
   Revision 1.33  1999/04/29 10:48:02  midas
   Implemented "/System/Client Notify" key
 
@@ -190,6 +193,7 @@ static INT            _tcp_rp = 0;
 static INT            _send_sock;
 
 static void           (*_debug_print)(char*) = NULL;
+static INT            _debug_mode = 0;
 
 /* table for transition functions */
 
@@ -232,10 +236,6 @@ ERROR_TABLE _error_table[] =
   { RPC_NET_ERROR, "Cannot connect to remote host" },
   { 0, NULL }
 };
-
-/* this gets set from cm_watchdog if client has been deleted. cm_yield
-evaluates it to notify remote clients */
-static BOOL _client_deleted = FALSE;
 
 /*------------------------------------------------------------------*/
 
@@ -2886,17 +2886,6 @@ BOOL  bMore;
     bm_mark_read_waiting(FALSE);
     }
 
-  /* check if watchdog deleted clients */
-  if (_client_deleted)
-    {
-    HNDLE hDB;
-
-    cm_get_experiment_database(&hDB, NULL);
-    status = 0;
-    db_set_value(hDB, 0, "/System/Client Notify", &status, sizeof(status), 1, TID_INT);
-    _client_deleted = FALSE;
-    }
-
   return status;  
 }
 
@@ -3655,7 +3644,6 @@ char            str[256];
           /* delete client entry after unlocking db */
           if (bDeleted)
             {
-            _client_deleted = TRUE;
             status = cm_delete_client_info(i+1, client_pid);
             if (status != CM_SUCCESS)
               cm_msg(MERROR, "cm_watchdog", "cannot delete client info");
@@ -8107,7 +8095,7 @@ INT rpc_set_name(char *name)
 
 /*------------------------------------------------------------------*/
 
-INT rpc_set_debug(void (*func)(char*))
+INT rpc_set_debug(void (*func)(char*), INT mode)
 /********************************************************************\
 
   Routine: rpc_set_debug
@@ -8118,6 +8106,7 @@ INT rpc_set_debug(void (*func)(char*))
 
   Input:
    void *func(char*)        Pointer to function.
+   INT  mode                Debug mode
 
   Output:
     none
@@ -8128,6 +8117,7 @@ INT rpc_set_debug(void (*func)(char*))
 \********************************************************************/
 {
   _debug_print = func;
+  _debug_mode  = mode;
   return RPC_SUCCESS;
 }
 
@@ -10493,7 +10483,7 @@ static struct callback_addr callback;
         callback.host_port1 = (short) port1;
         callback.host_port2 = (short) port2;
         callback.host_port3 = (short) port3;
-        callback.debug = (_debug_print != NULL);
+        callback.debug = _debug_mode;
 
         /* get the name of the remote host */
 #ifdef OS_VXWORKS

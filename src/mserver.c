@@ -6,6 +6,9 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
+  Revision 1.13  1999/04/30 10:58:59  midas
+  Added -D debug to screen for mserver
+
   Revision 1.12  1999/04/28 15:27:29  midas
   Made hs_read working for Java
 
@@ -129,8 +132,8 @@ main(int argc, char **argv)
 \********************************************************************/
 {
 struct callback_addr callback;
-int    i, flag, size, server_type;
-BOOL   inetd, debug;
+int    i, flag, size, server_type, debug;
+BOOL   inetd;
 
 #ifdef OS_WINNT
   /* init critical section object for open/close buffer */
@@ -161,14 +164,16 @@ BOOL   inetd, debug;
 
   if (argc < 7)
     {
-    debug = FALSE;
+    debug = 0;
     server_type = ST_MPROCESS;
     
     /* parse command line parameters */
     for (i=1 ; i<argc ; i++)
       {
       if (argv[i][0] == '-' && argv[i][1] == 'd')
-        debug = TRUE;
+        debug = 1;
+      else if (argv[i][0] == '-' && argv[i][1] == 'D')
+        debug = 2;
       else if (argv[i][0] == '-' && argv[i][1] == 's')
         server_type = ST_SINGLE;
       else if (argv[i][0] == '-' && argv[i][1] == 't')
@@ -187,6 +192,7 @@ BOOL   inetd, debug;
           printf("               -t    Multi threaded server\n");
           printf("               -m    Multi process server (default)\n");
           printf("               -d    Write debug info to \"mserver.log\"\n\n");
+          printf("               -D    Write debug info to stdout\n\n");
           return 0;
           }
         }
@@ -196,7 +202,10 @@ BOOL   inetd, debug;
     if (debug)
       {
       printf("Debugging mode is on.\n");
-      rpc_set_debug(debug_print);
+      if (debug == 1)
+        rpc_set_debug(debug_print, 1);
+      else
+        rpc_set_debug(puts, 2);
       }
 
     /* if command line parameter given, start according server type */
@@ -298,7 +307,10 @@ BOOL   inetd, debug;
     if (callback.debug)
       {
       printf("Debuggin mode is on.\n");
-      rpc_set_debug(debug_print);
+      if (callback.debug == 1)
+        rpc_set_debug(debug_print, 1);
+      else
+        rpc_set_debug(puts, 2);
       }
 
     rpc_register_server(ST_SUBPROCESS, NULL, NULL, rpc_server_dispatch);
