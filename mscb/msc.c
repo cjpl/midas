@@ -6,6 +6,9 @@
   Contents:     Command-line interface for the Midas Slow Control Bus
 
   $Log$
+  Revision 1.18  2002/11/06 16:47:37  midas
+  Address only needs 'a'
+
   Revision 1.17  2002/11/06 16:46:29  midas
   Keep address on reboot
 
@@ -443,7 +446,7 @@ MSCB_INFO_CHN info_chn;
 
     /* ping/address */
     else if ((param[0][0] == 'p') ||
-             (param[0][0] == 'a' && param[0][1] == 'd'))
+             (param[0][0] == 'a'))
       {
       if (!param[1][0])
         puts("Please specify node address");
