@@ -6,6 +6,9 @@
   Contents:     Calibration program for HVR-500
 
   $Log$
+  Revision 1.3  2003/11/13 12:26:24  midas
+  Remove HV before plugging in 1MOhm resistor
+
   Revision 1.2  2003/09/23 09:24:07  midas
   Added current calibration
 
@@ -94,15 +97,18 @@ MSCB_INFO_VAR info;
     }
 
   printf("\nPlease connect multimeter with 1000V range to output,\n");
-  printf("connect 1000V to input and press ENTER\n");
+  printf("connect 1300V to input and press ENTER\n");
   fgets(str, sizeof(str), stdin);
 
   /* init variables */
   f = 0;
+  d = 0;
   mscb_write(fd, adr, CH_VDEMAND, &f, sizeof(float));
   mscb_write(fd, adr, CH_ADCOFS,  &f, sizeof(float));
   mscb_write(fd, adr, CH_DACOFS,  &f, sizeof(float));
   mscb_write(fd, adr, CH_CUROFS,  &f, sizeof(float));
+  mscb_write(fd, adr, CH_RAMPUP,  &d, sizeof(short));
+  mscb_write(fd, adr, CH_RAMPDOWN,&d, sizeof(short));
 
   f = 1;
   mscb_write(fd, adr, CH_ADCGAIN, &f, sizeof(float));
@@ -182,6 +188,10 @@ MSCB_INFO_VAR info;
   mscb_write(fd, adr, CH_ADCOFS,  &adc_ofs, sizeof(float)); 
   mscb_write(fd, adr, CH_DACGAIN, &dac_gain, sizeof(float));
   mscb_write(fd, adr, CH_DACOFS,  &dac_ofs, sizeof(float));
+
+  /* remove voltage */
+  f = 0;
+  mscb_write(fd, adr, CH_VDEMAND, &f, sizeof(float));
 
   /* init variables */
   f = 0;
