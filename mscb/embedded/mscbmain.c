@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol main program
 
   $Log$
+  Revision 1.39  2004/03/05 12:29:00  midas
+  Fixed bugs with F020
+
   Revision 1.38  2004/03/04 15:27:52  midas
   Download with ACK after 60 bytes
 
@@ -215,6 +218,10 @@ void setup(void)
    P1MDOUT = 0x00;              // P1: LPT
    P2MDOUT = 0x00;              // P2: LPT
    P3MDOUT = 0xE0;              // P3.5,6,7: Optocouplers
+
+   /* Select external quartz oscillator */
+   OSCXCN = 0x67;               // Crystal mode, Power Factor 22E6
+   OSCICN = 0x08;               // CLKSL=1 (external)
 #elif defined(CPU_C8051F310)
    XBR0 = 0x01;                 // Enable RX/TX
    XBR1 = 0x40;                 // Enable crossbar
