@@ -7,6 +7,9 @@
                 linked with user code to form a complete frontend
 
   $Log$
+  Revision 1.19  2000/03/22 14:42:48  midas
+  Fixed bug with invalid pointer
+
   Revision 1.18  2000/03/17 13:00:05  midas
   Frontends use default timeout fo 60 sec.
 
@@ -1008,6 +1011,7 @@ INT opt_max=0, opt_index=0, opt_tcp_size=128, opt_cnt=0;
       if (eq_info->eq_type == EQ_POLLED)
         {
         readout_start = actual_millitime;
+        pevent = NULL;
 
         while ((source = poll_event(eq_info->source, eq->poll_count, FALSE)) > 0)
           {
@@ -1110,7 +1114,7 @@ INT opt_max=0, opt_index=0, opt_tcp_size=128, opt_cnt=0;
           }
 
         /* send event to ODB */
-        if (eq_info->read_on & RO_ODB || eq_info->history)
+        if (pevent && (eq_info->read_on & RO_ODB || eq_info->history))
           {
           if (actual_millitime - eq->last_called > ODB_UPDATE_TIME && pevent != NULL)
             {
