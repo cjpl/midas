@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.190  2002/02/21 15:58:19  midas
+  Fixed a few bugs, thanks to Thomas Prokscha
+
   Revision 1.189  2002/02/12 15:59:36  midas
   Improved time axis, added time query for history
 
@@ -3744,7 +3747,7 @@ int   size, i, run, msg_status, status, fh, length, first_message, last_message,
 char  str[256], orig_path[256], command[80], ref[256], file_name[256];
 char  date[80], author[80], type[80], system[80], subject[256], text[10000],
       orig_tag[80], reply_tag[80], attachment[3][256], encoding[80], att[256];
-HNDLE hDB, hkey, hkeyroot;
+HNDLE hDB, hkey, hkeyroot, hktmp;
 KEY   key;
 FILE  *f;
 BOOL  display_run_number, allow_delete;
@@ -3860,7 +3863,13 @@ BOOL  display_run_number, allow_delete;
       {
       size = sizeof(file_name);
       memset(file_name, 0, size);
-      db_get_value(hDB, 0, "/Logger/Data dir", file_name, &size, TID_STRING);
+      
+      status = db_find_key(hDB, 0, "/Logger/Elog dir", &hktmp);
+      if ( status == DB_SUCCESS)
+	      db_get_value(hDB, 0, "/Logger/Elog dir", file_name, &size, TID_STRING);
+      else
+	      db_get_value(hDB, 0, "/Logger/Data dir", file_name, &size, TID_STRING);
+      
       if (file_name[0] != 0)
         if (file_name[strlen(file_name)-1] != DIR_SEPARATOR)
           strcat(file_name, DIR_SEPARATOR_STR);
@@ -7406,7 +7415,7 @@ double      yb1, yb2, yf1, yf2, ybase;
     }
 
   /* if min and max too close together, switch to linear axis */
-  if (logaxis)
+  if (logaxis && ymin>0 && ymax>0)
     {
     yb1 = pow(10, floor(log(ymin)/LN10));
     yf1 = floor(ymin/yb1);
@@ -7431,7 +7440,7 @@ double      yb1, yb2, yf1, yf2, ybase;
     if (ymax <= 0)
       ymax = 1;
     if (ymin <= 0)
-      ymin = 1E-5f;
+      ymin = 1E-12f;
     }
 
   /* increase limits by 5% */
@@ -7772,7 +7781,7 @@ struct tm *ptms, tms;
     ltime_end += 3600*24;
 
     sprintf(str, "HS/%s?scale=%d&offset=%d", path, ltime_end-ltime_start, 
-            min(ss_time() - ltime_start, 0));
+            min(ltime_end - ss_time(), 0));
     redirect(str);
     return;
     }
