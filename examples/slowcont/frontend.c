@@ -17,6 +17,9 @@
 
 
   $Log$
+  Revision 1.10  2002/06/10 07:15:17  midas
+  Use new DF_xxx flags
+
   Revision 1.9  2002/05/29 13:35:47  midas
   Added max_event_size_frag
 
@@ -82,8 +85,8 @@ DEVICE_DRIVER hv_driver[] = {
 };
 
 DEVICE_DRIVER multi_driver[] = {
-  { "Input",   nulldev, 2, null, CH_INPUT },
-  { "Output",  nulldev, 2, null, CH_OUTPUT },
+  { "Input",   nulldev, 2, null, DF_INPUT },
+  { "Output",  nulldev, 2, null, DF_OUTPUT },
   { "" }
 };
 
