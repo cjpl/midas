@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus communication functions
 
   $Log$
+  Revision 1.29  2003/03/03 15:58:50  midas
+  V1.2.1, fixed communication problem with slow ADuC
+
   Revision 1.28  2003/02/27 10:44:05  midas
   Two-cygle communication with submaster to avoid data collision
 
@@ -90,7 +93,7 @@
 
 \********************************************************************/
 
-#define MSCB_LIBRARY_VERSION   "1.2.0"
+#define MSCB_LIBRARY_VERSION   "1.2.1"
 #define MSCB_PROTOCOL_VERSION  "1.2"
 
 #ifdef _MSC_VER           // Windows includes
@@ -2194,7 +2197,12 @@ unsigned char buf[80];
   if (mscb_lock(fd) != MSCB_SUCCESS)
     return MSCB_MUTEX;
 
-  mscb_addr(fd, CMD_ADDR_NODE16, adr, 1);
+  status = mscb_addr(fd, CMD_PING16, adr, 1);
+  if (status != MSCB_SUCCESS)
+    {
+    mscb_release(fd);
+    return status;
+    }
 
   buf[0] = CMD_ECHO;
   buf[1] = d1;

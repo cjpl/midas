@@ -7,6 +7,9 @@
                 SUBM300 running on Cygnal C8051F021
 
   $Log$
+  Revision 1.7  2003/03/03 15:58:50  midas
+  V1.2.1, fixed communication problem with slow ADuC
+
   Revision 1.6  2003/02/27 10:45:04  midas
   Two-cycle communication to avoid data collision
 
@@ -258,6 +261,9 @@ unsigned char byte;
   /* wait for end of cycle */
   while (LPT_NACK == 0)
     watchdog_refresh();
+
+  /* let slow client node remove RS485 enable */
+  delay_us(50);
 }
 
 /*------------------------------------------------------------------*/
