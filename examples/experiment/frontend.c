@@ -11,6 +11,9 @@
                 one bank (SCLR).
 
   $Log$
+  Revision 1.4  1998/10/29 14:27:46  midas
+  Added note about FE_ERR_HW in frontend_init()
+
   Revision 1.3  1998/10/28 15:50:58  midas
   Changed lam to DWORD
 
@@ -146,6 +149,8 @@ INT frontend_init()
 {
   /* put here hardware initialization */
 
+  /* print message and return FE_ERR_HW if frontend should not be started */
+
   return SUCCESS;
 }
 
@@ -210,7 +215,8 @@ INT poll_event(INT source, INT count, BOOL test)
    is available. If test equals TRUE, don't return. The test
    flag is used to time the polling */
 {
-DWORD i, lam;
+int   i;
+DWORD lam;
 
   for (i=0 ; i<count ; i++)
     {
