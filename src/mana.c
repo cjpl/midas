@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.33  1999/09/23 12:45:48  midas
+  Added 32 bit banks
+
   Revision 1.32  1999/08/20 14:26:24  midas
   Do last.rz existence checking before loading
 
@@ -1569,6 +1572,7 @@ BANK_HEADER    *pbh;
 BANK_LIST      *pbl;
 EVENT_DEF      *event_def;  
 BANK           *pbk;
+BANK32         *pbk32;
 void           *pdata;
 char           *pbuf, name[5], type_name[10];
 LRS1882_DATA   *lrs1882;
@@ -1577,6 +1581,8 @@ LRS1877_HEADER *lrs1877_header;
 HNDLE          hKey;
 KEY            key;
 char           buffer[100000];
+DWORD          bkname;
+WORD           bktype;
 
   event_def = db_get_event_definition(pevent->event_id);
   if (event_def == NULL)
@@ -1600,19 +1606,33 @@ char           buffer[100000];
     {
     pbh = (BANK_HEADER *) (pevent+1);
     pbk = NULL;
+    pbk32 = NULL;
     do
       {
       /* scan all banks */
-      size = bk_iterate(pbh, &pbk, &pdata);
-      if (pbk == NULL)
-        break;
+      if (bk_is32(pbh))
+        {
+        size = bk_iterate32(pbh, &pbk32, &pdata);
+        if (pbk32 == NULL)
+          break;
+        bkname = *((DWORD *) pbk32->name);
+        bktype = (WORD) pbk32->type;
+        }
+      else
+        {
+        size = bk_iterate(pbh, &pbk, &pdata);
+        if (pbk == NULL)
+          break;
+        bkname = *((DWORD *) pbk->name);
+        bktype = (WORD) pbk->type;
+        }
 
       /* look if bank is in exclude list */
       exclude = FALSE;
       pbl = NULL;
       if (par->bank_list != NULL)
         for (i=0 ; par->bank_list[i].name[0] ; i++)
-          if ( *((DWORD *) par->bank_list[i].name) == *((DWORD *) pbk->name))
+          if ( *((DWORD *) par->bank_list[i].name) == bkname )
             {
             pbl = &par->bank_list[i];
             exclude = (pbl->output_flag == 0);
@@ -1621,22 +1641,22 @@ char           buffer[100000];
 
       if (!exclude)
         {
-        if (rpc_tid_size(pbk->type & 0xFF))
-          size /= rpc_tid_size(pbk->type & 0xFF);
+        if (rpc_tid_size(bktype & 0xFF))
+          size /= rpc_tid_size(bktype & 0xFF);
     
-        lrs1882        = (LRS1882_DATA *)   pdata;
-        lrs1877        = (LRS1877_DATA *)   pdata;
+        lrs1882 = (LRS1882_DATA *) pdata;
+        lrs1877 = (LRS1877_DATA *) pdata;
 
         /* write bank header */
-        *((DWORD *) name) = *((DWORD *) (pbk)->name);
+        *((DWORD *) name) = bkname;
 
-        if ((pbk->type & 0xFF00) == 0)
-          strcpy(type_name, rpc_tid_name(pbk->type & 0xFF));
-        else if ((pbk->type & 0xFF00) == TID_LRS1882)
+        if ((bktype & 0xFF00) == 0)
+          strcpy(type_name, rpc_tid_name(bktype & 0xFF));
+        else if ((bktype & 0xFF00) == TID_LRS1882)
           strcpy(type_name, "LRS1882");
-        else if ((pbk->type & 0xFF00) == TID_LRS1877)
+        else if ((bktype & 0xFF00) == TID_LRS1877)
           strcpy(type_name, "LRS1877");
-        else if ((pbk->type & 0xFF00) == TID_PCOS3)
+        else if ((bktype & 0xFF00) == TID_PCOS3)
           strcpy(type_name, "PCOS3");
         else
           strcpy(type_name, "unknown");
@@ -1644,7 +1664,7 @@ char           buffer[100000];
         sprintf(pbuf, "BK %s TP %s SZ %d\n", name, type_name, size);
         STR_INC(pbuf, buffer);
 
-        if (pbk->type == TID_STRUCT)
+        if (bktype == TID_STRUCT)
           {
           if (pbl == NULL)
             cm_msg(MERROR, "write_event_ascii", "received unknown bank %s", name);
@@ -1677,7 +1697,7 @@ char           buffer[100000];
         else
           {
           /* write variable length bank  */
-          if ((pbk->type & 0xFF00) == TID_LRS1877)
+          if ((bktype & 0xFF00) == TID_LRS1877)
             {
             for (i=0 ; i<size ;)
               {
@@ -1706,17 +1726,17 @@ char           buffer[100000];
             }
           else for (i=0 ; i<size ; i++)
             {
-            if ((pbk->type & 0xFF00) == 0)
-              db_sprintf(pbuf, pdata, size, i, pbk->type & 0xFF);
+            if ((bktype & 0xFF00) == 0)
+              db_sprintf(pbuf, pdata, size, i, bktype & 0xFF);
 
-            else if ((pbk->type & 0xFF00) == TID_LRS1882)
+            else if ((bktype & 0xFF00) == TID_LRS1882)
               sprintf(pbuf, "GA %d CH %02d DA %d", 
                 lrs1882[i].geo_addr, lrs1882[i].channel, lrs1882[i].data);
       
-            else if ((pbk->type & 0xFF00) == TID_PCOS3)
+            else if ((bktype & 0xFF00) == TID_PCOS3)
               sprintf(pbuf, ""); /* TBD */
             else
-              db_sprintf(pbuf, pdata, size, i, pbk->type & 0xFF);
+              db_sprintf(pbuf, pdata, size, i, bktype & 0xFF);
 
             strcat(pbuf, "\n");
             STR_INC(pbuf,buffer);
@@ -1784,9 +1804,12 @@ BANK_HEADER    *pbh;
 BANK_LIST      *pbl;
 EVENT_DEF      *event_def;  
 BANK           *pbk;
+BANK32         *pbk32;
 char           *pdata, *pdata_copy;
 char           buffer[NET_TCP_SIZE], *pbuf;
 EVENT_HEADER   *pevent_copy;
+DWORD          bkname, bksize;
+WORD           bktype;
 
   pevent_copy = (EVENT_HEADER *) ALIGN((PTYPE)buffer);
 
@@ -1812,24 +1835,45 @@ EVENT_HEADER   *pevent_copy;
       pbuf = (char *) pevent_copy;
       memcpy(pbuf, pevent, sizeof(EVENT_HEADER));
       pbuf += sizeof(EVENT_HEADER);
-      bk_init(pbuf);
 
       pbh = (BANK_HEADER *) (pevent+1);
+
+      if (bk_is32(pbh))
+        bk_init32(pbuf);
+      else
+        bk_init(pbuf);
+
       pbk = NULL;
+      pbk32 = NULL;
       pdata_copy = pbuf;
       do
         {
         /* scan all banks */
-        size = bk_iterate(pbh, &pbk, &pdata);
-        if (pbk == NULL)
-          break;
+        if (bk_is32(pbh))
+          {
+          size = bk_iterate32(pbh, &pbk32, &pdata);
+          if (pbk32 == NULL)
+            break;
+          bkname = *((DWORD *) pbk32->name);
+          bktype = (WORD) pbk32->type;
+          bksize = pbk32->data_size;
+          }
+        else
+          {
+          size = bk_iterate(pbh, &pbk, &pdata);
+          if (pbk == NULL)
+            break;
+          bkname = *((DWORD *) pbk->name);
+          bktype = (WORD) pbk->type;
+          bksize = pbk->data_size;
+          }
 
         /* look if bank is in exclude list */
         exclude = FALSE;
         pbl = NULL;
         if (par->bank_list != NULL)
           for (i=0 ; par->bank_list[i].name[0] ; i++)
-            if ( *((DWORD *) par->bank_list[i].name) == *((DWORD *) pbk->name))
+            if ( *((DWORD *) par->bank_list[i].name) == bkname)
               {
               pbl = &par->bank_list[i];
               exclude = (pbl->output_flag == 0);
@@ -1839,9 +1883,9 @@ EVENT_HEADER   *pevent_copy;
         if (!exclude)
           {
           /* copy bank */
-          bk_create(pbuf, pbk->name, pbk->type, &pdata_copy);
-          memcpy(pdata_copy, pdata, pbk->data_size);
-          pdata_copy += pbk->data_size;
+          bk_create(pbuf, (char *) (&bkname), bktype, &pdata_copy);
+          memcpy(pdata_copy, pdata, bksize);
+          pdata_copy += bksize;
           bk_close(pbuf, pdata_copy);
           }
 
@@ -1877,16 +1921,20 @@ EVENT_HEADER   *pevent_copy;
 
 INT write_event_hbook(FILE *file, EVENT_HEADER *pevent, ANALYZE_REQUEST *par)
 {
-INT        i, j, k, n, size, item_size, status;
-BANK       *pbk;                      
-BANK_LIST  *pbl;                      
-void       *pdata;                    
-BOOL       exclude, exclude_all;
-char       block_name[5];             
-float      rwnt[512];                 
-EVENT_DEF  *event_def;                
-HNDLE      hkey;
-KEY        key;
+INT         i, j, k, n, size, item_size, status;
+BANK        *pbk;                      
+BANK32      *pbk32;
+BANK_LIST   *pbl;                      
+BANK_HEADER *pbh;
+void        *pdata;                    
+BOOL        exclude, exclude_all;
+char        block_name[5];             
+float       rwnt[512];                 
+EVENT_DEF   *event_def;                
+HNDLE       hkey;
+KEY         key;
+DWORD       bkname;
+WORD        bktype;
 
   /* retunr if N-tuples are disabled */
   if (!ntuple_flag)
@@ -1920,16 +1968,31 @@ KEY        key;
       HFNTB(pevent->event_id, "Number");
 
     pbk = NULL;
+    pbk32 = NULL;
     exclude_all = TRUE;
     do
       {
+      pbh = (BANK_HEADER *) (pevent+1);
       /* scan all banks */
-      size = bk_iterate((BANK_HEADER *) (pevent+1), &pbk, &pdata);
-      if (pbk == NULL)
-        break;
+      if (bk_is32(pbh))
+        {
+        size = bk_iterate32(pbh, &pbk32, &pdata);
+        if (pbk32 == NULL)
+          break;
+        bkname = *((DWORD *) pbk32->name);
+        bktype = (WORD) pbk32->type;
+        }
+      else
+        {
+        size = bk_iterate(pbh, &pbk, &pdata);
+        if (pbk == NULL)
+          break;
+        bkname = *((DWORD *) pbk->name);
+        bktype = (WORD) pbk->type;
+        }
 
       /* look if bank is in exclude list */
-      *((DWORD *) block_name) = *((DWORD *) pbk->name);
+      *((DWORD *) block_name) = bkname;
       block_name[4] = 0;
 
       exclude = FALSE;
@@ -1937,7 +2000,7 @@ KEY        key;
       if (par->bank_list != NULL)
         {
         for (i=0 ; par->bank_list[i].name[0] ; i++)
-          if ( *((DWORD *) par->bank_list[i].name) == *((DWORD *) pbk->name))
+          if ( *((DWORD *) par->bank_list[i].name) == bkname)
             {
             pbl = &par->bank_list[i];
             exclude = (pbl->output_flag == 0);
@@ -1951,9 +2014,9 @@ KEY        key;
       if (!exclude && pbl != NULL && !clp.rwnt)
         {
         /* set array size in bank list */
-        if ((pbk->type & 0xFF) != TID_STRUCT)
+        if ((bktype & 0xFF) != TID_STRUCT)
           {
-          item_size = rpc_tid_size(pbk->type & 0xFF);
+          item_size = rpc_tid_size(bktype & 0xFF);
           if (item_size == 0)
             {
             cm_msg(MERROR, "write_event_hbook", "Received bank %s with unknown item size", block_name);
@@ -1999,9 +2062,9 @@ KEY        key;
         {
         exclude_all = FALSE;
 
-        item_size = rpc_tid_size(pbk->type & 0xFF);
+        item_size = rpc_tid_size(bktype & 0xFF);
         /* set array size in bank list */
-        if ((pbk->type & 0xFF) != TID_STRUCT)
+        if ((bktype & 0xFF) != TID_STRUCT)
           {
           n = size / item_size;
 
@@ -2017,7 +2080,7 @@ KEY        key;
           /* convert bank to float values */
           for (i=0 ; i<n ; i++)
             {
-            switch (pbk->type & 0xFF)
+            switch (bktype & 0xFF)
               {
               case TID_BYTE : 
                 rwnt[pbl->n_data + i] = (float) (*((BYTE *) pdata+i));
@@ -2191,10 +2254,13 @@ INT            status, size, n_data, i;
 BANK_HEADER    *pbh;
 EVENT_DEF      *event_def;  
 BANK           *pbk;
+BANK32         *pbk32;
 void           *pdata;
 char           name[5];
 HNDLE          hKeyRoot, hKey;
 KEY            key;
+DWORD          bkname;
+WORD           bktype;
 
   event_def = db_get_event_definition(pevent->event_id);
   if (event_def == NULL)
@@ -2205,19 +2271,33 @@ KEY            key;
     {
     pbh = (BANK_HEADER *) (pevent+1);
     pbk = NULL;
+    pbk32 = NULL;
     do
       {
       /* scan all banks */
-      size = bk_iterate(pbh, &pbk, &pdata);
-      if (pbk == NULL)
-        break;
+      if (bk_is32(pbh))
+        {
+        size = bk_iterate32(pbh, &pbk32, &pdata);
+        if (pbk32 == NULL)
+          break;
+        bkname = *((DWORD *) pbk32->name);
+        bktype = (WORD) pbk32->type;
+        }
+      else
+        {
+        size = bk_iterate(pbh, &pbk, &pdata);
+        if (pbk == NULL)
+          break;
+        bkname = *((DWORD *) pbk->name);
+        bktype = (WORD) pbk->type;
+        }
 
       n_data = size;
-      if (rpc_tid_size(pbk->type & 0xFF))
-        n_data /= rpc_tid_size(pbk->type & 0xFF);
+      if (rpc_tid_size(bktype & 0xFF))
+        n_data /= rpc_tid_size(bktype & 0xFF);
   
       /* get bank key */
-      *((DWORD *) name) = *((DWORD *) (pbk)->name);
+      *((DWORD *) name) = bkname;
       name[4] = 0;
 
       status = db_find_key(hDB, event_def->hDefKey, name, &hKeyRoot);
@@ -2227,7 +2307,7 @@ KEY            key;
         continue;
         }
 
-      if (pbk->type == TID_STRUCT)
+      if (bktype == TID_STRUCT)
         {
         /* write structured bank */
         for (i=0 ;; i++)

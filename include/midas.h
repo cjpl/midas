@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.43  1999/09/23 12:45:48  midas
+  Added 32 bit banks
+
   Revision 1.42  1999/09/22 15:39:36  midas
   Logger won't start run if disk file already exists
 
@@ -829,7 +832,8 @@ typedef struct eqpmnt {
 
 /*---- Banks -------------------------------------------------------*/
 
-#define BANK_FORMAT_VERSION 1
+#define BANK_FORMAT_VERSION     1
+#define BANK_FORMAT_32BIT   (1<<4)
 
 typedef struct {
   DWORD  data_size;
@@ -841,6 +845,12 @@ typedef struct {
   WORD   type;
   WORD   data_size;
 } BANK;
+
+typedef struct {
+  char   name[4];
+  DWORD  type;
+  DWORD  data_size;
+} BANK32;
 
 typedef struct {
   char  name[NAME_LENGTH];
@@ -1366,12 +1376,15 @@ char EXPRT *strcomb(char **list);
 
 /*---- Bank routines ----*/
 void EXPRT bk_init(void *pbh);
+void EXPRT bk_init32(void *event);
+BOOL EXPRT bk_is32(void *event);
 INT EXPRT bk_size(void *pbh);
 void EXPRT bk_create(void *pbh, char *name, WORD type, void *pdata);
 int EXPRT bk_delete(void *event, char *name);
 void EXPRT bk_close(void *pbh, void *pdata);
 INT EXPRT bk_locate(void *pbh, char *name, void *pdata);
 INT EXPRT bk_iterate(void *pbh, BANK **pbk, void *pdata);
+INT EXPRT bk_iterate32(void *pbh, BANK32 **pbk, void *pdata);
 INT EXPRT bk_swap(void *event, BOOL force);
 
 /*---- RPC routines ----*/

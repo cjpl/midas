@@ -7,6 +7,9 @@
                 Most routines are from mfe.c mana.c and mlogger.c.
 
   $Log$
+  Revision 1.13  1999/09/23 12:45:48  midas
+  Added 32 bit banks
+
   Revision 1.12  1999/06/23 09:31:18  midas
   Modified error message
 
@@ -91,6 +94,8 @@ struct {
   void  *buffer;
   INT   buffer_size;
   HNDLE hKeyVar;
+  DWORD period;
+  DWORD last_log;
 } hist_log[MAX_EVENTS];
 
 INT   run_state;      /* STATE_RUNNING, STATE_STOPPED, STATE_PAUSED */
@@ -204,6 +209,7 @@ typedef struct {
 void send_all_periodic_events(INT transition);
 void receive_event(HNDLE hBuf, HNDLE request_id, EVENT_HEADER *pevent);
 INT  log_write(LOG_CHN *log_chn, EVENT_HEADER *pevent);
+void log_system_history(HNDLE hDB, HNDLE hKey, void *info);
 int print_message(const char *msg);
 
 /* items defined in frontend.c */
@@ -359,14 +365,12 @@ char buffer[16];
 
   if (count == sizeof(buffer))
     {
-    /* tape contains data -> spool to end-of-data */
-    cm_msg(MTALK, "tape_open", "spooling tape, please wait");
-    status = ss_tape_spool(*handle);
-    if (status != SS_SUCCESS)
-      {
-      cm_msg(MERROR, "tape_open", "cannot spool tape");
-      return status;
-      }
+    /* tape contains data -> don't start */
+    ss_tape_rskip(*handle, -1);
+    cm_msg(MINFO, "tape_open", "Tape contains data, please spool tape with 'mtape seod'");
+    cm_msg(MINFO, "tape_open", "or erase it with 'mtape weof', 'mtape rewind', then try again.");
+    ss_tape_close(*handle);
+    return SS_TAPE_ERROR;
     }
 
   return SS_SUCCESS;
@@ -443,9 +447,6 @@ char  *token, host_name[HOST_NAME_LENGTH],
 
 /*---- MIDAS format routines ---------------------------------------*/
 
-static char bars[] = "|/-\\";
-static int  i_bar;
-
 INT midas_flush_buffer(LOG_CHN *log_chn)
 {     
 INT         status, size, written;
@@ -456,10 +457,6 @@ MIDAS_INFO  *info;
 
   if (size == 0)
     return SS_SUCCESS;
-
-#ifndef FAL_MAIN
-  printf("%c\r", bars[i_bar++ % 4]);
-#endif
 
   /* write record to device */
   if (log_chn->type == LOG_TYPE_TAPE)
@@ -591,6 +588,16 @@ INT          status;
     }
   else
     {
+    /* check if file exists */
+    log_chn->handle = open(log_chn->path, O_RDONLY);
+    if (log_chn->handle > 0)
+      {
+      close(log_chn->handle);
+      free(info->buffer);
+      free(info);
+      log_chn->handle = 0;
+      return SS_FILE_EXISTS;
+      }
 #ifdef OS_WINNT       
     log_chn->handle = (int) CreateFile(log_chn->path, GENERIC_WRITE, FILE_SHARE_READ, NULL, 
                       CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_WRITE_THROUGH | 
@@ -766,10 +773,13 @@ INT         status, size, i, j;
 EVENT_DEF   *event_def;  
 BANK_HEADER *pbh;
 BANK        *pbk;
+BANK32      *pbk32;
 void        *pdata;
-char        buffer[10000], *pbuf, name[5], type_name[10];
+char        buffer[100000], *pbuf, name[5], type_name[10];
 HNDLE       hKey;
 KEY         key;
+DWORD       bkname;
+WORD        bktype;
 
   event_def = db_get_event_definition(pevent->event_id);
   if (event_def == NULL)
@@ -799,30 +809,44 @@ KEY         key;
     bk_swap(pbh, FALSE);
 
     pbk = NULL;
+    pbk32 = NULL;
     do
       {
       /* scan all banks */
-      size = bk_iterate(pbh, &pbk, &pdata);
-      if (pbk == NULL)
-        break;
+      if (bk_is32(pbh))
+        {
+        size = bk_iterate32(pbh, &pbk32, &pdata);
+        if (pbk32 == NULL)
+          break;
+        bkname = *((DWORD *) pbk32->name);
+        bktype = (WORD) pbk32->type;
+        }
+      else
+        {
+        size = bk_iterate(pbh, &pbk, &pdata);
+        if (pbk == NULL)
+          break;
+        bkname = *((DWORD *) pbk->name);
+        bktype = (WORD) pbk->type;
+        }
 
-      if (rpc_tid_size(pbk->type & 0xFF))
-        size /= rpc_tid_size(pbk->type & 0xFF);
+      if (rpc_tid_size(bktype & 0xFF))
+        size /= rpc_tid_size(bktype & 0xFF);
       
       lrs1882        = (LRS1882_DATA *)   pdata;
       lrs1877        = (LRS1877_DATA *)   pdata;
       lrs1877_header = (LRS1877_HEADER *) pdata;
 
       /* write bank header */
-      *((DWORD *) name) = *((DWORD *) (pbk)->name);
+      *((DWORD *) name) = bkname;
 
-      if ((pbk->type & 0xFF00) == 0)
-        strcpy(type_name, rpc_tid_name(pbk->type & 0xFF));
-      else if ((pbk->type & 0xFF00) == TID_LRS1882)
+      if ((bktype & 0xFF00) == 0)
+        strcpy(type_name, rpc_tid_name(bktype & 0xFF));
+      else if ((bktype & 0xFF00) == TID_LRS1882)
         strcpy(type_name, "LRS1882");
-      else if ((pbk->type & 0xFF00) == TID_LRS1877)
+      else if ((bktype & 0xFF00) == TID_LRS1877)
         strcpy(type_name, "LRS1877");
-      else if ((pbk->type & 0xFF00) == TID_PCOS3)
+      else if ((bktype & 0xFF00) == TID_PCOS3)
         strcpy(type_name, "PCOS3");
       else
         strcpy(type_name, "unknown");
@@ -833,14 +857,14 @@ KEY         key;
       /* write data */
       for (i=0 ; i<size ; i++)
         {
-        if ((pbk->type & 0xFF00) == 0)
-          db_sprintf(pbuf, pdata, size, i, pbk->type & 0xFF);
+        if ((bktype & 0xFF00) == 0)
+          db_sprintf(pbuf, pdata, size, i, bktype & 0xFF);
 
-        else if ((pbk->type & 0xFF00) == TID_LRS1882)
+        else if ((bktype & 0xFF00) == TID_LRS1882)
           sprintf(pbuf, "GA %d CH %02d DA %d", 
             lrs1882[i].geo_addr, lrs1882[i].channel, lrs1882[i].data);
         
-        else if ((pbk->type & 0xFF00) == TID_LRS1877)
+        else if ((bktype & 0xFF00) == TID_LRS1877)
           {
           if (i==0) /* header */
             sprintf(pbuf, "GA %d BF %d CN %d", 
@@ -850,10 +874,10 @@ KEY         key;
               lrs1877[i].geo_addr, lrs1877[i].channel, lrs1877[i].edge, lrs1877[i].data*0.5);
           }
 
-        else if ((pbk->type & 0xFF00) == TID_PCOS3)
+        else if ((bktype & 0xFF00) == TID_PCOS3)
           sprintf(pbuf, "");
         else
-          db_sprintf(pbuf, pdata, size, i, pbk->type & 0xFF);
+          db_sprintf(pbuf, pdata, size, i, bktype & 0xFF);
 
         strcat(pbuf, "\n");
         STR_INC(pbuf,buffer);
@@ -1024,6 +1048,7 @@ INT         status, size, i, j;
 EVENT_DEF   *event_def;  
 BANK_HEADER *pbh;
 BANK        *pbk;
+BANK32      *pbk32;
 void        *pdata;
 char        data[1000];
 char        buffer[10000], name[5], type_name[10];
@@ -1032,6 +1057,8 @@ char        *pd, data_line[10000];
 HNDLE       hKey, hKeyRoot;
 KEY         key;
 static short int last_event_id = -1;
+DWORD       bkname;
+WORD        bktype;
 
   if (pevent->serial_number == 1)
     last_event_id = -1;
@@ -1100,30 +1127,44 @@ static short int last_event_id = -1;
     bk_swap(pbh, FALSE);
 
     pbk = NULL;
+    pbk32 = NULL;
     do
       {
       /* scan all banks */
-      size = bk_iterate(pbh, &pbk, &pdata);
-      if (pbk == NULL)
-        break;
+      if (bk_is32(pbh))
+        {
+        size = bk_iterate32(pbh, &pbk32, &pdata);
+        if (pbk32 == NULL)
+          break;
+        bkname = *((DWORD *) pbk32->name);
+        bktype = (WORD) pbk32->type;
+        }
+      else
+        {
+        size = bk_iterate(pbh, &pbk, &pdata);
+        if (pbk == NULL)
+          break;
+        bkname = *((DWORD *) pbk->name);
+        bktype = (WORD) pbk->type;
+        }
 
-      if (rpc_tid_size(pbk->type & 0xFF))
-        size /= rpc_tid_size(pbk->type & 0xFF);
+      if (rpc_tid_size(bktype & 0xFF))
+        size /= rpc_tid_size(bktype & 0xFF);
       
       lrs1882        = (LRS1882_DATA *)   pdata;
       lrs1877        = (LRS1877_DATA *)   pdata;
       lrs1877_header = (LRS1877_HEADER *) pdata;
 
       /* write bank header */
-      *((DWORD *) name) = *((DWORD *) (pbk)->name);
+      *((DWORD *) name) = bkname;
 
-      if ((pbk->type & 0xFF00) == 0)
-        strcpy(type_name, rpc_tid_name(pbk->type & 0xFF));
-      else if ((pbk->type & 0xFF00) == TID_LRS1882)
+      if ((bktype & 0xFF00) == 0)
+        strcpy(type_name, rpc_tid_name(bktype & 0xFF));
+      else if ((bktype & 0xFF00) == TID_LRS1882)
         strcpy(type_name, "LRS1882");
-      else if ((pbk->type & 0xFF00) == TID_LRS1877)
+      else if ((bktype & 0xFF00) == TID_LRS1877)
         strcpy(type_name, "LRS1877");
-      else if ((pbk->type & 0xFF00) == TID_PCOS3)
+      else if ((bktype & 0xFF00) == TID_PCOS3)
         strcpy(type_name, "PCOS3");
       else
         strcpy(type_name, "unknown");
@@ -1134,7 +1175,7 @@ static short int last_event_id = -1;
       /* write data */
       for (i=0 ; i<size ; i++)
         {
-        db_sprintf(pd, pdata, size, i, pbk->type & 0xFF);
+        db_sprintf(pd, pdata, size, i, bktype & 0xFF);
         strcat(pd, "\t");
         STR_INC(pd, data_line);
         }
@@ -1349,10 +1390,13 @@ INT log_close(LOG_CHN *log_chn, INT run_number)
 
 INT log_write(LOG_CHN *log_chn, EVENT_HEADER *pevent)
 {
-int    status, size;
+int    status, size, izero;
 DWORD  actual_time, start_time;
 static BOOL stop_requested = FALSE;
 static DWORD last_checked = 0;
+HNDLE  htape, stats_hkey;
+char   tape_name[256];
+double dzero;
 
   start_time = ss_millitime();
 
@@ -1440,11 +1484,33 @@ static DWORD last_checked = 0;
     {
     stop_requested = TRUE;
     cm_msg(MTALK, "log_write", "tape capacity reached, stopping run");
+
+    /* remember tape name */
+    strcpy(tape_name, log_chn->path);
+    stats_hkey = log_chn->stats_hkey;
     
     status = cm_transition(TR_STOP, 0, NULL, 0, ASYNC);
     if (status != CM_SUCCESS)
       cm_msg(MERROR, "log_write", "cannot stop run after reaching tape capacity");
     stop_requested = FALSE;
+
+    /* rewind tape */
+    ss_tape_open(tape_name, O_RDONLY, &htape);
+    cm_msg(MTALK, "log_write", "rewinding tape %s, please wait", log_chn->path);
+
+    cm_set_watchdog_params(TRUE, 300000);  /* 5 min for tape rewind */
+    ss_tape_unmount(htape);
+    ss_tape_close(htape);
+    cm_set_watchdog_params(TRUE, LOGGER_TIMEOUT);
+
+    /* zero statistics */
+    dzero = izero = 0;
+    db_set_value(hDB, stats_hkey, "Bytes written total", &dzero, 
+                 sizeof(dzero), 1, TID_DOUBLE);
+    db_set_value(hDB, stats_hkey, "Files written", &izero, 
+                 sizeof(izero), 1, TID_INT);
+    
+    cm_msg(MTALK, "log_write", "Please insert new tape and start new run.");
 
     return status;
     }
@@ -1477,14 +1543,14 @@ void log_history(HNDLE hDB, HNDLE hKey, void *info);
 
 INT open_history()
 {
-INT      size, index, i_tag, status, i, j;
+INT      size, index, i_tag, status, i, j, li, max_event_id;
 INT      n_var, n_tags, n_names;
-HNDLE    hKeyRoot, hKeyVar, hKeyNames, hKeyEq, hKey;
+HNDLE    hKeyRoot, hKeyVar, hKeyNames, hLinkKey, hVarKey, hKeyEq, hHistKey, hKey;
 DWORD    history;
 TAG      *tag;
-KEY      key, varkey;
+KEY      key, varkey, linkkey, histkey;
 WORD     event_id;
-char     str[256], eq_name[NAME_LENGTH];
+char     str[256], eq_name[NAME_LENGTH], hist_name[NAME_LENGTH];
 BOOL     single_names;
 
   /* set direcotry for history files */
@@ -1493,6 +1559,21 @@ BOOL     single_names;
   db_get_value(hDB, 0, "/Logger/Data Dir", str, &size, TID_STRING);
   if (str[0] != 0)
     hs_set_path(str);
+
+  if (db_find_key(hDB, 0, "/History", &hKeyRoot) != DB_SUCCESS)
+    {
+    /* create default history keys */
+
+    if (db_find_key(hDB, 0, "/Equipment/Trigger/Statistics/Events per sec.", &hKeyEq) == DB_SUCCESS)
+      db_create_link(hDB, 0, "/History/Links/System/Trigger per sec.", "/Equipment/Trigger/Statistics/Events per sec.");
+
+    if (db_find_key(hDB, 0, "/Equipment/Trigger/Statistics/kBytes per sec.", &hKeyEq) == DB_SUCCESS)
+      db_create_link(hDB, 0, "/History/Links/System/Trigger kB per sec.", "/Equipment/Trigger/Statistics/kBytes per sec.");
+    }
+
+  /*---- define equipment events as history ------------------------*/
+
+  max_event_id = 0;
 
   status = db_find_key(hDB, 0, "/Equipment", &hKeyRoot);
   if (status != DB_SUCCESS)
@@ -1513,7 +1594,7 @@ BOOL     single_names;
     db_get_value(hDB, hKeyEq, "Common/Log history", &history, &size, TID_INT);
 
     /* define history tags only if log history flag is on */
-    if (history)
+    if (history > 0)
       {
       /* get equipment name */
       db_get_key(hDB, hKeyEq, &key);
@@ -1618,6 +1699,8 @@ BOOL     single_names;
       db_get_record_size(hDB, hKeyVar, 0, &size); 
       hist_log[index].buffer_size = size;
       hist_log[index].buffer = malloc(size);
+      hist_log[index].period = history;
+      hist_log[index].last_log = 0;
       if (hist_log[index].buffer == NULL)
         {
         cm_msg(MERROR, "open_history", "cannot allocate history buffer");
@@ -1629,6 +1712,10 @@ BOOL     single_names;
                               size, MODE_READ, log_history, NULL);
       if (status != DB_SUCCESS)
         cm_msg(MERROR, "open_history", "cannot open variable record for history logging");
+
+      /* remember maximum event id for later use with system events */
+      if (event_id > max_event_id)
+        max_event_id = event_id;
       }
     else
       {
@@ -1636,9 +1723,109 @@ BOOL     single_names;
       hist_log[index].hKeyVar = 0;
       hist_log[index].buffer = NULL;
       hist_log[index].buffer_size = 0;
+      hist_log[index].period = 0;
       }
     }
 
+  /*---- define linked trees ---------------------------------------*/
+
+  /* round up event id */
+  max_event_id = ((int) ((max_event_id+1)/ 10)+1) * 10;
+
+  status = db_find_key(hDB, 0, "/History/Links", &hKeyRoot);
+  if (status != DB_SUCCESS)
+    {
+    cm_msg(MERROR, "open_history", "Cannot find /History/Links entry in database");
+    return 0;
+    }
+
+  for (li = 0 ; ; li++)
+    {
+    status = db_enum_link(hDB, hKeyRoot, li, &hHistKey);
+    if (status == DB_NO_MORE_SUBKEYS)
+      break;
+
+    db_get_key(hDB, hHistKey, &histkey);
+    strcpy(hist_name, histkey.name);
+    db_enum_key(hDB, hKeyRoot, li, &hHistKey);
+
+    db_get_key(hDB, hHistKey, &key);
+    if (key.type != TID_KEY)
+      {
+      cm_msg(MERROR, "open_history", "Only subkeys allows in /history/links");
+      continue;
+      }
+
+    /* count subkeys in link */
+    for (i=n_var=0 ;; i++)
+      {
+      status = db_enum_key(hDB, hHistKey, i, &hKey);
+      if (status == DB_NO_MORE_SUBKEYS)
+        break;
+      db_get_key(hDB, hKey, &key);
+      if (key.type != TID_KEY)
+        n_var++;
+      }
+
+    if (n_var == 0)
+      cm_msg(MERROR, "open_history", "History event %s has no variables in ODB", hist_name);
+
+    /* create tag array */
+    tag = malloc(sizeof(TAG)*n_var);
+
+    for (i=0,size=0,n_var=0 ;; i++)
+      {
+      status = db_enum_link(hDB, hHistKey, i, &hLinkKey);
+      if (status == DB_NO_MORE_SUBKEYS)
+        break;
+
+      /* get link key */
+      db_get_key(hDB, hLinkKey, &linkkey);
+
+      if (linkkey.type == TID_KEY)
+        continue;
+
+      strcpy(tag[n_var].name, linkkey.name);
+
+      /* get link target */
+      db_enum_key(hDB, hHistKey, i, &hVarKey);
+      db_get_key(hDB, hVarKey, &varkey);
+
+      /* hot-link individual values */
+      if (histkey.type == TID_KEY)
+        db_open_record(hDB, hVarKey, NULL, varkey.total_size, MODE_READ, log_system_history, (void *) index);
+
+      tag[n_var].type = varkey.type;
+      tag[n_var].n_data = varkey.num_values;
+      size += varkey.total_size;
+      n_var++;
+      }
+
+    /* hot-link whole subtree */
+    if (histkey.type == TID_LINK)
+      db_open_record(hDB, hHistKey, NULL, size, MODE_READ, log_system_history, (void *) index);
+
+    hs_define_event(max_event_id, hist_name, tag, sizeof(TAG)*n_var);
+    free(tag);
+
+    /* define system history */
+  
+    hist_log[index].event_id = max_event_id;
+    hist_log[index].hKeyVar = hHistKey;
+    hist_log[index].buffer_size = size;
+    hist_log[index].buffer = malloc(size);
+    hist_log[index].period = 10; /* 10 sec default period */
+    hist_log[index].last_log = 0;
+    if (hist_log[index].buffer == NULL)
+      {
+      cm_msg(MERROR, "open_history", "cannot allocate history buffer");
+      return 0;
+      }
+
+    index++;
+    max_event_id++;
+    }
+  
   return CM_SUCCESS;
 }
 
@@ -1646,10 +1833,24 @@ BOOL     single_names;
 
 void close_history()
 {
-INT i;
+INT   i, status;
+HNDLE hKeyRoot, hKey;
 
-  /* close history */
-  for (i=0 ; i<MAX_EVENTS ; i++)
+  /* close system history */
+  status = db_find_key(hDB, 0, "/History/Links", &hKeyRoot);
+  if (status != DB_SUCCESS)
+    {
+    for (i=0 ; ; i++)
+      {
+      status = db_enum_key(hDB, hKeyRoot, i, &hKey);
+      if (status == DB_NO_MORE_SUBKEYS)
+        break;
+      db_close_record(hDB, hKey);
+      }
+    }
+
+  /* close event history */
+  for (i=1 ; i<MAX_EVENTS ; i++)
     if (hist_log[i].hKeyVar)
       {
       db_close_record(hDB, hist_log[i].hKeyVar);
@@ -1670,6 +1871,10 @@ INT i, size;
   if (i == MAX_EVENTS)
     return;
 
+  /* check if over period */
+  if (ss_time() - hist_log[i].last_log < hist_log[i].period)
+    return;
+
   /* check if event size has changed */
   db_get_record_size(hDB, hKey, 0, &size); 
   if (size != hist_log[i].buffer_size)
@@ -1677,8 +1882,49 @@ INT i, size;
     close_history();
     open_history();
     }
+
+  hs_write_event(hist_log[i].event_id, hist_log[i].buffer, hist_log[i].buffer_size);
+  hist_log[i].last_log = ss_time();
+}
+
+/*------------------------------------------------------------------*/
+
+void log_system_history(HNDLE hDB, HNDLE hKey, void *info)
+{
+INT   i, size, total_size, status, index;
+KEY   key;
+
+  index = (int) info;
+  
+  /* check if over period */
+  if (ss_time() - hist_log[index].last_log < hist_log[index].period)
+    return;
+
+  for (i=0,total_size=0 ; ; i++)
+    {
+    status = db_enum_key(hDB, hist_log[index].hKeyVar, i, &hKey);
+    if (status == DB_NO_MORE_SUBKEYS)
+      break;
+
+    db_get_key(hDB, hKey, &key);
+    size = key.total_size;
+    db_get_data(hDB, hKey, (char *)hist_log[index].buffer+total_size, &size, key.type);
+    total_size += size;
+    }
+  
+  if (total_size != hist_log[index].buffer_size)
+    {
+    close_history();
+    open_history();
+    }
   else
-    hs_write_event(hist_log[i].event_id, hist_log[i].buffer, hist_log[i].buffer_size);
+    hs_write_event(index, hist_log[index].buffer, hist_log[index].buffer_size);
+
+  hist_log[index].last_log = ss_time();
+
+  /* simulate odb key update for hot links connected to system history */
+  db_notify_clients(hDB, hist_log[index].hKeyVar, FALSE);
+
 }
 
 /*------------------------------------------------------------------*/
@@ -1841,13 +2087,13 @@ BOOL         write_data, tape_flag = FALSE;
     /* correct channel record */
     db_get_key(hDB, hKeyChannel, &key);
     status = db_create_record(hDB, hKeyRoot, key.name, channel_str);
-    if (status != DB_SUCCESS)
+    if (status != DB_SUCCESS && status != DB_OPEN_RECORD)
       {
       cm_msg(MERROR, "tr_prestart", "Cannot create channel record");
       break;
       }
 
-    if (status == DB_SUCCESS)
+    if (status == DB_SUCCESS || status == DB_OPEN_RECORD)
       {
       /* check if channel is already open */
       if (log_chn[index].handle || log_chn[index].ftp_con)
@@ -1952,8 +2198,12 @@ BOOL         write_data, tape_flag = FALSE;
         {
         if (status == SS_FILE_ERROR)
           sprintf(error, "cannot open file %s (Disk full?)", path);
+        if (status == SS_FILE_EXISTS)
+          sprintf(error, "file %s exists already, run start aborted", path);
         if (status == SS_NO_TAPE)
           sprintf(error, "no tape in device %s", path);
+        if (status == SS_TAPE_ERROR)
+          sprintf(error, "tape error, cannot start run");
         if (status == SS_DEV_BUSY)
           sprintf(error, "device %s used by someone else", path);
         if (status == FTP_NET_ERROR || status == FTP_RESPONSE_ERROR)
@@ -2364,10 +2614,13 @@ INT            status, size, n_data, i;
 BANK_HEADER    *pbh;
 EVENT_DEF      *event_def;  
 BANK           *pbk;
+BANK32         *pbk32;
 void           *pdata;
 char           name[5];
 HNDLE          hKeyRoot, hKey;
 KEY            key;
+DWORD          bkname;
+WORD           bktype;
 
   event_def = db_get_event_definition(pevent->event_id);
   if (event_def == NULL)
@@ -2378,19 +2631,33 @@ KEY            key;
     {
     pbh = (BANK_HEADER *) (pevent+1);
     pbk = NULL;
+    pbk32 = NULL;
     do
       {
       /* scan all banks */
-      size = bk_iterate(pbh, &pbk, &pdata);
-      if (pbk == NULL)
-        break;
+      if (bk_is32(pbh))
+        {
+        size = bk_iterate32(pbh, &pbk32, &pdata);
+        if (pbk32 == NULL)
+          break;
+        bkname = *((DWORD *) pbk32->name);
+        bktype = (WORD) pbk32->type;
+        }
+      else
+        {
+        size = bk_iterate(pbh, &pbk, &pdata);
+        if (pbk == NULL)
+          break;
+        bkname = *((DWORD *) pbk->name);
+        bktype = (WORD) pbk->type;
+        }
 
       n_data = size;
       if (rpc_tid_size(pbk->type & 0xFF))
         n_data /= rpc_tid_size(pbk->type & 0xFF);
   
       /* get bank key */
-      *((DWORD *) name) = *((DWORD *) (pbk)->name);
+      *((DWORD *) name) = bkname;
       name[4] = 0;
 
       status = db_find_key(hDB, event_def->hDefKey, name, &hKeyRoot);
@@ -2400,7 +2667,7 @@ KEY            key;
         continue;
         }
 
-      if (pbk->type == TID_STRUCT)
+      if (bktype == TID_STRUCT)
         {
         /* write structured bank */
         for (i=0 ;; i++)
@@ -2672,16 +2939,20 @@ EVENT_DEF  *event_def;
 
 INT write_event_hbook(EVENT_HEADER *pevent, ANALYZE_REQUEST *par)
 {
-INT        i, j, k, n, size, item_size, status;
-BANK       *pbk;                      
-BANK_LIST  *pbl;                      
-void       *pdata;                    
-BOOL       exclude, exclude_all;
-char       block_name[5];             
-float      rwnt[512];                 
-EVENT_DEF  *event_def;                
-HNDLE      hkey;
-KEY        key;
+INT         i, j, k, n, size, item_size, status;
+BANK        *pbk;                      
+BANK32      *pbk32;
+BANK_LIST   *pbl;      
+BANK_HEADER *pbh;
+void        *pdata;                    
+BOOL        exclude, exclude_all;
+char        block_name[5];             
+float       rwnt[512];                 
+EVENT_DEF   *event_def;                
+HNDLE       hkey;
+KEY         key;
+DWORD       bkname;
+WORD        bktype;
 
   event_def = db_get_event_definition(pevent->event_id);
   if (event_def == NULL)
@@ -2699,16 +2970,31 @@ KEY        key;
     {
     /* first fill number block */
     pbk = NULL;
+    pbk32 = NULL;
     exclude_all = TRUE;
     do
       {
+      pbh = (BANK_HEADER *) (pevent+1);
       /* scan all banks */
-      size = bk_iterate((BANK_HEADER *) (pevent+1), &pbk, &pdata);
-      if (pbk == NULL)
-        break;
+      if (bk_is32(pbh))
+        {
+        size = bk_iterate32(pbh, &pbk32, &pdata);
+        if (pbk32 == NULL)
+          break;
+        bkname = *((DWORD *) pbk32->name);
+        bktype = (WORD) pbk32->type;
+        }
+      else
+        {
+        size = bk_iterate(pbh, &pbk, &pdata);
+        if (pbk == NULL)
+          break;
+        bkname = *((DWORD *) pbk->name);
+        bktype = (WORD) pbk->type;
+        }
 
       /* look if bank is in exclude list */
-      *((DWORD *) block_name) = *((DWORD *) pbk->name);
+      *((DWORD *) block_name) = bkname;
       block_name[4] = 0;
 
       exclude = FALSE;
@@ -2716,7 +3002,7 @@ KEY        key;
       if (par->bank_list != NULL)
         {
         for (i=0 ; par->bank_list[i].name[0] ; i++)
-          if ( *((DWORD *) par->bank_list[i].name) == *((DWORD *) pbk->name))
+          if ( *((DWORD *) par->bank_list[i].name) == bkname)
             {
             pbl = &par->bank_list[i];
             exclude = (pbl->output_flag == 0);
@@ -2731,9 +3017,9 @@ KEY        key;
         {
         exclude_all = FALSE;
 
-        item_size = rpc_tid_size(pbk->type & 0xFF);
+        item_size = rpc_tid_size(bktype & 0xFF);
         /* set array size in bank list */
-        if ((pbk->type & 0xFF) != TID_STRUCT)
+        if ((bktype & 0xFF) != TID_STRUCT)
           {
           n = size / item_size;
 
@@ -2749,7 +3035,7 @@ KEY        key;
           /* convert bank to float values */
           for (i=0 ; i<n ; i++)
             {
-            switch (pbk->type & 0xFF)
+            switch (bktype & 0xFF)
               {
               case TID_BYTE : 
                 rwnt[pbl->n_data + i] = (float) (*((BYTE *) pdata+i));

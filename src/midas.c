@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.56  1999/09/23 12:45:49  midas
+  Added 32 bit banks
+
   Revision 1.55  1999/09/22 08:57:08  midas
   Implemented auto start and auto stop in /programs
 
@@ -11781,6 +11784,7 @@ exit:
 \********************************************************************/
 
 static BANK        *_pbk;
+static BANK32      *_pbk32;
 
 /*------------------------------------------------------------------*/
 
@@ -11804,6 +11808,53 @@ void bk_init(void *event)
 {
   ((BANK_HEADER *) event)->data_size = 0;
   ((BANK_HEADER *) event)->flags = BANK_FORMAT_VERSION;
+}
+
+/*------------------------------------------------------------------*/
+
+BOOL bk_is32(void *event)
+/********************************************************************\
+
+  Routine: bk_is32
+
+  Purpose: Return true if banks inside event are 32-bit banks
+
+  Input:
+    void   *event           pointer to the event
+
+  Output:
+    none
+
+  Function value:
+    none
+
+\********************************************************************/
+{
+  return ((((BANK_HEADER *) event)->flags & BANK_FORMAT_32BIT) > 0);
+}
+
+/*------------------------------------------------------------------*/
+
+void bk_init32(void *event)
+/********************************************************************\
+
+  Routine: bk_init
+
+  Purpose: Create a MIDAS 32-bit bank structure inside an event
+
+  Input:
+    void   *event           pointer to the event
+
+  Output:
+    none
+
+  Function value:
+    none
+
+\********************************************************************/
+{
+  ((BANK_HEADER *) event)->data_size = 0;
+  ((BANK_HEADER *) event)->flags = BANK_FORMAT_VERSION | BANK_FORMAT_32BIT;
 }
 
 /*------------------------------------------------------------------*/
@@ -11852,11 +11903,22 @@ void bk_create(void *event, char *name, WORD type, void *pdata)
 
 \********************************************************************/
 {
-  _pbk = (BANK *) ((char *) (((BANK_HEADER *) event) + 1) + ((BANK_HEADER *) event)->data_size);
-  strncpy(_pbk->name, name, 4);
-  (_pbk)->type = type;
-  (_pbk)->data_size = 0;
-  *((void **)pdata) = (_pbk)+1;
+  if (((BANK_HEADER *)event)->flags & BANK_FORMAT_32BIT)
+    {
+    _pbk32 = (BANK32 *) ((char *) (((BANK_HEADER *) event) + 1) + ((BANK_HEADER *) event)->data_size);
+    strncpy(_pbk32->name, name, 4);
+    (_pbk32)->type = type;
+    (_pbk32)->data_size = 0;
+    *((void **)pdata) = (_pbk32)+1;
+    }
+  else
+    {
+    _pbk = (BANK *) ((char *) (((BANK_HEADER *) event) + 1) + ((BANK_HEADER *) event)->data_size);
+    strncpy(_pbk->name, name, 4);
+    (_pbk)->type = type;
+    (_pbk)->data_size = 0;
+    *((void **)pdata) = (_pbk)+1;
+    }
 }
 
 /*------------------------------------------------------------------*/
@@ -11878,32 +11940,61 @@ int bk_delete(void *event, char *name)
 
 \********************************************************************/
 {
-BANK *pbk;
-DWORD dname;
-int   remaining;
+BANK   *pbk;
+BANK32 *pbk32;
+DWORD  dname;
+int    remaining;
 
-  /* locate bank */
-  pbk = (BANK *) (((BANK_HEADER *) event)+1);
-  strncpy((char *) &dname, name, 4);
-  do
+  if (((BANK_HEADER *)event)->flags & BANK_FORMAT_32BIT)
     {
-    if (*((DWORD *) pbk->name) == dname)
+    /* locate bank */
+    pbk32 = (BANK32 *) (((BANK_HEADER *) event)+1);
+    strncpy((char *) &dname, name, 4);
+    do
       {
-      /* bank found, delete it */
-      remaining = (int) ((char *) event + ((BANK_HEADER *) event)->data_size + sizeof(BANK_HEADER)) -
-                  (int) ((char *) (pbk + 1) + ALIGN(pbk->data_size));
+      if (*((DWORD *) pbk32->name) == dname)
+        {
+        /* bank found, delete it */
+        remaining = (int) ((char *) event + ((BANK_HEADER *) event)->data_size + sizeof(BANK_HEADER)) -
+                    (int) ((char *) (pbk32 + 1) + ALIGN(pbk32->data_size));
 
-      /* reduce total event size */
-      ((BANK_HEADER *) event)->data_size -= sizeof(BANK) + ALIGN(pbk->data_size);
+        /* reduce total event size */
+        ((BANK_HEADER *) event)->data_size -= sizeof(BANK32) + ALIGN(pbk32->data_size);
 
-      /* copy remaining bytes */
-      if (remaining > 0)
-        memcpy(pbk, (char *) (pbk + 1) + ALIGN(pbk->data_size), remaining);
-      return CM_SUCCESS;
-      }
+        /* copy remaining bytes */
+        if (remaining > 0)
+          memcpy(pbk32, (char *) (pbk32 + 1) + ALIGN(pbk32->data_size), remaining);
+        return CM_SUCCESS;
+        }
 
-    pbk = (BANK *) ((char *) (pbk + 1) + ALIGN(pbk->data_size));
-    } while ((DWORD) pbk - (DWORD) event < ((BANK_HEADER *) event)->data_size + sizeof(BANK_HEADER));
+      pbk32 = (BANK32 *) ((char *) (pbk32 + 1) + ALIGN(pbk32->data_size));
+      } while ((DWORD) pbk32 - (DWORD) event < ((BANK_HEADER *) event)->data_size + sizeof(BANK_HEADER));
+    }
+  else
+    {
+    /* locate bank */
+    pbk = (BANK *) (((BANK_HEADER *) event)+1);
+    strncpy((char *) &dname, name, 4);
+    do
+      {
+      if (*((DWORD *) pbk->name) == dname)
+        {
+        /* bank found, delete it */
+        remaining = (int) ((char *) event + ((BANK_HEADER *) event)->data_size + sizeof(BANK_HEADER)) -
+                    (int) ((char *) (pbk + 1) + ALIGN(pbk->data_size));
+
+        /* reduce total event size */
+        ((BANK_HEADER *) event)->data_size -= sizeof(BANK) + ALIGN(pbk->data_size);
+
+        /* copy remaining bytes */
+        if (remaining > 0)
+          memcpy(pbk, (char *) (pbk + 1) + ALIGN(pbk->data_size), remaining);
+        return CM_SUCCESS;
+        }
+
+      pbk = (BANK *) ((char *) (pbk + 1) + ALIGN(pbk->data_size));
+      } while ((DWORD) pbk - (DWORD) event < ((BANK_HEADER *) event)->data_size + sizeof(BANK_HEADER));
+    }
 
   return 0;
 }
@@ -11936,11 +12027,22 @@ void bk_close(void *event, void *pdata)
 
 \********************************************************************/
 {
-  _pbk->data_size = (WORD) (INT) pdata - (INT) (_pbk+1);
-  if (_pbk->type == TID_STRUCT && _pbk->data_size == 0)
-    printf("Warning: bank %c%c%c%c has zero size\n", 
-      _pbk->name[0], _pbk->name[1], _pbk->name[2], _pbk->name[3]);
-  ((BANK_HEADER *) event)->data_size += sizeof(BANK) + ALIGN(_pbk->data_size);
+  if (((BANK_HEADER *)event)->flags & BANK_FORMAT_32BIT)
+    {
+    _pbk32->data_size = (DWORD) (INT) pdata - (INT) (_pbk32+1);
+    if (_pbk32->type == TID_STRUCT && _pbk32->data_size == 0)
+      printf("Warning: bank %c%c%c%c has zero size\n", 
+        _pbk32->name[0], _pbk32->name[1], _pbk32->name[2], _pbk32->name[3]);
+    ((BANK_HEADER *) event)->data_size += sizeof(BANK) + ALIGN(_pbk32->data_size);
+    }
+  else
+    {
+    _pbk->data_size = (WORD) (INT) pdata - (INT) (_pbk+1);
+    if (_pbk->type == TID_STRUCT && _pbk->data_size == 0)
+      printf("Warning: bank %c%c%c%c has zero size\n", 
+        _pbk->name[0], _pbk->name[1], _pbk->name[2], _pbk->name[3]);
+    ((BANK_HEADER *) event)->data_size += sizeof(BANK) + ALIGN(_pbk->data_size);
+    }
 }
 
 /*------------------------------------------------------------------*/
@@ -11965,22 +12067,42 @@ INT bk_locate(void *event, char *name, void *pdata)
 
 \********************************************************************/
 {
-BANK *pbk;
-DWORD dname;
+BANK   *pbk;
+BANK32 *pbk32;
+DWORD  dname;
 
-  pbk = (BANK *) (((BANK_HEADER *) event)+1);
-  strncpy((char *) &dname, name, 4);
-  do
+  if (((BANK_HEADER *)event)->flags & BANK_FORMAT_32BIT)
     {
-    if (*((DWORD *) pbk->name) == dname)
+    pbk32 = (BANK32 *) (((BANK_HEADER *) event)+1);
+    strncpy((char *) &dname, name, 4);
+    do
       {
-      *((void **)pdata) = pbk+1;
-      if (tid_size[pbk->type & 0xFF] == 0)
-        return pbk->data_size;
-      return pbk->data_size / tid_size[pbk->type & 0xFF];
-      }
-    pbk = (BANK *) ((char *) (pbk + 1) + ALIGN(pbk->data_size));
-    } while ((DWORD) pbk - (DWORD) event < ((BANK_HEADER *) event)->data_size + sizeof(BANK_HEADER));
+      if (*((DWORD *) pbk32->name) == dname)
+        {
+        *((void **)pdata) = pbk32+1;
+        if (tid_size[pbk32->type & 0xFF] == 0)
+          return pbk32->data_size;
+        return pbk32->data_size / tid_size[pbk32->type & 0xFF];
+        }
+      pbk32 = (BANK32 *) ((char *) (pbk32 + 1) + ALIGN(pbk32->data_size));
+      } while ((DWORD) pbk32 - (DWORD) event < ((BANK_HEADER *) event)->data_size + sizeof(BANK_HEADER));
+    }
+  else
+    {
+    pbk = (BANK *) (((BANK_HEADER *) event)+1);
+    strncpy((char *) &dname, name, 4);
+    do
+      {
+      if (*((DWORD *) pbk->name) == dname)
+        {
+        *((void **)pdata) = pbk+1;
+        if (tid_size[pbk->type & 0xFF] == 0)
+          return pbk->data_size;
+        return pbk->data_size / tid_size[pbk->type & 0xFF];
+        }
+      pbk = (BANK *) ((char *) (pbk + 1) + ALIGN(pbk->data_size));
+      } while ((DWORD) pbk - (DWORD) event < ((BANK_HEADER *) event)->data_size + sizeof(BANK_HEADER));
+    }
 
   /* bank not found */
   *((void **)pdata) = NULL;
@@ -12027,6 +12149,44 @@ INT bk_iterate(void *event, BANK **pbk, void *pdata)
 
 /*------------------------------------------------------------------*/
 
+INT bk_iterate32(void *event, BANK32 **pbk, void *pdata)
+/********************************************************************\
+
+  Routine: bk_iterate
+
+  Purpose: Iterate through 32 bit MIDAS banks inside an event
+
+  Input:
+    void   *event           pointer to the event
+    BANK   **pbk32          must be NULL for the first call to bk_iterate
+
+  Output:
+    BANK   **pbk            pointer to the bank header
+    void   *pdata           pointer to data area of the bank
+
+  Function value:
+    INT    size of the bank in bytes
+
+\********************************************************************/
+{
+  if (*pbk == NULL)
+    *pbk = (BANK32 *) (((BANK_HEADER *) event)+1);
+  else
+    *pbk = (BANK32 *) ((char *) (*pbk + 1) + ALIGN((*pbk)->data_size));
+
+  *((void **)pdata) = (*pbk)+1;
+
+  if ((DWORD) *pbk - (DWORD) event >= ((BANK_HEADER *) event)->data_size + sizeof(BANK_HEADER))
+    {
+    *pbk = *((void **)pdata) = NULL;
+    return 0;
+    }
+
+  return (*pbk)->data_size;
+}
+
+/*------------------------------------------------------------------*/
+
 INT bk_swap(void *event, BOOL force)
 /********************************************************************\
 
@@ -12050,8 +12210,10 @@ INT bk_swap(void *event, BOOL force)
 {
 BANK_HEADER *pbh;
 BANK        *pbk;
+BANK32      *pbk32;
 void        *pdata;
 WORD        type;
+BOOL        b32;
 
   pbh = (BANK_HEADER *) event;
 
@@ -12059,23 +12221,45 @@ WORD        type;
   if (pbh->flags < 0x10000 && !force)
     return 0;
 
+  b32 = ((pbh->flags & BANK_FORMAT_32BIT) > 0);
+
   /* swap bank header */
   DWORD_SWAP(&pbh->data_size);
   DWORD_SWAP(&pbh->flags);
 
-  pbk = (BANK *) (pbh+1);
+  pbk   = (BANK *) (pbh+1);
+  pbk32 = (BANK32 *) pbk;
 
   /* scan event */
   while ((PTYPE) pbk - (PTYPE) pbh < (INT) pbh->data_size + (INT) sizeof(BANK_HEADER))
     {
     /* swap bank header */
-    WORD_SWAP(&pbk->type);
-    WORD_SWAP(&pbk->data_size);
-    pdata = pbk+1;
-    type = pbk->type;
+    if (b32)
+      {
+      DWORD_SWAP(&pbk32->type);
+      DWORD_SWAP(&pbk32->data_size);
+      pdata = pbk32+1;
+      type = (WORD) pbk32->type;
+      }
+    else
+      {
+      WORD_SWAP(&pbk->type);
+      WORD_SWAP(&pbk->data_size);
+      pdata = pbk+1;
+      type = pbk->type;
+      }
 
     /* pbk points to next bank */
-    pbk = (BANK *) ((char *) (pbk + 1) + ALIGN(pbk->data_size));
+    if (b32)
+      {
+      pbk32 = (BANK32 *) ((char *) (pbk32 + 1) + ALIGN(pbk32->data_size));
+      pbk = (BANK *) pbk32;
+      }
+    else
+      {
+      pbk = (BANK *) ((char *) (pbk + 1) + ALIGN(pbk->data_size));
+      pbk32 = (BANK32 *) pbk;
+      }
 
     switch (type)
       {

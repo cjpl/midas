@@ -6,6 +6,9 @@
   Contents:     Command-line interface to the MIDAS online data base.
 
   $Log$
+  Revision 1.25  1999/09/23 12:45:49  midas
+  Added 32 bit banks
+
   Revision 1.24  1999/09/22 15:27:08  midas
   Check for valid run number when starting a run
 
@@ -2503,7 +2506,12 @@ PRINT_INFO      print_info;
     /* test 3 */
     else if (param[0][0] == 't' && param[0][1] == '3')
       {
-      al_trigger_alarm("Analyzer alarm", "Histos have been moved");
+      int *pdata;
+
+      bk_init(str);
+      bk_create(str, "BANK", TID_INT, &pdata);
+      *pdata++ = 123;
+      bk_close(str, pdata);
       }
 
     /* exit/quit */
