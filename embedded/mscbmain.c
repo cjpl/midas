@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol main program
 
   $Log$
+  Revision 1.54  2004/09/25 01:14:54  midas
+  Started implementing slave port on SCS-1000
+
   Revision 1.53  2004/09/10 12:27:22  midas
   Version 1.7.5
 
@@ -208,9 +211,9 @@ extern void watchdog_refresh(void);
 
 /* forward declarations */
 void flash_upgrade(void);
+void send_remote_var(unsigned char i);
 
 /*------------------------------------------------------------------*/
-
 
 /* variables in internal RAM (indirect addressing) */
 
@@ -224,6 +227,10 @@ unsigned char idata i_in, last_i_in, final_i_in, n_out, i_out, cmd_len;
 unsigned char idata crc_code, addr_mode, n_variables, _flkey=0;
 
 unsigned char idata _cur_sub_addr, _var_size;
+
+#ifdef SCS_1000
+unsigned char var_to_send = 0xFF;
+#endif
 
 SYS_INFO sys_info;
 
@@ -398,12 +405,9 @@ void setup(void)
    /* start system clock */
    sysclock_init();
 
-   /* LED on by default */
-   for (i=0 ; i<N_LED ; i++) {
-      led_set(i, LED_ON);
+   /* default LED mode */
+   for (i=0 ; i<N_LED ; i++)
       led_mode(i, 1);
-      watchdog_refresh();
-   }
    
    /* initialize all memory */
    CSR = 0;
@@ -411,7 +415,7 @@ void setup(void)
    flash_param = 0;
    flash_program = 0;
    reboot = 0;
-   configured = 0;
+   configured = 1;
    flash_allowed = 0;
    wrong_cpu = 0;
 
@@ -462,6 +466,8 @@ void setup(void)
 
    /* retrieve EEPROM data */
    if (!eeprom_retrieve()) {
+      configured = 0;
+
       /* correct initial value */
       sys_info.node_addr = 0xFFFF;
       sys_info.group_addr = 0xFFFF;
@@ -469,14 +475,19 @@ void setup(void)
       memset(sys_info.node_name, 0, sizeof(sys_info.node_name));
       strncpy(sys_info.node_name, node_name, sizeof(sys_info.node_name));
 
-      // init variables
+      /* init variables */
       for (i = 0; variables[i].width; i++)
-         if (!(variables[i].flags & MSCBF_DATALESS))
-            // do it for each sub-address
+         if (!(variables[i].flags & MSCBF_DATALESS)) {
+            /* do it for each sub-address */
             for (adr = 0 ; adr < _n_sub_addr ; adr++) {
                memset((char*)variables[i].ud + _var_size*adr, 0, variables[i].width);
                watchdog_refresh();
             }
+#ifdef SCS_1000
+            if (variables[i].flags & MSCBF_REMOUT)
+               send_remote_var(i);
+#endif
+         }
 
       /* call user initialization routine with initialization */
       user_init(1);
@@ -873,8 +884,7 @@ void interprete(void)
    }
 
    if (cmd == CMD_READ) {
-      if (in_buf[0] == CMD_READ + 1)    // single variable
-      {
+      if (in_buf[0] == CMD_READ + 1) {  // single variable
          if (in_buf[1] < n_variables) {
             n = variables[in_buf[1]].width;     // number of bytes to return
 
@@ -1008,6 +1018,11 @@ void interprete(void)
 
          user_write(ch);
 
+#ifdef SCS_1000
+         /* mark variable to be send in main loop */
+         var_to_send = ch;
+#endif
+
          if (cmd == CMD_WRITE_ACK) {
             out_buf[0] = CMD_ACK;
             out_buf[1] = in_buf[i_in - 1];
@@ -1036,6 +1051,81 @@ void interprete(void)
 
 
 }
+
+/*------------------------------------------------------------------*/
+
+#ifdef SCS_1000
+
+static unsigned short last_addr = -1;
+static unsigned char xdata uart1_buf[10];
+
+void poll_remote_vars()
+{
+unsigned char i, n;
+
+   for (i=0 ; i<n_variables ; i++)
+      if (variables[i].flags & MSCBF_REMIN) {
+         
+         /* address remote node */
+         if (variables[i].node_address != last_addr) {
+            uart1_buf[0] = CMD_ADDR_NODE16;
+            uart1_buf[1] = (unsigned char) (variables[i].node_address >> 8);
+            uart1_buf[2] = (unsigned char) (variables[i].node_address & 0xFF);
+            uart1_buf[3] = crc8(uart1_buf, 3);
+            uart1_send(uart1_buf, 4);
+            last_addr = variables[i].node_address;
+         }
+
+         /* read variable */
+         uart1_buf[0] = CMD_READ + 1;
+         uart1_buf[1] = variables[i].channel;
+         uart1_buf[2] = crc8(uart1_buf, 2);
+         uart1_send(uart1_buf, 4);
+
+         n = uart1_receive(uart1_buf, 10);
+         if (n<2)
+            continue; // no bytes receive
+
+         if (uart1_buf[0] != CMD_ACK + n - 2)
+            continue; // invalid command received
+
+         if (variables[i].width != n - 2)
+            continue; // variables has wrong length
+
+         if (uart1_buf[n-1] != crc8(uart1_buf, n-1))
+            continue; // invalid CRC
+
+         /* all ok, so copy variable */
+         memcpy(variables[i].ud, uart1_buf+1, variables[i].width);
+  	   }
+}
+
+/*------------------------------------------------------------------*/
+
+void send_remote_var(unsigned char i)
+{
+unsigned char size;
+
+   /* address remote node */
+   if (variables[i].node_address != last_addr) {
+      uart1_buf[0] = CMD_ADDR_NODE16;
+      uart1_buf[1] = (unsigned char) (variables[i].node_address >> 8);
+      uart1_buf[2] = (unsigned char) (variables[i].node_address & 0xFF);
+      uart1_buf[3] = crc8(uart1_buf, 3);
+      uart1_send(uart1_buf, 4);
+      last_addr = variables[i].node_address;
+   }
+
+   /* send variable */
+   size = variables[i].width;
+   uart1_buf[0] = CMD_WRITE_NA + size + 1;
+   uart1_buf[1] = i;
+   memcpy(uart1_buf+2, variables[i].ud, size);
+   uart1_buf[2+size] = crc8(uart1_buf, 2+size);
+   uart1_send(uart1_buf, 3+size);
+}
+
+#endif
 
 /*------------------------------------------------------------------*/
 
@@ -1260,7 +1350,7 @@ void upgrade()
 /*------------------------------------------------------------------*\
 
   Yield should be called periodically by applications with long loops
-  to insure proper watchdog refresh
+  to insure proper watchdog refresh and other functions
 
 \*------------------------------------------------------------------*/
 
@@ -1273,6 +1363,16 @@ void yield(void)
 
    /* output RS232 data if present */
    rs232_output();
+
+   /* manage remote variables on SCS-1000 */
+#ifdef SCS_1000
+   poll_remote_vars();
+
+   if (var_to_send != 0xFF) {
+      send_remote_var(var_to_send);
+      var_to_send = 0xFF;
+   }
+#endif
 
    /* output new address to LCD if available */
 #if !defined(CPU_ADUC812) && !defined(SCS_300) && !defined(SCS_210)     // SCS210/300 redefine printf()

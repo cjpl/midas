@@ -10,6 +10,9 @@
                 Pfeiffer Dual Gauge TPG262 vacuum sensor
 
   $Log$
+  Revision 1.12  2004/09/25 01:14:54  midas
+  Started implementing slave port on SCS-1000
+
   Revision 1.11  2004/07/30 10:22:03  midas
   Added MSCBF_DATALESS
 
@@ -162,6 +165,7 @@ void user_loop(void)
    unsigned char i;
 
    if (!terminal_mode) {
+      /*
       i = gets_wait(str, sizeof(str), 200);
 
       if (i == 0) {
@@ -172,5 +176,9 @@ void user_loop(void)
          user_data.p1 = atof(str + 2);
          user_data.p2 = atof(str + 16);
       }
+      */
+      user_data.p1 += 1;
+      if (user_data.p1 > 100)
+         user_data.p1 = 0;
    }
 }
