@@ -6,6 +6,9 @@
   Contents:     Various utility functions for MSCB protocol
 
   $Log$
+  Revision 1.19  2003/03/06 11:01:13  midas
+  Priority inversion for slow ADuC
+
   Revision 1.18  2003/02/20 13:11:58  midas
   Re-init clock value on sysclock_init()
 
@@ -397,7 +400,13 @@ unsigned char code baud_table[] =
   RCAP2L = baud_table[baud-1];
 
   ES0 = 1;        // enable serial interrupt
+
+#ifdef CPU_ADUC812
+  PS = 1;         // serial interrupt high priority for slow ADuC
+#else
   PS = 0;         // serial interrupt low priority
+#endif
+
   EA = 1;         // general interrupt enable
   RB80 = 0;       // clear read bit 9
 }
@@ -440,7 +449,11 @@ void sysclock_init(void)
 
   EA = 1;             // general interrupt enable
   IE |= 0x08;         // Enable Timer1 interrupt
-  IP |= 0x08;         // Interrupt priority hight
+#ifdef CPU_ADUC812
+  PT1 = 0;            // Interrupt priority low for slow ADuC
+#else         
+  PT1 = 1;            // Interrupt priority high
+#endif
 
   TMOD = TMOD | 0x10; // 16-bit counter
 #ifdef CPU_CYGNAL
