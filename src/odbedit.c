@@ -6,6 +6,9 @@
   Contents:     Command-line interface to the MIDAS online data base.
 
   $Log$
+  Revision 1.37  2000/05/02 14:58:27  midas
+  Added 'cp' as alias to 'copy'
+
   Revision 1.36  2000/03/03 01:45:14  midas
   Added web password for mhttpd, added webpasswd command in odbedit
 
@@ -1609,7 +1612,7 @@ PRINT_INFO      print_info;
       }
 
     /* copy */
-    else if (param[0][0] == 'c' && param[0][1] == 'o')
+    else if (param[0][0] == 'c' && (param[0][1] == 'o' || param[0][1] == 'p'))
       {
       /* test if destination exists */
       compose_name(pwd, param[2], str);
