@@ -14,6 +14,10 @@
                 Brown, Prentice Hall
 
   $Log$
+  Revision 1.19  1999/01/20 08:55:44  midas
+  - Renames ss_xxx_mutex to ss_mutex_xxx
+  - Added timout flag to ss_mutex_wait_for
+
   Revision 1.18  1999/01/18 17:48:42  pierre
   - Correct ss_file_find().
 
@@ -1233,10 +1237,10 @@ INT ss_create_thread(INT (*thread_func)(void *), void *param)
 
 static INT skip_mutex_handle = -1;
 
-INT ss_create_mutex(char *name, HNDLE *mutex_handle)
+INT ss_mutex_create(char *name, HNDLE *mutex_handle)
 /********************************************************************\
 
-  Routine: ss_create_mutex
+  Routine: ss_mutex_create
 
   Purpose: Create a mutex with a specific name
 
@@ -1380,15 +1384,16 @@ char mutex_name[256], path[256], file_name[256];
 
 /*------------------------------------------------------------------*/
 
-INT ss_wait_for_mutex(HNDLE mutex_handle)
+INT ss_mutex_wait_for(HNDLE mutex_handle, INT timeout)
 /********************************************************************\
 
-  Routine: ss_wait_for_mutex
+  Routine: ss_mutex_wait_for
 
   Purpose: Wait for a mutex to get owned
 
   Input:
     HNDLE  *mutex_handle    Handle of the created mutex
+    INT    timeout          Timeout in ms, zero for no timeout
 
   Output:
     none
@@ -1403,7 +1408,8 @@ INT status;
 
 #ifdef OS_WINNT
 
-  status = WaitForSingleObject((HANDLE) mutex_handle, INFINITE);
+  status = WaitForSingleObject((HANDLE) mutex_handle, 
+                               timeout == 0 ? INFINITE : timeout);
 
   if (status == WAIT_FAILED)
     return SS_NO_MUTEX;
@@ -1447,10 +1453,10 @@ INT status;
   if (ss_in_async_routine_flag)
     if (semctl(mutex_handle, 0, GETPID, arg) == getpid())
       if (semctl(mutex_handle, 0, GETVAL, arg) == 0)
-	{
-	skip_mutex_handle = mutex_handle;
-	return SS_SUCCESS;
-	}
+	  {
+	  skip_mutex_handle = mutex_handle;
+	  return SS_SUCCESS;
+	  }
 
   skip_mutex_handle = -1;
 
@@ -1477,7 +1483,7 @@ INT status;
 
 /*------------------------------------------------------------------*/
 
-INT ss_release_mutex(HNDLE mutex_handle)
+INT ss_mutex_release(HNDLE mutex_handle)
 /********************************************************************\
 
   Routine: ss_release_mutex
@@ -1544,10 +1550,10 @@ INT status;
 
 /*------------------------------------------------------------------*/
 
-INT ss_delete_mutex(HNDLE mutex_handle, INT destroy_flag)
+INT ss_mutex_delete(HNDLE mutex_handle, INT destroy_flag)
 /********************************************************************\
 
-  Routine: ss_delete_mutex
+  Routine: ss_mutex_delete
 
   Purpose: Delete a mutex
 

@@ -7,6 +7,10 @@
                 routines
 
   $Log$
+  Revision 1.5  1999/01/20 08:55:43  midas
+  - Renames ss_xxx_mutex to ss_mutex_xxx
+  - Added timout flag to ss_mutex_wait_for
+
   Revision 1.4  1999/01/18 17:28:47  pierre
   - Added prototypes for dm_()
 
@@ -474,10 +478,10 @@ INT ss_getpid(void);
 INT ss_gettid(void);
 INT ss_getthandle(void);
 INT ss_set_async_flag(INT flag);
-INT ss_create_mutex(char *mutex_name, HNDLE *mutex_handle);
-INT ss_wait_for_mutex(HNDLE mutex_handle);
-INT ss_release_mutex(HNDLE mutex_handle);
-INT ss_delete_mutex(HNDLE mutex_handle, INT destroy_flag);
+INT ss_mutex_create(char *mutex_name, HNDLE *mutex_handle);
+INT ss_mutex_wait_for(HNDLE mutex_handle, INT timeout);
+INT ss_mutex_release(HNDLE mutex_handle);
+INT ss_mutex_delete(HNDLE mutex_handle, INT destroy_flag);
 INT ss_wake(INT pid, INT tid, INT thandle);
 INT ss_alarm(INT millitime, void (*func)(int));
 INT ss_suspend_get_port(INT* port);
