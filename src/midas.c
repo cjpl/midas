@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.19  1999/02/09 14:38:23  midas
+  Added debug logging facility
+
   Revision 1.18  1999/02/06 00:17:12  pierre
   - Fix local watchdog timeout in cm_set_watchdog_params()
   - Touch dm_xxx functions for OS_WINNT
@@ -126,7 +129,6 @@ static INT            _buffer_entries = 0;
 static INT            _msg_buffer = 0;
 static void           (*_msg_dispatch)(HNDLE,HNDLE,EVENT_HEADER*,void*);
 
-
 static REQUEST_LIST   *_request_list;
 static INT            _request_list_entries = 0;
 
@@ -144,6 +146,8 @@ static INT            _tcp_wp = 0;
 static INT            _tcp_rp = 0;
 
 static INT            _send_sock;
+
+static void           (*_debug_print)(char*) = NULL;
 
 /* table for transition functions */
 
@@ -7880,6 +7884,32 @@ INT rpc_set_name(char *name)
 
 /*------------------------------------------------------------------*/
 
+INT rpc_set_debug(void (*func)(char*))
+/********************************************************************\
+
+  Routine: rpc_set_debug
+
+  Purpose: Set a function which is called on every RPC call to 
+           display the function name and parameters of the RPC
+           call.
+
+  Input:
+   void *func(char*)        Pointer to function.
+
+  Output:
+    none
+
+  Function value:
+    RPC_SUCCESS             Successful completion
+
+\********************************************************************/
+{
+  _debug_print = func;
+  return RPC_SUCCESS;
+}
+
+/*------------------------------------------------------------------*/
+
 void rpc_va_arg(va_list* arg_ptr, INT arg_type, void *arg)
 {
   switch(arg_type)
@@ -9458,6 +9488,7 @@ INT          tid, flags;
 NET_COMMAND  *nc_in, *nc_out;
 INT          param_size, max_size;
 void         *prpc_param[20];
+char         str[256], debug_line[256];
 
 /* return buffer must be auto for multi-thread servers */
 char         return_buffer[NET_BUFFER_SIZE];
@@ -9496,6 +9527,9 @@ char         return_buffer[NET_BUFFER_SIZE];
 
   in_param_ptr  = nc_in->param;
   out_param_ptr = nc_out->param;
+
+  if (_debug_print)
+    sprintf(debug_line, "%s(", rpc_list[index].name);
 
   for (i=0 ; rpc_list[index].param[i].tid != 0; i++)
     {
@@ -9537,6 +9571,19 @@ char         return_buffer[NET_BUFFER_SIZE];
                            convert_flags);
         }
 
+      if (_debug_print)
+        {
+        db_sprintf(str, in_param_ptr, param_size, 0, rpc_list[index].param[i].tid);
+        if (rpc_list[index].param[i].tid == TID_STRING)
+          {
+          strcat(debug_line, "\"");
+          strcat(debug_line, str);
+          strcat(debug_line, "\"");
+          }
+        else
+          strcat(debug_line, str);
+        }
+
       in_param_ptr += param_size;
       }
 
@@ -9576,9 +9623,22 @@ char         return_buffer[NET_BUFFER_SIZE];
       if (rpc_list[index].param[i].flags & RPC_IN)
         memcpy(out_param_ptr, prpc_param[i], param_size);
 
+      if (_debug_print && !(flags & RPC_IN))
+        strcat(debug_line, "-");
+
       prpc_param[i] = out_param_ptr;
       out_param_ptr += param_size;
       }
+    
+    if (_debug_print)
+      if (rpc_list[index].param[i+1].tid)
+        strcat(debug_line, ", ");
+    }
+
+  if (_debug_print)
+    {
+    strcat(debug_line, ")");
+    _debug_print(debug_line);
     }
 
   last_param_ptr = out_param_ptr;
@@ -9746,7 +9806,7 @@ struct sockaddr_in   acc_addr;
 struct hostent       *phe;
 char                 str[100];
 char                 host_port1_str[30], host_port2_str[30], host_port3_str[30];
-char                 host_name[HOST_NAME_LENGTH];
+char                 host_name[HOST_NAME_LENGTH], debug_str[30];
 char                 *argv[10];
 char                 net_buffer[256];
 struct linger        ling;
@@ -9845,6 +9905,7 @@ static struct callback_addr callback;
         callback.host_port1 = (short) port1;
         callback.host_port2 = (short) port2;
         callback.host_port3 = (short) port3;
+        callback.debug = (_debug_print != NULL);
 
         /* get the name of the remote host */
 #ifdef OS_VXWORKS
@@ -9899,21 +9960,22 @@ static struct callback_addr callback;
           sprintf(host_port1_str, "%d", callback.host_port1);
           sprintf(host_port2_str, "%d", callback.host_port2);
           sprintf(host_port3_str, "%d", callback.host_port3);
+          sprintf(debug_str, "%d", callback.debug);
 
           argv[0] = (char *) rpc_get_server_option(RPC_OSERVER_NAME);
           argv[1] = callback.host_name;
           argv[2] = host_port1_str;
           argv[3] = host_port2_str;
           argv[4] = host_port3_str;
-          argv[5] = callback.experiment;
-          argv[6] = callback.directory;
-          argv[7] = callback.user;
-          argv[8] = NULL;
+          argv[5] = debug_str;
+          argv[6] = callback.experiment;
+          argv[7] = callback.directory;
+          argv[8] = callback.user;
+          argv[9] = NULL;
 
-/*
-          cm_msg(MINFO, "", "%s %s %s %s %s %s %s %s, %s", 
-            argv[0], argv[1], argv[2], argv[3], argv[4], argv[5], argv[6], argv[7], argv[8]);
-*/
+          cm_msg(MINFO, "", "%s %s %s %s %s %s %s %s %s %s", 
+            argv[0], argv[1], argv[2], argv[3], argv[4], 
+            argv[5], argv[6], argv[7], argv[8], argv[9]);
 
           status = ss_spawnv(P_NOWAIT, (char *) rpc_get_server_option(RPC_OSERVER_NAME), argv);
           if (status != SS_SUCCESS)

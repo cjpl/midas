@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.13  1999/02/09 14:38:54  midas
+  Added debug logging facility
+
   Revision 1.12  1999/01/20 09:03:38  midas
   Added LAM_SOURCE_CRATE and LAM_SOURCE_STATION macros
 
@@ -906,6 +909,7 @@ typedef struct {
 
 typedef struct {
   INT           id;
+  char          *name;
   RPC_PARAM     param[15];
   INT           (*dispatch)(INT,void**);
 } RPC_LIST;
@@ -1170,6 +1174,7 @@ INT EXPRT rpc_set_option(HNDLE hConn, INT item, INT value);
 INT EXPRT rpc_set_name(char *name);
 INT EXPRT rpc_get_name(char *name);
 INT EXPRT rpc_is_remote(void);
+INT EXPRT rpc_set_debug(void (*func)(char*));
 
 INT EXPRT rpc_register_server(INT server_type, char *name, INT *port, INT (*func)(INT,void**));
 INT EXPRT rpc_server_thread(void *pointer);

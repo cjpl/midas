@@ -6,6 +6,9 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
+  Revision 1.6  1999/02/09 14:38:11  midas
+  Added debug logging facility
+
   Revision 1.5  1999/02/05 23:39:39  pierre
   - Add commented function print_rpc_string(index)
 
@@ -29,102 +32,34 @@
 CRITICAL_SECTION buffer_critial_section;
 #endif
 
-typedef struct {
-  char name[32];
-  int  code;
-  } RPC_NAME;
-RPC_NAME rpc__list[] = {
- {"RPC_CM_SET_CLIENT_INFO"          ,11000}
-,{"RPC_CM_SET_WATCHDOG_PARAMS"      ,11001}
-,{"RPC_CM_SET_CLIENT_INFO"          ,11000}
-,{"RPC_CM_SET_WATCHDOG_PARAMS"      ,11001}
-,{"RPC_CM_CLEANUP"                  ,11002}
-,{"RPC_CM_GET_WATCHDOG_INFO"        ,11003}
-,{"RPC_CM_MSG_LOG"                  ,11004}
-,{"RPC_CM_EXECUTE"                  ,11005}
-,{"RPC_CM_SYNCHRONIZE"              ,11006}
-,{"RPC_CM_ASCTIME"                  ,11007}
-,{"RPC_CM_TIME"                     ,11008}
-,{"RPC_BM_OPEN_BUFFER"              ,11100}
-,{"RPC_BM_CLOSE_BUFFER"             ,11101}
-,{"RPC_BM_CLOSE_ALL_BUFFERS"        ,11102}
-,{"RPC_BM_GET_BUFFER_INFO"          ,11103}
-,{"RPC_BM_GET_BUFFER_LEVEL"         ,11104}
-,{"RPC_BM_INIT_BUFFER_COUNTERS"     ,11105}
-,{"RPC_BM_SET_CACHE_SIZE"           ,11106}
-,{"RPC_BM_ADD_EVENT_REQUEST"        ,11107}
-,{"RPC_BM_REMOVE_EVENT_REQUEST"     ,11108}
-,{"RPC_BM_SEND_EVENT"               ,11109}
-,{"RPC_BM_FLUSH_CACHE"              ,11110}
-,{"RPC_BM_RECEIVE_EVENT"            ,11111}
-,{"RPC_BM_MARK_READ_WAITING"        ,11112}
-,{"RPC_BM_EMPTY_BUFFERS"            ,11113}
-,{"RPC_DB_OPEN_DATABASE"            ,11200}
-,{"RPC_DB_CLOSE_DATABASE"           ,11201}
-,{"RPC_DB_CLOSE_ALL_DATABASES"      ,11202}
-,{"RPC_DB_CREATE_KEY"               ,11203}
-,{"RPC_DB_CREATE_LINK"              ,11204}
-,{"RPC_DB_SET_VALUE"                ,11205}
-,{"RPC_DB_GET_VALUE"                ,11206}
-,{"RPC_DB_FIND_KEY"                 ,11207}
-,{"RPC_DB_FIND_LINK"                ,11208}
-,{"RPC_DB_GET_PATH"                 ,11209}
-,{"RPC_DB_DELETE_KEY"               ,11210}
-,{"RPC_DB_ENUM_KEY"                 ,11211}
-,{"RPC_DB_GET_KEY"                  ,11212}
-,{"RPC_DB_GET_DATA"                 ,11213}
-,{"RPC_DB_SET_DATA"                 ,11214}
-,{"RPC_DB_SET_DATA_INDEX"           ,11215}
-,{"RPC_DB_SET_MODE"                 ,11216}
-,{"RPC_DB_GET_RECORD_SIZE"          ,11219}
-,{"RPC_DB_GET_RECORD"               ,11220}
-,{"RPC_DB_SET_RECORD"               ,11221}
-,{"RPC_DB_ADD_OPEN_RECORD"          ,11222}
-,{"RPC_DB_REMOVE_OPEN_RECORD"       ,11223}
-,{"RPC_DB_SAVE"                     ,11224}
-,{"RPC_DB_LOAD"                     ,1225}
-,{"RPC_DB_SET_CLIENT_NAME"          ,11226}
-,{"RPC_DB_RENAME_KEY"               ,11227}
-,{"RPC_DB_ENUM_LINK"                ,11228}
-,{"RPC_DB_REORDER_KEY"              ,11229}
-,{"RPC_DB_CREATE_RECORD"            ,11230}
-,{"RPC_DB_GET_DATA_INDEX"           ,11231}
-,{"RPC_DB_GET_KEY_TIME"             ,11232}
-,{"RPC_DB_GET_OPEN_RECORDS"         ,11233}
-,{"RPC_DB_SHOW_MEM"                 ,11234}
-,{"RPC_DB_FLUSH_DATABASE"           ,11235}
-,{"RPC_DB_SET_DATA_INDEX2"          ,11236}
-,{"RPC_HS_SET_PATH"                 ,11300}
-,{"RPC_HS_DEFINE_EVENT"             ,11301} 
-,{"RPC_HS_WRITE_EVENT"              ,11302}
-,{"RPC_HS_COUNT_EVENTS"             ,11303}
-,{"RPC_HS_ENUM_EVENTS"              ,11304}
-,{"RPC_HS_COUNT_TAGS"               ,11305}
-,{"RPC_HS_ENUM_TAGS"                ,11306}
-,{"RPC_HS_READ"                     ,11307}
-,{"RPC_RC_TRANSITION"               ,12000}
-,{"RPC_ANA_CLEAR_HISTOS"            ,13000}
-,{"RPC_LOG_REWIND"                  ,14000}
-,{"RPC_TEST"                        ,15000}
-,{"RPC_CNAF16"                      ,16000}
-,{"RPC_CNAF24"                      ,16001}
-,{"RPC_ID_WATCHDOG"                 ,99997}
-,{"RPC_ID_SHUTDOWN"                 ,99998}
-,{"RPC_ID_EXIT"                     ,99999}
-,{"", 0}
-  };
-
 INT rpc_server_dispatch(INT index, void *prpc_param[]);
 
 /*---- msg_print ---------------------------------------------------*/
 
-int msg_print(const char *msg)
+INT msg_print(const char *msg)
 {
   /* print message to system log */
   ss_syslog(msg);
 
   /* print message to stdout */
   return puts(msg);
+}
+
+/*---- debug_print -------------------------------------------------*/
+
+void debug_print(char *msg)
+{
+FILE *f;
+
+  /* print message to file */
+  f = fopen("mserver.log", "a");
+  if (f != NULL)
+    {
+    fprintf(f, "%s\n", msg);
+    fclose(f);
+    }
+  else
+    printf("Cannot open \"mserver.log\".");
 }
 
 /*---- main --------------------------------------------------------*/
@@ -176,8 +111,8 @@ main(int argc, char **argv)
 \********************************************************************/
 {
 struct callback_addr callback;
-int   flag, size;
-BOOL  inetd;
+int    i, flag, size, server_type;
+BOOL   inetd, debug;
 
 #ifdef OS_WINNT
   /* init critical section object for open/close buffer */
@@ -194,7 +129,7 @@ BOOL  inetd;
   size = sizeof(int);
   inetd = (getsockopt(0, SOL_SOCKET, SO_TYPE, (void *)&flag, (void *)&size) == 0);
            
-  if (argc < 3 && inetd)
+  if (argc < 7 && inetd)
     {
     /* accept connection from stdin */
     rpc_set_server_option(RPC_OSERVER_TYPE, ST_MPROCESS);
@@ -203,53 +138,76 @@ BOOL  inetd;
     return 0;
     }
 
-  if (!inetd && argc < 3)
+  if (!inetd && argc < 7)
     cm_msg(MLOG, "main", "%s started interactively", argv[0]);
 
-  if (argc < 3)
+  if (argc < 7)
     {
-    /* if command line parameter given, start according server type */
-    if (argc == 2)
+    debug = FALSE;
+    server_type = ST_MPROCESS;
+    
+    /* parse command line parameters */
+    for (i=1 ; i<argc ; i++)
       {
-      if (atoi(argv[1]) == 0)
-        printf("Single thread server started\n");
-      if (atoi(argv[1]) == 1)
+      if (argv[i][0] == '-' && argv[i][1] == 'd')
+        debug = TRUE;
+      else if (argv[i][0] == '-')
         {
-        if (ss_thread_create(NULL, NULL) == SS_NO_THREAD)
+        if (i+1 >= argc || argv[i+1][0] == '-')
+          goto usage;
+        if (argv[i][1] == 's')
+          server_type = ST_SINGLE;
+        else if (argv[i][1] == 't')
+          server_type = ST_MTHREAD;
+        else if (argv[i][1] == 'm')
+          server_type = ST_MPROCESS;
+        else
           {
-          printf("MIDAS doesn't support threads on this OS.\n");
+  usage:
+          printf("usage: mserver [-s][-t][-m][-d]\n");
+          printf("               -s    Single process server\n");
+          printf("               -t    Multi threaded server\n");
+          printf("               -m    Multi process server (default)\n");
+          printf("               -d    Write debug info to \"mserver.log\"\n\n");
           return 0;
           }
-
-        printf("NOTE: THE MULTI THREADED SERVER IS BUGGY, ONLY USE IT FOR TEST PURPOSES\n");  
-        printf("Multi thread server started\n");
         }
-      if (atoi(argv[1]) == 2)
-        printf("Multi process server started\n");
+      }
 
-      /* register server */
-      if (rpc_register_server(atoi(argv[1])+1, argv[0], 
-                              NULL, rpc_server_dispatch) != RPC_SUCCESS)
+    /* turn of debugging */
+    if (debug)
+      {
+      printf("Debugging mode is on.\n");
+      rpc_set_debug(debug_print);
+      }
+
+    /* if command line parameter given, start according server type */
+    if (server_type == ST_MTHREAD)
+      {
+      if (ss_thread_create(NULL, NULL) == SS_NO_THREAD)
         {
-        printf("Cannot start server\n");
+        printf("MIDAS doesn't support threads on this OS.\n");
         return 0;
         }
 
-      /* register MIDAS library functions */
-      rpc_register_functions(rpc_get_internal_list(1), rpc_server_dispatch);
+      printf("NOTE: THE MULTI THREADED SERVER IS BUGGY, ONLY USE IT FOR TEST PURPOSES\n");  
+      printf("Multi thread server started\n");
       }
-    else
-      {
-      /* without command line parameter, start default server type */
+    else if (server_type == ST_SINGLE)
+      printf("Single thread server started\n");
+    else if (server_type == ST_MPROCESS)
       printf("Multi process server started\n");
 
-      if (rpc_register_server(ST_MPROCESS, argv[0], NULL, rpc_server_dispatch) 
-            != RPC_SUCCESS)
-        {
-        printf("Cannot start server\n");
-        return 0;
-        }
+    /* register server */
+    if (rpc_register_server(server_type, argv[0], 
+                            NULL, rpc_server_dispatch) != RPC_SUCCESS)
+      {
+      printf("Cannot start server\n");
+      return 0;
       }
+
+    /* register MIDAS library functions */
+    rpc_register_functions(rpc_get_internal_list(1), rpc_server_dispatch);
 
     /* run forever */
     while (ss_suspend(5000, 0) != RPC_SHUTDOWN);
@@ -266,23 +224,25 @@ BOOL  inetd;
     callback.host_port1 = atoi(argv[3]);
     callback.host_port2 = atoi(argv[4]);
     callback.host_port3 = atoi(argv[5]);
+    callback.debug = atoi(argv[6]);
+    if (argc > 7)
+      strcpy(callback.experiment, argv[7]);
+    if (argc > 8)
+      strcpy(callback.directory, argv[8]);
+    if (argc > 9)
+      strcpy(callback.user, argv[9]);
+#else
+    strcpy(callback.host_name, argv[1]);
+    callback.host_port1 = atoi(argv[2]);
+    callback.host_port2 = atoi(argv[3]);
+    callback.host_port3 = atoi(argv[4]);
+    callback.debug = atoi(argv[5]);
     if (argc > 6)
       strcpy(callback.experiment, argv[6]);
     if (argc > 7)
       strcpy(callback.directory, argv[7]);
     if (argc > 8)
       strcpy(callback.user, argv[8]);
-#else
-    strcpy(callback.host_name, argv[1]);
-    callback.host_port1 = atoi(argv[2]);
-    callback.host_port2 = atoi(argv[3]);
-    callback.host_port3 = atoi(argv[4]);
-    if (argc > 5)
-      strcpy(callback.experiment, argv[5]);
-    if (argc > 6)
-      strcpy(callback.directory, argv[6]);
-    if (argc > 7)
-      strcpy(callback.user, argv[7]);
 #endif
     callback.index = 0;
 
@@ -317,6 +277,12 @@ BOOL  inetd;
       }
 #endif
 
+    if (callback.debug)
+      {
+      printf("Debuggin mode is on.\n");
+      rpc_set_debug(debug_print);
+      }
+
     rpc_register_server(ST_SUBPROCESS, NULL, NULL, rpc_server_dispatch);
 
     /* register MIDAS library functions */
@@ -344,20 +310,6 @@ INT rpc_test(BYTE b, WORD w, INT i, float f, double d,
 
   return 1;
 }
-
-
-/*----- RPC peeper for debugging -----------------------------------*/
-/* see call in rpc_server_displatch */
-void print_rpc_string(INT index)
-{ 
-  INT j;
-  for (j=0; rpc__list[j].name[0]; j++)
-    {
-      if (rpc__list[j].code == index)
-        printf(" call to %i =>  %s \n",index,rpc__list[j].name);
-    }
-}
-
 
 /*----- rpc_server_dispatch ----------------------------------------*/
 
@@ -388,9 +340,6 @@ INT status;
 INT convert_flags;
 
   convert_flags = rpc_get_server_option(RPC_CONVERT_FLAGS);
-  
-/*-PAA- to look at the RPC sequence call
-  print_rpc_string(index); */
   
   switch (index)
     {
