@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus communication functions
 
   $Log$
+  Revision 1.43  2003/07/14 10:18:27  midas
+  HW RESET uses negative logic
+
   Revision 1.42  2003/06/27 13:51:01  midas
   Added automatic submaster reset
 
@@ -132,7 +135,7 @@
 
 \********************************************************************/
 
-#define MSCB_LIBRARY_VERSION   "1.4.7"
+#define MSCB_LIBRARY_VERSION   "1.4.8"
 #define MSCB_PROTOCOL_VERSION  "1.4"
 
 #ifdef _MSC_VER           // Windows includes
@@ -194,7 +197,7 @@ MSCB_FD mscb_fd[MSCB_MAX_FD];
 
    1  No    PAP ---- 12 ---- P2.   <-     STATUS
 
-   2  Yes   !ALF --- 14 ---- RESET   ->    (HW RESET)
+   2  Yes   !ALF --- 14 ---- RESET   ->    /HW RESET
    2  No    INI ---- 16 ---- P2.4    ->    BIT9
 
 */
@@ -402,16 +405,16 @@ static unsigned int mask=0;
 
   switch (signal)
     {
-    case LPT_STROBE: // negative
+    case LPT_STROBE: // negative port, negative MSCB usage
        mask = flag ? mask | (1<<0) : mask & ~(1<<0);
        break;
-    case LPT_RESET:  // negative
-       mask = !flag ? mask | (1<<1) : mask & ~(1<<1);
+    case LPT_RESET:  // negative port, negative MSCB usage
+       mask = flag ? mask | (1<<1) : mask & ~(1<<1);
        break;
     case LPT_BIT9:   // positive
        mask = flag ? mask | (1<<2) : mask & ~(1<<2);
        break;
-    case LPT_ACK:    // negative
+    case LPT_ACK:    // negative port, negative MSCB usage
        mask = flag ? mask | (1<<3) : mask & ~(1<<3);
        break;
     case LPT_READMODE: // positive
@@ -527,9 +530,11 @@ int i, timeout;
       {
       printf("Automatic submaster reset.\n");
 
+      /*
       mscb_release(fd);
       mscb_reset(fd);
       mscb_lock(fd);
+      */
       Sleep(100);
 
       /* wait for SM ready */
@@ -552,6 +557,8 @@ int i, timeout;
     else
       pp_wcontrol(fd, LPT_BIT9, 0);
 
+    // ## printf(".");
+
     /* set strobe */
     pp_wcontrol(fd, LPT_STROBE, 1);
 
@@ -566,9 +573,11 @@ int i, timeout;
       {
       printf("Automatic submaster reset.\n");
 
+      /*
       mscb_release(fd);
       mscb_reset(fd);
       mscb_lock(fd);
+      */
       Sleep(100);
 
       /* try again */
@@ -906,6 +915,9 @@ char          host[256], port[256];
 
   /* switch to output mode */
   pp_setdir(index+1, 0);
+
+  /* wait for submaster irritated by a stuck LPT_STROBE */
+  Sleep(100);
   
   /* check if SM alive */
   if (pp_rstatus(index+1, LPT_BUSY))
@@ -1208,7 +1220,7 @@ int mscb_reset(int fd)
 
   /* toggle reset */
   pp_wcontrol(fd, LPT_RESET, 1);
-  Sleep(100); /* for elko */
+  Sleep(100); // for elko
   pp_wcontrol(fd, LPT_RESET, 0);
 
   mscb_release(fd);
