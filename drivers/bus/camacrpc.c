@@ -8,6 +8,9 @@
                 CAMAC frontend (mfe.c)
 
   $Log$
+  Revision 1.5  2003/04/23 20:57:52  pierre
+  add client_name arg to rpc_client_connect
+
   Revision 1.4  2002/05/08 19:54:40  midas
   Added extra parameter to function db_get_value()
 
@@ -82,7 +85,7 @@ HNDLE hDB, hKey, hRootKey, hSubkey;
     rpc_register_functions(rpc_get_internal_list(0), NULL);
     rpc_register_functions(rpc_get_internal_list(1), NULL);
 
-    status = rpc_client_connect(rpc_server, 1750, &hConn);
+    status = rpc_client_connect(rpc_server, 1750, client_name, &hConn);
     if (status != RPC_SUCCESS)
       {
       printf("Cannot connect to RPC server running on %s at port 1750.\n", rpc_server);
