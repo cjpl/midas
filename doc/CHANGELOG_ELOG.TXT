@@ -1,3 +1,10 @@
+Version 1.0.5, released August 8th, 2001
+========================================
+
+- Added separate password for message deletion
+- Added expiration time for passwords
+- Added "suppress Email notification" for message entry
+
 Version 1.0.4, released August 7th, 2001
 ========================================
 
