@@ -14,6 +14,9 @@
  *  Revision    : 1.0  1998        Pierre	 Initial revision
  *                include linux-camac.h from linux drivers
  *  $Log$
+ *  Revision 1.2  2000/09/07 17:16:46  pierre
+ *  -Add fe_name
+ *
  *  Revision 1.1  1999/12/20 10:18:11  midas
  *  Reorganized driver directory structure
  *
@@ -653,7 +656,7 @@ INLINE void cam_glint_attach(int lam, void (*isr)(void))
 }
 
 /*--Extra functions------------------------------------------*/
-int cam_init_rpc(char *host_name, char *exp_name, char *client_name, char *rpc_server)
+int cam_init_rpc(char *host_name, char *exp_name, char *fe_name, char *client_name, char *rpc_server)
 {
   return SUCCESS;
 }
@@ -706,7 +709,6 @@ INLINE void cam24i_q(const int c, const int n, const int a, const int f, DWORD *
 INLINE void cam16o_q(const int c, const int n, const int a, const int f, WORD d, int *x, int *q){*q=*x=1;}
 INLINE void cam24o_q(const int c, const int n, const int a, const int f, DWORD d, int *x, int *q){*q=*x=1;}
 INLINE int  cam_init(void){printf(" NOT OS_LINUX ==> simulation \n"); return 1;}
-INLINE int  cam_init_rpc(char *host_name, char *exp_name, char *client_name, char *rpc_server){return 1;}
 INLINE void cam_exit(void){printf(" WAS NOT OS_LINUX ==> simulation \n");}
 INLINE void cam_inhibit_set(const int c){}
 INLINE void cam_inhibit_clear(const int c){}
