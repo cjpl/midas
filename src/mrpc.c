@@ -6,6 +6,9 @@
   Contents:     List of MIDAS RPC functions with parameters
 
   $Log$
+  Revision 1.9  1999/04/15 09:57:27  midas
+  Added cm_exist
+
   Revision 1.8  1999/04/13 12:20:44  midas
   Added db_get_data1 (for Java)
 
@@ -83,6 +86,11 @@ static RPC_LIST rpc_list_library[] = {
     {{TID_STRING,     RPC_IN},
      {TID_STRING,     RPC_OUT},
      {TID_INT,        RPC_IN},
+     {0} }},
+
+  { RPC_CM_EXIST, "cm_exist",
+    {{TID_STRING,     RPC_IN},
+     {TID_BOOL,       RPC_IN},
      {0} }},
 
   { RPC_CM_SYNCHRONIZE, "cm_synchronize",
@@ -283,6 +291,8 @@ static RPC_LIST rpc_list_library[] = {
 
   { RPC_DB_GET_KEY_INFO, "db_get_key_info",
     {{TID_INT,        RPC_IN},
+     {TID_INT,        RPC_IN},
+     {TID_STRING,     RPC_OUT},
      {TID_INT,        RPC_IN},
      {TID_INT,        RPC_OUT}, 
      {TID_INT,        RPC_OUT}, 
