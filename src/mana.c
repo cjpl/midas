@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.109  2003/12/12 12:54:35  midas
+  Warn about uppercase characters in HBOOK directory names
+
   Revision 1.108  2003/12/12 12:52:24  midas
   Warn about uppercase characters in HBOOK directory names
 
@@ -2339,7 +2342,7 @@ char       str[256], file_name[256];
     if (i<(int)strlen(str))
       {
       printf("Error: Due to a limitation in HBOOK, directoy names may not contain uppercase\n");
-      printf("       characters. Histogram saving will not work.\n");
+      printf("       characters. Histogram saving to %s will not work.\n", str);
       }
     else
       {
@@ -4123,7 +4126,7 @@ char str[256];
     if (i<(int)strlen(str))
       {
       printf("Error: Due to a limitation in HBOOK, directoy names may not contain uppercase\n");
-      printf("       characters. Histogram loading will not work.\n");
+      printf("       characters. Histogram loading from %s will not work.\n", str);
       }
     else
       {
@@ -4175,7 +4178,7 @@ char str[256];
   if (i<(int)strlen(str))
     {
     printf("Error: Due to a limitation in HBOOK, directoy names may not contain uppercase\n");
-    printf("       characters. Histogram saving will not work.\n");
+    printf("       characters. Histogram saving to %s will not work.\n", str);
     }
   else
     {
