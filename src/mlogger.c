@@ -6,6 +6,9 @@
   Contents:     MIDAS logger program
 
   $Log$
+  Revision 1.92  2005/03/24 08:45:57  ritt
+  Save ODB dump in .mid files in XML format
+
   Revision 1.91  2004/12/14 22:31:58  olchansk
   Add name of the data stream to the "Write operation took N ms" warning.
 
@@ -429,7 +432,10 @@ void log_odb_dump(LOG_CHN * log_chn, short int event_id, INT run_number)
       }
 
       size = buffer_size - sizeof(EVENT_HEADER);
-      status = db_copy(hDB, 0, (char *) (pevent + 1), &size, "");
+      status = db_copy_xml(hDB, 0, (char *) (pevent + 1), &size);
+      
+      /* following line would dump ODB in old ASCII format instead of XML */
+      //status = db_copy(hDB, 0, (char *) (pevent + 1), &size, "");
       if (status != DB_TRUNCATED) {
          bm_compose_event(pevent, event_id, MIDAS_MAGIC,
                           buffer_size - sizeof(EVENT_HEADER) - size + 1, run_number);
@@ -464,7 +470,10 @@ void odb_save(char *filename)
    } else
       strcpy(path, filename);
 
-   db_save(hDB, 0, path, FALSE);
+   if (strstr(filename, ".xml") || strstr(filename, ".XML"))
+      db_save_xml(hDB, 0, path);
+   else
+      db_save(hDB, 0, path, FALSE);
 }
 
 
