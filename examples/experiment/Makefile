@@ -6,6 +6,9 @@
 #  Contents:     Makefile for MIDAS example frontend and analyzer
 #
 #  $Log$
+#  Revision 1.21  2003/08/19 23:39:48  pierre
+#  add pthread lib
+#
 #  Revision 1.20  2003/07/14 14:53:11  midas
 #  Restructured driver directory
 #
@@ -75,7 +78,7 @@
 #
 OSFLAGS = -DOS_LINUX -Dextname
 CFLAGS = -g -O2 -Wall
-LIBS = -lm -lz -lutil -lnsl
+LIBS = -lm -lz -lutil -lnsl -lpthread
 
 #-----------------------------------------
 # ROOT flags and libs
