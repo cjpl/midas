@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.58  2001/11/13 14:17:09  midas
+  More new features
+
   Revision 1.57  2001/11/12 15:22:27  midas
   Fixed bug with admin password and checking of allowed commands
 
@@ -185,7 +188,7 @@
 \********************************************************************/
 
 /* Version of ELOG */
-#define VERSION "1.2.1"
+#define VERSION "1.2.2"
 
 #include <stdio.h>
 #include <sys/types.h>
@@ -230,7 +233,9 @@ typedef unsigned long int DWORD;
 #include <errno.h>
 
 #define closesocket(s) close(s)
+#ifndef O_BINARY
 #define O_BINARY 0
+#endif
 #endif
 
 typedef int INT;
@@ -872,11 +877,11 @@ int  i;
       i++;
       }
 
-    if (p)
-      p = strchr(p, '\n');
-    if (p)
+    while (*p && *p != '\r' && *p != '\n')
       p++;
-    } while (p);
+    while (*p && (*p == '\r' || *p == '\n'))
+      p++;
+    } while (*p);
 
   return 0;
 }
@@ -1041,6 +1046,53 @@ char *pc;
 
 /*------------------------------------------------------------------*/
 
+/* Simplified copy of fnmatch() for Cygwin where fnmatch is not defined */
+
+#define	EOS	'\0'
+
+int fnmatch1(const char *pattern, const char *string)
+{
+const char *stringstart;
+char c, test;
+
+  for (stringstart = string;;)
+	  switch (c = *pattern++) {
+	  case EOS:
+		  return (*string == EOS ? 0 : 1);
+	  case '?':
+		  if (*string == EOS)
+			  return (1);
+		  ++string;
+		  break;
+	  case '*':
+		  c = *pattern;
+		  /* Collapse multiple stars. */
+		  while (c == '*')
+			  c = *++pattern;
+
+		  /* Optimize for pattern with * at end or before /. */
+		  if (c == EOS)
+  		  return (0);
+
+		  /* General case, use recursion. */
+		  while ((test = *string) != EOS) 
+        {
+			  if (!fnmatch1(pattern, string))
+				  return (0);
+			  ++string;
+        }
+		  return (1);
+		  /* FALLTHROUGH */
+	  default:
+		  if (c != *string)
+			  return (1);
+		  string++;
+		  break;
+	  }
+}
+
+/*------------------------------------------------------------------*/
+
 INT ss_file_find(char * path, char * pattern, char **plist)
 /********************************************************************\
 
@@ -1073,7 +1125,7 @@ INT ss_file_find(char * path, char * pattern, char **plist)
   i = 0;
   for (dp = readdir(dir_pointer); dp != NULL; dp = readdir(dir_pointer))
     {
-    if (fnmatch (pattern, dp->d_name, 0) == 0)
+    if (fnmatch1(pattern, dp->d_name) == 0)
       {
       *plist = (char *)realloc(*plist, (i+1)*MAX_PATH_LENGTH);
       strncpy(*plist+(i*MAX_PATH_LENGTH), dp->d_name, strlen(dp->d_name)); 
@@ -2949,7 +3001,7 @@ int  i, n;
 void show_elog_new(char *path, BOOL bedit)
 {
 int    i, n_attr, index, size, wrap;
-char   str[1000], *p, def_value[80], star[80], comment[10000];
+char   str[1000], *p, star[80], comment[10000];
 char   list[MAX_N_ATTR][NAME_LENGTH]; 
 char   date[80], attrib[MAX_N_ATTR][NAME_LENGTH], text[TEXT_SIZE], 
        orig_tag[80], reply_tag[80], att[MAX_ATTACHMENTS][256], encoding[80],
@@ -3057,11 +3109,6 @@ time_t now;
   /* display attributes */
   for (index = 0 ; index < n_attr ; index++)
     {
-    if (bedit || path)
-      strcpy(def_value, attrib[index]);
-    else
-      def_value[0] = 0;
-
     strcpy(star, (attr_flags[index] & AF_REQUIRED) ? "<font color=red>*</font>" : "");
 
     if (attr_options[index][0][0] == 0)
@@ -3069,7 +3116,7 @@ time_t now;
       /* display text box */
       rsprintf("<tr><td nowrap bgcolor=%s><b>%s%s:</b></td>", gt("Categories bgcolor1"), attr_list[index], star);
       rsprintf("<td bgcolor=%s><input type=\"text\" size=80 maxlength=%d name=\"%s\" value=\"%s\"></td></tr>\n", 
-                gt("Categories bgcolor2"), NAME_LENGTH, attr_list[index], def_value);
+                gt("Categories bgcolor2"), NAME_LENGTH, attr_list[index], attrib[index]);
       }
     else
       {
@@ -3103,7 +3150,7 @@ time_t now;
 
         for (i=0 ; i<MAX_N_LIST && attr_options[index][i][0] ; i++)
           {
-          if (equal_ustring(attr_options[index][i], def_value))
+          if (equal_ustring(attr_options[index][i], attrib[index]))
             rsprintf("<option selected value=\"%s\">%s\n", attr_options[index][i], attr_options[index][i]);
           else
             rsprintf("<option value=\"%s\">%s\n", attr_options[index][i], attr_options[index][i]);
@@ -3136,46 +3183,49 @@ time_t now;
     rsputs("<br>\n");
     }
   
-  rsprintf("<textarea rows=20 cols=%d wrap=hard name=Text>", wrap);
-
-  if (path)
+  if (!getcfg(logbook, "Show text", str) || atoi(str) == 1)
     {
-    if (bedit)
+    rsprintf("<textarea rows=20 cols=%d wrap=hard name=Text>", wrap);
+
+    if (path)
       {
-      rsputs(text);
-      }
-    else
-      {
-      p = text;
-      do
+      if (bedit)
         {
-        if (strchr(p, '\r'))
+        rsputs(text);
+        }
+      else
+        {
+        p = text;
+        do
           {
-          *strchr(p, '\r') = 0;
-          rsprintf("> %s\n", p);
-          p += strlen(p)+1;
-          if (*p == '\n')
-            p++;
-          }
-        else
-          {
-          rsprintf("> %s\n\n", p);
-          break;
-          }
+          if (strchr(p, '\r'))
+            {
+            *strchr(p, '\r') = 0;
+            rsprintf("> %s\n", p);
+            p += strlen(p)+1;
+            if (*p == '\n')
+              p++;
+            }
+          else
+            {
+            rsprintf("> %s\n\n", p);
+            break;
+            }
 
-        } while (TRUE);
+          } while (TRUE);
+        }
       }
+
+    rsprintf("</textarea><br>\n");
+
+    /* HTML check box */
+    if (bedit && encoding[0] == 'H')
+      rsprintf("<input type=checkbox checked name=html value=1>Submit as HTML text\n");
+    else
+      rsprintf("<input type=checkbox name=html value=1>Submit as HTML text\n");
+
+    rsprintf("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\n");
     }
-
-  rsprintf("</textarea><br>\n");
-
-  /* HTML check box */
-  if (bedit && encoding[0] == 'H')
-    rsprintf("<input type=checkbox checked name=html value=1>Submit as HTML text\n");
-  else
-    rsprintf("<input type=checkbox name=html value=1>Submit as HTML text\n");
-
-  rsprintf("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\n");
 
   if (getcfg(logbook, "Suppress default", str))
     {
@@ -3257,13 +3307,17 @@ char   str[256];
   rsprintf("<tr><td><table width=100%% border=%s cellpadding=%s cellspacing=1 bgcolor=%s>\n", 
            gt("Categories border"), gt("Categories cellpadding"), gt("Frame color"));
 
-  rsprintf("<tr><td colspan=2 bgcolor=%s>", gt("Categories bgcolor2"));
+  if (!getcfg(logbook, "Show text", str) || atoi(str) == 1)
+    {
+    rsprintf("<tr><td colspan=2 bgcolor=%s>", gt("Categories bgcolor2"));
 
-  if (getcfg(logbook, "Summary on default", str) && atoi(str) == 1)
-    rsprintf("<input type=checkbox checked name=mode value=\"summary\">Summary only\n");
-  else
-    rsprintf("<input type=checkbox name=mode value=\"summary\">Summary only\n");
-  rsprintf("</td></tr><td colspan=2 bgcolor=%s>", gt("Categories bgcolor2"));
+    if (getcfg(logbook, "Summary on default", str) && atoi(str) == 1)
+      rsprintf("<input type=checkbox checked name=mode value=\"summary\">Summary only\n");
+    else
+      rsprintf("<input type=checkbox name=mode value=\"summary\">Summary only\n");
+    rsprintf("</td></tr>\n");
+    }
+  rsprintf("<td colspan=2 bgcolor=%s>", gt("Categories bgcolor2"));
   rsprintf("<input type=checkbox name=attach value=1>Show attachments</td></tr>\n");
 
   rsprintf("<td colspan=2 bgcolor=%s>", gt("Categories bgcolor2"));
@@ -3349,10 +3403,13 @@ char   str[256];
     rsprintf("</td></tr>\n");
     }
 
-  rsprintf("<tr><td bgcolor=%s>Text:</td>",  gt("Categories bgcolor1"));
-  rsprintf("<td bgcolor=%s><input type=\"text\" size=\"30\" maxlength=\"80\" name=\"subtext\">\n",
-             gt("Categories bgcolor2"));
-  rsprintf("<i>(case insensitive substring)</i></td></tr>\n");
+  if (!getcfg(logbook, "Show text", str) || atoi(str) == 1)
+    {
+    rsprintf("<tr><td bgcolor=%s>Text:</td>",  gt("Categories bgcolor1"));
+    rsprintf("<td bgcolor=%s><input type=\"text\" size=\"30\" maxlength=\"80\" name=\"subtext\">\n",
+               gt("Categories bgcolor2"));
+    rsprintf("<i>(case insensitive substring)</i></td></tr>\n");
+    }
 
   rsprintf("</table></td></tr></table>\n");
   rsprintf("</body></html>\r\n");
@@ -3559,7 +3616,15 @@ FILE   *f;
   n_attr = scan_attributes(logbook);
 
   printable = atoi(getparam("Printable"));
-  reverse = atoi(getparam("Reverse"));
+  
+  if (*getparam("Reverse"))
+    reverse = atoi(getparam("Reverse"));
+  else
+    {
+    reverse = 0;
+    if (getcfg(logbook, "Reverse sort", str))
+      reverse = atoi(str);
+    }
 
   /*---- header ----*/
 
@@ -3891,21 +3956,34 @@ FILE   *f;
 
     if (past_n)
       {
-      time(&now);
-      ltime_start = now-3600*24*past_n;
-      ptms = localtime(&ltime_start);
+      if (reverse)
+        {
+        strcpy(tag, "-1");
+        el_search_message(tag, NULL, TRUE, FALSE);
 
-      sprintf(tag, "%02d%02d%02d.0", ptms->tm_year % 100, ptms->tm_mon+1, ptms->tm_mday);
+        time(&now);
+        ltime_start = now-3600*24*past_n;
+        }
+      else
+        {
+        time(&now);
+        ltime_start = now-3600*24*past_n;
+        ptms = localtime(&ltime_start);
+
+        sprintf(tag, "%02d%02d%02d.0", ptms->tm_year % 100, ptms->tm_mon+1, ptms->tm_mday);
+        }
       }
     else if (last_n)
       {
       strcpy(tag, "-1");
       el_search_message(tag, NULL, TRUE, FALSE);
-      for (i=1 ; i<last_n ; i++)   
-        {
-        strcat(tag, "-1");   
-        el_search_message(tag, NULL, TRUE, FALSE);
-        } 
+
+      if (!reverse)
+        for (i=1 ; i<last_n ; i++)   
+          {
+          strcat(tag, "-1");   
+          el_search_message(tag, NULL, TRUE, FALSE);
+          } 
       }
     else
       {
@@ -4098,12 +4176,12 @@ FILE   *f;
           size = printable ? 2 : 3;
           nowrap = printable ? "" : "nowrap";
 
-          rsprintf("<td align=center bgcolor=%s><font size=%d>%d</font></td>", col, size, n_found);
+          rsprintf("<td align=center bgcolor=%s><font size=%d><a href=\"%s\">%d</a></font></td>", col, size, ref, n_found);
 
           if (atoi(getparam("all")) == 1)
             rsprintf("<td align=center %s bgcolor=%s><font size=%d>%s</font></td>", nowrap, col, size, logbook_list[lindex]);
 
-          rsprintf("<td align=center %s bgcolor=%s><font size=%d><a href=\"%s\">%s</a></font></td>", nowrap, col, size, ref, date);
+          rsprintf("<td align=center %s bgcolor=%s><font size=%d>%s</font></td>", nowrap, col, size, date);
 
           for (i=0 ; i<n_attr ; i++)
             {
@@ -4125,44 +4203,51 @@ FILE   *f;
               rsprintf("<td align=center bgcolor=%s><font size=%d>%s&nbsp</font></td>", col, size, attrib[i]);
             }
 
+          rsprintf("</tr>\n");
+
           if (atoi(getparam("all")) == 1)
             colspan = 3+n_attr_disp;
           else
             colspan = 2+n_attr_disp;
 
-          rsprintf("</tr><tr><td bgcolor=#FFFFFF colspan=%d><font size=%d>", colspan, size);
-        
-          if (equal_ustring(encoding, "plain"))
+          if (!getcfg(logbook, "Show text", str) || atoi(str) == 1)
             {
-            rsputs("<pre>");
-            rsputs2(text);
-            rsputs("</pre>");
+            rsprintf("<tr><td bgcolor=#FFFFFF colspan=%d><font size=%d>", colspan, size);
+
+            if (equal_ustring(encoding, "plain"))
+              {
+              rsputs("<pre>");
+              rsputs2(text);
+              rsputs("</pre>");
+              }
+            else
+              rsputs(text);
+
+            rsprintf("&nbsp;</font></td></tr>\n");
             }
-          else
-            rsputs(text);
 
           if (!show_attachments && attachment[0][0])
             {
+            rsprintf("<tr><td bgcolor=#FFFFFF colspan=%d><font size=%d>", colspan, size);
+
             if (attachment[1][0])
               rsprintf("Attachments: ");
             else
               rsprintf("Attachment: ");
             }
-          else
-            rsprintf("&nbsp;</font></td></tr>\n");
 
           for (index = 0 ; index < MAX_ATTACHMENTS ; index++)
             {
             if (attachment[index][0])
               {
-              for (i=0 ; i<(int)strlen(attachment[index]) ; i++)
-                str[i] = toupper(attachment[index][i]);
-              str[i] = 0;
-    
               strcpy(str, attachment[index]);
               str[13] = 0;
               sprintf(ref, "%s%s/%s/%s", elogd_url, logbook_enc, str, attachment[index]+14);
 
+              for (i=0 ; i<(int)strlen(attachment[index]) ; i++)
+                str[i] = toupper(attachment[index][i]);
+              str[i] = 0;
+    
               if (!show_attachments)
                 {
                 rsprintf("<a href=\"%s\"><b>%s</b></a>&nbsp;", 
@@ -4232,12 +4317,12 @@ FILE   *f;
           size = printable ? 2 : 3;
           nowrap = printable ? "" : "nowrap";
 
-          rsprintf("<td align=center bgcolor=%s><font size=%d>%d</font></td>", col, size, n_found);
+          rsprintf("<td align=center bgcolor=%s><font size=%d><a href=\"%s\">%d</a></font></td>", col, size, ref, n_found);
 
           if (atoi(getparam("all")) == 1)
             rsprintf("<td align=center %s bgcolor=%s>%s</td>", nowrap, col, logbook_list[lindex]);
 
-          rsprintf("<td align=center %s bgcolor=%s><font size=%d><a href=\"%s\">%s</a></font></td>", nowrap, col, size, ref, date);
+          rsprintf("<td align=center %s bgcolor=%s><font size=%d>%s</font></td>", nowrap, col, size, date);
           
           for (i=0 ; i<n_attr ; i++)
             {
@@ -4423,7 +4508,7 @@ int    i, j, n, index, n_attr, n_mail, suppress, status;
     for (index=0 ; index <= n_attr ; index++)
       {
       if (index < n_attr)
-        sprintf(str, "Email %s", getparam(attr_list[index]));
+        sprintf(str, "Email %s %s", attr_list[index], getparam(attr_list[index]));
       else
         sprintf(str, "Email ALL");
 
@@ -4446,7 +4531,7 @@ int    i, j, n, index, n_attr, n_mail, suppress, status;
           strcpy(mail_to, mail_list[i]);
           sprintf(mail_from, "ELog@%s", host_name);
 
-          sprintf(mail_text, "A new entry has been submitted from %s:\r\n\r\n", host_name);
+          sprintf(mail_text, "A new entry has been submitted on %s:\r\n\r\n", host_name);
 
           sprintf(mail_text+strlen(mail_text), "Logbook             : %s\r\n", logbook);
 
@@ -4644,7 +4729,7 @@ void show_elog_page(char *logbook, char *path)
 {
 int    size, i, j, n, msg_status, status, fh, length, first_message, last_message, index, n_attr;
 char   str[256], orig_path[256], command[80], ref[256], file_name[256], attrib[MAX_N_ATTR][NAME_LENGTH];
-char   date[80], text[TEXT_SIZE],
+char   date[80], text[TEXT_SIZE], menu_str[1000],
        orig_tag[80], reply_tag[80], attachment[MAX_ATTACHMENTS][256], encoding[80], att[256], lattr[256];
 char   menu_item[MAX_N_LIST][NAME_LENGTH];
 FILE   *f;
@@ -4663,17 +4748,34 @@ FILE   *f;
 
   /* correct for image buttons */
   if (*getparam("cmd_first.x"))
-    strcpy(command, "first");
+    strcpy(command, "First");
   if (*getparam("cmd_previous.x"))
-    strcpy(command, "previous");
+    strcpy(command, "Previous");
   if (*getparam("cmd_next.x"))
-    strcpy(command, "next");
+    strcpy(command, "Next");
   if (*getparam("cmd_last.x"))
-    strcpy(command, "last");
+    strcpy(command, "Last");
 
-  /* check if command allowd for current user */
+  /* check if command allowed for current user */
   if (!allow_user(command))
     return;
+
+  /* get menu command */
+  getcfg(logbook, "Menu commands", menu_str);
+  if (menu_str[0] == 0)
+    if (getcfg(logbook, "Password file", str)) 
+      strcpy(menu_str, "New, Edit, Delete, Reply, Find, Last day, Last 10, Config, Change Password, Logout, Help");
+    else
+      strcpy(menu_str, "New, Edit, Delete, Reply, Find, Last day, Last 10, Config, Help");
+
+  /* check if command is present in the menu list */
+  if (command[0] && strstr(menu_str, command) == NULL &&
+      strstr("Submit Back Search Save Cancel First Last Previous Next", command) == NULL)
+    {
+    sprintf(str, "Error: command <b>%s</b> not allowed", command);
+    show_error(str);
+    return;
+    }
   
   if (equal_ustring(command, "help"))
     {
@@ -4964,14 +5066,7 @@ FILE   *f;
 
   rsprintf("<tr><td align=%s bgcolor=%s>\n", gt("Menu1 Align"), gt("Menu1 BGColor"));
   
-  getcfg(logbook, "Menu commands", str);
-  if (str[0] == 0)
-    if (getcfg(logbook, "Password file", str)) 
-      strcpy(str, "New, Edit, Delete, Reply, Find, Last day, Last 10, Config, Change Password, Logout, Help");
-    else
-      strcpy(str, "New, Edit, Delete, Reply, Find, Last day, Last 10, Config, Help");
-
-  n = strbreak(str, menu_item, MAX_N_LIST);
+  n = strbreak(menu_str, menu_item, MAX_N_LIST);
 
   if (atoi(gt("Use buttons")) == 1)
     {
@@ -5203,20 +5298,23 @@ FILE   *f;
     
     /*---- message text ----*/
 
-    rsprintf("<tr><td><table width=100%% border=0 cellpadding=1 cellspacing=1 bgcolor=%s>\n", gt("Frame color"));
-    rsprintf("<tr><td bgcolor=%s><br>\n", gt("Text BGColor"));
-    
-    if (equal_ustring(encoding, "plain"))
+    if (!getcfg(logbook, "Show text", str) || atoi(str) == 1)
       {
-      rsputs("<pre>");
-      rsputs2(text);
-      rsputs("</pre>");
-      }
-    else
-      rsputs(text);
+      rsprintf("<tr><td><table width=100%% border=0 cellpadding=1 cellspacing=1 bgcolor=%s>\n", gt("Frame color"));
+      rsprintf("<tr><td bgcolor=%s><br>\n", gt("Text BGColor"));
+    
+      if (equal_ustring(encoding, "plain"))
+        {
+        rsputs("<pre>");
+        rsputs2(text);
+        rsputs("</pre>");
+        }
+      else
+        rsputs(text);
 
-    rsputs("</td></tr>\n");
-    rsputs("</table></td></tr>\n");
+      rsputs("</td></tr>\n");
+      rsputs("</table></td></tr>\n");
+      }
 
     for (index = 0 ; index < MAX_ATTACHMENTS ; index++)
       {
@@ -5485,7 +5583,16 @@ char str[10000], logbook[80];
 
   rsprintf("<html>\n");
   rsprintf("<head>\n");
-  rsprintf("<title>ELOG Logbook Selection</title>\n");
+
+ if (getcfg("global", "Page Title", str))
+   {
+   rsprintf("<title>");
+   rsputs(str);
+   rsprintf("</title>\n");
+   }
+ else
+   rsprintf("<title>ELOG Logbook Selection</title>\n");
+
   rsprintf("</head>\n\n");
 
   rsprintf("<body>\n\n");
@@ -6306,9 +6413,19 @@ struct timeval       timeout;
         else
           if (!equal_ustring(logbook, str) && logbook[0])
             {
+            if (verbose)
+              printf("\n\n\n%s\n", net_buffer);
+
             sprintf(str, "Error: logbook \"%s\" not defined in elogd.cfg", logbook);
             show_error(str);
             send(_sock, return_buffer, strlen(return_buffer), 0);
+
+            if (verbose)
+              {
+              printf("==== Return ================================\n");
+              puts(return_buffer);
+              printf("\n\n");
+              }
             goto error;
             }
         }
