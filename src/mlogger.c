@@ -6,6 +6,9 @@
   Contents:     MIDAS logger program
 
   $Log$
+  Revision 1.68  2003/11/01 00:46:53  olchansk
+  abort if cannot read /runinfo/run number
+
   Revision 1.67  2003/10/30 14:17:23  midas
   Added 'umask' for FTP connections
 
@@ -214,6 +217,7 @@
 #include "hardware.h"
 #include "ftplib.h"
 #include <errno.h> /* for mkdir() */
+#include <assert.h>
 
 #define INCLUDE_LOGGING
 #include "ybos.h"
@@ -3291,7 +3295,8 @@ usage:
         {
         auto_restart = 0;
         size = sizeof(run_number);
-        db_get_value(hDB, 0, "/Runinfo/Run number", &run_number, &size, TID_INT, TRUE);
+        status = db_get_value(hDB, 0, "/Runinfo/Run number", &run_number, &size, TID_INT, TRUE);
+        assert(status == SUCCESS);
 
         if (run_number <= 0)
           {
