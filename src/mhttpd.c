@@ -6,6 +6,10 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.102  2000/03/15 08:54:39  midas
+  Removed web passwd check from "submit" button (necessary if someone edits
+  an elog entry for more than an hour)
+
   Revision 1.101  2000/03/13 09:41:53  midas
   Added refresh of Web password
 
@@ -5252,8 +5256,14 @@ struct tm *gmt;
 
   if (equal_ustring(command, "programs"))
     {
-    if (*getparam("Stop") || *getparam("Start"))
-      if (!check_web_password(cookie_wpwd, "?cmd=programs", experiment))
+    str[0] = 0;
+    if (*getparam("Start"))
+      sprintf(str, "?cmd=programs&Start=%s", getparam("Start"));
+    if (*getparam("Stop"))
+      sprintf(str, "?cmd=programs&Stop=%s", getparam("Stop"));
+ 
+    if (str[0])
+      if (!check_web_password(cookie_wpwd, str, experiment))
         return;
 
     show_programs_page();
@@ -5294,8 +5304,7 @@ struct tm *gmt;
     {
     if (equal_ustring(command, "new") ||
         equal_ustring(command, "edit") ||
-        equal_ustring(command, "reply") ||
-        equal_ustring(command, "submit"))
+        equal_ustring(command, "reply"))
       {
       sprintf(str, "%s?cmd=%s", path, command);
       if (!check_web_password(cookie_wpwd, str, experiment))
