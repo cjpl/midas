@@ -7,6 +7,9 @@
                 Most routines are from mfe.c mana.c and mlogger.c.
 
   $Log$
+  Revision 1.34  2003/04/14 13:32:02  midas
+  Updated register_equipment from mfe.c
+
   Revision 1.33  2003/02/20 13:46:12  midas
   Fixed bug with RO_ODB
 
@@ -145,6 +148,8 @@
 
 #define SERVER_CACHE_SIZE  100000 /* event cache before buffer */
 
+#define ODB_UPDATE_TIME      1000 /* 1 seconds for ODB update */
+
 #define MAX_CHANNELS 10
 #define MAX_EVENTS   10
 #define MAX_HISTORY  20
@@ -168,6 +173,8 @@ struct {
 
 INT   run_state;      /* STATE_RUNNING, STATE_STOPPED, STATE_PAUSED */
 INT   run_number;
+DWORD actual_time;      /* current time in seconds since 1970 */
+DWORD actual_millitime;       /* current time in milliseconds */
 char  event_buffer[NET_BUFFER_SIZE];
 char  host_name[NAME_LENGTH];
 char  exp_name[NAME_LENGTH];
@@ -269,9 +276,13 @@ INT  log_write(LOG_CHN *log_chn, EVENT_HEADER *pevent);
 void log_system_history(HNDLE hDB, HNDLE hKey, void *info);
 int print_message(const char *msg);
 void update_stats();
+void interrupt_routine(void);
+void interrupt_enable(BOOL flag);
 
 /* items defined in frontend.c */
 
+extern char *frontend_name;
+extern char *frontend_file_name;
 extern BOOL frontend_call_loop;
 extern char *frontend_file_name;
 extern INT  display_period;
@@ -300,6 +311,10 @@ extern INT  ana_pause_run(INT run_number, char *error);
 extern INT  ana_resume_run(INT run_number, char *error);
 extern ANALYZE_REQUEST analyze_request[];
 extern INT  odb_size;
+
+EQUIPMENT     *interrupt_eq = NULL;
+EVENT_HEADER  *interrupt_odb_buffer;
+BOOL          interrupt_odb_buffer_valid;
 
 /*---- Logging routines --------------------------------------------*/
 
@@ -3742,19 +3757,21 @@ INT  i;
 
 /*------------------------------------------------------------------*/
 
-void register_equipment(void)
+INT register_equipment(void)
 {
-INT             index, count, size, status, i, j, k, n;
-char            str[256];
-EQUIPMENT_INFO  *eq_info;
+INT    index, count, size, status, i, j, k, n;
+char   str[256];
+EQUIPMENT_INFO *eq_info;
 EQUIPMENT_STATS *eq_stats;
-DWORD           start_time, delta_time;
-HNDLE           hKey;
+DWORD  start_time, delta_time;
+HNDLE  hKey;
 BOOL   manual_trig_flag = FALSE;
+BANK_LIST *bank_list;
+DWORD  dummy;
 
   /* get current ODB run state */
   size = sizeof(run_state);
-  run_state = 1;
+  run_state = STATE_STOPPED;
   db_get_value(hDB, 0, "/Runinfo/State", &run_state, &size, TID_INT, TRUE);
   size = sizeof(run_number);
   run_number = 1;
@@ -3781,7 +3798,7 @@ BOOL   manual_trig_flag = FALSE;
     if (eq_info->eq_type != EQ_SLOW)
       {
       db_find_key(hDB, 0, str, &hKey);
-      size = sizeof(eq_info->event_limit);
+      size = sizeof(double);
       if (hKey)
         db_get_value(hDB, hKey, "Event limit", &eq_info->event_limit, &size, TID_DOUBLE, TRUE);
       }
@@ -3803,7 +3820,7 @@ BOOL   manual_trig_flag = FALSE;
       equipment[index].format = FORMAT_MIDAS;
 
     gethostname(eq_info->frontend_host, sizeof(eq_info->frontend_host));
-    strcpy(eq_info->frontend_name, fal_name);
+    strcpy(eq_info->frontend_name, frontend_name);
     strcpy(eq_info->frontend_file_name, frontend_file_name);
 
     /* set record from equipment[] table in frontend.c */
@@ -3814,17 +3831,73 @@ BOOL   manual_trig_flag = FALSE;
 
     /*---- Create variables record ---------------------------------*/
     sprintf(str, "/Equipment/%s/Variables", equipment[index].name);
-    if (equipment[index].init_string)
-      db_create_record(hDB, 0, str, equipment[index].init_string);
+    if (equipment[index].event_descrip)
+      {
+      if (equipment[index].format == FORMAT_FIXED)
+        db_create_record(hDB, 0, str, (char *)equipment[index].event_descrip);
+      else
+        {
+        /* create bank descriptions */
+        bank_list = (BANK_LIST *)equipment[index].event_descrip;
+
+        for (; bank_list->name[0] ; bank_list++)
+          {
+          /* mabye needed later...
+          if (bank_list->output_flag == 0)
+            continue;
+          */
+
+          if (bank_list->type == TID_STRUCT)
+            {
+            sprintf(str, "/Equipment/%s/Variables/%s", equipment[index].name, bank_list->name);
+            db_create_record(hDB, 0, str, strcomb(bank_list->init_str));
+            }
+          else
+            {
+            sprintf(str, "/Equipment/%s/Variables/%s", equipment[index].name, bank_list->name);
+            dummy = 0;
+            db_set_value(hDB, 0, str, &dummy, rpc_tid_size(bank_list->type), 1, bank_list->type);
+            }
+          }
+        }
+      }
     else
       db_create_key(hDB, 0, str, TID_KEY);
+
+    sprintf(str, "/Equipment/%s/Variables", equipment[index].name);
     db_find_key(hDB, 0, str, &hKey);
     equipment[index].hkey_variables = hKey;
 
     /*---- Create and initialize statistics tree -------------------*/
     sprintf(str, "/Equipment/%s/Statistics", equipment[index].name);
-    db_create_record(hDB, 0, str, EQUIPMENT_STATISTICS_STR);
-    db_find_key(hDB, 0, str, &hKey);
+    
+    /*-PAA- Needed in case Statistics exists but size = 0 */
+    /*-SR- Not needed since db_create_record does a delete already */
+
+    status = db_find_key(hDB, 0, str, &hKey);
+    if (status == DB_SUCCESS)
+      {
+      status = db_delete_key(hDB, hKey, FALSE);
+      if (status != DB_SUCCESS)
+        {
+          printf("Cannot delete statistics record, error %d\n",status);
+          ss_sleep(3000);
+        }
+      }
+
+    status = db_create_record(hDB, 0, str, EQUIPMENT_STATISTICS_STR);
+    if (status != DB_SUCCESS)
+      {
+      printf("Cannot create statistics record, error %d\n",status);
+      ss_sleep(3000);
+      }
+
+    status = db_find_key(hDB, 0, str, &hKey);
+    if (status != DB_SUCCESS)
+      {
+      printf("Cannot find statistics record, error %d\n",status);
+      ss_sleep(3000);
+      }
 
     eq_stats->events_sent = 0;
     eq_stats->events_per_sec = 0;
@@ -3834,7 +3907,7 @@ BOOL   manual_trig_flag = FALSE;
     status = db_open_record(hDB, hKey, eq_stats, sizeof(EQUIPMENT_STATS), MODE_WRITE, NULL, NULL);
     if (status != DB_SUCCESS)
       {
-      printf("Cannot open statistics record, probably other FE is using it\n");
+      printf("Cannot open statistics record, error %d. Probably other FE is using it\n",status);
       ss_sleep(3000);
       }
 
@@ -3847,7 +3920,7 @@ BOOL   manual_trig_flag = FALSE;
         cm_msg(MERROR, "register_equipment", 
                "Cannot open event buffer. Try to reduce EVENT_BUFFER_SIZE in midas.h \
 and rebuild the system.");
-        return;
+        return 0;         
         }
 
       /* set the default buffer cache size */
@@ -3860,7 +3933,7 @@ and rebuild the system.");
     if (eq_info->eq_type & EQ_POLLED)
       {
       if (display_period)
-        printf("Calibrating");
+        printf("\nCalibrating");
 
       count = 1;
       do
@@ -3886,6 +3959,45 @@ and rebuild the system.");
         printf("OK\n");
       }
 
+    /*---- initialize interrupt events -----------------------------*/
+    if (eq_info->eq_type & EQ_INTERRUPT)
+      {
+      /* install interrupt for interrupt events */
+
+      for (i=0 ; equipment[i].name[0] ; i++)
+        if (equipment[i].info.eq_type & EQ_POLLED)
+          {
+          equipment[index].status = FE_ERR_DISABLED;
+          cm_msg(MINFO, "register_equipment", 
+            "Interrupt readout cannot be combined with polled readout");
+          }
+
+      if (equipment[index].status != FE_ERR_DISABLED)
+        {
+        if (eq_info->enabled)
+          {
+          if (interrupt_eq)
+            {
+            equipment[index].status = FE_ERR_DISABLED;
+            cm_msg(MINFO, "register_equipment", 
+              "Defined more than one equipment with interrupt readout");
+            }
+          else
+            {
+            interrupt_configure(CMD_INTERRUPT_ATTACH, eq_info->source, (PTYPE) interrupt_routine);
+            interrupt_eq = &equipment[index];
+            interrupt_odb_buffer = malloc(MAX_EVENT_SIZE+sizeof(EVENT_HEADER));
+            }
+          }
+        else
+          {
+          equipment[index].status = FE_ERR_DISABLED;
+          cm_msg(MINFO, "register_equipment", "Equipment %s disabled in file \"frontend.c\"",
+                         equipment[index].name);
+          }
+        }
+      }
+    
     /*---- initialize slow control equipment -----------------------*/
     if (eq_info->eq_type & EQ_SLOW)
       {
@@ -3927,6 +4039,8 @@ and rebuild the system.");
       manual_trig_flag = TRUE;
       }
     }
+
+  return SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
@@ -4119,6 +4233,79 @@ INT            i;
 
     send_event(i);
     }
+}
+
+/*------------------------------------------------------------------*/
+
+BOOL interrupt_enabled;
+
+void interrupt_enable(BOOL flag)
+{
+  interrupt_enabled = flag;
+
+  if (interrupt_eq)
+  {
+    if (interrupt_enabled)
+      interrupt_configure(CMD_INTERRUPT_ENABLE,0,0);
+    else
+      interrupt_configure(CMD_INTERRUPT_DISABLE,0,0);
+  }
+}
+
+/*------------------------------------------------------------------*/
+
+void interrupt_routine(void)
+{
+  EVENT_HEADER *pevent;
+
+  /* get pointer for upcoming event.
+  This is a blocking call if no space available */
+  if ((pevent = dm_pointer_get()) == NULL)
+    cm_msg(MERROR, "interrupt_routine", "interrupt, dm_pointer_get returned NULL");
+
+  /* compose MIDAS event header */
+  pevent->event_id      = interrupt_eq->info.event_id;
+  pevent->trigger_mask  = interrupt_eq->info.trigger_mask;
+  pevent->data_size     = 0;
+  pevent->time_stamp    = actual_time;
+  pevent->serial_number = interrupt_eq->serial_number++;
+
+  /* call user readout routine */
+  pevent->data_size = interrupt_eq->readout((char *) (pevent+1), 0);
+
+  /* send event */
+  if (pevent->data_size)
+  {
+    interrupt_eq->bytes_sent += pevent->data_size + sizeof(EVENT_HEADER);
+    interrupt_eq->events_sent++;
+
+    if (interrupt_eq->buffer_handle)
+    {
+#ifdef USE_EVENT_CHANNEL
+      dm_pointer_increment(interrupt_eq->buffer_handle, 
+        pevent->data_size + sizeof(EVENT_HEADER));
+#else
+      rpc_send_event(interrupt_eq->buffer_handle, pevent,
+        pevent->data_size + sizeof(EVENT_HEADER), SYNC);
+#endif
+    }
+
+    /* send event to ODB */
+    if (interrupt_eq->info.read_on & RO_ODB ||
+      interrupt_eq->info.history)
+    {
+      if (actual_millitime - interrupt_eq->last_called > ODB_UPDATE_TIME)
+      {
+        interrupt_eq->last_called = actual_millitime;
+        memcpy(interrupt_odb_buffer, pevent, pevent->data_size + sizeof(EVENT_HEADER));
+        interrupt_odb_buffer_valid = TRUE;
+        interrupt_eq->odb_out++;
+      }
+    }
+  }
+  else
+    interrupt_eq->serial_number--;
+
 }
 
 /*------------------------------------------------------------------*/
