@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.61  1999/10/06 07:04:59  midas
+  Edit mode half finished
+
   Revision 1.60  1999/10/05 13:36:15  midas
   Use strencode
 
@@ -228,6 +231,7 @@ char type_list[20][NAME_LENGTH] = {
   "Severe error",
   "Fix",
   "Info",
+  "Modification",
   "Complaints",
   "Reply",
   "Alarm",
@@ -625,18 +629,19 @@ int    size;
 
 void show_status_page(int refresh)
 {
-int  i, size;
-BOOL flag;
-char str[256], name[32], ref[256];
-char *yn[] = {"No", "Yes"};
-char *state[] = {"", "Stopped", "Paused", "Running" };
+int    i, j, k, status, size;
+BOOL   flag;
+char   str[256], name[32], ref[256];
+char   *yn[] = {"No", "Yes"};
+char   *state[] = {"", "Stopped", "Paused", "Running" };
 time_t now, difftime;
 DWORD  analyzed;
 double analyze_ratio;
 float  value;
-HNDLE  hDB, hkey, hsubkey, hkeytmp;
+HNDLE  hDB, hkey, hLKey, hsubkey, hkeytmp;
 KEY    key;
-BOOL   ftp_mode;
+BOOL   ftp_mode, previous_mode;
+char   client_name[NAME_LENGTH];
 
 RUNINFO_STR(runinfo_str);
 RUNINFO runinfo;
@@ -977,14 +982,10 @@ CHN_STATISTICS chn_stats;
     }
 
   /*---- Lazy Logger ----*/
+  
   if (db_find_key(hDB, 0, "/Lazy", &hkey) == DB_SUCCESS)
-  {
-    INT  status, size, i, j, k;
-    BOOL previous_mode;
-    HNDLE  hLKey, hKey, hSubkey;
-    char   client_name[NAME_LENGTH];
-
-    status = db_find_key(hDB, 0, "System/Clients", &hKey);
+    {
+    status = db_find_key(hDB, 0, "System/Clients", &hkey);
     if (status != DB_SUCCESS)
       return;
 
@@ -992,23 +993,23 @@ CHN_STATISTICS chn_stats;
     previous_mode  = -1;
     /* loop over all clients */
     for (j=0 ; ; j++)
-    {
-      status = db_enum_key(hDB, hKey, j, &hSubkey);
+      {
+      status = db_enum_key(hDB, hkey, j, &hsubkey);
       if (status == DB_NO_MORE_SUBKEYS)
         break;
 
       if (status == DB_SUCCESS)
-      {
+        {
         /* get client name */
         size = sizeof(client_name);
-        db_get_value(hDB, hSubkey, "Name", client_name, &size, TID_STRING);
+        db_get_value(hDB, hsubkey, "Name", client_name, &size, TID_STRING);
         client_name[4] = 0; /* search only for the 4 first char */
         if (equal_ustring(client_name, "Lazy"))
-        {
+          {
           sprintf(str, "/Lazy/%s", &client_name[5]);  
           status = db_find_key(hDB, 0, str, &hLKey);
           if (status == DB_SUCCESS)
-          {
+            {
             size = sizeof(str);
             db_get_value(hDB, hLKey, "Settings/Backup Type", str, &size, TID_STRING);
             ftp_mode = equal_ustring(str, "FTP");
@@ -1016,12 +1017,12 @@ CHN_STATISTICS chn_stats;
             if (previous_mode != ftp_mode)
               k = 0;
             if (k == 0)
-            {
+              {
               if (ftp_mode)
                 rsprintf("<tr><th colspan=2>Lazy Destination<th>Progress<th>File Name<th>Speed [kb/s]<th>Total</tr>\n");
               else
                 rsprintf("<tr><th colspan=2>Lazy Label<th>Progress<th>File Name<th># Files<th>Total</tr>\n");
-            }
+              }
             previous_mode = ftp_mode;
             if (ftp_mode)
               {
@@ -1056,7 +1057,7 @@ CHN_STATISTICS chn_stats;
             if (ftp_mode)
               {
               size = sizeof(value);
-              db_get_value(hDB, hLKey, "Statistics/Copy Rate [KB per sec]", &value, &size, TID_FLOAT);
+              db_get_value(hDB, hLKey, "Statistics/Copy Rate [bytes per s]", &value, &size, TID_FLOAT);
               rsprintf("<td align=center>%1.1f", value);
               }
             else
@@ -1070,12 +1071,14 @@ CHN_STATISTICS chn_stats;
             db_get_value(hDB, hLKey, "Statistics/Backup status [%]", &value, &size, TID_FLOAT);
             rsprintf("<td align=center>%1.1f %%", value);
             k++;
+            }
           }
         }
       }
-    }
+
     rsprintf("</tr>\n");
-  }
+    }
+
   /*---- Messages ----*/
 
   rsprintf("<tr><td colspan=6>");
@@ -1237,10 +1240,10 @@ void el_format(char *text, char *encoding)
     strencode(text);
 }
 
-void show_elog_new(char *path)
+void show_elog_new(char *path, BOOL bedit)
 {
 int    i, size, run_number;
-char   str[256], ref[256];
+char   str[256], ref[256], *p;
 char   date[80], author[80], type[80], system[80], subject[256], text[10000], 
        orig_tag[80], reply_tag[80], att1[256], att2[256], att3[256], encoding[80];
 time_t now;
@@ -1250,6 +1253,7 @@ HNDLE  hDB, hkey;
 
   /* get message for reply */
   type[0] = system[0] = 0;
+  att1[0] = att2[0] = att3[0] = 0;
   if (path)
     {
     strcpy(str, path);
@@ -1291,15 +1295,36 @@ HNDLE  hDB, hkey;
 
   /*---- entry form ----*/
 
-  time(&now);
-  rsprintf("<tr><td bgcolor=#FFFF00>Entry date: %s", ctime(&now));
+  if (bedit)
+    {
+    rsprintf("<tr><td bgcolor=#FFFF00>Entry date: %s<br>", date);
+    time(&now);                 
+    rsprintf("Revision date: %s", ctime(&now));
+    }
+  else
+    {
+    time(&now);
+    rsprintf("<tr><td bgcolor=#FFFF00>Entry date: %s", ctime(&now));
+    }
 
-  size = sizeof(run_number);
-  db_get_value(hDB, 0, "/Runinfo/Run number", &run_number, &size, TID_INT);
+  if (!bedit)
+    {
+    size = sizeof(run_number);
+    db_get_value(hDB, 0, "/Runinfo/Run number", &run_number, &size, TID_INT);
+    }
   rsprintf("<td bgcolor=#FFFF00>Run number: ");
   rsprintf("<input type=\"text\" size=10 maxlength=10 name=\"run\" value=\"%d\"</tr>", run_number);
 
-  rsprintf("<tr><td bgcolor=#FFA0A0>Author: <input type=\"text\" size=\"15\" maxlength=\"80\" name=\"Author\">\n");
+  if (bedit)
+    {
+    strcpy(str, author);
+    if (strchr(str, '@'))
+      *strchr(str, '@') = 0;
+    }
+  else
+    str[0] = 0;
+
+  rsprintf("<tr><td bgcolor=#FFA0A0>Author: <input type=\"text\" size=\"15\" maxlength=\"80\" name=\"Author\" value=\"%s\">\n", str);
 
   /* get type list from ODB */
   size = 20*NAME_LENGTH;
@@ -1324,7 +1349,8 @@ HNDLE  hDB, hkey;
 
   rsprintf("<td bgcolor=#FFA0A0><a href=\"%s\" target=\"_blank\">Type:</a> <select name=\"type\">\n", ref);
   for (i=0 ; i<20 && type_list[i][0] ; i++)
-    if (path && equal_ustring(type_list[i], "reply"))
+    if ((path && !bedit && equal_ustring(type_list[i], "reply")) ||
+        (bedit && equal_ustring(type_list[i], type)))
       rsprintf("<option selected value=\"%s\">%s\n", type_list[i], type_list[i]);
     else
       rsprintf("<option value=\"%s\">%s\n", type_list[i], type_list[i]);
@@ -1339,31 +1365,68 @@ HNDLE  hDB, hkey;
   rsprintf("</select>\n");
 
   str[0] = 0;
-  if (path)
+  if (path && !bedit)
     sprintf(str, "Re: %s", subject);
+  else
+    sprintf(str, "%s", subject);
   rsprintf("<td bgcolor=#A0FFA0>Subject: <input type=text size=20 maxlength=\"80\" name=Subject value=\"%s\"></tr>\n", str);
 
-  /* reply text */
   if (path)
     {
+    /*
     rsprintf("<tr><td colspan=2 bgcolor=#E0E0FF><i>Original entry:</i><br><br>\n");
     el_format(text, encoding);
     rsprintf("</tr>\n");
+    */
 
     /* hidden text for original message */
     rsprintf("<input type=hidden name=orig value=\"%s\">\n", path);
     }
   
   rsprintf("<tr><td colspan=2>Text:<br>\n");
-  rsprintf("<textarea rows=10 cols=80 wrap=hard name=Text></textarea><br>\n");
+  rsprintf("<textarea rows=10 cols=80 wrap=hard name=Text>");
+
+  if (path)
+    {
+    if (bedit)
+      {
+      rsprintf(text);
+      }
+    else
+      {
+      p = text;
+      do
+        {
+        if (strchr(p, '\r'))
+          {
+          *strchr(p, '\r') = 0;
+          rsprintf("> %s\n", p);
+          p += strlen(p)+1;
+          if (*p == '\n')
+            p++;
+          }
+        else
+          {
+          rsprintf("> %s\n\n", p);
+          break;
+          }
+
+        } while (TRUE);
+      }
+    }
+
+  rsprintf("</textarea><br>\n");
 
   /* HTML check box */
-  rsprintf("<input type=\"checkbox\" name=\"html\" value=\"1\">Submit as HTML text</tr>\n");
+  if (bedit && encoding[0] == 'H')
+    rsprintf("<input type=checkbox checked name=html value=1>Submit as HTML text</tr>\n");
+  else
+    rsprintf("<input type=checkbox name=html value=1>Submit as HTML text</tr>\n");
   
   /* attachment */
-  rsprintf("<tr><td colspan=2>Attachment1: <input type=\"file\" size=\"60\" maxlength=\"256\" name=\"attfile1\" accept=\"filetype/*\" value=\"\"></tr>\n");
-  rsprintf("<tr><td colspan=2>Attachment2: <input type=\"file\" size=\"60\" maxlength=\"256\" name=\"attfile2\" accept=\"filetype/*\" value=\"\"></tr>\n");
-  rsprintf("<tr><td colspan=2>Attachment3: <input type=\"file\" size=\"60\" maxlength=\"256\" name=\"attfile3\" accept=\"filetype/*\" value=\"\"></tr>\n");
+  rsprintf("<tr><td colspan=2>Attachment1: <input type=\"file\" size=\"60\" maxlength=\"256\" name=\"attfile1\" value=\"%s\" accept=\"filetype/*\"></tr>\n", att1);
+  rsprintf("<tr><td colspan=2>Attachment2: <input type=\"file\" size=\"60\" maxlength=\"256\" name=\"attfile2\" value=\"%s\" accept=\"filetype/*\"></tr>\n", att2);
+  rsprintf("<tr><td colspan=2>Attachment3: <input type=\"file\" size=\"60\" maxlength=\"256\" name=\"attfile3\" value=\"%s\" accept=\"filetype/*\"></tr>\n", att3);
 
   rsprintf("</table>\n");
   rsprintf("</body></html>\r\n");
@@ -2170,13 +2233,19 @@ FILE  *f;
 
   if (equal_ustring(command, "new"))
     {
-    show_elog_new(NULL);
+    show_elog_new(NULL, FALSE);
+    return;
+    }
+
+  if (equal_ustring(command, "edit"))
+    {
+    show_elog_new(path, TRUE);
     return;
     }
 
   if (equal_ustring(command, "reply"))
     {
-    show_elog_new(path);
+    show_elog_new(path, FALSE);
     return;
     }
 
@@ -2392,6 +2461,7 @@ FILE  *f;
 
   rsprintf("<tr><td colspan=2 bgcolor=#C0C0C0>\n");
   rsprintf("<input type=submit name=cmd value=New>\n");
+  rsprintf("<input type=submit name=cmd value=Edit>\n");
   rsprintf("<input type=submit name=cmd value=Reply>\n");
   rsprintf("<input type=submit name=cmd value=Query>\n");
 
