@@ -7,6 +7,9 @@
                 following the MIDAS CAMAC Standard under DIRECTIO
 
   $Log$
+  Revision 1.4  2000/09/07 17:14:31  pierre
+  - added fe_name
+
   Revision 1.3  2000/04/19 07:39:22  midas
   Outcommented "fast" cam24i_r because of problems
 
@@ -870,6 +873,6 @@ INLINE void cam_interrupt_detach(void)
 }
 
 /*------------------------------------------------------------------*/
-INLINE int cam_init_rpc(char *host_name, char *exp_name, char *client_name, char *rpc_server){return 1;}
+INLINE int cam_init_rpc(char *host_name, char *exp_name, char *fe_name, char *client_name, char *rpc_server){return 1;}
 
 /*------------------------------------------------------------------*/
