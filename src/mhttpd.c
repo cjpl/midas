@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.138  2000/08/24 14:39:35  midas
+  Added password check for slow control value change
+
   Revision 1.137  2000/08/23 10:57:47  midas
   Break lines if more than 10 history panels
 
@@ -7390,6 +7393,13 @@ struct tm *gmt;
   
   if (strncmp(path, "SC/", 3) == 0)
     {
+    if (equal_ustring(command, "edit"))
+      {
+      sprintf(str, "%s?cmd=Edit&index=%d", path, index);
+      if (!check_web_password(cookie_wpwd, str, experiment))
+        return;
+      }
+
     show_sc_page(dec_path+3);
     return;
     }
