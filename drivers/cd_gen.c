@@ -6,6 +6,9 @@
   Contents:     Generic Class Driver
 
   $Log$
+  Revision 1.4  1999/11/04 15:54:37  midas
+  Modifications in order to work with bl_psi.c
+
   Revision 1.3  1999/09/20 11:54:08  midas
   Fixed compiler warning
 
@@ -87,6 +90,8 @@ BOOL         changed;
 GEN_INFO     *gen_info;
 HNDLE        hDB;
 
+  /*---- read measured value ----*/
+
   gen_info = (GEN_INFO *) pequipment->cd_info;
   cm_get_experiment_database(&hDB, NULL);
 
@@ -129,6 +134,19 @@ HNDLE        hDB;
     pequipment->odb_out++;
     }
 
+  /*---- read demand value ----*/
+
+  status = DRIVER(channel)(CMD_GET_DEMAND, gen_info->dd_info[channel], 
+                           channel-gen_info->channel_offset[channel], 
+                           &gen_info->demand[channel]);
+
+  if (gen_info->demand[channel] != gen_info->demand_mirror[channel])
+    {
+    gen_info->demand_mirror[channel] = gen_info->demand[channel];
+    db_set_data(hDB, gen_info->hKeyDemand, gen_info->demand,
+                sizeof(float)*gen_info->num_channels, gen_info->num_channels, TID_FLOAT);
+    }
+
   return status;
 }
 
@@ -145,8 +163,7 @@ EQUIPMENT *pequipment;
 
   /* set individual channels only if demand value differs */
   for (i=0 ; i<gen_info->num_channels ; i++)
-    if (gen_info->demand[i] != gen_info->demand_mirror[i] ||
-        abs(gen_info->measured[i] - gen_info->demand[i]) > 100)
+    if (gen_info->demand[i] != gen_info->demand_mirror[i])
       {
       status = DRIVER(i)(CMD_SET, gen_info->dd_info[i], 
                          i-gen_info->channel_offset[i], gen_info->demand[i]);
@@ -232,39 +249,6 @@ GEN_INFO *gen_info;
     return FE_ERR_ODB;
     }
 
-  /*---- Create/Read settings ----*/
-
-  /* Names */
-  for (i=0 ; i<gen_info->num_channels ; i++)
-    sprintf(gen_info->names+NAME_LENGTH*i, "Default%%CH %d", i);
-  db_merge_data(hDB, gen_info->hKeyRoot, "Settings/Names", 
-                gen_info->names, NAME_LENGTH*gen_info->num_channels, 
-                gen_info->num_channels, TID_STRING);
-
-  /* Update threshold */
-  for (i=0 ; i<gen_info->num_channels ; i++)
-    gen_info->update_threshold[i] = 2.f; /* default 2 units */
-  db_merge_data(hDB, gen_info->hKeyRoot, "Settings/Update Threshold Measured", 
-                gen_info->update_threshold, sizeof(float) * gen_info->num_channels, 
-                gen_info->num_channels, TID_FLOAT);
-
-  /*---- Create/Read variables ----*/
-
-  /* Demand */
-  db_merge_data(hDB, gen_info->hKeyRoot, "Variables/Demand", 
-                gen_info->demand, sizeof(float)*gen_info->num_channels, 
-                gen_info->num_channels, TID_FLOAT);
-  db_find_key(hDB, gen_info->hKeyRoot, "Variables/Demand", &gen_info->hKeyDemand);
-  db_open_record(hDB, gen_info->hKeyDemand, gen_info->demand, 
-                 gen_info->num_channels*sizeof(float), MODE_READ, gen_demand, pequipment);
-
-  /* Measured */
-  db_merge_data(hDB, gen_info->hKeyRoot, "Variables/Measured", 
-                gen_info->measured, sizeof(float)*gen_info->num_channels, 
-                gen_info->num_channels, TID_FLOAT);
-  db_find_key(hDB, gen_info->hKeyRoot, "Variables/Measured", &gen_info->hKeyMeasured);
-  memcpy(gen_info->measured_mirror, gen_info->measured, gen_info->num_channels * sizeof(float));
-
   /*---- Initialize device drivers ----*/
 
   /* call init method */
@@ -309,10 +293,63 @@ GEN_INFO *gen_info;
     gen_info->channel_offset[i] = offset;
     }
 
-  /* set initial demand values */
+  /*---- create demand variables ----*/
+
+  /* get demand from ODB */
+  status = db_find_key(hDB, gen_info->hKeyRoot, "Variables/Demand", &gen_info->hKeyDemand);
+  if (status == DB_SUCCESS)
+    {
+    size = sizeof(float)*gen_info->num_channels;
+    db_get_data(hDB, gen_info->hKeyDemand, gen_info->demand, &size, TID_FLOAT);
+    }
+  /* let device driver overwrite demand values */
   for (i=0 ; i<gen_info->num_channels ; i++)
-    DRIVER(i)(CMD_SET, gen_info->dd_info[i], 
-              i-gen_info->channel_offset[i], gen_info->demand[i]);
+    DRIVER(i)(CMD_GET_DEMAND, gen_info->dd_info[i], 
+              i-gen_info->channel_offset[i], &gen_info->demand[i]);
+  /* write back demand values */
+  status = db_find_key(hDB, gen_info->hKeyRoot, "Variables/Demand", &gen_info->hKeyDemand);
+  if (status != DB_SUCCESS)
+    {
+    db_create_key(hDB, gen_info->hKeyRoot, "Variables/Demand", TID_FLOAT);
+    db_find_key(hDB, gen_info->hKeyRoot, "Variables/Demand", &gen_info->hKeyDemand);
+    }
+  size = sizeof(float)*gen_info->num_channels;
+  db_set_data(hDB, gen_info->hKeyDemand, gen_info->demand, size, 
+              gen_info->num_channels, TID_FLOAT);
+  db_open_record(hDB, gen_info->hKeyDemand, gen_info->demand, 
+                 gen_info->num_channels*sizeof(float), MODE_READ, gen_demand, pequipment);
+
+  /*---- create measured variables ----*/
+  db_merge_data(hDB, gen_info->hKeyRoot, "Variables/Measured", 
+                gen_info->measured, sizeof(float)*gen_info->num_channels, 
+                gen_info->num_channels, TID_FLOAT);
+  db_find_key(hDB, gen_info->hKeyRoot, "Variables/Measured", &gen_info->hKeyMeasured);
+  memcpy(gen_info->measured_mirror, gen_info->measured, gen_info->num_channels * sizeof(float));
+
+  /*---- get default names from device driver ----*/
+  for (i=0 ; i<gen_info->num_channels ; i++)
+    {
+    sprintf(gen_info->names+NAME_LENGTH*i, "Default%%CH %d", i);
+    DRIVER(i)(CMD_GET_DEFAULT_NAME, gen_info->dd_info[i], 
+              i-gen_info->channel_offset[i], gen_info->names+NAME_LENGTH*i);
+    }
+  db_merge_data(hDB, gen_info->hKeyRoot, "Settings/Names", 
+                gen_info->names, NAME_LENGTH*gen_info->num_channels, 
+                gen_info->num_channels, TID_STRING);
+
+  /*---- get default update threshold from device driver ----*/
+  for (i=0 ; i<gen_info->num_channels ; i++)
+    {
+    gen_info->update_threshold[i] = 2.f; /* default 2 units */
+    DRIVER(i)(CMD_GET_DEFAULT_THRESHOLD, gen_info->dd_info[i], 
+              i-gen_info->channel_offset[i], &gen_info->update_threshold[i]);
+    }
+  db_merge_data(hDB, gen_info->hKeyRoot, "Settings/Update Threshold Measured", 
+                gen_info->update_threshold, sizeof(float) * gen_info->num_channels, 
+                gen_info->num_channels, TID_FLOAT);
+
+  /*---- set initial demand values ----*/
+  gen_demand(hDB, gen_info->hKeyDemand, pequipment);
 
   /* initially read all channels */
   for (i=0 ; i<gen_info->num_channels ; i++)
