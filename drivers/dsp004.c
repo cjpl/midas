@@ -7,6 +7,9 @@
                 following the MIDAS CAMAC Standard for DirectIO
 
   $Log$
+  Revision 1.3  1999/01/18 17:22:42  pierre
+  - fix cam24i_r for DH access
+
   Revision 1.2  1998/10/12 12:18:56  midas
   Added Log tag in header
 
@@ -218,7 +221,7 @@ INLINE void cam24i_r(const int c, const int n, const int a, const int f,
     while ((INT) (INP(OPST) & 0x7) != 5)
     *((char *)d)  =(unsigned char)INP(RL);
     *((char *)d+1)=(unsigned char)INP(RM);
-    *((char *)d+2)=(unsigned char)INP(RM);
+    *((char *)d+2)=(unsigned char)INP(RH);
     (*d)++;
   }
 }
@@ -688,7 +691,7 @@ INLINE void cam_interrupt_disable(void)
 
 static void (*old_handler)(void) = NULL;
 
-INLINE void cam_interrupt_attach(void (*isr)())
+INLINE void cam_interrupt_attach(void (*isr)(void))
 { 
 }
 
