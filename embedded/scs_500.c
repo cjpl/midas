@@ -9,6 +9,9 @@
                 for SCS-500 analog I/O
 
   $Log$
+  Revision 1.16  2003/05/14 14:56:44  midas
+  Switched P1 to push-pull
+
   Revision 1.15  2003/03/19 16:35:03  midas
   Eliminated configuration parameters
 
@@ -161,6 +164,8 @@ unsigned char i;
   REF0CN = 0x03;  // enable internal reference
   DAC0CN = 0x80;  // enable DAC0
   DAC1CN = 0x80;  // enable DAC1
+
+  PRT1CF = 0xFF;  // P1 on push-pull
 
   /* initial EEPROM value */
   if (init)
