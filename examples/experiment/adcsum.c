@@ -10,6 +10,9 @@
                 in the ODB and transferred to experim.h.
 
   $Log$
+  Revision 1.6  2003/04/23 15:09:29  midas
+  Added 'average' in ASUM bank
+
   Revision 1.5  2003/04/22 15:00:27  midas
   Worked on ROOT histo booking
 
@@ -91,7 +94,7 @@ ANA_MODULE adc_summing_module = {
 #ifdef HAVE_ROOT
 extern TDirectory *gManaHistsDir;
 
-static TH1F *gAdcSumHist = NULL;
+static TH1F *gAdcSumHist;
 #endif
 
 /*-- init routine --------------------------------------------------*/
@@ -116,9 +119,9 @@ INT adc_summing_init(void)
 
 INT adc_summing(EVENT_HEADER *pheader, void *pevent)
 {
-  INT          i, n_adc;
-  float        *cadc;
-  ASUM_BANK    *asum;
+INT          i, j, n_adc;
+float        *cadc;
+ASUM_BANK    *asum;
 
   /* look for CADC bank, return if not present */
   n_adc = bk_locate(pevent, "CADC", &cadc);
@@ -128,10 +131,17 @@ INT adc_summing(EVENT_HEADER *pheader, void *pevent)
   /* create ADC sum bank */
   bk_create(pevent, "ASUM", TID_STRUCT, &asum);
 
-  /* sum all channels above threshold */
+  /* sum all channels above threashold */
   asum->sum = 0.f;
-  for (i=0 ; i<n_adc ; i++)
-    asum->sum += cadc[i];
+  for (i=j=0 ; i<n_adc ; i++)
+    if (cadc[i] > adc_summing_param.adc_threshold)
+      {
+      asum->sum += cadc[i];
+      j++;
+      }
+
+  /* calculate ADC average */
+    asum->average = j > 0 ? asum->sum / j : 0;
 
   /* fill sum histo */
 #ifdef HAVE_HBOOK
