@@ -7,6 +7,9 @@
                 routines
 
   $Log$
+  Revision 1.30  2003/05/01 18:10:50  midas
+  Made rpc_client_check() EXPRT
+
   Revision 1.29  2003/04/25 11:47:17  midas
   Added ss_force_single_thread()
 
@@ -589,7 +592,7 @@ INT recv_tcp_check(int sock);
 INT recv_event_check(int sock);
 INT rpc_deregister_functions(void);
 INT rpc_check_channels(void);
-void rpc_client_check();
+void EXPRT rpc_client_check();
 INT rpc_server_disconnect(void);
 int EXPRT rpc_get_send_sock(void);
 int EXPRT rpc_get_event_sock(void);
