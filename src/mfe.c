@@ -7,6 +7,9 @@
                 linked with user code to form a complete frontend
 
   $Log$
+  Revision 1.45  2002/10/15 18:44:23  olchansk
+  fix printf() and cm_msg() format mismatches
+
   Revision 1.44  2002/10/15 18:15:25  olchansk
   disable dtsout, stderr buffering,
   catch-ignore SIGPIPE
@@ -850,8 +853,8 @@ static void    *frag_buffer = NULL;
       /* fragment event */
       if (pevent->data_size+sizeof(EVENT_HEADER) > (DWORD) max_event_size_frag)
         {
-        cm_msg(MERROR, "send_event", "Event size %d larger than maximum size %d for frag. ev.",
-               pevent->data_size+sizeof(EVENT_HEADER), max_event_size_frag);
+        cm_msg(MERROR, "send_event", "Event size %ld larger than maximum size %d for frag. ev.",
+               (long)(pevent->data_size+sizeof(EVENT_HEADER)), max_event_size_frag);
         return SS_NO_MEMORY;
         }
 
@@ -935,8 +938,8 @@ static void    *frag_buffer = NULL;
 
       if (pevent->data_size+sizeof(EVENT_HEADER) > (DWORD) max_event_size)
         {
-        cm_msg(MERROR, "send_event", "Event size %d larger than maximum size %d",
-               pevent->data_size+sizeof(EVENT_HEADER), max_event_size);
+        cm_msg(MERROR, "send_event", "Event size %ld larger than maximum size %d",
+               (long)(pevent->data_size+sizeof(EVENT_HEADER)), max_event_size);
         return SS_NO_MEMORY;
         }
 
@@ -1146,7 +1149,7 @@ char   str[30];
     ss_printf(0, 2, "Run status:   %s", run_state == STATE_STOPPED ? "Stopped" :
                                         run_state == STATE_RUNNING ? "Running" :
                                         "Paused");
-    ss_printf(25,2, "Run number %ld   ", run_number);
+    ss_printf(25,2, "Run number %d   ", run_number);
     ss_printf(0, 3, "================================================================================");
     ss_printf(0, 4, "Equipment     Status     Events     Events/sec Rate[kB/s] ODB->FE    FE->ODB");
     ss_printf(0, 5, "--------------------------------------------------------------------------------");
@@ -1331,8 +1334,8 @@ INT err;
                 {
                 if (pevent->data_size+sizeof(EVENT_HEADER) > (DWORD) max_event_size)
                   {
-                  cm_msg(MERROR, "scheduler", "Event size %d larger than maximum size %d",
-                         pevent->data_size+sizeof(EVENT_HEADER), max_event_size);
+                  cm_msg(MERROR, "scheduler", "Event size %ld larger than maximum size %d",
+                         (long)(pevent->data_size+sizeof(EVENT_HEADER)), max_event_size);
                   }
 
                 eq->subevent_number++;
@@ -1367,8 +1370,8 @@ INT err;
             /* check event size */
             if (pevent->data_size+sizeof(EVENT_HEADER) > (DWORD) max_event_size)
               {
-              cm_msg(MERROR, "scheduler", "Event size %d larger than maximum size %d",
-                     pevent->data_size+sizeof(EVENT_HEADER), max_event_size);
+              cm_msg(MERROR, "scheduler", "Event size %ld larger than maximum size %d",
+                     (long)(pevent->data_size+sizeof(EVENT_HEADER)), max_event_size);
               }
 
             /* increment serial number if event read out sucessfully */
@@ -1748,17 +1751,17 @@ INT   i, count;
       break;
 
     default:
-      printf("cnaf: Unknown command 0x%X\n", cmd);
+      printf("cnaf: Unknown command 0x%X\n",(unsigned int)cmd);
     }
 
   if (debug)
     {
     if (index == RPC_CNAF16)
       printf("cmd=%d r=%d c=%d n=%d a=%d f=%d d=%X x=%d q=%d\n",
-              cmd, count, c, n, a, f, pword[0], *x, *q);
+              (int)cmd, (int)count, (int)c, (int)n, (int)a, (int)f, (int)pword[0], (int)*x, (int)*q);
     else if (index == RPC_CNAF24)
       printf("cmd=%d r=%d c=%d n=%d a=%d f=%d d=%X x=%d q=%d\n",
-              cmd, count, c, n, a, f, pdword[0], *x, *q);
+              (int)cmd, (int)count, (int)c, (int)n, (int)a, (int)f, (int)pdword[0], (int)*x, (int)*q);
     }
 
   return RPC_SUCCESS;
