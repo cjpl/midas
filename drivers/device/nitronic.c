@@ -6,6 +6,9 @@
   Contents:     Nitronic HVS 132 High Voltage Device Driver
 
   $Log$
+  Revision 1.6  2001/01/04 10:50:46  midas
+  Switched off debugging
+
   Revision 1.5  2001/01/04 10:20:57  midas
   Increased timeouts from 1s to 3s
 
@@ -103,7 +106,7 @@ NITRONIC_INFO *info;
   if (status != SUCCESS)
     return status;
 
-  bd(CMD_DEBUG, TRUE);
+  bd(CMD_DEBUG, FALSE); 
 
   /* check if module is living  */
   sprintf(str, "M%02d", info->settings.address);
