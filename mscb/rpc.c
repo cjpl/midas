@@ -6,6 +6,9 @@
   Contents:     List of MSCB RPC functions with parameters
 
   $Log$
+  Revision 1.8  2003/03/21 13:36:37  midas
+  Fixed bug
+
   Revision 1.7  2003/03/19 16:35:03  midas
   Eliminated configuration parameters
 
@@ -90,7 +93,6 @@ static RPC_LIST rpc_list[] = {
 
   { RPC_MSCB_INFO_VARIABLE, "mscb_info_variable",
     {{TID_INT,        RPC_IN}, 
-     {TID_INT,        RPC_IN}, 
      {TID_INT,        RPC_IN}, 
      {TID_INT,        RPC_IN}, 
      {TID_STRUCT,     RPC_OUT, sizeof(MSCB_INFO_VAR)}, 
