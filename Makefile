@@ -6,6 +6,9 @@
 #  Contents:     Makefile for MIDAS binaries and examples under unix
 #
 #  $Log$
+#  Revision 1.15  1999/12/20 14:24:17  midas
+#  Adjusted for different driver direcotries
+#
 #  Revision 1.14  1999/09/17 11:55:08  midas
 #  Remove OS_UNIX (now defined in midas.h)
 #
@@ -63,6 +66,7 @@
 #        gmake             To compile the MIDAS library and binaries
 #        gmake install     To install the library and binaries
 #        gmake examples    To compile low-level examples (not necessary)
+#        gmake static      To make static executables for debugging
 #
 #
 # This makefile contains conditional code to determine the operating
@@ -75,11 +79,10 @@
 #
 # "gmake install" will copy MIDAS binaries, the midas library and
 # the midas include files to specific directories for each version.
-#
-# This allows to keep different versions on one machine. Only logical
-# links are created in some system direcotries pointing to the proper
-# version executables and libraries. You may change these directories
-# to match your preferences.
+# You may change these directories to match your preferences.
+#####################################################################
+
+# get OS type from shell
 OSTYPE = $(shell uname)
 
 #
@@ -207,7 +210,7 @@ SHLIB = $(LIB_DIR)/libmidas.so
 VPATH = $(LIB_DIR):$(INC_DIR)
 
 all:    $(OS_DIR) $(LIB_DIR) $(BIN_DIR) \
-	$(SHLIB) \
+	$(LIBNAME) $(SHLIB) \
 	$(LIB_DIR)/mana.o $(LIB_DIR)/mfe.o \
 	$(PROGS)
 
@@ -302,14 +305,20 @@ $(BIN_DIR)/%:$(UTL_DIR)/%.c
 	$(CC) $(CFLAGS) $(OSFLAGS) -o $@ $< $(LIB) $(LIBS)
 
 
-$(BIN_DIR)/mcnaf: $(UTL_DIR)/mcnaf.c $(DRV_DIR)/camacrpc.c
-	$(CC) $(CFLAGS) $(OSFLAGS) -o $@ $(UTL_DIR)/mcnaf.c $(DRV_DIR)/camacrpc.c $(LIB) $(LIBS)
+$(BIN_DIR)/mcnaf: $(UTL_DIR)/mcnaf.c $(DRV_DIR)/bus/camacrpc.c
+	$(CC) $(CFLAGS) $(OSFLAGS) -o $@ $(UTL_DIR)/mcnaf.c $(DRV_DIR)/bus/camacrpc.c $(LIB) $(LIBS)
 
 $(BIN_DIR)/mdump: $(UTL_DIR)/mdump.c $(SRC_DIR)/ybos.c
 	$(CC) $(CFLAGS) $(OSFLAGS) -o $@ $(UTL_DIR)/mdump.c $(SRC_DIR)/ybos.c $(LIB) -lz $(LIBS)
 
-$(BIN_DIR)/dio: $(DRV_DIR)/dio.c
-	$(CC) $(CFLAGS) $(OSFLAGS) -o $@ $(DRV_DIR)/dio.c $(LIB) $(LIBS)
+$(BIN_DIR)/dio: $(UTL_DIR)/dio.c
+	$(CC) $(CFLAGS) $(OSFLAGS) -o $@ $(UTL_DIR)/dio.c $(LIB) $(LIBS)
+
+#####################################################################
+
+static:
+	rm -f $(PROGS)
+	make USERFLAGS=-static
 
 #####################################################################
 
