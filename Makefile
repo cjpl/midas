@@ -6,6 +6,9 @@
 #  Contents:     Makefile for MIDAS binaries and examples under unix
 #
 #  $Log$
+#  Revision 1.9  1999/07/22 19:42:58  pierre
+#  - Added USERFLAGS to allow other options (-DUSERFLAGS=-static)
+#
 #  Revision 1.8  1999/06/23 10:01:20  midas
 #  Additions (shared library etc.) added by Glenn
 #
@@ -57,7 +60,11 @@
 #
 # "gmake install" will copy MIDAS binaries, the midas library and
 # the midas include files to specific directories for each version.
-
+#
+# This allows to keep different versions on one machine. Only logical
+# links are created in some system direcotries pointing to the proper
+# version executables and libraries. You may change these directories
+# to match your preferences.
 OSTYPE = $(shell uname)
 
 #
@@ -91,7 +98,7 @@ endif
 
 ifeq ($(OSTYPE),osf1)
 OS_DIR = osf1
-OSFLAGS = -DOS_OSF1 -DOS_UNIX
+OSFLAGS = -DOS_OSF1 -DOS_UNIX $(USERFLAGS)
 FFLAGS = -nofor_main -D 40000000 -T 20000000
 LIBS = -lbsd
 endif
@@ -105,7 +112,7 @@ endif
 
 ifeq ($(OSTYPE),ultrix)
 OS_DIR = ultrix
-OSFLAGS = -DOS_ULTRIX -DOS_UNIX -DNO_PTY
+OSFLAGS = -DOS_ULTRIX -DOS_UNIX -DNO_PTY $(USERFLAGS)
 LIBS =
 endif
 
@@ -114,7 +121,7 @@ endif
 #
 ifeq ($(OSTYPE), FreeBSD)
 OS_DIR = freeBSD
-OSFLAGS = -DOS_FREEBSD -DOS_UNIX
+OSFLAGS = -DOS_FREEBSD -DOS_UNIX $(USERFLAGS)
 LIBS = -lbsd -lcompat
 endif
 
@@ -127,7 +134,7 @@ endif
 
 ifeq ($(OSTYPE),linux)
 OS_DIR = linux
-OSFLAGS = -DOS_LINUX -DOS_UNIX -fpic -DPIC
+OSFLAGS = -DOS_LINUX -DOS_UNIX -fpic -DPIC $(USERFLAGS)
 LIBS = -lbsd -lutil
 endif
 
@@ -137,7 +144,7 @@ endif
 ifeq ($(OSTYPE),solaris)
 CC = gcc
 OS_DIR = solaris
-OSFLAGS = -DOS_SOLARIS -DOS_UNIX
+OSFLAGS = -DOS_SOLARIS -DOS_UNIX $(USERFLAGS)
 LIBS = -lsocket -lnsl
 endif
 
