@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.130  2000/06/06 10:52:27  midas
+  Increase max. number of colums in slow control page to 9
+
   Revision 1.129  2000/05/24 08:00:32  midas
   Use gethostbyaddr only when creating new elog entry -> fix hangups
 
@@ -3567,11 +3570,11 @@ char   data_str[256], hex_str[256];
       }
     }
 
-  show_header(hDB, "MIDAS slow control", "", 3);
+  show_header(hDB, "MIDAS slow control", "", 5);
 
   /*---- menu buttons ----*/
 
-  rsprintf("<tr><td colspan=6 bgcolor=#C0C0C0>\n");
+  rsprintf("<tr><td colspan=10 bgcolor=#C0C0C0>\n");
 
   rsprintf("<input type=submit name=cmd value=ODB>\n");
   rsprintf("<input type=submit name=cmd value=Status>\n");
@@ -3580,7 +3583,7 @@ char   data_str[256], hex_str[256];
 
   /*---- enumerate SC equipment ----*/
 
-  rsprintf("<tr><td colspan=6 bgcolor=#FFFF00><i>Equipment:</i> \n");
+  rsprintf("<tr><td colspan=10 bgcolor=#FFFF00><i>Equipment:</i> \n");
 
   db_find_key(hDB, 0, "/Equipment", &hkey);
   if (hkey)
@@ -3639,7 +3642,7 @@ char   data_str[256], hex_str[256];
   if (hkey)
     {
     /*---- single name array ----*/
-    rsprintf("<tr><td colspan=6 bgcolor=#FFFFA0><i>Groups:</i> ");
+    rsprintf("<tr><td colspan=10 bgcolor=#FFFFA0><i>Groups:</i> ");
 
     /* "all" group */
     if (equal_ustring(group, "All"))
@@ -3709,14 +3712,14 @@ char   data_str[256], hex_str[256];
         break;
       }
 
-    if (i == 0 || i > 3)
+    if (i == 0 || i > 9)
       {
       rsprintf("</table>");
       return;
       }
 
     /* title row */
-    colspan = 6-i;
+    colspan = 10-i;
     rsprintf("<tr><th colspan=%d>Names", colspan);
 
     /* display entries for this group */
@@ -3791,7 +3794,7 @@ char   data_str[256], hex_str[256];
     {
     /*---- multiple name arrays ----*/
 
-    rsprintf("<tr><td colspan=6 bgcolor=#FFFFA0><i>Groups:</i> ");
+    rsprintf("<tr><td colspan=10 bgcolor=#FFFFA0><i>Groups:</i> ");
 
     /* "all" group */
     if (equal_ustring(group, "All"))
@@ -3850,7 +3853,7 @@ char   data_str[256], hex_str[256];
         continue;
 
       /* title row */
-      rsprintf("<tr><th colspan=5>Names<th>%s</tr>\n", varkey.name);
+      rsprintf("<tr><th colspan=9>Names<th>%s</tr>\n", varkey.name);
 
 
       if (varkey.type == TID_KEY)
@@ -3868,7 +3871,7 @@ char   data_str[256], hex_str[256];
           if (key.type == TID_KEY)
             {
             /* for keys, don't display data value */
-            rsprintf("<tr><td colspan=5>%s<br></tr>\n", key.name);
+            rsprintf("<tr><td colspan=9>%s<br></tr>\n", key.name);
             }
           else
             {
@@ -3887,16 +3890,16 @@ char   data_str[256], hex_str[256];
                 }
 
               if (strcmp(data_str, hex_str) != 0 && hex_str[0])
-                rsprintf("<tr><td colspan=5>%s<td align=center>%s (%s)<br></tr>\n", 
+                rsprintf("<tr><td colspan=9>%s<td align=center>%s (%s)<br></tr>\n", 
                           key.name, data_str, hex_str);
               else
-                rsprintf("<tr><td colspan=5>%s<td align=center>%s<br></tr>\n", 
+                rsprintf("<tr><td colspan=9>%s<td align=center>%s<br></tr>\n", 
                           key.name, data_str);
               }
             else
               {
               /* display first value */
-              rsprintf("<tr><td colspan=5 rowspan=%d>%s\n", key.num_values, key.name);
+              rsprintf("<tr><td colspan=9 rowspan=%d>%s\n", key.num_values, key.name);
 
               for (k=0 ; k<key.num_values ; k++)
                 {
@@ -3939,7 +3942,7 @@ char   data_str[256], hex_str[256];
           else
             sprintf(name, "%s[%d]", varkey.name, j);
 
-          rsprintf("<tr><td colspan=5>%s", name);
+          rsprintf("<tr><td colspan=9>%s", name);
 
           size = sizeof(data);
           db_get_data_index(hDB, hkey, data, &size, j, varkey.type);
