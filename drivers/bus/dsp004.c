@@ -7,6 +7,9 @@
                 following the MIDAS CAMAC Standard for DirectIO
 
   $Log$
+  Revision 1.8  2002/05/08 22:19:27  pierre
+  remove warnings
+
   Revision 1.7  2001/11/22 18:26:25  pierre
   fix cam24o_q upper byte
 
@@ -572,7 +575,7 @@ DWORD size;
   if (!DeviceIoControl(_hdio, (DWORD) 0x9c406000, &buffer, sizeof(buffer), 
 		                   NULL, 0, &size, NULL))
     return -1;
-#endif _MSC_VER
+#endif // _MSC_VER
 #ifdef OS_LINUX
   /* 
   In order to access the IO ports of the CAMAC interface, one needs
