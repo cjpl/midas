@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.33  1999/08/26 15:18:22  midas
+  Added EL_xxx codes
+
   Revision 1.32  1999/08/20 13:31:18  midas
   Analyzer saves and reloads online histos
 
@@ -574,6 +577,12 @@ typedef          INT       HNDLE;
 #define FTP_FILE_ERROR              803
 #define FTP_RESPONSE_ERROR          804
 #define FTP_INVALID_ARG             805
+
+/* ELog */
+#define EL_SUCCESS                    1
+#define EL_FILE_ERROR               902
+#define EL_NO_MESSAGE               903
+#define EL_TRUNCATED                904
 
 /* Slow control commands */
 #define CMD_INIT                      1
