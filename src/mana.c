@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.12  1999/02/03 16:36:50  midas
+  Added -f flag to filter events
+
   Revision 1.11  1999/02/01 15:47:47  midas
   - removed ASCII read function (only historical for pibeta)
   - analyze_file puts current offline run number into ODB
@@ -116,6 +119,7 @@ struct {
   char  output_file_name[256];
   INT   run_number[2];
   DWORD n[4];
+  INT   filter[10];
   char  config_file_name[10][256];
   char  param[10][256];
   BOOL  rwnt;
@@ -165,6 +169,12 @@ struct {
      <first> <last> <n>\n\
                    Analyze every n-th event from \"first\" to \"last\".",
    clp.n, TID_INT, 4 },
+
+  {'f', 
+   "<event ID1>     Filter events. Only write events to the output file\n\
+     <event ID2>     if their event ID matches.\n\
+         ...         ", 
+   clp.filter, TID_INT, 10 },
 
   {'c', 
    "<filename1>   Configuration file name(s). May contain a '%05d' to be\n\
@@ -2140,20 +2150,31 @@ EVENT_DEF    *event_def;
   /* write resulting event */
   if (out_file)
     {
-    if (out_format == FORMAT_HBOOK)
-      status = write_event_hbook(out_file, pevent, par);
-    else if (out_format == FORMAT_ASCII)
-      status = write_event_ascii(out_file, pevent, par);
-    else if (out_format == FORMAT_MIDAS)
-      status = write_event_midas(out_file, pevent, par);
+    /* check if events matches filter */
+    for (i=0 ; i<10 && clp.filter[i] ; i++)
+      if (clp.filter[i] == pevent->event_id)
+        break;
 
-    if (status != SUCCESS)
+    if (clp.filter[0] == 0 || clp.filter[i] == pevent->event_id)
       {
-      cm_msg(MERROR, "process_event", "Error writing to file (Disk full?)");
-      return -1;
-      }
+      if (out_format == FORMAT_HBOOK)
+        status = write_event_hbook(out_file, pevent, par);
+      else if (out_format == FORMAT_ASCII)
+        status = write_event_ascii(out_file, pevent, par);
+      else if (out_format == FORMAT_MIDAS)
+        status = write_event_midas(out_file, pevent, par);
 
-    par->events_written++;
+      if (status != SUCCESS)
+        {
+        cm_msg(MERROR, "process_event", "Error writing to file (Disk full?)");
+        return -1;
+        }
+
+      par->events_written++;
+      }
+    else
+      /* signal rejection of event */
+      return 0;
     }
 
   /* fill shared memory */
