@@ -7,6 +7,9 @@
                 linked with user code to form a complete frontend
 
   $Log$
+  Revision 1.15  2000/02/26 01:25:54  midas
+  Fixed bug that number of sent events was not cleared at start
+
   Revision 1.14  2000/02/25 20:22:49  midas
   Added super-event scheme
 
@@ -170,6 +173,7 @@ INT i, status;
     {
     equipment[i].serial_number = 1;
     equipment[i].subevent_number = 0;
+    equipment[i].stats.events_sent = 0;
     equipment[i].odb_in = equipment[i].odb_out = 0;
     }
 
