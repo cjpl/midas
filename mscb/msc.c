@@ -6,6 +6,9 @@
   Contents:     Command-line interface for the Midas Slow Control Bus
 
   $Log$
+  Revision 1.20  2002/11/22 15:43:30  midas
+  Ouput cycle number in test mode
+
   Revision 1.19  2002/11/20 12:01:23  midas
   Added host to mscb_init
 
@@ -799,7 +802,7 @@ MSCB_INFO_CHN info_chn;
         status = mscb_user(fd, current_addr, &d1, sizeof(d1), &d2, &size);
 
         if (d2 != d1)
-          printf("Received: %04X, should be %04X, status = %d\n", d2, d1, status);
+          printf("%d\nReceived: %04X, should be %04X, status = %d\n", i, d2, d1, status);
 
         i++;
         if (i % 100 == 0)
