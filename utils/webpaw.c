@@ -6,6 +6,9 @@
   Contents:     Web server for remote PAW display
 
   $Log$
+  Revision 1.25  2000/10/05 14:46:16  midas
+  Added optional parameters
+
   Revision 1.24  2000/08/24 14:08:05  midas
   Version 1.0.7
 
@@ -105,7 +108,7 @@
 #endif
 
 /* Version of WebPAW */
-#define VERSION "1.0.7"
+#define VERSION "1.0.8"
 
 #define WEB_BUFFER_SIZE 100000
 #define MAX_PARAM           10
@@ -723,6 +726,67 @@ int    status;
 
 /*------------------------------------------------------------------*/
 
+void display_kumac(char *display_name, char *kumac_name)
+{
+char str[256], comment_name[256], param_name[256], *p;
+
+  /* single kumac found */
+  comment_name[0] = 0;
+  param_name[0] = 0;
+  if (strchr(kumac_name, '?'))
+    {
+    /* extract comment, trim leading blanks */
+    p = strchr(kumac_name, '?')+1;
+    while (*p && *p == ' ')
+      p++;
+    strcpy(comment_name, p);
+    /* trim trailing blanks */
+    p = comment_name;
+    while (*p && *p != ' ' && *p != '\r' && *p != '\n')
+      p++;
+    *p = 0;
+    }
+  if (strchr(kumac_name, '#'))
+    {
+    /* extract param, trim leading blanks */
+    p = strchr(kumac_name, '#')+1;
+    while (*p && *p == ' ')
+      p++;
+    strcpy(param_name, p);
+    /* trim trailing blanks */
+    p = param_name;
+    while (*p && *p != ' ' && *p != '\r' && *p != '\n')
+      p++;
+    *p = 0;
+    }
+
+  if (strchr(kumac_name, '?'))
+    *strchr(kumac_name, '?') = 0;
+  if (strchr(kumac_name, '#'))
+    *strchr(kumac_name, '#') = 0;
+
+  urlEncode(kumac_name);
+  format(display_name, str);
+
+  if (param_name[0])
+    {
+    if (comment_name[0])
+      rsprintf("<li><a href=\"/%s.html?comment=%s&param=%s\" target=_blank>%s</a></li>\r\n", 
+                kumac_name, comment_name, param_name, str);
+    else
+      rsprintf("<li><a href=\"/%s.html?param=%s\" target=_blank>%s</a></li>\r\n", 
+                kumac_name, param_name, str);
+    }
+  else if (comment_name[0])
+    rsprintf("<li><a href=\"/%s.html?comment=%s\" target=contents>%s</a></li>\r\n", 
+              kumac_name, comment_name, str);
+  else
+    rsprintf("<li><a href=\"/%s.html\" target=contents>%s</a></li>\r\n", 
+              kumac_name, str);
+}
+
+/*------------------------------------------------------------------*/
+
 void interprete(char *path)
 /********************************************************************\
 
@@ -739,7 +803,7 @@ void interprete(char *path)
 \********************************************************************/
 {
 char   str[10000], str2[10000], group_name[256], display_name[256], kumac_name[256];
-char   cmd[256], comment_name[256], *p;
+char   cmd[256], param_name[256], param_opt[256], *p, *ps;
 char   cur_group[256], tmp[256], elog[256];
 int    fh, i, j, length, status, height;
 
@@ -795,7 +859,6 @@ int    fh, i, j, length, status, height;
       }
     else
       {
-
       /* title row */
       rsprintf("<b><a target=_top href=\"http://midas.psi.ch/webpaw/\">WebPAW</a> V%s on %s</b>\r\n", 
                 VERSION, host_name);
@@ -907,57 +970,84 @@ int    fh, i, j, length, status, height;
             if (!enumcfg(group_name, display_name, kumac_name, j))
               break;
     
-            comment_name[0] = 0;
-            if (strchr(kumac_name, '?'))
-              {
-              /* extract comment, trim leading blanks */
-              p = strchr(kumac_name, '?')+1;
-              while (*p && *p == ' ')
-                p++;
-              strcpy(comment_name, p);
-              *strchr(kumac_name, '?') = 0;
-              }
-            urlEncode(kumac_name);
-            format(display_name, str);
-
-            if (comment_name[0])
-              rsprintf("<li><a href=\"/%s.html?comment=%s\" target=contents>%s</a></li>\r\n", 
-                        kumac_name, comment_name, str);
-            else
-              rsprintf("<li><a href=\"/%s.html\" target=contents>%s</a></li>\r\n", 
-                        kumac_name, str);
+            display_kumac(display_name, kumac_name);
             }
 
           rsprintf("</ul>\r\n");
           }
         }
       else
-        {
-        /* single kumac found */
-        comment_name[0] = 0;
-        if (strchr(kumac_name, '?'))
-          {
-          /* extract comment, trim leading blanks */
-          p = strchr(kumac_name, '?')+1;
-          while (*p && *p == ' ')
-            p++;
-          strcpy(comment_name, p);
-          *strchr(kumac_name, '?') = 0;
-          }
-        urlEncode(kumac_name);
-        format(display_name, str);
-
-        if (comment_name[0])
-          rsprintf("<li><a href=\"/%s.html?comment=%s\" target=contents>%s</a></li>\r\n", 
-                    kumac_name, comment_name, str);
-        else
-          rsprintf("<li><a href=\"/%s.html\" target=contents>%s</a></li>\r\n", 
-                    kumac_name, str);
-        }
-
+        display_kumac(display_name, kumac_name);
       }
 
     rsprintf("</ul>\r\n");
+
+    rsprintf("</body></html>\r\n");
+    return;
+    }
+
+  /* display parameter page */
+  if (strstr(path, ".html") && getparam("param"))
+    {
+    rsprintf("HTTP/1.0 200 Document follows\r\n");
+    rsprintf("Server: WebPAW\r\n");
+
+    rsprintf("Content-Type: text/html\r\n\r\n");
+
+    rsprintf("<head><title>Please enter parameters</title>\r\n");
+    rsprintf("</head>\r\n");
+
+    if (getcfg("General", "Body3", str))
+      rsprintf("<html><body %s>\r\n", str);
+    else
+      rsprintf("<html><body>\r\n");
+
+    rsprintf("<form method=GET action=\"%s\" target=contents>\r\n", webpaw_url);
+
+    rsprintf("<center><h2>Please enter parameters</h2>\r\n");
+    rsprintf("for function<p>\r\n");
+
+    strcpy(cmd, path);
+    *strstr(cmd, ".html") = 0;
+    urlDecode(cmd);
+    
+    rsprintf("<code>%s</code><p>\r\n\r\n", cmd);
+    rsprintf("<input type=\"hidden\" name=\"cmd\" value=\"%s\">\r\n", cmd);
+
+    rsprintf("<table border=0 cellpadding=5>\r\n");
+    for (i=0 ; ; i++)
+      {
+      if (!enumcfg(getparam("param"), param_name, param_opt, i))
+        break;
+    
+      rsprintf("<tr><td align=right>%s</td><td>", param_name);
+
+      if (strchr(param_opt, ';') == NULL)
+        rsprintf("<input type=text name=\"p%d\" value=\"%s\"</td></tr>\r\n", i, param_opt);
+      else
+        {
+        /* display individual options in drop down box */
+        rsprintf("<select size=1 name=\"p%d\">\r\n", i);
+        p = param_opt;
+        for (j=0 ; *p; j++)
+          {
+          while (*p && *p == ' ')
+            p++;
+          ps = str;
+          while (*p && *p != ';')
+            *ps++ = *p++;
+          *ps = 0;
+          if (*p)
+            p++;
+          rsprintf("<option>%s\r\n", str);
+          }
+
+        rsprintf("</select>\r\n");
+        }
+      }
+    rsprintf("</table><P>");
+
+    rsprintf("<input type=submit value=\"Submit\">\r\n");
 
     rsprintf("</body></html>\r\n");
     return;
@@ -991,6 +1081,25 @@ int    fh, i, j, length, status, height;
       }
     else
       strcpy(cmd, path);
+
+    /* add parameters if present */
+    param_opt[0] = 0;
+    for (i=0 ; ; i++)
+      {
+      sprintf(str, "p%d", i);
+      if (getparam(str))
+        {
+        strcat(param_opt, " ");
+        strcat(param_opt, getparam(str));
+        }
+      else
+        break;
+      } 
+    if (param_opt[0])
+      {
+      urlEncode(param_opt);
+      strcat(cmd, param_opt);
+      }
 
     if (equal_ustring(str, "quit"))
       {
@@ -1700,7 +1809,8 @@ char pwd[256], str[256];
         {
 usage:
         printf("usage: %s [-p port] [-d [file]] [-D] [-P password]\n\n", argv[0]);
-        printf("       -d [file] display debug message, optionally put them into file\n");
+        printf("       -p set port under which webpaw runs (default: 80)");
+        printf("       -d [file] display debug messages, optionally put them into file\n");
         printf("       -D become a daemon\n");
         printf("       -P create/overwrite password in webpaw.cfg\n\n");
         return 1;
