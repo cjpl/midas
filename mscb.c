@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus communication functions
 
   $Log$
+  Revision 1.18  2002/11/06 14:01:20  midas
+  Fixed small bugs
+
   Revision 1.17  2002/10/28 14:26:30  midas
   Changes from Japan
 
@@ -1471,7 +1474,7 @@ unsigned short ofs;
         sscanf(line+9+i*2, "%02x", &d);
         image[ofs+i] = d;
         }
-      line = strchr(line, '\r');
+      line = strchr(line, '\r')+1;
       if (line && *line == '\n')
         line++;
       }

@@ -6,6 +6,9 @@
   Contents:     Command-line interface for the Midas Slow Control Bus
 
   $Log$
+  Revision 1.16  2002/11/06 14:01:20  midas
+  Fixed small bugs
+
   Revision 1.15  2002/10/28 14:26:30  midas
   Changes from Japan
 
@@ -352,7 +355,7 @@ MSCB_INFO_CHN info_chn;
         {
         printf("Test address %d\r", i);
         fflush(stdout);
-        status = mscb_info(fd, current_addr, &info);
+        status = mscb_info(fd, i, &info);
         if (status == MSCB_SUCCESS)
           {
           printf("Found node \"%s\", node addr. %d (0x%04X), group addr. %d (0x%04X)      \n", 
@@ -364,7 +367,6 @@ MSCB_INFO_CHN info_chn;
         }
 
       printf("                       \n");
-      current_addr = -1;
       }
 
     /* info */
