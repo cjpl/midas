@@ -7,6 +7,9 @@
   Contents:     Includes all necessary include files
 
   $Log$
+  Revision 1.8  2003/04/25 13:54:19  midas
+  Added include file for inet_ntoa
+
   Revision 1.7  2003/04/15 21:47:35  pierre
   include ctype.h in all OS
 
@@ -143,8 +146,8 @@
 #include <sys/stat.h>
 #include <sys/mtio.h>
 #include <sys/mount.h>
-/*-PAA-*/
 #include <dirent.h>
+#include <arpa/inet.h>
 
 /* special code for Linux and FreeBSD */
 #if defined(OS_LINUX) || defined(OS_FREEBSD)
