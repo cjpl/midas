@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol commands
 
   $Log$
+  Revision 1.31  2004/03/05 12:29:00  midas
+  Fixed bugs with F020
+
   Revision 1.30  2004/03/04 14:34:22  midas
   Added SCS_250
 
@@ -110,7 +113,7 @@
 #define CPU_CYGNAL
 
 #define LED_0 P3 ^ 4
-#define LED_1 P3 ^ 3;
+#define LED_1 P3 ^ 3
 #define LED_ON 0
 sbit RS485_ENABLE = P3 ^ 5;
 
