@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus communication functions
 
   $Log$
+  Revision 1.35  2003/04/03 08:21:44  midas
+  Added submaster check
+
   Revision 1.34  2003/03/25 11:24:17  midas
   Fixed size bug
 
@@ -108,7 +111,7 @@
 
 \********************************************************************/
 
-#define MSCB_LIBRARY_VERSION   "1.4.2"
+#define MSCB_LIBRARY_VERSION   "1.4.3"
 #define MSCB_PROTOCOL_VERSION  "1.4"
 
 #ifdef _MSC_VER           // Windows includes
@@ -1014,7 +1017,7 @@ int mscb_addr(int fd, int cmd, int adr, int retry)
 \********************************************************************/
 {
 unsigned char buf[10];
-int i, n;
+int i, n, status;
 
   for (n = 0 ; n < retry ; n++)
     {
@@ -1026,7 +1029,7 @@ int i, n;
       {
       buf[1] = (unsigned char) adr;
       buf[2] = crc8(buf, 2);
-      mscb_out(fd, buf, 3, 1);
+      status = mscb_out(fd, buf, 3, 1);
       }
     else if (cmd == CMD_ADDR_NODE16 ||
              cmd == CMD_ADDR_GRP16 ||
@@ -1035,13 +1038,16 @@ int i, n;
       buf[1] = (unsigned char) (adr >> 8);
       buf[2] = (unsigned char) (adr & 0xFF);
       buf[3] = crc8(buf, 3);
-      mscb_out(fd, buf, 4, 1);
+      status = mscb_out(fd, buf, 4, 1);
       }
     else
       {
       buf[1] = crc8(buf, 1);
-      mscb_out(fd, buf, 2, 1);
+      status = mscb_out(fd, buf, 2, 1);
       }
+
+    if (status != MSCB_SUCCESS)
+      return MSCB_SUBM_ERROR;
 
     if (cmd == CMD_PING8 || cmd == CMD_PING16)
       {
@@ -2304,6 +2310,12 @@ MSCB_INFO_VAR info;
     if (cache == NULL)
       return MSCB_NO_MEM;
 
+    /* get variable size from node */
+    status = mscb_info_variable(fd, adr, index, &info);
+    if (status != MSCB_SUCCESS)
+      return status;
+
+    /* setup cache entry */
     i = n_cache;
     n_cache++;
 
@@ -2311,12 +2323,6 @@ MSCB_INFO_VAR info;
     cache[i].adr = adr;
     cache[i].index = index;
     cache[i].last = 0;
-
-    /* get variable size from node */
-    status = mscb_info_variable(fd, adr, index, &info);
-    if (status != MSCB_SUCCESS)
-      return status;
-
     cache[i].size = info.width;
 
     /* allocate at least 4 bytes */
