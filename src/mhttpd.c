@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.201  2002/05/08 22:27:24  midas
+  Added 'more lines' button in runlog display
+
   Revision 1.200  2002/05/08 20:56:32  midas
   Added spaces between panel names in history display
 
@@ -3180,24 +3183,35 @@ FILE   *f;
 
 void show_rawfile(char *path)
 {
-int    size;
+int    size, lines, i, buf_size, offset;
+char   *p;
 FILE   *f;
-char   file_name[256], str[100], line[1000];
+char   file_name[256], str[100], buffer[100000];
 HNDLE  hDB;
 
   cm_get_experiment_database(&hDB, NULL);
+
+  lines = 10;
+  if (*getparam("lines"))
+    lines = atoi(getparam("lines"));
+
+  if (*getparam("cmd") &&
+      equal_ustring(getparam("cmd"), "More lines"))
+    lines *= 2;
 
   /* header */
   rsprintf("HTTP/1.0 200 Document follows\r\n");
   rsprintf("Server: MIDAS HTTP %s\r\n", cm_get_version());
   rsprintf("Content-Type: text/html\r\n\r\n");
 
-  rsprintf("<html><head><title>MIDAS File Display</title></head>\n");
-  rsprintf("<body><form method=\"GET\" action=\"/EL/\">\n");
+  rsprintf("<html><head><title>MIDAS File Display %s</title></head>\n", path);
+  rsprintf("<body><form method=\"GET\" action=\"/EL/%s\">\n", path);
 
   /* define hidden field for experiment */
   if (exp_name[0])
     rsprintf("<input type=hidden name=exp value=\"%s\">\n", exp_name);
+
+  rsprintf("<input type=hidden name=lines value=%d>\n", lines);
 
   rsprintf("<table border=3 cellpadding=1 width=\"100%%\">\n");
 
@@ -3207,7 +3221,7 @@ HNDLE  hDB;
   str[0] = 0;
   db_get_value(hDB, 0, "/Experiment/Name", str, &size, TID_STRING, TRUE);
 
-  rsprintf("<tr><th bgcolor=#A0A0FF>MIDAS File Display");
+  rsprintf("<tr><th bgcolor=#A0A0FF>MIDAS File Display <b>%s</b>", path);
   if (elog_mode)
     rsprintf("<th bgcolor=#A0A0FF>Logbook \"%s\"</tr>\n", str);
   else
@@ -3220,7 +3234,10 @@ HNDLE  hDB;
   rsprintf("<input type=submit name=cmd value=\"ELog\">\n");
   if (!elog_mode)
     rsprintf("<input type=submit name=cmd value=\"Status\">\n");
-  rsprintf("</tr></table>\n\n");
+
+  rsprintf("<input type=submit name=cmd value=\"More lines\">\n");
+
+  rsprintf("</tr>\n\n");
 
   /*---- open file ----*/
 
@@ -3252,17 +3269,65 @@ HNDLE  hDB;
 
   /*---- file contents ----*/
 
+  rsprintf("<tr><td colspan=2>\n");
+
   rsprintf("<pre>\n");
-  while (!feof(f))
+
+  buf_size = sizeof(buffer);
+
+  /* position buf_size bytes before the EOF */
+  fseek(f, -(buf_size-1), SEEK_END);
+  offset = ftell(f);
+  if (offset != 0)
     {
-    memset(line, 0, sizeof(line));
-    fgets(line, sizeof(line), f);
-    rsputs2(line);
+    /* go to end of line */
+    fgets(buffer, buf_size-1, f);
+    offset = ftell(f)-offset;
+    buf_size -= offset;
     }
+
+  memset(buffer, 0, buf_size);
+  fread(buffer, 1, buf_size-1, f);
+  buffer[buf_size-1] = 0;
+  fclose(f);
+
+  p = buffer+(buf_size-2);
+
+  /* goto end of buffer */
+  while (p != buffer && *p == 0)
+    p--;
+
+  /* strip line break */
+  while(p != buffer && (*p == '\n' || *p == '\r'))
+    *(p--) = 0;
+
+  /* trim buffer so that last lines remain */
+  for (i=0 ; i<lines ; i++)
+    {
+    while (p != buffer && *p != '\n')
+      p--;
+
+    while (p != buffer && (*p == '\n' || *p == '\r'))
+      p--;
+    }
+  if (p != buffer)
+    {
+    p++;
+    while (*p == '\n' || *p == '\r')
+      p++;
+    }
+
+  buf_size = (buf_size-1) - ((PTYPE)p-(PTYPE)buffer);
+
+  memmove(buffer, p, buf_size);
+  buffer[buf_size] = 0;
+
+  rsputs2(buffer);
+  
   rsprintf("</pre>\n");
   fclose(f);
 
-  rsprintf("</body></html>\r\n");
+  rsprintf("</td></tr></table></body></html>\r\n");
 }
 
 /*------------------------------------------------------------------*/
@@ -3918,7 +3983,7 @@ char  def_button[][NAME_LENGTH] = {"8h", "24h", "7d" };
 
   if (equal_ustring(command, "runlog"))
     {
-    sprintf(str, "EL/runlog");
+    sprintf(str, "EL/runlog.txt");
     redirect(str);
     return;
     }
@@ -9067,7 +9132,8 @@ struct tm *gmt;
     return;
     }
 
-  if (strncmp(command, "More", 4) == 0)
+  if (strncmp(command, "More", 4) == 0 &&
+      strncmp(path, "EL/", 3) != 0)
     {
     i = atoi(command+4);
     if (i==0)
