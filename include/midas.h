@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.141  2004/09/29 17:57:22  midas
+  Added large file (>2GB) support for linux
+
   Revision 1.140  2004/09/29 16:45:06  midas
   Added get_frontend_index()
 
@@ -608,6 +611,11 @@ typedef INT midas_thread_t;
 #define INLINE __inline__
 #else
 #define INLINE
+#endif
+
+/* large file (>2GB) support */
+#ifndef _LARGEFILE64_SOURCE
+#define O_LARGEFILE 0
 #endif
 
 /**dox***************************************************************/
