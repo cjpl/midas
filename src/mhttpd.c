@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.273  2004/09/17 22:03:58  midas
+  Added refresh to SC page
+
   Revision 1.272  2004/08/26 20:21:00  pierre
   remove ; in History all
 
@@ -4662,7 +4665,7 @@ BOOL is_editable(char *eq_name, char *var_name)
    return FALSE;
 }
 
-void show_sc_page(char *path)
+void show_sc_page(char *path, int refresh)
 {
    int i, j, k, colspan, size, n_var, i_edit, i_set;
    char str[256], eq_name[32], group[32], name[32], ref[256];
@@ -4721,7 +4724,7 @@ void show_sc_page(char *path)
    }
 
    sprintf(str, "SC/%s/%s", eq_name, group);
-   show_header(hDB, "MIDAS slow control", "GET", str, 8, 0);
+   show_header(hDB, "MIDAS slow control", "GET", str, 8, i_edit == -1 ? refresh : 0);
 
   /*---- menu buttons ----*/
 
@@ -4779,14 +4782,15 @@ void show_sc_page(char *path)
       return;
    }
 
-  /*---- display SC ----*/
+   /*---- display SC ----*/
 
    n_var = 0;
    sprintf(str, "/Equipment/%s/Settings/Names", eq_name);
    db_find_key(hDB, 0, str, &hkey);
 
    if (hkey) {
-    /*---- single name array ----*/
+      
+      /*---- single name array ----*/
       rsprintf("<tr><td colspan=15 bgcolor=#FFFFA0><i>Groups:</i> &nbsp;&nbsp;");
 
       /* "all" group */
@@ -4916,7 +4920,7 @@ void show_sc_page(char *path)
                   rsprintf
                       ("<td align=center><input type=text size=10 maxlenth=80 name=value value=\"%s\">\n",
                        str);
-                  rsprintf("<input type=submit size=20 name=cmd value=Set></tr>\n");
+                  rsprintf("<input type=submit size=20 name=cmd value=Set>\n");
                   rsprintf("<input type=hidden name=index value=%d>\n", i_edit);
                   rsprintf("<input type=hidden name=cmd value=Set>\n");
                   n_var++;
@@ -4937,7 +4941,7 @@ void show_sc_page(char *path)
          rsprintf("</tr>\n");
       }
    } else {
-    /*---- multiple name arrays ----*/
+      /*---- multiple name arrays ----*/
       rsprintf("<tr><td colspan=15 bgcolor=#FFFFA0><i>Groups:</i> ");
 
       /* "all" group */
@@ -7437,7 +7441,7 @@ void generate_hist_graph(char *path, char *buffer, int *buffer_size,
             *strchr(var_name[i], '[') = 0;
          }
       } else {
-         sprintf(str, "Tag %s has wrong format in panel %s", tag_name[i], panel);
+         sprintf(str, "Tag \"%s\" has wrong format in panel %s", tag_name[i], panel);
          gdImageString(im, gdFontGiant, width / 2 - (strlen(str) * gdFontGiant->w) / 2,
                        height / 2, str, red);
          goto error;
@@ -8640,12 +8644,34 @@ void show_hist_page(char *path, char *buffer, int *buffer_size, int refresh)
    if (equal_ustring(getparam("cmd"), "New")) {
       sprintf(str, "HS/%s", path);
       show_header(hDB, "History", "GET", str, 1, 0);
-      rsprintf
-          ("<tr><td align=center bgcolor=\"#FFFF00\" colspan=2>Group name: &nbsp;&nbsp;");
-      rsprintf("<input type=text size=15 maxlength=31 name=group>\n");
-      rsprintf
-          ("<tr><td align=center bgcolor=\"#FFFF00\" colspan=2>Panel name: &nbsp;&nbsp;");
-      rsprintf("<input type=text size=15 maxlength=31 name=panel>\n");
+
+      rsprintf("<tr><td align=center bgcolor=\"#FFFF00\" colspan=2>\n");
+      rsprintf("Select group: &nbsp;&nbsp;");
+      rsprintf("<select name=\"group\">\n");
+
+      /* list existing groups */
+      db_find_key(hDB, 0, "/History/Display", &hkey);
+      if (hkey) {
+         for (i = 0;; i++) {
+            db_enum_link(hDB, hkey, i, &hkeyp);
+
+            if (!hkeyp)
+               break;
+
+            db_get_key(hDB, hkey, &key);
+            rsprintf("<option>%s</option>\n", key.name);
+         }
+      }
+      if (!hkey || i == 0)
+         rsprintf("<option>Default</option>\n");
+      rsprintf("</select><p>\n");
+
+      rsprintf("Or enter new group name: &nbsp;&nbsp;");
+      rsprintf("<input type=text size=15 maxlength=31 name=new_group>\n");
+
+      rsprintf("<tr><td align=center bgcolor=\"#FFFF00\" colspan=2>\n");
+      rsprintf("<br>Panel name: &nbsp;&nbsp;");
+      rsprintf("<input type=text size=15 maxlength=31 name=panel><br><br>\n");
       rsprintf("</td></tr>\n");
 
       rsprintf("<tr><td align=center colspan=2>");
@@ -8669,6 +8695,9 @@ void show_hist_page(char *path, char *buffer, int *buffer_size, int refresh)
    if (*getparam("panel")) {
       strcpy(path, getparam("panel"));
       strcpy(hgroup, getparam("group"));
+      /* use new group if present */
+      if (isparam("new_group") && *getparam("new_group"))
+         strcpy(hgroup, getparam("new_group"));
 
       /* create new panel */
       sprintf(str, "/History/Display/%s/%s", hgroup, path);
@@ -9724,7 +9753,7 @@ void interprete(char *cookie_pwd, char *cookie_wpwd, char *path, int refresh)
             return;
       }
 
-      show_sc_page(dec_path + 3);
+      show_sc_page(dec_path + 3, refresh);
       return;
    }
 
