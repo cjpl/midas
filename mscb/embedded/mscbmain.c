@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol main program
 
   $Log$
+  Revision 1.6  2002/07/12 08:38:13  midas
+  Fixed LCD recognition
+
   Revision 1.5  2002/07/10 09:52:55  midas
   Finished EEPROM routines
 
@@ -107,8 +110,8 @@ unsigned char i;
   PRT3CF = 0x00;  // P3
 
   /* Disable watchdog (for LCD setup with delays) */
-  WDTCN = 0xDE;
-  WDTCN = 0xAD;
+  WDTCN  = 0xDE;
+  WDTCN  = 0xAD;
 
   /* Select external quartz oscillator */
   OSCXCN = 0x66;  // Crystal mode, Power Factor 22E6
