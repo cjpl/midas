@@ -647,10 +647,11 @@ int mxml_find_nodes1(PMXML_NODE tree, char *xml_path, PMXML_NODE **nodelist, int
    /<node>[index]/<node>               Find subnode of the above
    /<node>[<subnode>=<value>]          Find a node which has a specific subnode
    /<node>[<subnode>=<value>]/<node>   Find subnode of the above
+   /<node>[@<attrib>=<value>]/<node>   Find a node which has a specific attribute
 */
 {
    PMXML_NODE pnode;
-   char *p1, *p2, *p3, node_name[256], condition[256], subnode[256], value[256];
+   char *p1, *p2, *p3, node_name[256], condition[256], subnode[256], cond_attr[256], value[256];
    int i, j, index;
    size_t len;
 
@@ -672,7 +673,7 @@ int mxml_find_nodes1(PMXML_NODE tree, char *xml_path, PMXML_NODE **nodelist, int
       memcpy(node_name, p1, len);
       node_name[len] = 0;
       index = 0;
-      subnode[0] = value[0] = 0;
+      subnode[0] = cond_attr[0] = value[0] = 0;
       if (*p2 == '[') {
          p2++;
          if (isdigit(*p2)) {
@@ -683,7 +684,7 @@ int mxml_find_nodes1(PMXML_NODE tree, char *xml_path, PMXML_NODE **nodelist, int
                return 0;
             p2++;
          } else {
-            /* evaluate [<subnode>=<value>] */
+            /* evaluate [<@attrib>/<subnode>=<value>] */
             while (*p2 && isspace(*p2))
                p2++;
             strlcpy(condition, p2, sizeof(condition));
@@ -693,10 +694,18 @@ int mxml_find_nodes1(PMXML_NODE tree, char *xml_path, PMXML_NODE **nodelist, int
                return 0;
             p2 = strchr(p2, ']')+1;
             if ((p3 = strchr(condition, '=')) != NULL) {
-               strlcpy(subnode, condition, sizeof(subnode));
-               *strchr(subnode, '=') = 0;
-               while (subnode[0] && isspace(subnode[strlen(subnode)-1]))
-                  subnode[strlen(subnode)-1] = 0;
+
+               if (condition[0] == '@') {
+                  strlcpy(cond_attr, condition+1, sizeof(cond_attr));
+                  *strchr(cond_attr, '=') = 0;
+                  while (cond_attr[0] && isspace(cond_attr[strlen(cond_attr)-1]))
+                     cond_attr[strlen(cond_attr)-1] = 0;
+               } else {
+                  strlcpy(subnode, condition, sizeof(subnode));
+                  *strchr(subnode, '=') = 0;
+                  while (subnode[0] && isspace(subnode[strlen(subnode)-1]))
+                     subnode[strlen(subnode)-1] = 0;
+               }
                p3++;
                while (*p3 && isspace(*p3))
                   p3++;
@@ -730,6 +739,13 @@ int mxml_find_nodes1(PMXML_NODE tree, char *xml_path, PMXML_NODE **nodelist, int
                      if (!mxml_add_resultnode(pnode->child+i, p2, nodelist, found))
                         return 0;
 
+         } else if (cond_attr[0]) {
+            /* search node with attribute */
+            if (strcmp(pnode->child[i].name, node_name) == 0)
+               if (mxml_get_attribute(pnode->child+i, cond_attr) &&
+                  strcmp(mxml_get_attribute(pnode->child+i, cond_attr), value) == 0)
+                  if (!mxml_add_resultnode(pnode->child+i, p2, nodelist, found))
+                     return 0;
          } else {
             if (strcmp(pnode->child[i].name, node_name) == 0)
                if (index == 0 || ++j == index)
@@ -1445,18 +1461,15 @@ void mxml_test()
    PMXML_NODE tree, *node;
    int i, n;
 
-   tree = mxml_create_root_node();
-   tree = mxml_parse_file("c:\\elogdemo\\forum.xml", err, sizeof(err));
+   tree = mxml_parse_file("c:\\online\\odb.xml", err, sizeof(err));
 
    node = NULL;
-   n = mxml_find_nodes(tree, "/list/user[name='stefan']/full_name", &node);
+   n = mxml_find_nodes(tree, "/odb/dir[@name=\"Experiment\"]/dir[@name='Run Parameters']/key[@name='Comment']", &node);
    for (i=0 ; i<n ; i++)
       printf("%s\n", node[i]->value);
 
-   free(node);
-
-   *node = mxml_find_node(tree, "/list/user[name='stefan']/full_name");
    mxml_debug_tree(*node, 0);
+   free(node);
 
    mxml_debug_tree(tree, 0);
    mxml_free_tree(tree);
