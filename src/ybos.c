@@ -6,6 +6,9 @@
  *         amaudruz@triumf.ca                            Local:           6234
  * ---------------------------------------------------------------------------
    $Log$
+   Revision 1.47  2003/04/10 15:51:18  pierre
+   remove bk_find
+
    Revision 1.46  2003/04/10 15:45:45  pierre
    Made file compile under C++
 
@@ -321,63 +324,6 @@ struct {
 /*--BANK MANIPULATION-----------------------------------------------*/
 /*------------------------------------------------------------------*/
 /*------------------------------------------------------------------*/
-/*------------------------------------------------------------------*/
-INT bk_find (BANK_HEADER * pmbh, char * bkname, DWORD * bklen, DWORD * bktype, void **pbk)
-/*
-Routine: bk_find
-Purpose: find the requested bank and return bank info
-
-  Input:
-  BANK_HEADER * pmbh     pointer to the Midas bank header (pheader+1)
-  char  * bkname         bank name
-  Output:
-  DWORD * pbklen         data section length in bytes
-  DWORD * pbktype        bank type
-  void  ** pbk           pointer to the bank header (bank name)
-  Function value:
-  SS_SUCCESS
-  SS_INVALID_NAME        bank not found
-  \********************************************************************/
-{
-  BANK * pmbk;
-  BANK32 * pmbk32;
-  char * pbkdata;
-  
-  pmbk = NULL;
-  pmbk32 = NULL;
-  /* search for given bank */
-  do
-  {
-    if (bk_is32(pmbh))
-    {
-      bk_iterate32(pmbh, &pmbk32, &pbkdata);
-      if (pmbk32 == NULL)
-        break;
-      if (strncmp(bkname,(char *)(pmbk32->name) ,4) == 0)
-      {
-        *bklen  = pmbk32->data_size;
-        *bktype = pmbk32->type;
-        *pbk    = pmbk32;
-        return SS_SUCCESS;
-      }
-    }
-    else
-    {
-      bk_iterate(pmbh, &pmbk, &pbkdata);
-      if (pmbk == NULL)
-        break;
-      if (strncmp(bkname,(char *)(pmbk->name) ,4) == 0)
-      {
-        *bklen  = pmbk->data_size;
-        *bktype = pmbk->type;
-        *pbk    = pmbk;
-        return SS_SUCCESS;
-      }    
-    }
-  } while(1);
-  return (SS_INVALID_NAME);
-}
-
 /*------------------------------------------------------------------*/
 /** ybk_init()
 \begin{description}
