@@ -6,6 +6,9 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.11  1999/04/08 15:25:17  midas
+  Added db_get_key_info and CF_ASCII client notification (for Java)
+
   Revision 1.10  1999/02/18 11:20:08  midas
   Added "level" parameter to db_scan_tree and db_scan_tree_link
 
@@ -2783,6 +2786,55 @@ KEY              *pkey;
 
 /*------------------------------------------------------------------*/
 
+INT db_get_key_info(HNDLE hDB, HNDLE hKey, INT *type, INT *num_values, 
+                    INT *item_size)
+/********************************************************************\
+
+  Routine: db_get_key_info
+
+  Purpose: Get key info (separate values instead of structure)
+
+  Input:
+    HNDLE hDB               Handle to the database
+    HNDLE hKey              Handle of key to retrieve info
+
+  Output:
+    INT   *type             TID value
+    INT   *num_values       Number of values in key
+    INT   *item_size        Size of individual key value (used for 
+                            strings)
+
+  Function value:
+    DB_SUCCESS              Successful completion
+    DB_INVALID_HANDLE       Database or key handle is invalid
+
+\********************************************************************/
+{
+  if (rpc_is_remote())
+    return rpc_call(RPC_DB_GET_KEY_INFO, hDB, hKey, type, 
+                    num_values, item_size); 
+
+#ifdef LOCAL_ROUTINES
+{
+KEY key;
+INT status;
+
+  status = db_get_key(hDB, hKey, &key);
+
+  if (status != DB_SUCCESS)
+    return status;
+
+  *type       = key.type;
+  *num_values = key.num_values;
+  *item_size  = key.item_size;
+}
+#endif /* LOCAL_ROUTINES */
+
+  return DB_SUCCESS;
+}
+
+/*------------------------------------------------------------------*/
+
 INT db_rename_key(HNDLE hDB, HNDLE hKey, char *name)
 /********************************************************************\
 
@@ -3337,6 +3389,10 @@ KEY              *pkey;
     cm_msg(MERROR, "db_set_data", "Key cannot contain data");
     return DB_TYPE_MISMATCH;
     }
+
+  /* if no buf_size given (Java!), calculate it */
+  if (buf_size == 0)
+    buf_size = pkey->item_size * num_values;
 
   /* resize data size if necessary */
   if (pkey->total_size != buf_size)
@@ -6093,35 +6149,43 @@ INT db_update_record(INT hDB, INT hKey, int socket)
 \********************************************************************/
 {
 INT         i, size, convert_flags, status;
-INT         buffer[16];
+char        buffer[32];
 NET_COMMAND *nc;
 
   /* check if we are the server */
   if (socket)
     {
-    nc = (NET_COMMAND *) buffer;
-
-    nc->header.routine_id  = MSG_ODB;
-    nc->header.param_size  = 2*sizeof(INT);
-    *((INT *) nc->param)   = hDB;
-    *((INT *) nc->param+1) = hKey;
-
     convert_flags = rpc_get_server_option(RPC_CONVERT_FLAGS);
-    if (convert_flags)
-      {
-      rpc_convert_single(&nc->header.routine_id, TID_DWORD, 
-                         RPC_OUTGOING, convert_flags);
-      rpc_convert_single(&nc->header.param_size, TID_DWORD, 
-                         RPC_OUTGOING, convert_flags);
-      rpc_convert_single(&nc->param[0], TID_DWORD, 
-                         RPC_OUTGOING, convert_flags);
-      rpc_convert_single(&nc->param[4], TID_DWORD, 
-                         RPC_OUTGOING, convert_flags);
-      }
 
-    /* send the update notification to the client */
-    send_tcp(socket, (char *) buffer, sizeof(NET_COMMAND_HEADER) 
-             + 2*sizeof(INT), 0);
+    if (convert_flags & CF_ASCII)
+      {
+      sprintf(buffer, "MSG_ODB&%d&%d", hDB, hKey);
+      send_tcp(socket, buffer, strlen(buffer)+1, 0);
+      }
+    else
+      {
+      nc = (NET_COMMAND *) buffer;
+
+      nc->header.routine_id  = MSG_ODB;
+      nc->header.param_size  = 2*sizeof(INT);
+      *((INT *) nc->param)   = hDB;
+      *((INT *) nc->param+1) = hKey;
+
+      if (convert_flags)
+        {
+        rpc_convert_single(&nc->header.routine_id, TID_DWORD, 
+                           RPC_OUTGOING, convert_flags);
+        rpc_convert_single(&nc->header.param_size, TID_DWORD, 
+                           RPC_OUTGOING, convert_flags);
+        rpc_convert_single(&nc->param[0], TID_DWORD, 
+                           RPC_OUTGOING, convert_flags);
+        rpc_convert_single(&nc->param[4], TID_DWORD, 
+                           RPC_OUTGOING, convert_flags);
+        }
+
+      /* send the update notification to the client */
+      send_tcp(socket, buffer, sizeof(NET_COMMAND_HEADER) + 2*sizeof(INT), 0);
+      }
 
     return DB_SUCCESS;
     }
