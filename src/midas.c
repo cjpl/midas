@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.163  2002/06/25 19:00:36  pierre
+  doc++ functions
+
   Revision 1.162  2002/05/29 18:49:37  midas
   Fixed bug with 'shutdown all' in odbedit
 
@@ -3665,31 +3668,49 @@ struct {
   TR_DEFERRED   , "DEFERRED",
 };
 
+/** @name cm_transition()
+    \begin{description}
+    \item[Description:] Performs a run transition (Start/Stop/Pause/Resume).
+    \item[Remarks:] Synchronous/Asynchronous flag.
+    If set to ASYNC, the transition is done
+    asynchronously, meaning that clients are connected and told to execute their
+    callback routine, but no result is awaited. The return value is
+    specified by the transition callback function on the remote clients. If all callbacks
+    can perform the transition, CM_SUCCESS is returned. If one callback cannot
+    perform the transition, the return value of this callback is returned from
+    cm_transition().
+    The async_flag is usually FALSE so that transition callbacks can block a
+    run transition in case of problems and return an error string. The only exception are
+    situations where a run transition is performed automatically by a program which
+    cannot block in a transition. For example the logger can cause a run stop when a
+    disk is nearly full but it cannot block in the cm_transition() function since it
+    has its own run stop callback which must flush buffers and close disk files and
+    tapes.
+    \item[Example:] \begin{verbatim}
+    ...
+    i = 1;
+    db_set_value(hDB, 0, "/Runinfo/Transition in progress", &i, sizeof(INT), 1, TID_INT);
+    
+      status = cm_transition(TR_START, new_run_number, str, sizeof(str), SYNC, debug_flag);
+      if (status != CM_SUCCESS)
+      {
+        // in case of error 
+        printf("Error: %s\n", str);
+      }
+    ...
+    \end{verbatim}
+    \end{description}
+    @memo Sends run transition. 
+    @param transition TR_START, TR_PAUSE, TR_RESUME or TR_STOP.
+    @param run_number New run number. If zero, use current run number plus one.
+    @param perror returned error string.
+    @param strsize Size of error string.
+    @param async_flag SYNC: synchronization flag (SYNC:wait completion, ASYNC: retun immediately)
+    @param debug_flag If true output debugginf information.
+    @return CM_SUCCESS, <error> error code from remote client
+*/
 INT cm_transition(INT transition, INT run_number, char *perror, INT strsize,
                   INT async_flag, INT debug_flag)
-/********************************************************************\
-
-  Routine: cm_transition
-
-  Purpose: Make a system transition (start/top runs)
-
-  Input:
-    INT    tranition        TR_START, TR_PAUSE, TR_RESUME or TR_STOP
-    INT    run_number       New run number. If zero, use current run
-                            number pluse one.
-    INT    strsize          Size of error string
-    INT    async_flag       Return immediately when flag equals ASYNC
-    INT    debug_flag       If TRUE, output debugging information
-
-  Output:
-    char   *perror          Error string set by clients which are unable
-                            to perform transitoin
-
-  Function value:
-    CM_SUCCESS              Successful completion
-    <error>                 Error code from remote client
-
-\********************************************************************/
 {
 INT    i, j, status, size;
 HNDLE  hDB, hRootKey, hSubkey, hKey;
