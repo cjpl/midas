@@ -9,6 +9,9 @@
                 for SCS-300 Parallel Port Interface
 
   $Log$
+  Revision 1.10  2004/06/16 11:40:25  midas
+  Fixed temporarily linker error
+
   Revision 1.9  2004/01/07 12:56:15  midas
   Chaned line length
 
@@ -49,6 +52,9 @@
 #include "mscb.h"
 
 char code node_name[] = "SCS-300";
+
+/* declare number of sub-addresses to framework */
+unsigned char idata _n_sub_addr = 1;
 
 /*---- Define variable parameters returned to CMD_GET_INFO command ----*/
 
@@ -218,8 +224,8 @@ void user_loop(void)
       n = gets_wait(str, sizeof(str), 200);
 
       /* if correct response, interprete data */
-      if (n == 10)
-         user_data.value[i] = atof(str);
+ //     if (n == 10)
+ //        user_data.value[i] = atof(str);
 
       yield();
    }
