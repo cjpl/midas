@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol commands
 
   $Log$
+  Revision 1.11  2002/10/22 15:05:13  midas
+  Added UNIT_FACTOR
+
   Revision 1.10  2002/10/09 15:48:13  midas
   Fixed bug with download
 
@@ -241,6 +244,7 @@ typedef struct {
 #define UNIT_PERCENT     90
 #define UNIT_PPM         91
 #define UNIT_COUNT       92
+#define UNIT_FACTOR      93
 
 /*------------------------------------------------------------------*/
 
