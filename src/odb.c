@@ -6,6 +6,9 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.26  1999/11/09 13:17:26  midas
+  Added secure ODB feature
+
   Revision 1.25  1999/10/28 09:57:53  midas
   Added lock/unload of ODB for db_find_key/link
 
@@ -606,7 +609,7 @@ INT                  timeout;
   handle = (HNDLE) i;
 
   /* open shared memory region */
-  status = ss_open_shm(database_name, 
+  status = ss_shm_open(database_name, 
                        sizeof(DATABASE_HEADER) + 2*ALIGN(database_size/2),
                        (void *) &(_database[(INT) handle].database_header),
                        &shm_handle);
@@ -678,7 +681,7 @@ INT                  timeout;
       {
       database_size = pheader->data_size + pheader->key_size;
 
-      status = ss_close_shm(database_name, _database[handle].database_header,
+      status = ss_shm_close(database_name, _database[handle].database_header,
                             shm_handle, FALSE);
       if (status != SS_SUCCESS)
         return DB_MEMSIZE_MISMATCH;
@@ -764,6 +767,7 @@ INT                  timeout;
   _database[handle].database_data  = _database[handle].database_header + 1;
   _database[handle].attached       = TRUE;
   _database[handle].shm_handle     = shm_handle;
+  _database[handle].protect        = FALSE;
 
   /* remember to which connection acutal buffer belongs */
   if (rpc_get_server_option(RPC_OSERVER_TYPE) == ST_SINGLE)
@@ -828,21 +832,31 @@ INT              index, destroy_flag, i, j;
   of other threads.
   */
 
+  /* first lock database */
+  db_lock_database(hDB);
+
   index   = _database[hDB-1].client_index;
   pheader = _database[hDB-1].database_header;
   pclient  = &pheader->client[index];
 
   if (rpc_get_server_option(RPC_OSERVER_TYPE) == ST_SINGLE &&
       _database[hDB-1].index != rpc_get_server_acception())
+    {
+    db_unlock_database(hDB);
     return DB_INVALID_HANDLE;
+    }
   
   if (rpc_get_server_option(RPC_OSERVER_TYPE) != ST_SINGLE &&
       _database[hDB-1].index != ss_gettid())
+    {
+    db_unlock_database(hDB);
     return DB_INVALID_HANDLE;
+    }
 
   if (!_database[hDB-1].attached)
     {
     cm_msg(MERROR, "db_close_database", "invalid database handle");
+    db_unlock_database(hDB);
     return DB_INVALID_HANDLE;
     }
 
@@ -850,9 +864,6 @@ INT              index, destroy_flag, i, j;
   for (i=0 ; i<pclient->max_index ; i++)
     if (pclient->open_record[i].handle)
       db_remove_open_record(hDB, pclient->open_record[i].handle);
-
-  /* first lock database */
-  db_lock_database(hDB);
 
   /* mark entry in _database as empty */
   _database[hDB-1].attached = FALSE;
@@ -875,10 +886,10 @@ INT              index, destroy_flag, i, j;
   destroy_flag = (pheader->num_clients == 0);
 
   /* flush shared memory to disk */
-  ss_flush_shm(pheader->name, pheader, sizeof(DATABASE_HEADER)+2*pheader->data_size);
+  ss_shm_flush(pheader->name, pheader, sizeof(DATABASE_HEADER)+2*pheader->data_size);
 
   /* unmap shared memory, delete it if we are the last */
-  ss_close_shm(pheader->name, pheader,
+  ss_shm_close(pheader->name, pheader,
                _database[hDB-1].shm_handle, destroy_flag);
 
   /* unlock database */
@@ -949,26 +960,35 @@ INT              index;
   of other threads.
   */
 
+  db_lock_database(hDB);
   index   = _database[hDB-1].client_index;
   pheader = _database[hDB-1].database_header;
   pclient  = &pheader->client[index];
 
   if (rpc_get_server_option(RPC_OSERVER_TYPE) == ST_SINGLE &&
       _database[hDB-1].index != rpc_get_server_acception())
+    {
+    db_unlock_database(hDB);
     return DB_INVALID_HANDLE;
+    }
   
   if (rpc_get_server_option(RPC_OSERVER_TYPE) != ST_SINGLE &&
       _database[hDB-1].index != ss_gettid())
+    {
+    db_unlock_database(hDB);
     return DB_INVALID_HANDLE;
+    }
 
   if (!_database[hDB-1].attached)
     {
     cm_msg(MERROR, "db_close_database", "invalid database handle");
+    db_unlock_database(hDB);
     return DB_INVALID_HANDLE;
     }
 
   /* flush shared memory to disk */
-  ss_flush_shm(pheader->name, pheader, sizeof(DATABASE_HEADER)+2*pheader->data_size);
+  ss_shm_flush(pheader->name, pheader, sizeof(DATABASE_HEADER)+2*pheader->data_size);
+  db_unlock_database(hDB);
 
 }
 #endif /* LOCAL_ROUTINES */
@@ -1092,6 +1112,9 @@ INT db_lock_database(HNDLE hDB)
 
   _database[hDB-1].lock_cnt++;
 
+  if (_database[hDB-1].protect)
+    ss_shm_unprotect(_database[hDB-1].shm_handle, &_database[hDB-1].database_header);
+
   return DB_SUCCESS;
 }
 
@@ -1127,6 +1150,47 @@ INT db_unlock_database(HNDLE hDB)
 
   if (_database[hDB-1].lock_cnt > 0)
     _database[hDB-1].lock_cnt--;
+
+  if (_database[hDB-1].protect)
+    {
+    ss_shm_protect(_database[hDB-1].shm_handle, _database[hDB-1].database_header);
+    _database[hDB-1].database_header = NULL;
+    }
+
+  return DB_SUCCESS;
+}
+
+/*------------------------------------------------------------------*/
+
+INT db_protect_database(HNDLE hDB)
+/********************************************************************\
+
+  Routine: db_protect_database
+
+  Purpose: Protect a database for read/write access outside of the
+           db_xxx functions
+
+  Input:
+    HNDLE hDB               Handle to the database to lock
+
+  Output:
+    none
+
+  Function value:
+    DB_SUCCESS              Successful completion
+    DB_INVALID_HANDLE       Database handle is invalid
+
+\********************************************************************/
+{
+  if (hDB > _database_entries || hDB <= 0)
+    {
+    cm_msg(MERROR, "db_unlock_database", "invalid database handle");
+    return DB_INVALID_HANDLE;
+    }
+
+  _database[hDB-1].protect = TRUE;
+  ss_shm_protect(_database[hDB-1].shm_handle, _database[hDB-1].database_header);
+  _database[hDB-1].database_header = NULL;
 
   return DB_SUCCESS;
 }
@@ -1509,11 +1573,11 @@ INT              status;
     return DB_INVALID_HANDLE;
     }
 
-  pheader  = _database[hDB-1].database_header;
-
   /* lock database at the top level */
   if (level == 0)
     db_lock_database(hDB);
+
+  pheader  = _database[hDB-1].database_header;
 
   pkey = (KEY *) ((char *) pheader + hKey);
 
@@ -1836,6 +1900,164 @@ INT              i;
 
 /*------------------------------------------------------------------*/
 
+INT db_find_key1(HNDLE hDB, HNDLE hKey, char *key_name, 
+                HNDLE *subhKey)
+/********************************************************************\
+
+  Routine: db_find_key1
+
+  Purpose: Same as db_find_key, but without DB locking
+
+  Input:
+    HNDLE  bufer_handle     Handle to the database
+    HNDLE  hKey             Key handle to start the search
+    char   *key_name        Name of key in the form "/key/key/key"
+
+  Output:
+    INT    *handle          Key handle
+
+  Function value:
+    DB_SUCCESS              Successful completion
+    DB_INVALID_HANDLE       Database handle is invalid
+    DB_NO_KEY               Key doesn't exist
+    DB_NO_ACCESS            No access to read key
+
+\********************************************************************/
+{
+  if (rpc_is_remote())
+    return rpc_call(RPC_DB_FIND_KEY, hDB, hKey, key_name,
+                                        subhKey);
+
+#ifdef LOCAL_ROUTINES
+{
+DATABASE_HEADER  *pheader;
+KEYLIST          *pkeylist;
+KEY              *pkey;
+char             *pkey_name, str[MAX_STRING_LENGTH];
+INT              i;
+
+  *subhKey = 0;
+
+  if (hDB > _database_entries || hDB <= 0)
+    {
+    cm_msg(MERROR, "db_find_key", "invalid database handle");
+    return DB_INVALID_HANDLE;
+    }
+
+  if (!_database[hDB-1].attached)
+    {
+    cm_msg(MERROR, "db_find_key", "invalid database handle");
+    return DB_INVALID_HANDLE;
+    }
+
+  pheader  = _database[hDB-1].database_header;
+  if (!hKey)
+    hKey = pheader->root_key;
+  pkey = (KEY *) ((char *) pheader + hKey);
+  if (pkey->type != TID_KEY)
+    {
+    cm_msg(MERROR, "db_find_key", "key has no subkeys");
+    *subhKey = 0;
+    return DB_NO_KEY;
+    }
+  pkeylist = (KEYLIST *) ((char *) pheader + pkey->data);
+
+  if (key_name[0] == 0 ||
+      strcmp(key_name, "/") == 0)
+    {
+    if (!(pkey->access_mode & MODE_READ))
+      {
+      *subhKey = 0;
+      return DB_NO_ACCESS;
+      }
+
+    *subhKey = (PTYPE) pkey - (PTYPE) pheader;
+
+    return DB_SUCCESS;
+    }
+
+  pkey_name = key_name;
+  do
+    {
+    /* extract single subkey from key_name */
+    pkey_name = extract_key(pkey_name, str);
+
+    /* check if parent or current directory */
+    if (strcmp(str, "..") == 0)
+      {
+      if (pkey->parent_keylist)
+        {
+        pkeylist = (KEYLIST *) ((char *) pheader + pkey->parent_keylist);
+        pkey = (KEY *) ((char *) pheader + pkeylist->parent);
+        }
+      continue;
+      }
+    if (strcmp(str, ".") == 0)
+      continue;
+
+    /* check if key is in keylist */
+    pkey = (KEY *) ((char *) pheader + pkeylist->first_key);
+
+    for (i=0 ; i<pkeylist->num_keys ; i++)
+      {
+      if (equal_ustring(str, pkey->name))
+        break;
+
+      pkey = (KEY *) ((char *) pheader + pkey->next_key);
+      }
+
+    if (i == pkeylist->num_keys)
+      {
+      *subhKey = 0;
+      return DB_NO_KEY;
+      }
+
+    /* resolve links */
+    if (pkey->type == TID_LINK)
+      {
+      /* copy destination, strip '/' */
+      strcpy(str, (char *) pheader + pkey->data);
+      if (str[strlen(str)-1] == '/')
+        str[strlen(str)-1] = 0;
+
+      /* append rest of key name if existing */
+      if (pkey_name[0])
+        {
+        strcat(str, pkey_name);
+        return db_find_key1(hDB, 0, str, subhKey);
+        }
+      else
+        {
+        /* if last key in chain is a link, return its destination */
+        return db_find_link1(hDB, 0, str, subhKey);
+        }
+      }
+
+    /* key found: check if last in chain */
+    if (*pkey_name == '/')
+      {
+      if (pkey->type != TID_KEY)
+        {
+        *subhKey = 0;
+        db_unlock_database(hDB);
+        return DB_NO_KEY;
+        }
+      }
+
+    /* descend one level */
+    pkeylist = (KEYLIST *) ((char *) pheader + pkey->data);
+
+    } while (*pkey_name == '/' && *(pkey_name+1));
+
+  *subhKey = (PTYPE) pkey - (PTYPE) pheader;
+}
+#endif /* LOCAL_ROUTINES */
+
+  return DB_SUCCESS;
+}
+
+/*------------------------------------------------------------------*/
+
 INT db_find_link(HNDLE hDB, HNDLE hKey, char *key_name, 
                  HNDLE *subhKey)
 /********************************************************************\
@@ -1992,6 +2214,154 @@ INT              i;
 #endif /* LOCAL_ROUTINES */
 
   db_unlock_database(hDB);
+  return DB_SUCCESS;
+}
+
+/*------------------------------------------------------------------*/
+
+INT db_find_link1(HNDLE hDB, HNDLE hKey, char *key_name, 
+                 HNDLE *subhKey)
+/********************************************************************\
+
+  Routine: db_find_link1
+
+  Purpose: Same ad db_find_link, but without DB locking
+
+  Input:
+    HNDLE  bufer_handle     Handle to the database
+    HNDLE  hKey       Key handle to start the search
+    char   *key_name        Name of key in the form "/key/key/key"
+
+  Output:
+    INT    *handle          Key handle
+
+  Function value:
+    DB_SUCCESS              Successful completion
+    DB_INVALID_HANDLE       Database handle is invalid
+    DB_NO_KEY               Key doesn't exist
+    DB_NO_ACCESS            No access to read key
+
+\********************************************************************/
+{
+  if (rpc_is_remote())
+    return rpc_call(RPC_DB_FIND_LINK, hDB, hKey, key_name,
+                                         subhKey);
+
+#ifdef LOCAL_ROUTINES
+{
+DATABASE_HEADER  *pheader;
+KEYLIST          *pkeylist;
+KEY              *pkey;
+char             *pkey_name, str[MAX_STRING_LENGTH];
+INT              i;
+
+  *subhKey = 0;
+
+  if (hDB > _database_entries || hDB <= 0)
+    {
+    cm_msg(MERROR, "db_find_link", "Invalid database handle");
+    return DB_INVALID_HANDLE;
+    }
+
+  if (!_database[hDB-1].attached)
+    {
+    cm_msg(MERROR, "db_find_link", "invalid database handle");
+    return DB_INVALID_HANDLE;
+    }
+
+  pheader  = _database[hDB-1].database_header;
+  if (!hKey)
+    hKey = pheader->root_key;
+  pkey = (KEY *) ((char *) pheader + hKey);
+  if (pkey->type != TID_KEY)
+    {
+    cm_msg(MERROR, "db_find_link", "key has no subkeys");
+    return DB_NO_KEY;
+    }
+  pkeylist = (KEYLIST *) ((char *) pheader + pkey->data);
+
+  if (key_name[0] == 0 ||
+      strcmp(key_name, "/") == 0)
+    {
+    if (!(pkey->access_mode & MODE_READ))
+      {
+      *subhKey = 0;
+      return DB_NO_ACCESS;
+      }
+
+    *subhKey = (PTYPE) pkey - (PTYPE) pheader;
+
+    return DB_SUCCESS;
+    }
+
+  pkey_name = key_name;
+  do
+    {
+    /* extract single subkey from key_name */
+    pkey_name = extract_key(pkey_name, str);
+
+    /* check if parent or current directory */
+    if (strcmp(str, "..") == 0)
+      {
+      if (pkey->parent_keylist)
+        {
+        pkeylist = (KEYLIST *) ((char *) pheader + pkey->parent_keylist);
+        pkey = (KEY *) ((char *) pheader + pkeylist->parent);
+        }
+      continue;
+      }
+    if (strcmp(str, ".") == 0)
+      continue;
+
+    /* check if key is in keylist */
+    pkey = (KEY *) ((char *) pheader + pkeylist->first_key);
+
+    for (i=0 ; i<pkeylist->num_keys ; i++)
+      {
+      if (equal_ustring(str, pkey->name))
+        break;
+
+      pkey = (KEY *) ((char *) pheader + pkey->next_key);
+      }
+
+    if (i == pkeylist->num_keys)
+      {
+      *subhKey = 0;
+      return DB_NO_KEY;
+      }
+
+    /* resolve links if not last in chain */
+    if (pkey->type == TID_LINK && *pkey_name == '/')
+      {
+      /* copy destination, strip '/' */
+      strcpy(str, (char *) pheader + pkey->data);
+      if (str[strlen(str)-1] == '/')
+        str[strlen(str)-1] = 0;
+
+      /* append rest of key name */
+      strcat(str, pkey_name);
+      return db_find_link1(hDB, 0, str, subhKey);
+      }
+
+    /* key found: check if last in chain */
+    if ((*pkey_name == '/'))
+      {
+      if (pkey->type != TID_KEY)
+        {
+        *subhKey = 0;
+        return DB_NO_KEY;
+        }
+      }
+
+    /* descend one level */
+    pkeylist = (KEYLIST *) ((char *) pheader + pkey->data);
+
+    } while (*pkey_name == '/' && *(pkey_name+1));
+
+  *subhKey = (PTYPE) pkey - (PTYPE) pheader;
+}
+#endif /* LOCAL_ROUTINES */
+
   return DB_SUCCESS;
 }
 
@@ -2206,34 +2576,29 @@ void db_find_open_records(HNDLE hDB, HNDLE hKey, KEY *key, INT level, void *resu
 {
 DATABASE_HEADER *pheader;
 DATABASE_CLIENT *pclient;
-INT             i, j, size, status;
-char            line[256], str[80], host[HOST_NAME_LENGTH];
-
-  pheader  = _database[hDB-1].database_header;
+INT             i, j;
+char            line[256], str[80];
 
   /* check if this key has notify count set */
   if (key->notify_count)
     {
     db_get_path(hDB, hKey, str, sizeof(str));
     sprintf(line, "%s open %d times by ", str, key->notify_count);
+
+    db_lock_database(hDB);
+    pheader  = _database[hDB-1].database_header;
+
     for (i=0 ; i<pheader->max_client_index ; i++)
       {
       pclient = &pheader->client[i];
       for (j=0 ; j<pclient->max_index ; j++)
         if (pclient->open_record[j].handle == hKey)
-          {
-          sprintf(str, "/system/clients/%1d/host", pclient->tid);
-          size = sizeof(host);
-          host[0] = 0;
-          status = db_get_value(hDB, 0, str, host, &size, TID_STRING);
-          if (status == DB_SUCCESS)
-            sprintf(line+strlen(line), "%s on %s", pclient->name, host);
-          else
-            sprintf(line+strlen(line), "%s",pclient->name);
-          }
+          sprintf(line+strlen(line), "%s ",pclient->name);
       }
     strcat(line, "\n");
     strcat((char *) result, line);
+
+    db_unlock_database(hDB);
     }
 }
 
@@ -2318,9 +2683,8 @@ INT              status;
   if (status != DB_SUCCESS)
     return status;
 
-  pheader  = _database[hDB-1].database_header;
-
   db_lock_database(hDB);
+  pheader  = _database[hDB-1].database_header;
 
   /* get address from handle */
   pkey = (KEY *) ((char *) pheader + hKey);
@@ -2388,9 +2752,8 @@ INT              status;
   /* update time */
   pkey->last_written = ss_time();
 
-  db_unlock_database(hDB);
-
   db_notify_clients(hDB, hKey, TRUE);
+  db_unlock_database(hDB);
 
 }
 #endif /* LOCAL_ROUTINES */
@@ -2452,20 +2815,13 @@ INT              status, size;
     return DB_INVALID_HANDLE;
     }
 
-  pheader  = _database[hDB-1].database_header;
-
-  db_lock_database(hDB);
-
   status = db_find_key(hDB, hKeyRoot, key_name, &hkey);
   if (status == DB_NO_KEY)
     {
     db_create_key(hDB, hKeyRoot, key_name, type);
     status = db_find_key(hDB, hKeyRoot, key_name, &hkey);
     if (status != DB_SUCCESS)
-      {
-      db_unlock_database(hDB);
       return status;
-      }
 
     /* get string size from data size */
     if (type == TID_STRING || 
@@ -2475,10 +2831,7 @@ INT              status, size;
       size = rpc_tid_size(type);
 
     if (size == 0)
-      {
-      db_unlock_database(hDB);
       return DB_TYPE_MISMATCH;
-      }
 
     /* set default value if key was created */
     status = db_set_value(hDB, hKeyRoot, key_name, data, 
@@ -2486,10 +2839,11 @@ INT              status, size;
     }
 
   if (status != DB_SUCCESS)
-    {
-    db_unlock_database(hDB);
     return status;
-    }
+
+  /* now lock database */
+  db_lock_database(hDB);
+  pheader  = _database[hDB-1].database_header;
 
   /* get address from handle */
   pkey = (KEY *) ((char *) pheader + hkey);
@@ -2570,6 +2924,8 @@ DATABASE_HEADER  *pheader;
 KEYLIST          *pkeylist;
 KEY              *pkey;
 INT              i;
+char             str[256];
+HNDLE            parent;
 
   if (hDB > _database_entries || hDB <= 0)
     {
@@ -2583,10 +2939,10 @@ INT              i;
     return DB_INVALID_HANDLE;
     }
 
+  *subkey_handle = 0;
+
   /* first lock database */
   db_lock_database(hDB);
-
-  *subkey_handle = 0;
 
   pheader  = _database[hDB-1].database_header;
   if (!hKey)
@@ -2612,12 +2968,13 @@ INT              i;
   /* resolve links */
   if (pkey->type == TID_LINK)
     {
-    db_unlock_database(hDB);
+    strcpy(str, (char *) pheader + pkey->data);
 
-    if (*((char *) pheader + pkey->data) == '/')
+    if (*str == '/')
       {
       /* absolute path */
-      return db_find_key(hDB, 0, (char *) pheader + pkey->data, subkey_handle);
+      db_unlock_database(hDB);
+      return db_find_key(hDB, 0, str, subkey_handle);
       }
     else
       {
@@ -2625,11 +2982,15 @@ INT              i;
       if (pkey->parent_keylist)
         {
         pkeylist = (KEYLIST *) ((char *) pheader + pkey->parent_keylist);
-        return db_find_key(hDB, pkeylist->parent, 
-          (char *) pheader + pkey->data, subkey_handle);
+        parent = pkeylist->parent;
+        db_unlock_database(hDB);
+        return db_find_key(hDB, parent, str, subkey_handle);
         }
       else
-        return db_find_key(hDB, 0, (char *) pheader + pkey->data, subkey_handle);
+        {
+        db_unlock_database(hDB);
+        return db_find_key(hDB, 0, str, subkey_handle);
+        }
       }
     }
 
@@ -2693,10 +3054,10 @@ INT              i;
     return DB_INVALID_HANDLE;
     }
 
+  *subkey_handle = 0;
+
   /* first lock database */
   db_lock_database(hDB);
-
-  *subkey_handle = 0;
 
   pheader  = _database[hDB-1].database_header;
   if (!hKey)
@@ -3660,9 +4021,8 @@ KEY              *pkey;
   /* update time */
   pkey->last_written = ss_time();
 
-  db_unlock_database(hDB);
-
   db_notify_clients(hDB, hKey, TRUE);
+  db_unlock_database(hDB);
 
 }
 #endif /* LOCAL_ROUTINES */
@@ -3763,9 +4123,8 @@ INT              new_size;
   /* update time */
   pkey->last_written = ss_time();
 
-  db_unlock_database(hDB);
-
   db_notify_clients(hDB, hKey, TRUE);
+  db_unlock_database(hDB);
 
 }
 #endif /* LOCAL_ROUTINES */
@@ -3898,9 +4257,8 @@ KEY              *pkey;
   /* update time */
   pkey->last_written = ss_time();
 
-  db_unlock_database(hDB);
-
   db_notify_clients(hDB, hKey, TRUE);
+  db_unlock_database(hDB);
 
 }
 #endif /* LOCAL_ROUTINES */
@@ -4035,11 +4393,10 @@ KEY              *pkey;
   /* update time */
   pkey->last_written = ss_time();
 
-  db_unlock_database(hDB);
-
   if (bNotify)
     db_notify_clients(hDB, hKey, TRUE);
 
+  db_unlock_database(hDB);
 }
 #endif /* LOCAL_ROUTINES */
 
@@ -4185,6 +4542,8 @@ HNDLE            hKeyLink;
     if (hKeyLink)
       db_set_mode(hDB, hKeyLink, mode, recurse > 0);
     db_lock_database(hDB);
+    pheader = _database[hDB-1].database_header;
+    pkey = (KEY *) ((char *) pheader + hKey);
     }
 
   /* now set mode */
@@ -5684,14 +6043,10 @@ char    str[256];
     return DB_SUCCESS;
     }
 
-  db_lock_database(hDB);
-
   /* check record size */
   db_get_record_size(hDB, hKey, 0, &total_size);
   if (total_size != *buf_size)
     {
-    db_unlock_database(hDB);
-
     db_get_path(hDB, hKey, str, sizeof(str));
     cm_msg(MERROR, "db_get_record", "struct size mismatch for \"%s\" (%d instead of %d)", 
            str, *buf_size, total_size);
@@ -5701,9 +6056,10 @@ char    str[256];
   /* get subkey data */
   pdata = data;
   total_size = 0;
+
+  db_lock_database(hDB);
   db_recurse_record_tree(hDB, hKey, &pdata, &total_size, align, 
                          NULL, FALSE, convert_flags);
-
   db_unlock_database(hDB);
 
 }
@@ -5802,10 +6158,12 @@ void             *pdata;
   /* set subkey data */
   pdata = data;
   total_size = 0;
+  
+  db_lock_database(hDB);
   db_recurse_record_tree(hDB, hKey, &pdata, &total_size, align, 
                          NULL, TRUE, convert_flags);
-
   db_notify_clients(hDB, hKey, TRUE);
+  db_unlock_database(hDB);
 }
 #endif /* LOCAL_ROUTINES */
 
@@ -5907,9 +6265,6 @@ DATABASE_CLIENT *pclient;
 KEY             *pkey;
 INT             i, index;
 
-  /* lock database */
-  db_lock_database(hDB);
-
   pheader  = _database[hDB-1].database_header;
   pclient  = &pheader->client[_database[hDB-1].client_index];
 
@@ -5919,10 +6274,7 @@ INT             i, index;
       break;
 
   if (index == pclient->max_index)
-    {
-    db_unlock_database(hDB);
     return DB_INVALID_HANDLE;
-    }
 
   /* decrement notify_count */
   pkey = (KEY *) ((char *) pheader + hKey);
@@ -5933,7 +6285,7 @@ INT             i, index;
 
   /* remove exclusive flag */
   if (pclient->open_record[index].access_mode & MODE_WRITE)
-    db_set_mode(hDB, hKey, (WORD) (pkey->access_mode & ~MODE_EXCLUSIVE), TRUE);
+    db_set_mode(hDB, hKey, (WORD) (pkey->access_mode & ~MODE_EXCLUSIVE), 2);
 
   memset(&pclient->open_record[index], 0, sizeof(OPEN_RECORD));
 
@@ -5943,7 +6295,6 @@ INT             i, index;
       break;
   pclient->max_index = i+1;
 
-  db_unlock_database(hDB);
 }
 #endif /* LOCAL_ROUTINES */
 
@@ -6408,7 +6759,9 @@ INT i;
     return DB_INVALID_HANDLE;
 
   /* remove record entry from database structure */
+  db_lock_database(hDB);
   db_remove_open_record(hDB, hKey);
+  db_unlock_database(hDB);
 
   /* free local memory */
   if (_record_list[i].access_mode & MODE_ALLOC)

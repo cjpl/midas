@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.80  1999/11/09 13:17:25  midas
+  Added secure ODB feature
+
   Revision 1.79  1999/11/08 13:56:09  midas
   Added different alarm types
 
@@ -1195,7 +1198,7 @@ INT cm_delete_client_info(HNDLE hDB, INT pid)
     db_lock_database(hDB);
 
     sprintf(str, "System/Clients/%0d", pid);
-    status = db_find_key(hDB, 0, str, &hKey);
+    status = db_find_key1(hDB, 0, str, &hKey);
     if (status != DB_SUCCESS)
       {
       db_unlock_database(hDB);
@@ -2549,6 +2552,7 @@ INT cm_get_watchdog_info(HNDLE hDB, char *client_name, INT *timeout, INT *last)
   Function value:
     CM_SUCCESS              Successful completion
     CM_NO_CLIENT            Client doesn't exist
+    DB_INVALID_HANDLE       Invalid database handle
 
 \********************************************************************/
 {
@@ -2560,6 +2564,21 @@ INT cm_get_watchdog_info(HNDLE hDB, char *client_name, INT *timeout, INT *last)
 DATABASE_HEADER *pheader;
 DATABASE_CLIENT *pclient;
 INT i;
+
+  if (hDB > _database_entries || hDB <= 0)
+    {
+    cm_msg(MERROR, "cm_get_watchdog_info", "invalid database handle");
+    return DB_INVALID_HANDLE;
+    }
+
+  if (!_database[hDB-1].attached)
+    {
+    cm_msg(MERROR, "cm_get_watchdog_info", "invalid database handle");
+    return DB_INVALID_HANDLE;
+    }
+
+  /* lock database */
+  db_lock_database(hDB);
 
   pheader = _database[hDB-1].database_header;
   pclient = pheader->client;
@@ -2574,6 +2593,9 @@ INT i;
       }
 
   *timeout = *last = 0;
+
+  db_unlock_database(hDB);
+
   return CM_NO_CLIENT;
 }
 #endif /* LOCAL_ROUTINES */
@@ -3508,7 +3530,7 @@ BUFFER_HEADER        *pheader;
 #endif
 
   /* open shared memory region */
-  status = ss_open_shm(buffer_name, sizeof(BUFFER_HEADER) + buffer_size,
+  status = ss_shm_open(buffer_name, sizeof(BUFFER_HEADER) + buffer_size,
                        (void *) &(_buffer[handle].buffer_header),
                        &shm_handle);
 
@@ -3539,12 +3561,12 @@ BUFFER_HEADER        *pheader;
 
       /* re-open shared memory with proper size */
 
-      status = ss_close_shm(buffer_name, _buffer[handle].buffer_header,
+      status = ss_shm_close(buffer_name, _buffer[handle].buffer_header,
                             shm_handle, FALSE);
       if (status != BM_SUCCESS)
         return BM_MEMSIZE_MISMATCH;
 
-      status = ss_open_shm(buffer_name, sizeof(BUFFER_HEADER) + buffer_size,
+      status = ss_shm_open(buffer_name, sizeof(BUFFER_HEADER) + buffer_size,
                            (void *) &(_buffer[handle].buffer_header),
                            &shm_handle);
 
@@ -3749,7 +3771,7 @@ INT           i, j, index, destroy_flag;
       ss_resume(pclient->port, "B  ");
 
   /* unmap shared memory, delete it if we are the last */
-  ss_close_shm(pheader->name, _buffer[buffer_handle-1].buffer_header,
+  ss_shm_close(pheader->name, _buffer[buffer_handle-1].buffer_header,
                _buffer[buffer_handle-1].shm_handle, destroy_flag);
 
   /* unlock buffer */
@@ -3845,6 +3867,10 @@ INT             client_pid;
 INT             i, j, k, nc, status;
 BOOL            bDeleted, time_changed, wrong_interval;
 char            str[256];
+
+  /* return immediately if watchdog has been disabled in meantime */
+  if (!_call_watchdog)
+    return;
 
   /* tell system services that we are in async mode ... */
   ss_set_async_flag(TRUE);
@@ -4338,6 +4364,7 @@ char            str[256];
     if (_database[i].attached)
       {
       /* update the last_activity entry to show that we are alive */
+      db_lock_database(i+1);
       pdbheader = _database[i].database_header;
       pdbclient = pdbheader->client;
       pdbclient[ _database[i].client_index ].last_activity = actual_time;
@@ -4353,7 +4380,6 @@ char            str[256];
           if (abs(actual_time - pdbclient->last_activity) > 2*WATCHDOG_INTERVAL)
             {
             bDeleted = FALSE;
-            db_lock_database(i+1);
             str[0] = 0;
 
             /* now make again the check with the buffer locked */
@@ -4375,7 +4401,7 @@ char            str[256];
 
                   if (pdbclient->open_record[k].access_mode & MODE_WRITE)
                     db_set_mode(i+1, pdbclient->open_record[k].handle, 
-                               (WORD) (pkey->access_mode & ~MODE_EXCLUSIVE), TRUE);
+                               (WORD) (pkey->access_mode & ~MODE_EXCLUSIVE), 2);
                   }
 
               /* clear entry from client structure in buffer header */
@@ -4396,8 +4422,6 @@ char            str[256];
               bDeleted = TRUE;
               }
 
-            db_unlock_database(i+1);
-
             /* display info message after unlocking buffer */
             if (str[0])
               cm_msg(MINFO, "cm_cleanup", str);
@@ -4405,9 +4429,13 @@ char            str[256];
             /* delete client entry after unlocking db */
             if (bDeleted)
               {
+              db_unlock_database(i+1);
               status = cm_delete_client_info(i+1, client_pid);
               if (status != CM_SUCCESS)
                 cm_msg(MERROR, "cm_cleanup", "cannot delete client info");
+              db_lock_database(i+1);
+              pdbheader = _database[i].database_header;
+              pdbclient = pdbheader->client;
               }
             }
           }

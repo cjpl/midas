@@ -6,6 +6,9 @@
   Contents:     MIDAS logger program
 
   $Log$
+  Revision 1.30  1999/11/09 13:17:26  midas
+  Added secure ODB feature
+
   Revision 1.29  1999/10/27 15:14:56  midas
   Exclude /dev/null from open file check
 
@@ -2376,7 +2379,7 @@ main(int argc, char *argv[])
 {
 INT    status, msg, i, size, run_number, ch;
 char   host_name[100], exp_name[NAME_LENGTH], dir[256];
-BOOL   debug, daemon;
+BOOL   debug, daemon, save_mode;
 DWORD  last_time_kb = 0;
 DWORD  last_time_hist = 0;
 DWORD  last_time_stat = 0;
@@ -2384,7 +2387,7 @@ DWORD  last_time_stat = 0;
   /* get default from environment */
   cm_get_environment(host_name, exp_name);
 
-  debug = daemon = FALSE;
+  debug = daemon = save_mode = FALSE;
   
   /* parse command line parameters */
   for (i=1 ; i<argc ; i++)
@@ -2393,6 +2396,8 @@ DWORD  last_time_stat = 0;
       debug = TRUE;
     else if (argv[i][0] == '-' && argv[i][1] == 'D')
       daemon = TRUE;
+    else if (argv[i][0] == '-' && argv[i][1] == 's')
+      save_mode = TRUE;
     else if (argv[i][0] == '-')
       {
       if (i+1 >= argc || argv[i+1][0] == '-')
@@ -2404,7 +2409,7 @@ DWORD  last_time_stat = 0;
       else
         {
 usage:
-        printf("usage: mlogger [-h Hostname] [-e Experiment] [-d] [-D]\n\n");
+        printf("usage: mlogger [-h Hostname] [-e Experiment] [-d] [-D] [-s]\n\n");
         return 1;
         }
       }
@@ -2434,6 +2439,13 @@ usage:
   /* turn off watchdog if in debug mode */
   if (debug)
     cm_set_watchdog_params(TRUE, 0);
+
+  /* turn on save mode */
+  if (save_mode)
+    {
+    cm_set_watchdog_params(FALSE, 0);
+    db_protect_database(hDB);
+    }
 
   /* turn off message display, turn on message logging */
   cm_set_msg_print(MT_ALL, 0, NULL);
