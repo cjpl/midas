@@ -6,6 +6,9 @@
   Contents:     CAMAC utility
   
   $Log$
+  Revision 1.14  2000/11/02 17:54:58  pierre
+  - Fix job repeat, uses command RxWx.
+
   Revision 1.13  2000/09/14 20:23:45  pierre
   -Add cm_get_environment()
 
@@ -517,13 +520,13 @@ void cnafsub()
     }
     if (status == LOOP || status == JOB)
     {
-      if (status == LOOP)
-	p = P;
-      if (status == JOB)
-	p = job;
-      while (p->m)
+      for (j=0;j<P->r;j++)
       {
-	for (j=0;j<p->r;j++)
+	if (status == LOOP)
+	  p = P;
+	if (status == JOB)
+	  p = job;
+	while (p->m)
 	{
 	  if (p->n == 28 || p->n == 29 || p->n == 30)
 	    cc_services(p);
@@ -569,8 +572,8 @@ void cnafsub()
 		ss_sleep(p->w);
 	    }
 	  }
+	  p++;
 	}
-	p++; 
       };
       if (status == JOB)
       {
