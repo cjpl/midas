@@ -6,6 +6,9 @@
   Contents:     Disk to Tape copier for background job
 
   $Log$
+  Revision 1.16  1999/12/08 00:38:41  pierre
+  - Add creation/update of "<channel>_recover.odb" after each copy
+
   Revision 1.15  1999/11/08 15:08:04  midas
   Added new parameters to al_trigger_alarm
 
@@ -1440,6 +1443,25 @@ INT lazy_main (INT channel, LAZY_INFO * pLall)
     cm_msg(MERROR,"Lazy","lazy_update failed");
     return NOTHING_TODO;
   }
+
+  /* generate/update a <channel>_recover.odb file when everything is Ok 
+     after each file copy */
+  {
+    char str[128];
+
+    /* save the recover with "List Label" empty */
+    str[0] ='\0';
+    size = sizeof(str);
+    db_set_value (hDB, pLch->hKey, "Settings/List label"
+                  , str, size, 1, TID_STRING);
+    sprintf(str,"%s%s_recover.odb", lazy.dir, pLch->name);
+    db_save(hDB, pLch->hKey, str, TRUE);
+    size = sizeof(lazy.backlabel);
+    db_set_value (hDB, pLch->hKey, "Settings/List label"
+                  , lazy.backlabel, size, 1, TID_STRING);
+
+  }
+
   return NOTHING_TODO;
 }
 
