@@ -6,6 +6,9 @@
   Contents:     Command-line interface for the Midas Slow Control Bus
 
   $Log$
+  Revision 1.67  2004/07/21 14:18:19  midas
+  Added more debugging info
+
   Revision 1.66  2004/05/17 09:32:52  midas
   Added Sleep
 
@@ -1095,6 +1098,8 @@ void cmd_loop(int fd, char *cmd, int adr)
 
             fh = open(str, O_RDONLY | O_BINARY);
             if (fh > 0) {
+               if (param[2][0])
+                  printf("Found file %s\n", str);
                size = lseek(fh, 0, SEEK_END) + 1;
                lseek(fh, 0, SEEK_SET);
                buffer = malloc(size);
