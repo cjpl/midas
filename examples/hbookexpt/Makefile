@@ -7,6 +7,9 @@
 #                using HBOOK functionality
 #
 #  $Log$
+#  Revision 1.2  2003/04/25 13:27:13  midas
+#  Link against hmana.o
+#
 #  Revision 1.1  2003/04/25 13:20:07  midas
 #  Initial revision
 #
@@ -81,7 +84,7 @@ $(UFE): $(LIB) $(LIB_DIR)/mfe.o $(DRIVER).o $(UFE).c
 $(DRIVER).o: $(DRV_DIR)/bus/$(DRIVER).c
 	$(CC) $(CFLAGS) $(OSFLAGS) -c -o $(DRIVER).o $(DRV_DIR)/bus/$(DRIVER).c
 
-analyzer: $(LIB) $(LIB_DIR)/mana.o analyzer.o $(MODULES)
+analyzer: $(LIB) $(LIB_DIR)/hmana.o analyzer.o $(MODULES)
 	$(FF) $(FFLAGS) -o analyzer $(LIB_DIR)/mana.o analyzer.o \
 	$(MODULES) $(CERNLIB_PACK) \
 	$(LIB) $(LDFLAGS) $(LIBS)
