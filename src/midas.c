@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.166  2002/09/12 10:42:20  midas
+  Added note to cm_cleanup()
+
   Revision 1.165  2002/09/09 17:57:14  pierre
   #if !defined(OS_VXWORKS) for eb_ & hs_ section
 
@@ -5371,6 +5374,12 @@ INT cm_cleanup(void)
   Purpose: Remove all hanging clients, even if their watchdog flags
            are off.
 
+           **** NOTE ****
+           Since this function does not obey the client watchdog
+           timeout, it should be only called to remove clients which
+           have their watchdog checking turned off. The normal client
+           removement is done via cm_watchdog().
+
   Input:
     none
 
@@ -5421,10 +5430,10 @@ char            str[256];
             /* now make again the check with the buffer locked */
             if (abs(actual_time - pbclient->last_activity) > 2*WATCHDOG_INTERVAL)
               {
-              sprintf(str, "Client %s on %s removed (idle %1.1lfs,TO %1.0lfs)",
+              sprintf(str, "Client %s on %s removed (HARD REMOVE) (idle %1.1lfs,TO %1.0lfs)",
                       pbclient->name, pheader->name,
                       (actual_time - pbclient->last_activity)/1000.0,
-                      pbclient->watchdog_timeout/1000.0);
+                      (2*WATCHDOG_INTERVAL)/1000.0);
 
               /* clear entry from client structure in buffer header */
               memset(&(pheader->client[j]), 0, sizeof(BUFFER_CLIENT));
@@ -5485,10 +5494,10 @@ char            str[256];
             /* now make again the check with the buffer locked */
             if (abs(actual_time - pdbclient->last_activity) > 2*WATCHDOG_INTERVAL)
               {
-              sprintf(str, "Client %s on %s removed (idle %1.1lfs,TO %1.0lfs)",
+              sprintf(str, "Client %s on %s removed (HARD REMOVE) (idle %1.1lfs,TO %1.0lfs)",
                            pdbclient->name, pdbheader->name,
                            (actual_time - pdbclient->last_activity)/1000.0,
-                           pdbclient->watchdog_timeout/1000.0);
+                           (2*WATCHDOG_INTERVAL)/1000.0);
 
               /* decrement notify_count for open records and clear exclusive mode */
               for (k=0 ; k<pdbclient->max_index ; k++)
