@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.62  1999/09/30 22:59:06  pierre
+  - fix bk_close for BK32
+
   Revision 1.61  1999/09/29 19:23:33  pierre
   - Fix bk_iterate,swap,locate for bank32
 
@@ -12054,7 +12057,7 @@ void bk_close(void *event, void *pdata)
     if (_pbk32->type == TID_STRUCT && _pbk32->data_size == 0)
       printf("Warning: bank %c%c%c%c has zero size\n", 
         _pbk32->name[0], _pbk32->name[1], _pbk32->name[2], _pbk32->name[3]);
-    ((BANK_HEADER *) event)->data_size += sizeof(BANK) + ALIGN(_pbk32->data_size);
+    ((BANK_HEADER *) event)->data_size += sizeof(BANK32) + ALIGN(_pbk32->data_size);
     }
   else
     {
@@ -12105,7 +12108,7 @@ DWORD  dname;
           return pbk32->data_size;
         return pbk32->data_size / tid_size[pbk32->type & 0xFF];
       }
-      pbk32 = (BANK32 *) ((char *) (pbk32 + 1) + ALIGN(pbk32->data_size) - sizeof(DWORD));
+      pbk32 = (BANK32 *) ((char *) (pbk32 + 1) + ALIGN(pbk32->data_size));
     } while ((DWORD) pbk32 - (DWORD) event < ((BANK_HEADER *) event)->data_size + sizeof(BANK_HEADER));
   }
   else
@@ -12193,7 +12196,7 @@ INT bk_iterate32(void *event, BANK32 **pbk, void *pdata)
   if (*pbk == NULL)
     *pbk = (BANK32 *) (((BANK_HEADER *) event)+1);
   else
-    *pbk = (BANK32 *) ((char *) (*pbk + 1) + ALIGN((*pbk)->data_size) - sizeof(DWORD));
+    *pbk = (BANK32 *) ((char *) (*pbk + 1) + ALIGN((*pbk)->data_size));
 
   *((void **)pdata) = (*pbk)+1;
 
@@ -12274,7 +12277,7 @@ BOOL        b32;
     /* pbk points to next bank */
     if (b32)
       {
-      pbk32 = (BANK32 *) ((char *) (pbk32 + 1) + ALIGN(pbk32->data_size) - sizeof(DWORD));
+      pbk32 = (BANK32 *) ((char *) (pbk32 + 1) + ALIGN(pbk32->data_size));
       pbk = (BANK *) pbk32;
       }
     else
