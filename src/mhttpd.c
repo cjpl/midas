@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.162  2001/07/30 08:26:05  midas
+  Fixed bug with automatich attachments in forms
+
   Revision 1.161  2001/07/25 09:08:03  midas
   Added attachments in Elog forms
 
@@ -1328,8 +1331,8 @@ CHN_STATISTICS chn_stats;
       db_get_key(hDB, hsubkey, &key);
 
       strcpy(name, key.name);
-      new_window = (name[strlen(name)-1] == '&');
-      if (new_window)
+      new_window = (name[strlen(name)-1] != '&');
+      if (!new_window)
         name[strlen(name)-1] = 0;
 
       if (key.type == TID_STRING)
@@ -1377,8 +1380,8 @@ CHN_STATISTICS chn_stats;
       db_get_key(hDB, hsubkey, &key);
 
       strcpy(name, key.name);
-      new_window = (name[strlen(name)-1] == '&');
-      if (new_window)
+      new_window = (name[strlen(name)-1] != '&');
+      if (!new_window)
         name[strlen(name)-1] = 0;
 
       if (key.type == TID_STRING)
@@ -3395,8 +3398,11 @@ KEY   key;
         /* generate attachments */
         size = sizeof(str);
         db_get_data(hDB, hkey, str, &size, TID_STRING);
+        _attachment_size[n_att] = 0;
         sprintf(att_name, "attachment%d", n_att++);
-        setparam(att_name, str);
+
+        sprintf(str, "c%d", i);
+        setparam(att_name, getparam(str));
         }
       else
         {
