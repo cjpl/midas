@@ -6,6 +6,9 @@
  *         amaudruz@triumf.ca                            Local:           6234
  * -----------------------------------------------------------------------------
    $Log$
+   Revision 1.19  1999/09/29 20:41:21  pierre
+   - several fixes for bk32, added TID_DOUBLE display.
+
    Revision 1.18  1999/09/24 00:13:43  pierre
    - include bk32 option
    - Fix some pointers
@@ -237,6 +240,7 @@ INT bk_list (BANK_HEADER * pmbh, char * bklist)
   BANK32 * pmbk32;
   char * pdata;
   pmbk = NULL;
+  pmbk32 = NULL;
 
   /* compose bank list */
   bklist[0] = 0;
@@ -295,6 +299,7 @@ INT bk_find (BANK_HEADER * pmbh, char * bkname, DWORD * bklen, DWORD * bktype, v
   char * pbkdata;
 
   pmbk = NULL;
+  pmbk32 = NULL;
   /* search for given bank */
   do
   {
@@ -1206,8 +1211,7 @@ INT ybos_write(LOG_CHN *log_chn, EVENT_HEADER *pevent, INT evt_size)
       bfsize = datasize + sizeof(YBOS_BANK_HEADER) + 4;   /* +LRL */
 
       /* allocate space */
-						if (pbktop == NULL)
-								pbktop = malloc(bfsize);
+			pbktop = malloc(bfsize);
       if (pbktop == NULL)
         {
           cm_msg(MERROR,"ybos_write","malloc error for ASCII dump");
@@ -1243,8 +1247,8 @@ INT ybos_write(LOG_CHN *log_chn, EVENT_HEADER *pevent, INT evt_size)
       memcpy( (char *)ybos->pbuf, (char *) pbktop, evt_size);
 
       if (pbktop != NULL)
-								free (pbktop);
-						pbktop = NULL;
+				free (pbktop);
+			pbktop = NULL;
       status = SS_SUCCESS;
     }
   else
@@ -1596,13 +1600,11 @@ INT   yb_any_file_ropen(char * infile, INT data_fmt)
     {
       my.fmt           = FORMAT_YBOS;
       my.size          = YBOS_PHYREC_SIZE;    /* in DWORD  */
-      if (my.pmagta == NULL)
-								my.pmagta = malloc(32);
-						if (my.pmagta == NULL)
-								return SS_NO_MEMORY;
-      if (my.pyh == NULL)
-								my.pyh = (YBOS_PHYSREC_HEADER *) malloc(my.size * 4);
-						if (my.pyh == NULL)
+	    my.pmagta = malloc(32);
+			if (my.pmagta == NULL)
+				return SS_NO_MEMORY;
+			my.pyh = (YBOS_PHYSREC_HEADER *) malloc(my.size * 4);
+			if (my.pyh == NULL)
 								return SS_NO_MEMORY;
       (my.pyh)->rec_size    = my.size - 1;
       (my.pyh)->header_length = YBOS_HEADER_LENGTH;
@@ -1612,8 +1614,7 @@ INT   yb_any_file_ropen(char * infile, INT data_fmt)
       my.pyrd               = (DWORD *)((DWORD *)my.pyh + (my.pyh)->offset);
 
       /* allocate memory for one full event */
-      if (my.pylrl == NULL)
-	      my.pylrl  = (DWORD *) malloc (MAX_EVENT_SIZE);    /* in bytes */
+	    my.pylrl  = (DWORD *) malloc (MAX_EVENT_SIZE);    /* in bytes */
       if (my.pylrl == NULL)
 	      return SS_NO_MEMORY;
       memset ((char *)my.pylrl, -1, MAX_EVENT_SIZE);
@@ -1625,15 +1626,13 @@ INT   yb_any_file_ropen(char * infile, INT data_fmt)
     {
      my.fmt  = FORMAT_MIDAS;
       my.size = TAPE_BUFFER_SIZE;
-      if (my.pmp == NULL)
-      	my.pmp = malloc( my.size);
+     	my.pmp = malloc( my.size);
       if (my.pmp == NULL)
 	      return SS_NO_MEMORY;
       my.pme = (EVENT_HEADER *)my.pmp;
       
       /* allocate memory for one full event */
-      if (my.pmrd == NULL)
-      	my.pmrd = malloc(5*MAX_EVENT_SIZE);    /* in bytes */
+     	my.pmrd = malloc(5*MAX_EVENT_SIZE);    /* in bytes */
       if (my.pmrd == NULL)
 	      return SS_NO_MEMORY;
       memset ((char *)my.pmrd, -1, 5*MAX_EVENT_SIZE);
@@ -2444,14 +2443,9 @@ INT   yb_any_event_swap (INT data_fmt, void * pevent)
        (((EVENT_HEADER *)pevent)->event_id == EVENTID_EOR) ||
        (((EVENT_HEADER *)pevent)->event_id == EVENTID_MESSAGE))
        return SS_SUCCESS;
-    /* patch for FIXED event => no swap if FIXED */
-    /* bk_function needs the (BANK_HEADER *)pointer */
     pbh = (BANK_HEADER *) (((EVENT_HEADER *)pevent)+1);
-    if ((pbh->data_size + 8) == ((EVENT_HEADER *)pevent)->data_size)
-      {
-         status = bk_swap(pbh, FALSE);
-         return  status == 0 ? YB_SUCCESS : status;
-      }
+    status = bk_swap(pbh, FALSE);
+    return  status;
   }
   else if (data_fmt == FORMAT_YBOS)
     {
@@ -2800,8 +2794,7 @@ void yb_any_raw_event_display(void * pevent, INT data_fmt, INT dsp_fmt)
   }
   else if (data_fmt == FORMAT_MIDAS)
   {
-    lrl = (((EVENT_HEADER *)pevent)->data_size)/sizeof(DWORD) 
-          + sizeof(EVENT_HEADER);  /* in I*4 for raw including the header */
+    lrl = ((((EVENT_HEADER *)pevent)->data_size)+ sizeof(EVENT_HEADER))/sizeof(DWORD); /* in I*4 for raw including the header */
     pevt = (DWORD *)pevent;              /* local copy starting from the pheader */
   }
 
@@ -2929,7 +2922,7 @@ void yb_any_bank_event_display( void * pevent, INT data_fmt, INT dsp_fmt)
 }
   
 /*------------------------------------------------------------------*/
-void  yb_any_bank_display( void * pbk, INT data_fmt, INT dsp_mode, INT dsp_fmt)
+void  yb_any_bank_display(void * pmbh, void * pbk, INT data_fmt, INT dsp_mode, INT dsp_fmt)
 /********************************************************************\
   Routine: external yb_any_bank_display
   Purpose: display on screen the given bank.
@@ -2950,7 +2943,7 @@ void  yb_any_bank_display( void * pbk, INT data_fmt, INT dsp_mode, INT dsp_fmt)
     {
       if (data_fmt == FORMAT_MIDAS)
       {
-       if (bk_is32(pbk))
+       if (bk_is32(pmbh))
            midas_bank_display32 (pbk, dsp_fmt);
          else
            midas_bank_display (pbk, dsp_fmt);
@@ -3177,6 +3170,11 @@ void midas_bank_display( BANK * pbk, INT dsp_fmt)
   j=64;         /* elements within line */
   i=1;         /* data counter */
   strcpy (strbktype,"Unknown format");
+  if (type == TID_DOUBLE)
+    {
+      length_type = sizeof (double);
+      strcpy (strbktype,"double*8");
+    }
   if (type == TID_FLOAT)
     {
       length_type = sizeof (float);
@@ -3215,12 +3213,24 @@ void midas_bank_display( BANK * pbk, INT dsp_fmt)
   {
     switch (type)
     {
+    case TID_DOUBLE :
+      if (j>7)
+      {
+	      printf("\n%4i-> ",i);
+	      j = 0;
+	      i += 8;
+      }
+      if (dsp_fmt == DSP_DEC) printf("%8.3e ",*((double *)pdata));
+      if (dsp_fmt == DSP_HEX) printf("0x%8.8x/%8.8x ",*((DWORD *)pdata),*((DWORD *)pdata+1));
+      ((double *)pdata)++;
+      j++;
+      break;
     case TID_FLOAT :
       if (j>7)
       {
-	printf("\n%4i-> ",i);
-	j = 0;
-	i += 8;
+	      printf("\n%4i-> ",i);
+	      j = 0;
+	      i += 8;
       }
       if (dsp_fmt == DSP_DEC) printf("%8.3e ",*((float *)pdata));
       if (dsp_fmt == DSP_HEX) printf("0x%8.8x ",*((DWORD *)pdata));
@@ -3323,6 +3333,11 @@ void midas_bank_display32( BANK32 * pbk, INT dsp_fmt)
   j=64;         /* elements within line */
   i=1;         /* data counter */
   strcpy (strbktype,"Unknown format");
+  if (type == TID_DOUBLE)
+    {
+      length_type = sizeof (double);
+      strcpy (strbktype,"double*8");
+    }
   if (type == TID_FLOAT)
     {
       length_type = sizeof (float);
@@ -3356,11 +3371,24 @@ void midas_bank_display32( BANK32 * pbk, INT dsp_fmt)
   printf("\nBank:%s Length: %i(I*1)/%i(I*4)/%i(Type) Type:%s",
 	 bank_name,lrl, lrl>>2, lrl/length_type, strbktype);
 
-  pendbk = pdata + lrl;
+  pendbk = pdata + lrl - sizeof(DWORD);
+
   while (pdata < pendbk)
   {
     switch (type)
     {
+    case TID_DOUBLE :
+      if (j>7)
+      {
+	      printf("\n%4i-> ",i);
+	      j = 0;
+	      i += 8;
+      }
+      if (dsp_fmt == DSP_DEC) printf("%8.3e ",*((double *)pdata));
+      if (dsp_fmt == DSP_HEX) printf("0x%16.16x ",*((double *)pdata));
+      ((double *)pdata)++;
+      j++;
+      break;
     case TID_FLOAT :
       if (j>7)
       {
