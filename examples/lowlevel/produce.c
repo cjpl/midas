@@ -7,6 +7,9 @@
                 ting to a SYSTEM buffer and sending some data.
 
   $Log$
+  Revision 1.4  1999/08/06 15:10:32  midas
+  Release 1.6.4
+
   Revision 1.3  1999/04/30 13:19:53  midas
   Changed inter-process communication (ss_resume, bm_notify_clients, etc)
   to strings so that server process can receive it's own watchdog produced
@@ -61,7 +64,7 @@ char          host_name[256];
   bm_open_buffer(EVENT_BUFFER_NAME, EVENT_BUFFER_SIZE, &hBuf);
 
   /* set the buffer write cache size */
-  bm_set_cache_size(hBuf, 0, 100000);
+  // bm_set_cache_size(hBuf, 0, 100000);
 
   /* allocate event buffer */
   event = (char *) malloc(size + sizeof(EVENT_HEADER));
@@ -93,8 +96,8 @@ char          host_name[256];
                          size, ((EVENT_HEADER*) (event))->serial_number+1);
 
         /* now send event */
-   	    status = rpc_send_event(hBuf, event, size+sizeof(EVENT_HEADER), SYNC);
-//   	    status = bm_send_event(hBuf, event, size+sizeof(EVENT_HEADER), SYNC);
+        status = rpc_send_event(hBuf, event, size+sizeof(EVENT_HEADER), SYNC);
+   	// status = bm_send_event(hBuf, event, size+sizeof(EVENT_HEADER), SYNC);
 
         if (status != BM_SUCCESS)
           {
@@ -122,7 +125,10 @@ char          host_name[256];
       rate = 0;
 
     printf("Rate: %1.2lf MB/sec\n", rate);
-    } while (1);
+
+    status = cm_yield(0);
+
+    } while (status != RPC_SHUTDOWN && status != SS_ABORT);
 
 error:
 
