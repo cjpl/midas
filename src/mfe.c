@@ -7,6 +7,9 @@
                 linked with user code to form a complete frontend
 
   $Log$
+  Revision 1.17  2000/03/01 23:29:20  midas
+  Fixed bug with wrong event header data size in super eventsvents mfe.c
+
   Revision 1.16  2000/02/29 21:59:45  midas
   Added auto restart
 
@@ -879,7 +882,7 @@ DWORD          last_time_network=0, last_time_display=0,
                last_time_flush=0, readout_start;
 INT            i, j, index, status, ch, source, size, state;
 char           str[80];
-BOOL           buffer_done;
+BOOL           buffer_done, force_update = FALSE;
 
 
 INT opt_max=0, opt_index=0, opt_tcp_size=128, opt_cnt=0;
@@ -1057,7 +1060,7 @@ INT opt_max=0, opt_index=0, opt_tcp_size=128, opt_cnt=0;
               } while (eq->subevent_number < eq->info.num_subevents && source);
 
             /* notify readout routine about end of super-event */
-            eq->readout((char *) (pevent+1), -1);
+            pevent->data_size = eq->readout((char *) (pevent+1), -1);
             }
           else
             {
@@ -1141,6 +1144,9 @@ INT opt_max=0, opt_index=0, opt_tcp_size=128, opt_cnt=0;
         size = sizeof(BOOL);
         auto_restart = FALSE;
         db_get_value(hDB, 0, "/Logger/Auto restart", &auto_restart, &size, TID_BOOL);
+
+        /* update event display correctly */
+        force_update = TRUE;
         }
       }
 
@@ -1156,9 +1162,12 @@ INT opt_max=0, opt_index=0, opt_tcp_size=128, opt_cnt=0;
     cm_check_deferred_transition();
 
     /*---- calculate rates and update status page periodically -----*/
-    if ((display_period && actual_millitime - last_time_display > (DWORD) display_period) ||
+    if (force_update ||
+        (display_period && actual_millitime - last_time_display > (DWORD) display_period) ||
         (!display_period && actual_millitime - last_time_display > 5000))
       {
+      force_update = FALSE;
+
       /* calculate rates */
       if (actual_millitime != last_time_display)
         {
@@ -1178,6 +1187,7 @@ INT opt_max=0, opt_index=0, opt_tcp_size=128, opt_cnt=0;
           eq->bytes_sent = 0;
           eq->events_sent = 0;
           }
+        
         max_bytes_per_sec = (DWORD) 
           ((double)max_bytes_per_sec/((actual_millitime-last_time_display)/1000.0));
 
