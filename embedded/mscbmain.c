@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol main program
 
   $Log$
+  Revision 1.51  2004/07/09 07:47:48  midas
+  Implemented xdata checking
+
   Revision 1.50  2004/07/08 11:15:46  midas
   Implemented flash protection
 
@@ -236,6 +239,7 @@ bit flash_program;              // used for upgrading firmware
 bit reboot;                     // used for rebooting
 bit configured;                 // TRUE if node is configured
 bit flash_allowed;              // TRUE 5 sec after booting node
+bit wrong_cpu;                  // TRUE if code uses xdata and CPU does't have it
 
 /*------------------------------------------------------------------*/
 
@@ -243,6 +247,7 @@ void setup(void)
 {
    unsigned char adr;
    unsigned short i;
+   unsigned char *p;
 
    _flkey = 0;
 
@@ -362,6 +367,7 @@ void setup(void)
    reboot = 0;
    configured = 0;
    flash_allowed = 0;
+   wrong_cpu = 0;
 
    RS485_ENABLE = 0;
    i_in = i_out = n_out = 0;
@@ -378,6 +384,17 @@ void setup(void)
       _var_size += variables[n_variables].width;
       if (variables[n_variables].width == 0)
          break;
+   }
+
+   /* check if variables are in xdata and xdata is present */
+   if (n_variables > 0) {
+      p = variables[0].ud;
+      *p = 0x55;
+      if (*p != 0x55)
+         wrong_cpu = 1;
+      *p = 0xAA;
+      if (*p != 0xAA)
+         wrong_cpu = 1;
    }
 
    /* retrieve EEPROM data */
@@ -1174,6 +1191,10 @@ void yield(void)
    /* blink LED if not configured */
    if (!configured)
       led_blink(0, 1, 50);
+
+   /* blink LED if wrong CPU */
+   if (wrong_cpu)
+      led_blink(0, 1, 30);
 
    /* flash EEPROM if asked by interrupt routine, wait 5 sec
       after reboot (power might not be stable) */
