@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.259  2003/11/18 14:39:44  midas
+  Remove red color on 'events analyzed' if /Analyzer does not exist
+
   Revision 1.258  2003/11/01 01:37:33  olchansk
   stop frobbing /runinfo on every show_status_page(), this
     used to tickle the race condition in db_create_record(). Not it only
@@ -1985,21 +1988,7 @@ CHN_STATISTICS chn_stats;
                      ref, key.name, equipment.frontend_name, equipment.frontend_host);
           }
 
-      /* get analyzed ratio */
-      analyze_ratio = 0;
-      sprintf(ref, "/Analyzer/%s", key.name);
-      db_find_key(hDB, 0, ref, &hkeytmp);
-      if (hkeytmp)
-        {
-        size = sizeof(double);
-        if (db_get_value(hDB, hkeytmp, "Statistics/Events received",
-                         &analyzed, &size, TID_DOUBLE, TRUE) == DB_SUCCESS &&
-            equipment_stats.events_sent > 0)
-          analyze_ratio = analyzed / equipment_stats.events_sent;
-        if (analyze_ratio > 1)
-          analyze_ratio = 1;
-        }
-
+      /* event statistics */
       d = equipment_stats.events_sent;
       if (d > 1E9)
         sprintf(str, "%1.3lfG", d/1E9);
@@ -2008,20 +1997,40 @@ CHN_STATISTICS chn_stats;
       else
         sprintf(str, "%1.0lf", d);
 
-      /* check if analyze is running */
-      if (cm_exist("Analyzer", FALSE) == CM_SUCCESS ||
-          cm_exist("FAL", FALSE) == CM_SUCCESS)
-        rsprintf("<td align=center>%s<td align=center>%1.1lf<td align=center>%1.1lf<td align=center bgcolor=#00FF00>%3.1lf%%</tr>\n",
-                 str,
-                 equipment_stats.events_per_sec,
-                 equipment_stats.kbytes_per_sec,
-                 analyze_ratio*100.0);
+      rsprintf("<td align=center>%s<td align=center>%1.1lf<td align=center>%1.1lf\n",
+               str,
+               equipment_stats.events_per_sec,
+               equipment_stats.kbytes_per_sec);
+
+      /* check if /Analyzer is defined */
+      if (db_find_key(hDB, 0, "/Analyzer", &hkeytmp) == DB_SUCCESS)
+        {
+        /* get analyzed ratio */
+        analyze_ratio = 0;
+        sprintf(ref, "/Analyzer/%s", key.name);
+        db_find_key(hDB, 0, ref, &hkeytmp);
+        if (hkeytmp)
+          {
+          size = sizeof(double);
+          if (db_get_value(hDB, hkeytmp, "Statistics/Events received",
+                           &analyzed, &size, TID_DOUBLE, TRUE) == DB_SUCCESS &&
+              equipment_stats.events_sent > 0)
+            analyze_ratio = analyzed / equipment_stats.events_sent;
+          if (analyze_ratio > 1)
+            analyze_ratio = 1;
+          }
+
+        /* check if analyzer is running */
+        if (cm_exist("Analyzer", FALSE) == CM_SUCCESS ||
+            cm_exist("FAL", FALSE) == CM_SUCCESS)
+          rsprintf("<td align=center bgcolor=#00FF00>%3.1lf%%</tr>\n", analyze_ratio*100.0);
+        else
+          rsprintf("<td align=center bgcolor=#FF0000>%3.1lf%%</tr>\n", analyze_ratio*100.0);
+        }
       else
-        rsprintf("<td align=center>%s<td align=center>%1.1lf<td align=center>%1.1lf<td align=center bgcolor=#FF0000>%3.1lf%%</tr>\n",
-                 str,
-                 equipment_stats.events_per_sec,
-                 equipment_stats.kbytes_per_sec,
-                 analyze_ratio*100.0);
+        {
+        rsprintf("<td align=center>N/A</td></tr>\n");
+        }
       }
     }
 
@@ -2068,7 +2077,7 @@ CHN_STATISTICS chn_stats;
 
     /* -PAA- get analyzed ratio, but the Analyzer is not scanning this
     EBuilder like Equipment for now. It's in for cosmetic purpose only.
-    The EBuilder (mevb.c) contains code for YBOs and MIDAS format, but
+    The EBuilder (mevb.c) contains code for YBOS and MIDAS format, but
     only the YBOS fmt has been tested (twist expt at Triumf). */
     analyze_ratio = 0;
     sprintf(ref, "/Analyzer/%s", ebname);
@@ -2085,7 +2094,7 @@ CHN_STATISTICS chn_stats;
         analyze_ratio = 1;
       }
 
-    rsprintf("<td align=center>%s<td align=center>%1.1lf<td align=center>%1.1lf<td align=center bgcolor=#FF0000>%3.1lf%%</tr>\n",
+    rsprintf("<td align=center>%s<td align=center>%1.1lf<td align=center>%1.1lf<td align=center>%3.1lf%%</tr>\n",
               str,
               equipment_stats.events_per_sec,
               equipment_stats.kbytes_per_sec,
