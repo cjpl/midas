@@ -6,6 +6,9 @@
   Contents:     Command-line interface for the Midas Slow Control Bus
 
   $Log$
+  Revision 1.47  2003/10/01 17:50:46  midas
+  Scan every 100's and 1000's address
+
   Revision 1.46  2003/09/30 08:03:41  midas
   Implemented multiple RPC connections
 
@@ -540,8 +543,22 @@ MSCB_INFO_VAR info_var;
             break;
             }
 
-          if (i == 1000)
-            i = 0xFFFE;
+          if (i && i % 1000 == 0 && status != MSCB_SUCCESS)
+            {
+            i += 999;
+            if (i == 64999)
+              i = 0xFFFE;
+            }
+
+          if (i && i % 100 == 0 && status != MSCB_SUCCESS)
+            {
+            i += 99;
+            if (i == 65499)
+              i = 0xFFFE;
+            }
+
+          if (kbhit())
+            break;
           }
         } while (param[1][0] == 'r' && !kbhit());
 
