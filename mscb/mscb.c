@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus communication functions
 
   $Log$
+  Revision 1.53  2004/03/05 19:39:52  midas
+  Better usb error reporting
+
   Revision 1.52  2004/03/05 16:30:09  midas
   Added libusb code
 
@@ -1386,10 +1389,10 @@ int mscb_init(char *device, int debug)
       mscb_out(index+1, buf, 1, RS485_FLAG_CMD);
 
       i = mscb_in(index+1, buf, 2, 5000);
-      if (i != 2 || buf[0] != MCMD_ACK)
-         return -3;
-
       mscb_release(index+1);
+
+      if (i != 2 || buf[0] != MCMD_ACK)
+         return -4;
 
    }
 
@@ -2926,11 +2929,19 @@ int mscb_select_device(char *device)
 \********************************************************************/
 {
    char list[10][256], str[256];
-   int status, i, n;
+   int status, i, n, index;
 
    n = 0;
 
    strcpy(device, DEF_DEVICE);
+
+   /* search for temporary file descriptor */
+   for (index = 0; index < MSCB_MAX_FD; index++)
+      if (mscb_fd[index].fd == 0)
+         break;
+
+   if (index == MSCB_MAX_FD)
+      return -1;
 
    /* check USB devices */
    for (i=0 ; i<127 ; i++) {
@@ -2948,8 +2959,12 @@ int mscb_select_device(char *device)
 #else
       sprintf(str, "/dev/parport%d", i);
 #endif
-      status = lpt_init(str, 0);
-      lpt_close(0);
+
+      mscb_fd[index].type = MSCB_TYPE_LPT;
+
+      status = lpt_init(str, index);
+      lpt_close(index);
+      memset(&mscb_fd[index], 0, sizeof(MSCB_FD));
       if (status == 0)
          sprintf(list[n++], str);
       else
