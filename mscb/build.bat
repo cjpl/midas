@@ -6,10 +6,10 @@ set version=%1
 set archive=\tmp\mscb%version%.zip
 
 rem Compiling new DLL
-rem cd \midas\nt
-rem nmake -f mscb.mak CFG="mscb - Win32 Debug"
-rem nmake -f msc.mak CFG="msc - Win32 Debug"
-rem cd \midas\mscb
+cd \midas\nt
+nmake -f mscb.mak CFG="mscb - Win32 Release"
+nmake -f msc.mak CFG="msc - Win32 Release"
+cd \midas\mscb
 
 copy \midas\nt\bin\msc.exe \midas\mscb\
 copy \midas\nt\lib\mscb.dll \midas\mscb\labview\
