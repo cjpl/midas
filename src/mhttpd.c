@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.287  2005/01/03 14:20:48  midas
+  Added colors for history graphs
+
   Revision 1.286  2004/12/23 09:36:16  midas
   Treat NaN as missing data
 
@@ -5267,8 +5270,8 @@ char *find_odb_tag(char *p, char *path, BOOL * edit)
 
 void show_custom_page(char *path)
 {
-   int size, i_edit, i_set, index, n_var;
-   char str[TEXT_SIZE], data[TEXT_SIZE], ctext[TEXT_SIZE], keypath[256], *p, *ps;
+   int size, i_edit, i_set, index, n_var, fh;
+   char str[TEXT_SIZE], data[TEXT_SIZE], *ctext, keypath[256], *p, *ps;
    HNDLE hDB, hkey;
    KEY key;
    BOOL bedit;
@@ -5285,17 +5288,38 @@ void show_custom_page(char *path)
    if (equal_ustring(getparam("cmd"), "Set"))
       i_set = atoi(getparam("index"));
 
-   rsprintf("HTTP/1.0 200 Document follows\r\n");
-   rsprintf("Server: MIDAS HTTP %s\r\n", cm_get_version());
-   rsprintf("Content-Type: text/html; charset=iso-8859-1\r\n\r\n");
-
    sprintf(str, "/Custom/%s", path);
 
    db_find_key(hDB, 0, str, &hkey);
    if (hkey) {
+      
       n_var = 0;
-      size = sizeof(ctext);
+      db_get_key(hDB, hkey, &key);
+      size = key.total_size;
+      ctext = malloc(size);
       db_get_data(hDB, hkey, ctext, &size, TID_STRING);
+
+      /* check if filename */
+      if (strchr(ctext, '\n') == 0) {
+         fh = open(ctext, O_RDONLY | O_BINARY);
+         if (fh < 0) {
+            sprintf(str, "Cannot open file \"%s\"", ctext);
+            show_error(str);
+            free(ctext);
+            return;
+         }
+         free(ctext);
+         size = lseek(fh, 0, SEEK_END)+1;
+         lseek(fh, 0, SEEK_SET);
+         ctext = malloc(size);
+         memset(ctext, 0, size);
+         read(fh, ctext, size);
+      }
+
+      /* HTTP header */
+      rsprintf("HTTP/1.0 200 Document follows\r\n");
+      rsprintf("Server: MIDAS HTTP %s\r\n", cm_get_version());
+      rsprintf("Content-Type: text/html; charset=iso-8859-1\r\n\r\n");
 
       /* interprete text, replace <odb> tags with ODB values */
       p = ps = ctext;
@@ -5367,6 +5391,8 @@ void show_custom_page(char *path)
 
       } while (p != NULL);
    }
+
+   free(ctext);
 }
 
 /*------------------------------------------------------------------*/
@@ -6245,6 +6271,7 @@ void show_create_page(char *enc_path, char *dec_path, char *value, int index, in
       rsprintf("<option value=7> Integer (32-bit)\n");
       rsprintf("<option value=9> Float (4 Bytes)\n");
       rsprintf("<option value=12> String\n");
+      rsprintf("<option value=13> Multi-line String\n");
       rsprintf("<option value=15> Subdirectory\n");
 
       rsprintf("<option value=1> Byte\n");
@@ -6311,7 +6338,11 @@ void show_create_page(char *enc_path, char *dec_path, char *value, int index, in
             strcat(str, "/");
          strcat(str, value);
 
-         status = db_create_key(hDB, 0, str, type);
+         if (type == TID_ARRAY)
+            /* multi-line string */
+            status = db_create_key(hDB, 0, str, TID_STRING);
+         else
+            status = db_create_key(hDB, 0, str, type);
          if (status != DB_SUCCESS) {
             rsprintf("<h1>Cannot create key %s</h1>\n", str);
             return;
@@ -6322,6 +6353,8 @@ void show_create_page(char *enc_path, char *dec_path, char *value, int index, in
          memset(data, 0, sizeof(data));
          if (key.type == TID_STRING || key.type == TID_LINK)
             key.item_size = NAME_LENGTH;
+         if (type == TID_ARRAY)
+            strcpy(data, "\n");
 
          if (index > 1)
             db_set_data_index(hDB, hkey, data, key.item_size, index - 1, key.type);
@@ -7058,14 +7091,14 @@ void taxis(gdImagePtr im, gdFont * font, int col, int gcol,
       if (x_screen >= x1) {
          if ((x_act - ss_timezone()) % major_dx == 0) {
             if ((x_act - ss_timezone()) % label_dx == 0) {
-          /**** label tick mark ****/
+               /**** label tick mark ****/
                gdImageLine(im, xs, y1, xs, y1 + text, col);
 
-          /**** grid line ***/
+               /**** grid line ***/
                if (grid != 0 && xs > x1 && xs < x1 + width)
                   gdImageLine(im, xs, y1, xs, y1 + grid, col);
 
-          /**** label ****/
+               /**** label ****/
                if (label != 0) {
                   sec_to_label(str, x_act, label_dx, force_date);
 
@@ -7078,16 +7111,16 @@ void taxis(gdImagePtr im, gdFont * font, int col, int gcol,
                   gdImageString(im, font, xl, y1 + label, str, col);
                }
             } else {
-          /**** major tick mark ****/
+               /**** major tick mark ****/
                gdImageLine(im, xs, y1, xs, y1 + major, col);
 
-          /**** grid line ****/
+               /**** grid line ****/
                if (grid != 0 && xs > x1 && xs < x1 + width)
                   gdImageLine(im, xs, y1 - 1, xs, y1 + grid, gcol);
             }
 
          } else
-        /**** minor tick mark ****/
+            /**** minor tick mark ****/
             gdImageLine(im, xs, y1, xs, y1 + minor, col);
 
       }
@@ -7185,10 +7218,10 @@ int vaxis(gdImagePtr im, gdFont * font, int col, int gcol,
          if (fabs(floor(y_act / major_dy + 0.5) - y_act / major_dy) < dy / major_dy / 10.0) {
             if (fabs(floor(y_act / label_dy + 0.5) - y_act / label_dy) < dy / label_dy / 10.0) {
                if (x1 != 0 || y1 != 0) {
-            /**** label tick mark ****/
+                  /**** label tick mark ****/
                   gdImageLine(im, x1, ys, x1 + text, ys, col);
 
-            /**** grid line ***/
+                  /**** grid line ***/
                   if (grid != 0 && y_screen < y1 && y_screen > y1 - width) {
                      if (grid > 0)
                         gdImageLine(im, x1 + 1, ys, x1 + grid, ys, gcol);
@@ -7196,7 +7229,7 @@ int vaxis(gdImagePtr im, gdFont * font, int col, int gcol,
                         gdImageLine(im, x1 - 1, ys, x1 + grid, ys, gcol);
                   }
 
-            /**** label ****/
+                  /**** label ****/
                   if (label != 0) {
                      sprintf(str, "%1.*lG", n_sig1, y_act);
                      if (label < 0)
@@ -7213,10 +7246,10 @@ int vaxis(gdImagePtr im, gdFont * font, int col, int gcol,
                }
             } else {
                if (x1 != 0 || y1 != 0) {
-            /**** major tick mark ****/
+                  /**** major tick mark ****/
                   gdImageLine(im, x1, ys, x1 + major, ys, col);
 
-            /**** grid line ***/
+                  /**** grid line ***/
                   if (grid != 0 && y_screen < y1 && y_screen > y1 - width)
                      gdImageLine(im, x1, ys, x1 + grid, ys, col);
                }
@@ -7229,7 +7262,7 @@ int vaxis(gdImagePtr im, gdFont * font, int col, int gcol,
 
          } else {
             if (x1 != 0 || y1 != 0) {
-          /**** minor tick mark ****/
+               /**** minor tick mark ****/
                gdImageLine(im, x1, ys, x1 + minor, ys, col);
             }
 
@@ -7302,17 +7335,18 @@ int time_to_sec(char *str)
 #define MAX_VARS 10
 
 void generate_hist_graph(char *path, char *buffer, int *buffer_size,
-                         int width, int height, int scale, int toffset, int index, int labels)
+                         int width, int height, int scale, int toffset, int index, 
+                         int labels, char *bgcolor, char *fgcolor, char *gridcolor)
 {
    HNDLE hDB, hkey, hkeypanel, hkeyeq, hkeydvar, hkeyvars, hkeyroot, hkeynames;
    KEY key;
    gdImagePtr im;
    gdGifBuffer gb;
-   int i, j, k, l, n_vars, size, status, row, x_marker, n_vp;
+   int i, j, k, l, n_vars, size, status, row, x_marker, n_vp, r, g, b;
    DWORD bsize, tsize, n_marker, *state, run_number;
    int length, aoffset;
    int flag, x1, y1, x2, y2, xs, xs_old, ys, xold, yold, xmaxm;
-   int white, black, grey, ltgrey, red, green, blue, curve_col[MAX_VARS], state_col[3];
+   int white, black, grey, ltgrey, red, green, blue, fgcol, bgcol, gridcol, curve_col[MAX_VARS], state_col[3];
    char str[256], panel[NAME_LENGTH], *p, odbpath[256];
    INT var_index[MAX_VARS];
    DWORD type, event_id;
@@ -7342,10 +7376,17 @@ void generate_hist_graph(char *path, char *buffer, int *buffer_size,
 
    cm_get_experiment_database(&hDB, NULL);
 
-   /* generate test image */
+   /* generate image */
    im = gdImageCreate(width, height);
 
-   /* First color allocated is background. */
+   /* allocate standard colors */
+   sscanf(bgcolor, "%02x%02x%02x", &r, &g, &b);
+   bgcol = gdImageColorAllocate(im, r, g, b);
+   sscanf(fgcolor, "%02x%02x%02x", &r, &g, &b);
+   fgcol = gdImageColorAllocate(im, r, g, b);
+   sscanf(gridcolor, "%02x%02x%02x", &r, &g, &b);
+   gridcol = gdImageColorAllocate(im, r, g, b);
+
    grey = gdImageColorAllocate(im, 192, 192, 192);
    ltgrey = gdImageColorAllocate(im, 208, 208, 208);
    white = gdImageColorAllocate(im, 255, 255, 255);
@@ -7376,7 +7417,7 @@ void generate_hist_graph(char *path, char *buffer, int *buffer_size,
    strcpy(panel, path);
    if (strstr(panel, ".gif"))
       *strstr(panel, ".gif") = 0;
-   gdImageString(im, gdFontGiant, width / 2 - (strlen(panel) * gdFontGiant->w) / 2, 2, panel, black);
+   gdImageString(im, gdFontGiant, width / 2 - (strlen(panel) * gdFontGiant->w) / 2, 2, panel, fgcol);
 
    /* set history path */
    status = db_find_key(hDB, 0, "/Logger/Data dir", &hkey);
@@ -7809,7 +7850,7 @@ void generate_hist_graph(char *path, char *buffer, int *buffer_size,
    xmax = (float) (toffset / 3600.0);
 
    /* caluclate required space for Y-axis */
-   aoffset = vaxis(im, gdFontSmall, black, ltgrey, 0, 0, height, -3, -5, -7, -8, 0, ymin, ymax, logaxis);
+   aoffset = vaxis(im, gdFontSmall, fgcol, gridcol, 0, 0, height, -3, -5, -7, -8, 0, ymin, ymax, logaxis);
    aoffset += 2;
 
    x1 = aoffset;
@@ -7817,17 +7858,17 @@ void generate_hist_graph(char *path, char *buffer, int *buffer_size,
    x2 = width - 20;
    y2 = 20;
 
-   gdImageFilledRectangle(im, x1, y2, x2, y1, white);
+   gdImageFilledRectangle(im, x1, y2, x2, y1, bgcol);
 
    /* draw axis frame */
-   taxis(im, gdFontSmall, black, ltgrey, x1, y1, x2 - x1, width, 3, 5, 9, 10, 0,
+   taxis(im, gdFontSmall, fgcol, gridcol, x1, y1, x2 - x1, width, 3, 5, 9, 10, 0,
          ss_time() - scale + toffset, ss_time() + toffset);
 
    /* use following line for a X-axis in seconds instead of a time axis */
-   //haxis(im, gdFontSmall, black, ltgrey, x1, y1, x2-x1, 3, 5, 9, 10, 0, xmin,  xmax);
-   vaxis(im, gdFontSmall, black, ltgrey, x1, y1, y1 - y2, -3, -5, -7, -8, x2 - x1, ymin, ymax, logaxis);
-   gdImageLine(im, x1, y2, x2, y2, black);
-   gdImageLine(im, x2, y2, x2, y1, black);
+   //haxis(im, gdFontSmall, fgcol, ltgrey, x1, y1, x2-x1, 3, 5, 9, 10, 0, xmin,  xmax);
+   vaxis(im, gdFontSmall, fgcol, gridcol, x1, y1, y1 - y2, -3, -5, -7, -8, x2 - x1, ymin, ymax, logaxis);
+   gdImageLine(im, x1, y2, x2, y2, fgcol);
+   gdImageLine(im, x2, y2, x2, y1, fgcol);
 
    xs = ys = xold = yold = 0;
 
@@ -7875,13 +7916,13 @@ void generate_hist_graph(char *path, char *buffer, int *buffer_size,
 
             if (state[j] == STATE_RUNNING) {
                if (xs > xmaxm) {
-                  gdImageStringUp(im, gdFontSmall, xs + 0, y2 + 2 + gdFontSmall->w * strlen(str), str, black);
+                  gdImageStringUp(im, gdFontSmall, xs + 0, y2 + 2 + gdFontSmall->w * strlen(str), str, fgcol);
                   xmaxm = xs - 2 + gdFontSmall->h;
                }
             } else if (state[j] == STATE_STOPPED) {
                if (xs + 2 - gdFontSmall->h > xmaxm) {
                   gdImageStringUp(im, gdFontSmall, xs + 2 - gdFontSmall->h,
-                                  y2 + 2 + gdFontSmall->w * strlen(str), str, black);
+                                  y2 + 2 + gdFontSmall->w * strlen(str), str, fgcol);
                   xmaxm = xs - 1;
                }
             }
@@ -8006,7 +8047,7 @@ void generate_hist_graph(char *path, char *buffer, int *buffer_size,
       }
    }
 
-   gdImageRectangle(im, x1, y2, x2, y1, black);
+   gdImageRectangle(im, x1, y2, x2, y1, fgcol);
 
  error:
 
@@ -8600,7 +8641,8 @@ void show_hist_config_page(char *path)
 
 void show_hist_page(char *path, char *buffer, int *buffer_size, int refresh)
 {
-   char str[256], ref[256], ref2[256], paramstr[256], scalestr[256], hgroup[256];
+   char str[256], ref[256], ref2[256], paramstr[256], scalestr[256], hgroup[256], 
+      bgcolor[32], fgcolor[32], gridcolor[32];
    char *poffset, *pscale, *pmag, *pindex;
    HNDLE hDB, hkey, hikeyp, hkeyp, hkeybutton;
    KEY key, ikey;
@@ -8754,6 +8796,21 @@ void show_hist_page(char *path, char *buffer, int *buffer_size, int refresh)
    if (*getparam("labels") && atoi(getparam("labels")) == 0)
       labels = 0;
 
+   if (*getparam("bgcolor"))
+      strlcpy(bgcolor, getparam("bgcolor"), sizeof(bgcolor));
+   else
+      strcpy(bgcolor, "FFFFFF");
+ 
+   if (*getparam("fgcolor"))
+      strlcpy(fgcolor, getparam("fgcolor"), sizeof(fgcolor));
+   else
+      strcpy(fgcolor, "000000");
+
+   if (*getparam("gcolor"))
+      strlcpy(gridcolor, getparam("gcolor"), sizeof(gridcolor));
+   else
+      strcpy(gridcolor, "A0A0A0");
+
    /* evaluate scale and offset */
 
    if (poffset && *poffset)
@@ -8772,14 +8829,14 @@ void show_hist_page(char *path, char *buffer, int *buffer_size, int refresh)
          index = atoi(pindex);
 
       if (equal_ustring(pmag, "Large"))
-         generate_hist_graph(path, buffer, buffer_size, 1024, 768, scale, offset, index, labels);
+         generate_hist_graph(path, buffer, buffer_size, 1024, 768, scale, offset, index, labels, bgcolor, fgcolor, gridcolor);
       else if (equal_ustring(pmag, "Small"))
-         generate_hist_graph(path, buffer, buffer_size, 320, 200, scale, offset, index, labels);
+         generate_hist_graph(path, buffer, buffer_size, 320, 200, scale, offset, index, labels, bgcolor, fgcolor, gridcolor);
       else if (atoi(pmag) > 0)
          generate_hist_graph(path, buffer, buffer_size, atoi(pmag),
-                             (int) (atoi(pmag) * 0.625), scale, offset, index, labels);
+                             (int) (atoi(pmag) * 0.625), scale, offset, index, labels, bgcolor, fgcolor, gridcolor);
       else
-         generate_hist_graph(path, buffer, buffer_size, 640, 400, scale, offset, index, labels);
+         generate_hist_graph(path, buffer, buffer_size, 640, 400, scale, offset, index, labels, bgcolor, fgcolor, gridcolor);
 
       return;
    }
