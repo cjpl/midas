@@ -42,10 +42,10 @@ zip mscb%version%.zip calib_700.exe
 zip mscb%version%.zip calib_900.exe
 zip mscb%version%.zip calib_hvr.exe
 
-zip -p mscb%version%.zip embedded/*.h
-zip -p mscb%version%.zip embedded/*.c
-zip -p mscb%version%.zip embedded/*.Uv2
-zip -p mscb%version%.zip embedded/*.hex
+zip -rp mscb%version%.zip embedded -i \*.h
+zip -rp mscb%version%.zip embedded -i \*.c
+zip -rp mscb%version%.zip embedded -i \*.Uv2
+zip -rp mscb%version%.zip embedded -i \*.hex
 
 zip -p mscb%version%.zip labview/*.dll
 zip -p mscb%version%.zip labview/*.llb
