@@ -6,6 +6,9 @@
   Contents:     MIDAS history display utility
 
   $Log$
+  Revision 1.3  1999/05/05 12:03:21  midas
+  Adapted usage of new history functions
+
   Revision 1.2  1998/10/12 12:19:03  midas
   Added Log tag in header
 
@@ -100,42 +103,44 @@ int i, j;
 
 /*------------------------------------------------------------------*/
 
-INT query_params(DWORD *event_id, DWORD *start_time, DWORD *end_time,
-                 DWORD *interval, TAG *var_tag, DWORD *index)
+INT query_params(DWORD *ev_id, DWORD *start_time, DWORD *end_time,
+                 DWORD *interval, char *var_name, DWORD *var_type, 
+                 INT *var_n_data, DWORD *index)
 {
 DWORD      status, hour, i, bytes, n;
-INT        var_index;
-DEF_RECORD *def_rec;
-TAG        *tag;
+INT        var_index, *event_id, name_size, id_size;
+char       *event_name;
+char       *var_names;
 
   status = hs_count_events(0, &n);
   if (status != HS_SUCCESS)
     return status;
-  bytes = sizeof(DEF_RECORD)*n;
-  def_rec = malloc(bytes);
-  hs_enum_events(0, def_rec, &bytes);
+  name_size = n*NAME_LENGTH;
+  id_size = n*sizeof(INT);
+  event_name = malloc(name_size);
+  event_id = malloc(id_size);
+  hs_enum_events(0, event_name, &name_size, event_id, &id_size);
 
   printf("Available events:\n");
   for (i=0 ; i<n ; i++)
-    printf("[%d] %s (ID %d)\n", i, def_rec[i].event_name, def_rec[i].event_id);
+    printf("ID %d: %s\n", event_id[i], event_name+i*NAME_LENGTH);
 
   if (n>1)
     {
-    printf("\nSelect event (0..%d): ", i-1);
-    scanf("%d", &i);
-    *event_id = def_rec[i].event_id;
+    printf("\nSelect event ID: ");
+    scanf("%d", ev_id);
     }
   else
-    *event_id = def_rec[0].event_id;
+    *ev_id = event_id[0];
 
-  hs_count_tags(0, *event_id, &n);
-  bytes = sizeof(TAG)*n;
-  tag = malloc(bytes);
-  hs_enum_tags(0, *event_id, tag, &bytes);
+  hs_count_vars(0, *ev_id, &n);
+  bytes = n*NAME_LENGTH;
+  var_names = malloc(bytes);
+  hs_enum_vars(0, *ev_id, var_names, &bytes);
 
   printf("\nAvailable variables:\n");
   for (i=0 ; i<n ; i++)
-    printf("(%d) %s\n", i, tag[i].name);
+    printf("%d: %s\n", i, var_names+i*NAME_LENGTH);
 
   *index = var_index = 0;
   if (n>1)
@@ -144,18 +149,19 @@ TAG        *tag;
     scanf("%d", &var_index);
     if (var_index >= (INT) n)
       var_index = n-1;
-    if (var_index >= 0 && tag[var_index].n_data > 1 && tag[var_index].type != TID_STRING)
+    if (var_index >= 0)
+      hs_get_var(0, *ev_id, var_names+var_index*NAME_LENGTH, var_type, var_n_data);
+    if (var_index >= 0 && *var_n_data > 1 && *var_type != TID_STRING)
       {
-      printf("\nSelect index (0..%d): ", tag[var_index].n_data-1);
+      printf("\nSelect index (0..%d): ", *var_n_data-1);
       scanf("%d", index);
       }
     }
 
   if (var_index < 0)
-    var_tag->name[0] = 0;
+    var_name[0] = 0;
   else
-    memcpy(var_tag, &tag[var_index], sizeof(TAG));
-
+    strcpy(var_name, var_names+var_index*NAME_LENGTH);
 
   printf("\nHow many hours: ");
   scanf("%d", &hour);
@@ -166,8 +172,8 @@ TAG        *tag;
   scanf("%d", interval);
   printf("\n");
 
-  free(def_rec);
-  free(tag);
+  free(event_name);
+  free(event_id);
 
   return HS_SUCCESS;
 }
@@ -175,7 +181,7 @@ TAG        *tag;
 /*------------------------------------------------------------------*/
 
 void display_single_hist(DWORD event_id, DWORD start_time, DWORD end_time,
-                         DWORD interval, TAG *tag, DWORD index)
+                         DWORD interval, char *var_name, DWORD index)
 /* read back history */
 {
 char       buffer[10000];
@@ -188,11 +194,11 @@ INT        status;
     {
     size = sizeof(buffer);
     tbsize = sizeof(tbuffer);
-    status = hs_read(event_id, start_time, end_time, interval, tag->name, index, 
+    status = hs_read(event_id, start_time, end_time, interval, var_name, index, 
                      tbuffer, &tbsize, buffer, &size, &type, &n);
 
     if (n == 0)
-      printf("No variables \"%s\" found in specified time range\n", tag->name);
+      printf("No variables \"%s\" found in specified time range\n", var_name);
 
     for (i=0 ; i<n ; i++)
       {
@@ -223,8 +229,9 @@ INT        status;
 main(int argc, char *argv[])
 {
 DWORD    status, event_id, start_time, end_time, interval, index;
-INT      i;
-TAG      tag;
+INT      i, var_n_data;
+DWORD    var_type;
+char     var_name[NAME_LENGTH];
 
   /* turn off system message */
   cm_set_msg_print(0, MT_ALL, puts);
@@ -232,7 +239,7 @@ TAG      tag;
   if (argc == 1)
     {
     status = query_params(&event_id, &start_time, &end_time,
-                          &interval, &tag, &index);
+                          &interval, var_name, &var_type, &var_n_data, &index);
     if (status != HS_SUCCESS)
       return 0;
     }
@@ -242,8 +249,8 @@ TAG      tag;
     start_time = end_time - 3600;
     interval = 1;
     index = 0;
-    tag.type = 0;
-    tag.name[0] = 0;
+    var_type = 0;
+    var_name[0] = 0;
 
     /* parse command line parameters */
     for (i=1 ; i<argc ; i++)
@@ -255,7 +262,7 @@ TAG      tag;
         if (argv[i][1] == 'e')
           event_id = atoi(argv[++i]);
         else if (argv[i][1] == 'v')
-          strcpy(tag.name, argv[++i]);
+          strcpy(var_name, argv[++i]);
         else if (argv[i][1] == 'i')
           index = atoi(argv[++i]);
         else if (argv[i][1] == 'h')
@@ -279,11 +286,11 @@ usage:
       }
     }
 
-  if (tag.name[0] == 0)
+  if (var_name[0] == 0)
     hs_dump(event_id, start_time, end_time, interval);
   else
     display_single_hist(event_id, start_time, end_time,
-                        interval, &tag, index);
+                        interval, var_name, index);
 
   return 1;
 }
