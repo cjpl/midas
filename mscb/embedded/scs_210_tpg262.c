@@ -10,6 +10,9 @@
                 Pfeiffer Dual Gauge TPG262 vacuum sensor
 
   $Log$
+  Revision 1.2  2002/10/09 11:06:46  midas
+  Protocol version 1.1
+
   Revision 1.1  2002/10/03 15:34:23  midas
   Initial revision
 
@@ -40,14 +43,14 @@ struct {
   
 
 MSCB_INFO_CHN code channel[] = {
-  SIZE_0BIT,  0, 0,           0, "RS232", 0,
-  SIZE_32BIT, 0, 0, MSCBF_FLOAT, "P1", &user_data.p1,
-  SIZE_32BIT, 0, 0, MSCBF_FLOAT, "P2", &user_data.p2,
+  SIZE_0BIT,            0, 0, 0,           0, "RS232", 0,
+  SIZE_32BIT, UNIT_PASCAL, 0, 0, MSCBF_FLOAT, "P1", &user_data.p1,
+  SIZE_32BIT, UNIT_PASCAL, 0, 0, MSCBF_FLOAT, "P2", &user_data.p2,
   0
 };
 
 MSCB_INFO_CHN code conf_param[] = {
-  SIZE_8BIT,  0, 0,           0, "Baud",  &user_conf.baud,
+  SIZE_8BIT,   UNIT_HERTZ, 0, 0,           0, "Baud",  &user_conf.baud,
   0
 };
 
@@ -145,6 +148,7 @@ unsigned char user_func(unsigned char idata *data_in,
   /* echo input data */
   data_out[0] = data_in[0];
   data_out[1] = data_in[1];
+  while(1);
   return 2;
 }
 
@@ -176,6 +180,7 @@ char          c;
       }
 
     watchdog_refresh();
+    blink_led();
 
     } while (time() < start+timeout);
 
@@ -193,7 +198,7 @@ unsigned char i;
   
     if (i == 0)
       {
-      /* start continuous mode, 1s update */
+      // start continuous mode, 1s update
       printf("COM,1\r\n");
       flush();
       }
@@ -203,6 +208,5 @@ unsigned char i;
       user_data.p2 = atof(str+16);
       }
     }
-
 }
 

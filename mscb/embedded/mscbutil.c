@@ -6,6 +6,9 @@
   Contents:     Various utility functions for MSCB protocol
 
   $Log$
+  Revision 1.11  2002/10/09 11:06:46  midas
+  Protocol version 1.1
+
   Revision 1.10  2002/10/07 15:16:32  midas
   Added upgrade facility
 
@@ -439,7 +442,7 @@ void watchdog_refresh(void)
   WDR2 = 1;
 #endif;
 
-#ifdef CPU_C8051F000
+#ifdef CPU_CYGNAL
   WDTCN = 0xA5;
 #endif
 }

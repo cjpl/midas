@@ -9,6 +9,9 @@
                 for SCS-400 thermo couple I/O
 
   $Log$
+  Revision 1.3  2002/10/09 11:06:46  midas
+  Protocol version 1.1
+
   Revision 1.2  2002/10/03 15:31:53  midas
   Various modifications
 
@@ -40,14 +43,14 @@ struct {
 
 
 MSCB_INFO_CHN code channel[] = {
-  1, 0, 0, 0, "Power0", &user_data.power[0],
-  1, 0, 0, 0, "Power1", &user_data.power[1],
-  1, 0, 0, 0, "Power2", &user_data.power[2],
-  1, 0, 0, 0, "Power3", &user_data.power[3],
-  4, 0, 0, MSCBF_FLOAT, "Temp0", &user_data.temp[0],
-  4, 0, 0, MSCBF_FLOAT, "Temp1", &user_data.temp[1],
-  4, 0, 0, MSCBF_FLOAT, "Temp2", &user_data.temp[2],
-  4, 0, 0, MSCBF_FLOAT, "Temp3", &user_data.temp[3],
+  1, UNIT_PERCENT, 0, 0,           0, "Power0", &user_data.power[0],
+  1, UNIT_PERCENT, 0, 0,           0, "Power1", &user_data.power[1],
+  1, UNIT_PERCENT, 0, 0,           0, "Power2", &user_data.power[2],
+  1, UNIT_PERCENT, 0, 0,           0, "Power3", &user_data.power[3],
+  4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp0", &user_data.temp[0],
+  4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp1", &user_data.temp[1],
+  4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp2", &user_data.temp[2],
+  4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp3", &user_data.temp[3],
   0
 };
 

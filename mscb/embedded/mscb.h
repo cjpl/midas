@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol commands
 
   $Log$
+  Revision 1.9  2002/10/09 11:06:46  midas
+  Protocol version 1.1
+
   Revision 1.8  2002/10/07 15:16:32  midas
   Added upgrade facility
 
@@ -85,7 +88,14 @@ sbit RS485_ENABLE =      P3^5;
 
 /*---- MSCB commands -----------------------------------------------*/
 
-#define VERSION 0x10    // version 1.0
+#define VERSION 0x11    // version 1.1
+
+/* Version history:
+
+1.0 Initial
+1.1 Add unit prefix, implement upgrade command
+
+*/
 
 #define CMD_ADDR_NODE8  0x09
 #define CMD_ADDR_NODE16 0x0A
@@ -165,14 +175,71 @@ typedef struct {
 
 typedef struct {
   unsigned char width;    // width in bytes
-  unsigned char units;    // physical units (not yet used)
+  unsigned char unit;     // physical units UNIT_xxxx
+  unsigned char prefix;   // unit prefix PRFX_xxx
   unsigned char status;   // status (not yet used)
-  unsigned char flags;    // flags
+  unsigned char flags;    // flags MSCBF_xxx
   char          name[8];  // name
   void data     *ud;      // point to user data buffer
 } MSCB_INFO_CHN;
 
 #define MSCBF_FLOAT  (1<<0) // channel in floating point format
+#define MSCBF_SIGNED (1<<1) // channel is signed integer
+
+/* physical units */
+
+#define PRFX_PICO       -12
+#define PRFX_NANO        -9
+#define PRFX_MICRO       -6
+#define PRFX_MILLI       -3
+#define PRFX_NONE         0
+#define PRFX_KILO         3
+#define PRFX_MEGA         6
+#define PRFX_GIGA         9
+#define PRFX_TERA        12
+
+#define UNIT_UNDEFINED    0      
+
+// SI base units
+#define UNIT_METER        1      
+#define UNIT_GRAM         2      
+#define UNIT_SECOND       3      
+#define UNIT_MINUTE       4
+#define UNIT_HOUR         5
+#define UNIT_AMPERE       6      
+#define UNIT_KELVIN       7      
+#define UNIT_CELSIUS      8      
+#define UNIT_FARENHEIT    9      
+
+// SI derived units
+
+#define UNIT_HERTZ       20       
+#define UNIT_PASCAL      21       
+#define UNIT_BAR         22
+#define UNIT_WATT        23       
+#define UNIT_VOLT        24       
+#define UNIT_OHM         25
+#define UNIT_TESLA       26
+#define UNIT_LITERPERSEC 27       
+#define UNIT_RPM         28
+
+// computer units
+
+#define UNIT_BOOLEAN     50
+#define UNIT_BYTE        52
+#define UNIT_WORD        53
+#define UNIT_DWORD       54
+#define UNIT_ASCII       55
+#define UNIT_STRING      56
+#define UNIT_BAUD        57
+
+// others
+
+#define UNIT_PERCENT     90
+#define UNIT_PPM         91
+#define UNIT_COUNT       92
+
+/*------------------------------------------------------------------*/
 
 typedef struct {          // system info stored in EEPROM
 unsigned int  node_addr;
@@ -186,6 +253,7 @@ unsigned int  wd_counter;
 /*---- function declarations ---------------------------------------*/
 
 void watchdog_refresh(void);
+void blink_led(void);
 void delay_us(unsigned int us);
 void delay_ms(unsigned int ms);
 

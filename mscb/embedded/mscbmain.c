@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol main program
 
   $Log$
+  Revision 1.13  2002/10/09 11:06:46  midas
+  Protocol version 1.1
+
   Revision 1.12  2002/10/07 15:16:32  midas
   Added upgrade facility
 
@@ -83,6 +86,7 @@ extern char code node_name[];
 
 /* funtions in mscbutil.c */
 extern void rs232_output(void);
+extern bit lcd_present;
 
 /* forward declarations */
 void flash_upgrade(void);
@@ -90,12 +94,12 @@ void flash_upgrade(void);
 /*------------------------------------------------------------------*/
 
 
-/* variables in internal RAM */
+/* variables in internal RAM (indirect addressing) */
 
-unsigned char idata in_buf[10], out_buf[8];  // move buffers to IDATA 
+unsigned char idata in_buf[10], out_buf[8];
 
-unsigned char i_in, last_i_in, final_i_in, n_out, i_out, cmd_len;
-unsigned char crc_code, addr_mode, tmp[4];
+unsigned char idata i_in, last_i_in, final_i_in, n_out, i_out, cmd_len;
+unsigned char idata crc_code, addr_mode, led_blink;
 
 SYS_INFO sys_info;
 
@@ -201,23 +205,16 @@ unsigned char i;
     }
 
   lcd_setup();
-  lcd_clear();
 
-#if !defined(SCS_210) && !defined(SCS_300) // do not print to UART1
-  printf("AD:%04X GA:%04X WD:%d", sys_info.node_addr, 
-          sys_info.group_addr, sys_info.wd_counter);
-#endif
-
-  /* Blink LED */
-  for (i=0 ; i<5 ; i++)
+  if (lcd_present)
     {
-    LED = LED_ON;
-    delay_ms(100);
-    LED = LED_OFF;
-    delay_ms(200);
+    printf("AD:%04X GA:%04X WD:%d", sys_info.node_addr, 
+            sys_info.group_addr, sys_info.wd_counter);
     }
 
-  lcd_clear();
+  /* Blink LED */
+  led_blink = 5;
+  LED = LED_ON;
 
   /* enable watchdog */
 #ifdef CPU_ADUC812
@@ -225,11 +222,34 @@ unsigned char i;
   WDE = 1;
 #endif
 #ifdef CPU_CYGNAL
-  WDTCN=0x07;        // 95 msec
+  WDTCN = 0x07;      // 95 msec
+  WDTCN = 0xA5;      // start watchdog
 #endif
 
   /* start system clock */
   sysclock_init();
+}
+
+/*------------------------------------------------------------------*/
+
+void blink_led()
+{
+static long last = 0;
+
+  if (led_blink > 0)
+    {
+    if (time() > last+20) 
+      LED = LED_OFF;
+    if (time() > last+30)
+      {
+      led_blink--;
+      if (led_blink > 0)
+        {
+        LED = LED_ON;
+        last = time();
+        }
+      }
+    }
 }
 
 /*------------------------------------------------------------------*/
@@ -482,9 +502,10 @@ MSCB_INFO_CHN code *pchn;
       RS485_ENABLE = 1;
 
       send_byte(CMD_ACK+7, &crc); // send acknowledge, variable data length
-      send_byte(12, &crc);        // send data length
+      send_byte(13, &crc);        // send data length
       send_byte(pchn->width, &crc);
-      send_byte(pchn->units, &crc);
+      send_byte(pchn->unit, &crc);
+      send_byte(pchn->prefix, &crc);
       send_byte(pchn->status, &crc);
       send_byte(pchn->flags, &crc);
 
@@ -522,7 +543,16 @@ MSCB_INFO_CHN code *pchn;
       break;
 
     case CMD_UPGRADE:
+
       flash_program = 1;
+
+      /* send acknowledge */
+      out_buf[0] = CMD_ACK;
+      out_buf[1] = in_buf[i_in-1];
+      n_out = 2;
+      RS485_ENABLE = 1;
+      SBUF0 = out_buf[0];
+
       break;
 
     case CMD_FLASH:
@@ -652,16 +682,18 @@ unsigned char code  *pr;
   /* disable all interrupts */
   EA = 0;
 
-  /* setup UART0 */
-  SCON0 = 0xD0;   // Mode 3, 9 bit, receive enable
-  
-  T2CON = 0x34;   // timer 2 RX+TX mode
-  RCAP2H = 0xFF;
-  RCAP2L = 0x100-3;
-
   /* disable watchdog */
   WDTCN  = 0xDE;
   WDTCN  = 0xAD;
+
+  cmd = page = 0;
+
+  /* send ready */
+  RS485_ENABLE = 1;
+  TI0 = 0;
+  SBUF0 = 0xBE;
+  while (TI0 == 0);
+  RS485_ENABLE = 0;
 
   do
     {
@@ -719,10 +751,10 @@ unsigned char code  *pr;
           {
           /* receive byte */
           while (!RI0);
-          RI0 = 0;
 
           /* flash byte */
           *pw++ = SBUF0;
+          RI0 = 0;
           }
 
         /* disable write */
@@ -761,7 +793,7 @@ unsigned char code  *pr;
     /* return acknowledge */
     RS485_ENABLE = 1;
     TI0 = 0;
-    SBUF0 = CMD_ACK;
+    SBUF0 = cmd;
     while (TI0 == 0);
     RS485_ENABLE = 0;
 
@@ -787,6 +819,7 @@ void main(void)
     {
     watchdog_refresh();
     user_loop();
+    blink_led();
 
     /* output debug info to LCD if asked by interrupt routine */
     debug_output();
