@@ -6,6 +6,9 @@
   Contents:     CAMAC utility
   
   $Log$
+  Revision 1.12  2000/08/10 07:49:25  midas
+  Added client name together with frontend name in cam_init_rpc
+
   Revision 1.11  2000/07/25 14:11:33  midas
   Changed "&" to "&&"
 
@@ -914,14 +917,14 @@ void help_page( INT which)
 
 int main(int argc, char **argv)
 {
-  char   host_name[30], exp_name[30], client_name[256], rpc_server[256];
+  char   host_name[30], exp_name[30], fe_name[256], rpc_server[256];
   INT    i, status;
   BOOL   debug;
   
   /* set default */
   host_name[0] = '\0';
   exp_name[0] = '\0';
-  client_name[0] = '\0';
+  fe_name[0] = '\0';
   rpc_server[0] = '\0';
   debug = FALSE;
   
@@ -939,29 +942,29 @@ int main(int argc, char **argv)
       	strcpy(exp_name, argv[++i]);
       else if (strncmp(argv[i],"-h",3)==0)
         strcpy(host_name, argv[++i]);
-      else if (strncmp(argv[i],"-c",3)==0)
-        strcpy(client_name, argv[++i]);
+      else if (strncmp(argv[i],"-f",3)==0)
+        strcpy(fe_name, argv[++i]);
       else if (strncmp(argv[i],"-s",3)==0)
         strcpy(rpc_server, argv[++i]);
       else
       {
      usage:
-        printf("usage: mcnaf [-c Client] [-h Hostname] [-e Experiment] [-s RPC server]\n\n");
+        printf("usage: mcnaf [-f Frontend] [-h Hostname] [-e Experiment] [-s RPC server]\n\n");
         return 0;
       }
     }
   }
   
   if (rpc_server[0])
-    status = cam_init_rpc("", "", "", rpc_server);
+    status = cam_init_rpc("", "", "", "mcnaf", rpc_server);
   else
-    status = cam_init_rpc(host_name, exp_name, client_name, "");
+    status = cam_init_rpc(host_name, exp_name, fe_name, "mcnaf", "");
   if (status == SUCCESS)
-  {
+    {
     status = cam_init();
     if (status == SUCCESS)
       cnafsub();
-  }
+    }
   cam_exit();
   return 0;
 }

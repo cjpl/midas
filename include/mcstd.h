@@ -13,6 +13,9 @@
  *  Author:  Pierre-Andre Amaudruz Data Acquisition Group
  *
  *  $Log$
+ *  Revision 1.6  2000/08/10 07:49:04  midas
+ *  Added client name together with frontend name in cam_init_rpc
+ *
  *  Revision 1.5  2000/04/17 17:38:10  pierre
  *  - First round of doc++ comments
  *
@@ -414,7 +417,7 @@ EXTERNAL INLINE void EXPRT camc_sn  (const int c, const int n, const int a, cons
     @return 1: success
 */
 EXTERNAL INLINE int  EXPRT cam_init (void);
-EXTERNAL INLINE int  EXPRT cam_init_rpc(char *host_name, char *exp_name, char *client_name, char *rpc_server);
+EXTERNAL INLINE int  EXPRT cam_init_rpc(char *host_name, char *exp_name, char *fe_name, char *client_name, char *rpc_server);
 
 /** cam\_exit()
     Close CAMAC accesss.
