@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.3  2001/05/22 09:13:47  midas
+  Rearranged configuration file
+
   Revision 1.2  2001/05/21 15:28:45  midas
   Implemented multiple logbooks
 
@@ -88,6 +91,7 @@ char *_attachment_buffer[3];
 INT  _attachment_size[3];
 struct in_addr remote_addr;
 INT  _sock;
+BOOL verbose;
 
 char *mname[] = {
   "January",
@@ -1676,7 +1680,7 @@ int i;
 void el_format(char *text, char *encoding)
 {
   if (equal_ustring(encoding, "HTML"))
-    rsprintf(text);
+    rsputs(text);
   else
     strencode(text);
 }
@@ -1684,7 +1688,7 @@ void el_format(char *text, char *encoding)
 void show_elog_new(char *path, BOOL bedit, char *odb_att)
 {
 int    i, size, run_number, wrap;
-char   str[256], ref[256], *p;
+char   str[256], ref[256], *p, list[1000];
 char   date[80], author[80], type[80], system[80], subject[256], text[10000], 
        orig_tag[80], reply_tag[80], att1[256], att2[256], att3[256], encoding[80];
 time_t now;
@@ -1751,14 +1755,34 @@ time_t now;
   rsprintf("<tr><td bgcolor=#FFA0A0>Author: <input type=\"text\" size=\"15\" maxlength=\"80\" name=\"Author\" value=\"%s\">\n", str);
 
   /* get type list from configuration file */
-  for (i=0 ; ; i++)
-    if (!enumcfg("Message Types", type_list[i], NULL, i))
-      break;
+  if (getcfg(logbook, "Types", list))
+    {
+    p = strtok(list, ",");
+    for (i=0 ; p ; i++)
+      {
+      strcpy(type_list[i], p);
+      p = strtok(NULL, ",");
+      if (!p)
+        break;
+      while (*p == ' ')
+        p++;
+      }
+    }
 
   /* get category list from configuration file */
-  for (i=0 ; ; i++)
-    if (!enumcfg("Message Categories", category_list[i], NULL, i))
-      break;
+  if (getcfg(logbook, "Categories", list))
+    {
+    p = strtok(list, ",");
+    for (i=0 ; p ; i++)
+      {
+      strcpy(category_list[i], p);
+      p = strtok(NULL, ",");
+      if (!p)
+        break;
+      while (*p == ' ')
+        p++;
+      }
+    }
 
   rsprintf("<td bgcolor=#FFA0A0>Type: <select name=\"type\">\n", ref);
   for (i=0 ; i<20 && type_list[i][0] ; i++)
@@ -1803,7 +1827,7 @@ time_t now;
     {
     if (bedit)
       {
-      rsprintf(text);
+      rsputs(text);
       }
     else
       {
@@ -1867,6 +1891,7 @@ void show_elog_query()
 int    i;
 time_t now;
 struct tm *tms;
+char   *p, list[1000];
 
   /* header */
   rsprintf("HTTP/1.0 200 Document follows\r\n");
@@ -1942,14 +1967,34 @@ struct tm *tms;
   rsprintf("</tr>\n");
 
   /* get type list from configuration file */
-  for (i=0 ; ; i++)
-    if (!enumcfg("Message Types", type_list[i], NULL, i))
-      break;
+  if (getcfg(logbook, "Types", list))
+    {
+    p = strtok(list, ",");
+    for (i=0 ; p ; i++)
+      {
+      strcpy(type_list[i], p);
+      p = strtok(NULL, ",");
+      if (!p)
+        break;
+      while (*p == ' ')
+        p++;
+      }
+    }
 
   /* get category list from configuration file */
-  for (i=0 ; ; i++)
-    if (!enumcfg("Message Categories", category_list[i], NULL, i))
-      break;
+  if (getcfg(logbook, "Categories", list))
+    {
+    p = strtok(list, ",");
+    for (i=0 ; p ; i++)
+      {
+      strcpy(category_list[i], p);
+      p = strtok(NULL, ",");
+      if (!p)
+        break;
+      while (*p == ' ')
+        p++;
+      }
+    }
 
   rsprintf("<tr><td colspan=2 bgcolor=#FFA0A0>Author: ");
   rsprintf("<input type=\"test\" size=\"15\" maxlength=\"80\" name=\"author\">\n");
@@ -3237,8 +3282,13 @@ struct tm *gmt;
   /* if no logbook given, display logbook selection page */
   if (!logbook[0])
     {
-    show_selection_page();
-    return;
+    enumgrp(0, logbook);
+
+    if (enumgrp(1, logbook))
+      {
+      show_selection_page();
+      return;
+      }
     }
 
   /* get data dir from configuration file */
@@ -3759,8 +3809,8 @@ INT                  last_time=0;
       else
         {
 
-        //##
-        printf("\n\n\n%s\n", net_buffer);
+        if (verbose)
+          printf("\n\n\n%s\n", net_buffer);
 
         if (strncmp(net_buffer, "GET", 3) == 0)
           {
@@ -3941,6 +3991,8 @@ char read_pwd[80], write_pwd[80], str[80];
     {
     if (argv[i][0] == '-' && argv[i][1] == 'D')
       daemon = TRUE;
+    else if (argv[i][0] == '-' && argv[i][1] == 'v')
+      verbose = TRUE;
     else if (argv[i][0] == '-')
       {
       if (i+1 >= argc || argv[i+1][0] == '-')
@@ -3962,6 +4014,7 @@ usage:
         printf("       -p <port> TCP/IP port\n");
         printf("       -D become a daemon\n");
         printf("       -c <file> specify configuration file\n");
+        printf("       -v debugging output\n");
         printf("       -r create/overwrite read password in config file\n");
         printf("       -w create/overwrite write password in config file\n");
         printf("       -l <loogbook> specify logbook for -r and -w commands\n\n");
