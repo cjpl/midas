@@ -6,6 +6,9 @@
   Contents:     MIDAS logger program
 
   $Log$
+  Revision 1.90  2004/11/16 19:50:44  midas
+  Replace '\' by '\' for MySQL
+
   Revision 1.89  2004/11/16 19:14:32  midas
   Fixed wrong CR/LF
 
@@ -525,13 +528,14 @@ int mysql_query_debug(MYSQL *db, char *query)
 {
    int status;
 
-   /* comment in these lines if you need debugging output */
-   printf("\nSQL query: %s\n", query); 
+   /* comment in this line if you need debugging output */
+   /* cm_msg(MERROR, "mysql_query_debug", "SQL query: %s", query); */
    
    status = mysql_query(db, query);
    
    if (status)
-      printf("SQL error: %s\n", mysql_error(db));
+      cm_msg(MERROR, "mysql_query_debug", "SQL error: %s", mysql_error(db));
+
    return status;
 }
 
@@ -579,7 +583,9 @@ int sql_get_columns(HNDLE hKeyRoot, SQL_LIST **sql_list)
          if (strlen(str) == 24 && str[10] == ' ' && str[13] == ':') {
             strcpy(str, "DATETIME");
             ctime_to_datetime((*sql_list)[i].data);
-         } else
+         } else if (key.item_size < 256)
+            sprintf(str, "VARCHAR (%d)", key.item_size);
+         else
             sprintf(str, " TEXT");
 
       } else {
@@ -718,7 +724,7 @@ char  query[256];
 int sql_insert(MYSQL *db, char *database, char *table, HNDLE hKeyRoot, BOOL create_flag)
 {
 char      query[5000], *pstr;
-int       status, i, n_col;
+int       status, i, j, n_col;
 SQL_LIST *sql_list;
 
    /* 
@@ -739,9 +745,21 @@ SQL_LIST *sql_list;
    strlcat(query, ") VALUES (", sizeof(query));
 
    for (i=0 ; i<n_col ; i++) {
-// convert \ to / as it gets drop off in the field
-      while ((pstr = strchr(sql_list[i].data, DIR_SEPARATOR)) != NULL)  *pstr = '/';
-      sprintf(query+strlen(query), "'%s'", sql_list[i].data);
+      strcat(query, "'");
+
+      /* convert "\" to "\\" (MySQL standard) */
+      for (j=0 ; j<(int)strlen(sql_list[i].data); j++) {
+         if (sql_list[i].data[j] == '\\')
+            strcat(query, "\\\\");
+         else {
+            pstr = query+strlen(query);
+            *pstr++ = sql_list[i].data[j];
+            *pstr = 0;
+         }
+      }
+
+      strcat(query, "'");
+
       if (i<n_col-1)
          strcat(query, ", ");
    }
