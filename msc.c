@@ -6,6 +6,9 @@
   Contents:     Command-line interface for the Midas Slow Control Bus
 
   $Log$
+  Revision 1.19  2002/11/20 12:01:23  midas
+  Added host to mscb_init
+
   Revision 1.18  2002/11/06 16:47:37  midas
   Address only needs 'a'
 
@@ -73,6 +76,7 @@
 #include <io.h>
 #include <fcntl.h>
 #include "mscb.h"
+#include "rpc.h"
 
 /*------------------------------------------------------------------*/
 
@@ -415,7 +419,8 @@ MSCB_INFO_CHN info_chn;
           for (i=0 ; i<info.n_channel ; i++)
             {
             mscb_info_channel(fd, current_addr, GET_INFO_CHANNEL, i, &info_chn);
-            mscb_read(fd, current_addr, (unsigned char)i, &data);
+            size = sizeof(data);
+            mscb_read(fd, current_addr, (unsigned char)i, &data, &size);
 
             print_channel(i, &info_chn, data, 1);
             }
@@ -424,7 +429,8 @@ MSCB_INFO_CHN info_chn;
           for (i=0 ; i<info.n_conf ; i++)
             {
             mscb_info_channel(fd, current_addr, GET_INFO_CONF, i, &info_chn);
-            mscb_read_conf(fd, current_addr, (unsigned char)i, &data);
+            size = sizeof(data);
+            mscb_read_conf(fd, current_addr, (unsigned char)i, &data, &size);
 
             print_channel(i, &info_chn, data, 1);
             }
@@ -603,7 +609,8 @@ MSCB_INFO_CHN info_chn;
 
           do
             {
-            status = mscb_read(fd, current_addr, (unsigned char)addr, &data);
+            size = sizeof(data);
+            status = mscb_read(fd, current_addr, (unsigned char)addr, &data, &size);
             if (status != MSCB_SUCCESS)
               printf("Error: %d\n", status);
             else
@@ -671,7 +678,8 @@ MSCB_INFO_CHN info_chn;
           {
           addr = atoi(param[1]);
 
-          status = mscb_read_conf(fd, current_addr, (unsigned char)addr, &data);
+          size = sizeof(data);
+          status = mscb_read_conf(fd, current_addr, (unsigned char)addr, &data, &size);
           if (status != MSCB_SUCCESS)
             printf("Error: %d\n", status);
           else
@@ -713,7 +721,8 @@ MSCB_INFO_CHN info_chn;
 
           }
 
-        mscb_read(fd, current_addr, 0, &d);
+        size = sizeof(d);
+        mscb_read(fd, current_addr, 0, &d, &size);
         if (d > 0)
           putchar(d);
 
@@ -786,6 +795,7 @@ MSCB_INFO_CHN info_chn;
         {
         d1 = rand();
 
+        size = sizeof(d2);
         status = mscb_user(fd, current_addr, &d1, sizeof(d1), &d2, &size);
 
         if (d2 != d1)
@@ -804,6 +814,59 @@ MSCB_INFO_CHN info_chn;
       }
     else if (param[0][0] == 't' && param[0][1] == '1')
       {
+      int  d, s, status;
+
+      puts("Exit with empty line\n");
+
+      /* switch SCS-210 into terminal mode */
+      c = 0;
+      status = mscb_write(fd, current_addr, 0, &c, 1);
+
+      do
+        {
+        if (kbhit())
+          {
+          gets(str);
+
+          if (str[0])
+            {
+            for (i=s=0 ; i<(int)strlen(str) ; i++)
+              {
+              c = str[i];
+              status = mscb_write(fd, current_addr, 0, &c, 1);
+              if (status != MSCB_SUCCESS)
+                {
+                printf("\nError: %d\n", status);
+                break;
+                }
+              s += c;
+              }
+
+            sprintf(str, "%03d", s & 0xFF);
+            printf("%s\n", str);
+            for (i=0 ; i<3 ; i++)
+              mscb_write(fd, current_addr, 0, &str[i], 1);
+
+            c = '\r';
+            mscb_write(fd, current_addr, 0, &c, 1);
+            }
+          else
+            {
+            c = 27;
+            mscb_write(fd, current_addr, 0, &c, 1);
+            }
+          }
+
+        size = sizeof(d);
+        mscb_read(fd, current_addr, 0, &d, &size);
+        if (d > 0)
+          putchar(d);
+
+        } while (c != 27);
+
+      puts("\n");
+      while (kbhit())
+        getch();
       }
 
     /* exit/quit */
@@ -829,21 +892,21 @@ MSCB_INFO_CHN info_chn;
 
 main(int argc, char *argv[])
 {
-int   i, fd, adr;
-char  cmd[256], port[100];
+int   i, fd, adr, server;
+char  cmd[256], device[256];
 int   debug, check_io;
 
   cmd[0] = 0;
   adr = 0;
 #ifdef _MSC_VER
-  strcpy(port, "lpt1");
+  strcpy(device, "lpt1");
 #elif defined(__linux__)
-  strcpy(port, "/dev/parport0");
+  strcpy(device, "/dev/parport0");
 #else
-  strcpy(port, "");
+  strcpy(device, "");
 #endif
 
-  debug = check_io = 0;
+  debug = check_io = server = 0;
 
   /* parse command line parameters */
   for (i=1 ; i<argc ; i++)
@@ -852,16 +915,16 @@ int   debug, check_io;
       debug = 1;
     if (argv[i][0] == '-' && argv[i][1] == 'i')
       check_io = 1;
+    if (argv[i][0] == '-' && argv[i][1] == 's')
+      server = 1;
     else if (argv[i][0] == '-')
       {
       if (i+1 >= argc || argv[i+1][0] == '-')
         goto usage;
-      if (argv[i][1] == 'p')
-        strcpy(port, argv[++i]);
+      else if (argv[i][1] == 'd')
+        strcpy(device, argv[++i]);
       else if (argv[i][1] == 'a')
-        {
         adr = atoi(argv[++i]);
-        }
       else if (argv[i][1] == 'c')
         {
         if (strlen(argv[i]) >= 256)
@@ -874,8 +937,9 @@ int   debug, check_io;
       else
         {
 usage:
-        printf("usage: msc [-p port] [-a addr] [-c Command] [-c @CommandFile] [-v] [-i]\n\n");
-        printf("       -p     Specify port (LPT1 by default)\n");
+        printf("usage: msc [-d host:device] [-a addr] [-c Command] [-c @CommandFile] [-v] [-i]\n\n");
+        printf("       -d     device, usually \"%s\" or \"<host>:%s\" for RPC connection\n", device, device);
+        printf("       -s     Start RPC server\n");
         printf("       -a     Address node before executing command\n");
         printf("       -c     Execute command immediately\n");
         printf("       -v     Produce verbose output\n\n");
@@ -887,18 +951,27 @@ usage:
       }
     }
 
+  if (server)
+    {
+    rpc_server_loop();
+    return 0;
+    }
+
   if (check_io)
     {
-    mscb_check(port);
+    mscb_check(device);
     return 0;
     }
 
   /* open port */
-  fd = mscb_init(port);
+  fd = mscb_init(device);
   if (fd < 0)
     {
     if (fd == -2)
-      printf("No MSCB submaster present at port \"%s\"\n", port);
+      printf("No MSCB submaster present at port \"%s\"\n", device);
+    else
+      printf("Cannot connect to device \"%s\"\n", device);
+
     return 0;
     }
 
