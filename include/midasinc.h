@@ -7,6 +7,9 @@
   Contents:     Includes all necessary include files
 
   $Log$
+  Revision 1.5  1999/01/21 22:58:18  pierre
+  - include DM_DUAL_THREAD lib as default for OS_VXWORKS
+
   Revision 1.4  1999/01/18 17:25:36  pierre
   - Add extra lib for dm_() for OS_VxWorks
 
@@ -102,13 +105,11 @@
 #include <ioLib.h>
 #include <netinet/tcp.h>
 #include <sys/stat.h>
-
-#ifdef DM_DUAL_THREAD
+/*-PAA- permanent as semphore moved in ss_mutex_...() */
 #include <semLib.h>
 #include <taskLib.h>
 #include <symLib.h>
 #include <errnoLib.h>
-#endif
 
 #endif
 
