@@ -13,6 +13,9 @@
  *  Author:  Pierre-Andre Amaudruz Data Acquisition Group
  *
  *  $Log$
+ *  Revision 1.9  2001/08/21 11:18:28  midas
+ *  Added c,n to cam_interrupt_attach/detach, added comments
+ *
  *  Revision 1.8  2001/08/21 09:32:02  midas
  *  Added cam_lam_wait
  *
@@ -625,15 +628,47 @@ EXTERNAL INLINE void EXPRT cam_lam_clear(const int c, const int n);
 */
 EXTERNAL INLINE int EXPRT cam_lam_wait(int *c, DWORD *n, const int millisec);
 
+/** cam\_interrupt\_enable()
+    Enable interrupts in specific crate
+    @memo Enable interrupts in crate controller.
+    @param c crate number (0..)
+    @return void
+*/
 EXTERNAL INLINE void EXPRT cam_interrupt_enable (const int c);
+
+/** cam\_interrupt\_disable()
+    Disables interrupts in specific crate
+    @memo Disable interrupts in crate controller.
+    @param c crate number (0..)
+    @return void
+*/
 EXTERNAL INLINE void EXPRT cam_interrupt_disable(const int c);
-EXTERNAL INLINE int  EXPRT cam_interrupt_test   (const int c);
-EXTERNAL INLINE void EXPRT cam_interrupt_attach (void (*isr)(void));
-EXTERNAL INLINE void EXPRT cam_interrupt_detach (void);
-EXTERNAL INLINE void EXPRT cam_glint_enable     (void);
-EXTERNAL INLINE void EXPRT cam_glint_disable    (void);
-EXTERNAL INLINE void EXPRT cam_glint_attach     (int lam, void (*isr)(void));
-EXTERNAL INLINE void EXPRT cam_glint_detach(void);
+
+/** cam\_interrupt\_test()
+    Test Crate Interrupt.
+    @memo Test Crate Interrupt.
+    @param c crate number (0..)
+    @return 1 for set, 0 for cleared
+*/
+EXTERNAL INLINE int  EXPRT cam_interrupt_test(const int c);
+
+/** cam\_interrupt\_attach()
+    Attach service routine to LAM of specific crate and station.
+    @memo Attach service routine.
+    @param c crate number (0..)
+    @param n station number
+    @return void
+*/
+EXTERNAL INLINE void EXPRT cam_interrupt_attach(const int c, const int n, void (*isr)(void));
+
+/** cam\_interrupt\_detach()
+    Detach service routine from LAM.
+    @memo Detach service routine.
+    @param c crate number (0..)
+    @param n station number
+    @return void
+*/
+EXTERNAL INLINE void EXPRT cam_interrupt_detach(const int c, const int n);
 
 #ifdef __cplusplus
 }
