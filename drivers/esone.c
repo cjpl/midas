@@ -7,11 +7,9 @@
  *         amaudruz@triumf.ca
  * -----------------------------------------------------------------------------
  *  
- *  Description	: CAMAC interface for ESONE standard
- *		  No reference to Midas.
- *
- *  Requires 	: inclusion of one of the CAMAC driver first
- *                ces8210.c, mcamac.c,  ...
+ *  Description	: CAMAC interface for ESONE standard using mcstd.h
+ *	
+ *  Requires 	: 
  *
  *  Application : Any CAMAC application
  *
@@ -20,7 +18,9 @@
  *  Revision 1.0  1998        Pierre	 Initial revision
  *
  *---------------------------------------------------------------------------*/
-
+#include <stdio.h>
+#include "mcstd.h"
+#include "esone.h"
 #ifndef INLINE 
 #if defined( _MSC_VER )
 #define INLINE __inline
@@ -31,6 +31,20 @@
 #endif
 #endif
 
+/*--external-----------------------------------------------------*/
+INLINE void came_cn(int *ext, const int b, const int c, const int n, const int a){
+  *ext = (b<<24 | (c<<16) | (n<<8) | a);
+}
+
+/*--external-----------------------------------------------------*/
+INLINE void came_ext(const int ext, int *b, int *c, int *n, int *a){
+  *b = (ext >> 24) & 0x7;
+  *c = (ext >> 16) & 0x7;
+  *n = (ext >>  8) & 0x1f;
+  *a = (ext >>  0) & 0xf;
+}
+
+/*-- REAL ESONE INTERFACE ---------------------------------------*/
 /*--External-----------------------------------------------------*/
 INLINE void cdreg (int *ext, const int b, const int c, const int n, const int a)
 { /* ext encoding */
@@ -41,21 +55,25 @@ INLINE void cdreg (int *ext, const int b, const int c, const int n, const int a)
 INLINE void cssa (const int f, int ext, unsigned short *d, int *q)
 { /* 16bit action */
   int x;
-
+  static int b,c,n,a;
+  static unsigned short dtemp;
   if (f < 8)
     {
       /* read */
-      cam16ei_q (ext, f, d, &x, q);
+      came_ext(ext, &b, &c, &n, &a);
+      cam16i_q(c,n,a,f,d,&x,q);
     }
   else if (f >15)
     {
       /* write */
-      cam16eo_q (ext, f, *d, &x, q);
+      came_ext(ext, &b, &c, &n, &a);
+      cam16o_q(c,n,a,f,*d,&x,q);
     }
   else if ((f > 7) || (f > 23))
     {
       /* command */
-      camec_q (ext, f, &x, q);
+      came_ext(ext, &b, &c, &n, &a);
+      cam16i_q(c,n,a,f,&dtemp,&x,q);
     }
 }
 
@@ -63,21 +81,26 @@ INLINE void cssa (const int f, int ext, unsigned short *d, int *q)
 INLINE void cfsa (const int f, const int ext, unsigned long *d, int *q)
 { /* 24bit action */
   int x;
+  static int b,c,n,a;
+  static unsigned short dtemp;
 
   if (f < 8)
     {
       /* read */
-      cam24ei_q (ext, f, d, &x, q);
+     came_ext(ext, &b, &c, &n, &a);
+     cam24i_q(c,n,a,f,d,&x,q);
     }
   else if (f >15)
     {
       /* write */
-      cam24eo_q (ext, f, *d, &x, q);
+      came_ext(ext, &b, &c, &n, &a);
+      cam24o_q(c,n,a,f,*d,&x,q);
     }
   else if ((f > 7) || (f > 23))
     {
       /* command */
-      camec_q (ext, f, &x, q);
+      came_ext(ext, &b, &c, &n, &a);
+      cam16i_q(c,n,a,f,&dtemp,&x,q);
     }
 }
 
@@ -135,7 +158,8 @@ INLINE void  ctcd(const int ext, int *l)
 }
 
 /*--ESONE General functions--------------------------------------*/
-INLINE void  cdlam(int *lam, const int b, const int c, const int n, const int a, const int inta[2])
+INLINE void  cdlam(int *lam, const int b, const int c, const int n, const int a
+                   , const int inta[2])
 { /* Declare LAM */
   /* inta[2] ignored */
   cdreg (lam, b, c, n, a);
@@ -153,30 +177,23 @@ INLINE void  ctgl(const int ext, int *l)
 /*--ESONE General functions--------------------------------------*/
 INLINE void  cclm(const int lam, int l)
 { /* Enable/Disable LAM */
-
-  /*  may requires a0
   int b, c, n, a;
-  came_ext(*ext, &b, &c, &n, &a);
-  camc (c,n,0,24/26);
-  */
-
+  /*  may requires a0 */
+  came_ext(lam, &b, &c, &n, &a);
+ 
   if (l)
-    camec (lam, 26);          /* c=c,n=n,a=a,f=26 */
+    camc (c,n,0,26);
   else
-    camec (lam, 24);          /* c=c,n=n,a=a,f=24 */
+    camc (c,n,0,24);
 }
 
 /*--ESONE General functions--------------------------------------*/
 INLINE void  cclc(const int lam)
 { /* Clear LAM */
-
-  /*  may requires a0
   int b, c, n, a;
+  /*  may requires a0 */
   came_ext(lam, &b, &c, &n, &a);
   camc (c,n,0,10);
-  */
-
-  camec (lam, 10);          /* c=c,n=n,a=a,f=10 */
 }
 
 /*--ESONE General functions--------------------------------------*/
@@ -184,8 +201,11 @@ INLINE void  ctlm(const int lam, int *l)
 { /* Test LAM */
   /* inta[2] ignored */
   int x;
+  static int b,c,n,a;
+  static WORD dtemp;
 
-  camec_q (lam, 10, &x, l);          /* c=c,n=n,a=a,f=10 */
+  came_ext(lam, &b, &c, &n, &a);
+  cam16i_q(c,n,a,10,&dtemp,&x,l);
 }
 
 /*--ESONE General functions--------------------------------------*/
@@ -243,7 +263,7 @@ INLINE void  cfubc(const int f, int ext, int intc[], int cb[])
     {
       cfsa (f,ext,(unsigned long *)intc, &q);
       if (q == 0)
-	count == 0;	/* stop on no q */
+	      count = 0;	/* stop on no q */
       else
 	{
 	  ++cb[1];		/* increment tally count */
