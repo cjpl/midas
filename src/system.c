@@ -14,6 +14,10 @@
                 Brown, Prentice Hall
 
   $Log$
+  Revision 1.85  2004/12/14 23:00:30  olchansk
+  Remove chdir("/") from ss_daemon_init()- this prevented us from
+  ever getting core dumps from midas daemons.
+
   Revision 1.84  2004/12/14 08:01:50  olchansk
   in ss_shm_open(), fail and return SS_NO_MEMORY when mapping a file with size smaller than requested size
 
@@ -1516,7 +1520,6 @@ INT ss_daemon_init(BOOL keep_stdout)
    }
 
    setsid();                    /* become session leader */
-   chdir("/");                  /* change working direcotry (not on NFS!) */
    umask(0);                    /* clear our file mode createion mask */
 
 #endif
