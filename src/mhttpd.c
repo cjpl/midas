@@ -6,6 +6,9 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
+  Revision 1.6  1998/10/28 13:48:17  midas
+  Added message display
+
   Revision 1.5  1998/10/28 12:39:45  midas
   Added hex display in ODB page
 
@@ -170,6 +173,34 @@ char *pd, *p, str[256];
     }
    *pd = '\0';
    strcpy(ps, str);
+}
+
+/*------------------------------------------------------------------*/
+
+#define MESSAGE_SIZE 20
+char message_buffer[MESSAGE_SIZE][256];
+int  message_index;
+
+INT print_message(const char *message)
+{
+  strcpy(message_buffer[message_index], message);
+  message_index = (message_index + 1) % MESSAGE_SIZE;
+  return SUCCESS;
+}
+
+void receive_message(HNDLE hBuf, HNDLE id, EVENT_HEADER *pheader, void *message)
+{
+time_t tm;
+char   str[80], line[256];
+
+  /* prepare time */
+  time(&tm);
+  strcpy(str, ctime(&tm));
+  str[19] = 0;
+
+  /* print message text which comes after event header */
+  sprintf(line, "%s %s", str+11, message);
+  print_message(line);
 }
 
 /*------------------------------------------------------------------*/
@@ -408,6 +439,7 @@ CHN_STATISTICS chn_stats;
 
   rsprintf("<input type=submit name=cmd value=ODB>\n");
   rsprintf("<input type=submit name=cmd value=CNAF>\n");
+  rsprintf("<input type=submit name=cmd value=Messages>\n");
   rsprintf("<input type=submit name=cmd value=Config>\n");
   rsprintf("<input type=submit name=cmd value=Help>\n");
   rsprintf("</tr>\n\n");
@@ -602,15 +634,28 @@ CHN_STATISTICS chn_stats;
       }
     }
 
+  /*---- Messages ----*/
+
+  rsprintf("<tr><td colspan=6>");
+
+  i = message_index - 1;
+  if (i<0)
+    i = MESSAGE_SIZE -1 ;
+
+  if (message_buffer[i][0])
+    rsprintf("<b>%s</b>", message_buffer[i]);
+
+  rsprintf("</tr>");
+
   /*---- Clients ----*/
 
   if (db_find_key(hDB, 0, "/System/Clients", &hkey) == DB_SUCCESS)
     {
     for (i=0 ; ; i++)
       {
-	    db_enum_key(hDB, hkey, i, &hsubkey);
-	    if (!hsubkey)
-	      break;
+      db_enum_key(hDB, hkey, i, &hsubkey);
+      if (!hsubkey)
+        break;
 
       if (i%3 == 0)
         rsprintf("<tr bgcolor=#FFFF00>"); 
@@ -631,6 +676,69 @@ CHN_STATISTICS chn_stats;
     }
 
   rsprintf("</table>\n");
+  rsprintf("</body></html>\r\n");
+}
+
+/*------------------------------------------------------------------*/
+
+void show_messages_page(HNDLE hDB, int refresh)
+{
+int i, size;
+char str[256];
+time_t now;
+
+  /* header */
+  rsprintf("HTTP/1.0 200 Document follows\r\n");
+  rsprintf("Server: MIDAS HTTP %s\r\n", cm_get_version());
+  rsprintf("Content-Type: text/html\r\n\r\n");
+
+  rsprintf("<html><head><title>MIDAS messages</title></head>\n");
+  rsprintf("<body><form method=\"GET\" action=\"%s\">\n", mhttpd_url);
+
+  /* define hidden field for experiment */
+  if (exp_name[0])
+    rsprintf("<input type=hidden name=exp value=\"%s\">\n", exp_name);
+
+  /* auto refresh */
+  rsprintf("<meta http-equiv=\"Refresh\" content=%d>\n\n", refresh);
+
+  rsprintf("<table border=3 cellpadding=2>\n");
+
+  /*---- title row ----*/
+
+  size = sizeof(str);
+  str[0] = 0;
+  db_get_value(hDB, 0, "/Experiment/Name", str, &size, TID_STRING);
+  time(&now);
+
+  rsprintf("<tr><th colspan=1 bgcolor=#A0A0FF>MIDAS experiment \"%s\"", str);
+  rsprintf("<th colspan=1 bgcolor=#A0A0FF>%s</tr>\n", ctime(&now));
+
+  /*---- menu buttons ----*/
+
+  rsprintf("<tr><td colspan=2 bgcolor=#C0C0C0>\n");
+
+  rsprintf("<input type=submit name=cmd value=ODB>\n");
+  rsprintf("<input type=submit name=cmd value=Status>\n");
+  rsprintf("<input type=submit name=cmd value=Config>\n");
+  rsprintf("<input type=submit name=cmd value=Help>\n");
+  rsprintf("</tr>\n\n");
+
+  /*---- messages ----*/
+
+  rsprintf("<tr><td colspan=2>\n");
+  if (message_buffer[message_index][0])
+    i = message_index;
+  else 
+    i = 0;
+  do
+    {
+    if (message_buffer[i][0])
+      rsprintf("%s<br>\n", message_buffer[i]);
+    i = (i + 1) % MESSAGE_SIZE;
+    } while (i != message_index && message_buffer[i][0]);
+
+  rsprintf("</tr></table>\n");
   rsprintf("</body></html>\r\n");
 }
 
@@ -2095,8 +2203,11 @@ struct tm *gmt;
     strcpy(exp_name, experiment);
     connected = TRUE;
 
-    /* turn off message display, turn on message logging */
-    cm_set_msg_print(MT_ALL, 0, NULL);
+    /* place a request for system messages */
+    cm_msg_register(receive_message);
+
+    /* redirect message display, turn on message logging */
+    cm_set_msg_print(MT_ALL, MT_ALL, print_message);
     }
 
   cm_get_experiment_database(&hDB, NULL);
@@ -2364,6 +2475,14 @@ struct tm *gmt;
   if (equal_ustring(command, "config"))
     {
     show_config_page(hDB, refresh);
+    return;
+    }
+
+  /*---- Messages command --------------------------------------------*/
+  
+  if (equal_ustring(command, "messages"))
+    {
+    show_messages_page(hDB, refresh);
     return;
     }
 
