@@ -6,6 +6,9 @@
   Contents:     MIDAS logger program
 
   $Log$
+  Revision 1.38  2000/05/05 08:05:31  midas
+  Avoid message "write operation took ..." if time gets adjusted by xntp
+
   Revision 1.37  2000/04/20 12:44:00  midas
   Fixed memory leak
 
@@ -1363,7 +1366,7 @@ double dzero;
     status = midas_write(log_chn, pevent, pevent->data_size+sizeof(EVENT_HEADER));
 
   actual_time = ss_millitime();
-  if (actual_time - start_time > 3000)
+  if ((int)actual_time - (int)start_time > 3000)
     cm_msg(MINFO, "log_write", "Write operation took %d ms", actual_time - start_time);
 
   if (status != SS_SUCCESS && !stop_requested)
