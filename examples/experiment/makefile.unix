@@ -33,7 +33,7 @@
 #OSFLAGS = -DOS_FREEBSD -DOS_UNIX
 
 # This is for Linux
-LIBS = -lbsd -lm /usr/lib/libf2c.a
+LIBS = -lbsd -lm -lutil /usr/lib/libf2c.a
 OSFLAGS = -DOS_LINUX -DOS_UNIX -Dextname
 FF = cc
 #FF = g77 necessary for egcs instead "cc"
