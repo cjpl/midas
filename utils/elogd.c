@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.99  2001/12/21 13:44:03  midas
+  Checked bug with relative and absolute paths for "password file = "
+
   Revision 1.98  2001/12/21 13:28:08  midas
   Adjusted spaces in find page display for link with message number
 
@@ -3272,7 +3275,7 @@ struct hostent *phe;
 
 void show_change_pwd_page()
 {
-char   str[256], line[256], *p, *pl, old_pwd[32], new_pwd[32];
+char   str[256], file_name[256], line[256], *p, *pl, old_pwd[32], new_pwd[32];
 char   *buf;
 FILE   *f;
 int    i, wrong_pwd, size;
@@ -3285,11 +3288,20 @@ struct tm *gmt;
   do_crypt(getparam("newpwd"), new_pwd);
 
   getcfg(logbook, "Password file", str);
+
+  if (str[0] == DIR_SEPARATOR || str[1] == ':')
+    strcpy(file_name, str);
+  else
+    {
+    strcpy(file_name, cfg_dir);
+    strcat(file_name, str);
+    }
+
   wrong_pwd = FALSE;
 
   if (old_pwd[0] || new_pwd[0])
     {
-    f = fopen(str, "r+b");
+    f = fopen(file_name, "r+b");
     if (f != NULL)
       {
       fseek(f, 0, SEEK_END);
@@ -6626,8 +6638,14 @@ char  str[256], line[256], file_name[256], *p;
 FILE  *f;
 
   getcfg(logbook, "Password file", str);
-  strcpy(file_name, cfg_dir);
-  strcat(file_name, str);
+
+  if (str[0] == DIR_SEPARATOR || str[1] == ':')
+    strcpy(file_name, str);
+  else
+    {
+    strcpy(file_name, cfg_dir);
+    strcat(file_name, str);
+    }
 
   f = fopen(file_name, "r");
   if (f != NULL)
