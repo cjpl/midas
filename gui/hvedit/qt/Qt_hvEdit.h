@@ -10,6 +10,9 @@
     email                : andreas.suter@psi.ch
 
   $Log$
+  Revision 1.2  2003/10/21 14:39:06  suter_a
+  added scaling
+
   Revision 1.1  2003/05/09 10:08:09  midas
   Initial revision
 
@@ -68,6 +71,10 @@ class Qt_hvEdit : public Qt_hvEdit_Base
     void updateTable(int ch);
 
   public slots:
+    void connectToExp();
+    void disconnectFromExp();
+
+  protected slots:
     void fileOpen();
     void fileSave();
     void filePrint();
@@ -76,8 +83,6 @@ class Qt_hvEdit : public Qt_hvEdit_Base
     void helpContents();
     void helpAboutQt();
     void helpAbout();
-    void connectToExp();
-    void disconnectFromExp();
     void changedDeviceSelection();
     void onSelectAll();
     void onSwitchAllChannelsOff();
@@ -90,6 +95,7 @@ class Qt_hvEdit : public Qt_hvEdit_Base
     void onP010();
     void onP001();
     void onSet();
+    void onScale();
     void hvValueChanged(int row, int col);
     void currentLimitValueChanged(int row, int col);
 
@@ -122,6 +128,7 @@ class Qt_hvEdit : public Qt_hvEdit_Base
     void updateODB_demand(int ch);
     void updateODB_currentLimit(int ch);
     void increment(const float incr);
+    void scale_hv(const float scale);
     QString *findSub(char *str, char *first, char *last, QString *last);
 };
 

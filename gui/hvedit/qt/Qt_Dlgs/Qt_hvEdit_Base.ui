@@ -1,4 +1,4 @@
-<!DOCTYPE UI><UI version="3.0" stdsetdef="1">
+<!DOCTYPE UI><UI version="3.1" stdsetdef="1">
 <class>Qt_hvEdit_Base</class>
 <widget class="QMainWindow">
     <property name="name">
@@ -23,7 +23,7 @@
     <property name="minimumSize">
         <size>
             <width>21</width>
-            <height>112</height>
+            <height>110</height>
         </size>
     </property>
     <property name="maximumSize">
@@ -90,12 +90,249 @@
     </widget>
     <widget class="QFrame">
         <property name="name">
+            <cstring>frame12</cstring>
+        </property>
+        <property name="geometry">
+            <rect>
+                <x>410</x>
+                <y>30</y>
+                <width>392</width>
+                <height>46</height>
+            </rect>
+        </property>
+        <property name="frameShape">
+            <enum>StyledPanel</enum>
+        </property>
+        <property name="frameShadow">
+            <enum>Raised</enum>
+        </property>
+        <widget class="QLabel">
+            <property name="name">
+                <cstring>hve_Host_textLabel</cstring>
+            </property>
+            <property name="geometry">
+                <rect>
+                    <x>12</x>
+                    <y>12</y>
+                    <width>38</width>
+                    <height>22</height>
+                </rect>
+            </property>
+            <property name="text">
+                <string>&lt;b&gt;host: &lt;/b&gt;</string>
+            </property>
+        </widget>
+        <widget class="QLineEdit">
+            <property name="name">
+                <cstring>hve_Host_lineEdit</cstring>
+            </property>
+            <property name="geometry">
+                <rect>
+                    <x>56</x>
+                    <y>12</y>
+                    <width>108</width>
+                    <height>22</height>
+                </rect>
+            </property>
+            <property name="sizePolicy">
+                <sizepolicy>
+                    <hsizetype>0</hsizetype>
+                    <vsizetype>0</vsizetype>
+                    <horstretch>0</horstretch>
+                    <verstretch>0</verstretch>
+                </sizepolicy>
+            </property>
+            <property name="minimumSize">
+                <size>
+                    <width>108</width>
+                    <height>22</height>
+                </size>
+            </property>
+            <property name="maximumSize">
+                <size>
+                    <width>108</width>
+                    <height>22</height>
+                </size>
+            </property>
+            <property name="readOnly">
+                <bool>true</bool>
+            </property>
+        </widget>
+        <widget class="QLabel">
+            <property name="name">
+                <cstring>hve_Exp_textLabel</cstring>
+            </property>
+            <property name="geometry">
+                <rect>
+                    <x>192</x>
+                    <y>12</y>
+                    <width>74</width>
+                    <height>22</height>
+                </rect>
+            </property>
+            <property name="text">
+                <string>&lt;b&gt;experiment:&lt;/b&gt;</string>
+            </property>
+        </widget>
+        <widget class="QLineEdit">
+            <property name="name">
+                <cstring>hve_Exp_lineEdit</cstring>
+            </property>
+            <property name="geometry">
+                <rect>
+                    <x>272</x>
+                    <y>12</y>
+                    <width>108</width>
+                    <height>22</height>
+                </rect>
+            </property>
+            <property name="sizePolicy">
+                <sizepolicy>
+                    <hsizetype>0</hsizetype>
+                    <vsizetype>0</vsizetype>
+                    <horstretch>0</horstretch>
+                    <verstretch>0</verstretch>
+                </sizepolicy>
+            </property>
+            <property name="minimumSize">
+                <size>
+                    <width>108</width>
+                    <height>22</height>
+                </size>
+            </property>
+            <property name="maximumSize">
+                <size>
+                    <width>108</width>
+                    <height>22</height>
+                </size>
+            </property>
+            <property name="readOnly">
+                <bool>true</bool>
+            </property>
+        </widget>
+    </widget>
+    <widget class="QTabWidget">
+        <property name="name">
+            <cstring>hve_HV_tabWidget</cstring>
+        </property>
+        <property name="geometry">
+            <rect>
+                <x>0</x>
+                <y>118</y>
+                <width>460</width>
+                <height>350</height>
+            </rect>
+        </property>
+        <widget class="QWidget">
+            <property name="name">
+                <cstring>tab</cstring>
+            </property>
+            <attribute name="title">
+                <string>HV</string>
+            </attribute>
+            <widget class="QTable">
+                <column>
+                    <property name="text">
+                        <string>Name</string>
+                    </property>
+                </column>
+                <column>
+                    <property name="text">
+                        <string>HV Demanded</string>
+                    </property>
+                </column>
+                <column>
+                    <property name="text">
+                        <string>HV Measured</string>
+                    </property>
+                </column>
+                <column>
+                    <property name="text">
+                        <string>Current Measured</string>
+                    </property>
+                </column>
+                <property name="name">
+                    <cstring>hve_HV_table</cstring>
+                </property>
+                <property name="geometry">
+                    <rect>
+                        <x>0</x>
+                        <y>0</y>
+                        <width>460</width>
+                        <height>330</height>
+                    </rect>
+                </property>
+                <property name="resizePolicy">
+                    <enum>Manual</enum>
+                </property>
+                <property name="vScrollBarMode">
+                    <enum>Auto</enum>
+                </property>
+                <property name="hScrollBarMode">
+                    <enum>Auto</enum>
+                </property>
+                <property name="numRows">
+                    <number>15</number>
+                </property>
+                <property name="numCols">
+                    <number>4</number>
+                </property>
+                <property name="showGrid">
+                    <bool>true</bool>
+                </property>
+            </widget>
+        </widget>
+        <widget class="QWidget">
+            <property name="name">
+                <cstring>tab</cstring>
+            </property>
+            <attribute name="title">
+                <string>Current Limit</string>
+            </attribute>
+            <widget class="QTable">
+                <column>
+                    <property name="text">
+                        <string>Name</string>
+                    </property>
+                </column>
+                <column>
+                    <property name="text">
+                        <string>Current Measured</string>
+                    </property>
+                </column>
+                <column>
+                    <property name="text">
+                        <string>Current Limit</string>
+                    </property>
+                </column>
+                <property name="name">
+                    <cstring>hve_currentLimit_table</cstring>
+                </property>
+                <property name="geometry">
+                    <rect>
+                        <x>0</x>
+                        <y>0</y>
+                        <width>460</width>
+                        <height>330</height>
+                    </rect>
+                </property>
+                <property name="numRows">
+                    <number>15</number>
+                </property>
+                <property name="numCols">
+                    <number>3</number>
+                </property>
+            </widget>
+        </widget>
+    </widget>
+    <widget class="QFrame">
+        <property name="name">
             <cstring>frame13</cstring>
         </property>
         <property name="geometry">
             <rect>
                 <x>470</x>
-                <y>168</y>
+                <y>148</y>
                 <width>330</width>
                 <height>260</height>
             </rect>
@@ -332,6 +569,9 @@
                                     <property name="text">
                                         <string>-1.0</string>
                                     </property>
+                                    <property name="toolTip" stdset="0">
+                                        <string>decrease selected HV by 1.0 kV</string>
+                                    </property>
                                 </widget>
                                 <widget class="QPushButton">
                                     <property name="name">
@@ -365,6 +605,9 @@
                                     <property name="text">
                                         <string>-0.1</string>
                                     </property>
+                                    <property name="toolTip" stdset="0">
+                                        <string>decrease selected HV by 0.1 kV</string>
+                                    </property>
                                 </widget>
                                 <widget class="QPushButton">
                                     <property name="name">
@@ -397,6 +640,9 @@
                                     </property>
                                     <property name="text">
                                         <string>-0.01</string>
+                                    </property>
+                                    <property name="toolTip" stdset="0">
+                                        <string>decrease selected HV by 0.01 kV</string>
                                     </property>
                                 </widget>
                             </hbox>
@@ -464,6 +710,9 @@
                                     <property name="text">
                                         <string>+0.01</string>
                                     </property>
+                                    <property name="toolTip" stdset="0">
+                                        <string>increase selected HV by 0.01 kV</string>
+                                    </property>
                                 </widget>
                                 <widget class="QPushButton">
                                     <property name="name">
@@ -497,6 +746,9 @@
                                     <property name="text">
                                         <string>+0.1</string>
                                     </property>
+                                    <property name="toolTip" stdset="0">
+                                        <string>increase selected HV by 0.01 kV</string>
+                                    </property>
                                 </widget>
                                 <widget class="QPushButton">
                                     <property name="name">
@@ -529,6 +781,9 @@
                                     </property>
                                     <property name="text">
                                         <string>+1.0</string>
+                                    </property>
+                                    <property name="toolTip" stdset="0">
+                                        <string>increase selected HV by 0.01 kV</string>
                                     </property>
                                 </widget>
                             </hbox>
@@ -581,6 +836,9 @@
                             <property name="text">
                                 <string>Zero</string>
                             </property>
+                            <property name="toolTip" stdset="0">
+                                <string>set all the selected HV/current Limit to zero</string>
+                            </property>
                         </widget>
                         <spacer>
                             <property name="name">
@@ -630,6 +888,9 @@
                             </property>
                             <property name="text">
                                 <string>Restore</string>
+                            </property>
+                            <property name="toolTip" stdset="0">
+                                <string>restore the selected values</string>
                             </property>
                         </widget>
                     </hbox>
@@ -683,21 +944,30 @@
                     <property name="text">
                         <string>Select All</string>
                     </property>
+                    <property name="toolTip" stdset="0">
+                        <string>select all channels of the current device</string>
+                    </property>
                 </widget>
             </vbox>
         </widget>
     </widget>
     <widget class="QFrame">
         <property name="name">
-            <cstring>frame12</cstring>
+            <cstring>frame5</cstring>
         </property>
         <property name="geometry">
             <rect>
-                <x>410</x>
-                <y>30</y>
-                <width>392</width>
+                <x>470</x>
+                <y>418</y>
+                <width>327</width>
                 <height>46</height>
             </rect>
+        </property>
+        <property name="minimumSize">
+            <size>
+                <width>327</width>
+                <height>0</height>
+            </size>
         </property>
         <property name="frameShape">
             <enum>StyledPanel</enum>
@@ -705,241 +975,69 @@
         <property name="frameShadow">
             <enum>Raised</enum>
         </property>
-        <widget class="QLabel">
+        <hbox>
             <property name="name">
-                <cstring>hve_Host_textLabel</cstring>
+                <cstring>unnamed</cstring>
             </property>
-            <property name="geometry">
-                <rect>
-                    <x>12</x>
-                    <y>12</y>
-                    <width>38</width>
-                    <height>22</height>
-                </rect>
-            </property>
-            <property name="text">
-                <string>&lt;b&gt;host: &lt;/b&gt;</string>
-            </property>
-        </widget>
-        <widget class="QLineEdit">
-            <property name="name">
-                <cstring>hve_Host_lineEdit</cstring>
-            </property>
-            <property name="geometry">
-                <rect>
-                    <x>56</x>
-                    <y>12</y>
-                    <width>108</width>
-                    <height>22</height>
-                </rect>
-            </property>
-            <property name="sizePolicy">
-                <sizepolicy>
-                    <hsizetype>0</hsizetype>
-                    <vsizetype>0</vsizetype>
-                    <horstretch>0</horstretch>
-                    <verstretch>0</verstretch>
-                </sizepolicy>
-            </property>
-            <property name="minimumSize">
-                <size>
-                    <width>108</width>
-                    <height>22</height>
-                </size>
-            </property>
-            <property name="maximumSize">
-                <size>
-                    <width>108</width>
-                    <height>22</height>
-                </size>
-            </property>
-            <property name="readOnly">
-                <bool>true</bool>
-            </property>
-        </widget>
-        <spacer>
-            <property name="name">
-                <cstring>spacer8</cstring>
-            </property>
-            <property name="orientation">
-                <enum>Horizontal</enum>
-            </property>
-            <property name="sizeType">
-                <enum>Expanding</enum>
-            </property>
-            <property name="sizeHint">
-                <size>
-                    <width>20</width>
-                    <height>20</height>
-                </size>
-            </property>
-        </spacer>
-        <widget class="QLabel">
-            <property name="name">
-                <cstring>hve_Exp_textLabel</cstring>
-            </property>
-            <property name="geometry">
-                <rect>
-                    <x>192</x>
-                    <y>12</y>
-                    <width>74</width>
-                    <height>22</height>
-                </rect>
-            </property>
-            <property name="text">
-                <string>&lt;b&gt;experiment:&lt;/b&gt;</string>
-            </property>
-        </widget>
-        <widget class="QLineEdit">
-            <property name="name">
-                <cstring>hve_Exp_lineEdit</cstring>
-            </property>
-            <property name="geometry">
-                <rect>
-                    <x>272</x>
-                    <y>12</y>
-                    <width>108</width>
-                    <height>22</height>
-                </rect>
-            </property>
-            <property name="sizePolicy">
-                <sizepolicy>
-                    <hsizetype>0</hsizetype>
-                    <vsizetype>0</vsizetype>
-                    <horstretch>0</horstretch>
-                    <verstretch>0</verstretch>
-                </sizepolicy>
-            </property>
-            <property name="minimumSize">
-                <size>
-                    <width>108</width>
-                    <height>22</height>
-                </size>
-            </property>
-            <property name="maximumSize">
-                <size>
-                    <width>108</width>
-                    <height>22</height>
-                </size>
-            </property>
-            <property name="readOnly">
-                <bool>true</bool>
-            </property>
-        </widget>
-    </widget>
-    <widget class="QTabWidget">
-        <property name="name">
-            <cstring>hve_HV_tabWidget</cstring>
-        </property>
-        <property name="geometry">
-            <rect>
-                <x>0</x>
-                <y>118</y>
-                <width>460</width>
-                <height>350</height>
-            </rect>
-        </property>
-        <widget class="QWidget">
-            <property name="name">
-                <cstring>tab</cstring>
-            </property>
-            <attribute name="title">
-                <string>HV</string>
-            </attribute>
-            <widget class="QTable">
-                <column>
-                    <property name="text">
-                        <string>Name</string>
-                    </property>
-                </column>
-                <column>
-                    <property name="text">
-                        <string>HV Demanded</string>
-                    </property>
-                </column>
-                <column>
-                    <property name="text">
-                        <string>HV Measured</string>
-                    </property>
-                </column>
-                <column>
-                    <property name="text">
-                        <string>Current Measured</string>
-                    </property>
-                </column>
+            <widget class="QPushButton">
                 <property name="name">
-                    <cstring>hve_HV_table</cstring>
+                    <cstring>hve_Scale_pushButton</cstring>
                 </property>
-                <property name="geometry">
-                    <rect>
-                        <x>0</x>
-                        <y>0</y>
-                        <width>460</width>
-                        <height>330</height>
-                    </rect>
+                <property name="font">
+                    <font>
+                        <bold>1</bold>
+                    </font>
                 </property>
-                <property name="resizePolicy">
-                    <enum>Manual</enum>
+                <property name="text">
+                    <string>Scale by factor</string>
                 </property>
-                <property name="vScrollBarMode">
-                    <enum>Auto</enum>
+                <property name="toolTip" stdset="0">
+                    <string>scales the selection by the factor of the combobox next to this button</string>
                 </property>
-                <property name="hScrollBarMode">
-                    <enum>Auto</enum>
+            </widget>
+            <widget class="QComboBox">
+                <item>
+                    <property name="text">
+                        <string>1.0</string>
+                    </property>
+                </item>
+                <item>
+                    <property name="text">
+                        <string>1.05</string>
+                    </property>
+                </item>
+                <item>
+                    <property name="text">
+                        <string>1.1</string>
+                    </property>
+                </item>
+                <item>
+                    <property name="text">
+                        <string>1.5</string>
+                    </property>
+                </item>
+                <property name="name">
+                    <cstring>hve_Scale_comboBox</cstring>
                 </property>
-                <property name="numRows">
-                    <number>15</number>
+                <property name="sizePolicy">
+                    <sizepolicy>
+                        <hsizetype>1</hsizetype>
+                        <vsizetype>0</vsizetype>
+                        <horstretch>2</horstretch>
+                        <verstretch>0</verstretch>
+                    </sizepolicy>
                 </property>
-                <property name="numCols">
-                    <number>4</number>
+                <property name="minimumSize">
+                    <size>
+                        <width>0</width>
+                        <height>24</height>
+                    </size>
                 </property>
-                <property name="showGrid">
+                <property name="editable">
                     <bool>true</bool>
                 </property>
             </widget>
-        </widget>
-        <widget class="QWidget">
-            <property name="name">
-                <cstring>tab</cstring>
-            </property>
-            <attribute name="title">
-                <string>Current Limit</string>
-            </attribute>
-            <widget class="QTable">
-                <column>
-                    <property name="text">
-                        <string>Name</string>
-                    </property>
-                </column>
-                <column>
-                    <property name="text">
-                        <string>Current Measured</string>
-                    </property>
-                </column>
-                <column>
-                    <property name="text">
-                        <string>Current Limit</string>
-                    </property>
-                </column>
-                <property name="name">
-                    <cstring>hve_currentLimit_table</cstring>
-                </property>
-                <property name="geometry">
-                    <rect>
-                        <x>0</x>
-                        <y>0</y>
-                        <width>460</width>
-                        <height>330</height>
-                    </rect>
-                </property>
-                <property name="numRows">
-                    <number>15</number>
-                </property>
-                <property name="numCols">
-                    <number>3</number>
-                </property>
-            </widget>
-        </widget>
+        </hbox>
     </widget>
 </widget>
 <menubar>
@@ -999,7 +1097,7 @@
             <string>&amp;Open...</string>
         </property>
         <property name="accel">
-            <number>4194383</number>
+            <string>Ctrl+O</string>
         </property>
     </action>
     <action>
@@ -1016,7 +1114,7 @@
             <string>&amp;Save</string>
         </property>
         <property name="accel">
-            <number>4194387</number>
+            <string>Ctrl+S</string>
         </property>
     </action>
     <action>
@@ -1033,7 +1131,7 @@
             <string>&amp;Print...</string>
         </property>
         <property name="accel">
-            <number>4194384</number>
+            <string>Ctrl+P</string>
         </property>
     </action>
     <action>
@@ -1050,7 +1148,7 @@
             <string>E&amp;xit</string>
         </property>
         <property name="accel">
-            <number>0</number>
+            <string></string>
         </property>
     </action>
     <action>
@@ -1064,7 +1162,7 @@
             <string>&amp;Contents...</string>
         </property>
         <property name="accel">
-            <number>0</number>
+            <string></string>
         </property>
     </action>
     <action>
@@ -1078,7 +1176,7 @@
             <string>&amp;Index...</string>
         </property>
         <property name="accel">
-            <number>0</number>
+            <string></string>
         </property>
     </action>
     <action>
@@ -1092,7 +1190,7 @@
             <string>&amp;About HVEdit</string>
         </property>
         <property name="accel">
-            <number>0</number>
+            <string></string>
         </property>
     </action>
     <action>
@@ -1106,7 +1204,7 @@
             <string>Connect to Experiment</string>
         </property>
         <property name="accel">
-            <number>4194371</number>
+            <string>Ctrl+C</string>
         </property>
     </action>
     <action>
@@ -1120,7 +1218,7 @@
             <string>Disconnect from Experiment</string>
         </property>
         <property name="accel">
-            <number>4194372</number>
+            <string>Ctrl+D</string>
         </property>
     </action>
     <action>
@@ -1134,25 +1232,25 @@
 </actions>
 <images>
     <image name="image0">
-        <data format="XPM.GZ" length="1301">789c7dd3c16ec3200c00d07bbe0225b7685ab754d1344dfd84553d569a7a004cb41dba496b76a8a6fe7b3184c410839503264f2606b269c5f1f02eda4d7519e5f8a585fe94bfa285bff3f9fa71dafd57f5b613f67911cff543553f0a2df63fdf06c760c7cd930b4c0da6bdec5f7b89a9c454f7baf36f35a6c31070e3539cc054857418dc2a349a25e434553032671892370b490d47728692c4b0843731890d4f389392c864c8daac446492324aa99c9991d2bad457c978e50b8135c0994000c0586300d8b51c3136d07894f6eeabccc6aa555fee5b1c614d4238433a8a8c45c190dd2b99b0c139430f6a32218289af04640cbd3510136faca0d7861a0826bd7a00b4ccfa7fa70898338dd4040a86467d7babeef52d1c33</data>
+        <data format="XPM.GZ" length="1301">789c7dd3c16ec2300c00d07bbf226a6f151a6c083169e213401c274d3b2471aaedc0260d3820c4bfcf4e1a7052276e0f71fae4d4693aefd5fb7eabfa79733ce9d3b755f64bffa91ece87c3e5e373736ddae58bc27bad9edb59d33e29ab76bf3f8ec680e36ee1835247e9ea952e4a35a516233cb5940e43c45d4869825213d361f0abf0e81ea1c7a98ad1252390b27990dc48a46438c98c48649392d4c8443239494c814ccd4424262b638c29993b32d6d6faaa99a042214003928904001c1a0720aee589c3201350de7ba87237a8267df977f1443419910ceb283188a261bb573371834b867fa8d1c488263d125030fcd4404a8241c18f0d37104d7ef4007899e9ffce1108df345123a8181eededadf907292b1c3f</data>
     </image>
     <image name="image1">
-        <data format="XPM.GZ" length="2365">789c8dd4d94edb401406e0fb3c45c4dca1ea103b5e55f582b05308841daa5e8c3de32c246c096bd577eff139679c1022350c16fa3cffef9938366babf5abe3c3faea5a6d3cd1937e5ecf7bfaa9be6a9e47a3f75fbf7ffca9adf87e1d7fe3b4eeaf7cabad7426f5bcdebebfb325402154837e4aab41e9c00bd3c0235bb20e0d1b92ca9ae6153bf2c4437128ee970efdb011d2e270c18e52f11e3bf6d8aa4bd69191f96b769c86743d782a1df9959fc5463c728eb8bfc54e3cf11d593bab91388db85f880d5bddb2534f6c4ac7cdc8c44dca3fb25d1ed6d92e0fb9b3e45371c8565a9c8a69fd3873f3e089dd7caf7246f39762b71fbf32cf37d9da135f8943f14de9a4199b84fba7ec24141fb35d5f6562d70f9c25df116bf1bed88a0fc85992267cbd9c5de543b1cb9f54e6f57eb2335fe65b95797e2c8ee4fa503a0d12930634bfcd4e3d712c0ec51b6cd7874db1164f9c25ff42ced334cdc9f76223a6f74907dad39ccfd8f8b8b0e9fdd2b9d69af37d76354fcf4716689bb123b2c9a2cc901b622d3e2a9d8799cd43f2393b8fc4676483e6fca1d88adba54d985bc3f95db23591e1ff173b622d7e155bf17b698b691b91dfd8d6177f8823f103d95a6db93f145b31bd7f4554f805e7e9f92f0a3c5390bb622d36e282dd992c3fa67950b363a9bca66c06f9b433dffc943738ac748ac5ab7dca77a147879d59a7ef9ad37c759d01dcc2108f720ce84c1f5bd9ec0e253f823b3a730f0f33833b8fd4eae3df69fe09c63081679a7f81577883773cdee003559e5ba7869ad94f0bc7066cc216691b7660578e57e9642e4f9f750ff671b4e02776789d033884361d6d38fa9257700c1d1c27d818e318d1b9533883733c069ff3d4b8804bec5c51ab45ad6beadc4003ef839aeebf7a1a3c1c3e3421c04648bbe3752288e7af4f8d04ef734aade64c4b8155b0308f43a9b2a334aee343a03285df9432f839bee4673a16eff7ba2aa8d5545dfa0c73fb9fefe0de0a5aa9877741a9fee2ebcfad338047758b9de1fcf7b568b875d40872b5447e761dec144afd3f3fff9e2e939f7b1fff7eaffd0376783802</data>
+        <data format="XPM.GZ" length="1082">789c6d914b6f82401845f7fe0ae2b7338defaaa4e9425db7e9b249d3050ce313c41151b1e97fefdc0b145ff7b2e0e4702724d36a389f1f6f4ea3554bf6de7ea91cb5f0764e2348a328fbfa7efda9d5bb5dc73ebd8ed3a93fd5ea4d4739eff146e35decbbb419e014d81fa0c03151a3c08c3843815be0f308054e80830e0a5c1319a0cad175735c105d14b8246a1478060ebb2830058efa28d0100314180379124f0e890cd0cf51a91c57448d0235d01ba2400fe8b751e089e8a2c03d507551e09138408107a28f027744069800831e0a8c880a056e80fa1905ce890c70069c0d51604064789b0f5318c9f3c87822bea2931b1304ba70e5b432a52ba634f84ccfe6f67fe06ce868164b91d59cb14ed1e566edfb0b9130da20215d61240c79441c31d615a6295b63c2183bb34b7649b2af8c1863e29867a687e341ff1b3b524671b7b6eeb4ba30f67e52ab6213dadd29ae4c53b2fcea20455f19a14b53abe49c5e18ba3156a99ac8b5a9764ab21b4337b52e933b53eeee37d52e7b60ca9b7f64cadbfe7da9fd01e5a6fb7d</data>
     </image>
     <image name="image2">
-        <data format="XPM.GZ" length="1247">789c95d24b6fda401007f03b9fc2626fa84af0ee1adbaa7a0821ef807aac14f5b00f131e312480499ca8dfbd9e995de28ddaaa1923e19f66ffb366cd712ffaf17d1cf58e3bdb9ddacd4d64666a13f56c5596f5ddcf6f6f9d2ee751f3913c8abb5f3adda3c84493f5aa807bd6dcb33e16f00618675c12b78e19f116c8fb9e95a321ee89c28dda00452cb218b973341c7981cc85143970ed981167c4c48d7a00ca262bf1f9a744d927ae887ef1c4312716c001cf12e2d8d1751f1d2df11aa97c7749cc63e2333015039b0ae02b318d89a7489d26a906ce1d73e21551b9c758382ae21930135992e12845cc2dfd404bd49c8eee05a99bc538b924faeed3817892f78e03a2f61438f904a8a48a9504d648a39432c073c78238046aa9b9c6c523a4d54a5be025d024ba3009d000a758f897fb63f90e0baad551dab4ca1687cef47e66e654cdb7592c99ef3c94ab76a6d559978b20f3d8ca2cfe9679c28cf954e64327c80415ecb3793f816d9861bb6adf5ccf2ff59685fbb00aebf56458b10f993d664eeb51c5c27d5ce6ec7c14642eaccfd4c3cb8a5d5d1f3a47c592dddcfa8b8d27fff3e6fef1b63fd5f9f5b5f31b43b22525</data>
+        <data format="XPM.GZ" length="932">789c95d1414f83300005e03bbfa2a1376236a00b93187f82c6a389f1505a4ad956d8601e8cf1bfcb6b03523316f7de92f5cba3175847e4f5e58944eba03ff3732d88d0bc2391fc30e6f3edfdf12b08d394e0979024bc0bc21511e4b96d4a9ce970a6b10d583b32e6d883890db803598c82da928d0f2bc72c733c596e50b0b4942828c12ccb73f7f01edca628585916287804ef372878b09428c8c17c086360e12884a301f916051bb08851b0b5cc51b003458a82025436f6bd5dccb8502fb3851762162ea7a52c94a85c867f21259d16aee677bc452ede91d7ef885bef2c2e7ee68bfe7d03b5bfd09d46f60753d33f8b768b69f4e5a532edc2726cfce5342da6e9bc65359c7b3d964af59f2f77e56bdfb47c3f043f9dcae2e6</data>
     </image>
     <image name="image3">
-        <data format="XPM.GZ" length="2205">789cb5d3c96edb301006e0bb9f42886e4131b1364a44d143f63db1b327450f1449657556395bd1772fc9190ab662b705da6642101ff87334dee6668393de76303bd779aa457d290379211e8359351c0cdebe7efbf2bd3313c781f9673c88673e7566fa7520839dbb5b6d01ca20ecba3fe733b462e455eb98c769cc9da5751225dd2472be72e64991e079499664619d46894c311f3a8bb448857528c93ebf609d892cc3735821f30cbd6ccd04e30cbd649d27799627ae1f3897b962eec5866e9e22292234f0c6f87c41cec86ebea2f48645efa274ceac795a287c1edca179c653e76367c9798ef94b6f2e9db7c88ace6fad452a2281f77bce526405f67f260b81f773b2a6790aeb326d9ca0cb989c9219cd173babc6afdef4fc79b22895f3295953be6b2d33639c8779d3fd43b48ce93cf2a6f33d32a3f3a1b7cc9c8f9c5573bee65de2fd5db2a07e0fde12e7dd26fb79fa8db1dfbeb5ca9aeffb0ebac99f78d3f306de0ae7bb40ab985c9119f9c05937fd37d04a50bfcdc6386fedadf0f7f84ed6e4756bcd94a6f7e7cd5b33e71767ad85c6fc2359939fac2ba67585f97b741593afc98c7ce35c1957cee76441d6e40addafffbcfe260f210853252d09ea37f912f44855a03ede18cb0b381fa90b93bf6cdf18cb5f99d435dcd01a98fc2ddc8ddf68f5b7c97b5a0f761eaca9fdefe1119e68d530347786f03c352fe065420d27e7e1d5f47f335ddf5b6bde4cb4d0cec3222cc1f2d45a81d5567e0dd66103365d4ddab746f3a6f7266cc30eec4e5d3d7c15945f863eecc13e1cc0a1d90fe1e8c37edcca9fc0299c99ea9a7dd26ae723882181d4acc97b36965f0106391453570ff868be5f871086c0431196a198b043283f7c5eea57f52f7e5fff25ffe373e72750f440ab</data>
+        <data format="XPM.GZ" length="1082">789c95d14b6f82401405e03dbf62223bd3f8c08a9aa60b75dda6cb264d17700147647c01cad8f4bf977329086ad3f61c49fc7254e2d06d8bd79727d1ee1a71e2244b12249dbd687ba952faedfdf1c3685996c85f83bee8b7ee8c56479078deac7dbccf3f2ccc1e079c15242a7800ad010abae0a087820ed3434113bcb75170c70c5030058763144c407b82823138b25070ce7451700f8e3d145c82fc55be51c6cc6333839213fee513d34741093a23145c836e0f05b7cc090a1e41b25050316d149c32a93c3a5d90a8b86f589208f4413e2a3ec9884928b801fd210aae981c7001062314f4981c7e9a37f3fb623a1c97ae16c7e3f8443f2e015d2d0bd427b9a48b85072fe4a3b8585668a442252f965515d558d6ce262ab3a5dd79d9c7493de9a15a8e51989fe3f9caca25f6753327fa5e12ada7d3fa92558bd2b3d9ed456b2965edaa96549f64a3f372e9c4d9bc9ed83cff536ae66fcff45fcbe783f105c21a106f</data>
     </image>
     <image name="image4">
         <data format="XPM.GZ" length="661">789cd3d7528808f055d0d2e72a2e492cc94c5648ce482c52d04a29cdcdad8c8eb5ade6523232520022630543251d2e253d856405bffcbc54105b19c8564e4b330002103711c20501b04aac005946190c306594e1004d46191920c9282b1329a30c97017112132182101a5526118982cac01427c225805248322051b804aa8c329204b132384dc3e602dcaec6e353dca1832d48b1ca101b7378621b2385d45a730100ef6d772d</data>
     </image>
     <image name="image5">
-        <data format="XPM.GZ" length="1367">789cb5d15b4fe24014c0f1773e45c3bc118394b6d866b30f2a5e908b78cd261b1fa6d3026d2d28140b9afdee3b67ce990115927dd98187fef2efa17038ac59bf867dab76585914bc488425267c6ed5a2659eaf7f3ffdfca8549b4d4bbebd8665570f2ad5ba25acc16c1ac33593d7aca10ef002e9f8c853a2400e91ad007985f46d648fe821df9101d51b22d537227dd41d3142de2239cdae881cd9478631f212295ac82e916e6e13e9e61219359105916633455f6f630db4cd726245535f808e1d048eda6aa818e8fa0a74ed88bbaa2e883172aec82539b0033c72f4ec39d0371c2b869a8fc0c0d59c115de489a2d035027273f340d1d425d16df8408e741af88bce80a199bd060a4f73a41869a6c0c8d44431d6bc27d2831e883e728a745c2700e648d7c55d1d03e396a63054ab9b107de433d20b3cc5facef3df0adb5b78b8a7c815c6fbca68ccbe16a6ce2449c719a383853de742bea66992ceb297d7f962be2818963c49f56b19be954551aca8887493a2f57bb929c79b908c4e4edb3b674667e71797a529f956e86457ddf2fb8c0cacd76f7f7f0e4cf4faddadef960ee4b95613c39bdb953c776c7b07f732b0cf3ba0bd3d74d8ee8dd61fb37ffde7fefca8fc05f4db29e5</data>
+        <data format="XPM.GZ" length="887">789cb591c14ac4301086ef7d8ad0dc8ab8ee06ca96c547503c0ae2a19d74b6dda6eda2eb41c47737d33f95ba6cc48b7f7ac8d72fc9c0cc2a538f0f772a5b25afa7f2d492a2a67c51997debfbf7a7e7db8f24dd6c94ffd65bb54eaf92f45a91ba1f875af6daeff5cd14c11e680cf008cc73a0031605700452b8db0524603de15696602528efc2b6c0a23046f00024020e82521587ada05405964063709805a52a6c039c2d0932cfb807e63e532b2ee6df8c8e9ab28a184db68e19b6fadce829c45ecd81d1fb86fc6a58547b90741a46fe85d8ca753e2e18e285aa5dc4b0edff64167578d091d7bc182f9a20be0d5b1f88a343f4b20722ce7a10fae645640af6e7807e99dce72ef902821aca7c</data>
     </image>
     <image name="image6">
-        <data format="XPM.GZ" length="1262">789cb5d14d5382401807f0bb9f82716f4e532a68304d072bb34cad63334d876541054345b0d2a6efde3e2fbb6a766d8781e7c77f778187b39af3fc34746a6795a29465a21c35952ba716adb36cf3f27af955a9369b8e3e3cd769544f2ad5534739a3c53c865ae85ad47100af89ae4fdc3015f181d80e88b744bf41bc63b688efc480d31593d70e9811b1244a49bc278631f186a8dac41e93276f993cb920464d62cee4b533a46fbe770d6cd8cf8f91360d816e60b8047a8d28f6b08d0ba4d494c02ef0dc3593af80bee504191a3e0203cf70cef4889f4865d20828ede43ed2a692e8d65d7cab0e30b493c7401519a6c0a865982063c321d3abfbc011d3276644cfa3cfff00c66d436589dd98327de21bb115b490a77f8e7f48848052d89b684ea094a10d6c82b5ee59bc1798e76809359e885d6077d3639aa49399e0418978cb54a69526e95c5f16cbc53217946489be89913ead8a3ccf4b4e54ca911ed1fabdd8251f898d92f1e766fb7b0d6c25c69dabeb9bc226990d84e8ce6e7bc5e11adc4a9feeeeb787cfc1a0d3d597dedebba5fdbe091e745196e540ecf760882b0e7ac01d1d75c55147a97e9c1dff85bfffdcf745e5073c900750</data>
+        <data format="XPM.GZ" length="872">789cb591c14e84301086ef3c45c3dc8871dd6d826e363e82c6a389f1c04ee9165820d1f5608cefee4c7f40943d787120305f3f3a2dd355661e1fee4cb64a5e4fc5a962c3a17831997b6bdbf7a7e7db8f24dd6c8cdceb6bb34e2f92f4d2b0b9efbb5273929cae62281e81d6027b609e031be0760bec803cccad07646019f1462fc5bda2d685ad80ccd62ab68aba0cac53d4658005d05a7cec157519d8001c2d2b7a3fe201984bc47f3f1bff608834a56930f260342df693984ccc895d3913e33a42c4ded1b798aa45236a0c183a040e421eaa92a80926c8988f4a1e4d2dd10c86fda0245cd92c4c5452f0f8271366d55a5a549b76d0fd32d8752baff9debc73a3e8759604cd7b80193f7a307454c4a2a3c81d2d4fe1fcc97dee922f88f7b943</data>
     </image>
 </images>
 <connections>
@@ -1288,31 +1386,45 @@
         <receiver>Qt_hvEdit_Base</receiver>
         <slot>fileOpen()</slot>
     </connection>
+    <connection>
+        <sender>hve_Scale_pushButton</sender>
+        <signal>clicked()</signal>
+        <receiver>Qt_hvEdit_Base</receiver>
+        <slot>onScale()</slot>
+    </connection>
+    <connection>
+        <sender>hve_Input_comboBox</sender>
+        <signal>activated(int)</signal>
+        <receiver>Qt_hvEdit_Base</receiver>
+        <slot>onSet()</slot>
+    </connection>
 </connections>
 <slots>
-    <slot>fileOpen()</slot>
-    <slot>fileSave()</slot>
-    <slot>fileSaveAs()</slot>
-    <slot>filePrint()</slot>
-    <slot>fileExit()</slot>
-    <slot>helpIndex()</slot>
-    <slot>helpContents()</slot>
-    <slot>helpAbout()</slot>
+    <slot access="protected">fileOpen()</slot>
+    <slot access="protected">fileSave()</slot>
+    <slot access="protected">fileSaveAs()</slot>
+    <slot access="protected">filePrint()</slot>
+    <slot access="protected">fileExit()</slot>
+    <slot access="protected">helpIndex()</slot>
+    <slot access="protected">helpContents()</slot>
+    <slot access="protected">helpAbout()</slot>
     <slot>connectToExp()</slot>
     <slot>disconnectFromExp()</slot>
-    <slot>changedDeviceSelection()</slot>
-    <slot>onSelectAll()</slot>
-    <slot>onZero()</slot>
-    <slot>onSwitchAllChannelsOff()</slot>
-    <slot>onRestore()</slot>
-    <slot>onM100()</slot>
-    <slot>onM010()</slot>
-    <slot>onM001()</slot>
-    <slot>onP001()</slot>
-    <slot>onP010()</slot>
-    <slot>onP100()</slot>
-    <slot>onSet()</slot>
-    <slot>helpAboutQt()</slot>
+    <slot access="protected">changedDeviceSelection()</slot>
+    <slot access="protected">onSelectAll()</slot>
+    <slot access="protected">onZero()</slot>
+    <slot access="protected">onSwitchAllChannelsOff()</slot>
+    <slot access="protected">onRestore()</slot>
+    <slot access="protected">onM100()</slot>
+    <slot access="protected">onM010()</slot>
+    <slot access="protected">onM001()</slot>
+    <slot access="protected">onP001()</slot>
+    <slot access="protected">onP010()</slot>
+    <slot access="protected">onP100()</slot>
+    <slot access="protected">onSet()</slot>
+    <slot access="protected">helpAboutQt()</slot>
+    <slot access="protected">onScale()</slot>
+    <slot access="protected">onSetSingle(int, int)</slot>
 </slots>
 <layoutdefaults spacing="6" margin="11"/>
 </UI>
