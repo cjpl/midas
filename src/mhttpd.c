@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.284  2004/12/17 08:11:01  midas
+  Define finite() as _finite() under Windos
+
   Revision 1.283  2004/12/17 08:08:18  midas
   Fixed missing finite() under Windows
 
@@ -866,11 +869,16 @@
 \********************************************************************/
 
 #include <math.h>
-#include <float.h>
 #include <assert.h>
 #include "midas.h"
 #include "msystem.h"
 #include "mgd.h"
+
+/* deal with finite() function */
+#ifdef OS_WINNT
+#include <float.h>
+#define finite(x) _finite(x)
+#endif
 
 /* refresh times in seconds */
 #define DEFAULT_REFRESH 60
@@ -7869,7 +7877,7 @@ void generate_hist_graph(char *path, char *buffer, int *buffer_size,
          }
 
          /* avoid NaNs */
-         if (!_finite(y[i][j]))
+         if (!finite(y[i][j]))
             y[i][j] = 0;
 
          /* avoid overflow */
