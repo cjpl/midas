@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.68  2001/11/20 16:14:37  midas
+  Corrected "data:" format in sendmail
+
   Revision 1.67  2001/11/20 12:24:36  midas
   Add more spaces between attachments in find result page
 
@@ -591,6 +594,7 @@ int                  s;
 char                 buf[80];
 char                 str[10000];
 time_t               now;
+struct tm            *ts;
 
   if (verbose)
     printf("\n\nEmail from %s to %s, SMTP host %s:\n", from, to, smtp_host);
@@ -648,9 +652,9 @@ time_t               now;
   if (verbose) puts(str);
 
   time(&now);
-  snprintf(buf, sizeof(buf) - 1, "%s", ctime(&now));
-  buf[strlen(buf)-1] = '\0';
-  snprintf(str, sizeof(str) - 1, "Date: %s\r\n\r\n", buf);
+  ts = localtime(&now);
+  strftime(buf, sizeof(buf), "%a, %d %b %Y %H:%M:%S", ts);
+  snprintf(str, sizeof(str) - 1, "Date: %s %+03d%02d\r\n\r\n", buf, -timezone/3600, (-timezone/60) % 60);
   send(s, str, strlen(str), 0);
   if (verbose) puts(str);
 
