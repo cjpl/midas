@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol main program
 
   $Log$
+  Revision 1.5  2002/07/10 09:52:55  midas
+  Finished EEPROM routines
+
   Revision 1.4  2002/07/09 15:31:32  midas
   Initial Revision
 
@@ -21,6 +24,7 @@
 \********************************************************************/
 
 #include <stdio.h>
+#include <string.h>
 #include "mscb.h"
 
 /* bit definitions */
@@ -82,6 +86,7 @@ sbit WD_RESET       = CSR ^ 3;   // got rebooted by watchdog reset
 
 bit addressed;                   // true if node addressed
 bit new_address, debug_new_i, debug_new_o;    // used for LCD debug output
+bit flash;                       // used for EEPROM flashing
 
 /*------------------------------------------------------------------*/
 
@@ -111,15 +116,6 @@ unsigned char i;
 
 #endif
 
-  /* Blink LED */
-  for (i=0 ; i<3 ; i++)
-    {
-    LED = 1;
-    delay_ms(100);
-    LED = 0;
-    delay_ms(200);
-    }
-
   /* init memory */
   CSR = 0;
   LED = 0;
@@ -128,7 +124,23 @@ unsigned char i;
   uart_init(BD_345600);
 
   /* retrieve EEPROM data */
-  eeprom_read(&sys_info, sizeof(sys_info), 0);
+  eeprom_retrieve();
+
+  /* correct initial value */
+  if (sys_info.wd_counter == 0xFFFF)
+    {
+    sys_info.wd_counter = 0;
+
+    // init channel variables
+    for (i=0 ; channel[i].width ; i++)
+      memset(channel[i].ud, 0, channel[i].width);
+  
+    // init configuration parameters 
+    for (i=0 ; conf_param[i].width ; i++)
+      memset(conf_param[i].ud, 0, conf_param[i].width);
+
+    eeprom_flash();
+    }
 
   /* check if reset by watchdog */
 #ifdef CPU_ADUC812
@@ -140,13 +152,24 @@ unsigned char i;
     {
     WD_RESET = 1;
     sys_info.wd_counter++;
-    // eeprom_write();
+    eeprom_flash();
     }
 
   lcd_setup();
   lcd_clear();
-  printf("AD:%04X GA:%02X WD:%d", sys_info.node_addr, 
+  printf("AD:%04X GA:%04X WD:%d", sys_info.node_addr, 
           sys_info.group_addr, sys_info.wd_counter);
+
+  /* Blink LED */
+  for (i=0 ; i<5 ; i++)
+    {
+    LED = 1;
+    delay_ms(100);
+    LED = 0;
+    delay_ms(200);
+    }
+
+  lcd_clear();
 
   /* call user initialization routine */
   user_init();
@@ -424,7 +447,7 @@ MSCB_INFO_CHN code *pchn;
       sys_info.group_addr = *((unsigned int*)(in_buf+3));
 
       /* copy address to EEPROM */
-
+      flash = 1;
 
       /* output new address */
       new_address = 1;
@@ -443,6 +466,18 @@ MSCB_INFO_CHN code *pchn;
       break;
 
     case CMD_TRANSP: // TBD...
+      break;
+
+    case CMD_FLASH:
+
+      flash = 1;
+
+      /* send acknowledge */
+      out_buf[0] = CMD_ACK;
+      out_buf[1] = in_buf[i_in-1];
+      n_out = 2;
+      RS485_ENABLE = 1;
+      SBUF = out_buf[0];
       break;
 
     case CMD_READ:
@@ -554,8 +589,10 @@ void main(void)
     watchdog_refresh();
     user_loop();
 
+    /* output debug info to LCD if asked by interrupt routine */
     debug_output();
-    
+
+    /* output new address to LCD if available */
     if (new_address)
       {
       new_address = 0;
@@ -563,6 +600,14 @@ void main(void)
       printf("AD:%04X GA:%04X WD:%d", sys_info.node_addr, 
               sys_info.group_addr, sys_info.wd_counter);
       }
+
+    /* flash EEPROM if asked by interrupt routine */
+    if (flash)
+      {
+      flash = 0;
+      eeprom_flash();
+      }
+
     } while (1);
   
 }
