@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.73  2000/10/23 14:19:05  midas
+  Added idle period for slow control equipment
+
   Revision 1.72  2000/09/29 13:31:10  midas
   ODBEdit cleanup now deletes open record with no client attached to
 
@@ -966,6 +969,7 @@ typedef struct eqpmnt {
   void   *cd_info;                      /* private data for class driver   */
   INT    status;                        /* One of FE_xxx                   */
   DWORD  last_called;                   /* Last time event was read        */
+  DWORD  last_idle;                     /* Last time idle func was called  */
   DWORD  poll_count;                    /* Needed to poll 'period'         */
   INT    format;                        /* FORMAT_xxx                      */
   HNDLE  buffer_handle;                 /* MIDAS buffer handle             */

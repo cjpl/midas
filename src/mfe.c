@@ -7,6 +7,9 @@
                 linked with user code to form a complete frontend
 
   $Log$
+  Revision 1.29  2000/10/23 14:19:06  midas
+  Added idle period for slow control equipment
+
   Revision 1.28  2000/09/28 13:16:02  midas
   Fixed bug that MANUAL_TRIG only events are not read out during transitions
 
@@ -385,10 +388,13 @@ BOOL   manual_trig_flag = FALSE;
     sprintf(str, "/Equipment/%s/Common", equipment[index].name);
     
     /* get last event limit from ODB */
-    db_find_key(hDB, 0, str, &hKey);
-    size = sizeof(double);
-    if (hKey)
-      db_get_value(hDB, hKey, "Event limit", &eq_info->event_limit, &size, TID_DOUBLE);
+    if (eq_info->eq_type != EQ_SLOW)
+      {
+      db_find_key(hDB, 0, str, &hKey);
+      size = sizeof(double);
+      if (hKey)
+        db_get_value(hDB, hKey, "Event limit", &eq_info->event_limit, &size, TID_DOUBLE);
+      }
     
     /* Create common subtree */
     status = db_create_record(hDB, 0, str, EQUIPMENT_COMMON_STR);
@@ -1013,13 +1019,24 @@ INT opt_max=0, opt_index=0, opt_tcp_size=128, opt_cnt=0;
       if (!eq_info->enabled)
         continue;
 
-      if (equipment[index].status != FE_SUCCESS)
+      if (eq->status != FE_SUCCESS)
         continue;
 
       /*---- call idle routine for slow control equipment ----*/
       if ((eq_info->eq_type & EQ_SLOW) &&
-          equipment[index].status == FE_SUCCESS)
-        equipment[index].cd(CMD_IDLE, &equipment[index]);
+          eq->status == FE_SUCCESS)
+        {
+        if (eq_info->event_limit>0 && run_state == STATE_RUNNING)
+          {
+          if (actual_time - eq->last_idle >= (DWORD) eq_info->event_limit)
+            {
+            eq->cd(CMD_IDLE, eq);
+            eq->last_idle = actual_time;
+            }
+          }
+        else
+          eq->cd(CMD_IDLE, eq);
+        }
 
       if (run_state == STATE_STOPPED && (eq_info->read_on & RO_STOPPED) == 0)
         continue;
@@ -1059,7 +1076,7 @@ INT opt_max=0, opt_index=0, opt_tcp_size=128, opt_cnt=0;
           pevent->serial_number = eq->serial_number++;
 
           /* call user readout routine */
-          *((EQUIPMENT **)(pevent+1)) = &equipment[index];
+          *((EQUIPMENT **)(pevent+1)) = eq;
           pevent->data_size = eq->readout((char *) (pevent+1), 0);
 
           /* send event */
@@ -1252,7 +1269,8 @@ INT opt_max=0, opt_index=0, opt_tcp_size=128, opt_cnt=0;
         }
 
       /*---- check if event limit is reached ----*/
-      if (eq_info->event_limit > 0 &&
+      if (eq_info->eq_type != EQ_SLOW &&
+          eq_info->event_limit > 0 &&
           eq->stats.events_sent + eq->events_sent >= eq_info->event_limit &&
           run_state == STATE_RUNNING)
         {
