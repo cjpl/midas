@@ -6,6 +6,9 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
+  Revision 1.5  1999/02/05 23:39:39  pierre
+  - Add commented function print_rpc_string(index)
+
   Revision 1.4  1999/01/21 23:10:23  pierre
   - change ss_create_thread() to ss_thread_create()
 
@@ -25,6 +28,91 @@
 /* critical section object for open/close buffer */
 CRITICAL_SECTION buffer_critial_section;
 #endif
+
+typedef struct {
+  char name[32];
+  int  code;
+  } RPC_NAME;
+RPC_NAME rpc__list[] = {
+ {"RPC_CM_SET_CLIENT_INFO"          ,11000}
+,{"RPC_CM_SET_WATCHDOG_PARAMS"      ,11001}
+,{"RPC_CM_SET_CLIENT_INFO"          ,11000}
+,{"RPC_CM_SET_WATCHDOG_PARAMS"      ,11001}
+,{"RPC_CM_CLEANUP"                  ,11002}
+,{"RPC_CM_GET_WATCHDOG_INFO"        ,11003}
+,{"RPC_CM_MSG_LOG"                  ,11004}
+,{"RPC_CM_EXECUTE"                  ,11005}
+,{"RPC_CM_SYNCHRONIZE"              ,11006}
+,{"RPC_CM_ASCTIME"                  ,11007}
+,{"RPC_CM_TIME"                     ,11008}
+,{"RPC_BM_OPEN_BUFFER"              ,11100}
+,{"RPC_BM_CLOSE_BUFFER"             ,11101}
+,{"RPC_BM_CLOSE_ALL_BUFFERS"        ,11102}
+,{"RPC_BM_GET_BUFFER_INFO"          ,11103}
+,{"RPC_BM_GET_BUFFER_LEVEL"         ,11104}
+,{"RPC_BM_INIT_BUFFER_COUNTERS"     ,11105}
+,{"RPC_BM_SET_CACHE_SIZE"           ,11106}
+,{"RPC_BM_ADD_EVENT_REQUEST"        ,11107}
+,{"RPC_BM_REMOVE_EVENT_REQUEST"     ,11108}
+,{"RPC_BM_SEND_EVENT"               ,11109}
+,{"RPC_BM_FLUSH_CACHE"              ,11110}
+,{"RPC_BM_RECEIVE_EVENT"            ,11111}
+,{"RPC_BM_MARK_READ_WAITING"        ,11112}
+,{"RPC_BM_EMPTY_BUFFERS"            ,11113}
+,{"RPC_DB_OPEN_DATABASE"            ,11200}
+,{"RPC_DB_CLOSE_DATABASE"           ,11201}
+,{"RPC_DB_CLOSE_ALL_DATABASES"      ,11202}
+,{"RPC_DB_CREATE_KEY"               ,11203}
+,{"RPC_DB_CREATE_LINK"              ,11204}
+,{"RPC_DB_SET_VALUE"                ,11205}
+,{"RPC_DB_GET_VALUE"                ,11206}
+,{"RPC_DB_FIND_KEY"                 ,11207}
+,{"RPC_DB_FIND_LINK"                ,11208}
+,{"RPC_DB_GET_PATH"                 ,11209}
+,{"RPC_DB_DELETE_KEY"               ,11210}
+,{"RPC_DB_ENUM_KEY"                 ,11211}
+,{"RPC_DB_GET_KEY"                  ,11212}
+,{"RPC_DB_GET_DATA"                 ,11213}
+,{"RPC_DB_SET_DATA"                 ,11214}
+,{"RPC_DB_SET_DATA_INDEX"           ,11215}
+,{"RPC_DB_SET_MODE"                 ,11216}
+,{"RPC_DB_GET_RECORD_SIZE"          ,11219}
+,{"RPC_DB_GET_RECORD"               ,11220}
+,{"RPC_DB_SET_RECORD"               ,11221}
+,{"RPC_DB_ADD_OPEN_RECORD"          ,11222}
+,{"RPC_DB_REMOVE_OPEN_RECORD"       ,11223}
+,{"RPC_DB_SAVE"                     ,11224}
+,{"RPC_DB_LOAD"                     ,1225}
+,{"RPC_DB_SET_CLIENT_NAME"          ,11226}
+,{"RPC_DB_RENAME_KEY"               ,11227}
+,{"RPC_DB_ENUM_LINK"                ,11228}
+,{"RPC_DB_REORDER_KEY"              ,11229}
+,{"RPC_DB_CREATE_RECORD"            ,11230}
+,{"RPC_DB_GET_DATA_INDEX"           ,11231}
+,{"RPC_DB_GET_KEY_TIME"             ,11232}
+,{"RPC_DB_GET_OPEN_RECORDS"         ,11233}
+,{"RPC_DB_SHOW_MEM"                 ,11234}
+,{"RPC_DB_FLUSH_DATABASE"           ,11235}
+,{"RPC_DB_SET_DATA_INDEX2"          ,11236}
+,{"RPC_HS_SET_PATH"                 ,11300}
+,{"RPC_HS_DEFINE_EVENT"             ,11301} 
+,{"RPC_HS_WRITE_EVENT"              ,11302}
+,{"RPC_HS_COUNT_EVENTS"             ,11303}
+,{"RPC_HS_ENUM_EVENTS"              ,11304}
+,{"RPC_HS_COUNT_TAGS"               ,11305}
+,{"RPC_HS_ENUM_TAGS"                ,11306}
+,{"RPC_HS_READ"                     ,11307}
+,{"RPC_RC_TRANSITION"               ,12000}
+,{"RPC_ANA_CLEAR_HISTOS"            ,13000}
+,{"RPC_LOG_REWIND"                  ,14000}
+,{"RPC_TEST"                        ,15000}
+,{"RPC_CNAF16"                      ,16000}
+,{"RPC_CNAF24"                      ,16001}
+,{"RPC_ID_WATCHDOG"                 ,99997}
+,{"RPC_ID_SHUTDOWN"                 ,99998}
+,{"RPC_ID_EXIT"                     ,99999}
+,{"", 0}
+  };
 
 INT rpc_server_dispatch(INT index, void *prpc_param[]);
 
@@ -257,6 +345,20 @@ INT rpc_test(BYTE b, WORD w, INT i, float f, double d,
   return 1;
 }
 
+
+/*----- RPC peeper for debugging -----------------------------------*/
+/* see call in rpc_server_displatch */
+void print_rpc_string(INT index)
+{ 
+  INT j;
+  for (j=0; rpc__list[j].name[0]; j++)
+    {
+      if (rpc__list[j].code == index)
+        printf(" call to %i =>  %s \n",index,rpc__list[j].name);
+    }
+}
+
+
 /*----- rpc_server_dispatch ----------------------------------------*/
 
 INT rpc_server_dispatch(INT index, void *prpc_param[])
@@ -286,7 +388,10 @@ INT status;
 INT convert_flags;
 
   convert_flags = rpc_get_server_option(RPC_CONVERT_FLAGS);
-
+  
+/*-PAA- to look at the RPC sequence call
+  print_rpc_string(index); */
+  
   switch (index)
     {
     /* common functions */
