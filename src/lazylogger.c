@@ -6,6 +6,11 @@
   Contents:     Disk to Tape copier for background job
 
   $Log$
+  Revision 1.10  1999/10/18 11:31:47  midas
+  - Fixed problem that lazy_main returned occasionally before releasing mutex
+  - Changed ss_tape_rewind to ss_tape_unload, use increased timeout
+  - Changed al_trigger_class to al_trigger_alarm
+
   Revision 1.9  1999/10/15 23:13:13  pierre
   - Added synchronization on purge between list and source dir
   - fix duplicated copy bug
@@ -1286,12 +1291,12 @@ INT lazy_main (INT channel, LAZY_INFO * pLall)
   if (pdirlog != NULL)   free (pdirlog); pdirlog = NULL;
   if (pdonelist != NULL) free (pdonelist); pdonelist = NULL;
   
+  /***** Release the mutex  *****/
+  status = ss_mutex_release(lazy_mutex);
+
   /* check if backup run is beyond keep */
   if (lazyst.cur_run >= (cur_acq_run - abs(lazy.staybehind)))
     return NOTHING_TODO;
-  
-  /***** Release the mutex  *****/
-  status = ss_mutex_release(lazy_mutex);
 
   /* Compose the proper file name */
   status = lazy_file_compose(lazy.backfmt , lazy.dir , lazyst.cur_run , inffile, lazyst.backfile);
@@ -1343,9 +1348,11 @@ INT lazy_main (INT channel, LAZY_INFO * pLall)
         int channel;
 
         cm_msg(MINFO,"Lazy","backup device rewinding...");
+        cm_set_watchdog_params(TRUE, 300000); /* 5 min for tape rewind */
         ss_tape_open(outffile, O_RDONLY, &channel);
-        ss_tape_rewind(channel);
+        ss_tape_unmount(channel);
         ss_tape_close(channel);
+        cm_set_watchdog_params(TRUE, 120000);
 
         /* Setup alarm */
         lazy.alarm[0] = 0;
@@ -1354,7 +1361,7 @@ INT lazy_main (INT channel, LAZY_INFO * pLall)
       
         /* trigger alarm if defined */
         if (lazy.alarm[0])
-          al_trigger_class(lazy.alarm, "Tape full, Please remove current tape and load new one!", TRUE);
+          al_trigger_alarm("Tape full", "Tape full, Please remove current tape and load new one!", lazy.alarm);
         return NOTHING_TODO;
       }
     }
