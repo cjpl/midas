@@ -1,11 +1,16 @@
 Revision History
 ================
 
-Version 1.9.1, released May 13, 2002
+Version 1.9.1, released May 22, 2002
 ------------------------------------
 
-- Added event fragmentation via EQ_FRAGMENTED
+- Added event fragmentation via EQ_FRAGMENTED and bm_defragment_event
 - Added "/logger/channels/x/settings/Create subdir every" and "Subdir Format"
+- Avoid overwriting of run number in history display if there are many runs
+- Fixed several bugs in history display configuration page
+- Added "/Programs/<name>/Check interval" which can be reduced to auto restart
+  programs faster than every 5 minutes (as it was before)
+- Added extra variables to hs_enum_vars for mhist to display array size
 
 Version 1.9.0, released May 13, 2002
 ------------------------------------
