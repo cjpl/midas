@@ -6,6 +6,10 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.265  2004/03/31 04:57:38  olchansk
+  display PNG image files, same as GIF and JPG. (I remember adding this code before, but now it is gone. What gives?)
+  one more strcpy() -> strlcpy()
+
   Revision 1.264  2004/02/06 00:39:16  pierre
   Update Midas doc links
 
@@ -3338,7 +3342,7 @@ void show_elog_submit_query(INT last_n)
                               ref, attachment[index] + 14);
                   } else {
                      colspan = display_run_number ? 6 : 5;
-                     if (strstr(str, ".GIF") || strstr(str, ".JPG")) {
+                     if (strstr(str, ".GIF") || strstr(str, ".PNG") || strstr(str, ".JPG")) {
                         rsprintf
                             ("<tr><td colspan=%d>Attachment: <a href=\"%s\"><b>%s</b></a><br>\n",
                              colspan, ref, attachment[index] + 14);
@@ -4545,7 +4549,7 @@ void show_elog_page(char *path)
             else
                sprintf(ref, "/EL/%s", attachment[index]);
 
-            if (strstr(att, ".GIF") || strstr(att, ".JPG")) {
+            if (strstr(att, ".GIF") || strstr(att, ".PNG") || strstr(att, ".JPG")) {
                rsprintf
                    ("<tr><td colspan=2>Attachment: <a href=\"%s\"><b>%s</b></a><br>\n",
                     ref, attachment[index] + 14);
@@ -9091,7 +9095,7 @@ void interprete(char *cookie_pwd, char *cookie_wpwd, char *path, int refresh)
    struct tm *gmt;
 
    /* encode path for further usage */
-   strcpy(dec_path, path);
+   strlcpy(dec_path, path, sizeof(dec_path));
    urlDecode(dec_path);
    // ##urlDecode(dec_path); /* necessary for %2520 -> %20 -> ' ' */
    strcpy(enc_path, dec_path);
