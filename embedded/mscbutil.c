@@ -6,6 +6,9 @@
   Contents:     Various utility functions for MSCB protocol
 
   $Log$
+  Revision 1.15  2002/11/20 12:02:39  midas
+  Fixed bug with secondary LED
+
   Revision 1.14  2002/11/06 16:45:42  midas
   Revised LED blinking scheme
 
@@ -431,9 +434,12 @@ static unsigned long _systime  = 0;
 static unsigned char led_pri_n     = 0;
 static unsigned char led_pri_int   = 0;
 static unsigned char led_pri_timer = 0;
+
+#ifdef LED_2
 static unsigned char led_sec_n     = 0;
 static unsigned char led_sec_int   = 0;
 static unsigned char led_sec_timer = 0;
+#endif
 
 /*------------------------------------------------------------------*/
 
@@ -461,6 +467,7 @@ void led_blink(int led, int n, int interval) reentrant
       }
     }
 
+#ifdef LED_2
   if (led == 2)
     {
     if (led_sec_n == 0 && led_sec_timer == 0)
@@ -470,6 +477,7 @@ void led_blink(int led, int n, int interval) reentrant
       led_sec_timer = 0;
       }
     }
+#endif
 }
 
 /*------------------------------------------------------------------*/
@@ -505,6 +513,7 @@ void timer1_int(void) interrupt 3 using 2
   if (led_pri_timer)
     led_pri_timer--;
 
+#ifdef LED_2
   if (led_sec_n)
     {
     if (led_sec_timer == 0)
@@ -519,6 +528,7 @@ void timer1_int(void) interrupt 3 using 2
 
   if (led_sec_timer)
     led_sec_timer--;
+#endif
 }
 
 /*------------------------------------------------------------------*/

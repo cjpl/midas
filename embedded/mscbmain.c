@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol main program
 
   $Log$
+  Revision 1.17  2002/11/20 12:02:25  midas
+  Fixed bug with secondary LED
+
   Revision 1.16  2002/11/06 16:45:42  midas
   Revised LED blinking scheme
 
@@ -181,7 +184,9 @@ unsigned char i;
   /* init memory */
   CSR = 0;
   LED = LED_OFF;
+#ifdef LED_2
   LED_SEC = LED_OFF;
+#endif
   RS485_ENABLE = 0;
   i_in = i_out = n_out = 0;
 
