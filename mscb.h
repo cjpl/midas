@@ -6,6 +6,9 @@
   Contents:     Header fiel for MSCB funcions
 
   $Log$
+  Revision 1.4  2001/08/31 12:23:51  midas
+  Added mutex protection
+
   Revision 1.3  2001/08/31 11:35:20  midas
   Added "wp" command in msc.c, changed parport to device in mscb.c
 
@@ -110,6 +113,7 @@ typedef struct {
 #define MSCB_CRC_ERROR     2
 #define MSCB_TIMEOUT       3
 #define MSCB_INVAL_PARAM   4
+#define MSCB_MUTEX         5
 
 /*---- function declarations ---------------------------------------*/
 
