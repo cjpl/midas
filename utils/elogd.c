@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.22  2001/08/03 12:06:12  midas
+  Fixed bug where categories were wrong when multiple logbooks are used
+
   Revision 1.21  2001/08/03 06:44:48  midas
   Changed mail notification author from "name@host" to "name from host"
 
@@ -2035,6 +2038,7 @@ BOOL   allow_edit;
   /* get optional author list from configuration file */
   if (getcfg(logbook, "Authors", list))
     {
+    memset(author_list, 0, sizeof(author_list));
     p = strtok(list, ",");
     for (i=0 ; p ; i++)
       {
@@ -2050,6 +2054,7 @@ BOOL   allow_edit;
   /* get type list from configuration file */
   if (getcfg(logbook, "Types", list))
     {
+    memset(type_list, 0, sizeof(type_list));
     p = strtok(list, ",");
     for (i=0 ; p ; i++)
       {
@@ -2065,6 +2070,7 @@ BOOL   allow_edit;
   /* get category list from configuration file */
   if (getcfg(logbook, "Categories", list))
     {
+    memset(category_list, 0, sizeof(category_list));
     p = strtok(list, ",");
     for (i=0 ; p ; i++)
       {
@@ -2292,6 +2298,7 @@ char   *p, list[1000];
   /* get type list from configuration file */
   if (getcfg(logbook, "Types", list))
     {
+    memset(type_list, 0, sizeof(type_list));
     p = strtok(list, ",");
     for (i=0 ; p ; i++)
       {
@@ -2307,6 +2314,7 @@ char   *p, list[1000];
   /* get category list from configuration file */
   if (getcfg(logbook, "Categories", list))
     {
+    memset(category_list, 0, sizeof(category_list));
     p = strtok(list, ",");
     for (i=0 ; p ; i++)
       {
@@ -3363,7 +3371,11 @@ BOOL  allow_delete, allow_edit;
   /*---- header ----*/
 
   /* header */
-  show_standard_header(subject, str);
+  if (msg_status == EL_SUCCESS)
+    show_standard_header(subject, str);
+  else
+    show_standard_header("", "");
+
   rsprintf("<table cols=2 border=2 cellpadding=2>\n");
 
   /*---- title row ----*/
@@ -4186,6 +4198,23 @@ INT                  last_time=0;
         logbook[i] = 0;
         strcpy(logbook_enc, logbook);
         url_decode(logbook);
+
+        /* check if logbook exists */
+        for (i=0 ; ; i++)
+          {
+          if (!enumgrp(i, str))
+            break;
+          if (equal_ustring(logbook, str))
+            break;
+          }
+
+        if (!equal_ustring(logbook, str))
+          {
+          sprintf(str, "Error: logbook \"%s\" not defined in elogd.cfg", logbook);
+          show_error(str);
+          send(_sock, return_buffer, strlen(return_buffer), 0);
+          goto error;
+          }
         }
       
       /* set my own URL */
