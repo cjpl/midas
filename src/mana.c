@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.23  1999/07/15 06:51:17  midas
+  Don't call ss_getchar in "quiet" mode not to block tty
+
   Revision 1.22  1999/07/13 08:16:45  midas
   -q flag makes now analyzer really quiet (not to block the terminal in BG)
 
@@ -2353,7 +2356,7 @@ EVENT_DEF    *event_def;
     }
 
   /* check keyboard once every second */
-  if (!clp.online && actual_time - last_time_kb > 1000)
+  if (!clp.online && actual_time - last_time_kb > 1000 && !clp.quiet)
     {
     last_time_kb = actual_time;
 
@@ -3221,7 +3224,8 @@ INT status;
   register_requests();
 
   /* initialize ss_getchar */
-  ss_getchar(0);
+  if (!clp.quiet)
+    ss_getchar(0);
 
   /* start main loop */
   if (clp.online)
@@ -3230,7 +3234,8 @@ INT status;
     loop_runs_offline();
 
   /* reset terminal */
-  ss_getchar(TRUE);
+  if (!clp.quiet)
+    ss_getchar(TRUE);
 
   /* call exit function */
   mana_exit();
