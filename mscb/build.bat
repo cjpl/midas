@@ -13,12 +13,15 @@ nmake -f msc.mak CFG="msc - Win32 Release" Clean
 nmake -f msc.mak CFG="msc - Win32 Release"
 nmake -f calib_520.mak CFG="calib_520 - Win32 Release" Clean
 nmake -f calib_520.mak CFG="calib_520 - Win32 Release"
+nmake -f calib_700.mak CFG="calib_700 - Win32 Release" Clean
+nmake -f calib_700.mak CFG="calib_700 - Win32 Release"
 nmake -f calib_hvr.mak CFG="calib_hvr - Win32 Release" Clean
 nmake -f calib_hvr.mak CFG="calib_hvr - Win32 Release"
 cd \midas\mscb
 
 copy \midas\nt\bin\msc.exe \midas\mscb\
 copy \midas\nt\bin\calib_520.exe \midas\mscb\
+copy \midas\nt\bin\calib_700.exe \midas\mscb\
 copy \midas\nt\bin\calib_hvr.exe \midas\mscb\
 copy \midas\nt\lib\mscb.dll \midas\mscb\labview\
 
@@ -28,6 +31,7 @@ zip mscb%version%.zip *.c
 zip mscb%version%.zip *.h
 zip mscb%version%.zip msc.exe
 zip mscb%version%.zip calib_520.exe
+zip mscb%version%.zip calib_700.exe
 zip mscb%version%.zip calib_hvr.exe
 
 zip -p mscb%version%.zip embedded/*.h
@@ -39,11 +43,11 @@ zip -p mscb%version%.zip labview/*.dll
 zip -p mscb%version%.zip labview/*.vi
 
 rem map network drive
-net use m: /d > nul
-net use m: \\pc2075\midas mi_das /user:midas
+net use n: /d > nul
+net use n: \\pc2075\midas mi_das /user:midas
 
 echo Sending archive to midas.psi.ch
 
-cp mscb%version%.zip m:\html\mscb\software\download
+cp mscb%version%.zip n:\html\mscb\software\download
 
 rm mscb%version%.zip > nul
