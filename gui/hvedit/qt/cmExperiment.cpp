@@ -12,6 +12,9 @@
     email                : andreas.suter@psi.ch
 
   $Log$
+  Revision 1.2  2003/05/13 17:29:44  midas
+  Fixed compiler warnings
+
   Revision 1.1  2003/05/09 10:08:09  midas
   Initial revision
 
@@ -51,8 +54,8 @@ void GetPassword(char *password)
 //**********************************************************************
 // Constructor
 //**********************************************************************
-cmExperiment::cmExperiment(QString strClientName, QObject *parent = 0,
-                           const char *name = 0) : QObject(parent, name)
+cmExperiment::cmExperiment(QString strClientName, QObject *parent,
+                           const char *name) : QObject(parent, name)
 {
   // Set empty strings
   m_strHostName       = "";
