@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.46  1999/12/20 22:12:15  pierre
+  - moved yb_tid_size[] in ybos.c, declared extern
+
   Revision 1.45  1999/12/17 00:10:47  pierre
   - Add YBOS support.
 
@@ -172,22 +175,10 @@
 #define HFNOV(A1,A2)  CCALLSFSUB2(HFNOV,hfnov,INT,FLOATV,A1,A2) 
 #endif
 
-INT yb_tid_size[] = {
-  0,         /* 0 not defined */
-  2,         /* 1 integer *2 */
-  1,         /* 2 ASCII bytes */
-  4,         /* 3 Integer *4*/
-  4,         /* 4 float *4 */
-  8,         /* 5 double */
-  0,         /* 6 undefined */
-  0,         /* 7 undefined */
-  1,         /* 8 logical*1 */
-  };
-
 /*------------------------------------------------------------------*/
 
 /* items defined in analyzer.c */
-
+extern yb_tid_size[];
 extern char *analyzer_name;
 extern INT  analyzer_loop_period;
 extern INT  analyzer_init(void);
