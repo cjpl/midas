@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.175  2002/11/27 12:54:49  midas
+  Removed unnecessary bind()
+
   Revision 1.174  2002/10/21 00:14:38  olchansk
   add missing error reporting
 
@@ -9169,7 +9172,7 @@ struct hostent       *phe;
 INT rpc_server_connect(char *host_name, char *exp_name)
 /********************************************************************\
 
-  Routine: rpc_connect
+  Routine: rpc_server_connect
 
   Purpose: Extablish a network connection to a remote MIDAS
            server using a callback scheme.
@@ -9317,16 +9320,6 @@ struct hostent       *phe;
   if (sock == -1)
     {
     cm_msg(MERROR, "rpc_server_connect", "cannot create socket");
-    return RPC_NET_ERROR;
-    }
-
-  /* let OS choose any port number */
-  bind_addr.sin_port = 0;
-
-  status = bind(sock, (void *)&bind_addr, sizeof(bind_addr));
-  if (status < 0)
-    {
-    cm_msg(MERROR, "rpc_server_connect", "cannot bind");
     return RPC_NET_ERROR;
     }
 
@@ -12695,40 +12688,6 @@ int                  flag;
   event_sock = socket(AF_INET, SOCK_STREAM, 0);
   if (event_sock == -1)
     return RPC_NET_ERROR;
-
-  /* bind local host and port to sockets */
-  memset(&bind_addr, 0, sizeof(bind_addr));
-  bind_addr.sin_family      = AF_INET;
-  bind_addr.sin_addr.s_addr = 0;
-  bind_addr.sin_port        = 0; /* OS chooses port */
-
-  /* reuse address, needed if previous server stopped (30s timeout!) */
-  flag = 1;
-  status = setsockopt(recv_sock, SOL_SOCKET, SO_REUSEADDR,
-                      (char *) &flag, sizeof(int));
-  status = setsockopt(send_sock, SOL_SOCKET, SO_REUSEADDR,
-                      (char *) &flag, sizeof(int));
-  status = setsockopt(event_sock, SOL_SOCKET, SO_REUSEADDR,
-                      (char *) &flag, sizeof(int));
-
-  status = bind(recv_sock, (void *)&bind_addr, sizeof(bind_addr));
-  if (status < 0)
-    {
-    cm_msg(MERROR, "rpc_server_callback", "cannot bind receive socket");
-    goto error;
-    }
-  status = bind(send_sock, (void *)&bind_addr, sizeof(bind_addr));
-  if (status < 0)
-    {
-    cm_msg(MERROR, "rpc_server_callback", "cannot bind send socket");
-    goto error;
-    }
-  status = bind(event_sock, (void *)&bind_addr, sizeof(bind_addr));
-  if (status < 0)
-    {
-    cm_msg(MERROR, "rpc_server_callback", "cannot bind event socket");
-    goto error;
-    }
 
   /* callback to remote node */
   memset(&bind_addr, 0, sizeof(bind_addr));
