@@ -6,6 +6,9 @@
   Contents:     MIDAS logger program
 
   $Log$
+  Revision 1.78  2004/09/15 01:18:04  midas
+  Removed -h command line switch completely
+
   Revision 1.77  2004/07/29 14:03:03  midas
   Added warning about remote connection
 
@@ -2393,9 +2396,11 @@ void log_system_history(HNDLE hDB, HNDLE hKey, void *info)
    hist_log[index].last_log = ss_time();
 
    /* simulate odb key update for hot links connected to system history */
-   db_lock_database(hDB);
-   db_notify_clients(hDB, hist_log[index].hKeyVar, FALSE);
-   db_unlock_database(hDB);
+   if (!rpc_is_remote()) {
+      db_lock_database(hDB);
+      db_notify_clients(hDB, hist_log[index].hKeyVar, FALSE);
+      db_unlock_database(hDB);
+   }
 
 }
 
@@ -3052,12 +3057,10 @@ int main(int argc, char *argv[])
             goto usage;
          if (argv[i][1] == 'e')
             strcpy(exp_name, argv[++i]);
-         else if (argv[i][1] == 'h')
-            strcpy(host_name, argv[++i]);
          else {
           usage:
             printf
-                ("usage: mlogger [-h Hostname] [-e Experiment] [-d] [-D] [-s] [-v]\n\n");
+                ("usage: mlogger [-e Experiment] [-d] [-D] [-s] [-v]\n\n");
             return 1;
          }
       }
@@ -3068,15 +3071,7 @@ int main(int argc, char *argv[])
       ss_daemon_init(FALSE);
    }
 
-   if (host_name[0]) {
-      printf("Logger cannot run through network connection.\n");
-      if (getenv("MIDAS_SERVER_HOST"))
-         printf("Please delete environment variable \"MIDAS_SERVER_HOST\".\n");
-      else
-         printf("Please omit \"-h\" parameter.\n");
-      return 1;
-   }
-   status = cm_connect_experiment(host_name, exp_name, "Logger", NULL);
+   status = cm_connect_experiment("", exp_name, "Logger", NULL);
    if (status != CM_SUCCESS)
       return 1;
 
