@@ -6,6 +6,9 @@
   Contents:     Multimeter Class Driver
 
   $Log$
+  Revision 1.9  2003/09/30 16:11:41  midas
+  Fixed another bug with zero output channels
+
   Revision 1.8  2003/09/30 14:40:27  midas
   Fixed problem if no output channels
 
@@ -344,7 +347,7 @@ MULTI_INFO *m_info;
   for (i=0 ; i<m_info->num_channels_input ; i++)
     m_info->factor_input[i] = 1.f; /* default 1 */
 
-  if (m_info->num_channels_output)
+  if (m_info->num_channels_input)
     {
     db_merge_data(hDB, m_info->hKeyRoot, "Settings/Input Factor", 
                   m_info->factor_input, m_info->num_channels_input*sizeof(float), 
@@ -352,7 +355,10 @@ MULTI_INFO *m_info;
     db_find_key(hDB, m_info->hKeyRoot, "Settings/Input factor", &hKey);
     db_open_record(hDB, hKey, m_info->factor_input, m_info->num_channels_input*sizeof(float), 
                    MODE_READ, NULL, NULL);
+    }
 
+  if (m_info->num_channels_output)
+    {
     for (i=0 ; i<m_info->num_channels_output ; i++)
       m_info->factor_output[i] = 1.f;
     db_merge_data(hDB, m_info->hKeyRoot, "Settings/Output Factor", 
@@ -484,14 +490,17 @@ MULTI_INFO *m_info;
     }
 
   /* open hotlink on output channel names */
-  if (db_find_key(hDB,  m_info->hKeyRoot, "Settings/Names Output", &hNamesOut) == DB_SUCCESS)
-    db_open_record(hDB, hNamesOut, m_info->names_output, NAME_LENGTH*m_info->num_channels_output,
-                   MODE_READ, multi_update_label, pequipment);
+  if (m_info->num_channels_output)
+    {
+    if (db_find_key(hDB,  m_info->hKeyRoot, "Settings/Names Output", &hNamesOut) == DB_SUCCESS)
+      db_open_record(hDB, hNamesOut, m_info->names_output, NAME_LENGTH*m_info->num_channels_output,
+                     MODE_READ, multi_update_label, pequipment);
 
-  /* open hot link to output record */
-  db_open_record(hDB, m_info->hKeyOutput, m_info->var_output, 
-                 m_info->num_channels_output*sizeof(float), 
-                 MODE_READ, multi_output, pequipment);
+    /* open hot link to output record */
+    db_open_record(hDB, m_info->hKeyOutput, m_info->var_output, 
+                   m_info->num_channels_output*sizeof(float), 
+                   MODE_READ, multi_output, pequipment);
+    }
 
   /* set initial demand values */
   for (i=0 ; i<m_info->num_channels_output ; i++)
@@ -514,8 +523,10 @@ MULTI_INFO *m_info;
                        m_info->output_mirror[i]);
       }
     }
-  db_set_record(hDB, m_info->hKeyOutput, m_info->output_mirror,
-                m_info->num_channels_output*sizeof(float), 0);
+
+  if (m_info->num_channels_output)
+    db_set_record(hDB, m_info->hKeyOutput, m_info->output_mirror,
+                  m_info->num_channels_output*sizeof(float), 0);
 
   /* initially read all channels */
   multi_read(pequipment, -1);
