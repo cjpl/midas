@@ -1,11 +1,14 @@
 /********************************************************************\
 
   Name:         odbhist.c
-  Created by:   Stefan Ritt
+  Created by:   Stefan Ritt, Ilia Chachkhunashvili
 
   Contents:     MIDAS history display utility
 
   $Log$
+  Revision 1.6  2000/07/24 14:27:34  midas
+  Did some cosmetics
+
   Revision 1.5  2000/06/15 09:49:07  midas
   Added Ilia's changes and additions (mainly configuration file)
 
@@ -24,6 +27,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <ctype.h>
+
 /*------------------------------------------------------------------*/
 
 #define SUCCESS 1
@@ -216,7 +221,7 @@ finish:
 
 /*------------------------------------------------------------------*/
 
-int load_pars_from_file(char Filename[256])
+int load_pars_from_file(char filename[256])
 /********************************************************************\
 
   Routine: load_pars_from_file
@@ -224,7 +229,7 @@ int load_pars_from_file(char Filename[256])
   Purpose: Load parameters for odbhist from file
 
   Input:
-    char *file_name         Name of configuration file
+    char *filename          Name of configuration file
 
   Output:
     <implicit through global variables>
@@ -242,7 +247,7 @@ int  getstr;
   
   getstr = 1;
   
-  f1 =  fopen(Filename, "r");
+  f1 =  fopen(filename, "r");
   if (f1 != NULL)
     {
     result = 1;
@@ -369,7 +374,7 @@ int  getstr;
   else 
     {
     result = 0; 
-    printf("\n ERROR:\nCan't open file %s\n", Filename);
+    printf("\n ERROR:\nCan't open file %s\n", filename);
     }
   if (result != 0)  
     if (fclose(f1)) 
@@ -548,7 +553,8 @@ usage:
   if (add)
     {
     printf("\nTotal: ");
-    if (quiet) printf("\n");
+    if (quiet) 
+      printf("\n");
     for (k = 0; k <= j; k++)
       printf("%lf\t", total[k]);
     printf("\n") ;
