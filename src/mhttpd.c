@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.147  2000/12/15 08:52:58  midas
+  Added "/Sript" facility and "/Alias new window" tree
+
   Revision 1.146  2000/11/14 12:19:23  midas
   Fixed bug in cm_msg_retrieve, added improved "more" feature in message display
 
@@ -1045,6 +1048,23 @@ CHN_STATISTICS chn_stats;
   rsprintf("<input type=submit name=cmd value=Config>\n");
   rsprintf("<input type=submit name=cmd value=Help>\n");
 
+  /*---- script buttons ----*/
+
+  status = db_find_key(hDB, 0, "Script", &hkey);
+  if (status == DB_SUCCESS)
+    {
+    rsprintf("<tr><td colspan=6 bgcolor=#D0D0D0>\n");
+  
+    for (i=0 ; ; i++)
+      {
+      db_enum_link(hDB, hkey, i, &hsubkey);
+	    if (!hsubkey)
+	      break;  
+	    db_get_key(hDB, hsubkey, &key);
+      rsprintf("<input type=submit name=script value=%s>\n", key.name);
+      }
+    }
+
   rsprintf("</tr>\n\n");
 
   /*---- alarms ----*/
@@ -1122,12 +1142,45 @@ CHN_STATISTICS chn_stats;
       rsprintf("</tr>\n\n");
     }
 
-  /*---- aliases ----*/
+  /*---- aliases same window ----*/
 
   db_find_key(hDB, 0, "/Alias", &hkey);
   if (hkey)
     {
     rsprintf("<tr><td colspan=6 bgcolor=#C0C0C0>\n");
+    for (i=0 ; ; i++)
+      {
+      db_enum_link(hDB, hkey, i, &hsubkey);
+      if (!hsubkey)
+        break;
+
+      db_get_key(hDB, hsubkey, &key);
+
+      if (key.type == TID_STRING)
+        {
+        /* html link */
+        size = sizeof(ref);
+        db_get_data(hDB, hsubkey, ref, &size, TID_STRING);
+        rsprintf("<a href=\"%s\">%s</a> ", ref, key.name);
+        }
+      else if (key.type == TID_LINK)
+        {
+        /* odb link */
+        if (exp_name[0])
+          sprintf(ref, "%sAlias/%s?exp=%s", mhttpd_url, key.name, exp_name);
+        else
+          sprintf(ref, "%sAlias/%s", mhttpd_url, key.name);
+
+        rsprintf("<a href=\"%s\">%s</a> ", ref, key.name);
+        }
+      }
+    }
+
+  /*---- aliases new window ----*/
+
+  db_find_key(hDB, 0, "/Alias new window", &hkey);
+  if (hkey)
+    {
     for (i=0 ; ; i++)
       {
       db_enum_link(hDB, hkey, i, &hsubkey);
@@ -6908,7 +6961,7 @@ HNDLE  hkey, hsubkey, hDB, hconn;
 KEY    key;
 char   str[256], *p;
 char   enc_path[256], dec_path[256], eq_name[NAME_LENGTH], fe_name[NAME_LENGTH];
-char   data[10000];
+char   data[10000], script[256];
 char   *experiment, *password, *wpassword, *command, *value, *group;
 char   exp_list[MAX_EXPERIMENT][NAME_LENGTH];
 time_t now;
@@ -7080,6 +7133,26 @@ struct tm *gmt;
 
   if (equal_ustring(command, "status"))
     {
+    redirect("");
+    return;
+    }
+
+  /*---- script command --------------------------------------------*/
+
+  if (getparam("script") && *getparam("script"))
+    {
+    sprintf(str, "%s?script=%s", path, getparam("script"));
+    if (!check_web_password(cookie_wpwd, str, experiment))
+      return;
+
+    sprintf(str, "/Script/%s", getparam("script"));
+    
+    script[0] = 0;
+    size = sizeof(script);
+    db_get_value(hDB, 0, str, script, &size, TID_STRING);
+    if (script[0])
+      ss_system(script);
+
     redirect("");
     return;
     }
