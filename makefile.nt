@@ -7,6 +7,9 @@
 #                Windows NT
 #
 #  $Log$
+#  Revision 1.10  2003/06/17 06:36:11  midas
+#  Removed hvedit from makefile
+#
 #  Revision 1.9  2002/03/02 08:22:13  midas
 #  Use $WINDIR instead of c:\winnt
 #
@@ -88,8 +91,7 @@ all:    $(LIB_DIR) $(BIN_DIR) \
   $(BIN_DIR)/mstat.exe \
   $(BIN_DIR)/mdump.exe \
   $(BIN_DIR)/odbhist.exe \
-  $(BIN_DIR)/lazylogger.exe \
-  $(BIN_DIR)/hvedit.exe
+  $(BIN_DIR)/lazylogger.exe
 
 examples: $(EXAMPLES)
 
@@ -171,10 +173,6 @@ $(BIN_DIR)/mstat.exe:  $(LIBRARY) $(UTL_DIR)/mstat.c
 $(BIN_DIR)/mcnaf.exe:$(LIBRARY) $(UTL_DIR)/mcnaf.c $(DRV_DIR)/bus/camacrpc.c
 	$(CC) $(CFLAGS) $(OSFLAGS) /Fe$(BIN_DIR)/mcnaf.exe $(UTL_DIR)/mcnaf.c $(DRV_DIR)/bus/camacrpc.c $(LIBRARY) wsock32.lib $(LIBS)
 
-$(BIN_DIR)/hvedit.exe:$(LIBRARY)
-	cd nt\hvedit
-	nmake -f hvedit.mak CFG="HVEDIT - Win32 Release"
-	cd ..\..
 
 clean:
 	del $(LIB_DIR)\*.obj
