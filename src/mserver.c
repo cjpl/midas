@@ -6,6 +6,9 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
+  Revision 1.52  2004/09/28 20:46:44  midas
+  Fixed bug in debug_print
+
   Revision 1.51  2004/09/28 20:37:03  midas
   Added more debugging info
 
@@ -191,22 +194,24 @@ INT msg_print(const char *msg)
 void debug_print(char *msg)
 {
    FILE *f;
+   char file_name[256];
 
    /* print message to file */
 #ifdef OS_LINUX
-   f = fopen("/tmp/mserver.log", "a");
+   strcpy(file_name, "/tmp/mserver.log");
 #else
-   f = fopen("mserver.log", "a");
+   getcwd(file_name, sizeof(file_name));
+   if (file_name[strlen(file_name)-1] != DIR_SEPARATOR)
+      strcat(file_name, DIR_SEPARATOR_STR);
+   strcat(file_name, "mserver.log");
 #endif
+   f = fopen(file_name, "a");
 
    if (f != NULL) {
       fprintf(f, "%s\n", msg);
       fclose(f);
    } else {
-      char str[256];
-
-      getcwd(str, sizeof(str));
-      printf("Cannot open \"%s\\mserver.log\": %s\n", str, strerror(errno));
+      printf("Cannot open \"%s\": %s\n", file_name, strerror(errno));
    }
 }
 
