@@ -6,6 +6,9 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
+  Revision 1.21  1999/08/31 15:12:02  midas
+  Finished query
+
   Revision 1.20  1999/08/27 08:14:26  midas
   Added query
 
@@ -81,12 +84,18 @@ BOOL connected;
 
 #define MAX_GROUPS 32
 #define MAX_PARAM  32
+#define VALUE_SIZE 256
+#define TEXT_SIZE  4096
 
 char _param[MAX_PARAM][NAME_LENGTH];
-char _value[MAX_PARAM][10000];
+char _value[MAX_PARAM][VALUE_SIZE];
+char _text[TEXT_SIZE];
 
-int el_retrieve(char *tag, char *date, int *run, char *author, char *type, char *subject, 
-                char *text, int *size);
+INT el_retrieve(char *tag, char *date, int *run, char *author, char *type, 
+                char *system, char *subject, char *text, int *textsize, char *encoding);
+int el_submit(int run, char *author, char *type, char *system, char *subject, 
+              char *text, char *encoding, char *tag);
+INT el_search_message(char *tag, int *fh);
 
 char *mname[] = {
   "January",
@@ -147,11 +156,22 @@ void initparam()
 {
   memset(_param, 0, sizeof(_param));
   memset(_value, 0, sizeof(_value));
+  _text[0] = 0;
 }
 
 void setparam(char *param, char *value)
 {
 int i;
+
+  if (equal_ustring(param, "text"))
+    {
+    if (strlen(value) >= TEXT_SIZE)
+      printf("Error: parameter value too big\n");
+
+    strncpy(_text, value, TEXT_SIZE);
+    _text[TEXT_SIZE-1] = 0;
+    return;
+    }
 
   for (i=0 ; i<MAX_PARAM ; i++)
     if (_param[i][0] == 0)
@@ -160,7 +180,12 @@ int i;
   if (i<MAX_PARAM)
     {
     strcpy(_param[i], param);
-    strcpy(_value[i], value);
+
+    if (strlen(value) >= VALUE_SIZE)
+      printf("Error: parameter value too big\n");
+
+    strncpy(_value[i], value, VALUE_SIZE);
+    _value[i][VALUE_SIZE-1] = 0;
     }
   else
     {
@@ -171,6 +196,9 @@ int i;
 char *getparam(char *param)
 {
 int i;
+
+  if (equal_ustring(param, "text"))
+    return _text;
 
   for (i=0 ; i<MAX_PARAM && _param[i][0]; i++)
     if (equal_ustring(param, _param[i]))
@@ -962,83 +990,19 @@ HNDLE hDB;
 
 /*------------------------------------------------------------------*/
 
-void show_elog_page(int mode)
+void el_format(char *text, char *encoding)
 {
-int   i, size, run, status;
-char  str[256], date[80], author[80], type[80], subject[256], text[10000];
-HNDLE hDB;
+int i;
 
-  cm_get_experiment_database(&hDB, NULL);
-
-  /* header */
-  rsprintf("HTTP/1.0 200 Document follows\r\n");
-  rsprintf("Server: MIDAS HTTP %s\r\n", cm_get_version());
-  rsprintf("Content-Type: text/html\r\n\r\n");
-
-  rsprintf("<html><head><title>MIDAS ELog</title></head>\n");
-  rsprintf("<body><form method=\"GET\" action=\"%s\">\n", mhttpd_url);
-
-  /* define hidden field for experiment */
-  if (exp_name[0])
-    rsprintf("<input type=hidden name=exp value=\"%s\">\n", exp_name);
-
-  rsprintf("<table border=2 cellpadding=2 width=\"100%%\">\n");
-
-  /*---- title row ----*/
-
-  size = sizeof(str);
-  str[0] = 0;
-  db_get_value(hDB, 0, "/Experiment/Name", str, &size, TID_STRING);
-
-  rsprintf("<tr><th colspan=1 bgcolor=#A0A0FF>MIDAS Electronic Logbook");
-  rsprintf("<th colspan=1 bgcolor=#A0A0FF>Experiment \"%s\"</tr>\n", str);
-
-  /*---- menu buttons ----*/
-
-  rsprintf("<tr><td bgcolor=#C0C0C0>\n");
-
-  rsprintf("<input type=submit name=cmd value=New>\n");
-  rsprintf("<input type=submit name=cmd value=Reply>\n");
-  rsprintf("<input type=submit name=cmd value=Query>\n");
-
-  rsprintf("<td bgcolor=#C0C0C0>");
-  rsprintf("<input type=submit name=cmd value=Next>\n");
-  rsprintf("<input type=submit name=cmd value=Previous>\n");
-
-  rsprintf("</tr>\n\n");
-
-  /*---- messages ----*/
-
-  size = sizeof(text);
-  strcpy(str, getparam("msg"));
-
-  if (mode == 1)
-    strcat(str, "+1");
-  if (mode == -1)
-    strcat(str, "-1");
-  
-  status = el_retrieve(str, date, &run, author, type, subject, text, &size);
-
-  if (status != EL_SUCCESS)
-    rsprintf("<tr><td bgcolor=#FF0000 colspan=2 align=center><h1>No message available</h1></tr>\n");
-  else
+  for (i=0 ; i<(int) strlen(text) ; i++)
     {
-    /* define hidden field for message id */
-    rsprintf("<input type=hidden name=msg value=\"%s\">\n", str);
-
-    rsprintf("<tr><td bgcolor=#FFFF00>Entry date: <b>%s</b>", date);
-
-    rsprintf("<td bgcolor=#FFFF00>Run number: <b>%d</b></tr>", run);
-
-    rsprintf("<tr><td bgcolor=#FFA0A0>Author: <b>%s</b>\n", author);
-    rsprintf("<td bgcolor=#FFA0A0>Type: <b>%s</b></tr>\n", type);
-
-    rsprintf("<tr><td bgcolor=#A0FFA0 colspan=2>Subject: <b>%s</b></tr>\n", subject);
-
-    rsprintf("<tr><td colspan=2>\n");
-
-    for (i=0 ; i<(int) strlen(text) ; i++)
-      {
+    if (encoding[0] == 'H')
+      switch (text[i])
+        {
+        case '\n': rsprintf("<br>\n"); break;
+        default: rsprintf("%c", text[i]);
+        }
+    else
       switch (text[i])
         {
         case '\n': rsprintf("<br>\n"); break;
@@ -1048,15 +1012,8 @@ HNDLE hDB;
         case '\"': rsprintf("&quot;"); break;
         default: rsprintf("%c", text[i]);
         }
-      }
-    rsprintf("</tr>\n", text);
     }
-
-  rsprintf("</table>\n");
-  rsprintf("</body></html>\r\n");
 }
-
-/*------------------------------------------------------------------*/
 
 void show_elog_new()
 {
@@ -1073,8 +1030,8 @@ HNDLE  hDB, hkey;
   rsprintf("Content-Type: text/html\r\n\r\n");
 
   rsprintf("<html><head><title>MIDAS ELog</title></head>\n");
-//  rsprintf("<body><form method=\"POST\" action=\"%s\" enctype=\"multipart/form-data\">\n", mhttpd_url);
-  rsprintf("<body><form method=\"GET\" action=\"%s\">\n", mhttpd_url);
+  rsprintf("<body><form method=\"POST\" action=\"%s\" enctype=\"multipart/form-data\">\n", mhttpd_url);
+//  rsprintf("<body><form method=\"GET\" action=\"%sEL/\">\n", mhttpd_url);
 
   /* define hidden field for experiment */
   if (exp_name[0])
@@ -1130,22 +1087,27 @@ HNDLE  hDB, hkey;
     sprintf(ref, "%sELog/?exp=%s", mhttpd_url, exp_name);
   else
     sprintf(ref, "%sELog/", mhttpd_url);
-  rsprintf("<td bgcolor=#FFA0A0><a href=\"%s\">Type:</a> <select name=\"type\">\n", ref);
+  rsprintf("<td bgcolor=#FFA0A0><a href=\"%s\" target=\"ELog Type\">Type:</a> <select name=\"type\">\n", ref);
   for (i=0 ; i<20 && type_list[i][0] ; i++)
     rsprintf("<option value=\"%s\">%s\n", type_list[i], type_list[i]);
-  rsprintf("</select>\n");
-
-  rsprintf("  System: <select name=\"system\">\n");
-  for (i=0 ; i<20 && system_list[i][0] ; i++)
-    rsprintf("<option value=\"%s\">%s\n", system_list[i], system_list[i]);
   rsprintf("</select></tr>\n");
 
-  rsprintf("<tr><td colspan=2 bgcolor=#A0FFA0>Subject: <input type=text size=80 maxlength=\"256\" name=Subject></tr>\n");
+  rsprintf("<tr><td bgcolor=#A0FFA0><a href=\"%s\" target=\"ELog System\">  System:</a> <select name=\"system\">\n", ref);
+  for (i=0 ; i<20 && system_list[i][0] ; i++)
+    rsprintf("<option value=\"%s\">%s\n", system_list[i], system_list[i]);
+  rsprintf("</select>\n");
 
-  rsprintf("<tr><td colspan=2>Text:<br><textarea rows=10 cols=80 name=Text></textarea></tr>\n");
+  rsprintf("<td bgcolor=#A0FFA0>Subject: <input type=text size=20 maxlength=\"80\" name=Subject></tr>\n");
 
+  rsprintf("<tr><td colspan=2>Text:<br>\n");
+
+  rsprintf("<textarea rows=10 cols=80 name=Text></textarea></tr>\n");
+
+  /* HTML check box */
+  rsprintf("<tr><td><input type=\"checkbox\" name=\"html\" value=\"1\">Text contains HTML tags\n");
+  
   /* attachment */
-  rsprintf("<tr><td colspan=2>Attachment: <input type=\"file\" size=\"50\" maxlength=\"256\" name=\"attfile\" value=\"\"> </tr>\n");
+  rsprintf("<td>Attachment: <input type=\"file\" size=\"30\" maxlength=\"256\" name=\"attfile\" value=\"\">\n");
 
   rsprintf("</tr></table>\n");
   rsprintf("</body></html>\r\n");
@@ -1169,7 +1131,7 @@ HNDLE  hDB, hkey;
   rsprintf("Content-Type: text/html\r\n\r\n");
 
   rsprintf("<html><head><title>MIDAS ELog</title></head>\n");
-  rsprintf("<body><form method=\"GET\" action=\"%s\">\n", mhttpd_url);
+  rsprintf("<body><form method=\"GET\" action=\"%sEL/\">\n", mhttpd_url);
 
   /* define hidden field for experiment */
   if (exp_name[0])
@@ -1191,6 +1153,7 @@ HNDLE  hDB, hkey;
   rsprintf("<tr><td colspan=4 bgcolor=#C0C0C0>\n");
 
   rsprintf("<input type=submit name=cmd value=\"Submit Query\">\n");
+  rsprintf("<input type=reset value=\"Reset Form\">\n");
   rsprintf("</tr>\n\n");
 
   /*---- entry form ----*/
@@ -1202,10 +1165,13 @@ HNDLE  hDB, hkey;
     tms->tm_year += 100;
 
   rsprintf("<tr><td bgcolor=#FFFF00>Start date: ");
-  rsprintf("<td colspan=3 bgcolor=#FFFF00><select name=\"m1\" value=\"%s\">\n", mname[tms->tm_mon]);
+  rsprintf("<td colspan=3 bgcolor=#FFFF00><select name=\"m1\">\n");
 
   for (i=0 ; i<12 ; i++)
-    rsprintf("<option value=\"%s\">%s\n", mname[i], mname[i]);
+    if (i == tms->tm_mon)
+      rsprintf("<option selected value=\"%s\">%s\n", mname[i], mname[i]);
+    else
+      rsprintf("<option value=\"%s\">%s\n", mname[i], mname[i]);
   rsprintf("</select>\n");
 
   rsprintf(" <input type=\"text\" size=3 maxlength=3 name=\"d1\" value=\"%d\">", tms->tm_mday);
@@ -1215,18 +1181,19 @@ HNDLE  hDB, hkey;
   rsprintf("<tr><td bgcolor=#FFFF00>End date: ");
   rsprintf("<td colspan=3 bgcolor=#FFFF00><select name=\"m2\" value=\"%s\">\n", mname[tms->tm_mon]);
 
+  rsprintf("<option value=\"\">\n");
   for (i=0 ; i<12 ; i++)
     rsprintf("<option value=\"%s\">%s\n", mname[i], mname[i]);
   rsprintf("</select>\n");
 
-  rsprintf(" <input type=\"text\" size=3 maxlength=3 name=\"d2\" value=\"%d\">", tms->tm_mday);
-  rsprintf(" <input type=\"text\" size=5 maxlength=5 name=\"y2\" value=\"%d\">", tms->tm_year);
+  rsprintf(" <input type=\"text\" size=3 maxlength=3 name=\"d2\">");
+  rsprintf(" <input type=\"text\" size=5 maxlength=5 name=\"y2\">");
   rsprintf("</tr>\n");
 
-  rsprintf("<tr><td bgcolor=#A0FFA0>Start run: ");
-  rsprintf("<td bgcolor=#A0FFA0><input type=\"text\" size=\"10\" maxlength=\"10\" name=\"r1\">\n");
-  rsprintf("<td bgcolor=#A0FFA0>End run: ");
-  rsprintf("<td bgcolor=#A0FFA0><input type=\"text\" size=\"10\" maxlength=\"10\" name=\"r2\">\n");
+  rsprintf("<tr><td bgcolor=#A0FFFF>Start run: ");
+  rsprintf("<td bgcolor=#A0FFFF><input type=\"text\" size=\"10\" maxlength=\"10\" name=\"r1\">\n");
+  rsprintf("<td bgcolor=#A0FFFF>End run: ");
+  rsprintf("<td bgcolor=#A0FFFF><input type=\"text\" size=\"10\" maxlength=\"10\" name=\"r2\">\n");
   rsprintf("</tr>\n");
 
   /* get type list from ODB */
@@ -1245,24 +1212,24 @@ HNDLE  hDB, hkey;
   if (hkey)
     db_get_data(hDB, hkey, system_list, &size, TID_STRING);
 
-  rsprintf("<tr><td colspan=2 bgcolor=#FFA0A0>Type: ");
+  rsprintf("<tr><td colspan=2 bgcolor=#FFA0A0>Author: ");
+  rsprintf("<input type=\"test\" size=\"15\" maxlength=\"80\" name=\"author\">\n");
+
+  rsprintf("<td colspan=2 bgcolor=#FFA0A0>Type: ");
   rsprintf("<select name=\"type\">\n");
   rsprintf("<option value=\"\">\n");
   for (i=0 ; i<20 && type_list[i][0] ; i++)
     rsprintf("<option value=\"%s\">%s\n", type_list[i], type_list[i]);
-  rsprintf("</select>\n");
+  rsprintf("</select></tr>\n");
 
-  rsprintf("<td colspan=2 bgcolor=#FFA0A0>System: ");
+  rsprintf("<tr><td colspan=2 bgcolor=#A0FFA0>System: ");
   rsprintf("<select name=\"system\">\n");
   rsprintf("<option value=\"\">\n");
   for (i=0 ; i<20 && system_list[i][0] ; i++)
     rsprintf("<option value=\"%s\">%s\n", system_list[i], system_list[i]);
-  rsprintf("</select></tr>\n");
+  rsprintf("</select>\n");
 
-  rsprintf("<tr><td colspan=2 bgcolor=#FFA0A0>Author: ");
-  rsprintf("<input type=\"test\" size=\"15\" maxlength=\"80\" name=\"author\">\n");
-
-  rsprintf("<td colspan=2 bgcolor=#FFA0A0>Subject: ");
+  rsprintf("<td colspan=2 bgcolor=#A0FFA0>Subject: ");
   rsprintf("<input type=\"test\" size=\"15\" maxlength=\"80\" name=\"subject\">\n");
 
   rsprintf("</tr></table>\n");
@@ -1271,8 +1238,333 @@ HNDLE  hDB, hkey;
 
 /*------------------------------------------------------------------*/
 
-int el_submit(int run, char *author, char *type, char *subject, 
-              char *text, char *tag)
+void show_elog_submit_query()
+{
+int    i, size, run, status;
+char   date[80], author[80], type[80], system[80], subject[256], text[10000], encoding[80];
+char   str[256], tag[256], ref[80];
+HNDLE  hDB;
+
+  cm_get_experiment_database(&hDB, NULL);
+
+  /* header */
+  rsprintf("HTTP/1.0 200 Document follows\r\n");
+  rsprintf("Server: MIDAS HTTP %s\r\n", cm_get_version());
+  rsprintf("Content-Type: text/html\r\n\r\n");
+
+  rsprintf("<html><head><title>MIDAS ELog</title></head>\n");
+  rsprintf("<body><form method=\"GET\" action=\"%sEL/\">\n", mhttpd_url);
+
+  /* define hidden field for experiment */
+  if (exp_name[0])
+    rsprintf("<input type=hidden name=exp value=\"%s\">\n", exp_name);
+
+  rsprintf("<table border=3 cellpadding=5 width=\"100%%\">\n");
+
+  /*---- title row ----*/
+
+  size = sizeof(str);
+  str[0] = 0;
+  db_get_value(hDB, 0, "/Experiment/Name", str, &size, TID_STRING);
+
+  rsprintf("<tr><th colspan=3 bgcolor=#A0A0FF>MIDAS Electronic Logbook");
+  rsprintf("<th colspan=4 bgcolor=#A0A0FF>Experiment \"%s\"</tr>\n", str);
+
+  /*---- menu buttons ----*/
+
+  rsprintf("<tr><td colspan=7 bgcolor=#C0C0C0>\n");
+
+  rsprintf("<input type=submit name=cmd value=\"Query\">\n");
+  rsprintf("<input type=submit name=cmd value=\"ELog\">\n");
+  rsprintf("<input type=submit name=cmd value=\"Status\">\n");
+  rsprintf("</tr>\n\n");
+
+  /*---- title row ----*/
+
+  if (*getparam("m2"))
+    rsprintf("<tr><td colspan=7 bgcolor=#FFFF00><b>Query result between %s %s %s and %s %s %s</b></tr>\n",
+              getparam("m1"), getparam("d1"), getparam("y1"),
+              getparam("m2"), getparam("d2"), getparam("y2"));
+  else
+    rsprintf("<tr><td colspan=7 bgcolor=#FFFF00><b>Query result between %s %s %s and today</b></tr>\n",
+              getparam("m1"), getparam("d1"), getparam("y1"));
+
+  rsprintf("</tr>\n<tr>");
+
+  rsprintf("<td colspan=7 bgcolor=#FFA0A0>\n");
+
+  if (*getparam("author"))
+    rsprintf("Author: <b>%s</b>   ", getparam("author"));
+
+  if (*getparam("type"))
+    rsprintf("Type: <b>%s</b>   ", getparam("type"));
+
+  if (*getparam("system"))
+    rsprintf("System: <b>%s</b>   ", getparam("system"));
+
+  if (*getparam("subject"))
+    rsprintf("Subject: <b>%s</b>   ", getparam("subject"));
+
+  rsprintf("</tr>\n");
+
+  /*---- table titles ----*/
+
+  rsprintf("<tr><th>Date<br>beginning with newest<th>Run<th>Author<th>Type<th>System<th>Subject<th>Text</tr>\n");
+
+  /*---- do query ----*/
+
+  if (*getparam("r1"))
+    {
+    /* do run query */
+    }
+  else
+    {
+    /* do date-date query */
+    strcpy(str, getparam("m1"));
+    for (i=0 ; i<12 ; i++)
+      if (equal_ustring(str, mname[i]))
+        break;
+    if (i == 12)
+      i = 0;
+
+    sprintf(tag, "%02d%02d%02d.0", atoi(getparam("y1")) % 100, i+1, atoi(getparam("d1")));
+
+    do
+      {
+      size = sizeof(text);
+      status = el_retrieve(tag, date, &run, author, type, system, subject, 
+                           text, &size, encoding);
+      strcat(tag, "+1");
+
+      if (status == EL_SUCCESS)
+        {
+        /* do filtering */
+        if (*getparam("author") && !equal_ustring(getparam("author"), author))
+          continue;
+        if (*getparam("type") && !equal_ustring(getparam("type"), type))
+          continue;
+        if (*getparam("system") && !equal_ustring(getparam("system"), system))
+          continue;
+        if (*getparam("subject"))
+          {
+          strcpy(str, getparam("subject"));
+          for (i=0 ; i<(int)strlen(str) ; i++)
+            str[i] = toupper(str[i]);
+          for (i=0 ; i<(int)strlen(subject) ; i++)
+            subject[i] = toupper(subject[i]);
+
+          if (strstr(subject, str) == NULL)
+            continue;
+          }
+
+        /* filter passed: display line */
+
+        strcpy(str, tag);
+        if (strchr(str, '+'))
+          *strchr(str, '+') = 0;
+        if (exp_name[0])
+          sprintf(ref, "%sEL/%s?exp=%s", mhttpd_url, str, exp_name);
+        else
+          sprintf(ref, "%sEL/%s", mhttpd_url, str);
+
+        strncpy(str, text, 80);
+        str[250] = 0;
+        rsprintf("<tr><td>%s<td>%d<td>%s<td>%s<td>%s<td>%s\n", date, run, author, type, system, subject);
+
+
+        rsprintf("<td><a href=%s>", ref);
+        
+        el_format(str, encoding);
+        
+        rsprintf("</a></tr>\n");
+        }
+
+      } while (status == EL_SUCCESS);
+    
+    }
+
+  rsprintf("</table>\n");
+  rsprintf("</body></html>\r\n");
+}
+
+/*------------------------------------------------------------------*/
+
+void submit_elog()
+{
+char str[80];
+
+  el_submit(atoi(getparam("run")), getparam("author"), getparam("type"),
+            getparam("system"), getparam("subject"), getparam("text"), 
+            *getparam("html") ? "HTML" : "plain", str);
+
+  rsprintf("HTTP/1.0 302 Found\r\n");
+  rsprintf("Server: MIDAS HTTP %s\r\n", cm_get_version());
+
+  if (exp_name[0])
+    rsprintf("Location: %sEL/?exp=%s&msg=%s\n\n<html>redir</html>\r\n", mhttpd_url, exp_name, str);
+  else
+    rsprintf("Location: %sEL/?msg=%s\n\n<html>redir</html>\r\n", mhttpd_url, str);
+
+}
+
+/*------------------------------------------------------------------*/
+
+void show_elog_page(char *path)
+{
+int   size, run, msg_status, status, fh, first_message, last_message;
+char  str[256], command[80];
+char  date[80], author[80], type[80], system[80], subject[256], text[10000], encoding[80];
+HNDLE hDB;
+
+  cm_get_experiment_database(&hDB, NULL);
+
+  /*---- interprete commands ---------------------------------------*/
+
+  strcpy(command, getparam("cmd"));
+
+  if (equal_ustring(command, "new"))
+    {
+    show_elog_new();
+    return;
+    }
+
+  if (equal_ustring(command, "submit"))
+    {
+    submit_elog();
+    return;
+    }
+
+  last_message = FALSE;
+  if (equal_ustring(command, "next"))
+    {
+    strcat(path, "+1");
+    status = el_search_message(path, &fh);
+    close(fh);
+    if (status == EL_SUCCESS)
+      {
+      sprintf(str, "EL/%s", path);
+      redirect(str);
+      return;
+      }
+    else
+      last_message = TRUE;
+    }
+
+  first_message = FALSE;
+  if (equal_ustring(command, "previous"))
+    {
+    strcat(path, "-1");
+    status = el_search_message(path, &fh);
+    close(fh);
+    if (status == EL_SUCCESS)
+      {
+      sprintf(str, "EL/%s", path);
+      redirect(str);
+      return;
+      }
+    else
+      first_message = TRUE;
+    }
+
+  if (equal_ustring(command, "query"))
+    {
+    show_elog_query();
+    return;
+    }
+
+  if (equal_ustring(command, "submit query"))
+    {
+    show_elog_submit_query();
+    return;
+    }
+
+  /*---- get current message ---------------------------------------*/
+
+  size = sizeof(text);
+  strcpy(str, path);
+  msg_status = el_retrieve(str, date, &run, author, type, system, subject, 
+                           text, &size, encoding);
+
+  /*---- header ----*/
+
+  /* header */
+  rsprintf("HTTP/1.0 200 Document follows\r\n");
+  rsprintf("Server: MIDAS HTTP %s\r\n", cm_get_version());
+  rsprintf("Content-Type: text/html\r\n\r\n");
+
+  rsprintf("<html><head><title>MIDAS ELog</title></head>\n");
+  rsprintf("<body><form method=\"GET\" action=\"%sEL/%s\">\n", mhttpd_url, str);
+
+  /* define hidden field for experiment */
+  if (exp_name[0])
+    rsprintf("<input type=hidden name=exp value=\"%s\">\n", exp_name);
+
+  rsprintf("<table border=2 cellpadding=2 width=\"100%%\">\n");
+
+  /*---- title row ----*/
+
+  size = sizeof(str);
+  str[0] = 0;
+  db_get_value(hDB, 0, "/Experiment/Name", str, &size, TID_STRING);
+
+  rsprintf("<tr><th colspan=1 bgcolor=#A0A0FF>MIDAS Electronic Logbook");
+  rsprintf("<th colspan=1 bgcolor=#A0A0FF>Experiment \"%s\"</tr>\n", str);
+
+  /*---- menu buttons ----*/
+
+  rsprintf("<tr><td bgcolor=#C0C0C0>\n");
+
+  rsprintf("<input type=submit name=cmd value=New>\n");
+  rsprintf("<input type=submit name=cmd value=Reply>\n");
+  rsprintf("<input type=submit name=cmd value=Query>\n");
+  rsprintf("<input type=submit name=cmd value=Status>\n");
+
+  rsprintf("<td bgcolor=#C0C0C0>");
+  rsprintf("<input type=submit name=cmd value=Next>\n");
+  rsprintf("<input type=submit name=cmd value=Previous>\n");
+
+  rsprintf("</tr>\n\n");
+
+  /*---- message ----*/
+
+  if (msg_status == EL_FILE_ERROR)
+    rsprintf("<tr><td bgcolor=#FF0000 colspan=2 align=center><h1>No message available</h1></tr>\n");
+  else
+    {
+    if (last_message)
+      rsprintf("<tr><td bgcolor=#FF0000 colspan=2 align=center><b>This is the last message in the ELog</b></tr>\n");
+
+    if (first_message)
+      rsprintf("<tr><td bgcolor=#FF0000 colspan=2 align=center><b>This is the first message in the ELog</b></tr>\n");
+
+
+    rsprintf("<tr><td bgcolor=#FFFF00>Entry date: <b>%s</b>", date);
+
+    rsprintf("<td bgcolor=#FFFF00>Run number: <b>%d</b></tr>", run);
+
+    rsprintf("<tr><td bgcolor=#FFA0A0>Author: <b>%s</b>\n", author);
+
+    rsprintf("<td bgcolor=#FFA0A0>Type: <b>%s</b></tr>\n", type);
+
+    rsprintf("<tr><td bgcolor=#A0FFA0>System: <b>%s</b>\n", system);
+
+    rsprintf("<td bgcolor=#A0FFA0>Subject: <b>%s</b></tr>\n", subject);
+
+    rsprintf("<tr><td colspan=2>\n");
+
+    el_format(text, encoding);
+
+    rsprintf("</tr>\n", text);
+    }
+
+  rsprintf("</table>\n");
+  rsprintf("</body></html>\r\n");
+}
+
+/*------------------------------------------------------------------*/
+
+int el_submit(int run, char *author, char *type, char *system, char *subject, 
+              char *text, char *encoding, char *tag)
 /********************************************************************\
 
   Routine: el_submit
@@ -1283,8 +1575,10 @@ int el_submit(int run, char *author, char *type, char *subject,
     int    run              Run number
     char   *author          Message author
     char   *type            Message type
+    char   *system          Message system
     char   *subject         Subject
     char   *text            Message text
+    char   *encoding        Text encoding, either HTML or plain
 
   Output:
     char   *tag             Message tag in the form YYMMDD.offset
@@ -1330,10 +1624,13 @@ char    message[10000];
   str[15] = 0;
 
   sprintf(message, "Date: %s\n", str);
+  sprintf(message+strlen(message), "Thread: %8d %8d\n", 0, 0);
   sprintf(message+strlen(message), "Run: %d\n", run);
   sprintf(message+strlen(message), "Author: %s\n", author);
   sprintf(message+strlen(message), "Type: %s\n", type);
+  sprintf(message+strlen(message), "System: %s\n", system);
   sprintf(message+strlen(message), "Subject: %s\n", subject);
+  sprintf(message+strlen(message), "Encoding: %s\n", encoding);
   sprintf(message+strlen(message), "========================================\n");
   strcat(message, text);
   strcat(message, "\n");
@@ -1341,16 +1638,16 @@ char    message[10000];
   /* go to EOF and record position */
   lseek(fh, 0, SEEK_END);
   size = 0;
-  sprintf(start_str, "$Start$: %8d %8d\n", TELL(fh), size);
-  sprintf(end_str,   "$End$:   %8d %8d\n\f", TELL(fh), size);
+  sprintf(start_str, "$Start$: %6d\n", size);
+  sprintf(end_str,   "$End$:   %6d\n\f", size);
 
   size = strlen(message)+strlen(start_str)+strlen(end_str);
 
   if (tag != NULL)
     sprintf(tag, "%02d%02d%02d.%d", tms->tm_year, tms->tm_mon+1, tms->tm_mday, TELL(fh));
 
-  sprintf(start_str, "$Start$: %8d %8d\n", TELL(fh), size);
-  sprintf(end_str,   "$End$:   %8d %8d\n\f", TELL(fh), size);
+  sprintf(start_str, "$Start$: %6d\n", size);
+  sprintf(end_str,   "$End$:   %6d\n\f", size);
 
   write(fh, start_str, strlen(start_str));
   write(fh, message, strlen(message));
@@ -1378,9 +1675,9 @@ char *pc;
 
 INT el_search_message(char *tag, int *fh)
 {
-int    i, size, offset, direction;
-struct tm *tms;
-DWORD  lt, ltime;
+int    i, size, offset, direction, last, status;
+struct tm *tms, ltms;
+DWORD  lt, ltime, lact;
 char   str[256], file_name[256], dir[256];
 HNDLE  hDB;
 
@@ -1426,24 +1723,35 @@ HNDLE  hDB;
       return EL_FILE_ERROR;
 
     lseek(*fh, offset, SEEK_SET);
+
+    /* extract time structure from file_name */
+
+    tms = &ltms;
+    memset(tms, 0, sizeof(struct tm));
+    tms->tm_year = (tag[0]-'0')*10 + (tag[1]-'0');
+    tms->tm_mon  = (tag[2]-'0')*10 + (tag[3]-'0') -1;
+    tms->tm_mday = (tag[4]-'0')*10 + (tag[5]-'0');
+    tms->tm_hour = 12;
+
+    ltime = mktime(tms);
     }
 
   /* open most recent file if no tag given */
   if (tag[0] == 0)
     {
-    time(&ltime);
-    lt = ltime;
+    time(&lt);
+    ltime = lt;
     do
       {
-      tms = localtime(&lt);
+      tms = localtime(&ltime);
 
       sprintf(file_name, "%s%02d%02d%02d.log", dir, 
               tms->tm_year, tms->tm_mon+1, tms->tm_mday);
       *fh = open(file_name, O_RDONLY | O_BINARY, 0644);
 
-      lt -= 3600*24; /* one day back */
+      ltime -= 3600*24; /* one day back */
 
-      } while (*fh < 0 && (INT)ltime-(INT)lt < 3600*24*365);
+      } while (*fh < 0 && (INT)lt-(INT)ltime < 3600*24*365);
 
     if (*fh < 0)
       return EL_FILE_ERROR;
@@ -1464,17 +1772,40 @@ HNDLE  hDB;
     if (TELL(*fh) == 0)
       {
       /* go back one day */
+      close(*fh);
+
+      lt = ltime;
+      do
+        {
+        lt -= 3600*24;
+        tms = localtime(&lt);
+        sprintf(str, "%02d%02d%02d.0",  
+                tms->tm_year, tms->tm_mon+1, tms->tm_mday);
+
+        status = el_search_message(str, fh);
+
+        } while (status != EL_SUCCESS && 
+                 (INT)ltime-(INT)lt < 3600*24*365);
+
+      if (status != EL_SUCCESS)
+        return status;
+
+      /* adjust tag */
+      strcpy(tag, str);
+
+      /* go to end of current file */
+      lseek(*fh, 0, SEEK_END);
       }
 
     /* read previous message size */
-    lseek(*fh, -28, SEEK_CUR);
-    i = read(*fh, str, 28);
+    lseek(*fh, -17, SEEK_CUR);
+    i = read(*fh, str, 17);
     if (i <= 0)
       return EL_FILE_ERROR;
 
     if (strncmp(str, "$End$: ", 7) == 0)
       {
-      size = atoi(str+18);
+      size = atoi(str+7);
       lseek(*fh, -size, SEEK_CUR);
       }
     else
@@ -1489,25 +1820,52 @@ HNDLE  hDB;
     /* seek next message */
 
     /* read current message size */
-    i = read(*fh, str, 28);
+    last = TELL(*fh);
+
+    i = read(*fh, str, 15);
     if (i <= 0)
       return EL_FILE_ERROR;
-    lseek(*fh, -28, SEEK_CUR);
+    lseek(*fh, -15, SEEK_CUR);
 
     if (strncmp(str, "$Start$: ", 9) == 0)
       {
-      size = atoi(str+18);
+      size = atoi(str+9);
       lseek(*fh, size, SEEK_CUR);
       }
     else
       return EL_FILE_ERROR;
 
     /* if EOF, goto next day */
-    i = read(*fh, str, 28);
-    if (i < 28)
+    i = read(*fh, str, 15);
+    if (i < 15)
       {
+      close(*fh);
+      time(&lact);
+
+      lt = ltime;
+      do
+        {
+        lt += 3600*24;
+        tms = localtime(&lt);
+        sprintf(str, "%02d%02d%02d.0",  
+                tms->tm_year, tms->tm_mon+1, tms->tm_mday);
+
+        status = el_search_message(str, fh);
+
+        } while (status != EL_SUCCESS && 
+                 (INT)lt-(INT)lact < 3600*24);
+
+      if (status != EL_SUCCESS)
+        return EL_LAST_MSG;
+
+      /* adjust tag */
+      strcpy(tag, str);
+
+      /* go to beginning of current file */
+      lseek(*fh, 0, SEEK_SET);
       }
-    lseek(*fh, -28, SEEK_CUR);
+    else
+      lseek(*fh, -15, SEEK_CUR);
 
     /* adjust tag */
     sprintf(strchr(tag, '.')+1, "%d", TELL(*fh));
@@ -1516,8 +1874,8 @@ HNDLE  hDB;
   return EL_SUCCESS;
 }
 
-INT el_retrieve(char *tag, char *date, int *run, char *author, char *type, char *subject, 
-                char *text, int *textsize)
+INT el_retrieve(char *tag, char *date, int *run, char *author, char *type, 
+                char *system, char *subject, char *text, int *textsize, char *encoding)
 /********************************************************************\
 
   Routine: el_retrieve
@@ -1534,36 +1892,39 @@ INT el_retrieve(char *tag, char *date, int *run, char *author, char *type, char 
     int    *run             Run number
     char   *author          Message author
     char   *type            Message type
+    char   *system          Message system
     char   *subject         Subject
     char   *text            Message text
+    char   *encoding        Encoding of message
     int    *size            Actual message text size
 
   Function value:
     EL_SUCCESS              Successful completion
+    EL_LAST_MSG             Last message in log
 
 \********************************************************************/
 {
-int     size, fh, offset, status;
+int     size, fh, offset, search_status;
 char    str[256], *p;
 char    message[10000];
 
   if (tag[0])
     {
-    el_search_message(tag, &fh);
+    search_status = el_search_message(tag, &fh);
     }
   else
     {
     /* open most recent message */
     strcpy(tag, "-1");
-    status = el_search_message(tag, &fh);
-    if (status != EL_SUCCESS)
-      return status;
+    search_status = el_search_message(tag, &fh);
+    if (search_status != EL_SUCCESS)
+      return search_status;
     }
 
   /* extract message size */
   offset = TELL(fh);
-  read(fh, str, 26);
-  size = atoi(str+18);
+  read(fh, str, 16);
+  size = atoi(str+9);
   read(fh, message, size);
 
   close(fh);
@@ -1575,7 +1936,9 @@ char    message[10000];
   el_decode(message, "Date: ", date);
   el_decode(message, "Author: ", author);
   el_decode(message, "Type: ", type);
+  el_decode(message, "System: ", system);
   el_decode(message, "Subject: ", subject);
+  el_decode(message, "Encoding: ", encoding);
 
   p = strstr(message, "========================================\n");
 
@@ -1605,26 +1968,10 @@ char    message[10000];
     *textsize = 0;
     }
 
+  if (search_status == EL_LAST_MSG)
+    return EL_LAST_MSG;
+
   return EL_SUCCESS;
-}
-
-/*------------------------------------------------------------------*/
-
-void submit_elog()
-{
-char str[80];
-
-  el_submit(atoi(getparam("run")), getparam("author"), getparam("type"),
-            getparam("subject"), getparam("text"), str);
-
-  rsprintf("HTTP/1.0 302 Found\r\n");
-  rsprintf("Server: MIDAS HTTP %s\r\n", cm_get_version());
-
-  if (exp_name[0])
-    rsprintf("Location: %sEL/?exp=%s&msg=%s\n\n<html>redir</html>\r\n", mhttpd_url, exp_name, str);
-  else
-    rsprintf("Location: %sEL/?msg=%s\n\n<html>redir</html>\r\n", mhttpd_url, str);
-
 }
 
 /*------------------------------------------------------------------*/
@@ -3494,42 +3841,19 @@ struct tm *gmt;
     return;
     }
 
+  if (*getparam("msg"))
+    {
+    sprintf(str, "EL/%s", getparam("msg"));
+    redirect("EL/");
+    return;
+    }
+
   if (strncmp(path, "EL/", 3) == 0)
     {
-    show_elog_page(0);
+    show_elog_page(dec_path+3);
     return;
     }
   
-  if (equal_ustring(command, "new"))
-    {
-    show_elog_new();
-    return;
-    }
-
-  if (equal_ustring(command, "submit"))
-    {
-    submit_elog();
-    return;
-    }
-
-  if (equal_ustring(command, "next"))
-    {
-    show_elog_page(1);
-    return;
-    }
-
-  if (equal_ustring(command, "previous"))
-    {
-    show_elog_page(-1);
-    return;
-    }
-
-  if (equal_ustring(command, "query"))
-    {
-    show_elog_query();
-    return;
-    }
-
   /*---- accept command --------------------------------------------*/
   
   if (equal_ustring(command, "accept"))
@@ -3578,14 +3902,15 @@ struct tm *gmt;
 
 /*------------------------------------------------------------------*/
 
-void decode(char *string, char *cookie_pwd, int refresh)
+void decode_get(char *string, char *cookie_pwd, int refresh)
 {
 char path[256];
 char *p, *pitem;
 
   initparam();
 
-  strcpy(path, string+1); /* strip leading '/' */
+  strncpy(path, string+1, sizeof(path)); /* strip leading '/' */
+  path[255] = 0;
   if (strchr(path, '?'))
     *strchr(path, '?') = 0;
   setparam("path", path);
@@ -3621,6 +3946,83 @@ char *p, *pitem;
 
 /*------------------------------------------------------------------*/
 
+void decode_post(char *string, char *boundary, int length, char *cookie_pwd, int refresh)
+{
+char path[256];
+char *pinit, *p, *pitem, *ptmp;
+
+  initparam();
+
+  pinit = string;
+
+  if (strstr(string, boundary))
+    string = strstr(string, boundary) + strlen(boundary);
+
+  do
+    {
+    while (*string == '\n' || *string == '\r')
+      string++;
+
+    if (strstr(string, "name="))
+      {
+      pitem = strstr(string, "name=")+5;
+      if (*pitem == '\"')
+        pitem++;
+
+      if (strncmp(pitem, "attfile", 7) == 0)
+        {
+        /* evaluate file attachment */
+        if (strstr(pitem, "filename="))
+          p = strstr(pitem, "filename=")+9;
+        if (*p == '\"')
+          p++;
+        if (strstr(p, "\r\n\r\n"))
+          ptmp = strstr(p, "\r\n\r\n")+4;
+        else if (strstr(p, "\r\r\n\r\r\n"))
+          ptmp = strstr(p, "\r\r\n\r\r\n")+6;
+        if (strchr(p, '\"'))
+          *strchr(p, '\"') = 0;
+
+        setparam("filename", p);
+
+        if (strstr(ptmp, boundary))
+          {
+          p = ptmp;
+          string = strstr(p, boundary) + strlen(boundary);
+          while (*string == '-' || *string == '\n' || *string == '\r')
+            string++;
+          }
+        }
+      else
+        {
+        p = pitem;
+        if (strstr(p, "\r\n\r\n"))
+          p = strstr(p, "\r\n\r\n")+4;
+        else if (strstr(p, "\r\r\n\r\r\n"))
+          p = strstr(p, "\r\r\n\r\r\n")+6;
+
+        if (strchr(pitem, '\"'))
+          *strchr(pitem, '\"') = 0;
+
+        if (strstr(p, boundary))
+          {
+          string = strstr(p, boundary) + strlen(boundary);
+          *strstr(p, boundary) = 0;
+          ptmp = p + (strlen(p) - 1);
+          while (*ptmp == '-' || *ptmp == '\n' || *ptmp == '\r')
+            *ptmp-- = 0;
+          }
+        setparam(pitem, p);
+        }
+      }
+
+    } while ((INT)string - (INT)pinit < length);
+  
+  interprete(cookie_pwd, path, refresh);
+}
+
+/*------------------------------------------------------------------*/
+
 char net_buffer[1000000];
 
 void server_loop(int tcp_port)
@@ -3628,8 +4030,8 @@ void server_loop(int tcp_port)
 int                  status, i, refresh;
 struct sockaddr_in   bind_addr, acc_addr;
 char                 host_name[256];
-char                 str[256], cookie_pwd[256];
-int                  lsock, sock, len, flag;
+char                 cookie_pwd[256], boundary[256];
+int                  lsock, sock, len, flag, content_length, header_length;
 struct hostent       *phe;
 struct linger        ling;
 fd_set               readfds;
@@ -3744,11 +4146,11 @@ INT                  last_time=0;
 
       memset(net_buffer, 0, sizeof(net_buffer));
       len = 0;
+      header_length = 0;
       do
         {
         i = recv(sock, net_buffer+len, sizeof(net_buffer)-len, 0);
       
-
         /* abort if connection got broken */
         if (i<0)
           goto error;
@@ -3764,9 +4166,28 @@ INT                  last_time=0;
           if (len>6 && strcmp(&net_buffer[len-6], "\r\r\n\r\r\n") == 0)
             break;
           }
+        else if (strstr(net_buffer, "POST") != NULL)
+          {
+          if (strstr(net_buffer, "Content-Length:"))
+            content_length = atoi(strstr(net_buffer, "Content-Length:") + 15);
+          if (strstr(net_buffer, "boundary="))
+            {
+            strncpy(boundary, strstr(net_buffer, "boundary=")+9, sizeof(boundary));
+            if (strchr(boundary, '\r'))
+              *strchr(boundary, '\r') = 0;
+            }
+
+          if (strstr(net_buffer, "\r\n\r\n"))
+            header_length = (INT)strstr(net_buffer, "\r\n\r\n") - (INT)net_buffer + 4;
+
+          if (strstr(net_buffer, "\r\r\n\r\r\n"))
+            header_length = (INT)strstr(net_buffer, "\r\r\n\r\r\n") - (INT)net_buffer + 6;
+
+          if (header_length > 0 && len >= header_length+content_length)
+            break;
+          }
         else
           printf(net_buffer);
-
 
         } while (1);
 
@@ -3787,20 +4208,28 @@ INT                  last_time=0;
       if (refresh == 0)
         refresh = DEFAULT_REFRESH;
 
-      /* extract path and commands */
-      *strchr(net_buffer, '\r') = 0;
-      if (strncmp(net_buffer, "GET", 3) != 0)
-        goto error;
-      strcpy(str, net_buffer+4);
-    
-      if (!strstr(str, "HTTP"))
-        goto error;
-      *(strstr(str, "HTTP")-1)=0;
-
       memset(return_buffer, 0, sizeof(return_buffer));
 
-      /* decode command and return answer */
-      decode(str, cookie_pwd, refresh);
+      if (strncmp(net_buffer, "GET", 3) != 0 &&
+          strncmp(net_buffer, "POST", 4) != 0)
+        goto error;
+      
+      if (strncmp(net_buffer, "GET", 3) == 0)
+        {
+        /* extract path and commands */
+        *strchr(net_buffer, '\r') = 0;
+  
+        if (!strstr(net_buffer, "HTTP"))
+          goto error;
+        *(strstr(net_buffer, "HTTP")-1)=0;
+
+        /* decode command and return answer */
+        decode_get(net_buffer+4, cookie_pwd, refresh);
+        }
+      else
+        {
+        decode_post(net_buffer+header_length, boundary, content_length, cookie_pwd, refresh);
+        }
 
       i = strlen(return_buffer);
       send(sock, return_buffer, i+1, 0);
