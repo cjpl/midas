@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.109  2003/04/14 12:58:16  midas
+  Added event_descrip to equipment
+
   Revision 1.108  2003/04/09 13:48:18  midas
   Added ROOT format
 
@@ -483,7 +486,12 @@ typedef          INT       HNDLE;
 /* Definition of implementation specific constants */
 
 /* all buffer sizes must be multiples of 4 ! */
-#define TAPE_BUFFER_SIZE       0x8000/* buffer size for taping data */
+
+#ifdef OS_WINNT 
+#define TAPE_BUFFER_SIZE       0x100000/* buffer size for taping data */
+#else
+#define TAPE_BUFFER_SIZE       0x8000  /* buffer size for taping data */
+#endif
 #define NET_TCP_SIZE           0xFFFF       /* maximum TCP transfer */
 #define OPT_TCP_SIZE           8192      /* optimal TCP buffer size */
 #define NET_UDP_SIZE           8192         /* maximum UDP transfer */
@@ -1108,26 +1116,26 @@ typedef struct {
 typedef struct eqpmnt *PEQUIPMENT;
 
 typedef struct eqpmnt {
-  char   name[NAME_LENGTH];             /* Equipment name                  */
-  EQUIPMENT_INFO info;                  /* From above                      */
-  INT    (*readout)(char *, INT);       /* Pointer to user readout routine */
-  INT    (*cd)(INT cmd, PEQUIPMENT);    /* Class driver routine            */
-  DEVICE_DRIVER *driver;                /* Device driver list              */
-  char   *init_string;                  /* Init string for fixed events    */
-  void   *cd_info;                      /* private data for class driver   */
-  INT    status;                        /* One of FE_xxx                   */
-  DWORD  last_called;                   /* Last time event was read        */
-  DWORD  last_idle;                     /* Last time idle func was called  */
-  DWORD  poll_count;                    /* Needed to poll 'period'         */
-  INT    format;                        /* FORMAT_xxx                      */
-  HNDLE  buffer_handle;                 /* MIDAS buffer handle             */
-  HNDLE  hkey_variables;                /* Key to variables subtree in ODB */
-  DWORD  serial_number;                 /* event serial number             */
-  DWORD  subevent_number;               /* subevent number                 */
-  DWORD  odb_out;                       /* # updates FE -> ODB             */
-  DWORD  odb_in;                        /* # updated ODB -> FE             */
-  DWORD  bytes_sent;                    /* number of bytes sent            */
-  DWORD  events_sent;                   /* number of events sent           */
+  char   name[NAME_LENGTH];             /* Equipment name                            */
+  EQUIPMENT_INFO info;                  /* From above                                */
+  INT    (*readout)(char *, INT);       /* Pointer to user readout routine           */
+  INT    (*cd)(INT cmd, PEQUIPMENT);    /* Class driver routine                      */
+  DEVICE_DRIVER *driver;                /* Device driver list                        */
+  void   *event_descrip;                /* Init string for fixed events or bank list */
+  void   *cd_info;                      /* private data for class driver             */
+  INT    status;                        /* One of FE_xxx                             */
+  DWORD  last_called;                   /* Last time event was read                  */
+  DWORD  last_idle;                     /* Last time idle func was called            */
+  DWORD  poll_count;                    /* Needed to poll 'period'                   */
+  INT    format;                        /* FORMAT_xxx                                */
+  HNDLE  buffer_handle;                 /* MIDAS buffer handle                       */
+  HNDLE  hkey_variables;                /* Key to variables subtree in ODB           */
+  DWORD  serial_number;                 /* event serial number                       */
+  DWORD  subevent_number;               /* subevent number                           */
+  DWORD  odb_out;                       /* # updates FE -> ODB                       */
+  DWORD  odb_in;                        /* # updated ODB -> FE                       */
+  DWORD  bytes_sent;                    /* number of bytes sent                      */
+  DWORD  events_sent;                   /* number of events sent                     */
   EQUIPMENT_STATS stats;
 } EQUIPMENT;
 
@@ -1740,14 +1748,15 @@ void EXPRT bk_init(void *pbh);
 void EXPRT bk_init32(void *event);
 BOOL EXPRT bk_is32(void *event);
 INT EXPRT bk_size(void *pbh);
-void EXPRT bk_create(void *pbh, char *name, WORD type, void *pdata);
-INT EXPRT bk_delete(void *event, char *name);
+void EXPRT bk_create(void *pbh, const char *name, WORD type, void *pdata);
+INT EXPRT bk_delete(void *event, const char *name);
 INT EXPRT bk_close(void *pbh, void *pdata);
-INT EXPRT bk_list (void *pbh, char * bklist);
-INT EXPRT bk_locate(void *pbh, char *name, void *pdata);
+INT EXPRT bk_list(void *pbh, char *bklist);
+INT EXPRT bk_locate(void *pbh, const char *name, void *pdata);
 INT EXPRT bk_iterate(void *pbh, BANK **pbk, void *pdata);
 INT EXPRT bk_iterate32(void *pbh, BANK32 **pbk, void *pdata);
 INT EXPRT bk_swap(void *event, BOOL force);
+INT EXPRT bk_find(BANK_HEADER *pbkh, const char *name, DWORD *bklen, DWORD *bktype, void **pdata);
 
 /*---- RPC routines ----*/
 INT EXPRT rpc_register_functions(RPC_LIST *new_list, INT (*func)(INT,void**));
