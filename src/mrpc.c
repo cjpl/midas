@@ -6,6 +6,9 @@
   Contents:     List of MIDAS RPC functions with parameters
 
   $Log$
+  Revision 1.35  2004/10/06 22:51:17  midas
+  Restrict destination string length of db_sprintf to MAX_STRING_LENGTH
+
   Revision 1.34  2004/01/13 00:51:57  pierre
   fix dox comment for vxworks
 
@@ -1127,6 +1130,8 @@ static RPC_LIST rpc_list_library[] = {
      {TID_INT, RPC_IN}
      ,
      {TID_STRING, RPC_OUT}
+     ,
+     {TID_INT, RPC_IN}
      ,
      {TID_INT, RPC_IN}
      ,

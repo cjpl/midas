@@ -6,6 +6,9 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.99  2004/10/06 22:51:17  midas
+  Restrict destination string length of db_sprintf to MAX_STRING_LENGTH
+
   Revision 1.98  2004/10/04 23:54:29  midas
   Implemented ODB version
 
@@ -6333,7 +6336,7 @@ INT db_sprintf(char *string, void *data, INT data_size, INT index, DWORD type)
          break;
       case TID_STRING:
       case TID_LINK:
-         sprintf(string, "%s", ((char *) data) + data_size * index);
+         strlcpy(string, ((char *) data) + data_size * index, MAX_STRING_LENGTH);
          break;
       default:
          sprintf(string, "<unknown>");
