@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.111  2000/04/17 16:28:21  pierre
+  - Added arg "BOOL binary_time" to hs_dump(), hs_fdump() for mhist -b
+
   Revision 1.110  2000/03/29 09:14:47  midas
   Fixed bug with original message tagging having the wrong offset
 
@@ -14249,7 +14252,7 @@ struct tm    *tms;
 /*------------------------------------------------------------------*/
 
 INT hs_dump(DWORD event_id, DWORD start_time, DWORD end_time,
-            DWORD interval)
+            DWORD interval, BOOL binary_time)
 /********************************************************************\
 
   Routine: hs_dump
@@ -14263,7 +14266,7 @@ INT hs_dump(DWORD event_id, DWORD start_time, DWORD end_time,
     DWORD  end_time         End Date/Time
     DWORD  interval         Minimum time in seconds between reported 
                             events. Can be used to skip events
-
+    BOOL   binary_time      Display DWORD time stamp
   Output:
     <screen output>
 
@@ -14386,10 +14389,14 @@ struct tm    *tms;
           }
 
         /* print time from header */
-        sprintf(str, "%s", ctime((const time_t *)&irec.time)+4);
-        str[20] = '\t';
-        printf(str);
-
+        if (binary_time)
+          printf("%i ",irec.time);
+        else
+        {
+	  sprintf(str, "%s", ctime((const time_t *)&irec.time)+4);
+	  str[20] = '\t';
+	  printf(str);
+        }
         /* read data */
         read(fh, data_buffer, rec.data_size);
 
@@ -14475,7 +14482,7 @@ struct tm    *tms;
 
 /*------------------------------------------------------------------*/
 
-INT hs_fdump(char *file_name, DWORD id)
+INT hs_fdump(char *file_name, DWORD id, BOOL binary_time)
 /********************************************************************\
 
   Routine: hs_fdump
@@ -14484,6 +14491,8 @@ INT hs_fdump(char *file_name, DWORD id)
 
   Input:
     char   *file_name       Name of file to dump
+    DWORD  event_id         Event ID
+    BOOL   binary_time      Display DWORD time stamp
 
   Output:
     <screen output>
@@ -14530,10 +14539,15 @@ char         str[80];
     else
       {
       /* print data record */
-      strcpy(str, ctime((const time_t *)&rec.time)+4);
-      str[15] = 0;
-      if (rec.event_id == id || id == 0)
-        printf("ID %d, %s, size %d\n", rec.event_id, str, rec.data_size);
+	if (binary_time)
+	  sprintf(str, "%i ",rec.time);
+	else
+	{
+	  strcpy(str, ctime((const time_t *)&rec.time)+4);
+	  str[15] = 0;
+	}
+	if (rec.event_id == id || id == 0)
+	  printf("ID %d, %s, size %d\n", rec.event_id, str, rec.data_size);
 
       /* skip data */
       lseek(fh, rec.data_size, SEEK_CUR);
