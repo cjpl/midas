@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.181  2002/01/31 09:43:22  midas
+  Fixed small bug with 'Edit run number'
+
   Revision 1.180  2001/12/13 18:08:41  pierre
   fix Edit run number var
 
@@ -626,7 +629,7 @@ struct {
   char type[32];
   } filetype[] = {
 
-  ".JPG",   "image/jpeg",     
+  ".JPG",   "image/jpeg",
   ".GIF",   "image/gif",
   ".PS",    "application/postscript",
   ".EPS",   "application/postscript",
@@ -698,7 +701,7 @@ char *p, link[256];
 
     return_buffer[j] = 0;
     strlen_retbuf = j;
-    }  
+    }
 }
 
 /*------------------------------------------------------------------*/
@@ -813,7 +816,7 @@ int i;
 
 /*------------------------------------------------------------------*/
 
-void urlDecode(char *p) 
+void urlDecode(char *p)
 /********************************************************************\
    Decode the given string in-place by expanding %XX escapes
 \********************************************************************/
@@ -822,25 +825,25 @@ char *pD, str[3];
 int  i;
 
   pD = p;
-  while (*p) 
+  while (*p)
     {
-    if (*p=='%') 
+    if (*p=='%')
       {
       /* Escape: next 2 chars are hex representation of the actual character */
       p++;
-      if (isxdigit(p[0]) && isxdigit(p[1])) 
+      if (isxdigit(p[0]) && isxdigit(p[1]))
         {
         str[0] = p[0];
         str[1] = p[1];
         str[2] = 0;
         sscanf(p, "%02X", &i);
-        
+
         *pD++ = (char) i;
         p += 2;
         }
       else
         *pD++ = '%';
-      } 
+      }
     else if (*p == '+')
       {
       /* convert '+' to ' ' */
@@ -855,7 +858,7 @@ int  i;
    *pD = '\0';
 }
 
-void urlEncode(char *ps) 
+void urlEncode(char *ps)
 /********************************************************************\
    Encode the given string in-place by adding %XX escapes
 \********************************************************************/
@@ -864,15 +867,15 @@ char *pd, *p, str[256];
 
   pd = str;
   p  = ps;
-  while (*p) 
+  while (*p)
     {
     if (strchr(" %&=", *p))
       {
       sprintf(pd, "%%%02X", *p);
       pd += 3;
       p++;
-      } 
-    else 
+      }
+    else
       {
       *pd++ = *p++;
       }
@@ -968,7 +971,7 @@ time_t               now;
   recv_string(s, str, sizeof(str), 3000);
 
   closesocket(s);
-  
+
   return 1;
 }
 
@@ -1030,10 +1033,10 @@ char        path[MAX_ODB_PATH], data[10000];
       {
       /* for keys, don't display data value */
       if (exp_name[0])
-        rsprintf("<tr><td bgcolor=#FFD000><a href=\"%s?exp=%s&path=%s\">%s</a></tr>\n", 
+        rsprintf("<tr><td bgcolor=#FFD000><a href=\"%s?exp=%s&path=%s\">%s</a></tr>\n",
                mhttpd_url, exp_name, str1, path);
       else
-        rsprintf("<tr><td bgcolor=#FFD000><a href=\"%s%s\">%s</a></tr>\n", 
+        rsprintf("<tr><td bgcolor=#FFD000><a href=\"%s%s\">%s</a></tr>\n",
                mhttpd_url, str1, path);
       }
     else
@@ -1056,10 +1059,10 @@ char        path[MAX_ODB_PATH], data[10000];
           db_sprintf(data_str, data, key->item_size, 0, key->type);
 
         if (exp_name[0])
-          sprintf(ref, "%s%s?cmd=Set&exp=%s", 
+          sprintf(ref, "%s%s?cmd=Set&exp=%s",
                   mhttpd_url, str1, exp_name);
         else
-          sprintf(ref, "%s%s?cmd=Set", 
+          sprintf(ref, "%s%s?cmd=Set",
                   mhttpd_url, str1);
 
         rsprintf("<tr><td bgcolor=#FFFF00>");
@@ -1083,10 +1086,10 @@ char        path[MAX_ODB_PATH], data[10000];
           db_sprintf(data_str, data, key->item_size, i, key->type);
 
           if (exp_name[0])
-            sprintf(ref, "%s%s?cmd=Set&index=%d&exp=%s", 
+            sprintf(ref, "%s%s?cmd=Set&index=%d&exp=%s",
                     mhttpd_url, str1, i, exp_name);
           else
-            sprintf(ref, "%s%s?cmd=Set&index=%d", 
+            sprintf(ref, "%s%s?cmd=Set&index=%d",
                     mhttpd_url, str1, i);
 
           if (i>0)
@@ -1117,7 +1120,7 @@ void show_help_page()
   rsprintf("a run. The ODB button switches into the Online Database mode, where\n");
   rsprintf("the contents of the experiment database can be displayed and modified.<P>\n\n");
 
-  rsprintf("For more information, refer to the\n"); 
+  rsprintf("For more information, refer to the\n");
   rsprintf("<A HREF=\"http://midas.psi.ch/doc/manual/Manual.html\">PSI MIDAS manual</A>,\n");
   rsprintf("<A HREF=\"http://midas.triumf.ca/docmidas/index.html\">Triumf MIDAS manual</A>.<P>\n\n");
 
@@ -1143,11 +1146,11 @@ int    size;
   rsprintf("Content-Type: text/html\r\n\r\n");
 
   rsprintf("<html><head>\n");
-  
+
   /* auto refresh */
   if (refresh)
     rsprintf("<meta http-equiv=\"Refresh\" content=\"%02d\">\n", refresh);
-    
+
   rsprintf("<title>%s</title></head>\n", title);
   rsprintf("<body><form method=\"GET\" action=\"%s%s\">\n\n",
             mhttpd_url, path);
@@ -1207,7 +1210,7 @@ void exec_script(HNDLE hkey)
 
   The arguments for the script are derived from the
   subtree below <button_name>, where <button_name> must be
-  TID_KEY. The subtree may then contain arguments or links 
+  TID_KEY. The subtree may then contain arguments or links
   to other values in the ODB, like run number etc.
 
 \********************************************************************/
@@ -1232,7 +1235,7 @@ char   data[1000], str[256];
       {
       db_enum_key(hDB, hkey, i, &hsubkey);
 	    if (!hsubkey)
-	      break;  
+	      break;
 	    db_get_key(hDB, hsubkey, &key);
 
       if (key.type != TID_KEY)
@@ -1247,7 +1250,7 @@ char   data[1000], str[256];
         strcat(command, str);
         }
       }
-  
+
   /* printf("exec_script: %s\n", command); */
 
   if (command[0])
@@ -1307,7 +1310,7 @@ CHN_STATISTICS chn_stats;
 
     rsprintf("Set-Cookie: midas_wpwd=%s; path=/; expires=%s\r\n", cookie_wpwd, str);
     }
-    
+
   rsprintf("\r\n<html>\n");
 
   /* auto refresh */
@@ -1359,12 +1362,12 @@ CHN_STATISTICS chn_stats;
   if (status == DB_SUCCESS)
     {
     rsprintf("<tr><td colspan=6 bgcolor=#D0D0D0>\n");
-  
+
     for (i=0 ; ; i++)
       {
       db_enum_link(hDB, hkey, i, &hsubkey);
 	    if (!hsubkey)
-	      break;  
+	      break;
 	    db_get_key(hDB, hsubkey, &key);
       rsprintf("<input type=submit name=script value=\"%s\">\n", key.name);
       }
@@ -1404,7 +1407,7 @@ CHN_STATISTICS chn_stats;
           size = sizeof(str);
           db_get_value(hDB, hsubkey, "Alarm Class", str, &size, TID_STRING);
 
-          rsprintf("<tr><td colspan=6 bgcolor=#FF0000 align=center><h1><a href=\"%s\">%s</a></h1></tr>\n", 
+          rsprintf("<tr><td colspan=6 bgcolor=#FF0000 align=center><h1><a href=\"%s\">%s</a></h1></tr>\n",
                    ref, str);
           break;
           }
@@ -1489,7 +1492,7 @@ CHN_STATISTICS chn_stats;
           sprintf(ref, "%sAlias/%s?exp=%s", mhttpd_url, key.name, exp_name);
         else
           sprintf(ref, "%sAlias/%s", mhttpd_url, key.name);
-  
+
         if (new_window)
           rsprintf("<a href=\"%s\" target=\"_blank\">%s</a> ", ref, name);
         else
@@ -1527,7 +1530,7 @@ CHN_STATISTICS chn_stats;
           sprintf(ref, "%sCS/%s?exp=%s", mhttpd_url, key.name, exp_name);
         else
           sprintf(ref, "%sCS/%s", mhttpd_url, key.name);
-  
+
         if (new_window)
           rsprintf("<a href=\"%s\" target=\"_blank\">%s</a> ", ref, name);
         else
@@ -1603,7 +1606,7 @@ CHN_STATISTICS chn_stats;
   if (runinfo.state == STATE_STOPPED)
     rsprintf("<td colspan=3>Stop: %s</tr>\n", runinfo.stop_time);
   else
-    rsprintf("<td colspan=3>Running time: %dh%02dm%02ds</tr>\n", 
+    rsprintf("<td colspan=3>Running time: %dh%02dm%02ds</tr>\n",
              difftime/3600, difftime%3600/60,difftime%60);
 
   /*---- Equipment list ----*/
@@ -1633,7 +1636,7 @@ CHN_STATISTICS chn_stats;
         if (size == sizeof(equipment))
           db_get_record(hDB, hkeytmp, &equipment, &size, 0);
         }
-      
+
       db_find_key(hDB, hsubkey, "Statistics", &hkeytmp);
 
       if (hkeytmp)
@@ -1647,20 +1650,20 @@ CHN_STATISTICS chn_stats;
         sprintf(ref, "%sSC/%s?exp=%s", mhttpd_url, key.name, exp_name);
       else
         sprintf(ref, "%sSC/%s", mhttpd_url, key.name);
-      
+
       /* check if client running this equipment is present */
       if (cm_exist(equipment.frontend_name, TRUE) != CM_SUCCESS)
-        rsprintf("<tr><td><a href=\"%s\">%s</a><td align=center bgcolor=#FF0000>(inactive)", 
+        rsprintf("<tr><td><a href=\"%s\">%s</a><td align=center bgcolor=#FF0000>(inactive)",
                   ref, key.name);
       else {
 	 if (equipment.enabled)
-	   rsprintf("<tr><td><a href=\"%s\">%s</a><td align=center bgcolor=#00FF00>%s@%s", 
+	   rsprintf("<tr><td><a href=\"%s\">%s</a><td align=center bgcolor=#00FF00>%s@%s",
 		    ref, key.name, equipment.frontend_name, equipment.frontend_host);
 	 else
 	   rsprintf("<tr><td><a href=\"%s\">%s</a><td align=center bgcolor=#FFFF00>%s@%s",
 		    ref, key.name, equipment.frontend_name, equipment.frontend_host);
       }
-	 
+
       /* get analyzed ratio */
       analyze_ratio = 0;
       sprintf(ref, "/Analyzer/%s", key.name);
@@ -1668,14 +1671,14 @@ CHN_STATISTICS chn_stats;
       if (hkeytmp)
         {
         size = sizeof(double);
-        if (db_get_value(hDB, hkeytmp, "Statistics/Events received", 
+        if (db_get_value(hDB, hkeytmp, "Statistics/Events received",
                          &analyzed, &size, TID_DOUBLE) == DB_SUCCESS &&
             equipment_stats.events_sent > 0)
           analyze_ratio = analyzed / equipment_stats.events_sent;
         if (analyze_ratio > 1)
           analyze_ratio = 1;
         }
-      
+
       d = equipment_stats.events_sent;
       if (d > 1E9)
         sprintf(str, "%1.3lfG", d/1E9);
@@ -1689,15 +1692,15 @@ CHN_STATISTICS chn_stats;
           cm_exist("FAL", FALSE) == CM_SUCCESS)
         rsprintf("<td align=center>%s<td align=center>%1.1lf<td align=center>%1.1lf<td align=center bgcolor=#00FF00>%3.1lf%%</tr>\n",
                  str,
-                 equipment_stats.events_per_sec, 
+                 equipment_stats.events_per_sec,
                  equipment_stats.kbytes_per_sec,
-                 analyze_ratio*100.0); 
+                 analyze_ratio*100.0);
       else
         rsprintf("<td align=center>%s<td align=center>%1.1lf<td align=center>%1.1lf<td align=center bgcolor=#FF0000>%3.1lf%%</tr>\n",
                  str,
-                 equipment_stats.events_per_sec, 
+                 equipment_stats.events_per_sec,
                  equipment_stats.kbytes_per_sec,
-                 analyze_ratio*100.0); 
+                 analyze_ratio*100.0);
       }
     }
 
@@ -1717,7 +1720,7 @@ CHN_STATISTICS chn_stats;
     else
       sprintf(ref, "%s%s/Settings", mhttpd_url, ebname);
     rsprintf("<a href=\"%s\">Settings</a>",ref);
-    
+
     /* Extract general setting */
     size = sizeof(str);
     db_get_value(hDB, hkey, "Settings/Hostname", str, &size, TID_STRING);
@@ -1741,7 +1744,7 @@ CHN_STATISTICS chn_stats;
       sprintf(str, "%1.3lfM", d/1E6);
     else
       sprintf(str, "%1.0lf", d);
-    
+
     /* -PAA- get analyzed ratio, but the Analyzer is not scanning this
     EBuilder like Equipment for now. It's in for cosmetic purpose only.
     The EBuilder (mevb.c) contains code for YBOs and MIDAS format, but
@@ -1752,7 +1755,7 @@ CHN_STATISTICS chn_stats;
     if (hkeytmp)
       {
       size = sizeof(double);
-      if (db_get_value(hDB, hkeytmp, "Statistics/Events received", 
+      if (db_get_value(hDB, hkeytmp, "Statistics/Events received",
                        &analyzed, &size, TID_DOUBLE) == DB_SUCCESS &&
           equipment_stats.events_sent > 0)
         analyze_ratio = analyzed / equipment_stats.events_sent;
@@ -1760,12 +1763,12 @@ CHN_STATISTICS chn_stats;
       if (analyze_ratio > 1)
         analyze_ratio = 1;
       }
-    
+
     rsprintf("<td align=center>%s<td align=center>%1.1lf<td align=center>%1.1lf<td align=center bgcolor=#FF0000>%3.1lf%%</tr>\n",
               str,
-              equipment_stats.events_per_sec, 
+              equipment_stats.events_per_sec,
               equipment_stats.kbytes_per_sec,
-              analyze_ratio*100.0); 
+              analyze_ratio*100.0);
     }
 
   /*---- Logging channels ----*/
@@ -1785,13 +1788,13 @@ CHN_STATISTICS chn_stats;
       db_find_key(hDB, hsubkey, "Settings", &hkeytmp);
       size = sizeof(chn_settings);
       db_get_record(hDB, hkeytmp, &chn_settings, &size, 0);
-      
+
       db_find_key(hDB, hsubkey, "Statistics", &hkeytmp);
       size = sizeof(chn_stats);
       db_get_record(hDB, hkeytmp, &chn_stats, &size, 0);
 
       /* filename */
-      
+
       if (strchr(chn_settings.filename, '%'))
         sprintf(str, chn_settings.filename, runinfo.run_number);
       else
@@ -1846,7 +1849,7 @@ CHN_STATISTICS chn_stats;
     }
 
   /*---- Lazy Logger ----*/
-  
+
   if (db_find_key(hDB, 0, "/Lazy", &hkey) == DB_SUCCESS)
     {
     status = db_find_key(hDB, 0, "System/Clients", &hkey);
@@ -1870,14 +1873,14 @@ CHN_STATISTICS chn_stats;
         client_name[4] = 0; /* search only for the 4 first char */
         if (equal_ustring(client_name, "Lazy"))
           {
-          sprintf(str, "/Lazy/%s", &client_name[5]);  
+          sprintf(str, "/Lazy/%s", &client_name[5]);
           status = db_find_key(hDB, 0, str, &hLKey);
           if (status == DB_SUCCESS)
             {
             size = sizeof(str);
             db_get_value(hDB, hLKey, "Settings/Backup Type", str, &size, TID_STRING);
             ftp_mode = equal_ustring(str, "FTP");
-            
+
             if (previous_mode != ftp_mode)
               k = 0;
             if (k == 0)
@@ -1963,7 +1966,7 @@ CHN_STATISTICS chn_stats;
         break;
 
       if (i%3 == 0)
-        rsprintf("<tr bgcolor=#E0E0FF>"); 
+        rsprintf("<tr bgcolor=#E0E0FF>");
 
       size = sizeof(name);
       db_get_value(hDB, hsubkey, "Name", name, &size, TID_STRING);
@@ -2144,7 +2147,7 @@ void show_elog_new(char *path, BOOL bedit, char *odb_att)
 {
 int    i, j, size, run_number, wrap;
 char   str[256], ref[256], *p;
-char   date[80], author[80], type[80], system[80], subject[256], text[10000], 
+char   date[80], author[80], type[80], system[80], subject[256], text[10000],
        orig_tag[80], reply_tag[80], att1[256], att2[256], att3[256], encoding[80];
 time_t now;
 HNDLE  hDB, hkey, hsubkey;
@@ -2165,7 +2168,7 @@ KEY    key;
     {
     strcpy(str, path);
     size = sizeof(text);
-    el_retrieve(str, date, &run_number, author, type, system, subject, 
+    el_retrieve(str, date, &run_number, author, type, system, subject,
                 text, &size, orig_tag, reply_tag, att1, att2, att3, encoding);
     }
 
@@ -2210,7 +2213,7 @@ KEY    key;
     if (bedit)
       {
       rsprintf("<tr><td bgcolor=#FFFF00>Entry date: %s<br>", date);
-      time(&now);                 
+      time(&now);
       rsprintf("Revision date: %s", ctime(&now));
       }
     else
@@ -2233,7 +2236,7 @@ KEY    key;
     if (bedit)
       {
       rsprintf("<tr><td colspan=2 bgcolor=#FFFF00>Entry date: %s<br>", date);
-      time(&now);                 
+      time(&now);
       rsprintf("Revision date: %s", ctime(&now));
       }
     else
@@ -2321,10 +2324,10 @@ KEY    key;
     if (bedit)
       rsprintf("<input type=hidden name=edit value=1>\n");
     }
-  
+
   /* increased wrapping for replys (leave space for '> ' */
   wrap = (path && !bedit) ? 78 : 76;
-  
+
   rsprintf("<tr><td colspan=2>Text:<br>\n");
   rsprintf("<textarea rows=10 cols=%d wrap=hard name=Text>", wrap);
 
@@ -2571,7 +2574,7 @@ BOOL   allow_delete;
   db_get_value(hDB, 0, "/Elog/Allow delete", &allow_delete, &size, TID_BOOL);
 
   /* redirect if confirm = NO */
-  if (getparam("confirm") && *getparam("confirm") && 
+  if (getparam("confirm") && *getparam("confirm") &&
       strcmp(getparam("confirm"), "No") == 0)
     {
     sprintf(str, "EL/%s", path);
@@ -2628,7 +2631,7 @@ BOOL   allow_delete;
 void show_elog_submit_query(INT last_n)
 {
 int    i, size, run, status, m1, d2, m2, y2, index, colspan;
-char   date[80], author[80], type[80], system[80], subject[256], text[10000], 
+char   date[80], author[80], type[80], system[80], subject[256], text[10000],
        orig_tag[80], reply_tag[80], attachment[3][256], encoding[80];
 char   str[256], str2[10000], tag[256], ref[256], file_name[256];
 HNDLE  hDB;
@@ -2668,7 +2671,7 @@ FILE   *f;
     full = !(*getparam("mode"));
     show_attachments = (*getparam("attach") > 0);
     }
-  
+
   /*---- title row ----*/
 
   size = sizeof(str);
@@ -2762,15 +2765,15 @@ FILE   *f;
       rsprintf("<tr><td colspan=%d bgcolor=#FFFF00><b>Query result between run %s and today</b></tr>\n",
                 colspan, getparam("r1"));
     }
-  else 
+  else
     {
     if (last_n)
       {
       if (exp_name[0])
-        rsprintf("<tr><td colspan=6><a href=\"last%d?exp=%s\">Last %d days</a></tr>\n", 
+        rsprintf("<tr><td colspan=6><a href=\"last%d?exp=%s\">Last %d days</a></tr>\n",
                   last_n+1, exp_name, last_n+1);
       else
-        rsprintf("<tr><td colspan=6><a href=\"last%d\">Last %d days</a></tr>\n", 
+        rsprintf("<tr><td colspan=6><a href=\"last%d\">Last %d days</a></tr>\n",
                   last_n+1, last_n+1);
 
       if (last_n == 1)
@@ -2857,8 +2860,8 @@ FILE   *f;
   do
     {
     size = sizeof(text);
-    status = el_retrieve(tag, date, &run, author, type, system, subject, 
-                         text, &size, orig_tag, reply_tag, 
+    status = el_retrieve(tag, date, &run, author, type, system, subject,
+                         text, &size, orig_tag, reply_tag,
                          attachment[0], attachment[1], attachment[2],
                          encoding);
     strcat(tag, "+1");
@@ -2879,7 +2882,7 @@ FILE   *f;
     if (tms.tm_year < 90)
       tms.tm_year += 100;
     ltime_current = mktime(&tms);
-    
+
     /* check for start date */
     if (ltime_start > 0)
       if (ltime_current < ltime_start)
@@ -2913,7 +2916,7 @@ FILE   *f;
         if (strstr(str2, str) == NULL)
           continue;
         }
-      
+
       if (*getparam("subject"))
         {
         strcpy(str, getparam("subject"));
@@ -2967,7 +2970,7 @@ FILE   *f;
           rsprintf("<tr><td><a href=%s>%s</a><td>%s<td>%s<td>%s<td>%s</tr>\n", ref, date, author, type, system, subject);
           rsprintf("<tr><td colspan=5>");
           }
-      
+
         if (equal_ustring(encoding, "plain"))
           {
           rsputs("<pre>");
@@ -2994,17 +2997,17 @@ FILE   *f;
             for (i=0 ; i<(int)strlen(attachment[index]) ; i++)
               str[i] = toupper(attachment[index][i]);
             str[i] = 0;
-    
+
             if (exp_name[0])
-              sprintf(ref, "%sEL/%s?exp=%s", 
+              sprintf(ref, "%sEL/%s?exp=%s",
                       mhttpd_url, attachment[index], exp_name);
             else
-              sprintf(ref, "%sEL/%s", 
+              sprintf(ref, "%sEL/%s",
                       mhttpd_url, attachment[index]);
 
             if (!show_attachments)
               {
-              rsprintf("<a href=\"%s\"><b>%s</b></a> ", 
+              rsprintf("<a href=\"%s\"><b>%s</b></a> ",
                         ref, attachment[index]+14);
               }
             else
@@ -3013,14 +3016,14 @@ FILE   *f;
               if (strstr(str, ".GIF") ||
                   strstr(str, ".JPG"))
                 {
-                rsprintf("<tr><td colspan=%d>Attachment: <a href=\"%s\"><b>%s</b></a><br>\n", 
+                rsprintf("<tr><td colspan=%d>Attachment: <a href=\"%s\"><b>%s</b></a><br>\n",
                           colspan, ref, attachment[index]+14);
                 if (show_attachments)
                   rsprintf("<img src=\"%s\"></tr>", ref);
                 }
               else
                 {
-                rsprintf("<tr><td colspan=%d bgcolor=#C0C0FF>Attachment: <a href=\"%s\"><b>%s</b></a>\n", 
+                rsprintf("<tr><td colspan=%d bgcolor=#C0C0FF>Attachment: <a href=\"%s\"><b>%s</b></a>\n",
                           colspan, ref, attachment[index]+14);
 
                 if ((strstr(str, ".TXT") ||
@@ -3058,7 +3061,7 @@ FILE   *f;
               }
             }
           }
- 
+
         if (!show_attachments && attachment[0][0])
           rsprintf("</tr>\n");
 
@@ -3080,7 +3083,7 @@ FILE   *f;
       }
 
     } while (status == EL_SUCCESS);
-    
+
   rsprintf("</table>\n");
   rsprintf("</body></html>\r\n");
 }
@@ -3273,7 +3276,7 @@ KEY    key;
     rsprintf("<input type=submit name=cmd value=\"Submit\">\n");
     rsprintf("</tr>\n\n");
     }
-    
+
   rsprintf("</tr></table>\n");
   rsprintf("</body></html>\r\n");
 }
@@ -3301,7 +3304,7 @@ time_t now;
   sprintf(b, "<table border=3 cellpadding=1>\n");
   sprintf(b+strlen(b), "<tr><th colspan=2 bgcolor=#A0A0FF>%s</tr>\n", ctime(&now));
   sprintf(b+strlen(b), "<tr><th colspan=2 bgcolor=#FFA0A0>%s</tr>\n", path);
-  
+
   /* enumerate subkeys */
   for (i=0 ; ; i++)
     {
@@ -3309,7 +3312,7 @@ time_t now;
     if (!hkey)
       break;
     db_get_key(hDB, hkey, &key);
-    
+
     /* resolve links */
     if (key.type == TID_LINK)
       {
@@ -3339,12 +3342,12 @@ time_t now;
           }
 
         if (strcmp(data_str, hex_str) != 0 && hex_str[0])
-          sprintf(b+strlen(b), 
-                  "<tr><td bgcolor=#FFFF00>%s</td><td bgcolor=#FFFFFF>%s (%s)</td></tr>\n", 
+          sprintf(b+strlen(b),
+                  "<tr><td bgcolor=#FFFF00>%s</td><td bgcolor=#FFFFFF>%s (%s)</td></tr>\n",
                   key.name, data_str, hex_str);
         else
           {
-          sprintf(b+strlen(b), 
+          sprintf(b+strlen(b),
                   "<tr><td bgcolor=#FFFF00>%s</td><td bgcolor=#FFFFFF>", key.name);
           strencode2(b+strlen(b), data_str);
           sprintf(b+strlen(b), "</td></tr>\n");
@@ -3423,9 +3426,9 @@ struct hostent *phe;
     if (getparam(str) && *getparam(str) && _attachment_size[i] == 0)
       {
       /* replace '\' by '/' */
-      strcpy(path, getparam(str));  
+      strcpy(path, getparam(str));
       strcpy(path1, path);
-      while (strchr(path, '\\'))    
+      while (strchr(path, '\\'))
         *strchr(path, '\\') = '/';
 
       /* check if valid ODB tree */
@@ -3459,7 +3462,7 @@ struct hostent *phe;
           {
           p = strchr(str, '?')+1;
           p = strtok(p,"&");
-          while (p != NULL) 
+          while (p != NULL)
             {
             pitem = p;
             p = strchr(p,'=');
@@ -3509,7 +3512,7 @@ struct hostent *phe;
     }
   else
     strcpy(str, phe->h_name);
-      
+
   strcpy(author, getparam("author"));
   strcat(author, "@");
   strcat(author, str);
@@ -3519,11 +3522,11 @@ struct hostent *phe;
     strcpy(tag, getparam("orig"));
 
   el_submit(atoi(getparam("run")), author, getparam("type"),
-            getparam("system"), getparam("subject"), getparam("text"), 
-            getparam("orig"), *getparam("html") ? "HTML" : "plain", 
-            att_file[0], _attachment_buffer[0], _attachment_size[0], 
-            att_file[1], _attachment_buffer[1], _attachment_size[1], 
-            att_file[2], _attachment_buffer[2], _attachment_size[2], 
+            getparam("system"), getparam("subject"), getparam("text"),
+            getparam("orig"), *getparam("html") ? "HTML" : "plain",
+            att_file[0], _attachment_buffer[0], _attachment_size[0],
+            att_file[1], _attachment_buffer[1], _attachment_size[1],
+            att_file[2], _attachment_buffer[2], _attachment_size[2],
             tag, sizeof(tag));
 
   /* check for mail submissions */
@@ -3543,7 +3546,7 @@ struct hostent *phe;
       }
     size = sizeof(smtp_host);
     db_get_data(hDB, hkey, smtp_host, &size, TID_STRING);
-    
+
     p = strtok(mail_list, ",");
     for (i=0 ; p ; i++)
       {
@@ -3590,7 +3593,7 @@ struct hostent *phe;
       }
     size = sizeof(smtp_host);
     db_get_data(hDB, hkey, smtp_host, &size, TID_STRING);
-    
+
     p = strtok(mail_list, ",");
     for (i=0 ; p ; i++)
       {
@@ -3700,7 +3703,7 @@ KEY   key;
         sprintf(text+strlen(text), "%s\n", getparam(str));
         }
       }
-  
+
   /* set parameters for submit_elog() */
   setparam("type", getparam("form"));
   setparam("system", "General");
@@ -3732,7 +3735,7 @@ void show_elog_page(char *path)
 {
 int   size, i, run, msg_status, status, fh, length, first_message, last_message, index;
 char  str[256], orig_path[256], command[80], ref[256], file_name[256];
-char  date[80], author[80], type[80], system[80], subject[256], text[10000], 
+char  date[80], author[80], type[80], system[80], subject[256], text[10000],
       orig_tag[80], reply_tag[80], attachment[3][256], encoding[80], att[256];
 HNDLE hDB, hkey, hkeyroot;
 KEY   key;
@@ -3746,7 +3749,7 @@ BOOL  display_run_number, allow_delete;
   size = sizeof(BOOL);
   db_get_value(hDB, 0, "/Elog/Display run number", &display_run_number , &size, TID_BOOL);
   db_get_value(hDB, 0, "/Elog/Allow delete", &allow_delete, &size, TID_BOOL);
-  
+
   /*---- interprete commands ---------------------------------------*/
 
   strcpy(command, getparam("cmd"));
@@ -3778,7 +3781,7 @@ BOOL  display_run_number, allow_delete;
   if (equal_ustring(command, "Create ELog from this page"))
     {
     strcpy(str, path);
-    while (strchr(path, '/'))    
+    while (strchr(path, '/'))
       *strchr(path, '/') = '\\';
 
     show_elog_new(NULL, FALSE, path);
@@ -3910,7 +3913,7 @@ BOOL  display_run_number, allow_delete;
     show_rawfile(path);
     return;
     }
-  
+
   /*---- check next/previous message -------------------------------*/
 
   last_message = first_message = FALSE;
@@ -3938,11 +3941,11 @@ BOOL  display_run_number, allow_delete;
         }
 
       size = sizeof(text);
-      el_retrieve(path, date, &run, author, type, system, subject, 
-                  text, &size, orig_tag, reply_tag, 
-                  attachment[0], attachment[1], attachment[2], 
+      el_retrieve(path, date, &run, author, type, system, subject,
+                  text, &size, orig_tag, reply_tag,
+                  attachment[0], attachment[1], attachment[2],
                   encoding);
-      
+
       if (strchr(author, '@'))
         *strchr(author, '@') = 0;
       if (*getparam("lauthor")  == '1' && !equal_ustring(getparam("author"),  author ))
@@ -3962,7 +3965,7 @@ BOOL  display_run_number, allow_delete;
         if (strstr(subject, str) == NULL)
           continue;
         }
-      
+
       sprintf(str, "EL/%s", path);
 
       if (*getparam("lauthor") == '1')
@@ -3999,8 +4002,8 @@ BOOL  display_run_number, allow_delete;
 
   size = sizeof(text);
   strcpy(str, path);
-  msg_status = el_retrieve(str, date, &run, author, type, system, subject, 
-                           text, &size, orig_tag, reply_tag, 
+  msg_status = el_retrieve(str, date, &run, author, type, system, subject,
+                           text, &size, orig_tag, reply_tag,
                            attachment[0], attachment[1], attachment[2],
                            encoding);
 
@@ -4076,20 +4079,20 @@ BOOL  display_run_number, allow_delete;
     if (orig_tag[0])
       {
       if (exp_name[0])
-        sprintf(ref, "%sEL/%s?exp=%s", 
+        sprintf(ref, "%sEL/%s?exp=%s",
                 mhttpd_url, orig_tag, exp_name);
       else
-        sprintf(ref, "%sEL/%s", 
+        sprintf(ref, "%sEL/%s",
                 mhttpd_url, orig_tag);
       rsprintf("  <a href=\"%s\">Original message</a>  ", ref);
       }
     if (reply_tag[0])
       {
       if (exp_name[0])
-        sprintf(ref, "%sEL/%s?exp=%s", 
+        sprintf(ref, "%sEL/%s?exp=%s",
                 mhttpd_url, reply_tag, exp_name);
       else
-        sprintf(ref, "%sEL/%s", 
+        sprintf(ref, "%sEL/%s",
                 mhttpd_url, reply_tag);
       rsprintf("  <a href=\"%s\">Reply to this message</a>  ", ref);
       }
@@ -4139,10 +4142,10 @@ BOOL  display_run_number, allow_delete;
     strcpy(str, author);
     if (strchr(str, '@'))
       *strchr(str, '@') = 0;
-    rsprintf("<input type=hidden name=author  value=\"%s\">\n", str); 
-    rsprintf("<input type=hidden name=type    value=\"%s\">\n", type); 
-    rsprintf("<input type=hidden name=system  value=\"%s\">\n", system); 
-    rsprintf("<input type=hidden name=subject value=\"%s\">\n\n", subject); 
+    rsprintf("<input type=hidden name=author  value=\"%s\">\n", str);
+    rsprintf("<input type=hidden name=type    value=\"%s\">\n", type);
+    rsprintf("<input type=hidden name=system  value=\"%s\">\n", system);
+    rsprintf("<input type=hidden name=subject value=\"%s\">\n\n", subject);
 
     if (*getparam("lauthor") == '1')
       rsprintf("<tr><td bgcolor=#FFA0A0><input type=\"checkbox\" checked name=\"lauthor\" value=\"1\">");
@@ -4169,7 +4172,7 @@ BOOL  display_run_number, allow_delete;
       rsprintf("<td bgcolor=#A0FFA0><input type=\"checkbox\" name=\"lsubject\" value=\"1\">");
     rsprintf("  Subject: <b>%s</b></tr>\n", subject);
 
-    
+
     /* message text */
     rsprintf("<tr><td colspan=2>\n");
     if (equal_ustring(encoding, "plain"))
@@ -4189,24 +4192,24 @@ BOOL  display_run_number, allow_delete;
         for (i=0 ; i<(int)strlen(attachment[index]) ; i++)
           att[i] = toupper(attachment[index][i]);
         att[i] = 0;
-      
+
         if (exp_name[0])
-          sprintf(ref, "%sEL/%s?exp=%s", 
+          sprintf(ref, "%sEL/%s?exp=%s",
                   mhttpd_url, attachment[index], exp_name);
         else
-          sprintf(ref, "%sEL/%s", 
+          sprintf(ref, "%sEL/%s",
                   mhttpd_url, attachment[index]);
 
         if (strstr(att, ".GIF") ||
             strstr(att, ".JPG"))
           {
-          rsprintf("<tr><td colspan=2>Attachment: <a href=\"%s\"><b>%s</b></a><br>\n", 
+          rsprintf("<tr><td colspan=2>Attachment: <a href=\"%s\"><b>%s</b></a><br>\n",
                     ref, attachment[index]+14);
           rsprintf("<img src=\"%s\"></tr>", ref);
           }
         else
           {
-          rsprintf("<tr><td colspan=2 bgcolor=#C0C0FF>Attachment: <a href=\"%s\"><b>%s</b></a>\n", 
+          rsprintf("<tr><td colspan=2 bgcolor=#C0C0FF>Attachment: <a href=\"%s\"><b>%s</b></a>\n",
                     ref, attachment[index]+14);
           if (strstr(att, ".TXT") ||
               strstr(att, ".ASC") ||
@@ -4395,10 +4398,10 @@ char   data_str[256], hex_str[256];
             else
               {
               if (exp_name[0])
-                rsprintf("<a href=\"%sSC/%s?exp=%s\">%s</a> ", 
+                rsprintf("<a href=\"%sSC/%s?exp=%s\">%s</a> ",
                           mhttpd_url, eqkey.name, exp_name, eqkey.name);
               else
-                rsprintf("<a href=\"%sSC/%s?\">%s</a> ", 
+                rsprintf("<a href=\"%sSC/%s?\">%s</a> ",
                           mhttpd_url, eqkey.name, eqkey.name);
               }
             break;
@@ -4431,10 +4434,10 @@ char   data_str[256], hex_str[256];
     else
       {
       if (exp_name[0])
-        rsprintf("<a href=\"%sSC/%s/All?exp=%s\">All</a> ", 
+        rsprintf("<a href=\"%sSC/%s/All?exp=%s\">All</a> ",
                   mhttpd_url, eq_name, exp_name);
       else
-        rsprintf("<a href=\"%sSC/%s/All?\">All</a> ", 
+        rsprintf("<a href=\"%sSC/%s/All?\">All</a> ",
                   mhttpd_url, eq_name);
       }
 
@@ -4469,10 +4472,10 @@ char   data_str[256], hex_str[256];
       else
         {
         if (exp_name[0])
-          rsprintf("<a href=\"%sSC/%s/%s?exp=%s\">%s</a> ", 
+          rsprintf("<a href=\"%sSC/%s/%s?exp=%s\">%s</a> ",
                     mhttpd_url, eq_name, group_name[i], exp_name, group_name[i]);
         else
-          rsprintf("<a href=\"%sSC/%s/%s?\">%s</a> ", 
+          rsprintf("<a href=\"%sSC/%s/%s?\">%s</a> ",
                     mhttpd_url, eq_name, group_name[i], group_name[i]);
         }
       }
@@ -4567,7 +4570,7 @@ char   data_str[256], hex_str[256];
             }
           if (n_var == i_edit)
             {
-            rsprintf("<td align=center><input type=text size=10 maxlenth=80 name=value value=\"%s\">\n", 
+            rsprintf("<td align=center><input type=text size=10 maxlenth=80 name=value value=\"%s\">\n",
                        str);
             rsprintf("<input type=submit size=20 name=cmd value=Set></tr>\n");
             rsprintf("<input type=hidden name=index value=%d>\n", i_edit);
@@ -4577,27 +4580,27 @@ char   data_str[256], hex_str[256];
           else
             {
             if (exp_name[0])
-              sprintf(ref, "%sSC/%s/%s?cmd=Edit&index=%d&exp=%s", 
+              sprintf(ref, "%sSC/%s/%s?cmd=Edit&index=%d&exp=%s",
                       mhttpd_url, eq_name, group, n_var, exp_name);
             else
-              sprintf(ref, "%sSC/%s/%s?cmd=Edit&index=%d", 
+              sprintf(ref, "%sSC/%s/%s?cmd=Edit&index=%d",
                       mhttpd_url, eq_name, group, n_var);
 
-            rsprintf("<td align=center><a href=\"%s\">%s</a>", 
+            rsprintf("<td align=center><a href=\"%s\">%s</a>",
                       ref, str);
             n_var++;
             }
 
-          
+
           /*
           if (exp_name[0])
-            sprintf(ref, "%sEquipment/%s/Variables/%s?cmd=Set&index=%d&group=%s&exp=%s", 
+            sprintf(ref, "%sEquipment/%s/Variables/%s?cmd=Set&index=%d&group=%s&exp=%s",
                     mhttpd_url, eq_name, varkey.name, i, group, exp_name);
           else
-            sprintf(ref, "%sEquipment/%s/Variables/%s?cmd=Set&index=%d&group=%s", 
+            sprintf(ref, "%sEquipment/%s/Variables/%s?cmd=Set&index=%d&group=%s",
                     mhttpd_url, eq_name, varkey.name, i, group);
 
-          rsprintf("<td align=center><a href=\"%s\">%s</a>", 
+          rsprintf("<td align=center><a href=\"%s\">%s</a>",
                     ref, str);
           */
           }
@@ -4619,10 +4622,10 @@ char   data_str[256], hex_str[256];
     else
       {
       if (exp_name[0])
-        rsprintf("<a href=\"%sSC/%s?exp=%s\">All</a> ", 
+        rsprintf("<a href=\"%sSC/%s?exp=%s\">All</a> ",
                   mhttpd_url, eq_name, exp_name);
       else
-        rsprintf("<a href=\"%sSC/%s?\">All</a> ", 
+        rsprintf("<a href=\"%sSC/%s?\">All</a> ",
                   mhttpd_url, eq_name);
       }
 
@@ -4645,10 +4648,10 @@ char   data_str[256], hex_str[256];
       else
         {
         if (exp_name[0])
-          rsprintf("<a href=\"%sSC/%s/%s?exp=%s\">%s</a> ", 
+          rsprintf("<a href=\"%sSC/%s/%s?exp=%s\">%s</a> ",
                     mhttpd_url, eq_name, key.name, exp_name, key.name);
         else
-          rsprintf("<a href=\"%sSC/%s/%s?\">%s</a> ", 
+          rsprintf("<a href=\"%sSC/%s/%s?\">%s</a> ",
                     mhttpd_url, eq_name, key.name, key.name);
         }
       }
@@ -4684,7 +4687,7 @@ char   data_str[256], hex_str[256];
           if (!hkey)
             break;
           db_get_key(hDB, hkey, &key);
-    
+
           if (key.type == TID_KEY)
             {
             /* for keys, don't display data value */
@@ -4707,10 +4710,10 @@ char   data_str[256], hex_str[256];
                 }
 
               if (strcmp(data_str, hex_str) != 0 && hex_str[0])
-                rsprintf("<tr><td colspan=9>%s<td align=center>%s (%s)<br></tr>\n", 
+                rsprintf("<tr><td colspan=9>%s<td align=center>%s (%s)<br></tr>\n",
                           key.name, data_str, hex_str);
               else
-                rsprintf("<tr><td colspan=9>%s<td align=center>%s<br></tr>\n", 
+                rsprintf("<tr><td colspan=9>%s<td align=center>%s<br></tr>\n",
                           key.name, data_str);
               }
             else
@@ -4750,7 +4753,7 @@ char   data_str[256], hex_str[256];
         db_find_key(hDB, 0, str, &hkeyset);
 
         if (varkey.num_values > 1000)
-          rsprintf("<tr><td colspan=9>%s<td align=center><i>... %d values ...</i>", 
+          rsprintf("<tr><td colspan=9>%s<td align=center><i>... %d values ...</i>",
                     varkey.name, varkey.num_values);
         else
           {
@@ -4786,7 +4789,7 @@ char   data_str[256], hex_str[256];
                 }
               if (n_var == i_edit)
                 {
-                rsprintf("<td align=center><input type=text size=10 maxlenth=80 name=value value=\"%s\">\n", 
+                rsprintf("<td align=center><input type=text size=10 maxlenth=80 name=value value=\"%s\">\n",
                            str);
                 rsprintf("<input type=submit size=20 name=cmd value=Set></tr>\n");
                 rsprintf("<input type=hidden name=index value=%d>\n", i_edit);
@@ -4796,13 +4799,13 @@ char   data_str[256], hex_str[256];
               else
                 {
                 if (exp_name[0])
-                  sprintf(ref, "%sSC/%s/%s?cmd=Edit&index=%d&exp=%s", 
+                  sprintf(ref, "%sSC/%s/%s?cmd=Edit&index=%d&exp=%s",
                           mhttpd_url, eq_name, group, n_var, exp_name);
                 else
-                  sprintf(ref, "%sSC/%s/%s?cmd=Edit&index=%d", 
+                  sprintf(ref, "%sSC/%s/%s?cmd=Edit&index=%d",
                           mhttpd_url, eq_name, group, n_var);
 
-                rsprintf("<td align=center><a href=\"%s\">%s</a>", 
+                rsprintf("<td align=center><a href=\"%s\">%s</a>",
                           ref, str);
                 n_var++;
                 }
@@ -4987,7 +4990,7 @@ BOOL   bedit;
             db_get_data_index(hDB, hkey, data, &size, index, key.type);
             db_sprintf(str, data, key.item_size, 0, key.type);
             }
-          
+
           if (n_var == i_edit)
             {
             rsprintf("<input type=text size=10 maxlength=80 name=value value=\"%s\">\n", str);
@@ -5011,7 +5014,7 @@ BOOL   bedit;
           rsputs(str);
         }
 
-      
+
       } while (p != NULL);
     }
 }
@@ -5044,7 +5047,7 @@ static HNDLE hconn = 0;
           break;
 
         sprintf(str, "RPC/%d", RPC_CNAF16);
-        status = db_find_key(hDB, hsubkey, str, &hkey); 
+        status = db_find_key(hDB, hsubkey, str, &hkey);
         if (status == DB_SUCCESS)
           {
           size = sizeof(client_name);
@@ -5115,7 +5118,7 @@ static HNDLE hconn = 0;
 
   /* execute commands */
   size = sizeof(d);
-  
+
   cmd = getparam("cmd");
   if (equal_ustring(cmd, "C cycle"))
     {
@@ -5174,7 +5177,7 @@ static HNDLE hconn = 0;
         {
         size = sizeof(d);
         status = rpc_client_call(hconn, RPC_CNAF24, CNAF, 0, c, n, a, f, &d, &size, &x, &q);
-      
+
         if (status == RPC_NET_ERROR)
           {
           /* try to reconnect */
@@ -5265,13 +5268,13 @@ int i;
   for (i=0 ; i<MAX_EXPERIMENT ; i++)
     {
     if (exp_list[i][0])
-      rsprintf("<a href=\"%s?exp=%s\">%s</a><p>", mhttpd_url, 
+      rsprintf("<a href=\"%s?exp=%s\">%s</a><p>", mhttpd_url,
                 exp_list[i], exp_list[i]);
     }
 
   rsprintf("</body>\n");
   rsprintf("</html>\r\n");
-  
+
 }
 
 /*------------------------------------------------------------------*/
@@ -5379,7 +5382,7 @@ char  data_str[256], comment[1000];
   db_get_value(hDB, 0, "/Runinfo/Run number", &rn, &size, TID_INT);
 
   size = sizeof(i);
-  if (db_find_key(hDB, 0, "/Experiment/Edit on start/Edit Run number", &hkey) &&
+  if (db_find_key(hDB, 0, "/Experiment/Edit on start/Edit Run number", &hkey) == DB_SUCCESS &&
       db_get_data(hDB, hkey, &i, &size, TID_BOOL) &&
       i == 0)
     rsprintf("<td><input type=hidden name=value value=%d>%d</tr>\n", rn+1, rn+1);
@@ -5431,7 +5434,7 @@ char  data_str[256], comment[1000];
           }
 
         db_sprintf(data_str, data, key.item_size, j, key.type);
-        
+
         rsprintf("<td><input type=text size=80 maxlenth=80 name=x%d value=\"%s\"></tr>\n",
                  n++, data_str);
         }
@@ -5452,7 +5455,7 @@ char  data_str[256], comment[1000];
 void show_odb_page(char *enc_path, char *dec_path)
 {
 int    i, j, size, status;
-char   str[256], tmp_path[256], url_path[256], 
+char   str[256], tmp_path[256], url_path[256],
        data_str[10000], hex_str[256], ref[256], keyname[32];
 char   *p, *pd;
 char   data[10000];
@@ -5553,10 +5556,10 @@ KEY    key;
     urlEncode(url_path);
 
     if (exp_name[0])
-      rsprintf("<a href=\"%s%s?&exp=%s\">%s</a>\n / ", 
+      rsprintf("<a href=\"%s%s?&exp=%s\">%s</a>\n / ",
                mhttpd_url, url_path, exp_name, str);
     else
-      rsprintf("<a href=\"%s%s\">%s</a>\n / ", 
+      rsprintf("<a href=\"%s%s\">%s</a>\n / ",
                mhttpd_url, url_path, str);
 
     strcat(tmp_path, "/");
@@ -5574,7 +5577,7 @@ KEY    key;
     if (!hkey)
       break;
     db_get_key(hDB, hkey, &key);
-    
+
     strcpy(str, dec_path);
     if (str[0] && str[strlen(str)-1] != '/')
       strcat(str, "/");
@@ -5593,10 +5596,10 @@ KEY    key;
       {
       /* for keys, don't display data value */
       if (exp_name[0])
-        rsprintf("<tr><td colspan=2 bgcolor=#FFD000><a href=\"%s%s?exp=%s\">%s</a><br></tr>\n", 
+        rsprintf("<tr><td colspan=2 bgcolor=#FFD000><a href=\"%s%s?exp=%s\">%s</a><br></tr>\n",
                mhttpd_url, str, exp_name, keyname);
       else
-        rsprintf("<tr><td colspan=2 bgcolor=#FFD000><a href=\"%s%s\">%s</a><br></tr>\n", 
+        rsprintf("<tr><td colspan=2 bgcolor=#FFD000><a href=\"%s%s\">%s</a><br></tr>\n",
                mhttpd_url, str, keyname);
       }
     else
@@ -5620,20 +5623,20 @@ KEY    key;
           }
 
         if (exp_name[0])
-          sprintf(ref, "%s%s?cmd=Set&exp=%s", 
+          sprintf(ref, "%s%s?cmd=Set&exp=%s",
                   mhttpd_url, str, exp_name);
         else
-          sprintf(ref, "%s%s?cmd=Set", 
+          sprintf(ref, "%s%s?cmd=Set",
                   mhttpd_url, str);
 
         if (strcmp(data_str, hex_str) != 0 && hex_str[0])
-          rsprintf("<tr><td bgcolor=#FFFF00>%s<td><a href=\"%s\">%s (%s)</a><br></tr>\n", 
+          rsprintf("<tr><td bgcolor=#FFFF00>%s<td><a href=\"%s\">%s (%s)</a><br></tr>\n",
                     keyname, ref, data_str, hex_str);
         else
           {
           if (strchr(data_str, '\n'))
             {
-            rsprintf("<tr><td bgcolor=#FFFF00>%s<td>", 
+            rsprintf("<tr><td bgcolor=#FFFF00>%s<td>",
                       keyname);
             rsprintf("\n<pre>");
             strencode3(data_str);
@@ -5642,7 +5645,7 @@ KEY    key;
             }
           else
             {
-            rsprintf("<tr><td bgcolor=#FFFF00>%s<td><a href=\"%s\">", 
+            rsprintf("<tr><td bgcolor=#FFFF00>%s<td><a href=\"%s\">",
                       keyname, ref);
             strencode(data_str);
             rsprintf("</a><br></tr>\n");
@@ -5673,10 +5676,10 @@ KEY    key;
               }
 
             if (exp_name[0])
-              sprintf(ref, "%s%s?cmd=Set&index=%d&exp=%s", 
+              sprintf(ref, "%s%s?cmd=Set&index=%d&exp=%s",
                       mhttpd_url, str, j, exp_name);
             else
-              sprintf(ref, "%s%s?cmd=Set&index=%d", 
+              sprintf(ref, "%s%s?cmd=Set&index=%d",
                       mhttpd_url, str, j);
 
             if (j>0)
@@ -5799,12 +5802,12 @@ char   data[10000];
       strncpy(data, getparam("text"), sizeof(data));
     else
       db_sscanf(value, data, &size, 0, key.type);
-    
+
     if (index < 0)
       index = 0;
 
     /* extend data size for single string if necessary */
-    if ((key.type == TID_STRING || key.type == TID_LINK) 
+    if ((key.type == TID_STRING || key.type == TID_LINK)
           && (int) strlen(data)+1 > key.item_size &&
         key.num_values == 1)
       key.item_size = strlen(data)+1;
@@ -5912,7 +5915,7 @@ HNDLE hDB, hkey;
 
 /*------------------------------------------------------------------*/
 
-void show_create_page(char *enc_path, char *dec_path, char *value, 
+void show_create_page(char *enc_path, char *dec_path, char *value,
                       int index, int type)
 {
 char  str[256], link[256], *p;
@@ -5995,7 +5998,7 @@ KEY   key;
       strcat(str, link);
 
 
-      status = db_create_link(hDB, 0, str, value); 
+      status = db_create_link(hDB, 0, str, value);
       if (status != DB_SUCCESS)
         {
         rsprintf("<h1>Cannot create key %s</h1>\n", str);
@@ -6061,7 +6064,7 @@ KEY   key;
       rsprintf("</body></html>\r\n");
       return;
       }
-    
+
     /* count keys */
     for (i=0 ; ; i++)
       {
@@ -6151,10 +6154,10 @@ char  str[256], ref[256], condition[256], value[256];
   if (!active)
     {
     if (exp_name[0])
-      sprintf(ref, "%sAlarms/Alarm System active?cmd=set&exp=%s", 
+      sprintf(ref, "%sAlarms/Alarm System active?cmd=set&exp=%s",
               mhttpd_url, exp_name);
     else
-      sprintf(ref, "%sAlarms/Alarm System active?cmd=set", 
+      sprintf(ref, "%sAlarms/Alarm System active?cmd=set",
               mhttpd_url);
     rsprintf("<tr><td align=center colspan=6 bgcolor=#FFC0C0><a href=\"%s\"><h1>Alarm system disabled</h1></a></tr>", ref);
     }
@@ -6200,10 +6203,10 @@ char  str[256], ref[256], condition[256], value[256];
 
         /* alarm */
         if (exp_name[0])
-          sprintf(ref, "%sAlarms/Alarms/%s?exp=%s", 
+          sprintf(ref, "%sAlarms/Alarms/%s?exp=%s",
                   mhttpd_url, key.name, exp_name);
         else
-          sprintf(ref, "%sAlarms/Alarms/%s", 
+          sprintf(ref, "%sAlarms/Alarms/%s",
                   mhttpd_url, key.name);
         rsprintf("<tr><td bgcolor=#C0C0FF><a href=\"%s\"><b>%s</b></a>", ref, key.name);
 
@@ -6234,10 +6237,10 @@ char  str[256], ref[256], condition[256], value[256];
         db_get_value(hDB, hkey, "Alarm Class", str, &size, TID_STRING);
 
         if (exp_name[0])
-          sprintf(ref, "%sAlarms/Classes/%s?exp=%s", 
+          sprintf(ref, "%sAlarms/Classes/%s?exp=%s",
                   mhttpd_url, str, exp_name);
         else
-          sprintf(ref, "%sAlarms/Classes/%s", 
+          sprintf(ref, "%sAlarms/Classes/%s",
                   mhttpd_url, str);
         rsprintf("<td align=center><a href=\"%s\">%s</a>", ref, str);
 
@@ -6364,10 +6367,10 @@ char  str[256], ref[256], command[256], name[80];
         continue;
 
       if (exp_name[0])
-        sprintf(ref, "%sPrograms/%s?exp=%s", 
+        sprintf(ref, "%sPrograms/%s?exp=%s",
                 mhttpd_url, key.name, exp_name);
       else
-        sprintf(ref, "%sPrograms/%s", 
+        sprintf(ref, "%sPrograms/%s",
                 mhttpd_url, key.name);
 
       /* required? */
@@ -6427,10 +6430,10 @@ char  str[256], ref[256], command[256], name[80];
       if (str[0])
         {
         if (exp_name[0])
-          sprintf(ref, "%sAlarms/Classes/%s?exp=%s", 
+          sprintf(ref, "%sAlarms/Classes/%s?exp=%s",
                   mhttpd_url, str, exp_name);
         else
-          sprintf(ref, "%sAlarms/Classes/%s", 
+          sprintf(ref, "%sAlarms/Classes/%s",
                   mhttpd_url, str);
         rsprintf("<td bgcolor=#FFFF00 align=center><a href=\"%s\">%s</a>", ref, str);
         }
@@ -6572,7 +6575,7 @@ double base[] = {1,2,5,10,20,50,100,200,500,1000};
 
   x_act = floor(xmin/dx)*dx;
 
-  gdImageLine(im, x1, y1, x1+width, y1, col); 
+  gdImageLine(im, x1, y1, x1+width, y1, col);
 
   do
     {
@@ -6591,34 +6594,34 @@ double base[] = {1,2,5,10,20,50,100,200,500,1000};
            dx / label_dx / 10.0 )
           {
           /**** label tick mark ****/
-          gdImageLine(im, xs, y1, xs, y1+text, col); 
+          gdImageLine(im, xs, y1, xs, y1+text, col);
 
           /**** grid line ***/
           if (grid != 0 && xs > x1 && xs < x1 + width)
-            gdImageLine(im, xs, y1, xs, y1+grid, col); 
+            gdImageLine(im, xs, y1, xs, y1+grid, col);
 
           /**** label ****/
           if (label != 0)
             {
             sprintf(str, "%1.*lG", n_sig1, x_act);
-            gdImageString(im, font, (int)xs-font->w*strlen(str)/2, 
+            gdImageString(im, font, (int)xs-font->w*strlen(str)/2,
                                     y1+label, str, col);
             }
           }
         else
           {
           /**** major tick mark ****/
-          gdImageLine(im, xs, y1, xs, y1+major, col); 
+          gdImageLine(im, xs, y1, xs, y1+major, col);
 
           /**** grid line ****/
           if (grid != 0 && xs > x1 && xs < x1 + width)
-            gdImageLine(im, xs, y1-1, xs, y1+grid, gcol); 
+            gdImageLine(im, xs, y1-1, xs, y1+grid, gcol);
           }
 
         }
       else
         /**** minor tick mark ****/
-        gdImageLine(im, xs, y1, xs, y1+minor, col); 
+        gdImageLine(im, xs, y1, xs, y1+minor, col);
 
       }
 
@@ -6693,7 +6696,7 @@ double base[] = {1,2,5,10,20,50,100,200,500,1000};
   max_width = 0;
   y_act = floor(ymin/dy)*dy;
 
-  if (x1 != 0 || y1 != 0) 
+  if (x1 != 0 || y1 != 0)
     gdImageLine(im, x1, y1, x1, y1 - width, col);
 
   do
@@ -6711,7 +6714,7 @@ double base[] = {1,2,5,10,20,50,100,200,500,1000};
         if ( fabs(floor(y_act/label_dy+0.5) - y_act/label_dy) <
            dy / label_dy / 10.0 )
           {
-          if (x1 != 0 || y1 != 0) 
+          if (x1 != 0 || y1 != 0)
             {
             /**** label tick mark ****/
             gdImageLine(im, x1, ys, x1 + text, ys, col);
@@ -6741,7 +6744,7 @@ double base[] = {1,2,5,10,20,50,100,200,500,1000};
           }
         else
           {
-          if (x1 != 0 || y1 != 0) 
+          if (x1 != 0 || y1 != 0)
             {
             /**** major tick mark ****/
             gdImageLine(im, x1, ys, x1 + major, ys, col);
@@ -6754,7 +6757,7 @@ double base[] = {1,2,5,10,20,50,100,200,500,1000};
 
         }
       else
-        if (x1 != 0 || y1 != 0) 
+        if (x1 != 0 || y1 != 0)
           {
           /**** minor tick mark ****/
           gdImageLine(im, x1, ys, x1 + minor, ys, col);
@@ -6775,7 +6778,7 @@ double base[] = {1,2,5,10,20,50,100,200,500,1000};
 
 #define MAX_VARS 10
 
-void generate_hist_graph(char *path, char *buffer, int *buffer_size, 
+void generate_hist_graph(char *path, char *buffer, int *buffer_size,
                          int width, int height, int scale, int offset, int index)
 {
 HNDLE       hDB, hkey, hkeypanel, hkeyeq, hkeydvar, hkeyvars, hkeyroot, hkeynames, hktmp;
@@ -6837,7 +6840,7 @@ float       upper_limit[MAX_VARS], lower_limit[MAX_VARS];
   if (strstr(panel, ".gif"))
     *strstr(panel, ".gif") = 0;
 	gdImageString(im, gdFontGiant, width/2-(strlen(panel)*gdFontGiant->w)/2, 2, panel, black);
-	
+
   /* set history path */
   status = db_find_key(hDB, 0, "/Logger/Data dir", &hkey);
   if (status != DB_SUCCESS)
@@ -6916,7 +6919,7 @@ float       upper_limit[MAX_VARS], lower_limit[MAX_VARS];
     size = sizeof(str);
     db_get_data_index(hDB, hkeydvar, str, &size, i, TID_STRING);
     strcpy(tag_name[i], str);
-    
+
     /* split varname in event, variable and index */
     if (strchr(tag_name[i], ':'))
       {
@@ -7043,7 +7046,7 @@ float       upper_limit[MAX_VARS], lower_limit[MAX_VARS];
                     db_get_data_index(hDB, hkeynames, str, &size, l, TID_STRING);
                     if (equal_ustring(str, var_name[i]))
                       {
-                      sprintf(odbpath, "/Equipment/%s/Variables/%s[%d]", 
+                      sprintf(odbpath, "/Equipment/%s/Variables/%s[%d]",
                               event_name[i], key_name, l);
                       break;
                       }
@@ -7128,8 +7131,8 @@ float       upper_limit[MAX_VARS], lower_limit[MAX_VARS];
 
     bsize = sizeof(ybuffer);
     tsize = sizeof(tbuffer);
-    status = hs_read(event_id, ss_time()-scale-toffset, ss_time()-toffset, scale/1000, 
-                     var_name[i], var_index[i], tbuffer, &tsize, ybuffer, &bsize, 
+    status = hs_read(event_id, ss_time()-scale-toffset, ss_time()-toffset, scale/1000,
+                     var_name[i], var_index[i], tbuffer, &tsize, ybuffer, &bsize,
                      &type, &n_point[i]);
 
     if (status == HS_UNDEFINED_VAR)
@@ -7142,7 +7145,7 @@ float       upper_limit[MAX_VARS], lower_limit[MAX_VARS];
     for (j=0 ; j<(int)n_point[i] ; j++)
       {
       x[i][j] = tbuffer[j] - ss_time();
-      
+
       /* convert data to float */
       switch (type)
         {
@@ -7302,19 +7305,19 @@ float       upper_limit[MAX_VARS], lower_limit[MAX_VARS];
 
     row = index == -1 ? i : 0;
 
-    gdImageFilledRectangle(im, 
-            x1+10, 
+    gdImageFilledRectangle(im,
+            x1+10,
             y2+10+row*(gdFontMediumBold->h+10),
-            x1+10+strlen(str)*gdFontMediumBold->w+10, 
+            x1+10+strlen(str)*gdFontMediumBold->w+10,
             y2+10+row*(gdFontMediumBold->h+10)+gdFontMediumBold->h+2+2, white);
-    gdImageRectangle(im, 
-            x1+10, 
+    gdImageRectangle(im,
+            x1+10,
             y2+10+row*(gdFontMediumBold->h+10),
-            x1+10+strlen(str)*gdFontMediumBold->w+10, 
+            x1+10+strlen(str)*gdFontMediumBold->w+10,
             y2+10+row*(gdFontMediumBold->h+10)+gdFontMediumBold->h+2+2, curve_col[i]);
 
-    gdImageString(im, gdFontMediumBold, 
-            x1+10+5, 
+    gdImageString(im, gdFontMediumBold,
+            x1+10+5,
             y2+10+2+row*(gdFontMediumBold->h+10),
             str, curve_col[i]);
     }
@@ -7432,7 +7435,7 @@ float  factor[2];
     pindex = getparam("hindex");
 
   /* evaluate scale and offset */
-  
+
   if (poffset && *poffset)
     {
     offset = atoi(poffset);
@@ -7513,7 +7516,7 @@ float  factor[2];
     }
   if (equal_ustring(getparam("shift"), ">>"))
     offset = 0;
-  
+
   /* define hidden field for parameters */
   if (pscale && *pscale)
     rsprintf("<input type=hidden name=hscale value=%s></tr>\n", pscale);
@@ -7536,10 +7539,10 @@ float  factor[2];
   else
     {
     if (exp_name[0])
-      rsprintf("<a href=\"%sHS/All?exp=%s\">ALL</a> ", 
+      rsprintf("<a href=\"%sHS/All?exp=%s\">ALL</a> ",
                 mhttpd_url, exp_name);
     else
-      rsprintf("<a href=\"%sHS/All\">ALL</a> ", 
+      rsprintf("<a href=\"%sHS/All\">ALL</a> ",
                 mhttpd_url);
     }
 
@@ -7549,19 +7552,19 @@ float  factor[2];
     /* create default panel */
     strcpy(str, "System:Trigger per sec.");
     strcpy(str+2*NAME_LENGTH, "System:Trigger kB per sec.");
-    db_set_value(hDB, 0, "/History/Display/Trigger rate/Variables", 
+    db_set_value(hDB, 0, "/History/Display/Trigger rate/Variables",
                  str, NAME_LENGTH*4, 2, TID_STRING);
 
     factor[0] = 1;
     factor[1] = 1;
-    db_set_value(hDB, 0, "/History/Display/Trigger rate/Factor", 
+    db_set_value(hDB, 0, "/History/Display/Trigger rate/Factor",
                  factor, 2*sizeof(float), 2, TID_FLOAT);
 
     i = 3600;
-    db_set_value(hDB, 0, "/History/Display/Trigger rate/Timescale", 
+    db_set_value(hDB, 0, "/History/Display/Trigger rate/Timescale",
                  &i, sizeof(INT), 1, TID_INT);
     i = 1;
-    db_set_value(hDB, 0, "/History/Display/Trigger rate/Zero ylow", 
+    db_set_value(hDB, 0, "/History/Display/Trigger rate/Zero ylow",
                  &i, sizeof(BOOL), 1, TID_BOOL);
     }
 
@@ -7581,10 +7584,10 @@ float  factor[2];
       else
         {
         if (exp_name[0])
-          rsprintf("<a href=\"%sHS/%s?exp=%s\">%s</a> ", 
+          rsprintf("<a href=\"%sHS/%s?exp=%s\">%s</a> ",
                     mhttpd_url, key.name, exp_name, key.name);
         else
-          rsprintf("<a href=\"%sHS/%s\">%s</a> ", 
+          rsprintf("<a href=\"%sHS/%s\">%s</a> ",
                     mhttpd_url, key.name, key.name);
         }
       if (i % 10 == 9)
@@ -7645,23 +7648,23 @@ float  factor[2];
           if (paramstr[0])
             {
             if (exp_name[0])
-              sprintf(ref, "%sHS/%s?exp=%s%s&index=%d", 
+              sprintf(ref, "%sHS/%s?exp=%s%s&index=%d",
                       mhttpd_url, path, exp_name, paramstr, i);
             else
-              sprintf(ref, "%sHS/%s?%s&index=%d", 
+              sprintf(ref, "%sHS/%s?%s&index=%d",
                       mhttpd_url, path, paramstr, i);
             }
           else
             {
             if (exp_name[0])
-              sprintf(ref, "%sHS/%s?exp=%s&index=%d", 
+              sprintf(ref, "%sHS/%s?exp=%s&index=%d",
                       mhttpd_url, path, exp_name, i);
             else
-              sprintf(ref, "%sHS/%s?index=%d", 
+              sprintf(ref, "%sHS/%s?index=%d",
                       mhttpd_url, path, i);
             }
 
-          rsprintf("  <area shape=rect coords=\"%d,%d,%d,%d\" href=\"%s\">\r\n", 
+          rsprintf("  <area shape=rect coords=\"%d,%d,%d,%d\" href=\"%s\">\r\n",
                    30, 31+23*i, 150, 30+23*i+17, ref);
           }
         }
@@ -7671,19 +7674,19 @@ float  factor[2];
       if (paramstr[0])
         {
         if (exp_name[0])
-          sprintf(ref, "%sHS/%s?exp=%s%s", 
+          sprintf(ref, "%sHS/%s?exp=%s%s",
                   mhttpd_url, path, exp_name, paramstr);
         else
-          sprintf(ref, "%sHS/%s?%s", 
+          sprintf(ref, "%sHS/%s?%s",
                   mhttpd_url, path, paramstr);
         }
       else
         {
         if (exp_name[0])
-          sprintf(ref, "%sHS/%s?exp=%s", 
+          sprintf(ref, "%sHS/%s?exp=%s",
                   mhttpd_url, path, exp_name);
         else
-          sprintf(ref, "%sHS/%s", 
+          sprintf(ref, "%sHS/%s",
                   mhttpd_url, path);
         }
 
@@ -7696,36 +7699,36 @@ float  factor[2];
       else
         width = 640;
 
-      rsprintf("  <area shape=rect coords=\"%d,%d,%d,%d\" href=\"%s\">\r\n", 
+      rsprintf("  <area shape=rect coords=\"%d,%d,%d,%d\" href=\"%s\">\r\n",
                  0, 0, width, 20, ref);
       }
 
     rsprintf("</map>\r\n");
-    
+
     /* Display individual panels */
     if (pindex && *pindex)
       sprintf(paramstr+strlen(paramstr), "&index=%s", pindex);
     if (paramstr[0])
       {
       if (exp_name[0])
-        sprintf(ref, "%sHS/%s.gif?exp=%s%s", 
+        sprintf(ref, "%sHS/%s.gif?exp=%s%s",
                 mhttpd_url, path, exp_name, paramstr);
       else
-        sprintf(ref, "%sHS/%s.gif?%s", 
+        sprintf(ref, "%sHS/%s.gif?%s",
                 mhttpd_url, path, paramstr);
       }
     else
       {
       if (exp_name[0])
-        sprintf(ref, "%sHS/%s.gif?exp=%s", 
+        sprintf(ref, "%sHS/%s.gif?exp=%s",
                 mhttpd_url, path, exp_name);
       else
-        sprintf(ref, "%sHS/%s.gif", 
+        sprintf(ref, "%sHS/%s.gif",
                 mhttpd_url, path);
       }
 
     /* put reference to graph */
-    rsprintf("<tr><td colspan=2><img src=\"%s\" alt=\"%s.gif\" usemap=\"#%s\"></tr>\n", 
+    rsprintf("<tr><td colspan=2><img src=\"%s\" alt=\"%s.gif\" usemap=\"#%s\"></tr>\n",
              ref, path, path);
     }
 
@@ -7745,24 +7748,24 @@ float  factor[2];
 
         if (exp_name[0])
           {
-          sprintf(ref, "%sHS/%s.gif?exp=%s&width=Small", 
+          sprintf(ref, "%sHS/%s.gif?exp=%s&width=Small",
                   mhttpd_url, key.name, exp_name);
-          sprintf(ref2, "%sHS/%s?exp=%s", 
+          sprintf(ref2, "%sHS/%s?exp=%s",
                   mhttpd_url, key.name, exp_name);
           }
         else
           {
-          sprintf(ref, "%sHS/%s.gif?width=Small", 
+          sprintf(ref, "%sHS/%s.gif?width=Small",
                   mhttpd_url, key.name);
-          sprintf(ref2, "%sHS/%s", 
+          sprintf(ref2, "%sHS/%s",
                   mhttpd_url, key.name);
           }
 
         if (i % 2 == 0)
-          rsprintf("<tr><td><a href=\"%s\"><img src=\"%s\" alt=\"%s.gif\"></a>\n", 
+          rsprintf("<tr><td><a href=\"%s\"><img src=\"%s\" alt=\"%s.gif\"></a>\n",
                    ref2, ref, key.name);
         else
-          rsprintf("<td><a href=\"%s\"><img src=\"%s\" alt=\"%s.gif\"></a></tr>\n", 
+          rsprintf("<td><a href=\"%s\"><img src=\"%s\" alt=\"%s.gif\"></a></tr>\n",
                    ref2, ref, key.name);
         }
     }
@@ -7910,7 +7913,7 @@ struct tm *gmt;
   run_state = STATE_STOPPED;
   size = sizeof(run_state);
   db_get_value(hDB, 0, "/Runinfo/State", &run_state, &size, TID_INT);
-  
+
   /*---- redirect with cookie if password given --------------------*/
 
   if (password[0])
@@ -7937,7 +7940,7 @@ struct tm *gmt;
     /* check if password correct */
     if (!check_web_password(ss_crypt(wpassword, "mi"), getparam("redir"), experiment))
       return;
-    
+
     rsprintf("HTTP/1.0 302 Found\r\n");
     rsprintf("Server: MIDAS HTTP %s\r\n", cm_get_version());
 
@@ -7994,7 +7997,7 @@ struct tm *gmt;
       return;
 
     sprintf(str, "/Script/%s", getparam("script"));
-    
+
     db_find_key(hDB, 0, str, &hkey);
 
     if (hkey)
@@ -8045,7 +8048,7 @@ struct tm *gmt;
     show_help_page();
     return;
     }
-  
+
   /*---- pause run -------------------------------------------*/
 
   if (equal_ustring(command, "pause"))
@@ -8126,7 +8129,7 @@ struct tm *gmt;
             size = key.item_size;
             sprintf(str, "x%d", n++);
             db_sscanf(getparam(str), data, &size, j, key.type);
-            db_set_data_index(hDB, hsubkey, data, size+1, j, key.type); 
+            db_set_data_index(hDB, hsubkey, data, size+1, j, key.type);
             }
           }
         }
@@ -8165,7 +8168,7 @@ struct tm *gmt;
 
   /*---- trigger equipment readout ---------------------------*/
 
-  if (strncmp(command, "Trigger", 7) == 0)    
+  if (strncmp(command, "Trigger", 7) == 0)
     {
     sprintf(str, "?cmd=%s", command);
     if (!check_web_password(cookie_wpwd, str, experiment))
@@ -8215,7 +8218,7 @@ struct tm *gmt;
     }
 
   /*---- cancel command --------------------------------------------*/
-  
+
   if (equal_ustring(command, "cancel"))
     {
     /* strip variable name from path */
@@ -8270,7 +8273,7 @@ struct tm *gmt;
     }
 
   /*---- find command ----------------------------------------------*/
-  
+
   if (equal_ustring(command, "find"))
     {
     show_find_page(enc_path, value);
@@ -8278,7 +8281,7 @@ struct tm *gmt;
     }
 
   /*---- create command --------------------------------------------*/
-  
+
   if (equal_ustring(command, "create"))
     {
     sprintf(str, "%s?cmd=create", enc_path);
@@ -8290,7 +8293,7 @@ struct tm *gmt;
     }
 
   /*---- CAMAC CNAF command ----------------------------------------*/
-  
+
   if (equal_ustring(command, "CNAF") || strncmp(path, "/CNAF", 5) == 0)
     {
     if (!check_web_password(cookie_wpwd, "?cmd=CNAF", experiment))
@@ -8301,7 +8304,7 @@ struct tm *gmt;
     }
 
   /*---- alarms command --------------------------------------------*/
-  
+
   if (equal_ustring(command, "reset all alarms"))
     {
     if (!check_web_password(cookie_wpwd, "?cmd=reset%20all%20alarms", experiment))
@@ -8327,7 +8330,7 @@ struct tm *gmt;
       sprintf(str, "?cmd=programs&Start=%s", getparam("Start"));
     if (*getparam("Stop"))
       sprintf(str, "?cmd=programs&Stop=%s", getparam("Stop"));
- 
+
     if (str[0])
       if (!check_web_password(cookie_wpwd, str, experiment))
         return;
@@ -8337,7 +8340,7 @@ struct tm *gmt;
     }
 
   /*---- config command --------------------------------------------*/
-  
+
   if (equal_ustring(command, "config"))
     {
     show_config_page(refresh);
@@ -8345,7 +8348,7 @@ struct tm *gmt;
     }
 
   /*---- Messages command ------------------------------------------*/
-  
+
   if (equal_ustring(command, "messages"))
     {
     show_messages_page(refresh, 20);
@@ -8383,7 +8386,7 @@ struct tm *gmt;
     show_elog_page(dec_path+3);
     return;
     }
-  
+
   if (equal_ustring(command, "Create ELog from this page"))
     {
     show_elog_page(dec_path);
@@ -8391,7 +8394,7 @@ struct tm *gmt;
     }
 
   /*---- accept command --------------------------------------------*/
-  
+
   if (equal_ustring(command, "accept"))
     {
     refresh = atoi(getparam("refr"));
@@ -8417,7 +8420,7 @@ struct tm *gmt;
     }
 
   /*---- delete command --------------------------------------------*/
-  
+
   if (equal_ustring(command, "delete"))
     {
     sprintf(str, "%s?cmd=delete", enc_path);
@@ -8429,7 +8432,7 @@ struct tm *gmt;
     }
 
   /*---- slow control display --------------------------------------*/
-  
+
   if (strncmp(path, "SC/", 3) == 0)
     {
     if (equal_ustring(command, "edit"))
@@ -8444,7 +8447,7 @@ struct tm *gmt;
     }
 
   /*---- custom page -----------------------------------------------*/
-  
+
   if (strncmp(path, "CS/", 3) == 0)
     {
     if (equal_ustring(command, "edit"))
@@ -8472,7 +8475,7 @@ struct tm *gmt;
     }
 
   /*---- show status -----------------------------------------------*/
-  
+
   if (path[0] == 0)
     {
     if (elog_mode)
@@ -8518,7 +8521,7 @@ char *p, *pitem;
       p[strlen(p)-1] = 0;
 
     p = strtok(p,"&");
-    while (p != NULL) 
+    while (p != NULL)
       {
       pitem = p;
       p = strchr(p,'=');
@@ -8534,13 +8537,13 @@ char *p, *pitem;
         }
       }
     }
-  
+
   interprete(cookie_pwd, cookie_wpwd, path, refresh);
 }
 
 /*------------------------------------------------------------------*/
 
-void decode_post(char *string, char *boundary, int length, 
+void decode_post(char *string, char *boundary, int length,
                  char *cookie_pwd, char *cookie_wpwd, int refresh)
 {
 char *pinit, *p, *pitem, *ptmp, file_name[256], str[256];
@@ -8614,7 +8617,7 @@ int  n;
         if (file_name[0])
           {
           _attachment_buffer[n] = string;
-          _attachment_size[n] = (INT)p - (INT) string; 
+          _attachment_size[n] = (INT)p - (INT) string;
           }
 
         string = strstr(p, boundary) + strlen(boundary);
@@ -8646,7 +8649,7 @@ int  n;
       }
 
     } while ((INT)string - (INT)pinit < length);
-  
+
   interprete(cookie_pwd, cookie_wpwd, "EL/", refresh);
 }
 
@@ -8827,7 +8830,7 @@ INT                  last_time=0;
           i = recv(_sock, net_buffer+len, sizeof(net_buffer)-len, 0);
         else
           goto error;
-      
+
         /* abort if connection got broken */
         if (i<0)
           goto error;
@@ -8917,14 +8920,14 @@ INT                  last_time=0;
       if (strncmp(net_buffer, "GET", 3) != 0 &&
           strncmp(net_buffer, "POST", 4) != 0)
         goto error;
-      
+
       return_length = 0;
 
       if (strncmp(net_buffer, "GET", 3) == 0)
         {
         /* extract path and commands */
         *strchr(net_buffer, '\r') = 0;
-  
+
         if (!strstr(net_buffer, "HTTP"))
           goto error;
         *(strstr(net_buffer, "HTTP")-1)=0;
@@ -8934,7 +8937,7 @@ INT                  last_time=0;
         }
       else
         {
-        decode_post(net_buffer+header_length, boundary, content_length, 
+        decode_post(net_buffer+header_length, boundary, content_length,
                     cookie_pwd, cookie_wpwd, refresh);
         }
 
@@ -9009,7 +9012,7 @@ usage:
         }
       }
     }
-  
+
   server_loop(tcp_port, daemon);
 
   return 0;
