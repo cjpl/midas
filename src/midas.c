@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.181  2003/03/28 07:59:50  midas
+  Removed old code
+
   Revision 1.180  2003/03/27 19:40:27  olchansk
   fix infinite loop in cm_scan_experiments(). Why feof() does not work is a mystery, but I definitely saw fgets() return NULL and the subsequent feof() return 0.
 
@@ -17416,8 +17419,6 @@ ALARM_PERIODIC_STR(alarm_periodic_str);
         }
 
       now = ss_time();
-
-//      program_info.checked_last = now;
 
       rpc_get_name(str);
       str[strlen(key.name)] = 0;
