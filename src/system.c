@@ -14,6 +14,9 @@
                 Brown, Prentice Hall
 
   $Log$
+  Revision 1.18  1999/01/18 17:48:42  pierre
+  - Correct ss_file_find().
+
   Revision 1.17  1998/12/10 12:47:51  midas
   Changed unexpexted tape error printf to cm_msg
 
@@ -4439,6 +4442,7 @@ INT ss_file_find(char * path, char * pattern, char **plist)
 	  {
 	    *plist = (char *)realloc(*plist, (i+1)*MAX_STRING_LENGTH);
 	    strncpy(*plist+(i*MAX_STRING_LENGTH), dp->d_name, strlen(dp->d_name)); 
+      *(*plist+(i*MAX_STRING_LENGTH)+strlen(dp->d_name)) = '\0';
 	    i++;
 	    seekdir(dir_pointer, telldir(dir_pointer));
 	  }
