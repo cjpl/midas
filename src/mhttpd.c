@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.65  1999/10/07 13:31:18  midas
+  Fixed truncated date in el_submit, cut off @host in author search
+
   Revision 1.64  1999/10/07 13:17:34  midas
   Put a few EXPRT im msystem.h to make NT happy, updated NT makefile
 
@@ -1830,8 +1833,10 @@ FILE   *f;
         strcpy(str, getparam("author"));
         for (i=0 ; i<(int)strlen(str) ; i++)
           str[i] = toupper(str[i]);
-        for (i=0 ; i<(int)strlen(author) ; i++)
+        str[i] = 0;
+        for (i=0 ; i<(int)strlen(author) && author[i] != '@'; i++)
           str2[i] = toupper(author[i]);
+        str2[i] = 0;
 
         if (strstr(str2, str) == NULL)
           continue;
@@ -2420,6 +2425,8 @@ FILE  *f;
                   attachment[0], attachment[1], attachment[2], 
                   encoding);
       
+      if (strchr(author, '@'))
+        *strchr(author, '@') = 0;
       if (*getparam("lauthor")  == '1' && !equal_ustring(getparam("author"),  author ))
         continue;
       if (*getparam("ltype")    == '1' && !equal_ustring(getparam("type"),    type   ))
