@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.271  2004/08/11 00:06:08  olchansk
+  fix mhttpd crashes from "broken pipe" signals (SIGPIPE) when the user's web browser prematurely closes the connection (i.e. when the user hits the "stop" button while mhttpd is generating the data).
+
   Revision 1.270  2004/07/29 14:27:35  midas
   Added red error display in status page
 
@@ -10265,6 +10268,10 @@ int main(int argc, char *argv[])
 
    setbuf(stdout, NULL);
    setbuf(stderr, NULL);
+#ifdef SIGPIPE
+  /* avoid getting killed by "Broken pipe" signals */
+  signal(SIGPIPE,SIG_IGN);
+#endif
 
    /* parse command line parameters */
    no_disconnect = FALSE;
