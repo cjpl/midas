@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.105  2000/03/21 13:48:06  midas
+  Web password expires after one day instead of one hour
+
   Revision 1.104  2000/03/18 08:02:32  midas
   Increased idle time logout to 1h
 
@@ -819,7 +822,7 @@ CHN_STATISTICS chn_stats;
   if (cookie_wpwd[0])
     {
     time(&now);
-    now += 3600;
+    now += 3600*24;
     gmt = gmtime(&now);
     strftime(str, sizeof(str), "%A, %d-%b-%y %H:%M:%S GMT", gmt);
 
