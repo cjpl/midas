@@ -7,6 +7,9 @@
                 following the MIDAS CAMAC Standard under DIRECTIO
 
   $Log$
+  Revision 1.6  2000/09/27 12:05:57  midas
+  Outcommented info about auto increment switch
+
   Revision 1.5  2000/09/26 07:10:50  midas
   Added DO_IOPERM for debugging as root
 
@@ -712,15 +715,15 @@ INLINE int cam_init(void)
   
   status = INP(CAMAC_BASE+6);
   if (!(status & 0x40))
-  {
+    {
     gbl_sw1d = FALSE;
-    printf("hyt1331.c: Auto increment disabled by SW1D. camxxi_sa won't work. 0x%x\n",status); 
-  }
+    //printf("hyt1331.c: Auto increment disabled by SW1D. camxxi_sa won't work. 0x%x\n",status); 
+    }
   else
-  {
+    {
     gbl_sw1d = TRUE;
-    printf("hyt1331.c: Auto increment enabled by SW1D. camxxi_sa will work. 0x%x\n",status);
-  }
+    //printf("hyt1331.c: Auto increment enabled by SW1D. camxxi_sa will work. 0x%x\n",status);
+    }
   return SUCCESS;
 }
 
