@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.7  2001/05/23 13:06:03  midas
+  Added "allow edit" functionality
+
   Revision 1.6  2001/05/23 10:48:48  midas
   Added version
 
@@ -1697,13 +1700,20 @@ void el_format(char *text, char *encoding)
     strencode(text);
 }
 
-void show_elog_new(char *path, BOOL bedit, char *odb_att)
+void show_elog_new(char *path, BOOL bedit, char *attachment)
 {
 int    i, size, run_number, wrap;
 char   str[256], ref[256], *p, list[1000];
 char   date[80], author[80], type[80], system[80], subject[256], text[10000], 
        orig_tag[80], reply_tag[80], att1[256], att2[256], att3[256], encoding[80];
 time_t now;
+BOOL   allow_edit;
+
+  allow_edit = TRUE;
+
+  /* get flag from configuration file */
+  if (getcfg(logbook, "Allow edit", str))
+    allow_edit= atoi(str);
 
   /* get message for reply */
   type[0] = system[0] = 0;
@@ -1734,6 +1744,14 @@ time_t now;
   rsprintf("<tr><th bgcolor=#A0A0FF>ELOG");
   rsprintf("<th bgcolor=#A0A0FF>Logbook \"%s\"</tr>\n", logbook);
 
+  if (bedit && !allow_edit)
+    {
+    rsprintf("<tr><td colspan=2 bgcolor=#FF8080 align=center><h1>Message editing disabled</h1>\n");
+    rsprintf("</table>\n");
+    rsprintf("</body></html>\r\n");
+    return;
+    }
+  
   /*---- menu buttons ----*/
 
   rsprintf("<tr><td colspan=2 bgcolor=#C0C0C0>\n");
@@ -1878,12 +1896,12 @@ time_t now;
   /* attachment */
   rsprintf("<tr><td colspan=2 align=center>Enter attachment filename(s):</tr>");
 
-  if (odb_att)
+  if (attachment)
     {
     str[0] = 0;
-    if (odb_att[0] != '\\' && odb_att[0] != '/')
+    if (attachment[0] != '\\' && attachment[0] != '/')
       strcpy(str, "\\");
-    strcat(str, odb_att);
+    strcat(str, attachment);
     rsprintf("<tr><td colspan=2>Attachment1: <input type=hidden name=attachment0 value=\"%s\"><b>%s</b></tr>\n", str, str);
     }
   else
@@ -2066,7 +2084,7 @@ BOOL   allow_delete;
 
   if (!allow_delete)
     {
-    rsprintf("<tr><td colspan=2 bgcolor=#FF8080 align=center><h1>Message deletion disabled in ODB</h1>\n");
+    rsprintf("<tr><td colspan=2 bgcolor=#FF8080 align=center><h1>Message deletion disabled</h1>\n");
     }
   else
     {
@@ -2722,13 +2740,16 @@ char  str[256], orig_path[256], command[80], ref[256], file_name[256];
 char  date[80], author[80], type[80], system[80], subject[256], text[10000], 
       orig_tag[80], reply_tag[80], attachment[3][256], encoding[80], att[256];
 FILE  *f;
-BOOL  allow_delete;
+BOOL  allow_delete, allow_edit;
 
   allow_delete = FALSE;
+  allow_edit = TRUE;
 
-  /* get flag from configuration file */
+  /* get flags from configuration file */
   if (getcfg(logbook, "Allow delete", str))
     allow_delete = atoi(str);
+  if (getcfg(logbook, "Allow edit", str))
+    allow_edit = atoi(str);
   
   /*---- interprete commands ---------------------------------------*/
 
@@ -2984,7 +3005,8 @@ BOOL  allow_delete;
 
   rsprintf("<tr><td colspan=2 bgcolor=#C0C0C0>\n");
   rsprintf("<input type=submit name=cmd value=New>\n");
-  rsprintf("<input type=submit name=cmd value=Edit>\n");
+  if (allow_edit)
+    rsprintf("<input type=submit name=cmd value=Edit>\n");
   if (allow_delete)
     rsprintf("<input type=submit name=cmd value=Delete>\n");
   rsprintf("<input type=submit name=cmd value=Reply>\n");
@@ -3266,11 +3288,11 @@ void interprete(char *cookie_wpwd, char *path)
 
   Routine: interprete
 
-  Purpose: Interprete parametersand generate HTML output from odb.
+  Purpose: Interprete parametersand generate HTML output.
 
   Input:
     char *cookie_pwd        Cookie containing encrypted password
-    char *path              ODB path "/dir/subdir/key"
+    char *path              Message path
 
   <implicit>
     _param/_value array accessible via getparam()
@@ -3298,6 +3320,10 @@ struct tm *gmt;
   group = getparam("group");
   index = atoi(getparam("index"));
 
+  /* if experiment give, use it as logbook */
+  if (experiment && experiment[0])
+    strcpy(logbook, experiment);
+  
   /* if no logbook given, display logbook selection page */
   if (!logbook[0])
     {
@@ -3345,7 +3371,8 @@ struct tm *gmt;
 
   if (equal_ustring(command, "new") ||
       equal_ustring(command, "edit") ||
-      equal_ustring(command, "reply"))
+      equal_ustring(command, "reply") ||
+      equal_ustring(command, "submit"))
     {
     sprintf(str, "%s?cmd=%s", path, command);
     if (!check_web_password(logbook, cookie_wpwd, str))
