@@ -14,6 +14,9 @@
                 Brown, Prentice Hall
 
   $Log$
+  Revision 1.33  1999/07/06 09:02:20  midas
+  Evaluater EINTR in ss_release_mutex
+
   Revision 1.32  1999/06/23 13:37:26  midas
   Fixed compiler warnings
 
@@ -1653,8 +1656,20 @@ INT status;
     return SS_SUCCESS;
     }
 
-  if ((status = semop(mutex_handle, &sb, 1)) < 0)
+  do
+    {
+    status = semop(mutex_handle, &sb, 1);
+
+    /* return on success */
+    if (status == 0)
+      break;
+
+    /* retry if interrupted by a ss_wake signal */
+    if (errno == EINTR)
+      continue;
+
     return SS_NO_MUTEX;
+    } while (1);
 
   return SS_SUCCESS;
   }
