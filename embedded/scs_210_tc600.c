@@ -10,6 +10,9 @@
                 Turbomolecular Pump with TC600 Electronics
 
   $Log$
+  Revision 1.10  2004/07/30 10:22:03  midas
+  Added MSCBF_DATALESS
+
   Revision 1.9  2004/04/07 11:06:17  midas
   Version 1.7.1
 
@@ -69,14 +72,14 @@ struct {
 
 
 MSCB_INFO_VAR code variables[] = {
-   1, UNIT_ASCII, 0, 0, 0, "RS232", 0,
-   1, UNIT_BOOLEAN, 0, 0, 0, "Pump on", &user_data.pump_on,
-   1, UNIT_BOOLEAN, 0, 0, 0, "Vent on", &user_data.vent_on,
-   2, UNIT_HERTZ, 0, 0, 0, "RotSpd", &user_data.rot_speed,
-   4, UNIT_AMPERE, 0, 0, MSCBF_FLOAT, "TMPcur", &user_data.tmp_current,
+   1, UNIT_ASCII,   0, 0, MSCBF_DATALESS, "RS232", 0,
+   1, UNIT_BOOLEAN, 0, 0,              0, "Pump on", &user_data.pump_on,
+   1, UNIT_BOOLEAN, 0, 0,              0, "Vent on", &user_data.vent_on,
+   2, UNIT_HERTZ,   0, 0,              0, "RotSpd", &user_data.rot_speed,
+   4, UNIT_AMPERE,  0, 0,    MSCBF_FLOAT, "TMPcur", &user_data.tmp_current,
 
-   1, UNIT_BAUD, 0, 0, 0, "Baud", &user_data.baud,
-   1, UNIT_BYTE, 0, 0, 0, "Address", &user_data.address,
+   1, UNIT_BAUD,    0, 0,              0, "Baud", &user_data.baud,
+   1, UNIT_BYTE,    0, 0,              0, "Address", &user_data.address,
    0
 };
 

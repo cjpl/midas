@@ -9,6 +9,9 @@
                 for TTI QL335P Power supply
 
   $Log$
+  Revision 1.6  2004/07/30 10:22:03  midas
+  Added MSCBF_DATALESS
+
   Revision 1.5  2004/04/07 11:06:17  midas
   Version 1.7.1
 
@@ -55,13 +58,13 @@ struct {
 } idata user_data;
 
 MSCB_INFO_VAR code variables[] = {
-   1, UNIT_ASCII, 0, 0, MSCBF_DATALESS, "GPIB", 0,
-   1, UNIT_BOOLEAN, 0, 0, 0, "Switch", &user_data.flag,
-   4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "Voltage", &user_data.demand_voltage,
-   4, UNIT_AMPERE, 0, 0, MSCBF_FLOAT, "Current", &user_data.current_limit,
-   4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "Vmeas", &user_data.measured_voltage,
-   4, UNIT_AMPERE, 0, 0, MSCBF_FLOAT, "Imeas", &user_data.measured_current,
-   1, UNIT_BYTE, 0, 0, 0, "GPIB Adr", &user_data.gpib_adr,
+   1, UNIT_ASCII,   0, 0, MSCBF_DATALESS, "GPIB",                            0,
+   1, UNIT_BOOLEAN, 0, 0,              0, "Switch",            &user_data.flag,
+   4, UNIT_VOLT,    0, 0,    MSCBF_FLOAT, "Voltage", &user_data.demand_voltage,
+   4, UNIT_AMPERE,  0, 0,    MSCBF_FLOAT, "Current",  &user_data.current_limit,
+   4, UNIT_VOLT,    0, 0,    MSCBF_FLOAT, "Vmeas", &user_data.measured_voltage,
+   4, UNIT_AMPERE,  0, 0,    MSCBF_FLOAT, "Imeas", &user_data.measured_current,
+   1, UNIT_BYTE,    0, 0,              0, "GPIB Adr",      &user_data.gpib_adr,
    0
 };
 

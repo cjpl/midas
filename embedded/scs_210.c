@@ -9,6 +9,9 @@
                 for SCS-210 RS232 node
 
   $Log$
+  Revision 1.13  2004/07/30 10:22:03  midas
+  Added MSCBF_DATALESS
+
   Revision 1.12  2004/06/16 11:39:55  midas
   Added external watchdog
 
@@ -71,13 +74,13 @@ struct {
    char output[32];
    char input[32];
    unsigned char baud;
-} idata user_data;
+} xdata user_data;
 
 MSCB_INFO_VAR code variables[] = {
-   1,  UNIT_ASCII,  0, 0, 0, "RS232", 0,
-   32, UNIT_STRING, 0, 0, 0, "Output", &user_data.output[0],
-   32, UNIT_STRING, 0, 0, 0, "Input", &user_data.input[0],
-   1,  UNIT_BAUD,   0, 0, 0, "Baud", &user_data.baud,
+   1,   UNIT_ASCII,  0, 0, MSCBF_DATALESS, "RS232", 0,
+   32,  UNIT_STRING, 0, 0,              0, "Output", &user_data.output[0],
+   32,  UNIT_STRING, 0, 0,              0, "Input", &user_data.input[0],
+   1,   UNIT_BAUD,   0, 0,              0, "Baud", &user_data.baud,
    0
 };
 
