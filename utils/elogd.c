@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.36  2001/08/28 11:36:18  midas
+  Treat configuration directory correctly
+
   Revision 1.35  2001/08/28 10:42:58  midas
   Extract path for theme file from configuration file
 
@@ -129,6 +132,7 @@
 #define OS_WINNT
 
 #define DIR_SEPARATOR '\\'
+#define DIR_SEPARATOR_STR "\\"
 
 #include <windows.h>
 #include <io.h>
@@ -141,6 +145,7 @@
 #define FALSE 0
 
 #define DIR_SEPARATOR '/'
+#define DIR_SEPARATOR_STR "/"
 
 typedef int BOOL;
 typedef unsigned long int DWORD;
@@ -183,6 +188,7 @@ char logbook[32];
 char logbook_enc[40];
 char data_dir[256];
 char cfg_file[256];
+char cfg_dir[256];
 
 #define MAX_GROUPS       32
 #define MAX_PARAM       100
@@ -238,6 +244,7 @@ struct {
 
   ".JPG",   "image/jpeg",     
   ".GIF",   "image/gif",
+  ".PNG",   "image/png",
   ".PS",    "application/postscript",
   ".EPS",   "application/postscript",
   ".HTML",  "text/html",
@@ -778,18 +785,7 @@ int  i;
 
   memset(file_name, 0, sizeof(file_name));
 
-  /* extract directory from configuration file */
-  if (cfg_file[0] && strchr(cfg_file, DIR_SEPARATOR))
-    {
-    strcpy(file_name, cfg_file);
-    for (i=strlen(file_name-1) ; i>0 ; i--)
-      {
-      if (file_name[i] == DIR_SEPARATOR)
-        break;
-      file_name[i] = 0;
-      }
-    }
-
+  strcpy(file_name, cfg_dir);
   strcat(file_name, tn);
   file_name[strlen(file_name)] = DIR_SEPARATOR;
   strcat(file_name, "theme.cfg");
@@ -2278,7 +2274,7 @@ int  i;
   /* right cell */
   rsprintf("<td bgcolor=%s align=right>", gt("Title BGColor"));
   if (*gt("Title image"))
-    rsprintf("<img src=\"%s%s/%s/%s\">", elogd_url, logbook_enc, theme_name, gt("Title image"));
+    rsprintf("<img src=\"%s%s/%s\">", elogd_url, logbook_enc, gt("Title image"));
   else
     rsprintf("<font size=3 face=verdana,arial,helvetica color=%s><b>ELOG V%s&nbsp;&nbsp</b></font>", 
               gt("Title fontcolor"), VERSION);
@@ -3406,7 +3402,8 @@ FILE   *f;
               else
                 {
                 if (strstr(str, ".GIF") ||
-                    strstr(str, ".JPG"))
+                    strstr(str, ".JPG") ||
+                    strstr(str, ".PNG"))
                   {
                   rsprintf("<tr><td colspan=%d bgcolor=%s><b>Attachment%d:</b> <a href=\"%s\">%s</a>\n", 
                             colspan, gt("List bgcolor2"), index+1, ref, attachment[index]+14);
@@ -3849,10 +3846,22 @@ BOOL  allow_delete, allow_edit;
   /*---- check if file requested -----------------------------------*/
 
   if ((strlen(path) > 13 && path[6] == '_' && path[13] == '_') ||
-      strstr(path, ".gif") || strstr(path, ".jpg"))
+      strstr(path, ".gif") || strstr(path, ".jpg") || strstr(path, ".png"))
     {
-    strcpy(file_name, data_dir);
-    strcat(file_name, path);
+    if (strlen(path) > 13 && path[6] == '_' && path[13] == '_')
+      {
+      /* file from data directory requested */
+      strcpy(file_name, data_dir);
+      strcat(file_name, path);
+      }
+    else
+      {
+      /* file from theme directory requested */
+      strcpy(file_name, cfg_dir);
+      strcat(file_name, theme_name);
+      strcat(file_name, DIR_SEPARATOR_STR);
+      strcat(file_name, path);
+      }
 
     fh = open(file_name, O_RDONLY | O_BINARY);
     if (fh > 0)
@@ -4071,14 +4080,14 @@ BOOL  allow_delete, allow_edit;
   
   if (atoi(gt("Menu2 use images")) == 1)
     {
-    rsprintf("<input type=image name=cmd_first border=0 alt=\"First entry\" src=\"%s%s/%s/first.gif\">\n", 
-             elogd_url, logbook_enc, theme_name);
-    rsprintf("<input type=image name=cmd_previous border=0 alt=\"Previous entry\" src=\"%s%s/%s/previous.gif\">\n", 
-             elogd_url, logbook_enc, theme_name);
-    rsprintf("<input type=image name=cmd_next border=0 alt=\"Next entry\" src=\"%s%s/%s/next.gif\">\n", 
-             elogd_url, logbook_enc, theme_name);
-    rsprintf("<input type=image name=cmd_last border=0 alt=\"Last entry\" src=\"%s%s/%s/last.gif\">\n", 
-             elogd_url, logbook_enc, theme_name);
+    rsprintf("<input type=image name=cmd_first border=0 alt=\"First entry\" src=\"%s%s/first.gif\">\n", 
+             elogd_url, logbook_enc);
+    rsprintf("<input type=image name=cmd_previous border=0 alt=\"Previous entry\" src=\"%s%s/previous.gif\">\n", 
+             elogd_url, logbook_enc);
+    rsprintf("<input type=image name=cmd_next border=0 alt=\"Next entry\" src=\"%s%s/next.gif\">\n", 
+             elogd_url, logbook_enc);
+    rsprintf("<input type=image name=cmd_last border=0 alt=\"Last entry\" src=\"%s%s/last.gif\">\n", 
+             elogd_url, logbook_enc);
     }
   else
     {
@@ -4262,7 +4271,8 @@ BOOL  allow_delete, allow_edit;
         rsprintf("</td></tr></table></td></tr>\n");
 
         if (strstr(att, ".GIF") ||
-            strstr(att, ".JPG"))
+            strstr(att, ".JPG") ||
+            strstr(att, ".PNG"))
           {
           rsprintf("<tr><td><table width=100%% border=0 cellpadding=0 cellspacing=1 bgcolor=%s>\n", gt("Frame color"));
           rsprintf("<tr><td bgcolor=%s>", gt("Text bgcolor"));
@@ -5407,6 +5417,18 @@ usage:
     base64_encode(delete_pwd, str);
     create_password(logbook, "Delete Password", str);
     return 0;
+    }
+
+  /* extract directory from configuration file */
+  if (cfg_file[0] && strchr(cfg_file, DIR_SEPARATOR))
+    {
+    strcpy(cfg_dir, cfg_file);
+    for (i=strlen(cfg_dir)-1 ; i>0 ; i--)
+      {
+      if (cfg_dir[i] == DIR_SEPARATOR)
+        break;
+      cfg_dir[i] = 0;
+      }
     }
 
   server_loop(tcp_port, daemon);
