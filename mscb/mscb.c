@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus communication functions
 
   $Log$
+  Revision 1.88  2005/03/21 15:31:30  ritt
+  Fixed compiler warnings
+
   Revision 1.87  2005/03/21 15:26:32  ritt
   Allow mscb000
 
@@ -1102,7 +1105,7 @@ int mscb_in1(int fd, unsigned char *c, int timeout)
 
 int recv_eth(int sock, char *buf, int buffer_size)
 {
-   INT n_received, n;
+   int n_received, n;
    unsigned char buffer[65];
 
    if (buffer_size > sizeof(buffer))
@@ -2883,7 +2886,7 @@ int mscb_upload(int fd, int adr, char *buffer, int size, int debug)
    unsigned int len, ofh, ofl, type, d;
    int i, status, page, subpage, flash_size, n_page, retry, sretry, protected_page;
    unsigned short ofs;
-   BOOL page_cont[128];
+   int page_cont[128];
 
    if (fd > MSCB_MAX_FD || fd < 1 || !mscb_fd[fd - 1].type)
       return MSCB_INVAL_PARAM;
@@ -2915,10 +2918,10 @@ int mscb_upload(int fd, int adr, char *buffer, int size, int debug)
    } while (*line);
 
    /* count pages and bytes */
-   for (page = 0; page < sizeof(page_cont)/sizeof(BOOL) ; page++)
+   for (page = 0; page < sizeof(page_cont)/sizeof(int) ; page++)
       page_cont[page] = FALSE;
 
-   for (page = n_page = 0; page < sizeof(page_cont)/sizeof(BOOL) ; page++) {
+   for (page = n_page = 0; page < sizeof(page_cont)/sizeof(int) ; page++) {
       /* check if page contains data */
       for (i = 0; i < 512; i++) {
          if (image[page * 512 + i] != 0xFF) {
