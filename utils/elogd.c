@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.47  2001/10/19 11:34:07  midas
+  Added "Welcome title" for logbook selection page
+
   Revision 1.46  2001/10/19 10:33:02  midas
   Added "boolean" attributes, "filtered browsing" and "display search"
 
@@ -2545,6 +2548,83 @@ void show_error(char *error)
 
 /*------------------------------------------------------------------*/
 
+void send_file(char *file_name)
+{
+int    fh, i, length;
+char   str[256];
+time_t now;
+struct tm *gmt;
+
+  fh = open(file_name, O_RDONLY | O_BINARY);
+  if (fh > 0)
+    {
+    lseek(fh, 0, SEEK_END);
+    length = TELL(fh);
+    lseek(fh, 0, SEEK_SET);
+
+    rsprintf("HTTP/1.1 200 Document follows\r\n");
+    rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
+    rsprintf("Accept-Ranges: bytes\r\n");
+
+    time(&now);
+    now += (int) (3600*3);
+    gmt = gmtime(&now);
+    strftime(str, sizeof(str), "%A, %d-%b-%y %H:%M:%S GMT", gmt);
+    rsprintf("Expires: %s\r\n", str);
+
+    if (use_keepalive)
+      {
+      rsprintf("Connection: Keep-Alive\r\n");
+      rsprintf("Keep-Alive: timeout=60, max=10\r\n");
+      }
+
+    /* return proper header for file type */
+    for (i=0 ; i<(int)strlen(file_name) ; i++)
+      str[i] = toupper(file_name[i]);
+    str[i] = 0;
+
+    for (i=0 ; filetype[i].ext[0] ; i++)
+      if (strstr(str, filetype[i].ext))
+        break;
+
+    if (filetype[i].ext[0])
+      rsprintf("Content-Type: %s\r\n", filetype[i].type);
+    else if (strchr(str, '.') == NULL)
+      rsprintf("Content-Type: text/plain\r\n");
+    else
+      rsprintf("Content-Type: application/octet-stream\r\n");
+
+    rsprintf("Content-Length: %d\r\n\r\n", length);
+
+    /* return if file too big */
+    if (length > (int) (sizeof(return_buffer) - strlen(return_buffer)))
+      {
+      printf("return buffer too small\n");
+      close(fh);
+      return;
+      }
+
+    return_length = strlen(return_buffer)+length;
+    read(fh, return_buffer+strlen(return_buffer), length);
+
+    close(fh);
+    }
+  else
+    {
+    rsprintf("HTTP/1.1 404 Not Found\r\n");
+    rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
+    rsprintf("Connection: close\r\n");
+    rsprintf("Content-Type: text/html\r\n\r\n");
+    rsprintf("<html><head><title>404 Not Found</title></head>\r\n");
+    rsprintf("<body><h1>Not Found</h1>\r\n");
+    rsprintf("The requested file <b>%s</b> was not found on this server<p>\r\n", file_name);
+    rsprintf("<hr><address>ELOG version %s</address></body></html>\r\n\r\n", VERSION);
+    keep_alive = 0;
+    }
+}
+
+/*------------------------------------------------------------------*/
+
 void strencode(char *text)
 {
 int i;
@@ -3833,62 +3913,6 @@ FILE   *f;
 
 /*------------------------------------------------------------------*/
 
-void show_rawfile(char *path)
-{
-FILE   *f;
-char   file_name[256], line[1000];
-
-  /* header */
-  show_standard_header(path, NULL);
-  rsprintf("<table border=3 cellpadding=1 width=\"100%%\">\n");
-
-  /*---- title row ----*/
-
-
-  rsprintf("<tr><th bgcolor=#A0A0FF>ELOG File Display");
-  rsprintf("<th bgcolor=#A0A0FF>Logbook \"%s\"</tr>\n", logbook);
-
-  /*---- menu buttons ----*/
-
-  rsprintf("<tr><td colspan=2 bgcolor=#C0C0C0>\n");
-  rsprintf("<input type=submit name=cmd value=\"ELog\">\n");
-  rsprintf("</tr></table>\n\n");
-
-  /*---- open file ----*/
-
-  strcpy(file_name, data_dir);
-  strcat(file_name, path);
-
-  f = fopen(file_name, "r");
-  if (f == NULL)
-    {
-    strcat(file_name, ".txt");
-    f = fopen(file_name, "r");
-    if (f == NULL)
-      {
-      rsprintf("<h3>File \"%s\" not available for this experiment</h3>\n", path);
-      rsprintf("</body></html>\n");
-      return;
-      }
-    }
-
-  /*---- file contents ----*/
-
-  rsprintf("<pre>\n");
-  while (!feof(f))
-    {
-    memset(line, 0, sizeof(line));
-    fgets(line, sizeof(line), f);
-    rsputs2(line);
-    }
-  rsprintf("</pre>\n");
-  fclose(f);
-
-  rsprintf("</body></html>\r\n");
-}
-
-/*------------------------------------------------------------------*/
-
 void submit_elog()
 {
 char   str[256], mail_to[256], mail_from[256],
@@ -4205,8 +4229,6 @@ char   date[80], text[TEXT_SIZE], *buf,
        orig_tag[80], reply_tag[80], attachment[MAX_ATTACHMENTS][256], encoding[80], att[256], lattr[256];
 FILE   *f;
 BOOL   allow_delete, allow_edit;
-time_t now;
-struct tm *gmt;
 
   n_attr = scan_attributes(logbook);
 
@@ -4372,85 +4394,10 @@ struct tm *gmt;
       strcat(file_name, path);
       }
 
-    fh = open(file_name, O_RDONLY | O_BINARY);
-    if (fh > 0)
-      {
-      lseek(fh, 0, SEEK_END);
-      length = TELL(fh);
-      lseek(fh, 0, SEEK_SET);
-
-      rsprintf("HTTP/1.1 200 Document follows\r\n");
-      rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
-      rsprintf("Accept-Ranges: bytes\r\n");
-
-      time(&now);
-      now += (int) (3600*3);
-      gmt = gmtime(&now);
-      strftime(str, sizeof(str), "%A, %d-%b-%y %H:%M:%S GMT", gmt);
-      rsprintf("Expires: %s\r\n", str);
-
-      if (use_keepalive)
-        {
-        rsprintf("Connection: Keep-Alive\r\n");
-        rsprintf("Keep-Alive: timeout=60, max=10\r\n");
-        }
-
-      /* return proper header for file type */
-      for (i=0 ; i<(int)strlen(path) ; i++)
-        str[i] = toupper(path[i]);
-      str[i] = 0;
-
-      for (i=0 ; filetype[i].ext[0] ; i++)
-        if (strstr(str, filetype[i].ext))
-          break;
-
-      if (filetype[i].ext[0])
-        rsprintf("Content-Type: %s\r\n", filetype[i].type);
-      else if (strchr(str, '.') == NULL)
-        rsprintf("Content-Type: text/plain\r\n");
-      else
-        rsprintf("Content-Type: application/octet-stream\r\n");
-
-      rsprintf("Content-Length: %d\r\n\r\n", length);
-
-      /* return if file too big */
-      if (length > (int) (sizeof(return_buffer) - strlen(return_buffer)))
-        {
-        printf("return buffer too small\n");
-        close(fh);
-        return;
-        }
-
-      return_length = strlen(return_buffer)+length;
-      read(fh, return_buffer+strlen(return_buffer), length);
-
-      close(fh);
-      }
-    else
-      {
-      /* return empty buffer */
-      rsprintf("HTTP/1.1 404 Not Found\r\n");
-      rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
-      rsprintf("Connection: close\r\n");
-      rsprintf("Content-Type: text/html\r\n\r\n");
-      rsprintf("<html><head><title>404 Not Found</title></head>\r\n");
-      rsprintf("<body><h1>Not Found</h1>\r\n");
-      rsprintf("The requested file <b>%s</b> was not found on this server<p>\r\n", file_name);
-      rsprintf("<hr><address>ELOG version %s</address></body></html>\r\n\r\n", VERSION);
-      keep_alive = 0;
-      }
-
+    send_file(file_name);
     return;
     }
 
-  /*---- check if runlog is requested ------------------------------*/
-
-  if (path[0] > '9')
-    {
-    show_rawfile(path);
-    return;
-    }
-  
   /*---- check next/previous message -------------------------------*/
 
   last_message = first_message = FALSE;
@@ -5073,7 +5020,7 @@ char  str[256];
 void show_selection_page()
 {
 int  i;
-char str[80], logbook[80];
+char str[10000], logbook[80];
 
   rsprintf("HTTP/1.1 200 Document follows\r\n");
   rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
@@ -5094,9 +5041,18 @@ char str[80], logbook[80];
   rsprintf("<p><p><p><table border=0 width=50%% bgcolor=#486090 cellpadding=0 cellspacing=0 align=center>");
   rsprintf("<tr><td><table cellpadding=5 cellspacing=1 border=0 width=100%% bgcolor=#486090>\n");
   
-  rsprintf("<tr><td align=center colspan=2 bgcolor=#486090><font size=5 color=#FFFFFF>\n");
-  rsprintf("Several logbooks are defined on this host.<BR>\n");
-  rsprintf("Please select the one to connect to:</font></td></tr>\n");
+  rsprintf("<tr><td align=center colspan=2 bgcolor=#486090>\n");
+
+  if (getcfg("global", "Welcome title", str))
+    {
+    rsputs(str);
+    }
+  else
+    {
+    rsprintf("<font size=5 color=#FFFFFF>\n");
+    rsprintf("Several logbooks are defined on this host.<BR>\n");
+    rsprintf("Please select the one to connect to:</font></td></tr>\n");
+    }
 
   for (i=0 ;  ; i++)
     {
@@ -5814,13 +5770,24 @@ struct timeval       timeout;
             break;
           }
 
-        if (!equal_ustring(logbook, str) && logbook[0])
+        if (strstr(logbook, ".gif") || strstr(logbook, ".jpg") || strstr(logbook, ".png"))
           {
-          sprintf(str, "Error: logbook \"%s\" not defined in elogd.cfg", logbook);
-          show_error(str);
-          send(_sock, return_buffer, strlen(return_buffer), 0);
+          /* server file directly */
+          strcpy(str, cfg_dir);
+          strcat(str, logbook);
+          send_file(str);
+          send(_sock, return_buffer, return_length, 0);
+
           goto error;
           }
+        else
+          if (!equal_ustring(logbook, str) && logbook[0])
+            {
+            sprintf(str, "Error: logbook \"%s\" not defined in elogd.cfg", logbook);
+            show_error(str);
+            send(_sock, return_buffer, strlen(return_buffer), 0);
+            goto error;
+            }
         }
 
       /* if no logbook is given and only one logbook defined, use this one */
