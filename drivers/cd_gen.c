@@ -6,6 +6,9 @@
   Contents:     Generic Class Driver
 
   $Log$
+  Revision 1.3  1999/09/20 11:54:08  midas
+  Fixed compiler warning
+
   Revision 1.2  1998/10/12 12:18:55  midas
   Added Log tag in header
 
@@ -433,6 +436,8 @@ EQUIPMENT *pequipment;
 
     return ybk_size((DWORD *)pevent);
     }
+  else
+    return 0;
 }
 
 /*------------------------------------------------------------------*/
