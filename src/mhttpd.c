@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.128  2000/05/23 13:45:48  midas
+  Added possibility to use local files as attachments (via /EL/?cmd=New&file=xxx)
+
   Revision 1.127  2000/05/16 12:13:42  midas
   Use "Logbook" in elog mode everywhere
 
@@ -1795,7 +1798,7 @@ BOOL   display_run_number;
   if (odb_att)
     {
     str[0] = 0;
-    if (odb_att[0] != '\\')
+    if (odb_att[0] != '\\' && odb_att[0] != '/')
       strcpy(str, "\\");
     strcat(str, odb_att);
     rsprintf("<tr><td colspan=2>Attachment1: <input type=hidden name=attachment0 value=\"%s\"><b>%s</b></tr>\n", str, str);
@@ -2779,11 +2782,11 @@ time_t now;
 
 void submit_elog()
 {
-char   str[80], author[256], path[256];
+char   str[80], author[256], path[256], path1[256];
 char   *buffer[3], *p, *pitem;
 HNDLE  hDB, hkey;
 char   att_file[3][256];
-int    i, size;
+int    i, fh, size;
 
   cm_get_experiment_database(&hDB, NULL);
   strcpy(att_file[0], getparam("attachment0"));
@@ -2813,6 +2816,7 @@ int    i, size;
       {
       /* replace '\' by '/' */
       strcpy(path, getparam(str));  
+      strcpy(path1, path);
       while (strchr(path, '\\'))    
         *strchr(path, '\\') = '/';
 
@@ -2825,6 +2829,18 @@ int    i, size;
         strcat(att_file[i], ".html");
         _attachment_buffer[i] = buffer[i];
         _attachment_size[i] = strlen(buffer[i])+1;
+        }
+      /* check if local file */
+      else if ((fh = open(path1, O_RDONLY | O_BINARY)) >= 0)
+        {
+        size = lseek(fh, 0, SEEK_END);
+        buffer[i] = malloc(size);
+        lseek(fh, 0, SEEK_SET);
+        read(fh, buffer[i], size);
+        close(fh);
+        strcpy(att_file[i], path);
+        _attachment_buffer[i] = buffer[i];
+        _attachment_size[i] = size;
         }
       else if (strncmp(path, "/HS/", 4) == 0)
         {
@@ -3016,8 +3032,10 @@ BOOL  display_run_number, allow_delete;
 
   if (equal_ustring(command, "new"))
     {
-    al_trigger_alarm("CsI Scaler", "CsI #115 fluctuated by 0.02", "Warning", "Deviation > 0.02", AT_INTERNAL);
-    show_elog_new(NULL, FALSE, NULL);
+    if (*getparam("file"))
+      show_elog_new(NULL, FALSE, getparam("file"));
+    else
+      show_elog_new(NULL, FALSE, NULL);
     return;
     }
 
