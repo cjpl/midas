@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.151  2002/05/10 16:49:37  midas
+  Moved 'execute on start' before TR_PRESTART
+
   Revision 1.150  2002/05/10 01:41:19  midas
   Added optional debug output to cm_transition
 
@@ -3717,6 +3720,45 @@ RUNINFO_STR(runinfo_str);
       }
     }
 
+  /* execute programs on start */
+  if (transition == TR_START)
+    {
+    str[0] = 0;
+    size = sizeof(str);
+    db_get_value(hDB, 0, "/Programs/Execute on start run", str, &size, TID_STRING, TRUE);
+    if (str[0])
+      ss_system(str);
+
+    db_find_key(hDB, 0, "/Programs", &hRootKey);
+    if (hRootKey)
+      {
+      for (i=0 ; ; i++)
+        {
+        status = db_enum_key(hDB, hRootKey, i, &hKey);
+        if (status == DB_NO_MORE_SUBKEYS)
+          break;
+
+        db_get_key(hDB, hKey, &key);
+
+        /* don't check "execute on xxx" */
+        if (key.type != TID_KEY)
+          continue;
+
+        size = sizeof(program_info);
+        status = db_get_record(hDB, hKey, &program_info, &size, 0);
+        if (status != DB_SUCCESS)
+          {
+          cm_msg(MERROR, "cm_transition", "Cannot get program info record");
+          continue;
+          }
+
+        if (program_info.auto_start &&
+            program_info.start_command[0])
+          ss_system(program_info.start_command);
+        }
+      }
+    }
+
   /* set new start time in database */
   if (transition == TR_START)
     {
@@ -3984,45 +4026,6 @@ RUNINFO_STR(runinfo_str);
   /* flush online database */
   if (transition == TR_STOP)
     db_flush_database(hDB);
-
-  /* execute programs on start */
-  if (transition == TR_START)
-    {
-    str[0] = 0;
-    size = sizeof(str);
-    db_get_value(hDB, 0, "/Programs/Execute on start run", str, &size, TID_STRING, TRUE);
-    if (str[0])
-      ss_system(str);
-
-    db_find_key(hDB, 0, "/Programs", &hRootKey);
-    if (hRootKey)
-      {
-      for (i=0 ; ; i++)
-        {
-        status = db_enum_key(hDB, hRootKey, i, &hKey);
-        if (status == DB_NO_MORE_SUBKEYS)
-          break;
-
-        db_get_key(hDB, hKey, &key);
-
-        /* don't check "execute on xxx" */
-        if (key.type != TID_KEY)
-          continue;
-
-        size = sizeof(program_info);
-        status = db_get_record(hDB, hKey, &program_info, &size, 0);
-        if (status != DB_SUCCESS)
-          {
-          cm_msg(MERROR, "cm_transition", "Cannot get program info record");
-          continue;
-          }
-
-        if (program_info.auto_start &&
-            program_info.start_command[0])
-          ss_system(program_info.start_command);
-        }
-      }
-    }
 
   /* execute/stop programs on stop */
   if (transition == TR_STOP)
