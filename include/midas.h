@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.50  1999/11/04 15:53:54  midas
+  Added some slow control commands
+
   Revision 1.49  1999/10/18 14:41:50  midas
   Use /programs/<name>/Watchdog timeout in all programs as timeout value. The
   default value can be submitted by calling cm_connect_experiment1(..., timeout)
@@ -657,6 +660,9 @@ typedef          INT       HNDLE;
 #define CMD_GET_CURRENT               8
 #define CMD_GET_CURRENT_ALL           9
 #define CMD_SET_CURRENT_LIMIT        10
+#define CMD_GET_DEMAND               11
+#define CMD_GET_DEFAULT_NAME         12
+#define CMD_GET_DEFAULT_THRESHOLD    13
 
 /* Commands for interrupt events */
 #define CMD_INTERRUPT_ENABLE        100
