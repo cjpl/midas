@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.54  1999/09/21 14:57:39  midas
+  Added "execute on start/stop" under /programs
+
   Revision 1.53  1999/09/21 14:15:04  midas
   Replaces cm_execute by system()
 
@@ -2711,6 +2714,16 @@ RUNINFO_STR(runinfo_str);
       return status;
     }
 
+  /* execute program on start */
+  if (transition == TR_START)
+    {
+    str[0] = 0;
+    size = sizeof(str);
+    db_get_value(hDB, 0, "/Programs/Execute on start run", str, &size, TID_STRING);
+    if (str[0])
+      cm_execute(str, error, sizeof(error));
+    }
+
   status = db_find_key(hDB, 0, "System/Clients", &hRootKey);
   if (status != DB_SUCCESS)
     {
@@ -2909,6 +2922,16 @@ RUNINFO_STR(runinfo_str);
   /* flush online database */
   if (transition == TR_STOP)
     db_flush_database(hDB);
+
+  /* execute program on stop */
+  if (transition == TR_STOP)
+    {
+    str[0] = 0;
+    size = sizeof(str);
+    db_get_value(hDB, 0, "/Programs/Execute on stop run", str, &size, TID_STRING);
+    if (str[0])
+      cm_execute(str, error, sizeof(error));
+    }
 
   /* send notification */
   if (transition == TR_START)
@@ -14976,6 +14999,10 @@ ALARM_STR(alarm_str);
         break;
 
       db_get_key(hDB, hkey, &key);
+      
+      /* don't check "execute on xxx" */
+      if (key.type != TID_KEY)
+        continue;
 
       size = sizeof(program_info);
       status = db_get_record(hDB, hkey, &program_info, &size, 0);
