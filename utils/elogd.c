@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.15  2001/07/26 09:31:07  midas
+  Added URL = entry in elogd.cfg to support secure connections over stunnel
+
   Revision 1.14  2001/07/24 10:46:09  midas
   Use subject as title, make http://xxx text aktive links
 
@@ -3327,6 +3330,9 @@ char str[80], logbook[80];
     if (!enumgrp(i, logbook))
       break;
 
+    if (equal_ustring(logbook, "global"))
+      continue;
+
     strcpy(str, logbook);
     url_encode(str);
     rsprintf("<tr><td bgcolor=#FFFF00><a href=\"%s%s\">%s</a>", elogd_url, str, logbook);
@@ -3732,12 +3738,6 @@ INT                  last_time=0;
     return;
     }
 
-  /* set my own URL */
-  if (tcp_port == 80)
-    sprintf(elogd_url, "http://%s/", host_name);
-  else
-    sprintf(elogd_url, "http://%s:%d/", host_name, tcp_port);
-
   printf("Server listening...\n");
   do
     {
@@ -3882,6 +3882,22 @@ INT                  last_time=0;
         url_decode(logbook);
         }
       
+      /* set my own URL */
+      getcfg("global", "URL", str);
+      if (str[0])
+        {
+        if (str[strlen(str)-1] != '/')
+          strcat(str, "/");
+        strcpy(elogd_url, str);
+        }
+      else
+        {
+        if (tcp_port == 80)
+          sprintf(elogd_url, "http://%s/", host_name);
+        else
+          sprintf(elogd_url, "http://%s:%d/", host_name, tcp_port);
+        }
+
       /* ask for password if configured */
       authorized = 1;
       if (getcfg(logbook, "Read Password", pwd))
