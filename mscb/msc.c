@@ -6,6 +6,9 @@
   Contents:     Command-line interface for the Midas Slow Control Bus
 
   $Log$
+  Revision 1.76  2005/01/07 09:29:05  midas
+  Version 1.7.a
+
   Revision 1.75  2004/12/22 16:02:04  midas
   Implemented verify for upload
 
@@ -866,7 +869,11 @@ void cmd_loop(int fd, char *cmd, int adr)
                      if (strlen(str) > 0 && str[strlen(str) - 1] == '\n')
                         str[strlen(str) - 1] = 0;
 
-                     status = mscb_write_block(fd, current_addr, (unsigned char) addr, str, strlen(str)+1);
+                     do {
+                        status = mscb_write_block(fd, current_addr, (unsigned char) addr, str, strlen(str)+1);
+                        Sleep(100);
+                     } while (param[3][0] && !kbhit());
+
                   } else {
                      if (info_var.flags & MSCBF_FLOAT) {
                         value = (float) atof(param[2]);

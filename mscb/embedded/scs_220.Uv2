@@ -111,7 +111,7 @@ Options 1,0,0  // Target 'Simulator'
  LX51DAS ()
  LX51IDS ()
   OPTDL (S8051.DLL)()(DCYG.DLL)(-pCYGF021)(S8051.DLL)()(TCYG.DLL)(-pCYGF021)
-  OPTDBG 2046,-1,()()()()()()()()()() (BIN\SiC8051F.dll)()()()
+  OPTDBG 2045,-1,()()()()()()()()()() (BIN\SiC8051F.dll)()()()
  FLASH1 { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }
  FLASH2 ()
  FLASH3 ()
