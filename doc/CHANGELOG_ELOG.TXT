@@ -1,4 +1,4 @@
-Version 1.0.2, released August 2nd, 2001
+Version 1.0.3, released August 2nd, 2001
 ========================================
 
 - Added email facility, please refer to the documentation
