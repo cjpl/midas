@@ -6,6 +6,9 @@
 #  Contents:     Makefile for MIDAS binaries and examples under unix
 #
 #  $Log$
+#  Revision 1.43  2003/05/09 22:44:42  pierre
+#  add ROOTSYS path to root-config
+#
 #  Revision 1.42  2003/04/28 11:12:55  midas
 #  Adjusted ROOT flags
 #
@@ -353,10 +356,11 @@ $(BIN_DIR):
 # main binaries
 #
 
+
 ifdef ROOTSYS
-ROOTLIBS    := $(shell root-config --libs)
-ROOTGLIBS   := $(shell root-config --glibs)
-ROOTCFLAGS  := $(shell root-config --cflags)
+ROOTLIBS    := $(shell $(ROOTSYS)/bin/root-config --libs)
+ROOTGLIBS   := $(shell $(ROOTSYS)/bin/root-config --glibs)
+ROOTCFLAGS  := $(shell $(ROOTSYS)/bin/root-config --cflags)
 
 $(BIN_DIR)/mlogger: $(BIN_DIR)/%: $(SRC_DIR)/%.c
 	$(CXX) $(CFLAGS) $(OSFLAGS) -DHAVE_ROOT $(ROOTCFLAGS) -o $@ $< $(LIB) $(ROOTLIBS) $(LIBS)
