@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.82  2001/12/07 10:05:30  midas
+  Fixed major bug with memcpy(rem_addr...), many thanks to Frank Schnell!
+
   Revision 1.81  2001/12/07 09:15:37  midas
   Added Per-Session cookies (when expriation == 0)
 
@@ -259,7 +262,7 @@
 \********************************************************************/
 
 /* Version of ELOG */
-#define VERSION "1.2.6"
+#define VERSION "1.2.7"
 
 #include <stdio.h>
 #include <sys/types.h>
@@ -1405,6 +1408,9 @@ char   *file_list;
     if (tms->tm_year < 90)
       tms->tm_year += 100;
     ltime = lt = mktime(tms);
+
+    if (ltime < 0)
+      return -1;
 
     strcpy(str, tag);
     if (strchr(str, '.'))
@@ -5438,7 +5444,13 @@ FILE   *f;
     {
     if (getcfg(logbook, "Help URL", str))
       {
-      redirect3(str);
+      /* if file is given, add '/' to make absolute path */
+      if (strchr(str, '/') == NULL)
+        sprintf(ref, "/%s", str);
+      else
+        strcpy(ref, str);
+
+      redirect3(ref);
       return;
       }
 
@@ -7068,7 +7080,7 @@ struct timeval       timeout;
         i_conn = i;
         _sock = ka_sock[i_conn];
         ka_time[i_conn] = (int) time(NULL);
-        memcpy(&rem_addr, &remote_addr[i_conn], sizeof(remote_addr));
+        memcpy(&rem_addr, &remote_addr[i_conn], sizeof(rem_addr));
 
 #ifdef DEBUG_CONN
         printf("## received request on connection %d\n", i_conn);
