@@ -19,6 +19,7 @@
 # The following lines define direcories. Adjust if necessary
 #                 
 INC_DIR 	= \midas\include
+DRV_DIR         = \midas\drivers
 LIB_DIR 	= \midas\nt\lib
 ZLIB_DIR        = \midas\nt\lib
 CERNLIB_DIR	= \cern\lib
@@ -40,8 +41,8 @@ CFLAGS = /I$(INC_DIR) /nologo /D WIN32
 
 all: frontend.exe analyzer.exe
 
-frontend.exe:  $(LIBRARY) $(LIB_DIR)\mfe.obj frontend.c camacnul.c
-	$(CC) $(CFLAGS) /Fefrontend.exe $(LIB_DIR)\mfe.obj frontend.c camacnul.c $(LIBRARY) $(LIBS) wsock32.lib
+frontend.exe:  $(LIBRARY) $(LIB_DIR)\mfe.obj frontend.c $(DRV_DIR)\bus\camacnul.c
+	$(CC) $(CFLAGS) /Fefrontend.exe $(LIB_DIR)\mfe.obj frontend.c $(DRV_DIR)\bus\camacnul.c $(LIBRARY) $(LIBS) wsock32.lib
 
 analyzer.exe: $(LIBRARY) $(LIB_DIR)\mana.obj analyzer.obj $(MODULES)
 	$(CC) /Feanalyzer.exe $(LIB_DIR)\mana.obj analyzer.obj \
