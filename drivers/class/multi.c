@@ -6,6 +6,9 @@
   Contents:     Multimeter Class Driver
 
   $Log$
+  Revision 1.6  2003/03/06 11:43:11  midas
+  Added CMD_SET_LABEL routines
+
   Revision 1.5  2002/06/06 07:50:12  midas
   Implemented scheme with DF_xxx flags
 
@@ -168,7 +171,7 @@ EQUIPMENT  *pequipment;
   for (i=0 ; i<m_info->num_channels_output ; i++)
     {
     /* only set channel if demand value differs */
-    if (m_info->var_output[i] != m_info->output_mirror[i])
+      if (m_info->var_output[i] != m_info->output_mirror[i])
       {
       m_info->output_mirror[i] = m_info->var_output[i] * m_info->factor_output[i] - m_info->offset_output[i];
 
@@ -180,13 +183,34 @@ EQUIPMENT  *pequipment;
   pequipment->odb_in++;
 }
 
+/*------------------------------------------------------------------*/
+
+void multi_update_label(INT hDB, INT hKey, void *info)
+{
+INT i, status;
+MULTI_INFO  *m_info;
+EQUIPMENT *pequipment;
+
+  pequipment = (EQUIPMENT *) info;
+  m_info = (MULTI_INFO *) pequipment->cd_info;
+
+  /* update channel labels based on the midas channel names */
+  for (i=0 ; i<m_info->num_channels_input ; i++)
+    status = DRIVER_INPUT(i)(CMD_SET_LABEL, m_info->dd_info_input[i], 
+                       i-m_info->channel_offset_input[i], m_info->names_input+NAME_LENGTH*i);
+
+  for (i=0 ; i<m_info->num_channels_output ; i++)
+    status = DRIVER_OUTPUT(i)(CMD_SET_LABEL, m_info->dd_info_output[i], 
+                       i-m_info->channel_offset_output[i], m_info->names_output+NAME_LENGTH*i);
+}
+
 /*----------------------------------------------------------------------------*/
 
 INT multi_init(EQUIPMENT *pequipment)
 {
 int   status, size, i, j, index, ch_offset;
 char  str[256];
-HNDLE hDB, hKey;
+HNDLE hDB, hKey, hNamesIn, hNamesOut;
 MULTI_INFO *m_info;
 
   /* allocate private data */
@@ -401,6 +425,48 @@ MULTI_INFO *m_info;
     m_info->dd_info_output[i] = pequipment->driver[index].dd_info;
     m_info->channel_offset_output[i] = ch_offset;
     }
+
+  /*---- get default names from device driver ----*/
+  size = NAME_LENGTH*sizeof(char);
+
+  db_find_key(hDB, m_info->hKeyRoot, "Settings/Names Input", &hKey);
+  for (i=0 ; i<m_info->num_channels_input ; i++)
+    {
+     DRIVER_INPUT(i)(CMD_GET_DEFAULT_NAME, m_info->dd_info_input[i], 
+                i-m_info->channel_offset_input[i], m_info->names_input+NAME_LENGTH*i);
+     db_set_data_index(hDB, hKey, m_info->names_input+NAME_LENGTH*i, size, i, TID_STRING);
+    }
+
+  db_find_key(hDB, m_info->hKeyRoot, "Settings/Names Output", &hKey);
+  for (i=0 ; i<m_info->num_channels_output ; i++)
+    {
+     DRIVER_OUTPUT(i)(CMD_GET_DEFAULT_NAME, m_info->dd_info_output[i], 
+                i-m_info->channel_offset_output[i], m_info->names_output+NAME_LENGTH*i);
+     db_set_data_index(hDB, hKey, m_info->names_output+NAME_LENGTH*i, size, i, TID_STRING);
+    }
+
+  /*---- set labels form midas SC names ----*/
+  for (i=0 ; i<m_info->num_channels_input ; i++)
+    {
+    DRIVER_INPUT(i)(CMD_SET_LABEL, m_info->dd_info_input[i], 
+              i-m_info->channel_offset_input[i], m_info->names_input+NAME_LENGTH*i);
+    }
+
+  /* open hotlink on input channel names */
+  if (db_find_key(hDB,  m_info->hKeyRoot, "Settings/Names Input", &hNamesIn) == DB_SUCCESS)
+    db_open_record(hDB, hNamesIn, m_info->names_input, NAME_LENGTH*m_info->num_channels_input,
+                   MODE_READ, multi_update_label, pequipment);
+
+  for (i=0 ; i<m_info->num_channels_output ; i++)
+    {
+    DRIVER_OUTPUT(i)(CMD_SET_LABEL, m_info->dd_info_output[i], 
+              i-m_info->channel_offset_output[i], m_info->names_output+NAME_LENGTH*i);
+    }
+
+  /* open hotlink on output channel names */
+  if (db_find_key(hDB,  m_info->hKeyRoot, "Settings/Names Output", &hNamesOut) == DB_SUCCESS)
+    db_open_record(hDB, hNamesOut, m_info->names_output, NAME_LENGTH*m_info->num_channels_output,
+                   MODE_READ, multi_update_label, pequipment);
 
   /* open hot link to output record */
   db_open_record(hDB, m_info->hKeyOutput, m_info->var_output, 

@@ -6,6 +6,9 @@
   Contents:     High Voltage Class Driver
 
   $Log$
+  Revision 1.9  2003/03/06 11:43:11  midas
+  Added CMD_SET_LABEL routines
+
   Revision 1.8  2002/06/06 08:06:32  midas
   Implemented DF_xx scheme
 
@@ -366,11 +369,28 @@ EQUIPMENT *pequipment;
 
 /*------------------------------------------------------------------*/
 
+void hv_update_label(INT hDB, INT hKey, void *info)
+{
+INT i, status;
+HV_INFO  *hv_info;
+EQUIPMENT *pequipment;
+
+  pequipment = (EQUIPMENT *) info;
+  hv_info = (HV_INFO *) pequipment->cd_info;
+
+  /* update channel labels based on the midas channel names */
+  for (i=0 ; i<hv_info->num_channels ; i++)
+    status = DRIVER(i)(CMD_SET_LABEL, hv_info->dd_info[i], 
+                       i-hv_info->channel_offset[i], hv_info->names+NAME_LENGTH*i);
+}
+
+/*------------------------------------------------------------------*/
+
 INT hv_init(EQUIPMENT *pequipment)
 {
 int   status, size, i, j, index, offset;
 char  str[256];
-HNDLE hDB, hKey;
+HNDLE hDB, hKey, hNames;
 HV_INFO *hv_info;
 
   /* allocate private data */
@@ -582,6 +602,29 @@ HV_INFO *hv_info;
     hv_info->channel_offset[i] = offset;
     hv_info->flags[i] = pequipment->driver[index].flags;
     }
+
+  /*---- get default names from device driver ----*/
+  size = NAME_LENGTH*sizeof(char);
+
+  db_find_key(hDB, hv_info->hKeyRoot, "Settings/Names", &hKey);
+  for (i=0 ; i<hv_info->num_channels ; i++)
+    {
+     DRIVER(i)(CMD_GET_DEFAULT_NAME, hv_info->dd_info[i], 
+                i-hv_info->channel_offset[i], hv_info->names+NAME_LENGTH*i);
+     db_set_data_index(hDB, hKey, hv_info->names+NAME_LENGTH*i, size, i, TID_STRING);
+    }
+
+  /*---- set labels form midas SC names ----*/
+  for (i=0 ; i<hv_info->num_channels ; i++)
+    {
+    DRIVER(i)(CMD_SET_LABEL, hv_info->dd_info[i], 
+              i-hv_info->channel_offset[i], hv_info->names+NAME_LENGTH*i);
+    }
+
+  /* open hotlink on channel names */
+  if (db_find_key(hDB,  hv_info->hKeyRoot, "Settings/Names", &hNames) == DB_SUCCESS)
+    db_open_record(hDB, hNames, hv_info->names, NAME_LENGTH*hv_info->num_channels,
+                   MODE_READ, hv_update_label, pequipment);
 
   /* set current limits and initial demand values */
   printf("\n");
