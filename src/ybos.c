@@ -6,6 +6,9 @@
  *         amaudruz@triumf.ca                            Local:           6234
  * ---------------------------------------------------------------------------
    $Log$
+   Revision 1.60  2004/09/29 17:57:11  midas
+   Added large file (>2GB) support for linux
+
    Revision 1.59  2004/01/13 00:51:36  pierre
    fix dox comment for vxworks
 
@@ -874,7 +877,7 @@ SS_FILE_ERROR       file access error
 
    /* check if file exists */
    /* Open for read (will fail if file does not exist) */
-   if ((dmpf = open(path, O_RDONLY | O_BINARY, 0644)) == -1) {
+   if ((dmpf = open(path, O_RDONLY | O_BINARY | O_LARGEFILE, 0644)) == -1) {
       cm_msg(MINFO, "ybos_file_fragment", "File dump -Failure- on open file %s", path);
       return SS_FILE_ERROR;
    }
@@ -1151,11 +1154,7 @@ error, success
                            FILE_ATTRIBUTE_NORMAL | FILE_FLAG_WRITE_THROUGH
                            | FILE_FLAG_SEQUENTIAL_SCAN, 0);
 #else
-#ifdef _LARGEFILE64_SOURCE
       *handle = open(path, O_WRONLY | O_CREAT | O_TRUNC | O_BINARY | O_LARGEFILE, 0644);
-#else
-      *handle = open(path, O_WRONLY | O_CREAT | O_TRUNC | O_BINARY, 0644);
-#endif
 #endif
       if (*handle < 0)
          return SS_FILE_ERROR;
@@ -1589,11 +1588,7 @@ status : from lower function
       if (my.type == LOG_TYPE_TAPE) {
          status = ss_tape_open(my.name, O_RDONLY | O_BINARY, &my.handle);
       }
-#ifdef _LARGEFILE64_SOURCE
       else if ((my.handle = open(my.name, O_RDONLY | O_BINARY | O_LARGEFILE, 0644)) == -1)
-#else
-      else if ((my.handle = open(my.name, O_RDONLY | O_BINARY, 0644)) == -1)
-#endif
       {
          printf("dev name :%s Handle:%d \n", my.name, my.handle);
          return (SS_FILE_ERROR);
@@ -1814,7 +1809,7 @@ status : from lower function
                               FILE_ATTRIBUTE_NORMAL |
                               FILE_FLAG_WRITE_THROUGH | FILE_FLAG_SEQUENTIAL_SCAN, 0);
 #else
-         *hDev = open(filename, O_WRONLY | O_CREAT | O_TRUNC | O_BINARY, 0644);
+         *hDev = open(filename, O_WRONLY | O_CREAT | O_TRUNC | O_BINARY | O_LARGEFILE, 0644);
 #endif
          status = *hDev < 0 ? SS_FILE_ERROR : SS_SUCCESS;
       }
@@ -3733,7 +3728,7 @@ YB_NOMORE_SLOT      no more slot for starting dump
 
       /* open device */
       if ((ymfile[i].fHandle =
-           open(ymfile[i].path, O_WRONLY | O_CREAT | O_TRUNC | O_BINARY, 0644)) == -1) {
+           open(ymfile[i].path, O_WRONLY | O_CREAT | O_TRUNC | O_BINARY | O_LARGEFILE, 0644)) == -1) {
          ymfile[i].fHandle = 0;
          printf("File %s cannot be created\n", ymfile[i].path);
          return (SS_FILE_ERROR);

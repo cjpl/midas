@@ -1,4 +1,3 @@
-
 #####################################################################
 #
 #  Name:         Makefile
@@ -7,6 +6,9 @@
 #  Contents:     Makefile for MIDAS binaries and examples under unix
 #
 #  $Log$
+#  Revision 1.63  2004/09/29 17:57:33  midas
+#  Added large file (>2GB) support for linux
+#
 #  Revision 1.62  2004/09/24 23:19:59  midas
 #  Use 'install', don't install rmana.o if no ROOT present
 #
@@ -295,6 +297,9 @@ MYSQL_LIBS=/usr/lib/mysql/libmysqlclient.a
 CC = cc
 CXX = g++
 CFLAGS = -g -O2 -Wall -Wuninitialized -I$(INC_DIR) -I$(DRV_DIR) -L$(LIB_DIR) -DINCLUDE_FTPLIB $(MIDAS_PREF_FLAGS) $(USERFLAGS)
+
+# >2GB file support
+CFLAGS += -D_LARGEFILE64_SOURCE
 
 #-----------------------
 # OSF/1 (DEC UNIX)

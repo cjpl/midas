@@ -6,6 +6,9 @@
   Contents:     MIDAS logger program
 
   $Log$
+  Revision 1.84  2004/09/29 17:57:11  midas
+  Added large file (>2GB) support for linux
+
   Revision 1.83  2004/09/22 18:04:51  midas
   Added BOR/EOR lists for SQL dump
 
@@ -1274,7 +1277,7 @@ INT midas_log_open(LOG_CHN * log_chn, INT run_number)
 
 #else
       log_chn->handle =
-          open(log_chn->path, O_WRONLY | O_CREAT | O_TRUNC | O_BINARY, 0644);
+          open(log_chn->path, O_WRONLY | O_CREAT | O_TRUNC | O_BINARY | O_LARGEFILE, 0644);
 #endif
 
       if (log_chn->handle < 0) {
@@ -1636,7 +1639,7 @@ INT dump_log_open(LOG_CHN * log_chn, INT run_number)
       } else
          log_chn->handle = 1;
    } else {
-      log_chn->handle = open(log_chn->path, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+      log_chn->handle = open(log_chn->path, O_WRONLY | O_CREAT | O_TRUNC | O_LARGEFILE, 0644);
 
       if (log_chn->handle < 0) {
          log_chn->handle = 0;
@@ -1856,7 +1859,7 @@ INT ascii_log_open(LOG_CHN * log_chn, INT run_number)
       } else
          log_chn->handle = 1;
    } else {
-      log_chn->handle = open(log_chn->path, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+      log_chn->handle = open(log_chn->path, O_WRONLY | O_CREAT | O_TRUNC | O_LARGEFILE, 0644);
 
       if (log_chn->handle < 0) {
          log_chn->handle = 0;
