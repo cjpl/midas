@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.82  2002/11/28 09:43:46  midas
+  Added '-o OFLN' option to produce PAW shared memory in offline mode
+
   Revision 1.81  2002/09/17 22:12:10  pierre
   add arg to cm_cleanup
 
@@ -499,7 +502,9 @@ struct {
   {'o', 
    "<filename>    Output file name. Extension may be .mid (MIDAS binary),\n\
                    .asc (ASCII) or .rz (HBOOK). If the name contains a '%05d',\n\
-                   one output file is generated for each run.", 
+                   one output file is generated for each run. Use \"OFLN\" as\n\
+                   output file name to creaate a HBOOK shared memory instead\n\
+                   of a file.", 
    clp.output_file_name, TID_STRING, 1 },
 
   {'p', 
@@ -1374,8 +1379,8 @@ EVENT_DEF  *event_def;
       if (HEXIST(id))
         HDELET(id);
 
-      if (clp.online)
-        HBOOKN(id, block_name,n_tag, " ", 
+      if (clp.online || equal_ustring(clp.output_file_name, "OFLN"))
+        HBOOKN(id, block_name, n_tag, " ", 
                n_tag*analyze_request[index].rwnt_buffer_size, rw_tag);
       else
         HBOOKN(id, block_name, n_tag, "//OFFLINE", 5120, rw_tag);
@@ -1481,7 +1486,18 @@ double     dummy;
     }
   else
     {
-    HLIMIT(pawc_size/4);
+    if (equal_ustring(clp.output_file_name, "OFLN"))
+      {
+      HLIMAP(pawc_size/4, "OFLN");
+      printf("\nGLOBAL MEMORY NAME = %s\n", "OFLN");
+
+      /* book online N-tuples only once when online */
+      status = book_ntuples();
+      if (status != SUCCESS)
+        return status;
+      }
+    else
+      HLIMIT(pawc_size/4);
     }
 #endif
   
@@ -1598,7 +1614,7 @@ INT        lrec;
 #endif
   
   /* open output file if not already open (append mode) and in offline mode */
-  if (!clp.online && out_file == NULL && !pvm_master)
+  if (!clp.online && out_file == NULL && !pvm_master && !equal_ustring(clp.output_file_name, "OFLN"))
     {
     if (out_info.filename[0])
       {
@@ -3043,7 +3059,7 @@ static char  *orig_event = NULL;
 
 #ifndef MANA_LITE
   /* fill shared memory */
-  if (clp.online && par->rwnt_buffer_size > 0)
+  if ((clp.online || equal_ustring(clp.output_file_name, "OFLN")) && par->rwnt_buffer_size > 0)
     write_event_hbook(NULL, pevent, par);
 #endif
   
@@ -4960,7 +4976,7 @@ INT status;
   clp.online = (clp.input_file_name[0][0] == 0);
 
   /* set Ntuple format to RWNT if online */
-  if (clp.online)
+  if (clp.online || equal_ustring(clp.output_file_name, "OFLN"))
     clp.rwnt = TRUE;
 
 #ifdef PVM
