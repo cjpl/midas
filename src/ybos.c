@@ -6,6 +6,9 @@
  *         amaudruz@triumf.ca                            Local:           6234
  * ---------------------------------------------------------------------------
    $Log$
+   Revision 1.44  2002/08/29 22:12:16  pierre
+   WORD casting for evt display
+
    Revision 1.43  2002/08/02 19:42:30  pierre
    ifdef vxWorks all the logger & mdump functions
 
@@ -3007,7 +3010,7 @@ none
       printf("--------- EVID --------- Event# %i ------Run#:%i--------\n"
         ,YBOS_EVID_EVENT_NB(pdata), YBOS_EVID_RUN_NUMBER(pdata));
       printf("Evid:%4.4x- Mask:%4.4x- Serial:%i- Time:0x%x- Dsize:%i/0x%x"
-        ,YBOS_EVID_EVENT_ID(pdata), YBOS_EVID_TRIGGER_MASK(pdata)
+        ,(WORD) YBOS_EVID_EVENT_ID(pdata), (WORD) YBOS_EVID_TRIGGER_MASK(pdata)
         ,YBOS_EVID_SERIAL(pdata), YBOS_EVID_TIME(pdata)
         ,((YBOS_BANK_HEADER *)pybk)->length
         ,((YBOS_BANK_HEADER *)pybk)->length);
@@ -3029,8 +3032,9 @@ none
     
     /* event header */
     printf("Evid:%4.4x- Mask:%4.4x- Serial:%i- Time:0x%x- Dsize:%i/0x%x"
-      ,pheader->event_id, pheader->trigger_mask ,pheader->serial_number
-      ,pheader->time_stamp, pheader->data_size, pheader->data_size);
+      , (WORD) pheader->event_id, (WORD) pheader->trigger_mask
+      , pheader->serial_number, pheader->time_stamp
+      , pheader->data_size, pheader->data_size);
     
     /* check if format is MIDAS or FIXED */
     pbh = (BANK_HEADER *) (pheader+1);
