@@ -6,6 +6,9 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
+  Revision 1.36  2002/10/21 00:25:14  olchansk
+  catch/ignore SIGPIPE
+
   Revision 1.35  2002/09/26 09:34:37  midas
   Log startup messages only in debugging mode
 
@@ -115,6 +118,11 @@
 #include "midas.h"
 #include "msystem.h"
 
+#ifdef OS_UNIX
+#include <grp.h>
+#include <sys/types.h>
+#endif
+
 #ifdef OS_WINNT
 /* critical section object for open/close buffer */
 CRITICAL_SECTION buffer_critial_section;
@@ -152,7 +160,7 @@ FILE *f;
 
 /*---- main --------------------------------------------------------*/
 
-main(int argc, char **argv)
+int main(int argc, char **argv)
 /********************************************************************\
 
   Routine: main (server.exe)
@@ -206,6 +214,10 @@ BOOL   inetd;
 #ifdef OS_WINNT
   /* init critical section object for open/close buffer */
   InitializeCriticalSection(&buffer_critial_section);
+#endif
+
+#if defined(SIGPIPE) && defined(SIG_IGN)
+  signal(SIGPIPE,SIG_IGN);
 #endif
 
   /* save executable file name */
