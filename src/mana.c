@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.36  1999/10/11 14:40:04  midas
+  Added -D flag (become daemon)
+
   Revision 1.35  1999/10/08 13:17:11  midas
   Fixed wrongly booked N-tuple #100000 when loading from last.rz
 
@@ -197,6 +200,7 @@ struct {
   BOOL  verbose;
   BOOL  quiet;
   BOOL  no_load;
+  BOOL  daemon;
 } clp;
 
 struct {
@@ -273,12 +277,19 @@ struct {
    &clp.debug, TID_BOOL, 0 },
 
   {'q', 
-   "              Quiet flag. If set, don't display run progress in offline mode.",
+   "              Quiet flag. If set, don't display run progress in\n\
+                   offline mode.",
    &clp.quiet, TID_BOOL, 0 },
+
 
   {'l', 
    "              If set, don't load histos from last.rz when running online.",
    &clp.no_load, TID_BOOL, 0 },
+
+  {'D', 
+   "              If set, start analyzer as a daemon in the background\n\
+                   (UNIX only).",
+   &clp.daemon, TID_BOOL, 0 },
 
   { 0 }
 };
@@ -3387,6 +3398,13 @@ INT status;
 
   /* reqister event requests */
   register_requests();
+
+  /* now become a daemon */
+  if (clp.daemon)
+    {
+    clp.quiet = TRUE;
+    ss_daemon_init();
+    }
 
   /* initialize ss_getchar */
   if (!clp.quiet)
