@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol main program
 
   $Log$
+  Revision 1.48  2004/06/09 11:25:01  midas
+  Changed blinking
+
   Revision 1.47  2004/06/02 08:18:58  midas
   Fixed bug with F021 CPU
 
@@ -1147,7 +1150,7 @@ void yield(void)
 
    /* blink LED if not configured */
    if (!configured)
-      led_blink(0, 1, 150);
+      led_blink(0, 1, 50);
 
    /* flash EEPROM if asked by interrupt routine, wait 3 sec
       after reboot (power might not be stable) */
