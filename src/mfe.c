@@ -7,6 +7,9 @@
                 linked with user code to form a complete frontend
 
   $Log$
+  Revision 1.5  1999/09/23 12:45:48  midas
+  Added 32 bit banks
+
   Revision 1.4  1999/06/23 09:38:51  midas
   - Added D8_BKTYPE
   - Fixed CAMAC server F24 bug
@@ -464,9 +467,11 @@ void              *pdata;
 char              name[5];
 BANK_HEADER       *pbh;
 BANK              *pbk;
+BANK32            *pbk32;
 void              *pydata;
 DWORD             odb_type;
-DWORD             *pyevt;
+DWORD             *pyevt, bkname;
+WORD              bktype;
 
   rpc_set_option(-1, RPC_OTRANSPORT, RPC_FTCP);
 
@@ -480,21 +485,35 @@ DWORD             *pyevt;
     {
     pbh = (BANK_HEADER *) (pevent+1);
     pbk = NULL;
+    pbk32 = NULL;
     do
       {
       /* scan all banks */
-      size = bk_iterate(pbh, &pbk, &pdata);
-      if (pbk == NULL)
-        break;
+      if (bk_is32(pbh))
+        {
+        size = bk_iterate32(pbh, &pbk32, &pdata);
+        if (pbk32 == NULL)
+          break;
+        bkname = *((DWORD *) pbk32->name);
+        bktype = (WORD) pbk32->type;
+        }
+      else
+        {
+        size = bk_iterate(pbh, &pbk, &pdata);
+        if (pbk == NULL)
+          break;
+        bkname = *((DWORD *) pbk->name);
+        bktype = (WORD) pbk->type;
+        }
       
       /* write bank to ODB */
-      *((DWORD *) name) = *((DWORD *) (pbk)->name);
+      *((DWORD *) name) = bkname;
       name[4] = 0;
 
-      n = rpc_tid_size(pbk->type & 0xFF) ? size / rpc_tid_size(pbk->type & 0xFF) : size;
+      n = rpc_tid_size(bktype & 0xFF) ? size / rpc_tid_size(bktype & 0xFF) : size;
 
       if (n>0)
-        db_set_value(hDB, hKey, name, pdata, size, n, pbk->type & 0xFF);
+        db_set_value(hDB, hKey, name, pdata, size, n, bktype & 0xFF);
 
       } while (1);
     }

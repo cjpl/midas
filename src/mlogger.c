@@ -6,6 +6,9 @@
   Contents:     MIDAS logger program
 
   $Log$
+  Revision 1.20  1999/09/23 12:45:49  midas
+  Added 32 bit banks
+
   Revision 1.19  1999/09/22 15:39:36  midas
   Logger won't start run if disk file already exists
 
@@ -662,10 +665,13 @@ INT         status, size, i, j;
 EVENT_DEF   *event_def;  
 BANK_HEADER *pbh;
 BANK        *pbk;
+BANK32      *pbk32;
 void        *pdata;
 char        buffer[100000], *pbuf, name[5], type_name[10];
 HNDLE       hKey;
 KEY         key;
+DWORD       bkname;
+WORD        bktype;
 
   event_def = db_get_event_definition(pevent->event_id);
   if (event_def == NULL)
@@ -695,30 +701,44 @@ KEY         key;
     bk_swap(pbh, FALSE);
 
     pbk = NULL;
+    pbk32 = NULL;
     do
       {
       /* scan all banks */
-      size = bk_iterate(pbh, &pbk, &pdata);
-      if (pbk == NULL)
-        break;
+      if (bk_is32(pbh))
+        {
+        size = bk_iterate32(pbh, &pbk32, &pdata);
+        if (pbk32 == NULL)
+          break;
+        bkname = *((DWORD *) pbk32->name);
+        bktype = (WORD) pbk32->type;
+        }
+      else
+        {
+        size = bk_iterate(pbh, &pbk, &pdata);
+        if (pbk == NULL)
+          break;
+        bkname = *((DWORD *) pbk->name);
+        bktype = (WORD) pbk->type;
+        }
 
-      if (rpc_tid_size(pbk->type & 0xFF))
-        size /= rpc_tid_size(pbk->type & 0xFF);
+      if (rpc_tid_size(bktype & 0xFF))
+        size /= rpc_tid_size(bktype & 0xFF);
       
       lrs1882        = (LRS1882_DATA *)   pdata;
       lrs1877        = (LRS1877_DATA *)   pdata;
       lrs1877_header = (LRS1877_HEADER *) pdata;
 
       /* write bank header */
-      *((DWORD *) name) = *((DWORD *) (pbk)->name);
+      *((DWORD *) name) = bkname;
 
-      if ((pbk->type & 0xFF00) == 0)
-        strcpy(type_name, rpc_tid_name(pbk->type & 0xFF));
-      else if ((pbk->type & 0xFF00) == TID_LRS1882)
+      if ((bktype & 0xFF00) == 0)
+        strcpy(type_name, rpc_tid_name(bktype & 0xFF));
+      else if ((bktype & 0xFF00) == TID_LRS1882)
         strcpy(type_name, "LRS1882");
-      else if ((pbk->type & 0xFF00) == TID_LRS1877)
+      else if ((bktype & 0xFF00) == TID_LRS1877)
         strcpy(type_name, "LRS1877");
-      else if ((pbk->type & 0xFF00) == TID_PCOS3)
+      else if ((bktype & 0xFF00) == TID_PCOS3)
         strcpy(type_name, "PCOS3");
       else
         strcpy(type_name, "unknown");
@@ -729,14 +749,14 @@ KEY         key;
       /* write data */
       for (i=0 ; i<size ; i++)
         {
-        if ((pbk->type & 0xFF00) == 0)
-          db_sprintf(pbuf, pdata, size, i, pbk->type & 0xFF);
+        if ((bktype & 0xFF00) == 0)
+          db_sprintf(pbuf, pdata, size, i, bktype & 0xFF);
 
-        else if ((pbk->type & 0xFF00) == TID_LRS1882)
+        else if ((bktype & 0xFF00) == TID_LRS1882)
           sprintf(pbuf, "GA %d CH %02d DA %d", 
             lrs1882[i].geo_addr, lrs1882[i].channel, lrs1882[i].data);
         
-        else if ((pbk->type & 0xFF00) == TID_LRS1877)
+        else if ((bktype & 0xFF00) == TID_LRS1877)
           {
           if (i==0) /* header */
             sprintf(pbuf, "GA %d BF %d CN %d", 
@@ -746,10 +766,10 @@ KEY         key;
               lrs1877[i].geo_addr, lrs1877[i].channel, lrs1877[i].edge, lrs1877[i].data*0.5);
           }
 
-        else if ((pbk->type & 0xFF00) == TID_PCOS3)
+        else if ((bktype & 0xFF00) == TID_PCOS3)
           sprintf(pbuf, "");
         else
-          db_sprintf(pbuf, pdata, size, i, pbk->type & 0xFF);
+          db_sprintf(pbuf, pdata, size, i, bktype & 0xFF);
 
         strcat(pbuf, "\n");
         STR_INC(pbuf,buffer);
@@ -920,6 +940,7 @@ INT         status, size, i, j;
 EVENT_DEF   *event_def;  
 BANK_HEADER *pbh;
 BANK        *pbk;
+BANK32      *pbk32;
 void        *pdata;
 char        data[1000];
 char        buffer[10000], name[5], type_name[10];
@@ -928,6 +949,8 @@ char        *pd, data_line[10000];
 HNDLE       hKey, hKeyRoot;
 KEY         key;
 static short int last_event_id = -1;
+DWORD       bkname;
+WORD        bktype;
 
   if (pevent->serial_number == 1)
     last_event_id = -1;
@@ -996,30 +1019,44 @@ static short int last_event_id = -1;
     bk_swap(pbh, FALSE);
 
     pbk = NULL;
+    pbk32 = NULL;
     do
       {
       /* scan all banks */
-      size = bk_iterate(pbh, &pbk, &pdata);
-      if (pbk == NULL)
-        break;
+      if (bk_is32(pbh))
+        {
+        size = bk_iterate32(pbh, &pbk32, &pdata);
+        if (pbk32 == NULL)
+          break;
+        bkname = *((DWORD *) pbk32->name);
+        bktype = (WORD) pbk32->type;
+        }
+      else
+        {
+        size = bk_iterate(pbh, &pbk, &pdata);
+        if (pbk == NULL)
+          break;
+        bkname = *((DWORD *) pbk->name);
+        bktype = (WORD) pbk->type;
+        }
 
-      if (rpc_tid_size(pbk->type & 0xFF))
-        size /= rpc_tid_size(pbk->type & 0xFF);
+      if (rpc_tid_size(bktype & 0xFF))
+        size /= rpc_tid_size(bktype & 0xFF);
       
       lrs1882        = (LRS1882_DATA *)   pdata;
       lrs1877        = (LRS1877_DATA *)   pdata;
       lrs1877_header = (LRS1877_HEADER *) pdata;
 
       /* write bank header */
-      *((DWORD *) name) = *((DWORD *) (pbk)->name);
+      *((DWORD *) name) = bkname;
 
-      if ((pbk->type & 0xFF00) == 0)
-        strcpy(type_name, rpc_tid_name(pbk->type & 0xFF));
-      else if ((pbk->type & 0xFF00) == TID_LRS1882)
+      if ((bktype & 0xFF00) == 0)
+        strcpy(type_name, rpc_tid_name(bktype & 0xFF));
+      else if ((bktype & 0xFF00) == TID_LRS1882)
         strcpy(type_name, "LRS1882");
-      else if ((pbk->type & 0xFF00) == TID_LRS1877)
+      else if ((bktype & 0xFF00) == TID_LRS1877)
         strcpy(type_name, "LRS1877");
-      else if ((pbk->type & 0xFF00) == TID_PCOS3)
+      else if ((bktype & 0xFF00) == TID_PCOS3)
         strcpy(type_name, "PCOS3");
       else
         strcpy(type_name, "unknown");
@@ -1030,7 +1067,7 @@ static short int last_event_id = -1;
       /* write data */
       for (i=0 ; i<size ; i++)
         {
-        db_sprintf(pd, pdata, size, i, pbk->type & 0xFF);
+        db_sprintf(pd, pdata, size, i, bktype & 0xFF);
         strcat(pd, "\t");
         STR_INC(pd, data_line);
         }
