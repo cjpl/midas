@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.37  1999/05/05 12:02:33  midas
+  Added and modified history functions, added db_set_num_values
+
   Revision 1.36  1999/04/30 14:22:01  midas
   Send buffer name via bm_notify_client to java application
 
@@ -10257,7 +10260,7 @@ char         return_buffer[ASCII_BUFFER_SIZE]; /* ASCII out */
       flags = rpc_list[index].param[i].flags;
       param_size  = ALIGN(tid_size[ tid ]);
 
-      if (tid == TID_STRING)
+      if (tid == TID_STRING && !(flags & RPC_VARARRAY))
         {
         strcpy(out_param_ptr, prpc_param[i]);
         param_size = strlen(prpc_param[i]);
@@ -10302,6 +10305,15 @@ char         return_buffer[ASCII_BUFFER_SIZE]; /* ASCII out */
               array_tid  = *((INT *) prpc_param[10]);
               num_values = *((INT *) prpc_param[11]);
               }
+            }
+          else /* variable arrays of fixed type like hs_enum_events, hs_enum_vars */
+            {
+            param_size =  *((INT *) prpc_param[i+1]);
+            array_tid = tid;
+            if (tid == TID_STRING)
+              num_values = param_size / NAME_LENGTH;
+            else
+              num_values = param_size / tid_size[tid];
             }
 
           /* derive size of individual item */
@@ -10356,7 +10368,13 @@ char         return_buffer[ASCII_BUFFER_SIZE]; /* ASCII out */
   /* print return buffer */
   if (_debug_print)
     {
-    sprintf(debug_line, "-> %s", return_buffer);
+    if (strlen(return_buffer) > sizeof(debug_line))
+      {
+      memcpy(debug_line, return_buffer, sizeof(debug_line)-10);
+      strcat(debug_line, "...");
+      }
+    else
+      sprintf(debug_line, "-> %s", return_buffer);
     _debug_print(debug_line);
     }
 
@@ -12339,7 +12357,8 @@ struct tm    tmb, tmr;
 
 /*------------------------------------------------------------------*/
 
-INT hs_enum_events(DWORD ltime, DEF_RECORD *index, DWORD *size)
+INT hs_enum_events(DWORD ltime, char *event_name, DWORD *name_size,
+                                INT  event_id[], DWORD *id_size)
 /********************************************************************\
 
   Routine: hs_enum_events
@@ -12350,8 +12369,10 @@ INT hs_enum_events(DWORD ltime, DEF_RECORD *index, DWORD *size)
     DWORD  ltime            Date at which events should be enumerated
 
   Output:
-    DEF_RECORD *index       Array containing event definitions
-    DWORD  *size            Size of index
+    char   *event_name      Array containing event names
+    DWORD  *name_size       Size of name array
+    char   *event_id        Array containing event IDs
+    DWORD  *id_size         Size of ID array
 
   Function value:
     HS_SUCCESS              Successful completion
@@ -12365,7 +12386,7 @@ INT        status, i, j, n;
 DEF_RECORD def_rec;
 
   if (rpc_is_remote())
-    return rpc_call(RPC_HS_ENUM_EVENTS, ltime, index, size);
+    return rpc_call(RPC_HS_ENUM_EVENTS, ltime, event_name, name_size, event_id, id_size);
 
   /* search latest history file */
   status = hs_search_file(&ltime, -1);
@@ -12396,16 +12417,17 @@ DEF_RECORD def_rec;
 
     /* look for existing entry for this event id */
     for (i=0 ; i<n ; i++)
-      if (index[i].event_id == def_rec.event_id)
+      if (event_id[i] == (INT)def_rec.event_id)
         {
-        memcpy(&index[i], &def_rec, sizeof(def_rec));
+        strcpy(event_name+i*NAME_LENGTH, def_rec.event_name);
         break;
         }
 
     /* new entry found */
     if (i == n)
       {
-      if (i*sizeof(DEF_RECORD) > *size)
+      if (i*NAME_LENGTH > (INT) *name_size ||
+          i*sizeof(INT) > (INT) *id_size)
         {
         cm_msg(MERROR, "hs_enum_events", "index buffer too small");
         close(fh);
@@ -12414,14 +12436,16 @@ DEF_RECORD def_rec;
         }
 
       /* copy definition record */
-      memcpy(&index[i], &def_rec, sizeof(def_rec));
+      strcpy(event_name+i*NAME_LENGTH, def_rec.event_name);
+      event_id[i] = def_rec.event_id;
       n++;
       }
     } while (TRUE);
 
   close(fh);
   close(fhd);
-  *size = n*sizeof(DEF_RECORD);
+  *name_size = n*NAME_LENGTH;
+  *id_size = n*sizeof(INT);
   
   return HS_SUCCESS;
 }
@@ -12510,12 +12534,84 @@ DEF_RECORD def_rec;
 
 /*------------------------------------------------------------------*/
 
-INT hs_count_tags(DWORD ltime, DWORD event_id, DWORD *count)
+INT hs_get_event_id(DWORD ltime, char *name, DWORD *id)
 /********************************************************************\
 
-  Routine: hs_count_tags
+  Routine: hs_get_event_id
 
-  Purpose: Count number of variable tags for a given date and event id
+  Purpose: Return event ID for a given name
+
+  Input:
+    DWORD  ltime            Date at which event ID should be looked for
+
+  Output:
+    DWORD  *id              Event ID
+
+  Function value:
+    HS_SUCCESS              Successful completion
+    HS_FILE_ERROR           Cannot open history file
+
+\********************************************************************/
+{
+int        fh, fhd;
+INT        status, i;
+DEF_RECORD def_rec;
+
+  if (rpc_is_remote())
+    return rpc_call(RPC_HS_GET_EVENT_ID, ltime, name, id);
+
+  /* search latest history file */
+  status = hs_search_file(&ltime, -1);
+  if (status != HS_SUCCESS)
+    {
+    cm_msg(MERROR, "hs_count_events", "cannot find recent history file");
+    return HS_FILE_ERROR;
+    }
+
+  /* open history and definition files */
+  hs_open_file(ltime, "hst", O_RDONLY, &fh);
+  hs_open_file(ltime, "idf", O_RDONLY, &fhd);
+  if (fh< 0 || fhd < 0)
+    {
+    cm_msg(MERROR, "hs_count_events", "cannot open index files");
+    return HS_FILE_ERROR;
+    }
+
+  /* allocate event id array */
+  lseek(fhd, 0, SEEK_END);
+  lseek(fhd, 0, SEEK_SET);
+
+  /* loop over index file */
+  *id = 0;
+  do
+    {
+    /* read definition index record */
+    i = read(fhd, (char *)&def_rec, sizeof(def_rec));
+    if (i < (int) sizeof(def_rec))
+      break;
+
+    if (strcmp(name, def_rec.event_name) == 0)
+      {
+      *id = def_rec.event_id;
+      break;
+      }
+    } while (TRUE);
+
+
+  close(fh);
+  close(fhd);
+  
+  return HS_SUCCESS;
+}
+
+/*------------------------------------------------------------------*/
+
+INT hs_count_vars(DWORD ltime, DWORD event_id, DWORD *count)
+/********************************************************************\
+
+  Routine: hs_count_vars
+
+  Purpose: Count number of variables for a given date and event id
 
   Input:
     DWORD  ltime            Date at which tags should be counted
@@ -12535,7 +12631,7 @@ DEF_RECORD   def_rec;
 HIST_RECORD  rec;
 
   if (rpc_is_remote())
-    return rpc_call(RPC_HS_COUNT_TAGS, ltime, event_id, count);
+    return rpc_call(RPC_HS_COUNT_VARS, ltime, event_id, count);
 
   /* search latest history file */
   status = hs_search_file(&ltime, -1);
@@ -12584,10 +12680,10 @@ HIST_RECORD  rec;
 
 /*------------------------------------------------------------------*/
 
-INT hs_enum_tags(DWORD ltime, DWORD event_id, TAG *tag, DWORD *size)
+INT hs_enum_vars(DWORD ltime, DWORD event_id, char *var_name, DWORD *size)
 /********************************************************************\
 
-  Routine: hs_enum_tags
+  Routine: hs_enum_vars
 
   Purpose: Enumerate variable tags for a given date and event id
 
@@ -12596,8 +12692,8 @@ INT hs_enum_tags(DWORD ltime, DWORD event_id, TAG *tag, DWORD *size)
     DWORD  event_id         Event ID
 
   Output:
-    TAG    *tag           Array containing variable tags
-    DWORD  *size            Size of tag array
+    char   *var_name        Array containing variable names
+    DWORD  *size            Size of name array
 
   Function value:
     HS_SUCCESS              Successful completion
@@ -12611,9 +12707,10 @@ int          fh, fhd;
 INT          i, n, status;
 DEF_RECORD   def_rec;
 HIST_RECORD  rec;
+TAG          *tag;
 
   if (rpc_is_remote())
-    return rpc_call(RPC_HS_ENUM_TAGS, ltime, event_id, tag, size);
+    return rpc_call(RPC_HS_ENUM_VARS, ltime, event_id, var_name, size);
 
   /* search latest history file */
   status = hs_search_file(&ltime, -1);
@@ -12649,31 +12746,143 @@ HIST_RECORD  rec;
     return HS_FILE_ERROR;
     }
 
-  memset(tag, 0, *size);
+  /* read definition header */
+  lseek(fh, def_rec.def_offset, SEEK_SET);
+  read(fh, (char *)&rec, sizeof(rec));
+  read(fh, str, NAME_LENGTH);
+
+  /* read event definition */
+  n = rec.data_size/sizeof(TAG);
+  tag = malloc(rec.data_size);
+  read(fh, (char *)tag, rec.data_size);
+
+  if (n*NAME_LENGTH > (INT)*size)
+    {
+    /* store partial definition */
+    for (i=0 ; i<(INT)*size/NAME_LENGTH ; i++)
+      strcpy(var_name+i*NAME_LENGTH, tag[i].name);
+
+    cm_msg(MERROR, "hs_enum_tags", "tag buffer too small");
+    free(tag);
+    close(fh);
+    close(fhd);
+    return HS_NO_MEMORY;
+    }
+
+  /* store full definition */
+  for (i=0 ; i<n ; i++)
+    strcpy(var_name+i*NAME_LENGTH, tag[i].name);
+  *size = n*NAME_LENGTH;
+
+  free(tag);
+  close(fh);
+  close(fhd);
+  
+  return HS_SUCCESS;
+}
+
+/*------------------------------------------------------------------*/
+
+INT hs_get_var(DWORD ltime, DWORD event_id, char *var_name, DWORD *type, INT *n_data)
+/********************************************************************\
+
+  Routine: hs_get_var
+
+  Purpose: Get definition for certain variable
+
+  Input:
+    DWORD  ltime            Date at which variable definition should 
+                            be returned
+    DWORD  event_id         Event ID
+    char   *var_name        Name of variable
+
+  Output:
+    INT    *type            Type of variable
+    INT    *n_data          Number of items in variable
+
+  Function value:
+    HS_SUCCESS              Successful completion
+    HS_NO_MEMEORY           Out of memory
+    HS_FILE_ERROR           Cannot open history file
+
+\********************************************************************/
+{
+char         str[256];
+int          fh, fhd;
+INT          i, n, status;
+DEF_RECORD   def_rec;
+HIST_RECORD  rec;
+TAG          *tag;
+
+  if (rpc_is_remote())
+    return rpc_call(RPC_HS_GET_VAR, ltime, event_id, var_name, type, n_data);
+
+  /* search latest history file */
+  status = hs_search_file(&ltime, -1);
+  if (status != HS_SUCCESS)
+    {
+    cm_msg(MERROR, "hs_enum_tags", "cannot find recent history file");
+    return HS_FILE_ERROR;
+    }
+
+  /* open history and definition files */
+  hs_open_file(ltime, "hst", O_RDONLY, &fh);
+  hs_open_file(ltime, "idf", O_RDONLY, &fhd);
+  if (fh< 0 || fhd < 0)
+    {
+    cm_msg(MERROR, "hs_enum_tags", "cannot open index files");
+    return HS_FILE_ERROR;
+    }
+
+  /* search last definition */
+  lseek(fhd, 0, SEEK_END);
+  n = TELL(fhd) / sizeof(def_rec);
+  def_rec.event_id = 0;
+  for (i=n-1 ; i>=0 ; i--)
+    {
+    lseek(fhd, i*sizeof(def_rec), SEEK_SET);
+    read(fhd, (char *)&def_rec, sizeof(def_rec));
+    if (def_rec.event_id == event_id)
+      break;
+    }
+  if (def_rec.event_id != event_id)
+    {
+    cm_msg(MERROR, "hs_enum_tags", "event %d not found in index file", event_id);
+    return HS_FILE_ERROR;
+    }
 
   /* read definition header */
   lseek(fh, def_rec.def_offset, SEEK_SET);
   read(fh, (char *)&rec, sizeof(rec));
   read(fh, str, NAME_LENGTH);
 
-  /* check if definition fits in user buffer */
-  if (rec.data_size > *size)
-    {
-    /* read partial definition */
-    read(fh, (char *)tag, *size);
-    cm_msg(MERROR, "hs_enum_tags", "tag buffer too small");
-    close(fh);
-    close(fhd);
-    return HS_NO_MEMORY;
-    }
-
-  /* read full definition */
+  /* read event definition */
+  n = rec.data_size/sizeof(TAG);
+  tag = malloc(rec.data_size);
   read(fh, (char *)tag, rec.data_size);
-  *size = rec.data_size;
+
+  /* search variable */
+  for (i=0 ; i<n ; i++)
+    if (strcmp(tag[i].name, var_name) == 0)
+      break;
 
   close(fh);
   close(fhd);
-  
+
+  if (i<n)
+    {
+    *type = tag[i].type;
+    *n_data = tag[i].n_data;
+    }
+  else
+    {
+    *type = *n_data = 0;
+    cm_msg(MERROR, "hs_get_var", "variable %s not found", var_name);
+    free(tag);
+    return HS_UNDEFINED_VAR;
+    }
+
+  free(tag);
   return HS_SUCCESS;
 }
 

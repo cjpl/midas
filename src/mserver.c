@@ -6,6 +6,9 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
+  Revision 1.15  1999/05/05 12:02:34  midas
+  Added and modified history functions, added db_set_num_values
+
   Revision 1.14  1999/05/03 10:45:06  midas
   Fixed compiler warning with rpc_set_debug
 
@@ -736,6 +739,10 @@ INT convert_flags;
       status = db_set_data_index2(CHNDLE(0), CHNDLE(1), CARRAY(2), CINT(3), CINT(4), CDWORD(5), CBOOL(6));
       break;
 
+    case RPC_DB_SET_NUM_VALUES:
+      status = db_set_num_values(CHNDLE(0), CHNDLE(1), CINT(2));
+      break;
+
     case RPC_DB_SET_MODE:
       status = db_set_mode(CHNDLE(0), CHNDLE(1), CWORD(2), CBOOL(3));
       break;
@@ -813,31 +820,23 @@ INT convert_flags;
       break;
 
     case RPC_HS_ENUM_EVENTS:
-      status = hs_enum_events(CDWORD(0), CARRAY(1), CPDWORD(2));
-      if (convert_flags)
-        {
-        DEF_RECORD *def_rec;
-
-        def_rec = (DEF_RECORD *) CARRAY(1);
-        rpc_convert_single(&def_rec->event_id, TID_DWORD, RPC_OUTGOING, convert_flags);
-        rpc_convert_single(&def_rec->def_offset, TID_DWORD, RPC_OUTGOING, convert_flags);
-        }
+      status = hs_enum_events(CDWORD(0), CSTRING(1), CPDWORD(2), CPINT(3), CPDWORD(4));
       break;
 
-    case RPC_HS_COUNT_TAGS:
-      status = hs_count_tags(CDWORD(0), CDWORD(1), CPDWORD(2));
+    case RPC_HS_COUNT_VARS:
+      status = hs_count_vars(CDWORD(0), CDWORD(1), CPDWORD(2));
       break;
 
-    case RPC_HS_ENUM_TAGS:
-      status = hs_enum_tags(CDWORD(0), CDWORD(1), CARRAY(2), CPDWORD(3));
-      if (convert_flags)
-        {
-        TAG *tag;
+    case RPC_HS_ENUM_VARS:
+      status = hs_enum_vars(CDWORD(0), CDWORD(1), CSTRING(2), CPDWORD(3));
+      break;
 
-        tag = (TAG *) CARRAY(2);
-        rpc_convert_single(&tag->type, TID_DWORD, RPC_OUTGOING, convert_flags);
-        rpc_convert_single(&tag->n_data, TID_DWORD, RPC_OUTGOING, convert_flags);
-        }
+    case RPC_HS_GET_VAR:
+      status = hs_get_var(CDWORD(0), CDWORD(1), CSTRING(2), CPDWORD(3), CPINT(4));
+      break;
+
+    case RPC_HS_GET_EVENT_ID:
+      status = hs_get_event_id(CDWORD(0), CSTRING(1), CPDWORD(2));
       break;
 
     case RPC_HS_READ:
