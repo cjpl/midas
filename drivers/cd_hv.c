@@ -6,6 +6,9 @@
   Contents:     High Voltage Class Driver
 
   $Log$
+  Revision 1.4  1999/10/27 14:05:03  midas
+  Fixed bug that demand_mirror was not initialized correctly
+
   Revision 1.3  1999/06/25 13:49:46  midas
   Print message "setting channels"
 
@@ -528,6 +531,7 @@ HV_INFO *hv_info;
               i-hv_info->channel_offset[i], hv_info->current_limit[i]);
     DRIVER(i)(CMD_SET, hv_info->dd_info[i], 
               i-hv_info->channel_offset[i], min(hv_info->demand[i], hv_info->voltage_limit[i]));
+    hv_info->demand_mirror[i] = hv_info->demand[i];
     }
   printf("\n");
 
