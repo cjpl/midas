@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.248  2003/05/12 14:29:19  midas
+  Added expiration header
+
   Revision 1.247  2003/05/09 14:03:22  midas
   Added 'labels=0/1' flag to history display
 
@@ -1375,6 +1378,8 @@ int    size;
   /* header */
   rsprintf("HTTP/1.0 200 Document follows\r\n");
   rsprintf("Server: MIDAS HTTP %s\r\n", cm_get_version());
+  rsprintf("Pragma: no-cache\r\n");
+  rsprintf("Expires: Fri, 01 Jan 1983 00:00:00 GMT\r\n");
   rsprintf("Content-Type: text/html; charset=iso-8859-1\r\n\r\n");
 
   rsprintf("<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\">\n");
@@ -4888,10 +4893,11 @@ char   data_str[256], hex_str[256];
             db_sscanf(str, data, &size, 0, varkey.type);
             db_set_data_index(hDB, hkey, data, size, i, varkey.type);
 
-            /* read back value */
-            size = sizeof(data);
-            db_get_data_index(hDB, hkey, data, &size, i, varkey.type);
-            db_sprintf(str, data, varkey.item_size, 0, varkey.type);
+            /* redirect (so that 'reload' does not reset value) */
+            strlen_retbuf = 0;
+            sprintf(str, "SC/%s/%s", eq_name, group);
+            redirect(str);
+            return;
             }
           if (n_var == i_edit)
             {
@@ -5092,10 +5098,11 @@ char   data_str[256], hex_str[256];
                 db_sscanf(str, data, &size, 0, varkey.type);
                 db_set_data_index(hDB, hkey, data, size, j, varkey.type);
 
-                /* read back value */
-                size = sizeof(data);
-                db_get_data_index(hDB, hkey, data, &size, j, varkey.type);
-                db_sprintf(str, data, varkey.item_size, 0, varkey.type);
+                /* redirect (so that 'reload' does not reset value) */
+                strlen_retbuf = 0;
+                sprintf(str, "SC/%s/%s", eq_name, group);
+                redirect(str);
+                return;
                 }
               if (n_var == i_edit)
                 {
