@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.94  2001/12/14 11:47:01  midas
+  Display active URLs also in find page
+
   Revision 1.93  2001/12/13 13:05:18  midas
   Added missing "reply" etc. translations
 
@@ -3800,7 +3803,7 @@ time_t now;
     {
     if (bedit)
       {
-      rsprintf("<tr><td colspan=2 align=center bgcolor=%s>%s.<br>\n",
+      rsprintf("<tr><td colspan=2 align=left bgcolor=%s>%s.<br>\n",
                 gt("Categories bgcolor1"), loc("If no attachments are resubmitted, the original ones are kept"));
       rsprintf("%s.</td></tr>\n", loc("To delete an old attachment, enter <code>&lt;delete&gt;</code> in the new attachment field"));
 
@@ -3980,7 +3983,7 @@ char   str[256];
 
   if (!getcfg(logbook, "Show text", str) || atoi(str) == 1)
     {
-    rsprintf("<tr><td bgcolor=%s>Text:</td>",  gt("Categories bgcolor1"));
+    rsprintf("<tr><td bgcolor=%s>%s:</td>",  gt("Categories bgcolor1"), loc("Text"));
     rsprintf("<td bgcolor=%s><input type=\"text\" size=\"30\" maxlength=\"80\" name=\"subtext\">\n",
                gt("Categories bgcolor2"));
     rsprintf("<i>%s</i></td></tr>\n", loc("(case insensitive substring)"));
@@ -4896,7 +4899,11 @@ FILE   *f;
                 rsprintf("<td align=center bgcolor=%s><input type=checkbox disabled></td>\n", col);
               }
             else
-              rsprintf("<td align=center bgcolor=%s><font size=%d>%s&nbsp</font></td>", col, size, attrib[i]);
+              {
+              rsprintf("<td align=center bgcolor=%s><font size=%d>", col, size);
+              rsputs2(attrib[i]);
+              rsprintf("&nbsp</font></td>");
+              }
             }
 
           rsprintf("</tr>\n");
