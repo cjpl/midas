@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.128  2004/05/03 11:30:37  midas
+  Implemented cm_query_transition()
+
   Revision 1.127  2004/01/19 16:53:35  olchansk
   add midas_thread_t
 
@@ -1868,6 +1871,7 @@ extern "C" {
                                     DWORD watchdog_timeout);
    INT EXPRT cm_disconnect_experiment(void);
    INT EXPRT cm_register_transition(INT transition, INT(*func) (INT, char *));
+   INT EXPRT cm_query_transition(int *transition, int *run_number, int *trans_time);
    INT EXPRT cm_register_deferred_transition(INT transition, BOOL(*func) (INT, BOOL));
    INT EXPRT cm_check_deferred_transition(void);
    INT EXPRT cm_transition(INT transition, INT run_number, char *error,

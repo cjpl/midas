@@ -7,6 +7,9 @@
                 ting to a SYSTEM buffer and receiving some data.
 
   $Log$
+  Revision 1.7  2004/05/03 11:30:36  midas
+  Implemented cm_query_transition()
+
   Revision 1.6  2004/01/08 08:40:09  midas
   Implemented standard indentation
 
@@ -41,6 +44,14 @@ void process_message(HNDLE hBuf, HNDLE id, EVENT_HEADER * pheader, void *message
 {
    /* just print message text which comes after event header */
    printf("%s\n", message);
+}
+
+/*----- process_message --------------------------------------------*/
+
+INT transition(INT run_number, char *error)
+{
+   printf("Transition, run #%d\n", run_number);
+   return CM_SUCCESS;
 }
 
 /*----- process_event ----------------------------------------------*/
@@ -108,7 +119,7 @@ void process_event(HNDLE hBuf, HNDLE request_id, EVENT_HEADER * pheader, void *p
 
 main()
 {
-   INT status, size;
+   INT status, size, trans, run_number;
    char host_name[256], str[32];
    INT event_id, request_id;
    DWORD last_time;
@@ -151,6 +162,9 @@ main()
    /* place a request for system messages */
    cm_msg_register(process_message);
 
+   /* place a request for transition notification */
+   cm_register_transition(TR_START, via_callback? transition : NULL);
+
    last_time = 0;
 
    do {
@@ -164,8 +178,12 @@ main()
             process_event(hBufEvent, request_id, (EVENT_HEADER *) event_buffer,
                           (void *) (((EVENT_HEADER *) event_buffer) + 1));
 
-         /* call yield once every second */
-         if (ss_millitime() - last_time > 1000) {
+         /* receive transitions "manually" */
+         if (cm_query_transition(&trans, &run_number, NULL))
+            transition(run_number, NULL);
+
+         /* call yield once every 100 ms */
+         if (ss_millitime() - last_time > 100) {
             last_time = ss_millitime();
             status = cm_yield(0);
          }

@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.206  2004/05/03 11:30:37  midas
+  Implemented cm_query_transition()
+
   Revision 1.205  2004/04/30 07:26:38  midas
   Fixed compiler warning
 
@@ -10201,6 +10204,16 @@ INT rpc_flush_event()
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
 
 /********************************************************************/
+
+typedef struct {
+   int transition;
+   int run_number;
+   time_t trans_time;
+} TR_FIFO;
+
+static TR_FIFO tr_fifo[10];
+static int trf_wp, trf_rp;
+
 static INT rpc_transition_dispatch(INT index, void *prpc_param[])
 /********************************************************************\
 
@@ -10232,10 +10245,22 @@ static INT rpc_transition_dispatch(INT index, void *prpc_param[])
       *(CSTRING(2)) = 0;
 
       /* call registerd function */
-      if (_trans_table[i].transition == CINT(0) && _trans_table[i].func)
-         status = _trans_table[i].func(CINT(1), CSTRING(2));
+      if (_trans_table[i].transition == CINT(0)) {
+         if (_trans_table[i].func)
+            /* execute callback if defined */
+            status = _trans_table[i].func(CINT(1), CSTRING(2));
+         else {
+            /* store transition in FIFO */
+            tr_fifo[trf_wp].transition = CINT(0);
+            tr_fifo[trf_wp].run_number = CINT(1);
+            tr_fifo[trf_wp].trans_time = time(NULL);
+            trf_wp = (trf_wp + 1) % 10;
+            status = RPC_SUCCESS;
+         }
+      }
       else
          status = RPC_SUCCESS;
+
    } else {
       cm_msg(MERROR, "rpc_transition_dispatch", "received unrecognized command");
       status = RPC_INVALID_ID;
@@ -10244,6 +10269,49 @@ static INT rpc_transition_dispatch(INT index, void *prpc_param[])
    return status;
 }
 
+/********************************************************************/
+int cm_query_transition(int *transition, int *run_number, int *trans_time)
+/********************************************************************\
+
+  Routine: cm_query_transition
+
+  Purpose: Query system if transition has occured. Normally, one 
+           registers callbacks for transitions via 
+           cm_register_transition. In some environments however,
+           callbacks are not possible. In that case one spciefies
+           a NULL pointer as the callback routine and can query
+           transitions "manually" by calling this functions. A small
+           FIFO takes care that no transition is lost if this functions
+           did not get called between some transitions.
+
+  Output:
+    INT   *transition        Type of transition, one of TR_xxx
+    INT   *run_nuber         Run number for transition
+    time_t *trans_time       Time (in UNIX time) of transition
+
+  Function value:
+    FALSE  No transition occured since last call
+    TRUE   Transition occured
+
+\********************************************************************/
+{
+
+   if (trf_wp == trf_rp)
+      return FALSE;
+
+   if (transition)
+      *transition = tr_fifo[trf_rp].transition;
+
+   if (run_number)
+      *run_number = tr_fifo[trf_rp].run_number;
+
+   if (trans_time)
+      *trans_time = (int)tr_fifo[trf_rp].trans_time;
+
+   trf_rp = (trf_rp + 1) % 10;
+
+   return TRUE;
+}
 
 /********************************************************************\
 *                        server functions                            *
