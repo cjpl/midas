@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.21  1999/02/12 10:55:03  midas
+  Accepted PAA's modification in cm_set_watchdog_params()
+
   Revision 1.20  1999/02/11 13:14:46  midas
   Basic ASCII protocol implemented in server
 
@@ -2029,8 +2032,8 @@ INT cm_set_watchdog_params(BOOL call_watchdog, INT timeout)
 {
 INT i;
 
-/*-PAA- set also local timeout to requested value */
-_watchdog_timeout = timeout;
+  /* set also local timeout to requested value (needed by cm_enable_watchdog()) */
+  _watchdog_timeout = timeout;
 
   if (rpc_is_remote())
     return rpc_call(RPC_CM_SET_WATCHDOG_PARAMS, call_watchdog, timeout);
