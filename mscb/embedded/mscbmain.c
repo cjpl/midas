@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol main program
 
   $Log$
+  Revision 1.15  2002/10/16 15:24:12  midas
+  Fixed bug for reboot
+
   Revision 1.14  2002/10/09 15:48:13  midas
   Fixed bug with download
 
@@ -169,6 +172,7 @@ unsigned char i;
   CSR = 0;
   LED = LED_OFF;
   RS485_ENABLE = 0;
+  i_in = i_out = n_out = 0;
 
   uart_init(0, BD_115200);
 
