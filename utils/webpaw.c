@@ -6,6 +6,9 @@
   Contents:     Web server for remote PAW display
 
   $Log$
+  Revision 1.19  2000/05/26 07:01:20  midas
+  Added <br> after "Create ELog ..."
+
   Revision 1.18  2000/05/25 10:07:05  midas
   Check y/n character in text tag
 
@@ -990,7 +993,7 @@ int    fh, i, j, length, status, height;
       
       if (getcfg("General", "Elog", elog))
         {
-        rsprintf("<p><a href=\"%s\">Create ELog with this picture</a>\r\n", elog);
+        rsprintf("<p><a href=\"%s\">Create ELog with this picture</a><br>\r\n", elog);
         }
 
       /* put reference to image */
