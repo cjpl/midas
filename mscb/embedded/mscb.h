@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol commands
 
   $Log$
+  Revision 1.51  2005/03/08 12:41:31  ritt
+  Version 1.9.0
+
   Revision 1.50  2005/02/22 13:18:29  ritt
   Added hvr_500
 
@@ -409,14 +412,14 @@ sbit RS485_ENABLE = P0 ^ 7;
 
 #if defined(CPU_C8051F120)
 #define DELAY_US(_us) { \
-   unsigned char idata _i,_j; \
+   unsigned char _i,_j; \
    for (_i = (unsigned char) _us; _i > 0; _i--) \
       for (_j=9 ; _j>0 ; _j--) \
          _nop_(); \
 }
 #elif defined(CPU_C8051F310)
 #define DELAY_US(_us) { \
-   unsigned char idata _i,_j; \
+   unsigned char _i,_j; \
    for (_i = (unsigned char) _us; _i > 0; _i--) { \
       _nop_(); \
       for (_j=3 ; _j>0 ; _j--) \
@@ -425,7 +428,7 @@ sbit RS485_ENABLE = P0 ^ 7;
 }
 #elif defined(CPU_C8051F320)
 #define DELAY_US(_us) { \
-   unsigned char idata _i,_j; \
+   unsigned char _i,_j; \
    for (_i = (unsigned char) _us; _i > 0; _i--) { \
       _nop_(); \
       for (_j=1 ; _j>0 ; _j--) \
@@ -434,7 +437,7 @@ sbit RS485_ENABLE = P0 ^ 7;
 }
 #else
 #define DELAY_US(_us) { \
-   unsigned char idata _i; \
+   unsigned char _i; \
    for (_i = (unsigned char) _us; _i > 0; _i--) { \
       _nop_(); \
       _nop_(); \
@@ -444,7 +447,7 @@ sbit RS485_ENABLE = P0 ^ 7;
 
 /*---- MSCB commands -----------------------------------------------*/
 
-#define VERSION 0x18            // version 1.8
+#define VERSION 0x19            // version 1.8
 #define INTERCHAR_DELAY 20      // 20us between characters
 
 /* Version history:
@@ -496,6 +499,16 @@ sbit RS485_ENABLE = P0 ^ 7;
 
 #define GET_INFO_GENERAL   0
 #define GET_INFO_VARIABLES 1
+
+/*---- MSCB upgrade commands ---------------------------------------*/
+
+#define UCMD_ECHO          1
+#define UCMD_ERASE         2
+#define UCMD_PROGRAM       3
+#define UCMD_VERIFY        4
+#define UCMD_READ          5
+#define UCMD_REBOOT        6
+#define UCMD_RETURN        7
 
 /*---- flags from the configuration and status register (CSR) ------*/
 

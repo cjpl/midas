@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol main program
 
   $Log$
+  Revision 1.60  2005/03/08 12:41:32  ritt
+  Version 1.9.0
+
   Revision 1.59  2005/02/16 13:14:50  ritt
   Version 1.8.0
 
@@ -1130,6 +1133,13 @@ unsigned char size;
 sbit led_0 = LED_0;
 #endif
 
+#define SEND_BYTE(_b) \
+   TI0 = 0; \
+   DELAY_US(INTERCHAR_DELAY); \
+   SBUF0 = _b; \
+   while (TI0 == 0);
+
+
 void upgrade()
 {
 #ifdef CPU_CYGNAL
@@ -1151,39 +1161,72 @@ void upgrade()
 
    cmd = page = 0;
 
-   /* send acknowledge */
+   do {
+
+receive_cmd:
+
 #ifdef CPU_C8051F120
-   SFRPAGE = UART0_PAGE;
+      SFRPAGE = UART0_PAGE;
 #endif
 
-   RS485_ENABLE = 1;
-   TI0 = 0;
-   DELAY_US(INTERCHAR_DELAY);
-   SBUF0 = CMD_ACK;
-   while (TI0 == 0);
-   TI0 = 0;
-   DELAY_US(INTERCHAR_DELAY);
-   SBUF0 = 0; // dummy CRC
-   while (TI0 == 0);
-   RS485_ENABLE = 0;
-
-   do {
       /* receive command */
-      while (!RI0);
+      while (!RI0) {
+         for (i=0 ; !RI0 && i<5000 ; i++)
+            DELAY_US(10);
+         led_0 = !led_0;
+      }
 
       cmd = SBUF0;
       RI0 = 0;
-      crc = 0;
 
       switch (cmd) {
-      case 1:                      // return acknowledge
+
+      case CMD_PING16:
+         for (i=0 ; !RI0 && i < 5000 ; i++)
+            DELAY_US(10);
+         if (!RI0) 
+            goto receive_cmd;
+         page = SBUF0; // LSB
+         RI0 = 0;
+         for (i=0 ; !RI0 && i < 5000 ; i++)
+            DELAY_US(10);
+         if (!RI0) 
+            goto receive_cmd;
+         page = SBUF0; // MSB
+         RI0 = 0;
+         for (i=0 ; !RI0 && i < 5000 ; i++)
+            DELAY_US(10);
+         if (!RI0) 
+            goto receive_cmd;
+         page = SBUF0; // CRC
+         RI0 = 0;
+
+         /* acknowledge ping, independent of own address */
+         RS485_ENABLE = 1;
+         SEND_BYTE(CMD_ACK);
+         RS485_ENABLE = 0;
          break;
 
-      case 2:                      // erase page
+      case UCMD_ECHO:
+         RS485_ENABLE = 1;
+         SEND_BYTE(CMD_ACK);
+         SEND_BYTE(0); // dummy CRC, needed by subm_250
+         RS485_ENABLE = 0;
+         break;
+
+      case UCMD_ERASE:
+
          /* receive page */
-         while (!RI0);
+         for (i=0 ; !RI0 && i < 5000 ; i++)
+            DELAY_US(10);
+         if (!RI0) 
+            goto receive_cmd;
+
          page = SBUF0;
          RI0 = 0;
+         crc = 0;
+
+         led_0 = page & 1;
 
          /* erase page if not page of upgrade() function */
          if (page*512 < (unsigned int)upgrade && page*512 < EEPROM_OFFSET) {
@@ -1191,7 +1234,7 @@ void upgrade()
 #ifdef CPU_C8051F120
             /* for F120, only erase even pages (1024kB page size!) */
             if (page & 1)
-               break;
+               goto erase_ok;
 
             SFRPAGE = LEGACY_PAGE;
 #endif
@@ -1214,21 +1257,48 @@ void upgrade()
    
             FLSCL = (FLSCL & 0xF0);
             PSCTL = 0x00;
+
          } else {
             crc = 0xFF;            // return 'protected' flag
          }
 
-         break;
-
-      case 3:                      // program page
-#ifdef LED_0
-         led_0 = LED_OFF;
+#ifdef CPU_C8051F120
+         SFRPAGE = UART0_PAGE;
 #endif
 
+#ifdef CPU_C8051F120
+erase_ok:
+#endif
+         /* return acknowledge */
+         RS485_ENABLE = 1;
+         SEND_BYTE(CMD_ACK);
+         SEND_BYTE(crc);
+         RS485_ENABLE = 0;
+
+         break;
+
+      case UCMD_PROGRAM:
          /* receive page */
-         while (!RI0);
+         for (i=0 ; !RI0 && i < 5000 ; i++)
+            DELAY_US(10);
+         if (!RI0) 
+            goto receive_cmd;
          page = SBUF0;
          RI0 = 0;
+
+         /* receive subpage */
+         for (i=0 ; !RI0 && i < 5000 ; i++)
+            DELAY_US(10);
+         if (!RI0) 
+            goto receive_cmd;
+         j = SBUF0;
+         RI0 = 0;
+
+         led_0 = page & 1;
+
+         /* program page if not page of upgrade() function */
+         if (page*512 >= (unsigned int)upgrade || page*512 >= EEPROM_OFFSET)
+            goto receive_cmd;
 
 #ifdef CPU_C8051F120
          SFRPAGE = LEGACY_PAGE;
@@ -1242,45 +1312,18 @@ void upgrade()
 #endif
          PSCTL = 0x01;             // allow write access
 
-         pw = (char xdata *) (512 * page);
+         pw = (char xdata *) (page*512 + j*32);
 
 #ifdef CPU_C8051F120
          SFRPAGE = UART0_PAGE;
 #endif
 
-         for (j=0 ; j<8 ; j++) {
-   
-            /* receive 60 bytes */
-            for (k = 0; k < 60; k++) {
-               /* receive byte */
-               while (!RI0);
-   
-#if defined(CPU_C8051F310)
-               FLKEY = 0xA5;          // write flash key code
-               FLKEY = 0xF1;
-#endif
-               /* flash byte */
-               *pw++ = SBUF0;
-               RI0 = 0;
-            }
-   
-            /* send ACK after each 60 bytes */
-            RS485_ENABLE = 1;
-            TI0 = 0;
-            DELAY_US(INTERCHAR_DELAY);
-            SBUF0 = CMD_ACK;
-            while (TI0 == 0);
-            TI0 = 0;
-            DELAY_US(INTERCHAR_DELAY);
-            SBUF0 = 0;
-            while (TI0 == 0);
-            RS485_ENABLE = 0;
-         }
-
-         /* receive remaining 32 bytes */
+         /* receive 32 bytes */
          for (k = 0; k < 32; k++) {
-            /* receive byte */
-            while (!RI0);
+            for (i=0 ; !RI0 && i < 5000 ; i++)
+               DELAY_US(10);
+            if (!RI0) 
+               goto receive_cmd;
 
 #if defined(CPU_C8051F310)
             FLKEY = 0xA5;          // write flash key code
@@ -1299,15 +1342,24 @@ void upgrade()
          FLSCL = (FLSCL & 0xF0);
          PSCTL = 0x00;
 
-         break;
-
-      case 4:                      // verify page
-#ifdef LED_0
-         led_0 = LED_ON;
+#ifdef CPU_C8051F120
+         SFRPAGE = UART0_PAGE;
 #endif
 
+         RS485_ENABLE = 1;
+         SEND_BYTE(CMD_ACK);
+         SEND_BYTE(0);
+         RS485_ENABLE = 0;
+         break;
+
+      case UCMD_VERIFY:
+
          /* receive page */
-         while (!RI0);
+         for (i=0 ; !RI0 && i < 5000 ; i++)
+            DELAY_US(10);
+         if (!RI0) 
+            goto receive_cmd;
+
          page = SBUF0;
          RI0 = 0;
 
@@ -1317,36 +1369,59 @@ void upgrade()
          for (i = crc = 0; i < 512; i++)
             crc += *pr++;
 
+         /* return acknowledge */
+         RS485_ENABLE = 1;
+         SEND_BYTE(CMD_ACK);
+         SEND_BYTE(crc);
+         RS485_ENABLE = 0;
+
          break;
 
-      case 5:                      // reboot
+      case UCMD_READ:
+
+         /* receive page */
+         for (i=0 ; !RI0 && i < 5000 ; i++)
+            DELAY_US(10);
+         if (!RI0) 
+            goto receive_cmd;
+         page = SBUF0;
+         RI0 = 0;
+
+         /* receive subpage */
+         for (i=0 ; !RI0 && i < 5000 ; i++)
+            DELAY_US(10);
+         if (!RI0) 
+            goto receive_cmd;
+         j = SBUF0;
+         RI0 = 0;
+
+         RS485_ENABLE = 1;
+
+         SEND_BYTE(CMD_ACK+7);     // send acknowledge, variable data length
+         SEND_BYTE(32);            // send data length
+
+         pr = (512 * page + 32 * j);
+
+         /* send 32 bytes */
+         for (k = crc = 0 ; k<32 ; k++) {
+            SEND_BYTE(*pr);
+            crc += *pr++;
+         }
+
+         SEND_BYTE(crc);
+         RS485_ENABLE = 0;
+         break;
+
+      case UCMD_REBOOT:
 #ifdef CPU_C8051F120
          SFRPAGE = LEGACY_PAGE;
 #endif
          RSTSRC = 0x10;
          break;
 
-      case 6:                      // return
-         break;
       }
 
-#ifdef CPU_C8051F120
-      SFRPAGE = UART0_PAGE;
-#endif
-
-      /* return acknowledge */
-      RS485_ENABLE = 1;
-      TI0 = 0;
-      DELAY_US(INTERCHAR_DELAY);
-      SBUF0 = CMD_ACK;
-      while (TI0 == 0);
-      TI0 = 0;
-      DELAY_US(INTERCHAR_DELAY);
-      SBUF0 = crc;
-      while (TI0 == 0);
-      RS485_ENABLE = 0;
-
-   } while (cmd != 6);
+   } while (cmd != UCMD_RETURN);
 
 
    EA = 1;                      // re-enable interrupts
@@ -1402,6 +1477,14 @@ void yield(void)
    if (flash_program && flash_allowed) {
       flash_program = 0;
 
+#ifdef LCD_SUPPORT
+      lcd_clear();
+      lcd_goto(0, 0);
+      puts("    Upgrading"); 
+      lcd_goto(0, 1);
+      puts("    Firmware...");
+#endif
+
       /* go to "bootloader" program */
       upgrade();
    }
@@ -1409,6 +1492,8 @@ void yield(void)
    /* allow flash 5 sec after reboot */
    if (time() > 500)
       flash_allowed = 1;
+      flash_program = 0;
+      flash_param = 0;
 
    if (reboot) {
 #ifdef CPU_CYGNAL
