@@ -6,6 +6,9 @@
   Contents:     CAMAC utility
 
     $Log$
+    Revision 1.17  2002/06/05 04:12:23  pierre
+    pass cmd_flag arg, remove printf
+
     Revision 1.16  2002/06/05 04:07:30  pierre
     fix @ job
 
@@ -137,11 +140,11 @@ char     job_name[128]="cnaf.cnf";
 
 HNDLE    hDB, hKey, hConn; 
 FILE *   pF;
-BOOL     jobflag, cmd_mode=FALSE;
+BOOL     jobflag;
 char     addr[128];
 
 /* prototype */
-INT  cnafsub(char *);
+INT  cnafsub(BOOL, char *);
 void help_page(INT which);
 INT  decode_line (CAMAC *p, char * str);
 INT  read_job_file(FILE * pF, INT action, void ** job, char * name);
@@ -482,7 +485,7 @@ INT  read_job_file(FILE * pF, INT action, void ** job, char * name)
 }
 
 /*--------------------------------------------------------------------*/
-INT cnafsub(char * cmd)
+INT cnafsub(BOOL cmd_mode, char * cmd)
 {
   char str[128], line[128];
   INT  status, j;
@@ -955,7 +958,7 @@ int main(int argc, char **argv)
   char   host_name[30], exp_name[30], fe_name[256], rpc_server[256];
   char   cmd[256];
   INT    i, status;
-  BOOL   debug;
+  BOOL   debug, cmd_mode=FALSE;
   
   /* set default */
   host_name[0] = '\0';
@@ -1012,9 +1015,9 @@ usage:
   {
     status = cam_init();
     if (status == SUCCESS)
-      status = cnafsub(cmd);
+      status = cnafsub(cmd_mode, cmd);
   }
   cam_exit();
-  printf("status:%d\n", status);
+//  printf("status:%d\n", status);
   return status;
 }
