@@ -6,6 +6,9 @@
   Contents:     Epics channel access device driver
 
   $Log$
+  Revision 1.3  2002/06/06 07:50:12  midas
+  Implemented scheme with DF_xxx flags
+
   Revision 1.2  2000/03/02 21:50:53  midas
   Added set_label command and possibility to disable individual functions
 
@@ -60,7 +63,7 @@ typedef struct {
   chid          *pv_handles;
   float         *array;
   INT           num_channels;
-  DWORD         cmd_disabled;
+  DWORD         flags;
 } CA_INFO;
 
 
@@ -258,7 +261,7 @@ INT epics_ca(INT cmd, ...)
 va_list argptr;
 HNDLE   hKey;
 INT     channel, status;
-DWORD   mask;
+DWORD   flags;
 float   value, *pvalue;
 CA_INFO *info;
 char    *label;
@@ -273,10 +276,10 @@ char    *label;
     hKey = va_arg(argptr, HNDLE);
     pinfo = va_arg(argptr, void *);
     channel = va_arg(argptr, INT);
-    mask = va_arg(argptr, DWORD);
+    flags = va_arg(argptr, DWORD);
     status = epics_ca_init(hKey, pinfo, channel);
     info = *(CA_INFO**)pinfo;
-    info->cmd_disabled = mask;
+    info->flags = flags;
     }
   else
     {
@@ -325,16 +328,6 @@ char    *label;
           status = epics_ca_get_all(info, channel, pvalue);
           break;
     
-        case CMD_DISABLE_COMMAND:
-          mask = va_arg(argptr, DWORD);
-          info->cmd_disabled |= mask;
-          break;
-
-        case CMD_ENABLE_COMMAND:
-          mask = va_arg(argptr, DWORD);
-          info->cmd_disabled &= ~mask;
-          break;
-
         default:
           break;
         }

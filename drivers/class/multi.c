@@ -6,6 +6,9 @@
   Contents:     Multimeter Class Driver
 
   $Log$
+  Revision 1.5  2002/06/06 07:50:12  midas
+  Implemented scheme with DF_xxx flags
+
   Revision 1.4  2002/05/08 19:54:40  midas
   Added extra parameter to function db_get_value()
 
@@ -218,9 +221,9 @@ MULTI_INFO *m_info;
     db_get_value(hDB, hKey, pequipment->driver[i].name, 
                  &pequipment->driver[i].channels, &size, TID_INT, TRUE);
 
-    if (pequipment->driver[i].type == CH_INPUT)
+    if (pequipment->driver[i].flags & DF_INPUT)
       m_info->num_channels_input += pequipment->driver[i].channels;
-    if (pequipment->driver[i].type == CH_OUTPUT)
+    if (pequipment->driver[i].flags & DF_OUTPUT)
       m_info->num_channels_output += pequipment->driver[i].channels;
     }
 
@@ -357,7 +360,9 @@ MULTI_INFO *m_info;
       }
 
     status = pequipment->driver[i].dd(CMD_INIT, hKey, &pequipment->driver[i].dd_info, 
-                                      pequipment->driver[i].channels, pequipment->driver[i].bd);
+                                      pequipment->driver[i].channels, 
+                                      pequipment->driver[i].flags, 
+                                      pequipment->driver[i].bd);
     if (status != FE_SUCCESS)
       {
       free_mem(m_info);
@@ -370,7 +375,7 @@ MULTI_INFO *m_info;
     {
     while (pequipment->driver[index].name[0] &&
            (j >= pequipment->driver[index].channels ||
-           pequipment->driver[index].type != CH_INPUT))
+           (pequipment->driver[index].flags & DF_INPUT) == 0))
       {
       ch_offset += j;
       index++;
@@ -385,7 +390,7 @@ MULTI_INFO *m_info;
     {
     while (pequipment->driver[index].name[0] &&
            (j >= pequipment->driver[index].channels ||
-           pequipment->driver[index].type != CH_OUTPUT))
+           (pequipment->driver[index].flags & DF_OUTPUT) == 0))
       {
       ch_offset += j;
       index++;

@@ -7,6 +7,9 @@
                 template to write a read device driver
 
   $Log$
+  Revision 1.2  2002/06/06 07:50:12  midas
+  Implemented scheme with DF_xxx flags
+
   Revision 1.1  2002/03/14 13:12:17  midas
   Split null driver in bus and device drivers
 
@@ -207,6 +210,7 @@ INT nulldev(INT cmd, ...)
 va_list argptr;
 HNDLE   hKey;
 INT     channel, status;
+DWORD   flags;
 float   value, *pvalue;
 void    *info, *bd;
 
@@ -219,6 +223,7 @@ void    *info, *bd;
       hKey = va_arg(argptr, HNDLE);
       info = va_arg(argptr, void *);
       channel = va_arg(argptr, INT);
+      flags = va_arg(argptr, DWORD);
       bd = va_arg(argptr, void *);
       status = nulldev_init(hKey, info, channel, bd);
       break;
