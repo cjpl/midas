@@ -6,6 +6,9 @@
   Contents:     MIDAS history display utility
 
   $Log$
+  Revision 1.6  1999/07/06 09:02:53  midas
+  Fixed little bug
+
   Revision 1.5  1999/06/28 12:01:10  midas
   Added -f flag
 
@@ -299,7 +302,7 @@ usage:
 
   if (file_name[0])
     hs_fdump(file_name, event_id);
-  if (var_name[0] == 0)
+  else if (var_name[0] == 0)
     hs_dump(event_id, start_time, end_time, interval);
   else
     display_single_hist(event_id, start_time, end_time,
