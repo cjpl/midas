@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.58  2000/02/25 20:22:23  midas
+  Added super-event scheme
+
   Revision 1.57  2000/02/24 22:33:16  midas
   Added deferred transitions
 
@@ -711,10 +714,11 @@ typedef struct {
 } EVENT_HEADER;
 
 /* macros to access event header in mfeuser.c */
-#define TRIGGER_MASK(e)  ((((EVENT_HEADER *) e)-1)->trigger_mask)
-#define EVENT_ID(e)      ((((EVENT_HEADER *) e)-1)->event_id)
-#define SERIAL_NUMBER(e) ((((EVENT_HEADER *) e)-1)->serial_number)
-#define TIME_STAMP(e)    ((((EVENT_HEADER *) e)-1)->time_stamp)
+#define TRIGGER_MASK(e)    ((((EVENT_HEADER *) e)-1)->trigger_mask)
+#define EVENT_ID(e)        ((((EVENT_HEADER *) e)-1)->event_id)
+#define SERIAL_NUMBER(e)   ((((EVENT_HEADER *) e)-1)->serial_number)
+#define TIME_STAMP(e)      ((((EVENT_HEADER *) e)-1)->time_stamp)
+#define EVENT_SOURCE(e,o)  (* (INT*) (e+o))
 
 
 /* system event IDs */
@@ -851,8 +855,8 @@ typedef struct {
 } EQUIPMENT_INFO;
 
 typedef struct {
-  DWORD  events_sent;
-  DWORD  events_per_sec;
+  double events_sent;
+  double events_per_sec;
   double kbytes_per_sec;
 } EQUIPMENT_STATS;
 
@@ -861,7 +865,8 @@ typedef struct eqpmnt *PEQUIPMENT;
 typedef struct eqpmnt {
   char   name[NAME_LENGTH];             /* Equipment name                  */
   EQUIPMENT_INFO info;                  /* From above                      */
-  INT    (*readout)(char *);            /* Pointer to user readout routine */
+  INT    (*readout)(char *, INT);       /* Pointer to user readout routine */
+  DWORD  num_subevents;                 /* Number of events in super event */
   INT    (*cd)(INT cmd, PEQUIPMENT);    /* Class driver routine            */
   DEVICE_DRIVER *driver;                /* Device driver list              */
   char   *init_string;                  /* Init string for fixed events    */
@@ -873,6 +878,7 @@ typedef struct eqpmnt {
   HNDLE  buffer_handle;                 /* MIDAS buffer handle             */
   HNDLE  hkey_variables;                /* Key to variables subtree in ODB */
   DWORD  serial_number;                 /* event serial number             */
+  DWORD  subevent_number;               /* subevent number                 */
   DWORD  odb_out;                       /* # updates FE -> ODB             */
   DWORD  odb_in;                        /* # updated ODB -> FE             */
   DWORD  bytes_sent;                    /* number of bytes sent            */
