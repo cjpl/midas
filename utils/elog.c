@@ -6,6 +6,9 @@
   Contents:     Electronic logbook utility   
 
   $Log$
+  Revision 1.2  1999/09/14 15:33:06  midas
+  Added Ctrl-C handling
+
   Revision 1.1  1999/09/14 15:15:27  midas
   Initial revision
 
@@ -13,6 +16,7 @@
 \********************************************************************/
 
 #include <stdio.h>
+#include <signal.h>
 #include "midas.h"
 #include "msystem.h"
 
@@ -120,6 +124,15 @@ int  i;
 
 /*------------------------------------------------------------------*/
 
+void ctrlc_handler(int sig)
+{
+  cm_disconnect_experiment();
+  ss_ctrlc_handler(NULL);
+  raise(sig);
+}
+
+/*------------------------------------------------------------------*/
+
 main(int argc, char *argv[])
 {
 char      author[80], type[80], system[80], subject[256], text[10000], attachment[256];
@@ -182,6 +195,9 @@ usage:
     }
 
   cm_get_experiment_database(&hDB, NULL);
+
+  /* re-establish Ctrl-C handler */
+  ss_ctrlc_handler(ctrlc_handler);
 
   /* get type list from ODB */
   size = 20*NAME_LENGTH;
