@@ -6,6 +6,9 @@
   Contents:     List of MSCB RPC functions with parameters
 
   $Log$
+  Revision 1.25  2004/12/15 17:05:05  midas
+  Changed OS_UNIX to __linux__
+
   Revision 1.24  2004/12/10 11:22:07  midas
   Added block functions
 
@@ -89,7 +92,7 @@
 #include <fcntl.h>
 #include <time.h>
 
-#elif defined(OS_UNIX)
+#elif defined(__linux__)
 
 #include <unistd.h>
 #include <stdarg.h>
