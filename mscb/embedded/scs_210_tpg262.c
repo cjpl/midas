@@ -10,6 +10,9 @@
                 Pfeiffer Dual Gauge TPG262 vacuum sensor
 
   $Log$
+  Revision 1.6  2002/11/28 14:44:02  midas
+  Removed SIZE_XBIT
+
   Revision 1.5  2002/11/28 13:03:41  midas
   Protocol version 1.2
 
@@ -53,14 +56,14 @@ struct {
   
 
 MSCB_INFO_CHN code channel[] = {
-  SIZE_0BIT,   UNIT_ASCII, 0, 0,           0, "RS232", 0,
-  SIZE_32BIT, UNIT_PASCAL, 0, 0, MSCBF_FLOAT, "P1", &user_data.p1,
-  SIZE_32BIT, UNIT_PASCAL, 0, 0, MSCBF_FLOAT, "P2", &user_data.p2,
+  1,  UNIT_ASCII, 0, 0,           0, "RS232", 0,
+  4, UNIT_PASCAL, 0, 0, MSCBF_FLOAT, "P1", &user_data.p1,
+  4, UNIT_PASCAL, 0, 0, MSCBF_FLOAT, "P2", &user_data.p2,
   0
 };
 
 MSCB_INFO_CHN code conf_param[] = {
-  SIZE_8BIT,   UNIT_HERTZ, 0, 0,           0, "Baud",  &user_conf.baud,
+  1,   UNIT_HERTZ, 0, 0,           0, "Baud",  &user_conf.baud,
   0
 };
 

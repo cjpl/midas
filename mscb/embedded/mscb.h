@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol commands
 
   $Log$
+  Revision 1.15  2002/11/28 14:44:02  midas
+  Removed SIZE_XBIT
+
   Revision 1.14  2002/11/28 13:03:41  midas
   Protocol version 1.2
 
@@ -111,6 +114,7 @@ sbit RS485_ENABLE =      P3^5;
 
 1.0 Initial
 1.1 Add unit prefix, implement upgrade command
+1.2 Add CMD_ECHO, CMD_READ with multiple channels
 
 */
 
@@ -153,12 +157,6 @@ sbit RS485_ENABLE =      P3^5;
 #define GET_INFO_GENERAL   0
 #define GET_INFO_CHANNEL   1
 #define GET_INFO_CONF      2
-
-#define SIZE_0BIT          0
-#define SIZE_8BIT          1
-#define SIZE_16BIT         2
-#define SIZE_24BIT         3
-#define SIZE_32BIT         4
 
 /*---- flags from the configuration and status register (CSR) ------*/
 
