@@ -1,3 +1,20 @@
+/*-----------------------------------------------------------------------------
+ * Copyright (c) 1996      TRIUMF Data Acquistion Group
+ * Please leave this header in any reproduction of that distribution
+ * 
+ * TRIUMF Data Acquisition Group, 4004 Wesbrook Mall, Vancouver, B.C. V6T 2A3
+ * Email: online@triumf.ca           Tel: (604) 222-1047  Fax: (604) 222-1074
+ *        amaudruz@triumf.ca
+ * ----------------------------------------------------------------------------
+ *  
+ * Description	: Header file for VMEIO triumf board
+ *
+ * Author:  Pierre-Andre Amaudruz Data Acquisition Group
+   $Log$
+   Revision 1.3  1999/09/29 21:06:33  pierre
+   - was missing the cvs header
+
+ *---------------------------------------------------------------------------*/
 #ifndef VMEIO_INCLUDE
 #define VMEIO_INCLUDE
 #include "stdio.h"
