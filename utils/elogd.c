@@ -6,6 +6,10 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.73  2001/11/21 16:26:29  midas
+  Removed "Revision date:" from edit form (should bette be done via an
+  attribute, preset to $date)
+
   Revision 1.72  2001/11/21 15:23:48  midas
   Fixed bug with "Welcome page"
 
@@ -3254,8 +3258,6 @@ time_t now;
     {
     rsprintf("<tr><td nowrap bgcolor=%s width=10%%><b>Entry date:</b></td><td bgcolor=%s>%s</td></tr>\n\n", 
              gt("Categories bgcolor1"), gt("Categories bgcolor2"), date);
-    rsprintf("<tr><td nowrap bgcolor=%s width=10%%><b>Revision date:</b></td><td bgcolor=%s>%s</td></tr>\n\n", 
-             gt("Categories bgcolor1"), gt("Categories bgcolor2"), ctime(&now));
     }
   else
     {
