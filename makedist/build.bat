@@ -7,6 +7,9 @@ echo If not, enter Ctrl-Break now and do so!
 
 sleep 10
 
+rem go to midas root
+cd ..
+
 set version=%1
 set dir=\tmp\midas%version%
 set archive=\tmp\midas%version%.zip
