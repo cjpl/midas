@@ -14,6 +14,9 @@
                 Brown, Prentice Hall
 
   $Log$
+  Revision 1.63  2002/06/25 19:48:18  pierre
+  doc++ functions
+
   Revision 1.62  2002/06/25 19:00:57  pierre
   doc++ functions
 
@@ -1523,25 +1526,25 @@ BOOL ss_existpid(INT pid)
 
 /*------------------------------------------------------------------*/
 /** @name ss_system()
-  \begin{description}
-  \item[Description:] Execute command in a separate process,
-  close all open file descriptors invoke ss_exec and ignore pid.
-  \item[Remarks:]
-  \item[Example:] \begin{verbatim}
-  { ...
-    char cmd[256];
-    sprintf(cmd,"%s %s %i %s/%s %1.3lf %d",lazy.commandAfter, 
-       lazy.backlabel, lazyst.nfiles, lazy.path, lazyst.backfile,
-       lazyst.file_size/1024.0/1024.0, blockn);
-    cm_msg(MINFO,"Lazy","Exec post file write script:%s",cmd);
-    ss_system(cmd);
-  }
-  ...  
-  \end{verbatim}
-  \end{description}
-  @memo Returns current time stamp in seconds. 
-  @param command Command to execute
-  @return SS_SUCCESS or ss_exec return code
+\begin{description}
+\item[Description:] Execute command in a separate process,
+ close all open file descriptors invoke ss_exec and ignore pid.
+\item[Remarks:]
+\item[Example:] \begin{verbatim}
+{ ...
+  char cmd[256];
+  sprintf(cmd,"%s %s %i %s/%s %1.3lf %d",lazy.commandAfter, 
+     lazy.backlabel, lazyst.nfiles, lazy.path, lazyst.backfile,
+     lazyst.file_size/1024.0/1024.0, blockn);
+  cm_msg(MINFO,"Lazy","Exec post file write script:%s",cmd);
+  ss_system(cmd);
+}
+...  
+\end{verbatim}
+\end{description}
+@memo Execute command. 
+@param command Command to execute.
+@return SS_SUCCESS or ss_exec return code
 */
 INT ss_system(char *command)
 {
@@ -2156,24 +2159,24 @@ INT ss_mutex_delete(HNDLE mutex_handle, INT destroy_flag)
 
 /*------------------------------------------------------------------*/
 /** @name ss_millitime()
-    \begin{description}
-    \item[Description:] Returns the actual time in milliseconds with an arbitrary
-	   origin. This time may only be used to calculate relative times.
-     Overruns in the 32 bit value don't hurt since in a subtraction calculated
-     with 32 bit accuracy this overrun cancels (you may think about!)..
-    \item[Remarks:] 
-    \item[Example:] \begin{verbatim}
-    ...
-    DWORD start, stop:
-    start = ss_millitime();
-      < do operations >
-    stop = ss_millitime();
-    printf("Operation took %1.3lf seconds\n",(stop-start)/1000.0);
-    ...
-    \end{verbatim}
-    \end{description}
-    @memo Returns current time stamp in millisecond. 
-    @return millisecond time stamp.
+\begin{description}
+\item[Description:] Returns the actual time in milliseconds with an arbitrary
+ origin. This time may only be used to calculate relative times.
+ Overruns in the 32 bit value don't hurt since in a subtraction calculated
+ with 32 bit accuracy this overrun cancels (you may think about!)..
+\item[Remarks:] 
+\item[Example:] \begin{verbatim}
+...
+DWORD start, stop:
+start = ss_millitime();
+  < do operations >
+stop = ss_millitime();
+printf("Operation took %1.3lf seconds\n",(stop-start)/1000.0);
+...
+\end{verbatim}
+\end{description}
+@memo Returns current time stamp in millisecond. 
+@return millisecond time stamp.
 */
 DWORD ss_millitime()
 {
@@ -2230,21 +2233,21 @@ DWORD ss_millitime()
 
 /*------------------------------------------------------------------*/
 /** @name ss_time()
-    \begin{description}
-    \item[Description:] Returns the actual time in seconds since 1.1.1970 UTC.
-    \item[Remarks:] 
-    \item[Example:] \begin{verbatim}
-    ...
-    DWORD start, stop:
-    start = ss_time();
-      ss_sleep(12000);
-    stop = ss_time();
-    printf("Operation took %1.3lf seconds\n",stop-start);
-    ...
-    \end{verbatim}
-    \end{description}
-    @memo Returns current time stamp in seconds. 
-    @return Time in seconds
+\begin{description}
+\item[Description:] Returns the actual time in seconds since 1.1.1970 UTC.
+\item[Remarks:] 
+\item[Example:] \begin{verbatim}
+...
+DWORD start, stop:
+start = ss_time();
+  ss_sleep(12000);
+stop = ss_time();
+printf("Operation took %1.3lf seconds\n",stop-start);
+...
+\end{verbatim}
+\end{description}
+@memo Returns current time stamp in seconds. 
+@return Time in seconds
 */
 DWORD ss_time()
 {
@@ -2358,18 +2361,18 @@ void ss_cont()
 
 /*------------------------------------------------------------------*/
 /** @name ss_sleep()
-    \begin{description}
-    \item[Description:] Suspend the calling process for a certain time.
-    \item[Remarks:] The function is similar to the sleep() function,
-    but has a resolution of one milliseconds. Under VxWorks the resolution
-    is 1/60 of a second. It uses the socket select() function with a time-out.
-    \item[Example:] \begin{verbatim}
-    \end{verbatim}
-    \end{description}
-    @memo Returns current time stamp in seconds. 
-    @param millisec Time in milliseconds to sleep. Zero means
-	    				      infinite (until another process calls ss_wake)
-    @return SS_SUCCESS
+\begin{description}
+\item[Description:] Suspend the calling process for a certain time.
+\item[Remarks:] The function is similar to the sleep() function,
+but has a resolution of one milliseconds. Under VxWorks the resolution
+is 1/60 of a second. It uses the socket select() function with a time-out.
+\item[Example:] see \Ref{ss_time()} \begin{verbatim}
+\end{verbatim}
+\end{description}
+@memo Suspend process for a while.
+@param millisec Time in milliseconds to sleep. Zero means
+                infinite (until another process calls ss_wake)
+@return SS_SUCCESS
 */
 INT ss_sleep(INT millisec)
 {
