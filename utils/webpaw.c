@@ -6,6 +6,9 @@
   Contents:     Web server for remote PAW display
 
   $Log$
+  Revision 1.26  2000/10/16 07:39:45  midas
+  Changed parameter separation character from '#' to '&'
+
   Revision 1.25  2000/10/05 14:46:16  midas
   Added optional parameters
 
@@ -746,10 +749,10 @@ char str[256], comment_name[256], param_name[256], *p;
       p++;
     *p = 0;
     }
-  if (strchr(kumac_name, '#'))
+  if (strchr(kumac_name, '&'))
     {
     /* extract param, trim leading blanks */
-    p = strchr(kumac_name, '#')+1;
+    p = strchr(kumac_name, '&')+1;
     while (*p && *p == ' ')
       p++;
     strcpy(param_name, p);
@@ -762,8 +765,8 @@ char str[256], comment_name[256], param_name[256], *p;
 
   if (strchr(kumac_name, '?'))
     *strchr(kumac_name, '?') = 0;
-  if (strchr(kumac_name, '#'))
-    *strchr(kumac_name, '#') = 0;
+  if (strchr(kumac_name, '&'))
+    *strchr(kumac_name, '&') = 0;
 
   urlEncode(kumac_name);
   format(display_name, str);
