@@ -17,6 +17,9 @@
  *  Author:  Pierre-Andre Amaudruz Data Acquisition Group
  * 
  *  $Log$
+ *  Revision 1.4  2003/08/20 21:21:35  pierre
+ *  add cam_interrupt/inhibit_test()
+ *
  *  Revision 1.3  2001/09/07 18:09:23  pierre
  *  Fix args for interrupts
  *
@@ -79,6 +82,7 @@ INLINE int  cam_init(void){return 1;}
 INLINE int  cam_init_rpc(char *host_name, char *exp_name, char *fe_name, char *client_name, char *rpc_server){return 1;}
 INLINE void cam_exit(void){}
 INLINE void cam_inhibit_set(const int c){}
+INLINE int cam_inhibit_test(const int c){return 1;}
 INLINE void cam_inhibit_clear(const int c){}
 INLINE void cam_crate_clear(const int c){}
 INLINE void cam_crate_zinit(const int c){}
@@ -88,6 +92,7 @@ INLINE void cam_lam_read(const int c, DWORD *lam){*lam=1;}
 INLINE void cam_lam_clear(const int c, const int n){}
 INLINE void cam_interrupt_enable(const int c){}
 INLINE void cam_interrupt_disable(const int c){}
+INLINE int cam_interrupt_test(const int c){return 1;}
 INLINE void cam_interrupt_attach(const int c, const int n, void (*isr)(void)){}
 INLINE void cam_interrupt_detach(const int c, const int n){}
 INLINE void cam_glint_enable(void){}
