@@ -6,6 +6,10 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.18  1999/02/06 00:17:12  pierre
+  - Fix local watchdog timeout in cm_set_watchdog_params()
+  - Touch dm_xxx functions for OS_WINNT
+
   Revision 1.17  1999/02/02 07:42:22  midas
   Only print warning about zero length bank in bk_close if bank has type TID_STRUCT
 
@@ -138,6 +142,8 @@ static INT            _net_send_buffer_size = 0;
 static char           *_tcp_buffer = NULL;
 static INT            _tcp_wp = 0;
 static INT            _tcp_rp = 0;
+
+static INT            _send_sock;
 
 /* table for transition functions */
 
@@ -2012,6 +2018,9 @@ INT cm_set_watchdog_params(BOOL call_watchdog, INT timeout)
 \********************************************************************/
 {
 INT i;
+
+/*-PAA- set also local timeout to requested value */
+_watchdog_timeout = timeout;
 
   if (rpc_is_remote())
     return rpc_call(RPC_CM_SET_WATCHDOG_PARAMS, call_watchdog, timeout);
@@ -12475,7 +12484,6 @@ struct tm    *tms;
 }
 
 /*------------------------------------------------------------------*/
-
 /********************************************************************\
 *                                                                    *
 *                 Event buffer functions                             *
@@ -12486,7 +12494,7 @@ struct tm    *tms;
    also new function eb_buffer_full()
 */
 static char *_event_ring_buffer = NULL;
-static INT  _eb_size, _send_sock;
+static INT  _eb_size;
 static char *_eb_read_pointer, *_eb_write_pointer, *_eb_end_pointer;
 
 /*------------------------------------------------------------------*/
@@ -12852,11 +12860,11 @@ INT  size, i;
 *                                                                    *
 * "*" : visible functions                                            *
 * dm_buffer_create():     *Setup the dual memory buffer              *
-*                          If in VxWorks : Setup semaphore           *
-*                                          Spawn second thread       *
+*                          Setup semaphore                           *
+*                          Spawn second thread                       *
 * dm_buffer_release():    *Release memory allocation for dm          *
-*                          If in VxWorks : Force a kill of 2nd thread*
-*                                          Remove semaphore          *
+*                          Force a kill of 2nd thread                *
+*                          Remove semaphore                          *
 * dm_area_full():         *Check for both area being full            *
 *                          None blocking, may be used for interrupt  *
 *                          disable.                                  *
@@ -12909,7 +12917,6 @@ typedef struct {
   } DMEM_BUFFER;
 
 DMEM_BUFFER  dm;
-static INT   _send_sock;
 extern       _opt_tcp_size;
 
 /*------------------------------------------------------------------*/
@@ -12964,22 +12971,27 @@ INT dm_buffer_create(INT size)
     VX_TASK_SPAWN starg;
 
     /* create semaphore */
-    if ((status = ss_mutex_create("send",&dm.sem_send)) != SS_CREATED)
+    status = ss_mutex_create("send",&dm.sem_send);
+    if (status != SS_CREATED && status != SS_SUCCESS)
       {
         cm_msg(MERROR,"dm_buffer_create","error in ss_mutex_create send");
         return status;
       }
-    if ((status = ss_mutex_create("flush",&dm.sem_flush)) != SS_CREATED)
+    status = ss_mutex_create("flush",&dm.sem_flush);
+    if (status != SS_CREATED && status != SS_SUCCESS)
       {
         cm_msg(MERROR,"dm_buffer_create","error in ss_mutex_create flush");
         return status;
       }
-
     /* spawn async_area_send */
     memset (&starg, 0, sizeof(VX_TASK_SPAWN));
+
+#ifdef OS_VXWORKS
+    /* Just pass an empty array */
     strcpy(starg.name,"areaSend");
     starg.priority = 120;
     starg.stackSize = 20000;
+#endif
 
     if ((status = ss_thread_create(dm_async_area_send, (void *) &starg))
                 != SS_SUCCESS)
@@ -12987,6 +12999,10 @@ INT dm_buffer_create(INT size)
         cm_msg(MERROR,"dm_buffer_create","error in ss_thread_create");
         return status;
       }
+
+#ifdef OS_WINNT
+    ss_mutex_wait_for(dm.sem_send, 0);
+#endif
   }
 #endif /* DM_DUAL_THREAD */
   
@@ -13017,11 +13033,10 @@ INT dm_buffer_release(void)
   dm.area1.serial = dm.area2.serial = 0;
 
 #ifdef DM_DUAL_THREAD
-  /* kill spawned async_area_send */
-    dm.action = DM_KILL;
-    ss_mutex_release(dm.sem_send);
-    ss_mutex_release(dm.sem_flush);
-    ss_sleep(500);
+ /* kill spawned async_area_send */
+  dm.action = DM_KILL;
+  ss_mutex_release(dm.sem_send);
+  ss_mutex_release(dm.sem_flush);
 
   /* release semaphore */
   ss_mutex_delete(dm.sem_send, 0);
@@ -13087,18 +13102,15 @@ INLINE BOOL dm_buffer_full (void)
     BOOL	       TRUE if not enough space for another event
 \********************************************************************/
 {
-  INT free;
-
   /* catch both full areas, waiting for transfer */
   if (dm.pa == NULL)
     return TRUE;
-  else if (!dm.pa->full)
-    free = (PTYPE)dm.pa->pb - (PTYPE)dm.pa->pw;
-  else if (!dm.area1.full)
-    free = (PTYPE)dm.area1.pb - (PTYPE)dm.area1.pw;
-  else if (!dm.area2.full)
-    free = (PTYPE)dm.area2.pb - (PTYPE)dm.area2.pw;
-  return (free < MAX_EVENT_SIZE+sizeof(EVENT_HEADER)+sizeof(INT));
+  /* Check the space in the active buffer only
+     as I don't switch buffer here */
+  if (dm.pa->full)
+    return TRUE;
+  return ( ((PTYPE)dm.pa->pb - (PTYPE)dm.pa->pw) <
+           (MAX_EVENT_SIZE+sizeof(EVENT_HEADER)+sizeof(INT)));
 }
 
 /*------------------------------------------------------------------*/
@@ -13124,10 +13136,10 @@ EVENT_HEADER *dm_pointer_get(void)
   /* shortcut for speed */
   if (!dm_buffer_full())
     return (EVENT_HEADER *) (dm.pa->pw + sizeof(INT));
-  
+
   /* We have to switch buffer */
   timeout = ss_millitime();   /* with timeout */
-  while (dm_buffer_full() && ((ss_millitime() - timeout) < 5000))
+  while (dm_buffer_full() && ((ss_millitime() - timeout) < 10000))
     { /* not enough space for event in current buffer */
       if (dm.pa != NULL)
         { /* Current area is full */
@@ -13138,34 +13150,33 @@ EVENT_HEADER *dm_pointer_get(void)
           /* mark current area full */
           dm.pa->full = TRUE;
 	  
-	  /* Trigger or do data transfer (Now/don't wait) */
-  	  if ((status = dm_area_send()) == RPC_NET_ERROR)
-	    {
-	      cm_msg(MERROR,"dm_pointer_get()","Net error or timeout %i",status);
-	      return NULL;
-	    }
+	        /* Trigger or do data transfer (Now/don't wait) */
+  	      if ((status = dm_area_send()) == RPC_NET_ERROR)
+	          {
+	            cm_msg(MERROR,"dm_pointer_get()","Net error or timeout %i",status);
+	            return NULL;
+	          }
 	  
-          /* switch to other area
-	     if both area are FULL return NULL */
+          /* switch to other area if both area are FULL return NULL */
           dm.pa = dm_area_switch();
 	  
-	  /* Check if valid pointer */
-	  if (dm.pa != NULL)
-	    return (EVENT_HEADER *) (dm.pa->pw + sizeof(INT));
-	}	  
+	        /* Check if valid pointer */
+	        if (dm.pa != NULL)
+	          return (EVENT_HEADER *) (dm.pa->pw + sizeof(INT));
+	      }	  
       else 
-	{
-	  /* Both area are full, force a transfer now since rate is so high. 
-	     Stay in while loop until area has been switched */
-  	  if ((status = dm_area_flush()) == RPC_NET_ERROR)
-	    {
-	      cm_msg(MERROR,"dm_pointer_get()","Net error or timeout %i", status);
-	      return NULL;
-	    }
-	}
+	      {
+	        /* Both area are full, force a transfer now since rate is so high. 
+             Stay in while loop until area has been switched */
+ 	        if ((status = dm_area_flush()) == RPC_NET_ERROR)
+	          {
+	            cm_msg(MERROR,"dm_pointer_get()","Net error or timeout %i", status);
+	            return NULL;
+	          }
+	      }
     } /* while full and not timeout */
   
-  if ((ss_millitime() - timeout) > 5000)
+  if ((ss_millitime() - timeout) > 10000)
     {
       /* Time running out abort */
       cm_msg(MERROR,"dm_pointer_get","Timeout due to buffer full");
@@ -13250,10 +13261,6 @@ INLINE INT dm_buffer_send(DMEM_AREA * larea)
   nfrag  =    tot_size / _opt_tcp_size;
   nfrag += (((tot_size % _opt_tcp_size)==0) ? 0 : 1);
 
-  /*  printf("dm_buffer_send size %i, frag %i, sock %i pt %p\n",
-	 tot_size, nfrag, _send_sock, lpt); 
-  */
-
   for (j=0; j < nfrag; j++)
     {
       /* send buffer */
@@ -13296,9 +13303,20 @@ INT dm_area_send(void)
 \********************************************************************/
 {
 #ifdef DM_DUAL_THREAD
+  INT status; 
+  
   /* force a DM_SEND if possible. Don't wait for completion */
   dm.action = DM_SEND;
   ss_mutex_release(dm.sem_send);
+#ifdef OS_WINNT
+  status = ss_mutex_wait_for(dm.sem_send, 1);
+#endif
+  if (status == SS_NO_MUTEX)
+    {
+      printf(" timeout while waiting for sem_send\n");
+      return RPC_NET_ERROR;
+    }
+  
   return CM_SUCCESS;
 #else
   INT status;
@@ -13346,7 +13364,7 @@ INT dm_async_area_send(void *pointer)
 {
 #ifdef DM_DUAL_THREAD
   INT status, timeout;
-  
+
   printf("Waiting for Semaphores initialization ... in task areaSend\n");
   
   /* Check or Wait for semaphore to be setup */
@@ -13355,81 +13373,75 @@ INT dm_async_area_send(void *pointer)
     ss_sleep(200);
   if (dm.sem_send == 0)
     goto kill;
-  
+
+#ifdef OS_WINNT
+  ss_mutex_wait_for(dm.sem_flush, 0);
+#endif
+
   /* Main FOREVER LOOP */
   printf("Waiting for Semaphores... in task areaSend\n");
   while (1)
     {
       if (dm.pa != NULL)
-	/* wait semaphore here ........ 0 == forever*/ 
-	ss_mutex_wait_for(dm.sem_send, 0);
-      if (dm.action == DM_SEND)
-	{
-	  /* DM_SEND : Empty a single full buffer only. */
-	  if (dm.area1.full || dm.area2.full)
-	    {
-	      /* select the full area */
-	      if (dm.area1.full && dm.area2.full)
-		if (dm.area1.serial <= dm.area2.serial)
-		  status = dm_buffer_send(&dm.area1);
-		else
-		  status = dm_buffer_send(&dm.area2);
-	      else if (dm.area1.full)
-		status = dm_buffer_send(&dm.area1);
-	      else if (dm.area2.full)
-		status = dm_buffer_send(&dm.area2);
-	      if (status == RPC_NET_ERROR)
-		{
-		  cm_msg(MERROR,"dm_async_area_send","network error");
-		  goto kill;
-		}
-	      /* but by now both area may be full again and dm.pa shows NULL.
-		 Check dm.pa and full if so force another send buffer before
-		 returning to wait semaphore.
-		 The goal here is to never return with dm.pa==NULL */
-	      /*	      if (dm.pa == NULL)
-		{
-		  printf(" Async send dm.pa %p  (1)%i (2)%i\n",
-			 dm.pa, dm.area1.pw-dm.area1.pt,
-			 dm.area2.pw-dm.area2.pt);
-		}
-	      */
-	    } /* go back waiting for semaphore */
-    	} /* if DM_SEND */
+        {
+	        /* wait semaphore here ........ 0 == forever*/ 
+          ss_mutex_wait_for(dm.sem_send, 0);
+          ss_mutex_release(dm.sem_send);
+        }
+      if (dm.action == DM_SEND)                            
+        {
+          /* DM_SEND : Empty the oldest buffer only. */
+          if (dm.area1.full && dm.area2.full)
+            if (dm.area1.serial <= dm.area2.serial)
+              status = dm_buffer_send(&dm.area1);
+            else
+              status = dm_buffer_send(&dm.area2);
+          else if (dm.area1.full)
+            status = dm_buffer_send(&dm.area1);
+          else if (dm.area2.full)
+            status = dm_buffer_send(&dm.area2);
+          if (status == RPC_NET_ERROR)
+            {
+              cm_msg(MERROR,"dm_async_area_send","network error");
+              goto kill;
+            }
+        } /* if DM_SEND */
       
       /* check for flush */
       if (dm.action == DM_FLUSH)
-	{
+	    {
 	  /* DM_FLUSH: User is waiting for completion (i.e. No more incomming 
 	     events) Empty both are in order */
 	  /* select in order both area independently of being full or not*/
-	  if (dm.area1.serial <= dm.area2.serial)
-	    {
-	      status = dm_buffer_send(&dm.area1);
-	      if (status == RPC_NET_ERROR)
-		goto error;
-	      status = dm_buffer_send(&dm.area2);
-	      if (status == RPC_NET_ERROR)
-		goto error;
-	    }
-	  else
-	    {
-	      status = dm_buffer_send(&dm.area2);
-	      if (status == RPC_NET_ERROR)
-		goto error;
-	      status = dm_buffer_send(&dm.area1);
-	      if (status == RPC_NET_ERROR)
-		goto error;
-	    }
+	    if (dm.area1.serial <= dm.area2.serial)
+	      {
+	        status = dm_buffer_send(&dm.area1);
+	        if (status == RPC_NET_ERROR)
+      		  goto error;
+	        status = dm_buffer_send(&dm.area2);
+	        if (status == RPC_NET_ERROR)
+		        goto error;
+	      }
+	    else
+	      {
+	        status = dm_buffer_send(&dm.area2);
+	        if (status == RPC_NET_ERROR)
+      		  goto error;
+	        status = dm_buffer_send(&dm.area1);
+	        if (status == RPC_NET_ERROR)
+		        goto error;
+	      }
 	  
-	  /* reset area */
-	  dm.pa = &dm.area1;
-	  
-	  /* release user */
-	  ss_mutex_release(dm.sem_flush);
-	} /* if FLUSH */
+	      /* reset area */
+	      dm.pa = &dm.area1;
+	      
+	      /* release user */
+	      ss_mutex_release(dm.sem_flush);
+	      ss_mutex_wait_for(dm.sem_flush, 0);
+	    } /* if FLUSH */
+
       if (dm.action == DM_KILL)
-	goto kill;
+	      goto kill;
       
     } /* FOREVER (go back wainting for semaphore) */
   
@@ -13438,12 +13450,14 @@ INT dm_async_area_send(void *pointer)
   cm_msg(MERROR,"dm_area_flush","aSync Net error");
  kill:
   ss_mutex_release(dm.sem_flush);
-  cm_msg(MERROR,"areaSend","task areaSend exiting now");  
+  ss_mutex_wait_for(dm.sem_flush, 1);
+cm_msg(MERROR,"areaSend","task areaSend exiting now");  
   exit;
 #else
   printf("DM_DUAL_THREAD not defined\n");
   return 0;
 #endif
+  return 1;
 }
 
 /*------------------------------------------------------------------*/
@@ -13471,10 +13485,15 @@ INT dm_area_flush(void)
   /* request FULL flush */
   dm.action = DM_FLUSH;
   ss_mutex_release(dm.sem_send);
-  
+#ifdef OS_WINNT
+  ss_mutex_wait_for(dm.sem_send, 0);
+#endif
   /* important to wait for completion before continue with timeout
-     timeout specifide in ticks, (1/60 sec I think)*/
-  status = ss_mutex_wait_for(dm.sem_flush, 120);
+     timeout specified milliseconds */
+  status = ss_mutex_wait_for(dm.sem_flush, 2000);
+#ifdef OS_WINNT  
+  ss_mutex_release(dm.sem_flush);   /* give it back now */
+#endif
   return status;
 #else
   /* full flush done here */
