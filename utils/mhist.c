@@ -6,6 +6,9 @@
   Contents:     MIDAS history display utility
 
   $Log$
+  Revision 1.10  2000/04/25 11:56:09  midas
+  Added -s and -p flags to specify start/stop time explicitly
+
   Revision 1.9  2000/04/25 11:04:42  midas
   Added display_vars(filename) function which can be used to display variables
   in an arbitrary history file via the '-l' and '-f filename' flags
@@ -266,7 +269,7 @@ INT        status;
     size = sizeof(buffer);
     tbsize = sizeof(tbuffer);
     status = hs_read(event_id, start_time, end_time, interval, var_name, index, 
-      tbuffer, &tbsize, buffer, &size, &type, &n);
+                     tbuffer, &tbsize, buffer, &size, &type, &n);
   
     if (n == 0)
       printf("No variables \"%s\" found in specified time range\n", var_name);
@@ -297,6 +300,63 @@ INT        status;
       start_time = tbuffer[n-1] + (tbuffer[n-1] - tbuffer[n-2]);
   
     } while (status == HS_TRUNCATED);
+}
+
+/*------------------------------------------------------------------*/
+
+DWORD convert_time(char *t)
+/* convert date in format DDMMYY[.HHMM[SS]] into decimal time */
+{
+struct tm tms;
+DWORD     ltime;
+INT       isdst;
+
+#if !defined(OS_VXWORKS) 
+#if !defined(OS_VMS)
+  tzset();
+#endif
+#endif
+
+  memset(&tms, 0, sizeof(tms));
+
+  tms.tm_mday = 10*(t[0]-'0')+(t[1]-'0');
+  tms.tm_mon  = 10*(t[2]-'0')+(t[3]-'0')-1;
+  tms.tm_year = 10*(t[4]-'0')+(t[5]-'0');
+  if (tms.tm_year < 90)
+    tms.tm_year += 100;
+  if (t[6] == '.')
+    {
+    tms.tm_hour = 10*(t[7]-'0')+(t[8]-'0');
+    tms.tm_min  = 10*(t[9]-'0')+(t[10]-'0');
+    if (t[11])
+      tms.tm_sec = 10*(t[11]-'0')+(t[12]-'0');
+    }
+
+  ltime = mktime(&tms);
+
+  /* correct for dst */
+  memcpy(&tms, localtime(&ltime), sizeof(tms));
+
+  isdst = tms.tm_isdst;
+  memset(&tms, 0, sizeof(tms));
+  tms.tm_isdst = isdst;
+
+  tms.tm_mday = 10*(t[0]-'0')+(t[1]-'0');
+  tms.tm_mon  = 10*(t[2]-'0')+(t[3]-'0')-1;
+  tms.tm_year = 10*(t[4]-'0')+(t[5]-'0');
+  if (tms.tm_year < 90)
+    tms.tm_year += 100;
+  if (t[6] == '.')
+    {
+    tms.tm_hour = 10*(t[7]-'0')+(t[8]-'0');
+    tms.tm_min  = 10*(t[9]-'0')+(t[10]-'0');
+    if (t[11])
+      tms.tm_sec = 10*(t[11]-'0')+(t[12]-'0');
+    }
+
+  ltime = mktime(&tms);
+
+  return ltime;
 }
 
 /*------------------------------------------------------------------*/
@@ -354,6 +414,10 @@ char     var_name[NAME_LENGTH], file_name[256];
 	        start_time = ss_time() - atoi(argv[++i])*3600;
 	      else if (strncmp(argv[i],"-d",2)==0)
 	        start_time = ss_time() - atoi(argv[++i])*3600*24;
+	      else if (strncmp(argv[i],"-s",2)==0)
+	        start_time = convert_time(argv[++i]);
+	      else if (strncmp(argv[i],"-p",2)==0)
+	        end_time = convert_time(argv[++i]);
 	      else if (strncmp(argv[i],"-t",2) == 0)
 	        interval = atoi(argv[++i]);
 	      else if (strncmp(argv[i],"-f",2) == 0)
@@ -363,10 +427,13 @@ char     var_name[NAME_LENGTH], file_name[256];
         {
 usage:
 	      printf("\nusage: mhist -e Event ID -v Variable Name\n");
-	      printf("         [-i Index] [-h Hours] [-d Days] [-t Interval]\n");
-	      printf("where index is for variables which are arrays, hours/days go into the past\n");
-	      printf("and interval is the minimum interval between two displayed records.\n\n");
-	      printf("         [-f file] specify history file explicitely\n");
+	      printf("         [-i Index] index of variables which are arrays\n");
+        printf("         [-t Interval] minimum interval in sec. between two displayed records\n");
+	      printf("         [-h Hours] display between some hours ago and now\n");
+	      printf("         [-d Days] display between some days ago and now\n");
+	      printf("         [-f File] specify history file explicitly\n");
+	      printf("         [-s Start date] specify start date DDMMYY[.HHMM[SS]]\n");
+	      printf("         [-p End date] specify end date DDMMYY[.HHMM[SS]]\n");
 	      printf("         [-l] list available events and variables\n");
 	      printf("         [-b] display time stamp in decimal format\n");
 	      return 1;
