@@ -6,6 +6,9 @@
   Contents:     Magnetic tape manipulation program for MIDAS tapes
 
   $Log$
+  Revision 1.6  1998/10/29 15:13:24  midas
+  Don't stop on "dir" command if data is not MIDAS data
+
   Revision 1.5  1998/10/22 12:41:08  midas
   - Added "oflag" to ss_tape_open()
   - Open tape in read only mode for all read operations
@@ -53,16 +56,10 @@ INT          status, size, index;
 
     /* check if data is real MIDAS header */
     if (event.event_id != EVENTID_BOR || event.trigger_mask != MIDAS_MAGIC)
-      {
       printf("Data on tape is no MIDAS data\n");
-      /* skip back record */
-      ss_tape_rskip(channel, -1);
-      return 1;
-      }
-
-    /* print run info */
-    printf("Found run #%d recorded on %s", event.serial_number, 
-            ctime(&event.time_stamp));
+    else
+      printf("Found run #%d recorded on %s", event.serial_number, 
+              ctime(&event.time_stamp));
 
     if (index < count-1)
       {
