@@ -6,6 +6,9 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.25  1999/10/28 09:57:53  midas
+  Added lock/unload of ODB for db_find_key/link
+
   Revision 1.24  1999/09/17 11:48:07  midas
   Alarm system half finished
 
@@ -1716,6 +1719,8 @@ INT              i;
     return DB_INVALID_HANDLE;
     }
 
+  db_lock_database(hDB);
+
   pheader  = _database[hDB-1].database_header;
   if (!hKey)
     hKey = pheader->root_key;
@@ -1724,6 +1729,7 @@ INT              i;
     {
     cm_msg(MERROR, "db_find_key", "key has no subkeys");
     *subhKey = 0;
+    db_unlock_database(hDB);
     return DB_NO_KEY;
     }
   pkeylist = (KEYLIST *) ((char *) pheader + pkey->data);
@@ -1734,11 +1740,13 @@ INT              i;
     if (!(pkey->access_mode & MODE_READ))
       {
       *subhKey = 0;
+      db_unlock_database(hDB);
       return DB_NO_ACCESS;
       }
 
     *subhKey = (PTYPE) pkey - (PTYPE) pheader;
 
+    db_unlock_database(hDB);
     return DB_SUCCESS;
     }
 
@@ -1775,6 +1783,7 @@ INT              i;
     if (i == pkeylist->num_keys)
       {
       *subhKey = 0;
+      db_unlock_database(hDB);
       return DB_NO_KEY;
       }
 
@@ -1790,11 +1799,15 @@ INT              i;
       if (pkey_name[0])
         {
         strcat(str, pkey_name);
+        db_unlock_database(hDB);
         return db_find_key(hDB, 0, str, subhKey);
         }
       else
+        {
         /* if last key in chain is a link, return its destination */
+        db_unlock_database(hDB);
         return db_find_link(hDB, 0, str, subhKey);
+        }
       }
 
     /* key found: check if last in chain */
@@ -1803,6 +1816,7 @@ INT              i;
       if (pkey->type != TID_KEY)
         {
         *subhKey = 0;
+        db_unlock_database(hDB);
         return DB_NO_KEY;
         }
       }
@@ -1816,6 +1830,7 @@ INT              i;
 }
 #endif /* LOCAL_ROUTINES */
 
+  db_unlock_database(hDB);
   return DB_SUCCESS;
 }
 
@@ -1875,6 +1890,8 @@ INT              i;
     return DB_INVALID_HANDLE;
     }
 
+  db_lock_database(hDB);
+
   pheader  = _database[hDB-1].database_header;
   if (!hKey)
     hKey = pheader->root_key;
@@ -1882,6 +1899,7 @@ INT              i;
   if (pkey->type != TID_KEY)
     {
     cm_msg(MERROR, "db_find_link", "key has no subkeys");
+    db_unlock_database(hDB);
     return DB_NO_KEY;
     }
   pkeylist = (KEYLIST *) ((char *) pheader + pkey->data);
@@ -1890,10 +1908,15 @@ INT              i;
       strcmp(key_name, "/") == 0)
     {
     if (!(pkey->access_mode & MODE_READ))
+      {
+      *subhKey = 0;
+      db_unlock_database(hDB);
       return DB_NO_ACCESS;
+      }
 
     *subhKey = (PTYPE) pkey - (PTYPE) pheader;
 
+    db_unlock_database(hDB);
     return DB_SUCCESS;
     }
 
@@ -1930,6 +1953,7 @@ INT              i;
     if (i == pkeylist->num_keys)
       {
       *subhKey = 0;
+      db_unlock_database(hDB);
       return DB_NO_KEY;
       }
 
@@ -1943,6 +1967,7 @@ INT              i;
 
       /* append rest of key name */
       strcat(str, pkey_name);
+      db_unlock_database(hDB);
       return db_find_link(hDB, 0, str, subhKey);
       }
 
@@ -1952,6 +1977,7 @@ INT              i;
       if (pkey->type != TID_KEY)
         {
         *subhKey = 0;
+        db_unlock_database(hDB);
         return DB_NO_KEY;
         }
       }
@@ -1965,6 +1991,7 @@ INT              i;
 }
 #endif /* LOCAL_ROUTINES */
 
+  db_unlock_database(hDB);
   return DB_SUCCESS;
 }
 
