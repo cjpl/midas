@@ -9,6 +9,9 @@
                 for SCS-700 PT100/PT1000 unit
 
   $Log$
+  Revision 1.6  2003/09/23 09:22:35  midas
+  Disable PID_CONTROL by default
+
   Revision 1.5  2003/07/17 14:24:20  midas
   Added PID loop
 
@@ -38,7 +41,7 @@ char code node_name[] = "SCS-700";
 
 /*---- Define variable parameters returned to the CMD_GET_INFO command ----*/
 
-#define PID_CONTROL      // activate/deactivate PID control loop
+#undef PID_CONTROL      // activate/deactivate PID control loop
 
 /* data buffer (mirrored in EEPROM) */
 
