@@ -6,6 +6,9 @@
   Contents:     Magnetic tape manipulation program for MIDAS tapes
 
   $Log$
+  Revision 1.7  1998/10/29 15:34:02  midas
+  Added end-of-tape detection under UNIX
+
   Revision 1.6  1998/10/29 15:13:24  midas
   Don't stop on "dir" command if data is not MIDAS data
 
@@ -50,7 +53,7 @@ INT          status, size, index;
         printf("End of tape reached.\n");
         return 1;
         }
-      printf("Cannot read from tape\n");
+      printf("Cannot read from tape, status=%X\n", status);
       return 1;
       }
 
