@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.150  2001/05/22 09:26:48  midas
+  Fixed bug with rsprintf/rsputs
+
   Revision 1.149  2001/05/15 03:03:51  pierre
   - Add "orange" color for disabled equipment
 
@@ -1811,7 +1814,7 @@ int i;
 void el_format(char *text, char *encoding)
 {
   if (equal_ustring(encoding, "HTML"))
-    rsprintf(text);
+    rsputs(text);
   else
     strencode(text);
 }
@@ -1993,7 +1996,7 @@ BOOL   display_run_number;
     {
     if (bedit)
       {
-      rsprintf(text);
+      rsputs(text);
       }
     else
       {
