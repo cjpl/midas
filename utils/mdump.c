@@ -5,6 +5,9 @@ Created by:   Pierre-Andre Amaudruz
 Contents:     Dump event on screen with MIDAS or YBOS data format
 
 $Log$
+Revision 1.22  2003/04/25 04:48:26  pierre
+Fixed compiler warning
+
 Revision 1.21  2003/04/23 23:08:46  pierre
 Fixed compiler warning
 
@@ -295,7 +298,7 @@ int replog (int data_fmt, char * rep_file, int bl, int action)
         if ((event_msk != TRIGGER_ALL) || (event_id != EVENTID_ALL) || (sbank_name[0] !=0))
         { /* check request or skip event if not satisfied */
           if (((event_id  != EVENTID_ALL) && (id != event_id))   || /* id check ==> skip */
-	      ((event_msk != TRIGGER_ALL) && (msk != event_msk)) || /* msk check ==> skip */
+          ((event_msk != TRIGGER_ALL) && (msk != event_msk)) || /* msk check ==> skip */
               ((sbank_name[0] !=0) && !bank_found))               /* bk check ==> skip */
           { /* skip event */
             printf("Searching for Bank -%s- Skiping event...%i\r",sbank_name,i++);
@@ -471,9 +474,9 @@ int main(int argc,char **argv)
   char          host_name[HOST_NAME_LENGTH], expt_name[HOST_NAME_LENGTH], str[80];
   char          buf_name[32]=EVENT_BUFFER_NAME, rep_file[128];
   double        rate;
-  unsigned int  i, status, start_time, stop_time;
+  unsigned int  status, start_time, stop_time;
   BOOL          debug=FALSE, rep_flag;
-  INT           ch, request_id, size, get_flag, action;
+  INT           ch, request_id, size, get_flag, action, i;
   BUFFER_HEADER buffer_header;
 
   /* set default */
