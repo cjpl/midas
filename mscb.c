@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus communication functions
 
   $Log$
+  Revision 1.21  2002/11/27 15:40:05  midas
+  Added version, fixed few bugs
+
   Revision 1.20  2002/11/20 12:01:26  midas
   Added host to mscb_init
 
@@ -66,6 +69,9 @@
 
 \********************************************************************/
 
+#define MSCB_LIBRARY_VERSION   "1.0.0"
+#define MSCB_PROTOCOL_VERSION  "1.1"
+
 #ifdef _MSC_VER           // Windows includes
 
 #include <windows.h>
@@ -116,7 +122,7 @@ MSCB_FD mscb_fd[MSCB_MAX_FD];
 
 /*
 
-  Ofs Inv   PC     DB25       SM    DIR   MSCB Name
+  Ofs Inv   PC     DB25     SM300   DIR   MSCB Name
 
    0  No    D0 ----- 2 ----- P1.0   <->    |
    0  No    D1 ----- 3 ----- P1.1   <->    |
@@ -127,16 +133,16 @@ MSCB_FD mscb_fd[MSCB_MAX_FD];
    0  No    D6 ----- 8 ----- P1.6   <->    |
    0  No    D7 ----- 9 ----- P1.7   <->    |
 
-   2  Yes   !STR --- 1  ---- P0.7    ->    /STROBE
-   1  Yes   !BSY --- 11 ---- P3.2   <-     BUSY
+   2  Yes   !STR --- 1  ---- P2.3    ->    /STROBE
+   1  Yes   !BSY --- 11 ---- P2.7   <-     BUSY
 
-   1  Yes   !ACK --- 10 ---- P3.3   <-     /DATAREADY
-   2  Yes   !DSL --- 17 ---- P0.3    ->    /ACK
+   1  Yes   !ACK --- 10 ---- P2.6   <-     /DATAREADY
+   2  Yes   !DSL --- 17 ---- P2.5    ->    /ACK
 
-   1  No    PAP ---- 12 ---- P3.1   <-     STATUS
+   1  No    PAP ---- 12 ---- P2.   <-     STATUS
 
-   2  Yes   !ALF --- 14 ---- P3.0    ->    /RESET
-   2  No    INI ---- 16 ---- P0.4    ->    BIT9
+   2  Yes   !ALF --- 14 ---- RESET   ->    (HW RESET)
+   2  No    INI ---- 16 ---- P2.4    ->    BIT9
 
 */
 
@@ -444,6 +450,7 @@ int i, timeout;
       if (pp_rstatus(fd, LPT_BUSY))
         break;
       }
+
     if (timeout == TIMEOUT_OUT)
       {
       /* remove strobe */
@@ -588,6 +595,14 @@ int i, n, len, status;
 
 /*------------------------------------------------------------------*/
 
+void mscb_get_version(char *lib_version, char *prot_version)
+{
+  strcpy(lib_version, MSCB_LIBRARY_VERSION);
+  strcpy(prot_version, MSCB_PROTOCOL_VERSION);
+} 
+                                        
+/*------------------------------------------------------------------*/
+
 int mscb_init(char *device)
 /********************************************************************\
 
@@ -637,21 +652,27 @@ char          host[256], port[256];
 
 #ifdef _MSC_VER
 
-  if (strlen(port) == 4)
-    i = atoi(port+3);
+  if (port[1] == 'x')
+    sscanf(port+2, "%x", &mscb_fd[index].fd);
   else
-    return -1;
+    {
+    if (strlen(port) == 4)
+      i = atoi(port+3);
+    else
+      return -1;
 
-  /* derive base address from device name */
-  if (i == 1)
-    mscb_fd[index].fd = 0x378;
-  else if (i == 2)
-    mscb_fd[index].fd = 0x278;
-  else
-    return -1;
+    /* derive base address from device name */
+    if (i == 1)
+      mscb_fd[index].fd = 0x378;
+    else if (i == 2)
+      mscb_fd[index].fd = 0x278;
+    else
+      return -1;
+    }
 
   /* under NT, user directio driver */
   {
+
   OSVERSIONINFO vi;
   DWORD buffer[4];
   DWORD size;
@@ -847,7 +868,7 @@ int i, fd, d;
 
 /*------------------------------------------------------------------*/
 
-static int mscb_addr(int fd, int cmd, int adr)
+static int mscb_addr(int fd, int cmd, int adr, int retry)
 /********************************************************************\
 
   Routine: mscb_addr
@@ -868,6 +889,7 @@ static int mscb_addr(int fd, int cmd, int adr)
                               CMD_PING16
 
     int adr                 Node or group address
+    int retry               Number of retries
 
   Function value:
     MSCB_SUCCESS            Successful completion
@@ -877,52 +899,58 @@ static int mscb_addr(int fd, int cmd, int adr)
 \********************************************************************/
 {
 unsigned char buf[10];
-int i;
+int i, n;
 
-  buf[0] = cmd;
+  for (n = 0 ; n < retry ; n++)
+    {
+    buf[0] = cmd;
 
-  if (cmd == CMD_ADDR_NODE8 ||
-      cmd == CMD_ADDR_GRP8 ||
-      cmd == CMD_PING8)
-    {
-    buf[1] = (unsigned char) adr;
-    buf[2] = crc8(buf, 2);
-    mscb_out(fd, buf, 3, 1);
-    }
-  else if (cmd == CMD_ADDR_NODE16 ||
-           cmd == CMD_ADDR_GRP16 ||
-           cmd == CMD_PING16)
-    {
-    buf[1] = (unsigned char) (adr >> 8);
-    buf[2] = (unsigned char) (adr & 0xFF);
-    buf[3] = crc8(buf, 3);
-    mscb_out(fd, buf, 4, 1);
-    }
-  else
-    {
-    buf[1] = crc8(buf, 1);
-    mscb_out(fd, buf, 2, 1);
-    }
-
-  if (cmd == CMD_PING8 || cmd == CMD_PING16)
-    {
-    /* read back ping reply, 1ms timeout */
-    i = mscb_in1(fd, buf, 300);
-
-    if (i == MSCB_SUCCESS && buf[0] == CMD_ACK)
+    if (cmd == CMD_ADDR_NODE8 ||
+        cmd == CMD_ADDR_GRP8 ||
+        cmd == CMD_PING8)
       {
-      mscb_release();
-      return MSCB_SUCCESS;
+      buf[1] = (unsigned char) adr;
+      buf[2] = crc8(buf, 2);
+      mscb_out(fd, buf, 3, 1);
+      }
+    else if (cmd == CMD_ADDR_NODE16 ||
+             cmd == CMD_ADDR_GRP16 ||
+             cmd == CMD_PING16)
+      {
+      buf[1] = (unsigned char) (adr >> 8);
+      buf[2] = (unsigned char) (adr & 0xFF);
+      buf[3] = crc8(buf, 3);
+      mscb_out(fd, buf, 4, 1);
+      }
+    else
+      {
+      buf[1] = crc8(buf, 1);
+      mscb_out(fd, buf, 2, 1);
       }
 
-    /* send 0's to overflow partially filled node receive buffer */
-    memset(buf, 0, sizeof(buf));
-    mscb_out(fd, buf, 10, 1);
+    if (cmd == CMD_PING8 || cmd == CMD_PING16)
+      {
+      /* read back ping reply, 1ms timeout */
+      i = mscb_in1(fd, buf, 1000);
 
-    return  MSCB_TIMEOUT;
+      if (i == MSCB_SUCCESS && buf[0] == CMD_ACK)
+        return MSCB_SUCCESS;
+
+      if (retry > 1)
+        {
+        /* send 0's to overflow partially filled node receive buffer */
+        memset(buf, 0, sizeof(buf));
+        mscb_out(fd, buf, 10, 1);
+
+        /* wait some time */
+        Sleep(10);
+        }
+
+      /* try again.... */
+      }
     }
 
-  return MSCB_SUCCESS;
+  return MSCB_TIMEOUT;
 }
 
 /*------------------------------------------------------------------*/
@@ -957,7 +985,7 @@ int status;
   if (mscb_lock() != MSCB_SUCCESS)
     return MSCB_MUTEX;
 
-  status = mscb_addr(fd, CMD_PING16, adr);
+  status = mscb_addr(fd, CMD_PING16, adr, 10);
   if (status != MSCB_SUCCESS)
     {
     mscb_release();
@@ -991,8 +1019,6 @@ int mscb_reset(int fd)
 
 \********************************************************************/
 {
-unsigned int timeout;
-
   if (rpc_connected())
     return rpc_call(RPC_MSCB_RESET, fd);
 
@@ -1007,11 +1033,7 @@ unsigned int timeout;
   pp_wcontrol(fd, LPT_RESET, 0);
 
   /* wait for node to reboot */
-  for (timeout=0 ; timeout<5*1000*1000 ; timeout++)
-    {
-    if (pp_rstatus(fd, LPT_BUSY))
-      break;
-    }
+  Sleep(5000);
 
   mscb_release();
 
@@ -1052,14 +1074,14 @@ int status;
   if (mscb_lock() != MSCB_SUCCESS)
     return MSCB_MUTEX;
 
-  status = mscb_addr(fd, CMD_PING16, adr);
+  status = mscb_addr(fd, CMD_PING16, adr, 1);
 
   mscb_release();
   return status;
 }
 
 /*------------------------------------------------------------------*/
-  
+
 int mscb_info(int fd, int adr, MSCB_INFO *info)
 /********************************************************************\
 
@@ -1094,7 +1116,7 @@ unsigned char buf[80];
   if (mscb_lock() != MSCB_SUCCESS)
     return MSCB_MUTEX;
 
-  status = mscb_addr(fd, CMD_PING16, adr);
+  status = mscb_addr(fd, CMD_PING16, adr, 10);
   if (status != MSCB_SUCCESS)
     {
     mscb_release();
@@ -1149,6 +1171,7 @@ int mscb_info_channel(int fd, int adr, int type, int index, MSCB_INFO_CHN *info)
     MSCB_SUCCESS            Successful completion
     MSCB_TIMEOUT            Timeout receiving data
     MSCB_CRC_ERROR          CRC error
+
     MSCB_MUTEX              Cannot obtain mutex for mscb
 
 \********************************************************************/
@@ -1165,7 +1188,7 @@ unsigned char buf[80];
   if (mscb_lock() != MSCB_SUCCESS)
     return MSCB_MUTEX;
 
-  status = mscb_addr(fd, CMD_PING16, adr);
+  status = mscb_addr(fd, CMD_PING16, adr, 10);
   if (status != MSCB_SUCCESS)
     {
     mscb_release();
@@ -1226,9 +1249,10 @@ int status;
   if (mscb_lock() != MSCB_SUCCESS)
     return MSCB_MUTEX;
 
-  status = mscb_addr(fd, CMD_PING16, adr);
+  status = mscb_addr(fd, CMD_PING16, adr, 10);
   if (status != MSCB_SUCCESS)
     {
+
     mscb_release();
     return status;
     }
@@ -1285,7 +1309,7 @@ unsigned char buf[10];
   if (mscb_lock() != MSCB_SUCCESS)
     return MSCB_MUTEX;
 
-  status = mscb_addr(fd, CMD_ADDR_GRP16, adr);
+  status = mscb_addr(fd, CMD_ADDR_GRP16, adr, 10);
   if (status != MSCB_SUCCESS)
     {
     mscb_release();
@@ -1348,7 +1372,7 @@ unsigned char *d;
   if (mscb_lock() != MSCB_SUCCESS)
     return MSCB_MUTEX;
 
-  status = mscb_addr(fd, CMD_PING16, adr);
+  status = mscb_addr(fd, CMD_PING16, adr, 10);
   if (status != MSCB_SUCCESS)
     {
     mscb_release();
@@ -1419,7 +1443,7 @@ unsigned char buf[10], crc, ack[2];
   if (mscb_lock() != MSCB_SUCCESS)
     return MSCB_MUTEX;
 
-  status = mscb_addr(fd, CMD_PING16, adr);
+  status = mscb_addr(fd, CMD_PING16, adr, 10);
   if (status != MSCB_SUCCESS)
     {
     mscb_release();
@@ -1486,7 +1510,7 @@ unsigned char buf[10], crc, ack[2];
   if (mscb_lock() != MSCB_SUCCESS)
     return MSCB_MUTEX;
 
-  status = mscb_addr(fd, CMD_PING16, adr);
+  status = mscb_addr(fd, CMD_PING16, adr, 10);
   if (status != MSCB_SUCCESS)
     {
     mscb_release();
@@ -1570,10 +1594,11 @@ unsigned short ofs;
 
     } while (*line);
 
+
   if (mscb_lock() != MSCB_SUCCESS)
     return MSCB_MUTEX;
 
-  status = mscb_addr(fd, CMD_PING16, adr);
+  status = mscb_addr(fd, CMD_PING16, adr, 10);
   if (status != MSCB_SUCCESS)
     {
     mscb_release();
@@ -1668,7 +1693,7 @@ unsigned short ofs;
           {
           printf("\bV");
           fflush(stdout);
-  
+
           /* verify page */
           buf[0] = 4;
           buf[1] = page;
@@ -1743,7 +1768,7 @@ int mscb_read(int fd, int adr, unsigned char channel, void *data, int *size)
 
 \********************************************************************/
 {
-int           i, status;
+int           i, n, status;
 unsigned char buf[10], crc;
 
   memset(data, 0, *size);
@@ -1756,39 +1781,50 @@ unsigned char buf[10], crc;
   if (mscb_lock() != MSCB_SUCCESS)
     return MSCB_MUTEX;
 
-  status = mscb_addr(fd, CMD_PING16, adr);
+  status = mscb_addr(fd, CMD_PING16, adr, 10);
   if (status != MSCB_SUCCESS)
     {
     mscb_release();
     return status;
     }
 
-  buf[0] = CMD_READ;
-  buf[1] = channel;
-  buf[2] = crc8(buf, 2);
-  mscb_out(fd, buf, 3, 0);
+  /* try ten times */
+  for (n=0 ; n<10 ; n++)
+    {
+    buf[0] = CMD_READ;
+    buf[1] = channel;
+    buf[2] = crc8(buf, 2);
+    mscb_out(fd, buf, 3, 0);
 
-  /* read data */
-  i = mscb_in(fd, buf, 10, 5000);
+    /* read data */
+    i = mscb_in(fd, buf, 10, 5000);
+
+    if (i<2)
+      continue;
+
+    crc = crc8(buf, i-1);
+
+    if (buf[0] != CMD_ACK+i-2 || buf[i-1] != crc)
+      continue;
+
+    memcpy(data, buf+1, i-2);
+    if (i-2 == 2)
+      WORD_SWAP(data);
+    if (i-2 == 4)
+      DWORD_SWAP(data);
+
+    *size = i-2;
+
+    mscb_release();
+    return MSCB_SUCCESS;
+    }
+
   mscb_release();
 
   if (i<2)
     return MSCB_TIMEOUT;
 
-  crc = crc8(buf, i-1);
-
-  if (buf[0] != CMD_ACK+i-2 || buf[i-1] != crc)
-    return MSCB_CRC_ERROR;
-
-  memcpy(data, buf+1, i-2);
-  if (i-2 == 2)
-    WORD_SWAP(data);
-  if (i-2 == 4)
-    DWORD_SWAP(data);
-
-  *size = i-2;
-
-  return MSCB_SUCCESS;
+  return MSCB_CRC_ERROR;
 }
 
 /*------------------------------------------------------------------*/
@@ -1819,7 +1855,7 @@ int mscb_read_conf(int fd, int adr, unsigned char index, void *data, int *size)
 
 \********************************************************************/
 {
-int           i, status;
+int           i, n, status;
 unsigned char buf[10], crc;
 
   memset(data, 0, *size);
@@ -1832,39 +1868,50 @@ unsigned char buf[10], crc;
   if (mscb_lock() != MSCB_SUCCESS)
     return MSCB_MUTEX;
 
-  status = mscb_addr(fd, CMD_PING16, adr);
+  status = mscb_addr(fd, CMD_PING16, adr, 10);
   if (status != MSCB_SUCCESS)
     {
     mscb_release();
     return status;
     }
 
-  buf[0] = CMD_READ_CONF;
-  buf[1] = index;
-  buf[2] = crc8(buf, 2);
-  mscb_out(fd, buf, 3, 0);
+  /* try ten times */
+  for (n=0 ; n<10 ; n++)
+    {
+    buf[0] = CMD_READ_CONF;
+    buf[1] = index;
+    buf[2] = crc8(buf, 2);
+    mscb_out(fd, buf, 3, 0);
 
-  /* read data */
-  i = mscb_in(fd, buf, 10, 5000);
+    /* read data */
+    i = mscb_in(fd, buf, 10, 5000);
+
+    if (i<2)
+      continue;
+
+    crc = crc8(buf, i-1);
+
+    if (buf[0] != CMD_ACK+i-2 || buf[i-1] != crc)
+      continue;
+
+    memcpy(data, buf+1, i-2);
+    if (i-2 == 2)
+      WORD_SWAP(data);
+    if (i-2 == 4)
+      DWORD_SWAP(data);
+
+    *size = i-2;
+
+    mscb_release();
+    return MSCB_SUCCESS;
+    }
+
   mscb_release();
 
-  if (i<3)
+  if (i<2)
     return MSCB_TIMEOUT;
 
-  crc = crc8(buf, i-1);
-
-  if (buf[0] != CMD_ACK+i-2 || buf[i-1] != crc)
-    return MSCB_CRC_ERROR;
-
-  memcpy(data, buf+1, i-2);
-  if (i-2 == 2)
-    WORD_SWAP(data);
-  if (i-2 == 4)
-    DWORD_SWAP(data);
-
-  *size = i-2;
-
-  return MSCB_SUCCESS;
+  return MSCB_CRC_ERROR;
 }
 
 /*------------------------------------------------------------------*/
@@ -1910,7 +1957,7 @@ unsigned char buf[80];
   if (mscb_lock() != MSCB_SUCCESS)
     return MSCB_MUTEX;
 
-  status = mscb_addr(fd, CMD_PING16, adr);
+  status = mscb_addr(fd, CMD_PING16, adr, 10);
   if (status != MSCB_SUCCESS)
     {
     mscb_release();

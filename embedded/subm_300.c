@@ -7,6 +7,9 @@
                 SUBM300 running on Cygnal C8051F021
 
   $Log$
+  Revision 1.4  2002/11/27 15:40:05  midas
+  Added version, fixed few bugs
+
   Revision 1.3  2002/10/09 11:06:46  midas
   Protocol version 1.1
 
@@ -32,6 +35,8 @@ sbit LPT_BUSY =          P2^7;
 sbit LPT_NDATAREADY =    P2^6;
 sbit LPT_NACK =          P2^5;
 sbit LPT_BIT9 =          P2^4;
+
+extern void watchdog_refresh(void);
 
 /*------------------------------------------------------------------*/
 
@@ -220,6 +225,13 @@ unsigned char byte;
   /* wait for PC acknowlege to be removed */
   while (LPT_NACK == 0)
     watchdog_refresh();
+}
+
+/*------------------------------------------------------------------*/
+
+void yield()
+{
+  watchdog_refresh();
 }
 
 /*------------------------------------------------------------------*\
