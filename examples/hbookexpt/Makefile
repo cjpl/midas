@@ -7,6 +7,9 @@
 #                using HBOOK functionality
 #
 #  $Log$
+#  Revision 1.3  2003/05/09 09:58:23  midas
+#  Removed ranalyzer from Makefile
+#
 #  Revision 1.2  2003/04/25 13:27:13  midas
 #  Link against hmana.o
 #
@@ -75,7 +78,7 @@ CC = cc
 CFLAGS += -g -I$(INC_DIR) -I$(DRV_DIR)
 LDFLAGS +=
 
-all: $(UFE) fal analyzer ranalyzer
+all: $(UFE) fal analyzer
 
 $(UFE): $(LIB) $(LIB_DIR)/mfe.o $(DRIVER).o $(UFE).c
 	$(CC) $(CFLAGS) $(OSFLAGS) -o $(UFE) $(UFE).c $(DRIVER).o \
@@ -85,7 +88,7 @@ $(DRIVER).o: $(DRV_DIR)/bus/$(DRIVER).c
 	$(CC) $(CFLAGS) $(OSFLAGS) -c -o $(DRIVER).o $(DRV_DIR)/bus/$(DRIVER).c
 
 analyzer: $(LIB) $(LIB_DIR)/hmana.o analyzer.o $(MODULES)
-	$(FF) $(FFLAGS) -o analyzer $(LIB_DIR)/mana.o analyzer.o \
+	$(FF) $(FFLAGS) -o analyzer $(LIB_DIR)/hmana.o analyzer.o \
 	$(MODULES) $(CERNLIB_PACK) \
 	$(LIB) $(LDFLAGS) $(LIBS)
 
