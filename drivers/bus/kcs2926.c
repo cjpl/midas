@@ -7,6 +7,9 @@
                 following the MIDAS CAMAC Standard for DirectIO
 
   $Log$
+  Revision 1.5  2002/05/08 22:19:46  pierre
+  remove warnings
+
   Revision 1.4  2001/10/16 20:47:20  pierre
   Update cam_interrupt_() args
 
@@ -513,7 +516,7 @@ DWORD size;
   if (!DeviceIoControl(_hdio, (DWORD) 0x9c406000, &buffer, sizeof(buffer), 
 		                   NULL, 0, &size, NULL))
     return -1;
-#endif _MSC_VER
+#endif // _MSC_VER
 #ifdef OS_LINUX
 
   /* 
