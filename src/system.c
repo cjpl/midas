@@ -14,6 +14,9 @@
                 Brown, Prentice Hall
 
   $Log$
+  Revision 1.81  2004/01/22 22:47:11  pierre
+  correct ss_timezone for VxWorks
+
   Revision 1.80  2004/01/19 20:19:14  midas
   Fixed compiler warnings under Windows
 
@@ -2441,7 +2444,11 @@ INT ss_timezone()
 #ifdef OS_DARWIN
   return 0;
 #else
+#ifndef OS_VXWORKS
   return timezone; /* on Linux, comes from "#include <time.h>". */
+#else
+  return 0;     /* Ignored on VxWorks as func() used in mhttpd */
+#endif
 #endif
 }
 
