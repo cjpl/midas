@@ -6,6 +6,9 @@
   Contents:     DAS-TEMP (Keithley) Device Driver
 
   $Log$
+  Revision 1.2  2001/08/22 13:53:02  midas
+  Reorganized directio functions
+
   Revision 1.1  1999/12/20 10:18:19  midas
   Reorganized driver directory structure
 
@@ -57,15 +60,12 @@ DASTEMP_SETTINGS *settings;
 
 #ifdef OS_WINNT
   /* open IO address space */
-  status = ss_directio_init(); 
+  status = ss_directio_give_port(settings->io_base, settings->io_base+0x0F);
   if (status != SS_SUCCESS)
     {
     cm_msg(MERROR, "dastemp_init", "DirectIO driver not installed");
     return FE_ERR_HW;
     }
-
-  ss_directio_give_port(settings->io_base, settings->io_base+0x0F);
-  ss_directio_exit();
 #endif
 
   return FE_SUCCESS;
