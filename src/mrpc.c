@@ -6,6 +6,9 @@
   Contents:     List of MIDAS RPC functions with parameters
 
   $Log$
+  Revision 1.31  2003/12/12 09:59:41  midas
+  Added missing parameter to db_remove_open_record()
+
   Revision 1.30  2003/11/24 08:22:46  midas
   Changed timeouts from INT to DWORD, added ignore_timeout to cm_cleanup, adde '-f' flag to ODBEdit 'cleanup'
 
@@ -506,6 +509,7 @@ static RPC_LIST rpc_list_library[] = {
   { RPC_DB_REMOVE_OPEN_RECORD, "db_remove_open_record",
     {{TID_INT,        RPC_IN}, 
      {TID_INT,        RPC_IN},
+     {TID_BOOL,       RPC_IN},
      {0} }},
 
   { RPC_DB_LOAD, "db_load",
