@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus communication functions
 
   $Log$
+  Revision 1.85  2005/03/21 12:53:43  ritt
+  Increased too small buffers
+
   Revision 1.84  2005/03/21 10:57:25  ritt
   Version 2.0.0
 
@@ -1739,7 +1742,7 @@ int mscb_init(char *device, int bufsize, char *password, int debug)
    int index, i, n;
    int status;
    char host[256], port[256], dev3[256], remote_device[256];
-   unsigned char buf[10];
+   unsigned char buf[64];
 
    /* search for new file descriptor */
    for (index = 0; index < MSCB_MAX_FD; index++)
@@ -2096,7 +2099,7 @@ int mscb_addr(int fd, int cmd, int adr, int retry, int lock)
 
 \********************************************************************/
 {
-   unsigned char buf[10];
+   unsigned char buf[64];
    int i, n, status;
 
    if (fd > MSCB_MAX_FD || fd < 1 || !mscb_fd[fd - 1].type)
@@ -2195,7 +2198,7 @@ int mscb_reboot(int fd, int adr)
 
 \********************************************************************/
 {
-   unsigned char buf[10];
+   unsigned char buf[64];
 
    if (fd > MSCB_MAX_FD || fd < 1 || !mscb_fd[fd - 1].type)
       return MSCB_INVAL_PARAM;
@@ -2457,7 +2460,7 @@ int mscb_set_addr(int fd, int adr, int node, int group)
 
 \********************************************************************/
 {
-   unsigned char buf[8];
+   unsigned char buf[64];
    int status;
 
    if (fd > MSCB_MAX_FD || fd < 1 || !mscb_fd[fd - 1].type)
@@ -2811,7 +2814,7 @@ int mscb_flash(int fd, int adr)
 
 \********************************************************************/
 {
-   unsigned char buf[10];
+   unsigned char buf[64];
 
    if (fd > MSCB_MAX_FD || fd < 1 || !mscb_fd[fd - 1].type)
       return MSCB_INVAL_PARAM;
@@ -3731,7 +3734,7 @@ int mscb_echo(int fd, int adr, unsigned char d1, unsigned char *d2)
 \********************************************************************/
 {
    int n, status;
-   unsigned char buf[60];
+   unsigned char buf[64];
 
    *d2 = 0xFF;
 
