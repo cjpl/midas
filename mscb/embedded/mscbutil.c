@@ -6,6 +6,9 @@
   Contents:     Various utility functions for MSCB protocol
 
   $Log$
+  Revision 1.10  2002/10/07 15:16:32  midas
+  Added upgrade facility
+
   Revision 1.9  2002/10/04 09:03:20  midas
   Small mods for scs_300
 
@@ -595,7 +598,11 @@ EEPROM_WRITE:
   unsigned char i;
   unsigned char idata *s;
 
+#if defined(CPU_C8051F000)
   FLSCL = (FLSCL & 0xF0) | 0x08; // set timer for 11.052 MHz clock
+#elif defined (CPU_C8051F020)
+  FLSCL = FLSCL  | 1;            // enable flash writes
+#endif
   PSCTL = 0x01;                  // allow write
 
   p = 0x8000 + *offset;
@@ -605,6 +612,7 @@ EEPROM_WRITE:
     p[i] = s[i];
 
   PSCTL = 0x00;                  // don't allow write
+  FLSCL = FLSCL & 0xF0;
 
   *offset += len;
 #endif
@@ -627,11 +635,18 @@ void eeprom_erase(void)
 #ifdef CPU_CYGNAL
   unsigned char xdata *p;
 
+#if defined(CPU_C8051F000)
   FLSCL = (FLSCL & 0xF0) | 0x08; // set timer for 11.052 MHz clock
+#elif defined (CPU_C8051F020)
+  FLSCL = FLSCL  | 1;            // enable flash writes
+#endif
   PSCTL = 0x03;                  // allow write and erase
 
   p = 0x8000;                    // erase page
   *p = 0;
+
+  PSCTL = 0x00;                  // don't allow write
+  FLSCL = FLSCL & 0xF0;
 #endif
 }
 

@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol commands
 
   $Log$
+  Revision 1.8  2002/10/07 15:16:32  midas
+  Added upgrade facility
+
   Revision 1.7  2002/10/04 09:03:20  midas
   Small mods for scs_300
 
@@ -99,7 +102,7 @@ sbit RS485_ENABLE =      P3^5;
 
 #define CMD_FREEZE      0x41
 #define CMD_SYNC        0x49
-#define CMD_TRANSP      0x50
+#define CMD_UPGRADE     0x50
 #define CMD_USER        0x58
 
 #define CMD_TOKEN       0x60

@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus communication functions
 
   $Log$
+  Revision 1.13  2002/10/07 15:16:32  midas
+  Added upgrade facility
+
   Revision 1.12  2002/10/03 15:30:40  midas
   Added linux support
 
@@ -1354,6 +1357,162 @@ unsigned char buf[10], crc, ack[2];
   if (ack[0] != CMD_ACK || ack[1] != crc)
     return MSCB_CRC_ERROR;
 
+  return MSCB_SUCCESS;
+}
+
+/*------------------------------------------------------------------*/
+
+int mscb_upload(int fd, char *filename)
+/********************************************************************\
+
+  Routine: mscb_upload
+
+  Purpose: Upload new firmware to currently addressed node
+
+
+  Input:
+    int fd                  File descriptor for connection
+                            and dword
+    char *filename          File name for Intel HEX file
+
+  Function value:
+    MSCB_SUCCESS            Successful completion
+    MSCB_TIMEOUT            Timeout receiving acknowledge
+    MSCB_CRC_ERROR          CRC error
+    MSCB_INVAL_PARAM        Parameter "size" has invalid value
+    MSCB_MUTEX              Cannot obtain mutex for mscb
+
+\********************************************************************/
+{
+unsigned char  buf[512], ack, image[0x8000], line[80], len, type, ofh, ofl, d;
+int            i, page;
+unsigned short ofs;
+FILE           *f;
+
+  f = fopen(filename, "rt");
+  if (f == NULL)
+    return MSCB_FILE_ERROR;
+
+  if (mscb_lock() != MSCB_SUCCESS)
+    return MSCB_MUTEX;
+
+  /* send upgrade command */
+  buf[0] = CMD_UPGRADE;
+  buf[1] = crc8(buf, 1);
+  mscb_out(fd, buf, 2, 0);
+
+  /* send ping */
+  buf[0] = 1;
+  mscb_out(fd, buf, 1, 0);
+
+  /* read acknowledge, 100ms timeout */
+  if (mscb_in1(fd, &ack, 100000) != MSCB_SUCCESS)
+    {
+    mscb_release();
+    return MSCB_TIMEOUT;
+    }
+
+  /* read HEX file */
+  memset(image, 0xFF, sizeof(image));
+  do
+    {
+    fgets(line, sizeof(line), f);
+
+    if (line[0] == ':')
+      {
+      sscanf(line+1, "%02x%02x%02x%02x", &len, &ofh, &ofl, &type);
+      ofs = (ofh << 8) | ofl;
+
+      for (i=0 ; i<len ; i++)
+        {
+        sscanf(line+9+i*2, "%02x", &d);
+        image[ofs+i] = d;
+        }
+      }
+
+    } while (!feof(f));
+
+  /* program pages up to 0x7000 */
+  for (page=0 ; page<56 ; page++)
+    {
+    /* check if page contains data */
+    for (i=0 ; i<512 ; i++)
+      if (image[page*512+i] != 0xFF)
+        break;
+
+    if (i<512)
+      {
+      do
+        {
+        printf("E");
+
+        /* erase page */
+        buf[0] = 2;
+        buf[1] = page;
+        mscb_out(fd, buf, 2, 0);
+
+        if (mscb_in1(fd, &ack, 100000) != MSCB_SUCCESS)
+          {
+          mscb_release();
+          return MSCB_TIMEOUT;
+          }
+
+        printf("\bP");
+
+        /* program page */
+        buf[0] = 3;
+        buf[1] = page;
+        mscb_out(fd, buf, 2, 0);
+
+        for (i=0 ; i<512 ; i++)
+          buf[i] = image[page*512+i];
+
+        mscb_out(fd, buf, 512, 0);
+
+        if (mscb_in1(fd, &ack, 100000) != MSCB_SUCCESS)
+          {
+          mscb_release();
+          return MSCB_TIMEOUT;
+          }
+
+        do
+          {
+          printf("\bV");
+
+          /* verify page */
+          buf[0] = 4;
+          buf[1] = page;
+          mscb_out(fd, buf, 2, 0);
+
+          for (i=0 ; i<512 ; i++)
+            if (mscb_in1(fd, buf+i, 100000) != MSCB_SUCCESS)
+              break;
+
+          if (i == 512)
+            if (mscb_in1(fd, &ack, 100000) == MSCB_SUCCESS)
+              break;
+
+          Sleep(100);
+
+          } while (1);
+
+        for (i=0 ; i<512 ; i++)
+          if (buf[i] != image[page*512+i])
+            break;
+
+        } while (i < 512);
+
+      printf("\b=");
+      }
+    }
+
+  printf("\n");
+
+  /* reboot node */
+  buf[0] = 5;
+  mscb_out(fd, buf, 1, 0);
+
+  mscb_release();
   return MSCB_SUCCESS;
 }
 
