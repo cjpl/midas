@@ -6,6 +6,9 @@
   Contents:     MIDAS logger program
 
   $Log$
+  Revision 1.61  2003/04/15 21:46:53  pierre
+  Fix for compilation -Wall
+
   Revision 1.60  2003/04/15 14:10:43  midas
   Fixed compiler warning
 
@@ -807,11 +810,11 @@ WORD        bktype;
   name[4] = 0;
 
   if (pevent->event_id == EVENTID_BOR)
-    sprintf(pbuf, "%%ID BOR NR %d\n", pevent->serial_number);
+    sprintf(pbuf, "%%ID BOR NR %ld\n", pevent->serial_number);
   else if (pevent->event_id == EVENTID_EOR)
-    sprintf(pbuf, "%%ID EOR NR %d\n", pevent->serial_number);
+    sprintf(pbuf, "%%ID EOR NR %ld\n", pevent->serial_number);
   else
-    sprintf(pbuf, "%%ID %d TR %d NR %d\n", pevent->event_id, pevent->trigger_mask,
+    sprintf(pbuf, "%%ID %d TR %d NR %ld\n", pevent->event_id, pevent->trigger_mask,
                                            pevent->serial_number);
   STR_INC(pbuf,buffer);
 
@@ -892,7 +895,7 @@ WORD        bktype;
           }
 
         else if ((bktype & 0xFF00) == TID_PCOS3)
-          sprintf(pbuf, "");
+          *pbuf = '\0';
         else
           db_sprintf(pbuf, pdata, size, i, bktype & 0xFF);
 
@@ -2703,7 +2706,9 @@ struct tm    *tms;
         log_chn[index].type = LOG_TYPE_DISK;
       else
         {
-        sprintf(error, "Invalid channel type \"%s\", pease use \"Tape\", \"FTP\" or \"Disk\"");
+        sprintf(error,
+	"Invalid channel type \"%s\", pease use \"Tape\", \"FTP\" or \"Disk\"",
+	   chn_settings->type);
         cm_msg(MERROR, "tr_prestart", error);
         return 0;
         }
@@ -3071,13 +3076,12 @@ INT i;
 
 /*------------------------ main ------------------------------------*/
 
-main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
 INT    status, msg, i, size, run_number, ch, state;
 char   host_name[100], exp_name[NAME_LENGTH], dir[256];
 BOOL   debug, daemon, save_mode;
 DWORD  last_time_kb = 0;
-DWORD  last_time_hist = 0;
 DWORD  last_time_stat = 0;
 HNDLE  hktemp;
 
