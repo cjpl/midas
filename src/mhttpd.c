@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.157  2001/07/23 07:02:48  midas
+  Modified SC page to display more columns
+
   Revision 1.156  2001/07/23 06:54:25  midas
   Made last mod. (155) also work for single experiment
 
@@ -2977,7 +2980,7 @@ KEY    key;
 
 /*------------------------------------------------------------------*/
 
-gen_odb_attachment(char *path, char *b)
+void gen_odb_attachment(char *path, char *b)
 {
 HNDLE  hDB, hkeyroot, hkey;
 KEY    key;
@@ -3910,11 +3913,11 @@ char   data_str[256], hex_str[256];
     }
 
   sprintf(str, "SC/%s/%s", eq_name, group);
-  show_header(hDB, "MIDAS slow control", str, 5, 0);
+  show_header(hDB, "MIDAS slow control", str, 8, 0);
 
   /*---- menu buttons ----*/
 
-  rsprintf("<tr><td colspan=10 bgcolor=#C0C0C0>\n");
+  rsprintf("<tr><td colspan=15 bgcolor=#C0C0C0>\n");
 
   rsprintf("<input type=submit name=cmd value=ODB>\n");
   rsprintf("<input type=submit name=cmd value=Status>\n");
@@ -3923,7 +3926,7 @@ char   data_str[256], hex_str[256];
 
   /*---- enumerate SC equipment ----*/
 
-  rsprintf("<tr><td colspan=10 bgcolor=#FFFF00><i>Equipment:</i> \n");
+  rsprintf("<tr><td colspan=15 bgcolor=#FFFF00><i>Equipment:</i> \n");
 
   db_find_key(hDB, 0, "/Equipment", &hkey);
   if (hkey)
@@ -3983,7 +3986,7 @@ char   data_str[256], hex_str[256];
   if (hkey)
     {
     /*---- single name array ----*/
-    rsprintf("<tr><td colspan=10 bgcolor=#FFFFA0><i>Groups:</i> ");
+    rsprintf("<tr><td colspan=15 bgcolor=#FFFFA0><i>Groups:</i> ");
 
     /* "all" group */
     if (equal_ustring(group, "All"))
@@ -4053,14 +4056,14 @@ char   data_str[256], hex_str[256];
         break;
       }
 
-    if (i == 0 || i > 9)
+    if (i == 0 || i > 15)
       {
       rsprintf("</table>");
       return;
       }
 
     /* title row */
-    colspan = 10-i;
+    colspan = 15-i;
     rsprintf("<tr><th colspan=%d>Names", colspan);
 
     /* display entries for this group */
@@ -4171,8 +4174,7 @@ char   data_str[256], hex_str[256];
   else
     {
     /*---- multiple name arrays ----*/
-
-    rsprintf("<tr><td colspan=10 bgcolor=#FFFFA0><i>Groups:</i> ");
+    rsprintf("<tr><td colspan=15 bgcolor=#FFFFA0><i>Groups:</i> ");
 
     /* "all" group */
     if (equal_ustring(group, "All"))
@@ -4375,7 +4377,6 @@ char   data_str[256], hex_str[256];
 
   rsprintf("</table>\r\n");
 }
-
 
 /*------------------------------------------------------------------*/
 
