@@ -6,6 +6,9 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
+  Revision 1.40  1999/09/17 15:11:18  midas
+  Fixed bug (triggered is INT, not BOOL)
+
   Revision 1.39  1999/09/17 15:06:46  midas
   Moved al_check into cm_yield() and rpc_server_thread
 
@@ -630,7 +633,7 @@ CHN_STATISTICS chn_stats;
 
       flag = 0;
       size = sizeof(flag);
-      db_get_value(hDB, hsubkey, "Triggered", &flag, &size, TID_BOOL);
+      db_get_value(hDB, hsubkey, "Triggered", &flag, &size, TID_INT);
       if (flag)
         {
         if (exp_name[0])
