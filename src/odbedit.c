@@ -6,6 +6,9 @@
   Contents:     Command-line interface to the MIDAS online data base.
 
   $Log$
+  Revision 1.16  1999/04/29 10:48:03  midas
+  Implemented "/System/Client Notify" key
+
   Revision 1.15  1999/04/19 07:47:25  midas
   Added "old" command to display old messages
 
@@ -69,11 +72,11 @@ typedef struct {
 
 /*------------------------------------------------------------------*/
 
-float test_array[1024];
+BOOL key_modified;
 
-void update_test(HNDLE hDB, HNDLE hkey, void *info)
+void key_update(HNDLE hDB, HNDLE hkey, void *info)
 {
-  printf("Update: %lf\n", test_array[0]);
+  key_modified = TRUE;
 }
 
 /*------------------------------------------------------------------*/
@@ -135,8 +138,9 @@ void print_help(char *command)
     printf("stop                    - stop current run\n");
     printf("trunc <key> <index>     - truncate key to [index] values\n");
     printf("ver                     - show MIDAS library version\n");
+    printf("wait <key>              - wait for key to get modified\n");
 
-    printf("\nquit/exit             - exit\n");
+    printf("\nquit/exit               - exit\n");
     return;
     }
 
@@ -2357,6 +2361,51 @@ PRINT_INFO      print_info;
       puts(data);
       }
 
+    /* wait */
+    else if (param[0][0] == 'w' && param[0][1] == 'a')
+      {
+      compose_name(pwd, param[1], str);
+
+      if (strcmp(str, "/") != 0)
+        status = db_find_link(hDB, 0, str, &hKey);
+      else
+        hKey = 0;
+
+      if (status == DB_SUCCESS || !hKey)
+        {
+        db_get_key(hDB, hKey, &key);
+        printf("Waiting for key \"%s\" to be modified, abort with \"!\"\n", key.name);
+        db_get_record_size(hDB, hKey, 0, &size);
+        db_open_record(hDB, hKey, data, size, MODE_READ, key_update, NULL);
+        key_modified = FALSE;
+
+        i = 0;
+        do
+          {
+          cm_yield(1000);
+
+          while (ss_kbhit())
+            {
+            i = ss_getchar(0);
+            if (i == -1)
+              i = getchar();
+
+            if ((char) i == '!')
+              break;
+            }
+
+          } while (!key_modified && i != '!');
+
+        db_close_record(hDB, hKey);
+        if (i == '!')
+          printf("Wait aborted.\n");
+        else
+          printf("Key has been modified.\n");
+        }
+      else
+        printf("key not found\n");
+      }
+
     /* test 1  */
     else if (param[0][0] == 't' && param[0][1] == '1')
       {
@@ -2407,25 +2456,6 @@ PRINT_INFO      print_info;
     /* test 3 */
     else if (param[0][0] == 't' && param[0][1] == '3')
       {
-      db_find_key(hDB, 0, "/Equipment/HV/Variables/Demand", &hKey);
-      if (hKey)
-        {
-        db_get_key(hDB, hKey, &key);
-        db_open_record(hDB, hKey, test_array, key.total_size, MODE_READ, update_test, NULL);
-        }
-      else
-        printf("No /Equipment/HV/Variables/Demand found\n");
-      }
-
-    /* test 4 */
-    else if (param[0][0] == 't' && param[0][1] == '4')
-      {
-      db_find_key(hDB, 0, "/Equipment/HV/Variables/Demand", &hKey);
-      if (hKey)
-        {
-        for (i=0 ; i<10 ; i++)
-          db_set_data_index2(hDB, hKey, &test_array[i], sizeof(float), i, TID_FLOAT, i==9);
-        }
       }
 
     /* exit/quit */

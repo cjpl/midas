@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.33  1999/04/29 10:48:02  midas
+  Implemented "/System/Client Notify" key
+
   Revision 1.32  1999/04/28 15:27:28  midas
   Made hs_read working for Java
 
@@ -229,6 +232,10 @@ ERROR_TABLE _error_table[] =
   { RPC_NET_ERROR, "Cannot connect to remote host" },
   { 0, NULL }
 };
+
+/* this gets set from cm_watchdog if client has been deleted. cm_yield
+evaluates it to notify remote clients */
+static BOOL _client_deleted = FALSE;
 
 /*------------------------------------------------------------------*/
 
@@ -1047,13 +1054,20 @@ INT cm_delete_client_info(HNDLE hDB, INT pid)
     sprintf(str, "System/Clients/%0d", pid);
     status = db_find_key(hDB, 0, str, &hKey);
     if (status != DB_SUCCESS)
+      {
+      db_unlock_database(hDB);
       return status;
+      }
 
     /* unlock client entry and delete it without locking DB */
     db_set_mode(hDB, hKey, MODE_READ | MODE_WRITE | MODE_DELETE, 2);
     db_delete_key1(hDB, hKey, 1, TRUE);
 
     db_unlock_database(hDB);
+
+    /* touch notify key to inform others */
+    status = 0;
+    db_set_value(hDB, 0, "/System/Client Notify", &status, sizeof(status), 1, TID_INT);
     }
 
 #endif /*LOCAL_ROUTINES*/
@@ -1304,6 +1318,10 @@ BOOL  call_watchdog, allow;
   /* save handle for ODB and client */
   rpc_set_server_option(RPC_ODB_HANDLE, hDB);
   rpc_set_server_option(RPC_CLIENT_HANDLE, hKey);
+
+  /* touch notify key to inform others */
+  data = 0;
+  db_set_value(hDB, 0, "/System/Client Notify", &data, sizeof(data), 1, TID_INT);
 
   *hKeyClient = hKey;
 }
@@ -2868,6 +2886,17 @@ BOOL  bMore;
     bm_mark_read_waiting(FALSE);
     }
 
+  /* check if watchdog deleted clients */
+  if (_client_deleted)
+    {
+    HNDLE hDB;
+
+    cm_get_experiment_database(&hDB, NULL);
+    status = 0;
+    db_set_value(hDB, 0, "/System/Client Notify", &status, sizeof(status), 1, TID_INT);
+    _client_deleted = FALSE;
+    }
+
   return status;  
 }
 
@@ -3516,10 +3545,10 @@ char            str[256];
           if (pbclient->pid && pbclient->watchdog_timeout > 0 &&
               actual_time - pbclient->last_activity > pbclient->watchdog_timeout)
             {
-            sprintf(str, "Client %s on buffer %s removed. (idle time %ldms, timeout %ldms)",
+            sprintf(str, "Client %s on %s removed (idle %1.1lfs,TO %1.0lfs)",
                     pbclient->name, pheader->name,
-                    actual_time - pbclient->last_activity,
-                    pbclient->watchdog_timeout);
+                    (actual_time - pbclient->last_activity)/1000.0,
+                    pbclient->watchdog_timeout/1000.0);
 
             /* clear entry from client structure in buffer header */
             memset(&(pheader->client[j]), 0, sizeof(BUFFER_CLIENT));
@@ -3581,10 +3610,10 @@ char            str[256];
           if (pdbclient->pid && pdbclient->watchdog_timeout &&
               actual_time - pdbclient->last_activity > pdbclient->watchdog_timeout)
             {
-            sprintf(str, "Client %s (PID %d) on buffer %s removed. (idle time %ldms, timeout %ldms)",
+            sprintf(str, "Client %s (PID %d) on %s removed (idle %1.1lfs,TO %1.0lfs)",
                     pdbclient->name, client_pid, pdbheader->name,
-                    actual_time - pdbclient->last_activity,
-                    pdbclient->watchdog_timeout);
+                    (actual_time - pdbclient->last_activity)/1000.0,
+                    pdbclient->watchdog_timeout/1000.0);
 
             /* decrement notify_count for open records and clear exclusive mode */
             for (k=0 ; k<pdbclient->max_index ; k++)
@@ -3626,6 +3655,7 @@ char            str[256];
           /* delete client entry after unlocking db */
           if (bDeleted)
             {
+            _client_deleted = TRUE;
             status = cm_delete_client_info(i+1, client_pid);
             if (status != CM_SUCCESS)
               cm_msg(MERROR, "cm_watchdog", "cannot delete client info");
@@ -3915,10 +3945,10 @@ char            str[256];
             /* now make again the check with the buffer locked */
             if (abs(actual_time - pbclient->last_activity) > 2*WATCHDOG_INTERVAL)
               {
-              sprintf(str, "Client %s on buffer %s removed. (idle time %ldms, timeout %ldms)",
+              sprintf(str, "Client %s on %s removed (idle %1.1lfs,TO %1.0lfs)",
                       pbclient->name, pheader->name,
-                      actual_time - pbclient->last_activity,
-                      pbclient->watchdog_timeout);
+                      (actual_time - pbclient->last_activity)/1000.0,
+                      pbclient->watchdog_timeout/1000.0);
 
               /* clear entry from client structure in buffer header */
               memset(&(pheader->client[j]), 0, sizeof(BUFFER_CLIENT));
@@ -3979,10 +4009,10 @@ char            str[256];
             /* now make again the check with the buffer locked */
             if (abs(actual_time - pdbclient->last_activity) > 2*WATCHDOG_INTERVAL)
               {
-              sprintf(str, "Client %s on database %s removed. (idle time %ldms, timeout %ldms)",
+              sprintf(str, "Client %s on %s removed (idle %1.1lfs,TO %1.0lfs)",
                            pdbclient->name, pdbheader->name,
-                           actual_time - pdbclient->last_activity,
-                           pdbclient->watchdog_timeout);
+                           (actual_time - pdbclient->last_activity)/1000.0,
+                           pdbclient->watchdog_timeout/1000.0);
 
               /* decrement notify_count for open records and clear exclusive mode */
               for (k=0 ; k<pdbclient->max_index ; k++)
