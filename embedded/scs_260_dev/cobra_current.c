@@ -7,6 +7,9 @@
                 and display coil currents.
 
   $Log$
+  Revision 1.4  2005/03/21 10:52:46  ritt
+  Added mcast display
+
   Revision 1.3  2005/03/18 13:44:27  ritt
   Switched to multicast mode
 
@@ -27,7 +30,7 @@
 #include <netinet/in.h>
 #endif
 
-#define MCAST_GROUP  "239.208.0.1"
+#define MCAST_GROUP  "239.208.0.0"
 
 main()
 {
@@ -69,6 +72,7 @@ main()
    if (setsockopt(sock, IPPROTO_IP, IP_ADD_MEMBERSHIP, (char *)&req, sizeof(req)) < 0)
       perror("setsockopt IP_ADD_MEMBERSHIP");
 
+   printf("Waiting for data from multicast group %s ...\n", MCAST_GROUP);
    size = sizeof(addr);
    do {
       memset(str, 0, sizeof(str));
