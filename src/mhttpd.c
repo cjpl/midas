@@ -6,6 +6,12 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.160  2001/07/25 08:15:08  midas
+  Custom pages now work with multiple experiments. Do do that, one has to
+  define the following field in the custom page:
+  <input type=hidden name=exp value=[experiment]>
+  where [experiment] is the experiment name
+
   Revision 1.159  2001/07/24 13:28:43  midas
   Use form names as subject
 
@@ -4633,7 +4639,11 @@ BOOL   bedit;
             }
           else
             {
-            rsprintf("<a href=\"%sCS/%s?cmd=Edit&index=%d\">", mhttpd_url, path, n_var++);
+            if (exp_name[0])
+              rsprintf("<a href=\"%sCS/%s?exp=%s&cmd=Edit&index=%d\">", mhttpd_url, path, exp_name, n_var++);
+            else
+              rsprintf("<a href=\"%sCS/%s?cmd=Edit&index=%d\">", mhttpd_url, path, n_var++);
+
             rsputs(str);
             rsprintf("</a>");
             }
@@ -5359,7 +5369,7 @@ char   data[10000];
       {
       rsprintf("<textarea rows=20 cols=80 name=\"text\">\n");
       rsputs(data_str);
-      rsprintf("\n</textarea>\n");
+      rsprintf("</textarea>\n");
       }
     else
       {
