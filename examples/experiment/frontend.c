@@ -11,6 +11,9 @@
                 with one bank (SCLR).
 
   $Log$
+  Revision 1.21  2003/05/12 15:20:11  midas
+  Removed test code
+
   Revision 1.20  2003/05/09 07:40:04  midas
   Added extra parameter to cm_get_environment
 
@@ -400,7 +403,6 @@ INT  q, timeout;
   /* clear TDC */
   camc(CRATE, SLOT_TDC, 0, 9);
 
-  pdata += 500;
   bk_close(pevent, pdata);
 
   /* clear IO unit LAM */
