@@ -14,6 +14,9 @@
                 Brown, Prentice Hall
 
   $Log$
+  Revision 1.12  1998/10/29 15:56:40  midas
+  Printout note about unimplemented tape status command
+
   Revision 1.11  1998/10/29 15:53:52  midas
   Added end-of-tape detection under UNIX
 
@@ -3630,6 +3633,7 @@ INT ss_tape_status(char *path)
 \********************************************************************/
 {
 #ifdef OS_UNIX
+  printf("Not implemented under UNIX\n");
 #endif /* OS_UNIX */
 
 #ifdef OS_WINNT
