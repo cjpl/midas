@@ -7,13 +7,15 @@
 This section refers to the Midas built-in capabilities. The following sections 
 describe in more details the essential aspect of each feature starting from the frontend
 to the Electronic Logbook.
+- @ref Transition_sequence : Transition Sequence
 - @ref Frontend_code
-  - @ref The_Equipment_Structure : Frontent acquisition characteristics 
+  - @ref The_Equipment_Structure : Frontend acquisition characteristics 
     - @ref MIDAS_event_construction : Midas event description 
     - @ref YBOS_event_construction : YBOS  event description
     - @ref FIXED_event_construction :FIXED  event description
   - @ref Deferred_Transition : Transition postpawning operation
   - @ref Super_Event : Short event compaction operation
+  - @ref Event_Builder : Event Builder operation 
 - @ref ODB_Structure : Online Database Trees
 - @ref Hot_Link : Notification mechanism
 - @ref Alarm_System : Alarm scheme
@@ -22,6 +24,85 @@ to the Electronic Logbook.
 - @ref Log_File : Message, error, report
 
 <br>
+
+<hr> @section Transition_sequence Run Transition Sequence
+The run transition sequence has been modified since Midas version 1.9.5.
+The new scheme utilize transition sequence level which provides to the user
+a full control of the sequencing of any Midas client.
+
+Midas defines 3 states of Data acquistion: \em STOPPED, \em PAUSED, \em RUNNING
+
+These 3 states requires 4 transitions : \em TR_START, \em TR_PAUSE
+, \em TR_RESUME, \em TR_STOP
+
+Any Midas client can request notification for run transition. This 
+notification is done by registering to the system for a given transition
+( cm_register_transition() ) by specifying the transition type and the
+sequencing number (1 to 1000). 
+
+By Default the following sequence numbers are used:
+- Frontend     : TR_START: 500, TR_PAUSE: 500, TR_RESUME: 500,TR_STOP: 500 
+- Analyzer     : TR_START: 500, TR_PAUSE: 500, TR_RESUME: 500,TR_STOP: 500 
+- Logger       : TR_START: 200, TR_PAUSE: 500, TR_RESUME: 500,TR_STOP: 800 
+- EventBuilder : TR_START: 300, TR_PAUSE: 500, TR_RESUME: 500,TR_STOP: 700 
+
+The sequence number appears into the ODBedit under /System/Clients/
+\code
+[local:midas:S]Clients>ls -lr
+Key name                        Type    #Val  Size  Last Opn Mode Value
+---------------------------------------------------------------------------
+Clients                         DIR
+    1832                        DIR     <------------ Frontend 1
+        Name                    STRING  1     32    21h  0   R    ebfe01
+        Host                    STRING  1     256   21h  0   R    pierre2
+        Hardware type           INT     1     4     21h  0   R    42
+        Server Port             INT     1     4     21h  0   R    2582
+        Transition START        INT     1     4     21h  0   R    500
+        Transition STOP         INT     1     4     21h  0   R    500
+        Transition PAUSE        INT     1     4     21h  0   R    500
+        Transition RESUME       INT     1     4     21h  0   R    500
+        RPC                     DIR
+            17000               BOOL    1     4     21h  0   R    y
+    3872                        DIR     <------------ Frontend 2 
+        Name                    STRING  1     32    21h  0   R    ebfe02
+        Host                    STRING  1     256   21h  0   R    pierre2
+        Hardware type           INT     1     4     21h  0   R    42
+        Server Port             INT     1     4     21h  0   R    2585
+        Transition START        INT     1     4     21h  0   R    500
+        Transition STOP         INT     1     4     21h  0   R    500
+        Transition PAUSE        INT     1     4     21h  0   R    500
+        Transition RESUME       INT     1     4     21h  0   R    500
+        RPC                     DIR
+            17000               BOOL    1     4     21h  0   R    y
+    2220                        DIR     <------------ ODBedit doesn't need transition
+        Name                    STRING  1     32    42s  0   R    ODBEdit
+        Host                    STRING  1     256   42s  0   R    pierre2
+        Hardware type           INT     1     4     42s  0   R    42
+        Server Port             INT     1     4     42s  0   R    3429
+    568                         DIR     <------------ Event Builder
+        Name                    STRING  1     32    26s  0   R    Ebuilder
+        Host                    STRING  1     256   26s  0   R    pierre2
+        Hardware type           INT     1     4     26s  0   R    42
+        Server Port             INT     1     4     26s  0   R    3432
+        Transition START        INT     1     4     26s  0   R    300
+        Transition STOP         INT     1     4     26s  0   R    700
+    2848                        DIR     <------------ Logger 
+        Name                    STRING  1     32    5s   0   R    Logger
+        Host                    STRING  1     256   5s   0   R    pierre2
+        Hardware type           INT     1     4     5s   0   R    42
+        Server Port             INT     1     4     5s   0   R    3436
+        Transition START        INT     1     4     5s   0   R    200
+        Transition STOP         INT     1     4     5s   0   R    800
+        Transition PAUSE        INT     1     4     5s   0   R    500
+        Transition RESUME       INT     1     4     5s   0   R    500
+        RPC                     DIR
+            14000               BOOL    1     4     5s   0   R    y
+\endcode
+
+The \em /System/Clients/... tree reflects the system at a given time. If a permanent
+change of a client sequence number is required, the system call cm_set_transition_sequence()
+can be used. 
+
 
 <hr> @section Frontend_code Frontend code
 Under MIDAS, experiment hardware is structured into "equipment" which refers to a
@@ -85,7 +166,7 @@ be remove.
     // Global user section
     // number of channels
     #define N_ADC  8  
-    #define N_TDC  8  
+    #define N_TDC  8 
     #define N_SCLR 8
 
     CAMAC crate and slots
@@ -462,6 +543,8 @@ Ored togheter. The possible options are:
         - CMD_INTERRUPT_DISABLE: to disable an interrupt
         - CMD_INTERRUPT_INSTALL: to install an interrupt callback routine at address adr.
         - CMD_INTERRUPT_DEINSTALL: to de-install an interrupt.
+  - [@ref EQ_EB] This flag identify the equipment as a \b fragment \b event and should be
+    ored with the EQ_POLLED in order to be identifyed by the Event_Builder. 
 
 - [@ref LAM_SOURCE(0,0xFFFFFF)] This parameter is a bit-wise representation of the
 24 CAMAC slots which may raise the LAM. It defines which CAMAC slot is allowed to
@@ -857,7 +940,7 @@ The Deferred_Transition requires 3 steps for setup:
   <b>/runinfo/Requested transition</b>  and will contain the transition code
   (see @ref state_transition ).
   When the system is in deferred state, an ODBedit override command can be issued to
-  \b force the transition to happen. \b eg: odbedit\> stop now, odbedit\> start now  .
+  \b force the transition to happen. eg: odbedit\> stop now, odbedit\> start now  .
   This overide will do the transition function regarless of the state of the
   hardware involved.
 
@@ -865,16 +948,16 @@ The Deferred_Transition requires 3 steps for setup:
 
 The Super Event is a option implemented in the frontend code in order to reduce the
 amount of data to be transfered to the backend by removing the bank header for each event
-constructed. In other words, when an equipment readout in either \em MIDAS  or
+constructed. In other words, when an equipment readout in either \em MIDAS or
 \em YBOS  format (bank format) is complete, the event is composed of the bank header
 followed by the data section.
 The overhead in bytes of the bank structure is 16 bytes for bk_init(),
 20 bytes for bk_init32() and ybk_init(). If the data section size is close to
 the number above, the data transfer as well as the data storage has an non-negligible
 overhead. To address this problem, the equipment can be setup to generate a so called
-\em Super Event  which is an event composed of the initial standard bank header for the
-first event on the super event and up to \b  number of sub event  maximum successive
-data section before closing of the bank.
+<b> Super Event </b>  which is an event composed of the initial standard bank header for the
+first event of the super event and up to <b> number of sub event </b> maximum successive
+data section before the closing of the bank.
 
 To demonstrate the use of it, let see the following example:
 
@@ -958,14 +1041,14 @@ To demonstrate the use of it, let see the following example:
   The content of the sub-event is essentially the responsibility of the user.
   - [Remark 1 ] The backend analyzer will have to be informed by the user on
     the content structure of the data section of the event as no particular tagging
-    is applied to the \em Super Event 
-    by the Midas transfer mechanism.
-  - [Remark 2 ] If the \em Super Event  is composed in a remote equipment
-    running a different \em Endian  mode than the backend processor,
+    is applied to the <b> Super Event </b> by the Midas transfer mechanism.
+  - [Remark 2 ] If the <b> Super Event </b> is composed in a remote equipment
+    running a different \em Endian mode than the backend processor,
     it would be necessary to insure the data type consistency throughout the
-    \em Super Event  in order to guaranty the proper byte swapping of the data content.
+    <b> Super Event </b> in order to guaranty the proper byte swapping of the data content.
   - [Remark 3 ] The event rate in the equipment statistic will indicates the
     rate of sub-events. 
+
 
 <hr> @section Slow_Control_system Slow Control System
 

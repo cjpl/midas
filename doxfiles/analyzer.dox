@@ -5,7 +5,8 @@ framework in which the user can gain access to the online data during data acqui
 or offline data through a replay of a stored data save-set.
 
 - The Midas distribution contains 2 directories where predefined set of analyzer files
-and their corresponding working demo code are available.
+and their corresponding working demo code are available. The internal functionality of 
+both example is similar and differ only on the histogram tool used for the data representation.
 These analyzer set are specific to 2 major data analysis tools i.e: \b ROOT, \b HBOOK:
  - \b examples/experiment: Analyzer tailored towards \b ROOT analysis
  - \b examples/hbookexpt: Analyzer tailored towards \b HBOOK with \b PAW.
@@ -38,28 +39,21 @@ or offline following the information given further down. The analysis goal is to
     frontend code is build against the \b camacnul.c driver providing a simulated data
     stream. 
 
-- As mentioned, both directories have equivalent code, the only aspect making them apart
-is relative to the histograming functionality.
- - \b ROOT histogram booking code (excerpt of experiment/adccalib.c)
+ - \b ROOT histogram booking code (excerpt of experiment/adcsum.c)
+  - \anchor Folder Histogram under ROOT is supported from version 1.9.5. This provides a cleaner
+  way to organize the histogram grouping. This functionality is implemented with the function
+  open_subfolder() and close_subfolder(). Dedicated Macro is also now available for histogram
+  booking.
 \code
-INT adc_calib_init(void)
+INT adc_summing_init(void)
 {
-   char name[256];
-   int i;
+   /* book ADC sum histo */
+   hAdcSum = H1_BOOK("ADCSUM", "ADC sum", 500, 0, 10000);
 
-   /* book CADC histos */
-
-   for (i = 0; i < N_ADC; i++) {
-      char title[256];
-
-      sprintf(name, "CADC%02d", i);
-      sprintf(title, "ADC %d", i);
-
-      gAdcHists[i] = (TH1F *) gManaHistsDir->GetList()->FindObject(name);
-
-      if (gAdcHists[i] == NULL)
-         gAdcHists[i] = new TH1F(name, title, ADC_N_BINS, ADC_X_LOW, ADC_X_HIGH);
-   }
+   /* book ADC average in separate subfolder */
+   open_subfolder("Average");
+   hAdcAvg = H1_BOOK("ADCAVG", "ADC average", 500, 0, 10000);
+   close_subfolder();
 
    return SUCCESS;
 }

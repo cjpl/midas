@@ -1,7 +1,7 @@
 /*! \page NDF New Documented Features
 
 \htmlonly <img ALIGN="left" alt="previous.gif" src="previous.gif"> \endhtmlonly 
-@ref Intro - @ref Top - @ref quickstart
+@ref Top - @ref Top - @ref Intro
 \htmlonly <img alt="next.gif" src="next.gif"> \endhtmlonly
 
 Some of the midas features are not yet fully documented or even referenced
@@ -12,26 +12,41 @@ of the latest documentation on past and current features. It will also
 mention the wish list documentation on current developments.
  
 
-- <b> Current doc revision: 1.9.4-0 </b>
-- <b> Software version: 1.9.4 </b>
-- <b> Latest tarball : <a href=http://midas.triumf.ca/download> 1.9.4 </a> </b>
+- <b> Current doc revision: 1.9.5-0 </b>
+- <b> Software version: 1.9.5 </b>
+- <b> Latest tarball : <a href=http://midas.triumf.ca/download> 1.9.5 </a> </b>
 - <b> Latest RPM : <a href=http://midas.triumf.ca/download> 1.9.2-1  </a> </b>
 
+- <b> [1.9.5] </b>
+ - <b> When upgrading to 1.9.5, \em ALL midas applications including user
+   applications needs to be rebuild \em AND the \b ODB.SHM (.ODB.SHM) shared
+   memory need to be removed. Prior the removal of the ODB.SHM, the ODB database
+   can be saved in ASCII format for later restoration. </b>
+ - <b> @ref Transition_sequence changed to multiple level scheme. </b>
+ - <b> odbedit_task support of XML format for ODB dump. </b>
+ - <b> Large File support (>2GB) from @ref mlogger_task application. </b>
+ - <b> @ref Folder Root Histogram support within mana. </b>
+ - <b> @ref mevb_task application. </b>
+ - <b> New @ref frontend_task argument for Event Builder option (-i index). </b>
+   - <b> Documentation on "Tests" results from analyzer.</b>
+ - <b> @ref mySQL support from @ref mlogger_task. </b>
+ - <b> Increase system wide parameters values (see midas.h).
+ - <b> Fix numerous small annoying bugs... </b>
+ - <b> Improve debugging messages in mserver -d (/tmp/mserver.log). </b>
 
-- In writing
- - <b> Epics Slow Control documentation </b>
+- <b> [<1.9.5] </b>
+ - In writing
+  - <b> Epics Slow Control documentation </b>
 
-- NEW
- - <b> Introduce @ref MIDASSYS environment variable </b>
- - <b> Analyzer documention revision @ref analyzer_struct </b>
- - <b> Watchdog bug fix (RH9.0) </b>
+  - <b> Introduce @ref MIDASSYS environment variable </b>
+  - <b> Analyzer documention revision @ref analyzer_struct </b>
+  - <b> Watchdog bug fix (RH9.0) </b>
 
-- <b> Restructured Midas distribution </b>
-  - In the same effort as the documentation, the midas tree and CVS have been  
-  modified. The <a href=http://midas.triumf.ca/download> download area </a> now
-  contains separate directories for doc, add-ons, publications etc.
-  
-- <b> [DOCUMENTATION in progress] </b>
+  - <b> Restructured Midas distribution </b>
+   - In the same effort as the documentation, the midas tree and CVS have been  
+     modified. The <a href=http://midas.triumf.ca/download> download area </a> now
+     contains separate directories for doc, add-ons, publications etc.
+ - <b> [DOCUMENTATION in progress] </b>
   - A large effort has been put on the documentation for switching from the
   \b DOC++ to <a href=http://www.stack.nl/~dimitri/doxygen/features.html> Doxygen</a>
   We feel the cross-referencing to the source code is excellent and hopefully
@@ -39,7 +54,7 @@ mention the wish list documentation on current developments.
   as well as the @ref quickstart. This \b Doxygen related files will be made accessible
   for better update.
   
-- <b> [Midas Short Course] </b>
+ - <b> [Midas Short Course] </b>
   - During the RealTime Conference 2003 held in Montreal, a short course
   was offered to introduce the Midas DAQ to the audience. This course (.ppt, .pdf) is now
   part of the Midas distribution and can be found under the doc/course/ directory
@@ -106,6 +121,6 @@ INT max_event_size_frag = 5*1024*1024;
   - Hopefully nobody is still running an older version.
   
 \htmlonly <img ALIGN="left" alt="previous.gif" src="previous.gif"> \endhtmlonly 
-@ref Intro - @ref Top - @ref quickstart
+@ref Top - @ref Top - @ref Intro
 \htmlonly <img alt="next.gif" src="next.gif"> \endhtmlonly
 */
