@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol main program
 
   $Log$
+  Revision 1.52  2004/07/20 16:04:40  midas
+  Implemented scs-1000 code
+
   Revision 1.51  2004/07/09 07:47:48  midas
   Implemented xdata checking
 
@@ -265,9 +268,38 @@ void setup(void)
 
 #ifdef CPU_CYGNAL
 
-   /* Port configuration (1 = Push Pull Output) */
+   /* Port and oscillator configuration */
 
-#if defined(CPU_C8051F020)
+#if defined(CPU_C8051F120)
+
+   SFRPAGE   = CONFIG_PAGE;
+  
+   P0MDOUT = 0xF5;              // SCS-1000 lines
+   P1MDOUT = 0xBF;
+   P2MDOUT = 0x00;
+   P3MDOUT = 0xFF;
+
+   XBR0 = 0x04;                 // Enable UART0 & UART1
+   XBR1 = 0x00;
+   XBR2 = 0x44;
+
+   /* Select internal quartz oscillator */
+   SFRPAGE   = LEGACY_PAGE;
+   FLSCL     = 0xB0;            // set flash read time for 100 MHz
+
+   SFRPAGE   = CONFIG_PAGE;
+   PLL0CN    |= 0x01;
+   PLL0DIV   = 0x01;
+   PLL0FLT   = 0x01;
+   PLL0MUL   = 0x04;
+   for (i = 0; i < 15; i++);   // Wait 5us for initialization
+   PLL0CN    |= 0x02;
+   while ((PLL0CN & 0x10) == 0);
+   OSCICN    = 0x83;
+   CLKSEL    = 0x02;            // select PLL as sysclk src
+
+#elif defined(CPU_C8051F020)
+
    XBR0 = 0x04;                 // Enable UART0 & UART1
    XBR1 = 0x00;
    XBR2 = 0x44;
@@ -280,7 +312,9 @@ void setup(void)
    /* Select external quartz oscillator */
    OSCXCN = 0x67;               // Crystal mode, Power Factor 22E6
    OSCICN = 0x08;               // CLKSL=1 (external)
+
 #elif defined(CPU_C8051F310)
+
    XBR0 = 0x01;                 // Enable RX/TX
    XBR1 = 0x40;                 // Enable crossbar
    P0MDOUT = 0x90;              // P0.4: TX, P0.7: RS485 enable Push/Pull
@@ -294,7 +328,9 @@ void setup(void)
 
    CLKSEL = 0x01;               // derive SYSCLK from external source
    OSCICN = 0x00;               // CLKSL=1 (external)
+
 #else
+
    XBR0 = 0x04;                 // Enable RX/TX
    XBR1 = 0x00;
    XBR2 = 0x40;                 // Enable crossbar
@@ -307,6 +343,7 @@ void setup(void)
    /* Select external quartz oscillator */
    OSCXCN = 0x67;               // Crystal mode, Power Factor 22E6
    OSCICN = 0x08;               // CLKSL=1 (external)
+
 #endif
 
 #endif
@@ -340,12 +377,18 @@ void setup(void)
    WDTCN = 0xAD;
 #endif
 
+#if defined(CPU_C8051F120)
+   SFRPAGE = LEGACY_PAGE;
+   RSTSRC = 0x04;               // enable missing clock detector
+#else /* F120 */
    /* enable missing clock reset */
    OSCICN |= 0x80;              // MSCLKE = 1
 
-   /* enable reset pin and watchdog reset */
-   RSTSRC = 0x09;
-#endif /* F310 */
+   /* enable watchdog reset */
+   RSTSRC = 0x08;
+#endif /* not F120 */
+
+#endif /* not F310 */
 
 #endif /* CPU_CYGNAL */
 
@@ -378,6 +421,18 @@ void setup(void)
       out_buf[i] = 0;
 
    uart_init(0, BD_115200);
+
+#ifdef LCD_SUPPORT
+   lcd_setup();
+
+#ifdef LCD_DEBUG
+   if (lcd_present) {
+      printf("AD:%04X GA:%04X WD:%d", sys_info.node_addr,
+             sys_info.group_addr, sys_info.wd_counter);
+   }
+#endif
+
+#endif
 
    /* count variables */
    for (n_variables = _var_size = 0;; n_variables++) {
@@ -443,18 +498,6 @@ void setup(void)
          //flash_param = 1;
       }
    }
-
-#ifdef LCD_SUPPORT
-   lcd_setup();
-
-#ifdef LCD_DEBUG
-   if (lcd_present) {
-      printf("AD:%04X GA:%04X WD:%d", sys_info.node_addr,
-             sys_info.group_addr, sys_info.wd_counter);
-   }
-#endif
-
-#endif
 
    /* Blink LEDs */
    for (i=0 ; i<N_LED ; i++)
@@ -585,6 +628,10 @@ void serial_int(void) interrupt 4 using 1
 
 static void send_byte(unsigned char d, unsigned char data * crc)
 {
+#ifdef CPU_C8051F120
+   SFRPAGE = UART0_PAGE;
+#endif
+
    if (crc)
       *crc = crc8_add(*crc, d);
    SBUF0 = d;
@@ -637,6 +684,10 @@ void interprete(void)
    MSCB_INFO_VAR code *pvar;
 
    cmd = (in_buf[0] & 0xF8);    // strip length field
+
+#ifdef CPU_C8051F120
+   SFRPAGE = UART0_PAGE;        // needed for SBUF0
+#endif
 
    switch (in_buf[0]) {
    case CMD_ADDR_NODE8:
@@ -772,7 +823,7 @@ void interprete(void)
 
    case CMD_SET_BAUD:
       led_blink(_cur_sub_addr, 1, 50);
-      // uart_init(0, in_buf[1]);
+      //uart_init(0, in_buf[1]);
       break;
 
    case CMD_FREEZE:
@@ -826,6 +877,9 @@ void interprete(void)
                out_buf[1 + n] = crc8(out_buf, 1 + n);      // generate CRC code
    
                /* send result */
+#ifdef CPU_C8051F120
+               SFRPAGE = UART0_PAGE;
+#endif
                n_out = 2 + n;
                RS485_ENABLE = 1;
                SBUF0 = out_buf[0];
@@ -896,6 +950,9 @@ void interprete(void)
       out_buf[0] = CMD_ACK + n;
       out_buf[n + 1] = crc8(out_buf, n + 1);
       n_out = n + 2;
+#ifdef CPU_C8051F120
+      SFRPAGE = UART0_PAGE;
+#endif
       RS485_ENABLE = 1;
       SBUF0 = out_buf[0];
    }
@@ -947,6 +1004,9 @@ void interprete(void)
             out_buf[0] = CMD_ACK;
             out_buf[1] = in_buf[i_in - 1];
             n_out = 2;
+#ifdef CPU_C8051F120
+            SFRPAGE = UART0_PAGE;
+#endif
             RS485_ENABLE = 1;
             SBUF0 = out_buf[0];
          }
@@ -957,6 +1017,9 @@ void interprete(void)
             out_buf[0] = CMD_ACK;
             out_buf[1] = in_buf[i_in - 1];
             n_out = 2;
+#ifdef CPU_C8051F120
+            SFRPAGE = UART0_PAGE;
+#endif
             RS485_ENABLE = 1;
             SBUF0 = out_buf[0];
          }
@@ -994,6 +1057,10 @@ void upgrade()
    cmd = page = 0;
 
    /* send acknowledge */
+#ifdef CPU_C8051F120
+   SFRPAGE = UART0_PAGE;
+#endif
+
    RS485_ENABLE = 1;
    TI0 = 0;
    SBUF0 = CMD_ACK;
@@ -1024,9 +1091,13 @@ void upgrade()
          /* erase page if not page of upgrade() function */
          if (page * 512 < (unsigned int)upgrade) {
 
+#ifdef CPU_C8051F120
+            SFRPAGE = LEGACY_PAGE;
+#endif
+
 #if defined(CPU_C8051F000)
             FLSCL = (FLSCL & 0xF0) | 0x08; // set timer for 11.052 MHz clock
-#elif defined (CPU_C8051F020)
+#elif defined (CPU_C8051F020) || defined(CPU_C8051F120)
             FLSCL = FLSCL | 1;     // enable flash writes
 #endif
             PSCTL = 0x03;          // allow write and erase
@@ -1058,15 +1129,23 @@ void upgrade()
          page = SBUF0;
          RI0 = 0;
 
+#ifdef CPU_C8051F120
+         SFRPAGE = LEGACY_PAGE;
+#endif
+
          /* allow write */
 #if defined(CPU_C8051F000)
          FLSCL = (FLSCL & 0xF0) | 0x08; // set timer for 11.052 MHz clock
-#elif defined (CPU_C8051F020)
+#elif defined (CPU_C8051F020) || defined(CPU_C8051F120)
          FLSCL = FLSCL | 1;        // enable flash writes
 #endif
          PSCTL = 0x01;             // allow write access
 
          pw = (char xdata *) (512 * page);
+
+#ifdef CPU_C8051F120
+         SFRPAGE = UART0_PAGE;
+#endif
 
          for (j=0 ; j<8 ; j++) {
    
@@ -1109,6 +1188,10 @@ void upgrade()
             RI0 = 0;
          }
 
+#ifdef CPU_C8051F120
+         SFRPAGE = LEGACY_PAGE;
+#endif
+
          /* disable write */
          FLSCL = (FLSCL & 0xF0);
          PSCTL = 0x00;
@@ -1134,12 +1217,19 @@ void upgrade()
          break;
 
       case 5:                      // reboot
+#ifdef CPU_C8051F120
+         SFRPAGE = LEGACY_PAGE;
+#endif
          RSTSRC = 0x10;
          break;
 
       case 6:                      // return
          break;
       }
+
+#ifdef CPU_C8051F120
+      SFRPAGE = UART0_PAGE;
+#endif
 
       /* return acknowledge */
       RS485_ENABLE = 1;
@@ -1222,7 +1312,11 @@ void yield(void)
 
    if (reboot) {
 #ifdef CPU_CYGNAL
-      RSTSRC = 0x10;         // force power-on reset
+#ifdef CPU_C8051F120
+      SFRPAGE = LEGACY_PAGE;
+#endif
+
+      RSTSRC = 0x10;         // force software reset
 #else
       WDCON = 0x00;          // 16 msec
       WDE = 1;
