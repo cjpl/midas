@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.156  2001/07/23 06:54:25  midas
+  Made last mod. (155) also work for single experiment
+
   Revision 1.155  2001/07/10 21:15:39  pierre
   - Added exp_name in Elog for last day request.
 
@@ -2474,8 +2477,12 @@ FILE   *f;
     {
     if (last_n)
       {
-      rsprintf("<tr><td colspan=6><a href=\"last%d?exp=%s\">Last %d days</a></tr>\n", 
-                last_n+1, exp_name, last_n+1);
+      if (exp_name[0])
+        rsprintf("<tr><td colspan=6><a href=\"last%d?exp=%s\">Last %d days</a></tr>\n", 
+                  last_n+1, exp_name, last_n+1);
+      else
+        rsprintf("<tr><td colspan=6><a href=\"last%d\">Last %d days</a></tr>\n", 
+                  last_n+1, last_n+1);
 
       if (last_n == 1)
         rsprintf("<tr><td colspan=6 bgcolor=#FFFF00><b>Last 24 hours</b></tr>\n");
