@@ -6,6 +6,9 @@
   Contents:     LeCroy LRS 1440 High Voltage Device Driver
 
   $Log$
+  Revision 1.2  2000/03/17 13:13:58  midas
+  Changed rs232.h to bus\rs232.h
+
   Revision 1.1  1999/12/20 10:18:19  midas
   Reorganized driver directory structure
 
@@ -27,7 +30,7 @@
 #include <stdio.h>
 #include <math.h>
 #include "midas.h"
-#include "rs232.h"
+#include "bus\rs232.h"
 
 /*---- globals -----------------------------------------------------*/
 
