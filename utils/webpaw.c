@@ -6,6 +6,9 @@
   Contents:     Web server for remote PAW display
 
   $Log$
+  Revision 1.36  2002/04/22 07:40:37  midas
+  Added "[Links]" into webpaw.cfg for optional URL display
+
   Revision 1.35  2001/08/02 12:31:11  midas
   Fixed type
 
@@ -324,7 +327,7 @@ int  fh;
       {
       p++;
       pstr = str;
-      while (*p && *p != ']' && *p != '\n')
+      while (*p && *p != ']' && *p != '\n' && *p != '\r')
         *pstr++ = *p++;
       *pstr = 0;
       if (equal_ustring(str, group))
@@ -336,7 +339,7 @@ int  fh;
         while (p && *p && *p != '[')
           {
           pstr = str;
-          while (*p && *p != '=' && *p != '\n')
+          while (*p && *p != '=' && *p != '\n' && *p != '\r')
             *pstr++ = *p++;
           *pstr-- = 0;
           while (pstr > str && (*pstr == ' ' || *pstr == '='))
@@ -396,7 +399,7 @@ int  i;
       {
       p++;
       pstr = str;
-      while (*p && *p != ']' && *p != '\n')
+      while (*p && *p != ']' && *p != '\n' && *p != '\r')
         *pstr++ = *p++;
       *pstr = 0;
       if (equal_ustring(str, group))
@@ -409,7 +412,7 @@ int  i;
         while (p && *p && *p != '[')
           {
           pstr = str;
-          while (*p && *p != '=' && *p != '\n')
+          while (*p && *p != '=' && *p != '\n' && *p != '\r')
             *pstr++ = *p++;
           *pstr-- = 0;
           while (pstr > str && (*pstr == ' ' || *pstr == '='))
@@ -424,7 +427,7 @@ int  i;
               while (*p == ' ')
                 p++;
               pstr = str;
-              while (*p && *p != '\n')
+              while (*p && *p != '\n' && *p != '\r')
                 *pstr++ = *p++;
               *pstr-- = 0;
               while (*pstr == ' ')
@@ -962,14 +965,34 @@ int    fh, i, j, length, status, height;
       rsprintf("<tr><td align=center><input type=submit name=submit value=\" Execute! \">\r\n");
       rsprintf("<td align=center><input type=submit name=restart value=\"Restart PAW!\">\r\n");
       rsprintf("</tr></table><hr>\r\n");
-      rsprintf("<h3>Macros</h3></center>\r\n");
       }
 
+    if (enumcfg("Links", display_name, kumac_name, 0))
+      {
+      rsprintf("<h3>Links</h3></center>\r\n");
+      
+      rsprintf("<ul>\r\n");
+
+      for (i=0 ; ; i++)
+        {
+        if (!enumcfg("Links", display_name, kumac_name, i))
+          break;
+
+        rsprintf("<li><a target=_blank href=\"%s\">%s</a>\n", kumac_name, display_name);
+        }
+
+      rsprintf("</ul>\r\n");
+      }
+
+      
     if (!enumcfg("Kumacs", display_name, kumac_name, 0))
       {
       rsprintf("<center>No macros defined in <i>webpaw.cfg</i></center></body></html>\r\n");
       return;
       }
+    else
+      rsprintf("<h3>Macros</h3></center>\r\n");
+
 
     if (strchr(path, '/'))
       {
