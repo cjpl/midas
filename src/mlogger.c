@@ -6,6 +6,9 @@
   Contents:     MIDAS logger program
 
   $Log$
+  Revision 1.11  1999/06/23 13:38:08  midas
+  Increased ASCII buffer in dump_write
+
   Revision 1.10  1999/06/23 09:31:01  midas
   Modified error message
 
@@ -627,7 +630,7 @@ EVENT_DEF   *event_def;
 BANK_HEADER *pbh;
 BANK        *pbk;
 void        *pdata;
-char        buffer[10000], *pbuf, name[5], type_name[10];
+char        buffer[100000], *pbuf, name[5], type_name[10];
 HNDLE       hKey;
 KEY         key;
 
