@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.97  2001/12/17 12:11:22  midas
+  Added "Preset <attrib> = %03d"
+
   Revision 1.96  2001/12/14 14:24:45  midas
   Couple of changes, see CHANGELOG
 
@@ -371,7 +374,7 @@ typedef int INT;
 #define EL_LAST_MSG   3
 #define EL_FILE_ERROR 4
 
-#define WEB_BUFFER_SIZE 10000000
+#define WEB_BUFFER_SIZE 2000000
 
 char return_buffer[WEB_BUFFER_SIZE];
 int  strlen_retbuf;
@@ -440,6 +443,7 @@ char author_list[MAX_N_LIST][NAME_LENGTH] = {
 #define AF_REQUIRED           (1<<0)
 #define AF_LOCKED             (1<<1)
 #define AF_MULTI              (1<<2)
+#define AF_FIXED              (1<<3)
 
 char attr_list[MAX_N_ATTR][NAME_LENGTH];
 char attr_options[MAX_N_ATTR][MAX_N_LIST][NAME_LENGTH];
@@ -2862,6 +2866,16 @@ int  i, j, n, m;
         if (equal_ustring(attr_list[j], tmp_list[i]))
           attr_flags[j] |= AF_LOCKED;
       }
+
+    /* check if fixed attribut */
+    getcfg(logbook, "Fixed Attributes", list);
+    m = strbreak(list, tmp_list, MAX_N_ATTR);
+    for (i=0 ; i<m ; i++)
+      {
+      for (j=0 ; j<n ; j++)
+        if (equal_ustring(attr_list[j], tmp_list[i]))
+          attr_flags[j] |= AF_FIXED;
+      }
     }
   else
     {
@@ -3443,6 +3457,29 @@ int  i, n;
 
 /*------------------------------------------------------------------*/
 
+int get_last_index(int index)
+{
+int    i, n_attr;
+char   str[80], date[80], attrib[MAX_N_ATTR][NAME_LENGTH],
+       orig_tag[80], reply_tag[80], att[MAX_ATTACHMENTS][256], encoding[80];
+
+  str[0] = 0;
+  n_attr = scan_attributes(logbook);
+  el_retrieve(str, date, attr_list, attrib, n_attr,
+              NULL, 0, orig_tag, reply_tag, att, encoding);
+
+  strcpy(str, attrib[index]);
+
+  /* look for first digit, return value */
+  for (i=0 ; i<(int)strlen(str) ; i++)
+    if (isdigit(str[i]))
+      break;
+
+  return atoi(str+i);
+}
+
+/*------------------------------------------------------------------*/
+
 void show_elog_new(char *path, BOOL bedit)
 {
 int    i, n, n_attr, index, size, wrap, fh, length;
@@ -3586,10 +3623,24 @@ time_t now;
     sprintf(str, "Preset %s", attr_list[index]);
     if (getcfg(logbook, str, preset))
       {
-      i = build_subst_list(slist, svalue, NULL);
-      strsubst(preset, slist, svalue, i);
+      if (!bedit || (attr_flags[index] & AF_FIXED) == 0)
+        {
+        i = build_subst_list(slist, svalue, NULL);
+        strsubst(preset, slist, svalue, i);
 
-      strcpy(attrib[index], preset);
+        /* check for index substitution */
+        if (!bedit && strchr(preset, '%'))
+          {
+          /* get index */
+          i = get_last_index(index);
+          
+          strcpy(str, preset);
+          sprintf(preset, str, i+1);
+          }
+
+        if (!strchr(preset, '%'))
+          strcpy(attrib[index], preset);
+        }
       }
 
     if (attr_options[index][0][0] == 0)
@@ -4874,7 +4925,7 @@ FILE   *f;
           size = printable ? 2 : 3;
           nowrap = printable ? "" : "nowrap";
 
-          rsprintf("<td align=center bgcolor=%s><font size=%d><a href=\"%s\">%d</a></font></td>", col, size, ref, n_found);
+          rsprintf("<td align=center bgcolor=%s><font size=%d><a href=\"%s\">&nbsp; %d &nbsp;</a></font></td>", col, size, ref, n_found);
 
           if (atoi(getparam("all")) == 1)
             rsprintf("<td align=center %s bgcolor=%s><font size=%d>%s</font></td>", nowrap, col, size, logbook_list[lindex]);
@@ -4948,7 +4999,7 @@ FILE   *f;
             else
               rsputs(text);
 
-            rsprintf("&nbsp;</font></td></tr>\n");
+            rsprintf("</font></td></tr>\n");
             }
 
           if (!show_attachments && attachment[0][0])
@@ -5042,7 +5093,7 @@ FILE   *f;
           size = printable ? 2 : 3;
           nowrap = printable ? "" : "nowrap";
 
-          rsprintf("<td align=center bgcolor=%s><font size=%d><a href=\"%s\">%d</a></font></td>", col, size, ref, n_found);
+          rsprintf("<td align=center bgcolor=%s><font size=%d><a href=\"%s\">&nbsp; %d &nbsp;</a></font></td>", col, size, ref, n_found);
 
           if (atoi(getparam("all")) == 1)
             rsprintf("<td align=center %s bgcolor=%s>%s</td>", nowrap, col, logbook_list[lindex]);
@@ -7412,7 +7463,6 @@ struct timeval       timeout;
         if (len >= sizeof(net_buffer))
           {
           /* drain incoming remaining data */
-          printf("##Draining:\n");
           do
             {
             FD_ZERO(&readfds);
@@ -7427,8 +7477,6 @@ struct timeval       timeout;
               i = recv(_sock, net_buffer, sizeof(net_buffer), 0);
             else
               break;
-
-            printf("."); //##
             } while (i);
 
           memset(return_buffer, 0, sizeof(return_buffer));
