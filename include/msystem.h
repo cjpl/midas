@@ -7,6 +7,9 @@
                 routines
 
   $Log$
+  Revision 1.13  1999/10/04 10:37:51  midas
+  Removed reduced MAX_EVENT_SIZE for VxWorks
+
   Revision 1.12  1999/06/23 09:59:00  midas
   Added dm_task and dm_buffer_time_get
 
@@ -191,9 +194,6 @@ extern char **environ;
 #define P_NOWAIT 1
 #define closesocket(s) close(s)
 #define ioctlsocket(s,c,d) ioctl(s,c,d)
-
-#undef MAX_EVENT_SIZE
-#define MAX_EVENT_SIZE 4096
 
 #endif
 
