@@ -6,6 +6,9 @@
   Contents:     RS232 communication routines for MS-DOS and NT
 
   $Log$
+  Revision 1.9  2001/04/05 05:53:34  midas
+  Added CMD_NAME
+
   Revision 1.8  2001/02/26 11:56:55  midas
   Added READ and WRITE functions
 
@@ -970,6 +973,12 @@ char       *str, *pattern;
     case CMD_EXIT:
       info = va_arg(argptr, void *);
       status = rs232_exit(info);
+      break;
+
+    case CMD_NAME:
+      info = va_arg(argptr, void *);
+      str = va_arg(argptr, char *);
+      strcpy(str, "rs232");
       break;
 
     case CMD_WRITE:

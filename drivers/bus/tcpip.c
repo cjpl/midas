@@ -6,6 +6,9 @@
   Contents:     TCP/IP socket communication routines
 
   $Log$
+  Revision 1.4  2001/04/05 05:53:34  midas
+  Added CMD_NAME
+
   Revision 1.3  2001/04/03 12:26:50  midas
   Improved logging
 
@@ -17,9 +20,8 @@
 
 \********************************************************************/
 
-#include <stdio.h>
-#include <io.h>
 #include "midas.h"
+#include "msystem.h"
 
 static int debug_flag = 0, debug_last = 0, debug_first = TRUE;
 
@@ -386,6 +388,12 @@ char       *str, *pattern;
     case CMD_EXIT:
       info = va_arg(argptr, void *);
       status = tcpip_exit(info);
+      break;
+
+    case CMD_NAME:
+      info = va_arg(argptr, void *);
+      str = va_arg(argptr, char *);
+      strcpy(str, "tcpip");
       break;
 
     case CMD_WRITE:
