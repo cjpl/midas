@@ -6,6 +6,9 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.64  2003/07/24 12:29:44  midas
+  Fixed problem with atol() in db_sscanf
+
   Revision 1.63  2003/05/30 23:16:15  pierre
   validate db_lock/unlock/protect_database() for other OS
 
@@ -6575,8 +6578,7 @@ BOOL  hex = FALSE;
   switch (tid)
     {
     case TID_BYTE:
-    case TID_SBYTE:
-      if (hex)
+    case TID_SBYTE:      if (hex)
         *((char *) data+i) = (char) value;
       else
         *((char *) data+i) = (char) atoi(data_str);
@@ -6596,10 +6598,10 @@ BOOL  hex = FALSE;
         *((short int *) data+i) = (short int) atoi(data_str);
       break;
     case TID_DWORD:
-      if (hex)
-        *((DWORD *) data+i) = value;
-      else
-        *((DWORD *) data+i) = atol(data_str);
+      if (!hex)
+        sscanf(data_str, "%lu", &value);
+
+      *((DWORD *) data+i) = value;
       break;
     case TID_INT:
       if (hex)
