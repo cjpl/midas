@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.17  1999/03/02 10:00:07  midas
+  Added ANA_CONTINUE and ANA_SKIP
+
   Revision 1.16  1999/02/18 13:06:27  midas
   Release 1.6.3
 
@@ -544,6 +547,9 @@ typedef          INT       HNDLE;
 #define CMD_INTERRUPT_DISABLE       101
 #define CMD_INTERRUPT_ATTACH        102
 #define CMD_INTERRUPT_DETACH        103
+
+#define ANA_CONTINUE                  1
+#define ANA_SKIP                      0
 
 /*---- Buffer manager structures -----------------------------------*/
 
