@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.83  2003/03/31 08:27:34  midas
+  Fixed alignment bug for strings
+
   Revision 1.82  2002/11/28 09:43:46  midas
   Added '-o OFLN' option to produce PAW shared memory in offline mode
 
@@ -2834,7 +2837,8 @@ WORD           bktype;
           db_get_key(hDB, hKey, &key);
 
           /* adjust for alignment */
-          pdata = (void *) VALIGN(pdata, min(ss_get_struct_align(),key.item_size));
+          if (key.type != TID_STRING && key.type != TID_LINK)
+            pdata = (void *) VALIGN(pdata, min(ss_get_struct_align(), key.item_size));
 
           status = db_set_data(hDB, hKey, pdata, key.item_size*key.num_values, 
                                key.num_values, key.type);
