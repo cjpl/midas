@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus communication functions
 
   $Log$
+  Revision 1.8  2002/07/10 09:51:18  midas
+  Introduced mscb_flash()
+
   Revision 1.7  2001/11/05 11:47:04  midas
   Fixed bug to run msc under W95
 
@@ -48,6 +51,20 @@
 #define INPW_P(_p) _inpw((unsigned short) (_p));_outp((unsigned short)0x80,0);
 #endif
 
+/* Byte and Word swapping big endian <-> little endian */
+#define WORD_SWAP(x) { BYTE _tmp;                               \
+                       _tmp= *((BYTE *)(x));                    \
+                       *((BYTE *)(x)) = *(((BYTE *)(x))+1);     \
+                       *(((BYTE *)(x))+1) = _tmp; }
+
+#define DWORD_SWAP(x) { BYTE _tmp;                              \
+                       _tmp= *((BYTE *)(x));                    \
+                       *((BYTE *)(x)) = *(((BYTE *)(x))+3);     \
+                       *(((BYTE *)(x))+3) = _tmp;               \
+                       _tmp= *(((BYTE *)(x))+1);                \
+                       *(((BYTE *)(x))+1) = *(((BYTE *)(x))+2); \
+                       *(((BYTE *)(x))+2) = _tmp; }
+
 /* file descriptor */
 
 #define MSCB_MAX_FD 10
@@ -62,27 +79,27 @@ MSCB_FD mscb_fd[MSCB_MAX_FD];
 
 /*
 
-  Ofs    PC     DB25       SM    DIR   Name
+  Ofs Inv   PC     DB25       SM    DIR   MSCB Name
                               
-   0     D0 ----- 2 ----- P1.0   <->    |
-   0     D1 ----- 3 ----- P1.1   <->    |
-   0     D2 ----- 4 ----- P1.2   <->    |  D
-   0     D3 ----- 5 ----- P1.3   <->     \ a
-   0     D4 ----- 6 ----- P1.4   <->     / t
-   0     D5 ----- 7 ----- P1.5   <->    |  a
-   0     D6 ----- 8 ----- P1.6   <->    |
-   0     D7 ----- 9 ----- P1.7   <->    |
+   0  No    D0 ----- 2 ----- P1.0   <->    |
+   0  No    D1 ----- 3 ----- P1.1   <->    |
+   0  No    D2 ----- 4 ----- P1.2   <->    |  D
+   0  No    D3 ----- 5 ----- P1.3   <->     \ a
+   0  No    D4 ----- 6 ----- P1.4   <->     / t
+   0  No    D5 ----- 7 ----- P1.5   <->    |  a
+   0  No    D6 ----- 8 ----- P1.6   <->    |
+   0  No    D7 ----- 9 ----- P1.7   <->    |
                               
-   2     !STR --- 1  ---- P0.7    ->    /STROBE
-   1     !BSY --- 11 ---- P3.2   <-     BUSY
+   2  Yes   !STR --- 1  ---- P0.7    ->    /STROBE
+   1  Yes   !BSY --- 11 ---- P3.2   <-     BUSY
 
-   1     !ACK --- 10 ---- P3.3   <-     /DATAREADY
-   2     !DSL --- 17 ---- P0.3    ->    /ACK
+   1  Yes   !ACK --- 10 ---- P3.3   <-     /DATAREADY
+   2  Yes   !DSL --- 17 ---- P0.3    ->    /ACK
 
-   1     PAP ---- 12 ---- P3.1   <-     STATUS
+   1  No    PAP ---- 12 ---- P3.1   <-     STATUS
 
-   2     !ALF --- 14 ---- P3.0    ->    /RESET
-   2     INI ---- 16 ---- P0.4    ->    BIT9
+   2  Yes   !ALF --- 14 ---- P3.0    ->    /RESET
+   2  No    INI ---- 16 ---- P0.4    ->    BIT9
 
 */
 
@@ -113,11 +130,6 @@ MSCB_FD mscb_fd[MSCB_MAX_FD];
 
 #define LPT_DIRECTION   (1<<5)   /* no pin */
 #define LPT_DIRECTION_OFS   2
-
-/* status bit */
-#define LPT_STATUS      (1<<5)
-#define LPT_STATUS_OFS      1
-
 
 /* other constants */
 
@@ -507,17 +519,17 @@ unsigned char c;
 
   mscb_lock();
 
+  /* set initial state of handshake lines */
+  OUTP(mscb_fd[index].fd + LPT_NSTROBE_OFS, 0);
+
   /* check if SM alive */
-  d = INP(mscb_fd[index].fd + LPT_STATUS_OFS);
-  if ((d & (LPT_STATUS)) > 0)
+  d = INP(mscb_fd[index].fd + LPT_NBUSY_OFS);
+  if ((d & LPT_NBUSY) == 0)
     {
     //printf("mscb.c: No SM present on parallel port\n");
     mscb_release();
     return -1;
     }
-
-  /* set initial state of handshake lines */
-  OUTP(mscb_fd[index].fd + LPT_NSTROBE_OFS, 0);
 
   /* empty RBuffer of SM */
   do
@@ -666,8 +678,8 @@ int i, fd, d;
       d >>= 1;
       }
 
-    d = INP(fd + LPT_STATUS_OFS);
-    printf(" %d%d%d\r", (d & LPT_NDATAREADY) > 0, (d & LPT_NBUSY) == 0, (d & LPT_STATUS) > 0);
+    d = INP(fd + LPT_NBUSY_OFS);
+    printf(" %d%d\r", (d & LPT_NDATAREADY) > 0, (d & LPT_NBUSY) == 0);
 
     Sleep(100);
     } while (!kbhit());
@@ -729,8 +741,8 @@ int i;
            cmd == CMD_ADDR_GRP16 ||
            cmd == CMD_PING16)
     {
-    buf[1] = (unsigned char) (adr & 0xFF);
-    buf[2] = (unsigned char) (adr >> 8);
+    buf[1] = (unsigned char) (adr >> 8);
+    buf[2] = (unsigned char) (adr & 0xFF);
     buf[3] = crc8(buf, 3);
     mscb_out(fd, buf, 4, TRUE);
     }
@@ -742,8 +754,8 @@ int i;
 
   if (cmd == CMD_PING8 || cmd == CMD_PING16)
     {
-    /* read back ping reply, 2ms timeout */
-    i = mscb_in1(fd, buf, 2000);
+    /* read back ping reply, 1ms timeout */
+    i = mscb_in1(fd, buf, 1000);
 
     mscb_release();
     
@@ -881,6 +893,10 @@ unsigned char buf[80];
   if (crc8(buf, sizeof(MSCB_INFO)+2) != buf[sizeof(MSCB_INFO)+2])
     return MSCB_CRC_ERROR;
 
+  WORD_SWAP(&info->node_address);
+  WORD_SWAP(&info->group_address);
+  WORD_SWAP(&info->watchdog_resets);
+
   return MSCB_SUCCESS;
 }
 
@@ -965,10 +981,10 @@ unsigned char buf[8];
     return MSCB_MUTEX;
 
   buf[0] = CMD_SET_ADDR;
-  buf[1] = (unsigned char ) (node & 0xFF);
-  buf[2] = (unsigned char ) (node >> 8);
-  buf[3] = (unsigned char ) (group & 0xFF);
-  buf[4] = (unsigned char ) (group >> 8);  
+  buf[1] = (unsigned char ) (node >> 8);
+  buf[2] = (unsigned char ) (node & 0xFF);
+  buf[3] = (unsigned char ) (group >> 8);  
+  buf[4] = (unsigned char ) (group & 0xFF);
   buf[5] = crc8(buf, 5);
   mscb_out(fd, buf, 6, FALSE);
 
@@ -1014,7 +1030,7 @@ unsigned char buf[10];
 
   for (i=0,d=data ; i<size ; i++)
     {
-    buf[2+i] = d & 0xFF;
+    buf[2+size-1-i] = d & 0xFF;
     d >>= 8;
     }
 
@@ -1066,7 +1082,7 @@ unsigned char buf[10], crc, ack[2];
 
   for (i=0,d=data ; i<size ; i++)
     {
-    buf[2+i] = d & 0xFF;
+    buf[2+size-1-i] = d & 0xFF;
     d >>= 8;
     }
 
@@ -1088,8 +1104,7 @@ unsigned char buf[10], crc, ack[2];
 
 /*------------------------------------------------------------------*/
 
-int mscb_write_conf(int fd, unsigned char channel, unsigned int data, int size,
-                    int perm)
+int mscb_write_conf(int fd, unsigned char channel, unsigned int data, int size)
 /********************************************************************\
 
   Routine: mscb_write_conf
@@ -1102,7 +1117,6 @@ int mscb_write_conf(int fd, unsigned char channel, unsigned int data, int size,
     unsigned int  data      Data to send
     int size                Data size in bytes 1..4 for byte, word, 
                             and dword
-    int perm                If 1, write permanently to EEPROM
 
   Function value:
     MSCB_SUCCESS            Successful completion
@@ -1123,22 +1137,66 @@ unsigned char buf[10], crc, ack[2];
   if (mscb_lock() != MSCB_SUCCESS)
     return MSCB_MUTEX;
 
-  if (perm)
-    buf[0] = CMD_WRITE_CONF_PERM+size+1;
-  else
-    buf[0] = CMD_WRITE_CONF+size+1;
-
+  buf[0] = CMD_WRITE_CONF+size+1;
   buf[1] = channel;
 
   for (i=0,d=data ; i<size ; i++)
     {
-    buf[2+i] = d & 0xFF;
+    buf[2+size-1-i] = d & 0xFF;
     d >>= 8;
     }
 
   crc = crc8(buf, 2+i);
   buf[2+i] = crc;
   mscb_out(fd, buf, 3+i, FALSE);
+
+  /* read acknowledge, 100ms timeout */
+  i = mscb_in(fd, ack, 2, 100000);
+  mscb_release();
+
+  if (i<2)
+    return MSCB_TIMEOUT;
+
+  if (ack[0] != CMD_ACK || ack[1] != crc)
+    return MSCB_CRC_ERROR;
+
+  return MSCB_SUCCESS;
+}
+
+/*------------------------------------------------------------------*/
+
+int mscb_flash(int fd)
+/********************************************************************\
+
+  Routine: mscb_flash
+
+  Purpose: Flash configuration parameter and channels values to
+           EEPROM
+           
+
+  Input:
+    int fd                  File descriptor for connection
+                            and dword
+
+  Function value:
+    MSCB_SUCCESS            Successful completion
+    MSCB_TIMEOUT            Timeout receiving acknowledge
+    MSCB_CRC_ERROR          CRC error
+    MSCB_INVAL_PARAM        Parameter "size" has invalid value
+    MSCB_MUTEX              Cannot obtain mutex for mscb
+
+\********************************************************************/
+{
+int           i;
+unsigned char buf[10], crc, ack[2];
+
+  if (mscb_lock() != MSCB_SUCCESS)
+    return MSCB_MUTEX;
+
+  buf[0] = CMD_FLASH;
+  crc = crc8(buf, 1);
+  buf[1] = crc;
+  mscb_out(fd, buf, 2, FALSE);
 
   /* read acknowledge, 100ms timeout */
   i = mscb_in(fd, ack, 2, 100000);
@@ -1205,6 +1263,10 @@ unsigned char buf[10], crc;
 
   *data = 0;
   memcpy(data, buf+1, i-2);
+  if (i-2 == 2)
+    WORD_SWAP(data);
+  if (i-2 == 4)
+    DWORD_SWAP(data);
 
   return MSCB_SUCCESS;
 }
@@ -1260,14 +1322,17 @@ unsigned char buf[10], crc;
 
   *data = 0;
   memcpy(data, buf+1, i-2);
+  if (i-2 == 2)
+    WORD_SWAP(data);
+  if (i-2 == 4)
+    DWORD_SWAP(data);
 
   return MSCB_SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
 
-int mscb_user(int fd, unsigned char *param, int size, 
-              unsigned char *result, int *rsize)
+int mscb_user(int fd, void *param, int size, void *result, int *rsize)
 /********************************************************************\
 
   Routine: mscb_user
@@ -1292,7 +1357,7 @@ int mscb_user(int fd, unsigned char *param, int size,
 
 \********************************************************************/
 {
-int i, status;
+int i, n, status;
 unsigned char buf[80];
 
   if (mscb_lock() != MSCB_SUCCESS)
@@ -1301,7 +1366,7 @@ unsigned char buf[80];
   buf[0] = CMD_USER+size;
 
   for (i=0 ; i<size ; i++)
-    buf[1+i] = param[i];
+    buf[1+i] = ((char *)param)[i];
 
   /* add CRC code and send data */
   buf[1+i] = crc8(buf, 1+i);
@@ -1319,15 +1384,18 @@ unsigned char buf[80];
     }
 
   /* read result */
-  i = mscb_in(fd, result, *rsize, 5000);
+  n = mscb_in(fd, buf, sizeof(buf), 5000);
   mscb_release();
-  
-  *rsize = i;
 
-  if (i<0)
+  if (n<0)
     return MSCB_TIMEOUT;
 
-  if (result[i-1] != crc8(result, i-1))
+  if (rsize)
+    *rsize = n-2;
+  for (i=0 ; i<n-2 ; i++)
+    ((char *)result)[i] = buf[1+i];
+
+  if (buf[n-1] != crc8(buf, n-1))
     return MSCB_CRC_ERROR;
 
   return MSCB_SUCCESS;
@@ -1374,16 +1442,16 @@ int           i;
 
   /* send address command */
   buf[0] = CMD_ADDR_NODE16;
-  buf[1] = (unsigned char) (addr & 0xFF);
-  buf[2] = (unsigned char) (addr >> 8);
+  buf[1] = (unsigned char) (addr >> 8);
+  buf[2] = (unsigned char) (addr & 0xFF);
   buf[3] = crc8(buf, 3);
   mscb_out(_fd, buf, 4, TRUE);
 
   /* send write command */
   buf[0] = CMD_WRITE_ACK+3;
   buf[1] = channel;
-  buf[2] = data & 0xFF;
-  buf[3] = (data >> 8);
+  buf[2] = (data >> 8);
+  buf[3] = data & 0xFF;
   crc = crc8(buf, 4);
   buf[4] = crc;
   mscb_out(_fd, buf, 5, FALSE);
@@ -1403,7 +1471,7 @@ int           i;
 /*------------------------------------------------------------------*/
 
 int mscb_write_conf16(char *device, unsigned short addr, unsigned char index,
-                      unsigned short data, int perm)
+                      unsigned short data)
 /********************************************************************\
 
   Routine: mscb_write_conf16
@@ -1415,7 +1483,6 @@ int mscb_write_conf16(char *device, unsigned short addr, unsigned char index,
     unsigned int  addr      Node address
     unsigned char index     Parameter index 0..254, 255 for node CSR
     unsigned int  data      Data to send
-    int perm                If 1, write permanently to EEPROM
 
   Function value:
     MSCB_SUCCESS            Successful completion
@@ -1440,19 +1507,16 @@ int           i;
 
   /* send address command */
   buf[0] = CMD_ADDR_NODE16;
-  buf[1] = (unsigned char) (addr & 0xFF);
-  buf[2] = (unsigned char) (addr >> 8);
+  buf[1] = (unsigned char) (addr >> 8);
+  buf[2] = (unsigned char) (addr & 0xFF);
   buf[3] = crc8(buf, 3);
   mscb_out(_fd, buf, 4, TRUE);
 
   /* send write command */
-  if (perm)
-    buf[0] = CMD_WRITE_CONF_PERM+3;
-  else
-    buf[0] = CMD_WRITE_CONF+3;
+  buf[0] = CMD_WRITE_CONF+3;
   buf[1] = index;
-  buf[2] = data & 0xFF;
-  buf[3] = (data >> 8);
+  buf[2] = (data >> 8);
+  buf[3] = data & 0xFF;
   crc = crc8(buf, 4);
   buf[4] = crc;
   mscb_out(_fd, buf, 5, FALSE);
@@ -1509,8 +1573,8 @@ int           i;
 
   /* send address command */
   buf[0] = CMD_ADDR_NODE16;
-  buf[1] = (unsigned char) (addr & 0xFF);
-  buf[2] = (unsigned char) (addr >> 8);
+  buf[1] = (unsigned char) (addr >> 8);
+  buf[2] = (unsigned char) (addr & 0xFF);
   buf[3] = crc8(buf, 3);
   mscb_out(_fd, buf, 4, TRUE);
 
@@ -1533,6 +1597,7 @@ int           i;
     return MSCB_CRC_ERROR;
 
   *data = *((unsigned short *)(buf+1));
+  WORD_SWAP(data);
 
   return MSCB_SUCCESS;
 }
@@ -1578,8 +1643,8 @@ int           i;
 
   /* send address command */
   buf[0] = CMD_ADDR_NODE16;
-  buf[1] = (unsigned char) (addr & 0xFF);
-  buf[2] = (unsigned char) (addr >> 8);
+  buf[1] = (unsigned char) (addr >> 8);
+  buf[2] = (unsigned char) (addr & 0xFF);
   buf[3] = crc8(buf, 3);
   mscb_out(_fd, buf, 4, TRUE);
 
@@ -1602,6 +1667,7 @@ int           i;
     return MSCB_CRC_ERROR;
 
   *data = *((unsigned short *)(buf+1));
+  WORD_SWAP(data);
 
   return MSCB_SUCCESS;
 }
