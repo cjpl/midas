@@ -6,6 +6,9 @@
   Contents:     LeCroy LRS1454/1458 Voltage Device Driver
 
   $Log$
+  Revision 1.15  2003/10/06 09:18:20  midas
+  Fix segfault if module does not report voltage
+
   Revision 1.14  2003/09/30 16:12:11  midas
   Show error about panic switch
 
@@ -228,7 +231,7 @@ LRS1454_INFO *info;
   if (!bd)
     return FE_ERR_ODB;
 
-  return lrs1454_setup(info, TRUE);
+  return lrs1454_setup(info, FALSE); /* try without zero channels */
 }
 
 /*----------------------------------------------------------------------------*/
@@ -400,7 +403,10 @@ char  str[256], *p;
     for (j=0 ; j<12 && i*12+j < channels ; j++)
       {
       array[i*12+j] = (float) fabs(atof(p));
-      p = strchr(p, ' ')+1;
+      p = strchr(p, ' ');
+      if (p == NULL)
+        break;
+      p++;
       }
     }
 
@@ -430,7 +436,10 @@ char  str[256], *p;
     for (j=0 ; j<12 && i*12+j < channels ; j++)
       {
       array[i*12+j] = (float) fabs(atof(p));
-      p = strchr(p, ' ')+1;
+      p = strchr(p, ' ');
+      if (p == NULL)
+        break;
+      p++;
       }
     }
 
