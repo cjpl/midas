@@ -6,6 +6,9 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.48  2002/05/15 22:50:30  midas
+  Improved error message
+
   Revision 1.47  2002/05/14 20:45:23  midas
   Added better error message
 
@@ -4012,6 +4015,7 @@ INT db_get_data_index(HNDLE hDB, HNDLE hKey,
 {
 DATABASE_HEADER  *pheader;
 KEY              *pkey;
+char             str[256];
 
   if (hDB > _database_entries || hDB <= 0)
     {
@@ -4080,8 +4084,10 @@ KEY              *pkey;
     {
     memset(data, 0, *buf_size);
     db_unlock_database(hDB);
+
+    db_get_path(hDB, hKey, str, sizeof(str));
     cm_msg(MERROR, "db_get_data_index", "index (%d) exceeds array length (%d) for key \"%s\"", 
-           index, pkey->num_values, pkey->name);
+           index, pkey->num_values, str);
     return DB_OUT_OF_RANGE;
     }
 
