@@ -6,13 +6,17 @@
   Cotents:      CAMAC functions for CES VCC 2117 controller
 
   $Log$
+  Revision 1.3  1998/10/23 14:21:49  midas
+  - Modified version scheme from 1.06 to 1.6.0
+  - cm_get_version() now returns versino as string
+
   Revision 1.2  1998/10/12 12:18:56  midas
   Added Log tag in header
 
 
 \********************************************************************/
 
-#include <camac.h>
+#include <mcstd.h>
 
 /*---- input -------------------------------------------------------*/
 

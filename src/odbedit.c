@@ -6,6 +6,10 @@
   Contents:     Command-line interface to the MIDAS online data base.
 
   $Log$
+  Revision 1.9  1998/10/23 14:21:51  midas
+  - Modified version scheme from 1.06 to 1.6.0
+  - cm_get_version() now returns versino as string
+
   Revision 1.8  1998/10/12 12:23:51  midas
   Added run state character in ODBEdit prompt
 
@@ -1954,7 +1958,7 @@ char            *state_char[] = { "U", "S", "P", "R" };
     /* ver */
     else if (param[0][0] == 'v' && param[0][1] == 'e')
       {
-      printf("MIDAS library version %1.2lf\n", cm_get_version()/100.0);
+      printf("MIDAS library version %s\n", cm_get_version());
       }
 
     /* exec */

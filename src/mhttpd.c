@@ -6,6 +6,10 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
+  Revision 1.3  1998/10/23 14:21:49  midas
+  - Modified version scheme from 1.06 to 1.6.0
+  - cm_get_version() now returns versino as string
+
   Revision 1.2  1998/10/12 12:19:02  midas
   Added Log tag in header
 
@@ -168,7 +172,7 @@ void redirect(char *path)
 {
   /* redirect */
   rsprintf("HTTP/1.0 302 Found\r\n");
-  rsprintf("Server: MIDAS HTTP %1.2lf\r\n", cm_get_version()/100.0);
+  rsprintf("Server: MIDAS HTTP %s\r\n", cm_get_version());
 
   if (exp_name[0])
     rsprintf("Location: %s%s?exp=%s\n\n<html>redir</html>\r\n", mhttpd_url, path, exp_name);
@@ -307,7 +311,7 @@ int    size;
 
   /* header */
   rsprintf("HTTP/1.0 200 Document follows\r\n");
-  rsprintf("Server: MIDAS HTTP %1.2lf\r\n", cm_get_version()/100.0);
+  rsprintf("Server: MIDAS HTTP %s\r\n", cm_get_version());
   rsprintf("Content-Type: text/html\r\n\r\n");
 
   rsprintf("<html><head><title>%s</title></head>\n", title);
@@ -360,7 +364,7 @@ CHN_STATISTICS chn_stats;
 
   /* header */
   rsprintf("HTTP/1.0 200 Document follows\r\n");
-  rsprintf("Server: MIDAS HTTP %1.2lf\r\n", cm_get_version()/100.0);
+  rsprintf("Server: MIDAS HTTP %s\r\n", cm_get_version());
   rsprintf("Content-Type: text/html\r\n\r\n");
 
   rsprintf("<html><head><title>MIDAS status</title></head>\n");
@@ -1049,7 +1053,7 @@ static HNDLE hconn = 0;
 
   /* header */
   rsprintf("HTTP/1.0 200 Document follows\r\n");
-  rsprintf("Server: MIDAS HTTP %1.2lf\r\n", cm_get_version()/100.0);
+  rsprintf("Server: MIDAS HTTP %s\r\n", cm_get_version());
   rsprintf("Content-Type: text/html\r\n\r\n");
 
   rsprintf("<html><head><title>MIDAS CAMAC interface</title></head>\n");
@@ -1235,7 +1239,7 @@ void show_experiment_page(char exp_list[MAX_EXPERIMENT][NAME_LENGTH])
 int i;
 
   rsprintf("HTTP/1.0 200 Document follows\r\n");
-  rsprintf("Server: MIDAS HTTP %1.2lf\r\n", cm_get_version()/100.0);
+  rsprintf("Server: MIDAS HTTP %s\r\n", cm_get_version());
   rsprintf("Content-Type: text/html\r\n\r\n");
 
   rsprintf("<html>\n");
@@ -1264,7 +1268,7 @@ int i;
 void show_password_page(char *password, char *experiment)
 {
   rsprintf("HTTP/1.0 200 Document follows\r\n");
-  rsprintf("Server: MIDAS HTTP %1.2lf\r\n", cm_get_version()/100.0);
+  rsprintf("Server: MIDAS HTTP %s\r\n", cm_get_version());
   rsprintf("Content-Type: text/html\r\n\r\n");
 
   rsprintf("<html><head><title>Enter password</title></head><body>\n\n");
@@ -2099,7 +2103,7 @@ struct tm *gmt;
   if (password[0])
     {
     rsprintf("HTTP/1.0 302 Found\r\n");
-    rsprintf("Server: MIDAS HTTP %1.2lf\r\n", cm_get_version()/100.0);
+    rsprintf("Server: MIDAS HTTP %s\r\n", cm_get_version());
 
     time(&now);
     now += 3600*24;
@@ -2351,7 +2355,7 @@ struct tm *gmt;
 
     /* redirect with cookie */
     rsprintf("HTTP/1.0 302 Found\r\n");
-    rsprintf("Server: MIDAS HTTP %1.2lf\r\n", cm_get_version()/100.0);
+    rsprintf("Server: MIDAS HTTP %s\r\n", cm_get_version());
 
     rsprintf("Set-cookie: midas_refr=%d; path=/; expires=0\n", refresh);
 

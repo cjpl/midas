@@ -6,6 +6,10 @@
   Contents:     CAMAC utility
   
   $Log$
+  Revision 1.5  1998/10/23 14:21:51  midas
+  - Modified version scheme from 1.06 to 1.6.0
+  - cm_get_version() now returns versino as string
+
   Revision 1.4  1998/10/13 16:56:53  pierre
   -PAA- Add log header
 
@@ -505,8 +509,8 @@ INT decode_line (CAMAC *P, char * ss)
 /*--------------------------------------------------------------------*/
 void help_page()
 {
-  printf("\n*-v%1.2lf----------- H E L P   C N A F -------------------*\n"
-	 ,cm_get_version()/100.0);
+  printf("\n*-v%s----------- H E L P   C N A F -------------------*\n"
+	 ,cm_get_version());
   printf("          Interactive Midas CAMAC command\n");
   printf("          ===============================\n");
   printf(" Output : Data [dec/hex X=0/1 - Q=0/1 ]\n");
