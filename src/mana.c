@@ -7,6 +7,11 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.114  2004/01/17 05:35:53  olchansk
+  replace #define ALIGN() with ALIGN8() to dodge namespace pollution under macosx
+  hide strlcpy() & co #ifdef HAVE_STRLCPY (macosx already has strlcpy())
+  correct inconsistent prototype of dbg_malloc() and dbg_calloc()
+
   Revision 1.113  2004/01/08 08:40:10  midas
   Implemented standard indentation
 
@@ -2595,7 +2600,7 @@ INT write_event_midas(FILE * file, EVENT_HEADER * pevent, ANALYZE_REQUEST * par)
    if (buffer == NULL)
       buffer = (char *) malloc(MAX_EVENT_SIZE);
 
-   pevent_copy = (EVENT_HEADER *) ALIGN((PTYPE) buffer);
+   pevent_copy = (EVENT_HEADER *) ALIGN8((PTYPE) buffer);
 
    if (clp.filter) {
       /* use original event */
@@ -3642,7 +3647,7 @@ void receive_event(HNDLE buffer_handle, HNDLE request_id, EVENT_HEADER * pheader
    }
 
    /* align buffer */
-   pb = (char *) ALIGN((int) buffer);
+   pb = (char *) ALIGN8((int) buffer);
 
    /* copy event to local buffer */
    memcpy(pb, pheader, pheader->data_size + sizeof(EVENT_HEADER));
@@ -4415,7 +4420,7 @@ INT analyze_run(INT run_number, char *input_file_name, char *output_file_name)
       printf("Not enough memeory\n");
       return -1;
    }
-   pevent = (EVENT_HEADER *) ALIGN((PTYPE) pevent_unaligned);
+   pevent = (EVENT_HEADER *) ALIGN8((PTYPE) pevent_unaligned);
 
    /* call analyzer bor routines */
    bor(run_number, error);

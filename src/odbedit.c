@@ -6,6 +6,11 @@
   Contents:     Command-line interface to the MIDAS online data base.
 
   $Log$
+  Revision 1.71  2004/01/17 05:35:53  olchansk
+  replace #define ALIGN() with ALIGN8() to dodge namespace pollution under macosx
+  hide strlcpy() & co #ifdef HAVE_STRLCPY (macosx already has strlcpy())
+  correct inconsistent prototype of dbg_malloc() and dbg_calloc()
+
   Revision 1.70  2004/01/08 08:40:10  midas
   Implemented standard indentation
 
@@ -638,11 +643,11 @@ void scan_tree(HNDLE hDB, HNDLE hKey, INT * total_size_key, INT * total_size_dat
    db_get_key(hDB, hKey, &key);
    size = sizeof(data);
 
-   *total_size_key += ALIGN(sizeof(KEY));
+   *total_size_key += ALIGN8(sizeof(KEY));
    if (key.type == TID_KEY)
-      *total_size_key += ALIGN(sizeof(KEYLIST));
+      *total_size_key += ALIGN8(sizeof(KEYLIST));
    else
-      *total_size_data += ALIGN(key.total_size);
+      *total_size_data += ALIGN8(key.total_size);
 
    if (flags & 0x4) {
       /* only print value */

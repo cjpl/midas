@@ -7,6 +7,11 @@
                 routines
 
   $Log$
+  Revision 1.37  2004/01/17 05:35:53  olchansk
+  replace #define ALIGN() with ALIGN8() to dodge namespace pollution under macosx
+  hide strlcpy() & co #ifdef HAVE_STRLCPY (macosx already has strlcpy())
+  correct inconsistent prototype of dbg_malloc() and dbg_calloc()
+
   Revision 1.36  2004/01/13 00:51:15  pierre
   fix dox comment for vxworks
 
@@ -226,7 +231,7 @@ Definition of implementation specific constants */
 #define MESSAGE_BUFFER_NAME    "SYSMSG" /**< buffer name for messages */
 #define MAX_RPC_CONNECTION     25       /**< server/client connections   */
 #define MAX_STRING_LENGTH      256      /**< max string length for odb */
-#define NET_BUFFER_SIZE        (ALIGN(MAX_EVENT_SIZE)+sizeof(EVENT_HEADER)+\
+#define NET_BUFFER_SIZE        (ALIGN8(MAX_EVENT_SIZE)+sizeof(EVENT_HEADER)+\
 4*8 + sizeof(NET_COMMAND_HEADER))
 
 /*------------------------------------------------------------------*/

@@ -6,6 +6,11 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.84  2004/01/17 05:35:53  olchansk
+  replace #define ALIGN() with ALIGN8() to dodge namespace pollution under macosx
+  hide strlcpy() & co #ifdef HAVE_STRLCPY (macosx already has strlcpy())
+  correct inconsistent prototype of dbg_malloc() and dbg_calloc()
+
   Revision 1.83  2004/01/13 00:51:47  pierre
   fix dox comment for vxworks
 
@@ -315,7 +320,7 @@ void *malloc_key(DATABASE_HEADER * pheader, INT size)
       return NULL;
 
    /* quadword alignment for alpha CPU */
-   size = ALIGN(size);
+   size = ALIGN8(size);
 
    /* search for free block */
    pfree = (FREE_DESCRIP *) ((char *) pheader + pheader->first_free_key);
@@ -375,7 +380,7 @@ void free_key(DATABASE_HEADER * pheader, void *address, INT size)
       return;
 
    /* quadword alignment for alpha CPU */
-   size = ALIGN(size);
+   size = ALIGN8(size);
 
    pfree = (FREE_DESCRIP *) address;
    pprev = NULL;
@@ -435,7 +440,7 @@ void *malloc_data(DATABASE_HEADER * pheader, INT size)
       return NULL;
 
    /* quadword alignment for alpha CPU */
-   size = ALIGN(size);
+   size = ALIGN8(size);
 
    /* search for free block */
    pfree = (FREE_DESCRIP *) ((char *) pheader + pheader->first_free_data);
@@ -495,7 +500,7 @@ void free_data(DATABASE_HEADER * pheader, void *address, INT size)
       return;
 
    /* quadword alignment for alpha CPU */
-   size = ALIGN(size);
+   size = ALIGN8(size);
 
    pfree = (FREE_DESCRIP *) address;
    pprev = NULL;
@@ -1018,7 +1023,7 @@ INT db_open_database(char *database_name, INT database_size,
       /* open shared memory region */
       status = ss_shm_open(database_name,
                            sizeof(DATABASE_HEADER) +
-                           2 * ALIGN(database_size / 2),
+                           2 * ALIGN8(database_size / 2),
                            (void **) &(_database[(INT) handle].
                                        database_header), &shm_handle);
 
@@ -1036,15 +1041,15 @@ INT db_open_database(char *database_name, INT database_size,
       shm_created = (status == SS_CREATED);
 
       /* clear memeory for debugging */
-      /* memset(pheader, 0, sizeof(DATABASE_HEADER) + 2*ALIGN(database_size/2)); */
+      /* memset(pheader, 0, sizeof(DATABASE_HEADER) + 2*ALIGN8(database_size/2)); */
 
       if (shm_created && pheader->name[0] == 0) {
          /* setup header info if database was created */
-         memset(pheader, 0, sizeof(DATABASE_HEADER) + 2 * ALIGN(database_size / 2));
+         memset(pheader, 0, sizeof(DATABASE_HEADER) + 2 * ALIGN8(database_size / 2));
 
          strcpy(pheader->name, database_name);
-         pheader->key_size = ALIGN(database_size / 2);
-         pheader->data_size = ALIGN(database_size / 2);
+         pheader->key_size = ALIGN8(database_size / 2);
+         pheader->data_size = ALIGN8(database_size / 2);
          pheader->root_key = sizeof(DATABASE_HEADER);
          pheader->first_free_key = sizeof(DATABASE_HEADER);
          pheader->first_free_data = sizeof(DATABASE_HEADER) + pheader->key_size;
@@ -1082,7 +1087,7 @@ INT db_open_database(char *database_name, INT database_size,
       } else {
          /* check if database size is identical */
 /*
-    if (pheader->data_size != ALIGN(database_size / 2))
+    if (pheader->data_size != ALIGN8(database_size / 2))
       {
       database_size = pheader->data_size + pheader->key_size;
 

@@ -8,6 +8,11 @@
 
 
   $Log$
+  Revision 1.126  2004/01/17 05:35:53  olchansk
+  replace #define ALIGN() with ALIGN8() to dodge namespace pollution under macosx
+  hide strlcpy() & co #ifdef HAVE_STRLCPY (macosx already has strlcpy())
+  correct inconsistent prototype of dbg_malloc() and dbg_calloc()
+
   Revision 1.125  2004/01/13 00:51:04  pierre
   fix dox comment for vxworks
 
@@ -805,7 +810,7 @@ min */
 
 /**
 Align macro for data alignment on 8-byte boundary */
-#define ALIGN(x)  (((x)+7) & ~7)
+#define ALIGN8(x)  (((x)+7) & ~7)
 
 /**
 Align macro for variable data alignment */
@@ -1893,8 +1898,10 @@ extern "C" {
    INT EXPRT cm_msg_retrieve(INT n_message, char *message, INT * buf_size);
 
    BOOL EXPRT equal_ustring(char *str1, char *str2);
+#ifndef HAVE_STRLCPY
    INT EXPRT strlcpy(char *dst, const char *src, INT size);
    INT EXPRT strlcat(char *dst, const char *src, INT size);
+#endif
 
 /*---- buffer manager ----*/
    INT EXPRT bm_open_buffer(char *buffer_name, INT buffer_size, INT * buffer_handle);
