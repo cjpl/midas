@@ -6,6 +6,9 @@
   Contents:     LeCroy LRS1454/1458 Voltage Device Driver
 
   $Log$
+  Revision 1.10  2001/04/11 02:11:24  midas
+  First zero all channels (for the case of trip problems)
+
   Revision 1.9  2001/04/06 03:58:35  midas
   Moved debugging flag into ODB for BD
 
@@ -132,6 +135,22 @@ char         str[1000];
     return FE_ERR_HW;
     }
   
+  /* enable channels */
+  printf("\n");
+  for (i=0 ; i<(info->num_channels-1)/12+1 ; i++)
+    {
+    printf("Zero module %d\r", i);
+    fflush(stdout);
+    sprintf(str, "LD L%d DV 0 0 0 0 0 0 0 0 0 0 0 0\r", i);
+    BD_PUTS(str);
+    status = BD_GETS(str, sizeof(str), ">", DEFAULT_TIMEOUT);
+    if (strchr(str, '>') == NULL || strstr(str, "ERROR"))
+      {
+      cm_msg(MERROR, "lrs1454_init", "Cannot zero module %d. Please exchange module.", i);
+      return FE_ERR_HW;
+      }
+    }
+
   /* turn on HV main switch */
   BD_PUTS("HVON\r");
   status = BD_GETS(str, sizeof(str), ">", DEFAULT_TIMEOUT);
