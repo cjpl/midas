@@ -6,6 +6,9 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
+  Revision 1.5  1998/10/28 12:39:45  midas
+  Added hex display in ODB page
+
   Revision 1.4  1998/10/28 12:25:13  midas
   Fixed bug causing comments in start page being truncated
 
@@ -1369,7 +1372,7 @@ void show_odb_page(HNDLE hDB, char *enc_path, char *dec_path)
 {
 int    i, j, size, status;
 char   str[256], tmp_path[256], url_path[256], 
-       data_str[256], ref[256], keyname[32];
+       data_str[256], hex_str[256], ref[256], keyname[32];
 char   *p, *pd;
 char   data[10000];
 HNDLE  hkey, hkeyroot;
@@ -1507,9 +1510,13 @@ KEY    key;
         size = sizeof(data);
         db_get_data(hDB, hkey, data, &size, key.type);
         db_sprintf(data_str, data, key.item_size, 0, key.type);
+        db_sprintfh(hex_str, data, key.item_size, 0, key.type);
 
         if (data_str[0] == 0 || equal_ustring(data_str, "<NULL>"))
+          {
           strcpy(data_str, "(empty)");
+          hex_str[0] = 0;
+          }
 
         if (exp_name[0])
           sprintf(ref, "%s%s?cmd=Set&exp=%s", 
@@ -1518,8 +1525,12 @@ KEY    key;
           sprintf(ref, "%s%s?cmd=Set", 
                   mhttpd_url, str);
 
-        rsprintf("<tr><td bgcolor=#FFFF00>%s<td><a href=\"%s\">%s</a><br></tr>\n", 
-                  keyname, ref, data_str);
+        if (strcmp(data_str, hex_str) != 0 && hex_str[0])
+          rsprintf("<tr><td bgcolor=#FFFF00>%s<td><a href=\"%s\">%s (%s)</a><br></tr>\n", 
+                    keyname, ref, data_str, hex_str);
+        else
+          rsprintf("<tr><td bgcolor=#FFFF00>%s<td><a href=\"%s\">%s</a><br></tr>\n", 
+                    keyname, ref, data_str);
         }
       else
         {
@@ -1531,9 +1542,13 @@ KEY    key;
           size = sizeof(data);
           db_get_data(hDB, hkey, data, &size, key.type);
           db_sprintf(data_str, data, key.item_size, j, key.type);
+          db_sprintfh(hex_str, data, key.item_size, j, key.type);
 
           if (data_str[0] == 0 || equal_ustring(data_str, "<NULL>"))
+            {
             strcpy(data_str, "(empty)");
+            hex_str[0] = 0;
+            }
 
           if (exp_name[0])
             sprintf(ref, "%s%s?cmd=Set&index=%d&exp=%s", 
@@ -1545,7 +1560,10 @@ KEY    key;
           if (j>0)
             rsprintf("<tr>");
 
-          rsprintf("<td><a href=\"%s\">[%d] %s</a><br></tr>\n", ref, j, data_str);
+          if (strcmp(data_str, hex_str) != 0 && hex_str[0])
+            rsprintf("<td><a href=\"%s\">[%d] %s (%s)</a><br></tr>\n", ref, j, data_str, hex_str);
+          else
+            rsprintf("<td><a href=\"%s\">[%d] %s</a><br></tr>\n", ref, j, data_str);
           }
         }
       }
@@ -1635,7 +1653,6 @@ char   data[10000];
       }
     db_get_key(hDB, hkey, &key);
 
-    
     memset(data, 0, sizeof(data));
     db_sscanf(value, data, &size, 0, key.type);
     
