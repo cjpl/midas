@@ -6,6 +6,9 @@
   Contents:     Calibration program for SCS-900
 
   $Log$
+  Revision 1.2  2004/12/22 16:03:01  midas
+  Fixed compiler warning
+
   Revision 1.1  2004/12/08 10:39:40  midas
   Initial revision
 
@@ -96,7 +99,7 @@ int main(int argc, char *argv[])
 
          for (j=0 ; j<8 ; j++) {
             size = sizeof(float);
-            mscb_read(fd, adr, j, &v, &size);
+            mscb_read(fd, adr, (unsigned char) j, &v, &size);
             mscb_write(fd, adr, (unsigned char) (j + 19), &v, sizeof(float));
 
             printf("Setting ADC%d offset to %1.3lf\n", j, v);
@@ -124,7 +127,7 @@ int main(int argc, char *argv[])
 
          for (j=0 ; j<8 ; j++) {
             size = sizeof(float);
-            mscb_read(fd, adr, j, &v, &size);
+            mscb_read(fd, adr, (unsigned char) j, &v, &size);
             v = (float) (9.9/v);
             mscb_write(fd, adr, (unsigned char) (j + 27), &v, sizeof(float));
 
