@@ -6,6 +6,9 @@
   Contents:     High Voltage Class Driver
 
   $Log$
+  Revision 1.12  2003/08/26 23:27:40  pierre
+  Cannot use // to denote comments because this does not compile under VxWorks; replaced all new // introduced on 2003/06/03 by /* ... */
+
   Revision 1.11  2003/06/03 09:09:39  suter_a
   allow negative high voltage values and adopeted hv_ramp accordingly
 
@@ -243,7 +246,7 @@ float delta, ramp_speed;
 
   for (i=0; i<hv_info->num_channels; i++) {
     if (hv_info->demand[i] != hv_info->demand_mirror[i]) {
-      // check if to ramp up or down
+      /* check if to ramp up or down */
       if ((hv_info->demand[i] >= 0.f) && (hv_info->demand_mirror[i] > 0.f)) {
         switch_tag = FALSE;
         if (hv_info->demand[i] > hv_info->demand_mirror[i])
@@ -273,9 +276,9 @@ float delta, ramp_speed;
 
       if (ramp_speed == 0.f)
         if (switch_tag)
-          hv_info->demand_mirror[i] = 0.f; // go to zero
+          hv_info->demand_mirror[i] = 0.f; /* go to zero */
         else
-          hv_info->demand_mirror[i] = hv_info->demand[i]; // step directly to the new high voltage
+          hv_info->demand_mirror[i] = hv_info->demand[i]; /* step directly to the new high voltage */
       else {
         delta = (float) ((ss_millitime() -
                           hv_info->last_change[i])/1000.0 * ramp_speed);
