@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol main program
 
   $Log$
+  Revision 1.58  2005/01/07 09:29:05  midas
+  Version 1.7.a
+
   Revision 1.57  2004/12/21 10:44:54  midas
   Made secondary port on SCS-1000 working
 
@@ -327,6 +330,10 @@ void setup(void)
    P1MDOUT = 0x00;              // P1: LPT
    P2MDOUT = 0x00;              // P2: LPT
    P3MDOUT = 0xE0;              // P3.5,6,7: Optocouplers
+
+#ifdef SCS_220
+   P0MDOUT |= 0x40;             // P0.6: RS485_SEC_ENABLE = Push Pull
+#endif
 
    /* Select external quartz oscillator */
    OSCXCN = 0x67;               // Crystal mode, Power Factor 22E6
