@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.9  2001/06/15 08:49:19  midas
+  Fixed bug when query gave no results if no message from yesterday
+
   Revision 1.8  2001/05/23 13:15:34  midas
   Fixed bug with category
 
@@ -599,7 +602,7 @@ char   str[256], file_name[256], dir[256];
         }
 
       /* in forward direction, stop today */
-      if (direction != -1 && ltime > (DWORD)time(NULL))
+      if (direction != -1 && ltime > (DWORD)time(NULL)+3600*24)
         break;
 
       /* in backward direction, goe back 10 years */
