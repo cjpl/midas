@@ -6,6 +6,9 @@
   Contents:     Header fiel for MSCB RPC funcions
 
   $Log$
+  Revision 1.5  2003/03/06 16:08:50  midas
+  Protocol version 1.3 (change node name)
+
   Revision 1.4  2002/11/28 13:04:36  midas
   Implemented protocol version 1.2 (echo, read_channels)
 
@@ -113,6 +116,7 @@ typedef struct {
 #define RPC_MSCB_READ_CONF        16
 #define RPC_MSCB_USER             17
 #define RPC_MSCB_ECHO             18
+#define RPC_MSCB_SET_NAME         19
 
 /*------------------------------------------------------------------*/
 

@@ -1,37 +1,16 @@
 /********************************************************************\
 
-  Name:         scs_400.c
+  Name:         scs_700.c
   Created by:   Stefan Ritt
 
 
   Contents:     Application specific (user) part of
                 Midas Slow Control Bus protocol
-                for SCS-400 thermo couple I/O
+                for SCS-700 PT100/PT1000 unit
 
   $Log$
-  Revision 1.9  2003/03/06 16:08:50  midas
+  Revision 1.1  2003/03/06 16:08:50  midas
   Protocol version 1.3 (change node name)
-
-  Revision 1.8  2003/02/27 10:44:30  midas
-  Added 'init' code
-
-  Revision 1.7  2003/02/19 16:05:36  midas
-  Added 'init' parameter to user_init
-
-  Revision 1.6  2003/01/14 08:19:13  midas
-  Increased to 8 channels
-
-  Revision 1.4  2002/11/22 15:43:03  midas
-  Made user_write reentrant
-
-  Revision 1.3  2002/10/09 11:06:46  midas
-  Protocol version 1.1
-
-  Revision 1.2  2002/10/03 15:31:53  midas
-  Various modifications
-
-  Revision 1.1  2002/08/08 06:46:03  midas
-  Initial revision
 
 \********************************************************************/
 
@@ -41,7 +20,7 @@
 extern bit FREEZE_MODE;
 extern bit DEBUG_MODE;
 
-char code node_name[] = "SCS-400";
+char code node_name[] = "SCS-700";
 
 #define GAIN      0   // gain for internal PGA
 #define AVERAGE  12   // average 2^12 times
@@ -187,8 +166,14 @@ float t;
   if (AVERAGE > 4)
     value >>= (AVERAGE-4);
 
-  /* convert to volts, times two (divider), times 100deg/Volt */
-  t = value  / 65536.0 * 2.5 * 2 * 100;
+  /* convert to volts, op-amp gain of 10 */
+  t = value  / 65536.0 * 2.5 / 10;
+
+  /* convert to Ohms (1mA excitation) */
+  t = t / 0.001;
+
+  /* convert to degrees, coefficients obtains from table fit (www.lakeshore.com) */
+  t = -2.60315E-7*t*t*t + 0.001249273*t*t + 2.310962*t - 243.5;
 
   DISABLE_INTERRUPTS;
   *d = t;

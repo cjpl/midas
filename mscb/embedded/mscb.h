@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol commands
 
   $Log$
+  Revision 1.19  2003/03/06 16:08:50  midas
+  Protocol version 1.3 (change node name)
+
   Revision 1.18  2003/03/06 11:00:17  midas
   Added section for SCS-600
 
@@ -64,6 +67,8 @@
 
 /*---- CPU specific items ------------------------------------------*/
 
+#undef LCD_DEBUG  // debug output on LCD
+
 /*--------------------------------*/
 #if defined(SCS_210)
 #include <c8051F020.h>
@@ -89,7 +94,7 @@ sbit RS485_ENABLE =      P3^5;
 #define LED_ON 0
 
 /*--------------------------------*/
-#elif defined(SCS_400) || defined(SCS_500) || defined(SCS_700)
+#elif defined(SCS_400) || defined(SCS_500)
 #include <c8051F000.h>
 #define CPU_C8051F000
 #define CPU_CYGNAL
@@ -99,7 +104,7 @@ sbit RS485_ENABLE =      P3^5;
 #define LED_ON 1
 
 /*--------------------------------*/
-#elif defined(SCS_600)
+#elif defined(SCS_600) || defined(SCS_700)
 #include <c8051F000.h>
 #define CPU_C8051F000
 #define CPU_CYGNAL
@@ -139,7 +144,7 @@ sbit RS485_ENABLE =      P3^5;
 
 /*---- MSCB commands -----------------------------------------------*/
 
-#define VERSION 0x12    // version 1.2
+#define VERSION 0x13    // version 1.3
 
 /* Version history:
 
@@ -292,8 +297,9 @@ typedef struct {
 typedef struct {          // system info stored in EEPROM
 unsigned int  node_addr;
 unsigned int  group_addr;
-unsigned int  wd_counter;
-unsigned int  magic;
+unsigned char wd_counter;
+char          node_name[16];
+unsigned char magic;
 } SYS_INFO;
 
 #define ENABLE_INTERRUPTS { EA = 1; }

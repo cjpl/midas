@@ -6,6 +6,9 @@
   Contents:     Command-line interface for the Midas Slow Control Bus
 
   $Log$
+  Revision 1.32  2003/03/06 16:08:50  midas
+  Protocol version 1.3 (change node name)
+
   Revision 1.31  2003/03/05 15:58:36  midas
   Added bit output
 
@@ -192,6 +195,7 @@ void print_help()
   puts("gaddr <addr>               Set group address");
   puts("info                       Retrive node info");
   puts("sa <addr> <gaddr>          Set node and group address of addressed node");
+  puts("sn <name>                  Set node name (up to 16 characters)");
   puts("debug 0/1                  Turn debuggin off/on on node (LCD output)");
   puts("\nwrite <channel> <value>  Write to node channel");
   puts("read <channel> [r]         Read from node channel [repeat mode]");
@@ -230,9 +234,9 @@ int  i;
 
     case 1:  
       if (info_chn->flags & MSCBF_SIGNED)
-        printf(" 8bit %8d (0x%02X, ", data, data); 
+        printf(" 8bit %8d (0x%02X/", data, data); 
       else
-        printf(" 8bit %8u (0x%02X, ", data, data); 
+        printf(" 8bit %8u (0x%02X/", data, data); 
       for (i=0 ; i<8 ; i++)
         if (data & (0x80 >> i))
           printf("1");
@@ -437,10 +441,13 @@ MSCB_INFO_CHN info_chn;
           if (status == MSCB_SUCCESS)
             {
             status = mscb_info(fd, i, &info);
+            strncpy(str, info.node_name, sizeof(info.node_name));
+            str[16] = 0;
+
             if (status == MSCB_SUCCESS)
               {
               printf("Found node \"%s\", node addr. %d (0x%04X), group addr. %d (0x%04X)      \n", 
-                info.node_name, i, i, info.group_address, info.group_address);
+                str, i, i, info.group_address, info.group_address);
               }
             }
 
@@ -469,7 +476,9 @@ MSCB_INFO_CHN info_chn;
           puts("No response from node");
         else
           {
-          printf("Node name:        %s\n", info.node_name);
+          strncpy(str, info.node_name, sizeof(info.node_name));
+          str[16] = 0;
+          printf("Node name:        %s\n", str);
           printf("Node status:      0x%02X", info.node_status);
           if (info.node_status > 0)
             {
@@ -575,7 +584,7 @@ MSCB_INFO_CHN info_chn;
         }
       }
 
-    /* set group address */
+    /* ga, set group address */
     else if ((param[0][0] == 'g' && param[0][1] == 'a'))
       {
       if (!param[1][0])
@@ -592,7 +601,7 @@ MSCB_INFO_CHN info_chn;
         }
       }
 
-    /* sa */
+    /* sa, set node address */
     else if ((param[0][0] == 's' && param[0][1] == 'a'))
       {
       if (current_addr < 0)
@@ -614,6 +623,27 @@ MSCB_INFO_CHN info_chn;
             gaddr = atoi(param[2]);
 
           mscb_set_addr(fd, current_addr, addr, gaddr);
+          }
+        }
+      }
+
+    /* sn, set node name */
+    else if ((param[0][0] == 's' && param[0][1] == 'n'))
+      {
+      if (current_addr < 0)
+        printf("You must first address an individual node\n");
+      else
+        {
+        if (!param[1][0])
+          puts("Please specify node name");
+        else
+          {
+          strcpy(str, param[1]);
+          while  (strlen(str) > 0 &&
+                  (str[strlen(str)-1] == '\r' || str[strlen(str)-1] == '\n'))
+            str[strlen(str)-1] = 0;
+
+          mscb_set_name(fd, current_addr, str);
           }
         }
       }
