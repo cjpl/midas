@@ -7,6 +7,9 @@
                 ting to a SYSTEM buffer and sending some data.
 
   $Log$
+  Revision 1.5  1999/10/26 12:26:05  midas
+  Added variable event size for test purposes
+
   Revision 1.4  1999/08/06 15:10:32  midas
   Release 1.6.4
 
@@ -39,7 +42,7 @@ char          *event, str[256];
 INT           *pdata, count;
 INT           start, stop;
 double        rate;
-int           id, size;
+int           id, size, act_size, variable_size, flush=0;
 char          host_name[256];
 
   /* get parameters */
@@ -54,6 +57,13 @@ char          host_name[256];
   printf("Event size: ");
   ss_gets(str, 256);
   size = atoi(str);
+  if (size < 0)
+    {
+    variable_size = 1;
+    size = -size;
+    }
+  else
+    variable_size = 0;
 
   /* connect to experiment */
   status = cm_connect_experiment(host_name, "", "Producer", NULL);
@@ -64,7 +74,7 @@ char          host_name[256];
   bm_open_buffer(EVENT_BUFFER_NAME, EVENT_BUFFER_SIZE, &hBuf);
 
   /* set the buffer write cache size */
-  // bm_set_cache_size(hBuf, 0, 100000);
+  bm_set_cache_size(hBuf, 0, 100000);
 
   /* allocate event buffer */
   event = (char *) malloc(size + sizeof(EVENT_HEADER));
@@ -85,19 +95,26 @@ char          host_name[256];
       {
       for (i=0 ; i<10 ; i++)
         {
+        if (variable_size)
+          act_size = (random() + 10) % size;
+        else
+          act_size = size;
+
         /* place the event size in the first and last word of
            the event to check later if data has been overwritten
            accidentally */
-        pdata[0] = size;
-        pdata[size/4-1] = size;
+        pdata[0] = act_size;
+        pdata[act_size/4-1] = act_size;
 
         /* compose an event header with serial number */
         bm_compose_event((EVENT_HEADER *) event, (short) id, 1,
-                         size, ((EVENT_HEADER*) (event))->serial_number+1);
+                         act_size, ((EVENT_HEADER*) (event))->serial_number+1);
 
         /* now send event */
-        status = rpc_send_event(hBuf, event, size+sizeof(EVENT_HEADER), SYNC);
-   	// status = bm_send_event(hBuf, event, size+sizeof(EVENT_HEADER), SYNC);
+        status = rpc_send_event(hBuf, event, 
+                                act_size+sizeof(EVENT_HEADER), SYNC);
+   	/* status = bm_send_event(hBuf, event, 
+	   act_size+sizeof(EVENT_HEADER), SYNC); */
 
         if (status != BM_SUCCESS)
           {
@@ -111,7 +128,7 @@ char          host_name[256];
         getchar();
 */
         
-        count += size;
+        count += act_size;
         }
 
       /* repeat this loop for 1s */
@@ -125,6 +142,14 @@ char          host_name[256];
       rate = 0;
 
     printf("Rate: %1.2lf MB/sec\n", rate);
+
+    /* flush buffers every 10 seconds */
+    if ((flush++) % 10 == 0)
+      {
+      rpc_flush_event();
+      bm_flush_cache(hBuf, SYNC);
+      printf("flush\n");
+      }
 
     status = cm_yield(0);
 
