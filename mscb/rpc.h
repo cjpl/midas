@@ -6,6 +6,9 @@
   Contents:     Header fiel for MSCB RPC funcions
 
   $Log$
+  Revision 1.14  2004/03/09 14:19:33  midas
+  Fixed problems with write/read of strings
+
   Revision 1.13  2004/03/04 15:29:27  midas
   Added USB support
 
@@ -48,7 +51,8 @@
 
 \********************************************************************/
 
-                                                                                                                                                        /* Data types *//*                      min      max    */
+/* Data types */                /*                      min      max    */
+
 #define TID_BYTE      1         /* unsigned byte         0       255    */
 #define TID_SBYTE     2         /* signed byte         -128      127    */
 #define TID_CHAR      3         /* single character      0       255    */
