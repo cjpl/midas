@@ -6,6 +6,11 @@
 #  Contents:     Makefile for MIDAS binaries and examples under unix
 #
 #  $Log$
+#  Revision 1.39  2003/04/16 23:28:56  olchansk
+#  change cflags to -g -O2 -Wall -Wunitialized for maximum warnings (-Wuninitialized does not work with -O2)
+#  if ROOTSYS is set, build mlogger with ROOT support
+#  if ROOTSYS is set, build rmana.o with ROOT support
+#
 #  Revision 1.38  2003/04/08 00:05:16  olchansk
 #  add rmana.o (the ROOT MIDAS analyzer)
 #
@@ -185,7 +190,7 @@ MIDAS_PREF_FLAGS  =
 # Common flags
 #
 CC = cc
-CFLAGS = -g -I$(INC_DIR) -I$(DRV_DIR) -L$(LIB_DIR) -DINCLUDE_FTPLIB
+CFLAGS = -g -O2 -Wall -Wuninitialized -I$(INC_DIR) -I$(DRV_DIR) -L$(LIB_DIR) -DINCLUDE_FTPLIB
 
 #-----------------------
 # OSF/1 (DEC UNIX)
@@ -291,9 +296,11 @@ PROGS = $(BIN_DIR)/mserver $(BIN_DIR)/mhttpd \
 OBJS =  $(LIB_DIR)/midas.o $(LIB_DIR)/system.o $(LIB_DIR)/mrpc.o \
 	$(LIB_DIR)/odb.o $(LIB_DIR)/ybos.o $(LIB_DIR)/ftplib.o
 
-LIB =   -lmidas
 LIBNAME=$(LIB_DIR)/libmidas.a
 SHLIB = $(LIB_DIR)/libmidas.so
+LIB =   -lmidas
+# Uncomment this for static linking of midas executables
+#LIB =   $(LIBNAME)
 VPATH = $(LIB_DIR):$(INC_DIR)
 
 all:    $(OS_DIR) $(LIB_DIR) $(BIN_DIR) \
@@ -331,6 +338,13 @@ $(BIN_DIR):
 #
 # main binaries
 #
+
+ifdef ROOTSYS
+ROOTLIBS:= -Wl,-rpath,$(ROOTSYS)/lib -L$(ROOTSYS)/lib -lCore -lCint -lHist -lTree -lMatrix -ldl
+
+$(BIN_DIR)/mlogger: $(BIN_DIR)/%: $(SRC_DIR)/%.c
+	$(CXX) $(CFLAGS) $(OSFLAGS) -DHAVE_ROOT -I$(ROOTSYS)/include -o $@ $< $(LIB) $(ROOTLIBS) $(LIBS)
+endif
 
 $(BIN_DIR)/%:$(SRC_DIR)/%.c
 	$(CC) $(CFLAGS) $(OSFLAGS) -o $@ $< $(LIB) $(LIBS)
@@ -376,13 +390,18 @@ $(LIB_DIR)/mana.o: $(SRC_DIR)/mana.c msystem.h midas.h midasinc.h mrpc.h
 $(LIB_DIR)/fal.o: $(SRC_DIR)/fal.c msystem.h midas.h midasinc.h mrpc.h
 
 $(LIB_DIR)/fal.o: $(SRC_DIR)/fal.c msystem.h midas.h midasinc.h mrpc.h
-	$(CC) -Dextname -c $(CFLAGS) $(OSFLAGS) $(MANA_OPTION) -w -o $@ $<
+	$(CC) -Dextname -c $(CFLAGS) $(OSFLAGS) $(MANA_OPTION) -o $@ $<
 $(LIB_DIR)/mana.o: $(SRC_DIR)/mana.c msystem.h midas.h midasinc.h mrpc.h
-	$(CC) -Dextname -c $(CFLAGS) $(OSFLAGS) $(MANA_OPTION) -w -o $@ $<
+	$(CC) -Dextname -DHAVE_HBOOK -c $(CFLAGS) $(OSFLAGS) $(MANA_OPTION) -o $@ $<
 $(LIB_DIR)/pmana.o: $(SRC_DIR)/mana.c msystem.h midas.h midasinc.h mrpc.h
-	$(CC) -Dextname -DPVM -c $(CFLAGS) $(OSFLAGS) -w -o $@ $<
+	$(CC) -Dextname -DHAVE_HBOOK -DPVM -c $(CFLAGS) $(OSFLAGS) -o $@ $<
+ifdef ROOTSYS
 $(LIB_DIR)/rmana.o: $(SRC_DIR)/mana.c msystem.h midas.h midasinc.h mrpc.h
-	$(CXX) -Dextname -DMANA_ROOT -DMANA_LITE -c $(CFLAGS) $(OSFLAGS) -w -o $@ $<
+	$(CXX) -Dextname -DHAVE_ROOT -DMANA_LITE -c $(CFLAGS) $(OSFLAGS) -I$(ROOTSYS)/include -o $@ $<
+else
+$(LIB_DIR)/rmana.o: $(SRC_DIR)/mana.c msystem.h midas.h midasinc.h mrpc.h
+	$(CXX) -Dextname -DMANA_LITE -c $(CFLAGS) $(OSFLAGS) -o $@ $<
+endif
 
 #
 # library objects
