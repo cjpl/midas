@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.143  2004/10/01 23:36:11  midas
+  Removed PRE/POST transitions and implemented sequence order of transitions
+
   Revision 1.142  2004/10/01 15:38:18  midas
   Added previous_count to tests
 
@@ -759,14 +762,6 @@ Transitions values */
 #define TR_STOP       (1<<1)  /**< Stop transition  */
 #define TR_PAUSE      (1<<2)  /**< Pause transition */
 #define TR_RESUME     (1<<3)  /**< Resume transition  */
-#define TR_PRESTART   (1<<4)
-#define TR_POSTSTART  (1<<5)
-#define TR_PRESTOP    (1<<6)
-#define TR_POSTSTOP   (1<<7)
-#define TR_PREPAUSE   (1<<8)
-#define TR_POSTPAUSE  (1<<9)
-#define TR_PRERESUME  (1<<10)
-#define TR_POSTRESUME (1<<11)
 #define TR_DEFERRED   (1<<12)
 
 /** 
@@ -940,6 +935,7 @@ System message types */
 #define CM_DEFERRED_TRANSITION      110 /**< - */
 #define CM_TRANSITION_IN_PROGRESS   111 /**< - */
 #define CM_TIMEOUT                  112 /**< - */
+#define CM_INVALID_TRANSITION       113 /**< - */
 /**dox***************************************************************/
 /** @} */ /* end of err21 */
 
@@ -1923,7 +1919,8 @@ extern "C" {
                                     void (*func) (char *), INT odb_size,
                                     DWORD watchdog_timeout);
    INT EXPRT cm_disconnect_experiment(void);
-   INT EXPRT cm_register_transition(INT transition, INT(*func) (INT, char *));
+   INT EXPRT cm_register_transition(INT transition, INT(*func) (INT, char *), int sequence_number);
+   INT EXPRT cm_set_transition_sequence(INT transition, INT sequence_number);
    INT EXPRT cm_query_transition(int *transition, int *run_number, int *trans_time);
    INT EXPRT cm_register_deferred_transition(INT transition, BOOL(*func) (INT, BOOL));
    INT EXPRT cm_check_deferred_transition(void);

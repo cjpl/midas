@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.219  2004/10/01 23:35:53  midas
+  Removed PRE/POST transitions and implemented sequence order of transitions
+
   Revision 1.218  2004/09/30 19:58:11  midas
   Added more debugging info to cm_transition
 
@@ -761,6 +764,17 @@ char *tid_name[] = {
    "LINK"
 };
 
+struct {
+   int transition;
+   char name[32];
+} trans_name[] = {
+   {TR_START, "START",}, 
+   {TR_STOP, "STOP",}, 
+   {TR_PAUSE, "PAUSE",}, 
+   {TR_RESUME, "RESUME",}, 
+   {TR_DEFERRED, "DEFERRED",},
+};
+
 /* Globals */
 #ifdef OS_MSDOS
 extern unsigned _stklen = 60000U;
@@ -810,14 +824,6 @@ TRANS_TABLE _trans_table[] = {
    {TR_STOP, NULL},
    {TR_PAUSE, NULL},
    {TR_RESUME, NULL},
-   {TR_PRESTART, NULL},
-   {TR_POSTSTART, NULL},
-   {TR_PRESTOP, NULL},
-   {TR_POSTSTOP, NULL},
-   {TR_PREPAUSE, NULL},
-   {TR_POSTPAUSE, NULL},
-   {TR_PRERESUME, NULL},
-   {TR_POSTRESUME, NULL},
    {0, NULL}
 };
 
@@ -826,14 +832,6 @@ TRANS_TABLE _deferred_trans_table[] = {
    {TR_STOP, NULL},
    {TR_PAUSE, NULL},
    {TR_RESUME, NULL},
-   {TR_PRESTART, NULL},
-   {TR_POSTSTART, NULL},
-   {TR_PRESTOP, NULL},
-   {TR_POSTSTOP, NULL},
-   {TR_PREPAUSE, NULL},
-   {TR_POSTPAUSE, NULL},
-   {TR_PRERESUME, NULL},
-   {TR_POSTRESUME, NULL},
    {0, NULL}
 };
 
@@ -2153,24 +2151,6 @@ INT cm_set_client_info(HNDLE hDB, HNDLE * hKeyClient, char *host_name,
          return status;
       }
 
-      /* set transition mask */
-      data = 0;
-      status = db_set_value(hDB, hKey, "Transition Mask", &data,
-                            sizeof(DWORD), 1, TID_DWORD);
-      if (status != DB_SUCCESS){
-         db_unlock_database(hDB);
-         return status;
-      }
-
-      /* set deferred transition mask */
-      data = 0;
-      status = db_set_value(hDB, hKey, "Deferred Transition Mask", &data,
-                            sizeof(DWORD), 1, TID_DWORD);
-      if (status != DB_SUCCESS){
-         db_unlock_database(hDB);
-         return status;
-      }
-
       /* lock client entry */
       db_set_mode(hDB, hKey, MODE_READ, TRUE);
 
@@ -3308,14 +3288,17 @@ INT cm_register_server(void)
 Registers a callback function for run transitions.
 This function internally registers the transition callback
 function and publishes its request for transition notification by writing
-the transition bit to /System/Clients/\<pid\>/Transition Mask.
-Other clients making a transition scan the transition masks of all clients
+a transition request to /System/Clients/\<pid\>/Transition XXX.
+Other clients making a transition scan the transition requests of all clients
 and call their transition callbacks via RPC.
 
-Clients can register for transitions (Start/Stop/Pause/Resume) or for
-notifications before or after a transition occurs
-(Pre-start/Post-start/Pre-stop/Post-stop). The logger for example opens
-the logging files on pre-start and closes them on post-stop.
+Clients can register for transitions (Start/Stop/Pause/Resume) in a given
+sequence. All sequence numbers given in the registration are sorted on 
+a transition and the clients are contacted in ascending order. By default,
+all programs register with a sequence number of 500. The logger however
+uses 200 for start, so that it can open files before the other clients
+are contacted, and 800 for stop, so that the files get closed when all
+other clients have gone already through the stop trantition.
 
 The callback function returns CM_SUCCESS if it can perform the transition or
 a value larger than one in case of error. An error string can be copied
@@ -3336,7 +3319,7 @@ INT start(INT run_number, char *error)
 main()
 {
   ...
-  cm_register_transition(TR_START, start);
+  cm_register_transition(TR_START, start, 500);
   do
     {
     status = cm_yield(1000);
@@ -3349,18 +3332,24 @@ main()
 @param func Callback function.
 @return CM_SUCCESS
 */
-INT cm_register_transition(INT transition, INT(*func) (INT, char *))
+INT cm_register_transition(INT transition, INT(*func) (INT, char *), INT sequence_number)
 {
-   INT status, i, size;
-   DWORD mask;
+   INT status, i;
+   BOOL deferred;
    HNDLE hDB, hKey;
+   char str[256];
+
+   deferred = (transition & TR_DEFERRED) > 0;
+   transition &= ~TR_DEFERRED;
+
+   /* check for valid transition */
+   if (transition != TR_START && transition != TR_STOP && 
+       transition != TR_PAUSE && transition != TR_RESUME) {
+         cm_msg(MERROR, "cm_transition", "Invalid transition request \"%d\"", transition);
+         return CM_INVALID_TRANSITION;
+      }
 
    cm_get_experiment_database(&hDB, &hKey);
-
-   size = sizeof(DWORD);
-   status = db_get_value(hDB, hKey, "Transition Mask", &mask, &size, TID_DWORD, TRUE);
-   if (status != DB_SUCCESS)
-      return status;
 
    rpc_register_function(RPC_RC_TRANSITION, rpc_transition_dispatch);
 
@@ -3368,15 +3357,20 @@ INT cm_register_transition(INT transition, INT(*func) (INT, char *))
       if (_trans_table[i].transition == transition)
          _trans_table[i].func = func;
 
-   /* set new transition mask */
-   mask |= transition;
+   for (i = 0; i < 13; i++)
+      if (trans_name[i].transition == transition)
+         break;
+
+   sprintf(str, "Transition %s", trans_name[i].name);
+   if (deferred)
+      strcat(str, " DEFERRED");
 
    /* unlock database */
    db_set_mode(hDB, hKey, MODE_READ | MODE_WRITE, TRUE);
 
    /* set value */
    status =
-       db_set_value(hDB, hKey, "Transition Mask", &mask, sizeof(DWORD), 1, TID_DWORD);
+       db_set_value(hDB, hKey, str, &sequence_number, sizeof(INT), 1, TID_INT);
    if (status != DB_SUCCESS)
       return status;
 
@@ -3386,6 +3380,55 @@ INT cm_register_transition(INT transition, INT(*func) (INT, char *))
    return CM_SUCCESS;
 }
 
+/********************************************************************/
+/**
+Change the transition sequence for the calling program.
+@param transition TR_START, TR_PAUSE, TR_RESUME or TR_STOP.
+@param sequence_number New sequence number, should be between 1 and 1000
+@return     CM_SUCCESS
+*/
+INT cm_set_transition_sequence(INT transition, INT sequence_number)
+{
+   INT status, i;
+   BOOL deferred;
+   HNDLE hDB, hKey;
+   char str[256];
+
+   deferred = (transition & TR_DEFERRED) > 0;
+   transition &= ~TR_DEFERRED;
+
+   /* check for valid transition */
+   if (transition != TR_START && transition != TR_STOP && 
+       transition != TR_PAUSE && transition != TR_RESUME) {
+         cm_msg(MERROR, "cm_transition", "Invalid transition request \"%d\"", transition);
+         return CM_INVALID_TRANSITION;
+      }
+
+   cm_get_experiment_database(&hDB, &hKey);
+
+   for (i = 0; i < 13; i++)
+      if (trans_name[i].transition == transition)
+         break;
+
+   sprintf(str, "Transition %s", trans_name[i].name);
+   if (deferred)
+      strcat(str, " DEFERRED");
+
+   /* unlock database */
+   db_set_mode(hDB, hKey, MODE_READ | MODE_WRITE, TRUE);
+
+   /* set value */
+   status =
+       db_set_value(hDB, hKey, str, &sequence_number, sizeof(INT), 1, TID_INT);
+   if (status != DB_SUCCESS)
+      return status;
+
+   /* re-lock database */
+   db_set_mode(hDB, hKey, MODE_READ, TRUE);
+
+   return CM_SUCCESS;
+
+}
 
 /**dox***************************************************************/
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
@@ -3513,27 +3556,21 @@ INT cm_check_deferred_transition()
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
 
 /********************************************************************/
-struct {
-   int transition;
-   char name[32];
-} trans_name[] = {
-   {
-   TR_START, "START",}, {
-   TR_STOP, "STOP",}, {
-   TR_PAUSE, "PAUSE",}, {
-   TR_RESUME, "RESUME",}, {
-   TR_PRESTART, "PRESTART",}, {
-   TR_POSTSTART, "POSTSTART",}, {
-   TR_PRESTOP, "PRESTOP",}, {
-   TR_POSTSTOP, "POSTSTOP",}, {
-   TR_PREPAUSE, "PREPAUSE",}, {
-   TR_POSTPAUSE, "POSTPAUSE",}, {
-   TR_PRERESUME, "PRERESUME",}, {
-   TR_POSTRESUME, "POSTRESUME",}, {
-TR_DEFERRED, "DEFERRED",},};
 
 /**dox***************************************************************/
 #endif                          /* DOXYGEN_SHOULD_SKIP_THIS */
+
+typedef struct {
+   int  sequence_number;
+   char host_name[HOST_NAME_LENGTH];
+   char client_name[NAME_LENGTH];
+   int  port;
+} TR_CLIENT;
+
+int tr_compare(const void *arg1, const void *arg2) 
+{
+   return ((TR_CLIENT *)arg1)->sequence_number - ((TR_CLIENT*)arg2)->sequence_number;
+}
 
 /********************************************************************/
 /**
@@ -3578,22 +3615,25 @@ tapes.
 INT cm_transition(INT transition, INT run_number, char *perror, INT strsize,
                   INT async_flag, INT debug_flag)
 {
-   INT i, j, status, size;
-   HNDLE hDB, hRootKey, hSubkey, hKey, hKeylocal;
-   HNDLE hConn;
-   DWORD mask, seconds;
-   INT port;
-   char host_name[HOST_NAME_LENGTH], client_name[NAME_LENGTH];
-   char str[256];
-   char error[256];
-   INT state;
-   INT old_timeout;
+   INT i, status, index, size, sequence_number, port, state, old_timeout, n_tr_clients;
+   HNDLE hDB, hRootKey, hSubkey, hKey, hKeylocal, hConn;
+   DWORD seconds;
+   char host_name[HOST_NAME_LENGTH], client_name[NAME_LENGTH],
+     str[256], error[256], tr_key_name[256];
    KEY key;
    BOOL deferred;
    PROGRAM_INFO program_info;
+   TR_CLIENT *tr_client;
 
    deferred = (transition & TR_DEFERRED) > 0;
    transition &= ~TR_DEFERRED;
+
+   /* check for valid transition */
+   if (transition != TR_START && transition != TR_STOP &&
+      transition != TR_PAUSE && transition != TR_RESUME) {
+         cm_msg(MERROR, "cm_transition", "Invalid transition request \"%d\"", transition);
+         return CM_INVALID_TRANSITION;
+      }
 
    /* get key of local client */
    cm_get_experiment_database(&hDB, &hKeylocal);
@@ -3657,12 +3697,12 @@ INT cm_transition(INT transition, INT run_number, char *perror, INT strsize,
             break;
 
          if (status == DB_SUCCESS) {
-            size = sizeof(mask);
-            status = db_get_value(hDB, hSubkey, "Deferred Transition Mask",
-                                  &mask, &size, TID_DWORD, TRUE);
+            //size = sizeof(mask);
+            //status = db_get_value(hDB, hSubkey, "Deferred Transition Mask",
+            //                      &mask, &size, TID_DWORD, TRUE);
 
             /* if registered for deferred transition, set flag in ODB and return */
-            if (status == DB_SUCCESS && (mask & transition)) {
+            /*if (status == DB_SUCCESS && (mask & transition)) {
                size = NAME_LENGTH;
                db_get_value(hDB, hSubkey, "Name", str, &size, TID_STRING, TRUE);
                db_set_value(hDB, 0, "/Runinfo/Requested transition", &transition,
@@ -3671,7 +3711,7 @@ INT cm_transition(INT transition, INT run_number, char *perror, INT strsize,
                   sprintf(perror, "Transition deferred by client \"%s\"", str);
 
                return CM_DEFERRED_TRANSITION;
-            }
+            }*/
          }
       }
    }
@@ -3753,33 +3793,6 @@ INT cm_transition(INT transition, INT run_number, char *perror, INT strsize,
       }
    }
 
-   /* call pre- transitions */
-   if (transition == TR_START) {
-      status =
-          cm_transition(TR_PRESTART, run_number, perror, strsize, async_flag, debug_flag);
-      if (status != CM_SUCCESS)
-         return status;
-   }
-   if (transition == TR_STOP) {
-      status =
-          cm_transition(TR_PRESTOP, run_number, perror, strsize, async_flag, debug_flag);
-      if (status != CM_SUCCESS)
-         return status;
-   }
-   if (transition == TR_PAUSE) {
-      status =
-          cm_transition(TR_PREPAUSE, run_number, perror, strsize, async_flag, debug_flag);
-      if (status != CM_SUCCESS)
-         return status;
-   }
-   if (transition == TR_RESUME) {
-      status =
-          cm_transition(TR_PRERESUME, run_number, perror, strsize, async_flag,
-                        debug_flag);
-      if (status != CM_SUCCESS)
-         return status;
-   }
-
    status = db_find_key(hDB, 0, "System/Clients", &hRootKey);
    if (status != DB_SUCCESS) {
       cm_msg(MERROR, "cm_transition", "cannot find System/Clients entry in database");
@@ -3791,170 +3804,191 @@ INT cm_transition(INT transition, INT run_number, char *perror, INT strsize,
          break;
 
    if (debug_flag == 1)
-      printf("Transition %s started\n", trans_name[i].name);
+      printf("---- Transition %s started ----\n", trans_name[i].name);
    if (debug_flag == 2)
-      cm_msg(MDEBUG, "cm_transition", "cm_transition: Transition %s started", trans_name[i].name);
+      cm_msg(MDEBUG, "cm_transition", "cm_transition: ---- Transition %s started ----", trans_name[i].name);
 
-   /* search database for clients with transition mask set */
+   sprintf(tr_key_name, "Transition %s", trans_name[i].name);
+
+   /* search database for clients which registered for transition */
+   n_tr_clients = 0;
+   tr_client = NULL;
+
    for (i = 0, status = 0;; i++) {
       status = db_enum_key(hDB, hRootKey, i, &hSubkey);
       if (status == DB_NO_MORE_SUBKEYS)
          break;
 
-      /* erase error string */
-      error[0] = 0;
-
       if (status == DB_SUCCESS) {
-         size = sizeof(mask);
-         status = db_get_value(hDB, hSubkey, "Transition Mask",
-                               &mask, &size, TID_DWORD, TRUE);
+         size = sizeof(sequence_number);
+         status = db_get_value(hDB, hSubkey, tr_key_name,
+                               &sequence_number, &size, TID_INT, FALSE);
+         if (status == DB_SUCCESS) {
 
-         if (status == DB_SUCCESS && (mask & transition)) {
-            /* if own client call transition callback directly */
+            if (tr_client == NULL)
+               tr_client = (TR_CLIENT *) malloc(sizeof(TR_CLIENT));
+            else
+               tr_client = (TR_CLIENT *) realloc(tr_client, sizeof(TR_CLIENT)*(n_tr_clients+1));
+            assert(tr_client);
+
+            tr_client[n_tr_clients].sequence_number = sequence_number;
+
             if (hSubkey == hKeylocal) {
-               for (j = 0; _trans_table[j].transition; j++)
-                  if (_trans_table[j].transition == transition)
-                     break;
-
-               /* call registerd function */
-               if (_trans_table[j].transition == transition && _trans_table[j].func) {
-                  if (debug_flag == 1)
-                     printf("Calling local transition callback\n");
-                  if (debug_flag == 2)
-                     cm_msg(MDEBUG, "cm_transition", "cm_transition: Calling local transition callback");
- 
-                  status = _trans_table[j].func(run_number, error);
-
-                  if (debug_flag == 1)
-                     printf("Local transition callback finished\n");
-                  if (debug_flag == 2)
-                     cm_msg(MDEBUG, "cm_transition", "cm_transition: Local transition callback finished");
-               } else
-                  status = CM_SUCCESS;
-
-               if (perror != NULL)
-                  memcpy(perror, error, (INT) strlen(error) + 1 < strsize ?
-                         strlen(error) + 1 : strsize);
-
-               if (status != CM_SUCCESS)
-                  return status;
+               /* remember own client */
+               tr_client[n_tr_clients].port = 0;
             } else {
-               /* contact client if transition mask set */
+               /* get client info */
                size = sizeof(client_name);
                db_get_value(hDB, hSubkey, "Name", client_name, &size, TID_STRING, TRUE);
+               strcpy(tr_client[n_tr_clients].client_name, client_name);
 
                size = sizeof(port);
                db_get_value(hDB, hSubkey, "Server Port", &port, &size, TID_INT, TRUE);
+               tr_client[n_tr_clients].port = port;
 
                size = sizeof(host_name);
                db_get_value(hDB, hSubkey, "Host", host_name, &size, TID_STRING, TRUE);
-
-               if (debug_flag == 1)
-                  printf("Connecting to client \"%s\" on host %s...\n", client_name, host_name);
-               if (debug_flag == 2)
-                  cm_msg(MDEBUG, "cm_transition", 
-                     "cm_transition: Connecting to client \"%s\" on host %s...", client_name, host_name);
-
-               /* client found -> connect to its server port */
-               status = rpc_client_connect(host_name, port, client_name, &hConn);
-               if (status != RPC_SUCCESS) {
-                  cm_msg(MERROR, "cm_transition", "cannot connect to client \"%s\" on host %s, port %d",
-                         client_name, host_name, port);
-                  continue;
-               }
-
-               if (debug_flag == 1)
-                  printf("Connection established to client \"%s\" on host %s\n", client_name, host_name);
-               if (debug_flag == 2)
-                  cm_msg(MDEBUG, "cm_transition", 
-                     "cm_transition: Connection established to client \"%s\" on host %s", client_name, host_name);
-
-               /* call RC_TRANSITION on remote client with increased timeout */
-               old_timeout = rpc_get_option(hConn, RPC_OTIMEOUT);
-               rpc_set_option(hConn, RPC_OTIMEOUT, 120000);
-
-               /* set FTPC protocol if in async mode */
-               if (async_flag == ASYNC)
-                  rpc_set_option(hConn, RPC_OTRANSPORT, RPC_FTCP);
-
-               if (debug_flag== 1)
-                  printf("Executing RPC transition client \"%s\" on host %s...\n", client_name, host_name);
-               if (debug_flag == 2)
-                  cm_msg(MDEBUG, "cm_transition", 
-                     "cm_transition: Executing RPC transition client \"%s\" on host %s...", client_name, host_name);
-
-               status = rpc_client_call(hConn, RPC_RC_TRANSITION, transition,
-                                        run_number, error, strsize);
-
-               /* reset timeout */
-               rpc_set_option(hConn, RPC_OTIMEOUT, old_timeout);
-
-               /* reset protocol */
-               if (async_flag == ASYNC)
-                  rpc_set_option(hConn, RPC_OTRANSPORT, RPC_TCP);
-
-               if (debug_flag == 1)
-                  printf("RPC transition finished client \"%s\" on host %s\n", client_name, host_name);
-               if (debug_flag == 2)
-                  cm_msg(MDEBUG, "cm_transition", 
-                     "cm_transition: RPC transition finished client \"%s\" on host %s", client_name, host_name);
-
-               if (perror != NULL)
-                  memcpy(perror, error, (INT) strlen(error) + 1 < strsize ?
-                         strlen(error) + 1 : strsize);
-
-               if (status != CM_SUCCESS)
-                  return status;
+               strcpy(tr_client[n_tr_clients].host_name, host_name);
             }
+
+            n_tr_clients++;
          }
       }
    }
+
+   /* sort clients according to sequence number */
+   if (n_tr_clients > 1)
+      qsort(tr_client, n_tr_clients, sizeof(TR_CLIENT), tr_compare);
+
+   /* contact ordered clients for transition */
+   for (index=0 ; index<n_tr_clients; index++) {
+      /* erase error string */
+      error[0] = 0;
+
+      if (debug_flag == 1)
+         printf("\n==== Found client \"%s\" with sequence number %d\n", tr_client[index].client_name, 
+            tr_client[index].sequence_number);
+      if (debug_flag == 2)
+         cm_msg(MDEBUG, "cm_transition", "cm_transition: ==== Found client \"%s\" with sequence number %d",
+            tr_client[index].client_name, tr_client[index].sequence_number);
+
+      /* if own client call transition callback directly */
+      if (tr_client[index].port == 0) {
+         for (i = 0; _trans_table[i].transition; i++)
+            if (_trans_table[i].transition == transition)
+               break;
+
+         /* call registerd function */
+         if (_trans_table[i].transition == transition && _trans_table[i].func) {
+            if (debug_flag == 1)
+               printf("Calling local transition callback\n");
+            if (debug_flag == 2)
+               cm_msg(MDEBUG, "cm_transition", "cm_transition: Calling local transition callback");
+
+            status = _trans_table[i].func(run_number, error);
+
+            if (debug_flag == 1)
+               printf("Local transition callback finished\n");
+            if (debug_flag == 2)
+               cm_msg(MDEBUG, "cm_transition", "cm_transition: Local transition callback finished");
+         } else
+            status = CM_SUCCESS;
+
+         if (perror != NULL)
+            memcpy(perror, error, (INT) strlen(error) + 1 < strsize ?
+                     strlen(error) + 1 : strsize);
+
+         if (status != CM_SUCCESS) {
+            free(tr_client);
+            return status;
+         }
+
+      } else {
+         
+         /* contact client if transition mask set */
+         if (debug_flag == 1)
+            printf("Connecting to client \"%s\" on host %s...\n", 
+               tr_client[index].client_name, tr_client[index].host_name);
+         if (debug_flag == 2)
+            cm_msg(MDEBUG, "cm_transition", 
+               "cm_transition: Connecting to client \"%s\" on host %s...", 
+               tr_client[index].client_name, tr_client[index].host_name);
+
+         /* client found -> connect to its server port */
+         status = rpc_client_connect(tr_client[index].host_name, tr_client[index].port, 
+                                     tr_client[index].client_name, &hConn);
+         if (status != RPC_SUCCESS) {
+            cm_msg(MERROR, "cm_transition", "cannot connect to client \"%s\" on host %s, port %d",
+                     tr_client[index].client_name, tr_client[index].host_name, 
+                     tr_client[index].port);
+            continue;
+         }
+
+         if (debug_flag == 1)
+            printf("Connection established to client \"%s\" on host %s\n", 
+              tr_client[index].client_name, tr_client[index].host_name);
+         if (debug_flag == 2)
+            cm_msg(MDEBUG, "cm_transition", 
+               "cm_transition: Connection established to client \"%s\" on host %s", 
+                tr_client[index].client_name, tr_client[index].host_name);
+
+         /* call RC_TRANSITION on remote client with increased timeout */
+         old_timeout = rpc_get_option(hConn, RPC_OTIMEOUT);
+         rpc_set_option(hConn, RPC_OTIMEOUT, 120000);
+
+         /* set FTPC protocol if in async mode */
+         if (async_flag == ASYNC)
+            rpc_set_option(hConn, RPC_OTRANSPORT, RPC_FTCP);
+
+         if (debug_flag== 1)
+            printf("Executing RPC transition client \"%s\" on host %s...\n", 
+              tr_client[index].client_name, tr_client[index].host_name);
+         if (debug_flag == 2)
+            cm_msg(MDEBUG, "cm_transition", 
+               "cm_transition: Executing RPC transition client \"%s\" on host %s...", 
+                 tr_client[index].client_name, tr_client[index].host_name);
+
+         status = rpc_client_call(hConn, RPC_RC_TRANSITION, transition,
+                                  run_number, error, strsize);
+
+         /* reset timeout */
+         rpc_set_option(hConn, RPC_OTIMEOUT, old_timeout);
+
+         /* reset protocol */
+         if (async_flag == ASYNC)
+            rpc_set_option(hConn, RPC_OTRANSPORT, RPC_TCP);
+
+         if (debug_flag == 1)
+            printf("RPC transition finished client \"%s\" on host %s\n", 
+              tr_client[index].client_name, tr_client[index].host_name);
+         if (debug_flag == 2)
+            cm_msg(MDEBUG, "cm_transition", 
+               "cm_transition: RPC transition finished client \"%s\" on host %s", 
+                 tr_client[index].client_name, tr_client[index].host_name);
+
+         if (perror != NULL)
+            memcpy(perror, error, (INT) strlen(error) + 1 < strsize ?
+                     strlen(error) + 1 : strsize);
+
+         if (status != CM_SUCCESS) {
+            free(tr_client);
+            return status;
+         }
+      }
+   }
+
+   if (tr_client)
+      free(tr_client);
 
    for (i = 0; i < 13; i++)
       if (trans_name[i].transition == transition)
          break;
 
    if (debug_flag == 1)
-      printf("Transition %s finished\n", trans_name[i].name);
+      printf("\n---- Transition %s finished ----\n", trans_name[i].name);
    if (debug_flag == 2)
       cm_msg(MDEBUG, "cm_transition", 
-         "cm_transition: Transition %s finished", trans_name[i].name);
-
-   /* call post- transitions */
-   if (transition == TR_START) {
-      status =
-          cm_transition(TR_POSTSTART, run_number, perror, strsize, async_flag,
-                        debug_flag);
-      if (status != CM_SUCCESS)
-         return status;
-   }
-   if (transition == TR_STOP) {
-      status =
-          cm_transition(TR_POSTSTOP, run_number, perror, strsize, async_flag, debug_flag);
-      if (status != CM_SUCCESS)
-         return status;
-   }
-   if (transition == TR_PAUSE) {
-      status =
-          cm_transition(TR_POSTPAUSE, run_number, perror, strsize, async_flag,
-                        debug_flag);
-      if (status != CM_SUCCESS)
-         return status;
-   }
-   if (transition == TR_RESUME) {
-      status =
-          cm_transition(TR_POSTRESUME, run_number, perror, strsize, async_flag,
-                        debug_flag);
-      if (status != CM_SUCCESS)
-         return status;
-   }
-
-   /* don't update database or send messages on PRE/POST transitions */
-   if (transition == TR_PRESTART || transition == TR_PRESTOP ||
-       transition == TR_PREPAUSE || transition == TR_PRERESUME ||
-       transition == TR_POSTSTART || transition == TR_POSTSTOP ||
-       transition == TR_POSTPAUSE || transition == TR_POSTRESUME)
-      return CM_SUCCESS;
+         "cm_transition: ---- Transition %s finished ----", trans_name[i].name);
 
    /* set new run state in database */
    if (transition == TR_START || transition == TR_RESUME)

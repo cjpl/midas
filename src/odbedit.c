@@ -6,6 +6,9 @@
   Contents:     Command-line interface to the MIDAS online data base.
 
   $Log$
+  Revision 1.74  2004/10/01 23:35:54  midas
+  Removed PRE/POST transitions and implemented sequence order of transitions
+
   Revision 1.73  2004/09/15 23:36:02  midas
   Added ODB save in XML format
 
@@ -2781,15 +2784,20 @@ void command_loop(char *host_name, char *exp_name, char *cmd, char *start_dir)
 
       /* test 3 */
       else if (param[0][0] == 't' && param[0][1] == '3') {
-         i = j = 0;
-         do {
-            status = db_get_next_link(hDB, i, &i);
-            if (i == 0)
-               break;
+typedef struct {
+  INT       test;
+} EXP_EDIT;
 
-            db_get_path(hDB, i, str, sizeof(str));
-            printf("%d: %s\n", j++, str);
-         } while (1);
+#define EXP_EDIT_STR(_name) char *_name[] = {\
+"[.]",\
+"test = LINK : [34] /Equipment/Trigger/Variables/test",\
+"",\
+NULL }
+
+EXP_EDIT_STR(exp_edit_str);
+
+         status =
+             db_create_record(hDB, 0, "/Experiment/Edit on start", strcomb(exp_edit_str));
       }
 
       /* exit/quit */
