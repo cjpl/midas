@@ -6,6 +6,9 @@
   Contents:     Header fiel for MSCB RPC funcions
 
   $Log$
+  Revision 1.18  2004/12/10 11:22:05  midas
+  Added block functions
+
   Revision 1.17  2004/10/03 18:08:43  olchansk
   in server_execute(), abort() on unknown commands
   replace ALIGN with ALIGN8 (same as in midas.h) to dodge namespace pollution on Darwin
@@ -146,16 +149,17 @@ typedef struct {
 #define RPC_MSCB_SET_ADDR          8
 #define RPC_MSCB_WRITE             9
 #define RPC_MSCB_WRITE_GROUP      10
-#define RPC_MSCB_FLASH            11
-#define RPC_MSCB_UPLOAD           12
-#define RPC_MSCB_READ             13
-#define RPC_MSCB_READ_RANGE       14
-#define RPC_MSCB_USER             15
-#define RPC_MSCB_ECHO             16
-#define RPC_MSCB_SET_NAME         17
-#define RPC_MSCB_ADDR             18
-#define RPC_MSCB_WRITE_BLOCK      19
-#define RPC_MSCB_GET_DEVICE       20
+#define RPC_MSCB_WRITE_BLOCK      11
+#define RPC_MSCB_FLASH            12
+#define RPC_MSCB_UPLOAD           13
+#define RPC_MSCB_READ             14
+#define RPC_MSCB_READ_RANGE       15
+#define RPC_MSCB_READ_BLOCK       16
+#define RPC_MSCB_USER             17
+#define RPC_MSCB_ECHO             18
+#define RPC_MSCB_SET_NAME         19
+#define RPC_MSCB_ADDR             20
+#define RPC_MSCB_GET_DEVICE       21
 
 /*------------------------------------------------------------------*/
 
