@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus communication functions
 
   $Log$
+  Revision 1.67  2004/05/10 18:58:14  midas
+  Added _STRLCPY_DEFINED
+
   Revision 1.66  2004/04/07 11:06:17  midas
   Version 1.7.1
 
@@ -349,6 +352,9 @@ int kbhit()
 
 /*---- strlcpy and strlcat to avoid buffer overflow ----------------*/
 
+#ifndef _STRLCPY_DEFINED
+#define _STRLCPY_DEFINED
+
 /*
 * Copy src to string dst of size siz.  At most siz-1 characters
 * will be copied.  Always NUL terminates (unless size == 0).
@@ -411,6 +417,11 @@ size_t strlcat(char *dst, const char *src, size_t size)
 
    return (dlen + (s - src));   /* count does not include NUL */
 }
+
+#else 
+extern size_t strlcpy(char *dst, const char *src, size_t size);
+extern size_t strlcat(char *dst, const char *src, size_t size);
+#endif
 
 /*------------------------------------------------------------------*/
 
