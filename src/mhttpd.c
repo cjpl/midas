@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.211  2002/05/14 19:17:35  midas
+  Removed addition of .txt to files
+
   Revision 1.210  2002/05/14 06:33:36  midas
   Display link destination on ODB pages
 
@@ -3249,7 +3252,7 @@ HNDLE  hDB;
   str[0] = 0;
   db_get_value(hDB, 0, "/Experiment/Name", str, &size, TID_STRING, TRUE);
 
-  rsprintf("<tr><th bgcolor=#A0A0FF>MIDAS File Display <b>%s</b>", path);
+  rsprintf("<tr><th bgcolor=#A0A0FF>MIDAS File Display <code>\"%s\"</code>", path);
   if (elog_mode)
     rsprintf("<th bgcolor=#A0A0FF>Logbook \"%s\"</tr>\n", str);
   else
@@ -3285,14 +3288,9 @@ HNDLE  hDB;
   f = fopen(file_name, "r");
   if (f == NULL)
     {
-    strcat(file_name, ".txt");
-    f = fopen(file_name, "r");
-    if (f == NULL)
-      {
-      rsprintf("<h3>File \"%s\" not available for this experiment</h3>\n", path);
-      rsprintf("</body></html>\n");
-      return;
-      }
+    rsprintf("<h3>Cannot find file \"%s\"</h3>\n", file_name);
+    rsprintf("</body></html>\n");
+    return;
     }
 
   /*---- file contents ----*/
