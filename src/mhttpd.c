@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.205  2002/05/10 20:29:12  midas
+  Fixed another small bug
+
   Revision 1.204  2002/05/10 20:18:30  stefan
   Fixed small bugs
 
@@ -8756,11 +8759,11 @@ char   def_button[][NAME_LENGTH] = {"10m", "1h", "3h", "12h", "24h", "3d", "7d" 
   rsprintf("<tr><td colspan=2 bgcolor=#C0C0C0>\n");
   rsprintf("<input type=submit name=cmd value=ODB>\n");
   rsprintf("<input type=submit name=cmd value=Alarms>\n");
-  rsprintf("<input type=submit name=cmd value=Status></tr>\n");
+  rsprintf("<input type=submit name=cmd value=Status>\n");
 
   /* define hidden field for parameters */
   if (pscale && *pscale)
-    rsprintf("<input type=hidden name=hscale value=%d></tr>\n", scale);
+    rsprintf("<input type=hidden name=hscale value=%d>\n", scale);
   else
     {
     /* if no scale and offset given, get it from default */
@@ -8783,20 +8786,22 @@ char   def_button[][NAME_LENGTH] = {"10m", "1h", "3h", "12h", "24h", "3d", "7d" 
         db_get_value(hDB, 0, str, scalestr, &size, TID_STRING, TRUE);
         }
 
-      rsprintf("<input type=hidden name=hscale value=%s></tr>\n", scalestr);
+      rsprintf("<input type=hidden name=hscale value=%s>\n", scalestr);
       scale = time_to_sec(scalestr);
       }
     }
 
   if (offset != 0)
-    rsprintf("<input type=hidden name=hoffset value=%d></tr>\n", offset);
+    rsprintf("<input type=hidden name=hoffset value=%d>\n", offset);
   if (pmag && *pmag)
-    rsprintf("<input type=hidden name=hwidth value=%s></tr>\n", pmag);
+    rsprintf("<input type=hidden name=hwidth value=%s>\n", pmag);
   if (pindex && *pindex)
-    rsprintf("<input type=hidden name=hindex value=%s></tr>\n", pindex);
+    rsprintf("<input type=hidden name=hindex value=%s>\n", pindex);
+
+  rsprintf("</td></tr>\n");
 
   /* links for history panels */
-  rsprintf("<tr><td colspan=6 bgcolor=#FFFF00>\n");
+  rsprintf("<tr><td colspan=2 bgcolor=#FFFF00>\n");
   if (path[0])
     rsprintf("<i>Panel:</i>&nbsp;&nbsp;&nbsp;\n");
   else
