@@ -17,6 +17,9 @@
  *  Author:  Pierre-Andre Amaudruz Data Acquisition Group
  * 
  *  $Log$
+ *  Revision 1.3  2001/09/07 18:09:23  pierre
+ *  Fix args for interrupts
+ *
  *  Revision 1.2  2000/08/11 13:41:27  midas
  *  Changed parameter of rpc_cam_init
  *
@@ -83,10 +86,10 @@ INLINE void cam_lam_enable(const int c, const int n){}
 INLINE void cam_lam_disable(const int c, const int n){}
 INLINE void cam_lam_read(const int c, DWORD *lam){*lam=1;}
 INLINE void cam_lam_clear(const int c, const int n){}
-INLINE void cam_interrupt_enable(void){}
-INLINE void cam_interrupt_disable(void){}
-INLINE void cam_interrupt_attach(void (*isr)(void)){}
-INLINE void cam_interrupt_detach(void){}
+INLINE void cam_interrupt_enable(const int c){}
+INLINE void cam_interrupt_disable(const int c){}
+INLINE void cam_interrupt_attach(const int c, const int n, void (*isr)(void)){}
+INLINE void cam_interrupt_detach(const int c, const int n){}
 INLINE void cam_glint_enable(void){}
 INLINE void cam_glint_disable(void){}
 INLINE void cam_glint_attach(int lam, void (*isr)(void)){}

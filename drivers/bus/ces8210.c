@@ -15,6 +15,9 @@
  *  Application :
  *  Author      : Pierre-Andre Amaudruz Data Acquisition Group
  *  $Log$
+ *  Revision 1.3  2001/09/07 18:09:44  pierre
+ *  Fix args for interrupts
+ *
  *  Revision 1.2  2001/06/18 11:11:54  midas
  *  Major modifications (SR) to work with Bit3 MOdel 617 interface
  *
@@ -453,28 +456,28 @@ INLINE void cam_lam_clear(const int c, const int n)
 *                                                                 *
 \*****************************************************************/
 
-INLINE void cam_interrupt_enable(void)
+INLINE void cam_interrupt_enable(const int c)
 {
   printf("cam_interrupt_enable - Not yet implemented\n");
 }
 
 /*---------------------------------------------------------------*/
 
-INLINE void cam_interrupt_disable(void)
+INLINE void cam_interrupt_disable(const int c)
 {
   printf("cam_interrupt_disable - Not yet implemented\n");
 }
 
 /*---------------------------------------------------------------*/
 
-INLINE void cam_interrupt_attach(void (*isr)(void))
+INLINE void cam_interrupt_attach(const int c, const int n, void (*isr)(void))
 {
   printf("cam_interrupt_attach - Not yet implemented\n");
 }
 
 /*---------------------------------------------------------------*/
 
-INLINE void cam_interrupt_detach(void)
+INLINE void cam_interrupt_detach(const int c, const int n)
 {
   printf("cam_interrupt_detach - Not yet implemented\n");
 }
