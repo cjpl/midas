@@ -6,6 +6,9 @@
 #  Contents:     Makefile for MIDAS example frontend and analyzer
 #
 #  $Log$
+#  Revision 1.12  2000/12/01 09:35:18  midas
+#  Added fal
+#
 #  Revision 1.11  2000/10/02 14:04:08  midas
 #  Added -lzlib for OSF1
 #
@@ -96,7 +99,7 @@ CC = cc
 CFLAGS += -g -I$(INC_DIR) -I$(DRV_DIR)
 LDFLAGS +=
 
-all: $(UFE) analyzer
+all: $(UFE) fal analyzer
 
 $(UFE): $(LIB) $(LIB_DIR)/mfe.o $(DRV_DIR)/bus/$(DRIVER).o $(UFE).c
 	$(CC) $(CFLAGS) $(OSFLAGS) -o $(UFE) $(UFE).c $(DRIVER).o \
@@ -109,6 +112,11 @@ analyzer: $(LIB) $(LIB_DIR)/mana.o analyzer.o $(MODULES)
 	$(FF) $(FFLAGS) -o analyzer $(LIB_DIR)/mana.o analyzer.o \
 	$(MODULES) $(CERNLIB_DIR)/libpacklib.a \
 	$(LIB) $(LDFLAGS) $(LIBS)
+
+fal: $(LIB) $(LIB_DIR)/fal.o $(DRV_DIR)/bus/$(DRIVER).o $(UFE).c $(MODULES) $(UFE).o analyzer.o
+	$(FF) $(FFLAGS) -o fal $(LIB_DIR)/fal.o $(UFE).o $(DRIVER).o \
+	analyzer.o $(MODULES) $(CERNLIB_DIR)/libpacklib.a \
+	$(LIB) $(LDFEFLAGS) $(LIBS)
 
 .c.o:
 	$(CC) $(CFLAGS) $(OSFLAGS) -c $<
