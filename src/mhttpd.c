@@ -6,6 +6,9 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
+  Revision 1.44  1999/09/21 14:41:35  midas
+  Close server socket before system() call
+
   Revision 1.43  1999/09/21 14:15:03  midas
   Replaces cm_execute by system()
 
@@ -159,6 +162,8 @@ char _text[TEXT_SIZE];
 char *_attachment_buffer;
 INT  _attachment_size;
 char remote_host_name[256];
+char _start_command[256];
+char _start_name[NAME_LENGTH];
 
 char *mname[] = {
   "January",
@@ -3849,14 +3854,8 @@ char  str[256], ref[256], command[256], name[80];
     db_get_value(hDB, 0, str, command, &size, TID_STRING);
     if (command[0])
       {
-      system(command);
-      /* wait until program started */
-      for (i=0 ; i<50 ; i++)
-        {
-        if (cm_exist(name, FALSE))
-          break;
-        ss_sleep(100);
-        }
+      strcpy(_start_command, command);
+      strcpy(_start_name, name);
       }
     redirect("?cmd=programs");
     return;
@@ -4911,6 +4910,20 @@ INT                  last_time=0;
   error:
 
       closesocket(sock);
+
+      /* start program if requested */
+      if (_start_command[0])
+        {
+        system(_start_command);
+        for (i=0 ; i<50 ; i++)
+          {
+          if (cm_exist(_start_name, FALSE) == CM_SUCCESS)
+            break;
+          ss_sleep(100);
+          }
+        }
+
+      _start_command[0] = 0;
       }
 
     /* re-establish ctrl-c handler */
