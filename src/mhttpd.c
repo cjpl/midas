@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.197  2002/05/08 17:56:12  midas
+  Omit overflow in history display
+
   Revision 1.196  2002/05/08 16:39:25  midas
   Fixed problem with '+' in key names
 
@@ -7503,6 +7506,7 @@ double      yb1, yb2, yf1, yf2, ybase;
 
     bsize = sizeof(ybuffer);
     tsize = sizeof(tbuffer);
+    memset(ybuffer, 0, bsize);
     status = hs_read(event_id, ss_time()-scale+toffset, ss_time()+toffset, scale/1000,
                      var_name[i], var_index[i], tbuffer, &tsize, ybuffer, &bsize,
                      &type, &n_point[i]);
@@ -7543,6 +7547,10 @@ double      yb1, yb2, yf1, yf2, ybase;
           y[i][j] = (float) *(((double *) ybuffer)+j); break;
         }
 
+      /* avoid overflow */
+      if (y[i][j] > 1E30)
+        y[i][j] = 1E30f;
+      
       /* apply factor and offset */
       y[i][j] = y[i][j]*factor[i] + offset[i];
 
