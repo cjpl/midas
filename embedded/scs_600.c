@@ -9,6 +9,9 @@
                 for SCS-600 Digital I/O
 
   $Log$
+  Revision 1.6  2002/10/28 14:26:30  midas
+  Changes from Japan
+
   Revision 1.5  2002/10/22 15:06:18  midas
   Removed temporary OE test
 
@@ -47,19 +50,40 @@ sbit SR_READB   = P0 ^ 4;    // Serial data readback
 /* data buffer (mirrored in EEPROM) */
 
 struct {
-  unsigned char out;
+  unsigned char out[8];
   unsigned char in;
-} user_data;
+} idata user_data;
+
+struct {
+  float power[8];
+} idata user_conf;
 
 MSCB_INFO_CHN code channel[] = {
-  1, UNIT_BYTE, 0, 0, 0, "Out",   &user_data.out,
-  1, UNIT_BYTE, 0, 0, 0, "In",    &user_data.in,
+  1, UNIT_BOOLEAN, 0, 0, 0, "Out0",   &user_data.out[0],
+  1, UNIT_BOOLEAN, 0, 0, 0, "Out1",   &user_data.out[1],
+  1, UNIT_BOOLEAN, 0, 0, 0, "Out2",   &user_data.out[2],
+  1, UNIT_BOOLEAN, 0, 0, 0, "Out3",   &user_data.out[3],
+  1, UNIT_BOOLEAN, 0, 0, 0, "Out4",   &user_data.out[4],
+  1, UNIT_BOOLEAN, 0, 0, 0, "Out5",   &user_data.out[5],
+  1, UNIT_BOOLEAN, 0, 0, 0, "Out6",   &user_data.out[6],
+  1, UNIT_BOOLEAN, 0, 0, 0, "Out7",   &user_data.out[7],
+  1, UNIT_BYTE,    0, 0, 0,   "In",   &user_data.in,
   0
 };
 
 MSCB_INFO_CHN code conf_param[] = {
+  4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "Power0", &user_conf.power[0],
+  4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "Power1", &user_conf.power[1],
+  4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "Power2", &user_conf.power[2],
+  4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "Power3", &user_conf.power[3],
+  4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "Power4", &user_conf.power[4],
+  4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "Power5", &user_conf.power[5],
+  4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "Power6", &user_conf.power[6],
+  4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "Power7", &user_conf.power[7],
   0
 };
+
+unsigned char output;
 
 /********************************************************************\
 
@@ -83,6 +107,7 @@ void user_init(void)
   SR_DATAO = 0;
   SR_DATAI = 1; // prepare for input
 }
+
 
 /*---- User write function -----------------------------------------*/
 
@@ -124,7 +149,7 @@ unsigned char user_func(unsigned char idata *data_in,
   return 2;
 }
 
-/*---- User loop function ------------------------------------------*/
+/*---- Clock external shift registers to read and output data ------*/
 
 void ser_clock()
 {
@@ -136,7 +161,7 @@ unsigned char d, i;
     if (SR_DATAI)
       d |= (0x80 >> i);
 
-    SR_DATAO = (user_data.out & (0x80>>i)) == 0;
+    SR_DATAO = ((output & (0x80 >> i)) == 0);
     delay_us(10);
     SR_CLOCK = 1;
     delay_us(10);
@@ -147,7 +172,7 @@ unsigned char d, i;
   /* second shift register */
   for (i=0 ; i<8 ; i++)
     {
-    SR_DATAO = (user_data.out & (0x80>>i)) == 0;
+    SR_DATAO = ((output & (0x80 >> i)) == 0);
     delay_us(10);
     SR_CLOCK = 1;
     delay_us(10);
@@ -161,11 +186,81 @@ unsigned char d, i;
   SR_STROBE = 0;
 
   /* after first cycle, enable outputs */
-  delay_ms(1);
   SR_OE = 0;
 
   user_data.in = d;  
 }
+
+/*---- Apply power settings as a fraction of a second --------------*/
+
+unsigned char cycle;
+unsigned char ca[8];
+
+void set_power(void)
+{
+unsigned char        i;
+static unsigned long on_time;
+float                frac;
+unsigned long        expired;
+
+  /* turn output off after on-time expired */
+  for (i=0 ; i<8 ; i++)
+    if (user_conf.power[i] < 100)
+      {
+      expired = time() - on_time;
+      if (expired >= (unsigned long) (user_conf.power[i]))
+        {
+        frac = user_conf.power[i] - (unsigned long) (user_conf.power[i]);
+
+        if (frac == 0 || expired >= (unsigned long) (user_conf.power[i])+1)
+          {
+          output &= ~(1<<i);
+          }
+        else if (cycle > 0)
+          {
+          if ((float)ca[i] / cycle > frac)
+            {
+            output &= ~(1<<i);
+            }
+          else
+            {
+            ca[i]++;
+            }
+          }
+        else 
+          {
+          ca[i]++;
+          }
+        }
+      }
+
+  /* turn all outputs on every second */
+  if (time() - on_time >= 100)
+    {
+    on_time = time();
+    for (i=0 ; i<8 ; i++)
+      if (user_conf.power[i] > 0 && user_data.out[i])
+        output |= (1<<i);
+
+    cycle = (cycle + 1) % 10;
+
+    if (cycle == 0)
+      for (i=0 ; i<8 ; i++)
+        ca[i] = 0;
+    }
+
+  /* set outputs according to main switch */
+  for (i=0 ; i<8 ; i++)
+    if (user_conf.power[i] >= 100)
+      {
+      if (user_data.out[i])
+        output |= (1<<i);
+      else
+        output &= ~(1<<i);
+      }
+}
+
+/*---- User loop function ------------------------------------------*/
 
 void user_loop(void)
 {
@@ -180,8 +275,11 @@ static bit first = 1;
     {
     if ((user_data.in & (1<<i)) > 0 &&
         (old_in & (1<<i)) == 0)
-      user_data.out ^= (1<<i);
+      user_data.out[i] = !user_data.out[i];
     }
+
+  /* set output according to power */
+  set_power();
 
   if (!DEBUG_MODE && time() > last+30)
     {
@@ -196,7 +294,7 @@ static bit first = 1;
     lcd_goto(0, 0);
     printf("OUT: ");
     for (i=0 ; i<8 ; i++)
-      printf("%c", user_data.out & (1<<i) ? '1' : '0');
+      printf("%c", user_data.out[i] ? '1' : '0');
 
     lcd_goto(0, 1);
     printf("IN:  ");
