@@ -7,6 +7,9 @@
                 linked with user code to form a complete frontend
 
   $Log$
+  Revision 1.53  2003/04/25 10:41:42  midas
+  Removed FTCP mode in update_odb()
+
   Revision 1.52  2003/04/25 07:45:03  midas
   Write first event to ODB only if logger uses ROOT format
 
@@ -744,7 +747,8 @@ WORD              bktype;
 HNDLE             hKeyRoot, hKeyl;
 KEY               key;
 
-  rpc_set_option(-1, RPC_OTRANSPORT, RPC_FTCP);
+  /* outcommented sind db_find_key does not work in FTCP mode, SR 25.4.03
+  rpc_set_option(-1, RPC_OTRANSPORT, RPC_FTCP); */
 
   if (format == FORMAT_FIXED)
     {
@@ -806,6 +810,7 @@ KEY               key;
           /* adjust for alignment */
           if (key.type != TID_STRING && key.type != TID_LINK)
             pdata = (void *) VALIGN(pdata, min(ss_get_struct_align(), key.item_size));
+
           status = db_set_data(hDB, hKeyl, pdata, key.item_size*key.num_values, 
                                key.num_values, key.type);
           if (status != DB_SUCCESS)
