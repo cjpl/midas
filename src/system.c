@@ -14,6 +14,9 @@
                 Brown, Prentice Hall
 
   $Log$
+  Revision 1.22  1999/02/01 11:53:45  midas
+  Changed comment
+
   Revision 1.21  1999/01/22 09:48:16  midas
   Added return statements for MSDOS in mutex routines
 
@@ -1403,7 +1406,7 @@ char mutex_name[256], path[256], file_name[256];
 
   if (*mutex_handle < 0)
     {
-    cm_msg(MERROR, "ss_create_mutex", "semget() failed, errno = %d", errno);
+    cm_msg(MERROR, "ss_mutex_mutex", "semget() failed, errno = %d", errno);
     return SS_NO_MUTEX;
     }
 
