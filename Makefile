@@ -6,6 +6,9 @@
 #  Contents:     Makefile for MIDAS binaries and examples under unix
 #
 #  $Log$
+#  Revision 1.1  1998/11/22 20:10:33  midas
+#  Changed makefile to Makefile
+#
 #  Revision 1.4  1998/10/28 10:53:20  midas
 #  Added -lutil for linux
 #
