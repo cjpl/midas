@@ -6,6 +6,9 @@
   Contents:     Various utility functions for MSCB protocol
 
   $Log$
+  Revision 1.4  2002/07/09 15:31:32  midas
+  Initial Revision
+
   Revision 1.3  2002/07/08 08:51:05  midas
   Wrote eeprom functions
 
@@ -57,12 +60,15 @@ unsigned char code crc8_data[] = {
 0xb6, 0xe8, 0x0a, 0x54, 0xd7, 0x89, 0x6b, 0x35,
 };
 
-unsigned char crc8(unsigned char *buffer, int len)
+#pragma NOAREGS  // all functions can be called from interrupt routine!
+
+unsigned char crc8(unsigned char idata *buffer, int len)
 /********************************************************************\
 
   Routine: crc8
 
-  Purpose: Calculate 8-bit cyclic redundancy checksum
+  Purpose: Calculate 8-bit cyclic redundancy checksum for a full
+           buffer
 
   Input:
     unsigned char *data     data buffer
@@ -85,6 +91,29 @@ unsigned char crc8_code, index;
     }
 
   return crc8_code;
+}
+
+unsigned char crc8_add(unsigned char crc, unsigned int c)
+/********************************************************************\
+
+  Routine: crc8_add
+
+  Purpose: Single calculation for 8-bit cyclic redundancy checksum
+
+  Input:
+    unsigned char crc       running crc
+    unsigned char c         new character
+
+
+  Function value:
+    unsighend char          CRC-8 code
+
+\********************************************************************/
+{
+unsigned char index;
+
+  index = c ^ crc;
+  return crc8_data[index];
 }
 
 /*------------------------------------------------------------------*/
@@ -114,6 +143,11 @@ unsigned char code baud_table[] =
   T2CON = 0x34;  // timer 2 RX+TX mode
   RCAP2H = 0xFF;
   RCAP2L = baud_table[baud-1];
+
+  ES = 1;        // enable serial interrupt
+  PS = 0;        // serial interrupt low priority
+  EA = 1;        // general interrupt enable
+  RB8 = 0;       // clear read bit 9
 }
 
 /*------------------------------------------------------------------*/
@@ -430,6 +464,7 @@ void lcd_setup()
 void lcd_clear()
 {
   lcd_out(0x01, 0);
+  lcd_goto(0, 0);
 }
 
 /*------------------------------------------------------------------*/
