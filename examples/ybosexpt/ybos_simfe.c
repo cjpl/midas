@@ -11,6 +11,9 @@
                 one bank (SCLR).
 
   $Log$
+  Revision 1.3  1999/07/16 00:08:50  pierre
+  -Added D8 ybos bank, random event size and event length
+
   Revision 1.2  1998/10/12 12:18:59  midas
   Added Log tag in header
 
@@ -22,7 +25,7 @@
 #include "msystem.h"
 #include "ybos.h"
 #include "mcstd.h"
-#include "camacnul.c"
+#include "esone.h"
 
 /* make frontend functions callable from the C framework */
 #ifdef __cplusplus
@@ -30,7 +33,8 @@ extern "C" {
 #endif
 
 /*-- Globals -------------------------------------------------------*/
-
+INT poll_val  = 10; /* .1% */
+INT tr1 = 16, tr2 = 200;
 /* The frontend name (client name) as seen by other MIDAS clients   */
 char *frontend_name = "YbosFE";
 /* The frontend file name, don't change it */
@@ -40,7 +44,7 @@ char *frontend_file_name = __FILE__;
 BOOL frontend_call_loop = FALSE;
 
 /* a frontend status page is displayed with this frequency in ms */
-INT display_period = 5000;
+INT display_period = 000;
 
 /* buffer size to hold events */
 INT event_buffer_size = DEFAULT_EVENT_BUFFER_SIZE;
@@ -72,7 +76,7 @@ EQUIPMENT equipment[] = {
 #else
     EQ_POLLED,            /* equipment type */
 #endif
-    CRATE(0),             /* event source */
+    0,                    /* event source */
     "YBOS",               /* format */
     TRUE,                 /* enabled */
     RO_RUNNING,           /* read only when running */
@@ -110,7 +114,7 @@ EQUIPMENT equipment[] = {
     EQ_PERIODIC,          /* equipment type */
     0,                    /* event source */
     "YBOS",               /* format */
-    FALSE,                /* enabled */
+    TRUE,                 /* enabled */
     RO_BOR,               /* read only at BOR */
     10000,                /* read every 10 sec */
     0,                    /* stop run after this event limit */
@@ -159,6 +163,7 @@ EQUIPMENT equipment[] = {
 INT frontend_init()
 {
   /* put here hardware initialization */
+  cam_init();
   return SUCCESS;
 }
 
@@ -166,6 +171,7 @@ INT frontend_init()
 
 INT frontend_exit()
 {
+  cam_exit();
   return SUCCESS;
 }
 
@@ -173,8 +179,13 @@ INT frontend_exit()
 
 INT begin_of_run(INT run_number, char *error)
 {
+  int ext, q;
+  unsigned long d;
   /* put here clear scalers etc. */
   gbl_run_number = run_number;
+
+  cdreg(&ext, 1,2,3,4);
+  cfsa(16,ext,&d,&q);
   return SUCCESS;
 }
 
@@ -220,15 +231,15 @@ INT frontend_loop()
 
 INT poll_event(INT source, INT count, BOOL test)
 {
-  INT dd, i;
+  INT i;
   
   for (i=0 ; i<count ; i++)
     {
       /* read the LAM register of the Crate controller to find out if
          ANY station has raised the LAM line.
          */
-      dd = 1;
-      if (dd)      /* Ignore LAM if not LAM_STATION */
+      
+      if (rand()%10000 < poll_val)      /* Ignore LAM if not LAM_STATION */
         if (!test)
           return TRUE;
     }
@@ -247,7 +258,7 @@ INT interrupt_configure(INT cmd, INT source[], PTYPE adr)
       cam_interrupt_disable();
       break;
     case CMD_INTERRUPT_ATTACH:
-      cam_interrupt_attach((void (*)())adr);
+      cam_interrupt_attach((void (*)(void))adr);
       break;
     case CMD_INTERRUPT_DETACH:
       cam_interrupt_detach();
@@ -260,28 +271,35 @@ INT interrupt_configure(INT cmd, INT source[], PTYPE adr)
 
 INT read_trigger_event(char *pevent)
 {
-DWORD i;
-DWORD *pbkdat;
-
-ybk_init((DWORD *) pevent);
-
-/* collect user hardware data */
-/*---- USER Stuff ----*/
+  INT i, j;
+  double *pbkdat;
+  ybk_init((DWORD *) pevent);
+  
+  j = rand()%100;
+  if (j < tr1)
+    j = tr1;
+  else if (j > tr2)
+    j = tr2;
   ybk_create((DWORD *)pevent, "ADC0", I4_BKTYPE, (DWORD *)(&pbkdat));
-  for (i=0 ; i<8 ; i++)
+  for (i=0 ; i<j ; i++)
     *pbkdat++ = i & 0xFFF;
   ybk_close((DWORD *)pevent, pbkdat);
 
   ybk_create((DWORD *)pevent, "TDC0", I2_BKTYPE, (DWORD *)(&pbkdat));
-  for (i=0 ; i<8 ; i++)
-    *((WORD *)pbkdat)++ = (WORD)(0x10+i) & 0xFFF;
+  for (i=0 ; i<16 ; i++)
+    *((WORD *)pbkdat)++ = (WORD)(0x10+i) & 0xFFFF;
   ybk_close((DWORD *) pevent, pbkdat);
 
   ybk_create_chaos((DWORD *)pevent, "POJA", I2_BKTYPE, (DWORD *)(&pbkdat));
-  for (i=0 ; i<9 ; i++)
-    *((WORD *)pbkdat)++ = (WORD) (0x20+i) & 0xFFF;
+  for (i=0 ; i<16 ; i++)
+    *((WORD *)pbkdat)++ = (WORD) (0x20+i+1) & 0xFFFF;
   ybk_close_chaos((DWORD *) pevent, I2_BKTYPE, pbkdat);
-/* END OF EVENT */
+
+  ybk_create((DWORD *)pevent, "EFGH", D8_BKTYPE, (DWORD *)(&pbkdat));
+  for (i=0 ; i<6 ; i++)
+    *pbkdat++ = (double)i + 10.;
+  ybk_close((DWORD *)pevent, pbkdat);
+  /* END OF EVENT */
 
   return (ybk_size((DWORD *)pevent));
 }
@@ -308,12 +326,8 @@ INT read_scaler_event(char *pevent)
 /*-- File event -------------------------------------------------*/
 INT files_dump (char *pevent)
 {
-  ybos_feodb_file_dump((EQUIPMENT *)&equipment[2].name
-		       , (DWORD *)pevent, gbl_run_number, "trigger");
-
-  equipment[2].odb_out++; 
+  feodb_file_dump(equipment, "File", pevent, gbl_run_number, "trigger");
 
   /* return 0 because I handle the "event send" by myself */
   return 0;
 }
-
