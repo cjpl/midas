@@ -6,6 +6,7 @@ Version 1.2.6, released December 4th, 2001
 - Display locked attributes as text only (no input field)
 - Added FAQ about "Last 10" page as default logbook page
 - Added -h flag for multi-homed hosts; thanks to Scott Erickson
+- Fixed problem with "Date format" in short listings
 
 Version 1.2.5, released November 21st, 2001
 ===========================================
