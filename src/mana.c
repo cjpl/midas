@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.121  2004/08/02 07:53:31  midas
+  Do a tree->Reset() after rwnt_buffer_size tree fills
+
   Revision 1.120  2004/07/29 09:14:47  midas
   Added online TTrees, thanks to Ryu Sawada
 
@@ -3309,6 +3312,10 @@ INT write_event_ttree(FILE * file, EVENT_HEADER * pevent, ANALYZE_REQUEST * par)
                    "Bank %s booked but not received, tree cannot be filled",
                    et->branch_name + (i * NAME_LENGTH));
 
+      /* delete tree if too many entries, will be obsolete with cyglic trees later */
+      if (clp.online && et->tree->GetEntries() > par->rwnt_buffer_size)
+         et->tree->Reset();
+
       /* fill tree both online and offline */
       if (!exclude_all)
          et->tree->Fill();
@@ -3628,7 +3635,7 @@ INT process_event(ANALYZE_REQUEST * par, EVENT_HEADER * pevent)
       write_event_hbook(NULL, pevent, par);
 #endif                          /* HAVE_HBOOK */
 #ifdef HAVE_ROOT
-   /* fill tree, should late be replaces by cyclic filling once it's implemented in ROOT */
+   /* fill tree, should later be replaced by cyclic filling once it's implemented in ROOT */
    if (clp.online && par->rwnt_buffer_size > 0)
       write_event_ttree(NULL, pevent, par);
 #endif
