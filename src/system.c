@@ -14,6 +14,9 @@
                 Brown, Prentice Hall
 
   $Log$
+  Revision 1.25  1999/04/29 07:06:40  midas
+  Removed superfluous "{"
+
   Revision 1.24  1999/04/16 15:11:28  midas
   ss_suspends forwards more MSG_BM UPD messages (needed for JMidas seeing
   its own messages in parallel to an ODB key update like run start)
@@ -1487,7 +1490,6 @@ INT status;
   return SS_SUCCESS;
 #endif /* OS_VMS */
 #ifdef OS_VXWORKS
-  {
   /* convert timeout in ticks (1/60) = 1000/60 ~ 1/16 = >>4 */
   status = semTake((SEM_ID)mutex_handle, timeout == 0 ? WAIT_FOREVER : timeout>>4);
   if (status == ERROR)
