@@ -8,6 +8,9 @@
                 ACUM bank.
 
   $Log$
+  Revision 1.4  2003/04/08 00:09:50  olchansk
+  add required #include <string.h>
+
   Revision 1.3  1998/11/09 09:14:16  midas
   Removed printf("EOR scaler\n");
 
@@ -21,6 +24,7 @@
 
 /* standard includes */
 #include <stdio.h>
+#include <string.h>
 #include <time.h>
 
 /* midas includes */
