@@ -7,6 +7,9 @@
                 through EPICS channel access.
 
   $Log$
+  Revision 1.7  2002/05/10 00:42:32  pierre
+  additional arg for BUS_DRIVER
+
   Revision 1.6  2000/03/02 21:54:48  midas
   Added comments concerning channel names and possibility to disable functions
 
@@ -49,8 +52,11 @@ BOOL frontend_call_loop = TRUE;
 /* a frontend status page is displayed with this frequency in ms    */
 INT display_period = 1000;
 
+/* maximum event size produced by this frontend */
+INT max_event_size = 10000;
+
 /* buffer size to hold events */
-INT event_buffer_size = DEFAULT_EVENT_BUFFER_SIZE;
+INT event_buffer_size = 10*10000;
 
 /*-- Equipment list ------------------------------------------------*/
 
@@ -85,7 +91,7 @@ by EPICS.
 
 /* device driver list */
 DEVICE_DRIVER epics_driver[] = {
-  { "Beamline", epics_ca, 10, 0, CMD_SET_LABEL }, /* disable CMD_SET_LABEL */
+  { "Beamline", epics_ca, 10, NULL, 0, CMD_SET_LABEL }, /* disable CMD_SET_LABEL */
   { "" }
 };
 
