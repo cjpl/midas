@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.90  2002/05/09 18:16:55  midas
+  Version 1.9.0
+
   Revision 1.89  2002/05/08 19:54:40  midas
   Added extra parameter to function db_get_value()
 
@@ -295,7 +298,7 @@
    to the MIDAS library. First digit is major release, second
    digit is minor release, third digit is patch level */
 
-#define MIDAS_VERSION "1.8.3"
+#define MIDAS_VERSION "1.9.0"
 
 /*------------------------------------------------------------------*/
 
