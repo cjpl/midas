@@ -6,6 +6,9 @@
   Contents:     Command-line interface to the MIDAS online data base.
 
   $Log$
+  Revision 1.50  2001/10/03 08:20:19  midas
+  Fixed small bug in parameter checking of "del" command
+
   Revision 1.49  2001/08/06 08:02:09  midas
   Added "export" command
 
@@ -1798,9 +1801,11 @@ PRINT_INFO      print_info;
              (param[0][0] == 'r' && param[0][1] == 'm'))
       {
       flags = 0;
-      if (param[1][1] == 'f' || param[2][1] == 'f')
+      if ((param[1][0] == '-' && param[1][1] == 'f') || 
+          (param[2][0] == '-' && param[2][1] == 'f'))
         flags |= (1<<0);
-      if (param[1][1] == 'l' || param[2][1] == 'l')
+      if ((param[1][0] == '-' && param[1][1] == 'l') || 
+          (param[2][0] == '-' && param[2][1] == 'l'))
         flags |= (1<<1);
 
       for (i=1 ; param[i][0] == '-' ; i++);
