@@ -6,6 +6,9 @@
   Contents:     Command-line interface to the MIDAS online data base.
 
   $Log$
+  Revision 1.49  2001/08/06 08:02:09  midas
+  Added "export" command
+
   Revision 1.48  2001/07/24 10:44:40  midas
   Added import command
 
@@ -202,6 +205,7 @@ void print_help(char *command)
     printf("  -l                      follow links\n");
     printf("  -f                      force deletion without asking\n");
     printf("exec <key>/<cmd>        - execute shell command (stored in key) on server\n");
+    printf("exp <key> <filename>    - import key into ASCII file\n");
     printf("find <pattern>          - find a key with wildcard pattern\n");
     printf("help/? [command]        - print this help [for a specific command]\n");
     printf("hi [analyzer] [id]      - tell analyzer to clear histos\n");
@@ -2192,14 +2196,14 @@ PRINT_INFO      print_info;
       {
       int fh;
 
-      fh = open(param[1], O_RDONLY | O_BINARY);
+      fh = open(param[1], O_RDONLY | O_TEXT);
       if (fh < 0)
         printf("File %s not found\n", param[1]);
       else
         {
         size = lseek(fh, 0, SEEK_END); 
         lseek(fh, 0, SEEK_SET);
-        read(fh, data, size);
+        size = read(fh, data, size);
         data[size++] = 0;
         close(fh);
 
@@ -2218,6 +2222,52 @@ PRINT_INFO      print_info;
         db_set_data(hDB, hKey, data, size, 1, TID_STRING);
         }
 
+      }
+
+    /* export */
+    else if (param[0][0] == 'e' && param[0][1] == 'x' && param[0][2] == 'p')
+      {
+      FILE *f;
+
+      if (param[1][0] == 0)
+        printf("please specify key\n");
+      else
+        {
+        compose_name(pwd, param[1], str);
+
+        db_find_key(hDB, 0, str, &hKey);
+        if (hKey == 0)
+          printf("key \"%s\" not found\n", param[1]);
+        else
+          {
+          if (param[2][0] == 0)
+            {
+            printf("File name: ");
+            ss_gets(name, 256);
+            }
+          else
+            strcpy(name, param[2]);
+
+          f = fopen(name, "w");
+          if (f == NULL)
+            printf("Cannot open file \"%s\"\n", name);
+          else
+            {
+            db_get_key(hDB, hKey, &key);
+            if (key.type != TID_STRING)
+              printf("Only export of STRING key possible\n");
+            else
+              {
+              size = sizeof(data);
+              memset(data, 0, size);
+              db_get_data(hDB, hKey, data, &size, key.type);
+            
+              fprintf(f, data);
+              fclose(f);
+              }
+            }
+          }
+        }
       }
 
     /* rewind */
