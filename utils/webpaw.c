@@ -6,6 +6,10 @@
   Contents:     Web server for remote PAW display
 
   $Log$
+  Revision 1.17  2000/05/25 09:22:30  midas
+  - Added text output
+  - Fixed a few bugs
+
   Revision 1.16  2000/05/24 14:30:35  midas
   Increased PAW timeout to 15 sec
 
@@ -80,7 +84,7 @@
 #endif
 
 /* Version of WebPAW */
-#define VERSION "1.0.2"
+#define VERSION "1.0.4"
 
 #define WEB_BUFFER_SIZE 100000
 #define MAX_PARAM           10
@@ -190,6 +194,27 @@ char *p;
     switch (str[i])
       {
       case '\n': sprintf(p, "<br>\n"); break;
+      case '<': sprintf(p, "&lt;"); break;
+      case '>': sprintf(p, "&gt;"); break;
+      case '&': sprintf(p, "&amp;"); break;
+      case '\"': sprintf(p, "&quot;"); break;
+      default: *p = str[i]; *(p+1) = 0;
+      }
+    p += strlen(p);
+    }
+  *p = 0;
+}
+
+void format1(char *str, char *result)
+{
+int  i;
+char *p;
+
+  p = result;
+  for (i=0 ; i<(int) strlen(str) ; i++)
+    {
+    switch (str[i])
+      {
       case '<': sprintf(p, "&lt;"); break;
       case '>': sprintf(p, "&gt;"); break;
       case '&': sprintf(p, "&amp;"); break;
@@ -561,7 +586,7 @@ int    i;
 }
 
 
-int submit_paw(char *kumac, char *result)
+int submit_paw(char *kumac, char *result, int save_gif)
 {
 #ifndef _MSC_VER
 static int pid=0, pipe;
@@ -641,20 +666,21 @@ int    status;
     if (status != SUCCESS)
       return status;
 
-    /* send print command */
-    strcpy(str, "pict/print webpaw.gif\n");
-    write(pipe, str, strlen(str));
-
-    /* wait for prompt */
-    status = read_paw(pipe, "PAW > ", str);
-    if (status != SUCCESS)
-      return status;
-
-    if (strstr(str, "PAW > "))
+    if (save_gif)
       {
-      *strstr(str, "PAW > ") = 0;
-      if (result)
-        strcpy(result, str);
+      /* send print command */
+      strcpy(str, "pict/print webpaw.gif\n");
+      write(pipe, str, strlen(str));
+
+      /* wait for prompt */
+      status = read_paw(pipe, "PAW > ", str);
+      if (status != SUCCESS)
+        return status;
+      }
+
+    if (strstr(str, "PAW > ") && result)
+      {
+      strcpy(result, str);
       return SUCCESS;
       }
     else
@@ -691,8 +717,8 @@ void interprete(char *path)
 
 \********************************************************************/
 {
-char   str[10000], str2[256], group_name[256], display_name[256], kumac_name[256];
-char   comment_name[256];
+char   str[10000], str2[10000], group_name[256], display_name[256], kumac_name[256];
+char   cmd[256], comment_name[256], *p;
 char   cur_group[256], tmp[256], elog[256];
 int    fh, i, j, length, status, height;
 
@@ -853,19 +879,24 @@ int    fh, i, j, length, status, height;
             if (!enumcfg(group_name, display_name, kumac_name, j))
               break;
     
+            comment_name[0] = 0;
             if (strchr(kumac_name, '?'))
               {
-              strcpy(comment_name, strchr(kumac_name, '?')+1);
+              /* extract comment, trim leading blanks */
+              p = strchr(kumac_name, '?')+1;
+              while (*p && *p == ' ')
+                p++;
+              strcpy(comment_name, p);
               *strchr(kumac_name, '?') = 0;
               }
             urlEncode(kumac_name);
             format(display_name, str);
 
             if (comment_name[0])
-              rsprintf("<li><a href=\"%s.html?comment=%s\" target=contents>%s</a></li>\r\n", 
+              rsprintf("<li><a href=\"/%s.html?comment=%s\" target=contents>%s</a></li>\r\n", 
                         kumac_name, comment_name, str);
             else
-              rsprintf("<li><a href=\"%s.html\" target=contents>%s</a></li>\r\n", 
+              rsprintf("<li><a href=\"/%s.html\" target=contents>%s</a></li>\r\n", 
                         kumac_name, str);
             }
 
@@ -875,19 +906,24 @@ int    fh, i, j, length, status, height;
       else
         {
         /* single kumac found */
+        comment_name[0] = 0;
         if (strchr(kumac_name, '?'))
           {
-          strcpy(comment_name, strchr(kumac_name, '?')+1);
+          /* extract comment, trim leading blanks */
+          p = strchr(kumac_name, '?')+1;
+          while (*p && *p == ' ')
+            p++;
+          strcpy(comment_name, p);
           *strchr(kumac_name, '?') = 0;
           }
         urlEncode(kumac_name);
         format(display_name, str);
 
         if (comment_name[0])
-          rsprintf("<li><a href=\"%s.html?comment=%s\" target=contents>%s</a></li>\r\n", 
+          rsprintf("<li><a href=\"/%s.html?comment=%s\" target=contents>%s</a></li>\r\n", 
                     kumac_name, comment_name, str);
         else
-          rsprintf("<li><a href=\"%s.html\" target=contents>%s</a></li>\r\n", 
+          rsprintf("<li><a href=\"/%s.html\" target=contents>%s</a></li>\r\n", 
                     kumac_name, str);
         }
 
@@ -909,15 +945,15 @@ int    fh, i, j, length, status, height;
     rsprintf("<html><body>\r\n");
 
     if (getparam("restart"))
-      strcpy(str, "restart");
+      strcpy(cmd, "restart");
     else if (getparam("cmd"))
-      strcpy(str, getparam("cmd"));
+      strcpy(cmd, getparam("cmd"));
     else
-      strcpy(str, path);
+      strcpy(cmd, path);
 
     if (equal_ustring(str, "quit"))
       {
-      status = submit_paw("quit", str);
+      status = submit_paw("quit", str, 0);
       if (status == SHUTDOWN)
         rsprintf("<h1>WebPAW shut down successfully</h1>\r\n");
       else
@@ -927,8 +963,8 @@ int    fh, i, j, length, status, height;
       }
     else
       {
-      if (strstr(str, ".html"))
-        *strstr(str, ".html") = 0;
+      if (strstr(cmd, ".html"))
+        *strstr(cmd, ".html") = 0;
 
       /* display optional comment */
       if (getparam("comment"))
@@ -949,13 +985,28 @@ int    fh, i, j, length, status, height;
           }
         }
       
-      rsprintf("<img src=\"%s.gif\" alt=contents.gif></a>\r\n", str);
-
       if (getcfg("General", "Elog", elog))
         {
         rsprintf("<p><a href=\"%s\">Create ELog with this picture</a>\r\n", elog);
         }
 
+      /* put reference to image */
+      rsprintf("<img src=\"/%s.gif\" alt=contents.gif></a>\r\n", cmd);
+
+      /* display optional PAW text output */
+      if (!equal_ustring(cmd, "contents"))
+        if (getcfg("General", "Text", str))
+          {
+          rsprintf("<p><pre>\r\n");
+
+          urlDecode(cmd);
+          status = submit_paw(cmd, str, 0);
+
+          format1(str, str2);
+          rsprintf(str2);
+
+          rsprintf("</pre>\r\n");
+          }
       }
     
     rsprintf("</body></html>\r\n");
@@ -982,7 +1033,7 @@ int    fh, i, j, length, status, height;
       str[0] = 0;
 
 #ifndef _MSC_VER
-    status = submit_paw(str, str);
+    status = submit_paw(str, str, 1);
     if (status != SUCCESS)
       {
       rsprintf("HTTP/1.0 200 Document follows\r\n");
@@ -1247,7 +1298,7 @@ char                 pwd[256], cl_pwd[256], str[256], *p;
   setgid(getgid());
 
   /* start paw */
-  status = submit_paw("restart", NULL);
+  status = submit_paw("restart", NULL, 1);
   if (status != 1)
     {
     printf("Error starting PAW: ");
