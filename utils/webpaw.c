@@ -6,6 +6,9 @@
   Contents:     Web server for remote PAW display
 
   $Log$
+  Revision 1.18  2000/05/25 10:07:05  midas
+  Check y/n character in text tag
+
   Revision 1.17  2000/05/25 09:22:30  midas
   - Added text output
   - Fixed a few bugs
@@ -995,7 +998,7 @@ int    fh, i, j, length, status, height;
 
       /* display optional PAW text output */
       if (!equal_ustring(cmd, "contents"))
-        if (getcfg("General", "Text", str))
+        if (getcfg("General", "Text", str) && str[0] == 'y')
           {
           rsprintf("<p><pre>\r\n");
 
