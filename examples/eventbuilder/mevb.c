@@ -4,6 +4,9 @@ Created by:   Pierre-Andre Amaudruz
 
 Contents:     Main Event builder task.
 $Log$
+Revision 1.9  2002/10/07 17:04:01  pierre
+fix tr_stop request
+
 Revision 1.8  2002/09/28 00:48:33  pierre
 Add EB_USER_ERROR handling, handFlush()
 
@@ -45,8 +48,8 @@ DWORD max_event_size = MAX_EVENT_SIZE;
 HNDLE hDB, hKey, hStatKey;
 BOOL  debug=FALSE, debug1=FALSE;
 
-BOOL  stop_requested = TRUE;
-// BOOL  stopped = TRUE;
+BOOL  abort_requested = FALSE, stop_requested = TRUE;
+BOOL  stopped = TRUE;
 BOOL  wheel = FALSE;
 INT   run_state=0;
 DWORD start_time = 0, stop_time=0, request_stop_time=0;
@@ -211,13 +214,13 @@ INT tr_prestart(INT rn, char *error)
 {
   INT fragn, status, size;
 
+  abort_requested = FALSE;
   gbl_run = rn;
   printf("EBuilder-Starting New Run: %d\n", rn);
 
   /* Reset Destination statistics */
   memset((char *)&ebstat, 0, sizeof(EBUILDER_STATISTICS));
   db_set_record(hDB, hStatKey, &ebstat, sizeof(EBUILDER_STATISTICS), 0);
-  stop_requested = FALSE;
   gbl_bytes_sent = 0;
   gbl_events_sent = 0;
 
@@ -252,12 +255,10 @@ INT tr_prestart(INT rn, char *error)
 
   /* local run state */
   run_state = STATE_RUNNING;
+  stopped = FALSE;
+  stop_requested = FALSE;
 
   /* Reset global trigger mask */
-  /* If you want to test event mismatch condition, comment out
-  the following statement. Start a run, shutdown one producer
-  during this run. End the run. Restart the producer. 
-  Start a new run. That makes an event mismatch */
   cdemask = 0;
   return CM_SUCCESS;
 }
@@ -295,11 +296,13 @@ INT handFlush(INT nfragment)
   char strout[256];
 
   /* Do Hand flush until better way to  garantee the input buffer to be empty */
+  if (debug)
+    printf("Hand flushing system buffer... \n");
   for (i=0;i<nfragment;i++) {
     do {  
       size = max_event_size;
       status = bm_receive_event(ebch[i].hBuf, ebch[i].pfragment, &size, ASYNC);
-      if (debug) {
+      if (debug1) {
         sprintf(strout
           ,"booking:Hand flush bm_receive_event[%d] hndle:%d stat:%d  Last Ser:%d"
           , i, ebch[i].hBuf, status
@@ -313,7 +316,8 @@ INT handFlush(INT nfragment)
   status = bm_empty_buffers();
   if (status != BM_SUCCESS) 
     cm_msg(MERROR, "source_booking", "bm_empty_buffers failure [%d]",status);
-
+  stopped = TRUE;
+  run_state = STATE_STOPPED;
   return status;
 }
 
@@ -321,8 +325,7 @@ INT handFlush(INT nfragment)
 /*--------------------------------------------------------------------*/
 INT source_booking(INT nfrag)
 {
-  INT j, i, size, status, status1, status2;
-  char strout[256];
+  INT j, i, status, status1, status2;
 
   if(debug) printf("Entering booking\n");
 
@@ -368,20 +371,6 @@ INT source_booking(INT nfrag)
         cm_msg(MERROR, "source_booking", "Can't allocate space for buffer");
         return BM_NO_MEMORY;
       }
-
-      /* Do Hand flush until better way to  garantee the input buffer
-      to be empty */
-      do {
-        size = max_event_size;
-        status = bm_receive_event(ebch[i].hBuf, ebch[i].pfragment, &size, ASYNC);
-        if (debug) {
-          sprintf(strout
-          ,"booking:Hand flush bm_receive_event[%d] hndle:%d stat:%d  Last Ser:%d"
-          , i, ebch[i].hBuf, status
-          , ((EVENT_HEADER *) ebch[i].pfragment)->serial_number);
-         printf("%s\n", strout);
-        }
-      } while (status == BM_SUCCESS);
     }
   }
 
@@ -403,14 +392,14 @@ INT source_booking(INT nfrag)
 
       printf("%d)%s",j , ebch[j].name);
       printf(" buff:%s", ebch[j].set.buffer);
-      printf(" msk#:%x", ebch[j].set.emask);
+      printf(" msk#:%4.4x", ebch[j].set.emask);
       printf(" ser#:%d", ebch[j].serial);
-      printf(" hbuf:%d", ebch[j].hBuf);
-      printf(" rqid:%d", ebch[j].req_id);
+      printf(" hbuf:%2d", ebch[j].hBuf);
+      printf(" rqid:%2d", ebch[j].req_id);
       printf(" opst:%d", status1);
       printf(" rqst:%d", status2);
-      printf(" evid:%d", ebch[j].set.event_id);
-      printf(" tmsk:0x%x\n", ebch[j].set.trigger_mask);
+      printf(" evid:%2d", ebch[j].set.event_id);
+      printf(" tmsk:0x%4.4x\n", ebch[j].set.trigger_mask);
     }
   }
 
@@ -419,7 +408,7 @@ INT source_booking(INT nfrag)
 
 /*--------------------------------------------------------------------*/
 INT source_unbooking(nfrag)
-{
+{   
   INT i, status;
 
   /* Skip unbooking if already done */
@@ -495,45 +484,49 @@ INT source_scan(INT fmt, INT nfragment, HNDLE dest_hBuf, char * dest_event)
       /* Get fragment and store it in ebch[i].pfragment */
       size = max_event_size;
       status = bm_receive_event(ebch[i].hBuf, ebch[i].pfragment, &size, ASYNC);
-      if (status == BM_SUCCESS) { /* event received */
-        /* mask event */
-        cdemask |= ebch[i].set.emask;
-        /* Keep local serial */
-        ebch[i].serial = ((EVENT_HEADER *) ebch[i].pfragment)->serial_number;
+      switch (status) {
+        case BM_SUCCESS : /* event received */
+          /* Mask event */
+          cdemask |= ebch[i].set.emask;
 
-        /* Swap event depending on data format */
-        if (fmt == FORMAT_YBOS) {
+          /* Keep local serial */
+          ebch[i].serial = ((EVENT_HEADER *) ebch[i].pfragment)->serial_number;
+
+          /* Swap event depending on data format */
+          switch (fmt) {
+        case FORMAT_YBOS :
           plrl = (DWORD *) (((EVENT_HEADER *) ebch[i].pfragment) + 1);
           ybos_event_swap (plrl);
-        }
-        else if (fmt== FORMAT_MIDAS) {
-          /* Swap event if necessary */
+          break;
+        case FORMAT_MIDAS :
           psbh = (BANK_HEADER *) (((EVENT_HEADER *) ebch[i].pfragment) + 1);
           bk_swap(psbh, FALSE);
-        }
+          break;
+          }
 
-        /* update local source statistics */
-        ebch[i].stat.events_sent++;
+          /* update local source statistics */
+          ebch[i].stat.events_sent++;
 
-        if (debug1) {
-          printf("SUCC: ch:%d ser:%d Dest_emask:%d cdemask:%x emask:%x sz:%d\n"
-            , i, ebch[i].serial
-            , ebset.emask, cdemask, ebch[i].set.emask, size);
-        }
+          if (debug1) {
+            printf("SUCC: ch:%d ser:%d Dest_emask:%d cdemask:%x emask:%x sz:%d\n"
+              , i, ebch[i].serial
+              , ebset.emask, cdemask, ebch[i].set.emask, size);
+          }
+          break;
+        case BM_ASYNC_RETURN : /* timeout */
+          ebch[i].timeout++;
+          if (debug1) {
+            printf("ASYNC: ch:%d ser:%d Dest_emask:%d cdemask:%x emask:%x sz:%d\n"
+              , i,  ebch[i].serial
+              , ebset.emask, cdemask, ebch[i].set.emask, size);
+          }
+          break;
+        default : /* Error */
+          cm_msg(MERROR, "event_scan", "bm_receive_event error %d", status);
+          return status;
+          break;
       }
-      else if (status == BM_ASYNC_RETURN) { /* timeout */
-        ebch[i].timeout++;
-        if (debug1) {
-          printf("ASYNC: ch:%d ser:%d Dest_emask:%d cdemask:%x emask:%x sz:%d\n"
-            , i,  ebch[i].serial
-            , ebset.emask, cdemask, ebch[i].set.emask, size);
-        }
-      }
-      else { /* Error */
-        cm_msg(MERROR, "event_scan", "bm_receive_event error %d", status);
-        return status;
-      }
-    } /* ~cdemask */
+    } /* ~cdemask => next channel */
   }
 
   /* Check if all fragments have been received */
@@ -554,6 +547,11 @@ INT source_scan(INT fmt, INT nfragment, HNDLE dest_hBuf, char * dest_event)
       }
     }
 
+    if (abort_requested) {
+        cdemask = 0;
+        return EB_SKIP;
+    }
+
     /* Global event mismatch */
     if (event_mismatch) {
       char str[256];
@@ -564,22 +562,14 @@ INT source_scan(INT fmt, INT nfragment, HNDLE dest_hBuf, char * dest_event)
         sprintf (strsub, "Ser[%d]:%d ", j, ebch[j].serial);
         strcat (str, strsub);
       }
-      if (!stop_requested)
-        cm_msg(MERROR,"EBuilder", str);
-      return EB_ERROR;
     }
-    else {
+    else {  /* serial number match */
 
-      /* serial number match */
       /* wheel display */
       if (wheel && (serial % 1024)==0) {
-        printf("..Going...%c\r", bars[i_bar++ % 4]);
+        printf("...%c ..Going on %1.0lf\r", bars[i_bar++ % 4], ebstat.events_sent);
         fflush(stdout);
       }
-
-      /* Skip event for flushing */
-      if (stop_requested)
-        return SS_SUCCESS;
 
       /* Inform this is a NEW destination event building procedure */
       memset(dest_event, 0, sizeof(EVENT_HEADER));
@@ -602,9 +592,9 @@ INT source_scan(INT fmt, INT nfragment, HNDLE dest_hBuf, char * dest_event)
         for (j=0 ; j<nfragment ; j++) {
           status = meb_fragment_add(dest_event, ebch[j].pfragment, &act_size);
           if (status != EB_SUCCESS) {
-            cm_msg(MERROR,"source_scan","compose fragment:%d current size:%d"
-              , j, act_size);
-            return status;
+            cm_msg(MERROR,"source_scan","compose fragment:%d current size:%d (%d)"
+              , j, act_size, status);
+            return EB_ERROR;
           }
         }
       } /* skip user_build */
@@ -619,7 +609,7 @@ INT source_scan(INT fmt, INT nfragment, HNDLE dest_hBuf, char * dest_event)
           printf("rpc_send_event returned error %d, event_size %d\n", 
           status, act_size);
         cm_msg(MERROR,"EBuilder","rpc_send_event returned error %d",status);
-        return status;
+        return EB_ERROR;
       }
 
       /* Keep track of the total byte count */
@@ -630,9 +620,13 @@ INT source_scan(INT fmt, INT nfragment, HNDLE dest_hBuf, char * dest_event)
       gbl_events_sent++;
 
       /* Reset mask and timeouts */
+      for (i=0;i<nfragment;i++)
+        ebch[i].timeout = 0;
       cdemask = 0;
     } /* serial match */
+    return EB_SUCCESS;
   } /* cdemask == ebset.emask */ 
+  
   return status;
 }
 
@@ -804,7 +798,7 @@ usage:
     goto error;
   }
 
-  /* Set fragment_add function based on the fornat */
+  /* Set fragment_add function based on the format */
   if (fmt == FORMAT_MIDAS)
     meb_fragment_add = eb_mfragment_add;
   else if (fmt == FORMAT_YBOS)
@@ -818,9 +812,12 @@ usage:
   do {
     if (run_state != STATE_RUNNING) {
       /* skip the source scan and yield */
-      status = cm_yield(100);
-      cdemask = 0;
-      goto skip;
+      status = cm_yield(500);
+      if (wheel) {
+        printf("...%c Snoring on %1.0lf\r", bars[i_bar++ % 4], ebstat.events_sent);
+        fflush(stdout);
+      }
+      continue;
     }
 
     /* scan source buffer and send event to destination
@@ -832,82 +829,81 @@ usage:
     the run state is checked and memory channels are freed
     */
     status = source_scan(fmt, nfragment, hBuf, dest_event);
-    if (status == BM_ASYNC_RETURN) {
+    switch (status) {
+    case BM_ASYNC_RETURN:
+    // No event found for now:
+    // Check for timeout 
       for (fragn=0; fragn<nfragment ;fragn++) {
-        if (ebch[fragn].timeout > TIMEOUT) {
-          /* Check for stop */
-          if (stop_requested) {
-            //stopped = TRUE;
-            run_state = STATE_STOPPED;
+        if (ebch[fragn].timeout > TIMEOUT) {  /* Timeout */
+          if (stop_requested) { /* Stop */
+            if (debug) printf ("Stop requested on timeout %d\n", status);
 
             /* Flush local destination cache */
             bm_flush_cache(hBuf, SYNC);
 
             /* Call user function */
-            status = eb_end_of_run(gbl_run, strout);
-            if (status != EB_SUCCESS)
-              cm_msg(MERROR, "eb_stop"
-              , "eb_end_of_run returns:%d", status);
+            eb_end_of_run(gbl_run, strout);
+
+            /* Cleanup buffers */
+            handFlush(nfragment);
 
             /* Detach all source from midas */
-            status = source_unbooking(nfragment);
+            source_unbooking(nfragment);
 
-            printf("EBuilder-Run: %d stopped\n", gbl_run);
-            if(debug) printf("main: stop unbooking:%d\n", status);
-
+            /* Compose message */
             stop_time = ss_millitime() - request_stop_time;
-            sprintf(strout,"Run %d Stop on frag#%d; events_sent %1.0lf",
-              gbl_run, fragn, ebstat.events_sent);
+            sprintf(strout,"Run %d Stop on frag#%d; events_sent %1.0lf DT:%d[ms]",
+              gbl_run, fragn, ebstat.events_sent, stop_time);
+
+            /* Send message */
             cm_msg(MINFO,"EBuilder","%s",strout);
-            printf("Time between request and actual stop: %d ms\n",stop_time);
+
+            run_state = STATE_STOPPED;
+            abort_requested = FALSE;
             break;
           }
-          else {
+          else { /* No stop requested */
             ebch[fragn].timeout = 0;
-            status = cm_yield(50);
+            status = cm_yield(100);
             if (wheel) {
-              printf("Waiting...%c\r", bars[i_bar++ % 4]);
+              printf("...%c Timoing on %1.0lf\r", bars[i_bar++ % 4], ebstat.events_sent);
               fflush(stdout);
             }
           }
         }
-        else {
-          status = cm_yield(50);
-        }
+        //else { /* No timeout */
+        //  status = cm_yield(50);
+        //}
+      }   /* do loop */
+      break;
+    case EB_ERROR :
+    case EB_USER_ERROR :
+      abort_requested = TRUE;
+      if (status == EB_USER_ERROR)
+        cm_msg(MTALK,"EBuilder","Error signaled by user code - stopping run...");
+      else
+        cm_msg(MTALK,"EBuilder","Event mismatch - Stopping run...");
+      cdemask = 0;
+      if (cm_transition(TR_STOP, 0, NULL, 0, ASYNC, 0) != CM_SUCCESS) {
+        cm_msg(MERROR, "EBuilder", "Stop Transition request failed");
+        goto error;
       }
-    }
-    else if (status == EB_ERROR || status == EB_USER_ERROR) {
-      if(!stop_requested) {
-        stop_requested = TRUE;
-        if (cm_transition(TR_STOP, 0, NULL, 0, ASYNC, 0) != CM_SUCCESS) {
-          cm_msg(MERROR, "EBuilder", "Stop Transition request failed");
-          goto error;
-        }
-        if (status == EB_USER_ERROR)
-          cm_msg(MTALK,"EBuilder","Error signaled by user code - stopping run...");
-        else
-          cm_msg(MTALK,"EBuilder","Event mismatch - Stopping run...");
-        cdemask = 0;
-
-        /* Cleanup buffers */
-        cm_msg(MTALK,"EBuilder","Flushing buffers...");
-        handFlush(nfragment);
-      }
-    }
-    else if (status == EB_SUCCESS) {
-      for (i=0;i<nfragment;i++)
-        ebch[i].timeout = 0;
-    }
-    else {
+      break;
+    case EB_SUCCESS :
+    case EB_SKIP :
+      //   Normal path if event has been assembled
+      //   No yield in this case.
+      break;
+    default:
       cm_msg(MERROR, "Source_scan", "unexpected return %d", status);
       status = SS_ABORT;
     }
 
-skip: /* EB job done, update statistics */
+    /* EB job done, update statistics if its time */
 
     /* Check if it's time to do statistics job */
     if ((actual_millitime = ss_millitime()) - last_time > 1000) {
-      /* Force event ot appear at the destination if Ebuilder is remote */
+      /* Force event to appear at the destination if Ebuilder is remote */
       rpc_flush_event();
       /* Force event ot appear at the destination if Ebuilder is local */
       bm_flush_cache(hBuf, ASYNC);
@@ -949,9 +945,9 @@ skip: /* EB job done, update statistics */
       gbl_bytes_sent = 0;
 
       /* Yield for system messages */
-      status = cm_yield(500);
+      status = cm_yield(50);
       if (wheel && (run_state != STATE_RUNNING)) {
-        printf("Idleing...%c\r", bars[i_bar++ % 4]);
+        printf("...%c Idleing on %1.0lf\r", bars[i_bar++ % 4], ebstat.events_sent);
         fflush(stdout);
       }
     }
