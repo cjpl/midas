@@ -6,6 +6,9 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
+  Revision 1.30  1999/09/14 13:06:32  midas
+  Added raw file display (for runlog.txt for now...)
+
   Revision 1.29  1999/09/14 11:45:25  midas
   Finished run number query
 
@@ -1537,6 +1540,91 @@ struct tm tms;
 
 /*------------------------------------------------------------------*/
 
+void show_rawfile(char *path)
+{
+int    size;
+FILE   *f;
+char   file_name[256], str[100], line[1000];
+HNDLE  hDB;
+
+  cm_get_experiment_database(&hDB, NULL);
+
+  /* header */
+  rsprintf("HTTP/1.0 200 Document follows\r\n");
+  rsprintf("Server: MIDAS HTTP %s\r\n", cm_get_version());
+  rsprintf("Content-Type: text/html\r\n\r\n");
+
+  rsprintf("<html><head><title>MIDAS File Display</title></head>\n");
+  rsprintf("<body><form method=\"GET\" action=\"%sEL/\">\n", mhttpd_url);
+
+  /* define hidden field for experiment */
+  if (exp_name[0])
+    rsprintf("<input type=hidden name=exp value=\"%s\">\n", exp_name);
+
+  rsprintf("<table border=3 cellpadding=1 width=\"100%%\">\n");
+
+  /*---- title row ----*/
+
+  size = sizeof(str);
+  str[0] = 0;
+  db_get_value(hDB, 0, "/Experiment/Name", str, &size, TID_STRING);
+
+  rsprintf("<tr><th bgcolor=#A0A0FF>MIDAS File Display");
+  rsprintf("<th bgcolor=#A0A0FF>Experiment \"%s\"</tr>\n", str);
+
+  /*---- menu buttons ----*/
+
+  rsprintf("<tr><td colspan=2 bgcolor=#C0C0C0>\n");
+
+  rsprintf("<input type=submit name=cmd value=\"ELog\">\n");
+  rsprintf("<input type=submit name=cmd value=\"Status\">\n");
+  rsprintf("</tr></table>\n\n");
+
+  /*---- open file ----*/
+
+  cm_get_experiment_database(&hDB, NULL);
+  file_name[0] = 0;
+  if (hDB > 0)
+    {
+    size = sizeof(file_name);
+    memset(file_name, 0, size);
+    db_get_value(hDB, 0, "/Logger/Data dir", file_name, &size, TID_STRING);
+    if (file_name[0] != 0)
+      if (file_name[strlen(file_name)-1] != DIR_SEPARATOR)
+        strcat(file_name, DIR_SEPARATOR_STR);
+    }
+  strcat(file_name, path);
+
+  f = fopen(file_name, "r");
+  if (f == NULL)
+    {
+    strcat(file_name, ".txt");
+    f = fopen(file_name, "r");
+    if (f == NULL)
+      {
+      rsprintf("<h3>File \"%s\" not available for this experiment</h3>\n", path);
+      rsprintf("</body></html>\n");
+      return;
+      }
+    }
+
+  /*---- file contents ----*/
+
+  rsprintf("<pre>\n");
+  while (!feof(f))
+    {
+    memset(line, 0, sizeof(line));
+    fgets(line, sizeof(line), f);
+    rsprintf(line);
+    }
+  rsprintf("</pre>\n");
+  fclose(f);
+
+  rsprintf("</body></html>\r\n");
+}
+
+/*------------------------------------------------------------------*/
+
 void show_form_query()
 {
 int    i, size, run_number;
@@ -1722,7 +1810,7 @@ KEY   key;
 void show_elog_page(char *path)
 {
 int   size, i, run, msg_status, status, fh, length, first_message, last_message;
-char  str[256], orig_path[256], command[80], ref[256], dir[256], file_name[256];
+char  str[256], orig_path[256], command[80], ref[256], file_name[256];
 char  date[80], author[80], type[80], system[80], subject[256], text[10000], 
       orig_tag[80], reply_tag[80], attachment[256], encoding[80];
 HNDLE hDB, hkey, hkeyroot;
@@ -1779,6 +1867,13 @@ KEY   key;
     return;
     }
 
+  if (equal_ustring(command, "runlog"))
+    {
+    sprintf(str, "EL/runlog");
+    redirect(str);
+    return;
+    }
+
   /*---- check if file requested -----------------------------------*/
 
   if (strlen(path) > 13 && path[6] == '_' && path[13] == '_')
@@ -1791,7 +1886,7 @@ KEY   key;
       memset(file_name, 0, size);
       db_get_value(hDB, 0, "/Logger/Data dir", file_name, &size, TID_STRING);
       if (file_name[0] != 0)
-        if (dir[strlen(file_name)-1] != DIR_SEPARATOR)
+        if (file_name[strlen(file_name)-1] != DIR_SEPARATOR)
           strcat(file_name, DIR_SEPARATOR_STR);
       }
     strcat(file_name, path);
@@ -1839,6 +1934,14 @@ KEY   key;
     return;
     }
 
+  /*---- check if runlog is requested ------------------------------*/
+
+  if (path[0] > '9')
+    {
+    show_rawfile(path);
+    return;
+    }
+  
   /*---- check next/previous message -------------------------------*/
 
   last_message = first_message = FALSE;
@@ -1966,6 +2069,7 @@ KEY   key;
       rsprintf("<input type=submit name=form value=\"%s\">\n", key.name);
       }
 
+  rsprintf("<input type=submit name=cmd value=Runlog>\n");
   rsprintf("<input type=submit name=cmd value=Status>\n");
   rsprintf("</tr>\n");
 
