@@ -6,6 +6,9 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
+  Revision 1.7  1999/02/11 13:15:51  midas
+  Made cm_msg callable from a remote client (for Java)
+
   Revision 1.6  1999/02/09 14:38:11  midas
   Added debug logging facility
 
@@ -151,16 +154,16 @@ BOOL   inetd, debug;
       {
       if (argv[i][0] == '-' && argv[i][1] == 'd')
         debug = TRUE;
+      else if (argv[i][0] == '-' && argv[i][1] == 's')
+        server_type = ST_SINGLE;
+      else if (argv[i][0] == '-' && argv[i][1] == 't')
+        server_type = ST_MTHREAD;
+      else if (argv[i][0] == '-' && argv[i][1] == 'm')
+        server_type = ST_MPROCESS;
       else if (argv[i][0] == '-')
         {
         if (i+1 >= argc || argv[i+1][0] == '-')
           goto usage;
-        if (argv[i][1] == 's')
-          server_type = ST_SINGLE;
-        else if (argv[i][1] == 't')
-          server_type = ST_MTHREAD;
-        else if (argv[i][1] == 'm')
-          server_type = ST_MPROCESS;
         else
           {
   usage:
@@ -360,6 +363,10 @@ INT convert_flags;
 
     case RPC_CM_GET_WATCHDOG_INFO:
       status = cm_get_watchdog_info(CHNDLE(0), CSTRING(1), CPINT(2), CPINT(3));
+      break;
+
+    case RPC_CM_MSG:
+      status = cm_msg(CINT(0), CSTRING(1), CINT(2), CSTRING(3), CSTRING(4));
       break;
 
     case RPC_CM_MSG_LOG:
