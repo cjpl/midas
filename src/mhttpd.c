@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.266  2004/04/30 19:11:45  midas
+  Newly created strings in ODB now get default length of 32
+
   Revision 1.265  2004/03/31 04:57:38  olchansk
   display PNG image files, same as GIF and JPG. (I remember adding this code before, but now it is gone. What gives?)
   one more strcpy() -> strlcpy()
@@ -1400,8 +1403,7 @@ void show_help_page()
        ("the contents of the experiment database can be displayed and modified.<P>\n\n");
 
    rsprintf("For more information, refer to the\n");
-   rsprintf
-       ("<A HREF=\"http://midas.psi.ch/htmldoc/index.html\">PSI MIDAS manual</A>,\n");
+   rsprintf("<A HREF=\"http://midas.psi.ch/htmldoc/index.html\">PSI MIDAS manual</A>,\n");
    rsprintf
        ("<A HREF=\"http://midas.triumf.ca/doc/html/index.html\">Triumf MIDAS manual</A>.<P>\n\n");
 
@@ -3342,7 +3344,8 @@ void show_elog_submit_query(INT last_n)
                               ref, attachment[index] + 14);
                   } else {
                      colspan = display_run_number ? 6 : 5;
-                     if (strstr(str, ".GIF") || strstr(str, ".PNG") || strstr(str, ".JPG")) {
+                     if (strstr(str, ".GIF") || strstr(str, ".PNG")
+                         || strstr(str, ".JPG")) {
                         rsprintf
                             ("<tr><td colspan=%d>Attachment: <a href=\"%s\"><b>%s</b></a><br>\n",
                              colspan, ref, attachment[index] + 14);
@@ -6247,14 +6250,16 @@ void show_create_page(char *enc_path, char *dec_path, char *value, int index, in
             return;
          }
 
-         if (index > 1) {
-            db_find_key(hDB, 0, str, &hkey);
-            db_get_key(hDB, hkey, &key);
-            memset(data, 0, sizeof(data));
-            if (key.type == TID_STRING || key.type == TID_LINK)
-               key.item_size = NAME_LENGTH;
+         db_find_key(hDB, 0, str, &hkey);
+         db_get_key(hDB, hkey, &key);
+         memset(data, 0, sizeof(data));
+         if (key.type == TID_STRING || key.type == TID_LINK)
+            key.item_size = NAME_LENGTH;
+
+         if (index > 1)
             db_set_data_index(hDB, hkey, data, key.item_size, index - 1, key.type);
-         }
+         else if (key.type == TID_STRING || key.type == TID_LINK)
+            db_set_data(hDB, hkey, data, key.item_size, 1, key.type);
       }
 
       /* redirect */
@@ -6990,7 +6995,8 @@ void taxis(gdImagePtr im, gdFont * font, int col, int gcol,
          break;
    } while (1);
 
-   x_act = (int) floor((double) (xmin - ss_timezone()) / label_dx) * label_dx + ss_timezone();
+   x_act =
+       (int) floor((double) (xmin - ss_timezone()) / label_dx) * label_dx + ss_timezone();
 
    gdImageLine(im, x1, y1, x1 + width, y1, col);
 
