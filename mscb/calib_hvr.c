@@ -6,6 +6,9 @@
   Contents:     Calibration program for HVR-200
 
   $Log$
+  Revision 1.8  2004/05/14 15:09:46  midas
+  Increased wait time
+
   Revision 1.7  2004/03/10 13:28:25  midas
   mscb_init returns device name
 
@@ -105,176 +108,197 @@ int main(int argc, char *argv[])
       return 0;
    }
 
-   printf("\nPlease connect multimeter with 1000V range to output,\n");
-   printf("connect 1300V to input and press ENTER\n");
+   printf("Calibrate voltage ([y]/n) ? ");
    fgets(str, sizeof(str), stdin);
 
-   /* init variables */
-   f = 0;
-   d = 0;
-   mscb_write(fd, adr, CH_VDEMAND, &f, sizeof(float));
-   mscb_write(fd, adr, CH_ADCOFS, &f, sizeof(float));
-   mscb_write(fd, adr, CH_DACOFS, &f, sizeof(float));
-   mscb_write(fd, adr, CH_CUROFS, &f, sizeof(float));
-   mscb_write(fd, adr, CH_RAMPUP, &d, sizeof(short));
-   mscb_write(fd, adr, CH_RAMPDOWN, &d, sizeof(short));
+   if (str[0] != 'n') {
 
-   f = 1;
-   mscb_write(fd, adr, CH_ADCGAIN, &f, sizeof(float));
-   mscb_write(fd, adr, CH_DACGAIN, &f, sizeof(float));
-   mscb_write(fd, adr, CH_CURGAIN, &f, sizeof(float));
+	   printf("\nPlease connect multimeter with 1000V range to output,\n");
+	   printf("connect 1300V to input and press ENTER\n");
+	   fgets(str, sizeof(str), stdin);
 
-   /* set current limit to 3mA */
-   f = 3000;
-   mscb_write(fd, adr, CH_ILIMIT, &f, sizeof(float));
+	   /* init variables */
+	   f = 0;
+	   d = 0;
+	   mscb_write(fd, adr, CH_VDEMAND, &f, sizeof(float));
+	   mscb_write(fd, adr, CH_ADCOFS, &f, sizeof(float));
+	   mscb_write(fd, adr, CH_DACOFS, &f, sizeof(float));
+	   mscb_write(fd, adr, CH_CUROFS, &f, sizeof(float));
+	   mscb_write(fd, adr, CH_RAMPUP, &d, sizeof(short));
+	   mscb_write(fd, adr, CH_RAMPDOWN, &d, sizeof(short));
 
-   /* set demand to 100V */
-   f = 100;
-   mscb_write(fd, adr, CH_VDEMAND, &f, sizeof(float));
+	   f = 1;
+	   mscb_write(fd, adr, CH_ADCGAIN, &f, sizeof(float));
+	   mscb_write(fd, adr, CH_DACGAIN, &f, sizeof(float));
+	   mscb_write(fd, adr, CH_CURGAIN, &f, sizeof(float));
 
-   /* set CSR to HV on, no regulation */
-   d = 1;
-   mscb_write(fd, adr, CH_CONTROL, &d, 1);
+	   /* set current limit to 3mA */
+	   f = 3000;
+	   mscb_write(fd, adr, CH_ILIMIT, &f, sizeof(float));
 
-   printf("Please enter voltage from multimeter: ");
-   fgets(str, sizeof(str), stdin);
-   v_multi1 = (float) atof(str);
+	   /* set demand to 100V */
+	   f = 100;
+	   mscb_write(fd, adr, CH_VDEMAND, &f, sizeof(float));
 
-   /* read ADC */
-   size = sizeof(float);
-   mscb_read(fd, adr, CH_VMEAS, &v_adc1, &size);
+	   /* set CSR to HV on, no regulation */
+	   d = 1;
+	   mscb_write(fd, adr, CH_CONTROL, &d, 1);
 
-   printf("HVR-200 ADC reads %1.1lf Volt\n", v_adc1);
+	   printf("Please enter voltage from multimeter: ");
+	   fgets(str, sizeof(str), stdin);
+	   v_multi1 = (float) fabs(atof(str));
 
-   if (v_adc1 < 50) {
-      printf("HVR-200 ADC voltage too low, aborting.\n");
-      return 0;
+	   /* read ADC */
+	   size = sizeof(float);
+	   mscb_read(fd, adr, CH_VMEAS, &v_adc1, &size);
+
+	   printf("HVR-200 ADC reads %1.1lf Volt\n", v_adc1);
+
+	   if (v_adc1 < 50) {
+		  printf("HVR-200 ADC voltage too low, aborting.\n");
+		  return 0;
+	   }
+
+	   /* set demand to 900V */
+	   f = 900;
+	   mscb_write(fd, adr, CH_VDEMAND, &f, sizeof(float));
+
+	   printf("Please enter voltage from multimeter: ");
+	   fgets(str, sizeof(str), stdin);
+	   v_multi2 = (float) fabs(atof(str));
+
+	   /* read ADC */
+	   size = sizeof(float);
+	   mscb_read(fd, adr, CH_VMEAS, &v_adc2, &size);
+
+	   printf("HVR-200 ADC reads %1.1lf\n", v_adc2);
+
+	   if (v_adc2 < 500) {
+		  printf("HVR-200 ADC voltage too low, aborting.\n");
+		  return 0;
+	   }
+
+	   /* calculate corrections */
+	   dac_gain = (float) ((900.0 - 100.0) / (v_multi2 - v_multi1));
+	   dac_ofs = (float) (100 - dac_gain * v_multi1);
+
+	   adc_gain = (float) ((v_multi2 - v_multi1) / (v_adc2 - v_adc1));
+	   adc_ofs = (float) (v_multi1 - adc_gain * v_adc1);
+
+	   printf("\n\nCalculated calibration constants:\n");
+	   printf("DAC gain:   %1.5lf\n", dac_gain);
+	   printf("DAC offset: %1.5lf\n", dac_ofs);
+	   printf("ADC gain:   %1.5lf\n", adc_gain);
+	   printf("ADC offset: %1.5lf\n", adc_ofs);
+
+	   printf("\nWrite values to flash? ([y]/n) ");
+	   fgets(str, sizeof(str), stdin);
+	   if (str[0] == 'n') {
+		  printf("Calibration aborted.\n");
+		  return 0;
+	   }
+
+	   mscb_write(fd, adr, CH_ADCGAIN, &adc_gain, sizeof(float));
+	   mscb_write(fd, adr, CH_ADCOFS, &adc_ofs, sizeof(float));
+	   mscb_write(fd, adr, CH_DACGAIN, &dac_gain, sizeof(float));
+	   mscb_write(fd, adr, CH_DACOFS, &dac_ofs, sizeof(float));
+
+	   /* remove voltage */
+	   f = 0;
+	   mscb_write(fd, adr, CH_VDEMAND, &f, sizeof(float));
+
+	   /* write constants to EEPROM */
+	   mscb_flash(fd, adr);
    }
 
-   /* set demand to 900V */
-   f = 900;
-   mscb_write(fd, adr, CH_VDEMAND, &f, sizeof(float));
-
-   printf("Please enter voltage from multimeter: ");
+   printf("Calibrate current ([y]/n) ? ");
    fgets(str, sizeof(str), stdin);
-   v_multi2 = (float) atof(str);
 
-   /* read ADC */
-   size = sizeof(float);
-   mscb_read(fd, adr, CH_VMEAS, &v_adc2, &size);
+   if (str[0] != 'n') {
+	   /* init variables */
+	   f = 0;
+	   mscb_write(fd, adr, CH_CUROFS, &f, sizeof(float));   /* CURofs  */
+	   f = 1;
+	   mscb_write(fd, adr, CH_CURGAIN, &f, sizeof(float));  /* CURgain */
 
-   printf("HVR-200 ADC reads %1.1lf\n", v_adc2);
+      /* set CSR to HV on, no regulation */
+	   d = 1;
+	   mscb_write(fd, adr, CH_CONTROL, &d, 1);
 
-   if (v_adc2 < 500) {
-      printf("HVR-200 ADC voltage too low, aborting.\n");
-      return 0;
+	   printf("\nPlease connect 1MOhm resistor to output,\n");
+	   printf("connect 1300V to input and press ENTER\n");
+	   fgets(str, sizeof(str), stdin);
+
+	   /* set demand to 100V */
+	   f = 100;
+	   mscb_write(fd, adr, CH_VDEMAND, &f, sizeof(float));
+
+	   /* wait voltage to settle */
+	   Sleep(3000);
+
+	   /* read current */
+	   size = sizeof(float);
+	   mscb_read(fd, adr, CH_IMEAS, &i1, &size);
+	   printf("Current at 100V: %1.1lf uA\n", i1);
+
+	   /* set demand to 900V */
+	   f = 900;
+	   mscb_write(fd, adr, CH_VDEMAND, &f, sizeof(float));
+
+		/* wait voltage to settle */
+		Sleep(3000);
+
+	   do {
+		  /* read voltage */
+		  size = sizeof(float);
+		  mscb_read(fd, adr, CH_VMEAS, &v_adc1, &size);
+
+		  if (v_adc1 < 890) {
+			 v_adc2 = 900 - v_adc1 + 100;
+			 v_adc2 = (float) ((int) (v_adc2 / 100.0) * 100);
+
+			 printf("Only %1.1lf V can be reached on output,\n", v_adc1);
+			 printf("please increase input voltage by %1.0lf V and press ENTER.\n", v_adc2);
+			 fgets(str, sizeof(str), stdin);
+		  }
+
+	   } while (v_adc1 < 890);
+
+	   /* read current */
+	   size = sizeof(float);
+	   mscb_read(fd, adr, CH_IMEAS, &i2, &size);
+	   printf("Current at 900V: %1.1lf uA\n", i2);
+
+	   /* calculate corrections */
+	   i_gain = (float) ((900 - 100) / (i2 - i1));
+	   i_ofs = (float) (100 - i_gain * i1);
+
+	   printf("\n\nCalculated calibration constants:\n");
+	   printf("I gain:   %1.5lf\n", i_gain);
+	   printf("I offset: %1.5lf\n", i_ofs);
+
+      printf("\nWARNING: The current offset is positive, which means that a current\n");
+      printf("below %1.0lfuA cannot be measured. A compensation resistor to Vref is missing.\n\n", i_ofs);
+
+	   printf("\nWrite values to flash? ([y]/n) ");
+	   fgets(str, sizeof(str), stdin);
+	   if (str[0] == 'n') {
+		  printf("Calibration aborted.\n");
+		  return 0;
+	   }
+
+	   mscb_write(fd, adr, CH_CURGAIN, &i_gain, sizeof(float));
+	   mscb_write(fd, adr, CH_CUROFS, &i_ofs, sizeof(float));
+
+	   /* remove voltage */
+	   f = 0;
+	   mscb_write(fd, adr, CH_VDEMAND, &f, sizeof(float));
+	   d = 2;
+	   mscb_write(fd, adr, CH_CONTROL, &d, 1);
+
+	   /* write constants to EEPROM */
+	   mscb_flash(fd, adr);
    }
-
-   /* calculate corrections */
-   dac_gain = (float) ((900.0 - 100.0) / (v_multi2 - v_multi1));
-   dac_ofs = (float) (100 - dac_gain * v_multi1);
-
-   adc_gain = (float) ((v_multi2 - v_multi1) / (v_adc2 - v_adc1));
-   adc_ofs = (float) (v_multi1 - adc_gain * v_adc1);
-
-   printf("\n\nCalculated calibration constants:\n");
-   printf("DAC gain:   %1.5lf\n", dac_gain);
-   printf("DAC offset: %1.5lf\n", dac_ofs);
-   printf("ADC gain:   %1.5lf\n", adc_gain);
-   printf("ADC offset: %1.5lf\n", adc_ofs);
-
-   printf("\nWrite values to flash? ([y]/n) ");
-   fgets(str, sizeof(str), stdin);
-   if (str[0] == 'n') {
-      printf("Calibration aborted.\n");
-      return 0;
-   }
-
-   mscb_write(fd, adr, CH_ADCGAIN, &adc_gain, sizeof(float));
-   mscb_write(fd, adr, CH_ADCOFS, &adc_ofs, sizeof(float));
-   mscb_write(fd, adr, CH_DACGAIN, &dac_gain, sizeof(float));
-   mscb_write(fd, adr, CH_DACOFS, &dac_ofs, sizeof(float));
-
-   /* remove voltage */
-   f = 0;
-   mscb_write(fd, adr, CH_VDEMAND, &f, sizeof(float));
-
-   /* init variables */
-   f = 0;
-   mscb_write(fd, adr, CH_CUROFS, &f, sizeof(float));   /* CURofs  */
-   f = 1;
-   mscb_write(fd, adr, CH_CURGAIN, &f, sizeof(float));  /* CURgain */
-
-   printf("\nPlease connect 1MOhm resistor to output,\n");
-   printf("connect 1300V to input and press ENTER\n");
-   fgets(str, sizeof(str), stdin);
-
-   /* set demand to 100V */
-   f = 100;
-   mscb_write(fd, adr, CH_VDEMAND, &f, sizeof(float));
-
-   /* wait voltage to settle */
-   Sleep(1000);
-
-   /* read current */
-   size = sizeof(float);
-   mscb_read(fd, adr, CH_IMEAS, &i1, &size);
-   printf("Current at 100V: %1.1lf uA\n", i1);
-
-   /* set demand to 900V */
-   f = 900;
-   mscb_write(fd, adr, CH_VDEMAND, &f, sizeof(float));
-
-   /* wait voltage to settle */
-   Sleep(1000);
-
-   do {
-      /* read voltage */
-      size = sizeof(float);
-      mscb_read(fd, adr, CH_VMEAS, &v_adc1, &size);
-
-      if (v_adc1 < 890) {
-         v_adc2 = 900 - v_adc1 + 100;
-         v_adc2 = (float) ((int) (v_adc2 / 100.0) * 100);
-
-         printf("Only %1.1lf V can be reached on output,\n", v_adc1);
-         printf("please increase input voltage by %1.0lf V and press ENTER.\n", v_adc2);
-         fgets(str, sizeof(str), stdin);
-      }
-
-   } while (v_adc1 < 890);
-
-   /* read current */
-   size = sizeof(float);
-   mscb_read(fd, adr, CH_IMEAS, &i2, &size);
-   printf("Current at 900V: %1.1lf uA\n", i2);
-
-   /* calculate corrections */
-   i_gain = (float) ((900 - 100) / (i2 - i1));
-   i_ofs = (float) (100 - i_gain * i1);
-
-   printf("\n\nCalculated calibration constants:\n");
-   printf("I gain:   %1.5lf\n", i_gain);
-   printf("I offset: %1.5lf\n", i_ofs);
-
-   printf("\nWrite values to flash? ([y]/n) ");
-   fgets(str, sizeof(str), stdin);
-   if (str[0] == 'n') {
-      printf("Calibration aborted.\n");
-      return 0;
-   }
-
-   mscb_write(fd, adr, CH_CURGAIN, &i_gain, sizeof(float));
-   mscb_write(fd, adr, CH_CUROFS, &i_ofs, sizeof(float));
-
-   /* remove voltage */
-   f = 0;
-   mscb_write(fd, adr, CH_VDEMAND, &f, sizeof(float));
-   d = 2;
-   mscb_write(fd, adr, CH_CONTROL, &d, 1);
-
-   /* write constants to EEPROM */
-   mscb_flash(fd, adr);
 
    printf("\nCalibration finished.\n");
 
