@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol commands
 
   $Log$
+  Revision 1.29  2004/02/24 13:30:21  midas
+  Implemented C8051F310 code
+
   Revision 1.28  2004/01/07 12:56:15  midas
   Chaned line length
 
@@ -102,11 +105,10 @@
 #define CPU_C8051F020
 #define CPU_CYGNAL
 
-sbit LED = P3 ^ 4;
-sbit LED_SEC = P3 ^ 3;
-sbit RS485_ENABLE = P3 ^ 5;
-#define LED_2
+#define LED_0 P3 ^ 4
+#define LED_1 P3 ^ 3;
 #define LED_ON 0
+sbit RS485_ENABLE = P3 ^ 5;
 
 /*--------------------------------*/
 #elif defined(SCS_300) || defined(SCS_310)
@@ -114,11 +116,10 @@ sbit RS485_ENABLE = P3 ^ 5;
 #define CPU_C8051F020
 #define CPU_CYGNAL
 
-sbit LED = P3 ^ 3;
-sbit LED_SEC = P3 ^ 4;
-sbit RS485_ENABLE = P3 ^ 5;
-#define LED_2
+#define LED_0 P3 ^ 3
+#define LED_1 P3 ^ 4;
 #define LED_ON 0
+sbit RS485_ENABLE = P3 ^ 5;
 
 /*--------------------------------*/
 #elif defined(SCS_400) || defined(SCS_500)
@@ -126,28 +127,41 @@ sbit RS485_ENABLE = P3 ^ 5;
 #define CPU_C8051F000
 #define CPU_CYGNAL
 
-sbit LED = P3 ^ 4;
-sbit RS485_ENABLE = P3 ^ 5;
+#define LED_0 P3 ^ 4
 #define LED_ON 1
+sbit RS485_ENABLE = P3 ^ 5;
 
 /*--------------------------------*/
-#elif defined(SCS_520) || defined(SCS_600) || defined(SCS_700) || defined (SCS_800)
+#elif defined(SCS_520) || defined(SCS_600) || defined(SCS_700) || defined (SCS_800) || defined (SCS_900)
 #include <c8051F000.h>
 #define CPU_C8051F000
 #define CPU_CYGNAL
 
-sbit LED = P3 ^ 4;
-sbit RS485_ENABLE = P3 ^ 5;
+#define LED_0 P3 ^ 4
 #define LED_ON 0
+sbit RS485_ENABLE = P3 ^ 5;
 
 /*--------------------------------*/
 #elif defined(HVR_300)
 #include <aduc812.h>
 #define CPU_ADUC812
 
-sbit LED = P3 ^ 4;
-sbit RS485_ENABLE = P3 ^ 5;
+#define LED_0 = P3 ^ 4;
 #define LED_ON 1
+sbit RS485_ENABLE = P3 ^ 5;
+
+/*--------------------------------*/
+#elif defined(HVR_200)
+#include <c8051F310.h>
+#define CPU_C8051F310
+#define CPU_CYGNAL
+
+#define LED_0 P2 ^ 4
+#define LED_1 P2 ^ 5 
+#define LED_2 P2 ^ 6 
+#define LED_3 P2 ^ 7
+#define LED_ON 1
+sbit RS485_ENABLE = P0 ^ 7;
 
 /*--------------------------------*/
 #else
@@ -156,20 +170,40 @@ sbit RS485_ENABLE = P3 ^ 5;
 
 #define LED_OFF !LED_ON
 
+#if defined(LED_4)
+#define N_LED 5
+#elif defined(LED_3)
+#define N_LED 4
+#elif defined(LED_2)
+#define N_LED 3
+#elif defined(LED_1)
+#define N_LED 2
+#elif defined(LED_0)
+#define N_LED 1
+#else
+#define N_LED 0
+#endif
+
 /* use hardware watchdog of CPU */
-#define USE_WATCHDOG
+#undef USE_WATCHDOG
 
 /* LCD support */
 #undef LCD_SUPPORT
 
 /* map SBUF0 & Co. to SBUF */
-#ifndef CPU_C8051F020
+#if !defined(CPU_C8051F020) && !defined(CPU_C8051F310)
 #define SCON0    SCON
 #define SBUF0    SBUF
 #define TI0      TI
 #define RI0      RI
 #define RB80     RB8
 #define ES0      ES
+#endif
+
+#if defined(CPU_C8051F310)
+#define EEPROM_OFFSET 0x3A00 // 0x3A00-0x3DFF = 1024 bytes
+#else
+#define EEPROM_OFFSET 0x8000
 #endif
 
 /*---- MSCB commands -----------------------------------------------*/
@@ -260,7 +294,7 @@ typedef struct {
    unsigned char status;        // status (not yet used)
    unsigned char flags;         // flags MSCBF_xxx
    char name[8];                // name
-   void data *ud;               // point to user data buffer
+   void *ud;                    // point to user data buffer
 } MSCB_INFO_VAR;
 
 #define MSCBF_FLOAT  (1<<0)     // channel in floating point format
@@ -336,8 +370,9 @@ typedef struct {                // system info stored in EEPROM
 /*---- function declarations ---------------------------------------*/
 
 void yield(void);
-void led_blink(int led, int n, int interval) reentrant;
-void led_mode(int led, int flag) reentrant;
+void led_set(unsigned char led, unsigned char flag) reentrant;
+void led_blink(unsigned char led, unsigned char n, int interval) reentrant;
+void led_mode(unsigned char led, unsigned char flag) reentrant;
 void delay_us(unsigned int us);
 void delay_ms(unsigned int ms);
 
