@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.219  2002/05/21 23:02:36  midas
+  Put <empty> in event selection list (problems with netsacpe) and fixed problem with followed links in history configuration
+
   Revision 1.218  2002/05/21 22:51:45  midas
   Adjust maxlength in start page according to string length
 
@@ -8430,7 +8433,7 @@ char   *hist_col[] =
       }
 
     /* empty option */
-    rsprintf("<option value=\"\">\n");
+    rsprintf("<option value=\"\">&lt;empty&gt;\n");
 
     /* loop over equipment to display event name */
     for (i=0;  ; i++)
@@ -8493,7 +8496,7 @@ char   *hist_col[] =
       if (!hKeyEq)
         {
         sprintf(str, "/History/Links/%s", eq_name);
-        status = db_find_key(hDB, 0, str, &hKeyVar);
+        status = db_find_link(hDB, 0, str, &hKeyVar);
         if (status != DB_SUCCESS)
           {
           sprintf(str, "Cannot find /Equipment/%s or /History/Links/%s in ODB", 
@@ -8523,7 +8526,7 @@ char   *hist_col[] =
 
       for (i=0 ;; i++)
         {
-        status = db_enum_key(hDB, hKeyVar, i, &hKey);
+        status = db_enum_link(hDB, hKeyVar, i, &hKey);
         if (status == DB_NO_MORE_SUBKEYS)
           break;
 
