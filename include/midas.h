@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.149  2005/03/24 21:49:31  ritt
+  Added xml functions
+
   Revision 1.148  2005/01/14 08:08:54  midas
   Defined cut_book()
 
@@ -2098,11 +2101,13 @@ extern "C" {
    INT EXPRT db_save(HNDLE hdb, HNDLE key_handle, char *filename, BOOL bRemote);
    INT EXPRT db_copy(HNDLE hDB, HNDLE hKey, char *buffer, INT * buffer_size, char *path);
    INT EXPRT db_paste(HNDLE hDB, HNDLE hKeyRoot, char *buffer);
+   INT EXPRT db_paste_xml(HNDLE hDB, HNDLE hKeyRoot, char *buffer);
    INT EXPRT db_save_struct(HNDLE hDB, HNDLE hKey, char *file_name,
                             char *struct_name, BOOL append);
    INT EXPRT db_save_string(HNDLE hDB, HNDLE hKey, char *file_name,
                             char *string_name, BOOL append);
    INT EXPRT db_save_xml(HNDLE hDB, HNDLE hKey, char *file_name);
+   INT EXPRT db_copy_xml(HNDLE hDB, HNDLE hKey, char *buffer, INT * buffer_size);
 
    INT EXPRT db_sprintf(char *string, void *data, INT data_size, INT index, DWORD type);
    INT EXPRT db_sprintfh(char *string, void *data, INT data_size, INT index, DWORD type);
