@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.117  2004/02/12 08:21:22  midas
+  Print ROOT server port on startup
+
   Revision 1.116  2004/02/12 08:06:35  midas
   Added -s parameter for ROOT server
 
@@ -5505,7 +5508,7 @@ void *root_server_loop(void *arg)
    each connection.
 */
 {
-   printf("Root server listening...\n");
+   printf("Root server listening on port %d...\n", clp.root_port);
    TServerSocket *lsock = new TServerSocket(clp.root_port, kTRUE);
 
    do {
