@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus communication functions
 
   $Log$
+  Revision 1.59  2004/03/10 12:41:07  midas
+  Dedicated USB timeout
+
   Revision 1.58  2004/03/10 10:28:47  midas
   Implemented test block write for speed tests
 
@@ -580,7 +583,7 @@ int msend_usb(int fd, void *buf, int size)
 
 /*------------------------------------------------------------------*/
 
-int mrecv_usb(int fd, void *buf, int size, int timeout)
+int mrecv_usb(int fd, void *buf, int size)
 {
    int n_read;
 
@@ -599,10 +602,8 @@ int mrecv_usb(int fd, void *buf, int size, int timeout)
       if (status != ERROR_IO_PENDING)
          return 0;
 
-      /* wait for completion */
-      if (timeout < 1000)
-         timeout = 1000;        // at least 1ms
-      status = WaitForSingleObject(overlapped.hEvent, timeout / 1000);
+      /* wait for completion, 1s timeout */
+      status = WaitForSingleObject(overlapped.hEvent, 1000);
       if (status == WAIT_TIMEOUT)
          CancelIo((HANDLE) fd);
       else
@@ -616,10 +617,8 @@ int mrecv_usb(int fd, void *buf, int size, int timeout)
 
    dev = (usb_dev_handle *) fd;
 
-   if (timeout < 1000)
-      timeout = 1000;           // at least 1ms
    for (i = 0; i < 10; i++) {
-      n_read = usb_bulk_read(dev, 1, buf, size, timeout / 1000);
+      n_read = usb_bulk_read(dev, 1, buf, 1000);
       //printf("##mrecv_usb(%X): %d\n", dev, n_read);
 
       if (n_read < 0)
@@ -872,7 +871,7 @@ int mscb_in(int index, char *buffer, int size, int timeout)
    if (mscb_fd[index - 1].type == MSCB_TYPE_USB) {
 
       /* receive result on IN pipe */
-      n = mrecv_usb(mscb_fd[index - 1].hr, buffer, size, timeout);
+      n = mrecv_usb(mscb_fd[index - 1].hr, buffer, size);
 
    } else {
 
@@ -1287,7 +1286,7 @@ int mrpc_connected(int fd)
 
 /*------------------------------------------------------------------*/
 
-int mscb_init(char *device, int debug)
+int mscb_init(char *d, int debug)
 /********************************************************************\
 
   Routine: mscb_init
@@ -1298,6 +1297,7 @@ int mscb_init(char *device, int debug)
     char *device            Under NT: lpt1 or lpt2
                             Under Linux: /dev/parport0 or /dev/parport1
                             "<host>:device" for RPC connection
+                            usbx for USB connection
 
   Function value:
     int fd                  device descriptor for connection, -1 if
@@ -1307,7 +1307,7 @@ int mscb_init(char *device, int debug)
 {
    int index, i, n;
    int status;
-   char host[256], port[256], dev3[256], buf[10];
+   char device[256], host[256], port[256], dev3[256], buf[10];
 
    /* search for new file descriptor */
    for (index = 0; index < MSCB_MAX_FD; index++)
@@ -1325,6 +1325,10 @@ int mscb_init(char *device, int debug)
       free(cache[i].data);
    free(cache);
    n_cache = 0;
+
+   strcpy(device, d);
+   if (!device[0])
+     mscb_select_device(device);
 
    /* check for RPC connection */
    if (strchr(device, ':')) {
