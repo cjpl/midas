@@ -6,6 +6,9 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
+  Revision 1.50  1999/09/27 09:14:54  midas
+  Use _blank for new windows
+
   Revision 1.49  1999/09/27 09:11:13  midas
   Check domain name in hostname
 
@@ -719,7 +722,7 @@ CHN_STATISTICS chn_stats;
         /* html link */
         size = sizeof(ref);
         db_get_data(hDB, hsubkey, ref, &size, TID_STRING);
-        rsprintf("<a href=\"%s\">%s</a> ", ref, key.name);
+        rsprintf("<a href=\"%s\" target=\"_blank\">%s</a> ", ref, key.name);
         }
       else if (key.type == TID_LINK)
         {
@@ -729,7 +732,7 @@ CHN_STATISTICS chn_stats;
         else
           sprintf(ref, "%sAlias/%s", mhttpd_url, key.name);
 
-        rsprintf("<a href=\"%s\" target=\"%s\">%s</a> ", ref, key.name, key.name);
+        rsprintf("<a href=\"%s\" target=\"_blank\">%s</a> ", ref, key.name);
         }
       }
     }
@@ -1240,7 +1243,7 @@ HNDLE  hDB, hkey;
   else
     sprintf(ref, "%sELog/", mhttpd_url);
 
-  rsprintf("<td bgcolor=#FFA0A0><a href=\"%s\" target=\"ELog Type\">Type:</a> <select name=\"type\">\n", ref);
+  rsprintf("<td bgcolor=#FFA0A0><a href=\"%s\" target=\"_blank\">Type:</a> <select name=\"type\">\n", ref);
   for (i=0 ; i<20 && type_list[i][0] ; i++)
     if (path && equal_ustring(type_list[i], "reply"))
       rsprintf("<option selected value=\"%s\">%s\n", type_list[i], type_list[i]);
@@ -1248,7 +1251,7 @@ HNDLE  hDB, hkey;
       rsprintf("<option value=\"%s\">%s\n", type_list[i], type_list[i]);
   rsprintf("</select></tr>\n");
 
-  rsprintf("<tr><td bgcolor=#A0FFA0><a href=\"%s\" target=\"ELog System\">  System:</a> <select name=\"system\">\n", ref);
+  rsprintf("<tr><td bgcolor=#A0FFA0><a href=\"%s\" target=\"_blank\">  System:</a> <select name=\"system\">\n", ref);
   for (i=0 ; i<20 && system_list[i][0] ; i++)
     if (path && equal_ustring(system_list[i], system))
       rsprintf("<option selected value=\"%s\">%s\n", system_list[i], system_list[i]);
