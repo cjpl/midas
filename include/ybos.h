@@ -10,6 +10,9 @@
   date        by    modification
   ---------   ---   ------------------------------------------------
 *  $Log$
+*  Revision 1.18  2002/09/18 16:37:27  pierre
+*  remove bk_list()
+*
 *  Revision 1.17  2002/06/08 06:06:27  pierre
 *  add DSP_UNK
 *
@@ -346,7 +349,6 @@ INT   EXPRT yb_any_event_swap (INT data_fmt, void * pevent);
 INT   EXPRT yb_any_event_get (INT data_fmt, void ** pevent, DWORD * psize);
 
 /* Bank manipulation */
-INT   EXPRT bk_list (BANK_HEADER * pmbh, char * bklist);
 INT   EXPRT bk_find (BANK_HEADER * pmbh, char * bkname, DWORD * bklen, DWORD * bktype, void **pbk);
 void  EXPRT ybk_init        (DWORD *pevent);
 void  EXPRT ybk_create      (DWORD *pevent, char *bkname, DWORD btype, void *pbkdat);
