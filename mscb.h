@@ -6,6 +6,9 @@
   Contents:     Header fiel for MSCB funcions
 
   $Log$
+  Revision 1.35  2004/07/08 11:14:45  midas
+  Added size to mscb_select_device()
+
   Revision 1.34  2004/03/19 12:09:16  midas
   Upload with simplified CRC
 
@@ -304,7 +307,7 @@ extern "C" {
 #endif
 
    int EXPRT mscb_init(char *device, int size, int debug);
-   int EXPRT mscb_select_device(char *data, int select);
+   int EXPRT mscb_select_device(char *data, int size, int select);
    void EXPRT mscb_get_device(int fd, char *device, int bufsize);
    void EXPRT mscb_get_version(char *lib_version, char *prot_version);
    void EXPRT mscb_check(char *device, int size);
