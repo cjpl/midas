@@ -7,6 +7,10 @@
                 Most routines are from mfe.c mana.c and mlogger.c.
 
   $Log$
+  Revision 1.5  1999/01/15 12:55:03  midas
+  Set /Analyzer/Bank switches/... to FALSE by default to avoid N-tuple
+  overflow when an fal is started the first time
+
   Revision 1.4  1998/11/09 09:15:12  midas
   Merged new code from mana.c, mlogger.c and mfe.c
 
@@ -2157,7 +2161,7 @@ BANK_LIST  *bank_list;
       for (; bank_list->name[0] ; bank_list++)
         {
         sprintf(str, "/%s/Bank switches/%s", analyzer_name, bank_list->name);
-        bank_list->output_flag = TRUE;
+        bank_list->output_flag = FALSE;
         size = sizeof(DWORD);
         db_get_value(hDB, 0, str, &bank_list->output_flag, &size, TID_DWORD);
         }
@@ -2475,7 +2479,7 @@ EVENT_DEF  *event_def;
       for (; bank_list->name[0] ; bank_list++)
         {
         sprintf(str, "/%s/Bank switches/%s", analyzer_name, bank_list->name);
-        bank_list->output_flag = TRUE;
+        bank_list->output_flag = FALSE;
         size = sizeof(DWORD);
         db_get_value(hDB, 0, str, &bank_list->output_flag, &size, TID_DWORD); 
         }
