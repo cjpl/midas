@@ -11,6 +11,9 @@
                 one bank (SCLR).
 
   $Log$
+  Revision 1.4  2000/03/01 18:04:38  pierre
+  - include Super event support
+
   Revision 1.3  1999/07/16 00:08:50  pierre
   -Added D8 ybos bank, random event size and event length
 
@@ -58,9 +61,9 @@ INT pause_run(INT run_number, char *error);
 INT resume_run(INT run_number, char *error);
 INT frontend_loop();
 
-INT read_trigger_event(char *pevent);
-INT read_scaler_event(char *pevent);
-INT files_dump (char *pevent);
+INT read_trigger_event(char *pevent, INT off);
+INT read_scaler_event(char *pevent, INT off);
+INT files_dump (char *pevent, INT off);
 INT gbl_run_number;
 /*-- Equipment list ------------------------------------------------*/
 
@@ -82,6 +85,7 @@ EQUIPMENT equipment[] = {
     RO_RUNNING,           /* read only when running */
     500,                  /* poll for 500ms */
     0,                    /* stop run after this event limit */
+    0,                    /* number of sub event */
     0,                    /* don't log history */
     "", "", "",
     read_trigger_event,   /* readout routine */
@@ -101,6 +105,7 @@ EQUIPMENT equipment[] = {
     RO_ODB,               /* and update ODB */ 
     10000,                /* read every 10 sec */
     0,                    /* stop run after this event limit */
+    0,                    /* number of sub event */
     0,                    /* log history */
     "", "", "",
     read_scaler_event,    /* readout routine */
@@ -114,10 +119,11 @@ EQUIPMENT equipment[] = {
     EQ_PERIODIC,          /* equipment type */
     0,                    /* event source */
     "YBOS",               /* format */
-    TRUE,                 /* enabled */
+    FALSE,                /* enabled */
     RO_BOR,               /* read only at BOR */
     10000,                /* read every 10 sec */
     0,                    /* stop run after this event limit */
+    0,                    /* number of sub event */
     0,                    /* don't log history */
     "", "", "",
     files_dump,           /* file dump */
@@ -269,7 +275,7 @@ INT interrupt_configure(INT cmd, INT source[], PTYPE adr)
 
 /*-- Event readout -------------------------------------------------*/
 
-INT read_trigger_event(char *pevent)
+INT read_trigger_event(char *pevent, INT off)
 {
   INT i, j;
   double *pbkdat;
@@ -306,7 +312,7 @@ INT read_trigger_event(char *pevent)
 
 /*-- Scaler event --------------------------------------------------*/
 
-INT read_scaler_event(char *pevent)
+INT read_scaler_event(char *pevent, INT off)
 {
   DWORD i;
   DWORD *pbkdat;
@@ -324,7 +330,7 @@ INT read_scaler_event(char *pevent)
 }
 
 /*-- File event -------------------------------------------------*/
-INT files_dump (char *pevent)
+INT files_dump (char *pevent, INT off)
 {
   feodb_file_dump(equipment, "File", pevent, gbl_run_number, "trigger");
 
