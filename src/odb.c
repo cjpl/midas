@@ -6,6 +6,9 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.101  2004/10/14 07:26:39  midas
+  Check for '/' in db_rename_key
+
   Revision 1.100  2004/10/07 00:54:50  midas
   Kill ODB client only under unix
 
@@ -3921,6 +3924,7 @@ INT db_rename_key(HNDLE hDB, HNDLE hKey, char *name)
   Function value:
     DB_SUCCESS              Successful completion
     DB_INVALID_HANDLE       Database handle is invalid
+    DB_INVALID_NAME         Key name contains '/'
 
 \********************************************************************/
 {
@@ -3947,6 +3951,10 @@ INT db_rename_key(HNDLE hDB, HNDLE hKey, char *name)
          return DB_INVALID_HANDLE;
       }
 
+      if (strchr(name, '/')) {
+         cm_msg(MERROR, "db_rename_key", "key name may not contain \"/\"");
+         return DB_INVALID_NAME;
+      }
       db_lock_database(hDB);
 
       pheader = _database[hDB - 1].database_header;
