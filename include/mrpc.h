@@ -7,6 +7,9 @@
   Contents:     Symbolic constants for internal RPC functions
 
   $Log$
+  Revision 1.9  1999/05/05 12:01:42  midas
+  Added and modified hs_xxx functions
+
   Revision 1.8  1999/04/19 07:46:43  midas
   Added cm_msg_retrieve
 
@@ -100,15 +103,18 @@
 #define RPC_DB_SET_DATA_INDEX2          11236
 #define RPC_DB_GET_KEY_INFO             11237
 #define RPC_DB_GET_DATA1                11238
+#define RPC_DB_SET_NUM_VALUES           11239
 
 #define RPC_HS_SET_PATH                 11300
 #define RPC_HS_DEFINE_EVENT             11301 
 #define RPC_HS_WRITE_EVENT              11302
 #define RPC_HS_COUNT_EVENTS             11303
 #define RPC_HS_ENUM_EVENTS              11304
-#define RPC_HS_COUNT_TAGS               11305
-#define RPC_HS_ENUM_TAGS                11306
+#define RPC_HS_COUNT_VARS               11305
+#define RPC_HS_ENUM_VARS                11306
 #define RPC_HS_READ                     11307
+#define RPC_HS_GET_VAR                  11308
+#define RPC_HS_GET_EVENT_ID             11309
 
 #define RPC_RC_TRANSITION               12000
 

@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.25  1999/05/05 12:01:42  midas
+  Added and modified hs_xxx functions
+
   Revision 1.24  1999/04/30 10:58:20  midas
   Added mode to rpc_set_debug
 
@@ -1171,6 +1174,7 @@ INT EXPRT db_get_data_index(HNDLE hDB, HNDLE hKey, void *data, INT *buf_size, IN
 INT EXPRT db_set_data(HNDLE hdb, HNDLE hKey, void *data, INT buf_size, INT num_values, DWORD type);
 INT EXPRT db_set_data_index(HNDLE hDB, HNDLE hKey, void *data, INT size, INT index, DWORD type);
 INT EXPRT db_set_data_index2(HNDLE hDB, HNDLE hKey, void *data, INT size, INT index, DWORD type, BOOL bNotify);
+INT EXPRT db_set_num_values(HNDLE hDB, HNDLE hKey, INT num_values);
 INT EXPRT db_merge_data(HNDLE hDB, HNDLE hKeyRoot, char *name, void *data, INT data_size, INT num_values, INT type);
 INT EXPRT db_set_mode(HNDLE hdb, HNDLE key_handle, WORD mode, BOOL recurse);
 INT EXPRT db_create_record(HNDLE hdb, HNDLE hkey, char *name, char *init_str);
@@ -1287,9 +1291,11 @@ INT EXPRT hs_set_path(char *path);
 INT EXPRT hs_define_event(DWORD event_id, char *name, TAG *tag, DWORD size);
 INT EXPRT hs_write_event(DWORD event_id, void *data, DWORD size);
 INT EXPRT hs_count_events(DWORD ltime, DWORD *count);
-INT EXPRT hs_enum_events(DWORD ltime, DEF_RECORD *index, DWORD *size);
-INT EXPRT hs_count_tags(DWORD ltime, DWORD event_id, DWORD *count);
-INT EXPRT hs_enum_tags(DWORD ltime, DWORD event_id, TAG *tag, DWORD *size);
+INT EXPRT hs_enum_events(DWORD ltime, char *event_name, DWORD *name_size, INT  event_id[], DWORD *id_size);
+INT EXPRT hs_count_vars(DWORD ltime, DWORD event_id, DWORD *count);
+INT EXPRT hs_enum_vars(DWORD ltime, DWORD event_id, char *var_name, DWORD *size);
+INT EXPRT hs_get_var(DWORD ltime, DWORD event_id, char *var_name, DWORD *type, INT *n_data);
+INT EXPRT hs_get_event_id(DWORD ltime, char *name, DWORD *id);
 INT EXPRT hs_read(DWORD event_id, DWORD start_time, DWORD end_time, DWORD interval, 
             char *tag_name, DWORD var_index, DWORD *time_buffer, DWORD *tbsize,
             void *data_buffer, DWORD *dbsize, DWORD *type, DWORD *n);
