@@ -8,6 +8,9 @@
   Contents:     File Transfer Protocol library
 
   $Log$
+  Revision 1.5  2003/04/14 13:01:59  midas
+  Fixed compiler warning
+
   Revision 1.4  2003/04/09 13:42:40  midas
   Made file compile under C++
 
@@ -103,7 +106,7 @@ struct hostent       *phe;
 #ifdef OS_UNIX
   do
     {
-    status = connect(sock, &bind_addr, sizeof(bind_addr));
+    status = connect(sock, (struct sockaddr *)&bind_addr, sizeof(bind_addr));
 
     /* don't return if an alarm signal was cought */
     } while (status == -1 && errno == EINTR); 
