@@ -6,6 +6,9 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.23  1999/09/13 11:07:58  midas
+  Test for NULL strings in equal_ustring
+
   Revision 1.22  1999/08/27 08:14:47  midas
   Fixed bug with several strings in db_set_value
 
@@ -1140,6 +1143,13 @@ char *extract_key(char *key_list, char *key_name)
 
 BOOL equal_ustring(char *str1, char *str2)
 {
+  if (str1 == NULL && str2 != NULL)
+    return FALSE;
+  if (str1 != NULL && str2 == NULL)
+    return FALSE;
+  if (str1 == NULL && str2 == NULL)
+    return TRUE;
+
   while (*str1)
     if (toupper(*str1++) != toupper(*str2++))
       return FALSE;
