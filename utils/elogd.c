@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.79  2001/12/06 09:22:36  midas
+  Fixed bug with "full_name"
+
   Revision 1.78  2001/12/05 16:01:05  midas
   Removed DWORD, changed (int)p1-(int)p2 to (int)(p1-p2) for True64
 
@@ -6194,12 +6197,11 @@ FILE  *f;
         strcpy(str, p);
         if (strchr(str, ':'))
           *strchr(str, ':') = 0;
-        strcpy(str, p);
         if (strchr(str, '\r'))
           *strchr(str, '\r') = 0;
         if (strchr(str, '\n'))
           *strchr(str, '\n') = 0;
-        setparam("full_name", p);
+        setparam("full_name", str);
         return TRUE;
         }
       }
@@ -6769,7 +6771,7 @@ struct timeval       timeout;
 
   /* bind local node name and port to socket */
   memset(&serv_addr, 0, sizeof(serv_addr));
-  serv_addr.sin_family      = AF_INET;
+  serv_addr.sin_family = AF_INET;
 
   /* if no hostname given with the -h flag, listen on any interface */
   if (tcp_hostname[0] == 0)
@@ -6792,7 +6794,7 @@ struct timeval       timeout;
     memcpy(&serv_addr.sin_addr.s_addr, phe->h_addr_list[0], phe->h_length);
     }
 
-  serv_addr.sin_port        = htons((short) tcp_port);
+  serv_addr.sin_port = htons((short) tcp_port);
 
   status = bind(lsock, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
   if (status < 0)
