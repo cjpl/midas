@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol main program
 
   $Log$
+  Revision 1.14  2002/10/09 15:48:13  midas
+  Fixed bug with download
+
   Revision 1.13  2002/10/09 11:06:46  midas
   Protocol version 1.1
 
@@ -552,7 +555,6 @@ MSCB_INFO_CHN code *pchn;
       n_out = 2;
       RS485_ENABLE = 1;
       SBUF0 = out_buf[0];
-
       break;
 
     case CMD_FLASH:
@@ -679,6 +681,9 @@ unsigned short i;
 unsigned char xdata *pw;
 unsigned char code  *pr;
 
+  /* wait until acknowledge has been sent */
+  while (RS485_ENABLE);
+
   /* disable all interrupts */
   EA = 0;
 
@@ -687,6 +692,7 @@ unsigned char code  *pr;
   WDTCN  = 0xAD;
 
   cmd = page = 0;
+
 
   /* send ready */
   RS485_ENABLE = 1;

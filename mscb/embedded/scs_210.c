@@ -9,6 +9,9 @@
                 for SCS-210 RS232 node
 
   $Log$
+  Revision 1.3  2002/10/09 15:48:13  midas
+  Fixed bug with download
+
   Revision 1.2  2002/10/09 11:06:46  midas
   Protocol version 1.1
 
@@ -18,12 +21,14 @@
 \********************************************************************/
 
 #include <stdio.h>
+#include <stdlib.h> // for atof()
 #include "mscb.h"
 
 extern bit FREEZE_MODE;
 extern bit DEBUG_MODE;
 
 char code node_name[] = "SCS-210";
+bit       terminal_mode;
 
 /*---- Define channels and configuration parameters returned to
        the CMD_GET_INFO command                                 ----*/
@@ -40,8 +45,8 @@ struct {
   
 
 MSCB_INFO_CHN code channel[] = {
+  SIZE_0BIT,      UNIT_ASCII, 0, 0,           0, "RS232", 0,
   SIZE_32BIT, UNIT_UNDEFINED, 0, 0, MSCBF_FLOAT, "Value", &user_data.value,
-  SIZE_0BIT,  UNIT_ASCII,     0, 0,           0, "RS232", 0,
   0
 };
 
@@ -88,11 +93,18 @@ void user_write(unsigned char channel)
 {
 unsigned char i, n;
 
-  if (channel == 1)
+  if (channel == 0)
     {
-    n = (in_buf[0] & 0x07) - 1;
-    for (i=0 ; i< n ; i++)
-      putchar(in_buf[i+2]);
+    if (in_buf[2] == 27)
+      terminal_mode = 0;
+    else if (in_buf[2] == 0)
+      terminal_mode = 1;
+    else
+      {
+      n = (in_buf[0] & 0x07) - 1;
+      for (i=0 ; i< n ; i++)
+        putchar(in_buf[i+2]);
+      }
     }
 }
 
@@ -102,7 +114,7 @@ unsigned char user_read(unsigned char channel)
 {
 char c;
 
-  if (channel == 1)
+  if (channel == 0)
     {
     c = getchar_nowait();
     if (c != -1)
@@ -143,14 +155,17 @@ unsigned char user_func(unsigned char idata *data_in,
 
 /*---- User loop function ------------------------------------------*/
 
-#include <stdlib.h>
-
 void user_loop(void)
 {
-  /*
-  gets(str, sizeof(str));
-  printf("%s\r\n", str);
-  user_data.value = atof(str);
-  */
+char idata str[32];
+unsigned char i;
+
+  if (!terminal_mode)
+    {
+    i = gets_wait(str, sizeof(str), 200);
+
+    if (i > 2)
+      user_data.value = atof(str);
+    }
 }
 

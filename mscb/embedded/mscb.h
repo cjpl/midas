@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol commands
 
   $Log$
+  Revision 1.10  2002/10/09 15:48:13  midas
+  Fixed bug with download
+
   Revision 1.9  2002/10/09 11:06:46  midas
   Protocol version 1.1
 
@@ -268,6 +271,7 @@ void lcd_puts(char *str);
 char scs_lcd1_read();
 
 char getchar_nowait(void);
+unsigned char gets_wait(char *str, unsigned char size, unsigned char timeout);
 void flush(void);
 
 void eeprom_flash(void); 

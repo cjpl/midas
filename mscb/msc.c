@@ -6,6 +6,9 @@
   Contents:     Command-line interface for the Midas Slow Control Bus
 
   $Log$
+  Revision 1.13  2002/10/09 15:48:13  midas
+  Fixed bug with download
+
   Revision 1.12  2002/10/09 11:06:46  midas
   Protocol version 1.1
 
@@ -717,9 +720,6 @@ MSCB_INFO_CHN info_chn;
         if (str[strlen(str)-1] == '\n')
           str[strlen(str)-1] = 0;
         status = mscb_upload(fd, str);
-
-        if (status != MSCB_SUCCESS)
-          printf("Error: %d\n", status);
         }
       current_addr = -1;
       current_group = -1;
