@@ -6,6 +6,10 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
+  Revision 1.28  2001/08/07 12:51:50  midas
+  If no full path is given as argv[0] (line under xinetd), use
+  /usr/local/bin/mserver as default
+
   Revision 1.27  2001/04/23 08:25:07  midas
   Only call setuid() when started as root
 
@@ -175,6 +179,7 @@ main(int argc, char **argv)
 {
 struct callback_addr callback;
 int    i, flag, size, server_type, debug;
+char   name[256];
 BOOL   inetd;
 
 #ifdef OS_WINNT
@@ -183,7 +188,18 @@ BOOL   inetd;
 #endif
 
   /* save executable file name */
-  rpc_set_server_option(RPC_OSERVER_NAME, (PTYPE) argv[0]);
+  if (argv[0] == NULL || argv[0][0] == 0)
+    strcpy(name, "mserver");
+  else
+    strcpy(name, argv[0]);
+
+#ifdef OS_UNIX
+  /* if no full path given, assume /usr/local/bin */
+  if (strchr(name, '/') == 0)
+    strcpy(name, "/usr/local/bin/mserver");
+#endif
+
+  rpc_set_server_option(RPC_OSERVER_NAME, (PTYPE) name);
 
   /* redirect message print */
   cm_set_msg_print(MT_ALL, MT_ALL, msg_print);
