@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.37  2001/08/28 11:41:49  midas
+  Optimized attachment display
+
   Revision 1.36  2001/08/28 11:36:18  midas
   Treat configuration directory correctly
 
@@ -2614,7 +2617,7 @@ BOOL   allow_edit;
       {
       if (att[i][0])
         {
-        rsprintf("<tr><td align=right nowrap bgcolor=%s>Original attachment%d:<br>New attachment%d:</td>", 
+        rsprintf("<tr><td align=right nowrap bgcolor=%s>Original attachment %d:<br>New attachment %d:</td>", 
                   gt("Categories bgcolor1"), i+1, i+1);
 
         rsprintf("<td bgcolor=%s>%s<br>", gt("Categories bgcolor2"), att[i]+14);
@@ -2622,7 +2625,7 @@ BOOL   allow_edit;
                   i+1);
         }
       else
-        rsprintf("<tr><td bgcolor=%s>Attachment%d:</td><td bgcolor=%s><input type=\"file\" size=\"60\" maxlength=\"200\" name=\"attfile%d\" accept=\"filetype/*\"></tr>\n", 
+        rsprintf("<tr><td bgcolor=%s>Attachment %d:</td><td bgcolor=%s><input type=\"file\" size=\"60\" maxlength=\"200\" name=\"attfile%d\" accept=\"filetype/*\"></tr>\n", 
                   gt("Categories bgcolor1"), i+1, gt("Categories bgcolor2"), i+1);
       }
 
@@ -2631,7 +2634,7 @@ BOOL   allow_edit;
     {
     /* attachment */
     for (i=0 ; i<MAX_ATTACHMENTS ; i++)
-      rsprintf("<tr><td bgcolor=%s><b>Attachment%d:</b></td><td bgcolor=%s><input type=\"file\" size=\"60\" maxlength=\"200\" name=\"attfile%d\" accept=\"filetype/*\"></tr>\n", 
+      rsprintf("<tr><td bgcolor=%s><b>Attachment %d:</b></td><td bgcolor=%s><input type=\"file\" size=\"60\" maxlength=\"200\" name=\"attfile%d\" accept=\"filetype/*\"></tr>\n", 
                gt("Categories bgcolor1"), i+1, gt("Categories bgcolor2"), i+1);
     }
 
@@ -3405,14 +3408,14 @@ FILE   *f;
                     strstr(str, ".JPG") ||
                     strstr(str, ".PNG"))
                   {
-                  rsprintf("<tr><td colspan=%d bgcolor=%s><b>Attachment%d:</b> <a href=\"%s\">%s</a>\n", 
+                  rsprintf("<tr><td colspan=%d bgcolor=%s><b>Attachment %d:</b> <a href=\"%s\">%s</a>\n", 
                             colspan, gt("List bgcolor2"), index+1, ref, attachment[index]+14);
                   if (show_attachments)
                     rsprintf("</td></tr><tr><td colspan=%d bgcolor=#FFFFFF><img src=\"%s\"></td></tr>", colspan, ref);
                   }
                 else
                   {
-                  rsprintf("<tr><td colspan=%d bgcolor=%s><b>Attachment%d:</b> <a href=\"%s\">%s</a>\n", 
+                  rsprintf("<tr><td colspan=%d bgcolor=%s><b>Attachment %d:</b> <a href=\"%s\">%s</a>\n", 
                             colspan, gt("List bgcolor2"), index+1, ref, attachment[index]+14);
 
                   if ((strstr(str, ".TXT") ||
@@ -4256,9 +4259,9 @@ BOOL  allow_delete, allow_edit;
 
         rsprintf("<tr><td><table width=100%% border=0 cellpadding=0 cellspacing=1 bgcolor=%s>\n", gt("Frame color"));
 
-        rsprintf("<tr><td nowrap width=10%% bgcolor=%s><b>Attachment %d:</b></td>", 
+        rsprintf("<tr><td nowrap width=10%% bgcolor=%s><b>&nbsp;Attachment %d:</b></td>", 
                  gt("Categories bgcolor1"), index+1);
-        rsprintf("<td bgcolor=%s><a href=\"%s\">%s</a>\n", 
+        rsprintf("<td bgcolor=%s>&nbsp;<a href=\"%s\">%s</a>\n", 
                  gt("Categories bgcolor2"), ref, attachment[index]+14);
 
         if (length < 1024)
