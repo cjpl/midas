@@ -11,6 +11,9 @@
                 with one bank (SCLR).
 
   $Log$
+  Revision 1.17  2003/04/23 15:08:43  midas
+  Decreased N_TDC to 4
+
   Revision 1.16  2003/04/14 13:31:17  midas
   Enabled trigger_bank_list
 
@@ -88,7 +91,7 @@ INT event_buffer_size = 10*10000;
 
 /* number of channels */
 #define N_ADC  4
-#define N_TDC  8  
+#define N_TDC  4  
 #define N_SCLR 4
 
 /* CAMAC crate and slots */
