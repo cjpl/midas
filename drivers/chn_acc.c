@@ -6,6 +6,9 @@
   Contents:     Epics channel access device driver
 
   $Log$
+  Revision 1.3  1999/09/22 11:30:48  midas
+  Added event driven data readout
+
   Revision 1.2  1999/09/21 13:48:40  midas
   Fixed compiler warning
 
@@ -21,7 +24,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "cadef.h"
-#include <stdarg.h>
+
+#undef va_arg
+#undef va_start
+#undef va_end
+
 #include "midas.h"
 
 /*---- globals -----------------------------------------------------*/
@@ -33,7 +40,25 @@ typedef struct {
   chid          *pv_handles;
   float         *array;
   INT           num_channels;
+  evid          *pevid;
 } CA_INFO;
+
+
+void chn_acc_callback(struct event_handler_args args)
+{
+CA_INFO *info;
+int     i;
+
+  info = (CA_INFO *) args.usr;
+
+  /* search channel index */
+  for (i=0 ; i<info->num_channels ; i++)
+    if (info->pv_handles[i] == args.chid)
+      break;
+
+  if (i < info->num_channels)
+    info->array[i] = *((float *) args.dbr);
+}
 
 /*---- device driver routines --------------------------------------*/
 
@@ -65,6 +90,11 @@ CA_INFO   *info;
     return FE_ERR_HW;
     }
 
+  /* allocate arrays */
+  info->array = calloc(channels, sizeof(float));
+  info->pevid = calloc(channels, sizeof(evid));
+
+  /* search channels */
   info->num_channels = channels;
   info->pv_handles = malloc(channels*sizeof(chid));
   for (i=0 ; i<channels ; i++)
@@ -82,7 +112,27 @@ CA_INFO   *info;
                info->channel_names+CHN_NAME_LENGTH*i);
 	  }
 
-  info->array = calloc(channels, sizeof(float));
+  /* add change notifications */
+  for (i=0 ; i<channels ; i++)
+    {
+    /* ignore unconnected channels */
+    if (info->pv_handles[i]->state != 2)
+      continue;
+
+  	status = ca_add_event(DBR_FLOAT, info->pv_handles[i], chn_acc_callback, 
+                          info, &info->pevid[i]);
+      
+    if (!(status & CA_M_SUCCESS))
+      cm_msg(MERROR, "chn_acc_init", "cannot add event to channel %s", info->channel_names+CHN_NAME_LENGTH*i);
+    }
+
+  if (ca_pend_io(5.0) == ECA_TIMEOUT)
+	  {
+		for (i=0; i < channels; i++)
+			if (info->pv_handles[i]->state != 2)
+        cm_msg(MERROR, "chn_acc_init", "cannot add event to channel %s", 
+               info->channel_names+CHN_NAME_LENGTH*i);
+	  }
 
   return FE_SUCCESS;
 }
@@ -93,6 +143,8 @@ INT chn_acc_exit(CA_INFO *info)
 {
   if (info->array)
     free(info->array);
+  if (info->pevid)
+    free(info->pevid);
   if (info->channel_names)
     free(info->channel_names);
 
@@ -105,7 +157,7 @@ INT chn_acc_exit(CA_INFO *info)
 
 INT chn_acc_set(CA_INFO *info, INT channel, float value)
 {
-  ca_array_put(DBR_FLOAT, 1, info->pv_handles[channel], &value);
+  ca_put(DBR_FLOAT, info->pv_handles[channel], &value);
 
   return FE_SUCCESS;
 }
@@ -117,7 +169,7 @@ INT chn_acc_set_all(CA_INFO *info, INT channels, float value)
 INT i;
 
   for (i=0 ; i<min(info->num_channels, channels) ; i++)
-  	ca_array_put(DBR_FLOAT, 1, info->pv_handles[i], &value);
+  	ca_put(DBR_FLOAT, info->pv_handles[i], &value);
 
   return FE_SUCCESS;
 }
@@ -126,11 +178,8 @@ INT i;
 
 INT chn_acc_get(CA_INFO *info, INT channel, float *pvalue)
 {
-	ca_array_get(DBR_FLOAT, 1L, info->pv_handles[channel], pvalue);
-	if (ca_pend_io(1.0) == ECA_TIMEOUT) 
-    cm_msg(MERROR, "chn_acc_get", "got timeout");
-  else
-    info->array[channel] = *pvalue;
+  ca_pend_event(0.0001);
+  *pvalue = info->array[channel];
 
   return FE_SUCCESS;
 }
