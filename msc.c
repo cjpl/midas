@@ -6,6 +6,9 @@
   Contents:     Command-line interface for the Midas Slow Control Bus
 
   $Log$
+  Revision 1.66  2004/05/17 09:32:52  midas
+  Added Sleep
+
   Revision 1.65  2004/04/05 10:10:27  midas
   Fixed linux warnings
 
@@ -1311,7 +1314,8 @@ int main(int argc, char *argv[])
 #ifdef _MSC_VER
       puts("\n-- hit any key to exit --");
 
-      while (!kbhit());
+      while (!kbhit()) 
+         Sleep(100);
       while (kbhit())
          getch();
 #endif
