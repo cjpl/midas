@@ -14,6 +14,9 @@
                 Brown, Prentice Hall
 
   $Log$
+  Revision 1.44  1999/10/11 14:45:37  midas
+  Fixed bug
+
   Revision 1.43  1999/10/11 14:41:10  midas
   Added code to close stdin, stdout and stderr in daemon mode
 
@@ -1290,7 +1293,7 @@ INT ss_daemon_init()
 #ifdef OS_UNIX
 
   /* only implemented for UNIX */
-  int pid;
+  int i, fd, pid;
 
   if ( (pid = fork()) < 0)
     return SS_ABORT;
@@ -1312,7 +1315,7 @@ INT ss_daemon_init()
       cm_msg(MERROR, "ss_system", "Can't open /dev/null");
       return;
       }
-    if (fd != i) {
+    if (fd != i)
       {
       cm_msg(MERROR, "ss_system", "Did not get file descriptor");
       return;
@@ -1322,8 +1325,6 @@ INT ss_daemon_init()
   setsid();               /* become session leader */
   chdir("/");             /* change working direcotry (not on NFS!) */
   umask(0);               /* clear our file mode createion mask */
-
-  return SS_SUCCESS;
 
 #endif
 
@@ -1380,7 +1381,7 @@ INT ss_system(char *command)
       cm_msg(MERROR, "ss_system", "Can't open /dev/null");
       return;
       }
-    if (fd != i) {
+    if (fd != i)
       {
       cm_msg(MERROR, "ss_system", "Did not get file descriptor");
       return;
