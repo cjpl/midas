@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.58  1999/10/05 12:48:17  midas
+  Added expiration date 2040 for refresh cookie
+
   Revision 1.57  1999/10/04 14:16:10  midas
   Fixed bug in form submit
 
@@ -4759,7 +4762,7 @@ struct tm *gmt;
     rsprintf("Server: MIDAS HTTP %s\r\n", cm_get_version());
     rsprintf("Content-Type: text/html\r\n");
 
-    rsprintf("Set-Cookie: midas_refr=%d; path=/; expires=0\r\n", refresh);
+    rsprintf("Set-Cookie: midas_refr=%d; path=/; expires=Mon, 01 Jan 2040 00:00:00 GMT\r\n", refresh);
 
     if (exp_name[0])
       rsprintf("Location: %s?exp=%s\r\n\r\n<html>redir</html>\r\n", mhttpd_url, exp_name);
