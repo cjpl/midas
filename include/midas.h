@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.86  2001/10/03 08:36:02  midas
+  Added DB_INVALID_LINK
+
   Revision 1.85  2001/08/22 13:51:14  midas
   Reorganized directio functions
 
@@ -710,6 +713,7 @@ Convert the coded LAM station to Station number.
 #define DB_STRUCT_SIZE_MISMATCH     319
 #define DB_OPEN_RECORD              320
 #define DB_OUT_OF_RANGE             321
+#define DB_INVALID_LINK             322
 
 /* System Services */
 #define SS_SUCCESS                    1
