@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.4  2001/05/22 11:32:59  midas
+  Added Help button
+
   Revision 1.3  2001/05/22 09:13:47  midas
   Rearranged configuration file
 
@@ -1580,11 +1583,11 @@ void show_help_page()
   rsprintf("</head>\n\n");
 
   rsprintf("<body>\n");
-  rsprintf("<h1>ELog Electronic Logbook Help</h1>\n");
-  rsprintf("The Electronic Logbook (ELOG) can be used to store and retrieve messages\n");
+  rsprintf("<center><h1>ELog Electronic Logbook Help</h1></center>\n");
+  rsprintf("The Electronic Logbook (<i>ELOG</i>) can be used to store and retrieve messages\n");
   rsprintf("through a Web interface. Use the <b>New</b> button to create a new message\n");
   rsprintf("and use the <b>Next/Previous/Last</b> and <b>Query</b> buttons to view\n");
-  rsprintf("messages<p>\n\n");
+  rsprintf("messages.<p>\n\n");
 
   rsprintf("For more information, refer to the\n"); 
   rsprintf("<A HREF=\"http://midas.psi.ch/elog\">ELOG home page</A>.<P>\n\n");
@@ -2722,6 +2725,12 @@ BOOL  allow_delete;
 
   strcpy(command, getparam("cmd"));
 
+  if (equal_ustring(command, "help"))
+    {
+    show_help_page();
+    return;
+    }
+
   if (equal_ustring(command, "new"))
     {
     if (*getparam("file"))
@@ -2973,6 +2982,7 @@ BOOL  allow_delete;
   rsprintf("<input type=submit name=cmd value=Query>\n");
   rsprintf("<input type=submit name=cmd value=\"Last day\">\n");
   rsprintf("<input type=submit name=cmd value=\"Last 10\">\n");
+  rsprintf("<input type=submit name=cmd value=\"Help\">\n");
 
   rsprintf("</tr>\n");
 
