@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.91  2001/12/12 16:01:18  midas
+  Fixed wrong help file name and preceeding " | " for MOptions
+
   Revision 1.90  2001/12/11 13:41:31  midas
   Added "MOptions" multiple options
 
@@ -5123,7 +5126,7 @@ char   str[256], mail_to[256], mail_from[256], file_name[256], error[1000],
 char   *buffer[MAX_ATTACHMENTS], mail_param[1000];
 char   att_file[MAX_ATTACHMENTS][256];
 char   slist[MAX_N_ATTR+10][NAME_LENGTH], svalue[MAX_N_ATTR+10][NAME_LENGTH];
-int    i, j, n, index, n_attr, n_mail, suppress, status;
+int    i, j, n, first, index, n_attr, n_mail, suppress, status;
 
   n_attr = scan_attributes(logbook);
 
@@ -5176,6 +5179,7 @@ int    i, j, n, index, n_attr, n_mail, suppress, status;
     if (attr_flags[i] & AF_MULTI)
       {
       attrib[i][0] = 0;
+      first = 1;
       for (j=0 ; j<MAX_N_LIST ; j++)
         {
         sprintf(str, "%s%d", attr_list[i], j);
@@ -5183,7 +5187,9 @@ int    i, j, n, index, n_attr, n_mail, suppress, status;
           {
           if (*getparam(str))
             {
-            if (j>0)
+            if (first)
+              first = 0;
+            else
               strcat(attrib[i], " | ");
             if (strlen(attrib[i]) + strlen(getparam(str)) < NAME_LENGTH-2)
               strcat(attrib[i], getparam(str));
@@ -5614,7 +5620,7 @@ FILE   *f;
 
     /* send local help file */
     strcpy(file_name, cfg_dir);
-    strcat(file_name, "eloglang_");
+    strcat(file_name, "eloghelp_");
 
     if (getcfg("global", "Language", str))
       {
