@@ -6,6 +6,9 @@
   Contents:     MIDAS logger program
 
   $Log$
+  Revision 1.59  2003/04/14 12:52:03  midas
+  Added ROOT output format
+
   Revision 1.58  2002/06/03 06:07:15  midas
   Added extra parameter to ss_daemon_init to keep stdout
 
@@ -191,6 +194,14 @@
 #define INCLUDE_LOGGING
 #include "ybos.h"
 
+#ifdef HAVE_ROOT
+#undef GetCurrentTime
+#include "TApplication.h"
+#include "TFile.h"
+#include "TNtuple.h"
+#include "TLeaf.h"
+#endif
+
 /*---- globals -----------------------------------------------------*/
 
 #define LOGGER_TIMEOUT 60000
@@ -294,7 +305,7 @@ EVENT_HEADER *pevent;
   buffer_size = 10000;
   do
     {
-    pevent = malloc(buffer_size);
+    pevent = (EVENT_HEADER *)malloc(buffer_size);
     if (pevent == NULL)
       {
       cm_msg(MERROR, "log_odb_dump", "Cannot allocate ODB dump buffer");
@@ -462,7 +473,7 @@ MIDAS_INFO  *info;
   else
     {
 #ifdef OS_WINNT
-    WriteFile((HANDLE) log_chn->handle, info->buffer, size, &written, NULL);
+    WriteFile((HANDLE) log_chn->handle, info->buffer, size, (unsigned long *)&written, NULL);
 #else
     written = write(log_chn->handle, info->buffer, size);
 #endif
@@ -537,7 +548,7 @@ MIDAS_INFO   *info;
 INT          status;
 
   /* allocate MIDAS buffer info */
-  log_chn->format_info = malloc(sizeof(MIDAS_INFO));
+  log_chn->format_info = (void **)malloc(sizeof(MIDAS_INFO));
 
   info = (MIDAS_INFO *) log_chn->format_info;
   if (info == NULL)
@@ -681,7 +692,7 @@ static EVENT_DEF *event_def=NULL;
 
   /* allocate memory for cache */
   if (event_def == NULL)
-    event_def = calloc(EVENT_DEF_CACHE_SIZE, sizeof(EVENT_DEF));
+    event_def = (EVENT_DEF *)calloc(EVENT_DEF_CACHE_SIZE, sizeof(EVENT_DEF));
 
   /* lookup if event definition in cache */
   for (i=0 ; event_def[i].event_id ; i++)
@@ -918,7 +929,7 @@ WORD        bktype;
           }
 
         /* shift data pointer to next item */
-        (char *) pdata += key.item_size*key.num_values;
+        pdata = ((char *) pdata) + key.item_size*key.num_values;
         }
       }
     }
@@ -1053,11 +1064,10 @@ BANK_HEADER *pbh;
 BANK        *pbk;
 BANK32      *pbk32;
 void        *pdata;
-char        data[1000];
 char        buffer[10000], name[5], type_name[10];
 char        *ph, header_line[10000];
 char        *pd, data_line[10000];
-HNDLE       hKey, hKeyRoot;
+HNDLE       hKey;
 KEY         key;
 static short int last_event_id = -1;
 DWORD       bkname;
@@ -1075,49 +1085,6 @@ WORD        bktype;
   data_line[0]   = 0;
   ph = header_line;
   pd = data_line;
-
-  /* write run parameter at begin of run */
-  if (pevent->event_id == EVENTID_BOR)
-    {
-    sprintf(header_line, "%%Run\t");
-    sprintf(data_line, "%d\t", pevent->serial_number);
-    STR_INC(ph, header_line);
-    STR_INC(pd, data_line);
-
-    status = db_find_key(hDB, 0, "/Experiment/Run parameters", &hKeyRoot);
-    if (status == DB_SUCCESS)
-      {
-      for (i=0 ;; i++)
-        {
-        status = db_enum_key(hDB, hKeyRoot, i, &hKey);
-        if (status == DB_NO_MORE_SUBKEYS)
-          break;
-
-        db_get_key(hDB, hKey, &key);
-        size = sizeof(data);
-        db_get_data(hDB, hKey, data, &size, key.type);
-
-        for (j=0 ; j<key.num_values ; j++)
-          {
-          if (key.num_values == 1)
-            sprintf(ph, "%s\t", key.name);
-          else
-            sprintf(ph, "%s%d\t", key.name, j);
-
-          STR_INC(ph, header_line);
-
-          db_sprintf(pd, data, key.item_size, j, key.type);
-          strcat(pd, "\t");
-          STR_INC(pd, data_line);
-          }
-        }
-      }
-    }
-  else
-    {
-    sprintf(ph, "%%", pevent->event_id);
-    STR_INC(ph, header_line);
-    }
 
   /*---- MIDAS format ----------------------------------------------*/
   if (event_def->format == FORMAT_MIDAS)
@@ -1223,7 +1190,7 @@ WORD        bktype;
           }
 
         /* shift data pointer to next item */
-        (char *) pdata += key.item_size*key.num_values;
+        pdata = ((char *) pdata) + key.item_size*key.num_values;
         }
       }
     }
@@ -1336,6 +1303,441 @@ INT ascii_log_close(LOG_CHN *log_chn, INT run_number)
   return SS_SUCCESS;
 }
 
+/*---- ROOT format routines ----------------------------------------*/
+
+#ifdef HAVE_ROOT
+
+typedef struct {
+  int        event_id;
+  TTree      *tree;
+  int        n_branch;
+  DWORD      *branch_name;
+  int        *branch_filled;
+  int        *branch_len;
+  TBranch    **branch;
+  } EVENT_TREE;
+
+typedef struct {
+  TFile      *f;
+  int        n_tree;
+  EVENT_TREE *event_tree;
+  } TREE_STRUCT;
+
+/*------------------------------------------------------------------*/
+
+INT root_book_trees(TREE_STRUCT *tree_struct)
+{
+int   index, size, status;
+WORD  id;
+char  str[1000];
+HNDLE hKeyRoot, hKeyEq;
+KEY   eqkey;
+EVENT_TREE *et;
+
+  status = db_find_key(hDB, 0, "/Equipment", &hKeyRoot);
+  if (status != DB_SUCCESS)
+    {
+    cm_msg(MERROR, "root_book_trees", "cannot find \"/Equipment\" entry in ODB");
+    return 0;
+    }
+
+  tree_struct->n_tree = 0;
+
+  for (index=0 ; ; index++)
+    {
+    /* loop through all events under /Equipment */
+    status = db_enum_key(hDB, hKeyRoot, index, &hKeyEq);
+    if (status == DB_NO_MORE_SUBKEYS)
+      return 1;
+
+    db_get_key(hDB, hKeyEq, &eqkey);
+
+    /* create tree */
+    tree_struct->n_tree++;
+    if (tree_struct->n_tree == 1)
+      tree_struct->event_tree = (EVENT_TREE *)malloc(sizeof(EVENT_TREE));
+    else
+      tree_struct->event_tree = (EVENT_TREE *)realloc(tree_struct->event_tree, sizeof(EVENT_TREE)*tree_struct->n_tree);
+
+    et = tree_struct->event_tree + (tree_struct->n_tree - 1);
+
+    size = sizeof(id);
+    status = db_get_value(hDB, hKeyEq, "Common/Event ID", &id, &size, TID_WORD, TRUE);
+    if (status != DB_SUCCESS)
+      continue;
+
+    et->event_id = id;
+    et->n_branch = 0;
+    et->branch = NULL;
+    et->branch_name = NULL;
+    et->branch_filled = NULL;
+    et->branch_len = NULL;
+
+    /* check format */
+    size = sizeof(str);
+    str[0] = 0;
+    db_get_value(hDB, hKeyEq, "Common/Format", str, &size, TID_STRING, TRUE);
+
+    if (!equal_ustring(str, "MIDAS"))
+      {
+      cm_msg(MERROR, "root_book_events", "ROOT output format currently only supported for MIDAS events");
+      return 0;
+      }
+
+    /* create tree */
+    sprintf(str, "Event \"%s\", ID %d", eqkey.name, id);
+    et->tree = new TTree(eqkey.name, str);
+    et->n_branch = 0;
+    }
+
+  return 1;
+}
+
+/*------------------------------------------------------------------*/
+
+INT root_book_bank(EVENT_TREE *et, HNDLE hKeyDef, int event_id, char *bank_name)
+{
+int   i, status;
+char  str[1000];
+HNDLE hKeyVar, hKeySubVar;
+KEY   varkey, subvarkey;
+
+  /* find definition of bank */
+  status = db_find_key(hDB, hKeyDef, bank_name, &hKeyVar);
+  if (status != DB_SUCCESS)
+    {
+    cm_msg(MERROR, "root_book_bank", "received unknown bank \"%s\" in event #%d", bank_name, event_id);
+    return 0;
+    }
+
+  if (et->n_branch == 0)
+    {
+    et->branch = (TBranch **)malloc(sizeof(TBranch *));
+    et->branch_name = (DWORD *)malloc(sizeof(DWORD));
+    et->branch_filled = (int *)malloc(sizeof(int));
+    et->branch_len = (int *)malloc(sizeof(int));
+    }
+  else
+    {
+    et->branch = (TBranch **)realloc(et->branch, sizeof(TBranch *) * (et->n_branch + 1));
+    et->branch_name = (DWORD *)realloc(et->branch_name, sizeof(DWORD) * (et->n_branch + 1));
+    et->branch_filled = (int *)realloc(et->branch_filled, sizeof(int) * (et->n_branch + 1));
+    et->branch_len = (int *)realloc(et->branch_len, sizeof(int) * (et->n_branch + 1));
+    }
+
+  db_get_key(hDB, hKeyVar, &varkey);
+
+  if (varkey.type != TID_KEY)
+    {
+    /* book variable length array size */
+
+    sprintf(str, "n%s/I:%s[n%s]/", varkey.name, varkey.name, varkey.name);
+
+    switch (varkey.type)
+      {
+      case TID_BYTE:   
+      case TID_CHAR:   strcat(str, "b"); break;
+      case TID_SBYTE:  strcat(str, "B"); break;
+      case TID_WORD:   strcat(str, "s"); break;
+      case TID_SHORT:  strcat(str, "S"); break;
+      case TID_DWORD:  strcat(str, "i"); break;
+      case TID_INT:    strcat(str, "I"); break;
+      case TID_BOOL:   strcat(str, "I"); break;
+      case TID_FLOAT:  strcat(str, "F"); break;
+      case TID_DOUBLE: strcat(str, "D"); break;
+      case TID_STRING: strcat(str, "C"); break;
+      }
+
+    et->branch[et->n_branch] = et->tree->Branch(bank_name, NULL, str);
+    et->branch_name[et->n_branch] = *(DWORD *)bank_name;
+    et->n_branch++;
+    }
+  else
+    {
+    /* book structured bank */
+    str[0] = 0;
+
+    for (i=0 ; ; i++)
+      {
+      /* loop through bank variables */
+      status = db_enum_key(hDB, hKeyVar, i, &hKeySubVar);
+      if (status == DB_NO_MORE_SUBKEYS)
+        break;
+
+      db_get_key(hDB, hKeySubVar, &subvarkey);
+
+      if (i != 0)
+        strcat(str, ":");
+      strcat(str, subvarkey.name);
+      strcat(str, "/");
+      switch (subvarkey.type)
+        {
+        case TID_BYTE:   
+        case TID_CHAR:   strcat(str, "b"); break;
+        case TID_SBYTE:  strcat(str, "B"); break;
+        case TID_WORD:   strcat(str, "s"); break;
+        case TID_SHORT:  strcat(str, "S"); break;
+        case TID_DWORD:  strcat(str, "i"); break;
+        case TID_INT:    strcat(str, "I"); break;
+        case TID_BOOL:   strcat(str, "I"); break;
+        case TID_FLOAT:  strcat(str, "F"); break;
+        case TID_DOUBLE: strcat(str, "D"); break;
+        case TID_STRING: strcat(str, "C"); break;
+        }
+      }
+
+    et->branch[et->n_branch] = et->tree->Branch(bank_name, NULL, str);
+    et->branch_name[et->n_branch] = *(DWORD *)bank_name;
+    et->n_branch++;
+    }
+
+  return 1;
+}
+
+/*------------------------------------------------------------------*/
+
+INT root_write(LOG_CHN *log_chn, EVENT_HEADER *pevent, INT evt_size)
+{
+INT         size, i;
+char        bank_name[32];
+EVENT_DEF   *event_def;
+BANK_HEADER *pbh;
+void        *pdata;
+static short int last_event_id = -1;
+TREE_STRUCT *ts;
+EVENT_TREE  *et;
+BANK        *pbk;
+BANK32      *pbk32;
+DWORD       bklen;
+DWORD       bkname;
+WORD        bktype;
+TBranch     *branch;
+
+  if (pevent->serial_number == 1)
+    last_event_id = -1;
+
+  event_def = db_get_event_definition(pevent->event_id);
+  if (event_def == NULL)
+    {
+    cm_msg(MERROR, "root_write", "Definition for event #%d not found under /Equipment", pevent->event_id);
+    return SS_INVALID_FORMAT;
+    }
+
+  ts = (TREE_STRUCT *) log_chn->format_info;
+
+  size = ts->f->GetBytesWritten();
+
+  /*---- MIDAS format ----------------------------------------------*/
+
+  if (event_def->format == FORMAT_MIDAS)
+    {
+    pbh = (BANK_HEADER *) (pevent+1);
+    bk_swap(pbh, FALSE);
+
+    /* find event in tree structure */
+    for (i=0 ; i<ts->n_tree ; i++)
+      if (ts->event_tree[i].event_id == pevent->event_id)
+        break;
+
+    if (i == ts->n_tree)
+      {
+      cm_msg(MERROR, "root_write", "Event #%d not booked by root_book_events()", pevent->event_id);
+      return SS_INVALID_FORMAT;
+      }
+
+    et = ts->event_tree + i;
+
+    /* first mark all banks non-filled */
+    for (i=0 ; i<et->n_branch ; i++)
+      et->branch_filled[i] = FALSE;
+
+    /* go thourgh all banks and set the address */
+    pbk = NULL;
+    pbk32 = NULL;
+    do
+      {
+      /* scan all banks */
+      if (bk_is32(pbh))
+        {
+        bklen = bk_iterate32(pbh, &pbk32, &pdata);
+        if (pbk32 == NULL)
+          break;
+        bkname = *((DWORD *) pbk32->name);
+        bktype = (WORD) pbk32->type;
+        }
+      else
+        {
+        bklen = bk_iterate(pbh, &pbk, &pdata);
+        if (pbk == NULL)
+          break;
+        bkname = *((DWORD *) pbk->name);
+        bktype = (WORD) pbk->type;
+        }
+
+      if (rpc_tid_size(bktype & 0xFF))
+        bklen /= rpc_tid_size(bktype & 0xFF);
+
+      *((DWORD *) bank_name) = bkname;
+      bank_name[4] = 0;
+
+      for (i=0 ; i<et->n_branch ; i++)
+        if (et->branch_name[i] == bkname)
+          break;
+
+      if (i == et->n_branch)
+        root_book_bank(et, event_def->hDefKey, pevent->event_id, bank_name);
+
+      branch = et->branch[i];
+      et->branch_filled[i] = TRUE;
+      et->branch_len[i] = bklen;
+
+      if (bktype != TID_STRUCT)
+        {
+        TIter next(branch->GetListOfLeaves());
+        TLeaf *leaf = (TLeaf *)next();
+
+        /* varibale length array */
+        leaf->SetAddress(&et->branch_len[i]);
+
+        leaf = (TLeaf *)next();
+        leaf->SetAddress(pdata);
+        }
+      else
+        {
+        /* structured bank */
+        branch->SetAddress(pdata);
+        }
+      
+      } while(1);
+
+    /* check if all branches have been filled */
+    for (i=0 ; i<et->n_branch ; i++)
+      if (!et->branch_filled[i])
+        cm_msg(MERROR, "root_write", "Bank %s booked but not received, tree cannot be filled", bank_name);
+
+    /* fill tree */
+    et->tree->Fill();
+    }
+
+  size = ts->f->GetBytesWritten() - size;
+  
+  /* update statistics */
+  log_chn->statistics.events_written++;
+  log_chn->statistics.bytes_written += size;
+  log_chn->statistics.bytes_written_total += size;
+
+  return SS_SUCCESS;
+}
+
+/*------------------------------------------------------------------*/
+
+INT root_log_open(LOG_CHN *log_chn, INT run_number)
+{
+INT size, level;
+char str[256], name[256];
+EVENT_HEADER event;
+TREE_STRUCT *tree_struct;
+
+  /* Create device channel */
+  if (log_chn->type == LOG_TYPE_TAPE || log_chn->type == LOG_TYPE_FTP)
+    {
+    cm_msg(MERROR, "root_log_open", "ROOT files can only reside on disk");
+    log_chn->handle = 0;
+    return -1;
+    }
+  else
+    {
+    /* check if file exists */
+    if (strstr(log_chn->path, "null") == NULL)
+      {
+      log_chn->handle = open(log_chn->path, O_RDONLY);
+      if (log_chn->handle > 0)
+        {
+        /* check if file length is nonzero */
+        if (lseek(log_chn->handle, 0, SEEK_END) > 0)
+          {
+          close(log_chn->handle);
+          log_chn->handle = 0;
+          return SS_FILE_EXISTS;
+          }
+        }
+      }
+
+    name[0] = 0;
+    size = sizeof(name);
+    db_get_value(hDB, 0, "/Experiment/Name", name, &size, TID_STRING, TRUE);
+
+    sprintf(str,"MIDAS exp. %s, run #%d", name, run_number);
+
+    TFile *f = new TFile(log_chn->path, "create", str, 1);
+    if (!f->IsOpen())
+      {
+      delete f;
+      log_chn->handle = 0;
+      return SS_FILE_ERROR;
+      }
+    log_chn->handle = 1;
+
+    /* set compression level */
+    level = 0;
+    size = sizeof(level);
+    db_get_value(hDB, log_chn->settings_hkey, "Compression", &level, &size, TID_INT, FALSE);
+    f->SetCompressionLevel(level);
+
+    /* create root structure with trees and branches */
+    tree_struct = (TREE_STRUCT *)malloc(sizeof(TREE_STRUCT));
+    tree_struct->f = f;
+
+    /* book event tree */
+    root_book_trees(tree_struct);
+
+    /* store file object in format_info */
+    log_chn->format_info = (void **) tree_struct;
+    }
+
+  /* write ODB dump */
+  if (log_chn->settings.odb_dump)
+    {
+    event.event_id = EVENTID_BOR;
+    event.data_size = 0;
+    event.serial_number = run_number;
+
+    //##root_write(log_chn, &event, sizeof(EVENT_HEADER));
+    }
+
+  return SS_SUCCESS;
+}
+
+/*------------------------------------------------------------------*/
+
+INT root_log_close(LOG_CHN *log_chn, INT run_number)
+{
+int         i;
+TREE_STRUCT *ts;
+
+  ts = (TREE_STRUCT *) log_chn->format_info;
+
+  /* flush and close file */
+  ts->f->Write();
+  ts->f->Close();
+  delete ts->f; // deletes also all trees and branches!
+
+  /* go through all events */
+  for (i=0 ; i<ts->n_tree ; i++)
+    if (ts->event_tree[i].branch)
+      free(ts->event_tree[i].branch);
+
+  /* delete event tree */
+  free(ts->event_tree);
+  free(ts);
+
+  log_chn->format_info = NULL;
+
+  return SS_SUCCESS;
+}
+
+#endif /* HAVE_ROOT */
+
 /*---- log_open ----------------------------------------------------*/
 
 INT log_open(LOG_CHN *log_chn, INT run_number)
@@ -1357,11 +1759,22 @@ INT status;
     log_chn->format = FORMAT_DUMP;
     status = dump_log_open(log_chn, run_number);
     }
-  else /* default format is MIDAS */
+  else if (equal_ustring(log_chn->settings.format, "ROOT"))
+    {
+#ifdef HAVE_ROOT
+    log_chn->format = FORMAT_ROOT;
+    status = root_log_open(log_chn, run_number);
+#else
+    return SS_NO_ROOT;
+#endif
+    }
+  else if (equal_ustring(log_chn->settings.format, "MIDAS"))
     {
     log_chn->format = FORMAT_MIDAS;
     status = midas_log_open(log_chn, run_number);
     }
+  else
+    return SS_INVALID_FORMAT;
 
   return status;
 }
@@ -1378,6 +1791,11 @@ INT log_close(LOG_CHN *log_chn, INT run_number)
 
   if (log_chn->format == FORMAT_DUMP)
     dump_log_close(log_chn, run_number);
+
+#ifdef HAVE_ROOT
+  if (log_chn->format == FORMAT_ROOT)
+    root_log_close(log_chn, run_number);
+#endif
 
   if (log_chn->format == FORMAT_MIDAS)
     midas_log_close(log_chn, run_number);
@@ -1415,6 +1833,11 @@ double dzero;
 
   if (log_chn->format == FORMAT_MIDAS)
     status = midas_write(log_chn, pevent, pevent->data_size+sizeof(EVENT_HEADER));
+
+#ifdef HAVE_ROOT
+  if (log_chn->format == FORMAT_ROOT)
+    status = root_write(log_chn, pevent, pevent->data_size+sizeof(EVENT_HEADER));
+#endif
 
   actual_time = ss_millitime();
   if ((int)actual_time - (int)start_time > 3000)
@@ -1644,7 +2067,7 @@ BOOL     single_names;
         cm_msg(MERROR, "open_history", "defined event %d with no variables in ODB", event_id);
 
       /* create tag array */
-      tag = malloc(sizeof(TAG)*n_tags);
+      tag = (TAG *)malloc(sizeof(TAG)*n_tags);
 
       for (i=0,i_tag=0 ;; i++)
         {
@@ -1835,7 +2258,7 @@ BOOL     single_names;
       else
         {
         /* create tag array */
-        tag = malloc(sizeof(TAG)*n_var);
+        tag = (TAG *)malloc(sizeof(TAG)*n_var);
 
         for (i=0,size=0,n_var=0 ;; i++)
           {
@@ -1907,7 +2330,7 @@ BOOL     single_names;
 
   /*---- define run start/stop event -------------------------------*/
 
-  tag = malloc(sizeof(TAG)*2);
+  tag = (TAG *)malloc(sizeof(TAG)*2);
 
   strcpy(tag[0].name, "State");
   tag[0].type = TID_DWORD;
@@ -2273,8 +2696,14 @@ struct tm    *tms;
         log_chn[index].type = LOG_TYPE_TAPE;
       else if (equal_ustring(chn_settings->type, "FTP"))
         log_chn[index].type = LOG_TYPE_FTP;
-      else
+      else if (equal_ustring(chn_settings->type, "Disk"))
         log_chn[index].type = LOG_TYPE_DISK;
+      else
+        {
+        sprintf(error, "Invalid channel type \"%s\", pease use \"Tape\", \"FTP\" or \"Disk\"");
+        cm_msg(MERROR, "tr_prestart", error);
+        return 0;
+        }
 
       data_dir[0] = 0;
 
@@ -2326,7 +2755,7 @@ struct tm    *tms;
 
       strcpy(log_chn[index].path, path);
 
-      /* wirte back current file name to ODB */
+      /* write back current file name to ODB */
       if (strncmp(path, data_dir, strlen(data_dir)) == 0)
         strcpy(str, path+strlen(data_dir));
       else
@@ -2348,17 +2777,22 @@ struct tm    *tms;
       if (status != SS_SUCCESS)
         {
         if (status == SS_FILE_ERROR)
-          sprintf(error, "cannot open file %s (Disk full?)", path);
+          sprintf(error, "Cannot open file %s (Disk full?)", path);
         if (status == SS_FILE_EXISTS)
-          sprintf(error, "file %s exists already, run start aborted", path);
+          sprintf(error, "File %s exists already, run start aborted", path);
         if (status == SS_NO_TAPE)
-          sprintf(error, "no tape in device %s", path);
+          sprintf(error, "No tape in device %s", path);
         if (status == SS_TAPE_ERROR)
-          sprintf(error, "tape error, cannot start run");
+          sprintf(error, "Tape error, cannot start run");
         if (status == SS_DEV_BUSY)
-          sprintf(error, "device %s used by someone else", path);
+          sprintf(error, "Device %s used by someone else", path);
         if (status == FTP_NET_ERROR || status == FTP_RESPONSE_ERROR)
-          sprintf(error,  "cannot open FTP channel to [%s]", path);
+          sprintf(error,  "Cannot open FTP channel to [%s]", path);
+        if (status == SS_NO_ROOT)
+          sprintf(error,  "No ROOT support compiled into mlogger, please compile with -DHAVE_ROOT flag");
+
+        if (status == SS_INVALID_FORMAT)
+          sprintf(error,  "Invalid data format, please use \"MIDAS\", \"YBOS\", \"ASCII\", \"DUMP\" or \"ROOT\"");
 
         cm_msg(MERROR, "tr_prestart", error);
         return 0;
@@ -2643,6 +3077,30 @@ DWORD  last_time_kb = 0;
 DWORD  last_time_hist = 0;
 DWORD  last_time_stat = 0;
 HNDLE  hktemp;
+
+#ifdef HAVE_ROOT
+char **rargv;
+int rargc;
+
+  /* copy first argument */
+  rargc = 0;
+  rargv = (char **)malloc(sizeof(char *) * 2);
+  rargv[rargc] = (char *)malloc(strlen(argv[rargc])+1);
+  strcpy(rargv[rargc], argv[rargc]);
+  rargc++;
+
+  /* append argument "-b" for batch mode without graphics */
+  rargv[rargc] = (char *)malloc(3);
+  rargv[rargc++] = "-b";
+
+  TApplication theApp("mlogger", &rargc, rargv);
+
+  /* free argument memory */
+  free(rargv[0]);
+  free(rargv[1]);
+  free(rargv);
+
+#endif
 
   /* get default from environment */
   cm_get_environment(host_name, exp_name);
