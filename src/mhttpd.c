@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.145  2000/11/06 14:18:54  midas
+  Don't draw history polygons if no data points present
+
   Revision 1.144  2000/10/12 01:08:02  pierre
   Fix ? for All panel
 
@@ -5999,6 +6002,8 @@ float       upper_limit[MAX_VARS], lower_limit[MAX_VARS];
     goto error;
     }
 
+  ymin = ymax = 0;
+
   for (i=0 ; i<n_vars ; i++)
     {
     if (index != -1 && index != i)
@@ -6368,14 +6373,17 @@ float       upper_limit[MAX_VARS], lower_limit[MAX_VARS];
       yold = ys;
       }
 
-    poly[0].x = xs;
-    poly[0].y = ys;
-    poly[1].x = xs+12;
-    poly[1].y = ys-6;
-    poly[2].x = xs+12;
-    poly[2].y = ys+6;
+    if (n_point[i] > 0)
+      {
+      poly[0].x = xs;
+      poly[0].y = ys;
+      poly[1].x = xs+12;
+      poly[1].y = ys-6;
+      poly[2].x = xs+12;
+      poly[2].y = ys+6;
 
-    gdImageFilledPolygon(im, poly, 3, curve_col[i]);
+      gdImageFilledPolygon(im, poly, 3, curve_col[i]);
+      }
     }
 
   for (i=0 ; i<n_vars ; i++)
