@@ -5,6 +5,9 @@
   Contents:     Disk to Tape copier for background job.
 
   $Log$
+  Revision 1.38  2003/12/12 09:50:32  midas
+  Changed watchdog_timeout from INT to DWORD to avoid compiler warnings
+
   Revision 1.37  2003/12/12 09:48:30  midas
   Removed ^M at each end of line
 
@@ -1207,7 +1210,8 @@ Function value:
   void      *plazy = NULL;
   DWORD     szlazy;
   INT status, no_cpy_last_time=0;
-  INT last_time, cpy_loop_time, watchdog_timeout;
+  INT last_time, cpy_loop_time;
+  DWORD  watchdog_timeout;
   static INT last_error = 0;
   char * pext;
   BOOL   watchdog_flag;
@@ -1419,7 +1423,7 @@ Function value:
   double freepercent, svfree;
   char str[MAX_FILE_PATH], pufile[MAX_FILE_PATH], inffile[MAX_FILE_PATH], outffile[MAX_FILE_PATH];
   BOOL donepurge, watchdog_flag;
-  INT watchdog_timeout;
+  DWORD watchdog_timeout;
   LAZY_INFO * pLch;
   static BOOL eot_reached = FALSE;
 
