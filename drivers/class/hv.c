@@ -6,6 +6,9 @@
   Contents:     High Voltage Class Driver
 
   $Log$
+  Revision 1.8  2002/06/06 08:06:32  midas
+  Implemented DF_xx scheme
+
   Revision 1.7  2002/06/06 07:50:12  midas
   Implemented scheme with DF_xxx flags
 
@@ -77,6 +80,7 @@ typedef struct {
   void   **driver;
   INT    *channel_offset;
   void   **dd_info;
+  DWORD  *flags;
 
 } HV_INFO;
 
@@ -110,6 +114,7 @@ static void free_mem(HV_INFO *hv_info)
   free(hv_info->dd_info);
   free(hv_info->channel_offset);
   free(hv_info->driver);
+  free(hv_info->flags);
 
   free(hv_info);
 }
@@ -295,9 +300,10 @@ EQUIPMENT *pequipment;
     {
     for (i=0,offset=0 ; pequipment->driver[i].name[0] ; i++)
       {
-      status = pequipment->driver[i].dd(CMD_SET_ALL, pequipment->driver[i].dd_info, 
-                                        pequipment->driver[i].channels, 
-                                        hv_info->demand+offset);
+      if ((pequipment->driver[i].flags & DF_READ_ONLY) == 0)
+        status = pequipment->driver[i].dd(CMD_SET_ALL, pequipment->driver[i].dd_info, 
+                                          pequipment->driver[i].channels, 
+                                          hv_info->demand+offset);
 
       offset += pequipment->driver[i].channels;
       }
@@ -322,8 +328,9 @@ EQUIPMENT *pequipment;
         if ((hv_info->demand[i] > hv_info->demand_mirror[i] && hv_info->rampup_speed[i] == 0) ||
             (hv_info->demand[i] < hv_info->demand_mirror[i] && hv_info->rampdown_speed[i] == 0))
           {
-          status = DRIVER(i)(CMD_SET, hv_info->dd_info[i], 
-                             i-hv_info->channel_offset[i], hv_info->demand[i]);
+          if ((hv_info->flags[i] & DF_READ_ONLY) == 0)
+            status = DRIVER(i)(CMD_SET, hv_info->dd_info[i], 
+                               i-hv_info->channel_offset[i], hv_info->demand[i]);
           hv_info->demand_mirror[i] = hv_info->demand[i];
           }
 
@@ -432,8 +439,9 @@ HV_INFO *hv_info;
   hv_info->dd_info          = (void *)  calloc(hv_info->num_channels, sizeof(void*));
   hv_info->channel_offset   = (INT *)   calloc(hv_info->num_channels, sizeof(INT));
   hv_info->driver           = (void *)  calloc(hv_info->num_channels, sizeof(void*));
+  hv_info->flags            = (DWORD *) calloc(hv_info->num_channels, sizeof(void*));
 
-  if (!hv_info->driver)
+  if (!hv_info->flags)
     {
     cm_msg(MERROR, "hv_init", "Not enough memory");
     return FE_ERR_ODB;
@@ -572,6 +580,7 @@ HV_INFO *hv_info;
     hv_info->driver[i] = pequipment->driver[index].dd;
     hv_info->dd_info[i] = pequipment->driver[index].dd_info;
     hv_info->channel_offset[i] = offset;
+    hv_info->flags[i] = pequipment->driver[index].flags;
     }
 
   /* set current limits and initial demand values */
@@ -587,14 +596,28 @@ HV_INFO *hv_info;
 
     printf("\n");
 
-    status = DRIVER(i)(CMD_SET_ALL, pequipment->driver[i].dd_info, 
-                       pequipment->driver[i].channels, hv_info->demand_mirror+offset);
+    if ((hv_info->flags[i] & DF_PRIO_DEVICE) == 0)
+      status = DRIVER(i)(CMD_SET_ALL, pequipment->driver[i].dd_info, 
+                         pequipment->driver[i].channels, hv_info->demand_mirror+offset);
     if (status != FE_SUCCESS)
       return status;
 
     offset += pequipment->driver[i].channels;
     }
   printf("\n");
+
+  /* get demand valus from device if asked for */
+  for (i=0 ; i<hv_info->num_channels ; i++)
+    {
+    if (hv_info->flags[i] & DF_PRIO_DEVICE)
+      {
+      DRIVER(i)(CMD_GET_DEMAND, hv_info->dd_info[i], 
+                i-hv_info->channel_offset[i], &hv_info->demand[i]);
+      hv_info->demand_mirror[i] = hv_info->demand[i];
+      }
+    }
+  db_set_record(hDB, hv_info->hKeyDemand, hv_info->demand, 
+                hv_info->num_channels*sizeof(float), 0);
 
   /* initially read all channels if not too much */
   if (hv_info->num_channels < 256)
