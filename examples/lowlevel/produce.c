@@ -7,6 +7,9 @@
                 ting to a SYSTEM buffer and sending some data.
 
   $Log$
+  Revision 1.6  1999/11/09 13:22:12  midas
+  Changed event size slightly to be above 10
+
   Revision 1.5  1999/10/26 12:26:05  midas
   Added variable event size for test purposes
 
@@ -96,7 +99,7 @@ char          host_name[256];
       for (i=0 ; i<10 ; i++)
         {
         if (variable_size)
-          act_size = (random() + 10) % size;
+          act_size = (random() % (size-10)) + 10;
         else
           act_size = size;
 
@@ -110,6 +113,9 @@ char          host_name[256];
         bm_compose_event((EVENT_HEADER *) event, (short) id, 1,
                          act_size, ((EVENT_HEADER*) (event))->serial_number+1);
 
+        if (act_size < 0)
+          printf("Error: act_size = %d, size = %d\n", act_size, size);
+
         /* now send event */
         status = rpc_send_event(hBuf, event, 
                                 act_size+sizeof(EVENT_HEADER), SYNC);
@@ -118,9 +124,9 @@ char          host_name[256];
 
         if (status != BM_SUCCESS)
           {
-          printf("rpc_send_event returns %d\n", status);
-          printf("Error sending event");
-	        goto error;
+          printf("rpc_send_event returned error %d, event_size %d\n", 
+                  status, act_size);
+          goto error;
           }
 
 /*
