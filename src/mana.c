@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.112  2003/12/18 17:42:12  midas
+  Added 'P' to HROPEN to work with uppercase directories in offline mode
+
   Revision 1.111  2003/12/17 07:59:50  midas
   Improved previous error display
 
@@ -2210,7 +2213,7 @@ BANK_LIST  *bank_list;
         strcpy(str, "BSIZE");
         HBSET(str, HBOOK_LREC, status);
         strcpy(str, "OFFLINE");
-        strcpy(str2, "NQ");
+        strcpy(str2, "NQP");
         HROPEN(1, str, file_name, str2, lrec, status);
         if (status != 0)
           {
