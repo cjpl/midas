@@ -6,6 +6,9 @@
   Contents:     Speaks midas messages (UNIX version)
 
   $Log$
+  Revision 1.6  2000/09/29 09:52:14  midas
+  Replace "isblank" routine which doesn't exist under DECUnix
+
   Revision 1.5  1999/11/29 17:51:29  pierre
   - add daemon startup (-D)
 
@@ -88,7 +91,7 @@ char str[256], *pc, *sp;
     {
       pc = strchr((char *)(message),']')+2;
       sp = pc + strlen(pc) - 1;
-      while (isblank(*sp))
+      while (*sp == ' ' || *sp == '\t')
       	sp--;
       *(++sp) ='\0';
       if (debug) 
