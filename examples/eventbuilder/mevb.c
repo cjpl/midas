@@ -4,6 +4,9 @@ Created by:   Pierre-Andre Amaudruz
 
 Contents:     Main Event builder task.
 $Log$
+Revision 1.17  2004/10/07 22:04:00  pierre
+Doxygen correction
+
 Revision 1.16  2004/10/07 20:08:34  pierre
 1.9.5
 
@@ -886,7 +889,6 @@ where the destination event is going to be composed.
 
 @param fmt Fragment format type 
 @param eq_info Equipement pointer
-@param dest_hBuf  Destination buffer handle
 @return   EB_NO_MORE_EVENT, EB_COMPOSE_TIMEOUT
 if different then SUCCESS (bm_compose, rpc_sent error)
 */
