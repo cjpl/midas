@@ -6,6 +6,11 @@
   Contents:     Disk to Tape copier for background job
 
   $Log$
+  Revision 1.9  1999/10/15 23:13:13  pierre
+  - Added synchronization on purge between list and source dir
+  - fix duplicated copy bug
+  - move mutex outside purge
+
   Revision 1.8  1999/10/15 12:44:19  midas
   Increase timeout
 
@@ -103,9 +108,6 @@ typedef struct {
   double size;
 } DIRLOG;
 
-DIRLOG *pdirlog;
-INT    *pdonelist;
-
 #define LAZY_SETTINGS_STRING "\
 Maintain free space(%) = INT : 0\n\
 Stay behind = INT : -3\n\
@@ -190,9 +192,9 @@ INT  lazy_main (INT, LAZY_INFO *);
 INT  lazy_copy( char * dev, char * file);
 INT  lazy_file_compose(char * fmt , char * dir, INT num, char * ffile, char * file);
 INT  lazy_update_list(LAZY_INFO *);
-INT  lazy_select_purge(HNDLE,  LAZY_INFO *, DIRLOG * plog, char * pufile, INT * run);
+INT  lazy_select_purge(HNDLE,  INT ch, LAZY_INFO *, char * fmt, char * dir, char * pufile, INT * run);
 INT  lazy_load_params( HNDLE hDB, HNDLE hKey );
-void build_log_list(char * fmt, char * dir, DIRLOG ** plog);
+INT  build_log_list(char * fmt, char * dir, DIRLOG ** plog);
 INT  build_done_list(HNDLE, INT **);
 INT  cmp_log2donelist (DIRLOG * plog, INT * pdo);
 INT  lazy_log_update(INT action, INT run, char * label, char * file);
@@ -273,7 +275,7 @@ INT ss_run_extract(char * name)
 }
 
 /*------------------------------------------------------------------*/
-void build_log_list(char * fmt, char * dir, DIRLOG ** plog)
+INT build_log_list(char * fmt, char * dir, DIRLOG ** plog)
 /********************************************************************\
   Routine: build_log_list
   Purpose: build an internal directory file list from the disk directory
@@ -283,13 +285,13 @@ void build_log_list(char * fmt, char * dir, DIRLOG ** plog)
   Output:
     INT     **plog     internal file list struct
   Function value:
+    number of elements
 \********************************************************************/
 {
   INT nfile, i, j;
   char * list = NULL;
   char str[MAX_FILE_PATH];
   DIRLOG temp;
-  
   
   /* substitue %xx by * */
   strcpy (str, fmt);
@@ -340,6 +342,7 @@ void build_log_list(char * fmt, char * dir, DIRLOG ** plog)
       }
     }
   }
+  return nfile;
 }
 
 /*------------------------------------------------------------------*/
@@ -434,7 +437,7 @@ return -1;
 }
 
 /*------------------------------------------------------------------*/
-INT lazy_select_purge(HNDLE hKey, LAZY_INFO * pLall, DIRLOG * plog, char * fpufile, INT * run)
+INT lazy_select_purge(HNDLE hKey, INT channel, LAZY_INFO * pLall, char * fmt, char * dir, char * fpufile, INT * run)
 /********************************************************************\
   Routine: lazy_select_purge
   Purpose: Search oldest run number which can be purged
@@ -454,11 +457,12 @@ INT lazy_select_purge(HNDLE hKey, LAZY_INFO * pLall, DIRLOG * plog, char * fpufi
    -1          run not found
 \********************************************************************/
 {
-  INT *pdonelist, *potherlist, size;
-  INT  i, j, k, status, ndone, nother;
+  DIRLOG *pdirlog=NULL;
+  INT *pdonelist=NULL, *potherlist=NULL, size;
+  INT  i, j, k, status, ndone, nother, nfile;
   BOOL mark;
   char pufile[MAX_FILE_PATH];
-  char dir[256], ff[128];
+  char ddir[256], ff[128];
   char cdir[256], cff[128];
 
   /* Scan donelist from first element (oldest)
@@ -470,64 +474,84 @@ INT lazy_select_purge(HNDLE hKey, LAZY_INFO * pLall, DIRLOG * plog, char * fpufi
   db_get_value(hDB, hKey, "Settings/Data dir", &cdir, &size, TID_STRING);
   size = sizeof(cff);
   db_get_value(hDB, hKey, "Settings/filename format", &cff, &size, TID_STRING);
-  /* build current done list */
-  pdonelist = malloc(sizeof(INT));
-  potherlist = malloc(sizeof(INT));
-  ndone = build_done_list(hKey, &pdonelist);
-  /* try to find the oldest matching run number in the 
-
-  /* build matching dir and ff */
-  for (i=0; i < MAX_LAZY_CHANNEL ; i++)
+  while (1)
   {
-    (pLall+i)->match = FALSE;
-    if (((pLall+i)->hKey) && (hKey != (pLall+i)->hKey))
-    { /* valid channel */
-      size = sizeof(dir);
-      db_get_value(hDB, (pLall+i)->hKey, "Settings/Data dir", &dir, &size, TID_STRING);
-      size = sizeof(ff);
-      db_get_value(hDB, (pLall+i)->hKey, "Settings/filename format", &ff, &size, TID_STRING);
-
-      if ((strcmp(dir, cdir) == 0) && (strcmp(ff, cff) == 0))
-        (pLall+i)->match = TRUE;
-    }  
-  }
-
-  /* scan matching run number */
-  for (i=0; i < MAX_LAZY_CHANNEL ; i++)
-  {
-    if ((pLall+i)->match)
+    /* try to find the oldest matching run present in the list AND on disk */
+    /* build current done list */
+    if (pdonelist == NULL) pdonelist = malloc(sizeof(INT));
+    if (potherlist == NULL) potherlist = malloc(sizeof(INT));
+    ndone = build_done_list(hKey, &pdonelist);
+  
+   /* build matching dir and ff */
+    for (i=0; i < MAX_LAZY_CHANNEL ; i++)
     {
-      /* build done list for that channel */
-      nother = build_done_list((pLall+i)->hKey, &potherlist);
+      (pLall+i)->match = FALSE;
+      if (((pLall+i)->hKey) && (hKey != (pLall+i)->hKey))
+      { /* valid channel */
+        size = sizeof(ddir);
+        db_get_value(hDB, (pLall+i)->hKey, "Settings/Data dir", &ddir, &size, TID_STRING);
+        size = sizeof(ff);
+        db_get_value(hDB, (pLall+i)->hKey, "Settings/filename format", &ff, &size, TID_STRING);
 
-      /* search for run match */
-      for (k=0; k < ndone; k++)
-      {
-        mark = FALSE;
-        for (j=0 ; j < nother ;j++)
-        {
-          if ((potherlist[j] == pdonelist[k]) && (pdonelist[k] != 0))
-             mark = TRUE; 
-        }
-        if (!mark) pdonelist[k] = 0;
-      }      
+        if ((strcmp(ddir, cdir) == 0) && (strcmp(ff, cff) == 0))
+          (pLall+i)->match = TRUE;
+      }  
     }
-  }
 
-  /* Take the first run from pdonelist to purge */
-  for (i=0 ; i < ndone ; i++)
-  {
-    if (pdonelist[i] != 0)
-      break;
+    /* scan matching run number */
+    for (i=0; i < MAX_LAZY_CHANNEL ; i++)
+    {
+      if ((pLall+i)->match)
+      {
+        /* build done list for that channel */
+        nother = build_done_list((pLall+i)->hKey, &potherlist);
+
+        /* search for run match */
+        for (k=0; k < ndone; k++)
+        {
+          mark = FALSE;
+          for (j=0 ; j < nother ;j++)
+          {
+            if ((potherlist[j] == pdonelist[k]) && (pdonelist[k] != 0))
+               mark = TRUE; 
+          }
+          if (!mark) pdonelist[k] = 0;
+        }      
+      }
+    }
+
+    /* Take the first run from pdonelist to purge */
+    for (i=0 ; i < ndone ; i++)
+    {
+      if (pdonelist[i] != 0)
+        break;
+    }
+    /* return -1 if no run found */
+    if (i == ndone)
+      return -1;
+  
+    /* pdonelist[i] is the oldest run common to all the valid channels */    
+    *run = pdonelist[i];
+    if (pdonelist) free (pdonelist); pdonelist=NULL;
+    if (potherlist) free(potherlist); potherlist=NULL;
+
+    /* check if file is in the dir log (exists) */
+    if (pdirlog == NULL) pdirlog = malloc(sizeof(DIRLOG));
+    nfile = build_log_list(fmt, dir, &pdirlog);
+    for (i=0;i<nfile;i++)
+    {
+      if (pdirlog[i].run == *run)
+      {
+        status = lazy_file_compose(lazy.backfmt, lazy.dir, *run, fpufile, pufile);
+        if (pdirlog) free (pdirlog); pdirlog = NULL;
+        return 0;  /* found can be selected */
+      }
+    }
+    if (pdirlog)   free (pdirlog); pdirlog=NULL;
+
+    /* file not found synchronize listings and try again */
+    status=lazy_remove_entry(channel, pLall, *run);
   }
-  /* return -1 if no run found */
-  if (i == ndone)
-    return -1;
-  /* pdonelist[i] is the oldest run common to all the valid channels */    
-  *run = pdonelist[i];
-  if (pdonelist != NULL) free (pdonelist);
-  status = lazy_file_compose(lazy.backfmt, lazy.dir, *run, fpufile, pufile);
-  return 0;
 }
 
 /*------------------------------------------------------------------*/
@@ -612,14 +636,14 @@ int lazy_remove_entry(INT channel, LAZY_INFO * pLall, int run)
 \********************************************************************/
 {
   INT    size, i, j, k;
-  INT    *potherlist, nother;
+  INT    *potherlist=NULL, nother;
   BOOL   found=FALSE;
   HNDLE  hSubkey;
   KEY    key;
 
   /* mark current channel for removing entry too */
   (pLall+channel)->match = TRUE;
-  potherlist = malloc(sizeof(INT));
+  if (potherlist == NULL) potherlist = malloc(sizeof(INT));
 
   /* scan matching run number */
   for (k=0; k < MAX_LAZY_CHANNEL ; k++)
@@ -627,9 +651,9 @@ int lazy_remove_entry(INT channel, LAZY_INFO * pLall, int run)
     if ((pLall+k)->match)
     {
       /* search for the proper array to remove the entry */
-      found = FALSE;
       for (i=0 ; ; i++)
       {
+        found = FALSE;
         if (db_find_key(hDB, (pLall+k)->hKey, "List", &hKey) != DB_SUCCESS)
         {
           cm_msg(MERROR,"lazy_entry_remove","Did not found %s/list", (pLall+k)->name);
@@ -666,8 +690,7 @@ int lazy_remove_entry(INT channel, LAZY_INFO * pLall, int run)
       }
     }
   }
-  if (potherlist != NULL)
-    free ((void *)potherlist);
+  if (potherlist) free (potherlist); potherlist=NULL;
   return 0;
 }
 
@@ -1087,6 +1110,8 @@ INT lazy_main (INT channel, LAZY_INFO * pLall)
   Function value:
 \********************************************************************/
 {
+  DIRLOG *pdirlog=NULL;
+  INT *pdonelist=NULL;
   INT size,cur_acq_run, status, tobe_backup, purun;
   double freepercent, svfree;
   char pufile[MAX_FILE_PATH], inffile[MAX_FILE_PATH], outffile[MAX_FILE_PATH];
@@ -1164,19 +1189,18 @@ INT lazy_main (INT channel, LAZY_INFO * pLall)
   }
   
    /* build logger dir listing */
-  pdirlog = malloc(sizeof(DIRLOG));
+  if (pdirlog == NULL) pdirlog = malloc(sizeof(DIRLOG));
   build_log_list(lazy.backfmt, lazy.dir, &pdirlog);
   
   /* build donelist comparing pdirlog and /Lazy/List */
-  pdonelist = malloc(sizeof(INT));
+  if (pdonelist == NULL) pdonelist = malloc(sizeof(INT));
   build_done_list(pLch->hKey, &pdonelist);
   
   /* compare list : run NOT in donelist AND run in dirlog */
   tobe_backup = cmp_log2donelist (pdirlog, pdonelist);
   /* cleanup memory */
-  if (pdirlog != NULL)   free (pdirlog);
-  if (pdonelist != NULL) free (pdonelist);
-  (void *)pdonelist = (void *)pdirlog = NULL;
+  if (pdirlog)   free (pdirlog); pdirlog = NULL;
+  if (pdonelist) free (pdonelist); pdonelist = NULL;
 
   if (tobe_backup < 0)
     return NOTHING_TODO;
@@ -1195,32 +1219,35 @@ INT lazy_main (INT channel, LAZY_INFO * pLall)
   /* update "maintain free space */
   lazy_maintain_check(pLch->hKey, pLall);
 
+  /***** Lock other clients out of this following code as
+         it may accessing the other client info tree   *****/
+  status = ss_mutex_wait_for(lazy_mutex, 5000);
+  if (status != SS_SUCCESS)
+  {
+    /* exit for now and come back later */
+    if (pdirlog != NULL)   free (pdirlog); pdirlog = NULL;
+    if (pdonelist != NULL) free (pdonelist); pdonelist = NULL;
+
+    return NOTHING_TODO;
+  }
+
   /* check SPACE and purge if necessary = % (1:99) */
   if (lazy.pupercent > 0)
   {
-    pdirlog = malloc(sizeof(DIRLOG));
+    if (pdirlog == NULL) pdirlog = malloc(sizeof(DIRLOG));
     /* cleanup memory */
     donepurge = FALSE;
     svfree = freepercent = 100. * ss_disk_free(lazy.dir) / ss_disk_size(lazy.dir);
 
-    /***** Lock other clients out of this following code as
-           it may access the other client info tree   *****/
-    status = ss_mutex_wait_for(lazy_mutex, 5000);
-    if (status != SS_SUCCESS)
-    {
-      /* exit for now and come back later */
-      if (pdirlog != NULL)   free (pdirlog);
-      if (pdonelist != NULL) free (pdonelist);
-      return NOTHING_TODO;
-    }
-      
+    
+    /* check purging action */
     while (freepercent <= (double)lazy.pupercent)
     {
-      /* rebuild dir listing */
-      build_log_list(lazy.backfmt, lazy.dir, &pdirlog);
-
       /* search file to purge : run in donelist AND run in dirlog */
-      if (lazy_select_purge(pLch->hKey, pLall, pdirlog, pufile, &purun) == 0)
+      /* synchronize donelist to dir log in case user has purged
+         some file by hand. Basically remove the run in the list if the
+         file is not anymore in the source dir. */
+      if (lazy_select_purge(pLch->hKey, channel, pLall, lazy.backfmt, lazy.dir, pufile, &purun) == 0)
       {
         /* check if beyond keep file + 1 */
         if (purun < (cur_acq_run - abs(lazy.staybehind) - 1 ))
@@ -1253,20 +1280,19 @@ INT lazy_main (INT channel, LAZY_INFO * pLall)
         break;
       }
     }
-
-    /***** Release the mutex  *****/
-    status = ss_mutex_release(lazy_mutex);
-  }
+  } /* end of if pupercent > 0 */
   
   /* cleanup memory */
-  if (pdirlog != NULL)   free (pdirlog);
-  if (pdonelist != NULL) free (pdonelist);
-  (void *)pdonelist = (void *)pdirlog = NULL;
+  if (pdirlog != NULL)   free (pdirlog); pdirlog = NULL;
+  if (pdonelist != NULL) free (pdonelist); pdonelist = NULL;
   
   /* check if backup run is beyond keep */
   if (lazyst.cur_run >= (cur_acq_run - abs(lazy.staybehind)))
     return NOTHING_TODO;
   
+  /***** Release the mutex  *****/
+  status = ss_mutex_release(lazy_mutex);
+
   /* Compose the proper file name */
   status = lazy_file_compose(lazy.backfmt , lazy.dir , lazyst.cur_run , inffile, lazyst.backfile);
   if (status != 0)
