@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.44  1999/11/29 14:04:31  midas
+  Fixed bug that with RWNT all events were filled, even if buffer size = 0
+
   Revision 1.43  1999/11/29 11:27:23  midas
   Made HBOOK record size LREC changable via command line parameter -L
 
@@ -461,6 +464,7 @@ typedef struct {
   int       type;
   WORD      format;
   HNDLE     hDefKey;
+  BOOL      disabled;
   } EVENT_DEF;
 
 EVENT_DEF *db_get_event_definition(short int event_id)
@@ -499,6 +503,7 @@ static EVENT_DEF *event_def=NULL;
     event_def[index].event_id = event_id;
     event_def[index].format   = FORMAT_ASCII;
     event_def[index].hDefKey  = 0;
+    event_def[index].disabled = FALSE;
     return &event_def[index];
     }
 
@@ -973,9 +978,15 @@ EVENT_DEF  *event_def;
     /* go through all analyzer requests (events) */
     for (index=0 ; analyze_request[index].event_name[0] ; index++)
       {
+      /* get pointer to event definition */
+      event_def = db_get_event_definition((short int) analyze_request[index].ar_info.event_id);
+
       /* don't book NT if not requested */
       if (analyze_request[index].rwnt_buffer_size == 0)
+        {
+        event_def->disabled = TRUE;
         continue;
+        }
 
       n_tag = 0;
     
@@ -994,7 +1005,6 @@ EVENT_DEF  *event_def;
       if (bank_list == NULL)
         {
         /* book fixed event */
-        event_def = db_get_event_definition((short int) analyze_request[index].ar_info.event_id);
 
         for (i=0 ; ; i++)
           {
@@ -1984,12 +1994,15 @@ KEY         key;
 DWORD       bkname;
 WORD        bktype;
 
-  /* retunr if N-tuples are disabled */
+  /* return if N-tuples are disabled */
   if (!ntuple_flag)
     return SS_SUCCESS;
 
   event_def = db_get_event_definition(pevent->event_id);
   if (event_def == NULL)
+    return SS_SUCCESS;
+
+  if (event_def->disabled)
     return SS_SUCCESS;
 
   /* fill number info */
