@@ -9,6 +9,9 @@
                 for SCS-210 RS232 node
 
   $Log$
+  Revision 1.15  2005/03/08 14:52:32  ritt
+  Adapted SCS_210 to F121 CPU
+
   Revision 1.14  2004/12/13 11:13:43  midas
   Modified terminal mode
 
@@ -110,7 +113,7 @@ void user_init(unsigned char init)
 /*---- User write function -----------------------------------------*/
 
 /* buffers in mscbmain.c */
-extern unsigned char xdata in_buf[300], out_buf[300];
+extern unsigned char xdata in_buf[64], out_buf[64];
 
 #pragma NOAREGS
 
@@ -169,7 +172,7 @@ unsigned char user_func(unsigned char *data_in, unsigned char *data_out)
 /*---- User loop function ------------------------------------------*/
 
 /* external watchdog */
-sbit EWD = P0 ^ 6;
+sbit EWD = P0 ^ 5;
 
 void user_loop(void)
 {

@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol main program
 
   $Log$
+  Revision 1.61  2005/03/08 14:52:32  ritt
+  Adapted SCS_210 to F121 CPU
+
   Revision 1.60  2005/03/08 12:41:32  ritt
   Version 1.9.0
 
@@ -236,7 +239,7 @@ void send_remote_var(unsigned char i);
 
 /* variables in internal RAM (indirect addressing) */
 
-#ifdef CPU_C8051F020
+#if defined(CPU_C8051F020) || defined(CPU_C8051F120)
 unsigned char xdata in_buf[64], out_buf[64]; /* limited by USB block size */
 #else
 unsigned char idata in_buf[20], out_buf[8];
@@ -321,7 +324,7 @@ void setup(void)
    PLL0DIV   = 0x01;
    PLL0FLT   = 0x01;
    PLL0MUL   = 0x04;
-   for (i = 0; i < 15; i++);   // Wait 5us for initialization
+   for (i = 0; i < 15; i++);    // Wait 5us for initialization
    PLL0CN    |= 0x02;
    while ((PLL0CN & 0x10) == 0);
    OSCICN    = 0x83;

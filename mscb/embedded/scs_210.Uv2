@@ -14,13 +14,13 @@ File 2,7,<.\mscb.h><mscb.h> 0x0
 
 
 Options 1,0,0  // Target 'Simulator'
- Device (C8051F020/021)
- Vendor (Cygnal Integrated Products)
- Cpu (IRAM(0 - 0xFF) XRAM(0 - 0xFFF) IROM(0 - 0xFFFF) CLOCK(25000000))
+ Device (C8051F121)
+ Vendor (Silicon Laboratories, Inc.)
+ Cpu (IRAM(0-0xFF) XRAM(0-0x1FFF) IROM(0-0xFFFF) CLOCK(100000000))
  FlashUt ()
- StupF ()
+ StupF ("LIB\STARTUP.A51" ("Standard 8051 Startup Code"))
  FlashDR ()
- Rgf (REG51F020.H)
+ Rgf (C8051F120.H)
  Mem ()
  C ()
  A ()
@@ -63,7 +63,7 @@ Options 1,0,0  // Target 'Simulator'
  OCR51 { 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }
  IRO51 { 1,0,0,0,0,0,0,1,0 }
  IRA51 { 0,0,0,0,0,0,1,0,0 }
- XRA51 { 0,0,0,0,0,0,16,0,0 }
+ XRA51 { 0,0,0,0,0,0,32,0,0 }
  XRA512 { 0,0,0,0,0,0,0,0,0 }
  C51FL=21630224
  C51VA=0
@@ -110,7 +110,7 @@ Options 1,0,0  // Target 'Simulator'
  LX51BIS ()
  LX51DAS ()
  LX51IDS ()
-  OPTDL (S8051.DLL)()(DP51.DLL)(-p51F00)(S8051.DLL)()(TP51.DLL)(-p51F00)
+  OPTDL (S8051.DLL)()(DCYG.DLL)(-pCYGF121)(S8051.DLL)()(TCYG.DLL)(-pCYGF121)
   OPTDBG 1022,-1,()()()()()()()()()() (BIN\SiC8051F.dll)()()()
  FLASH1 { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }
  FLASH2 ()

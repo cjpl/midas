@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol commands
 
   $Log$
+  Revision 1.52  2005/03/08 14:52:32  ritt
+  Adapted SCS_210 to F121 CPU
+
   Revision 1.51  2005/03/08 12:41:31  ritt
   Version 1.9.0
 
@@ -227,14 +230,16 @@
 
 /*--------------------------------*/
 #if defined(SCS_210)
-#include <c8051F020.h>
-#define CPU_C8051F020
+#include <c8051F120.h>
+#define CPU_C8051F120
 #define CPU_CYGNAL
 
 #define LED_0 P3 ^ 4
 #define LED_1 P3 ^ 3
 #define LED_ON 0
 sbit RS485_ENABLE = P3 ^ 5;
+
+#undef USE_WATCHDOG // max. interval is 10ms on F121, not enough for EEPROM
 
 /*--------------------------------*/
 #elif defined(SCS_220)
@@ -318,7 +323,7 @@ sbit RS485_ENABLE = P3 ^ 5;
 sbit RS485_ENABLE = P0 ^ 5;
 sbit RS485_SEC_ENABLE = P0 ^ 4;
 
-#undef USE_WATCHDOG
+#undef USE_WATCHDOG // max. interval is 10ms on F121, not enough for EEPROM
 #define LCD_SUPPORT
 
 /*--------------------------------*/
@@ -334,7 +339,7 @@ sbit RS485_SEC_ENABLE = P0 ^ 4;
 sbit RS485_ENABLE = P0 ^ 5;
 sbit RS485_SEC_ENABLE = P0 ^ 4;
 
-#undef USE_WATCHDOG
+#undef USE_WATCHDOG // max. interval is 10ms on F121, not enough for EEPROM
 #define LCD_SUPPORT
 
 /*--------------------------------*/
