@@ -6,6 +6,9 @@
   Contents:     MIDAS logger program
 
   $Log$
+  Revision 1.7  1999/04/27 15:15:49  midas
+  Added system event in history
+
   Revision 1.6  1998/12/10 12:50:11  midas
   - removed spinning bars "|\-/" which caused terminal hangup if started in bg
   - changed behaviour if logger finds tape with data. Previously the tape was
@@ -46,6 +49,7 @@
 BOOL in_stop_transition = FALSE;
 BOOL auto_restart = FALSE;
 BOOL tape_message = TRUE;
+int  run_state;
 
 LOG_CHN log_chn[MAX_CHANNELS];
 
@@ -55,6 +59,8 @@ struct {
   INT   buffer_size;
   HNDLE hKeyVar;
 } hist_log[MAX_EVENTS];
+
+int hist_period = 10;
 
 HNDLE hDB;
 
@@ -1341,6 +1347,82 @@ BOOL     single_names;
   if (str[0] != 0)
     hs_set_path(str);
 
+  if (db_find_key(hDB, 0, "/History", &hKeyRoot) != DB_SUCCESS)
+    {
+    /* create default history keys */
+    db_set_value(hDB, 0, "/History/Period", &hist_period, sizeof(hist_period), 1, TID_INT);
+
+    if (db_find_key(hDB, 0, "/Equipment/Trigger/Statistics/Events per sec.", &hKeyEq) == DB_SUCCESS)
+      db_create_link(hDB, 0, "/History/Links/Trigger per sec.", "/Equipment/Trigger/Statistics/Events per sec.");
+
+    if (db_find_key(hDB, 0, "/Equipment/Trigger/Statistics/kBytes per sec.", &hKeyEq) == DB_SUCCESS)
+      db_create_link(hDB, 0, "/History/Links/Trigger kB per sec.", "/Equipment/Trigger/Statistics/kBytes per sec.");
+    }
+
+  /* retrieve history period for system event */
+
+  size = sizeof(hist_period);
+  db_get_value(hDB, 0, "/History/Period", &hist_period, &size, TID_INT);
+
+  /* define system history */
+
+  status = db_find_key(hDB, 0, "/History/Links", &hKeyRoot);
+  if (status != DB_SUCCESS)
+    {
+    cm_msg(MERROR, "open_history", "Cannot find /History/Links entry in database");
+    return 0;
+    }
+
+  /* count keys in link list */
+  for (n_var=0 ;; n_var++)
+    {
+    status = db_enum_key(hDB, hKeyRoot, n_var, &hKey);
+    if (status == DB_NO_MORE_SUBKEYS)
+      break;
+    }
+
+  if (n_var == 0)
+    cm_msg(MERROR, "open_history", "system event has no variables in ODB");
+
+  /* create tag array */
+  tag = malloc(sizeof(TAG)*n_var);
+
+  for (i=0,size=0 ; i<n_var ; i++)
+    {
+    status = db_enum_link(hDB, hKeyRoot, i, &hKey);
+    if (status == DB_NO_MORE_SUBKEYS)
+      break;
+
+    /* get link key */
+    db_get_key(hDB, hKey, &varkey);
+    strcpy(tag[i].name, varkey.name);
+
+    /* get link target */
+    db_enum_key(hDB, hKeyRoot, i, &hKey);
+    db_get_key(hDB, hKey, &varkey);
+
+    tag[i].type = varkey.type;
+    tag[i].n_data = varkey.num_values;
+    size += varkey.total_size;
+    }
+
+  hs_define_event(0, "System", tag, sizeof(TAG)*n_var);
+  free(tag);
+
+  /* define system history */
+  
+  hist_log[0].event_id = 0;
+  hist_log[0].hKeyVar = hKeyRoot;
+  hist_log[0].buffer_size = size;
+  hist_log[0].buffer = malloc(size);
+  if (hist_log[0].buffer == NULL)
+    {
+    cm_msg(MERROR, "open_history", "cannot allocate history buffer");
+    return 0;
+    }
+  
+  /* define equipment events */
+
   status = db_find_key(hDB, 0, "/Equipment", &hKeyRoot);
   if (status != DB_SUCCESS)
     {
@@ -1459,29 +1541,29 @@ BOOL     single_names;
       free(tag);
 
       /* setup hist_log structure for this event */
-      hist_log[index].event_id = event_id;
-      hist_log[index].hKeyVar = hKeyVar;
+      hist_log[index+1].event_id = event_id;
+      hist_log[index+1].hKeyVar = hKeyVar;
       db_get_record_size(hDB, hKeyVar, 0, &size); 
-      hist_log[index].buffer_size = size;
-      hist_log[index].buffer = malloc(size);
-      if (hist_log[index].buffer == NULL)
+      hist_log[index+1].buffer_size = size;
+      hist_log[index+1].buffer = malloc(size);
+      if (hist_log[index+1].buffer == NULL)
         {
         cm_msg(MERROR, "open_history", "cannot allocate history buffer");
         return 0;
         }
 
       /* open hot link to variables */
-      status = db_open_record(hDB, hKeyVar, hist_log[index].buffer, 
+      status = db_open_record(hDB, hKeyVar, hist_log[index+1].buffer, 
                               size, MODE_READ, log_history, NULL);
       if (status != DB_SUCCESS)
         cm_msg(MERROR, "open_history", "cannot open variable record for history logging");
       }
     else
       {
-      hist_log[index].event_id = 0;
-      hist_log[index].hKeyVar = 0;
-      hist_log[index].buffer = NULL;
-      hist_log[index].buffer_size = 0;
+      hist_log[index+1].event_id = 0;
+      hist_log[index+1].hKeyVar = 0;
+      hist_log[index+1].buffer = NULL;
+      hist_log[index+1].buffer_size = 0;
       }
     }
 
@@ -1523,8 +1605,41 @@ INT i, size;
     close_history();
     open_history();
     }
+
+  hs_write_event(hist_log[i].event_id, hist_log[i].buffer, hist_log[i].buffer_size);
+}
+
+/*------------------------------------------------------------------*/
+
+void log_system_history()
+{
+INT   i, size, total_size, status;
+HNDLE hKey;
+KEY   key;
+
+  for (i=0,total_size=0 ; ; i++)
+    {
+    status = db_enum_key(hDB, hist_log[0].hKeyVar, i, &hKey);
+    if (status == DB_NO_MORE_SUBKEYS)
+      break;
+
+    db_get_key(hDB, hKey, &key);
+    size = key.total_size;
+    db_get_data(hDB, hKey, (char *)hist_log[0].buffer+total_size, &size, key.type);
+    total_size += size;
+    }
+  
+  if (total_size != hist_log[0].buffer_size)
+    {
+    close_history();
+    open_history();
+    }
   else
-    hs_write_event(hist_log[i].event_id, hist_log[i].buffer, hist_log[i].buffer_size);
+    hs_write_event(0, hist_log[0].buffer, hist_log[0].buffer_size);
+
+  /* simulate odb key update for hot links connected to system history */
+  db_notify_clients(hDB, hist_log[0].hKeyVar, FALSE);
+
 }
 
 /*------------------------------------------------------------------*/
@@ -2035,6 +2150,8 @@ INT    status, msg, i, size, run_number, ch;
 char   host_name[100], exp_name[NAME_LENGTH], dir[256];
 BOOL   debug;
 DWORD  last_time_kb = 0;
+DWORD  last_time_hist = 0;
+HNDLE  hKey;
 
   /* get default from environment */
   cm_get_environment(host_name, exp_name);
@@ -2106,6 +2223,11 @@ usage:
   /* open history logging */
   open_history();
 
+  /* hotlink run state */
+  db_find_key(hDB, 0, "/Runinfo/State", &hKey);
+  if (hKey)
+    db_open_record(hDB, hKey, &run_state, sizeof(run_state), MODE_READ, NULL, NULL);
+  
   /* print startup message */
   size = sizeof(dir);
   db_get_value(hDB, 0, "/Logger/Data dir", dir, &size, TID_STRING);
@@ -2153,6 +2275,14 @@ usage:
         if ((char) ch == '!')
           break;
         }
+      }
+
+    /* check system history */
+    if (ss_millitime() - last_time_hist > (DWORD)hist_period*1000 && 
+        run_state == STATE_RUNNING)
+      {
+      last_time_hist = ss_millitime();
+      log_system_history();
       }
 
     } while (msg != RPC_SHUTDOWN && msg != SS_ABORT && ch != '!');
