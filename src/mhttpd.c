@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.143  2000/10/06 08:34:58  midas
+  Fixed bug which did not display "all" history panel if experiment is defined
+
   Revision 1.142  2000/09/29 20:04:05  pierre
   - Fix & for TID_STRING
 
@@ -6823,7 +6826,7 @@ float  factor[2];
 
         if (exp_name[0])
           {
-          sprintf(ref, "%sHS/%s.gif?exp=%s?magnify=Small", 
+          sprintf(ref, "%sHS/%s.gif?exp=%s&magnify=Small", 
                   mhttpd_url, key.name, exp_name);
           sprintf(ref2, "%sHS/%sexp=%s", 
                   mhttpd_url, key.name, exp_name);
