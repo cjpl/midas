@@ -6,6 +6,9 @@
    Contents:     Dump event on screen with MIDAS or YBOS data format
  
    $Log$
+   Revision 1.11  1999/09/30 22:53:21  pierre
+   - fix return of yb_any_swap
+
    Revision 1.10  1999/09/29 20:36:24  pierre
    - fix yb_any_bank_display
 
@@ -351,7 +354,7 @@ void process_event(HNDLE hBuf, HNDLE request_id, EVENT_HEADER *pheader, void *pe
       }
     }
     else if ((internal_data_fmt==FORMAT_MIDAS)&&
-	     (yb_any_event_swap(FORMAT_MIDAS, pheader) == SS_SUCCESS))
+	     (yb_any_event_swap(FORMAT_MIDAS, pheader) >= YB_SUCCESS))
     { /* ---- MIDAS FMT ---- */
       if (file_mode != YB_NO_RECOVER)
 	      status = yb_file_recompose(pheader, internal_data_fmt, svpath, file_mode);  
