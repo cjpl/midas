@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.30  2001/08/09 07:44:31  midas
+  Changed from absolute pathnames to relative pathnames
+
   Revision 1.29  2001/08/08 14:26:44  midas
   Fixed bug which crashes server on long (>80 chars) attachments
 
@@ -378,10 +381,9 @@ time_t               now;
   /* connect to remote node port 25 */
   memset(&bind_addr, 0, sizeof(bind_addr));
   bind_addr.sin_family      = AF_INET;
-  bind_addr.sin_addr.s_addr = 0;
   bind_addr.sin_port        = htons((short) 25);
 
-  phe = gethostbyname(smtp_host);
+  phe = gethostbyname(smtp_host); 
   if (phe == NULL)
     return -1;
   memcpy((char *)&(bind_addr.sin_addr), phe->h_addr, phe->h_length);
@@ -4095,7 +4097,7 @@ char net_buffer[WEB_BUFFER_SIZE];
 void server_loop(int tcp_port, int daemon)
 {
 int                  status, i, n_error, authorized;
-struct sockaddr_in   bind_addr, acc_addr;
+struct sockaddr_in   serv_addr, acc_addr;
 char                 pwd[256], str[256], cl_pwd[256], *p;
 char                 cookie_wpwd[256], cookie_dpwd[256], boundary[256];
 int                  lsock, len, flag, content_length, header_length;
@@ -4125,40 +4127,19 @@ INT                  last_time=0;
     }
 
   /* bind local node name and port to socket */
-  memset(&bind_addr, 0, sizeof(bind_addr));
-  bind_addr.sin_family      = AF_INET;
-  bind_addr.sin_addr.s_addr = 0;
-  bind_addr.sin_port        = htons((short) tcp_port);
+  memset(&serv_addr, 0, sizeof(serv_addr));
+  serv_addr.sin_family      = AF_INET;
+  serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+  serv_addr.sin_port        = htons((short) tcp_port);
 
-  gethostname(host_name, sizeof(host_name));
-
-  phe = gethostbyname(host_name);
-  if (phe == NULL)
-    {
-    printf("Cannot retrieve host name\n");
-    return;
-    }
-  phe = gethostbyaddr(phe->h_addr, sizeof(int), AF_INET);
-  if (phe == NULL)
-    {
-    printf("Cannot retrieve host name\n");
-    return;
-    }
-
-  /* if domain name is not in host name, hope to get it from phe */
-  if (strchr(host_name, '.') == NULL)
-    strcpy(host_name, phe->h_name);
-
-  memcpy((char *)&(bind_addr.sin_addr), phe->h_addr, phe->h_length);
-
-  status = bind(lsock, (struct sockaddr *)&bind_addr, sizeof(bind_addr));
+  status = bind(lsock, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
   if (status < 0)
     {
     /* try reusing address */
     flag = 1;
     setsockopt(lsock, SOL_SOCKET, SO_REUSEADDR,
                (char *) &flag, sizeof(INT));
-    status = bind(lsock, (struct sockaddr *)&bind_addr, sizeof(bind_addr));
+    status = bind(lsock, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
 
     if (status < 0)
       {
@@ -4169,6 +4150,16 @@ INT                  last_time=0;
       printf("Warning: port %d already in use\n", tcp_port);
     }
 
+  /* get host name for mail notification */
+  gethostname(host_name, sizeof(host_name));
+
+  phe = gethostbyname(host_name);
+  if (phe != NULL)
+    phe = gethostbyaddr(phe->h_addr, sizeof(int), AF_INET);
+
+  /* if domain name is not in host name, hope to get it from phe */
+  if (strchr(host_name, '.') == NULL && phe != NULL)
+    strcpy(host_name, phe->h_name);
 
   /* open configuration file */
   getcfg("dummy", "dummy", str);
@@ -4370,10 +4361,15 @@ INT                  last_time=0;
         }
       else
         {
+        /* use relative pathnames */
+        sprintf(elogd_url, "/");
+
+        /* old code for absolute pathnames
         if (tcp_port == 80)
           sprintf(elogd_url, "http://%s/", host_name);
         else
           sprintf(elogd_url, "http://%s:%d/", host_name, tcp_port);
+        */
         }
 
       /* ask for password if configured */
