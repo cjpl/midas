@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.105  2000/03/03 01:45:13  midas
+  Added web password for mhttpd, added webpasswd command in odbedit
+
   Revision 1.104  2000/03/01 23:06:19  midas
   bk_xxx functions now don't use global variable _pbk
 
@@ -1445,7 +1448,7 @@ INT cm_set_client_info(HNDLE hDB, HNDLE *hKeyClient, char *host_name,
 #ifdef LOCAL_ROUTINES
 {
 INT   status, pid, data, i, index, size;
-HNDLE hKey, hSubkey, hKeyHosts;
+HNDLE hKey, hSubkey;
 char  str[256], name[NAME_LENGTH], orig_name[NAME_LENGTH], pwd[NAME_LENGTH];
 BOOL  call_watchdog, allow;
 PROGRAM_INFO_STR(program_info_str);
@@ -1458,15 +1461,16 @@ PROGRAM_INFO_STR(program_info_str);
     size = sizeof(pwd);
     db_get_data(hDB, hKey, pwd, &size, TID_STRING);
 
-    /* first check rhosts list */
+    /* first check allowed hosts list */
     allow = FALSE;
-    db_find_key(hDB, 0, "/Experiment/Security/rhosts", &hKeyHosts);
-    if (hKeyHosts)
-      {
-      db_find_key(hDB, hKeyHosts, host_name, &hKey);
-      if (hKey)
-        allow = TRUE;
-      }
+    db_find_key(hDB, 0, "/Experiment/Security/Allowed hosts", &hKey);
+    if (hKey && db_find_key(hDB, hKey, host_name, &hKey) == DB_SUCCESS)
+      allow = TRUE;
+
+    /* check allowed programs list */
+    db_find_key(hDB, 0, "/Experiment/Security/Allowed programs", &hKey);
+    if (hKey && db_find_key(hDB, hKey, client_name, &hKey) == DB_SUCCESS)
+      allow = TRUE;
     
     /* now check password */
     if (!allow && 

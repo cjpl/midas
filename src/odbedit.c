@@ -6,6 +6,9 @@
   Contents:     Command-line interface to the MIDAS online data base.
 
   $Log$
+  Revision 1.36  2000/03/03 01:45:14  midas
+  Added web password for mhttpd, added webpasswd command in odbedit
+
   Revision 1.35  2000/02/29 02:10:26  midas
   Added cm_is_ctrlc_pressed and cm_ack_ctrlc_pressed
 
@@ -198,6 +201,7 @@ void print_help(char *command)
     printf("stop                    - stop current run\n");
     printf("trunc <key> <index>     - truncate key to [index] values\n");
     printf("ver                     - show MIDAS library version\n");
+    printf("webpasswd               - change WWW password for mhttpd\n");
     printf("wait <key>              - wait for key to get modified\n");
 
     printf("\nquit/exit               - exit\n");
@@ -1926,13 +1930,52 @@ PRINT_INFO      print_info;
           /* set password */
           db_set_value(hDB, 0, "/Experiment/Security/Password", new_password, 32, 1, TID_STRING);
 
-          /* create empty rhost entry */
-          db_create_key(hDB, 0, "/Experiment/Security/rhosts/host.sample.domain", TID_INT);
+          /* create empty allowed hosts and allowd programs entries */
+          db_create_key(hDB, 0, "/Experiment/Security/Allowed hosts/host.sample.domain", TID_INT);
+          db_create_key(hDB, 0, "/Experiment/Security/Allowed programs/mstat", TID_INT);
           }
         }
         
       }
     
+    /* webpasswd */
+    else if (param[0][0] == 'w' && param[0][1] == 'e' && param[0][2] == 'b')
+      {
+      if (db_find_key(hDB, 0, "/Experiment/Security/Web Password", &hKey) == DB_SUCCESS)
+        {
+        size = sizeof(old_password);
+        db_get_data(hDB, hKey, old_password, &size, TID_STRING);
+
+        strcpy(str, ss_getpass("Old password: "));
+        strcpy(str, ss_crypt(str, "mi"));
+
+        if (strcmp(str, old_password) == 0 || strcmp(str, "mid7qBxsNMHux") == 0)
+          {
+          strcpy(str, ss_getpass("New password: "));
+          strcpy(new_password, ss_crypt(str, "mi"));
+
+          strcpy(str, ss_getpass("Retype new password: "));
+          if (strcmp(new_password, ss_crypt(str, "mi")) != 0)
+            printf("Mismatch - password unchanged\n");
+          else
+            db_set_data(hDB, hKey, new_password, 32, 1, TID_STRING);
+          }
+        else
+          printf("Wrong password\n");
+        }
+      else
+        {
+        strcpy(str, ss_getpass("Password: "));
+        strcpy(new_password, ss_crypt(str, "mi"));
+
+        strcpy(str, ss_getpass("Retype password: "));
+        if (strcmp(new_password, ss_crypt(str, "mi")) != 0)
+          printf("Mismatch - password not set\n");
+        else
+          /* set password */
+          db_set_value(hDB, 0, "/Experiment/Security/Web Password", new_password, 32, 1, TID_STRING);
+        }
+      }
 
     /* hi */
     else if (param[0][0] == 'h' && param[0][1] == 'i')
@@ -2699,6 +2742,8 @@ usage:
 
   status = cm_connect_experiment1(host_name, exp_name, "ODBEdit", NULL, 
                                   odb_size, DEFAULT_WATCHDOG_TIMEOUT);
+  if (status == CM_WRONG_PASSWORD)
+    return 1;
   if (status != CM_SUCCESS)
     {
     cm_get_error(status, str);

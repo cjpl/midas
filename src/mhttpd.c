@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.98  2000/03/03 01:45:13  midas
+  Added web password for mhttpd, added webpasswd command in odbedit
+
   Revision 1.97  2000/03/01 23:04:49  midas
   Avoid analyzer ratio > 1
 
@@ -3639,6 +3642,59 @@ void show_password_page(char *password, char *experiment)
 
 /*------------------------------------------------------------------*/
 
+BOOL check_web_password(char *password, char *redir, char *experiment)
+{
+HNDLE hDB, hkey;
+INT   size;
+char  str[256];
+
+  cm_get_experiment_database(&hDB, NULL);
+
+  /* check for password */
+  db_find_key(hDB, 0, "/Experiment/Security/Web Password", &hkey);
+  if (hkey)
+    {
+    size = sizeof(str);
+    db_get_data(hDB, hkey, str, &size, TID_STRING);
+    if (strcmp(password, str) == 0)
+      return TRUE;
+
+    /* show web password page */
+    rsprintf("HTTP/1.0 200 Document follows\r\n");
+    rsprintf("Server: MIDAS HTTP %s\r\n", cm_get_version());
+    rsprintf("Content-Type: text/html\r\n\r\n");
+
+    rsprintf("<html><head><title>Enter password</title></head><body>\n\n");
+
+    rsprintf("<form method=\"GET\" action=\"%s\">\n\n", mhttpd_url);
+
+    /* define hidden fields for current experiment and destination */
+    if (experiment[0])
+      rsprintf("<input type=hidden name=exp value=\"%s\">\n", experiment);
+    if (redir[0])
+      rsprintf("<input type=hidden name=redir value=\"%s\">\n", redir);
+
+    rsprintf("<table border=1 cellpadding=5>");
+
+    if (password[0])
+      rsprintf("<tr><th bgcolor=#FF0000>Wrong password!</tr>\n");
+
+    rsprintf("<tr><th bgcolor=#A0A0FF>Please enter password to obtain write access</tr>\n");
+    rsprintf("<tr><td align=center><input type=password name=wpwd></tr>\n");
+    rsprintf("<tr><td align=center><input type=submit value=Submit></tr>");
+
+    rsprintf("</table>\n");
+
+    rsprintf("</body></html>\r\n");
+
+    return FALSE;
+    }
+  else
+    return TRUE;
+}
+
+/*------------------------------------------------------------------*/
+
 void show_start_page(void)
 {
 int   i, j, n, size, status;
@@ -4719,7 +4775,7 @@ static char last_password[32];
 
 /*------------------------------------------------------------------*/
 
-void interprete(char *cookie_pwd, char *path, int refresh)
+void interprete(char *cookie_pwd, char *cookie_wpwd, char *path, int refresh)
 /********************************************************************\
 
   Routine: interprete
@@ -4741,7 +4797,7 @@ KEY    key;
 char   str[256], *p, *ps, *pe;
 char   enc_path[256], dec_path[256], eq_name[NAME_LENGTH];
 char   data[10000];
-char   *experiment, *password, *command, *value, *group;
+char   *experiment, *password, *wpassword, *command, *value, *group;
 char   exp_list[MAX_EXPERIMENT][NAME_LENGTH];
 time_t now;
 struct tm *gmt;
@@ -4755,6 +4811,7 @@ struct tm *gmt;
 
   experiment = getparam("exp");
   password = getparam("pwd");
+  wpassword = getparam("wpwd");
   command = getparam("cmd");
   value = getparam("value");
   group = getparam("group");
@@ -4837,7 +4894,10 @@ struct tm *gmt;
     {
     size = sizeof(str);
     db_get_data(hDB, hkey, str, &size, TID_STRING);
-    if (strcmp(cookie_pwd, str) != 0)
+
+    /* check for excemption */
+    db_find_key(hDB, 0, "/Experiment/Security/Allowed programs/mhttpd", &hkey);
+    if (hkey == 0 && strcmp(cookie_pwd, str) != 0)
       {
       show_password_page("", experiment);
       return;
@@ -4866,6 +4926,35 @@ struct tm *gmt;
       rsprintf("Location: %s?exp=%s\n\n<html>redir</html>\r\n", mhttpd_url, exp_name);
     else
       rsprintf("Location: %s\n\n<html>redir</html>\r\n", mhttpd_url);
+    return;
+    }
+
+  if (wpassword[0])
+    {
+    /* check if password correct */
+    if (!check_web_password(ss_crypt(wpassword, "mi"), getparam("redir"), experiment))
+      return;
+    
+    rsprintf("HTTP/1.0 302 Found\r\n");
+    rsprintf("Server: MIDAS HTTP %s\r\n", cm_get_version());
+
+    time(&now);
+    now += 3600;
+    gmt = gmtime(&now);
+    strftime(str, sizeof(str), "%A, %d-%b-%y %H:%M:%S GMT", gmt);
+
+    rsprintf("Set-Cookie: midas_wpwd=%s; path=/; expires=%s\r\n", ss_crypt(wpassword, "mi"), str);
+
+    sprintf(str, "%s%s", mhttpd_url, getparam("redir"));
+    if (exp_name[0])
+      {
+      if (strchr(str, '?'))
+        rsprintf("Location: %s&exp=%s\n\n<html>redir</html>\r\n", str, exp_name);
+      else
+        rsprintf("Location: %s?exp=%s\n\n<html>redir</html>\r\n", str, exp_name);
+      }
+    else
+      rsprintf("Location: %s\n\n<html>redir</html>\r\n", str);
     return;
     }
 
@@ -4911,6 +5000,9 @@ struct tm *gmt;
       return;
       }
 
+    if (!check_web_password(cookie_wpwd, "?cmd=pause", experiment))
+      return;
+
     status = cm_transition(TR_PAUSE, 0, str, sizeof(str), SYNC);
     if (status != CM_SUCCESS && status != CM_DEFERRED_TRANSITION)
       show_error(str);
@@ -4929,6 +5021,9 @@ struct tm *gmt;
       show_error("Run is not paused");
       return;
       }
+
+    if (!check_web_password(cookie_wpwd, "?cmd=resume", experiment))
+      return;
 
     status = cm_transition(TR_RESUME, 0, str, sizeof(str), SYNC);
     if (status != CM_SUCCESS && status != CM_DEFERRED_TRANSITION)
@@ -4951,6 +5046,8 @@ struct tm *gmt;
 
     if (value[0] == 0)
       {
+      if (!check_web_password(cookie_wpwd, "?cmd=start", experiment))
+        return;
       show_start_page();
       }
     else
@@ -4997,6 +5094,9 @@ struct tm *gmt;
       show_error("Run is not running");
       return;
       }
+
+    if (!check_web_password(cookie_wpwd, "?cmd=stop", experiment))
+      return;
 
     status = cm_transition(TR_STOP, 0, str, sizeof(str), SYNC);
     if (status != CM_SUCCESS && status != CM_DEFERRED_TRANSITION)
@@ -5052,6 +5152,10 @@ struct tm *gmt;
 
   if (equal_ustring(command, "set"))
     {
+    sprintf(str, "%s?cmd=set", enc_path);
+    if (!check_web_password(cookie_wpwd, str, experiment))
+      return;
+
     show_set_page(enc_path, dec_path, group, index, value);
     return;
     }
@@ -5068,6 +5172,10 @@ struct tm *gmt;
   
   if (equal_ustring(command, "create"))
     {
+    sprintf(str, "%s?cmd=create", enc_path);
+    if (!check_web_password(cookie_wpwd, str, experiment))
+      return;
+
     show_create_page(enc_path, dec_path, value, index, atoi(getparam("type")));
     return;
     }
@@ -5076,6 +5184,10 @@ struct tm *gmt;
   
   if (equal_ustring(command, "delete"))
     {
+    sprintf(str, "%s?cmd=delete", enc_path);
+    if (!check_web_password(cookie_wpwd, str, experiment))
+      return;
+
     show_delete_page(enc_path, dec_path, value, index);
     return;
     }
@@ -5084,6 +5196,9 @@ struct tm *gmt;
   
   if (equal_ustring(command, "CNAF") || strncmp(path, "/CNAF", 5) == 0)
     {
+    if (!check_web_password(cookie_wpwd, "?cmd=CNAF", experiment))
+      return;
+
     show_cnaf_page();
     return;
     }
@@ -5092,6 +5207,9 @@ struct tm *gmt;
   
   if (equal_ustring(command, "reset all alarms"))
     {
+    if (!check_web_password(cookie_wpwd, "?cmd=reset%20all%20alarms", experiment))
+      return;
+
     al_reset_alarm(NULL);
     redirect("?cmd=alarms");
     return;
@@ -5113,13 +5231,10 @@ struct tm *gmt;
 
   if (equal_ustring(command, "programs"))
     {
-    show_programs_page();
-    return;
-    }
+    if (*getparam("Stop") || *getparam("Start"))
+      if (!check_web_password(cookie_wpwd, "?cmd=programs", experiment))
+        return;
 
-  if (strncmp(command, "start_", 6) == 0 ||
-      strncmp(command, "stop_", 5) == 0)
-    {
     show_programs_page();
     return;
     }
@@ -5156,6 +5271,16 @@ struct tm *gmt;
 
   if (strncmp(path, "EL/", 3) == 0)
     {
+    if (equal_ustring(command, "new") ||
+        equal_ustring(command, "edit") ||
+        equal_ustring(command, "reply") ||
+        equal_ustring(command, "submit"))
+      {
+      sprintf(str, "%s?cmd=%s", path, command);
+      if (!check_web_password(cookie_wpwd, str, experiment))
+        return;
+      }
+
     show_elog_page(dec_path+3);
     return;
     }
@@ -5213,7 +5338,7 @@ struct tm *gmt;
 
 /*------------------------------------------------------------------*/
 
-void decode_get(char *string, char *cookie_pwd, int refresh)
+void decode_get(char *string, char *cookie_pwd, char *cookie_wpwd, int refresh)
 {
 char path[256];
 char *p, *pitem;
@@ -5252,12 +5377,13 @@ char *p, *pitem;
       }
     }
   
-  interprete(cookie_pwd, path, refresh);
+  interprete(cookie_pwd, cookie_wpwd, path, refresh);
 }
 
 /*------------------------------------------------------------------*/
 
-void decode_post(char *string, char *boundary, int length, char *cookie_pwd, int refresh)
+void decode_post(char *string, char *boundary, int length, 
+                 char *cookie_pwd, char *cookie_wpwd, int refresh)
 {
 char *pinit, *p, *pitem, *ptmp, file_name[256], str[256];
 int  n;
@@ -5362,7 +5488,7 @@ int  n;
 
     } while ((INT)string - (INT)pinit < length);
   
-  interprete(cookie_pwd, "EL/", refresh);
+  interprete(cookie_pwd, cookie_wpwd, "EL/", refresh);
 }
 
 /*------------------------------------------------------------------*/
@@ -5383,7 +5509,7 @@ void server_loop(int tcp_port)
 int                  status, i, refresh;
 struct sockaddr_in   bind_addr, acc_addr;
 char                 host_name[256];
-char                 cookie_pwd[256], boundary[256];
+char                 cookie_pwd[256], cookie_wpwd[256], boundary[256];
 int                  lsock, len, flag, content_length, header_length;
 struct hostent       *phe;
 struct linger        ling;
@@ -5591,10 +5717,16 @@ INT                  last_time=0;
 
       /* extract cookies */
       cookie_pwd[0] = 0;
+      cookie_wpwd[0] = 0;
       if (strstr(net_buffer, "midas_pwd=") != NULL)
         {
         strcpy(cookie_pwd, strstr(net_buffer, "midas_pwd=")+10);
         cookie_pwd[strcspn(cookie_pwd, " ;\r\n")] = 0;
+        }
+      if (strstr(net_buffer, "midas_wpwd=") != NULL)
+        {
+        strcpy(cookie_wpwd, strstr(net_buffer, "midas_wpwd=")+11);
+        cookie_wpwd[strcspn(cookie_wpwd, " ;\r\n")] = 0;
         }
 
       refresh = 0;
@@ -5621,11 +5753,12 @@ INT                  last_time=0;
         *(strstr(net_buffer, "HTTP")-1)=0;
 
         /* decode command and return answer */
-        decode_get(net_buffer+4, cookie_pwd, refresh);
+        decode_get(net_buffer+4, cookie_pwd, cookie_wpwd, refresh);
         }
       else
         {
-        decode_post(net_buffer+header_length, boundary, content_length, cookie_pwd, refresh);
+        decode_post(net_buffer+header_length, boundary, content_length, 
+                    cookie_pwd, cookie_wpwd, refresh);
         }
 
       if (return_length != -1)
