@@ -6,6 +6,9 @@
   Contents:     List of MSCB RPC functions with parameters
 
   $Log$
+  Revision 1.11  2003/05/12 10:41:38  midas
+  Fixed compiler warnings
+
   Revision 1.10  2003/05/12 10:30:45  midas
   Fixed name collisions with midas library
 
@@ -56,6 +59,8 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <string.h>
+#include <fcntl.h>
+#include <time.h>
 
 #define closesocket(s) close(s)
 
