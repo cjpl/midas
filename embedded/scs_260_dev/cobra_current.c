@@ -7,6 +7,9 @@
                 and display coil currents.
 
   $Log$
+  Revision 1.5  2005/03/24 23:51:39  ritt
+  Print time
+
   Revision 1.4  2005/03/21 10:52:46  ritt
   Added mcast display
 
@@ -22,6 +25,7 @@
 \********************************************************************/
 
 #include <stdio.h>
+#include <time.h>
 
 #ifdef _MSC_VER
 #include <windows.h>
@@ -30,15 +34,16 @@
 #include <netinet/in.h>
 #endif
 
-#define MCAST_GROUP  "239.208.0.0"
+#define MCAST_GROUP  "239.208.0.1"
 
 main()
 {
    int sock, n;
-   char str[80];
+   char cur_time[80], str[80];
    struct sockaddr_in myaddr, addr;
    struct ip_mreq req;
    int size;
+   time_t now;
 
 #if defined( _MSC_VER )
    {
@@ -78,7 +83,13 @@ main()
       memset(str, 0, sizeof(str));
       n = recvfrom(sock, str, sizeof(str), 0, (struct sockaddr *)&addr, &size);
 
-      /* just print string */
-      printf(str);
+      /* get current time */
+      time(&now);
+      strcpy(cur_time, ctime(&now)+11);
+      cur_time[8] = 0;
+
+      /* print string */
+      printf("%s - %s", cur_time, str);
+
    } while (1);
 }
