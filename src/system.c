@@ -14,6 +14,9 @@
                 Brown, Prentice Hall
 
   $Log$
+  Revision 1.74  2003/07/24 11:09:50  midas
+  Fixed compiler warning under Windows
+
   Revision 1.73  2003/06/25 18:22:53  pierre
   Added pthread support for UNIX version - DBM
 
@@ -5020,7 +5023,7 @@ blockn:  >0 = block number, =0 option not available, <0 errno
   
 #ifdef OS_WINNT
   TAPE_GET_MEDIA_PARAMETERS media;
-  INT size;
+  unsigned long size;
   /* I'm not sure the partition count corresponds to the block count */
   status = GetTapeParameters((HANDLE) channel
 			     , GET_TAPE_MEDIA_INFORMATION 
