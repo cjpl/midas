@@ -6,6 +6,9 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
+  Revision 1.42  2003/12/12 09:19:08  midas
+  Fixed wrong parameter in call to cm_get_watchdog_info()
+
   Revision 1.41  2003/11/24 08:22:46  midas
   Changed timeouts from INT to DWORD, added ignore_timeout to cm_cleanup, adde '-f' flag to ODBEdit 'cleanup'
 
@@ -513,7 +516,7 @@ INT convert_flags;
       break;
 
     case RPC_CM_GET_WATCHDOG_INFO:
-      status = cm_get_watchdog_info(CHNDLE(0), CSTRING(1), CPINT(2), CPINT(3));
+      status = cm_get_watchdog_info(CHNDLE(0), CSTRING(1), CPDWORD(2), CPDWORD(3));
       break;
 
     case RPC_CM_MSG:
