@@ -6,6 +6,9 @@
 #  Contents:     Makefile for MIDAS binaries and examples under unix
 #
 #  $Log$
+#  Revision 1.4  1998/10/28 10:53:20  midas
+#  Added -lutil for linux
+#
 #  Revision 1.3  1998/10/19 17:54:36  pierre
 #  - Add lazylogger task
 #
@@ -110,7 +113,7 @@ endif
 ifeq ($(OSTYPE),linux)
 OS_DIR = linux
 OSFLAGS = -DOS_LINUX -DOS_UNIX
-LIBS = -lbsd
+LIBS = -lbsd -lutil
 endif
 
 #-----------------------
