@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.91  2003/04/23 15:30:17  midas
+  Fixed compiler warnings under g++
+
   Revision 1.90  2003/04/23 15:08:02  midas
   Added TTree output
 
@@ -1740,7 +1743,7 @@ INT LoadRootHistograms(TDirectory *dir, const char *filename)
   dir->cd();
   TFile *inf = new TFile(filename, "READ");
   if (inf == NULL)
-    printf("Error: File \"%\" not found", filename);
+    printf("Error: File \"%s\" not found", filename);
   else
     {
     TIter next(inf->GetListOfKeys());
@@ -2579,7 +2582,7 @@ WORD           bktype;
                 lrs1882[i].geo_addr, lrs1882[i].channel, lrs1882[i].data);
       
             else if ((bktype & 0xFF00) == TID_PCOS3)
-              sprintf(pbuf, ""); /* TBD */
+              sprintf(pbuf, "TBD");
             else
               db_sprintf(pbuf, pdata, size, i, bktype & 0xFF);
 
@@ -4419,7 +4422,7 @@ int status, n;
     {
     if (file->format == MA_FORMAT_MIDAS)
       {
-      if (size < sizeof(EVENT_HEADER))
+      if (size < (int)sizeof(EVENT_HEADER))
         {
         cm_msg(MERROR, "ma_read_event", "Buffer size too small");
         return -1;
@@ -4427,7 +4430,7 @@ int status, n;
 
       /* read event header */
       n = gzread(file->gzfile, pevent, sizeof(EVENT_HEADER));
-      if (n < sizeof(EVENT_HEADER))
+      if (n < (int)sizeof(EVENT_HEADER))
         {
         if (n > 0)
           printf("Unexpected end of file %s, last event skipped\n", file->file_name);
