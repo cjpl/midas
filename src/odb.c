@@ -6,6 +6,9 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.87  2004/03/26 09:33:47  midas
+  Added database record cleanup to db_open_database
+
   Revision 1.86  2004/03/26 09:33:09  midas
   Added database record cleanup to db_open_database
 
@@ -955,7 +958,7 @@ INT db_open_database(char *database_name, INT database_size,
 
 #ifdef LOCAL_ROUTINES
    {
-      INT i, k, status;
+      INT i, status;
       HNDLE handle;
       DATABASE_CLIENT *pclient;
       BOOL shm_created;
@@ -1116,6 +1119,8 @@ INT db_open_database(char *database_name, INT database_size,
       /* Only enable this for systems that define ESRCH and hope that
          they also support kill(pid,0) */
       for (i = 0; i < MAX_CLIENTS; i++) {
+         int k;
+
          errno = 0;
          kill(pheader->client[i].pid, 0);
          if (errno == ESRCH) {
