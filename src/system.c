@@ -14,6 +14,9 @@
                 Brown, Prentice Hall
 
   $Log$
+  Revision 1.59  2002/05/28 11:30:21  midas
+  Made send_tcp() send always all bytes
+
   Revision 1.58  2001/08/22 13:51:46  midas
   Reorganized directio functions
 
@@ -3554,32 +3557,27 @@ INT send_tcp(int sock, char *buffer, DWORD buffer_size, INT flags)
 DWORD count;
 INT   status;
 
-  if (buffer_size <= NET_TCP_SIZE)
-    return send(sock, buffer, buffer_size, flags);
-  else
+  /* transfer fragments until complete buffer is transferred */
+
+  for (count=0 ; (INT)count<(INT)buffer_size-NET_TCP_SIZE ; )
     {
-    /* split buffer in several transfers */
-
-    for (count=0 ; count<buffer_size-NET_TCP_SIZE ; )
-      {
-      status = send(sock, buffer+count, NET_TCP_SIZE, flags);
-      if (status != -1)
-	      count += status;
-      else
-	      return status;
-      }
-
-    while (count<buffer_size)
-      {
-      status = send(sock, buffer+count, buffer_size - count, flags);
-      if (status != -1)
-	      count += status;
-      else
-	      return status;
-      }
-
-    return count;
+    status = send(sock, buffer+count, NET_TCP_SIZE, flags);
+    if (status != -1)
+	    count += status;
+    else
+	    return status;
     }
+
+  while (count<buffer_size)
+    {
+    status = send(sock, buffer+count, buffer_size - count, flags);
+    if (status != -1)
+	    count += status;
+    else
+	    return status;
+    }
+
+  return count;
 }
 
 /*------------------------------------------------------------------*/
