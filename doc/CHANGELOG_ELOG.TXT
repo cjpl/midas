@@ -1,5 +1,19 @@
-Version 1.2.2, released November xth, 2001
-==========================================
+Version 1.2.3, released November 15th, 2001
+===========================================
+
+- Implemented quotation marks for "email <attribute> <value>" in case
+  attribute or value contains blanks
+- Produce error if submitted attachment is too large
+- Fixed crash when nonexisting logbook in URL
+- Changed "options <attribute> = <string>" into
+  "Preset <attribute> = <string>"
+- Added "Preset text = <string> | <file>"
+- Added "Locked attributes"
+- Added "ftp://" and "mailto:" as clickable links
+- Added FAQs in documentation
+
+Version 1.2.2, released November 14th, 2001
+===========================================
 
 - Added User level access control with login/logout and password file
 - Added "Remove on reply"
