@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.130  2004/10/07 00:53:48  midas
+  Implemented templates for histo booking from John O'Donnell
+
   Revision 1.129  2004/10/01 23:35:53  midas
   Removed PRE/POST transitions and implemented sequence order of transitions
 
@@ -468,6 +471,7 @@
 #include <TSystem.h>
 #include <TFolder.h>
 #include <TRint.h>
+#include <TCutG.h>
 
 #ifdef OS_LINUX
 #include <TThread.h>
@@ -1828,13 +1832,16 @@ INT LoadRootHistograms(TFolder * folder, const char *filename)
 
 /*------------------------------------------------------------------*/
 
-// Clear all TH1 objects in the given directory
+// Clear all TH1 objects in the given directory,
+// and it's subdirectories
 INT ClearRootHistograms(TFolder * folder)
 {
-   TIter next(folder->GetListOfFolders());
-   while (TObject * obj = next())
+   TIter next (folder->GetListOfFolders());
+   while (TObject *obj = next())
       if (obj->InheritsFrom("TH1"))
          ((TH1 *) obj)->Reset();
+      else if (obj->InheritsFrom("TFolder"))
+         ClearRootHistograms( (TFolder *)obj);
    return SUCCESS;
 }
 
@@ -3894,48 +3901,7 @@ void update_stats()
 
 #ifdef USE_ROOT
 
-void * h1_book(char *name, char *title, int bins, double min, double max)
-{
-   TH1F *hist;
-
-   /* check if histo already exists */
-   if (!gHistoFolderStack->Last())
-      hist = (TH1F *) gManaHistosFolder->FindObjectAny(name);
-   else
-      hist = (TH1F *) ((TFolder *)gHistoFolderStack->Last())->FindObjectAny(name);
-
-   if (hist == NULL) {
-      hist = new TH1F(name, title, bins, min, max);
-      if (!gHistoFolderStack->Last())
-         gManaHistosFolder->Add(hist);
-      else
-         ((TFolder *)gHistoFolderStack->Last())->Add(hist);
-   }
-
-   return hist;
-}
-
-void * h2_book(char *name, char *title, int xbins, double xmin, double xmax,
-                                        int ybins, double ymin, double ymax)
-{
-   TH2F *hist;
-
-   /* check if histo already exists */
-   if (!gHistoFolderStack->Last())
-      hist = (TH2F *) gManaHistosFolder->FindObjectAny(name);
-   else
-      hist = (TH2F *) ((TFolder *)gHistoFolderStack->Last())->FindObjectAny(name);
-
-   if (hist == NULL) {
-      hist = new TH2F(name, title, xbins, xmin, xmax, ybins, ymin, ymax);
-      if (!gHistoFolderStack->Last())
-         gManaHistosFolder->Add(hist);
-      else
-         ((TFolder *)gHistoFolderStack->Last())->Add(hist);
-   }
-
-   return hist;
-}
+/* h1_book and h2_book are now templates in midas.h */
 
 void open_subfolder(char *name)
 {
@@ -3945,8 +3911,21 @@ void open_subfolder(char *name)
    if (!current)
       current = gManaHistosFolder;
 
-   TFolder *subfolder = new TFolder(name, name);
-   current->Add(subfolder);
+   // if the subfolder already exists, use it
+   TFolder *subfolder = 0;
+
+   TCollection *listOfSubFolders = current->GetListOfFolders();
+   TIter iter(listOfSubFolders);
+   while (TObject *obj = iter()) {
+      if (strcmp( obj->GetName(), name) == 0 && obj->InheritsFrom( "TFolder"))
+ 	      subfolder = (TFolder *) obj;
+   }
+
+   if (! subfolder) {
+      subfolder = new TFolder(name, name);
+      current->Add(subfolder);
+   }
+
    gHistoFolderStack->Add(subfolder);
 }
 
