@@ -6,6 +6,9 @@
   Contents:     Header fiel for MSCB funcions
 
   $Log$
+  Revision 1.22  2003/04/03 08:21:44  midas
+  Added submaster check
+
   Revision 1.21  2003/03/25 09:42:57  midas
   Added debugging facility
 
@@ -217,6 +220,7 @@ typedef struct {
 #define MSCB_MUTEX         5
 #define MSCB_FORMAT_ERROR  6
 #define MSCB_NO_MEM        7
+#define MSCB_SUBM_ERROR    8
 
 /*---- Byte and Word swapping big endian <-> little endian ---------*/
 #define WORD_SWAP(x) { unsigned char _tmp;                               \
