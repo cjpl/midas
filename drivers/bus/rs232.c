@@ -6,6 +6,9 @@
   Contents:     RS232 communication routines for MS-DOS and NT
 
   $Log$
+  Revision 1.7  2001/01/05 15:30:56  midas
+  *** empty log message ***
+
   Revision 1.6  2001/01/05 15:20:44  midas
   Fixed wrong error return value
 
@@ -558,7 +561,7 @@ DWORD written;
 
 int rs232_gets(RS232_INFO *info, char *str, int size, char *pattern, int timeout)
 {
-int           i, l;
+int           status, i, l;
 COMMTIMEOUTS  CommTimeOuts;
 
   GetCommTimeouts((HANDLE) info->fd, &CommTimeOuts );
