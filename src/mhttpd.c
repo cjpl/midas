@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.251  2003/05/19 11:52:22  midas
+  Fixed bug with content_length
+
   Revision 1.250  2003/05/17 15:59:05  midas
   Frontend displayed correctly when running FAL
 
@@ -10339,6 +10342,7 @@ struct linger        ling;
       memset(net_buffer, 0, sizeof(net_buffer));
       len = 0;
       header_length = 0;
+      content_length = 0;
       n_error = 0;
       do
         {
@@ -10410,8 +10414,6 @@ struct linger        ling;
           if (n_error == 100)
             goto error;
           }
-
-        content_length = 0;
 
         /* finish when empty line received */
         if (strstr(net_buffer, "GET") != NULL && strstr(net_buffer, "POST") == NULL)
