@@ -6,6 +6,14 @@
   Contents:     Command-line interface to the MIDAS online data base.
 
   $Log$
+  Revision 1.10  1998/10/29 14:57:46  midas
+  - ODBEDIT prompt can now be modified under /System/Prompt with
+  %h host, %e experiment, %t time, %s state (single letter), %S state (string),
+  %p directory, %P full path, similar to the UNIX prompt
+  - Correct experiment name now shows up in prompt
+  - If a stopped run is stopped again, a warning is issued
+  - Run parameters are queried with edit capabilities
+
   Revision 1.9  1998/10/23 14:21:51  midas
   - Modified version scheme from 1.06 to 1.6.0
   - cm_get_version() now returns versino as string
@@ -809,10 +817,91 @@ void compose_name(char *pwd, char *name, char *full_name)
 
 /*------------------------------------------------------------------*/
 
+void assemble_prompt(char *prompt, char *host_name, char *exp_name, char *pwd)
+{
+HNDLE  hDB;
+char   mask[256], str[32];
+int    state, size;
+char   *pp, *pm, *pc;
+time_t now;
+
+char  *state_char[] = { "U", "S", "P", "R" };
+char  *state_str[]  = { "Unknown", "Stopped", "Paused", "Running" };
+
+  cm_get_experiment_database(&hDB, NULL);
+
+  size = sizeof(mask);
+  strcpy(mask, "[%h:%e:%s]%p>");
+  db_get_value(hDB, 0, "/System/Prompt", mask, &size, TID_STRING);
+
+  state = STATE_STOPPED;
+  size = sizeof(state);
+  db_get_value(hDB, 0, "/Runinfo/State", &state, &size, TID_INT);
+  if (state > STATE_RUNNING)
+    state = 0;
+
+  pm = mask;
+  pp = prompt;
+  do
+    {
+    if (*pm != '%')
+      {
+      *pp++ = *pm++;
+      *pp = 0;
+      }
+    else
+      {
+      switch (*++pm)
+        {
+        case 't':
+          time(&now);
+          strcpy(str, ctime(&now));
+          str[19] = 0;
+          strcpy(pp, str+11);
+          break;
+        case 'h':
+          if (host_name[0])
+            strcat(pp, host_name);
+          else
+            strcat(pp, "local");
+          break;
+        case 'e':
+          if (exp_name[0])
+            strcat(pp, exp_name);
+          else
+            strcat(pp, "Default");
+          break;
+        case 's':
+          strcat(pp, state_char[state]);
+          break;
+        case 'S':
+          strcat(pp, state_str[state]);
+          break;
+        case 'P':
+          strcat(pp, pwd);
+          break;
+        case 'p':
+          pc = pwd+strlen(pwd)-1;
+          while (*pc != '/' && pc != pwd)
+            pc--;
+          if (pc == pwd)
+            strcat(pp, pwd);
+          else
+            strcat(pp, pc+1);
+          break;
+        }
+      pm++;
+      pp += strlen(pp);
+      }
+    } while (*pm);
+}
+
+/*------------------------------------------------------------------*/
+
 void command_loop(char *host_name, char *exp_name, char *cmd, char *start_dir)
 {
 INT             status, i, j, state, size, old_run_number, new_run_number, channel;
-char            line[256];
+char            line[256], prompt[256];
 char            param[10][100];
 char            str[256], name[256], *pc, data_str[256];
 char            old_password[32], new_password[32];
@@ -826,7 +915,6 @@ FILE            *cmd_file = NULL;
 DWORD           last_msg_time=0;
 char            message[256], client_name[256];
 INT             n1, n2;
-char            *state_char[] = { "U", "S", "P", "R" };
 
   cm_get_experiment_database(&hDB, &hKeyClient);
   
@@ -859,34 +947,11 @@ char            *state_char[] = { "U", "S", "P", "R" };
     /* print prompt */
     if (cmd[0] == 0)
       {
-      strcpy(str, "[");
-      if (host_name[0])
-        strcat(str, host_name);
-      else strcat(str, "local");
-        if (exp_name[0] && strcmp(exp_name, "Default") != 0)
-          {
-          strcat(str, ":");
-          strcat(str, exp_name);
-          }
-      state = STATE_STOPPED;
-      size = sizeof(state);
-      db_get_value(hDB, 0, "/Runinfo/State", &state, &size, TID_INT);
-      strcat(str, ":");
-      if (state > STATE_RUNNING)
-        state = 0;
-      strcat(str, state_char[state]);
-      strcat(str, "]");
-      pc = pwd+strlen(pwd)-1;
-      while (*pc != '/' && pc != pwd)
-        pc--;
-      if (pc == pwd)
-        strcat(str, pwd);
-      else
-        strcat(str, pc+1);
-      strcat(str, ">");
+      assemble_prompt(prompt, host_name, exp_name, pwd);
 
       in_cmd_edit = TRUE;
-      cmd_edit(str, line, cmd_dir, cmd_idle);
+      line[0] = 0;
+      cmd_edit(prompt, line, cmd_dir, cmd_idle);
       in_cmd_edit = FALSE;
       }
     else if (cmd[0] != '@')
@@ -1742,10 +1807,12 @@ char            *state_char[] = { "U", "S", "P", "R" };
                 for (j=0 ; j<key.num_values ; j++)
                   {
                   db_sprintf(data_str, data, key.item_size, j, key.type);
-                  printf("%s [%s]: ", str, data_str);
+                  sprintf(prompt, "%s : ", str);
 
-                  line[0] = 0;
-                  ss_gets(line, 256);
+                  strcpy(line, data_str);
+                  in_cmd_edit = TRUE;
+                  cmd_edit(prompt, line, NULL, cmd_idle);
+                  in_cmd_edit = FALSE;
 
                   if (line[0])
                     {
@@ -1807,13 +1874,25 @@ char            *state_char[] = { "U", "S", "P", "R" };
         }
       else
         {
-        i = 1;
-        db_set_value(hDB, 0, "/Runinfo/Transition in progress", &i, sizeof(INT), 1, TID_INT);
-        status = cm_transition(TR_STOP, 0, str, sizeof(str), SYNC);
-        if (status != CM_SUCCESS)
-          printf("Error: %s\n", str);
-        i = 0;
-        db_set_value(hDB, 0, "/Runinfo/Transition in progress", &i, sizeof(INT), 1, TID_INT);
+        /* check if run is stopped */
+        state = STATE_STOPPED;
+        size = sizeof(i);
+        db_get_value(hDB, 0, "/Runinfo/State", &state, &size, TID_INT);
+        if (state == STATE_STOPPED)
+          {
+          printf("Run is already stopped. Stop again? (y/[n]) ");
+          i = getchar();
+          }
+        if (i == 'y' || state != STATE_STOPPED)
+          {
+          i = 1;
+          db_set_value(hDB, 0, "/Runinfo/Transition in progress", &i, sizeof(INT), 1, TID_INT);
+          status = cm_transition(TR_STOP, 0, str, sizeof(str), SYNC);
+          if (status != CM_SUCCESS)
+            printf("Error: %s\n", str);
+          i = 0;
+          db_set_value(hDB, 0, "/Runinfo/Transition in progress", &i, sizeof(INT), 1, TID_INT);
+          }
         }
       }
     
@@ -1910,6 +1989,7 @@ char            *state_char[] = { "U", "S", "P", "R" };
       do
         {
         in_cmd_edit = TRUE;
+        message[0] = 0;
         cmd_edit("> ", message, NULL, cmd_idle);
         in_cmd_edit = FALSE;
 
@@ -2077,10 +2157,11 @@ odbedit(char *ahost_name, char *aexp_name)
 main(int argc, char *argv[])
 #endif
 {
-INT           status, i, odb_size;
+INT           status, i, odb_size, size;
 char          host_name[100], exp_name[NAME_LENGTH];
 char          cmd[100], dir[100], str[256];
 BOOL          debug;
+HNDLE         hDB;
 
   cmd[0] = dir[0] = 0;
   odb_size = DEFAULT_ODB_SIZE;
@@ -2149,6 +2230,14 @@ usage:
   /* turn off watchdog if in debug mode */
   if (debug)
     cm_set_watchdog_params(TRUE, 0);
+
+  /* get experiment name */
+  if (!exp_name[0])
+    {
+    cm_get_experiment_database(&hDB, NULL);
+    size = NAME_LENGTH;
+    db_get_value(hDB, 0, "/Experiment/Name", exp_name, &size, TID_STRING);
+    }
 
   /* command loop */
   command_loop(host_name, exp_name, cmd, dir);
