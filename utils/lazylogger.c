@@ -6,6 +6,9 @@
   Contents:     Disk to Tape copier for background job
 
   $Log$
+  Revision 1.10  1999/06/30 14:43:00  midas
+  Increased str length in lazy_log_updata
+
   Revision 1.9  1999/06/23 09:48:42  midas
   Added FTP functionality
 
@@ -141,7 +144,7 @@ INT lazy_log_update(INT action, INT index, INT run, char * label, char * file);
 /*------------------------------------------------------------------*/
 INT lazy_log_update(INT action, INT index, INT run, char * label, char * file)
 {
-  char str[80];
+  char str[MAX_FILE_PATH];
   
   /* log Lazy logger to midas.log only */
   if (action == NEW_FILE)
