@@ -6,6 +6,9 @@
   Contents:     Magnetic tape manipulation program for MIDAS tapes
 
   $Log$
+  Revision 1.8  1998/10/29 15:54:32  midas
+  Added detection of other than MIDAS files on tape
+
   Revision 1.7  1998/10/29 15:34:02  midas
   Added end-of-tape detection under UNIX
 
@@ -38,15 +41,18 @@ BOOL verbose = FALSE;
 
 INT tape_dir(INT channel, INT count)
 {
-EVENT_HEADER event;
+EVENT_HEADER *event;
+char         buffer[1024];
 INT          status, size, index;
+FILE         *f;
 
+  event = (EVENT_HEADER *) buffer;
   for (index=0 ; index<count ; index++)
     {
     /* read event header at current position */
-    size = sizeof(event);
-    status = ss_tape_read(channel, &event, &size);
-    if (size != sizeof(event))
+    size = sizeof(buffer);
+    status = ss_tape_read(channel, buffer, &size);
+    if (size != sizeof(buffer))
       {
       if (status == SS_END_OF_TAPE)
         {
@@ -58,11 +64,21 @@ INT          status, size, index;
       }
 
     /* check if data is real MIDAS header */
-    if (event.event_id != EVENTID_BOR || event.trigger_mask != MIDAS_MAGIC)
+    if (event->event_id != EVENTID_BOR || event->trigger_mask != MIDAS_MAGIC)
+      {
+#ifdef OS_UNIX
+      f = fopen("/tmp/.mt", "w");
+      fwrite(buffer, sizeof(buffer), 1, f);
+      fclose(f);
+      system("file -b /tmp/.mt");
+      unlink("/tmp/.mt");
+#else
       printf("Data on tape is no MIDAS data\n");
+#endif
+      }
     else
-      printf("Found run #%d recorded on %s", event.serial_number, 
-              ctime(&event.time_stamp));
+      printf("Found run #%d recorded on %s", event->serial_number, 
+              ctime(&event->time_stamp));
 
     if (index < count-1)
       {
