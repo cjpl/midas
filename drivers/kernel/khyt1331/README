@@ -26,6 +26,8 @@ RedHat 7.1. It could be ported back to the 2.2.x kernel because no special
 feature of 2.4.x are used, although many data structures and function parameters
 have changed between 2.2 and 2.4, which makes the porting a bit painful.
 
+The driver supports only one 5331 card with up to four CAMAC crates.
+
 Two test applications, "camactest.c" for the MCSTD calls, and "esonetest.c" for
 the ESONE calls are supplied in this distribution. They demonstrate basic data
 IO and the usage of asynchronous LAM service routines.
@@ -33,8 +35,6 @@ IO and the usage of asynchronous LAM service routines.
 
 Installation
 ============
-
-Please check if a newer version of the driver is available from 
 
 A makefile comes with this distribution which builds the kernel driver, the
 library and the test programs. If "make" works fine on a system, it can be
@@ -80,6 +80,14 @@ This should produce some output like this:
 The driver only allows one process at a time to open the device. Thus if a
 process has the device open, its PID is displayed.
 
+If the driver should be started automatically after a reboot, one can put
+following line into /etc/modules.conf
+
+  alias char-major-60 khyt1331
+
+This causes the kernel to load the driver from the
+/lib/modules/2.4.x/kernel/drivers/char/khyt1331.o as soon as a program tries
+to access the /etc/camac device. 
 
 Running the test programs
 =========================
@@ -90,14 +98,42 @@ back a value from crate 0, station 1. Putting a standard CAMAC dataway display i
 "online-mode" into slot one should make the program work. The programs then wait
 in an infinite loop to receive interrupts (LAMS) from station 1. This can be done
 with most dataway display by pressing their "LAM" button. This tests the whole
-chain of interrupt flow going through the CAMAC controller, the PCI card,
-into the kernel, and via signalling into the user space routine.
+chain of interrupt flow going through the CAMAC controller, the PCI card, into
+the kernel, and via signalling into the user space routine.
 
-It should be noted that kernel mode switches and interrupt response times are
-much faster than in earlier days. On a 233 MHz PII with kernel 2.4.2 a typical
-time of 8.6us for a 16-bit CAMAC write has been measured and a interrupt response
-time (time of first CAMAC access from user code minus time of external signal,
-measured with an oscilloscope) of 40us has been measured. On a 933 MHz PIII,
-these times were 6.3us and 26us, respectively.
 
+Performance
+===========
+
+Writing device drivers running in kernel mode always causes some overhead for
+device context switches, especially when dealing with interrupts. Due to
+optimized kernel design and faster PCs this situation has become better.
+
+On a 233 MHz PII with kernel 2.4.2 a typical time of 8.6us for a 16-bit random
+CAMAC write has been measured and a interrupt response time (time of first CAMAC
+access from user code minus time of external signal, measured with an
+oscilloscope) of 40us has been measured. On a 933 MHz PIII, these times were
+6.3us and 26us, respectively. If the CAMAC access is done without user-mode /
+kernel-mode switches (like in a loop directly in the driver), the time for the
+16-bit CAMAC access is 4.2us, which is then limited only by the communication
+between 5331 PCI interface and the 1331 CAMAC controller.
+
+
+Obtaining the latest version
+============================
+
+The latest version of this package can be obtained from
+
+http://midas.psi.ch/download/khyt1331-latest.tar.gz
+
+or via CVSWEB from 
+
+http://midas.psi.ch/cgi-bin/cvsweb/midas/drivers/kernel/khyt1331/
+
+
+
+
+
+------------------------
+Stefan Ritt, August 2001
 
