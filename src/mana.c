@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.88  2003/04/22 12:07:22  midas
+  Made mana.c compile under Visual C++, added TApplication to make select() work
+
   Revision 1.87  2003/04/21 03:22:59  olchansk
   remove \t
   fix missing calls to CloseRootOutputFile()
@@ -315,7 +318,10 @@
 
 #ifdef HAVE_ROOT
 
+#undef GetCurrentTime
+
 #include <assert.h>
+#include <TApplication.h>
 #include <TROOT.h>
 #include <TH1.h>
 #include <TFile.h>
@@ -399,6 +405,8 @@ INT CloseRootOutputFile()
   
   // go to ROOT root directory
   gROOT->cd();
+
+  return SUCCESS;
 }
 
 #endif /* HAVE_ROOT */
@@ -2250,7 +2258,7 @@ WORD           bktype;
                 }
 
               /* shift data pointer to next item */
-              (char *) pdata += key.item_size*key.num_values;
+              pdata = (char *) pdata + key.item_size*key.num_values;
               }
           }
         else
@@ -2335,7 +2343,7 @@ WORD           bktype;
           }
 
         /* shift data pointer to next item */
-        (char *) pdata += key.item_size*key.num_values;
+        pdata = (char *) pdata + key.item_size*key.num_values;
         }
       }
     }
@@ -3059,7 +3067,7 @@ WORD           bktype;
             }
 
           /* shift data pointer to next item */
-          (char *) pdata += key.item_size*key.num_values;
+          pdata = (char *) pdata + key.item_size*key.num_values;
           }
         }
       else
@@ -3542,7 +3550,6 @@ INT loop_online()
 INT      status = SUCCESS;
 DWORD    last_time_loop, last_time_update, actual_time;
 int      ch;
-FILE     *f;
 char     str[256];
 
   /* load previous online histos */
@@ -3553,6 +3560,8 @@ char     str[256];
       add_data_dir(str, out_info.last_histo_filename);
 
 #ifdef HAVE_HBOOK
+    {
+    FILE *f;
     f = fopen(str, "r");
     if (f != NULL)
       {
@@ -3564,6 +3573,7 @@ char     str[256];
       if (HEXIST(100000))
         HDELET(100000);
       }
+    }
 #endif /* HAVE_HBOOK */
 
 #ifdef HAVE_ROOT
@@ -5192,6 +5202,30 @@ INT status;
     strcat(str, " ");
     }
   PVM_DEBUG("Analyzer started: %s", str);
+#endif
+
+#ifdef HAVE_ROOT
+char **rargv;
+int rargc;
+
+  /* copy first argument */
+  rargc = 0;
+  rargv = (char **)malloc(sizeof(char *) * 2);
+  rargv[rargc] = (char *)malloc(strlen(argv[rargc])+1);
+  strcpy(rargv[rargc], argv[rargc]);
+  rargc++;
+
+  /* append argument "-b" for batch mode without graphics */
+  rargv[rargc] = (char *)malloc(3);
+  rargv[rargc++] = "-b";
+
+  TApplication theApp("mlogger", &rargc, rargv);
+
+  /* free argument memory */
+  free(rargv[0]);
+  free(rargv[1]);
+  free(rargv);
+
 #endif
 
   /* get default from environment */
