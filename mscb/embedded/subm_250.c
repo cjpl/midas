@@ -7,6 +7,9 @@
                 SUBM250 running on Cygnal C8051F320
 
   $Log$
+  Revision 1.3  2004/03/10 10:28:48  midas
+  Implemented test block write for speed tests
+
   Revision 1.2  2004/03/09 14:19:08  midas
   Increased default timeout
 
@@ -69,6 +72,16 @@ extern void watchdog_refresh(void);
 
 #define GET_INFO_GENERAL   0
 #define GET_INFO_VARIABLE  1
+
+/*------------------------------------------------------------------*/
+
+#define RS485_FLAG_BIT9      (1<<0)
+#define RS485_FLAG_NO_ACK    (1<<1)
+#define RS485_FLAG_SHORT_TO  (1<<2)
+#define RS485_FLAG_LONG_TO   (1<<3)
+#define RS485_FLAG_CMD       (1<<4)
+
+unsigned char rs485_flags;
 
 /*------------------------------------------------------------------*/
 
@@ -162,6 +175,9 @@ void yield()
 
 /*------------------------------------------------------------------*/
 
+sbit led_0 = LED_0;
+sbit led_1 = LED_1;
+
 void execute()
 {
    if (usb_rx_buf[1] == MCMD_INIT) {
@@ -176,17 +192,15 @@ void execute()
       usb_tx_buf[1] = 0;  // reserved for future use
       usb_send(usb_tx_buf, 2);
    }
+
+   if (usb_rx_buf[1] == RS485_FLAG_CMD) {
+      /* just blink LED, discard data */
+      led_1 = !led_1;
+   }
+
 }
 
 /*------------------------------------------------------------------*/
-
-#define RS485_FLAG_BIT9      (1<<0)
-#define RS485_FLAG_NO_ACK    (1<<1)
-#define RS485_FLAG_SHORT_TO  (1<<2)
-#define RS485_FLAG_LONG_TO   (1<<3)
-#define RS485_FLAG_CMD       (1<<4)
-
-unsigned char rs485_flags;
 
 unsigned char rs485_send()
 {
@@ -273,8 +287,6 @@ unsigned char i, n;
   Main loop
 
 \*------------------------------------------------------------------*/
-
-sbit led0 = P1 ^ 2;
 
 void main(void)
 {

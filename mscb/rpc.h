@@ -6,6 +6,9 @@
   Contents:     Header fiel for MSCB RPC funcions
 
   $Log$
+  Revision 1.15  2004/03/10 10:28:48  midas
+  Implemented test block write for speed tests
+
   Revision 1.14  2004/03/09 14:19:33  midas
   Fixed problems with write/read of strings
 
@@ -144,6 +147,7 @@ typedef struct {
 #define RPC_MSCB_ECHO             16
 #define RPC_MSCB_SET_NAME         17
 #define RPC_MSCB_ADDR             18
+#define RPC_MSCB_WRITE_BLOCK      19
 
 /*------------------------------------------------------------------*/
 
