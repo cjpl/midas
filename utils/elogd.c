@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.5  2001/05/23 08:16:41  midas
+  Fixed bug when POST request comes in two blocks
+
   Revision 1.4  2001/05/22 11:32:59  midas
   Added Help button
 
@@ -1633,7 +1636,7 @@ void show_error(char *error)
   rsprintf("Server: ELOG HTTP 1.0\r\n");
   rsprintf("Content-Type: text/html\r\n\r\n");
 
-  rsprintf("<html><head><title>MIDAS error</title></head>\n");
+  rsprintf("<html><head><title>ELOG error</title></head>\n");
   rsprintf("<body><H1>%s</H1></body></html>\n", error);
 }
 
@@ -1714,7 +1717,7 @@ time_t now;
   rsprintf("Server: ELOG HTTP 1.0\r\n");
   rsprintf("Content-Type: text/html\r\n\r\n");
 
-  rsprintf("<html><head><title>MIDAS ELog</title></head>\n");
+  rsprintf("<html><head><title>ELOG</title></head>\n");
   rsprintf("<body><form method=\"POST\" action=\"%s%s\" enctype=\"multipart/form-data\">\n", 
             elogd_url, logbook);
 
@@ -1867,7 +1870,7 @@ time_t now;
     rsprintf("<tr><td colspan=2 align=center bgcolor=#8080FF>If no attachment are resubmitted, the original ones are kept</tr>\n");
 
   /* attachment */
-  rsprintf("<tr><td colspan=2 align=center>Enter attachment filename(s) or ODB tree(s), use \"\\\" as an ODB directory separator:</tr>");
+  rsprintf("<tr><td colspan=2 align=center>Enter attachment filename(s):</tr>");
 
   if (odb_att)
     {
@@ -1901,7 +1904,7 @@ char   *p, list[1000];
   rsprintf("Server: ELOG HTTP 1.0\r\n");
   rsprintf("Content-Type: text/html\r\n\r\n");
 
-  rsprintf("<html><head><title>MIDAS ELog</title></head>\n");
+  rsprintf("<html><head><title>ELOG</title></head>\n");
   rsprintf("<body><form method=\"GET\" action=\"%s%s\">\n", elogd_url, logbook);
 
   rsprintf("<table border=3 cellpadding=5>\n");
@@ -2113,7 +2116,7 @@ FILE   *f;
   rsprintf("Server: ELOG HTTP 1.0\r\n");
   rsprintf("Content-Type: text/html\r\n\r\n");
 
-  rsprintf("<html><head><title>MIDAS ELog</title></head>\n");
+  rsprintf("<html><head><title>ELOG</title></head>\n");
   rsprintf("<body><form method=\"GET\" action=\"%s%s\">\n", elogd_url, logbook);
 
   rsprintf("<table border=3 cellpadding=2 width=\"100%%\">\n");
@@ -2550,7 +2553,7 @@ char   file_name[256], line[1000];
   rsprintf("Server: ELOG HTTP 1.0\r\n");
   rsprintf("Content-Type: text/html\r\n\r\n");
 
-  rsprintf("<html><head><title>MIDAS File Display</title></head>\n");
+  rsprintf("<html><head><title>ELOG File Display</title></head>\n");
   rsprintf("<body><form method=\"GET\" action=\"%s%s\">\n", elogd_url, logbook);
 
   rsprintf("<table border=3 cellpadding=1 width=\"100%%\">\n");
@@ -2558,7 +2561,7 @@ char   file_name[256], line[1000];
   /*---- title row ----*/
 
 
-  rsprintf("<tr><th bgcolor=#A0A0FF>MIDAS File Display");
+  rsprintf("<tr><th bgcolor=#A0A0FF>ELOG File Display");
   rsprintf("<th bgcolor=#A0A0FF>Logbook \"%s\"</tr>\n", logbook);
 
   /*---- menu buttons ----*/
@@ -2961,7 +2964,7 @@ BOOL  allow_delete;
   rsprintf("Server: ELOG HTTP 1.0\r\n");
   rsprintf("Content-Type: text/html\r\n\r\n");
 
-  rsprintf("<html><head><title>MIDAS ELog</title></head>\n");
+  rsprintf("<html><head><title>ELOG</title></head>\n");
   rsprintf("<body><form method=\"GET\" action=\"%s%s/%s\">\n", elogd_url, logbook, str);
 
   rsprintf("<table cols=2 border=2 cellpadding=2>\n");
@@ -3716,7 +3719,8 @@ INT                  last_time=0;
             if (strstr(net_buffer, "\r\r\n\r\r\n"))
               header_length = (INT)strstr(net_buffer, "\r\r\n\r\r\n") - (INT)net_buffer + 6;
 
-            net_buffer[header_length-1] = 0;
+            if (header_length)
+              net_buffer[header_length-1] = 0;
             }
 
           if (header_length > 0 && len >= header_length+content_length)

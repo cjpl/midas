@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.151  2001/05/23 08:16:40  midas
+  Fixed bug when POST request comes in two blocks
+
   Revision 1.150  2001/05/22 09:26:48  midas
   Fixed bug with rsprintf/rsputs
 
@@ -8084,7 +8087,8 @@ INT                  last_time=0;
             if (strstr(net_buffer, "\r\r\n\r\r\n"))
               header_length = (INT)strstr(net_buffer, "\r\r\n\r\r\n") - (INT)net_buffer + 6;
 
-            net_buffer[header_length-1] = 0;
+            if (header_length)
+              net_buffer[header_length-1] = 0;
             }
 
           if (header_length > 0 && len >= header_length+content_length)
