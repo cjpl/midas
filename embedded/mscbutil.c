@@ -6,6 +6,9 @@
   Contents:     Various utility functions for MSCB protocol
 
   $Log$
+  Revision 1.32  2004/04/30 08:01:41  midas
+  led_mode starts now with led0
+
   Revision 1.31  2004/04/07 11:06:17  midas
   Version 1.7.1
 
@@ -572,6 +575,17 @@ void sysclock_init(void)
 /*------------------------------------------------------------------*/
 
 void led_mode(unsigned char led, unsigned char flag) reentrant
+/********************************************************************\
+
+  Routine: led_mode
+
+  Purpose: Set LED mode
+
+  Input:
+    int led               0 for primary, 1 for secondary
+    int flag              Noninverted (0) / Inverted (1)
+
+\********************************************************************/
 {
    if (led < N_LED)
       leds[led].mode = flag;
@@ -587,7 +601,7 @@ void led_blink(unsigned char led, unsigned char n, int interval) reentrant
   Purpose: Blink primary or secondary LED for a couple of times
 
   Input:
-    int led               1 for primary, 2 for secondary
+    int led               0 for primary, 1 for secondary, ...
     int interval          Blink interval in ms
     int n                 Number of blinks
 
@@ -653,6 +667,9 @@ void led_int() reentrant using 2
 
       if (leds[i].timer)
          leds[i].timer--;
+
+      if (leds[i].n == 0)
+         led_set(i, LED_OFF);
    }
 }
 
