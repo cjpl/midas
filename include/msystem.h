@@ -7,6 +7,9 @@
                 routines
 
   $Log$
+  Revision 1.43  2004/10/04 23:54:39  midas
+  Implemented ODB version
+
   Revision 1.42  2004/09/29 00:58:35  midas
   Increased various constants
 
@@ -494,6 +497,7 @@ typedef struct {
 
 typedef struct {
    char name[NAME_LENGTH];      /* name of database           */
+   INT version;                 /* database version           */
    INT num_clients;             /* no of active clients       */
    INT max_client_index;        /* index of last client       */
    INT key_size;                /* size of key area in bytes  */

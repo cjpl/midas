@@ -6,6 +6,9 @@
   Contents:     Command-line interface to the MIDAS online data base.
 
   $Log$
+  Revision 1.75  2004/10/04 23:54:29  midas
+  Implemented ODB version
+
   Revision 1.74  2004/10/01 23:35:54  midas
   Removed PRE/POST transitions and implemented sequence order of transitions
 
@@ -2676,6 +2679,7 @@ void command_loop(char *host_name, char *exp_name, char *cmd, char *start_dir)
       /* ver */
       else if (param[0][0] == 'v' && param[0][1] == 'e') {
          printf("MIDAS library version %s\n", cm_get_version());
+         printf("ODB version %d\n", DATABASE_VERSION);
       }
 
       /* exec */

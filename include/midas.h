@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.144  2004/10/04 23:54:39  midas
+  Implemented ODB version
+
   Revision 1.143  2004/10/01 23:36:11  midas
   Removed PRE/POST transitions and implemented sequence order of transitions
 
@@ -481,6 +484,7 @@ The main include file
  *  @{  */
 
 #define MIDAS_VERSION "1.9.4"
+#define DATABASE_VERSION 2   /* has to be changed whenenver binary ODB format changes*/
 
 /**dox***************************************************************/
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
@@ -992,6 +996,7 @@ System message types */
 #define DB_CORRUPTED                323   /**< - */
 #define DB_STRUCT_MISMATCH          324   /**< - */
 #define DB_TIMEOUT                  325   /**< - */
+#define DB_VERSION_MISMATCH         326   /**< - */
 /**dox***************************************************************/
 /** @} */ /* end of group 23 */
 
