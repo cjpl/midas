@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.15  1999/04/22 07:53:37  midas
+  Added event size in -verbose output
+
   Revision 1.14  1999/03/02 10:00:37  midas
   Used ANA_SKIP/CONTINUE for skipping events
 
@@ -2123,7 +2126,8 @@ EVENT_DEF    *event_def;
 
   /* verbose output */
   if (clp.verbose)
-    printf("event %d, number %d\n", pevent->event_id, pevent->serial_number);
+    printf("event %d, number %d, total size %d\n", 
+      pevent->event_id, pevent->serial_number, pevent->data_size+sizeof(EVENT_HEADER));
 
   /* increment event counter */
   par->events_received++;
