@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.115  2000/05/02 14:15:39  midas
+  Fixed bug with number of curves being displayed
+
   Revision 1.114  2000/05/02 14:03:18  midas
   Added alarm level display and display of individual curves
 
@@ -6131,29 +6134,36 @@ float  factor[2];
 
     if (!(pindex && *pindex))
       {
-      for (i=0 ; i < 5 ; i++)
+      sprintf(str, "/History/Display/%s/Variables", path);
+      db_find_key(hDB, 0, str, &hkey);
+      if (hkey)
         {
-        if (paramstr[0])
-          {
-          if (exp_name[0])
-            sprintf(ref, "%sHS/%s?exp=%s%s&index=%d", 
-                    mhttpd_url, path, exp_name, paramstr, i);
-          else
-            sprintf(ref, "%sHS/%s?%s&index=%d", 
-                    mhttpd_url, path, paramstr, i);
-          }
-        else
-          {
-          if (exp_name[0])
-            sprintf(ref, "%sHS/%s?exp=%s&index=%d", 
-                    mhttpd_url, path, exp_name, i);
-          else
-            sprintf(ref, "%sHS/%s?index=%d", 
-                    mhttpd_url, path, i);
-          }
+        db_get_key(hDB, hkey, &key);
 
-        rsprintf("  <area shape=rect coords=\"%d,%d,%d,%d\" href=\"%s\">\r\n", 
-                 30, 31+23*i, 150, 30+23*i+17, ref);
+        for (i=0 ; i < key.num_values ; i++)
+          {
+          if (paramstr[0])
+            {
+            if (exp_name[0])
+              sprintf(ref, "%sHS/%s?exp=%s%s&index=%d", 
+                      mhttpd_url, path, exp_name, paramstr, i);
+            else
+              sprintf(ref, "%sHS/%s?%s&index=%d", 
+                      mhttpd_url, path, paramstr, i);
+            }
+          else
+            {
+            if (exp_name[0])
+              sprintf(ref, "%sHS/%s?exp=%s&index=%d", 
+                      mhttpd_url, path, exp_name, i);
+            else
+              sprintf(ref, "%sHS/%s?index=%d", 
+                      mhttpd_url, path, i);
+            }
+
+          rsprintf("  <area shape=rect coords=\"%d,%d,%d,%d\" href=\"%s\">\r\n", 
+                   30, 31+23*i, 150, 30+23*i+17, ref);
+          }
         }
       }
     else
