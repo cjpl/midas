@@ -11,12 +11,12 @@ or
 can be used to rebuild the full documentation through the doxygen package.
 
 Procedure:
-mkdir     my_own_midas_doc            << create your own dir
+mkdir     my_own_midas_doc               << create your own dir
 cd        my_own_midas_doc            
-cp        midas/doxfiles/* .          << copy all doxfiles
-tar      -zxvf midas-images.tar.gz    << insert the images dir
-doxygen   doxlx.cfg                   << generate the documentation
-                                         with doxygen
+cp        midas/doxfiles/* .             << copy all doxfiles
+tar      -zxvf midasdoc-images.tar.gz    << insert the images dir
+doxygen   doxlx.cfg                      << generate the documentation
+                                            with doxygen
 
 
 !! Prior running doxygen, make sure the path defined in the dox*.cfg
