@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.88  1999/11/11 11:53:10  midas
+  Link to auto restart and alarms on/off directly goes to "set" page
+
   Revision 1.87  1999/11/10 10:39:35  midas
   Changed text field size for ODB set page
 
@@ -260,7 +263,7 @@
 #include "msystem.h"
 
 /* refresh times in seconds */
-#define DEFAULT_REFRESH  5
+#define DEFAULT_REFRESH 60
 
 /* time until mhttpd disconnects from MIDAS */
 #define CONNECT_TIME   600
@@ -891,9 +894,9 @@ CHN_STATISTICS chn_stats;
   rsprintf("<td colspan=2 bgcolor=#%s>%s", str, state[runinfo.state]);
 
   if (exp_name[0])
-    sprintf(ref, "%sLogger?exp=%s", mhttpd_url, exp_name);
+    sprintf(ref, "%sLogger/Auto restart?cmd=set&exp=%s", mhttpd_url, exp_name);
   else
-    sprintf(ref, "%sLogger", mhttpd_url);
+    sprintf(ref, "%sLogger/Auto restart?cmd=set", mhttpd_url);
 
   size = sizeof(flag);
   db_get_value(hDB, 0, "/Logger/Auto restart", &flag, &size, TID_BOOL);
@@ -3918,7 +3921,7 @@ char   data[10000];
       data_str[0] = 0;
 
     size = 20;
-    if (strlen(data_str) > size)
+    if ((int)strlen(data_str) > size)
       size = strlen(data_str)+3;
     if (size > 80)
       size = 80;
@@ -4303,10 +4306,10 @@ char  str[256], ref[256], condition[256], value[256];
   if (!active)
     {
     if (exp_name[0])
-      sprintf(ref, "%sAlarms/?exp=%s", 
+      sprintf(ref, "%sAlarms/Alarm System active?cmd=set&exp=%s", 
               mhttpd_url, exp_name);
     else
-      sprintf(ref, "%sAlarms/", 
+      sprintf(ref, "%sAlarms/Alarm System active?cmd=set", 
               mhttpd_url);
     rsprintf("<tr><td align=center colspan=6 bgcolor=#FFC0C0><a href=\"%s\"><h1>Alarm system disabled</h1></a></tr>", ref);
     }
@@ -5040,7 +5043,7 @@ struct tm *gmt;
 
   if (equal_ustring(command, "Alarms on/off"))
     {
-    redirect("Alarms/");
+    redirect("Alarms/Alarm system active?cmd=set");
     return;
     }
 
