@@ -9,11 +9,14 @@
                 for SCS-600 Digital I/O
 
   $Log$
+  Revision 1.12  2003/06/11 14:12:18  midas
+  Removed LCD output
+
   Revision 1.11  2003/03/19 16:35:03  midas
   Eliminated configuration parameters
 
   Revision 1.10  2003/03/06 10:59:54  midas
-  Adde P1 output and 16-bit input
+  Added P1 output and 16-bit input
 
   Revision 1.9  2003/02/19 16:05:36  midas
   Added 'init' parameter to user_init
@@ -314,8 +317,10 @@ unsigned long        expired;
 void user_loop(void)
 {
 unsigned char i, old_button;
+/*
 static unsigned long last = 300;
 static bit first = 1;
+*/
 
   /* read inputs */
   old_button = user_data.button;
@@ -330,6 +335,7 @@ static bit first = 1;
   /* set output according to power */
   set_power();
 
+  /*
   if (!DEBUG_MODE && time() > last+30)
     {
     if (first)
@@ -350,5 +356,6 @@ static bit first = 1;
     for (i=0 ; i<8 ; i++)
       printf("%c", user_data.button & (1<<i) ? '1' : '0');
     }
+  */
 }
 
