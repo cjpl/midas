@@ -14,6 +14,11 @@
                 Brown, Prentice Hall
 
   $Log$
+  Revision 1.28  1999/04/30 13:19:55  midas
+  Changed inter-process communication (ss_resume, bm_notify_clients, etc)
+  to strings so that server process can receive it's own watchdog produced
+  messages (pass buffer name insteas buffer handle)
+
   Revision 1.27  1999/04/30 10:58:59  midas
   Added -D debug to screen for mserver
 
@@ -2313,7 +2318,7 @@ typedef struct {
   INT                   ipc_port;                                                 
   INT                   ipc_recv_socket;                                          
   INT                   ipc_send_socket;                                          
-  INT                   (*ipc_dispatch)(INT,INT,INT,INT);                                        
+  INT                   (*ipc_dispatch)(char *,INT);                                        
   INT                   listen_socket;
   INT                   (*listen_dispatch)(INT);     
   RPC_SERVER_CONNECTION *server_connection;
@@ -2603,7 +2608,7 @@ INT i, status;
 
   if (channel == CH_IPC)
     {
-    _suspend_struct[i].ipc_dispatch      = (INT (*)(INT,INT,INT,INT)) dispatch;
+    _suspend_struct[i].ipc_dispatch      = (INT (*)(char *,INT)) dispatch;
 
     if (!_suspend_struct[i].ipc_recv_socket)
       ss_suspend_init_ipc(i);
@@ -2707,11 +2712,11 @@ INT ss_suspend(INT millisec, INT msg)
 {
 fd_set              readfds;
 struct timeval      timeout;
-INT                 sock, server_socket, buffer[16], buffer_tmp[16];
+INT                 sock, server_socket;
 INT                 index, status, i, return_status;
 int                 size;
 struct sockaddr     from_addr;
-char                str[100];
+char                str[100], buffer[80], buffer_tmp[80];
 
   /* get index to _suspend_struct for this thread */
   status = ss_suspend_get_index(&index);
@@ -2864,7 +2869,7 @@ char                str[100];
         else
 	        {
 	        status = SS_SUCCESS;
-	        size = recv_tcp(sock, (char *) buffer, sizeof(buffer), 0);
+	        size = recv_tcp(sock, buffer, sizeof(buffer), 0);
 
 	        if (size <= 0)
 	          status = SS_ABORT;
@@ -2899,8 +2904,7 @@ char                str[100];
       /* receive IPC message */
       size = sizeof(struct sockaddr);
       size = recvfrom(_suspend_struct[index].ipc_recv_socket, 
-		      (char *) buffer, 
-		      sizeof(buffer), 0, (void *)&from_addr, (void *)&size);
+		                  buffer, sizeof(buffer), 0, (void *)&from_addr, (void *)&size);
 
       /* find out if this thread is connected as a server */
       server_socket = 0;
@@ -2927,29 +2931,27 @@ char                str[100];
 	      if (FD_ISSET(_suspend_struct[index].ipc_recv_socket, &readfds))
           {
           size = sizeof(struct sockaddr);
-          size = recvfrom(_suspend_struct[index].ipc_recv_socket, (char *)buffer_tmp,
-					          sizeof(buffer), 0, (void *) &from_addr, (void *)&size);
+          size = recvfrom(_suspend_struct[index].ipc_recv_socket, buffer_tmp,
+					                sizeof(buffer_tmp), 0, (void *) &from_addr, (void *)&size);
 
           /* don't forward same MSG_BM as above */
-          if (!(buffer_tmp[0] == MSG_BM && 
-                buffer_tmp[0] == buffer[0] &&
-                buffer_tmp[1] == buffer[1] &&
-                buffer_tmp[2] == buffer[2]))
+          if (buffer_tmp[0] != 'B' ||
+              strcmp(buffer_tmp, buffer) != 0)
 	          if (_suspend_struct[index].ipc_dispatch)
-		          _suspend_struct[index].ipc_dispatch(buffer_tmp[0], buffer_tmp[1], buffer_tmp[2], 
-					          server_socket);
+		          _suspend_struct[index].ipc_dispatch(buffer_tmp, server_socket);
           }
 
 	      } while (FD_ISSET(_suspend_struct[index].ipc_recv_socket, &readfds));
 
       /* return if received requested message */
-      if (msg == buffer[0])
+      if (msg == MSG_BM && buffer[0] == 'B')
 	      return SS_SUCCESS;
+      if (msg == MSG_ODB && buffer[0] == 'O')
+        return SS_SUCCESS;
 
       /* call dispatcher */
       if (_suspend_struct[index].ipc_dispatch)
-	      _suspend_struct[index].ipc_dispatch(buffer[0], buffer[1], buffer[2], 
-			                                      server_socket);
+	      _suspend_struct[index].ipc_dispatch(buffer, server_socket);
 
       return_status = SS_SUCCESS;
       } 
@@ -2961,7 +2963,7 @@ char                str[100];
 
 /*------------------------------------------------------------------*/
 
-INT ss_resume(INT port, INT msg, INT param1, INT param2)
+INT ss_resume(INT port, char *message)
 /********************************************************************\
 
   Routine: ss_resume
@@ -2985,8 +2987,7 @@ INT ss_resume(INT port, INT msg, INT param1, INT param2)
 
 \********************************************************************/
 {
-INT                         buffer[3];
-INT                         status, index;
+INT status, index;
 
   if (ss_in_async_routine_flag)
     {
@@ -3003,16 +3004,12 @@ INT                         status, index;
 
   _suspend_struct[index].bind_addr.sin_port = htons((short) port);
 
-  buffer[0] = msg;
-  buffer[1] = param1;
-  buffer[2] = param2;
-
-  status = sendto(_suspend_struct[index].ipc_send_socket, (char *) buffer, 
-                  sizeof(buffer), 0, 
+  status = sendto(_suspend_struct[index].ipc_send_socket, message, 
+                  strlen(message)+1, 0, 
                   (void *) &_suspend_struct[index].bind_addr, 
                   sizeof(struct sockaddr_in));
 
-  if (status != sizeof(buffer))
+  if (status != (INT)strlen(message)+1)
     return SS_SOCKET_ERROR;
 
   return SS_SUCCESS;

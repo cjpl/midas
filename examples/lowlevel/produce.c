@@ -7,6 +7,11 @@
                 ting to a SYSTEM buffer and sending some data.
 
   $Log$
+  Revision 1.3  1999/04/30 13:19:53  midas
+  Changed inter-process communication (ss_resume, bm_notify_clients, etc)
+  to strings so that server process can receive it's own watchdog produced
+  messages (pass buffer name insteas buffer handle)
+
   Revision 1.2  1998/10/12 12:18:59  midas
   Added Log tag in header
 
@@ -88,8 +93,8 @@ char          host_name[256];
                          size, ((EVENT_HEADER*) (event))->serial_number+1);
 
         /* now send event */
-/*   	    status = rpc_send_event(hBuf, event, size+sizeof(EVENT_HEADER), SYNC); */
-   	    status = bm_send_event(hBuf, event, size+sizeof(EVENT_HEADER), SYNC);
+   	    status = rpc_send_event(hBuf, event, size+sizeof(EVENT_HEADER), SYNC);
+//   	    status = bm_send_event(hBuf, event, size+sizeof(EVENT_HEADER), SYNC);
 
         if (status != BM_SUCCESS)
           {

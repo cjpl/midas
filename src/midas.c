@@ -6,6 +6,11 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.35  1999/04/30 13:19:54  midas
+  Changed inter-process communication (ss_resume, bm_notify_clients, etc)
+  to strings so that server process can receive it's own watchdog produced
+  messages (pass buffer name insteas buffer handle)
+
   Revision 1.34  1999/04/30 10:58:58  midas
   Added -D debug to screen for mserver
 
@@ -2788,7 +2793,7 @@ RUNINFO_STR(runinfo_str);
 
 /*------------------------------------------------------------------*/
 
-INT cm_dispatch_ipc(INT msg, INT p1, INT p2, int socket)
+INT cm_dispatch_ipc(char *message, int socket)
 /********************************************************************\
 
   Routine: cm_dispatch_ipc
@@ -2808,16 +2813,26 @@ INT cm_dispatch_ipc(INT msg, INT p1, INT p2, int socket)
 
 \********************************************************************/
 {
-  if (msg == MSG_ODB)
-    return db_update_record(p1, p2, socket);
-
-  /* p1 == 0 means "resume event sender" */
-  if (msg == MSG_BM && p1)
+  if (message[0] == 'O') 
     {
+    HNDLE hDB, hKey;
+    sscanf(message+2, "%d %d", &hDB, &hKey);
+    return db_update_record(hDB, hKey, socket);
+    }
+
+  /* message == "B  " means "resume event sender" */
+  if (message[0] == 'B' && message[2] != ' ')
+    {
+    char str[80];
+
+    strcpy(str, message+2);
+    if (strchr(str, ' '))
+      *strchr(str, ' ') = 0;
+
     if (socket)
-      return bm_notify_client(p1, p2, socket);
+      return bm_notify_client(str, socket);
     else
-      return bm_push_event(p1);
+      return bm_push_event(str);
     }
 
   return CM_SUCCESS;
@@ -3388,7 +3403,7 @@ INT           i, j, index, destroy_flag;
 
   for (i=0 ; i<pheader->max_client_index ; i++,pclient++)
     if (pclient->pid && (pclient->write_wait || pclient->read_wait))
-      ss_resume(pclient->port, MSG_BM, 0, 0);
+      ss_resume(pclient->port, "B  ");
 
   /* unmap shared memory, delete it if we are the last */
   ss_close_shm(pheader->name, _buffer[buffer_handle-1].buffer_header,
@@ -3559,7 +3574,7 @@ char            str[256];
 
             for (k=0 ; k<pheader->max_client_index ; k++,pbctmp++)
               if (pbctmp->pid && (pbctmp->write_wait || pbctmp->read_wait))
-                ss_resume(pbctmp->port, MSG_BM, 0, 0);
+                ss_resume(pbctmp->port, "B  ");
 
             }
 
@@ -3958,7 +3973,7 @@ char            str[256];
 
               for (k=0 ; k<pheader->max_client_index ; k++,pbctmp++)
                 if (pbctmp->pid && (pbctmp->write_wait || pbctmp->read_wait))
-                  ss_resume(pbctmp->port, MSG_BM, 0, 0);
+                  ss_resume(pbctmp->port, "B  ");
 
               }
 
@@ -4853,6 +4868,7 @@ char            *pdata;
 BOOL            blocking;
 INT             n_blocking;
 INT             request_id;
+char            str[80];
 
   pbuf = &_buffer[buffer_handle-1];
 
@@ -4987,7 +5003,8 @@ INT             request_id;
 	            cm_msg(MDEBUG, "Send wake: rp=%d, wp=%d",
                       pheader->read_pointer, pheader->write_pointer);
 #endif
-              ss_resume(pc->port, MSG_BM, buffer_handle, request_id);
+              sprintf(str, "B %s %d", pheader->name, request_id);
+              ss_resume(pc->port, str);
               }
 
 
@@ -5122,7 +5139,8 @@ INT             request_id;
 	cm_msg(MDEBUG, "Send wake: rp=%d, wp=%d", pheader->read_pointer,
 		pheader->write_pointer);
 #endif
-        ss_resume(pclient[i].port, MSG_BM, buffer_handle, request_id);
+        sprintf(str, "B %s %d", pheader->name, request_id);
+        ss_resume(pclient[i].port, str);
         }
 
       /* if that client has no request, shift its read pointer */
@@ -5227,6 +5245,7 @@ char            *pdata;
 BOOL            blocking;
 INT             n_blocking;
 INT             request_id;
+char            str[80];
 
   pbuf = &_buffer[buffer_handle-1];
 
@@ -5344,7 +5363,8 @@ INT             request_id;
               cm_msg(MDEBUG, "Send wake: rp=%d, wp=%d",
                       pheader->read_pointer, pheader->write_pointer);
 #endif
-              ss_resume(pc->port, MSG_BM, buffer_handle, request_id);
+              sprintf(str, "B %s %d", pheader->name, request_id);
+              ss_resume(pc->port, str);
               }
 
 
@@ -5482,7 +5502,8 @@ INT             request_id;
       cm_msg(MDEBUG, "Send wake: rp=%d, wp=%d", pheader->read_pointer,
               pheader->write_pointer);
 #endif
-      ss_resume(pclient[i].port, MSG_BM, buffer_handle, -1);
+      sprintf(str, "B %s %d", pheader->name, -1);
+      ss_resume(pclient[i].port, str);
       }
 
   /* shift read pointer of own client */
@@ -5891,7 +5912,7 @@ CACHE_FULL:
                 pheader->write_pointer,
                 100-100.0*size/pheader->size);
 #endif
-        ss_resume(pctmp->port, MSG_BM, 0, 0);
+        ss_resume(pctmp->port, "B  ");
         }
 
   /* if no matching event found, start again */
@@ -5912,7 +5933,7 @@ CACHE_FULL:
 
 /*------------------------------------------------------------------*/
 
-INT bm_push_event(INT buffer_handle)
+INT bm_push_event(char *buffer_name)
 /********************************************************************\
 
   Routine: bm_push_event
@@ -5922,8 +5943,7 @@ INT bm_push_event(INT buffer_handle)
 
 
   Input:
-    INT  buffer_handle      Handle of the buffer. Must be obtained
-                            via bm_open_buffer.
+    char *buffer_name       Name of buffer
     INT  request_id         Request ID obtained form bm_request_event
 
   Output:
@@ -5948,15 +5968,19 @@ BUFFER_CLIENT   *pclient,*pc, *pctmp;
 EVENT_REQUEST   *prequest;
 EVENT_HEADER    *pevent;
 char            *pdata;
-INT             i, min_wp, size, total_size;
+INT             i, min_wp, size, total_size, buffer_handle;
 INT             my_client_index;
 BOOL            found;
 INT             old_read_pointer, new_read_pointer;
 
-  pbuf = &_buffer[buffer_handle-1];
-
-  if (buffer_handle > _buffer_entries || buffer_handle <= 0)
+  for (i=0 ; i<_buffer_entries ; i++)
+    if (strcmp(buffer_name, _buffer[i].buffer_header->name) == 0)
+      break;
+  if (i == _buffer_entries)
     return BM_INVALID_HANDLE;
+
+  buffer_handle = i+1;
+  pbuf = &_buffer[buffer_handle-1];
 
   if (!pbuf->attached)
     return BM_INVALID_HANDLE;
@@ -6171,7 +6195,7 @@ CACHE_FULL:
                 pheader->write_pointer,
                 100-100.0*size/pheader->size);
 #endif
-        ss_resume(pctmp->port, MSG_BM, 0, 0);
+        ss_resume(pctmp->port, "B  ");
         }
 
   /* if no matching event found, start again */
@@ -6258,7 +6282,7 @@ DWORD           start_time;
 
     do
       {
-      status = bm_push_event(index+1);
+      status = bm_push_event(_buffer[index].buffer_header->name);
 
       if (status != BM_MORE_EVENTS)
         break;
@@ -6338,7 +6362,7 @@ BUFFER_CLIENT *pclient;
 
 /*------------------------------------------------------------------*/
 
-INT bm_notify_client(INT buffer_handle, INT request_id, int socket)
+INT bm_notify_client(char *buffer_name, int socket)
 /********************************************************************\
 
   Routine: bm_notify_client
@@ -6347,8 +6371,7 @@ INT bm_notify_client(INT buffer_handle, INT request_id, int socket)
            the connected client
 
   Input:
-    HNDLE hBuf              Buffer handle 
-    INT   request_id        Request ID from bm_request_event
+    char  *buffer_name      Name of buffer
     int   socket            Network socket to client
 
   Output:
@@ -6361,12 +6384,18 @@ INT bm_notify_client(INT buffer_handle, INT request_id, int socket)
 {
 char         buffer[32];
 NET_COMMAND  *nc;
-INT          convert_flags;
+INT          i, convert_flags;
 static DWORD last_time = 0;
+
+  for (i=0 ; i<_buffer_entries ; i++)
+    if (strcmp(buffer_name, _buffer[i].buffer_header->name) == 0)
+      break;
+  if (i == _buffer_entries)
+    return BM_INVALID_HANDLE;
 
   /* don't send notification if client has no callback defined
      to receive events -> client calls bm_receive_event manually */
-  if(!_buffer[buffer_handle-1].callback)
+  if(!_buffer[i].callback)
     return DB_SUCCESS;
 
   convert_flags = rpc_get_server_option(RPC_CONVERT_FLAGS);
@@ -6379,7 +6408,7 @@ static DWORD last_time = 0;
 
   if (convert_flags & CF_ASCII)
     {
-    sprintf(buffer, "MSG_BM&%d&%d", buffer_handle, request_id);
+    sprintf(buffer, "MSG_BM");
     send_tcp(socket, buffer, strlen(buffer)+1, 0);
     }
   else
@@ -6387,9 +6416,7 @@ static DWORD last_time = 0;
     nc = (NET_COMMAND *) buffer;
 
     nc->header.routine_id  = MSG_BM;
-    nc->header.param_size  = 2*sizeof(INT);
-    *((INT *) nc->param)   = buffer_handle;
-    *((INT *) nc->param+1) = request_id;
+    nc->header.param_size  = 0;
 
     if (convert_flags)
       {
@@ -6397,15 +6424,10 @@ static DWORD last_time = 0;
                          RPC_OUTGOING, convert_flags);
       rpc_convert_single(&nc->header.param_size, TID_DWORD, 
                          RPC_OUTGOING, convert_flags);
-      rpc_convert_single(&nc->param[0], TID_DWORD, 
-                         RPC_OUTGOING, convert_flags);
-      rpc_convert_single(&nc->param[4], TID_DWORD, 
-                         RPC_OUTGOING, convert_flags);
       }
 
     /* send the update notification to the client */
-    send_tcp(socket, (char *) buffer, sizeof(NET_COMMAND_HEADER) + 
-             2*sizeof(INT), 0);
+    send_tcp(socket, (char *) buffer, sizeof(NET_COMMAND_HEADER), 0);
     }
 
   return BM_SUCCESS;
@@ -7058,13 +7080,7 @@ char        net_buffer[256];
     {
     fd_set         readfds;
     struct timeval timeout;
-/*
-    INT            buffer_handle;
-    INT            request_id;
 
-    buffer_handle = *((INT *)nc->param);
-    request_id    = *((INT *)nc->param+1);
-*/
     /* receive further messages to empty TCP queue */
     do
       {
@@ -12722,13 +12738,12 @@ struct tm    *tms;
   if (end_time == 0)
     end_time = time(NULL);
 
-  *n = 0;
-
   /* search history file for start_time */
   status = hs_search_file(&start_time, 1);
   if (status != HS_SUCCESS)
     {
     cm_msg(MERROR, "hs_read", "cannot find recent history file");
+    *tbsize = *dbsize = *n = 0;
     return HS_FILE_ERROR;
     }
 
@@ -12739,6 +12754,7 @@ struct tm    *tms;
   if (fh< 0 || fhd < 0 || fhi < 0)
     {
     cm_msg(MERROR, "hs_read", "cannot open index files");
+    *tbsize = *dbsize = *n = 0;
     return HS_FILE_ERROR;
     }
 
@@ -12763,6 +12779,7 @@ struct tm    *tms;
 
   /* read records, skip wrong IDs */
   old_def_offset = -1;
+  *n = 0;
   prev_time = 0;
   do
     {

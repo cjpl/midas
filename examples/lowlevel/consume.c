@@ -7,6 +7,11 @@
                 ting to a SYSTEM buffer and receiving some data.
 
   $Log$
+  Revision 1.3  1999/04/30 13:19:53  midas
+  Changed inter-process communication (ss_resume, bm_notify_clients, etc)
+  to strings so that server process can receive it's own watchdog produced
+  messages (pass buffer name insteas buffer handle)
+
   Revision 1.2  1998/10/12 12:18:59  midas
   Added Log tag in header
 
@@ -120,10 +125,6 @@ BOOL   via_callback;
              all_flag ? "Power Consumer" : "Consumer", NULL);
   if (status != CM_SUCCESS)
     return 1;
-
-#ifdef _DEBUG
-  cm_set_watchdog_params(TRUE, 0);
-#endif
 
   /* open the "system" buffer, 1M size */
   bm_open_buffer("SYSTEM", EVENT_BUFFER_SIZE, &hBufEvent);

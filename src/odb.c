@@ -6,6 +6,11 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.16  1999/04/30 13:19:55  midas
+  Changed inter-process communication (ss_resume, bm_notify_clients, etc)
+  to strings so that server process can receive it's own watchdog produced
+  messages (pass buffer name insteas buffer handle)
+
   Revision 1.15  1999/04/29 10:48:02  midas
   Implemented "/System/Client Notify" key
 
@@ -5802,6 +5807,7 @@ DATABASE_CLIENT *pclient;
 KEY             *pkey;
 KEYLIST         *pkeylist;
 INT             i, j;
+char            str[80];
 
   pheader  = _database[hDB-1].database_header;
 
@@ -5820,7 +5826,8 @@ INT             i, j;
           if (pclient->open_record[j].handle == hKey)
             {
             /* send notification to remote process */
-            ss_resume(pclient->port, MSG_ODB, hDB, hKey);
+            sprintf(str, "O %d %d", hDB, hKey);
+            ss_resume(pclient->port, str);
             }
         }
 
