@@ -6,6 +6,9 @@
   Contents:     LeCroy LRS 1440 High Voltage Device Driver
 
   $Log$
+  Revision 1.4  1999/01/14 17:01:44  midas
+  Added rs232 port sharing
+
   Revision 1.3  1999/01/14 15:57:54  midas
   Adapted to new "info" structure
 
@@ -21,6 +24,8 @@
 #include "rs232.h"
 
 /*---- globals -----------------------------------------------------*/
+
+int rs232_hdev[2];
 
 typedef struct {
   char rs232_port[NAME_LENGTH];
@@ -86,7 +91,7 @@ INT  status;
 
 INT lrs1440_init(HNDLE hKey, void **pinfo, INT channels)
 {
-int          status, size;
+int          status, size, no;
 char         str[256];
 HNDLE        hDB;
 LRS1440_INFO *info;
@@ -108,7 +113,19 @@ LRS1440_INFO *info;
   info->num_channels = channels;
 
   /* initialize RS232 port */
-  info->hdev = rs232_init(info->settings.rs232_port, 9600, 'N', 8, 1, 0);
+  no = info->settings.rs232_port[3] - '0';
+  if (no < 1)
+    no = 1;
+  if (no > 2)
+    no = 2;
+
+  if (rs232_hdev[no-1])
+    info->hdev = rs232_hdev[no-1];
+  else
+    {
+    info->hdev = rs232_init(info->settings.rs232_port, 9600, 'N', 8, 1, 0);
+    rs232_hdev[no-1] = info->hdev;
+    }
 
   rs232_debug(FALSE);
 
