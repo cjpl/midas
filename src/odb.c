@@ -6,6 +6,9 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.78  2003/12/12 10:18:10  midas
+  Reset exclusive mode in db_fix_open_records()
+
   Revision 1.77  2003/12/12 09:44:17  midas
   Fixed missing parameter in db_remove_open_record() RPC call
 
@@ -3279,6 +3282,9 @@ KEY             *pkey;
       /* reset notify count */
       pkey = (KEY *) ((char *) pheader + hKey);
       pkey->notify_count = 0;
+
+      /* and exclusive mode */
+      pkey->access_mode & ~MODE_EXCLUSIVE;
       }
 
     db_unlock_database(hDB);
