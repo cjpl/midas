@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.109  2000/04/20 13:41:39  midas
+  Display alarm class instead "Alarm!"
+
   Revision 1.108  2000/04/03 12:52:24  midas
   Chaned table colors
 
@@ -914,7 +917,11 @@ CHN_STATISTICS chn_stats;
           else
             sprintf(ref, "%s?cmd=alarms", mhttpd_url);
 
-          rsprintf("<tr><td colspan=6 bgcolor=#FF0000 align=center><h1><a href=\"%s\">Alarm!</a></h1></tr>\n", ref);
+          size = sizeof(str);
+          db_get_value(hDB, hsubkey, "Alarm Class", str, &size, TID_STRING);
+
+          rsprintf("<tr><td colspan=6 bgcolor=#FF0000 align=center><h1><a href=\"%s\">%s</a></h1></tr>\n", 
+                   ref, str);
           break;
           }
         }
