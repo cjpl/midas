@@ -4,6 +4,9 @@ Revision History
 Version 1.9.0, released May 10, 2002
 ------------------------------------
 
+- Added slowdev class driver.
+- Added jorway73a SCSI/CAMAC driver.
+- Makefile option for "analyzer_lite" (without HBOOK).
 - Removed lingering in mhttpd
 - Fixed big bug that history files did not get closed in hs_hread. This
   cause mhttpd to crash after ~100 history updates
