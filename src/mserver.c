@@ -6,6 +6,9 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
+  Revision 1.12  1999/04/28 15:27:29  midas
+  Made hs_read working for Java
+
   Revision 1.11  1999/04/19 07:47:39  midas
   Added cm_msg_retrieve
 
@@ -826,7 +829,7 @@ INT convert_flags;
       status = hs_read(CDWORD(0), CDWORD(1), CDWORD(2), CDWORD(3), CSTRING(4), 
                        CDWORD(5), CARRAY(6), CPDWORD(7), CARRAY(8), CPDWORD(9),
                        CPDWORD(10), CPDWORD(11));
-      if (convert_flags)
+      if (convert_flags && rpc_tid_size(CDWORD(10))>0)
         {
         rpc_convert_data(CARRAY(6), TID_DWORD, RPC_FIXARRAY | RPC_OUTGOING, 
                          CDWORD(7)/sizeof(DWORD), convert_flags);

@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.32  1999/04/28 15:27:28  midas
+  Made hs_read working for Java
+
   Revision 1.31  1999/04/27 15:16:14  midas
   Increased ASCII_BUFFER_SIZE to 64500
 
@@ -10246,6 +10249,20 @@ char         return_buffer[ASCII_BUFFER_SIZE]; /* ASCII out */
             param_size = *((INT *) prpc_param[i+1]);
             array_tid  = *((INT *) prpc_param[i+3]);
             num_values = 1;
+            }
+          else if (rpc_list[index].id == RPC_HS_READ)
+            {
+            param_size = *((INT *) prpc_param[i+1]);
+            if (i == 6)
+              {
+              array_tid  = TID_DWORD;
+              num_values = param_size / sizeof(DWORD);
+              }
+            else
+              {
+              array_tid  = *((INT *) prpc_param[10]);
+              num_values = *((INT *) prpc_param[11]);
+              }
             }
 
           /* derive size of individual item */
