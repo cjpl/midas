@@ -9,6 +9,9 @@
                 for HVR_300 High Voltage Regulator
 
   $Log$
+  Revision 1.4  2003/09/23 09:20:56  midas
+  Second version: new resistor values, config bits, split CSR
+
   Revision 1.3  2003/03/19 16:35:03  midas
   Eliminated configuration parameters
 
@@ -29,12 +32,19 @@ extern bit DEBUG_MODE;
 char code node_name[] = "HVR-300";
 
 /* calculate voltage divider */
-#define DIVIDER ((41E6 + 82E3) / 82E3)
+#define DIVIDER ((41E6 + 33E3) / 33E3)
 
 /* current resistor */
-#define RCURR 94E3
+#define RCURR 112E3
 
-bit           demand_changed, ramp_up, ramp_down;
+/* current multiplier */
+#define CUR_MULT 15
+
+/* configuration jumper */
+sbit JU1 = P0 ^ 5; /* negative module if forced to zero */
+sbit JU2 = P0 ^ 1; /* low current version if forced to zero */
+
+bit           demand_changed, i_limit_changed, ramp_up, ramp_down;
 unsigned long demand_changed_time;
 float         v_actual;
 unsigned int  i_limit_adc;
@@ -44,20 +54,23 @@ unsigned int  i_limit_adc;
 /* data buffer (mirrored in EEPROM) */
 
 /* CSR control bits */
-#define CSR_HV_ON      (1<<0)
-#define CSR_REGULATION (1<<1)
+#define CONTROL_HV_ON      (1<<0)
+#define CONTROL_REGULATION (1<<1)
 
 /* CSR status bits */
-#define CSR_RAMP_UP    (1<<4)
-#define CSR_RAMP_DOWN  (1<<5)
-#define CSR_VLIMIT     (1<<6)
-#define CSR_ILIMIT     (1<<7)
+#define STATUS_NEGATIVE    (1<<0)
+#define STATUS_LOWCUR      (1<<1)
+#define STATUS_RAMP_UP     (1<<2)
+#define STATUS_RAMP_DOWN   (1<<3)
+#define STATUS_VLIMIT      (1<<4)
+#define STATUS_ILIMIT      (1<<5)
 
 struct {
-  unsigned char csr;
+  unsigned char control;
   float         v_demand;
   float         v_meas;
   float         i_meas;
+  unsigned char status;
   unsigned char trip_cnt;
 
   unsigned int  ramp_up;
@@ -80,31 +93,32 @@ struct {
 } idata user_data;
   
 MSCB_INFO_VAR code variables[] = {
-  1, UNIT_BYTE,            0, 0,           0, "CSR",      &user_data.csr,         // 0
+  1, UNIT_BYTE,            0, 0,           0, "Control",  &user_data.control,     // 0
   4, UNIT_VOLT,            0, 0, MSCBF_FLOAT, "Vdemand",  &user_data.v_demand,    // 1
   4, UNIT_VOLT,            0, 0, MSCBF_FLOAT, "Vmeas",    &user_data.v_meas,      // 2
   4, UNIT_AMPERE, PRFX_MICRO, 0, MSCBF_FLOAT, "Imeas",    &user_data.i_meas,      // 3
-  1, UNIT_COUNT,           0, 0,           0, "TripCnt",  &user_data.trip_cnt,    // 4
+  1, UNIT_BYTE,            0, 0,           0, "Status",   &user_data.status,      // 4
+  1, UNIT_COUNT,           0, 0,           0, "TripCnt",  &user_data.trip_cnt,    // 5
 
-  2, UNIT_VOLT,            0, 0,           0, "RampUp",   &user_data.ramp_up,     // 5
-  2, UNIT_VOLT,            0, 0,           0, "RampDown", &user_data.ramp_down,   // 6
-  4, UNIT_VOLT,            0, 0, MSCBF_FLOAT, "Vlimit",   &user_data.v_limit,     // 7 
-  4, UNIT_AMPERE, PRFX_MICRO, 0, MSCBF_FLOAT, "Ilimit",   &user_data.i_limit,     // 8
-  1, UNIT_COUNT,           0, 0,           0, "TripMax",  &user_data.trip_max,    // 9
+  2, UNIT_VOLT,            0, 0,           0, "RampUp",   &user_data.ramp_up,     // 6
+  2, UNIT_VOLT,            0, 0,           0, "RampDown", &user_data.ramp_down,   // 7
+  4, UNIT_VOLT,            0, 0, MSCBF_FLOAT, "Vlimit",   &user_data.v_limit,     // 8 
+  4, UNIT_AMPERE, PRFX_MICRO, 0, MSCBF_FLOAT, "Ilimit",   &user_data.i_limit,     // 9
+  1, UNIT_COUNT,           0, 0,           0, "TripMax",  &user_data.trip_max,    // 10
 
   /* calibration constants */
-  4, UNIT_FACTOR,          0, 0, MSCBF_FLOAT, "ADCgain",  &user_data.adc_gain,    // 10
-  4, UNIT_VOLT,            0, 0, MSCBF_FLOAT, "ADCofs",   &user_data.adc_offset,  // 11
-  4, UNIT_FACTOR,          0, 0, MSCBF_FLOAT, "DACgain",  &user_data.dac_gain,    // 12
-  4, UNIT_VOLT,            0, 0, MSCBF_FLOAT, "DACofs",   &user_data.dac_offset,  // 13
-  4, UNIT_FACTOR,          0, 0, MSCBF_FLOAT, "CURgain",  &user_data.cur_gain,    // 14
-  4, UNIT_AMPERE, PRFX_MICRO, 0, MSCBF_FLOAT, "CURofs",   &user_data.cur_offset,  // 15
+  4, UNIT_FACTOR,          0, 0, MSCBF_FLOAT, "ADCgain",  &user_data.adc_gain,    // 11
+  4, UNIT_VOLT,            0, 0, MSCBF_FLOAT, "ADCofs",   &user_data.adc_offset,  // 12
+  4, UNIT_FACTOR,          0, 0, MSCBF_FLOAT, "DACgain",  &user_data.dac_gain,    // 13
+  4, UNIT_VOLT,            0, 0, MSCBF_FLOAT, "DACofs",   &user_data.dac_offset,  // 14
+  4, UNIT_FACTOR,          0, 0, MSCBF_FLOAT, "CURgain",  &user_data.cur_gain,    // 15
+  4, UNIT_AMPERE, PRFX_MICRO, 0, MSCBF_FLOAT, "CURofs",   &user_data.cur_offset,  // 16
 
   /* debugging */
-  4, UNIT_CELSIUS,         0, 0, MSCBF_FLOAT, "TempC",    &user_data.temperature, // 16
-  4, UNIT_VOLT,            0, 0, MSCBF_FLOAT, "VDAC",     &user_data.v_dac,       // 17
-  2, UNIT_WORD,            0, 0,           0, "Debug0",   &user_data.debug0,      // 18
-  2, UNIT_WORD,            0, 0,           0, "Debug1",   &user_data.debug1,      // 19
+  4, UNIT_CELSIUS,         0, 0, MSCBF_FLOAT, "TempC",    &user_data.temperature, // 17
+  4, UNIT_VOLT,            0, 0, MSCBF_FLOAT, "VDAC",     &user_data.v_dac,       // 18
+  2, UNIT_WORD,            0, 0,           0, "Debug0",   &user_data.debug0,      // 19
+  2, UNIT_WORD,            0, 0,           0, "Debug1",   &user_data.debug1,      // 20
   0
 };
 
@@ -126,33 +140,35 @@ void user_init(unsigned char init)
   /* initial nonzero EEPROM values */
   if (init)
     {
-    user_data.csr = CSR_REGULATION;
     user_data.v_limit   = 1200;
-    user_data.i_limit   = 200;
-    user_data.adc_gain  = 1.0;
-    user_data.dac_gain  = 1.0;
-    user_data.cur_gain  = 1.0;
+    user_data.i_limit   = 3000;
+    
+	user_data.adc_gain   = 1;
+    user_data.adc_offset = 0;
+    user_data.dac_gain   = 1;
+    user_data.dac_offset = 0;
+    user_data.cur_gain   = 1;
+    user_data.cur_offset = 0;
     }
 
-  /* ## temp. calib. const, for testing only */
-  user_data.adc_gain   = 1.00072;
-  user_data.adc_offset = 8.4;
-  user_data.dac_gain   = 1.00000;
-  user_data.dac_offset = -20.8;
-  user_data.cur_gain   = 0.749;
-  user_data.cur_offset = 24.47;
+  /* default control register */
+  user_data.control = CONTROL_REGULATION;
+  user_data.status = 0;
+  JU1 = 1;
+  JU2 = 1;
 
   /* enable ADC */
   ADCCON1 = 0x7C;  // power up ADC, 14.5us conv+acq time
-
-  /* calculate trip current in ADC units */
-  user_write(8);
 
   /* power up or down DACs */
   user_write(0);
 
   /* force update */
   demand_changed = 1;
+
+  /* forc update i_limit_adc */
+  i_limit_adc = 4096;
+  i_limit_changed = 1;
 }
 
 /*---- User write function -----------------------------------------*/
@@ -163,7 +179,7 @@ void user_write(unsigned char index) reentrant
 {
   if (index == 0)
     {
-    if (user_data.csr & CSR_HV_ON)
+    if (user_data.control & CONTROL_HV_ON)
       {
       /* power up DACs */
       DACCON = 0x1F;
@@ -180,7 +196,7 @@ void user_write(unsigned char index) reentrant
   if (index == 1 || index == 4)
     {
     /* reset trip */
-    user_data.csr &= ~CSR_ILIMIT;
+    user_data.status &= ~STATUS_ILIMIT;
 
     /* indicate new demand voltage */
     demand_changed = 1;
@@ -196,9 +212,7 @@ void user_write(unsigned char index) reentrant
 
   /* recalculate trip current in ADC units */
   if (index == 8)
-    i_limit_adc = (user_data.i_limit - user_data.cur_offset)/user_data.cur_gain / 
-                  1E6 * RCURR / DIVIDER * 4.7 / 2.5 * 4096;
-
+    i_limit_changed = 1;
 }
 
 /*---- User read function ------------------------------------------*/
@@ -247,10 +261,10 @@ unsigned int d;
   if (value > user_data.v_limit)
     {
     value = user_data.v_limit;
-    user_data.csr |= CSR_VLIMIT;
+    user_data.status |= STATUS_VLIMIT;
     }
   else
-    user_data.csr &= ~CSR_VLIMIT;
+    user_data.status &= ~STATUS_VLIMIT;
 
   /* apply correction */
   value = value * user_data.dac_gain + user_data.dac_offset;
@@ -265,7 +279,7 @@ unsigned int d;
 
   /* output integer part to DAC0 */
   d = ((int) value) & 0x0FFF;
-  //  user_data.debug0 = d;
+  //user_data.debug0 = d;
 
   DAC0H = d >> 8;
   DAC0L = d & 0xFF;
@@ -276,7 +290,7 @@ unsigned int d;
 
   /* offset by 16 to get out of the rail */
   d = (int) (value + 16.5);
-  //  user_data.debug1 = d;
+  //user_data.debug1 = d;
 
   DAC1H = 0;
   DAC1L = d;
@@ -305,10 +319,10 @@ unsigned char check_current_trip(unsigned int adc)
     user_data.v_dac = 0;
     ramp_up = 0;
     ramp_down = 0;
-    user_data.csr &= ~(CSR_RAMP_UP | CSR_RAMP_DOWN);
+    user_data.status &= ~(STATUS_RAMP_UP | STATUS_RAMP_DOWN);
 
     /* raise trip flag */
-    user_data.csr |= CSR_ILIMIT;
+    user_data.status |= STATUS_ILIMIT;
     user_data.trip_cnt++;
     user_data.v_dac = 0;
     v_actual = 0;
@@ -317,7 +331,7 @@ unsigned char check_current_trip(unsigned int adc)
     if (user_data.trip_cnt < user_data.trip_max)
       {
       /* clear trip */
-      user_data.csr &= ~CSR_ILIMIT;
+      user_data.status &= ~STATUS_ILIMIT;
 
       /* force ramp up */
       demand_changed = 1;     
@@ -344,21 +358,16 @@ unsigned long v_average;
     n = 100;
 
   v_average = 0;
-  for (i=0 ; i<n ; i++)
+  for (i=0 ; i<n ; )
     {
     v_average += adc_read(1);
+    i++;
 
     if (check_current_trip(0))
-      {
-      i++;
       break;
-      }
 
     if (demand_changed)
-      {
-      i++;
       break;
-      }
 
     yield();
     }
@@ -385,6 +394,14 @@ unsigned int  i, adc;
 float         current;
 unsigned long c_average;
 
+  if (i_limit_changed)
+    {
+	if (user_data.cur_gain > 0)
+      i_limit_adc = (user_data.i_limit - user_data.cur_offset)/user_data.cur_gain / 
+                    1E6 * RCURR / DIVIDER * CUR_MULT / 2.5 * 4096;
+	i_limit_changed = 0;
+	}
+
   c_average = 0;
 
   /* average 100 readings */
@@ -405,7 +422,7 @@ unsigned long c_average;
     }
 
   /* convert to Volt, opamp gain, divider & curr. resist, microamp */
-  current = (float) c_average / i / 4096.0 * 2.5 / 4.7 * DIVIDER / RCURR *1E6;
+  current = (float) c_average / i / 4096.0 * 2.5 / CUR_MULT * DIVIDER / RCURR *1E6;
 
   /* calibrate */
   current = current*user_data.cur_gain + user_data.cur_offset;
@@ -423,8 +440,8 @@ static unsigned long t;
 unsigned char delta;
 
   /* only process ramping when HV is on and not tripped */
-  if ((user_data.csr & CSR_HV_ON) &&
-     !(user_data.csr & CSR_ILIMIT))
+  if ((user_data.control & CONTROL_HV_ON) &&
+     !(user_data.status & STATUS_ILIMIT))
     {
 
     if (demand_changed)
@@ -437,8 +454,8 @@ unsigned char delta;
         /* ramp up */
         ramp_up = 1;
         ramp_down = 0;
-        user_data.csr |= CSR_RAMP_UP;
-        user_data.csr &= ~CSR_RAMP_DOWN;
+        user_data.status |= STATUS_RAMP_UP;
+        user_data.status &= ~STATUS_RAMP_DOWN;
         demand_changed = 0;
         }
 
@@ -448,8 +465,8 @@ unsigned char delta;
         /* ramp down */
         ramp_up = 0;
         ramp_down = 1;
-        user_data.csr &= ~CSR_RAMP_UP;
-        user_data.csr |= CSR_RAMP_DOWN;
+        user_data.status &= ~STATUS_RAMP_UP;
+        user_data.status |= STATUS_RAMP_DOWN;
         demand_changed = 0;
         }
 
@@ -472,7 +489,7 @@ unsigned char delta;
           v_actual = user_data.v_demand;
           user_data.v_dac = v_actual;
           ramp_up = 0;
-          user_data.csr &= ~CSR_RAMP_UP;
+          user_data.status &= ~STATUS_RAMP_UP;
 
           /* make regulation loop faster */
           demand_changed_time = time();
@@ -498,7 +515,7 @@ unsigned char delta;
           v_actual = user_data.v_demand;
           user_data.v_dac = v_actual;
           ramp_down = 0;
-          user_data.csr &= ~CSR_RAMP_DOWN;
+          user_data.status &= ~STATUS_RAMP_DOWN;
 
           /* make regulation loop faster */
           demand_changed_time = time();
@@ -516,10 +533,10 @@ unsigned char delta;
 void regulation(void)
 {
   /* only if HV on and not ramping */
-  if ((user_data.csr & CSR_HV_ON) && !ramp_up && !ramp_down &&
-     !(user_data.csr & CSR_ILIMIT))
+  if ((user_data.control & CONTROL_HV_ON) && !ramp_up && !ramp_down &&
+     !(user_data.status & STATUS_ILIMIT))
     {
-    if (user_data.csr & CSR_REGULATION)
+    if (user_data.control & CONTROL_REGULATION)
       {
       /* apply correction if outside +-0.05V window */
       if (user_data.v_meas > user_data.v_demand + 0.05 ||
@@ -537,7 +554,7 @@ void regulation(void)
   
         demand_changed = 0;
         dac_write(user_data.v_dac);
-        }
+		}
       }
     else
       {
@@ -551,7 +568,7 @@ void regulation(void)
       }
     }
 
-  if (!(user_data.csr & CSR_HV_ON))
+  if (!(user_data.control & CONTROL_HV_ON))
     demand_changed = 0;
 }
 
@@ -589,7 +606,13 @@ unsigned long t_average;
     DISABLE_INTERRUPTS;
     user_data.temperature = temperature;
     ENABLE_INTERRUPTS;
-    }
+
+    /* read node configuration */
+    if (JU1 == 0)
+      user_data.status |= STATUS_NEGATIVE;
+    if (JU2 == 0)
+      user_data.status |= STATUS_LOWCUR;
+	}
 }
 
 /*---- User loop function ------------------------------------------*/
