@@ -6,6 +6,9 @@
   Contents:     Command-line interface to the MIDAS online data base.
 
   $Log$
+  Revision 1.52  2002/03/14 12:59:31  midas
+  Skip 'Edit run number' when starting a run
+
   Revision 1.51  2001/10/03 08:36:23  midas
   Return "invalid link" in odbedit
 
@@ -2496,6 +2499,9 @@ PRINT_INFO      print_info;
 
                   db_get_key(hDB, hSubkey, &key);
                   strcpy(str, key.name);
+
+                  if (equal_ustring(str, "Edit run number"))
+                    continue;
 
                   db_enum_key(hDB, hKey, i, &hSubkey);
                   db_get_key(hDB, hSubkey, &key);
