@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.200  2004/01/08 08:40:10  midas
+  Implemented standard indentation
+
   Revision 1.199  2004/01/08 06:44:00  pierre
   Doxygen the file
 
@@ -1586,7 +1589,7 @@ INT cm_msg_retrieve(INT n_message, char *message, INT * buf_size)
 }
 
 /**dox***************************************************************/
-/** @} */// end of msgfunctionc
+                                                      /** @} */// end of msgfunctionc
 
 /**dox***************************************************************/
 /** @addtogroup cmfunctionc
@@ -1658,7 +1661,7 @@ INT cm_time(DWORD * time)
 }
 
 /**dox***************************************************************/
-/** @} */// end of cmfunctionc
+                                                      /** @} */// end of cmfunctionc
 
 /********************************************************************\
 *                                                                    *
@@ -1724,7 +1727,7 @@ INT cm_get_path(char *path)
 }
 
 /**dox***************************************************************/
-/** @} */// end of cmfunctionc
+                                                      /** @} */// end of cmfunctionc
 
 /**dox***************************************************************/
 /** @addtogroup cmfunctionc
@@ -4185,7 +4188,7 @@ INT cm_register_function(INT id, INT(*func) (INT, void **))
 #endif                          /* DOXYGEN_SHOULD_SKIP_THIS */
 
 /**dox***************************************************************/
-/** @} */// end of cmfunctionc
+                                                      /** @} */// end of cmfunctionc
 
 /**dox***************************************************************/
 /** @addtogroup bmfunctionc
@@ -4619,7 +4622,7 @@ INT bm_close_all_buffers(void)
 }
 
 /**dox***************************************************************/
-/** @} */// end of bmfunctionc
+                                                      /** @} */// end of bmfunctionc
 
 /**dox***************************************************************/
 /** @addtogroup cmfunctionc
@@ -5433,7 +5436,7 @@ INT bm_init_buffer_counters(INT buffer_handle)
 #endif                          /* DOXYGEN_SHOULD_SKIP_THIS */
 
 /**dox***************************************************************/
-/** @} */// end of cmfunctionc
+                                                      /** @} */// end of cmfunctionc
 
 /**dox***************************************************************/
 /** @addtogroup bmfunctionc
@@ -7808,7 +7811,7 @@ void bm_defragment_event(HNDLE buffer_handle, HNDLE request_id,
 #endif                          /* DOXYGEN_SHOULD_SKIP_THIS */
 
 /**dox***************************************************************/
-/** @} */// end of bmfunctionc
+                                                      /** @} */// end of bmfunctionc
 
 /**dox***************************************************************/
 /** @addtogroup rpcfunctionc
@@ -11458,7 +11461,8 @@ INT rpc_server_accept(int lsock)
       command = (char) toupper(net_buffer[0]);
 
       switch (command) {
-      case 'S':/*----------- shutdown listener ----------------------*/
+      case 'S':
+               /*----------- shutdown listener ----------------------*/
          closesocket(sock);
          return RPC_SHUTDOWN;
 
@@ -11467,7 +11471,8 @@ INT rpc_server_accept(int lsock)
          closesocket(sock);
          break;
 
-      case 'I':/*----------- return available experiments -----------*/
+      case 'I':
+               /*----------- return available experiments -----------*/
          cm_scan_experiments();
          for (i = 0; i < MAX_EXPERIMENT && exptab[i].name[0]; i++) {
             sprintf(str, "%s", exptab[i].name);
@@ -11477,7 +11482,8 @@ INT rpc_server_accept(int lsock)
          closesocket(sock);
          break;
 
-      case 'C':/*----------- connect to experiment -----------*/
+      case 'C':
+               /*----------- connect to experiment -----------*/
 
          /* get callback information */
          callback.experiment[0] = 0;
@@ -12381,7 +12387,7 @@ INT rpc_check_channels(void)
 #endif                          /* DOXYGEN_SHOULD_SKIP_THIS */
 
 /**dox***************************************************************/
-/** @} */// end of rpcfunctionc
+                                                      /** @} */// end of rpcfunctionc
 
 /**dox***************************************************************/
 /** @addtogroup bkfunctionc
@@ -12990,7 +12996,7 @@ INT bk_swap(void *event, BOOL force)
 }
 
 /**dox***************************************************************/
-/** @} */// end of bkfunctionc
+                                                      /** @} */// end of bkfunctionc
 
 /**dox***************************************************************/
 /** @addtogroup hsfunctionc
@@ -14775,7 +14781,7 @@ INT hs_fdump(char *file_name, DWORD id, BOOL binary_time)
 #endif                          /* DOXYGEN_SHOULD_SKIP_THIS */
 
 /**dox***************************************************************/
-/** @} */// end of hsfunctionc
+                                                      /** @} */// end of hsfunctionc
 
 /**dox***************************************************************/
 /** @addtogroup elfunctionc
@@ -15694,7 +15700,7 @@ INT el_delete_message(char *tag)
 #endif                          /* DOXYGEN_SHOULD_SKIP_THIS */
 
 /**dox***************************************************************/
-/** @} */// end of elfunctionc
+                                                      /** @} */// end of elfunctionc
 
 /**dox***************************************************************/
 /** @addtogroup alfunctionc
@@ -16362,7 +16368,7 @@ INT al_check()
 /**dox***************************************************************/
 #endif                          /* DOXYGEN_SHOULD_SKIP_THIS */
 
-/** @} */// end of alfunctionc
+                                                      /** @} */// end of alfunctionc
 
 /***** sKIP eb_xxx **************************************************/
 /**dox***************************************************************/
@@ -17455,7 +17461,7 @@ INT dm_area_flush(void)
 #endif                          /* DOXYGEN_SHOULD_SKIP_THIS */
 
 /**dox***************************************************************/
-/** @} */// end of dmfunctionc
+                                                      /** @} */// end of dmfunctionc
 
 /**dox***************************************************************/
-/** @} */// end of midasincludecode
+                                                      /** @} */// end of midasincludecode

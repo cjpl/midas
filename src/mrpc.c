@@ -6,6 +6,9 @@
   Contents:     List of MIDAS RPC functions with parameters
 
   $Log$
+  Revision 1.33  2004/01/08 08:40:10  midas
+  Implemented standard indentation
+
   Revision 1.32  2004/01/08 06:36:40  pierre
   Doxygen the file
 
@@ -1282,7 +1285,7 @@ RPC_LIST *rpc_get_internal_list(INT flag)
 /*------------------------------------------------------------------*/
 
 /**dox***************************************************************/
-/** @} */// end of mrpcstructc
+                                                      /** @} */// end of mrpcstructc
 
 /**dox***************************************************************/
-/** @} */// end of mrpcincludecode
+                                                      /** @} */// end of mrpcincludecode

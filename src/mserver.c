@@ -6,6 +6,9 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
+  Revision 1.44  2004/01/08 08:40:10  midas
+  Implemented standard indentation
+
   Revision 1.43  2003/12/12 10:54:14  midas
   Fixed wrong index in call to db_remove_open_record()
 
@@ -155,28 +158,26 @@ INT rpc_server_dispatch(INT index, void *prpc_param[]);
 
 INT msg_print(const char *msg)
 {
-  /* print message to system log */
-  ss_syslog(msg);
+   /* print message to system log */
+   ss_syslog(msg);
 
-  /* print message to stdout */
-  return puts(msg);
+   /* print message to stdout */
+   return puts(msg);
 }
 
 /*---- debug_print -------------------------------------------------*/
 
 void debug_print(char *msg)
 {
-FILE *f;
+   FILE *f;
 
-  /* print message to file */
-  f = fopen("mserver.log", "a");
-  if (f != NULL)
-    {
-    fprintf(f, "%s\n", msg);
-    fclose(f);
-    }
-  else
-    printf("Cannot open \"mserver.log\".");
+   /* print message to file */
+   f = fopen("mserver.log", "a");
+   if (f != NULL) {
+      fprintf(f, "%s\n", msg);
+      fclose(f);
+   } else
+      printf("Cannot open \"mserver.log\".");
 }
 
 /*---- main --------------------------------------------------------*/
@@ -227,248 +228,231 @@ int main(int argc, char **argv)
 
 \********************************************************************/
 {
-struct callback_addr callback;
-int    i, flag, size, server_type, debug;
-char   name[256];
-BOOL   inetd;
+   struct callback_addr callback;
+   int i, flag, size, server_type, debug;
+   char name[256];
+   BOOL inetd;
 
 #ifdef OS_WINNT
-  /* init critical section object for open/close buffer */
-  InitializeCriticalSection(&buffer_critial_section);
+   /* init critical section object for open/close buffer */
+   InitializeCriticalSection(&buffer_critial_section);
 #endif
 
 #if defined(SIGPIPE) && defined(SIG_IGN)
-  signal(SIGPIPE,SIG_IGN);
+   signal(SIGPIPE, SIG_IGN);
 #endif
 
-  /* save executable file name */
-  if (argv[0] == NULL || argv[0][0] == 0)
-    strcpy(name, "mserver");
-  else
-    strcpy(name, argv[0]);
+   /* save executable file name */
+   if (argv[0] == NULL || argv[0][0] == 0)
+      strcpy(name, "mserver");
+   else
+      strcpy(name, argv[0]);
 
 #ifdef OS_UNIX
-  /* if no full path given, assume /usr/local/bin */
-  if (strchr(name, '/') == 0)
-    strcpy(name, "/usr/local/bin/mserver");
+   /* if no full path given, assume /usr/local/bin */
+   if (strchr(name, '/') == 0)
+      strcpy(name, "/usr/local/bin/mserver");
 #endif
 
-  rpc_set_server_option(RPC_OSERVER_NAME, (PTYPE) name);
+   rpc_set_server_option(RPC_OSERVER_NAME, (PTYPE) name);
 
-  /* redirect message print */
-  cm_set_msg_print(MT_ALL, MT_ALL, msg_print);
+   /* redirect message print */
+   cm_set_msg_print(MT_ALL, MT_ALL, msg_print);
 
-  /* find out if we were started by inetd */
-  size = sizeof(int);
-  inetd = (getsockopt(0, SOL_SOCKET, SO_TYPE, (void *)&flag, (void *)&size) == 0);
-           
-  if (argc < 7 && inetd)
-    {
-    /* accept connection from stdin */
-    rpc_set_server_option(RPC_OSERVER_TYPE, ST_MPROCESS);
-    rpc_server_accept(0);
+   /* find out if we were started by inetd */
+   size = sizeof(int);
+   inetd = (getsockopt(0, SOL_SOCKET, SO_TYPE, (void *) &flag, (void *) &size) == 0);
 
-    return 0;
-    }
+   if (argc < 7 && inetd) {
+      /* accept connection from stdin */
+      rpc_set_server_option(RPC_OSERVER_TYPE, ST_MPROCESS);
+      rpc_server_accept(0);
 
-  if (!inetd && argc < 7)
-    cm_msg(MLOG, "main", "%s started interactively", argv[0]);
-
-  if (argc < 7)
-    {
-    debug = 0;
-    server_type = ST_MPROCESS;
-    
-    /* parse command line parameters */
-    for (i=1 ; i<argc ; i++)
-      {
-      if (argv[i][0] == '-' && argv[i][1] == 'd')
-        debug = 1;
-      else if (argv[i][0] == '-' && argv[i][1] == 'D')
-        debug = 2;
-      else if (argv[i][0] == '-' && argv[i][1] == 's')
-        server_type = ST_SINGLE;
-      else if (argv[i][0] == '-' && argv[i][1] == 't')
-        server_type = ST_MTHREAD;
-      else if (argv[i][0] == '-' && argv[i][1] == 'm')
-        server_type = ST_MPROCESS;
-      else if (argv[i][0] == '-')
-        {
-        if (i+1 >= argc || argv[i+1][0] == '-')
-          goto usage;
-        else
-          {
-  usage:
-          printf("usage: mserver [-s][-t][-m][-d]\n");
-          printf("               -s    Single process server\n");
-          printf("               -t    Multi threaded server\n");
-          printf("               -m    Multi process server (default)\n");
-          printf("               -d    Write debug info to \"mserver.log\"\n\n");
-          printf("               -D    Write debug info to stdout\n\n");
-          return 0;
-          }
-        }
-      }
-
-    /* turn on debugging */
-    if (debug)
-      {
-      printf("Debugging mode is on.\n");
-      if (debug == 1)
-        rpc_set_debug(debug_print, 1);
-      else
-        rpc_set_debug((void (*)(char*))puts, 2);
-      }
-
-    /* if command line parameter given, start according server type */
-    if (server_type == ST_MTHREAD)
-      {
-      if (ss_thread_create(NULL, NULL) == SS_NO_THREAD)
-        {
-        printf("MIDAS doesn't support threads on this OS.\n");
-        return 0;
-        }
-
-      printf("NOTE: THE MULTI THREADED SERVER IS BUGGY, ONLY USE IT FOR TEST PURPOSES\n");  
-      printf("Multi thread server started\n");
-      }
-    else if (server_type == ST_SINGLE)
-      printf("Single thread server started\n");
-    else if (server_type == ST_MPROCESS)
-      printf("Multi process server started\n");
-
-    /* register server */
-    if (rpc_register_server(server_type, argv[0], 
-                            NULL, rpc_server_dispatch) != RPC_SUCCESS)
-      {
-      printf("Cannot start server\n");
       return 0;
+   }
+
+   if (!inetd && argc < 7)
+      cm_msg(MLOG, "main", "%s started interactively", argv[0]);
+
+   if (argc < 7) {
+      debug = 0;
+      server_type = ST_MPROCESS;
+
+      /* parse command line parameters */
+      for (i = 1; i < argc; i++) {
+         if (argv[i][0] == '-' && argv[i][1] == 'd')
+            debug = 1;
+         else if (argv[i][0] == '-' && argv[i][1] == 'D')
+            debug = 2;
+         else if (argv[i][0] == '-' && argv[i][1] == 's')
+            server_type = ST_SINGLE;
+         else if (argv[i][0] == '-' && argv[i][1] == 't')
+            server_type = ST_MTHREAD;
+         else if (argv[i][0] == '-' && argv[i][1] == 'm')
+            server_type = ST_MPROCESS;
+         else if (argv[i][0] == '-') {
+            if (i + 1 >= argc || argv[i + 1][0] == '-')
+               goto usage;
+            else {
+             usage:
+               printf("usage: mserver [-s][-t][-m][-d]\n");
+               printf("               -s    Single process server\n");
+               printf("               -t    Multi threaded server\n");
+               printf("               -m    Multi process server (default)\n");
+               printf("               -d    Write debug info to \"mserver.log\"\n\n");
+               printf("               -D    Write debug info to stdout\n\n");
+               return 0;
+            }
+         }
       }
 
-    /* register MIDAS library functions */
-    rpc_register_functions(rpc_get_internal_list(1), rpc_server_dispatch);
+      /* turn on debugging */
+      if (debug) {
+         printf("Debugging mode is on.\n");
+         if (debug == 1)
+            rpc_set_debug(debug_print, 1);
+         else
+            rpc_set_debug((void (*)(char *)) puts, 2);
+      }
 
-    /* run forever */
-    while (ss_suspend(5000, 0) != RPC_SHUTDOWN);
-    }
-  else
-    {
-    /* here we come if this program is started as a subprocess */
+      /* if command line parameter given, start according server type */
+      if (server_type == ST_MTHREAD) {
+         if (ss_thread_create(NULL, NULL) == SS_NO_THREAD) {
+            printf("MIDAS doesn't support threads on this OS.\n");
+            return 0;
+         }
 
-    memset(&callback, 0, sizeof(callback));
+         printf
+             ("NOTE: THE MULTI THREADED SERVER IS BUGGY, ONLY USE IT FOR TEST PURPOSES\n");
+         printf("Multi thread server started\n");
+      } else if (server_type == ST_SINGLE)
+         printf("Single thread server started\n");
+      else if (server_type == ST_MPROCESS)
+         printf("Multi process server started\n");
 
-    /* extract callback arguments and start receiver */
+      /* register server */
+      if (rpc_register_server(server_type, argv[0],
+                              NULL, rpc_server_dispatch) != RPC_SUCCESS) {
+         printf("Cannot start server\n");
+         return 0;
+      }
+
+      /* register MIDAS library functions */
+      rpc_register_functions(rpc_get_internal_list(1), rpc_server_dispatch);
+
+      /* run forever */
+      while (ss_suspend(5000, 0) != RPC_SHUTDOWN);
+   } else {
+      /* here we come if this program is started as a subprocess */
+
+      memset(&callback, 0, sizeof(callback));
+
+      /* extract callback arguments and start receiver */
 #ifdef OS_VMS
-    strcpy(callback.host_name, argv[2]);
-    callback.host_port1 = atoi(argv[3]);
-    callback.host_port2 = atoi(argv[4]);
-    callback.host_port3 = atoi(argv[5]);
-    callback.debug = atoi(argv[6]);
-    if (argc > 7)
-      strcpy(callback.experiment, argv[7]);
-    if (argc > 8)
-      strcpy(callback.directory, argv[8]);
-    if (argc > 9)
-      strcpy(callback.user, argv[9]);
+      strcpy(callback.host_name, argv[2]);
+      callback.host_port1 = atoi(argv[3]);
+      callback.host_port2 = atoi(argv[4]);
+      callback.host_port3 = atoi(argv[5]);
+      callback.debug = atoi(argv[6]);
+      if (argc > 7)
+         strcpy(callback.experiment, argv[7]);
+      if (argc > 8)
+         strcpy(callback.directory, argv[8]);
+      if (argc > 9)
+         strcpy(callback.user, argv[9]);
 #else
-    strcpy(callback.host_name, argv[1]);
-    callback.host_port1 = atoi(argv[2]);
-    callback.host_port2 = atoi(argv[3]);
-    callback.host_port3 = atoi(argv[4]);
-    callback.debug = atoi(argv[5]);
-    if (argc > 6)
-      strcpy(callback.experiment, argv[6]);
-    if (argc > 7)
-      strcpy(callback.directory, argv[7]);
-    if (argc > 8)
-      strcpy(callback.user, argv[8]);
+      strcpy(callback.host_name, argv[1]);
+      callback.host_port1 = atoi(argv[2]);
+      callback.host_port2 = atoi(argv[3]);
+      callback.host_port3 = atoi(argv[4]);
+      callback.debug = atoi(argv[5]);
+      if (argc > 6)
+         strcpy(callback.experiment, argv[6]);
+      if (argc > 7)
+         strcpy(callback.directory, argv[7]);
+      if (argc > 8)
+         strcpy(callback.user, argv[8]);
 #endif
-    callback.index = 0;
+      callback.index = 0;
 
-    if (callback.debug)
-      {
-      if (callback.directory[0])
-        {
-        if (callback.user[0])
-          cm_msg(MLOG, "main", "Start subprocess in %s under user %s", 
-                  callback.directory, callback.user);
-        else
-          cm_msg(MLOG, "main", "Start subprocess in %s", callback.directory);
+      if (callback.debug) {
+         if (callback.directory[0]) {
+            if (callback.user[0])
+               cm_msg(MLOG, "main", "Start subprocess in %s under user %s",
+                      callback.directory, callback.user);
+            else
+               cm_msg(MLOG, "main", "Start subprocess in %s", callback.directory);
 
-        }
-      else
-        cm_msg(MLOG, "main", "Start subprocess in current directory");
+         } else
+            cm_msg(MLOG, "main", "Start subprocess in current directory");
       }
 
-    /* change the directory and uid */
-    if (callback.directory[0])
-      if (chdir(callback.directory) != 0)
-        cm_msg(MERROR, "main", "Cannot change to directory \"%s\"", callback.directory);
+      /* change the directory and uid */
+      if (callback.directory[0])
+         if (chdir(callback.directory) != 0)
+            cm_msg(MERROR, "main", "Cannot change to directory \"%s\"",
+                   callback.directory);
 
 #ifdef OS_UNIX
 
-    /* under UNIX, change user and group ID if started under root */
-    if (callback.user[0] && geteuid() == 0)
-      {
-      struct passwd *pw;
+      /* under UNIX, change user and group ID if started under root */
+      if (callback.user[0] && geteuid() == 0) {
+         struct passwd *pw;
 
-      pw = getpwnam(callback.user);
-      if (pw == NULL)
-        {
-        cm_msg(MERROR, "main", "Cannot change UID, unknown user \"%s\"", callback.user);
-        }
-      else
-        {
-        if(setgid(pw->pw_gid) < 0 || initgroups(pw->pw_name, pw->pw_gid) < 0)
-          cm_msg(MERROR, "main", "Unable to set group premission for user %s", callback.user);
-        else
-          {
-          if(setuid(pw->pw_uid) < 0)
-            cm_msg(MERROR, "main", "Unable to set user ID for %s", callback.user);
-          else
-            cm_msg(MLOG, "main", "Changed UID to user %s (GID %d, UID %d)", callback.user,
-                   pw->pw_gid, pw->pw_uid);
-          }
-        }
+         pw = getpwnam(callback.user);
+         if (pw == NULL) {
+            cm_msg(MERROR, "main", "Cannot change UID, unknown user \"%s\"",
+                   callback.user);
+         } else {
+            if (setgid(pw->pw_gid) < 0 || initgroups(pw->pw_name, pw->pw_gid) < 0)
+               cm_msg(MERROR, "main", "Unable to set group premission for user %s",
+                      callback.user);
+            else {
+               if (setuid(pw->pw_uid) < 0)
+                  cm_msg(MERROR, "main", "Unable to set user ID for %s", callback.user);
+               else
+                  cm_msg(MLOG, "main", "Changed UID to user %s (GID %d, UID %d)",
+                         callback.user, pw->pw_gid, pw->pw_uid);
+            }
+         }
 
       }
 #endif
 
-    if (callback.debug)
-      {
-      printf("Debuggin mode is on.\n");
-      if (callback.debug == 1)
-        rpc_set_debug(debug_print, 1);
-      else
-        rpc_set_debug((void (*)(char*))puts, 2);
+      if (callback.debug) {
+         printf("Debuggin mode is on.\n");
+         if (callback.debug == 1)
+            rpc_set_debug(debug_print, 1);
+         else
+            rpc_set_debug((void (*)(char *)) puts, 2);
       }
 
-    rpc_register_server(ST_SUBPROCESS, NULL, NULL, rpc_server_dispatch);
+      rpc_register_server(ST_SUBPROCESS, NULL, NULL, rpc_server_dispatch);
 
-    /* register MIDAS library functions */
-    rpc_register_functions(rpc_get_internal_list(1), rpc_server_dispatch);
+      /* register MIDAS library functions */
+      rpc_register_functions(rpc_get_internal_list(1), rpc_server_dispatch);
 
-    rpc_server_thread(&callback);
-    }
+      rpc_server_thread(&callback);
+   }
 
-  return BM_SUCCESS;
+   return BM_SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
 
 /* just a small test routine which doubles numbers */
 INT rpc_test(BYTE b, WORD w, INT i, float f, double d,
-             BYTE *b1, WORD *w1, INT *i1, float *f1, double *d1)
+             BYTE * b1, WORD * w1, INT * i1, float *f1, double *d1)
 {
-  printf("rpc_test: %d %d %d %1.1f %1.1lf\n", b, w, i, f, d);
+   printf("rpc_test: %d %d %d %1.1f %1.1lf\n", b, w, i, f, d);
 
-  *b1 = b*2;
-  *w1 = w*2;
-  *i1 = i*2;
-  *f1 = f*2;
-  *d1 = d*2;
+   *b1 = b * 2;
+   *w1 = w * 2;
+   *i1 = i * 2;
+   *f1 = f * 2;
+   *d1 = d * 2;
 
-  return 1;
+   return 1;
 }
 
 /*----- rpc_server_dispatch ----------------------------------------*/
@@ -496,77 +480,76 @@ INT rpc_server_dispatch(INT index, void *prpc_param[])
 
 \********************************************************************/
 {
-INT status = 0;
-INT convert_flags;
+   INT status = 0;
+   INT convert_flags;
 
-  convert_flags = rpc_get_server_option(RPC_CONVERT_FLAGS);
-  
-  switch (index)
-    {
-    /* common functions */
+   convert_flags = rpc_get_server_option(RPC_CONVERT_FLAGS);
 
-    case RPC_CM_SET_CLIENT_INFO:
-      status = cm_set_client_info(CHNDLE(0), CPHNDLE(1), CSTRING(2), 
+   switch (index) {
+      /* common functions */
+
+   case RPC_CM_SET_CLIENT_INFO:
+      status = cm_set_client_info(CHNDLE(0), CPHNDLE(1), CSTRING(2),
                                   CSTRING(3), CINT(4), CSTRING(5), CINT(6));
       break;
 
-    case RPC_CM_SET_WATCHDOG_PARAMS:
+   case RPC_CM_SET_WATCHDOG_PARAMS:
       status = cm_set_watchdog_params(CBOOL(0), CINT(1));
       break;
 
-    case RPC_CM_CLEANUP:
+   case RPC_CM_CLEANUP:
       status = cm_cleanup(CSTRING(0), CBOOL(1));
       break;
 
-    case RPC_CM_GET_WATCHDOG_INFO:
+   case RPC_CM_GET_WATCHDOG_INFO:
       status = cm_get_watchdog_info(CHNDLE(0), CSTRING(1), CPDWORD(2), CPDWORD(3));
       break;
 
-    case RPC_CM_MSG:
+   case RPC_CM_MSG:
       status = cm_msg(CINT(0), CSTRING(1), CINT(2), CSTRING(3), CSTRING(4));
       break;
 
-    case RPC_CM_MSG_LOG:
+   case RPC_CM_MSG_LOG:
       status = cm_msg_log(CINT(0), CSTRING(1));
       break;
 
-    case RPC_CM_MSG_LOG1:
+   case RPC_CM_MSG_LOG1:
       status = cm_msg_log1(CINT(0), CSTRING(1), CSTRING(2));
       break;
 
-    case RPC_CM_EXECUTE:
+   case RPC_CM_EXECUTE:
       status = cm_execute(CSTRING(0), CSTRING(1), CINT(2));
       break;
 
-    case RPC_CM_EXIST:
+   case RPC_CM_EXIST:
       status = cm_exist(CSTRING(0), CBOOL(1));
       break;
 
-    case RPC_CM_SYNCHRONIZE:
+   case RPC_CM_SYNCHRONIZE:
       status = cm_synchronize(CPDWORD(0));
       break;
 
-    case RPC_CM_ASCTIME:
-      status = cm_asctime(CSTRING(0),CINT(1));
+   case RPC_CM_ASCTIME:
+      status = cm_asctime(CSTRING(0), CINT(1));
       break;
 
-    case RPC_CM_TIME:
+   case RPC_CM_TIME:
       status = cm_time(CPDWORD(0));
       break;
 
-    case RPC_CM_MSG_RETRIEVE:
+   case RPC_CM_MSG_RETRIEVE:
       status = cm_msg_retrieve(CINT(0), CSTRING(1), CPINT(2));
       break;
 
-    /* buffer manager functions */
-    
-    case RPC_BM_OPEN_BUFFER:
+      /* buffer manager functions */
+
+   case RPC_BM_OPEN_BUFFER:
 
 #ifdef OS_WINNT
       /*
-      bm_open_buffer may only be called from one thread at a time,
-      so use critical section object for synchronization.
-      */
+         bm_open_buffer may only be called from one thread at a time,
+         so use critical section object for synchronization.
+       */
       EnterCriticalSection(&buffer_critial_section);
 #endif
 
@@ -578,13 +561,13 @@ INT convert_flags;
 
       break;
 
-    case RPC_BM_CLOSE_BUFFER:
+   case RPC_BM_CLOSE_BUFFER:
 
 #ifdef OS_WINNT
       /*
-      bm_close_buffer may only be called from one thread at a time,
-      so use critical section object for synchronization.
-      */
+         bm_close_buffer may only be called from one thread at a time,
+         so use critical section object for synchronization.
+       */
       EnterCriticalSection(&buffer_critial_section);
 #endif
 
@@ -596,13 +579,13 @@ INT convert_flags;
 
       break;
 
-    case RPC_BM_CLOSE_ALL_BUFFERS:
+   case RPC_BM_CLOSE_ALL_BUFFERS:
 
 #ifdef OS_WINNT
       /*
-      bm_close_all_buffers may only be called from one thread at a time,
-      so use critical section object for synchronization.
-      */
+         bm_close_all_buffers may only be called from one thread at a time,
+         so use critical section object for synchronization.
+       */
       EnterCriticalSection(&buffer_critial_section);
 #endif
 
@@ -614,93 +597,91 @@ INT convert_flags;
 
       break;
 
-    case RPC_BM_GET_BUFFER_INFO:
+   case RPC_BM_GET_BUFFER_INFO:
       status = bm_get_buffer_info(CINT(0), CARRAY(1));
-      if (convert_flags)
-        {
-        BUFFER_HEADER *pb;
+      if (convert_flags) {
+         BUFFER_HEADER *pb;
 
-        /* convert event header */
-        pb = (BUFFER_HEADER *) CARRAY(1);
-        rpc_convert_single(&pb->num_clients, TID_INT, RPC_OUTGOING, convert_flags);
-        rpc_convert_single(&pb->max_client_index, TID_INT, RPC_OUTGOING, convert_flags);
-        rpc_convert_single(&pb->size, TID_INT, RPC_OUTGOING, convert_flags);
-        rpc_convert_single(&pb->read_pointer, TID_INT, RPC_OUTGOING, convert_flags);
-        rpc_convert_single(&pb->write_pointer, TID_INT, RPC_OUTGOING, convert_flags);
-        rpc_convert_single(&pb->num_in_events, TID_INT, RPC_OUTGOING, convert_flags);
-        rpc_convert_single(&pb->num_out_events, TID_INT, RPC_OUTGOING, convert_flags);
-        }
+         /* convert event header */
+         pb = (BUFFER_HEADER *) CARRAY(1);
+         rpc_convert_single(&pb->num_clients, TID_INT, RPC_OUTGOING, convert_flags);
+         rpc_convert_single(&pb->max_client_index, TID_INT, RPC_OUTGOING, convert_flags);
+         rpc_convert_single(&pb->size, TID_INT, RPC_OUTGOING, convert_flags);
+         rpc_convert_single(&pb->read_pointer, TID_INT, RPC_OUTGOING, convert_flags);
+         rpc_convert_single(&pb->write_pointer, TID_INT, RPC_OUTGOING, convert_flags);
+         rpc_convert_single(&pb->num_in_events, TID_INT, RPC_OUTGOING, convert_flags);
+         rpc_convert_single(&pb->num_out_events, TID_INT, RPC_OUTGOING, convert_flags);
+      }
       break;
 
-    case RPC_BM_GET_BUFFER_LEVEL:
+   case RPC_BM_GET_BUFFER_LEVEL:
       status = bm_get_buffer_level(CINT(0), CPINT(1));
       break;
 
-    case RPC_BM_INIT_BUFFER_COUNTERS:
+   case RPC_BM_INIT_BUFFER_COUNTERS:
       status = bm_init_buffer_counters(CINT(0));
       break;
 
-    case RPC_BM_SET_CACHE_SIZE:
+   case RPC_BM_SET_CACHE_SIZE:
       status = bm_set_cache_size(CINT(0), CINT(1), CINT(2));
       break;
 
-    case RPC_BM_ADD_EVENT_REQUEST:
+   case RPC_BM_ADD_EVENT_REQUEST:
       status = bm_add_event_request(CINT(0), CSHORT(1),
-                                    CSHORT(2), CINT(3), (void (*)(HNDLE,HNDLE,EVENT_HEADER*,void*)) CINT(4), CINT(5));
+                                    CSHORT(2), CINT(3),
+                                    (void (*)(HNDLE, HNDLE, EVENT_HEADER *, void *))
+                                    CINT(4), CINT(5));
       break;
 
-    case RPC_BM_REMOVE_EVENT_REQUEST:
+   case RPC_BM_REMOVE_EVENT_REQUEST:
       status = bm_remove_event_request(CINT(0), CINT(1));
       break;
 
-    case RPC_BM_SEND_EVENT:
-      if (convert_flags)
-        {
-        EVENT_HEADER *pevent;
+   case RPC_BM_SEND_EVENT:
+      if (convert_flags) {
+         EVENT_HEADER *pevent;
 
-        /* convert event header */
-        pevent = (EVENT_HEADER *) CARRAY(1);
-        rpc_convert_single(&pevent->event_id, TID_SHORT, 0, convert_flags);
-        rpc_convert_single(&pevent->trigger_mask, TID_SHORT, 0, convert_flags);
-        rpc_convert_single(&pevent->serial_number, TID_DWORD, 0, convert_flags);
-        rpc_convert_single(&pevent->time_stamp, TID_DWORD, 0, convert_flags);
-        rpc_convert_single(&pevent->data_size, TID_DWORD, 0, convert_flags);
-        }
+         /* convert event header */
+         pevent = (EVENT_HEADER *) CARRAY(1);
+         rpc_convert_single(&pevent->event_id, TID_SHORT, 0, convert_flags);
+         rpc_convert_single(&pevent->trigger_mask, TID_SHORT, 0, convert_flags);
+         rpc_convert_single(&pevent->serial_number, TID_DWORD, 0, convert_flags);
+         rpc_convert_single(&pevent->time_stamp, TID_DWORD, 0, convert_flags);
+         rpc_convert_single(&pevent->data_size, TID_DWORD, 0, convert_flags);
+      }
 
-      status = bm_send_event(CINT(0), CARRAY(1), CINT(2),
-                             CINT(3));
+      status = bm_send_event(CINT(0), CARRAY(1), CINT(2), CINT(3));
       break;
 
-    case RPC_BM_RECEIVE_EVENT:
-      status = bm_receive_event(CINT(0), CARRAY(1), CPINT(2),
-                                CINT(3));
+   case RPC_BM_RECEIVE_EVENT:
+      status = bm_receive_event(CINT(0), CARRAY(1), CPINT(2), CINT(3));
       break;
 
-    case RPC_BM_SKIP_EVENT:
+   case RPC_BM_SKIP_EVENT:
       status = bm_skip_event(CINT(0));
       break;
 
-    case RPC_BM_FLUSH_CACHE:
+   case RPC_BM_FLUSH_CACHE:
       status = bm_flush_cache(CINT(0), CINT(1));
       break;
 
-    case RPC_BM_MARK_READ_WAITING:
+   case RPC_BM_MARK_READ_WAITING:
       status = bm_mark_read_waiting(CBOOL(0));
       break;
 
-    case RPC_BM_EMPTY_BUFFERS:
+   case RPC_BM_EMPTY_BUFFERS:
       status = bm_empty_buffers();
       break;
 
-    /* database functions */
-    
-    case RPC_DB_OPEN_DATABASE:
+      /* database functions */
+
+   case RPC_DB_OPEN_DATABASE:
 
 #ifdef OS_WINNT
       /*
-      db_open_database may only be called from one thread at a time,
-      so use critical section object for synchronization.
-      */
+         db_open_database may only be called from one thread at a time,
+         so use critical section object for synchronization.
+       */
       EnterCriticalSection(&buffer_critial_section);
 #endif
 
@@ -712,13 +693,13 @@ INT convert_flags;
 
       break;
 
-    case RPC_DB_CLOSE_DATABASE:
+   case RPC_DB_CLOSE_DATABASE:
 
 #ifdef OS_WINNT
       /*
-      db_close_database may only be called from one thread at a time,
-      so use critical section object for synchronization.
-      */
+         db_close_database may only be called from one thread at a time,
+         so use critical section object for synchronization.
+       */
       EnterCriticalSection(&buffer_critial_section);
 #endif
 
@@ -730,17 +711,17 @@ INT convert_flags;
 
       break;
 
-    case RPC_DB_FLUSH_DATABASE:
+   case RPC_DB_FLUSH_DATABASE:
       status = db_flush_database(CINT(0));
       break;
 
-    case RPC_DB_CLOSE_ALL_DATABASES:
+   case RPC_DB_CLOSE_ALL_DATABASES:
 
 #ifdef OS_WINNT
       /*
-      db_close_allo_databases may only be called from one thread at a time,
-      so use critical section object for synchronization.
-      */
+         db_close_allo_databases may only be called from one thread at a time,
+         so use critical section object for synchronization.
+       */
       EnterCriticalSection(&buffer_critial_section);
 #endif
 
@@ -752,269 +733,281 @@ INT convert_flags;
 
       break;
 
-    case RPC_DB_CREATE_KEY:
+   case RPC_DB_CREATE_KEY:
       status = db_create_key(CHNDLE(0), CHNDLE(1), CSTRING(2), CDWORD(3));
       break;
 
-    case RPC_DB_CREATE_LINK:
+   case RPC_DB_CREATE_LINK:
       status = db_create_link(CHNDLE(0), CHNDLE(1), CSTRING(2), CSTRING(3));
       break;
 
-    case RPC_DB_SET_VALUE:
+   case RPC_DB_SET_VALUE:
       rpc_convert_data(CARRAY(3), CDWORD(6), RPC_FIXARRAY, CINT(4), convert_flags);
-      status = db_set_value(CHNDLE(0), CHNDLE(1), CSTRING(2), CARRAY(3), CINT(4), CINT(5), CDWORD(6));
+      status =
+          db_set_value(CHNDLE(0), CHNDLE(1), CSTRING(2), CARRAY(3), CINT(4), CINT(5),
+                       CDWORD(6));
       break;
 
-    case RPC_DB_GET_VALUE:
+   case RPC_DB_GET_VALUE:
       rpc_convert_data(CARRAY(3), CDWORD(5), RPC_FIXARRAY, CINT(4), convert_flags);
-      status = db_get_value(CHNDLE(0), CHNDLE(1), CSTRING(2), CARRAY(3), CPINT(4), CDWORD(5), CBOOL(6));
-      rpc_convert_data(CARRAY(3), CDWORD(5), RPC_FIXARRAY | RPC_OUTGOING, CINT(4), convert_flags);
+      status =
+          db_get_value(CHNDLE(0), CHNDLE(1), CSTRING(2), CARRAY(3), CPINT(4), CDWORD(5),
+                       CBOOL(6));
+      rpc_convert_data(CARRAY(3), CDWORD(5), RPC_FIXARRAY | RPC_OUTGOING, CINT(4),
+                       convert_flags);
       break;
 
-    case RPC_DB_FIND_KEY:
+   case RPC_DB_FIND_KEY:
       status = db_find_key(CHNDLE(0), CHNDLE(1), CSTRING(2), CPHNDLE(3));
       break;
 
-    case RPC_DB_FIND_LINK:
+   case RPC_DB_FIND_LINK:
       status = db_find_link(CHNDLE(0), CHNDLE(1), CSTRING(2), CPHNDLE(3));
       break;
 
-    case RPC_DB_GET_PATH:
+   case RPC_DB_GET_PATH:
       status = db_get_path(CHNDLE(0), CHNDLE(1), CSTRING(2), CINT(3));
       break;
 
-    case RPC_DB_DELETE_KEY:
+   case RPC_DB_DELETE_KEY:
       status = db_delete_key(CHNDLE(0), CHNDLE(1), CBOOL(2));
       break;
 
-    case RPC_DB_ENUM_KEY:
+   case RPC_DB_ENUM_KEY:
       status = db_enum_key(CHNDLE(0), CHNDLE(1), CINT(2), CPHNDLE(3));
       break;
 
-    case RPC_DB_ENUM_LINK:
+   case RPC_DB_ENUM_LINK:
       status = db_enum_link(CHNDLE(0), CHNDLE(1), CINT(2), CPHNDLE(3));
       break;
 
-    case RPC_DB_GET_NEXT_LINK:
+   case RPC_DB_GET_NEXT_LINK:
       status = db_get_next_link(CHNDLE(0), CHNDLE(1), CPHNDLE(2));
       break;
 
-    case RPC_DB_GET_KEY:
+   case RPC_DB_GET_KEY:
       status = db_get_key(CHNDLE(0), CHNDLE(1), CARRAY(2));
-      if (convert_flags)
-        {
-        KEY *pkey;
+      if (convert_flags) {
+         KEY *pkey;
 
-        pkey = (KEY *) CARRAY(2);
-        rpc_convert_single(&pkey->type, TID_DWORD, RPC_OUTGOING, convert_flags);
-        rpc_convert_single(&pkey->num_values, TID_INT, RPC_OUTGOING, convert_flags);
-        rpc_convert_single(&pkey->data, TID_INT, RPC_OUTGOING, convert_flags);
-        rpc_convert_single(&pkey->total_size, TID_INT, RPC_OUTGOING, convert_flags);
-        rpc_convert_single(&pkey->item_size, TID_INT, RPC_OUTGOING, convert_flags);
-        rpc_convert_single(&pkey->access_mode, TID_WORD, RPC_OUTGOING, convert_flags);
-        rpc_convert_single(&pkey->notify_count, TID_WORD, RPC_OUTGOING, convert_flags);
-        rpc_convert_single(&pkey->next_key, TID_INT, RPC_OUTGOING, convert_flags);
-        rpc_convert_single(&pkey->parent_keylist, TID_INT, RPC_OUTGOING, convert_flags);
-        rpc_convert_single(&pkey->last_written, TID_INT, RPC_OUTGOING, convert_flags);
-        }
+         pkey = (KEY *) CARRAY(2);
+         rpc_convert_single(&pkey->type, TID_DWORD, RPC_OUTGOING, convert_flags);
+         rpc_convert_single(&pkey->num_values, TID_INT, RPC_OUTGOING, convert_flags);
+         rpc_convert_single(&pkey->data, TID_INT, RPC_OUTGOING, convert_flags);
+         rpc_convert_single(&pkey->total_size, TID_INT, RPC_OUTGOING, convert_flags);
+         rpc_convert_single(&pkey->item_size, TID_INT, RPC_OUTGOING, convert_flags);
+         rpc_convert_single(&pkey->access_mode, TID_WORD, RPC_OUTGOING, convert_flags);
+         rpc_convert_single(&pkey->notify_count, TID_WORD, RPC_OUTGOING, convert_flags);
+         rpc_convert_single(&pkey->next_key, TID_INT, RPC_OUTGOING, convert_flags);
+         rpc_convert_single(&pkey->parent_keylist, TID_INT, RPC_OUTGOING, convert_flags);
+         rpc_convert_single(&pkey->last_written, TID_INT, RPC_OUTGOING, convert_flags);
+      }
       break;
 
-    case RPC_DB_GET_KEY_INFO:
-      status = db_get_key_info(CHNDLE(0), CHNDLE(1), CSTRING(2), CINT(3), CPINT(4), CPINT(5), CPINT(6));
+   case RPC_DB_GET_KEY_INFO:
+      status =
+          db_get_key_info(CHNDLE(0), CHNDLE(1), CSTRING(2), CINT(3), CPINT(4), CPINT(5),
+                          CPINT(6));
       break;
 
-    case RPC_DB_GET_KEY_TIME:
+   case RPC_DB_GET_KEY_TIME:
       status = db_get_key_time(CHNDLE(0), CHNDLE(1), CPDWORD(2));
       break;
 
-    case RPC_DB_RENAME_KEY:
+   case RPC_DB_RENAME_KEY:
       status = db_rename_key(CHNDLE(0), CHNDLE(1), CSTRING(2));
       break;
 
-    case RPC_DB_REORDER_KEY:
+   case RPC_DB_REORDER_KEY:
       status = db_reorder_key(CHNDLE(0), CHNDLE(1), CINT(2));
       break;
 
-    case RPC_DB_GET_DATA:
+   case RPC_DB_GET_DATA:
       status = db_get_data(CHNDLE(0), CHNDLE(1), CARRAY(2), CPINT(3), CDWORD(4));
-      rpc_convert_data(CARRAY(2), CDWORD(4), RPC_FIXARRAY | RPC_OUTGOING, CINT(3), convert_flags);
+      rpc_convert_data(CARRAY(2), CDWORD(4), RPC_FIXARRAY | RPC_OUTGOING, CINT(3),
+                       convert_flags);
       break;
 
-    case RPC_DB_GET_DATA1:
-      status = db_get_data1(CHNDLE(0), CHNDLE(1), CARRAY(2), CPINT(3), CDWORD(4), CPINT(5));
-      rpc_convert_data(CARRAY(2), CDWORD(4), RPC_FIXARRAY | RPC_OUTGOING, CINT(3), convert_flags);
+   case RPC_DB_GET_DATA1:
+      status =
+          db_get_data1(CHNDLE(0), CHNDLE(1), CARRAY(2), CPINT(3), CDWORD(4), CPINT(5));
+      rpc_convert_data(CARRAY(2), CDWORD(4), RPC_FIXARRAY | RPC_OUTGOING, CINT(3),
+                       convert_flags);
       break;
 
-    case RPC_DB_GET_DATA_INDEX:
-      status = db_get_data_index(CHNDLE(0), CHNDLE(1), CARRAY(2), CPINT(3), CINT(4), CDWORD(5));
+   case RPC_DB_GET_DATA_INDEX:
+      status =
+          db_get_data_index(CHNDLE(0), CHNDLE(1), CARRAY(2), CPINT(3), CINT(4),
+                            CDWORD(5));
       rpc_convert_single(CARRAY(2), CDWORD(5), RPC_OUTGOING, convert_flags);
       break;
 
-    case RPC_DB_SET_DATA:
+   case RPC_DB_SET_DATA:
       rpc_convert_data(CARRAY(2), CDWORD(5), RPC_FIXARRAY, CINT(3), convert_flags);
       status = db_set_data(CHNDLE(0), CHNDLE(1), CARRAY(2), CINT(3), CINT(4), CDWORD(5));
       break;
 
-    case RPC_DB_SET_DATA_INDEX:
+   case RPC_DB_SET_DATA_INDEX:
       rpc_convert_single(CARRAY(2), CDWORD(5), 0, convert_flags);
-      status = db_set_data_index(CHNDLE(0), CHNDLE(1), CARRAY(2), CINT(3), CINT(4), CDWORD(5));
+      status =
+          db_set_data_index(CHNDLE(0), CHNDLE(1), CARRAY(2), CINT(3), CINT(4), CDWORD(5));
       break;
 
-    case RPC_DB_SET_DATA_INDEX2:
+   case RPC_DB_SET_DATA_INDEX2:
       rpc_convert_single(CARRAY(2), CDWORD(5), 0, convert_flags);
-      status = db_set_data_index2(CHNDLE(0), CHNDLE(1), CARRAY(2), CINT(3), CINT(4), CDWORD(5), CBOOL(6));
+      status =
+          db_set_data_index2(CHNDLE(0), CHNDLE(1), CARRAY(2), CINT(3), CINT(4), CDWORD(5),
+                             CBOOL(6));
       break;
 
-    case RPC_DB_SET_NUM_VALUES:
+   case RPC_DB_SET_NUM_VALUES:
       status = db_set_num_values(CHNDLE(0), CHNDLE(1), CINT(2));
       break;
 
-    case RPC_DB_SET_MODE:
+   case RPC_DB_SET_MODE:
       status = db_set_mode(CHNDLE(0), CHNDLE(1), CWORD(2), CBOOL(3));
       break;
 
-    case RPC_DB_GET_RECORD:
+   case RPC_DB_GET_RECORD:
       status = db_get_record(CHNDLE(0), CHNDLE(1), CARRAY(2), CPINT(3), CINT(4));
       break;
 
-    case RPC_DB_SET_RECORD:
+   case RPC_DB_SET_RECORD:
       status = db_set_record(CHNDLE(0), CHNDLE(1), CARRAY(2), CINT(3), CINT(4));
       break;
 
-    case RPC_DB_GET_RECORD_SIZE:
+   case RPC_DB_GET_RECORD_SIZE:
       status = db_get_record_size(CHNDLE(0), CHNDLE(1), CINT(2), CPINT(3));
       break;
 
-    case RPC_DB_CREATE_RECORD:
+   case RPC_DB_CREATE_RECORD:
       status = db_create_record(CHNDLE(0), CHNDLE(1), CSTRING(2), CSTRING(3));
       break;
 
-    case RPC_DB_CHECK_RECORD:
+   case RPC_DB_CHECK_RECORD:
       status = db_check_record(CHNDLE(0), CHNDLE(1), CSTRING(2), CSTRING(3), CBOOL(4));
       break;
 
-    case RPC_DB_ADD_OPEN_RECORD:
+   case RPC_DB_ADD_OPEN_RECORD:
       status = db_add_open_record(CHNDLE(0), CHNDLE(1), CWORD(2));
       break;
 
-    case RPC_DB_REMOVE_OPEN_RECORD:
+   case RPC_DB_REMOVE_OPEN_RECORD:
       status = db_remove_open_record(CHNDLE(0), CHNDLE(1), CBOOL(2));
       break;
 
-    case RPC_DB_LOAD:
+   case RPC_DB_LOAD:
       status = db_load(CHNDLE(0), CHNDLE(1), CSTRING(2), CBOOL(3));
       break;
 
-    case RPC_DB_SAVE:
+   case RPC_DB_SAVE:
       status = db_save(CHNDLE(0), CHNDLE(1), CSTRING(2), CBOOL(3));
       break;
 
-    case RPC_DB_SET_CLIENT_NAME:
+   case RPC_DB_SET_CLIENT_NAME:
       status = db_set_client_name(CHNDLE(0), CSTRING(1));
       break;
 
-    case RPC_DB_GET_OPEN_RECORDS:
+   case RPC_DB_GET_OPEN_RECORDS:
       status = db_get_open_records(CHNDLE(0), CHNDLE(1), CSTRING(2), CINT(3), CBOOL(4));
       break;
 
-    /* history functions */
+      /* history functions */
 
-    case RPC_HS_SET_PATH:
+   case RPC_HS_SET_PATH:
       status = hs_set_path(CSTRING(0));
       break;
 
-    case RPC_HS_DEFINE_EVENT:
-      if (convert_flags)
-        {
-        TAG *tag;
-        INT i;
+   case RPC_HS_DEFINE_EVENT:
+      if (convert_flags) {
+         TAG *tag;
+         INT i;
 
-        /* convert tags */
-        tag = (TAG *) CARRAY(2);
-        for (i=0 ; i<CINT(3) ; i++)
-          {
-          rpc_convert_single(&tag[i].type, TID_DWORD, 0, convert_flags);
-          rpc_convert_single(&tag[i].n_data, TID_DWORD, 0, convert_flags);
-          }
-        }
+         /* convert tags */
+         tag = (TAG *) CARRAY(2);
+         for (i = 0; i < CINT(3); i++) {
+            rpc_convert_single(&tag[i].type, TID_DWORD, 0, convert_flags);
+            rpc_convert_single(&tag[i].n_data, TID_DWORD, 0, convert_flags);
+         }
+      }
 
       status = hs_define_event(CDWORD(0), CSTRING(1), CARRAY(2), CDWORD(3));
       break;
 
-    case RPC_HS_WRITE_EVENT:
+   case RPC_HS_WRITE_EVENT:
       status = hs_write_event(CDWORD(0), CARRAY(1), CDWORD(2));
       break;
 
-    case RPC_HS_COUNT_EVENTS:
+   case RPC_HS_COUNT_EVENTS:
       status = hs_count_events(CDWORD(0), CPDWORD(1));
       break;
 
-    case RPC_HS_ENUM_EVENTS:
+   case RPC_HS_ENUM_EVENTS:
       status = hs_enum_events(CDWORD(0), CSTRING(1), CPDWORD(2), CPINT(3), CPDWORD(4));
       break;
 
-    case RPC_HS_COUNT_VARS:
+   case RPC_HS_COUNT_VARS:
       status = hs_count_vars(CDWORD(0), CDWORD(1), CPDWORD(2));
       break;
 
-    case RPC_HS_ENUM_VARS:
-      status = hs_enum_vars(CDWORD(0), CDWORD(1), CSTRING(2), CPDWORD(3), CPDWORD(4), CPDWORD(5));
+   case RPC_HS_ENUM_VARS:
+      status =
+          hs_enum_vars(CDWORD(0), CDWORD(1), CSTRING(2), CPDWORD(3), CPDWORD(4),
+                       CPDWORD(5));
       break;
 
-    case RPC_HS_GET_VAR:
+   case RPC_HS_GET_VAR:
       status = hs_get_var(CDWORD(0), CDWORD(1), CSTRING(2), CPDWORD(3), CPINT(4));
       break;
 
-    case RPC_HS_GET_EVENT_ID:
+   case RPC_HS_GET_EVENT_ID:
       status = hs_get_event_id(CDWORD(0), CSTRING(1), CPDWORD(2));
       break;
 
-    case RPC_HS_READ:
-      status = hs_read(CDWORD(0), CDWORD(1), CDWORD(2), CDWORD(3), CSTRING(4), 
+   case RPC_HS_READ:
+      status = hs_read(CDWORD(0), CDWORD(1), CDWORD(2), CDWORD(3), CSTRING(4),
                        CDWORD(5), CARRAY(6), CPDWORD(7), CARRAY(8), CPDWORD(9),
                        CPDWORD(10), CPDWORD(11));
-      if (convert_flags && rpc_tid_size(CDWORD(10))>0)
-        {
-        rpc_convert_data(CARRAY(6), TID_DWORD, RPC_FIXARRAY | RPC_OUTGOING, 
-                         CDWORD(7)/sizeof(DWORD), convert_flags);
-        rpc_convert_data(CARRAY(8), CDWORD(10), RPC_FIXARRAY | RPC_OUTGOING, 
-                         CDWORD(11)/rpc_tid_size(CDWORD(10)), convert_flags);
-        }
+      if (convert_flags && rpc_tid_size(CDWORD(10)) > 0) {
+         rpc_convert_data(CARRAY(6), TID_DWORD, RPC_FIXARRAY | RPC_OUTGOING,
+                          CDWORD(7) / sizeof(DWORD), convert_flags);
+         rpc_convert_data(CARRAY(8), CDWORD(10), RPC_FIXARRAY | RPC_OUTGOING,
+                          CDWORD(11) / rpc_tid_size(CDWORD(10)), convert_flags);
+      }
       break;
 
-    case RPC_EL_SUBMIT:
+   case RPC_EL_SUBMIT:
       status = el_submit(CINT(0), CSTRING(1), CSTRING(2), CSTRING(3), CSTRING(4),
-                         CSTRING(5), CSTRING(6), CSTRING(7), 
-                         CSTRING(8), CARRAY(9), CINT(10), 
-                         CSTRING(11), CARRAY(12), CINT(13), 
-                         CSTRING(14), CARRAY(15), CINT(16), 
-                         CSTRING(17), CINT(18));
+                         CSTRING(5), CSTRING(6), CSTRING(7),
+                         CSTRING(8), CARRAY(9), CINT(10),
+                         CSTRING(11), CARRAY(12), CINT(13),
+                         CSTRING(14), CARRAY(15), CINT(16), CSTRING(17), CINT(18));
       break;
-    
-    case RPC_AL_CHECK:
+
+   case RPC_AL_CHECK:
       status = al_check();
       break;
 
-    case RPC_AL_TRIGGER_ALARM:
+   case RPC_AL_TRIGGER_ALARM:
       status = al_trigger_alarm(CSTRING(0), CSTRING(1), CSTRING(2), CSTRING(3), CINT(4));
       break;
 
-    /* exit functions */
-    case RPC_ID_EXIT:
-    case RPC_ID_SHUTDOWN:
+      /* exit functions */
+   case RPC_ID_EXIT:
+   case RPC_ID_SHUTDOWN:
       status = RPC_SUCCESS;
       break;
 
-    /* various functions */
+      /* various functions */
 
-    case RPC_TEST:
+   case RPC_TEST:
       status = rpc_test(CBYTE(0), CWORD(1), CINT(2), CFLOAT(3), CDOUBLE(4),
                         CPBYTE(5), CPWORD(6), CPINT(7), CPFLOAT(8), CPDOUBLE(9));
       break;
 
-    default:
+   default:
       cm_msg(MERROR, "rpc_server_dispatch", "received unrecognized command %d", index);
-    }
+   }
 
-  return status;
+   return status;
 }

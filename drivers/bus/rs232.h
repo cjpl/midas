@@ -6,6 +6,9 @@
   Contents:     Header file for RS232 bus driver
 
   $Log$
+  Revision 1.3  2004/01/08 08:40:08  midas
+  Implemented standard indentation
+
   Revision 1.2  2001/01/03 16:05:10  midas
   Adapted Bus Driver scheme to rs232
 
@@ -19,5 +22,3 @@
 \********************************************************************/
 
 INT rs232(INT cmd, ...);
-
-

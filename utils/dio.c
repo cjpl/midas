@@ -11,6 +11,9 @@
                 dio frontend
 
   $Log$
+  Revision 1.4  2004/01/08 08:40:11  midas
+  Implemented standard indentation
+
   Revision 1.3  2003/04/23 23:08:57  pierre
   Fixed compiler warning
 
@@ -35,35 +38,34 @@
 #include <unistd.h>
 #include <sys/io.h>
 
-int main( int argc, char **argv )
+int main(int argc, char **argv)
 {
-  int status;
+   int status;
 
-  /* Grant access to the device's ioports */
-  status = iopl( 3 );
-  if (status < 0) {
-    perror( "iopl()" );
-    exit( 2 );
-  }
+   /* Grant access to the device's ioports */
+   status = iopl(3);
+   if (status < 0) {
+      perror("iopl()");
+      exit(2);
+   }
 
-  /* Surrender root privileges - the exec()ed program will keep IO
-     access to the IO ports (see "man 2 iopl") */
-  if (setuid( getuid() ) < 0) {
-    perror( "setuid()" );
-    exit( 2 );
-  }
+   /* Surrender root privileges - the exec()ed program will keep IO
+      access to the IO ports (see "man 2 iopl") */
+   if (setuid(getuid()) < 0) {
+      perror("setuid()");
+      exit(2);
+   }
 
-  /* Check command arguments */
-  if (argc < 2) {
-    fprintf( stderr, "Usage: %s program [arguments]\n",
-             argv[0] );
-    exit( 1 );
-  }
+   /* Check command arguments */
+   if (argc < 2) {
+      fprintf(stderr, "Usage: %s program [arguments]\n", argv[0]);
+      exit(1);
+   }
 
-  /* Execute the program (with any supplied command line args) */
-  if (execvp( argv[1], &argv[1] ) < 0) {
-    perror( argv[1] );
-    exit( 2 );
-  }
-  return 0;
+   /* Execute the program (with any supplied command line args) */
+   if (execvp(argv[1], &argv[1]) < 0) {
+      perror(argv[1]);
+      exit(2);
+   }
+   return 0;
 }

@@ -8,6 +8,9 @@
                 ACUM bank.
 
   $Log$
+  Revision 1.5  2004/01/08 08:40:08  midas
+  Implemented standard indentation
+
   Revision 1.4  2003/04/08 00:09:50  olchansk
   add required #include <string.h>
 
@@ -19,7 +22,7 @@
 
 
 \********************************************************************/
-                                                        
+
 /*-- Include files -------------------------------------------------*/
 
 /* standard includes */
@@ -34,21 +37,21 @@
 
 /*-- Module declaration --------------------------------------------*/
 
-INT scaler_accum(EVENT_HEADER*,void*);
+INT scaler_accum(EVENT_HEADER *, void *);
 INT scaler_clear(INT run_number);
 INT scaler_eor(INT run_number);
 
 ANA_MODULE scaler_accum_module = {
-  "Scaler accumulation",         /* module name           */  
-  "Stefan Ritt",                 /* author                */
-  scaler_accum,                  /* event routine         */
-  scaler_clear,                  /* BOR routine           */
-  scaler_eor,                    /* EOR routine           */
-  NULL,                          /* init routine          */
-  NULL,                          /* exit routine          */
-  NULL,                          /* parameter structure   */
-  0,                             /* structure size        */
-  NULL,                          /* initial parameters    */
+   "Scaler accumulation",       /* module name           */
+   "Stefan Ritt",               /* author                */
+   scaler_accum,                /* event routine         */
+   scaler_clear,                /* BOR routine           */
+   scaler_eor,                  /* EOR routine           */
+   NULL,                        /* init routine          */
+   NULL,                        /* exit routine          */
+   NULL,                        /* parameter structure   */
+   0,                           /* structure size        */
+   NULL,                        /* initial parameters    */
 };
 
 /*-- accumulated scalers -------------------------------------------*/
@@ -59,42 +62,41 @@ double scaler[32];
 
 INT scaler_clear(INT run_number)
 {
-  memset(scaler, 0, sizeof(scaler));
-  return SUCCESS;
+   memset(scaler, 0, sizeof(scaler));
+   return SUCCESS;
 }
 
 /*-- EOR routine ---------------------------------------------------*/
 
 INT scaler_eor(INT run_number)
 {
-  return SUCCESS;
+   return SUCCESS;
 }
 
 /*-- event routine -------------------------------------------------*/
 
-INT scaler_accum(EVENT_HEADER *pheader, void *pevent)
+INT scaler_accum(EVENT_HEADER * pheader, void *pevent)
 {
-INT       n, i;
-DWORD     *psclr;
-double    *pacum;
+   INT n, i;
+   DWORD *psclr;
+   double *pacum;
 
-  /* look for SCLR bank */
-  n = bk_locate(pevent, "SCLR", &psclr);
-  if (n == 0)
-    return 1;
+   /* look for SCLR bank */
+   n = bk_locate(pevent, "SCLR", &psclr);
+   if (n == 0)
+      return 1;
 
-  /* create acummulated scaler bank */
-  bk_create(pevent, "ACUM", TID_DOUBLE, &pacum);
+   /* create acummulated scaler bank */
+   bk_create(pevent, "ACUM", TID_DOUBLE, &pacum);
 
-  /* accumulate scalers */
-  for (i=0 ; i<n ; i++)
-    {
-    scaler[i] += psclr[i];
-    pacum[i] = scaler[i];
-    }
+   /* accumulate scalers */
+   for (i = 0; i < n; i++) {
+      scaler[i] += psclr[i];
+      pacum[i] = scaler[i];
+   }
 
-  /* close bank */
-  bk_close(pevent, pacum+n);
+   /* close bank */
+   bk_close(pevent, pacum + n);
 
-  return SUCCESS;
+   return SUCCESS;
 }

@@ -6,6 +6,9 @@
   Contents:     High Voltage Class Driver
 
   $Log$
+  Revision 1.3  2004/01/08 08:40:08  midas
+  Implemented standard indentation
+
   Revision 1.2  2000/03/02 21:54:02  midas
   Added offset in readout routines, added cmd_set_label
 
@@ -20,4 +23,4 @@
 
 /* class driver routines */
 INT cd_hv(INT cmd, PEQUIPMENT pequipment);
-INT cd_hv_read(char *pevent,int);
+INT cd_hv_read(char *pevent, int);

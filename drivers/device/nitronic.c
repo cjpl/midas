@@ -6,6 +6,9 @@
   Contents:     Nitronic HVS 132 High Voltage Device Driver
 
   $Log$
+  Revision 1.7  2004/01/08 08:40:08  midas
+  Implemented standard indentation
+
   Revision 1.6  2001/01/04 10:50:46  midas
   Switched off debugging
 
@@ -31,7 +34,7 @@
 /*---- globals -----------------------------------------------------*/
 
 typedef struct {
-  int  address;
+   int address;
 } NITRONIC_SETTINGS;
 
 #define NITRONIC_SETTINGS_STR "\
@@ -39,260 +42,253 @@ Address = INT : 0\n\
 "
 
 typedef struct {
-  NITRONIC_SETTINGS settings;
-  int num_channels;
-  INT (*bd)(INT cmd, ...);             /* bus driver entry function */
-  void *bd_info;                      /* private info of bus driver */
+   NITRONIC_SETTINGS settings;
+   int num_channels;
+    INT(*bd) (INT cmd, ...);    /* bus driver entry function */
+   void *bd_info;               /* private info of bus driver */
 } NITRONIC_INFO;
 
 /*---- device driver routines --------------------------------------*/
 
-void nitronic_switch(NITRONIC_INFO *info)
+void nitronic_switch(NITRONIC_INFO * info)
 {
-static INT last_address=-1;
-char str[80];
-INT  status;
+   static INT last_address = -1;
+   char str[80];
+   INT status;
 
-  if (info->settings.address != last_address)
-    {
-    sprintf(str, "M%02d", info->settings.address);
-    BD_PUTS(str);
-    status = BD_GETS(str, sizeof(str), "\r+", 5000);
-    if (!status)
-      {
-      cm_msg(MERROR, "nitronic_switch", 
-        "NITRONIC adr %d doesn't respond. Check power and RS232 connection.", 
-        info->settings.address);
-      return;
+   if (info->settings.address != last_address) {
+      sprintf(str, "M%02d", info->settings.address);
+      BD_PUTS(str);
+      status = BD_GETS(str, sizeof(str), "\r+", 5000);
+      if (!status) {
+         cm_msg(MERROR, "nitronic_switch",
+                "NITRONIC adr %d doesn't respond. Check power and RS232 connection.",
+                info->settings.address);
+         return;
       }
 
-    last_address = info->settings.address;
-    }
+      last_address = info->settings.address;
+   }
 }
 
 /*------------------------------------------------------------------*/
 
-INT nitronic_init(HNDLE hkey, void **pinfo, INT channels, INT (*bd)(INT cmd, ...))
+INT nitronic_init(HNDLE hkey, void **pinfo, INT channels, INT(*bd) (INT cmd, ...))
 {
-int          status, size;
-char         str[256];
-HNDLE        hDB, hkeydd;
-NITRONIC_INFO *info;
+   int status, size;
+   char str[256];
+   HNDLE hDB, hkeydd;
+   NITRONIC_INFO *info;
 
-  /* allocate info structure */
-  info = (NITRONIC_INFO *) calloc(1, sizeof(NITRONIC_INFO));
-  *pinfo = info;
+   /* allocate info structure */
+   info = (NITRONIC_INFO *) calloc(1, sizeof(NITRONIC_INFO));
+   *pinfo = info;
 
-  cm_get_experiment_database(&hDB, NULL);
+   cm_get_experiment_database(&hDB, NULL);
 
-  /* create NITRONIC settings record */
-  status = db_create_record(hDB, hkey, "DD", NITRONIC_SETTINGS_STR);
-  if (status != DB_SUCCESS)
-    return FE_ERR_ODB;
+   /* create NITRONIC settings record */
+   status = db_create_record(hDB, hkey, "DD", NITRONIC_SETTINGS_STR);
+   if (status != DB_SUCCESS)
+      return FE_ERR_ODB;
 
-  db_find_key(hDB, hkey, "DD", &hkeydd);
-  size = sizeof(info->settings);
-  db_get_record(hDB, hkeydd, &info->settings, &size, 0);
+   db_find_key(hDB, hkey, "DD", &hkeydd);
+   size = sizeof(info->settings);
+   db_get_record(hDB, hkeydd, &info->settings, &size, 0);
 
-  info->num_channels = channels;
-  info->bd = bd;
+   info->num_channels = channels;
+   info->bd = bd;
 
-  /* initialize bus driver */
-  if (!bd)
-    return FE_ERR_ODB;
+   /* initialize bus driver */
+   if (!bd)
+      return FE_ERR_ODB;
 
-  status = bd(CMD_INIT, hkey, &info->bd_info);
+   status = bd(CMD_INIT, hkey, &info->bd_info);
 
-  if (status != SUCCESS)
-    return status;
+   if (status != SUCCESS)
+      return status;
 
-  bd(CMD_DEBUG, FALSE); 
+   bd(CMD_DEBUG, FALSE);
 
-  /* check if module is living  */
-  sprintf(str, "M%02d", info->settings.address);
-  BD_PUTS(str);
-  status = BD_GETS(str, sizeof(str), "\r+", 2000);
-  if (!status)
-    {
-    cm_msg(MERROR, "nitronic_init", "NITRONIC adr %d doesn't respond. Check power and RS232 connection.", info->settings.address);
-    return FE_ERR_HW;
-    }
+   /* check if module is living  */
+   sprintf(str, "M%02d", info->settings.address);
+   BD_PUTS(str);
+   status = BD_GETS(str, sizeof(str), "\r+", 2000);
+   if (!status) {
+      cm_msg(MERROR, "nitronic_init",
+             "NITRONIC adr %d doesn't respond. Check power and RS232 connection.",
+             info->settings.address);
+      return FE_ERR_HW;
+   }
 
-  /* turn on HV main switch */
-  BD_PUTS("ONA");
-  BD_GETS(str, sizeof(str), "\r+", 5000);
+   /* turn on HV main switch */
+   BD_PUTS("ONA");
+   BD_GETS(str, sizeof(str), "\r+", 5000);
 
-  BD_PUTS("M16\r\n");
+   BD_PUTS("M16\r\n");
 
-  return FE_SUCCESS;
+   return FE_SUCCESS;
 }
 
 /*----------------------------------------------------------------------------*/
 
-INT nitronic_exit(NITRONIC_INFO *info)
+INT nitronic_exit(NITRONIC_INFO * info)
 {
-  info->bd(CMD_EXIT, info->bd_info);
-  
-  free(info);
+   info->bd(CMD_EXIT, info->bd_info);
 
-  return FE_SUCCESS;
+   free(info);
+
+   return FE_SUCCESS;
 }
 
 /*----------------------------------------------------------------------------*/
 
-INT nitronic_set(NITRONIC_INFO *info, INT channel, float value)
+INT nitronic_set(NITRONIC_INFO * info, INT channel, float value)
 {
-char  str[80];
+   char str[80];
 
-  nitronic_switch(info);
+   nitronic_switch(info);
 
-  sprintf(str, "UCH%02d%04.0fL", channel+1, value);
-  BD_PUTS(str);
-  BD_GETS(str, sizeof(str), "+", 3000);
+   sprintf(str, "UCH%02d%04.0fL", channel + 1, value);
+   BD_PUTS(str);
+   BD_GETS(str, sizeof(str), "+", 3000);
 
-  return FE_SUCCESS;
+   return FE_SUCCESS;
 }
 
 /*----------------------------------------------------------------------------*/
 
-INT nitronic_set_all(NITRONIC_INFO *info, INT channels, float value)
+INT nitronic_set_all(NITRONIC_INFO * info, INT channels, float value)
 {
-char  str[80];
-INT   i;
+   char str[80];
+   INT i;
 
-  nitronic_switch(info);
+   nitronic_switch(info);
 
-  for (i=0 ; i<channels ; i++)
-    {
-    sprintf(str, "UCH%02d%04.0fL", i+1, value);
-    BD_PUTS(str);
-    BD_GETS(str, sizeof(str), "+", 3000);
-    }
+   for (i = 0; i < channels; i++) {
+      sprintf(str, "UCH%02d%04.0fL", i + 1, value);
+      BD_PUTS(str);
+      BD_GETS(str, sizeof(str), "+", 3000);
+   }
 
-  return FE_SUCCESS;
+   return FE_SUCCESS;
 }
 
 /*----------------------------------------------------------------------------*/
 
-INT nitronic_get(NITRONIC_INFO *info, INT channel, float *pvalue)
+INT nitronic_get(NITRONIC_INFO * info, INT channel, float *pvalue)
 {
-int   value;
-char  str[256];
+   int value;
+   char str[256];
 
-  nitronic_switch(info);
+   nitronic_switch(info);
 
-  sprintf(str, "CH%02dL", channel+1);
-  BD_PUTS(str);
-  BD_GETS(str, sizeof(str), "+", 3000);
-  sscanf(str+14, "%d", &value);
+   sprintf(str, "CH%02dL", channel + 1);
+   BD_PUTS(str);
+   BD_GETS(str, sizeof(str), "+", 3000);
+   sscanf(str + 14, "%d", &value);
 
-  *pvalue = (float) value;
+   *pvalue = (float) value;
 
-  return FE_SUCCESS;
+   return FE_SUCCESS;
 }
 
 /*----------------------------------------------------------------------------*/
 
-INT nitronic_get_current(NITRONIC_INFO *info, INT channel, float *pvalue)
+INT nitronic_get_current(NITRONIC_INFO * info, INT channel, float *pvalue)
 {
-int   value;
-char  str[256];
+   int value;
+   char str[256];
 
-  nitronic_switch(info);
+   nitronic_switch(info);
 
-  sprintf(str, "CH%02dL", channel+1);
-  BD_PUTS(str);
-  BD_GETS(str, sizeof(str), "+", 3000);
-  sscanf(str+19, "%d", &value);
+   sprintf(str, "CH%02dL", channel + 1);
+   BD_PUTS(str);
+   BD_GETS(str, sizeof(str), "+", 3000);
+   sscanf(str + 19, "%d", &value);
 
-  *pvalue = (float) value;
+   *pvalue = (float) value;
 
-  return FE_SUCCESS;
+   return FE_SUCCESS;
 }
 
 /*----------------------------------------------------------------------------*/
 
-INT nitronic_get_all(NITRONIC_INFO *info, INT channels, float *array)
+INT nitronic_get_all(NITRONIC_INFO * info, INT channels, float *array)
 {
-int   value, i;
-char  str[256];
+   int value, i;
+   char str[256];
 
-  nitronic_switch(info);
+   nitronic_switch(info);
 
-  BD_PUTS("CH01A");
-  BD_GETS(str, sizeof(str), "\r", 5000);
+   BD_PUTS("CH01A");
+   BD_GETS(str, sizeof(str), "\r", 5000);
 
-  for (i=0 ; i < 32 ; i++)
-    {
-    BD_GETS(str, sizeof(str), "\r", 5000);
-    if (i < channels)
-      {
-      sscanf(str+12, "%d", &value);
-      array[i] = (float) value;
+   for (i = 0; i < 32; i++) {
+      BD_GETS(str, sizeof(str), "\r", 5000);
+      if (i < channels) {
+         sscanf(str + 12, "%d", &value);
+         array[i] = (float) value;
       }
-    }
-  BD_GETS(str, sizeof(str), "+", 2000);
+   }
+   BD_GETS(str, sizeof(str), "+", 2000);
 
-  return FE_SUCCESS;
+   return FE_SUCCESS;
 }
 
 /*----------------------------------------------------------------------------*/
 
-INT nitronic_get_current_all(NITRONIC_INFO *info, INT channels, float *array)
+INT nitronic_get_current_all(NITRONIC_INFO * info, INT channels, float *array)
 {
-int   value, i;
-char  str[256];
+   int value, i;
+   char str[256];
 
-  nitronic_switch(info);
+   nitronic_switch(info);
 
-  BD_PUTS("CH01A");
-  BD_GETS(str, sizeof(str), "\r", 5000);
+   BD_PUTS("CH01A");
+   BD_GETS(str, sizeof(str), "\r", 5000);
 
-  for (i=0 ; i < 32 ; i++)
-    {
-    BD_GETS(str, sizeof(str), "\r", 5000);
-    if (i < channels)
-      {
-      sscanf(str+19, "%d", &value);
-      array[i] = (float) value;
+   for (i = 0; i < 32; i++) {
+      BD_GETS(str, sizeof(str), "\r", 5000);
+      if (i < channels) {
+         sscanf(str + 19, "%d", &value);
+         array[i] = (float) value;
       }
-    }
-  BD_GETS(str, sizeof(str), "+", 2000);
+   }
+   BD_GETS(str, sizeof(str), "+", 2000);
 
-  return FE_SUCCESS;
+   return FE_SUCCESS;
 }
 
 /*----------------------------------------------------------------------------*/
 
-INT nitronic_set_current_limit(NITRONIC_INFO *info, float limit)
+INT nitronic_set_current_limit(NITRONIC_INFO * info, float limit)
 {
-char str[256];
+   char str[256];
 
-  nitronic_switch(info);
+   nitronic_switch(info);
 
-  sprintf(str, "ICH01%04dA", (int)limit);
-  BD_PUTS(str);
-  BD_GETS(str, sizeof(str), "\r+", 5000);
+   sprintf(str, "ICH01%04dA", (int) limit);
+   BD_PUTS(str);
+   BD_GETS(str, sizeof(str), "\r+", 5000);
 
-  return FE_SUCCESS;
+   return FE_SUCCESS;
 }
 
 /*---- device driver entry point -----------------------------------*/
 
 INT nitronic(INT cmd, ...)
 {
-va_list argptr;
-HNDLE   hKey;
-INT     channel, status;
-float   value, *pvalue;
-void    *info, *bd;
+   va_list argptr;
+   HNDLE hKey;
+   INT channel, status;
+   float value, *pvalue;
+   void *info, *bd;
 
-  va_start(argptr, cmd);
-  status = FE_SUCCESS;
+   va_start(argptr, cmd);
+   status = FE_SUCCESS;
 
-  switch (cmd)
-    {
-    case CMD_INIT:
+   switch (cmd) {
+   case CMD_INIT:
       hKey = va_arg(argptr, HNDLE);
       info = va_arg(argptr, void *);
       channel = va_arg(argptr, INT);
@@ -300,68 +296,68 @@ void    *info, *bd;
       status = nitronic_init(hKey, info, channel, bd);
       break;
 
-    case CMD_EXIT:
+   case CMD_EXIT:
       info = va_arg(argptr, void *);
       status = nitronic_exit(info);
       break;
 
-    case CMD_SET:
-      info = va_arg(argptr, void *);
-      channel = va_arg(argptr, INT);
-      value   = (float) va_arg(argptr, double);
-      status = nitronic_set(info, channel, value);
-      break;
-
-    case CMD_SET_ALL:
-      info = va_arg(argptr, void *);
-      channel = va_arg(argptr, INT);
-      value   = (float) va_arg(argptr, double);
-      status = nitronic_set_all(info, channel, value);
-      break;
-
-    case CMD_GET:
-      info = va_arg(argptr, void *);
-      channel = va_arg(argptr, INT);
-      pvalue  = va_arg(argptr, float*);
-      status = nitronic_get(info, channel, pvalue);
-      break;
-    
-    case CMD_GET_ALL:
-      info = va_arg(argptr, void *);
-      channel = va_arg(argptr, INT);
-      pvalue  = va_arg(argptr, float*);
-      status = nitronic_get_all(info, channel, pvalue);
-      break;
-
-    case CMD_GET_CURRENT:
-      info = va_arg(argptr, void *);
-      channel = va_arg(argptr, INT);
-      pvalue  = va_arg(argptr, float*);
-      status = nitronic_get_current(info, channel, pvalue);
-      break;
-    
-    case CMD_GET_CURRENT_ALL:
-      break;
-      
-    case CMD_SET_CURRENT_LIMIT:
+   case CMD_SET:
       info = va_arg(argptr, void *);
       channel = va_arg(argptr, INT);
       value = (float) va_arg(argptr, double);
-      if (channel == 0) /* one one limit for all channels */
-        status = nitronic_set_current_limit(info, value);
-      else
-        status = FE_SUCCESS;
+      status = nitronic_set(info, channel, value);
       break;
 
-    default:
+   case CMD_SET_ALL:
+      info = va_arg(argptr, void *);
+      channel = va_arg(argptr, INT);
+      value = (float) va_arg(argptr, double);
+      status = nitronic_set_all(info, channel, value);
+      break;
+
+   case CMD_GET:
+      info = va_arg(argptr, void *);
+      channel = va_arg(argptr, INT);
+      pvalue = va_arg(argptr, float *);
+      status = nitronic_get(info, channel, pvalue);
+      break;
+
+   case CMD_GET_ALL:
+      info = va_arg(argptr, void *);
+      channel = va_arg(argptr, INT);
+      pvalue = va_arg(argptr, float *);
+      status = nitronic_get_all(info, channel, pvalue);
+      break;
+
+   case CMD_GET_CURRENT:
+      info = va_arg(argptr, void *);
+      channel = va_arg(argptr, INT);
+      pvalue = va_arg(argptr, float *);
+      status = nitronic_get_current(info, channel, pvalue);
+      break;
+
+   case CMD_GET_CURRENT_ALL:
+      break;
+
+   case CMD_SET_CURRENT_LIMIT:
+      info = va_arg(argptr, void *);
+      channel = va_arg(argptr, INT);
+      value = (float) va_arg(argptr, double);
+      if (channel == 0)         /* one one limit for all channels */
+         status = nitronic_set_current_limit(info, value);
+      else
+         status = FE_SUCCESS;
+      break;
+
+   default:
       cm_msg(MERROR, "nitronic device driver", "Received unknown command %d", cmd);
       status = FE_ERR_DRIVER;
       break;
-    }
+   }
 
-  va_end(argptr);
+   va_end(argptr);
 
-  return status;
+   return status;
 }
 
 /*------------------------------------------------------------------*/

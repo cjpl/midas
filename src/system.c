@@ -14,6 +14,9 @@
                 Brown, Prentice Hall
 
   $Log$
+  Revision 1.77  2004/01/08 08:40:10  midas
+  Implemented standard indentation
+
   Revision 1.76  2004/01/08 06:36:10  pierre
   Doxygen the file
 
@@ -1613,7 +1616,7 @@ INT ss_exec(char *command, INT * pid)
    }
 
    setsid();                    /* become session leader */
-/* chdir("/"); *//* change working directory (not on NFS!) */
+   /* chdir("/"); *//* change working directory (not on NFS!) */
    umask(0);                    /* clear our file mode createion mask */
 
    /* execute command */
@@ -5887,5 +5890,5 @@ char *ss_crypt(char *buf, char *salt)
 /**dox***************************************************************/
 #endif                          /* DOXYGEN_SHOULD_SKIP_THIS */
 
-/** @} */// end of msfunctionc
-/** @} */// end of msystemincludecode
+                                                      /** @} */// end of msfunctionc
+                                                      /** @} */// end of msystemincludecode

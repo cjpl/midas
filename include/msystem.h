@@ -7,6 +7,9 @@
                 routines
 
   $Log$
+  Revision 1.34  2004/01/08 08:40:09  midas
+  Implemented standard indentation
+
   Revision 1.33  2004/01/08 06:29:39  pierre
   Doxygen the file
 
@@ -164,7 +167,7 @@ data representations
 #define DR_ASCII            (1<<7)  /**< - */
 
 /**dox***************************************************************/
-/** @} */// end of msdefineh
+                                                      /** @} */// end of msdefineh
 
 /**dox***************************************************************/
 /** @addtogroup msmacroh
@@ -206,7 +209,7 @@ SWAP QWORD macro */
                        *(((BYTE *)(x))+4) = _tmp; }
 
 /**dox***************************************************************/
-/** @} */// end of msmacroh
+                                                      /** @} */// end of msmacroh
 
 /**dox***************************************************************/
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
@@ -517,7 +520,7 @@ typedef struct {
 } REQUEST_LIST;
 
 /**dox***************************************************************/
-/** @} */// end of mssectionh
+                                                      /** @} */// end of mssectionh
 
 /**dox***************************************************************/
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
@@ -746,4 +749,4 @@ extern "C" {
 #endif
 /**dox***************************************************************/
 #endif                          /* DOXYGEN_SHOULD_SKIP_THIS */
-/**dox***************************************************************//** @} */// end of msystemincludecode
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          /**dox***************************************************************//** @} */// end of msystemincludecode

@@ -1,4 +1,4 @@
-/* cfortran.h  3.9 */          /* anonymous ftp@zebra.desy.de */
+                                                                                                                                        /* cfortran.h  3.9 *//* anonymous ftp@zebra.desy.de */
 /* Burkhard Burow  burow@desy.de                 1990 - 1997. */
 
 #ifndef __CFORTRAN_LOADED
@@ -19,7 +19,7 @@
 
 /* First prepare for the C compiler. */
 
-#ifndef ANSI_C_preprocessor /* i.e. user can override. */
+#ifndef ANSI_C_preprocessor     /* i.e. user can override. */
 #ifdef __CF__KnR
 #define ANSI_C_preprocessor 0
 #else
@@ -27,7 +27,7 @@
 #define ANSI_C_preprocessor 1
 #else
 #define _cfleft             1
-#define _cfright 
+#define _cfright
 #define _cfleft_cfright     0
 #define ANSI_C_preprocessor _cfleft/**/_cfright
 #endif
@@ -36,10 +36,10 @@
 
 #if ANSI_C_preprocessor
 #define _0(A,B)   A##B
-#define  _(A,B)   _0(A,B)  /* see cat,xcat of K&R ANSI C p. 231 */
-#define _2(A,B)   A##B     /* K&R ANSI C p.230: .. identifier is not replaced */
+#define  _(A,B)   _0(A,B)       /* see cat,xcat of K&R ANSI C p. 231 */
+#define _2(A,B)   A##B          /* K&R ANSI C p.230: .. identifier is not replaced */
 #define _3(A,B,C) _(A,_(B,C))
-#else                      /* if it turns up again during rescanning.         */
+#else                           /* if it turns up again during rescanning.         */
 #define  _(A,B)   A/**/B
 #define _2(A,B)   A/**/B
 #define _3(A,B,C) A/**/B/**/C
@@ -49,21 +49,21 @@
 #define VAXUltrix
 #endif
 
-#include <stdio.h>     /* NULL [in all machines stdio.h]                      */
-#include <string.h>    /* strlen, memset, memcpy, memchr.                     */
+#include <stdio.h>              /* NULL [in all machines stdio.h]                      */
+#include <string.h>             /* strlen, memset, memcpy, memchr.                     */
 #if !( defined(VAXUltrix) || defined(sun) || (defined(apollo)&&!defined(__STDCPP__)) )
-#include <stdlib.h>    /* malloc,free                                         */
+#include <stdlib.h>             /* malloc,free                                         */
 #else
-#include <malloc.h>    /* Had to be removed for DomainOS h105 10.4 sys5.3 425t*/
+#include <malloc.h>             /* Had to be removed for DomainOS h105 10.4 sys5.3 425t */
 #ifdef apollo
-#define __CF__APOLLO67 /* __STDCPP__ is in Apollo 6.8 (i.e. ANSI) and onwards */
+#define __CF__APOLLO67          /* __STDCPP__ is in Apollo 6.8 (i.e. ANSI) and onwards */
 #endif
 #endif
 
 #if !defined(__GNUC__) && !defined(__sun) && (defined(sun)||defined(VAXUltrix)||defined(lynx))
-#define __CF__KnR     /* Sun, LynxOS and VAX Ultrix cc only supports K&R.     */
-                      /* Manually define __CF__KnR for HP if desired/required.*/
-#endif                /*       i.e. We will generate Kernighan and Ritchie C. */
+#define __CF__KnR               /* Sun, LynxOS and VAX Ultrix cc only supports K&R.     */
+                      /* Manually define __CF__KnR for HP if desired/required. */
+#endif                          /*       i.e. We will generate Kernighan and Ritchie C. */
 /* Note that you may define __CF__KnR before #include cfortran.h, in order to
 generate K&R C instead of the default ANSI C. The differences are mainly in the
 function prototypes and declarations. All machines, except the Apollo, work
@@ -78,24 +78,24 @@ only C calling FORTRAN subroutines will work using K&R style.*/
 #define f2cFortran
 #endif
 
-/* VAX/VMS does not let us \-split long #if lines. */ 
+/* VAX/VMS does not let us \-split long #if lines. */
 /* Split #if into 2 because some HP-UX can't handle long #if */
 #if !(defined(NAGf90Fortran)||defined(f2cFortran)||defined(hpuxFortran)||defined(apolloFortran)||defined(sunFortran)||defined(IBMR2Fortran)||defined(CRAYFortran))
 #if !(defined(mipsFortran)||defined(DECFortran)||defined(vmsFortran)||defined(CONVEXFortran)||defined(PowerStationFortran)||defined(AbsoftUNIXFortran)||defined(SXFortran))
 /* If no Fortran compiler is given, we choose one for the machines we know.   */
 #if defined(lynx) || defined(VAXUltrix)
-#define f2cFortran    /* Lynx:      Only support f2c at the moment.
-                         VAXUltrix: f77 behaves like f2c.
-                           Support f2c or f77 with gcc, vcc with f2c. 
-                           f77 with vcc works, missing link magic for f77 I/O.*/
+#define f2cFortran              /* Lynx:      Only support f2c at the moment.
+                                   VAXUltrix: f77 behaves like f2c.
+                                   Support f2c or f77 with gcc, vcc with f2c. 
+                                   f77 with vcc works, missing link magic for f77 I/O. */
 #endif
 #if defined(__hpux)             /* 921107: Use __hpux instead of __hp9000s300 */
-#define       hpuxFortran       /*         Should also allow hp9000s7/800 use.*/
+#define       hpuxFortran       /*         Should also allow hp9000s7/800 use. */
 #endif
 #if       defined(apollo)
 #define           apolloFortran /* __CF__APOLLO67 also defines some behavior. */
 #endif
-#if          defined(sun) || defined(__sun) 
+#if          defined(sun) || defined(__sun)
 #define              sunFortran
 #endif
 #if       defined(_IBMR2)
@@ -122,14 +122,14 @@ only C calling FORTRAN subroutines will work using K&R style.*/
 #if   defined(VISUAL_CPLUSPLUS)
 #define     PowerStationFortran
 #endif
-#endif /* ...Fortran */
-#endif /* ...Fortran */
+#endif                          /* ...Fortran */
+#endif                          /* ...Fortran */
 
 /* Split #if into 2 because some HP-UX can't handle long #if */
 #if !(defined(NAGf90Fortran)||defined(f2cFortran)||defined(hpuxFortran)||defined(apolloFortran)||defined(sunFortran)||defined(IBMR2Fortran)||defined(CRAYFortran))
 #if !(defined(mipsFortran)||defined(DECFortran)||defined(vmsFortran)||defined(CONVEXFortran)||defined(PowerStationFortran)||defined(AbsoftUNIXFortran)||defined(SXFortran))
 /* If your compiler barfs on ' #error', replace # with the trigraph for #     */
- #error "cfortran.h:  Can't find your environment among:\
+#error "cfortran.h:  Can't find your environment among:\
     - MIPS cc and f77 2.0. (e.g. Silicon Graphics, DECstations, ...)     \
     - IBM AIX XL C and FORTRAN Compiler/6000 Version 01.01.0000.0000     \
     - VAX   VMS CC 3.1 and FORTRAN 5.4.                                  \
@@ -156,41 +156,41 @@ only C calling FORTRAN subroutines will work using K&R style.*/
 
 #if defined(VAXC) && !defined(__VAXC)
 #define OLD_VAXC
-#pragma nostandard                       /* Prevent %CC-I-PARAMNOTUSED.       */
+#pragma nostandard              /* Prevent %CC-I-PARAMNOTUSED.       */
 #endif
 
 /* Throughout cfortran.h we use: UN = Uppercase Name.  LN = Lowercase Name.   */
 
 #if defined(f2cFortran) || defined(NAGf90Fortran) || defined(DECFortran) || defined(mipsFortran) || defined(apolloFortran) || defined(sunFortran) || defined(CONVEXFortran) || defined(SXFortran) || defined(extname)
-#define CFC_(UN,LN)            _(LN,_)      /* Lowercase FORTRAN symbols.     */
+#define CFC_(UN,LN)            _(LN,_)  /* Lowercase FORTRAN symbols.     */
 #define orig_fcallsc(UN,LN)    CFC_(UN,LN)
-#else 
+#else
 #if defined(CRAYFortran) || defined(PowerStationFortran)
-#ifdef _CRAY          /* (UN), not UN, circumvents CRAY preprocessor bug.     */
-#define CFC_(UN,LN)            (UN)         /* Uppercase FORTRAN symbols.     */
-#else                 /* At least VISUAL_CPLUSPLUS barfs on (UN), so need UN. */
-#define CFC_(UN,LN)            UN           /* Uppercase FORTRAN symbols.     */
+#ifdef _CRAY                    /* (UN), not UN, circumvents CRAY preprocessor bug.     */
+#define CFC_(UN,LN)            (UN)     /* Uppercase FORTRAN symbols.     */
+#else                           /* At least VISUAL_CPLUSPLUS barfs on (UN), so need UN. */
+#define CFC_(UN,LN)            UN       /* Uppercase FORTRAN symbols.     */
 #endif
-#define orig_fcallsc(UN,LN)    CFC_(UN,LN)  /* CRAY insists on arg.'s here.   */
-#else  /* For following machines one may wish to change the fcallsc default.  */
+#define orig_fcallsc(UN,LN)    CFC_(UN,LN)      /* CRAY insists on arg.'s here.   */
+#else                           /* For following machines one may wish to change the fcallsc default.  */
 #define CF_SAME_NAMESPACE
 #ifdef vmsFortran
-#define CFC_(UN,LN)            LN           /* Either case FORTRAN symbols.   */
-     /* BUT we usually use UN for C macro to FORTRAN routines, so use LN here,*/
+#define CFC_(UN,LN)            LN       /* Either case FORTRAN symbols.   */
+     /* BUT we usually use UN for C macro to FORTRAN routines, so use LN here, */
      /* because VAX/VMS doesn't do recursive macros.                          */
 #define orig_fcallsc(UN,LN)    UN
-#else      /* HP-UX without +ppu or IBMR2 without -qextname. NOT reccomended. */
-#define CFC_(UN,LN)            LN           /* Lowercase FORTRAN symbols.     */
+#else                           /* HP-UX without +ppu or IBMR2 without -qextname. NOT reccomended. */
+#define CFC_(UN,LN)            LN       /* Lowercase FORTRAN symbols.     */
 #define orig_fcallsc(UN,LN)    CFC_(UN,LN)
-#endif /*  vmsFortran */
-#endif /* CRAYFortran PowerStationFortran */
-#endif /* ....Fortran */
+#endif                          /*  vmsFortran */
+#endif                          /* CRAYFortran PowerStationFortran */
+#endif                          /* ....Fortran */
 
 #define fcallsc(UN,LN)               orig_fcallsc(UN,LN)
 #define preface_fcallsc(P,p,UN,LN)   CFC_(_(P,UN),_(p,LN))
 #define  append_fcallsc(P,p,UN,LN)   CFC_(_(UN,P),_(LN,p))
 
-#define C_FUNCTION(UN,LN)            fcallsc(UN,LN)      
+#define C_FUNCTION(UN,LN)            fcallsc(UN,LN)
 #define FORTRAN_FUNCTION(UN,LN)      CFC_(UN,LN)
 
 #ifndef COMMON_BLOCK
@@ -229,12 +229,12 @@ only C calling FORTRAN subroutines will work using K&R style.*/
 #ifdef _CRAY
 #include <fortran.h>
 #else
-#include "fortran.h"  /* i.e. if crosscompiling assume user has file. */
+#include "fortran.h"            /* i.e. if crosscompiling assume user has file. */
 #endif
-#define FLOATVVVVVVV_cfPP (FORTRAN_REAL *)   /* Used for C calls FORTRAN.     */
+#define FLOATVVVVVVV_cfPP (FORTRAN_REAL *)      /* Used for C calls FORTRAN.     */
 /* CRAY's double==float but CRAY says pointers to doubles and floats are diff.*/
-#define VOIDP  (void *)  /* When FORTRAN calls C, we don't know if C routine 
-                            arg.'s have been declared float *, or double *.   */
+#define VOIDP  (void *)         /* When FORTRAN calls C, we don't know if C routine 
+                                   arg.'s have been declared float *, or double *.   */
 #else
 #define FLOATVVVVVVV_cfPP
 #define VOIDP
@@ -244,15 +244,15 @@ only C calling FORTRAN subroutines will work using K&R style.*/
 #if    defined(vms) || defined(__vms)
 #include <descrip.h>
 #else
-#include "descrip.h"  /* i.e. if crosscompiling assume user has file. */
+#include "descrip.h"            /* i.e. if crosscompiling assume user has file. */
 #endif
 #endif
 
 #ifdef sunFortran
 #if defined(sun) || defined(__sun)
-#include <math.h>     /* Sun's FLOATFUNCTIONTYPE, ASSIGNFLOAT, RETURNFLOAT.  */
+#include <math.h>               /* Sun's FLOATFUNCTIONTYPE, ASSIGNFLOAT, RETURNFLOAT.  */
 #else
-#include "math.h"     /* i.e. if crosscompiling assume user has file. */
+#include "math.h"               /* i.e. if crosscompiling assume user has file. */
 #endif
 /* At least starting with the default C compiler SC3.0.1 of SunOS 5.3,
  * FLOATFUNCTIONTYPE, ASSIGNFLOAT, RETURNFLOAT are not required and not in
@@ -267,7 +267,7 @@ only C calling FORTRAN subroutines will work using K&R style.*/
 #ifndef apolloFortran
 #define COMMON_BLOCK_DEF(DEFINITION, NAME) extern DEFINITION NAME
 #define CF_NULL_PROTO
-#else                                         /* HP doesn't understand #elif. */
+#else                           /* HP doesn't understand #elif. */
 /* Without ANSI prototyping, Apollo promotes float functions to double.    */
 /* Note that VAX/VMS, IBM, Mips choke on 'type function(...);' prototypes. */
 #define CF_NULL_PROTO ...
@@ -293,8 +293,8 @@ only C calling FORTRAN subroutines will work using K&R style.*/
 #define CF_SET_GETARG(ARGC,ARGV)
 #endif
 
-#ifdef OLD_VAXC                          /* Allow %CC-I-PARAMNOTUSED.         */
-#pragma standard                         
+#ifdef OLD_VAXC                 /* Allow %CC-I-PARAMNOTUSED.         */
+#pragma standard
 #endif
 
 #define ACOMMA ,
@@ -330,7 +330,7 @@ Apollo                                           : neg.   = TRUE, else FALSE.
 #if defined(NAGf90Fortran) || defined(f2cFortran) || defined(mipsFortran) || defined(PowerStationFortran) || defined(hpuxFortran800) || defined(AbsoftUNIXFortran) || defined(SXFortran)
 /* SX/PowerStationFortran have 0 and 1 defined, others are neither T nor F.   */
 /* hpuxFortran800 has 0 and 0x01000000 defined. Others are unknown.           */
-#define LOGICAL_STRICT      /* Other Fortran have .eqv./.neqv. == .eq./.ne.   */
+#define LOGICAL_STRICT          /* Other Fortran have .eqv./.neqv. == .eq./.ne.   */
 #endif
 
 #define C2FLOGICALV(A,I) \
@@ -340,11 +340,11 @@ Apollo                                           : neg.   = TRUE, else FALSE.
 
 #if defined(apolloFortran)
 #define C2FLOGICAL(L) ((L)?-1:(L)&~((unsigned)1<<sizeof(int)*8-1))
-#define F2CLOGICAL(L) ((L)<0?(L):0) 
+#define F2CLOGICAL(L) ((L)<0?(L):0)
 #else
 #if defined(CRAYFortran)
 #define C2FLOGICAL(L) _btol(L)
-#define F2CLOGICAL(L) _ltob(&(L))     /* Strangely _ltob() expects a pointer. */
+#define F2CLOGICAL(L) _ltob(&(L))       /* Strangely _ltob() expects a pointer. */
 #else
 #if defined(IBMR2Fortran) || defined(vmsFortran) || defined(DECFortran) || defined(AbsoftUNIXFortran)
 #define C2FLOGICAL(L) ((L)?(L)|1:(L)&~(int)1)
@@ -353,7 +353,7 @@ Apollo                                           : neg.   = TRUE, else FALSE.
 #if defined(CONVEXFortran)
 #define C2FLOGICAL(L) ((L) ? ~0 : 0 )
 #define F2CLOGICAL(L) (L)
-#else   /* others evaluate LOGICALs as for C. */
+#else                           /* others evaluate LOGICALs as for C. */
 #define C2FLOGICAL(L) (L)
 #define F2CLOGICAL(L) (L)
 #ifndef LOGICAL_STRICT
@@ -361,11 +361,11 @@ Apollo                                           : neg.   = TRUE, else FALSE.
 #undef  F2CLOGICALV
 #define C2FLOGICALV(A,I)
 #define F2CLOGICALV(A,I)
-#endif  /* LOGICAL_STRICT                     */
-#endif  /* CONVEXFortran || All Others        */
-#endif  /* IBMR2Fortran vmsFortran DECFortran AbsoftUNIXFortran */
-#endif  /* CRAYFortran                        */
-#endif  /* apolloFortran                      */
+#endif                          /* LOGICAL_STRICT                     */
+#endif                          /* CONVEXFortran || All Others        */
+#endif                          /* IBMR2Fortran vmsFortran DECFortran AbsoftUNIXFortran */
+#endif                          /* CRAYFortran                        */
+#endif                          /* apolloFortran                      */
 
 /* 970514 - In addition to CRAY, there may be other machines
             for which LOGICAL_STRICT makes no sense. */
@@ -386,88 +386,118 @@ Apollo                                           : neg.   = TRUE, else FALSE.
 #define C2FLOGICAL(L) ((L)?0x01000000:0)
 #else
 #if defined(apolloFortran) || defined(vmsFortran) || defined(DECFortran)
-#define C2FLOGICAL(L) ((L)?-1:0) /* These machines use -1/0 for .true./.false.*/
+#define C2FLOGICAL(L) ((L)?-1:0)        /* These machines use -1/0 for .true./.false. */
 #else
-#define C2FLOGICAL(L) ((L)? 1:0) /* All others     use +1/0 for .true./.false.*/
+#define C2FLOGICAL(L) ((L)? 1:0)        /* All others     use +1/0 for .true./.false. */
 #endif
 #endif
-#endif /* LOGICAL_STRICT */
+#endif                          /* LOGICAL_STRICT */
 
 /* Convert a vector of C strings into FORTRAN strings. */
 #ifndef __CF__KnR
-static char *c2fstrv(char* cstr, char *fstr, int elem_len, int sizeofcstr)
+static char *c2fstrv(char *cstr, char *fstr, int elem_len, int sizeofcstr)
 #else
-static char *c2fstrv(      cstr,       fstr,     elem_len,     sizeofcstr)
-                     char* cstr; char *fstr; int elem_len; int sizeofcstr;
+static char *c2fstrv(cstr, fstr, elem_len, sizeofcstr)
+char *cstr;
+char *fstr;
+int elem_len;
+int sizeofcstr;
 #endif
-{ int i,j;
+{
+   int i, j;
 /* elem_len includes \0 for C strings. Fortran strings don't have term. \0.
    Useful size of string must be the same in both languages. */
-for (i=0; i<sizeofcstr/elem_len; i++) {
-  for (j=1; j<elem_len && *cstr; j++) *fstr++ = *cstr++;
-  cstr += 1+elem_len-j;
-  for (; j<elem_len; j++) *fstr++ = ' ';
-} /* 95109 - Seems to be returning the original fstr. */
-return fstr-sizeofcstr+sizeofcstr/elem_len; }
+   for (i = 0; i < sizeofcstr / elem_len; i++) {
+      for (j = 1; j < elem_len && *cstr; j++)
+         *fstr++ = *cstr++;
+      cstr += 1 + elem_len - j;
+      for (; j < elem_len; j++)
+         *fstr++ = ' ';
+   }                            /* 95109 - Seems to be returning the original fstr. */
+   return fstr - sizeofcstr + sizeofcstr / elem_len;
+}
 
 /* Convert a vector of FORTRAN strings into C strings. */
 #ifndef __CF__KnR
-static char *f2cstrv(char *fstr, char* cstr, int elem_len, int sizeofcstr)
+static char *f2cstrv(char *fstr, char *cstr, int elem_len, int sizeofcstr)
 #else
-static char *f2cstrv(      fstr,       cstr,     elem_len,     sizeofcstr)
-                     char *fstr; char* cstr; int elem_len; int sizeofcstr; 
+static char *f2cstrv(fstr, cstr, elem_len, sizeofcstr)
+char *fstr;
+char *cstr;
+int elem_len;
+int sizeofcstr;
 #endif
-{ int i,j;
+{
+   int i, j;
 /* elem_len includes \0 for C strings. Fortran strings don't have term. \0.
    Useful size of string must be the same in both languages. */
-cstr += sizeofcstr;
-fstr += sizeofcstr - sizeofcstr/elem_len;
-for (i=0; i<sizeofcstr/elem_len; i++) {
-  *--cstr = '\0';
-  for (j=1; j<elem_len; j++) *--cstr = *--fstr;
-} return cstr; }
+   cstr += sizeofcstr;
+   fstr += sizeofcstr - sizeofcstr / elem_len;
+   for (i = 0; i < sizeofcstr / elem_len; i++) {
+      *--cstr = '\0';
+      for (j = 1; j < elem_len; j++)
+         *--cstr = *--fstr;
+   }
+   return cstr;
+}
 
 /* kill the trailing char t's in string s. */
 #ifndef __CF__KnR
 static char *kill_trailing(char *s, char t)
 #else
-static char *kill_trailing(      s,      t) char *s; char t;
+static char *kill_trailing(s, t)
+char *s;
+char t;
 #endif
-{char *e; 
-e = s + strlen(s);
-if (e>s) {                           /* Need this to handle NULL string.*/
-  while (e>s && *--e==t);            /* Don't follow t's past beginning. */
-  e[*e==t?0:1] = '\0';               /* Handle s[0]=t correctly.       */
-} return s; }
+{
+   char *e;
+   e = s + strlen(s);
+   if (e > s) {                 /* Need this to handle NULL string. */
+      while (e > s && *--e == t);       /* Don't follow t's past beginning. */
+      e[*e == t ? 0 : 1] = '\0';        /* Handle s[0]=t correctly.       */
+   }
+   return s;
+}
 
 /* kill_trailingn(s,t,e) will kill the trailing t's in string s. e normally 
 points to the terminating '\0' of s, but may actually point to anywhere in s.
 s's new '\0' will be placed at e or earlier in order to remove any trailing t's.
-If e<s string s is left unchanged. */ 
+If e<s string s is left unchanged. */
 #ifndef __CF__KnR
 static char *kill_trailingn(char *s, char t, char *e)
 #else
-static char *kill_trailingn(      s,      t,       e) char *s; char t; char *e;
+static char *kill_trailingn(s, t, e)
+char *s;
+char t;
+char *e;
 #endif
-{ 
-if (e==s) *e = '\0';                 /* Kill the string makes sense here.*/
-else if (e>s) {                      /* Watch out for neg. length string.*/
-  while (e>s && *--e==t);            /* Don't follow t's past beginning. */
-  e[*e==t?0:1] = '\0';               /* Handle s[0]=t correctly.       */
-} return s; }
+{
+   if (e == s)
+      *e = '\0';                /* Kill the string makes sense here. */
+   else if (e > s) {            /* Watch out for neg. length string. */
+      while (e > s && *--e == t);       /* Don't follow t's past beginning. */
+      e[*e == t ? 0 : 1] = '\0';        /* Handle s[0]=t correctly.       */
+   }
+   return s;
+}
 
 /* Note the following assumes that any element which has t's to be chopped off,
 does indeed fill the entire element. */
 #ifndef __CF__KnR
-static char *vkill_trailing(char* cstr, int elem_len, int sizeofcstr, char t)
+static char *vkill_trailing(char *cstr, int elem_len, int sizeofcstr, char t)
 #else
-static char *vkill_trailing(      cstr,     elem_len,     sizeofcstr,      t)
-                            char* cstr; int elem_len; int sizeofcstr; char t;
+static char *vkill_trailing(cstr, elem_len, sizeofcstr, t)
+char *cstr;
+int elem_len;
+int sizeofcstr;
+char t;
 #endif
-{ int i;
-for (i=0; i<sizeofcstr/elem_len; i++) /* elem_len includes \0 for C strings. */
-  kill_trailingn(cstr+elem_len*i,t,cstr+elem_len*(i+1)-1);
-return cstr; }
+{
+   int i;
+   for (i = 0; i < sizeofcstr / elem_len; i++)  /* elem_len includes \0 for C strings. */
+      kill_trailingn(cstr + elem_len * i, t, cstr + elem_len * (i + 1) - 1);
+   return cstr;
+}
 
 #ifdef vmsFortran
 typedef struct dsc$descriptor_s fstring;
@@ -504,24 +534,30 @@ typedef DSC$DESCRIPTOR_A(1) fstringvector;
 #ifndef __CF__KnR
 static int num_elem(char *strv, unsigned elem_len, int term_char, int num_term)
 #else
-static int num_elem(      strv,          elem_len,     term_char,     num_term)
-                    char *strv; unsigned elem_len; int term_char; int num_term;
+static int num_elem(strv, elem_len, term_char, num_term)
+char *strv;
+unsigned elem_len;
+int term_char;
+int num_term;
 #endif
 /* elem_len is the number of characters in each element of strv, the FORTRAN
 vector of strings. The last element of the vector must begin with at least
 num_term term_char characters, so that this routine can determine how 
 many elements are in the vector. */
 {
-unsigned num,i;
-if (num_term == _NUM_ELEMS || num_term == _NUM_ELEM_ARG) 
-  return term_char;
-if (num_term <=0) num_term = (int)elem_len;
-for (num=0; ; num++) {
-  for (i=0; i<(unsigned)num_term && *strv==term_char; i++,strv++);
-  if (i==(unsigned)num_term) break;
-  else strv += elem_len-i;
-}
-return (int)num;
+   unsigned num, i;
+   if (num_term == _NUM_ELEMS || num_term == _NUM_ELEM_ARG)
+      return term_char;
+   if (num_term <= 0)
+      num_term = (int) elem_len;
+   for (num = 0;; num++) {
+      for (i = 0; i < (unsigned) num_term && *strv == term_char; i++, strv++);
+      if (i == (unsigned) num_term)
+         break;
+      else
+         strv += elem_len - i;
+   }
+   return (int) num;
 }
 #endif
 /*-------------------------------------------------------------------------*/
@@ -557,12 +593,12 @@ return (int)num;
 
 /* Define lookup tables for how to handle the various types of variables.  */
 
-#ifdef OLD_VAXC                                /* Prevent %CC-I-PARAMNOTUSED. */
+#ifdef OLD_VAXC                 /* Prevent %CC-I-PARAMNOTUSED. */
 #pragma nostandard
 #endif
 
 #define ZTRINGV_NUM(I)       I
-#define ZTRINGV_ARGFP(I) (*(_2(A,I))) /* Undocumented. For PINT, etc. */
+#define ZTRINGV_ARGFP(I) (*(_2(A,I)))   /* Undocumented. For PINT, etc. */
 #define ZTRINGV_ARGF(I) _2(A,I)
 #ifdef CFSUBASFUN
 #define ZTRINGV_ARGS(I) ZTRINGV_ARGF(I)
@@ -577,7 +613,7 @@ return (int)num;
 /* This allows Pvariables for ARGS. ARGF machinery is above ARGFP.
  * B is not needed because the variable may be changed by the Fortran routine,
  * but because B is the only way to access an arbitrary macro argument.       */
-#define     PINT_cfVP(A,B) int  B = (int)A;              /* For ZSTRINGV_ARGS */
+#define     PINT_cfVP(A,B) int  B = (int)A;     /* For ZSTRINGV_ARGS */
 #else
 #define     PINT_cfVP(A,B)
 #endif
@@ -671,7 +707,7 @@ return (int)num;
 #define  PDOUBLE_cfAAP(A,B) &A
 #define   PFLOAT_cfAAP(A,B) FLOATVVVVVVV_cfPP &A
 #define     PINT_cfAAP(A,B) &A
-#define PLOGICAL_cfAAP(A,B) B= &A         /* B used to keep a common W table. */
+#define PLOGICAL_cfAAP(A,B) B= &A       /* B used to keep a common W table. */
 #define    PLONG_cfAAP(A,B) &A
 #define   PSHORT_cfAAP(A,B) &A
 
@@ -746,7 +782,7 @@ return (int)num;
 #define  DEFAULT_cfW(A,B)
 #define  LOGICAL_cfW(A,B)
 #define PLOGICAL_cfW(A,B) *B=F2CLOGICAL(*B);
-#define   STRING_cfW(A,B) (A[B.clen]!='\0'?A[B.clen]='\0':0); /* A?="constnt"*/
+#define   STRING_cfW(A,B) (A[B.clen]!='\0'?A[B.clen]='\0':0);   /* A?="constnt" */
 #define  PSTRING_cfW(A,B) kill_trailing(A,' ');
 #ifdef vmsFortran
 #define  STRINGV_cfW(A,B) free(B.dsc$a_pointer);
@@ -762,9 +798,9 @@ return (int)num;
 #define  ZTRINGV_cfW(A,B)      STRINGV_cfW(A,B)
 #define PZTRINGV_cfW(A,B)     PSTRINGV_cfW(A,B)
 
-#define   NCF(TN,I,C)       _SEP_(TN,C,COMMA) _Icf(2,N,TN,_(A,I),0) 
+#define   NCF(TN,I,C)       _SEP_(TN,C,COMMA) _Icf(2,N,TN,_(A,I),0)
 #define  NNCF(TN,I,C)        UUCF(TN,I,C)
-#define NNNCF(TN,I,C)       _SEP_(TN,C,COLON) _Icf(2,N,TN,_(A,I),0) 
+#define NNNCF(TN,I,C)       _SEP_(TN,C,COLON) _Icf(2,N,TN,_(A,I),0)
 #define        INT_cfN(T,A) _(T,VVVVVVV_cfTYPE) * A
 #define       INTV_cfN(T,A) _(T,VVVVVV_cfTYPE)  * A
 #define      INTVV_cfN(T,A) _(T,VVVVV_cfTYPE)   * A
@@ -792,9 +828,9 @@ return (int)num;
 #define    STRINGV_cfN(T,A) char *                A
 #endif
 #endif
-#define    PSTRING_cfN(T,A)   STRING_cfN(T,A) /* CRAY insists on arg.'s here. */
-#define   PNSTRING_cfN(T,A)   STRING_cfN(T,A) /* CRAY insists on arg.'s here. */
-#define   PPSTRING_cfN(T,A)   STRING_cfN(T,A) /* CRAY insists on arg.'s here. */
+#define    PSTRING_cfN(T,A)   STRING_cfN(T,A)   /* CRAY insists on arg.'s here. */
+#define   PNSTRING_cfN(T,A)   STRING_cfN(T,A)   /* CRAY insists on arg.'s here. */
+#define   PPSTRING_cfN(T,A)   STRING_cfN(T,A)   /* CRAY insists on arg.'s here. */
 #define   PSTRINGV_cfN(T,A)  STRINGV_cfN(T,A)
 #define    ZTRINGV_cfN(T,A)  STRINGV_cfN(T,A)
 #define   PZTRINGV_cfN(T,A) PSTRINGV_cfN(T,A)
@@ -885,7 +921,7 @@ return (int)num;
  F(T7,A7,7,1) F(T8,A8,8,1) F(T9,A9,9,1) F(TA,AA,A,1) F(TB,AB,B,1) F(TC,AC,C,1) \
  F(TD,AD,D,1) F(TE,AE,E,1) S(T1,1)      S(T2,2)      S(T3,3)      S(T4,4)      \
  S(T5,5)      S(T6,6)      S(T7,7)      S(T8,8)      S(T9,9)      S(TA,A)      \
- S(TB,B)      S(TC,C)      S(TD,D)      S(TE,E) 
+ S(TB,B)      S(TC,C)      S(TD,D)      S(TE,E)
 #if MAX_PREPRO_ARGS>31
 /* F changed to Z for arg 15. Watch out if ever extend to S or Z arguments. */
 #define CFARGTA20(Z,S,T1,T2,T3,T4,T5,T6,T7,T8,T9,TA,TB,TC,TD,TE,TF,TG,TH,TI,TJ,TK,A1,A2,A3,A4,A5,A6,A7,A8,A9,AA,AB,AC,AD,AE,AF,AG,AH,AI,AJ,AK) \
@@ -925,7 +961,7 @@ return (int)num;
  Z(TA,AA,A,1) S(TA,A) Z(TB,AB,B,1) S(TB,B) Z(TC,AC,C,1) S(TC,C)                \
  Z(TD,AD,D,1) S(TD,D) Z(TE,AE,E,1) S(TE,E) Z(TF,AF,F,1) S(TF,F)                \
  Z(TG,AG,G,1) S(TG,G) Z(TH,AH,H,1) S(TH,H) Z(TI,AI,I,1) S(TI,I)                \
- Z(TJ,AJ,J,1) S(TJ,J) Z(TK,AK,K,1) S(TK,K)                
+ Z(TJ,AJ,J,1) S(TJ,J) Z(TK,AK,K,1) S(TK,K)
 #endif
 #endif
 
@@ -1011,7 +1047,7 @@ return (int)num;
 #endif
 
 
-#ifdef OLD_VAXC                                  /* Allow %CC-I-PARAMNOTUSED. */
+#ifdef OLD_VAXC                 /* Allow %CC-I-PARAMNOTUSED. */
 #pragma standard
 #endif
 
@@ -1115,7 +1151,7 @@ do{VVCF(T1,A1,B1) VVCF(T2,A2,B2) VVCF(T3,A3,B3) VVCF(T4,A4,B4) VVCF(T5,A5,B5)  \
  WCF(TD,AD,D) WCF(TE,AE,E) WCF(TF,AF,F) WCF(TG,AG,G) WCF(TH,AH,H) WCF(TI,AI,I) \
  WCF(TJ,AJ,J) WCF(TK,AK,K) }while(FALSE)
 #endif
-#endif         /* MAX_PREPRO_ARGS */
+#endif                          /* MAX_PREPRO_ARGS */
 
 /*-------------------------------------------------------------------------*/
 
@@ -1138,12 +1174,12 @@ do{VVCF(T1,A1,B1) VVCF(T2,A2,B2) VVCF(T3,A3,B3) VVCF(T4,A4,B4) VVCF(T5,A5,B5)  \
    string coming out of a FORTRAN routine.                                 */
 #define CFORTRAN_NON_CHAR 0x7F
 
-#ifdef OLD_VAXC                                /* Prevent %CC-I-PARAMNOTUSED. */
+#ifdef OLD_VAXC                 /* Prevent %CC-I-PARAMNOTUSED. */
 #pragma nostandard
 #endif
 
 #define _SEP_(TN,C,COMMA)     _(__SEP_,C)(TN,COMMA)
-#define __SEP_0(TN,COMMA)  
+#define __SEP_0(TN,COMMA)
 #define __SEP_1(TN,COMMA)     _Icf(2,SEP,TN,COMMA,0)
 #define        INT_cfSEP(T,B) _(A,B)
 #define       INTV_cfSEP(T,B) INT_cfSEP(T,B)
@@ -1157,7 +1193,7 @@ do{VVCF(T1,A1,B1) VVCF(T2,A2,B2) VVCF(T3,A3,B3) VVCF(T4,A4,B4) VVCF(T5,A5,B5)  \
 #define      PVOID_cfSEP(T,B) INT_cfSEP(T,B)
 #define    ROUTINE_cfSEP(T,B) INT_cfSEP(T,B)
 #define     SIMPLE_cfSEP(T,B) INT_cfSEP(T,B)
-#define       VOID_cfSEP(T,B) INT_cfSEP(T,B)    /* For FORTRAN calls C subr.s.*/
+#define       VOID_cfSEP(T,B) INT_cfSEP(T,B)    /* For FORTRAN calls C subr.s. */
 #define     STRING_cfSEP(T,B) INT_cfSEP(T,B)
 #define    STRINGV_cfSEP(T,B) INT_cfSEP(T,B)
 #define    PSTRING_cfSEP(T,B) INT_cfSEP(T,B)
@@ -1166,25 +1202,25 @@ do{VVCF(T1,A1,B1) VVCF(T2,A2,B2) VVCF(T3,A3,B3) VVCF(T4,A4,B4) VVCF(T5,A5,B5)  \
 #define   PPSTRING_cfSEP(T,B) INT_cfSEP(T,B)
 #define    ZTRINGV_cfSEP(T,B) INT_cfSEP(T,B)
 #define   PZTRINGV_cfSEP(T,B) INT_cfSEP(T,B)
-                         
+
 #if defined(SIGNED_BYTE) || !defined(UNSIGNED_BYTE)
 #ifdef OLD_VAXC
-#define INTEGER_BYTE               char    /* Old VAXC barfs on 'signed char' */
+#define INTEGER_BYTE               char /* Old VAXC barfs on 'signed char' */
 #else
-#define INTEGER_BYTE        signed char    /* default */
+#define INTEGER_BYTE        signed char /* default */
 #endif
 #else
 #define INTEGER_BYTE        unsigned char
 #endif
 #define    BYTEVVVVVVV_cfTYPE INTEGER_BYTE
-#define  DOUBLEVVVVVVV_cfTYPE DOUBLE_PRECISION 
+#define  DOUBLEVVVVVVV_cfTYPE DOUBLE_PRECISION
 #define   FLOATVVVVVVV_cfTYPE FORTRAN_REAL
 #define     INTVVVVVVV_cfTYPE int
 #define LOGICALVVVVVVV_cfTYPE int
 #define    LONGVVVVVVV_cfTYPE long
 #define   SHORTVVVVVVV_cfTYPE short
 #define          PBYTE_cfTYPE INTEGER_BYTE
-#define        PDOUBLE_cfTYPE DOUBLE_PRECISION 
+#define        PDOUBLE_cfTYPE DOUBLE_PRECISION
 #define         PFLOAT_cfTYPE FORTRAN_REAL
 #define           PINT_cfTYPE int
 #define       PLOGICAL_cfTYPE int
@@ -1282,10 +1318,10 @@ do{VVCF(T1,A1,B1) VVCF(T2,A2,B2) VVCF(T3,A3,B3) VVCF(T4,A4,B4) VVCF(T5,A5,B5)  \
 #define        ZTRINGV_cfINT(N,A,B,X,Y,Z)         PVOID_cfINT(N,A,B,X,Y,Z)
 #define       PZTRINGV_cfINT(N,A,B,X,Y,Z)         PVOID_cfINT(N,A,B,X,Y,Z)
 #define           CF_0_cfINT(N,A,B,X,Y,Z)
-                         
+
 
 #define   UCF(TN,I,C)  _SEP_(TN,C,COMMA) _Icf(2,U,TN,_(A,I),0)
-#define  UUCF(TN,I,C)  _SEP_(TN,C,COMMA) _SEP_(TN,1,I) 
+#define  UUCF(TN,I,C)  _SEP_(TN,C,COMMA) _SEP_(TN,1,I)
 #define UUUCF(TN,I,C)  _SEP_(TN,C,COLON) _Icf(2,U,TN,_(A,I),0)
 #define        INT_cfU(T,A) _(T,VVVVVVV_cfTYPE)   A
 #define       INTV_cfU(T,A) _(T,VVVVVV_cfTYPE)  * A
@@ -1296,8 +1332,8 @@ do{VVCF(T1,A1,B1) VVCF(T2,A2,B2) VVCF(T3,A3,B3) VVCF(T4,A4,B4) VVCF(T5,A5,B5)  \
 #define  INTVVVVVV_cfU(T,A) _(T,V_cfTYPE)       * A
 #define INTVVVVVVV_cfU(T,A) _(T,_cfTYPE)        * A
 #define       PINT_cfU(T,A) _(T,_cfTYPE)        * A
-#define      PVOID_cfU(T,A) void  *A 
-#define    ROUTINE_cfU(T,A) void (*A)(CF_NULL_PROTO) 
+#define      PVOID_cfU(T,A) void  *A
+#define    ROUTINE_cfU(T,A) void (*A)(CF_NULL_PROTO)
 #define       VOID_cfU(T,A) void   A    /* Needed for C calls FORTRAN sub.s.  */
 #define     STRING_cfU(T,A) char  *A    /*            via VOID and wrapper.   */
 #define    STRINGV_cfU(T,A) char  *A
@@ -1308,17 +1344,17 @@ do{VVCF(T1,A1,B1) VVCF(T2,A2,B2) VVCF(T3,A3,B3) VVCF(T4,A4,B4) VVCF(T5,A5,B5)  \
 
 /* VOID breaks U into U and UU. */
 #define       INT_cfUU(T,A) _(T,VVVVVVV_cfTYPE) A
-#define      VOID_cfUU(T,A)             /* Needed for FORTRAN calls C sub.s.  */
-#define    STRING_cfUU(T,A) char *A 
+#define      VOID_cfUU(T,A)     /* Needed for FORTRAN calls C sub.s.  */
+#define    STRING_cfUU(T,A) char *A
 
 
 #define      BYTE_cfPU(A)   CFextern INTEGER_BYTE      FCALLSC_QUALIFIER A
 #define    DOUBLE_cfPU(A)   CFextern DOUBLE_PRECISION  FCALLSC_QUALIFIER A
 #if ! (defined(FLOATFUNCTIONTYPE)&&defined(ASSIGNFLOAT)&&defined(RETURNFLOAT))
 #define     FLOAT_cfPU(A)   CFextern FORTRAN_REAL      FCALLSC_QUALIFIER A
-#else				   	                   
+#else
 #define     FLOAT_cfPU(A)   CFextern FLOATFUNCTIONTYPE FCALLSC_QUALIFIER A
-#endif				   	                   
+#endif
 #define       INT_cfPU(A)   CFextern int   FCALLSC_QUALIFIER   A
 #define   LOGICAL_cfPU(A)   CFextern int   FCALLSC_QUALIFIER   A
 #define      LONG_cfPU(A)   CFextern long  FCALLSC_QUALIFIER   A
@@ -1380,7 +1416,7 @@ do{VVCF(T1,A1,B1) VVCF(T2,A2,B2) VVCF(T3,A3,B3) VVCF(T4,A4,B4) VVCF(T5,A5,B5)  \
 
 #define     INT_cfG(T,UN,LN)    INT_cfGZ(T,UN,LN)
 #define    VOID_cfG(T,UN,LN)   VOID_cfGZ(T,UN,LN)
-#define  STRING_cfG(T,UN,LN) STRING_cfGZ(T,UN,LN), /*, is only diff. from _cfG*/
+#define  STRING_cfG(T,UN,LN) STRING_cfGZ(T,UN,LN),      /*, is only diff. from _cfG */
 
 #define    BYTEVVVVVVV_cfPP
 #define     INTVVVVVVV_cfPP     /* These complement FLOATVVVVVVV_cfPP. */
@@ -1414,7 +1450,7 @@ do{VVCF(T1,A1,B1) VVCF(T2,A2,B2) VVCF(T3,A3,B3) VVCF(T4,A4,B4) VVCF(T5,A5,B5)  \
 #define    ROUTINE_cfB(T,A) (void(*)(CF_NULL_PROTO))A
 #define    ZTRINGV_cfB(T,A) (char *)   A
 #define   PZTRINGV_cfB(T,A) (char *)   A
-                                                              	
+
 #define SCF(TN,NAME,I,A)    _(TN,_cfSTR)(3,S,NAME,I,A,0,0)
 #define  DEFAULT_cfS(M,I,A)
 #define  LOGICAL_cfS(M,I,A)
@@ -1560,9 +1596,9 @@ do{VVCF(T1,A1,B1) VVCF(T2,A2,B2) VVCF(T3,A3,B3) VVCF(T4,A4,B4) VVCF(T5,A5,B5)  \
 #if !defined(__CF__KnR)
 #define    FLOAT_cfCCC(A,B) &A
                                /* Although the VAX doesn't, at least the      */
-#else                          /* HP and K&R mips promote float arg.'s of     */
-#define    FLOAT_cfCCC(A,B) &B /* unprototyped functions to double. Cannot    */
-#endif                         /* use A here to pass the argument to FORTRAN. */
+#else                           /* HP and K&R mips promote float arg.'s of     */
+#define    FLOAT_cfCCC(A,B) &B  /* unprototyped functions to double. Cannot    */
+#endif                          /* use A here to pass the argument to FORTRAN. */
 #define      INT_cfCCC(A,B) &A
 #define  LOGICAL_cfCCC(A,B) &A
 #define     LONG_cfCCC(A,B) &A
@@ -1571,12 +1607,12 @@ do{VVCF(T1,A1,B1) VVCF(T2,A2,B2) VVCF(T3,A3,B3) VVCF(T4,A4,B4) VVCF(T5,A5,B5)  \
 #define  PDOUBLE_cfCCC(A,B)  A
 #define   PFLOAT_cfCCC(A,B)  A
 #define     PINT_cfCCC(A,B)  A
-#define PLOGICAL_cfCCC(A,B)  B=A       /* B used to keep a common W table. */
+#define PLOGICAL_cfCCC(A,B)  B=A        /* B used to keep a common W table. */
 #define    PLONG_cfCCC(A,B)  A
 #define   PSHORT_cfCCC(A,B)  A
 
 #define CCCF(TN,I,M)           _SEP_(TN,M,COMMA) _Icf(3,CC,TN,_(A,I),_(B,I))
-#define        INT_cfCC(T,A,B) _(T,_cfCCC)(A,B) 
+#define        INT_cfCC(T,A,B) _(T,_cfCCC)(A,B)
 #define       INTV_cfCC(T,A,B)  A
 #define      INTVV_cfCC(T,A,B)  A
 #define     INTVVV_cfCC(T,A,B)  A
@@ -1584,7 +1620,7 @@ do{VVCF(T1,A1,B1) VVCF(T2,A2,B2) VVCF(T3,A3,B3) VVCF(T4,A4,B4) VVCF(T5,A5,B5)  \
 #define   INTVVVVV_cfCC(T,A,B)  A
 #define  INTVVVVVV_cfCC(T,A,B)  A
 #define INTVVVVVVV_cfCC(T,A,B)  A
-#define       PINT_cfCC(T,A,B) _(T,_cfCCC)(A,B) 
+#define       PINT_cfCC(T,A,B) _(T,_cfCCC)(A,B)
 #define      PVOID_cfCC(T,A,B)  A
 #if defined(apolloFortran) || defined(hpuxFortran800) || defined(AbsoftUNIXFortran)
 #define    ROUTINE_cfCC(T,A,B) &A
@@ -1638,7 +1674,7 @@ do{VVCF(T1,A1,B1) VVCF(T2,A2,B2) VVCF(T3,A3,B3) VVCF(T4,A4,B4) VVCF(T5,A5,B5)  \
 /* Note that we don't use LN here, but we keep it for consistency. */
 #define CCALLSFFUN0(UN,LN) CFFUN(UN)()
 
-#ifdef OLD_VAXC                                  /* Allow %CC-I-PARAMNOTUSED. */
+#ifdef OLD_VAXC                 /* Allow %CC-I-PARAMNOTUSED. */
 #pragma standard
 #endif
 
@@ -1689,7 +1725,7 @@ Can only have prototype arg.'s with difficulty, a la G... table since FORTRAN
 functions returning strings have extra arg.'s. Don't bother, since this only
 causes a compiler warning to come up when one uses FCALLSCFUNn and CCALLSFFUNn
 for the same function in the same source code. Something done by the experts in
-debugging only.*/    
+debugging only.*/
 
 #define PROTOCCALLSFFUN0(F,UN,LN)                                              \
 _(F,_cfPU)( CFC_(UN,LN))(CF_NULL_PROTO);                                       \
@@ -1755,7 +1791,7 @@ static _Icf(2,U,F,CFFUN(UN),0)() {_(F,_cfE) _Icf(3,GZ,F,UN,LN) ABSOFT_cf1(F));_(
 
 /*               UTILITIES FOR FORTRAN TO CALL C ROUTINES                  */
 
-#ifdef OLD_VAXC                                /* Prevent %CC-I-PARAMNOTUSED. */
+#ifdef OLD_VAXC                 /* Prevent %CC-I-PARAMNOTUSED. */
 #pragma nostandard
 #endif
 
@@ -1780,26 +1816,26 @@ static _Icf(2,U,F,CFFUN(UN),0)() {_(F,_cfE) _Icf(3,GZ,F,UN,LN) ABSOFT_cf1(F));_(
 #define PNSTRING_cfQ(B) char *B=NULL;
 #define PPSTRING_cfQ(B)
 
-#ifdef     __sgi   /* Else SGI gives warning 182 contrary to its C LRM A.17.7 */
-#define ROUTINE_orig    *(void**)& 
+#ifdef     __sgi                /* Else SGI gives warning 182 contrary to its C LRM A.17.7 */
+#define ROUTINE_orig    *(void**)&
 #else
-#define ROUTINE_orig     (void *)  
+#define ROUTINE_orig     (void *)
 #endif
 
-#define ROUTINE_1     ROUTINE_orig   
-#define ROUTINE_2     ROUTINE_orig   
-#define ROUTINE_3     ROUTINE_orig   
-#define ROUTINE_4     ROUTINE_orig   
-#define ROUTINE_5     ROUTINE_orig   
-#define ROUTINE_6     ROUTINE_orig   
-#define ROUTINE_7     ROUTINE_orig   
-#define ROUTINE_8     ROUTINE_orig   
-#define ROUTINE_9     ROUTINE_orig   
-#define ROUTINE_10    ROUTINE_orig   
-#define ROUTINE_11    ROUTINE_orig   
-#define ROUTINE_12    ROUTINE_orig   
-#define ROUTINE_13    ROUTINE_orig   
-#define ROUTINE_14    ROUTINE_orig   
+#define ROUTINE_1     ROUTINE_orig
+#define ROUTINE_2     ROUTINE_orig
+#define ROUTINE_3     ROUTINE_orig
+#define ROUTINE_4     ROUTINE_orig
+#define ROUTINE_5     ROUTINE_orig
+#define ROUTINE_6     ROUTINE_orig
+#define ROUTINE_7     ROUTINE_orig
+#define ROUTINE_8     ROUTINE_orig
+#define ROUTINE_9     ROUTINE_orig
+#define ROUTINE_10    ROUTINE_orig
+#define ROUTINE_11    ROUTINE_orig
+#define ROUTINE_12    ROUTINE_orig
+#define ROUTINE_13    ROUTINE_orig
+#define ROUTINE_14    ROUTINE_orig
 
 #define TCF(NAME,TN,I,M)              _SEP_(TN,M,COMMA) _(TN,_cfT)(NAME,I,_(A,I),_(B,I),_(C,I))
 #define           BYTE_cfT(M,I,A,B,D) *A
@@ -1816,12 +1852,12 @@ static _Icf(2,U,F,CFFUN(UN),0)() {_(F,_cfE) _Icf(3,GZ,F,UN,LN) ABSOFT_cf1(F));_(
 #define       LOGICALV_cfT(M,I,A,B,D)  A
 #define          LONGV_cfT(M,I,A,B,D)  A
 #define         SHORTV_cfT(M,I,A,B,D)  A
-#define         BYTEVV_cfT(M,I,A,B,D)  (void *)A /* We have to cast to void *,*/
-#define        BYTEVVV_cfT(M,I,A,B,D)  (void *)A /* since we don't know the   */
-#define       BYTEVVVV_cfT(M,I,A,B,D)  (void *)A /* dimensions of the array.  */
-#define      BYTEVVVVV_cfT(M,I,A,B,D)  (void *)A /* i.e. Unfortunately, can't */
-#define     BYTEVVVVVV_cfT(M,I,A,B,D)  (void *)A /* check that the type       */
-#define    BYTEVVVVVVV_cfT(M,I,A,B,D)  (void *)A /* matches the prototype.    */
+#define         BYTEVV_cfT(M,I,A,B,D)  (void *)A        /* We have to cast to void *, */
+#define        BYTEVVV_cfT(M,I,A,B,D)  (void *)A        /* since we don't know the   */
+#define       BYTEVVVV_cfT(M,I,A,B,D)  (void *)A        /* dimensions of the array.  */
+#define      BYTEVVVVV_cfT(M,I,A,B,D)  (void *)A        /* i.e. Unfortunately, can't */
+#define     BYTEVVVVVV_cfT(M,I,A,B,D)  (void *)A        /* check that the type       */
+#define    BYTEVVVVVVV_cfT(M,I,A,B,D)  (void *)A        /* matches the prototype.    */
 #define       DOUBLEVV_cfT(M,I,A,B,D)  (void *)A
 #define      DOUBLEVVV_cfT(M,I,A,B,D)  (void *)A
 #define     DOUBLEVVVV_cfT(M,I,A,B,D)  (void *)A
@@ -1834,9 +1870,9 @@ static _Icf(2,U,F,CFFUN(UN),0)() {_(F,_cfE) _Icf(3,GZ,F,UN,LN) ABSOFT_cf1(F));_(
 #define     FLOATVVVVV_cfT(M,I,A,B,D)  (void *)A
 #define    FLOATVVVVVV_cfT(M,I,A,B,D)  (void *)A
 #define   FLOATVVVVVVV_cfT(M,I,A,B,D)  (void *)A
-#define          INTVV_cfT(M,I,A,B,D)  (void *)A  
-#define         INTVVV_cfT(M,I,A,B,D)  (void *)A  
-#define        INTVVVV_cfT(M,I,A,B,D)  (void *)A  
+#define          INTVV_cfT(M,I,A,B,D)  (void *)A
+#define         INTVVV_cfT(M,I,A,B,D)  (void *)A
+#define        INTVVVV_cfT(M,I,A,B,D)  (void *)A
 #define       INTVVVVV_cfT(M,I,A,B,D)  (void *)A
 #define      INTVVVVVV_cfT(M,I,A,B,D)  (void *)A
 #define     INTVVVVVVV_cfT(M,I,A,B,D)  (void *)A
@@ -1983,7 +2019,7 @@ static _Icf(2,U,F,CFFUN(UN),0)() {_(F,_cfE) _Icf(3,GZ,F,UN,LN) ABSOFT_cf1(F));_(
 #define     INT_cfFF
 #define    VOID_cfFF
 #ifdef vmsFortran
-#define  STRING_cfFF           fstring *AS; 
+#define  STRING_cfFF           fstring *AS;
 #else
 #ifdef CRAYFortran
 #define  STRING_cfFF           _fcd     AS;
@@ -1994,7 +2030,7 @@ static _Icf(2,U,F,CFFUN(UN),0)() {_(F,_cfE) _Icf(3,GZ,F,UN,LN) ABSOFT_cf1(F));_(
 
 #define     INT_cfL            A0=
 #define  STRING_cfL            A0=
-#define    VOID_cfL                        
+#define    VOID_cfL
 
 #define    INT_cfK
 #define   VOID_cfK
@@ -2042,7 +2078,7 @@ string. */
 #define  STRING_cfI  return   ;
 #define    VOID_cfI  return   ;
 
-#ifdef OLD_VAXC                                  /* Allow %CC-I-PARAMNOTUSED. */
+#ifdef OLD_VAXC                 /* Allow %CC-I-PARAMNOTUSED. */
 #pragma standard
 #endif
 
@@ -2055,7 +2091,7 @@ string. */
 #define FCALLSCSUB5( CN,UN,LN,T1,T2,T3,T4,T5) \
     FCALLSCFUN5(VOID,CN,UN,LN,T1,T2,T3,T4,T5)
 #define FCALLSCSUB6( CN,UN,LN,T1,T2,T3,T4,T5,T6) \
-    FCALLSCFUN6(VOID,CN,UN,LN,T1,T2,T3,T4,T5,T6)       
+    FCALLSCFUN6(VOID,CN,UN,LN,T1,T2,T3,T4,T5,T6)
 #define FCALLSCSUB7( CN,UN,LN,T1,T2,T3,T4,T5,T6,T7) \
     FCALLSCFUN7(VOID,CN,UN,LN,T1,T2,T3,T4,T5,T6,T7)
 #define FCALLSCSUB8( CN,UN,LN,T1,T2,T3,T4,T5,T6,T7,T8) \
@@ -2130,4 +2166,4 @@ string. */
 #endif
 
 
-#endif	 /* __CFORTRAN_LOADED */
+#endif                          /* __CFORTRAN_LOADED */

@@ -57,7 +57,7 @@ extern "C" {
 #endif
 
 #include "epicsTypes.h"
-#include "errMdef.h"	/* get M_ts for this subsystem's `number' */
+#include "errMdef.h"            /* get M_ts for this subsystem's `number' */
 #include "shareLib.h"
 
 /*---------------------------------------------------------------------------
@@ -73,10 +73,10 @@ extern "C" {
 *
 *----------------------------------------------------------------------------
 */
-typedef struct {
-    epicsUInt32    secPastEpoch;   /* seconds since 0000 Jan 1, 1990 */
-    epicsUInt32    nsec;           /* nanoseconds within second */
-} TS_STAMP;
+   typedef struct {
+      epicsUInt32 secPastEpoch; /* seconds since 0000 Jan 1, 1990 */
+      epicsUInt32 nsec;         /* nanoseconds within second */
+   } TS_STAMP;
 
 /*----------------------------------------------------------------------------
 * TS_TEXT_xxx text type codes for converting between text and time stamp
@@ -86,10 +86,10 @@ typedef struct {
 *			123456789012345678901234567890123456789
 *			0        1         2         3
 *----------------------------------------------------------------------------*/
-enum tsTextType{
-    TS_TEXT_MONDDYYYY,
-    TS_TEXT_MMDDYY
-};
+   enum tsTextType {
+      TS_TEXT_MONDDYYYY,
+      TS_TEXT_MMDDYY
+   };
 
 /*/subhead macros-------------------------------------------------------------
 *    arithmetic macros
@@ -160,57 +160,50 @@ enum tsTextType{
 
 #if defined(__STDC__) || defined(__cplusplus)
 
-epicsShareFunc long epicsShareAPI tsLocalTime (TS_STAMP *pStamp);
+   epicsShareFunc long epicsShareAPI tsLocalTime(TS_STAMP * pStamp);
 
-epicsShareFunc void epicsShareAPI tsAddDouble(
-TS_STAMP *pSum,         /* O sum time stamp */
-TS_STAMP *pStamp,       /* I addend time stamp */
-double  dbl             /* I number of seconds to add */
-);
+   epicsShareFunc void epicsShareAPI tsAddDouble(TS_STAMP * pSum,       /* O sum time stamp */
+                                                 TS_STAMP * pStamp,     /* I addend time stamp */
+                                                 double dbl     /* I number of seconds to add */
+       );
 
-epicsShareFunc int epicsShareAPI tsCmpStamps(
-TS_STAMP *pStamp1,      /* pointer to first stamp */
-TS_STAMP *pStamp2       /* pointer to second stamp */
-);
+   epicsShareFunc int epicsShareAPI tsCmpStamps(TS_STAMP * pStamp1,     /* pointer to first stamp */
+                                                TS_STAMP * pStamp2      /* pointer to second stamp */
+       );
 
-epicsShareFunc long epicsShareAPI tsRoundDownLocal(
-TS_STAMP *pStamp,       /* IO pointer to time stamp buffer */
-unsigned long interval  /* I rounding interval, in seconds */
-);
+   epicsShareFunc long epicsShareAPI tsRoundDownLocal(TS_STAMP * pStamp,        /* IO pointer to time stamp buffer */
+                                                      unsigned long interval    /* I rounding interval, in seconds */
+       );
 
-epicsShareFunc long epicsShareAPI tsRoundUpLocal(
-TS_STAMP *pStamp,       /* IO pointer to time stamp buffer */
-unsigned long interval  /* I rounding interval, in seconds */
-);
+   epicsShareFunc long epicsShareAPI tsRoundUpLocal(TS_STAMP * pStamp,  /* IO pointer to time stamp buffer */
+                                                    unsigned long interval      /* I rounding interval, in seconds */
+       );
 
-epicsShareFunc char * epicsShareAPI tsStampToText(
-TS_STAMP *pStamp,       /* I pointer to time stamp */
-enum tsTextType textType,/* I type of conversion desired; one of TS_TEXT_xxx */
-char    *textBuffer     /* O buffer to receive text */
-);
+   epicsShareFunc char *epicsShareAPI tsStampToText(TS_STAMP * pStamp,  /* I pointer to time stamp */
+                                                    enum tsTextType textType,   /* I type of conversion desired; one of TS_TEXT_xxx */
+                                                    char *textBuffer    /* O buffer to receive text */
+       );
 
-epicsShareFunc long epicsShareAPI tsTextToStamp(
-TS_STAMP *pStamp,       /* O time stamp corresponding to text */
-char    **pText         /* IO ptr to ptr to string containing time and date */
-);
+   epicsShareFunc long epicsShareAPI tsTextToStamp(TS_STAMP * pStamp,   /* O time stamp corresponding to text */
+                                                   char **pText /* IO ptr to ptr to string containing time and date */
+       );
 
-epicsShareFunc long epicsShareAPI tsTimeTextToStamp(
-TS_STAMP *pStamp,       /* O time stamp corresponding to text */
-char    **pText         /* IO ptr to ptr to string containing time and date */
-);
+   epicsShareFunc long epicsShareAPI tsTimeTextToStamp(TS_STAMP * pStamp,       /* O time stamp corresponding to text */
+                                                       char **pText     /* IO ptr to ptr to string containing time and date */
+       );
 
-#else /* !defined(__STDC__) && !defined(__cplusplus) */
+#else                           /* !defined(__STDC__) && !defined(__cplusplus) */
 
-epicsShareFunc long epicsShareAPI tsLocalTime ();
-epicsShareFunc void epicsShareAPI tsAddDouble();
-epicsShareFunc int epicsShareAPI tsCmpStamps();
-epicsShareFunc long epicsShareAPI tsRoundDownLocal();
-epicsShareFunc long epicsShareAPI tsRoundUpLocal();
-epicsShareFunc char * epicsShareAPI tsStampToText();
-epicsShareFunc long epicsShareAPI tsTextToStamp();
-epicsShareFunc long epicsShareAPI tsTimeTextToStamp();
+   epicsShareFunc long epicsShareAPI tsLocalTime();
+   epicsShareFunc void epicsShareAPI tsAddDouble();
+   epicsShareFunc int epicsShareAPI tsCmpStamps();
+   epicsShareFunc long epicsShareAPI tsRoundDownLocal();
+   epicsShareFunc long epicsShareAPI tsRoundUpLocal();
+   epicsShareFunc char *epicsShareAPI tsStampToText();
+   epicsShareFunc long epicsShareAPI tsTextToStamp();
+   epicsShareFunc long epicsShareAPI tsTimeTextToStamp();
 
-#endif /*defined(__STDC__) || defined(__cplusplus) */
+#endif                          /*defined(__STDC__) || defined(__cplusplus) */
 
 /*/subhead status codes-------------------------------------------------------
 *		S T A T U S   C O D E S
@@ -222,14 +215,14 @@ epicsShareFunc long epicsShareAPI tsTimeTextToStamp();
 *    corresponding to a status code.
 *
 *----------------------------------------------------------------------------*/
-#define S_ts_OK		     0 
-#define S_ts_sysTimeError    (M_ts|1| 1<<1) /* error getting system time */
-#define S_ts_badTextCode     (M_ts|1| 2<<1) /* invalid TS_TEXT_xxx code */
-#define S_ts_inputTextError  (M_ts|1| 3<<1) /* error in text date or time */
-#define S_ts_timeSkippedDST  (M_ts|1| 4<<1) /* time skipped on switch to DST */
-#define S_ts_badRoundInterval (M_ts|1| 5<<1) /* invalid rounding interval */
+#define S_ts_OK		     0
+#define S_ts_sysTimeError    (M_ts|1| 1<<1)     /* error getting system time */
+#define S_ts_badTextCode     (M_ts|1| 2<<1)     /* invalid TS_TEXT_xxx code */
+#define S_ts_inputTextError  (M_ts|1| 3<<1)     /* error in text date or time */
+#define S_ts_timeSkippedDST  (M_ts|1| 4<<1)     /* time skipped on switch to DST */
+#define S_ts_badRoundInterval (M_ts|1| 5<<1)    /* invalid rounding interval */
 
-#define TS_S_PAST		 6	/* one past last legal code */
+#define TS_S_PAST		 6      /* one past last legal code */
 
 #define TsStatusToIndex(status) \
 	(  ((status&0xffff0000)!=M_ts)  \
@@ -243,22 +236,21 @@ epicsShareFunc long epicsShareAPI tsTimeTextToStamp();
 #define TsStatusToText(status) \
 	(glTsStatText[TsStatusToIndex(status)])
 
-epicsShareExtern char *glTsStatText[7];
+   epicsShareExtern char *glTsStatText[7];
 #ifdef createTSSubrGlobals
-    epicsShareDef char *glTsStatText[] = {
-        /* S_ts_OK                */ "success",
-        /* S_ts_sysTimeError      */ "error getting system time",
-        /* S_ts_badTextCode       */ "invalid TS_TEXT_xxx code",
-        /* S_ts_inputTextError    */ "error in text date or time",
-        /* S_ts_timeSkippedDST    */ "time skipped on switch to DST",
-        /* S_ts_badRoundInterval  */ "rounding interval is invalid",
+   epicsShareDef char *glTsStatText[] = {
+      /* S_ts_OK                */ "success",
+      /* S_ts_sysTimeError      */ "error getting system time",
+      /* S_ts_badTextCode       */ "invalid TS_TEXT_xxx code",
+      /* S_ts_inputTextError    */ "error in text date or time",
+      /* S_ts_timeSkippedDST    */ "time skipped on switch to DST",
+      /* S_ts_badRoundInterval  */ "rounding interval is invalid",
 
-        /* TS_S_PAST              */ "illegal TS status code",
-    };
+      /* TS_S_PAST              */ "illegal TS status code",
+   };
 #endif
 
 #ifdef __cplusplus
 }
 #endif /*__cplusplus */
-
-#endif /*INC_tsDefs_h*/
+#endif                          /*INC_tsDefs_h */

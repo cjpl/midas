@@ -22,7 +22,7 @@
 \********************************************************************/
 
 typedef struct {
-  char      comment[80];
+   char comment[80];
 } EXP_PARAM;
 
 #define EXP_PARAM_STR(_name) char *_name[] = {\
@@ -32,7 +32,7 @@ typedef struct {
 NULL }
 
 typedef struct {
-  char      comment[80];
+   char comment[80];
 } EXP_EDIT;
 
 #define EXP_EDIT_STR(_name) char *_name[] = {\
@@ -44,9 +44,9 @@ NULL }
 #ifndef EXCL_ADC_CALIBRATION
 
 typedef struct {
-  INT       pedestal[8];
-  float     software_gain[8];
-  double    histo_threshold;
+   INT pedestal[8];
+   float software_gain[8];
+   double histo_threshold;
 } ADC_CALIBRATION_PARAM;
 
 #define ADC_CALIBRATION_PARAM_STR(_name) char *_name[] = {\
@@ -78,7 +78,7 @@ NULL }
 #ifndef EXCL_ADC_SUMMING
 
 typedef struct {
-  float     adc_threshold;
+   float adc_threshold;
 } ADC_SUMMING_PARAM;
 
 #define ADC_SUMMING_PARAM_STR(_name) char *_name[] = {\
@@ -92,7 +92,7 @@ NULL }
 #ifndef EXCL_GLOBAL
 
 typedef struct {
-  float     adc_threshold;
+   float adc_threshold;
 } GLOBAL_PARAM;
 
 #define GLOBAL_PARAM_STR(_name) char *_name[] = {\
@@ -106,7 +106,7 @@ NULL }
 #ifndef EXCL_TRIGGER
 
 typedef struct {
-  float     sum;
+   float sum;
 } ASUM_BANK;
 
 #define ASUM_BANK_STR(_name) char *_name[] = {\
@@ -116,7 +116,7 @@ typedef struct {
 NULL }
 
 typedef struct {
-  BYTE      io506;
+   BYTE io506;
 } TRIGGER_SETTINGS;
 
 #define TRIGGER_SETTINGS_STR(_name) char *_name[] = {\
@@ -130,4 +130,3 @@ NULL }
 #ifndef EXCL_SCALER
 
 #endif
-

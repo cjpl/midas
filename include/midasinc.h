@@ -7,6 +7,9 @@
   Contents:     Includes all necessary include files
 
   $Log$
+  Revision 1.11  2004/01/08 08:40:09  midas
+  Implemented standard indentation
+
   Revision 1.10  2003/06/25 18:22:53  pierre
   Added pthread support for UNIX version - DBM
 
@@ -176,7 +179,7 @@
 #define NO_PTY
 #endif
 
-extern void *malloc(); /* patches for wrong gcc include files */
+extern void *malloc();          /* patches for wrong gcc include files */
 extern void *realloc();
 #endif
 
@@ -198,4 +201,3 @@ extern void *realloc();
 #endif
 
 /*------------------------------------------------------------------*/
-

@@ -55,7 +55,7 @@ The success of the operation can be checked by looking at the
   <date>       <XX>  created
 
 \********************************************************************/
-                                                        
+
 /*-- Include files -------------------------------------------------*/
 
 /* standard includes */
@@ -67,62 +67,61 @@ The success of the operation can be checked by looking at the
 
 /*-- Parameters ----------------------------------------------------*/
 
-<TEMPLATE>_PARAM <template>_param;
+< TEMPLATE > _PARAM < template > _param;
 
 /*-- Static parameters ---------------------------------------------*/
 
 
 /*-- Module declaration --------------------------------------------*/
 
-INT <template>(EVENT_HEADER*, void*);
-INT <template>_init(void);
+INT < template > (EVENT_HEADER *, void *);
+INT < template > _init(void);
 
-<TEMPLATE>_PARAM_STR(<template>_param_str);
+<TEMPLATE > _PARAM_STR(<template > _param_str);
 
-ANA_MODULE <template>_module = {
-  "<template>",                  /* module name           */  
-  "<Your Name>",                 /* author                */
-  <template>,                    /* event routine         */
-  NULL,                          /* BOR routine           */
-  NULL,                          /* EOR routine           */
-  <template>_init,               /* init routine          */
-  NULL,                          /* exit routine          */
-  &<template>_param,             /* parameter structure   */
-  sizeof(<template>_param),      /* structure size        */
-  <template>_param_str,          /* initial parameters    */
+ANA_MODULE < template > _module = {
+   "<template>",                /* module name           */
+       "<Your Name>",           /* author                */
+       <template >,             /* event routine         */
+       NULL,                    /* BOR routine           */
+       NULL,                    /* EOR routine           */
+       <template > _init,       /* init routine          */
+       NULL,                    /* exit routine          */
+       &<template > _param,     /* parameter structure   */
+       sizeof(<template > _param),      /* structure size        */
+       <template > _param_str,  /* initial parameters    */
 };
 
 /*-- init routine --------------------------------------------------*/
 
-INT <template>_init(void)
+INT < template > _init(void)
 {
-  /* book histos */
-  
-  return SUCCESS;
+   /* book histos */
+
+   return SUCCESS;
 }
 
 /*-- event routine -------------------------------------------------*/
 
-INT <template>(EVENT_HEADER *pheader, void *pevent)
-{
-int          n;
-XXXX_BANK    *xxxx;
-YYYY_BANK    *yyyy;
+INT < template > (EVENT_HEADER * pheader, void *pevent) {
+   int n;
+   XXXX_BANK *xxxx;
+   YYYY_BANK *yyyy;
 
-  /* look for <XXXX> bank, return if not present */
-  n = bk_locate(pevent, "XXXX", &xxxx);
-  if (n == 0)
-    return SUCCESS;
+   /* look for <XXXX> bank, return if not present */
+   n = bk_locate(pevent, "XXXX", &xxxx);
+   if (n == 0)
+      return SUCCESS;
 
-  /* create calculated bank */
-  bk_create(pevent, "YYYY", TID_STRUCT, &yyyy);
+   /* create calculated bank */
+   bk_create(pevent, "YYYY", TID_STRUCT, &yyyy);
 
   /*---- perform calculations --------------------------------------*/
 
-  yyyy->x = xxxx->x * 2;
+   yyyy->x = xxxx->x * 2;
 
   /*---- close calculated bank -------------------------------------*/
-  bk_close(pevent, yyyy+1);
-  
-  return SUCCESS;
+   bk_close(pevent, yyyy + 1);
+
+   return SUCCESS;
 }

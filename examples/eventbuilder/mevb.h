@@ -4,6 +4,9 @@ Name:         mevb.h
 
   Contents:     Event builder header file
   $Log$
+  Revision 1.8  2004/01/08 08:40:08  midas
+  Implemented standard indentation
+
   Revision 1.7  2003/01/28 20:44:50  pierre
   Remove user field in fragment struct
 
@@ -67,40 +70,40 @@ NULL }
 NULL }
 
 typedef struct {
-    WORD      event_id;
-    WORD      trigger_mask;
-    char      buffer[32];
-    char      format[32];
-    BOOL      user_build;
-    char      user_field[64];
-    DWORD     emask;
-    char      hostname[64];
-  } EBUILDER_SETTINGS;
+   WORD event_id;
+   WORD trigger_mask;
+   char buffer[32];
+   char format[32];
+   BOOL user_build;
+   char user_field[64];
+   DWORD emask;
+   char hostname[64];
+} EBUILDER_SETTINGS;
 
 typedef struct {
-    WORD      event_id;
-    WORD      trigger_mask;
-    char      buffer[32];
-    char      format[32];
-    DWORD     emask;
-  } EBUILDER_SETTINGS_CH;
+   WORD event_id;
+   WORD trigger_mask;
+   char buffer[32];
+   char format[32];
+   DWORD emask;
+} EBUILDER_SETTINGS_CH;
 
 typedef struct {
-    double    events_sent;
-    double    events_per_sec_;
-    double    kbytes_per_sec_;
-  } EBUILDER_STATISTICS;
+   double events_sent;
+   double events_per_sec_;
+   double kbytes_per_sec_;
+} EBUILDER_STATISTICS;
 
 typedef struct {
-    char  name[32];
-    INT   hBuf;
-    INT   req_id;
-    INT   hStat;
-    INT   timeout;
-    DWORD serial;
-    char *pfragment;
-    EBUILDER_SETTINGS_CH   set;
-    EBUILDER_STATISTICS   stat;
+   char name[32];
+   INT hBuf;
+   INT req_id;
+   INT hStat;
+   INT timeout;
+   DWORD serial;
+   char *pfragment;
+   EBUILDER_SETTINGS_CH set;
+   EBUILDER_STATISTICS stat;
 } EBUILDER_CHANNEL;
 
 #define   EB_SUCCESS               1

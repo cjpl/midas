@@ -29,8 +29,8 @@
 	Trigger an event when the alarm state changes
 
 */
-#define	DBE_VALUE	(1<<0)	
+#define	DBE_VALUE	(1<<0)
 #define	DBE_LOG		(1<<1)
-#define	DBE_ALARM	(1<<2)	
+#define	DBE_ALARM	(1<<2)
 
 #endif

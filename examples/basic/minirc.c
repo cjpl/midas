@@ -7,6 +7,9 @@
                 of starting/stopping runs in the MIDAS system
 
   $Log$
+  Revision 1.3  2004/01/08 08:40:08  midas
+  Implemented standard indentation
+
   Revision 1.2  1998/10/12 12:18:58  midas
   Added Log tag in header
 
@@ -21,36 +24,36 @@
 
 main()
 {
-INT           run_number, status;
-char          host_name[256];
-char          str[256];
+   INT run_number, status;
+   char host_name[256];
+   char str[256];
 
-  printf("Host to connect: ");
-  ss_gets(host_name, 256);
+   printf("Host to connect: ");
+   ss_gets(host_name, 256);
 
-  /* connect to experiment */
-  status = cm_connect_experiment(host_name, "", "MiniRC", NULL);
-  if (status != CM_SUCCESS)
-    return 1;
+   /* connect to experiment */
+   status = cm_connect_experiment(host_name, "", "MiniRC", NULL);
+   if (status != CM_SUCCESS)
+      return 1;
 
-  printf("Enter run number: ");
-  ss_gets(str, 256);
-  run_number = atoi(str);
+   printf("Enter run number: ");
+   ss_gets(str, 256);
+   run_number = atoi(str);
 
-  printf("Start run\n");
+   printf("Start run\n");
 
-  /* start run */
-  if (cm_transition(TR_START, run_number, str, sizeof(str), SYNC) != CM_SUCCESS)
-    printf(str);
+   /* start run */
+   if (cm_transition(TR_START, run_number, str, sizeof(str), SYNC) != CM_SUCCESS)
+      printf(str);
 
-  printf("Hit RETURN to stop run");
-  getchar();
-  
-  /* stop run */
-  if (cm_transition(TR_STOP, run_number, str, sizeof(str), SYNC) != CM_SUCCESS)
-    printf(str);
+   printf("Hit RETURN to stop run");
+   getchar();
 
-  cm_disconnect_experiment();
+   /* stop run */
+   if (cm_transition(TR_STOP, run_number, str, sizeof(str), SYNC) != CM_SUCCESS)
+      printf(str);
 
-  return 1;
+   cm_disconnect_experiment();
+
+   return 1;
 }

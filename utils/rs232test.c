@@ -7,6 +7,9 @@
                 midas/drivers/bus/rs232.c
 
   $Log$
+  Revision 1.3  2004/01/08 08:40:11  midas
+  Implemented standard indentation
+
   Revision 1.2  2001/01/05 15:25:43  midas
   Added variable port name
 
@@ -20,48 +23,46 @@
 
 int main()
 {
-RS232_INFO info;
-char str[10000];
+   RS232_INFO info;
+   char str[10000];
 
-  printf("Enter port [/dev/ttyS0]: ");
-  fgets(str, sizeof(str), stdin);
-  if (strchr(str, '\n'))
-    *strchr(str, '\n') = 0;
+   printf("Enter port [/dev/ttyS0]: ");
+   fgets(str, sizeof(str), stdin);
+   if (strchr(str, '\n'))
+      *strchr(str, '\n') = 0;
 
-  if (!str[0])
-    strcpy(str, "/dev/ttyS0");
+   if (!str[0])
+      strcpy(str, "/dev/ttyS0");
 
-  info.fd = rs232_open(str, 9600, 'N', 8, 1, 0);
+   info.fd = rs232_open(str, 9600, 'N', 8, 1, 0);
 
-  if (info.fd < 0)
-    {
-    printf("Cannot open ttyS0\n");
-    return 0;
-    }
-  
-  /* turn on debugging, will go to rs232.log */
-  rs232(CMD_DEBUG, TRUE);
+   if (info.fd < 0) {
+      printf("Cannot open ttyS0\n");
+      return 0;
+   }
 
-  printf("Connected to ttyS0, exit with <ESC>\n");
-  
-  do
-    {
-    memset(str, 0, sizeof(str));
-    str[0] = ss_getchar(0);
-    if (str[0] == 27)
-      break;
+   /* turn on debugging, will go to rs232.log */
+   rs232(CMD_DEBUG, TRUE);
 
-    if (str[0] > 0)
-      rs232_puts(&info, str);
+   printf("Connected to ttyS0, exit with <ESC>\n");
 
-    rs232_gets(&info, str, sizeof(str), "", 10);
-    printf(str);
-    fflush(stdout);
+   do {
+      memset(str, 0, sizeof(str));
+      str[0] = ss_getchar(0);
+      if (str[0] == 27)
+         break;
 
-    } while (1);
+      if (str[0] > 0)
+         rs232_puts(&info, str);
 
-  ss_getchar(TRUE);
-  rs232_exit(&info);
-  
-  return 1;
+      rs232_gets(&info, str, sizeof(str), "", 10);
+      printf(str);
+      fflush(stdout);
+
+   } while (1);
+
+   ss_getchar(TRUE);
+   rs232_exit(&info);
+
+   return 1;
 }

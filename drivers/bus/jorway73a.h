@@ -10,6 +10,9 @@
         16oct01 gsh     added target_result to sjy_controller struct
 
  $Log$
+ Revision 1.2  2004/01/08 08:40:08  midas
+ Implemented standard indentation
+
  Revision 1.1  2002/05/08 22:21:39  pierre
  initial version
 
@@ -34,19 +37,19 @@ typedef unsigned char UCHAR;
 #define INQUIRY_CMD         0x12
 #define INQUIRY_CMDLEN         6
 #define INQUIRY_REPLY_LEN     36
-#define INQUIRY_VENDOR         8     /* Offset in reply data to vendor name */
+#define INQUIRY_VENDOR         8        /* Offset in reply data to vendor name */
 
 #define TESTUNITREADY_CMD    0x0
 #define TESTUNITREADY_CMDLEN   6
 
-#define SENSEKEY               2     /* Offset in sense buffer to sense key */
-#define ADD_SENSECODE         12     /* Offset to additional sense code */
+#define SENSEKEY               2        /* Offset in sense buffer to sense key */
+#define ADD_SENSECODE         12        /* Offset to additional sense code */
 
 #define SENSE_CMD           0x03
 #define SENSE_CMDLEN           6
 
 
- 
+
 /* SCSI return statuses */
 #define SJY_GOOD            0x00
 #define SJY_CHECK_CONDITION 0x02
@@ -72,15 +75,15 @@ typedef unsigned char UCHAR;
 
 
 /* branch specific information */
-typedef struct{
-  int           fd;		/* file descriptor for branch */
-  int           scsi_id;	/* SCSI id of JY411S */
-  int           scsi_bus;	/* SCSI bus number, or controller number */
-  int           serial;		/* serial=1, parallel=0 */
-  int           errn;           /* SCSI/CAMAC error */
-  int           result;         /* SCSI command result */
-  unsigned char sense_buffer[SJY_SENSE_LENGTH]; /* SCSI sense buffer */ 
-  int           target_status;  /* Added by gh */
+typedef struct {
+   int fd;                      /* file descriptor for branch */
+   int scsi_id;                 /* SCSI id of JY411S */
+   int scsi_bus;                /* SCSI bus number, or controller number */
+   int serial;                  /* serial=1, parallel=0 */
+   int errn;                    /* SCSI/CAMAC error */
+   int result;                  /* SCSI command result */
+   unsigned char sense_buffer[SJY_SENSE_LENGTH];        /* SCSI sense buffer */
+   int target_status;           /* Added by gh */
 } SJY_CONTROLLER;
 
 /* branch argument masks. branch = SCSI id + (8*SCSI bus). */
@@ -101,7 +104,7 @@ typedef struct{
 
 #ifdef SJY411S
 
-#define	SJY_MAX_SJY411S	32	/* maximum number of Jorways on host computer */
+#define	SJY_MAX_SJY411S	32      /* maximum number of Jorways on host computer */
 
 xdef SJY_CONTROLLER sjy_controller[SJY_MAX_SJY411S];
 
@@ -119,18 +122,18 @@ xdef SJY_CONTROLLER sjy_controller[SJY_MAX_SJY411S];
 
 /* structures and definitions for Request Sense */
 typedef struct _SJB_SENSE {
-	UCHAR	errorCode;
-	UCHAR	segNumber;
-        UCHAR	senseKey;
-	UCHAR	reserved1;
-	UCHAR	wcda[3];
-	UCHAR	asl;
-	UCHAR	mainReg;
-	UCHAR	serialReg[2];
-	UCHAR	reserved2;
-	UCHAR	addSense;
-	UCHAR	reserved3;
-	UCHAR	cna[2];
+   UCHAR errorCode;
+   UCHAR segNumber;
+   UCHAR senseKey;
+   UCHAR reserved1;
+   UCHAR wcda[3];
+   UCHAR asl;
+   UCHAR mainReg;
+   UCHAR serialReg[2];
+   UCHAR reserved2;
+   UCHAR addSense;
+   UCHAR reserved3;
+   UCHAR cna[2];
 } SJB_SENSE, *PSJB_SENSE;
 
 #define CRATE(cna)		((cna[0] & 0xFE) >> 1)
@@ -185,18 +188,18 @@ typedef struct _SJB_SENSE {
 
 #define SJY_CRATE(c)	(((c)&SJY_SERIAL_BIT)?(c):(1<<((c)-1)))
 
-#endif	/* 411S */
+#endif                          /* 411S */
 
 
 /*
 ** Jorway 73A defintions
 */
 
-#ifdef SJY73A	
+#ifdef SJY73A
 
 // "Branch" is used here synonymously with Controller SCSI ID
 // for code reuse purposes
-#define	SJY_MAX_SJY73A	7	/* maximum number of Jorways on host computer */
+#define	SJY_MAX_SJY73A	7       /* maximum number of Jorways on host computer */
 
 xdef SJY_CONTROLLER sjy_controller[SJY_MAX_SJY73A];
 
@@ -211,22 +214,22 @@ xdef SJY_CONTROLLER sjy_controller[SJY_MAX_SJY73A];
 
 /* structures and definitions for Request Sense */
 typedef struct _SJB_SENSE {
-	UCHAR	errorCode;
-	UCHAR	segNumber;
-	UCHAR	senseKey;
-	UCHAR	fifoStatus;
-	UCHAR	dmabc[3];
-	UCHAR	asl;
-	UCHAR	reserved8;
-	UCHAR	reserved9;
-	UCHAR	reserved10;
-	UCHAR	reserved11;
-	UCHAR	addSense;
-	UCHAR	reserved13;
-	UCHAR	reserved14;
-	UCHAR	reserved15;
-	UCHAR	reserved16;
-	UCHAR	reserved17;
+   UCHAR errorCode;
+   UCHAR segNumber;
+   UCHAR senseKey;
+   UCHAR fifoStatus;
+   UCHAR dmabc[3];
+   UCHAR asl;
+   UCHAR reserved8;
+   UCHAR reserved9;
+   UCHAR reserved10;
+   UCHAR reserved11;
+   UCHAR addSense;
+   UCHAR reserved13;
+   UCHAR reserved14;
+   UCHAR reserved15;
+   UCHAR reserved16;
+   UCHAR reserved17;
 } SJB_SENSE, *PSJB_SENSE;
 
 #define DMABC(dmabc)		((dmabc[0] << 16) | (dmabc[1] << 8) | (dmabc[2]))
@@ -282,7 +285,7 @@ typedef struct _SJB_SENSE {
 
 #define SJY_CRATE(c)		0
 
-#endif	/* 73A */
+#endif                          /* 73A */
 
 
 /* Clear DMA mode in SRB */
@@ -294,8 +297,8 @@ typedef struct _SJB_SENSE {
 
 
 /* define maximum configuration */
-#define SCSI_MAXCTLR	4				// typical # of PCI slots/PC
-#define SCSI_MAXTARG	7				// for an AHA-2940 
+#define SCSI_MAXCTLR	4       // typical # of PCI slots/PC
+#define SCSI_MAXTARG	7       // for an AHA-2940
 #define SCSI_SENSE_LEN	32
 
 

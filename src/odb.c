@@ -6,6 +6,9 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.82  2004/01/08 08:40:10  midas
+  Implemented standard indentation
+
   Revision 1.81  2004/01/08 06:35:47  pierre
   Doxygen the file
 
@@ -7877,7 +7880,7 @@ INT db_send_changed_records()
 /*------------------------------------------------------------------*/
 
 /**dox***************************************************************/
-/** @} */// end of odbfunctionc
+                                                      /** @} */// end of odbfunctionc
 
 /**dox***************************************************************/
-/** @} */// end of odbcode
+                                                      /** @} */// end of odbcode

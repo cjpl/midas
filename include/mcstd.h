@@ -13,6 +13,9 @@
  *  Author:  Pierre-Andre Amaudruz Data Acquisition Group
  *
  *  $Log$
+ *  Revision 1.12  2004/01/08 08:40:09  midas
+ *  Implemented standard indentation
+ *
  *  Revision 1.11  2004/01/08 06:30:02  pierre
  *  Doxygen the file
  *
@@ -778,4 +781,4 @@ Detach service routine from LAM.
 #ifdef __cplusplus
 }
 #endif
-/**dox***************************************************************//** @} */// end of mcstdfunctinoh/**dox***************************************************************//** @} */// end of mcstdinclude
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          /**dox***************************************************************//** @} */// end of mcstdfunctinoh/**dox***************************************************************//** @} */// end of mcstdinclude

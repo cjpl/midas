@@ -10,6 +10,9 @@
     email                : andreas.suter@psi.ch
 
   $Log$
+  Revision 1.2  2004/01/08 08:40:09  midas
+  Implemented standard indentation
+
   Revision 1.1  2003/05/09 10:08:09  midas
   Initial revision
 
@@ -33,5 +36,4 @@
 
 int MidasMessage(const char *str);
 
-#endif // _GLOBALS_H
-
+#endif                          // _GLOBALS_H
