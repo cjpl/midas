@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.95  2002/05/16 18:01:13  midas
+  Added subdir creation in logger and improved program restart scheme
+
   Revision 1.94  2002/05/15 23:44:47  midas
   Added EVENTID_FRAG for fragmented events
 
@@ -1261,15 +1264,15 @@ NULL }
 /*---- Alarm system ------------------------------------------------*/
 
 typedef struct {
+  BOOL      required;
+  INT       watchdog_timeout;
+  DWORD     check_interval;
+  char      start_command[256];
   BOOL      auto_start;
   BOOL      auto_stop;
   BOOL      auto_restart;
-  BOOL      required;
-  char      start_command[256];
   char      alarm_class[32];
-  DWORD     checked_last;
-  DWORD     alarm_count;
-  INT       watchdog_timeout;
+  DWORD     first_failed;
 } PROGRAM_INFO;
 
 #define AT_INTERNAL   1
@@ -1280,15 +1283,15 @@ typedef struct {
 
 #define PROGRAM_INFO_STR(_name) char *_name[] = {\
 "[.]",\
+"Required = BOOL : n",\
+"Watchdog timeout = INT : 10000",\
+"Check interval = DWORD : 180000",\
+"Start command = STRING : [256] ",\
 "Auto start = BOOL : n",\
 "Auto stop = BOOL : n",\
 "Auto restart = BOOL : n",\
-"Required = BOOL : n",\
-"Start command = STRING : [256] ",\
-"Alarm Class = STRING : [32] ",\
-"Checked last = DWORD : 0",\
-"Alarm count = DWORD : 0",\
-"Watchdog timeout = INT : 10000",\
+"Alarm class = STRING : [32] ",\
+"First failed = DWORD : 0",\
 "",\
 NULL }
 
