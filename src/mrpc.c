@@ -6,6 +6,9 @@
   Contents:     List of MIDAS RPC functions with parameters
 
   $Log$
+  Revision 1.21  2000/08/21 07:05:48  midas
+  Added cm_msg_log1(...,facility) to be compatible with older programs
+
   Revision 1.20  2000/08/11 11:43:51  midas
   Added cm_msg1 to produce messages which go to a differnt logging file
 
@@ -112,6 +115,11 @@ static RPC_LIST rpc_list_library[] = {
      {0} }},
 
   { RPC_CM_MSG_LOG, "cm_msg_log",
+    {{TID_INT,        RPC_IN},
+     {TID_STRING,     RPC_IN},
+     {0} }},
+
+  { RPC_CM_MSG_LOG1, "cm_msg_log1",
     {{TID_INT,        RPC_IN},
      {TID_STRING,     RPC_IN},
      {TID_STRING,     RPC_IN},
