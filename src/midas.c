@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.57  1999/09/23 14:00:48  midas
+  Used capital names for mutexes
+
   Revision 1.56  1999/09/23 12:45:49  midas
   Added 32 bit banks
 
@@ -1657,13 +1660,13 @@ HNDLE hDB, hKeyClient;
     cm_set_path(exptab[i].directory);
 
     /* create alarm and elog mutexes */
-    status = ss_mutex_create("alarm", &mutex_alarm);
+    status = ss_mutex_create("ALARM", &mutex_alarm);
     if (status != SS_CREATED && status != SS_SUCCESS)
       {
       cm_msg(MERROR,"cm_connect_experiment", "Cannot create alarm mutex");
       return status;
       }
-    status = ss_mutex_create("elog", &mutex_elog);
+    status = ss_mutex_create("ELOG", &mutex_elog);
     if (status != SS_CREATED && status != SS_SUCCESS)
       {
       cm_msg(MERROR,"cm_connect_experiment", "Cannot create elog mutex");

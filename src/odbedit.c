@@ -6,6 +6,9 @@
   Contents:     Command-line interface to the MIDAS online data base.
 
   $Log$
+  Revision 1.26  1999/09/23 14:00:48  midas
+  Used capital names for mutexes
+
   Revision 1.25  1999/09/23 12:45:49  midas
   Added 32 bit banks
 
@@ -2506,12 +2509,6 @@ PRINT_INFO      print_info;
     /* test 3 */
     else if (param[0][0] == 't' && param[0][1] == '3')
       {
-      int *pdata;
-
-      bk_init(str);
-      bk_create(str, "BANK", TID_INT, &pdata);
-      *pdata++ = 123;
-      bk_close(str, pdata);
       }
 
     /* exit/quit */
