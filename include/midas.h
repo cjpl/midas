@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.42  1999/09/22 15:39:36  midas
+  Logger won't start run if disk file already exists
+
   Revision 1.41  1999/09/21 13:49:02  midas
   Added PROGRAM_INFO
 
@@ -568,6 +571,7 @@ typedef          INT       HNDLE;
 #define SS_NO_DRIVER                421
 #define SS_END_OF_TAPE              422
 #define SS_END_OF_FILE              423
+#define SS_FILE_EXISTS              424
 
 /* Remote Procedure Calls */
 #define RPC_SUCCESS                   1
