@@ -1,0 +1,47 @@
+<html>
+ <head>
+  <title>MyExperiment Demo Status</title>
+  <meta http-equiv="Refresh" content="30">
+ </head>
+<body>
+ <form name="form1" method="Get" action="/CS/MyExpt&">
+   <table border=3 cellpadding=2>
+	<tr><th bgcolor="#A0A0FF">Demo Experiment<th bgcolor="#A0A0FF">Custom Monitor/Control</tr> 
+	<tr><td> <b><font color="#ff0000">Actions: </font></b><input
+		  value="Status" name="cmd" type="submit"> <input type="submit"
+		  name="cmd" value="Start"><input type="submit" name="cmd" value="Stop">
+	</td><td>
+	<center> <a href="http://midas.triumf.ca/doc/html/index.html"> Help </a></center>
+	</td></tr>
+	<td>Current run #: <b><odb src="/Runinfo/run number"></b></td>
+	<td>#events: <b><odb src="/Equipment/Trigger/Statistics/Events sent"></b></td>
+	</tr><tr>
+	<td>Event Rate [/sec]: <b><odb src="/Equipment/Trigger/Statistics/Events per sec."></b></td>
+	<td>Data Rate [kB/s]: <b><odb src="/Equipment/Trigger/Statistics/kBytes per sec."></b></td>
+	</tr><tr>
+	<td>Cell Pressure: <b><odb src="/Equipment/NewEpics/Variables/CellPressure"></b></td>
+	<td>FaradayCup   : <b><odb src="/Equipment/NewEpics/Variables/ChargeFaradayCup"></b></td>
+	</tr><tr>
+	<td>Q1 Setpoint: <b><odb src="/Equipment/NewEpics/Variables/EpicsVars[17]" edit=1></b></td>
+	<td>Q2 Setpoint: <b><odb src="/Equipment/NewEpics/Variables/EpicsVars[19]" edit=1></b></td>
+	</tr><tr>
+	<th> <img src="http://localhost:8080/HS/Default/Trigger%20rate.gif?
+	                exp=default&amp;scale=12h&amp;width=250">
+	</th>
+	<th> <img src="http://localhost:8080/HS/Default/Scaler%20rate.gif?
+	                exp=default&amp;scale=10m&amp;width=250"></th>
+	</tr>
+	<tr><td colspan=2>
+	<map name="myexpt.map">
+	<area shape=rect coords="140,70, 420,170" 
+	        href="http://midas.triumf.ca/doc/html/index.html" title="Midas Doc">
+	<area shape=rect coords="200,200,400,400"
+	        href="http://localhost:8080" title="Switch pump">
+     <area shape=rect coords="230,515,325,600"
+            href="http://localhost:8080" title="Logger in color level (using Fill)">
+	<img src="myexpt.gif" border=1 usemap="#myexpt.map">
+	</map>
+	</td></tr>
+   </table></form>
+ </body>
+</html>  

@@ -1,0 +1,1347 @@
+[/Custom]
+Dewpoint& = STRING : [256] c:\doc\kopio\cooling\dewpoint.html
+myexpt& = STRING : [256] \midas\examples\custom\myexpt.html
+
+[/Custom/Images/myexpt.gif]
+Background = STRING : [256] \midas\examples\custom\myexpt.gif
+
+[/Custom/Images/myexpt.gif/Labels/Rate]
+Src = STRING : [256] /equipment/trigger/statistics/kBytes per sec.
+Format = STRING : [32] Rate:%1.1f kB/s
+Font = STRING : [32] Medium
+X = INT : 330
+Y = INT : 250
+Align = INT : 0
+FGColor = STRING : [8] 000000
+BGColor = STRING : [8] FFFFFF
+
+[/Custom/Images/myexpt.gif/Labels/total]
+Src = STRING : [256] /Logger/channels/0/statistics/events written
+Format = STRING : [32] Count:%4.0f evts
+Font = STRING : [32] Medium
+X = INT : 225
+Y = INT : 470
+Align = INT : 0
+FGColor = STRING : [8] 000000
+BGColor = STRING : [8] FFFFFF
+
+[/Custom/Images/myexpt.gif/Labels/Event]
+Src = STRING : [256] /equipment/Trigger/statistics/events per sec.
+Format = STRING : [32] Rate:%1.1f evt/s
+Font = STRING : [32] Medium
+X = INT : 170
+Y = INT : 250
+Align = INT : 0
+FGColor = STRING : [8] 000000
+BGColor = STRING : [8] FFFFFF
+
+[/Custom/Images/myexpt.gif/Bars/Rate]
+Src = STRING : [256] /equipment/Trigger/statistics/kbytes per sec.
+X = INT : 460
+Y = INT : 210
+Width = INT : 10
+Height = INT : 100
+Direction = INT : 0
+Axis = INT : 1
+Logscale = BOOL : n
+Min = DOUBLE : 0
+Max = DOUBLE : 50
+FGColor = STRING : [8] 000000
+BGColor = STRING : [8] FFFFFF
+BDColor = STRING : [8] 808080
+
+[/Custom/Images/myexpt.gif/Bars/Events]
+Src = STRING : [256] /equipment/Trigger/statistics/events sent
+X = INT : 240
+Y = INT : 450
+Width = INT : 10
+Height = INT : 100
+Direction = INT : 1
+Axis = INT : 1
+Logscale = BOOL : n
+Min = DOUBLE : 0
+Max = DOUBLE : 1e+006
+FGColor = STRING : [8] 000000
+BGColor = STRING : [8] FFFFFF
+BDColor = STRING : [8] 808080
+
+[/Custom/Images/myexpt.gif/Fills/Level]
+Src = STRING : [256] /equipment/Trigger/statistics/events sent
+X = INT : 250
+Y = INT : 550
+Limits = DOUBLE[4] :
+[0] 0
+[1] 10
+[2] 10000
+[3] 100000
+Fillcolors = STRING[4] :
+[8] 00FF00
+[8] AAFF00
+[8] AA0000
+[8] FF0000
+
+[/History/Links/System]
+Trigger per sec. = LINK : [46] /Equipment/Trigger/Statistics/Events per sec.
+Trigger kB per sec. = LINK : [46] /Equipment/Trigger/Statistics/kBytes per sec.
+
+[/History/Links/Scalers]
+Scaler per sec. = LINK : [45] /Equipment/Scaler/Statistics/Events per sec.
+Scaler kB per sec. = LINK : [45] /Equipment/Scaler/Statistics/kBytes per sec.
+
+[/History/Display/Default/Trigger rate]
+Variables = STRING[2] :
+[64] System:Trigger per sec.
+[64] System:Trigger kB per sec.
+Time Scale = STRING : [32] 1h
+Factor = FLOAT[2] :
+[0] 1
+[1] 1
+Offset = FLOAT[2] :
+[0] 0
+[1] 0
+Timescale = STRING : [32] 1h
+Zero ylow = BOOL : y
+Show run markers = BOOL : y
+Log axis = BOOL : n
+Minimum = FLOAT : -1.#INF
+Maximum = FLOAT : 1.#INF
+Buttons = STRING[7] :
+[32] 10m
+[32] 1h
+[32] 3h
+[32] 12h
+[32] 24h
+[32] 3d
+[32] 7d
+
+[/History/Display/Default/Scaler Rate]
+Factor = FLOAT[2] :
+[0] 1
+[1] 1
+Offset = FLOAT[2] :
+[0] 0
+[1] 0
+Timescale = STRING : [32] 1h
+Zero ylow = BOOL : y
+Show run markers = BOOL : y
+Log axis = BOOL : n
+Buttons = STRING[7] :
+[32] 10m
+[32] 1h
+[32] 3h
+[32] 12h
+[32] 24h
+[32] 3d
+[32] 7d
+Minimum = FLOAT : -1.#INF
+Maximum = FLOAT : 1.#INF
+Variables = STRING[2] :
+[64] Scalers:Scaler per sec.
+[64] Scalers:Scaler kB per sec.
+
+[/History/Display/Dragon/BeamC]
+Factor = FLOAT[5] :
+[0] 1
+[1] 1
+[2] 1
+[3] 1
+[4] 1
+Offset = FLOAT[5] :
+[0] 0
+[1] 0
+[2] 0
+[3] 0
+[4] 0
+Timescale = STRING : [32] 1h
+Zero ylow = BOOL : y
+Show run markers = BOOL : y
+Log axis = BOOL : n
+Variables = STRING[5] :
+[64] NewEpics:ChargeFaradayCup
+[64] NewEpics:ChargeSlitLeft
+[64] NewEpics:ChargeSlitRight
+[64] NewEpics:ChargeSlitTop
+[64] NewEpics:ChargeSlitBottom
+Buttons = STRING[7] :
+[32] 10m
+[32] 1h
+[32] 3h
+[32] 12h
+[32] 24h
+[32] 3d
+[32] 7d
+Minimum = FLOAT : -1.#INF
+Maximum = FLOAT : 1.#INF
+
+[/History/Display/Dragon/BeamM]
+Factor = FLOAT[5] :
+[0] 1
+[1] 1
+[2] 1
+[3] 1
+[4] 1
+Offset = FLOAT[5] :
+[0] 0
+[1] 0
+[2] 0
+[3] 0
+[4] 0
+Timescale = STRING : [32] 1h
+Zero ylow = BOOL : y
+Show run markers = BOOL : y
+Log axis = BOOL : n
+Buttons = STRING[7] :
+[32] 10m
+[32] 1h
+[32] 3h
+[32] 12h
+[32] 24h
+[32] 3d
+[32] 7d
+Variables = STRING[5] :
+[64] NewEpics:FCupMass
+[64] NewEpics:MassSlitLeft
+[64] NewEpics:MassSlitRight
+[64] NewEpics:MassSlitTop
+[64] NewEpics:MassSlitBottom
+
+[/History/Display/Dragon/BeamF]
+Factor = FLOAT[5] :
+[0] 1
+[1] 1
+[2] 1
+[3] 1
+[4] 1
+Offset = FLOAT[5] :
+[0] 0
+[1] 0
+[2] 0
+[3] 0
+[4] 0
+Timescale = STRING : [32] 1h
+Zero ylow = BOOL : y
+Show run markers = BOOL : y
+Log axis = BOOL : n
+Buttons = STRING[7] :
+[32] 10m
+[32] 1h
+[32] 3h
+[32] 12h
+[32] 24h
+[32] 3d
+[32] 7d
+Variables = STRING[5] :
+[64] NewEpics:FinalFaradayCup
+[64] NewEpics:FinalSlitLeft
+[64] NewEpics:FinalSlitRight
+[64] NewEpics:FinalSlitTop
+[64] NewEpics:FinalSlitBottom
+
+[/History/Display/Dragon/Dipoles]
+Factor = FLOAT[10] :
+[0] 1
+[1] 1
+[2] 1
+[3] 1
+[4] 1
+[5] 1
+[6] 1
+[7] 1
+[8] 1
+[9] 1
+Offset = FLOAT[10] :
+[0] 0
+[1] 0
+[2] 0
+[3] 0
+[4] 0
+[5] 0
+[6] 0
+[7] 0
+[8] 0
+[9] 0
+Timescale = STRING : [32] 1h
+Zero ylow = BOOL : y
+Show run markers = BOOL : y
+Log axis = BOOL : n
+Variables = STRING[10] :
+[64] NewEpics:MD1SetPoint
+[64] NewEpics:MD1FieldReadBack
+[64] NewEpics:MD2SetPoint
+[64] NewEpics:MD2FieldReadBack
+[64] NewEpics:ED1SetPoint
+[64] NewEpics:ED1PosReadBack
+[64] NewEpics:ED1NegReadBack
+[64] NewEpics:ED2SetPoint
+[64] NewEpics:ED2PosReadBack
+[64] NewEpics:ED2NegReadBack
+Buttons = STRING[7] :
+[32] 10m
+[32] 1h
+[32] 3h
+[32] 12h
+[32] 24h
+[32] 3d
+[32] 7d
+
+[/History/Display/Dragon/Quads]
+Factor = FLOAT[10] :
+[0] 1
+[1] 1
+[2] 1
+[3] 1
+[4] 1
+[5] 1
+[6] 1
+[7] 1
+[8] 1
+[9] 1
+Offset = FLOAT[10] :
+[0] 0
+[1] 0
+[2] 0
+[3] 0
+[4] 0
+[5] 0
+[6] 0
+[7] 0
+[8] 0
+[9] 0
+Timescale = STRING : [32] 1h
+Zero ylow = BOOL : y
+Show run markers = BOOL : y
+Log axis = BOOL : n
+Variables = STRING[10] :
+[64] NewEpics:Q1CurrentReadBack
+[64] NewEpics:Q2CurrentReadBack
+[64] NewEpics:Q3CurrentReadBack
+[64] NewEpics:Q4CurrentReadBack
+[64] NewEpics:Q5CurrentReadBack
+[64] NewEpics:Q6CurrentReadBack
+[64] NewEpics:Q7CurrentReadBack
+[64] NewEpics:Q8CurrentReadBack
+[64] NewEpics:Q9CurrentReadBack
+[64] NewEpics:Q10CurrentReadBack
+Buttons = STRING[7] :
+[32] 10m
+[32] 1h
+[32] 3h
+[32] 12h
+[32] 24h
+[32] 3d
+[32] 7d
+
+[/History/Display/Dragon/Sextupoles]
+Factor = FLOAT[8] :
+[0] 1
+[1] 1
+[2] 1
+[3] 1
+[4] 1
+[5] 1
+[6] 1
+[7] 1
+Offset = FLOAT[8] :
+[0] 0
+[1] 0
+[2] 0
+[3] 0
+[4] 0
+[5] 0
+[6] 0
+[7] 0
+Timescale = STRING : [32] 1h
+Zero ylow = BOOL : y
+Show run markers = BOOL : y
+Log axis = BOOL : n
+Variables = STRING[8] :
+[64] NewEpics:SX1SetPoint
+[64] NewEpics:SX1CurrentReadBack
+[64] NewEpics:SX2SetPoint
+[64] NewEpics:SX2CurrentReadBack
+[64] NewEpics:SX3SetPoint
+[64] NewEpics:SX3CurrentReadBack
+[64] NewEpics:SX4SetPoint
+[64] NewEpics:SX4CurrentReadBack
+Buttons = STRING[7] :
+[32] 10m
+[32] 1h
+[32] 3h
+[32] 12h
+[32] 24h
+[32] 3d
+[32] 7d
+
+[/History/Display/Dragon/SlitWidths]
+Factor = FLOAT[6] :
+[0] 1
+[1] 1
+[2] 1
+[3] 1
+[4] 1
+[5] 1
+Offset = FLOAT[6] :
+[0] 0
+[1] 0
+[2] 0
+[3] 0
+[4] 0
+[5] 0
+Timescale = STRING : [32] 1h
+Zero ylow = BOOL : y
+Show run markers = BOOL : y
+Log axis = BOOL : n
+Variables = STRING[6] :
+[64] NewEpics:ChargeSlitXWidth
+[64] NewEpics:ChargeSlitYWidth
+[64] NewEpics:MassSlitXWidth
+[64] NewEpics:MassSlitYWidth
+[64] NewEpics:FinalSlitXWidth
+[64] NewEpics:FinalSlitYWidth
+Buttons = STRING[7] :
+[32] 10m
+[32] 1h
+[32] 3h
+[32] 12h
+[32] 24h
+[32] 3d
+[32] 7d
+
+[/History/Display/Dragon/SlitPositions]
+Factor = FLOAT[6] :
+[0] 1
+[1] 1
+[2] 1
+[3] 1
+[4] 1
+[5] 1
+Offset = FLOAT[6] :
+[0] 0
+[1] 0
+[2] 0
+[3] 0
+[4] 0
+[5] 0
+Timescale = STRING : [32] 1h
+Zero ylow = BOOL : y
+Show run markers = BOOL : y
+Log axis = BOOL : n
+Variables = STRING[6] :
+[64] NewEpics:ChargeSlitXPosn
+[64] NewEpics:ChargeSlitYPosn
+[64] NewEpics:MassSlitXPosn
+[64] NewEpics:MassSlitYPosn
+[64] NewEpics:FinalSlitXPosn
+[64] NewEpics:FinalSlitYPosn
+Buttons = STRING[7] :
+[32] 10m
+[32] 1h
+[32] 3h
+[32] 12h
+[32] 24h
+[32] 3d
+[32] 7d
+
+[/History/Display/Dragon/FCups]
+Factor = FLOAT[4] :
+[0] 1
+[1] 1
+[2] 1
+[3] 1
+Offset = FLOAT[4] :
+[0] 0
+[1] 0
+[2] 0
+[3] 0
+Timescale = STRING : [32] 1h
+Zero ylow = BOOL : y
+Show run markers = BOOL : y
+Log axis = BOOL : n
+Buttons = STRING[7] :
+[32] 10m
+[32] 1h
+[32] 3h
+[32] 12h
+[32] 24h
+[32] 3d
+[32] 7d
+Variables = STRING[4] :
+[64] NewEpics:FCupCH
+[64] NewEpics:FCupCH
+[64] NewEpics:FCupMass
+[64] NewEpics:FCupFinal
+
+[/History/Display/Dragon/Cum rates]
+Factor = FLOAT[6] :
+[0] 1
+[1] 1
+[2] 1
+[3] 1
+[4] 1
+[5] 1
+Offset = FLOAT[6] :
+[0] 0
+[1] 0
+[2] 0
+[3] 0
+[4] 0
+[5] 0
+Timescale = STRING : [32] 1h
+Zero ylow = BOOL : y
+Show run markers = BOOL : y
+Log axis = BOOL : n
+Variables = STRING[6] :
+[64] System:Beta-monitor
+[64] System:SB0_triggers
+[64] System:BGO_triggers
+[64] System:NaI_triggers
+[64] System:Tail_triggers
+[64] System:MCP_triggers
+Buttons = STRING[7] :
+[32] 10m
+[32] 1h
+[32] 3h
+[32] 12h
+[32] 24h
+[32] 3d
+[32] 7d
+
+[/Equipment/NewEpics/Common]
+Event ID = WORD : 20
+Trigger mask = WORD : 0
+Buffer = STRING : [32] SYSTEM
+Type = INT : 1
+Source = INT : 0
+Format = STRING : [8] MIDAS
+Enabled = BOOL : y
+Read on = INT : 255
+Period = INT : 100
+Event limit = DOUBLE : 0
+Num subevents = DWORD : 0
+Log history = INT : 30
+Frontend host = STRING : [32] localhost
+Frontend name = STRING : [32] feepics
+Frontend file name = STRING : [256] feepics.c
+
+[/Equipment/NewEpics/Settings]
+Command = STRING : [80] status
+EPICS_Names = STRING[100] :
+[32] DRA:CMGC:RDVAC
+[32] DRA:CMTRIN:RDVAC
+[32] DRA:FCCH:RDCUR
+[32] DRA:XSLITC:RDCUR1
+[32] DRA:XSLITC:RDCUR2
+[32] DRA:YSLITC:RDCUR1
+[32] DRA:YSLITC:RDCUR2
+[32] DRA:FCM:RDCUR
+[32] DRA:XSLITM:SCALECUR1
+[32] DRA:XSLITM:SCALECUR2
+[32] DRA:YSLITM:SCALECUR1
+[32] DRA:YSLITM:SCALECUR2
+[32] DRA:FCF:RDCUR
+[32] DRA:XSLITF:RDCUR1
+[32] DRA:XSLITF:RDCUR2
+[32] DRA:YSLITF:RDCUR1
+[32] DRA:YSLITF:RDCUR2
+[32] DRA:Q1:CUR
+[32] DRA:Q1:RDCUR
+[32] DRA:Q2:CUR
+[32] DRA:Q2:RDCUR
+[32] DRA:Q3:CUR
+[32] DRA:Q3:RDCUR
+[32] DRA:Q4:CUR
+[32] DRA:Q4:RDCUR
+[32] DRA:Q5:CUR
+[32] DRA:Q5:RDCUR
+[32] DRA:Q6:CUR
+[32] DRA:Q6:RDCUR
+[32] DRA:Q7:CUR
+[32] DRA:Q7:RDCUR
+[32] DRA:Q8:CUR
+[32] DRA:Q8:RDCUR
+[32] DRA:Q9:CUR
+[32] DRA:Q9:RDCUR
+[32] DRA:Q10:CUR
+[32] DRA:Q10:RDCUR
+[32] DRA:SX1:CUR
+[32] DRA:SX1:RDCUR
+[32] DRA:SX2:CUR
+[32] DRA:SX2:RDCUR
+[32] DRA:SX3:CUR
+[32] DRA:SX3:RDCUR
+[32] DRA:SX4:CUR
+[32] DRA:SX4:RDCUR
+[32] DRA:ED1:POS:VOL
+[32] DRA:ED1:POS:RDVOL
+[32] DRA:ED1:NEG:RDVOL
+[32] DRA:ED2:POS:VOL
+[32] DRA:ED2:POS:RDVOL
+[32] DRA:ED2:NEG:RDVOL
+[32] DRA:MD1:CUR
+[32] DRA:MD1:RDNMR
+[32] DRA:MD2:CUR
+[32] DRA:MD2:RDNMR
+[32] DRA:XSLITC:MOTION.F
+[32] DRA:XSLITC:MOTION.G
+[32] DRA:YSLITC:MOTION.F
+[32] DRA:YSLITC:MOTION.G
+[32] DRA:XSLITM:MOTION.F
+[32] DRA:XSLITM:MOTION.G
+[32] DRA:YSLITM:MOTION.F
+[32] DRA:YSLITM:MOTION.G
+[32] DRA:XSLITF:MOTION.F
+[32] DRA:XSLITF:MOTION.G
+[32] DRA:YSLITF:MOTION.F
+[32] DRA:YSLITF:MOTION.G
+[32] HEBT2:FC4:SCALECUR
+[32] DRA:FCCH:SCALECUR
+[32] DRA:FCM:SCALECUR
+[32] DRA:FCF:SCALECUR
+[32] DRA:FCCHCI:SCALECUR
+[32] HEBT2:FC4CI:SCALECUR
+[32] DRA:FCCHCI:SCALECUR
+[32] DRA:FCFCI:SCALECUR
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+Status_Names = STRING[100] :
+[32] GasTarget/CellPressure
+[32] GasTarget/TrapPressure
+[32] Beam/ChargeFaradayCup
+[32] Beam/ChargeSlitLeft
+[32] Beam/ChargeSlitRight
+[32] Beam/ChargeSlitTop
+[32] Beam/ChargeSlitBottom
+[32] Beam/MassFaradayCup
+[32] Beam/MassSlitLeft
+[32] Beam/MassSlitRight
+[32] Beam/MassSlitTop
+[32] Beam/MassSlitBottom
+[32] Beam/FinalFaradayCup
+[32] Beam/FinalSlitLeft
+[32] Beam/FinalSlitRight
+[32] Beam/FinalSlitTop
+[32] Beam/FinalSlitBottom
+[32] 
+[32] Magnet/Q1
+[32] 
+[32] Magnet/Q2
+[32] 
+[32] Magnet/Q3
+[32] 
+[32] Magnet/Q4
+[32] 
+[32] Magnet/Q5
+[32] 
+[32] Magnet/Q6
+[32] 
+[32] Magnet/Q7
+[32] 
+[32] Magnet/Q8
+[32] 
+[32] Magnet/Q9
+[32] 
+[32] Magnet/Q10
+[32] 
+[32] Magnet/SX1
+[32] 
+[32] Magnet/SX2
+[32] 
+[32] Magnet/SX3
+[32] 
+[32] Magnet/SX4
+[32] 
+[32] Magnet/ED1
+[32] 
+[32] 
+[32] Magnet/ED2
+[32] 
+[32] 
+[32] Magnet/MD1
+[32] 
+[32] Magnet/MD2
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+Names EpicsVars = STRING[100] :
+[32] CellPressure
+[32] TrapPressure
+[32] ChargeFaradayCup
+[32] ChargeSlitLeft
+[32] ChargeSlitRight
+[32] ChargeSlitTop
+[32] ChargeSlitBottom
+[32] MassFaradayCup
+[32] MassSlitLeft
+[32] MassSlitRight
+[32] MassSlitTop
+[32] MassSlitBottom
+[32] FinalFaradayCup
+[32] FinalSlitLeft
+[32] FinalSlitRight
+[32] FinalSlitTop
+[32] FinalSlitBottom
+[32] Q1SetPoint
+[32] Q1CurrentReadBack
+[32] Q2SetPoint
+[32] Q2CurrentReadBack
+[32] Q3SetPoint
+[32] Q3CurrentReadBack
+[32] Q4SetPoint
+[32] Q4CurrentReadBack
+[32] Q5SetPoint
+[32] Q5CurrentReadBack
+[32] Q6SetPoint
+[32] Q6CurrentReadBack
+[32] Q7SetPoint
+[32] Q7CurrentReadBack
+[32] Q8SetPoint
+[32] Q8CurrentReadBack
+[32] Q9SetPoint
+[32] Q9CurrentReadBack
+[32] Q10SetPoint
+[32] Q10CurrentReadBack
+[32] SX1SetPoint
+[32] SX1CurrentReadBack
+[32] SX2SetPoint
+[32] SX2CurrentReadBack
+[32] SX3SetPoint
+[32] SX3CurrentReadBack
+[32] SX4SetPoint
+[32] SX4CurrentReadBack
+[32] ED1SetPoint
+[32] ED1PosReadBack
+[32] ED1NegReadBack
+[32] ED2SetPoint
+[32] ED2PosReadBack
+[32] ED2NegReadBack
+[32] MD1SetPoint
+[32] MD1FieldReadBack
+[32] MD2SetPoint
+[32] MD2FieldReadBack
+[32] ChargeSlitXWidth
+[32] ChargeSlitXPosn
+[32] ChargeSlitYWidth
+[32] ChargeSlitYPosn
+[32] MassSlitXWidth
+[32] MassSlitXPosn
+[32] MassSlitYWidth
+[32] MassSlitYPosn
+[32] FinalSlitXWidth
+[32] FinalSlitXPosn
+[32] FinalSlitYWidth
+[32] FinalSlitYPosn
+[32] FCup4
+[32] FCupCH
+[32] FCupMass
+[32] FCupFinal
+[32] FCup4CI
+[32] FCupCHCI
+[32] FCupFinalCI
+[32] FCup4CI
+[32] (empty)
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+LowLimit = FLOAT[100] :
+[0] 0
+[1] 0
+[2] 0
+[3] 0
+[4] 0
+[5] 0
+[6] 0
+[7] 0
+[8] 0
+[9] 0
+[10] 0
+[11] 0
+[12] 0
+[13] 0
+[14] 0
+[15] 0
+[16] 0
+[17] 0
+[18] 0.75
+[19] 0
+[20] 0.75
+[21] 0
+[22] 0.75
+[23] 0
+[24] 0.75
+[25] 0
+[26] 0.75
+[27] 0
+[28] 0.75
+[29] 0
+[30] 0.75
+[31] 0
+[32] 0.75
+[33] 0
+[34] 0.75
+[35] 0
+[36] 0.75
+[37] 0
+[38] 0.75
+[39] 0
+[40] 0.75
+[41] 0
+[42] 0.75
+[43] 0
+[44] 0
+[45] 0
+[46] 0.75
+[47] 0.75
+[48] 0
+[49] 0.75
+[50] 0.75
+[51] 0
+[52] 0
+[53] 0
+[54] 0
+[55] 0
+[56] 0
+[57] 0
+[58] 0
+[59] 0
+[60] 0
+[61] 0
+[62] 0
+[63] 0
+[64] 0
+[65] 0
+[66] 0
+[67] 0
+[68] 0
+[69] 0
+[70] 0
+[71] 0
+[72] 0
+[73] 0
+[74] 0
+[75] 0
+[76] 0
+[77] 0
+[78] 0
+[79] 0
+[80] 0
+[81] 0
+[82] 0
+[83] 0
+[84] 0
+[85] 0
+[86] 0
+[87] 0
+[88] 0
+[89] 0
+[90] 0
+[91] 0
+[92] 0
+[93] 0
+[94] 0
+[95] 0
+[96] 0
+[97] 0
+[98] 0
+[99] 0
+HighLimit = FLOAT[100] :
+[0] 60
+[1] 100
+[2] 0
+[3] 0
+[4] 0
+[5] 0
+[6] 0
+[7] 0
+[8] 0
+[9] 0
+[10] 0
+[11] 0
+[12] 0
+[13] 0
+[14] 0
+[15] 0
+[16] 0
+[17] 0
+[18] 1.25
+[19] 0
+[20] 1.25
+[21] 0
+[22] 1.25
+[23] 0
+[24] 1.25
+[25] 0
+[26] 1.25
+[27] 0
+[28] 1.25
+[29] 0
+[30] 1.25
+[31] 0
+[32] 1.25
+[33] 0
+[34] 1.25
+[35] 0
+[36] 1.25
+[37] 0
+[38] 1.25
+[39] 0
+[40] 1.25
+[41] 0
+[42] 1.25
+[43] 0
+[44] 0
+[45] 0
+[46] 1.25
+[47] 1.25
+[48] 0
+[49] 1.25
+[50] 1.25
+[51] 0
+[52] 0
+[53] 0
+[54] 0
+[55] 0
+[56] 0
+[57] 0
+[58] 0
+[59] 0
+[60] 0
+[61] 0
+[62] 0
+[63] 0
+[64] 0
+[65] 0
+[66] 0
+[67] 0
+[68] 0
+[69] 0
+[70] 0
+[71] 0
+[72] 0
+[73] 0
+[74] 0
+[75] 0
+[76] 0
+[77] 0
+[78] 0
+[79] 0
+[80] 0
+[81] 0
+[82] 0
+[83] 0
+[84] 0
+[85] 0
+[86] 0
+[87] 0
+[88] 0
+[89] 0
+[90] 0
+[91] 0
+[92] 0
+[93] 0
+[94] 0
+[95] 0
+[96] 0
+[97] 0
+[98] 0
+[99] 0
+
+[/Equipment/NewEpics/Settings/EPICS5SEC]
+Period = DWORD : 5
+TrapPressure = INT : 0
+ChargeFaradayCup = INT : 0
+MassFaradayCup = INT : 0
+FinalFaradayCup = INT : 0
+CellPressure = INT : 0
+ChargeSlitLeft = INT : 0
+ChargeSlitRight = INT : 0
+ChargeSlitTop = INT : 0
+ChargeSlitBottom = INT : 0
+MassSlitLeft = INT : 0
+MassSlitRight = INT : 0
+MassSlitTop = INT : 0
+MassSlitBottom = INT : 0
+FinalSlitLeft = INT : 0
+FinalSlitRight = INT : 0
+FinalSlitTop = INT : 0
+FinalSlitBottom = INT : 0
+FCupMass = INT : 0
+FCup4 = INT : 0
+FCupCH = INT : 0
+FCupFinal = INT : 0
+FCup4CI = INT : 0
+FCupCHCI = INT : 0
+FCupFinalCI = INT : 0
+
+[/Equipment/NewEpics/Settings/EPICS5MIN]
+Period = DWORD : 300
+CellPressure = STRING : [0] <NULL>
+Q1CurrentReadBack = INT : 0
+Q2CurrentReadBack = INT : 0
+Q3CurrentReadBack = INT : 0
+Q4CurrentReadBack = INT : 0
+Q5CurrentReadBack = INT : 0
+Q6CurrentReadBack = INT : 0
+Q7CurrentReadBack = INT : 0
+Q8CurrentReadBack = INT : 0
+Q9CurrentReadBack = INT : 0
+Q10CurrentReadBack = INT : 0
+Q1SetPoint = INT : 0
+Q2SetPoint = INT : 0
+Q3SetPoint = INT : 0
+Q4SetPoint = INT : 0
+Q5SetPoint = INT : 0
+Q6SetPoint = INT : 0
+Q7SetPoint = INT : 0
+Q8SetPoint = INT : 0
+Q9SetPoint = INT : 0
+Q10SetPoint = INT : 0
+SX1SetPoint = INT : 0
+SX1CurrentReadBack = INT : 0
+SX2SetPoint = INT : 0
+SX2CurrentReadBack = INT : 0
+SX3SetPoint = INT : 0
+SX3CurrentReadBack = INT : 0
+SX4SetPoint = INT : 0
+SX4CurrentReadBack = INT : 0
+ED1SetPoint = INT : 0
+ED1PosReadBack = INT : 0
+ED1NegReadBack = INT : 0
+ED2SetPoint = INT : 0
+ED2PosReadBack = INT : 0
+ED2NegReadBack = INT : 0
+MD1SetPoint = INT : 0
+MD1FieldReadBack = INT : 0
+MD2SetPoint = INT : 0
+MD2FieldReadBack = INT : 0
+ChargeSlitXWidth = INT : 0
+ChargeSlitXPosn = INT : 0
+ChargeSlitYWidth = INT : 0
+ChargeSlitYPosn = INT : 0
+MassSlitXWidth = INT : 0
+MassSlitXPosn = INT : 0
+MassSlitYWidth = INT : 0
+MassSlitYPosn = INT : 0
+FinalSlitXWidth = INT : 0
+FinalSlitXPosn = INT : 0
+FinalSlitYWidth = INT : 0
+FinalSlitYPosn = INT : 0
+
+[/Equipment/NewEpics/Settings]
+Period = DWORD[50] :
+[0] 30000
+[1] 30000
+[2] 5000
+[3] 5000
+[4] 5000
+[5] 5000
+[6] 5000
+[7] 5000
+[8] 5000
+[9] 5000
+[10] 5000
+[11] 5000
+[12] 5000
+[13] 5000
+[14] 5000
+[15] 5000
+[16] 5000
+[17] 0
+[18] 0
+[19] 0
+[20] 0
+[21] 0
+[22] 0
+[23] 0
+[24] 0
+[25] 0
+[26] 0
+[27] 0
+[28] 0
+[29] 0
+[30] 0
+[31] 0
+[32] 0
+[33] 0
+[34] 0
+[35] 0
+[36] 0
+[37] 0
+[38] 0
+[39] 0
+[40] 0
+[41] 0
+[42] 0
+[43] 0
+[44] 0
+[45] 0
+[46] 0
+[47] 0
+[48] 0
+[49] 0
+MIDAS_Names = STRING[50] :
+[32] CellPressure
+[32] TrapPressure
+[32] ChargeFaradayCup
+[32] ChargeSlitLeft
+[32] ChargeSlitRight
+[32] ChargeSlitTop
+[32] ChargeSlitBottom
+[32] MassFaradayCup
+[32] MassSlitLeft
+[32] MassSlitRight
+[32] MassSlitTop
+[32] MassSlitBottom
+[32] FinalFaradayCup
+[32] FinalSlitLeft
+[32] FinalSlitRight
+[32] FinalSlitTop
+[32] FinalSlitBottom
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+[32] 
+
+[/Equipment/NewEpics/Variables]
+EpicsVars = FLOAT[100] :
+[0] 2.96703
+[1] 3.56532
+[2] 0.00948188
+[3] 0.00488281
+[4] 0.0048756
+[5] 0
+[6] 0.00422397
+[7] 0
+[8] 0
+[9] 5.17121e-007
+[10] 0
+[11] 4.88281e-007
+[12] -0.00488281
+[13] 0.00488281
+[14] 0.00488281
+[15] 0.00488281
+[16] 6.75288e-005
+[17] 23.45
+[18] 0.201419
+[19] 12.97
+[20] 0
+[21] 0
+[22] 0
+[23] 0
+[24] 0
+[25] 0
+[26] 0
+[27] 0
+[28] 0.320439
+[29] 0
+[30] 0
+[31] 0
+[32] 0
+[33] 0
+[34] 0.0106813
+[35] 0
+[36] 0.0167849
+[37] 0
+[38] 0.00198367
+[39] 0
+[40] 0.0218204
+[41] 0
+[42] 0
+[43] 0
+[44] 0
+[45] 0
+[46] 0.215152
+[47] 0.204981
+[48] 0
+[49] 0.247196
+[50] 0.224308
+[51] 0
+[52] 3182.43
+[53] 0
+[54] 4706.24
+[55] 29.9997
+[56] 4.95071e-005
+[57] 45.0002
+[58] 3.00013
+[59] 15
+[60] 4.73175e-005
+[61] 25.0001
+[62] -4.7287e-005
+[63] 44.9996
+[64] 5.82458e-007
+[65] 45
+[66] 1.84931e-005
+[67] 9.76562e-012
+[68] 8.89851e-007
+[69] 0
+[70] -4.88281e-007
+[71] 0.0050055
+[72] 0.0428707
+[73] 0.0050055
+[74] -0.334106
+[75] 0
+[76] 0
+[77] 0
+[78] 0
+[79] 0
+[80] 0
+[81] 0
+[82] 0
+[83] 0
+[84] 0
+[85] 0
+[86] 0
+[87] 0
+[88] 0
+[89] 0
+[90] 0
+[91] 0
+[92] 0
+[93] 0
+[94] 0
+[95] 0
+[96] 0
+[97] 0
+[98] 0
+[99] 0
+EPCS = FLOAT[3] :
+[0] 1
+[1] 73
+[2] 0.0050055
+CellPressure = FLOAT : 0.0586081
+TrapPressure = FLOAT : 0.39072
+ChargeFaradayCup = FLOAT : 0.00926811
+ChargeSlitLeft = FLOAT : -0.0146484
+ChargeSlitRight = FLOAT : 0.000851667
+ChargeSlitTop = FLOAT : 0.0244141
+ChargeSlitBottom = FLOAT : -0.000319464
+MassFaradayCup = FLOAT : 0.00122459
+MassSlitLeft = FLOAT : 0
+MassSlitRight = FLOAT : 0
+MassSlitTop = FLOAT : -4.07715
+MassSlitBottom = FLOAT : -0.0108259
+FinalFaradayCup = FLOAT : -0.00454858
+FinalSlitLeft = FLOAT : 0
+FinalSlitRight = FLOAT : 0
+FinalSlitTop = FLOAT : -0.0195312
+FinalSlitBottom = FLOAT : -0.000839855
+
+[/Equipment/NewEpics/Statistics]
+Events sent = DOUBLE : 64
+Events per sec. = DOUBLE : 0
+kBytes per sec. = DOUBLE : 0.431885
+
