@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.21  1999/04/19 07:46:43  midas
+  Added cm_msg_retrieve
+
   Revision 1.20  1999/04/15 09:59:09  midas
   Added key name to db_get_key_info
 
@@ -1099,6 +1102,7 @@ INT EXPRT cm_time(DWORD *time);
 INT EXPRT cm_set_msg_print(INT system_mask, INT user_mask, int (*func)(const char*));
 INT EXPRT cm_msg(INT message_type, char* filename, INT line, const char *routine, const char *format, ...);
 INT EXPRT cm_msg_register(void (*func)(HNDLE,HNDLE,EVENT_HEADER*,void*));
+INT EXPRT cm_msg_retrieve(char *message, INT *buf_size);
 
 BOOL EXPRT equal_ustring(char *str1, char *str2);
 

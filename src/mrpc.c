@@ -6,6 +6,9 @@
   Contents:     List of MIDAS RPC functions with parameters
 
   $Log$
+  Revision 1.10  1999/04/19 07:47:54  midas
+  Added cm_msg_retrieve
+
   Revision 1.9  1999/04/15 09:57:27  midas
   Added cm_exist
 
@@ -112,6 +115,11 @@ static RPC_LIST rpc_list_library[] = {
      {TID_STRING,     RPC_OUT},
      {TID_INT,        RPC_IN}, 
      {TID_INT,        RPC_IN}, 
+     {0} }},
+
+  { RPC_CM_MSG_RETRIEVE, "cm_msg_retrieve",
+    {{TID_STRING,     RPC_OUT},
+     {TID_INT,        RPC_IN | RPC_OUT},
      {0} }},
 
   /* buffer manager functions */

@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.28  1999/04/19 07:47:00  midas
+  Added cm_msg_retrieve
+
   Revision 1.27  1999/04/16 15:13:28  midas
   bm_notify_client notifies ASCII client (Java) always
 
@@ -585,6 +588,87 @@ INT status, id;
                             GET_SOME, &id, func);
 
   return status;
+}
+
+/*------------------------------------------------------------------*/
+
+INT cm_msg_retrieve(char *message, INT *buf_size)
+/********************************************************************\
+
+  Routine: cm_msg_retrieve
+
+  Purpose: Retrive old messages from log file
+
+  Input:
+    INT    *buf_size         Size of message buffer to fill
+
+  Output:
+    char   *messages         buf_size bytes of messages, separated
+                             by \n characters. The returned number
+                             of bytes is normally smaller than the
+                             initial buf_size, since only full
+                             lines are returned.
+
+  Function value:
+    CM_SUCCESS
+
+\********************************************************************/
+{
+char  dir[256];
+char  filename[256];
+char  path[256];
+FILE  *f;
+INT   status, size, offset;
+HNDLE hDB, hKey;
+
+
+  if (rpc_is_remote())
+    return rpc_call(RPC_CM_MSG_RETRIEVE, message, buf_size);
+
+  cm_get_experiment_database(&hDB, NULL);
+
+  if (hDB)
+    {
+    status = db_find_key(hDB, 0, "/Logger/Data dir", &hKey);
+    if (status == DB_SUCCESS)
+      {
+      size = sizeof(dir);
+      memset(dir, 0, size);
+      db_get_value(hDB, 0, "/Logger/Data dir", dir, &size, TID_STRING);
+      if (dir[0] != 0)
+        if (dir[strlen(dir)-1] != DIR_SEPARATOR)
+          strcat(dir, DIR_SEPARATOR_STR);
+      
+      strcpy(filename, "midas.log");
+      db_get_value(hDB, 0, "/Logger/Message file", filename, &size, TID_STRING);
+
+      strcpy(path, dir);
+      strcat(path, filename);
+      }
+    else
+      strcpy(path, "midas.log");
+    }
+  else
+    strcpy(path, "midas.log");
+
+  f = fopen(path, "rb");
+  if (f==NULL)
+    {
+    printf("Cannot open message log file %s\n", path);
+    }
+  else
+    {
+    /* position buf_size bytes before the EOF */
+    fseek(f, -(*buf_size), SEEK_END);
+    offset = ftell(f);
+    fgets(message, *buf_size, f);
+    offset = ftell(f)-offset;
+    *buf_size -= offset;
+    offset = fread(message, 1, *buf_size, f);
+    fclose(f);
+    }
+
+  return CM_SUCCESS;
 }
 
 /*------------------------------------------------------------------*/

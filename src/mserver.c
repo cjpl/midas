@@ -6,6 +6,9 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
+  Revision 1.11  1999/04/19 07:47:39  midas
+  Added cm_msg_retrieve
+
   Revision 1.10  1999/04/15 09:57:52  midas
   Added cm_exist, modified db_get_key_info
 
@@ -404,6 +407,10 @@ INT convert_flags;
 
     case RPC_CM_TRANSITION:
       status = cm_transition(CINT(0), CINT(1), CSTRING(2), CINT(3), CINT(4));
+      break;
+
+    case RPC_CM_MSG_RETRIEVE:
+      status = cm_msg_retrieve(CSTRING(0), CPINT(1));
       break;
 
     /* buffer manager functions */
