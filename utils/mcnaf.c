@@ -6,6 +6,9 @@
   Contents:     CAMAC utility
   
   $Log$
+  Revision 1.11  2000/07/25 14:11:33  midas
+  Changed "&" to "&&"
+
   Revision 1.10  2000/04/18 22:07:31  pierre
   - added cam_lam_clear private function.
   - fix cc_services for N >= 28
@@ -195,7 +198,8 @@ void mcstd_func(CAMAC *PP)
     p = PP;
     if (status == LOOP)
       status = pstatus;
-    if (status != SKIP & status != HELP) pstatus = status;
+    if (status != SKIP && status != HELP) 
+      pstatus = status;
     i = 0;
     pdd16 = dd16;
     pdd24 = dd24;
