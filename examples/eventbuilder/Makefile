@@ -6,6 +6,9 @@
 #  Contents:     Makefile for mevb MIDAS example 
 #
 #  $Log$
+#  Revision 1.2  2003/08/19 23:25:29  pierre
+#  add pthread lib
+#
 #  Revision 1.1.1.2  2002/01/17 21:37:44  pierre
 #  Initial Version
 #
@@ -33,7 +36,7 @@ CFLAGS =
 #FF = cc
 # for egcs g77, use this
 FF = g77
-LIBS = -lm -lz -lutil -lnsl
+LIBS = -lm -lz -lutil -lnsl -lpthread
 
 #-------------------------------------------------------------------
 # The following lines define direcories. Adjust it if necessary.
