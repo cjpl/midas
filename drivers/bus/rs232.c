@@ -6,6 +6,9 @@
   Contents:     RS232 communication routines for MS-DOS and NT
 
   $Log$
+  Revision 1.6  2001/01/05 15:20:44  midas
+  Fixed wrong error return value
+
   Revision 1.5  2001/01/05 15:08:22  midas
   Fine-tuned timeout in rs232_gets
 
@@ -496,7 +499,7 @@ COMMTIMEOUTS  CommTimeOuts;
                   NULL );
                   
   if (hDev == (HANDLE) -1)
-    return FE_ERR_HW;
+    return -1;
 
   GetCommState(hDev, &dcb);
 
@@ -504,7 +507,7 @@ COMMTIMEOUTS  CommTimeOuts;
   BuildCommDCB(str, &dcb);
 
   if (SetCommState(hDev, &dcb) == FALSE)
-    return FE_ERR_HW;
+    return -1;
 
   SetupComm(hDev, 4096, 4096);
 
@@ -636,7 +639,7 @@ struct {
   if (fd < 0)
     {
     perror("rs232_open");
-    return FE_ERR_HW;
+    return fd;
     }
 
   tio.c_iflag = 0;
