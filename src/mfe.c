@@ -7,6 +7,9 @@
                 linked with user code to form a complete frontend
 
   $Log$
+  Revision 1.64  2004/03/26 09:31:56  midas
+  Converted pritnf() to cm_msg() for statistics record error
+
   Revision 1.63  2004/03/19 09:31:43  midas
   Re-formatted comments
 
@@ -603,8 +606,8 @@ INT register_equipment(void)
           db_open_record(hDB, hKey, eq_stats, sizeof(EQUIPMENT_STATS), MODE_WRITE, NULL,
                          NULL);
       if (status != DB_SUCCESS) {
-         printf
-             ("Cannot open statistics record, error %d. Probably other FE is using it\n",
+         cm_msg(MERROR, "register_equipment", 
+             "Cannot open statistics record, error %d. Probably other FE is using it",
               status);
          ss_sleep(3000);
       }
