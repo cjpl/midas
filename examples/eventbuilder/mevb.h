@@ -4,6 +4,9 @@ Name:         mevb.h
 
   Contents:     Event builder header file
   $Log$
+  Revision 1.9  2004/09/29 16:20:43  pierre
+  change Ebuilder structure
+
   Revision 1.8  2004/01/08 08:40:08  midas
   Implemented standard indentation
 
@@ -28,11 +31,11 @@ Name:         mevb.h
 "[Settings]",\
 "Event ID = WORD : 1",\
 "Trigger mask = WORD : 1",\
+"Number of Fragment = INT : 0",\
 "Buffer = STRING : [32] SYSTEM",\
 "Format = STRING : [32] MIDAS",\
 "User build = BOOL : n",\
 "User Field = STRING : [64] ",\
-"Event mask = DWORD : 3",\
 "Hostname = STRING : [64] ",\
 "",\
 "[Statistics]",\
@@ -42,51 +45,19 @@ Name:         mevb.h
 "",\
 NULL }
 
-#define EBUILDER_CHANNEL(_name) char *_name[] = {\
-"[Frag1/Settings]",\
-"Event ID = WORD : 1",\
-"Trigger mask = WORD : -1",\
-"Buffer = STRING : [32] BUF1",\
-"Format = STRING : [32] MIDAS",\
-"Event mask = DWORD : 1",\
-"",\
-"[Frag1/Statistics]",\
-"Events sent = DOUBLE : 0",\
-"Events per sec. = DOUBLE : 0",\
-"kBytes per sec. = DOUBLE : 0",\
-"",\
-"[Frag2/Settings]",\
-"Event ID = WORD : 2",\
-"Trigger mask = WORD : -1",\
-"Buffer = STRING : [32] BUF2",\
-"Format = STRING : [32] MIDAS",\
-"Event mask = DWORD : 2",\
-"",\
-"[Frag2/Statistics]",\
-"Events sent = DOUBLE : 0",\
-"Events per sec. = DOUBLE : 0",\
-"kBytes per sec. = DOUBLE : 0",\
-"",\
-NULL }
 
 typedef struct {
    WORD event_id;
    WORD trigger_mask;
+   INT  nfragment;
    char buffer[32];
    char format[32];
    BOOL user_build;
    char user_field[64];
-   DWORD emask;
    char hostname[64];
+   BOOL *preqfrag;
+   BOOL *received;
 } EBUILDER_SETTINGS;
-
-typedef struct {
-   WORD event_id;
-   WORD trigger_mask;
-   char buffer[32];
-   char format[32];
-   DWORD emask;
-} EBUILDER_SETTINGS_CH;
 
 typedef struct {
    double events_sent;
@@ -95,15 +66,17 @@ typedef struct {
 } EBUILDER_STATISTICS;
 
 typedef struct {
-   char name[32];
+   char buffer[32];
+   char format[32];
+   WORD event_id;
+   WORD trigger_mask;
+   INT type;
    INT hBuf;
    INT req_id;
    INT hStat;
    INT timeout;
    DWORD serial;
    char *pfragment;
-   EBUILDER_SETTINGS_CH set;
-   EBUILDER_STATISTICS stat;
 } EBUILDER_CHANNEL;
 
 #define   EB_SUCCESS               1
@@ -113,4 +86,4 @@ typedef struct {
 #define   EB_ABORTED            1003
 #define   EB_SKIP               1004
 #define   TIMEOUT                 10
-#define   MAX_CHANNELS             8
+#define   MAX_CHANNELS           128
