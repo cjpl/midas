@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.26  1999/06/23 09:58:28  midas
+  Fixed typo
+
   Revision 1.25  1999/05/05 12:01:42  midas
   Added and modified hs_xxx functions
 
@@ -715,7 +718,7 @@ typedef struct {
   WORD   trigger_mask;                /* Trigger mask                      */
   char   buffer[NAME_LENGTH];         /* Event buffer to send events into  */
   INT    eq_type;                     /* One of EQ_xxx                     */
-  INT    source;                      /* Event soource (LAM/IRQ)           */
+  INT    source;                      /* Event source (LAM/IRQ)            */
   char   format[8];                   /* Data format to produce            */
   BOOL   enabled;                     /* Enable flag                       */
   INT    read_on;                     /* Combination of Read-On flags RO_xxx */
