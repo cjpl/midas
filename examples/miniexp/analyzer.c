@@ -6,6 +6,9 @@
   Contents:     Single file analyzer code for sample experiment
 
   $Log$
+  Revision 1.2  2002/05/08 20:51:41  midas
+  Added extra parameter to function db_get_value()
+
   Revision 1.1  1999/02/22 12:24:56  midas
   Initial revision
 
@@ -228,13 +231,13 @@ BOOL   flag;
   /* update run log if run was written and running online */
 
   size = sizeof(flag);
-  db_get_value(hDB, 0, "/Logger/Write data", &flag, &size, TID_BOOL);
+  db_get_value(hDB, 0, "/Logger/Write data", &flag, &size, TID_BOOL, TRUE);
   if (flag && runinfo.online_mode == 1)
     {
     /* update run log */
     size = sizeof(str);
     str[0] = 0;
-    db_get_value(hDB, 0, "/Logger/Data Dir", str, &size, TID_STRING);
+    db_get_value(hDB, 0, "/Logger/Data Dir", str, &size, TID_STRING, TRUE);
     if (str[0] != 0)
       if (str[strlen(str)-1] != DIR_SEPARATOR)
         strcat(str, DIR_SEPARATOR_STR);
@@ -258,7 +261,7 @@ BOOL   flag;
 
     size = sizeof(n);
     db_get_value(hDB, 0, "/Equipment/Trigger/Statistics/Events sent", 
-                 &n, &size, TID_DWORD);
+                 &n, &size, TID_DWORD, TRUE);
 
     fprintf(f, "%dk\t", (int) (n/1000.0+0.5));
     fprintf(f, "%s\n", exp_param.comment);

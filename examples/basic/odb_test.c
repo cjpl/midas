@@ -6,6 +6,9 @@
   Contents:     Small demo program to show how to connect to the ODB
 
   $Log$
+  Revision 1.3  2002/05/08 20:51:41  midas
+  Added extra parameter to function db_get_value()
+
   Revision 1.2  1998/10/12 12:18:58  midas
   Added Log tag in header
 
@@ -38,7 +41,7 @@ HNDLE hDB, hKey;
 
   /* read key "runinfo/run number" */
   size = sizeof(run_number);
-  status = db_get_value(hDB, 0, "/runinfo/run number", &run_number, &size, TID_INT);
+  status = db_get_value(hDB, 0, "/runinfo/run number", &run_number, &size, TID_INT, TRUE);
   if (status != DB_SUCCESS)
     {
     printf("Cannot read run number");

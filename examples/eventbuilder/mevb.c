@@ -4,6 +4,9 @@ Name:         mevb.c
 
   Contents:     Main Event builder task.
   $Log$
+  Revision 1.3  2002/05/08 20:51:41  midas
+  Added extra parameter to function db_get_value()
+
   Revision 1.2  2002/01/17 23:34:14  pierre
   doc++ format
 
@@ -785,7 +788,7 @@ int main(unsigned int argc,char **argv)
 
   /* Check for run condition */
   size = sizeof(state);
-  db_get_value(hDB,0,"/Runinfo/state", &state, &size, TID_INT);
+  db_get_value(hDB,0,"/Runinfo/state", &state, &size, TID_INT, TRUE);
   if (state != STATE_STOPPED)
   {
     cm_msg(MERROR,"EBuilder","Run must be stopped before starting EBuilder");

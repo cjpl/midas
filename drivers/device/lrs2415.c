@@ -6,6 +6,9 @@
   Contents:     LeCroy 2415 CAMAC HV Device Driver
 
   $Log$
+  Revision 1.2  2002/05/08 20:51:41  midas
+  Added extra parameter to function db_get_value()
+
   Revision 1.1  1999/12/20 10:18:20  midas
   Reorganized driver directory structure
 
@@ -44,15 +47,15 @@ HNDLE hDB;
   /* read LRS2415 settings */
   camac_crate[index] = 0;
   size = sizeof(INT);
-  db_get_value(hDB, hKey, "CAMAC crate", &camac_crate[index], &size, TID_INT);
+  db_get_value(hDB, hKey, "CAMAC crate", &camac_crate[index], &size, TID_INT, TRUE);
 
   camac_slot[index] = 1;
   size = sizeof(INT);
-  db_get_value(hDB, hKey, "CAMAC slot", &camac_slot[index], &size, TID_INT);
+  db_get_value(hDB, hKey, "CAMAC slot", &camac_slot[index], &size, TID_INT, TRUE);
 
   config[index] = (float) 3.5;
   size = sizeof(float);
-  db_get_value(hDB, hKey, "Configuration", &config[index], &size, TID_FLOAT);
+  db_get_value(hDB, hKey, "Configuration", &config[index], &size, TID_FLOAT, TRUE);
 
   return FE_SUCCESS;
 }
