@@ -9,6 +9,9 @@
                 for SCS-400 thermo couple I/O
 
   $Log$
+  Revision 1.10  2003/03/14 13:47:22  midas
+  Switched P1 to push-pull
+
   Revision 1.9  2003/03/06 16:08:50  midas
   Protocol version 1.3 (change node name)
 
@@ -52,19 +55,11 @@ char code node_name[] = "SCS-400";
 /* data buffer (mirrored in EEPROM) */
 
 struct {
-  float temp[8];
   float power[8];
+  float temp[8];
 } idata user_data;
 
 MSCB_INFO_CHN code channel[] = {
-  4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp0",  &user_data.temp[0],
-  4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp1",  &user_data.temp[1],
-  4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp2",  &user_data.temp[2],
-  4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp3",  &user_data.temp[3],
-  4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp4",  &user_data.temp[4],
-  4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp5",  &user_data.temp[5],
-  4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp6",  &user_data.temp[6],
-  4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp7",  &user_data.temp[7],
   4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "Power0", &user_data.power[0],
   4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "Power1", &user_data.power[1],
   4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "Power2", &user_data.power[2],
@@ -73,6 +68,14 @@ MSCB_INFO_CHN code channel[] = {
   4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "Power5", &user_data.power[5],
   4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "Power6", &user_data.power[6],
   4, UNIT_PERCENT, 0, 0, MSCBF_FLOAT, "Power7", &user_data.power[7],
+  4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp0",  &user_data.temp[0],
+  4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp1",  &user_data.temp[1],
+  4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp2",  &user_data.temp[2],
+  4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp3",  &user_data.temp[3],
+  4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp4",  &user_data.temp[4],
+  4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp5",  &user_data.temp[5],
+  4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp6",  &user_data.temp[6],
+  4, UNIT_CELSIUS, 0, 0, MSCBF_FLOAT, "Temp7",  &user_data.temp[7],
   0
 };
 
@@ -94,13 +97,6 @@ void user_init(unsigned char init)
 {
 unsigned char i;
 
-#ifdef CPU_ADUC812
-  ADCCON1 = 0x7C; // power up ADC, 14.5us conv+acq time
-  ADCCON2 = 0;    // select channel to convert
-  DACCON  = 0x1f; // power on DACs
-#endif
-
-#ifdef CPU_C8051F000
   AMX0CF = 0x00;  // select single ended analog inputs
   ADC0CF = 0xE0;  // 16 system clocks, gain 1
   ADC0CN = 0x80;  // enable ADC
@@ -108,7 +104,8 @@ unsigned char i;
   REF0CN = 0x03;  // enable internal reference
   DAC0CN = 0x80;  // enable DAC0
   DAC1CN = 0x80;  // enable DAC1
-#endif
+
+  PRT1CF = 0xFF;  // P1 on push-pull
 
   if (init)
     for (i=0 ; i<8 ; i++)
