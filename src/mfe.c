@@ -7,6 +7,10 @@
                 linked with user code to form a complete frontend
 
   $Log$
+  Revision 1.44  2002/10/15 18:15:25  olchansk
+  disable dtsout, stderr buffering,
+  catch-ignore SIGPIPE
+
   Revision 1.43  2002/10/15 18:13:59  olchansk
   always recreate the statistics record.
 
@@ -1775,6 +1779,13 @@ INT  daemon;
   exp_name[0] = 0;
   debug = FALSE;
   daemon = 0;
+
+  setbuf(stdout,0);
+  setbuf(stderr,0);
+
+#ifdef SIGPIPE
+  signal(SIGPIPE,SIG_IGN);
+#endif
 
 #ifdef OS_VXWORKS
   if (ahost_name)
