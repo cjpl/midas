@@ -9,6 +9,9 @@
                 for SCS-400 thermo couple I/O
 
   $Log$
+  Revision 1.4  2002/11/22 15:43:03  midas
+  Made user_write reentrant
+
   Revision 1.3  2002/10/09 11:06:46  midas
   Protocol version 1.1
 
@@ -64,7 +67,7 @@ MSCB_INFO_CHN code conf_param[] = {
 
 \********************************************************************/
 
-void user_write(unsigned char channel);
+void user_write(unsigned char channel) reentrant;
 
 /*---- User init function ------------------------------------------*/
 
@@ -92,7 +95,7 @@ void user_init(void)
 
 #pragma NOAREGS
 
-void user_write(unsigned char channel)
+void user_write(unsigned char channel) reentrant
 {
   if (channel);
 }
@@ -108,7 +111,7 @@ unsigned char user_read(unsigned char channel)
 
 /*---- User write config function ----------------------------------*/
 
-void user_write_conf(unsigned char channel)
+void user_write_conf(unsigned char channel) reentrant
 {
   if (channel);
 }
@@ -154,7 +157,7 @@ float t;
     ENABLE_INTERRUPTS;
 
     value += (ADC0L | (ADC0H << 8));
-    watchdog_refresh();
+    yield();
     }
 
   if (AVERAGE > 4)
