@@ -4,7 +4,7 @@
   Created by:   Stefan Ritt
 
   Contents:     Device driver for HYTEC 1331 Turbo CAMAC controller
-                following the MIDAS CAMAC Standard
+                following the MIDAS CAMAC Standard under DIRECTIO
 
   Revision history
   ------------------------------------------------------------------
@@ -16,10 +16,10 @@
 \********************************************************************/
 
 #include <stdio.h>
+#include "midas.h"
 #include "mcstd.h"
 
 /*------------------------------------------------------------------*/
-
 /*
   Base address of PC card. Must match jumper setting:
   ===================================================
@@ -450,7 +450,7 @@ unsigned int adr, status;
 INLINE void cam8o_r(const int c, const int n, const int a, const int f, 
                     BYTE *d, const int r)
 {
-WORD adr, i;
+  WORD adr, i;
 
   adr = CAMAC_BASE+(c<<4);
  
@@ -608,22 +608,18 @@ DWORD size;
     return -1;
 #endif _MSC_VER
 #ifdef OS_LINUX
-/* Check if running under su */
+  /* You cannot access Directly CAMAC without su privilege 
+     due to ioperm protection. In order to run this code you need
+     a su access given by Dio prg. to know more about it contact us */
+#endif
+
   adr =  CAMAC_BASE; 
-#ifndef IO_PERM
-   if (ioperm(adr,16,1))
-    {
-      printf("CAMAC:ioperm can't get I/O permission\n");
-      exit (-1);
-    }
-#endif
-#endif
 
   status = INP(CAMAC_BASE+6);
   if (!(status & 0x40))
     printf("HYT1331: Auto increment disabled by SW1D. camxxi_sa won't work.\n");
 
-  return 0;
+  return SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
@@ -686,13 +682,7 @@ unsigned int adr;
 
 INLINE void cam_lam_enable(const int c, const int n)
 { 
-unsigned int adr, i;
-
-  /* enable LAM flip-flop in unit */
-  camc(c, n, 0, 26);
-
-  /* clear LAM flip-flop in unit */
-  camc(c, n, 0, 10);
+  unsigned int adr;
 
   /* enable LAM in controller */
   adr = CAMAC_BASE+(c<<4);
@@ -707,7 +697,7 @@ unsigned int adr, i;
 
 INLINE void cam_lam_disable(const int c, const int n)
 { 
-unsigned int adr, i;
+unsigned int adr;
 
   /* disable LAM flip-flop in unit */
   camc(c, n, 0, 24);
@@ -721,12 +711,12 @@ unsigned int adr, i;
 
 INLINE void cam_lam_read(const int c, DWORD *lam)
 {
-  unsigned int adr, i, csr; 
+  unsigned int adr, csr; 
 
   adr = CAMAC_BASE+(c<<4);
   csr = (unsigned char) INP(adr+6);
   if (csr & 0x8)
-    *lam = (unsigned char) INP(adr+8);
+    *lam = (1<<((unsigned char) INP(adr+8)));
   else
     *lam = 0;
 }
