@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.78  1999/10/27 15:13:56  midas
+  Added "access(<key>)" in alarm system
+
   Revision 1.77  1999/10/27 13:37:57  midas
   Added event size check in bm_send_event
 
@@ -14969,11 +14972,12 @@ char    tag[256];
 BOOL al_evaluate_condition(char *condition, char *value)
 {
 HNDLE  hDB, hkey;
-int    i, index, size;
+int    i, j, index, size;
 KEY    key;
 double value1, value2;
-char   str[256], op[3];
+char   str[256], op[3], function[80];
 char   data[10000];
+DWORD  time;
 
   strcpy(str, condition);
   op[1] = op[2] = 0;
@@ -15000,6 +15004,22 @@ char   data[10000];
     i--;
   str[i+1] = 0;
 
+  /* check if function */
+  function[0] = 0;
+  if (str[i] == ')')
+    {
+    str[i--] = 0;
+    if (strchr(str, '('))
+      {
+      *strchr(str, '(') = 0;
+      strcpy(function, str);
+      for (i=strlen(str)+1,j=0 ; str[i] ; i++,j++)
+        str[j] = str[i];
+      str[j] = 0;
+      i = j-1;
+      }
+    }
+
   /* find key */
   if (str[i] == ']')
     {
@@ -15020,12 +15040,22 @@ char   data[10000];
     return FALSE;
     }
 
-  /* get key data and convert to double */
-  db_get_key(hDB, hkey, &key);
-  size = sizeof(data);
-  db_get_data(hDB, hkey, data, &size, key.type);
-  db_sprintf(str, data, size, index, key.type);
-  value1 = atof(str);
+  if (equal_ustring(function, "access"))
+    {
+    /* check key access time */
+    db_get_key_time(hDB, hkey, &time);
+    sprintf(str, "%d", time);
+    value1 = atof(str);
+    }
+  else
+    {
+    /* get key data and convert to double */
+    db_get_key(hDB, hkey, &key);
+    size = sizeof(data);
+    db_get_data(hDB, hkey, data, &size, key.type);
+    db_sprintf(str, data, size, index, key.type);
+    value1 = atof(str);
+    }
   
   /* return value */
   if (value)
