@@ -7,6 +7,9 @@
                 SUBM260 running on Cygnal C8051F120
 
   $Log$
+  Revision 1.2  2005/03/21 10:51:34  ritt
+  Added network configuration
+
   Revision 1.1  2005/03/16 14:16:49  ritt
   Initial revision
 
@@ -22,10 +25,25 @@
 
 #define MSCB_NET_PORT           1177
 
-char *host_name = "MSCB001";    // used for DHCP
+char host_name[20];    // used for DHCP
 
-/* set MAC address for first PSI address by default */
-unsigned char eth_src_hw_addr[ETH_ADDR_LEN] = { 0x00,0x50,0xC2,0x46,0xD0,0x00 };
+char password[20];     // used for access control
+
+/* our current MAC address */
+unsigned char eth_src_hw_addr[ETH_ADDR_LEN];
+
+/* configuration structure residing in flash scratchpad */
+typedef struct {
+   char           host_name[20];
+   char           password[20];
+   unsigned char  eth_mac_addr[ETH_ADDR_LEN];
+   unsigned short magic;
+} SUBM_CFG;
+
+SUBM_CFG code  *subm_cfg;
+SUBM_CFG xdata *subm_cfg_write;
+
+bit configured;        // set after being configuration
 
 /*---- MSCB commands -----------------------------------------------*/
 
@@ -71,6 +89,7 @@ unsigned char eth_src_hw_addr[ETH_ADDR_LEN] = { 0x00,0x50,0xC2,0x46,0xD0,0x00 };
 #define RS485_FLAG_SHORT_TO  (1<<2)
 #define RS485_FLAG_LONG_TO   (1<<3)
 #define RS485_FLAG_CMD       (1<<4)
+#define RS485_FLAG_ADR_CYCLE (1<<5)
 
 /*------------------------------------------------------------------*/
 
@@ -85,6 +104,8 @@ unsigned char tcp_rx_buf[NUM_SOCKETS][DATA_BUFF_LEN];
 
 unsigned char rs485_tx_buf[DATA_BUFF_LEN];
 unsigned char rs485_rx_buf[DATA_BUFF_LEN];
+
+unsigned char rs485_tx_bit9[4];
 
 unsigned char n_tcp_rx, n_rs485_tx, i_rs485_tx, i_rs485_rx;
 
@@ -167,7 +188,70 @@ void setup(void)
    /* invert first LED */
    led_mode(0, 1);
 }
+ 
+/*------------------------------------------------------------------*/
 
+void configure()
+{
+   /* setup pointers to scratchpad area */
+   subm_cfg = 0x0000;
+   subm_cfg_write = 0x0000;
+
+   SFRPAGE = LEGACY_PAGE;
+   PSCTL = 0x04; // select scratchpad area
+   configured = (subm_cfg->magic == 0x1234);
+   PSCTL = 0x00; // unselect scratchpad area
+
+   if (!configured) {
+      /* set default values for host name and MAC address */
+
+      strcpy(host_name, "MSCBFFF");
+      eth_src_hw_addr[0] = 0x00;
+      eth_src_hw_addr[1] = 0x50;
+      eth_src_hw_addr[2] = 0xC2;
+      eth_src_hw_addr[3] = 0x46;
+      eth_src_hw_addr[4] = 0xDF;
+      eth_src_hw_addr[5] = 0xFF;
+
+      password[0] = 0;
+   } else {
+      PSCTL = 0x04; // select scratchpad area
+      strcpy(host_name, subm_cfg->host_name);
+      strcpy(password,  subm_cfg->password);
+      memcpy(eth_src_hw_addr, subm_cfg->eth_mac_addr, ETH_ADDR_LEN);
+      PSCTL = 0x00; // unselect scratchpad area
+   }
+}
+ 
+/*------------------------------------------------------------------*/
+
+unsigned char set_config(SUBM_CFG *new_cfg)
+{
+   if (new_cfg->magic != 0x1234)
+      return 0;
+
+   DISABLE_INTERRUPTS;
+   SFRPAGE = LEGACY_PAGE;
+
+   /* erase scratchpad area */
+
+   FLSCL = FLSCL | 1;  // enable flash writes/erases
+   PSCTL = 0x07; // allow write and erase to scratchpad area
+   subm_cfg_write->host_name[0] = 0;
+
+   /* program scratchpad area */
+   PSCTL = 0x05; // allow write to scratchpad area
+   memcpy(subm_cfg_write, new_cfg, sizeof(SUBM_CFG));
+
+   FLSCL = FLSCL & ~1; // disable flash writes/erases
+
+   ENABLE_INTERRUPTS;
+
+   /* read back configuration */
+   configure();
+   return 1;
+}
+ 
 /*------------------------------------------------------------------*/
 
 void serial_int(void) interrupt 4 using 1
@@ -179,6 +263,13 @@ void serial_int(void) interrupt 4 using 1
 
       i_rs485_tx++;
       if (i_rs485_tx < n_rs485_tx) {
+         
+         /* set bit9 according to array */
+         if (i_rs485_tx < 5 && rs485_tx_bit9[i_rs485_tx-1])
+            TB80 = 1;
+         else
+            TB80 = 0;
+
          DELAY_US(INTERCHAR_DELAY);
          SBUF0 = rs485_tx_buf[i_rs485_tx];
       } else {
@@ -211,6 +302,7 @@ unsigned char execute(char socket_no)
 {
    if (rs485_tx_buf[1] == MCMD_INIT) {
       /* reboot */
+      SFRPAGE = LEGACY_PAGE;
       RSTSRC = 0x10;
    }
 
@@ -223,9 +315,37 @@ unsigned char execute(char socket_no)
       return 2;
    }
 
-   if (rs485_tx_buf[1] == RS485_FLAG_CMD) {
-      /* just blink LED, discard data */
-      led_1 = !led_1;
+   if (rs485_tx_buf[1] == MCMD_TOKEN) {
+      /* check password */
+
+      if (password[0] == 0 || strcmp(rs485_tx_buf+2, password) == 0)
+         rs485_rx_buf[0] = MCMD_ACK;
+      else
+         rs485_rx_buf[0] = 0xFF;
+         
+
+      tcp_send(socket_no, rs485_rx_buf, 1);
+      return 1;
+   }
+
+   if (rs485_tx_buf[1] == MCMD_FLASH) {
+      
+      /* update configuration in flash */
+      if (set_config((void*)(rs485_tx_buf+2))) {
+
+         rs485_rx_buf[0] = MCMD_ACK;
+         rs485_rx_buf[1] = 0;  // reserved for future use
+         tcp_send(socket_no, rs485_rx_buf, 2);
+   
+         /* reboot */
+         SFRPAGE = LEGACY_PAGE;
+         RSTSRC = 0x10;
+
+      } else {
+         rs485_rx_buf[0] = 0xFF;
+         tcp_send(socket_no, rs485_rx_buf, 1);
+         return 1;
+      }
    }
 
    return 0;
@@ -235,6 +355,8 @@ unsigned char execute(char socket_no)
 
 unsigned char rs485_send(char socket_no, unsigned char len, unsigned char flags)
 {
+   unsigned char i;
+
    /* clear receive buffer */
    i_rs485_rx = 0;
 
@@ -250,8 +372,19 @@ unsigned char rs485_send(char socket_no, unsigned char len, unsigned char flags)
       /* send buffer to RS485 */
       SFRPAGE = UART0_PAGE;
 
-      /* set bit9 */
-      TB80 = (flags & RS485_FLAG_BIT9) > 0;
+      memset(rs485_tx_bit9, 0, sizeof(rs485_tx_bit9));
+
+      /* set all bit9 if BIT9 flag */
+      if (flags & RS485_FLAG_BIT9)
+         for (i=1 ; i<len && i<5 ; i++)
+            rs485_tx_bit9[i-1] = 1;
+
+      /* set first four bit9 if ADR_CYCLE flag */
+      if (flags & RS485_FLAG_ADR_CYCLE)
+         for (i=0 ; i<4 ; i++)
+            rs485_tx_bit9[i] = 1;
+
+      TB80 = rs485_tx_bit9[0];
 
       n_rs485_tx = len;
       DELAY_US(INTERCHAR_DELAY);
@@ -322,271 +455,9 @@ unsigned short i, to;
 
 /*------------------------------------------------------------------*/
 
-int tcp_server(void)
-{
-	unsigned char packet_type;
-	PSOCKET_INFO socket_ptr;
-	int sent;
-	int recvd;
-   int status;
-   char socket_no;
-	static PSOCKET_INFO check_socket_ptr = sock_info;
-   unsigned char dhcp_state;
-
-	socket_ptr = &sock_info[0];
-	sent = 0;
-	recvd = 0;
-   status = 0;
-
-   /* if no listening socket open, open or reopen it */
-   if (mn_find_socket(MSCB_NET_PORT, 0, null_addr, PROTO_TCP) == NULL) {
-      socket_no = mn_open(null_addr, MSCB_NET_PORT, 0, NO_OPEN, PROTO_TCP,
-                          STD_TYPE, tcp_rx_buf[0], DATA_BUFF_LEN);
-      if (socket_no >= 0) {
-         socket_ptr = &sock_info[socket_no];
-         socket_ptr->recv_ptr = tcp_rx_buf[socket_no];
-         socket_ptr->recv_end = tcp_rx_buf[socket_no] + DATA_BUFF_LEN - 1;
-      }
-   }
-
-   /* loop until we get a tcp packet, will open a socket automatically
-		if required.
-	*/
-	while (1) {
-      dhcp_state = dhcp_lease.dhcp_state;
-      if (dhcp_state == DHCP_DEAD)
-         return (DHCP_LEASE_EXPIRED);
-
-      /* renew with the previous lease time */
-      if (dhcp_state == DHCP_RENEWING || dhcp_state == DHCP_REBINDING)
-         mn_dhcp_renew(dhcp_lease.org_lease_time);
-
-	 	packet_type = mn_ip_recv();
-
-	 	if (packet_type & TCP_TYPE)
-	 		break;
-
-	 	if (packet_type & UDP_TYPE)
-	 		break;
-
-      /* Check if the socket pointed to by check_socket_ptr has bytes
-         we need to resend. If it does, try a resend. Increment
-         check_socket_ptr so another socket will be checked the next time
-         around.
-      */
-      check_socket_ptr++;
-      if (check_socket_ptr >= &sock_info[NUM_SOCKETS])
-         check_socket_ptr = &sock_info[0];
-      if (check_socket_ptr->ip_proto == PROTO_TCP && \
-            TCP_TIMER_EXPIRED(check_socket_ptr) && \
-            (check_socket_ptr->send_len || \
-            check_socket_ptr->tcp_state >= TCP_FIN_WAIT_1))
-         {
-         socket_ptr = check_socket_ptr;
-         goto send_data;
-         }
-
- 	}
-
-	/* process the packet, switch sockets if neccessary */
-   if (packet_type & TCP_TYPE)
-	   recvd = mn_tcp_recv(&socket_ptr);
-
-   if (packet_type & UDP_TYPE)
-	   recvd = mn_udp_recv(&socket_ptr);
-
-	/* if socket_ptr == NULL there was some sort of error. The TCP
-		or UDP layer has thrown away the bad packet so we just wait for
-      another packet.
-	*/
-	if (socket_ptr == NULL)
-		return 0;
-
-   if (packet_type & TCP_TYPE && \
-         (recvd >= 0 || recvd == NEED_TO_LISTEN || recvd == TCP_NO_CONNECT))
-      {
-         {
-         if (socket_ptr->tcp_state == TCP_CLOSED)  /* other side closed */
-            {
-            (void)mn_abort(socket_ptr->socket_no);
-            socket_ptr = (PSOCKET_INFO)NULL;
-            }
-         }
-      }
-
-
- 	/* get another packet if error or NEED_TO_LISTEN */
-	if (socket_ptr == NULL || recvd < 0)
-		return 0;
-
-   /* callback function to possibly do something with the packet we
-      just received.
-   */
-   socket_ptr->send_ptr = socket_ptr->recv_ptr;
-   socket_ptr->send_len = socket_ptr->recv_len;
-
-
-send_data:
-	if (socket_ptr != NULL)
-      {
-      if (socket_ptr->ip_proto == PROTO_TCP)
-         {
-	   	/* reply to the packet we just got */
-         sent = mn_tcp_send(socket_ptr);
-
-         if (sent != UNABLE_TO_SEND)
-            {
-               {
-       	   	if ((sent < 0 && sent != TCP_NO_CONNECT) || \
-                     socket_ptr->tcp_state == TCP_CLOSED)
-         	   	mn_abort(socket_ptr->socket_no);
-               }
-            }
-         }
-
-      if (socket_ptr != NULL && socket_ptr->ip_proto == PROTO_UDP)
-         {
-   		/* reply to the packet we just got */
-      	sent = mn_udp_send(socket_ptr);
-         }
-
-      }
-
-   return (0);
-}
-
-/*------------------------------------------------------------------*/
-
-int tcp_server1(void)
-{
-	unsigned char packet_type;
-	PSOCKET_INFO socket_ptr;
-	int sent;
-	int recvd;
-   int status;
-   char socket_no;
-	static PSOCKET_INFO check_socket_ptr = sock_info;
-   unsigned char dhcp_state;
-
-	socket_ptr = &sock_info[0];
-	sent = 0;
-	recvd = 0;
-   status = 0;
-
-   /* if no listening socket open, open or reopen it */
-   if (mn_find_socket(MSCB_NET_PORT, 0, null_addr, PROTO_TCP) == NULL) {
-      socket_no = mn_open(null_addr, MSCB_NET_PORT, 0, NO_OPEN, PROTO_TCP,
-                          STD_TYPE, tcp_rx_buf[0], DATA_BUFF_LEN);
-      if (socket_no >= 0) {
-         socket_ptr = &sock_info[socket_no];
-         socket_ptr->recv_ptr = tcp_rx_buf[socket_no];
-         socket_ptr->recv_end = tcp_rx_buf[socket_no] + DATA_BUFF_LEN - 1;
-      }
-   }
-
-   /* loop until we get a tcp packet, will open a socket automatically
-		if required.
-	*/
-	while (1) {
-      dhcp_state = dhcp_lease.dhcp_state;
-      if (dhcp_state == DHCP_DEAD)
-         return (DHCP_LEASE_EXPIRED);
-
-      /* renew with the previous lease time */
-      if (dhcp_state == DHCP_RENEWING || dhcp_state == DHCP_REBINDING)
-         mn_dhcp_renew(dhcp_lease.org_lease_time);
-
-	 	packet_type = mn_ip_recv();
-
-	 	if (packet_type & TCP_TYPE) {
-         recvd = mn_tcp_recv(&socket_ptr);
-      	if (socket_ptr == NULL || recvd < 0)
-      		return 0;
-
-         if (recvd >= 0 || recvd == NEED_TO_LISTEN || recvd == TCP_NO_CONNECT)
-            if (socket_ptr->tcp_state == TCP_CLOSED) { /* other side closed */
-               (void)mn_abort(socket_ptr->socket_no);
-               socket_ptr = (PSOCKET_INFO)NULL;
-            }
-         break;
-      }
-
-	 	if (packet_type & UDP_TYPE) {
-    	   recvd = mn_udp_recv(&socket_ptr);
-      	if (socket_ptr == NULL || recvd < 0)
-      		return 0;
-
-	 		break;
-      }
-
-      /* Check if the socket pointed to by check_socket_ptr has bytes
-         we need to resend. If it does, try a resend. Increment
-         check_socket_ptr so another socket will be checked the next time
-         around.
-      */
-      check_socket_ptr++;
-      if (check_socket_ptr >= &sock_info[NUM_SOCKETS])
-         check_socket_ptr = &sock_info[0];
-      if (check_socket_ptr->ip_proto == PROTO_TCP &&
-            TCP_TIMER_EXPIRED(check_socket_ptr) &&
-            (check_socket_ptr->send_len ||
-            check_socket_ptr->tcp_state >= TCP_FIN_WAIT_1)) {
-
-         socket_ptr = check_socket_ptr;
-         sent = mn_tcp_send(socket_ptr);
-
-         if (sent != UNABLE_TO_SEND)
-    	   	if ((sent < 0 && sent != TCP_NO_CONNECT) ||
-                  socket_ptr->tcp_state == TCP_CLOSED)
-      	   	mn_abort(socket_ptr->socket_no);
-
-         return 0;
-      }
-
- 	}
-
-   /* callback function to possibly do something with the packet we
-      just received.
-   */
-   socket_ptr->send_ptr = socket_ptr->recv_ptr;
-   socket_ptr->send_len = socket_ptr->recv_len;
-
-
-	if (socket_ptr != NULL)
-      {
-      if (socket_ptr->ip_proto == PROTO_TCP)
-         {
-	   	/* reply to the packet we just got */
-         sent = mn_tcp_send(socket_ptr);
-
-         if (sent != UNABLE_TO_SEND)
-            {
-               {
-       	   	if ((sent < 0 && sent != TCP_NO_CONNECT) || \
-                     socket_ptr->tcp_state == TCP_CLOSED)
-         	   	mn_abort(socket_ptr->socket_no);
-               }
-            }
-         }
-
-      if (socket_ptr != NULL && socket_ptr->ip_proto == PROTO_UDP)
-         {
-   		/* reply to the packet we just got */
-      	sent = mn_udp_send(socket_ptr);
-         }
-
-      }
-
-   return (0);
-}
-
-/*------------------------------------------------------------------*/
-
 int tcp_receive(unsigned char **data_ptr, char *socket_no_ptr)
 {
-   static PSOCKET_INFO check_socket_ptr = sock_info;
-
-   unsigned char packet_type;
+   unsigned char packet_type, i, n;
    PSOCKET_INFO socket_ptr;
    int recvd, sent;
    unsigned char dhcp_state;
@@ -594,12 +465,21 @@ int tcp_receive(unsigned char **data_ptr, char *socket_no_ptr)
 
    /* if no listening socket open, open or reopen it */
    if (mn_find_socket(MSCB_NET_PORT, 0, null_addr, PROTO_TCP) == NULL) {
-      socket_no = mn_open(null_addr, MSCB_NET_PORT, 0, NO_OPEN, PROTO_TCP,
-                          STD_TYPE, tcp_rx_buf[0], DATA_BUFF_LEN);
-      if (socket_no >= 0) {
-         socket_ptr = &sock_info[socket_no];
-         socket_ptr->recv_ptr = tcp_rx_buf[socket_no];
-         socket_ptr->recv_end = tcp_rx_buf[socket_no] + DATA_BUFF_LEN - 1;
+
+      /* count number of active sockets */
+      for (i=n=0 ; i<NUM_SOCKETS ; i++)
+         if (SOCKET_ACTIVE(i))
+            n++;
+      
+      /* leave one inactive socket for ping and arp requests */
+      if (n < NUM_SOCKETS-1) {
+         socket_no = mn_open(null_addr, MSCB_NET_PORT, 0, NO_OPEN, PROTO_TCP,
+                             STD_TYPE, tcp_rx_buf[0], DATA_BUFF_LEN);
+         if (socket_no >= 0) {
+            socket_ptr = &sock_info[socket_no];
+            socket_ptr->recv_ptr = tcp_rx_buf[socket_no];
+            socket_ptr->recv_end = tcp_rx_buf[socket_no] + DATA_BUFF_LEN - 1;
+         }
       }
    }
 
@@ -615,23 +495,21 @@ int tcp_receive(unsigned char **data_ptr, char *socket_no_ptr)
    /* receive packet */
    packet_type = mn_ip_recv();
 
-   socket_ptr = NULL;
-
    if (packet_type & TCP_TYPE) {
 
       recvd = mn_tcp_recv(&socket_ptr);
       if (socket_ptr == NULL)
          return 0;
 
-      if (recvd >= 0 || recvd == NEED_TO_LISTEN || recvd == TCP_NO_CONNECT) {
-
-         if (socket_ptr->tcp_state == TCP_CLOSED) {     /* other side closed */
-
-            mn_abort(socket_ptr->socket_no);
-            return 0;
-         }
+      if (socket_ptr->tcp_state == TCP_CLOSED) {     /* other side closed */
+         mn_abort(socket_ptr->socket_no);
+         return 0;
       }
 
+      *data_ptr = socket_ptr->recv_ptr;
+      *socket_no_ptr = socket_ptr->socket_no;
+   
+      return socket_ptr->recv_len;
    }
 
    if (packet_type & UDP_TYPE) {
@@ -642,36 +520,21 @@ int tcp_receive(unsigned char **data_ptr, char *socket_no_ptr)
 
    }
 
-   /* Check if the socket pointed to by check_socket_ptr has bytes
-      we need to resend. If it does, try a resend. Increment
-      check_socket_ptr so another socket will be checked the next time
-      around.
-    */
-   check_socket_ptr++;
-   if (check_socket_ptr >= &sock_info[NUM_SOCKETS])
-      check_socket_ptr = &sock_info[0];
+   /* check if a socket has bytes we need to send */
+   for (i = 0; i < NUM_SOCKETS; i++) {
+      socket_ptr = MK_SOCKET_PTR(i);
+      if (socket_ptr->ip_proto == PROTO_TCP && TCP_TIMER_EXPIRED(socket_ptr) &&
+          (socket_ptr->send_len || socket_ptr->tcp_state >= TCP_FIN_WAIT_1)) {
+         sent = mn_tcp_send(socket_ptr);
 
-   if (check_socket_ptr->ip_proto == PROTO_TCP &&
-       TCP_TIMER_EXPIRED(check_socket_ptr) &&
-       (check_socket_ptr->send_len || check_socket_ptr->tcp_state >= TCP_FIN_WAIT_1)) {
-      socket_ptr = check_socket_ptr;
-
-      sent = mn_tcp_send(socket_ptr);
-
-      if (sent != UNABLE_TO_SEND) {
-         if ((sent < 0 && sent != TCP_NO_CONNECT) || socket_ptr->tcp_state == TCP_CLOSED)
+         if (sent == TCP_NO_CONNECT || socket_ptr->tcp_state == TCP_CLOSED)
             mn_abort(socket_ptr->socket_no);
+
+         return 0;
       }
    }
 
-   /* get another packet if error or NEED_TO_LISTEN */
-   if (socket_ptr == NULL || recvd < 0)
-      return 0;
-
-   *data_ptr = socket_ptr->recv_ptr;
-   *socket_no_ptr = socket_ptr->socket_no;
-
-   return socket_ptr->recv_len;
+   return 0;
 }
 
 /*------------------------------------------------------------------*/
@@ -720,6 +583,9 @@ void main(void)
    // initialize the C8051F12x
    setup();
 
+   // read configuration from flash
+   configure();
+
    // initialize the CMX Micronet variables
    mn_init();
 
@@ -728,6 +594,9 @@ void main(void)
 
    do {
       yield();
+
+      if (!configured)
+         led_blink(0, 1, 50);
 
       /* receive a TCP package, open socket if necessary */
       if ((n = tcp_receive(&ptr, &socket_no)) > 0) {
