@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.61  2001/11/15 11:54:25  midas
+  Version 1.2.3
+
   Revision 1.60  2001/11/14 10:51:02  midas
   Fixed bug with resubmission of attachments
 
@@ -194,7 +197,7 @@
 \********************************************************************/
 
 /* Version of ELOG */
-#define VERSION "1.2.2"
+#define VERSION "1.2.3"
 
 #include <stdio.h>
 #include <sys/types.h>
@@ -322,6 +325,7 @@ char author_list[MAX_N_LIST][NAME_LENGTH] = {
 
 /* attribute flags */
 #define AF_REQUIRED           (1<<0)
+#define AF_LOCKED             (1<<1)
 
 char attr_list[MAX_N_ATTR][NAME_LENGTH];
 char attr_options[MAX_N_ATTR][MAX_N_LIST][NAME_LENGTH];
@@ -1023,6 +1027,9 @@ int  i;
 char *gt(char *name)
 {
 int i;
+
+  if (theme == NULL)
+    loadtheme(NULL);
 
   for (i=0 ; theme[i].name[0] ; i++)
     if (equal_ustring(theme[i].name, name))
@@ -2098,11 +2105,33 @@ char *p, link[256];
         {
         p = (char *) (str+i+7);
         i += 7;
-        for (k=0 ; *p && *p != ' ' && *p != '\n' ; k++,i++)
+        for (k=0 ; *p && *p != ' ' && *p != '\t' && *p != '\n' && *p != '\r'; k++,i++)
           link[k] = *p++;
         link[k] = 0;
 
         sprintf(return_buffer+j, "<a href=\"http://%s\">http://%s</a>", link, link);
+        j += strlen(return_buffer+j);
+        }
+      else if (strncmp(str+i, "ftp://", 6) == 0)
+        {
+        p = (char *) (str+i+6);
+        i += 6;
+        for (k=0 ; *p && *p != ' ' && *p != '\t' && *p != '\n' && *p != '\r'; k++,i++)
+          link[k] = *p++;
+        link[k] = 0;
+
+        sprintf(return_buffer+j, "<a href=\"ftp://%s\">ftp://%s</a>", link, link);
+        j += strlen(return_buffer+j);
+        }
+      else if (strncmp(str+i, "mailto:", 7) == 0)
+        {
+        p = (char *) (str+i+7);
+        i += 7;
+        for (k=0 ; *p && *p != ' ' && *p != '\t' && *p != '\n' && *p != '\r'; k++,i++)
+          link[k] = *p++;
+        link[k] = 0;
+
+        sprintf(return_buffer+j, "<a href=\"mailto:%s\">mailto:%s</a>", link, link);
         j += strlen(return_buffer+j);
         }
       else
@@ -2411,6 +2440,15 @@ int  i, j, n, m;
           attr_flags[j] |= AF_REQUIRED;
       }
 
+    /* check if locked attribut */
+    getcfg(logbook, "Locked Attributes", list);
+    m = strbreak(list, tmp_list, MAX_N_ATTR);
+    for (i=0 ; i<m ; i++)
+      {
+      for (j=0 ; j<n ; j++)
+        if (equal_ustring(attr_list[j], tmp_list[i]))
+          attr_flags[j] |= AF_LOCKED;
+      }
     }
   else
     {
@@ -2670,7 +2708,7 @@ void show_error(char *error)
   rsprintf("<tr><td><table cellpadding=5 cellspacing=0 border=0 width=100%% bgcolor=%s>\n", gt("Frame color"));
   rsprintf("<tr><td bgcolor=#FFB0B0 align=center>");
 
-  rsprintf("<b>%s</b></tr>\n", error);
+  rsprintf("%s</tr>\n", error);
 
   rsprintf("<tr><td bgcolor=%s align=center><input type=submit value=\"Back\"></td></tr>\n", 
             gt("Cell BGColor"));
@@ -3016,7 +3054,7 @@ int  i, n;
     if (equal_ustring(list[i], getparam("unm")))
       return TRUE;
 
-  sprintf(str, "Error: Command \"%s\" is not allowed for user \"%s\"", 
+  sprintf(str, "Error: Command \"<b>%s</b>\" is not allowed for user \"<b>%s</b>\"", 
           command, getparam("full_name"));
   show_error(str);
 
@@ -3027,9 +3065,9 @@ int  i, n;
 
 void show_elog_new(char *path, BOOL bedit)
 {
-int    i, n, n_attr, index, size, wrap;
-char   str[1000], *p, star[80], comment[10000];
-char   list[MAX_N_ATTR][NAME_LENGTH]; 
+int    i, n, n_attr, index, size, wrap, fh, length;
+char   str[1000], preset[1000], *p, star[80], comment[10000];
+char   list[MAX_N_ATTR][NAME_LENGTH], file_name[256], *buffer; 
 char   date[80], attrib[MAX_N_ATTR][NAME_LENGTH], text[TEXT_SIZE], 
        orig_tag[80], reply_tag[80], att[MAX_ATTACHMENTS][256], encoding[80],
        slist[MAX_N_ATTR+5][NAME_LENGTH], svalue[MAX_N_ATTR+5][NAME_LENGTH];
@@ -3138,12 +3176,27 @@ time_t now;
     {
     strcpy(star, (attr_flags[index] & AF_REQUIRED) ? "<font color=red>*</font>" : "");
 
+    /* check for preset string */
+    sprintf(str, "Preset %s", attr_list[index]);
+    if (getcfg(logbook, str, preset))
+      {
+      i = build_subst_list(slist, svalue, NULL);
+      strsubst(preset, slist, svalue, i);
+
+      strcpy(attrib[index], preset);
+      }
+
     if (attr_options[index][0][0] == 0)
       {
       /* display text box */
       rsprintf("<tr><td nowrap bgcolor=%s><b>%s%s:</b></td>", gt("Categories bgcolor1"), attr_list[index], star);
-      rsprintf("<td bgcolor=%s><input type=\"text\" size=80 maxlength=%d name=\"%s\" value=\"%s\"></td></tr>\n", 
-                gt("Categories bgcolor2"), NAME_LENGTH, attr_list[index], attrib[index]);
+
+      if (attr_flags[index] & AF_LOCKED)
+        rsprintf("<td bgcolor=%s><input type=\"text\" size=80 maxlength=%d name=\"%s\" value=\"%s\" readonly></td></tr>\n", 
+                  gt("Categories bgcolor2"), NAME_LENGTH, attr_list[index], attrib[index]);
+      else
+        rsprintf("<td bgcolor=%s><input type=\"text\" size=80 maxlength=%d name=\"%s\" value=\"%s\"></td></tr>\n", 
+                  gt("Categories bgcolor2"), NAME_LENGTH, attr_list[index], attrib[index]);
       }
     else
       {
@@ -3152,19 +3205,6 @@ time_t now;
         /* display checkbox */
         rsprintf("<tr><td nowrap bgcolor=%s><b>%s%s:</b></td><td bgcolor=%s><input type=checkbox name=\"%s\" value=1>\n",
                  gt("Categories bgcolor1"), attr_list[index], star, gt("Categories bgcolor2"), attr_list[index]);
-        }
-      else if (strchr(attr_options[index][0], '$'))
-        {
-        /* substitute attribute */
-        i = build_subst_list(slist, svalue, NULL);
-        strcpy(str, attr_options[index][0]);
-        strsubst(str, slist, svalue, i);
-
-        /* display fixed text box */
-        rsprintf("<tr><td nowrap bgcolor=%s><b>%s%s:</b></td>", gt("Categories bgcolor1"), attr_list[index], star);
-        rsprintf("<td bgcolor=%s><input type=\"text\" readonly size=80 maxlength=%d name=\"%s\" value=\"%s\"></td></tr>\n", 
-                  gt("Categories bgcolor2"), NAME_LENGTH, attr_list[index], str);
-        
         }
       else
         {
@@ -3241,6 +3281,28 @@ time_t now;
 
           } while (TRUE);
         }
+      }
+
+    if (!path && getcfg(logbook, "Preset text", str))
+      {
+      /* check if file */
+      strcpy(file_name, cfg_dir);
+      strcat(file_name, str);
+
+      fh = open(file_name, O_RDONLY | O_BINARY);
+      if (fh > 0)
+        {
+        length = lseek(fh, 0, SEEK_END);
+        lseek(fh, 0, SEEK_SET);
+        buffer = malloc(length+1);
+        read(fh, buffer, length);
+        buffer[length] = 0;
+        close(fh);
+        rsputs(buffer);
+        free(buffer);
+        }
+      else
+        rsputs(str);
       }
 
     rsprintf("</textarea><br>\n");
@@ -4234,9 +4296,9 @@ FILE   *f;
             if (equal_ustring(attr_options[i][0], "boolean"))
               {
               if (atoi(attrib[i]) == 1)
-                rsprintf("<td align=center bgcolor=%s><input type=checkbox checked readonly></td>\n", col);
+                rsprintf("<td align=center bgcolor=%s><input type=checkbox checked disabled></td>\n", col);
               else
-                rsprintf("<td align=center bgcolor=%s><input type=checkbox readonly></td>\n", col);
+                rsprintf("<td align=center bgcolor=%s><input type=checkbox disabled></td>\n", col);
               }
             else
               rsprintf("<td align=center bgcolor=%s><font size=%d>%s&nbsp</font></td>", col, size, attrib[i]);
@@ -4375,9 +4437,9 @@ FILE   *f;
             if (equal_ustring(attr_options[i][0], "boolean"))
               {
               if (atoi(attrib[i]) == 1)
-                rsprintf("<td align=center bgcolor=%s><input type=checkbox checked readonly></td>\n", col);
+                rsprintf("<td align=center bgcolor=%s><input type=checkbox checked disabled></td>\n", col);
               else
-                rsprintf("<td align=center bgcolor=%s><input type=checkbox readonly></td>\n", col);
+                rsprintf("<td align=center bgcolor=%s><input type=checkbox disabled></td>\n", col);
               }
             else
               rsprintf("<td align=center bgcolor=%s><font size=%d>%s&nbsp</font></td>", col, size, attrib[i]);
@@ -4407,6 +4469,10 @@ FILE   *f;
           rsprintf("</tr>\n");
           }
         }
+
+      /* stop after all found (needed for reverse search) */
+      if (last_n && n_found >= last_n)
+        break;
 
       } while (status == EL_SUCCESS);
     } /* for () */
@@ -4551,7 +4617,19 @@ int    i, j, n, index, n_attr, n_mail, suppress, status;
     for (index=0 ; index <= n_attr ; index++)
       {
       if (index < n_attr)
-        sprintf(str, "Email %s %s", attr_list[index], getparam(attr_list[index]));
+        {
+        strcpy(str, "Email ");
+        if (strchr(attr_list[index], ' '))
+          sprintf(str+strlen(str), "\"%s\"", attr_list[index]);
+        else
+          strcat(str, attr_list[index]);
+        strcat(str, " ");
+
+        if (strchr(getparam(attr_list[index]), ' '))
+          sprintf(str+strlen(str), "\"%s\"", getparam(attr_list[index]));
+        else
+          strcat(str, getparam(attr_list[index]));
+        }
       else
         sprintf(str, "Email ALL");
 
@@ -4816,7 +4894,7 @@ FILE   *f;
   if (command[0] && strstr(menu_str, command) == NULL &&
       strstr("Submit Back Search Save Cancel First Last Previous Next", command) == NULL)
     {
-    sprintf(str, "Error: command <b>%s</b> not allowed", command);
+    sprintf(str, "Error: command \"<b>%s</b>\" not allowed", command);
     show_error(str);
     return;
     }
@@ -5325,10 +5403,10 @@ FILE   *f;
       if (equal_ustring(attr_options[i][0], "boolean"))
         {
         if (atoi(attrib[i]) == 1)
-          rsprintf("<b>%s:</b></td><td bgcolor=%s><input type=checkbox checked readonly></td></tr>\n", 
+          rsprintf("<b>%s:</b></td><td bgcolor=%s><input type=checkbox checked disabled></td></tr>\n", 
                    attr_list[i], gt("Categories bgcolor2"));
         else
-          rsprintf("<b>%s:</b></td><td bgcolor=%s><input type=checkbox eadonly></td></tr>\n", 
+          rsprintf("<b>%s:</b></td><td bgcolor=%s><input type=checkbox disabled></td></tr>\n", 
                    attr_list[i], gt("Categories bgcolor2"));
         }
       else 
@@ -5594,6 +5672,11 @@ FILE  *f;
         strcpy(str, p);
         if (strchr(str, ':'))
           *strchr(str, ':') = 0;
+        strcpy(str, p);
+        if (strchr(str, '\r'))
+          *strchr(str, '\r') = 0;
+        if (strchr(str, '\n'))
+          *strchr(str, '\n') = 0;
         setparam("full_name", p);
         return TRUE;
         }
@@ -6334,6 +6417,42 @@ struct timeval       timeout;
 
         if (i>0)
           len += i;
+
+        /* check if net_buffer too small */
+        if (len >= sizeof(net_buffer))
+          {
+          /* drain incoming remaining data */
+          do
+            {
+            FD_ZERO(&readfds);
+            FD_SET(_sock, &readfds);
+
+            timeout.tv_sec  = 2;
+            timeout.tv_usec = 0;
+
+            status = select(FD_SETSIZE, (void *) &readfds, NULL, NULL, (void *) &timeout);
+
+            if (FD_ISSET(_sock, &readfds))
+              i = recv(_sock, net_buffer, sizeof(net_buffer), 0);
+            else
+              break;
+            } while (i);
+
+          memset(return_buffer, 0, sizeof(return_buffer));
+          strlen_retbuf = 0;
+          return_length = 0;
+
+          show_error("Submitted attachment too large, please increase WEB_BUFFER_SIZE in elogd.c and recompile");
+          send(_sock, return_buffer, strlen_retbuf+1, 0);
+          keep_alive = 0;
+          if (verbose)
+            {
+            printf("==== Return ================================\n");
+            puts(return_buffer);
+            printf("\n\n");
+            }
+          goto error;
+          }
 
         if (i == 0)
           {
