@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.95  2001/12/14 12:48:44  midas
+  Fixed concatenation of lines in password file, thanks to Michael Buselli
+
   Revision 1.94  2001/12/14 11:47:01  midas
   Display active URLs also in find page
 
@@ -363,7 +366,7 @@ typedef int INT;
 #define EL_LAST_MSG   3
 #define EL_FILE_ERROR 4
 
-#define WEB_BUFFER_SIZE 1000000
+#define WEB_BUFFER_SIZE 10000000
 
 char return_buffer[WEB_BUFFER_SIZE];
 int  strlen_retbuf;
@@ -3313,7 +3316,7 @@ struct tm *gmt;
         fseek(f, 0, SEEK_SET);
         fwrite(buf, 1, pl-buf, f);
 
-        fprintf(f, "%s:%s:%s", getparam("unm"), new_pwd, getparam("full_name"));
+        fprintf(f, "%s:%s:%s\n", getparam("unm"), new_pwd, getparam("full_name"));
 
         pl += strlen(line);
         while (*pl && (*pl == '\r' || *pl == '\n'))
@@ -7353,6 +7356,7 @@ struct timeval       timeout;
         if (len >= sizeof(net_buffer))
           {
           /* drain incoming remaining data */
+          printf("##Draining:\n");
           do
             {
             FD_ZERO(&readfds);
@@ -7367,6 +7371,8 @@ struct timeval       timeout;
               i = recv(_sock, net_buffer, sizeof(net_buffer), 0);
             else
               break;
+
+            printf("."); //##
             } while (i);
 
           memset(return_buffer, 0, sizeof(return_buffer));
