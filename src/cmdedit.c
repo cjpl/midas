@@ -6,6 +6,9 @@
   Contents:     Command-line editor for ODBEdit
 
   $Log$
+  Revision 1.7  1998/12/10 16:32:14  midas
+  Command line completion now also adds values if <tab> is pressed after full key
+
   Revision 1.6  1998/11/02 08:41:41  midas
   - Added fflush() at the beginning
   - Fixed bug with <arrow up> under UNIX
@@ -37,7 +40,7 @@ INT  his_index = 0;
 
 #ifdef OS_VMS
 
-INT cmd_edit(char *prompt, char *cmd, INT (*dir)(char*), INT (*idle)())
+INT cmd_edit(char *prompt, char *cmd, INT (*dir)(char*, INT*), INT (*idle)())
 {
   printf(prompt);
   ss_gets(cmd, 256);
@@ -47,9 +50,9 @@ INT cmd_edit(char *prompt, char *cmd, INT (*dir)(char*), INT (*idle)())
 
 #else
 
-INT cmd_edit(char *prompt, char *cmd, INT (*dir)(char*), INT (*idle)())
+INT cmd_edit(char *prompt, char *cmd, INT (*dir)(char*, INT*), INT (*idle)())
 {
-char  line[LINE_LENGTH], rest[LINE_LENGTH], *pc;
+char  line[LINE_LENGTH];
 INT   i, j, k, c, hi;
 INT   status;
 DWORD last_time = 0;
@@ -250,27 +253,9 @@ BOOL  escape_flag = 0;
     if (c == 9 && dir != NULL)
       {
       if (strlen(line) == 0)
-        status = dir(line);
+        status = dir(line, &i);
       else
-        {
-        if (strchr(line, '"'))
-          pc = strchr(line, '"');
-        else
-          {
-          pc = line + i - 1;
-          strcpy(rest, line+i);
-          line[i] = 0;
-          while (pc > line && *pc != ' ')
-            pc--;
-          }
-        if (*pc == ' ')
-          pc++;
-
-        status = dir(pc);
-        if (status)
-          i = strlen(line);
-        strcat(pc, rest);
-        }
+        status = dir(line, &i);
 
       /* redraw line */
       printf("\r%s%s", prompt, line);

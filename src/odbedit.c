@@ -6,6 +6,9 @@
   Contents:     Command-line interface to the MIDAS online data base.
 
   $Log$
+  Revision 1.11  1998/12/10 16:32:14  midas
+  Command line completion now also adds values if <tab> is pressed after full key
+
   Revision 1.10  1998/10/29 14:57:46  midas
   - ODBEDIT prompt can now be modified under /System/Prompt with
   %h host, %e experiment, %t time, %s state (single letter), %S state (string),
@@ -29,7 +32,7 @@
 #include "midas.h"
 #include "msystem.h"
 
-extern INT cmd_edit(char *prompt, char *cmd, INT (*dir)(char*), INT (*idle)());
+extern INT cmd_edit(char *prompt, char *cmd, INT (*dir)(char*,INT*), INT (*idle)());
 
 BOOL  need_redraw;
 BOOL  in_cmd_edit;
@@ -321,16 +324,74 @@ DWORD       delta;
 /*------------------------------------------------------------------*/
 
 /* complete partial key name, gets called from cmd_edit */
-INT cmd_dir(char *key_name)
+INT cmd_dir(char *line, INT *cursor)
 {
 KEY   key;
 HNDLE hDB, hKey, hSubkey;
-INT   i, j, match;
-char  str[256], *pc, partial[256], last_match[256], c;
+INT   i, j, match, size;
+char  str[256], *pc, partial[256], last_match[256], head[256], tail[256], key_name[256], c;
+char  test_key[256];
 BOOL  blanks, mismatch;
 
   cm_get_experiment_database(&hDB, NULL);
 
+  /* remember tail for later */
+  strcpy(head, line);
+  strcpy(tail, line+*cursor);
+  line[*cursor] = 0; 
+
+  /* search beginning of key */
+  pc = head;
+  while (*pc && *pc != ' ')
+    pc++;
+  while (*pc && *pc == ' ')
+    pc++;
+
+  if (*pc)
+    {
+    strcpy(key_name, pc);
+    *pc = 0; /* end of head */
+    }
+  else
+    key_name[0] = 0;
+  
+  /* check if key exists (for "set <key>" completion */
+  if (strncmp(head, "set", 3) == 0 && strlen(key_name)>0)
+    {
+    if (key_name[0] == '"')
+      strcpy(str, key_name+1);
+    else
+      strcpy(str, key_name);
+    if (key_name[0] != '/')
+      {
+      strcpy(test_key, pwd);
+      if (str[strlen(test_key)-1] != '/')
+        strcat(test_key, "/");
+      strcat(test_key, str);
+      }
+    else
+      strcpy(test_key, str);
+
+    pc = test_key + strlen(test_key) - 1;
+    while (pc > test_key && (*pc == ' ' || *pc == '"'))
+      *pc-- = 0;
+    if (db_find_key(hDB, 0, test_key, &hSubkey) == DB_SUCCESS)
+      {
+      /* retrieve key data */
+      db_get_key(hDB, hSubkey, &key);
+      size = sizeof(data);
+      db_get_data(hDB, hSubkey, data, &size, key.type);
+      db_sprintf(str, data, size, 0, key.type);
+
+      strcpy(line, head);
+      strcat(line, key_name);
+      strcat(line, str);
+      *cursor = strlen(line);
+      strcat(line, tail);
+      return TRUE;
+      }
+    }
+  
   /* combine pwd and key_name */
   pc = key_name;
   if (*pc == '"')
@@ -407,7 +468,7 @@ BOOL  blanks, mismatch;
           {
           if (key_name[0] != '"')
             {
-            for (i=strlen(key_name)-1 ; i >= 0 ; i--)
+            for (i=strlen(key_name) ; i >= 0 ; i--)
               key_name[i+1] = key_name[i];
 
             key_name[0] = '"';
@@ -419,6 +480,10 @@ BOOL  blanks, mismatch;
         if (key.type != TID_KEY)
           strcat(pc, " ");
 
+        strcpy(line, head);
+        strcat(line, key_name);
+        *cursor = strlen(line);
+        strcat(line, tail);
         return TRUE;
         }
       }
@@ -479,18 +544,27 @@ BOOL  blanks, mismatch;
       {
       if (key_name[0] != '"')
         {
-        for (i=strlen(key_name)-1 ; i >= 0 ; i--)
+        for (i=strlen(key_name) ; i >= 0 ; i--)
           key_name[i+1] = key_name[i];
 
         key_name[0] = '"';
         }
       }
+
+    strcpy(line, head);
+    strcat(line, key_name);
+    *cursor = strlen(line);
+    strcat(line, tail);
     return TRUE;
     }
 
   /* beep if not found */
   printf("%c", 7);
 
+  strcpy(line, head);
+  strcat(line, key_name);
+  *cursor = strlen(line);
+  strcat(line, tail);
   return FALSE;
 }
 
