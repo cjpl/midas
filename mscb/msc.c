@@ -6,6 +6,9 @@
   Contents:     Command-line interface for the Midas Slow Control Bus
 
   $Log$
+  Revision 1.62  2004/03/10 13:28:25  midas
+  mscb_init returns device name
+
   Revision 1.61  2004/03/10 12:41:22  midas
   *** empty log message ***
 
@@ -1246,17 +1249,13 @@ int main(int argc, char *argv[])
       return 0;
    }
 
-   /* select device if not specified on command line */
-   if (!device[0])
-      mscb_select_device(device);
-
    if (check_io) {
-      mscb_check(device);
+      mscb_check(device, sizeof(device));
       return 0;
    }
 
    /* open port */
-   fd = mscb_init(device, debug ? 1 : 0);
+   fd = mscb_init(device, sizeof(device), debug ? 1 : 0);
    if (fd < 0) {
       if (fd == -2) {
          printf("No MSCB submaster present at port \"%s\"\n", device);
