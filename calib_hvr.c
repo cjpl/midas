@@ -3,9 +3,12 @@
   Name:         calib_hvr.c
   Created by:   Stefan Ritt
 
-  Contents:     Calibration program for HVR-500
+  Contents:     Calibration program for HVR-200
 
   $Log$
+  Revision 1.6  2004/03/04 15:28:57  midas
+  Changed HVR-500 to HVR-200
+
   Revision 1.5  2004/01/07 12:56:15  midas
   Chaned line length
 
@@ -49,7 +52,7 @@
 #define CH_DACOFS      14
 #define CH_CURGAIN     15
 #define CH_CUROFS      16
-#define CH_TEMPC       17
+#define CH_TEMP        17
 
 /*------------------------------------------------------------------*/
 
@@ -73,7 +76,7 @@ int main(int argc, char *argv[])
       return 0;
    }
 
-   printf("Enter address of HVR-520 device: ");
+   printf("Enter address of HVR-200 device: ");
    fgets(str, sizeof(str), stdin);
    adr = atoi(str);
 
@@ -82,18 +85,18 @@ int main(int argc, char *argv[])
       return 0;
    }
 
-   mscb_info_variable(fd, adr, CH_TEMPC, &info);
+   mscb_info_variable(fd, adr, CH_TEMP, &info);
    memset(str, 0, sizeof(str));
    memcpy(str, info.name, 8);
-   if (strcmp(str, "TempC") != 0) {
-      printf("Incorrect software versionon SCS-520. Expect \"TempC\" on var #17.\n");
+   if (strcmp(str, "Temp") != 0) {
+      printf("Incorrect software versionon HVR-200. Expect \"Temp\" on var #%d.\n", CH_TEMP);
       return 0;
    }
 
    /* check temperature */
    size = sizeof(float);
-   mscb_read(fd, adr, CH_TEMPC, &f, &size);
-   if (f < 10 || f > 50) {
+   mscb_read(fd, adr, CH_TEMP, &f, &size);
+   if (f < 0 || f > 50) {
       printf("Incorrect temperature reading %1.1lf. Check reference voltage and AGND.\n");
       return 0;
    }
@@ -137,10 +140,10 @@ int main(int argc, char *argv[])
    size = sizeof(float);
    mscb_read(fd, adr, CH_VMEAS, &v_adc1, &size);
 
-   printf("HVR-500 ADC reads %1.1lf Volt\n", v_adc1);
+   printf("HVR-200 ADC reads %1.1lf Volt\n", v_adc1);
 
    if (v_adc1 < 50) {
-      printf("HVR-500 ADC voltage too low, aborting.\n");
+      printf("HVR-200 ADC voltage too low, aborting.\n");
       return 0;
    }
 
@@ -156,10 +159,10 @@ int main(int argc, char *argv[])
    size = sizeof(float);
    mscb_read(fd, adr, CH_VMEAS, &v_adc2, &size);
 
-   printf("HVR-500 ADC reads %1.1lf\n", v_adc2);
+   printf("HVR-200 ADC reads %1.1lf\n", v_adc2);
 
    if (v_adc2 < 500) {
-      printf("HVR-500 ADC voltage too low, aborting.\n");
+      printf("HVR-200 ADC voltage too low, aborting.\n");
       return 0;
    }
 
@@ -207,7 +210,7 @@ int main(int argc, char *argv[])
    mscb_write(fd, adr, CH_VDEMAND, &f, sizeof(float));
 
    /* wait voltage to settle */
-   Sleep(3000);
+   Sleep(1000);
 
    /* read current */
    size = sizeof(float);
@@ -219,7 +222,7 @@ int main(int argc, char *argv[])
    mscb_write(fd, adr, CH_VDEMAND, &f, sizeof(float));
 
    /* wait voltage to settle */
-   Sleep(3000);
+   Sleep(1000);
 
    do {
       /* read voltage */
