@@ -14,6 +14,9 @@
                 Brown, Prentice Hall
 
   $Log$
+  Revision 1.8  1998/10/28 11:07:45  midas
+  Added ss_shell for UNIX
+
   Revision 1.7  1998/10/27 10:53:48  midas
   - Added run start notification
   - Added ss_shell() for NT
@@ -1078,6 +1081,61 @@ struct timeval      timeout;
 #endif /* OS_WINNT */
 
 #ifdef OS_UNIX
+#ifndef NO_PTY
+pid_t  pid;
+int    i, pipe;
+char   line[32], buffer[1024], shell[32];
+fd_set readfds;
+struct termios tios;
+  
+  if ((pid = forkpty(&pipe, line, NULL, NULL)) < 0)
+    return 0;
+  else if (pid > 0)
+    {
+    /* parent process */
+
+    do
+      {
+      FD_ZERO(&readfds);
+      FD_SET(sock, &readfds);
+      FD_SET(pipe, &readfds);
+
+      select(FD_SETSIZE, (void *) &readfds, NULL, NULL, NULL);
+
+      if (FD_ISSET(sock, &readfds))
+	{
+        memset(buffer, 0, sizeof(buffer));
+        i = recv(sock, buffer, sizeof(buffer), 0);
+        if (i <= 0)
+          break;
+        if (write(pipe, buffer, i) != i)
+          break;
+        }
+
+      if (FD_ISSET(pipe, &readfds))
+        {
+        memset(buffer, 0, sizeof(buffer));
+        i = read(pipe, buffer, sizeof(buffer));
+        if (i <= 0)
+          break;
+        send(sock, buffer, i, 0);
+        }
+
+      } while (1);
+    }
+  else
+    {
+    /* child process */
+
+    if (getenv("SHELL"))
+      strcpy(shell, getenv("SHELL"));
+    else
+      strcpy(shell, "/bin/sh");
+    execl(shell, shell, 0);
+    }
+#else
+  send(sock, "not implemented\n", 17, 0);  
+#endif /* NO_PTY */
 
   return SS_SUCCESS;
 
