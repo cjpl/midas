@@ -6,6 +6,9 @@
  *         amaudruz@triumf.ca                            Local:           6234
  * -----------------------------------------------------------------------------
    $Log$
+   Revision 1.11  1999/01/20 08:39:19  midas
+   Fixed even more compiler warnings
+
    Revision 1.10  1999/01/19 19:58:06  pierre
    - Fix several compiler warnings
 
@@ -1812,9 +1815,9 @@ INT  yb_any_dev_os_read(INT handle, INT type, void * prec, DWORD nbytes, DWORD *
 	      status = SS_SUCCESS;
       return status;
     }
-  else if (type == LOG_TYPE_TAPE)
     /* --------- TAPE ----------*/
 #ifdef OS_UNIX
+  else if (type == LOG_TYPE_TAPE)
     {
       *readn = read(handle, prec, nbytes);
       if (*readn <= 0)
@@ -1826,6 +1829,7 @@ INT  yb_any_dev_os_read(INT handle, INT type, void * prec, DWORD nbytes, DWORD *
 #endif
       
 #ifdef OS_WINNT
+  else if (type == LOG_TYPE_TAPE)
     {
       if (!ReadFile((HANDLE)handle, prec, nbytes, readn, NULL))
       	status = GetLastError();
@@ -1837,6 +1841,7 @@ INT  yb_any_dev_os_read(INT handle, INT type, void * prec, DWORD nbytes, DWORD *
       return status;
     }
 #endif /* OS_WINNT */
+  else return SS_SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
@@ -1916,6 +1921,7 @@ INT  yb_any_dev_os_write(INT handle, INT type, void * prec, DWORD nbytes, DWORD 
       return SS_IO_ERROR;
     }
 #endif
+  return SS_SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
@@ -2376,11 +2382,15 @@ INT   yb_any_event_swap (INT data_fmt, void * pevent)
        (((EVENT_HEADER *)pevent)->event_id == EVENTID_EOR) ||
        (((EVENT_HEADER *)pevent)->event_id == EVENTID_MESSAGE))
        return SS_SUCCESS;
-    /* bk_function needc the (BANK_HEADER *)pointer */
-    return status=bk_swap(((EVENT_HEADER *)pevent)+1, FALSE) == 0 ? YB_SUCCESS : status;
+    /* bk_function needs the (BANK_HEADER *)pointer */
+    status=bk_swap(((EVENT_HEADER *)pevent)+1, FALSE);
+    return  status == 0 ? YB_SUCCESS : status;
   }
   else if (data_fmt == FORMAT_YBOS)
-   return status=ybos_event_swap ((DWORD *)pevent) == YB_EVENT_NOT_SWAPPED ? YB_SUCCESS : status;
+    {
+    status=ybos_event_swap ((DWORD *)pevent);
+    return  status == YB_EVENT_NOT_SWAPPED ? YB_SUCCESS : status;
+    }
   else
    return YB_UNKNOWN_FORMAT;
 }
