@@ -7,6 +7,9 @@
                 following the MIDAS CAMAC Standard for DirectIO
 
   $Log$
+  Revision 1.3  1998/11/05 21:31:33  pierre
+  -PAA- Fix cam_lam_disable mask
+
   Revision 1.2  1998/10/12 12:18:56  midas
   Added Log tag in header
 
@@ -633,7 +636,7 @@ INLINE void cam_inhibit_clear(const int c)
   WORD ccsr;
 
   cam16i (c,30,0,1,&ccsr);
-  ccsr |= ~INHIBIT;
+  ccsr &= ~INHIBIT;
   cam16o(c,30,0,17,ccsr);
 }
 
