@@ -6,6 +6,9 @@
   Contents:     System part of Analyzer code for sample experiment
 
   $Log$
+  Revision 1.4  2000/03/02 22:00:18  midas
+  Changed events sent to double
+
   Revision 1.3  1998/10/29 14:18:19  midas
   Used hDB consistently
 
@@ -203,7 +206,7 @@ FILE   *f;
 time_t now;
 char   str[256];
 int    size;
-DWORD  n;
+double n;
 HNDLE  hDB;
 BOOL   flag;
 
@@ -241,9 +244,9 @@ BOOL   flag;
     fprintf(f, "%s\t", str+11);
 
     size = sizeof(n);
-    db_get_value(hDB, 0, "/Equipment/Trigger/Statistics/Events sent", &n, &size, TID_DWORD);
+    db_get_value(hDB, 0, "/Equipment/Trigger/Statistics/Events sent", &n, &size, TID_DOUBLE);
 
-    fprintf(f, "%dk\t", (int) (n/1000.0+0.5));
+    fprintf(f, "%5.1lfk\t", n/1000);
     fprintf(f, "%s\n", exp_param.comment);
 
     fclose(f);
