@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.73  2001/01/30 09:13:04  midas
+  Correct for increased event size
+
   Revision 1.72  2001/01/29 15:27:43  midas
   Added some \n for parallel version
 
@@ -2931,8 +2934,6 @@ static char  *orig_event = NULL;
       return 0;
     }
 
-  i = bk_size(pevent+1);
-
   /* loop over analyzer modules */
   module = par->ana_module;
   for (i=0 ; module != NULL && module[i] != NULL ; i++)
@@ -2947,12 +2948,26 @@ static char  *orig_event = NULL;
       }
     }
 
-  /* check if event got too large */
   if (event_def->format == FORMAT_MIDAS)
     {
+    /* check if event got too large */
     i = bk_size(pevent+1);
     if (i > MAX_EVENT_SIZE)
       cm_msg(MERROR, "process_event", "Event got too large (%d Bytes) in analyzer", i);
+
+    /* correct for increased event size */
+    pevent->data_size = i;
+    }
+
+  if (event_def->format == FORMAT_YBOS)
+    {
+    /* check if event got too large */
+    i = ybk_size((void *) (pevent+1));
+    if (i > MAX_EVENT_SIZE)
+      cm_msg(MERROR, "process_event", "Event got too large (%d Bytes) in analyzer", i);
+
+    /* correct for increased event size */
+    pevent->data_size = i;
     }
 
   /* increment tests */
