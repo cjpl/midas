@@ -7,6 +7,10 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.8  1998/12/16 11:07:41  midas
+  - verbose output (via -v flag) for N-Tuple booking
+  - error message if histo dump is on when running online
+
   Revision 1.7  1998/12/10 12:50:47  midas
   Program abort with "!" now works without a return under UNIX
 
@@ -704,11 +708,22 @@ EVENT_DEF  *event_def;
     /* go through all analyzer requests (events) */
     for (index=0 ; analyze_request[index].event_name[0] ; index++)
       {
+      /* don't book NT if not requested */
+      if (analyze_request[index].rwnt_buffer_size == 0)
+        continue;
+
       n_tag = 0;
     
       strcpy(rw_tag[n_tag++], "Run");
       strcpy(rw_tag[n_tag++], "Number");
       strcpy(rw_tag[n_tag++], "Time");
+
+      if (clp.verbose)
+        {
+        printf("NT #%d-1: Run\n", analyze_request[index].ar_info.event_id);
+        printf("NT #%d-2: Number\n", analyze_request[index].ar_info.event_id);
+        printf("NT #%d-3: Time\n", analyze_request[index].ar_info.event_id);
+        }
 
       bank_list = analyze_request[index].bank_list;
       if (bank_list == NULL)
@@ -739,6 +754,11 @@ EVENT_DEF  *event_def;
               {
               sprintf(str, "%s%d", key_name, j);
               strncpy(rw_tag[n_tag++], str, 8);
+
+              if (clp.verbose)
+                printf("NT #%d-%d: %s\n", analyze_request[index].ar_info.event_id, 
+                                          n_tag+1, str);
+
               if (n_tag >= 512)
                 {
                 cm_msg(MERROR, "book_ntuples", "Too much tags for RW N-tupeles (512 maximum)");
@@ -746,7 +766,14 @@ EVENT_DEF  *event_def;
                 }
               }
           else
+            {
             strncpy(rw_tag[n_tag++], key_name, 8);
+          
+            if (clp.verbose)
+              printf("NT #%d-%d: %s\n", analyze_request[index].ar_info.event_id, 
+                                        n_tag, key_name);
+            }
+          
           if (n_tag >= 512)
             {
             cm_msg(MERROR, "book_ntuples", "Too much tags for RW N-tupeles (512 maximum)");
@@ -771,6 +798,10 @@ EVENT_DEF  *event_def;
               {
               sprintf(str, "%s%d", bank_list->name, i);
               strncpy(rw_tag[n_tag++], str, 8);
+
+              if (clp.verbose)
+                printf("NT #%d-%d: %s\n", analyze_request[index].ar_info.event_id, 
+                                          n_tag, str);
               }
             }
           else
@@ -799,6 +830,11 @@ EVENT_DEF  *event_def;
                   {
                   sprintf(str, "%s%d", key_name, j);
                   strncpy(rw_tag[n_tag++], str, 8);
+
+                  if (clp.verbose)
+                    printf("NT #%d-%d: %s\n", analyze_request[index].ar_info.event_id, 
+                                              n_tag, str);
+                  
                   if (n_tag >= 512)
                     {
                     cm_msg(MERROR, "book_ntuples", "Too much tags for RW N-tupeles (512 maximum)");
@@ -806,7 +842,13 @@ EVENT_DEF  *event_def;
                     }
                   }
               else
+                {
                 strncpy(rw_tag[n_tag++], key_name, 8);
+                if (clp.verbose)
+                  printf("NT #%d-%d: %s\n", analyze_request[index].ar_info.event_id, 
+                                            n_tag, key_name);
+                }
+              
               if (n_tag >= 512)
                 {
                 cm_msg(MERROR, "book_ntuples", "Too much tags for RW N-tupeles (512 maximum)");
@@ -1153,25 +1195,33 @@ char       str[256], file_name[256];
   /* save histos if requested */
   if (out_info.histo_dump)
     {
-    if (clp.online)
+    if (out_file)
       {
-      size = sizeof(str);
-      str[0] = 0;
-      db_get_value(hDB, 0, "/Logger/Data Dir", str, &size, TID_STRING);
-      if (str[0] != 0)
-        if (str[strlen(str)-1] != DIR_SEPARATOR)
-          strcat(str, DIR_SEPARATOR_STR);
+      printf("\nCannot dump histos together with output RZ file.\n");
+      printf("Please switch off \"/Analyzer/Output/Dump Histos\" flag.\n");
       }
     else
-      str[0] = 0;
+      {
+      if (clp.online)
+        {
+        size = sizeof(str);
+        str[0] = 0;
+        db_get_value(hDB, 0, "/Logger/Data Dir", str, &size, TID_STRING);
+        if (str[0] != 0)
+          if (str[strlen(str)-1] != DIR_SEPARATOR)
+            strcat(str, DIR_SEPARATOR_STR);
+        }
+      else
+        str[0] = 0;
 
-    strcat(str, out_info.histo_dump_filename);
-    if (strchr(str, '%') != NULL)
-      sprintf(file_name, str, run_number);
-    else
-      strcpy(file_name, str);
+      strcat(str, out_info.histo_dump_filename);
+      if (strchr(str, '%') != NULL)
+        sprintf(file_name, str, run_number);
+      else
+        strcpy(file_name, str);
 
-    HRPUT(0, file_name, "NT");
+      HRPUT(0, file_name, "NT");
+      }
     }
 
   /* close output file */
