@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.171  2002/09/23 18:13:49  pierre
+  correct cm_cleanup() rpc_call arg list
+
   Revision 1.170  2002/09/23 09:50:23  midas
   Fixed problem with odbedit 'cleanup' command
 
@@ -5425,7 +5428,7 @@ INT cm_cleanup(char *client_name)
 \********************************************************************/
 {
   if (rpc_is_remote())
-    return rpc_call(RPC_CM_CLEANUP);
+    return rpc_call(RPC_CM_CLEANUP, client_name);
 
 #ifdef LOCAL_ROUTINES
 {
