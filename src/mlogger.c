@@ -6,6 +6,9 @@
   Contents:     MIDAS logger program
 
   $Log$
+  Revision 1.77  2004/07/29 14:03:03  midas
+  Added warning about remote connection
+
   Revision 1.76  2004/07/29 13:10:30  midas
   Removed temporary increased timeout
 
@@ -3065,6 +3068,14 @@ int main(int argc, char *argv[])
       ss_daemon_init(FALSE);
    }
 
+   if (host_name[0]) {
+      printf("Logger cannot run through network connection.\n");
+      if (getenv("MIDAS_SERVER_HOST"))
+         printf("Please delete environment variable \"MIDAS_SERVER_HOST\".\n");
+      else
+         printf("Please omit \"-h\" parameter.\n");
+      return 1;
+   }
    status = cm_connect_experiment(host_name, exp_name, "Logger", NULL);
    if (status != CM_SUCCESS)
       return 1;
