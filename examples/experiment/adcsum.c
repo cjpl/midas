@@ -10,6 +10,11 @@
                 in the ODB and transferred to experim.h.
 
   $Log$
+  Revision 1.4  2003/04/21 04:02:13  olchansk
+  replace MANA_LITE with HAVE_HBOOK and HAVE_ROOT
+  implement ROOT-equivalents of the sample HBOOK code
+  implement example of adding custom branches to the analyzer root output file
+
   Revision 1.3  2002/05/10 05:22:59  pierre
   add MANA_LITE #ifdef
 
@@ -39,9 +44,13 @@
 #define f2cFortran
 #endif
 
-#ifndef MANA_LITE
+#ifdef HAVE_HBOOK
 #include <cfortran.h>
 #include <hbook.h>
+#endif
+
+#ifdef HAVE_ROOT
+#include <TH1F.h>
 #endif
 
 #ifndef PI
@@ -73,15 +82,22 @@ ANA_MODULE adc_summing_module = {
   adc_summing_param_str,         /* initial parameters    */
 };
 
+/*-- Module-local variables-----------------------------------------*/
+
+#ifdef HAVE_ROOT
+static TH1F *gAdcSumHist = NULL;
+#endif
+
 /*-- init routine --------------------------------------------------*/
 
 INT adc_summing_init(void)
 {
-#ifdef MANA_LITE
-  printf("manalite: adc_summing_init: HBOOK disable\n");
-#else
   /* book sum histo */
+#ifdef HAVE_HBOOK
   HBOOK1(ADCSUM_ID_BASE, "ADC sum", 500, 0.f, 10000.f, 0.f); 
+#endif
+#ifdef HAVE_ROOT
+  gAdcSumHist = new TH1F("ADCSUM", "ADC sum", 500, 0, 10000);
 #endif
   return SUCCESS;
 }
@@ -107,11 +123,12 @@ INT adc_summing(EVENT_HEADER *pheader, void *pevent)
   for (i=0 ; i<n_adc ; i++)
     asum->sum += cadc[i];
 
-#ifdef MANA_LITE
- printf("manalite: adc_summing: HBOOK disable\n");
-#else
   /* fill sum histo */
+#ifdef HAVE_HBOOK
   HF1(ADCSUM_ID_BASE, asum->sum, 1.f);
+#endif
+#ifdef HAVE_ROOT
+  gAdcSumHist->Fill(asum->sum,1);
 #endif
 
   /* close calculated bank */
