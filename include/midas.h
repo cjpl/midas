@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.4  1998/10/23 13:11:13  midas
+  Modified release number to 1.6
+
   Revision 1.3  1998/10/22 12:40:20  midas
   Added "oflag" to ss_tape_open()
 
@@ -33,7 +36,7 @@
    cm_get_version and will be incremented whenever changes are done
    to the MIDAS library */
 
-#define MIDAS_VERSION 1.06
+#define MIDAS_VERSION 1.6
 
 /*------------------------------------------------------------------*/
 
