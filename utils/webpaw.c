@@ -6,6 +6,9 @@
   Contents:     Web server for remote PAW display
 
   $Log$
+  Revision 1.35  2001/08/02 12:31:11  midas
+  Fixed type
+
   Revision 1.34  2001/08/02 12:30:00  midas
   Fixed unix bug
 
@@ -1169,7 +1172,7 @@ int    fh, i, j, length, status, height;
             }
           }
         }
-                                                  getaddrinfo
+
       if (getcfg("Global", "Elog", elog))
         {
         rsprintf("<p><a target=_blank href=\"%s\">Create ELog with this picture</a><br>\r\n", elog);
