@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus communication functions
 
   $Log$
+  Revision 1.78  2004/12/10 11:21:30  midas
+  Added block functions
+
   Revision 1.77  2004/12/08 10:42:18  midas
   Version 1.7.8
 
@@ -474,6 +477,9 @@ size_t strlcat(char *dst, const char *src, size_t size)
    return (dlen + (s - src));   /* count does not include NUL */
 }
 
+#else
+extern size_t strlcpy(char *dst, const char *src, size_t size);
+extern size_t strlcat(char *dst, const char *src, size_t size);
 #endif
 
 /*------------------------------------------------------------------*/
@@ -2575,13 +2581,13 @@ int mscb_write_block(int fd, int adr, unsigned char index, void *data, int size)
 \********************************************************************/
 {
    int i, n, status;
-   unsigned char buf[1024];
+   unsigned char buf[256], crc, ack[2];
 
    if (fd > MSCB_MAX_FD || fd < 1 || !mscb_fd[fd - 1].type)
       return MSCB_INVAL_PARAM;
 
    if (mrpc_connected(fd))
-      return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_WRITE, mscb_fd[fd - 1].remote_fd, adr, index, data, size);
+      return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_WRITE_BLOCK, mscb_fd[fd - 1].remote_fd, adr, index, data, size);
 
    if (size < 1)
       return MSCB_INVAL_PARAM;
@@ -2606,19 +2612,36 @@ int mscb_write_block(int fd, int adr, unsigned char index, void *data, int size)
    return MSCB_SUCCESS;
    */
 
-   /* slice data in 60 byte blocks */
-   for (i=0 ; i<=size/60 ; i++) {
-      buf[0] = MCMD_WRITE_BLOCK;
-
-      n = 60;
-      if (size < (i+1)*60)
-         n = size - i*60;
+   /* slice data in 58 byte blocks */
+   for (i=0 ; i<=size/58 ; i++) {
+      n = 58;
+      if (size < (i+1)*58)
+         n = size - i*58;
 
       if (n == 0)
          break;
 
-      memcpy(buf+1, (char *)data+i*60, n);
-      mscb_out(fd, buf, n+1, RS485_FLAG_CMD);
+      buf[0] = MCMD_WRITE_ACK + 7;
+      buf[1] = n + 1;
+      buf[2] = index;
+
+      memcpy(buf+3, (char *)data+i*58, n);
+      crc = crc8(buf, 3 + n);
+      buf[3 + n] = crc;
+
+      mscb_out(fd, buf, n+4, 0);
+
+      /* read acknowledge */
+      n = mscb_in(fd, ack, 2, 10000);
+      if (n < 2) {
+         mscb_release(fd);
+         return MSCB_TIMEOUT;
+      }
+
+      if (ack[0] != MCMD_ACK || ack[1] != crc) {
+         mscb_release(fd);
+         return MSCB_CRC_ERROR;
+      }
    }
 
    mscb_release(fd);
@@ -3152,6 +3175,118 @@ int mscb_read_range(int fd, int adr, unsigned char index1, unsigned char index2,
       return MSCB_TIMEOUT;
 
    return MSCB_CRC_ERROR;
+}
+
+/*------------------------------------------------------------------*/
+
+int mscb_read_block(int fd, int adr, unsigned char index, void *data, int *size)
+/********************************************************************\
+
+  Routine: mscb_read_block
+
+  Purpose: Read data from variable on node
+
+  Input:
+    int fd                  File descriptor for connection
+    int adr                 Node address
+    unsigned char index     Variable index 0..255
+    int size                Buffer size for data
+
+  Output:
+    void *data              Received data
+    int  *size              Number of received bytes
+
+  Function value:
+    MSCB_SUCCESS            Successful completion
+    MSCB_TIMEOUT            Timeout receiving acknowledge
+    MSCB_CRC_ERROR          CRC error
+    MSCB_INVAL_PARAM        Parameter "size" has invalid value
+    MSCB_MUTEX              Cannot obtain mutex for mscb
+
+\********************************************************************/
+{
+   int i, n, status;
+   unsigned char buf[256], crc;
+
+   memset(data, 0, *size);
+
+   if (fd > MSCB_MAX_FD || fd < 1 || !mscb_fd[fd - 1].type)
+      return MSCB_INVAL_PARAM;
+
+   if (mrpc_connected(fd))
+      return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_READ_BLOCK, mscb_fd[fd - 1].remote_fd, adr, index, data, size);
+
+   if (mscb_lock(fd) != MSCB_SUCCESS)
+      return MSCB_MUTEX;
+
+   status = mscb_addr(fd, MCMD_PING16, adr, 10, 0);
+   if (status != MSCB_SUCCESS) {
+      mscb_release(fd);
+      return status;
+   }
+
+   n = 0;
+   do {
+
+      buf[0] = MCMD_READ + 1;
+      buf[1] = index;
+      buf[2] = crc8(buf, 2);
+      mscb_out(fd, buf, 3, 0);
+
+      /* read data */
+      i = mscb_in(fd, buf, sizeof(buf), 10000);
+
+      if (i == 1 && buf[0] == 0xFF) {
+#ifndef _USRDLL
+         printf("Timeout from RS485 bus.\n");
+#endif
+         mscb_release(fd);
+         *size = 0;
+         return MSCB_TIMEOUT;
+      }
+
+      crc = crc8(buf, i - 1);
+
+      if ((buf[0] != MCMD_ACK + i - 2 && buf[0] != MCMD_ACK + 7)
+         || buf[i - 1] != crc) {
+         mscb_release(fd);
+         *size = 0;
+         return MSCB_CRC_ERROR;
+      }
+
+      if (buf[0] == MCMD_ACK + 7) {
+         if (n + i - 3 > *size) {
+            mscb_release(fd);
+            *size = 0;
+            return MSCB_NO_MEM;
+         }
+
+         /* end of data on empty buffer */
+         if (i == 3)
+            break;
+
+         memcpy((char *)data+n, buf + 2, i - 3);  // variable length
+         n += i - 3;
+      } else {
+         if (n + i - 2 > *size) {
+            mscb_release(fd);
+            *size = 0;
+            return MSCB_NO_MEM;
+         }
+
+         /* end of data on empty buffer */
+         if (i == 2)
+            break;
+
+         memcpy((char *)data+n, buf + 1, i - 2);
+         n += i - 2;
+      }
+   } while (TRUE);
+
+   mscb_release(fd);
+   *size = n;
+
+   return MSCB_SUCCESS;
 }
 
 /*------------------------------------------------------------------*/

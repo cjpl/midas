@@ -6,6 +6,9 @@
   Contents:     List of MSCB RPC functions with parameters
 
   $Log$
+  Revision 1.24  2004/12/10 11:22:07  midas
+  Added block functions
+
   Revision 1.23  2004/10/03 18:08:43  olchansk
   in server_execute(), abort() on unknown commands
   replace ALIGN with ALIGN8 (same as in midas.h) to dodge namespace pollution on Darwin
@@ -446,6 +449,10 @@ int server_execute(int index, void *prpc_param[])
       status = mscb_write(CINT(0), CINT(1), CBYTE(2), CARRAY(3), CINT(4));
       break;
 
+   case RPC_MSCB_WRITE_BLOCK:
+      status = mscb_write(CINT(0), CINT(1), CBYTE(2), CARRAY(3), CINT(4));
+      break;
+
    case RPC_MSCB_FLASH:
       status = mscb_flash(CINT(0), CINT(1));
       break;
@@ -460,6 +467,10 @@ int server_execute(int index, void *prpc_param[])
 
    case RPC_MSCB_READ_RANGE:
       status = mscb_read_range(CINT(0), CINT(1), CBYTE(2), CBYTE(3), CARRAY(4), CPINT(5));
+      break;
+
+   case RPC_MSCB_READ_BLOCK:
+      status = mscb_read(CINT(0), CINT(1), CBYTE(2), CARRAY(3), CPINT(4));
       break;
 
    case RPC_MSCB_ECHO:
