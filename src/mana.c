@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.66  2000/11/08 14:47:40  midas
+  Analyzer now stops with '!' also in -r (multi run) mode
+
   Revision 1.65  2000/10/30 10:07:24  midas
   Fixed bug that "always true" test was cleared at the BOR
 
@@ -3828,6 +3831,8 @@ BANK_LIST *bank_list;
         strcpy(output_file_name, clp.output_file_name);
 
       status = analyze_run(run_number, input_file_name, output_file_name);
+      if (status == RPC_SHUTDOWN)
+        break;
       }
     }
   else
@@ -3858,6 +3863,8 @@ BANK_LIST *bank_list;
         strcpy(output_file_name, clp.output_file_name);
 
       status = analyze_run(run_number, input_file_name, output_file_name);
+      if (status == RPC_SHUTDOWN)
+        break;
       }
     }
 
