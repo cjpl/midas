@@ -6,6 +6,10 @@
   Contents:     Web server for remote PAW display
 
   $Log$
+  Revision 1.15  2000/05/24 14:22:08  midas
+  - Added comment display for macros
+  - Fixed problem with reusing port numbers
+
   Revision 1.14  2000/05/23 13:46:09  midas
   Added Elog configuration switch
 
@@ -685,6 +689,7 @@ void interprete(char *path)
 \********************************************************************/
 {
 char   str[10000], str2[256], group_name[256], display_name[256], kumac_name[256];
+char   comment_name[256];
 char   cur_group[256], tmp[256], elog[256];
 int    fh, i, j, length, status, height;
 
@@ -732,7 +737,7 @@ int    fh, i, j, length, status, height;
     if (getcfg("Global", "Logo", str))
       {
       rsprintf("<a target=_top href=\"http://midas.psi.ch/webpaw/\">\r\n");
-      rsprintf("<img src=banner.gif alt=banner.gif></a>\r\n");
+      rsprintf("<img src=banner.gif alt=banner.gif border=0></a>\r\n");
       }
     else
       {
@@ -845,10 +850,20 @@ int    fh, i, j, length, status, height;
             if (!enumcfg(group_name, display_name, kumac_name, j))
               break;
     
+            if (strchr(kumac_name, '?'))
+              {
+              strcpy(comment_name, strchr(kumac_name, '?')+1);
+              *strchr(kumac_name, '?') = 0;
+              }
             urlEncode(kumac_name);
             format(display_name, str);
-            rsprintf("<li><a href=\"/%s.html\" target=contents>%s</a></li>\r\n", 
-                      kumac_name, str);
+
+            if (comment_name[0])
+              rsprintf("<li><a href=\"%s.html?comment=%s\" target=contents>%s</a></li>\r\n", 
+                        kumac_name, comment_name, str);
+            else
+              rsprintf("<li><a href=\"%s.html\" target=contents>%s</a></li>\r\n", 
+                        kumac_name, str);
             }
 
           rsprintf("</ul>\r\n");
@@ -857,10 +872,20 @@ int    fh, i, j, length, status, height;
       else
         {
         /* single kumac found */
+        if (strchr(kumac_name, '?'))
+          {
+          strcpy(comment_name, strchr(kumac_name, '?')+1);
+          *strchr(kumac_name, '?') = 0;
+          }
         urlEncode(kumac_name);
         format(display_name, str);
-        rsprintf("<li><a href=\"%s.html\" target=contents>%s</a></li>\r\n", 
-                  kumac_name, str);
+
+        if (comment_name[0])
+          rsprintf("<li><a href=\"%s.html?comment=%s\" target=contents>%s</a></li>\r\n", 
+                    kumac_name, comment_name, str);
+        else
+          rsprintf("<li><a href=\"%s.html\" target=contents>%s</a></li>\r\n", 
+                    kumac_name, str);
         }
 
       }
@@ -899,8 +924,28 @@ int    fh, i, j, length, status, height;
       }
     else
       {
-      if (strstr(path, ".html"))
+      if (strstr(str, ".html"))
         *strstr(str, ".html") = 0;
+
+      /* display optional comment */
+      if (getparam("comment"))
+        {
+        fh = open(getparam("comment"), O_RDONLY);
+        if (fh > 0)
+          {
+          length = lseek(fh, 0, SEEK_END);
+          lseek(fh, 0, SEEK_SET);
+
+          /* return if file too big */
+          if (length < (int) (sizeof(return_buffer) - strlen(return_buffer)))
+            {
+            *(return_buffer+strlen(return_buffer)+length) = 0;
+            read(fh, return_buffer+strlen(return_buffer), length);
+            close(fh);
+            }
+          }
+        }
+      
       rsprintf("<img src=\"%s.gif\" alt=contents.gif></a>\r\n", str);
 
       if (getcfg("General", "Elog", elog))
@@ -1181,22 +1226,16 @@ char                 pwd[256], cl_pwd[256], str[256], *p;
 
   memcpy((char *)&(bind_addr.sin_addr), phe->h_addr, phe->h_length);
 
+  /* try reusing address */
+  flag = 1;
+  setsockopt(lsock, SOL_SOCKET, SO_REUSEADDR,
+             (char *) &flag, sizeof(int));
+
   status = bind(lsock, (struct sockaddr *)&bind_addr, sizeof(bind_addr));
   if (status < 0)
     {
-    /* try reusing address */
-    flag = 1;
-    setsockopt(lsock, SOL_SOCKET, SO_REUSEADDR,
-               (char *) &flag, sizeof(int));
-    status = bind(lsock, (struct sockaddr *)&bind_addr, sizeof(bind_addr));
-
-    if (status < 0)
-      {
-      printf("Cannot bind to port %d.\nPlease try later or use the \"-p\" flag to specify a different port\n", tcp_port);
-      return;
-      }
-    else
-      printf("Warning: port %d already in use\n", tcp_port);
+    printf("Cannot bind to port %d.\nPlease try later or use the \"-p\" flag to specify a different port\n", tcp_port);
+    return;
     }
 
 #ifndef _MSC_VER
