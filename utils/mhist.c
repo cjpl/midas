@@ -6,6 +6,9 @@
   Contents:     MIDAS history display utility
 
   $Log$
+  Revision 1.4  1999/06/02 07:52:50  midas
+  Fixed compiler warning
+
   Revision 1.3  1999/05/05 12:03:21  midas
   Adapted usage of new history functions
 
@@ -119,7 +122,7 @@ char       *var_names;
   id_size = n*sizeof(INT);
   event_name = malloc(name_size);
   event_id = malloc(id_size);
-  hs_enum_events(0, event_name, &name_size, event_id, &id_size);
+  hs_enum_events(0, event_name, (DWORD*)&name_size, event_id, (DWORD*)&id_size);
 
   printf("Available events:\n");
   for (i=0 ; i<n ; i++)
