@@ -125,11 +125,13 @@ NULL }
 
 typedef struct {
   float     sum;
+  float     average;
 } ASUM_BANK;
 
 #define ASUM_BANK_STR(_name) char *_name[] = {\
 "[.]",\
 "Sum = FLOAT : 0",\
+"Average = FLOAT : 0",\
 "",\
 NULL }
 
