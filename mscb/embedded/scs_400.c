@@ -9,6 +9,9 @@
                 for SCS-400 thermo couple I/O
 
   $Log$
+  Revision 1.16  2003/03/24 10:59:20  midas
+  Added variable perod
+
   Revision 1.15  2003/03/24 08:18:25  midas
   Properly initialize new constants
 
@@ -81,6 +84,7 @@ struct {
   float c_int[4];
   float p_int[4];
   char  power[4];
+  unsigned short period;
 } idata user_data;
 
 MSCB_INFO_VAR code variables[] = {
@@ -108,6 +112,7 @@ MSCB_INFO_VAR code variables[] = {
   1, UNIT_PERCENT, 0, 0,           0, "Power1",  &user_data.power[1],
   1, UNIT_PERCENT, 0, 0,           0, "Power2",  &user_data.power[2],
   1, UNIT_PERCENT, 0, 0,           0, "Power3",  &user_data.power[3],
+  2, UNIT_SECOND,  0, 0,           0, "Period",  &user_data.period,
   0
 };
 
@@ -176,6 +181,7 @@ unsigned char i;
        {
        user_data.c_int[i] = 0.01;
        user_data.c_prop[i] = 1;
+       user_data.period = 60;
        }
 #endif
     }
@@ -279,8 +285,8 @@ unsigned char i;
 float p;
 static unsigned long t;
 
-  /* once every minute */
-  if (time() > t + 100*60)
+  /* once every specified period */
+  if (time() > t + 100*user_data.period)
     {
     t = time();
 
