@@ -8,6 +8,9 @@
                 following the MIDAS CAMAC Standard under DIRECTIO
 
   $Log$
+  Revision 1.18  2002/02/12 14:56:04  midas
+  Opened port 0x80 for delayed write
+
   Revision 1.17  2002/01/16 14:54:52  midas
   Removed debugging printf()
 
@@ -1135,6 +1138,9 @@ INLINE int cam_init(void)
     signal(SIGSEGV, SIG_DFL);
     return 0;
     }
+
+  /* open port 80 for delayed write */
+  directio_give_port(0x80, 0x80);
 
   /* check if we have access */
   OUTP(io_base[0], 0);
