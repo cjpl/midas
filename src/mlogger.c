@@ -6,6 +6,9 @@
   Contents:     MIDAS logger program
 
   $Log$
+  Revision 1.37  2000/04/20 12:44:00  midas
+  Fixed memory leak
+
   Revision 1.36  2000/04/03 12:27:31  midas
   Changed auto restart to 20 seconds in main loop
 
@@ -260,6 +263,7 @@ EVENT_HEADER *pevent;
       bm_compose_event(pevent, event_id, MIDAS_MAGIC, buffer_size-sizeof(EVENT_HEADER)-size+1, 
                        run_number);
       log_write(log_chn, pevent);
+      free(pevent);
       break;
       }
 
