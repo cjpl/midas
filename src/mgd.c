@@ -19,6 +19,9 @@
   Contents:     GD graphics library to create Web images
 
   $Log$
+  Revision 1.5  2005/01/04 13:33:06  midas
+  Recycle already allocated colors
+
   Revision 1.4  2004/01/18 09:59:45  olchansk
   remove bogus #include <malloc.h>
 
@@ -505,6 +508,17 @@ int gdImageColorAllocate(gdImagePtr im, int r, int g, int b)
 {
    int i;
    int ct = (-1);
+   
+   /* check if color exists already */
+   for (i = 0; (i < (im->colorsTotal)); i++) {
+      if (!im->open[i] &&
+          im->red[i] == r &&
+          im->green[i] == g &&
+          im->blue[i] == b) {
+         return i;
+      }
+   }
+   
    for (i = 0; (i < (im->colorsTotal)); i++) {
       if (im->open[i]) {
          ct = i;
