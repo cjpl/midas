@@ -6,8 +6,8 @@
   Contents:     Electronic logbook utility   
 
   $Log$
-  Revision 1.2  1999/09/14 15:33:06  midas
-  Added Ctrl-C handling
+  Revision 1.3  1999/09/15 08:06:58  midas
+  Use own Ctrl-C handler
 
   Revision 1.1  1999/09/14 15:15:27  midas
   Initial revision
