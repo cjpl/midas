@@ -32,6 +32,7 @@ Section "ELOG system (required)"
   
   File /oname=readme.html m:\html\elog\index.html
   File m:\html\elog\config.html
+  File m:\html\elog\faq.html
   File m:\html\elog\*.gif
   File m:\html\elog\*.jpg
   
