@@ -6,6 +6,9 @@
   Contents:     Magnetic tape manipulation program for MIDAS tapes
 
   $Log$
+  Revision 1.4  1998/10/22 12:05:54  midas
+  Added backup/restore commands
+
   Revision 1.3  1998/10/13 07:31:28  midas
   Fixed minor bugs causing compiler warnings
 
@@ -18,6 +21,7 @@
 #include "midas.h"
 #include "msystem.h"
 
+BOOL verbose = FALSE;
 
 /*------------------------------------------------------------------*/
 
@@ -36,17 +40,19 @@ INT          status, size, index;
       if (status == SS_END_OF_TAPE)
         {
         printf("End of tape reached.\n");
-        return SS_SUCCESS;
+        return 1;
         }
       printf("Cannot read from tape\n");
-      return -1;
+      return 1;
       }
 
     /* check if data is real MIDAS header */
     if (event.event_id != EVENTID_BOR || event.trigger_mask != MIDAS_MAGIC)
       {
       printf("Data on tape is no MIDAS data\n");
-      return -1;
+      /* skip back record */
+      ss_tape_rskip(channel, -1);
+      return 1;
       }
 
     /* print run info */
@@ -73,10 +79,10 @@ INT          status, size, index;
 
 /*------------------------------------------------------------------*/
 
-INT tape_copy(INT channel, INT count)
+INT tape_restore(INT channel, INT count, char *file_name)
 {
 EVENT_HEADER *pevent;
-INT          status, index, n, fh;
+INT          status, index, n, fh, size, mb;
 char         buffer[TAPE_BUFFER_SIZE], str[80];
 
   pevent = (EVENT_HEADER *) buffer;
@@ -103,22 +109,44 @@ char         buffer[TAPE_BUFFER_SIZE], str[80];
       return -1;
       }
 
+    /* make file name */
+    if (strchr(file_name, '%'))
+      sprintf(str, file_name, pevent->serial_number);
+    else
+      strcpy(str, file_name);
+
     /* print run info */
-    printf("Copy run to file run%05d.mid\n", pevent->serial_number);
+    printf("Copy run to file %s\n", str);
 
     /* open file */
-    sprintf(str, "run%05d.mid", pevent->serial_number);
     fh = open(str, O_RDWR | O_CREAT | O_TRUNC | O_BINARY, 0644);
+    if (fh < 0)
+      {
+      printf("Cannot open file %s\n", str);
+      return 1;
+      }
     
+    size = mb = 0;
     do
       {
       /* write buffer */
       write(fh, buffer, n);
 
+      size += n;
+      if (verbose && size > mb+1024*1024)
+        {
+        mb = size;
+        printf("%d MB\r", size/1024/1024);
+        fflush(stdout);
+        }
+
       /* read next buffer */
       n = TAPE_BUFFER_SIZE;
       ss_tape_read(channel, buffer, &n);
       } while (n == TAPE_BUFFER_SIZE);
+
+    if (verbose)
+      printf("%d MB\n", size/1024/1024);
 
     write(fh, buffer, n);
     close(fh);
@@ -132,51 +160,107 @@ char         buffer[TAPE_BUFFER_SIZE], str[80];
 
 /*------------------------------------------------------------------*/
 
+INT tape_backup(INT channel, INT count, char *file_name)
+{
+EVENT_HEADER *pevent;
+INT          status, index, n, fh, size, mb;
+char         buffer[TAPE_BUFFER_SIZE], str[256];
+
+  if (strchr(file_name, '%'))
+    sprintf(str, file_name, count);
+  else
+    strcpy(str, file_name);
+
+  /* open file for read */
+  fh = open(str, O_RDONLY | O_BINARY, 0644);
+  if (fh < 0)
+    {
+    printf("Cannot open file %s\n", str);
+    return 1;
+    }
+
+  /* print run info */
+  printf("Copy file %s to tape\n", str);
+  size = mb = 0;
+
+  do
+    {
+    /* read buffer */
+    n = read(fh, buffer, TAPE_BUFFER_SIZE);
+    
+    size += n;
+    if (verbose && size > mb+1024*1024)
+      {
+      mb = size;
+      printf("%d MB\r", size/1024/1024);
+      fflush(stdout);
+      }
+
+    /* write buffer */
+    ss_tape_write(channel, buffer, n);
+
+    } while (n > 0);
+
+  if (verbose)
+    printf("%d MB\n", size/1024/1024);
+
+  close(fh);
+    
+  /* write EOF */
+  ss_tape_write_eof(channel);
+
+  return SS_SUCCESS;
+}
+
+/*------------------------------------------------------------------*/
+
 main(int argc, char *argv[])
 {
 INT  status, i, count, channel;
-char cmd[100], tape_name[100];
+char cmd[100], tape_name[256], file_name[256];
 
   /* set default tape name */
   
 #ifdef OS_WINNT
   strcpy(tape_name, "\\\\.\\tape0");
 #elif defined(OS_UNIX)
-  strcpy(tape_name, "/dev/nrmt0");
+  strcpy(tape_name, "/dev/tape");
 #elif defined(OS_VMS)
   strcpy(tape_name, "mka0:");
 #else
 #error This program cannot be compiled under this operating system
 #endif
 
+  /* default parameters */
+  strcpy(file_name, "run%05d.mid");
+  cmd[0] = 0;
+  count = 1;
+
   /* if "TAPE" environment variable present, use it */
   if (getenv("TAPE") != NULL)
     strcpy(tape_name, getenv("TAPE"));
   
   /* parse command line parameters */
-  if (argv[1] == NULL)
-    goto usage;
-
-  i = 1;
-  if (argv[i][0] == '-')
+  for (i=1 ; i<argc ; i++)
     {
-    if (argc <= 2 || argv[i+1][0] == '-')
-      goto usage;
-    if (argv[i][1] == 'f')
-      strcpy(tape_name, argv[++i]);
-    else 
-      goto usage;
-    i++;
+    if (argv[i][0] == '-' && argv[i][1] == 'v')
+        verbose = TRUE;
+    else if (argv[i][0] == '-')
+      {
+      if (i+1 >= argc || argv[i+1][0] == '-')
+        goto usage;
+      if (argv[i][1] == 'f')
+        strcpy(tape_name, argv[++i]);
+      if (argv[i][1] == 'd')
+        strcpy(file_name, argv[++i]);
+      else 
+        goto usage;
+      }
+    else if (cmd[0] == 0)
+      strcpy(cmd, argv[i]);
+    else
+      count = atoi(argv[i]);
     }
-  
-  if (argv[i] == NULL)
-    goto usage;
-
-  strcpy(cmd, argv[i++]);
-  if (argv[i] != NULL)
-    count = atoi(argv[i]);
-  else
-    count = 1;
 
   /* don't produce system messages */
   cm_set_msg_print(0, MT_ALL, puts);
@@ -225,13 +309,16 @@ char cmd[100], tape_name[100];
   else if (strcmp(cmd, "dir") == 0)
     status = tape_dir(channel, count);
 
-  else if (strcmp(cmd, "copy") == 0)
-    status = tape_copy(channel, count);
+  else if (strcmp(cmd, "backup") == 0)
+    status = tape_backup(channel, count, file_name);
+
+  else if (strcmp(cmd, "restore") == 0)
+    status = tape_restore(channel, count, file_name);
 
   else
     {
 usage:
-    printf("usage: mtape [-f tape_device] command [count]\n\n");
+    printf("usage: mtape [-f tape_device] [-d file] [-v] command [count]\n\n");
     printf("Following commands are available:\n");
     printf("  status     Print status information about tape\n");
     printf("  rewind     Rewind tape\n");
@@ -245,8 +332,17 @@ usage:
     printf("  online     Places the tape online (load)\n");
     printf("  seod       Space to end of recorded data\n\n");
     printf("Following commands only work with tapes written in MIDAS format:\n");
-    printf("  dir <n>    List next <n> runs on MIDAS tape\n");
-    printf("  copy <n>   Copy next <n> runs to disk\n");
+    printf("  dir        List next [count] runs on MIDAS tape\n");
+    printf("  backup\n");
+    printf("             Copy run [count] from disk to tape.\n");
+    printf("             If [-d file] is not given, runxxxxx.mid is used where\n");
+    printf("             xxxxx is the run number. If [file] contains %%05d, it\n");
+    printf("             is replaced by the run number.\n");
+    printf("  restore\n");
+    printf("             Copy next [count] files from tape to disk.\n");
+    printf("             If [-d file] is not given, runxxxxx.mid is used where\n");
+    printf("             xxxxx is the run number. If [file] contains %%05d, it\n");
+    printf("             is replaced by the run number.\n");
     return 0;
     }
 
