@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol main program
 
   $Log$
+  Revision 1.47  2004/06/02 08:18:58  midas
+  Fixed bug with F021 CPU
+
   Revision 1.46  2004/05/19 15:10:59  midas
   Avoid flashing directly after watchdog reset
 
@@ -228,7 +231,8 @@ bit configured;                 // TRUE if node is configured
 
 void setup(void)
 {
-   unsigned char i, adr;
+   unsigned char adr;
+   unsigned short i;
 
    /* first disable watchdog */
 #ifdef CPU_CYGNAL
