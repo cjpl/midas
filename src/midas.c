@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.97  2000/02/23 21:07:44  midas
+  Changed spaces and tabulators
+
   Revision 1.96  2000/02/15 11:07:51  midas
   Changed GET_xxx to bit flags
 
@@ -16455,6 +16458,7 @@ DWORD dm_buffer_time_get (void)
 }
 
 /*------------------------------------------------------------------*/
+
 EVENT_HEADER *dm_pointer_get(void)
 /********************************************************************\
   Routine: dm_pointer_get
@@ -16477,6 +16481,7 @@ EVENT_HEADER *dm_pointer_get(void)
   /* Is there still space in the active area ? */
   if (!dm_active_full())
     return (EVENT_HEADER *) (dm.pa->pw + sizeof(INT));
+  
   /* no more space => switch area */
 
   /* Tag current area with global dm.serial for order consistency */
@@ -16515,6 +16520,7 @@ EVENT_HEADER *dm_pointer_get(void)
 }
 
 /*------------------------------------------------------------------*/
+
 dm_pointer_increment(INT buffer_handle, INT event_size)
 /********************************************************************\
   Routine: dm_pointer_increment
@@ -16535,11 +16541,11 @@ dm_pointer_increment(INT buffer_handle, INT event_size)
 INT aligned_event_size;
 
   /* if not connected remotely, use bm_send_event */
- if (_send_sock == 0)
- {
+  if (_send_sock == 0)
+    {
     *((INT *) dm.pa->pw) = buffer_handle;
     return bm_send_event(buffer_handle, dm.pa->pw+sizeof(INT), event_size, SYNC);
- }
+    }
   aligned_event_size = ALIGN(event_size);
   
   *((INT *) dm.pa->pw) = buffer_handle;
