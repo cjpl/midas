@@ -6,6 +6,9 @@
   Contents:     MIDAS logger program
 
   $Log$
+  Revision 1.35  2000/03/06 17:40:14  midas
+  Create History/Links even if no Trigger Equipment defined
+
   Revision 1.34  1999/12/09 10:28:18  midas
   Removed message for missing /history/links
 
@@ -1504,6 +1507,7 @@ BOOL     single_names;
   if (db_find_key(hDB, 0, "/History", &hKeyRoot) != DB_SUCCESS)
     {
     /* create default history keys */
+    db_create_key(hDB, 0, "/History/Links", TID_KEY);
 
     if (db_find_key(hDB, 0, "/Equipment/Trigger/Statistics/Events per sec.", &hKeyEq) == DB_SUCCESS)
       db_create_link(hDB, 0, "/History/Links/System/Trigger per sec.", "/Equipment/Trigger/Statistics/Events per sec.");
