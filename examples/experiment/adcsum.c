@@ -10,6 +10,9 @@
                 in the ODB and transferred to experim.h.
 
   $Log$
+  Revision 1.11  2004/09/23 19:22:43  midas
+  Use new histo booking
+
   Revision 1.10  2004/01/08 08:40:08  midas
   Implemented standard indentation
 
@@ -55,7 +58,6 @@
 
 /* root includes */
 #include <TH1F.h>
-#include <TDirectory.h>
 
 #ifndef PI
 #define PI 3.14159265359
@@ -88,19 +90,19 @@ ANA_MODULE adc_summing_module = {
 
 /*-- Module-local variables-----------------------------------------*/
 
-extern TDirectory *gManaHistsDir;
-
-static TH1F *gAdcSumHist;
+static TH1F *hAdcSum, *hAdcAvg;
 
 /*-- init routine --------------------------------------------------*/
 
 INT adc_summing_init(void)
 {
-   /* book sum histo */
-   gAdcSumHist = (TH1F *) gManaHistsDir->GetList()->FindObject("ADCSUM");
+   /* book ADC sum histo */
+   hAdcSum = H1_BOOK("ADCSUM", "ADC sum", 500, 0, 10000);
 
-   if (gAdcSumHist == NULL)
-      gAdcSumHist = new TH1F("ADCSUM", "ADC sum", 500, 0, 10000);
+   /* book ADC average in separate subfolder */
+   open_subfolder("Average");
+   hAdcAvg = H1_BOOK("ADCAVG", "ADC average", 500, 0, 10000);
+   close_subfolder();
 
    return SUCCESS;
 }
@@ -133,7 +135,10 @@ INT adc_summing(EVENT_HEADER * pheader, void *pevent)
    asum->average = j > 0 ? asum->sum / j : 0;
 
    /* fill sum histo */
-   gAdcSumHist->Fill(asum->sum, 1);
+   hAdcSum->Fill(asum->sum, 1);
+
+   /* fill average histo */
+   hAdcAvg->Fill(asum->average);
 
    /* close calculated bank */
    bk_close(pevent, asum + 1);
