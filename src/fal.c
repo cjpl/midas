@@ -7,6 +7,9 @@
                 Most routines are from mfe.c mana.c and mlogger.c.
 
   $Log$
+  Revision 1.18  2000/09/28 13:16:01  midas
+  Fixed bug that MANUAL_TRIG only events are not read out during transitions
+
   Revision 1.17  2000/09/28 13:02:02  midas
   Added manual triggered events
 
@@ -113,7 +116,7 @@ struct {
   HNDLE hKeyVar;
   DWORD period;
   DWORD last_log;
-} hist_log[MAX_EVENTS];
+} hist_log[MAX_HISTORY];
 
 INT   run_state;      /* STATE_RUNNING, STATE_STOPPED, STATE_PAUSED */
 INT   run_number;
@@ -3850,8 +3853,7 @@ INT            i;
     {
     eq_info = &equipment[i].info;
 
-    if ((!(eq_info->eq_type & EQ_PERIODIC) && !(eq_info->eq_type & EQ_SLOW)) || 
-        !eq_info->enabled)
+    if (!eq_info->enabled)
       continue;
 
     if (transition == TR_START  && (eq_info->read_on & RO_BOR)    == 0)

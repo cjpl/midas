@@ -7,6 +7,9 @@
                 linked with user code to form a complete frontend
 
   $Log$
+  Revision 1.28  2000/09/28 13:16:02  midas
+  Fixed bug that MANUAL_TRIG only events are not read out during transitions
+
   Revision 1.27  2000/09/28 13:02:03  midas
   Added manual triggered events
 
@@ -791,8 +794,7 @@ INT            i;
     {
     eq_info = &equipment[i].info;
 
-    if ((!(eq_info->eq_type & EQ_PERIODIC) && !(eq_info->eq_type & EQ_SLOW)) || 
-        !eq_info->enabled || equipment[i].status != FE_SUCCESS)
+    if (!eq_info->enabled || equipment[i].status != FE_SUCCESS)
       continue;
 
     if (transition == TR_START  && (eq_info->read_on & RO_BOR)    == 0)
