@@ -6,6 +6,9 @@
   Contents:     Generic Class Driver
 
   $Log$
+  Revision 1.5  2002/06/06 07:15:45  midas
+  Added demand priority ODB/Device
+
   Revision 1.4  2002/05/09 03:02:37  midas
   Simplified driver to better serve as template for more complicated drivers
 
@@ -65,6 +68,7 @@ typedef struct {
   void   **driver;
   INT    *channel_offset;
   void   **dd_info;
+  INT    *demand_priority;
 
 } GEN_INFO;
 
@@ -256,8 +260,9 @@ GEN_INFO *gen_info;
   gen_info->dd_info          = (void *)  calloc(gen_info->num_channels, sizeof(void*));
   gen_info->channel_offset   = (INT *)   calloc(gen_info->num_channels, sizeof(INT));
   gen_info->driver           = (void *)  calloc(gen_info->num_channels, sizeof(void*));
+  gen_info->demand_priority  = (INT *)   calloc(gen_info->num_channels, sizeof(INT));
 
-  if (!gen_info->driver)
+  if (!gen_info->demand_priority)
     {
     cm_msg(MERROR, "hv_init", "Not enough memory");
     return FE_ERR_ODB;
@@ -306,6 +311,7 @@ GEN_INFO *gen_info;
     gen_info->driver[i] = pequipment->driver[index].dd;
     gen_info->dd_info[i] = pequipment->driver[index].dd_info;
     gen_info->channel_offset[i] = offset;
+    gen_info->demand_priority[i] = pequipment->driver[index].demand_priority;
     }
 
   /*---- create demand variables ----*/
@@ -320,9 +326,14 @@ GEN_INFO *gen_info;
   /* let device driver overwrite demand values, if it supports it */
   for (i=0 ; i<gen_info->num_channels ; i++)
     {
-    DRIVER(i)(CMD_GET_DEMAND, gen_info->dd_info[i], 
-              i-gen_info->channel_offset[i], &gen_info->demand[i]);
-    gen_info->demand_mirror[i] = -12345.f; /* use -12345 as invalid value */
+    if (gen_info->demand_priority[i] == PRIO_DEVICE)
+      {
+      DRIVER(i)(CMD_GET_DEMAND, gen_info->dd_info[i], 
+                i-gen_info->channel_offset[i], &gen_info->demand[i]);
+      gen_info->demand_mirror[i] = gen_info->demand[i];
+      }
+    else
+      gen_info->demand_mirror[i] = -12345.f; /* use -12345 as invalid value */
     }
   /* write back demand values */
   status = db_find_key(hDB, gen_info->hKeyRoot, "Variables/Demand", &gen_info->hKeyDemand);
