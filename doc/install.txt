@@ -148,10 +148,13 @@ normally done during installation.
 
 13) If the frontend runs on another computer, the MIDAS server program
 has to be installed. You can either start mserver manually or via
-inetd. To configure inetd, add following line to your /etc/services
+(x)inetd. To configure (x)inetd, add following line to your /etc/services
 file:
 
   midas   1175/tcp
+
+Usage with inetd:
+-----------------
 
 Then add this line to your /etc/inetd.conf file:
 
@@ -160,10 +163,34 @@ Then add this line to your /etc/inetd.conf file:
 
 Send a hangup signal to inetd:
 
-  ps -A | grep inetd
-  <note the process id>
+  killall -HUP inetd
 
-  kill -HUP <id>
+Usage with xinetd (e.g. RedHat >= 7.1):
+---------------------------------------
+
+Create /etc/xinetd.c/midas containing:
+
+# default: on
+# description: The midas server serves Midas DAQ sessions
+service midas
+{
+        flags                   = REUSE
+        socket_type             = stream
+        wait                    = no
+        user                    = root
+        server                  = /usr/local/bin/mserver
+        log_on_success          += USERID HOST PID
+        log_on_failure          += USERID HOST PID
+        disable                 = no
+}
+
+Send a USR1 signal to xinetd
+
+  killall -USR1 xinetd
+
+
+Setup of exptab:
+----------------
 
 To connect to different experiments, the server has to know in 
 which directories and under which user names the experiments are 
