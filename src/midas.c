@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.216  2004/09/28 20:21:05  midas
+  Fixed missing LF in debug output
+
   Revision 1.215  2004/09/28 20:05:59  midas
   Revised debug logging for mserver
 
@@ -9418,9 +9421,10 @@ void rpc_debug_printf(char *format, ...)
       vsprintf(str, (char *) format, argptr);
       va_end(argptr);
 
-      if (_debug_print)
+      if (_debug_print) {
+         strcat(str, "\n");
          _debug_print(str);
-      else
+      } else
          puts(str);
    }
 }
