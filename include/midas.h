@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.14  1999/02/11 13:20:29  midas
+  Changed cm_msg from void to INT
+
   Revision 1.13  1999/02/09 14:38:54  midas
   Added debug logging facility
 
@@ -1072,7 +1075,7 @@ INT EXPRT cm_asctime(char *str, INT buf_size);
 INT EXPRT cm_time(DWORD *time);
 
 INT EXPRT cm_set_msg_print(INT system_mask, INT user_mask, int (*func)(const char*));
-void EXPRT cm_msg(INT message_type, char* filename, INT line, const char *routine, const char *format, ...);
+INT EXPRT cm_msg(INT message_type, char* filename, INT line, const char *routine, const char *format, ...);
 INT EXPRT cm_msg_register(void (*func)(HNDLE,HNDLE,EVENT_HEADER*,void*));
 
 BOOL EXPRT equal_ustring(char *str1, char *str2);
