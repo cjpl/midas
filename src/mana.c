@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.110  2003/12/17 07:52:32  midas
+  Added error display if experiment not defined
+
   Revision 1.109  2003/12/12 12:54:35  midas
   Warn about uppercase characters in HBOOK directory names
 
@@ -6066,7 +6069,11 @@ int rargc;
   status = cm_connect_experiment1(clp.host_name, clp.exp_name, analyzer_name, NULL, odb_size,
                                   DEFAULT_WATCHDOG_TIMEOUT);
   if (status != CM_SUCCESS)
+    {
+    cm_get_error(status, str);
+    printf("\nError: %s\n", str);
     return 1;
+    }
 
   if (clp.online)
     printf("OK\n");
