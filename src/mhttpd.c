@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.224  2002/05/28 09:00:03  midas
+  Fixed bug with opera browser
+
   Revision 1.223  2002/05/28 07:39:29  midas
   Added HELO statement in sendmail
 
@@ -10273,9 +10276,12 @@ INT                  last_time=0;
           {
           if (header_length == 0)
             {
-            /* extrac header and content length */
+            /* extract header and content length */
             if (strstr(net_buffer, "Content-Length:"))
               content_length = atoi(strstr(net_buffer, "Content-Length:") + 15);
+            else if (strstr(net_buffer, "Content-length:"))
+              content_length = atoi(strstr(net_buffer, "Content-length:") + 15);
+
             boundary[0] = 0;
             if (strstr(net_buffer, "boundary="))
               {
