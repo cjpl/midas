@@ -6,6 +6,9 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
+  Revision 1.33  1999/09/15 09:30:49  midas
+  Added Ctrl-C handler
+
   Revision 1.32  1999/09/15 08:05:09  midas
   - Added "last" button
   - Fixed bug that only partial file attachments were returned
@@ -4327,6 +4330,15 @@ HNDLE  hDB;
 
 /*------------------------------------------------------------------*/
 
+BOOL _abort = FALSE;
+
+void ctrlc_handler(int sig)
+{
+  _abort = TRUE;
+}
+
+/*------------------------------------------------------------------*/
+
 char net_buffer[1000000];
 
 void server_loop(int tcp_port)
@@ -4341,6 +4353,9 @@ struct linger        ling;
 fd_set               readfds;
 struct timeval       timeout;
 INT                  last_time=0;
+
+  /* establish Ctrl-C handler */
+  ss_ctrlc_handler(ctrlc_handler);
 
 #ifdef OS_WINNT
   {
@@ -4561,14 +4576,14 @@ INT                  last_time=0;
     if (connected)
       {
       status = cm_yield(0);
-      if (status == RPC_SHUTDOWN)
+      if (status == RPC_SHUTDOWN || _abort)
         {
         cm_disconnect_experiment();
         return;
         }
       }
 
-    } while (1);
+    } while (!_abort);
 }
 
 /*------------------------------------------------------------------*/
