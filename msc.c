@@ -6,6 +6,9 @@
   Contents:     Command-line interface for the Midas Slow Control Bus
 
   $Log$
+  Revision 1.72  2004/10/27 07:42:07  midas
+  Changed hotplug warning
+
   Revision 1.71  2004/10/27 07:06:55  midas
   Fixed compiler warning
 
@@ -1335,7 +1338,7 @@ int main(int argc, char *argv[])
          puts("Please disconnect and reconnect submaster\n");
       } else if (fd == -5) {
          printf("\nNo write access to MSCB submaster at %s\n", device);
-         puts("Please install hotplug script \"/etc/hotplug/usb/scs_250\".\n");
+         puts("Please install hotplug script \"drivers/linux/usb.usermap_scs_250\" to \"/etc/hotplug/\".\n");
       } else
          if (device[0])
             printf("Cannot connect to device \"%s\"\n", device);\
