@@ -6,6 +6,9 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
+  Revision 1.15  1999/08/12 15:48:01  midas
+  Fixed compiler warnings
+
   Revision 1.14  1999/08/12 15:44:50  midas
   Fixed bug when subkey was in variables list, added domainname for unit
 
@@ -2850,7 +2853,7 @@ INT                  last_time=0;
 char domain_name[256];
 
   getdomainname(domain_name, sizeof(domain));
-  if (strchr(host_name, ".") == NULL)
+  if (strchr(host_name, '.') == NULL)
     strcat(host_name, domain_name);
 }
 #endif
