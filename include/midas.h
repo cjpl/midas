@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.88  2002/03/19 22:15:40  pierre
+  Added  ~defined (OS_IRIX)
+
   Revision 1.87  2002/03/13 08:39:01  midas
   Added periodic alarms
 
@@ -322,7 +325,7 @@
 #define OS_UNIX
 #endif
 
-#if !defined(OS_VMS) && !defined(OS_MSDOS) && !defined(OS_UNIX) && !defined(OS_VXWORKS) && !defined(OS_WINNT)
+#if !defined(OS_IRIX) && !defined(OS_VMS) && !defined(OS_MSDOS) && !defined(OS_UNIX) && !defined(OS_VXWORKS) && !defined(OS_WINNT)
 #error MIDAS cannot be used on this operating system
 #endif
 
