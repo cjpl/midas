@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.246  2003/05/07 10:57:36  midas
+  Removed tabs
+
   Revision 1.245  2003/05/02 09:03:01  midas
   Fixed buffer overflows by strlcpy()
 
@@ -1904,14 +1907,15 @@ CHN_STATISTICS chn_stats;
       if (cm_exist(equipment.frontend_name, TRUE) != CM_SUCCESS)
         rsprintf("<tr><td><a href=\"%s\">%s</a><td align=center bgcolor=#FF0000>(inactive)",
                   ref, key.name);
-      else {
-     if (equipment.enabled)
-       rsprintf("<tr><td><a href=\"%s\">%s</a><td align=center bgcolor=#00FF00>%s@%s",
-            ref, key.name, equipment.frontend_name, equipment.frontend_host);
-     else
-       rsprintf("<tr><td><a href=\"%s\">%s</a><td align=center bgcolor=#FFFF00>%s@%s",
-            ref, key.name, equipment.frontend_name, equipment.frontend_host);
-      }
+        else 
+          {
+          if (equipment.enabled)
+            rsprintf("<tr><td><a href=\"%s\">%s</a><td align=center bgcolor=#00FF00>%s@%s",
+                     ref, key.name, equipment.frontend_name, equipment.frontend_host);
+          else
+            rsprintf("<tr><td><a href=\"%s\">%s</a><td align=center bgcolor=#FFFF00>%s@%s",
+                     ref, key.name, equipment.frontend_name, equipment.frontend_host);
+          }
 
       /* get analyzed ratio */
       analyze_ratio = 0;

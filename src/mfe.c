@@ -7,6 +7,9 @@
                 linked with user code to form a complete frontend
 
   $Log$
+  Revision 1.54  2003/05/07 10:57:10  midas
+  Removed tabs
+
   Revision 1.53  2003/04/25 10:41:42  midas
   Removed FTCP mode in update_odb()
 
@@ -213,7 +216,7 @@ extern INT  interrupt_configure(INT cmd, INT source, PTYPE adr);
 
 /* globals */
 
-/* #define USE_EVENT_CHANNEL */
+#undef USE_EVENT_CHANNEL
 
 #define SERVER_CACHE_SIZE  100000 /* event cache before buffer */
 
@@ -895,41 +898,40 @@ KEY               key;
 
 int send_event(INT index)
 {
-  EQUIPMENT_INFO *eq_info;
-  EVENT_HEADER   *pevent, *pfragment;
-  char           *pdata;
-  unsigned char  *pd;
-  INT            i;
-  DWORD          sent, size;
-  INT            err;
-  static void    *frag_buffer = NULL;
+EQUIPMENT_INFO *eq_info;
+EVENT_HEADER   *pevent, *pfragment;
+char           *pdata;
+unsigned char  *pd;
+INT            i, status;
+DWORD          sent, size;
+static void    *frag_buffer = NULL;
 
   eq_info = &equipment[index].info;
 
   /* check for fragmented event */
   if (eq_info->eq_type & EQ_FRAGMENTED)
-  {
+    {
     if (frag_buffer == NULL)
       frag_buffer = malloc(max_event_size_frag);
 
     if (frag_buffer == NULL)
-    {
+      {
       cm_msg(MERROR, "send_event", "Not enough memory to allocate buffer for fragmented events");
       return SS_NO_MEMORY;
-    }
+      }
 
     pevent = frag_buffer;
-  }
+    }
   else
-  {
+    {
     /* return value should be valid pointer. if NULL BIG error ==> abort  */
     pevent = dm_pointer_get();
     if (pevent == NULL)
-    {
+      {
       cm_msg(MERROR, "send_event", "dm_pointer_get not returning valid pointer");
       return SS_NO_MEMORY;
+      }
     }
-  }
 
   /* compose MIDAS event header */
   pevent->event_id      = eq_info->event_id;
@@ -946,24 +948,24 @@ int send_event(INT index)
 
   /* send event */
   if (pevent->data_size)
-  {
-    if (eq_info->eq_type & EQ_FRAGMENTED)
     {
+    if (eq_info->eq_type & EQ_FRAGMENTED)
+      {
       /* fragment event */
       if (pevent->data_size+sizeof(EVENT_HEADER) > (DWORD) max_event_size_frag)
-      {
+        {
         cm_msg(MERROR, "send_event", "Event size %ld larger than maximum size %d for frag. ev.",
           (long)(pevent->data_size+sizeof(EVENT_HEADER)), max_event_size_frag);
         return SS_NO_MEMORY;
-      }
+        }
 
       /* compose fragments */
       pfragment = dm_pointer_get();
       if (pfragment == NULL)
-      {
+        {
         cm_msg(MERROR, "send_event", "dm_pointer_get not returning valid pointer");
         return SS_NO_MEMORY;
-      }
+        }
 
       /* compose MIDAS event header */
       memcpy(pfragment, pevent, sizeof(EVENT_HEADER));
@@ -973,19 +975,19 @@ int send_event(INT index)
       pd = (char *)(pfragment+1);
       size = pevent->data_size;
       for (i=0 ; i<4 ; i++)
-      {
+        {
         pd[i] = (unsigned char)(size & 0xFF); /* little endian, please! */
         size >>= 8;
-      }
+        }
 
       pfragment->data_size = sizeof(DWORD);
 
       pdata=(char *)(pevent+1);
 
       for (i=0,sent=0 ; sent<pevent->data_size ; i++)
-      {
-        if (i>0)
         {
+        if (i>0)
+          {
           pfragment = dm_pointer_get();
 
           /* compose MIDAS event header */
@@ -1001,113 +1003,110 @@ int send_event(INT index)
           pfragment->data_size = size;
           sent += size;
           pdata += size;
-        }
+          }
 
         /* send event to buffer */
         if (equipment[index].buffer_handle)
-        {
+          {
 #ifdef USE_EVENT_CHANNEL
           dm_pointer_increment(equipment[index].buffer_handle, 
             pfragment->data_size + sizeof(EVENT_HEADER));
 #else
           rpc_flush_event();
-          err = bm_send_event(equipment[index].buffer_handle, pfragment,
-            pfragment->data_size + sizeof(EVENT_HEADER), SYNC);
-          if (err != BM_SUCCESS)
+          status = bm_send_event(equipment[index].buffer_handle, pfragment,
+                                 pfragment->data_size + sizeof(EVENT_HEADER), SYNC);
+          if (status != BM_SUCCESS)
+            {
+            cm_msg(MERROR, "send_event", "bm_send_event(SYNC) error %d", status);
+            return status;
+            }
+#endif
+          }
+        }
+
+      if (equipment[index].buffer_handle) {
+#ifndef USE_EVENT_CHANNEL
+        status = bm_flush_cache(equipment[index].buffer_handle, SYNC);
+        if (status != BM_SUCCESS)
           {
-            cm_msg(MERROR,"send_event","bm_send_event(SYNC) error %d",err);
-            return err;
+          cm_msg(MERROR,"send_event","bm_flush_cache(SYNC) error %d", status);
+          return status;
           }
 #endif
         }
       }
-
-      if (equipment[index].buffer_handle) {
-#ifndef USE_EVENT_CHANNEL
-        err = bm_flush_cache(equipment[index].buffer_handle, SYNC);
-        if (err != BM_SUCCESS)
-        {
-          cm_msg(MERROR,"send_event","bm_flush_cache(SYNC) error %d",err);
-          return err;
-        }
-#endif
-      }
-    }
     else
-    {
+      {
       /* send unfragmented event */
 
       if (pevent->data_size+sizeof(EVENT_HEADER) > (DWORD) max_event_size)
-      {
+        {
         cm_msg(MERROR, "send_event", "Event size %ld larger than maximum size %d",
           (long)(pevent->data_size+sizeof(EVENT_HEADER)), max_event_size);
         return SS_NO_MEMORY;
-      }
+        }
 
       /* send event to buffer */
       if (equipment[index].buffer_handle)
-      {
+        {
 #ifdef USE_EVENT_CHANNEL
         dm_pointer_increment(equipment[index].buffer_handle, 
           pevent->data_size + sizeof(EVENT_HEADER));
 #else
         rpc_flush_event();
-        err = bm_send_event(equipment[index].buffer_handle, pevent,
+        status = bm_send_event(equipment[index].buffer_handle, pevent,
           pevent->data_size + sizeof(EVENT_HEADER), SYNC);
-        if (err != BM_SUCCESS)
-        {
-          cm_msg(MERROR,"send_event","bm_send_event(SYNC) error %d",err);
-          return err;
-        }
-        err = bm_flush_cache(equipment[index].buffer_handle, SYNC);
-        if (err != BM_SUCCESS)
-        {
-          cm_msg(MERROR,"send_event","bm_flush_cache(SYNC) error %d",err);
-          return err;
-        }
+        if (status != BM_SUCCESS)
+          {
+          cm_msg(MERROR,"send_event","bm_send_event(SYNC) error %d",status);
+          return status;
+          }
+        status = bm_flush_cache(equipment[index].buffer_handle, SYNC);
+        if (status != BM_SUCCESS)
+          {
+          cm_msg(MERROR,"send_event","bm_flush_cache(SYNC) error %d",status);
+          return status;
+          }
 #endif
-      }
+        }
 
       /* send event to ODB if RO_ODB flag is set or history is on. Do not
       send SLOW events since the class driver does that */
       if ((eq_info->read_on & RO_ODB) ||
         (eq_info->history > 0 && (eq_info->eq_type & ~EQ_SLOW)))
-      {
+        {
         update_odb(pevent, equipment[index].hkey_variables, equipment[index].format);
         equipment[index].odb_out++;
+        }
       }
-    }
 
     equipment[index].bytes_sent += pevent->data_size + sizeof(EVENT_HEADER);
     equipment[index].events_sent++;
 
     equipment[index].stats.events_sent += equipment[index].events_sent;
     equipment[index].events_sent = 0;
-  }
+   }
   else
     equipment[index].serial_number--;
 
   /* emtpy event buffer */
 #ifdef USE_EVENT_CHANNEL
-  {
-    INT status;
     if ((status = dm_area_flush()) != CM_SUCCESS)
       cm_msg(MERROR,"send_event","dm_area_flush: %i", status);
-  }
 #endif
 
   for (i=0 ; equipment[i].name[0] ; i++)
     if (equipment[i].buffer_handle)
-    {
-      INT err = bm_flush_cache(equipment[i].buffer_handle, SYNC);
-      if (err != BM_SUCCESS)
       {
-        cm_msg(MERROR,"send_event","bm_flush_cache(SYNC) error %d",err);
-        return err;
+      status = bm_flush_cache(equipment[i].buffer_handle, SYNC);
+      if (status != BM_SUCCESS)
+        {
+        cm_msg(MERROR,"send_event","bm_flush_cache(SYNC) error %d", status);
+        return status;
+        }
       }
-    }
 
-    return CM_SUCCESS;
+  return CM_SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
