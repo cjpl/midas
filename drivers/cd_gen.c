@@ -6,6 +6,9 @@
   Contents:     Generic Class Driver
 
   $Log$
+  Revision 1.5  1999/11/08 13:54:53  midas
+  Initialize demand_mirror with invalid value
+
   Revision 1.4  1999/11/04 15:54:37  midas
   Modifications in order to work with bl_psi.c
 
@@ -304,8 +307,11 @@ GEN_INFO *gen_info;
     }
   /* let device driver overwrite demand values */
   for (i=0 ; i<gen_info->num_channels ; i++)
+    {
     DRIVER(i)(CMD_GET_DEMAND, gen_info->dd_info[i], 
               i-gen_info->channel_offset[i], &gen_info->demand[i]);
+    gen_info->demand_mirror[i] = -12345; /* invalid value */
+    }
   /* write back demand values */
   status = db_find_key(hDB, gen_info->hKeyRoot, "Variables/Demand", &gen_info->hKeyDemand);
   if (status != DB_SUCCESS)
