@@ -6,6 +6,9 @@
   Contents:     Various utility functions for MSCB protocol
 
   $Log$
+  Revision 1.6  2002/07/12 08:38:13  midas
+  Fixed LCD recognition
+
   Revision 1.5  2002/07/10 09:52:55  midas
   Finished EEPROM routines
 
@@ -463,18 +466,9 @@ lcd_out(unsigned char d, bit df)
   if (!lcd_present)
     return;
 
-#ifdef CPU_C8051F000
-  /* switch LCD_DB7 to input */
-  // PRT2CF = 0x7F;
-#endif
-  LCD = 0xFC;       // data input R/W=High
+  LCD = 0xFC;       // data input R/W=High, P2 must be on open drain
   delay_us(1);
   while (LCD_DB7);  // loop if busy
-
-#ifdef CPU_C8051F000
-  /* switch LCD_DB7 to output */
-  // PRT2CF = 0xFF;
-#endif
 
   LCD = 0;
   delay_us(1);
@@ -531,8 +525,8 @@ void lcd_setup()
 
   /* test if LCD present */
   LCD = 0xFC; // data input R/W=High
-  delay_us(10);
-  if (!LCD_DB7)
+  delay_us(100);
+  if (LCD_DB7)
     {
     lcd_present = 0;
     return;
