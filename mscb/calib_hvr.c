@@ -6,6 +6,9 @@
   Contents:     Calibration program for HVR-200
 
   $Log$
+  Revision 1.11  2005/02/22 13:21:35  ritt
+  Calibration with hvr_500
+
   Revision 1.10  2004/12/22 16:03:24  midas
   Implemented VGain calibration
 
@@ -65,7 +68,6 @@
 #define CH_CURVGAIN    15
 #define CH_CURGAIN     16
 #define CH_CUROFS      17
-#define CH_TEMP        18
 
 /*------------------------------------------------------------------*/
 
@@ -90,7 +92,7 @@ int main(int argc, char *argv[])
       return 0;
    }
 
-   printf("Enter address of HVR-200 device: ");
+   printf("Enter address of HVR-400/500 device: ");
    fgets(str, sizeof(str), stdin);
    adr = atoi(str);
 
@@ -99,20 +101,12 @@ int main(int argc, char *argv[])
       return 0;
    }
 
-   mscb_info_variable(fd, adr, CH_TEMP, &info);
+   mscb_info_variable(fd, adr, CH_CUROFS, &info);
    memset(str, 0, sizeof(str));
    memcpy(str, info.name, 8);
-   if (strcmp(str, "Temp") != 0) {
-      printf("Incorrect software versionon HVR-200. Expect \"Temp\" on var #%d.\n",
-             CH_TEMP);
-      return 0;
-   }
-
-   /* check temperature */
-   size = sizeof(float);
-   mscb_read(fd, adr, CH_TEMP, &f, &size);
-   if (f < 0 || f > 50) {
-      printf("Incorrect temperature reading %1.1lf. Check reference voltage and AGND.\n");
+   if (strcmp(str, "CURofs") != 0) {
+      printf("Incorrect software versionon HVR-400/500. Expect \"CURofs\" on var #%d.\n",
+             CH_CUROFS);
       return 0;
    }
 
