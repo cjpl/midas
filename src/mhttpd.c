@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.166  2001/08/02 12:52:54  midas
+  Added email facility
+
   Revision 1.165  2001/07/31 12:20:39  midas
   Increased display limit to 1000
 
@@ -514,6 +517,7 @@
 
 char return_buffer[WEB_BUFFER_SIZE];
 int  return_length;
+char host_name[256];
 char mhttpd_url[256];
 char exp_name[32];
 BOOL connected, no_disconnect;
@@ -850,6 +854,72 @@ char   str[80], line[256];
   /* print message text which comes after event header */
   sprintf(line, "%s %s", str+11, message);
   print_message(line);
+}
+
+/*-------------------------------------------------------------------*/
+
+INT sendmail(char *smtp_host, char *from, char *to, char *subject, char *text)
+{
+struct sockaddr_in   bind_addr;
+struct hostent       *phe;
+int                  s;
+char                 str[10000];
+time_t               now;
+
+  /* create a new socket for connecting to remote server */
+  s = socket(AF_INET, SOCK_STREAM, 0);
+  if (s == -1)
+    return -1;
+
+  /* connect to remote node port 25 */
+  memset(&bind_addr, 0, sizeof(bind_addr));
+  bind_addr.sin_family      = AF_INET;
+  bind_addr.sin_addr.s_addr = 0;
+  bind_addr.sin_port        = htons((short) 25);
+
+  phe = gethostbyname(smtp_host);
+  if (phe == NULL)
+    return -1;
+  memcpy((char *)&(bind_addr.sin_addr), phe->h_addr, phe->h_length);
+
+  if (connect(s, (void *) &bind_addr, sizeof(bind_addr)) < 0)
+    {
+    closesocket(s);
+    return -1;
+    }
+
+  recv_string(s, str, sizeof(str), 3000);
+
+  sprintf(str, "MAIL FROM: <%s>\n", from);
+  send(s, str, strlen(str), 0);
+  recv_string(s, str, sizeof(str), 3000);
+
+  sprintf(str, "RCPT TO: <%s>\n", to);
+  send(s, str, strlen(str), 0);
+  recv_string(s, str, sizeof(str), 3000);
+
+  sprintf(str, "DATA\n");
+  send(s, str, strlen(str), 0);
+  recv_string(s, str, sizeof(str), 3000);
+
+  sprintf(str, "To: %s\nFrom: %s\nSubject: %s\n", to, from, subject);
+  send(s, str, strlen(str), 0);
+
+  time(&now);
+  sprintf(str, "Date: %s\n", ctime(&now));
+  send(s, str, strlen(str), 0);
+
+  sprintf(str, "%s\n.\n", text);
+  send(s, str, strlen(str), 0);
+  recv_string(s, str, sizeof(str), 3000);
+
+  sprintf(str, "QUIT\n");
+  send(s, str, strlen(str), 0);
+  recv_string(s, str, sizeof(str), 3000);
+
+  closesocket(s);
+  
+  return 1;
 }
 
 /*------------------------------------------------------------------*/
@@ -1951,14 +2021,6 @@ int i;
 
 /*------------------------------------------------------------------*/
 
-void el_format(char *text, char *encoding)
-{
-  if (equal_ustring(encoding, "HTML"))
-    rsputs(text);
-  else
-    strencode(text);
-}
-
 void show_elog_new(char *path, BOOL bedit, char *odb_att)
 {
 int    i, j, size, run_number, wrap;
@@ -2885,15 +2947,16 @@ FILE   *f;
       else
         {
         if (display_run_number)
-          rsprintf("<tr><td>%s<td>%d<td>%s<td>%s<td>%s<td>%s\n", date, run, author, type, system, subject);
+          rsprintf("<tr><td><a href=%s>%s</a><td>%d<td>%s<td>%s<td>%s<td>%s\n", ref, date, run, author, type, system, subject);
         else
-          rsprintf("<tr><td>%s<td>%s<td>%s<td>%s<td>%s\n", date, author, type, system, subject);
+          rsprintf("<tr><td><a href=%s>%s</a><td>%s<td>%s<td>%s<td>%s\n", ref, date, author, type, system, subject);
 
-        rsprintf("<td><a href=%s>", ref);
-      
-        el_format(str, encoding);
-      
-        rsprintf("</a></tr>\n");
+        if (equal_ustring(encoding, "HTML"))
+          rsputs(text);
+        else
+          strencode(text);
+
+        rsprintf("</tr>\n");
         }
       }
 
@@ -3206,10 +3269,12 @@ time_t now;
 void submit_elog()
 {
 char   str[80], author[256], path[256], path1[256];
+char   mail_to[256], mail_from[256], mail_text[256], mail_list[256],
+       smtp_host[256], tag[80], mail_param[1000];
 char   *buffer[3], *p, *pitem;
 HNDLE  hDB, hkey;
 char   att_file[3][256];
-int    i, fh, size;
+int    i, fh, size, n_mail;
 struct hostent *phe;
 
   cm_get_experiment_database(&hDB, NULL);
@@ -3330,9 +3395,9 @@ struct hostent *phe;
   strcat(author, "@");
   strcat(author, str);
 
-  str[0] = 0;
+  tag[0] = 0;
   if (*getparam("edit"))
-    strcpy(str, getparam("orig"));
+    strcpy(tag, getparam("orig"));
 
   el_submit(atoi(getparam("run")), author, getparam("type"),
             getparam("system"), getparam("subject"), getparam("text"), 
@@ -3340,7 +3405,98 @@ struct hostent *phe;
             att_file[0], _attachment_buffer[0], _attachment_size[0], 
             att_file[1], _attachment_buffer[1], _attachment_size[1], 
             att_file[2], _attachment_buffer[2], _attachment_size[2], 
-            str, sizeof(str));
+            tag, sizeof(tag));
+
+  /* check for mail submissions */
+  mail_param[0] = 0;
+  n_mail = 0;
+
+  sprintf(str, "/Elog/Email %s", getparam("type"));
+  if (db_find_key(hDB, 0, str, &hkey) == DB_SUCCESS)
+    {
+    size = sizeof(mail_list);
+    db_get_data(hDB, hkey, mail_list, &size, TID_STRING);
+
+    if (db_find_key(hDB, 0, "/Elog/SMTP host", &hkey) != DB_SUCCESS)
+      {
+      show_error("No SMTP host defined under /Elog/SMTP host");
+      return;
+      }
+    size = sizeof(smtp_host);
+    db_get_data(hDB, hkey, smtp_host, &size, TID_STRING);
+    
+    p = strtok(mail_list, ",");
+    for (i=0 ; p ; i++)
+      {
+      strcpy(mail_to, p);
+
+      size = sizeof(str);
+      str[0] = 0;
+      db_get_value(hDB, 0, "/Experiment/Name", str, &size, TID_STRING);
+      sprintf(mail_from, "MIDAS@%s", host_name);
+
+      sprintf(mail_text, "A new entry has been submitted by %s:\n\n", author);
+      sprintf(mail_text+strlen(mail_text), "Type    : %s\n", getparam("type"));
+      sprintf(mail_text+strlen(mail_text), "System  : %s\n", getparam("system"));
+      sprintf(mail_text+strlen(mail_text), "Subject : %s\n", getparam("subject"));
+      sprintf(mail_text+strlen(mail_text), "Link    : %sEL/%s\n", mhttpd_url, tag);
+
+      sendmail(smtp_host, mail_from, mail_to, getparam("type"), mail_text);
+
+      if (mail_param[0] == 0)
+        strcpy(mail_param, "?");
+      else
+        strcat(mail_param, "&");
+      sprintf(mail_param+strlen(mail_param), "mail%d=%s", n_mail++, mail_to);
+
+      p = strtok(NULL, ",");
+      if (!p)
+        break;
+      while (*p == ' ')
+        p++;
+      }
+    }
+
+  sprintf(str, "/Elog/Email %s", getparam("system"));
+  if (db_find_key(hDB, 0, str, &hkey) == DB_SUCCESS)
+    {
+    size = sizeof(mail_list);
+    db_get_data(hDB, hkey, mail_list, &size, TID_STRING);
+
+    if (db_find_key(hDB, 0, "/Elog/SMTP host", &hkey) != DB_SUCCESS)
+      {
+      show_error("No SMTP host defined under /Elog/SMTP host");
+      return;
+      }
+    size = sizeof(smtp_host);
+    db_get_data(hDB, hkey, smtp_host, &size, TID_STRING);
+    
+    p = strtok(mail_list, ",");
+    for (i=0 ; p ; i++)
+      {
+      strcpy(mail_to, p);
+
+      size = sizeof(str);
+      str[0] = 0;
+      db_get_value(hDB, 0, "/Experiment/Name", str, &size, TID_STRING);
+      sprintf(mail_from, "MIDAS experiment %s", str);
+
+      sprintf(mail_text, "A new entry has been submitted by %s:\n\n", author);
+      sprintf(mail_text+strlen(mail_text), "Subject: %s\n", getparam("subject"));
+      sprintf(mail_text+strlen(mail_text), "Link:    %sEL/%s\n", mhttpd_url, tag);
+
+      sendmail(smtp_host, mail_from, mail_to, getparam("system"), mail_text);
+
+      strcat(mail_param, "&");
+      sprintf(mail_param+strlen(mail_param), "mail%d=%s", n_mail++, mail_to);
+
+      p = strtok(NULL, ",");
+      if (!p)
+        break;
+      while (*p == ' ')
+        p++;
+      }
+    }
 
   for (i=0 ; i<3 ; i++)
     if (buffer[i])
@@ -3349,21 +3505,15 @@ struct hostent *phe;
   rsprintf("HTTP/1.0 302 Found\r\n");
   rsprintf("Server: MIDAS HTTP %s\r\n", cm_get_version());
 
-  if (*getparam("edit"))
-    {
-    if (exp_name[0])
-      rsprintf("Location: %sEL/%s?exp=%s\n\n<html>redir</html>\r\n", mhttpd_url, str, exp_name);
-    else
-      rsprintf("Location: %sEL/%s\n\n<html>redir</html>\r\n", mhttpd_url, str);
-    }
+  if (exp_name[0])
+    rsprintf("Location: %sEL/%s?exp=%s%s\n\n<html>redir</html>\r\n", mhttpd_url, tag, exp_name, mail_param);
   else
     {
-    if (exp_name[0])
-      rsprintf("Location: %sEL/?exp=%s\n\n<html>redir</html>\r\n", mhttpd_url, exp_name);
+    if (mail_param[0])
+      rsprintf("Location: %sEL/%s?%s\n\n<html>redir</html>\r\n", mhttpd_url, tag, mail_param+1);
     else
-      rsprintf("Location: %sEL/%s\n\n<html>redir</html>\r\n", mhttpd_url, str);
+      rsprintf("Location: %sEL/%s\n\n<html>redir</html>\r\n", mhttpd_url, tag);
     }
-
 }
 
 /*------------------------------------------------------------------*/
@@ -3834,6 +3984,22 @@ BOOL  display_run_number, allow_delete;
 
     if (first_message)
       rsprintf("<tr><td bgcolor=#FF0000 colspan=2 align=center><b>This is the first message in the ELog</b></tr>\n");
+
+    /* check for mail submissions */
+    for (i=0 ; ; i++)
+      {
+      sprintf(str, "mail%d", i);
+      if (*getparam(str))
+        {
+        if (i==0)
+          rsprintf("<tr><td colspan=2 bgcolor=#FFC020>");
+        rsprintf("Mail sent to %s<br>\n", getparam(str));
+        }
+      else
+        break;
+      }
+    if (i>0)
+      rsprintf("</tr>\n");
 
 
     if (display_run_number)
@@ -8339,7 +8505,6 @@ void server_loop(int tcp_port, int daemon)
 {
 int                  status, i, refresh, n_error;
 struct sockaddr_in   bind_addr, acc_addr;
-char                 host_name[256];
 char                 cookie_pwd[256], cookie_wpwd[256], boundary[256];
 int                  lsock, len, flag, content_length, header_length;
 struct hostent       *phe;
