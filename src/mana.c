@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.71  2000/11/20 12:18:58  midas
+  Merge more than 10 RZ files
+
   Revision 1.70  2000/11/20 11:26:53  midas
   Added "use tests" in analyzer request
 
@@ -319,8 +322,8 @@ int  pvm_merge(void);
 void pvm_debug(char *format, ...);
 int  pvm_distribute(ANALYZE_REQUEST *par, EVENT_HEADER *pevent);
 
-#define PVM_DEBUG pvm_debug
-//#define PVM_DEBUG
+//#define PVM_DEBUG pvm_debug
+#define PVM_DEBUG
 
 #else
 
@@ -4671,7 +4674,7 @@ char           str[256];
       else
         PVM_DEBUG("pvm_eor: send EXIT to client %d", j);
 
-      printf("Shutting down %s      \r", pvmc[j].host);
+      printf("Shutting down %s               \r", pvmc[j].host);
       fflush(stdout);
 
       status = pvm_send(tid, eor_tag);
@@ -4740,7 +4743,7 @@ char           str[256];
 
 int pvm_merge()
 {
-int  i;
+int  i, j;
 char fn[10][8], str[256], file_name[256], error[256];
 char ext[10], *p;
 
@@ -4788,9 +4791,26 @@ char ext[10], *p;
     if (pvm_n_task <= 10)
       {
       for (i=0 ; i<pvm_n_task ; i++)
-        sprintf(fn[i], "n%d%s", i, ext);
+        sprintf(fn[i], "n%d.rz", i);
 
       HMERGE(pvm_n_task, fn, file_name);
+      }
+    else
+      {
+      for (i=0 ; i<=pvm_n_task/10 ; i++)
+        {
+        for (j=0 ; j<10 && j+i*10<pvm_n_task ; j++)
+          sprintf(fn[j], "n%d.rz", j+i*10);
+
+        sprintf(str, "t%d.rz", i);
+        printf("Merging %d files to %s:\n", j, str);
+        HMERGE(j, fn, str);
+        }
+      for (i=0 ; i<=pvm_n_task/10 ; i++)
+        sprintf(fn[i], "t%d.rz", i);
+
+      printf("Merging %d files to %s:\n", i, file_name);
+      HMERGE(i, fn, file_name);
       }
     }
 
