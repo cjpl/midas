@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.23  1999/04/27 11:11:39  midas
+  Added rpc_register_client
+
   Revision 1.22  1999/04/23 11:43:15  midas
   Increased version to 1.7.0
 
@@ -1211,6 +1214,7 @@ INT EXPRT rpc_is_remote(void);
 INT EXPRT rpc_set_debug(void (*func)(char*));
 
 INT EXPRT rpc_register_server(INT server_type, char *name, INT *port, INT (*func)(INT,void**));
+INT EXPRT rpc_register_client(char *name, RPC_LIST *list);
 INT EXPRT rpc_server_thread(void *pointer);
 INT EXPRT rpc_server_shutdown(void);
 INT EXPRT rpc_client_call(HNDLE hConn, const INT routine_id, ...);
