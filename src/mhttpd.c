@@ -6,6 +6,10 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.239  2003/03/14 06:10:36  pierre
+  - Fix find_odb_tag() for ctl character (LF)
+  - Modify for 50K Custom weeb page
+
   Revision 1.238  2003/02/20 13:11:13  midas
   Fixed compiler warning
 
@@ -745,7 +749,7 @@ int  tcp_port = 80;
 #define MAX_PARAM    100
 #define VALUE_SIZE   256
 #define PARAM_LENGTH 256
-#define TEXT_SIZE  10000
+#define TEXT_SIZE  50000
 
 char _param[MAX_PARAM][PARAM_LENGTH];
 char _value[MAX_PARAM][VALUE_SIZE];
@@ -1438,9 +1442,9 @@ char   data[1000], str[256];
     for (i=0 ; ; i++)
       {
       db_enum_key(hDB, hkey, i, &hsubkey);
-	    if (!hsubkey)
-	      break;
-	    db_get_key(hDB, hsubkey, &key);
+        if (!hsubkey)
+          break;
+        db_get_key(hDB, hsubkey, &key);
 
       if (key.type != TID_KEY)
         {
@@ -1571,9 +1575,9 @@ CHN_STATISTICS chn_stats;
     for (i=0 ; ; i++)
       {
       db_enum_link(hDB, hkey, i, &hsubkey);
-	    if (!hsubkey)
-	      break;
-	    db_get_key(hDB, hsubkey, &key);
+        if (!hsubkey)
+          break;
+        db_get_key(hDB, hsubkey, &key);
       rsprintf("<input type=submit name=script value=\"%s\">\n", key.name);
       }
     }
@@ -1876,12 +1880,12 @@ CHN_STATISTICS chn_stats;
         rsprintf("<tr><td><a href=\"%s\">%s</a><td align=center bgcolor=#FF0000>(inactive)",
                   ref, key.name);
       else {
-	 if (equipment.enabled)
-	   rsprintf("<tr><td><a href=\"%s\">%s</a><td align=center bgcolor=#00FF00>%s@%s",
-		    ref, key.name, equipment.frontend_name, equipment.frontend_host);
-	 else
-	   rsprintf("<tr><td><a href=\"%s\">%s</a><td align=center bgcolor=#FFFF00>%s@%s",
-		    ref, key.name, equipment.frontend_name, equipment.frontend_host);
+     if (equipment.enabled)
+       rsprintf("<tr><td><a href=\"%s\">%s</a><td align=center bgcolor=#00FF00>%s@%s",
+            ref, key.name, equipment.frontend_name, equipment.frontend_host);
+     else
+       rsprintf("<tr><td><a href=\"%s\">%s</a><td align=center bgcolor=#FFFF00>%s@%s",
+            ref, key.name, equipment.frontend_name, equipment.frontend_host);
       }
 
       /* get analyzed ratio */
@@ -4114,9 +4118,9 @@ char  def_button[][NAME_LENGTH] = {"8h", "24h", "7d" };
       size = sizeof(file_name);
       memset(file_name, 0, size);
       
-	    status = db_get_value(hDB, 0, "/Logger/Elog dir", file_name, &size, TID_STRING, FALSE);
+        status = db_get_value(hDB, 0, "/Logger/Elog dir", file_name, &size, TID_STRING, FALSE);
       if (status != DB_SUCCESS)
-	      db_get_value(hDB, 0, "/Logger/Data dir", file_name, &size, TID_STRING, TRUE);
+          db_get_value(hDB, 0, "/Logger/Data dir", file_name, &size, TID_STRING, TRUE);
       
       if (file_name[0] != 0)
         if (file_name[strlen(file_name)-1] != DIR_SEPARATOR)
@@ -5103,7 +5107,7 @@ char str[256], *ps;
       return NULL;
 
     p++;
-    while (*p && *p == ' ')
+    while (*p && ((*p == ' ') || iscntrl(*p)))
       p++;
 
     strncpy(str, p, 4);
@@ -5113,7 +5117,7 @@ char str[256], *ps;
       {
       ps = p-1;
       p += 4;
-      while (*p && *p == ' ')
+      while (*p && ((*p == ' ') || iscntrl(*p)))
         p++;
 
       do
@@ -5151,7 +5155,7 @@ char str[256], *ps;
             }
           }
 
-        while (*p && *p == ' ')
+        while (*p && ((*p == ' ') || iscntrl(*p)))
           p++;
 
         } while (*p != '>');
@@ -5169,7 +5173,7 @@ char str[256], *ps;
 void show_custom_page(char *path)
 {
 int    size, i_edit, i_set, index, n_var;
-char   str[10000], data[10000], ctext[10000], keypath[256], *p, *ps;
+char   str[50000], data[50000], ctext[50000], keypath[256], *p, *ps;
 HNDLE  hDB, hkey;
 KEY    key;
 BOOL   bedit;
@@ -5721,9 +5725,9 @@ void show_odb_page(char *enc_path, char *dec_path)
 {
 int    i, j, size, status;
 char   str[256], tmp_path[256], url_path[256],
-       data_str[10000], hex_str[256], ref[256], keyname[32], link_name[256];
+       data_str[50000], hex_str[256], ref[256], keyname[32], link_name[256];
 char   *p, *pd;
-char   data[10000];
+char   data[50000];
 HNDLE  hDB, hkey, hkeyroot;
 KEY    key;
 
@@ -5983,8 +5987,8 @@ void show_set_page(char *enc_path, char *dec_path, char *group, int index, char 
 int    status, size;
 HNDLE  hDB, hkey;
 KEY    key;
-char   data_str[10000], str[256], *p, eq_name[NAME_LENGTH];
-char   data[10000];
+char   data_str[50000], str[256], *p, eq_name[NAME_LENGTH];
+char   data[50000];
 
   cm_get_experiment_database(&hDB, NULL);
 
@@ -7401,11 +7405,11 @@ double      yb1, yb2, yf1, yf2, ybase;
   /* generate test image */
   im = gdImageCreate(width, height);
 
-	/* First color allocated is background. */
+    /* First color allocated is background. */
   grey   = gdImageColorAllocate(im, 192, 192, 192);
   ltgrey = gdImageColorAllocate(im, 208, 208, 208);
-	white  = gdImageColorAllocate(im, 255, 255, 255);
-	black  = gdImageColorAllocate(im, 0, 0, 0);
+    white  = gdImageColorAllocate(im, 255, 255, 255);
+    black  = gdImageColorAllocate(im, 0, 0, 0);
   red    = gdImageColorAllocate(im, 255,   0,   0);
   green  = gdImageColorAllocate(im,   0, 255,   0);
   blue   = gdImageColorAllocate(im,   0,   0, 255);
@@ -7426,13 +7430,13 @@ double      yb1, yb2, yf1, yf2, ybase;
   state_col[2] = gdImageColorAllocate(im,   0, 255,   0);
 
   /* Set transparent color. */
-	gdImageColorTransparent(im, grey);
+    gdImageColorTransparent(im, grey);
 
-	/* Title */
+    /* Title */
   strcpy(panel, path);
   if (strstr(panel, ".gif"))
     *strstr(panel, ".gif") = 0;
-	gdImageString(im, gdFontGiant, width/2-(strlen(panel)*gdFontGiant->w)/2, 2, panel, black);
+    gdImageString(im, gdFontGiant, width/2-(strlen(panel)*gdFontGiant->w)/2, 2, panel, black);
 
   /* set history path */
   status = db_find_key(hDB, 0, "/Logger/Data dir", &hkey);
@@ -8086,8 +8090,8 @@ double      yb1, yb2, yf1, yf2, ybase;
 error:
 
   /* generate GIF */
-	gdImageInterlace(im, 1);
-	gdImageGif(im, &gb);
+    gdImageInterlace(im, 1);
+    gdImageGif(im, &gb);
   gdImageDestroy(im);
   length = gb.size;
 
@@ -9255,7 +9259,7 @@ HNDLE  hkey, hsubkey, hDB, hconn;
 KEY    key;
 char   str[256], *p;
 char   enc_path[256], dec_path[256], eq_name[NAME_LENGTH], fe_name[NAME_LENGTH];
-char   data[10000];
+char   data[50000];
 char   *experiment, *password, *wpassword, *command, *value, *group;
 char   exp_list[MAX_EXPERIMENT][NAME_LENGTH];
 time_t now;
