@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.157  2002/05/22 05:43:32  midas
+  Added extra variables to hs_enum_vars for mhist to display array size
+
   Revision 1.156  2002/05/22 05:26:38  midas
   Fixed problem with empty history files
 
@@ -14654,7 +14657,8 @@ HIST_RECORD  rec;
 
 /*------------------------------------------------------------------*/
 
-INT hs_enum_vars(DWORD ltime, DWORD event_id, char *var_name, DWORD *size)
+INT hs_enum_vars(DWORD ltime, DWORD event_id, char *var_name, DWORD *size,
+                 DWORD *var_n, DWORD *n_size)
 /********************************************************************\
 
   Routine: hs_enum_vars
@@ -14668,6 +14672,8 @@ INT hs_enum_vars(DWORD ltime, DWORD event_id, char *var_name, DWORD *size)
   Output:
     char   *var_name        Array containing variable names
     DWORD  *size            Size of name array
+    DWORD  *var_n           Array size of variable
+    DWORD  *n_size          Size of n array
 
   Function value:
     HS_SUCCESS              Successful completion
@@ -14730,11 +14736,15 @@ TAG          *tag;
   tag = M_MALLOC(rec.data_size);
   read(fh, (char *)tag, rec.data_size);
 
-  if (n*NAME_LENGTH > (INT)*size)
+  if (n*NAME_LENGTH > (INT)*size ||
+      n*sizeof(DWORD) > *n_size)
     {
     /* store partial definition */
     for (i=0 ; i<(INT)*size/NAME_LENGTH ; i++)
+      {
       strcpy(var_name+i*NAME_LENGTH, tag[i].name);
+      var_n[i] = tag[i].n_data;
+      }
 
     cm_msg(MERROR, "hs_enum_tags", "tag buffer too small");
     M_FREE(tag);
@@ -14745,8 +14755,12 @@ TAG          *tag;
 
   /* store full definition */
   for (i=0 ; i<n ; i++)
+    {
     strcpy(var_name+i*NAME_LENGTH, tag[i].name);
+    var_n[i] = tag[i].n_data;
+    }
   *size = n*NAME_LENGTH;
+  *n_size = n;
 
   M_FREE(tag);
   close(fh);

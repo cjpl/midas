@@ -6,6 +6,9 @@
   Contents:     MIDAS history display utility
 
   $Log$
+  Revision 1.15  2002/05/22 05:43:33  midas
+  Added extra variables to hs_enum_vars for mhist to display array size
+
   Revision 1.14  2002/05/08 19:54:41  midas
   Added extra parameter to function db_get_value()
 
@@ -142,7 +145,7 @@ INT query_params(DWORD *ev_id, DWORD *start_time, DWORD *end_time,
                  DWORD *interval, char *var_name, DWORD *var_type, 
                  INT *var_n_data, DWORD *index)
 {
-DWORD      status, hour, i, bytes, n;
+DWORD      status, hour, i, bytes, n, *var_n, n_bytes;
 INT        var_index, *event_id, name_size, id_size;
 char       *event_name;
 char       *var_names;
@@ -169,13 +172,18 @@ char       *var_names;
     *ev_id = event_id[0];
   
   hs_count_vars(0, *ev_id, &n);
+  n_bytes = n;
   bytes = n*NAME_LENGTH;
   var_names = malloc(bytes);
-  hs_enum_vars(0, *ev_id, var_names, &bytes);
+  var_n = malloc(n*sizeof(DWORD));
+  hs_enum_vars(0, *ev_id, var_names, &bytes, var_n, &n_bytes);
   
   printf("\nAvailable variables:\n");
   for (i=0 ; i<n ; i++)
-    printf("%d: %s\n", i, var_names+i*NAME_LENGTH);
+    if (var_n[i] > 1)
+      printf("%d: %s[%d]\n", i, var_names+i*NAME_LENGTH, var_n[i]);
+    else
+      printf("%d: %s\n", i, var_names+i*NAME_LENGTH);
   
   *index = var_index = 0;
   if (n>1)
@@ -207,6 +215,8 @@ char       *var_names;
   scanf("%d", interval);
   printf("\n");
 
+  free(var_names);
+  free(var_n);
   free(event_name);
   free(event_id);
   
@@ -217,7 +227,7 @@ char       *var_names;
 
 INT display_vars(char *file_name)
 {
-DWORD      status, i, j, bytes, n, nv, ltime;
+DWORD      status, i, j, bytes, n, nv, ltime, *var_n, n_bytes;
 INT        *event_id, name_size, id_size;
 char       *event_name;
 char       *var_names;
@@ -251,10 +261,18 @@ char       *var_names;
     printf("\nEvent ID %d: %s\n", event_id[i], event_name+i*NAME_LENGTH);
     hs_count_vars(0, event_id[i], &nv);
     bytes = nv*NAME_LENGTH;
+    n_bytes = nv*sizeof(DWORD);
     var_names = malloc(bytes);
-    hs_enum_vars(ltime, event_id[i], var_names, &bytes);
+    var_n = malloc(nv*sizeof(DWORD));
+    
+    hs_enum_vars(ltime, event_id[i], var_names, &bytes, var_n, &n_bytes);
     for (j=0 ; j<nv ; j++)
-      printf("%d: %s\n", j, var_names+j*NAME_LENGTH);
+      if (var_n[j] > 1)
+        printf("%d: %s[%d]\n", j, var_names+j*NAME_LENGTH, var_n[j]);
+      else
+        printf("%d: %s\n", j, var_names+j*NAME_LENGTH);
+
+    free(var_n);
     free(var_names);
     }
 
