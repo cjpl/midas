@@ -6,6 +6,9 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.74  2003/12/01 07:56:10  midas
+  Fixed bug in db_check_record()
+
   Revision 1.73  2003/11/24 08:22:46  midas
   Changed timeouts from INT to DWORD, added ignore_timeout to cm_cleanup, adde '-f' flag to ODBEdit 'cleanup'
 
@@ -7802,7 +7805,7 @@ char             line[MAX_STRING_LENGTH];
 char             title[MAX_STRING_LENGTH];
 char             key_name[MAX_STRING_LENGTH];
 char             info_str[MAX_STRING_LENGTH + 50];
-char             *pc, *pold;
+char             *pc, *pold, *rec_str_orig;
 DWORD            tid;
 INT              i, j, n_data, string_length, status;
 HNDLE            hKeyRoot, hKeyTest;
@@ -7823,6 +7826,7 @@ BOOL             multi_line;
 
   title[0] = 0;
   multi_line = FALSE;
+  rec_str_orig = rec_str; 
 
   db_get_key(hDB, hKeyRoot, &key);
   if (key.type == TID_KEY)
@@ -7835,7 +7839,7 @@ BOOL             multi_line;
   if (hKeyTest == 0 && *rec_str != 0)
     {
     if (correct)
-      return db_create_record(hDB, hKey, keyname, rec_str);
+      return db_create_record(hDB, hKey, keyname, rec_str_orig);
 
     return DB_STRUCT_MISMATCH;
     }
@@ -8020,7 +8024,7 @@ BOOL             multi_line;
           if (!hKeyTest)
             {
             if (correct)
-              return db_create_record(hDB, hKey, keyname, rec_str);
+              return db_create_record(hDB, hKey, keyname, rec_str_orig);
             
             return DB_STRUCT_MISMATCH;
             }
@@ -8034,7 +8038,7 @@ BOOL             multi_line;
               key.num_values != n_data)
             {
             if (correct)
-              return db_create_record(hDB, hKey, keyname, rec_str);
+              return db_create_record(hDB, hKey, keyname, rec_str_orig);
             
             return DB_STRUCT_MISMATCH;
             }
