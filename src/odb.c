@@ -6,6 +6,9 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.54  2003/03/26 21:07:11  midas
+  Outcommented 'kill()' so that it compiles under Windows and removed some tabs
+
   Revision 1.53  2003/03/22 07:00:16  olchansk
   ODB corruption fixes:
   - validate the odb directory in db_open_database()
@@ -309,11 +312,11 @@ FREE_DESCRIP   *pfree, *pprev, *pnext;
     while (pprev->next_free < (PTYPE) address - (PTYPE) pheader)
       {
       if (pprev->next_free <= 0)
-	{
+        {
         cm_msg(MERROR, "free_key","database is corrupted: pprev=0x%x, pprev->next_free=%d",pprev,pprev->next_free);
-	//abort();
-	return;
-	}
+	      //abort();
+        return;
+        }
       pprev = (FREE_DESCRIP *) ((char *) pheader + pprev->next_free);
       }
 
@@ -448,11 +451,12 @@ FREE_DESCRIP   *pfree, *pprev, *pnext;
     while (pprev->next_free < (PTYPE) address - (PTYPE) pheader)
       {
       if (pprev->next_free <= 0)
-	{
+        {
         cm_msg(MERROR, "free_data","database is corrupted: pprev=0x%x, pprev->next_free=%d",pprev,pprev->next_free);
-	//abort();
-	return;
-	}
+	      //abort();
+        return;
+        }
+
       pprev = (FREE_DESCRIP *) ((char *) pheader + pprev->next_free);
       }
 
@@ -967,19 +971,21 @@ INT                  timeout;
   /*
   remove dead clients
   */
+  /*
   for (i=0 ; i<MAX_CLIENTS ; i++)
     {
-      int err;
-      errno = 0;
-      err = kill(pheader->client[i].pid,0);
-      /* fprintf(stderr,"slot: %d, pid: %d, kill: %d, errno: %d (%s)\n",i,pheader->client[i].pid,err,errno,strerror(errno)); */
-      if (errno == ESRCH)
-	{
-	  cm_msg(MERROR, "db_open_database", "removing client %s, pid %d, index %d because the pid no longer exists", pheader->client[i].name, pheader->client[i].pid, i);
-	  /* clear entry from client structure in database header */
-	  memset(&(pheader->client[i]), 0, sizeof(DATABASE_CLIENT));
-	}
+    int err;
+    errno = 0;
+    err = kill(pheader->client[i].pid, 0);
+    // fprintf(stderr,"slot: %d, pid: %d, kill: %d, errno: %d (%s)\n",i,pheader->client[i].pid,err,errno,strerror(errno));
+    if (errno == ESRCH)
+      {
+	    cm_msg(MERROR, "db_open_database", "removing client %s, pid %d, index %d because the pid no longer exists", pheader->client[i].name, pheader->client[i].pid, i);
+	    // clear entry from client structure in database header
+	    memset(&(pheader->client[i]), 0, sizeof(DATABASE_CLIENT));
+      }
     }
+  */
 
   /*
   update the client count
