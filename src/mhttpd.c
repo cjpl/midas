@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.198  2002/05/08 18:34:43  midas
+  Added 'last x' buttons in Elog display
+
   Revision 1.197  2002/05/08 17:56:12  midas
   Omit overflow in history display
 
@@ -2839,17 +2842,28 @@ FILE   *f;
     {
     if (last_n)
       {
-      if (exp_name[0])
-        rsprintf("<tr><td colspan=6><a href=\"last%d?exp=%s\">Last %d days</a></tr>\n",
-                  last_n*2, exp_name, last_n*2);
-      else
-        rsprintf("<tr><td colspan=6><a href=\"last%d\">Last %d days</a></tr>\n",
-                  last_n*2, last_n*2);
+      if (last_n < 24)
+        {
+        if (exp_name[0])
+          rsprintf("<tr><td colspan=6><a href=\"last%d?exp=%s\">Last %d hours</a></tr>\n",
+                    last_n*2, exp_name, last_n*2);
+        else
+          rsprintf("<tr><td colspan=6><a href=\"last%d\">Last %d hours</a></tr>\n",
+                    last_n*2, last_n*2);
 
-      if (last_n == 1)
-        rsprintf("<tr><td colspan=6 bgcolor=#FFFF00><b>Last 24 hours</b></tr>\n");
+        rsprintf("<tr><td colspan=6 bgcolor=#FFFF00><b>Last %d hours</b></tr>\n", last_n);
+        }
       else
-        rsprintf("<tr><td colspan=6 bgcolor=#FFFF00><b>Last %d days</b></tr>\n", last_n);
+        {
+        if (exp_name[0])
+          rsprintf("<tr><td colspan=6><a href=\"last%d?exp=%s\">Last %d days</a></tr>\n",
+                    last_n*2, exp_name, last_n/24*2);
+        else
+          rsprintf("<tr><td colspan=6><a href=\"last%d\">Last %d days</a></tr>\n",
+                    last_n*2, last_n/24*2);
+
+        rsprintf("<tr><td colspan=6 bgcolor=#FFFF00><b>Last %d days</b></tr>\n", last_n/24);
+        }
       }
 
     else if (*getparam("m2") || *getparam("y2") || *getparam("d2"))
@@ -2911,7 +2925,7 @@ FILE   *f;
   if (last_n)
     {
     time(&now);
-    ltime_start = now-3600*24*last_n;
+    ltime_start = now-3600*last_n;
     ptms = localtime(&ltime_start);
 
     sprintf(tag, "%02d%02d%02d.0", ptms->tm_year % 100, ptms->tm_mon+1, ptms->tm_mday);
@@ -3791,10 +3805,11 @@ int   size, i, run, msg_status, status, fh, length, first_message, last_message,
 char  str[256], orig_path[256], command[80], ref[256], file_name[256];
 char  date[80], author[80], type[80], system[80], subject[256], text[10000],
       orig_tag[80], reply_tag[80], attachment[3][256], encoding[80], att[256];
-HNDLE hDB, hkey, hkeyroot, hktmp;
+HNDLE hDB, hkey, hkeyroot, hkeybutton, hktmp;
 KEY   key;
 FILE  *f;
 BOOL  display_run_number, allow_delete;
+char  def_button[][NAME_LENGTH] = {"8h", "24h", "7d" };
 
   /* get flag for displaying run number and allow delete */
   cm_get_experiment_database(&hDB, NULL);
@@ -3872,15 +3887,14 @@ BOOL  display_run_number, allow_delete;
     return;
     }
 
-  if (equal_ustring(command, "last 24 hours"))
+  if (strncmp(command, "Last ", 5) == 0)
     {
-    redirect("EL/last1");
-    return;
-    }
-
-  if (equal_ustring(command, "last week"))
-    {
-    redirect("EL/last7");
+    if (command[strlen(command)-1] == 'h')
+      sprintf(str, "EL/last%d", atoi(command+5));
+    else if (command[strlen(command)-1] == 'd')
+      sprintf(str, "EL/last%d", atoi(command+5)*24);
+                                             
+    redirect(str);
     return;
     }
 
@@ -4110,8 +4124,6 @@ BOOL  display_run_number, allow_delete;
     rsprintf("<input type=submit name=cmd value=Delete>\n");
   rsprintf("<input type=submit name=cmd value=Reply>\n");
   rsprintf("<input type=submit name=cmd value=Query>\n");
-  rsprintf("<input type=submit name=cmd value=\"Last 24 hours\">\n");
-  rsprintf("<input type=submit name=cmd value=\"Last week\">\n");
 
   /* check forms from ODB */
   db_find_key(hDB, 0, "/Elog/Forms", &hkeyroot);
@@ -4131,6 +4143,29 @@ BOOL  display_run_number, allow_delete;
 
   if (!elog_mode)
     rsprintf("<input type=submit name=cmd value=Status>\n");
+  rsprintf("</tr>\n");
+
+  /* "last x" button row */
+  rsprintf("<tr><td colspan=2 bgcolor=#D0D0D0>\n");
+
+  db_find_key(hDB, 0, "/Elog/Buttons", &hkeybutton);
+  if (hkeybutton == 0)
+    {
+    /* create default buttons */
+    db_create_key(hDB, 0, "/Elog/Buttons", TID_STRING);
+    db_find_key(hDB, 0, "/Elog/Buttons", &hkeybutton);
+    db_set_data(hDB, hkeybutton, def_button, sizeof(def_button), 3, TID_STRING);
+    }
+
+  db_get_key(hDB, hkeybutton, &key);
+
+  for (i=0 ; i<key.num_values ; i++)
+    {
+    size = sizeof(str);
+    db_get_data_index(hDB, hkeybutton, str, &size, i, TID_STRING);
+    rsprintf("<input type=submit name=cmd value=\"Last %s\">\n", str);
+    }
+
   rsprintf("</tr>\n");
 
   rsprintf("<tr><td colspan=2 bgcolor=#E0E0E0>");
