@@ -6,6 +6,9 @@
   Contents:     Command-line interface for the Midas Slow Control Bus
 
   $Log$
+  Revision 1.17  2002/11/06 16:46:29  midas
+  Keep address on reboot
+
   Revision 1.16  2002/11/06 14:01:20  midas
   Fixed small bugs
 
@@ -430,16 +433,12 @@ MSCB_INFO_CHN info_chn;
     else if ((param[0][0] == 'r' && param[0][1] == 'e') && param[0][2] == 'b')
       {
       mscb_reboot(fd, current_addr);
-      current_addr = -1;
-      current_group = -1;
       }
 
     /* reset */
     else if ((param[0][0] == 'r' && param[0][1] == 'e') && param[0][2] == 's')
       {
       mscb_reset(fd);
-      current_addr = -1;
-      current_group = -1;
       }
 
     /* ping/address */
