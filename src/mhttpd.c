@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.155  2001/07/10 21:15:39  pierre
+  - Added exp_name in Elog for last day request.
+
   Revision 1.154  2001/06/27 12:29:35  midas
   Added auto refresh to history page
 
@@ -2471,8 +2474,8 @@ FILE   *f;
     {
     if (last_n)
       {
-      rsprintf("<tr><td colspan=6><a href=\"last%d\">Last %d days</a></tr>\n", 
-                last_n+1, last_n+1);
+      rsprintf("<tr><td colspan=6><a href=\"last%d?exp=%s\">Last %d days</a></tr>\n", 
+                last_n+1, exp_name, last_n+1);
 
       if (last_n == 1)
         rsprintf("<tr><td colspan=6 bgcolor=#FFFF00><b>Last 24 hours</b></tr>\n");
