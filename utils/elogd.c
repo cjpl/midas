@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.66  2001/11/20 09:16:33  midas
+  Added "Last x" in "find menu commands"
+
   Revision 1.65  2001/11/19 17:14:25  midas
   Made "bottom text" work with find page and added "find menu commands"
 
@@ -3868,7 +3871,18 @@ FILE   *f;
       if (atoi(gt("Use buttons")) == 1)
         {
         for (i=0 ; i<n ; i++)
-          rsprintf("<input type=submit name=cmd value=\"%s\">\n", menu_item[i]);
+          {
+          if (equal_ustring(menu_item[i], "Last x"))
+            {
+            if (past_n)
+              rsprintf("<input type=submit name=past value=\"Last %d days\">\n", past_n*2);
+
+            if (last_n)
+              rsprintf("<input type=submit name=last value=\"Last %d entries\">\n", last_n*2);
+            }
+          else
+            rsprintf("<input type=submit name=cmd value=\"%s\">\n", menu_item[i]);
+          }
         }
       else
         {
@@ -3876,10 +3890,21 @@ FILE   *f;
 
         for (i=0 ; i<n ; i++)
           {
-          if (i < n-1)
-            rsprintf("&nbsp;<a href=\"/%s?cmd=%s\">%s</a>&nbsp;|\n", logbook_enc, menu_item[i], menu_item[i]);
+          if (equal_ustring(menu_item[i], "Last x"))
+            {
+            if (past_n)
+              rsprintf("&nbsp;<a href=\"/%s/past%d\">Last %d days</a>&nbsp;|\n", logbook_enc, past_n*2, past_n*2);
+
+            if (last_n)
+              rsprintf("&nbsp;<a href=\"/%s/last%d\">Last %d entries</a>&nbsp;|\n", logbook_enc, last_n*2, last_n*2);
+            }
           else
-            rsprintf("&nbsp;<a href=\"/%s?cmd=%s\">%s</a>&nbsp;\n", logbook_enc, menu_item[i], menu_item[i]);
+            {
+            if (i < n-1)
+              rsprintf("&nbsp;<a href=\"/%s?cmd=%s\">%s</a>&nbsp;|\n", logbook_enc, menu_item[i], menu_item[i]);
+            else
+              rsprintf("&nbsp;<a href=\"/%s?cmd=%s\">%s</a>&nbsp;\n", logbook_enc, menu_item[i], menu_item[i]);
+            }
           }
 
         rsprintf("</small>\n");
