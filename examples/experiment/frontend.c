@@ -11,6 +11,9 @@
                 with one bank (SCLR).
 
   $Log$
+  Revision 1.23  2004/06/08 14:58:18  midas
+  Fixed strange formatting
+
   Revision 1.22  2004/01/08 08:40:08  midas
   Implemented standard indentation
 
@@ -85,24 +88,24 @@ extern "C" {
 /*-- Globals -------------------------------------------------------*/
 
 /* The frontend name (client name) as seen by other MIDAS clients   */
-   char *frontend_name = "Sample Frontend";
+char *frontend_name = "Sample Frontend";
 /* The frontend file name, don't change it */
-   char *frontend_file_name = __FILE__;
+char *frontend_file_name = __FILE__;
 
 /* frontend_loop is called periodically if this variable is TRUE    */
-   BOOL frontend_call_loop = FALSE;
+BOOL frontend_call_loop = FALSE;
 
 /* a frontend status page is displayed with this frequency in ms */
-   INT display_period = 3000;
+INT display_period = 3000;
 
 /* maximum event size produced by this frontend */
-   INT max_event_size = 10000;
+INT max_event_size = 10000;
 
 /* maximum event size for fragmented events (EQ_FRAGMENTED) */
-   INT max_event_size_frag = 5 * 1024 * 1024;
+INT max_event_size_frag = 5 * 1024 * 1024;
 
 /* buffer size to hold events */
-   INT event_buffer_size = 10 * 10000;
+INT event_buffer_size = 10 * 10000;
 
 /* number of channels */
 #define N_ADC  4
@@ -118,96 +121,93 @@ extern "C" {
 
 /*-- Function declarations -----------------------------------------*/
 
-   INT frontend_init();
-   INT frontend_exit();
-   INT begin_of_run(INT run_number, char *error);
-   INT end_of_run(INT run_number, char *error);
-   INT pause_run(INT run_number, char *error);
-   INT resume_run(INT run_number, char *error);
-   INT frontend_loop();
+INT frontend_init();
+INT frontend_exit();
+INT begin_of_run(INT run_number, char *error);
+INT end_of_run(INT run_number, char *error);
+INT pause_run(INT run_number, char *error);
+INT resume_run(INT run_number, char *error);
+INT frontend_loop();
 
-   INT read_trigger_event(char *pevent, INT off);
-   INT read_scaler_event(char *pevent, INT off);
+INT read_trigger_event(char *pevent, INT off);
+INT read_scaler_event(char *pevent, INT off);
 
 /*-- Bank definitions ----------------------------------------------*/
 
-    ADC0_BANK_STR(adc0_bank_str);
+ADC0_BANK_STR(adc0_bank_str);
 
-   BANK_LIST trigger_bank_list[] = {
-      {"ADC0", TID_STRUCT, sizeof(ADC0_BANK), adc0_bank_str}
-      ,
-      {"TDC0", TID_WORD, N_TDC, NULL}
-      ,
+BANK_LIST trigger_bank_list[] = {
+   {"ADC0", TID_STRUCT, sizeof(ADC0_BANK), adc0_bank_str}
+   ,
+   {"TDC0", TID_WORD, N_TDC, NULL}
+   ,
 
-      {""}
-      ,
-   };
+   {""}
+   ,
+};
 
-   BANK_LIST scaler_bank_list[] = {
-      {"SCLR", TID_DWORD, N_ADC, NULL}
-      ,
-      {""}
-      ,
-   };
+BANK_LIST scaler_bank_list[] = {
+   {"SCLR", TID_DWORD, N_ADC, NULL}
+   ,
+   {""}
+   ,
+};
 
 /*-- Equipment list ------------------------------------------------*/
 
 #undef USE_INT
 
-   EQUIPMENT equipment[] = {
+EQUIPMENT equipment[] = {
 
-      {"Trigger",               /* equipment name */
-       {1, 0,                   /* event ID, trigger mask */
-        "SYSTEM",               /* event buffer */
+   {"Trigger",               /* equipment name */
+    {1, 0,                   /* event ID, trigger mask */
+     "SYSTEM",               /* event buffer */
 #ifdef USE_INT
-        EQ_INTERRUPT,           /* equipment type */
+     EQ_INTERRUPT,           /* equipment type */
 #else
-        EQ_POLLED,              /* equipment type */
+     EQ_POLLED,              /* equipment type */
 #endif
-        LAM_SOURCE(0, 0xFFFFFF),        /* event source crate 0, all stations */
-        "MIDAS",                /* format */
-        TRUE,                   /* enabled */
-        RO_RUNNING |            /* read only when running */
-        RO_ODB,                 /* and update ODB */
-        500,                    /* poll for 500ms */
-        0,                      /* stop run after this event limit */
-        0,                      /* number of sub events */
-        0,                      /* don't log history */
-        "", "", "",}
-       ,
-       read_trigger_event,      /* readout routine */
-       NULL, NULL,
-       trigger_bank_list,       /* bank list */
-       }
-      ,
+     LAM_SOURCE(0, 0xFFFFFF),        /* event source crate 0, all stations */
+     "MIDAS",                /* format */
+     TRUE,                   /* enabled */
+     RO_RUNNING |            /* read only when running */
+     RO_ODB,                 /* and update ODB */
+     500,                    /* poll for 500ms */
+     0,                      /* stop run after this event limit */
+     0,                      /* number of sub events */
+     0,                      /* don't log history */
+     "", "", "",},
+    read_trigger_event,      /* readout routine */
+    NULL, NULL,
+    trigger_bank_list,       /* bank list */
+    },
 
-      {"Scaler",                /* equipment name */
-       {2, 0,                   /* event ID, trigger mask */
-        "SYSTEM",               /* event buffer */
-        EQ_PERIODIC | EQ_MANUAL_TRIG,   /* equipment type */
-        0,                      /* event source */
-        "MIDAS",                /* format */
-        TRUE,                   /* enabled */
-        RO_RUNNING | RO_TRANSITIONS |   /* read when running and on transitions */
-        RO_ODB,                 /* and update ODB */
-        10000,                  /* read every 10 sec */
-        0,                      /* stop run after this event limit */
-        0,                      /* number of sub events */
-        0,                      /* log history */
-        "", "", "",}
-       ,
-       read_scaler_event,       /* readout routine */
-       NULL, NULL,
-       scaler_bank_list,        /* bank list */
-       }
-      ,
+   {"Scaler",                /* equipment name */
+    {2, 0,                   /* event ID, trigger mask */
+     "SYSTEM",               /* event buffer */
+     EQ_PERIODIC | EQ_MANUAL_TRIG,   /* equipment type */
+     0,                      /* event source */
+     "MIDAS",                /* format */
+     TRUE,                   /* enabled */
+     RO_RUNNING | RO_TRANSITIONS |   /* read when running and on transitions */
+     RO_ODB,                 /* and update ODB */
+     10000,                  /* read every 10 sec */
+     0,                      /* stop run after this event limit */
+     0,                      /* number of sub events */
+     0,                      /* log history */
+     "", "", "",},
+    read_scaler_event,       /* readout routine */
+    NULL, NULL,
+    scaler_bank_list,        /* bank list */
+    },
 
-      {""}
-   };
+   {""}
+};
 
 #ifdef __cplusplus
 }
 #endif
+
 /********************************************************************\
               Callback routines for system transitions
 
@@ -231,9 +231,11 @@ extern "C" {
   pause_run:      When a run is paused. Should disable trigger events.
 
   resume_run:     When a run is resumed. Should enable trigger events.
+\********************************************************************/
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          \********************************************************************//*-- Frontend Init -------------------------------------------------*/
-    INT frontend_init()
+/*-- Frontend Init -------------------------------------------------*/
+
+INT frontend_init()
 {
    /* hardware initialization */
 
