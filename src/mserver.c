@@ -6,6 +6,9 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
+  Revision 1.9  1999/04/13 12:20:44  midas
+  Added db_get_data1 (for Java)
+
   Revision 1.8  1999/04/08 15:26:55  midas
   Added cm_transition and db_get_key_info
 
@@ -673,6 +676,11 @@ INT convert_flags;
 
     case RPC_DB_GET_DATA:
       status = db_get_data(CHNDLE(0), CHNDLE(1), CARRAY(2), CPINT(3), CDWORD(4));
+      rpc_convert_data(CARRAY(2), CDWORD(4), RPC_FIXARRAY | RPC_OUTGOING, CINT(3), convert_flags);
+      break;
+
+    case RPC_DB_GET_DATA1:
+      status = db_get_data1(CHNDLE(0), CHNDLE(1), CARRAY(2), CPINT(3), CDWORD(4), CPINT(5));
       rpc_convert_data(CARRAY(2), CDWORD(4), RPC_FIXARRAY | RPC_OUTGOING, CINT(3), convert_flags);
       break;
 

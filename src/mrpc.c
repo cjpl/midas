@@ -6,6 +6,9 @@
   Contents:     List of MIDAS RPC functions with parameters
 
   $Log$
+  Revision 1.8  1999/04/13 12:20:44  midas
+  Added db_get_data1 (for Java)
+
   Revision 1.7  1999/04/08 15:26:33  midas
   Added cm_transition and db_get_key_info
 
@@ -310,6 +313,15 @@ static RPC_LIST rpc_list_library[] = {
      {TID_ARRAY,      RPC_OUT | RPC_VARARRAY}, 
      {TID_INT,        RPC_IN | RPC_OUT},
      {TID_DWORD,      RPC_IN}, 
+     {0} }},
+
+  { RPC_DB_GET_DATA1, "db_get_data1",
+    {{TID_INT,        RPC_IN}, 
+     {TID_INT,        RPC_IN},
+     {TID_ARRAY,      RPC_OUT | RPC_VARARRAY}, 
+     {TID_INT,        RPC_IN | RPC_OUT},
+     {TID_DWORD,      RPC_IN}, 
+     {TID_INT,        RPC_OUT},
      {0} }},
 
   { RPC_DB_GET_DATA_INDEX, "db_get_data_index",

@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.19  1999/04/13 12:20:42  midas
+  Added db_get_data1 (for Java)
+
   Revision 1.18  1999/04/08 15:23:46  midas
   Added CF_ASCII and db_get_key_info
 
@@ -1147,6 +1150,7 @@ INT EXPRT db_get_key_time(HNDLE hdb, HNDLE key_handle, DWORD *delta);
 INT EXPRT db_rename_key(HNDLE hDB, HNDLE hKey, char *name);
 INT EXPRT db_reorder_key(HNDLE hDB, HNDLE hKey, INT index);
 INT EXPRT db_get_data(HNDLE hdb, HNDLE key_handle, void *data, INT *buf_size, DWORD type);
+INT EXPRT db_get_data1(HNDLE hDB, HNDLE hKey, void *data, INT *buf_size, DWORD type, INT *num_values);
 INT EXPRT db_get_data_index(HNDLE hDB, HNDLE hKey, void *data, INT *buf_size, INT index, DWORD type);
 INT EXPRT db_set_data(HNDLE hdb, HNDLE hKey, void *data, INT buf_size, INT num_values, DWORD type);
 INT EXPRT db_set_data_index(HNDLE hDB, HNDLE hKey, void *data, INT size, INT index, DWORD type);
