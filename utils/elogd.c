@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.10  2001/06/15 09:13:30  midas
+  Display "<" and ">" correctly
+
   Revision 1.9  2001/06/15 08:49:19  midas
   Fixed bug when query gave no results if no message from yesterday
 
@@ -1387,12 +1390,35 @@ char    *buffer;
 
 /*------------------------------------------------------------------*/
 
-void rsputs(const char *str, ...)
+void rsputs(const char *str)
 {
   if (strlen(return_buffer) + strlen(str) > sizeof(return_buffer))
     strcpy(return_buffer, "<H1>Error: return buffer too small</H1>");
   else
     strcat(return_buffer, str);
+}
+
+/*------------------------------------------------------------------*/
+
+void rsputs2(const char *str)
+{
+int i, j;
+
+  if (strlen(return_buffer) + strlen(str) > sizeof(return_buffer))
+    strcpy(return_buffer, "<H1>Error: return buffer too small</H1>");
+  else
+    {
+    j = strlen(return_buffer);
+    for (i=0 ; i<(int)strlen(str) ; i++)
+      switch (str[i])
+        {
+        case '<': strcat(return_buffer, "&lt;"); j+=4; break;
+        case '>': strcat(return_buffer, "&gt;"); j+=4; break;
+        default: return_buffer[j++] = str[i];
+        }
+
+    return_buffer[j] = 0;
+    }  
 }
 
 /*------------------------------------------------------------------*/
@@ -2472,7 +2498,7 @@ FILE   *f;
         if (equal_ustring(encoding, "plain"))
           {
           rsputs("<pre>");
-          rsputs(text);
+          rsputs2(text);
           rsputs("</pre>");
           }
         else
@@ -2537,7 +2563,7 @@ FILE   *f;
                       {
                       str[0] = 0;
                       fgets(str, sizeof(str), f);
-                      rsputs(str);
+                      rsputs2(str);
                       }
                     fclose(f);
                     }
@@ -2625,7 +2651,7 @@ char   file_name[256], line[1000];
     {
     memset(line, 0, sizeof(line));
     fgets(line, sizeof(line), f);
-    rsputs(line);
+    rsputs2(line);
     }
   rsprintf("</pre>\n");
   fclose(f);
@@ -3100,7 +3126,7 @@ BOOL  allow_delete, allow_edit;
     if (equal_ustring(encoding, "plain"))
       {
       rsputs("<pre>");
-      rsputs(text);
+      rsputs2(text);
       rsputs("</pre>");
       }
     else
@@ -3147,7 +3173,11 @@ BOOL  allow_delete, allow_edit;
                 {
                 str[0] = 0;
                 fgets(str, sizeof(str), f);
-                rsputs(str);
+
+                if (!strstr(att, ".HTML"))
+                  rsputs2(str);
+                else
+                  rsputs(str);
                 }
               fclose(f);
               }

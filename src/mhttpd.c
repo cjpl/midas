@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.153  2001/06/15 09:13:09  midas
+  Display "<" and ">" correctly
+
   Revision 1.152  2001/06/01 11:41:40  midas
   Fixed bug with expired password
 
@@ -555,12 +558,35 @@ void show_hist_page(char *path, char *buffer, int *buffer_size);
 
 /*------------------------------------------------------------------*/
 
-void rsputs(const char *str, ...)
+void rsputs(const char *str)
 {
   if (strlen(return_buffer) + strlen(str) > sizeof(return_buffer))
     strcpy(return_buffer, "<H1>Error: return buffer too small</H1>");
   else
     strcat(return_buffer, str);
+}
+
+/*------------------------------------------------------------------*/
+
+void rsputs2(const char *str)
+{
+int i, j;
+
+  if (strlen(return_buffer) + strlen(str) > sizeof(return_buffer))
+    strcpy(return_buffer, "<H1>Error: return buffer too small</H1>");
+  else
+    {
+    j = strlen(return_buffer);
+    for (i=0 ; i<(int)strlen(str) ; i++)
+      switch (str[i])
+        {
+        case '<': strcat(return_buffer, "&lt;"); j+=4; break;
+        case '>': strcat(return_buffer, "&gt;"); j+=4; break;
+        default: return_buffer[j++] = str[i];
+        }
+
+    return_buffer[j] = 0;
+    }  
 }
 
 /*------------------------------------------------------------------*/
@@ -2637,7 +2663,7 @@ FILE   *f;
         if (equal_ustring(encoding, "plain"))
           {
           rsputs("<pre>");
-          rsputs(text);
+          rsputs2(text);
           rsputs("</pre>");
           }
         else
@@ -2712,7 +2738,7 @@ FILE   *f;
                       {
                       str[0] = 0;
                       fgets(str, sizeof(str), f);
-                      rsputs(str);
+                      rsputs2(str);
                       }
                     fclose(f);
                     }
@@ -2831,7 +2857,7 @@ HNDLE  hDB;
     {
     memset(line, 0, sizeof(line));
     fgets(line, sizeof(line), f);
-    rsputs(line);
+    rsputs2(line);
     }
   rsprintf("</pre>\n");
   fclose(f);
@@ -3691,7 +3717,7 @@ BOOL  display_run_number, allow_delete;
     if (equal_ustring(encoding, "plain"))
       {
       rsputs("<pre>");
-      rsputs(text);
+      rsputs2(text);
       rsputs("</pre>");
       }
     else
@@ -3749,7 +3775,10 @@ BOOL  display_run_number, allow_delete;
                 {
                 str[0] = 0;
                 fgets(str, sizeof(str), f);
-                rsputs(str);
+                if (!strstr(att, ".HTML"))
+                  rsputs2(str);
+                else
+                  rsputs(str);
                 }
               fclose(f);
               }
