@@ -110,10 +110,10 @@ Options 1,0,0  // Target 'Target 1'
  LX51DAS ()
  LX51IDS ()
   OPTDL (S8051.DLL)()(DP51.DLL)(-p51F00)(S8051.DLL)()(TP51.DLL)(-p51F00)
-  OPTDBG 509,0,()()()()()()()()()() ()()()()
- FLASH1 { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }
- FLASH2 ()
- FLASH3 ()
+  OPTDBG 2046,-1,()()()()()()()()()() (BIN\SiC8051F.dll)()()()
+ FLASH1 { 1,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }
+ FLASH2 (BIN\SiC8051F.dll)
+ FLASH3 ("" ())
 EndOpt
 
 Options 1,2,4  // File 'mscb.h'
