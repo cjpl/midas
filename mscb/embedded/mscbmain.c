@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol main program
 
   $Log$
+  Revision 1.29  2003/03/21 08:28:15  midas
+  Fixed bug with LSB bytes
+
   Revision 1.28  2003/03/19 16:35:03  midas
   Eliminated configuration parameters
 
@@ -729,10 +732,16 @@ MSCB_INFO_VAR code *pvar;
       {
       n = variables[ch].width;
   
-      /* copy LSB bytes */
       for (i=0 ; i<n ; i++)
         if (variables[ch].ud)
-          ((char idata *)variables[ch].ud)[i] = in_buf[2+j+i];
+          {
+          if (n < 4)
+            /* copy LSB bytes, needed for BYTE if DWORD is sent */
+            ((char idata *)variables[ch].ud)[i] = in_buf[i_in-1-n+i+j];
+          else
+            /* copy bytes in normal order, needed for strings */
+            ((char idata *)variables[ch].ud)[i] = in_buf[2+j+i];
+          }
       
       user_write(ch);
   
