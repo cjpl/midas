@@ -6,6 +6,9 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.79  2003/12/12 10:19:22  midas
+  Reset exclusive mode in db_fix_open_records()
+
   Revision 1.78  2003/12/12 10:18:10  midas
   Reset exclusive mode in db_fix_open_records()
 
@@ -3284,7 +3287,7 @@ KEY             *pkey;
       pkey->notify_count = 0;
 
       /* and exclusive mode */
-      pkey->access_mode & ~MODE_EXCLUSIVE;
+      pkey->access_mode = pkey->access_mode & ~MODE_EXCLUSIVE;
       }
 
     db_unlock_database(hDB);
