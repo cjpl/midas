@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.91  1999/11/26 10:49:58  midas
+  Display alarym system on/off flag on main status page
+
   Revision 1.90  1999/11/23 10:17:55  midas
   SC equipment is now normally displayed if no equipment settings are defined
 
@@ -897,7 +900,17 @@ CHN_STATISTICS chn_stats;
     strcpy(str, "00FF00");
   else strcpy(str, "FFFFFF");
 
-  rsprintf("<td colspan=2 bgcolor=#%s>%s", str, state[runinfo.state]);
+  rsprintf("<td colspan=1 bgcolor=#%s>%s", str, state[runinfo.state]);
+
+  if (exp_name[0])
+    sprintf(ref, "%sAlarms/Alarm system active?cmd=set&exp=%s", mhttpd_url, exp_name);
+  else
+    sprintf(ref, "%sAlarms/Alarm system active?cmd=set", mhttpd_url);
+
+  size = sizeof(flag);
+  db_get_value(hDB, 0, "/Alarms/Alarm system active", &flag, &size, TID_BOOL);
+  strcpy(str, flag ? "00FF00" : "FFC0C0");
+  rsprintf("<td bgcolor=#%s><a href=\"%s\">Alarms: %s</a>", str, ref, flag ? "On" : "Off");
 
   if (exp_name[0])
     sprintf(ref, "%sLogger/Auto restart?cmd=set&exp=%s", mhttpd_url, exp_name);
