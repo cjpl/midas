@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.123  2000/09/29 13:31:12  midas
+  ODBEdit cleanup now deletes open record with no client attached to
+
   Revision 1.122  2000/08/21 14:18:39  midas
   bk_close returns bank size
 
@@ -5223,8 +5226,9 @@ char            str[256];
             }
           }
 
-      db_unlock_database(i+1);
+    db_unlock_database(i+1);
     }
+
 }
 #endif /* LOCAL_ROUTINES */
 

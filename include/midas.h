@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.72  2000/09/29 13:31:10  midas
+  ODBEdit cleanup now deletes open record with no client attached to
+
   Revision 1.71  2000/09/28 13:01:25  midas
   Added manual triggered events
 
@@ -1525,7 +1528,7 @@ INT EXPRT db_get_record(HNDLE hdb, HNDLE hKey, void *data, INT *buf_size, INT al
 INT EXPRT db_get_record_size(HNDLE hdb, HNDLE hKey, INT align, INT *buf_size);
 INT EXPRT db_set_record(HNDLE hdb, HNDLE hKey, void *data, INT buf_size, INT align);
 INT EXPRT db_send_changed_records(void);
-INT EXPRT db_get_open_records(HNDLE hDB, HNDLE hKey, char *str, INT buf_size);
+INT EXPRT db_get_open_records(HNDLE hDB, HNDLE hKey, char *str, INT buf_size, BOOL fix);
 
 INT EXPRT db_add_open_record(HNDLE hDB, HNDLE hKey, WORD access_mode);
 INT EXPRT db_remove_open_record(HNDLE hDB, HNDLE hKey);
