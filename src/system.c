@@ -14,6 +14,9 @@
                 Brown, Prentice Hall
 
   $Log$
+  Revision 1.34  1999/07/08 13:41:37  midas
+  Fixed followup error in ss_tape_read
+
   Revision 1.33  1999/07/06 09:02:20  midas
   Evaluater EINTR in ss_release_mutex
 
@@ -3975,9 +3978,9 @@ INT n, status;
   do
     {
     n = read(channel, pdata, *count);
-    } while (n <= 0 && errno == EINTR);
+    } while (n == -1 && errno == EINTR);
 
-  if (n <= 0)
+  if (n == -1)
     {
     if (errno == ENOSPC || errno == EIO)
       status = SS_END_OF_TAPE;
