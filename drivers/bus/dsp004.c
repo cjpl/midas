@@ -7,6 +7,9 @@
                 following the MIDAS CAMAC Standard for DirectIO
 
   $Log$
+  Revision 1.5  2001/04/20 21:58:29  pierre
+  - decrement *d if no Q in _rq calls
+
   Revision 1.4  2000/09/26 07:10:50  midas
   Added DO_IOPERM for debugging as root
 
@@ -238,7 +241,10 @@ int i, x, q;
     {
     cam16i_q(c, n, a, f, (*d)++, &x, &q);
     if (!q)
+	 {
+	    (*d)--;
       break;
+	 }
     }
 }
 /*------------------------------------------------------------------*/
