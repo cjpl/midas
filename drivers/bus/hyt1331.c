@@ -8,6 +8,9 @@
                 following the MIDAS CAMAC Standard under DIRECTIO
 
   $Log$
+  Revision 1.22  2003/10/30 12:21:45  midas
+  Fixed bug with pci_scan under linux
+
   Revision 1.21  2003/10/29 13:08:15  midas
   Stop after one PCI device found
 
@@ -47,6 +50,7 @@
 \********************************************************************/
 
 #include <stdio.h>
+#include <string.h>
 #include "mcstd.h"
 
 /*------------------------------------------------------------------*/
@@ -980,12 +984,10 @@ int pci_scan(int vendor_id, int device_id, int n_dev, BYTE *pirq, DWORD *ba)
 {
 #ifdef __linux__
 
-  FILE  *f;
-  char  line[256];
-  int   n;
-  DWORD base_addr[6];
-  BYTE  irq;
-  unsigned int  dfn, vend, vend_id, dev_id;
+FILE  *f;
+char  line[1000];
+int   n;
+DWORD base_addr[6], irq, dfn, vend, vend_id, dev_id;
 
   f = fopen("/proc/bus/pci/devices", "r");
   if (f == NULL)
@@ -1075,10 +1077,10 @@ void catch_sigsegv(int signo)
 
 INLINE int cam_init(void)
 {
-  BYTE  status, n_dev, i, n, a, f;
-  WORD  isa_io_base[] = { 0x200, 0x280, 0x300, 0x380 };
-  WORD  base_test;
-  DWORD base_addr[6];
+BYTE  status, n_dev, i, n, a, f;
+WORD  isa_io_base[] = { 0x200, 0x280, 0x300, 0x380 };
+WORD  base_test;
+DWORD base_addr[6];
 
   /* set signal handler for segmet violation */
   signal(SIGSEGV, catch_sigsegv);
