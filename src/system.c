@@ -14,6 +14,9 @@
                 Brown, Prentice Hall
 
   $Log$
+  Revision 1.39  1999/09/15 08:05:51  midas
+  Ctrl-C handle can now be turned off by using SIG_DFL
+
   Revision 1.38  1999/08/26 08:50:56  midas
   Added missing status check on select() funciton
 
@@ -2358,7 +2361,9 @@ void *ss_ctrlc_handler(void (*func)(int))
      clean up things which may otherwise left in an undefined state.
 
   Input:
-    void  (*func)(int)     Address of handler function
+    void  (*func)(int)     Address of handler function, if NULL
+                           install default handler
+
   Output:
     none
 
@@ -2369,8 +2374,17 @@ void *ss_ctrlc_handler(void (*func)(int))
 {
 #ifdef OS_WINNT
 
-  signal(SIGBREAK, func);
-  return signal(SIGINT, func);
+  if (func == NULL)
+    {
+    signal(SIGBREAK, SIG_DFL);
+    return signal(SIGINT, SIG_DFL);
+    }
+  else
+    {
+    signal(SIGBREAK, func);
+    return signal(SIGINT, func);
+    }
+  return NULL;
 
 #endif /* OS_WINNT */
 #ifdef OS_VMS
@@ -2381,8 +2395,17 @@ void *ss_ctrlc_handler(void (*func)(int))
 
 #ifdef OS_UNIX
 
-  signal(SIGTERM, func);
-  return signal(SIGINT, func);
+  if (func == NULL)
+    {
+    signal(SIGTERM, SIG_DFL);
+    return signal(SIGINT, SIG_DFL);
+    }
+  else
+    {
+    signal(SIGTERM, func);
+    return signal(SIGINT, func);
+    }
+  return NULL;
 
 #endif /* OS_UNIX */
 
