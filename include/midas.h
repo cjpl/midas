@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.79  2001/01/29 09:51:54  midas
+  Put if defined(__linux__) under #if !defined(OS_LINUX)
+
   Revision 1.78  2001/01/22 08:26:58  midas
   Added evaluation of __linux__
 
@@ -285,8 +288,10 @@
 #undef OS_UNIX
 #endif
 
+#if !defined(OS_LINUX)
 #if defined ( __linux__ )
 #define OS_LINUX
+#endif
 #endif
 
 #if defined(OS_LINUX) || defined(OS_OSF1) || defined(OS_ULTRIX) || defined(OS_FREEBSD) || defined(OS_SOLARIS)
