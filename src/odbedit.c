@@ -6,6 +6,9 @@
   Contents:     Command-line interface to the MIDAS online data base.
 
   $Log$
+  Revision 1.65  2003/07/26 23:26:51  olchansk
+  use "odbedit -C" to connect to corrupted ODB
+
   Revision 1.64  2003/05/09 07:40:05  midas
   Added extra parameter to cm_get_environment
 
@@ -3056,11 +3059,12 @@ INT           status, i, odb_size, size;
 char          host_name[HOST_NAME_LENGTH], exp_name[NAME_LENGTH];
 char          cmd[256], dir[100], str[256];
 BOOL          debug;
+BOOL          corrupted;
 HNDLE         hDB;
 
   cmd[0] = dir[0] = 0;
   odb_size = DEFAULT_ODB_SIZE;
-  debug = cmd_mode = FALSE;
+  debug = corrupted = cmd_mode = FALSE;
 
 #ifdef OS_VXWORKS
   strcpy(host_name, ahost_name);
@@ -3075,6 +3079,8 @@ HNDLE         hDB;
     {
     if (argv[i][0] == '-' && argv[i][1] == 'g')
       debug = TRUE;
+    else if (argv[i][0] == '-' && argv[i][1] == 'C')
+      corrupted = TRUE;
     else if (argv[i][0] == '-')
       {
       if (i+1 >= argc || argv[i+1][0] == '-')
@@ -3101,7 +3107,8 @@ HNDLE         hDB;
         {
 usage:
         printf("usage: odbedit [-h Hostname] [-e Experiment] [-d ODB Subtree]\n");
-        printf("               [-c Command] [-c @CommandFile] [-s size] [-g (debug)]\n\n");
+        printf("               [-c Command] [-c @CommandFile] [-s size]\n");
+        printf("               [-g (debug)] [-C (connect to corrupted ODB)]\n\n");
         printf("For a list of valid commands start odbedit interactively\n");
         printf("and type \"help\".\n");
         return 0;
@@ -3120,7 +3127,13 @@ usage:
                                   odb_size, DEFAULT_WATCHDOG_TIMEOUT);
   if (status == CM_WRONG_PASSWORD)
     return 1;
-  if (status != CM_SUCCESS)
+  else if ((status == DB_INVALID_HANDLE)&&corrupted)
+    {
+    cm_get_error(status, str);
+    puts(str);
+    printf("ODB is corrupted, connecting anyway...\n");
+    }
+  else if (status != CM_SUCCESS)
     {
     cm_get_error(status, str);
     puts(str);
