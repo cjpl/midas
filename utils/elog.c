@@ -6,6 +6,9 @@
   Contents:     Electronic logbook utility   
 
   $Log$
+  Revision 1.20  2001/11/15 11:49:46  midas
+  Added -u flag for user name/password
+
   Revision 1.19  2001/11/14 15:35:37  midas
   Fix error under Cygwin with O_BINARY
 
@@ -120,6 +123,7 @@ char *p;
 char request[600000], response[10000], content[600000];
 
 INT submit_elog(char *host, int port, char *experiment, char *passwd,
+                char *uname, char *upwd,
                 char attrib_name[MAX_N_ATTR][NAME_LENGTH],
                 char attrib[MAX_N_ATTR][NAME_LENGTH],
                 int  n_attr,
@@ -136,7 +140,9 @@ INT submit_elog(char *host, int port, char *experiment, char *passwd,
   Input:
     char   *host            Host name where ELog server runs
     in     port             ELog server port number
-    char   *passwd          Web password
+    char   *passwd          Write password
+    char   *uname           User name
+    char   *upwd            User password
     int    run              Run number
     char   *attrib_name     Attribute names
     char   *attrib          Attribute values
@@ -222,6 +228,17 @@ char                 host_name[256], boundary[80], str[80], *p;
   strcpy(boundary, "---------------------------7d0bf1a60904bc");
   strcpy(content, boundary);
   strcat(content, "\r\nContent-Disposition: form-data; name=\"cmd\"\r\n\r\nSubmit\r\n");
+
+  if (uname[0])
+    sprintf(content+strlen(content), 
+            "%s\r\nContent-Disposition: form-data; name=\"unm\"\r\n\r\n%s\r\n", boundary, uname);
+
+  if (upwd[0])
+    {
+    base64_encode(upwd, str);
+    sprintf(content+strlen(content), 
+            "%s\r\nContent-Disposition: form-data; name=\"upwd\"\r\n\r\n%s\r\n", boundary, str);
+    }
 
   if (experiment[0])
     sprintf(content+strlen(content), 
@@ -323,6 +340,8 @@ char                 host_name[256], boundary[80], str[80], *p;
     printf("No logbook specified\n\n");
   else if (strstr(response, "Enter password"))
     printf("Missing or invalid password\n");
+  else if (strstr(response, "login"))
+    printf("Missing or invalid user name/password\n");
   else
     printf("Error transmitting message\n");
 
@@ -333,14 +352,14 @@ char                 host_name[256], boundary[80], str[80], *p;
 
 main(int argc, char *argv[])
 {
-char      str[1000], text[10000];
+char      str[1000], text[10000], uname[80], upwd[80];
 char      host_name[256], logbook[32], textfile[256], password[80];
 char      *buffer[MAX_ATTACHMENTS], attachment[MAX_ATTACHMENTS][256];
 INT       att_size[MAX_ATTACHMENTS];
 INT       i, n, fh, n_att, n_attr, size, port;
 char      attr_name[MAX_N_ATTR][NAME_LENGTH], attrib[MAX_N_ATTR][NAME_LENGTH]; 
 
-  text[0] = textfile[0] = 0;
+  text[0] = textfile[0] = uname[0] = upwd[0] = 0;
   host_name[0] = logbook[0] = password[0] = n_att = n_attr = 0;
   port = 80;
   for (i=0 ; i<MAX_ATTACHMENTS ; i++)
@@ -369,6 +388,11 @@ char      attr_name[MAX_N_ATTR][NAME_LENGTH], attrib[MAX_N_ATTR][NAME_LENGTH];
           strcpy(logbook, argv[++i]);
         else if (argv[i][1] == 'w')
           strcpy(password, argv[++i]);
+        else if (argv[i][1] == 'u')
+          {
+          strcpy(uname, argv[++i]);
+          strcpy(upwd, argv[++i]);
+          }
         else if (argv[i][1] == 'a')
           {
           strcpy(str, argv[++i]);
@@ -396,6 +420,7 @@ char      attr_name[MAX_N_ATTR][NAME_LENGTH], attrib[MAX_N_ATTR][NAME_LENGTH];
           printf("           [-l logbook/experiment]\n");
           printf("           [-v]                     for verbose output\n");
           printf("           [-w password]            write password defined on server\n");
+          printf("           [-u username password]   user name and password\n");
           printf("           [-f <attachment>]        (up to %d times)\n", MAX_ATTACHMENTS);
           printf("           -a <attribute>=<value>   (up to %d times)\n", MAX_N_ATTR);
           printf("           -m <textfile>] | <text>\n");
@@ -484,6 +509,7 @@ char      attr_name[MAX_N_ATTR][NAME_LENGTH], attrib[MAX_N_ATTR][NAME_LENGTH];
 
   /* now submit message */
   submit_elog(host_name, port, logbook, password, 
+              uname, upwd,
               attr_name, attrib, n_attr, text,
               attachment, buffer, att_size); 
 
