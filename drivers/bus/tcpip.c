@@ -6,6 +6,9 @@
   Contents:     TCP/IP socket communication routines
 
   $Log$
+  Revision 1.3  2001/04/03 12:26:50  midas
+  Improved logging
+
   Revision 1.2  2001/03/01 09:36:25  midas
   Put <TIMOUT> into debug messages
 
@@ -18,7 +21,7 @@
 #include <io.h>
 #include "midas.h"
 
-static int debug_flag = 0;
+static int debug_flag = 0, debug_last = 0, debug_first = TRUE;
 
 typedef struct {
   char host[256];
@@ -35,6 +38,31 @@ typedef struct {
   int fd;                        /* device handle for socket device */
 } TCPIP_INFO;
 
+/*----------------------------------------------------------------------------*/
+
+void tcpip_debug(char *dbg_str)
+{
+FILE *f;
+int delta;
+
+  if (debug_last == 0)
+    delta = 0;
+  else
+    delta = ss_millitime() - debug_last;
+  debug_last = ss_millitime();
+
+  f = fopen("tcpip.log", "a");
+
+  if (debug_first)
+    fprintf(f, "\n==== new session =============\n\n");
+  debug_first = FALSE;
+  fprintf(f, "{%d} %s\n", delta, dbg_str);
+
+  if (debug_flag > 1)
+    printf("{%d} %s\n", delta, dbg_str);
+
+  fclose(f);
+}
 
 /*------------------------------------------------------------------*/
 
@@ -135,14 +163,13 @@ int i;
  
   if (debug_flag)
     {
-    FILE *f;
- 
-    f = fopen("tcpip.log", "a");
-    fprintf(f, "write: ");
+    char dbg_str[256];
+
+    sprintf(dbg_str, "write: ");
     for (i=0 ; (int)i<size ; i++)
-      fprintf(f, "%X ", data[i]);
-    fprintf(f, "\n");
-    fclose(f);
+      sprintf(dbg_str+strlen(dbg_str), "%X ", data[i]);
+
+    tcpip_debug(dbg_str);
     }
  
   i = send(info->fd, data, size, 0);
@@ -197,21 +224,21 @@ int            i, status, n;
 
     } while (1); /* while (buffer[n-1] && buffer[n-1] != 10); */
 
-  if (debug_flag && n>0)
+  if (debug_flag)
     {
-    FILE *f;
+    char dbg_str[256];
 
-    f = fopen("tcpip.log", "a");
-    fprintf(f, "read: ");
+    sprintf(dbg_str, "read: ");
+
     if (n == 0)
-      fprintf(f, "<TIMEOUT>");
+      sprintf(dbg_str+strlen(dbg_str), "<TIMEOUT>");
     else
       for (i=0 ; i<n ; i++)
-        fprintf(f, "%X ", data[i]);
-    fprintf(f, "\n");
-    fclose(f);
+        sprintf(dbg_str+strlen(dbg_str), "%X ", data[i]);
+
+    tcpip_debug(dbg_str);
     }
- 
+
   return n;
 }
 
@@ -223,13 +250,12 @@ int i;
  
   if (debug_flag)
     {
-    FILE *f;
- 
-    f = fopen("tcpip.log", "a");
-    fprintf(f, "puts: %s\n", str);
-    fclose(f);
+    char dbg_str[256];
+
+    sprintf(dbg_str, "puts: %s", str); 
+    tcpip_debug(dbg_str);
     }
- 
+
   i = send(info->fd, str, strlen(str), 0);
   if (i < 0)
     perror("tcpip_puts");
@@ -277,7 +303,7 @@ int            i, status, n;
     if (i<=0)
       break;
 
-    n++;
+    n += i;
 
     if (pattern && pattern[0])
       if (strstr(str, pattern) != NULL)
@@ -290,14 +316,16 @@ int            i, status, n;
 
   if (debug_flag)
     {
-    FILE *f;
+    char dbg_str[256];
 
-    f = fopen("tcpip.log", "a");
+    sprintf(dbg_str, "gets [%s]: ", pattern);
+
     if (str[0] == 0)
-      fprintf(f, "gets [%s]: <TIMEOUT>\n", pattern);
+      sprintf(dbg_str+strlen(dbg_str), "<TIMEOUT>");
     else
-      fprintf(f, "gets [%s]: %s\n", pattern, str);
-    fclose(f);
+      sprintf(dbg_str+strlen(dbg_str), "%s", str);
+
+    tcpip_debug(dbg_str);
     }
  
   return n;
