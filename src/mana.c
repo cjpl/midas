@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.22  1999/07/13 08:16:45  midas
+  -q flag makes now analyzer really quiet (not to block the terminal in BG)
+
   Revision 1.21  1999/07/12 11:22:51  midas
   Added tests
 
@@ -2841,7 +2844,8 @@ DWORD           start_time;
 
       if (flag)
         {
-        printf("Load ODB from run %d...", run_number);
+        if (!clp.quiet)
+          printf("Load ODB from run %d...", run_number);
         
         if (flag == 1)
           {
@@ -2888,7 +2892,8 @@ DWORD           start_time;
           db_set_mode(hDB, 0, MODE_READ | MODE_WRITE | MODE_DELETE, TRUE);
 
         /* reload parameter files after BOR event */
-        printf("OK\n");
+        if (!clp.quiet)
+          printf("OK\n");
         load_parameters(run_number);
 
         /* open module parameters again */
@@ -2995,11 +3000,14 @@ DWORD           start_time;
   start_time = ss_millitime() - start_time;
 
   update_stats();
-  if (out_file)
-    printf("%s:%d  %s:%d  events, %1.2lfs\n", input_file_name, num_events_in, 
-           out_info.filename, num_events_out, start_time/1000.0);
-  else
-    printf("%s:%d  events, %1.2lfs\n", input_file_name, num_events_in, start_time/1000.0); 
+  if (!clp.quiet)
+    {
+    if (out_file)
+      printf("%s:%d  %s:%d  events, %1.2lfs\n", input_file_name, num_events_in, 
+             out_info.filename, num_events_out, start_time/1000.0);
+    else
+      printf("%s:%d  events, %1.2lfs\n", input_file_name, num_events_in, start_time/1000.0); 
+    }
 
   /* call analyzer eor routines */
   eor(run_number, error);
@@ -3019,7 +3027,8 @@ INT  i, status, run_number;
 char input_file_name[256], output_file_name[256];
 BANK_LIST *bank_list;
 
-  printf("Running analyzer offline. Stop with \"!\"\n");
+  if (!clp.quiet)
+    printf("Running analyzer offline. Stop with \"!\"\n");
 
   run_number = 0;
   out_append = (strchr(clp.input_file_name[0], '%') != NULL) &&
