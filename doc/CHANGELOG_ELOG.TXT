@@ -1,3 +1,18 @@
+Version 1.1.0, released August 28th, 2001
+=========================================
+
+- Added "themes"
+- Added tabs for logbook selection
+- Added graphical browse buttons
+- Added "first" browse button
+- Menu can be switched from buttons to links
+- Replaced "query" by more appropriate "find"
+- Search can span multiple logbooks
+- Search can produce "printable output", which is optimized for printing
+- Search has no default start date, which means that the whole logbook is
+  searched by default
+- Configuration and themes file get re-read at each access
+
 Version 1.0.5, released August 8th, 2001
 ========================================
 
