@@ -6,6 +6,9 @@
   Contents:     MIDAS logger program
 
   $Log$
+  Revision 1.67  2003/10/30 14:17:23  midas
+  Added 'umask' for FTP connections
+
   Revision 1.66  2003/10/13 00:26:40  olchansk
   abort on use of invalid run number zero on auto restart
 
@@ -416,7 +419,7 @@ INT ftp_open(char *destination, FTP_CON **con)
 INT   status;
 short port=0;
 char  *token, host_name[HOST_NAME_LENGTH],
-      user[32], pass[32], directory[256], file_name[256];
+      user[32], pass[32], directory[256], file_name[256], file_mode[256];
 
   /*
   destination should have the form:
@@ -448,6 +451,11 @@ char  *token, host_name[HOST_NAME_LENGTH],
   if (token)
     strcpy(file_name, token);
 
+  token = strtok(NULL, ", ");
+  file_mode[0] = 0;
+  if (token)
+    strcpy(file_mode, token);
+
 #ifdef FAL_MAIN
   ftp_debug(NULL, ftp_error);
 #else
@@ -465,6 +473,13 @@ char  *token, host_name[HOST_NAME_LENGTH],
   status = ftp_binary(*con);
   if (status >= 0)
     return status;
+
+  if (file_mode[0])
+    {
+    status = ftp_command(*con, "umask %s", file_mode, 200, 250, EOF);
+    if (status >= 0)
+      return status;
+    }
 
   if (ftp_open_write(*con, file_name) >= 0)
     return (*con)->err_no;
