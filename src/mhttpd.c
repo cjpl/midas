@@ -6,6 +6,10 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.171  2001/10/12 12:08:42  midas
+  If custom page /Custom/Status is present, it gets displayed instead of
+  the standard status page
+
   Revision 1.170  2001/10/12 11:12:13  midas
   Added /Experiment/Parameter Comment feature
 
@@ -8335,6 +8339,19 @@ struct tm *gmt;
       }
 
     show_custom_page(dec_path+3);
+    return;
+    }
+
+  if (db_find_key(hDB, 0, "/Custom/Status", &hkey) == DB_SUCCESS && path[0] == 0)
+    {
+    if (equal_ustring(command, "edit"))
+      {
+      sprintf(str, "%s?cmd=Edit&index=%d", path, index);
+      if (!check_web_password(cookie_wpwd, str, experiment))
+        return;
+      }
+
+    show_custom_page("Status");
     return;
     }
 
