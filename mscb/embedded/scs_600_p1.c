@@ -9,6 +9,9 @@
                 for SCS-600 Digital I/O
 
   $Log$
+  Revision 1.6  2003/03/28 07:44:27  midas
+  Removed LCD output
+
   Revision 1.5  2003/03/21 13:38:17  midas
   Reverse order P1
 
@@ -226,27 +229,7 @@ unsigned long        expired;
 
 void user_loop(void)
 {
-unsigned char i;
-static unsigned long last = 300;
-static bit first = 1;
-
   /* set output according to power */
   set_power();
-
-  if (!DEBUG_MODE && time() > last+30)
-    {
-    if (first)
-      {
-      lcd_clear();
-      first = 0;
-      }
-
-    last = time();
-
-    lcd_goto(0, 0);
-    printf("OUT: ");
-    for (i=0 ; i<8 ; i++)
-      printf("%c", user_data.out[i] ? '1' : '0');
-    }
 }
 
