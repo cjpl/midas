@@ -1,3 +1,11 @@
+Version 1.0.4, released August 7th, 2001
+========================================
+
+- Fixed bug where Email notification only got sent to "Email All"
+- Fixed bug with wrong display of logbook list if no logbook is
+  specified
+- Categories and Types were mixed if several logbooks are used. Fixed.
+
 Version 1.0.3, released August 2nd, 2001
 ========================================
 
