@@ -6,6 +6,9 @@
   Contents:     MSCB Device Driver.
 
   $Log$
+  Revision 1.4  2003/05/12 14:45:58  midas
+  Corrected error status
+
   Revision 1.3  2003/05/12 14:36:31  midas
   Fixed compiler warning
 
@@ -112,7 +115,7 @@ MSCBDEV_INFO  *info;
 
   info->fd = mscb_init(info->mscbdev_settings.device, FALSE);
   if (info->fd < 0)
-    return -1;
+    return FE_ERR_HW;
 
   /* read initial variable sizes */
   addr_changed(0, 0, info);
