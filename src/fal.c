@@ -7,6 +7,9 @@
                 Most routines are from mfe.c mana.c and mlogger.c.
 
   $Log$
+  Revision 1.21  2000/10/30 10:07:23  midas
+  Fixed bug that "always true" test was cleared at the BOR
+
   Revision 1.20  2000/10/29 09:35:11  midas
   Added test system from mana.c
 
@@ -878,15 +881,10 @@ int i;
     tl[i]->count = 0;
     tl[i]->value = FALSE;
     }
-}
 
-void test_reset()
-{
-int i;
-
-  /* reset all tests to FALSE except "always true" test */
-  for (i=1 ; i<n_test ; i++)
-    tl[i]->value = FALSE;
+  /* set "always true" test */
+  if (n_test > 0)
+    tl[0]->value = TRUE;
 }
 
 void test_increment()
