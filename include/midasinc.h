@@ -7,6 +7,11 @@
   Contents:     Includes all necessary include files
 
   $Log$
+  Revision 1.12  2004/01/19 16:54:56  olchansk
+  add assert.h
+  add OS_DARWIN specific
+  remove sys/mount.h (moved to system.c to avoid namespace pollution on macosx)
+
   Revision 1.11  2004/01/08 08:40:09  midas
   Implemented standard indentation
 
@@ -48,6 +53,7 @@
 #include <string.h>
 #include <time.h>
 #include <ctype.h>
+#include <assert.h>
 
 /* OS dependent files */
 
@@ -154,17 +160,23 @@
 #include <sys/timeb.h>
 #include <sys/stat.h>
 #include <sys/mtio.h>
-#include <sys/mount.h>
 #include <dirent.h>
 #include <pthread.h>
 
 /* special code for Linux and FreeBSD */
 #if defined(OS_LINUX) || defined(OS_FREEBSD)
 #include <sys/time.h>
+#ifdef OS_DARWIN
+#else
 #include <sys/vfs.h>
+#endif
 #include <arpa/inet.h>
 #include <fnmatch.h>
+#ifdef OS_DARWIN
+#include <util.h>
+#else
 #include <pty.h>
+#endif
 #undef LITTLE_ENDIAN
 #endif
 
