@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.122  2000/08/21 14:18:39  midas
+  bk_close returns bank size
+
   Revision 1.121  2000/08/21 07:05:48  midas
   Added cm_msg_log1(...,facility) to be compatible with older programs
 
@@ -12953,9 +12956,9 @@ int    remaining;
     @memo Close bank.
     @param event pointer to current composed event
     @param pdata  pointer to the data
-    @return void
+    @return number of bytes contained in bank
  */
-void bk_close(void *event, void *pdata)
+INT bk_close(void *event, void *pdata)
 {
   if (((BANK_HEADER *)event)->flags & BANK_FORMAT_32BIT)
     {
@@ -12967,6 +12970,7 @@ void bk_close(void *event, void *pdata)
       printf("Warning: bank %c%c%c%c has zero size\n", 
         pbk32->name[0], pbk32->name[1], pbk32->name[2], pbk32->name[3]);
     ((BANK_HEADER *) event)->data_size += sizeof(BANK32) + ALIGN(pbk32->data_size);
+    return pbk32->data_size;
     }
   else
     {
@@ -12978,6 +12982,7 @@ void bk_close(void *event, void *pdata)
       printf("Warning: bank %c%c%c%c has zero size\n", 
         pbk->name[0], pbk->name[1], pbk->name[2], pbk->name[3]);
     ((BANK_HEADER *) event)->data_size += sizeof(BANK) + ALIGN(pbk->data_size);
+    return pbk->data_size;
     }
 }
 
