@@ -6,6 +6,9 @@
  *         amaudruz@triumf.ca                            Local:           6234
  * ---------------------------------------------------------------------------
    $Log$
+   Revision 1.52  2003/04/23 23:09:30  pierre
+   Fixed compiler warning
+
    Revision 1.51  2003/04/17 16:53:35  pierre
    fix tape return code for WINNT
 
@@ -1750,7 +1753,7 @@ status : from lower function
 INT yb_ftp_open(char *destination, FTP_CON **con)
 {
   INT   status;
-  short port;
+  short port=0;
   char  *token, host_name[HOST_NAME_LENGTH], 
     user[32], pass[32], directory[256], file_name[256];
   
@@ -1819,7 +1822,7 @@ Function value:
 status : from lower function
 *******************************************************************/
 {
-  INT status;
+  INT status=0;
   
   if (type == LOG_TYPE_DISK)
     /* takes care of TapeLX/NT under ss_tape_open , DiskLX/NT here */
@@ -2213,7 +2216,7 @@ YB_DONE            No more record to read
 YB_SUCCESS         Ok
 \********************************************************************/
 {
-  INT   status;
+  INT   status=0;
   
   /* read one block of data */
   if (!my.zipfile)
@@ -2641,7 +2644,7 @@ Function value:
 status : from lower function
 \********************************************************************/
 {
-  INT status;
+  INT status=0;
   
   *pevent = NULL;
   if (data_fmt == FORMAT_MIDAS)
@@ -2883,7 +2886,7 @@ Function value:
 none
 \********************************************************************/
 {
-  DWORD lrl, *pevt, j, i, total=0;
+  DWORD lrl=0, *pevt=NULL, j, i, total=0;
   
   if (data_fmt == FORMAT_YBOS)
   {
@@ -3068,7 +3071,7 @@ Function value:
 none
 \********************************************************************/
 {
-  DWORD *pdata, lrl, j, i;
+  DWORD *pdata=NULL, lrl=0, j, i;
   
   if (data_fmt == FORMAT_YBOS)
   {
@@ -3080,7 +3083,7 @@ none
     lrl= ((BANK *)pbank)->data_size >> 2;   /* in DWORD */
     pdata = (DWORD *)((BANK *)(pbank)+1);
   }
-  
+
   for (i=0;i<lrl;i +=NLINE)
   {
     j = 0;
@@ -3113,7 +3116,7 @@ none
 \********************************************************************/
 {
   char bank_name[5], strbktype[32];
-  DWORD length_type;
+  DWORD length_type=0;
   DWORD *pdata, *pendbk;
   INT i,j;
   
@@ -3261,7 +3264,7 @@ none
 {
   char  bank_name[5], strbktype[32];
   char  *pdata, *pendbk;
-  DWORD length_type, lrl;
+  DWORD length_type=0, lrl;
   INT type, i, j;
   
   lrl= pbk->data_size;   /* in bytes */
@@ -3477,7 +3480,7 @@ none
 {
   char  bank_name[5], strbktype[32];
   char  *pdata, *pendbk;
-  DWORD length_type, lrl;
+  DWORD length_type=0, lrl;
   INT type, i, j;
   
   lrl= pbk->data_size;   /* in bytes */

@@ -6,6 +6,9 @@
   Contents:     Speaks midas messages (UNIX version)
 
   $Log$
+  Revision 1.9  2003/04/23 23:09:08  pierre
+  Fixed compiler warning
+
   Revision 1.8  2002/09/26 00:09:17  pierre
   include arg for 'play beep'
 
@@ -85,7 +88,7 @@ void receive_message(HNDLE hBuf, HNDLE id, EVENT_HEADER *header, void *message)
   
   if (debug)
   {
-    printf("evID:%hx Mask:%hx Serial:%i Size:%d\n"
+    printf("evID:%hx Mask:%hx Serial:%li Size:%ld\n"
       ,header->event_id
       ,header->trigger_mask
       ,header->serial_number
@@ -137,7 +140,7 @@ void receive_message(HNDLE hBuf, HNDLE id, EVENT_HEADER *header, void *message)
 int main(int argc, char *argv[])
 {
   BOOL   daemon=FALSE;
-  INT    status, i, ch;
+  INT    status, i;
   char   host_name[NAME_LENGTH];
   char   exp_name[NAME_LENGTH];
   char *speech_program = SPEECH_PROGRAM;

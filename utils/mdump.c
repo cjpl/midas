@@ -5,6 +5,9 @@ Created by:   Pierre-Andre Amaudruz
 Contents:     Dump event on screen with MIDAS or YBOS data format
 
 $Log$
+Revision 1.21  2003/04/23 23:08:46  pierre
+Fixed compiler warning
+
 Revision 1.20  2002/09/28 00:42:55  pierre
 enable DSP_UNK format display
 
@@ -168,8 +171,8 @@ int replog (int data_fmt, char * rep_file, int bl, int action)
 {
   char  banklist[YB_STRING_BANKLIST_MAX];
   short int msk, id;
-  BOOL  bank_found;
-  INT status, i;
+  BOOL  bank_found=FALSE;
+  INT status=0, i;
   DWORD physize, evtlen;
   void  *physrec;
   char *pmyevt;
@@ -214,7 +217,7 @@ int replog (int data_fmt, char * rep_file, int bl, int action)
       status = yb_any_event_swap(data_fmt, pmyevt);
       if (file_mode != YB_NO_RECOVER)
         if ((status = yb_file_recompose(pmyevt, data_fmt, svpath, file_mode)) != YB_SUCCESS)
-          printf("mdump recompose error %i\n");
+          printf("mdump recompose error %i\n", status);
       if (action == REP_LENGTH)
         status = yb_any_all_info_display (D_EVTLEN);
       if (action == REP_BANKLIST)
@@ -228,7 +231,7 @@ int replog (int data_fmt, char * rep_file, int bl, int action)
             pme->event_id == EVENTID_EOR ||
             pme->event_id == EVENTID_MESSAGE)
             continue;
-          printf("Evid:%4.4hx- Mask:%4.4hx- Serial:%d- Time:0x%x- Dsize:%d/0x%x\n"
+          printf("Evid:%4.4hx- Mask:%4.4hx- Serial:%ld- Time:0x%lx- Dsize:%ld/0x%lx\n"
             ,pme->event_id, pme->trigger_mask ,pme->serial_number
             ,pme->time_stamp, pme->data_size, pme->data_size);
           pmbkh = (BANK_HEADER *)(((EVENT_HEADER *)pmyevt)+1);
@@ -291,9 +294,9 @@ int replog (int data_fmt, char * rep_file, int bl, int action)
         /* check user request through switch setting (id, msk ,bank) */
         if ((event_msk != TRIGGER_ALL) || (event_id != EVENTID_ALL) || (sbank_name[0] !=0))
         { /* check request or skip event if not satisfied */
-          if (((event_id != EVENTID_ALL)  && (id != event_id)) ||  /* id check ==> skip */
-            ((event_msk != TRIGGER_ALL) && (msk != event_msk)||  /* msk check ==> skip */
-            (sbank_name[0] !=0) && !bank_found))               /* bk check ==> skip */
+          if (((event_id  != EVENTID_ALL) && (id != event_id))   || /* id check ==> skip */
+	      ((event_msk != TRIGGER_ALL) && (msk != event_msk)) || /* msk check ==> skip */
+              ((sbank_name[0] !=0) && !bank_found))               /* bk check ==> skip */
           { /* skip event */
             printf("Searching for Bank -%s- Skiping event...%i\r",sbank_name,i++);
             fflush(stdout);
@@ -343,16 +346,16 @@ void process_event(HNDLE hBuf, HNDLE request_id, EVENT_HEADER *pheader, void *pe
     if (pheader->serial_number != pevh.serial_number+1)
     {
       /* event header */
-      printf("\nLast - Evid:%4.4hx- Mask:%4.4hx- Serial:%i- Time:0x%x- Dsize:%i/0x%x\n"
+      printf("\nLast - Evid:%4.4hx- Mask:%4.4hx- Serial:%li- Time:0x%lx- Dsize:%li/0x%lx\n"
         ,pevh.event_id, pevh.trigger_mask ,pevh.serial_number
         ,pevh.time_stamp, pevh.data_size, pevh.data_size);
-      printf("Now  - Evid:%4.4hx- Mask:%4.4hx- Serial:%i- Time:0x%x- Dsize:%i/0x%x\n"
+      printf("Now  - Evid:%4.4hx- Mask:%4.4hx- Serial:%li- Time:0x%lx- Dsize:%li/0x%lx\n"
         ,pheader->event_id, pheader->trigger_mask ,pheader->serial_number
         ,pheader->time_stamp, pheader->data_size, pheader->data_size);
     }
     else
     {
-      printf("Consistency check: %c - %i\r", bars[i_bar++ % 4], pheader->serial_number );
+      printf("Consistency check: %c - %li\r", bars[i_bar++ % 4], pheader->serial_number );
       fflush(stdout);
     }
     memcpy ((char *) &pevh, (char *) pheader, sizeof(EVENT_HEADER)); 
@@ -377,14 +380,14 @@ void process_event(HNDLE hBuf, HNDLE request_id, EVENT_HEADER *pheader, void *pe
     { /* ---- YBOS FMT ---- */
       if (file_mode != YB_NO_RECOVER)
         if ((status = yb_file_recompose(pevent, internal_data_fmt, svpath, file_mode)) != YB_SUCCESS)
-          printf("mdump recompose error %i\n,status");
+          printf("mdump recompose error %i\n",status);
       if (sbank_name[0] != 0)
       { /* bank name given through argument list */
         if ((status = ybk_find (plrl,sbank_name,&bklen,&bktyp,(void *)&pybk)) == YB_SUCCESS)
         { /* given bank found in list */
           status = ybk_list (plrl, banklist);
           printf("#banks:%i Bank list:-%s-\n",status,banklist);
-          printf("Bank:%s - Length (I*4):%i - Type:%i - pBk:0x%p\n",sbank_name, bklen,bktyp,pybk);
+          printf("Bank:%s - Length (I*4):%li - Type:%li - pBk:%p\n",sbank_name, bklen,bktyp,pybk);
           yb_any_bank_display(NULL, pybk, FORMAT_YBOS, dsp_mode, dsp_fmt);
         }
         else
@@ -397,7 +400,7 @@ void process_event(HNDLE hBuf, HNDLE request_id, EVENT_HEADER *pheader, void *pe
       else
       { /* Full event */
         /* event header */
-        printf("Evid:%4.4hx- Mask:%4.4hx- Serial:%d- Time:0x%x- Dsize:%d/0x%x\n"
+        printf("Evid:%4.4hx- Mask:%4.4hx- Serial:%ld- Time:0x%lx- Dsize:%ld/0x%lx\n"
           ,pheader->event_id, pheader->trigger_mask ,pheader->serial_number
           ,pheader->time_stamp, pheader->data_size, pheader->data_size);
 
@@ -435,7 +438,7 @@ void process_event(HNDLE hBuf, HNDLE request_id, EVENT_HEADER *pheader, void *pe
         if (disp_bank_list)
         {
           /* event header */
-          printf("Evid:%4.4hx- Mask:%4.4hx- Serial:%d- Time:0x%x- Dsize:%d/0x%x\n"
+          printf("Evid:%4.4hx- Mask:%4.4hx- Serial:%ld- Time:0x%lx- Dsize:%ld/0x%lx\n"
             ,pheader->event_id, pheader->trigger_mask ,pheader->serial_number
             ,pheader->time_stamp, pheader->data_size, pheader->data_size);
           status = bk_list (pmbh, banklist);
@@ -462,14 +465,14 @@ void process_event(HNDLE hBuf, HNDLE request_id, EVENT_HEADER *pheader, void *pe
 }  
 
 /*------------------------------------------------------------------*/
-int main(unsigned int argc,char **argv)
+int main(int argc,char **argv)
 {
   HNDLE         hDB, hKey;
   char          host_name[HOST_NAME_LENGTH], expt_name[HOST_NAME_LENGTH], str[80];
   char          buf_name[32]=EVENT_BUFFER_NAME, rep_file[128];
   double        rate;
   unsigned int  i, status, start_time, stop_time;
-  BOOL          debug, rep_flag;
+  BOOL          debug=FALSE, rep_flag;
   INT           ch, request_id, size, get_flag, action;
   BUFFER_HEADER buffer_header;
 
