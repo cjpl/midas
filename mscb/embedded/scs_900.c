@@ -9,6 +9,9 @@
                 for SCS-900 analog high precision I/O 
 
   $Log$
+  Revision 1.6  2004/12/08 10:38:05  midas
+  Implemented calibration
+
   Revision 1.5  2004/09/10 12:27:23  midas
   Version 1.7.5
 
@@ -78,31 +81,72 @@ struct {
    char  uni_dac;
    char  uni_adc;
    char  adc_25;
-} idata user_data;
+
+   float oadc[8];
+   float gadc[8];
+   float odac[8];
+   float gdac[8];
+} xdata user_data;
 
 MSCB_INFO_VAR code variables[] = {
 
-   4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC0", &user_data.adc[0],
-   4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC1", &user_data.adc[1],
-   4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC2", &user_data.adc[2],
-   4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC3", &user_data.adc[3],
-   4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC4", &user_data.adc[4],
-   4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC5", &user_data.adc[5],
-   4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC6", &user_data.adc[6],
-   4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC7", &user_data.adc[7],
+   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC0", &user_data.adc[0]  },
+   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC1", &user_data.adc[1]  },
+   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC2", &user_data.adc[2]  },
+   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC3", &user_data.adc[3]  },
+   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC4", &user_data.adc[4]  },
+   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC5", &user_data.adc[5]  },
+   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC6", &user_data.adc[6]  },
+   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC7", &user_data.adc[7]  },
 
-   4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "DAC0", &user_data.dac[0],
-   4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "DAC1", &user_data.dac[1],
-   4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "DAC2", &user_data.dac[2],
-   4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "DAC3", &user_data.dac[3],
-   4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "DAC4", &user_data.dac[4],
-   4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "DAC5", &user_data.dac[5],
-   4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "DAC6", &user_data.dac[6],
-   4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "DAC7", &user_data.dac[7],
+   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "DAC0", &user_data.dac[0]  },
+   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "DAC1", &user_data.dac[1]  },
+   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "DAC2", &user_data.dac[2]  },
+   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "DAC3", &user_data.dac[3]  },
+   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "DAC4", &user_data.dac[4]  },
+   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "DAC5", &user_data.dac[5]  },
+   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "DAC6", &user_data.dac[6]  },
+   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "DAC7", &user_data.dac[7]  },
 
-   1, UNIT_BOOLEAN, 0, 0, 0, "Uni DAC", &user_data.uni_dac,
-   1, UNIT_BOOLEAN, 0, 0, 0, "Uni ADC", &user_data.uni_adc,
-   1, UNIT_BOOLEAN, 0, 0, 0, "2.5V ADC", &user_data.adc_25,
+   { 1, UNIT_BOOLEAN, 0, 0, 0, "Uni DAC",     &user_data.uni_dac },
+   { 1, UNIT_BOOLEAN, 0, 0, 0, "Uni ADC",     &user_data.uni_adc },
+   { 1, UNIT_BOOLEAN, 0, 0, 0, "2.5V ADC",    &user_data.adc_25  },
+
+   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "OADC0", &user_data.oadc[0] },
+   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "OADC1", &user_data.oadc[1] },
+   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "OADC2", &user_data.oadc[2] },
+   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "OADC3", &user_data.oadc[3] },
+   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "OADC4", &user_data.oadc[4] },
+   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "OADC5", &user_data.oadc[5] },
+   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "OADC6", &user_data.oadc[6] },
+   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "OADC7", &user_data.oadc[7] },
+
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "GADC0", &user_data.gadc[0] },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "GADC1", &user_data.gadc[1] },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "GADC2", &user_data.gadc[2] },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "GADC3", &user_data.gadc[3] },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "GADC4", &user_data.gadc[4] },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "GADC5", &user_data.gadc[5] },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "GADC6", &user_data.gadc[6] },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "GADC7", &user_data.gadc[7] },
+
+   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "ODAC0", &user_data.odac[0] },
+   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "ODAC1", &user_data.odac[1] },
+   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "ODAC2", &user_data.odac[2] },
+   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "ODAC3", &user_data.odac[3] },
+   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "ODAC4", &user_data.odac[4] },
+   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "ODAC5", &user_data.odac[5] },
+   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "ODAC6", &user_data.odac[6] },
+   { 4, UNIT_VOLT, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "ODAC7", &user_data.odac[7] },
+
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "GDAC0", &user_data.gdac[0] },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "GDAC1", &user_data.gdac[1] },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "GDAC2", &user_data.gdac[2] },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "GDAC3", &user_data.gdac[3] },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "GDAC4", &user_data.gdac[4] },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "GDAC5", &user_data.gdac[5] },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "GDAC6", &user_data.gdac[6] },
+   { 4, UNIT_FACTOR, 0, 0, MSCBF_FLOAT | MSCBF_HIDDEN, "GDAC7", &user_data.gdac[7] },
 
    0
 };
@@ -113,6 +157,7 @@ MSCB_INFO_VAR code variables[] = {
 
 \********************************************************************/
 
+unsigned short iadc_read(channel);
 void user_write(unsigned char index) reentrant;
 void write_adc(unsigned char a, unsigned char d);
 
@@ -126,7 +171,6 @@ void user_init(unsigned char init)
 {
    unsigned char i;
 
-   ADC0CN = 0x00;               // disable ADC 
    DAC0CN = 0x00;               // disable DAC0
    DAC1CN = 0x00;               // disable DAC1
    REF0CN = 0x00;               // disenable internal reference
@@ -162,8 +206,14 @@ void user_init(unsigned char init)
    /* initial EEPROM value */
    if (init) {
 
-      for (i = 0; i < 8; i++)
+      for (i = 0; i < 8; i++) {
          user_data.dac[i] = 0;
+
+         user_data.odac[i] = 0;
+         user_data.gdac[i] = 1;
+         user_data.oadc[i] = 0;
+         user_data.gadc[i] = 1;
+      }
    }
 
    /* set-up DAC & ADC */
@@ -179,16 +229,47 @@ void user_init(unsigned char init)
 
    user_write(16);
 
-   /* swich unipolar/bipolar */
-   user_data.uni_dac = 0;
-   user_data.uni_adc = 0;
-   user_data.adc_25 = 0;
-   
+   /* read configuration jumper */
+
+   ADC0CN = 0x80;               // enable ADC 
+
+   user_data.uni_adc = iadc_read(4) > 0x800;     // JU10
+   user_data.adc_25  = iadc_read(2) > 0x800;     // JU11
+   user_data.uni_dac = iadc_read(0) > 0x800;     // JU12
+
+   ADC0CN = 0x00;               // disable ADC 
+
+   /* set analog switch */
    UNI_DAC = user_data.uni_dac;
    UNI_ADC = !user_data.uni_adc;
+
 }
 
 #pragma NOAREGS
+
+/*---- Internal ADC ------------------------------------------------*/
+
+unsigned short iadc_read(channel)
+{
+   unsigned short value;
+
+   REF0CN = 0x02;               // voltage reference bias enable
+   AMX0CF = 0x00;               // select single ended analog inputs
+   AMX0SL = channel & 0x0F;
+   ADC0CF = 0xE0;               // 16 system clocks, gain 1
+
+   DISABLE_INTERRUPTS;
+
+   ADCINT = 0;
+   ADBUSY = 1;
+   while (!ADCINT);          // wait until conversion ready, does NOT work with ADBUSY!
+
+   ENABLE_INTERRUPTS;
+   yield();
+
+   value = (ADC0L | (ADC0H << 8));
+   return value;
+}
 
 /*---- DAC functions -----------------------------------------------*/
 
@@ -235,23 +316,29 @@ unsigned char code dac_index[8] = {4, 5, 2, 3, 1, 0, 7, 6};
 void write_dac(unsigned char index) reentrant
 {
    unsigned short d;
+   float v;
+
+   /* apply correction */
+   v = (user_data.dac[index]  - user_data.odac[index]) * 
+        user_data.gdac[index];
 
    if (user_data.uni_dac) {
-      if (user_data.dac[index] < 0)
-         user_data.dac[index] = 0;
+      if (v < 0)
+         v = 0;
   
-      if (user_data.dac[index] > 10)
-         user_data.dac[index] = 10;
+      if (v > 10)
+         v = 10;
 
-      d = user_data.dac[index] / 10 * 65535 + 0.5;
+      d = v / 10 * 65535 + 0.5;
    } else {
-      if (user_data.dac[index] < -10)
-         user_data.dac[index] = -10;
+      
+      if (v < -10)
+         v = -10;
   
-      if (user_data.dac[index] > 10)
-         user_data.dac[index] = 10;
+      if (v > 10)
+         v = 10;
 
-      d = (user_data.dac[index] + 10) / 20 * 65535 + 0.5;
+      d = (v + 10) / 20 * 65535 + 0.5;
    }
 
    /* do mapping */
@@ -405,6 +492,9 @@ void adc_read()
       else
          gvalue = gvalue/2.56*20.0 - 10;
    }
+
+   /* apply corrections */
+   gvalue = (gvalue - user_data.oadc[adc_chn]) * user_data.gadc[adc_chn];
 
    DISABLE_INTERRUPTS;
    user_data.adc[adc_chn] = gvalue;
