@@ -6,6 +6,9 @@
   Contents:     List of MSCB RPC functions with parameters
 
   $Log$
+  Revision 1.30  2005/03/21 15:33:54  ritt
+  Added missing #includes
+
   Revision 1.29  2005/03/21 10:57:25  ritt
   Version 2.0.0
 
@@ -118,6 +121,7 @@
 #include <string.h>
 #include <fcntl.h>
 #include <time.h>
+#include <errno.h>
 
 #define closesocket(s) close(s)
 
