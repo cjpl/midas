@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.14  1999/01/22 09:31:16  midas
+  Fixed again status return from ss_mutex_create in bm_open_buffer
+
   Revision 1.13  1999/01/21 23:09:17  pierre
   - Incorporate dm_semaphore_...() functionality into ss_mutex_...()
   - Remove dm_semaphore_...(), adjust dm_...() accordingly.
@@ -3021,7 +3024,7 @@ BUFFER_HEADER        *pheader;
 
   /* create mutex for the buffer */
   status = ss_mutex_create(buffer_name, &(_buffer[handle].mutex));
-  if (status != SS_CREATED)
+  if (status != SS_CREATED && status != SS_SUCCESS)
     {
     *buffer_handle = 0;
     return BM_NO_MUTEX;
