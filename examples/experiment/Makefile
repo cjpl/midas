@@ -6,6 +6,9 @@
 #  Contents:     Makefile for MIDAS example frontend and analyzer
 #
 #  $Log$
+#  Revision 1.11  2000/10/02 14:04:08  midas
+#  Added -lzlib for OSF1
+#
 #  Revision 1.10  2000/05/18 13:18:33  midas
 #  Added -lnsl for linux (problems with CERNLIB 2000)
 #
@@ -39,7 +42,7 @@
 
 #-----------------------------------------
 # This is for OSF1
-#LIBS = -lbsd
+#LIBS = -lbsd -lzlib
 #OSFLAGS = -DOS_OSF1 -Dextname
 #FF = f77
 #FFLAGS = -nofor_main -D 40000000 -T 20000000
