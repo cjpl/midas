@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.76  2000/11/20 12:23:17  midas
+  Version 1.8.2
+
   Revision 1.75  2000/11/20 11:26:52  midas
   Added "use tests" in analyzer request
 
@@ -253,7 +256,7 @@
    to the MIDAS library. First digit is major release, second
    digit is minor release, third digit is patch level */
 
-#define MIDAS_VERSION "1.8.1"
+#define MIDAS_VERSION "1.8.2"
 
 /*------------------------------------------------------------------*/
 
