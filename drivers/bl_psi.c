@@ -7,6 +7,9 @@
                 (http://www1.psi.ch/~rohrer/secblctl.htm)
 
   $Log$
+  Revision 1.2  1999/11/09 15:08:44  midas
+  Added trailing zero when sending commands
+
   Revision 1.1  1999/11/04 15:54:52  midas
   Added files
 
@@ -145,7 +148,7 @@ struct hostent       *phe;
     }
 
   /* get channel names and initial values */
-  status = send(info->sock, "RALL", 4, 0);
+  status = send(info->sock, "RALL", 5, 0);
   if (status <= 0)
     {
     cm_msg(MERROR, "bl_psi", "cannot retrieve data from %s",
@@ -210,7 +213,7 @@ char str[80];
 INT  status;
 
   sprintf(str, "WDAC %s %d", info->name+channel*NAME_LENGTH, (int) value);
-  status = send(info->sock, str, strlen(str), 0);
+  status = send(info->sock, str, strlen(str)+1, 0);
   if (status < 0)
     {
     cm_msg(MERROR, "bl_psi_get", "cannot read data from %s", info->bl_psi_settings.frontend_pc);
@@ -234,7 +237,7 @@ char str[1024];
     {
     last_update = ss_time();
 
-    status = send(info->sock, "RALL", 4, 0);
+    status = send(info->sock, "RALL", 5, 0);
     if (status <= 0)
       {
       cm_msg(MERROR, "bl_psi_rall", "cannot retrieve data from %s",
