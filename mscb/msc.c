@@ -6,6 +6,9 @@
   Contents:     Command-line interface for the Midas Slow Control Bus
 
   $Log$
+  Revision 1.34  2003/03/25 09:42:57  midas
+  Added debugging facility
+
   Revision 1.33  2003/03/19 16:35:03  midas
   Eliminated configuration parameters
 
@@ -895,6 +898,10 @@ MSCB_INFO_VAR info_var;
 
     else if (param[0][0] == 't' && param[0][1] == '1')
       {
+      data = atoi(param[1]);
+      mscb_link(fd, current_addr, 8, &data, 4);
+
+      printf("Data: %d\n", data);
       }
 
     /* exit/quit */
@@ -926,14 +933,7 @@ int   debug, check_io;
 
   cmd[0] = 0;
   adr = 0;
-#ifdef _MSC_VER
-  strcpy(device, "lpt1");
-#elif defined(__linux__)
-  strcpy(device, "/dev/parport0");
-#else
-  strcpy(device, "");
-#endif
-
+  strcpy(device, DEF_DEVICE);
   debug = check_io = server = 0;
 
   /* parse command line parameters */
@@ -972,7 +972,7 @@ usage:
         printf("       -s     Start RPC server\n");
         printf("       -a     Address node before executing command\n");
         printf("       -c     Execute command immediately\n");
-        printf("       -v     Produce verbose output\n\n");
+        printf("       -v     Produce verbose debugging output\n\n");
         printf("       -i     Check IO pins of port\n\n");
         printf("For a list of valid commands start msc interactively\n");
         printf("and type \"help\".\n");
@@ -994,7 +994,7 @@ usage:
     }
 
   /* open port */
-  fd = mscb_init(device);
+  fd = mscb_init(device, debug ? 2 : 0);
   if (fd < 0)
     {
     if (fd == -2)

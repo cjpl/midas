@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus communication functions
 
   $Log$
+  Revision 1.33  2003/03/25 09:42:57  midas
+  Added debugging facility
+
   Revision 1.32  2003/03/23 11:48:41  midas
   Added mscb_link()
 
@@ -102,7 +105,7 @@
 
 \********************************************************************/
 
-#define MSCB_LIBRARY_VERSION   "1.4.0"
+#define MSCB_LIBRARY_VERSION   "1.4.2"
 #define MSCB_PROTOCOL_VERSION  "1.4"
 
 #ifdef _MSC_VER           // Windows includes
@@ -205,6 +208,27 @@ MSCB_FD mscb_fd[MSCB_MAX_FD];
 /* other constants */
 
 #define TIMEOUT_OUT      1000    /* ~1ms */
+
+extern int _debug_flag; /* global debug flag */
+extern void debug_log(char *format, ...);
+
+/*------------------------------------------------------------------*/
+
+/* cache definitions for mscb_link */
+
+typedef struct {
+  int            fd;
+  unsigned short adr;
+  unsigned char  index;
+  void           *data;
+  unsigned char  size;
+  unsigned long  last;
+} CACHE_ENTRY;
+
+CACHE_ENTRY *cache;
+int n_cache ;
+
+#define CACHE_PERIOD 500 // update cache every 500 ms
 
 /*------------------------------------------------------------------*/
 
@@ -671,7 +695,7 @@ void mscb_get_version(char *lib_version, char *prot_version)
                                         
 /*------------------------------------------------------------------*/
 
-int mscb_init(char *device)
+int mscb_init(char *device, int debug)
 /********************************************************************\
 
   Routine: mscb_init
@@ -694,9 +718,20 @@ int           status;
 unsigned char c;
 char          host[256], port[256];
 
+  /* set global debug flag */
+  _debug_flag = debug;
+
+  /* clear cache */
+  for (i=0 ; i<n_cache ; i++)
+    free(cache[i].data);
+  free(cache);
+  n_cache = 0;
+
   if (strchr(device, ':'))
     {
     strcpy(port, strchr(device, ':')+1);
+    if (port[0] == 0)
+      strcpy(port, DEF_DEVICE);
     strcpy(host, device);
     *strchr(host, ':') = 0;
     if (rpc_connect(host) != RPC_SUCCESS)
@@ -706,7 +741,7 @@ char          host[256], port[256];
     strcpy(port, device);
 
   if (rpc_connected())
-    return rpc_call(RPC_MSCB_INIT, port);
+    return rpc_call(RPC_MSCB_INIT, port, debug);
 
   /* search for new file descriptor */
   for (index=0 ; index<MSCB_MAX_FD ; index++)
@@ -885,7 +920,7 @@ void mscb_check(char *device)
 {
 int i, fd, d;
 
-  mscb_init(device);
+  mscb_init(device, 0);
   fd = 1;
 
   mscb_lock(fd);
@@ -1884,11 +1919,25 @@ unsigned char buf[256], crc;
 
     if (buf[0] == CMD_ACK+7)
       {
+      if (i-3 < *size)
+        {
+        mscb_release(fd);
+        *size = 0;
+        return MSCB_NO_MEM;
+        }
+
       memcpy(data, buf+2, i-3);  // variable length
       *size = i-3;
       }
     else
       {
+      if (i-2 < *size)
+        {
+        mscb_release(fd);
+        *size = 0;
+        return MSCB_NO_MEM;
+        }
+
       memcpy(data, buf+1, i-2);
       *size = i-2;
       }
@@ -2178,21 +2227,6 @@ unsigned long ss_millitime()
 
 /*------------------------------------------------------------------*/
 
-typedef struct {
-  unsigned short adr;
-  unsigned char  index;
-  void           *data;
-  unsigned char  size;
-  unsigned long  last;
-} CACHE_ENTRY;
-
-CACHE_ENTRY *cache;
-int n_cache;
-
-#define CACHE_PERIOD 500 // update cache every 500 ms
-
-/*------------------------------------------------------------------*/
-
 int mscb_link(int fd, int adr, unsigned char index, void *data, int size)
 /********************************************************************\
 
@@ -2223,9 +2257,12 @@ int mscb_link(int fd, int adr, unsigned char index, void *data, int size)
 int i, s, status;
 MSCB_INFO_VAR info;
 
+  debug_log("mscb_link( %d %d %d * %d)\n", fd, adr, index, size);
+
   /* check if variable in cache */
   for (i=0 ; i<n_cache ; i++)
-    if (cache[i].adr == adr &&
+    if (cache[i].fd == fd &&
+        cache[i].adr == adr &&
         cache[i].index == index)
       break;
 
@@ -2267,8 +2304,10 @@ MSCB_INFO_VAR info;
     i = n_cache;
     n_cache++;
 
+    cache[i].fd = fd;
     cache[i].adr = adr;
     cache[i].index = index;
+    cache[i].last = 0;
 
     /* get variable size from node */
     status = mscb_info_variable(fd, adr, index, &info);
