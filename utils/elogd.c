@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.14  2001/07/24 10:46:09  midas
+  Use subject as title, make http://xxx text aktive links
+
   Revision 1.13  2001/07/06 12:34:13  midas
   Incresed cookie expiration from 1h to 1d
 
@@ -1455,7 +1458,8 @@ void rsputs(const char *str)
 
 void rsputs2(const char *str)
 {
-int i, j;
+int i, j, k;
+char *p, link[256];
 
   if (strlen(return_buffer) + strlen(str) > sizeof(return_buffer))
     strcpy(return_buffer, "<H1>Error: return buffer too small</H1>");
@@ -1463,12 +1467,26 @@ int i, j;
     {
     j = strlen(return_buffer);
     for (i=0 ; i<(int)strlen(str) ; i++)
-      switch (str[i])
+      {
+      if (strncmp(str+i, "http://", 7) == 0)
         {
-        case '<': strcat(return_buffer, "&lt;"); j+=4; break;
-        case '>': strcat(return_buffer, "&gt;"); j+=4; break;
-        default: return_buffer[j++] = str[i];
+        p = (char *) (str+i+7);
+        i += 7;
+        for (k=0 ; *p && *p != ' ' && *p != '\n' ; k++,i++)
+          link[k] = *p++;
+        link[k] = 0;
+
+        sprintf(return_buffer+j, "<a href=\"http://%s\">http://%s</a>", link, link);
+        j = strlen(return_buffer);
         }
+      else
+        switch (str[i])
+          {
+          case '<': strcat(return_buffer, "&lt;"); j+=4; break;
+          case '>': strcat(return_buffer, "&gt;"); j+=4; break;
+          default: return_buffer[j++] = str[i];
+          }
+      }
 
     return_buffer[j] = 0;
     }  
@@ -1721,13 +1739,13 @@ time_t now;
   rsprintf("<th colspan=%d bgcolor=#A0A0FF>%s</tr>\n", colspan, ctime(&now));
 }
 
-void show_standard_header(char *path)
+void show_standard_header(char *title, char *path)
 {
   rsprintf("HTTP/1.0 200 Document follows\r\n");
   rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
   rsprintf("Content-Type: text/html\r\n\r\n");
 
-  rsprintf("<html><head><title>ELOG</title></head>\n");
+  rsprintf("<html><head><title>%s</title></head>\n", title);
   if (path)
     rsprintf("<body><form method=\"GET\" action=\"%s%s/%s\">\n", elogd_url, logbook_enc, path);
   else
@@ -2034,7 +2052,7 @@ struct tm *tms;
 char   *p, list[1000];
 
   /* header */
-  show_standard_header(NULL);
+  show_standard_header("ELOG query", NULL);
   rsprintf("<table border=3 cellpadding=5>\n");
 
   /*---- title row ----*/
@@ -2240,7 +2258,7 @@ struct tm tms, *ptms;
 FILE   *f;
 
   /* header */
-  show_standard_header(NULL);
+  show_standard_header("ELOG query result", NULL);
   rsprintf("<table border=3 cellpadding=2 width=\"100%%\">\n");
 
   /* get mode */
@@ -2675,7 +2693,7 @@ FILE   *f;
 char   file_name[256], line[1000];
 
   /* header */
-  show_standard_header(NULL);
+  show_standard_header(path, NULL);
   rsprintf("<table border=3 cellpadding=1 width=\"100%%\">\n");
 
   /*---- title row ----*/
@@ -2809,7 +2827,7 @@ void show_elog_page(char *logbook, char *path)
 {
 int   size, i, run, msg_status, status, fh, length, first_message, last_message, index;
 char  str[256], orig_path[256], command[80], ref[256], file_name[256];
-char  date[80], author[80], type[80], category[80], subject[256], text[TEXT_SIZE], 
+char  date[80], author[80], type[80], category[80], subject[256], text[TEXT_SIZE],
       orig_tag[80], reply_tag[80], attachment[MAX_ATTACHMENTS][256], encoding[80], att[256];
 FILE  *f;
 BOOL  allow_delete, allow_edit;
@@ -3054,7 +3072,7 @@ BOOL  allow_delete, allow_edit;
   /*---- header ----*/
 
   /* header */
-  show_standard_header(str);
+  show_standard_header(subject, str);
   rsprintf("<table cols=2 border=2 cellpadding=2>\n");
 
   /*---- title row ----*/
@@ -3229,7 +3247,7 @@ BOOL  allow_delete, allow_edit;
 
 void show_password_page(char *password, char *experiment)
 {
-  show_standard_header(NULL);
+  show_standard_header("ELOG password input", NULL);
   rsprintf("<table border=1 cellpadding=5>");
 
   if (password[0])
@@ -3257,9 +3275,9 @@ char  str[256];
       return TRUE;
 
     /* show web password page */
-    show_standard_header(NULL);
+    show_standard_header("ELOG password", NULL);
 
-    /* define hidden fields for current experiment and destination */
+    /* define hidden fields for current destination */
     if (redir[0])
       rsprintf("<input type=hidden name=redir value=\"%s\">\n", redir);
 
