@@ -6,6 +6,9 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
+  Revision 1.39  2003/04/24 13:47:38  midas
+  Fixed compiler warning
+
   Revision 1.38  2003/04/15 12:52:34  midas
   Removed db_show_mem
 
@@ -481,7 +484,7 @@ INT rpc_server_dispatch(INT index, void *prpc_param[])
 
 \********************************************************************/
 {
-INT status;
+INT status = 0;
 INT convert_flags;
 
   convert_flags = rpc_get_server_option(RPC_CONVERT_FLAGS);
