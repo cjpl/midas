@@ -9,6 +9,9 @@
                 for SCS-950 20-chn analog in
 
   $Log$
+  Revision 1.2  2004/07/09 14:10:04  midas
+  Added multi-ADC code
+
   Revision 1.1  2004/07/09 07:48:10  midas
   Initial revision
 
@@ -23,20 +26,32 @@ extern bit DEBUG_MODE;
 
 char code node_name[] = "SCS-950";
 
+#define UNIPOLAR
+
 /* declare number of sub-addresses to framework */
 unsigned char idata _n_sub_addr = 1;
 
-sbit UNI_BIP = P0 ^ 2;          // Unipolar/bipolar DAC switch
+sbit EXT_WATCHDOG = P0 ^ 3;
 
 /* AD7718 pins */
-sbit ADC_P2   = P1 ^ 0;         // P2
-sbit ADC_P1   = P1 ^ 1;         // P1
-sbit ADC_NRES = P1 ^ 2;         // !Reset
-sbit ADC_SCLK = P1 ^ 3;         // Serial Clock
-sbit ADC_NCS  = P1 ^ 4;         // !Chip select
-sbit ADC_NRDY = P1 ^ 5;         // !Ready
-sbit ADC_DOUT = P1 ^ 6;         // Data out
+sbit ADC_SCLK = P1 ^ 6;         // Serial Clock
 sbit ADC_DIN  = P1 ^ 7;         // Data in
+
+sbit AD1_NCS  = P1 ^ 0;         // !Chip select
+sbit AD2_NCS  = P1 ^ 1;         // !Chip select
+sbit AD3_NCS  = P1 ^ 2;         // !Chip select
+sbit AD4_NCS  = P1 ^ 3;         // !Chip select
+
+sbit AD1_NRDY = P1 ^ 5;         // !Ready
+sbit AD2_NRDY = P1 ^ 5;         // !Ready
+sbit AD3_NRDY = P1 ^ 5;         // !Ready
+sbit AD4_NRDY = P1 ^ 5;         // !Ready
+
+sbit AD1_DOUT = P0 ^ 4;         // Data out
+sbit AD2_DOUT = P0 ^ 5;         // Data out
+sbit AD3_DOUT = P0 ^ 6;         // Data out
+sbit AD4_DOUT = P0 ^ 7;         // Data out
+
 
 /* AD7718 registers */
 #define REG_STATUS     0
@@ -53,7 +68,11 @@ sbit ADC_DIN  = P1 ^ 7;         // Data in
 /* data buffer (mirrored in EEPROM) */
 
 struct {
+#ifdef UNIPOLAR
    float adc[40];
+#else
+   float adc[20];
+#endif
 } xdata user_data;
 
 MSCB_INFO_VAR code variables[] = {
@@ -78,6 +97,8 @@ MSCB_INFO_VAR code variables[] = {
    4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC17", &user_data.adc[17],
    4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC18", &user_data.adc[18],
    4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC19", &user_data.adc[19],
+
+#ifdef UNIPOLAR
    4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC20", &user_data.adc[20],
    4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC21", &user_data.adc[21],
    4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC22", &user_data.adc[22],
@@ -98,6 +119,7 @@ MSCB_INFO_VAR code variables[] = {
    4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC37", &user_data.adc[37],
    4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC38", &user_data.adc[38],
    4, UNIT_VOLT, 0, 0, MSCBF_FLOAT, "ADC39", &user_data.adc[39],
+#endif
 
    0
 };
@@ -109,9 +131,7 @@ MSCB_INFO_VAR code variables[] = {
 \********************************************************************/
 
 void user_write(unsigned char index) reentrant;
-void write_adc(unsigned char a, unsigned char d);
-
-unsigned char adc_chn = 0;
+void write_adc(unsigned char n, unsigned char a, unsigned char d);
 
 /*---- User init function ------------------------------------------*/
 
@@ -119,7 +139,13 @@ extern SYS_INFO sys_info;
 
 void user_init(unsigned char init)
 {
-   ADC0CN = 0x00;               // disable ADC 
+   unsigned char i;
+
+   AMX0CF = 0x00;               // select single ended analog inputs
+   ADC0CF = 0xE0;               // 16 system clocks, gain 1
+   ADC0CN = 0x80;               // enable ADC 
+   REF0CN = 0x03;               // enable internal reference
+
    DAC0CN = 0x00;               // disable DAC0
    DAC1CN = 0x00;               // disable DAC1
 
@@ -156,23 +182,57 @@ void user_init(unsigned char init)
    }
 
    /* set-up DAC & ADC */
-   ADC_NRES = 1;
-   write_adc(REG_FILTER, 82);                   // SF value for 50Hz rejection
-   write_adc(REG_MODE, 3);                      // continuous conversion
-   write_adc(REG_CONTROL, adc_chn << 4 | 0x0F); // Chn. 1, +2.56V range
+   for (i=0 ; i<3 ; i++) {
+      write_adc(i, REG_FILTER, 82);                   // SF value for 50Hz rejection
+      write_adc(i, REG_MODE, 0x13);                   // continuous conversion, 10 channels
+      write_adc(i, REG_CONTROL, 0x0F);                // start first conversion
+   }
 }
 
 #pragma NOAREGS
 
 /*---- ADC functions -----------------------------------------------*/
 
-void write_adc(unsigned char a, unsigned char d)
+void set_adc_ncs(unsigned char n, unsigned char d)
+{
+   switch (n) {
+      case 0: AD1_NCS = d; break;
+      case 1: AD2_NCS = d; break;
+      case 2: AD3_NCS = d; break;
+      case 3: AD4_NCS = d; break;
+   }
+}
+
+unsigned char get_adc_dout(unsigned char n)
+{
+   switch (n) {
+      case 0: return AD1_DOUT;
+      case 1: return AD1_DOUT;
+      case 2: return AD1_DOUT;
+      case 3: return AD1_DOUT;
+   }
+}
+
+unsigned char get_adc_nrdy(unsigned char n)
+{
+   unsigned int value;
+
+   AMX0SL = n;
+   ADCINT = 0;
+   ADBUSY = 1;
+   while (!ADCINT);
+
+   value = (ADC0L | (ADC0H << 8));
+   return (value > 2048);
+}
+
+void write_adc(unsigned char n, unsigned char a, unsigned char d)
 {
    unsigned char i, m;
 
    /* write to communication register */
 
-   ADC_NCS = 0;
+   set_adc_ncs(n, 0);
    
    /* write zeros to !WEN and R/!W */
    for (i=0 ; i<4 ; i++) {
@@ -189,11 +249,11 @@ void write_adc(unsigned char a, unsigned char d)
       m >>= 1;
    }
 
-   ADC_NCS = 1;
+   set_adc_ncs(n, 1);
 
    /* write to selected data register */
 
-   ADC_NCS = 0;
+   set_adc_ncs(n, 0);
 
    for (i=0,m=0x80 ; i<8 ; i++) {
       ADC_SCLK = 0;
@@ -202,16 +262,16 @@ void write_adc(unsigned char a, unsigned char d)
       m >>= 1;
    }
 
-   ADC_NCS = 1;
+   set_adc_ncs(n, 1);
 }
 
-void read_adc8(unsigned char a, unsigned char *d)
+void read_adc24(unsigned char n, unsigned char a, unsigned long *d)
 {
    unsigned char i, m;
 
    /* write to communication register */
 
-   ADC_NCS = 0;
+   set_adc_ncs(n, 0);
    
    /* write zero to !WEN and one to R/!W */
    for (i=0 ; i<4 ; i++) {
@@ -228,74 +288,44 @@ void read_adc8(unsigned char a, unsigned char *d)
       m >>= 1;
    }
 
-   ADC_NCS = 1;
+   set_adc_ncs(n, 1);
 
    /* read from selected data register */
 
-   ADC_NCS = 0;
-
-   for (i=0,m=0x80,*d=0 ; i<8 ; i++) {
-      ADC_SCLK = 0;
-      if (ADC_DOUT)
-         *d |= m;
-      ADC_SCLK = 1;
-      m >>= 1;
-   }
-
-   ADC_NCS = 1;
-}
-
-void read_adc24(unsigned char a, unsigned long *d)
-{
-   unsigned char i, m;
-
-   /* write to communication register */
-
-   ADC_NCS = 0;
-   
-   /* write zero to !WEN and one to R/!W */
-   for (i=0 ; i<4 ; i++) {
-      ADC_SCLK = 0;
-      ADC_DIN  = (i == 1);
-      ADC_SCLK = 1;
-   }
-
-   /* register address */
-   for (i=0,m=8 ; i<4 ; i++) {
-      ADC_SCLK = 0;
-      ADC_DIN  = (a & m) > 0;
-      ADC_SCLK = 1;
-      m >>= 1;
-   }
-
-   ADC_NCS = 1;
-
-   /* read from selected data register */
-
-   ADC_NCS = 0;
+   set_adc_ncs(n, 0);
 
    for (i=0,*d=0 ; i<24 ; i++) {
       *d <<= 1;
       ADC_SCLK = 0;
-      *d |= ADC_DOUT;
+      *d |= get_adc_dout(n);
       ADC_SCLK = 1;
    }
 
-   ADC_NCS = 1;
+   set_adc_ncs(n, 1);
 }
 
-unsigned char code adc_index[8] = {6, 7, 0, 1, 2, 3, 4, 5};
+#ifdef UNIPOLAR
+unsigned char code adc_index[] = {14, 15, 4, 5, 2, 3, 0, 1, 6, 7};
+#else
+unsigned char code adc_index[] = {12, 10, 9, 8, 11};
+#endif
 
-void adc_read()
+void adc_read(unsigned char iadc, unsigned char ichn)
 {
-   unsigned char i;
+   unsigned char i, ivalue;
    unsigned long value;
    float gvalue;
 
-   if (ADC_NRDY)
+   if (get_adc_nrdy(iadc))
        return;
 
-   read_adc24(REG_ADCDATA, &value);
+   read_adc24(iadc, REG_ADCDATA, &value);
+
+#ifdef UNIPOLAR
+   ivalue = iadc * 10 + ichn;
+#else
+   ivalue = iadc * 5 + ichn;
+#endif
 
    /* convert to volts */
    gvalue = ((float)value / (1l<<24)) * 2.56;
@@ -304,34 +334,12 @@ void adc_read()
    gvalue = floor(gvalue*1E5+0.5)/1E5;
 
    DISABLE_INTERRUPTS;
-   user_data.adc[adc_chn] = gvalue;
+   user_data.adc[ivalue] = gvalue;
    ENABLE_INTERRUPTS;
 
    /* start next conversion */
-   adc_chn = (adc_chn + 1) % 8;
-   i = adc_index[adc_chn];
-   write_adc(REG_CONTROL, i << 4 | 0x0F); // adc_chn, +2.56V range
-}
-
-void adc_calib()
-{
-   unsigned char i;
-
-   for (i=0 ; i<8 ; i++) {
-
-      write_adc(REG_CONTROL, i << 4 | 0x0F);
-
-      /* zero calibration */
-      write_adc(REG_MODE, 4);
-      while (ADC_NRDY) led_blink(1, 1, 100);
-
-      /* full scale calibration */
-      write_adc(REG_MODE, 5);
-      while (ADC_NRDY) led_blink(1, 1, 100);
-   }
-
-   /* restart continuous conversion */
-   write_adc(REG_MODE, 3);
+   i = adc_index[ichn];
+   write_adc(iadc, REG_CONTROL, i << 4 | 0x0F); // adc_chn, +2.56V range
 }
 
 /*---- User write function -----------------------------------------*/
@@ -363,5 +371,13 @@ unsigned char user_func(unsigned char *data_in, unsigned char *data_out)
 
 void user_loop(void)
 {
-   adc_read();
+   static unsigned char ichn;
+
+#ifdef UNIPOLAR   
+   adc_read(ichn / 10, ichn % 10);
+   ichn = (ichn + 1) % 40;
+#else
+   adc_read(ichn / 5, ichn % 5);
+   ichn = (ichn + 1) % 20;
+#endif
 }
