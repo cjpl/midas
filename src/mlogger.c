@@ -6,6 +6,9 @@
   Contents:     MIDAS logger program
 
   $Log$
+  Revision 1.93  2005/03/24 22:05:51  ritt
+  Changed last.odb to last.xml
+
   Revision 1.92  2005/03/24 08:45:57  ritt
   Save ODB dump in .mid files in XML format
 
@@ -3188,7 +3191,7 @@ INT tr_start(INT run_number, char *error)
    struct tm *tms;
 
    /* save current ODB */
-   odb_save("last.odb");
+   odb_save("last.xml");
 
    /* read global logging flag */
    size = sizeof(BOOL);
