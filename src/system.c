@@ -14,6 +14,10 @@
                 Brown, Prentice Hall
 
   $Log$
+  Revision 1.75  2003/10/16 22:53:57  midas
+  Changed return values for ss_thread_create to return threadId.
+  Added ss_thread_kill for killing the passed threadId. (DBM - Triumf)
+
   Revision 1.74  2003/07/24 11:09:50  midas
   Fixed compiler warning under Windows
 
@@ -1682,49 +1686,64 @@ INT ss_exec(char * command, INT *pid)
 }
 
 /*------------------------------------------------------------------*/
+/** @name ss_thread_create()
+\begin{description}
+\item[Description:] Creates and returns a new thread of execution. 
+\item[Remarks:] Note the difference when calling from vxWorks versus Linux and Windows.
+		The parameter pointer for a vxWorks call is a VX_TASK_SPAWN structure, whereas
+		for Linux and Windows it is a void pointer.
+		
+		Early versions returned SS_SUCCESS or SS_NO_THREAD instead of thread ID.
+		
+\item[Example: vxWorks] \begin{verbatim}
+...
+VX_TASK_SPAWN tsWatch = {"Watchdog", 100, 0, 2000,  (int) pDevice, 0, 0, 0, 0, 0, 0, 0, 0 ,0};
+thread_id = ss_thread_spawn((void *) taskWatch, &tsWatch);
+if (thread_id == 0) {
+	printf("cannot spawn taskWatch\n");
+}
+...
+\end{verbatim}
+\item[Example: Linux] \begin{verbatim}
+...
+thread_id = ss_thread_spawn((void *) taskWatch, pDevice);
+if (thread_id == 0) {
+	printf("cannot spawn taskWatch\n");
+}
+...
+\end{verbatim}
+\end{description}
+
+ * @param param a pointer to a VX_TASK_SPAWN structure for vxWorks and a void pointer
+		            for Unix and Windows
+ * @return the new thread id or zero on error
+*/
+
 INT ss_thread_create(INT (*thread_func)(void *), void *param)
-/********************************************************************\
-
-  Routine: ss_thread_create
-
-  Purpose: Create a thread
-
-  Input:
-    INT (*thread_func) Pointer to function which runs as a thread.
-           NULL for testing for threads.
-
-    INT param          Parameter passed to thread_func
-
-  Output:
-    none
-
-  Function value:
-    SS_SUCCESS       Successful completeion
-    SS_NO_THREAD     Current operationg system doesn't support threads
-
-\********************************************************************/
 {
 #ifdef OS_WINNT
 
+	HANDLE status;
   DWORD thread_id;
 
-  if (thread_func == NULL)
-    return SS_SUCCESS;
+  if (thread_func == NULL) {
+    return 0;
+  }
+	
+  status = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE) thread_func,
+                        (LPVOID) param, 0, &thread_id);
 
-  CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE) thread_func,
-         (LPVOID) param, 0, &thread_id);
-
-  return SS_SUCCESS;
+  return status == NULL ? 0 : thread_id;
 
 #endif /* OS_WINNT */
 #ifdef OS_MSDOS
 
-  return SS_NO_THREAD;
+  return 0;
 
 #endif /* OS_MSDOS */
 #ifdef OS_VMS
 
-  return SS_NO_THREAD;
+  return 0;
 
 #endif /* OS_VMS */
 
@@ -1744,9 +1763,8 @@ INT ss_thread_create(INT (*thread_func)(void *), void *param)
          , ts->stackSize, (FUNCPTR) thread_func
          , ts->arg1, ts->arg2, ts->arg3, ts->arg4, ts->arg5
          , ts->arg6, ts->arg7, ts->arg8, ts->arg9, ts->arg10);
-  if (status == ERROR)
-    return SS_NO_THREAD;
-  return SS_SUCCESS;
+
+  return status == ERROR ? 0 : status;
 #endif /* OS_VXWORKS */
 
 #ifdef OS_UNIX
@@ -1755,9 +1773,68 @@ INT ss_thread_create(INT (*thread_func)(void *), void *param)
   	
   status = pthread_create(&thread_id, NULL, (void *) thread_func, param);
 
-  if (status != 0)
-    return SS_NO_THREAD;
-  return SS_SUCCESS;
+  return status != 0 ? 0 : thread_id;
+#endif /* OS_UNIX */
+}
+
+/*------------------------------------------------------------------*/
+/** 
+\begin{description}
+\item[Description:] Destroys the thread identified by the passed thread id. 
+  The thread id is returned by ss_thread_create() on creation.
+
+\item[Remarks:]
+\item[Example:] \begin{verbatim}
+...
+thread_id = ss_thread_create((void *) taskWatch, pDevice);
+if (thread_id == 0) {
+	printf("cannot spawn taskWatch\n");
+}
+...
+ss_thread_kill(thread_id);
+...
+\end{verbatim}
+\end{description}
+
+ * @param thread_id the thread id of the thread to be killed.
+ * @return SS_SUCCESS if no error, else SS_NO_THREAD
+ */
+INT ss_thread_kill(INT thread_id)
+{
+#ifdef OS_WINNT
+
+	DWORD status;
+
+	status = TerminateThread((HANDLE) thread_id, 0);
+
+  return status != 0 ? SS_SUCCESS : SS_NO_THREAD;
+
+#endif /* OS_WINNT */
+#ifdef OS_MSDOS
+
+  return 0;
+
+#endif /* OS_MSDOS */
+#ifdef OS_VMS
+
+  return 0;
+
+#endif /* OS_VMS */
+
+#ifdef OS_VXWORKS
+  INT status;
+  	
+	status = taskDelete(thread_id);
+
+	return status == OK ? 0 : ERROR;
+#endif /* OS_VXWORKS */
+
+#ifdef OS_UNIX
+  INT status;
+  	
+	status = pthread_kill((pthread_t) thread_id, SIGKILL);
+
+	return status == 0 ? SS_SUCCESS : SS_NO_THREAD;
 #endif /* OS_UNIX */
 }
 
