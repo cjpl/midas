@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.143  2002/01/30 13:03:34  midas
+  Fixed small bug in history function
+
   Revision 1.142  2001/12/12 18:27:03  pierre
   add doc++, fix comments
 
@@ -13962,7 +13965,7 @@ struct tm    tmb, tmr;
 
     /* open new index file */
     hs_open_file(rec.time, "idx", O_CREAT | O_RDWR, &fhi);
-    if (fh < 0)
+    if (fhi < 0)
       return HS_FILE_ERROR;
 
     /* open new definition index file */
