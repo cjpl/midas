@@ -6,6 +6,9 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.51  2002/06/24 23:52:28  pierre
+  doc++ in db_set_value
+
   Revision 1.50  2002/06/10 07:06:55  midas
   Added 'lock' parameter to db_remove_open_record() to work also remotely
 
@@ -2815,8 +2818,8 @@ and key_name is interpreted relative to that directory like "Settings/Level1".
 \item[Example:]
  \begin{verbatim}
   INT level1;
-  db_get_value(hDB, 0, "/Equipment/Trigger/Settings/Level1",
-                          &level1, sizeof(level1), TID_INT);
+  db_set_value(hDB, 0, "/Equipment/Trigger/Settings/Level1",
+                          &level1, sizeof(level1), 1, TID_INT);
  \end{verbatim}
 \end{description}
 @memo Sets key data in ODB.
