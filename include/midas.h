@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.119  2003/05/09 07:40:04  midas
+  Added extra parameter to cm_get_environment
+
   Revision 1.118  2003/05/08 19:36:24  midas
   Changed size_t into INT
 
@@ -1641,7 +1644,7 @@ extern "C" {
 /*---- common routines ----*/
 INT EXPRT cm_get_error(INT code, char *string);
 char EXPRT *cm_get_version(void);
-INT EXPRT cm_get_environment(char *host_name, char *exp_name);
+INT EXPRT cm_get_environment(char *host_name, int host_name_size, char *exp_name, int exp_name_size);
 INT EXPRT cm_list_experiments(char *host_name, char exp_name[MAX_EXPERIMENT][NAME_LENGTH]);
 INT EXPRT cm_select_experiment(char *host_name, char *exp_name);
 INT EXPRT cm_connect_experiment(char *host_name, char *exp_name, char *client_name, void (*func)(char*));

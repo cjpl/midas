@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.191  2003/05/09 07:40:05  midas
+  Added extra parameter to cm_get_environment
+
   Revision 1.190  2003/05/08 19:36:32  midas
   Changed size_t into INT
 
@@ -2392,15 +2395,15 @@ usage:
     @param exp_name Contents of MIDAS_EXPT_NAME environment variable.
     @return CM_SUCCESS
 */
-INT cm_get_environment(char *host_name, char *exp_name)
+INT cm_get_environment(char *host_name, int host_name_size, char *exp_name, int exp_name_size)
 {
   host_name[0] = exp_name[0] = 0;
 
   if (getenv("MIDAS_SERVER_HOST"))
-    strlcpy(host_name, getenv("MIDAS_SERVER_HOST"), sizeof(host_name));
+    strlcpy(host_name, getenv("MIDAS_SERVER_HOST"), host_name_size);
 
   if (getenv("MIDAS_EXPT_NAME"))
-    strlcpy(exp_name, getenv("MIDAS_EXPT_NAME"), sizeof(exp_name));
+    strlcpy(exp_name, getenv("MIDAS_EXPT_NAME"), exp_name_size);
 
   return CM_SUCCESS;
 }

@@ -5,6 +5,9 @@ Created by:   Pierre-Andre Amaudruz
 Contents:     Dump event on screen with MIDAS or YBOS data format
 
 $Log$
+Revision 1.23  2003/05/09 07:40:05  midas
+Added extra parameter to cm_get_environment
+
 Revision 1.22  2003/04/25 04:48:26  pierre
 Fixed compiler warning
 
@@ -471,7 +474,7 @@ void process_event(HNDLE hBuf, HNDLE request_id, EVENT_HEADER *pheader, void *pe
 int main(int argc,char **argv)
 {
   HNDLE         hDB, hKey;
-  char          host_name[HOST_NAME_LENGTH], expt_name[HOST_NAME_LENGTH], str[80];
+  char          host_name[HOST_NAME_LENGTH], expt_name[NAME_LENGTH], str[80];
   char          buf_name[32]=EVENT_BUFFER_NAME, rep_file[128];
   double        rate;
   unsigned int  status, start_time, stop_time;
@@ -500,7 +503,7 @@ int main(int argc,char **argv)
   action = REP_EVENT;
 
   /* Get if existing the pre-defined experiment */
-  cm_get_environment (host_name, expt_name);
+  cm_get_environment(host_name, sizeof(host_name), expt_name, sizeof(expt_name));
 
   /* scan arg list for -x which specify the replog configuration */
   for (i=1 ; i<argc ; i++)

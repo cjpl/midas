@@ -7,6 +7,9 @@
                 linked with user code to form a complete frontend
 
   $Log$
+  Revision 1.55  2003/05/09 07:40:04  midas
+  Added extra parameter to cm_get_environment
+
   Revision 1.54  2003/05/07 10:57:10  midas
   Removed tabs
 
@@ -229,7 +232,7 @@ INT   run_number;
 DWORD actual_time;      /* current time in seconds since 1970 */
 DWORD actual_millitime;       /* current time in milliseconds */
 
-char  host_name[NAME_LENGTH];
+char  host_name[HOST_NAME_LENGTH];
 char  exp_name[NAME_LENGTH];
 
 INT   max_bytes_per_sec;
@@ -1934,7 +1937,7 @@ INT  daemon;
 #else
 
   /* get default from environment */
-  cm_get_environment(host_name, exp_name);
+  cm_get_environment(host_name, sizeof(host_name), exp_name, sizeof(exp_name));
   
   /* parse command line parameters */
   for (i=1 ; i<argc ; i++)

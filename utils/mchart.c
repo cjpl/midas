@@ -19,6 +19,9 @@
     See mchart -h for further info.
 
   $Log$
+  Revision 1.10  2003/05/09 07:40:05  midas
+  Added extra parameter to cm_get_environment
+
   Revision 1.9  2003/04/23 23:08:33  pierre
   Fixed compiler warning
 
@@ -381,14 +384,14 @@ int main(int argc,char **argv)
   INT    status, last_time=0;
   DWORD  i;
   HNDLE  hDB, hKey;
-  char   host_name[HOST_NAME_LENGTH], expt_name[HOST_NAME_LENGTH];
+  char   host_name[HOST_NAME_LENGTH], expt_name[NAME_LENGTH];
   char   eqpstr[128]={'\0'};
   char   ch, cmdline[256];
   char   mchart_dir[128]={'\0'}, mchart_data[128], mchart_conf[128];
   INT    msg, childpid;
   int  sys_err;
   /* set default */
-  cm_get_environment (host_name, expt_name);
+  cm_get_environment (host_name, sizeof(host_name), expt_name, sizeof(expt_name));
   delta_time = 5000;
   daemon = FALSE;
 

@@ -6,6 +6,9 @@
   Contents:     MIDAS logger program
 
   $Log$
+  Revision 1.64  2003/05/09 07:40:05  midas
+  Added extra parameter to cm_get_environment
+
   Revision 1.63  2003/04/25 14:37:43  midas
   Fixed compiler warnings
 
@@ -3089,7 +3092,7 @@ INT i;
 int main(int argc, char *argv[])
 {
 INT    status, msg, i, size, run_number, ch=0, state;
-char   host_name[100], exp_name[NAME_LENGTH], dir[256];
+char   host_name[HOST_NAME_LENGTH], exp_name[NAME_LENGTH], dir[256];
 BOOL   debug, daemon, save_mode;
 DWORD  last_time_kb = 0;
 DWORD  last_time_stat = 0;
@@ -3120,7 +3123,7 @@ int rargc;
 #endif
 
   /* get default from environment */
-  cm_get_environment(host_name, exp_name);
+  cm_get_environment(host_name, sizeof(host_name), exp_name, sizeof(exp_name));
 
   debug = daemon = save_mode = FALSE;
 
