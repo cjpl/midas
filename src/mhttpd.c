@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.94  2000/02/25 22:19:09  midas
+  Improved Ctrl-C handling
+
   Revision 1.93  2000/02/24 22:29:24  midas
   Added deferred transitions
 
@@ -568,7 +571,7 @@ void redirect2(char *path)
 
 /*------------------------------------------------------------------*/
 
-void search_callback(HNDLE hDB, HNDLE hKey, KEY *key, INT level, void *info)
+INT search_callback(HNDLE hDB, HNDLE hKey, KEY *key, INT level, void *info)
 {
 INT         i, size, status;
 char        *search_name, *p;
@@ -664,6 +667,8 @@ char        path[MAX_ODB_PATH], data[10000];
         }
       }
     }
+
+  return SUCCESS;
 }
 
 /*------------------------------------------------------------------*/

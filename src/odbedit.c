@@ -6,6 +6,9 @@
   Contents:     Command-line interface to the MIDAS online data base.
 
   $Log$
+  Revision 1.33  2000/02/25 22:19:10  midas
+  Improved Ctrl-C handling
+
   Revision 1.32  2000/02/24 22:29:25  midas
   Added deferred transitions
 
@@ -98,6 +101,7 @@
 #include "msystem.h"
 
 extern INT cmd_edit(char *prompt, char *cmd, INT (*dir)(char*,INT*), INT (*idle)());
+extern BOOL _ctrlc_pressed;
 
 BOOL  need_redraw;
 BOOL  in_cmd_edit;
@@ -268,19 +272,22 @@ BOOL match(char *pat, char *str)
 
 /*------------------------------------------------------------------*/
 
-void print_key(HNDLE hDB, HNDLE hKey, KEY *key, INT level, void *info)
+INT print_key(HNDLE hDB, HNDLE hKey, KEY *key, INT level, void *info)
 {
 INT         i, size, status;
 static char data_str[256], line[256];
 DWORD       delta;
 PRINT_INFO  *pi;
 
+  if (_ctrlc_pressed)
+    return 0;
+
   pi = (PRINT_INFO *) info;
 
   /* if pattern set, check if match */
   if (pi->pattern[0] &&
       !match(pi->pattern, key->name))
-    return;
+    return SUCCESS;
   
   size = sizeof(data);
   if (pi->flags & PI_VALUE)
@@ -405,6 +412,8 @@ PRINT_INFO  *pi;
         }
       }
     }
+
+  return SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
@@ -457,6 +466,13 @@ KEY         key;
 HNDLE       hSubkey;
 static char data_str[256], line[256];
 DWORD       delta;
+
+  if (_ctrlc_pressed)
+    {
+    if (level == 0)
+      _ctrlc_pressed = FALSE;
+    return;
+    }
 
   db_get_key(hDB, hKey, &key);
   size = sizeof(data);
@@ -598,6 +614,13 @@ DWORD       delta;
         break;
 
       scan_tree(hDB, hSubkey, total_size_key, total_size_data, level+1, flags);
+
+      if (_ctrlc_pressed)
+        {
+        if (level == 0)
+          _ctrlc_pressed = FALSE;
+        return;
+        }
       }
     }
 }
@@ -856,7 +879,7 @@ BOOL  blanks, mismatch;
 
 /*------------------------------------------------------------------*/
 
-void search_key(HNDLE hDB, HNDLE hKey, KEY *key, INT level, void *info)
+INT search_key(HNDLE hDB, HNDLE hKey, KEY *key, INT level, void *info)
 {
 INT         i, size, status;
 char        *pattern;
@@ -898,6 +921,7 @@ char        path[MAX_ODB_PATH];
       printf("%s\n", line);
     }
 
+  return SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
@@ -1439,7 +1463,11 @@ PRINT_INFO      print_info;
           }
 
         if (print_info.flags & PI_RECURSIVE)
+          {
           db_scan_tree(hDB, hKey, 0, print_key, &print_info);
+          if (_ctrlc_pressed)
+            _ctrlc_pressed = FALSE;
+          }
         else
           {
           db_get_key(hDB, hKey, &key);
@@ -1448,6 +1476,12 @@ PRINT_INFO      print_info;
           else
             for (i=0 ; ; i++)
               {
+              if (_ctrlc_pressed)
+                {
+                _ctrlc_pressed = FALSE;
+                break;
+                }
+
               db_enum_link(hDB, hKey, i, &hSubkey);
 
               if (!hSubkey)

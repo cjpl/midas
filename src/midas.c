@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.100  2000/02/25 22:19:09  midas
+  Improved Ctrl-C handling
+
   Revision 1.99  2000/02/24 23:58:29  midas
   Fixed problem with _requested_transition being update by hotlink too late
 
@@ -3510,8 +3513,15 @@ BOOL _ctrlc_pressed = FALSE;
 
 void cm_ctrlc_handler(int sig)
 {
+  if (_ctrlc_pressed)
+    {
+    printf("Received 2nd break. Hard abort.\n");
+    exit(0);
+    }
   printf("Received break. Aborting...\n");
   _ctrlc_pressed = TRUE;
+
+  ss_ctrlc_handler(cm_ctrlc_handler);
 }
 
 /*------------------------------------------------------------------*/
