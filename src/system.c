@@ -14,6 +14,9 @@
                 Brown, Prentice Hall
 
   $Log$
+  Revision 1.61  2002/06/03 06:21:59  midas
+  Fixed bug with stdout
+
   Revision 1.60  2002/06/03 06:07:15  midas
   Added extra parameter to ss_daemon_init to keep stdout
 
@@ -1458,7 +1461,7 @@ INT ss_daemon_init(BOOL keep_stdout)
      routines writing to stdout etc won't cause havoc. Copied from smbd */
   for (i=0 ; i<3 ; i++) 
     {
-    if (keep_stdout && i == 2)
+    if (keep_stdout && i == 1)
       continue;
 
     close(i);
