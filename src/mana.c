@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.55  2000/03/08 17:39:35  midas
+  Added "/analyzer/output/events to odb" flag
+
   Revision 1.54  2000/03/06 22:39:06  midas
   Moved last.rz to /analyzer/output so that it can be changed, including a path
 
@@ -399,6 +402,7 @@ struct {
   char      histo_dump_filename[256];
   BOOL      clear_histos;
   char      last_histo_filename[256];
+  BOOL      events_to_odb;
 } out_info;
 
 FILE *out_file;
@@ -434,6 +438,7 @@ Histo Dump = BOOL : 0\n\
 Histo Dump Filename = STRING : [256] his%05d.rz\n\
 Clear histos = BOOL : 1\n\
 Last Histo Filename = STRING : [256] last.rz\n\
+Events to ODB = BOOL : 0\n\
 "
 
 /*-- interprete command line parameters ----------------------------*/
@@ -2851,27 +2856,28 @@ static char  *orig_event = NULL;
     write_event_hbook(NULL, pevent, par);
 
   /* put event in ODB once every second */
-  for (i=0 ; i<50 ; i++)
-    {
-    if (last_time_event[i].event_id == pevent->event_id)
+  if (out_info.events_to_odb)
+    for (i=0 ; i<50 ; i++)
       {
-      if (event_def->type == EQ_PERIODIC ||
-          event_def->type == EQ_SLOW ||
-          actual_time - last_time_event[i].last_time > 1000)
+      if (last_time_event[i].event_id == pevent->event_id)
         {
+        if (event_def->type == EQ_PERIODIC ||
+            event_def->type == EQ_SLOW ||
+            actual_time - last_time_event[i].last_time > 1000)
+          {
+          last_time_event[i].last_time = actual_time;
+          write_event_odb(pevent);
+          }
+        break;
+        }
+      if (last_time_event[i].event_id == 0)
+        {
+        last_time_event[i].event_id = pevent->event_id;
         last_time_event[i].last_time = actual_time;
         write_event_odb(pevent);
+        break;
         }
-      break;
       }
-    if (last_time_event[i].event_id == 0)
-      {
-      last_time_event[i].event_id = pevent->event_id;
-      last_time_event[i].last_time = actual_time;
-      write_event_odb(pevent);
-      break;
-      }
-    }
 
   return SUCCESS;
 }
