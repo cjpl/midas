@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.222  2004/10/06 20:59:46  midas
+  Made deferred transitions work again in new level scheme
+
   Revision 1.221  2004/10/04 17:55:24  midas
   Fixed bug in cm_msg() with incorrect buffer size for 'message file'
 
@@ -3344,12 +3347,8 @@ main()
 INT cm_register_transition(INT transition, INT(*func) (INT, char *), INT sequence_number)
 {
    INT status, i;
-   BOOL deferred;
    HNDLE hDB, hKey;
    char str[256];
-
-   deferred = (transition & TR_DEFERRED) > 0;
-   transition &= ~TR_DEFERRED;
 
    /* check for valid transition */
    if (transition != TR_START && transition != TR_STOP && 
@@ -3371,8 +3370,6 @@ INT cm_register_transition(INT transition, INT(*func) (INT, char *), INT sequenc
          break;
 
    sprintf(str, "Transition %s", trans_name[i].name);
-   if (deferred)
-      strcat(str, " DEFERRED");
 
    /* unlock database */
    db_set_mode(hDB, hKey, MODE_READ | MODE_WRITE, TRUE);
@@ -3399,12 +3396,8 @@ Change the transition sequence for the calling program.
 INT cm_set_transition_sequence(INT transition, INT sequence_number)
 {
    INT status, i;
-   BOOL deferred;
    HNDLE hDB, hKey;
    char str[256];
-
-   deferred = (transition & TR_DEFERRED) > 0;
-   transition &= ~TR_DEFERRED;
 
    /* check for valid transition */
    if (transition != TR_START && transition != TR_STOP && 
@@ -3420,8 +3413,6 @@ INT cm_set_transition_sequence(INT transition, INT sequence_number)
          break;
 
    sprintf(str, "Transition %s", trans_name[i].name);
-   if (deferred)
-      strcat(str, " DEFERRED");
 
    /* unlock database */
    db_set_mode(hDB, hKey, MODE_READ | MODE_WRITE, TRUE);
@@ -3464,32 +3455,30 @@ reached.
 INT cm_register_deferred_transition(INT transition, BOOL(*func) (INT, BOOL))
 {
    INT status, i, size;
-   DWORD mask;
+   char tr_key_name[256];
    HNDLE hDB, hKey;
 
    cm_get_experiment_database(&hDB, &hKey);
-
-   size = sizeof(DWORD);
-   status =
-       db_get_value(hDB, hKey, "Deferred Transition Mask", &mask, &size, TID_DWORD, TRUE);
-   if (status != DB_SUCCESS)
-      return status;
 
    for (i = 0; _deferred_trans_table[i].transition; i++)
       if (_deferred_trans_table[i].transition == transition)
          _deferred_trans_table[i].func = (int (*)(int, char *)) func;
 
    /* set new transition mask */
-   mask |= transition;
    _deferred_transition_mask |= transition;
+
+   for (i = 0; i < 13; i++)
+      if (trans_name[i].transition == transition)
+         break;
+
+   sprintf(tr_key_name, "Transition %s DEFERRED", trans_name[i].name);
 
    /* unlock database */
    db_set_mode(hDB, hKey, MODE_READ | MODE_WRITE, TRUE);
 
    /* set value */
-   status =
-       db_set_value(hDB, hKey, "Deferred Transition Mask", &mask, sizeof(DWORD), 1,
-                    TID_DWORD);
+   i = 0;
+   status = db_set_value(hDB, hKey, tr_key_name, &i, sizeof(INT), 1, TID_INT);
    if (status != DB_SUCCESS)
       return status;
 
@@ -3699,28 +3688,41 @@ INT cm_transition(INT transition, INT run_number, char *perror, INT strsize,
          return CM_TRANSITION_IN_PROGRESS;
       }
 
-      /* search database for clients with deferred transition mask set */
+      for (i = 0; i < 13; i++)
+         if (trans_name[i].transition == transition)
+            break;
+
+      sprintf(tr_key_name, "Transition %s DEFERRED", trans_name[i].name);
+
+      /* search database for clients with deferred transition request */
       for (i = 0, status = 0;; i++) {
          status = db_enum_key(hDB, hRootKey, i, &hSubkey);
          if (status == DB_NO_MORE_SUBKEYS)
             break;
 
          if (status == DB_SUCCESS) {
-            //size = sizeof(mask);
-            //status = db_get_value(hDB, hSubkey, "Deferred Transition Mask",
-            //                      &mask, &size, TID_DWORD, TRUE);
+            size = sizeof(sequence_number);
+            status = db_get_value(hDB, hSubkey, tr_key_name,
+                                 &sequence_number, &size, TID_INT, FALSE);
 
             /* if registered for deferred transition, set flag in ODB and return */
-            /*if (status == DB_SUCCESS && (mask & transition)) {
+            if (status == DB_SUCCESS) {
                size = NAME_LENGTH;
                db_get_value(hDB, hSubkey, "Name", str, &size, TID_STRING, TRUE);
                db_set_value(hDB, 0, "/Runinfo/Requested transition", &transition,
                             sizeof(int), 1, TID_INT);
+
+               if (debug_flag == 1)
+                  printf("---- Transition %s deferred by client \"%s\" ----\n", trans_name[i].name, str);
+               if (debug_flag == 2)
+                  cm_msg(MDEBUG, "cm_transition", "cm_transition: ---- Transition %s deferred by client \"%s\" ----", 
+                     trans_name[i].name, str);
+
                if (perror)
                   sprintf(perror, "Transition deferred by client \"%s\"", str);
 
                return CM_DEFERRED_TRANSITION;
-            }*/
+            }
          }
       }
    }
