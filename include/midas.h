@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.35  1999/09/14 11:46:04  midas
+  Added EL_FIRST_MESSAGE
+
   Revision 1.34  1999/08/31 15:12:34  midas
   Added EL_LAST_MSG
 
@@ -586,7 +589,8 @@ typedef          INT       HNDLE;
 #define EL_FILE_ERROR               902
 #define EL_NO_MESSAGE               903
 #define EL_TRUNCATED                904
-#define EL_LAST_MSG                 905
+#define EL_FIRST_MSG                905
+#define EL_LAST_MSG                 906
 
 /* Slow control commands */
 #define CMD_INIT                      1
