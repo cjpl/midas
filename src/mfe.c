@@ -7,6 +7,9 @@
                 linked with user code to form a complete frontend
 
   $Log$
+  Revision 1.49  2003/04/01 19:22:44  pierre
+  fix update_odb for hKeyl copy
+
   Revision 1.48  2003/03/31 08:27:34  midas
   Fixed alignment bug for strings
 
@@ -346,12 +349,12 @@ INT status, i;
   for (i=0 ; equipment[i].name[0] ; i++)
     if (equipment[i].buffer_handle)
       {
-	INT err = bm_flush_cache(equipment[i].buffer_handle, SYNC);
-	if (err != BM_SUCCESS)
-	  {
-	    cm_msg(MERROR,"tr_prestop","bm_flush_cache(SYNC) error %d",err);
-	    return err;
-	  }
+    INT err = bm_flush_cache(equipment[i].buffer_handle, SYNC);
+    if (err != BM_SUCCESS)
+      {
+        cm_msg(MERROR,"tr_prestop","bm_flush_cache(SYNC) error %d",err);
+        return err;
+      }
       }
 
   return status;
@@ -517,12 +520,12 @@ BOOL   manual_trig_flag = FALSE;
     status = db_find_key(hDB, 0, str, &hKey);
     if (status == DB_SUCCESS)
       {
-	status = db_delete_key(hDB, hKey, FALSE);
-	if (status != DB_SUCCESS)
-	  {
-	    printf("Cannot delete statistics record, error %d\n",status);
-	    ss_sleep(3000);
-	  }
+    status = db_delete_key(hDB, hKey, FALSE);
+    if (status != DB_SUCCESS)
+      {
+        printf("Cannot delete statistics record, error %d\n",status);
+        ss_sleep(3000);
+      }
       }
 
     status = db_create_record(hDB, 0, str, EQUIPMENT_STATISTICS_STR);
@@ -697,7 +700,7 @@ void              *pydata;
 DWORD             odb_type;
 DWORD             *pyevt, bkname;
 WORD              bktype;
-HNDLE             hKeyRoot;
+HNDLE             hKeyRoot, hKeyl;
 KEY               key;
 
   rpc_set_option(-1, RPC_OTRANSPORT, RPC_FTCP);
@@ -753,17 +756,16 @@ KEY               key;
         /* write structured bank */
         for (i=0 ;; i++)
           {
-          status = db_enum_key(hDB, hKeyRoot, i, &hKey);
+          status = db_enum_key(hDB, hKeyRoot, i, &hKeyl);
           if (status == DB_NO_MORE_SUBKEYS)
             break;
 
-          db_get_key(hDB, hKey, &key);
+          db_get_key(hDB, hKeyl, &key);
 
           /* adjust for alignment */
           if (key.type != TID_STRING && key.type != TID_LINK)
             pdata = (void *) VALIGN(pdata, min(ss_get_struct_align(), key.item_size));
-
-          status = db_set_data(hDB, hKey, pdata, key.item_size*key.num_values, 
+          status = db_set_data(hDB, hKeyl, pdata, key.item_size*key.num_values, 
                                key.num_values, key.type);
           if (status != DB_SUCCESS)
             {
@@ -779,7 +781,7 @@ KEY               key;
         {
         /* write variable length bank  */
         if (n_data > 0)
-          db_set_value(hDB, hKey, name, pdata, size, n_data, bktype & 0xFF);
+          db_set_value(hDB, hKeyl, name, pdata, size, n_data, bktype & 0xFF);
         }
 
       } while (1);
@@ -793,27 +795,27 @@ KEY               key;
     pyevt = (DWORD *) (pevent+1);
     pybkh = NULL;
     do
-	    {
-	    /* scan all banks */
-	    ni4 = ybk_iterate(pyevt, &pybkh, &pydata);
-	    if (pybkh == NULL || ni4 == 0)
-	      break;
+        {
+        /* scan all banks */
+        ni4 = ybk_iterate(pyevt, &pybkh, &pydata);
+        if (pybkh == NULL || ni4 == 0)
+          break;
 
-	    /* find the corresponding odb type */
-	    tsize = odb_type = 0;
+        /* find the corresponding odb type */
+        tsize = odb_type = 0;
       for (i=0;id_map[0].ybos_type > 0; i++)
-	      {
+          {
         if (pybkh->type == id_map[i].ybos_type)
           {
-		      odb_type = id_map[i].odb_type;
-		      tsize = id_map[i].tsize;
- 		      break;
+              odb_type = id_map[i].odb_type;
+              tsize = id_map[i].tsize;
+              break;
           }
-	      }
+          }
 
-	    /* extract bank name (key name) */
-	    *((DWORD *)name) = pybkh->name;
-	    name[4] = 0;
+        /* extract bank name (key name) */
+        *((DWORD *)name) = pybkh->name;
+        name[4] = 0;
 
       /* reject EVID bank */
       if (strncmp(name, "EVID", 4) == 0)
@@ -827,15 +829,15 @@ KEY               key;
       if (pybkh->type == I1_BKTYPE || pybkh->type == A1_BKTYPE)
         ni4 *= 4;
 
-	    /* write bank to ODB, ni4 always in I*4 */
-	    size = ni4 * tsize;
-	    if ((status = db_set_value(hDB, hKey, name, pydata, size, ni4, odb_type & 0xFF)) != DB_SUCCESS)
-	      {
-	      printf("status:%i odb_type:%li name:%s ni4:%i size:%i tsize:%i\n",
-		            status, odb_type, name, ni4, size, tsize);
-	      for (i=0;i<6;i++)
-		      printf("data: %f\n",*((float *)(pydata))++);
-	      }
+        /* write bank to ODB, ni4 always in I*4 */
+        size = ni4 * tsize;
+        if ((status = db_set_value(hDB, hKey, name, pydata, size, ni4, odb_type & 0xFF)) != DB_SUCCESS)
+          {
+          printf("status:%i odb_type:%li name:%s ni4:%i size:%i tsize:%i\n",
+                    status, odb_type, name, ni4, size, tsize);
+          for (i=0;i<6;i++)
+              printf("data: %f\n",*((float *)(pydata))++);
+          }
       } while (1);
 #endif /* YBOS_SUPPORT */
     }
@@ -964,12 +966,12 @@ static void    *frag_buffer = NULL;
 #else
           rpc_flush_event();
           err = bm_send_event(equipment[index].buffer_handle, pfragment,
-			      pfragment->data_size + sizeof(EVENT_HEADER), SYNC);
-	  if (err != BM_SUCCESS)
-	    {
-	      cm_msg(MERROR,"send_event","bm_send_event(SYNC) error %d",err);
-	      return err;
-	    }
+                  pfragment->data_size + sizeof(EVENT_HEADER), SYNC);
+      if (err != BM_SUCCESS)
+        {
+          cm_msg(MERROR,"send_event","bm_send_event(SYNC) error %d",err);
+          return err;
+        }
 #endif
           }
         }
@@ -977,10 +979,10 @@ static void    *frag_buffer = NULL;
 #ifndef USE_EVENT_CHANNEL
       err = bm_flush_cache(equipment[index].buffer_handle, SYNC);
       if (err != BM_SUCCESS)
-	{
-	  cm_msg(MERROR,"send_event","bm_flush_cache(SYNC) error %d",err);
-	  return err;
-	}
+    {
+      cm_msg(MERROR,"send_event","bm_flush_cache(SYNC) error %d",err);
+      return err;
+    }
 #endif
       }
     else
@@ -1004,17 +1006,17 @@ static void    *frag_buffer = NULL;
         rpc_flush_event();
         err = bm_send_event(equipment[index].buffer_handle, pevent,
                       pevent->data_size + sizeof(EVENT_HEADER), SYNC);
-	if (err != BM_SUCCESS)
-	  {
-	    cm_msg(MERROR,"send_event","bm_send_event(SYNC) error %d",err);
-	    return err;
-	  }
+    if (err != BM_SUCCESS)
+      {
+        cm_msg(MERROR,"send_event","bm_send_event(SYNC) error %d",err);
+        return err;
+      }
         err = bm_flush_cache(equipment[index].buffer_handle, SYNC);
-	if (err != BM_SUCCESS)
-	  {
-	    cm_msg(MERROR,"send_event","bm_flush_cache(SYNC) error %d",err);
-	    return err;
-	  }
+    if (err != BM_SUCCESS)
+      {
+        cm_msg(MERROR,"send_event","bm_flush_cache(SYNC) error %d",err);
+        return err;
+      }
   #endif
         }
 
@@ -1049,12 +1051,12 @@ static void    *frag_buffer = NULL;
   for (i=0 ; equipment[i].name[0] ; i++)
     if (equipment[i].buffer_handle)
       {
-	INT err = bm_flush_cache(equipment[i].buffer_handle, SYNC);
-	if (err != BM_SUCCESS)
-	  {
-	    cm_msg(MERROR,"send_event","bm_flush_cache(SYNC) error %d",err);
-	    return err;
-	  }
+    INT err = bm_flush_cache(equipment[i].buffer_handle, SYNC);
+    if (err != BM_SUCCESS)
+      {
+        cm_msg(MERROR,"send_event","bm_flush_cache(SYNC) error %d",err);
+        return err;
+      }
       }
 
   return CM_SUCCESS;
@@ -1440,12 +1442,12 @@ INT err;
                                    pevent->data_size + sizeof(EVENT_HEADER));
 #else
               status = rpc_send_event(eq->buffer_handle, pevent,
-				      pevent->data_size + sizeof(EVENT_HEADER), SYNC);
-	      if (status != SUCCESS)
-		{
-		  cm_msg(MERROR, "scheduler", "rpc_send_event error %d",status);
-		  goto net_error;
-		}
+                      pevent->data_size + sizeof(EVENT_HEADER), SYNC);
+          if (status != SUCCESS)
+        {
+          cm_msg(MERROR, "scheduler", "rpc_send_event error %d",status);
+          goto net_error;
+        }
 #endif
 
               eq->bytes_sent += pevent->data_size + sizeof(EVENT_HEADER);
@@ -1648,13 +1650,13 @@ INT err;
             if (!buffer_done)
               {
               rpc_set_option(-1, RPC_OTRANSPORT, RPC_FTCP);
-	      rpc_flush_event();
+          rpc_flush_event();
               err = bm_flush_cache(equipment[i].buffer_handle, ASYNC);
-	      if (err != BM_SUCCESS)
-		{
-		  cm_msg(MERROR,"scheduler","bm_flush_cache(ASYNC) error %d",err);
-		  return err;
-		}
+          if (err != BM_SUCCESS)
+        {
+          cm_msg(MERROR,"scheduler","bm_flush_cache(ASYNC) error %d",err);
+          return err;
+        }
               rpc_set_option(-1, RPC_OTRANSPORT, RPC_TCP);
               }
             }
