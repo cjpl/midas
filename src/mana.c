@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.34  1999/10/06 10:42:40  midas
+  Added -l flag not to load histos from last.rz
+
   Revision 1.33  1999/09/23 12:45:48  midas
   Added 32 bit banks
 
@@ -190,6 +193,7 @@ struct {
   BOOL  debug;
   BOOL  verbose;
   BOOL  quiet;
+  BOOL  no_load;
 } clp;
 
 struct {
@@ -268,6 +272,10 @@ struct {
   {'q', 
    "              Quiet flag. If set, don't display run progress in offline mode.",
    &clp.quiet, TID_BOOL, 0 },
+
+  {'l', 
+   "              If set, don't load histos from last.rz when running online.",
+   &clp.no_load, TID_BOOL, 0 },
 
   { 0 }
 };
@@ -2696,14 +2704,17 @@ char     str[80];
 FILE     *f;
 
   /* load previous online histos */
-  add_data_dir(str, "last.rz");
-
-  f = fopen(str, "r");
-  if (f != NULL)
+  if (!clp.no_load)
     {
-    fclose(f);
-    printf("Loading previous online histos from %s\n", str);
-    HRGET(0, str, "A");
+    add_data_dir(str, "last.rz");
+
+    f = fopen(str, "r");
+    if (f != NULL)
+      {
+      fclose(f);
+      printf("Loading previous online histos from %s\n", str);
+      HRGET(0, str, "A");
+      }
     }
   
   printf("Running analyzer online. Stop with \"!\"\n");
