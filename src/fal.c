@@ -7,6 +7,9 @@
                 Most routines are from mfe.c mana.c and mlogger.c.
 
   $Log$
+  Revision 1.30  2002/05/10 05:55:06  pierre
+  Added optional debug output to cm_transition
+
   Revision 1.29  2002/05/10 05:22:05  pierre
   add MANA_LITE #ifdef
 
@@ -1506,7 +1509,7 @@ double dzero;
       cm_msg(MTALK, "log_write", "Error writing to %s, stopping run", log_chn->path);
 
     stop_requested = TRUE;
-    cm_transition(TR_STOP, 0, NULL, 0, ASYNC);
+    cm_transition(TR_STOP, 0, NULL, 0, ASYNC, FALSE);
     stop_requested = FALSE;
 
     return status;
@@ -1522,7 +1525,7 @@ double dzero;
     cm_msg(MTALK, "log_write", "stopping run after having received %d events", 
                                 log_chn->settings.event_limit);
 
-    status = cm_transition(TR_STOP, 0, NULL, 0, ASYNC);
+    status = cm_transition(TR_STOP, 0, NULL, 0, ASYNC, FALSE);
     if (status != CM_SUCCESS)
       cm_msg(MERROR, "log_write", "cannot stop run after reaching event limit");
     stop_requested = FALSE;
@@ -1548,7 +1551,7 @@ double dzero;
     cm_msg(MTALK, "log_write", "stopping run after having received %1.0lf mega bytes", 
                                 log_chn->statistics.bytes_written/1E6);
 
-    status = cm_transition(TR_STOP, 0, NULL, 0, ASYNC);
+    status = cm_transition(TR_STOP, 0, NULL, 0, ASYNC, FALSE);
     if (status != CM_SUCCESS)
       cm_msg(MERROR, "log_write", "cannot stop run after reaching bytes limit");
     stop_requested = FALSE;
@@ -1577,7 +1580,7 @@ double dzero;
     strcpy(tape_name, log_chn->path);
     stats_hkey = log_chn->stats_hkey;
     
-    status = cm_transition(TR_STOP, 0, NULL, 0, ASYNC);
+    status = cm_transition(TR_STOP, 0, NULL, 0, ASYNC, FALSE);
     if (status != CM_SUCCESS)
       cm_msg(MERROR, "log_write", "cannot stop run after reaching tape capacity");
     stop_requested = FALSE;
@@ -1616,7 +1619,7 @@ double dzero;
       stop_requested = TRUE;
       cm_msg(MTALK, "log_write", "disk nearly full, stopping run");
 
-      status = cm_transition(TR_STOP, 0, NULL, 0, ASYNC);
+      status = cm_transition(TR_STOP, 0, NULL, 0, ASYNC, FALSE);
       if (status != CM_SUCCESS)
         cm_msg(MERROR, "log_write", "cannot stop run after reaching byte limit");
       stop_requested = FALSE;
@@ -4385,7 +4388,7 @@ char            str[80];
           run_state == STATE_RUNNING)
         {
         /* stop run */
-        if (cm_transition(TR_STOP, 0, str, sizeof(str), SYNC) != CM_SUCCESS)
+        if (cm_transition(TR_STOP, 0, str, sizeof(str), SYNC, FALSE) != CM_SUCCESS)
           {
           cm_msg(MERROR, "Cannot stop run: %s", str);
           }
@@ -4486,7 +4489,7 @@ char            str[80];
       db_get_value(hDB, 0, "/Runinfo/Run number", &run_number, &size, TID_INT, TRUE);
 
       cm_msg(MTALK, "main", "starting new run");
-      status = cm_transition(TR_START, run_number+1, NULL, 0, ASYNC);
+      status = cm_transition(TR_START, run_number+1, NULL, 0, ASYNC, FALSE);
       if (status != CM_SUCCESS)
         cm_msg(MERROR, "main", "cannot restart run");
       }
