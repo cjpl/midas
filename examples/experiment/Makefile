@@ -6,6 +6,9 @@
 #  Contents:     Makefile for MIDAS example frontend and analyzer
 #
 #  $Log$
+#  Revision 1.18  2003/04/28 10:22:47  midas
+#  Makefile only compiles ROOT analyzer
+#
 #  Revision 1.17  2003/04/24 14:09:59  midas
 #  Added more ROOT libraries
 #
@@ -62,29 +65,19 @@
 # lines below.
 
 #-----------------------------------------
-# This is for OSF1
-#LIBS = -lbsd -lzlib
-#OSFLAGS = -DOS_OSF1 -Dextname
-#FF = f77
-#FFLAGS = -nofor_main -D 40000000 -T 20000000
-
-#-----------------------------------------
 # This is for Linux
+#
 OSFLAGS = -DOS_LINUX -Dextname
-CFLAGS = -g -O2 -Wall -Wuninitialized
-
-# for f2c, uncomment following:
-#LIBS = -lbsd -lm -lutil /usr/lib/libf2c.a
-#FF = cc
-# for egcs g77, use this
-FF = g77
+CFLAGS = -g -O2 -Wall
 LIBS = -lm -lz -lutil -lnsl
 
 #-----------------------------------------
-ifdef ROOTSYS
-ROOTCFLAGS:= -DHAVE_ROOT -I$(ROOTSYS)/include
-ROOTLIBS:= -Wl,-rpath,$(ROOTSYS)/lib -L$(ROOTSYS)/lib -lCore -lCint -lHist -lGraf -lGui -lGpad -lTree -lMatrix -lThread -ldl
-endif
+# ROOT flags and libs
+#
+ROOTCFLAGS := $(shell root-config --cflags)
+ROOTCFLAGS += -DHAVE_ROOT
+ROOTLIBS   := $(shell root-config --libs)
+ROOTLIBS   += -lThread
 
 #-------------------------------------------------------------------
 # The following lines define direcories. Adjust if necessary
@@ -93,19 +86,10 @@ DRV_DIR         = ../../drivers
 INC_DIR 	= ../../include
 LIB_DIR 	= ../../linux/lib
 #
-CERNLIB_PACK	= /cern/pro/lib/libpacklib.a
-#
 #-------------------------------------------------------------------
 # List of analyzer modules
 #
-# LITE modules for "analyzer"
 MODULES 	= adccalib.o adcsum.o scaler.o
-
-# ROOT modules for the ROOT analyzer "ranalyzer"
-RMODULES 	= radccalib.o radcsum.o rscaler.o
-
-# HBOOK modules for the HBOOK analyzer "hanalyzer"
-HMODULES 	= hadccalib.o hadcsum.o hscaler.o
 
 #-------------------------------------------------------------------
 # Hardware driver can be (camacnul, kcs2926, kcs2927, hyt1331)
@@ -127,11 +111,12 @@ UFE = frontend
 LIB = $(LIB_DIR)/libmidas.a
 
 # compiler
-CC = cc
+CC = gcc
+CXX = g++
 CFLAGS += -g -I$(INC_DIR) -I$(DRV_DIR)
 LDFLAGS +=
 
-all: $(UFE) fal analyzer ranalyzer
+all: $(UFE) analyzer
 
 $(UFE): $(LIB) $(LIB_DIR)/mfe.o $(DRIVER).o $(UFE).c
 	$(CC) $(CFLAGS) $(OSFLAGS) -o $(UFE) $(UFE).c $(DRIVER).o \
@@ -140,28 +125,12 @@ $(UFE): $(LIB) $(LIB_DIR)/mfe.o $(DRIVER).o $(UFE).c
 $(DRIVER).o: $(DRV_DIR)/bus/$(DRIVER).c
 	$(CC) $(CFLAGS) $(OSFLAGS) -c -o $(DRIVER).o $(DRV_DIR)/bus/$(DRIVER).c
 
-analyzer: $(LIB) $(LIB_DIR)/mana.o hanalyzer.o $(HMODULES)
-	$(FF) $(FFLAGS) -o $@ $(LIB_DIR)/mana.o hanalyzer.o \
-	$(MODULES) $(CERNLIB_PACK) \
-	$(LIB) $(LDFLAGS) $(LIBS)
-
-ranalyzer: $(LIB) $(LIB_DIR)/rmana.o ranalyzer.o $(RMODULES)
-	$(CXX) $(FFLAGS) -o $@ $(LIB_DIR)/rmana.o ranalyzer.o $(RMODULES) \
+analyzer: $(LIB) $(LIB_DIR)/rmana.o analyzer.o $(MODULES)
+	$(CXX) $(FFLAGS) -o $@ $(LIB_DIR)/rmana.o analyzer.o $(MODULES) \
 	$(LIB) $(LDFLAGS) $(ROOTLIBS) $(LIBS)
 
-fal: $(LIB) $(LIB_DIR)/fal.o $(DRV_DIR)/bus/$(DRIVER).o $(UFE).c $(MODULES) $(UFE).o hanalyzer.o
-	$(FF) $(FFLAGS) -o fal $(LIB_DIR)/fal.o $(UFE).o $(DRIVER).o \
-	hanalyzer.o $(MODULES) $(CERNLIB_PACK) \
-	$(LIB) $(LDFEFLAGS) $(LIBS)
-
-ranalyzer.o $(RMODULES): r%.o: %.c
-	$(CXX) $(ROOTCFLAGS) $(USERFLAGS) $(CFLAGS) $(OSFLAGS) -o $@ -c $<
-
-hanalyzer.o $(HMODULES): h%.o: %.c
-	$(CC) -DHAVE_HBOOK $(CFLAGS) $(OSFLAGS) -o $@ -c $<
-
 %.o: %.c
-	$(CC) $(USERFLAGS) $(CFLAGS) $(OSFLAGS) -o $@ -c $<
+	$(CXX) $(USERFLAGS) $(ROOTCFLAGS) $(CFLAGS) $(OSFLAGS) -o $@ -c $<
 
 clean::
 	rm -f *.o *~ \#*
