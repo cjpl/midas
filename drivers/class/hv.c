@@ -6,6 +6,9 @@
   Contents:     High Voltage Class Driver
 
   $Log$
+  Revision 1.15  2003/10/06 09:17:10  midas
+  Output commect if # channels overwritten by ODB
+
   Revision 1.14  2003/09/29 11:57:30  midas
   Fixed bug with driver entry point offset
 
@@ -414,7 +417,7 @@ EQUIPMENT *pequipment;
 
 INT hv_init(EQUIPMENT *pequipment)
 {
-int   status, size, i, j, index, offset;
+int   status, size, i, j, index, offset, channels;
 char  str[256];
 HNDLE hDB, hKey, hNames;
 HV_INFO *hv_info;
@@ -449,8 +452,15 @@ HV_INFO *hv_info;
     /* ODB value has priority over driver list in channel number */
     size = sizeof(INT);
     db_get_value(hDB, hKey, pequipment->driver[i].name, 
-                 &pequipment->driver[i].channels, &size, TID_INT, TRUE);
-    
+                 &channels, &size, TID_INT, TRUE);
+
+    if (channels != pequipment->driver[i].channels)
+      {
+      printf("\nNumber of HV channels overwritten by ODB (%d -> %d).\n", 
+        pequipment->driver[i].channels, channels);
+      pequipment->driver[i].channels = channels;
+      }
+
     if (pequipment->driver[i].channels == 0)
       pequipment->driver[i].channels = 1;
 
