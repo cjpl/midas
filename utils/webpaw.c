@@ -6,6 +6,9 @@
   Contents:     Web server for remote PAW display
 
   $Log$
+  Revision 1.7  2000/05/15 15:07:38  midas
+  Fixed bug with command line parameters
+
   Revision 1.6  2000/05/15 14:27:11  midas
   Embed images in .html file
 
@@ -1256,7 +1259,7 @@ int tcp_port = 80, daemon = 0;
     {
     if (argv[i][0] == '-' && argv[i][1] == 'D')
       daemon = 1;
-    if (argv[i][0] == '-' && argv[i][1] == 'd')
+    else if (argv[i][0] == '-' && argv[i][1] == 'd')
       _debug = 1;
     else if (argv[i][0] == '-')
       {
