@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.209  2004/07/12 12:23:03  midas
+  Fixed small bug in hs_enum_vars()
+
   Revision 1.208  2004/07/12 11:32:13  midas
   Fixed types in cm_msg()
 
@@ -14012,8 +14015,8 @@ INT hs_count_vars(DWORD ltime, DWORD event_id, DWORD * count)
 
 
 /********************************************************************/
-INT hs_enum_vars(DWORD ltime, DWORD event_id, char *var_name, DWORD * size,
-                 DWORD * var_n, DWORD * n_size)
+INT hs_enum_vars(DWORD ltime, DWORD event_id, char *var_name, DWORD *size,
+                 DWORD *var_n, DWORD *n_size)
 /********************************************************************\
 
   Routine: hs_enum_vars
@@ -14087,9 +14090,10 @@ INT hs_enum_vars(DWORD ltime, DWORD event_id, char *var_name, DWORD * size,
    tag = (TAG *) M_MALLOC(rec.data_size);
    read(fh, (char *) tag, rec.data_size);
 
-   if (n * NAME_LENGTH > (INT) * size || n * sizeof(DWORD) > *n_size) {
+   if (n * NAME_LENGTH > (INT) *size || n * sizeof(DWORD) > *n_size) {
+      
       /* store partial definition */
-      for (i = 0; i < (INT) * size / NAME_LENGTH; i++) {
+      for (i = 0; i < (INT) *size / NAME_LENGTH; i++) {
          strcpy(var_name + i * NAME_LENGTH, tag[i].name);
          var_n[i] = tag[i].n_data;
       }
@@ -14107,7 +14111,7 @@ INT hs_enum_vars(DWORD ltime, DWORD event_id, char *var_name, DWORD * size,
       var_n[i] = tag[i].n_data;
    }
    *size = n * NAME_LENGTH;
-   *n_size = n;
+   *n_size = n * sizeof(DWORD);
 
    M_FREE(tag);
    close(fh);
