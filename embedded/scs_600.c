@@ -9,6 +9,9 @@
                 for SCS-600 Digital I/O
 
   $Log$
+  Revision 1.3  2002/10/09 11:06:46  midas
+  Protocol version 1.1
+
   Revision 1.2  2002/10/03 15:31:53  midas
   Various modifications
 
@@ -35,8 +38,8 @@ struct {
 } user_data;
 
 MSCB_INFO_CHN code channel[] = {
-  1, 0, 0, 0, "Out",   &user_data.out,
-  1, 0, 0, 0, "In",    &user_data.in,
+  1, UNIT_BYTE, 0, 0, 0, "Out",   &user_data.out,
+  1, UNIT_BYTE, 0, 0, 0, "In",    &user_data.in,
   0
 };
 
@@ -157,6 +160,8 @@ unsigned long value;
 void user_loop(void)
 {
 unsigned char i;
+static unsigned long last = 300;
+static bit first = 1;
 
   /* don't take data in freeze mode */
   if (!FREEZE_MODE);
@@ -169,15 +174,26 @@ unsigned char i;
         user_data.in &= ~(1<<i);
       }
 
-    lcd_goto(0, 0);
-    printf("OUT: ");
-    for (i=0 ; i<8 ; i++)
-      printf("%c", user_data.out & (1<<i) ? '1' : '0');
+    if (time() > last+30)
+      {
+      if (first)
+        {
+        lcd_clear();
+        first = 0;
+        }
 
-    lcd_goto(0, 1);
-    printf("IN:  ");
-    for (i=0 ; i<8 ; i++)
-      printf("%c", user_data.in & (1<<i) ? '1' : '0');
+      last = time();
+
+      lcd_goto(0, 0);
+      printf("OUT: ");
+      for (i=0 ; i<8 ; i++)
+        printf("%c", user_data.out & (1<<i) ? '1' : '0');
+  
+      lcd_goto(0, 1);
+      printf("IN:  ");
+      for (i=0 ; i<8 ; i++)
+        printf("%c", user_data.in & (1<<i) ? '1' : '0');
+      }
     }
 }
 

@@ -9,6 +9,9 @@
                 for SCS-500 analog I/O
 
   $Log$
+  Revision 1.6  2002/10/09 11:06:46  midas
+  Protocol version 1.1
+
   Revision 1.5  2002/10/03 15:31:53  midas
   Various modifications
 
@@ -53,40 +56,60 @@ struct {
   unsigned char p1;
   unsigned int  dac0;
   unsigned int  dac1;
-  unsigned int  adc[8];
-} user_data;
+  float         adc[8];
+} idata user_data;
 
 struct {
   unsigned char adc_average;
-  unsigned char gain[8];
-} user_conf;
+  unsigned char gain[8]; // PGA bits
+} idata user_conf;
   
+float idata gain[8];     // gain resulting from PGA bits
 
 MSCB_INFO_CHN code channel[] = {
-  1, 0, 0, 0, "P1",   &user_data.p1,
-  2, 0, 0, 0, "DAC0", &user_data.dac0,
-  2, 0, 0, 0, "DAC1", &user_data.dac1,
-  2, 0, 0, 0, "ADC0", &user_data.adc[0],
-  2, 0, 0, 0, "ADC1", &user_data.adc[1],
-  2, 0, 0, 0, "ADC2", &user_data.adc[2],
-  2, 0, 0, 0, "ADC3", &user_data.adc[3],
-  2, 0, 0, 0, "ADC4", &user_data.adc[4],
-  2, 0, 0, 0, "ADC5", &user_data.adc[5],
-  2, 0, 0, 0, "ADC6", &user_data.adc[6],
-  2, 0, 0, 0, "ADC7", &user_data.adc[7],
+  1, UNIT_BYTE,  0, 0, 0, "P1",   &user_data.p1,
+  2, UNIT_WORD,  0, 0, 0, "DAC0", &user_data.dac0,
+  2, UNIT_WORD,  0, 0, 0, "DAC1", &user_data.dac1,
+  2, UNIT_WORD,  0, 0, 0, "ADC0", &user_data.adc[0],
+  2, UNIT_WORD,  0, 0, 0, "ADC1", &user_data.adc[1],
+  2, UNIT_WORD,  0, 0, 0, "ADC2", &user_data.adc[2],
+  2, UNIT_WORD,  0, 0, 0, "ADC3", &user_data.adc[3],
+  2, UNIT_WORD,  0, 0, 0, "ADC4", &user_data.adc[4],
+  2, UNIT_WORD,  0, 0, 0, "ADC5", &user_data.adc[5],
+  2, UNIT_WORD,  0, 0, 0, "ADC6", &user_data.adc[6],
+  2, UNIT_WORD,  0, 0, 0, "ADC7", &user_data.adc[7],
   0
 };
 
+/* Usage of gain:
+
+ Bipol.     Ext.  PGA          Int. PGA       Gain
+
+  Bit5      Bit4 Bit3       Bit2 Bit1 Bit0
+   0         0    0          0    0    0       1
+   0         0    0          0    0    1       2
+   0         0    0          0    1    0       4
+   0         0    0          0    1    1       8
+   0         0    0          1    0    0      16
+   0         0    0          1    1    0       0.5
+
+   0         0    1          0    0    0      10
+   0         1    0          0    0    0     100
+   0         1    1          0    0    0    1000
+
+   1  bipolar, represents external jumper setting
+*/
+
 MSCB_INFO_CHN code conf_param[] = {
-  1, 0, 0, 0, "ADCAvrg", &user_conf.adc_average,
-  1, 0, 0, 0, "Gain0",   &user_conf.gain[0],
-  1, 0, 0, 0, "Gain1",   &user_conf.gain[1],
-  1, 0, 0, 0, "Gain2",   &user_conf.gain[2],
-  1, 0, 0, 0, "Gain3",   &user_conf.gain[3],
-  1, 0, 0, 0, "Gain4",   &user_conf.gain[4],
-  1, 0, 0, 0, "Gain5",   &user_conf.gain[5],
-  1, 0, 0, 0, "Gain6",   &user_conf.gain[6],
-  1, 0, 0, 0, "Gain7",   &user_conf.gain[7],
+  1, UNIT_COUNT, 0, 0, 0, "ADCAvrg", &user_conf.adc_average,
+  1, UNIT_BYTE,  0, 0, 0, "Gain0",   &user_conf.gain[0],
+  1, UNIT_BYTE,  0, 0, 0, "Gain1",   &user_conf.gain[1],
+  1, UNIT_BYTE,  0, 0, 0, "Gain2",   &user_conf.gain[2],
+  1, UNIT_BYTE,  0, 0, 0, "Gain3",   &user_conf.gain[3],
+  1, UNIT_BYTE,  0, 0, 0, "Gain4",   &user_conf.gain[4],
+  1, UNIT_BYTE,  0, 0, 0, "Gain5",   &user_conf.gain[5],
+  1, UNIT_BYTE,  0, 0, 0, "Gain6",   &user_conf.gain[6],
+  1, UNIT_BYTE,  0, 0, 0, "Gain7",   &user_conf.gain[7],
   0
 };
 
@@ -97,7 +120,7 @@ MSCB_INFO_CHN code conf_param[] = {
 \********************************************************************/
 
 void user_write(unsigned char channel);
-void write_gain(void);
+void write_gain(void) reentrant;
 
 /*---- User init function ------------------------------------------*/
 
@@ -186,9 +209,10 @@ unsigned char user_read(unsigned char channel)
 
 /*---- User write config function ----------------------------------*/
 
-void write_gain(void)
+void write_gain(void) reentrant
 {
 unsigned char i;
+float g;
 
   SR_STROBE = 0;
   SR_CLOCK  = 0;
@@ -218,6 +242,37 @@ unsigned char i;
   SR_DATA   = 0;
   SR_STROBE = 1;
   SR_STROBE = 0;
+
+  /* calculate gains */
+  for (i=0 ; i<8 ; i++)
+    {
+    /* convert to volts */
+    g = 1 / 65536.0 * 2.5;
+    
+    /* external voltage divider */
+    g /= 20;
+  
+    /* internal PGA */
+    switch (user_conf.gain[i] & 0x07)
+      {
+      case 0: g *= 1; break;
+      case 1: g *= 2; break;
+      case 2: g *= 4; break;
+      case 3: g *= 8; break;
+      case 4: g *= 16; break;
+      case 6: g *= 0.5; break;
+      }
+  
+    /* external PGA */
+    switch (user_conf.gain[i] & 0x18)
+      {
+      case 0x08: g *= 10; break;
+      case 0x10: g *= 100; break;
+      case 0x18: g *= 1000; break;
+      }
+
+    gain[i] = g;
+    }
 }
 
 void user_write_conf(unsigned char channel)
@@ -246,10 +301,11 @@ unsigned char user_func(unsigned char idata *data_in,
 
 /*---- User loop function ------------------------------------------*/
 
-void adc_read(channel, unsigned int *d)
+void adc_read(channel, float *d)
 {
 unsigned long value;
 unsigned int  i, n;
+float gvalue;
 
   AMX0SL = channel & 0x0F;
   ADC0CF = 0xE0 | (user_conf.gain[channel] & 0x07);  // 16 system clocks and gain
@@ -274,8 +330,13 @@ unsigned int  i, n;
   if (user_conf.adc_average)
     value >>= (user_conf.adc_average);
 
+  gvalue = value;
+
+
+
+
   DISABLE_INTERRUPTS;
-  *d = value;
+  *d = gvalue;
   ENABLE_INTERRUPTS;
 }
 
@@ -292,10 +353,10 @@ unsigned char i;
     if (!DEBUG_MODE)
       {
       lcd_goto(0, 0);
-      printf("CH1: %6.4f V", user_data.adc[0] / 65536.0 * 2.5);
+      printf("CH1: %6.4f V", user_data.adc[0]);
   
       lcd_goto(0, 1);
-      printf("CH2: %6.4f V", user_data.adc[1] / 65536.0 * 2.5);
+      printf("CH2: %6.4f V", user_data.adc[1]);
       }
     }
 }

@@ -7,6 +7,9 @@
                 SUBM300 running on Cygnal C8051F021
 
   $Log$
+  Revision 1.3  2002/10/09 11:06:46  midas
+  Protocol version 1.1
+
   Revision 1.2  2002/10/04 09:03:20  midas
   Small mods for scs_300
 
@@ -129,7 +132,11 @@ void serial_int(void) interrupt 4 using 1
 
     /* store character in read buffer */
     *rbuf_wp = SBUF0;
-    rbuf_wp = (unsigned char) (rbuf_wp + 1);
+
+    /* increment write pointer with wrap around at 1024 bytes */
+    rbuf_wp++;
+    if (rbuf_wp == 0x400)
+      rbuf_wp = 0;
 
     RI0 = 0;
     }
@@ -191,8 +198,10 @@ unsigned char byte;
   /* get received byte */
   byte = *rbuf_rp;
 
-  /* increment read pointer with wrap around at 256 bytes */
-  rbuf_rp = (unsigned char)(rbuf_rp + 1);
+  /* increment read pointer with wrap around at 1024 bytes */
+  rbuf_rp = rbuf_rp + 1;
+  if (rbuf_rp == 0x400)
+    rbuf_rp = 0;
 
   /* signal new data to PC */
   LPT_DATA = byte;
