@@ -7,13 +7,14 @@
 #
 
 OUTNAME       = msc 
-CC            = gcc 
+CC            = gcc -g
 FLAGS         = -Wall
+LIBS	      = -lusb
 
 all: $(OUTNAME)
 
 $(OUTNAME): mscb.o msc.o rpc.o
-	$(CC) $(FLAGS) mscb.o msc.o rpc.o -o $(OUTNAME)
+	$(CC) $(FLAGS) mscb.o msc.o rpc.o -o $(OUTNAME) $(LIBS)
 
 rpc.o: rpc.c rpc.h
 	$(CC) $(FLAGS) -c rpc.c
@@ -25,5 +26,5 @@ msc.o: msc.c
 	$(CC) $(FLAGS) -c msc.c 
 
 clean:
-	@rm *.o $(OUTNAME)
+	rm *.o $(OUTNAME)
 
