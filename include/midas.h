@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.30  1999/07/15 07:35:12  midas
+  Added ss_ctrlc_handler
+
   Revision 1.29  1999/07/13 08:24:27  midas
   Added ANA_TEST
 
@@ -1286,6 +1289,8 @@ char EXPRT *ss_getpass(char *prompt);
 INT EXPRT ss_getchar(BOOL reset);
 char EXPRT *ss_crypt(char *key, char *salt);
 char EXPRT *ss_gets(char *string, int size);
+
+void EXPRT *ss_ctrlc_handler(void (*func)(int));
 
 /*---- direct io routines ----*/
 INT EXPRT ss_directio_init(void);
