@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.130  2004/07/09 11:27:57  midas
+  Version 1.9.4
+
   Revision 1.129  2004/05/07 19:40:11  midas
   Replaced min/max by MIN/MAX macros
 
@@ -438,7 +441,7 @@ The main include file
  *  
  *  @{  */
 
-#define MIDAS_VERSION "1.9.3"
+#define MIDAS_VERSION "1.9.4"
 
 /**dox***************************************************************/
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
