@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.62  2000/06/06 13:41:09  midas
+  Added lock_histo to prevent histos from being cleared
+
   Revision 1.61  2000/06/06 11:22:02  midas
   Added EXT_EVENT_SIZE, partially implemented PVM stuff
 
@@ -282,6 +285,9 @@ extern ANALYZE_REQUEST analyze_request[];
 
 /* N-tupel booking and filling flag */
 BOOL ntuple_flag;
+
+/* list of locked histos (won't get cleared) */
+INT  lock_list[10000];
 
 #ifdef extname
 int quest_[100];
@@ -1409,7 +1415,7 @@ INT        i, j;
 INT bor(INT run_number, char *error)
 {
 ANA_MODULE **module;
-INT        i, j, status, size;
+INT        i, j, n, status, size;
 char       str[256], file_name[256];
 char       *ext_str;
 BANK_LIST  *bank_list;
@@ -1447,11 +1453,25 @@ INT        lrec;
   /* clear histos, N-tuples and tests */
   if (clp.online && out_info.clear_histos)
     {
+    int hid[10000];
+
     for (i=0 ; analyze_request[i].event_name[0] ; i++)
       if (analyze_request[i].bank_list != NULL)
         if (HEXIST(analyze_request[i].ar_info.event_id))
           HRESET(analyze_request[i].ar_info.event_id, " ");
-    HRESET(0, " ");
+
+    /* get list of all histos */
+    HIDALL(hid, n);
+    for (i=0 ; i<n ; i++)
+      {
+      for (j=0 ; j<10000 ; j++)
+        if (lock_list[j] == 0 || lock_list[j] == hid[i])
+          break;
+
+      /* clear histo if not locked */
+      if (lock_list[j] != hid[i])
+        HRESET(hid[i], " ");
+      }
 
     test_clear();
     }
@@ -3068,6 +3088,19 @@ INT i;
     }
 
   return SUCCESS;
+}
+
+/*------------------------------------------------------------------*/
+
+void lock_histo(INT id)
+{
+INT i;
+
+  for (i=0 ; i<10000 ; i++)
+    if (lock_list[i] == 0)
+      break;
+
+  lock_list[i] = id;
 }
 
 /*------------------------------------------------------------------*/
