@@ -6,6 +6,9 @@
   Contents:     Calibration program for SCS-900
 
   $Log$
+  Revision 1.3  2005/02/07 14:34:20  ritt
+  Added not about connection DAC to ADC
+
   Revision 1.2  2004/12/22 16:03:01  midas
   Fixed compiler warning
 
@@ -91,6 +94,9 @@ int main(int argc, char *argv[])
             mscb_write(fd, adr, (unsigned char) (j + 27), &v, sizeof(float));
          }
 
+         printf("Please connect DAC0 to ADC0-7 and press ENTER\n");
+         fgets(str, sizeof(str), stdin);
+
          /* calibrate ADC offset */
          v = 0;
          size = sizeof(v);
@@ -128,10 +134,14 @@ int main(int argc, char *argv[])
          for (j=0 ; j<8 ; j++) {
             size = sizeof(float);
             mscb_read(fd, adr, (unsigned char) j, &v, &size);
-            v = (float) (9.9/v);
-            mscb_write(fd, adr, (unsigned char) (j + 27), &v, sizeof(float));
 
-            printf("Setting ADC%d gain to %1.3lf\n", j, v);
+            if (v > 9.8 && v < 10) {
+               v = (float) (9.9/v);
+               mscb_write(fd, adr, (unsigned char) (j + 27), &v, sizeof(float));
+
+               printf("Setting ADC%d gain to %1.3lf\n", j, v);
+            } else
+               printf("Invalid reading for ADC%d: %1.3lf, skipping channel\n", j, v);
          }
       }
    }
