@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.97  2002/05/22 22:10:03  midas
+  Version 1.9.1
+
   Revision 1.96  2002/05/22 05:43:32  midas
   Added extra variables to hs_enum_vars for mhist to display array size
 
@@ -316,7 +319,7 @@
    to the MIDAS library. First digit is major release, second
    digit is minor release, third digit is patch level */
 
-#define MIDAS_VERSION "1.9.0"
+#define MIDAS_VERSION "1.9.1"
 
 /*------------------------------------------------------------------*/
 
