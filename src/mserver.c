@@ -6,6 +6,9 @@
   Contents:     Server program for midas RPC calls
 
   $Log$
+  Revision 1.22  1999/11/22 08:44:25  midas
+  Fixed missing parameter in cm_set_client_info
+
   Revision 1.21  1999/11/08 15:06:26  midas
   Added new parameters to al_trigger_alarm
 
@@ -401,7 +404,7 @@ INT convert_flags;
 
     case RPC_CM_SET_CLIENT_INFO:
       status = cm_set_client_info(CHNDLE(0), CPHNDLE(1), CSTRING(2), 
-                                  CSTRING(3), CINT(4), CSTRING(5));
+                                  CSTRING(3), CINT(4), CSTRING(5), CINT(6));
       break;
 
     case RPC_CM_SET_WATCHDOG_PARAMS:
