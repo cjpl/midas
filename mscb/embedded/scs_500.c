@@ -9,6 +9,9 @@
                 for SCS-500 analog I/O
 
   $Log$
+  Revision 1.17  2003/05/14 15:08:04  midas
+  Switched P1 back to open drain
+
   Revision 1.16  2003/05/14 14:56:44  midas
   Switched P1 to push-pull
 
@@ -165,7 +168,8 @@ unsigned char i;
   DAC0CN = 0x80;  // enable DAC0
   DAC1CN = 0x80;  // enable DAC1
 
-  PRT1CF = 0xFF;  // P1 on push-pull
+  // uncomment following line for P1 push-pull mode
+  //PRT1CF = 0xFF;
 
   /* initial EEPROM value */
   if (init)
