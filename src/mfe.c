@@ -7,6 +7,9 @@
                 linked with user code to form a complete frontend
 
   $Log$
+  Revision 1.42  2002/10/15 18:09:59  olchansk
+  catch bm_xxx() errors and bail out from schedule(). This fixes infinite looping after rpc timeouts.
+
   Revision 1.41  2002/09/13 07:32:47  midas
   Added client name to cm_cleanup()
 
@@ -323,7 +326,14 @@ INT status, i;
   rpc_flush_event();
   for (i=0 ; equipment[i].name[0] ; i++)
     if (equipment[i].buffer_handle)
-      bm_flush_cache(equipment[i].buffer_handle, SYNC);
+      {
+	INT err = bm_flush_cache(equipment[i].buffer_handle, SYNC);
+	if (err != BM_SUCCESS)
+	  {
+	    cm_msg(MERROR,"tr_prestop","bm_flush_cache(SYNC) error %d",err);
+	    return err;
+	  }
+      }
 
   return status;
 }
@@ -501,7 +511,7 @@ BOOL   manual_trig_flag = FALSE;
     status = db_open_record(hDB, hKey, eq_stats, sizeof(EQUIPMENT_STATS), MODE_WRITE, NULL, NULL);
     if (status != DB_SUCCESS)
       {
-      printf("Cannot open statistics record, probably other FE is using it\n");
+      printf("Cannot open statistics record, error %d. Probably other FE is using it\n",status);
       ss_sleep(3000);
       }
 
@@ -765,6 +775,7 @@ char           *pdata;
 unsigned char  *pd;
 INT            i;
 DWORD          sent, size;
+INT            err;
 static void    *frag_buffer = NULL;
 
   eq_info = &equipment[index].info;
@@ -874,14 +885,24 @@ static void    *frag_buffer = NULL;
                                pfragment->data_size + sizeof(EVENT_HEADER));
 #else
           rpc_flush_event();
-          bm_send_event(equipment[index].buffer_handle, pfragment,
-                        pfragment->data_size + sizeof(EVENT_HEADER), SYNC);
+          err = bm_send_event(equipment[index].buffer_handle, pfragment,
+			      pfragment->data_size + sizeof(EVENT_HEADER), SYNC);
+	  if (err != BM_SUCCESS)
+	    {
+	      cm_msg(MERROR,"send_event","bm_send_event(SYNC) error %d",err);
+	      return err;
+	    }
 #endif
           }
         }
 
 #ifndef USE_EVENT_CHANNEL
-      bm_flush_cache(equipment[index].buffer_handle, SYNC);
+      err = bm_flush_cache(equipment[index].buffer_handle, SYNC);
+      if (err != BM_SUCCESS)
+	{
+	  cm_msg(MERROR,"send_event","bm_flush_cache(SYNC) error %d",err);
+	  return err;
+	}
 #endif
       }
     else
@@ -903,9 +924,19 @@ static void    *frag_buffer = NULL;
                              pevent->data_size + sizeof(EVENT_HEADER));
   #else
         rpc_flush_event();
-        bm_send_event(equipment[index].buffer_handle, pevent,
+        err = bm_send_event(equipment[index].buffer_handle, pevent,
                       pevent->data_size + sizeof(EVENT_HEADER), SYNC);
-        bm_flush_cache(equipment[index].buffer_handle, SYNC);
+	if (err != BM_SUCCESS)
+	  {
+	    cm_msg(MERROR,"send_event","bm_send_event(SYNC) error %d",err);
+	    return err;
+	  }
+        err = bm_flush_cache(equipment[index].buffer_handle, SYNC);
+	if (err != BM_SUCCESS)
+	  {
+	    cm_msg(MERROR,"send_event","bm_flush_cache(SYNC) error %d",err);
+	    return err;
+	  }
   #endif
         }
 
@@ -939,7 +970,14 @@ static void    *frag_buffer = NULL;
 
   for (i=0 ; equipment[i].name[0] ; i++)
     if (equipment[i].buffer_handle)
-      bm_flush_cache(equipment[i].buffer_handle, SYNC);
+      {
+	INT err = bm_flush_cache(equipment[i].buffer_handle, SYNC);
+	if (err != BM_SUCCESS)
+	  {
+	    cm_msg(MERROR,"send_event","bm_flush_cache(SYNC) error %d",err);
+	    return err;
+	  }
+      }
 
   return CM_SUCCESS;
 }
@@ -1146,6 +1184,7 @@ char           str[80];
 BOOL           buffer_done, flag, force_update = FALSE;
 
 INT opt_max=0, opt_index=0, opt_tcp_size=128, opt_cnt=0;
+INT err;
 
 #ifdef OS_VXWORKS
   rpc_set_opt_tcp_size(1024);
@@ -1217,7 +1256,7 @@ INT opt_max=0, opt_index=0, opt_tcp_size=128, opt_cnt=0;
 
           if (status != CM_SUCCESS)
             {
-            cm_msg(MERROR, "scheduler", "error reading and sending event");
+            cm_msg(MERROR, "scheduler", "send_event error %d",status);
             goto net_error;
             }
 
@@ -1322,8 +1361,13 @@ INT opt_max=0, opt_index=0, opt_tcp_size=128, opt_cnt=0;
               dm_pointer_increment(eq->buffer_handle, 
                                    pevent->data_size + sizeof(EVENT_HEADER));
 #else
-              rpc_send_event(eq->buffer_handle, pevent,
-                             pevent->data_size + sizeof(EVENT_HEADER), SYNC);
+              status = rpc_send_event(eq->buffer_handle, pevent,
+				      pevent->data_size + sizeof(EVENT_HEADER), SYNC);
+	      if (status != SUCCESS)
+		{
+		  cm_msg(MERROR, "scheduler", "rpc_send_event error %d",status);
+		  goto net_error;
+		}
 #endif
 
               eq->bytes_sent += pevent->data_size + sizeof(EVENT_HEADER);
@@ -1527,7 +1571,12 @@ INT opt_max=0, opt_index=0, opt_tcp_size=128, opt_cnt=0;
               {
               rpc_set_option(-1, RPC_OTRANSPORT, RPC_FTCP);
 	      rpc_flush_event();
-              bm_flush_cache(equipment[i].buffer_handle, ASYNC);
+              err = bm_flush_cache(equipment[i].buffer_handle, ASYNC);
+	      if (err != BM_SUCCESS)
+		{
+		  cm_msg(MERROR,"scheduler","bm_flush_cache(ASYNC) error %d",err);
+		  return err;
+		}
               rpc_set_option(-1, RPC_OTRANSPORT, RPC_TCP);
               }
             }
@@ -1696,7 +1745,7 @@ INT   i, count;
 #ifdef OS_VXWORKS
 int mfe(char *ahost_name, char *aexp_name, BOOL adebug)
 #else
-main(int argc, char *argv[])
+int main(int argc, char *argv[])
 #endif
 {
 INT  status, i, dm_size;
@@ -1967,7 +2016,7 @@ usage:
     }
 
   if (status != RPC_SHUTDOWN)
-    printf("\nNetwork connection aborted.");
+    printf("Network connection aborted.\n");
 
   dm_buffer_release();
 
