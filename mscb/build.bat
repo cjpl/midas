@@ -17,6 +17,10 @@ nmake -f calib_700.mak CFG="calib_700 - Win32 Release" Clean
 nmake -f calib_700.mak CFG="calib_700 - Win32 Release"
 nmake -f calib_hvr.mak CFG="calib_hvr - Win32 Release" Clean
 nmake -f calib_hvr.mak CFG="calib_hvr - Win32 Release"
+
+cd \midas\mscb\embedded
+make
+
 cd \midas\mscb
 
 copy \midas\nt\bin\msc.exe \midas\mscb\
