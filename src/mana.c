@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.58  2000/05/05 08:44:09  midas
+  Added ybos_get_tid_size
+
   Revision 1.57  2000/03/23 08:50:37  midas
   Changed comments
 
@@ -234,7 +237,6 @@ void pvm_eor();
 /*------------------------------------------------------------------*/
 
 /* items defined in analyzer.c */
-extern yb_tid_size[];
 extern char *analyzer_name;
 extern INT  analyzer_loop_period;
 extern INT  analyzer_init(void);
@@ -2359,7 +2361,7 @@ WORD        bktype;
         /* set array size in bank list */
         if ((pybk->type & 0xFF) < MAX_BKTYPE)
           {
-          item_size = yb_tid_size[pybk->type & 0xFF];
+          item_size = ybos_get_tid_size(pybk->type & 0xFF);
           if (item_size == 0)
             {
             cm_msg(MERROR, "write_event_hbook", "Received bank %s with unknown item size", block_name);
@@ -2405,7 +2407,7 @@ WORD        bktype;
       {
         exclude_all = FALSE;
 	
-        item_size = yb_tid_size[pybk->type & 0xFF];
+        item_size = ybos_get_tid_size(pybk->type & 0xFF);
         /* set array size in bank list */
         if ((pybk->type & 0xFF) < MAX_BKTYPE)
           {
