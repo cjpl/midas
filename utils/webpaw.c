@@ -6,6 +6,9 @@
   Contents:     Web server for remote PAW display
 
   $Log$
+  Revision 1.14  2000/05/23 13:46:09  midas
+  Added Elog configuration switch
+
   Revision 1.13  2000/05/18 12:44:01  midas
   Changed realm
 
@@ -682,7 +685,7 @@ void interprete(char *path)
 \********************************************************************/
 {
 char   str[10000], str2[256], group_name[256], display_name[256], kumac_name[256];
-char   cur_group[256], tmp[256];
+char   cur_group[256], tmp[256], elog[256];
 int    fh, i, j, length, status, height;
 
   if (!path[0] && !getparam("submit") && !getparam("cmd"))
@@ -899,6 +902,12 @@ int    fh, i, j, length, status, height;
       if (strstr(path, ".html"))
         *strstr(str, ".html") = 0;
       rsprintf("<img src=\"%s.gif\" alt=contents.gif></a>\r\n", str);
+
+      if (getcfg("General", "Elog", elog))
+        {
+        rsprintf("<p><a href=\"%s\">Create ELog with this picture</a>\r\n", elog);
+        }
+
       }
     
     rsprintf("</body></html>\r\n");
