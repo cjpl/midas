@@ -1,14 +1,17 @@
 /********************************************************************\
 
-  Name:         scs_600.c
+  Name:         scs_500.c
   Created by:   Stefan Ritt
 
 
   Contents:     Application specific (user) part of
                 Midas Slow Control Bus protocol 
-                for SCS-600 analog I/O
+                for SCS-500 analog I/O
 
   $Log$
+  Revision 1.3  2002/08/08 06:47:27  midas
+  Fixed typo
+
   Revision 1.2  2002/07/12 15:19:53  midas
   Added NOAREGS
 
