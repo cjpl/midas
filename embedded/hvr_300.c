@@ -9,6 +9,9 @@
                 for HVR_300 High Voltage Regulator
 
   $Log$
+  Revision 1.5  2003/11/13 12:27:11  midas
+  Extent regulation region to 5V
+
   Revision 1.4  2003/09/23 09:20:56  midas
   Second version: new resistor values, config bits, split CSR
 
@@ -545,12 +548,12 @@ void regulation(void)
         v_actual = user_data.v_demand;
         user_data.v_dac += user_data.v_demand - user_data.v_meas;
   
-        /* only allow +-3V fine regulation range */
-        if (user_data.v_dac < user_data.v_demand - 3)
-          user_data.v_dac = user_data.v_demand - 3;
+        /* only allow +-5V fine regulation range */
+        if (user_data.v_dac < user_data.v_demand - 5)
+          user_data.v_dac = user_data.v_demand - 5;
   
-        if (user_data.v_dac > user_data.v_demand + 3)
-          user_data.v_dac = user_data.v_demand + 3;
+        if (user_data.v_dac > user_data.v_demand + 5)
+          user_data.v_dac = user_data.v_demand + 5;
   
         demand_changed = 0;
         dac_write(user_data.v_dac);
