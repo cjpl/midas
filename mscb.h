@@ -6,6 +6,9 @@
   Contents:     Header fiel for MSCB funcions
 
   $Log$
+  Revision 1.12  2002/10/22 15:03:38  midas
+  Added UNIT_FACTOR
+
   Revision 1.11  2002/10/16 15:25:07  midas
   xxx16 now does 32 bit exchange
 
@@ -186,6 +189,7 @@ typedef struct {
 #define UNIT_PERCENT     90
 #define UNIT_PPM         91
 #define UNIT_COUNT       92
+#define UNIT_FACTOR      93
 
 /*---- status codes ------------------------------------------------*/
 
