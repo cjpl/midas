@@ -9,8 +9,8 @@
                 for SCS-400 thermo couple I/O
 
   $Log$
-  Revision 1.17  2003/03/24 14:59:28  midas
-  Added 1/10 percent power setting
+  Revision 1.18  2003/03/24 15:43:04  midas
+  Fixed bug on power setting
 
   Revision 1.16  2003/03/24 10:59:20  midas
   Added variable perod
@@ -357,7 +357,7 @@ static unsigned long t;
       if (p > 100)
         p = 100;
 
-      user_data.power[i] = (char) (p + 0.5);
+      user_data.power[i] = ((int) (p*10 + 0.5))/10.0;
       }
     }
 }
