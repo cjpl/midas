@@ -6,6 +6,9 @@
 #  Contents:     Makefile for MIDAS example frontend and analyzer
 #
 #  $Log$
+#  Revision 1.5  1999/12/21 10:15:29  midas
+#  Removed kernel flags
+#
 #  Revision 1.4  1999/12/20 15:33:39  midas
 #  Adjustments for different driver directories
 #
@@ -29,7 +32,7 @@
 #-----------------------------------------
 # This is for Linux
 OSFLAGS = -DOS_LINUX 
-CFLAGS = -O3 -DMODULE -D__KERNEL__
+CFLAGS = -O3
 
 # for f2c, uncomment following:
 #LIBS = -lbsd -lm -lutil /usr/lib/libf2c.a
