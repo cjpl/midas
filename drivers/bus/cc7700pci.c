@@ -7,19 +7,17 @@
                 following the MIDAS CAMAC Standard under DIRECTIO
 
   $Log$
+  Revision 1.2  2002/01/31 09:11:03  midas
+  Fixed bugs with directio driver
+
   Revision 1.1  2000/12/05 00:49:24  midas
   Initial revision
 
 
 \********************************************************************/
 
+#include <stdio.h>
 #include "mcstd.h"
-
-/*------------------------------------------------------------------*/
-
-/* for now, get IO and IRQ from /proc/pci and enter it here */
-#define IOBASE 0x5800
-#define LAM_IRQ 10
 
 /*------------------------------------------------------------------*/
 
@@ -38,8 +36,10 @@
 #include <conio.h>
 #define OUTP(_p, _d) _outp((unsigned short) (_p), (int) (_d))
 #define OUTPW(_p, _d) _outpw((unsigned short) (_p), (unsigned short) (_d))
+#define OUTPL(_p, _d) _outpd((unsigned short) (_p), (unsigned long) (_d))
 #define INP(_p) _inp((unsigned short) (_p))
 #define INPW(_p) _inpw((unsigned short) (_p))
+#define INPL(_p) _inpd((unsigned short) (_p))
 #define OUTP_P(_p, _d) {_outp((unsigned short) (_p), (int) (_d)); _outp((unsigned short)0x80,0);}
 #define OUTPW_P(_p, _d) {_outpw((unsigned short) (_p), (unsigned short) (_d)); _outp((unsigned short)0x80,0);}
 #define INP_P(_p) _inp((unsigned short) (_p)); _outp((unsigned short)0x80,0);
@@ -72,7 +72,7 @@
 
 /*- Global var -----------------------------------------------------*/
 
-unsigned int iobase = IOBASE;
+static unsigned int iobase;
 
 /* Register mapping */
 
@@ -539,36 +539,42 @@ static HANDLE _hdio = 0;
 
 INLINE int cam_init(void)
 {
-  unsigned char status;
-  unsigned int adr;
-  
 #ifdef _MSC_VER
   OSVERSIONINFO vi;
-  unsigned short buffer1[] = {6, iobase, iobase+0x10, 0};
-  unsigned short buffer2[] = {6, 0x80, 0x80, 0};
-  unsigned short size;
+  DWORD buffer[] = {8, 0x0001, 0xcc77, 0};
+  DWORD retbuf[7];
+  int size;
   
   vi.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
   GetVersionEx(&vi);
   
   /* use DirectIO driver under NT to gain port access */
   if (vi.dwPlatformId == VER_PLATFORM_WIN32_NT)
-  {
+    {
     _hdio = CreateFile("\\\\.\\directio", GENERIC_READ, FILE_SHARE_READ, NULL,
 		       OPEN_EXISTING, 0, NULL);
     if (_hdio == INVALID_HANDLE_VALUE)
-    {
-      printf("hyt1331.c: Cannot access IO ports (No DirectIO driver installed)\n");
+      {
+      printf("cc7700pci.c: Cannot access IO ports (No DirectIO driver installed)\n");
       return -1;
+      }
     }
-  }
   
-  if (!DeviceIoControl(_hdio, (unsigned short) 0x9c406000, &buffer1, sizeof(buffer1), 
-		       NULL, 0, &size, NULL))
+  /* get IO base from ProbePCI function in DirectIO driver */
+  if (!DeviceIoControl(_hdio, (DWORD) 0x9c406000, &buffer, sizeof(buffer), 
+		   retbuf, sizeof(retbuf), &size, NULL))
     return -1;
 
-  if (!DeviceIoControl(_hdio, (unsigned short) 0x9c406000, &buffer2, sizeof(buffer2), 
-		       NULL, 0, &size, NULL))
+  /* stip last four bits */
+  iobase = (retbuf[1] & 0xFFF0);
+
+  /* open ports for direct access */
+  buffer[0] = 6;
+  buffer[1] = iobase;
+  buffer[2] = iobase+0x10;
+
+  if (!DeviceIoControl(_hdio, (DWORD) 0x9c406000, buffer, sizeof(buffer), 
+      NULL, 0, &size, NULL))
     return -1;
 
 #endif _MSC_VER
@@ -619,14 +625,14 @@ INLINE int cam_init(void)
 INLINE void cam_exit(void)
 {
 #ifdef _MSC_VER
-  unsigned short buffer[] = {6, iobase, iobase+0x10, 0};
-  unsigned short size;
+  DWORD buffer[] = {6, iobase, iobase+0x10, 0};
+  DWORD size;
   
   if (_hdio <= 0)
     return;
   
   DeviceIoControl(_hdio, (unsigned short) 0x9c406000, &buffer, sizeof(buffer), 
-		  NULL, 0, &size, NULL);
+                  NULL, 0, &size, NULL);
 #endif
 #ifdef OS_LINUX
 #ifdef DO_IOPERM
@@ -720,8 +726,6 @@ INLINE void cam_lam_read(const int c, DWORD *lam)
 
 INLINE void cam_lam_clear(const int c, const int n)
 { 
-  unsigned int adr;
-  
   /* signal End-Of-Interrupt */
 #ifdef __MSDOS__
   OUTP(0x20, 0x20);
@@ -733,31 +737,35 @@ INLINE void cam_lam_clear(const int c, const int n)
 
 /*------------------------------------------------------------------*/
 
-INLINE void cam_interrupt_enable(void)
+INLINE void cam_interrupt_enable(const int c)
 {
+#ifdef __MSDOS__
   unsigned char mask;
   
   mask = INP(0x21);
   mask &= (~(1<<LAM_IRQ));
   OUTP(0x21, mask);
+#endif
 }
 
 /*------------------------------------------------------------------*/
 
-INLINE void cam_interrupt_disable(void)
+INLINE void cam_interrupt_disable(const int c)
 {
+#ifdef __MSDOS__
   unsigned char mask;
   
   mask = INP(0x21);
   mask |= 1<<LAM_IRQ;
   OUTP(0x21, mask);
+#endif
 }
 
 /*------------------------------------------------------------------*/
 
 static void (*old_handler)(void) = (void *)0;
 
-INLINE void cam_interrupt_attach(void (*isr)(void))
+INLINE void cam_interrupt_attach(const int c, const int n, void (*isr)(void))
 { 
 #ifdef __MSDOS__
   old_handler = (void (*)()) getvect(LAM_INT);
@@ -767,7 +775,7 @@ INLINE void cam_interrupt_attach(void (*isr)(void))
 
 /*------------------------------------------------------------------*/
 
-INLINE void cam_interrupt_detach(void)
+INLINE void cam_interrupt_detach(const int c, const int n)
 {
 #ifdef __MSDOS__
   if (old_handler)
