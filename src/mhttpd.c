@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.225  2002/05/28 11:31:49  midas
+  Added debug output via '-d'
+
   Revision 1.224  2002/05/28 09:00:03  midas
   Fixed bug with opera browser
 
@@ -712,6 +715,7 @@ INT  _attachment_size[3];
 struct in_addr remote_addr;
 INT  _sock;
 BOOL elog_mode = FALSE;
+BOOL debug = FALSE;
 
 char *mname[] = {
   "January",
@@ -10110,6 +10114,9 @@ struct hostent       *phe;
 fd_set               readfds;
 struct timeval       timeout;
 INT                  last_time=0;
+/*
+struct linger        ling;
+*/
 
   /* establish Ctrl-C handler */
   ss_ctrlc_handler(ctrlc_handler);
@@ -10216,8 +10223,8 @@ INT                  last_time=0;
       /* turn on lingering (borrowed from NCSA httpd code) */
 
       /* outcommented, gave occasional hangups on Linux 
-      ling.l_onoff = 1;
-      ling.l_linger = 600;
+      ling.l_onoff = 0;
+      ling.l_linger = 0;
       setsockopt(_sock, SOL_SOCKET, SO_LINGER, (char *) &ling, sizeof(ling));
       */
 
@@ -10345,8 +10352,8 @@ INT                  last_time=0;
 
       return_length = 0;
 
-      //##
-      //printf("\n%s\n", net_buffer);
+      if (debug)
+        printf("\n%s\n", net_buffer);
 
       if (strncmp(net_buffer, "GET", 3) == 0)
         {
@@ -10371,10 +10378,12 @@ INT                  last_time=0;
         if (return_length == 0)
           return_length = strlen(return_buffer)+1;
 
-        //##
-        //printf("=======================\n%s\n\n", return_buffer);
+        if (debug)
+          printf("=======================\n%s\n\n", return_buffer);
 
-        send_tcp(_sock, return_buffer, return_length, 0);
+        i = send_tcp(_sock, return_buffer, return_length, 0);
+        if (i != return_length)
+          cm_msg(MERROR, "server_loope", "Only sent back %d out of %d bytes", i, return_length);
 
   error:
 
@@ -10419,6 +10428,8 @@ int tcp_port = 80, daemon = FALSE;
     {
     if (argv[i][0] == '-' && argv[i][1] == 'D')
       daemon = TRUE;
+    if (argv[i][0] == '-' && argv[i][1] == 'd')
+      debug = TRUE;
     else if (argv[i][0] == '-' && argv[i][1] == 'E')
       elog_mode = TRUE;
     else if (argv[i][0] == '-' && argv[i][1] == 'c')
@@ -10432,7 +10443,8 @@ int tcp_port = 80, daemon = FALSE;
       else
         {
 usage:
-        printf("usage: %s [-p port] [-D] [-c]\n\n", argv[0]);
+        printf("usage: %s [-p port] [-d] [-D] [-c]\n\n", argv[0]);
+        printf("       -d display HTTP communication\n");
         printf("       -D become a daemon\n");
         printf("       -E only display ELog system\n");
         printf("       -c don't disconnect from experiment\n");
