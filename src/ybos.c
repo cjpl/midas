@@ -6,6 +6,9 @@
  *         amaudruz@triumf.ca                            Local:           6234
  * ---------------------------------------------------------------------------
    $Log$
+   Revision 1.38  2002/05/28 17:34:19  pierre
+   Fix bug for large events (bigger than 8192 bytes), Renee Poutissou
+
    Revision 1.37  2002/05/08 19:54:41  midas
    Added extra parameter to function db_get_value()
 
@@ -1384,12 +1387,12 @@ INT ybos_write(LOG_CHN *log_chn, EVENT_HEADER *pevent, INT evt_size)
        ybos->recn++;
                
       /* check if event is larger than YBOS_PHYREC_SIZE */
-      if (ybos->pbuf >= ybos->pbot+YBOS_PHYREC_SIZE)
+      if (ybos->pbuf >= ybos->pbot+(YBOS_PHYREC_SIZE - YBOS_HEADER_LENGTH))
         {
           large_evt = TRUE;
-          /* shift record window by one YBOS_PHYSREC */
+          /* shift record window by one YBOS_PHYSREC - header */
           ybos->pwrt  = ybos->pbot;
-          ybos->pbot += YBOS_PHYREC_SIZE;
+          ybos->pbot += (YBOS_PHYREC_SIZE - YBOS_HEADER_LENGTH);
         }
       else
         {
@@ -2711,29 +2714,42 @@ INT   ybos_event_get (DWORD ** plrl, DWORD * readn)
     /* upcomming event crosses block, then first copy first part of event */
     /* compute max copy for first part of event */
     fpart = (DWORD *)my.pyh + my.size - my.pyrd;
-    lpart = evt_length - fpart;
-    
     memcpy ((char *)my.pylrl, (char *)my.pyrd, fpart<<2);
     
     /* adjust temporary evt pointer all in I*4 */
     ptmp = my.pylrl + fpart;
     
-    /* get next physical record */
-    if ((status=ybos_physrec_get (&prec, &size)) != YB_SUCCESS)
-      return (status);
+    while ( (evt_length - fpart) > 0)
+    {
+      lpart = evt_length - fpart;
+      if (lpart > (YBOS_PHYREC_SIZE - YBOS_HEADER_LENGTH))
+	lpart = (YBOS_PHYREC_SIZE - YBOS_HEADER_LENGTH);
     
-    /* pyrd is left at the next lrl but here we comming from
-       a cross boundary request so read just the pyrd to 
-       pyh+header_length */
-    my.pyrd = (DWORD *)my.pyh + my.pyh->header_length;
-    /* now copy remaining from temporary pointer */
-    memcpy ((char *)ptmp, (char *)my.pyrd, lpart<<2);
+      /* get next physical record */
+      if ((status=ybos_physrec_get (&prec, &size)) != YB_SUCCESS)
+	return (status);
     
-    /* adjust pointer to next valid data (LRL) 
-       should be equivalent to pyh+pyh->offset */
-    my.pyrd += lpart;
+      /* pyrd is left at the next lrl but here we comming from
+	 a cross boundary request so read just the pyrd to 
+	 pyh+header_length */
+      my.pyrd = (DWORD *)my.pyh + my.pyh->header_length;
+      /* now copy remaining from temporary pointer */
+      memcpy ((char *)ptmp, (char *)my.pyrd, lpart<<2);
+    
+      /* adjust pointer to next valid data (LRL) 
+	 should be equivalent to pyh+pyh->offset */
+      my.pyrd += lpart;
+      fpart += lpart;
+      ptmp += lpart;   	     ;
+    }
     if ( my.pyrd !=  (DWORD *)my.pyh + my.pyh->offset)
-      printf(" event misalignment !!\n");
+      {
+	printf(" event misalignment !! %d  %d \n",
+	       my.pyrd,(DWORD *)my.pyh + my.pyh->offset);
+	printf("Event crossed boundary: length %d\n",evt_length);    
+	my.pyrd =  (DWORD *)my.pyh + my.pyh->offset;
+      }
+
   }
   else
   {
