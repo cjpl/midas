@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.53  2001/11/05 14:44:17  midas
+  Fixed problem with long configuration files
+
   Revision 1.52  2001/11/05 12:37:36  midas
   Version 1.2.1
 
@@ -3079,7 +3082,18 @@ char *buffer;
 
   /*---- header ----*/
 
-  show_standard_header("ELOG find", NULL);
+  rsprintf("HTTP/1.1 200 Document follows\r\n");
+  rsprintf("Server: ELOG HTTP %s\r\n", VERSION);
+  if (use_keepalive)
+    {
+    rsprintf("Connection: Keep-Alive\r\n");
+    rsprintf("Keep-Alive: timeout=60, max=10\r\n");
+    }
+  rsprintf("Content-Type: text/html\r\n\r\n");
+
+  rsprintf("<html><head><title>ELOG config</title></head>\n");
+  rsprintf("<body><form method=\"POST\" action=\"%s%s\" enctype=\"multipart/form-data\">\n", 
+            elogd_url, logbook_enc);
 
   /*---- title ----*/
   
@@ -3127,7 +3141,7 @@ char *buffer;
   buffer[length] = 0;
   close(fh);
   
-  rsprintf("<textarea rows=40 cols=80 nowrap name=Text>");
+  rsprintf("<textarea rows=40 cols=80 wrap=virtual name=Text>");
 
   rsputs(buffer);
   free(buffer);
@@ -3155,19 +3169,26 @@ char *buffer;
 
 int save_config()
 {
-int  fh;
+int  fh, i;
 char str[80];
 
   fh = open(cfg_file, O_RDWR | O_BINARY | O_TRUNC, 644);
   if (fh < 0)
     {
-    sprintf(str, "Cannot write to <b>%s</b>: %s", cfg_file, strerror(errno));
+    sprintf(str, "Cannot open file <b>%s</b>: %s", cfg_file, strerror(errno));
     show_error(str);
     return 0;
     }
-  write(fh, _text, strlen(_text));
-  close(fh);
+  i = write(fh, _text, strlen(_text));
+  if (i < (int)strlen(_text))
+    {
+    sprintf(str, "Cannot write to <b>%s</b>: %s", cfg_file, strerror(errno));
+    show_error(str);
+    close(fh);
+    return 0;
+    }
 
+  close(fh);
   return 1;
 }
 
