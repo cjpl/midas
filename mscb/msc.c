@@ -6,6 +6,9 @@
   Contents:     Command-line interface for the Midas Slow Control Bus
 
   $Log$
+  Revision 1.27  2003/01/24 13:45:12  midas
+  Fixed bug in argument analysis
+
   Revision 1.26  2003/01/15 15:51:11  midas
   Moved error explanation (-1 could be DirectIO)
 
@@ -938,9 +941,9 @@ int   debug, check_io;
     {
     if (argv[i][0] == '-' && argv[i][1] == 'v')
       debug = 1;
-    if (argv[i][0] == '-' && argv[i][1] == 'i')
+    else if (argv[i][0] == '-' && argv[i][1] == 'i')
       check_io = 1;
-    if (argv[i][0] == '-' && argv[i][1] == 's')
+    else if (argv[i][0] == '-' && argv[i][1] == 's')
       server = 1;
     else if (argv[i][0] == '-')
       {
