@@ -6,6 +6,9 @@
   Contents:     MSCB Device Driver.
 
   $Log$
+  Revision 1.10  2005/03/24 22:48:45  ritt
+  Changed parameters to mscb_init
+
   Revision 1.9  2004/12/23 09:35:23  midas
   Implemented NaNs for invalid channel readings
 
@@ -134,7 +137,7 @@ INT mscbdev_init(HNDLE hkey, void **pinfo, INT channels, INT(*bd) (INT cmd, ...)
    /* initialize info structure */
    info->num_channels = channels;
 
-   info->fd = mscb_init(info->mscbdev_settings.device, sizeof(info->mscbdev_settings.device), FALSE);
+   info->fd = mscb_init(info->mscbdev_settings.device, sizeof(info->mscbdev_settings.device), "", FALSE);
    if (info->fd < 0) {
       cm_msg(MERROR, "mscbdev_init", "Cannot connect to MSCB device \"%s\"",
              info->mscbdev_settings.device);
