@@ -1,47 +1,50 @@
 /********************************************************************\
-  
-  Name:         mcnaf.c
-  Created by:   Pierre-Andre Amaudruz
-  
+
+ Name:         mcnaf.c
+ Created by:   Pierre-Andre Amaudruz
+ 
   Contents:     CAMAC utility
-  
-  $Log$
-  Revision 1.15  2001/07/20 00:49:29  pierre
-  - Added -c option and -c @filename.
 
-  Revision 1.14  2000/11/02 17:54:58  pierre
-  - Fix job repeat, uses command RxWx.
+    $Log$
+    Revision 1.16  2002/06/05 04:07:30  pierre
+    fix @ job
 
-  Revision 1.13  2000/09/14 20:23:45  pierre
-  -Add cm_get_environment()
+    Revision 1.15  2001/07/20 00:49:29  pierre
+    - Added -c option and -c @filename.
 
-  Revision 1.12  2000/08/10 07:49:25  midas
-  Added client name together with frontend name in cam_init_rpc
+    Revision 1.14  2000/11/02 17:54:58  pierre
+    - Fix job repeat, uses command RxWx.
 
-  Revision 1.11  2000/07/25 14:11:33  midas
-  Changed "&" to "&&"
+    Revision 1.13  2000/09/14 20:23:45  pierre
+    -Add cm_get_environment()
 
-  Revision 1.10  2000/04/18 22:07:31  pierre
-  - added cam_lam_clear private function.
-  - fix cc_services for N >= 28
+    Revision 1.12  2000/08/10 07:49:25  midas
+    Added client name together with frontend name in cam_init_rpc
 
-  Revision 1.9  1999/12/08 00:04:48  pierre
-  - Fix mcstd _r, _sa functions
+    Revision 1.11  2000/07/25 14:11:33  midas
+    Changed "&" to "&&"
 
-  Revision 1.8  1998/11/23 16:17:37  pierre
-  Fix bug: double CAMAC call since [P] implementation (visible in camacrpc)
-  CVS:-----------------------------------------------------------------------
+    Revision 1.10  2000/04/18 22:07:31  pierre
+    - added cam_lam_clear private function.
+    - fix cc_services for N >= 28
 
-  Revision 1.7  1998/11/20 14:29:31  pierre
-  Added [P] cmd for MCStd commands (2nd level)
+    Revision 1.9  1999/12/08 00:04:48  pierre
+    - Fix mcstd _r, _sa functions
 
-  Revision 1.5  1998/10/23 14:21:51  midas
-  - Modified version scheme from 1.06 to 1.6.0
-  - cm_get_version() now returns versino as string
+    Revision 1.8  1998/11/23 16:17:37  pierre
+    Fix bug: double CAMAC call since [P] implementation (visible in camacrpc)
+    CVS:-----------------------------------------------------------------------
 
-  Revision 1.4  1998/10/13 16:56:53  pierre
-  -PAA- Add log header
+    Revision 1.7  1998/11/20 14:29:31  pierre
+    Added [P] cmd for MCStd commands (2nd level)
 
+    Revision 1.5  1998/10/23 14:21:51  midas
+    - Modified version scheme from 1.06 to 1.6.0
+    - cm_get_version() now returns versino as string
+
+    Revision 1.4  1998/10/13 16:56:53  pierre
+    -PAA- Add log header
+             
 \********************************************************************/
 #include <stdio.h>
 #include "midas.h"
@@ -49,7 +52,7 @@
 #include "mcstd.h"
 
 /* internal definitions */
-#define  D16   16	 
+#define  D16   16  
 #define  D24   24
 #define  LOOP   1
 #define  QUIT   2
@@ -74,7 +77,7 @@
 #define  CAM24I_SA   CAM_OFF+20
 #define  CAM16I_SN   CAM_OFF+19 
 #define  CAM24I_SN   CAM_OFF+18 
-                               
+
 #define  CAM16O      CAM_OFF+17
 #define  CAM24O      CAM_OFF+16
 #define  CAM16O_Q    CAM_OFF+15 
@@ -98,35 +101,35 @@
 
 /* MCStd command list */
 char MCStd[31][32] = {
-   "CAM_CRATE_ZINIT","CAM_CRATE_CLEAR","CAM_INHIBIT_SET","CAM_INHIBIT_CLEAR",
-   "CAM_LAM_CLEAR","CAM_LAM_DISABLE","CAM_LAM_READ","CAM_LAM_ENABLE",
-   "CAMC_SN","CAMC_SA","CAMC_Q","CAMC",
-   "CAM24O_R","CAM16O_R","CAM24O_Q","CAM16O_Q","CAM24O","CAM16O",
-   "CAM24I_SN","CAM16I_SN","CAM24I_SA","CAM16I_SA",
-   "CAM24I_RQ","CAM16I_RQ","CAM24I_R","CAM16I_R",
-   "CAM24I_Q","CAM16I_Q","CAM24I","CAM16I",""
-  };
+  "CAM_CRATE_ZINIT","CAM_CRATE_CLEAR","CAM_INHIBIT_SET","CAM_INHIBIT_CLEAR",
+    "CAM_LAM_CLEAR","CAM_LAM_DISABLE","CAM_LAM_READ","CAM_LAM_ENABLE",
+    "CAMC_SN","CAMC_SA","CAMC_Q","CAMC",
+    "CAM24O_R","CAM16O_R","CAM24O_Q","CAM16O_Q","CAM24O","CAM16O",
+    "CAM24I_SN","CAM16I_SN","CAM24I_SA","CAM16I_SA",
+    "CAM24I_RQ","CAM16I_RQ","CAM24I_R","CAM16I_R",
+    "CAM24I_Q","CAM16I_Q","CAM24I","CAM16I",""
+};
 
 /* structure for CAMAC definition */
 typedef struct {
-    INT   m;
-    INT	  b;
-    INT	  c;
-    INT	  n;
-    INT	  a;
-    INT	  f;
-    WORD  d16;
-    DWORD d24;
-    INT   r;
-    INT   w;
-    INT   q;
-    INT   x;
+  INT   m;
+  INT   b;
+  INT   c;
+  INT   n;
+  INT   a;
+  INT   f;
+  WORD  d16;
+  DWORD d24;
+  INT   r;
+  INT   w;
+  INT   q;
+  INT   x;
 } CAMAC;
 
 
 /* Default CAMAC definition */
 CAMAC Prompt[2] ={ {24,0,0,1,2,0,0,0,1,0,0,0},
-		   {0}
+{0}
 };
 
 /* Default job file name */
@@ -135,10 +138,10 @@ char     job_name[128]="cnaf.cnf";
 HNDLE    hDB, hKey, hConn; 
 FILE *   pF;
 BOOL     jobflag, cmd_mode=FALSE;
-char     addr[128], cmd[256];
+char     addr[128];
 
 /* prototype */
-INT  cnafsub();
+INT  cnafsub(char *);
 void help_page(INT which);
 INT  decode_line (CAMAC *p, char * str);
 INT  read_job_file(FILE * pF, INT action, void ** job, char * name);
@@ -161,8 +164,8 @@ void cc_services (CAMAC *p)
       cam_lam_enable(p->c, p->d24);
     else if (p->a>=12 && p->f==17)
       cam_lam_disable(p->c, p->d24);
-/*      else if (p->a>=13 && p->f==1)
-	we don't support that function "read lam mask" */
+      /*      else if (p->a>=13 && p->f==1)
+    we don't support that function "read lam mask" */
   }
   else if (p->n == 28 && (p->a==8 || p->a==9))
   {
@@ -174,14 +177,14 @@ void cc_services (CAMAC *p)
   else
     if (p->m == 24) /* Actual 24 bits CAMAC operation */
       if (p->f<16)
-	cam24i_q(p->c, p->n, p->a, p->f, &p->d24, &p->x, &p->q);
+        cam24i_q(p->c, p->n, p->a, p->f, &p->d24, &p->x, &p->q);
       else
-	cam24o_q(p->c, p->n, p->a, p->f, p->d24, &p->x, &p->q);
-    else /* Actual 16 bits CAMAC operation */
-      if (p->f<16)
-	cam16i_q(p->c, p->n, p->a, p->f, &p->d16, &p->x, &p->q);
-      else
-	cam16o_q(p->c, p->n, p->a, p->f, p->d16, &p->x, &p->q);
+        cam24o_q(p->c, p->n, p->a, p->f, p->d24, &p->x, &p->q);
+      else /* Actual 16 bits CAMAC operation */
+        if (p->f<16)
+          cam16i_q(p->c, p->n, p->a, p->f, &p->d16, &p->x, &p->q);
+        else
+          cam16o_q(p->c, p->n, p->a, p->f, p->d16, &p->x, &p->q);
 }
 
 /*--------------------------------------------------------------------*/
@@ -254,15 +257,15 @@ void mcstd_func(CAMAC *PP)
     case CAMC:
       do 
       {
-	camc(p->c, p->n, p->a, p->f);
-	printf("camc:[R%i]-C%i-N%i-A%i-F%i\n", ++i, p->c, p->n, p->a, p->f);
+        camc(p->c, p->n, p->a, p->f);
+        printf("camc:[R%i]-C%i-N%i-A%i-F%i\n", ++i, p->c, p->n, p->a, p->f);
       } while (i<p->r);
       break;
     case CAMC_Q:
       do 
       {
-	camc_q(p->c, p->n, p->a, p->f, &p->q);
-	printf("camc_q:[R%i]-C%i-N%i-A%i-F%i -Q:%i\n", ++i, p->c, p->n, p->a, p->f, p->q);
+        camc_q(p->c, p->n, p->a, p->f, &p->q);
+        printf("camc_q:[R%i]-C%i-N%i-A%i-F%i -Q:%i\n", ++i, p->c, p->n, p->a, p->f, p->q);
       } while (i<p->r);
       break;
     case CAMC_SA:
@@ -277,31 +280,31 @@ void mcstd_func(CAMAC *PP)
     case CAM16O:
       do 
       {
-	cam16o(p->c, p->n, p->a, p->f, p->d16);
-	printf("cam16o:[R%i]-C%i-N%i-A%i-F%i <- 0x%x\n", ++i, p->c, p->n, p->a, p->f, p->d16);
+        cam16o(p->c, p->n, p->a, p->f, p->d16);
+        printf("cam16o:[R%i]-C%i-N%i-A%i-F%i <- 0x%x\n", ++i, p->c, p->n, p->a, p->f, p->d16);
       } while (i<p->r);
       break;
     case CAM24O:
       do 
       {
-	cam24o(p->c, p->n, p->a, p->f, p->d24);
-	printf("cam24o:[R%i]-C%i-N%i-A%i-F%i <- 0x%x\n", ++i, p->c, p->n, p->a, p->f, p->d24);
+        cam24o(p->c, p->n, p->a, p->f, p->d24);
+        printf("cam24o:[R%i]-C%i-N%i-A%i-F%i <- 0x%x\n", ++i, p->c, p->n, p->a, p->f, p->d24);
       } while (i<p->r);
       break;
     case CAM16O_Q:
       do 
       {
-	cam16o_q(p->c, p->n, p->a, p->f, p->d16, &p->x, &p->q);
-	printf("cam16o_q:[R%i]-C%i-N%i-A%i-F%i <- 0x%x X:%i-Q:%i\n"
-	       ,++i , p->c, p->n, p->a, p->f, p->d16, p->x, p->q);
+        cam16o_q(p->c, p->n, p->a, p->f, p->d16, &p->x, &p->q);
+        printf("cam16o_q:[R%i]-C%i-N%i-A%i-F%i <- 0x%x X:%i-Q:%i\n"
+          ,++i , p->c, p->n, p->a, p->f, p->d16, p->x, p->q);
       } while (i<p->r);
       break;
     case CAM24O_Q:
       do 
       {
-	cam24o_q(p->c, p->n, p->a, p->f, p->d24, &p->x, &p->q);
-	printf("cam24o_q:[R%i]-C%i-N%i-A%i-F%i <- 0x%x X:%i-Q:%i\n"
-	       ,++i , p->c, p->n, p->a, p->f, p->d24, p->x, p->q);
+        cam24o_q(p->c, p->n, p->a, p->f, p->d24, &p->x, &p->q);
+        printf("cam24o_q:[R%i]-C%i-N%i-A%i-F%i <- 0x%x X:%i-Q:%i\n"
+          ,++i , p->c, p->n, p->a, p->f, p->d24, p->x, p->q);
       } while (i<p->r);
       break;
     case CAM16O_R:
@@ -316,80 +319,80 @@ void mcstd_func(CAMAC *PP)
     case CAM16I:
       do 
       {
-	cam16i(p->c, p->n, p->a, p->f, &p->d16);
-	printf("cam16i:[R%i]-C%i-N%i-A%i-F%i-> 0x%4.4x\n",++i ,p->c, p->n, p->a, p->f,p->d16);
+        cam16i(p->c, p->n, p->a, p->f, &p->d16);
+        printf("cam16i:[R%i]-C%i-N%i-A%i-F%i-> 0x%4.4x\n",++i ,p->c, p->n, p->a, p->f,p->d16);
       } while (i<p->r);
       break;
     case CAM24I:
       do 
       {
-	cam24i(p->c, p->n, p->a, p->f, &p->d24);
-	printf("cam24i:[R%i]-C%i-N%i-A%i-F%i-> 0x%6.6x\n",++i, p->c, p->n, p->a, p->f,p->d24);
+        cam24i(p->c, p->n, p->a, p->f, &p->d24);
+        printf("cam24i:[R%i]-C%i-N%i-A%i-F%i-> 0x%6.6x\n",++i, p->c, p->n, p->a, p->f,p->d24);
       } while (i<p->r);
       break;
     case CAM16I_Q:
       do 
       {
-	cam16i_q(p->c, p->n, p->a, p->f, &p->d16, &p->x, &p->q);
-	printf("cam16i_q:[R%i]-C%i-N%i-A%i-F%i-> 0x%4.4x X:%i-Q:%i\n"
-	       ,++i ,p->c, p->n, p->a, p->f,p->d16, p->x, p->q);
+        cam16i_q(p->c, p->n, p->a, p->f, &p->d16, &p->x, &p->q);
+        printf("cam16i_q:[R%i]-C%i-N%i-A%i-F%i-> 0x%4.4x X:%i-Q:%i\n"
+          ,++i ,p->c, p->n, p->a, p->f,p->d16, p->x, p->q);
       } while (i<p->r);
       break;
     case CAM24I_Q:
       do 
       {
-	cam24i_q(p->c, p->n, p->a, p->f, &p->d24, &p->x, &p->q);
-	printf("cam24i_q:[R%i]-C%i-N%i-A%i-F%i-> 0x%6.6x X:%i-Q:%i\n"
-	       ,++i ,p->c, p->n, p->a, p->f,p->d24, p->x, p->q);
+        cam24i_q(p->c, p->n, p->a, p->f, &p->d24, &p->x, &p->q);
+        printf("cam24i_q:[R%i]-C%i-N%i-A%i-F%i-> 0x%6.6x X:%i-Q:%i\n"
+          ,++i ,p->c, p->n, p->a, p->f,p->d24, p->x, p->q);
       } while (i<p->r);
       break;
     case CAM16I_R:
       memset(pdd16, 0, sizeof(dd16));
       cam16i_r(p->c, p->n, p->a, p->f, &pdd16, p->r);
       for (i=0;i<p->r;i++)
-	printf("cam16i_r:[R%i]-C%i-N%i-A%i-F%i-> 0x%4.4x\n",i+1, p->c, p->n, p->a, p->f,dd16[i]);
+        printf("cam16i_r:[R%i]-C%i-N%i-A%i-F%i-> 0x%4.4x\n",i+1, p->c, p->n, p->a, p->f,dd16[i]);
       break;
     case CAM24I_R:
       memset(pdd24, 0, sizeof(dd24));
       cam24i_r(p->c, p->n, p->a, p->f, &pdd24, p->r);
       for (i=0;i<p->r;i++)
-	printf("cam24i_r:[R%i]-C%i-N%i-A%i-F%i-> 0x%6.6x\n",i+1, p->c, p->n, p->a, p->f,dd24[i]);
+        printf("cam24i_r:[R%i]-C%i-N%i-A%i-F%i-> 0x%6.6x\n",i+1, p->c, p->n, p->a, p->f,dd24[i]);
       break;
     case CAM16I_RQ:
       memset(pdd16, 0, sizeof(dd16));
       cam16i_rq(p->c, p->n, p->a, p->f, &pdd16, p->r);
       for (i=0;i<p->r;i++)
-	printf("cam16i_rq:[R%i]-C%i-N%i-A%i-F%i-> 0x%4.4x\n",i+1, p->c, p->n, p->a, p->f,dd16[i]);
+        printf("cam16i_rq:[R%i]-C%i-N%i-A%i-F%i-> 0x%4.4x\n",i+1, p->c, p->n, p->a, p->f,dd16[i]);
       break;
     case CAM24I_RQ:
       memset(pdd24, 0, sizeof(dd24));
       cam24i_rq(p->c, p->n, p->a, p->f, &pdd24, p->r);
       for (i=0;i<p->r;i++)
-	printf("cam24i_rq:[R%i]-C%i-N%i-A%i-F%i-> 0x%6.6x\n",i+1, p->c, p->n, p->a, p->f,dd24[i]);
+        printf("cam24i_rq:[R%i]-C%i-N%i-A%i-F%i-> 0x%6.6x\n",i+1, p->c, p->n, p->a, p->f,dd24[i]);
       break;
     case CAM16I_SA:
       memset(pdd16, 0, sizeof(dd16));
       cam16i_sa(p->c, p->n, p->a, p->f, &pdd16, p->r);
       for (i=0;i<p->r;i++)
-	printf("cam16i_sa:[R%i]-C%i-N%i-A%i-F%i-> 0x%4.4x\n",i+1, p->c, p->n, p->a+i, p->f,dd16[i]);
+        printf("cam16i_sa:[R%i]-C%i-N%i-A%i-F%i-> 0x%4.4x\n",i+1, p->c, p->n, p->a+i, p->f,dd16[i]);
       break;
     case CAM24I_SA:
       memset(pdd24, 0, sizeof(dd24));
       cam24i_sa(p->c, p->n, p->a, p->f, &pdd24, p->r);
       for (i=0;i<p->r;i++)
-	printf("cam24i_sa:[R%i]-C%i-N%i-A%i-F%i-> 0x%6.6x\n",i+1, p->c, p->n, p->a+i, p->f,dd24[i]);
+        printf("cam24i_sa:[R%i]-C%i-N%i-A%i-F%i-> 0x%6.6x\n",i+1, p->c, p->n, p->a+i, p->f,dd24[i]);
       break;
     case CAM16I_SN:
       memset(pdd16, 0, sizeof(dd16));
       cam16i_sa(p->c, p->n, p->a, p->f, &pdd16, p->r);
       for (i=0;i<p->r;i++)
-	printf("cam16i_sn:[R%i]-C%i-N%i-A%i-F%i-> 0x%x\n",i+1, p->c, p->n+i, p->a, p->f,dd16[i]);
+        printf("cam16i_sn:[R%i]-C%i-N%i-A%i-F%i-> 0x%x\n",i+1, p->c, p->n+i, p->a, p->f,dd16[i]);
       break;
     case CAM24I_SN:
       memset(pdd24, 0, sizeof(dd24));
       cam24i_sn(p->c, p->n, p->a, p->f, &pdd24, p->r);
       for (i=0;i<p->r;i++)
-	printf("cam24i_sn:[R%i]-C%i-N%i-A%i-F%i-> 0x%x\n",i+1, p->c, p->n+i, p->a, p->f,dd24[i]);
+        printf("cam24i_sn:[R%i]-C%i-N%i-A%i-F%i-> 0x%x\n",i+1, p->c, p->n+i, p->a, p->f,dd24[i]);
       break;
     case QUIT:
       p->r = 1;
@@ -413,15 +416,15 @@ void make_display_string(int from, CAMAC *p, char * saddr)
   {
     if (p->m == D24)
       sprintf(saddr,"B%01dC%01dN%02dA%02dF%02d [%d/0x%06x Q%01dX%01d] R%dW%dM%2d"
-	      ,p->b,p->c,p->n,p->a,p->f,p->d24,p->d24,p->q,p->x,p->r,p->w,p->m);
+      ,p->b,p->c,p->n,p->a,p->f,p->d24,p->d24,p->q,p->x,p->r,p->w,p->m);
     else
       sprintf(saddr,"B%01dC%01dN%02dA%02dF%02d [%d/0x%04x Q%01dX%01d] R%dW%dM%2d"
-	      ,p->b,p->c,p->n,p->a,p->f,p->d16,p->d16,p->q,p->x,p->r,p->w,p->m);
+      ,p->b,p->c,p->n,p->a,p->f,p->d16,p->d16,p->q,p->x,p->r,p->w,p->m);
   }
   else
   {
     sprintf(saddr,"B%01dC%01dN%02dA%02dF%02d [%d/0x%06x] R%d"
-	    ,p->b,p->c,p->n,p->a,p->f,p->d24,p->d24,p->r);
+      ,p->b,p->c,p->n,p->a,p->f,p->d24,p->d24,p->r);
   }
 }
 
@@ -434,8 +437,7 @@ INT  read_job_file(FILE * pF, INT action, void ** job, char * name)
   
   if (action == CHECK)
   {
-    if (*name == 0)
-      sprintf(name,"%s",job_name);
+    if (*name == 0) sprintf(name,"%s",job_name);
     pF = fopen(name, "r");
     if (pF)
     {
@@ -445,7 +447,7 @@ INT  read_job_file(FILE * pF, INT action, void ** job, char * name)
     printf("CNAF-I- File not found :%s\n",name);
     return SKIP;
   }
-  else
+  else if (action == READ)
   {
     pF = fopen(name, "r");
     if (pF)
@@ -453,7 +455,7 @@ INT  read_job_file(FILE * pF, INT action, void ** job, char * name)
       n = 0;
       /* count the total number of line */
       while (fgets(line, 128, pF))
-	n++;
+        n++;
       /* allocate memory for full job */
       *job = malloc ((n+1)*sizeof(CAMAC));
       pjob = *job;
@@ -464,21 +466,23 @@ INT  read_job_file(FILE * pF, INT action, void ** job, char * name)
       rewind (pF);
       while (fgets(line, 128, pF))
       {
-	if (pjob->m == 0)
-	  /* load previous command before overwriting */
-	  memcpy((char *)pjob, (char *) (pjob-1), sizeof(CAMAC));
-	decode_line(pjob++, line);
+        if (pjob->m == 0) {
+          /* load previous command before overwriting */
+          memcpy((char *)pjob, (char *) (pjob-1), sizeof(CAMAC));
+        }
+        decode_line(pjob++, line);
       }
       fclose (pF);
       return JOB;
     }
   }
+  else
+    printf("CNAF-I- Cmd not found :%s\n",name);
   return SKIP;
 }
 
 /*--------------------------------------------------------------------*/
-
-INT cnafsub()
+INT cnafsub(char * cmd)
 {
   char str[128], line[128];
   INT  status, j;
@@ -517,90 +521,96 @@ INT cnafsub()
       help_page(MAIN);
     else if (status == JOB)
     {
-    if (!cmd_mode) {
-      printf("\nmCNAF> Job file name [%s]:",job_name);
-      ss_gets (line,128);
-    }
-    else {
-      strcpy(job_name, &str[1]);
-    }
-    status = read_job_file(pF, CHECK, (void **) &job, line);
-    if (status == JOB)
-      {
-	      sprintf(job_name,"%s",line);
-	      status=read_job_file(pF, READ, (void **) &job, job_name);
+      if (!cmd_mode) {
+        /* interactive session, display default job name */
+        printf("\nmCNAF> Job file name [%s]:",job_name);
+        ss_gets (line,128);
+        if (strlen(line) == 0)
+          strcpy(line, job_name);   // Use default
+        else {
+          strcpy(job_name, line);
+        }
       }
+      else {
+        /* from command line, skip @ */
+        strcpy(line, &str[1]);
+      }
+      /* Check if file exists */
+      status = read_job_file(pF, CHECK, (void **) &job, line);
+      if (status == JOB)
+        status=read_job_file(pF, READ, (void **) &job, line);
     }
+    
     if (status == LOOP || status == JOB)
     {
       for (j=0;j<P->r;j++)
       {
-	  if (status == LOOP)
-	    p = P;
-	  if (status == JOB)
-	    p = job;
-	  while (p->m)
-	  {
-	    if (p->n == 28 || p->n == 29 || p->n == 30)
-	      cc_services(p);
-	    else
-	      if (p->m == 24) /* Actual 24 bits CAMAC operation */
-	        if (p->f<16)
-		  cam24i_q(p->c, p->n, p->a, p->f, &p->d24, &p->x, &p->q);
-	        else
-		  cam24o_q(p->c, p->n, p->a, p->f, p->d24, &p->x, &p->q);
-	      else /* Actual 16 bits CAMAC operation */
-	        if (p->f<16)
-		  cam16i_q(p->c, p->n, p->a, p->f, &p->d16, &p->x, &p->q);
-	        else
-		  cam16o_q(p->c, p->n, p->a, p->f, p->d16, &p->x, &p->q);
-	    make_display_string(MAIN, p, addr);
-	    
-            /* Result display */
-	    if (p->r > 1)
-	    {
-	      /* repeat mode */
-	      if (status == JOB)
-	      {
-	        if (!cmd_mode)
-            printf("\nmCNAF> [%s]",addr);
-	        if (p->w != 0)
-		  ss_sleep(p->w);
-	      }  
-	      else
-	      {
-	        if (!cmd_mode) 
-            printf("mCNAF> [%s] <-%03i\n",addr,j+1);
-	        if (p->w != 0)
-	          ss_sleep(p->w);
-	        if (j > p->r-1)
-		  break;
-	      }
-	    }
-	    else
-	    {
-	      /* single command */
-	      if (status == JOB)
-	      {
-	        if (!cmd_mode) 
-            printf("mCNAF> [%s]\n",addr);
-	        if (p->w != 0)
-		        ss_sleep(p->w);
-	      }
-	    }
-	    p++;
-	  }
+        if (status == LOOP)
+          p = P;
+        if (status == JOB)
+          p = job;
+        while (p->m)
+        {
+          if (p->n == 28 || p->n == 29 || p->n == 30)
+            cc_services(p);
+          else
+            if (p->m == 24) /* Actual 24 bits CAMAC operation */
+              if (p->f<16)
+                cam24i_q(p->c, p->n, p->a, p->f, &p->d24, &p->x, &p->q);
+              else
+                cam24o_q(p->c, p->n, p->a, p->f, p->d24, &p->x, &p->q);
+              else /* Actual 16 bits CAMAC operation */
+                if (p->f<16)
+                  cam16i_q(p->c, p->n, p->a, p->f, &p->d16, &p->x, &p->q);
+                else
+                  cam16o_q(p->c, p->n, p->a, p->f, p->d16, &p->x, &p->q);
+                make_display_string(MAIN, p, addr);
+                
+                /* Result display */
+                if (p->r > 1)
+                {
+                  /* repeat mode */
+                  if (status == JOB)
+                  {
+                    if (!cmd_mode)
+                      printf("\nmCNAF> [%s]",addr);
+                    if (p->w != 0)
+                      ss_sleep(p->w);
+                  }  
+                  else
+                  {
+                    if (!cmd_mode) 
+                      printf("mCNAF> [%s] <-%03i\n",addr,j+1);
+                    if (p->w != 0)
+                      ss_sleep(p->w);
+                    if (j > p->r-1)
+                      break;
+                  }
+                }
+                else
+                {
+                  /* single command */
+                  if (status == JOB)
+                  {
+                    if (!cmd_mode) 
+                      printf("mCNAF> [%s]\n",addr);
+                    if (p->w != 0)
+                      ss_sleep(p->w);
+                  }
+                }
+                p++;
+        }
       };
       if (status == JOB)
       {
-	      free (job);
+        free (job);
         if (!cmd_mode) 
           printf("\n");
       }
     }
     if (cmd_mode) break;
-  }
-  return status;
+    }
+    return status;
 }
 
 /*--------------------------------------------------------------------*/
@@ -629,22 +639,22 @@ INT decode_line (CAMAC *P, char * ss)
     if (*s == 'G')
     {
       while (*s)
-	*p++ = *s++;
+        *p++ = *s++;
       break;
     }
     if ((*s == 'B') || (*s == 'C') ||
-	(*s == 'N') || (*s == 'A') ||
-	(*s == 'F') || (*s == 'C') ||
-	(*s == 'R') || (*s == 'W') || 
-	(*s == 'G') || (*s == 'H') ||
-	(*s == 'E') || (*s == 'Q'))
+      (*s == 'N') || (*s == 'A') ||
+      (*s == 'F') || (*s == 'C') ||
+      (*s == 'R') || (*s == 'W') || 
+      (*s == 'G') || (*s == 'H') ||
+      (*s == 'E') || (*s == 'Q'))
       *p++ = ' ';
     else if ((*s == 'X') || (*s == 'D') || (*s == 'O'))
     {
       *p++ = ' ';
       *p++ = *s++;
       while (*s)
-	*p++ = *s++;
+        *p++ = *s++;
       break;
     };
     *p++ = *s++;
@@ -661,7 +671,7 @@ INT decode_line (CAMAC *P, char * ss)
     {
       if (MCStd[i][0] == 0) break;
       if (strstr(p+2, MCStd[i]) != NULL) 
-	return CAM_OFF+i;
+        return CAM_OFF+i;
     }
     return LOOP;
   }
@@ -678,22 +688,22 @@ INT decode_line (CAMAC *P, char * ss)
       tmp = strtoul((cmd+1),NULL,16);
       if (tmp>=0x0 && tmp<=0xffffff)
       {
-	P->d24 = tmp;
-	ok = TRUE;
+        P->d24 = tmp;
+        ok = TRUE;
       }
       else
-	printf("mcnaf-E- Data out of range 0x0:0xffffff\n");
+        printf("mcnaf-E- Data out of range 0x0:0xffffff\n");
     }
     else
     {
       tmp = strtoul((cmd+1),NULL,16);
       if (tmp>=0x0 && tmp<=0xffff)
       {
-	P->d16 = (WORD) tmp;
-	ok = TRUE;
+        P->d16 = (WORD) tmp;
+        ok = TRUE;
       }
       else
-	printf("mcnaf-E- Data out of range 0x0:0xffff\n");
+        printf("mcnaf-E- Data out of range 0x0:0xffff\n");
     }
     strncpy(cmd,empty,strlen(cmd));
     *ps = ' '; 
@@ -707,22 +717,22 @@ INT decode_line (CAMAC *P, char * ss)
       tmp = strtoul((cmd+1),NULL,8);
       if (tmp>=0 && tmp<=077777777)
       {
-	P->d24 = tmp;
-	ok = TRUE;
+        P->d24 = tmp;
+        ok = TRUE;
       }
       else
-	printf("mcnaf-E- Data out of range O0:O77777777\n");
+        printf("mcnaf-E- Data out of range O0:O77777777\n");
     }
     else
     {
       tmp = strtoul((cmd+1),NULL,8);
       if (tmp>=00 && tmp<=0177777)
       {
-	P->d16 = (WORD) tmp;
-	ok = TRUE;
+        P->d16 = (WORD) tmp;
+        ok = TRUE;
       }
       else
-	printf("mcnaf-E- Data out of range O0:O177777\n");
+        printf("mcnaf-E- Data out of range O0:O177777\n");
     }
     strncpy(cmd,empty,strlen(cmd));
     *ps = ' '; 
@@ -736,22 +746,22 @@ INT decode_line (CAMAC *P, char * ss)
       tmp = strtoul((cmd+1),NULL,10);
       if (tmp>=0x0 && tmp<=0xffffff)
       {
-	P->d24 = tmp;
-	ok = TRUE;
+        P->d24 = tmp;
+        ok = TRUE;
       }
       else
-	printf("mcnaf-E- Data out of range 0:16777215\n");
+        printf("mcnaf-E- Data out of range 0:16777215\n");
     }
     else
     {
       tmp = strtoul((cmd+1),NULL,10);
       if (tmp>=0x0 && tmp<=0xffff)
       {
-	P->d16 = (WORD) tmp;
-	ok = TRUE;
+        P->d16 = (WORD) tmp;
+        ok = TRUE;
       }
       else
-	printf("mcnaf-E- Data out of range 0:65535\n");
+        printf("mcnaf-E- Data out of range 0:65535\n");
     }
     strncpy(cmd,empty,strlen(cmd));
     *ps = ' '; 
@@ -834,7 +844,7 @@ INT decode_line (CAMAC *P, char * ss)
     if (tmp<1000 && tmp>=0)
     {
       if (tmp==0)
-	tmp = 1;
+        tmp = 1;
       P->r = tmp;
     }
     else
@@ -876,7 +886,7 @@ void help_page( INT which)
   if (which == MAIN)
   {
     printf("\n*-v%s----------- H E L P   C N A F -------------------*\n"
-	   ,cm_get_version());
+      ,cm_get_version());
     printf("          Interactive Midas CAMAC command\n");
     printf("          ===============================\n");
     printf(" Output : Data [dec/hex X=0/1 - Q=0/1 ]\n");
@@ -910,7 +920,7 @@ void help_page( INT which)
   else
   {
     printf("\n*-v%s----------- H E L P   C N A F -------------------*\n"
-	   ,cm_get_version());
+      ,cm_get_version());
     printf("          Interactive MCStd CAMAC command\n");
     printf("The action taken is dependent on the driver implementation\n");
     printf("[Q/E]            : Exit this level\n");
@@ -943,6 +953,7 @@ void help_page( INT which)
 int main(int argc, char **argv)
 {
   char   host_name[30], exp_name[30], fe_name[256], rpc_server[256];
+  char   cmd[256];
   INT    i, status;
   BOOL   debug;
   
@@ -955,7 +966,7 @@ int main(int argc, char **argv)
   
   /* get parameters */
   cm_get_environment (host_name, exp_name);
-
+  
   /* parse command line parameters */
   for (i=1 ; i<argc ; i++)
   {
@@ -966,7 +977,7 @@ int main(int argc, char **argv)
       if (i+1 >= argc || argv[i+1][0] == '-')
         goto usage;
       if (strncmp(argv[i],"-e",3) == 0)
-      	strcpy(exp_name, argv[++i]);
+        strcpy(exp_name, argv[++i]);
       else if (strncmp(argv[i],"-h",3)==0)
         strcpy(host_name, argv[++i]);
       else if (strncmp(argv[i],"-f",3)==0)
@@ -974,21 +985,21 @@ int main(int argc, char **argv)
       else if (strncmp(argv[i],"-s",3)==0)
         strcpy(rpc_server, argv[++i]);
       else if (argv[i][1] == 'c')
-        {
+      {
         if (strlen(argv[i]) >= 256)
-          {
+        {
           printf("error: command line too long (>256).\n");
           return 0;
-          }
+        }
         strcpy(cmd, argv[++i]);
         cmd_mode = TRUE;
-        }
+      }
       else
       {
-     usage:
-        printf("usage: mcnaf [-f Frontend] [-h Hostname] [-e Experiment] [-s RPC server]\n");
-	      printf("             [-c Command] [-c @CommandFile] \n\n");
-        return 0;
+usage:
+      printf("usage: mcnaf [-f Frontend] [-h Hostname] [-e Experiment] [-s RPC server]\n");
+      printf("             [-c Command] [-c @CommandFile] \n\n");
+      return 0;
       }
     }
   }
@@ -998,11 +1009,11 @@ int main(int argc, char **argv)
   else
     status = cam_init_rpc(host_name, exp_name, fe_name, "mcnaf", "");
   if (status == SUCCESS)
-    {
+  {
     status = cam_init();
     if (status == SUCCESS)
-      status = cnafsub();
-    }
+      status = cnafsub(cmd);
+  }
   cam_exit();
   printf("status:%d\n", status);
   return status;
