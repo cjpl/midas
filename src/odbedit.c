@@ -6,6 +6,9 @@
   Contents:     Command-line interface to the MIDAS online data base.
 
   $Log$
+  Revision 1.46  2001/06/27 11:56:54  midas
+  Fixed missing argument in printf
+
   Revision 1.45  2001/02/26 09:09:18  midas
   Increased command length to 256
 
@@ -2222,7 +2225,7 @@ PRINT_INFO      print_info;
             if (channel == -1)
               printf("Rewinding all channels...\n");
             else
-              printf("Rewinding channel %d...\n");
+              printf("Rewinding channel %d...\n", channel);
 
             status = rpc_client_call(hConn, RPC_LOG_REWIND, channel);
             cm_disconnect_client(hConn, FALSE);
