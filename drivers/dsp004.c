@@ -7,6 +7,9 @@
                 following the MIDAS CAMAC Standard for DirectIO
 
   $Log$
+  Revision 1.5  1999/07/22 01:24:27  pierre
+  - Zero 4th bytes on R24 calls
+
   Revision 1.4  1999/02/22 19:07:10  pierre
   - Remove came_xxx
 
@@ -117,6 +120,7 @@ INLINE void cam24i(const int c, const int n, const int a, const int f,
   *((char *)d)  =(unsigned char)INP(RL);
   *((char *)d+1)=(unsigned char)INP(RM);
   *((char *)d+2)=(unsigned char)INP(RH);
+  *((char *)d+3)=0;
 }
 /*------------------------------------------------------------------*/
 INLINE void cam8i_q(const int c, const int n, const int a, const int f, 
@@ -158,6 +162,7 @@ INLINE void cam24i_q(const int c, const int n, const int a, const int f,
   *((char *)d)  =(unsigned char)INP(RL);
   *((char *)d+1)=(unsigned char)INP(RM);
   *((char *)d+2)=(unsigned char)INP(RH);
+  *((char *)d+3)=0;
   *q = INP(LXQ);
   *x = *q>>1 & 1;
   *q &= 1;
@@ -196,6 +201,7 @@ INLINE void cam24i_r(const int c, const int n, const int a, const int f,
     *((char *)d)  =(unsigned char)INP(RL);
     *((char *)d+1)=(unsigned char)INP(RM);
     *((char *)d+2)=(unsigned char)INP(RH);
+    *((char *)d+3)=0;
     (*d)++;
   }
 }
@@ -260,6 +266,7 @@ INLINE void cam24i_sa(const int c, const int n, const int a, const int f,
     *((char *)d)  =(unsigned char)INP(RL);
     *((char *)d+1)=(unsigned char)INP(RM);
     *((char *)d+2)=(unsigned char)INP(RH);
+    *((char *)d+3)=0;
     (*d)++;
     aa++;
   }
@@ -554,6 +561,8 @@ INLINE void cam_lam_read(const int c, DWORD *lam){
   OUTP(CDMA, (((c&0x3)-1)<<4));
   *lam = INP(LXQ);
   *lam = (*lam>>2) & 0x1f;
+  *lam = 1<<(*lam-1);
+
 }
 /*------------------------------------------------------------------*/
 INLINE void cam_lam_clear(const int c, const int n){ 
