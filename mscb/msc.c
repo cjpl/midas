@@ -6,6 +6,9 @@
   Contents:     Command-line interface for the Midas Slow Control Bus
 
   $Log$
+  Revision 1.42  2003/07/17 13:56:04  midas
+  Fixed bug when outputting signed 16-bit data
+
   Revision 1.41  2003/06/26 11:56:13  midas
   Use retry in ping
 
@@ -286,14 +289,14 @@ int  i, data;
 
       case 2: 
         if (info_chn->flags & MSCBF_SIGNED)
-          sprintf(line+strlen(line), "16bit S %15d (0x%04X)", data, data); 
+          sprintf(line+strlen(line), "16bit S %15d (0x%04X)", (short)data, data); 
         else
           sprintf(line+strlen(line), "16bit U %15u (0x%04X)", data, data); 
         break;
 
       case 3: 
         if (info_chn->flags & MSCBF_SIGNED)
-          sprintf(line+strlen(line), "24bit S %15d (0x%06X)", data, data); 
+          sprintf(line+strlen(line), "24bit S %15d (0x%06X)", (long)data, data); 
         else
           sprintf(line+strlen(line), "24bit U %15u (0x%06X)", data, data); 
         break;
