@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.42  1999/11/29 09:14:45  midas
+  Do a automatic cleanup if running offline
+
   Revision 1.41  1999/11/26 12:04:49  midas
   Added additional error message when creating module parameters in ODB
 
@@ -3410,6 +3413,24 @@ INT status;
       {
       printf("Failed to start local RPC server");
       return 1;
+      }
+    }
+  else
+    {
+    status = cm_exist(analyzer_name, FALSE);
+    if (status == CM_SUCCESS)
+      {
+      /* kill hanging previous analyzer */
+      cm_cleanup();
+
+      status = cm_exist(analyzer_name, FALSE);
+      if (status == CM_SUCCESS)
+        {
+        /* analyzer may only run once if offline */
+        status = cm_shutdown(analyzer_name, FALSE);
+        if (status == CM_SHUTDOWN)
+          printf("Previous analyzer stopped\n");
+        }
       }
     }
 
