@@ -7,6 +7,9 @@
                 following the MIDAS CAMAC Standard for DirectIO
 
   $Log$
+  Revision 1.5  1999/12/13 17:47:12  pierre
+  - Fix cam26/24_r/sa pointers
+
   Revision 1.4  1999/02/22 19:10:22  pierre
   - Remove came_xxx
 
@@ -180,8 +183,8 @@ INLINE void cam16i_r(const int c, const int n, const int a, const int f,
   {
     OUTP(CSR1,1);
     while(!(INP(CSR1)&128));
-    *((char *)d)=(unsigned char)INP(DL);
-    *((char *)d+1)=(unsigned char)INP(DM);
+    *((char *)(*d)  )=(unsigned char)INP(DL);
+    *((char *)(*d)+1)=(unsigned char)INP(DM);
     (*d)++;
   }
 }
@@ -200,9 +203,9 @@ INLINE void cam24i_r(const int c, const int n, const int a, const int f,
   {
     OUTP(CSR1,1);
     while(!(INP(CSR1)&128));
-    *((char *)d)=(unsigned char)INP(DL);
-    *((char *)d+1)=(unsigned char)INP(DM);
-    *((char *)d+2)=(unsigned char)INP(DH);
+    *((char *)(*d)  )=(unsigned char)INP(DL);
+    *((char *)(*d)+1)=(unsigned char)INP(DM);
+    *((char *)(*d)+2)=(unsigned char)INP(DH);
     (*d)++;
   }
 }
@@ -250,17 +253,18 @@ INLINE void cam16i_sa(const int c, const int n, const int a, const int f,
 {
   int i, aa;
 
-  OUTP(C, c);
   aa = a;
+  OUTP(C, c);
   for (i=0 ; i<r ; i++)
   {
     OUTP(NAF1,(aa<<5)|f);
     OUTP(NAF2,(n<<1)|(a>>3));
     OUTP(CSR1,1);
     while(!(INP(CSR1)&128));
-    *((char *)d)=(unsigned char)INP(DL);
-    *((char *)d+1)=(unsigned char)INP(DM);
+    *((char *) (*d)  )=(unsigned char)INP(DL);
+    *((char *) (*d)+1)=(unsigned char)INP(DM);
     aa++;
+    (*d)++;
   }
 }
 
@@ -271,18 +275,19 @@ INLINE void cam24i_sa(const int c, const int n, const int a, const int f,
 {
   int i, aa;
 
-  OUTP(C, c);
   aa = a;
+  OUTP(C, c);
   for (i=0 ; i<r ; i++)
   {
     OUTP(NAF1,(aa<<5)|f);
     OUTP(NAF2,(n<<1)|(a>>3));
     OUTP(CSR1,1);
     while(!(INP(CSR1)&128));
-    *((char *)d)=(unsigned char)INP(DL);
-    *((char *)d+1)=(unsigned char)INP(DM);
-    *((char *)d+2)=(unsigned char)INP(DH);
+    *((char *)(*d)  )=(unsigned char)INP(DL);
+    *((char *)(*d)+1)=(unsigned char)INP(DM);
+    *((char *)(*d)+2)=(unsigned char)INP(DH);
     aa++;
+    (*d)++;
   }
 }
 
