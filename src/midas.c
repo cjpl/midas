@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.107  2000/03/04 00:42:29  midas
+  Delete elog & alarm mutexes correctly
+
   Revision 1.106  2000/03/03 22:46:07  midas
   Remove elog and alarm mutex on exit
 
@@ -1075,7 +1078,7 @@ static char  _client_name[NAME_LENGTH];
 static char  _path_name[MAX_STRING_LENGTH];
 static INT   _call_watchdog     = TRUE;
 static INT   _watchdog_timeout  = DEFAULT_WATCHDOG_TIMEOUT;
-static INT   _mutex_alarm, _mutex_elog;
+       INT   _mutex_alarm, _mutex_elog;
 
 /*------------------------------------------------------------------*/
 
@@ -2329,11 +2332,6 @@ char local_host_name[HOST_NAME_LENGTH], client_name[80];
 
     bm_close_all_buffers();
     db_close_all_databases();
-
-    if (_mutex_elog)
-      ss_mutex_delete(_mutex_elog, TRUE);
-    if (_mutex_alarm)
-      ss_mutex_delete(_mutex_alarm, TRUE);
     }
 
   if (rpc_get_server_option(RPC_OSERVER_TYPE) == ST_REMOTE)
@@ -12063,11 +12061,6 @@ exit:
       db_close_all_databases();
 
       rpc_deregister_functions();
-
-      if (_mutex_elog)
-        ss_mutex_delete(_mutex_elog, TRUE);
-      if (_mutex_alarm)
-        ss_mutex_delete(_mutex_alarm, TRUE);
 
       cm_set_experiment_database(0, 0);
 

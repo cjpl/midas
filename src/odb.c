@@ -6,6 +6,9 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.35  2000/03/04 00:42:29  midas
+  Delete elog & alarm mutexes correctly
+
   Revision 1.34  2000/02/26 00:51:09  midas
   Fixed conversion bug in db_set_record
 
@@ -934,6 +937,18 @@ INT              index, destroy_flag, i, j;
     free(_database);
     _database = NULL;
     }
+
+  /* if we are the last one, also delete other mutexes */
+  if (destroy_flag)
+    {
+    extern INT _mutex_elog, _mutex_alarm;
+
+    if (_mutex_elog)
+      ss_mutex_delete(_mutex_elog, TRUE);
+    if (_mutex_alarm)
+      ss_mutex_delete(_mutex_alarm, TRUE);
+    }
+
 }
 #endif /* LOCAL_ROUTINES */
 
