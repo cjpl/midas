@@ -6,6 +6,9 @@
   Contents:     MIDAS online database functions
 
   $Log$
+  Revision 1.34  2000/02/26 00:51:09  midas
+  Fixed conversion bug in db_set_record
+
   Revision 1.33  2000/02/25 23:41:02  midas
   Fixed secondary problem with conversion flags, adjusted mhttpd display of
   event number (M and G)
@@ -6150,13 +6153,14 @@ INT              convert_flags;
 INT              total_size;
 void             *pdata;
 
+  convert_flags = 0;
+
   if (!align)
     align = ss_get_struct_align();
-
-  if (rpc_get_server_option(RPC_OSERVER_TYPE) != ST_REMOTE)
-    convert_flags = rpc_get_server_option(RPC_CONVERT_FLAGS);
   else
-    convert_flags = 0;
+    /* only convert data if called remotely, as indicated by align != 0 */
+    if (rpc_get_server_option(RPC_OSERVER_TYPE) != ST_REMOTE)
+      convert_flags = rpc_get_server_option(RPC_CONVERT_FLAGS);
 
   /* check if key has subkeys */
   db_get_key(hDB, hKey, &key);
