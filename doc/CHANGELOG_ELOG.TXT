@@ -1,3 +1,21 @@
+Version 1.2.0, released October 19th, 2001
+==========================================
+
+- added arbitrary attributes instead of fixed "author", "type", "category" and
+  "subject"
+- logbook entries can now be moved or copied between logbooks, if configured in
+  elogd.cfg
+- Added "Hosts allow" and "Hosts deny" for access control
+- Any attribute or several attributes can be used for the "subject" field in
+  email notifications
+- Any attribute can be used as a title for the web page
+- A comment can be displayed above the text entry box
+- A site-specifig URL can be defined for the Help button
+- On the search page, the result can be sorted in reverse order
+- On full-text searches, the pattern is highlighted in the result
+- If a "types" entry is present in elogd.cfg, a help page is displayed for
+  upgrading the configuration file
+
 Version 1.1.3, released October 12th, 2001
 ==========================================
 
