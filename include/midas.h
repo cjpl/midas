@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.51  1999/11/08 13:55:54  midas
+  Added AT_xxx
+
   Revision 1.50  1999/11/04 15:53:54  midas
   Added some slow control commands
 
@@ -1046,6 +1049,10 @@ typedef struct {
   INT       watchdog_timeout;
 } PROGRAM_INFO;
 
+#define AT_INTERNAL   1
+#define AT_PROGRAM    2
+#define AT_EVALUATED  3
+
 #define PROGRAM_INFO_STR(_name) char *_name[] = {\
 "[.]",\
 "Auto start = BOOL : n",\
@@ -1087,6 +1094,7 @@ NULL }
 typedef struct {
   BOOL      active;
   INT       triggered;
+  INT       type;
   INT       check_interval;
   DWORD     checked_last;
   char      time_triggered_first[32];
@@ -1100,6 +1108,7 @@ typedef struct {
 "[.]",\
 "Active = BOOL : n",\
 "Triggered = INT : 0",\
+"Type = INT : 3",\
 "Check interval = INT : 60",\
 "Checked last = DWORD : 0",\
 "Time triggered first = STRING : [32] ",\
@@ -1527,7 +1536,7 @@ INT EXPRT el_search_run(int run, char *return_tag);
 
 /*---- Alarm functions ----*/
 INT EXPRT al_check();
-INT EXPRT al_trigger_alarm(char *alarm_name, char *alarm_message, char *default_class);
+INT EXPRT al_trigger_alarm(char *alarm_name, char *alarm_message, char *default_class, char *cond_str, INT type);
 INT EXPRT al_trigger_class(char *alarm_class, char *alarm_message, BOOL first);
 INT EXPRT al_reset_alarm(char *alarm_name);
 BOOL EXPRT al_evaluate_condition(char *condition, char *value);
