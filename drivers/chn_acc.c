@@ -6,6 +6,9 @@
   Contents:     Epics channel access device driver
 
   $Log$
+  Revision 1.4  1999/09/22 12:13:42  midas
+  Fixed compiler warning
+
   Revision 1.3  1999/09/22 11:30:48  midas
   Added event driven data readout
 
@@ -25,9 +28,11 @@
 #include <stdlib.h>
 #include "cadef.h"
 
+#ifdef _MSC_VER /* collision between varargs and stdarg */
 #undef va_arg
 #undef va_start
 #undef va_end
+#endif
 
 #include "midas.h"
 
