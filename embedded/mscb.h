@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol commands
 
   $Log$
+  Revision 1.21  2003/03/19 16:35:03  midas
+  Eliminated configuration parameters
+
   Revision 1.20  2003/03/14 13:47:54  midas
   Added SCS_310 code
 
@@ -147,13 +150,15 @@ sbit RS485_ENABLE =      P3^5;
 
 /*---- MSCB commands -----------------------------------------------*/
 
-#define VERSION 0x13    // version 1.3
+#define VERSION 0x14    // version 1.4
 
 /* Version history:
 
 1.0 Initial
 1.1 Add unit prefix, implement upgrade command
 1.2 Add CMD_ECHO, CMD_READ with multiple channels
+1.3 Add "set node name"
+1.4 Remove CMD_xxxs_CONF
 
 */
 
@@ -184,18 +189,15 @@ sbit RS485_ENABLE =      P3^5;
 #define CMD_WRITE_NA    0x80
 #define CMD_WRITE_ACK   0x88
 
-#define CMD_WRITE_CONF  0x90
 #define CMD_FLASH       0x98
 
 #define CMD_READ        0xA0
-#define CMD_READ_CONF   0xA8
 
 #define CMD_WRITE_BLOCK 0xB5
 #define CMD_READ_BLOCK  0xB9
 
 #define GET_INFO_GENERAL   0
-#define GET_INFO_CHANNEL   1
-#define GET_INFO_CONF      2
+#define GET_INFO_VARIABLES 1
 
 /*---- flags from the configuration and status register (CSR) ------*/
 
@@ -220,8 +222,7 @@ sbit RS485_ENABLE =      P3^5;
 typedef struct {
   unsigned char  protocol_version;
   unsigned char  node_status;
-  unsigned char  n_channel;
-  unsigned char  n_conf;
+  unsigned char  n_variables;
   unsigned short node_address;
   unsigned short group_address;
   unsigned short watchdog_resets;
@@ -236,7 +237,7 @@ typedef struct {
   unsigned char flags;    // flags MSCBF_xxx
   char          name[8];  // name
   void data     *ud;      // point to user data buffer
-} MSCB_INFO_CHN;
+} MSCB_INFO_VAR;
 
 #define MSCBF_FLOAT  (1<<0) // channel in floating point format
 #define MSCBF_SIGNED (1<<1) // channel is signed integer
@@ -300,7 +301,7 @@ typedef struct {
 typedef struct {          // system info stored in EEPROM
 unsigned int  node_addr;
 unsigned int  group_addr;
-unsigned char wd_counter;
+unsigned int  wd_counter;
 char          node_name[16];
 unsigned char magic;
 } SYS_INFO;
@@ -315,7 +316,7 @@ void led_blink(int led, int n, int interval) reentrant;
 void delay_us(unsigned int us);
 void delay_ms(unsigned int ms);
 
-unsigned char crc8(unsigned char idata *buffer, int len);
+unsigned char crc8(unsigned char *buffer, int len);
 unsigned char crc8_add(unsigned char crc, unsigned int c);
 
 void lcd_setup();
@@ -337,6 +338,6 @@ void uart_init(unsigned char port, unsigned char baud);
 void sysclock_init(void);
 unsigned long time(void);
 
-unsigned char user_func(unsigned char idata *data_in,
-                        unsigned char idata *data_out);
+unsigned char user_func(unsigned char *data_in,
+                        unsigned char *data_out);
 

@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol main program
 
   $Log$
+  Revision 1.28  2003/03/19 16:35:03  midas
+  Eliminated configuration parameters
+
   Revision 1.27  2003/03/14 13:47:54  midas
   Added SCS_310 code
 
@@ -94,33 +97,29 @@
 #include "mscb.h"
 
 /* GET_INFO attributes */
-#define GET_INFO_GENERAL 0
-#define GET_INFO_CHANNEL 1
-#define GET_INFO_CONF    2
+#define GET_INFO_GENERAL  0
+#define GET_INFO_VARIABLE 1
 
-/* Channel attributes */
-#define SIZE_8BIT        1
-#define SIZE_16BIT       2
-#define SIZE_24BIT       3
-#define SIZE_32BIT       4
+/* Variable attributes */
+#define SIZE_8BIT         1
+#define SIZE_16BIT        2
+#define SIZE_24BIT        3
+#define SIZE_32BIT        4
 
 /* Address modes */
-#define ADDR_NONE        0
-#define ADDR_NODE        1
-#define ADDR_GROUP       2
-#define ADDR_ALL         3
+#define ADDR_NONE         0
+#define ADDR_NODE         1
+#define ADDR_GROUP        2
+#define ADDR_ALL          3
 
 /*---- functions and data in user part -----------------------------*/
 
 void user_init(unsigned char init);
-void user_write(unsigned char channel) reentrant;
-unsigned char user_read(unsigned char channel);
-void user_write_conf(unsigned char channel) reentrant;
-void user_read_conf(unsigned char channel);
+void user_write(unsigned char index) reentrant;
+unsigned char user_read(unsigned char index);
 void user_loop(void);
 
-extern MSCB_INFO_CHN code channel[];
-extern MSCB_INFO_CHN code conf_param[];
+extern MSCB_INFO_VAR code variables[];
 
 extern char code node_name[];
 
@@ -139,10 +138,14 @@ void flash_upgrade(void);
 
 /* variables in internal RAM (indirect addressing) */
 
+#ifdef CPU_C8051F020
+unsigned char xdata in_buf[300], out_buf[300];
+#else
 unsigned char idata in_buf[20], out_buf[20];
+#endif
 
 unsigned char idata i_in, last_i_in, final_i_in, n_out, i_out, cmd_len;
-unsigned char idata crc_code, addr_mode, n_channel, n_param;
+unsigned char idata crc_code, addr_mode, n_variables;
 
 SYS_INFO sys_info;
 
@@ -223,12 +226,9 @@ unsigned char i;
 
   uart_init(0, BD_115200);
 
-  /* count channels and parameters */
-  for (n_channel=0 ; ; n_channel++)
-    if (channel[n_channel].width == 0)
-      break;
-  for (n_param=0 ; ; n_param++)
-    if (conf_param[n_param].width == 0)
+  /* count variables */
+  for (n_variables=0 ; ; n_variables++)
+    if (variables[n_variables].width == 0)
       break;
 
   /* retrieve EEPROM data */
@@ -244,16 +244,11 @@ unsigned char i;
     strncpy(sys_info.node_name, node_name, sizeof(sys_info.node_name));
     sys_info.magic      = 0x12;
 
-    // init channel variables
-    for (i=0 ; channel[i].width ; i++)
-      if (channel[i].ud)
-        memset(channel[i].ud, 0, channel[i].width);
+    // init variables
+    for (i=0 ; variables[i].width ; i++)
+      if (variables[i].ud)
+        memset(variables[i].ud, 0, variables[i].width);
   
-    // init configuration parameters 
-    for (i=0 ; conf_param[i].width ; i++)
-      if (conf_param[i].ud)
-        memset(conf_param[i].ud, 0, conf_param[i].width);
-
     /* call user initialization routine with initialization */
     user_init(1);
 
@@ -276,7 +271,7 @@ unsigned char i;
     eeprom_flash();
     }
 
-#if !defined(CPU_ADUC812) && !defined(SCS_300) && !defined(SCS_210) // SCS210/300 redefine printf()
+#if !defined(CPU_ADUC812) && !defined(SCS_210) && !defined(SCS_300) && !defined(SCS_310) // SCS210/300 redefine printf()
   lcd_setup();
 
 #ifdef LCD_DEBUG
@@ -451,7 +446,7 @@ static void send_byte(unsigned char d, unsigned char data *crc)
 void interprete(void)
 {
 unsigned char crc, cmd, i, j, n, ch;
-MSCB_INFO_CHN code *pchn;
+MSCB_INFO_VAR code *pvar;
 
   cmd = (in_buf[0] & 0xF8); // strip length field
 
@@ -511,12 +506,10 @@ MSCB_INFO_CHN code *pchn;
       RS485_ENABLE = 1;
 
       send_byte(CMD_ACK+7, &crc); // send acknowledge, variable data length
-      send_byte(26, &crc);        // send data length
+      send_byte(24, &crc);        // send data length
       send_byte(VERSION, &crc);   // send protocol version
-      send_byte(CSR, &crc);       // send node status
 
-      send_byte(n_channel, &crc); // send number of channels
-      send_byte(n_param, &crc);   // send number of configuration parameters
+      send_byte(n_variables, &crc); // send number of variables
 
       send_byte(*(((unsigned char *)&sys_info.node_addr)+0), &crc);    // send node address
       send_byte(*(((unsigned char *)&sys_info.node_addr)+1), &crc); 
@@ -533,39 +526,30 @@ MSCB_INFO_CHN code *pchn;
       send_byte(crc, NULL);                        // send CRC code
 
       RS485_ENABLE = 0;
-      ES0 = 1;                                      // re-enable serial interrupts
+      ES0 = 1;                                     // re-enable serial interrupts
       break;
 
-    case CMD_GET_INFO+2:
-      /* send channel/config param info */
+    case CMD_GET_INFO+1:
+      /* send variable info */
 
-      if (in_buf[1] == GET_INFO_CHANNEL)
+      if (in_buf[1] < n_variables)
         {
-        i = n_channel;
-        pchn = channel+in_buf[2];
-        }
-      else
-        {
-        i = n_param;
-        pchn = conf_param+in_buf[2];
-        }
+        pvar = variables+in_buf[1];
 
-      if (in_buf[2] < i)
-        {
         ES0 = 0;                     // temporarily disable serial interrupt
         crc = 0;
         RS485_ENABLE = 1;
   
         send_byte(CMD_ACK+7, &crc); // send acknowledge, variable data length
         send_byte(13, &crc);        // send data length
-        send_byte(pchn->width, &crc);
-        send_byte(pchn->unit, &crc);
-        send_byte(pchn->prefix, &crc);
-        send_byte(pchn->status, &crc);
-        send_byte(pchn->flags, &crc);
+        send_byte(pvar->width, &crc);
+        send_byte(pvar->unit, &crc);
+        send_byte(pvar->prefix, &crc);
+        send_byte(pvar->status, &crc);
+        send_byte(pvar->flags, &crc);
   
-        for (i=0 ; i<8 ; i++)                        // send channel name
-          send_byte(pchn->name[i], &crc);
+        for (i=0 ; i<8 ; i++)                        // send variable name
+          send_byte(pvar->name[i], &crc);
   
         send_byte(crc, NULL);                        // send CRC code
   
@@ -647,15 +631,15 @@ MSCB_INFO_CHN code *pchn;
 
   if (cmd == CMD_READ)
     {
-    if (in_buf[0] == CMD_READ + 1)  // single channel
+    if (in_buf[0] == CMD_READ + 1)  // single variable
       {
-      if (in_buf[1] < n_channel)
+      if (in_buf[1] < n_variables)
         {
-        n = channel[in_buf[1]].width; // number of bytes to return
+        n = variables[in_buf[1]].width; // number of bytes to return
     
-        if (channel[in_buf[1]].ud == 0)
+        if (variables[in_buf[1]].ud == 0)
           {
-          n = user_read(in_buf[1]);   // for dataless channels, user routine returns bytes
+          n = user_read(in_buf[1]);   // for dataless variables, user routine returns bytes
           out_buf[0] = CMD_ACK + n;   // and places data directly in out_buf
           }
         else
@@ -668,14 +652,14 @@ MSCB_INFO_CHN code *pchn;
             out_buf[0] = CMD_ACK + 7;
             out_buf[1] = n;
             for (i=0 ; i<n ; i++)
-              out_buf[2+i] = ((char idata *)channel[in_buf[1]].ud)[i];  // copy user data
+              out_buf[2+i] = ((char idata *)variables[in_buf[1]].ud)[i];  // copy user data
             n++; 
             }
           else
             {
             out_buf[0] = CMD_ACK + n;
             for (i=0 ; i<n ; i++)
-              out_buf[1+i] = ((char idata *)channel[in_buf[1]].ud)[i];  // copy user data
+              out_buf[1+i] = ((char idata *)variables[in_buf[1]].ud)[i];  // copy user data
             }
           }
     
@@ -687,15 +671,15 @@ MSCB_INFO_CHN code *pchn;
         SBUF0 = out_buf[0];
         }
       }
-    else if (in_buf[0] == CMD_READ + 2) // channel range
+    else if (in_buf[0] == CMD_READ + 2) // variable range
       {
-      if (in_buf[1] < n_channel && in_buf[2] < n_channel && in_buf[1] < in_buf[2])
+      if (in_buf[1] < n_variables && in_buf[2] < n_variables && in_buf[1] < in_buf[2])
         {
         /* calculate number of bytes to return */
         for (i=in_buf[1],n=0 ; i<=in_buf[2] ; i++)
           {
           user_read(i);
-          n += channel[i].width;
+          n += variables[i].width;
           }
   
         ES0 = 0;                      // temporarily disable serial interrupt
@@ -705,11 +689,11 @@ MSCB_INFO_CHN code *pchn;
         send_byte(CMD_ACK+7, &crc);   // send acknowledge, variable data length
         send_byte(n, &crc);           // send data length
   
-        /* loop over all channels */
+        /* loop over all variables */
         for (i=in_buf[1] ; i<=in_buf[2] ; i++)
           {
-          for (j=0 ; j<channel[i].width ; j++)
-            send_byte(((char idata *)channel[i].ud)[j], &crc); // send user data
+          for (j=0 ; j<variables[i].width ; j++)
+            send_byte(((char idata *)variables[i].ud)[j], &crc); // send user data
           }
   
         send_byte(crc, NULL);         // send CRC code
@@ -717,28 +701,6 @@ MSCB_INFO_CHN code *pchn;
         RS485_ENABLE = 0;
         ES0 = 1;                      // re-enable serial interrupts
         }
-      }
-    }
-
-  if (cmd == CMD_READ_CONF)
-    {
-    if (in_buf[1] < n_param)
-      {
-      user_read_conf(in_buf[1]);      // let user readout routine update data buffer
-  
-      n = conf_param[in_buf[1]].width; // number of bytes to return
-  
-      out_buf[0] = CMD_ACK + n;
-      for (i=0 ; i<n ; i++)
-        if (conf_param[in_buf[1]].ud)
-          out_buf[1+i] = ((char idata *)conf_param[in_buf[1]].ud)[i];  // copy user data
-  
-      out_buf[1+i] = crc8(out_buf, 1 + n); // generate CRC code
-  
-      /* send result */
-      n_out = 2 + n;
-      RS485_ENABLE = 1;
-      SBUF0 = out_buf[0];
       }
     }
 
@@ -763,14 +725,14 @@ MSCB_INFO_CHN code *pchn;
 
     ch = in_buf[1+j];
       
-    if (ch < n_channel)
+    if (ch < n_variables)
       {
-      n = channel[ch].width;
+      n = variables[ch].width;
   
       /* copy LSB bytes */
       for (i=0 ; i<n ; i++)
-        if (channel[ch].ud)
-          ((char idata *)channel[ch].ud)[i] = in_buf[i_in-1-n+i+j];
+        if (variables[ch].ud)
+          ((char idata *)variables[ch].ud)[i] = in_buf[2+j+i];
       
       user_write(ch);
   
@@ -783,35 +745,21 @@ MSCB_INFO_CHN code *pchn;
         SBUF0 = out_buf[0];
         }
       }
-    }
-
-  if (cmd == CMD_WRITE_CONF)
-    {
-    if (in_buf[1] < n_param && in_buf[1] != 0xFF)
+    else if (ch == 0xFF)
       {
-      if (in_buf[1] == 0xFF)
+      CSR = in_buf[2];
+
+      if (cmd == CMD_WRITE_ACK)
         {
-        CSR = in_buf[2];
+        out_buf[0] = CMD_ACK;
+        out_buf[1] = in_buf[i_in-1];
+        n_out = 2;
+        RS485_ENABLE = 1;
+        SBUF0 = out_buf[0];
         }
-      else
-        {
-        n = conf_param[in_buf[1]].width;
-    
-        /* copy LSB bytes */
-        for (i=0 ; i<n ; i++)
-          if (conf_param[in_buf[1]].ud)
-            ((char idata *)conf_param[in_buf[1]].ud)[i] = in_buf[i_in-1-n+i];
-        
-        user_write_conf(in_buf[1]);
-        }
-    
-      out_buf[0] = CMD_ACK;
-      out_buf[1] = in_buf[i_in-1];
-      n_out = 2;
-      RS485_ENABLE = 1;
-      SBUF0 = out_buf[0];
       }
     }
+
 
 }
 
@@ -837,7 +785,6 @@ unsigned char code  *pr;
 
   cmd = page = 0;
 
-
   /* send ready */
   RS485_ENABLE = 1;
   TI0 = 0;
@@ -849,6 +796,7 @@ unsigned char code  *pr;
     {
     /* receive command */
     while (!RI0);
+     
     cmd = SBUF0;
     RI0 = 0;
 
@@ -1006,12 +954,18 @@ void main(void)
     if (flash_param)
       {
       flash_param = 0;
+
+      /* reset watchdog counts */
+      sys_info.wd_counter = 0;
+
       eeprom_flash();
       }
 
     if (flash_program)
       {
-      flash_program = 1;
+      flash_program = 0;
+
+      /* go to "bootloader" program */
       upgrade();
       }
 
