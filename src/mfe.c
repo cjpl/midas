@@ -7,6 +7,9 @@
                 linked with user code to form a complete frontend
 
   $Log$
+  Revision 1.16  2000/02/29 21:59:45  midas
+  Added auto restart
+
   Revision 1.15  2000/02/26 01:25:54  midas
   Fixed bug that number of sent events was not cleared at start
 
@@ -106,6 +109,7 @@ INT   max_bytes_per_sec;
 INT   optimize = 0;  /* set this to one to opimize TCP buffer size */
 INT   fe_stop = 0;   /* stop switch for VxWorks */
 BOOL  debug;         /* disable watchdog messages from server */
+DWORD auto_restart;  /* restart run after event limit reached stop */
 
 HNDLE hDB;
 
@@ -147,7 +151,8 @@ Format = STRING : [8] FIXED\n\
 Enabled = BOOL : 0\n\
 Read on = INT : 0\n\
 Period = INT : 0\n\
-Event limit = DWORD : 0\n\
+Event limit = DOUBLE : 0\n\
+Num subevents = DWORD : 0\n\
 Log history = INT : 0\n\
 Frontend host = STRING : [32] \n\
 Frontend name = STRING : [32] \n\
@@ -314,8 +319,9 @@ HNDLE  hKey;
     
     /* get last event limit from ODB */
     db_find_key(hDB, 0, str, &hKey);
+    size = sizeof(double);
     if (hKey)
-      db_get_value(hDB, hKey, "Event limit", &eq_info->event_limit, &size, TID_DWORD);
+      db_get_value(hDB, hKey, "Event limit", &eq_info->event_limit, &size, TID_DOUBLE);
     
     /* Create common subtree */
     status = db_create_record(hDB, 0, str, EQUIPMENT_COMMON_STR);
@@ -727,7 +733,7 @@ EVENT_HEADER *pevent;
   /* get pointer for upcoming event.
      This is a blocking call if no space available */
   if ((pevent = dm_pointer_get()) == NULL)
-    cm_msg(MERROR,"scheduler","interrupt, dm_pointer_get returned NULL");
+    cm_msg(MERROR, "interrupt_routine", "interrupt, dm_pointer_get returned NULL");
   
   /* compose MIDAS event header */
   pevent->event_id      = interrupt_eq->info.event_id;
@@ -871,7 +877,7 @@ EQUIPMENT      *eq;
 EVENT_HEADER   *pevent;
 DWORD          last_time_network=0, last_time_display=0,
                last_time_flush=0, readout_start;
-INT            i, j, index, status, ch, source, size;
+INT            i, j, index, status, ch, source, size, state;
 char           str[80];
 BOOL           buffer_done;
 
@@ -1017,7 +1023,7 @@ INT opt_max=0, opt_index=0, opt_tcp_size=128, opt_cnt=0;
              multi-source applications */
           *(INT *) (pevent+1) = source;
 
-          if (eq->num_subevents)
+          if (eq->info.num_subevents)
             {
             eq->subevent_number = 0;
             do
@@ -1048,7 +1054,7 @@ INT opt_max=0, opt_index=0, opt_tcp_size=128, opt_cnt=0;
                   }
                 } while (source == FALSE);
 
-              } while (eq->subevent_number < eq->num_subevents && source);
+              } while (eq->subevent_number < eq->info.num_subevents && source);
 
             /* notify readout routine about end of super-event */
             eq->readout((char *) (pevent+1), -1);
@@ -1074,7 +1080,7 @@ INT opt_max=0, opt_index=0, opt_tcp_size=128, opt_cnt=0;
 
               eq->bytes_sent += pevent->data_size + sizeof(EVENT_HEADER);
 
-              if (eq->num_subevents)
+              if (eq->info.num_subevents)
                 eq->events_sent += eq->subevent_number;
               else
                 eq->events_sent++;
@@ -1090,8 +1096,8 @@ INT opt_max=0, opt_index=0, opt_tcp_size=128, opt_cnt=0;
             break;
 
           /* quit if event limit is reached */
-          if (eq_info->event_limit &&
-              eq->serial_number > eq_info->event_limit)
+          if (eq_info->event_limit > 0 &&
+              eq->stats.events_sent + eq->events_sent >= eq_info->event_limit)
             break;
           }
 
@@ -1123,13 +1129,18 @@ INT opt_max=0, opt_index=0, opt_tcp_size=128, opt_cnt=0;
         }
 
       /*---- check if event limit is reached ----*/
-      if (eq_info->event_limit &&
-          eq->serial_number > eq_info->event_limit &&
+      if (eq_info->event_limit > 0 &&
+          eq->stats.events_sent + eq->events_sent >= eq_info->event_limit &&
           run_state == STATE_RUNNING)
         {
         /* stop run */
         if (cm_transition(TR_STOP, 0, str, sizeof(str), SYNC) != CM_SUCCESS)
           cm_msg(MERROR, "scheduler", "cannot stop run: %s", str);
+
+        /* check if autorestart, main loop will take care of it */
+        size = sizeof(BOOL);
+        auto_restart = FALSE;
+        db_get_value(hDB, 0, "/Logger/Auto restart", &auto_restart, &size, TID_BOOL);
         }
       }
 
@@ -1267,6 +1278,31 @@ INT opt_max=0, opt_index=0, opt_tcp_size=128, opt_cnt=0;
         interrupt_enable(TRUE);
         }
       }
+
+      /*---- check for auto restart --------------------------------*/
+      if (auto_restart)
+        {
+        /* check if really stopped */
+        size = sizeof(state);
+        status = db_get_value(hDB, 0, "Runinfo/State", &state, &size, TID_INT);
+        if (status != DB_SUCCESS)
+          cm_msg(MERROR, "cm_transition", "cannot get Runinfo/State in database");
+
+        if (state == STATE_STOPPED)
+          {
+          /* wait until system settles quiet */
+          ss_sleep(5000);
+
+          auto_restart = FALSE;
+          size = sizeof(run_number);
+          db_get_value(hDB, 0, "/Runinfo/Run number", &run_number, &size, TID_INT);
+
+          cm_msg(MTALK, "main", "starting new run");
+          status = cm_transition(TR_START, run_number+1, NULL, 0, SYNC);
+          if (status != CM_SUCCESS)
+            cm_msg(MERROR, "main", "cannot restart run");
+          }
+        }
 
     /*---- check network messages ----------------------------------*/
     if (run_state == STATE_RUNNING && interrupt_eq == NULL)
