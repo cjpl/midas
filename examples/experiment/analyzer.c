@@ -6,6 +6,9 @@
   Contents:     System part of Analyzer code for sample experiment
 
   $Log$
+  Revision 1.7  2000/11/20 12:29:37  midas
+  Added use_tests flag in analyzer request
+
   Revision 1.6  2000/09/12 12:36:15  midas
   Removed test messages
 
@@ -118,6 +121,7 @@ ANALYZE_REQUEST analyze_request[] = {
     trigger_module,       /* module list */
     trigger_bank_list,    /* bank list */
     1000,                 /* RWNT buffer size */
+    TRUE,                 /* Use tests for this event */
   },
 
   { "Scaler",             /* equipment name */
