@@ -6,6 +6,9 @@
   Contents:     Web server for remote PAW display
 
   $Log$
+  Revision 1.16  2000/05/24 14:30:35  midas
+  Increased PAW timeout to 15 sec
+
   Revision 1.15  2000/05/24 14:22:08  midas
   - Added comment display for macros
   - Fixed problem with reusing port numbers
@@ -515,7 +518,7 @@ int    i;
     FD_ZERO(&readfds);
     FD_SET(pipe, &readfds);
 
-    timeout.tv_sec  = 5;
+    timeout.tv_sec  = 15;
     timeout.tv_usec = 0;
     select(FD_SETSIZE, (void *) &readfds, NULL, NULL, (void *) &timeout);
 
@@ -527,7 +530,7 @@ int    i;
       }
     else
       {
-      if (result);
+      if (result)
         strcpy(result, str);
 
       debug_message(str);
@@ -1247,7 +1250,14 @@ char                 pwd[256], cl_pwd[256], str[256], *p;
   status = submit_paw("restart", NULL);
   if (status != 1)
     {
-    printf("Error: cannot start PAW.\n");
+    printf("Error starting PAW: ");
+    if (status == ERR_TIMEOUT)
+      printf("Timeout\n");
+    else if (status == ERR_PIPE)
+      printf("PAW stopped unexpectedly\n");
+    else
+      printf("Unknown error %d\n", status);
+
     return;
     }
 
