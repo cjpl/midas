@@ -6,6 +6,9 @@
   Contents:     Various utility functions for MSCB protocol
 
   $Log$
+  Revision 1.18  2003/02/20 13:11:58  midas
+  Re-init clock value on sysclock_init()
+
   Revision 1.17  2003/02/19 16:04:56  midas
   Added code for ADuC812
 
@@ -409,6 +412,20 @@ void rs232_output(void)
 
 /*------------------------------------------------------------------*/
 
+static unsigned long _systime;
+
+static unsigned char led_pri_n;
+static unsigned char led_pri_int;
+static unsigned char led_pri_timer;
+
+#ifdef LED_2
+static unsigned char led_sec_n;
+static unsigned char led_sec_int;
+static unsigned char led_sec_timer;
+#endif
+
+/*------------------------------------------------------------------*/
+
 void sysclock_init(void)
 /********************************************************************\
 
@@ -433,21 +450,18 @@ void sysclock_init(void)
   TL1 = 0x00; 
   TR1 = 1;            // start timer 1
 
-}
+  _systime = 0;
 
-/*------------------------------------------------------------------*/
-
-static unsigned long _systime  = 0;
-
-static unsigned char led_pri_n     = 0;
-static unsigned char led_pri_int   = 0;
-static unsigned char led_pri_timer = 0;
-
+  led_pri_n     = 0;
+  led_pri_int   = 0;
+  led_pri_timer = 0;
+  
 #ifdef LED_2
-static unsigned char led_sec_n     = 0;
-static unsigned char led_sec_int   = 0;
-static unsigned char led_sec_timer = 0;
+  led_sec_n     = 0;
+  led_sec_int   = 0;
+  led_sec_timer = 0;
 #endif
+}
 
 /*------------------------------------------------------------------*/
 
