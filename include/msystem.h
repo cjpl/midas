@@ -7,6 +7,9 @@
                 routines
 
   $Log$
+  Revision 1.9  1999/04/29 12:14:49  midas
+  Made db_notify_clients EXPRT
+
   Revision 1.8  1999/02/11 13:19:44  midas
   Added DR_ASCII
 
@@ -468,7 +471,7 @@ INT db_unlock_database(HNDLE database_handle);
 INT db_update_record(INT hDB, INT hKey, int socket);
 INT db_close_all_records(void);
 INT EXPRT db_flush_database(HNDLE hDB);
-INT db_notify_clients(HNDLE hDB, HNDLE hKey, BOOL bWalk);
+INT EXPRT db_notify_clients(HNDLE hDB, HNDLE hKey, BOOL bWalk);
 INT EXPRT db_set_client_name(HNDLE hDB, char *client_name);
 INT db_delete_key1(HNDLE hDB, HNDLE hKey, INT level, BOOL follow_links);
 INT EXPRT db_show_mem(HNDLE hDB, char *result, INT buf_size);
