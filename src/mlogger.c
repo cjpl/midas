@@ -6,6 +6,9 @@
   Contents:     MIDAS logger program
 
   $Log$
+  Revision 1.75  2004/07/29 11:38:42  midas
+  Fixed problem with history system
+
   Revision 1.74  2004/07/21 14:55:14  midas
   Fixed crashes with root trees due to realloc()
 
@@ -2064,14 +2067,17 @@ INT open_history()
                }
             }
 
-            if (hKeyNames && varkey.num_values > n_names)
+            if (hKeyNames && varkey.num_values != n_names) {
                cm_msg(MERROR, "open_history",
-                      "/Equipment/%s/Settings/%s contains only %d entries", eq_name,
-                      key.name, n_names);
+                      "Mismatch between \"/Equipment/%s/Settings/%s\" and \"/Equipment/%s/Variables/%s\" (%d vs. %d entries)", eq_name,
+                      key.name, eq_name, varkey.name, n_names, varkey.num_values);
+               free(tag);
+	       return 0;
+	    }
 
             if (hKeyNames) {
                /* loop over array elements */
-               for (j = 0; j < key.num_values; j++) {
+               for (j = 0; j < varkey.num_values; j++) {
                   /* get name #j */
                   size = NAME_LENGTH;
                   db_get_data_index(hDB, hKeyNames, tag[i_tag].name, &size, j,
