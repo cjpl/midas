@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol main program
 
   $Log$
+  Revision 1.55  2004/10/12 11:02:41  midas
+  Version 1.7.6
+
   Revision 1.54  2004/09/25 01:14:54  midas
   Started implementing slave port on SCS-1000
 
@@ -328,16 +331,10 @@ void setup(void)
    XBR0 = 0x01;                 // Enable RX/TX
    XBR1 = 0x40;                 // Enable crossbar
    P0MDOUT = 0x90;              // P0.4: TX, P0.7: RS485 enable Push/Pull
-   P0SKIP  = 0x0C;              // Skip P0.2&3 for Xtal
-   P0MDIN  = 0xF3;              // P0.2&3 as analog input for Xtal
 
-   /* Select external quartz oscillator */
-   OSCXCN = 0x67;
-   for (i=0 ; i<255 ; i++);
-   while ((OSCXCN & 0x80) == 0);
-
-   CLKSEL = 0x01;               // derive SYSCLK from external source
-   OSCICN = 0x00;               // CLKSL=1 (external)
+   /* Select internal quartz oscillator */
+   OSCICN = 0x83;               // IOSCEN=1, SYSCLK=24.5 MHz
+   CLKSEL = 0x00;               // derive SYSCLK from internal source
 
 #else
 
@@ -382,6 +379,7 @@ void setup(void)
 #ifdef USE_WATCHDOG
    WDTCN = 0x07;                // 95 msec
    WDTCN = 0xA5;                // start watchdog
+   PCA0CPH4 = 0x00;
 #else
    WDTCN = 0xDE;                // disable watchdog
    WDTCN = 0xAD;
@@ -426,6 +424,8 @@ void setup(void)
       in_buf[i] = 0;
    for (i=0 ; i<sizeof(out_buf) ; i++)
       out_buf[i] = 0;
+
+   watchdog_refresh();
 
    /* initialize UART(s) */
    uart_init(0, BD_115200);

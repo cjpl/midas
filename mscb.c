@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus communication functions
 
   $Log$
+  Revision 1.75  2004/10/12 11:02:41  midas
+  Version 1.7.6
+
   Revision 1.74  2004/10/03 18:27:13  olchansk
   add MacOSX (aka darwin) native USB support
   make libusb support conditional on HAVE_LIBUSB (this allows one to use libusb on MacOSX)
@@ -229,7 +232,7 @@
 
 \********************************************************************/
 
-#define MSCB_LIBRARY_VERSION   "1.7.5"
+#define MSCB_LIBRARY_VERSION   "1.7.6"
 #define MSCB_PROTOCOL_VERSION  "1.7"
 
 #ifdef _MSC_VER                 // Windows includes
