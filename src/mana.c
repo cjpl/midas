@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.30  1999/08/16 08:28:42  midas
+  Fixed bug with wrong run number extraction from tape1/run123456.mid
+
   Revision 1.29  1999/08/13 13:49:14  midas
   Extract current_run_number from BOR event
 
@@ -3046,7 +3049,7 @@ DWORD           start_time;
 INT loop_runs_offline()
 {
 INT  i, status, run_number;
-char input_file_name[256], output_file_name[256];
+char input_file_name[256], output_file_name[256], *prn;
 BANK_LIST *bank_list;
 
   if (!clp.quiet)
@@ -3091,8 +3094,12 @@ BANK_LIST *bank_list;
       strcpy(input_file_name, clp.input_file_name[i]);
 
       /* get run number from input file */
-      if (strpbrk(clp.input_file_name[i], "0123456789"))
-        run_number = atoi(strpbrk(clp.input_file_name[i], "0123456789"));
+      prn = input_file_name;
+      while (strchr(prn, DIR_SEPARATOR) != NULL)
+        prn = strchr(prn, DIR_SEPARATOR)+1;
+
+      if (strpbrk(prn, "0123456789"))
+        run_number = atoi(strpbrk(prn, "0123456789"));
 
       if (strchr(clp.output_file_name, '%') != NULL)
         {
