@@ -6,6 +6,9 @@
   Contents:     Various utility functions for MSCB protocol
 
   $Log$
+  Revision 1.22  2003/03/23 10:20:43  midas
+  Added LCD_SUPPORT flag
+
   Revision 1.21  2003/03/19 16:35:03  midas
   Eliminated configuration parameters
 
@@ -929,9 +932,9 @@ unsigned char offset, i;
 
 /*------------------------------------------------------------------*/
 
-bit lcd_present;
+#ifdef LCD_SUPPORT
 
-#if !defined(CPU_ADUC812) && !defined(SCS_210) && !defined(SCS_310) // save code space
+bit lcd_present;
 
 /********************************************************************\
 
@@ -1059,15 +1062,11 @@ void lcd_goto(char x, char y)
 
 /*------------------------------------------------------------------*/
 
-#if !defined(SCS_210) && !defined(SCS_300) && !defined(SCS_310)
-
 char putchar(char c)
 {
   lcd_out(c, 1);
   return c;
 }
-
-#endif
 
 /*------------------------------------------------------------------*/
 
@@ -1112,5 +1111,5 @@ char i, d;
 }
 */
 
-#endif /* CPU_ADUC812 */
+#endif
 

@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol commands
 
   $Log$
+  Revision 1.22  2003/03/23 10:20:43  midas
+  Added LCD_SUPPORT flag
+
   Revision 1.21  2003/03/19 16:35:03  midas
   Eliminated configuration parameters
 
@@ -137,6 +140,9 @@ sbit RS485_ENABLE =      P3^5;
 
 /* use hardware watchdog of CPU */
 #define USE_WATCHDOG
+
+/* LCD support */
+#undef LCD_SUPPORT
 
 /* map SBUF0 & Co. to SBUF */
 #ifndef CPU_C8051F020

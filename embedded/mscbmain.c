@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol main program
 
   $Log$
+  Revision 1.30  2003/03/23 10:20:43  midas
+  Added LCD_SUPPORT flag
+
   Revision 1.29  2003/03/21 08:28:15  midas
   Fixed bug with LSB bytes
 
@@ -218,6 +221,9 @@ unsigned char i;
   /* start system clock */
   sysclock_init();
 
+  /* avoid compiler warning */
+  delay_ms(0);
+
   /* init memory */
   CSR = 0;
   LED = LED_OFF;
@@ -274,7 +280,7 @@ unsigned char i;
     eeprom_flash();
     }
 
-#if !defined(CPU_ADUC812) && !defined(SCS_210) && !defined(SCS_300) && !defined(SCS_310) // SCS210/300 redefine printf()
+#ifdef LCD_SUPPORT
   lcd_setup();
 
 #ifdef LCD_DEBUG
@@ -285,8 +291,6 @@ unsigned char i;
     }
 #endif
 
-#else
-  lcd_present = 0;
 #endif
 
   /* Blink LEDs */
