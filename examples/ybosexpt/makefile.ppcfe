@@ -78,18 +78,22 @@ UFE = ybos_simfe
 # MIDAS library
 LIB = 
 
-all: $(OBJ_DIR) $(OBJ_DIR)/$(DRIVER).o $(UFE) $(DRV_DIR)/bus/esone.c
+all: $(OBJ_DIR) $(OBJ_DIR)/$(DRIVER).o $(UFE) 
 
-$(UFE): $(LIB) $(OBJ_DIR)/$(DRIVER).o $(OBJ_DIR)/esone.o
+$(UFE): $(LIB) $(OBJ_DIR)/$(DRIVER).o $(OBJ_DIR)/esone.o $(OBJ_DIR)/vxVME.o
 	$(CC) $(CFLAGS) $(INCLUDES) $(OSFLAGS) -c -o $(OBJ_DIR)/$(UFE).o $(UFE).c
 	$(LD) -o $(OBJ_DIR)/mfe.o -r \
-		$(LIB_DIR)/mfe.o $(OBJ_DIR)/$(UFE).o $(OBJ_DIR)/$(DRIVER).o $(OBJ_DIR)/esone.o
+	$(LIB_DIR)/mfe.o $(OBJ_DIR)/$(UFE).o $(OBJ_DIR)/$(DRIVER).o \
+	$(OBJ_DIR)/esone.o $(OBJ_DIR)/vxVME.o
 
 $(OBJ_DIR)/$(DRIVER).o: $(DRV_DIR)/bus/$(DRIVER).c
 	$(CC) $(CFLAGS) $(OSFLAGS) -c -o $@ $<
 
 $(OBJ_DIR)/esone.o: $(DRV_DIR)/bus/esone.c
 	$(CC) $(CFLAGS) $(OSFLAGS) -c -o $@ $<
+
+$(OBJ_DIR)/vxVME.o: $(DRV_DIR)/bus/vxVME.c
+	$(CC) $(CFLAGS_PPC) -I$(INC_DIR) -c -o $@ $<
 
 $(OBJ_DIR):
 	@if [ ! -d  $(OBJ_DIR) ] ; then \
