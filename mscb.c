@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus communication functions
 
   $Log$
+  Revision 1.6  2001/10/31 11:16:54  midas
+  Added IO check function
+
   Revision 1.5  2001/09/04 07:33:42  midas
   Rewrote write16/read16 functions
 
@@ -438,7 +441,10 @@ int mscb_init(char *device)
 
 \********************************************************************/
 {
-int index, i;
+int           index, i;
+BYTE          d;
+int           status;
+unsigned char c;
 
   /* search for new file descriptor */
   for (index=0 ; index<MSCB_MAX_FD ; index++)
@@ -469,9 +475,6 @@ int index, i;
   DWORD buffer[4];
   DWORD size;
   HANDLE hdio;
-  BYTE d;
-  int status;
-  unsigned char c;
 
   buffer[0] = 6; /* give IO */
   buffer[1] = mscb_fd[index].fd;
@@ -497,6 +500,7 @@ int index, i;
 		  NULL, 0, &size, NULL))
     return -1;
 
+  }
 #endif _MSC_VER
 
   mscb_lock();
@@ -520,8 +524,6 @@ int index, i;
     if (status == MSCB_SUCCESS)
       printf("%02X ", c);
     } while (status == MSCB_SUCCESS);
-
-  }
 
   mscb_release();
 
@@ -551,6 +553,129 @@ int mscb_exit(int fd)
   memset(&mscb_fd[fd-1], 0, sizeof(MSCB_FD));
 
   return MSCB_SUCCESS;
+}
+
+/*------------------------------------------------------------------*/
+
+void mscb_check(char *device)
+/********************************************************************\
+
+  Routine: mscb_check
+
+  Purpose: Check IO pins of port
+
+  Input:
+    char *device            Under NT: lpt1 or lpt2
+                            Under Linux: /dev/parport0 or /dev/parport1
+
+  Function value:
+    int fd                  device descriptor for connection, -1 if
+                            error
+
+\********************************************************************/
+{
+int i, fd, d;
+
+#ifdef _MSC_VER
+
+  if (strlen(device) == 4)
+    i = atoi(device+3);
+  else
+    {
+    printf("Wrong device, either LPT1 or LPT2.\n");
+    return;
+    }
+  
+  /* derive base address from device name */
+  if (i == 1)
+    fd = 0x378;
+  else if (i == 2)
+    fd = 0x278;
+  else
+    {
+    printf("Wrong device, either LPT1 or LPT2.\n");
+    return;
+    }
+  
+  /* under NT, user directio driver */
+  {
+  OSVERSIONINFO vi;
+  DWORD buffer[4];
+  DWORD size;
+  HANDLE hdio;
+
+  buffer[0] = 6; /* give IO */
+  buffer[1] = fd;
+  buffer[2] = buffer[1]+4;
+  buffer[3] = 0;
+
+  vi.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
+  GetVersionEx(&vi);
+
+  /* use DirectIO driver under NT to gain port access */
+  if (vi.dwPlatformId == VER_PLATFORM_WIN32_NT)
+    {
+    hdio = CreateFile("\\\\.\\directio", GENERIC_READ, FILE_SHARE_READ, NULL,
+		       OPEN_EXISTING, 0, NULL);
+    if (hdio == INVALID_HANDLE_VALUE)
+      {
+      printf("mscb.c: Cannot access parallel port (No DirectIO driver installed)\n");
+      return;
+      }
+    }
+
+  if (!DeviceIoControl(hdio, (DWORD) 0x9c406000, &buffer, sizeof(buffer), 
+		  NULL, 0, &size, NULL))
+    return;
+
+  printf("Toggling %s output pins, hit ENTER to stop.\n", device);
+  printf("GND = 19-25, toggling 2-9, 1, 14, 16 and 17\n\n");
+  do
+    {
+    printf("\r00000000 0000");
+    OUTP(fd, 0);
+    OUTP(fd + LPT_NSTROBE_OFS, LPT_NSTROBE | LPT_NACK | LPT_NRESET);
+    
+    Sleep(300);
+
+    printf("\r11111111 1111");
+    OUTP(fd, 0xFF);
+    OUTP(fd + LPT_NSTROBE_OFS, LPT_BIT9);
+
+    Sleep(1000);
+
+    } while (!kbhit());
+
+  while (kbhit())
+    getch();
+
+  /* switch port to input */
+  OUTP(fd+LPT_DIRECTION_OFS, LPT_DIRECTION);
+
+  printf("\n\n\nInput display, hit ENTER to stop.\n");
+  printf("Pins 2-9, 10, 11, and 12\n\n");
+
+  do
+    {
+    d = INP(fd);
+    for (i=0 ; i<8 ; i++)
+      {
+      printf("%d", (d & 1) > 0);
+      d >>= 1;
+      }
+
+    d = INP(fd + LPT_STATUS_OFS);
+    printf(" %d%d%d\r", (d & LPT_NDATAREADY) > 0, (d & LPT_NBUSY) == 0, (d & LPT_STATUS) > 0);
+
+    Sleep(100);
+    } while (!kbhit());
+
+  while (kbhit())
+    getch();
+
+  }
+#endif _MSC_VER
+
 }
 
 /*------------------------------------------------------------------*/
