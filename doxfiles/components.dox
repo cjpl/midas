@@ -24,8 +24,8 @@ link is a similar image with more information
  <a href=http://midas.triumf.ca/midasIntro.jpg>Midas Structure</a>.
 
  * <center> 
- *  \image html MidasIntro.jpg
- *  \image latex components.eps "Components" width=13.25cm
+ *  \image html midasintro.jpg
+ *  \image latex midasintro.eps "Components" width=13.25cm
  * </center> 
 
 The main elements of the \b Midas package are listed below with a short description of
