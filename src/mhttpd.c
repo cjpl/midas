@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.67  1999/10/08 08:38:09  midas
+  Added "last<n> messages" feature
+
   Revision 1.66  1999/10/07 14:04:49  midas
   Added select() before recv() to avoid hangups
 
@@ -1600,7 +1603,7 @@ KEY    key;
 
 /*------------------------------------------------------------------*/
 
-void show_elog_submit_query(BOOL last10)
+void show_elog_submit_query(INT last_n)
 {
 int    i, size, run, status, m1, d2, m2, y2, index, fh;
 char   date[80], author[80], type[80], system[80], subject[256], text[10000], 
@@ -1629,7 +1632,7 @@ FILE   *f;
   rsprintf("<table border=3 cellpadding=2 width=\"100%%\">\n");
 
   /* get mode */
-  if (last10)
+  if (last_n)
     {
     full = TRUE;
     show_attachments = FALSE;
@@ -1665,7 +1668,7 @@ FILE   *f;
 
   ltime_end = 0;
 
-  if (!last10)
+  if (!last_n)
     {
     strcpy(str, getparam("m1"));
     for (m1=0 ; m1<12 ; m1++)
@@ -1723,7 +1726,7 @@ FILE   *f;
     }
   else 
     {
-    if (last10)
+    if (last_n)
       rsprintf("<tr><td colspan=6 bgcolor=#FFFF00><b>Last ten messages</b></tr>\n");
 
     else if (*getparam("m2") || *getparam("y2") || *getparam("d2"))
@@ -1769,12 +1772,12 @@ FILE   *f;
 
   /*---- do query ----*/
 
-  if (last10)
+  if (last_n)
     {
     strcpy(tag, "-1");
     el_search_message(tag, &fh, TRUE);
     close(fh);
-    for (i=0 ; i<10 ; i++)
+    for (i=1 ; i<last_n ; i++)
       {
       strcat(tag, "-1");
       el_search_message(tag, &fh, TRUE);
@@ -2306,19 +2309,19 @@ FILE  *f;
 
   if (equal_ustring(command, "submit query"))
     {
-    show_elog_submit_query(FALSE);
+    show_elog_submit_query(0);
     return;
     }
 
   if (equal_ustring(command, "last 10 entries"))
     {
-    redirect("EL/last");
+    redirect("EL/last10");
     return;
     }
 
-  if (equal_ustring(path, "last"))
+  if (strncmp(path, "last", 4) == 0)
     {
-    show_elog_submit_query(TRUE);
+    show_elog_submit_query(atoi(path+4));
     return;
     }
 
