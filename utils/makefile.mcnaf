@@ -23,6 +23,9 @@
 # 
 #  Revision History:
 #    $Log$
+#    Revision 1.4  1999/12/08 00:13:35  pierre
+#    - remove OS_UNIX
+#
 #    Revision 1.3  1998/11/23 16:20:38  pierre
 #    change names :  miocnaf  <- DirectIO (DRIVER=... hy1331, kcs2927, kcs2926, dsp004)
 #    		mdrvcnaf <- Linux camac (drivers/camaclx.c)
@@ -49,7 +52,7 @@ SYSBIN_DIR = /usr/local/bin
 #
 CC   = gcc
 INCLUDES = -I$(MIDAS_INC_DIR)
-OSFLAGS = -DOS_LINUX -DOS_UNIX
+OSFLAGS = -DOS_LINUX
 CFLAGS  = -O3
 DIO_LDFLAGS = -DMODULE -D__KERNEL__ 
 DRV_LDFLAGS =
