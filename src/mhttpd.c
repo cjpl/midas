@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.113  2000/04/28 15:27:14  midas
+  Adjusted colors
+
   Revision 1.112  2000/04/28 14:48:58  midas
   Added ELog from History capability
 
@@ -5399,10 +5402,10 @@ gdPoint     poly[3];
   curve_col[0] = gdImageColorAllocate(im,   0,   0, 255);
   curve_col[1] = gdImageColorAllocate(im,   0, 192,   0);
   curve_col[2] = gdImageColorAllocate(im, 255,   0,   0);
-  curve_col[3] = gdImageColorAllocate(im,   0, 255, 255);
+  curve_col[3] = gdImageColorAllocate(im,   0, 192, 192);
   curve_col[4] = gdImageColorAllocate(im, 255,   0, 255);
-  curve_col[5] = gdImageColorAllocate(im, 255, 255,   0);
-  curve_col[6] = gdImageColorAllocate(im, 128, 128, 255);
+  curve_col[5] = gdImageColorAllocate(im, 192, 192,   0);
+  curve_col[6] = gdImageColorAllocate(im, 128, 128, 128);
   curve_col[7] = gdImageColorAllocate(im, 128, 255, 128);
   curve_col[8] = gdImageColorAllocate(im, 255, 128, 128);
   curve_col[9] = gdImageColorAllocate(im, 128, 128, 128);
@@ -6177,7 +6180,15 @@ struct tm *gmt;
     return;
     }
 
-  /*---- History command -------------------------------------------*/
+  /*---- alarms command --------------------------------------------*/
+
+  if (equal_ustring(command, "alarms"))
+    {
+    show_alarm_page();
+    return;
+    }
+
+  /*---- history command -------------------------------------------*/
 
   if (equal_ustring(command, "history"))
     {
@@ -6434,12 +6445,6 @@ struct tm *gmt;
   if (equal_ustring(command, "Alarms on/off"))
     {
     redirect("Alarms/Alarm system active?cmd=set");
-    return;
-    }
-
-  if (equal_ustring(command, "alarms"))
-    {
-    show_alarm_page();
     return;
     }
 
