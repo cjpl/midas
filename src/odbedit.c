@@ -6,6 +6,12 @@
   Contents:     Command-line interface to the MIDAS online data base.
 
   $Log$
+  Revision 1.66  2003/11/01 00:46:06  olchansk
+  abort if cannot read /runinfo/run number
+  abort if run number resets to zero
+  abort if cannot write /runinfo/run number
+  abort if cannot write /runinfo/transition in progress
+
   Revision 1.65  2003/07/26 23:26:51  olchansk
   use "odbedit -C" to connect to corrupted ODB
 
@@ -197,6 +203,7 @@
 
 #include "midas.h"
 #include "msystem.h"
+#include <assert.h>
 
 extern INT cmd_edit(char *prompt, char *cmd, INT (*dir)(char*,INT*), INT (*idle)());
 
@@ -2551,7 +2558,9 @@ PRINT_INFO      print_info;
           {
           /* get present run number */
           old_run_number = 0;
-          db_get_value(hDB, 0, "/Runinfo/Run number", &old_run_number, &size, TID_INT, TRUE);
+          status = db_get_value(hDB, 0, "/Runinfo/Run number", &old_run_number, &size, TID_INT, TRUE);
+          assert(status == SUCCESS);
+          assert(old_run_number >= 0);
 
           /* edit run parameter if command is not "start now" */
           if ((param[1][0] == 'n' && param[1][1] == 'o' && param[1][2] == 'w') ||
@@ -2626,19 +2635,24 @@ PRINT_INFO      print_info;
             printf("Starting run #%d\n", new_run_number);
 
             i = 1;
-            db_set_value(hDB, 0, "/Runinfo/Transition in progress", &i, sizeof(INT), 1, TID_INT);
+            status = db_set_value(hDB, 0, "/Runinfo/Transition in progress", &i, sizeof(INT), 1, TID_INT);
+            assert(status == SUCCESS);
+
+            assert(new_run_number > 0);
 
             status = cm_transition(TR_START, new_run_number, str, sizeof(str), SYNC, debug_flag);
             if (status != CM_SUCCESS)
               {
               /* in case of error, reset run number */
-              db_set_value(hDB, 0, "/Runinfo/Run number", &old_run_number, size, 1, TID_INT);
+              status = db_set_value(hDB, 0, "/Runinfo/Run number", &old_run_number, size, 1, TID_INT);
+              assert(status == SUCCESS);
 
               printf("Error: %s\n", str);
               }
 
             i = 0;
-            db_set_value(hDB, 0, "/Runinfo/Transition in progress", &i, sizeof(INT), 1, TID_INT);
+            status = db_set_value(hDB, 0, "/Runinfo/Transition in progress", &i, sizeof(INT), 1, TID_INT);
+            assert(status == SUCCESS);
             }
           }
         }
@@ -2955,7 +2969,8 @@ PRINT_INFO      print_info;
       HNDLE hKey;
 
       start_time = ss_millitime();
-      db_find_key(hDB, 0, "/runinfo/run number", &hKey);
+      status = db_find_key(hDB, 0, "/runinfo/run number", &hKey);
+      assert(status == SUCCESS);
       size = sizeof(rn);
 
       i = 0;
