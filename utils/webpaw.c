@@ -6,6 +6,9 @@
   Contents:     Web server for remote PAW display
 
   $Log$
+  Revision 1.31  2001/06/15 07:26:24  midas
+  Fixed Genera/Global bug in configuration file
+
   Revision 1.30  2001/05/18 08:52:48  midas
   Fixed unterminated string in configuration file
 
@@ -870,7 +873,7 @@ int    fh, i, j, length, status, height;
     rsprintf("Server: WebPAW\r\n");
     rsprintf("Content-Type: text/html\r\n\r\n");
 
-    if (getcfg("General", "Body2", str))
+    if (getcfg("Global", "Body2", str))
       rsprintf("<html><body %s>\r\n", str);
     else
       rsprintf("<html><body>\r\n");
@@ -931,7 +934,7 @@ int    fh, i, j, length, status, height;
     rsprintf("HTTP/1.0 200 Document follows\r\n");
     rsprintf("Server: WebPAW\r\n");
     rsprintf("Content-Type: text/html\r\n\r\n");
-    if (getcfg("General", "Body1", str))
+    if (getcfg("Global", "Body1", str))
       rsprintf("<html><body %s>\r\n", str);
     else
       rsprintf("<html><body>\r\n");
@@ -1020,7 +1023,7 @@ int    fh, i, j, length, status, height;
     rsprintf("<head><title>Please enter parameters</title>\r\n");
     rsprintf("</head>\r\n");
 
-    if (getcfg("General", "Body3", str))
+    if (getcfg("Global", "Body3", str))
       rsprintf("<html><body %s>\r\n", str);
     else
       rsprintf("<html><body>\r\n");
@@ -1086,11 +1089,11 @@ int    fh, i, j, length, status, height;
     rsprintf("Content-Type: text/html\r\n\r\n");
 
     rsprintf("<head>\r\n");
-    if (getcfg("General", "Refresh", str))
+    if (getcfg("Global", "Refresh", str))
       rsprintf("<meta http-equiv=REFRESH content=%s>", str);
     rsprintf("</head>\r\n");
 
-    if (getcfg("General", "Body3", str))
+    if (getcfg("Global", "Body3", str))
       rsprintf("<html><body %s>\r\n", str);
     else
       rsprintf("<html><body>\r\n");
@@ -1158,7 +1161,7 @@ int    fh, i, j, length, status, height;
           }
         }
       
-      if (getcfg("General", "Elog", elog))
+      if (getcfg("Global", "Elog", elog))
         {
         rsprintf("<p><a href=\"%s\">Create ELog with this picture</a><br>\r\n", elog);
         }
@@ -1168,7 +1171,7 @@ int    fh, i, j, length, status, height;
 
       /* display optional PAW text output */
       if (!equal_ustring(cmd, "contents"))
-        if (getcfg("General", "Text", str) && str[0] == 'y')
+        if (getcfg("Global", "Text", str) && str[0] == 'y')
           {
           rsprintf("<p><pre>\r\n");
 
@@ -1637,7 +1640,7 @@ char                 pwd[256], cl_pwd[256], str[256], *p;
 
       /* ask for password if configured */
       authorized = 1;
-      if (getcfg("General", "Password", pwd))
+      if (getcfg("Global", "Password", pwd))
         {
         authorized = 0;
 
@@ -1736,7 +1739,7 @@ char *cfgbuffer, str[256], *p;
       printf("Cannot create \"webpaw.cfg\".\n");
       return;
       }
-    sprintf(str, "[General]\nPassword=%s\n", pwd);
+    sprintf(str, "[Global]\nPassword=%s\n", pwd);
     write(fh, str, strlen(str));
     close(fh);
     printf("File \"webpaw.cfg\" created with password.\n");
@@ -1774,10 +1777,10 @@ char *cfgbuffer, str[256], *p;
       p++;
     write(fh, p, strlen(p));
     }
-  else if (strstr(cfgbuffer, "[General]"))
+  else if (strstr(cfgbuffer, "[Global]"))
     {
-    /* add password to [General] section */
-    p = strstr(cfgbuffer, "[General]")+9;
+    /* add password to [Global] section */
+    p = strstr(cfgbuffer, "[Global]")+9;
     while (*p && (*p == '\r' || *p == '\n'))
       p++;
     i = (int) p - (int) cfgbuffer;
@@ -1790,7 +1793,7 @@ char *cfgbuffer, str[256], *p;
     }
   else
     {
-    sprintf(str, "[General]\nPassword=%s\n\n", pwd);
+    sprintf(str, "[Global]\nPassword=%s\n\n", pwd);
     write(fh, str, strlen(str));
     write(fh, cfgbuffer, length);
     }
