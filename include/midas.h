@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.56  2000/02/15 11:07:50  midas
+  Changed GET_xxx to bit flags
+
   Revision 1.55  2000/02/09 08:03:27  midas
   Changed version to 1.7.1
 
@@ -362,9 +365,9 @@ typedef          INT       HNDLE;
 #define FORMAT_HBOOK  6       /* CERN hbook (rz) format             */
 
 /* Sampling type */
-#define GET_ALL       1       /* get all events (consume)           */
-#define GET_SOME      2       /* get as much as possible (sampling) */
-#define GET_FARM      3       /* distribute events over several
+#define GET_ALL   (1<<0)      /* get all events (consume)           */
+#define GET_SOME  (1<<1)      /* get as much as possible (sampling) */
+#define GET_FARM  (1<<2)      /* distribute events over several
                                  clients (farming)                  */
 
 /* Synchronous / Asynchronous flags */

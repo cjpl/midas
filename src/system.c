@@ -14,6 +14,9 @@
                 Brown, Prentice Hall
 
   $Log$
+  Revision 1.50  2000/02/15 11:07:51  midas
+  Changed GET_xxx to bit flags
+
   Revision 1.49  1999/11/09 13:19:25  midas
   Fixed bug
 
@@ -2540,6 +2543,7 @@ INT MidasExceptionSignal(INT sig)
   return 0;
 }
 
+/*
 INT _matherr(struct _exception *except)
 {
   if (MidasExceptionHandler != NULL)
@@ -2547,6 +2551,7 @@ INT _matherr(struct _exception *except)
 
   return 0;
 }
+*/
 
 #endif /* OS_WINNT */
 
