@@ -14,6 +14,9 @@
                 Brown, Prentice Hall
 
   $Log$
+  Revision 1.73  2003/06/25 18:22:53  pierre
+  Added pthread support for UNIX version - DBM
+
   Revision 1.72  2003/06/12 18:40:59  pierre
   include ss_tape_get_blockn
 
@@ -923,7 +926,7 @@ HANDLE hThread;
 #endif /* OS_VMS */
 #ifdef OS_UNIX
 
-  return 0;
+  return ss_getpid();
 
 #endif /* OS_VMS */
 }
@@ -1744,7 +1747,14 @@ INT ss_thread_create(INT (*thread_func)(void *), void *param)
 #endif /* OS_VXWORKS */
 
 #ifdef OS_UNIX
-  return SS_NO_THREAD;
+  INT status;
+  pthread_t thread_id;
+  	
+  status = pthread_create(&thread_id, NULL, (void *) thread_func, param);
+
+  if (status != 0)
+    return SS_NO_THREAD;
+  return SS_SUCCESS;
 #endif /* OS_UNIX */
 }
 

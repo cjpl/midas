@@ -7,6 +7,9 @@
   Contents:     Includes all necessary include files
 
   $Log$
+  Revision 1.10  2003/06/25 18:22:53  pierre
+  Added pthread support for UNIX version - DBM
+
   Revision 1.9  2003/04/25 14:38:02  midas
   Fixed compiler warnings
 
@@ -150,6 +153,7 @@
 #include <sys/mtio.h>
 #include <sys/mount.h>
 #include <dirent.h>
+#include <pthread.h>
 
 /* special code for Linux and FreeBSD */
 #if defined(OS_LINUX) || defined(OS_FREEBSD)
