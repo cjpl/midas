@@ -6,6 +6,9 @@
   Contents:     MIDAS main library funcitons
 
   $Log$
+  Revision 1.68  1999/10/08 13:21:20  midas
+  Alarm system disabled when running offline
+
   Revision 1.67  1999/10/07 13:50:49  midas
   Fixed bug with date in el_submit
 
@@ -15275,6 +15278,13 @@ ALARM_STR(alarm_str);
 
   if (hDB == 0)
     return AL_SUCCESS; /* called from server not yet connected */
+
+  /* check online mode */
+  flag = TRUE;
+  size = sizeof(flag);
+  db_get_value(hDB, 0, "/Runinfo/Online Mode", &flag, &size, TID_INT);
+  if (!flag)
+    return AL_SUCCESS;
 
   /* check global alarm flag */
   flag = TRUE;
