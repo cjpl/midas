@@ -6,6 +6,9 @@
   Contents:     Web server program for midas RPC calls
 
   $Log$
+  Revision 1.243  2003/04/16 20:14:43  midas
+  Fixed compiler warnings coming up with -Wuninitialized
+
   Revision 1.242  2003/04/16 19:05:49  olchansk
   Fix a few compiler warnings:
   - a format mismatch,
@@ -1524,13 +1527,13 @@ CHN_STATISTICS chn_stats;
   rsprintf("Server: MIDAS HTTP %s\r\n", cm_get_version());
   rsprintf("Content-Type: text/html; charset=iso-8859-1\r\n");
   rsprintf("Pragma: no-cache\r\n");
-  rsprintf("Expires: Fri, 01 Jan 1983 00:00:00 GMT\r\n");
+  rsprintf("Expires: Fri, 01-Jan-1983 00:00:00 GMT\r\n");
   if (cookie_wpwd[0])
     {
     time(&now);
     now += 3600*24;
     gmt = gmtime(&now);
-    strftime(str, sizeof(str), "%A, %d-%b-%y %H:%M:%S GMT", gmt);
+    strftime(str, sizeof(str), "%A, %d-%b-%Y %H:%M:%S GMT", gmt);
 
     rsprintf("Set-Cookie: midas_wpwd=%s; path=/; expires=%s\r\n", cookie_wpwd, str);
     }
@@ -2402,6 +2405,7 @@ KEY    key;
   type[0] = system[0] = 0;
   att1[0] = att2[0] = att3[0] = 0;
   subject[0] = 0;
+  run_number = 0;
 
   if (path)
     {
@@ -2942,6 +2946,7 @@ FILE   *f;
   /*---- convert end date to ltime ----*/
 
   ltime_end = ltime_start = 0;
+  m1 = m2 = d2 = y2 = 0;
 
   if (!last_n)
     {
@@ -3550,6 +3555,7 @@ KEY    key;
 
   sprintf(str, "/Elog/Forms/%s", getparam("form"));
   db_find_key(hDB, 0, str, &hkeyroot);
+  i = 0;
   if (hkeyroot)
     for (i=0 ; ; i++)
       {
@@ -4253,28 +4259,36 @@ char  def_button[][NAME_LENGTH] = {"8h", "24h", "7d" };
       sprintf(str, "EL/%s", path);
 
       if (*getparam("lauthor") == '1')
+        {
         if (strchr(str, '?') == NULL)
           strcat(str, "?lauthor=1");
         else
           strcat(str, "&lauthor=1");
+        }
 
       if (*getparam("ltype") == '1')
+        {
         if (strchr(str, '?') == NULL)
           strcat(str, "?ltype=1");
         else
           strcat(str, "&ltype=1");
+        }
 
       if (*getparam("lsystem") == '1')
+        {
         if (strchr(str, '?') == NULL)
           strcat(str, "?lsystem=1");
         else
           strcat(str, "&lsystem=1");
+        }
 
       if (*getparam("lsubject") == '1')
+        {
         if (strchr(str, '?') == NULL)
           strcat(str, "?lsubject=1");
         else
           strcat(str, "&lsubject=1");
+        }
 
       redirect(str);
       return;
@@ -4626,6 +4640,7 @@ char   data_str[256], hex_str[256];
     {
     sprintf(str, "/Equipment/%s/Settings", eq_name);
     db_find_key(hDB, 0, str, &hkeyset);
+    hkeynames = 0;
     if (hkeyset)
       {
       for (i=0 ; ; i++)
@@ -7503,6 +7518,7 @@ double      yb1, yb2, yf1, yf2, ybase;
     }
 
   ymin = ymax = 0;
+  logaxis = runmarker = 0;
 
   for (i=0 ; i<n_vars ; i++)
     {
@@ -7905,6 +7921,8 @@ double      yb1, yb2, yf1, yf2, ybase;
   gdImageLine(im, x1, y2, x2, y2, black);
   gdImageLine(im, x2, y2, x2, y1, black);
 
+  xs = ys = xold = yold = 0;
+
   /* write run markes if selected */
   if (runmarker)
     {
@@ -8121,7 +8139,7 @@ error:
     rsprintf("Content-Type: image/gif\r\n");
     rsprintf("Content-Length: %d\r\n", length);
     rsprintf("Pragma: no-cache\r\n");
-    rsprintf("Expires: Fri, 01 Jan 1983 00:00:00 GMT\r\n\r\n");
+    rsprintf("Expires: Fri, 01-Jan-1983 00:00:00 GMT\r\n\r\n");
 
     if (length > (int) (sizeof(return_buffer) - strlen(return_buffer)))
       {
@@ -8288,6 +8306,7 @@ char   *hist_col[] =
 
   cm_get_experiment_database(&hDB, NULL);
   strcpy(cmd, getparam("cmd"));
+  hKeyVar = 0;
 
   if (cmd[0] && equal_ustring(cmd, "save"))
     {
@@ -8472,7 +8491,6 @@ char   *hist_col[] =
       {
       db_get_key(hDB, hKey, &key);
 
-      memset(display_name, 0, size);
       for (i=0 ; i< key.num_values ; i++)
         {
         size = 2*NAME_LENGTH;
@@ -8615,6 +8633,7 @@ char   *hist_col[] =
           {
           /* get variable key */
           db_get_key(hDB, hKey, &varkey);
+          n_names = 0;
 
           /* look for names */
           db_find_key(hDB, hKeyEq, "Settings/Names", &hKeyNames);
@@ -9394,7 +9413,7 @@ struct tm *gmt;
     time(&now);
     now += 3600*24;
     gmt = gmtime(&now);
-    strftime(str, sizeof(str), "%A, %d-%b-%y %H:00:00 GMT", gmt);
+    strftime(str, sizeof(str), "%A, %d-%b-%Y %H:00:00 GMT", gmt);
 
     rsprintf("Set-Cookie: midas_pwd=%s; path=/; expires=%s\r\n", ss_crypt(password, "mi"), str);
 
@@ -9417,7 +9436,7 @@ struct tm *gmt;
     time(&now);
     now += 3600*24;
     gmt = gmtime(&now);
-    strftime(str, sizeof(str), "%A, %d-%b-%y %H:%M:%S GMT", gmt);
+    strftime(str, sizeof(str), "%A, %d-%b-%Y %H:%M:%S GMT", gmt);
 
     rsprintf("Set-Cookie: midas_wpwd=%s; path=/; expires=%s\r\n", ss_crypt(wpassword, "mi"), str);
 
@@ -9888,7 +9907,7 @@ struct tm *gmt;
     time(&now);
     now += 3600*24*365;
     gmt = gmtime(&now);
-    strftime(str, sizeof(str), "%A, %d-%b-%y %H:00:00 GMT", gmt);
+    strftime(str, sizeof(str), "%A, %d-%b-%Y %H:00:00 GMT", gmt);
 
     rsprintf("Set-Cookie: midas_refr=%d; path=/; expires=%s\r\n", refresh, str);
 
@@ -10355,6 +10374,8 @@ struct linger        ling;
           if (n_error == 100)
             goto error;
           }
+
+        content_length = 0;
 
         /* finish when empty line received */
         if (strstr(net_buffer, "GET") != NULL && strstr(net_buffer, "POST") == NULL)
