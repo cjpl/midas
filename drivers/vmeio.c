@@ -14,6 +14,9 @@
  *  Author      :  Pierre-Andre Amaudruz Data Acquisition Group
  *  Revision 1.0:  1998/Mar/20 Pierre	   Inline function
     $Log$
+    Revision 1.4  1999/12/08 00:52:24  pierre
+    - fix () to (void *) declaration.
+
     Revision 1.3  1999/09/29 21:04:19  pierre
     - include vmeio.h
 
@@ -261,7 +264,7 @@ INLINE void vmeio_int_disable (const DWORD base_adr, int intnum)
   *spec_adr = ~(intnum & 0xff);
 }
 
-INLINE void vmeio_int_attach (const DWORD base_adr, DWORD base_vect, int intnum, void (*isr)())
+INLINE void vmeio_int_attach (const DWORD base_adr, DWORD base_vect, int intnum, void (*isr)(void))
 /**************************************************************\
  Purpose: Book an ISR for a bitwise set of interrupt input (0xff).
           The interrupt vector is then the VECTOR_BASE+intnum
