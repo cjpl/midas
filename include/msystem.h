@@ -7,6 +7,10 @@
                 routines
 
   $Log$
+  Revision 1.38  2004/01/19 16:56:15  olchansk
+  add ss_timezone()
+  change ss_thread_create() and ss_thread_kill() to use midas_thread_t
+
   Revision 1.37  2004/01/17 05:35:53  olchansk
   replace #define ALIGN() with ALIGN8() to dodge namespace pollution under macosx
   hide strlcpy() & co #ifdef HAVE_STRLCPY (macosx already has strlcpy())
@@ -716,9 +720,10 @@ extern "C" {
    INT ss_exception_handler(void (*func) ());
    void EXPRT ss_force_single_thread();
    INT EXPRT ss_suspend(INT millisec, INT msg);
-   INT EXPRT ss_thread_create(INT(*func) (void *), void *param);
-   INT EXPRT ss_thread_kill(INT thread_id);
+   midas_thread_t EXPRT ss_thread_create(INT(*func) (void *), void *param);
+   INT EXPRT ss_thread_kill(midas_thread_t thread_id);
    INT EXPRT ss_get_struct_align(void);
+   INT ss_timezone(void);
 
 /*---- socket routines ----*/
    INT EXPRT send_tcp(int sock, char *buffer, DWORD buffer_size, INT flags);
