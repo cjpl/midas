@@ -6,6 +6,9 @@
 #  Contents:     UNIX Makefile for MIDAS slow control frontend
 #
 #  $Log$
+#  Revision 1.2  2002/05/29 13:36:42  midas
+#  Added nulldev driver
+#
 #  Revision 1.1  1999/12/21 09:39:00  midas
 #  Added source
 #
@@ -43,7 +46,7 @@ DRV_DIR		= ../../drivers
 #-------------------------------------------------------------------
 # Drivers needed by the frontend program
 #                 
-DRIVERS         = camacnul.o hv.o multi.o null.o
+DRIVERS         = camacnul.o hv.o multi.o null.o nulldev.o
 
 ####################################################################
 # Lines below here should not be edited
@@ -70,9 +73,11 @@ hv.o: $(DRV_DIR)/class/hv.c
 multi.o: $(DRV_DIR)/class/multi.c
 	$(CC) $(CFLAGS) $(OSFLAGS) -c $< -o $@
 
-null.o: $(DRV_DIR)/device/null.c
+nulldev.o: $(DRV_DIR)/device/nulldev.c
 	$(CC) $(CFLAGS) $(OSFLAGS) -c $< -o $@
 
+null.o: $(DRV_DIR)/bus/null.c
+	$(CC) $(CFLAGS) $(OSFLAGS) -c $< -o $@
 
 .c.o:
 	$(CC) $(CFLAGS) $(OSFLAGS) -c $<
