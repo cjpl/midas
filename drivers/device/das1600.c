@@ -6,6 +6,9 @@
   Contents:     DAS-1600 (Keithley) Device Driver
 
   $Log$
+  Revision 1.4  2004/05/10 19:04:45  midas
+  Changed CH_IN/OUTUT to DF_IN/OUTPUT
+
   Revision 1.3  2004/01/08 08:40:08  midas
   Implemented standard indentation
 
@@ -193,7 +196,7 @@ INT das1600_ai(INT cmd, ...)
       hKey = va_arg(argptr, HNDLE);
       info = va_arg(argptr, void *);
       channel = va_arg(argptr, INT);
-      status = das1600_init(hKey, info, channel, CH_INPUT);
+      status = das1600_init(hKey, info, channel, DF_INPUT);
       break;
 
    case CMD_GET:
@@ -230,7 +233,7 @@ INT das1600_ao(INT cmd, ...)
       hKey = va_arg(argptr, HNDLE);
       info = va_arg(argptr, void *);
       channel = va_arg(argptr, INT);
-      status = das1600_init(hKey, info, channel, CH_OUTPUT);
+      status = das1600_init(hKey, info, channel, DF_OUTPUT);
       break;
 
    case CMD_SET:
