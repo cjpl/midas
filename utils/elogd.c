@@ -6,6 +6,9 @@
   Contents:     Web server program for Electronic Logbook ELOG
 
   $Log$
+  Revision 1.44  2001/10/12 10:48:27  midas
+  Version 1.1.3
+
   Revision 1.43  2001/10/12 10:46:05  midas
   Fixed bug which caused problems with the "find" function
 
@@ -142,7 +145,7 @@
 \********************************************************************/
 
 /* Version of ELOG */
-#define VERSION "1.1.2"
+#define VERSION "1.1.3"
 
 #include <stdio.h>
 #include <sys/types.h>
