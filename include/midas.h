@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.68  2000/06/07 10:49:07  midas
+  Release 1.8.1
+
   Revision 1.67  2000/06/06 13:45:11  midas
   Added locking of histos
 
@@ -229,7 +232,7 @@
    to the MIDAS library. First digit is major release, second
    digit is minor release, third digit is patch level */
 
-#define MIDAS_VERSION "1.8.0"
+#define MIDAS_VERSION "1.8.1"
 
 /*------------------------------------------------------------------*/
 
