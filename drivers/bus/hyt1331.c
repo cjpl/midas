@@ -8,6 +8,9 @@
                 following the MIDAS CAMAC Standard under DIRECTIO
 
   $Log$
+  Revision 1.25  2005/04/07 22:51:58  olchanski
+  report status of mulfunctionning hyt1331 camac controllers rather than just saying "card not found"
+
   Revision 1.24  2004/04/20 13:27:22  midas
   Fixed bug with PCI interface
 
@@ -1083,6 +1086,7 @@ INLINE int cam_init(void)
       OUTP(base_test, 0);
       status = INP(base_test);
       if (status != 0) {
+         if (status != 0xFF) printf("hyt1331.c: Unexpected status 0x%X from ISA card at 0x%X\n",status,base_test);
          directio_lock_port(base_test, base_test + 4 * 0x10);
          continue;
       }
@@ -1097,6 +1101,7 @@ INLINE int cam_init(void)
       f = (BYTE) INP(base_test + 10);
 
       if (n != 1 || a != 2 || f != 32) {
+         printf("hyt1331.c: Bad readback from ISA card at 0x%X: a=%d, n=%d, f=%d, should be: a=2, n=1, f=32\n",base_test,a,n,f);
          directio_lock_port(base_test, base_test + 4 * 0x10);
          continue;
       }
