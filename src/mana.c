@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.137  2005/04/12 23:24:42  amaudruz
+  move Reset in Command
+
   Revision 1.136  2005/03/24 22:29:27  ritt
   Get ODB from .mid file also for XML format
 
@@ -5640,24 +5643,24 @@ THREADTYPE root_server_thread(void *arg)
 */
 {
    char request[256];
-
+   
    TSocket *sock = (TSocket *) arg;
-
+   
    do {
-
+      
       /* close connection if client has disconnected */
       if (sock->Recv(request, sizeof(request)) <= 0) {
          // printf("Closed connection to %s\n", sock->GetInetAddress().GetHostName());
          sock->Close();
          delete sock;
          return THREADRETURN;
-
+	 
       } else {
-
+	 
          TMessage *message = new TMessage(kMESS_OBJECT);
-
+	 
          if (strcmp(request, "GetListOfFolders") == 0) {
-
+	    
             TFolder *folder = ReadFolderPointer(sock);
             if (folder==NULL) {
                message->Reset(kMESS_OBJECT);
@@ -5688,40 +5691,34 @@ THREADTYPE root_server_thread(void *arg)
 	    
             delete message;
 	    
-	 } else if( strncmp(request,"Reset",5) == 0 ) {
-
-	   TObject *object = gROOT->FindObjectAny(request+6);
-	   if( object && object->InheritsFrom(TH1::Class()) )
-	     static_cast<TH1*>(object)->Reset();
-	   
 	 } else if (strncmp(request, "FindObject", 10) == 0) {
-	   
-	   TFolder *folder = ReadFolderPointer(sock);
-	   
-	   //get object
-	   TObject *obj;
-	   if (strncmp(request+10, "Any", 3) == 0)
-	     obj = folder->FindObjectAny(request+14);
-	   else
-	     obj = folder->FindObject(request+11);
-	   
-	   //write object
-	   if (!obj)
-               sock->Send("Error");
+	    
+	    TFolder *folder = ReadFolderPointer(sock);
+	    
+	    //get object
+	    TObject *obj;
+	    if (strncmp(request+10, "Any", 3) == 0)
+	      obj = folder->FindObjectAny(request+14);
+	    else
+	      obj = folder->FindObject(request+11);
+	    
+	    //write object
+	    if (!obj)
+	      sock->Send("Error");
             else {
                message->Reset(kMESS_OBJECT);
                message->WriteObject(obj);
                sock->Send(*message);
             }
             delete message;
-
+	    
          } else if (strncmp(request, "FindFullPathName", 16) == 0) {
-
+	    
             TFolder *folder = ReadFolderPointer(sock);
-
+	    
             //find path
             const char* path = folder->FindFullPathName(request+17);
-
+	    
             //write path
             if (!path) {
                sock->Send("Error");
@@ -5733,88 +5730,81 @@ THREADTYPE root_server_thread(void *arg)
                delete obj;
             }
             delete message;
-
+	    
          } else if (strncmp(request, "Occurence", 9) == 0) {
-
+	    
             TFolder *folder = ReadFolderPointer(sock);
-
+	    
             //read object
             message->Reset(kMESS_OBJECT);
             sock->Recv(message);
             TObject *obj = ((TObject*) message->ReadObject(message->GetClass()));
-
+	    
             //get occurence
             Int_t retValue = folder->Occurence(obj);
-
+	    
             //write occurence
             message->Reset(kMESS_OBJECT);
             *message<<retValue;
             sock->Send(*message);
-
+	    
             delete message;
-
+	    
          } else if (strncmp(request, "GetPointer", 10) == 0) {
-
+	    
             //find object
             TObject *obj = gROOT->FindObjectAny(request+11);
-
+	    
             //write pointer
             message->Reset(kMESS_ANY);
             int p = (PTYPE)obj;
             *message<<p;
             sock->Send(*message);
-
+	    
             delete message;
-         } else if (strncmp(request, "Command", 7) == 0) {
 
-            char objName[100], type[100], method[100], arg[100];
-
-            sock->Recv(objName, sizeof(objName));
-            sock->Recv(type, sizeof(type));
-            sock->Recv(method, sizeof(method));
-            sock->Recv(arg, sizeof(arg));
-
-            TObject *obj = gROOT->FindObjectAny(objName);
-            if (obj) {
-               if (strcmp(type, "TH1F*") == 0 && strcmp(method, "Reset") == 0)
-                  ((TH1F *)obj)->Reset();
-               if (strcmp(type, "TH2F*") == 0 && strcmp(method, "Reset") == 0)
-                  ((TH2F *)obj)->Reset();
-            }
-
+         } else if( strncmp(request,"Command",7) == 0 ) {
+	    char objName[100], method[100];
+	    sock->Recv( objName, sizeof(objName) );
+	    sock->Recv( method, sizeof(method) );
+	    TObject *object = gROOT->FindObjectAny(objName);
+	    if( object && object->InheritsFrom(TH1::Class()) &&
+		strcmp(method,"Reset")==0 )
+	      static_cast<TH1*>(object)->Reset();
+	 
 	 } else if (strncmp(request, "SetCut", 6) == 0) {
-
+	    
             //read new settings for a cut
             char name[256];
             sock->Recv(name, sizeof(name));
             TCutG *cut = (TCutG*)gManaHistosFolder->FindObjectAny(name);
-
+	    
             message->Reset(kMESS_OBJECT);
             sock->Recv(message);
             TCutG *newc = ((TCutG*) message->ReadObject(message->GetClass()));
-
+	    
             if (cut) {
-              cm_msg(MINFO, "root server thread",
-                     "changing cut %s", newc->GetName());
-              newc->TAttMarker::Copy( *cut);
-              newc->TAttFill::Copy( *cut);
-              newc->TAttLine::Copy( *cut);
-              newc->TNamed::Copy( *cut);
-              cut->Set( newc->GetN());
-              for (int i=0; i<cut->GetN(); ++i) {
-                cut->SetPoint(i, newc->GetX()[i], newc->GetY()[i]);
-              }
+	       cm_msg(MINFO, "root server thread",
+		      "changing cut %s", newc->GetName());
+	       newc->TAttMarker::Copy( *cut);
+	       newc->TAttFill::Copy( *cut);
+	       newc->TAttLine::Copy( *cut);
+	       newc->TNamed::Copy( *cut);
+	       cut->Set( newc->GetN());
+	       for (int i=0; i<cut->GetN(); ++i) {
+		  cut->SetPoint(i, newc->GetX()[i], newc->GetY()[i]);
+	       }
             } else {
-              cm_msg(MERROR, "root server thread",
-                     "ignoring receipt of unknown cut %s", newc->GetName());
+	       cm_msg(MERROR, "root server thread",
+		      "ignoring receipt of unknown cut %s", newc->GetName());
             }
             delete newc;
-
+	    
          } else
-            printf("SocketServer: Received unknown command \"%s\"\n", request);
+	   printf("SocketServer: Received unknown command \"%s\"\n", request);
       }
    } while (1);
-
+   
    return THREADRETURN;
 }
 
