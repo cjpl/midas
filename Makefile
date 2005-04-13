@@ -33,11 +33,11 @@ endif
 
 all: $(OUTNAME)
 
-$(OUTNAME): mscb.o msc.o rpc.o
-	$(CC) $(FLAGS) mscb.o msc.o rpc.o -o $(OUTNAME) $(LIBS)
+$(OUTNAME): mscb.o msc.o mscbrpc.o
+	$(CC) $(FLAGS) mscb.o msc.o mscbrpc.o -o $(OUTNAME) $(LIBS)
 
-rpc.o: rpc.c rpc.h
-	$(CC) $(FLAGS) -c rpc.c
+mscbrpc.o: mscbrpc.c mscbrpc.h
+	$(CC) $(FLAGS) -c mscbrpc.c
 
 mscb.o: mscb.c mscb.h
 	$(CC) $(FLAGS) -c mscb.c 
