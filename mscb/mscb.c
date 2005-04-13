@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus communication functions
 
   $Log$
+  Revision 1.91  2005/04/13 14:54:43  ritt
+  Added IDENT routine
+
   Revision 1.90  2005/04/01 10:51:47  ritt
   Fixed wrong CRC
 
@@ -324,7 +327,7 @@
 
 #include <stdio.h>
 #include "mscb.h"
-#include "rpc.h"
+#include "mscbrpc.h"
 
 /*------------------------------------------------------------------*/
 
@@ -1756,7 +1759,7 @@ int mscb_init(char *device, int bufsize, char *password, int debug)
 
 \********************************************************************/
 {
-   int index, i, n;
+   int index, usb_index, found, i, n;
    int status;
    char host[256], port[256], dev3[256], remote_device[256];
    unsigned char buf[64];
@@ -1857,9 +1860,22 @@ int mscb_init(char *device, int bufsize, char *password, int debug)
 
    if (mscb_fd[index].type == MSCB_TYPE_USB) {
 
-      status = musb_init(atoi(device + 3), &mscb_fd[index].hr, &mscb_fd[index].hw);
-      if (status < 0)
-         return status;
+      for (usb_index = found = 0 ; usb_index < 127 ; usb_index ++) {
+         status = musb_init(usb_index, &mscb_fd[index].hr, &mscb_fd[index].hw);
+         if (status < 0)
+            return status;
+
+         /* check if it's a subm_250 */
+         buf[0] = 0;
+         msend_usb(mscb_fd[index].hw, buf, 1);
+
+         i = mrecv_usb(mscb_fd[index].hr, buf, sizeof(buf));
+         if (strcmp(buf, "SUBM_250 V2.0") == 0)
+            if (found++ == atoi(device + 3))
+               break;
+
+         musb_close(mscb_fd[index].hr, mscb_fd[index].hw);
+      }
 
       /* linux needs some time to start-up ...??? */
       for (i = 0; i < 10; i++) {
