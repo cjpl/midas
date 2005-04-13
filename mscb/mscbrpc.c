@@ -6,6 +6,9 @@
   Contents:     List of MSCB RPC functions with parameters
 
   $Log$
+  Revision 1.1  2005/04/13 14:25:12  ritt
+  Renamed files
+
   Revision 1.30  2005/03/21 15:33:54  ritt
   Added missing #includes
 

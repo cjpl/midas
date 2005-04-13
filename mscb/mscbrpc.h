@@ -6,6 +6,9 @@
   Contents:     Header fiel for MSCB RPC funcions
 
   $Log$
+  Revision 1.1  2005/04/13 14:25:12  ritt
+  Renamed files
+
   Revision 1.20  2005/03/16 14:11:51  ritt
   Added ethernet protocol
 
@@ -135,7 +138,6 @@ typedef struct {
    unsigned short flags;
    int n;
 } RPC_PARAM;
-
 
 typedef struct {
    int id;
