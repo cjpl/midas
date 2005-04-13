@@ -7,6 +7,9 @@
                 SUBM250 running on Cygnal C8051F320
 
   $Log$
+  Revision 1.11  2005/04/13 14:24:57  ritt
+  Added INDENT command
+
   Revision 1.10  2005/03/21 13:16:05  ritt
   Added submaster software version
 
@@ -47,6 +50,8 @@
 #include "usb.h"
 
 #define VERSION 0x20  // used for PC-Submaster communication
+
+#define IDENT_STR "SUBM_250 V2.0"
 
 /*------------------------------------------------------------------*/
 
@@ -353,6 +358,14 @@ void main(void)
 
          /* signal incoming data */
          led_blink(0, 1, 50);
+
+         /* check for ident command */
+         if (n_usb_rx == 1 && usb_rx_buf[0] == 0) {
+            usb_send(IDENT_STR, strlen(IDENT_STR)+1);
+            n_usb_rx = 0;
+            continue;
+         }
+
 
          flags = usb_rx_buf[0];
          n_rs485_tx = n_usb_rx;
