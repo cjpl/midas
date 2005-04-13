@@ -6,6 +6,9 @@
   Contents:     Command-line interface for the Midas Slow Control Bus
 
   $Log$
+  Revision 1.82  2005/04/13 14:54:53  ritt
+  Changed rpc.x to mscbrpc.x
+
   Revision 1.81  2005/04/01 10:51:27  ritt
   Added repeat mode for writing stings
 
@@ -273,7 +276,7 @@
 #include <fcntl.h>
 #include <time.h>
 #include "mscb.h"
-#include "rpc.h"
+#include "mscbrpc.h"
 
 /*------------------------------------------------------------------*/
 

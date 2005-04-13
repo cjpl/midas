@@ -6,6 +6,9 @@
   Contents:     List of MSCB RPC functions with parameters
 
   $Log$
+  Revision 1.2  2005/04/13 14:54:53  ritt
+  Changed rpc.x to mscbrpc.x
+
   Revision 1.1  2005/04/13 14:25:12  ritt
   Renamed files
 
@@ -132,7 +135,7 @@
 
 #include <stdio.h>
 #include "mscb.h"
-#include "rpc.h"
+#include "mscbrpc.h"
 
 typedef int INT;
 
