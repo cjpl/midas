@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus communication functions
 
   $Log$
+  Revision 1.92  2005/04/14 07:59:08  ritt
+  Added IDENT to device selection
+
   Revision 1.91  2005/04/13 14:54:43  ritt
   Added IDENT routine
 
@@ -3977,8 +3980,9 @@ int mscb_select_device(char *device, int size, int select)
 
 \********************************************************************/
 {
-   char list[10][256], str[256];
-   int status, i, n, index, error_code;
+   char list[10][256], str[256], buf[64];
+   int status, usb_index, found, i, n, index, error_code;
+   int fdr, fdw;
 
    n = 0;
    *device = 0;
@@ -3993,12 +3997,20 @@ int mscb_select_device(char *device, int size, int select)
       return -1;
 
    /* check USB devices */
-   for (i = 0; i < 127; i++) {
-      status = musb_init(i, NULL, NULL);
-      if (status == 0)
-         sprintf(list[n++], "usb%d", i);
-      else
+   for (usb_index = found = 0 ; usb_index < 127 ; usb_index ++) {
+      status = musb_init(usb_index, &fdr, &fdw);
+      if (status < 0)
          break;
+
+      /* check if it's a subm_250 */
+      buf[0] = 0;
+      msend_usb(fdw, buf, 1);
+
+      i = mrecv_usb(fdr, buf, sizeof(buf));
+      if (strcmp(buf, "SUBM_250 V2.0") == 0)
+         sprintf(list[n++], "usb%d", found++);
+
+      musb_close(fdr, fdw);
    }
 
    /* check LPT devices */
