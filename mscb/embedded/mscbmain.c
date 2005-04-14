@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol main program
 
   $Log$
+  Revision 1.63  2005/04/14 10:19:42  ritt
+  Removed flash_param=0 in main looop
+
   Revision 1.62  2005/03/21 10:56:02  ritt
   Removed ADuC code
 
@@ -783,8 +786,6 @@ void interprete(void)
       break;
 
    case CMD_SET_ADDR:
-      led_blink(_cur_sub_addr, 1, 50);
-
       /* set address in RAM */
       sys_info.node_addr = *((unsigned int *) (in_buf + 1));
       sys_info.group_addr = *((unsigned int *) (in_buf + 3));
@@ -795,8 +796,6 @@ void interprete(void)
       break;
 
    case (CMD_SET_ADDR | 0x07):
-      led_blink(_cur_sub_addr, 1, 50);
-
       /* set node name in RAM */
       for (i = 0; i < 16 && i < in_buf[1]; i++)
          sys_info.node_name[i] = in_buf[2 + i];
@@ -825,7 +824,6 @@ void interprete(void)
       break;
 
    case CMD_FLASH:
-      led_blink(_cur_sub_addr, 1, 50);
       flash_param = 1;
       break;
 
@@ -1438,9 +1436,11 @@ void yield(void)
    if (wrong_cpu)
       led_blink(0, 1, 30);
 
-   /* flash EEPROM if asked by interrupt routine, wait 5 sec
+   /* flash EEPROM if asked by interrupt routine, wait 3 sec
       after reboot (power might not be stable) */
    if (flash_param && flash_allowed) {
+      led_blink(_cur_sub_addr, 1, 50);
+
       flash_param = 0;
 
       /* reset watchdog counts */
@@ -1466,11 +1466,9 @@ void yield(void)
       upgrade();
    }
 
-   /* allow flash 5 sec after reboot */
-   if (time() > 500)
+   /* allow flash 3 sec after reboot */
+   if (time() > 300)
       flash_allowed = 1;
-      flash_program = 0;
-      flash_param = 0;
 
    if (reboot) {
 #ifdef CPU_C8051F120
