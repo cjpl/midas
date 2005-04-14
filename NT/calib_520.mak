@@ -36,7 +36,7 @@ ALL : ".\bin\calib_520.exe"
 CLEAN :
 	-@erase "$(INTDIR)\calib_520.obj"
 	-@erase "$(INTDIR)\mscb.obj"
-	-@erase "$(INTDIR)\rpc.obj"
+	-@erase "$(INTDIR)\mscbrpc.obj"
 	-@erase "$(INTDIR)\vc60.idb"
 	-@erase ".\bin\calib_520.exe"
 
@@ -86,7 +86,7 @@ LINK32_FLAGS=wsock32.lib /nologo /subsystem:console /incremental:no /pdb:"$(OUTD
 LINK32_OBJS= \
 	"$(INTDIR)\calib_520.obj" \
 	"$(INTDIR)\mscb.obj" \
-	"$(INTDIR)\rpc.obj"
+	"$(INTDIR)\mscbrpc.obj"
 
 ".\bin\calib_520.exe" : "$(OUTDIR)" $(DEF_FILE) $(LINK32_OBJS)
     $(LINK32) @<<
@@ -104,7 +104,7 @@ ALL : ".\bin\calib_520.exe"
 CLEAN :
 	-@erase "$(INTDIR)\calib_520.obj"
 	-@erase "$(INTDIR)\mscb.obj"
-	-@erase "$(INTDIR)\rpc.obj"
+	-@erase "$(INTDIR)\mscbrpc.obj"
 	-@erase "$(INTDIR)\vc60.idb"
 	-@erase "$(INTDIR)\vc60.pdb"
 	-@erase "$(OUTDIR)\calib_520.pdb"
@@ -157,7 +157,7 @@ LINK32_FLAGS=wsock32.lib /nologo /subsystem:console /incremental:yes /pdb:"$(OUT
 LINK32_OBJS= \
 	"$(INTDIR)\calib_520.obj" \
 	"$(INTDIR)\mscb.obj" \
-	"$(INTDIR)\rpc.obj"
+	"$(INTDIR)\mscbrpc.obj"
 
 ".\bin\calib_520.exe" : "$(OUTDIR)" $(DEF_FILE) $(LINK32_OBJS)
     $(LINK32) @<<
@@ -189,9 +189,9 @@ SOURCE=..\mscb\mscb.c
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=..\mscb\rpc.c
+SOURCE=..\mscb\mscbrpc.c
 
-"$(INTDIR)\rpc.obj" : $(SOURCE) "$(INTDIR)"
+"$(INTDIR)\mscbrpc.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
