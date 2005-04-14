@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol commands
 
   $Log$
+  Revision 1.55  2005/04/14 08:20:40  ritt
+  Version 2.1.0
+
   Revision 1.54  2005/03/21 10:56:02  ritt
   Removed ADuC code
 
@@ -466,7 +469,7 @@ sbit RS485_ENABLE = P0 ^ 7;
 
 /*---- MSCB commands -----------------------------------------------*/
 
-#define VERSION 0x20            // version 2.0
+#define VERSION 0x21            // version 2.0
 #define INTERCHAR_DELAY 20      // 20us between characters
 
 /* Version history:
