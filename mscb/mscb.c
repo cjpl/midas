@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus communication functions
 
   $Log$
+  Revision 1.93  2005/04/14 08:20:40  ritt
+  Version 2.1.0
+
   Revision 1.92  2005/04/14 07:59:08  ritt
   Added IDENT to device selection
 
@@ -283,8 +286,9 @@
 
 \********************************************************************/
 
-#define MSCB_LIBRARY_VERSION   "2.0.0"
-#define MSCB_PROTOCOL_VERSION  "2.0"
+#define MSCB_LIBRARY_VERSION   "2.1.0"
+#define MSCB_PROTOCOL_VERSION  "2.1"
+#define MSCB_VERSION_BIN       0x21
 
 #ifdef _MSC_VER                 // Windows includes
 
@@ -1873,7 +1877,7 @@ int mscb_init(char *device, int bufsize, char *password, int debug)
          msend_usb(mscb_fd[index].hw, buf, 1);
 
          i = mrecv_usb(mscb_fd[index].hr, buf, sizeof(buf));
-         if (strcmp(buf, "SUBM_250 V2.0") == 0)
+         if (strcmp(buf, "SUBM_250") == 0)
             if (found++ == atoi(device + 3))
                break;
 
@@ -1895,7 +1899,7 @@ int mscb_init(char *device, int bufsize, char *password, int debug)
          if (n == 2 && buf[0] == MCMD_ACK) {
             
             /* check version */
-            if (buf[1] < 0x20) 
+            if (buf[1] < MSCB_VERSION_BIN) 
                return EMSCB_SUBM_VERSION;
 
             break;
@@ -4007,7 +4011,7 @@ int mscb_select_device(char *device, int size, int select)
       msend_usb(fdw, buf, 1);
 
       i = mrecv_usb(fdr, buf, sizeof(buf));
-      if (strcmp(buf, "SUBM_250 V2.0") == 0)
+      if (strcmp(buf, "SUBM_250") == 0)
          sprintf(list[n++], "usb%d", found++);
 
       musb_close(fdr, fdw);
