@@ -9,6 +9,9 @@
                 for SCS-900 analog high precision I/O 
 
   $Log$
+  Revision 1.9  2005/04/14 10:19:09  ritt
+  Assume 2.5 DAC if ADC is 2.5V
+
   Revision 1.8  2005/03/08 12:41:38  ritt
   Version 1.9.0
 
@@ -330,13 +333,26 @@ void write_dac(unsigned char index) reentrant
         user_data.gdac[index];
 
    if (user_data.uni_dac) {
-      if (v < 0)
+      if (v < 0) {
+         user_data.dac[index] = 0;
          v = 0;
-  
-      if (v > 10)
-         v = 10;
+      }
 
-      d = v / 10 * 65535 + 0.5;
+      if (user_data.adc_25 == 0) {
+         if (v > 10) {
+            user_data.dac[index] = 10;
+            v = 10;
+         }
+   
+         d = v / 10 * 65535 + 0.5;
+      } else {
+         if (v > 2.5) {
+            user_data.dac[index] = 2.5;
+            v = 2.5;
+         }
+   
+         d = v / 2.5 * 65535 + 0.5;
+      }
    } else {
       
       if (v < -10)
