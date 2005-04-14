@@ -7,6 +7,9 @@
                 SUBM250 running on Cygnal C8051F320
 
   $Log$
+  Revision 1.12  2005/04/14 08:20:40  ritt
+  Version 2.1.0
+
   Revision 1.11  2005/04/13 14:24:57  ritt
   Added INDENT command
 
@@ -49,9 +52,7 @@
 #include "mscb.h"
 #include "usb.h"
 
-#define VERSION 0x20  // used for PC-Submaster communication
-
-#define IDENT_STR "SUBM_250 V2.0"
+#define IDENT_STR "SUBM_250"
 
 /*------------------------------------------------------------------*/
 
