@@ -35,7 +35,7 @@ ALL : ".\lib\mscb.dll"
 
 CLEAN :
 	-@erase "$(INTDIR)\mscb.obj"
-	-@erase "$(INTDIR)\rpc.obj"
+	-@erase "$(INTDIR)\mscbrpc.obj"
 	-@erase "$(INTDIR)\vc60.idb"
 	-@erase "$(OUTDIR)\mscb.exp"
 	-@erase "$(OUTDIR)\mscb.lib"
@@ -88,7 +88,7 @@ LINK32=link.exe
 LINK32_FLAGS=wsock32.lib /nologo /dll /incremental:no /pdb:"$(OUTDIR)\mscb.pdb" /machine:I386 /out:"\midas\nt\lib\mscb.dll" /implib:"$(OUTDIR)\mscb.lib" 
 LINK32_OBJS= \
 	"$(INTDIR)\mscb.obj" \
-	"$(INTDIR)\rpc.obj"
+	"$(INTDIR)\mscbrpc.obj"
 
 ".\lib\mscb.dll" : "$(OUTDIR)" $(DEF_FILE) $(LINK32_OBJS)
     $(LINK32) @<<
@@ -105,7 +105,7 @@ ALL : ".\lib\mscb.dll"
 
 CLEAN :
 	-@erase "$(INTDIR)\mscb.obj"
-	-@erase "$(INTDIR)\rpc.obj"
+	-@erase "$(INTDIR)\mscbrpc.obj"
 	-@erase "$(INTDIR)\vc60.idb"
 	-@erase "$(INTDIR)\vc60.pdb"
 	-@erase "$(OUTDIR)\mscb.exp"
@@ -161,7 +161,7 @@ LINK32=link.exe
 LINK32_FLAGS=wsock32.lib /nologo /dll /incremental:yes /pdb:"$(OUTDIR)\mscb.pdb" /debug /machine:I386 /out:"\midas\nt\lib\mscb.dll" /implib:"$(OUTDIR)\mscb.lib" /pdbtype:sept 
 LINK32_OBJS= \
 	"$(INTDIR)\mscb.obj" \
-	"$(INTDIR)\rpc.obj"
+	"$(INTDIR)\mscbrpc.obj"
 
 ".\lib\mscb.dll" : "$(OUTDIR)" $(DEF_FILE) $(LINK32_OBJS)
     $(LINK32) @<<
@@ -187,9 +187,9 @@ SOURCE=..\mscb\mscb.c
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
-SOURCE=..\mscb\rpc.c
+SOURCE=..\mscb\mscbrpc.c
 
-"$(INTDIR)\rpc.obj" : $(SOURCE) "$(INTDIR)"
+"$(INTDIR)\mscbrpc.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 

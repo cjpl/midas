@@ -36,7 +36,7 @@ ALL : ".\bin\msc.exe"
 CLEAN :
 	-@erase "$(INTDIR)\msc.obj"
 	-@erase "$(INTDIR)\mscb.obj"
-	-@erase "$(INTDIR)\rpc.obj"
+	-@erase "$(INTDIR)\mscbrpc.obj"
 	-@erase "$(INTDIR)\vc60.idb"
 	-@erase ".\bin\msc.exe"
 
@@ -86,7 +86,7 @@ LINK32_FLAGS=wsock32.lib /nologo /subsystem:console /incremental:no /pdb:"$(OUTD
 LINK32_OBJS= \
 	"$(INTDIR)\msc.obj" \
 	"$(INTDIR)\mscb.obj" \
-	"$(INTDIR)\rpc.obj"
+	"$(INTDIR)\mscbrpc.obj"
 
 ".\bin\msc.exe" : "$(OUTDIR)" $(DEF_FILE) $(LINK32_OBJS)
     $(LINK32) @<<
@@ -109,8 +109,8 @@ CLEAN :
 	-@erase "$(INTDIR)\msc.sbr"
 	-@erase "$(INTDIR)\mscb.obj"
 	-@erase "$(INTDIR)\mscb.sbr"
-	-@erase "$(INTDIR)\rpc.obj"
-	-@erase "$(INTDIR)\rpc.sbr"
+	-@erase "$(INTDIR)\mscbrpc.obj"
+	-@erase "$(INTDIR)\mscbrpc.sbr"
 	-@erase "$(INTDIR)\vc60.idb"
 	-@erase "$(INTDIR)\vc60.pdb"
 	-@erase "$(OUTDIR)\msc.bsc"
@@ -160,7 +160,7 @@ BSC32_FLAGS=/nologo /o"$(OUTDIR)\msc.bsc"
 BSC32_SBRS= \
 	"$(INTDIR)\msc.sbr" \
 	"$(INTDIR)\mscb.sbr" \
-	"$(INTDIR)\rpc.sbr"
+	"$(INTDIR)\mscbrpc.sbr"
 
 "$(OUTDIR)\msc.bsc" : "$(OUTDIR)" $(BSC32_SBRS)
     $(BSC32) @<<
@@ -172,7 +172,7 @@ LINK32_FLAGS=wsock32.lib /nologo /subsystem:console /incremental:yes /pdb:"$(OUT
 LINK32_OBJS= \
 	"$(INTDIR)\msc.obj" \
 	"$(INTDIR)\mscb.obj" \
-	"$(INTDIR)\rpc.obj"
+	"$(INTDIR)\mscbrpc.obj"
 
 ".\bin\msc.exe" : "$(OUTDIR)" $(DEF_FILE) $(LINK32_OBJS)
     $(LINK32) @<<
@@ -228,19 +228,19 @@ SOURCE=..\mscb\mscb.c
 
 !ENDIF 
 
-SOURCE=..\mscb\rpc.c
+SOURCE=..\mscb\mscbrpc.c
 
 !IF  "$(CFG)" == "msc - Win32 Release"
 
 
-"$(INTDIR)\rpc.obj" : $(SOURCE) "$(INTDIR)"
+"$(INTDIR)\mscbrpc.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
 !ELSEIF  "$(CFG)" == "msc - Win32 Debug"
 
 
-"$(INTDIR)\rpc.obj"	"$(INTDIR)\rpc.sbr" : $(SOURCE) "$(INTDIR)"
+"$(INTDIR)\mscbrpc.obj"	"$(INTDIR)\mscbrpc.sbr" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
