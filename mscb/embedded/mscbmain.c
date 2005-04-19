@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol main program
 
   $Log$
+  Revision 1.65  2005/04/19 14:59:19  ritt
+  Protect upgrade() via _flkey
+
   Revision 1.64  2005/04/19 09:50:21  ritt
   Do not use case() since it calls C library in upgrade
 
@@ -428,6 +431,7 @@ void setup(void)
    configured = 1;
    flash_allowed = 0;
    wrong_cpu = 0;
+   _flkey = 0;
 
    RS485_ENABLE = 0;
    i_in = i_out = n_out = 0;
@@ -797,6 +801,7 @@ void interprete(void)
 
       /* copy address to EEPROM */
       flash_param = 1;
+      _flkey = 0xF1;
 
       break;
 
@@ -807,6 +812,7 @@ void interprete(void)
 
       /* copy address to EEPROM */
       flash_param = 1;
+      _flkey = 0xF1;
 
       break;
 
@@ -825,11 +831,13 @@ void interprete(void)
 
    case CMD_UPGRADE:
       flash_program = 1;
+      _flkey = 0xF1;
       /* acknowledge gets sent from upgrade() routine */
       break;
 
    case CMD_FLASH:
       flash_param = 1;
+      _flkey = 0xF1;
       break;
 
    case CMD_ECHO:
@@ -1130,6 +1138,9 @@ void upgrade()
    unsigned char xdata *pw;
    unsigned char code *pr;
 
+   if (_flkey != 0xF1)
+      return;
+
    /* disable all interrupts */
    EA = 0;
 
@@ -1232,7 +1243,7 @@ receive_cmd:
    
 #if defined(CPU_C8051F310)
             FLKEY = 0xA5;          // write flash key code
-            FLKEY = 0xF1;
+            FLKEY = _flkey;
 #endif
             
             *pw = 0;
@@ -1310,7 +1321,7 @@ erase_ok:
 
 #if defined(CPU_C8051F310)
             FLKEY = 0xA5;          // write flash key code
-            FLKEY = 0xF1;
+            FLKEY = _flkey;
 #endif
             /* flash byte */
             *pw++ = SBUF0;
@@ -1404,6 +1415,7 @@ erase_ok:
    } while (cmd != UCMD_RETURN);
 
 
+   _flkey = 0;
    EA = 1;                      // re-enable interrupts
 }
 
@@ -1449,7 +1461,6 @@ void yield(void)
       /* reset watchdog counts */
       sys_info.wd_counter = 0;
 
-      _flkey = 0xF1;
       eeprom_flash();
 	   configured = 1;
    }
