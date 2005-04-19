@@ -9,6 +9,9 @@
                 for HVR_300 High Voltage Regulator
 
   $Log$
+  Revision 1.2  2005/04/19 15:00:37  ritt
+  Implemented hardware trip
+
   Revision 1.1  2005/02/22 13:20:18  ritt
   Initial revision
 
@@ -52,19 +55,27 @@ sbit JU0 = P3 ^ 4;              // negative module if forced to zero
 sbit JU1 = P3 ^ 2;              // low current module if forced to zero
 sbit JU2 = P3 ^ 1;
 
+/* geographic address */
+sbit GA_A0 = P0 ^ 1;            // 0=top, 1=bottom
+sbit GA_A1 = P0 ^ 0;
+sbit GA_A2 = P0 ^ 3;
+sbit GA_A3 = P0 ^ 2;
+sbit GA_A4 = P2 ^ 1;
+sbit GA_A5 = P2 ^ 0;
+
 /* AD7718 pins */
-sbit ADC_NRES = P2 ^ 0;         // !Reset
-sbit ADC_SCLK = P1 ^ 6;         // Serial Clock
-sbit ADC_NCS  = P1 ^ 4;         // !Chip select
+sbit ADC_NRES = P1 ^ 7;         // !Reset
+sbit ADC_SCLK = P1 ^ 5;         // Serial Clock
+sbit ADC_NCS  = P1 ^ 3;         // !Chip select
 sbit ADC_NRDY = P1 ^ 0;         // !Ready
 sbit ADC_DOUT = P1 ^ 1;         // Data out
-sbit ADC_DIN  = P1 ^ 5;         // Data in
+sbit ADC_DIN  = P1 ^ 4;         // Data in
 
 /* LTC2600 pins */
-sbit DAC_NCS  = P1 ^ 3;         // !Chip select
-sbit DAC_SCK  = P1 ^ 6;         // Serial Clock
-sbit DAC_CLR  = P1 ^ 7;         // Clear
-sbit DAC_DIN  = P1 ^ 5;         // Data in
+sbit DAC_NCS  = P1 ^ 2;         // !Chip select
+sbit DAC_SCK  = P1 ^ 5;         // Serial Clock
+sbit DAC_CLR  = P1 ^ 6;         // Clear
+sbit DAC_DIN  = P1 ^ 4;         // Data in
 
 /* AD7718 registers */
 #define REG_STATUS     0
@@ -176,8 +187,11 @@ extern SYS_INFO sys_info;
 void user_init(unsigned char init)
 {
    unsigned char i;
+   unsigned short address;
 
-   P2MDOUT = 0x00; // all output open drain
+   /* all output open drain */
+   P1MDOUT = 0x00;
+   P2MDOUT = 0x00;
 
    /* initial nonzero EEPROM values */
    if (init) {
@@ -215,8 +229,31 @@ void user_init(unsigned char init)
       t_ramp[i] = time();
    }
 
+   /* jumper and address bits as input */
    JU1 = 1;
    JU2 = 1;
+   GA_A0 = 1;
+   GA_A1 = 1;
+   GA_A2 = 1;
+   GA_A3 = 1;
+   GA_A4 = 1;
+   GA_A5 = 1;
+
+   /* read six address bits */
+   address = GA_A5;
+   address = (address << 1) | GA_A4;
+   address = (address << 1) | GA_A3;
+   address = (address << 1) | GA_A2;
+   address = (address << 1) | GA_A1;
+   address = (address << 1) | GA_A0;
+
+   /* each device has 5 channels */
+   address *= 5;                   
+   
+   /* keep high byte of node address */               
+   address |= (sys_info.node_addr & 0xFF00);
+
+   sys_info.node_addr = address;
 
    /* set-up DAC & ADC */
    DAC_CLR  = 1;
@@ -640,6 +677,14 @@ void set_current_limit(float value)
 
 unsigned char hardware_current_trip(unsigned char channel)
 {
+unsigned char d;
+
+   read_adc8(REG_IOCONTROL, &d);
+   
+   /* P2 of AD7718 should be low in case of trip */
+   if ((d & 2) > 0)
+      return 0;
+
    /* only check some time after setting/ramping */
 
    if (time() > t_ramp[channel] + 300) {
@@ -675,7 +720,7 @@ void reset_hardware_trip()
 void check_current(unsigned char channel)
 {
    /* do "software" check */
-   if (user_data[channel].i_meas > user_data[channel].i_limit ||    // "software" check
+   if (/*user_data[channel].i_meas > user_data[channel].i_limit ||*/    // "software" check
        hardware_current_trip(channel)) {                            // "hardware" check
 
       /* zero output voltage */
@@ -708,7 +753,7 @@ void check_current(unsigned char channel)
    }
 
    if (user_data[channel].status & STATUS_ILIMIT)
-      led_blink(channel, 3, 50);
+      led_blink(channel, 2, 100);
 }
 
 /*------------------------------------------------------------------*/
