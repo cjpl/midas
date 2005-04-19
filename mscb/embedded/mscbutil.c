@@ -6,6 +6,9 @@
   Contents:     Various utility functions for MSCB protocol
 
   $Log$
+  Revision 1.54  2005/04/19 14:59:46  ritt
+  Removed extra LED blink
+
   Revision 1.53  2005/04/01 10:52:19  ritt
   Initialize UART1 in 8 bit mode
 
@@ -1209,8 +1212,6 @@ void eeprom_flash(void)
 {
    unsigned char i, adr;
    unsigned short magic, offset;
-
-   led_blink(3, 3, 50);
 
    eeprom_erase();
 
