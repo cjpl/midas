@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol main program
 
   $Log$
+  Revision 1.64  2005/04/19 09:50:21  ritt
+  Do not use case() since it calls C library in upgrade
+
   Revision 1.63  2005/04/14 10:19:42  ritt
   Removed flash_param=0 in main looop
 
@@ -377,10 +380,10 @@ void setup(void)
 #endif
 
 #if defined(CPU_C8051F310)
-
 #ifdef USE_WATCHDOG
-   PCA0CPL4 = 255;              // 71.1 msec
+   PCA0CPL4 = 255;              // 32.1 msec
    PCA0MD = 0x40;               // enable watchdog
+   PCA0CPH4 = 0x00;             // reset watchdog
 #endif
 
    /* enable reset pin and watchdog reset */
@@ -620,6 +623,8 @@ static void send_byte(unsigned char d, unsigned char data * crc)
    SBUF0 = d;
    while (!TI0);
    TI0 = 0;
+
+   watchdog_refresh();
 }
 
 static void send_obuf(unsigned char n)
@@ -1156,9 +1161,10 @@ receive_cmd:
       cmd = SBUF0;
       RI0 = 0;
 
-      switch (cmd) {
+      /* cannot use case since it calls the C library */
 
-      case CMD_PING16:
+      if (cmd == CMD_PING16) {
+
          for (i=0 ; !RI0 && i < 5000 ; i++)
             DELAY_US(10);
          if (!RI0) 
@@ -1182,16 +1188,15 @@ receive_cmd:
          RS485_ENABLE = 1;
          SEND_BYTE(CMD_ACK);
          RS485_ENABLE = 0;
-         break;
 
-      case UCMD_ECHO:
+      } else if (cmd == UCMD_ECHO) {
+
          RS485_ENABLE = 1;
          SEND_BYTE(CMD_ACK);
          SEND_BYTE(0); // dummy CRC, needed by subm_250
          RS485_ENABLE = 0;
-         break;
 
-      case UCMD_ERASE:
+      } else if (cmd == UCMD_ERASE) {
 
          /* receive page */
          for (i=0 ; !RI0 && i < 5000 ; i++)
@@ -1203,7 +1208,7 @@ receive_cmd:
          RI0 = 0;
          crc = 0;
 
-         led_0 = page & 1;
+         led_0 = !(page & 1);
 
          /* erase page if not page of upgrade() function */
          if (page*512 < (unsigned int)upgrade && page*512 < EEPROM_OFFSET) {
@@ -1232,7 +1237,9 @@ receive_cmd:
             
             *pw = 0;
    
+#ifndef CPU_C8051F310
             FLSCL = (FLSCL & 0xF0);
+#endif
             PSCTL = 0x00;
 
          } else {
@@ -1252,9 +1259,8 @@ erase_ok:
          SEND_BYTE(crc);
          RS485_ENABLE = 0;
 
-         break;
+      } else if (cmd == UCMD_PROGRAM) {
 
-      case UCMD_PROGRAM:
          /* receive page */
          for (i=0 ; !RI0 && i < 5000 ; i++)
             DELAY_US(10);
@@ -1316,7 +1322,9 @@ erase_ok:
 #endif
 
          /* disable write */
+#ifndef CPU_C8051F310
          FLSCL = (FLSCL & 0xF0);
+#endif
          PSCTL = 0x00;
 
 #ifdef CPU_C8051F120
@@ -1327,9 +1335,8 @@ erase_ok:
          SEND_BYTE(CMD_ACK);
          SEND_BYTE(0);
          RS485_ENABLE = 0;
-         break;
 
-      case UCMD_VERIFY:
+      } else if (cmd == UCMD_VERIFY) {
 
          /* receive page */
          for (i=0 ; !RI0 && i < 5000 ; i++)
@@ -1352,9 +1359,7 @@ erase_ok:
          SEND_BYTE(crc);
          RS485_ENABLE = 0;
 
-         break;
-
-      case UCMD_READ:
+      } else if (cmd == UCMD_READ) {
 
          /* receive page */
          for (i=0 ; !RI0 && i < 5000 ; i++)
@@ -1387,15 +1392,13 @@ erase_ok:
 
          SEND_BYTE(crc);
          RS485_ENABLE = 0;
-         break;
 
-      case UCMD_REBOOT:
+      } else if (cmd == UCMD_REBOOT) {
+
 #ifdef CPU_C8051F120
          SFRPAGE = LEGACY_PAGE;
 #endif
          RSTSRC = 0x10;
-         break;
-
       }
 
    } while (cmd != UCMD_RETURN);
