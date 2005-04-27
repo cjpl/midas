@@ -7,6 +7,9 @@
                 linked with analyze.c to form a complete analyzer
 
   $Log$
+  Revision 1.139  2005/04/27 22:42:47  olchanski
+  do not create duplicated folders for analyzer modules
+
   Revision 1.138  2005/04/13 19:10:08  ritt
   Run source code though indent
 
@@ -1992,7 +1995,13 @@ INT mana_init()
 #ifdef USE_ROOT
             /* create histo subfolder for module */
             sprintf(str, "Histos for module %s", module[j]->name);
-            module[j]->histo_folder = gManaHistosFolder->AddFolder(module[j]->name, str);
+            module[j]->histo_folder = (TFolder*)gROOT->FindObjectAny(module[j]->name);
+            if (!module[j]->histo_folder)
+              module[j]->histo_folder = gManaHistosFolder->AddFolder(module[j]->name, str);
+            else if (strcmp(((TObject*)module[j]->histo_folder)->ClassName(),"TFolder")!=0) {
+              cm_msg(MERROR, "mana_init", "Fatal error: ROOT Object \"%s\" of class \"%s\" exists but it is not a TFolder, exiting!",module[j]->name,((TObject*)module[j]->histo_folder)->ClassName());
+              exit(1);
+            }
             gHistoFolderStack->Clear();
             gHistoFolderStack->Add((TObject *) module[j]->histo_folder);
 #endif
