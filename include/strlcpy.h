@@ -6,7 +6,7 @@
    Contents:     Header file for strlcpy.c
 
    $Log$
-   Revision 1.1  2005/05/02 10:24:49  ritt
+   Revision 1.1  2005/05/02 10:26:50  ritt
    *** empty log message ***
 
    Revision 1.1  2005/05/02 10:20:33  ritt
