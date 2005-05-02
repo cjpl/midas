@@ -7,7 +7,7 @@
                  strcpy and strcat, but which avoid buffer overflows
 
    $Log$
-   Revision 1.1  2005/05/02 10:24:46  ritt
+   Revision 1.2  2005/05/02 10:30:06  ritt
    *** empty log message ***
 
    Revision 1.1  2005/05/02 10:19:12  ritt
