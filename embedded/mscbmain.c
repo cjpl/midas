@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol main program
 
   $Log$
+  Revision 1.66  2005/05/02 10:50:12  ritt
+  Version 2.1.1
+
   Revision 1.65  2005/04/19 14:59:19  ritt
   Protect upgrade() via _flkey
 
@@ -13,7 +16,7 @@
   Do not use case() since it calls C library in upgrade
 
   Revision 1.63  2005/04/14 10:19:42  ritt
-  Removed flash_param=0 in main looop
+  Removed flash_param=0 in main loop
 
   Revision 1.62  2005/03/21 10:56:02  ritt
   Removed ADuC code

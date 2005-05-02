@@ -7,6 +7,9 @@
                 SUBM250 running on Cygnal C8051F320
 
   $Log$
+  Revision 1.2  2005/05/02 10:50:13  ritt
+  Version 2.1.1
+
   Revision 1.1  2004/03/04 14:38:23  midas
   Initial revision
 
@@ -1052,9 +1055,6 @@ BYTE SetInterface(PIF_STATUS pIfStatus)
          gEp2OutStatus.uMaxP = EP2_PACKET_SIZE;// Set maximum packet size
          gEp2OutStatus.bEp = EP2_OUT;     // Set endpoint number
          gEp2OutStatus.bEpState = EP_IDLE;// Set endpoint state
-
-         // Load first outgoing (IN) packet into FIFO
-//##!!!         BulkOrInterruptIn(&gEp1InStatus);
 
          UWRITE_BYTE(INDEX, 0);           // Return to index 0
 

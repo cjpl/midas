@@ -9,6 +9,9 @@
                 for HVR_300 High Voltage Regulator
 
   $Log$
+  Revision 1.3  2005/05/02 10:50:12  ritt
+  Version 2.1.1
+
   Revision 1.2  2005/04/19 15:00:37  ritt
   Implemented hardware trip
 
@@ -218,6 +221,8 @@ void user_init(unsigned char init)
    for (i=0 ; i<N_HV_CHN ; i++) {
       user_data[i].control = CONTROL_REGULATION;
       user_data[i].status = 0;
+      user_data[i].u_demand = 0;
+      user_data[i].trip_cnt = 0;
 
       /* check maximum ratings */
       if (user_data[i].u_limit > MAX_VOLTAGE)
@@ -302,7 +307,8 @@ void user_write(unsigned char index) reentrant
 
    /* check current limit */
    if (index == 9) {
-      if (user_data[cur_sub_addr()].i_limit > MAX_CURRENT)
+      if (user_data[cur_sub_addr()].i_limit > MAX_CURRENT &&
+          user_data[cur_sub_addr()].i_limit != 9999)
          user_data[cur_sub_addr()].i_limit = MAX_CURRENT;
 
       chn_bits[cur_sub_addr()] |= CUR_LIMIT_CHANGED;
@@ -660,14 +666,18 @@ void set_current_limit(float value)
 {
    unsigned short d;
 
-   /* "reverse" calibration */
-   value = (value - user_data[0].cur_offset) / user_data[0].cur_gain;
-
-   /* convert current to voltage */
-   value = value / DIVIDER * CUR_MULT * RCURR / 1E6;
-
-   /* convert to DAC units */
-   d = (unsigned short) ((value / 2.5 * 65536) + 0.5);
+   if (value == 9999)
+      d = 65535; /* disable current trip */
+   else {
+      /* "reverse" calibration */
+      value = (value - user_data[0].cur_offset) / user_data[0].cur_gain;
+   
+      /* convert current to voltage */
+      value = value / DIVIDER * CUR_MULT * RCURR / 1E6;
+   
+      /* convert to DAC units */
+      d = (unsigned short) ((value / 2.5 * 65535) + 0.5);
+   }
 
    /* write current dac */
    write_dac(5, d);
@@ -753,7 +763,7 @@ void check_current(unsigned char channel)
    }
 
    if (user_data[channel].status & STATUS_ILIMIT)
-      led_blink(channel, 2, 100);
+      led_blink(channel, 3, 100);
 }
 
 /*------------------------------------------------------------------*/
