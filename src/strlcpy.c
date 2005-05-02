@@ -7,6 +7,9 @@
                  strcpy and strcat, but which avoid buffer overflows
 
    $Log$
+   Revision 1.3  2005/05/02 10:50:42  ritt
+   Moved strlcpy/strlcat in separate C file
+
    Revision 1.2  2005/05/02 10:30:06  ritt
    *** empty log message ***
 
@@ -17,6 +20,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include "strlcpy.h"
 
 /*
 * Copy src to string dst of size siz.  At most siz-1 characters

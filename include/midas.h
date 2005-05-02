@@ -8,6 +8,9 @@
 
 
   $Log$
+  Revision 1.150  2005/05/02 10:50:41  ritt
+  Moved strlcpy/strlcat in separate C file
+
   Revision 1.149  2005/03/24 21:49:31  ritt
   Added xml functions
 
@@ -1992,10 +1995,6 @@ extern "C" {
    INT EXPRT cm_msg_retrieve(INT n_message, char *message, INT * buf_size);
 
    BOOL EXPRT equal_ustring(char *str1, char *str2);
-#ifndef HAVE_STRLCPY
-   INT EXPRT strlcpy(char *dst, const char *src, INT size);
-   INT EXPRT strlcat(char *dst, const char *src, INT size);
-#endif
 
    /*---- buffer manager ----*/
    INT EXPRT bm_open_buffer(char *buffer_name, INT buffer_size, INT * buffer_handle);
@@ -2267,6 +2266,11 @@ extern "C" {
 
    void EXPRT open_subfolder(char *name);
    void EXPRT close_subfolder();
+
+   /*---- functions in strlcpy.c ----*/
+   size_t EXPRT strlcpy(char *dst, const char *src, size_t size);
+   size_t EXPRT strlcat(char *dst, const char *src, size_t size);
+
 #ifdef __cplusplus
 }
 
