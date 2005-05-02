@@ -7,6 +7,9 @@
 #                Windows NT
 #
 #  $Log$
+#  Revision 1.13  2005/05/02 10:50:36  ritt
+#  Moved strlcpy/strlcat in separate C file
+#
 #  Revision 1.12  2005/03/29 08:34:09  ritt
 #  Get mxml from separate directory
 #
@@ -82,7 +85,8 @@ OBJS =  $(LIB_DIR)/midas.obj \
   $(LIB_DIR)/odb.obj \
   $(LIB_DIR)/ybos.obj \
   $(LIB_DIR)/ftplib.obj \
-  $(LIB_DIR)/mxml.obj
+  $(LIB_DIR)/mxml.obj \
+  $(LIB_DIR)/strlcpy.obj
 
 LIBRARY =   $(LIB_DIR)/midas.lib
 
@@ -161,7 +165,9 @@ $(LIB_DIR)/ybos.obj: $(SRC_DIR)/ybos.c $(INC_DIR)/msystem.h $(INC_DIR)/midas.h $
 $(LIB_DIR)/ftplib.obj: $(SRC_DIR)/ftplib.c $(INC_DIR)/msystem.h $(INC_DIR)/midas.h $(INC_DIR)/midasinc.h
 	$(CC) /c /DMIDAS_DLL $(CFLAGS) /Fo$(LIB_DIR)/ftplib.obj $(SRC_DIR)/ftplib.c
 $(LIB_DIR)/mxml.obj: $(MXML_DIR)/mxml.c $(INC_DIR)/msystem.h $(INC_DIR)/midas.h $(INC_DIR)/midasinc.h $(MXML_DIR)/mxml.h
-	$(CC) /c /DMIDAS_DLL /DHAVE_STRLCPY $(CFLAGS) /Fo$(LIB_DIR)/mxml.obj $(MXML_DIR)/mxml.c
+	$(CC) /c /DMIDAS_DLL $(CFLAGS) /Fo$(LIB_DIR)/mxml.obj $(MXML_DIR)/mxml.c
+$(LIB_DIR)/strlcpy.obj: $(SRC_DIR)/strlcpy.c $(INC_DIR)/strlcpy.h
+	$(CC) /c /DEXPORT_DLL $(CFLAGS) /Fo$(LIB_DIR)/strlcpy.obj $(SRC_DIR)/strlcpy.c
 
 # frontend + backend
 $(LIB_DIR)/mfe.obj: $(SRC_DIR)/mfe.c $(INC_DIR)/msystem.h $(INC_DIR)/midas.h $(INC_DIR)/midasinc.h $(INC_DIR)/mrpc.h
