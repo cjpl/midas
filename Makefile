@@ -6,6 +6,9 @@
 #  Contents:     Makefile for MIDAS binaries and examples under unix
 #
 #  $Log$
+#  Revision 1.69  2005/05/02 10:53:43  ritt
+#  Added strlcpy.c
+#
 #  Revision 1.68  2005/04/01 06:56:39  ritt
 #  Added include path for mxml.h
 #
@@ -454,7 +457,7 @@ endif
 
 OBJS =  $(LIB_DIR)/midas.o $(LIB_DIR)/system.o $(LIB_DIR)/mrpc.o \
 	$(LIB_DIR)/odb.o $(LIB_DIR)/ybos.o $(LIB_DIR)/ftplib.o \
-	$(LIB_DIR)/mxml.o
+	$(LIB_DIR)/mxml.o $(LIB_DIR)/strlcpy.o
 
 LIBNAME=$(LIB_DIR)/libmidas.a
 LIB    =$(LIBNAME)
@@ -597,7 +600,7 @@ $(LIB_DIR)/%.o:$(SRC_DIR)/%.c
 	$(CC) -c $(CFLAGS) $(OSFLAGS) -o $@ $<
 
 $(LIB_DIR)/mxml.o:$(MXML_DIR)/mxml.c
-	$(CC) -c $(CFLAGS) -DHAVE_STRLCPY $(OSFLAGS) -o $@ $(MXML_DIR)/mxml.c
+	$(CC) -c $(CFLAGS) $(OSFLAGS) -o $@ $(MXML_DIR)/mxml.c
 
 $(LIB_DIR)/midas.o: msystem.h midas.h midasinc.h mrpc.h
 $(LIB_DIR)/system.o: msystem.h midas.h midasinc.h mrpc.h
@@ -606,6 +609,7 @@ $(LIB_DIR)/odb.o: msystem.h midas.h midasinc.h mrpc.h
 $(LIB_DIR)/ybos.o: msystem.h midas.h midasinc.h mrpc.h
 $(LIB_DIR)/ftplib.o: msystem.h midas.h midasinc.h
 $(LIB_DIR)/mxml.o: msystem.h midas.h midasinc.h $(MXML_DIR)/mxml.h
+$(LIB_DIR)/strlcpy.o: strlcpy.h
 
 #
 # utilities
