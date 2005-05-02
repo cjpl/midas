@@ -14,7 +14,7 @@ File 2,7,<.\mscb.h><mscb.h> 0x0
 
 Options 1,0,0  // Target 'Target 1'
  Device (C8051F310)
- Vendor (Cygnal Integrated Products)
+ Vendor (Silicon Laboratories, Inc.)
  Cpu (IRAM(0-0xFF) XRAM(0-0x3FF) IROM(0-0x3FFF) CLOCK(25000000))
  FlashUt ()
  StupF ("LIB\STARTUP.A51" ("Standard 8051 Startup Code"))
@@ -113,7 +113,7 @@ Options 1,0,0  // Target 'Target 1'
   OPTDBG 2046,-1,()()()()()()()()()() (BIN\SiC8051F.dll)()()()
  FLASH1 { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }
  FLASH2 ()
- FLASH3 ("" ())
+ FLASH3 ()
 EndOpt
 
 Options 1,2,4  // File 'mscb.h'

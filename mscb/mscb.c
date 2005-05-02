@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus communication functions
 
   $Log$
+  Revision 1.94  2005/05/02 10:50:12  ritt
+  Version 2.1.1
+
   Revision 1.93  2005/04/14 08:20:40  ritt
   Version 2.1.0
 
@@ -286,7 +289,7 @@
 
 \********************************************************************/
 
-#define MSCB_LIBRARY_VERSION   "2.1.0"
+#define MSCB_LIBRARY_VERSION   "2.1.1"
 #define MSCB_PROTOCOL_VERSION  "2.1"
 #define MSCB_VERSION_BIN       0x21
 
@@ -3370,6 +3373,9 @@ int mscb_read(int fd, int adr, unsigned char index, void *data, int *size)
 {
    int i, n;
    unsigned char buf[256], crc;
+
+   if (*size > 256)
+      return MSCB_INVAL_PARAM;
 
    memset(data, 0, *size);
 
