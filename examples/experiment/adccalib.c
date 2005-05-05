@@ -12,6 +12,10 @@
                 and transferred to experim.h.
 
   $Log$
+  Revision 1.11  2005/05/05 19:19:50  olchanski
+  Change TH1F -> TH1D
+  Use the h1_book<TH1D> macro
+
   Revision 1.10  2004/09/23 19:22:49  midas
   Use new histo booking
 
@@ -56,7 +60,7 @@
 #include "analyzer.h"
 
 /* root includes */
-#include <TH1F.h>
+#include <TH1D.h>
 #include <TTree.h>
 
 /*-- Parameters ----------------------------------------------------*/
@@ -89,7 +93,7 @@ ANA_MODULE adc_calib_module = {
 
 /*-- module-local variables ----------------------------------------*/
 
-static TH1F *hAdcHists[N_ADC];
+static TH1D *hAdcHists[N_ADC];
 
 /*-- init routine --------------------------------------------------*/
 
@@ -110,7 +114,7 @@ INT adc_calib_init(void)
       sprintf(name, "CADC%02d", i);
       sprintf(title, "ADC %d", i);
 
-      hAdcHists[i] = H1_BOOK(name, title, ADC_N_BINS, ADC_X_LOW, ADC_X_HIGH);
+      hAdcHists[i] = h1_book<TH1D>(name, title, ADC_N_BINS, ADC_X_LOW, ADC_X_HIGH);
    }
 
    return SUCCESS;
