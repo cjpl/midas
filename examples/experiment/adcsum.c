@@ -10,6 +10,10 @@
                 in the ODB and transferred to experim.h.
 
   $Log$
+  Revision 1.13  2005/05/05 19:20:38  olchanski
+  Change TH1F -> TH1D
+  Use the h1_book<TH1D> macro
+
   Revision 1.12  2004/09/30 23:35:33  midas
   Added some simple tests
 
@@ -62,7 +66,7 @@
 #include "analyzer.h"
 
 /* root includes */
-#include <TH1F.h>
+#include <TH1D.h>
 
 #ifndef PI
 #define PI 3.14159265359
@@ -100,18 +104,18 @@ ANA_MODULE adc_summing_module = {
 
 /*-- Module-local variables-----------------------------------------*/
 
-static TH1F *hAdcSum, *hAdcAvg;
+static TH1D *hAdcSum, *hAdcAvg;
 
 /*-- init routine --------------------------------------------------*/
 
 INT adc_summing_init(void)
 {
    /* book ADC sum histo */
-   hAdcSum = H1_BOOK("ADCSUM", "ADC sum", 500, 0, 10000);
+   hAdcSum = h1_book<TH1D>("ADCSUM", "ADC sum", 500, 0, 10000);
 
    /* book ADC average in separate subfolder */
    open_subfolder("Average");
-   hAdcAvg = H1_BOOK("ADCAVG", "ADC average", 500, 0, 10000);
+   hAdcAvg = h1_book<TH1D>("ADCAVG", "ADC average", 500000, 0, 10000);
    close_subfolder();
 
    return SUCCESS;
