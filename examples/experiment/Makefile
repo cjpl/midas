@@ -6,6 +6,12 @@
 #  Contents:     Makefile for MIDAS example frontend and analyzer
 #
 #  $Log$
+#  Revision 1.23  2005/05/05 19:19:05  olchanski
+#  Changes:
+#  add "-m32" compiler switch to work on 64-bit linux
+#  add -rpath for the ROOT libraries
+#  change $(FFLAGS) to $(CFLAGS) when linking the analyzer (we use g++, not g77)
+#
 #  Revision 1.22  2003/12/12 17:40:29  midas
 #  Added experim.h dependency
 #
@@ -80,7 +86,7 @@
 # This is for Linux
 #
 OSFLAGS = -DOS_LINUX -Dextname
-CFLAGS = -g -O2 -Wall
+CFLAGS = -m32 -g -O2 -Wall
 LIBS = -lm -lz -lutil -lnsl -lpthread
 
 #-----------------------------------------
@@ -88,8 +94,8 @@ LIBS = -lm -lz -lutil -lnsl -lpthread
 #
 ifdef ROOTSYS
 ROOTCFLAGS := $(shell  $(ROOTSYS)/bin/root-config --cflags)
-ROOTCFLAGS += -DHAVE_ROOT
-ROOTLIBS   := $(shell  $(ROOTSYS)/bin/root-config --libs)
+ROOTCFLAGS += -DHAVE_ROOT -DUSE_ROOT
+ROOTLIBS   := $(shell  $(ROOTSYS)/bin/root-config --libs) -Wl,-rpath,$(ROOTSYS)/lib
 ROOTLIBS   += -lThread
 endif
 #-------------------------------------------------------------------
@@ -139,7 +145,7 @@ $(DRIVER).o: $(DRV_DIR)/$(DRIVER).c
 	$(CC) $(CFLAGS) $(OSFLAGS) -c -o $(DRIVER).o $(DRV_DIR)/$(DRIVER).c
 
 analyzer: $(LIB) $(LIB_DIR)/rmana.o analyzer.o $(MODULES)
-	$(CXX) $(FFLAGS) -o $@ $(LIB_DIR)/rmana.o analyzer.o $(MODULES) \
+	$(CXX) $(CFLAGS) -o $@ $(LIB_DIR)/rmana.o analyzer.o $(MODULES) \
 	$(LIB) $(LDFLAGS) $(ROOTLIBS) $(LIBS)
 
 %.o: %.c experim.h
