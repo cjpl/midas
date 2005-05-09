@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol main program
 
   $Log$
+  Revision 1.67  2005/05/09 09:09:50  ritt
+  Decreased power consumption of scs_210
+
   Revision 1.66  2005/05/02 10:50:12  ritt
   Version 2.1.1
 
@@ -324,6 +327,15 @@ void setup(void)
    XBR1 = 0x00;
    XBR2 = 0x44;
 
+#ifdef SCS_210 // run SCS_210 at 12.25 MHz
+   /* Select internal quartz oscillator */
+   SFRPAGE   = LEGACY_PAGE;
+   FLSCL     = 0x00;            // set flash read time for <25 MHz
+
+   SFRPAGE   = CONFIG_PAGE;
+   OSCICN    = 0x83;            // divide by 1
+   CLKSEL    = 0x00;            // select internal oscillator
+#else          // run SCS_1001 at 98 MHz
    /* Select internal quartz oscillator */
    SFRPAGE   = LEGACY_PAGE;
    FLSCL     = 0xB0;            // set flash read time for 100 MHz
@@ -338,6 +350,7 @@ void setup(void)
    while ((PLL0CN & 0x10) == 0);
    OSCICN    = 0x83;
    CLKSEL    = 0x02;            // select PLL as sysclk src
+#endif
 
 #elif defined(CPU_C8051F020)
 
