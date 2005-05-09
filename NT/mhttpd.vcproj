@@ -247,6 +247,9 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath="..\..\mxml\strlcpy.c">
+			</File>
+			<File
 				RelativePath="..\src\system.c">
 				<FileConfiguration
 					Name="Debug|Win32">

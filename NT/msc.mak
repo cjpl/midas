@@ -37,6 +37,7 @@ CLEAN :
 	-@erase "$(INTDIR)\msc.obj"
 	-@erase "$(INTDIR)\mscb.obj"
 	-@erase "$(INTDIR)\mscbrpc.obj"
+	-@erase "$(INTDIR)\strlcpy.obj"
 	-@erase "$(INTDIR)\vc60.idb"
 	-@erase ".\bin\msc.exe"
 
@@ -44,7 +45,7 @@ CLEAN :
     if not exist "$(OUTDIR)/$(NULL)" mkdir "$(OUTDIR)"
 
 CPP=cl.exe
-CPP_PROJ=/nologo /ML /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\msc.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
+CPP_PROJ=/nologo /ML /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\msc.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c /I "\mxml"
 
 .c{$(INTDIR)}.obj::
    $(CPP) @<<
@@ -86,6 +87,7 @@ LINK32_FLAGS=wsock32.lib /nologo /subsystem:console /incremental:no /pdb:"$(OUTD
 LINK32_OBJS= \
 	"$(INTDIR)\msc.obj" \
 	"$(INTDIR)\mscb.obj" \
+	"$(INTDIR)\strlcpy.obj" \
 	"$(INTDIR)\mscbrpc.obj"
 
 ".\bin\msc.exe" : "$(OUTDIR)" $(DEF_FILE) $(LINK32_OBJS)
@@ -111,6 +113,8 @@ CLEAN :
 	-@erase "$(INTDIR)\mscb.sbr"
 	-@erase "$(INTDIR)\mscbrpc.obj"
 	-@erase "$(INTDIR)\mscbrpc.sbr"
+	-@erase "$(INTDIR)\strlcpy.obj"
+	-@erase "$(INTDIR)\strlcpy.sbr"
 	-@erase "$(INTDIR)\vc60.idb"
 	-@erase "$(INTDIR)\vc60.pdb"
 	-@erase "$(OUTDIR)\msc.bsc"
@@ -122,7 +126,7 @@ CLEAN :
     if not exist "$(OUTDIR)/$(NULL)" mkdir "$(OUTDIR)"
 
 CPP=cl.exe
-CPP_PROJ=/nologo /MLd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /FR"$(INTDIR)\\" /Fp"$(INTDIR)\msc.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
+CPP_PROJ=/nologo /MLd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /FR"$(INTDIR)\\" /Fp"$(INTDIR)\msc.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c /I "\mxml"
 
 .c{$(INTDIR)}.obj::
    $(CPP) @<<
@@ -160,6 +164,7 @@ BSC32_FLAGS=/nologo /o"$(OUTDIR)\msc.bsc"
 BSC32_SBRS= \
 	"$(INTDIR)\msc.sbr" \
 	"$(INTDIR)\mscb.sbr" \
+	"$(INTDIR)\strlcpy.sbr" \
 	"$(INTDIR)\mscbrpc.sbr"
 
 "$(OUTDIR)\msc.bsc" : "$(OUTDIR)" $(BSC32_SBRS)
@@ -172,6 +177,7 @@ LINK32_FLAGS=wsock32.lib /nologo /subsystem:console /incremental:yes /pdb:"$(OUT
 LINK32_OBJS= \
 	"$(INTDIR)\msc.obj" \
 	"$(INTDIR)\mscb.obj" \
+	"$(INTDIR)\strlcpy.obj" \
 	"$(INTDIR)\mscbrpc.obj"
 
 ".\bin\msc.exe" : "$(OUTDIR)" $(DEF_FILE) $(LINK32_OBJS)
@@ -241,6 +247,24 @@ SOURCE=..\mscb\mscbrpc.c
 
 
 "$(INTDIR)\mscbrpc.obj"	"$(INTDIR)\mscbrpc.sbr" : $(SOURCE) "$(INTDIR)"
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+
+!ENDIF 
+
+SOURCE=\mxml\strlcpy.c
+
+!IF  "$(CFG)" == "msc - Win32 Release"
+
+
+"$(INTDIR)\strlcpy.obj" : $(SOURCE) "$(INTDIR)"
+	$(CPP) $(CPP_PROJ) $(SOURCE)
+
+
+!ELSEIF  "$(CFG)" == "msc - Win32 Debug"
+
+
+"$(INTDIR)\strlcpy.obj"	"$(INTDIR)\strlcpy.sbr" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
