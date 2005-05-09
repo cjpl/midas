@@ -453,6 +453,9 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath="..\src\strlcpy.c">
+			</File>
+			<File
 				RelativePath="..\src\SYSTEM.C">
 				<FileConfiguration
 					Name="Release|Win32">

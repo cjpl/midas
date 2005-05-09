@@ -37,6 +37,7 @@ CLEAN :
 	-@erase "$(INTDIR)\calib_700.obj"
 	-@erase "$(INTDIR)\mscb.obj"
 	-@erase "$(INTDIR)\mscbrpc.obj"
+	-@erase "$(INTDIR)\strlcpy.obj"
 	-@erase "$(INTDIR)\vc60.idb"
 	-@erase ".\bin\calib_700.exe"
 
@@ -44,7 +45,7 @@ CLEAN :
     if not exist "$(OUTDIR)/$(NULL)" mkdir "$(OUTDIR)"
 
 CPP=cl.exe
-CPP_PROJ=/nologo /ML /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\calib_700.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
+CPP_PROJ=/nologo /ML /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\calib_700.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c /I "\mxml"
 
 .c{$(INTDIR)}.obj::
    $(CPP) @<<
@@ -86,6 +87,7 @@ LINK32_FLAGS=wsock32.lib /nologo /subsystem:console /incremental:no /pdb:"$(OUTD
 LINK32_OBJS= \
 	"$(INTDIR)\calib_700.obj" \
 	"$(INTDIR)\mscb.obj" \
+	"$(INTDIR)\strlcpy.obj" \
 	"$(INTDIR)\mscbrpc.obj"
 
 ".\bin\calib_700.exe" : "$(OUTDIR)" $(DEF_FILE) $(LINK32_OBJS)
@@ -105,6 +107,7 @@ CLEAN :
 	-@erase "$(INTDIR)\calib_700.obj"
 	-@erase "$(INTDIR)\mscb.obj"
 	-@erase "$(INTDIR)\mscbrpc.obj"
+	-@erase "$(INTDIR)\strlcpy.obj"
 	-@erase "$(INTDIR)\vc60.idb"
 	-@erase "$(INTDIR)\vc60.pdb"
 	-@erase "$(OUTDIR)\calib_700.pdb"
@@ -115,7 +118,7 @@ CLEAN :
     if not exist "$(OUTDIR)/$(NULL)" mkdir "$(OUTDIR)"
 
 CPP=cl.exe
-CPP_PROJ=/nologo /MLd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\calib_700.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
+CPP_PROJ=/nologo /MLd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /Fp"$(INTDIR)\calib_700.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c /I "\mxml"
 
 .c{$(INTDIR)}.obj::
    $(CPP) @<<
@@ -157,6 +160,7 @@ LINK32_FLAGS=wsock32.lib /nologo /subsystem:console /incremental:yes /pdb:"$(OUT
 LINK32_OBJS= \
 	"$(INTDIR)\calib_700.obj" \
 	"$(INTDIR)\mscb.obj" \
+	"$(INTDIR)\strlcpy.obj" \
 	"$(INTDIR)\mscbrpc.obj"
 
 ".\bin\calib_700.exe" : "$(OUTDIR)" $(DEF_FILE) $(LINK32_OBJS)
@@ -194,6 +198,10 @@ SOURCE=..\mscb\mscbrpc.c
 "$(INTDIR)\mscbrpc.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
+SOURCE=\mxml\strlcpy.c
+
+"$(INTDIR)\strlcpy.obj" : $(SOURCE) "$(INTDIR)"
+	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
 !ENDIF 

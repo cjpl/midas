@@ -246,7 +246,7 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\src\strlcpy.c">
+				RelativePath="..\..\mxml\strlcpy.c">
 			</File>
 			<File
 				RelativePath="..\src\SYSTEM.C">

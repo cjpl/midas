@@ -36,6 +36,7 @@ ALL : ".\lib\mscb.dll"
 CLEAN :
 	-@erase "$(INTDIR)\mscb.obj"
 	-@erase "$(INTDIR)\mscbrpc.obj"
+	-@erase "$(INTDIR)\strlcpy.obj"
 	-@erase "$(INTDIR)\vc60.idb"
 	-@erase "$(OUTDIR)\mscb.exp"
 	-@erase "$(OUTDIR)\mscb.lib"
@@ -45,7 +46,7 @@ CLEAN :
     if not exist "$(OUTDIR)/$(NULL)" mkdir "$(OUTDIR)"
 
 CPP=cl.exe
-CPP_PROJ=/nologo /MT /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "MSCB_EXPORTS" /Fp"$(INTDIR)\mscb.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
+CPP_PROJ=/nologo /MT /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "MSCB_EXPORTS" /Fp"$(INTDIR)\mscb.pch" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c /I "\mxml"
 
 .c{$(INTDIR)}.obj::
    $(CPP) @<<
@@ -88,7 +89,9 @@ LINK32=link.exe
 LINK32_FLAGS=wsock32.lib /nologo /dll /incremental:no /pdb:"$(OUTDIR)\mscb.pdb" /machine:I386 /out:"\midas\nt\lib\mscb.dll" /implib:"$(OUTDIR)\mscb.lib" 
 LINK32_OBJS= \
 	"$(INTDIR)\mscb.obj" \
-	"$(INTDIR)\mscbrpc.obj"
+	"$(INTDIR)\mscbrpc.obj" \
+	"$(INTDIR)\strlcpy.obj"
+
 
 ".\lib\mscb.dll" : "$(OUTDIR)" $(DEF_FILE) $(LINK32_OBJS)
     $(LINK32) @<<
@@ -106,6 +109,7 @@ ALL : ".\lib\mscb.dll"
 CLEAN :
 	-@erase "$(INTDIR)\mscb.obj"
 	-@erase "$(INTDIR)\mscbrpc.obj"
+	-@erase "$(INTDIR)\strlcpy.obj"
 	-@erase "$(INTDIR)\vc60.idb"
 	-@erase "$(INTDIR)\vc60.pdb"
 	-@erase "$(OUTDIR)\mscb.exp"
@@ -161,7 +165,9 @@ LINK32=link.exe
 LINK32_FLAGS=wsock32.lib /nologo /dll /incremental:yes /pdb:"$(OUTDIR)\mscb.pdb" /debug /machine:I386 /out:"\midas\nt\lib\mscb.dll" /implib:"$(OUTDIR)\mscb.lib" /pdbtype:sept 
 LINK32_OBJS= \
 	"$(INTDIR)\mscb.obj" \
-	"$(INTDIR)\mscbrpc.obj"
+	"$(INTDIR)\mscbrpc.obj" \
+	"$(INTDIR)\strlcpy.obj"
+
 
 ".\lib\mscb.dll" : "$(OUTDIR)" $(DEF_FILE) $(LINK32_OBJS)
     $(LINK32) @<<
@@ -192,6 +198,10 @@ SOURCE=..\mscb\mscbrpc.c
 "$(INTDIR)\mscbrpc.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
+SOURCE=\mxml\strlcpy.c
+
+"$(INTDIR)\strlcpy.obj" : $(SOURCE) "$(INTDIR)"
+	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 
 !ENDIF 
