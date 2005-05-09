@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol commands
 
   $Log$
+  Revision 1.56  2005/05/09 09:09:50  ritt
+  Decreased power consumption of scs_210
+
   Revision 1.55  2005/04/14 08:20:40  ritt
   Version 2.1.0
 
@@ -431,6 +434,15 @@ sbit RS485_ENABLE = P0 ^ 7;
    for (_i = (unsigned char) _us; _i > 0; _i--) \
       for (_j=2 ; _j>0 ; _j--) \
          _nop_(); \
+}
+#elif defined(SCS_210)
+#define DELAY_US(_us) { \
+   unsigned char _i,_j; \
+   for (_i = (unsigned char) _us; _i > 0; _i--) { \
+      _nop_(); \
+      for (_j=3 ; _j>0 ; _j--) \
+         _nop_(); \
+   } \
 }
 #elif defined(CPU_C8051F120)
 #define DELAY_US(_us) { \

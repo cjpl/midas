@@ -9,6 +9,9 @@
                 for SCS-210 RS232 node
 
   $Log$
+  Revision 1.16  2005/05/09 09:09:50  ritt
+  Decreased power consumption of scs_210
+
   Revision 1.15  2005/03/08 14:52:32  ritt
   Adapted SCS_210 to F121 CPU
 
@@ -174,6 +177,8 @@ unsigned char user_func(unsigned char *data_in, unsigned char *data_out)
 /* external watchdog */
 sbit EWD = P0 ^ 5;
 
+sbit led_0 = LED_0;
+
 void user_loop(void)
 {
    char c;
@@ -222,4 +227,7 @@ void user_loop(void)
 
    /* toggle external watchdog */
    EWD = !EWD;
+
+   /* go into idle mode, wakeup via UART or 100Hz interrupt */
+   PCON |= 0x01;
 }

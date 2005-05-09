@@ -6,6 +6,9 @@
   Contents:     Various utility functions for MSCB protocol
 
   $Log$
+  Revision 1.55  2005/05/09 09:09:50  ritt
+  Decreased power consumption of scs_210
+
   Revision 1.54  2005/04/19 14:59:46  ritt
   Removed extra LED blink
 
@@ -618,6 +621,29 @@ void uart_init(unsigned char port, unsigned char baud)
       0x100 - 52,   // 115200
       0x100 - 35,   // 172800  2% error
       0x100 - 17 }; // 345600  2% error
+#elif defined(SCS_210)             // 24.5 MHz
+   unsigned char code baud_table[] =  // UART0 via timer 2
+     {0x100 - 0,    //  N/A
+      0x100 - 0,    //  N/A
+      0x100 - 160,  //   9600  0.3% error
+      0x100 - 80,   //  19200  0.3% error
+      0x100 - 53,   //  28800  0.3% error
+      0x100 - 40,   //  38400  0.3% error
+      0x100 - 27,   //  57600  1.5% error
+      0x100 - 13,   // 115200  2.2% error
+      0x100 - 9,    // 172800  1.5% error
+      0x100 - 0 };  // N/A
+   unsigned char code baud_table1[] =  // UART1 via timer 1
+     {0x100 - 0,    //  N/A
+      0x100 - 212,  //   4800  0.3% error
+      0x100 - 106,  //   9600  0.3% error
+      0x100 - 53,   //  19200  0.3% error
+      0x100 - 35,   //  28800  1.3% error
+      0x100 - 27,   //  38400  1.6% error
+      0x100 - 18,   //  57600  1.6% error
+      0x100 - 9,    // 115200  1.6% error
+      0x100 - 6,    // 172800  1.6% error
+      0x100 - 3 };  // 345600  1.6% error
 #elif defined(CPU_C8051F120)       // 98 MHz
    unsigned char code baud_table[] =  // UART0 via timer 2
      {0x100 - 0,    //  N/A
@@ -711,6 +737,19 @@ void uart_init(unsigned char port, unsigned char baud)
       uart1_init_buffer();
 #endif
 
+#elif defined(SCS_210)             // 24.5 MHz
+      SFRPAGE = UART1_PAGE;
+      SCON1 = 0x50;                // Mode 1, 8 bit, receive enable
+
+      SFRPAGE = TIMER01_PAGE;
+      TMOD  = (TMOD & 0x0F)| 0x20; // Timer 1 8-bit counter with auto reload
+      CKCON = 0x00;                // use SYSCLK/12 (needed by timer 0)
+
+      TH1 = baud_table1[baud - 1];
+      TR1 = 1;                     // start timer 1
+
+      EIE2 |= 0x40;                // enable serial interrupt
+      EIP2 &= ~0x40;               // serial interrupt low priority
 #elif defined(CPU_C8051F120)       // 98 MHz
       SFRPAGE = UART1_PAGE;
       SCON1 = 0x50;                // Mode 1, 8 bit, receive enable
@@ -784,8 +823,11 @@ void sysclock_init(void)
 #endif
 
    TMOD = (TMOD & 0x0F) | 0x01; // 16-bit counter
-#if defined(CPU_C8051F120)
-   CKCON = 0x02;                // use SYSCLK/48
+#if defined(SCS_210)
+   CKCON = 0x00;                // use SYSCLK/12
+   TH0 = 0xAF;                  // load initial value (24.5 MHz SYSCLK)
+#elif defined(CPU_C8051F120)
+   CKCON = 0x02;                // use SYSCLK/48 (98 MHz SYSCLK)
    TH0 = 0xAF;                  // load initial value
 #elif defined(CPU_C8051F310)
    CKCON = 0x00;                // use SYSCLK/12
@@ -1020,7 +1062,11 @@ void delay_us(unsigned int us)
 
    if (us <= 250) {
       for (i = (unsigned char) us; i > 0; i--) {
-#if defined(CPU_C8051F120)
+#if defined(SCS_210)
+         _nop_();
+         for (j=3 ; j>0 ; j--)
+            _nop_();
+#elif defined(CPU_C8051F120)
          for (j=22 ; j>0 ; j--)
             _nop_();
 #elif defined(CPU_C8051F310)
