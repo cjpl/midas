@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus communication functions
 
   $Log$
+  Revision 1.95  2005/05/09 09:09:14  ritt
+  Moved strlcpy to \mxml
+
   Revision 1.94  2005/05/02 10:50:12  ritt
   Version 2.1.1
 
@@ -289,7 +292,7 @@
 
 \********************************************************************/
 
-#define MSCB_LIBRARY_VERSION   "2.1.1"
+#define MSCB_LIBRARY_VERSION   "2.1.2"
 #define MSCB_PROTOCOL_VERSION  "2.1"
 #define MSCB_VERSION_BIN       0x21
 
@@ -338,6 +341,7 @@
 #include <stdio.h>
 #include "mscb.h"
 #include "mscbrpc.h"
+#include "strlcpy.h"
 
 /*------------------------------------------------------------------*/
 
@@ -459,78 +463,6 @@ int kbhit()
    return (n > 0);
 }
 
-#endif
-
-/*---- strlcpy and strlcat to avoid buffer overflow ----------------*/
-
-#ifndef HAVE_STRLCPY
-
-/*
-* Copy src to string dst of size siz.  At most siz-1 characters
-* will be copied.  Always NUL terminates (unless size == 0).
-* Returns strlen(src); if retval >= siz, truncation occurred.
-*/
-size_t strlcpy(char *dst, const char *src, size_t size)
-{
-   char *d = dst;
-   const char *s = src;
-   size_t n = size;
-
-   /* Copy as many bytes as will fit */
-   if (n != 0 && --n != 0) {
-      do {
-         if ((*d++ = *s++) == 0)
-            break;
-      } while (--n != 0);
-   }
-
-   /* Not enough room in dst, add NUL and traverse rest of src */
-   if (n == 0) {
-      if (size != 0)
-         *d = '\0';             /* NUL-terminate dst */
-      while (*s++);
-   }
-
-   return (s - src - 1);        /* count does not include NUL */
-}
-
-/*
-* Appends src to string dst of size siz (unlike strncat, siz is the
-* full size of dst, not space left).  At most siz-1 characters
-* will be copied.  Always NUL terminates (unless size <= strlen(dst)).
-* Returns strlen(src) + MIN(size, strlen(initial dst)).
-* If retval >= size, truncation occurred.
-*/
-size_t strlcat(char *dst, const char *src, size_t size)
-{
-   char *d = dst;
-   const char *s = src;
-   size_t n = size;
-   size_t dlen;
-
-   /* Find the end of dst and adjust bytes left but don't go past end */
-   while (n-- != 0 && *d != '\0')
-      d++;
-   dlen = d - dst;
-   n = size - dlen;
-
-   if (n == 0)
-      return (dlen + strlen(s));
-   while (*s != '\0') {
-      if (n != 1) {
-         *d++ = *s;
-         n--;
-      }
-      s++;
-   }
-   *d = '\0';
-
-   return (dlen + (s - src));   /* count does not include NUL */
-}
-
-#else
-extern size_t strlcpy(char *dst, const char *src, size_t size);
-extern size_t strlcat(char *dst, const char *src, size_t size);
 #endif
 
 /*------------------------------------------------------------------*/
@@ -921,8 +853,8 @@ int mscb_out(int index, unsigned char *buffer, int len, int flags)
 
       if (i != len + 1)
          return MSCB_TIMEOUT;
-   } 
-   
+   }
+
    /*---- LPT code ----*/
 
    if (mscb_fd[index - 1].type == MSCB_TYPE_LPT) {
@@ -1003,7 +935,7 @@ int mscb_out(int index, unsigned char *buffer, int len, int flags)
          pp_wcontrol(index, LPT_STROBE, 0);
       }
    }
-   
+
    /*---- Ethernet code ----*/
 
    if (mscb_fd[index - 1].type == MSCB_TYPE_ETH) {
@@ -1605,7 +1537,7 @@ int musb_init(int index, int *fdr, int *fdw)
 	UInt16 vendor, product;
 	UInt8 numend;
 	int found = 0;
-	
+
 	printf("musb_init, index=%d!\n",index);
 
 	status = IORegistryCreateIterator(kIOMasterPortDefault,kIOUSBPlane,kIORegistryIterateRecursively,&iter);
@@ -1737,7 +1669,7 @@ int mscb_init(char *device, int bufsize, char *password, int debug)
                             usbx for USB connection
                             mscbxxx for Ethernet connection
 
-                            If device equals "", the function 
+                            If device equals "", the function
                             mscb_select_device is called which selects
                             the first available device or asks the user
                             which one to use.
@@ -1900,9 +1832,9 @@ int mscb_init(char *device, int bufsize, char *password, int debug)
          mscb_release(index + 1);
 
          if (n == 2 && buf[0] == MCMD_ACK) {
-            
+
             /* check version */
-            if (buf[1] < MSCB_VERSION_BIN) 
+            if (buf[1] < MSCB_VERSION_BIN)
                return EMSCB_SUBM_VERSION;
 
             break;
@@ -2019,7 +1951,7 @@ void mscb_get_device(int fd, char *device, int bufsize)
     int fd                  File descriptor obtained wiv mscb_init()
     int bufsize             Size of device string
     char *device            device name, "" if invalid fd
-                            
+
 \********************************************************************/
 {
    char str[256];
@@ -2032,7 +1964,7 @@ void mscb_get_device(int fd, char *device, int bufsize)
       return;
 
    if (mrpc_connected(fd)) {
-      mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_GET_DEVICE, 
+      mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_GET_DEVICE,
                 mscb_fd[fd - 1].remote_fd, str, sizeof(str));
    }
 
@@ -2791,7 +2723,7 @@ int mscb_write_block(int fd, int adr, unsigned char index, void *data, int size)
 
    for (i=0 ; i<1024 ; i++)
       buf[i] = RS485_FLAG_CMD;
-   
+
    i = msend_usb(mscb_fd[fd - 1].hw, buf, 1024);
    mscb_release(fd);
    return MSCB_SUCCESS;
@@ -2940,7 +2872,7 @@ int mscb_upload(int fd, int adr, char *buffer, int size, int debug)
             sscanf(line + 9 + i * 2, "%02x", &d);
             image[ofs + i] = d;
          }
-         
+
          flash_size += len;
          line = strchr(line, '\r') + 1;
          if (line && *line == '\n')
@@ -3016,7 +2948,7 @@ int mscb_upload(int fd, int adr, char *buffer, int size, int debug)
 
    /* erase pages up to 64k */
    for (page = 0; page < 128; page++) {
-      
+
       /* check if page contains data */
       if (!page_cont[page])
          continue;
@@ -3078,7 +3010,7 @@ prog_pages:
 
    /* program pages up to 64k */
    for (page = 0; page < protected_page; page++) {
-      
+
       /* check if page contains data */
       if (!page_cont[page])
          continue;
@@ -3236,7 +3168,7 @@ int mscb_verify(int fd, int adr, char *buffer, int size)
             sscanf(line + 9 + i * 2, "%02x", &d);
             image[ofs + i] = d;
          }
-         
+
          flash_size += len;
          line = strchr(line, '\r') + 1;
          if (line && *line == '\n')
@@ -3260,7 +3192,7 @@ int mscb_verify(int fd, int adr, char *buffer, int size)
    crc = crc8(buf, 1);
    buf[1] = crc;
    mscb_out(fd, buf, 2, RS485_FLAG_NO_ACK);
-   
+
    /* let main routine enter upgrade() */
    Sleep(500);
 
@@ -3282,7 +3214,7 @@ int mscb_verify(int fd, int adr, char *buffer, int size)
 
    /* compare pages up to 64k */
    for (page = 0; page < 128; page++) {
-      
+
       /* check if page contains data */
       for (i = 0; i < 512; i++)
          if (image[page * 512 + i] != 0xFF)
@@ -3319,7 +3251,7 @@ int mscb_verify(int fd, int adr, char *buffer, int size)
          for (j=0 ; j<32 ; j++) {
             if (buf[j+2] != image[page*512+subpage*32+j]) {
                n_error++;
-               printf("\nError at 0x%04X: file=0x%02X != remote=0x%02X", page*512+subpage*32+j, 
+               printf("\nError at 0x%04X: file=0x%02X != remote=0x%02X", page*512+subpage*32+j,
                   image[page*512+subpage*32+j], buf[j]);
             }
          }
@@ -4137,7 +4069,7 @@ int set_mac_address(int fd)
    cfg.eth_mac_addr[4] = 0xD0 | (n >> 8);
    cfg.eth_mac_addr[5] = n & 0xFF;
 
-   printf("MAC Address is 00-50-C2-46-%02X-%02X\n", 
+   printf("MAC Address is 00-50-C2-46-%02X-%02X\n",
            cfg.eth_mac_addr[4], cfg.eth_mac_addr[5]);
 
    printf("Enter optional password        : ");
@@ -4146,7 +4078,7 @@ int set_mac_address(int fd)
       printf("Password too long\n");
       return 0;
    }
-   while (strlen(str)>0 && 
+   while (strlen(str)>0 &&
            (str[strlen(str)-1] == '\r' || str[strlen(str)-1] == '\n'))
       str[strlen(str)-1] = 0;
    strcpy(cfg.password, str);
@@ -4160,9 +4092,9 @@ int set_mac_address(int fd)
    n = mscb_in(fd, buf, 2, 10000);
    if (n == 2 && buf[0] == MCMD_ACK) {
       printf("\nConfiguration successfully downloaded.\n");
-      return MSCB_SUCCESS;   
+      return MSCB_SUCCESS;
    }
-    
+
    printf("Error downloading configuration.\n");
 
    return 0;

@@ -7,6 +7,9 @@
 #                Windows NT
 #
 #  $Log$
+#  Revision 1.14  2005/05/09 09:10:42  ritt
+#  Moved strlcpy to \mxml
+#
 #  Revision 1.13  2005/05/02 10:50:36  ritt
 #  Moved strlcpy/strlcat in separate C file
 #
@@ -166,8 +169,8 @@ $(LIB_DIR)/ftplib.obj: $(SRC_DIR)/ftplib.c $(INC_DIR)/msystem.h $(INC_DIR)/midas
 	$(CC) /c /DMIDAS_DLL $(CFLAGS) /Fo$(LIB_DIR)/ftplib.obj $(SRC_DIR)/ftplib.c
 $(LIB_DIR)/mxml.obj: $(MXML_DIR)/mxml.c $(INC_DIR)/msystem.h $(INC_DIR)/midas.h $(INC_DIR)/midasinc.h $(MXML_DIR)/mxml.h
 	$(CC) /c /DMIDAS_DLL $(CFLAGS) /Fo$(LIB_DIR)/mxml.obj $(MXML_DIR)/mxml.c
-$(LIB_DIR)/strlcpy.obj: $(SRC_DIR)/strlcpy.c $(INC_DIR)/strlcpy.h
-	$(CC) /c /DEXPORT_DLL $(CFLAGS) /Fo$(LIB_DIR)/strlcpy.obj $(SRC_DIR)/strlcpy.c
+$(LIB_DIR)/strlcpy.obj: $(MXML_DIR)/strlcpy.c $(MXML_DIR)/strlcpy.h
+	$(CC) /c /DEXPORT_DLL $(CFLAGS) /Fo$(LIB_DIR)/strlcpy.obj $(MXML_DIR)/strlcpy.c
 
 # frontend + backend
 $(LIB_DIR)/mfe.obj: $(SRC_DIR)/mfe.c $(INC_DIR)/msystem.h $(INC_DIR)/midas.h $(INC_DIR)/midasinc.h $(INC_DIR)/mrpc.h

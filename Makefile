@@ -6,6 +6,9 @@
 #  Contents:     Makefile for MIDAS binaries and examples under unix
 #
 #  $Log$
+#  Revision 1.70  2005/05/09 09:10:39  ritt
+#  Moved strlcpy to \mxml
+#
 #  Revision 1.69  2005/05/02 10:53:43  ritt
 #  Added strlcpy.c
 #
@@ -602,6 +605,9 @@ $(LIB_DIR)/%.o:$(SRC_DIR)/%.c
 $(LIB_DIR)/mxml.o:$(MXML_DIR)/mxml.c
 	$(CC) -c $(CFLAGS) $(OSFLAGS) -o $@ $(MXML_DIR)/mxml.c
 
+$(LIB_DIR)/strlcpy.o:$(MXML_DIR)/strlcpy.c
+	$(CC) -c $(CFLAGS) $(OSFLAGS) -o $@ $(MXML_DIR)/strlcpy.c
+
 $(LIB_DIR)/midas.o: msystem.h midas.h midasinc.h mrpc.h
 $(LIB_DIR)/system.o: msystem.h midas.h midasinc.h mrpc.h
 $(LIB_DIR)/mrpc.o: msystem.h midas.h mrpc.h
@@ -609,7 +615,6 @@ $(LIB_DIR)/odb.o: msystem.h midas.h midasinc.h mrpc.h
 $(LIB_DIR)/ybos.o: msystem.h midas.h midasinc.h mrpc.h
 $(LIB_DIR)/ftplib.o: msystem.h midas.h midasinc.h
 $(LIB_DIR)/mxml.o: msystem.h midas.h midasinc.h $(MXML_DIR)/mxml.h
-$(LIB_DIR)/strlcpy.o: strlcpy.h
 
 #
 # utilities
