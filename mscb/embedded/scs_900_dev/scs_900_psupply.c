@@ -9,6 +9,9 @@
                 for SCS-900 single channel power supply (2A)
 
   $Log$
+  Revision 1.2  2005/05/12 13:55:15  ritt
+  Fixed regulation problems
+
   Revision 1.1  2005/04/15 12:35:51  ritt
   Initial revision
 
@@ -387,8 +390,6 @@ unsigned char adc_read()
 void user_write(unsigned char index) reentrant
 {
    if (index == 1) {
-      user_data.dac = user_data.demand;
-      write_dac();
       new_value = 1;
    }
 }
@@ -416,11 +417,11 @@ unsigned char user_func(unsigned char *data_in, unsigned char *data_out)
 void user_loop(void)
 {
    if (adc_read()) {
-      if (new_value)
+      if (new_value) {
          new_value = 0;
-      else {
+      } else {
          /* do correction */
-         user_data.dac += user_data.demand - user_data.adc;
+         user_data.dac += (user_data.demand - user_data.adc);
          write_dac();
       }
    }
