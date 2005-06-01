@@ -9,6 +9,9 @@
                 for PSI beamline scanner
 
   $Log$
+  Revision 1.2  2005/06/01 15:37:10  ritt
+  Fixed memory problem
+
   Revision 1.1  2004/12/21 10:55:29  midas
   Created subdirectory
 
@@ -28,7 +31,7 @@
 extern bit FREEZE_MODE;
 extern bit DEBUG_MODE;
 
-char code node_name[] = "Scanner";
+char code node_name[] = "BL Scanner";
 
 /* declare number of sub-addresses to framework */
 unsigned char idata _n_sub_addr = 1;
@@ -243,6 +246,7 @@ void adc_read(channel, float *d)
    for (i = 0; i < n; i++) {
       DISABLE_INTERRUPTS;
 
+      SFRPAGE = ADC0_PAGE;
       AD0INT = 0;
       AD0BUSY = 1;
       while (!AD0INT);          // wait until conversion ready, does NOT work with ADBUSY!
@@ -276,7 +280,7 @@ bit b0, b1, b2, b3;
 
 #define SHIFT SRCLK = 1; delay_us(1); SRCLK = 0; delay_us(1)
 
-unsigned char din[4];
+xdata unsigned char din[4];
 
 void sr_read()
 {
