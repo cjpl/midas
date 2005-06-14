@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus communication functions
 
   $Log$
+  Revision 1.96  2005/06/14 11:38:02  ritt
+  Revised MSCB adr to 16-bit consistently
+
   Revision 1.95  2005/05/09 09:09:14  ritt
   Moved strlcpy to \mxml
 
@@ -292,7 +295,7 @@
 
 \********************************************************************/
 
-#define MSCB_LIBRARY_VERSION   "2.1.2"
+#define MSCB_LIBRARY_VERSION   "2.1.3"
 #define MSCB_PROTOCOL_VERSION  "2.1"
 #define MSCB_VERSION_BIN       0x21
 
@@ -1717,7 +1720,7 @@ int mscb_init(char *device, int bufsize, char *password, int debug)
    /* set global debug flag */
    _debug_flag = (debug == 1);
 
-   debug_log("mscb_init( %s %d %s %d * %d)\n", device, bufsize, password, debug);
+   debug_log("mscb_init(device=%s,bufsize=%d,password=%s,debug=%d) ", device, bufsize, password, debug);
 
    /* clear cache */
    for (i = 0; i < n_cache; i++)
@@ -1757,6 +1760,7 @@ int mscb_init(char *device, int bufsize, char *password, int debug)
 
       sprintf(device, "%s:%s", host, remote_device);
 
+      debug_log("return %d\n", index + 1);
       return index + 1;
    }
 
@@ -1821,8 +1825,10 @@ int mscb_init(char *device, int bufsize, char *password, int debug)
 
       /* linux needs some time to start-up ...??? */
       for (i = 0; i < 10; i++) {
-         if (!mscb_lock(index + 1))
+         if (!mscb_lock(index + 1)) {
+            debug_log("return EMSCB_LOCKED\n");
             return EMSCB_LOCKED;
+         }
 
          /* check if submaster alive */
          buf[0] = MCMD_ECHO;
@@ -1834,15 +1840,19 @@ int mscb_init(char *device, int bufsize, char *password, int debug)
          if (n == 2 && buf[0] == MCMD_ACK) {
 
             /* check version */
-            if (buf[1] < MSCB_VERSION_BIN)
+            if (buf[1] < MSCB_VERSION_BIN) {
+               debug_log("return EMSCB_SUBM_VERSION\n");
                return EMSCB_SUBM_VERSION;
+            }
 
             break;
          }
       }
 
-      if (n != 2 || buf[0] != MCMD_ACK)
+      if (n != 2 || buf[0] != MCMD_ACK) {
+         debug_log("return EMSCB_COMM_ERROR\n");
          return EMSCB_COMM_ERROR;
+      }
    }
 
    if (mscb_fd[index].type == MSCB_TYPE_ETH) {
@@ -1851,11 +1861,14 @@ int mscb_init(char *device, int bufsize, char *password, int debug)
 
       if (mscb_fd[index].fd < 0) {
          mscb_fd[index].fd = 0;
+         debug_log("return EMSCB_RPC_ERROR\n");
          return EMSCB_RPC_ERROR;
       }
 
-      if (!mscb_lock(index + 1))
+      if (!mscb_lock(index + 1)) {
+         debug_log("return EMSCB_LOCKED\n");
          return EMSCB_LOCKED;
+      }
 
       /* authenticate */
       memset(buf, 0, sizeof(buf));
@@ -1871,17 +1884,21 @@ int mscb_init(char *device, int bufsize, char *password, int debug)
 
       if (n != 1 || (buf[0] != MCMD_ACK && buf[0] != 0xFF)) {
          mscb_exit(index + 1);
+         debug_log("return EMSCB_COMM_ERROR\n");
          return EMSCB_COMM_ERROR;
       }
 
       if (buf[0] == 0xFF) {
          mscb_exit(index + 1);
+         debug_log("return EMSCB_WRONG_PASSWORD\n");
          return EMSCB_WRONG_PASSWORD;
       }
 
+      debug_log("return %d\n", index + 1);
       return index + 1;
    }
 
+   debug_log("return %d\n", index + 1);
    return index + 1;
 }
 
@@ -2049,7 +2066,7 @@ void mscb_check(char *device, int size)
 
 /*------------------------------------------------------------------*/
 
-int mscb_addr(int fd, int cmd, int adr, int retry, int lock)
+int mscb_addr(int fd, int cmd, unsigned short adr, int retry, int lock)
 /********************************************************************\
 
   Routine: mscb_addr
@@ -2069,7 +2086,7 @@ int mscb_addr(int fd, int cmd, int adr, int retry, int lock)
                               MCMD_ADDR_GRP16
                               MCMD_PING16
 
-    int adr                 Node or group address
+    unsigned short adr      Node or group address
     int retry               Number of retries
     int lock                Lock MSCB if TRUE
 
@@ -2161,7 +2178,7 @@ int mscb_addr(int fd, int cmd, int adr, int retry, int lock)
 
 /*------------------------------------------------------------------*/
 
-int mscb_reboot(int fd, int adr)
+int mscb_reboot(int fd, unsigned short adr)
 /********************************************************************\
 
   Routine: mscb_reboot
@@ -2170,7 +2187,7 @@ int mscb_reboot(int fd, int adr)
 
   Input:
     int fd                  File descriptor for connection
-    int adr                 Node address
+    unsigned short adr      Node address
 
   Function value:
     MSCB_SUCCESS            Successful completion
@@ -2254,7 +2271,7 @@ int mscb_reset(int fd)
 
 /*------------------------------------------------------------------*/
 
-int mscb_ping(int fd, int adr)
+int mscb_ping(int fd, unsigned short adr)
 /********************************************************************\
 
   Routine: mscb_ping
@@ -2263,7 +2280,7 @@ int mscb_ping(int fd, int adr)
 
   Input:
     int fd                  File descriptor for connection
-    int adr                 Node address
+    unsigned short adr      Node address
 
   Output:
     none
@@ -2294,7 +2311,7 @@ int mscb_ping(int fd, int adr)
 
 /*------------------------------------------------------------------*/
 
-int mscb_info(int fd, int adr, MSCB_INFO * info)
+int mscb_info(int fd, unsigned short adr, MSCB_INFO * info)
 /********************************************************************\
 
   Routine: mscb_info
@@ -2303,7 +2320,7 @@ int mscb_info(int fd, int adr, MSCB_INFO * info)
 
   Input:
     int fd                  File descriptor for connection
-    int adr                 Node address
+    unsigned short adr      Node address
 
   Output:
     MSCB_INFO *info         Info structure defined in mscb.h
@@ -2358,7 +2375,7 @@ int mscb_info(int fd, int adr, MSCB_INFO * info)
 
 /*------------------------------------------------------------------*/
 
-int mscb_info_variable(int fd, int adr, int index, MSCB_INFO_VAR * info)
+int mscb_info_variable(int fd, unsigned short adr, unsigned char index, MSCB_INFO_VAR * info)
 /********************************************************************\
 
   Routine: mscb_info_variable
@@ -2367,7 +2384,7 @@ int mscb_info_variable(int fd, int adr, int index, MSCB_INFO_VAR * info)
 
   Input:
     int fd                  File descriptor for connection
-    int adr                 Node address
+    unsigned short adr      Node address
     int index               Variable index 0..255
 
   Output:
@@ -2422,7 +2439,7 @@ int mscb_info_variable(int fd, int adr, int index, MSCB_INFO_VAR * info)
 
 /*------------------------------------------------------------------*/
 
-int mscb_set_addr(int fd, int adr, int node, int group)
+int mscb_set_addr(int fd, unsigned short adr, unsigned short node, unsigned short group)
 /********************************************************************\
 
   Routine: mscb_set_addr
@@ -2431,9 +2448,9 @@ int mscb_set_addr(int fd, int adr, int node, int group)
 
   Input:
     int fd                  File descriptor for connection
-    int adr                 Node address
-    int node                16-bit node address
-    int group               16-bit group address
+    unsigned short adr      Node address
+    unsigned short node     16-bit node address
+    unsigned short group    16-bit group address
 
   Function value:
     MSCB_SUCCESS            Successful completion
@@ -2480,7 +2497,7 @@ int mscb_set_addr(int fd, int adr, int node, int group)
 
 /*------------------------------------------------------------------*/
 
-int mscb_set_name(int fd, int adr, char *name)
+int mscb_set_name(int fd, unsigned short adr, char *name)
 /********************************************************************\
 
   Routine: mscb_set_name
@@ -2489,7 +2506,7 @@ int mscb_set_name(int fd, int adr, char *name)
 
   Input:
     int fd                  File descriptor for connection
-    int adr                 Node address
+    unsigned short adr      Node address
     char *name              New node name, up to 16 characters
 
   Function value:
@@ -2534,7 +2551,7 @@ int mscb_set_name(int fd, int adr, char *name)
 
 /*------------------------------------------------------------------*/
 
-int mscb_write_group(int fd, int adr, unsigned char index, void *data, int size)
+int mscb_write_group(int fd, unsigned short adr, unsigned char index, void *data, int size)
 /********************************************************************\
 
   Routine: mscb_write_group
@@ -2543,7 +2560,7 @@ int mscb_write_group(int fd, int adr, unsigned char index, void *data, int size)
 
   Input:
     int fd                  File descriptor for connection
-    int adr                 Group address
+    unsigned short adr      group address
     unsigned char index     Variable index 0..255
     unsigned int  data      Data to send
     int size                Data size in bytes 1..4 for byte, word,
@@ -2593,7 +2610,7 @@ int mscb_write_group(int fd, int adr, unsigned char index, void *data, int size)
 
 /*------------------------------------------------------------------*/
 
-int mscb_write(int fd, int adr, unsigned char index, void *data, int size)
+int mscb_write(int fd, unsigned short adr, unsigned char index, void *data, int size)
 /********************************************************************\
 
   Routine: mscb_write
@@ -2602,7 +2619,7 @@ int mscb_write(int fd, int adr, unsigned char index, void *data, int size)
 
   Input:
     int fd                  File descriptor for connection
-    int adr                 Node address
+    unsigned short adr      Node address
     unsigned char index     Variable index 0..255
     void *data              Data to send
     int size                Data size in bytes 1..4 for byte, word,
@@ -2621,17 +2638,32 @@ int mscb_write(int fd, int adr, unsigned char index, void *data, int size)
    unsigned char buf[256], crc, ack[2];
    unsigned char *d;
 
-   if (fd > MSCB_MAX_FD || fd < 1 || !mscb_fd[fd - 1].type)
+   for (i=0 ; i<size && ((char *)data)[i] ; i++)
+      if (!isascii(((char *)data)[i]))
+         break;
+
+   if (i < size && ((char *)data)[i])
+      debug_log("mscb_write(fd=%d,adr=%d,index=%d,data=%p,size=%d) ", fd, adr, index, data, size);
+   else
+      debug_log("mscb_write(fd=%d,adr=%d,index=%d,data=\"%s\",size=%d) ", fd, adr, index, (char *)data, size);
+
+   if (fd > MSCB_MAX_FD || fd < 1 || !mscb_fd[fd - 1].type) {
+      debug_log("return MSCB_INVAL_PARAM\n");
       return MSCB_INVAL_PARAM;
+   }
 
    if (mrpc_connected(fd))
       return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_WRITE, mscb_fd[fd - 1].remote_fd, adr, index, data, size);
 
-   if (size < 1)
+   if (size < 1) {
+      debug_log("return MSCB_INVAL_PARAM\n");
       return MSCB_INVAL_PARAM;
+   }
 
-   if (mscb_lock(fd) != MSCB_SUCCESS)
+   if (mscb_lock(fd) != MSCB_SUCCESS) {
+      debug_log("return MSCB_MUTEX\n");
       return MSCB_MUTEX;
+   }
 
    buf[0] = MCMD_ADDR_NODE16;
    buf[1] = (unsigned char) (adr >> 8);
@@ -2669,18 +2701,23 @@ int mscb_write(int fd, int adr, unsigned char index, void *data, int size)
    /* read acknowledge */
    i = mscb_in(fd, ack, 2, 10000);
    mscb_release(fd);
-   if (i < 2)
+   if (i < 2) {
+      debug_log("return MSCB_TIMEOUT\n");
       return MSCB_TIMEOUT;
+   }
 
-   if (ack[0] != MCMD_ACK || ack[1] != crc)
+   if (ack[0] != MCMD_ACK || ack[1] != crc) {
+      debug_log("return MSCB_CRC_ERROR\n");
       return MSCB_CRC_ERROR;
+   }
 
+   debug_log("return MSCB_SUCCESS\n");
    return MSCB_SUCCESS;
 }
 
 /*------------------------------------------------------------------*/
 
-int mscb_write_block(int fd, int adr, unsigned char index, void *data, int size)
+int mscb_write_block(int fd, unsigned short adr, unsigned char index, void *data, int size)
 /********************************************************************\
 
   Routine: mscb_write_block
@@ -2689,7 +2726,7 @@ int mscb_write_block(int fd, int adr, unsigned char index, void *data, int size)
 
   Input:
     int fd                  File descriptor for connection
-    int adr                 Node address
+    unsigned short adr      Node address
     unsigned char index     Variable index 0..255
     void *data              Data to send
     int size                Data size in bytes
@@ -2773,7 +2810,7 @@ int mscb_write_block(int fd, int adr, unsigned char index, void *data, int size)
 
 /*------------------------------------------------------------------*/
 
-int mscb_flash(int fd, int adr)
+int mscb_flash(int fd, unsigned short adr)
 /********************************************************************\
 
   Routine: mscb_flash
@@ -2783,7 +2820,7 @@ int mscb_flash(int fd, int adr)
 
   Input:
     int fd                  File descriptor for connection
-    int adr                 Node address
+    unsigned short adr      Node address
                             and dword
 
   Function value:
@@ -2822,7 +2859,7 @@ int mscb_flash(int fd, int adr)
 
 /*------------------------------------------------------------------*/
 
-int mscb_upload(int fd, int adr, char *buffer, int size, int debug)
+int mscb_upload(int fd, unsigned short adr, char *buffer, int size, int debug)
 /********************************************************************\
 
   Routine: mscb_upload
@@ -2832,7 +2869,7 @@ int mscb_upload(int fd, int adr, char *buffer, int size, int debug)
 
   Input:
     int fd                  File descriptor for connection
-    int adr                 Node address
+    unsigned short adr      Node address
     char *buffer            Buffer with Intel HEX file
     int size                Size of buffer
     int debug               If TRUE, produce detailed debugging output
@@ -3120,7 +3157,7 @@ prog_error:
 
 /*------------------------------------------------------------------*/
 
-int mscb_verify(int fd, int adr, char *buffer, int size)
+int mscb_verify(int fd, unsigned short adr, char *buffer, int size)
 /********************************************************************\
 
   Routine: mscb_verify
@@ -3130,7 +3167,7 @@ int mscb_verify(int fd, int adr, char *buffer, int size)
 
   Input:
     int fd                  File descriptor for connection
-    int adr                 Node address
+    unsigend short adr      Node address
     char *buffer            Buffer with Intel HEX file
     int size                Size of buffer
 
@@ -3277,7 +3314,7 @@ ver_error:
 
 /*------------------------------------------------------------------*/
 
-int mscb_read(int fd, int adr, unsigned char index, void *data, int *size)
+int mscb_read(int fd, unsigned short adr, unsigned char index, void *data, int *size)
 /********************************************************************\
 
   Routine: mscb_read
@@ -3286,7 +3323,7 @@ int mscb_read(int fd, int adr, unsigned char index, void *data, int *size)
 
   Input:
     int fd                  File descriptor for connection
-    int adr                 Node address
+    unsigend short adr                 Node address
     unsigned char index     Variable index 0..255
     int size                Buffer size for data
 
@@ -3306,19 +3343,25 @@ int mscb_read(int fd, int adr, unsigned char index, void *data, int *size)
    int i, n;
    unsigned char buf[256], crc;
 
+   debug_log("mscb_read(fd=%d,adr=%d,index=%d,data=%p,size=%d) ", fd, adr, index, data, *size);
+
    if (*size > 256)
       return MSCB_INVAL_PARAM;
 
    memset(data, 0, *size);
 
-   if (fd > MSCB_MAX_FD || fd < 1 || !mscb_fd[fd - 1].type)
+   if (fd > MSCB_MAX_FD || fd < 1 || !mscb_fd[fd - 1].type) {
+      debug_log("return MSCB_INVAL_PARAM\n");
       return MSCB_INVAL_PARAM;
+   }
 
    if (mrpc_connected(fd))
       return mrpc_call(mscb_fd[fd - 1].fd, RPC_MSCB_READ, mscb_fd[fd - 1].remote_fd, adr, index, data, size);
 
-   if (mscb_lock(fd) != MSCB_SUCCESS)
+   if (mscb_lock(fd) != MSCB_SUCCESS) {
+      debug_log("return MSCB_MUTEX\n");
       return MSCB_MUTEX;
+   }
 
    /* try ten times */
    for (n = 0; n < 10; n++) {
@@ -3365,6 +3408,7 @@ int mscb_read(int fd, int adr, unsigned char index, void *data, int *size)
          if (i - 3 > *size) {
             mscb_release(fd);
             *size = 0;
+            debug_log("return MSCB_NO_MEM, i=%d, *size=%d\n", i, *size);
             return MSCB_NO_MEM;
          }
 
@@ -3374,6 +3418,7 @@ int mscb_read(int fd, int adr, unsigned char index, void *data, int *size)
          if (i - 2 > *size) {
             mscb_release(fd);
             *size = 0;
+            debug_log("return MSCB_NO_MEM, i=%d, *size=%d\n", i, *size);
             return MSCB_NO_MEM;
          }
 
@@ -3387,20 +3432,31 @@ int mscb_read(int fd, int adr, unsigned char index, void *data, int *size)
          DWORD_SWAP(data);
 
       mscb_release(fd);
+      for (i=0 ; i<*size && ((char *)data)[i] ; i++)
+         if (!isascii(((char *)data)[i]))
+            break;
+
+      if (i < *size && ((char *)data)[i])
+         debug_log("return %d bytes: %s\n", *size, data);
+      else
+         debug_log("return %d bytes: \"%s\"\n", *size, data);
       return MSCB_SUCCESS;
    }
 
    mscb_release(fd);
 
-   if (i < 2)
+   if (i < 2) {
+      debug_log("return MSCB_TIMEOUT\n");
       return MSCB_TIMEOUT;
+   }
 
+   debug_log("return MSCB_CRC_ERROR");
    return MSCB_CRC_ERROR;
 }
 
 /*------------------------------------------------------------------*/
 
-int mscb_read_range(int fd, int adr, unsigned char index1, unsigned char index2, void *data, int *size)
+int mscb_read_range(int fd, unsigned short adr, unsigned char index1, unsigned char index2, void *data, int *size)
 /********************************************************************\
 
   Routine: mscb_read
@@ -3409,7 +3465,7 @@ int mscb_read_range(int fd, int adr, unsigned char index1, unsigned char index2,
 
   Input:
     int fd                  File descriptor for connection
-    int adr                 Node address
+    unsigend short adr      Node address
     unsigned char index1    First index to read
     unsigned char index2    Last index to read
     int size                Buffer size for data
@@ -3493,7 +3549,7 @@ int mscb_read_range(int fd, int adr, unsigned char index1, unsigned char index2,
 
 /*------------------------------------------------------------------*/
 
-int mscb_read_block(int fd, int adr, unsigned char index, void *data, int *size)
+int mscb_read_block(int fd, unsigned short adr, unsigned char index, void *data, int *size)
 /********************************************************************\
 
   Routine: mscb_read_block
@@ -3502,7 +3558,7 @@ int mscb_read_block(int fd, int adr, unsigned char index, void *data, int *size)
 
   Input:
     int fd                  File descriptor for connection
-    int adr                 Node address
+    unsigend short adr      Node address
     unsigned char index     Variable index 0..255
     int size                Buffer size for data
 
@@ -3604,7 +3660,7 @@ int mscb_read_block(int fd, int adr, unsigned char index, void *data, int *size)
 
 /*------------------------------------------------------------------*/
 
-int mscb_user(int fd, int adr, void *param, int size, void *result, int *rsize)
+int mscb_user(int fd, unsigned short adr, void *param, int size, void *result, int *rsize)
 /********************************************************************\
 
   Routine: mscb_user
@@ -3613,7 +3669,7 @@ int mscb_user(int fd, int adr, void *param, int size, void *result, int *rsize)
 
   Input:
     int  fd                 File descriptor for connection
-    int adr                 Node address
+    unsigned short adr      Node address
     char *param             Parameters passed to user function, no CRC code
     int  size               Size of parameters in bytes
     int  *rsize             Size of result buffer
@@ -3693,7 +3749,7 @@ int mscb_user(int fd, int adr, void *param, int size, void *result, int *rsize)
 
 /*------------------------------------------------------------------*/
 
-int mscb_echo(int fd, int adr, unsigned char d1, unsigned char *d2)
+int mscb_echo(int fd, unsigned short adr, unsigned char d1, unsigned char *d2)
 /********************************************************************\
 
   Routine: mscb_echo
@@ -3795,7 +3851,7 @@ unsigned long millitime()
 
 /*------------------------------------------------------------------*/
 
-int mscb_link(int fd, int adr, unsigned char index, void *data, int size)
+int mscb_link(int fd, unsigned short adr, unsigned char index, void *data, int size)
 /********************************************************************\
 
   Routine: mscb_link

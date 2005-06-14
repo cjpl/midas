@@ -6,6 +6,9 @@
   Contents:     List of MSCB RPC functions with parameters
 
   $Log$
+  Revision 1.3  2005/06/14 11:38:02  ritt
+  Revised MSCB adr to 16-bit consistently
+
   Revision 1.2  2005/04/13 14:54:53  ritt
   Changed rpc.x to mscbrpc.x
 
@@ -446,7 +449,7 @@ int server_execute(int index, void *prpc_param[])
       break;
 
    case RPC_MSCB_REBOOT:
-      status = mscb_reboot(CINT(0), CINT(1));
+      status = mscb_reboot(CINT(0), CWORD(1));
       break;
 
    case RPC_MSCB_RESET:
@@ -454,71 +457,71 @@ int server_execute(int index, void *prpc_param[])
       break;
 
    case RPC_MSCB_PING:
-      status = mscb_ping(CINT(0), CINT(1));
+      status = mscb_ping(CINT(0), CWORD(1));
       break;
 
    case RPC_MSCB_INFO:
-      status = mscb_info(CINT(0), CINT(1), CARRAY(2));
+      status = mscb_info(CINT(0), CWORD(1), CARRAY(2));
       break;
 
    case RPC_MSCB_INFO_VARIABLE:
-      status = mscb_info_variable(CINT(0), CINT(1), CINT(2), CARRAY(3));
+      status = mscb_info_variable(CINT(0), CSHORT(1), CBYTE(2), CARRAY(3));
       break;
 
    case RPC_MSCB_SET_ADDR:
-      status = mscb_set_addr(CINT(0), CINT(1), CINT(2), CINT(3));
+      status = mscb_set_addr(CINT(0), CSHORT(1), CSHORT(2), CSHORT(3));
       break;
 
    case RPC_MSCB_SET_NAME:
-      status = mscb_set_name(CINT(0), CINT(1), CSTRING(2));
+      status = mscb_set_name(CINT(0), CSHORT(1), CSTRING(2));
       break;
 
    case RPC_MSCB_WRITE_GROUP:
-      status = mscb_write_group(CINT(0), CINT(1), CBYTE(2), CARRAY(3), CINT(4));
+      status = mscb_write_group(CINT(0), CSHORT(1), CBYTE(2), CARRAY(3), CINT(4));
       break;
 
    case RPC_MSCB_WRITE:
-      status = mscb_write(CINT(0), CINT(1), CBYTE(2), CARRAY(3), CINT(4));
+      status = mscb_write(CINT(0), CSHORT(1), CBYTE(2), CARRAY(3), CINT(4));
       break;
 
    case RPC_MSCB_WRITE_BLOCK:
-      status = mscb_write(CINT(0), CINT(1), CBYTE(2), CARRAY(3), CINT(4));
+      status = mscb_write(CINT(0), CSHORT(1), CBYTE(2), CARRAY(3), CINT(4));
       break;
 
    case RPC_MSCB_FLASH:
-      status = mscb_flash(CINT(0), CINT(1));
+      status = mscb_flash(CINT(0), CSHORT(1));
       break;
 
    case RPC_MSCB_UPLOAD:
-      status = mscb_upload(CINT(0), CINT(1), CARRAY(2), CINT(3), CINT(4));
+      status = mscb_upload(CINT(0), CSHORT(1), CARRAY(2), CINT(3), CINT(4));
       break;
 
    case RPC_MSCB_VERIFY:
-      status = mscb_verify(CINT(0), CINT(1), CARRAY(2), CINT(3));
+      status = mscb_verify(CINT(0), CSHORT(1), CARRAY(2), CINT(3));
       break;
 
    case RPC_MSCB_READ:
-      status = mscb_read(CINT(0), CINT(1), CBYTE(2), CARRAY(3), CPINT(4));
+      status = mscb_read(CINT(0), CSHORT(1), CBYTE(2), CARRAY(3), CPINT(4));
       break;
 
    case RPC_MSCB_READ_RANGE:
-      status = mscb_read_range(CINT(0), CINT(1), CBYTE(2), CBYTE(3), CARRAY(4), CPINT(5));
+      status = mscb_read_range(CINT(0), CSHORT(1), CBYTE(2), CBYTE(3), CARRAY(4), CPINT(5));
       break;
 
    case RPC_MSCB_READ_BLOCK:
-      status = mscb_read(CINT(0), CINT(1), CBYTE(2), CARRAY(3), CPINT(4));
+      status = mscb_read(CINT(0), CSHORT(1), CBYTE(2), CARRAY(3), CPINT(4));
       break;
 
    case RPC_MSCB_ECHO:
-      status = mscb_echo(CINT(0), CINT(1), CBYTE(2), CPBYTE(3));
+      status = mscb_echo(CINT(0), CSHORT(1), CBYTE(2), CPBYTE(3));
       break;
 
    case RPC_MSCB_USER:
-      status = mscb_user(CINT(0), CINT(1), CARRAY(2), CINT(3), CARRAY(4), CPINT(5));
+      status = mscb_user(CINT(0), CSHORT(1), CARRAY(2), CINT(3), CARRAY(4), CPINT(5));
       break;
 
    case RPC_MSCB_ADDR:
-      status = mscb_addr(CINT(0), CINT(1), CINT(2), CINT(3), CINT(4));
+      status = mscb_addr(CINT(0), CINT(1), CSHORT(2), CINT(3), CINT(4));
       break;
    }
 
