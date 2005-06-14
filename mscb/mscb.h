@@ -6,6 +6,9 @@
   Contents:     Header fiel for MSCB funcions
 
   $Log$
+  Revision 1.46  2005/06/14 11:38:02  ritt
+  Revised MSCB adr to 16-bit consistently
+
   Revision 1.45  2005/03/21 13:15:35  ritt
   Added submaster software version
 
@@ -378,26 +381,26 @@ extern "C" {
    void EXPRT mscb_check(char *device, int size);
    int EXPRT mscb_exit(int fd);
    int EXPRT mscb_reset(int fd);
-   int EXPRT mscb_reboot(int fd, int adr);
-   int EXPRT mscb_ping(int fd, int adr);
-   int EXPRT mscb_echo(int fd, int addr, unsigned char d1, unsigned char *d2);
-   int EXPRT mscb_info(int fd, int adr, MSCB_INFO * info);
-   int EXPRT mscb_info_variable(int fd, int adr, int index, MSCB_INFO_VAR * info);
-   int EXPRT mscb_set_addr(int fd, int adr, int node, int group);
-   int EXPRT mscb_set_name(int fd, int adr, char *name);
-   int EXPRT mscb_write(int fd, int adr, unsigned char index, void *data, int size);
-   int EXPRT mscb_write_group(int fd, int adr, unsigned char index, void *data, int size);
-   int EXPRT mscb_write_block(int fd, int adr, unsigned char index, void *data, int size);
-   int EXPRT mscb_flash(int fd, int adr);
-   int EXPRT mscb_upload(int fd, int adr, char *buffer, int size, int debug);
-   int EXPRT mscb_verify(int fd, int adr, char *buffer, int size);
-   int EXPRT mscb_read(int fd, int adr, unsigned char index, void *data, int *size);
-   int EXPRT mscb_read_range(int fd, int adr, unsigned char index1,
+   int EXPRT mscb_reboot(int fd, unsigned short adr);
+   int EXPRT mscb_ping(int fd, unsigned short adr);
+   int EXPRT mscb_echo(int fd, unsigned short add, unsigned char d1, unsigned char *d2);
+   int EXPRT mscb_info(int fd, unsigned short adr, MSCB_INFO * info);
+   int EXPRT mscb_info_variable(int fd, unsigned short adr, unsigned char index, MSCB_INFO_VAR * info);
+   int EXPRT mscb_set_addr(int fd, unsigned short adr, unsigned short node, unsigned short group);
+   int EXPRT mscb_set_name(int fd, unsigned short adr, char *name);
+   int EXPRT mscb_write(int fd, unsigned short adr, unsigned char index, void *data, int size);
+   int EXPRT mscb_write_group(int fd, unsigned short adr, unsigned char index, void *data, int size);
+   int EXPRT mscb_write_block(int fd, unsigned short adr, unsigned char index, void *data, int size);
+   int EXPRT mscb_flash(int fd, unsigned short adr);
+   int EXPRT mscb_upload(int fd, unsigned short adr, char *buffer, int size, int debug);
+   int EXPRT mscb_verify(int fd, unsigned short adr, char *buffer, int size);
+   int EXPRT mscb_read(int fd, unsigned short adr, unsigned char index, void *data, int *size);
+   int EXPRT mscb_read_range(int fd, unsigned short adr, unsigned char index1,
                              unsigned char index2, void *data, int *size);
-   int EXPRT mscb_read_block(int fd, int adr, unsigned char index, void *data, int *size);
-   int EXPRT mscb_user(int fd, int adr, void *param, int size, void *result, int *rsize);
-   int EXPRT mscb_link(int fd, int adr, unsigned char index, void *data, int size);
-   int EXPRT mscb_addr(int fd, int cmd, int adr, int retry, int lock);
+   int EXPRT mscb_read_block(int fd, unsigned short adr, unsigned char index, void *data, int *size);
+   int EXPRT mscb_user(int fd, unsigned short adr, void *param, int size, void *result, int *rsize);
+   int EXPRT mscb_link(int fd, unsigned short adr, unsigned char index, void *data, int size);
+   int EXPRT mscb_addr(int fd, int cmd, unsigned short adr, int retry, int lock);
 
    int set_mac_address(int fd);
 
