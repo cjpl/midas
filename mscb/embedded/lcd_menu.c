@@ -8,6 +8,9 @@
                 and four buttons
 
   $Log$
+  Revision 1.6  2005/06/24 18:49:02  ritt
+  Implemented UART1_MSCB/DEVICE
+
   Revision 1.5  2005/02/16 14:17:58  ritt
   Two-speed menu increment
 
@@ -393,8 +396,10 @@ void lcd_menu()
                      flash_param = 1;
                } else {
                   user_write(var_index);
+#ifdef UART1_MSCB
                   if (pvar->flags & MSCBF_REMOUT)
                      send_remote_var(var_index);
+#endif
                }
             }
 
@@ -577,7 +582,7 @@ void lcd_menu()
                      flash_param = 1;
                } else {
                   user_write(var_index);
-#if defined(SCS_1000) || defined(SCS_1001)
+#ifdef UART1_MSCB
                   if (variables[var_index].flags & MSCBF_REMOUT)
                      send_remote_var(var_index);
 #endif
