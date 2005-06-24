@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol main program
 
   $Log$
+  Revision 1.68  2005/06/24 18:49:03  ritt
+  Implemented UART1_MSCB/DEVICE
+
   Revision 1.67  2005/05/09 09:09:50  ritt
   Decreased power consumption of scs_210
 
@@ -268,7 +271,7 @@ unsigned char idata crc_code, addr_mode, n_variables, _flkey=0;
 
 unsigned char idata _cur_sub_addr, _var_size;
 
-#if defined(SCS_1000) || defined(SCS_1001)
+#ifdef UART1_MSCB
 unsigned char var_to_send = 0xFF;
 #endif
 
@@ -462,13 +465,12 @@ void setup(void)
    /* initialize UART(s) */
    uart_init(0, BD_115200);
 
-#if defined(SCS_1000) || defined(scs_1001)
+#ifdef UART1_MSCB
    uart_init(1, BD_115200);
 #endif
 
 #ifdef LCD_SUPPORT
    lcd_setup();
-
 #endif
 
    /* count variables */
@@ -992,7 +994,7 @@ void interprete(void)
 
          user_write(ch);
 
-#if defined(SCS_1000) || defined(SCS_1001)
+#ifdef UART1_MSCB
          /* mark variable to be send in main loop */
          if (variables[ch].flags & MSCBF_REMOUT)
             var_to_send = ch;
@@ -1017,7 +1019,7 @@ void interprete(void)
 
 /*------------------------------------------------------------------*/
 
-#if defined(SCS_1000) || defined(SCS_1001)
+#ifdef UART1_MSCB
 
 static unsigned short xdata last_addr = -1;
 static unsigned char xdata uart1_buf[10];
@@ -1132,7 +1134,7 @@ unsigned char size;
    led_blink(1, 1, 50);
 }
 
-#endif // SCS_1000/1
+#endif // UART1_MSCB
 
 /*------------------------------------------------------------------*/
 
@@ -1450,7 +1452,7 @@ void yield(void)
    rs232_output();
 
    /* manage remote variables on SCS-1000 */
-#if defined(SCS_1000) || defined(SCS_1001)
+#ifdef UART1_MSCB
    poll_remote_vars();
 
    if (var_to_send != 0xFF) {

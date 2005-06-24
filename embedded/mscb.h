@@ -6,6 +6,9 @@
   Contents:     Midas Slow Control Bus protocol commands
 
   $Log$
+  Revision 1.57  2005/06/24 18:49:03  ritt
+  Implemented UART1_MSCB/DEVICE
+
   Revision 1.56  2005/05/09 09:09:50  ritt
   Decreased power consumption of scs_210
 
@@ -424,6 +427,22 @@ sbit RS485_ENABLE = P0 ^ 7;
 #else
 #define EEPROM_OFFSET 0x6000 // 0x6000-0x6FFF = 4kB
 #define N_EEPROM_PAGE      8 // 8 pages @ 512 bytes
+#endif
+
+
+/* UART1 specific definitions */
+#if defined(SCS_210) | defined(SCS_220)
+#define UART1_DEVICE                     // use direct device communication
+#endif
+
+#if defined(UART1_DEVICE) && defined(LCD_SUPPORT)
+char putchar1(char c);                   // putchar cannot be used with LCD support
+#endif
+
+#ifndef UART1_DEVICE
+#if defined(SCS_1000) || defined(SCS_1001)
+#define UART1_MSCB                       // UART1 connected as master to MSCB slave bus
+#endif
 #endif
 
 /*---- Delay macro to be used in interrupt routines etc. -----------*/

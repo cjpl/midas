@@ -6,6 +6,9 @@
   Contents:     Various utility functions for MSCB protocol
 
   $Log$
+  Revision 1.56  2005/06/24 18:49:03  ritt
+  Implemented UART1_MSCB/DEVICE
+
   Revision 1.55  2005/05/09 09:09:50  ritt
   Decreased power consumption of scs_210
 
@@ -280,17 +283,17 @@ unsigned char crc8_add(unsigned char crc, unsigned int c)
 
 /*------------------------------------------------------------------*/
 
-#if defined(SCS_210) | defined(SCS_220) // SCS_210/220 uses UAR0 & UART1
+#if defined(UART1_DEVICE) // user-level device communication via UART1
 
 bit ti1_shadow = 1;
 
 char xdata rbuf[2048];
 char xdata sbuf[1024];
 
-unsigned char xdata *data rbuf_rp = rbuf;
-unsigned char xdata *data rbuf_wp = rbuf;
-unsigned char xdata *data sbuf_rp = sbuf;
-unsigned char xdata *data sbuf_wp = sbuf;
+unsigned char xdata * xdata rbuf_rp = rbuf;
+unsigned char xdata * xdata rbuf_wp = rbuf;
+unsigned char xdata * xdata sbuf_rp = sbuf;
+unsigned char xdata * xdata sbuf_wp = sbuf;
 
 /*---- UART1 handling ----------------------------------------------*/
 
@@ -298,7 +301,7 @@ void serial_int1(void) interrupt 20 using 2
 {
    if (SCON1 & 0x02) {          // TI1
 
-#ifdef SCS_220
+#if defined(SCS_220) || defined(SCS_1000) || defined(SCS_1001)
       if (sbuf_wp == sbuf_rp)
          RS485_SEC_ENABLE = 0;
 #endif
@@ -333,11 +336,11 @@ void rs232_output(void)
 {
    if (sbuf_wp != sbuf_rp && ti1_shadow == 1) {
       ti1_shadow = 0;
-#ifdef SCS_220
+#if defined(SCS_220) || defined(SCS_1000) || defined(SCS_1001)
       RS485_SEC_ENABLE = 1;
 #endif
 
-#ifdef SCS_210
+#ifdef CPU_C8051F120
       SFRPAGE = UART1_PAGE;
 #endif
 
@@ -414,6 +417,23 @@ unsigned char gets_wait(char *str, unsigned char size, unsigned char timeout)
 
 /*------------------------------------------------------------------*/
 
+#ifdef LCD_SUPPORT // putchar is already used for LCD
+
+char putchar1(char c)
+{
+   /* check if buffer overflow */
+   if (sbuf_wp + 1 == sbuf_rp)
+      return c;
+
+   *sbuf_wp++ = c;
+   if (sbuf_wp == sbuf + sizeof(sbuf))
+      sbuf_wp = sbuf;
+
+   return c;
+}
+
+#else
+
 char putchar(char c)
 {
    /* check if buffer overflow */
@@ -426,6 +446,8 @@ char putchar(char c)
 
    return c;
 }
+
+#endif;
 
 /*------------------------------------------------------------------*/
 
@@ -447,7 +469,7 @@ void uart1_init_buffer()
 
 /*------------------------------------------------------------------*/
 
-#elif defined(SCS_1000) || defined(SCS_1001) // SCS_1000/1 uses UAR0 & UART1
+#elif defined(UART1_MSCB) // UART1 connected as master to MSCB slave bus
 
 bit ti1_shadow = 1;
 unsigned char n_recv;
@@ -564,7 +586,7 @@ void rs232_output(void) // dummy
 
 /*------------------------------------------------------------------*/
 
-#else // SCS_210 | SCS_220 | SCS_1000
+#else // UART1_MSCB
 
 void rs232_output(void) // dummy
 {
@@ -733,9 +755,6 @@ void uart_init(unsigned char port, unsigned char baud)
       EIE2 |= 0x40;                // enable serial interrupt
       EIP2 &= ~0x40;               // serial interrupt low priority
 
-#if defined(SCS_210) | defined(SCS_220) | defined(SCS_1000) | defined(SCS_1001)
-      uart1_init_buffer();
-#endif
 
 #elif defined(SCS_210)             // 24.5 MHz
       SFRPAGE = UART1_PAGE;
@@ -764,6 +783,8 @@ void uart_init(unsigned char port, unsigned char baud)
       EIE2 |= 0x40;                // enable serial interrupt
       EIP2 &= ~0x40;               // serial interrupt low priority
 #endif
+
+      uart1_init_buffer();
    }
 
    EA = 1;                         // general interrupt enable
